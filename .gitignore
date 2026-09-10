@@ -1,0 +1,7 @@
+node_modules/
+.edge-qa/
+UsersNatalieAppDataLocalGoogleChromeUser Data/
+*.log
+.claude/scheduled_tasks.lock
+data/prep.db
+tools/codex-cli/

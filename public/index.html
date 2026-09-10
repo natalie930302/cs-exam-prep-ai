@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>資工所備考中心 · 116學年度</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="image" href="/assets/rolling-hills-pexels-32821671.jpg">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=20260903a">
+</head>
+<body id="appRoot">
+
+<a class="skip-link" href="#main">跳到主要內容</a>
+
+<main id="main" tabindex="-1">
+  <div class="brandbar">
+    <div class="brand">
+      <div class="brand-t">CSIE PREP HUB</div>
+      <div class="brand-s">資工所備考中心 · 116學年度</div>
+    </div>
+    <nav class="pillnav" id="pillnav" aria-label="主要功能">
+      <button class="pill ui-btn on" type="button" data-sec="schedule" aria-current="page" onclick="goSec('schedule',this)">日曆</button>
+      <button class="pill ui-btn" type="button" data-sec="subjects" onclick="goSec('subjects',this)">六科</button>
+      <button class="pill ui-btn" type="button" data-sec="materials" onclick="goSec('materials',this)">素材</button>
+      <button class="pill ui-btn" type="button" data-sec="schools" onclick="goSec('schools',this)">學校</button>
+      <button class="pill ui-btn" type="button" data-sec="ai" onclick="goSec('ai',this)">AI 助教<span class="pill-unread" id="aiUnreadDot" style="display:none;"></span></button>
+    </nav>
+    <button class="global-search-toggle ui-btn ui-btn-icon" onclick="openGlobalSearch()" aria-label="搜尋章節與資源" title="搜尋（Ctrl+K)">
+      <svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </button>
+  </div>
+
+  <!-- ══════════ 日曆 ══════════ -->
+  <div class="sec on" id="sec-schedule" aria-hidden="false">
+    <div class="checkin-banner" id="checkinBanner" style="display:none;"></div>
+
+    <div class="cal-header-card">
+      <div class="cal-greet" id="greetingLine"></div>
+      <div class="daily-focus" id="dailyFocus"></div>
+      <div id="calPaceWarning"></div>
+      <div class="cal-next-info" id="calNextInfo"></div>
+    </div>
+
+    <div class="smart-overview" id="smartOverview"></div>
+    <button class="ai-daily-brief-btn ui-btn ui-btn-primary" id="aiDailyBriefBtn" type="button" onclick="requestDailyBrief()" style="display:none;">AI 每日建議 →</button>
+
+    <div class="cal-view-toggle" role="group" aria-label="日曆檢視方式">
+      <button class="filter-chip ui-btn active" id="calViewWeekBtn" type="button" aria-pressed="true" onclick="setCalView('week')">週曆</button>
+      <button class="filter-chip ui-btn" id="calViewMonthBtn" type="button" aria-pressed="false" onclick="setCalView('month')">月曆</button>
+    </div>
+
+    <div id="calContainer"></div>
+  </div>
+
+  <!-- ══════════ 六科章節計畫 ══════════ -->
+  <div class="sec" id="sec-subjects" aria-hidden="true">
+    <div class="sh">六科章節詳細計畫</div>
+    <div class="ss">依章節查看考點、任務與完成進度。</div>
+    <div class="stabs" id="stabs" role="tablist" aria-label="六科切換"></div>
+    <div id="spPanels"></div>
+  </div>
+
+  <!-- ══════════ 備考素材 ══════════ -->
+  <div class="sec" id="sec-materials" aria-hidden="true">
+    <div class="sh">備考參考資源</div>
+    <div class="ss">完整課程、同儕筆記，以及考古題與複試資源。</div>
+    <div class="filter-bar">
+      <div class="filter-chips" id="matFilterChips"></div>
+    </div>
+    <div class="res-grid" id="resGrid"></div>
+    <div class="filter-empty" id="matEmpty">找不到符合的素材，換個關鍵字試試。</div>
+  </div>
+
+  <!-- ══════════ 各校考試資訊 ══════════ -->
+  <div class="sec" id="sec-schools" data-school-mode="all" aria-hidden="true">
+    <div class="sh">各校招生資訊</div>
+    <div class="ss">更新於2026/9/2：考試入學列115學年度歷史資料；推甄追蹤116學年度官方公告狀態，未公告項目不預填。</div>
+    <div class="admission-update-note">
+      <span class="admission-update-icon" aria-hidden="true">i</span>
+      <div><strong>近期公告節點</strong><span>中山預計 9/11、清大與陽明交大約 9 月中、北科約 9 月下旬；日期到時仍要回官方入口確認。</span></div>
+    </div>
+    <section class="admission-radar" id="admissionRadar" aria-labelledby="admissionRadarTitle">
+      <div class="admission-radar-head">
+        <div><span>SMART TRACKER</span><h2 id="admissionRadarTitle">116 推甄招生雷達</h2></div>
+        <button class="admission-radar-reset" type="button" hidden onclick="setAdmissionStage('all',this)">顯示全部學校</button>
+      </div>
+      <div class="admission-radar-metrics" id="admissionRadarMetrics"></div>
+      <div class="admission-next-action" id="admissionNextAction"></div>
+    </section>
+    <details class="admission-experience-guide">
+      <summary>HackMD 考生心得交叉整理 <span id="admissionGuideEvidence">非官方</span></summary>
+      <div id="admissionExperienceGuide"></div>
+    </details>
+    <div class="school-mode-bar" role="group" aria-label="招生資訊篩選">
+      <button class="filter-chip ui-btn active" type="button" data-school-mode="all" aria-pressed="true" onclick="setSchoolInfoMode('all',this)">全部</button>
+      <button class="filter-chip ui-btn" type="button" data-school-mode="recommend" aria-pressed="false" onclick="setSchoolInfoMode('recommend',this)">116 推甄</button>
+      <button class="filter-chip ui-btn" type="button" data-school-mode="exam" aria-pressed="false" onclick="setSchoolInfoMode('exam',this)">115 考試參考</button>
+    </div>
+    <div class="uni-grid" id="uniGrid"></div>
+  </div>
+
+  <!-- ══════════ AI 助教 ══════════ -->
+  <div class="sec" id="sec-ai" aria-hidden="true">
+    <div class="sh">AI 助教</div>
+    <div class="ss">查詢進度、調整計畫或釐清考點。</div>
+    <div class="chat-wrap">
+      <button class="ai-home-nudge" id="aiHomeNudge" type="button" onclick="useAiProactivePrompt()"></button>
+      <div class="ai-energy-check" id="aiHomeEnergy" aria-label="今天的精神狀態"></div>
+      <div class="ai-time-plans" id="aiHomeTimePlans" aria-label="依可用時間產生計畫"></div>
+      <div class="chat-log" id="chatLog" role="log" aria-live="polite" aria-relevant="additions"></div>
+      <div class="ai-followups" id="aiFollowups" aria-label="AI 建議的後續操作"></div>
+      <div class="chat-status" id="chatStatus" role="status" aria-live="polite"></div>
+      <div class="chat-input-row">
+        <input type="text" id="chatInput" class="chat-input" aria-label="輸入給 AI 助教的問題" placeholder="問AI問題，或說『這週進度落後了』…" />
+        <button class="voice-input-btn ui-btn ui-btn-icon" type="button" onclick="startVoiceInput('chatInput',this)" aria-label="語音輸入"></button>
+        <button onclick="sendChat()" class="chat-send-btn ui-btn ui-btn-primary" id="chatSendBtn">送出</button>
+      </div>
+      <div style="font-size:10px;color:var(--mt);margin-top:8px;">
+        <button class="chat-reset-link" type="button" onclick="resetChat()">開始新對話</button>
+        <span style="margin:0 6px;">・</span>
+        <span>「開始新對話」只清對話紀錄，AI 記得的長期事實不會跟著消失（見下方）</span>
+      </div>
+      <div class="ai-support-grid">
+        <div class="memory-panel">
+          <div class="memory-hd">AI 記得的事</div>
+          <div class="memory-list" id="memoryList"></div>
+        </div>
+        <div class="backup-panel">
+          <div><div class="backup-title">進度備份</div><div class="backup-note">開始日期、完成任務、每日清單與 AI 記憶。</div></div>
+          <div class="backup-actions">
+            <button class="qa-btn ui-btn" onclick="exportProgressBackup()">匯出</button>
+            <button class="qa-btn ui-btn" onclick="document.getElementById('backupFile').click()">匯入</button>
+            <input id="backupFile" type="file" accept="application/json,.json" hidden onchange="importProgressBackup(this.files[0]);this.value=''">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="task-toast" id="taskToast" role="status" aria-live="polite"></div>
+<div class="chapter-tool-modal" id="chapterToolModal" aria-hidden="true" onclick="if(event.target===this)closeChapterToolModal()">
+  <div class="chapter-tool-dialog" role="dialog" aria-modal="true" aria-labelledby="chapterToolModalTitle">
+    <button class="chapter-tool-close ui-btn ui-btn-icon" type="button" onclick="closeChapterToolModal()" aria-label="關閉">×</button>
+    <div class="chapter-tool-kicker" id="chapterToolModalKicker"></div>
+    <h2 id="chapterToolModalTitle"></h2>
+    <div class="chapter-tool-body" id="chapterToolModalBody"></div>
+    <button class="chapter-tool-submit" id="chapterToolModalSubmit" type="button" onclick="submitChapterToolModal()">儲存</button>
+  </div>
+</div>
+<div class="chapter-tool-modal diagnostic-modal" id="diagnosticModal" aria-hidden="true" onclick="if(event.target===this)closeDiagnosticModal()">
+  <div class="chapter-tool-dialog diagnostic-dialog" role="dialog" aria-modal="true" aria-labelledby="diagnosticTitle">
+    <button class="chapter-tool-close ui-btn ui-btn-icon" type="button" onclick="closeDiagnosticModal()" aria-label="關閉">×</button>
+    <div class="chapter-tool-kicker" id="diagnosticKicker">章節診斷</div>
+    <h2 id="diagnosticTitle">準備題目中</h2>
+    <div id="diagnosticBody" class="diagnostic-body"><div class="diagnostic-loading"><span></span><p>正在依本章考點準備 5 題測驗…</p></div></div>
+  </div>
+</div>
+<div class="chapter-tool-modal diagnostic-modal" id="chapterSummaryModal" aria-hidden="true" onclick="if(event.target===this)closeChapterSummaryModal()">
+  <div class="chapter-tool-dialog diagnostic-dialog" role="dialog" aria-modal="true" aria-labelledby="chapterSummaryTitle">
+    <button class="chapter-tool-close ui-btn ui-btn-icon" type="button" onclick="closeChapterSummaryModal()" aria-label="關閉">×</button>
+    <div class="chapter-tool-kicker" id="chapterSummaryKicker">重點統整</div>
+    <h2 id="chapterSummaryTitle">整理中</h2>
+    <div id="chapterSummaryBody" class="diagnostic-body"><div class="diagnostic-loading"><span></span><p>正在統整本章重點…</p></div></div>
+  </div>
+</div>
+<div class="chapter-tool-modal diagnostic-modal" id="schoolPlanModal" aria-hidden="true" onclick="if(event.target===this)closeSchoolPlanModal()">
+  <div class="chapter-tool-dialog diagnostic-dialog" role="dialog" aria-modal="true" aria-labelledby="schoolPlanTitle">
+    <button class="chapter-tool-close ui-btn ui-btn-icon" type="button" onclick="closeSchoolPlanModal()" aria-label="關閉">×</button>
+    <div class="chapter-tool-kicker" id="schoolPlanKicker">AI 準備建議</div>
+    <h2 id="schoolPlanTitle">整理中</h2>
+    <div id="schoolPlanBody" class="diagnostic-body"><div class="diagnostic-loading"><span></span><p>正在整理這間學校的準備建議…</p></div></div>
+  </div>
+</div>
+<div class="chapter-tool-modal diagnostic-modal" id="dailyBriefModal" aria-hidden="true" onclick="if(event.target===this)closeDailyBriefModal()">
+  <div class="chapter-tool-dialog diagnostic-dialog" role="dialog" aria-modal="true" aria-labelledby="dailyBriefTitle">
+    <button class="chapter-tool-close ui-btn ui-btn-icon" type="button" onclick="closeDailyBriefModal()" aria-label="關閉">×</button>
+    <div class="chapter-tool-kicker">AI 每日建議</div>
+    <h2 id="dailyBriefTitle">整理中</h2>
+    <div id="dailyBriefBody" class="diagnostic-body"><div class="diagnostic-loading"><span></span><p>正在根據你的實際進度整理今天建議…</p></div></div>
+  </div>
+</div>
+<div class="global-search-panel" id="globalSearchPanel" aria-hidden="true" onclick="if(event.target===this)closeGlobalSearch()">
+  <div class="global-search-dialog" role="dialog" aria-modal="true" aria-label="搜尋章節與資源">
+    <div class="global-search-input-row"><span class="search-icon" aria-hidden="true">⌕</span><input id="globalSearchInput" type="search" aria-label="搜尋章節、學校與素材" placeholder="搜尋 AVL、Page Fault、Jordan Form…" autocomplete="off"><button class="voice-input-btn ui-btn ui-btn-icon" type="button" onclick="startVoiceInput('globalSearchInput',this)" aria-label="語音輸入"></button><button class="ui-btn ui-btn-icon" type="button" onclick="closeGlobalSearch()" aria-label="關閉搜尋">×</button></div>
+    <div class="sr-only" id="globalSearchAnnouncement" role="status" aria-live="polite"></div>
+    <div class="global-search-results" id="globalSearchResults"></div>
+  </div>
+</div>
+
+<div class="ai-context-dock" id="aiContextDock">
+  <div class="ai-context-panel" id="aiContextPanel" role="dialog" aria-label="情境 AI 助教" aria-hidden="true">
+    <div class="ai-context-eyebrow">目前頁面</div>
+    <div class="ai-context-title" id="aiContextTitle">日曆與今日進度</div>
+    <button class="ai-context-nudge" id="aiContextNudge" type="button" onclick="useAiProactivePrompt()"></button>
+    <div class="ai-energy-check compact" id="aiContextEnergy" aria-label="今天的精神狀態"></div>
+    <div class="ai-time-plans compact" id="aiContextTimePlans" aria-label="依可用時間產生計畫"></div>
+    <div class="ai-context-actions" id="aiContextActions"></div>
+    <button class="ai-context-full" type="button" onclick="openAiWithPrompt('')">開啟完整 AI 助教</button>
+  </div>
+  <button class="ai-context-peek" id="aiContextPeek" type="button" onclick="toggleAiContextDock()" aria-label="查看 AI 主動建議" aria-live="polite"></button>
+  <button class="ai-context-trigger" type="button" onclick="toggleAiContextDock()" aria-label="開啟情境 AI 助教" aria-controls="aiContextPanel" aria-expanded="false">
+    <svg class="ic ai-assistant-icon" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5c.7 4.8 3.2 7.3 8 8-4.8.7-7.3 3.2-8 8-.7-4.8-3.2-7.3-8-8 4.8-.7 7.3-3.2 8-8z"/><path d="M19 3v4M17 5h4M5.5 17.5v3M4 19h3"/></svg>
+  </button>
+</div>
+
+<div class="global-timer" id="globalTimer" aria-live="polite">
+  <button class="global-timer-main" type="button" onclick="goToActiveTimerChapter()">
+    <span class="global-timer-pulse"></span>
+    <span class="global-timer-copy"><small id="globalTimerState">正在計時</small><b id="globalTimerTitle">章節</b></span>
+    <strong id="globalTimerElapsed">00:00</strong>
+  </button>
+  <div class="global-timer-actions">
+    <button class="ui-btn" id="globalTimerPause" type="button" onclick="toggleActiveTimerFromDock()">暫停</button>
+    <button class="ui-btn ui-btn-primary" type="button" onclick="finishActiveTimerFromDock()">完成</button>
+  </div>
+</div>
+
+<script src="data.js?v=20260903a"></script>
+<script src="/vendor/katex/katex.min.js"></script>
+<script src="app.js?v=20260903a"></script>
+</body>
+</html>
