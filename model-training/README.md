@@ -35,10 +35,11 @@ Gradient Boosting 比現行固定規則的 AUC 從 0.442 提升到 0.727(+64.5%�
 cd src
 python generate_synthetic_data.py   # 產生模擬資料
 python train_retention_model.py     # 訓練並評估
+python load_real_data.py            # 檢查真實資料量、若足夠則輸出可訓練的CSV
 ```
 
 ## 接回真實系統的規劃
 
-1. `prep.db` 累積到至少數百筆 `quiz_attempts` 後,寫一支 `load_real_data.py` 取代 `generate_synthetic_data.py`,輸出同樣的欄位格式
+1. **`src/load_real_data.py` 已經寫好**:從真實 `prep.db` 的 `quiz_attempts` 轉換成跟 `generate_synthetic_data.py` 完全相同的欄位格式,`train_retention_model.py` 不用改任何程式碼就能直接吃真實資料。真實資料沒有多學生概念,改用 `subject_id`(六科)當分組單位切train/test。目前執行會印出「資料量不足,不產生訓練檔案」——這是誠實的行為,不是bug,quiz_attempts 目前只有2筆,遠不到能訓練的量。之後隨著實際使用 app 累積更多測驗紀錄,直接重跑這支腳本即可。
 2. 訓練好的模型可以整合進 `server.js` 的複習排程邏輯,取代現在寫死的 SM-2 固定公式
 3. 需要額外設計「冷啟動」機制(新使用者/新章節初期資料不足時,退回目前的固定規則)
