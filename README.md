@@ -1323,6 +1323,18 @@ npm start        # 啟動伺服器，預設 http://localhost:3210
 
 開啟瀏覽器連到 `http://localhost:3210` 即可使用。要換 port 可用 `PORT=xxxx npm start`。
 
+### 開機自動啟動（Windows）
+
+`tools/autostart/` 裡有登入時自動開伺服器並打開瀏覽器的腳本。搬過專案或第一次用時，執行一次：
+
+```
+powershell -ExecutionPolicy Bypass -File tools\autostart\install-startup.ps1
+```
+
+它會在使用者的「啟動」資料夾放一個 `CSIE Prep Hub` 捷徑，指向 `start-and-open.vbs`。腳本會從自己所在位置推算專案目錄，
+所以不需要改路徑；`run-server-loop.bat` 會在 node 意外退出時自動重啟，`ensure-server.vbs` 則是不開瀏覽器的版本，
+重複執行也不會多開第二份伺服器。
+
 用 Ctrl+C 關掉伺服器就會停止。資料存在 `data/prep.db`（SQLite 單檔，第一次啟動自動建立），
 砍掉這個檔案等於重置所有進度/設定/對話紀錄。
 

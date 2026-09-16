@@ -1,5 +1,6 @@
 @echo off
-cd /d "C:\Users\Natalie\Desktop\csie_prep_package"
+rem Self-restarting server loop. Project root is two levels above this file.
+cd /d "%~dp0..\.."
 :loop
 node server.js
 timeout /t 2 /nobreak >nul
