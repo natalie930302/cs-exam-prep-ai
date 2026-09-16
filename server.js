@@ -169,6 +169,41 @@ app.post('/api/checklist/:date/toggle', (req, res) => {
   res.json({ done, all: db.getChecklistDone(req.params.date) });
 });
 
+// ── Node binary the Codex sandbox is allowed to execute ──
+// On Windows, Codex runs the agent's shell commands as a restricted local
+// account (CodexSandboxOnline / CodexSandboxOffline, members of "Users").
+// A default Node.js install under C:/Program Files/nodejs only grants
+// SYSTEM, Administrators and the installing user, so that account cannot
+// launch node.exe and every tools/plan-tool.cmd call fails with
+// "Access is denied." (the AI then reports it cannot read progress). The
+// project directory, on the other hand, is ACL'd for the sandbox group by
+// Codex itself, so we keep a private copy of the running node binary inside
+// it (tools/.runtime/, gitignored) and hand that path to plan-tool.cmd via
+// CSIE_NODE_EXE. The copy is refreshed whenever the real node.exe changes.
+const SANDBOX_NODE_DIR = path.join(__dirname, 'tools', '.runtime');
+const SANDBOX_NODE_EXE = path.join(SANDBOX_NODE_DIR, path.basename(process.execPath));
+function ensureSandboxNode() {
+  if (process.platform !== 'win32') return process.execPath;
+  try {
+    const src = fs.statSync(process.execPath);
+    let stale = true;
+    try {
+      const dst = fs.statSync(SANDBOX_NODE_EXE);
+      stale = dst.size !== src.size || dst.mtimeMs < src.mtimeMs;
+    } catch (_) { /* missing -> copy */ }
+    if (stale) {
+      fs.mkdirSync(SANDBOX_NODE_DIR, { recursive: true });
+      fs.copyFileSync(process.execPath, SANDBOX_NODE_EXE);
+      console.log('已更新 sandbox 用的 Node 執行檔：' + SANDBOX_NODE_EXE);
+    }
+    return SANDBOX_NODE_EXE;
+  } catch (err) {
+    console.warn('無法準備 sandbox 用的 Node 執行檔（' + err.message + '），改用 ' + process.execPath);
+    return process.execPath;
+  }
+}
+const CODEX_NODE_EXE = ensureSandboxNode();
+
 // ── Chat bridge (spawns the local Codex CLI non-interactively) ──
 app.get('/api/chat/history', (req, res) => {
   res.json({ messages: db.getChatHistory() });
@@ -198,7 +233,7 @@ function runCodex(message, options = {}) {
       HOME: process.env.HOME || userHome,
       USERPROFILE: process.env.USERPROFILE || userHome,
       CODEX_HOME: path.join(userHome, '.codex'),
-      CSIE_NODE_EXE: process.execPath,
+      CSIE_NODE_EXE: CODEX_NODE_EXE,
     };
     const pathKey = Object.keys(codexEnv).find((key) => key.toLowerCase() === 'path') || 'Path';
     codexEnv[pathKey] = [path.dirname(process.execPath), codexEnv[pathKey] || ''].filter(Boolean).join(path.delimiter);

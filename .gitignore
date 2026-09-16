@@ -5,3 +5,4 @@ UsersNatalieAppDataLocalGoogleChromeUser Data/
 .claude/scheduled_tasks.lock
 data/prep.db
 tools/codex-cli/
+tools/.runtime/
