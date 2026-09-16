@@ -184,14 +184,19 @@ const SUBJECT_PLAYLISTS = {
 // at 6hr/day — using 7 gave an unrealistically loose 46%-of-capacity buffer
 // that would never trigger the pace warning even when genuinely behind).
 // Set to match the illustrative 5-day-per-week calendar in data.js's
-// WK_FOUND (which lands foundation's last block on 11/17–11/21) so the AI
+// WK_FOUND (which lands foundation's last block on 11/27–11/30) so the AI
 // card's pace warning and the 日程與時程 reference page agree on when
 // foundation is "supposed to" wrap — both derived from the same ~304.5hr
 // total, giving a comparable buffer to the original 13-week plan.
-// 11/22–11/28 is reserved as a recovery window. If the queue finishes on
+// 12/1–12/7 is reserved as a recovery window. If the queue finishes on
 // time, drilling starts immediately; if real life interrupts a few days,
 // foundation can roll into this week without consuming the 10% safety margin.
-const FOUNDATION_TARGET_DATE = new Date('2026-11-29');
+//
+// 2026/9/16: recomputed again — nothing had been ticked off since the 8/21
+// start, so the plan was re-anchored to 9/16 with 4-day queue-weeks
+// (was 5-day) to keep ~5 weeks of 刷題期; foundation now targets 11/30,
+// recovery week 12/1–12/7, and daily capacity moved from 5hr to 6hr.
+const FOUNDATION_TARGET_DATE = new Date('2026-12-08');
 
 // ── State ──────────────────────────────────────────────────────────
 // SETTINGS is loaded from the server (SQLite-backed) in init(); everything
@@ -326,7 +331,7 @@ function dayInfo(d){
   const phase2 = phase !== 'foundation'; // kept for legacy checks (true once past foundation)
 
   const ps = phase === 'foundation' ? '基礎' : phase === 'drilling' ? '刷題' : '收斂';
-  let hrs = '~5hr';
+  let hrs = '~6hr';
   if(isRest) hrs = '休息日';
   else if(isDayOff) hrs = '打工';
   else if(phase === 'drilling') hrs = '~7hr';
@@ -717,12 +722,13 @@ function goSubjWeek(subjName, wk, taskType){
 // Rule-based pace check — no AI call, just arithmetic. Compares remaining
 // foundation workload against how much usable study time is actually left
 // before FOUNDATION_TARGET_DATE, using the same weekly rhythm dayInfo()
-// assumes (Sunday off, Monday ~0hr, everything else 5hr, matching the three
-// visible 2hr + 2hr + 1hr calendar blocks). The calendar's
+// assumes (Sunday off, Monday ~0hr, everything else 6hr, matching the three
+// visible 2.5hr + 2.5hr + 1hr calendar blocks; was 5hr before the 2026/9/16
+// re-plan). The calendar's
 // dates never get pushed back to hide falling behind (that would just be
 // lying about what's really scheduled) — this is the honest alternative:
 // a warning, not a rewritten schedule.
-const DAILY_CAPACITY_HOURS = { 0:0, 1:0, 2:5, 3:5, 4:5, 5:5, 6:5 };
+const DAILY_CAPACITY_HOURS = { 0:0, 1:0, 2:6, 3:6, 4:6, 5:6, 6:6 };
 const FORECAST_RESERVE_RATIO = 0.10;
 function foundationForecast(doneIds){
   const status = getFoundationQueueStatus(doneIds);
@@ -785,7 +791,7 @@ function renderCalPaceWarning(){
   const forecast = foundationForecast(DONE_TASK_IDS);
   const targetLabel = (FOUNDATION_TARGET_DATE.getMonth()+1)+'/'+FOUNDATION_TARGET_DATE.getDate();
   el.innerHTML = forecast.behind
-    ? '<div class="cal-pace-warn">'+svgIcon('alert-triangle',13)+' 依每天5小時計算，'+targetLabel+'前不足約 <b>'+Math.round((forecast.remainingHours-forecast.capacityHours)*10)/10+'</b> 小時，後續任務會自動順延。</div>'
+    ? '<div class="cal-pace-warn">'+svgIcon('alert-triangle',13)+' 依每天6小時計算，'+targetLabel+'前不足約 <b>'+Math.round((forecast.remainingHours-forecast.capacityHours)*10)/10+'</b> 小時，後續任務會自動順延。</div>'
     : forecast.tight
       ? '<div class="cal-pace-warn">'+svgIcon('alert-triangle',13)+' 目前可完成，但機動時間不足10%：只剩約 <b>'+forecast.spareHours+'</b> 小時緩衝。</div>'
       : '';
@@ -1507,8 +1513,8 @@ function buildWeekDayBlocks(d, info){
   const chLabel = c ? shortChapterLabel(c.ch) : '複習';
   const click = c ? {subj:subj, wk:projWk} : null;
   return [
-    {time:'09:00–11:00', title:subj+' 影片', colorVar:cv, click:click},
-    {time:'14:00–16:00', title:chLabel, colorVar:cv, click:click},
+    {time:'09:00–11:30', title:subj+' 影片', colorVar:cv, click:click},
+    {time:'14:00–16:30', title:chLabel, colorVar:cv, click:click},
     {time:'19:00–20:00', title:'筆記＋練習', colorVar:cv, click:click}
   ];
 }
