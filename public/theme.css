@@ -1,0 +1,37 @@
+/* One shared visual system for every page (index, study room, labs).
+   Calm and solid: cream background, white surfaces, thin warm borders,
+   one accent per subject. No photo backgrounds or frosted glass — the
+   content (video, 3D scenes) is what should stand out. */
+:root {
+  --bg: #faf6ef;
+  --surf: #ffffff;
+  --surf2: #f5eee1;
+  --surf3: #ede1cc;
+  --bd: #e6d8be;
+  --bd2: #d8c29b;
+  --tx: #2e2418;
+  --mt: #6e5f49;
+  --mt2: #5c4e3b;
+  --ac: #5c7a4a;
+  --ac2: #c08a1f;
+  --grn: #4c9a63;
+  --amb: #c2660a;
+  --red: #d64545;
+  --ds: #2fc092;
+  --alg: #9b7ef4;
+  --os: #dd8238;
+  --la: #4b9ee2;
+  --dm: #e55a9b;
+  --ca: #31aab0;
+  --on-ac: #ffffff;
+  --subj: var(--ac);
+  --r: 16px;
+  --r-sm: 10px;
+  --r-lg: 24px;
+  --shadow: 0 10px 30px -20px rgba(46, 36, 24, .45);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-1: 170ms;
+  --dur-2: 280ms;
+  --font: "Noto Sans TC", system-ui, sans-serif;
+  --mono: "Space Mono", ui-monospace, Consolas, monospace;
+}
