@@ -164,45 +164,6 @@ const UNIS=[
    relatedDeptsFootnote:null,
    url:"https://graduate.ntut.edu.tw/"}];
 
-// 116學年度（2027入學）碩士班甄試追蹤。
-// 查證日：2026-09-02。116簡章尚未公告者只記錄官方公告狀態；
-// reference 明確標示為115學年度或一般準備方向，不冒充116正式規定。
-const RECOMMEND_ADMISSIONS={
-  NTU:{stage:"pending",stageLabel:"待正式簡章",status:"116簡章尚未正式公告；教務處已進入簡章校稿階段",schedule:"報名、放榜日期待116正式簡章",method:"前一年度資工所為100%資料審查，無筆試、無口試",materials:"歷年成績單、總成績名次、個人基本資料表、就學計畫、有利審查資料；推薦函前一年度非必繳",reference:"甄試方式為115學年度參考，116仍須以正式簡章為準",url:"https://www.csie.ntu.edu.tw/zh_tw/Admission/Announcement11"},
-  NTHU:{stage:"upcoming",stageLabel:"9月中預計公告",status:"116簡章尚未公告；校方說明約於9月中旬公布",schedule:"正式報名與複試日期待116簡章",method:"資工甄試依組別審查，部分組別另有複試；各組名額與比例每年可能調整",materials:"先準備成績與排名、專題/研究成果、讀書與研究計畫、履歷及其他有利資料",reference:"方式依前一年度簡章整理，請在116簡章公告後逐組核對",url:"https://adms.site.nthu.edu.tw/"},
-  NYCU:{stage:"partial",stageLabel:"已有招生說明會",status:"資訊學院已公告116甄試說明會；校級簡章預計9月中公告（2026-09-02複查：教務處甄試入學頁仍只列115學年度簡章與榜單，尚無116資訊）",schedule:"正式報名、志願與複試日期待116簡章",method:"資訊學院採聯招與志願分發；審查/複試方式依報考系所組別",materials:"成績與排名、推薦函、專題/論文、研究計畫、競賽與其他有利證明先行整理",reference:"聯招系所、志願數與名額須以116資訊學院招生系統為準",url:"https://exam.nycu.edu.tw/ma-md.html"},
-  NCKU:{stage:"partial",stageLabel:"已有報名Q&A",status:"校方已發布116碩博甄試報名Q&A；正式簡章仍待公告（2026-09-02複查：碩士班甄試專頁最後更新即為當日，仍只列115學年度以前的簡章與榜單，116簡章尚未上架）",schedule:"報名、初審與面試日期待116正式簡章",method:"資工所甄試通常含資料審查，是否複試及成績比例依當年度分則",materials:"成績與排名、專題成果、研究/讀書計畫、履歷、推薦函及有利證明先行整理",reference:"目前只確認校級116甄試作業已啟動，不預填尚未公布的系所比例",url:"https://adms-acad.ncku.edu.tw/p/406-1044-227147,r3265.php?Lang=zh-tw"},
-  NTNU:{stage:"pending",stageLabel:"待正式簡章",status:"116資工所甄試簡章尚未公告",schedule:"正式時程待校方公告；系網公告往年約於10–11月報名、考試與放榜",method:"資料審查與是否口試須依116資工系所分則確認",materials:"成績與排名、履歷、自傳/讀書計畫、專題成果、推薦函及其他有利資料",reference:"往年月份僅供準備節奏參考，不是116正式日期",url:"https://www.aa.ntnu.edu.tw/"},
-  NCU:{stage:"pending",stageLabel:"待正式簡章",status:"116資工所甄試簡章尚未公告；招生資訊網目前仍列115簡章",schedule:"正式報名與複試日期待116簡章",method:"資工、軟工與AI碩士班甄試方式依班組而異，可能含資料審查及複試",materials:"成績與排名、專題研究、論文、研究計畫與自傳、競賽/CPE/英文能力等證明",reference:"前一年度AI碩士班另有複試筆試；不可直接套用到116其他班組",url:"https://admission.ncu.edu.tw/zh-TW/content/82/13%20%E3%80%82"},
-  NCHU:{stage:"pending",stageLabel:"待正式簡章",status:"116資工所甄試簡章尚未公告",schedule:"正式報名與面試日期待116簡章",method:"甄試項目與比例依116資工系所分則",materials:"成績與排名、專題/研究成果、自傳與研究計畫、競賽/英文證明、推薦函先行整理",reference:"校方目前公開資訊仍以115學年度為主",url:"https://recruit.nchu.edu.tw/grade-exam/sele/"},
-  CCU:{stage:"partial",stageLabel:"已有異動公告",status:"校方已公告116部分系所甄試內容異動；資工正式分則仍待簡章",schedule:"正式報名、初審與複試日期待116簡章",method:"資工所資料審查與複試規則須以116系所分則確認",materials:"成績與排名、履歷/自傳、讀書與研究計畫、專題成果、推薦函及有利證明",reference:"校方已提醒116內容有異動，送件前務必重新核對最新版本",url:"https://exams.ccu.edu.tw/p/403-1032-2830.php?Lang=zh-tw"},
-  NSYSU:{stage:"pending",stageLabel:"待正式簡章",status:"116簡章尚未開放；教務處與資工系官網目前均未公告具體公告日期（原記錄的9/11預計公告，2026-09-02複查時已找不到來源，暫不確定是否仍準確，且原網址有誤，已一併修正）",schedule:"校內公告列報名預計2026/10/1–10/14，仍以正式簡章為準",method:"前一年度資工/資安甄試為初審資料審查，複試採基本能力評估與心得報告",materials:"成績與排名、專題/研究成果、讀書計畫、履歷與其他有利資料",reference:"時程來自校內116招生頁；系所名額與評分比例待正式簡章",url:"https://exam-acad.nsysu.edu.tw/exam_netlist/exam_netlist_index.php"},
-  NTUST:{stage:"published",stageLabel:"簡章已公告",status:"116碩博士班甄試招生簡章已於2026/9/2正式公告（含資工所適用之校級簡章）；資工所初審/複試比例等系所細節請直接查PDF簡章原文，未逐項核實前不預填百分比",schedule:"報名115年9月30日9:00–10月6日17:00；口試與放榜日期依簡章PDF公告，尚待逐項核實",method:"甄試採書面資料審查＋口試；116一般考試也取消筆試，改採審查＋口試（此點已由系網與校級公告雙重確認）",materials:"個人基本資料表、成績與排名、專題/研究成果、讀書計畫、履歷及有利證明；正式清單以簡章PDF為準",reference:"116簡章已公告，細項請直接對照PDF；系所比例、口試日期本次未能可靠核實，避免誤植錯誤日期",url:"https://www.admission.ntust.edu.tw/p/405-1052-151133,c8735.php?Lang=zh-tw"},
-  NTUT:{stage:"upcoming",stageLabel:"9月下旬預計公告",status:"校方公告116碩士班甄試簡章預定2026年9月下旬公布",schedule:"正式報名與甄試日期待9月下旬簡章",method:"資料審查、面試與成績比例依116資工系所分則",materials:"成績與排名、履歷/自傳、讀書與研究計畫、專題作品、競賽與其他有利證明",reference:"目前僅有官方預告公告時間，不預填未公布日期",url:"https://graduate.ntut.edu.tw/"}
-};
-
-// HackMD心得是考生個案，不是招生規則。只收錄多篇心得中可重複觀察、
-// 且對準備有具體用途的內容；結果、門檻與面試流程不可外推到116學年度。
-const HACKMD_ADMISSION_GUIDE={
-  common:{
-    points:[
-      "多篇心得都把系排、資工主科成績與專題成果放在書審核心；競賽、實習、英文與助教經驗適合作為佐證，不宜只是堆清單。",
-      "常見準備節奏是9月整理成績與經歷、聯絡推薦人，9–10月反覆校稿，10–11月準備2–4分鐘自介與專題問答。",
-      "面試常追問專題中自己的實際貢獻、研究計畫細節、入學後想修的課與研究方向；回答要能提出具體證據。"
-    ],
-    sources:[
-      {label:"115 資工所雙主修推甄心得",url:"https://hackmd.io/@lQAQl030/r1F6WnA-bx"},
-      {label:"113 資工所推甄心得（交清成央）",url:"https://hackmd.io/SwVYNTIrQX2OhpgPPiIncQ"},
-      {label:"114 資工所推甄面試心得",url:"https://hackmd.io/@pinhsiu92/HJQkYvWsq"}
-    ]
-  },
-  NTU:{points:["有考生觀察台大資工除總排名外也重視資工主科成績；這是個案比較，不是官方評分公式。","因前一年度資工所為100%書審，主張最好用成績、專題成果、論文/競賽或實作連結直接佐證。"],sources:[{label:"113年資工所推甄心得",url:"https://hackmd.io/P3RilAhmQ_a84_K2KOFpcg"}]},
-  NTHU:{points:["心得提到不同組別書審結果差異可很大，應依研究方向分別調整內容，不要一份備審原封不動投所有組。","有心得提到系統會要求填寫計組、作業系統、演算法等主科成績，並可上傳多封推薦信；116仍須核對正式系統。"],sources:[{label:"113 資工所推甄心得（交清成央）",url:"https://hackmd.io/SwVYNTIrQX2OhpgPPiIncQ"},{label:"資工所推甄心得",url:"https://hackmd.io/Th1kvPe8S26_lhFKOOHwRA"}]},
-  NYCU:{points:["心得反覆提醒資訊聯招除校級報名外，還要留意資訊學院自己的系統與志願設定。","曾有系統欄位要求以短篇幅說明最好/較弱主科、專案、競賽與研究方向；先準備100–200字版本可降低臨時壓縮內容的風險。"],sources:[{label:"113 資工所推甄心得（交清成央）",url:"https://hackmd.io/SwVYNTIrQX2OhpgPPiIncQ"},{label:"115 資工所雙主修推甄心得",url:"https://hackmd.io/@lQAQl030/r1F6WnA-bx"}]},
-  NCKU:{points:["多篇心得中的面試多圍繞專題分工、研究計畫、報考動機與未來方向，常見自介約1–4分鐘。","紙本摘要頁數與面試形式會因組別改變，收到複試通知後必須依該組通知重做濃縮版，不能只帶完整備審。"],sources:[{label:"推甄結果分享（台清交成央師）",url:"https://hackmd.io/@SunGJ/BkT48GTXfg"},{label:"113 資工所推甄心得（交清成央）",url:"https://hackmd.io/SwVYNTIrQX2OhpgPPiIncQ"}]},
-  NCU:{points:["多篇心得提到短簡報或自我介紹後，教授集中追問專題貢獻、研究興趣、論文與未來規劃。","曾有考生分享3分鐘簡報，因此建議同時準備30秒、1分鐘與3分鐘三種版本；實際秒數依116通知。"],sources:[{label:"113 資工所推甄心得（交清成央）",url:"https://hackmd.io/SwVYNTIrQX2OhpgPPiIncQ"},{label:"私校資工113推甄心得",url:"https://hackmd.io/@padoru/H12C5LkI6"}]}
-};
-
 // ── Subject data with per-chapter materials ──
 // NOTE (2026/8/20): each chapter's `n` field ("主題1", "主題2"...) is this
 // app's OWN topic grouping for browsing/reference — it does NOT correspond
@@ -225,7 +186,7 @@ tip:"主題1–9按順序打基礎（約4週），圖論演算法與字串處理
    {name:"MIT 6.006：AVL Trees, AVL Sort",url:"https://www.youtube.com/watch?v=FNeL18KsWPc",note:"平衡樹旋轉是這科最常考卡關的地方，這支講得最清楚"},
    {name:"Abdul Bari：Heap",url:"https://www.youtube.com/watch?v=HqPJF2L5h9U",note:"Heap建構與調整的手算流程，配合Priority Queue章節看"}],
  chapters:[
-  {n:"主題1",t:"複雜度分析",sub:"Big-O / Θ / Ω、遞迴分析",pri:"must",hrs:"7.5hr",wk:6,
+  {n:"主題1",t:"複雜度分析",sub:"Big-O / Θ / Ω、遞迴分析",pri:"must",hrs:"7.5hr",wk:1,
    key:"Master Theorem三種情況、遞迴樹畫法、常見函數成長率比較（log n < n < n log n < n² < 2ⁿ）",
    mats:[
     {type:"vidgroup",text:"複雜度分析 Big-O/Θ/Ω",options:[
@@ -238,7 +199,7 @@ tip:"主題1–9按順序打基礎（約4週），圖論演算法與字串處理
       {label:"交大彭文志 Lec02 Introduction (2/2)",url:"https://www.youtube.com/watch?v=0J2eLvkuF8k",dur:"52:57"}
     ]}
    ]},
-  {n:"主題2",t:"陣列、Linked List、Stack、Queue",sub:"Array、Singly/Doubly/Circular LL、Stack、Queue",pri:"must",hrs:"28.5hr",wk:7,
+  {n:"主題2",t:"陣列、Linked List、Stack、Queue",sub:"Array、Singly/Doubly/Circular LL、Stack、Queue",pri:"must",hrs:"28.5hr",wk:2,
    key:"各結構insert/delete時間複雜度比較、Circular Queue環狀操作、Stack用陣列vs鏈結實作差異",
    peerNote:"同儕筆記校正：有份筆記的行主序（row-major）範例最後一項誤植為i（應為l），Protected存取層級也只寫「部分人能拿取」，實際上是子類別可存取，讀到這段時以課本為準。",
    mats:[
@@ -272,7 +233,7 @@ tip:"主題1–9按順序打基礎（約4週），圖論演算法與字串處理
       {label:"Abdul Bari：Recursion and Stack",url:"https://www.youtube.com/watch?v=ygK0YON10sQ",dur:"13:09"}
     ]},
     {type:"ex",text:"手寫Circular Queue的enqueue/dequeue操作過程（畫格子模擬），各10次"}]},
-  {n:"主題3",t:"樹（基礎）",sub:"Binary Tree、走訪、完全二元樹",pri:"must",hrs:"11.6hr",wk:7,
+  {n:"主題3",t:"樹（基礎）",sub:"Binary Tree、走訪、完全二元樹",pri:"must",hrs:"11.6hr",wk:2,
    key:"Inorder/Preorder/Postorder三種走訪用途與程式碼、BFS（Level-order）用Queue實作、完全vs完滿二元樹定義",
    mats:[
     {type:"book",text:"資結七版（洪逸）Ch5 Tree & Binary Tree：5-5走訪（非常重要），把走訪程式碼抄一遍 + Q講義Q4"},
@@ -288,7 +249,7 @@ tip:"主題1–9按順序打基礎（約4週），圖論演算法與字串處理
       {label:"交大彭文志 Lec17 Trees (6/6)",url:"https://www.youtube.com/watch?v=4HDjWNV09QY",dur:"45:15"}
     ]},
     {type:"ex",text:"給定一棵樹，手寫三種走訪結果 × 5題（資結七版（洪逸）書後習題）"}]},
-  {n:"主題4",t:"BST、AVL Tree、Red-Black Tree",sub:"二元搜尋樹、高度平衡樹",pri:"must",hrs:"20hr",wk:9,
+  {n:"主題4",t:"BST、AVL Tree、Red-Black Tree",sub:"二元搜尋樹、高度平衡樹",pri:"must",hrs:"20hr",wk:4,
    key:"BST插入/刪除/搜尋、AVL四種旋轉（LL/RR/LR/RL）、平衡因子計算、紅黑樹性質（不要求手推旋轉，要知道特性）",
    peerNote:"同儕筆記地雷：BST不平衡會退化成linked list、O(log N)優勢消失；紅黑樹插入/刪除後務必把root塗黑，是常被漏掉的細節。讀過的資料結構同儕筆記完全沒提到AVL/Red-Black Tree的實作，這塊要靠課本/影片，不能只找同儕筆記。",
    mats:[
@@ -311,7 +272,7 @@ tip:"主題1–9按順序打基礎（約4週），圖論演算法與字串處理
     ]},
     {type:"ex",text:"手畫AVL旋轉過程：給定插入序列，畫出每步旋轉 × 5組（課本習題）"},
     {type:"rec",text:"補充：搜尋「AVL Tree 題目 研究所」找練習題"}]},
-  {n:"主題5",t:"Heap 與 Priority Queue",sub:"Min/Max Heap、Priority Queue",pri:"must",hrs:"8hr",wk:9,
+  {n:"主題5",t:"Heap 與 Priority Queue",sub:"Min/Max Heap、Priority Queue",pri:"must",hrs:"8hr",wk:4,
    key:"建堆複雜度O(n)為何（bottom-up heapify）、Heap Sort複雜度O(n log n)、Priority Queue用途（Dijkstra等）",
    mats:[
     {type:"book",text:"資結七版（洪逸）Ch9-1 Min-Max Heap：建堆O(n)的推導是重點，搭配Q講義Q6"},
@@ -322,7 +283,7 @@ tip:"主題1–9按順序打基礎（約4週），圖論演算法與字串處理
       {label:"MIT 6.006 L4：Heaps and Heap Sort",url:"https://www.youtube.com/watch?v=B7hVxCmfPtM",dur:"52:32"}
     ]},
     {type:"ex",text:"給定陣列，手動建Max Heap並做Heap Sort，畫出每步 × 3題"}]},
-  {n:"主題6",t:"雜湊表 Hash Table",sub:"Hash Function、衝突處理",pri:"must",hrs:"11.5hr",wk:9,
+  {n:"主題6",t:"雜湊表 Hash Table",sub:"Hash Function、衝突處理",pri:"must",hrs:"11.5hr",wk:4,
    key:"Chaining vs Open Addressing（Linear/Quadratic Probing、Double Hashing）、Load Factor對效率的影響、各方法worst case",
    peerNote:"同儕筆記地雷：linear probing在load factor過高時效率會劇烈下降；讀過的同儕筆記也沒提到hash table動態resize，這塊需另外靠課本補。",
    mats:[
@@ -336,7 +297,7 @@ tip:"主題1–9按順序打基礎（約4週），圖論演算法與字串處理
       {label:"交大彭文志 Lec23 Hashing",url:"https://www.youtube.com/watch?v=bULIs7AVDNk",dur:"1:35:18"}
     ]},
     {type:"ex",text:"給定hash function和鍵值，手算Chaining和Linear Probing的表格 × 3題"}]},
-  {n:"主題7",t:"圖（基礎）",sub:"有向/無向圖、表示法、DFS/BFS",pri:"must",hrs:"6.5hr",wk:8,
+  {n:"主題7",t:"圖（基礎）",sub:"有向/無向圖、表示法、DFS/BFS",pri:"must",hrs:"6.5hr",wk:3,
    key:"Adjacency Matrix vs List的空間/時間複雜度、DFS/BFS的時間複雜度（O(V+E)）、有向圖vs無向圖的矩陣對稱性",
    mats:[
     {type:"vidgroup",text:"圖的表示法與 DFS/BFS",options:[
@@ -347,7 +308,7 @@ tip:"主題1–9按順序打基礎（約4週），圖論演算法與字串處理
     ]},
     {type:"ex",text:"給定圖，手寫 Adjacency Matrix/List，並寫出 DFS/BFS 走訪順序 × 3 題"}
    ]},
-  {n:"主題8",t:"排序演算法",sub:"Merge/Quick/Heap/Counting/Radix Sort",pri:"must",hrs:"12.5hr",wk:8,
+  {n:"主題8",t:"排序演算法",sub:"Merge/Quick/Heap/Counting/Radix Sort",pri:"must",hrs:"12.5hr",wk:3,
    key:"所有排序的最佳/平均/最差複雜度表、穩定性比較（Merge/Insertion穩定；Quick/Heap不穩定）、Quick Sort的pivot選擇",
    peerNote:"同儕筆記缺口：讀過的三份資料結構同儕筆記沒有一份完整涵蓋排序演算法比較，這章不能靠同儕筆記補，建議直接練課本習題與考古題。",
    mats:[
@@ -364,7 +325,7 @@ tip:"主題1–9按順序打基礎（約4週），圖論演算法與字串處理
     ]},
     {type:"ex",text:"製作一張排序比較表（穩定性、最佳/平均/最差複雜度），貼在桌前"}
    ]},
-  {n:"主題9",t:"進階樹：B-Tree、B+ Tree、Trie",sub:"磁碟存取優化樹結構",pri:"hi",hrs:"5.5hr",wk:9,
+  {n:"主題9",t:"進階樹：B-Tree、B+ Tree、Trie",sub:"磁碟存取優化樹結構",pri:"hi",hrs:"5.5hr",wk:4,
    key:"B+Tree vs B-Tree差異（所有資料在葉節點）、B-Tree分裂/合併操作、Trie用途（字典、前綴搜尋）",
    mats:[
     {type:"book",text:"資結七版（洪逸）Ch9 Advanced Tree Structure：9-11 B樹 + 9-6 AVL樹 + 9-10紅黑樹"},
@@ -374,7 +335,7 @@ tip:"主題1–9按順序打基礎（約4週），圖論演算法與字串處理
       {label:"交大彭文志 Lec26 Search Structures (3/3)",url:"https://www.youtube.com/watch?v=ucL0BLz2OGk",dur:"36:17"}
     ]},
     {type:"ex",text:"給定插入序列，手動建B-Tree並模擬分裂 × 2題"}]},
-  {n:"主題10",t:"圖演算法",sub:"Dijkstra、Kruskal、Prim、Bellman-Ford",pri:"must",hrs:"10hr",wk:8,
+  {n:"主題10",t:"圖演算法",sub:"Dijkstra、Kruskal、Prim、Bellman-Ford",pri:"must",hrs:"10hr",wk:3,
    key:"Dijkstra限制（無負邊）vs Bellman-Ford（可處理負邊）、MST兩種演算法複雜度比較、Greedy正確性",
    peerNote:"同儕筆記缺口：讀過的三份資料結構同儕筆記沒有一份完整涵蓋圖論最短路徑，這章不能靠同儕筆記補，建議直接練課本習題與考古題。Kruskal／Prim／MST本質是同一組安全邊（safe edge）與cut-and-paste正確性證明，不是三種互斥知識。",
    mats:[
@@ -390,7 +351,7 @@ tip:"主題1–9按順序打基礎（約4週），圖論演算法與字串處理
     ]},
     {type:"vid",text:"Abdul Bari：Disjoint Sets Data Structure（Kruskal的前置知識：Union-Find）",url:"https://www.youtube.com/watch?v=wU6udHRIkcc",dur:"26:04"},
     {type:"ex",text:"給定加權圖，手算Dijkstra和Kruskal的執行過程 × 3題"}]},
-  {n:"主題11",t:"字串處理：KMP、Boyer-Moore",sub:"模式比對",pri:"hi",hrs:"5.5hr",wk:13,
+  {n:"主題11",t:"字串處理：KMP、Boyer-Moore",sub:"模式比對",pri:"hi",hrs:"5.5hr",wk:6,
    key:"KMP的Failure Function建構步驟、KMP為何O(n+m)、Boyer-Moore的Bad Character規則",
    peerNote:"同儕筆記提醒：KMP演算法通常需要額外花時間才能真正搞懂，不要輕估這章，多演練Failure Function手算題。",
    mats:[
@@ -422,7 +383,7 @@ tip:"DP是最常出大題的考點，主題3、4要花最多時間，務必手�
    {name:"MIT 6.006 L11：DP I",url:"https://www.youtube.com/watch?v=OQ5jsbhAv_M",note:"DP入門講得最完整，先看這支再進各章節的DP例題"},
    {name:"Master's Theorem Explained",url:"https://www.youtube.com/watch?v=SLsHKh_OUEM",note:"7分鐘講完三種情況怎麼判斷，複雜度分析章節前先看"}],
  chapters:[
-  {n:"主題1",t:"複雜度與遞迴",sub:"Recurrence Relation、Master Theorem",pri:"must",hrs:"25.5hr",wk:12,
+  {n:"主題1",t:"複雜度與遞迴",sub:"Recurrence Relation、Master Theorem",pri:"must",hrs:"25.5hr",wk:5,
    key:"Master Theorem三種情況的判斷、遞迴樹展開法、Substitution Method基本操作",
    peerNote:"同儕筆記提醒：依考古頻率統計，Time Complexity在清大／交大／台大都被列五星必考範圍；Master定理與遞迴樹法要能手算，不能只會套公式。",
    mats:[
@@ -484,7 +445,7 @@ tip:"DP是最常出大題的考點，主題3、4要花最多時間，務必手�
       {label:"MIT 6.006 Rec11：Principles of Algorithm Design",url:"https://www.youtube.com/watch?v=a_otxyu0mSQ",dur:"58:26"}
     ]},
     {type:"ex",text:"給定遞迴式，用Master Theorem判斷複雜度 × 10題（課本習題）"}]},
-  {n:"主題2",t:"分治法 Divide and Conquer",sub:"Merge Sort推導、Binary Search變形",pri:"must",hrs:"14hr",wk:12,
+  {n:"主題2",t:"分治法 Divide and Conquer",sub:"Merge Sort推導、Binary Search變形",pri:"must",hrs:"14hr",wk:5,
    key:"分治法三步驟（Divide/Conquer/Combine）、Merge Sort複雜度推導、Matrix Multiplication（Strassen）",
    mats:[
     {type:"book",text:"演算法~1~（林立宇）Ch2 Divide-and-Conquer：2.1–2.5全部（含matrix multiplication、selection problem）"},
@@ -514,7 +475,7 @@ tip:"DP是最常出大題的考點，主題3、4要花最多時間，務必手�
     {type:"vid",text:"Maximum Subarray solution using Divide & Conquer | Kadane",url:"https://www.youtube.com/watch?v=u7YMFRUFqe0",dur:"10:11"},
     {type:"vid",text:"Abdul Bari：2.8.2 QuickSort Analysis",url:"https://www.youtube.com/watch?v=-qOVVRIZzao",dur:"11:37"},
     {type:"ex",text:"手推Merge Sort遞迴樹並推導T(n)=2T(n/2)+n的解 × 3遍"}]},
-  {n:"主題3",t:"動態規劃（基礎）",sub:"Memoization、Bottom-up DP、LCS、LIS、Knapsack",pri:"must",hrs:"13.5hr",wk:13,
+  {n:"主題3",t:"動態規劃（基礎）",sub:"Memoization、Bottom-up DP、LCS、LIS、Knapsack",pri:"must",hrs:"13.5hr",wk:6,
    key:"DP兩要素：最優子結構＋重疊子問題；LCS的狀態轉移表手推；0/1 Knapsack的dp[i][w]定義；LIS的O(n²)和O(n log n)解法",
    peerNote:"同儕筆記提醒：DP章節多數只是把遞迴關係式化簡，真正需要額外花時間搞懂的是字串處理科（見資料結構主題11）的KMP演算法。DP程式碼最好背到能上機驗證，不是只會紙上寫轉移式。",
    mats:[
@@ -548,7 +509,7 @@ tip:"DP是最常出大題的考點，主題3、4要花最多時間，務必手�
     {type:"ex",text:"LCS：手推兩個字串的狀態表並回溯答案 × 5題"},
     {type:"ex",text:"0/1 Knapsack：手推dp table × 3題"},
     {type:"ex",text:"各校歷屆DP題（從成大、中央開始，難度適中）"}]},
-  {n:"主題4",t:"動態規劃（進階）",sub:"Matrix Chain、Optimal BST、Coin Change",pri:"hi",hrs:"9hr",wk:13,
+  {n:"主題4",t:"動態規劃（進階）",sub:"Matrix Chain、Optimal BST、Coin Change",pri:"hi",hrs:"9hr",wk:6,
    key:"Matrix Chain Multiplication的狀態轉移m[i][j]定義、Optimal BST期望搜尋次數計算",
    mats:[
     {type:"book",text:"演算法~1~（林立宇）Ch3-4 Matrix-chain multiplication + Ch3-5 Optimal binary search trees"},
@@ -565,7 +526,7 @@ tip:"DP是最常出大題的考點，主題3、4要花最多時間，務必手�
     {type:"vid",text:"MIT 6.006 Rec22：DP: Dance Dance Revolution（進階DP範例，補充）",url:"https://www.youtube.com/watch?v=PptQgy89cN8",dur:"53:15"},
     {type:"vid",text:"Abdul Bari：4.8 Reliability Design - DP",url:"https://www.youtube.com/watch?v=uJOmqBwENB8",dur:"26:32"},
     {type:"ex",text:"Matrix Chain：給定矩陣維度，手填m[i][j]表格 × 3題"}]},
-  {n:"主題5",t:"貪婪演算法 Greedy",sub:"Activity Selection、Huffman Code、Fractional Knapsack",pri:"must",hrs:"11.5hr",wk:12,
+  {n:"主題5",t:"貪婪演算法 Greedy",sub:"Activity Selection、Huffman Code、Fractional Knapsack",pri:"must",hrs:"11.5hr",wk:5,
    key:"Greedy vs DP的選擇判斷、Activity Selection的正確性證明思路、Huffman Tree建構步驟",
    mats:[
     {type:"book",text:"演算法~1~（林立宇）Ch1 Amortized analysis（1.3）+ 貪婪相關融入各章習題"},
@@ -582,7 +543,7 @@ tip:"DP是最常出大題的考點，主題3、4要花最多時間，務必手�
     {type:"vid",text:"Abdul Bari：3.2 Job Sequencing with Deadlines - Greedy Method",url:"https://www.youtube.com/watch?v=zPtI8q9gvX8",dur:"13:29"},
     {type:"vid",text:"Abdul Bari：3.3 Optimal Merge Pattern - Greedy Method",url:"https://www.youtube.com/watch?v=HHIc5JZyenI",dur:"9:33"},
     {type:"ex",text:"給定字元頻率，手建Huffman Tree並計算平均編碼長度 × 3題"}]},
-  {n:"主題6",t:"圖論演算法",sub:"BFS、DFS、Topological Sort、SCC",pri:"must",hrs:"16.5hr",wk:14,
+  {n:"主題6",t:"圖論演算法",sub:"BFS、DFS、Topological Sort、SCC",pri:"must",hrs:"16.5hr",wk:7,
    key:"Topological Sort兩種方法（DFS後序逆序 vs Kahn's BFS）、Strongly Connected Component（Kosaraju/Tarjan算法概念）",
    peerNote:"同儕筆記提醒：Graph Algorithm整體在清大／交大／台大都被列五星必考範圍。Kruskal／Prim／MST（見資料結構主題10）本質是同一組安全邊（safe edge）與cut-and-paste正確性證明，交叉看能一次理解三種寫法。",
    mats:[
@@ -607,7 +568,7 @@ tip:"DP是最常出大題的考點，主題3、4要花最多時間，務必手�
     {type:"vid",text:"MIT 6.006 Rec16：Rubik's Cube, StarCraft Zero（圖搜尋應用，補充）",url:"https://www.youtube.com/watch?v=oRpERQA4Vik",dur:"54:35"},
     {type:"ex",text:"給定有向圖，找出 Topological Order + SCC × 3 題"}
    ]},
-  {n:"主題7",t:"最短路徑",sub:"Dijkstra、Bellman-Ford、Floyd-Warshall",pri:"must",hrs:"12hr",wk:14,
+  {n:"主題7",t:"最短路徑",sub:"Dijkstra、Bellman-Ford、Floyd-Warshall",pri:"must",hrs:"12hr",wk:7,
    key:"三種演算法的適用場景（無負邊/有負邊/All-Pairs）、複雜度比較、Negative Cycle偵測",
    peerNote:"同儕筆記提醒：最短路徑屬於Graph Algorithm大類，在清大／交大／台大都被列五星必考範圍，優先度不能放低。",
    mats:[
@@ -631,7 +592,7 @@ tip:"DP是最常出大題的考點，主題3、4要花最多時間，務必手�
       {label:"MIT 6.006 Rec18：Quiz 2 Review",url:"https://www.youtube.com/watch?v=sPuazUPiV1k",dur:"1:05:30"}
     ]},
     {type:"ex",text:"給定加權圖，手算Bellman-Ford每輪鬆弛結果 × 2題"}]},
-  {n:"主題8",t:"最大流 / 二分圖匹配",sub:"Ford-Fulkerson、Bipartite Matching",pri:"hi",hrs:"7hr",wk:14,
+  {n:"主題8",t:"最大流 / 二分圖匹配",sub:"Ford-Fulkerson、Bipartite Matching",pri:"hi",hrs:"7hr",wk:7,
    key:"Min-Cut Max-Flow定理（概念）、Residual Graph、Augmenting Path、二分圖匹配與最大流的關係",
    peerNote:"同儕筆記提醒：讀過的「演算法期末考筆記」對最大流／二分圖匹配整理得完整（對應CLRS Ch12–26整體架構），可交叉參考核對手算流程。",
    mats:[
@@ -642,7 +603,7 @@ tip:"DP是最常出大題的考點，主題3、4要花最多時間，務必手�
       {label:"交大江蕙如 Lec21 Network Flow (2/2)",url:"https://www.youtube.com/watch?v=NOYNTuhXDGU",dur:"1:17:06"}
     ]},
     {type:"ex",text:"給定網路圖，手算最大流（標記每步Augmenting Path）× 2題"}]},
-  {n:"主題9",t:"NP理論",sub:"P、NP、NP-Hard、NP-Complete、Reduction",pri:"must",hrs:"9.5hr",wk:14,
+  {n:"主題9",t:"NP理論",sub:"P、NP、NP-Hard、NP-Complete、Reduction",pri:"must",hrs:"9.5hr",wk:7,
    key:"P⊆NP、Cook-Levin定理（概念）、常見NP-Complete問題清單（SAT/3-SAT、Vertex Cover、Clique、TSP、Subset Sum）、Reduction方向——有讀書筆記提到不同學校深淺不一：清大偏好要求寫出完整的Reduction證明過程，交大則常考Hamiltonian Cycle等具體問題的應用題，兩種都要練習，不能只準備其中一種",
    peerNote:"同儕筆記提醒：NP-Complete在清大／交大／台大都被列五星必考範圍，跟本章key欄位提到的校系差異一起準備；同一份筆記把Computational Geometry列為三校幾乎不考，這也是六科規劃沒有另闢章節教它的原因，不用另外找教材。",
    mats:[
@@ -688,7 +649,7 @@ tip:"CPU排程、同步／互斥、死鎖、記憶體與虛擬記憶體是五大
    {name:"Gate Smashers：Banker Algorithm",url:"https://www.youtube.com/watch?v=7gMLNiEz3nw",note:"死鎖章節最容易算錯的地方，這支的手算示範很清楚"},
    {name:"Page Replacement Algorithms（LRU and Optimal）",url:"https://www.youtube.com/watch?v=DXU7SqsYDvg",note:"虛擬記憶體章節的LRU/Optimal手算比較，考試常出"}],
  chapters:[
-  {n:"主題1",t:"OS概論",sub:"OS結構、System Call、服務類型",pri:"hi",hrs:"8.5hr",wk:17,
+  {n:"主題1",t:"OS概論",sub:"OS結構、System Call、服務類型",pri:"hi",hrs:"8.5hr",wk:8,
    key:"Monolithic vs Microkernel vs Layered結構比較、System Call的執行流程（user mode → kernel mode）、OS提供的服務類型",
    mats:[
     {type:"book",text:"作業系統金寶典四版（洪逸）Ch3系統作業結構：3-3 System Call、3-5系統結構、3-10微核心"},{type:"book",text:"Q講義 Q1（Ch1–Ch3）：做例題1–3"},
@@ -713,7 +674,7 @@ tip:"CPU排程、同步／互斥、死鎖、記憶體與虛擬記憶體是五大
       {label:"清大周志遠 第5D講 OS Structure",url:"https://www.youtube.com/watch?v=_RxbSP6hjqU",dur:"19:22"}
     ]},
     {type:"ex",text:"背誦System Call流程（trap→kernel→return），能手寫說明"}]},
-  {n:"主題2",t:"Process管理",sub:"PCB、Process State、Context Switch、fork()",pri:"must",hrs:"7hr",wk:17,
+  {n:"主題2",t:"Process管理",sub:"PCB、Process State、Context Switch、fork()",pri:"must",hrs:"7hr",wk:8,
    key:"五狀態圖（New/Ready/Running/Waiting/Terminated）默寫、Context Switch的代價與內容、fork()後parent/child的關係",
    mats:[
     {type:"book",text:"金寶典四版（洪逸）Ch4：4-1處理程序 + 4-3內文轉換 + 4-2排班程式種類 — 五狀態圖重點在4-1"},
@@ -731,7 +692,7 @@ tip:"CPU排程、同步／互斥、死鎖、記憶體與虛擬記憶體是五大
     ]},
     {type:"vid",text:"Neso Academy：fork() and exec() System Calls",url:"https://www.youtube.com/watch?v=IFEFVXvjiHY",dur:"20:34"},
     {type:"ex",text:"默寫五狀態圖並說明每個轉換條件 × 5次直到流暢"}]},
-  {n:"主題3",t:"Thread與並行",sub:"User/Kernel Thread、多對多模型",pri:"must",hrs:"4.5hr",wk:17,
+  {n:"主題3",t:"Thread與並行",sub:"User/Kernel Thread、多對多模型",pri:"must",hrs:"4.5hr",wk:8,
    key:"Thread vs Process的共享資源差異、三種模型（Many-to-One/One-to-One/Many-to-Many）、多執行緒的優缺點",
    mats:[
     {type:"book",text:"金寶典四版（洪逸）Ch4-10 Thread Management + Q講義Q2（Ch4 Thread部分）"},
@@ -743,7 +704,7 @@ tip:"CPU排程、同步／互斥、死鎖、記憶體與虛擬記憶體是五大
     ]},
     {type:"vid",text:"Multithreading Models in Operating Systems（Many-to-One/One-to-One/Many-to-Many）",url:"https://www.youtube.com/watch?v=LsgJDGJIrJI",dur:"5:23"},
     {type:"ex",text:"比較表：Process vs Thread（共享資源、建立成本、通訊方式）手寫一遍"}]},
-  {n:"主題4",t:"CPU排程",sub:"FCFS、SJF、RR、Priority、多層佇列",pri:"must",hrs:"7.5hr",wk:17,
+  {n:"主題4",t:"CPU排程",sub:"FCFS、SJF、RR、Priority、多層佇列",pri:"must",hrs:"7.5hr",wk:8,
    key:"每個排程演算法的Gantt Chart手畫、計算Waiting Time/Turnaround Time/Response Time、Preemptive vs Non-preemptive差異、Aging解決Starvation",
    peerNote:"同儕筆記重點（三份完整筆記說法一致）：FCFS有Convoy effect（短工被長工卡住）、Priority Scheduling會Starvation要靠Aging解、Round Robin的time quantum太小會讓context switch overhead吃掉效能。",
    mats:[
@@ -758,7 +719,7 @@ tip:"CPU排程、同步／互斥、死鎖、記憶體與虛擬記憶體是五大
     {type:"vid",text:"Gate Smashers：Shortest Job First (SJF) Scheduling Algorithm",url:"https://www.youtube.com/watch?v=VCIVXPoiLpU",dur:"9:13"},
     {type:"ex",text:"Gantt Chart 排程計算 × 5 題（Q講義 Q2），算出 Waiting Time / Turnaround Time"}
    ]},
-  {n:"主題5",t:"同步與互斥",sub:"Race Condition、Critical Section、Mutex、Semaphore",pri:"must",hrs:"10hr",wk:18,
+  {n:"主題5",t:"同步與互斥",sub:"Race Condition、Critical Section、Mutex、Semaphore",pri:"must",hrs:"10hr",wk:9,
    key:"Critical Section的三個條件（Mutual Exclusion/Progress/Bounded Waiting）、Binary vs Counting Semaphore差異、用Semaphore解Producer-Consumer/Readers-Writers/Dining Philosophers",
    peerNote:"同儕筆記地雷：Priority Inversion與Priority Inheritance常被搞混——低優先權任務占用資源導致高優先權任務被中優先權任務插隊延遲，解法是暫時把低優先權任務的優先權拉高，不能只背名詞。",
    mats:[
@@ -778,7 +739,7 @@ tip:"CPU排程、同步／互斥、死鎖、記憶體與虛擬記憶體是五大
     {type:"vid",text:"Process Synchronisation | Critical Section Problem",url:"https://www.youtube.com/watch?v=sEVfeXqWY-s",dur:"13:32"},
     {type:"vid",text:"Semaphores in Operating Systems",url:"https://www.youtube.com/watch?v=HUA_cVBdLw0",dur:"12:48"},
     {type:"ex",text:"練習：用Semaphore寫出Producer-Consumer偽代碼並說明每個變數用途 × 3次"}]},
-  {n:"主題6",t:"死鎖 Deadlock",sub:"四條件、Resource Allocation Graph、Banker Algorithm",pri:"must",hrs:"6.5hr",wk:18,
+  {n:"主題6",t:"死鎖 Deadlock",sub:"四條件、Resource Allocation Graph、Banker Algorithm",pri:"must",hrs:"6.5hr",wk:9,
    key:"死鎖四必要條件（Mutual Exclusion/Hold and Wait/No Preemption/Circular Wait）、RAG看有無死鎖、Banker Algorithm安全狀態判斷（手算）",
    peerNote:"同儕筆記提醒：四條件必須同時成立才算死鎖，缺一不可；Banker's Algorithm的safety algorithm手算題是各校常考題型，務必練到熟。",
    mats:[
@@ -792,7 +753,7 @@ tip:"CPU排程、同步／互斥、死鎖、記憶體與虛擬記憶體是五大
     {type:"vid",text:"Deadlock | Necessary Condition for Deadlock | Resource Allocation Graph",url:"https://www.youtube.com/watch?v=XpKrBUZqfGI",dur:"17:30"},
     {type:"ex",text:"Banker Algorithm 安全狀態判斷 × 5 題（Q講義 Q3）"}
    ]},
-  {n:"主題7",t:"記憶體管理",sub:"Paging、Segmentation、碎裂",pri:"must",hrs:"8.5hr",wk:19,
+  {n:"主題7",t:"記憶體管理",sub:"Paging、Segmentation、碎裂",pri:"must",hrs:"8.5hr",wk:10,
    key:"Paging的位址轉換（logical→physical：page number用來查Page Table取frame number，加offset）、TLB命中率計算、Page Table大小計算、Internal vs External Fragmentation",
    mats:[
     {type:"vidgroup",text:"Paging 記憶體管理（周志遠完整系列）",options:[
@@ -808,7 +769,7 @@ tip:"CPU排程、同步／互斥、死鎖、記憶體與虛擬記憶體是五大
     {type:"vid",text:"Paging in Operating Systems with Example & Working",url:"https://www.youtube.com/watch?v=pJ6qrCB8pDw",dur:"17:26"},
     {type:"ex",text:"Page Table 位址轉換計算 × 5 題（Q講義 Q5）"}
    ]},
-  {n:"主題8",t:"虛擬記憶體",sub:"Demand Paging、Page Fault、Page Replacement",pri:"must",hrs:"7.5hr",wk:19,
+  {n:"主題8",t:"虛擬記憶體",sub:"Demand Paging、Page Fault、Page Replacement",pri:"must",hrs:"7.5hr",wk:10,
    key:"Page Fault的處理流程（trap→swap in→restart）、三種置換演算法比較（FIFO/LRU/Optimal）、Thrashing的成因與解決、Working Set模型",
    peerNote:"同儕筆記地雷：FIFO有Belady's Anomaly（frame數變多、page fault反而變多），LRU和Optimal屬於stack algorithm、不會有此異常；同儕筆記附的EMAT、TLB命中率計算範例可以直接拿來對答案。",
    mats:[
@@ -824,7 +785,7 @@ tip:"CPU排程、同步／互斥、死鎖、記憶體與虛擬記憶體是五大
     {type:"vid",text:"Page Replacement Algorithms（LRU and Optimal）",url:"https://www.youtube.com/watch?v=DXU7SqsYDvg",dur:"16:18"},
     {type:"vid",text:"Page Faults & Page Fault Handling（含Thrashing）",url:"https://www.youtube.com/watch?v=Nif2TZ5Cohw",dur:"14:17"},
     {type:"ex",text:"給定reference string和frame數，用FIFO/LRU/Optimal計算page fault次數 × 5題"}]},
-  {n:"主題9",t:"檔案系統",sub:"inode、Directory、File Allocation",pri:"hi",hrs:"5.5hr",wk:19,
+  {n:"主題9",t:"檔案系統",sub:"inode、Directory、File Allocation",pri:"hi",hrs:"5.5hr",wk:10,
    key:"三種分配方式（Contiguous/Linked/Indexed）的比較、inode的direct/indirect block存取次數計算、FAT結構",
    peerNote:"同儕筆記缺口：四份讀過的作業系統同儕筆記裡，有兩份到同步機制或更早就沒繼續寫，只有一份真正涵蓋File System，這章不能只靠同儕筆記，優先回歸課本與影片。",
    mats:[
@@ -840,7 +801,7 @@ tip:"CPU排程、同步／互斥、死鎖、記憶體與虛擬記憶體是五大
     ]},
     {type:"ex",text:"inode direct/indirect block 存取次數計算 × 3 題（Q講義 Q6）"}
    ]},
-  {n:"主題10",t:"I/O系統",sub:"DMA、Interrupt、Disk Scheduling",pri:"hi",hrs:"6hr",wk:19,
+  {n:"主題10",t:"I/O系統",sub:"DMA、Interrupt、Disk Scheduling",pri:"hi",hrs:"6hr",wk:10,
    key:"Polling vs Interrupt vs DMA比較、三種磁頭排程（SSTF/SCAN/C-SCAN）的磁頭移動距離計算",
    peerNote:"同儕筆記重點：磁碟排程與RAID只有一份筆記寫得完整，附了FCFS/SSTF/SCAN/C-SCAN/C-Look磁頭移動量的實際計算例題與RAID 0–6效能比較，這塊優先靠這份加課本補，其他筆記幾乎空白。",
    mats:[
@@ -869,7 +830,7 @@ tip:"線性代數適合每天少量持續練習；特徵值、特徵向量與向
    {name:"MIT 18.06 L9：Four Fundamental Subspaces",url:"https://www.youtube.com/watch?v=nHlE7EgJFds",note:"線代最重要的一支影片，向量空間章節的核心觀念都在這"},
    {name:"3Blue1Brown：Eigenvectors and eigenvalues",url:"https://www.youtube.com/watch?v=PFDu9oVAE-g",note:"特徵值特徵向量的幾何直覺，公式背不熟時回來看這支"}],
  chapters:[
-  {n:"主題1",t:"矩陣與線性方程組",sub:"Gaussian Elimination、Row Reduction、RREF",pri:"must",hrs:"9.5hr",wk:10,
+  {n:"主題1",t:"矩陣與線性方程組",sub:"Gaussian Elimination、Row Reduction、RREF",pri:"must",hrs:"9.5hr",wk:16,
    key:"高斯消去法手算、REF/RREF的定義、解的三種情況（unique/no/infinite）、自由變數的判斷",
    mats:[
     {type:"book",text:"線性代數上冊（林緯）Ch2 線性方程組與求解：2-1線性方程組 + 2-3行列式 — 搭配Ch2-5進階試題"},
@@ -890,7 +851,7 @@ tip:"線性代數適合每天少量持續練習；特徵值、特徵向量與向
     {type:"vid",text:"3Blue1Brown：Taylor series | Ch11",url:"https://www.youtube.com/watch?v=3d6DsjIBzJ4",dur:"22:20"},
     {type:"vid",text:"3Blue1Brown：The other way to visualize derivatives | Ch12",url:"https://www.youtube.com/watch?v=CfW845LNObM",dur:"14:26"},
     {type:"ex",text:"給定方程組，用高斯消去法求解 × 8題（課本習題）"}]},
-  {n:"主題2",t:"矩陣運算",sub:"乘法、轉置、逆矩陣、Elementary Matrix",pri:"must",hrs:"5hr",wk:10,
+  {n:"主題2",t:"矩陣運算",sub:"乘法、轉置、逆矩陣、Elementary Matrix",pri:"must",hrs:"5hr",wk:16,
    key:"矩陣乘法的條件與複雜度、逆矩陣存在⟺det≠0、逆矩陣求法（augmented matrix method）",
    peerNote:"同儕筆記地雷：AB=AC且A≠O不能消去成B=C、AB=O不代表A或B有一個是零矩陣、A²=A不代表A=I或A=O——這些是選擇題常見誤答點。也要分清「古典伴隨矩陣」（adjugate，求逆矩陣用）跟內積空間的「伴隨算子」（主題7會遇到，概念不同）。",
    mats:[
@@ -902,7 +863,7 @@ tip:"線性代數適合每天少量持續練習；特徵值、特徵向量與向
     {type:"vid",text:"MIT OCW 18.06 L20：Cramer's Rule, Inverse Matrix, and Volume",url:"https://www.youtube.com/watch?v=QNpj-gOXW9M",dur:"51:01"},
     {type:"vid",text:"MIT OCW 18.06 L5：Transposes, Permutations, Spaces R^n",url:"https://www.youtube.com/watch?v=JibVXBElKL0",dur:"47:41"},
     {type:"ex",text:"3×3矩陣求逆矩陣手算 × 5題"}]},
-  {n:"主題3",t:"行列式 Determinant",sub:"Cofactor Expansion、性質、幾何意義",pri:"must",hrs:"6.5hr",wk:10,
+  {n:"主題3",t:"行列式 Determinant",sub:"Cofactor Expansion、性質、幾何意義",pri:"must",hrs:"6.5hr",wk:16,
    key:"Cofactor Expansion沿任一行/列展開、行列式的性質（row swap改符號、row multiply乘常數）、Cramer's Rule",
    mats:[
     {type:"book",text:"線性代數上冊（林緯）Ch2-3行列式 + Ch2-4行列式的應用"},
@@ -914,7 +875,7 @@ tip:"線性代數適合每天少量持續練習；特徵值、特徵向量與向
     {type:"vid",text:"3Blue1Brown：Cross products | Essence of linear algebra Ch10",url:"https://www.youtube.com/watch?v=eu6i7WJeinw",dur:"8:54"},
     {type:"vid",text:"3Blue1Brown：Cramer's rule, explained geometrically | Ch12",url:"https://www.youtube.com/watch?v=jBsC34PxzoM",dur:"12:12"},
     {type:"ex",text:"3×3和4×4矩陣計算行列式 × 8題"}]},
-  {n:"主題4",t:"向量空間",sub:"Subspace、Span、Basis、Dimension、Rank-Nullity",pri:"must",hrs:"12.5hr",wk:10,
+  {n:"主題4",t:"向量空間",sub:"Subspace、Span、Basis、Dimension、Rank-Nullity",pri:"must",hrs:"12.5hr",wk:16,
    key:"四個基本子空間（Column Space/Null Space/Row Space/Left Null Space）、Rank-Nullity Theorem（rank+nullity=n）、線性獨立的判斷",
    peerNote:"同儕筆記地雷：求行空間（column space）要用行運算、求列空間（row space）要用列運算，兩者搞混會直接算錯。",
    mats:[
@@ -937,7 +898,7 @@ tip:"線性代數適合每天少量持續練習；特徵值、特徵向量與向
     {type:"vid",text:"MIT OCW 18.06 L13：Quiz 1 Review",url:"https://www.youtube.com/watch?v=l88D4r74gtM",dur:"47:40"},
     {type:"vid",text:"3Blue1Brown：Abstract vector spaces | Ch16",url:"https://www.youtube.com/watch?v=TgKwz5Ikpc8",dur:"16:46"},
     {type:"ex",text:"給定矩陣，找出Column Space的basis和Null Space的basis × 5題"}]},
-  {n:"主題5",t:"線性變換",sub:"Linear Map、Matrix Representation、Kernel/Image",pri:"hi",hrs:"6hr",wk:10,
+  {n:"主題5",t:"線性變換",sub:"Linear Map、Matrix Representation、Kernel/Image",pri:"hi",hrs:"6hr",wk:16,
    key:"線性變換的定義（加法和純量乘法保持）、核（Kernel）和像（Image）的維度關係（等於Nullity和Rank）",
    mats:[
     {type:"book",text:"線性代數上冊（林緯）Ch4 線性映射：4-1到4-4（含一對一與映成）"},
@@ -953,7 +914,7 @@ tip:"線性代數適合每天少量持續練習；特徵值、特徵向量與向
       {label:"3Blue1Brown：Change of basis",url:"https://www.youtube.com/watch?v=P2LTAUO1TdA",dur:"12:51"}
     ]},
     {type:"ex",text:"給定線性變換，找出其Kernel × 3題"}]},
-  {n:"主題6",t:"特徵值與特徵向量",sub:"Eigenvalue、Eigenvector、對角化",pri:"must",hrs:"12hr",wk:11,
+  {n:"主題6",t:"特徵值與特徵向量",sub:"Eigenvalue、Eigenvector、對角化",pri:"must",hrs:"12hr",wk:17,
    key:"特徵多項式det(A-λI)=0、幾何重數與代數重數、對角化條件、複數特徵值的處理；Jordan Form掌握定義與基本求法，深入題型列為選讀",
    peerNote:"同儕筆記地雷：不可先把矩陣列運算成上三角再算特徵值，列運算會改變特徵值，是常見誤區。唯一附完整推導的同儕筆記把Cayley-Hamilton定理跟Jordan Form的證明過程都寫出來，可交叉核對，但另兩份筆記只條列公式，不能單獨依賴。",
    mats:[
@@ -971,7 +932,7 @@ tip:"線性代數適合每天少量持續練習；特徵值、特徵向量與向
     {type:"vid",text:"MIT OCW 18.06 L28：Similar Matrices and Jordan Form",url:"https://www.youtube.com/watch?v=z_zYQHmrh08",dur:"45:56"},
     {type:"vid",text:"3Blue1Brown：A quick trick for computing eigenvalues | Essence of linear algebra Ch15",url:"https://www.youtube.com/watch?v=e50Bj7jn9IQ",dur:"13:13"},
     {type:"ex",text:"給定矩陣，求特徵值/特徵向量並判斷是否可對角化 × 8題"}]},
-  {n:"主題7",t:"正交性",sub:"Inner Product、Gram-Schmidt、QR分解",pri:"must",hrs:"8.5hr",wk:11,
+  {n:"主題7",t:"正交性",sub:"Inner Product、Gram-Schmidt、QR分解",pri:"must",hrs:"8.5hr",wk:17,
    key:"正交投影公式（proj_v u = (u·v/v·v)v）、Gram-Schmidt步驟、QR分解的用途",
    peerNote:"同儕筆記重點：QR分解在其中一份筆記有完整步驟推導可交叉核對；內積空間的「伴隨算子」（adjoint operator）跟主題2提過的古典伴隨矩陣是不同概念，合看時容易搞混，要用課本定義釐清。",
    mats:[
@@ -986,7 +947,7 @@ tip:"線性代數適合每天少量持續練習；特徵值、特徵向量與向
     {type:"vid",text:"MIT OCW 18.06 L16：Projection Matrices and Least Squares",url:"https://www.youtube.com/watch?v=osh80YCg_GM",dur:"48:05"},
     {type:"vid",text:"3Blue1Brown：Dot products and duality | Essence of linear algebra Ch9",url:"https://www.youtube.com/watch?v=LyGKycYT2v0",dur:"14:12"},
     {type:"ex",text:"給定一組向量，用Gram-Schmidt正交化 × 3題"}]},
-  {n:"主題8",t:"對稱矩陣與二次型",sub:"Symmetric、Spectral Theorem、正定矩陣",pri:"hi",hrs:"7hr",wk:11,
+  {n:"主題8",t:"對稱矩陣與二次型",sub:"Symmetric、Spectral Theorem、正定矩陣",pri:"hi",hrs:"7hr",wk:17,
    key:"對稱矩陣一定可以正交對角化（Spectral Theorem）、正定矩陣的判斷方法（所有特徵值>0 / 所有Leading Principal Minor>0）",
    peerNote:"同儕筆記重點：「用正交矩陣P使D=PᵀAP」（對稱矩陣正交對角化）是同儕觀察中出現機率最高的單一題型（十題有八題），這章優先確保這個流程能一次做對。正規矩陣不等於對稱矩陣（對稱矩陣一定正規，但正規不一定對稱），筆記對這條界線交代模糊，以課本為準。",
    mats:[
@@ -998,7 +959,7 @@ tip:"線性代數適合每天少量持續練習；特徵值、特徵向量與向
     {type:"vid",text:"MIT OCW 18.06 L26：Complex Matrices; Fast Fourier Transform",url:"https://www.youtube.com/watch?v=M0Sa8fLOajA",dur:"47:52"},
     {type:"vid",text:"MIT OCW 18.06 L27：Positive Definite Matrices and Minima",url:"https://www.youtube.com/watch?v=vF7eyJ2g3kU",dur:"50:40"},
     {type:"ex",text:"判斷矩陣是否正定 × 5題"}]},
-  {n:"主題9",t:"SVD與應用",sub:"Singular Value Decomposition、Pseudo-inverse",pri:"hi",hrs:"8hr",wk:11,
+  {n:"主題9",t:"SVD與應用",sub:"Singular Value Decomposition、Pseudo-inverse",pri:"hi",hrs:"8hr",wk:17,
    key:"SVD分解步驟（求AᵀA的特徵值→σᵢ→求uᵢ）、低秩近似的意義、Moore-Penrose Pseudo-inverse",
    mats:[
     {type:"book",text:"線性代數下冊（林緯）Ch8-6奇異值分解（SVD）：這是林緯課本最後一章的重點"},
@@ -1021,7 +982,7 @@ tip:"計數題需要大量練習；圖論可與資料結構的圖演算法一起
    {name:"TrevTutor：Pigeonhole Principle",url:"https://www.youtube.com/watch?v=2-mxYrCNX60",note:"鴿巢原理的應用題型示範，計數原理章節前先看"},
    {name:"Generating Functions | Part 1",url:"https://www.youtube.com/watch?v=tA2cqfNh5EM",note:"生成函數最容易卡關，這支從頭建立觀念，配合遞推關係章節看"}],
  chapters:[
-  {n:"主題1",t:"邏輯與命題",sub:"Propositional Logic、Predicate Logic、量詞",pri:"must",hrs:"5hr",wk:1,
+  {n:"主題1",t:"邏輯與命題",sub:"Propositional Logic、Predicate Logic、量詞",pri:"must",hrs:"5hr",wk:11,
    key:"真值表、邏輯等價（De Morgan定律背熟）、量詞∀和∃的否定、謂詞邏輯的推導",
    mats:[
     {type:"vid",text:"交大OCW 易志偉《離散數學》Lec01 Logic and Proofs (1/5)",url:"https://www.youtube.com/watch?v=klWl-t7V5qY",dur:"1:21:01"},
@@ -1031,7 +992,7 @@ tip:"計數題需要大量練習；圖論可與資料結構的圖演算法一起
     {type:"vid",text:"清大OCW 趙啟超《離散數學》第1C講 Logic and Set Theory",url:"https://www.youtube.com/watch?v=jBoa60H5XVU",dur:"29:34"},
     {type:"ex",text:"真值表與邏輯等價練習 × 5 題（離散上冊 Ch1 習題）"}
    ]},
-  {n:"主題2",t:"證明方法",sub:"Direct Proof、Proof by Contradiction、Mathematical Induction",pri:"must",hrs:"11.5hr",wk:2,
+  {n:"主題2",t:"證明方法",sub:"Direct Proof、Proof by Contradiction、Mathematical Induction",pri:"must",hrs:"11.5hr",wk:12,
    key:"三種證明方法的結構、強歸納法（Strong Induction）、Well-Ordering Principle",
    mats:[
     {type:"vid",text:"交大OCW 易志偉《離散數學》Lec03 Logic and Proofs (3/5)",url:"https://www.youtube.com/watch?v=_WXIdyyHfqk",dur:"1:07:01"},
@@ -1048,7 +1009,7 @@ tip:"計數題需要大量練習；圖論可與資料結構的圖演算法一起
     {type:"vid",text:"交大OCW 易志偉《離散數學》Lec13 Induction and Recur (3/4)",url:"https://www.youtube.com/watch?v=5QtHzN4SRZc",dur:"59:03"},
     {type:"ex",text:"數學歸納法完整證明 × 3 題（寫出 Base Case + Inductive Step）"}
    ]},
-  {n:"主題3",t:"集合與函數",sub:"Set Operations、Functions、Bijection、Cardinality",pri:"hi",hrs:"7.5hr",wk:2,
+  {n:"主題3",t:"集合與函數",sub:"Set Operations、Functions、Bijection、Cardinality",pri:"hi",hrs:"7.5hr",wk:12,
    key:"集合運算（聯集/交集/差集/補集）的性質、函數的單射/滿射/雙射定義、Cantor對角線論證（可數vs不可數）",
    mats:[
     {type:"vid",text:"清大OCW 趙啟超《離散數學》第2B講 Logic and Set Theory",url:"https://www.youtube.com/watch?v=BxbJxYFSOdo",dur:"18:35"},
@@ -1061,7 +1022,7 @@ tip:"計數題需要大量練習；圖論可與資料結構的圖演算法一起
     {type:"vid",text:"清大OCW 趙啟超《離散數學》第4B講 Functions",url:"https://www.youtube.com/watch?v=5QvVXhrnTHQ",dur:"22:33"},
     {type:"ex",text:"集合運算與函數 one-to-one/onto 判斷 × 5 題"}
    ]},
-  {n:"主題4",t:"遞推關係",sub:"Recurrence Relation、特徵方程、生成函數入門",pri:"must",hrs:"7hr",wk:3,
+  {n:"主題4",t:"遞推關係",sub:"Recurrence Relation、特徵方程、生成函數入門",pri:"must",hrs:"7hr",wk:13,
    key:"線性遞推關係的特徵方程解法（homogeneous和particular solution）、Fibonacci通項公式推導——生成函數這塊有讀書筆記提醒最常見的算錯原因是一開始沒把初始項（initial term）定義清楚，導致後面級數展開整組錯，練習時養成先把初始條件寫下來的習慣",
    mats:[
     {type:"vid",text:"Solving Recurrences Using Substitution Method",url:"https://www.youtube.com/watch?v=dVPDdHE3RJU",dur:"13:12"},
@@ -1074,7 +1035,7 @@ tip:"計數題需要大量練習；圖論可與資料結構的圖演算法一起
     {type:"vid",text:"清大OCW 趙啟超《離散數學》第13B講 Recurrence Relations",url:"https://www.youtube.com/watch?v=oUULN2JwYbw",dur:"21:05"},
     {type:"ex",text:"線性遞推關係特徵方程求通解 × 5 題（離散上冊 Ch7 習題）"}
    ]},
-  {n:"主題5",t:"計數原理",sub:"Permutation、Combination、Pigeonhole Principle",pri:"must",hrs:"8.5hr",wk:3,
+  {n:"主題5",t:"計數原理",sub:"Permutation、Combination、Pigeonhole Principle",pri:"must",hrs:"8.5hr",wk:13,
    key:"加法/乘法原理、排列P(n,r)和組合C(n,r)公式與應用、鴿巢原理的應用（generalized pigeonhole）",
    mats:[
     {type:"vid",text:"TrevTutor：Pigeonhole Principle",url:"https://www.youtube.com/watch?v=2-mxYrCNX60",dur:"16:46"},
@@ -1091,7 +1052,7 @@ tip:"計數題需要大量練習；圖論可與資料結構的圖演算法一起
     {type:"vid",text:"清大OCW 趙啟超《離散數學》第9D講 Principles of Counting",url:"https://www.youtube.com/watch?v=xCEpXWbSGuM",dur:"22:49"},
     {type:"ex",text:"排列組合應用題 × 10 題（課本 Ch5 全做）"}
    ]},
-  {n:"主題6",t:"進階計數",sub:"容斥原理、Generating Function、Burnside引理／玻里亞計數",pri:"hi",hrs:"14hr",wk:3,
+  {n:"主題6",t:"進階計數",sub:"容斥原理、Generating Function、Burnside引理／玻里亞計數",pri:"hi",hrs:"14hr",wk:13,
    key:"容斥原理公式與應用、常用生成函數、Burnside引理與玻里亞計數；掌握基礎公式，深入題型列為選讀",
    peerNote:"同儕筆記地雷：H_r^n（相同物放相異箱）、S(m,n)（相異物到相同箱）、onto(m,n)（相異物放相異箱不允許空）三種計數公式最常被搞混，要先分清題型再套公式；第二類史特林數的求和上界公式在某份筆記裡疑似不夠精確，跟課本對不上時以課本為準。",
    mats:[
@@ -1121,7 +1082,7 @@ tip:"計數題需要大量練習；圖論可與資料結構的圖演算法一起
     {type:"vid",text:"清大OCW 趙啟超《離散數學》第17D講 Generating Functions and Complexity of Algorithms",url:"https://www.youtube.com/watch?v=cM8ymJ355fc",dur:"21:48"},
     {type:"ex",text:"容斥原理應用題 × 5 題（離散上冊 Ch6 習題）"}
    ]},
-  {n:"主題7",t:"圖論（基礎）",sub:"圖的定義、Walk/Path/Cycle、Euler/Hamilton路徑",pri:"must",hrs:"6.5hr",wk:4,
+  {n:"主題7",t:"圖論（基礎）",sub:"圖的定義、Walk/Path/Cycle、Euler/Hamilton路徑",pri:"must",hrs:"6.5hr",wk:14,
    key:"握手定理（Σdeg=2|E|）、Euler路徑/迴路的條件（奇數度節點數）、Hamilton路徑（無簡單判斷條件，考概念）",
    mats:[
     {type:"vid",text:"交大OCW 易志偉《離散數學》Lec22 Graphs (1/3)",url:"https://www.youtube.com/watch?v=q0Vy0gQCB_g",dur:"1:23:28"},
@@ -1133,7 +1094,7 @@ tip:"計數題需要大量練習；圖論可與資料結構的圖演算法一起
     {type:"vid",text:"清大OCW 趙啟超《離散數學》第19C講 Introduction to Graph Theory",url:"https://www.youtube.com/watch?v=lyVL6rqj7gU",dur:"15:38"},
     {type:"ex",text:"Euler 路徑判斷 + 握手定理計算 × 5 題（離散下冊 Ch8 習題）"}
    ]},
-  {n:"主題8",t:"圖論（進階）",sub:"Planar Graph、Graph Coloring、Spanning Tree",pri:"hi",hrs:"20.5hr",wk:4,
+  {n:"主題8",t:"圖論（進階）",sub:"Planar Graph、Graph Coloring、Spanning Tree",pri:"hi",hrs:"20.5hr",wk:14,
    key:"Euler公式（v-e+f=2，平面圖）、四色定理（概念，不需證明）、Chromatic Number定義、生成樹計數",
    mats:[
     {type:"vid",text:"Spanning Tree：Discrete Mathematics",url:"https://www.youtube.com/watch?v=6WZvVJ0Q1FA",dur:"43:05"},
@@ -1179,7 +1140,7 @@ tip:"計數題需要大量練習；圖論可與資料結構的圖演算法一起
     {type:"vid",text:"清大OCW 趙啟超《離散數學》第32B講 Maximum Flow Problem",url:"https://www.youtube.com/watch?v=oFStjKYt8b4",dur:"22:57"},
     {type:"ex",text:"Euler 公式（v-e+f=2）判斷平面圖 × 3 題"}
    ]},
-  {n:"主題9",t:"二元關係",sub:"Equivalence Relation、Partial Order、Poset、Hasse Diagram",pri:"must",hrs:"6.5hr",wk:5,
+  {n:"主題9",t:"二元關係",sub:"Equivalence Relation、Partial Order、Poset、Hasse Diagram",pri:"must",hrs:"6.5hr",wk:15,
    key:"等價關係三性質（Reflexive/Symmetric/Transitive）判斷、等價類與集合分割的對應、偏序集（Poset）與Hasse圖繪製、全序vs偏序——台大近年考古題常單題出到10分，不要輕忽",
    mats:[
     {type:"book",text:"離散下冊（林緯）Ch11 二元關係及其應用"},
@@ -1196,7 +1157,7 @@ tip:"計數題需要大量練習；圖論可與資料結構的圖演算法一起
     {type:"vid",text:"清大OCW 趙啟超《離散數學》第8B講 Relations",url:"https://www.youtube.com/watch?v=AqETkP2lPY4",dur:"20:38"},
     {type:"ex",text:"給定關係，判斷是否為等價關係並找出等價類 × 5題 + 手畫Hasse圖 × 3題"}
    ]},
-  {n:"主題10",t:"代數結構",sub:"Group、Ring、Boolean Algebra",pri:"lo",hrs:"4hr",wk:5,
+  {n:"主題10",t:"代數結構",sub:"Group、Ring、Boolean Algebra",pri:"lo",hrs:"4hr",wk:15,
    key:"群的四條性質（封閉性/結合律/單位元/反元素）、布林代數的化簡規則",
    peerNote:"同儕筆記提醒：這章被同儕筆記作者評為「CP值很低，全部章節中最難，又很少考」，時間不夠時可以放到最後讀，符合這章pri標為lo（補充）的定位。",
    mats:[
@@ -1214,7 +1175,7 @@ tip:"Pipeline與Cache是核心章節。Pipeline要能手算Hazard與CPI，Cache�
    {name:"Pipeline Hazards（Structural, Data and Control Hazards）",url:"https://www.youtube.com/watch?v=t27kbXWP5GY",note:"Pipeline是全科最重要的計算題型，這支把三種Hazard講得最清楚"},
    {name:"Average Memory Access Time（AMAT）— Computer Organization",url:"https://www.youtube.com/watch?v=Y1esjWBTf7Q",note:"Cache章節的AMAT計算範例，考試幾乎必出"}],
  chapters:[
-  {n:"主題1",t:"數字系統與運算",sub:"二進位、補數、浮點數IEEE 754",pri:"must",hrs:"11hr",wk:15,
+  {n:"主題1",t:"數字系統與運算",sub:"二進位、補數、浮點數IEEE 754",pri:"must",hrs:"11hr",wk:18,
    key:"二進位/十六進位互轉、2's Complement加減法、IEEE 754 single precision格式（1+8+23位元）、denormalized number",
    peerNote:"同儕筆記地雷：浮點數加法不具結合律（(A+B)+C ≠ A+(B+C)），這是常見考題陷阱，同儕筆記中只有一份特別獨立列出這個警語，容易被忽略。",
    mats:[
@@ -1231,7 +1192,7 @@ tip:"Pipeline與Cache是核心章節。Pipeline要能手算Hazard與CPI，Cache�
     {type:"vid",text:"黃婷婷教授計算機結構_第13A講 Computer Arithmetic",url:"https://www.youtube.com/watch?v=gnPwCZLD04c",dur:"49:46"},
     {type:"ex",text:"IEEE 754 浮點數轉換手算 × 10 題（計組上冊張凡 Ch2 考古題）"}
    ]},
-  {n:"主題2",t:"指令集架構 ISA",sub:"RISC vs CISC、定址模式、MIPS指令",pri:"must",hrs:"9.5hr",wk:15,
+  {n:"主題2",t:"指令集架構 ISA",sub:"RISC vs CISC、定址模式、MIPS指令",pri:"must",hrs:"9.5hr",wk:18,
    key:"六種定址模式（Immediate/Register/Direct/Indirect/Base/PC-relative）比較、RISC vs CISC核心差異、MIPS R-type/I-type/J-type格式",
    peerNote:"同儕筆記提醒：讀過的同儕筆記（含標題掛RISC-V的資料統整篇）內文其實幾乎全用MIPS舉例，真正的RISC-V教材只在連結清單當外部資源列出，沒有一份自己整理過RISC-V內容，如果目標校系考RISC-V，這塊得另外找教材。",
    mats:[
@@ -1246,7 +1207,7 @@ tip:"Pipeline與Cache是核心章節。Pipeline要能手算Hazard與CPI，Cache�
     {type:"vid",text:"黃婷婷教授計算機結構_第7B講 Instruction Set Architecture",url:"https://www.youtube.com/watch?v=CqVPl7fIlAo",dur:"49:43"},
     {type:"ex",text:"MIPS 指令格式分析（R/I/J-type）× 5 題"}
    ]},
-  {n:"主題3",t:"CPU設計",sub:"ALU、Datapath、Control Unit、單週期vs多週期",pri:"hi",hrs:"7hr",wk:16,
+  {n:"主題3",t:"CPU設計",sub:"ALU、Datapath、Control Unit、單週期vs多週期",pri:"hi",hrs:"7hr",wk:19,
    key:"單週期CPU的datapath設計、各指令（lw/sw/beq/add）的控制訊號設定、多週期CPU的優缺點",
    mats:[
     {type:"vid",text:"黃婷婷教授計算機結構_第15A講 Single-Cycle Processor",url:"https://www.youtube.com/watch?v=iblxfbOsp_g",dur:"45:40"},
@@ -1256,7 +1217,7 @@ tip:"Pipeline與Cache是核心章節。Pipeline要能手算Hazard與CPI，Cache�
     {type:"vid",text:"黃婷婷教授計算機結構_第17A講 Single-Cycle Processor / Pipelining",url:"https://www.youtube.com/watch?v=4vRk10j9MC8",dur:"41:39"},
     {type:"ex",text:"控制訊號真值表填寫 × 3 題（計組上冊張凡 Ch4 考古題）"}
    ]},
-  {n:"主題4",t:"Pipeline",sub:"五階段Pipeline、Hazard偵測與處理",pri:"must",hrs:"11hr",wk:16,
+  {n:"主題4",t:"Pipeline",sub:"五階段Pipeline、Hazard偵測與處理",pri:"must",hrs:"11hr",wk:19,
    key:"三種Hazard（Data/Control/Structural）的成因、Data Forwarding如何減少stall、計算Pipeline的CPI（CPI=1+stalls per instruction）、Branch Prediction的效益計算——有考生心得提到台大考過直接給一段組合語言（如含lw、branch的指令序列）要求手算實際stall週期數，不是只考公式代入，練習時要準備看得懂組合語言指令再算Hazard的題型",
    peerNote:"同儕筆記地雷：sw接著lw雖然是資料相依，其實可以直接forward不必stall；真正一定要stall的是load-use（前一條是lw時），這是常被混淆的地方，同儕筆記中只有一份特別點出來。",
    mats:[
@@ -1270,7 +1231,7 @@ tip:"Pipeline與Cache是核心章節。Pipeline要能手算Hazard與CPI，Cache�
     {type:"vid",text:"黃婷婷教授計算機結構_第20A講 Pipelining",url:"https://www.youtube.com/watch?v=II7Eh-Q8hdI",dur:"51:36"},
     {type:"ex",text:"Pipeline CPI 和 Stall 手算 × 5 題（計組上冊 Ch5 所有考古題）"}
    ]},
-  {n:"主題5",t:"記憶體層次與Cache",sub:"Cache設計、命中率、AMAT計算",pri:"must",hrs:"10hr",wk:16,
+  {n:"主題5",t:"記憶體層次與Cache",sub:"Cache設計、命中率、AMAT計算",pri:"must",hrs:"10hr",wk:19,
    key:"三種Cache映射（Direct-mapped/Set-Associative/Fully-Associative）的比較、AMAT公式（AMAT=Hit time+Miss rate×Miss penalty）、寫策略（Write-back vs Write-through）、替換演算法（LRU/FIFO）",
    peerNote:"同儕筆記重點：AMAT、Cache miss三分類、write policy在同儕筆記中整理得最完整，但其中一份有Spatial Locality的筆誤，讀到時對照課本確認，不要照單全收。",
    mats:[
@@ -2282,63 +2243,63 @@ const MATS=[
 
 // ── Weekly schedule data ──
 const WK_FOUND=[
-  {wk:"W1",date:"9/16–9/19",subj:'離散數學',color:"#C43478",
-   ch:'DM Ch1 邏輯（命題與真值表、邏輯等價）+ Ch2 集合論（集合論、排容原理）',
-   mat:'📘 離散上冊（林緯）Ch1–Ch2\n🎬 交大OCW 易志偉《離散數學》Lec01 Logic and Proofs (1/5)\n🎬 The Principle of Inclusion-Exclusion\n✏️ 真值表練習 × 5 題 + 排容原理應用題 × 3 題',hrs:"13.0"},
-  {wk:"W2",date:"9/20–9/23",subj:'離散數學',color:"#C43478",
-   ch:'DM Ch3 函數（可數/不可數集、鴿籠原理）+ Ch4 數學歸納法與數論（數學歸納法、質數）',
-   mat:'📘 離散上冊（林緯）Ch3–Ch4\n🎬 Neso Academy：Pigeonhole Principle\n🎬 Proof Using Mathematical Induction — Summation Formulae\n✏️ 鴿籠原理應用題 × 3 題 + 數學歸納法完整證明 × 5 題',hrs:"13.0"},
-  {wk:"W3",date:"9/24–9/27",subj:'離散數學',color:"#C43478",
-   ch:'DM Ch5 組合計數（排列組合、二項式係數）+ Ch6 生成函數（一般/指數生成函數）+ Ch7 遞迴關係式（求解法、轉換法）——研究確認這三章是「最容易拿分」的必考點',
-   mat:'📘 離散上冊（林緯）Ch5–Ch7\n🎬 Generating Functions | Part 1\n🎬 Solving Recurrences Using Substitution Method\n✏️ 排列組合應用題 × 10 題 + 生成函數求解 × 3 題 + 遞迴關係式求通解 × 5 題',hrs:"15.0"},
-  {wk:"W4",date:"9/28–10/1",subj:'離散數學',color:"#C43478",
-   ch:'DM Ch8 圖論I（基本定義、路徑、連通、最短路徑）+ Ch9 圖論II（著色問題、平面圖、流量）+ Ch10 樹（生成樹、有根樹、最佳樹）',
-   mat:'📘 離散下冊（林緯）Ch8–Ch10\n🎬 交大OCW 易志偉《離散數學》Lec22 Graphs (1/3)\n🎬 Spanning Tree：Discrete Mathematics\n✏️ Euler/Hamilton路徑判斷 × 3 題 + 圖著色問題 × 2 題 + 生成樹手畫 × 3 題',hrs:"17.0"},
-  {wk:"W5",date:"10/2–10/5",subj:'離散數學',color:"#C43478",
-   ch:'DM Ch11 二元關係及其應用（等價關係、偏序集、布林代數）+ Ch12 代數結構（群、環與體）+ Ch13 有限狀態機（清大每年必考）',
-   mat:'📘 離散下冊（林緯）Ch11–Ch13\n🎬 Equivalence Relation\n🎬 Neso Academy：Finite State Machine（Finite Automata）\n✏️ 等價關係判斷 × 3 題 + Boolean Algebra基本運算 × 5 題 + 有限狀態機設計 × 2 題',hrs:"15.0"},
-  {wk:"W6",date:"10/6–10/9",subj:'資料結構',color:"#12946B",
+  {wk:"W1",date:"9/24–9/27",subj:'資料結構',color:"#12946B",
    ch:'Ch1 基本概念（複雜度分析、Big-O/Θ/Ω、Master Method）+ Ch2 陣列與結構（Array）+ Ch3 堆疊與佇列（Stack/Queue）',
    mat:'📘 資結七版（洪逸）Ch1–Ch3\n🎬 交大OCW 彭文志《資料結構》Ch1 Introduction\n🎬 Abdul Bari：Asymptotic Notations\n✏️ 做課本後附練習題 Ch1–Ch3（至少各5題）',hrs:"13.0"},
-  {wk:"W7",date:"10/10–10/13",subj:'資料結構',color:"#12946B",
+  {wk:"W2",date:"9/28–10/1",subj:'資料結構',color:"#12946B",
    ch:'Ch4 鏈結串列（Linked List各類型）+ Ch5 樹與二元樹（Tree & Binary Tree、走訪Traversal【非常重要】）',
    mat:'📘 資結七版（洪逸）Ch4–Ch5\n🎬 Abdul Bari：Linked List Introduction & Concepts\n🎬 Binary Tree Traversals（Inorder, Preorder, Postorder）\n✏️ 手寫Circular Queue操作 × 5題 + 給定一棵樹手寫三種走訪結果 × 5題',hrs:"15.0"},
-  {wk:"W8",date:"10/14–10/17",subj:'資料結構',color:"#12946B",
+  {wk:"W3",date:"10/2–10/5",subj:'資料結構',color:"#12946B",
    ch:'Ch6 圖形（表示法、Traversal、Spanning Tree、最短路徑、拓撲排序）+ Ch7 搜尋與排序（Search、Sort）',
    mat:'📘 資結七版（洪逸）Ch6–Ch7\n🎬 Abdul Bari：Graph Data Structure（圖的表示法、DFS/BFS）\n🎬 Abdul Bari：Merge Sort\n🎬 Abdul Bari：Quick Sort\n✏️ DFS/BFS手算 × 3題 + Merge/Quick Sort手跑過程 × 3題',hrs:"16.5"},
-  {wk:"W9",date:"10/18–10/21",subj:'資料結構',color:"#12946B",
+  {wk:"W4",date:"10/6–10/9",subj:'資料結構',color:"#12946B",
    ch:'Ch8 雜湊（Hashing、衝突處理）+ Ch9 高等樹結構（Heap、AVL樹、2-3樹、紅黑樹、B樹）',
    mat:'📘 資結七版（洪逸）Ch8–Ch9\n🎬 Abdul Bari：Hashing\n🎬 Abdul Bari：Heap\n🎬 Abdul Bari：AVL Tree\n✏️ Hash Table衝突手算 × 3題 + 手畫AVL Tree旋轉過程（LL/RR/LR/RL）各3次',hrs:"17.5"},
-  {wk:"W10",date:"10/22–10/25",subj:'線性代數',color:"#1E6FBF",
-   ch:'LA Ch1 矩陣（定義與運算）+ Ch2 線性方程組與求解（高斯消去、行列式）+ Ch3 向量空間 + Ch4 線性映射',
-   mat:'📘 線代上冊（林緯）Ch1–Ch4\n🎬 MIT 18.06 L1：Geometry of Linear Equations\n🎬 MIT 18.06 L2：Elimination\n🎬 MIT 18.06 L18：Determinants\n🎬 MIT 18.06 L9：Four Fundamental Subspaces\n✏️ 高斯消去法手算 × 5 題 + 3×3逆矩陣手算 × 3 題 + 行列式Cofactor展開 × 5 題',hrs:"21.0"},
-  {wk:"W11",date:"10/26–10/29",subj:'線性代數',color:"#1E6FBF",
-   ch:'LA Ch5 對角化理論（特徵值/特徵向量、對角化、Cayley-Hamilton）+ Ch7 內積空間（Gram-Schmidt正交化）+ Ch8 各內積算子（SVD）——Ch6 Jordan Form基礎要知道，深入題型可選擇性放（曾有考生反映意外被考到，別完全跳過）',
-   mat:'📘 線代下冊（林緯）Ch5、Ch7–Ch8\n🎬 MIT 18.06 L21：Eigenvalues\n🎬 3Blue1Brown：Eigenvectors\n🎬 MIT 18.06 L29：SVD\n🎬 3Blue1Brown：Singular Value Decomposition\n✏️ 特徵值/特徵向量計算 × 5 題 + Gram-Schmidt正交化 × 3 題 + SVD分解步驟練習 × 2 題',hrs:"18.0"},
-  {wk:"W12",date:"10/30–11/2",subj:'演算法',color:"#7C4FE0",
+  {wk:"W5",date:"10/10–10/13",subj:'演算法',color:"#7C4FE0",
    ch:'ALG Ch1 Analyzing Algorithms（Asymptotic notation、Recurrence relation、Amortized analysis）+ Ch2 Divide-and-Conquer（Maximum subarray、Matrix multiplication、Closest pair）',
    mat:'📘 演算法~1~ Ch1–Ch2\n🎬 Abdul Bari：Merge Sort（分治法範例）\n🎬 Master\'s Theorem Explained\n✏️ Recurrence Relation用Master Theorem求解 × 5題 + Maximum Subarray手推 × 2題',hrs:"13.0"},
-  {wk:"W13",date:"11/3–11/6",subj:'演算法',color:"#7C4FE0",
+  {wk:"W6",date:"10/14–10/17",subj:'演算法',color:"#7C4FE0",
    ch:'ALG Ch3 Dynamic Programming（Rod cutting、Knapsack、Matrix-chain、Optimal BST、LCS、KMP）——全科最重的一章',
    mat:'📘 演算法~1~ Ch3\n🎬 MIT 6.006 L11：DP I\n🎬 MIT 6.006 L12：DP II\n🎬 MIT 6.006 L14：DP IV（Matrix Chain）\n🎬 Abdul Bari：Matrix Chain Multiplication\n✏️ 手推 LCS 狀態表 × 3 題 + 手推 0/1 Knapsack dp table × 2 題 + 手填 Matrix Chain m[i][j] 表格 × 3 題',hrs:"18.0"},
-  {wk:"W14",date:"11/7–11/10",subj:'演算法',color:"#7C4FE0",
+  {wk:"W7",date:"10/18–10/21",subj:'演算法',color:"#7C4FE0",
    ch:'ALG Ch4 Graph Algorithms（BFS、DFS、Shortest Paths、MST、Max Flow）+ Ch6 NP-completeness（研究確認清大常考）——Ch5計算幾何、Ch7其他問題較低頻，留到刷題期',
    mat:'📘 演算法~1~ Ch4、Ch6\n🎬 Abdul Bari：BFS（Breadth First Search）\n🎬 Abdul Bari：DFS（Depth First Search）\n🎬 Abdul Bari：Topological Sort\n🎬 Abdul Bari：Strongly Connected Components\n🎬 Theory of Computation：P, NP, NP-Complete and NP-Hard\n✏️ 手算 BFS/DFS 執行過程 × 3 題 + Dijkstra手算 × 2 題 + NP-Complete問題判斷 × 3 題',hrs:"17.5"},
-  {wk:"W15",date:"11/11–11/14",subj:'計算機組織',color:"#0F7A8C",
-   ch:'《數位邏輯講義》Ch1–Ch3（二進位系統、布林代數、組合邏輯，精簡讀過即可）+ CA Ch1 指令（MIPS、ISA）+ Ch2 計算機算術（IEEE 754浮點數）',
-   mat:'📘 數位邏輯講義 Ch1–Ch3（精簡）+ 計組上冊（張凡）Ch1–Ch2\n🎬 Neso Academy：Logic Gates（Part 2）\n🎬 IEEE 754 Floating Point Representation（Single & Double Precision）\n✏️ IEEE 754 浮點數轉換 × 5 題 + 布林函數化簡 × 3 題',hrs:"15.0"},
-  {wk:"W16",date:"11/15–11/18",subj:'計算機組織',color:"#0F7A8C",
-   ch:'CA Ch3 效能評估（Amdahl定律）+ Ch4 處理器資料路徑 + Ch5 管線（Pipeline Hazard，最重要）+ Ch6 記憶體階層與Cache（AMAT計算，最重要）——Ch7儲存裝置、Ch8多重處理器、Ch9基本概念較低頻，留到刷題期',
-   mat:'📘 計組上冊（張凡）Ch3–Ch5 + 計組下冊 Ch6\n🎬 Pipeline Hazards（Structural, Data and Control Hazards）\n🎬 Average Memory Access Time（AMAT）— Cache Memory\n✏️ Amdahl定律計算 × 3 題 + Pipeline CPI/Stall 手算 × 5 題 + AMAT計算 × 5 題',hrs:"20.0"},
-  {wk:"W17",date:"11/19–11/22",subj:'作業系統',color:"#B8560F",
+  {wk:"W8",date:"10/22–10/25",subj:'作業系統',color:"#B8560F",
    ch:'OS Ch1 導論 + Ch2 Computer System Architecture（Dual Mode、特權指令）+ Ch3 系統作業結構（System Call、Layered/Microkernel）+ Ch4 處理程序（Process、CPU排程FCFS/SJF/RR/Priority）',
    mat:'📘 金寶典四版（洪逸）Ch1–Ch4 + Q講義Q1–Q2\n🎬 清大OCW 周志遠《作業系統》第1A講\n🎬 清大OCW 周志遠 第2講 Process\n✏️ 做 Q講義 Q1（Ch1–Ch3）所有例題 + 五狀態圖默寫 × 5 次 + Gantt Chart排程計算 × 5 題（Q講義 Q2）',hrs:"17.0"},
-  {wk:"W18",date:"11/23–11/26",subj:'作業系統',color:"#B8560F",
+  {wk:"W9",date:"10/26–10/29",subj:'作業系統',color:"#B8560F",
    ch:'OS Ch5 死結 Dead Lock（必要條件、預防、Banker Algorithm）+ Ch6 處理程序的協調（Critical Section、Semaphore、Monitor）',
    mat:'📘 金寶典 Ch5–Ch6 + Q講義Q3–Q4\n🎬 Abdul Bari：Banker Algorithm\n🎬 Process Synchronization — Critical Section & Semaphores\n✏️ Banker Algorithm 安全狀態判斷 × 5 題（Q講義 Q3）+ Semaphore解同步問題 × 3 題（Q講義 Q4）',hrs:"13.0"},
-  {wk:"W19",date:"11/27–11/30",subj:'作業系統',color:"#B8560F",
+  {wk:"W10",date:"10/30–11/2",subj:'作業系統',color:"#B8560F",
    ch:'OS Ch7 記憶管理（Paging、Segmentation）+ Ch8 虛擬記憶體（Page Replacement Algorithms）+ Ch9 輔助儲存體管理（磁碟排程SCAN/C-SCAN）+ Ch10 檔案系統——基礎期最後一週',
-   mat:'📘 金寶典 Ch7–Ch10 + Q講義Q5–Q6\n🎬 Page Replacement Algorithms（LRU and Optimal）\n🎬 SCAN Disk Scheduling Algorithm\n✏️ Page Table 位址轉換計算 × 5 題 + FIFO/LRU/Optimal 計算 × 3 題（Q講義 Q5）+ SCAN/C-SCAN磁碟排程手算 × 3 題（Q講義 Q6）',hrs:"17.0"}];
+   mat:'📘 金寶典 Ch7–Ch10 + Q講義Q5–Q6\n🎬 Page Replacement Algorithms（LRU and Optimal）\n🎬 SCAN Disk Scheduling Algorithm\n✏️ Page Table 位址轉換計算 × 5 題 + FIFO/LRU/Optimal 計算 × 3 題（Q講義 Q5）+ SCAN/C-SCAN磁碟排程手算 × 3 題（Q講義 Q6）',hrs:"17.0"},
+  {wk:"W11",date:"11/3–11/6",subj:'離散數學',color:"#C43478",
+   ch:'DM Ch1 邏輯（命題與真值表、邏輯等價）+ Ch2 集合論（集合論、排容原理）',
+   mat:'📘 離散上冊（林緯）Ch1–Ch2\n🎬 交大OCW 易志偉《離散數學》Lec01 Logic and Proofs (1/5)\n🎬 The Principle of Inclusion-Exclusion\n✏️ 真值表練習 × 5 題 + 排容原理應用題 × 3 題',hrs:"13.0"},
+  {wk:"W12",date:"11/7–11/10",subj:'離散數學',color:"#C43478",
+   ch:'DM Ch3 函數（可數/不可數集、鴿籠原理）+ Ch4 數學歸納法與數論（數學歸納法、質數）',
+   mat:'📘 離散上冊（林緯）Ch3–Ch4\n🎬 Neso Academy：Pigeonhole Principle\n🎬 Proof Using Mathematical Induction — Summation Formulae\n✏️ 鴿籠原理應用題 × 3 題 + 數學歸納法完整證明 × 5 題',hrs:"13.0"},
+  {wk:"W13",date:"11/11–11/14",subj:'離散數學',color:"#C43478",
+   ch:'DM Ch5 組合計數（排列組合、二項式係數）+ Ch6 生成函數（一般/指數生成函數）+ Ch7 遞迴關係式（求解法、轉換法）——研究確認這三章是「最容易拿分」的必考點',
+   mat:'📘 離散上冊（林緯）Ch5–Ch7\n🎬 Generating Functions | Part 1\n🎬 Solving Recurrences Using Substitution Method\n✏️ 排列組合應用題 × 10 題 + 生成函數求解 × 3 題 + 遞迴關係式求通解 × 5 題',hrs:"15.0"},
+  {wk:"W14",date:"11/15–11/18",subj:'離散數學',color:"#C43478",
+   ch:'DM Ch8 圖論I（基本定義、路徑、連通、最短路徑）+ Ch9 圖論II（著色問題、平面圖、流量）+ Ch10 樹（生成樹、有根樹、最佳樹）',
+   mat:'📘 離散下冊（林緯）Ch8–Ch10\n🎬 交大OCW 易志偉《離散數學》Lec22 Graphs (1/3)\n🎬 Spanning Tree：Discrete Mathematics\n✏️ Euler/Hamilton路徑判斷 × 3 題 + 圖著色問題 × 2 題 + 生成樹手畫 × 3 題',hrs:"17.0"},
+  {wk:"W15",date:"11/19–11/22",subj:'離散數學',color:"#C43478",
+   ch:'DM Ch11 二元關係及其應用（等價關係、偏序集、布林代數）+ Ch12 代數結構（群、環與體）+ Ch13 有限狀態機（清大每年必考）',
+   mat:'📘 離散下冊（林緯）Ch11–Ch13\n🎬 Equivalence Relation\n🎬 Neso Academy：Finite State Machine（Finite Automata）\n✏️ 等價關係判斷 × 3 題 + Boolean Algebra基本運算 × 5 題 + 有限狀態機設計 × 2 題',hrs:"15.0"},
+  {wk:"W16",date:"11/23–11/26",subj:'線性代數',color:"#1E6FBF",
+   ch:'LA Ch1 矩陣（定義與運算）+ Ch2 線性方程組與求解（高斯消去、行列式）+ Ch3 向量空間 + Ch4 線性映射',
+   mat:'📘 線代上冊（林緯）Ch1–Ch4\n🎬 MIT 18.06 L1：Geometry of Linear Equations\n🎬 MIT 18.06 L2：Elimination\n🎬 MIT 18.06 L18：Determinants\n🎬 MIT 18.06 L9：Four Fundamental Subspaces\n✏️ 高斯消去法手算 × 5 題 + 3×3逆矩陣手算 × 3 題 + 行列式Cofactor展開 × 5 題',hrs:"21.0"},
+  {wk:"W17",date:"11/27–11/30",subj:'線性代數',color:"#1E6FBF",
+   ch:'LA Ch5 對角化理論（特徵值/特徵向量、對角化、Cayley-Hamilton）+ Ch7 內積空間（Gram-Schmidt正交化）+ Ch8 各內積算子（SVD）——Ch6 Jordan Form基礎要知道，深入題型可選擇性放（曾有考生反映意外被考到，別完全跳過）',
+   mat:'📘 線代下冊（林緯）Ch5、Ch7–Ch8\n🎬 MIT 18.06 L21：Eigenvalues\n🎬 3Blue1Brown：Eigenvectors\n🎬 MIT 18.06 L29：SVD\n🎬 3Blue1Brown：Singular Value Decomposition\n✏️ 特徵值/特徵向量計算 × 5 題 + Gram-Schmidt正交化 × 3 題 + SVD分解步驟練習 × 2 題',hrs:"18.0"},
+  {wk:"W18",date:"12/1–12/4",subj:'計算機組織',color:"#0F7A8C",
+   ch:'《數位邏輯講義》Ch1–Ch3（二進位系統、布林代數、組合邏輯，精簡讀過即可）+ CA Ch1 指令（MIPS、ISA）+ Ch2 計算機算術（IEEE 754浮點數）',
+   mat:'📘 數位邏輯講義 Ch1–Ch3（精簡）+ 計組上冊（張凡）Ch1–Ch2\n🎬 Neso Academy：Logic Gates（Part 2）\n🎬 IEEE 754 Floating Point Representation（Single & Double Precision）\n✏️ IEEE 754 浮點數轉換 × 5 題 + 布林函數化簡 × 3 題',hrs:"15.0"},
+  {wk:"W19",date:"12/5–12/8",subj:'計算機組織',color:"#0F7A8C",
+   ch:'CA Ch3 效能評估（Amdahl定律）+ Ch4 處理器資料路徑 + Ch5 管線（Pipeline Hazard，最重要）+ Ch6 記憶體階層與Cache（AMAT計算，最重要）——Ch7儲存裝置、Ch8多重處理器、Ch9基本概念較低頻，留到刷題期',
+   mat:'📘 計組上冊（張凡）Ch3–Ch5 + 計組下冊 Ch6\n🎬 Pipeline Hazards（Structural, Data and Control Hazards）\n🎬 Average Memory Access Time（AMAT）— Cache Memory\n✏️ Amdahl定律計算 × 3 題 + Pipeline CPI/Stall 手算 × 5 題 + AMAT計算 × 5 題',hrs:"20.0"},];
 // 2026/8/20: restructured from "刷完一批學校就換下一批"（單輪擴廣度）改成
 // 「同一批考古題重複刷」——研究真實資工所準備者的經驗發現，成功上榜者常見
 // 節奏是對同一份約5年份考古題反覆刷到「每題都自動反應」，而不是刷過一輪就

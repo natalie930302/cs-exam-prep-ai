@@ -8,9 +8,10 @@
 <link rel="stylesheet" href="/vendor/katex/katex.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="image" href="/assets/rolling-hills-pexels-32821671.jpg">
+
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20260903a">
+<link rel="stylesheet" href="theme.css?v=20261007e">
+<link rel="stylesheet" href="styles.css?v=20261007f">
 </head>
 <body id="appRoot">
 
@@ -37,6 +38,7 @@
   <!-- ══════════ 日曆 ══════════ -->
   <div class="sec on" id="sec-schedule" aria-hidden="false">
     <div class="checkin-banner" id="checkinBanner" style="display:none;"></div>
+    <section class="restart-card" id="restartCard" aria-label="重啟模式" hidden></section>
 
     <div class="cal-header-card">
       <div class="cal-greet" id="greetingLine"></div>
@@ -76,30 +78,9 @@
   </div>
 
   <!-- ══════════ 各校考試資訊 ══════════ -->
-  <div class="sec" id="sec-schools" data-school-mode="all" aria-hidden="true">
+  <div class="sec" id="sec-schools" aria-hidden="true">
     <div class="sh">各校招生資訊</div>
-    <div class="ss">更新於2026/9/2：考試入學列115學年度歷史資料；推甄追蹤116學年度官方公告狀態，未公告項目不預填。</div>
-    <div class="admission-update-note">
-      <span class="admission-update-icon" aria-hidden="true">i</span>
-      <div><strong>近期公告節點</strong><span>中山預計 9/11、清大與陽明交大約 9 月中、北科約 9 月下旬；日期到時仍要回官方入口確認。</span></div>
-    </div>
-    <section class="admission-radar" id="admissionRadar" aria-labelledby="admissionRadarTitle">
-      <div class="admission-radar-head">
-        <div><span>SMART TRACKER</span><h2 id="admissionRadarTitle">116 推甄招生雷達</h2></div>
-        <button class="admission-radar-reset" type="button" hidden onclick="setAdmissionStage('all',this)">顯示全部學校</button>
-      </div>
-      <div class="admission-radar-metrics" id="admissionRadarMetrics"></div>
-      <div class="admission-next-action" id="admissionNextAction"></div>
-    </section>
-    <details class="admission-experience-guide">
-      <summary>HackMD 考生心得交叉整理 <span id="admissionGuideEvidence">非官方</span></summary>
-      <div id="admissionExperienceGuide"></div>
-    </details>
-    <div class="school-mode-bar" role="group" aria-label="招生資訊篩選">
-      <button class="filter-chip ui-btn active" type="button" data-school-mode="all" aria-pressed="true" onclick="setSchoolInfoMode('all',this)">全部</button>
-      <button class="filter-chip ui-btn" type="button" data-school-mode="recommend" aria-pressed="false" onclick="setSchoolInfoMode('recommend',this)">116 推甄</button>
-      <button class="filter-chip ui-btn" type="button" data-school-mode="exam" aria-pressed="false" onclick="setSchoolInfoMode('exam',this)">115 考試參考</button>
-    </div>
+    <div class="ss">更新於2026/9/2：考試入學列115學年度歷史資料，116學年度請以官方簡章為準。</div>
     <div class="uni-grid" id="uniGrid"></div>
   </div>
 
@@ -168,14 +149,6 @@
     <div id="chapterSummaryBody" class="diagnostic-body"><div class="diagnostic-loading"><span></span><p>正在統整本章重點…</p></div></div>
   </div>
 </div>
-<div class="chapter-tool-modal diagnostic-modal" id="schoolPlanModal" aria-hidden="true" onclick="if(event.target===this)closeSchoolPlanModal()">
-  <div class="chapter-tool-dialog diagnostic-dialog" role="dialog" aria-modal="true" aria-labelledby="schoolPlanTitle">
-    <button class="chapter-tool-close ui-btn ui-btn-icon" type="button" onclick="closeSchoolPlanModal()" aria-label="關閉">×</button>
-    <div class="chapter-tool-kicker" id="schoolPlanKicker">AI 準備建議</div>
-    <h2 id="schoolPlanTitle">整理中</h2>
-    <div id="schoolPlanBody" class="diagnostic-body"><div class="diagnostic-loading"><span></span><p>正在整理這間學校的準備建議…</p></div></div>
-  </div>
-</div>
 <div class="chapter-tool-modal diagnostic-modal" id="dailyBriefModal" aria-hidden="true" onclick="if(event.target===this)closeDailyBriefModal()">
   <div class="chapter-tool-dialog diagnostic-dialog" role="dialog" aria-modal="true" aria-labelledby="dailyBriefTitle">
     <button class="chapter-tool-close ui-btn ui-btn-icon" type="button" onclick="closeDailyBriefModal()" aria-label="關閉">×</button>
@@ -222,6 +195,7 @@
 
 <script src="data.js?v=20260903a"></script>
 <script src="/vendor/katex/katex.min.js"></script>
-<script src="app.js?v=20260903a"></script>
+<script src="chapter-core.js?v=20261007s"></script>
+<script src="app.js?v=20261007a"></script>
 </body>
 </html>

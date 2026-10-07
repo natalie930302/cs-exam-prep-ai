@@ -30,114 +30,8 @@ function svgIcon(name, size){
   return '<svg class="ic" width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+d+'</svg>';
 }
 
-// Stable task IDs are derived from content, never array position. This keeps
-// completion records attached to the same chapter/material after future edits.
-function stableTaskKey(value){
-  const text = String(value || '').trim().toLowerCase();
-  let hash = 2166136261;
-  for(let i=0;i<text.length;i++){
-    hash ^= text.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return (hash >>> 0).toString(36);
-}
-function videoSeriesName(label){
-  const text = String(label || '');
-  const rules = [
-    [/林軒田/,'台大 林軒田 DSA'],[/彭文志/,'交大OCW 彭文志'],[/江蕙如/,'交大OCW 江蕙如'],
-    [/易志偉/,'交大OCW 易志偉'],[/周志遠/,'清大OCW 周志遠'],[/趙啟超/,'清大OCW 趙啟超'],
-    [/黃婷婷/,'清大 黃婷婷'],[/韓永楷/,'清大 韓永楷'],[/Abdul Bari/i,'Abdul Bari'],
-    [/3Blue1Brown/i,'3Blue1Brown'],[/MIT(?: OCW)? 6\.006/i,'MIT OCW 6.006'],
-    [/MIT(?: OCW)? 18\.06/i,'MIT OCW 18.06']
-  ];
-  for(let i=0;i<rules.length;i++) if(rules[i][0].test(text)) return rules[i][1];
-  return '精選單篇';
-}
-function videoSequenceNumber(label, fallback){
-  const text = String(label || '');
-  const patterns = [/\bLec\s*0*(\d+)/i,/\bLecture\s*0*(\d+)/i,/第\s*0*(\d+)講/i,/\bL\s*0*(\d+)\b/i,/\bCh(?:apter)?\s*0*(\d+)/i,/^\s*0*(\d+)[.：\s]/];
-  for(let i=0;i<patterns.length;i++){
-    const m = text.match(patterns[i]);
-    if(m) return Number(m[1]);
-  }
-  return 10000 + fallback;
-}
-function groupVideoSeries(options){
-  const groups = [];
-  const map = {};
-  options.forEach(function(option,index){
-    const name = videoSeriesName(option.label);
-    if(!map[name]){
-      map[name] = {name:name,options:[],firstIndex:index};
-      groups.push(map[name]);
-    }
-    map[name].options.push(Object.assign({},option,{sourceIndex:index,sequence:videoSequenceNumber(option.label,index)}));
-  });
-  groups.forEach(function(group){
-    group.options.sort(function(a,b){ return a.sequence-b.sequence || a.sourceIndex-b.sourceIndex; });
-    group.topics = Array.from(new Set(group.options.map(function(o){ return o.topic; }).filter(Boolean)));
-  });
-  return groups.sort(function(a,b){ return a.firstIndex-b.firstIndex; });
-}
-function chapterDisplayMaterials(c){
-  const firstVideoIndex = c.mats.findIndex(function(m){ return m.type === 'vid' || m.type === 'vidgroup'; });
-  const videoOptions = [];
-  c.mats.forEach(function(m){
-    if(m.type === 'vidgroup') m.options.forEach(function(o){ videoOptions.push(Object.assign({},o,{topic:m.text})); });
-    else if(m.type === 'vid') videoOptions.push({label:m.text,url:m.url,dur:m.dur,note:m.note,topic:''});
-  });
-  const display = [];
-  c.mats.forEach(function(m, sourceIndex){
-    if(sourceIndex === firstVideoIndex && videoOptions.length){
-      display.push({type:'vidgroup',text:'本章影片',options:videoOptions,series:groupVideoSeries(videoOptions),taskKey:'video'});
-    }
-    if(m.type !== 'vid' && m.type !== 'vidgroup'){
-      const copy = Object.assign({},m);
-      copy.taskKey = m.type+'-'+stableTaskKey(m.text || String(sourceIndex));
-      display.push(copy);
-    }
-  });
-  return display;
-}
-function chapterMaterialTaskId(subjectId, chapter, material){
-  return 'mat-v2-'+subjectId+'-'+stableTaskKey(chapter.t)+'-'+material.taskKey;
-}
-function weekMaterialTasks(wk){
-  const rows = [];
-  SUBJECTS.forEach(function(s){
-    s.chapters.forEach(function(c){
-      if(c.wk !== wk) return;
-      chapterDisplayMaterials(c).forEach(function(m){
-        rows.push({id:chapterMaterialTaskId(s.id,c,m),type:m.type});
-      });
-    });
-  });
-  return rows;
-}
 async function syncFoundationWeek(wk){
-  if(!wk) return;
-  const rows = weekMaterialTasks(wk);
-  if(!rows.length) return;
-  const done = new Set(DONE_TASK_IDS);
-  const groups = {
-    video:rows.filter(function(r){ return r.type === 'vidgroup'; }),
-    book:rows.filter(function(r){ return r.type === 'book'; }),
-    practice:rows.filter(function(r){ return r.type === 'ex'; }),
-    notes:rows.filter(function(r){ return r.type === 'rec'; })
-  };
-  const allDone = rows.every(function(r){ return done.has(r.id); });
-  const targets = {
-    video:groups.video.length > 0 && groups.video.every(function(r){ return done.has(r.id); }),
-    book:groups.book.length > 0 && groups.book.every(function(r){ return done.has(r.id); }),
-    practice:groups.practice.length > 0 && groups.practice.every(function(r){ return done.has(r.id); }),
-    notes:groups.notes.length ? groups.notes.every(function(r){ return done.has(r.id); }) : allDone,
-    review:allDone
-  };
-  await Promise.all(Object.keys(targets).map(function(type){
-    return fetch('/api/tasks/w'+wk+'-'+type+'/set', {
-      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({done:targets[type]})
-    });
-  }));
+  await syncFoundationWeekTasks(wk, DONE_TASK_IDS);
   await fetchDoneTasks();
 }
 
@@ -145,6 +39,11 @@ async function syncFoundationWeek(wk){
 const EXAM_DATE = new Date('2027-02-01');
 const FOUNDATION_WEEKS = 19; // weeks of chapter-by-chapter foundation from start date
 const CONVERGENCE_DAYS = 21; // last N days before exam = pure convergence, no new material
+// The chapter card's main call to action: open the chapter study room
+// (video + synced notes + lab + quiz). See public/study.html.
+function chapterStudyHtml(subjectId, idx){
+  return '<a class="ch-study-link" href="'+studyRoomUrl(subjectId, idx)+'">'+svgIcon('film',14)+'進入學習空間：邊看影片邊學</a>';
+}
 // Subject overview uses one canonical YouTube playlist link per adopted
 // course. Individual watch links stay inside chapter tasks below.
 const SUBJECT_PLAYLISTS = {
@@ -377,198 +276,198 @@ function dayInfo(d){
 // task still exists so it isn't silently dropped, it just isn't a
 // clickable link until re-verified.
 const FOUNDATION_CONTENT = {
-    1: {subj:'離散數學', ch:'DM Ch1 邏輯（命題與真值表、邏輯等價）+ Ch2 集合論（集合論、排容原理）',
-        book:'離散上冊（林緯）Ch1–Ch2',
-        vid:[{icon:'🎬',text:'交大OCW 易志偉《離散數學》Lec01 Logic and Proofs (1/5)',url:'https://www.youtube.com/watch?v=klWl-t7V5qY',dur:'1:21:01'},
-             {icon:'🎬',text:'交大OCW 易志偉《離散數學》Lec02 Logic and Proofs (2/5)',url:'https://www.youtube.com/watch?v=ih43BS7GsNY',dur:'36:23'},
-             {icon:'🎬',text:'The Principle of Inclusion-Exclusion',url:'https://www.youtube.com/watch?v=YlKDp03Kg68',dur:'17:35'}]},
-    2: {subj:'離散數學', ch:'DM Ch3 函數（可數/不可數集、鴿籠原理）+ Ch4 數學歸納法與數論（數學歸納法、質數）',
-        book:'離散上冊（林緯）Ch3–Ch4',
-        vid:[{icon:'🎬',text:'TrevTutor：Pigeonhole Principle',url:'https://www.youtube.com/watch?v=2-mxYrCNX60',dur:'16:46'},
-             {icon:'🎬',text:'Proof Using Mathematical Induction — Summation Formulae',url:'https://www.youtube.com/watch?v=ZJeBDVMbhJE',dur:'23:24'}]},
-    3: {subj:'離散數學', ch:'DM Ch5 組合計數（排列組合、二項式係數）+ Ch6 生成函數（一般/指數生成函數）+ Ch7 遞迴關係式（求解法、轉換法）——研究確認這三章是「最容易拿分」的必考點',
-        book:'離散上冊（林緯）Ch5–Ch7',
-        vid:[{icon:'🎬',text:'Generating Functions | Part 1',url:'https://www.youtube.com/watch?v=tA2cqfNh5EM',dur:'31:07'},
-             {icon:'🎬',text:'Solving Recurrences Using Substitution Method',url:'https://www.youtube.com/watch?v=dVPDdHE3RJU',dur:'13:12'}]},
-    4: {subj:'離散數學', ch:'DM Ch8 圖論I（基本定義、路徑、連通、最短路徑）+ Ch9 圖論II（著色問題、平面圖、流量）+ Ch10 樹（生成樹、有根樹、最佳樹）',
-        book:'離散下冊（林緯）Ch8–Ch10',
-        vid:[{icon:'🎬',text:'交大OCW 易志偉《離散數學》Lec22 Graphs (1/3)',url:'https://www.youtube.com/watch?v=q0Vy0gQCB_g',dur:'1:23:28'},
-             {icon:'🎬',text:'交大OCW 易志偉《離散數學》Lec23 Graphs (2/3)',url:'https://www.youtube.com/watch?v=y4sLC9zeEvU',dur:'40:14'},
-             {icon:'🎬',text:'交大OCW 易志偉《離散數學》Lec24 Graphs (3/3)',url:'https://www.youtube.com/watch?v=P2FRYshQ57s',dur:'1:27:09'},
-             {icon:'🎬',text:'Spanning Tree：Discrete Mathematics',url:'https://www.youtube.com/watch?v=6WZvVJ0Q1FA',dur:'43:05'}]},
-    5: {subj:'離散數學', ch:'DM Ch11 二元關係及其應用（等價關係、偏序集、布林代數）+ Ch12 代數結構（群、環與體）+ Ch13 有限狀態機（清大每年必考）',
-        book:'離散下冊（林緯）Ch11–Ch13',
-        vid:[{icon:'🎬',text:'Equivalence Relation',url:'https://www.youtube.com/watch?v=RexPywlCmV8',dur:'6:29'},
-             {icon:'🎬',text:'Neso Academy：Finite State Machine（Finite Automata）',url:'https://www.youtube.com/watch?v=Qa6csfkK7_I',dur:'11:05'}]},
-    6: {subj:'資料結構', ch:'Ch1 基本概念（複雜度分析、Big-O/Θ/Ω、Master Method）+ Ch2 陣列與結構（Array）+ Ch3 堆疊與佇列（Stack/Queue）',
+    1: {subj:'資料結構', ch:'Ch1 基本概念（複雜度分析、Big-O/Θ/Ω、Master Method）+ Ch2 陣列與結構（Array）+ Ch3 堆疊與佇列（Stack/Queue）',
         book:'資結七版（洪逸）Ch1–Ch3',
         vid:[{icon:'🎬',text:'交大OCW 彭文志《資料結構》Ch1 Introduction',url:'https://www.youtube.com/watch?v=3503j2L6qNA',dur:'1:10:42'},
              {icon:'🎬',text:'Time Complexity of a Computer Program',url:'https://www.youtube.com/watch?v=V42FBiohc6c',dur:'9:42'}]},
-    7: {subj:'資料結構', ch:'Ch4 鏈結串列（Linked List各類型）+ Ch5 樹與二元樹（Tree & Binary Tree、走訪Traversal【非常重要】）',
+    2: {subj:'資料結構', ch:'Ch4 鏈結串列（Linked List各類型）+ Ch5 樹與二元樹（Tree & Binary Tree、走訪Traversal【非常重要】）',
         book:'資結七版（洪逸）Ch4–Ch5',
         vid:[{icon:'🎬',text:'Linked List Introduction & Concepts',url:'https://www.youtube.com/watch?v=akErwS16DUg',dur:'27:07'},
              {icon:'🎬',text:'Binary Tree Traversals（Inorder, Preorder, Postorder）',url:'https://www.youtube.com/watch?v=-b2lciNd2L4',dur:'11:07'}]},
-    8: {subj:'資料結構', ch:'Ch6 圖形（表示法、Traversal、Spanning Tree、最短路徑、拓撲排序）+ Ch7 搜尋與排序（Search、Sort）',
+    3: {subj:'資料結構', ch:'Ch6 圖形（表示法、Traversal、Spanning Tree、最短路徑、拓撲排序）+ Ch7 搜尋與排序（Search、Sort）',
         book:'資結七版（洪逸）Ch6–Ch7',
         vid:[{icon:'🎬',text:'Abdul Bari：Graph Traversals - BFS & DFS',url:'https://www.youtube.com/watch?v=pcKY4hjDrxk',dur:'18:30'},
              {icon:'🎬',text:'Abdul Bari：Merge Sort',url:'https://www.youtube.com/watch?v=mB5HXBb_HY8',dur:'20:23'},
              {icon:'🎬',text:'Abdul Bari：Quick Sort',url:'https://www.youtube.com/watch?v=7h1s2SojIRw',dur:'13:42'}]},
-    9: {subj:'資料結構', ch:'Ch8 雜湊（Hashing、衝突處理）+ Ch9 高等樹結構（Heap、AVL樹、2-3樹、紅黑樹、B樹）',
+    4: {subj:'資料結構', ch:'Ch8 雜湊（Hashing、衝突處理）+ Ch9 高等樹結構（Heap、AVL樹、2-3樹、紅黑樹、B樹）',
         book:'資結七版（洪逸）Ch8–Ch9',
         vid:[{icon:'🎬',text:'What is a HashTable Data Structure',url:'https://www.youtube.com/watch?v=MfhjkfocRR0',dur:'7:37'},
              {icon:'🎬',text:'Abdul Bari：Heap',url:'https://www.youtube.com/watch?v=HqPJF2L5h9U',dur:'51:08'},
              {icon:'🎬',text:'MIT 6.006：AVL Trees, AVL Sort',url:'https://www.youtube.com/watch?v=FNeL18KsWPc',dur:'51:59'}]},
-    10:{subj:'線性代數', ch:'LA Ch1 矩陣（定義與運算）+ Ch2 線性方程組與求解（高斯消去、行列式）+ Ch3 向量空間 + Ch4 線性映射',
-        book:'線代上冊（林緯）Ch1–Ch4',
-        vid:[{icon:'🎬',text:'MIT 18.06 L1：Geometry of Linear Equations',url:'https://www.youtube.com/watch?v=ZK3O402wf1c',dur:'39:49'},
-             {icon:'🎬',text:'MIT 18.06 L2：Elimination',url:'https://www.youtube.com/watch?v=QVKj3LADCnA',dur:'47:41'},
-             {icon:'🎬',text:'MIT 18.06 L18：Determinants',url:'https://www.youtube.com/watch?v=srxexLishgY',dur:'49:12'},
-             {icon:'🎬',text:'MIT 18.06 L9：Four Fundamental Subspaces',url:'https://www.youtube.com/watch?v=nHlE7EgJFds',dur:'49:20'}]},
-    11:{subj:'線性代數', ch:'LA Ch5 對角化理論（特徵值/特徵向量、對角化、Cayley-Hamilton）+ Ch7 內積空間（Gram-Schmidt正交化）+ Ch8 各內積算子（SVD）——Ch6 Jordan Form基礎要知道，深入題型可選擇性放（曾有考生反映意外被考到，別完全跳過）',
-        book:'線代下冊（林緯）Ch5、Ch7–Ch8',
-        vid:[{icon:'🎬',text:'MIT 18.06 L21：Eigenvalues',url:'https://www.youtube.com/watch?v=cdZnhQjJu4I',dur:'51:22'},
-             {icon:'🎬',text:'3Blue1Brown：Eigenvectors',url:'https://www.youtube.com/watch?v=PFDu9oVAE-g',dur:'17:15'},
-             {icon:'🎬',text:'MIT 18.06 L29：SVD',url:'https://www.youtube.com/watch?v=TX_vooSnhm8',dur:'40:28'}]},
-    12:{subj:'演算法', ch:'ALG Ch1 Analyzing Algorithms（Asymptotic notation、Recurrence relation、Amortized analysis）+ Ch2 Divide-and-Conquer（Maximum subarray、Matrix multiplication、Closest pair）',
+    5: {subj:'演算法', ch:'ALG Ch1 Analyzing Algorithms（Asymptotic notation、Recurrence relation、Amortized analysis）+ Ch2 Divide-and-Conquer（Maximum subarray、Matrix multiplication、Closest pair）',
         book:'演算法~1~ Ch1–Ch2',
         vid:[{icon:'🎬',text:'Abdul Bari：Merge Sort（分治法範例）',url:'https://www.youtube.com/watch?v=mB5HXBb_HY8',dur:'20:23'},
              {icon:'🎬',text:"Master's Theorem Explained",url:'https://www.youtube.com/watch?v=SLsHKh_OUEM',dur:'7:19'}]},
-    13:{subj:'演算法', ch:'ALG Ch3 Dynamic Programming（Rod cutting、Knapsack、Matrix-chain、Optimal BST、LCS、KMP）——全科最重的一章',
+    6: {subj:'演算法', ch:'ALG Ch3 Dynamic Programming（Rod cutting、Knapsack、Matrix-chain、Optimal BST、LCS、KMP）——全科最重的一章',
         book:'演算法~1~ Ch3',
         vid:[{icon:'🎬',text:'MIT 6.006 L11：DP I',url:'https://www.youtube.com/watch?v=OQ5jsbhAv_M',dur:'51:47'},
              {icon:'🎬',text:'MIT 6.006 L12：DP II',url:'https://www.youtube.com/watch?v=ENyox7kNKeY',dur:'52:11'},
              {icon:'🎬',text:'MIT 6.006 L14：DP IV（Matrix Chain）',url:'https://www.youtube.com/watch?v=ocZMDMZwhCY',dur:'52:41'},
              {icon:'🎬',text:'Abdul Bari：Matrix Chain Multiplication',url:'https://www.youtube.com/watch?v=_WncuhSJZyA',dur:'52:01'}]},
-    14:{subj:'演算法', ch:'ALG Ch4 Graph Algorithms（BFS、DFS、Shortest Paths、MST、Max Flow）+ Ch6 NP-completeness（研究確認清大常考）——Ch5計算幾何、Ch7其他問題較低頻，留到刷題期',
+    7: {subj:'演算法', ch:'ALG Ch4 Graph Algorithms（BFS、DFS、Shortest Paths、MST、Max Flow）+ Ch6 NP-completeness（研究確認清大常考）——Ch5計算幾何、Ch7其他問題較低頻，留到刷題期',
         book:'演算法~1~ Ch4、Ch6',
         vid:[{icon:'🎬',text:'Abdul Bari：BFS（Breadth First Search）',url:'https://www.youtube.com/watch?v=pcKY4hjDrxk',dur:'18:30'},
              {icon:'🎬',text:'WilliamFiset：DFS（Depth First Search）',url:'https://www.youtube.com/watch?v=7fujbpJ0LB4',dur:'10:20'},
              {icon:'🎬',text:'Tushar Roy：Topological Sort',url:'https://www.youtube.com/watch?v=ddTC4Zovtbc',dur:'10:31'},
              {icon:'🎬',text:'Tushar Roy：Strongly Connected Components',url:'https://www.youtube.com/watch?v=RpgcYiky7uw',dur:'24:29'},
              {icon:'🎬',text:'Theory of Computation：P, NP, NP-Complete and NP-Hard',url:'https://www.youtube.com/watch?v=tIE2lkJv20c',dur:'5:06'}]},
-    15:{subj:'計算機組織', ch:'《數位邏輯講義》Ch1–Ch3（二進位系統、布林代數、組合邏輯，精簡讀過即可）+ CA Ch1 指令（MIPS、ISA）+ Ch2 計算機算術（IEEE 754浮點數）',
-        book:'數位邏輯講義 Ch1–Ch3（精簡）+ 計組上冊（張凡）Ch1–Ch2',
-        vid:[{icon:'🎬',text:'Neso Academy：Logic Gates（Part 2）',url:'https://www.youtube.com/watch?v=iogRGu7nbJw',dur:'14:14'},
-             {icon:'🎬',text:'IEEE 754 Floating Point Representation（Single & Double Precision）',url:'https://www.youtube.com/watch?v=sKxdXfH5qko',dur:'12:42'}]},
-    16:{subj:'計算機組織', ch:'CA Ch3 效能評估（Amdahl定律）+ Ch4 處理器資料路徑 + Ch5 管線（Pipeline Hazard，最重要）+ Ch6 記憶體階層與Cache（AMAT計算，最重要）——Ch7儲存裝置、Ch8多重處理器、Ch9基本概念較低頻，留到刷題期',
-        book:'計組上冊（張凡）Ch3–Ch5 + 計組下冊 Ch6',
-        vid:[{icon:'🎬',text:'Pipeline Hazards（Structural, Data and Control Hazards）',url:'https://www.youtube.com/watch?v=t27kbXWP5GY',dur:'15:37'},
-             {icon:'🎬',text:'Average Memory Access Time（AMAT）— Computer Organization',url:'https://www.youtube.com/watch?v=Y1esjWBTf7Q',dur:'6:54'}]},
-    17:{subj:'作業系統', ch:'OS Ch1 導論 + Ch2 Computer System Architecture（Dual Mode、特權指令）+ Ch3 系統作業結構（System Call、Layered/Microkernel）+ Ch4 處理程序（Process、CPU排程FCFS/SJF/RR/Priority）',
+    8: {subj:'作業系統', ch:'OS Ch1 導論 + Ch2 Computer System Architecture（Dual Mode、特權指令）+ Ch3 系統作業結構（System Call、Layered/Microkernel）+ Ch4 處理程序（Process、CPU排程FCFS/SJF/RR/Priority）',
         book:'金寶典四版（洪逸）Ch1–Ch4 + Q講義Q1–Q2',
         vid:[{icon:'🎬',text:'清大OCW 周志遠《作業系統》第1A講',url:'https://www.youtube.com/watch?v=3PfL2WIS22o',dur:'15:57'},
              {icon:'🎬',text:'清大OCW 周志遠《作業系統》第1B講',url:'https://www.youtube.com/watch?v=QK63Mw9hPec',dur:'16:13'},
              {icon:'🎬',text:'清大OCW 周志遠《作業系統》第1C講',url:'https://www.youtube.com/watch?v=wzRwuRrUzNQ',dur:'24:14'},
              {icon:'🎬',text:'清大OCW 周志遠 第9A講 Ch3:Processes Concept',url:'https://www.youtube.com/watch?v=dDghjse91lE',dur:'35:59'},
              {icon:'🎬',text:'清大OCW 周志遠 第9B講 Ch3:Processes Concept',url:'https://www.youtube.com/watch?v=iFRv7y8i7Sw',dur:'11:01'}]},
-    18:{subj:'作業系統', ch:'OS Ch5 死結 Dead Lock（必要條件、預防、Banker Algorithm）+ Ch6 處理程序的協調（Critical Section、Semaphore、Monitor）',
+    9: {subj:'作業系統', ch:'OS Ch5 死結 Dead Lock（必要條件、預防、Banker Algorithm）+ Ch6 處理程序的協調（Critical Section、Semaphore、Monitor）',
         book:'金寶典 Ch5–Ch6 + Q講義Q3–Q4',
         vid:[{icon:'🎬',text:'Gate Smashers：Banker Algorithm',url:'https://www.youtube.com/watch?v=7gMLNiEz3nw',dur:'24:04'},
              {icon:'🎬',text:'Process Synchronisation | Critical Section Problem',url:'https://www.youtube.com/watch?v=sEVfeXqWY-s',dur:'13:32'}]},
-    19:{subj:'作業系統', ch:'OS Ch7 記憶管理（Paging、Segmentation）+ Ch8 虛擬記憶體（Page Replacement Algorithms）+ Ch9 輔助儲存體管理（磁碟排程SCAN/C-SCAN）+ Ch10 檔案系統——基礎期最後一週',
+    10:{subj:'作業系統', ch:'OS Ch7 記憶管理（Paging、Segmentation）+ Ch8 虛擬記憶體（Page Replacement Algorithms）+ Ch9 輔助儲存體管理（磁碟排程SCAN/C-SCAN）+ Ch10 檔案系統——基礎期最後一週',
         book:'金寶典 Ch7–Ch10 + Q講義Q5–Q6',
         vid:[{icon:'🎬',text:'Page Replacement Algorithms（LRU and Optimal）',url:'https://www.youtube.com/watch?v=DXU7SqsYDvg',dur:'16:18'},
              {icon:'🎬',text:'SCAN Disk Scheduling Algorithm',url:'https://www.youtube.com/watch?v=ko8ogLJc1Ko',dur:'5:40'}]},
+    11:{subj:'離散數學', ch:'DM Ch1 邏輯（命題與真值表、邏輯等價）+ Ch2 集合論（集合論、排容原理）',
+        book:'離散上冊（林緯）Ch1–Ch2',
+        vid:[{icon:'🎬',text:'交大OCW 易志偉《離散數學》Lec01 Logic and Proofs (1/5)',url:'https://www.youtube.com/watch?v=klWl-t7V5qY',dur:'1:21:01'},
+             {icon:'🎬',text:'交大OCW 易志偉《離散數學》Lec02 Logic and Proofs (2/5)',url:'https://www.youtube.com/watch?v=ih43BS7GsNY',dur:'36:23'},
+             {icon:'🎬',text:'The Principle of Inclusion-Exclusion',url:'https://www.youtube.com/watch?v=YlKDp03Kg68',dur:'17:35'}]},
+    12:{subj:'離散數學', ch:'DM Ch3 函數（可數/不可數集、鴿籠原理）+ Ch4 數學歸納法與數論（數學歸納法、質數）',
+        book:'離散上冊（林緯）Ch3–Ch4',
+        vid:[{icon:'🎬',text:'TrevTutor：Pigeonhole Principle',url:'https://www.youtube.com/watch?v=2-mxYrCNX60',dur:'16:46'},
+             {icon:'🎬',text:'Proof Using Mathematical Induction — Summation Formulae',url:'https://www.youtube.com/watch?v=ZJeBDVMbhJE',dur:'23:24'}]},
+    13:{subj:'離散數學', ch:'DM Ch5 組合計數（排列組合、二項式係數）+ Ch6 生成函數（一般/指數生成函數）+ Ch7 遞迴關係式（求解法、轉換法）——研究確認這三章是「最容易拿分」的必考點',
+        book:'離散上冊（林緯）Ch5–Ch7',
+        vid:[{icon:'🎬',text:'Generating Functions | Part 1',url:'https://www.youtube.com/watch?v=tA2cqfNh5EM',dur:'31:07'},
+             {icon:'🎬',text:'Solving Recurrences Using Substitution Method',url:'https://www.youtube.com/watch?v=dVPDdHE3RJU',dur:'13:12'}]},
+    14:{subj:'離散數學', ch:'DM Ch8 圖論I（基本定義、路徑、連通、最短路徑）+ Ch9 圖論II（著色問題、平面圖、流量）+ Ch10 樹（生成樹、有根樹、最佳樹）',
+        book:'離散下冊（林緯）Ch8–Ch10',
+        vid:[{icon:'🎬',text:'交大OCW 易志偉《離散數學》Lec22 Graphs (1/3)',url:'https://www.youtube.com/watch?v=q0Vy0gQCB_g',dur:'1:23:28'},
+             {icon:'🎬',text:'交大OCW 易志偉《離散數學》Lec23 Graphs (2/3)',url:'https://www.youtube.com/watch?v=y4sLC9zeEvU',dur:'40:14'},
+             {icon:'🎬',text:'交大OCW 易志偉《離散數學》Lec24 Graphs (3/3)',url:'https://www.youtube.com/watch?v=P2FRYshQ57s',dur:'1:27:09'},
+             {icon:'🎬',text:'Spanning Tree：Discrete Mathematics',url:'https://www.youtube.com/watch?v=6WZvVJ0Q1FA',dur:'43:05'}]},
+    15:{subj:'離散數學', ch:'DM Ch11 二元關係及其應用（等價關係、偏序集、布林代數）+ Ch12 代數結構（群、環與體）+ Ch13 有限狀態機（清大每年必考）',
+        book:'離散下冊（林緯）Ch11–Ch13',
+        vid:[{icon:'🎬',text:'Equivalence Relation',url:'https://www.youtube.com/watch?v=RexPywlCmV8',dur:'6:29'},
+             {icon:'🎬',text:'Neso Academy：Finite State Machine（Finite Automata）',url:'https://www.youtube.com/watch?v=Qa6csfkK7_I',dur:'11:05'}]},
+    16:{subj:'線性代數', ch:'LA Ch1 矩陣（定義與運算）+ Ch2 線性方程組與求解（高斯消去、行列式）+ Ch3 向量空間 + Ch4 線性映射',
+        book:'線代上冊（林緯）Ch1–Ch4',
+        vid:[{icon:'🎬',text:'MIT 18.06 L1：Geometry of Linear Equations',url:'https://www.youtube.com/watch?v=ZK3O402wf1c',dur:'39:49'},
+             {icon:'🎬',text:'MIT 18.06 L2：Elimination',url:'https://www.youtube.com/watch?v=QVKj3LADCnA',dur:'47:41'},
+             {icon:'🎬',text:'MIT 18.06 L18：Determinants',url:'https://www.youtube.com/watch?v=srxexLishgY',dur:'49:12'},
+             {icon:'🎬',text:'MIT 18.06 L9：Four Fundamental Subspaces',url:'https://www.youtube.com/watch?v=nHlE7EgJFds',dur:'49:20'}]},
+    17:{subj:'線性代數', ch:'LA Ch5 對角化理論（特徵值/特徵向量、對角化、Cayley-Hamilton）+ Ch7 內積空間（Gram-Schmidt正交化）+ Ch8 各內積算子（SVD）——Ch6 Jordan Form基礎要知道，深入題型可選擇性放（曾有考生反映意外被考到，別完全跳過）',
+        book:'線代下冊（林緯）Ch5、Ch7–Ch8',
+        vid:[{icon:'🎬',text:'MIT 18.06 L21：Eigenvalues',url:'https://www.youtube.com/watch?v=cdZnhQjJu4I',dur:'51:22'},
+             {icon:'🎬',text:'3Blue1Brown：Eigenvectors',url:'https://www.youtube.com/watch?v=PFDu9oVAE-g',dur:'17:15'},
+             {icon:'🎬',text:'MIT 18.06 L29：SVD',url:'https://www.youtube.com/watch?v=TX_vooSnhm8',dur:'40:28'}]},
+    18:{subj:'計算機組織', ch:'《數位邏輯講義》Ch1–Ch3（二進位系統、布林代數、組合邏輯，精簡讀過即可）+ CA Ch1 指令（MIPS、ISA）+ Ch2 計算機算術（IEEE 754浮點數）',
+        book:'數位邏輯講義 Ch1–Ch3（精簡）+ 計組上冊（張凡）Ch1–Ch2',
+        vid:[{icon:'🎬',text:'Neso Academy：Logic Gates（Part 2）',url:'https://www.youtube.com/watch?v=iogRGu7nbJw',dur:'14:14'},
+             {icon:'🎬',text:'IEEE 754 Floating Point Representation（Single & Double Precision）',url:'https://www.youtube.com/watch?v=sKxdXfH5qko',dur:'12:42'}]},
+    19:{subj:'計算機組織', ch:'CA Ch3 效能評估（Amdahl定律）+ Ch4 處理器資料路徑 + Ch5 管線（Pipeline Hazard，最重要）+ Ch6 記憶體階層與Cache（AMAT計算，最重要）——Ch7儲存裝置、Ch8多重處理器、Ch9基本概念較低頻，留到刷題期',
+        book:'計組上冊（張凡）Ch3–Ch5 + 計組下冊 Ch6',
+        vid:[{icon:'🎬',text:'Pipeline Hazards（Structural, Data and Control Hazards）',url:'https://www.youtube.com/watch?v=t27kbXWP5GY',dur:'15:37'},
+             {icon:'🎬',text:'Average Memory Access Time（AMAT）— Computer Organization',url:'https://www.youtube.com/watch?v=Y1esjWBTf7Q',dur:'6:54'}]},
 };
 // Week-specific task text (matches FOUNDATION_CONTENT — same DM→DS→LA→
 // ALG→CA→OS order, see the comment there for why). Shared by getChecklist()
 // and buildFoundationTasks() so the two never drift out of sync.
 const FOUNDATION_TASK_TEXT = {
-    1: {subj:'離散數學',
-        am:'讀《離散上冊》Ch1 邏輯（命題與真值表、邏輯等價）+ Ch2 集合論（集合論、排容原理）',
-        pm:'真值表練習 × 5 題 + 排容原理應用題 × 3 題',
-        vid:'看 交大易志偉 Logic and Proofs + The Principle of Inclusion-Exclusion',
-        note:'排容原理其實是Ch2（跟集合論同一章），不是跟圖論放一起'},
-    2: {subj:'離散數學',
-        am:'讀《離散上冊》Ch3 函數（鴿籠原理）+ Ch4 數學歸納法與數論（數學歸納法、質數）',
-        pm:'鴿籠原理應用題 × 3 題 + 數學歸納法完整證明 × 5 題',
-        vid:'看 Neso Academy：Pigeonhole Principle + Mathematical Induction',
-        note:'數學歸納法的證明格式要練到能一次寫對，演算法正確性證明會一直用到'},
-    3: {subj:'離散數學',
-        am:'讀《離散上冊》Ch5 組合計數（排列組合、二項式係數）+ Ch6 生成函數 + Ch7 遞迴關係式（求解法）',
-        pm:'排列組合應用題 × 10 題 + 生成函數求解 × 3 題 + 遞迴關係式求通解 × 5 題',
-        vid:'看 Generating Functions Part 1 + Solving Recurrences Using Substitution Method',
-        note:'組合計數、生成函數與遞迴關係式是高頻題型，先寫清楚初始條件再計算'},
-    4: {subj:'離散數學',
-        am:'讀《離散下冊》Ch8 圖論I（路徑、連通、最短路徑）+ Ch9 圖論II（著色、平面圖）+ Ch10 樹（生成樹）',
-        pm:'Euler/Hamilton路徑判斷 × 3 題 + 圖著色問題 × 2 題 + 生成樹手畫 × 3 題',
-        vid:'看 交大易志偉 Lec22 Graphs + Spanning Tree：Discrete Mathematics',
-        note:'圖論與樹一起讀，生成樹可同時銜接資料結構的圖演算法'},
-    5: {subj:'離散數學',
-        am:'讀《離散下冊》Ch11 二元關係及其應用（等價關係、偏序集、布林代數）+ Ch12 代數結構（群）+ Ch13 有限狀態機',
-        pm:'等價關係判斷 × 3 題 + Boolean Algebra基本運算 × 5 題 + 有限狀態機設計 × 2 題',
-        vid:'看 Equivalence Relation + Neso Academy：Finite State Machine',
-        note:'有限狀態機與二元關係列為重點；玻里亞計數掌握基礎公式即可'},
-    6: {subj:'資料結構',
+    1: {subj:'資料結構',
         am:'讀《資結七版》Ch1 基本概念（複雜度分析、Master Method）+ Ch2 陣列與結構 + Ch3 堆疊與佇列',
         pm:'做課本後附練習題 Ch1–Ch3（至少各5題）',
         vid:'看 Abdul Bari：Asymptotic Notations（20分鐘）',
         note:'在書上標記 Master Theorem 三種情況'},
-    7: {subj:'資料結構',
+    2: {subj:'資料結構',
         am:'讀《資結七版》Ch4 鏈結串列（各類型LL）+ Ch5 樹與二元樹（5-5走訪【非常重要】）',
         pm:'手寫Circular Queue操作 × 5題 + 給定一棵樹手寫三種走訪結果 × 5題',
         vid:'看 Abdul Bari：Linked List Introduction + Binary Tree Traversals',
         note:'走訪程式碼抄一遍，用手跑過一棵樹'},
-    8: {subj:'資料結構',
+    3: {subj:'資料結構',
         am:'讀《資結七版》Ch6 圖形（表示法、Traversal、最短路徑、拓撲排序）+ Ch7 搜尋與排序',
         pm:'DFS/BFS手算 × 3題 + Merge/Quick Sort手跑過程 × 3題',
         vid:'看 Abdul Bari：Graph Data Structure + Merge Sort + Quick Sort',
         note:'圖形走訪與排序都要能手算完整過程'},
-    9: {subj:'資料結構',
+    4: {subj:'資料結構',
         am:'讀《資結七版》Ch8 雜湊（衝突處理）+ Ch9 高等樹結構（Heap、AVL樹、2-3/紅黑/B樹）',
         pm:'Hash Table衝突手算 × 3題 + 手畫AVL Tree旋轉過程（LL/RR/LR/RL）各3次',
         vid:'看 Abdul Bari：Hashing + Heap + AVL Tree',
         note:'AVL樹其實在真書Ch9（不是Ch5），資料結構到此結束，下週起轉線性代數'},
-    10:{subj:'線性代數',
-        am:'讀《線代上冊》Ch1 矩陣與線性方程組（高斯消去）+ Ch2 矩陣運算（逆矩陣）+ Ch3 行列式 + Ch4 向量空間',
-        pm:'高斯消去法手算 × 5 題 + 3×3逆矩陣手算 × 3 題 + 行列式Cofactor展開 × 5 題',
-        vid:'看 MIT 18.06 L1 Geometry of Linear Equations + L2 Elimination + L18 Determinants',
-        note:'高斯消去和行列式計算幾乎每校必考，練到能快速手算'},
-    11:{subj:'線性代數',
-        am:'讀《線代下冊》Ch5 對角化理論（特徵值/特徵向量、對角化）+ Ch7 內積空間（Gram-Schmidt）+ Ch8 各內積算子（SVD）',
-        pm:'特徵值/特徵向量計算 × 5 題 + Gram-Schmidt正交化 × 3 題 + SVD分解步驟練習 × 2 題',
-        vid:'看 MIT 18.06 L21 Eigenvalues + 3Blue1Brown Eigenvectors + L29 SVD',
-        note:'特徵多項式 det(A-λI)=0 要熟練；Jordan Form掌握定義與基本求法'},
-    12:{subj:'演算法',
+    5: {subj:'演算法',
         am:'讀《演算法~1~》Ch1 Analyzing Algorithms（Asymptotic notation、Recurrence relation）+ Ch2 Divide-and-Conquer（Maximum subarray、Matrix multiplication）',
         pm:'Recurrence Relation用Master Theorem求解 × 5題 + Maximum Subarray手推 × 2題',
         vid:'看 Abdul Bari：Merge Sort（分治法範例）+ Recurrence Relation教學影片',
         note:'這兩章是全書基礎，複雜度分析要練到直覺反應'},
-    13:{subj:'演算法',
+    6: {subj:'演算法',
         am:'讀《演算法~1~》Ch3 Dynamic Programming（Rod cutting、Knapsack、Matrix-chain、LCS、KMP）',
         pm:'手推 LCS 狀態表 × 3 題 + 手推 0/1 Knapsack dp table × 2 題 + 手填 Matrix Chain m[i][j] 表格 × 3 題',
         vid:'看 MIT 6.006 L11 DP I + L12 DP II + L14 DP IV（Matrix Chain）+ Abdul Bari：Matrix Chain Multiplication',
         note:'DP 是全科最高頻考點，這週要花最多時間，之前的遞迴/歸納法基礎這裡會用上，KMP也在這章（不是資結章節）'},
-    14:{subj:'演算法',
+    7: {subj:'演算法',
         am:'讀《演算法~1~》Ch4 Graph Algorithms（BFS/DFS/最短路徑/MST/最大流）+ Ch6 NP-completeness',
         pm:'手算 BFS/DFS 執行過程 × 3 題 + Dijkstra手算 × 2 題 + NP-Complete問題判斷 × 3 題',
         vid:'看 Abdul Bari：BFS + DFS + Topological Sort + Strongly Connected Components',
         note:'NP理論列為重點；計算幾何與其他問題放到刷題期補強'},
-    15:{subj:'計算機組織',
-        am:'讀《數位邏輯講義》Ch1–Ch3（二進位系統、布林代數、組合邏輯，精簡讀過即可）+ 《計組上冊》Ch1 指令（MIPS）+ Ch2 計算機算術（IEEE 754）',
-        pm:'IEEE 754 浮點數轉換 × 5 題 + 布林函數化簡 × 3 題',
-        vid:'看 Neso Academy：Logic Gates + IEEE 754 Floating Point Representation',
-        note:'數位邏輯是計組的前置基礎，掌握二進位、布林代數與組合邏輯即可'},
-    16:{subj:'計算機組織',
-        am:'讀《計組上冊》Ch3 效能評估（Amdahl定律）+ Ch4 處理器資料路徑 + Ch5 管線（Pipeline Hazard）+ 《計組下冊》Ch6 記憶體階層與Cache（AMAT計算）',
-        pm:'Amdahl定律計算 × 3 題 + Pipeline CPI/Stall 手算 × 5 題 + AMAT計算 × 5 題',
-        vid:'看 Pipeline Hazards + Average Memory Access Time（AMAT）',
-        note:'Pipeline跟Cache幾乎每校必考，這週花最多時間；Ch7儲存裝置、Ch8多重處理器、Ch9基本概念較低頻，留到刷題期，計組到此結束'},
-    17:{subj:'作業系統',
+    8: {subj:'作業系統',
         am:'讀《金寶典》Ch1 導論 + Ch2 電腦系統架構（Dual Mode）+ Ch3 系統作業結構（System Call）+ Ch4 處理程序（CPU排程）',
         pm:'做 Q講義 Q1（Ch1–Ch3）所有例題 + 五狀態圖默寫 × 5 次 + Gantt Chart排程計算 × 5 題（Q講義 Q2）',
         vid:'看 清大OCW 周志遠 第1A–1C講（OS概論）+ 第9A–9B講 Process',
         note:'五狀態圖要能閉眼默寫，Gantt Chart 排程計算每校必出'},
-    18:{subj:'作業系統',
+    9: {subj:'作業系統',
         am:'讀《金寶典》Ch5 死結（四條件、Banker Algorithm）+ Ch6 處理程序的協調（Critical Section、Semaphore、Monitor）',
         pm:'Banker Algorithm 安全狀態判斷 × 5 題（Q講義 Q3）+ Semaphore解同步問題 × 3 題（Q講義 Q4）',
         vid:'看 Abdul Bari：Banker Algorithm + Process Synchronization（Critical Section／Semaphore）',
         note:'Banker Algorithm 要能手算'},
-    19:{subj:'作業系統',
+    10:{subj:'作業系統',
         am:'讀《金寶典》Ch7 記憶管理（Paging）+ Ch8 虛擬記憶體（Page Replacement）+ Ch9 輔助儲存體管理（磁碟排程）+ Ch10 檔案系統',
         pm:'Page Table 位址轉換計算 × 5 題 + FIFO/LRU/Optimal 計算 × 3 題（Q講義 Q5）+ SCAN/C-SCAN磁碟排程手算 × 3 題（Q講義 Q6）',
         vid:'看 Page Replacement Algorithms（LRU/Optimal）+ SCAN Disk Scheduling Algorithm',
         note:'Page Fault與磁碟排程要能快速手算；完成後進入刷題期'},
+    11:{subj:'離散數學',
+        am:'讀《離散上冊》Ch1 邏輯（命題與真值表、邏輯等價）+ Ch2 集合論（集合論、排容原理）',
+        pm:'真值表練習 × 5 題 + 排容原理應用題 × 3 題',
+        vid:'看 交大易志偉 Logic and Proofs + The Principle of Inclusion-Exclusion',
+        note:'排容原理其實是Ch2（跟集合論同一章），不是跟圖論放一起'},
+    12:{subj:'離散數學',
+        am:'讀《離散上冊》Ch3 函數（鴿籠原理）+ Ch4 數學歸納法與數論（數學歸納法、質數）',
+        pm:'鴿籠原理應用題 × 3 題 + 數學歸納法完整證明 × 5 題',
+        vid:'看 Neso Academy：Pigeonhole Principle + Mathematical Induction',
+        note:'數學歸納法的證明格式要練到能一次寫對，演算法正確性證明會一直用到'},
+    13:{subj:'離散數學',
+        am:'讀《離散上冊》Ch5 組合計數（排列組合、二項式係數）+ Ch6 生成函數 + Ch7 遞迴關係式（求解法）',
+        pm:'排列組合應用題 × 10 題 + 生成函數求解 × 3 題 + 遞迴關係式求通解 × 5 題',
+        vid:'看 Generating Functions Part 1 + Solving Recurrences Using Substitution Method',
+        note:'組合計數、生成函數與遞迴關係式是高頻題型，先寫清楚初始條件再計算'},
+    14:{subj:'離散數學',
+        am:'讀《離散下冊》Ch8 圖論I（路徑、連通、最短路徑）+ Ch9 圖論II（著色、平面圖）+ Ch10 樹（生成樹）',
+        pm:'Euler/Hamilton路徑判斷 × 3 題 + 圖著色問題 × 2 題 + 生成樹手畫 × 3 題',
+        vid:'看 交大易志偉 Lec22 Graphs + Spanning Tree：Discrete Mathematics',
+        note:'圖論與樹一起讀，生成樹可同時銜接資料結構的圖演算法'},
+    15:{subj:'離散數學',
+        am:'讀《離散下冊》Ch11 二元關係及其應用（等價關係、偏序集、布林代數）+ Ch12 代數結構（群）+ Ch13 有限狀態機',
+        pm:'等價關係判斷 × 3 題 + Boolean Algebra基本運算 × 5 題 + 有限狀態機設計 × 2 題',
+        vid:'看 Equivalence Relation + Neso Academy：Finite State Machine',
+        note:'有限狀態機與二元關係列為重點；玻里亞計數掌握基礎公式即可'},
+    16:{subj:'線性代數',
+        am:'讀《線代上冊》Ch1 矩陣與線性方程組（高斯消去）+ Ch2 矩陣運算（逆矩陣）+ Ch3 行列式 + Ch4 向量空間',
+        pm:'高斯消去法手算 × 5 題 + 3×3逆矩陣手算 × 3 題 + 行列式Cofactor展開 × 5 題',
+        vid:'看 MIT 18.06 L1 Geometry of Linear Equations + L2 Elimination + L18 Determinants',
+        note:'高斯消去和行列式計算幾乎每校必考，練到能快速手算'},
+    17:{subj:'線性代數',
+        am:'讀《線代下冊》Ch5 對角化理論（特徵值/特徵向量、對角化）+ Ch7 內積空間（Gram-Schmidt）+ Ch8 各內積算子（SVD）',
+        pm:'特徵值/特徵向量計算 × 5 題 + Gram-Schmidt正交化 × 3 題 + SVD分解步驟練習 × 2 題',
+        vid:'看 MIT 18.06 L21 Eigenvalues + 3Blue1Brown Eigenvectors + L29 SVD',
+        note:'特徵多項式 det(A-λI)=0 要熟練；Jordan Form掌握定義與基本求法'},
+    18:{subj:'計算機組織',
+        am:'讀《數位邏輯講義》Ch1–Ch3（二進位系統、布林代數、組合邏輯，精簡讀過即可）+ 《計組上冊》Ch1 指令（MIPS）+ Ch2 計算機算術（IEEE 754）',
+        pm:'IEEE 754 浮點數轉換 × 5 題 + 布林函數化簡 × 3 題',
+        vid:'看 Neso Academy：Logic Gates + IEEE 754 Floating Point Representation',
+        note:'數位邏輯是計組的前置基礎，掌握二進位、布林代數與組合邏輯即可'},
+    19:{subj:'計算機組織',
+        am:'讀《計組上冊》Ch3 效能評估（Amdahl定律）+ Ch4 處理器資料路徑 + Ch5 管線（Pipeline Hazard）+ 《計組下冊》Ch6 記憶體階層與Cache（AMAT計算）',
+        pm:'Amdahl定律計算 × 3 題 + Pipeline CPI/Stall 手算 × 5 題 + AMAT計算 × 5 題',
+        vid:'看 Pipeline Hazards + Average Memory Access Time（AMAT）',
+        note:'Pipeline跟Cache幾乎每校必考，這週花最多時間；Ch7儲存裝置、Ch8多重處理器、Ch9基本概念較低頻，留到刷題期，計組到此結束'},
 };
 
 // ── Task queue (foundation phase only) ───────────────────────────────
@@ -580,9 +479,7 @@ const FOUNDATION_TASK_TEXT = {
 // Book-task minutes are grounded in SUBJECTS' real per-chapter `hrs` figures
 // (data.js), summed for whichever chapters that week covers — not guessed.
 const FOUNDATION_BOOK_MINUTES = {
-  1:480, 2:480, 3:600, 4:720, 5:600, 6:480, 7:600, 8:660, 9:720,
-  10:900, 11:720, 12:480, 13:720, 14:660, 15:600, 16:900,
-  17:720, 18:480, 19:720,
+  1:480, 2:600, 3:660, 4:720, 5:480, 6:720, 7:660, 8:720, 9:480, 10:720, 11:480, 12:480, 13:600, 14:720, 15:600, 16:900, 17:720, 18:600, 19:900,
 };
 function durationToMinutes(value){
   const parts = String(value || '').split(':').map(Number);
@@ -1139,34 +1036,6 @@ async function requestChapterSummary(subjectId,index){
     body.innerHTML='<div class="chapter-summary-content">'+renderChapterSummaryText(j.summary)+'</div>';
   }catch(e){
     body.innerHTML='<div class="diagnostic-error"><b>整理暫時載入失敗</b><span>'+escapeHtml(e.message)+'</span><button type="button" onclick="requestChapterSummary(\''+subjectId+'\','+index+')">重新產生</button></div>';
-  }
-}
-let schoolPlanReturnFocus=null;
-function closeSchoolPlanModal(){
-  const modal=document.getElementById('schoolPlanModal');
-  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
-  if(schoolPlanReturnFocus&&schoolPlanReturnFocus.isConnected)schoolPlanReturnFocus.focus();
-  schoolPlanReturnFocus=null;
-}
-// Same on-demand AI-synthesis pattern as requestChapterSummary, but for a
-// school's 推甄 prep — combines official admission status/method with
-// verified peer-experience points and this student's real mastery data
-// (fetched server-side from mastery_evidence) into one personalized plan.
-async function requestSchoolPrepPlan(en){
-  const u=UNIS.find(function(x){return x.en===en;}),rec=RECOMMEND_ADMISSIONS[en],experience=HACKMD_ADMISSION_GUIDE[en];
-  const modal=document.getElementById('schoolPlanModal'),body=document.getElementById('schoolPlanBody');if(!u||!rec||!modal||!body)return;
-  if(!modal.classList.contains('open'))schoolPlanReturnFocus=document.activeElement;
-  document.getElementById('schoolPlanKicker').textContent=u.en;
-  document.getElementById('schoolPlanTitle').textContent=u.name;
-  body.innerHTML='<div class="diagnostic-loading"><span></span><p>正在整理這間學校的準備建議…</p></div>';
-  modal.classList.add('open');modal.setAttribute('aria-hidden','false');modal.querySelector('.chapter-tool-close')?.focus();
-  try{
-    const r=await fetch('/api/school-prep-plan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({school:u.name,status:rec.status,method:rec.method,materials:rec.materials,subjects:u.subjs.join('、'),peer_points:experience?experience.points.join(' '):''})});
-    const j=await r.json();
-    if(!r.ok||!j.plan)throw new Error(j.message||'目前無法產生建議');
-    body.innerHTML='<div class="chapter-summary-content">'+renderChapterSummaryText(j.plan)+'</div>';
-  }catch(e){
-    body.innerHTML='<div class="diagnostic-error"><b>建議暫時載入失敗</b><span>'+escapeHtml(e.message)+'</span><button type="button" onclick="requestSchoolPrepPlan(\''+en+'\')">重新產生</button></div>';
   }
 }
 async function reportReviewResult(subjectId,index){
@@ -1871,59 +1740,6 @@ function goSec(id, el){
   setTimeout(renderAiContextDock,0);
 }
 
-function setSchoolInfoMode(mode, el){
-  if(['all','recommend','exam'].indexOf(mode) === -1) mode = 'all';
-  var section = document.getElementById('sec-schools');
-  if(section) section.dataset.schoolMode = mode;
-  document.querySelectorAll('[data-school-mode]').forEach(function(btn){
-    var selected = btn.dataset.schoolMode === mode;
-    btn.classList.toggle('active', selected);
-    btn.setAttribute('aria-pressed', selected ? 'true' : 'false');
-  });
-  if(mode==='exam')setAdmissionStage('all');
-  if(el) noteUiAction();
-}
-
-function setAdmissionStage(stage, el){
-  var valid=['all','partial','upcoming','pending'];
-  if(valid.indexOf(stage)===-1)stage='all';
-  document.querySelectorAll('#uniGrid .uni-card').forEach(function(card){
-    card.classList.toggle('admission-stage-hidden',stage!=='all'&&card.dataset.admissionStage!==stage);
-  });
-  document.querySelectorAll('[data-admission-stage-filter]').forEach(function(btn){
-    var active=btn.dataset.admissionStageFilter===stage;
-    btn.classList.toggle('active',active);
-    btn.setAttribute('aria-pressed',String(active));
-  });
-  var reset=document.querySelector('.admission-radar-reset');
-  if(reset)reset.hidden=stage==='all';
-  if(el)noteUiAction();
-}
-
-function renderAdmissionRadar(){
-  var metricsRoot=document.getElementById('admissionRadarMetrics');
-  var actionRoot=document.getElementById('admissionNextAction');
-  if(!metricsRoot||!actionRoot)return;
-  var definitions=[
-    {stage:'partial',label:'已有官方資訊',hint:'現在可先核對',icon:'check-circle'},
-    {stage:'upcoming',label:'近期預計公告',hint:'9月重點追蹤',icon:'calendar'},
-    {stage:'pending',label:'等待正式簡章',hint:'不預填日期',icon:'clock'}
-  ];
-  metricsRoot.innerHTML=definitions.map(function(item){
-    var count=UNIS.filter(function(u){return RECOMMEND_ADMISSIONS[u.en]?.stage===item.stage;}).length;
-    return '<button type="button" class="admission-radar-metric" data-admission-stage-filter="'+item.stage+'" aria-pressed="false" onclick="setAdmissionStage(\''+item.stage+'\',this)">'
-      +'<span class="admission-radar-metric-icon">'+svgIcon(item.icon,15)+'</span>'
-      +'<strong>'+count+'</strong><span>'+item.label+'</span><small>'+item.hint+'</small></button>';
-  }).join('');
-  var now=new Date();
-  var milestone=new Date(2026,8,11);
-  var title=now<milestone?'現在先做：完成共用備審母版':'現在先做：逐校核對正式簡章';
-  var detail=now<milestone
-    ?'先備妥一頁履歷、成績與排名、專題貢獻摘要、研究方向及推薦人清單；9/11起優先回查中山，接著追蹤清大、陽明交大與北科。'
-    :'先從已到公告節點的學校開始，逐項核對名額、必繳資料、推薦函格式、字數限制與複試日期；不要直接沿用前一年度規則。';
-  actionRoot.innerHTML='<span>'+svgIcon('target',16)+'</span><div><strong>'+title+'</strong><p>'+detail+'</p></div>';
-}
-
 // ── Init ──────────────────────────────────────────────────────────
 async function init(){
   // Navigation is always explicit. Remove legacy remembered positions so
@@ -1941,27 +1757,12 @@ async function init(){
   renderGreetingHeader();
   renderCalContainer();
   renderGlobalTimer();
-  renderAdmissionRadar();
-
-  var commonGuide = HACKMD_ADMISSION_GUIDE.common;
-  var guideRoot = document.getElementById('admissionExperienceGuide');
-  if(guideRoot && commonGuide){
-    var guideEvidence = document.getElementById('admissionGuideEvidence');
-    if(guideEvidence) guideEvidence.textContent = '非官方 · '+commonGuide.sources.length+'篇交叉';
-    guideRoot.innerHTML = '<div class="experience-warning">考生心得只能用來準備，不能當作116招生規則或錄取門檻。</div>'
-      +'<ul>'+commonGuide.points.map(function(point){ return '<li>'+point+'</li>'; }).join('')+'</ul>'
-      +'<div class="experience-sources">'+commonGuide.sources.map(function(source){
-        return '<a href="'+source.url+'" target="_blank" rel="noopener">'+source.label+'</a>';
-      }).join('')+'</div>';
-  }
 
   // Schools (priority schools first)
   // No more 主力校/有複試 categorization or filter chips — the user
   // explicitly didn't want schools sorted/tagged into tiers, just clear
   // per-school facts. Natural UNIS order (by `n`) is used as-is.
   document.getElementById('uniGrid').innerHTML = UNIS.map(function(u){
-    var rec = RECOMMEND_ADMISSIONS[u.en];
-    var experience = HACKMD_ADMISSION_GUIDE[u.en];
     // One mini-card per department that shares this exam — the school's
     // own 資工所 program first, then any relatedDepts — each showing what
     // it tests, weighting if known, and complex/second-stage-exam status,
@@ -1993,12 +1794,11 @@ async function init(){
       +'</div>';
     }).join('');
 
-    return '<details class="uni-card" data-admission-stage="'+(rec?.stage||'pending')+'">'
+    return '<details class="uni-card">'
       +'<summary class="uni-summary">'
         +'<div><div class="uni-name">'+u.name+'</div><div class="uni-en">'+u.en+' · '+u.loc+'</div></div>'
       +'<div class="uni-summary-facts">'
-        +(rec?'<div class="summary-recommend"><span class="admission-status status-'+rec.stage+'">'+rec.stageLabel+'</span><strong>116推甄｜'+rec.status+'</strong></div>':'')
-        +'<span class="summary-exam">115考試參考｜'+u.exam+' · '+u.examFormat+'</span>'
+        +'<span class="summary-exam">115考試｜'+u.exam+' · '+u.examFormat+'</span>'
       +'</div>'
         +'<span class="expand-icon uni-summary-chevron" aria-hidden="true"></span>'
       +'</summary>'
@@ -2014,27 +1814,6 @@ async function init(){
         +'<div class="ir"><span class="il">考試地點</span><span class="iv">'+u.place+'</span></div>'
         +'<div class="ir"><span class="il">放榜日期</span><span class="iv">115年'+u.result+'</span></div>'
       +'</div>'
-
-      // Section 2 — current 116 recommendation-admission tracking. Unknown
-      // dates stay explicitly pending instead of inheriting last year's dates.
-      +(rec?'<div class="card-section recommend-section">'
-        +'<div class="card-section-hd recommend-heading"><span>116學年度推甄資訊</span><span class="admission-status status-'+rec.stage+'">'+rec.stageLabel+'</span></div>'
-        +'<div class="ir"><span class="il">公告狀態</span><span class="iv">'+rec.status+'</span></div>'
-        +'<div class="ir"><span class="il">重要時程</span><span class="iv">'+rec.schedule+'</span></div>'
-        +'<div class="ir"><span class="il">甄試方式</span><span class="iv">'+rec.method+'</span></div>'
-        +'<div class="ir"><span class="il">先準備</span><span class="iv">'+rec.materials+'</span></div>'
-        +'<div class="depts-footnote">'+rec.reference+'</div>'
-        +'<div class="rc-links">'
-        +'<a class="lbtn ui-btn" href="'+rec.url+'" target="_blank" rel="noopener">推甄官方資訊 →</a>'
-        +'<button class="lbtn ui-btn" type="button" onclick="event.stopPropagation();requestSchoolPrepPlan(\''+u.en+'\')">AI 準備建議 →</button>'
-        +'</div>'
-      +'</div>':'')
-
-      +(experience?'<div class="card-section experience-section">'
-        +'<div class="card-section-hd recommend-heading"><span>HackMD 考生經驗</span><span class="experience-badge">非官方 · '+(experience.sources.length > 1 ? experience.sources.length+'篇交叉' : '單篇個案')+'</span></div>'
-        +'<ul class="experience-points">'+experience.points.map(function(point){ return '<li>'+point+'</li>'; }).join('')+'</ul>'
-        +'<div class="experience-sources">'+experience.sources.map(function(source){ return '<a href="'+source.url+'" target="_blank" rel="noopener">'+source.label+'</a>'; }).join('')+'</div>'
-      +'</div>':'')
 
       // Section 3 — 系所與考試方式: one small card per department (this
       // school's own 資工所 + any relatedDepts), each with its subjects,
@@ -2180,7 +1959,7 @@ async function init(){
         +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">'
         +'<span class="pri '+priClass+'">'+priLabel+'</span><span class="ch-hrs">'+c.hrs+' · <b class="ch-progress-count">'+chapterDoneCount+'/'+chapterTaskIds.length+'</b></span></div></div>'
         +'<div class="ch-body"><div>'
-        +'<div class="ch-section"><div class="ch-section-lbl">核心考點</div><div class="ch-key">'+c.key+'</div>'+chapterLearningFlowHtml(s,c,idx,chapterDoneCount,chapterTaskIds.length)+'</div>'
+        +'<div class="ch-section"><div class="ch-section-lbl">核心考點</div><div class="ch-key">'+c.key+'</div>'+chapterStudyHtml(s.id,idx)+chapterLearningFlowHtml(s,c,idx,chapterDoneCount,chapterTaskIds.length)+'</div>'
         +(c.peerNote ? '<div class="ch-section ch-peernote-section"><div class="ch-section-lbl">同儕筆記提醒</div><div class="ch-peernote">'+c.peerNote+'</div></div>' : '')
         +'<div class="ch-section"><div class="ch-section-lbl">素材與練習</div><div class="ch-mats">'+matsHtml+'</div></div>'
         +'</div></div>'
@@ -2409,6 +2188,7 @@ async function init(){
   loadChatHistory();
   loadMemories();
   loadDailyCheckin();
+  loadRestart();
   document.body.classList.add('ui-ready');
   renderAiContextDock();
 }
@@ -2624,12 +2404,7 @@ function globalSearchCatalog(){
     if(url) items.push({type:m.type,title:m.name,detail:m.st || '',url:url});
   });
   UNIS.forEach(function(u,idx){
-    var rec = RECOMMEND_ADMISSIONS[u.en];
-    var experience = HACKMD_ADMISSION_GUIDE[u.en];
-    var recSearch = rec ? ' 116推甄 '+rec.status+' '+rec.method+' '+rec.materials : '';
-    var experienceSearch = experience ? ' HackMD考生經驗 '+experience.points.join(' ') : '';
-    var visibleDetail = u.en+'｜116推甄 '+(rec ? rec.stageLabel : '待公告');
-    items.push({type:'學校',title:u.name,detail:visibleDetail,searchText:u.subjs.join(' ')+recSearch+experienceSearch,action:'school',index:idx});
+    items.push({type:'學校',title:u.name,detail:u.en+'｜115考試 '+u.exam,searchText:u.subjs.join(' '),action:'school',index:idx});
   });
   return items;
 }
@@ -2704,3 +2479,99 @@ document.addEventListener('DOMContentLoaded', function(){
     if(e.target.closest('.uni-summary,#matFilterChips .filter-chip')) setTimeout(renderAiContextDock,0);
   });
 });
+
+
+// ── 重啟模式 ─────────────────────────────────────────────────────
+// 只看今天的一小步：今日目標、今天讀了什麼、散步與心情、連續天數與最近
+// 14 天的小格子。純顯示；紀錄由 Claude 寫進 data/study-log.json。
+let restartState = null;
+let restartTimer = null;
+const RESTART_TIMER_KEY = 'restart-timer-end';
+function restartTimerEnd(){ try{ return Number(localStorage.getItem(RESTART_TIMER_KEY)) || 0; }catch(e){ return restartTimerMem || 0; } }
+let restartTimerMem = 0;
+function setRestartTimerEnd(v){ restartTimerMem = v; try{ if(v) localStorage.setItem(RESTART_TIMER_KEY, String(v)); else localStorage.removeItem(RESTART_TIMER_KEY); }catch(e){} }
+setInterval(function(){ if(document.visibilityState==='visible') loadRestart(); }, 60000);
+async function loadRestart(){
+  try{
+    const r = await fetch('/api/restart');
+    if(!r.ok) return;
+    restartState = await r.json();
+    renderRestart();
+  }catch(e){ /* server not running — skip */ }
+}
+async function restartPost(url, body){
+  try{
+    const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body||{}) });
+    if(r.ok){ restartState = await r.json(); renderRestart(); }
+  }catch(e){}
+}
+function restartLog(kind, extra){ return restartPost('/api/restart/log', Object.assign({kind}, extra||{})); }
+function restartUndo(kind){ return restartPost('/api/restart/undo', {kind}); }
+function startRestartTimer(){
+  setRestartTimerEnd(Date.now() + 25*60*1000);
+  tickRestartTimer();
+}
+function cancelRestartTimer(){ setRestartTimerEnd(0); tickRestartTimer(); }
+function tickRestartTimer(){
+  if(restartTimer){ clearInterval(restartTimer); restartTimer = null; }
+  const el = document.getElementById('restartTimerText');
+  const end = restartTimerEnd();
+  const update = () => {
+    const left = end - Date.now();
+    const box = document.getElementById('restartTimerBox');
+    if(!box) return;
+    if(!end){ box.classList.remove('running'); if(el) el.textContent = '25:00'; return; }
+    if(left <= 0){
+      clearInterval(restartTimer); restartTimer = null;
+      setRestartTimerEnd(0);
+      box.classList.remove('running');
+      restartLog('pomodoro');
+      const msg = document.getElementById('restartMsg');
+      if(msg) msg.textContent = '完成一個番茄鐘了，真的很棒。休息 5 分鐘，喝口水。';
+      return;
+    }
+    box.classList.add('running');
+    const m = Math.floor(left/60000), s = Math.floor((left%60000)/1000);
+    const t = document.getElementById('restartTimerText');
+    if(t) t.textContent = String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  };
+  update();
+  if(end) restartTimer = setInterval(update, 1000);
+}
+function renderRestart(){
+  // 2026/9/25：純顯示。紀錄由 Claude 寫進 data/study-log.json，這裡只負責呈現。
+  const card = document.getElementById('restartCard');
+  const st = restartState;
+  if(!card || !st) return;
+  const t = st.todayStats, tg = st.target;
+  const fmtMin = function(m){ m = Math.round(m||0); return m >= 60 ? Math.floor(m/60)+' 小時'+(m%60 ? ' '+(m%60)+' 分' : '') : m+' 分'; };
+  const pct = Math.min(100, Math.round((t.studyMinutes / Math.max(1, tg.minutes)) * 100));
+  const walkOk = t.walk >= tg.walk;
+  const weekLabel = st.week === 0 ? '明天正式開始' : '重啟第 '+st.week+' 週';
+  const cells = st.days.map(function(d){
+    const lv = d.studyMinutes >= 100 ? 3 : d.studyMinutes >= 50 ? 2 : d.studyMinutes >= 20 ? 1 : 0;
+    const isToday = d.date === st.today;
+    const tip = d.date.slice(5).replace('-','/') + '：讀書 '+fmtMin(d.studyMinutes)+(d.walk?'・散步 '+d.walk+' 分':'')+(d.mood?'・心情 '+d.mood:'');
+    return '<span class="rs-cell lv'+lv+(isToday?' today':'')+'" title="'+escapeHtml(tip)+'"></span>';
+  }).join('');
+  const items = (t.items||[]).length
+    ? '<ul class="rs-items">'+t.items.map(function(it){ return '<li><span class="rs-item-subj">'+escapeHtml(it.subject||'')+'</span>'+escapeHtml(it.what||'')+'<span class="rs-item-min">'+fmtMin(it.minutes)+'</span></li>'; }).join('')+'</ul>'
+    : '<div class="rs-empty">今天還沒有紀錄。讀完跟 Claude 說一聲就會出現在這裡。</div>';
+  const done = t.studyMinutes >= tg.minutes;
+  card.innerHTML =
+    '<div class="rs-head"><div><div class="rs-kicker">重啟模式</div><div class="rs-title">今天的一小步</div></div>'
+    + '<div class="rs-streak"><b>'+st.streak+'</b><span>連續天數</span></div></div>'
+    + '<div class="rs-sub">'+escapeHtml(weekLabel)+'・今日目標：'+escapeHtml(tg.label)+'</div>'
+    + '<div class="rs-lines"><div class="rs-line"><span class="rs-tag rs-tag-exam">考科</span>'+escapeHtml(st.examFocus||'')+'</div></div>'
+    + '<div class="rs-today">'
+    +   '<div class="rs-today-top"><span class="rs-goal-lbl">今天讀書</span><b class="rs-today-min">'+fmtMin(t.studyMinutes)+'</b><span class="rs-today-of">／目標 '+fmtMin(tg.minutes)+'</span></div>'
+    +   '<div class="rs-bar"><span style="width:'+pct+'%"></span></div>'
+    +   items
+    +   '<div class="rs-stats"><span class="rs-walk'+(walkOk?' on':'')+'">散步 '+(t.walk ? t.walk+' 分' : '還沒')+'</span>'
+    +   '<span class="rs-sep">・</span><span>心情 '+(t.mood ? t.mood+'／10' : '—')+'</span>'
+    +   '<span class="rs-sep">・</span><span>這 7 天共 '+fmtMin(st.last7Minutes)+'</span></div>'
+    + '</div>'
+    + '<div class="rs-grid-wrap"><span class="rs-grid-lbl">最近 14 天</span><span class="rs-grid">'+cells+'</span><span class="rs-grid-note">這 7 天有讀書 '+st.last7Studied+' 天</span></div>'
+    + '<div class="rs-msg" id="restartMsg">'+(done ? '今天的目標完成了。多讀是加分，不讀也沒關係。' : '讀一小段就算數，不用補昨天的。')+'</div>';
+  card.hidden = false;
+}

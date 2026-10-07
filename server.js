@@ -38,7 +38,16 @@ function serveIndex(req, res) {
 app.get(['/', '/index.html'], serveIndex);
 
 app.use('/vendor/katex', express.static(path.join(__dirname, 'node_modules', 'katex', 'dist'), { maxAge: '30d', etag: true }));
-app.use(express.static(PUBLIC_DIR, { maxAge: '30d', etag: true }));
+app.use('/vendor/three', express.static(path.join(__dirname, 'node_modules', 'three'), { maxAge: '30d', etag: true }));
+// Chapter labs change often while their content is being built — always revalidate.
+app.use('/lab', express.static(path.join(PUBLIC_DIR, 'lab'), { maxAge: 0, etag: true }));
+app.use('/notes', express.static(path.join(PUBLIC_DIR, 'notes'), { maxAge: 0, etag: true }));
+// Assets are versioned with ?v= and cached long; HTML pages must always
+// revalidate so a new ?v= reference is picked up immediately.
+app.use(express.static(PUBLIC_DIR, {
+  maxAge: '30d', etag: true,
+  setHeaders: (res, filePath) => { if (/\.html$|resources\.json$/.test(filePath)) res.setHeader('Cache-Control', 'no-cache'); },
+}));
 
 const PORT = process.env.PORT || 3210;
 
@@ -98,11 +107,19 @@ app.post('/api/settings', (req, res) => {
 
 // ── Task queue (foundation phase — finite content, stable task ids) ──
 app.get('/api/tasks/done', (req, res) => {
-  res.json({ done: db.getDoneTaskIds() });
+  const ids = new Set(db.getDoneTaskIds());
+  readStudyLog().done.forEach((d) => d && d.task_id && ids.add(String(d.task_id)));
+  res.json({ done: Array.from(ids) });
 });
 
 app.get('/api/tasks/done-dates', (req, res) => {
-  res.json({ dates: db.getTaskDoneDates() });
+  const dates = db.getTaskDoneDates();
+  readStudyLog().done.forEach((d) => {
+    if (!d || !d.task_id || !/^\d{4}-\d{2}-\d{2}$/.test(d.date || '')) return;
+    const list = (dates[d.date] = dates[d.date] || []);
+    if (!list.includes(String(d.task_id))) list.push(String(d.task_id));
+  });
+  res.json({ dates });
 });
 
 app.post('/api/tasks/:id/toggle', (req, res) => {
@@ -114,6 +131,16 @@ app.post('/api/tasks/:id/set', (req, res) => {
   if (typeof req.body?.done !== 'boolean') return res.status(400).json({ error: 'done must be boolean' });
   db.setTaskDone(req.params.id, req.body.done);
   res.json({ done: req.body.done, all: db.getDoneTaskIds() });
+});
+
+// ── Study room: the user's own notes per chapter ───────────────────
+app.get('/api/chapter-notes/:key', (req, res) => {
+  res.json(db.getChapterNote(req.params.key) || { key: req.params.key, content: '', updated_at: null });
+});
+app.post('/api/chapter-notes/:key', (req, res) => {
+  const content = String(req.body?.content ?? '').slice(0, 100000);
+  db.setChapterNote(req.params.key, content);
+  res.json(db.getChapterNote(req.params.key));
 });
 
 // ── Adaptive learning evidence ─────────────────────────────────────
@@ -368,59 +395,6 @@ ${personalization}
 
 const SUBJECT_NAMES = { ds: '資料結構', alg: '演算法', os: '作業系統', la: '線性代數', dm: '離散數學', ca: '計算機組織' };
 
-// On-demand, per-school 推甄 prep synthesis — combines the official
-// admission status/method (already verified against real sources) with any
-// verified peer-experience points and this student's own recorded practice
-// accuracy (from mastery_evidence) into one personalized plan, instead of
-// generic "how to prep for grad school" advice that ignores their real data.
-app.post('/api/school-prep-plan', async (req, res) => {
-  const school = String(req.body?.school || '').slice(0, 60);
-  const status = String(req.body?.status || '').slice(0, 300);
-  const method = String(req.body?.method || '').slice(0, 300);
-  const materials = String(req.body?.materials || '').slice(0, 300);
-  const subjects = String(req.body?.subjects || '').slice(0, 200);
-  const peerPoints = String(req.body?.peer_points || '').slice(0, 800);
-  if (!school) return res.status(400).json({ error: 'missing school' });
-
-  const bySubject = {};
-  db.getMasteryEvidence().forEach((e) => {
-    const s = bySubject[e.subject_id] || { correct: 0, total: 0 };
-    s.correct += e.correct; s.total += e.total;
-    bySubject[e.subject_id] = s;
-  });
-  const masterySummary = Object.keys(bySubject)
-    .map((id) => `${SUBJECT_NAMES[id] || id}：${Math.round((bySubject[id].correct / bySubject[id].total) * 100)}%（${bySubject[id].correct}/${bySubject[id].total}題）`)
-    .join('、');
-  const personalization = masterySummary
-    ? `這位學生目前有練習紀錄的科目正確率：${masterySummary}。請根據這個資料，針對這間學校實際會考的科目，具體指出應該優先補強哪一科、哪個方向，不要空泛建議「要多練習」。沒有列出正確率的科目代表還沒有紀錄，不要假裝知道。`
-    : '這位學生目前還沒有任何診斷測驗紀錄，先給均衡、按部就班的準備建議即可，不要假裝知道他的弱點。';
-
-  const prompt = `你是台灣資工所推甄申請顧問。請針對「${school}」這間學校的116學年度推甄，幫這位學生寫一份具體、可執行的準備建議。
-
-官方公告狀態：${status}
-甄試方式：${method}
-需先準備的資料：${materials}
-這間學校會考的科目：${subjects}
-${peerPoints ? '同儕心得整理的重點（非官方，只能當準備方向參考，不可當成錄取規則）：' + peerPoints : ''}
-${personalization}
-
-寫作規則：
-- 用繁體中文，語氣直接、實用，不要空話，不要輸出開場白或「以下是」這種話，直接從第一個「## 」標題開始寫。
-- 固定用這幾個區塊，每個用「## 標題」開頭：
-  ## 這間學校的準備重心
-  ## 根據你目前進度該優先做的事
-  ## 備審或口試準備提醒
-  ## 一句話總結
-- 「這間學校的準備重心」要說明這個甄試方式（書審／筆試／口試）真正在考什麼，不是重複貼一次官方公告原文。
-- 「根據你目前進度該優先做的事」必須基於上面給的正確率資料給具體建議；如果沒有正確率資料，就給一般性但仍具體的準備順序建議，不要虛構學生的弱點。
-- 官方公告與同儕心得如果衝突，要提醒以官方公告為準；同儕心得的內容要標明是「個案經驗」，不能講得像保證會考。
-- 條列時每行開頭用「- 」。
-- 長度大約400–700字。`;
-  const result = await runCodex(prompt, { standalone: true });
-  if (result.errMsg) return res.status(result.status).json({ error: 'plan_unavailable', message: result.errMsg });
-  res.json({ plan: result.reply.trim() });
-});
-
 // On-demand AI reading of the same numbers the rule-based "smart overview"
 // cards on the calendar tab already show (due reviews, weakest verified
 // chapter, weekly accuracy, time calibration) — turns three disconnected
@@ -435,7 +409,7 @@ app.post('/api/daily-brief', async (req, res) => {
   const recentAccuracy = String(req.body?.recent_accuracy || '').slice(0, 10);
   const timeCalibration = String(req.body?.time_calibration || '').slice(0, 100);
 
-  const prompt = `你是台灣資工所推甄／考試準備的讀書教練。請根據以下這位學生今天的真實進度數據，寫一段今天具體該怎麼安排的建議。
+  const prompt = `你是台灣資工所考試準備的讀書教練。請根據以下這位學生今天的真實進度數據，寫一段今天具體該怎麼安排的建議。
 
 目前基礎期第 ${currentWeek || '未知'} 週${nextTask ? '，下一個該做的任務：' + nextTask : ''}
 到期待複習：${dueReviewCount} 個章節${dueReviews ? '（' + dueReviews + '）' : ''}
@@ -523,13 +497,122 @@ const CHECKIN_PROMPT =
   '寫一段 2–4 句、口語、像朋友早上打招呼那樣的訊息：帶一點今天的進度或提醒，不要條列、不要長篇大論、' +
   '不要說「以下是」這種開場白，直接講重點就好。用繁體中文。）';
 
+
+// ── 重啟模式（2026/9 加入）─────────────────────────────────────────
+// 不看「還剩多少任務／小時」的總量，只看今天的一小步：每天最小目標會
+// 隨週數慢慢加量（第 1 週 1 個番茄鐘 → 第 4 週起約 2.5 小時），並顯示
+// 連續天數與最近 14 天的小格子，讓進步看得見。
+const RESTART_START = '2026-09-24';
+function localDate(d = new Date()) {
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+function addDays(dateStr, n) {
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setDate(d.getDate() + n);
+  return localDate(d);
+}
+function restartWeek(today) {
+  const diff = Math.floor((new Date(today + 'T12:00:00') - new Date(RESTART_START + 'T12:00:00')) / 86400000);
+  return diff < 0 ? 0 : Math.floor(diff / 7) + 1;
+}
+function restartTarget(week) {
+  if (week <= 1) return { minutes: 25, walk: 10, label: '讀 25 分鐘＋散步 10 分' };
+  if (week === 2) return { minutes: 50, walk: 15, label: '讀 50 分鐘＋散步 15 分' };
+  if (week === 3) return { minutes: 100, walk: 20, label: '讀 1 小時 40 分＋散步 20 分' };
+  return { minutes: 150, walk: 20, label: '讀 2.5 小時＋散步 20 分' };
+}
+// 2026/9/25：網站改成純顯示。紀錄由 Claude 寫進 data/study-log.json
+// （每次請求都重讀，不用重開伺服器）。格式：
+// { "focus": "目前考科重點", "entries": [ { "date":"YYYY-MM-DD", "kind":"study"|"walk"|"mood",
+//   "subject":"ds", "minutes":10, "what":"讀了什麼", "mood":7 } ],
+//   "done": [ { "task_id":"w1-video", "date":"YYYY-MM-DD" } ] }
+const STUDY_LOG_PATH = path.join(__dirname, 'data', 'study-log.json');
+function readStudyLog() {
+  try {
+    const j = JSON.parse(fs.readFileSync(STUDY_LOG_PATH, 'utf8').replace(/^\uFEFF/, ''));
+    return { focus: j.focus || '', entries: Array.isArray(j.entries) ? j.entries : [], done: Array.isArray(j.done) ? j.done : [] };
+  } catch (e) {
+    return { focus: '', entries: [], done: [] };
+  }
+}
+function restartStatus() {
+  const today = localDate();
+  const since = addDays(today, -60);
+  const logs = db.getRestartLog(since);
+  const study = db.getStudyMinutesByDate(since);
+  const slog = readStudyLog();
+  const byDate = {};
+  const get = (d) => (byDate[d] = byDate[d] || { date: d, pomodoros: 0, walk: 0, mood: null, studyMinutes: 0, items: [] });
+  for (const l of logs) {
+    const r = get(l.date);
+    if (l.kind === 'pomodoro') { r.pomodoros += 1; r.studyMinutes += (l.minutes || 25); }
+    else if (l.kind === 'walk') r.walk += (l.minutes || 10);
+    else if (l.kind === 'mood') r.mood = l.mood;
+  }
+  for (const s of study) get(s.date).studyMinutes += s.minutes || 0;
+  for (const e of slog.entries) {
+    if (!e || !/^\d{4}-\d{2}-\d{2}$/.test(e.date || '') || e.date < since) continue;
+    const r = get(e.date);
+    const kind = e.kind || 'study';
+    if (kind === 'study') {
+      const m = Math.max(0, Number(e.minutes) || 0);
+      r.studyMinutes += m;
+      r.items.push({ subject: SUBJECT_NAMES[e.subject] || e.subject || '', what: e.what || '', minutes: m });
+    } else if (kind === 'walk') r.walk += Math.max(0, Number(e.minutes) || 0);
+    else if (kind === 'mood') r.mood = Number(e.mood) || null;
+  }
+  const didStudy = (d) => { const r = byDate[d]; return !!r && r.studyMinutes >= 20; };
+  let streak = 0;
+  let cursor = didStudy(today) ? today : addDays(today, -1);
+  while (didStudy(cursor)) { streak += 1; cursor = addDays(cursor, -1); }
+  const empty = (d) => ({ date: d, pomodoros: 0, walk: 0, mood: null, studyMinutes: 0, items: [] });
+  const days = [];
+  for (let i = 13; i >= 0; i--) { const d = addDays(today, -i); days.push(byDate[d] || empty(d)); }
+  const week = restartWeek(today);
+  const weekDays = days.slice(-7);
+  return {
+    start: RESTART_START, today, week, target: restartTarget(week), streak,
+    todayStats: byDate[today] || empty(today),
+    days, last7Studied: weekDays.filter((x) => didStudy(x.date)).length,
+    last7Minutes: weekDays.reduce((s, x) => s + x.studyMinutes, 0),
+    examFocus: slog.focus || '資料結構 → 演算法 → 作業系統（11/21 前）',
+  };
+}
+app.get('/api/restart', (req, res) => res.json(restartStatus()));
+app.post('/api/restart/log', (req, res) => {
+  const kind = String((req.body || {}).kind || '');
+  if (!['pomodoro', 'walk', 'mood'].includes(kind)) return res.status(400).json({ error: 'bad kind' });
+  const minutes = kind === 'pomodoro' ? 25 : kind === 'walk' ? Math.max(1, Math.min(180, Number(req.body.minutes) || 10)) : null;
+  const mood = kind === 'mood' ? Math.max(1, Math.min(10, Number(req.body.mood) || 5)) : null;
+  db.addRestartLog(localDate(), kind, minutes, mood);
+  res.json(restartStatus());
+});
+app.post('/api/restart/undo', (req, res) => {
+  const kind = String((req.body || {}).kind || '');
+  db.undoRestartLog(localDate(), kind);
+  res.json(restartStatus());
+});
+function buildCheckinPrompt() {
+  const st = restartStatus();
+  const y = st.days[st.days.length - 2];
+  const info = `重啟模式資料：今天 ${st.today}，重啟第 ${st.week} 週（${st.week === 0 ? '明天正式開始，今天可以先暖身' : '進行中'}），` +
+    `今日最小目標＝${st.target.label}；連續讀書 ${st.streak} 天；最近 7 天有讀書 ${st.last7Studied} 天；` +
+    `昨天讀書 ${y.studyMinutes} 分。`;
+  return '（系統自動觸發：新的一天開始，使用者剛打開這個網頁。她最近狀態低落、容易自責，正在用「重啟模式」慢慢把讀書節奏找回來。' +
+    info +
+    '請先執行 tools\\plan-tool.cmd get-study-context 找出佇列裡第一個還沒完成的內容，然後寫 2–4 句像朋友早上打招呼的話：' +
+    '把今天的最小目標具體指到那個內容的一小段（例如某支影片的前 25 分鐘或課本某一小節）；有連續天數就具體肯定她，昨天沒讀也不要責備，只說今天讀一小段就好。' +
+    '不要提剩下多少任務、剩多少小時這類總量，不要條列、不要說教。用繁體中文。）';
+}
+
 app.get('/api/checkin', async (req, res) => {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDate();
   const existing = db.getDailyCheckin(today);
   if (existing) return res.json({ date: today, message: existing.message, isNew: false });
 
   syncMemoryIntoAgentsMd();
-  const result = await runCodex(CHECKIN_PROMPT);
+  const result = await runCodex(buildCheckinPrompt());
   if (result.errMsg) {
     // Don't cache failures — next page load should just try again rather
     // than being stuck with an error message as "today's greeting".

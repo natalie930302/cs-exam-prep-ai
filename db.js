@@ -38,6 +38,19 @@ CREATE TABLE IF NOT EXISTS ai_memory (
   content TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE TABLE IF NOT EXISTS chapter_notes (
+  key TEXT PRIMARY KEY,
+  content TEXT NOT NULL,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS restart_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  date TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  minutes INTEGER,
+  mood INTEGER,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 CREATE TABLE IF NOT EXISTS daily_checkins (
   date TEXT PRIMARY KEY,
   message TEXT NOT NULL,
@@ -357,7 +370,39 @@ function setDailyCheckin(date, message) {
   ).run(date, message);
 }
 
+// 重啟模式：每日最小目標（番茄鐘、散步、心情）的簡單紀錄。
+function addRestartLog(date, kind, minutes, mood) {
+  if (kind === 'mood') db.prepare("DELETE FROM restart_log WHERE date = ? AND kind = 'mood'").run(date);
+  db.prepare('INSERT INTO restart_log(date, kind, minutes, mood) VALUES (?, ?, ?, ?)')
+    .run(date, kind, minutes == null ? null : minutes, mood == null ? null : mood);
+}
+function undoRestartLog(date, kind) {
+  const row = db.prepare('SELECT id FROM restart_log WHERE date = ? AND kind = ? ORDER BY id DESC LIMIT 1').get(date, kind);
+  if (row) db.prepare('DELETE FROM restart_log WHERE id = ?').run(row.id);
+  return !!row;
+}
+function getRestartLog(sinceDate) {
+  return db.prepare('SELECT date, kind, minutes, mood FROM restart_log WHERE date >= ? ORDER BY date, id').all(sinceDate);
+}
+function getStudyMinutesByDate(sinceDate) {
+  return db.prepare("SELECT date(started_at, 'localtime') AS date, SUM(COALESCE(actual_minutes,0)) AS minutes FROM study_sessions WHERE date(started_at, 'localtime') >= ? GROUP BY 1").all(sinceDate);
+}
+
+// 學習空間「我的筆記」：每章一份純文字，key = 科目id-章節key。
+function getChapterNote(key) {
+  return db.prepare('SELECT key, content, updated_at FROM chapter_notes WHERE key = ?').get(key);
+}
+function setChapterNote(key, content) {
+  db.prepare("INSERT INTO chapter_notes(key, content, updated_at) VALUES (?, ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET content = excluded.content, updated_at = excluded.updated_at").run(key, content);
+}
+
 module.exports = {
+  getChapterNote,
+  setChapterNote,
+  addRestartLog,
+  undoRestartLog,
+  getRestartLog,
+  getStudyMinutesByDate,
   getStartDate,
   setStartDate,
   getDoneTaskIds,

@@ -300,9 +300,7 @@ function smartLearningSummary() {
 // FOUNDATION_BOOK_MINUTES table, mirror it here too.
 const FOUNDATION_WEEKS = 19;
 const FOUNDATION_BOOK_MINUTES = {
-  1: 480, 2: 480, 3: 600, 4: 720, 5: 600, 6: 480, 7: 600, 8: 660, 9: 720,
-  10: 900, 11: 720, 12: 480, 13: 720, 14: 660, 15: 600, 16: 900,
-  17: 720, 18: 480, 19: 720,
+  1:480, 2:600, 3:660, 4:720, 5:480, 6:720, 7:660, 8:720, 9:480, 10:720, 11:480, 12:480, 13:600, 14:720, 15:600, 16:900, 17:720, 18:600, 19:900,
 };
 function foundationCatalog() {
   const tasks = [];

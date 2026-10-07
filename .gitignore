@@ -3,6 +3,7 @@ node_modules/
 UsersNatalieAppDataLocalGoogleChromeUser Data/
 *.log
 .claude/scheduled_tasks.lock
-data/prep.db
+# Personal study data: database, backups, study log, transcripts, screenshots, reports
+data/
 tools/codex-cli/
 tools/.runtime/

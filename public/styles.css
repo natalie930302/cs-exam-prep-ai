@@ -440,6 +440,15 @@ display: grid;
   gap: 20px;
   align-items: start;
 }
+.experience-badge {
+  flex: 0 0 auto;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--amb) 13%, transparent);
+  color: color-mix(in srgb, var(--amb) 78%, var(--tx));
+  font-size: 10px;
+  font-weight: 800;
+}
 .uni-card {
 background: var(--glass-bg);
   border: 1px solid var(--glass-bd);
@@ -3928,7 +3937,8 @@ background: url("/assets/rolling-hills-pexels-32821671.jpg") center 48% / cover 
 }
 body::after {
 background: rgba(235, 241, 232, 0.18);
-}.brandbar, .cal-header-card, .rec-books, .ch-list, .rc, .uni-card, .chat-wrap, .memory-panel, .sm, .checkin-banner, #date-setup-card, .calweek-col, .cal-cell, .sp-donut, .cal-view-toggle, .stabs, .filter-bar, .cal-nav, .tip {
+}
+.brandbar, .cal-header-card, .rec-books, .ch-list, .rc, .uni-card, .chat-wrap, .memory-panel, .sm, .checkin-banner, #date-setup-card, .calweek-col, .cal-cell, .sp-donut, .cal-view-toggle, .stabs, .filter-bar, .cal-nav, .tip {
 background: rgba(249, 251, 247, 0.68) !important;
   border: none !important;
   box-shadow: var(--glass-shadow) !important;
@@ -4434,7 +4444,8 @@ border-radius: 24px;
 }
 .pillnav {
 gap: 4px;
-}.pill, .filter-chip, .stab, .nav-btn, .collapse-all-btn {
+}
+.pill, .filter-chip, .stab, .nav-btn, .collapse-all-btn {
 border: 0 !important;
   box-shadow: none !important;
   background: transparent !important;
@@ -4634,283 +4645,6 @@ margin-top: var(--space-3) !important;
 
 .uni-grid {
 gap: var(--space-3);
-}
-.school-mode-bar {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--u-control-gap);
-  padding: var(--u-control-group-pad);
-  margin-bottom: var(--space-3);
-  border-radius: var(--ui-radius-section);
-  background: var(--u-glass-main);
-  box-shadow: var(--u-glass-shadow);
-}
-.admission-update-note {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 14px 16px;
-  margin-bottom: var(--space-3);
-  border-radius: var(--ui-radius-section);
-  background: color-mix(in srgb, var(--ac) 8%, var(--u-glass-sub));
-  color: var(--mt2);
-  font-size: 12px;
-  line-height: 1.6;
-}
-.admission-radar {
-  padding: var(--ui-card-pad);
-  margin-bottom: var(--space-3);
-  border-radius: var(--ui-radius-card);
-  background: var(--u-glass-main);
-  box-shadow: var(--u-glass-shadow);
-}
-.admission-radar-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 14px;
-}
-.admission-radar-head > div > span {
-  display: block;
-  margin-bottom: 3px;
-  color: var(--ac);
-  font-family: "Space Mono", monospace;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: .12em;
-}
-.admission-radar-head h2 {
-  margin: 0;
-  color: var(--tx);
-  font-size: 17px;
-  line-height: 1.3;
-}
-.admission-radar-reset {
-  padding: 7px 10px;
-  border: 0;
-  border-radius: var(--ui-radius-control);
-  background: var(--u-glass-control);
-  color: var(--ac);
-  font-size: 11px;
-  font-weight: 750;
-  cursor: pointer;
-}
-.admission-radar-metrics {
-  display: grid;
-  grid-template-columns: repeat(3,minmax(0,1fr));
-  gap: var(--ui-item-gap);
-}
-.admission-radar-metric {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: 2px 8px;
-  min-width: 0;
-  padding: 12px;
-  border: 0;
-  border-radius: var(--ui-radius-section);
-  background: var(--u-glass-sub);
-  color: var(--mt2);
-  text-align: left;
-  cursor: pointer;
-  transition: background var(--dur-1) var(--ease),filter var(--dur-1) var(--ease);
-}
-.admission-radar-metric:hover,
-.admission-radar-metric.active {
-  background: var(--ui-hover);
-}
-.admission-radar-metric:active {
-  filter: brightness(.94);
-}
-.admission-radar-metric-icon {
-  grid-row: 1/4;
-  display: grid;
-  place-items: center;
-  width: 31px;
-  height: 31px;
-  border-radius: 50%;
-  background: color-mix(in srgb,var(--ac) 11%,transparent);
-  color: var(--ac);
-}
-.admission-radar-metric strong {
-  color: var(--tx);
-  font-size: 19px;
-  line-height: 1;
-}
-.admission-radar-metric > span:not(.admission-radar-metric-icon) {
-  font-size: 11.5px;
-  font-weight: 750;
-}
-.admission-radar-metric small {
-  color: var(--mt);
-  font-size: 9.5px;
-}
-.admission-next-action {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-top: 12px;
-  padding: 12px 13px;
-  border-radius: var(--ui-radius-section);
-  background: color-mix(in srgb,var(--ac) 8%,var(--u-glass-sub));
-  color: var(--ac);
-}
-.admission-next-action div {min-width:0;}
-.admission-next-action strong {display:block;color:var(--tx);font-size:12px;}
-.admission-next-action p {margin:3px 0 0;color:var(--mt2);font-size:11px;line-height:1.65;}
-.uni-card.admission-stage-hidden {display:none !important;}
-.admission-experience-guide {
-  padding: 14px 16px;
-  margin-bottom: var(--space-3);
-  border-radius: var(--ui-radius-section);
-  background: var(--u-glass-sub);
-}
-.admission-experience-guide summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  color: var(--tx);
-  font-size: 13px;
-  font-weight: 800;
-  cursor: pointer;
-}
-.admission-experience-guide summary span,
-.experience-badge {
-  flex: 0 0 auto;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--amb) 13%, transparent);
-  color: color-mix(in srgb, var(--amb) 78%, var(--tx));
-  font-size: 10px;
-  font-weight: 800;
-}
-#admissionExperienceGuide {
-  padding-top: 12px;
-}
-.experience-warning {
-  padding: 9px 11px;
-  margin-bottom: 10px;
-  border-radius: var(--ui-radius-control);
-  background: color-mix(in srgb, var(--amb) 9%, transparent);
-  color: var(--mt2);
-  font-size: 11px;
-  line-height: 1.6;
-}
-.experience-points,
-#admissionExperienceGuide ul {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-  padding-left: 18px;
-  color: var(--mt2);
-  font-size: 12px;
-  line-height: 1.7;
-}
-.experience-sources {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  margin-top: 12px;
-}
-.experience-sources a {
-  padding: 5px 9px;
-  border-radius: 999px;
-  background: var(--u-glass-control);
-  color: var(--ac);
-  font-size: 10.5px;
-  font-weight: 750;
-  text-decoration: none;
-  transition: background var(--dur-1) var(--ease);
-}
-.experience-sources a:hover {
-  background: var(--ui-hover);
-}
-.admission-update-note div {
-  display: grid;
-  gap: 2px;
-}
-.admission-update-note strong {
-  color: var(--tx);
-  font-size: 12px;
-}
-.admission-update-icon {
-  display: inline-grid;
-  place-items: center;
-  flex: 0 0 22px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--ac);
-  color: var(--on-ac);
-  font-weight: 800;
-  font-family: ui-serif, serif;
-}
-.summary-recommend {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-}
-.summary-recommend strong {
-  min-width: 0;
-}
-.admission-status {
-  display: inline-flex;
-  align-items: center;
-  flex: 0 0 auto;
-  min-height: 22px;
-  padding: 3px 8px;
-  border-radius: 999px;
-  font-size: 10px;
-  font-weight: 800;
-  line-height: 1.2;
-  white-space: nowrap;
-}
-.status-pending {
-  background: color-mix(in srgb, var(--mt) 10%, transparent);
-  color: var(--mt2);
-}
-.status-upcoming {
-  background: color-mix(in srgb, var(--ac2) 16%, transparent);
-  color: color-mix(in srgb, var(--ac2) 78%, var(--tx));
-}
-.status-partial {
-  background: color-mix(in srgb, var(--ac) 14%, transparent);
-  color: color-mix(in srgb, var(--ac) 82%, var(--tx));
-}
-.status-published {
-  background: color-mix(in srgb, var(--grn) 16%, transparent);
-  color: color-mix(in srgb, var(--grn) 80%, var(--tx));
-}
-.recommend-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-#sec-schools[data-school-mode="recommend"] .exam-section,
-#sec-schools[data-school-mode="recommend"] .summary-exam,
-#sec-schools[data-school-mode="exam"] .recommend-section,
-#sec-schools[data-school-mode="exam"] .experience-section,
-#sec-schools[data-school-mode="exam"] .admission-experience-guide,
-#sec-schools[data-school-mode="exam"] .admission-radar,
-#sec-schools[data-school-mode="exam"] .summary-recommend {
-  display: none !important;
-}
-@media (max-width: 640px) {
-  .admission-radar-metrics {grid-template-columns:1fr;}
-  .admission-radar-head {align-items:flex-start;}
-  .school-mode-bar {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    width: 100%;
-  }
-  .school-mode-bar .ui-btn {
-    min-width: 0 !important;
-    padding-inline: 8px !important;
-    font-size: 11px !important;
-  }
 }
 .uni-card {
 border-radius: 24px;
@@ -6504,12 +6238,14 @@ background: var(--u-glass-main) !important;
   box-shadow: var(--u-glass-shadow) !important;
   backdrop-filter: blur(var(--u-glass-blur)) saturate(1.08) !important;
   -webkit-backdrop-filter: blur(var(--u-glass-blur)) saturate(1.08) !important;
-}.subject-overview-card .sp-top {
+}
+.subject-overview-card .sp-top {
 background: transparent !important;
   box-shadow: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-}.subject-overview-card .rec-books {
+}
+.subject-overview-card .rec-books {
 background: var(--u-glass-sub) !important;
   box-shadow: none !important;
   backdrop-filter: none !important;
@@ -6687,7 +6423,8 @@ background: var(--ac) !important;
      it is always paired with a background close to one endpoint or the
      other, never the muddy middle. */
   transition: background var(--dur-1) var(--ease);
-}.stabs .stab.on {
+}
+.stabs .stab.on {
 background: var(--subject-color, var(--ac)) !important;
   color: #fff !important;
   transition: background var(--dur-1) var(--ease);
@@ -7361,3 +7098,131 @@ body#appRoot #uniGrid .uni-body {
     animation-iteration-count: 1 !important;
   }
 }
+
+
+/* ── 重啟模式 ─────────────────────────────────────────── */
+.restart-card{background:var(--surf);border:1px solid var(--bd);border-radius:20px;padding:18px 20px;margin:0 0 18px;display:flex;flex-direction:column;gap:12px;}
+.restart-card[hidden]{display:none;}
+.rs-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+.rs-kicker{font-size:10px;font-weight:800;letter-spacing:.14em;color:var(--ac);}
+.rs-title{font-size:18px;font-weight:900;color:var(--tx);}
+.rs-streak{display:flex;flex-direction:column;align-items:center;min-width:64px;padding:6px 10px;border-radius:14px;background:var(--surf2);border:1px solid var(--bd);}
+.rs-streak b{font-size:22px;line-height:1.1;color:var(--ac);font-variant-numeric:tabular-nums;}
+.rs-streak span{font-size:10px;color:var(--mt);font-weight:700;}
+.rs-sub{font-size:12.5px;color:var(--mt2);}
+.rs-row{display:grid;grid-template-columns:minmax(170px,220px) 1fr;gap:14px;}
+.rs-timer{background:var(--surf2);border:1px solid var(--bd);border-radius:16px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:10px;}
+.rs-time{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.02em;color:var(--tx);}
+.rs-timer.running .rs-time{color:var(--ac);}
+.rs-timer-btns{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}
+.rs-timer .rs-cancel{display:none;}
+.rs-timer.running .rs-cancel{display:inline-flex;}
+.rs-timer.running .rs-start{display:none;}
+.rs-goals{display:flex;flex-direction:column;gap:10px;justify-content:center;}
+.rs-goal{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.rs-goal-lbl{font-size:12px;font-weight:800;color:var(--mt2);min-width:56px;}
+.rs-pomos{display:inline-flex;gap:5px;align-items:center;}
+.rs-pomo{width:16px;height:16px;border-radius:50%;border:2px solid var(--bd2);}
+.rs-pomo.on{background:var(--grn);border-color:var(--grn);}
+.rs-extra{font-size:11px;font-weight:800;color:var(--grn);}
+.rs-walk{font-size:12.5px;color:var(--mt);font-weight:700;}
+.rs-walk.on{color:var(--grn);}
+.rs-mini{font-size:11.5px;padding:4px 10px;min-height:0;}
+.rs-undo{opacity:.7;}
+.rs-moods{display:inline-flex;gap:3px;flex-wrap:wrap;}
+.rs-mood{width:26px;height:26px;border-radius:8px;border:1px solid var(--bd);background:var(--surf2);color:var(--mt2);font-size:11.5px;font-weight:700;cursor:pointer;}
+.rs-mood.on{background:var(--ac);border-color:var(--ac);color:#fff;}
+.rs-grid-wrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.rs-grid-lbl,.rs-grid-note{font-size:11px;color:var(--mt);font-weight:700;}
+.rs-grid{display:inline-flex;gap:4px;}
+.rs-cell{width:16px;height:16px;border-radius:4px;background:var(--surf3);border:1px solid var(--bd);}
+.rs-cell.lv1{background:color-mix(in srgb,var(--grn) 40%,var(--surf2));}
+.rs-cell.lv2{background:color-mix(in srgb,var(--grn) 70%,var(--surf2));}
+.rs-cell.lv3{background:var(--grn);}
+.rs-cell.today{outline:2px solid var(--ac);outline-offset:1px;}
+.rs-msg{font-size:12.5px;color:var(--mt2);}
+@media (max-width:640px){.rs-row{grid-template-columns:1fr;}
+.restart-card{padding:14px;}}
+.restart-card .rs-timer:not(.running) .rs-cancel{display:none !important;}
+.restart-card .rs-timer.running .rs-start{display:none !important;}
+.restart-card .rs-grid{flex-wrap:wrap;}
+
+.rs-lines{display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--tx);}
+.rs-line{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;line-height:1.5;}
+.rs-tag{font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;flex-shrink:0;}
+.rs-tag-exam{background:color-mix(in srgb,var(--ac) 16%,transparent);color:var(--ac);}
+.rs-sep{color:var(--mt);margin:0 2px;}
+
+/* 2026/9/25 重啟卡片改純顯示 */
+.rs-today{background:var(--surf2);border:1px solid var(--bd);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px;}
+.rs-today-top{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;}
+.rs-today-min{font-size:26px;font-weight:900;color:var(--ac);font-variant-numeric:tabular-nums;}
+.rs-today-of{font-size:12.5px;color:var(--mt);font-weight:700;}
+.rs-bar{height:8px;border-radius:99px;background:var(--surf3);overflow:hidden;}
+.rs-bar span{display:block;height:100%;background:var(--grn);border-radius:99px;transition:width .4s;}
+.rs-items{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;}
+.rs-items li{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--tx);}
+.rs-item-subj{font-size:11px;font-weight:800;color:var(--ac);background:color-mix(in srgb,var(--ac) 12%,transparent);padding:2px 8px;border-radius:99px;white-space:nowrap;}
+.rs-item-min{margin-left:auto;font-size:12px;color:var(--mt2);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.rs-empty{font-size:12.5px;color:var(--mt);}
+.rs-stats{display:flex;flex-wrap:wrap;gap:4px;font-size:12px;color:var(--mt2);font-weight:700;}
+
+/* Chapter card → chapter study room (public/study.html). */
+.ch-study-link {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
+  padding: 7px 14px; border-radius: 999px; font-size: 13px; font-weight: 700;
+  color: var(--on-ac); background: var(--ch-color, var(--ac)); text-decoration: none;
+  transition: transform var(--dur-1) var(--ease);
+}
+.ch-study-link:hover { transform: translateY(-1px); }
+
+/* ════════════════════════════════════════════════════════════════════
+   Unified theme (2026/10/7) — the whole site now shares the study room's
+   calm, solid look (tokens in theme.css): cream background, white cards
+   with a thin warm border, no landscape photo and no frosted glass.
+   Kept as one final block so it reliably wins over the earlier layered
+   glass experiments above without rewriting them one by one.
+   ════════════════════════════════════════════════════════════════════ */
+/* Re-pin the shared tokens (theme.css) here: earlier :root blocks above
+   redefined --bg/--surf etc. as translucent glass colors. */
+body#appRoot {
+  --bg: #faf6ef; --surf: #ffffff; --surf2: #f5eee1; --surf3: #ede1cc;
+  --bd: #e6d8be; --bd2: #d8c29b; --tx: #2e2418; --mt: #6e5f49; --mt2: #5c4e3b;
+  --ac: #5c7a4a; --ac2: #c08a1f; --grn: #4c9a63; --amb: #c2660a; --red: #d64545;
+  --glass-bg: var(--surf); --glass-tint: var(--surf); --glass-bd: var(--bd);
+  --glass-shadow: 0 1px 0 rgba(46, 36, 24, .03); --blur: 0px;
+  background: var(--bg) !important;
+}
+body#appRoot::before, body#appRoot::after { content: none !important; background: none !important; }
+body#appRoot *, body#appRoot *::before, body#appRoot *::after {
+  backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+}
+/* containers → solid white cards */
+body#appRoot :is(.cal-header-card, .rec-books, .ch-list, .rc, .uni-card, .chat-wrap, .memory-panel, .sm, .checkin-banner,
+  #date-setup-card, .calweek-col, .sp-donut, .stabs, .filter-bar, .tip, .subject-overview-card, .dept-card,
+  .ai-context-panel, .chapter-tool-dialog, .global-search-dialog, .restart-card, .chat-log, .calweek-block),
+body#appRoot #main #sec-schedule > .cal-header-card,
+body#appRoot #main .subject-overview-card {
+  background: var(--surf) !important;
+  border: 1px solid var(--bd) !important;
+  box-shadow: 0 1px 0 rgba(46, 36, 24, .03) !important;
+}
+body#appRoot #main #sec-schedule > .cal-header-card > .daily-focus { background: var(--surf2) !important; border: 0 !important; box-shadow: none !important; }
+/* top bar: solid strip */
+body#appRoot :is(.brandbar, .topbar), body#appRoot #main > .brandbar {
+  background: color-mix(in srgb, var(--bg) 96%, transparent) !important;
+  border: 0 !important; border-bottom: 1px solid var(--bd) !important; box-shadow: none !important;
+}
+/* small controls → quiet chips */
+body#appRoot :is(.chip, .lbtn, .nav-btn, .qa-btn, .today-btn, .collapse-all-btn, .datebadge, .cal-nav, .cal-view-toggle,
+  .filter-chips, .mat-opt, .rc-when, .ai-context-trigger, .ai-context-peek, .chat-send-btn) {
+  background: var(--surf) !important; border: 1px solid var(--bd) !important; box-shadow: none !important;
+}
+body#appRoot :is(.search-input, .chat-input) { background: var(--surf) !important; border: 1px solid var(--bd2) !important; box-shadow: none !important; }
+body#appRoot :is(.ch-mat, .ch-mat-group) { background: var(--surf2) !important; border: 1px solid transparent !important; box-shadow: none !important; }
+body#appRoot .cal-cell { background: var(--surf) !important; border: 1px solid var(--bd) !important; box-shadow: none !important; }
+body#appRoot :is(.cal-cell.today, .calweek-col-hd.today) { background: color-mix(in srgb, var(--ac) 12%, var(--surf)) !important; border-color: color-mix(in srgb, var(--ac) 40%, transparent) !important; }
+body#appRoot .cb { background: var(--surf) !important; border: 1.5px solid var(--bd2) !important; }
+body#appRoot > #globalTimer { background: var(--surf) !important; border: 1px solid var(--bd) !important; }
+/* page titles no longer sit on a photo */
+body#appRoot :is(.sh, .ss) { text-shadow: none !important; }
