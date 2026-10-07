@@ -178,5 +178,6 @@
    "ans": "Earliest deadline first",
    "why": "就像寫作業：最早要交的先做。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

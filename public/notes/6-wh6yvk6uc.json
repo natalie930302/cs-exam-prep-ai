@@ -244,5 +244,6 @@
    "ans": "3",
    "why": "Euler：6 − 8 + 迴圈 = 1 → 迴圈 = 3。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

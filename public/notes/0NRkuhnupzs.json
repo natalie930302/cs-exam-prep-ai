@@ -253,5 +253,6 @@
    "ans": "靠額外 hardware register 保留 state，切換成本低",
    "why": "coarse-grained 才會 flush pipeline。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

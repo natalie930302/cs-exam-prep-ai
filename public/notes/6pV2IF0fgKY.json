@@ -196,5 +196,6 @@
    "ans": "4-way merging",
    "why": "一次合併 m 個串列叫 m-way merging。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

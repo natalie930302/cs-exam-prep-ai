@@ -81,7 +81,7 @@
     if (e.origin !== location.origin || !e.data) return;
     if (e.data.type === 'tour-scene' && touring && !curNotes) {
       const t = (stageScenes[e.data.id] || {}).title || '';
-      $('nowSec').textContent = '這章的概念導覽';
+      $('nowSec').textContent = '概念導覽：右邊不是影片目前在講的內容';
       $('nowPoint').textContent = t;
     }
     if (e.data.type === 'lab-ready') e.data.scenes.forEach(function(x){ stageScenes[x.id] = x; });
@@ -312,7 +312,7 @@
       el.querySelectorAll('a[data-si]').forEach(function(a){ a.onclick = function(){ playVideo(Number(a.dataset.si), Number(a.dataset.i), true); }; });
       $('timeline').innerHTML = '';
       $('nowSec').textContent = current ? current.opt.label : '';
-      $('nowPoint').textContent = hasStage ? '這支影片的重點整理中，右邊先導覽這章的概念' : '這支影片的重點整理中';
+      $('nowPoint').textContent = hasStage ? '這支影片還沒整理重點，右邊先輪流介紹這章的概念（跟影片進度無關）' : '這支影片的重點整理中';
       startTour();
       return;
     }
@@ -324,7 +324,7 @@
     }).join('')
       + '<p class="st-src">重點由影片語音轉文字後整理；「易錯」有些是整理時補充的考試提醒，不一定是老師原話。</p>';
     el.querySelectorAll('.st-pt').forEach(function(b){ b.onclick = function(){ seek(Number(b.dataset.t)); }; });
-    $('timeline').innerHTML = n.sections.map(function(s, si){
+    $('timeline').innerHTML = (n.timing === 'estimated' ? '<span class="st-seg-note" title="這支影片的重點時間是用字幕位置推算的，切換可能早或晚一兩分鐘；拿到帶時間的字幕後會校正">時間為估算</span>' : '') + n.sections.map(function(s, si){
       const t = s.points.length ? s.points[0].t : 0;
       return '<button class="st-seg" data-sec="' + si + '" data-t="' + t + '"><span class="st-seg-t">' + fmt(t) + '</span><span class="st-seg-name">' + esc(s.title) + '</span></button>';
     }).join('');

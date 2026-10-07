@@ -213,5 +213,6 @@
    "ans": "Θ(n³)",
    "why": "n(n−1)(n−2)/6。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

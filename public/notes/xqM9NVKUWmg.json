@@ -405,5 +405,6 @@
    "ans": "ABC+*D*",
    "why": "左括號一定 push；讀到右括號就 pop 出 +；第二個 * 進來時，ISP(*) ≤ ICP(*)，先 pop 第一個 *；最後把剩下的 * pop 出來。"
   }
- ]
+ ],
+ "timing": "exact"
 }

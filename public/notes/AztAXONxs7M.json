@@ -217,5 +217,6 @@
    "ans": "mid-term",
    "why": "mid-term 跟 virtual memory 結合，負責 swapping。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

@@ -240,5 +240,6 @@
    "ans": "卡片讀取速度",
    "why": "time sharing 需要更多 memory（VM）、檔案管理、同步與死鎖處理。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

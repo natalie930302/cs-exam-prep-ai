@@ -191,5 +191,6 @@
    "ans": "cost(i,j) = min{c(j,l) + cost(i+1,l)}",
    "why": "l 在下一個 stage 且 (j,l) 是邊；取最小值。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

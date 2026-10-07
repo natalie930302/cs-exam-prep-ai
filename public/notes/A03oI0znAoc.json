@@ -170,5 +170,6 @@
    "ans": "兩者無關，任何 case 都可用任何符號",
    "why": "漸近符號描述函數的界；case analysis 決定要分析哪個函數。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

@@ -163,5 +163,6 @@
    "ans": "O 表示的是多項式的次數（degree）",
    "why": "影片強調：O(n²) 指 f(n) 的最高次數是 2，不是 f(n) 等於 n²。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

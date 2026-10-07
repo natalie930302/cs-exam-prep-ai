@@ -344,5 +344,6 @@
    "ans": "所有列運算合成 E，EA = I 所以 E = A⁻¹",
    "why": "E[A | I] = [EA | E] = [I | A⁻¹]。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

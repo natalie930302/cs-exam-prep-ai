@@ -180,5 +180,6 @@
    "ans": "array",
    "why": "連續儲存、隨機存取 O(1)，串接要複製。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

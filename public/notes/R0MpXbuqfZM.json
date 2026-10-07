@@ -440,5 +440,6 @@
    "ans": "enqueue 在 rear，dequeue 在 front",
    "why": "Queue 是 FIFO：新來的排在隊伍後端，服務時從前端取出。"
   }
- ]
+ ],
+ "timing": "exact"
 }

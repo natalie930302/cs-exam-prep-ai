@@ -204,5 +204,6 @@
    "ans": "O(mⁿ)",
    "why": "狀態空間樹節點數約 m^(n+1)，bounding 只是剪掉一部分。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

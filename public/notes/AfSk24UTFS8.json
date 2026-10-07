@@ -293,5 +293,6 @@
    "ans": "所有 adjacency list 的長度總和",
    "why": "每個頂點的 DFS-visit 掃自己的 Adj[v]，總和是 E（無向是 2E）。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

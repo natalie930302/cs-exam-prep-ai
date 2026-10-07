@@ -224,5 +224,6 @@
    "ans": "O(V + E)",
    "why": "V 個串列頭 + 串列總長 Σdeg = 2E。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

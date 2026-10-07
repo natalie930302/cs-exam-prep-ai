@@ -188,5 +188,6 @@
    "ans": "O(n)",
    "why": "n + n = 2n，不是相乘。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

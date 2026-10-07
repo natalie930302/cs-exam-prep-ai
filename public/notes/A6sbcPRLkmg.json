@@ -337,5 +337,6 @@
    "ans": "static power（leakage）",
    "why": "電晶體關不緊會漏電，不運算也耗電。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

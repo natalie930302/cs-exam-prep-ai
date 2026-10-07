@@ -217,5 +217,6 @@
    "ans": "同一時間只有一個 thread 能在裡面執行 method",
    "why": "語言層級保證 mutual exclusion。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

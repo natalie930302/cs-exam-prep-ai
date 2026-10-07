@@ -244,5 +244,6 @@
    "ans": "把 timer interrupt disable",
    "why": "不被打斷就等於 non-preemptive，一次做完。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

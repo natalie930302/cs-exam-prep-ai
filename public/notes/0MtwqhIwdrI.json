@@ -295,5 +295,6 @@
    "ans": "qᵢᵀb",
    "why": "QᵀQx̂ = Qᵀb 且 QᵀQ = I，所以 x̂ = Qᵀb，x̂ᵢ = qᵢᵀb。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

@@ -134,5 +134,6 @@
    "ans": "O(n log n)",
    "why": "a = 1，log n 乘上 n（嚴格說 Σ log i = log n! = Θ(n log n)）。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

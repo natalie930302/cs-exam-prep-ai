@@ -286,5 +286,6 @@
    "ans": "Contiguous",
    "why": "counting 記起點與連續塊數，就像 contiguous。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

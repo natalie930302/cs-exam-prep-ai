@@ -206,5 +206,6 @@
    "ans": "需要 DMA controller 增加成本，且可能有 cache coherence 問題",
    "why": "DMA 直接改記憶體，cache 中可能還留著舊資料。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

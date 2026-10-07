@@ -273,5 +273,6 @@
    "ans": "Striping",
    "why": "資料切開放在多顆，可以平行讀寫。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

@@ -395,5 +395,6 @@
    "ans": "結果只對那組輸入成立，不 general",
    "why": "例：FCFS 先短後長很好，先長後短最糟。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

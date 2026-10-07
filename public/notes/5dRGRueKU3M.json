@@ -167,5 +167,6 @@
    "ans": "memoization top-down、tabulation bottom-up",
    "why": "memo 從 fib(5) 往下呼叫；tabulation 從 F[0]、F[1] 往上填。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

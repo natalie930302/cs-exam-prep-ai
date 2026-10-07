@@ -263,5 +263,6 @@
    "ans": "∞",
    "why": "topological 順序在起點之前的頂點不可能從起點走到。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

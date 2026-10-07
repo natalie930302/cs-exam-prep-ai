@@ -253,5 +253,6 @@
    "ans": "(1/π)∫₀^{2π} f(x)cos x dx",
    "why": "∫₀^{2π} cos²x dx = π；(1/2π)∫ f dx 是 a₀（平均值）。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

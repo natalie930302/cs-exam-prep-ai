@@ -222,5 +222,6 @@
    "ans": "TLB 被 flush，接下來的 access 都 miss，每次要兩次 memory access",
    "why": "要等 TLB 重新裝進常用的 (p, f) 才會恢復加速。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

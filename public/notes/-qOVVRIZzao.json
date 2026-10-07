@@ -181,5 +181,6 @@
    "ans": "merge sort Θ(n log n)、quicksort Θ(n²)",
    "why": "merge sort 永遠對半切。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

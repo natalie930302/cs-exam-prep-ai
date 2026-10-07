@@ -308,5 +308,6 @@
    "ans": "讓 OS 能檢查與保護系統，user 不能直接跳進 OS",
    "why": "透過 trap 才能區分 OS 的服務與一般 function，並做合法性檢查。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

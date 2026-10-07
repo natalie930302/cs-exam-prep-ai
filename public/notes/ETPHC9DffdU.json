@@ -235,5 +235,6 @@
    "ans": "parent 呼叫 wait()",
    "why": "Linux 的 fork 是 concurrent，parent 不必等；是 programmer 用 wait 讓它等。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

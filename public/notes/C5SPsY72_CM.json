@@ -229,5 +229,6 @@
    "ans": "back edge",
    "why": "back edge ⇔ cycle；它要求祖先晚於子孫輸出，跟 finishing time 反序矛盾。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

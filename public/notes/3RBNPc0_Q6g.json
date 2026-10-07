@@ -174,5 +174,6 @@
    "ans": "Fixed size",
    "why": "長度永遠等於 job 數；{J1, J4} 才是長度會變的子集合表示。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

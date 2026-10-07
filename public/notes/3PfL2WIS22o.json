@@ -122,5 +122,6 @@
    "ans": "先了解程式架構與 code path，再判斷要改哪裡",
    "why": "修改別人的大型程式，要先知道檔案、function 之間的呼叫順序。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

@@ -191,5 +191,6 @@
    "ans": "因為 q₁ 已是單位向量",
    "why": "一般投影是 (b·a / a·a)a；a = q₁ 時 q₁·q₁ = 1。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

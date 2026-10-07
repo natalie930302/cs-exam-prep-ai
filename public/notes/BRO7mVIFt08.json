@@ -224,5 +224,6 @@
    "ans": "amortized O(1)",
    "why": "底層用 table doubling，偶爾要整個搬家。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

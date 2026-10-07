@@ -146,5 +146,6 @@
    "ans": "CPU 被多個程式共用，被換走時要保存",
    "why": "switch 時把 register 存起來，回來時才能接著跑。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

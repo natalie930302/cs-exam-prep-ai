@@ -276,5 +276,6 @@
    "ans": "影響整個系統的運作與其他使用者",
    "why": "只有 OS kernel（程式短、priority 高）可以這樣做。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

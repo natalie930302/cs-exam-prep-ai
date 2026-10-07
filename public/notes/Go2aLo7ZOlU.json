@@ -275,5 +275,6 @@
    "ans": "VΣ⁺Uᵀ",
    "why": "倒過來乘，每個因子取（pseudo-）inverse：(Vᵀ)⁻¹ = V、U⁻¹ = Uᵀ。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

@@ -282,5 +282,6 @@
    "ans": "JVM 這層會對到各 OS 的 thread library（Win32 thread、pthread）",
    "why": "隔了一層 virtual machine，同一份程式可在不同 OS 執行。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

@@ -238,5 +238,6 @@
    "ans": "剛出來的人沒被 context switch，馬上又想進去",
    "why": "要證明它會被擋住，讓等待的人先進。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

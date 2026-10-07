@@ -185,5 +185,6 @@
    "ans": "隨機選擇 hash function 的 a、b",
    "why": "對最壞情況的 key，隨機挑選 hash function 也能保證期望表現。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

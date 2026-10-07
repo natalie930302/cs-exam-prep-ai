@@ -155,5 +155,6 @@
    "ans": "必須用 C 語言撰寫",
    "why": "演算法與語言無關；五個特性是 input、output、definiteness、finiteness、effectiveness。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

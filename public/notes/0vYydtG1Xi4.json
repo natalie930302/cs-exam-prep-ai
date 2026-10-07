@@ -262,5 +262,6 @@
    "ans": "無法 traverse 進入該目錄",
    "why": "路徑上任一層 parent 缺 x 都會 permission denied。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

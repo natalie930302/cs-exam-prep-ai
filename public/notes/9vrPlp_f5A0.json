@@ -187,5 +187,6 @@
    "ans": "printf 走的是 Linux 的 standard I/O，沒經過 Nachos",
    "why": "要用 Nachos 的 system call 與 counter 確認。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

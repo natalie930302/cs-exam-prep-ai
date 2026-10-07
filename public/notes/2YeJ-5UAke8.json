@@ -223,5 +223,6 @@
    "ans": "對 n 連續取 log 直到 ≤ 1 所需的次數",
    "why": "iterated logarithm，成長極慢。"
   }
- ]
+ ],
+ "timing": "estimated"
 }

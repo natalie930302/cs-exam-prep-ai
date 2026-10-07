@@ -245,5 +245,6 @@
    "ans": "可能會 deadlock，但不一定已經 deadlock",
    "why": "deadlock ⊂ unsafe。"
   }
- ]
+ ],
+ "timing": "estimated"
 }
