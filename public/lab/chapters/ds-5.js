@@ -4,6 +4,8 @@
 // 例子取自 MIT 6.006 L4（Heaps and Heap Sort）的板書：
 //   16,14,10,8,7,9,3,2,4,1（heap 的陣列表示）、max-heapify(A,2)、build-max-heap、heap sort。
 // max-heapify（CLRS／MIT 的名字）＝ Horowitz 課本的 adjust。
+import kit from './_kit.js';
+
 export default function (ctx) {
   const { THREE, lab, colorFor, sleep, $, log, clearLog, setState, controls, on, say, beat, block, tile } = ctx;
 
@@ -821,6 +823,13 @@ export default function (ctx) {
     } },
   };
 
+
+  // 每段影片的場景片段（由 sync pass 加入）：每個片段把 [id, 標題, play] 放進 FRAG。
+  const K = kit(ctx);
+  const FRAG = [];
+  // @@FRAGMENTS@@
+  FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
+
   return {
     kicker: '資料結構・第 5 章',
     title: 'Heap 與 Priority Queue',
@@ -837,7 +846,7 @@ export default function (ctx) {
       { id: 'quiz', name: '小測驗', render: renderQuiz },
     ],
     scenes: Object.fromEntries(Object.entries(scenes).map(([id, s]) => [id, { title: s.title, play: async (tok) => { sceneTok = tok; await s.play(tok); } }])),
-    sceneOrder: ['heap-as-array', 'max-heapify', 'build-max-heap', 'build-heap-cost', 'pq-insert', 'extract-max', 'heap-sort', 'minmax-heap'],
+    sceneOrder: ['heap-as-array', 'max-heapify', 'build-max-heap', 'build-heap-cost', 'pq-insert', 'extract-max', 'heap-sort', 'minmax-heap'].concat(FRAG.map((f) => f[0])),
     stop() { gen++; busy = false; sceneTok = null; },
   };
 }

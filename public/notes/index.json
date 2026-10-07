@@ -379,6 +379,11 @@
   "points": 36,
   "quiz": 7
  },
+ "CwM-Cxilk4g": {
+  "label": "Hashing - Collision Resolution with Linear Probing",
+  "points": 48,
+  "quiz": 6
+ },
  "CyknhZbfMqc": {
   "label": "Abdul Bari：2.2 Masters Theorem Decreasing Function",
   "points": 11,
@@ -388,6 +393,11 @@
   "label": "台大林軒田 DSA Analysis Tools",
   "points": 39,
   "quiz": 6
+ },
+ "DBRW8nwZV-g": {
+  "label": "Graph Data Structure Intro（表示法）",
+  "points": 34,
+  "quiz": 7
  },
  "DBugSTeX1zw": {
   "label": "PERMUTATIONS and COMBINATIONS Review",
@@ -492,6 +502,16 @@
  "lhXHk8IuFeQ": {
   "label": "交大彭文志 Lec08 Lists (1/4)",
   "points": 76,
+  "quiz": 7
+ },
+ "MfhjkfocRR0": {
+  "label": "What is a HashTable Data Structure",
+  "points": 27,
+  "quiz": 5
+ },
+ "mFY0J5W8Udk": {
+  "label": "Abdul Bari：Hashing Technique - Simplified",
+  "points": 48,
   "quiz": 7
  },
  "MJZd6uPi88E": {

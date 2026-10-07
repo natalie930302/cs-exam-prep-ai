@@ -6,6 +6,8 @@
 //   MIT 6.006 L6（AVL）：41 / 20 / 65 / 11 / 29 / 50 / 26 那棵樹，插入 23（右旋 29）、插入 55（兩次旋轉）。
 // 課本慣例（洪逸／Horowitz）：高度以層數計（root 在 level 1）、bf = h(左) − h(右)、
 //   旋轉以「從失衡點 A 往新節點走的方向」命名 LL / RR / LR / RL；紅黑樹插入分 XYr（變色）與 XYb（旋轉）。
+import kit from './_kit.js';
+
 export default function (ctx) {
   const { THREE, lab, colorFor, sleep, $, log, clearLog, setState, controls, on, say, beat, block } = ctx;
   const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -843,6 +845,13 @@ export default function (ctx) {
     } },
   };
 
+
+  // 每段影片的場景片段（由 sync pass 加入）：每個片段把 [id, 標題, play] 放進 FRAG。
+  const K = kit(ctx);
+  const FRAG = [];
+  // @@FRAGMENTS@@
+  FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
+
   return {
     kicker: '資料結構・第 4 章',
     title: 'BST、AVL Tree、Red-Black Tree',
@@ -858,7 +867,7 @@ export default function (ctx) {
       { id: 'quiz', name: '小測驗', render: renderQuiz },
     ],
     scenes,
-    sceneOrder: ['bst-insert', 'runway-k-check', 'subtree-size-rank', 'bst-delete', 'degenerate-path', 'avl-rotation', 'avl-rr-rl', 'rb-insert'],
+    sceneOrder: ['bst-insert', 'runway-k-check', 'subtree-size-rank', 'bst-delete', 'degenerate-path', 'avl-rotation', 'avl-rr-rl', 'rb-insert'].concat(FRAG.map((f) => f[0])),
     stop() { stopTimer(); epoch++; busy = false; },
   };
 }

@@ -1,0 +1,323 @@
+{
+ "video": "mFY0J5W8Udk",
+ "label": "Abdul Bari：Hashing Technique - Simplified",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "先回顧：linear search 與 binary search",
+   "scene": "hasha-search-cmp",
+   "points": [
+    {
+     "text": "Hashing 技術是為了搜尋而設計的。",
+     "t": 8
+    },
+    {
+     "text": "Linear search：元素在陣列中任意排列，從左往右找，時間 O(n)。",
+     "t": 25
+    },
+    {
+     "text": "Binary search：元素要排好序，每次看中間，大了往右、小了往左，時間 O(log n)。",
+     "t": 52
+    },
+    {
+     "text": "差別在排列方式：binary search 要求先排序，得多花排序的時間。",
+     "t": 81
+    },
+    {
+     "text": "從 O(n) 到 O(log n)，我們想再進一步做到 O(1)，這就引出 hashing。",
+     "t": 107
+    }
+   ]
+  },
+  {
+   "title": "最簡單的 hashing：值就是 index",
+   "scene": "hasha-direct",
+   "points": [
+    {
+     "text": "把元素的值本身當 index，存在同一個 index 上。",
+     "t": 123
+    },
+    {
+     "text": "8 存在 [8]、3 存在 [3]，依此類推。",
+     "t": 144
+    },
+    {
+     "text": "搜尋 10：直接去 index 10 看有沒有。",
+     "t": 162
+    },
+    {
+     "text": "搜尋 12：index 12 沒有 → 找不到；搜尋時間 O(1)。",
+     "t": 170
+    },
+    {
+     "text": "問題：多一個 50 就得有 index 50，可能很遠。",
+     "t": 186
+    },
+    {
+     "text": "為了少數元素開巨大的陣列，大部分空著，浪費大量空間。",
+     "t": 203
+    }
+   ]
+  },
+  {
+   "title": "數學模型：key space → hash table",
+   "scene": "hasha-model",
+   "points": [
+    {
+     "text": "為了改進，用「函數」來建立 hashing 的數學模型。",
+     "t": 216
+    },
+    {
+     "text": "手上的元素叫 key space，存放的地方叫 hash table。",
+     "t": 233
+    },
+    {
+     "text": "h(x) = x 把 key 從 key space 映射到 hash table：h(8) = 8、h(13) = 13。",
+     "t": 241
+    },
+    {
+     "text": "h(x) = x 是理想的 hash function。",
+     "t": 282
+    },
+    {
+     "text": "但 key 是 50 就需要 index 50，表還是很長、浪費空間。",
+     "t": 296
+    },
+    {
+     "text": "函數有兩種：one-to-one 與 many-to-one。",
+     "t": 314
+    },
+    {
+     "text": "h(x) = x 是 one-to-one；換成其他函數多半是 many-to-one（也取決於 key 和表大小）。",
+     "t": 329
+    },
+    {
+     "text": "要修改函數，讓 hash table 的空間用得更有效率。",
+     "t": 348
+    }
+   ]
+  },
+  {
+   "title": "h(x) = x mod size 與 collision",
+   "scene": "hasha-mod10",
+   "points": [
+    {
+     "text": "改用 h(x) = x mod size（size = hash table 大小）。",
+     "t": 361
+    },
+    {
+     "text": "例子取 size = 10。",
+     "t": 385
+    },
+    {
+     "text": "8 mod 10 = 8 → 放 [8]；3 mod 10 = 3 → 放 [3]。",
+     "t": 400
+    },
+    {
+     "text": "13 mod 10 也是 3 → collision。",
+     "t": 418
+    },
+    {
+     "text": "換了 hash function 後，兩個以上元素可能對到同一個 index，這就叫 collision。",
+     "t": 426
+    },
+    {
+     "text": "解法：open hashing（chaining）與 closed hashing（linear probing、quadratic probing）。",
+     "t": 451
+    }
+   ]
+  },
+  {
+   "title": "Chaining（open hashing）",
+   "scene": "hasha-bari-chain",
+   "points": [
+    {
+     "text": "Chaining：元素不存在表本身，而是在該 index 加一條 chain。",
+     "t": 465
+    },
+    {
+     "text": "chain 就是 linked list；3 對到 [3]，就在 [3] 的 chain 加一個節點。",
+     "t": 496
+    },
+    {
+     "text": "13 也對到 [3]，再加一個節點存 13。",
+     "t": 504
+    },
+    {
+     "text": "發生 collision 時，就插入同一個 index 的 chain。",
+     "t": 514
+    },
+    {
+     "text": "搜尋 13：13 mod 10 = 3，到 index 3 的 chain 裡找。",
+     "t": 543
+    },
+    {
+     "text": "chain 裡可能不只一個元素，必須搜整條 linked list。",
+     "t": 567
+    },
+    {
+     "text": "時間不再是 O(1)，但仍比 log n 快。",
+     "t": 577
+    }
+   ],
+   "trap": "補充：「比 log n 快」是平均情況；chaining 的平均搜尋時間是 O(1 + α)（α = n/m），最壞全部擠在同一條 chain 是 O(n)。"
+  },
+  {
+   "title": "Linear probing（closed hashing）",
+   "scene": "hasha-bari-lp",
+   "points": [
+    {
+     "text": "Linear probing 用同一個 h(x) = x mod size。",
+     "t": 591
+    },
+    {
+     "text": "8 → [8]、3 → [3]，13 也對到 3 → collision，存到下一格 [4]。",
+     "t": 603
+    },
+    {
+     "text": "數學寫法：h'(x) = (h(x) + f(i)) mod size，f(i) = i，i = 0, 1, 2, …",
+     "t": 637
+    },
+    {
+     "text": "13：i = 0 得 3 撞了，i = 1 得 4 → 放 [4]。",
+     "t": 672
+    },
+    {
+     "text": "6 → [6]；4 撞到 13 → 放 [5]；10 → [0]。",
+     "t": 721
+    },
+    {
+     "text": "搜尋 4：[4] 不是，看下一格 [5] 找到。",
+     "t": 744
+    },
+    {
+     "text": "搜尋 24：[4]、[5]、[6] 都不是，[7] 是空格 → 停，24 不在表中（找到或遇到空格才停）。",
+     "t": 773
+    },
+    {
+     "text": "問題：clustering，一堆元素擠在連續位置，搜尋變慢。",
+     "t": 821
+    }
+   ],
+   "trap": "補充：linear probing 平均搜尋快，但最壞（表快滿、大 cluster）可到 O(n)；刪除時不能直接清空格子，要用 lazy deletion（墓碑），否則會切斷 probe sequence。"
+  },
+  {
+   "title": "Quadratic probing",
+   "scene": "hasha-bari-qp",
+   "points": [
+    {
+     "text": "為了避免 clustering，引入 quadratic probing。",
+     "t": 837
+    },
+    {
+     "text": "h'(x) = (h(x) + f(i)) mod size，但 f(i) = i²。",
+     "t": 853
+    },
+    {
+     "text": "差別：linear 的 f(i) = i，quadratic 的 f(i) = i²。",
+     "t": 890
+    },
+    {
+     "text": "8 → [8]、3 → [3]、13 撞了，i = 1 → 放 [4]。",
+     "t": 908
+    },
+    {
+     "text": "23：i = 0 得 3，collision。",
+     "t": 926
+    },
+    {
+     "text": "i = 1：3 + 1 = 4，也 collision。",
+     "t": 945
+    },
+    {
+     "text": "i = 2：3 + 4 = 7 → 23 放在 [7]。",
+     "t": 970
+    },
+    {
+     "text": "元素放在離衝突處較遠的位置，中間留空，避免 clustering、改善搜尋時間。",
+     "t": 1002
+    }
+   ],
+   "trap": "補充：quadratic probing 解決 primary clustering，但 hash 值相同的 key 仍走同一條序列（secondary clustering）；且只有在表大小為質數、λ ≤ 0.5 時才保證找得到空格。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Binary search 能達到 O(log n) 的前提是？",
+   "opts": [
+    "元素已排序",
+    "元素任意排列",
+    "使用 hash function",
+    "陣列大小是質數"
+   ],
+   "ans": "元素已排序",
+   "why": "Binary search 每次看中間決定往左或往右，必須先排好序。"
+  },
+  {
+   "q": "直接把值當 index（h(x) = x）存放的主要缺點是？",
+   "opts": [
+    "key 很大時要開巨大陣列，浪費空間",
+    "搜尋變成 O(n)",
+    "一定會發生 collision",
+    "不能搜尋不存在的 key"
+   ],
+   "ans": "key 很大時要開巨大陣列，浪費空間",
+   "why": "例如存 50 就要有 index 50，大部分格子都空著。"
+  },
+  {
+   "q": "h(x) = x mod 10，下列哪兩個 key 會 collision？",
+   "opts": [
+    "3 和 13",
+    "3 和 8",
+    "6 和 4",
+    "10 和 8"
+   ],
+   "ans": "3 和 13",
+   "why": "3 mod 10 = 13 mod 10 = 3，對到同一個 index。"
+  },
+  {
+   "q": "表大小 10、linear probing，依序 insert 8, 3, 13, 6, 4, 10，4 會放在哪？",
+   "opts": [
+    "[5]",
+    "[4]",
+    "[6]",
+    "[7]"
+   ],
+   "ans": "[5]",
+   "why": "13 先撞 3 而放進 [4]，4 到 [4] 撞到 13，下一格 [5] 是空的。"
+  },
+  {
+   "q": "承上表（[3]=3, [4]=13, [5]=4, [6]=6, [7] 空），search 24 會怎樣？",
+   "opts": [
+    "查 [4]、[5]、[6] 後遇到空格 [7]，回報找不到",
+    "查 [4] 不是就回報找不到",
+    "查遍全部 10 格",
+    "在 [7] 找到"
+   ],
+   "ans": "查 [4]、[5]、[6] 後遇到空格 [7]，回報找不到",
+   "why": "Linear probing 搜尋要一直找到 key 或遇到空格為止。"
+  },
+  {
+   "q": "Quadratic probing、表大小 10，已有 [3]=3、[4]=13，insert 23 會放在？",
+   "opts": [
+    "[7]",
+    "[5]",
+    "[6]",
+    "[4]"
+   ],
+   "ans": "[7]",
+   "why": "i = 0：3 撞；i = 1：3 + 1 = 4 撞；i = 2：3 + 4 = 7 空。"
+  },
+  {
+   "q": "Quadratic probing 主要想解決 linear probing 的什麼問題？",
+   "opts": [
+    "primary clustering",
+    "需要額外記憶體",
+    "hash function 太慢",
+    "表大小不能改"
+   ],
+   "ans": "primary clustering",
+   "why": "跳 1、4、9… 格，讓碰撞的元素不會全部擠成連續一塊。"
+  }
+ ]
+}

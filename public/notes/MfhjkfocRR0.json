@@ -1,0 +1,203 @@
+{
+ "video": "MfhjkfocRR0",
+ "label": "What is a HashTable Data Structure",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Hash table：key 對應 value",
+   "scene": "hasha-kv",
+   "points": [
+    {
+     "text": "Hash table 是用來存資料的資料結構。",
+     "t": 4
+    },
+    {
+     "text": "每筆資料有兩部分：key，以及 value（record）。",
+     "t": 13
+    },
+    {
+     "text": "例：key 是名字、value 是電話號碼，可以拿來存一堆人的電話。",
+     "t": 26
+    },
+    {
+     "text": "Hash table 是實作 associative array 的一種方式：把 key 對應（map）到 value。",
+     "t": 42
+    },
+    {
+     "text": "它的核心就是一個陣列，例如 index 0～4。",
+     "t": 49
+    },
+    {
+     "text": "真正實作時表會開得大很多，白板上 5 格只是示意。",
+     "t": 67
+    }
+   ]
+  },
+  {
+   "title": "Hash function：hash(Paul) = 3",
+   "scene": "hasha-paul",
+   "points": [
+    {
+     "text": "要寫一個 hash function。",
+     "t": 89
+    },
+    {
+     "text": "Hash function 看 key、算出一個 index，告訴我們資料要放陣列哪一格。",
+     "t": 93
+    },
+    {
+     "text": "例：hash(\"Paul\") 算出 index 3，Paul 的名字和電話就放在 [3]。",
+     "t": 121
+    },
+    {
+     "text": "同一個 key 每次丟進去都得到同一個 index（deterministic）。",
+     "t": 138
+    },
+    {
+     "text": "另一個人 hash 出 1，就放 [1]。",
+     "t": 162
+    },
+    {
+     "text": "再一個放 [2]、另一個（菱形）放 [4]。",
+     "t": 190
+    }
+   ]
+  },
+  {
+   "title": "Collision 與 chaining",
+   "scene": "hasha-chain3",
+   "points": [
+    {
+     "text": "再加一個人，hash 值也是 3。",
+     "t": 206
+    },
+    {
+     "text": "[3] 已經有 Paul 的資料 → 這就是 collision。",
+     "t": 227
+    },
+    {
+     "text": "處理 collision 的方法很多；這系列用的做法是在每個 index 拉一條 linked list。",
+     "t": 232
+    },
+    {
+     "text": "新的人放進 [3] 的串列裡。",
+     "t": 261
+    },
+    {
+     "text": "這種做法叫 chaining。",
+     "t": 270
+    },
+    {
+     "text": "再有人 hash 到 3，就繼續接在同一條串列後面。",
+     "t": 272
+    },
+    {
+     "text": "發生 collision 就掛在同一格的串列上，這些人都屬於 index 3。",
+     "t": 295
+    }
+   ]
+  },
+  {
+   "title": "查詢：hash 直接告訴你去哪一格",
+   "scene": "hasha-lookup",
+   "points": [
+    {
+     "text": "存了大量資料後，想用某人的名字查他的電話。",
+     "t": 306
+    },
+    {
+     "text": "把 key 丟進同一個 hash function。",
+     "t": 323
+    },
+    {
+     "text": "hash function 吐出 index，直接告訴你他在哪一格。",
+     "t": 340
+    },
+    {
+     "text": "例：hash 結果是 1（老師先口誤說 2）。",
+     "t": 363
+    },
+    {
+     "text": "就算陣列有一百萬格，其他 index 都不用看。",
+     "t": 366
+    },
+    {
+     "text": "若有 chaining，就沿著 [1] 的串列往下找到那筆資料。",
+     "t": 380
+    },
+    {
+     "text": "hash function 設計得好，每格的串列就不會太長。",
+     "t": 397
+    }
+   ],
+   "trap": "補充：chaining 查詢平均 O(1 + α)，α = n/m（load factor）；若 hash function 很差，全部擠進同一格，最壞會退化成 O(n)。"
+  },
+  {
+   "title": "結語",
+   "scene": null,
+   "points": [
+    {
+     "text": "總結：其他處理 collision 的方法也有，下一集會用 C++ 實作 chaining 版的 hash table。",
+     "t": 419
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "影片中 hash function 的作用是什麼？",
+   "opts": [
+    "把 key 轉成陣列的 index",
+    "把 value 加密",
+    "把陣列排序",
+    "刪除重複的 key"
+   ],
+   "ans": "把 key 轉成陣列的 index",
+   "why": "hash(key) 算出 index，告訴我們資料要存在陣列哪一格。"
+  },
+  {
+   "q": "hash(\"Paul\") 第一次得到 3，第二次再算會得到？",
+   "opts": [
+    "3",
+    "隨機一個 index",
+    "4（下一格）",
+    "0"
+   ],
+   "ans": "3",
+   "why": "同一個 key 每次都必須得到同一個 index，否則之後就查不到資料。"
+  },
+  {
+   "q": "兩個不同的 key 算出同一個 index，叫做？",
+   "opts": [
+    "collision",
+    "overflow",
+    "rehashing",
+    "underflow"
+   ],
+   "ans": "collision",
+   "why": "影片中第二個人也 hash 到 3，而 [3] 已經有 Paul，這就是 collision。"
+  },
+  {
+   "q": "影片用哪種方法處理 collision？",
+   "opts": [
+    "chaining：每個 index 接一條 linked list",
+    "linear probing：放到下一格",
+    "直接覆蓋舊資料",
+    "把表放大一倍"
+   ],
+   "ans": "chaining：每個 index 接一條 linked list",
+   "why": "老師在每個 index 拉出 linked list，碰撞的資料都接在同一格的串列上。"
+  },
+  {
+   "q": "查詢某人時 hash 得到 1，接下來要做什麼？",
+   "opts": [
+    "只看 index 1，沿著它的串列找",
+    "從 index 0 開始一格一格找",
+    "看 index 1 和 2",
+    "把整個表排序後二分搜尋"
+   ],
+   "ans": "只看 index 1，沿著它的串列找",
+   "why": "hash function 已經告訴你在哪一格，其他 index 都不用看，只要搜那一格的串列。"
+  }
+ ]
+}

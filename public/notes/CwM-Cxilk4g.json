@@ -1,0 +1,318 @@
+{
+ "video": "CwM-Cxilk4g",
+ "label": "Hashing - Collision Resolution with Linear Probing",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Open addressing 與 chaining 對照",
+   "scene": "chaining-vs-open",
+   "points": [
+    {
+     "text": "本講主題：collision resolution，特別是 open addressing。",
+     "t": 0
+    },
+    {
+     "text": "Open addressing：所有資料都放在 hash table 本身裡面。",
+     "t": 15
+    },
+    {
+     "text": "上一講的 separate chaining（open hashing）每格掛 linked list，會長到比表的格數還多。",
+     "t": 26
+    },
+    {
+     "text": "Open addressing 需要比較大的表，load factor λ 低於 0.5 時效果好。",
+     "t": 52
+    },
+    {
+     "text": "例：h(x) = x mod 10，10、20、30、40、50 全部 hash 到 index 0。",
+     "t": 73
+    },
+    {
+     "text": "用 chaining 會在 [0] 串成 50→40→30→20→10。",
+     "t": 179
+    },
+    {
+     "text": "表裡明明還有很多空格，卻另外花了 linked list 的記憶體。",
+     "t": 196
+    }
+   ]
+  },
+  {
+   "title": "Linear probing 的想法：撞了放下一格",
+   "scene": "hasha-lp-idea",
+   "points": [
+    {
+     "text": "想把表裡的空格用起來，這就是 open addressing 的動機。",
+     "t": 216
+    },
+    {
+     "text": "insert 10 放 [0]；20 撞了就放下一格 [1]。",
+     "t": 227
+    },
+    {
+     "text": "h(30) = 0 已滿，試 [1] 也滿，就放 [2]。",
+     "t": 240
+    },
+    {
+     "text": "這種往下一格找的方法叫 linear probing。",
+     "t": 260
+    },
+    {
+     "text": "40：[0]、[1]、[2] 都不空，放到 [3]。",
+     "t": 282
+    },
+    {
+     "text": "一般式：h_i(x) = (hash(x) + f(i)) mod 10。",
+     "t": 297
+    },
+    {
+     "text": "Linear probing 的 f(i) 就是 i。",
+     "t": 318
+    },
+    {
+     "text": "h_0(x) = hash(x) + f(0) = hash(x)；撞了之後依序 +1、+2、+3，直到不撞。",
+     "t": 334
+    }
+   ]
+  },
+  {
+   "title": "正式定義：probe sequence",
+   "scene": "hasha-probe-def",
+   "points": [
+    {
+     "text": "依序嘗試 h_0(x)、h_1(x)、h_2(x)…",
+     "t": 365
+    },
+    {
+     "text": "h_i(x) = (hash(x) + f(i)) mod TableSize，且 f(0) = 0。",
+     "t": 373
+    },
+    {
+     "text": "三種常見做法：linear probing、quadratic probing、double hashing；本講用 linear。",
+     "t": 389
+    },
+    {
+     "text": "Linear probing：依序掃描陣列、到底就 wrap around，直到找到空格。",
+     "t": 396
+    },
+    {
+     "text": "f 是線性函數，通常取 f(i) = i。",
+     "t": 432
+    },
+    {
+     "text": "例：20 第一次撞，f(1) = 1，就移到下一格。",
+     "t": 438
+    }
+   ]
+  },
+  {
+   "title": "例：insert 89, 18, 49, 58, 9",
+   "scene": "hasha-lp-89",
+   "points": [
+    {
+     "text": "看每次 insert 後的表；表大小 10，hash(x) = x mod 10。",
+     "t": 453
+    },
+    {
+     "text": "89 mod 10 = 9，[9] 空 → 放 [9]。",
+     "t": 489
+    },
+    {
+     "text": "18 mod 10 = 8 → 放 [8]。",
+     "t": 502
+    },
+    {
+     "text": "49 mod 10 = 9 已滿；h_1(49) = (9 + 1) mod 10 = 0 → 放 [0]。",
+     "t": 515
+    },
+    {
+     "text": "58：h_0 = 8、h_1 = 9、h_2 = 0 都撞。",
+     "t": 559
+    },
+    {
+     "text": "h_3(58) = (8 + 3) mod 10 = 1 → 放 [1]。",
+     "t": 607
+    },
+    {
+     "text": "9：h_0 = 9、h_1 = 0、h_2 = 1 都撞。",
+     "t": 618
+    },
+    {
+     "text": "h_3(9) = (9 + 3) mod 10 = 2 → 放 [2]。",
+     "t": 675
+    }
+   ],
+   "trap": "影片 10:32 口誤說「11 modulo 2」，應為 11 mod 10 = 1。補充：58 和 9 都要 4 次 probe（3 次碰撞＋1 次成功）。"
+  },
+  {
+   "title": "Find：走同一條 probe sequence",
+   "scene": "find-probes",
+   "points": [
+    {
+     "text": "Find 跟 insert 走同一條 probe sequence。",
+     "t": 701
+    },
+    {
+     "text": "find 58 要 4 次 probe。",
+     "t": 708
+    },
+    {
+     "text": "h(58) = 8 不是 → [9] 不是 → [0] 不是 → [1] 找到。",
+     "t": 718
+    },
+    {
+     "text": "所以 find 58 總共 4 次 probe。",
+     "t": 753
+    },
+    {
+     "text": "find 19 要 5 次 probe。",
+     "t": 759
+    }
+   ],
+   "trap": "補充：19 不在表中，要走 9 → 0 → 1 → 2 → 3，遇到空格 [3] 才能確定不存在，這是失敗搜尋。"
+  },
+  {
+   "title": "Primary clustering",
+   "scene": "hasha-cluster",
+   "points": [
+    {
+     "text": "Linear probing 的問題：clustering。",
+     "t": 764
+    },
+    {
+     "text": "只要表夠大，一定找得到空格，但找的時間會變長。",
+     "t": 767
+    },
+    {
+     "text": "連續被占的一大塊就是 cluster：hash 到這裡就得一路走到底。",
+     "t": 782
+    },
+    {
+     "text": "所以 λ 要小於 0.5。",
+     "t": 793
+    }
+   ]
+  },
+  {
+   "title": "平均 probe 次數：表大小 11",
+   "scene": "hasha-avg11",
+   "points": [
+    {
+     "text": "看成功搜尋與失敗搜尋平均要幾次 probe；這張表大小為 11。",
+     "t": 799
+    },
+    {
+     "text": "find 20：20 mod 11 = 9，一次就找到。",
+     "t": 810
+    },
+    {
+     "text": "30 mod 11 = 8，也是一次；2 mod 11 = 2，一次。",
+     "t": 829
+    },
+    {
+     "text": "13 mod 11 = 2 不是 → +1 到 [3] 找到，2 次。",
+     "t": 845
+    },
+    {
+     "text": "成功搜尋平均 15/8 次，不到 2 次。",
+     "t": 881
+    },
+    {
+     "text": "失敗搜尋：find 0，[0] 不是，[1] 是空格 → 停。",
+     "t": 897
+    },
+    {
+     "text": "find 4：[4]、[5] 都不是，[6] 空 → 不在表裡。",
+     "t": 950
+    },
+    {
+     "text": "失敗搜尋要找到空格才能停，所以比較次數更多。",
+     "t": 970
+    }
+   ],
+   "trap": "影片 14:27 說 25 mod 11 = 4、直接找到；其實 25 mod 11 = 3，[3] 被 13 占了，25 是探到 [4] 才找到（2 次），15/8 的總和本來就是這樣算的。補充：這張表失敗搜尋平均 31/11 ≈ 2.82 次。"
+  },
+  {
+   "title": "結語：下一個是 quadratic probing",
+   "scene": null,
+   "points": [
+    {
+     "text": "下一個方法 quadratic probing 可以減輕 clustering。",
+     "t": 980
+    },
+    {
+     "text": "Open addressing 只用表本身的記憶體，不需 chaining 的額外資料結構。",
+     "t": 989
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Open addressing 和 separate chaining 最大的差別是？",
+   "opts": [
+    "所有資料都放在表本身，不用額外的 linked list",
+    "每個 index 掛一條 linked list",
+    "不需要 hash function",
+    "表的大小可以小於資料數"
+   ],
+   "ans": "所有資料都放在表本身，不用額外的 linked list",
+   "why": "Open addressing 碰撞時在表裡找別的空格；chaining 才是另外掛串列。"
+  },
+  {
+   "q": "表大小 10、hash(x) = x mod 10、linear probing，依序 insert 89, 18, 49, 58，58 會放在哪？",
+   "opts": [
+    "[1]",
+    "[8]",
+    "[0]",
+    "[2]"
+   ],
+   "ans": "[1]",
+   "why": "58 → 8（18 占）→ 9（89 占）→ 0（49 占）→ 1 空，所以放 [1]。"
+  },
+  {
+   "q": "linear probing 的 probe 函數 f(i) 是？",
+   "opts": [
+    "f(i) = i",
+    "f(i) = i²",
+    "f(i) = i·hash2(x)",
+    "f(i) = 2i"
+   ],
+   "ans": "f(i) = i",
+   "why": "h_i(x) = (hash(x) + i) mod m，依序往下一格找。"
+  },
+  {
+   "q": "Open addressing 的 find 何時可以判定 key 不在表中？",
+   "opts": [
+    "沿 probe sequence 遇到空格時",
+    "第一次 probe 不是時",
+    "走到表的最後一格時",
+    "probe 次數超過 2 次時"
+   ],
+   "ans": "沿 probe sequence 遇到空格時",
+   "why": "insert 時若有這個 key，一定會放在那個空格之前；遇到空格就能停止。"
+  },
+  {
+   "q": "表大小 11 的例子，成功搜尋平均 probe 次數是？",
+   "opts": [
+    "15/8",
+    "8/11",
+    "31/11",
+    "1"
+   ],
+   "ans": "15/8",
+   "why": "8 個 key 的 probe 次數 1+1+1+2+2+4+1+3 = 15，平均 15/8 ≈ 1.88。"
+  },
+  {
+   "q": "Linear probing 讓連續格子被占成一大塊，使搜尋變慢的現象叫？",
+   "opts": [
+    "primary clustering",
+    "secondary clustering",
+    "overflow",
+    "rehashing"
+   ],
+   "ans": "primary clustering",
+   "why": "hash 到 cluster 裡的任何 key 都要一路走到 cluster 尾端，而且 cluster 會越長越大。"
+  }
+ ]
+}

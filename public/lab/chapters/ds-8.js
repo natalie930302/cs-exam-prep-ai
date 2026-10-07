@@ -10,6 +10,8 @@
 // - Radix Sort 用 LSD（從最低位開始），每回合用穩定的分配（bucket 先進先出）。影片例子：2341 1432 2413 1243 2143 1234。
 // - Heap Sort 依洪逸課本：陣列看成 1-based 完整二元樹，先由下往上 adjust 建 max heap，再反覆把根換到尾端。
 // - Merge Sort 用遞迴（top-down）版；合併時相等取左邊，所以穩定。
+import kit from './_kit.js';
+
 export default function (ctx) {
   const { THREE, lab, colorFor, sleep, $, log, clearLog, setState, controls, on, say, beat } = ctx;
   let timer = null;
@@ -942,6 +944,13 @@ export default function (ctx) {
     } },
   };
 
+
+  // 每段影片的場景片段（由 sync pass 加入）：每個片段把 [id, 標題, play] 放進 FRAG。
+  const K = kit(ctx);
+  const FRAG = [];
+  // @@FRAGMENTS@@
+  FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
+
   return {
     kicker: '資料結構・第 8 章',
     title: '排序演算法',
@@ -959,7 +968,7 @@ export default function (ctx) {
       { id: 'quiz', name: '小測驗', render: renderQuiz },
     ],
     scenes,
-    sceneOrder: ['quick-partition', 'quick-worst-case', 'merge-sort', 'heap-sort', 'comparison-lower-bound', 'counting-sort', 'radix-lsd', 'stability'],
+    sceneOrder: ['quick-partition', 'quick-worst-case', 'merge-sort', 'heap-sort', 'comparison-lower-bound', 'counting-sort', 'radix-lsd', 'stability'].concat(FRAG.map((f) => f[0])),
     stop() { stopTimer(); },
   };
 }

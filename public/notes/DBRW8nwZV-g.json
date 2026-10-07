@@ -1,0 +1,267 @@
+{
+ "video": "DBRW8nwZV-g",
+ "label": "Graph Data Structure Intro（表示法）",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Graph：node、edge，有向與無向",
+   "scene": "grapha-types",
+   "points": [
+    {
+     "text": "Graph 資料結構不是數學課畫的函數圖。",
+     "t": 5
+    },
+    {
+     "text": "Graph 是一群東西以及它們之間的關係（連線）。",
+     "t": 10
+    },
+    {
+     "text": "資料叫 node 或 vertex，連線叫 edge。",
+     "t": 14
+    },
+    {
+     "text": "例：social network，node 是人，edge 表示兩人是不是朋友。",
+     "t": 22
+    },
+    {
+     "text": "兩大類：directed 與 undirected。",
+     "t": 30
+    },
+    {
+     "text": "Undirected graph 的邊沒有方向；directed graph 的邊有方向。",
+     "t": 35
+    },
+    {
+     "text": "Undirected 例：社群網路的朋友關係。",
+     "t": 44
+    },
+    {
+     "text": "Directed 例：網頁與超連結，A 連到 B 不代表 B 連回 A。",
+     "t": 52
+    }
+   ]
+  },
+  {
+   "title": "Adjacency List",
+   "scene": "grapha-adjlist",
+   "points": [
+    {
+     "text": "介紹三種表示 graph 的方法。",
+     "t": 64
+    },
+    {
+     "text": "第一種 adjacency list：每個 vertex 對應它的鄰居集合。",
+     "t": 68
+    },
+    {
+     "text": "例：A 連到 B，B 連到 A 和 C，C 連到 B。",
+     "t": 79
+    },
+    {
+     "text": "可以用 JavaScript 物件表示：key 是頂點、value 是鄰居陣列。",
+     "t": 89
+    },
+    {
+     "text": "這是 undirected graph，表示法看不出邊的方向。",
+     "t": 95
+    },
+    {
+     "text": "也可以更簡單地用陣列，node 用編號取代字串標籤。",
+     "t": 100
+    }
+   ]
+  },
+  {
+   "title": "Adjacency Matrix（無向）",
+   "scene": "graph-representations",
+   "points": [
+    {
+     "text": "第二種：adjacency matrix。",
+     "t": 112
+    },
+    {
+     "text": "它是二維陣列，每個內層陣列的長度都和外層一樣。",
+     "t": 115
+    },
+    {
+     "text": "數字代表邊：0 表示沒有邊，1 表示有邊。",
+     "t": 127
+    },
+    {
+     "text": "表格的上方和左側是 node 的標籤。",
+     "t": 136
+    },
+    {
+     "text": "和 adjacency list 不同：每一列的元素數都必須等於 node 數。",
+     "t": 148
+    },
+    {
+     "text": "3 × 3 矩陣代表 graph 有 3 個 node。",
+     "t": 155
+    }
+   ],
+   "trap": "補充：無向圖的 adjacency matrix 必定對稱（M[i][j] = M[j][i]），空間 O(V²)；adjacency list 空間 O(V + E)，稀疏圖較省。"
+  },
+  {
+   "title": "Adjacency Matrix（有向）",
+   "scene": "directed-matrix",
+   "points": [
+    {
+     "text": "Adjacency matrix 也能表示 directed graph。",
+     "t": 161
+    },
+    {
+     "text": "例：第二個 node 指向第一個，第三個 node 也指向第一個。",
+     "t": 165
+    },
+    {
+     "text": "只有「從某點指向另一點」的位置才是 1；兩條邊就只有兩個 1。",
+     "t": 175
+    }
+   ],
+   "trap": "補充：有向圖矩陣不一定對稱；第 i 列總和 = out-degree，第 j 行總和 = in-degree。"
+  },
+  {
+   "title": "Incidence Matrix",
+   "scene": "incidence-matrix",
+   "points": [
+    {
+     "text": "第三種：incidence matrix，也是二維陣列。",
+     "t": 186
+    },
+    {
+     "text": "但行列意義不同：adjacency matrix 的行列都是 node；incidence matrix 的 row 是 node、column 是 edge。",
+     "t": 200
+    },
+    {
+     "text": "所以列數和行數可以不一樣（V × E）。",
+     "t": 212
+    },
+    {
+     "text": "每一行代表一條 edge；一條邊連兩個 node，就在那一行的兩列填 1。",
+     "t": 216
+    },
+    {
+     "text": "例：edge 1 連接 A、B，edge 1 那一行在 A 列與 B 列都是 1。",
+     "t": 231
+    },
+    {
+     "text": "Directed graph：離開的 node 填 −1，進入的 node 填 1。",
+     "t": 244
+    },
+    {
+     "text": "最後展示 incidence matrix 的 JavaScript 寫法。",
+     "t": 253
+    }
+   ]
+  },
+  {
+   "title": "Weighted graph",
+   "scene": "grapha-weights",
+   "points": [
+    {
+     "text": "Edge 也可以有權重（weight）。",
+     "t": 259
+    },
+    {
+     "text": "目前的例子都是 unweighted：有邊／沒邊只用 0 或 1。",
+     "t": 264
+    },
+    {
+     "text": "可依應用給不同權重，影片說用大於 1 的數表示。",
+     "t": 268
+    }
+   ],
+   "trap": "補充：權重可以是任何數（包括 1、0 甚至負數），影片「大於 1」只是簡化說法；weighted adjacency matrix 常用 ∞（或另設記號）表示沒有邊，以免和權重 0 混淆。"
+  },
+  {
+   "title": "結語",
+   "scene": null,
+   "points": [
+    {
+     "text": "下一支影片會講 graph traversal 演算法（BFS／DFS）。",
+     "t": 281
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Graph 中的資料點和連線分別叫做？",
+   "opts": [
+    "node（vertex）與 edge",
+    "key 與 value",
+    "row 與 column",
+    "root 與 leaf"
+   ],
+   "ans": "node（vertex）與 edge",
+   "why": "影片定義：資料叫 node 或 vertex，連線叫 edge。"
+  },
+  {
+   "q": "網頁與超連結最適合用哪種 graph 表示？",
+   "opts": [
+    "directed graph",
+    "undirected graph",
+    "tree",
+    "complete graph"
+   ],
+   "ans": "directed graph",
+   "why": "A 頁連到 B 頁，B 不一定連回 A，邊有方向。"
+  },
+  {
+   "q": "A–B、B–C 的無向圖，B 的 adjacency list 是？",
+   "opts": [
+    "A, C",
+    "C",
+    "A",
+    "A, B, C"
+   ],
+   "ans": "A, C",
+   "why": "B 同時和 A、C 相連；無向圖兩端都要記錄。"
+  },
+  {
+   "q": "Adjacency matrix 中 M[i][j] = 0 代表？",
+   "opts": [
+    "i 和 j 之間沒有邊",
+    "i 和 j 是同一點",
+    "邊的權重為 1",
+    "i 的 degree 為 0"
+   ],
+   "ans": "i 和 j 之間沒有邊",
+   "why": "unweighted adjacency matrix：1 表示有邊、0 表示沒邊。"
+  },
+  {
+   "q": "有向圖：第二個 node 指向第一個、第三個也指向第一個，矩陣裡有幾個 1？",
+   "opts": [
+    "2",
+    "4",
+    "3",
+    "6"
+   ],
+   "ans": "2",
+   "why": "有向邊只在 M[來源][目的] 填 1，兩條邊就兩個 1，不會對稱補上。"
+  },
+  {
+   "q": "Incidence matrix 的 row 和 column 分別代表？",
+   "opts": [
+    "row = node，column = edge",
+    "row = edge，column = node",
+    "都代表 node",
+    "都代表 edge"
+   ],
+   "ans": "row = node，column = edge",
+   "why": "所以大小是 V × E，列數和行數可以不同。"
+  },
+  {
+   "q": "有向圖的 incidence matrix 中，一條邊離開的 node 和進入的 node 分別填？",
+   "opts": [
+    "−1 與 1",
+    "1 與 −1",
+    "1 與 1",
+    "0 與 1"
+   ],
+   "ans": "−1 與 1",
+   "why": "影片慣例：離開的 node 填 −1，進入的 node 填 1。"
+  }
+ ]
+}

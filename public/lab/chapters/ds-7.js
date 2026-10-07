@@ -5,6 +5,8 @@
 // 鄰接串列一律依頂點編號由小到大排列（考題沒指定順序時的常見假設），所以 DFS／BFS 順序是唯一的。
 // DFS 用課本的遞迴版（畫面上的 stack = 遞迴呼叫堆疊）；BFS 在 enqueue 時就標記 visited（課本 bfs()）。
 // 表示法場景沿用影片〈Graph Data Structure Intro〉的例子：A–B、B–C；有向圖 B→A、C→A；Incidence Matrix 有向時離開 −1、進入 +1。
+import kit from './_kit.js';
+
 export default function (ctx) {
   const { THREE, lab, colorFor, sleep, $, log, clearLog, setState, controls, on, say, beat } = ctx;
   let timer = null;
@@ -877,6 +879,112 @@ export default function (ctx) {
     } },
   };
 
+
+  // 每段影片的場景片段（由 sync pass 加入）：每個片段把 [id, 標題, play] 放進 FRAG。
+  const K = kit(ctx);
+  const FRAG = [];
+  // ═══ grapha.js ═══
+  {
+const { V3, fresh, tag, cube, glow, relabel, code, arrow, GOLD } = K;
+// ─── DBRW8nwZV-g：Graph Data Structure Intro（表示法） ───
+const GV = '#4b9ee2', GP = '#9b7ef4', GO = '#dd8238';
+function gaV(name, x, z, color) { return cube(name, color || GV, [0.9, 0.7, 0.9], x, 0.35, z, 3); }
+function gaLine(a, b) {
+  const l = new ctx.THREE.Line(new ctx.THREE.BufferGeometry().setFromPoints([V3(a.position.x, 0.35, a.position.z), V3(b.position.x, 0.35, b.position.z)]), new ctx.THREE.LineBasicMaterial({ color: '#9c8b70' }));
+  ctx.lab.world.add(l); return l;
+}
+// directed edge: arrow from a to b, stopping short of b's cube
+function gaArc(a, b, color = 0x9c8b70) {
+  const p = V3(a.position.x, 0.35, a.position.z), q = V3(b.position.x, 0.35, b.position.z);
+  const d = q.clone().sub(p).normalize();
+  return arrow(p.clone().addScaledVector(d, 0.55), q.clone().addScaledVector(d, -0.6), color);
+}
+
+// 00:05 graph = nodes + edges；undirected vs directed
+FRAG.push(['grapha-types', 'Graph：node、edge，有向與無向', async (tok) => {
+  fresh([0, 8.5, 11.5], [0, 0.4, 0]);
+  const you = gaV('你', -4.4, 1.6, GV), a = gaV('小明', -2.0, -1.4, GV), b = gaV('小華', -5.6, -1.8, GV);
+  say('graph：一群東西＋它們之間的關係', '不是數學課畫的函數圖');
+  await beat(tok, 2800);
+  tag('node / vertex', 'ptr', -3.8, 1.6, -3.2);
+  say('資料叫 node（vertex）', '連線叫 edge');
+  await beat(tok, 2000);
+  for (const [p, q] of [[you, a], [you, b], [a, b]]) { gaLine(p, q); await beat(tok, 500); }
+  tag('edge', 'ptr alt', -3.2, 0.9, 0.2);
+  say('社群網路：node = 人，edge = 朋友', '朋友是雙向的 → undirected');
+  await beat(tok, 3000);
+  tag('undirected', 'ptr', -3.8, 0, 3.4);
+  const p1 = gaV('網頁1', 2.4, 1.6, GO), p2 = gaV('網頁2', 5.4, 1.2, GO), p3 = gaV('網頁3', 4.0, -2.0, GO);
+  say('directed：edge 有方向', '例：網頁與超連結');
+  await beat(tok, 2200);
+  for (const [p, q] of [[p1, p2], [p1, p3], [p3, p2]]) { gaArc(p, q); await beat(tok, 700); }
+  tag('directed', 'ptr', 4.0, 0, 3.4);
+  glow(p1, GOLD); glow(p2, GOLD);
+  say('網頁1 連到網頁2，網頁2 不一定連回來', '⟨網頁1, 網頁2⟩ ≠ ⟨網頁2, 網頁1⟩');
+  await beat(tok, 3200);
+}]);
+
+// 01:04 adjacency list：A–B、B–C → JS 物件 → 編號陣列
+FRAG.push(['grapha-adjlist', 'Adjacency List：A–B、B–C', async (tok) => {
+  fresh([0, 8.5, 11.5], [0, 0.8, -0.4]);
+  const A = gaV('A', -5.4, -1.6), B = gaV('B', -3.6, 0.6), C = gaV('C', -5.4, 2.6);
+  gaLine(A, B); gaLine(B, C);
+  say('第一種表示法：adjacency list', '每個 vertex 記住它的鄰居');
+  await beat(tok, 2600);
+  const rows = [['A', ['B']], ['B', ['A', 'C']], ['C', ['B']]];
+  const idx = { A: 0, B: 1, C: 2 };
+  const heads = [], cells = [];
+  for (let r = 0; r < rows.length; r++) {
+    const [h, nb] = rows[r], z = -1.6 + r * 2.1;
+    heads.push(cube(h, GP, [0.9, 0.7, 0.9], -1.2, 0.35, z, 3));
+    glow([A, B, C][r], GOLD);
+    nb.forEach((n, k) => {
+      arrow(V3(-0.7 + k * 1.6, 0.4, z), V3(0.05 + k * 1.6, 0.4, z));
+      cells.push([cube(n, GV, [0.9, 0.7, 0.9], 0.6 + k * 1.6, 0.35, z, 3), n]);
+    });
+    say(h + ' 的鄰居：' + nb.join('、'), h + ' → ' + nb.join(', '));
+    await beat(tok, 2200);
+    glow([A, B, C][r], null);
+  }
+  const js = code(['var undirectedG = {', "  A: ['B'],", "  B: ['A', 'C'],", "  C: ['B']", '};'], 4.6, 1.2, 0.5, -1.2);
+  say('用 JavaScript 物件寫出來', 'key = 頂點，value = 鄰居陣列');
+  await beat(tok, 2800);
+  say('undirected：A 有 B，B 也有 A', '看不出方向 → 無向圖');
+  await beat(tok, 2400);
+  js.kill();
+  code(['var undirectedGArr = [', '  [1],', '  [0, 2],', '  [1]', '];'], 4.6, 1.2, 0.5, -1.2);
+  heads.forEach((h, r) => relabel(h, r));
+  cells.forEach(([c, n]) => relabel(c, idx[n]));
+  relabel(A, 0); relabel(B, 1); relabel(C, 2);
+  say('node 改用編號：更簡單的陣列', 'A = 0、B = 1、C = 2');
+  await beat(tok, 3200);
+}]);
+
+// 04:19 weighted edges
+FRAG.push(['grapha-weights', 'Weighted graph：邊上有權重', async (tok) => {
+  fresh([0, 8.5, 11.5], [0, 0.6, 0]);
+  const A = gaV('A', -5.4, -1.6), B = gaV('B', -3.2, 0.4), C = gaV('C', -5.4, 2.4);
+  gaLine(A, B); gaLine(B, C);
+  const N = ['A', 'B', 'C'], x0 = 1.0, z0 = -1.4, d = 1.3;
+  N.forEach((n, i) => { tag(n, 'idx', x0 + i * d, 0, z0 - 1.0); tag(n, 'idx', x0 - 1.0, 0, z0 + i * d); });
+  const M = [[0, 1, 0], [1, 0, 1], [0, 1, 0]];
+  const cells = M.map((row, i) => row.map((v, j) => cube(v, v ? GV : '#efe5d3', [1.0, 0.4, 1.0], x0 + j * d, 0.2, z0 + i * d, 3)));
+  say('目前都是 unweighted', '有邊 = 1、沒邊 = 0');
+  await beat(tok, 3800);
+  tag('4', 'ptr alt', -4.3, 0.9, -0.6); tag('2', 'ptr alt', -4.3, 0.9, 1.4);
+  say('邊可以帶權重（weight）', '權重依應用而定，例如距離（數字為示意）');
+  await beat(tok, 3400);
+  for (const [i, j, w] of [[0, 1, 4], [1, 0, 4], [1, 2, 2], [2, 1, 2]]) { relabel(cells[i][j], w); glow(cells[i][j], GOLD); }
+  say('矩陣裡改填權重', 'M[A][B] = M[B][A] = 4　M[B][C] = M[C][B] = 2');
+  await beat(tok, 3200);
+  for (const row of cells) for (const c of row) glow(c, null);
+  say('不只 0／1：數字就是邊的權重', 'weighted graph');
+  await beat(tok, 3000);
+}]);
+  }
+  // @@FRAGMENTS@@
+  FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
+
   return {
     kicker: '資料結構・第 7 章',
     title: '圖（基礎）：表示法、DFS、BFS',
@@ -892,7 +1000,7 @@ export default function (ctx) {
       { id: 'quiz', name: '小測驗', render: renderQuiz },
     ],
     scenes,
-    sceneOrder: ['graph-representations', 'directed-matrix', 'incidence-matrix', 'space-sparse-dense', 'dfs-stack', 'bfs-queue', 'connected-components', 'spanning-tree'],
+    sceneOrder: ['graph-representations', 'directed-matrix', 'incidence-matrix', 'space-sparse-dense', 'dfs-stack', 'bfs-queue', 'connected-components', 'spanning-tree'].concat(FRAG.map((f) => f[0])),
     stop() { stopTimer(); },
   };
 }
