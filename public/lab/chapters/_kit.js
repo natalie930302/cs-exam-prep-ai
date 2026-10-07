@@ -35,8 +35,11 @@ export default function kit(ctx) {
     const ls = lines.map((s, i) => { const l = tag(s.padEnd(w, ' '), '', x, yTop - i * dy, z); Object.assign(l.element.style, MONO); return l; });
     return { ls, hl(i) { ls.forEach((l, k) => { l.element.className = 'lab-label' + (k === i ? ' ptr alt' : ''); }); }, kill() { ls.forEach(kill); } };
   }
-  async function anim(tok, ms, fn) { const steps = 10; for (let k = 1; k <= steps; k++) { fn(k / steps); await beat(tok, ms / steps); } }
-  function line(x1, y1, x2, y2, z = 0, color = '#c9b48e') {
+  // eased (in-out sine) and smoother for longer moves; still ends exactly at t = 1
+  const REDUCED = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const ease = (t) => (REDUCED ? t : 0.5 - 0.5 * Math.cos(Math.PI * t));
+  async function anim(tok, ms, fn) { const steps = Math.max(10, Math.min(30, Math.round(ms / 33))); for (let k = 1; k <= steps; k++) { fn(ease(k / steps)); await beat(tok, ms / steps); } }
+  function line(x1, y1, x2, y2, z = 0, color = '#a99470') {
     const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([V3(x1, y1, z), V3(x2, y2, z)]), new THREE.LineBasicMaterial({ color }));
     lab.world.add(l); return l;
   }

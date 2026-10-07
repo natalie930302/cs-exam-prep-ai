@@ -14,7 +14,7 @@
 // look and behave alike. ?stage=1 is the study-room mode: no chrome, one
 // caption + one formula line, scenes driven by postMessage from study.html
 // ({type:'scene', scene, params} or {type:'tour'}).
-import { THREE, createLab, colorFor } from './lab-engine.js?v=15';
+import { THREE, createLab, colorFor } from './lab-engine.js?v=21';
 
 const q = new URLSearchParams(location.search);
 const CH = (q.get('ch') || 'ds-2').replace(/[^\w-]/g, '');
@@ -48,8 +48,13 @@ function makeCtx() {
     on(id, fn) { const el = $(id); if (el) el.onclick = fn; },
     // stage caption (one short line) + formula line (may contain <span class="ok|no">)
     say(text, formula) {
-      $('caption').textContent = text || '';
-      $('caption').classList.toggle('on', !!text);
+      const cap = $('caption');
+      if (text && text !== cap.textContent && cap.classList.contains('on')) {
+        // a new step: replay a short settle-in so the eye notices the change
+        cap.classList.remove('swap'); void cap.offsetWidth; cap.classList.add('swap');
+      }
+      cap.textContent = text || '';
+      cap.classList.toggle('on', !!text);
       if (formula !== undefined) { $('formulaOv').innerHTML = formula || ''; $('formulaOv').classList.toggle('on', !!formula); }
     },
     // inside a scene: wait, and abort if the study room switched scenes

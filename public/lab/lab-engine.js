@@ -3,20 +3,36 @@
 // fall under gravity onto a floor height (bouncing with damping) or spring
 // toward a target position. Enough to make data-structure operations feel
 // physical without pulling in a full physics library.
+//
+// Look: soft studio lighting (a small baked room environment + one gentle
+// key light), slightly rounded blocks, and no visible floor edge — the canvas
+// is transparent over a warm paper gradient (lab.css) and a shadow-only
+// ground keeps objects anchored. In stage mode a quiet "camera operator"
+// keeps whatever the scene builds inside the frame (see autoFit below).
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 export { THREE };
 
+const SMALL = typeof matchMedia === 'function' && matchMedia('(max-width: 640px)').matches;
+// prefers-reduced-motion: no overshoot, squash, pulse or camera drift
+const CALM = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 export function createLab(container) {
+  const STAGE = document.body.classList.contains('stage');
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#fbf7f0');
+  scene.background = null; // the paper gradient comes from CSS behind the canvas
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 200);
   camera.position.set(0, 7, 16);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, SMALL ? 1.75 : 2));
+  renderer.setClearColor(0x000000, 0);
+  renderer.toneMapping = THREE.NeutralToneMapping;
+  renderer.toneMappingExposure = 1.05;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   container.appendChild(renderer.domElement);
@@ -25,25 +41,40 @@ export function createLab(container) {
   labels.domElement.style.position = 'absolute';
   labels.domElement.style.inset = '0';
   labels.domElement.style.pointerEvents = 'none';
+  labels.domElement.className = 'lab-labels';
   container.appendChild(labels.domElement);
 
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
   controls.maxPolarAngle = Math.PI * 0.49;
   controls.minDistance = 6;
   controls.maxDistance = 40;
 
-  scene.add(new THREE.HemisphereLight('#ffffff', '#e8dcc6', 1.6));
-  const sun = new THREE.DirectionalLight('#ffffff', 1.8);
-  sun.position.set(6, 14, 8);
+  // Soft image-based light: a tiny procedural room, baked once (cheap on
+  // phones and on a GTX1650), gives blocks gentle highlights on their edges.
+  try {
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environmentIntensity = 0.5;
+    pmrem.dispose();
+  } catch (e) { /* no env map: the lights below still work */ }
+
+  scene.add(new THREE.HemisphereLight('#fffaf1', '#dccbaf', 1.05));
+  const sun = new THREE.DirectionalLight('#fff3df', 1.55);
+  sun.position.set(4, 16, 7); // high and slightly in front: short shadows right under objects
   sun.castShadow = true;
-  sun.shadow.mapSize.set(1024, 1024);
-  Object.assign(sun.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14 });
+  sun.shadow.mapSize.set(1024, 1024); // lower res = softer edges, cheaper
+  sun.shadow.bias = -0.0004;
+  sun.shadow.normalBias = 0.02;
+  sun.shadow.intensity = 0.75; // shadows on blocks themselves stay light
+  Object.assign(sun.shadow.camera, { left: -16, right: 16, top: 16, bottom: -16, near: 1, far: 50 });
   scene.add(sun);
 
+  // Shadow-only ground: no visible disc edge / horizon line, just soft contact shadows.
   const floor = new THREE.Mesh(
-    new THREE.CircleGeometry(30, 64),
-    new THREE.MeshStandardMaterial({ color: '#f1e8d8', roughness: 1 })
+    new THREE.PlaneGeometry(200, 200),
+    new THREE.ShadowMaterial({ color: '#4a3618', opacity: 0.08 })
   );
   floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = true;
@@ -68,11 +99,215 @@ export function createLab(container) {
   new ResizeObserver(resize).observe(container);
   resize();
 
+  // ── Auto framing (stage mode) ──
+  // Scenes aim the camera once with frameCamera(); content then grows,
+  // moves and appears over time. Every few frames we measure what is on
+  // screen (blocks + visible labels) and, if it spills outside the area
+  // between the caption and the formula line, gently dolly back / re-centre.
+  // It never fights the user: any orbit/zoom drag turns it off until the
+  // next scene frames the camera again.
+  const fit = {
+    on: STAGE, user: false, frame: 0, lastFrameAt: -1e9,
+    look: new THREE.Vector3(0, 0, 0), dir: new THREE.Vector3(0, 7, 16).normalize(), dist: Math.hypot(7, 16),
+    scale: 1, goalScale: 1, shift: new THREE.Vector3(), goalShift: new THREE.Vector3(),
+    bias: new THREE.Vector3(), goalBias: new THREE.Vector3(),
+  };
+  controls.addEventListener('start', () => { fit.user = true; });
+  const _p = new THREE.Vector3(), _q = new THREE.Vector3(), _box = new THREE.Box3(), _size = new THREE.Vector3();
+  const _right = new THREE.Vector3(), _up = new THREE.Vector3();
+  function measure() {
+    const W = container.clientWidth, H = container.clientHeight;
+    if (!W || !H) return null;
+    camera.updateMatrixWorld();
+    world.updateMatrixWorld();
+    const off = new Map();
+    for (const b of bodies) {
+      if (b.mode === 'fly') off.set(b.obj, null);
+      else if (b.mode === 'fall' || b.mode === 'spring') off.set(b.obj, b.target.clone().sub(b.obj.position));
+    }
+    const r = { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity, n: 0, minY: Infinity, ax: 0, ay: 0, an: 0 };
+    // where things are changing right now (bodies on their way somewhere)
+    for (const b of bodies) {
+      if (b.mode !== 'fall' && b.mode !== 'spring') continue;
+      _q.copy(b.target).project(camera);
+      if (_q.z > 1 || _q.z < -1) continue;
+      r.ax += (_q.x + 1) / 2 * W; r.ay += (1 - _q.y) / 2 * H; r.an++;
+    }
+    const add = (p, hw, hh) => {
+      _q.copy(p).project(camera);
+      if (_q.z > 1 || _q.z < -1) return;
+      const sx = (_q.x + 1) / 2 * W, sy = (1 - _q.y) / 2 * H;
+      r.x0 = Math.min(r.x0, sx - hw); r.x1 = Math.max(r.x1, sx + hw);
+      r.y0 = Math.min(r.y0, sy - hh); r.y1 = Math.max(r.y1, sy + hh);
+      r.n++;
+    };
+    for (const top of world.children) {
+      const d = off.get(top);
+      if (d === null) continue;
+      top.traverseVisible((o) => {
+        if (o.isCSS2DObject) {
+          const el = o.element, st = el.style;
+          if (!el.textContent || st.visibility === 'hidden' || st.opacity === '0') return;
+          o.getWorldPosition(_p); if (d) _p.add(d);
+          add(_p, el.offsetWidth / 2, el.offsetHeight / 2);
+          return;
+        }
+        if (!o.isMesh || !o.geometry || o.userData.noFit) return;
+        const m = o.material;
+        if (m && !Array.isArray(m) && m.transparent && m.opacity < 0.35) return;
+        if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+        _box.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld);
+        if (_box.isEmpty()) return;
+        if (d) _box.translate(d);
+        _box.getSize(_size);
+        const big = Math.max(_size.x, _size.y, _size.z), small = Math.min(_size.x, _size.y, _size.z);
+        if (big > 40) return;                       // floors / backdrops are setting, not content
+        if (big > 12 && small < 0.3 && _size.x * _size.y * _size.z < 1) return; // long axis rods / "infinite" lines
+        r.minY = Math.min(r.minY, _box.min.y);
+        for (let i = 0; i < 8; i++) {
+          _p.set(i & 1 ? _box.max.x : _box.min.x, i & 2 ? _box.max.y : _box.min.y, i & 4 ? _box.max.z : _box.min.z);
+          add(_p, 0, 0);
+        }
+      });
+    }
+    return r.n ? r : null;
+  }
+  function safeArea() {
+    const W = container.clientWidth, H = container.clientHeight;
+    const cr = container.getBoundingClientRect();
+    let top = 14, bottom = H - 14;
+    const cap = document.getElementById('caption'), fo = document.getElementById('formulaOv');
+    if (cap && cap.classList.contains('on')) top = Math.max(top, cap.getBoundingClientRect().bottom - cr.top + 10);
+    if (fo && fo.classList.contains('on')) bottom = Math.min(bottom, fo.getBoundingClientRect().top - cr.top - 10);
+    if (bottom - top < H * 0.45) { top = H * 0.12; bottom = H * 0.9; }
+    return { x0: 14, x1: W - 14, y0: top, y1: bottom };
+  }
+  function fitStep(r) {
+    if (!r) return;
+    const s = safeArea();
+    const cw = r.x1 - r.x0, ch = r.y1 - r.y0, sw = s.x1 - s.x0, sh = s.y1 - s.y0;
+    const need = Math.max(cw / sw, ch / sh); // > 1: spills out of the safe area
+    let goal = fit.scale;
+    if (need > 1.0) goal = fit.scale * need * 1.05;
+    else if (need < 0.6) goal = fit.scale * need / 0.75; // lots of empty room: step in a little
+    goal = Math.min(1.9, Math.max(0.85, goal));
+    if (Math.abs(goal - fit.goalScale) / fit.goalScale > 0.05) fit.goalScale = goal;
+    // re-centre: screen offset -> world offset on the camera's right/up plane
+    const H = container.clientHeight;
+    const ox = (r.x0 + r.x1) / 2 - (s.x0 + s.x1) / 2, oy = (r.y0 + r.y1) / 2 - (s.y0 + s.y1) / 2;
+    const dist = fit.dist * fit.scale;
+    const wpp = 2 * dist * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) / H;
+    const spillX = cw > sw * 0.98 || r.x0 < s.x0 || r.x1 > s.x1;
+    const spillY = ch > sh * 0.98 || r.y0 < s.y0 || r.y1 > s.y1;
+    // only re-centre when something is cut off: a lopsided layout is often
+    // deliberate (room kept for what the scene adds next)
+    if (spillX || spillY) {
+      _right.setFromMatrixColumn(camera.matrixWorld, 0);
+      _up.setFromMatrixColumn(camera.matrixWorld, 1);
+      const g = fit.shift.clone().addScaledVector(_right, ox * wpp).addScaledVector(_up, -oy * wpp);
+      const lim = fit.dist * 0.45;
+      if (g.length() > lim) g.setLength(lim);
+      if (g.distanceTo(fit.goalShift) > fit.dist * 0.02) fit.goalShift.copy(g);
+    }
+    // lean the camera a little toward what is moving (small, slow, capped)
+    if (!CALM && r.an) {
+      _right.setFromMatrixColumn(camera.matrixWorld, 0);
+      _up.setFromMatrixColumn(camera.matrixWorld, 1);
+      const ax = r.ax / r.an - (s.x0 + s.x1) / 2, ay = r.ay / r.an - (s.y0 + s.y1) / 2;
+      fit.goalBias.set(0, 0, 0).addScaledVector(_right, ax * wpp * 0.14).addScaledVector(_up, -ay * wpp * 0.14);
+      const cap = fit.dist * 0.05;
+      if (fit.goalBias.length() > cap) fit.goalBias.setLength(cap);
+    } else fit.goalBias.set(0, 0, 0);
+  }
+  function applyFit(dt) {
+    const k = dt >= 1 ? 1 : 1 - Math.exp(-dt * 2.4);
+    fit.scale += (fit.goalScale - fit.scale) * k;
+    fit.shift.lerp(fit.goalShift, k);
+    fit.bias.lerp(fit.goalBias, dt >= 1 ? 1 : 1 - Math.exp(-dt * 1.1));
+    controls.target.copy(fit.look).add(fit.shift).add(fit.bias);
+    camera.position.copy(controls.target).addScaledVector(fit.dir, fit.dist * fit.scale);
+  }
+  // The shadow-only ground follows the lowest block, so shadows touch the
+  // objects that cast them instead of floating as grey strips far below.
+  let floorGoal = 0;
+  function measureTick() {
+    const r = measure();
+    if (r && isFinite(r.minY)) floorGoal = Math.max(-2, Math.min(12, r.minY - 0.02));
+    return r;
+  }
+  // ── Focus: when a scene highlights something (an emissive "glow", which is
+  // how every chapter marks the current element), quietly fade the other
+  // blocks and their labels toward the background so the eye lands on the
+  // highlighted one. Colours are blended, never replaced: a tint() a scene
+  // applies meanwhile is picked up as the new base colour.
+  const PAPER = new THREE.Color('#f8f2e7');
+  const _c = new THREE.Color();
+  const dimmed = new Set();
+  function isGlowing(m) { const e = m.emissive; return !!e && (e.r + e.g + e.b) > 0.04; }
+  function focusTick() {
+    const flying = new Set();
+    for (const b of bodies) if (b.mode === 'fly') flying.add(b.obj);
+    const meshes = [];
+    let glowing = 0;
+    for (const top of world.children) {
+      if (flying.has(top)) continue;
+      top.traverseVisible((o) => {
+        const m = o.material;
+        if (!o.isMesh || !m || Array.isArray(m) || !m.isMeshStandardMaterial || !m.color) return;
+        meshes.push(o);
+        if (isGlowing(m)) {
+          glowing++;
+          // gentle "breathing" on the highlighted block
+          if (!CALM) { m.emissiveIntensity = 1 + 0.4 * Math.sin(performance.now() / 1000 * 3.4); m.userData.__pulse = true; }
+        } else if (m.userData.__pulse) { m.emissiveIntensity = 1; delete m.userData.__pulse; }
+      });
+    }
+    const focus = glowing > 0 && glowing <= meshes.length * 0.6 && meshes.length >= 3;
+    const live = new Set();
+    for (const o of meshes) {
+      const m = o.material;
+      const want = focus && !isGlowing(m) ? 1 : 0;
+      let st = m.userData.__dim;
+      if (!st) {
+        if (!want) continue;
+        st = m.userData.__dim = { base: m.color.clone(), t: 0, hex: m.color.getHex() };
+      }
+      if (m.color.getHex() !== st.hex) st.base.copy(m.color); // recoloured by the scene
+      st.t += (want - st.t) * 0.35;
+      if (!want && st.t < 0.02) { m.color.copy(st.base); delete m.userData.__dim; setLabelDim(o, false); continue; }
+      m.color.copy(st.base).lerp(_c.copy(PAPER), 0.55 * st.t);
+      st.hex = m.color.getHex();
+      setLabelDim(o, st.t > 0.5);
+      live.add(o);
+    }
+    for (const o of dimmed) if (!live.has(o)) {
+      const st = o.material && o.material.userData.__dim;
+      if (st) { o.material.color.copy(st.base); delete o.material.userData.__dim; }
+      setLabelDim(o, false);
+    }
+    dimmed.clear(); for (const o of live) dimmed.add(o);
+  }
+  function setLabelDim(o, on) {
+    for (const c of o.children) if (c.isCSS2DObject) c.element.classList.toggle('lab-dim', on);
+  }
+
+  function fitTick(dt) {
+    const due = ++fit.frame % 8 === 0;
+    if (fit.frame % 3 === 0) focusTick();
+    const r = due ? measureTick() : null;
+    floor.position.y += (floorGoal - floor.position.y) * Math.min(1, dt * 4);
+    if (!fit.on || fit.user || !STAGE) return;
+    if (due) fitStep(r);
+    applyFit(dt);
+  }
+
   let last = performance.now();
   function tick(now) {
     const dt = Math.min(0.033, (now - last) / 1000);
     last = now;
     for (const b of bodies) stepBody(b, dt);
+    stepPops(dt);
+    fitTick(dt);
     controls.update();
     renderer.render(scene, camera);
     labels.render(scene, camera);
@@ -91,17 +326,20 @@ export function createLab(container) {
       if (p.y <= b.target.y) {
         p.y = b.target.y;
         if (Math.abs(b.vel.y) > 2.5) {
-          b.vel.y = -b.vel.y * 0.32; // bounce, losing energy
+          if (!b.landed) { b.landed = true; pop(b.obj, Math.min(1, Math.abs(b.vel.y) / 14)); } // squash on impact
+          b.vel.y = -b.vel.y * (CALM ? 0.15 : 0.3); // a soft bounce, losing energy
         } else {
+          b.landed = false;
           b.vel.y = 0;
           b.mode = 'rest';
           b.onSettle && b.onSettle();
         }
       }
     } else if (b.mode === 'spring') {
-      // critically-damped-ish spring toward target
+      // spring toward target with a slight overshoot-and-settle (damping
+      // ratio ~0.72; critically damped when reduced motion is on)
       for (const k of ['x', 'y', 'z']) {
-        const a = (b.target[k] - p[k]) * 90 - b.vel[k] * 16;
+        const a = (b.target[k] - p[k]) * 90 - b.vel[k] * (CALM ? 19 : 13.6);
         b.vel[k] += a * dt;
         p[k] += b.vel[k] * dt;
       }
@@ -109,15 +347,19 @@ export function createLab(container) {
         p.copy(b.target);
         b.vel.set(0, 0, 0);
         b.mode = 'rest';
+        if (b.travel > 0.6) pop(b.obj, 0.45); // small snap when it reaches its slot
         b.onSettle && b.onSettle();
       }
     } else if (b.mode === 'fly') {
       b.vel.y += GRAVITY * 0.35 * dt;
       p.addScaledVector(b.vel, dt);
-      b.obj.rotation.x += dt * 4;
-      b.obj.rotation.z += dt * 3;
-      b.life -= dt;
-      b.obj.traverse((o) => { if (o.material && o.material.transparent) o.material.opacity = Math.max(0, b.life); });
+      // drift away and fade, with only a gentle tumble
+      b.obj.rotation.x += dt * 1.6;
+      b.obj.rotation.z += dt * 1.1;
+      b.life -= dt * 1.2;
+      const s = 0.85 + 0.15 * Math.max(0, b.life);
+      if (b.baseScale) b.obj.scale.copy(b.baseScale).multiplyScalar(s);
+      b.obj.traverse((o) => { if (o.material && o.material.transparent) o.material.opacity = Math.max(0, b.life) * (o.material.userData.op0 ?? 1); });
       if (b.life <= 0) { removeBody(b); }
     }
   }
@@ -137,11 +379,37 @@ export function createLab(container) {
     b.target.copy(target); b.mode = 'fall'; b.onSettle = onSettle;
   }
   function springTo(b, target, onSettle) {
+    b.travel = b.obj.position.distanceTo(target);
     b.target.copy(target); b.mode = 'spring'; b.onSettle = onSettle;
   }
+  // squash-and-recover "snap" (~0.24 s); never stacks on the same object
+  const pops = new Map();
+  function pop(obj, amp) {
+    if (CALM || !obj || !obj.scale || amp < 0.05) return;
+    const p = pops.get(obj);
+    if (p) { p.t = 0; p.amp = Math.max(p.amp, amp); return; }
+    pops.set(obj, { base: obj.scale.clone(), last: null, t: 0, amp });
+  }
+  function stepPops(dt) {
+    for (const [obj, p] of pops) {
+      // the scene changed this object's scale itself: let it win, stop popping
+      if (p.last && !obj.scale.equals(p.last)) { pops.delete(obj); continue; }
+      p.t += dt;
+      const u = p.t / 0.24;
+      if (u >= 1 || !obj.parent) { obj.scale.copy(p.base); pops.delete(obj); continue; }
+      const e = Math.sin(Math.PI * u) * (1 - u) * p.amp;
+      obj.scale.set(p.base.x * (1 + 0.07 * e), p.base.y * (1 - 0.13 * e), p.base.z * (1 + 0.07 * e));
+      p.last = (p.last || new THREE.Vector3()).copy(obj.scale);
+    }
+  }
   function flyAway(b, dir = new THREE.Vector3(0, 9, 4)) {
-    b.vel.copy(dir); b.mode = 'fly'; b.life = 1;
-    b.obj.traverse((o) => { if (o.material) { o.material = o.material.clone(); o.material.transparent = true; } });
+    b.vel.copy(dir); b.mode = 'fly'; b.life = 1; b.baseScale = b.obj.scale.clone();
+    b.obj.traverse((o) => {
+      if (o.material) {
+        const op0 = o.material.transparent ? o.material.opacity : 1;
+        o.material = o.material.clone(); o.material.transparent = true; o.material.userData.op0 = op0;
+      }
+    });
     b.obj.traverse((o) => { if (o.element) o.element.style.opacity = '0'; });
   }
   function clear() {
@@ -157,10 +425,23 @@ export function createLab(container) {
     el.textContent = text;
     return new CSS2DObject(el);
   }
+  // Rounded blocks: one shared geometry per size (cheap even with hundreds
+  // of cells); edges catch the environment light so blocks read as objects.
+  const geoCache = new Map();
+  function blockGeometry(w, h, d) {
+    const key = w + ',' + h + ',' + d;
+    let g = geoCache.get(key);
+    if (!g) {
+      const r = Math.min(0.09, Math.min(w, h, d) * 0.14);
+      g = r > 0.012 ? new RoundedBoxGeometry(w, h, d, 2, r) : new THREE.BoxGeometry(w, h, d);
+      geoCache.set(key, g);
+    }
+    return g;
+  }
   function box(color, size = [1.6, 0.9, 1.6]) {
     const m = new THREE.Mesh(
-      new THREE.BoxGeometry(...size),
-      new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.05 })
+      blockGeometry(...size),
+      new THREE.MeshStandardMaterial({ color, roughness: 0.62, metalness: 0 })
     );
     m.castShadow = true; m.receiveShadow = true;
     return m;
@@ -168,21 +449,46 @@ export function createLab(container) {
   function frameCamera(pos, look) {
     // Embedded beside the video (stage mode) the canvas is smaller and wide,
     // so step back a little to keep the whole structure in frame.
-    if (document.body.classList.contains('stage')) {
+    if (STAGE) {
       pos = pos.map((v, i) => look[i] + (v - look[i]) * 1.18);
     }
     camera.position.set(...pos);
     controls.target.set(...look);
+    // auto framing: a new scene (not a camera move inside one) starts fresh
+    const now = performance.now();
+    const d = Math.hypot(pos[0] - look[0], pos[1] - look[1], pos[2] - look[2]);
+    if (d > 0.01) {
+      const key = pos.concat(look).map((v) => v.toFixed(3)).join(',');
+      // same framing as last time = the scene is looping: keep the fitted
+      // view instead of jumping back and re-fitting every loop
+      if (now - fit.lastFrameAt > 400 && key !== fit.key) {
+        fit.scale = fit.goalScale = 1; fit.shift.set(0, 0, 0); fit.goalShift.set(0, 0, 0); fit.bias.set(0, 0, 0); fit.goalBias.set(0, 0, 0);
+      }
+      if (now - fit.lastFrameAt > 400) fit.user = false;
+      fit.key = key;
+      fit.look.set(...look);
+      fit.dir.set(pos[0] - look[0], pos[1] - look[1], pos[2] - look[2]).normalize();
+      fit.dist = d;
+      if (fit.on && !fit.user) applyFit(0);
+    }
+    fit.lastFrameAt = now;
   }
   // Advance the simulation without waiting for animation frames (used when
   // the page is in a background tab, and for automated checks).
   function advance(seconds = 2) {
-    for (let t = 0; t < seconds; t += 1 / 60) for (const b of [...bodies]) stepBody(b, 1 / 60);
+    for (let t = 0; t < seconds; t += 1 / 60) {
+      for (const b of [...bodies]) stepBody(b, 1 / 60);
+      stepPops(1 / 60);
+      const due = Math.round(t * 60) % 8 === 0; const r = due ? measureTick() : null;
+      if (Math.round(t * 60) % 3 === 0) focusTick();
+      floor.position.y += (floorGoal - floor.position.y) * (4 / 60);
+      if (fit.on && !fit.user && STAGE) { if (due) fitStep(r); applyFit(1 / 60); }
+    }
     controls.update();
     renderer.render(scene, camera);
     labels.render(scene, camera);
   }
-  return { advance, scene, world, camera, controls, addBody, removeBody, dropTo, springTo, flyAway, clear, label, box, frameCamera, bodies };
+  return { advance, scene, world, camera, controls, addBody, removeBody, dropTo, springTo, flyAway, clear, label, box, frameCamera, bodies, renderer };
 }
 
 // Distinct but harmonious block colours, picked by value so the same
