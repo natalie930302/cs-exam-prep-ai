@@ -948,6 +948,429 @@ export default function (ctx) {
   // 每段影片的場景片段（由 sync pass 加入）：每個片段把 [id, 標題, play] 放進 FRAG。
   const K = kit(ctx);
   const FRAG = [];
+  // ═══ heaphq.js ═══
+  {
+// ─── HqPJF2L5h9U：Abdul Bari「Heap」（陣列表示、complete binary tree、insert／delete、heap sort、heapify、priority queue） ───
+// 只用 K 與 ctx（這個片段也會裝進 ds-8）。陣列一律 1-based。
+const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, line, GOLD, GREEN, RED, GRAY } = K;
+const say = ctx.say, beat = ctx.beat, colorFor = ctx.colorFor;
+const BLUE = '#1f3a6e';
+const QLY = [6.2, 4.7, 3.2, 1.7];
+const QCAM = [0, 6, 15.5], QLOOK = [0, 3.3, 1];
+// 一棵 heap：上面是樹、下面是陣列格（同一份資料兩種畫法）
+function qTree(vals, o = {}) {
+  const W = o.w || 11, X0 = o.x0 || 0, cap = o.cap || vals.length, arr = o.arr !== false;
+  const cz = o.cz === undefined ? 3.4 : o.cz, dx = o.dx || 0.9, sz = o.sz || 0.9, min = !!o.min;
+  const better = (x, y) => (min ? x < y : x > y);
+  const GT = min ? '<' : '>', GE = min ? '≤' : '≥', BIG = min ? '小' : '大';
+  const col = (v) => (o.color ? o.color(v) : colorFor(v));
+  const S = { a: [null], nd: [null], cl: [null], ed: [null], size: 0, cap };
+  S.p = (i) => { const d = Math.floor(Math.log2(i)), c = 1 << d; return V3(X0 + ((i - c + 0.5) / c - 0.5) * W, QLY[d], 0); };
+  S.c = (i) => V3(X0 + (i - (cap + 1) / 2) * dx, 0.3, cz);
+  if (arr) for (let i = 1; i <= cap; i++) { const c = S.c(i); ctx.tile(V3(c.x, 0.02, c.z), dx * 0.92, 0.9); tag('[' + i + ']', 'idx', c.x, 0.05, c.z + 0.75); }
+  S.node = (i, v, drop = 0) => {
+    S.a[i] = v; const p = S.p(i);
+    if (i > 1 && !S.ed[i]) { const q = S.p(i >> 1); S.ed[i] = line(q.x, q.y, p.x, p.y); }
+    S.nd[i] = cube(v, col(v), [sz, sz, sz], p.x, p.y, 0, drop);
+  };
+  S.cell = (i, v, drop = 0) => { S.a[i] = v; if (!arr) return; const c = S.c(i); S.cl[i] = cube(v, col(v), [dx * 0.72, 0.42, 0.7], c.x, c.y, c.z, drop ? 2 : 0); };
+  S.put = (i, v, drop = 0) => { S.node(i, v, drop); S.cell(i, v, drop); S.size = Math.max(S.size, i); };
+  vals.forEach((v, k) => { if (v === null || v === undefined) return; if (o.cellsOnly) S.cell(k + 1, v); else S.put(k + 1, v); });
+  if (o.cellsOnly) S.size = 0;
+  const szl = o.sizeTag && arr ? tag('', 'ptr', 0, 1.15, cz) : null;
+  S.setSize = (k) => { S.size = k; if (!szl) return; const c = S.c(Math.max(1, k)); txt(szl, 'heap size = ' + k); szl.position.set(c.x, 1.15, cz); };
+  if (szl) S.setSize(S.size);
+  S.hl = (list, c) => list.forEach((i) => { if (S.nd[i]) glow(S.nd[i], c); if (S.cl[i]) glow(S.cl[i], c); });
+  S.off = () => { for (let i = 1; i <= cap; i++) { if (S.nd[i]) glow(S.nd[i], null); if (S.cl[i]) glow(S.cl[i], null); } };
+  S.sw = async (tok, i, j, ms = 800) => {
+    const pi = S.p(i), pj = S.p(j);
+    if (S.nd[i]) move(S.nd[i], pj.x, pj.y, 0); if (S.nd[j]) move(S.nd[j], pi.x, pi.y, 0);
+    if (S.cl[i] && S.cl[j]) { const ci = S.c(i), cj = S.c(j); move(S.cl[i], cj.x, cj.y, cj.z); move(S.cl[j], ci.x, ci.y, ci.z); }
+    [S.nd[i], S.nd[j]] = [S.nd[j], S.nd[i]]; [S.cl[i], S.cl[j]] = [S.cl[j], S.cl[i]]; [S.a[i], S.a[j]] = [S.a[j], S.a[i]];
+    await beat(tok, ms);
+  };
+  // 把位置 i 的元素搬到空位 j（樹與陣列一起搬）
+  S.mv = (i, j) => {
+    const p = S.p(j);
+    if (S.nd[i]) move(S.nd[i], p.x, p.y, 0);
+    if (S.cl[i]) { const c = S.c(j); move(S.cl[i], c.x, c.y, c.z); }
+    S.nd[j] = S.nd[i]; S.cl[j] = S.cl[i]; S.a[j] = S.a[i]; S.nd[i] = null; S.cl[i] = null; S.a[i] = null;
+    if (S.ed[i]) { kill(S.ed[i]); S.ed[i] = null; }
+    if (j > 1 && !S.ed[j]) { const q = S.p(j >> 1); S.ed[j] = line(q.x, q.y, p.x, p.y); }
+  };
+  // insert 的調整：由葉子往根（向上）
+  S.up = async (tok, i, ms = 900) => {
+    while (i > 1) {
+      const p = i >> 1; S.off(); S.hl([i], GOLD); S.hl([p], BLUE);
+      if (!better(S.a[i], S.a[p])) { say(S.a[i] + ' ' + (min ? '≥' : '≤') + ' parent ' + S.a[p] + '：停', 'parent = ⌊' + i + '/2⌋ = ' + p); await beat(tok, ms); break; }
+      say(S.a[i] + ' ' + GT + ' parent ' + S.a[p] + '：往上換', 'parent = ⌊' + i + '/2⌋ = ' + p);
+      await beat(tok, ms * 0.6);
+      await S.sw(tok, i, p, ms); i = p;
+    }
+    S.off(); return i;
+  };
+  // delete／heapify 的調整：由根往葉子（向下），和較大（min-heap 是較小）的孩子換
+  S.down = async (tok, i, size, ms = 900) => {
+    while (2 * i <= size) {
+      const l = 2 * i, r = l + 1; let c = l; if (r <= size && better(S.a[r], S.a[l])) c = r;
+      S.off(); S.hl([i], GOLD); S.hl(r <= size ? [l, r] : [l], BLUE);
+      say('孩子 ' + (r <= size ? S.a[l] + '、' + S.a[r] : S.a[l]) + '：較' + BIG + '的是 ' + S.a[c], 'left = 2·' + i + ' = ' + l + (r <= size ? '，right = ' + r : ''));
+      await beat(tok, ms);
+      if (!better(S.a[c], S.a[i])) { say(S.a[i] + ' ' + GE + ' ' + S.a[c] + '：不用換', '停在 [' + i + ']'); await beat(tok, ms); break; }
+      say(S.a[c] + ' ' + GT + ' ' + S.a[i] + '：交換', 'A[' + i + '] ↔ A[' + c + ']');
+      await S.sw(tok, i, c, ms); i = c;
+    }
+    S.off(); return i;
+  };
+  // 刪除根：最後一個補到根，再往下調；keep = 把刪掉的值放進空出來的格子
+  S.pop = async (tok, ms = 900, keep = true) => {
+    const n = S.size, top = S.a[1];
+    S.off(); S.hl([1], RED);
+    say('刪除根 ' + top, '只能刪 root（A[1]）');
+    await beat(tok, ms);
+    fly(S.nd[1]); S.nd[1] = null;
+    const topCell = S.cl[1]; S.cl[1] = null;
+    if (n > 1) { S.mv(n, 1); if (S.ed[n]) { kill(S.ed[n]); S.ed[n] = null; } }
+    if (topCell) {
+      if (keep) { const cn = S.c(n); glow(topCell, null); move(topCell, cn.x, cn.y, cn.z); tint(topCell, GRAY); S.cl[n] = topCell; }
+      else fly(topCell, V3(0, 6, 5));
+    }
+    S.a[n] = keep ? top : null;
+    S.setSize(n - 1);
+    if (n > 1) say('最後一個 ' + S.a[1] + ' 補到根', keep ? top + ' 放進空出來的 [' + n + ']' : 'heap size = ' + (n - 1));
+    await beat(tok, ms);
+    await S.down(tok, 1, n - 1, ms);
+    return top;
+  };
+  return S;
+}
+const qGap = (S, list) => list.map((i) => { const c = S.c(i); return tag('空', 'ptr', c.x, 0.95, c.z); });
+const HQ_MAX = [50, 30, 20, 15, 10, 8, 16];
+
+// 02:29 陣列表示
+FRAG.push(['heaphq-array-rep', '用陣列存 Binary Tree：A–G 與三個公式', async (tok) => {
+  fresh(QCAM, QLOOK);
+  const S = qTree([], { cap: 7, color: () => '#4b9ee2' });
+  say('用陣列存樹：元素和父子關係都要存', 'index 從 1 開始（課堂慣例）');
+  await beat(tok, 2400);
+  for (const [k, v] of ['A', 'B', 'C', 'D', 'E', 'F', 'G'].entries()) { S.put(k + 1, v, 3); say('一層一層、由左到右填：' + v, 'A[' + (k + 1) + '] = ' + v); await beat(tok, 650); }
+  S.hl([2], GOLD); S.hl([4], GREEN);
+  say('B 在 i = 2：左孩子在 2i', 'left = 2·2 = 4 → D');
+  await beat(tok, 2200);
+  S.off(); S.hl([2], GOLD); S.hl([5], GREEN);
+  say('右孩子在 2i + 1', 'right = 2·2 + 1 = 5 → E');
+  await beat(tok, 2200);
+  S.off(); S.hl([3], GOLD); S.hl([6, 7], GREEN);
+  say('C 在 i = 3：孩子在 6、7', 'left = 6 → F，right = 7 → G');
+  await beat(tok, 2400);
+  S.off(); S.hl([6], GOLD); S.hl([3], GREEN);
+  say('F 在 6：parent = 6/2 = 3', 'parent = ⌊i/2⌋ → C');
+  await beat(tok, 2200);
+  S.off(); S.hl([7], GOLD); S.hl([3], GREEN);
+  say('G 在 7：7/2 = 3.5，取 floor', '⌊7/2⌋ = 3 → C');
+  await beat(tok, 2400);
+  S.off();
+  say('照層序填，公式自動成立', 'left = 2i、right = 2i + 1、parent = ⌊i/2⌋');
+  await beat(tok, 2800);
+}]);
+
+// 05:38 缺節點要留空格
+FRAG.push(['heaphq-array-gaps', '缺少的節點要在陣列留空格', async (tok) => {
+  fresh(QCAM, QLOOK);
+  let S = qTree([], { cap: 7, color: () => '#4b9ee2' });
+  for (const [k, v] of ['A', 'B', 'C', 'D', 'E'].entries()) { S.put(k + 1, v, 3); say('A B C D E 一樣層序填', 'A[' + (k + 1) + '] = ' + v); await beat(tok, 550); }
+  say('最後一層不滿也沒關係', '公式照樣成立');
+  await beat(tok, 2200);
+  fresh(QCAM, QLOOK);
+  S = qTree([], { cap: 7, color: () => '#4b9ee2' });
+  for (const [k, v] of ['A', 'B', 'C'].entries()) S.put(k + 1, v);
+  say('這棵：D 是 C 的左孩子', 'B 沒有孩子');
+  await beat(tok, 2200);
+  S.put(4, 'D', 3); S.hl([4], RED);
+  say('直接接著放 D 到 [4]？', '<span class="no">[4] = 2·2：D 變成 B 的左孩子</span>');
+  await beat(tok, 2600);
+  S.off(); S.mv(4, 6);
+  say('D 要放在 [6] = 2·3', 'C 的左孩子');
+  await beat(tok, 1800);
+  qGap(S, [4, 5]);
+  say('B 的兩個孩子位置要留空', 'A B C _ _ D');
+  await beat(tok, 2400);
+  S.hl([6], GOLD); S.hl([3], GREEN);
+  say('D 的 parent：⌊6/2⌋ = 3 → C', '有缺的節點就留空格，公式才對');
+  await beat(tok, 2800);
+}]);
+
+// 07:22 full vs complete
+FRAG.push(['heaphq-full-complete', 'Full Binary Tree 與 Complete Binary Tree', async (tok) => {
+  fresh(QCAM, QLOOK);
+  const S = qTree(['A', 'B', 'C', 'D', 'E', 'F', 'G'], { cap: 9, color: () => '#4b9ee2' });
+  for (let d = 0; d < 3; d++) tag('h ' + d, 'idx', -6.3, QLY[d], 0);
+  say('高度 2：節點數已是最多', 'full：2^(h+1) − 1 = 2³ − 1 = 7');
+  await beat(tok, 2800);
+  say('再加一個節點，高度就會變 3', 'full binary tree：沒有空位');
+  await beat(tok, 2200);
+  tag('h 3', 'idx', -6.3, QLY[3], 0);
+  S.put(8, 'H', 3); S.put(9, 'I', 3);
+  say('Complete：陣列中間沒有空格', 'A … I 連續，後面的空位不算');
+  await beat(tok, 2800);
+  S.hl([8], RED);
+  await beat(tok, 600);
+  fly(S.nd[8]); fly(S.cl[8]); kill(S.ed[8]); S.nd[8] = S.cl[8] = S.ed[8] = null;
+  const g = qGap(S, [8]);
+  say('拿掉 H：[8] 變空格', '<span class="no">中間有空 → 不是 complete</span>');
+  await beat(tok, 2800);
+  kill(g[0]); S.mv(9, 8); S.hl([8], GREEN);
+  say('課本定義：h − 1 層以上是 full', '最後一層由左往右填');
+  await beat(tok, 2800);
+  S.off();
+  say('Full 一定也是 Complete', '（有人把 complete 叫 almost complete）');
+  await beat(tok, 2600);
+}]);
+
+// 11:33 判斷 complete 的例子
+FRAG.push(['heaphq-complete-check', '判斷是不是 Complete：看陣列有沒有空格', async (tok) => {
+  const col = () => '#9b7ef4';
+  fresh(QCAM, QLOOK);
+  let S = qTree([1, 2, 3, 4, 5], { cap: 10, color: col });
+  say('一層一層檢查：有沒有缺的', '從左邊開始，不能跳過');
+  await beat(tok, 2200);
+  say('1、2 個，最後一層從左邊開始', '<span class="ok">complete</span>');
+  await beat(tok, 2800);
+  fresh(QCAM, QLOOK);
+  S = qTree([1, 2, 3, null, null, null, 4], { cap: 10, color: col });
+  say('最後一層只有最右邊一個', '陣列：1 2 3 _ _ _ 4');
+  await beat(tok, 1800);
+  qGap(S, [4, 5, 6]);
+  say('中間空了 3 格', '<span class="no">不是 complete</span>');
+  await beat(tok, 2800);
+  fresh(QCAM, QLOOK);
+  S = qTree([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], { cap: 10, color: col });
+  say('上面三層滿，最後一層靠左', '<span class="ok">complete</span>（之後沒節點不要緊）');
+  await beat(tok, 2800);
+  for (let d = 0; d < 4; d++) tag('h ' + d, 'idx', -6.3, QLY[d], 0);
+  say('一層沒填滿不會往下長', '高度最小：h = ⌊log₂ n⌋ = ⌊log₂ 10⌋ = 3');
+  await beat(tok, 3000);
+}]);
+
+// 14:11 max heap／min heap
+FRAG.push(['heaphq-max-min', 'Max Heap 與 Min Heap', async (tok) => {
+  fresh(QCAM, QLOOK);
+  const A = qTree(HQ_MAX, { arr: false, w: 6, x0: -3.4, sz: 0.75 });
+  tag('Max Heap', 'ptr alt', -3.4, 7.4, 0);
+  say('Heap 先要是 complete binary tree', 'A = 50, 30, 20, 15, 10, 8, 16');
+  await beat(tok, 2400);
+  A.hl([2], GOLD); A.hl([4, 5], BLUE);
+  say('30 ≥ 15、10', '每個節點 ≥ 所有子孫');
+  await beat(tok, 1800);
+  A.off(); A.hl([3], GOLD); A.hl([6, 7], BLUE);
+  say('20 ≥ 8、16', '可以等於：允許重複');
+  await beat(tok, 1800);
+  A.off(); A.hl([1], GREEN);
+  say('根是最大值 50', 'max heap');
+  await beat(tok, 2200);
+  const B = qTree([10, 30, 20, 35, 40, 32, 25], { arr: false, w: 6, x0: 3.4, sz: 0.75 });
+  tag('Min Heap', 'ptr', 3.4, 7.4, 0);
+  B.hl([2], GOLD); B.hl([4, 5], BLUE);
+  say('35、40 ≥ 30，也 ≥ 10', '每個節點 ≤ 所有子孫');
+  await beat(tok, 2200);
+  B.off(); B.hl([1], GREEN);
+  say('根是最小值 10', 'min heap');
+  await beat(tok, 2600);
+  say('之後都用 max heap 講', 'min heap 做法相同，方向相反');
+  await beat(tok, 2400);
+}]);
+
+// 16:18 錯誤的 insert：塞進根
+FRAG.push(['heaphq-insert-wrong', '常見錯誤：把 60 直接塞到根', async (tok) => {
+  fresh(QCAM, QLOOK);
+  const S = qTree(HQ_MAX, { cap: 15, dx: 0.74 });
+  say('insert 60：60 最大，最後要在根', 'A = 50, 30, 20, 15, 10, 8, 16');
+  await beat(tok, 3000);
+  const p1 = S.p(1), n60 = cube(60, colorFor(60), [0.9, 0.9, 0.9], p1.x + 1.6, 7.6, 0);
+  glow(n60, RED);
+  say('錯誤想法：60 塞進根，其他往下推', '50 → 20 那邊 → 16 再往下');
+  await beat(tok, 2200);
+  S.mv(7, 15); say('16 被擠到 20 底下', '20 再往下推'); await beat(tok, 1200);
+  S.mv(3, 7); say('20 被擠下去', '50 也往右下推'); await beat(tok, 1200);
+  S.mv(1, 3); say('50 讓出根', '60 坐上根'); await beat(tok, 1200);
+  move(n60, p1.x, p1.y, 0); S.nd[1] = n60; S.a[1] = 60; S.cell(1, 60, 1);
+  say('樹往右下長出一條', '16 跑到 [15]');
+  await beat(tok, 2800);
+  qGap(S, [8, 9, 10, 11, 12, 13, 14]);
+  say('陣列 [8]～[14] 全空', '<span class="no">不是 complete，不能這樣插</span>');
+  await beat(tok, 3600);
+}]);
+
+// 18:02 正確的 insert
+FRAG.push(['heaphq-insert-60', 'insert 60：放最後一格，再往上比', async (tok) => {
+  fresh(QCAM, QLOOK);
+  const S = qTree(HQ_MAX, { cap: 8 });
+  say('正確：放在陣列下一個空位', '[8]：2·4 = 8 → 15 的左孩子');
+  S.put(8, 60, 3);
+  await beat(tok, 2600);
+  S.hl([8], RED);
+  say('還是 complete，但 60 > 15', '<span class="no">違反 max heap</span>');
+  await beat(tok, 2200);
+  await S.up(tok, 8, 950);
+  S.hl([1], GREEN);
+  say('60 到根：比較、交換 3 次', 'A = ' + S.a.slice(1).join(', '));
+  await beat(tok, 2800);
+  say('交換次數 ≤ 高度 = log n', '插入 6 就 0 次：O(1) ～ O(log n)');
+  await beat(tok, 2800);
+  S.off();
+  say('insert：由葉子往根調整', '方向：向上');
+  await beat(tok, 2400);
+}]);
+
+// 22:15 delete：只能刪根
+FRAG.push(['heaphq-delete-50', 'Delete：刪根、最後一個補上、往下調', async (tok) => {
+  fresh(QCAM, QLOOK);
+  const S = qTree(HQ_MAX, { cap: 7, sizeTag: true });
+  S.hl([1], GOLD);
+  say('只能刪根：最大的 50', '像蘋果堆，只拿最上面那顆');
+  await beat(tok, 2600);
+  S.off(); S.hl([2, 4], RED);
+  say('錯誤：30 補上去、15 再補上去', '<span class="no">[4] 空掉 → 不是 complete</span>');
+  await beat(tok, 2800);
+  S.off();
+  await S.pop(tok, 1000, false);
+  S.hl([1], GREEN);
+  say('又是 max heap：30 在根', 'A = ' + S.a.slice(1, S.size + 1).join(', '));
+  await beat(tok, 2600);
+  S.off();
+  say('delete：由根往葉子調整', '方向：向下，最多 log n 次 → O(log n)');
+  await beat(tok, 2600);
+}]);
+
+// 27:51 刪掉的值放進空格
+FRAG.push(['heaphq-delete-store', '刪除的值放進空出來的格子 → 排好序', async (tok) => {
+  fresh(QCAM, QLOOK);
+  const S = qTree([30, 16, 20, 15, 10, 8], { cap: 7, sizeTag: true });
+  S.cell(7, 50); tint(S.cl[7], GRAY); S.a[7] = 50;
+  say('heap size = 6，[7] 已不屬於 heap', '把刪掉的 50 存在 [7]');
+  await beat(tok, 2800);
+  await S.pop(tok, 900, true);
+  say('8 在 [3]：size = 5，沒有孩子', '2·3 = 6 > 5 → 停');
+  await beat(tok, 2600);
+  say('一直刪：每次拿到剩下最大的', '刪掉的值依序放到尾端');
+  await beat(tok, 1800);
+  for (let k = 0; k < 4; k++) await S.pop(tok, 420, true);
+  for (let i = 1; i <= 7; i++) if (S.cl[i]) tint(S.cl[i], '#2fc092');
+  say('從左讀：由小到大排好了', 'A = ' + S.a.slice(1, 8).join(', ') + '：heap sort 的想法');
+  await beat(tok, 3200);
+}]);
+
+// 30:55 heap sort 第一步：逐一 insert
+FRAG.push(['heaphq-sort-build', 'Heap Sort 第一步：10 20 15 30 40 逐一 insert', async (tok) => {
+  fresh(QCAM, QLOOK);
+  const vals = [10, 20, 15, 30, 40];
+  const S = qTree(vals, { cap: 5, cellsOnly: true, sizeTag: true });
+  say('要排序：10, 20, 15, 30, 40', '第一步：建 heap；第二步：全部 delete');
+  await beat(tok, 2600);
+  for (let k = 1; k <= 5; k++) {
+    S.node(k, S.a[k], 3); S.setSize(k); S.hl([k], GOLD);
+    say(k === 1 ? '10 自己就是 heap' : 'insert ' + S.a[k] + '：放在 [' + k + ']', 'heap size = ' + k);
+    await beat(tok, k === 1 ? 1800 : 1000);
+    await S.up(tok, k, 700);
+  }
+  S.hl([1], GREEN);
+  say('max heap 建好了', 'A = ' + S.a.slice(1, 6).join(', '));
+  await beat(tok, 2600);
+  S.off();
+  say('n 個元素，每個最多爬 log n', '建 heap：O(n log n)');
+  await beat(tok, 2600);
+}]);
+
+// 36:07 heap sort 第二步：全部 delete
+FRAG.push(['heaphq-sort-delete', 'Heap Sort 第二步：一直 delete，放到空出的位置', async (tok) => {
+  fresh(QCAM, QLOOK);
+  const S = qTree([40, 30, 15, 10, 20], { cap: 5, sizeTag: true });
+  say('從剛建好的 max heap 開始', 'A = 40, 30, 15, 10, 20');
+  await beat(tok, 2200);
+  for (let k = 0; k < 4; k++) await S.pop(tok, 650, true);
+  for (let i = 1; i <= 5; i++) if (S.cl[i]) tint(S.cl[i], '#2fc092');
+  say('排好了：10, 15, 20, 30, 40', '每次 delete O(log n)，共 n 次');
+  await beat(tok, 2800);
+  say('n log n（建）+ n log n（刪）', '2n log n = <span class="ok">O(n log n)</span>');
+  await beat(tok, 2800);
+}]);
+
+// 41:35 heapify
+FRAG.push(['heaphq-heapify', 'Heapify：由右往左掃，往下調整', async (tok) => {
+  fresh(QCAM, QLOOK);
+  const S = qTree([10, 20, 15, 12, 40, 25, 18], { cap: 7 });
+  say('complete，但不是 max heap', 'A = 10, 20, 15, 12, 40, 25, 18');
+  await beat(tok, 2400);
+  say('從最後一個往前掃（由右往左）', '每個元素往下調整（像 delete 那樣）');
+  await beat(tok, 2200);
+  for (let i = 7; i >= 4; i--) { S.hl([i], GREEN); say(S.a[i] + ' 沒有孩子：自己就是 heap', 'i = ' + i); await beat(tok, 700); }
+  S.off();
+  for (let i = 3; i >= 1; i--) {
+    S.hl([i], GOLD);
+    say('i = ' + i + '：' + S.a[i] + ' 往下看', '它底下的子樹都已是 heap');
+    await beat(tok, 1200);
+    await S.down(tok, i, 7, 800);
+  }
+  S.hl([1], GREEN);
+  say('max heap 完成', 'A = ' + S.a.slice(1, 8).join(', '));
+  await beat(tok, 2600);
+  S.off();
+  say('heapify：O(n)', '逐一 insert 建 heap：O(n log n) → heapify 較快');
+  await beat(tok, 2800);
+}]);
+
+// 46:51 priority queue
+const HQ_PQ = [8, 6, 3, 10, 9];
+const pqX = (i) => (i - 2) * 1.9;
+FRAG.push(['heaphq-pq-priority', 'Priority Queue：數字本身就是 priority', async (tok) => {
+  fresh([0, 6, 12], [0, 0.8, 0]);
+  const bs = HQ_PQ.map((v, i) => cube(v, colorFor(v), [1.2, 0.9, 1.2], pqX(i), 0.45, 0, 4));
+  say('Queue 是 FIFO；priority queue 不是', '刪除時拿 priority 最高的');
+  await beat(tok, 2600);
+  say('這裡數字本身就是 priority', '8 的 priority 是 8，3 的是 3');
+  await beat(tok, 2400);
+  const ord = [...HQ_PQ.keys()].sort((a, b) => HQ_PQ[a] - HQ_PQ[b]);
+  const tags = [];
+  say('規則一：數字越小，priority 越高', '先刪 3，再 6，再 8');
+  for (let k = 0; k < 3; k++) { glow(bs[ord[k]], GOLD); tags.push(tag('#' + (k + 1), 'ptr', pqX(ord[k]), 1.6, 0)); await beat(tok, 900); }
+  await beat(tok, 1400);
+  tags.forEach(kill); bs.forEach((b) => glow(b, null)); tags.length = 0;
+  say('規則二：數字越大，priority 越高', '先刪 10，再 9，再 8');
+  for (let k = 0; k < 3; k++) { const i = ord[4 - k]; glow(bs[i], BLUE); tags.push(tag('#' + (k + 1), 'ptr alt', pqX(i), 1.6, 0)); await beat(tok, 900); }
+  await beat(tok, 1400);
+  say('兩種規則都可以，事先說好', '小的優先 → min heap；大的優先 → max heap');
+  await beat(tok, 3000);
+}]);
+
+FRAG.push(['heaphq-pq-array-vs-heap', 'Priority Queue：用陣列 vs 用 Heap', async (tok) => {
+  fresh([0, 6, 12], [0, 0.8, 0]);
+  const xs = (i) => (i - 2.5) * 1.7;
+  const bs = HQ_PQ.map((v, i) => cube(v, colorFor(v), [1.2, 0.9, 1.2], xs(i), 0.45, 0));
+  say('用一般陣列：小的優先', 'A = 8, 6, 3, 10, 9');
+  await beat(tok, 2200);
+  const nx = cube('x', '#d8cfc0', [1.2, 0.9, 1.2], xs(5), 0.45, 0, 4);
+  say('insert：直接放尾端', '<span class="ok">O(1)</span>');
+  await beat(tok, 2200);
+  glow(bs[2], RED);
+  say('delete：要先找到 3', '最高 priority 可能在任何位置');
+  await beat(tok, 1800);
+  fly(bs[2]);
+  [bs[3], bs[4], nx].forEach((b, k) => move(b, xs(2 + k), 0.45, 0));
+  say('刪掉後後面全部往前移', '<span class="no">O(n)</span>');
+  await beat(tok, 2600);
+  say('改成保持排序？換 insert 要 O(n)', '總有一個操作是 O(n)');
+  await beat(tok, 2600);
+  fresh(QCAM, QLOOK);
+  const S = qTree([3, 6, 8, 10, 9], { cap: 5, min: true, sizeTag: true });
+  say('改用 min heap（同一組數字）', 'A = 3, 6, 8, 10, 9');
+  await beat(tok, 2400);
+  await S.pop(tok, 750, false);
+  say('insert、delete 都只走一條路徑', '<span class="ok">O(log n)</span>');
+  await beat(tok, 2600);
+  say('heap 最適合實作 priority queue', '小的優先用 min heap，大的優先用 max heap');
+  await beat(tok, 2800);
+}]);
+  }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
 

@@ -1,0 +1,1078 @@
+{
+ "video": "Lzr5-m7ap-8",
+ "label": "台大林軒田 DSA Skip List / BST / AVL Tree",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場 Q&A：Open Addressing 要連 key 一起存",
+   "scene": null,
+   "points": [
+    {
+     "text": "開場，先回答同學上次留下的問題。",
+     "t": 351
+    },
+    {
+     "text": "Q：Open Addressing 把資料放到附近的格子後，下次怎麼確定拿到的是自己要的那筆？",
+     "t": 419
+    },
+    {
+     "text": "因為資料可能不在 key 原本對應的位置，table 裡一定要把 key 和 value 一起存。",
+     "t": 457
+    },
+    {
+     "text": "可以把 Open Addressing 想成在同一塊空間裡串了很多條 implicit linked list，就像 array 隱含一棵 complete binary tree。",
+     "t": 536
+    },
+    {
+     "text": "同一格可能放著來自不同 key 的資料，所以要靠存下來的 key 做比對。",
+     "t": 620
+    }
+   ]
+  },
+  {
+   "title": "Q&A：作業、實體課、perfect hash、TinyURL",
+   "scene": null,
+   "points": [
+    {
+     "text": "Q：decision tree 邊建邊輸出可以嗎？兩種都對，但作業要你表達 tree 在記憶體裡的結構，先建好再 visit 比較好寫。",
+     "t": 638
+    },
+    {
+     "text": "剩約 4 週不改回實體課，最後一次 summary 可能實體。",
+     "t": 707
+    },
+    {
+     "text": "perfect hash 的 bonus：32 個 keyword 要一對一放進 32 個 bucket。",
+     "t": 788
+    },
+    {
+     "text": "TinyURL 可以看成一個 map：短網址後面那串是 key，原本的網址是 value。",
+     "t": 820
+    },
+    {
+     "text": "MD5 只要科普程度的解釋就好。",
+     "t": 865
+    }
+   ]
+  },
+  {
+   "title": "回顧 Extendible Hash：滿出來才分家",
+   "scene": "bstlin-lazy-split",
+   "points": [
+    {
+     "text": "補充上次講得比較亂的 extendible hashing，用講義上的圖重講。",
+     "t": 935
+    },
+    {
+     "text": "hash function 可以擴充：本來 mod 4，改成 mod 8。",
+     "t": 1070
+    },
+    {
+     "text": "naive 做法：每個 key 都重新 hash，cat（c 開頭）放 [2]、good（g 開頭）放 [6]，但這是重複的力氣。",
+     "t": 1092
+    },
+    {
+     "text": "lazy 做法：只有滿出來的那一格才重新分。",
+     "t": 1129
+    },
+    {
+     "text": "還沒分家的格子只在 [6] 留一張小紙條：要找 [6] 的去 [2] 找，兩格共用同一串。",
+     "t": 1178
+    },
+    {
+     "text": "再塞一個 c 開頭的（例如 cool）時那串才超過上限，這時才真的分家：good 搬去 [6]、cat 和 cool 留下。",
+     "t": 1211
+    },
+    {
+     "text": "連新的一格都放不下，才再 extend 整個 hash table 的大小。",
+     "t": 1241
+    }
+   ],
+   "trap": "補充：影片裡 cat、good、cool 是用「首字母」當 hash 的示意；ASR 把 cool 聽成「酷我」，應為 c 開頭的字。"
+  },
+  {
+   "title": "今天的主題：還有哪些資料結構可以做 Map",
+   "scene": null,
+   "points": [
+    {
+     "text": "Q：機器學習偏程式還偏數學？兩者都要，數學多一點。",
+     "t": 1302
+    },
+    {
+     "text": "hash 是把 array 延伸來做 map；今天看 linked list 和 tree 能不能也拿來做 map。",
+     "t": 1345
+    },
+    {
+     "text": "linked list（skip list）會講得很快，主力放在 tree-based map。",
+     "t": 1416
+    }
+   ]
+  },
+  {
+   "title": "用 Linked List 做 Map：search 只能一站一站停",
+   "scene": "bstlin-list-map",
+   "points": [
+    {
+     "text": "直接拿 linked list 來做 map 會發生什麼事？",
+     "t": 1469
+    },
+    {
+     "text": "key 不能比大小時只能串成一串，找任何東西都要整條走過去逐一比對。",
+     "t": 1501
+    },
+    {
+     "text": "unordered list：insertion 很快，但 search 很慢。",
+     "t": 1527
+    },
+    {
+     "text": "array 能快是因為 random access；unordered linked list 沒有其他方法快速標出東西在哪。",
+     "t": 1576
+    },
+    {
+     "text": "就算排好序（ordered），linked list 也不能做 binary search，還是 slow search。",
+     "t": 1585
+    },
+    {
+     "text": "而且 ordered list 還可能 slow insertion：要先找到要插在哪。",
+     "t": 1631
+    }
+   ]
+  },
+  {
+   "title": "在 Linked List 上做 binary search：多存中點",
+   "scene": "bstlin-mid-pointer",
+   "points": [
+    {
+     "text": "slow search 的原因：只能 sequential，像每站都停的慢車。",
+     "t": 1669
+    },
+    {
+     "text": "有沒有「快車」？像高鐵、台鐵只停大站，到大站再轉車去小站。",
+     "t": 1726
+    },
+    {
+     "text": "binary search 的條件：東西要排好，而且要能很快找到中點。",
+     "t": 1778
+    },
+    {
+     "text": "如果有額外空間直接存中點的位置：8 筆資料 2 4 5 9 10 11 15 20，中點在 9。",
+     "t": 1873
+    },
+    {
+     "text": "找 10：先跟中點 9 比，10 在 9 的後面，一次消掉一半的可能。",
+     "t": 1911
+    },
+    {
+     "text": "9 之後再存一個像四分位點的「中點 2 號」11：10 < 11，就在 9 和 11 之間找。",
+     "t": 1972
+    },
+    {
+     "text": "要快速比較，就得在一些地方存中點 1 號、中點 2 號……讓它們帶路。",
+     "t": 2022
+    }
+   ],
+   "trap": "補充：ASR 把「中點」聽成「終點」；這 8 筆資料是依影片提到的 2、4、5、9、10、11、15、20 整理，並非逐字可辨。"
+  },
+  {
+   "title": "快車：兩站一停的 linked list",
+   "scene": "bstlin-fast-lane",
+   "points": [
+    {
+     "text": "把剛才的中點整理起來，就是在普通車之外加一條快車。",
+     "t": 2050
+    },
+    {
+     "text": "快車兩站一停：head → 4 → 9 → 11 → 20。",
+     "t": 2074
+    },
+    {
+     "text": "找 10：4 和 9 都還在後面，11 過頭了，在 9 這站轉普通車，下一站就是 10。",
+     "t": 2132
+    },
+    {
+     "text": "10 排第 5 個，原本要比 5 次；現在比 4、9、11 再回頭，大約 3～4 次。",
+     "t": 2178
+    },
+    {
+     "text": "快車就是最低層級的一些中點：binary search 是 top-down 想，這裡是 bottom-up 想。",
+     "t": 2202
+    }
+   ]
+  },
+  {
+   "title": "特快車、超快車 = Skip List",
+   "scene": "bstlin-skip-15",
+   "points": [
+    {
+     "text": "在快車上面再兩個一數做特快車：9 → 20。",
+     "t": 2221
+    },
+    {
+     "text": "找 15：特快車到 9，跟 20 比過頭，往下一層。",
+     "t": 2256
+    },
+    {
+     "text": "快車從 9 走到 11，20 又過頭，在 11 往下，普通車從 11 走到 15。",
+     "t": 2272
+    },
+    {
+     "text": "有效比較的 node 幾乎只有 9、11、15（再加跟 20 比兩次）。",
+     "t": 2282
+    },
+    {
+     "text": "再加一條只有一個 node 的超快車，那就是 binary search 裡第一個中點。",
+     "t": 2307
+    },
+    {
+     "text": "ordered linked list 加上一堆更快的 linked list，就叫 Skip List。",
+     "t": 2359
+    },
+    {
+     "text": "從上往下看是 list of mid、list of quad……；search 像一個 zooming 的過程。",
+     "t": 2420
+    },
+    {
+     "text": "每層砍掉大約一半，約 log N 層，search 大約 O(log N) 次比較。",
+     "t": 2506
+    }
+   ]
+  },
+  {
+   "title": "Q&A：機場快線、作業 heap 題",
+   "scene": null,
+   "points": [
+    {
+     "text": "Q：這不就是機場快線？對，交通上的快慢車也是在節省運輸資源。",
+     "t": 2555
+    },
+    {
+     "text": "Q：作業要回傳 heap 中比某值小的元素，可以用 heap operation，也可以把 heap 當一般 tree 走訪。",
+     "t": 2603
+    }
+   ]
+  },
+  {
+   "title": "Skip List 吃多少記憶體",
+   "scene": "bstlin-skip-space",
+   "points": [
+    {
+     "text": "Q：skip list 很吃記憶體嗎？",
+     "t": 2645
+    },
+    {
+     "text": "底層 list 放 n 個是 O(n)；兩兩一數的快車約 n/2。",
+     "t": 2672
+    },
+    {
+     "text": "四個一數約 n/4，再上去 n/8、n/16……",
+     "t": 2695
+    },
+    {
+     "text": "1/2 + 1/4 + 1/8 + … ≤ 1：上面各層加起來最多再一條 list，大約多花一倍。",
+     "t": 2720
+    },
+    {
+     "text": "有時不能多花一倍，例如作業的 double-ended priority queue 要求只用一棵 tree。",
+     "t": 2747
+    },
+    {
+     "text": "空間仍是 O(n)；每個箭頭也是一張小紙條，會多一些，但只是常數倍。",
+     "t": 2812
+    }
+   ]
+  },
+  {
+   "title": "Skip List 怎麼實作，insertion 的難題",
+   "scene": "bstlin-skip-impl",
+   "points": [
+    {
+     "text": "Q：要在原本的 node 上加 pointer 嗎？有很多做法。",
+     "t": 2857
+    },
+    {
+     "text": "可以真的維護好幾條不同的 linked list。",
+     "t": 2883
+    },
+    {
+     "text": "也可以在原本的 node 上標註普通車、快車……各自的下一站在哪。",
+     "t": 2898
+    },
+    {
+     "text": "通常不複製資料（連 key 都可能太大），只多存 pointer。",
+     "t": 2921
+    },
+    {
+     "text": "目前只講了 search；從無到有建這個結構還沒講。",
+     "t": 2990
+    },
+    {
+     "text": "亂序資料要排成 ordered linked list，本質上就是 insertion sort，很花時間。",
+     "t": 3021
+    },
+    {
+     "text": "skip list 的一次 insertion 可能要在很多條 list 裡做，看起來只會更慢。",
+     "t": 3046
+    },
+    {
+     "text": "ordered list 的兩個缺點：slow search 已經用快車解決，slow insertion 還沒。",
+     "t": 3060
+    }
+   ]
+  },
+  {
+   "title": "下課休息",
+   "scene": null,
+   "points": [
+    {
+     "text": "休息 10 分鐘。",
+     "t": 3104
+    },
+    {
+     "text": "休息結束，回到 skip list。",
+     "t": 3743
+    }
+   ]
+  },
+  {
+   "title": "第二個例子：找 9、找 6",
+   "scene": "bstlin-skip-search-9-6",
+   "points": [
+    {
+     "text": "底層排好：2 3 5 8 9 10 13。",
+     "t": 3779
+    },
+    {
+     "text": "快一點的 list 從 3 跳到 8 再跳到 13；上下兩層的 3 其實是同一個。",
+     "t": 3791
+    },
+    {
+     "text": "圖上畫單箭頭，也可以用雙箭頭：好做但更吃記憶體。",
+     "t": 3832
+    },
+    {
+     "text": "再上去四個一跳：最上層只有 8。",
+     "t": 3857
+    },
+    {
+     "text": "找 9：從 8 進來，9 > 8 往右但沒了，往下；13 過頭，在 8 再往下，找到 9。",
+     "t": 3875
+    },
+    {
+     "text": "找不存在的 6：8 已經過頭，回到 3，3 往 5 前進，下一個已經是 8，沒有 6。",
+     "t": 3915
+    },
+    {
+     "text": "詳細的 pseudocode 課本上有。",
+     "t": 3952
+    }
+   ],
+   "trap": "補充：標準 skip list 是從 head 的最高層出發，往右比、過頭就往下一層；老師為了對應 binary search 用「從 8 進來、過頭回到 3」來講。"
+  },
+  {
+   "title": "Insert 6：嚴格兩兩一數的代價",
+   "scene": "bstlin-skip-strict",
+   "points": [
+    {
+     "text": "找不到之後，map 很常見的操作就是把 6 塞進去。",
+     "t": 3965
+    },
+    {
+     "text": "在最底層塞不是問題：找不到 6 時已經停在 5 和 8 中間。",
+     "t": 3988
+    },
+    {
+     "text": "已經知道位置的 insertion 是 linked list 的強項：改兩張小紙條，5、6、8 就連起來。",
+     "t": 4020
+    },
+    {
+     "text": "問題是上面還有好多條 list：堅持兩兩一走，上一層要變成 3、6、9……",
+     "t": 4042
+    },
+    {
+     "text": "每一層 linked list 都需要一定程度的更新。",
+     "t": 4085
+    },
+    {
+     "text": "上面各層 node 加起來約等於底層的 n 個，全部照嚴格規則更新，一次 insertion 就是 O(n)。",
+     "t": 4099
+    }
+   ],
+   "trap": "補充：動畫依「每 2 個取 1、每 4 個取 1」的嚴格規則畫出插入後的上層（3 6 9 13 與 6 13）；板書上的細節（例如塗掉 13）聽不太清楚。"
+  },
+  {
+   "title": "偷懶：丟銅板決定上幾層（randomized）",
+   "scene": "bstlin-skip-coin",
+   "points": [
+    {
+     "text": "所有資料結構與演算法的設計都在偷懶；成本來自「嚴格規定」兩兩一數、四四一數。",
+     "t": 4174
+    },
+    {
+     "text": "就像 extendible hash：還不用分家就先共用。",
+     "t": 4205
+    },
+    {
+     "text": "放鬆規則：「差不多」兩兩一數、四四一數就好。",
+     "t": 4291
+    },
+    {
+     "text": "6 放進底層後丟銅板：正面就在上一層也放 6，反面就不上去。",
+     "t": 4316
+    },
+    {
+     "text": "上去了就再丟一次決定要不要上上層：在第二層的機率 1/2、第三層 1/4。",
+     "t": 4344
+    },
+    {
+     "text": "每個 insertion 都這樣做，期望上約一半的點在第二層、1/4 在第三層……",
+     "t": 4376
+    },
+    {
+     "text": "不用更新所有上層 list：只更新 1 層的機率 1/2、2 層 1/4……，每次更新都是簡單的 linked list insertion。",
+     "t": 4427
+    },
+    {
+     "text": "這是課程裡少數的 randomized algorithm / data structure。",
+     "t": 4492
+    }
+   ]
+  },
+  {
+   "title": "Skip List 小結與 Q&A",
+   "scene": null,
+   "points": [
+    {
+     "text": "search 靠類似 binary search 的快慢車，insertion 靠 randomization。",
+     "t": 4515
+    },
+    {
+     "text": "removal 也需要一定的 randomization，時間關係不講。",
+     "t": 4540
+    },
+    {
+     "text": "Q：這也太隨便？其實很好實作，有 linked list library 就能快速寫出一個 map。",
+     "t": 4576
+    },
+    {
+     "text": "以後還會看到 randomization，例如 QuickSort。",
+     "t": 4635
+    },
+    {
+     "text": "同學說這樣畫很像一棵 tree——這正是接下來要講的。",
+     "t": 4658
+    }
+   ]
+  },
+  {
+   "title": "從 Skip List 到 Binary Search Tree",
+   "scene": "bstlin-skip-to-tree",
+   "points": [
+    {
+     "text": "還是同一個 map 問題：從 skip list 走到 tree。",
+     "t": 4683
+    },
+    {
+     "text": "用一個「龜毛」建起來的 skip list 來講（不是隨機建的）。",
+     "t": 4764
+    },
+    {
+     "text": "找 2：從 8 進來，8 過頭往 3，3 還是過頭，找到 2。",
+     "t": 4803
+    },
+    {
+     "text": "找 5：8 過頭回到 3，從 3 往右找到 5；找 10：8 → 13 過頭 → 往左找到 10。",
+     "t": 4826
+    },
+    {
+     "text": "把搜尋時碰到的點和「往左／往右」的關係另外畫出來。",
+     "t": 4864
+    },
+    {
+     "text": "比 13 小但比 10 大、比 5 大但比 8 小……這些就是不在資料裡。",
+     "t": 4907
+    },
+    {
+     "text": "每個 node 只有往左、往右兩種可能：畫出來是一棵 binary tree。",
+     "t": 4942
+    },
+    {
+     "text": "從 8 往左的都比 8 小，往右的都比 8 大；每棵 subtree 都一樣。",
+     "t": 4978
+    },
+    {
+     "text": "左子樹都比 root 小、右子樹都比 root 大，且每棵 subtree 都成立：Binary Search Tree。",
+     "t": 5096
+    }
+   ],
+   "trap": "補充：轉成樹時老師畫的資料是 2 3 5 8 10 13（第二層 3、8、13，最上層 8），比前一頁少了 9。"
+  },
+  {
+   "title": "BST 的 Search 演算法",
+   "scene": "bstlin-bst-search",
+   "points": [
+    {
+     "text": "BST 如其名，就是幫我們做 binary search。",
+     "t": 5114
+    },
+    {
+     "text": "跟 root 比：比 root 小去左子樹找，比 root 大去右子樹找，subtree 再做同樣的事。",
+     "t": 5118
+    },
+    {
+     "text": "例如找 7：7 < 8 去左邊，右邊整個不用考慮，跟 binary search 一樣的偷吃步。",
+     "t": 5151
+    },
+    {
+     "text": "接下來兩個延伸：怎麼做出「好的」BST（加限制），以及 multi-way search tree。",
+     "t": 5201
+    },
+    {
+     "text": "binary search 的「中點」其實就是 root。",
+     "t": 5308
+    },
+    {
+     "text": "key < mid：BSTSearch(T.left, key)；key > mid：BSTSearch(T.right, key)。",
+     "t": 5327
+    },
+    {
+     "text": "key == mid：回傳 root 對應的 value；整個演算法結構跟 array 上的 binary search 一樣。",
+     "t": 5364
+    },
+    {
+     "text": "板書沒有 termination condition：找不到時不會停，要補「tree 是空的就停」。",
+     "t": 5428
+    }
+   ],
+   "trap": "補充：完整的 BSTSearch 第一行要先判斷 T 是否為空（NIL），否則找不到的 key 會一直往下呼叫。"
+  },
+  {
+   "title": "Search 要花多少力氣：O(h)",
+   "scene": "bstlin-bst-height",
+   "points": [
+    {
+     "text": "search 從 root 一路往某個 subtree 走，直到沒有為止。",
+     "t": 5460
+    },
+    {
+     "text": "走的路徑就是 root 到某個 leaf，花樹高 h 那麼多力氣：O(h)。",
+     "t": 5499
+    },
+    {
+     "text": "h 最糟是多少？很高的樹就是偽裝的 linked list。",
+     "t": 5547
+    },
+    {
+     "text": "worst case：O(h) = O(n)。",
+     "t": 5578
+    },
+    {
+     "text": "例如 8 → 5 → 3 → 2 一路往下，找 2 要走 4 個 node，跟 linked list 一樣。",
+     "t": 5607
+    },
+    {
+     "text": "best case：像 complete binary tree，h ≈ log n。",
+     "t": 5640
+    },
+    {
+     "text": "目前唯一花 log n 力氣的 map 是 skip list：底層 n、上面 n/2、n/4……約 log n 層。",
+     "t": 5662
+    },
+    {
+     "text": "我們想避免長歪的 BST：加條件讓樹高低一點，就像 max tree 加 complete 變成 heap。",
+     "t": 5713
+    }
+   ]
+  },
+  {
+   "title": "Q&A 小插曲",
+   "scene": null,
+   "points": [
+    {
+     "text": "同學只在笑老師一直念「比三小」，老師澄清只是寫錯數字。",
+     "t": 5786
+    }
+   ]
+  },
+  {
+   "title": "限制強度的取捨：一般 BST ↔ complete BST",
+   "scene": "bstlin-tradeoff",
+   "params": {
+    "part": 1
+   },
+   "points": [
+    {
+     "text": "資料結構設計有很多 trade-off：要在 BST 上再加什麼限制來確保樹高。",
+     "t": 5824
+    },
+    {
+     "text": "以 insertion 為例：限制很寬鬆時，insert 後幾乎不用維護，隨便找位置放就好。",
+     "t": 5880
+    },
+    {
+     "text": "但寬鬆就無法維持樹高：worst search 可能是 O(n)。最寬鬆的就是一般 arbitrary BST。",
+     "t": 5935
+    },
+    {
+     "text": "最嚴格：要求是 complete binary tree，其實就是一個 ordered array 的重排版。",
+     "t": 6019
+    },
+    {
+     "text": "complete BST 的 worst search 是 O(log n)，但 insert 後要花 O(n) 才能把蘿蔔放回各自的坑。",
+     "t": 6084
+    },
+    {
+     "text": "中間的 AVL tree：比 complete 寬鬆，insert 後只要 constant 的力氣維護，worst search 仍 O(log n)。",
+     "t": 6180
+    },
+    {
+     "text": "另一種是 Red-Black tree：一樣 constant 的維護、O(log n) 的 worst search。",
+     "t": 6249
+    }
+   ],
+   "trap": "補充：「constant 的力氣」指的是旋轉（結構調整）次數是常數；insert 本身要先 O(log n) 往下找、再沿路往回更新高度，所以整體仍是 O(log n)。"
+  },
+  {
+   "title": "AVL vs 紅黑樹",
+   "scene": "bstlin-tradeoff",
+   "params": {
+    "part": 2
+   },
+   "points": [
+    {
+     "text": "複雜度看起來差不多，但相對位置不同：紅黑樹寫在 AVL 左邊一點（較寬鬆）。",
+     "t": 6276
+    },
+    {
+     "text": "中間其實有很多種選擇，選這兩種是因為有代表性又實用。",
+     "t": 6326
+    },
+    {
+     "text": "AVL：easy to teach。",
+     "t": 6353
+    },
+    {
+     "text": "紅黑樹：faster in general——指維護比較快，比較能適應動態調整；search 稍慢一點點。",
+     "t": 6362
+    },
+    {
+     "text": "實務上較常用紅黑樹，但它不適合入門，所以先教 AVL。",
+     "t": 6403
+    },
+    {
+     "text": "重講一次：complete 太 strict、arbitrary 太 loose；AVL search 稍快 insertion 稍慢，紅黑樹相反。",
+     "t": 6482
+    }
+   ]
+  },
+  {
+   "title": "下課休息",
+   "scene": null,
+   "points": [
+    {
+     "text": "休息 10 分鐘。",
+     "t": 6565
+    },
+    {
+     "text": "休息結束。",
+     "t": 7185
+    }
+   ]
+  },
+  {
+   "title": "為什麼 complete BST 維護要 O(n)：1 2 3 插入 4",
+   "scene": "bstlin-complete-insert4",
+   "points": [
+    {
+     "text": "Q：為什麼 strict 那邊維護要花比較大的力氣？用例子說明。",
+     "t": 7187
+    },
+    {
+     "text": "complete BST 存 1 2 3：root 2、左 1、右 3，array 是 [2, 1, 3]。",
+     "t": 7230
+    },
+    {
+     "text": "插入 4 後，又要 complete 又要 BST，只能長成 root 3、左 2（下面 1）、右 4。",
+     "t": 7269
+    },
+    {
+     "text": "對應的 array 是 [3, 2, 4, 1]。",
+     "t": 7303
+    },
+    {
+     "text": "原本的 3 個東西全部換位置，跟 ordered array 插入一樣，大家都要讓開。",
+     "t": 7344
+    },
+    {
+     "text": "每個都要換位置，就要花 O(n) 的 effort。",
+     "t": 7409
+    },
+    {
+     "text": "heap 的 insertion 只修最後一個位置到 root 的那條 path；BST 的性質更強，只修一條 path 不夠。",
+     "t": 7416
+    }
+   ]
+  },
+  {
+   "title": "AVL Tree 的定義與 balance factor",
+   "scene": "bstlin-avl-def",
+   "points": [
+    {
+     "text": "AVL 是 Adelson-Velsky 和 Landis 名字的縮寫，1962 年就有的資料結構。",
+     "t": 7505
+    },
+    {
+     "text": "定義：還是 binary search tree，再加上一些條件。",
+     "t": 7543
+    },
+    {
+     "text": "從任何一個 root 看，左邊和右邊要差不多高，樹才不會歪一邊。",
+     "t": 7565
+    },
+    {
+     "text": "|左子樹高度 − 右子樹高度| ≤ 1，每棵 subtree 都要成立；就這一條限制。",
+     "t": 7595
+    },
+    {
+     "text": "左高寫 hL、右高寫 hR。",
+     "t": 7657
+    },
+    {
+     "text": "balance factor：bf = hL − hR（BF 不是 boyfriend）。",
+     "t": 7681
+    },
+    {
+     "text": "AVL 裡 bf 只能是 0、+1（左邊高一點）、−1（右邊高一點）；所有維護都在保持這三種值。",
+     "t": 7702
+    }
+   ]
+  },
+  {
+   "title": "特例：依序插入 3、5、8",
+   "scene": "bstlin-avl-358",
+   "points": [
+    {
+     "text": "先看特例：依序插入 3、5、8。",
+     "t": 7776
+    },
+    {
+     "text": "插入 3：左右都空，高度 0 − 0，bf = 0。",
+     "t": 7833
+    },
+    {
+     "text": "BST 的插入跟 search 是同一回事：在「該找到卻找不到」的地方放進去；5 > 3 放在 3 的右邊。",
+     "t": 7860
+    },
+    {
+     "text": "bf(5) = 0；bf(3) = 0 − 1 = −1，仍是 AVL。",
+     "t": 7904
+    },
+    {
+     "text": "插入 8：比 3 大、比 5 大，一路往右放到 5 的右邊。",
+     "t": 7955
+    },
+    {
+     "text": "bf(8) = 0、bf(5) = −1、bf(3) = 0 − 2 = −2：違反 AVL。",
+     "t": 7980
+    },
+    {
+     "text": "長成一長串：從中間的 5 把它拉起來，讓 5 當新的 root，左 3、右 8。",
+     "t": 8043
+    },
+    {
+     "text": "調整後 3、5、8 的 bf 都是 0；只有 4 種情形且兩兩對稱，樹高可證明是 O(log n)。",
+     "t": 8112
+    }
+   ]
+  },
+  {
+   "title": "Q&A 小插曲",
+   "scene": null,
+   "points": [
+    {
+     "text": "同學對 3 5 8 特例沒有問題，聊了幾句成語和上課反應。",
+     "t": 8217
+    }
+   ]
+  },
+  {
+   "title": "RR 的通例：rotate A 和 B",
+   "scene": "bstlin-rr-general",
+   "points": [
+    {
+     "text": "從特例推到通例：圖要複雜一點，每個 node 下面都可能有 subtree。",
+     "t": 8303
+    },
+    {
+     "text": "原本 3 的位置叫 A，5 的位置叫 B；B 的左右 subtree 叫 BL、BR，A 的左 subtree 叫 AL。",
+     "t": 8364
+    },
+    {
+     "text": "B 原本平衡；insert 進 BR 讓它多一層，B 沒事，出問題的是 A。",
+     "t": 8454
+    },
+    {
+     "text": "A 的左邊 AL 跟 B 帶的整棵 subtree 差了 2：bf(A) = −2，bf(B) = −1。",
+     "t": 8506
+    },
+    {
+     "text": "維護：把 B 拉上來，A 滾下去；AL 跟著 A 往下一層，BR 跟著 B 往上一層。",
+     "t": 8562
+    },
+    {
+     "text": "BL 要去哪？BL 是比 A 大、比 B 小的資料，必須在 A 的右邊。",
+     "t": 8709
+    },
+    {
+     "text": "調整完 AL、BL、BR 底端切齊：bf(A) = 0、bf(B) = 0。",
+     "t": 8777
+    },
+    {
+     "text": "AL 還在 A 左、BR 還在 B 右；變的只有兩個 link：A.right = B.left、B.left = A。",
+     "t": 8840
+    },
+    {
+     "text": "這兩行叫 rotate(A, B)：B 逆時針轉上去當 root；這種情形叫 RR。",
+     "t": 8916
+    }
+   ],
+   "trap": "補充：RR 是以「新節點在失衡點 A 的右邊的右邊」命名，做的是一次左旋（B 逆時針轉上來），不要跟旋轉方向的名稱搞混。"
+  },
+  {
+   "title": "為什麼只要調整一次",
+   "scene": "bstlin-rr-height",
+   "points": [
+    {
+     "text": "實際的 AVL insertion：先做 BST insertion，insert 那條 path 上的 bf 可能改變。",
+     "t": 8961
+    },
+    {
+     "text": "從下往上重算 bf，找到第一個不平衡的點 A。",
+     "t": 8984
+    },
+    {
+     "text": "若插在 A 的右邊的右邊，就 rotate(A, B)，A 帶頭的 subtree 平衡完成。",
+     "t": 8996
+    },
+    {
+     "text": "調整完 subtree 高度跟 insert 前一模一樣，所以再往上的 bf 通通不會變。",
+     "t": 9053
+    },
+    {
+     "text": "找到第一個出錯的地方、調整一次，事情就結束。",
+     "t": 9108
+    },
+    {
+     "text": "根據對稱性，插在左邊的左邊（LL）也一樣一次旋轉解決。",
+     "t": 9162
+    }
+   ]
+  },
+  {
+   "title": "Q&A：BL 接到 A 不會讓 bf 變 2 嗎",
+   "scene": "bstlin-rr-height",
+   "points": [
+    {
+     "text": "Q：BL 接到 A 的右邊，bf 不會變 2 嗎？要看 BL 和 AL 的高度。",
+     "t": 9249
+    },
+    {
+     "text": "A 是第一個失衡點，表示它原本就是 −1：B 那邊比 AL 高一層。",
+     "t": 9295
+    },
+    {
+     "text": "若 BL 高 10，B 那層就是 11，AL 也是 10；最後 AL 和 BL 10 對 10，bf(A) = 0。",
+     "t": 9318
+    },
+    {
+     "text": "BL 會不會少一層？那 insert 後 B 自己就先不平衡，第一個失衡點就不會是 A。",
+     "t": 9372
+    },
+    {
+     "text": "不會像 strict 的 ordered array：只旋轉一次，其他 subtree 都不動，有自由度。",
+     "t": 9422
+    },
+    {
+     "text": "維護只是兩個 pointer 的改變；成本主要是沿著樹高從下往上找第一個要修的地方。",
+     "t": 9477
+    }
+   ]
+  },
+  {
+   "title": "完整例子：依序插入 1 到 7",
+   "scene": "bstlin-avl-1to7",
+   "points": [
+    {
+     "text": "依序把 1, 2, 3, 4, 5, 6, 7 塞進 AVL tree。",
+     "t": 9540
+    },
+    {
+     "text": "插入 3：從 3 往上找，1 的 bf = −2，3 在 1 的右邊的右邊（RR），2 拉上來、1 下去。",
+     "t": 9589
+    },
+    {
+     "text": "插入 4：放在 3 的右邊，往回看 4、3、2 都平衡。",
+     "t": 9661
+    },
+    {
+     "text": "插入 5：3 的 bf = −2（RR），4 提上來當 root、3 轉下去；subtree 高度維持 2，上面不受影響。",
+     "t": 9688
+    },
+    {
+     "text": "插入 6：5、4 都平衡，2 的左高 1、右高 3，bf = −2。",
+     "t": 9828
+    },
+    {
+     "text": "rotate 2 和 4：4 在上、2 在下；1 和 5、6 不變，原本 4 的左子樹 3 接到 2 的右邊。",
+     "t": 9877
+    },
+    {
+     "text": "插入 7：5 不平衡（RR），6 上來當 root、5 變小弟。",
+     "t": 9944
+    },
+    {
+     "text": "最後意外得到一棵 full binary tree，但過程中並沒有堅持 complete。",
+     "t": 9999
+    }
+   ]
+  },
+  {
+   "title": "小結與 Q&A：bf 怎麼算",
+   "scene": "bstlin-avl-height-store",
+   "points": [
+    {
+     "text": "還沒講：insertion 在右邊的左邊、左邊的右邊（RL、LR），下次上課。",
+     "t": 10074
+    },
+    {
+     "text": "BST 的 search 順著樹做 binary search；insertion 就是 search 不到的地方放進去。",
+     "t": 10094
+    },
+    {
+     "text": "AVL 在 insertion 後多一步調整；RR、LL 都只牽涉兩個 node，其他 node 不受影響。",
+     "t": 10106
+    },
+    {
+     "text": "Q：這棵樹只在乎平衡？其實插入和 search 時一直在跟 node 比大小，就是在排序。",
+     "t": 10153
+    },
+    {
+     "text": "Q：計算 bf 的時間複雜度？簡單做法是每個 node 存左右兩邊的樹高 hL、hR。",
+     "t": 10179
+    },
+    {
+     "text": "insertion 只會改到 root 到 leaf 那條 path 上的樹高，往回修正時順便更新。",
+     "t": 10215
+    },
+    {
+     "text": "bf 其實只需要 0、1、−1，可以設計更省 bit 的存法；那是實作細節。",
+     "t": 10238
+    }
+   ],
+   "trap": "補充：存子樹節點總數不能直接得到 bf，要存的是高度（或直接存 bf 本身）。"
+  },
+  {
+   "title": "結語",
+   "scene": null,
+   "points": [
+    {
+     "text": "第一次接觸 BST 和 AVL，請把 BST 和簡單的 AVL operation 讀熟，下次會講更複雜的操作。",
+     "t": 10273
+    },
+    {
+     "text": "final project 會盡快公布。",
+     "t": 10339
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "在 skip list 2 4 5 9 10 11 15 20 上，快車是 4 → 9 → 11 → 20。找 10 時應該在哪一站轉普通車？",
+   "opts": [
+    "4",
+    "9",
+    "11",
+    "20"
+   ],
+   "ans": "9",
+   "why": "快車比 4、9 都還在後面，11 過頭，所以在 9 換到普通車，下一站就是 10。"
+  },
+  {
+   "q": "skip list 每層大約是下一層的一半，整體空間大約是多少？",
+   "opts": [
+    "約 n",
+    "約 2n",
+    "約 n log n",
+    "約 n²"
+   ],
+   "ans": "約 2n",
+   "why": "n(1 + 1/2 + 1/4 + …) ≤ 2n，仍是 O(n)，只是多花約一倍。"
+  },
+  {
+   "q": "skip list 插入新 key 時，用什麼方法避免每層都要重排？",
+   "opts": [
+    "每次重建所有上層 list",
+    "丟銅板：正面才往上一層也放",
+    "只放最上層",
+    "改用 hash 決定層數"
+   ],
+   "ans": "丟銅板：正面才往上一層也放",
+   "why": "新 key 一定在底層，在第 2 層的機率 1/2、第 3 層 1/4……只要更新它自己那幾層。"
+  },
+  {
+   "q": "在 BST 中 search 的時間複雜度最貼切的描述是？",
+   "opts": [
+    "O(1)",
+    "O(log n) 一定成立",
+    "O(h)，最差 O(n)",
+    "O(n log n)"
+   ],
+   "ans": "O(h)，最差 O(n)",
+   "why": "search 是從 root 走到某個 leaf，花樹高 h；樹長歪成 linked list 時 h = n。"
+  },
+  {
+   "q": "complete BST 存 1 2 3（array [2,1,3]），插入 4 之後的 array 是？",
+   "opts": [
+    "[2,1,3,4]",
+    "[3,2,4,1]",
+    "[2,1,4,3]",
+    "[3,1,4,2]"
+   ],
+   "ans": "[3,2,4,1]",
+   "why": "4 個 node 的 complete BST 只能 root 3、左 2（下面接 1）、右 4；原本 3 個元素全部換位置。"
+  },
+  {
+   "q": "AVL tree 依序插入 3、5、8，插完 8 時哪個 node 的 bf 是 −2？",
+   "opts": [
+    "3",
+    "5",
+    "8",
+    "沒有 node 失衡"
+   ],
+   "ans": "3",
+   "why": "3 的左子樹高 0、右子樹高 2，bf = 0 − 2 = −2，要把 5 拉上來當 root。"
+  },
+  {
+   "q": "RR 旋轉 rotate(A, B)（B = A.right）時，B 原本的左子樹 BL 會接到哪裡？",
+   "opts": [
+    "B 的右邊",
+    "A 的左邊",
+    "A 的右邊",
+    "整棵樹的 root"
+   ],
+   "ans": "A 的右邊",
+   "why": "BL 裡的 key 都比 A 大、比 B 小，旋轉後只能放在 A 的右邊：A.right = B.left; B.left = A。"
+  },
+  {
+   "q": "AVL 依序插入 1 到 7，插入 6 時第一個失衡的 node 是？",
+   "opts": [
+    "5",
+    "4",
+    "2",
+    "1"
+   ],
+   "ans": "2",
+   "why": "插入 6 前樹是 2 /(1),(4/3,5)；插入後 2 的左高 1、右高 3，bf = −2，rotate 2 和 4，3 接到 2 的右邊。"
+  }
+ ]
+}

@@ -1,0 +1,617 @@
+{
+ "video": "HqPJF2L5h9U",
+ "label": "Abdul Bari：Heap Sort",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "本集主題",
+   "scene": null,
+   "points": [
+    {
+     "text": "主題：binary tree 的陣列表示、complete binary tree、heap、insert／delete、heap sort、heapify、priority queue。",
+     "t": 0
+    },
+    {
+     "text": "要先懂前面幾個子題才看得懂 heap sort；已經會的可以跳過。",
+     "t": 34
+    }
+   ]
+  },
+  {
+   "title": "課程廣告",
+   "scene": null,
+   "points": [
+    {
+     "text": "老師介紹自己在 Udemy 的 C++ 與資料結構課程（與本章內容無關）。",
+     "t": 54
+    }
+   ]
+  },
+  {
+   "title": "Binary tree 的陣列表示",
+   "scene": "heaphq-array-rep",
+   "points": [
+    {
+     "text": "先講怎麼用陣列存 binary tree（例子用字母 A–G）。",
+     "t": 149
+    },
+    {
+     "text": "寫程式時陣列從 0 開始，但理論上習慣從 index 1 開始。",
+     "t": 179
+    },
+    {
+     "text": "要存兩件事：所有元素，以及父子關係（誰是 parent、left child、right child）。",
+     "t": 198
+    },
+    {
+     "text": "元素一層一層、由左到右存進陣列：A B C D E F G。",
+     "t": 224
+    },
+    {
+     "text": "節點在 index i：left child 在 2i、right child 在 2i + 1、parent 在 ⌊i/2⌋。",
+     "t": 237
+    },
+    {
+     "text": "驗證：B 在 2，左孩子 D 在 4、右孩子 E 在 5；C 在 3，F、G 在 6、7。",
+     "t": 257
+    },
+    {
+     "text": "F 在 6：parent = 6/2 = 3 → C。",
+     "t": 290
+    },
+    {
+     "text": "G 在 7：7/2 = 3.5，取 floor 得 3 → C。",
+     "t": 305
+    },
+    {
+     "text": "只要照層序填，公式就自動成立，不必每次套公式。",
+     "t": 329
+    }
+   ]
+  },
+  {
+   "title": "缺少的節點要留空格",
+   "scene": "heaphq-array-gaps",
+   "points": [
+    {
+     "text": "A B C D E 一樣層序填，公式自動成立。",
+     "t": 338
+    },
+    {
+     "text": "另一棵：A、B、C，D 是 C 的孩子，B 沒有孩子。",
+     "t": 361
+    },
+    {
+     "text": "層序填時，缺的節點必須留空格。",
+     "t": 375
+    },
+    {
+     "text": "陣列變成 A B C _ _ D。",
+     "t": 394
+    },
+    {
+     "text": "若把 D 緊接著放在 [4]，它會變成 B 的左孩子，關係就錯了。",
+     "t": 413
+    },
+    {
+     "text": "結論：公式維持關係、元素照原樣存；有缺就留空。",
+     "t": 432
+    }
+   ]
+  },
+  {
+   "title": "Full 與 Complete binary tree",
+   "scene": "heaphq-full-complete",
+   "points": [
+    {
+     "text": "Full binary tree：在目前高度下節點數已是最多。",
+     "t": 449
+    },
+    {
+     "text": "高度 2 的 full tree 有 7 個節點；再加任何節點高度就會增加。",
+     "t": 467
+    },
+    {
+     "text": "高度 h 的 full binary tree 有 2^(h+1) − 1 個節點。",
+     "t": 498
+    },
+    {
+     "text": "Complete binary tree：用陣列表示時，第一個到最後一個元素之間沒有空格。",
+     "t": 517
+    },
+    {
+     "text": "最後一個元素之後有空位沒關係，重點是中間不能有。",
+     "t": 564
+    },
+    {
+     "text": "每個 full binary tree 也是 complete binary tree。",
+     "t": 581
+    },
+    {
+     "text": "課本定義：高度 h − 1 以上是 full，最後一層由左到右填。",
+     "t": 633
+    },
+    {
+     "text": "有些作者把它叫 almost complete binary tree；多數課本叫 complete。",
+     "t": 683
+    }
+   ]
+  },
+  {
+   "title": "判斷 complete 的例子與高度",
+   "scene": "heaphq-complete-check",
+   "points": [
+    {
+     "text": "畫幾棵樹練習判斷是不是 complete。",
+     "t": 702
+    },
+    {
+     "text": "最後一層若左邊缺、右邊有，就不是 complete。",
+     "t": 734
+    },
+    {
+     "text": "例：1 2 3 _ _ _ 4，中間三個空格 → 不是 complete。",
+     "t": 767
+    },
+    {
+     "text": "前面各層全滿、最後一層靠左連續 → 是 complete；最後一個之後沒有節點沒關係。",
+     "t": 807
+    },
+    {
+     "text": "Complete binary tree 的高度最小，等於 log n：一層沒填滿不會往下一層長。",
+     "t": 822
+    }
+   ]
+  },
+  {
+   "title": "Max heap 與 Min heap",
+   "scene": "heaphq-max-min",
+   "points": [
+    {
+     "text": "Heap 首先必須是 complete binary tree。",
+     "t": 875
+    },
+    {
+     "text": "例：50；30、20；15、10、8、16——每個節點都大於所有子孫。",
+     "t": 882
+    },
+    {
+     "text": "根是最大值：這叫 max heap。",
+     "t": 906
+    },
+    {
+     "text": "條件是「大於或等於」，所以允許重複值。",
+     "t": 921
+    },
+    {
+     "text": "例：10；30、20；35、40、32、25——每個節點都小於等於所有子孫。",
+     "t": 931
+    },
+    {
+     "text": "根是最小值：這叫 min heap。",
+     "t": 953
+    },
+    {
+     "text": "之後都用 max heap 講，min heap 做法相同。",
+     "t": 976
+    }
+   ]
+  },
+  {
+   "title": "Insert 的錯誤做法",
+   "scene": "heaphq-insert-wrong",
+   "points": [
+    {
+     "text": "在 max heap 50, 30, 20, 15, 10, 8, 16 中插入新元素。",
+     "t": 981
+    },
+    {
+     "text": "要插入 60；60 最大，最後會在根。",
+     "t": 1023
+    },
+    {
+     "text": "常見錯誤：把 60 直接放到根，其他元素往下推。",
+     "t": 1043
+    },
+    {
+     "text": "這樣樹會往某個方向一直延伸。",
+     "t": 1057
+    },
+    {
+     "text": "結果不是 complete binary tree，所以不能從根插入。",
+     "t": 1063
+    }
+   ]
+  },
+  {
+   "title": "Insert 60：放在最後，再往上調整",
+   "scene": "heaphq-insert-60",
+   "points": [
+    {
+     "text": "正確做法：實作上是陣列，60 放在陣列下一個空位。",
+     "t": 1086
+    },
+    {
+     "text": "空位是 [8]，在樹上是 15 的左孩子。",
+     "t": 1108
+    },
+    {
+     "text": "違反 max heap：和 parent 比較。",
+     "t": 1143
+    },
+    {
+     "text": "60 > 15、60 > 30、60 > 50，一路往上換。",
+     "t": 1145
+    },
+    {
+     "text": "陣列中的路徑：8 → 4 → 2 → 1（每次除以 2）。",
+     "t": 1160
+    },
+    {
+     "text": "結果：60, 50, 20, 30, 10, 8, 16, 15。",
+     "t": 1205
+    },
+    {
+     "text": "時間 = 交換次數，最多等於高度 log n。",
+     "t": 1245
+    },
+    {
+     "text": "若插入的是 6 就不用換：最少 O(1)、最多 O(log n)。",
+     "t": 1275
+    },
+    {
+     "text": "Insert 的調整方向是由葉子往根（向上）。",
+     "t": 1316
+    }
+   ]
+  },
+  {
+   "title": "Delete：只能刪根",
+   "scene": "heaphq-delete-50",
+   "points": [
+    {
+     "text": "在 7 個元素的 max heap 上做 delete。",
+     "t": 1342
+    },
+    {
+     "text": "只能刪根，不能刪其他元素。",
+     "t": 1358
+    },
+    {
+     "text": "比喻：水果攤堆成金字塔的蘋果，只會拿最上面最好的那顆。",
+     "t": 1381
+    },
+    {
+     "text": "常見錯誤：30 補上、15 再補上——會破壞 complete binary tree。",
+     "t": 1447
+    },
+    {
+     "text": "正確：陣列最後一個元素 16 補到根。",
+     "t": 1475
+    },
+    {
+     "text": "往下調整：比較孩子 30、20，較大的 30 上來、16 下去。",
+     "t": 1532
+    },
+    {
+     "text": "16 的孩子 15、10 都比 16 小，不用換，完成。",
+     "t": 1592
+    },
+    {
+     "text": "Insert 向上調整，delete 向下調整。",
+     "t": 1637
+    },
+    {
+     "text": "時間取決於高度：O(log n)。",
+     "t": 1665
+    }
+   ]
+  },
+  {
+   "title": "刪除的值放進空格 → heap sort 的想法",
+   "scene": "heaphq-delete-store",
+   "points": [
+    {
+     "text": "從 max heap 每刪一次，就得到剩下最大的元素。",
+     "t": 1676
+    },
+    {
+     "text": "陣列大小 7，刪一個後 heap size = 6，[7] 已不屬於 heap。",
+     "t": 1725
+    },
+    {
+     "text": "把剛刪掉的 50 放進空出來的 [7]。",
+     "t": 1746
+    },
+    {
+     "text": "再刪 30：最後的 8 補到根，20 較大所以 20 上來。",
+     "t": 1777
+    },
+    {
+     "text": "heap size 變 5，30 放進 [6]。",
+     "t": 1800
+    },
+    {
+     "text": "一直刪下去，從左讀陣列就是排好序的。",
+     "t": 1826
+    },
+    {
+     "text": "這就是 heap sort 的想法。",
+     "t": 1837
+    }
+   ],
+   "trap": "影片說 8 換下去後「再和 10 比、10 上來」。補充：heap size = 5 時 8 在 [3]，2·3 = 6 > 5，沒有孩子（10 是 16 的孩子），不用再換；正確結果是 20, 16, 8, 15, 10。"
+  },
+  {
+   "title": "Heap sort 第一步：逐一 insert 建 heap",
+   "scene": "heaphq-sort-build",
+   "points": [
+    {
+     "text": "Heap sort 兩步驟：先建 heap，再把元素全部刪除。",
+     "t": 1865
+    },
+    {
+     "text": "例子：10, 20, 15, 30, 40。",
+     "t": 1907
+    },
+    {
+     "text": "第一個元素 10 自己就是 heap。",
+     "t": 1920
+    },
+    {
+     "text": "insert 20：比 parent 10 大，換上去。",
+     "t": 1936
+    },
+    {
+     "text": "insert 15：比 parent 20 小，不用動。",
+     "t": 1994
+    },
+    {
+     "text": "insert 30：先和 10 換，再和 20 換，到根。",
+     "t": 2027
+    },
+    {
+     "text": "insert 40：和 20、30 換，得到 40, 30, 15, 10, 20。",
+     "t": 2075
+    },
+    {
+     "text": "n 個元素、每個最多 log n：建 heap O(n log n)。",
+     "t": 2139
+    }
+   ]
+  },
+  {
+   "title": "Heap sort 第二步：全部 delete",
+   "scene": "heaphq-sort-delete",
+   "points": [
+    {
+     "text": "第二步：從 heap 一個一個刪。",
+     "t": 2180
+    },
+    {
+     "text": "刪 40：最後的 20 補到根，30 較大換上去。",
+     "t": 2194
+    },
+    {
+     "text": "40 放進空出來的最後一格（不屬於 heap）。",
+     "t": 2263
+    },
+    {
+     "text": "刪 30：10 補到根，20 上來。",
+     "t": 2272
+    },
+    {
+     "text": "刪 20：15 補到根，已經比孩子大，不用換。",
+     "t": 2328
+    },
+    {
+     "text": "刪 15：剩 10。",
+     "t": 2387
+    },
+    {
+     "text": "結果 10, 15, 20, 30, 40：排好了。",
+     "t": 2411
+    },
+    {
+     "text": "n log n（建）+ n log n（刪）= 2n log n = O(n log n)。",
+     "t": 2476
+    }
+   ]
+  },
+  {
+   "title": "Heapify：另一種建 heap 的方法",
+   "scene": "heaphq-heapify",
+   "points": [
+    {
+     "text": "Heapify 也是建 heap 的方法，但調整方向不同。",
+     "t": 2503
+    },
+    {
+     "text": "例子：10, 20, 15, 12, 40, 25, 18（complete，但不是 max heap）。",
+     "t": 2554
+    },
+    {
+     "text": "改成由右往左掃描陣列。",
+     "t": 2596
+    },
+    {
+     "text": "每個元素往下調整，用的就是 delete 時的方法。",
+     "t": 2608
+    },
+    {
+     "text": "18、25、40、12 沒有孩子，自己就是 heap。",
+     "t": 2627
+    },
+    {
+     "text": "15：孩子中 25 較大，25 上去、15 下來。",
+     "t": 2662
+    },
+    {
+     "text": "20：孩子中 40 較大，40 上去。",
+     "t": 2699
+    },
+    {
+     "text": "10：先和 40 換，再和 20 換，得到 40, 20, 25, 12, 10, 15, 18。",
+     "t": 2724
+    },
+    {
+     "text": "Heapify 是 O(n)；逐一 insert 建 heap 是 O(n log n)，heapify 較快。",
+     "t": 2777
+    }
+   ]
+  },
+  {
+   "title": "Priority queue",
+   "scene": "heaphq-pq-priority",
+   "points": [
+    {
+     "text": "最後一個主題：priority queue。",
+     "t": 2818
+    },
+    {
+     "text": "Queue 是 FIFO；priority queue 依 priority 插入、刪除。",
+     "t": 2827
+    },
+    {
+     "text": "刪除時一定拿 priority 最高的元素。",
+     "t": 2839
+    },
+    {
+     "text": "這裡的例子：數字本身就是 priority。",
+     "t": 2862
+    },
+    {
+     "text": "這和作業系統裡的 priority queue 概念不同，主要用在演算法。",
+     "t": 2871
+    },
+    {
+     "text": "規則一：數字越小 priority 越高，3 最先被刪。",
+     "t": 2901
+    },
+    {
+     "text": "規則二：數字越大 priority 越高，順序是 10、9、8。",
+     "t": 2911
+    }
+   ]
+  },
+  {
+   "title": "用陣列 vs 用 heap 實作 priority queue",
+   "scene": "heaphq-pq-array-vs-heap",
+   "points": [
+    {
+     "text": "用一般陣列：insert 直接放在尾端。",
+     "t": 2936
+    },
+    {
+     "text": "delete 要刪 3，後面元素都要往前移，O(n)。",
+     "t": 2955
+    },
+    {
+     "text": "若改成保持排序，insert 就要 O(n)；總有一個操作是 O(n)。",
+     "t": 2972
+    },
+    {
+     "text": "用 heap：insert、delete 都是 O(log n)。",
+     "t": 2984
+    },
+    {
+     "text": "數字小的優先就用 min heap，數字大的優先就用 max heap。",
+     "t": 2994
+    },
+    {
+     "text": "Heap 是實作 priority queue 最好的資料結構。",
+     "t": 3035
+    }
+   ]
+  },
+  {
+   "title": "結尾與課程資訊",
+   "scene": null,
+   "points": [
+    {
+     "text": "結尾再次介紹 Udemy 課程。",
+     "t": 3052
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "陣列從 index 1 開始存 binary tree，index 7 的 parent 在哪？",
+   "opts": [
+    "3",
+    "3.5",
+    "4",
+    "14"
+   ],
+   "ans": "3",
+   "why": "parent = ⌊7/2⌋ = ⌊3.5⌋ = 3。"
+  },
+  {
+   "q": "下列哪個陣列表示的是 complete binary tree？（_ 代表空格）",
+   "opts": [
+    "A B C D E",
+    "A B C _ _ D",
+    "1 2 3 _ _ _ 4",
+    "A _ C"
+   ],
+   "ans": "A B C D E",
+   "why": "Complete binary tree 的陣列從第一個到最後一個元素之間不能有空格。"
+  },
+  {
+   "q": "在 max heap 50, 30, 20, 15, 10, 8, 16 中 insert 60，結果陣列是？",
+   "opts": [
+    "60, 50, 20, 30, 10, 8, 16, 15",
+    "60, 50, 30, 20, 15, 10, 8, 16",
+    "50, 30, 20, 15, 10, 8, 16, 60",
+    "60, 30, 50, 15, 10, 8, 16, 20"
+   ],
+   "ans": "60, 50, 20, 30, 10, 8, 16, 15",
+   "why": "60 先放 [8]，再沿 8 → 4 → 2 → 1 和 15、30、50 交換。"
+  },
+  {
+   "q": "從 max heap 50, 30, 20, 15, 10, 8, 16 delete 一次，剩下的 heap 是？",
+   "opts": [
+    "30, 16, 20, 15, 10, 8",
+    "30, 15, 20, 16, 10, 8",
+    "30, 20, 16, 15, 10, 8",
+    "16, 30, 20, 15, 10, 8"
+   ],
+   "ans": "30, 16, 20, 15, 10, 8",
+   "why": "最後的 16 補到根，和較大的孩子 30 換；16 比 15、10 大就停。"
+  },
+  {
+   "q": "對 10, 20, 15, 12, 40, 25, 18 做 heapify（建 max heap），結果是？",
+   "opts": [
+    "40, 20, 25, 12, 10, 15, 18",
+    "40, 25, 20, 18, 15, 12, 10",
+    "40, 20, 25, 12, 10, 18, 15",
+    "10, 12, 15, 18, 20, 25, 40"
+   ],
+   "ans": "40, 20, 25, 12, 10, 15, 18",
+   "why": "由右往左：15 換 25、20 換 40、10 先換 40 再換 20。"
+  },
+  {
+   "q": "建 heap：逐一 insert 和 heapify 的時間各是？",
+   "opts": [
+    "O(n log n) 和 O(n)",
+    "O(n) 和 O(n log n)",
+    "都是 O(n log n)",
+    "都是 O(log n)"
+   ],
+   "ans": "O(n log n) 和 O(n)",
+   "why": "逐一 insert 每個最多爬 log n；heapify 由下往上調，總和是 O(n)。"
+  },
+  {
+   "q": "Priority queue 若「數字越小 priority 越高」，應該用？",
+   "opts": [
+    "min heap",
+    "max heap",
+    "排序好的 linked list",
+    "一般 queue"
+   ],
+   "ans": "min heap",
+   "why": "min heap 的根是最小值，insert、delete 都 O(log n)。"
+  }
+ ]
+}

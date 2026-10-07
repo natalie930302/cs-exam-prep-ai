@@ -1,0 +1,573 @@
+{
+ "video": "nfDvFjXU2VI",
+ "label": "交大彭文志 Lec24 Search Structures (1/3)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Skewed BST：找 SEPT 要比 12 次",
+   "scene": "bstb-skewed-months",
+   "points": [
+    {
+     "text": "BST 的形狀受 input sequence 影響，順序不好就會長成 skewed binary search tree。",
+     "t": 0
+    },
+    {
+     "text": "照字母順序插入 12 個月份，search SEPT 要從 root 一路比到底：最多比較 12 次。",
+     "t": 39
+    },
+    {
+     "text": "average comparison：把 12 個 node 各自的比較次數取平均，得到 6.5。",
+     "t": 60
+    },
+    {
+     "text": "不 balance 的 BST 搜尋很慢 → 希望找到 balanced BST，代表就是 AVL tree。",
+     "t": 78
+    }
+   ],
+   "trap": "補充：平均 = (1 + 2 + … + 12) / 12 = 78 / 12 = 6.5。"
+  },
+  {
+   "title": "AVL 定義與 balance factor",
+   "scene": "bstb-avl-def",
+   "points": [
+    {
+     "text": "AVL tree 有兩個條件：第一，T_L 和 T_R 都是 height balanced。",
+     "t": 98
+    },
+    {
+     "text": "第二，|h_L − h_R| ≤ 1：左右子樹高度相差在 1 之內。",
+     "t": 125
+    },
+    {
+     "text": "height balanced 是遞迴定義：任取一個 node，它的左右子樹都要符合這兩個條件。",
+     "t": 158
+    },
+    {
+     "text": "每個 node 定一個 balance factor：BF = h_L − h_R，不取絕對值。",
+     "t": 197
+    },
+    {
+     "text": "AVL tree 每個 node 的 BF 只能是 −1、0、1。",
+     "t": 233
+    },
+    {
+     "text": "insert 時一發現某個 node 的 BF 超出這三個值，就要調整。",
+     "t": 243
+    },
+    {
+     "text": "是在 insert 的過程中、每插一個就調整，不是全部插完才調整。",
+     "t": 307
+    }
+   ],
+   "trap": "BF 有正負號（左高為正）；條件是 BF ∈ {−1, 0, 1}。"
+  },
+  {
+   "title": "四種調整：LL、LR、RR、RL",
+   "scene": "bstb-four-cases",
+   "points": [
+    {
+     "text": "AVL 的調整只有四種 operation。",
+     "t": 349
+    },
+    {
+     "text": "新 insert 進來的 node 叫 Y。",
+     "t": 361
+    },
+    {
+     "text": "A = insert Y 之後 BF 不在 −1、0、1 之間的 node。",
+     "t": 413
+    },
+    {
+     "text": "LL：Y 插在 A 的 left subtree 的 left。",
+     "t": 449
+    },
+    {
+     "text": "LR：Y 插在 A 的 left subtree 的 right（英文課本寫得很繞，記中文就好）。",
+     "t": 461
+    },
+    {
+     "text": "RR：right subtree 的 right；RL 跟 LR 剛好相反：right subtree 的 left。",
+     "t": 500
+    },
+    {
+     "text": "做法：先 detect 哪個 node 是 A，再判斷 Y 和 A 的空間關係，一定落入四種之一。",
+     "t": 530
+    }
+   ],
+   "trap": "LL/LR/RR/RL 是看「從 A 往 Y 走的頭兩步」，不是看 Y 是誰的左右子。"
+  },
+  {
+   "title": "月份例：MAR、MAY、NOV → RR",
+   "scene": "bstb-month-rr",
+   "points": [
+    {
+     "text": "依 input sequence 一個一個插：樹原本是空的，MAR 當 root。",
+     "t": 573
+    },
+    {
+     "text": "MAY 和 MAR 比：第三個字 Y > R，所以 MAY 放在 MAR 右邊。",
+     "t": 587
+    },
+    {
+     "text": "插完就算 BF：MAR = 0 − 1 = −1，MAY = 0。",
+     "t": 604
+    },
+    {
+     "text": "insert NOV → 在 MAY 的右邊，這時 root MAR 違規。",
+     "t": 628
+    },
+    {
+     "text": "MAR 是 A、NOV 是 Y；Y 在 A 的 right subtree 的 right → RR。",
+     "t": 663
+    },
+    {
+     "text": "調整：MAY 拉上來、MAR 壓到左邊、NOV 在右邊，BF 全部變 0。",
+     "t": 730
+    }
+   ]
+  },
+  {
+   "title": "月份例：AUG、APR → LL",
+   "scene": "bstb-month-ll",
+   "points": [
+    {
+     "text": "insert AUG，更新每個 node 的 BF：沒有人違規。",
+     "t": 762
+    },
+    {
+     "text": "insert APR 後更新 BF：MAY 和 MAR 兩個 node 都違規。",
+     "t": 780
+    },
+    {
+     "text": "APR 在 A 的 left subtree 的 left → LL。",
+     "t": 832
+    },
+    {
+     "text": "A 是 MAR：離 APR 最近的那一個。",
+     "t": 841
+    },
+    {
+     "text": "LL：把 AUG 提上來、MAR 往下壓。",
+     "t": 859
+    },
+    {
+     "text": "MAY 的 h_L = 2、h_R = 1 → BF = 1，調整完成，全部符合規定。",
+     "t": 887
+    }
+   ]
+  },
+  {
+   "title": "月份例：JAN → LR，A 是最近的違規點",
+   "scene": "bstb-month-lr",
+   "points": [
+    {
+     "text": "insert JAN 進來，又有人違規。",
+     "t": 904
+    },
+    {
+     "text": "JAN 在 A 的 left subtree 的 right → 進行 LR 調整。",
+     "t": 929
+    },
+    {
+     "text": "APR 那一步有兩個 node 的 BF 都是 2，還是要確認哪一個是 A。",
+     "t": 956
+    },
+    {
+     "text": "A = 從新 node 往 root 走，遇到的第一個違規 node（APR 那次是 MAR）。",
+     "t": 965
+    },
+    {
+     "text": "這次往 root 走，最近的違規 node 是 MAY。",
+     "t": 996
+    },
+    {
+     "text": "LL、RR、LR、RL 的調整都有固定步驟，照著圖表依樣畫葫蘆。",
+     "t": 1020
+    },
+    {
+     "text": "LR 的調整幅度很大：root 都換了，MAR 被拉上來。",
+     "t": 1069
+    },
+    {
+     "text": "不管怎麼調整，結果都必須維持 BST 的特質。",
+     "t": 1093
+    }
+   ]
+  },
+  {
+   "title": "月份例：DEC、JULY、FEB → RL",
+   "scene": "bstb-month-rl",
+   "points": [
+    {
+     "text": "insert DEC：沒有導致任何違規。",
+     "t": 1126
+    },
+    {
+     "text": "insert JULY：也沒有違規。",
+     "t": 1134
+    },
+    {
+     "text": "insert FEB 之後重新計算每個 node 的 BF。",
+     "t": 1140
+    },
+    {
+     "text": "這次違規的 node 不只一個。",
+     "t": 1150
+    },
+    {
+     "text": "A 是 AUG；FEB 在 AUG 的 right subtree 的 left → RL 調整。",
+     "t": 1167
+    },
+    {
+     "text": "AVL 的調整就是這四種情況。",
+     "t": 1200
+    }
+   ],
+   "trap": "補充：影片說 AUG、MAY、MAR 三個違規；實際算 BF 是 AUG = −2、MAR = 2，MAY 是 −1。結論不變：最近的 AUG 是 A。"
+  },
+  {
+   "title": "月份例：JUNE → LR，最後的 AVL tree",
+   "scene": "bstb-month-final",
+   "points": [
+    {
+     "text": "insert JUNE，計算 BF，把 A 抓出來：MAR。",
+     "t": 1222
+    },
+    {
+     "text": "JUNE 在 MAR 的 left subtree 的 right → LR。",
+     "t": 1235
+    },
+    {
+     "text": "之後繼續 insert 到完（OCT、SEPT 影片直接帶過）。",
+     "t": 1263
+    },
+    {
+     "text": "最後的樹比較 balanced：每個 node 都符合規定。",
+     "t": 1273
+    }
+   ],
+   "trap": "補充：OCT 插入時 MAY 的 BF = −2，做 RR；SEPT 不需調整。最後 root 是 JAN，高度 5。"
+  },
+  {
+   "title": "實作與流程總結",
+   "scene": "bstb-avl-algo",
+   "points": [
+    {
+     "text": "看課本的實作：如果你來寫，AVL tree 要用 array 還是 pointer？",
+     "t": 1287
+    },
+    {
+     "text": "對照 heap：常常要找 parent、child，所以直接用 array。",
+     "t": 1328
+    },
+    {
+     "text": "每種資料結構的表示方法不只一種，要想清楚哪種適合。",
+     "t": 1360
+    },
+    {
+     "text": "總結：每 insert 一個 node，就計算目前所有 node 的 BF。",
+     "t": 1380
+    },
+    {
+     "text": "從 Y 往 root 走，第一個違反 BF 的 node 就是 A。",
+     "t": 1422
+    },
+    {
+     "text": "再依 LL、LR、RR、RL 四種空間關係做調整。",
+     "t": 1433
+    }
+   ],
+   "trap": "補充：AVL 會一直旋轉、形狀不固定，用 array 會有大量搬移與空洞；課本（Horowitz）用 link（pointer）實作，每個 node 存 bf。"
+  },
+  {
+   "title": "LL 通式：B 上提、B_R 給 A",
+   "scene": "bstb-ll-general",
+   "points": [
+    {
+     "text": "一般化的示意圖：A、B 兩個 node，B_L、B_R、A_R 是 subtree。",
+     "t": 1464
+    },
+    {
+     "text": "A_R 高 h，B 那邊高 h + 1，所以 B_L、B_R 都是 h。",
+     "t": 1508
+    },
+    {
+     "text": "Y 加在 B_L 下面：B_L 變 h + 1，BF(B) = 1。",
+     "t": 1538
+    },
+    {
+     "text": "B 這邊變 h + 2，BF(A) = (h + 2) − h = 2。",
+     "t": 1572
+    },
+    {
+     "text": "Y 在 A 的 left subtree 的 left：A 往下壓、B 往上提。",
+     "t": 1619
+    },
+    {
+     "text": "再把 B_R 搬到 A 的左邊。",
+     "t": 1675
+    },
+    {
+     "text": "B_R 的值都比 B 大、比 A 小，放那裡仍是 BST，而且兩邊都是 h，平衡。",
+     "t": 1701
+    }
+   ]
+  },
+  {
+   "title": "RR 通式：LL 的鏡像",
+   "scene": "bstb-rr-general",
+   "points": [
+    {
+     "text": "RR 跟 LL 剛好顛倒，像鏡像。",
+     "t": 1768
+    },
+    {
+     "text": "Y 插在 A 的 right subtree 的 right。",
+     "t": 1784
+    },
+    {
+     "text": "B 往上提、A 往左下壓，B_L 丟給 A 當 right subtree。",
+     "t": 1794
+    },
+    {
+     "text": "會 LL 就會 RR。",
+     "t": 1809
+    }
+   ]
+  },
+  {
+   "title": "LR 通式：C 拉上來，四塊照順序接",
+   "scene": "bstb-lr-general",
+   "points": [
+    {
+     "text": "LR 有幾種情況；(a) 最單純：只有三個 node。",
+     "t": 1826
+    },
+    {
+     "text": "把 C 調上來，A、B 放在它下面，就平衡了。",
+     "t": 1849
+    },
+    {
+     "text": "一般圖：A、B、C 三個 node，加上 B_L、C_L、C_R、A_R 四塊 subtree。",
+     "t": 1873
+    },
+    {
+     "text": "新 node 在 A 的 left subtree（B 的子樹）的 right → LR。",
+     "t": 1902
+    },
+    {
+     "text": "C 拉到 root，A 和 B 往下壓。",
+     "t": 1932
+    },
+    {
+     "text": "四塊怎麼放？符合 BST：照 B_L, C_L, C_R, A_R 的順序由左到右接上。",
+     "t": 1974
+    },
+    {
+     "text": "C_L 接在 B 的右邊：C_L 的值本來就都比 B 大。",
+     "t": 2020
+    },
+    {
+     "text": "C_R 接在 A 的左邊：C_R 比 A 小、比 C 大。",
+     "t": 2032
+    },
+    {
+     "text": "技巧：確認 ABC → C 放上來 → 四塊由左到右接到 parent。",
+     "t": 2056
+    }
+   ]
+  },
+  {
+   "title": "對照月份例：A = MAY、B = AUG、C = MAR",
+   "scene": "bstb-month-lr",
+   "points": [
+    {
+     "text": "拿剛剛 insert JAN 的實際情況來對照通式。",
+     "t": 2080
+    },
+    {
+     "text": "A 是 MAY、B 是 AUG、C 是 MAR。",
+     "t": 2088
+    },
+    {
+     "text": "C 被提到最上面，A、B 當它的 child。",
+     "t": 2095
+    },
+    {
+     "text": "B_L = APR、C_L = 剛加進來的 JAN、C_R 是空的、A_R = NOV。",
+     "t": 2110
+    },
+    {
+     "text": "看圖說話、依樣畫葫蘆：先把 A、B、C 確認。",
+     "t": 2142
+    }
+   ]
+  },
+  {
+   "title": "LR(b)、LR(c)：Y 在 C_L 或 C_R 下",
+   "scene": "bstb-lr-general",
+   "params": {
+    "kase": "c"
+   },
+   "points": [
+    {
+     "text": "另一個一般情況：插入點也在 A 的 left subtree 的 right，屬於 LR。",
+     "t": 2172
+    },
+    {
+     "text": "一樣：C 往上拉，B 和 A 往下壓。",
+     "t": 2204
+    },
+    {
+     "text": "B_L、C_L、C_R、A_R 的順序都不會改變，依序接到 parent。",
+     "t": 2221
+    },
+    {
+     "text": "LR 分成 (a)(b)(c) 三個 case；(a) 下面沒有 subtree，最簡單。",
+     "t": 2266
+    },
+    {
+     "text": "(b) 和 (c) 只差在新 node 在 C_L 下面還是 C_R 下面。",
+     "t": 2301
+    },
+    {
+     "text": "做法都一樣：ABC 確認、C 往上拉、B A 往下壓、四塊維持順序接上。",
+     "t": 2317
+    }
+   ]
+  },
+  {
+   "title": "RL 與「每插一個就調整」",
+   "scene": "bstb-lr-general",
+   "params": {
+    "mirror": true
+   },
+   "points": [
+    {
+     "text": "會 LR 就會 RL，就像照鏡子，所以 RL 投影片就不附了。",
+     "t": 2333
+    },
+    {
+     "text": "AVL 其實不難：調整方法是前人的論文，現在已經寫進教科書。",
+     "t": 2348
+    },
+    {
+     "text": "每增加一個 node，就要計算 BF、做調整。",
+     "t": 2374
+    },
+    {
+     "text": "思考題：能不能插入 k 個 node 之後再一次調整？",
+     "t": 2398
+    }
+   ],
+   "trap": "補充：RL 的四塊由左到右是 A_L, C_L, C_R, B_R；C_L 接到 A 的右邊、C_R 接到 B 的左邊。"
+  },
+  {
+   "title": "AVL 與其他結構的效率比較",
+   "scene": "bstb-avl-cost",
+   "points": [
+    {
+     "text": "search x：AVL 最差就是樹的高度，O(log n)。",
+     "t": 2437
+    },
+    {
+     "text": "sequential list 是排序過的，可以 binary search：O(log n)。",
+     "t": 2449
+    },
+    {
+     "text": "linked list 沒有排序，只能從頭一個個檢查：O(n)。",
+     "t": 2501
+    },
+    {
+     "text": "找第 k 小：sequential list 已排序，O(1)。",
+     "t": 2525
+    },
+    {
+     "text": "AVL 找第 k 小也是 O(log n)：回想 BST 多存的 left size 欄位。",
+     "t": 2542
+    },
+    {
+     "text": "有了 left size，只要走樹的高度就找到。",
+     "t": 2610
+    },
+    {
+     "text": "問題：建一棵 AVL tree 的 complexity 是多少？期末考可能會考。",
+     "t": 2652
+    },
+    {
+     "text": "今天就到這裡。",
+     "t": 2713
+    }
+   ],
+   "trap": "補充：建 AVL = n 次 insert，每次 O(log n) → O(n log n)。Horowitz 的 leftSize 定義是「左子樹 node 數 + 1」，影片說不含自己；用哪種定義，找第 k 小的比較式要跟著調整。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "把 12 個月份照字母順序插入 BST，搜尋每個月份的平均比較次數是？",
+   "opts": [
+    "3.5",
+    "4",
+    "6.5",
+    "12"
+   ],
+   "ans": "6.5",
+   "why": "會長成一條往右的 skewed tree，平均 (1+…+12)/12 = 6.5；最多 12 次。"
+  },
+  {
+   "q": "AVL tree 中 balance factor 的定義與允許值？",
+   "opts": [
+    "h_R − h_L，∈ {0, 1}",
+    "h_L − h_R，∈ {−1, 0, 1}",
+    "|h_L − h_R|，≤ 2",
+    "左右 node 數差，∈ {−1, 0, 1}"
+   ],
+   "ans": "h_L − h_R，∈ {−1, 0, 1}",
+   "why": "BF = 左子樹高度 − 右子樹高度，不取絕對值；每個 node 都要在 −1、0、1 之間。"
+  },
+  {
+   "q": "依序插入 MAR、MAY、NOV，需要哪種調整？",
+   "opts": [
+    "LL",
+    "LR",
+    "RR",
+    "RL"
+   ],
+   "ans": "RR",
+   "why": "NOV 在 A = MAR 的 right subtree 的 right，MAY 拉上來。"
+  },
+  {
+   "q": "插入 APR 後 MAR 與 MAY 的 BF 都是 2，A 應選誰？",
+   "opts": [
+    "MAY（比較上面）",
+    "MAR（離 APR 最近）",
+    "兩個都要各做一次",
+    "root"
+   ],
+   "ans": "MAR（離 APR 最近）",
+   "why": "A 是從新 node 往 root 走遇到的第一個違規 node；修好它，上面的 MAY 也跟著恢復。"
+  },
+  {
+   "q": "LR 調整後，四塊 subtree B_L、C_L、C_R、A_R 的接法？",
+   "opts": [
+    "B_L→B 左、C_L→B 右、C_R→A 左、A_R→A 右",
+    "C_L→A 左、C_R→B 右",
+    "B_L、C_L 接到 C 下面",
+    "C_L、C_R 交換位置"
+   ],
+   "ans": "B_L→B 左、C_L→B 右、C_R→A 左、A_R→A 右",
+   "why": "C 上去當 root，B、A 當 child，四塊由左到右維持順序接上，仍符合 BST。"
+  },
+  {
+   "q": "用 n 次 insert 建一棵 AVL tree 的時間複雜度？",
+   "opts": [
+    "O(n)",
+    "O(log n)",
+    "O(n log n)",
+    "O(n²)"
+   ],
+   "ans": "O(n log n)",
+   "why": "每次 insert（含找 A 與旋轉）是 O(log n)，共 n 次。"
+  }
+ ]
+}

@@ -1,0 +1,791 @@
+{
+ "video": "63Dp2MjLlUo",
+ "label": "交大彭文志 Lec25 Search Structures (2/3)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Optimal BST：用什麼標準評估",
+   "scene": "bst63-worst-compare",
+   "points": [
+    {
+     "text": "進入 optimal binary search tree：說「最佳」之前，要先講清楚用什麼觀點評估。",
+     "t": 0
+    },
+    {
+     "text": "cost 以從 root 開始搜尋、找到該 node 所需的 comparison 次數計算，反映在 node 的 level 上。",
+     "t": 87
+    },
+    {
+     "text": "左邊那棵樹找 if：for → while → return → if，要 4 次 comparison。",
+     "t": 153
+    },
+    {
+     "text": "右邊那棵樹找 if：for → return → if，只要 3 次。",
+     "t": 177
+    },
+    {
+     "text": "用 worst case（樹高）評估，右邊較好；但 worst case 不見得常發生。",
+     "t": 197
+    },
+    {
+     "text": "更好的 cost 要考慮每個字被搜尋的頻率（probability），例如很多人都在查 for。",
+     "t": 221
+    },
+    {
+     "text": "只看樹高＝只看最差情況，拿來評估 BST 不太好。",
+     "t": 278
+    }
+   ],
+   "trap": "worst case 比較次數少，不代表平均搜尋成本低；optimal 要把搜尋機率算進 cost。"
+  },
+  {
+   "title": "Internal / External path 與 fail node",
+   "scene": "bst63-ext-path",
+   "points": [
+    {
+     "text": "為了推導 cost，先分 external path 與 internal path。",
+     "t": 301
+    },
+    {
+     "text": "external path：要找的字不在樹中，搜尋一路走到底都失敗。",
+     "t": 307
+    },
+    {
+     "text": "為了 model 失敗的搜尋，加入 fail node（方塊），實際上不存在。",
+     "t": 335
+    },
+    {
+     "text": "例：找 cc：cc < for 往左，cc < do 再往左，落到 do 左邊的 fail node，path 長度 2。",
+     "t": 383
+    },
+    {
+     "text": "I＝internal path 總和、E＝external path 總和；算的是經過幾條 edge（hop），不是 comparison 次數。",
+     "t": 438
+    },
+    {
+     "text": "for 是 root 為 0，do、while 為 1，return 為 2，if 為 3，所以 I = 7。",
+     "t": 471
+    },
+    {
+     "text": "E 是從 root 走到每個方塊（fail node）經過的 edge 數加總。",
+     "t": 520
+    },
+    {
+     "text": "skewed tree 的 I = Σ i（i = 0..n−1）；complete binary tree 的 I = Σ ⌊log₂ i⌋。",
+     "t": 560
+    }
+   ],
+   "trap": "補充：extended binary tree 一定有 E = I + 2n；本例 I = 7、n = 5，所以 E = 17。path 長度算 edge 數，root 為 0。"
+  },
+  {
+   "title": "加入搜尋機率的 cost 公式",
+   "scene": "bst63-cost-terms",
+   "points": [
+    {
+     "text": "只算經過幾個 hop 不等於真正的 cost，因為沒考慮每個字被搜尋的機率。",
+     "t": 576
+    },
+    {
+     "text": "設 a1 < a2 < … < an，搜尋 ai 的機率是 pi。",
+     "t": 619
+    },
+    {
+     "text": "成功搜尋的 cost：Σ pi × level(ai)。",
+     "t": 660
+    },
+    {
+     "text": "pi 越大，越希望這個字放在靠近 root 的地方。",
+     "t": 701
+    },
+    {
+     "text": "搜尋不存在的字會落到 fail node Ei，機率是 qi。",
+     "t": 775
+    },
+    {
+     "text": "失敗搜尋到 leaf 就知道沒有了，所以用 level(Ei) − 1。",
+     "t": 845
+    },
+    {
+     "text": "總 cost = Σ pi·level(ai) + Σ qi·(level(Ei) − 1)：成功與失敗兩大項相加。",
+     "t": 884
+    }
+   ],
+   "trap": "fail node 那一項要減 1：走到 leaf 發現沒有 child 就停，不會真的走到方塊。"
+  },
+  {
+   "title": "do / if / while 五棵 BST（uniform 機率）",
+   "scene": "bst63-five-uniform",
+   "points": [
+    {
+     "text": "三個字 do、if、while 可以組成 5 棵不同的 BST，哪一棵最 optimal？",
+     "t": 933
+    },
+    {
+     "text": "假設 pi、qi 都是 uniform：3 個字加 4 個 fail node，各 1/7。",
+     "t": 983
+    },
+    {
+     "text": "tree a 成功部分：while level 1、if level 2、do level 3 → (1+2+3)/7。",
+     "t": 1031
+    },
+    {
+     "text": "fail node 在 level 4，但只算到 do，所以算 3；失敗部分 (3+3+2+1)/7。",
+     "t": 1109
+    },
+    {
+     "text": "tree a 的 cost = 15/7。",
+     "t": 1139
+    },
+    {
+     "text": "比較 a～e，cost 最小的是 tree b（13/7），所以 b 是 optimal。",
+     "t": 1158
+    }
+   ],
+   "trap": "補充：其他四棵 a、c、d、e 都是 15/7，只有平衡的 b 是 13/7。"
+  },
+  {
+   "title": "非 uniform 機率與 static set",
+   "scene": "bst63-five-nonuniform",
+   "points": [
+    {
+     "text": "第二組機率不是 uniform：p1 = 0.5、p2 = 0.1、p3 = 0.05。",
+     "t": 1177
+    },
+    {
+     "text": "落到各個 fail node 的機率 q0～q3 也不相同。",
+     "t": 1202
+    },
+    {
+     "text": "這時最小 cost 是 1.5，tree c 是最佳解。",
+     "t": 1217
+    },
+    {
+     "text": "Optimal BST 針對 static set：字和機率都給定，不隨時間改變。",
+     "t": 1253
+    },
+    {
+     "text": "真實環境（例如搜尋引擎）的字與機率是 dynamic，每個月、甚至每天都不同。",
+     "t": 1311
+    },
+    {
+     "text": "dynamic set 的 optimal BST 要怎麼定 cost 留作思考題，期末考不會考。",
+     "t": 1343
+    }
+   ],
+   "trap": "補充：課本給 q0 = 0.15、q1 = 0.1、q2 = q3 = 0.05；五棵的 cost 為 a 2.65、b 1.9、c 1.5、d 2.15、e 1.6（課本印 d = 2.05，照公式算是 2.15）。機率變了，最佳樹也跟著變。"
+  },
+  {
+   "title": "暴力法：列出所有 BST",
+   "scene": "bst63-brute-force",
+   "points": [
+    {
+     "text": "回到 static set：給 n 個字、每個字的 pi 與 fail node 的 qi，找最佳 BST。",
+     "t": 1403
+    },
+    {
+     "text": "最笨的方法：把 n 個 node 能組成的所有 BST 都產生出來。",
+     "t": 1479
+    },
+    {
+     "text": "每棵都算 cost，排序選最小的就是 optimal。",
+     "t": 1516
+    },
+    {
+     "text": "這是暴力法，光是第一步「產生所有 BST」就很難。",
+     "t": 1529
+    },
+    {
+     "text": "比較有效率的是類似 dynamic programming 的方法，演算法課也會教。",
+     "t": 1550
+    }
+   ],
+   "trap": "補充：n 個 key 的 BST 有 Catalan number C(n) = (2n)!/(n!(n+1)!) 種，n = 10 就有 16796 棵，呈指數成長。"
+  },
+  {
+   "title": "DP 符號：Tij、cij、rij、wij",
+   "scene": "bst63-tij-def",
+   "points": [
+    {
+     "text": "Tij：包含 a(i+1)～aj 的 optimal BST（i < j）。",
+     "t": 1568
+    },
+    {
+     "text": "cij 是 Tij 的 cost，rij 是 Tij 的 root。",
+     "t": 1606
+    },
+    {
+     "text": "wij：Tij 裡所有字的 p，加上 fail node qi～qj 的機率總和。",
+     "t": 1630
+    },
+    {
+     "text": "weight 只把機率加總；cost 是機率乘上 level。",
+     "t": 1726
+    },
+    {
+     "text": "初始條件：rii = 0、wii = qi（只有一個 fail node）。",
+     "t": 1768
+    },
+    {
+     "text": "要找的是 T0n，它的 cost 是 c0n、weight 是 w0n、root 是 r0n。",
+     "t": 1793
+    },
+    {
+     "text": "做法：拆成很多 subtree，每棵 subtree 都 optimal，組出來的 T0n 才會 optimal。",
+     "t": 1817
+    }
+   ],
+   "trap": "補充：cii = 0（空樹不用比較）；Tij 的 fail node 是 qi～qj，比字多一個。"
+  },
+  {
+   "title": "遞迴式：選 ak 當 root",
+   "scene": "bst63-recurrence",
+   "points": [
+    {
+     "text": "假設 Tij 的 root 是 ak，k 一定介於 i 和 j 之間。",
+     "t": 1848
+    },
+    {
+     "text": "左子樹含 a(i+1)～a(k−1)，右子樹含 a(k+1)～aj。",
+     "t": 1895
+    },
+    {
+     "text": "cij = pk + cost(L) + cost(R) + w(L) + w(R)：子樹每個點都往下多一層。",
+     "t": 1922
+    },
+    {
+     "text": "cost(L) = c(i,k−1)、cost(R) = c(k,j)，而 w(i,k−1) + w(k,j) + pk = wij。",
+     "t": 1972
+    },
+    {
+     "text": "所以 cij = wij + c(i,k−1) + c(k,j)。",
+     "t": 2032
+    },
+    {
+     "text": "root 要選誰事先不知道，就把每個 k 都試，取最小：cij = wij + min(c(i,k−1) + c(k,j))。",
+     "t": 2082
+    },
+    {
+     "text": "wij 不管選哪個 k 都一樣。",
+     "t": 2141
+    }
+   ],
+   "trap": "補充：k 的範圍是 i < k ≤ j（影片說 i < k < j，是口誤）。"
+  },
+  {
+   "title": "例：T02 以 a2 為 root 驗證公式",
+   "scene": "bst63-t02-verify",
+   "points": [
+    {
+     "text": "T02 含 a1、a2 兩個字，以及 q0、q1、q2 三個 fail node。",
+     "t": 2171
+    },
+    {
+     "text": "假設 a2 當 root：a1 在左，q2 在右。",
+     "t": 2211
+    },
+    {
+     "text": "cost(T02) = p2 + cost(L) + cost(R) + wL + wR，wL = q0 + p1 + q1、wR = q2。",
+     "t": 2280
+    },
+    {
+     "text": "cost(T01) = p1 + q0 + q1，代進去就能算出 cost(T02)。",
+     "t": 2351
+    },
+    {
+     "text": "直接用 level 算：a1 level 2、a2 level 1，再加上 q0、q1、q2 那幾項，答案一樣。",
+     "t": 2441
+    },
+    {
+     "text": "遞迴式裡完全沒有 level，靠 weight 一層層累加，自然就把 level 乘進去了。",
+     "t": 2557
+    },
+    {
+     "text": "這頁兩個目的：驗證公式和 level 定義一致；cost 可以由 subtree recursive 算出來。",
+     "t": 2611
+    }
+   ],
+   "trap": "補充：cost(T02) = 2p1 + p2 + 2q0 + 2q1 + q2。"
+  },
+  {
+   "title": "DP 表：do、if、return、while（第 0、1 列）",
+   "scene": "bst63-obst-row1",
+   "points": [
+    {
+     "text": "例子：4 個字 (a1, a2, a3, a4) = (do, if, return, while)。",
+     "t": 2683
+    },
+    {
+     "text": "p1～p4 = 3, 3, 1, 1（搜尋次數，還沒 normalize）；q0～q4 = 2, 3, 1, 1, 1。",
+     "t": 2694
+    },
+    {
+     "text": "重點是這張表：橫軸是 i，縱軸是樹裡包含幾個字。",
+     "t": 2726
+    },
+    {
+     "text": "第 0 列不含任何字：w00 = q0 = 2。",
+     "t": 2769
+    },
+    {
+     "text": "第 1 列只含一個字，共 4 種；例如 T01 以 a1 為 root，左右是 q0、q1。",
+     "t": 3086
+    },
+    {
+     "text": "w01 = p1 + q0 + q1 = 3 + 2 + 3 = 8。",
+     "t": 3135
+    },
+    {
+     "text": "c01 = w01 + c00 + c11 = 8 + 0 + 0 = 8，r01 = 1。",
+     "t": 3150
+    },
+    {
+     "text": "同理 T12、T23、T34 分別只含 a2、a3、a4。",
+     "t": 3190
+    }
+   ],
+   "trap": "c00 = 0，不是 2（影片說「C00 是 2」是口誤，2 是 w00）。"
+  },
+  {
+   "title": "DP 表第 2 列：T02 兩種 root 取最小",
+   "scene": "bst63-obst-row2",
+   "points": [
+    {
+     "text": "第 2 列：樹含兩個字，第一個是 T02（a1、a2）。",
+     "t": 3220
+    },
+    {
+     "text": "w02 = p1 + p2 + q0 + q1 + q2 = 12。",
+     "t": 3264
+    },
+    {
+     "text": "k = 1：c00 + c12 = 0 + 7；k = 2：c01 + c22 = 8 + 0。",
+     "t": 3300
+    },
+    {
+     "text": "取最小的 7：c02 = 12 + 7 = 19，r02 = 1（do 當 root）。",
+     "t": 3335
+    },
+    {
+     "text": "8 + 0 那種是 a2 當 root、a1 掛左邊，也是一棵 BST，只是 cost 較大。",
+     "t": 3383
+    },
+    {
+     "text": "同理往下推 T13、T24。",
+     "t": 3424
+    }
+   ],
+   "trap": "補充：T13：w13 = 9、c13 = 12、r13 = 2；T24：w24 = 5、c24 = 8、r24 = 3（k = 3、4 平手，取前者）。"
+  },
+  {
+   "title": "DP 表第 3、4 列與最終 optimal BST",
+   "scene": "bst63-obst-final",
+   "points": [
+    {
+     "text": "第 3 列：樹含三個字，例如 T03 含 a1、a2、a3。",
+     "t": 3441
+    },
+    {
+     "text": "c03 = w03 + 11 = 14 + 11 = 25；11 怎麼來留給大家推。",
+     "t": 3459
+    },
+    {
+     "text": "答案一定在最下面那格 T04（含 a1～a4）。",
+     "t": 3478
+    },
+    {
+     "text": "c04 = w04 + min(c(0,k−1) + c(k,4))，k = 1～4。",
+     "t": 3509
+    },
+    {
+     "text": "四種情況是 19、16、22、25，最小 16 在 k = 2，所以 r04 = 2。",
+     "t": 3557
+    },
+    {
+     "text": "從上往下慢慢推，最佳解來自之前算好的結果，這就是 Dynamic Programming。",
+     "t": 3603
+    },
+    {
+     "text": "a1～a4 一定要先排序。",
+     "t": 3629
+    }
+   ],
+   "trap": "補充：c03 的 11 來自 k = 2：c01 + c23 = 8 + 3。c04 = 16 + 16 = 32。最後的樹：if 當 root，do 在左，return 在右，while 掛在 return 右邊。"
+  },
+  {
+   "title": "回顧：cost 與 weight、DP 的意義",
+   "scene": "bst63-recurrence",
+   "points": [
+    {
+     "text": "老師分享：大學時看不懂這張表，後來修了演算法才搞懂。",
+     "t": 3644
+    },
+    {
+     "text": "cost 和 weight 要分開看。",
+     "t": 3660
+    },
+    {
+     "text": "樹已知時 cost 一定會算；難在不知道樹長什麼樣，又要讓 cost 最小。",
+     "t": 3697
+    },
+    {
+     "text": "透過 weight 加總與 recursive，讓 left subtree 和 right subtree 都是最佳解。",
+     "t": 3721
+    },
+    {
+     "text": "決定 k 的方法其實很直接：k 從 i+1 到 j 全部試，選最小。",
+     "t": 3751
+    },
+    {
+     "text": "這就是 dynamic programming 的概念。",
+     "t": 3820
+    }
+   ]
+  },
+  {
+   "title": "m-way search tree",
+   "scene": "bst63-mway",
+   "points": [
+    {
+     "text": "BST、AVL、optimal BST 都是 binary；接著看 m-way search tree。",
+     "t": 3845
+    },
+    {
+     "text": "root 最多有 m 個 subtree，也就是 m 個 pointer。",
+     "t": 3864
+    },
+    {
+     "text": "node 內有 keys K1 < K2 < … < Kn 與 pointer A0～An（n < m）。",
+     "t": 3881
+    },
+    {
+     "text": "搜尋 x：從 root 開始，先看 node 內有沒有 key 等於 x，有就直接回報。",
+     "t": 3959
+    },
+    {
+     "text": "若 Ki < x < Ki+1，就往這兩個 key 之間的 pointer Ai 走。",
+     "t": 4003
+    },
+    {
+     "text": "高度 h 的 m-way search tree 最多有 Σ m^i 個 node。",
+     "t": 4017
+    }
+   ],
+   "trap": "補充：高度 h 的 m-way search tree 最多 (m^h − 1)/(m − 1) 個 node、m^h − 1 個 key。"
+  },
+  {
+   "title": "B-tree 的定義",
+   "scene": "bst63-btree-def",
+   "points": [
+    {
+     "text": "m-way search tree 中很重要的一種：B-tree。",
+     "t": 4045
+    },
+    {
+     "text": "條件一：root 至少要有 2 個 child（pointer）。",
+     "t": 4083
+    },
+    {
+     "text": "條件二：root 與 fail node 以外的 node 至少要有 ⌈m/2⌉ 個 child。",
+     "t": 4097
+    },
+    {
+     "text": "m 是 order：order 3 時，非 root 的 node 至少 ⌈3/2⌉ = 2 個 child。",
+     "t": 4118
+    },
+    {
+     "text": "條件三：所有 fail node 都在同一個 level。",
+     "t": 4158
+    },
+    {
+     "text": "例：order 4 的 B-tree，中間層每個 node 至少有 ⌈4/2⌉ = 2 個 pointer。",
+     "t": 4207
+    }
+   ]
+  },
+  {
+   "title": "B-tree 搜尋 30",
+   "scene": "bst63-btree-search30",
+   "points": [
+    {
+     "text": "在這棵 B-tree 中搜尋 30。",
+     "t": 4239
+    },
+    {
+     "text": "root 的 key 21、48、72 都不是 30，30 落在 21 和 48 之間，往下走。",
+     "t": 4267
+    },
+    {
+     "text": "到了 25、31、41 這個 node，30 落在 25 和 31 之間。",
+     "t": 4290
+    },
+    {
+     "text": "再往下那個 node 也沒有 30，回報找不到。",
+     "t": 4304
+    }
+   ],
+   "trap": "補充：B-tree 每一層只走一個 node，搜尋成本跟樹高成正比。"
+  },
+  {
+   "title": "為什麼用 B-tree：矮胖＝少讀 disk",
+   "scene": "bst63-btree-fat",
+   "points": [
+    {
+     "text": "不用 B-tree 的話，binary tree 每個 node 只有 2 個 child，key 多時樹很高。",
+     "t": 4315
+    },
+    {
+     "text": "AVL 雖然 balanced，key 很多時高度還是很高，影響 performance。",
+     "t": 4333
+    },
+    {
+     "text": "與其讓樹又高又瘦，B-tree 讓它長胖變矮，很快就到 leaf。",
+     "t": 4348
+    },
+    {
+     "text": "file system、DB 常用 B-tree / B+ tree：每個 node 是一個 disk block（page）。",
+     "t": 4376
+    },
+    {
+     "text": "代價：每個 node 內要比較的 key 變多。",
+     "t": 4427
+    },
+    {
+     "text": "node 內用 binary search 找區間：先跟中間的 key 比。",
+     "t": 4464
+    }
+   ]
+  },
+  {
+   "title": "B-tree insert 與 delete 概念",
+   "scene": "bst63-btree-split-merge",
+   "points": [
+    {
+     "text": "insert：前面跟 search 一樣，先找到它該放的 leaf。",
+     "t": 4528
+    },
+    {
+     "text": "leaf 沒滿就直接放進去。",
+     "t": 4564
+    },
+    {
+     "text": "滿了（例如最多放 5 個，又塞第 6 個）就 overflow → split，上層 index 也要調整。",
+     "t": 4568
+    },
+    {
+     "text": "delete：找到 key 刪掉後，若 child 少於 ⌈m/2⌉ 就要跟別人 merge（合併）。",
+     "t": 4595
+    },
+    {
+     "text": "詳細做法用 2-3 tree、2-3-4 tree 的例子講。",
+     "t": 4659
+    },
+    {
+     "text": "實作在 disk 上時，m 通常介於 32～256。",
+     "t": 4676
+    }
+   ],
+   "trap": "影片口誤：delete 後要檢查的是 underflow（太少），不是 overflow。動畫中的數字只是示意。"
+  },
+  {
+   "title": "2-3 tree 與 2-3-4 tree：定義與 search",
+   "scene": "bst63-23-search",
+   "points": [
+    {
+     "text": "B-tree order 4 叫 2-3-4 tree，order 3 叫 2-3 tree，兩者都是 B-tree。",
+     "t": 4697
+    },
+    {
+     "text": "檢查性質：root 有 2 個 child，其他 internal node 至少 ⌈3/2⌉ = 2 個 child。",
+     "t": 4742
+    },
+    {
+     "text": "n 個 key 的 2-3 tree 高度介於 log₃(n+1) 與 log₂(n+1) 之間。",
+     "t": 4762
+    },
+    {
+     "text": "search x：比第一個 key 小走左、介於兩 key 之間走中間、比第二個大走右。",
+     "t": 4796
+    },
+    {
+     "text": "search function 寫成這三個 case，再加上相等時回報找到。",
+     "t": 4840
+    }
+   ],
+   "trap": "投影片第三個 case 把小寫 x 打成大寫 X，是筆誤。"
+  },
+  {
+   "title": "2-3 tree insert：insert 70、30（split）",
+   "scene": "bst63-23-insert-70-30",
+   "points": [
+    {
+     "text": "insert 先用 search function 找位置；key 已存在就不用插。",
+     "t": 4868
+    },
+    {
+     "text": "要插入的 leaf 叫 u：u 只有 1 個 key 就直接放進去。",
+     "t": 4923
+    },
+    {
+     "text": "u 已有 2 個 key 就要 split：新 node 放最大的 key，中間 key 推給 parent，最小留在 u。",
+     "t": 4948
+    },
+    {
+     "text": "insert 70：70 > 40 往 C 走，C 只有 80，直接放進去。",
+     "t": 5001
+    },
+    {
+     "text": "insert 30：30 < 40 走到 B，B 的 10、20 已經滿了。",
+     "t": 5035
+    },
+    {
+     "text": "split B：新 node D 放最大的 30，中位數 20 推到 parent A，10 留在 B。",
+     "t": 5063
+    }
+   ]
+  },
+  {
+   "title": "2-3 tree insert 60：連鎖 split",
+   "scene": "bst63-23-insert-60",
+   "points": [
+    {
+     "text": "insert 60：從 A 往 40 右邊走到 C（70、80），已經滿了。",
+     "t": 5131
+    },
+    {
+     "text": "split C：最大的 80 到新 node E，60 留在 C，70 往上推給 A（20、40）。",
+     "t": 5158
+    },
+    {
+     "text": "A 又爆了，再 split：70 到新 node F，20 留在 A，40 被拉到新的 root G。",
+     "t": 5188
+    },
+    {
+     "text": "兩次 split 是連鎖反應；新 node 依序是 E、F、G。",
+     "t": 5224
+    }
+   ],
+   "trap": "補充：2-3 tree 只有 root split 時樹高才會 +1，所以 leaf 永遠在同一層。"
+  },
+  {
+   "title": "2-3 tree delete：rotate 與 combine",
+   "scene": "bst63-23-delete",
+   "points": [
+    {
+     "text": "delete 70：70 落在 50 與 80 之間，走到 node C，直接刪掉。",
+     "t": 5263
+    },
+    {
+     "text": "delete 90：D 還剩 95，沒事。",
+     "t": 5286
+    },
+    {
+     "text": "delete 60：C 變空了，要做調整。",
+     "t": 5313
+    },
+    {
+     "text": "rotate：把 parent 的 50 搓下來，左兄弟的 20 丟上去。",
+     "t": 5343
+    },
+    {
+     "text": "rotate 盡量不動 pointer，只讓 key 在 node 間旋轉，維持 2-3 tree 的性質。",
+     "t": 5375
+    },
+    {
+     "text": "delete 也會有 combine：刪掉 95 後 D 空了，就要跟兄弟合併。",
+     "t": 5398
+    }
+   ],
+   "trap": "補充：相鄰兄弟有 2 個 key 才能 rotate；兄弟只有 1 個 key 就 combine（把 parent 的 key 拉下來合併）。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "在 Optimal BST 的 cost 公式中，fail node Ei 那一項為什麼是 qi × (level(Ei) − 1)？",
+   "opts": [
+    "因為走到 leaf 就知道失敗，不會真的走到方塊",
+    "因為 fail node 的機率比較小",
+    "因為 root 的 level 是 0",
+    "因為 external path 要扣掉 root"
+   ],
+   "ans": "因為走到 leaf 就知道失敗，不會真的走到方塊",
+   "why": "搜尋到 leaf 發現沒有對應的 child 就停止，所以實際比較次數是 fail node 的 level 減 1。"
+  },
+  {
+   "q": "do、if、while 三個字、p 與 q 都是 1/7 時，哪一棵 BST 的 cost 最小？",
+   "opts": [
+    "if 當 root 的平衡樹，13/7",
+    "while 當 root 往左斜，15/7",
+    "do 當 root 往右斜，15/7",
+    "五棵都一樣"
+   ],
+   "ans": "if 當 root 的平衡樹，13/7",
+   "why": "平衡的 tree b 是 13/7，其他四棵都是 15/7。"
+  },
+  {
+   "q": "p = (0.5, 0.1, 0.05)、q = (0.15, 0.1, 0.05, 0.05) 時，optimal BST 是哪一棵？",
+   "opts": [
+    "do → if → while 的右斜樹（cost 1.5）",
+    "if 當 root 的平衡樹（cost 1.9）",
+    "while 當 root 的左斜樹（cost 2.65）",
+    "do 當 root、while 在右、if 在 while 左（cost 1.6）"
+   ],
+   "ans": "do → if → while 的右斜樹（cost 1.5）",
+   "why": "do 被搜尋的機率最高，放 root 最划算；tree c 的 cost 1.5 最小。"
+  },
+  {
+   "q": "Optimal BST 的 DP 遞迴式是？",
+   "opts": [
+    "cij = wij + min(c(i,k−1) + c(k,j))，i < k ≤ j",
+    "cij = pk + min(c(i,k) + c(k,j))",
+    "cij = wij × min(c(i,k−1), c(k,j))",
+    "cij = min(w(i,k−1) + w(k,j))"
+   ],
+   "ans": "cij = wij + min(c(i,k−1) + c(k,j))，i < k ≤ j",
+   "why": "選 ak 當 root 後，子樹每點都深一層，等於多加一次 wij；wij 與 k 無關，只需對 c(i,k−1) + c(k,j) 取最小。"
+  },
+  {
+   "q": "(do, if, return, while)、p = 3 3 1 1、q = 2 3 1 1 1，w01 與 c01 各是多少？",
+   "opts": [
+    "w01 = 8，c01 = 8",
+    "w01 = 5，c01 = 8",
+    "w01 = 8，c01 = 16",
+    "w01 = 3，c01 = 3"
+   ],
+   "ans": "w01 = 8，c01 = 8",
+   "why": "w01 = q0 + p1 + q1 = 2 + 3 + 3 = 8；c01 = w01 + c00 + c11 = 8 + 0 + 0。"
+  },
+  {
+   "q": "同一例子中，最後的 optimal BST 的 root 是哪個字？",
+   "opts": [
+    "if",
+    "do",
+    "return",
+    "while"
+   ],
+   "ans": "if",
+   "why": "c04 的四種候選 19、16、22、25，最小在 k = 2，r04 = 2，也就是 a2 = if。"
+  },
+  {
+   "q": "order m 的 B-tree，下列哪一項不是它的條件？",
+   "opts": [
+    "每個 node 都恰好有 m 個 child",
+    "root 至少 2 個 child",
+    "root 以外的 internal node 至少 ⌈m/2⌉ 個 child",
+    "所有 fail node 在同一個 level"
+   ],
+   "ans": "每個 node 都恰好有 m 個 child",
+   "why": "m 是上限；下限是 root ≥ 2、其他 internal node ≥ ⌈m/2⌉。"
+  },
+  {
+   "q": "2-3 tree：A(20, 40) 下有 B(10)、D(30)、C(70, 80)，insert 60 後新的 root 是？",
+   "opts": [
+    "40",
+    "70",
+    "20",
+    "60"
+   ],
+   "ans": "40",
+   "why": "C split 把 70 推進 A，A 變 20, 40, 70 又爆，再 split 時中間的 40 成為新 root G。"
+  }
+ ]
+}

@@ -1,0 +1,632 @@
+{
+ "video": "FNeL18KsWPc",
+ "label": "MIT 6.006：AVL Trees, AVL Sort",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場",
+   "scene": null,
+   "points": [
+    {
+     "text": "MIT OpenCourseWare 開場授權說明。",
+     "t": 0
+    }
+   ]
+  },
+  {
+   "title": "BST 回顧與 in-order traversal",
+   "scene": "bstb-mit-inorder",
+   "points": [
+    {
+     "text": "延續 sorting：BST 是一種動態排序，元素來來去去仍隨時知道順序。",
+     "t": 22
+    },
+    {
+     "text": "BST = rooted binary tree + 每個 node 存 key + search property。",
+     "t": 41
+    },
+    {
+     "text": "左子樹所有 key ≤ x、右子樹所有 key ≥ x：不只 child，是所有子孫。",
+     "t": 68
+    },
+    {
+     "text": "in-order traversal：遞迴走左、印自己、遞迴走右。",
+     "t": 94
+    },
+    {
+     "text": "例：印出 11, 20, 26, 29, 41, 50, 65，正好是排序。",
+     "t": 104
+    }
+   ]
+  },
+  {
+   "title": "操作是 O(h)：balanced vs path",
+   "scene": "bstb-mit-balance",
+   "points": [
+    {
+     "text": "一般 BST insert：沿著樹往下找 key 該放的位置。",
+     "t": 136
+    },
+    {
+     "text": "insert 30：左、右、右，放在 29 的右邊。",
+     "t": 146
+    },
+    {
+     "text": "insert、delete、successor、predecessor 都是 O(h)。",
+     "t": 167
+    },
+    {
+     "text": "h 是 log n 嗎？不一定，這就是 balance 的問題。",
+     "t": 190
+    },
+    {
+     "text": "理想的 perfectly balanced tree：height ≈ log n。",
+     "t": 215
+    },
+    {
+     "text": "最糟是一條 path：height = n，平均路徑也有 n/2。",
+     "t": 228
+    },
+    {
+     "text": "height = 從 root 往下到 leaf 的最長路徑長度。",
+     "t": 249
+    },
+    {
+     "text": "balanced 的定義：height = O(log n)；今天用 AVL tree 維持。",
+     "t": 306
+    }
+   ]
+  },
+  {
+   "title": "Node 的高度：max(h_L, h_R) + 1",
+   "scene": "bstb-mit-node-height",
+   "points": [
+    {
+     "text": "除了樹高，也要定義每個 node 的 height。",
+     "t": 380
+    },
+    {
+     "text": "depth 從上往下數；height 是從該 node 往下到 leaf 的最長路徑。",
+     "t": 424
+    },
+    {
+     "text": "leaf 的 height 是 0，往上 1、2…，root 是 3。",
+     "t": 475
+    },
+    {
+     "text": "公式：height = max(左 child 高度, 右 child 高度) + 1。",
+     "t": 523
+    },
+    {
+     "text": "像上次維護 subtree size 一樣，用 augmentation 在每個 node 存 height。",
+     "t": 592
+    },
+    {
+     "text": "只靠 children 的 local formula，可以 O(1) 額外成本維護。",
+     "t": 609
+    },
+    {
+     "text": "空的 child 高度定為 −1：leaf = max(−1, −1) + 1 = 0，不用特例。",
+     "t": 676
+    }
+   ]
+  },
+  {
+   "title": "AVL 性質：|h_L − h_R| ≤ 1",
+   "scene": "bstb-mit-avl-prop",
+   "points": [
+    {
+     "text": "AVL trees。",
+     "t": 709
+    },
+    {
+     "text": "目標是 height O(log n)：讓每個 node 左右兩邊高度差不多。",
+     "t": 756
+    },
+    {
+     "text": "左右子樹畫成三角形，高度分別是 h_L、h_R。",
+     "t": 791
+    },
+    {
+     "text": "每個 node 都要 |h_L − h_R| ≤ 1。",
+     "t": 815
+    },
+    {
+     "text": "要求差 0 不可能：等於強迫成完美的樹，n 不剛好就做不到。",
+     "t": 834
+    },
+    {
+     "text": "差 1 幾乎一樣好，而且可以在 log n 時間維持。",
+     "t": 863
+    }
+   ]
+  },
+  {
+   "title": "最稀疏的 AVL：N_h 遞迴式",
+   "scene": "bstb-mit-sparse",
+   "points": [
+    {
+     "text": "Claim：AVL tree 是 balanced，height = O(log n)。",
+     "t": 878
+    },
+    {
+     "text": "最糟情況：固定高度 h，最少能塞幾個 node？",
+     "t": 916
+    },
+    {
+     "text": "每個 node 都讓右邊比左邊高 1。",
+     "t": 958
+    },
+    {
+     "text": "這種樹像碎形一樣遞迴長出來。",
+     "t": 1033
+    },
+    {
+     "text": "定義 N_h = 高度 h 的 AVL tree 最少的 node 數。",
+     "t": 1081
+    },
+    {
+     "text": "遞迴式：N_h = 1 + N_{h−1} + N_{h−2}。",
+     "t": 1290
+    },
+    {
+     "text": "原因：高的一邊是 h − 1、另一邊是 h − 2，再加上 root 這個 node。",
+     "t": 1310
+    }
+   ],
+   "trap": "補充：MIT 高度以 leaf = 0 計：N_0 = 1、N_1 = 2、N_2 = 4、N_3 = 7。課本（Horowitz）以層數計時下標會差 1。"
+  },
+  {
+   "title": "Fibonacci 下界：h < 1.44 log n",
+   "scene": "bstb-mit-nh-bound",
+   "params": {
+    "mode": "fib"
+   },
+   "points": [
+    {
+     "text": "這個遞迴式看起來像 Fibonacci。",
+     "t": 1387
+    },
+    {
+     "text": "拿掉 +1 就是 Fibonacci，所以 N_h > F_h。",
+     "t": 1393
+    },
+    {
+     "text": "F_h = φ^h / √5 取最接近的整數。",
+     "t": 1425
+    },
+    {
+     "text": "φ ≈ 1.618 > 1：N_h 至少指數成長。",
+     "t": 1447
+    },
+    {
+     "text": "反過來：φ^h / √5 < n。",
+     "t": 1456
+    },
+    {
+     "text": "兩邊取 log_φ。",
+     "t": 1485
+    },
+    {
+     "text": "h < log_φ n ≈ 1.440 log₂ n。",
+     "t": 1501
+    }
+   ]
+  },
+  {
+   "title": "簡單版：h < 2 log n",
+   "scene": "bstb-mit-nh-bound",
+   "params": {
+    "mode": "half"
+   },
+   "points": [
+    {
+     "text": "不背 Fibonacci 也有更簡單的分析方法。",
+     "t": 1553
+    },
+    {
+     "text": "對稱化：把 N_{h−1} 也換成 N_{h−2}（要的是下界，換小的才對）。",
+     "t": 1595
+    },
+    {
+     "text": "N_h > 1 + 2N_{h−2} > 2N_{h−2}。",
+     "t": 1621
+    },
+    {
+     "text": "每兩層 node 數至少翻倍 → N_h = Θ(2^{h/2})。",
+     "t": 1649
+    },
+    {
+     "text": "取 log：h < 2 log₂ n。",
+     "t": 1663
+    },
+    {
+     "text": "真正的最糟是 1.44 log n，但 2 log n 好證，作業可以用這招。",
+     "t": 1678
+    },
+    {
+     "text": "只要維持左右高度差 ≤ 1，就保證 balanced。",
+     "t": 1703
+    }
+   ]
+  },
+  {
+   "title": "AVL insert：先 BST insert（insert 23）",
+   "scene": "bstb-mit-insert23",
+   "params": {
+    "part": "detect"
+   },
+   "points": [
+    {
+     "text": "今天只講 insert；delete 幾乎一樣，看課程程式碼。",
+     "t": 1738
+    },
+    {
+     "text": "步驟 1：simple BST insert，往下找位置、放成新的 leaf。",
+     "t": 1775
+    },
+    {
+     "text": "這不保證 AVL → 步驟 2：fix AVL property。",
+     "t": 1792
+    },
+    {
+     "text": "例子：insert 23。",
+     "t": 1826
+    },
+    {
+     "text": "每個 node 標記：↙ 左重、↘ 右重、— 一樣高。",
+     "t": 1850
+    },
+    {
+     "text": "23 < 41、> 20、< 29、< 26 → 放在 26 的左邊。",
+     "t": 1879
+    },
+    {
+     "text": "29 變成雙重左重：23、26、29 排成一條 path。",
+     "t": 1915
+    }
+   ]
+  },
+  {
+   "title": "Rotation：O(1) 且保持 BST 順序",
+   "scene": "bstb-mit-rotate",
+   "points": [
+    {
+     "text": "修樹只需要一個工具：rotation。",
+     "t": 1952
+    },
+    {
+     "text": "left rotate(x)：x 和它的右 child y 交換上下。",
+     "t": 2002
+    },
+    {
+     "text": "兩個 node x、y，加上掛著的 subtree a、b、c（可能是空的）。",
+     "t": 2028
+    },
+    {
+     "text": "b 的 parent 從 y 變成 x；x 原本的 parent 變成 y 的 parent。",
+     "t": 2055
+    },
+    {
+     "text": "只改常數個指標：O(1)。",
+     "t": 2063
+    },
+    {
+     "text": "in-order 前後都是 a, x, b, y, c → 仍是 BST。",
+     "t": 2075
+    },
+    {
+     "text": "root 往左移叫 left rotate；反過來 right rotate(y) 可以轉回去。",
+     "t": 2103
+    }
+   ]
+  },
+  {
+   "title": "Right rotate 29：insert 23 修好",
+   "scene": "bstb-mit-insert23",
+   "points": [
+    {
+     "text": "23、26、29 這條 path 想變成平衡的樣子。",
+     "t": 2121
+    },
+    {
+     "text": "做法就是 right rotate(29)。",
+     "t": 2138
+    },
+    {
+     "text": "26 升上來、29 變成右 child，23 是原本的 subtree a。",
+     "t": 2176
+    },
+    {
+     "text": "又是 AVL tree 了。",
+     "t": 2206
+    },
+    {
+     "text": "檢查標記：每個 node 都只差 1。",
+     "t": 2210
+    }
+   ]
+  },
+  {
+   "title": "Insert 55：zigzag 要兩次旋轉",
+   "scene": "bstb-mit-insert55",
+   "points": [
+    {
+     "text": "insert 55：放在 50 的右邊。",
+     "t": 2235
+    },
+    {
+     "text": "50 變右重、65 變雙重左重。",
+     "t": 2247
+    },
+    {
+     "text": "65、50、55 是 zigzag path。",
+     "t": 2275
+    },
+    {
+     "text": "只 right rotate(65) 會變成 zag-zig，高度一樣，沒用。",
+     "t": 2278
+    },
+    {
+     "text": "學生提議：先旋 50。",
+     "t": 2315
+    },
+    {
+     "text": "left rotate(50)：55 升上來，變成一直線。",
+     "t": 2335
+    },
+    {
+     "text": "再 right rotate(65)：55 當子樹 root，三個都平衡。",
+     "t": 2362
+    },
+    {
+     "text": "有人叫 double rotation，其實就是兩次 rotation。",
+     "t": 2395
+    }
+   ]
+  },
+  {
+   "title": "一般做法：往上找最低的違規 node",
+   "scene": "bstb-mit-walkup",
+   "points": [
+    {
+     "text": "fix AVL property：從改到的 node 往上修。",
+     "t": 2421
+    },
+    {
+     "text": "例子沒呈現的是：一般可能要做不只兩次旋轉。",
+     "t": 2442
+    },
+    {
+     "text": "修完最低的違規後，上面可能還有違規，要繼續往上。",
+     "t": 2471
+    },
+    {
+     "text": "x = 最低的、不符合 AVL 的 node。",
+     "t": 2485
+    },
+    {
+     "text": "往上走時用 max + 1 更新高度，直到某處左右差 2。",
+     "t": 2502
+    },
+    {
+     "text": "AVL 性質看的是左右子樹高度，不是層數。",
+     "t": 2550
+    },
+    {
+     "text": "例：65 的左子樹高 1、右子樹不存在算 −1 → 差 2。",
+     "t": 2557
+    }
+   ]
+  },
+  {
+   "title": "Case 1：y 右重或平衡 → 一次旋轉",
+   "scene": "bstb-mit-cases",
+   "params": {
+    "kase": 1
+   },
+   "points": [
+    {
+     "text": "假設 x 的右邊比較重（左邊對稱）。",
+     "t": 2611
+    },
+    {
+     "text": "分兩種 case，先看簡單的。",
+     "t": 2654
+    },
+    {
+     "text": "x 右重，看它的右 child y：y 右重或平衡。",
+     "t": 2683
+    },
+    {
+     "text": "做一次旋轉 rotate(x)，y 升上來。",
+     "t": 2695
+    },
+    {
+     "text": "設 x 高 k → y 高 k−1 → C 高 k−2。",
+     "t": 2743
+    },
+    {
+     "text": "y 是 AVL，所以 A、B 都是 k−3。",
+     "t": 2770
+    },
+    {
+     "text": "旋轉後 x 高 k−2、y 高 k−1：兩邊都平衡。",
+     "t": 2798
+    },
+    {
+     "text": "y 平衡的情況也成立；之後往 y 的 parent 繼續檢查。",
+     "t": 2830
+    }
+   ],
+   "trap": "影片口誤：44:55 說 \"right rotate of x\"，但 x 是右重，應該做 left rotate(x)（板書也是 y 升上來、x 變成左 child）。"
+  },
+  {
+   "title": "Case 2：z 左重 → 兩次旋轉",
+   "scene": "bstb-mit-cases",
+   "params": {
+    "kase": 2
+   },
+   "points": [
+    {
+     "text": "另一種 case 要做兩次旋轉。",
+     "t": 2838
+    },
+    {
+     "text": "x 的右 child z 是左重：x → z → y 是 zigzag。",
+     "t": 2883
+    },
+    {
+     "text": "先 right rotate(z)、再 left rotate(x)，得到 y 在上、x 和 z 在下，恢復 AVL。",
+     "t": 2891
+    }
+   ]
+  },
+  {
+   "title": "AVL sort：O(n log n)",
+   "scene": "bstb-mit-avl-sort",
+   "points": [
+    {
+     "text": "可以拿來 sort：全部 insert，再做 in-order traversal。",
+     "t": 2923
+    },
+    {
+     "text": "in-order traversal 是 linear time。",
+     "t": 2945
+    },
+    {
+     "text": "每次 insert 是 O(h) = O(log n)，總共 O(n log n)。",
+     "t": 2952
+    }
+   ]
+  },
+  {
+   "title": "ADT vs 資料結構",
+   "scene": "bstb-mit-adt",
+   "points": [
+    {
+     "text": "heap 支援 insert、delete-min；AVL 也做得到。",
+     "t": 2966
+    },
+    {
+     "text": "AVL 多了 find next larger / next smaller：successor、predecessor。",
+     "t": 2990
+    },
+    {
+     "text": "abstract data type：規定要支援哪些操作（像 Java 的 interface）。",
+     "t": 3003
+    },
+    {
+     "text": "insert + delete + min 叫 priority queue。",
+     "t": 3038
+    },
+    {
+     "text": "實作 priority queue 可以用 heap、AVL、sorted array…",
+     "t": 3062
+    },
+    {
+     "text": "三種操作（含 succ/pred）都要 → 需要 balanced BST。",
+     "t": 3076
+    },
+    {
+     "text": "heap 的好處是 in place；AVL 指標很多，空間多一個常數倍。",
+     "t": 3093
+    },
+    {
+     "text": "不在意常數的話，AVL 什麼都能 O(log n)。",
+     "t": 3113
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "樹 41(20(11, 29(26)), 65(50)) 的 in-order traversal 是？",
+   "opts": [
+    "41 20 11 29 26 65 50",
+    "11 20 26 29 41 50 65",
+    "11 26 29 20 50 65 41",
+    "41 20 65 11 29 50 26"
+   ],
+   "ans": "11 20 26 29 41 50 65",
+   "why": "BST 的 in-order 一定是排序好的。"
+  },
+  {
+   "q": "以 leaf 高度 = 0、空 child = −1，上面那棵樹 root 41 的 height？",
+   "opts": [
+    "2",
+    "3",
+    "4",
+    "7"
+   ],
+   "ans": "3",
+   "why": "41 → 20 → 29 → 26 最長路徑 3 條邊；h = max(2, 1) + 1 = 3。"
+  },
+  {
+   "q": "高度 h 的 AVL tree 最少 node 數 N_h 的遞迴式？",
+   "opts": [
+    "N_h = 2N_{h−1}",
+    "N_h = N_{h−1} + 1",
+    "N_h = 1 + N_{h−1} + N_{h−2}",
+    "N_h = N_{h−1} + N_{h−2}"
+   ],
+   "ans": "N_h = 1 + N_{h−1} + N_{h−2}",
+   "why": "一邊高 h−1、另一邊最少 h−2，再加 root。"
+  },
+  {
+   "q": "AVL tree 的高度上界約為？",
+   "opts": [
+    "log₂ n",
+    "1.44 log₂ n",
+    "2 n",
+    "n / 2"
+   ],
+   "ans": "1.44 log₂ n",
+   "why": "N_h > F_h ≈ φ^h/√5 → h < log_φ n ≈ 1.44 log₂ n（簡單版可證 2 log₂ n）。"
+  },
+  {
+   "q": "在 41/20/65… 那棵樹（23 已修好）插入 55，怎麼修？",
+   "opts": [
+    "right rotate(65)",
+    "left rotate(50) 再 right rotate(65)",
+    "left rotate(65)",
+    "right rotate(41)"
+   ],
+   "ans": "left rotate(50) 再 right rotate(65)",
+   "why": "65→50→55 是 zigzag，只轉 65 會變 zag-zig；先把它拉成直線再轉。"
+  },
+  {
+   "q": "關於 rotation，何者錯誤？",
+   "opts": [
+    "只改常數個指標",
+    "前後 in-order 相同",
+    "會改變 subtree b 的 parent",
+    "需要 O(log n) 時間"
+   ],
+   "ans": "需要 O(log n) 時間",
+   "why": "rotation 是 O(1)，且保持 BST 順序。"
+  },
+  {
+   "q": "x 雙重右重、其右 child y 右重時，應做？",
+   "opts": [
+    "right rotate(x)",
+    "left rotate(x)",
+    "right rotate(y) 再 left rotate(x)",
+    "不用處理"
+   ],
+   "ans": "left rotate(x)",
+   "why": "直線型（RR）一次 left rotate 即可；y 左重才需要兩次。"
+  },
+  {
+   "q": "用 AVL tree 排序 n 個數（AVL sort）的時間？",
+   "opts": [
+    "O(n)",
+    "O(n log n)",
+    "O(n²)",
+    "O(log n)"
+   ],
+   "ans": "O(n log n)",
+   "why": "n 次 insert 各 O(log n)，加上 O(n) 的 in-order traversal。"
+  }
+ ]
+}
