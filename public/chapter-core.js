@@ -25,14 +25,29 @@ function videoSeriesName(label){
   for(let i=0;i<rules.length;i++) if(rules[i][0].test(text)) return rules[i][1];
   return '精選單篇';
 }
-function videoSequenceNumber(label, fallback){
+// Sort key for a video inside one teacher's series. Playlist position first
+// (video-order.js — the order the course is actually taught), then lecture
+// numbers parsed from the title: 第12B講 → 12·10+2, Abdul Bari's 1.5.2 →
+// 1·10000+5·100+2, Lec/Lecture/L n → n·10, Rec n → n·10+5. Unknown titles
+// keep their original order after everything else.
+function videoSequenceNumber(label, fallback, url){
+  const id = youtubeId(url);
+  if (typeof VIDEO_ORDER !== 'undefined' && id && VIDEO_ORDER[id]) return VIDEO_ORDER[id];
+  return videoTitleNumber(label, fallback);
+}
+function videoTitleNumber(label, fallback){
   const text = String(label || '');
-  const patterns = [/\bLec\s*0*(\d+)/i,/\bLecture\s*0*(\d+)/i,/第\s*0*(\d+)講/i,/\bL\s*0*(\d+)\b/i,/\bCh(?:apter)?\s*0*(\d+)/i,/^\s*0*(\d+)[.：\s]/];
-  for(let i=0;i<patterns.length;i++){
-    const m = text.match(patterns[i]);
-    if(m) return Number(m[1]);
-  }
-  return 10000 + fallback;
+  let m = text.match(/第\s*0*(\d+)\s*([A-Za-z])?\s*講/);
+  if (m) return Number(m[1]) * 10 + (m[2] ? m[2].toUpperCase().charCodeAt(0) - 64 : 0);
+  m = text.match(/(?:^|[：:]\s*)(\d+(?:\.\d+)*)\.?\s/);
+  if (m) { const p = m[1].split('.').map(Number); return p[0] * 10000 + (p[1] || 0) * 100 + (p[2] || 0); }
+  m = text.match(/\bRec(?:itation)?\s*0*(\d+)/i);
+  if (m) return Number(m[1]) * 10 + 5;
+  m = text.match(/\b(?:Lec(?:ture)?|L)\s*0*(\d+)/i);
+  if (m) return Number(m[1]) * 10;
+  m = text.match(/\bCh(?:apter)?\s*0*(\d+)/i);
+  if (m) return Number(m[1]) * 10;
+  return 1000000 + fallback;
 }
 function groupVideoSeries(options){
   const groups = [];
@@ -43,9 +58,13 @@ function groupVideoSeries(options){
       map[name] = {name:name,options:[],firstIndex:index};
       groups.push(map[name]);
     }
-    map[name].options.push(Object.assign({},option,{sourceIndex:index,sequence:videoSequenceNumber(option.label,index)}));
+    map[name].options.push(Object.assign({},option,{sourceIndex:index,sequence:videoSequenceNumber(option.label,index,option.url)}));
   });
   groups.forEach(function(group){
+    // Playlist positions and title numbers are different scales: only use
+    // playlist order when every video of the series has one.
+    const allInPlaylist = typeof VIDEO_ORDER !== 'undefined' && group.options.every(function(o){ return VIDEO_ORDER[youtubeId(o.url)]; });
+    if (!allInPlaylist) group.options.forEach(function(o){ o.sequence = videoTitleNumber(o.label, o.sourceIndex); });
     group.options.sort(function(a,b){ return a.sequence-b.sequence || a.sourceIndex-b.sourceIndex; });
     group.topics = Array.from(new Set(group.options.map(function(o){ return o.topic; }).filter(Boolean)));
   });
