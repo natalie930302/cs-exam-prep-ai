@@ -1,0 +1,363 @@
+{
+ "video": "akErwS16DUg",
+ "label": "Linked List Introduction & Concepts",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "陣列的問題：大小固定",
+   "scene": "engmisc-array-fixed",
+   "points": [
+    {
+     "text": "本段要講：為什麼需要 Linked List——先看陣列的問題，再比較 array 與 linked list。",
+     "t": 0
+    },
+    {
+     "text": "陣列是 fixed size：建立時就要給大小，之後不能增加也不能減少。",
+     "t": 17
+    },
+    {
+     "text": "宣告 A[10]：執行時元素超過 10 個就放不下；只有 2、3 個時大部分空間浪費。",
+     "t": 64
+    },
+    {
+     "text": "改成 100 格也一樣：超過 100 個還是放不下。",
+     "t": 85
+    },
+    {
+     "text": "元素個數由使用者在 runtime 決定，但陣列大小必須在 coding／compile time 給定——這就是問題。",
+     "t": 125
+    }
+   ]
+  },
+  {
+   "title": "陣列可建在 Stack 或 Heap；連續所以能用 index",
+   "scene": "engmisc-array-stack-heap",
+   "points": [
+    {
+     "text": "複習：陣列可以建在 Stack（例如 int A[5]，放在 main 的 activation record），也可以建在 Heap。",
+     "t": 145
+    },
+    {
+     "text": "在 Heap 建陣列要用 pointer p 配置 5 格，p 指向那塊記憶體。",
+     "t": 165
+    },
+    {
+     "text": "陣列的優點：所有格子 contiguous（一格挨一格），所以能用 index 0～4 存取，可 random access 任一元素。",
+     "t": 201
+    },
+    {
+     "text": "比喻：陣列像一張 5 人座長椅，做好時容量就固定；人多坐不下，人少浪費位子。",
+     "t": 217
+    }
+   ]
+  },
+  {
+   "title": "Linked List 的想法：每個元素自帶空間",
+   "scene": "engmisc-ll-build",
+   "points": [
+    {
+     "text": "需要一個能隨使用者增減而變大、變小的 variable size 資料結構。",
+     "t": 245
+    },
+    {
+     "text": "做法：在 runtime 於 Heap 配置記憶體，並用 linking 把它們串起來。",
+     "t": 283
+    },
+    {
+     "text": "先準備一個 pointer first；要存 8 時，配置元素空間加上「指向下一個元素的 pointer」，目前沒有下一個所以是 NULL。",
+     "t": 319
+    },
+    {
+     "text": "元素空間 + pointer 空間合起來叫 node；再存 3、12 時各建一個 node，前一個 node 指向它。",
+     "t": 363
+    },
+    {
+     "text": "比喻：不是長椅，而是每個人自己帶椅子來、一個牽一個；離開時把椅子帶走。",
+     "t": 416
+    }
+   ]
+  },
+  {
+   "title": "改 link 就能刪除與插入",
+   "scene": "engmisc-ll-relink",
+   "points": [
+    {
+     "text": "刪除 3：讓 8 不再指向 3，改指向 12 即可。",
+     "t": 465
+    },
+    {
+     "text": "在 3 和 12 之間插入 7：建立 node 7，讓 7 指向 12，再讓 3 指向 7。",
+     "t": 479
+    },
+    {
+     "text": "從 first 走：8 → 3 → 7 → 12；插入只是改 link。",
+     "t": 490
+    },
+    {
+     "text": "Linked List 比陣列有彈性：大小可增可減，插入／刪除很容易。",
+     "t": 504
+    },
+    {
+     "text": "整理：陣列可建在 Stack 或 Heap；Linked List 在 Stack 建沒有意義，一律在 Heap 動態配置，每個元素各自配置、移除就釋放。",
+     "t": 520
+    }
+   ],
+   "trap": "補充：插入時要先設新節點的 next（7→12），再改前一個節點（3→7）；順序反了會弄丟後半串。"
+  },
+  {
+   "title": "Linked List 定義、head 與位址",
+   "scene": "engmisc-ll-address",
+   "points": [
+    {
+     "text": "下一段：細講 Linked List——定義、node 結構、如何建立與存取 node。",
+     "t": 553
+    },
+    {
+     "text": "定義：Linked List 是 node 的集合，每個 node 含 data 與指向下一個 node 的 pointer。",
+     "t": 585
+    },
+    {
+     "text": "例：第一個 node 位址 200，data 8、link 存 210；node 210 存 data 3、link 270。",
+     "t": 603
+    },
+    {
+     "text": "first（也叫 head）是指向第一個 node（head node）的 pointer，存 200；first 自己的位址是 100。",
+     "t": 623
+    },
+    {
+     "text": "位址是隨便取的（真實的通常是幾千）；重點是 node 不連續：200、210、270、300。",
+     "t": 664
+    },
+    {
+     "text": "陣列的位址連續（200、202…），Linked List 的連續性靠 link（位址）維持。",
+     "t": 676
+    }
+   ]
+  },
+  {
+   "title": "定義 node：self-referential structure",
+   "scene": "engmisc-node-struct",
+   "points": [
+    {
+     "text": "定義 node 要兩樣：data（int、float、double 或任何型別）與 pointer。",
+     "t": 716
+    },
+    {
+     "text": "pointer 指向下一個 node，所以型別是 node 自己的型別。",
+     "t": 736
+    },
+    {
+     "text": "C 寫法：struct Node { int data; struct Node *next; };",
+     "t": 775
+    },
+    {
+     "text": "structure 內含指向自己型別的 pointer，叫 self-referential structure，Linked List 就靠它。",
+     "t": 833
+    },
+    {
+     "text": "C++ 也可用 struct 或 class；差別：class 成員預設 private，struct 預設 public。",
+     "t": 859
+    },
+    {
+     "text": "大小：影片假設 int 2 bytes、pointer 也 2 bytes，所以一個 node 4 bytes（例：200～203）；pointer 只記第一個 byte 的位址。",
+     "t": 890
+    }
+   ],
+   "trap": "補充：int 與 pointer 的大小依系統而定，現代 64-bit 系統常見 int 4 bytes、pointer 8 bytes；影片的「int 2 bytes 時 pointer 也 2 bytes」只是為了方便計算的假設，兩者不一定相同。"
+  },
+  {
+   "title": "建立 node：malloc／new 與 ->",
+   "scene": "engmisc-node-malloc",
+   "points": [
+    {
+     "text": "node 必須建在 Heap，所以先宣告 pointer：struct Node *p;",
+     "t": 960
+    },
+    {
+     "text": "C：p = (struct Node *)malloc(sizeof(struct Node)); 要 4 bytes 可以寫 sizeof(struct Node)。",
+     "t": 996
+    },
+    {
+     "text": "malloc 回傳 void *，要強制轉型成 struct Node *。",
+     "t": 1021
+    },
+    {
+     "text": "C++ 簡單：p = new Node;",
+     "t": 1051
+    },
+    {
+     "text": "假設新 node 位址 500，p 存 500 → p 指向這個 node。",
+     "t": 1080
+    },
+    {
+     "text": "p 是指向 structure 的 pointer，成員用箭頭運算子：p->data = 10;",
+     "t": 1109
+    },
+    {
+     "text": "p->next = 0（NULL），表示不指向任何 node。",
+     "t": 1136
+    }
+   ]
+  },
+  {
+   "title": "常用指標敘述：q = p、q = p->next、p = p->next",
+   "scene": "engmisc-ptr-move",
+   "points": [
+    {
+     "text": "例子：p 指向位址 200 的 node，另外有一個 pointer q。",
+     "t": 1164
+    },
+    {
+     "text": "q = p：把 p 裡的 200 存進 q，兩個 pointer 指向同一個 node。",
+     "t": 1189
+    },
+    {
+     "text": "q = p->next：p 的 next 欄位是 210，q 指向 p 的下一個 node。",
+     "t": 1218
+    },
+    {
+     "text": "p = p->next：把 210 存回 p，p 移到下一個 node。",
+     "t": 1264
+    },
+    {
+     "text": "p = p->next 是走訪 Linked List 時非常常用的一行。",
+     "t": 1307
+    }
+   ]
+  },
+  {
+   "title": "判斷 pointer 是否為 NULL",
+   "scene": "engmisc-null-check",
+   "points": [
+    {
+     "text": "讓 p 為 NULL：寫 p = 0 或 p = NULL，兩者相同。",
+     "t": 1354
+    },
+    {
+     "text": "p 沒指向 node → 值為 0；有指向 → 非 0 的有效位址。",
+     "t": 1385
+    },
+    {
+     "text": "C/C++ 中 0 是 false，非 0 是 true。",
+     "t": 1405
+    },
+    {
+     "text": "p 是 NULL 的三種寫法：if (p == NULL)、if (p == 0)、if (!p)。",
+     "t": 1425
+    },
+    {
+     "text": "p 有指向 node 的三種寫法（反過來）：if (p != NULL)、if (p != 0)、if (p)。",
+     "t": 1505
+    }
+   ]
+  },
+  {
+   "title": "p->next == NULL：最後一個 node",
+   "scene": "engmisc-last-node",
+   "points": [
+    {
+     "text": "想知道 node p 後面還有沒有 node，看 p->next。",
+     "t": 1560
+    },
+    {
+     "text": "if (p->next == NULL)：成立代表 p 是 Linked List 的最後一個 node。",
+     "t": 1572
+    },
+    {
+     "text": "if (p->next != NULL)：成立代表 p 後面還有 node；這類條件很常用。",
+     "t": 1600
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "影片指出陣列最主要的問題是什麼？",
+   "opts": [
+    "大小固定，宣告後不能增減",
+    "不能用 index 存取",
+    "只能建在 Stack",
+    "元素一定要是 int"
+   ],
+   "ans": "大小固定，宣告後不能增減",
+   "why": "陣列大小在 compile time 決定，但元素個數要到 runtime 才知道，太小放不下、太大浪費。"
+  },
+  {
+   "q": "陣列能 random access（用 index 直接存取）的原因是？",
+   "opts": [
+    "元素位址連續",
+    "每個元素有 next 指標",
+    "陣列建在 Heap",
+    "陣列大小固定"
+   ],
+   "ans": "元素位址連續",
+   "why": "格子一個挨一個，第 i 個的位址可直接算出。"
+  },
+  {
+   "q": "8 → 3 → 12 中刪除 3，最少要改什麼？",
+   "opts": [
+    "讓 8 的 next 指向 12",
+    "讓 12 的 next 指向 8",
+    "把 12 搬到 3 的位置",
+    "把 first 改指向 12"
+   ],
+   "ans": "讓 8 的 next 指向 12",
+   "why": "跳過 3 只需改前一個 node 的 link。"
+  },
+  {
+   "q": "struct Node { int data; struct Node *next; }; 這種結構叫什麼？",
+   "opts": [
+    "self-referential structure",
+    "nested structure",
+    "union",
+    "abstract class"
+   ],
+   "ans": "self-referential structure",
+   "why": "結構裡有指向自己型別的 pointer。"
+  },
+  {
+   "q": "p 指向位址 200 的 node，該 node 的 next 存 210。執行 p = p->next 後 p 的值是？",
+   "opts": [
+    "210",
+    "200",
+    "0",
+    "p 原本 node 的 data"
+   ],
+   "ans": "210",
+   "why": "p->next 的值是 210，存回 p，p 移到下一個 node。"
+  },
+  {
+   "q": "下列哪一個條件在 p 指向某個 node 時成立？",
+   "opts": [
+    "if (p)",
+    "if (!p)",
+    "if (p == 0)",
+    "if (p == NULL)"
+   ],
+   "ans": "if (p)",
+   "why": "p 有效時是非 0 位址，非 0 為 true；其餘三個都是在 p 為 NULL 時才成立。"
+  },
+  {
+   "q": "怎麼判斷 p 是 Linked List 的最後一個 node？",
+   "opts": [
+    "p->next == NULL",
+    "p == NULL",
+    "p->data == 0",
+    "p == first"
+   ],
+   "ans": "p->next == NULL",
+   "why": "最後一個 node 的 next 不指向任何 node。p == NULL 是 p 本身沒指向 node。"
+  },
+  {
+   "q": "C 語言 malloc 回傳的型別是？",
+   "opts": [
+    "void *",
+    "struct Node *",
+    "int",
+    "struct Node"
+   ],
+   "ans": "void *",
+   "why": "所以影片寫 (struct Node *)malloc(sizeof(struct Node)) 做轉型。"
+  }
+ ]
+}

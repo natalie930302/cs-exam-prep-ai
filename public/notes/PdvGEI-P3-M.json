@@ -1,0 +1,173 @@
+{
+ "video": "PdvGEI-P3-M",
+ "label": "Abdul Bari：Stack vs Heap",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Main memory 三區與 code section",
+   "scene": "engmisc-mem-code",
+   "points": [
+    {
+     "text": "主題：Stack 與 Heap 的差別；先了解系統記憶體。",
+     "t": 0
+    },
+    {
+     "text": "電腦記憶體分三大區：Code section、Stack、Heap。",
+     "t": 23
+    },
+    {
+     "text": "程式裡宣告了一些變數；compile 後得到 machine code。",
+     "t": 62
+    },
+    {
+     "text": "要執行程式，先把 machine code 載入 Code section，這叫 loading（像把 DVD 放進播放器）。",
+     "t": 97
+    },
+    {
+     "text": "載入後 CPU 一次取一個指令執行；Code 區就是放程式本身的地方。",
+     "t": 136
+    }
+   ]
+  },
+  {
+   "title": "Stack：靜態大小、直接存取",
+   "scene": "engmisc-mem-stack",
+   "points": [
+    {
+     "text": "程式中宣告的變數（a、b、c）所需記憶體從 Stack 配置。",
+     "t": 156
+    },
+    {
+     "text": "配置發生在 runtime（程式開始執行時），但需要多少記憶體在 compile time 就決定：size static、allocation dynamic。",
+     "t": 187
+    },
+    {
+     "text": "程式可以用位址直接存取 Stack，例如 a 在 1000、b 在 1002、c 在 1004。",
+     "t": 238
+    },
+    {
+     "text": "main 在 Stack 上的這一塊叫 activation record，也叫 stack frame。",
+     "t": 261
+    },
+    {
+     "text": "Stack 兩重點：程式直接存取；大小是靜態的（由宣告的變數決定）。",
+     "t": 300
+    }
+   ]
+  },
+  {
+   "title": "Heap：透過 pointer 間接存取",
+   "scene": "engmisc-mem-heap",
+   "points": [
+    {
+     "text": "程式只能直接存取 Stack，不能直接存取 Heap。",
+     "t": 368
+    },
+    {
+     "text": "為什麼需要 Heap：執行時可能需要比宣告的變數更多的記憶體，要多少由使用者在 runtime 決定。",
+     "t": 410
+    },
+    {
+     "text": "程式設計者要事先宣告一個 pointer（例如 int *p），它跟其他變數一樣配置在 Stack。",
+     "t": 447
+    },
+    {
+     "text": "p = malloc(10)：從 Heap 配置 10 bytes，起始位址（例如 5000）存進 p，p 指向這塊記憶體。",
+     "t": 536
+    },
+    {
+     "text": "程式透過 pointer 去存取 Heap：Heap 是間接存取，大小在 runtime 決定（dynamic）。",
+     "t": 584
+    }
+   ],
+   "trap": "06:33–06:50 錄音辨識成亂碼，內容依前後文推斷為「執行中可能需要額外記憶體」。"
+  },
+  {
+   "title": "總結：Stack 與 Heap 的兩大差異",
+   "scene": "engmisc-mem-compare",
+   "points": [
+    {
+     "text": "差異一：Stack 直接存取；Heap 間接存取（透過 pointer）。",
+     "t": 622
+    },
+    {
+     "text": "差異二：Stack 大小事先決定（看宣告的變數）；Heap 大小在 runtime 決定。",
+     "t": 633
+    },
+    {
+     "text": "Heap 不是靠變數，而是用 malloc 配合 pointer；要存取 Heap 一定需要 pointer。",
+     "t": 644
+    }
+   ],
+   "trap": "補充：影片的 Stack／Heap 是記憶體區段，和資料結構的 stack 不同；但 Stack 區的 activation record 確實以 LIFO 方式疊放。另外 Heap 配置的空間要記得 free，否則 memory leak。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "程式執行前把 machine code 放進 Code section 的動作叫什麼？",
+   "opts": [
+    "loading",
+    "compiling",
+    "linking",
+    "allocating"
+   ],
+   "ans": "loading",
+   "why": "影片比喻成把 DVD 放進播放器。"
+  },
+  {
+   "q": "依影片，Stack 上變數記憶體的「大小」何時決定？",
+   "opts": [
+    "compile time",
+    "runtime 由使用者決定",
+    "呼叫 malloc 時",
+    "loading 前由 OS 隨機決定"
+   ],
+   "ans": "compile time",
+   "why": "size static、allocation dynamic：大小由宣告的變數決定，配置在執行時。"
+  },
+  {
+   "q": "main 函式在 Stack 上的那一塊記憶體叫？",
+   "opts": [
+    "activation record（stack frame）",
+    "heap block",
+    "code segment",
+    "page table"
+   ],
+   "ans": "activation record（stack frame）",
+   "why": "影片說也叫 stack frame。"
+  },
+  {
+   "q": "程式如何存取 Heap 的記憶體？",
+   "opts": [
+    "透過存放在 Stack 的 pointer 間接存取",
+    "用變數名稱直接存取",
+    "只能由 OS 存取",
+    "載入 Code section 後存取"
+   ],
+   "ans": "透過存放在 Stack 的 pointer 間接存取",
+   "why": "Heap 不能直接存取，必須用 pointer。"
+  },
+  {
+   "q": "p = malloc(10) 之後，p 裡面存的是？",
+   "opts": [
+    "Heap 中那 10 bytes 的起始位址",
+    "數字 10",
+    "p 自己的位址",
+    "Stack 的頂端位址"
+   ],
+   "ans": "Heap 中那 10 bytes 的起始位址",
+   "why": "影片例子是 5000，p 指向那塊記憶體。"
+  },
+  {
+   "q": "以下哪一項描述 Heap 正確？",
+   "opts": [
+    "大小在 runtime 決定、間接存取",
+    "大小在 compile time 決定、直接存取",
+    "大小在 compile time 決定、間接存取",
+    "大小在 runtime 決定、直接存取"
+   ],
+   "ans": "大小在 runtime 決定、間接存取",
+   "why": "這正是影片總結的兩大差異。"
+  }
+ ]
+}

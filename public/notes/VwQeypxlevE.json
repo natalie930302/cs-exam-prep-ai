@@ -1,0 +1,1087 @@
+{
+ "video": "VwQeypxlevE",
+ "label": "交大彭文志 Lec12 Trees (1/6)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "課前事項：期中考 11/16",
+   "scene": null,
+   "points": [
+    {
+     "text": "本講開始進入第五章 Tree；期中考 11 月 16 日，本班自己考，不與隔壁班合併。",
+     "t": 41
+    },
+    {
+     "text": "若本週講到 Tree 後半段，考試範圍就涵蓋到那裡。",
+     "t": 58
+    }
+   ]
+  },
+  {
+   "title": "Tree 的遞迴定義",
+   "scene": "p12-def",
+   "points": [
+    {
+     "text": "Tree 長得像族譜：上面是祖先，下面是 child，child 再往下長。",
+     "t": 91
+    },
+    {
+     "text": "最底下沒有 child 的 node 叫 leaf node。",
+     "t": 100
+    },
+    {
+     "text": "正式定義：Tree 是 a collection of nodes（node 的集合）。",
+     "t": 111
+    },
+    {
+     "text": "其中有一個特殊 node 叫 root，是最原始的祖先，tree 一定要有 root。",
+     "t": 118
+    },
+    {
+     "text": "root 底下有 T1…Tk 等 subtree，每棵 subtree 又有自己的 root，定義是 recursive 的。",
+     "t": 138
+    },
+    {
+     "text": "分枝數（一個 node 可以 link 出去幾個 child）可以依需求定義。",
+     "t": 153
+    }
+   ],
+   "trap": "補充：課本（Horowitz）定義為「一個或多個 node 的有限集合」，T1…Tn 必須是互不相交（disjoint）的 subtree，所以一般 tree 不能是空的。"
+  },
+  {
+   "title": "Level、高度與 node 的 degree",
+   "scene": "p12-sample",
+   "params": {
+    "focus": "level"
+   },
+   "points": [
+    {
+     "text": "最上面 root 的 level 是 1，往下依序是 level 2、3、4。",
+     "t": 185
+    },
+    {
+     "text": "Tree 的高度（深度）就是最大的 level 數，這個例子高度是 4。",
+     "t": 192
+    },
+    {
+     "text": "Node 的 degree 指它指出去的 pointer（child）個數。",
+     "t": 224
+    },
+    {
+     "text": "A 指出去三條，所以 degree(A) = 3。",
+     "t": 243
+    },
+    {
+     "text": "在 tree 中別人指到它的邊不算，只算 point out 出去的。",
+     "t": 257
+    },
+    {
+     "text": "C 只往下指到 G，所以 degree(C) = 1。",
+     "t": 272
+    },
+    {
+     "text": "Tree 其實是一種特殊的 graph；graph 的 degree 會再分 in-degree / out-degree（第六章）。",
+     "t": 291
+    }
+   ],
+   "trap": "本講 root 的 level 為 1（與洪逸／Horowitz 相同）；部分教材把 root 設為 level 0、高度少 1，考題要看定義。"
+  },
+  {
+   "title": "Parent 與 child",
+   "scene": "p12-sample",
+   "params": {
+    "focus": "parent"
+   },
+   "points": [
+    {
+     "text": "A 是整棵 tree 最原始的祖先（root）。",
+     "t": 310
+    },
+    {
+     "text": "把 subtree 拉出來看，這棵 subtree 的祖先是 B，B 就是 parent。",
+     "t": 323
+    },
+    {
+     "text": "B 底下 link 出去的 node 就是它的 child。",
+     "t": 331
+    }
+   ],
+   "trap": "老師口誤說 E、F、K、L 都是 B 的 child。更正：B 的 child 只有 E、F；K、L 是 E 的 child，對 B 而言是 descendant（孫輩）。parent 是相對關係，不等於 root。"
+  },
+  {
+   "title": "閒談：族譜、物體追蹤與 PCS 基地台",
+   "scene": null,
+   "points": [
+    {
+     "text": "族譜就是 tree：老師自己在族譜的 level 32，來台祖先在 level 28。",
+     "t": 399
+    },
+    {
+     "text": "Tree 也用在 sensor network 的 object tracking，以及 PCS 行動通訊：leaf node 是基地台。",
+     "t": 515
+    },
+    {
+     "text": "使用者從基地台 K 走到 L 的範圍叫 handoff；L 沒有足夠 channel 時通話會被中斷（blocking / dropping）。",
+     "t": 567
+    }
+   ]
+  },
+  {
+   "title": "Sibling 與 ancestors",
+   "scene": "p12-sample",
+   "params": {
+    "focus": "sibling"
+   },
+   "points": [
+    {
+     "text": "有相同 parent 的 node 互為 sibling（兄弟姊妹）。",
+     "t": 734
+    },
+    {
+     "text": "從 root 往某個 node traverse 會形成一條 path。",
+     "t": 742
+    },
+    {
+     "text": "這條 path 上經過的 node 都是該 node 的 ancestors。",
+     "t": 756
+    }
+   ],
+   "trap": "補充：sibling 的條件是「同一個 parent」，只是同 level 但 parent 不同（如 E 與 G）不是 sibling，而是 cousin。"
+  },
+  {
+   "title": "Tree 的 list 表示法",
+   "scene": "p12-list",
+   "points": [
+    {
+     "text": "Tree 的表示法有很多種，不只「每個 node 開 k 個 child 欄位」一種。",
+     "t": 781
+    },
+    {
+     "text": "可以用 linked list 表示 tree，括號代表從屬關係。",
+     "t": 801
+    },
+    {
+     "text": "K、L 括在一起，因為它們的共同 parent 是 E。",
+     "t": 818
+    },
+    {
+     "text": "E、F 括在一起，因為它們的 parent 是 B，依此類推。",
+     "t": 841
+    },
+    {
+     "text": "A 有三個分支，每個分支出去都是一條 linked list。",
+     "t": 880
+    },
+    {
+     "text": "Tree 是較高層次的 data structure，看你怎麼 implement 它。",
+     "t": 916
+    }
+   ]
+  },
+  {
+   "title": "k-ary tree 固定 k 個 pointer 的空間浪費",
+   "scene": "p12-kary",
+   "points": [
+    {
+     "text": "k-ary tree：每個 node 最多可以指到 k 個 node，即 degree 為 k。",
+     "t": 934
+    },
+    {
+     "text": "每個 node 都要有 data 欄位加上 k 個 pointer 欄位。",
+     "t": 964
+    },
+    {
+     "text": "n 個 node 總共有 n·k 個 pointer。",
+     "t": 987
+    },
+    {
+     "text": "除了 root 沒人指到它，其他 node 都恰好被一個 pointer 指到，所以只用了 n−1 個。",
+     "t": 997
+    },
+    {
+     "text": "浪費的 pointer 數是 nk − (n−1)。",
+     "t": 1027
+    },
+    {
+     "text": "k 越大浪費越多；但 B-tree、B+ tree 也是 k-ary tree，實務上要看資料型態。",
+     "t": 1055
+    }
+   ],
+   "trap": "補充：null link 數 = nk − (n−1) = n(k−1)+1；k=2（binary tree）時為 n+1。 舞台以課本樹 n=12、k=3 示意：36 個 pointer、用 11、null 25。"
+  },
+  {
+   "title": "Left Child–Right Sibling 表示法",
+   "scene": "p12-lcrs",
+   "params": {
+    "focus": "lcrs"
+   },
+   "points": [
+    {
+     "text": "LCRS：每個 node 只有兩個 pointer。",
+     "t": 1091
+    },
+    {
+     "text": "一個 pointer 指向最左邊的 child。",
+     "t": 1102
+    },
+    {
+     "text": "另一個 pointer 指向它的 sibling（右邊的兄弟）。",
+     "t": 1110
+    },
+    {
+     "text": "A 的 left child 指向 B；A 是 root，沒有 sibling。",
+     "t": 1132
+    },
+    {
+     "text": "B 的 left child 指向 E，right sibling 把 C、D 串起來。",
+     "t": 1167
+    },
+    {
+     "text": "C 只有一個 child，所以 left child 指向 G。",
+     "t": 1177
+    },
+    {
+     "text": "實作上只有 data、left child、right sibling 三個欄位，避免浪費 pointer 空間。",
+     "t": 1207
+    }
+   ]
+  },
+  {
+   "title": "Degree-two tree 與 binary tree；表示法小結",
+   "scene": "p12-lcrs",
+   "params": {
+    "focus": "bin"
+   },
+   "points": [
+    {
+     "text": "只用兩個 pointer 的 LCRS，就衍生出 degree 為 2 的 tree 表示法。",
+     "t": 1245
+    },
+    {
+     "text": "指出去最多兩個的 tree 就是 binary tree。",
+     "t": 1255
+    },
+    {
+     "text": "總結：tree 可以用 linked list、LCRS，或最直覺的 k 個 child 欄位表示。",
+     "t": 1277
+    },
+    {
+     "text": "k-ary tree 中 k = 2 就是 binary tree。",
+     "t": 1304
+    }
+   ],
+   "trap": "補充：老師沒有講轉換細節。課本做法是把 LCRS 的 right sibling 改當 right child（圖順時針轉 45°），所以任何 tree 都能轉成 binary tree，且 root 的 right child 一定是空的。"
+  },
+  {
+   "title": "Binary tree 定義：與一般 tree 的比較",
+   "scene": "p12-bt-def",
+   "points": [
+    {
+     "text": "回去自己查 binary tree 與 binary search tree 的差別，後面會講 BST。",
+     "t": 1324
+    },
+    {
+     "text": "Binary tree 是 a finite set of nodes。",
+     "t": 1352
+    },
+    {
+     "text": "既然是 set 就可以是 empty，empty binary tree 是合法的。",
+     "t": 1373
+    },
+    {
+     "text": "非空時有一個 root，再分出 left subtree 與 right subtree。",
+     "t": 1407
+    },
+    {
+     "text": "一般 tree 的定義不允許 0 個 node。",
+     "t": 1421
+    },
+    {
+     "text": "Binary tree 的左子樹、右子樹有差別，一般 tree 不管順序。",
+     "t": 1459
+    },
+    {
+     "text": "比較表：binary tree degree ≤ 2，tree 沒有限制。",
+     "t": 1469
+    }
+   ],
+   "trap": "補充：left / right subtree 本身也都是 binary tree（可為空），所以「A 只有左 child B」與「A 只有右 child B」是兩棵不同的 binary tree，但作為一般 tree 是同一棵。"
+  },
+  {
+   "title": "Binary tree 範例：左右有別、skewed、complete",
+   "scene": "p12-bt-examples",
+   "points": [
+    {
+     "text": "AB、ABC 都是 tree；中間是用 LCRS implement 後的樣子。",
+     "t": 1522
+    },
+    {
+     "text": "程式裡的實作長相和實際的 tree 長相不同，要區分清楚。",
+     "t": 1542
+    },
+    {
+     "text": "A 的 left child 是 B 與 A 的 right child 是 B，是兩棵不同的 binary tree。",
+     "t": 1585
+    },
+    {
+     "text": "全部歪向同一邊的叫 skewed binary tree，就像 linked list。",
+     "t": 1608
+    },
+    {
+     "text": "最右邊排得很整齊的叫 complete binary tree。",
+     "t": 1624
+    }
+   ],
+   "trap": "老師說 complete 是「排得很好、很 balance」，這不夠精確。補充：complete 的要求是 node 依層序編號剛好佔滿 1..n，不是單純平衡。"
+  },
+  {
+   "title": "Lemma 5.2：每層與整棵樹的最大 node 數",
+   "scene": "p12-max-nodes",
+   "params": {
+    "focus": "lemma"
+   },
+   "points": [
+    {
+     "text": "Binary tree 第 i 層最多有幾個 node？",
+     "t": 1644
+    },
+    {
+     "text": "第 1 層只有 root 一個，即 2^(1−1) = 1。",
+     "t": 1668
+    },
+    {
+     "text": "第 2 層最多 2 個、第 3 層最多 4 個，所以第 i 層最多 2^(i−1) 個。",
+     "t": 1683
+    },
+    {
+     "text": "深度為 k 的 binary tree 最多有幾個 node？",
+     "t": 1701
+    },
+    {
+     "text": "答案是 2^k − 1。",
+     "t": 1716
+    },
+    {
+     "text": "就是把每層最大值 Σ_{i=1..k} 2^(i−1) 加起來。",
+     "t": 1729
+    }
+   ],
+   "trap": "轉錄稿在 29:19–31:48 中斷約 2.5 分鐘，該段內容不明。此公式以 root 在 level 1 為準；若 root 為 level 0，則第 i 層最多 2^i、高度 h 最多 2^(h+1)−1。"
+  },
+  {
+   "title": "Lemma 5.3：n0 = n2 + 1 的敘述",
+   "scene": "p12-n0n2",
+   "params": {
+    "focus": "stmt"
+   },
+   "points": [
+    {
+     "text": "對任一非空 binary tree T：n0 = degree 0（leaf）的 node 數。",
+     "t": 1934
+    },
+    {
+     "text": "n2 = degree 2 的 node 數，n1 = degree 1 的 node 數。",
+     "t": 1942
+    },
+    {
+     "text": "性質：n0 = n2 + 1。",
+     "t": 1961
+    },
+    {
+     "text": "Degree 0 的 node 在最下面，因為它沒有再指出去。",
+     "t": 1985
+    },
+    {
+     "text": "證明只用符號代換，不需要微積分；n 是總 node 數。",
+     "t": 2023
+    },
+    {
+     "text": "B 是 branch，也就是 pointer 的個數。",
+     "t": 2031
+    }
+   ],
+   "trap": "老師沒有畫具體例子，舞台用 A(B(D,E),C(,F)) 示意（補充）：n0=3、n1=1、n2=2。"
+  },
+  {
+   "title": "證明 n0 = n2 + 1",
+   "scene": "p12-n0n2",
+   "params": {
+    "focus": "proof"
+   },
+   "points": [
+    {
+     "text": "總 node 數 n = n0 + n1 + n2。",
+     "t": 2067
+    },
+    {
+     "text": "除了 root 沒人指到，其他 node 都被一個 pointer 指到，所以 B = n − 1，即 B + 1 = n。",
+     "t": 2107
+    },
+    {
+     "text": "從指出去的角度算：degree 1 的貢獻 1·n1，degree 2 的貢獻 2·n2。",
+     "t": 2174
+    },
+    {
+     "text": "所以 B = n1 + 2n2。",
+     "t": 2189
+    },
+    {
+     "text": "代入得 n1 + 2n2 + 1 = n。",
+     "t": 2242
+    },
+    {
+     "text": "再用 n = n0 + n1 + n2 代換、兩邊消去，就得到 n0 = n2 + 1。",
+     "t": 2268
+    }
+   ],
+   "trap": "老師在 38:11 口誤說 n = n0 + n1 + 2n2，正確是 n = n0 + n1 + n2。"
+  },
+  {
+   "title": "閒談：數學在資工的用處",
+   "scene": null,
+   "points": [
+    {
+     "text": "CS 不只 0 和 1，往後也會用到微積分與線性代數。",
+     "t": 2353
+    },
+    {
+     "text": "例如 data mining 常用 SVD（Singular Value Decomposition）。",
+     "t": 2363
+    },
+    {
+     "text": "不要排斥數學，很多問題都能用數學 model。",
+     "t": 2441
+    }
+   ]
+  },
+  {
+   "title": "Full binary tree",
+   "scene": "p12-max-nodes",
+   "params": {
+    "focus": "full"
+   },
+   "points": [
+    {
+     "text": "Full 和 complete 是不一樣的。",
+     "t": 2485
+    },
+    {
+     "text": "深度為 k 的 full binary tree 擁有 2^k − 1 個 node。",
+     "t": 2495
+    },
+    {
+     "text": "也就是在深度允許範圍內擁有最多 node，來自 Lemma 5.2。",
+     "t": 2526
+    },
+    {
+     "text": "例子：高度 4，有 2^4 − 1 = 15 個 node 全滿。",
+     "t": 2572
+    }
+   ],
+   "trap": "本講（洪逸／Horowitz）的 full 指「深度 k 且有 2^k−1 個 node」；有些英文教材把 full 定義為「每個 node 有 0 或 2 個 child」，兩者不同。"
+  },
+  {
+   "title": "Complete binary tree 與層序編號",
+   "scene": "p12-complete",
+   "points": [
+    {
+     "text": "這棵沒有全滿，後面一串位置是空的。",
+     "t": 2590
+    },
+    {
+     "text": "除了最後空出來的部分，其他位置跟 full tree 一樣，這叫 complete binary tree。",
+     "t": 2605
+    },
+    {
+     "text": "Full 是每個位置都被佔滿；complete 則後面還剩一些空位。",
+     "t": 2616
+    },
+    {
+     "text": "通常會給 node 編號：一層一層、從上到下、從左到右。",
+     "t": 2636
+    },
+    {
+     "text": "編號是為了等一下用 array 表示時能直接算出位置。",
+     "t": 2642
+    },
+    {
+     "text": "思考題：若把 H、I 移到 G 底下，它還是 complete 嗎？（考試可能考）",
+     "t": 2700
+    }
+   ],
+   "trap": "老師沒公布答案。補充：不是 complete。complete 要求 n 個 node 剛好對應 full tree 的編號 1..n；H、I 移到 G 下面後佔 14、15，8–13 是空的。"
+  },
+  {
+   "title": "Array 表示法：complete tree 與 2i、2i+1、⌊i/2⌋",
+   "scene": "p12-array",
+   "params": {
+    "focus": "complete"
+   },
+   "points": [
+    {
+     "text": "Array 也能表示 binary tree，因為每個 node 有固定該放的位置。",
+     "t": 2751
+    },
+    {
+     "text": "以 complete tree 為例，A 放在 array 的位置 1。",
+     "t": 2797
+    },
+    {
+     "text": "依從上到下、從左到右的編號，直接 map 到 array 的 index。",
+     "t": 2818
+    },
+    {
+     "text": "位置 i 的 left child 在 2i。",
+     "t": 2890
+    },
+    {
+     "text": "位置 i 的 right child 在 2i + 1。",
+     "t": 2896
+    },
+    {
+     "text": "例：B 在 2，left child D 在 4，right child E 在 5。",
+     "t": 2914
+    },
+    {
+     "text": "位置 i 的 parent 在 ⌊i/2⌋，例如 5/2 = 2.5 取 floor 得 2。",
+     "t": 2982
+    },
+    {
+     "text": "i = 1 是 root，沒有 parent。",
+     "t": 3032
+    }
+   ],
+   "trap": "老師在 50:17 口誤唸成「2i−1」，正確是 left child 2i、right child 2i+1（1-based）。若 array 從 0 開始，則 left = 2i+1、right = 2i+2、parent = ⌊(i−1)/2⌋。"
+  },
+  {
+   "title": "Array 表示 skewed tree 的空間浪費",
+   "scene": "p12-array",
+   "params": {
+    "focus": "skew"
+   },
+   "points": [
+    {
+     "text": "Skewed tree A、B、C、D、E 用 array 表示：A 仍在位置 1，B 在 2。",
+     "t": 3078
+    },
+    {
+     "text": "C 是 B 的 left child，放在 2×2 = 4。",
+     "t": 3090
+    },
+    {
+     "text": "D 是 C 的 left child，放在 2×4 = 8。",
+     "t": 3100
+    },
+    {
+     "text": "E 放在 2×8 = 16。",
+     "t": 3106
+    },
+    {
+     "text": "Skewed tree 用 array 會有很多空間空著沒用到。",
+     "t": 3120
+    },
+    {
+     "text": "優點：找 parent 和 child 只要做算術，一步就到。",
+     "t": 3135
+    },
+    {
+     "text": "缺點：tree 不夠 complete 時，很多空間被浪費。",
+     "t": 3150
+    }
+   ],
+   "trap": "補充：深度 k 的 skewed tree 需要 2^k − 1 格 array，卻只用 k 格；本例需 31 格只用 5 格。"
+  },
+  {
+   "title": "Linked 表示：找 child 容易、找 parent 困難",
+   "scene": "p12-linked-parent",
+   "points": [
+    {
+     "text": "Binary tree 可以用 array，也可以用 left child / right child 的 node 宣告表示，優缺點要知道。",
+     "t": 3208
+    },
+    {
+     "text": "問 D 的 parent：要先從 root 往下找到 D。",
+     "t": 3237
+    },
+    {
+     "text": "可以用兩個 pointer，一個往下走，另一個跟在上一層，就能得到 parent。",
+     "t": 3252
+    },
+    {
+     "text": "問 child 很簡單：找到 node 後直接看左、右 pointer。",
+     "t": 3285
+    },
+    {
+     "text": "在 linked binary tree 中，找 parent 比找 child 難。",
+     "t": 3292
+    },
+    {
+     "text": "Skewed binary tree 用 linked 表示就像 linked list。",
+     "t": 3317
+    }
+   ],
+   "trap": "補充：若常需要找 parent，可在 node 多加一個 parent pointer（代價是多一個欄位）。"
+  },
+  {
+   "title": "閒聊：計概作業 Huffman code",
+   "scene": null,
+   "points": [
+    {
+     "text": "同學計概寫過 tree，作業是 Huffman code（ASR 誤成 HomePayCode）。",
+     "t": 3358
+    },
+    {
+     "text": "本課仍會出 Huffman code 作業，可能要求讀檔做壓縮。",
+     "t": 3381
+    }
+   ]
+  },
+  {
+   "title": "TreeNode 類別與 array vs linked 比較",
+   "scene": "p12-class-table",
+   "points": [
+    {
+     "text": "Linked 表示法：node 宣告成 TreeNode，有 leftChild、rightChild、data 三個欄位。",
+     "t": 3409
+    },
+    {
+     "text": "Tree 類別只有一個 pointer 叫 root，指向 TreeNode，從 root 開始 traverse。",
+     "t": 3420
+    },
+    {
+     "text": "比較表：決定 parent 用 array 簡單，用 link 不簡單。",
+     "t": 3449
+    },
+    {
+     "text": "Space overhead：array 要宣告整個 array，可能花較多空間；link 用多少 create 多少。",
+     "t": 3477
+    },
+    {
+     "text": "Array 的 insert/delete 困難，因為牽涉資料移動。",
+     "t": 3502
+    },
+    {
+     "text": "Link 的 insert/delete 只要 pointer assignment 就完成。",
+     "t": 3538
+    },
+    {
+     "text": "沒有絕對的好壞：建好後不再 insert/delete 用 array；頻繁 insert/delete 不該用 array。",
+     "t": 3583
+    }
+   ],
+   "trap": "補充：舞台的「在 C 的位置插入 X、後面整串往後搬」是示意。"
+  },
+  {
+   "title": "為什麼需要 tree traversal",
+   "scene": "p12-trav",
+   "params": {
+    "focus": "why"
+   },
+   "points": [
+    {
+     "text": "Binary tree traversal 就是拜訪 tree 的每個 node，順便印出來。",
+     "t": 3627
+    },
+    {
+     "text": "問題：給兩棵 binary tree T1、T2，怎麼判斷一不一樣？",
+     "t": 3660
+    },
+    {
+     "text": "人眼一看就知道，但要讓電腦也能判斷。",
+     "t": 3680
+    },
+    {
+     "text": "方法一：用兩個 pointer 從第一個 node 開始逐一往下檢查。",
+     "t": 3690
+    },
+    {
+     "text": "方法二：透過 traversal 把 tree 變成 string，再比對 string。",
+     "t": 3702
+    },
+    {
+     "text": "Traversal 的目的不是為了考試，而是快速掌握 tree 的 structure。",
+     "t": 3732
+    }
+   ],
+   "trap": "補充：只比較單一 traversal 字串不足以判斷兩棵 tree 相同（不同形狀可有相同 inorder），需要加上 null 標記，或 inorder 搭配 preorder/postorder。 舞台的 T1=A(B(D),C)、T2=A(B(,D),C) 是示意：preorder 相同但 inorder 不同。"
+  },
+  {
+   "title": "L、V、R 三種動作與三種 traversal",
+   "scene": "p12-lvr",
+   "points": [
+    {
+     "text": "Node 只有 data、left、right 三個欄位，對應三個 operation。",
+     "t": 3767
+    },
+    {
+     "text": "L：看到 node 先不印，先往左邊走。",
+     "t": 3769
+    },
+    {
+     "text": "V：看到 node 就把資料印出來。",
+     "t": 3787
+    },
+    {
+     "text": "R：不往左也不印，先往右邊走。",
+     "t": 3797
+    },
+    {
+     "text": "三個動作有六種組合，但可以歸成三種。",
+     "t": 3834
+    },
+    {
+     "text": "LVR 對應 inorder。",
+     "t": 3919
+    },
+    {
+     "text": "LRV 對應 postorder；VLR 對應 preorder。",
+     "t": 3927
+    }
+   ],
+   "trap": "老師在 63:01 把 L 說成「先往右邊走」後馬上更正；L 是往左走。補充：保留的三種都是「先左後右」，V 的位置決定 pre/in/post。"
+  },
+  {
+   "title": "運算式樹：四種 traversal 的輸出",
+   "scene": "p12-expr4",
+   "points": [
+    {
+     "text": "以 A/B*C*D+E 為例，之前在 stack 章節做過 infix 轉換與 evaluate。",
+     "t": 3947
+    },
+    {
+     "text": "這個 expression 可以用 tree 表示，leaf 底下藍色的是 null 指標。",
+     "t": 3996
+    },
+    {
+     "text": "Inorder（LVR）得到 infix：A/B*C*D+E。",
+     "t": 4013
+    },
+    {
+     "text": "Preorder 得到 prefix：+**/ABCDE。",
+     "t": 4022
+    },
+    {
+     "text": "Postorder（LRV）得到 postfix：AB/C*D*E+。",
+     "t": 4029
+    },
+    {
+     "text": "Level order 由上到下逐層輸出：+*E*D/CAB。",
+     "t": 4044
+    }
+   ]
+  },
+  {
+   "title": "遞迴 inorder 程式",
+   "scene": "p12-rec-code",
+   "params": {
+    "kind": "in"
+   },
+   "points": [
+    {
+     "text": "寫一個 procedure 叫 Inorder，傳進 tree 的 root（Tree class 的 private member）。",
+     "t": 4091
+    },
+    {
+     "text": "Inorder 呼叫自己，是 recursive function。",
+     "t": 4136
+    },
+    {
+     "text": "Recursive function 一定要會停止，不能無限迴圈。",
+     "t": 4156
+    },
+    {
+     "text": "若 currentNode 不是 null，代表確實是個 tree node，才往下做。",
+     "t": 4179
+    },
+    {
+     "text": "三行程式分別是 L、V、R。",
+     "t": 4202
+    },
+    {
+     "text": "左邊有 child 就一直往左走，直到指到 null。",
+     "t": 4247
+    },
+    {
+     "text": "從 null 返回後印出資料（V），再往右走（R）。",
+     "t": 4269
+    }
+   ]
+  },
+  {
+   "title": "追蹤 inorder 的遞迴呼叫",
+   "scene": "inorder",
+   "params": {
+    "tree": "expr"
+   },
+   "points": [
+    {
+     "text": "第一個呼叫 Inorder 的是 root「+」。",
+     "t": 4399
+    },
+    {
+     "text": "+ 的 left child 是 *，不是空的，所以呼叫第二次。",
+     "t": 4422
+    },
+    {
+     "text": "第三次呼叫在下層的 *，接著 left child 是 /，再呼叫。",
+     "t": 4474
+    },
+    {
+     "text": "/ 的 left child 是 A，再呼叫。",
+     "t": 4482
+    },
+    {
+     "text": "A 的 left child 是 null，這是第六次呼叫，發現是空的就 return。",
+     "t": 4502
+    },
+    {
+     "text": "返回後 cout 印出 A。",
+     "t": 4515
+    },
+    {
+     "text": "A 的右邊也是 null，返回後回到 /。",
+     "t": 4530
+    },
+    {
+     "text": "Inorder 就是盡量往左走，走不下去就印出，再檢查右邊，遞迴進行。",
+     "t": 4575
+    }
+   ]
+  },
+  {
+   "title": "Preorder 程式（VLR）",
+   "scene": "p12-rec-code",
+   "params": {
+    "kind": "pre"
+   },
+   "points": [
+    {
+     "text": "會寫 inorder，preorder 只要 copy 程式再改一下。",
+     "t": 4618
+    },
+    {
+     "text": "Procedure 改名為 Preorder，關鍵在那三行的順序。",
+     "t": 4627
+    },
+    {
+     "text": "Preorder 先拜訪（印出值），再往左、再往右，即 VLR。",
+     "t": 4641
+    }
+   ]
+  },
+  {
+   "title": "Postorder 程式（LRV）",
+   "scene": "p12-rec-code",
+   "params": {
+    "kind": "post"
+   },
+   "points": [
+    {
+     "text": "Postorder 一樣 copy 後改名。",
+     "t": 4666
+    },
+    {
+     "text": "Post 就是最後才印出來。",
+     "t": 4680
+    },
+    {
+     "text": "三行指令依序是 L、R、V。",
+     "t": 4688
+    },
+    {
+     "text": "三種 traversal 都用 recursive function 實作，程式很簡單。",
+     "t": 4711
+    }
+   ]
+  },
+  {
+   "title": "非遞迴 inorder：用 stack",
+   "scene": "p12-iter-inorder",
+   "points": [
+    {
+     "text": "不用遞迴的話，可以用 stack 實作 traversal。",
+     "t": 4730
+    },
+    {
+     "text": "Stack 的特性是 last in first out。",
+     "t": 4746
+    },
+    {
+     "text": "一開始 currentNode = root。",
+     "t": 4784
+    },
+    {
+     "text": "currentNode 不是空的就 push 進 stack，然後往 leftChild 走，直到走不下去。",
+     "t": 4804
+    },
+    {
+     "text": "內層 while 跳出後，檢查 stack 是否為空（空就結束）。",
+     "t": 4847
+    },
+    {
+     "text": "不空就 pop 出最後放進去的 node，印出它的值。",
+     "t": 4858
+    },
+    {
+     "text": "接著 currentNode 改成它的 rightChild，再回到外層迴圈。",
+     "t": 4876
+    },
+    {
+     "text": "作業思考：preorder、postorder 不用遞迴要怎麼寫？",
+     "t": 4939
+    }
+   ],
+   "trap": "補充：非遞迴 preorder 只要把「印出」移到 push 時；非遞迴 postorder 較麻煩，需記錄右子樹是否已拜訪過（或用兩個 stack）。"
+  },
+  {
+   "title": "Level order：用 queue",
+   "scene": "level-order",
+   "params": {
+    "tree": "expr"
+   },
+   "points": [
+    {
+     "text": "Preorder／postorder 非遞迴用 stack；level order 則用 queue 實作。",
+     "t": 4993
+    },
+    {
+     "text": "Level order 就是從上到下輸出。",
+     "t": 4999
+    },
+    {
+     "text": "以這個例子，一開始看到 + 就印出。",
+     "t": 5014
+    },
+    {
+     "text": "+ 下面兩個 child：* 與 E，放進 queue。",
+     "t": 5021
+    },
+    {
+     "text": "Queue 是 first in first out。",
+     "t": 5026
+    },
+    {
+     "text": "* 最先被取出，再把它下面的 * 與 D 丟進 queue。",
+     "t": 5038
+    },
+    {
+     "text": "直到 queue 是空的就結束。",
+     "t": 5094
+    }
+   ],
+   "trap": "補充：level order 從 level 1（root）往下，老師說的「level 最高的開始」意思是最上層，不是 level 數字最大的。"
+  },
+  {
+   "title": "Traversal 的應用：判斷相同與複製（下次續講）",
+   "scene": "p12-trav",
+   "params": {
+    "focus": "apps"
+   },
+   "points": [
+    {
+     "text": "有了 inorder、preorder、postorder，可以比較兩棵 tree 是否一模一樣。",
+     "t": 5131
+    },
+    {
+     "text": "也可以做 copy：給一棵 T1，透過 traversal 複製出 T2。",
+     "t": 5137
+    },
+    {
+     "text": "這部分下次再講。",
+     "t": 5158
+    }
+   ],
+   "trap": "補充：老師本講只提概念；舞台用 A(B(D,E),C(,F)) 示意 preorder 複製與同步比較。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "在課本範例樹 A(B(E(K,L),F),C(G),D(H,I,J)) 中，node C 的 degree 是多少？",
+   "opts": [
+    "0",
+    "1",
+    "2",
+    "3"
+   ],
+   "ans": "1",
+   "why": "Tree 中 node 的 degree 只算指出去的 child 數；C 只有 child G，連到 parent A 的邊不算。"
+  },
+  {
+   "q": "一棵有 n 個 node 的 k-ary tree，若每個 node 固定開 k 個 child pointer，會有多少個 null pointer？",
+   "opts": [
+    "n − 1",
+    "nk − n",
+    "n(k−1) + 1",
+    "nk"
+   ],
+   "ans": "n(k−1) + 1",
+   "why": "總共 nk 個 pointer，除 root 外每個 node 被一個 pointer 指到，用掉 n−1 個，剩 nk−(n−1) = n(k−1)+1。"
+  },
+  {
+   "q": "下列關於 binary tree 與一般 tree 的敘述，何者正確？",
+   "opts": [
+    "一般 tree 可以是空的，binary tree 不行",
+    "Binary tree 可以是空的，且左右子樹有區分",
+    "兩者都不區分左右子樹",
+    "一般 tree 的 degree 限制為 2"
+   ],
+   "ans": "Binary tree 可以是空的，且左右子樹有區分",
+   "why": "Binary tree 定義為 finite set of nodes，可為 empty，且 left/right subtree 有順序；一般 tree 至少要有 root，不分順序，degree 無限制。"
+  },
+  {
+   "q": "一棵非空 binary tree 有 7 個 degree 2 的 node，它有幾個 leaf？",
+   "opts": [
+    "6",
+    "7",
+    "8",
+    "14"
+   ],
+   "ans": "8",
+   "why": "由 n0 = n2 + 1，leaf 數 = 7 + 1 = 8，與 n1 無關。"
+  },
+  {
+   "q": "1-based array 表示 binary tree 時，位於 index 11 的 node，其 parent 與 right child 的 index 分別是？",
+   "opts": [
+    "5 與 22",
+    "5 與 23",
+    "6 與 23",
+    "5.5 與 22"
+   ],
+   "ans": "5 與 23",
+   "why": "parent = ⌊11/2⌋ = 5；right child = 2·11 + 1 = 23（left child 是 22）。"
+  },
+  {
+   "q": "把 complete binary tree A(B(D(H,I),E),C(F,G)) 的 H、I 移到 G 底下，結果是？",
+   "opts": [
+    "仍是 complete binary tree",
+    "變成 full binary tree",
+    "不是 complete binary tree",
+    "變成 skewed binary tree"
+   ],
+   "ans": "不是 complete binary tree",
+   "why": "H、I 會佔編號 14、15，而 8–13 為空，不符合「node 剛好佔滿編號 1..n」的 complete 定義。"
+  },
+  {
+   "q": "Expression tree +(*(*(/(A,B),C),D),E) 的 postorder 輸出是？",
+   "opts": [
+    "+**/ABCDE",
+    "AB/C*D*E+",
+    "A/B*C*D+E",
+    "+*E*D/CAB"
+   ],
+   "ans": "AB/C*D*E+",
+   "why": "Postorder 為 LRV，得到 postfix；+**/ABCDE 是 preorder，A/B*C*D+E 是 inorder，+*E*D/CAB 是 level order。"
+  },
+  {
+   "q": "非遞迴 traversal 中，inorder 與 level order 通常分別借助哪種資料結構？",
+   "opts": [
+    "queue、stack",
+    "stack、queue",
+    "stack、stack",
+    "queue、queue"
+   ],
+   "ans": "stack、queue",
+   "why": "Inorder 需要回到最近走過的祖先（LIFO），用 stack；level order 逐層由左到右（FIFO），用 queue。"
+  }
+ ]
+}

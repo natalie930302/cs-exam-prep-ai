@@ -1,0 +1,576 @@
+{
+ "video": "x72xBomc-XE",
+ "label": "交大彭文志 Lec04 Arrays (2/4)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "複習：Array 與多項式表示法 1",
+   "scene": "arrpeng12-poly-rep1",
+   "params": {
+    "poly": "sparse"
+   },
+   "points": [
+    {
+     "text": "Array 是 a set of pairs：<index, value>。",
+     "t": 0
+    },
+    {
+     "text": "可以是一維，也可以是二維 array。",
+     "t": 39
+    },
+    {
+     "text": "上次用 array 表示多項式。",
+     "t": 63
+    },
+    {
+     "text": "表示法 1：每個多項式一個 coef array，名字取 coef 是有道理的。",
+     "t": 90
+    },
+    {
+     "text": "array 存係數，index 就是指數。",
+     "t": 106
+    },
+    {
+     "text": "sparse 的 2x¹⁰⁰⁰ + 1：大 array 只有 x¹⁰⁰⁰ 存 2、index 0 存 1，其他都空著，很浪費。",
+     "t": 130
+    },
+    {
+     "text": "表示法 2 課堂不講，請回去看書，期中可能會考。",
+     "t": 167
+    }
+   ]
+  },
+  {
+   "title": "複習：表示法 3 的 global array",
+   "scene": "arrpeng12-term-array",
+   "points": [
+    {
+     "text": "表示法 3：所有多項式都放在一個 global array（很重要）。",
+     "t": 183
+    },
+    {
+     "text": "最下面 0…6 是 array 的 index。",
+     "t": 207
+    },
+    {
+     "text": "A.start 到 A.finish 存 A；B.start 到 B.finish 存 B。",
+     "t": 229
+    },
+    {
+     "text": "index 用來記錄每個多項式的 start 和 end。",
+     "t": 259
+    },
+    {
+     "text": "A.start 那格存兩個資訊：係數 2、指數 1000 → 2x¹⁰⁰⁰。",
+     "t": 277
+    },
+    {
+     "text": "A.finish 那格：係數 1、指數 0。",
+     "t": 301
+    }
+   ]
+  },
+  {
+   "title": "複習：class Term 與 static termArray",
+   "scene": "arrpeng12-poly-class",
+   "points": [
+    {
+     "text": "實作時，class 宣告要特別注意。",
+     "t": 323
+    },
+    {
+     "text": "表上的每一格用一個 class Term 表示。",
+     "t": 343
+    },
+    {
+     "text": "Term 的 friend class 是 Polynomial。",
+     "t": 361
+    },
+    {
+     "text": "Term 有兩個重要 data：coef 和 exp。",
+     "t": 378
+    },
+    {
+     "text": "每個 Polynomial 用 start、finish 記錄自己在 global array 的位置。",
+     "t": 402
+    },
+    {
+     "text": "static Term termArray：不同多項式佔用同一個 termArray 的空間。",
+     "t": 448
+    },
+    {
+     "text": "static 有它的意義，不要拿掉。",
+     "t": 477
+    },
+    {
+     "text": "static int free：指到第一個沒用到的 index。",
+     "t": 484
+    }
+   ]
+  },
+  {
+   "title": "NewTerm：C(x) = x¹⁰⁰ + 1",
+   "scene": "arrpeng12-newterm",
+   "points": [
+    {
+     "text": "free 的用處：新多項式 C(x) = x¹⁰⁰ + 1 要放哪？",
+     "t": 521
+    },
+    {
+     "text": "從 free = 6 之後開始放：C.start = 6。",
+     "t": 532
+    },
+    {
+     "text": "兩項，所以 C.finish = 7。",
+     "t": 545
+    },
+    {
+     "text": "每一項都 new 一個 term。",
+     "t": 576
+    },
+    {
+     "text": "NewTerm 先檢查 free 有沒有超過 MaxTerms，超過就印錯誤訊息。",
+     "t": 591
+    },
+    {
+     "text": "否則 termArray[free].coef = c、exp = e：第一項 coef 1、exp 100。",
+     "t": 621
+    },
+    {
+     "text": "free++：把 free 往後移一格。",
+     "t": 655
+    },
+    {
+     "text": "第二項 coef 1、exp 0，C 就塞進 termArray 了。",
+     "t": 665
+    }
+   ]
+  },
+  {
+   "title": "Add 的 while 迴圈與剩餘項",
+   "scene": "arrpeng12-padd-global",
+   "points": [
+    {
+     "text": "多項式加法的概念跟上次一樣，不細講。",
+     "t": 713
+    },
+    {
+     "text": "從最大的項開始比指數大小。",
+     "t": 726
+    },
+    {
+     "text": "指數相同：係數相加。",
+     "t": 733
+    },
+    {
+     "text": "A 比較大：把 A 那項 copy 到新的多項式。",
+     "t": 737
+    },
+    {
+     "text": "做完一項，指標要 shift。",
+     "t": 755
+    },
+    {
+     "text": "while (a <= A.finish && b <= B.finish)：都還沒到 finish 才比。",
+     "t": 768
+    },
+    {
+     "text": "A 先到 finish、B 還沒：用 for 迴圈把 B 剩餘的項 copy 到新 array。",
+     "t": 820
+    }
+   ]
+  },
+  {
+   "title": "Trace 程式（題外話：AI）",
+   "scene": null,
+   "points": [
+    {
+     "text": "程式不難，但要花時間一行一行 trace。",
+     "t": 848
+    },
+    {
+     "text": "人一行一行 trace 是「工人智慧」；Siri 靠 machine learning 是人工智慧。",
+     "t": 896
+    },
+    {
+     "text": "自己把程式打進去、宣告、一行一行 debug。",
+     "t": 990
+    }
+   ]
+  },
+  {
+   "title": "加法的 complexity：O(n + m)",
+   "scene": "arrpeng12-poly-cost",
+   "points": [
+    {
+     "text": "A 多項式有 n 個 element。",
+     "t": 1016
+    },
+    {
+     "text": "B 有 m 個；整個程式要把 n 和 m 都 scan 過一次。",
+     "t": 1028
+    },
+    {
+     "text": "兩個 pointer，每一項都要比較。",
+     "t": 1040
+    },
+    {
+     "text": "complexity 是 O(n + m)。",
+     "t": 1060
+    },
+    {
+     "text": "n、m 是非 0（non-zero）的項數。",
+     "t": 1068
+    },
+    {
+     "text": "係數 0 的項根本不會出現在 termArray 裡。",
+     "t": 1082
+    },
+    {
+     "text": "概念跟表示法 1 的加法很像，但細節不同。",
+     "t": 1120
+    }
+   ]
+  },
+  {
+   "title": "free 超過 MaxTerms：回收空間",
+   "scene": "arrpeng12-reuse",
+   "points": [
+    {
+     "text": "問題：free 已超過 MaxTerms 時怎麼辦？",
+     "t": 1138
+    },
+    {
+     "text": "例如最多 100 個 term，global array 滿了。",
+     "t": 1151
+    },
+    {
+     "text": "最笨：送一個「滿了」的訊息，使用者會不滿。",
+     "t": 1178
+    },
+    {
+     "text": "較好：用過的多項式位置可以回收（A、B 加完就不用了）。",
+     "t": 1209
+    },
+    {
+     "text": "期中可能考：光靠一個 free 指標可以回收嗎？",
+     "t": 1287
+    },
+    {
+     "text": "回收寫在 destructor：把多項式用的空間還給 termArray。",
+     "t": 1333
+    },
+    {
+     "text": "有些格空、有些被佔用時，NewTerm 要怎麼改寫？",
+     "t": 1395
+    },
+    {
+     "text": "像 OS 的 memory management、磁碟重組：把有用的資料 shift 集中。",
+     "t": 1494
+    }
+   ],
+   "trap": "補充（老師沒公布答案）：一個 free 只能往後配；要回收中間的洞，可用 free list 記錄空洞，或像磁碟重組把仍在用的項往前搬（compaction）並更新各多項式的 start、finish。"
+  },
+  {
+   "title": "讀原文書（題外話）",
+   "scene": null,
+   "points": [
+    {
+     "text": "表示法 2 沒講，請自己看書。",
+     "t": 1566
+    },
+    {
+     "text": "書店老闆說學生很少買教科書，還常買中譯本。",
+     "t": 1698
+    },
+    {
+     "text": "讀原文書是訓練英文閱讀，研究所論文都要用英文寫。",
+     "t": 1801
+    },
+    {
+     "text": "看中譯本會鬧笑話：spanning tree 被說成「深層樹」。",
+     "t": 1972
+    }
+   ]
+  },
+  {
+   "title": "Sparse matrix",
+   "scene": "arrpeng12-sparse-2d",
+   "points": [
+    {
+     "text": "回到正題：第二個問題是 matrix（矩陣）。",
+     "t": 2025
+    },
+    {
+     "text": "矩陣運算有加、減、乘，也有轉換。",
+     "t": 2037
+    },
+    {
+     "text": "最直接：n × m 的矩陣用二維陣列存。",
+     "t": 2114
+    },
+    {
+     "text": "Sparse matrix：很多 element 是 0。",
+     "t": 2136
+    },
+    {
+     "text": "例 B 是 6 × 6，共 36 個 element。",
+     "t": 2150
+    },
+    {
+     "text": "大部分是 0，用二維陣列存很浪費空間。",
+     "t": 2160
+    },
+    {
+     "text": "能不能想出更省空間的方式存 sparse matrix？",
+     "t": 2187
+    }
+   ]
+  },
+  {
+   "title": "SparseMatrix ADT",
+   "scene": "arrpeng12-sparse-adt",
+   "points": [
+    {
+     "text": "class SparseMatrix 可以想成一個 ADT。",
+     "t": 2217
+    },
+    {
+     "text": "包含 row、column 和 value。",
+     "t": 2226
+    },
+    {
+     "text": "constructor 告訴它 row 和 column 數。",
+     "t": 2229
+    },
+    {
+     "text": "Transpose：row 變 column、column 變 row。",
+     "t": 2250
+    },
+    {
+     "text": "還有 Add、Multiply。",
+     "t": 2264
+    },
+    {
+     "text": "重點：sparse matrix 怎麼表示、怎麼做 transpose。",
+     "t": 2276
+    }
+   ]
+  },
+  {
+   "title": "用 <row, col, value> 存",
+   "scene": "arrpeng12-triples",
+   "points": [
+    {
+     "text": "不用二維陣列：只記非 0 element 的位置。",
+     "t": 2286
+    },
+    {
+     "text": "位置用 row 和 column：15 在 (0, 0)。",
+     "t": 2310
+    },
+    {
+     "text": "22 在第 0 row、第 3 column。",
+     "t": 2335
+    },
+    {
+     "text": "只記非 0 element 的位置和值：<row, col, value>。",
+     "t": 2363
+    },
+    {
+     "text": "這個例子共 8 個非 0 值。",
+     "t": 2387
+    },
+    {
+     "text": "依 row 排序；row 相同再依 column 由左到右。",
+     "t": 2405
+    },
+    {
+     "text": "存成 a[0]…a[7]：a[0] = (0, 0, 15)，a[1] = (0, 3, 22)。",
+     "t": 2452
+    },
+    {
+     "text": "row 0 放完（a[2] = (0, 5, −15)）才放 row 1。",
+     "t": 2480
+    }
+   ]
+  },
+  {
+   "title": "Transpose 的目標",
+   "scene": "arrpeng12-transpose-goal",
+   "points": [
+    {
+     "text": "只用一個一維 array，每格存 row、col、value。",
+     "t": 2535
+    },
+    {
+     "text": "例：(0, 3, 22)。",
+     "t": 2569
+    },
+    {
+     "text": "transpose 後是 (3, 0, 22)：第 3 row、第 0 column。",
+     "t": 2584
+    },
+    {
+     "text": "A 轉成 B 之後，B 仍要符合同一個規則。",
+     "t": 2601
+    },
+    {
+     "text": "先依 row 排，同 row 再依 column 排。",
+     "t": 2622
+    }
+   ]
+  },
+  {
+   "title": "class MatrixTerm 與 smArray",
+   "scene": "arrpeng12-triples",
+   "params": {
+    "cls": true
+   },
+   "points": [
+    {
+     "text": "先講最 naive 的方法，先看宣告。",
+     "t": 2651
+    },
+    {
+     "text": "class MatrixTerm：matrix 裡的一個 term，名字不是亂取的。",
+     "t": 2660
+    },
+    {
+     "text": "friend class 是 SparseMatrix。",
+     "t": 2670
+    },
+    {
+     "text": "MatrixTerm 有 row、col、value 三個 data。",
+     "t": 2680
+    },
+    {
+     "text": "SparseMatrix 裡有 MatrixTerm 組成的 smArray。",
+     "t": 2690
+    },
+    {
+     "text": "array 有上限：最多能容許多少 term。",
+     "t": 2702
+    }
+   ]
+  },
+  {
+   "title": "最笨的 transpose",
+   "scene": "arrpeng12-naive-transpose",
+   "points": [
+    {
+     "text": "最笨的方法：一行一行來，row、col 對調。",
+     "t": 2716
+    },
+    {
+     "text": "(0, 0, 15) → (0, 0, 15)；(0, 3, 22) → (3, 0, 22)；(0, 5, −15) → (5, 0, −15)。",
+     "t": 2734
+    },
+    {
+     "text": "第四個 (1, 1, 11) 放最後不符合排序規則。",
+     "t": 2779
+    },
+    {
+     "text": "(1, 1, 11) 應放在 (0, 0, 15) 之後、(3, 0, 22) 之前。",
+     "t": 2836
+    },
+    {
+     "text": "(1, 2, 3) → (2, 1, 3)，要移到 row 3 的前面。",
+     "t": 2855
+    },
+    {
+     "text": "電腦很笨：transpose 後位置要對。",
+     "t": 2884
+    },
+    {
+     "text": "每轉一個就要調整位置，調整非常頻繁。",
+     "t": 2904
+    },
+    {
+     "text": "有更聰明的調整方式，下次講。",
+     "t": 2932
+    }
+   ],
+   "trap": "補充：課本的 Transpose 改成「依 column 0、1、2… 掃描 A」直接產生排好的 B，時間 O(cols·terms)；FastTranspose 先數每個 column 的項數算起始位置，O(cols + terms)。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "用表示法 3 存 A(x) = 2x¹⁰⁰⁰ + 1，termArray 佔幾格？",
+   "opts": [
+    "2",
+    "1001",
+    "1000",
+    "4"
+   ],
+   "ans": "2",
+   "why": "只存非 0 項：(2, 1000) 與 (1, 0)。"
+  },
+  {
+   "q": "termArray 中 A 佔 0…1、B 佔 2…5，再加入 C(x) = x¹⁰⁰ + 1 後，C.finish 與 free 是？",
+   "opts": [
+    "C.finish = 7，free = 8",
+    "C.finish = 6，free = 7",
+    "C.finish = 8，free = 8",
+    "C.finish = 7，free = 7"
+   ],
+   "ans": "C.finish = 7，free = 8",
+   "why": "C 從 free = 6 開始放兩項（6、7），每次 NewTerm 後 free++。"
+  },
+  {
+   "q": "多項式加法 O(n + m) 中的 n、m 指的是？",
+   "opts": [
+    "兩個多項式的最高次數",
+    "兩個多項式的非 0 項數",
+    "termArray 的大小",
+    "MaxTerms"
+   ],
+   "ans": "兩個多項式的非 0 項數",
+   "why": "係數 0 的項不在 termArray 裡，兩個指標各掃一次非 0 項。"
+  },
+  {
+   "q": "free 已經 ≥ MaxTerms，但前面有已 destruct 的多項式空出的格子，問題出在哪？",
+   "opts": [
+    "termArray 不是 static",
+    "只靠一個 free 指標找不到中間的空洞",
+    "Term 少了 friend",
+    "exp 存錯位置"
+   ],
+   "ans": "只靠一個 free 指標找不到中間的空洞",
+   "why": "free 只往後走；要回收需 free list 或把在用的項往前搬（像磁碟重組）。"
+  },
+  {
+   "q": "Horowitz 的 6 × 6 例子用 <row, col, value> 存，排序規則是？",
+   "opts": [
+    "依 value 由小到大",
+    "依 column，再依 row",
+    "依 row，同 row 再依 column",
+    "照輸入順序"
+   ],
+   "ans": "依 row，同 row 再依 column",
+   "why": "row-major：a[0] = (0,0,15)、a[1] = (0,3,22)、a[2] = (0,5,−15)、a[3] = (1,1,11)…"
+  },
+  {
+   "q": "(0, 3, 22) transpose 後是？",
+   "opts": [
+    "(0, 3, 22)",
+    "(3, 0, 22)",
+    "(3, 0, −22)",
+    "(22, 3, 0)"
+   ],
+   "ans": "(3, 0, 22)",
+   "why": "row、column 對調，value 不變。"
+  },
+  {
+   "q": "照 A 的順序把 row/col 對調後直接接在 B 後面，第一個放錯位置的是哪個？",
+   "opts": [
+    "(3, 0, 22)",
+    "(5, 0, −15)",
+    "(1, 1, 11)",
+    "(2, 1, 3)"
+   ],
+   "ans": "(1, 1, 11)",
+   "why": "前面已有 (3,0,22)、(5,0,−15)，row 1 必須往上搬到 (0,0,15) 之後。"
+  }
+ ]
+}

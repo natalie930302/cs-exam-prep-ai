@@ -1,0 +1,1268 @@
+{
+ "video": "XkNIHYd9Ruc",
+ "label": "台大林軒田 DSA Tree",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "課前 Q&A：停修與讀書建議",
+   "scene": null,
+   "points": [
+    {
+     "text": "開場回答同學問題：作業二批改進度、停修單要提早印好放辦公室門口簽名。",
+     "t": 519
+    },
+    {
+     "text": "被當一科很正常：先弄清楚自己的選擇與狀況，再決定有限資源投在哪裡，並找同學一起讀以提高效率。",
+     "t": 722
+    },
+    {
+     "text": "在紙上寫程式是重要訓練：先建大綱再填細節，能暴露邏輯漏洞。",
+     "t": 900
+    }
+   ]
+  },
+  {
+   "title": "教學意見調查回覆",
+   "scene": null,
+   "points": [
+    {
+     "text": "兩班老師各有節奏與內容深淺；想多聽的主題可以提出，老師會盡量加入。",
+     "t": 1331
+    },
+    {
+     "text": "本課不設期中考，把時間用來多教內容。",
+     "t": 1543
+    }
+   ]
+  },
+  {
+   "title": "Tree：有階層關係的資料結構",
+   "scene": "lina-hierarchy",
+   "points": [
+    {
+     "text": "今天的新資料結構是 tree，之後會衍生出許多更複雜的資料結構。",
+     "t": 1598
+    },
+    {
+     "text": "相較於 vector 或 linked list，tree 要表達的是 hierarchical（階層）關係。",
+     "t": 1649
+    },
+    {
+     "text": "Vector/list 是「平平的」：資料攤平或排成一列，沒有上下關係。",
+     "t": 1682
+    }
+   ],
+   "trap": "補充：畫面用台大組織的 7 筆資料示意「攤平成一列」與「階層」的差別；老師此段只口頭比較 vector／list 與 tree。"
+  },
+  {
+   "title": "例子：台大組織架構與檔案目錄",
+   "scene": "lina-ntu-org",
+   "points": [
+    {
+     "text": "以台大組織架構為例：學校之下有各學院，學院之下有各系，資料之間有上下關聯。",
+     "t": 1761
+    },
+    {
+     "text": "把台大、各學院、各系都視為一筆資料，它們彼此有從上到下的階層關係。",
+     "t": 1812
+    },
+    {
+     "text": "從學校 → 學院 → 系所，一層一層往下，就是階層。",
+     "t": 1937
+    },
+    {
+     "text": "把這些資料放在一起並妥善表示其關係，這種 data structure 就叫 tree。",
+     "t": 1958
+    },
+    {
+     "text": "Tree 著重的是階層／從屬關係，不是任意關係都能表示。",
+     "t": 1972
+    },
+    {
+     "text": "電腦裡的檔案目錄（目錄、子目錄、檔案）也是 tree 的典型例子。",
+     "t": 2003
+    }
+   ],
+   "trap": "老師畫的是「社會科學院」「電機資訊學院」，畫面簡寫為社科院、電資學院；檔案目錄老師未給名稱，畫面的 home／user／hw2.c 等為補充示意。"
+  },
+  {
+   "title": "Tree 的定義：root 加上 subtrees",
+   "scene": "lina-tree-def",
+   "params": {
+    "phase": "def"
+   },
+   "points": [
+    {
+     "text": "要寫出 tree 的數學定義，先觀察：它有一個階層中最高的地方。",
+     "t": 2095
+    },
+    {
+     "text": "階層最高的節點叫 root；CS 的樹 root 畫在最上面，與園藝的樹相反。",
+     "t": 2109
+    },
+    {
+     "text": "Root 之下的那些也具有樹狀結構的部分，也是樹，稱為 subtree。",
+     "t": 2180
+    },
+    {
+     "text": "一棵樹 T 由兩部分組成：root，以及 n 棵 subtree T1…Tn。",
+     "t": 2210
+    },
+    {
+     "text": "對應台大例子：四個學院就是四棵 subtree，root 裝的是台大。",
+     "t": 2258
+    }
+   ]
+  },
+  {
+   "title": "遞迴定義與終止條件",
+   "scene": "lina-tree-def",
+   "params": {
+    "phase": "rec"
+   },
+   "points": [
+    {
+     "text": "這是 recursive definition：大樹拆成 root 與較小的樹，小樹再如法炮製。",
+     "t": 2272
+    },
+    {
+     "text": "例如 T1 也有自己的 subroot 與 subtrees T1-1、T1-2…T1-m。",
+     "t": 2349
+    },
+    {
+     "text": "只寫 recursive formula 程式還沒寫完，因為不保證會停下來。",
+     "t": 2410
+    },
+    {
+     "text": "與遞迴式同等重要的是 termination condition：什麼時候小到不能再小。",
+     "t": 2434
+    },
+    {
+     "text": "Tree 的終止情形：一個節點只有 root、沒有任何 subtree 可以再展開。",
+     "t": 2498
+    }
+   ],
+   "trap": "補充：寫任何遞迴（定義或函式）都要同時給出遞迴式與終止條件；教科書也常把「空樹」當作遞迴的基底（洪逸／Horowitz 的 binary tree 定義允許空樹，但 general tree 定義要求至少一個節點）。"
+  },
+  {
+   "title": "Subtree 是否有順序：ordered vs unordered",
+   "scene": "lina-ordered",
+   "points": [
+    {
+     "text": "定義中沒有規定 subtrees 之間是否要有順序。",
+     "t": 2546
+    },
+    {
+     "text": "台大各學院某種角度是平等的，只需要知道它們同屬台大，不必排序。",
+     "t": 2566
+    },
+    {
+     "text": "但若學院有編號（如電資學院 90）並需依編號處理，就變成有序。",
+     "t": 2592
+    },
+    {
+     "text": "需要順序時 subtrees 是 sequence（ordered tree）；不需要時只是 set。",
+     "t": 2623
+    }
+   ],
+   "trap": "補充：老師只提到電資學院編號 90，畫面其他學院的編號（20、50、30）為示意。課本中 ordered tree 的子樹對調後視為不同的樹。"
+  },
+  {
+   "title": "名詞：root、node、level 與 depth",
+   "scene": "lina-terms",
+   "params": {
+    "focus": "level"
+   },
+   "points": [
+    {
+     "text": "先介紹名詞，之後上課會順口使用。",
+     "t": 2692
+    },
+    {
+     "text": "樹的最頂端叫 root。",
+     "t": 2744
+    },
+    {
+     "text": "樹中每一筆資料（存放資料的位置）叫 node，例如 NTU、EECS、CSIE 都是 node。",
+     "t": 2761
+    },
+    {
+     "text": "以階層編號：root 在 level 0，下一層 level 1。",
+     "t": 2803
+    },
+    {
+     "text": "老師採 C 語言習慣從 0 開始；level 又常稱為深度 depth。",
+     "t": 2841
+    },
+    {
+     "text": "第二層的新 node 位於 depth 2；之後多用 depth（樹有多深／多高）而少說 level。",
+     "t": 2885
+    }
+   ],
+   "trap": "老師把 root 定為 level 0（depth 0）；洪逸／Horowitz 課本 root 為 level 1，考試請依課本：此樹在課本中有 4 個 level，height（depth）= 4。"
+  },
+  {
+   "title": "名詞：leaf（external node）與 internal node",
+   "scene": "lina-terms",
+   "params": {
+    "focus": "leaf"
+   },
+   "points": [
+    {
+     "text": "從 root 一路長到長不下去、沒有任何 subtree 的節點，就是樹的尾巴。",
+     "t": 2967
+    },
+    {
+     "text": "這種節點叫 leaf（樹葉）。",
+     "t": 2995
+    },
+    {
+     "text": "較正式的叫法是 external node，位於樹的最外圍。",
+     "t": 3004
+    },
+    {
+     "text": "不是 root、也還沒長到尾巴的節點叫 internal node。",
+     "t": 3049
+    },
+    {
+     "text": "Internal node 大致指 non-root 且 non-leaf 的節點；樹的 node 可分 root、leaf、internal 三種。",
+     "t": 3057
+    },
+    {
+     "text": "不同書定義略有不同，有的書把 root 也算進 internal。",
+     "t": 3085
+    }
+   ],
+   "trap": "補充：多數課本（含洪逸／Horowitz）把「degree ≠ 0 的節點」都叫 nonterminal／internal，root 若有小孩也算 internal；另外在 extended binary tree 中 external node 指補上的空節點方塊，與 leaf 意義不同，注意題目語境。"
+  },
+  {
+   "title": "族譜關係：parent、child、sibling、ancestor、descendant",
+   "scene": "lina-terms",
+   "params": {
+    "focus": "family"
+   },
+   "points": [
+    {
+     "text": "可以把 tree 想成族譜，root 是共同祖先，level 1、level 2 是第一代、第二代。",
+     "t": 3170
+    },
+    {
+     "text": "往上的連結叫 parent：A 是 C 的 parent。",
+     "t": 3213
+    },
+    {
+     "text": "反過來 C 是 A 的 child。",
+     "t": 3253
+    },
+    {
+     "text": "E 與 F 有同一個 parent，互為 sibling。",
+     "t": 3303
+    },
+    {
+     "text": "一個節點以下的子子孫孫叫 descendant（ASR 誤作 dependent）。",
+     "t": 3321
+    },
+    {
+     "text": "往上的爸爸、阿公、阿祖一路到 root，都是 ancestor。",
+     "t": 3346
+    }
+   ],
+   "trap": "影片 ASR 把 descendant 聽成 dependent，正確術語為 descendant。 畫面中 B 的 descendants、M 的 ancestors 為示意（ASR 聽不清老師指的節點）。"
+  },
+  {
+   "title": "Height 與 degree",
+   "scene": "lina-terms",
+   "params": {
+    "focus": "height"
+   },
+   "points": [
+    {
+     "text": "Level 像「第幾代」，而 depth 描述樹有多深、多高。",
+     "t": 3436
+    },
+    {
+     "text": "最深的 node（K、L、M）在 depth 3。",
+     "t": 3455
+    },
+    {
+     "text": "最深的深度 3 就稱為這棵樹的 height。",
+     "t": 3463
+    },
+    {
+     "text": "每個 node 小孩數量不同，例如 D 有三個小孩。",
+     "t": 3511
+    },
+    {
+     "text": "小孩數量最多的那個 node 的小孩數，稱為 tree 的 degree。",
+     "t": 3551
+    },
+    {
+     "text": "Degree 用在 node 上是小孩數；用在 tree 上是 maximum node degree。",
+     "t": 3592
+    }
+   ],
+   "trap": "老師以 root depth 0 得 height = 3；洪逸／Horowitz 定義 root level 1，height（depth）= 最大 level = 4。計算題務必先確認 root 從 0 還是 1 起算。"
+  },
+  {
+   "title": "Q&A：Final Project、uncle 關係、紅黑樹",
+   "scene": "lina-terms",
+   "params": {
+    "focus": "uncle"
+   },
+   "points": [
+    {
+     "text": "Final Project 預計本週公布，越晚公布會越簡單。",
+     "t": 3654
+    },
+    {
+     "text": "同學問 D 與 G 的關係：D 是 G 的 parent 的 sibling，可稱為 uncle。",
+     "t": 3863
+    },
+    {
+     "text": "預計會教 red-black tree（RBT），並休息十分鐘。",
+     "t": 3876
+    }
+   ],
+   "trap": "uncle 不是課本正式術語，只是族譜比喻；考試常見的是 parent、child、sibling、ancestor、descendant。"
+  },
+  {
+   "title": "休息後回到課程",
+   "scene": null,
+   "points": [
+    {
+     "text": "休息回來回答留言，接著換新頁面進入下一段。",
+     "t": 4555
+    }
+   ]
+  },
+  {
+   "title": "表示 tree：child link 與 parent link",
+   "scene": "lina-links",
+   "points": [
+    {
+     "text": "回顧：前半講了抽象的 tree、遞迴定義與節點關係；接著要在程式中 represent tree。",
+     "t": 4616
+    },
+    {
+     "text": "依定義 tree = root + 一堆 subtree。",
+     "t": 4680
+    },
+    {
+     "text": "把 subtrees 裝進一個 container（裝資料的容器）。",
+     "t": 4720
+    },
+    {
+     "text": "Root 存資料，旁邊附一張小紙片（pointer）指到 subtrees 的 container。",
+     "t": 4752
+    },
+    {
+     "text": "有時需要從小孩找爸爸媽媽，因此讓每棵 subtree 都有一條 link 指回 root。",
+     "t": 4816
+    },
+    {
+     "text": "往上找家長的叫 parent link，往下找小孩的叫 child link。",
+     "t": 4879
+    },
+    {
+     "text": "也可以讓 root 有很多條 link，每條指向一個小孩。",
+     "t": 4896
+    }
+   ],
+   "trap": "補充：「root 有很多條 link、每條指向一個小孩」的做法，每個 node 的 link 數要開到 tree 的 degree k，n 個節點會有 nk − (n − 1) 個 null link，浪費空間。"
+  },
+  {
+   "title": "用 vector 當 container",
+   "scene": "lina-vector",
+   "points": [
+    {
+     "text": "上一講介紹的 vector 可用 index 存取所有元素，拿來當 container。",
+     "t": 4938
+    },
+    {
+     "text": "Root 的 subtrees T1、T2、T3 的 root 各佔 vector 的一格。",
+     "t": 4996
+    },
+    {
+     "text": "Root 與裝小孩的 vector 之間用 child link 連起來。",
+     "t": 5012
+    },
+    {
+     "text": "T1 有兩個小孩，用一條 link 指向裝它兩個小孩的 vector；T3 有三個小孩亦同。",
+     "t": 5031
+    },
+    {
+     "text": "T2 沒有小孩，可以用空 array 或 null pointer 表示。",
+     "t": 5051
+    },
+    {
+     "text": "若再加上指回 parent 的虛線，就像 doubly linked list：爸爸找小孩、小孩也能找爸爸。",
+     "t": 5087
+    }
+   ],
+   "trap": "補充：粉1／粉2、橘1～橘3 是老師用顏色畫的小孩，此處用文字代稱。"
+  },
+  {
+   "title": "用 linked list 當 container",
+   "scene": "lina-list",
+   "points": [
+    {
+     "text": "改用 linked list 當 container：T1、T2、T3 串成一條 list，結尾指向 null。",
+     "t": 5140
+    },
+    {
+     "text": "Root 用一條 link 找到它的第一個小孩。",
+     "t": 5155
+    },
+    {
+     "text": "T1 指向兩個粉紅小孩組成的 list，T3 指向三個 node 的 list，T2 沒有小孩則指向 null。",
+     "t": 5161
+    },
+    {
+     "text": "Vector 版是記憶體中相對連續的區塊；linked list 版用較多小紙條（pointer）。",
+     "t": 5227
+    },
+    {
+     "text": "小紙條有兩種：橫的指向兄弟姐妹（sibling），往下的指向小孩（child）。",
+     "t": 5266
+    },
+    {
+     "text": "每個 node 最多只需要兩種小紙條，不會有三個。",
+     "t": 5315
+    }
+   ]
+  },
+  {
+   "title": "改畫成 left-child / right-sibling 形式",
+   "scene": "lina-lcrs",
+   "points": [
+    {
+     "text": "只有兩種小紙條的結構可以換一種畫法。",
+     "t": 5389
+    },
+    {
+     "text": "Root 的 child 小紙條往左下畫，指到 T1；T1 的 child 再往左下指到粉紅1號。",
+     "t": 5413
+    },
+    {
+     "text": "T1 的第二張小紙條是 sibling，改往右下畫，指到 T2。",
+     "t": 5436
+    },
+    {
+     "text": "粉紅2號是粉紅1號的同輩，畫在它右下；T2 沒小孩，右下接 T3。",
+     "t": 5458
+    },
+    {
+     "text": "T3 沒有下一個同輩，但有三個小孩（橘子三兄弟），往左下再一路往右下連過去。",
+     "t": 5507
+    },
+    {
+     "text": "總結：原本橫的 sibling 連結變右下斜線，往下的 child 連結變左下斜線。",
+     "t": 5542
+    },
+    {
+     "text": "重畫後 T1 這棵 subtree 有兩棵 subtree：一棵關於 T1 的小孩，一棵關於 T1 原本的兄弟姐妹。",
+     "t": 5573
+    },
+    {
+     "text": "在這種畫法中，每個 node 最多只有兩條連接。",
+     "t": 5592
+    }
+   ],
+   "trap": "補充：這就是 left-child right-sibling 表示法；任何 ordered tree 都能轉成 binary tree，且轉換後 root 的右子樹必為空（root 沒有 sibling）。"
+  },
+  {
+   "title": "Left-Child Right-Sibling：把 general tree 變成 binary tree",
+   "scene": "linb-lcrs",
+   "points": [
+    {
+     "text": "重畫之後，每個 node 最多只有兩條連結（maximum number of children = 2）。",
+     "t": 5592
+    },
+    {
+     "text": "degree 最多為 2 的樹稱為 binary tree（老師戲稱『二胎化』）。",
+     "t": 5649
+    },
+    {
+     "text": "binary tree 的左小孩與右小孩意義不同，必須區分左右（有順序／位置關係）。",
+     "t": 5674
+    },
+    {
+     "text": "這種表示法叫 Left-Child Right-Sibling representation。",
+     "t": 5698
+    },
+    {
+     "text": "binary tree 的左連結 = 原樹的 child 關係，右連結 = 原樹的 sibling（平輩）關係。",
+     "t": 5717
+    },
+    {
+     "text": "嚴格來說可表示任何一棵 ordered tree：T1、T2、T3 之間的順序必須存在。",
+     "t": 5754
+    },
+    {
+     "text": "實作上每個 node 就是兩張小紙條，因此任何 general tree 都可以當成 binary tree 來存。",
+     "t": 5774
+    }
+   ],
+   "trap": "補充：LCRS 轉出的 binary tree，root 的 right child 必為空（原 root 沒有 sibling）；而且轉換只對 ordered tree 唯一。"
+  },
+  {
+   "title": "Binary tree 的條件與空指標",
+   "scene": "linb-null-links",
+   "points": [
+    {
+     "text": "接下來好幾講會先鎖定在 binary tree，有些結果可再推廣到 general tree。",
+     "t": 5809
+    },
+    {
+     "text": "binary tree 條件一：tree 的 degree 最多為 2（≤ 2）。",
+     "t": 5857
+    },
+    {
+     "text": "條件二：需要 order，左右小孩是有差別的。",
+     "t": 5860
+    },
+    {
+     "text": "指向空的連結（沒有存資料）以後畫圖時不畫，需要時自行腦補。",
+     "t": 5899
+    },
+    {
+     "text": "若把空連結也算進去，每個 node 的 degree 都等於 2，只是其中可能指向空。",
+     "t": 5949
+    },
+    {
+     "text": "binary tree 就是每個 node 都有左右兩邊，只是某一邊可能為空。",
+     "t": 5977
+    }
+   ],
+   "trap": "補充：binary tree 不是 degree ≤ 2 的 tree 那麼簡單——它區分左右，且可以是空樹（洪逸／Horowitz 定義：binary tree 為 node 的有限集合，可為空，或由 root 與兩棵互斥的 left / right subtree 組成）。只有一個 child 時，『左 child』和『右 child』是兩棵不同的 binary tree。"
+  },
+  {
+   "title": "Q&A：用一個大 vector 存 tree？root 只有一個小孩",
+   "scene": "linb-vector-pack",
+   "points": [
+    {
+     "text": "同學問：general tree 的 node 能否連續放在一個 vector 裡？這是實作上的選擇。",
+     "t": 6003
+    },
+    {
+     "text": "全塞在緊密 vector 中：memory access／allocate 方便，但 insertion、removal（例如 T1 多一個小孩）要擠開其他元素，彈性差。",
+     "t": 6066
+    },
+    {
+     "text": "LCRS 表示中，原 root 沒有 sibling，所以轉成 binary tree 後只會有一個（左）小孩；binary tree 的 node 只有一個實際小孩是可能的。",
+     "t": 6155
+    }
+   ],
+   "trap": "補充：舞台中 vector 依一層一層排放、插入 P3 的例子為示意。"
+  },
+  {
+   "title": "用 recursion 建構 tree 的 pseudo code",
+   "scene": "linb-construct",
+   "params": {
+    "phase": "base"
+   },
+   "points": [
+    {
+     "text": "建構 tree 的想法：拿第一筆資料 data[0] 當 root，其他資料分到各個 subtree。",
+     "t": 6236
+    },
+    {
+     "text": "第一步：create root node from data[0]。",
+     "t": 6259
+    },
+    {
+     "text": "第二步：要建 n 棵 subtree。",
+     "t": 6279
+    },
+    {
+     "text": "因此需要把 data partition 成 n 個 set，依某種規則分配。",
+     "t": 6288
+    },
+    {
+     "text": "最簡單例子：比 data[0] 小的放左邊、比 data[0] 大的放右邊（n=2）。",
+     "t": 6323
+    },
+    {
+     "text": "對第 i 份資料遞迴呼叫 ConstructTree，得到 subtree T_i——同一函數 reuse。",
+     "t": 6372
+    },
+    {
+     "text": "最後 link root to T_i，設定好指標箭頭。",
+     "t": 6388
+    }
+   ],
+   "trap": "補充：『比 root 小放左、比 root 大放右』這個遞迴建法，正是之後 binary search tree 的插入概念。舞台的資料 [5,3,8,1,4] 為示意（老師沒給具體數字）。"
+  },
+  {
+   "title": "Recursion 的終止條件與重點回顧",
+   "scene": "linb-construct",
+   "params": {
+    "phase": "term"
+   },
+   "points": [
+    {
+     "text": "剛才的 recursive algorithm 沒有 termination condition，沒說何時停。",
+     "t": 6412
+    },
+    {
+     "text": "終止條件例：if data empty，就 return NULL。",
+     "t": 6427
+    },
+    {
+     "text": "else 建 root、link 完後 return address of root node，代表整棵 tree。",
+     "t": 6440
+    },
+    {
+     "text": "回顧：除了 data[0] 當 root，其餘用某方法切 n 份（如小的到左、大的到右），各自建 subtree 再連上 root。",
+     "t": 6530
+    },
+    {
+     "text": "完整的 recursion 除了 recursive formula 還需要 termination condition。",
+     "t": 6544
+    },
+    {
+     "text": "這裡用 NULL pointer 表示不再遞迴建構任何東西。",
+     "t": 6561
+    }
+   ]
+  },
+  {
+   "title": "樹高與 node 數：h = 0、h = 1",
+   "scene": "linb-height-nodes",
+   "params": {
+    "upto": 1
+   },
+   "points": [
+    {
+     "text": "binary tree：每個 node 最多兩個真的小孩，也可能只有一個（另一個為 NULL）。",
+     "t": 6612
+    },
+    {
+     "text": "問題：樹的高度和能裝的 node 數有什麼關係？node 是實際存資料的地方。",
+     "t": 6635
+    },
+    {
+     "text": "例如要塞 10 萬筆資料，樹最矮和最高差多少？",
+     "t": 6698
+    },
+    {
+     "text": "h = 0：只有 root 孤單一人，最少、最多都是 1 個 node。",
+     "t": 6718
+    },
+    {
+     "text": "h = 1：root 至少要有一個小孩才長得出高度，最少 2 個 node。",
+     "t": 6745
+    },
+    {
+     "text": "root 有兩個小孩時最多 3 個 node；所以 h=1 時 2 ≤ n ≤ 3。",
+     "t": 6791
+    }
+   ],
+   "trap": "老師（本課）定義 root 為 level 0、只有 root 的樹 height = 0；洪逸／Horowitz 是 root 為 level 1、depth 以 level 數計，同一棵樹數值會差 1。"
+  },
+  {
+   "title": "h = 2 的最多／最少與 skewed tree",
+   "scene": "linb-height-nodes",
+   "params": {
+    "upto": 2
+   },
+   "points": [
+    {
+     "text": "h = 2 最多：每個人都生兩個小孩，1 + 2 + 4 = 7 個 node。",
+     "t": 6818
+    },
+    {
+     "text": "最少：代代單傳。",
+     "t": 6823
+    },
+    {
+     "text": "binary tree 左右有差，所以單傳可能有的生左小孩、有的生右小孩，都算最少的情況。",
+     "t": 6840
+    },
+    {
+     "text": "h = 2 時最少也能裝 3 筆資料。",
+     "t": 6852
+    },
+    {
+     "text": "只偏一邊長的樹叫做 skewed tree（歪斜樹）。",
+     "t": 6879
+    },
+    {
+     "text": "skewed tree 一點也不像樹，反而像 linked list。",
+     "t": 6908
+    },
+    {
+     "text": "它是一棵退化的樹，限制和缺點都跟 linked list 類似，我們不喜歡。",
+     "t": 6914
+    }
+   ]
+  },
+  {
+   "title": "一般高度 h：h+1 ≤ n ≤ 2^(h+1)−1",
+   "scene": "linb-height-formula",
+   "points": [
+    {
+     "text": "最少：每代至少一人，第 0 代到第 h 代，共 h + 1 個 node。",
+     "t": 6963
+    },
+    {
+     "text": "最多：每個人都生兩個，要算 1+2+4+8+… 的等比級數。",
+     "t": 6984
+    },
+    {
+     "text": "用二進位看：第 0 位到第 h 位都是 1，總數為 2^(h+1) − 1。",
+     "t": 7010
+    },
+    {
+     "text": "例：一串連續的 1 等於『下一位為 1 的 2 的冪次』再減 1。",
+     "t": 7031
+    },
+    {
+     "text": "所以 node 數 n 介於 h + 1 與 2^(h+1) − 1 之間。",
+     "t": 7072
+    },
+    {
+     "text": "反過來看 h 的範圍：h 最多是 n − 1。",
+     "t": 7130
+    },
+    {
+     "text": "h 最少約是 lg(n+1) − 1；lg 代表以 2 為底的 log。",
+     "t": 7142
+    }
+   ],
+   "trap": "老師口誤：說『連續 8 個 1 剛好是 2 的 9 次方再減 1』，正確為 8 個 1 = 2^8 − 1 = 255。ASR 的『log(n−1) − 1』應為 ⌈lg(n+1)⌉ − 1。洪逸／Horowitz（root level 1、深度 k）寫法為：depth k 的 binary tree 最多 2^k − 1 個 node，第 i 層最多 2^(i−1) 個 node；n 個 node 的 complete binary tree 深度為 ⌈log2(n+1)⌉。"
+  },
+  {
+   "title": "為什麼在意樹高：搜尋次數與 h 有關",
+   "scene": "linb-search-height",
+   "params": {
+    "focus": "good"
+   },
+   "points": [
+    {
+     "text": "tree 是階層式 access：常常從 root 出發一路往下找。",
+     "t": 7168
+    },
+    {
+     "text": "若每層只找一次，最多找『樹的高度』那麼多次。",
+     "t": 7202
+    },
+    {
+     "text": "就像以前分析 sequential search、binary search 看拜訪幾個 node 一樣，tree 上的 search 成本跟 h 有關。",
+     "t": 7211
+    },
+    {
+     "text": "binary search 在 ordered array 上每次丟掉一半 candidate。",
+     "t": 7245
+    },
+    {
+     "text": "所以比較次數大約是 log（資料數量）。",
+     "t": 7263
+    }
+   ],
+   "trap": "補充：舞台用 n = 7 的兩棵樹（矮的 BST 與右偏斜樹）找 7 為示意，老師沒有給具體數字。"
+  },
+  {
+   "title": "Best case vs worst case：矮樹與退化樹",
+   "scene": "linb-search-height",
+   "params": {
+    "focus": "compare"
+   },
+   "points": [
+    {
+     "text": "樹很矮、接近 log n 時，只要花 log n 次就找到，這是好的情況。",
+     "t": 7267
+    },
+    {
+     "text": "像 linked list 的 skewed tree 高度是 n − 1，要花 linear 的力氣。",
+     "t": 7290
+    },
+    {
+     "text": "那就跟在 linked list 上做 sequential search 差不多。",
+     "t": 7297
+    },
+    {
+     "text": "未來設計 tree 相關資料結構和演算法，要努力壓低樹的高度。",
+     "t": 7317
+    },
+    {
+     "text": "不想要退化樹：要退化不如回去用 linked list。",
+     "t": 7342
+    },
+    {
+     "text": "同一層多塞東西對我們有利，同一層放太少則不利。",
+     "t": 7378
+    }
+   ]
+  },
+  {
+   "title": "休息",
+   "scene": null,
+   "points": [
+    {
+     "text": "Best case 與 worst case 講完，休息 10 分鐘。",
+     "t": 7419
+    },
+    {
+     "text": "歡迎回來（影片剪掉休息時間，下一句已是 134:01）。",
+     "t": 7424
+    }
+   ]
+  },
+  {
+   "title": "Q&A：網站是 tree 嗎？HTML 與 parse tree",
+   "scene": "linb-html-tree",
+   "points": [
+    {
+     "text": "同學問：網站的架構是 tree data structure 嗎？",
+     "t": 8045
+    },
+    {
+     "text": "若網頁檔案放在 directory structure 中，directory 可看成 tree structure。",
+     "t": 8064
+    },
+    {
+     "text": "網頁之間的 hyperlink 沒有父子關係，比 tree 更複雜，屬於 graph structure。",
+     "t": 8119
+    },
+    {
+     "text": "HTML = HyperText Markup Language，是結構化的文字。",
+     "t": 8135
+    },
+    {
+     "text": "每個標記結構（如 <a> 裡包 <img>）可看成 subtree，整頁可表示成 tree。",
+     "t": 8205
+    },
+    {
+     "text": "這樣的 tree 叫網頁的 parse tree。",
+     "t": 8244
+    },
+    {
+     "text": "它和作業三的 expression tree 類似，都描述文法架構。",
+     "t": 8250
+    }
+   ],
+   "trap": "補充：舞台的網頁連結圖與 HTML 片段為示意；老師實際展示的是自己網頁中 <a> 包住 <img> 的結構。"
+  },
+  {
+   "title": "Full binary tree 的編號與二進位",
+   "scene": "linb-path-code",
+   "params": {
+    "phase": "number"
+   },
+   "points": [
+    {
+     "text": "從同一高度能塞最多 node 的情況講起。",
+     "t": 8382
+    },
+    {
+     "text": "每層都塞滿、每個 node 都有兩個小孩的 binary tree 叫 full binary tree（例：三層 7 個 node）。",
+     "t": 8412
+    },
+    {
+     "text": "替每個 node 編號：由上到下、同層由左到右，1 到 7。",
+     "t": 8434
+    },
+    {
+     "text": "把編號寫成二進位：1、10、11、100、101、110、111。",
+     "t": 8466
+    },
+    {
+     "text": "紅字為 node number 的 binary representation。",
+     "t": 8483
+    }
+   ],
+   "trap": "老師說的 full binary tree 指每層都滿（2^(h+1)−1 個 node），與洪逸定義一致；部分英文教材的 full binary tree 指『每個 node 有 0 或 2 個 child』，名稱需小心。老師口語說『由左到右、由上到下』，實際編號順序是 level order（先上到下分層、同層左到右）。"
+  },
+  {
+   "title": "Path code：往左接 0、往右接 1",
+   "scene": "linb-path-code",
+   "params": {
+    "phase": "path"
+   },
+   "points": [
+    {
+     "text": "在每條往左的 link 上寫 0。",
+     "t": 8531
+    },
+    {
+     "text": "node 1 往左接 0 得 10 = 2，再往左得 100 = 4。",
+     "t": 8546
+    },
+    {
+     "text": "3 = 11 往左接 0 得 110，就是 6 號 node。",
+     "t": 8558
+    },
+    {
+     "text": "往右走接 1：1 → 11 = 3 → 111 = 7。",
+     "t": 8572
+    },
+    {
+     "text": "node 編號 = 先放一個 1，後面接上路徑的 0/1，當成二進位數。",
+     "t": 8606
+    },
+    {
+     "text": "二進位後面接 0 = 左移一位 = ×2（110 = 6 → 1100 = 12）。",
+     "t": 8649
+    },
+    {
+     "text": "接 1 = shift 後再加 1，即 ×2 + 1。",
+     "t": 8680
+    },
+    {
+     "text": "所以 2、3 是 1 的 ×2、×2+1；4、5 是 2 的 ×2、×2+1。",
+     "t": 8696
+    }
+   ]
+  },
+  {
+   "title": "用 vector 存 full binary tree：不需要指標",
+   "scene": "linb-vector",
+   "points": [
+    {
+     "text": "最喜歡用編號的 data structure 就是 vector。",
+     "t": 8724
+    },
+    {
+     "text": "建一個 7 格的 vector，編號 1 到 7，就能存這棵 full binary tree。",
+     "t": 8738
+    },
+    {
+     "text": "在第 i 格找左小孩：編號 ×2。",
+     "t": 8772
+    },
+    {
+     "text": "找右小孩：編號 ×2 + 1。",
+     "t": 8780
+    },
+    {
+     "text": "完全不用另外加 link（小紙條），節省空間。",
+     "t": 8804
+    },
+    {
+     "text": "×2、×2+1 是很快的位元運算，往往比沿指標在記憶體裡跳來跳去更快。",
+     "t": 8841
+    },
+    {
+     "text": "任何 binary tree 都是 full binary tree 砍掉一些 node 的殘缺版本，可在 vector 中留空格表示。",
+     "t": 8896
+    },
+    {
+     "text": "因此可以用 vector 表示任何一棵 binary tree，而不用任何 link。",
+     "t": 8925
+    }
+   ],
+   "trap": "補充：舞台最後砍掉 5、6 號 node 為示意（老師沒有給具體例子）；本課編號 1-based，root 在 [1]。"
+  },
+  {
+   "title": "空間浪費與 complete binary tree",
+   "scene": "linb-complete",
+   "points": [
+    {
+     "text": "越接近 full binary tree，vector 表示法越不浪費空間。",
+     "t": 8962
+    },
+    {
+     "text": "四層的樹只裝 10 個 node，卻要 1+2+4+8 = 15 格。",
+     "t": 8978
+    },
+    {
+     "text": "五層的樹只裝 10 個 node，要配置 31 格，浪費更多。",
+     "t": 8989
+    },
+    {
+     "text": "只包含 full binary tree 前面幾個 node 的 binary tree（例：前 4 個）也能用 vector 表示。",
+     "t": 9048
+    },
+    {
+     "text": "這種 tree 叫 complete binary tree。",
+     "t": 9074
+    },
+    {
+     "text": "node 編號 1..n 剛好對應 size n 的 array，連接關係由 ×2、×2+1 規則決定。",
+     "t": 9087
+    },
+    {
+     "text": "從小孩找爸爸：編號除以 2（整數除法），如 4/2 = 2、5/2 = 2。",
+     "t": 9136
+    },
+    {
+     "text": "full binary tree 是我們最喜歡的 case，它和 vector 有密切關係。",
+     "t": 9181
+    }
+   ],
+   "trap": "老師口誤：說『想要得到爸爸，乘以 2』，正確為 parent(i) = ⌊i/2⌋（他前一句的例子 4/2、5/2 才是對的）。補充：此規則需 1-based；若 0-based，children 為 2i+1、2i+2，parent 為 ⌊(i−1)/2⌋。 舞台中 4 層／5 層裝 10 個 node 的具體形狀為示意。"
+  },
+  {
+   "title": "Q&A：五層的樹高度是 5 還是 4？",
+   "scene": "linb-level-def",
+   "points": [
+    {
+     "text": "同學問：五層的樹，高度是 5 還是 4？",
+     "t": 9225
+    },
+    {
+     "text": "本課答案：高度是 4。",
+     "t": 9231
+    },
+    {
+     "text": "不同書的說法不一樣，沒有完全公定的定義。",
+     "t": 9233
+    },
+    {
+     "text": "本課採用 root 是第 0 層，往下第 1、2、3、4 層。",
+     "t": 9261
+    },
+    {
+     "text": "最深的層數（第 4 層）就是樹的高度。",
+     "t": 9276
+    }
+   ],
+   "trap": "考試以洪逸／Horowitz 為準：root 為 level 1，五層的樹 depth（height）= 5；本課 root 為 level 0，height = 4。寫題前先確認題目採哪種定義。"
+  },
+  {
+   "title": "延伸：Huffman tree 與 path code",
+   "scene": "linb-huffman",
+   "points": [
+    {
+     "text": "full binary tree 的 vector representation 利用了二進位與 binary tree 的關係。",
+     "t": 9292
+    },
+    {
+     "text": "Huffman tree 是資料壓縮中非常重要的資料結構，是一種特別的 binary tree。",
+     "t": 9377
+    },
+    {
+     "text": "它的 path 就像剛才的 path code。",
+     "t": 9399
+    },
+    {
+     "text": "解壓縮時順著資料的 bit 沿 path 走，走到 leaf 就 decode 出一個符號。",
+     "t": 9419
+    },
+    {
+     "text": "顯示一張 JPEG 需要非常多次從 root 走到 leaf。",
+     "t": 9463
+    }
+   ],
+   "trap": "補充：舞台的 Huffman tree（A=0、B=10、C=110、D=111）與 bit 串為示意，老師沒有畫具體例子。"
+  },
+  {
+   "title": "老師經驗：MPEG decoder 與記憶體配置",
+   "scene": "linb-cache",
+   "points": [
+    {
+     "text": "期末作業是 MPEG-2 decoder：等於每秒做 30 次 JPEG decoding。",
+     "t": 9534
+    },
+    {
+     "text": "tree node 四散在記憶體各處時無法利用快取，速度不夠。",
+     "t": 9590
+    },
+    {
+     "text": "要像把 full binary tree 壓進 vector 一樣，讓 node 位置相近。",
+     "t": 9613
+    },
+    {
+     "text": "並讓找小孩只需 ×2、×2+1 這類簡單計算，程式才夠快。",
+     "t": 9625
+    },
+    {
+     "text": "補充 full binary tree 與 vector、path code 的關係，未來學 Huffman tree 或 JPEG 可能用得到。",
+     "t": 9769
+    },
+    {
+     "text": "同學問那門課難度是幾個 DSA，老師答對他來說約四五個（閒聊）。",
+     "t": 9808
+    }
+   ]
+  },
+  {
+   "title": "Expression tree：internal node 放運算子",
+   "scene": "linb-expr-tree",
+   "params": {
+    "phase": "eval"
+   },
+   "points": [
+    {
+     "text": "把 tree 和作業三 stack 的 expression parsing 連起來：expression tree。",
+     "t": 9869
+    },
+    {
+     "text": "root 和 internal node 上放運算符號（×、+、−）。",
+     "t": 9913
+    },
+    {
+     "text": "leaf node 上放要計算的數字，如 3、5、2、7、4。",
+     "t": 9930
+    },
+    {
+     "text": "這樣的 tree 叫 expression tree。",
+     "t": 9949
+    },
+    {
+     "text": "全是 binary operator 時是 binary tree；有 unary operator 就不一定每個 node 有兩個連結。",
+     "t": 9974
+    },
+    {
+     "text": "若有多參數的 function call，就可能是 general tree。",
+     "t": 9991
+    },
+    {
+     "text": "意義：先算完左右 subtree 的結果，再做 root 的運算（這裡是乘法）。",
+     "t": 10022
+    }
+   ]
+  },
+  {
+   "title": "Subtree = 括號：從 expression tree 寫回算式",
+   "scene": "linb-expr-tree",
+   "params": {
+    "phase": "paren"
+   },
+   "points": [
+    {
+     "text": "這棵 tree 涵蓋了什麼先算、什麼後算：subtree 先算，再算 root。",
+     "t": 10063
+    },
+    {
+     "text": "左 subtree 寫成 (3+5)，加括號表示先算。",
+     "t": 10085
+    },
+    {
+     "text": "右 subtree 是 2 − (7+4)，再整個加括號後做乘法。",
+     "t": 10097
+    },
+    {
+     "text": "規則：subtree 加括號、root 放中間，遞迴進行。",
+     "t": 10130
+    },
+    {
+     "text": "leaf 本身就不加括號了。",
+     "t": 10151
+    },
+    {
+     "text": "下次會講如何在 expression tree 上 evaluation，以及印出 postfix、infix 形式。",
+     "t": 10206
+    },
+    {
+     "text": "總結：internal node 放 operator，external node 放 operand，subtree 代表 parentheses。",
+     "t": 10243
+    },
+    {
+     "text": "下次再看 expression tree 上可以 run 哪些演算法。",
+     "t": 10286
+    }
+   ],
+   "trap": "補充：『subtree 加括號、root 放中間』就是 inorder traversal（加完整括號）；evaluate 時先左右 subtree 再 root 的順序對應 postorder，結果 3 5 + 2 7 4 + − ×。"
+  },
+  {
+   "title": "作業三測資與下課",
+   "scene": null,
+   "points": [
+    {
+     "text": "作業三請同學自己設計三筆測試資料說服助教，可分享測資但不能抄。",
+     "t": 10324
+    },
+    {
+     "text": "作業用 C 語法，可以丟給 C compiler 比對答案，當作自己的批改娘。",
+     "t": 10431
+    },
+    {
+     "text": "老師希望大家叫他『軒田』，祝期中考順利。",
+     "t": 10494
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "林軒田老師畫的樹 A(B(E(K,L),F), C(G), D(H(M),I,J)) 中，若依洪逸／Horowitz 課本（root 在 level 1），這棵樹的 height 是多少？",
+   "opts": [
+    "2",
+    "3",
+    "4",
+    "13"
+   ],
+   "ans": "4",
+   "why": "最深的 K、L、M 在老師的 depth 3（root=0）；課本 root 為 level 1，所以最大 level = 4，即 height = 4。"
+  },
+  {
+   "q": "同一棵樹 A(B(E(K,L),F), C(G), D(H(M),I,J)) 的 degree 是多少？",
+   "opts": [
+    "2",
+    "3",
+    "7",
+    "13"
+   ],
+   "ans": "3",
+   "why": "Tree 的 degree 是最大 node degree；A 與 D 都有 3 個小孩，所以為 3。"
+  },
+  {
+   "q": "在 A(B(E(K,L),F), C(G), D(H(M),I,J)) 中，D 與 G 的關係為何？",
+   "opts": [
+    "D 是 G 的 parent",
+    "D 是 G 的 sibling",
+    "D 是 G 的 parent 的 sibling（uncle）",
+    "D 是 G 的 descendant"
+   ],
+   "ans": "D 是 G 的 parent 的 sibling（uncle）",
+   "why": "G 的 parent 是 C，C 與 D 同屬 A 的小孩，所以 D 是 G 的 uncle。"
+  },
+  {
+   "q": "以 linked list 當 container、用 child 指標與 sibling 指標表示一般樹時，每個 node 最多需要幾個指標？",
+   "opts": [
+    "1",
+    "2",
+    "等於該 node 的 degree",
+    "等於 tree 的 degree"
+   ],
+   "ans": "2",
+   "why": "只需一個指向第一個小孩的 child 指標與一個指向下一個兄弟的 sibling 指標，這就是 left-child right-sibling。"
+  },
+  {
+   "q": "樹 root(T1(P1,P2), T2, T3(O1,O2,O3)) 改畫成 left-child right-sibling 後，T2 的右子節點是誰？",
+   "opts": [
+    "T1",
+    "T3",
+    "O1",
+    "空（null）"
+   ],
+   "ans": "T3",
+   "why": "右邊代表原樹中的下一個 sibling；T2 的下一個兄弟是 T3。T2 沒有小孩，所以它的左邊為空。"
+  },
+  {
+   "q": "用 Left-Child Right-Sibling 把 general tree 表示成 binary tree 時，binary tree 的右指標代表原樹中的什麼關係？",
+   "opts": [
+    "parent",
+    "first child",
+    "next sibling",
+    "last child"
+   ],
+   "ans": "next sibling",
+   "why": "左連結 = 原樹的 child 關係，右連結 = 原樹的平輩（sibling）關係；因此原 root 轉換後的右邊一定為空。"
+  },
+  {
+   "q": "依本課慣例（root 在 level 0，只有 root 時高度為 0），高度為 h 的 binary tree，node 數 n 的範圍是？",
+   "opts": [
+    "h ≤ n ≤ 2^h",
+    "h+1 ≤ n ≤ 2^(h+1) − 1",
+    "h ≤ n ≤ 2^h − 1",
+    "1 ≤ n ≤ 2^(h+1)"
+   ],
+   "ans": "h+1 ≤ n ≤ 2^(h+1) − 1",
+   "why": "最少是每代單傳的 skewed tree（h+1 個），最多是每層都滿的 full binary tree（1+2+…+2^h = 2^(h+1) − 1）。若用洪逸 root=level 1、depth k，最多為 2^k − 1。"
+  },
+  {
+   "q": "在依 level order 從 1 開始編號的 full binary tree 中，6 號 node（二進位 110）從 root 出發的路徑是？",
+   "opts": [
+    "左、右",
+    "右、左",
+    "右、右",
+    "左、左"
+   ],
+   "ans": "右、左",
+   "why": "去掉開頭的 1 後剩下路徑 10：先往右（1）到 3 號，再往左（0）到 6 號，即 3×2 = 6。"
+  }
+ ]
+}

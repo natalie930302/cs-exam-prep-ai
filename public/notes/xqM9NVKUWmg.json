@@ -1,10 +1,11 @@
 {
  "video": "xqM9NVKUWmg",
- "label": "交大 彭文志《資料結構》Lec07 Stacks & Queues (2/2)",
- "source": "whisper",
+ "label": "交大彭文志 Lec07 Stacks & Queues (2/2)",
+ "timing": "exact",
  "sections": [
   {
    "title": "Stack 與 Queue 回顧",
+   "scene": "sqpeng-queue-abcd",
    "points": [
     {
      "text": "Stack 符合 LIFO（Last In First Out）：最後 push 進去的元素最先被 pop 出來；add/push 是同一個意思，delete/pop 也是同一個意思。",
@@ -20,17 +21,18 @@
     },
     {
      "text": "投影片上 delete 後 B、C、D「掉下來」只是示意圖；實際上它們仍佔用 array[1]、[2]、[3]，只是 array[0] 空出來，元素不會自動往前移。",
-     "t": 136
+     "t": 143
     },
     {
      "text": "預告 priority queue：取出元素時要依某種 priority，之後章節才會細講。",
      "t": 179
     }
-   ],
-   "scene": "stack-lifo"
+   ]
   },
   {
    "title": "線性 Queue 的「假滿」問題",
+   "scene": "sqpeng-false-full",
+   "trap": "線性 queue 只看 rear == MaxSize-1 判斷 full，前面因 delete 空出的空間用不到，會出現「假滿」。補充：影片口頭說「rear 等於 4」，但 4 格陣列 index 是 0～3，滿的時候 rear = MaxSize − 1 = 3。",
    "points": [
     {
      "text": "Stack 和 queue 的 capacity（MaxSize）都是固定的，所以 add 前要先檢查是否 full，delete 前要檢查是否 empty。",
@@ -41,12 +43,16 @@
      "t": 279
     },
     {
+     "text": "例：MaxSize = 4，A、B、C、D 放滿 array[0..3]。",
+     "t": 320
+    },
+    {
      "text": "問題：delete 掉 A 後前面明明空出位置，但 rear 仍停在最後一格，IsFull 還是回報 full，造成誤判。",
      "t": 356
     },
     {
      "text": "解法一：data movement，把 B、C、D 各往前搬一格；這樣 IsFull procedure 不用改，但要另外寫一個搬資料的 procedure。",
-     "t": 442
+     "t": 446
     },
     {
      "text": "解法二（老師留作思考題）：不搬資料，改寫 IsFull 的判斷方式；老師強調解法不只一種。",
@@ -56,12 +62,12 @@
      "text": "書上的另一種實作就是 circular queue（環狀佇列）。",
      "t": 518
     }
-   ],
-   "trap": "線性 queue 只看 rear == MaxSize-1 判斷 full，前面因 delete 空出的空間用不到，會出現「假滿」。",
-   "scene": "queue-false-full"
+   ]
   },
   {
    "title": "Circular Queue：front/rear 規則與 full/empty",
+   "scene": "sqpeng-cq-j",
+   "trap": "Circular queue 為了分辨 empty/full 會犧牲一格，大小為 MaxSize 的陣列最多只能放 MaxSize-1 個元素。",
    "points": [
     {
      "text": "環狀只是示意圖，實際上還是一個連續的 array（例：6 格，index 0～5）。",
@@ -77,7 +83,7 @@
     },
     {
      "text": "例：加入 J1～J3 後 front = 0、rear = 3；再加 J4、J5 後 front = 0、rear = 5，此時就算 full，即使還留一格空位。",
-     "t": 667
+     "t": 666
     },
     {
      "text": "若硬把 J6 塞進最後一格，rear 會繞回 0，等於 front，就無法分辨是 empty 還是 full；所以刻意保留一格不用。",
@@ -91,12 +97,12 @@
      "text": "Full 條件：(rear + 1) % MaxSize == front；Empty 條件：front == rear。",
      "t": 878
     }
-   ],
-   "trap": "Circular queue 為了分辨 empty/full 會犧牲一格，大小為 MaxSize 的陣列最多只能放 MaxSize-1 個元素。",
-   "scene": "circular-queue"
+   ]
   },
   {
    "title": "Circular Queue 的 Add / Delete 程式",
+   "scene": "sqpeng-cq-code",
+   "trap": "Delete 時 front 指的是空格，要先 front = (front+1) % MaxSize 再取 queue[front]，順序弄反就會取錯元素。",
    "points": [
     {
      "text": "老師指出投影片的 add 函式漏了參數，要自己補上要加入的元素 x（型別為 KeyType）。",
@@ -122,12 +128,12 @@
      "text": "用 % MaxSize 讓 index 在陣列裡繞圈，好處是能充分利用 queue 空間，不會誤判 full。",
      "t": 1081
     }
-   ],
-   "trap": "Delete 時 front 指的是空格，要先 front = (front+1) % MaxSize 再取 queue[front]，順序弄反就會取錯元素。",
-   "scene": "circular-queue"
+   ]
   },
   {
    "title": "Stack 應用一：迷宮問題的概念",
+   "scene": "sqpeng-maze-intro",
+   "trap": "補充：投影片上的迷宮在影片中沒有逐格念出，場景用一個小迷宮示範同樣的規則（0 可走、1 是牆、八個方向、走不通就 pop 退回）。",
    "points": [
     {
      "text": "迷宮用 2D array 表示：0 代表可走，1 代表牆/障礙物；目標是從入口找出一條通往出口的 path。",
@@ -142,19 +148,23 @@
      "t": 1323
     },
     {
-     "text": "走不下去時要往回退一步（backtrack），所以用 stack 記錄走過的每個位置；這正是 stack LIFO 的特性。",
-     "t": 1419
+     "text": "走不下去時就往回走一步（backtrack）。",
+     "t": 1373
     },
     {
-     "text": "往某方向走到下一步，只要對目前的 row、col index 做 ±1。例如往北是 (row-1, col)。",
-     "t": 1497
+     "text": "要記錄走過的每個位置、走不通再往回退，這種結構就是 stack（LIFO）。",
+     "t": 1415
     }
-   ],
-   "scene": "maze-dfs"
+   ]
   },
   {
    "title": "迷宮：move offset 陣列與 stack 內容",
+   "scene": "sqpeng-move-offset",
    "points": [
+    {
+     "text": "往某方向走到下一步，只要對目前的 row、col index 做 ±1。例如往北是 (row-1, col)。",
+     "t": 1497
+    },
     {
      "text": "定義 offset 型別（vertical、horizontal 位移），存成大小 8 的 array move[8]，dir = 0～7 是方向的 index。",
      "t": 1588
@@ -175,127 +185,397 @@
      "text": "記錄 dir 是為了退回這格時不要重試已經失敗的方向，例如北、東北都試過了，就從東開始試。",
      "t": 1940
     }
-   ],
-   "scene": "maze-dfs"
+   ]
   },
   {
-   "title": "迷宮：演算法流程與邊界技巧",
+   "title": "迷宮 pseudocode：初始化與 while 迴圈",
+   "scene": "sqpeng-maze-code",
    "points": [
     {
-     "text": "初始化：把入口座標和起始方向（北）push 進 stack，所以第一次進 while 迴圈時 stack 不是 empty。",
-     "t": 2101
+     "text": "看 pseudocode：給定迷宮 maze、入口和出口 (m, p) 的座標，先做初始化。",
+     "t": 1980
     },
     {
      "text": "While stack 不空：pop 出 (i, j, dir)，當 d < 8 時依序試各方向，算出下一步 (g, h)。",
-     "t": 1995
+     "t": 2026
     },
     {
      "text": "若 (g, h) == (m, p)，也就是出口，就成功並輸出路徑。",
+     "t": 2080
+    },
+    {
+     "text": "初始化：把入口座標和起始方向（北）push 進 stack，所以第一次進 while 迴圈時 stack 不是 empty。",
+     "t": 2101
+    }
+   ]
+  },
+  {
+   "title": "邊界技巧：外圍包一圈 1",
+   "scene": "sqpeng-maze-border",
+   "points": [
+    {
+     "text": "入口往北試會碰到外牆：實作時 array 會開大一點，外圍的 boundary 都是 1。",
+     "t": 2234
+    },
+    {
+     "text": "這樣就不必另外寫程式判斷位置在上、下、左、右哪個邊界，邊界的格子也一樣試北、東北、東……",
+     "t": 2266
+    },
+    {
+     "text": "外圍包一圈 1 之後，八個方向的程式可以共用；老師稱讚這個寫法比特別判斷邊界乾淨很多。",
+     "t": 2293
+    }
+   ]
+  },
+  {
+   "title": "迷宮：maze、mark 與 push 的條件",
+   "scene": "sqpeng-maze-code",
+   "trap": "mark 和 maze 是兩個不同的 array：maze 存牆/路，mark 存「是否走過」；只檢查 maze 不檢查 mark 會在迷宮裡繞圈。",
+   "points": [
+    {
+     "text": "在入口北邊是牆、東北也不通，接著試東邊，得到下一個位置 (g, h)。",
+     "t": 2336
+    },
+    {
+     "text": "先判斷 (g, h) 是不是出口 (m, p)；不是出口才繼續。",
      "t": 2369
+    },
+    {
+     "text": "maze[g][h] 記錄地圖：1 不能走、0 可以走。",
+     "t": 2401
+    },
+    {
+     "text": "mark 是另一個同樣大小的 2D array，記錄這格有沒有走過，走過就設成 1。",
+     "t": 2424
     },
     {
      "text": "若 maze[g][h] == 0（可走）且 mark[g][h] == 0（沒走過）：設 mark[g][h] = 1，把 (i, j, 下一個要試的 d) push 進 stack，再移到 (g, h)，d 歸零。",
      "t": 2499
     },
     {
-     "text": "共用到三個結構：maze（靜態地圖）、mark（同大小的 2D array，記錄是否走過）、stack（走過的路徑，大小約 m×p）；move 用在算下一步。",
-     "t": 2594
+     "text": "整個程式用到三個結構：stack 記錄老鼠走過的 path、maze 記錄迷宮、mark 記錄是否走過；move 用在算下一步。",
+     "t": 2548
+    }
+   ]
+  },
+  {
+   "title": "試方向的順序與延伸考題",
+   "scene": "sqpeng-maze-order",
+   "points": [
+    {
+     "text": "有同學問為什麼每次都先往北：出口在右下角時，先往北試其實很浪費。",
+     "t": 2620
     },
     {
-     "text": "邊界技巧：在迷宮外圍包一圈 1（牆），陣列變成 (m+2)×(p+2)，入口變成 (1,1)、出口是 (m,p)，就不用另外寫程式判斷是否在邊界。",
-     "t": 2244
-    },
-    {
-     "text": "試方向的順序可以自訂，例如先試東；要嘛重新編排 move array 的編號，要嘛直接改 offset。逆時針也可以，但若出口在右下，可能多走很多冤枉路。",
+     "text": "試方向的順序可以自訂，例如先試東、再東南、再南，只要規則固定、記得試過哪些方向即可。",
      "t": 2671
     },
     {
-     "text": "延伸考題：出口不一定在右下角、甚至有多個出口時，要怎麼找到最近、最短的出口（近的不一定走得通）。",
+     "text": "逆時針也可以，但若出口在右下，先試北、西北是遠離目的地，可能多走很多冤枉路。",
+     "t": 2739
+    },
+    {
+     "text": "老師以前考過：單一出口時，怎麼讓它盡量走最短路徑。",
+     "t": 2777
+    },
+    {
+     "text": "更難的延伸：出口不一定在右下角、甚至有多個出口時，要怎麼找到最近、最短的出口（近的不一定走得通）。",
      "t": 2822
     }
-   ],
-   "trap": "mark 和 maze 是兩個不同的 array：maze 存牆/路，mark 存「是否走過」；只檢查 maze 不檢查 mark 會在迷宮裡繞圈。",
-   "scene": "maze-dfs"
+   ]
   },
   {
-   "title": "Stack 應用二：Postfix 求值",
+   "title": "實作：外圍紅色那一圈與入口 (1,1)",
+   "scene": "sqpeng-maze-border",
    "points": [
     {
-     "text": "Infix 式子如 A/B-C+D*E-A*C 若不規定優先序，括號加法不同就會有不同結果（如 1 或 2.666），所以要遵守先乘除後加減。",
+     "text": "真正實作時，黑色是原本的迷宮，外面多加一圈紅色的 1 當圍牆，避免邊界判斷。",
+     "t": 2880
+    },
+    {
+     "text": "原本入口在 (0, 0)，加了外圍後入口變成 (1, 1)，(m, p) 仍是出口；陣列變成 (m+2)×(p+2)。",
+     "t": 2926
+    },
+    {
+     "text": "在邊界上照樣依規則先往北試，走不通就換方向，不會因為在邊界而有不同的程式。",
+     "t": 2953
+    }
+   ]
+  },
+  {
+   "title": "迷宮程式：從 pseudocode 到程式碼",
+   "scene": "sqpeng-maze-code",
+   "points": [
+    {
+     "text": "程式：宣告大小約 m×p 的 stack，把入口位置和方向 add 進去。",
+     "t": 2997
+    },
+    {
+     "text": "while 迴圈判斷 stack 是不是空的；做好初始值後一開始一定有入口的資訊。",
+     "t": 3008
+    },
+    {
+     "text": "(g, h) = (i, j) 加上 move[d] 的 offset；while d < 8 依序試 0～7 八個方向。",
+     "t": 3022
+    },
+    {
+     "text": "若 (g, h) 等於出口 (m, p) 就輸出路徑；否則檢查 maze[g][h] 與 mark[g][h]，跟 pseudocode 幾乎一樣。",
+     "t": 3089
+    },
+    {
+     "text": "老師建議：先寫 pseudocode 確認方法可行，等於成功一半，再改寫成詳細程式。",
+     "t": 3131
+    },
+    {
+     "text": "d 是下一次要嘗試的方向，d++ 就是換下一個方向（0 北 → 1 東北）。",
+     "t": 3201
+    },
+    {
+     "text": "想讓它先往東試：程式不用改，重新編排 move array 的編號，或直接改 offset 即可。",
+     "t": 3227
+    }
+   ]
+  },
+  {
+   "title": "Stack 應用二：Infix 的歧義與 Postfix",
+   "scene": "sqpeng-infix-ambig",
+   "trap": "補充：影片說另一種結果是「2.666」，課本（Horowitz）的另一種括號 ((4/(2−2+3))*(3−4))*2 算出來是 −2.666…，有負號。",
+   "points": [
+    {
+     "text": "第二個應用：用程式寫計算機。",
+     "t": 3274
+    },
+    {
+     "text": "Infix 式子如 A/B-C+D*E-A*C（A=4、B=C=2、D=E=3）若不規定優先序，括號加法不同就會有不同結果。",
      "t": 3298
     },
     {
-     "text": "Postfix 沒有括號，例如 2+3*4 寫成 2 3 4 * +；電腦用 postfix 求值很容易。",
+     "text": "依括號不同，X 可能是 1，也可能是 2.666…，會產生 misleading。",
+     "t": 3362
+    },
+    {
+     "text": "為了遵守先乘除後加減，使用 postfix：例如 2+3*4 寫成 2 3 4 * +，postfix 沒有括號。",
      "t": 3399
     },
     {
-     "text": "例：6/2-3+4*2 的 postfix 是 6 2 / 3 - 4 2 * +。",
-     "t": 3495
-    },
-    {
-     "text": "求值規則：由左往右 scan，遇到運算元就 push；遇到 operator 就 pop 兩次取出頂端兩個元素運算，再把結果 push 回 stack。",
-     "t": 3540
-    },
-    {
-     "text": "Postfix 字串以 # 結尾；讀到 # 時 stack 裡剩下的值就是答案。這個例子 stack 只需要 3 格。",
-     "t": 3732
-    },
-    {
-     "text": "函式 Eval：輸入是 postfix string，輸出是式子的值。",
-     "t": 3825
+     "text": "概念：infix 先轉成 postfix，電腦再用 postfix 很容易地 evaluate 出值。",
+     "t": 3431
     }
-   ],
-   "trap": "補充：遇到 operator 時，先 pop 出來的是右運算元、後 pop 的是左運算元；減法和除法順序不能顛倒（例如 6 2 / 是 6/2）。",
+   ]
+  },
+  {
+   "title": "用 Stack 計算 Postfix：6 2 / 3 − 4 2 * +",
    "scene": "postfix-eval",
    "params": {
     "expr": "6/2-3+4*2"
-   }
-  },
-  {
-   "title": "Infix 轉 Postfix",
+   },
+   "trap": "補充：遇到 operator 時，先 pop 出來的是右運算元、後 pop 的是左運算元；減法和除法順序不能顛倒（例如 6 2 / 是 6/2）。",
    "points": [
     {
-     "text": "手動法（2 pass）：先依優先序把式子完全加上括號，再把每個 operator 移去取代它對應的右括號，最後刪掉所有括號；例如 A/B-C+D*E-A*C 變成 AB/C-DE*+AC*-。",
+     "text": "例：postfix 6 2 / 3 - 4 2 * +，對應的 infix 是 6/2-3+4*2。",
+     "t": 3487
+    },
+    {
+     "text": "求值規則：由左往右 scan，遇到運算元就 push；6、2 依序 push。",
+     "t": 3540
+    },
+    {
+     "text": "遇到 operator（例如 /）就 pop 出頂端兩個元素運算：6 / 2 = 3，再把結果 push 回 stack。",
+     "t": 3566
+    },
+    {
+     "text": "3 push，遇到 - 就算 (6/2) - 3 = 0，結果存回 stack。",
+     "t": 3606
+    },
+    {
+     "text": "4、2 push，遇到 * 算 4*2 = 8；最後遇到 + 算 0 + 8 = 8。",
+     "t": 3640
+    }
+   ]
+  },
+  {
+   "title": "Eval 函式與 # 結尾",
+   "scene": "sqpeng-eval-code",
+   "points": [
+    {
+     "text": "最右邊是 top 指標；這個例子 stack 只需要 3 格。",
+     "t": 3673
+    },
+    {
+     "text": "這個過程的 input 是 postfix，output 是數學式子的值。",
+     "t": 3701
+    },
+    {
+     "text": "函式 Eval(e)：e 是 postfix 表示法，用 # 標記式子結尾。",
+     "t": 3717
+    },
+    {
+     "text": "for 迴圈用 NextToken 一個一個讀 token，直到讀到 #。",
+     "t": 3766
+    },
+    {
+     "text": "是運算元就 push；是 operator 就 pop 兩次、做運算、把結果存回 stack。",
+     "t": 3794
+    },
+    {
+     "text": "讀到 # 就是結尾，stack 裡剩下的值就是答案。",
+     "t": 3825
+    },
+    {
+     "text": "但使用者輸入的是 infix（例如 2+3*4），所以接著要寫程式把 infix 轉成 postfix。",
+     "t": 3889
+    }
+   ]
+  },
+  {
+   "title": "Infix 轉 Postfix：手動加括號（2 pass）",
+   "scene": "sqpeng-paren-2pass",
+   "points": [
+    {
+     "text": "Infix 轉 prefix 是課本習題，考古題也考過，請自己看。",
+     "t": 3912
+    },
+    {
+     "text": "手動法：先依先乘除後加減把式子完全加上括號。",
      "t": 3937
     },
     {
-     "text": "較快的 stack 法只需 scan 一次：遇到運算元（數字或 symbol）直接 output，operator 才放進 stack。",
-     "t": 4064
+     "text": "再把每個 operator 移去取代它對應的右括號（左括號不用理），最後刪掉所有括號；A/B-C+D*E-A*C 變成 AB/C-DE*+AC*-。",
+     "t": 3958
+    },
+    {
+     "text": "缺點是要兩個 pass：第一次 scan 加括號，第二次做取代、再刪括號。",
+     "t": 4036
+    }
+   ]
+  },
+  {
+   "title": "Stack 法：A+B*C 與 ISP/ICP",
+   "scene": "sqpeng-ispicp",
+   "params": {
+    "expr": "A+B*C"
+   },
+   "trap": "補充：老師在約 70:50 一度說成「ISP 大於 ICP 就 push」，正確規則是 ISP(y) ≤ ICP(x) 才把 y pop 出來，否則 push x；數字越小 priority 越高。",
+   "points": [
+    {
+     "text": "較快的 stack 法只需 scan 一次；例 A+B*C，* 的 priority 比 + 高。",
+     "t": 4054
+    },
+    {
+     "text": "遇到運算元（數字或 symbol）直接 output；遇到 operator 才放進 stack。",
+     "t": 4117
     },
     {
      "text": "每個 operator 有兩個 priority：ISP（in-stack priority，在 stack 裡時）與 ICP（incoming priority，剛 scan 到時）。",
      "t": 4185
     },
     {
+     "text": "ISP(+) = 3、ICP(*) = 2：ISP(+) ≤ ICP(*) 不成立，所以 * 直接 push。",
+     "t": 4258
+    },
+    {
+     "text": "讀到結尾 # 時，把 stack 裡剩下的 operator 全部 pop 出來，得到 ABC*+。",
+     "t": 4284
+    }
+   ]
+  },
+  {
+   "title": "A*B+C：先 pop 掉 *",
+   "scene": "sqpeng-ispicp",
+   "params": {
+    "expr": "A*B+C"
+   },
+   "points": [
+    {
+     "text": "另一個例子 A*B+C：A output，* 進 stack（stack 原本是空的）。",
+     "t": 4334
+    },
+    {
+     "text": "讀到 + 時要跟 stack 裡的 * 比較：先乘除後加減，所以 * 應該先出來。",
+     "t": 4377
+    },
+    {
+     "text": "ISP(*) = 2 ≤ ICP(+) = 3 成立：pop * 輸出，再把 + push 進去。",
+     "t": 4436
+    },
+    {
+     "text": "結果是 AB*C+。",
+     "t": 4475
+    },
+    {
+     "text": "這裡的 stack 放的是 operator；Eval 的 stack 放的是運算元，兩者用途不同。",
+     "t": 4492
+    }
+   ]
+  },
+  {
+   "title": "A*(B+C)*D：括號與同級 operator",
+   "scene": "sqpeng-ispicp",
+   "params": {
+    "expr": "A*(B+C)*D"
+   },
+   "points": [
+    {
+     "text": "A*(B+C)*D 有兩個 *，分別叫 *1 和 *2。",
+     "t": 4572
+    },
+    {
+     "text": "左括號直接 push；+ push；C output。",
+     "t": 4609
+    },
+    {
+     "text": "讀到右括號：一直 pop 到左括號為止，pop 出 +，再丟掉左括號。",
+     "t": 4629
+    },
+    {
+     "text": "讀到 *2：ISP(*1) ≤ ICP(*2)（同優先序），先 pop *1，再 push *2。",
+     "t": 4696
+    },
+    {
+     "text": "最後讀到結尾把 stack 清空，結果是 ABC+*D*。",
+     "t": 4725
+    }
+   ]
+  },
+  {
+   "title": "規則與 priority table",
+   "scene": "sqpeng-prio-table",
+   "trap": "老師用的 priority table 數字越小代表 priority 越高（乘除 2、加減 3），所以規則寫成 ISP(y) ≤ ICP(x) 就 pop。補充：洪逸／Horowitz C 版的 isp/icp 數值是越大越優先，規則變成 isp ≥ icp 才 pop，考試要看清楚題目用哪一種表。",
+   "points": [
+    {
+     "text": "operator 在 stack 裡有 ISP，剛讀到時有 ICP。",
+     "t": 4740
+    },
+    {
      "text": "規則：stack 頂端 operator y 若滿足 ISP(y) ≤ ICP(x)（x 是新讀到的 operator），就把 y pop 出來 output，重複檢查後再把 x push 進去。",
      "t": 4753
-    },
-    {
-     "text": "A+B*C：* 優先序比 + 高，所以 * 直接 push，結果是 ABC*+；A*B+C：讀到 + 時要先 pop *，結果是 AB*C+。",
-     "t": 4304
-    },
-    {
-     "text": "A*(B+C)*D：左括號直接 push；讀到右括號就一直 pop 到左括號為止；第二個 * 讀進來時，同優先序的第一個 * 要先 pop，結果是 ABC+*D*。",
-     "t": 4568
     },
     {
      "text": "左括號在 stack 內的 ISP = 8（最低），incoming 時的 ICP = 0（最高）；所以讀到左括號一定 push，進了 stack 之後又不會擋住其他 operator。",
      "t": 4776
     },
     {
-     "text": "讀到結尾 # 時，把 stack 裡剩下的 operator 全部 pop 出來；Eval 的 stack 放的是運算元，轉換用的 stack 放的是 operator。",
-     "t": 4284
+     "text": "Priority table 中數字越小 priority 越高：乘除 mod 比加減小。",
+     "t": 4792
+    },
+    {
+     "text": "程式（課本 Program 3.19）：讀 infix 直到 #，operator 就檢查 ISP(y) ≤ ICP(x) 決定 pop。",
+     "t": 4846
+    },
+    {
+     "text": "「higher priority」指 priority 較高、數字較小；不要把數字較大（larger）當成較優先。",
+     "t": 4939
     }
-   ],
-   "trap": "老師用的 priority table 數字越小代表 priority 越高（乘除 2、加減 3），所以規則寫成 ISP(y) ≤ ICP(x) 就 pop；「higher priority」指數值較小，不是數字較大。補充：洪逸／Horowitz C 版的 isp/icp 數值是越大越優先，規則變成 isp ≥ icp 才 pop，考試要看清楚題目用哪一種表。",
-   "scene": "infix-to-postfix",
-   "params": {
-    "expr": "A/B-C+D*E-A*C"
-   }
+   ]
   },
   {
    "title": "Multiple Stacks 與 Stack ≠ Array",
+   "scene": "sqpeng-multistack",
    "points": [
+    {
+     "text": "一個 array 裡可以有多個 stack（multiple stacks）。",
+     "t": 5001
+    },
     {
      "text": "一個 array 可以放兩個 stack：一個從 array 頭往後長，另一個從尾巴往前長。",
      "t": 5014
@@ -312,8 +592,7 @@
      "text": "Array 是 (index, value) pair 的集合；stack 是有限集合，再加上 LIFO 的規則，屬於 ADT。",
      "t": 5101
     }
-   ],
-   "scene": "stack-lifo"
+   ]
   }
  ],
  "quiz": [
@@ -405,6 +684,5 @@
    "ans": "ABC+*D*",
    "why": "左括號一定 push；讀到右括號就 pop 出 +；第二個 * 進來時，ISP(*) ≤ ICP(*)，先 pop 第一個 *；最後把剩下的 * pop 出來。"
   }
- ],
- "timing": "exact"
+ ]
 }

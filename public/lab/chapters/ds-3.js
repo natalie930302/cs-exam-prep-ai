@@ -50,7 +50,29 @@ export default function (ctx) {
     expr: { name: '運算式樹 A/B*C*D+E（課本例）', make: () => T('+', T('*', T('*', T('/', T('A'), T('B')), T('C')), T('D')), T('E')) },
     sample: { name: '一般二元樹（9 個節點）', make: () => T('A', T('B', T('D'), T('E', T('G'))), T('C', null, T('F', T('H'), T('I')))) },
     random: { name: '隨機樹', make: () => labelLevel(randomShape(6 + rnd(4))) },
+    hindi: { name: '影片例 A(B(,D),C(E(G,),F(H,I)))', make: () => parseTree('A(B(,D),C(E(G,),F(H,I)))') },
+    bari: { name: 'Abdul Bari 例 3(6(5,2),4(9,8))', make: () => parseTree('3(6(5,2),4(9,8))') },
   };
+  // 樹的文字表示：X(左,右)，空子樹留白，例如 A(B(,D),C)；X(Y) = 只有左子
+  function parseTree(src) {
+    let i = 0;
+    const s = String(src).replace(/\s+/g, '');
+    function node() {
+      let lab = '';
+      while (i < s.length && !'(),'.includes(s[i])) lab += s[i++];
+      if (!lab) return null;
+      const n = T(lab);
+      if (s[i] === '(') {
+        i++;
+        n.left = node();
+        if (s[i] === ',') { i++; n.right = node(); }
+        if (s[i] === ')') i++;
+      }
+      return n;
+    }
+    return node();
+  }
+  const makeTree = (key) => (TREES[key] ? TREES[key].make() : parseTree(key));
 
   // 中序位置決定 x、深度決定 y：任兩個中序相鄰的節點一定不同層，所以不會重疊。
   const TREE_O = { cx: 0, width: 11.6, topY: 6.6, minY: 1.7, maxStep: 1.45, maxSp: 1.3 };
@@ -144,7 +166,7 @@ export default function (ctx) {
   function enterTrav() {
     fresh();
     lab.frameCamera([0, 5, 13.5], [0, 3.2, 0.8]);
-    tv.root = TREES[tv.tree].make();
+    tv.root = makeTree(tv.tree);
     spawnTree(tv.root);
     edgeLines(() => treePairs(tv.root));
     tv.cur = makeCursor();
@@ -155,7 +177,7 @@ export default function (ctx) {
       + '<select id="tvKind"><option value="pre">Preorder</option><option value="in">Inorder</option><option value="post">Postorder</option></select>'
       + '<button class="primary" id="tvNext">下一步</button><button id="tvAuto">自動播放</button><button id="tvReset">重來</button>'
     );
-    $('tvTree').value = tv.tree; $('tvKind').value = tv.kind;
+    if (TREES[tv.tree]) $('tvTree').value = tv.tree; $('tvKind').value = tv.kind;
     $('tvTree').onchange = (e) => { tv.tree = e.target.value; clearLog(); enterTrav(); };
     $('tvKind').onchange = (e) => { tv.kind = e.target.value; clearLog(); enterTrav(); };
     on('tvNext', () => { stopTimer(); if (!travStep()) log('已經走完了，按「重來」或換一種走訪。'); });
@@ -200,7 +222,7 @@ export default function (ctx) {
   function enterLevel() {
     fresh();
     lab.frameCamera([0, 5.2, 13.5], [0, 3.1, 1]);
-    lv.root = TREES[lv.tree].make();
+    lv.root = makeTree(lv.tree);
     spawnTree(lv.root);
     edgeLines(() => treePairs(lv.root));
     lv.cur = makeCursor();
@@ -212,7 +234,7 @@ export default function (ctx) {
       '<select id="lvTree">' + Object.keys(TREES).map((k) => '<option value="' + k + '">' + TREES[k].name + '</option>').join('') + '</select>'
       + '<button class="primary" id="lvNext">下一步</button><button id="lvAuto">自動播放</button><button id="lvReset">重來</button>'
     );
-    $('lvTree').value = lv.tree;
+    if (TREES[lv.tree]) $('lvTree').value = lv.tree;
     $('lvTree').onchange = (e) => { lv.tree = e.target.value; clearLog(); enterLevel(); };
     on('lvNext', () => { stopTimer(); if (!lvStep()) log('Queue 已經空了，走訪結束。'); });
     on('lvAuto', () => auto(lvStep, 1000));
@@ -611,11 +633,5848 @@ export default function (ctx) {
       say(s.emit ? '第 ' + s.pass + ' 次經過 ' + s.n.label + ' → 輸出' : s.why, '輸出：' + (s.out.join(' ') || '—'));
       await beat(tok, s.emit ? 900 : 550);
     }
-    const out = tv.steps[tv.steps.length - 1].out.join('');
+    const out = tv.steps[tv.steps.length - 1].out.join(' ');
     say(tv.tree === 'expr' ? { pre: '運算式樹的前序 = prefix 運算式', in: '中序 = 我們平常寫的 infix', post: '後序 = postfix，可以直接用 stack 計算' }[kind] : K.name + ' 完成', '<span class="ok">' + out + '</span>');
     await beat(tok, 3000);
   }
+  // ───────────────────────── 講師例子用的小工具 ─────────────────────────
+  const GOLD = '#4a3600', GREEN = '#163a2a', RED = '#4a1010', OFF = '#000';
+  function tag(text, cls, x, y, z = 0) { const l = lab.label(text, cls); l.position.set(x, y, z); lab.world.add(l); return l; }
+  function setTag(l, text) { l.element.textContent = text; }
+  function seg(a, b, color = '#c08a1f') {
+    const g = new THREE.BufferGeometry().setFromPoints([a, b]);
+    const ln = new THREE.Line(g, new THREE.LineBasicMaterial({ color }));
+    lab.world.add(ln);
+    return ln;
+  }
+  function cube(v, color, size, x, y, z = 0, drop = 0) {
+    const b = lab.addBody(block(v, size || NODE, color));
+    b.obj.position.set(x, y + drop, z);
+    if (drop) lab.dropTo(b, V(x, y, z)); else b.target.set(x, y, z);
+    return b;
+  }
+  const lit = (b, c) => b.obj.material.emissive.set(c || OFF);
+  // 依講師的樹畫出來（中序決定 x、深度決定 y），回傳 root；opts 可改版面
+  function showTree(src, opts, dropMs) {
+    const root = typeof src === 'string' ? makeTree(src) : src;
+    layoutTree(root, Object.assign({}, TREE_O, opts || {}));
+    levelorder(root).forEach((n) => { nodeBody(n).obj.position.copy(n.pos); n.body.target.copy(n.pos); });
+    edgeLines(() => treePairs(root));
+    return root;
+  }
+  async function dropTree(tok, src, opts, ms = 300) {
+    const root = typeof src === 'string' ? makeTree(src) : src;
+    layoutTree(root, Object.assign({}, TREE_O, opts || {}));
+    edgeLines(() => treePairs(root));
+    for (const n of levelorder(root)) { const b = nodeBody(n); b.obj.position.copy(n.pos).add(V(0, 4, 0)); lab.dropTo(b, n.pos.clone()); await beat(tok, ms); }
+    return root;
+  }
+  const allNodes = (root) => levelorder(root);
+  const find = (root, label) => allNodes(root).find((n) => n.label === label);
+
+  // 三種走訪的規則：V L R／L V R／L R V（小樹 root + 左右子）
+  async function scTravRules(tok) {
+    fresh();
+    lab.frameCamera([0, 4.6, 13], [0, 3.2, 0]);
+    const kinds = [['pre', 'Preorder', ['V', 'L', 'R']], ['in', 'Inorder', ['L', 'V', 'R']], ['post', 'Postorder', ['L', 'R', 'V']]];
+    const minis = kinds.map(([k, name], j) => {
+      const cx = -4.4 + j * 4.4;
+      const r = cube('root', '#2fc092', [1.1, 0.6, 0.8], cx, 4.8), l = cube('L', '#4b9ee2', [0.8, 0.6, 0.8], cx - 1.3, 3.1), rr = cube('R', '#9b7ef4', [0.8, 0.6, 0.8], cx + 1.3, 3.1);
+      seg(V(cx, 4.5, 0), V(cx - 1.3, 3.4, 0), '#7a6a52'); seg(V(cx, 4.5, 0), V(cx + 1.3, 3.4, 0), '#7a6a52');
+      tag(name, 'ptr', cx, 6.1);
+      return { k, cx, map: { V: r, L: l, R: rr } };
+    });
+    say('走訪 = 每個節點拜訪剛好一次', '三種差別只在 root 什麼時候印');
+    await beat(tok, 2600);
+    for (let j = 0; j < 3; j++) {
+      const [k, name, ord] = kinds[j], m = minis[j];
+      say(name + '：' + ord.map((x) => (x === 'V' ? 'root' : x === 'L' ? 'left' : 'right')).join(' → '), ord.join(' ') + (k === 'pre' ? '（root 最先）' : k === 'in' ? '（root 在中間）' : '（root 最後）'));
+      for (let s = 0; s < 3; s++) {
+        const b = m.map[ord[s]];
+        lit(b, GOLD);
+        tag(String(s + 1), 'ptr alt', b.obj.position.x, b.obj.position.y - 0.85);
+        await beat(tok, 900);
+        lit(b);
+      }
+      await beat(tok, 1200);
+    }
+    say('pre／in／post 指的是 root 的位置', '左一定在右前面');
+    await beat(tok, 3000);
+  }
+
+  // Abdul Bari 的畫線法：從每個節點的左邊／正下方／右邊拉線到底線，由左往右讀
+  async function scTravFlags(tok) {
+    const P = ctx.params || {};
+    const kind = P.kind || 'pre';
+    fresh();
+    lab.frameCamera([0, 4.4, 13.5], [0, 3.4, 0]);
+    const root = showTree(P.tree || 'bari', { topY: 6.4, minY: 3.0 });
+    const base = new THREE.Mesh(new THREE.BoxGeometry(12, 0.06, 0.12), new THREE.MeshStandardMaterial({ color: '#7a6a52' }));
+    base.position.set(0, 0.9, 0); lab.world.add(base);
+    const where = { pre: '左邊', in: '正下方', post: '右邊' }[kind];
+    const name = KIND[kind].name;
+    say(name + '：從每個節點的「' + where + '」拉一條線到底線', '線不能交叉，然後由左往右讀');
+    const cur = makeCursor();
+    await beat(tok, 2600);
+    const steps = travSteps(root, kind);
+    const n = allNodes(root).length;
+    const bx = (k) => -5.4 + k * (10.8 / Math.max(1, n - 1));
+    const out = [];
+    const off = [null, V(-0.62, 0, 0), V(0, -0.5, 0), V(0.62, 0, 0)];
+    for (const s of steps) {
+      const p = s.n.pos.clone().add(off[s.pass]);
+      cursorTo(cur, p);
+      if (s.emit) {
+        const k = out.length;
+        out.push(s.n.label);
+        glow(s.n, GOLD);
+        seg(p, V(bx(k), 0.95, 0));
+        const b = cube(s.n.label, depthColor(s.n.depth), SMALL, bx(k), 0.33, 0.9, 2);
+        say('沿著樹的外圍走，碰到 ' + s.n.label + ' 的' + where + ' → 落到底線', out.join(' '));
+        await beat(tok, 1000);
+      } else await beat(tok, 380);
+    }
+    cur.obj.visible = false;
+    say(name + '（由左往右讀底線）', '<span class="ok">' + out.join(' ') + '</span>');
+    await beat(tok, 3200);
+  }
+
+  const LECT = {};
+  // @@LECT@@
+  // ═════════════════════ 講師例子場景（逐段對齊影片） ═════════════════════
+  const MONO = { whiteSpace: 'pre', fontFamily: 'ui-monospace, SFMono-Regular, Consolas, monospace', fontSize: '11px', fontWeight: '600' };
+  function kill(o) {
+    if (!o) return;
+    for (const b of lab.bodies) if (b.obj === o || b === o) { lab.removeBody(b); return; }
+    lab.world.remove(o); o.traverse((c) => { if (c.element) c.element.remove(); });
+  }
+  // 程式碼面板：每行一個 label，hl(i) 讓第 i 行變金色
+  function code(lines, x, yTop, dy = 0.5, z = 0) {
+    const w = Math.max(...lines.map((s) => s.length));
+    const ls = lines.map((s, i) => { const l = tag(s.padEnd(w, ' '), '', x, yTop - i * dy, z); Object.assign(l.element.style, MONO); return l; });
+    return { ls, hl(i) { ls.forEach((l, k) => { l.element.className = 'lab-label' + (k === i ? ' ptr alt' : ''); }); }, kill() { ls.forEach(kill); } };
+  }
+  function arrow(a, b, color = '#7a6a52', dashed = false) {
+    const g = new THREE.BufferGeometry().setFromPoints([a, b]);
+    const m = dashed ? new THREE.LineDashedMaterial({ color, dashSize: 0.18, gapSize: 0.12 }) : new THREE.LineBasicMaterial({ color });
+    const ln = new THREE.Line(g, m);
+    if (dashed) ln.computeLineDistances();
+    const dir = b.clone().sub(a).normalize();
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.26, 10), new THREE.MeshBasicMaterial({ color }));
+    cone.position.copy(b).addScaledVector(dir, -0.13);
+    cone.quaternion.setFromUnitVectors(V(0, 1, 0), dir);
+    ln.add(cone);
+    lab.world.add(ln);
+    return ln;
+  }
+  // 半透明框：圈出 subtree／區塊
+  function ghost(color, x, y, w, h, z = 0, d = 1.1) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.16, depthWrite: false }));
+    m.position.set(x, y, z); lab.world.add(m); return m;
+  }
+  const W = (s) => Math.max(0.8, 0.26 * [...String(s)].reduce((a, c) => a + (c.charCodeAt(0) > 255 ? 2 : 1), 0) + 0.3);
+  async function anim(tok, ms, fn) { const steps = 12; for (let k = 1; k <= steps; k++) { fn(k / steps); await beat(tok, ms / steps); } }
+
+  // ── 一般樹（多個子節點）：G 記法 A(B,C(D))，葉子等距排、parent 置中 ──
+  function parseG(src) {
+    let i = 0; const s = String(src).replace(/\s+/g, '');
+    function node() {
+      let lab2 = ''; while (i < s.length && !'(),'.includes(s[i])) lab2 += s[i++];
+      const n = { label: lab2, kids: [] };
+      if (s[i] === '(') { i++; for (;;) { n.kids.push(node()); if (s[i] === ',') { i++; continue; } if (s[i] === ')') i++; break; } }
+      return n;
+    }
+    return node();
+  }
+  function gAll(r, out = []) { out.push(r); r.kids.forEach((k) => gAll(k, out)); return out; }
+  function layoutG(root, o = {}) {
+    const O = Object.assign({ cx: 0, width: 11, topY: 6.4, step: 1.6, z: 0 }, o);
+    const leaves = []; (function w(n, d) { n.depth = d; if (!n.kids.length) leaves.push(n); n.kids.forEach((k) => w(k, d + 1)); })(root, 0);
+    const sp = leaves.length > 1 ? O.width / (leaves.length - 1) : 0;
+    leaves.forEach((n, k) => { n.x = O.cx + (k - (leaves.length - 1) / 2) * sp; });
+    (function px(n) { if (n.kids.length) { n.kids.forEach(px); n.x = (n.kids[0].x + n.kids[n.kids.length - 1].x) / 2; } })(root);
+    gAll(root).forEach((n) => { n.pos = V(n.x, O.topY - n.depth * O.step, O.z); });
+    return root;
+  }
+  function spawnG(root, o = {}, opt = {}) {
+    layoutG(root, o);
+    const size = opt.size || ((n) => [W(n.label), 0.6, 0.8]);
+    for (const n of gAll(root)) {
+      const b = lab.addBody(block(n.label, size(n), opt.color ? opt.color(n) : depthColor(n.depth)));
+      b.obj.position.copy(n.pos); b.target.copy(n.pos); n.body = b;
+    }
+    edgeLines(() => { const out = []; for (const n of gAll(root)) for (const k of n.kids) if (n.body && k.body) out.push([n.body.obj.position, k.body.obj.position]); return out; });
+    return root;
+  }
+  const gFind = (root, l) => gAll(root).find((n) => n.label === l);
+  const gLit = (n, c) => n && n.body && n.body.obj.material.emissive.set(c || OFF);
+
+  // ─── XkNIHYd9Ruc（台大林軒田 DSA：Tree，前半 07:15–93:12） ───
+  {
+    const NTU = 'NTU(理學院(數學系,物理系),工學院(土木系),社科院,電資學院(資訊系,電機系))';
+    const TERMS = 'A(B(E(K,L),F),C(G),D(H(M),I,J))';
+    const BLUE = '#10304a';
+    const SIB = '#4b9ee2', KID = '#c08a1f';
+    const gBox = (n) => [W(n.label), 0.6, 0.8];
+    // 逐步長出一般樹：先算版面，節點建立後才畫線
+    function growG(src, o) {
+      const root = layoutG(parseG(src), o);
+      edgeLines(() => { const out = []; for (const n of gAll(root)) for (const k of n.kids) if (n.body && k.body) out.push([n.body.obj.position, k.body.obj.position]); return out; });
+      return root;
+    }
+    function addG(n, drop = 0) {
+      const b = lab.addBody(block(n.label, gBox(n), depthColor(n.depth)));
+      if (drop) { b.obj.position.copy(n.pos).add(V(0, drop, 0)); lab.dropTo(b, n.pos.clone()); }
+      else { b.obj.position.copy(n.pos); b.target.copy(n.pos); }
+      n.body = b; return b;
+    }
+    // 圈出一棵 subtree 的半透明框
+    function boxSub(n, color) {
+      const all = gAll(n);
+      const x0 = Math.min(...all.map((m) => m.pos.x - W(m.label) / 2)) - 0.12, x1 = Math.max(...all.map((m) => m.pos.x + W(m.label) / 2)) + 0.12;
+      const y0 = Math.min(...all.map((m) => m.pos.y)) - 0.45, y1 = n.pos.y + 0.45;
+      return ghost(color, (x0 + x1) / 2, (y0 + y1) / 2, x1 - x0, y1 - y0);
+    }
+    // 依中心連線（線段跟著方塊走），pairs() 回傳 [[posA, posB], …]
+    function dynLines(pairs, color) {
+      const MAX = 24, geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(MAX * 6), 3));
+      const ls = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color }));
+      ls.frustumCulled = false;
+      ls.onBeforeRender = () => {
+        const a = geo.attributes.position.array; let k = 0;
+        for (const [P, C] of pairs()) { a[k++] = P.x; a[k++] = P.y; a[k++] = P.z - 0.05; a[k++] = C.x; a[k++] = C.y; a[k++] = C.z - 0.05; }
+        geo.setDrawRange(0, k / 3); geo.attributes.position.needsUpdate = true;
+      };
+      lab.world.add(ls); return ls;
+    }
+
+    // 1. 平的 vs 有階層的
+    LECT['lina-hierarchy'] = { title: 'Vector／list 是平的，tree 有階層', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.6, 13.5], [0, 3.6, 0]);
+      const items = ['NTU', '理', '工', '電資', '數學', '資訊', '電機'];
+      const S = [1.3, 0.6, 0.8];
+      say('Vector：資料攤平排成一列', '示意：拿台大組織的 7 筆資料來排');
+      const bs = [], tmp = [];
+      for (let i = 0; i < items.length; i++) {
+        bs.push(cube(items[i], '#4b9ee2', S, -4.8 + i * 1.6, 1.0, 0, 3));
+        tmp.push(tag('[' + i + ']', 'idx', -4.8 + i * 1.6, 0.25));
+        await beat(tok, 380);
+      }
+      await beat(tok, 2200);
+      say('Linked list：一個接一個串起來', '還是一條線，沒有上下關係');
+      for (let i = 0; i + 1 < items.length; i++) { tmp.push(arrow(V(-4.8 + i * 1.6 + 0.66, 1.0, 0), V(-4.8 + (i + 1) * 1.6 - 0.66, 1.0, 0), KID)); await beat(tok, 250); }
+      await beat(tok, 2400);
+      say('可是學校 → 學院 → 系所有上下關係', 'vector／list 表達不出 hierarchical 關係');
+      await beat(tok, 2600);
+      tmp.forEach(kill);
+      const P = [[0, 6.3], [-4, 4.6], [0, 4.6], [4, 4.6], [-4, 2.9], [2.9, 2.9], [5.1, 2.9]];
+      const C = ['#2fc092', '#4b9ee2', '#4b9ee2', '#4b9ee2', '#9b7ef4', '#9b7ef4', '#9b7ef4'];
+      bs.forEach((b, i) => { lab.springTo(b, V(P[i][0], P[i][1], 0)); b.obj.material.color.set(C[i]); });
+      const E = [[0, 1], [0, 2], [0, 3], [1, 4], [3, 5], [3, 6]];
+      edgeLines(() => E.map(([a, c]) => [bs[a].obj.position, bs[c].obj.position]));
+      say('把上下關係畫出來：就是一棵 tree', '學校 → 學院 → 系所');
+      await beat(tok, 3000);
+      tag('階層 1：學校', 'idx', -6.2, 6.3); tag('階層 2：學院', 'idx', -6.2, 4.6 + 0.7); tag('階層 3：系所', 'idx', -6.2, 2.9 - 0.7);
+      say('Tree：表達 hierarchical 關係的資料結構', '<span class="ok">有上下（階層）關係</span>，不只是排成一列');
+      await beat(tok, 3200);
+    } };
+
+    // 2. 台大組織圖、檔案目錄
+    LECT['lina-ntu-org'] = { title: '例子：台大組織圖與檔案目錄', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.6, 13.5], [0, 3.9, 0]);
+      const root = growG(NTU, { width: 11, topY: 6.4, step: 1.9 });
+      say('台大的組織架構', '每個單位都是一筆資料');
+      addG(root, 3); await beat(tok, 1200);
+      const lv = tag('學校', 'ptr', -6.3, 6.4);
+      for (const k of root.kids) { addG(k, 3); await beat(tok, 500); }
+      tag('學院', 'ptr', -6.3, 4.5);
+      say('學校之下有各學院', '理學院、工學院、社會科學院、電機資訊學院');
+      await beat(tok, 2200);
+      for (const k of root.kids) for (const g of k.kids) { addG(g, 3); await beat(tok, 450); }
+      tag('系所', 'ptr', -6.3, 2.0);
+      say('學院之下有各系', '理：數學、物理；工：土木；電資：資訊、電機');
+      await beat(tok, 2600);
+      for (const d of [0, 1, 2]) { gAll(root).filter((n) => n.depth === d).forEach((n) => gLit(n, GOLD)); await beat(tok, 700); gAll(root).filter((n) => n.depth === d).forEach((n) => gLit(n)); }
+      say('一層一層往下：這就是階層', '把資料和上下關係一起存 → tree');
+      await beat(tok, 2600);
+      gAll(root).forEach((n) => lab.flyAway(n.body, V((Math.random() - 0.5) * 4, 7, 3)));
+      for (const n of gAll(root)) n.body = null;
+      kill(lv);
+      await beat(tok, 900);
+      const dir = growG('/(home(user(hw2.c,notes.txt)),usr(bin))', { width: 7, topY: 6.4, step: 1.4, cx: 0.6 });
+      say('另一個例子：電腦的檔案目錄', '示意：目錄 → 子目錄 → 檔案');
+      for (const n of gAll(dir)) { addG(n, 3); await beat(tok, 350); }
+      await beat(tok, 2000);
+      gAll(dir).filter((n) => !n.kids.length).forEach((n) => gLit(n, GREEN));
+      say('目錄裡有子目錄，最底下是檔案', '<span class="ok">檔案目錄也是 tree</span>');
+      await beat(tok, 3000);
+    } };
+
+    // 3. 定義：root + subtrees；遞迴與終止條件
+    LECT['lina-tree-def'] = { title: 'Tree = root + subtrees（遞迴定義）', play: async (tok) => {
+      const rec = (ctx.params || {}).phase === 'rec';
+      fresh();
+      lab.frameCamera([0, 4.6, 13.5], [0, 3.9, 0]);
+      const root = growG(NTU, { width: 11, topY: 6.4, step: 1.9 });
+      gAll(root).forEach((n) => addG(n));
+      say(rec ? '定義：T = root + T1 … Tn' : '樹有一個階層最高的地方', rec ? '接著把 T1 也照樣拆開' : '台大的組織圖');
+      await beat(tok, rec ? 1800 : 2200);
+      gLit(root, GOLD);
+      const rt = tag('root', 'ptr alt', 0, 7.3);
+      if (!rec) { say('階層最高的 node 叫 root', 'CS 的樹 root 在最上面（跟真的樹相反）'); await beat(tok, 2800); }
+      const boxes = [], names = [];
+      const cols = ['#4b9ee2', '#e55a9b', '#9b7ef4', '#dd8238'];
+      for (let i = 0; i < root.kids.length; i++) {
+        const k = root.kids[i];
+        boxes.push(boxSub(k, cols[i]));
+        names.push(tag('T' + (i + 1), 'ptr', k.pos.x, k.pos.y + 0.75));
+        if (!rec) { say('學院連同底下的系：也是樹 → subtree', 'T' + (i + 1) + ' = ' + k.label + ' 這棵 subtree'); await beat(tok, 1300); }
+      }
+      if (!rec) {
+        say('T = root + subtrees T1, T2, …, Tn', 'root 裝「國立台灣大學」，這裡 n = 4');
+        await beat(tok, 3400);
+        say('四個學院 = 四棵 subtree', '<span class="ok">T = NTU + { T1, T2, T3, T4 }</span>');
+        await beat(tok, 3000);
+        return;
+      }
+      await beat(tok, 1600);
+      const t1 = root.kids[0];
+      boxes.slice(1).forEach(kill); names.slice(1).forEach(kill);
+      gLit(root); gLit(t1, GOLD); setTag(rt, 'root');
+      say('T1 也是一棵樹：subroot + 更小的樹', 'T1 = 理學院 + { T1-1, T1-2 }');
+      const sr = tag('subroot', 'ptr alt', t1.pos.x - 1.6, t1.pos.y);
+      const sub = t1.kids.map((g, j) => { gLit(g, GREEN); return [boxSub(g, '#2fc092'), tag('T1-' + (j + 1), 'ptr', g.pos.x, g.pos.y - 0.85)]; });
+      await beat(tok, 3400);
+      say('大樹拆成小樹，小樹再拆成更小的樹', '這是 recursive definition');
+      await beat(tok, 3000);
+      say('只寫遞迴式還不夠：要能停下來', '還需要 termination condition');
+      await beat(tok, 2800);
+      const leaf = t1.kids[0];
+      sub.forEach(([g]) => kill(g)); t1.kids.forEach((g) => gLit(g)); gLit(leaf, RED); kill(sr);
+      const x = tag('✕ 沒有 subtree', 'ptr', leaf.pos.x + 0.6, leaf.pos.y - 1.3);
+      say('T1-1 = 數學系：只有 root，下面什麼都沒有', '沒有任何 subtree → 遞迴停止');
+      await beat(tok, 3200);
+      gLit(root.kids[2], RED);
+      tag('✕', 'ptr', root.kids[2].pos.x, root.kids[2].pos.y - 1.0);
+      say('只有 root 的樹 = 終止情形', '<span class="ok">遞迴式 + 終止條件</span> 才完整');
+      await beat(tok, 3000);
+      kill(x);
+    } };
+
+    // 4. subtrees 有沒有順序
+    LECT['lina-ordered'] = { title: 'Subtrees：unordered（set）vs ordered（sequence）', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.4, 13.5], [0, 3.8, 0]);
+      const root = growG('NTU(理學院,工學院,社科院,電資學院)', { width: 9.6, topY: 6.2, step: 2.6 });
+      gAll(root).forEach((n) => addG(n));
+      const ks = root.kids, xs = ks.map((k) => k.pos.x), y = ks[0].pos.y;
+      say('定義裡沒規定 subtrees 要不要排順序', 'T = root + { T1, T2, T3, T4 }');
+      await beat(tok, 2600);
+      say('學院彼此平等：只要知道都屬於台大', '示意：換一換位置');
+      const mv = async (perm) => { perm.forEach((p, i) => lab.springTo(ks[i].body, V(xs[p], y, 0))); await beat(tok, 1500); };
+      await mv([2, 0, 3, 1]); await mv([3, 2, 1, 0]);
+      say('不需要順序：subtrees 只是一個 set', '<span class="ok">換位置還是同一棵樹</span>（unordered）');
+      await beat(tok, 2800);
+      const nums = [20, 50, 30, 90];
+      const tags = ks.map((k, i) => { const t = tag('編號 ' + nums[i], 'ptr alt', k.body.obj.position.x, y - 0.9); return t; });
+      say('但學院有編號，例如電資學院 90', '示意編號：理 20、工 50、社科 30、電資 90');
+      await beat(tok, 2800);
+      const order = [0, 2, 1, 3];
+      order.forEach((ki, slot) => { lab.springTo(ks[ki].body, V(xs[slot], y, 0)); tags[ki].position.set(xs[slot], y - 0.9, 0); });
+      say('要依編號處理 → 順序有意義', '(T1, T2, T3, T4) 是 sequence → ordered tree');
+      await beat(tok, 3000);
+      lit(ks[0].body, RED); lit(ks[1].body, RED);
+      say('ordered tree：T1、T2 對調就是不同的樹', 'unordered：set　ordered：sequence');
+      await beat(tok, 3000);
+    } };
+
+    // 5. 名詞（老師的 13 節點樹）
+    LECT['lina-terms'] = { title: '樹的名詞：level、leaf、族譜、height、degree', play: async (tok) => {
+      const f = (ctx.params || {}).focus || 'level';
+      fresh();
+      lab.frameCamera([0, 4.4, 13.5], [0, 3.9, 0]);
+      const root = growG(TERMS, { width: 10.6, cx: 0.4, topY: 6.5, step: 1.55 });
+      const N = (l) => gFind(root, l);
+      const byD = (d) => gAll(root).filter((n) => n.depth === d);
+      const dTag = (d, txt) => tag(txt, 'idx', -6.4, 6.5 - d * 1.55);
+      if (f === 'level') {
+        say('樹裡的每一筆資料叫 node', '最上面的 node A 是 root');
+        addG(root, 3); gLit(root, GOLD); dTag(0, 'level 0');
+        await beat(tok, 2600);
+        for (const n of byD(1)) { addG(n, 3); await beat(tok, 400); }
+        dTag(1, 'level 1');
+        say('root 在 level 0，下一層 level 1', '老師照 C 語言從 0 開始（課本 root = level 1）');
+        await beat(tok, 3200);
+        say('level 又叫 depth（深度）', '越往下，depth 越大');
+        await beat(tok, 2400);
+        for (const n of byD(2)) { addG(n, 3); await beat(tok, 380); }
+        dTag(2, 'depth 2');
+        say('再往下的 E、F、G、H、I、J', '都在 depth 2');
+        await beat(tok, 2800);
+        for (const n of byD(3)) { addG(n, 3); await beat(tok, 380); }
+        dTag(3, 'depth 3');
+        say('最下面 K、L、M 在 depth 3', '之後多講 depth（樹多深、多高）');
+        await beat(tok, 3000);
+        return;
+      }
+      gAll(root).forEach((n) => addG(n));
+      if (f === 'leaf') {
+        say('從 root 一路長，長到不能再長', '沒有任何 subtree 的 node');
+        await beat(tok, 2400);
+        for (const l of ['K', 'L', 'F', 'G', 'M', 'I', 'J']) { gLit(N(l), GREEN); await beat(tok, 450); }
+        tag('leaf = external node', 'ptr', 0.4, 0.75);
+        say('這些叫 leaf（樹葉）', '正式說法：external node（在樹的最外圍）');
+        await beat(tok, 3200);
+        gLit(root, GOLD);
+        for (const l of ['B', 'C', 'D', 'E', 'H']) { gLit(N(l), BLUE); await beat(tok, 400); }
+        say('不是 root、也不是 leaf：internal node', 'internal：B、C、D、E、H');
+        await beat(tok, 3000);
+        say('node 分三種：root、leaf、internal', '金 = root　綠 = leaf　藍 = internal');
+        await beat(tok, 3000);
+        say('有的書把 root 也算 internal', '課本：degree ≠ 0 的都叫 nonterminal');
+        await beat(tok, 2800);
+        return;
+      }
+      if (f === 'family') {
+        say('把 tree 想成族譜', 'root A 是共同祖先，level 1 是第一代');
+        gLit(root, GOLD);
+        await beat(tok, 2800);
+        const A = N('A').pos, C = N('C').pos;
+        const up = arrow(C.clone().add(V(0.15, 0.35, 0)), A.clone().add(V(0.15, -0.35, 0)), KID);
+        gLit(N('C'), GREEN);
+        say('A 是 C 的 parent（家長）', '往上一代 = parent');
+        await beat(tok, 2800);
+        kill(up);
+        arrow(A.clone().add(V(-0.15, -0.35, 0)), C.clone().add(V(-0.15, 0.35, 0)), SIB);
+        say('反過來，C 是 A 的 child', '往下一代 = child');
+        await beat(tok, 2800);
+        gLit(root); gLit(N('C'));
+        gLit(N('E'), GREEN); gLit(N('F'), GREEN); gLit(N('B'), GOLD);
+        tag('siblings', 'ptr', (N('E').pos.x + N('F').pos.x) / 2, N('E').pos.y - 0.85);
+        say('E、F 有同一個 parent B', 'E、F 互為 sibling（兄弟姐妹）');
+        await beat(tok, 3000);
+        gLit(N('E')); gLit(N('F')); gLit(N('B'));
+        const g = boxSub(N('B'), '#2fc092');
+        say('B 以下的子子孫孫：descendants', '示意：B 的 descendants = E、F、K、L');
+        await beat(tok, 3000);
+        kill(g);
+        const cur = makeCursor();
+        say('M 往上：爸爸、阿公、阿祖…', '示意：M 的 ancestors');
+        for (const l of ['M', 'H', 'D', 'A']) { cursorTo(cur, N(l).pos); if (l !== 'M') gLit(N(l), GOLD); await beat(tok, 900); }
+        say('一路到 root 都是 ancestor', 'M 的 ancestors = H、D、A');
+        await beat(tok, 3000);
+        return;
+      }
+      if (f === 'uncle') {
+        say('同學問：D 和 G 是什麼關係？', 'G 的 parent 是 C');
+        gLit(N('G'), GREEN);
+        await beat(tok, 2600);
+        arrow(N('G').pos.clone().add(V(0, 0.35, 0)), N('C').pos.clone().add(V(0, -0.35, 0)), KID);
+        gLit(N('C'), GOLD);
+        say('先往上找到 parent：C', 'C 是 G 的 parent');
+        await beat(tok, 2800);
+        gLit(N('D'), GOLD);
+        tag('siblings', 'ptr', (N('C').pos.x + N('D').pos.x) / 2, N('C').pos.y + 0.75);
+        say('C 和 D 都是 A 的小孩 → siblings', 'C、D 有同一個 parent A');
+        await beat(tok, 3000);
+        tag('uncle', 'ptr alt', N('D').pos.x + 0.9, N('D').pos.y - 0.8);
+        say('D 是 G 的 parent 的 sibling', '<span class="ok">D 可稱為 G 的 uncle</span>');
+        await beat(tok, 3000);
+        say('uncle 只是族譜比喻', '課本正式術語：parent、child、sibling、ancestor');
+        await beat(tok, 2800);
+        return;
+      }
+      // height / degree
+      ['depth 0', 'depth 1', 'depth 2', 'depth 3'].forEach((t, d) => dTag(d, t));
+      say('每個 node 在第幾層：depth', 'root A 在 depth 0（老師的慣例）');
+      await beat(tok, 2600);
+      for (const d of [0, 1, 2]) { byD(d).forEach((n) => gLit(n, BLUE)); await beat(tok, 600); byD(d).forEach((n) => gLit(n)); }
+      byD(3).forEach((n) => gLit(n, GOLD));
+      say('最深的是 K、L、M，在 depth 3', '樹最深到 3 → height = 3');
+      await beat(tok, 3200);
+      say('課本 root 在 level 1', '同一棵樹：課本 height（depth）= 4');
+      await beat(tok, 2800);
+      byD(3).forEach((n) => gLit(n));
+      for (const n of gAll(root)) { tag(String(n.kids.length), n.kids.length === 3 ? 'ptr alt' : 'idx', n.pos.x + W(n.label) / 2 + 0.2, n.pos.y - 0.3); }
+      gLit(N('D'), GOLD);
+      say('node 的 degree = 小孩數', 'D 有 3 個小孩 → degree 3；B 有 2 個');
+      await beat(tok, 3200);
+      gLit(N('A'), GOLD);
+      say('tree 的 degree = 最大的 node degree', 'max(3, 2, 1, 3, 2, 1, 0…) = <span class="ok">3</span>');
+      await beat(tok, 3200);
+    } };
+
+    // 6. 表示法：container、child link、parent link
+    LECT['lina-links'] = { title: '表示 tree：child link 與 parent link', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.4, 13], [0, 4.1, 0]);
+      say('tree = root + 一堆 subtree', '要在程式裡表示出來');
+      const r = cube('root', '#2fc092', [1.4, 0.6, 0.8], 0, 6.4, 0, 3);
+      await beat(tok, 2000);
+      const bar = lab.box('#e9dcc4', [10, 0.2, 1.0]); bar.position.set(0, 3.25, 0); lab.world.add(bar);
+      tag('container', 'idx', -5.6, 3.25 + 0.45);
+      const xs = [-3.6, -1.2, 1.2, 3.6], nm = ['T1', 'T2', '…', 'Tn'];
+      const ts = [];
+      for (let i = 0; i < 4; i++) { ts.push(cube(nm[i], i === 2 ? '#c9b48e' : '#4b9ee2', [1.6, 0.6, 0.8], xs[i], 3.65, 0, 3)); await beat(tok, 450); }
+      say('把 subtrees 裝進一個 container', '每棵 subtree 佔 container 的一部分');
+      await beat(tok, 2600);
+      const note = cube('', '#f2c46d', [0.4, 0.4, 0.5], 1.05, 6.4, 0, 2);
+      tag('小紙片', 'idx', 1.05, 7.0);
+      const ch = arrow(V(1.05, 6.18, 0), V(1.05, 4.05, 0), KID);
+      const chT = tag('child link', 'ptr alt', 2.4, 5.1);
+      say('root 存資料，旁邊附一張小紙片', 'pointer 指到 subtrees 的 container');
+      await beat(tok, 3000);
+      const ups = [];
+      for (const i of [0, 1, 3]) { ups.push(arrow(V(xs[i], 4.0, 0), V(-0.35 + i * 0.12, 6.08, 0), SIB, true)); await beat(tok, 500); }
+      const upT = tag('parent link', 'ptr', -3.3, 5.3);
+      say('小孩也要找得到爸爸媽媽', '每棵 subtree 都有一條 link 指回 root');
+      await beat(tok, 3000);
+      say('往下找小孩：child link', '往上找家長：parent link（虛線）');
+      await beat(tok, 3000);
+      [bar, ch, chT, upT, ...ups].forEach(kill); kill(note);
+      ts.forEach((b, i) => lab.springTo(b, V(xs[i], 3.0, 0)));
+      say('另一種做法：root 有很多條 link', '每條 link 各指向一個小孩');
+      await beat(tok, 900);
+      for (let i = 0; i < 4; i++) { arrow(V(-0.3 + i * 0.2, 6.08, 0), V(xs[i], 3.35, 0), KID); await beat(tok, 450); }
+      await beat(tok, 2800);
+      lit(r, GOLD);
+      say('兩種都能表示 root 和它的 subtrees', 'container + 一條 link，或 每個小孩一條 link');
+      await beat(tok, 2600);
+    } };
+
+    // 7. vector 當 container
+    LECT['lina-vector'] = { title: '用 vector 當 container', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.4, 13.5], [0, 4.2, 0]);
+      const CW = 1.2, S = [1.18, 0.6, 0.8];
+      const vec = (labels, x0, y, color) => labels.map((l, i) => { const b = cube(l, color, S, x0 + i * CW, y, 0, 3); tag('[' + i + ']', 'idx', x0 + i * CW, y - 0.55); return b; });
+      say('範例樹：root 有三個小孩 T1、T2、T3', 'T1 有 2 個小孩、T2 沒有、T3 有 3 個');
+      vec(['root'], 0, 6.6, '#2fc092');
+      await beat(tok, 2600);
+      const top = vec(['T1', 'T2', 'T3'], -CW, 4.6, '#4b9ee2');
+      tag('vector', 'idx', -2.6, 4.6);
+      arrow(V(0, 6.28, 0), V(0, 4.95, 0), KID);
+      say('T1、T2、T3 各佔 vector 的一格', 'root 用 child link 連到這個 vector');
+      await beat(tok, 3000);
+      vec(['粉1', '粉2'], -4.6, 2.4, '#e55a9b');
+      arrow(V(-CW, 4.28, 0), V(-4.0, 2.75, 0), KID);
+      say('T1 用一條 link 指向裝 2 個小孩的 vector', '粉紅 1 號、粉紅 2 號');
+      await beat(tok, 3000);
+      vec(['橘1', '橘2', '橘3'], 2.4, 2.4, '#dd8238');
+      arrow(V(CW, 4.28, 0), V(3.6, 2.75, 0), KID);
+      say('T3 指向裝 3 個小孩的 vector', '橘子三兄弟');
+      await beat(tok, 2800);
+      arrow(V(0, 4.28, 0), V(0, 3.15, 0), RED);
+      tag('null（或空 array）', 'ptr', 0, 2.8);
+      lit(top[1], RED);
+      say('T2 沒有小孩', '用空 array 或 null pointer 表示');
+      await beat(tok, 3000);
+      lit(top[1]);
+      arrow(V(0.35, 4.95, 0), V(0.35, 6.28, 0), SIB, true);
+      arrow(V(-3.0, 2.75, 0), V(-1.45, 4.28, 0), SIB, true);
+      arrow(V(4.4, 2.75, 0), V(1.45, 4.28, 0), SIB, true);
+      tag('parent link', 'ptr', 5.0, 5.0);
+      say('再加上指回 parent 的虛線', '像 doubly linked list：上下都找得到');
+      await beat(tok, 3200);
+    } };
+
+    // 8 & 9 共用：linked list 版的版面
+    const LIST_POS = { root: [-4.5, 6.6], T1: [-4.5, 4.7], T2: [-1.0, 4.7], T3: [2.5, 4.7], '粉1': [-5.6, 2.6], '粉2': [-3.8, 2.6], '橘1': [1.4, 2.6], '橘2': [3.1, 2.6], '橘3': [4.8, 2.6] };
+    const LIST_COL = { root: '#2fc092', T1: '#4b9ee2', T2: '#4b9ee2', T3: '#4b9ee2', '粉1': '#e55a9b', '粉2': '#e55a9b', '橘1': '#dd8238', '橘2': '#dd8238', '橘3': '#dd8238' };
+    const KID_E = [['root', 'T1'], ['T1', '粉1'], ['T3', '橘1']];
+    const SIB_E = [['T1', 'T2'], ['T2', 'T3'], ['粉1', '粉2'], ['橘1', '橘2'], ['橘2', '橘3']];
+    const NULLS = [['T3', 6.2, 4.7, 'sib'], ['粉2', -2.3, 2.6, 'sib'], ['橘3', 6.3, 2.6, 'sib'], ['T2', -1.0, 3.2, 'kid']];
+    function listNodes(drop) {
+      const B = {};
+      for (const k of Object.keys(LIST_POS)) { const [x, y] = LIST_POS[k]; B[k] = cube(k, LIST_COL[k], [W(k), 0.6, 0.8], x, y, 0, drop); }
+      return B;
+    }
+
+    // 8. linked list 當 container
+    LECT['lina-list'] = { title: '用 linked list 當 container', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.4, 13.5], [0, 4.4, 0]);
+      const B = listNodes(3);
+      const at = (k) => B[k].obj.position;
+      say('同一棵樹，改用 linked list 當 container', 'root(T1(粉1,粉2), T2, T3(橘1,橘2,橘3))');
+      await beat(tok, 2600);
+      const sib = [], kid = [];
+      dynLines(() => sib.map(([a, c]) => [at(a), at(c)]), SIB);
+      dynLines(() => kid.map(([a, c]) => [at(a), at(c)]), KID);
+      const nul = (i) => { const [, x, y] = NULLS[i]; return tag('null', 'idx', x, y); };
+      sib.push(['T1', 'T2']); await beat(tok, 500); sib.push(['T2', 'T3']); nul(0);
+      say('T1 → T2 → T3 串成一條 list', '最後指向 null');
+      await beat(tok, 2600);
+      kid.push(['root', 'T1']); lit(B.root, GOLD);
+      say('root 用一條 link 找到第一個小孩', 'root → T1');
+      await beat(tok, 2600);
+      lit(B.root);
+      kid.push(['T1', '粉1']); sib.push(['粉1', '粉2']); nul(1);
+      say('T1 往下指到兩個粉紅小孩的 list', '粉1 → 粉2 → null');
+      await beat(tok, 2600);
+      kid.push(['T3', '橘1']); sib.push(['橘1', '橘2'], ['橘2', '橘3']); nul(2);
+      say('T3 往下指到三個 node 的 list', '橘1 → 橘2 → 橘3 → null');
+      await beat(tok, 2600);
+      arrow(V(-1.0, 4.38, 0), V(-1.0, 3.45, 0), KID);
+      nul(3);
+      say('T2 沒有小孩：child 直接指向 null', 'vector 版是連續區塊；list 版用比較多小紙條');
+      await beat(tok, 3000);
+      tag('橫的 = sibling', 'ptr', 3.0, 6.4); tag('往下 = child', 'ptr alt', 3.0, 5.8);
+      say('小紙條只有兩種', '橫的指兄弟姐妹、往下的指小孩');
+      await beat(tok, 2800);
+      lit(B.T1, GOLD);
+      say('每個 node 最多兩張小紙條', 'T1：一張往下（粉1）、一張往右（T2）');
+      await beat(tok, 3000);
+    } };
+
+    // 9. 重畫成 left-child right-sibling
+    LECT['lina-lcrs'] = { title: '重畫：child 往左下、sibling 往右下', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.2, 13.5], [0, 3.9, 0]);
+      const B = listNodes(0);
+      const at = (k) => B[k].obj.position;
+      dynLines(() => SIB_E.map(([a, c]) => [at(a), at(c)]), SIB);
+      dynLines(() => KID_E.map(([a, c]) => [at(a), at(c)]), KID);
+      const nulls = NULLS.map(([, x, y]) => tag('null', 'idx', x, y));
+      say('上一張圖：只有兩種小紙條', '金 = child（往下）　藍 = sibling（橫的）');
+      await beat(tok, 2800);
+      nulls.forEach(kill);
+      const t = parseTree('root(T1(粉1(,粉2),T2(,T3(橘1(,橘2(,橘3)),))),)');
+      layoutTree(t, Object.assign({}, TREE_O, { topY: 6.7, minY: 1.0 }));
+      const P = {}; levelorder(t).forEach((n) => { P[n.label] = n.pos.clone(); });
+      const go = (k) => lab.springTo(B[k], P[k]);
+      const steps = [
+        [['root', 'T1'], 'root 的 child 紙條往左下畫', 'root ↙ T1'],
+        [['粉1'], 'T1 的 child 再往左下', 'T1 ↙ 粉紅 1 號'],
+        [['T2'], 'T1 的 sibling 紙條改往右下', 'T1 ↘ T2'],
+        [['粉2'], '粉紅 2 號是粉紅 1 號的同輩', '粉1 ↘ 粉2（粉1 沒小孩，左邊空）'],
+        [['T3'], 'T2 沒小孩，右下接 T3', 'T2 ↘ T3'],
+        [['橘1', '橘2', '橘3'], 'T3 的三個小孩：左下再一路右下', 'T3 ↙ 橘1 ↘ 橘2 ↘ 橘3'],
+      ];
+      for (const [ks, cap, fm] of steps) {
+        ks.forEach(go); ks.forEach((k) => lit(B[k], GOLD));
+        say(cap, fm);
+        await beat(tok, 2600);
+        ks.forEach((k) => lit(B[k]));
+      }
+      tag('↙ 左 = child', 'ptr alt', -5.2, 2.0); tag('↘ 右 = sibling', 'ptr', -5.2, 1.3);
+      say('child 變左下斜線，sibling 變右下斜線', '每個 node 最多兩條連接');
+      await beat(tok, 3000);
+      lit(B.T1, GOLD);
+      const boxOf = (ks, color) => {
+        const x0 = Math.min(...ks.map((k) => P[k].x - W(k) / 2)) - 0.1, x1 = Math.max(...ks.map((k) => P[k].x + W(k) / 2)) + 0.1;
+        const y0 = Math.min(...ks.map((k) => P[k].y)) - 0.4, y1 = Math.max(...ks.map((k) => P[k].y)) + 0.4;
+        return ghost(color, (x0 + x1) / 2, (y0 + y1) / 2, x1 - x0, y1 - y0);
+      };
+      const l = boxOf(['粉1', '粉2'], '#e55a9b');
+      const r = boxOf(['T2', 'T3', '橘1', '橘2', '橘3'], '#4b9ee2');
+      say('T1 的兩棵 subtree', '左：T1 的小孩　右：T1 原本的兄弟姐妹');
+      await beat(tok, 3200);
+      kill(l); kill(r); lit(B.T1);
+      lit(B.root, GOLD);
+      tag('右邊空', 'ptr', P.root.x + 1.2, P.root.y - 0.9);
+      say('root 原本有 3 個小孩，現在只連 T1', 'root 沒有 sibling → 右邊一定空');
+      await beat(tok, 3000);
+    } };
+  }
+
+  // ─── XkNIHYd9Ruc（台大林軒田 DSA：Tree）後半 93:12–176:04 ───
+  {
+    const PRM = () => ctx.params || {};
+    const PINK = '#e55a9b', ORANGE = '#dd8238', CHILD_C = '#1f8a5a', SIB_C = '#c08a1f';
+    const relab = (b, t) => b.obj.children.forEach((c) => { if (c.element) c.element.textContent = String(t); });
+    const tgt = (b, dx = 0, dy = 0) => b.target.clone().add(V(dx, dy, 0));
+    // 會跟著方塊移動的連線（list 可變動）
+    function links(list) { return edgeLines(() => list.filter((e) => e[0] && e[1]).map(([a, b]) => [a.obj.position, b.obj.position])); }
+    function tileAt(x, z, w = 0.8, d = 0.9, color = '#e9dcc4', y = 0.04) {
+      const t = new THREE.Mesh(new THREE.BoxGeometry(w, 0.08, d), new THREE.MeshStandardMaterial({ color, roughness: 1 }));
+      t.position.set(x, y, z); lab.world.add(t); return t;
+    }
+    // 拱形箭頭（陣列格之間的跳躍）
+    function arc(a, b, color = SIB_C, h) {
+      const peak = V((a.x + b.x) / 2, Math.max(a.y, b.y) + (h === undefined ? 0.3 + 0.22 * Math.abs(b.x - a.x) : h), (a.z + b.z) / 2);
+      return [seg(a, peak, color), arrow(peak, b, color)];
+    }
+    const killAll = (arr) => { arr.forEach((o) => kill(o)); arr.length = 0; };
+
+    // ── LCRS 的例子：root(T1(P1,P2), T2, T3(O1,O2,O3)) ──
+    const LCRS_G = 'R(T1(P1,P2),T2,T3(O1,O2,O3))';
+    const LCRS_B = { R: [0, 0], T1: [-1, 1], P1: [-2, 2], T2: [0, 2], P2: [-1, 3], T3: [1, 3], O1: [0, 4], O2: [1, 5], O3: [2, 6] };
+    const LCRS_E = [['R', 'T1', 'L'], ['T1', 'P1', 'L'], ['T1', 'T2', 'R'], ['P1', 'P2', 'R'], ['T2', 'T3', 'R'], ['T3', 'O1', 'L'], ['O1', 'O2', 'R'], ['O2', 'O3', 'R']];
+    const lcrsPos = (l, cx = 0, top = 6.6, dx = 1.3, dy = 0.92) => V(cx + LCRS_B[l][0] * dx, top - LCRS_B[l][1] * dy, 0);
+    const lcrsColor = (l) => (l[0] === 'P' ? PINK : l[0] === 'O' ? ORANGE : l === 'R' ? '#2fc092' : '#4b9ee2');
+    function lcrsArrows(B) {
+      return LCRS_E.map(([p, c, s]) => arrow(tgt(B[p], s === 'L' ? -0.25 : 0.25, -0.3), tgt(B[c], 0, 0.32), s === 'L' ? CHILD_C : SIB_C));
+    }
+    async function spawnLCRS(tok, ms = 220, o = {}) {
+      const B = {};
+      for (const l of Object.keys(LCRS_B)) {
+        const p = lcrsPos(l, o.cx, o.top);
+        B[l] = cube(l, lcrsColor(l), NODE, p.x, p.y, 0, 3);
+        if (ms) await beat(tok, ms);
+      }
+      return B;
+    }
+    function lcrsLegend(x = -5.2, y = 1.4) {
+      const a = tag('↙ left = first child', 'ptr', x, y); a.element.style.color = CHILD_C;
+      const b = tag('↘ right = next sibling', 'ptr alt', x, y - 0.6);
+      return [a, b];
+    }
+
+    LECT['linb-lcrs'] = { title: 'Left-Child Right-Sibling：general tree → binary tree', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.6, 13.5], [0, 3.6, 0]);
+      const g = parseG(LCRS_G);
+      layoutG(g, { width: 10, topY: 6.2, step: 2.0 });
+      const B = {};
+      say('原本的 general tree（有順序）', 'root 的小孩依序是 T1、T2、T3');
+      for (const n of gAll(g)) { B[n.label] = cube(n.label, lcrsColor(n.label), NODE, n.pos.x, n.pos.y, 0, 3); await beat(tok, 200); }
+      const E = [];
+      for (const n of gAll(g)) for (const k of n.kids) E.push([B[n.label], B[k.label]]);
+      links(E);
+      tag('粉紅 1、2 號', 'idx', -4, 1.3); tag('橘子三兄弟', 'idx', 3, 1.3);
+      await beat(tok, 2000);
+      // 只留兩張小紙條：first child、next sibling
+      E.length = 0;
+      const tmp = [];
+      for (const n of gAll(g)) {
+        if (n.kids.length) tmp.push(arrow(tgt(B[n.label], 0, -0.3), tgt(B[n.kids[0].label], 0, 0.32), CHILD_C));
+        for (let k = 0; k + 1 < n.kids.length; k++) tmp.push(arrow(tgt(B[n.kids[k].label], 0.42, 0), tgt(B[n.kids[k + 1].label], -0.42, 0), SIB_C, true));
+      }
+      say('每個 node 只要兩張小紙條', '↓ first child（綠）、→ next sibling（金）');
+      await beat(tok, 3200);
+      killAll(tmp);
+      say('child 往左下畫、sibling 往右下畫', '整張圖像是轉了 45°');
+      for (const l of Object.keys(LCRS_B)) lab.springTo(B[l], lcrsPos(l));
+      await beat(tok, 1600);
+      lcrsArrows(B);
+      lcrsLegend();
+      await beat(tok, 2400);
+      say('每個 node 最多 2 條連結', 'maximum number of children = 2 → binary tree');
+      lit(B.T1, GOLD); lit(B.T2, GOLD); lit(B.O1, GOLD); lit(B.O2, GOLD);
+      await beat(tok, 3000);
+      [B.T1, B.T2, B.O1, B.O2].forEach((b) => lit(b));
+      const z = tag('∅', 'ptr alt', 0.7, 5.9);
+      lit(B.R, GOLD);
+      say('root 沒有 sibling：右邊一定是空', '左右有差別：要 ordered tree（T1、T2、T3 有順序）');
+      await beat(tok, 3200);
+      lit(B.R); kill(z);
+      say('Left-Child Right-Sibling', '<span class="ok">任何 ordered tree 都能存成 binary tree</span>');
+      await beat(tok, 3000);
+    } };
+
+    LECT['linb-null-links'] = { title: 'Binary tree 的條件與 NULL link', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.6, 13.5], [0, 3.6, 0]);
+      say('剛才轉出來的 binary tree', 'left = child、right = sibling');
+      const B = await spawnLCRS(tok, 200);
+      lcrsArrows(B);
+      await beat(tok, 1400);
+      tag('binary tree 條件', 'ptr', -5.2, 6.4);
+      const c1 = tag('1. degree ≤ 2', 'ptr alt', -5.2, 5.8);
+      say('條件一：tree 的 degree 最多為 2', '老師先寫「= 2」，再改成「≤ 2」');
+      await beat(tok, 2600);
+      c1.element.className = 'lab-label ptr'; tag('2. ordered：左右有差', 'ptr alt', -5.2, 5.2);
+      say('條件二：左小孩、右小孩有差別', '只有一個小孩時，也要分是左還是右');
+      await beat(tok, 2600);
+      say('把指向空的小紙條畫出來', 'NULL link：沒有存任何資料');
+      const nulls = [];
+      const has = {}; LCRS_E.forEach(([p, , s]) => { has[p + s] = true; });
+      for (const l of Object.keys(LCRS_B)) for (const s of ['L', 'R']) {
+        if (has[l + s]) continue;
+        const a = tgt(B[l], s === 'L' ? -0.25 : 0.25, -0.3), b = tgt(B[l], s === 'L' ? -0.6 : 0.6, -0.72);
+        nulls.push(seg(a, b, '#b04040'));
+        nulls.push(tag('∅', 'idx', b.x + (s === 'L' ? -0.12 : 0.12), b.y - 0.15));
+        await beat(tok, 260);
+      }
+      await beat(tok, 1200);
+      Object.values(B).forEach((b) => lit(b, GREEN));
+      say('算進 NULL：每個 node 都剛好 2 條', 'degree = 2，只是其中可能指向空');
+      await beat(tok, 2800);
+      Object.values(B).forEach((b) => lit(b));
+      say('9 個 node：18 條連結、8 條真的', '補充：n 個 node 的 binary tree 有 n + 1 條 NULL link');
+      await beat(tok, 3000);
+      killAll(nulls);
+      say('以後畫圖不畫 NULL，需要時自己腦補', '<span class="ok">每個 node 都有左右兩邊，某一邊可能為空</span>');
+      await beat(tok, 3000);
+    } };
+
+    LECT['linb-vector-pack'] = { title: 'Q&A：把 tree 塞進一個大 vector？', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 6.5, 11.5], [0, 1.6, 0]);
+      const X = (i) => -4.5 + i * 1.0;
+      const order = ['R', 'T1', 'T2', 'T3', 'P1', 'P2', 'O1', 'O2', 'O3'];
+      for (let i = 0; i < 10; i++) { tileAt(X(i), 0); tag('[' + i + ']', 'idx', X(i), 0.1, 0.8); }
+      tag('一個緊密的 vector（示意排法：一層一層放）', 'ptr', 0, 2.6);
+      say('同學問：node 全放進一個大 vector？', '這是實作上的選擇');
+      const cells = [];
+      for (let i = 0; i < order.length; i++) { cells.push(cube(order[i], lcrsColor(order[i]), [0.7, 0.55, 0.7], X(i), 0.36, 0, 2.5)); await beat(tok, 200); }
+      say('全擠在一起：access、allocate 很方便', '整塊記憶體連續');
+      await beat(tok, 2400);
+      say('T1 多一個小孩 P3：要插在 P2 後面', '後面的人通通要往後擠');
+      for (let i = order.length - 1; i >= 6; i--) { lab.springTo(cells[i], V(X(i + 1), 0.36, 0)); lit(cells[i], RED); await beat(tok, 450); }
+      const p3 = cube('P3', PINK, [0.7, 0.55, 0.7], X(6), 0.36, 0, 3);
+      await beat(tok, 900);
+      cells.forEach((c) => lit(c));
+      say('insertion／removal 都要搬動元素', '<span class="no">彈性差</span>：這就是為什麼常用小紙條（link）');
+      await beat(tok, 3000);
+      killAll(cells); kill(p3);
+      say('另一個問題：root 只有一個小孩？', 'LCRS 中 root 沒有 sibling');
+      await beat(tok, 1600);
+      for (const [l, x] of [['R', 3.6], ['T1', 2.4]]) cube(l, lcrsColor(l), NODE, x, l === 'R' ? 5.4 : 4.2, -1.5, 2);
+      arrow(V(3.4, 5.1, -1.5), V(2.5, 4.52, -1.5), CHILD_C);
+      seg(V(3.85, 5.1, -1.5), V(4.3, 4.6, -1.5), '#b04040'); tag('∅', 'idx', 4.45, 4.35, -1.5);
+      await beat(tok, 1000);
+      say('轉成 binary tree：root 只有左小孩', '<span class="ok">binary tree 的 node 只有一個實際小孩是可能的</span>');
+      await beat(tok, 3200);
+    } };
+
+    // ── 遞迴建樹（示意資料 [5,3,8,1,4]）──
+    LECT['linb-construct'] = { title: '用 recursion 建構 tree', play: async (tok) => {
+      const term = PRM().phase === 'term';
+      fresh();
+      lab.frameCamera([0, 4.4, 13.5], [0, 3.4, 0]);
+      const lines = term
+        ? ['ConstructTree(data):', '  if data empty: return NULL', '  else:', '    create root node from data[0]', '    partition data into n sets', '    T_i = ConstructTree(i-th set)', '    link root to T_i', '    return address of root node']
+        : ['ConstructTree(data):', '  create root node from data[0]', '  partition data into n sets', '  for each i:', '    T_i = ConstructTree(i-th set)', '    link root to T_i'];
+      const L = term ? { empty: 1, create: 3, part: 4, rec: 5, link: 6, ret: 7 } : { create: 1, part: 2, rec: 4, link: 5 };
+      const cp = code(lines, -3.9, 6.6, 0.5);
+      const data = [5, 3, 8, 1, 4];
+      const row = data.map((v, k) => cube(v, '#b9a582', SMALL, -2.2 + k * 0.8, 0.3, 2.2, 2));
+      row.forEach((b, k) => { b.v = data[k]; });
+      tag('data（示意）', 'idx', -2.2, 0.3, 3.1);
+      say(term ? '補上終止條件的完整版' : '建 tree 的 pseudo code（不是 C）', '資料 [5, 3, 8, 1, 4] 是示意；規則：小的放左、大的放右');
+      await beat(tok, 2600);
+      const E = []; links(E);
+      const DX = [1.6, 0.8, 0.5];
+      async function build(items, pos, depth, parent) {
+        if (!items.length) {
+          if (term) {
+            cp.hl(L.empty);
+            tag('NULL', 'idx', pos.x, pos.y + 0.2);
+            say('data 是空的 → return NULL', '不再往下建任何東西');
+            await beat(tok, 750);
+          }
+          return null;
+        }
+        const r = items[0];
+        cp.hl(L.create);
+        lab.springTo(r, pos.clone());
+        lit(r, GOLD);
+        say('create root：data[0] = ' + r.v, '其餘 ' + (items.length - 1) + ' 筆要分給 subtree');
+        await beat(tok, 1300);
+        lit(r);
+        const rest = items.slice(1);
+        const sm = rest.filter((b) => b.v < r.v), bg = rest.filter((b) => b.v > r.v);
+        const cpos = [V(pos.x - DX[depth], pos.y - 1.6, 0), V(pos.x + DX[depth], pos.y - 1.6, 0)];
+        if (rest.length) {
+          cp.hl(L.part);
+          [[sm, cpos[0], '#4b9ee2'], [bg, cpos[1], ORANGE]].forEach(([set, cp2, col]) => set.forEach((b, k) => {
+            b.obj.material.color.set(col);
+            lab.springTo(b, V(cp2.x + (k - (set.length - 1) / 2) * 0.68, cp2.y - 0.7, 0));
+          }));
+          say('partition：比 ' + r.v + ' 小放左、大放右', '小：{' + sm.map((b) => b.v).join(', ') + '}　大：{' + bg.map((b) => b.v).join(', ') + '}');
+          await beat(tok, 1400);
+        }
+        for (const [set, cp2] of [[sm, cpos[0]], [bg, cpos[1]]]) {
+          if (!set.length && !term) continue;
+          cp.hl(L.rec);
+          const sub = await build(set, cp2, depth + 1, r);
+          if (sub) {
+            cp.hl(L.link);
+            E.push([r, sub]);
+            say('link root to T_i', r.v + ' → ' + sub.v);
+            await beat(tok, 650);
+          }
+        }
+        if (term) { cp.hl(L.ret); say('return address of root node', '回傳 ' + r.v + ' 的位址 = 代表整棵 subtree'); await beat(tok, 700); }
+        return r;
+      }
+      await build(row, V(3.4, 6.2, 0), 0, null);
+      cp.hl(-1);
+      if (term) say('遞迴式 + 終止條件才完整', 'recursive formula + termination condition；' + '<span class="ok">用 NULL pointer 表示「不再遞迴建構」</span>');
+      else say('問題：沒有說什麼時候停！', '下一段補上 termination condition（補充：這就是 BST 的雛形）');
+      await beat(tok, 3000);
+    } };
+
+    // ── 樹高與 node 數（本課 root = level 0）──
+    function mini(list, color = '#4b9ee2', size = [0.6, 0.5, 0.6]) {
+      const objs = list.map(([x, y]) => cube('', color, size, x, y, 0, 2));
+      list.forEach(([x, y, p]) => { if (p !== undefined) { const [px, py] = list[p]; objs.push(seg(V(px, py - 0.25, 0), V(x, y + 0.25, 0), '#7a6a52')); } });
+      return objs;
+    }
+    LECT['linb-height-nodes'] = { title: '樹高 h 與 node 數：h = 0、1、2', play: async (tok) => {
+      const two = PRM().upto === 2;
+      fresh();
+      lab.frameCamera([0, 4.4, 13.5], [0, 3.8, 0]);
+      tag('h │ 最少 n │ 最多 n', 'ptr', -5, 6.6);
+      const rows = [0, 1, 2].map((h) => tag('h = ' + h + '：?', 'idx', -5, 6.0 - h * 0.6));
+      const fillRow = (h, a, b) => { setTag(rows[h], 'h = ' + h + '：' + a + ' ≤ n ≤ ' + b); rows[h].element.className = 'lab-label ptr alt'; };
+      if (!two) {
+        say('本課：只有 root 時 h = 0', 'root 在 level 0（洪逸是 level 1，數值差 1）');
+        await beat(tok, 2600);
+        mini([[-1, 5.8]], '#2fc092');
+        say('h = 0：root 孤單一人', '最少 = 最多 = 1 個 node');
+        fillRow(0, 1, 1);
+        await beat(tok, 2800);
+        mini([[2, 5.8], [1.2, 4.4, 0]], '#4b9ee2');
+        say('h = 1：root 至少要有一個小孩', '最少 2 個 node');
+        await beat(tok, 2800);
+        mini([[5, 5.8], [4.2, 4.4, 0], [5.8, 4.4, 0]], '#9b7ef4');
+        say('root 有兩個小孩：最多 3 個', '<span class="ok">h = 1：2 ≤ n ≤ 3</span>');
+        fillRow(1, 2, 3);
+        await beat(tok, 3000);
+        say('塞 10 萬筆資料，樹最矮、最高差多少？', '先看 node 數和高度的關係');
+        await beat(tok, 3400);
+        return;
+      }
+      fillRow(0, 1, 1); fillRow(1, 2, 3);
+      say('續上表：h = 2', '本課 root = level 0');
+      await beat(tok, 2000);
+      const full = [[2.5, 6.2], [1.0, 4.8, 0], [4.0, 4.8, 0], [0.25, 3.4, 1], [1.75, 3.4, 1], [3.25, 3.4, 2], [4.75, 3.4, 2]];
+      const objs = [];
+      objs.push(...mini(full.slice(0, 1), '#2fc092')); await beat(tok, 500);
+      objs.push(...mini(full.slice(1, 3).map((p) => [p[0], p[1]]), '#4b9ee2')); await beat(tok, 500);
+      objs.push(...mini(full.slice(3).map((p) => [p[0], p[1]]), '#9b7ef4'));
+      full.slice(1).forEach(([x, y, p]) => objs.push(seg(V(full[p][0], full[p][1] - 0.25, 0), V(x, y + 0.25, 0), '#7a6a52')));
+      say('最多：每個人都生兩個小孩', '1 + 2 + 4 = 7 個 node');
+      await beat(tok, 2800);
+      killAll(objs);
+      const a = mini([[0.8, 6.2], [0, 4.8, 0], [-0.8, 3.4, 1]], '#dd8238');
+      const b = mini([[4.6, 6.2], [3.8, 4.8, 0], [4.6, 3.4, 1]], '#dd8238');
+      say('最少：代代單傳，3 個 node', '有人生左、有人生右都算（binary tree 分左右）');
+      fillRow(2, 3, 7);
+      await beat(tok, 3000);
+      tag('skewed tree', 'ptr alt', 0, 2.4);
+      say('只偏一邊長：skewed tree（歪斜樹）', '長得像 linked list：退化的樹，我們不喜歡');
+      a.forEach((o) => { if (o.obj) lit(o, RED); });
+      await beat(tok, 3000);
+      say('h = 2：3 ≤ n ≤ 7', '<span class="ok">再推廣到一般的 h</span>');
+      await beat(tok, 3200);
+      void b;
+    } };
+
+    LECT['linb-height-formula'] = { title: '一般高度 h：h+1 ≤ n ≤ 2^(h+1) − 1', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.6, 13.5], [0, 3.4, 0.6]);
+      const H = 3;
+      tag('最少（示意 h = 3）', 'ptr', -5.4, 7.0);
+      const chain = [];
+      for (let i = 0; i <= H; i++) { chain.push(cube('', '#dd8238', [0.55, 0.45, 0.55], -5.4, 6.2 - i * 1.2, 0, 2)); tag('第 ' + i + ' 代', 'idx', -4.4, 6.2 - i * 1.2); await beat(tok, 300); }
+      for (let i = 0; i < H; i++) seg(V(-5.4, 5.97 - i * 1.2, 0), V(-5.4, 5.23 - i * 1.2, 0), '#7a6a52');
+      say('最少：每代只有 1 個', '<span class="ok">n_min = h + 1</span>（示意 h = 3 → 4）');
+      await beat(tok, 2600);
+      tag('最多：每個人生兩個', 'ptr', 1.2, 7.0);
+      const bits = [];
+      const BX = (i) => 5.2 - i * 0.9;
+      for (let i = 0; i <= H; i++) {
+        const k = 1 << i;
+        for (let j = 0; j < k; j++) cube('', '#4b9ee2', [0.42, 0.38, 0.42], 1.2 + (j - (k - 1) / 2) * 0.55, 6.2 - i * 1.2, 0, 1.5);
+        tag('2^' + i + ' = ' + k, 'idx', 4.2, 6.2 - i * 1.2);
+        say('第 ' + i + ' 層：' + k + ' 個', '1 + 2 + 4 + 8 + … 等比級數');
+        await beat(tok, 750);
+      }
+      say('用二進位看：每一層是一個 bit', '第 0 位到第 h 位都是 1');
+      for (let i = 0; i <= H; i++) {
+        bits[i] = cube('1', '#2fc092', [0.6, 0.5, 0.6], BX(i), 0.3, 2.2, 2);
+        tag('2' + '⁰¹²³⁴'[i], 'idx', BX(i), 0.3, 3.0);
+        await beat(tok, 450);
+      }
+      tag('2⁴', 'idx', BX(4), 0.3, 3.0);
+      say('1111₂ = 1 + 2 + 4 + 8 = 15', '(h+1) 個 1');
+      await beat(tok, 2200);
+      const one = cube('+1', '#f2c46d', [0.6, 0.5, 0.6], BX(0), 1.1, 2.2, 2);
+      await beat(tok, 900);
+      kill(one);
+      for (let i = 0; i <= H; i++) { relab(bits[i], 0); bits[i].obj.material.color.set('#b9a582'); await beat(tok, 350); }
+      bits[4] = cube('1', '#2fc092', [0.6, 0.5, 0.6], BX(4), 0.3, 2.2, 2);
+      say('再加 1：一路進位變成 10000₂', '1111₂ + 1 = 2⁴ → 1111₂ = 2⁴ − 1');
+      await beat(tok, 2800);
+      say('所以 n 有上下界', '<span class="ok">h + 1 ≤ n ≤ 2^(h+1) − 1</span>');
+      await beat(tok, 3000);
+      say('反過來：給 n，h 的範圍', 'lg(n+1) − 1 ≤ h ≤ n − 1（lg = log₂）');
+      await beat(tok, 3200);
+      say('洪逸（root = level 1，depth k）', 'depth k 最多 2^k − 1 個 node；第 i 層最多 2^(i−1) 個');
+      await beat(tok, 2800);
+    } };
+
+    LECT['linb-search-height'] = { title: '為什麼在意樹高：搜尋成本 ≈ h', play: async (tok) => {
+      const cmp = PRM().focus === 'compare';
+      fresh();
+      lab.frameCamera([0, 4.4, 13.5], [0, 3.6, 0.6]);
+      const L = showTree('4(2(1,3),6(5,7))', { cx: -3.4, width: 5.6, topY: 6.4, minY: 3.4, maxStep: 1.5, maxSp: 0.95 });
+      const R = showTree('1(,2(,3(,4(,5(,6(,7))))))', { cx: 3.6, width: 5.4, topY: 6.6, minY: 0.8, maxStep: 1.0, maxSp: 0.9 });
+      const cL = tag('拜訪 0 次', 'ptr alt', -3.4, 2.4), cR = tag('拜訪 0 次', 'ptr alt', 5.2, 6.6);
+      tag('n = 7（示意）', 'idx', -3.4, 7.3);
+      say('tree 是階層式 access：從 root 往下找', '示意：兩棵 n = 7 的 binary tree，找 7');
+      await beat(tok, 2600);
+      const curL = makeCursor(), curR = makeCursor();
+      async function walk(root, cur, cnt, target, ms, cap) {
+        let n = root, k = 0;
+        while (n) {
+          cursorTo(cur, n.pos); glow(n, GOLD); k++; setTag(cnt, '拜訪 ' + k + ' 次');
+          if (cap) say(n.label === target ? '找到 ' + target + '！' : target + ' > ' + n.label + '：往右', '每層只拜訪一個 node');
+          await beat(tok, ms);
+          if (String(target) === n.label) break;
+          n = Number(target) < Number(n.label) ? n.left : n.right;
+        }
+        return k;
+      }
+      if (!cmp) {
+        await walk(L, curL, cL, '7', 1100, true);
+        say('最多找「樹的高度」那麼多層', '矮樹：h = 2（root = level 0），3 次');
+        await beat(tok, 2600);
+        const xs = [-6, -5.1, -4.2, -3.3, -2.4, -1.5, -0.6];
+        const arr = xs.map((x, k) => cube(k + 1, '#b9a582', SMALL, x, 0.3, 2.2, 1.5));
+        say('就像 ordered array 上的 binary search', '每次丟掉一半 candidate');
+        await beat(tok, 1600);
+        for (const [mid, drop] of [[3, [0, 1, 2, 3]], [5, [4, 5]], [6, []]]) {
+          lit(arr[mid], GOLD); await beat(tok, 800);
+          drop.forEach((k) => { arr[k].obj.material.color.set('#d8cfc0'); lit(arr[k]); });
+          await beat(tok, 600);
+        }
+        say('比較次數 ≈ lg（資料數量）', '<span class="ok">tree 上 search 的成本跟 h 有關</span>');
+        await beat(tok, 3000);
+        return;
+      }
+      say('Best case：矮樹', '找 7：4 → 6 → 7');
+      await walk(L, curL, cL, '7', 800, false);
+      tag('h ≈ lg n：好', 'ptr alt', -3.4, 1.7);
+      say('h ≈ lg n：花 log n 次就找到', '類似 binary search');
+      await beat(tok, 2200);
+      say('Worst case：skewed tree', '找 7：一路往右走到底');
+      await walk(R, curR, cR, '7', 600, false);
+      tag('h = n − 1：壞', 'ptr', 3.4, 0.1);
+      say('h = n − 1：要花 linear 的力氣', '跟 linked list 的 sequential search 一樣');
+      await beat(tok, 2800);
+      arrow(V(0.4, 1.2, 0), V(-1.6, 2.4, 0), '#1f8a5a');
+      say('設計 tree 的 DS／演算法：壓低樹高', '要退化成 linked list，不如直接用 list');
+      await beat(tok, 3000);
+      say('同一層多塞 node 對我們有利', '<span class="ok">矮胖好，瘦高（退化）不好</span>');
+      await beat(tok, 2800);
+    } };
+
+    LECT['linb-html-tree'] = { title: 'Q&A：網站是 tree 嗎？HTML parse tree', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.6, 13.5], [0, 3.6, 0]);
+      const pg = { home: [-5, 6], cv: [-2.4, 6], blog: [-5, 4], post: [-2.4, 4] };
+      const B = {};
+      for (const k of Object.keys(pg)) B[k] = cube(k, '#8fa3b8', [1.2, 0.55, 0.7], pg[k][0], pg[k][1], 0, 2);
+      await beat(tok, 600);
+      const A = (a, b, dy = 0) => arrow(V(pg[a][0] + (pg[b][0] > pg[a][0] ? 0.62 : pg[b][0] < pg[a][0] ? -0.62 : 0.2), pg[a][1] + dy + (pg[b][1] < pg[a][1] ? -0.3 : pg[b][1] > pg[a][1] ? 0.3 : 0), 0),
+        V(pg[b][0] + (pg[b][0] > pg[a][0] ? -0.62 : pg[b][0] < pg[a][0] ? 0.62 : 0.2), pg[b][1] + dy + (pg[b][1] < pg[a][1] ? 0.3 : pg[b][1] > pg[a][1] ? -0.3 : 0), 0), SIB_C);
+      A('home', 'cv', 0.12); A('cv', 'home', -0.12); A('home', 'blog'); A('blog', 'post', 0); A('post', 'home');
+      tag('hyperlink（示意）', 'idx', -3.7, 7.0);
+      say('網頁之間的 hyperlink 沒有父子關係', '可以互連、有環 → graph structure，比 tree 複雜');
+      await beat(tok, 3400);
+      say('檔案放在 directory 裡', 'directory 本身可看成 tree structure');
+      await beat(tok, 2400);
+      const html = ['<html>', '  <head>…</head>', '  <body>', '    <a href=…>', '      <img src=…>', '    </a>', '    <p>…</p>', '  </body>', '</html>'];
+      const cp = code(html, -3.8, 2.8, 0.36);
+      say('HTML：HyperText Markup Language', '結構化的文字（老師的網頁原始碼，示意）');
+      await beat(tok, 2600);
+      const g = spawnG(parseG('html(head,body(a(img),p))'), { cx: 3.2, width: 5, topY: 6.4, step: 1.5 });
+      const gb = (l) => gFind(g, l);
+      cp.hl(3); gLit(gb('a'), GOLD); gLit(gb('img'), GOLD);
+      const box = ghost('#c08a1f', 2.0, 2.65, 1.6, 2.4);
+      say('<a> 裡面包著 <img>：一棵 subtree', '每個標記結構都可看成 subtree');
+      await beat(tok, 3200);
+      cp.hl(-1); gLit(gb('a')); gLit(gb('img')); kill(box);
+      say('整頁表示成 tree：parse tree', '跟作業三的 expression tree 一樣描述文法架構');
+      await beat(tok, 3000);
+    } };
+
+    // ── full binary tree 1..7 與 path code ──
+    const PC_POS = (i) => heapPos(i, 6.4, 1.9, 8);
+    const bin = (i) => i.toString(2);
+    LECT['linb-path-code'] = { title: 'Full binary tree 的編號、二進位與 path code', play: async (tok) => {
+      const path = PRM().phase === 'path';
+      fresh();
+      lab.frameCamera([0, 4.4, 13.5], [0, 3.8, 0]);
+      const N = {}, bt = {};
+      const E = []; links(E);
+      if (!path) say('同一高度塞最多 node：full binary tree', '三層（level 0..2）→ 1 + 2 + 4 = 7 個');
+      for (let i = 1; i <= 7; i++) {
+        const p = PC_POS(i);
+        N[i] = cube(i, depthColor(hdepth(i)), NODE, p.x, p.y, 0, path ? 0 : 3);
+        if (i > 1) E.push([N[i >> 1], N[i]]);
+        if (path) { bt[i] = tag(bin(i), 'ptr alt', p.x + 0.85, p.y + 0.15); } else await beat(tok, 380);
+      }
+      if (!path) {
+        await beat(tok, 1600);
+        say('編號：由上到下、同層由左到右', '就是 level order：1 到 7');
+        for (let i = 1; i <= 7; i++) { lit(N[i], GOLD); await beat(tok, 300); lit(N[i]); }
+        await beat(tok, 600);
+        say('把編號寫成二進位', '1, 10, 11, 100, 101, 110, 111');
+        for (let i = 1; i <= 7; i++) { const p = PC_POS(i); bt[i] = tag(bin(i), 'ptr alt', p.x + 0.85, p.y + 0.15); await beat(tok, 500); }
+        await beat(tok, 1600);
+        say('金字 = 編號的二進位（老師用紅字）', 'node number 的 binary representation');
+        await beat(tok, 2600);
+        say('第 k 層（level k）的編號都是 k+1 位', '<span class="ok">看看路徑跟這些 bits 的關係</span>');
+        await beat(tok, 2600);
+        return;
+      }
+      for (let i = 2; i <= 7; i++) {
+        const a = PC_POS(i >> 1), b = PC_POS(i), m = a.clone().add(b).multiplyScalar(0.5);
+        const l = tag(i % 2 ? '1' : '0', 'ptr', m.x + (i % 2 ? 0.35 : -0.35), m.y + 0.2);
+        if (i % 2 === 0) l.element.style.color = CHILD_C;
+      }
+      say('往左的 link 寫 0、往右寫 1', '從 root 出發，沿路收集 bits');
+      await beat(tok, 2600);
+      const cur = makeCursor();
+      const pathTag = tag('', 'ptr alt', 0, 0.6, 1.5);
+      const walk = [[1, '1', '從 root 1 出發', 'code = 1'], [2, '1·0', '往左接 0：10₂ = 2', '1 → 10'], [4, '1·00', '再往左：100₂ = 4', '10 → 100'],
+        [1, '1', '回到 root', 'code = 1'], [3, '1·1', '往右接 1：11₂ = 3', '1 → 11'], [6, '1·10', '3 往左接 0：110₂ = 6', '11 → 110'],
+        [3, '1·1', '回到 3', 'code = 11'], [7, '1·11', '再往右：111₂ = 7', '11 → 111']];
+      for (const [i, code2, cap, f] of walk) {
+        cursorTo(cur, PC_POS(i)); lit(N[i], GOLD);
+        setTag(pathTag, 'path code：' + code2 + ' = ' + i);
+        say(cap, f);
+        await beat(tok, 1300);
+        lit(N[i]);
+      }
+      cur.obj.visible = false;
+      say('編號 = 先放 1，後面接路徑 bits', 'node 6：1 + 「右 1、左 0」→ 110₂');
+      await beat(tok, 2800);
+      say('接 0 = 左移一位 = ×2', '110₂ = 6 → 1100₂ = 12');
+      await beat(tok, 2600);
+      say('接 1 = 左移再加 1 = ×2 + 1', '2 = 1×2、3 = 1×2+1；4 = 2×2、5 = 2×2+1');
+      for (const [p, a, b] of [[1, 2, 3], [2, 4, 5]]) { lit(N[p], GOLD); lit(N[a], GREEN); lit(N[b], GREEN); await beat(tok, 1300); [p, a, b].forEach((k) => lit(N[k])); }
+      await beat(tok, 2400);
+    } };
+
+    // ── 用 vector 存 full binary tree ──
+    const VX = (i) => -4.2 + (i - 1) * 1.3;
+    function vecTiles(n, z = 1.5) {
+      const t = [];
+      for (let i = 1; i <= n; i++) { t[i] = tileAt(VX(i), z, 1.0, 1.0); tag('[' + i + ']', 'idx', VX(i), 0.1, z + 0.75); }
+      return t;
+    }
+    LECT['linb-vector'] = { title: '用 vector 存 full binary tree：不需要指標', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 5.2, 12.5], [0, 3.0, 0.8]);
+      const P = (i) => heapPos(i, 6.8, 1.2, 7);
+      const N = {}, C = {}, E = []; links(E);
+      for (let i = 1; i <= 7; i++) { N[i] = cube(i, depthColor(hdepth(i)), [0.7, 0.55, 0.7], P(i).x, P(i).y); if (i > 1) E.push([N[i >> 1], N[i]]); }
+      const tiles = vecTiles(7);
+      say('最喜歡用編號的 data structure：vector', '7 格，編號 1 到 7');
+      await beat(tok, 2200);
+      for (let i = 1; i <= 7; i++) {
+        C[i] = cube(i, depthColor(hdepth(i)), [0.7, 0.55, 0.7], P(i).x, P(i).y);
+        lab.springTo(C[i], V(VX(i), 0.35, 1.5));
+        await beat(tok, 320);
+      }
+      await beat(tok, 600);
+      const arcs = [];
+      for (const i of [1, 2, 3]) {
+        lit(C[i], GOLD); lit(N[i], GOLD);
+        say('第 ' + i + ' 格：左小孩 ' + i + '×2 = ' + 2 * i, '右小孩 ' + i + '×2+1 = ' + (2 * i + 1));
+        arcs.push(...arc(V(VX(i), 0.7, 1.5), V(VX(2 * i), 0.7, 1.5), CHILD_C));
+        await beat(tok, 900);
+        arcs.push(...arc(V(VX(i), 0.7, 1.5), V(VX(2 * i + 1), 0.7, 1.5), SIB_C));
+        await beat(tok, 1500);
+        lit(C[i]); lit(N[i]);
+      }
+      say('完全不用存 left／right 小紙條', '省空間；×2、×2+1 是很快的 bit shift');
+      await beat(tok, 3000);
+      killAll(arcs);
+      for (const i of [5, 6]) {
+        lab.flyAway(N[i], V(i === 5 ? -3 : 3, 8, 3)); lab.flyAway(C[i], V(0, 8, 4));
+        const k = E.findIndex((e) => e[1] === N[i]); if (k >= 0) E.splice(k, 1);
+        tiles[i].material.color.set('#f4d9d0');
+      }
+      say('一般 binary tree = full 砍掉一些 node', '示意：砍掉 5、6 → vector 留空格');
+      await beat(tok, 3200);
+      say('任何 binary tree 都能用 vector 表示', '<span class="ok">不需要任何 link</span>');
+      await beat(tok, 2800);
+    } };
+
+    LECT['linb-complete'] = { title: '空間浪費、complete binary tree 與找爸爸', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 5.0, 13.5], [0, 3.4, 0.8]);
+      async function waste(set, levels, cap, f) {
+        const total = (1 << levels) - 1;
+        const sp = 12.6 / total, P = (i) => heapPos(i, 6.8, levels === 4 ? 1.35 : 1.15, levels === 4 ? 11 : 12.4);
+        const objs = [], M = {};
+        for (let i = 1; i <= total; i++) {
+          const x = -6.3 + (i - 0.5) * sp;
+          objs.push(tileAt(x, 2.6, sp * 0.86, 0.8, set.includes(i) ? '#e9dcc4' : '#f4d9d0'));
+          if (set.includes(i)) {
+            const p = P(i);
+            M[i] = cube(levels === 4 ? i : '', depthColor(hdepth(i)), levels === 4 ? [0.55, 0.45, 0.55] : [0.42, 0.38, 0.42], p.x, p.y, 0, 2);
+            objs.push(M[i]);
+            objs.push(cube('', depthColor(hdepth(i)), [sp * 0.6, 0.3, 0.5], x, 0.25, 2.6));
+          }
+        }
+        const E = [];
+        for (const i of set) if (i > 1) E.push([M[i >> 1], M[i]]);
+        objs.push(links(E));
+        say(cap, f);
+        await beat(tok, 3600);
+        killAll(objs);
+      }
+      await waste([1, 2, 3, 4, 5, 6, 7, 9, 12, 15], 4, '4 層的樹只裝 10 個 node（示意）', 'vector 要 1+2+4+8 = 15 格，粉紅 = 空格');
+      await waste([1, 2, 3, 5, 6, 10, 11, 13, 26, 27], 5, '5 層的樹也只裝 10 個', '要配置 31 格 → 浪費 21 格');
+      const P = (i) => heapPos(i, 6.4, 1.6, 8);
+      const N = {}, C = {}, E = []; links(E);
+      const tiles = [];
+      for (let i = 1; i <= 7; i++) {
+        N[i] = cube(i, depthColor(hdepth(i)), NODE, P(i).x, P(i).y, 0, 2);
+        if (i > 1) E.push([N[i >> 1], N[i]]);
+        tiles[i] = tileAt(VX(i), 1.5, 1.0, 1.0); tag('[' + i + ']', 'idx', VX(i), 0.1, 2.25);
+        C[i] = cube(i, depthColor(hdepth(i)), [0.7, 0.55, 0.7], VX(i), 0.35, 1.5);
+      }
+      say('越接近 full binary tree 越不浪費', 'full：7 個 node 剛好 7 格');
+      await beat(tok, 2600);
+      for (const i of [7, 6, 5]) {
+        lab.flyAway(N[i], V(4, 8, 3)); lab.flyAway(C[i], V(4, 8, 4)); kill(tiles[i]);
+        const k = E.findIndex((e) => e[1] === N[i]); if (k >= 0) E.splice(k, 1);
+        await beat(tok, 500);
+      }
+      say('只留 full tree 的前 4 個 node', '這種叫 complete binary tree');
+      await beat(tok, 2600);
+      say('編號 1..n ↔ size n 的 array', '連接關係仍由 ×2、×2+1 決定');
+      await beat(tok, 2400);
+      const arcs = [];
+      for (const [c, p] of [[4, 2], [3, 1], [2, 1]]) {
+        lit(C[c], GOLD); lit(N[c], GOLD); lit(C[p], GREEN); lit(N[p], GREEN);
+        arcs.push(...arc(V(VX(c), 0.7, 1.5), V(VX(p), 0.7, 1.5), '#4b9ee2'));
+        say('由小孩找爸爸：' + c + ' / 2 = ' + p, c === 4 ? '5 / 2 = 2 也一樣（整數除法）' : '編號除以 2，捨去小數');
+        await beat(tok, 1700);
+        [c, p].forEach((k) => { lit(C[k]); lit(N[k]); });
+      }
+      say('小孩：×2、×2+1；爸爸：÷2', '<span class="ok">parent(i) = ⌊i/2⌋</span>（老師口誤說「乘以 2」）');
+      await beat(tok, 3000);
+    } };
+
+    LECT['linb-level-def'] = { title: 'Q&A：五層的樹高度是 5 還是 4？', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.4, 13.5], [0, 3.8, 0]);
+      const set = [1, 2, 3, 4, 5, 6, 7, 8, 9, 16];
+      const P = (i) => heapPos(i, 6.6, 1.3, 9);
+      const M = {}, E = []; links(E);
+      for (const i of set) { M[i] = cube('', depthColor(hdepth(i)), [0.6, 0.5, 0.6], P(i).x, P(i).y, 0, 2); if (i > 1) E.push([M[i >> 1], M[i]]); await beat(tok, 150); }
+      say('同學問：五層的樹，高度是 5 還是 4？', '不同書說法不一樣，沒有完全公定');
+      await beat(tok, 2800);
+      const a = [];
+      for (let d = 0; d < 5; d++) { a.push(tag('第 ' + d + ' 層', 'ptr', -5.6, 6.6 - d * 1.3)); await beat(tok, 300); }
+      say('本課：root 是第 0 層', '最深是第 4 層 → <span class="ok">height = 4</span>');
+      lit(M[16], GOLD);
+      await beat(tok, 2800);
+      for (let d = 0; d < 5; d++) { tag('level ' + (d + 1), 'ptr alt', 5.6, 6.6 - d * 1.3); await beat(tok, 300); }
+      say('洪逸／Horowitz：root 在 level 1', '五層 → depth（height）= 5');
+      await beat(tok, 2800);
+      say('寫題前先確認題目用哪種定義', '同一棵樹，兩種慣例差 1');
+      await beat(tok, 2800);
+    } };
+
+    LECT['linb-huffman'] = { title: '延伸：Huffman tree 與 path code 解碼', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.4, 13.5], [0, 3.6, 0.6]);
+      const root = T('•', T('A'), T('•', T('B'), T('•', T('C'), T('D'))));
+      showTree(root, { topY: 6.6, minY: 2.4 });
+      walkPre(root, (n) => { for (const [c, b] of [[n.left, '0'], [n.right, '1']]) if (c) { const m = n.pos.clone().add(c.pos).multiplyScalar(0.5); const l = tag(b, 'ptr', m.x + (b === '1' ? 0.3 : -0.3), m.y + 0.2); if (b === '0') l.element.style.color = CHILD_C; } });
+      say('Huffman tree：資料壓縮用的 binary tree', '示意：A = 0、B = 10、C = 110、D = 111');
+      await beat(tok, 3000);
+      const bits = '010110111'.split('');
+      const bt = bits.map((b, k) => tag(b, 'idx', -4 + k * 0.7, 0.9, 1.6));
+      tag('壓縮資料', 'ptr', -5.8, 0.9, 1.6);
+      tag('解出', 'ptr', -5.8, 0.3, 3.0);
+      say('解壓縮：順著 bit 沿 path 走', '走到 leaf 就 decode 出一個符號');
+      await beat(tok, 2200);
+      const cur = makeCursor();
+      let n = root, outN = 0;
+      cursorTo(cur, root.pos);
+      for (let k = 0; k < bits.length; k++) {
+        bt[k].element.className = 'lab-label ptr alt';
+        n = bits[k] === '0' ? n.left : n.right;
+        cursorTo(cur, n.pos);
+        await beat(tok, 700);
+        if (!n.left && !n.right) {
+          glow(n, GOLD);
+          cube(n.label, depthColor(n.depth), SMALL, -4 + outN * 0.9, 0.3, 3.0, 2);
+          outN++;
+          say('走到 leaf：解出 ' + n.label, '回到 root 繼續');
+          await beat(tok, 900);
+          glow(n, OFF);
+          n = root; cursorTo(cur, root.pos);
+          await beat(tok, 300);
+        }
+      }
+      say('每個符號都要從 root 走到 leaf', '一張 JPEG 要走非常非常多次');
+      await beat(tok, 3000);
+    } };
+
+    LECT['linb-cache'] = { title: '經驗談：node 四散 vs 壓進 vector', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 7.5, 11], [0, 0.8, 0.6]);
+      const X = (i) => -6.0 + i * 0.86;
+      const scat = [6, 1, 12, 0, 9, 4, 13];
+      tag('記憶體：node 四散', 'ptr', -4.6, 1.4, -2.2);
+      for (let i = 0; i < 15; i++) tileAt(X(i), -1.5, 0.78, 0.8);
+      const A = {};
+      for (let i = 1; i <= 7; i++) A[i] = cube(i, depthColor(hdepth(i)), [0.6, 0.5, 0.6], X(scat[i - 1]), 0.3, -1.5, 2);
+      await beat(tok, 900);
+      say('用指標串起來：node 四散在記憶體各處', '沿指標跳來跳去，cache 幫不上忙');
+      const ar = [];
+      for (const i of [1, 2, 3]) for (const c of [2 * i, 2 * i + 1]) { ar.push(...arc(V(X(scat[i - 1]), 0.6, -1.5), V(X(scat[c - 1]), 0.6, -1.5), '#b04040', 0.5 + 0.12 * Math.abs(scat[c - 1] - scat[i - 1]))); await beat(tok, 450); }
+      await beat(tok, 1600);
+      tag('vector：位置相近', 'ptr alt', -4.6, 1.4, 1.2);
+      for (let i = 1; i <= 7; i++) { tileAt(X(i + 3), 2.4, 0.78, 0.8); cube(i, depthColor(hdepth(i)), [0.6, 0.5, 0.6], X(i + 3), 0.3, 2.4, 2); }
+      await beat(tok, 700);
+      say('像 full binary tree 壓進 vector', 'node 位置相近 + 找小孩只要 ×2、×2+1');
+      for (const i of [1, 2, 3]) for (const c of [2 * i, 2 * i + 1]) { arc(V(X(i + 3), 0.6, 2.4), V(X(c + 3), 0.6, 2.4), CHILD_C, 0.4 + 0.1 * (c - i)); await beat(tok, 350); }
+      await beat(tok, 1600);
+      say('MPEG-2 decoder ≈ 每秒 30 次 JPEG 解碼', '記憶體配置決定程式夠不夠快');
+      await beat(tok, 3000);
+      say('full tree、vector、path code 都相關', '<span class="ok">未來學 Huffman tree、JPEG 會用到</span>');
+      await beat(tok, 2800);
+    } };
+
+    // ── Expression tree：×(+(3,5), −(2, +(7,4))) ──
+    LECT['linb-expr-tree'] = { title: 'Expression tree：運算子、運算元與括號', play: async (tok) => {
+      const paren = PRM().phase === 'paren';
+      fresh();
+      lab.frameCamera([0, 4.4, 13.5], [0, 3.4, 0.6]);
+      const src = '×(+(3,5),−(2,+(7,4)))';
+      const opts = { topY: 6.4, minY: 2.6 };
+      const root = paren ? showTree(src, opts) : await dropTree(tok, src, opts, 260);
+      const internal = postorder(root).filter((n) => n.left);
+      const leaves = allNodes(root).filter((n) => !n.left && !n.right);
+      if (!paren) {
+        say('把 tree 和作業三連起來：expression tree', '老師畫的：×(3+5, 2−(7+4))');
+        await beat(tok, 2200);
+        internal.forEach((n) => glow(n, GOLD));
+        say('root、internal node 放運算子', '×、+、−、+');
+        await beat(tok, 2400);
+        leaves.forEach((n) => glow(n, GREEN));
+        say('leaf 放要計算的數字', '3、5、2、7、4');
+        await beat(tok, 2400);
+        say('全是 binary operator → binary tree', 'unary operator 或多參數 function call → 不一定');
+        await beat(tok, 2600);
+        allNodes(root).forEach((n) => glow(n, OFF));
+        const cur = makeCursor();
+        const val = new Map(leaves.map((n) => [n, Number(n.label)]));
+        const op = { '+': (a, b) => a + b, '−': (a, b) => a - b, '×': (a, b) => a * b };
+        for (const n of internal) {
+          if (n === root.right) { cursorTo(cur, n.left.pos); glow(n.left, GREEN); say('右 subtree：2 是 leaf，就是 2', '再算 7 + 4'); await beat(tok, 1400); }
+          const a = val.get(n.left), b = val.get(n.right), v = op[n.label](a, b);
+          val.set(n, v);
+          cursorTo(cur, n.pos); glow(n, GOLD);
+          tag('= ' + v, 'ptr alt', n.pos.x + 0.75, n.pos.y - 0.45);
+          say('左右 subtree 算完，再做 root', a + ' ' + n.label + ' ' + (b < 0 ? '(' + b + ')' : b) + ' = ' + v);
+          await beat(tok, 1700);
+        }
+        say('結果 −72（老師沒算到，補充）', '<span class="ok">(3+5) × (2 − (7+4)) = −72</span>');
+        await beat(tok, 3000);
+        return;
+      }
+      const ino = inorder(root);
+      const toks = ino.map((n) => cube(n.label, n.left ? '#f2c46d' : '#2fc092', SMALL, n.pos.x, 0.3, 1.6, 2));
+      say('subtree 先算，root 後算', '照 x 位置讀下來：3 + 5 × 2 − 7 + 4（還沒加括號）');
+      await beat(tok, 3000);
+      const closeCnt = new Map();
+      const box = (n) => { const s = inorder(n), d = postorder(n); const xs = s.map((k) => k.pos.x), ys = d.map((k) => k.pos.y); return ghost('#c08a1f', (Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2, Math.max(...xs) - Math.min(...xs) + 1.1, Math.max(...ys) - Math.min(...ys) + 0.9); };
+      const steps = [[root.left, '左 subtree 加括號：(3+5)', '加括號 = 要先算'], [root.right.right, '最裡面：(7+4)', 'subtree 加括號、root 放中間'],
+        [root.right, '右 subtree：(2 − (7+4))', '遞迴做同一件事']];
+      for (const [n, cap, f] of steps) {
+        const s = inorder(n), i0 = ino.indexOf(s[0]), i1 = ino.indexOf(s[s.length - 1]);
+        const c = closeCnt.get(i1) || 0; closeCnt.set(i1, c + 1);
+        const g = box(n);
+        tag('(', 'ptr', ino[i0].pos.x - 0.55, 0.35, 1.6); tag(')', 'ptr', ino[i1].pos.x + 0.55 + c * 0.4, 0.35, 1.6);
+        say(cap, f);
+        await beat(tok, 2600);
+        kill(g);
+      }
+      glow(root.right.left, GREEN);
+      say('leaf（如 2）本身不用加括號', '2 就是 2');
+      await beat(tok, 2200);
+      glow(root.right.left, OFF);
+      say('寫回算式：(3+5) × (2 − (7+4))', '<span class="ok">root × 放在中間</span>');
+      glow(root, GOLD);
+      await beat(tok, 2600);
+      say('internal node 放 operator', 'external node（leaf）放 operand');
+      await beat(tok, 2400);
+      say('subtree 代表 parentheses', '補充：= inorder 加括號；postfix 為 3 5 + 2 7 4 + − ×');
+      await beat(tok, 3000);
+      void toks;
+    } };
+  }
+
+  // ─── VwQeypxlevE：交大彭文志 Lec12 Trees（1/6）───
+  {
+    const HT = 'A(B(E(K,L),F),C(G),D(H,I,J))';          // 課本 Fig 5.2 的一般樹
+    const HT_BIN = 'A(B(E(K(,L),F),C(G,D(H(,I(,J))))))'; // 它的 LCRS → binary tree
+    const CT = 'A(B(D(H,I),E),C(F,G))';                  // 講師的 complete binary tree（9 個 node）
+    const PP = () => ctx.params || {};
+    const BLU = '#4b9ee2', ORG = '#dd8238', PUR = '#9b7ef4', GRN = '#2fc092', SAND = '#c9b48e', DIM = '#d8cfc0';
+    const topP = (p, h = 0.3) => V(p.x, p.y + h, p.z + 0.02), botP = (p, h = 0.3) => V(p.x, p.y - h, p.z + 0.02);
+    const hide = (l, on) => { l.element.style.visibility = on ? '' : 'hidden'; };
+    const flyB = (b) => b && lab.flyAway(b, V((Math.random() - 0.5) * 6, 8, 4));
+    const hiEdge = (a, b, color = '#c08a1f') => seg(botP(a.pos), topP(b.pos), color);
+
+    // 一般樹一個一個掉下來
+    async function dropG(tok, src, o, ms = 200, opt = {}) {
+      const root = typeof src === 'string' ? parseG(src) : src;
+      layoutG(root, o);
+      const size = opt.size || ((n) => [W(n.label), 0.6, 0.8]);
+      edgeLines(() => { const out = []; for (const n of gAll(root)) for (const k of n.kids) if (n.body && k.body) out.push([n.body.obj.position, k.body.obj.position]); return out; });
+      const q = [root];
+      while (q.length) {
+        const n = q.shift();
+        const b = lab.addBody(block(n.label, size(n), opt.color ? opt.color(n) : depthColor(n.depth)));
+        b.obj.position.copy(n.pos).add(V(0, 3, 0)); lab.dropTo(b, n.pos.clone()); n.body = b;
+        q.push(...n.kids);
+        if (ms) await beat(tok, ms);
+      }
+      return root;
+    }
+    // 深度 4 的位置框（編號 1..15）
+    const HP = (i) => heapPos(i, 6.6, 1.5, 11.6);
+    function slots(n, posFn = HP, withIdx = false) {
+      const out = [];
+      for (let i = 1; i <= n; i++) {
+        const g = new THREE.Mesh(new THREE.BoxGeometry(...NODE), new THREE.MeshBasicMaterial({ color: SAND, wireframe: true, transparent: true, opacity: 0.35 }));
+        g.position.copy(posFn(i)); lab.world.add(g); out.push(g);
+        if (withIdx) { const p = posFn(i); tag(String(i), 'idx', p.x, p.y - 0.55); }
+      }
+      return out;
+    }
+    function idxCube(v, i, color, pos) {
+      const b = lab.addBody(block(v, NODE, color));
+      b.obj.position.copy(pos); b.target.copy(pos);
+      const il = lab.label(String(i), 'idx'); il.position.set(0.6, -0.32, 0); b.obj.add(il);
+      b.il = il;
+      return b;
+    }
+
+    // ── 1. Tree 的遞迴定義 ──
+    LECT['p12-def'] = { title: 'Tree 的遞迴定義：root + T1…Tk', play: async (tok) => {
+      fresh(); lab.frameCamera([0, 5, 13.5], [0, 3.6, 0]);
+      say('Tree 長得像族譜（示意）', '上面是祖先，下面是 child');
+      const fam = await dropG(tok, '祖先(拉丁人(義大利人,法國人),日耳曼人(德國人,荷蘭人),斯拉夫人)', { width: 11, topY: 6.4, step: 1.9 }, 260);
+      await beat(tok, 1400);
+      const leaves = gAll(fam).filter((n) => !n.kids.length);
+      leaves.forEach((n) => gLit(n, GOLD));
+      say('最底下沒有 child 的叫 leaf node', 'leaf：沒有再往下長');
+      await beat(tok, 2600);
+      gAll(fam).forEach((n) => flyB(n.body));
+      await beat(tok, 800);
+      fresh(); lab.frameCamera([0, 5, 13.5], [0, 3.6, 0]);
+      say('定義：a collection of nodes', '有一個特殊 node 叫 root（一定要有）');
+      const r = cube('root', GRN, [1.2, 0.6, 0.8], 0, 6.4, 0, 3);
+      await beat(tok, 2200);
+      const subs = [['T1', -4.4, 2], ['T2', 0, 1], ['Tk', 4.4, 3]].map(([nm, cx, k], j) => {
+        const g = ghost([BLU, PUR, ORG][j], cx, 3.3, 3.4, 2.9);
+        const lb = tag(nm, 'ptr', cx, 5.0);
+        const sr = cube('r' + (j === 2 ? 'k' : j + 1), BLU, [0.8, 0.5, 0.7], cx, 4.15, 0, 2);
+        const kids = [];
+        for (let i = 0; i < k; i++) {
+          const x = cx + (i - (k - 1) / 2) * 1.05;
+          kids.push(cube('', PUR, [0.6, 0.45, 0.6], x, 2.55, 0, 2));
+          seg(V(cx, 3.9, 0), V(x, 2.78, 0), '#7a6a52');
+        }
+        arrow(V(0, 6.1, 0), V(cx, 4.45, 0));
+        return { g, lb, sr, kids };
+      });
+      tag('…', 'ptr', 2.2, 3.3);
+      say('root 底下接 k 棵 subtree：T1 … Tk', '彼此不相交（disjoint）');
+      await beat(tok, 3000);
+      lit(subs[0].sr, GOLD);
+      say('每棵 subtree 又有自己的 root', '→ 定義是 recursive（遞迴）的');
+      await beat(tok, 3000);
+      lit(subs[0].sr);
+      subs.forEach((s) => s.kids.forEach((b) => lit(b, GOLD)));
+      say('最底下沒有 child 的是 leaf node', 'subtree 的 subtree… 最後停在 leaf');
+      await beat(tok, 2600);
+      subs.forEach((s) => s.kids.forEach((b) => lit(b)));
+      lit(r, GOLD);
+      say('一個 node 可以分幾枝，可以自己定', '分枝數 k 依需求定義（k = 2 → binary）');
+      await beat(tok, 3000);
+    } };
+
+    // ── 2/3/5. 課本範例樹：level、degree、parent／child、sibling、ancestor ──
+    async function sampleBase(tok) {
+      fresh(); lab.frameCamera([0, 5, 13.5], [0, 3.8, 0]);
+      const root = await dropG(tok, HT, { width: 10, topY: 6.6, step: 1.6 }, 140);
+      return { root, N: (l) => gFind(root, l) };
+    }
+    async function scLevels(tok) {
+      const { root, N } = await sampleBase(tok);
+      say('課本範例樹：A 是 root', 'A(B(E(K,L),F), C(G), D(H,I,J))');
+      await beat(tok, 2000);
+      const all = gAll(root);
+      for (let d = 0; d < 4; d++) {
+        tag('level ' + (d + 1), 'idx', -6.4, 6.6 - d * 1.6);
+        const ns = all.filter((n) => n.depth === d);
+        ns.forEach((n) => gLit(n, GOLD));
+        say('level ' + (d + 1) + '：' + ns.map((n) => n.label).join(' '), d ? '往下一層 +1' : 'root 的 level 是 1');
+        await beat(tok, 1300);
+        ns.forEach((n) => gLit(n));
+      }
+      say('高度（深度）= 最大的 level', 'height = 4（root 算 level 1）');
+      await beat(tok, 2400);
+      const A = N('A'), C = N('C');
+      gLit(A, GOLD);
+      const ea = A.kids.map((k) => hiEdge(A, k));
+      const ta = tag('degree(A) = 3', 'ptr alt', A.pos.x + 2.2, A.pos.y + 0.3);
+      say('degree = 指出去的 child 數', 'A 指出去 3 條 → degree(A) = 3');
+      await beat(tok, 3000);
+      gLit(A); ea.forEach(kill); kill(ta);
+      gLit(C, GOLD);
+      const up = hiEdge(A, C, '#d04040'), dn = hiEdge(C, N('G'));
+      tag('✗ 不算', 'ptr', (A.pos.x + C.pos.x) / 2 + 0.7, (A.pos.y + C.pos.y) / 2);
+      tag('degree(C) = 1', 'ptr alt', C.pos.x + 1.6, C.pos.y + 0.2);
+      say('別人指到它的邊不算', '只算往下指的：degree(C) = 1');
+      await beat(tok, 3200);
+      say('Tree 是一種特殊的 graph', 'graph 的 degree 再分 in／out-degree（第 6 章）');
+      await beat(tok, 2800);
+      void up; void dn;
+    }
+    async function scParent(tok) {
+      const { N } = await sampleBase(tok);
+      const A = N('A'), B = N('B');
+      gLit(A, GOLD);
+      tag('root：最原始的祖先', 'ptr alt', A.pos.x, A.pos.y + 0.8);
+      say('A 是整棵 tree 最原始的祖先', 'root = A');
+      await beat(tok, 2600);
+      gLit(A);
+      const sub = ['B', 'E', 'F', 'K', 'L'].map(N);
+      sub.forEach((n) => lab.springTo(n.body, n.pos.clone().setZ(1.6)));
+      const xs = sub.map((n) => n.pos.x);
+      ghost(BLU, (Math.min(...xs) + Math.max(...xs)) / 2, 3.4, Math.max(...xs) - Math.min(...xs) + 1.4, 4.0, 1.6);
+      tag('B 的 subtree', 'ptr', Math.min(...xs) - 0.2, 5.8, 1.6);
+      gLit(B, GOLD);
+      say('把 subtree 拉出來：祖先是 B', 'B 是這棵 subtree 的 root／parent');
+      await beat(tok, 3000);
+      ['E', 'F'].forEach((l) => { gLit(N(l), GREEN); tag('child', 'ptr', N(l).pos.x, N(l).pos.y - 0.6, 1.6); });
+      say('B link 出去的 node 是它的 child', 'child(B) = E、F');
+      await beat(tok, 2800);
+      ['K', 'L'].forEach((l) => { gLit(N(l), RED); });
+      tag('E 的 child', 'ptr', N('E').pos.x, N('K').pos.y - 0.7, 1.6);
+      say('K、L 是 E 的 child，不是 B 的', 'K、L 對 B 而言是 descendant（孫輩）');
+      await beat(tok, 3200);
+      gLit(N('E'), GOLD);
+      say('parent／child 是相對的關係', 'E 是 B 的 child，也是 K、L 的 parent');
+      await beat(tok, 3000);
+    }
+    async function scSibling(tok) {
+      const { N } = await sampleBase(tok);
+      const sibs = ['B', 'C', 'D'].map(N);
+      sibs.forEach((n) => gLit(n, GREEN));
+      tag('sibling', 'ptr', 6.0, sibs[0].pos.y);
+      say('同一個 parent 的 node 互為 sibling', 'B、C、D 的 parent 都是 A');
+      await beat(tok, 2800);
+      sibs.forEach((n) => gLit(n));
+      ['K', 'L'].forEach((l) => gLit(N(l), GREEN));
+      say('K、L 也是 sibling', 'parent 都是 E');
+      await beat(tok, 2200);
+      ['K', 'L'].forEach((l) => gLit(N(l)));
+      ['E', 'G'].forEach((l) => gLit(N(l), RED));
+      say('E、G 同一層，但 parent 不同', '不是 sibling（補充：叫 cousin）');
+      await beat(tok, 2600);
+      ['E', 'G'].forEach((l) => gLit(N(l)));
+      const cur = makeCursor();
+      const path = ['A', 'B', 'E', 'K'].map(N);
+      for (let i = 0; i < path.length; i++) {
+        cursorTo(cur, path[i].pos);
+        if (i) hiEdge(path[i - 1], path[i]);
+        say('從 root 往下走到 K：形成一條 path', path.slice(0, i + 1).map((n) => n.label).join(' → '));
+        await beat(tok, 1000);
+      }
+      path.slice(0, 3).forEach((n) => { gLit(n, GOLD); tag('ancestor', 'ptr alt', n.pos.x + 1.25, n.pos.y + 0.1); });
+      say('path 上經過的 node 是 K 的 ancestors', 'ancestors(K) = A、B、E');
+      await beat(tok, 3200);
+    }
+    LECT['p12-sample'] = { title: '課本範例樹：level、degree、parent、sibling', play: (tok) => {
+      const f = PP().focus;
+      return f === 'parent' ? scParent(tok) : f === 'sibling' ? scSibling(tok) : scLevels(tok);
+    } };
+
+    // ── 6. list 表示法 ──
+    LECT['p12-list'] = { title: 'Tree 的 list 表示法', play: async (tok) => {
+      fresh(); lab.frameCamera([0, 5, 13.5], [0, 3.8, 0.4]);
+      const root = await dropG(tok, HT, { width: 10, topY: 6.8, step: 1.4 }, 120);
+      const N = (l) => gFind(root, l);
+      const str = tag('', '', 0, 0.9, 1.2); Object.assign(str.element.style, MONO, { fontSize: '14px' });
+      say('Tree 不只一種表示法', '括號代表從屬關係（list）');
+      await beat(tok, 2200);
+      const box = (ls, color, pad = 0.55) => {
+        const ns = ls.map(N), xs = ns.map((n) => n.pos.x), ys = ns.map((n) => n.pos.y);
+        return ghost(color, (Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2, Math.max(...xs) - Math.min(...xs) + 2 * pad + 0.4, Math.max(...ys) - Math.min(...ys) + 1.0);
+      };
+      const steps = [
+        [['K', 'L'], BLU, 'E(K,L)', 'K、L 括在一起：共同 parent 是 E', '(K,L) 前面接 E'],
+        [['E', 'F', 'K', 'L'], PUR, 'B(E(K,L),F)', 'E、F 括在一起：parent 是 B', '(E(K,L),F) 前面接 B'],
+        [['G'], ORG, 'B(E(K,L),F),C(G),D(H,I,J)', '依此類推：C(G)、D(H,I,J)', 'B、C、D 的 parent 是 A'],
+      ];
+      const gs = [];
+      for (const [ls, c, s, cap, f] of steps) {
+        gs.push(box(ls, c));
+        if (ls[0] === 'G') gs.push(box(['H', 'I', 'J'], ORG));
+        str.element.textContent = s;
+        say(cap, f);
+        await beat(tok, 2800);
+      }
+      str.element.textContent = '(A(B(E(K,L),F),C(G),D(H,I,J)))';
+      gLit(N('A'), GOLD);
+      say('整棵 tree 寫成一個 list', '(A(B(E(K,L),F),C(G),D(H,I,J)))');
+      await beat(tok, 2600);
+      gAll(root).forEach((n) => flyB(n.body)); gs.forEach(kill);
+      await beat(tok, 800);
+      // 每一層括號 = 一條 linked list（• = 指向子 list）
+      const L = {};
+      const cell = (k, v, x, y, color) => { L[k] = cube(v, color, [0.8, 0.6, 0.8], x, y, 0, 2.5); return L[k]; };
+      const nxt = (a, b) => arrow(V(L[a].target.x + 0.42, L[a].target.y, 0), V(L[b].target.x - 0.42, L[b].target.y, 0));
+      const dn = (a, b) => arrow(V(L[a].target.x, L[a].target.y - 0.3, 0), V(L[b].target.x, L[b].target.y + 0.32, 0), BLU);
+      const rows = [
+        ['A 的 list：A 後面三個分支', '每個 • 指向一條子 list', [['A', 'A', -5.5, 6.2, GRN], ['a1', '•', -4.0, 6.2, SAND], ['a2', '•', -2.5, 6.2, SAND], ['a3', '•', -1.0, 6.2, SAND]], [['A', 'a1'], ['a1', 'a2'], ['a2', 'a3']], []],
+        ['B 的子 list：B → •(E…) → F', '(E(K,L),F) 前面接 B', [['B', 'B', -4.0, 4.5, BLU], ['b1', '•', -2.5, 4.5, SAND], ['F', 'F', -1.0, 4.5, PUR]], [['B', 'b1'], ['b1', 'F']], [['a1', 'B']]],
+        ['E 的子 list：E → K → L', '(K,L) 前面接 E', [['E', 'E', -2.5, 2.8, PUR], ['K', 'K', -1.0, 2.8, '#e55a9b'], ['L', 'L', 0.5, 2.8, '#e55a9b']], [['E', 'K'], ['K', 'L']], [['b1', 'E']]],
+        ['C、D 的子 list', 'C(G)、D(H,I,J)', [['C', 'C', 1.5, 4.5, BLU], ['G', 'G', 3.0, 4.5, PUR], ['D', 'D', 1.9, 2.8, BLU], ['H', 'H', 3.3, 2.8, PUR], ['I', 'I', 4.7, 2.8, PUR], ['J', 'J', 6.1, 2.8, PUR]], [['C', 'G'], ['D', 'H'], ['H', 'I'], ['I', 'J']], [['a2', 'C'], ['a3', 'D']]],
+      ];
+      const s2 = tag('(A(B(E(K,L),F),C(G),D(H,I,J)))', '', 0, 7.5); Object.assign(s2.element.style, MONO, { fontSize: '13px' });
+      for (const [cap, f, cs, ns, ds] of rows) {
+        say(cap, f);
+        for (const [k, v, x, y, c] of cs) { cell(k, v, x, y, c); await beat(tok, 260); }
+        ns.forEach(([a, b]) => nxt(a, b)); ds.forEach(([a, b]) => dn(a, b));
+        await beat(tok, 1800);
+      }
+      say('每一層括號都是一條 linked list', 'Tree 是高層次的 DS，看你怎麼 implement');
+      await beat(tok, 3000);
+    } };
+
+    // ── 7. k-ary tree 的 null pointer ──
+    LECT['p12-kary'] = { title: 'k-ary tree：固定 k 個 pointer 很浪費', play: async (tok) => {
+      fresh(); lab.frameCamera([0, 5, 13.5], [0, 3.6, 0]);
+      const labs = ['data', '1', '2', '3', '4', '5', '…', 'k'];
+      let x = -4.4;
+      const cs = labs.map((v, i) => { const w = i ? 0.8 : 1.6; const b = cube(v, i ? BLU : GRN, [w, 0.8, 0.9], x + w / 2, 4.2, 0, 2.5); x += w + 0.08; return b; });
+      tag('k-ary tree 的 node', 'ptr', 0, 5.4);
+      say('k-ary tree：每個 node 最多指 k 個', 'degree ≤ k');
+      await beat(tok, 2600);
+      cs.slice(1).forEach((b) => lit(b, GOLD));
+      say('每個 node 都開 data + k 個 pointer', '不管實際有幾個 child，欄位數固定');
+      await beat(tok, 2600);
+      cs.forEach(flyB);
+      await beat(tok, 700);
+      fresh(); lab.frameCamera([0, 5, 13.5], [0, 3.6, 0]);
+      const root = await dropG(tok, HT, { width: 10, topY: 6.6, step: 1.6 }, 90);
+      const K = 3;
+      const sl = new Map();
+      for (const n of gAll(root)) {
+        sl.set(n, [0, 1, 2].map((j) => cube('', DIM, [0.22, 0.16, 0.3], n.pos.x + (j - 1) * 0.27, n.pos.y - 0.48, 0)));
+      }
+      const cnt = tag('', 'ptr alt', 4.6, 7.5);
+      setTag(cnt, 'pointer 共 n·k = 12 × 3 = 36');
+      say('以課本樹示意：n = 12、k = 3', '總 pointer 數 = n·k = 36');
+      await beat(tok, 2800);
+      let used = 0;
+      for (const n of gAll(root)) n.kids.forEach((c, j) => { sl.get(n)[j].obj.material.color.set(GRN); used++; });
+      for (const n of gAll(root)) if (n.kids.length) { for (let j = 0; j < n.kids.length; j++) { lit(sl.get(n)[j], GREEN); } }
+      say('除了 root，每個 node 恰被一個指到', '用到的 pointer = n − 1 = ' + used);
+      await beat(tok, 3000);
+      for (const n of gAll(root)) sl.get(n).forEach((b, j) => { if (j >= n.kids.length) b.obj.material.color.set('#e06666'); });
+      setTag(cnt, 'null = 36 − 11 = 25');
+      say('紅色都是 null（浪費）', 'nk − (n−1) = 36 − 11 = 25');
+      await beat(tok, 3000);
+      say('一般式：n(k−1) + 1 個 null', 'k = 2：n + 1；k = 3：2n + 1 → k 越大越浪費');
+      await beat(tok, 3000);
+      say('B-tree、B+ tree 也是 k-ary tree', '實務上看資料型態決定');
+      await beat(tok, 2600);
+    } };
+
+    // ── 8/9. Left Child–Right Sibling，再轉成 binary tree ──
+    LECT['p12-lcrs'] = { title: 'Left Child–Right Sibling 表示法', play: async (tok) => {
+      const bin = PP().focus === 'bin';
+      fresh(); lab.frameCamera([0, 5, 13.5], [0, 3.8, 0]);
+      const g = layoutG(parseG(HT), { width: 10, topY: 6.6, step: 1.6 });
+      const B = {}, P = {};
+      for (const n of gAll(g)) { B[n.label] = cube(n.label, depthColor(n.depth), NODE, n.pos.x, n.pos.y, 0, bin ? 0 : 2); P[n.label] = n.pos; if (!bin) await beat(tok, 70); }
+      const orig = [];
+      for (const n of gAll(g)) for (const k of n.kids) orig.push(seg(botP(n.pos), topP(k.pos), DIM));
+      const st = tag('node = [ data | left child | right sibling ]', 'ptr', 2.6, 7.6);
+      const links = [['A', 'B', 'L'], ['A', null, 'S'], ['B', 'E', 'L'], ['B', 'C', 'S'], ['C', 'D', 'S'], ['C', 'G', 'L'], ['E', 'K', 'L'], ['E', 'F', 'S'], ['K', 'L', 'S'], ['D', 'H', 'L'], ['H', 'I', 'S'], ['I', 'J', 'S']];
+      const arrs = [];
+      const draw = (a, b, k) => {
+        if (!b) return tag('sibling = null', 'idx', P[a].x + 1.5, P[a].y + 0.1);
+        return k === 'L' ? arrow(botP(P[a]), topP(P[b], 0.32), BLU) : arrow(V(P[a].x + 0.42, P[a].y, 0.02), V(P[b].x - 0.42, P[b].y, 0.02), ORG);
+      };
+      if (!bin) {
+        say('LCRS：每個 node 只有兩個 pointer', '藍 = left child（最左的 child），橘 = right sibling');
+        await beat(tok, 2800);
+        for (const [a, b, k] of links) {
+          lit(B[a], GOLD);
+          arrs.push(draw(a, b, k));
+          say(b ? a + '.' + (k === 'L' ? 'leftChild' : 'rightSibling') + ' = ' + b : 'A 是 root：沒有 sibling', k === 'L' ? '指向最左邊的 child' : b ? '把右邊的兄弟串起來' : 'rightSibling = null');
+          await beat(tok, 1150);
+          lit(B[a]);
+        }
+        say('實作只要三個欄位', 'data、left child、right sibling → 不浪費 pointer');
+        await beat(tok, 3200);
+        return;
+      }
+      for (const [a, b, k] of links) arrs.push(draw(a, b, k));
+      say('延續 LCRS：每個 node 兩個 pointer', '把兩個 pointer 看成兩個分支');
+      await beat(tok, 3600);
+      arrs.forEach(kill); orig.forEach(kill); kill(st);
+      const br = parseTree(HT_BIN);
+      layoutTree(br, Object.assign({}, TREE_O, { topY: 6.8, minY: 1.4 }));
+      for (const n of levelorder(br)) { n.body = B[n.label]; lab.springTo(n.body, n.pos.clone()); }
+      edgeLines(() => treePairs(br));
+      say('right sibling 改當 right child', '（課本：LCRS 順時針轉 45°）');
+      await beat(tok, 4200);
+      const A = levelorder(br)[0];
+      lit(B.A, GOLD);
+      tag('right = 空', 'ptr alt', A.pos.x + 1.3, A.pos.y - 0.6);
+      say('得到 degree 2 的 tree = binary tree', 'root 沒有 sibling → right child 一定空');
+      await beat(tok, 3000);
+      lit(B.A);
+      tag('k 個 child 欄位（最直覺）', 'ptr', -4.2, 0.4, 1.4); tag('list（括號）', 'ptr', 0, 0.4, 1.4); tag('LCRS', 'ptr', 3.6, 0.4, 1.4);
+      say('表示法小結：三種都可以', 'k-ary tree 的 k = 2 就是 binary tree');
+      await beat(tok, 4400);
+    } };
+
+    // ── 10. Binary tree 定義 vs Tree ──
+    LECT['p12-bt-def'] = { title: 'Binary tree 定義：和一般 tree 的差別', play: async (tok) => {
+      fresh(); lab.frameCamera([0, 5, 13.5], [0, 4, 0]);
+      const e = ghost(SAND, 0, 5.0, 3.2, 1.8);
+      const et = tag('∅  empty binary tree', 'ptr alt', 0, 5.0);
+      say('Binary tree：a finite set of nodes', '是 set → 可以是 empty（合法）');
+      await beat(tok, 3000);
+      kill(e); kill(et);
+      const r = cube('root', GRN, [1.2, 0.6, 0.8], 0, 6.4, 0, 3);
+      const gl = ghost(BLU, -2.4, 4.0, 3.0, 2.2), gr = ghost(PUR, 2.4, 4.0, 3.0, 2.2);
+      const tl = tag('left subtree', 'ptr', -2.4, 4.0), tr = tag('right subtree', 'ptr', 2.4, 4.0);
+      const a1 = arrow(V(-0.3, 6.1, 0), V(-2.0, 5.15, 0)), a2 = arrow(V(0.3, 6.1, 0), V(2.0, 5.15, 0));
+      say('非空：root + left + right subtree', '左右 subtree 本身也是 binary tree（可空）');
+      await beat(tok, 3200);
+      [gl, gr, tl, tr, a1, a2].forEach(kill); flyB(r);
+      await beat(tok, 600);
+      tag('Binary tree', 'ptr alt', 0.6, 7.2); tag('Tree', 'ptr', 4.4, 7.2);
+      const rows = [
+        ['允許 0 個 node', '✓ 可以', '✗ 不行', '一般 tree 不允許 0 個 node', 'tree 至少要有 root'],
+        ['左右順序', '有區分', '不區分', 'binary tree 的左右子樹有差別', 'tree 不管 child 的順序'],
+        ['degree', '≤ 2', 'no limit', '比較表：degree', 'binary ≤ 2，tree 沒有限制'],
+      ];
+      for (let k = 0; k < rows.length; k++) {
+        const [nm, a, b, cap, f] = rows[k], y = 5.8 - k * 1.5;
+        tag(nm, 'ptr', -4.4, y);
+        cube(a, k === 0 ? GRN : BLU, [2.6, 0.7, 0.8], 0.6, y, 0, 2.5);
+        await beat(tok, 300);
+        cube(b, k === 0 ? '#e06666' : SAND, [2.6, 0.7, 0.8], 4.4, y, 0, 2.5);
+        say(cap, f);
+        await beat(tok, 2800);
+      }
+      say('A 只有左 child ≠ A 只有右 child', '在 binary tree 是兩棵不同的樹（補充）');
+      await beat(tok, 3000);
+    } };
+
+    // ── 11. Binary tree 範例 ──
+    LECT['p12-bt-examples'] = { title: 'Binary tree 範例：左右有別、skewed、complete', play: async (tok) => {
+      fresh(); lab.frameCamera([0, 5, 13.5], [0, 4, 0]);
+      const t1 = await dropG(tok, 'A(B)', { cx: -5.4, topY: 6.2, step: 1.6 }, 200);
+      const t2 = await dropG(tok, 'A(B,C)', { cx: -2.3, width: 1.8, topY: 6.2, step: 1.6 }, 200);
+      tag('tree：AB', 'ptr', -5.4, 7.2); tag('tree：ABC', 'ptr', -2.3, 7.2);
+      void t1; void t2;
+      // 中間：LCRS 實作
+      const i1a = cube('A', GRN, NODE, 1.6, 6.2, 0, 2), i1b = cube('B', BLU, NODE, 1.6, 4.6, 0, 2);
+      arrow(V(1.6, 5.9, 0), V(1.6, 4.92, 0), BLU);
+      const i2a = cube('A', GRN, NODE, 4.4, 6.2, 0, 2), i2b = cube('B', BLU, NODE, 4.4, 4.6, 0, 2), i2c = cube('C', BLU, NODE, 6.0, 4.6, 0, 2);
+      arrow(V(4.4, 5.9, 0), V(4.4, 4.92, 0), BLU); arrow(V(4.82, 4.6, 0), V(5.58, 4.6, 0), ORG);
+      tag('LCRS 實作的長相', 'ptr alt', 3.8, 7.2);
+      void i1a; void i1b; void i2a; void i2b;
+      say('AB、ABC 都是 tree；右邊是 LCRS 實作', '藍 = left child，橘 = right sibling');
+      await beat(tok, 3000);
+      lit(i2c, GOLD);
+      say('程式裡的長相 ≠ 實際 tree 的長相', 'C 在實作裡是 B 的 sibling');
+      await beat(tok, 2800);
+      fresh(); lab.frameCamera([0, 5, 13.5], [0, 4, 0]);
+      await dropTree(tok, 'A(B)', { cx: -3, width: 2, topY: 6.0, minY: 4.4 }, 250);
+      await dropTree(tok, 'A(,B)', { cx: 3, width: 2, topY: 6.0, minY: 4.4 }, 250);
+      tag('≠', 'ptr alt', 0, 5.2);
+      tag('A 的 left child = B', 'ptr', -3, 3.4); tag('A 的 right child = B', 'ptr', 3, 3.4);
+      say('左 child B ≠ 右 child B', '當作一般 tree 卻是同一棵');
+      await beat(tok, 3400);
+      fresh(); lab.frameCamera([0, 5, 13.5], [0, 4, 0]);
+      tag('skewed binary tree', 'ptr', -3.6, 7.4);
+      await dropTree(tok, 'A(B(C(D(E))))', { cx: -3.8, width: 4.4, topY: 6.6, minY: 1.8 }, 250);
+      say('全部歪向同一邊：skewed binary tree', '長得就像 linked list');
+      await beat(tok, 2600);
+      tag('complete binary tree', 'ptr alt', 3.4, 7.4);
+      await dropTree(tok, CT, { cx: 3.4, width: 6.8, topY: 6.6, minY: 2.4 }, 180);
+      say('排得很整齊的：complete binary tree', 'A(B(D(H,I),E),C(F,G))，9 個 node');
+      await beat(tok, 2600);
+      say('complete 不只是「很平衡」', '補充：要剛好佔滿層序編號 1..n');
+      await beat(tok, 3000);
+    } };
+
+    // ── 12/16. Lemma 5.2 與 full binary tree ──
+    LECT['p12-max-nodes'] = { title: '每層最多 2^(i−1)、深度 k 最多 2^k − 1', play: async (tok) => {
+      const full = PP().focus === 'full';
+      fresh(); lab.frameCamera([0, 4.8, 13.5], [0, 4.1, 0]);
+      slots(15);
+      for (let d = 0; d < 4; d++) tag('level ' + (d + 1), 'idx', -6.7, 6.6 - d * 1.5);
+      if (!full) {
+        say('Binary tree 第 i 層最多幾個 node？', 'root 在 level 1');
+        await beat(tok, 2400);
+        let sum = 0;
+        for (let d = 0; d < 4; d++) {
+          const c = 1 << d; sum += c;
+          for (let i = c; i < 2 * c; i++) { cube('', depthColor(d), NODE, HP(i).x, HP(i).y, 0, 2.5); await beat(tok, 90); }
+          tag('2^' + d + ' = ' + c, 'ptr alt', 6.6, 6.6 - d * 1.5);
+          say('level ' + (d + 1) + '：最多 2^(' + (d + 1) + '−1) = ' + c + ' 個', d < 3 ? '每往下一層 ×2' : '第 i 層最多 2^(i−1)');
+          await beat(tok, 1800);
+        }
+        say('深度 k 最多幾個 node？每層加起來', 'Σ_{i=1..k} 2^(i−1) = 2^k − 1');
+        await beat(tok, 3200);
+        say('k = 4：1 + 2 + 4 + 8 = 15', '= 2⁴ − 1 ✓');
+        await beat(tok, 3000);
+        return;
+      }
+      say('Full binary tree：深度 k 全滿', '有 2^k − 1 個 node');
+      await beat(tok, 2600);
+      const bs = [];
+      for (let i = 1; i <= 15; i++) { const b = cube(String(i), depthColor(hdepth(i)), NODE, HP(i).x, HP(i).y, 0, 2.5); bs.push(b); await beat(tok, 260); }
+      say('一層一層、由左到右編號 1..15', '深度 4：2⁴ − 1 = 15 個，全滿');
+      await beat(tok, 3000);
+      bs.forEach((b) => lit(b, GOLD));
+      say('深度允許的範圍內，node 數最多', '就是 Lemma 5.2 的最大值');
+      await beat(tok, 2800);
+      bs.forEach((b) => lit(b));
+      say('Full 和 complete 不一樣', '補充：有些英文書的 full = 每個 node 0 或 2 child');
+      await beat(tok, 3000);
+    } };
+
+    // ── 13/14. n0 = n2 + 1 ──
+    LECT['p12-n0n2'] = { title: 'Lemma 5.3：n0 = n2 + 1', play: async (tok) => {
+      const proof = PP().focus === 'proof';
+      fresh(); lab.frameCamera([0, 5, 13.5], [0, 3.8, 0]);
+      const opts = proof ? { cx: -3.8, width: 4.6, topY: 6.4, minY: 3.0 } : { width: 7, topY: 6.4, minY: 3.0 };
+      const root = await dropTree(tok, 'A(B(D,E),C(,F))', opts, 200);
+      const N = (l) => find(root, l);
+      const deg = (n) => (n.left ? 1 : 0) + (n.right ? 1 : 0);
+      const all = allNodes(root);
+      const COL = [GREEN, RED, GOLD];
+      if (!proof) {
+        say('任一棵非空 binary tree（示意）', '數 degree 0、1、2 的 node 各幾個');
+        await beat(tok, 2400);
+        const grp = [[0, 'n0 = degree 0（leaf）', 'n0 = 3：D、E、F'], [2, 'n2 = degree 2 的 node 數', 'n2 = 2：A、B'], [1, 'n1 = degree 1 的 node 數', 'n1 = 1：C']];
+        for (const [d, cap, f] of grp) {
+          all.filter((n) => deg(n) === d).forEach((n) => { glow(n, COL[d]); tag('deg ' + d, 'idx', n.pos.x + 0.75, n.pos.y - 0.3); });
+          say(cap, f);
+          await beat(tok, 2600);
+        }
+        say('性質：n0 = n2 + 1', '<span class="ok">3 = 2 + 1</span>，跟 n1 無關');
+        await beat(tok, 3000);
+        all.forEach((n) => [n.left, n.right].forEach((c) => c && hiEdge(n, c)));
+        say('證明要用的符號：n、B', 'n = 6 個 node，B = branch（pointer）= 5');
+        await beat(tok, 3000);
+        return;
+      }
+      const cd = code(['(1) n = n0 + n1 + n2', '(2) B = n − 1   → n = B + 1', '(3) B = n1 + 2·n2', '(4) n = n1 + 2·n2 + 1', '(5) n0+n1+n2 = n1+2·n2+1', '(6) n0 = n2 + 1'], 3.4, 6.6, 0.8);
+      cd.ls.forEach((l) => hide(l, false));
+      const show = (i) => { hide(cd.ls[i], true); cd.hl(i); };
+      show(0); all.forEach((n) => glow(n, COL[deg(n)]));
+      say('總 node 數 = 三種 degree 加起來', 'n = 3 + 1 + 2 = 6');
+      await beat(tok, 3000);
+      all.forEach((n) => glow(n));
+      show(1);
+      say('除了 root，每個 node 被一個 branch 指到', 'B = n − 1');
+      let b = 0;
+      for (const n of all) for (const c of [n.left, n.right]) if (c) { hiEdge(n, c); glow(c, GREEN); b++; await beat(tok, 450); }
+      say('B = ' + b + ' = 6 − 1', '所以 n = B + 1');
+      await beat(tok, 2200);
+      all.forEach((n) => glow(n));
+      show(2);
+      all.filter((n) => deg(n)).forEach((n) => { glow(n, COL[deg(n)]); tag('×' + deg(n), 'ptr alt', n.pos.x + 0.75, n.pos.y); });
+      say('從指出去的角度數 branch', 'B = 1·n1 + 2·n2 = 1 + 4 = 5');
+      await beat(tok, 3000);
+      show(3);
+      say('把 (3) 代入 (2)', 'n = n1 + 2n2 + 1');
+      await beat(tok, 2400);
+      show(4);
+      say('再用 (1) 代換 n', 'n0 + n1 + n2 = n1 + 2n2 + 1');
+      await beat(tok, 2400);
+      show(5);
+      say('兩邊消去 n1、n2', '<span class="ok">n0 = n2 + 1</span>');
+      await beat(tok, 3000);
+    } };
+
+    // ── 17. Complete binary tree 與層序編號 ──
+    LECT['p12-complete'] = { title: 'Complete binary tree：佔滿編號 1..n', play: async (tok) => {
+      fresh(); lab.frameCamera([0, 4.8, 13.5], [0, 4.1, 0]);
+      const gs = slots(15, HP, true);
+      for (let d = 0; d < 4; d++) tag('level ' + (d + 1), 'idx', -6.7, 6.6 - d * 1.5);
+      say('對照深度 4 的 full tree（15 格）', '編號：由上到下、由左到右');
+      await beat(tok, 2400);
+      const bs = {};
+      'ABCDEFGHI'.split('').forEach((c, k) => { bs[c] = cube(c, depthColor(hdepth(k + 1)), NODE, HP(k + 1).x, HP(k + 1).y, 0, 2.5); });
+      for (let k = 0; k < 9; k++) {
+        const c = 'ABCDEFGHI'[k];
+        lit(bs[c], GOLD);
+        say(c + ' 的編號 = ' + (k + 1), '一層一層、從左到右');
+        await beat(tok, 420);
+        lit(bs[c]);
+      }
+      const hole = [];
+      for (let i = 10; i <= 15; i++) hole.push(ghost(SAND, HP(i).x, HP(i).y, 0.9, 0.7, 0, 0.9));
+      say('9 個 node：佔編號 1..9，10..15 空著', '其他位置都跟 full 一樣 → complete');
+      await beat(tok, 3000);
+      say('編號是為了用 array 表示', '位置可以直接算出來');
+      await beat(tok, 2400);
+      hole.forEach(kill);
+      say('思考題：H、I 移到 G 底下呢？', '考試可能考');
+      lab.springTo(bs.H, HP(14)); lab.springTo(bs.I, HP(15));
+      await beat(tok, 2200);
+      for (let i = 8; i <= 13; i++) hole.push(ghost('#e06666', HP(i).x, HP(i).y, 0.9, 0.7, 0, 0.9));
+      gs.forEach((g, i) => { if (i + 1 >= 8 && i + 1 <= 13) g.material.color.set('#e06666'); });
+      say('H、I 佔 14、15，8–13 是空的', '<span class="no">不是 complete</span>（老師沒公布答案，補充）');
+      await beat(tok, 3400);
+    } };
+
+    // ── 18/19. Array 表示法 ──
+    LECT['p12-array'] = { title: 'Array 表示法：2i、2i+1、⌊i/2⌋', play: async (tok) => {
+      const skew = PP().focus === 'skew';
+      fresh(); lab.frameCamera([0, 5.2, 13.5], [0, 3.5, 1]);
+      if (!skew) {
+        const TP = (i) => heapPos(i, 7.0, 1.3, 9);
+        const XP = (i) => -4.6 + i * 1.0;
+        const tiles = [];
+        for (let i = 0; i <= 9; i++) {
+          const t = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.08, 0.9), new THREE.MeshStandardMaterial({ color: i ? '#e9dcc4' : '#cbbd9f' }));
+          t.position.set(XP(i), 0.04, 2.8); lab.world.add(t); tiles.push(t);
+          tag(i ? '[' + i + ']' : '[0] 不用', 'idx', XP(i), 0, 3.6);
+        }
+        const L = 'ABCDEFGHI';
+        const nb = [];
+        for (let i = 1; i <= 9; i++) { nb[i] = idxCube(L[i - 1], i, depthColor(hdepth(i)), TP(i)); }
+        edgeLines(() => { const out = []; for (let i = 1; i <= 9; i++) for (const c of [2 * i, 2 * i + 1]) if (c <= 9) out.push([nb[i].obj.position, nb[c].obj.position]); return out; });
+        say('Array 也能表示 binary tree', '每個 node 有固定該放的位置');
+        await beat(tok, 2400);
+        const cells = [];
+        for (let i = 1; i <= 9; i++) {
+          const c = lab.addBody(block(L[i - 1], [0.6, 0.45, 0.6], depthColor(hdepth(i))));
+          c.obj.position.copy(TP(i)); lab.springTo(c, V(XP(i), 0.32, 2.8)); cells[i] = c;
+          say(i === 1 ? 'A 放在 array 的位置 1' : '照編號放進 index ' + i, '從上到下、從左到右 → index');
+          await beat(tok, i === 1 ? 1200 : 320);
+        }
+        await beat(tok, 900);
+        const tmp = [];
+        const clr = () => { tmp.splice(0).forEach(kill); cells.forEach((c) => c && lit(c)); nb.forEach((b) => b && lit(b)); };
+        const mark = (i, t, col) => { lit(cells[i], col); lit(nb[i], col); tmp.push(tag(t, col === GOLD ? 'ptr alt' : 'ptr', XP(i), 1.15, 2.8)); };
+        for (const i of [1, 2]) {
+          mark(i, 'i=' + i, GOLD); mark(2 * i, 'left', GREEN); mark(2 * i + 1, 'right', GREEN);
+          say('位置 i：left = 2i、right = 2i+1', L[i - 1] + '(' + i + ')：left ' + L[2 * i - 1] + ' = ' + 2 * i + '，right ' + L[2 * i] + ' = ' + (2 * i + 1));
+          await beat(tok, 3000);
+          clr();
+        }
+        for (const i of [4, 5]) {
+          mark(i, 'i=' + i, GOLD); mark(2, 'parent', GREEN);
+          tmp.push(arrow(V(XP(i), 1.5, 2.8), V(XP(2) + 0.2, 1.5, 2.8), '#c08a1f'));
+          say('parent 在 ⌊i/2⌋', i === 4 ? 'D(4)：4/2 = 2 → B' : 'E(5)：⌊5/2⌋ = ⌊2.5⌋ = 2 → B');
+          await beat(tok, 2800);
+          clr();
+        }
+        mark(1, 'root', GOLD);
+        say('i = 1 是 root，沒有 parent', '1-based：[0] 不用（0-based 公式不同）');
+        await beat(tok, 3000);
+        return;
+      }
+      // 左歪斜 A(B(C(D(E))))：A→1, B→2, C→4, D→8, E→16
+      const XP = (i) => -6.6 + i * 0.42;
+      const tiles = [];
+      for (let i = 1; i <= 31; i++) {
+        const t = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.08, 0.8), new THREE.MeshStandardMaterial({ color: '#e9dcc4' }));
+        t.position.set(XP(i), 0.04, 2.8); lab.world.add(t); tiles.push(t);
+        if ([1, 2, 4, 8, 16, 31].includes(i)) tag(String(i), 'idx', XP(i), 0, 3.5);
+      }
+      const idx = [1, 2, 4, 8, 16];
+      const TP = (d) => V(-0.6 - d * 1.1, 7.0 - d * 1.2, 0);
+      const nb = 'ABCDE'.split('').map((c, d) => idxCube(c, idx[d], depthColor(d), TP(d)));
+      edgeLines(() => nb.slice(1).map((b, d) => [nb[d].obj.position, b.obj.position]));
+      say('Skewed tree A、B、C、D、E 放進 array', '一樣用 left = 2i');
+      await beat(tok, 2400);
+      const capF = ['A 仍在位置 1', 'B 是 A 的 left：2×1 = 2', 'C 是 B 的 left：2×2 = 4', 'D 是 C 的 left：2×4 = 8', 'E 是 D 的 left：2×8 = 16'];
+      for (let d = 0; d < 5; d++) {
+        const c = lab.addBody(block('ABCDE'[d], [0.36, 0.4, 0.5], depthColor(d)));
+        c.obj.position.copy(TP(d)); lab.springTo(c, V(XP(idx[d]), 0.3, 2.8));
+        lit(nb[d], GOLD);
+        say(capF[d], 'index = ' + idx[d]);
+        await beat(tok, 1500);
+        lit(nb[d]);
+      }
+      tiles.forEach((t, k) => { if (!idx.includes(k + 1)) t.material.color.set('#f4b8a8'); });
+      say('深度 5 要 31 格，只用到 5 格', '<span class="no">26 格空著沒用</span>');
+      await beat(tok, 3000);
+      say('優點：找 parent／child 只要算術', '⌊i/2⌋、2i、2i+1，一步到位');
+      await beat(tok, 2600);
+      say('缺點：不夠 complete 就浪費空間', '深度 k 的 skewed tree 要 2^k − 1 格');
+      await beat(tok, 3000);
+    } };
+
+    // ── 20. Linked 表示：找 parent 難 ──
+    LECT['p12-linked-parent'] = { title: 'Linked 表示：找 child 易、找 parent 難', play: async (tok) => {
+      fresh(); lab.frameCamera([0, 5, 13.5], [0, 3.6, 0.5]);
+      const root = await dropTree(tok, CT, { topY: 6.4, minY: 2.2, width: 9 }, 150);
+      const N = (l) => find(root, l);
+      tag('node = [ leftChild | data | rightChild ]', 'ptr', 0, 7.6);
+      say('問：D 的 parent 是誰？', 'linked node 只有往下的 pointer');
+      await beat(tok, 2600);
+      const cur = makeCursor(), prev = makeCursor();
+      prev.obj.material = new THREE.MeshBasicMaterial({ color: BLU }); prev.obj.scale.set(1.25, 1.25, 1.25);
+      const tc = tag('cur', 'ptr alt', 0, 0), tp = tag('prev', 'ptr', 0, 0);
+      const path = ['A', 'B', 'D'].map(N);
+      for (let i = 0; i < 3; i++) {
+        cursorTo(cur, path[i].pos); tc.position.copy(path[i].pos).add(V(-1.0, 0.1, 0));
+        if (i) { cursorTo(prev, path[i - 1].pos); tp.position.copy(path[i - 1].pos).add(V(1.1, 0.1, 0)); }
+        say(i ? 'cur 往下走，prev 跟在上一層' : '從 root 往下找 D', 'cur = ' + path[i].label + '，prev = ' + (i ? path[i - 1].label : 'null'));
+        await beat(tok, 1600);
+      }
+      glow(N('B'), GOLD);
+      say('找到 D 時，prev 就是 parent', 'parent(D) = B');
+      await beat(tok, 2800);
+      const D = N('D');
+      ['H', 'I'].forEach((l) => { glow(N(l), GREEN); hiEdge(D, N(l)); });
+      say('問 child 很簡單：直接看左右 pointer', 'D.leftChild = H，D.rightChild = I');
+      await beat(tok, 2800);
+      say('Linked 中，找 parent 比找 child 難', '補充：常要找 parent 就多一個 parent 欄位');
+      await beat(tok, 2800);
+      fresh(); lab.frameCamera([0, 5, 13.5], [0, 3.6, 0.5]);
+      tag('full binary tree', 'ptr', -3.4, 7.4); tag('skewed binary tree', 'ptr', 3.4, 7.4);
+      await dropTree(tok, 'A(B(D,E),C(F,G))', { cx: -3.4, width: 5, topY: 6.4, minY: 3.4 }, 120);
+      await dropTree(tok, 'A(,B(,C(,D)))', { cx: 3.4, width: 4, topY: 6.4, minY: 2.4 }, 200);
+      say('skewed 用 linked 表示就像 linked list', '每個 node 只用到一個 pointer');
+      await beat(tok, 3200);
+    } };
+
+    // ── 22. TreeNode 類別、array vs linked 比較表 ──
+    LECT['p12-class-table'] = { title: 'TreeNode 類別；array vs linked 比較', play: async (tok) => {
+      fresh(); lab.frameCamera([0, 5, 13.5], [0, 4, 0]);
+      const tr = cube('Tree：root', GRN, [2.4, 0.7, 0.9], -4.4, 6.2, 0, 2.5);
+      tag('class Tree { private: TreeNode *root; }', 'ptr', -2.6, 7.4);
+      const f = [['leftChild', -0.2], ['data', 1.6], ['rightChild', 3.4]].map(([t, x]) => cube(t, t === 'data' ? GRN : BLU, [1.75, 0.7, 0.9], x, 6.2, 0, 2.5));
+      arrow(V(-3.2, 6.2, 0), V(-1.1, 6.2, 0), '#c08a1f');
+      tag('TreeNode', 'ptr alt', 1.6, 7.0);
+      say('TreeNode：leftChild、data、rightChild', 'class Tree 只有一個 pointer：root');
+      await beat(tok, 3000);
+      const k1 = cube('TreeNode', BLU, [1.6, 0.6, 0.8], -1.4, 4.2, 0, 2), k2 = cube('TreeNode', BLU, [1.6, 0.6, 0.8], 4.6, 4.2, 0, 2);
+      const a1 = arrow(V(-0.2, 5.85, 0), V(-1.2, 4.55, 0), BLU), a2 = arrow(V(3.4, 5.85, 0), V(4.4, 4.55, 0), BLU);
+      say('從 root 開始 traverse', '每個 node 再指向左右 child');
+      await beat(tok, 2600);
+      [tr, ...f, k1, k2].forEach(flyB); [a1, a2].forEach(kill);
+      await beat(tok, 700);
+      fresh(); lab.frameCamera([0, 5, 13.5], [0, 4, 0]);
+      tag('Array', 'ptr alt', 0.4, 7.3); tag('Linked', 'ptr alt', 4.2, 7.3);
+      const rows = [
+        ['決定 parent／child', ['index 算：易', GRN], ['parent 難', '#e06666'], '決定 parent：array 簡單，link 不簡單', 'array 算 ⌊i/2⌋；link 要從 root 找'],
+        ['space overhead', ['整個先宣告', '#e06666'], ['用多少開多少', GRN], 'Space：array 要宣告整個 array', 'link：用多少 node 就 create 多少'],
+        ['insert／delete', ['要搬資料：難', '#e06666'], ['改 pointer：易', GRN], 'Array insert/delete 要搬資料', 'link 只要 pointer assignment'],
+      ];
+      for (let k = 0; k < rows.length; k++) {
+        const [nm, a, b, cap, fm] = rows[k], y = 6.0 - k * 1.3;
+        tag(nm, 'ptr', -4.4, y);
+        cube(a[0], a[1], [3.2, 0.7, 0.8], 0.4, y, 0, 2.5); cube(b[0], b[1], [3.2, 0.7, 0.8], 4.2, y, 0, 2.5);
+        say(cap, fm);
+        await beat(tok, 2800);
+      }
+      // array 插入示意：後面整串往後搬
+      const xs = (i) => -2.4 + i * 0.95;
+      const arr = 'ABCDE'.split('').map((c, i) => cube(c, SAND, [0.8, 0.5, 0.8], xs(i), 0.3, 2.2));
+      tag('array（示意）', 'idx', -4.2, 0.3, 2.2);
+      say('在 C 的位置插入 X（示意）', '後面整串都要搬一格');
+      await beat(tok, 1400);
+      for (let i = 4; i >= 2; i--) { lab.springTo(arr[i], V(xs(i + 1), 0.3, 2.2)); await beat(tok, 380); }
+      cube('X', '#f2c46d', [0.8, 0.5, 0.8], xs(2), 0.3, 2.2, 2.5);
+      await beat(tok, 1600);
+      say('沒有絕對的好壞', '建好不再改 → array；常 insert/delete → linked');
+      await beat(tok, 3200);
+    } };
+
+    // ── 23/32. 為什麼要 traversal；Equal／Copy ──
+    function rowOf(labels, cx, z, y = 0.3) {
+      return labels.map((c, k) => cube(c, SAND, SMALL, cx - (labels.length - 1) * 0.4 + k * 0.8, y, z, 2));
+    }
+    LECT['p12-trav'] = { title: '為什麼需要 traversal：判斷相同、複製', play: async (tok) => {
+      const apps = PP().focus === 'apps';
+      fresh(); lab.frameCamera([0, 5, 13.5], [0, 3.6, 0.8]);
+      const O1 = { cx: -3.4, width: 4, topY: 6.4, minY: 3.4 }, O2 = { cx: 3.4, width: 4, topY: 6.4, minY: 3.4 };
+      tag('T1', 'ptr alt', -6.0, 6.4); tag('T2', 'ptr alt', 0.8, 6.4);
+      if (!apps) {
+        const t1 = await dropTree(tok, 'A(B(D),C)', O1, 180), t2 = await dropTree(tok, 'A(B(,D),C)', O2, 180);
+        say('Traversal：拜訪每個 node（順便印出）', '問題：T1、T2 一樣嗎？（示意）');
+        await beat(tok, 2800);
+        const c1 = makeCursor(), c2 = makeCursor();
+        for (const l of ['A', 'B']) {
+          cursorTo(c1, find(t1, l).pos); cursorTo(c2, find(t2, l).pos);
+          glow(find(t1, l), GREEN); glow(find(t2, l), GREEN);
+          say('方法一：兩個 pointer 同步往下比', l + ' = ' + l + ' ✓');
+          await beat(tok, 1400);
+        }
+        const B1 = find(t1, 'B'), B2 = find(t2, 'B');
+        cursorTo(c1, B1.left.pos); cursorTo(c2, B2.pos.clone().add(V(-0.6, -1.2, 0)));
+        glow(B1.left, RED); ghost('#e06666', B2.pos.x - 0.6, B2.pos.y - 1.2, 0.7, 0.6, 0, 0.7);
+        say('B 的 left：D vs null', '<span class="no">不一樣</span> → 人眼一看就知道，電腦要一步步比');
+        await beat(tok, 3000);
+        c1.obj.visible = false; c2.obj.visible = false;
+        rowLabel('pre', 2.0); rowLabel('in', 3.2);
+        rowOf(['A', 'B', 'D', 'C'], -3.4, 2.0); rowOf(['A', 'B', 'D', 'C'], 3.4, 2.0);
+        say('方法二：traverse 成字串再比', 'preorder 都是 ABDC！');
+        await beat(tok, 3000);
+        const i1 = rowOf(['D', 'B', 'A', 'C'], -3.4, 3.2), i2 = rowOf(['B', 'D', 'A', 'C'], 3.4, 3.2);
+        [0, 1].forEach((k) => { lit(i1[k], RED); lit(i2[k], RED); });
+        say('只比一種 traversal 不夠（補充）', 'inorder：DBAC ≠ BDAC → 要兩種，或記下 null');
+        await beat(tok, 3200);
+        say('Traversal 的目的：掌握 tree 的 structure', '不只是為了考試');
+        await beat(tok, 2600);
+        return;
+      }
+      const src = 'A(B(D,E),C(,F))';
+      const t1 = await dropTree(tok, src, O1, 150);
+      const t2 = makeTree(src); layoutTree(t2, Object.assign({}, TREE_O, O2));
+      edgeLines(() => treePairs(t2));
+      say('Copy(T1)：traverse T1，邊走邊建 T2', '用 preorder：先建自己，再左、再右（示意）');
+      await beat(tok, 2400);
+      const c1 = makeCursor();
+      const p1 = preorder(t1), p2 = preorder(t2);
+      for (let k = 0; k < p1.length; k++) {
+        cursorTo(c1, p1[k].pos);
+        const b = nodeBody(p2[k]); b.obj.position.copy(p2[k].pos).add(V(0, 3, 0)); lab.dropTo(b, p2[k].pos.clone());
+        say('拜訪 ' + p1[k].label + ' → 在 T2 建一個 ' + p1[k].label, 'Copy：' + p1.slice(0, k + 1).map((n) => n.label).join(' '));
+        await beat(tok, 950);
+      }
+      await beat(tok, 800);
+      const c2 = makeCursor();
+      for (let k = 0; k < p1.length; k++) {
+        cursorTo(c1, p1[k].pos); cursorTo(c2, p2[k].pos);
+        glow(p1[k], GREEN); glow(p2[k], GREEN);
+        say('Equal(T1, T2)：同時 traverse 逐一比', p1[k].label + ' = ' + p2[k].label + ' ✓（左右結構也要一樣）');
+        await beat(tok, 750);
+      }
+      say('全部相同 → Equal 回傳 true', 'Equal、Copy 都是 traversal 的應用（下次細講）');
+      await beat(tok, 3000);
+    } };
+
+    // ── 24. L、V、R ──
+    LECT['p12-lvr'] = { title: 'L、V、R 三個動作 → 三種 traversal', play: async (tok) => {
+      fresh(); lab.frameCamera([0, 5, 13.5], [0, 3.8, 0.6]);
+      const l = cube('left', BLU, [1.5, 0.8, 0.9], -1.7, 6.4, 0, 2.5), d = cube('data', GRN, [1.5, 0.8, 0.9], 0, 6.4, 0, 2.5), r = cube('right', PUR, [1.5, 0.8, 0.9], 1.7, 6.4, 0, 2.5);
+      say('node 只有 left、data、right', '對應三個動作');
+      await beat(tok, 2400);
+      lit(l, GOLD); arrow(V(-2.2, 6.0, 0), V(-3.8, 4.9, 0), BLU); tag('L：先往左走', 'ptr', -4.6, 4.6);
+      say('L：看到 node 先不印，往左走', 'L = go left');
+      await beat(tok, 2200); lit(l);
+      lit(d, GOLD); tag('V：印出 data', 'ptr alt', 0, 7.3);
+      say('V：visit，把資料印出來', 'V = visit / print');
+      await beat(tok, 2200); lit(d);
+      lit(r, GOLD); arrow(V(2.2, 6.0, 0), V(3.8, 4.9, 0), PUR); tag('R：往右走', 'ptr', 4.6, 4.6);
+      say('R：往右邊走', 'R = go right');
+      await beat(tok, 2200); lit(r);
+      const perms = ['LVR', 'LRV', 'VLR', 'VRL', 'RVL', 'RLV'];
+      const C = { L: BLU, V: GRN, R: PUR };
+      const rows = perms.map((p, k) => {
+        const cx = k < 3 ? -2.8 : 2.8, y = 3.4 - (k % 3) * 1.0;
+        return p.split('').map((ch, j) => cube(ch, C[ch], [0.6, 0.5, 0.6], cx - 0.7 + j * 0.7, y, 1.2, 2.5));
+      });
+      say('三個動作有 3! = 6 種排列', 'LVR LRV VLR VRL RVL RLV');
+      await beat(tok, 2800);
+      rows.slice(3).forEach((row) => row.forEach((b) => lit(b, RED)));
+      say('R 在 L 前面的三種只是左右對稱', '只保留「先左後右」');
+      await beat(tok, 2600);
+      rows.slice(3).forEach((row) => row.forEach(flyB));
+      await beat(tok, 600);
+      const nm = [['inorder', 'LVR = inorder'], ['postorder', 'LRV = postorder'], ['preorder', 'VLR = preorder']];
+      for (let k = 0; k < 3; k++) {
+        rows[k].forEach((b) => lit(b, GOLD));
+        tag(nm[k][0], 'ptr alt', 0.6, 3.4 - k * 1.0, 1.2);
+        say(nm[k][1], 'V 的位置決定 pre／in／post');
+        await beat(tok, 1600);
+        rows[k].forEach((b) => lit(b));
+      }
+      await beat(tok, 2000);
+    } };
+
+    // ── 25. 運算式樹的四種輸出 ──
+    LECT['p12-expr4'] = { title: '運算式樹 A/B*C*D+E：四種 traversal', play: async (tok) => {
+      fresh(); lab.frameCamera([0, 5.4, 13.5], [0, 3.2, 1.2]);
+      const root = await dropTree(tok, 'expr', { topY: 6.8, minY: 3.4 }, 120);
+      for (const n of allNodes(root)) if (!n.left && !n.right) [-0.38, 0.38].forEach((dx) => cube('', BLU, [0.22, 0.22, 0.22], n.pos.x + dx, n.pos.y - 0.6, 0));
+      say('A/B*C*D+E 的 expression tree', 'leaf 底下藍色的是 null 指標');
+      await beat(tok, 2800);
+      const cur = makeCursor();
+      const ords = [
+        ['in', 'Inorder（LVR）→ infix', 'infix', inorder(root)],
+        ['pre', 'Preorder（VLR）→ prefix', 'prefix', preorder(root)],
+        ['post', 'Postorder（LRV）→ postfix', 'postfix', postorder(root)],
+        ['level', 'Level order：一層一層', 'level', levelorder(root)],
+      ];
+      for (let k = 0; k < 4; k++) {
+        const [nm, cap, tg, seq] = ords[k], z = 1.2 + k * 0.85;
+        rowLabel(nm, z);
+        say(cap, '…');
+        for (let i = 0; i < seq.length; i++) {
+          const n = seq[i];
+          cursorTo(cur, n.pos);
+          const b = lab.addBody(block(n.label, SMALL, depthColor(n.depth)));
+          b.obj.position.copy(n.pos); lab.springTo(b, rowPos(i, z));
+          say(cap, seq.slice(0, i + 1).map((x) => x.label).join(''));
+          await beat(tok, 260);
+        }
+        tag(tg, 'ptr alt', 2.0, 0.35, z);
+        await beat(tok, 1300);
+      }
+      cur.obj.visible = false;
+      say('同一棵樹，四種輸出', 'A/B*C*D+E｜+**/ABCDE｜AB/C*D*E+｜+*E*D/CAB');
+      await beat(tok, 3200);
+    } };
+
+    // ── 26/28/29. 遞迴 Inorder／Preorder／Postorder 程式 ──
+    LECT['p12-rec-code'] = { title: '遞迴 traversal 程式：三行換順序', play: async (tok) => {
+      const kind = ['pre', 'post'].includes(PP().kind) ? PP().kind : 'in';
+      const nm = { in: 'Inorder', pre: 'Preorder', post: 'Postorder' }[kind];
+      const ORD = { in: ['L', 'V', 'R'], pre: ['V', 'L', 'R'], post: ['L', 'R', 'V'] }[kind];
+      const TXT = { L: '    ' + nm + '(cur->leftChild);   // L', V: '    cout << cur->data;   // V', R: '    ' + nm + '(cur->rightChild);  // R' };
+      fresh(); lab.frameCamera([0, 5.2, 13.5], [0, 3.6, 1]);
+      const cd = code(['void Tree::' + nm + '() { ' + nm + '(root); }', 'void Tree::' + nm + '(TreeNode *cur) {', '  if (cur) {', ...ORD.map((a) => TXT[a]), '  }', '}'], -3.4, 7.2, 0.5);
+      const root = showTree('expr', { cx: 3.6, width: 6.2, topY: 6.6, minY: 2.8, maxSp: 0.85 });
+      rowLabel('輸出', 2.6);
+      const cur = makeCursor();
+      const out = [];
+      cd.hl(0);
+      say(kind === 'in' ? '把 tree 的 root 傳進 Inorder' : nm + '：copy Inorder，改名、換三行順序', ORD.join(' ') + (kind === 'pre' ? '：先印，再左、再右' : kind === 'post' ? '：最後才印' : '：三行分別是 L、V、R'));
+      await beat(tok, 2800);
+      if (kind === 'in') { cd.hl(2); say('if (cur)：遞迴的終止條件', 'cur 是 null 就直接 return'); await beat(tok, 2400); }
+      async function call(n, from, side) {
+        if (!n) {
+          const p = from.clone().add(V(side * 0.4, -0.8, 0));
+          const g = ghost('#e06666', p.x, p.y, 0.4, 0.35, 0, 0.4);
+          cd.hl(2); say('null → if 不成立，return', '輸出：' + (out.join(' ') || '—'));
+          await beat(tok, 330); kill(g); return;
+        }
+        cursorTo(cur, n.pos); cd.hl(2);
+        say('呼叫 ' + nm + '(' + n.label + ')', '輸出：' + (out.join(' ') || '—'));
+        await beat(tok, 330);
+        for (let j = 0; j < 3; j++) {
+          const a = ORD[j];
+          cd.hl(3 + j);
+          if (a === 'V') {
+            out.push(n.label); glow(n, GOLD);
+            const b = lab.addBody(block(n.label, SMALL, depthColor(n.depth)));
+            b.obj.position.copy(n.pos); lab.springTo(b, rowPos(out.length - 1, 2.6));
+            say('V：印出 ' + n.label, '輸出：' + out.join(' '));
+            await beat(tok, 620);
+          } else {
+            await beat(tok, 180);
+            await call(a === 'L' ? n.left : n.right, n.pos, a === 'L' ? -1 : 1);
+            cursorTo(cur, n.pos); cd.hl(3 + j);
+          }
+        }
+      }
+      await call(root, root.pos, 0);
+      cd.hl(-1); cur.obj.visible = false;
+      say(nm + ' 完成', '<span class="ok">' + out.join('') + '</span>');
+      await beat(tok, 3000);
+    } };
+
+    // ── 30. 非遞迴 inorder（stack） ──
+    LECT['p12-iter-inorder'] = { title: '非遞迴 Inorder：用 stack', play: async (tok) => {
+      fresh(); lab.frameCamera([0, 5.2, 13.5], [0, 3.6, 1]);
+      const cd = code(['void Tree::NonrecInorder() {', '  Stack<TreeNode*> s; cur = root;', '  while (1) {', '    while (cur) { s.Push(cur);', '      cur = cur->leftChild; }', '    if (s.IsEmpty()) return;', '    cur = s.Top(); s.Pop();', '    cout << cur->data;', '    cur = cur->rightChild;', '  }', '}'], -3.5, 7.4, 0.45);
+      const root = showTree('expr', { cx: 3.6, width: 6.2, topY: 6.6, minY: 2.8, maxSp: 0.85 });
+      rowLabel('stack', 2.2); rowLabel('輸出', 3.4);
+      tag('底 → 頂', 'idx', -5.6, 0.95, 2.2);
+      const c = makeCursor();
+      const st = [], out = [];
+      let cur = root;
+      cd.hl(1);
+      say('不用遞迴：改用 stack（LIFO）', '一開始 cur = root');
+      await beat(tok, 2600);
+      for (;;) {
+        while (cur) {
+          cd.hl(3); cursorTo(c, cur.pos);
+          const b = lab.addBody(block(cur.label, SMALL, depthColor(cur.depth)));
+          b.obj.position.copy(cur.pos); lab.springTo(b, rowPos(st.length, 2.2));
+          st.push({ n: cur, b });
+          say('push ' + cur.label + '，往 leftChild 走', 'stack：' + st.map((e) => e.n.label).join(' '));
+          await beat(tok, 650);
+          cd.hl(4);
+          if (!cur.left) { say(cur.label + ' 的 leftChild 是 null', '跳出內層 while'); await beat(tok, 450); }
+          cur = cur.left;
+        }
+        cd.hl(5);
+        if (!st.length) { say('stack 空了 → return', '輸出：' + out.join(' ')); await beat(tok, 1200); break; }
+        await beat(tok, 200);
+        const { n, b } = st.pop();
+        cd.hl(6); cursorTo(c, n.pos);
+        lab.springTo(b, rowPos(out.length, 3.4));
+        out.push(n.label); glow(n, GOLD);
+        cd.hl(7);
+        say('pop ' + n.label + ' 並印出', '輸出：' + out.join(' '));
+        await beat(tok, 750);
+        cd.hl(8);
+        cur = n.right;
+        say('cur = ' + n.label + '.rightChild', cur ? '= ' + cur.label + '，回外層迴圈' : '= null，下一輪直接 pop');
+        await beat(tok, 450);
+      }
+      cd.hl(-1); c.obj.visible = false;
+      say('非遞迴 inorder 完成', '<span class="ok">' + out.join('') + '</span>；思考：pre／post 怎麼寫？');
+      await beat(tok, 3000);
+    } };
+  }
+
+  // ─── UO0B1SQOAgk：交大彭文志 Lec13 Trees 2/6（走訪程式、stack／queue 走訪、copy、equal、SAT） ───
+  {
+    const padL = (lines) => { const w = Math.max(...lines.map((s) => s.length)); return lines.map((s) => s.padEnd(w, ' ')); };
+    const OUT_SZ = [0.5, 0.42, 0.5];
+    // 從節點位置飛出一顆小方塊到 pos（輸出列、stack、queue 用）
+    function emit(n, pos, size = OUT_SZ) {
+      const b = lab.addBody(block(n.label, size, depthColor(n.depth || 0)));
+      b.obj.position.copy(n.pos); lab.springTo(b, pos.clone()); return b;
+    }
+    const allOff = (root) => levelorder(root).forEach((n) => glow(n, OFF));
+
+    // 1) 三種走訪的遞迴程式碼：只差 cout 那一行的位置
+    const TCODE = {
+      in: ['void Inorder(TreeNode* cur) {', '  if (cur) {', '    Inorder(cur->leftChild);   // L', '    cout << cur->data;         // V', '    Inorder(cur->rightChild);  // R', '  }', '}'],
+      pre: ['void Preorder(TreeNode* cur) {', '  if (cur) {', '    cout << cur->data;         // V', '    Preorder(cur->leftChild);  // L', '    Preorder(cur->rightChild); // R', '  }', '}'],
+      post: ['void Postorder(TreeNode* cur) {', '  if (cur) {', '    Postorder(cur->leftChild);  // L', '    Postorder(cur->rightChild); // R', '    cout << cur->data;          // V', '  }', '}'],
+    };
+    LECT['p13-trav-code'] = { title: '三種走訪的遞迴程式碼', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.8, 13.5], [0, 3.9, 0]);
+      const cls = code(['class Tree {', '  TreeNode* root;', '};'], -3.8, 7.6, 0.45);
+      cls.hl(1);
+      say('recursive code 幾行就搞定', 'class Tree 只有一個 data member：root');
+      await beat(tok, 2600);
+      cls.hl(-1);
+      const w = Math.max(...Object.values(TCODE).flat().map((s) => s.length));
+      const cd = code(TCODE.in.map((s) => s.padEnd(w, ' ')), -3.8, 5.8, 0.5);
+      const root = showTree('expr', { cx: 3.7, width: 5.6, topY: 6.6, minY: 2.6, maxSp: 0.7 });
+      tag('輸出', 'ptr', 0.5, 0.35, 2.2);
+      const cur = makeCursor();
+      let outs = [];
+      const NAME = { in: 'Inorder', pre: 'Preorder', post: 'Postorder' };
+      const ORD = { in: inorder, pre: preorder, post: postorder };
+      const RULE = { in: 'L V R', pre: 'V L R', post: 'L R V' };
+      for (const k of ['in', 'pre', 'post']) {
+        outs.forEach((b) => lab.flyAway(b, V(0, 8, 4))); outs = [];
+        allOff(root);
+        TCODE[k].forEach((s, i) => setTag(cd.ls[i], s.padEnd(w, ' ')));
+        const vLine = TCODE[k].findIndex((s) => s.includes('cout'));
+        if (k === 'in') {
+          say('Inorder：cur 不為空才做', 'L → V → R');
+          for (const i of [1, 2, 3, 4]) { cd.hl(i); await beat(tok, 650); }
+        } else {
+          cd.hl(vLine);
+          say('改成 ' + NAME[k] + '：只搬動 cout 那行', RULE[k] + '（cout 在第 ' + (vLine - 1) + ' 行）');
+          await beat(tok, 2300);
+        }
+        cd.hl(vLine);
+        const order = ORD[k](root);
+        for (let i = 0; i < order.length; i++) {
+          const n = order[i];
+          cursorTo(cur, n.pos); glow(n, GOLD);
+          outs.push(emit(n, V(1.2 + i * 0.6, 0.35, 2.2)));
+          await beat(tok, 420);
+        }
+        say(NAME[k] + ' 的輸出', '<span class="ok">' + str(order) + '</span>');
+        await beat(tok, 1700);
+      }
+      cd.hl(-1);
+      say('三個版本只差 cout 的位置', 'pre：V L R ｜ in：L V R ｜ post：L R V');
+      await beat(tok, 3000);
+    } };
+
+    // 2) 非遞迴 inorder：自己用 stack
+    LECT['p13-iter-inorder'] = { title: '非遞迴 Inorder：用 Stack', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.8, 13.5], [0, 3.6, 0.6]);
+      const root = showTree('expr', { cx: -1.6, width: 7.4, topY: 6.8, minY: 2.6, maxSp: 0.92 });
+      const base = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.08, 1.0), new THREE.MeshStandardMaterial({ color: '#7a6a52' }));
+      base.position.set(5.4, 0.04, 0); lab.world.add(base);
+      tag('Stack', 'ptr', 5.4, 6.4);
+      tag('輸出', 'ptr', -6.3, 0.35, 2.4);
+      const cur = makeCursor();
+      const steps = []; const st = []; let c = root;
+      for (;;) {
+        while (c) { steps.push({ op: 'push', n: c }); st.push(c); c = c.left; }
+        if (!st.length) break;
+        const n = st.pop(); steps.push({ op: 'pop', n }); c = n.right; steps.push({ op: 'right', n, to: c });
+      }
+      say('不用遞迴：自己用一個 stack 存 node', '往左 push → 走不下去 pop 印出 → 往右');
+      await beat(tok, 2800);
+      const stack = []; const out = [];
+      for (const s of steps) {
+        if (s.op === 'push') {
+          cursorTo(cur, s.n.pos);
+          stack.push({ n: s.n, b: emit(s.n, V(5.4, 0.35 + stack.length * 0.5, 0), SMALL) });
+          say('往左走：' + s.n.label + ' 先不印，push', 'stack（底→頂）：' + stack.map((e) => e.n.label).join(' '));
+          await beat(tok, 800);
+        } else if (s.op === 'pop') {
+          const b = stack.pop().b;
+          cursorTo(cur, s.n.pos); glow(s.n, GOLD);
+          lab.springTo(b, V(-5.4 + out.length * 0.7, 0.35, 2.4));
+          out.push(s.n.label);
+          say('走不下去 → pop ' + s.n.label + ' 印出', '輸出：' + out.join(' '));
+          await beat(tok, 1000);
+        } else if (s.to) {
+          cursorTo(cur, s.to.pos);
+          say('往 ' + s.n.label + ' 的右子樹走：' + s.to.label, 'cur = cur->rightChild');
+          await beat(tok, 600);
+        } else await beat(tok, 350);
+      }
+      cur.obj.visible = false;
+      say('stack 空且 cur 為 null → 結束', '<span class="ok">' + out.join(' ') + '</span>（與遞迴版相同）');
+      await beat(tok, 3000);
+    } };
+
+    // 3) Level order：用 queue（Horowitz LevelOrder），再示範先放右孩子會怎樣
+    const LCODE = ['void LevelOrder() {', '  Queue<TreeNode*> q;', '  TreeNode* cur = root;', '  while (cur) {', '    cout << cur->data;', '    if (cur->leftChild)', '      q.Push(cur->leftChild);', '    if (cur->rightChild)', '      q.Push(cur->rightChild);', '    if (q.IsEmpty()) return;', '    cur = q.Front(); q.Pop();', '  }', '}'];
+    LECT['p13-level-queue'] = { title: 'Level order：用 Queue', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.8, 13.5], [0, 3.6, 0.8]);
+      const w = Math.max(...LCODE.map((s) => s.length)) + 2;
+      const cd = code(LCODE.map((s) => s.padEnd(w, ' ')), -4.0, 7.6, 0.47);
+      const root = showTree('expr', { cx: 3.4, width: 5.8, topY: 7.0, minY: 3.4, maxSp: 0.72 });
+      tag('queue', 'ptr', 0.2, 0.35, 2.0);
+      tag('輸出', 'ptr', 0.2, 0.35, 3.3);
+      const cur = makeCursor();
+      const qPos = (i) => V(1.3 + i * 0.62, 0.35, 2.0);
+      const oPos = (i) => V(1.3 + i * 0.62, 0.35, 3.3);
+      async function run(rightFirst, ms) {
+        const q = []; const out = [];
+        let n = root, b = null;
+        for (;;) {
+          cursorTo(cur, n.pos); glow(n, GOLD);
+          cd.hl(4);
+          if (b) lab.springTo(b, oPos(out.length)); else b = emit(n, oPos(0));
+          out.push({ n, b });
+          q.forEach((e, i) => lab.springTo(e.b, qPos(i)));
+          if (ms > 400) say('cout ' + n.label, 'queue：' + (q.map((e) => e.n.label).join(' ') || '空'));
+          await beat(tok, ms);
+          const kids = rightFirst ? [n.right, n.left] : [n.left, n.right];
+          for (let j = 0; j < 2; j++) {
+            const k = kids[j];
+            const isL = (j === 0) !== rightFirst;
+            cd.hl(isL ? 6 : 8);
+            if (!k) continue;
+            q.push({ n: k, b: emit(k, qPos(q.length)) });
+            if (ms > 400) say(n.label + ' 的' + (isL ? ' left' : ' right') + ' child ' + k.label + ' 放進 queue', 'queue：' + q.map((e) => e.n.label).join(' '));
+            await beat(tok, ms * 0.7);
+          }
+          if (!q.length) { cd.hl(9); await beat(tok, ms * 0.5); break; }
+          cd.hl(10);
+          const f = q.shift(); n = f.n; b = f.b;
+          await beat(tok, ms * 0.5);
+        }
+        return out;
+      }
+      cd.hl(2);
+      say('Level order：queue 的架構，幾行就好', 'cur 一開始 = root');
+      await beat(tok, 2600);
+      const o1 = await run(false, 900);
+      say('先左後右 → 每層由左到右', '<span class="ok">' + o1.map((e) => e.n.label).join(' ') + '</span>');
+      await beat(tok, 2600);
+      o1.forEach((e) => lab.flyAway(e.b, V(0, 8, 4)));
+      allOff(root);
+      [['    if (cur->rightChild)', 5], ['      q.Push(cur->rightChild);', 6], ['    if (cur->leftChild)', 7], ['      q.Push(cur->leftChild);', 8]].forEach(([s, i]) => setTag(cd.ls[i], s.padEnd(w, ' ')));
+      say('若先放 right child？queue 是 FIFO', '順序顛倒 → 每層變成由右到左');
+      await beat(tok, 2400);
+      const o2 = await run(true, 260);
+      cd.hl(-1);
+      say('先放右邊：level order 變由右到左', '<span class="no">' + o2.map((e) => e.n.label).join(' ') + '</span>');
+      await beat(tok, 3000);
+    } };
+
+    // 4) 相似？A(B,C) vs A(C,B)；轉成 string 比較、LCS
+    LECT['p13-similar'] = { title: '兩棵 tree 相似嗎？轉成 string 比較', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.6, 13], [0, 3.6, 0.6]);
+      const t1 = showTree('A(B,C)', { cx: -3.6, width: 2.6, topY: 6.4, minY: 4.8, maxSp: 1.3 });
+      const t2 = showTree('A(C,B)', { cx: 3.6, width: 2.6, topY: 6.4, minY: 4.8, maxSp: 1.3 });
+      tag('T1', 'ptr', -3.6, 7.4); tag('T2', 'ptr', 3.6, 7.4);
+      say('A(B,C) 與 A(C,B) 相似嗎？', 'root 相同，兩個孩子左右對調');
+      await beat(tok, 2800);
+      const g1 = ghost('#2fc092', -3.6, 5.6, 3.6, 2.4), g2 = ghost('#2fc092', 3.6, 5.6, 3.6, 2.4);
+      say('只看形狀：root 下面兩個 child', '只看 structure → 長得一樣');
+      await beat(tok, 2800);
+      kill(g1); kill(g2);
+      glow(t1.left, RED); glow(t2.left, RED);
+      say('位置對位置比資料：B ≠ C', '左右也要一樣 → 不相同（看定義）');
+      await beat(tok, 3000);
+      glow(t1.left, OFF); glow(t2.left, OFF);
+      say('快速方法：traversal 轉成 string 再比', 'preorder 與 inorder');
+      tag('preorder', 'idx', 0, 0.35, 2.0); tag('inorder', 'idx', 0, 0.35, 3.2);
+      const rows = {};
+      for (const [k, f, z] of [['pre', preorder, 2.0], ['in', inorder, 3.2]]) {
+        rows[k] = [];
+        for (const [t, x0] of [[t1, -4.6], [t2, 2.6]]) {
+          const seq = f(t); const bs = [];
+          for (let i = 0; i < seq.length; i++) { bs.push(emit(seq[i], V(x0 + i * 0.75, 0.35, z), SMALL)); await beat(tok, 380); }
+          rows[k].push(bs);
+        }
+        say(k === 'pre' ? 'preorder：ABC vs ACB' : 'inorder：BAC vs CAB', '字串不同 → 左右不一樣');
+        await beat(tok, 1600);
+      }
+      // LCS(ABC, ACB) = 2：A、B 共同出現且順序相同
+      [rows.pre[0][0], rows.pre[0][1], rows.pre[1][0], rows.pre[1][2]].forEach((b) => lit(b, GOLD));
+      say('再用 LCS 比共同出現的字與順序', 'LCS(ABC, ACB) = AB（或 AC），長度 2');
+      await beat(tok, 3200);
+      say('similar 的判定依定義而不同', '課本：結構相同即 similar；資料也同才 equal');
+      await beat(tok, 2800);
+    } };
+
+    // 5) Copy：V、L、R 遞迴複製；錯誤版只做 pointer assignment
+    const CCODE = ['TreeNode* Copy(TreeNode* orig) {', '  if (!orig) return 0;', '  TreeNode* temp = new TreeNode;', '  temp->data = orig->data;      // V', '  temp->leftChild =', '    Copy(orig->leftChild);      // L', '  temp->rightChild =', '    Copy(orig->rightChild);     // R', '  return temp;', '}'];
+    LECT['p13-copy'] = { title: '複製一棵 tree（Copy）', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.6, 13.5], [0, 4.0, 0]);
+      const w = Math.max(...CCODE.map((s) => s.length)) + 6;
+      const cd = code(CCODE.map((s) => s.padEnd(w, ' ')), -3.9, 7.4, 0.48);
+      const SRC = 'A(B(D,E),C)';
+      const src = showTree(SRC, { cx: 3.4, width: 3.6, topY: 7.2, minY: 5.0, maxSp: 0.95 });
+      const dst = parseTree(SRC);
+      layoutTree(dst, Object.assign({}, TREE_O, { cx: 3.4, width: 3.6, topY: 3.6, minY: 1.4, maxSp: 0.95 }));
+      edgeLines(() => treePairs(dst));
+      tag('原 tree（示意）', 'ptr', 0.6, 7.2);
+      tag('copy', 'ptr alt', 0.6, 3.6);
+      const cur = makeCursor();
+      cd.hl(0);
+      say('有了走訪就能 copy：傳入原 tree 的 root', '示意例：A(B(D,E),C)');
+      await beat(tok, 2600);
+      async function go(s, d) {
+        cd.hl(1);
+        if (!s) { await beat(tok, 330); return; }
+        cursorTo(cur, s.pos);
+        say('orig = ' + s.label + ' 不是 empty', 'if (!orig) return 0 不成立');
+        await beat(tok, 450);
+        cd.hl(2);
+        const b = lab.addBody(block(s.label, NODE, depthColor(d.depth)));
+        b.obj.position.copy(s.pos); lab.springTo(b, d.pos.clone()); d.body = b;
+        say('new TreeNode，複製 data ' + s.label, 'V：temp->data = orig->data');
+        await beat(tok, 950);
+        cd.hl(5);
+        if (s.left) { say('遞迴 Copy ' + s.label + ' 的左子樹', 'L：temp->leftChild = Copy(…)'); await beat(tok, 450); }
+        await go(s.left, d.left);
+        cd.hl(7);
+        if (s.right) { say('遞迴 Copy ' + s.label + ' 的右子樹', 'R：temp->rightChild = Copy(…)'); await beat(tok, 450); }
+        await go(s.right, d.right);
+        cd.hl(8);
+        await beat(tok, 250);
+      }
+      await go(src, dst);
+      cur.obj.visible = false;
+      say('左右子樹都遞迴複製 → 完整的一份', '<span class="ok">copy 完成：5 個新 node</span>');
+      await beat(tok, 2400);
+      // 錯誤寫法：只有 pointer assignment
+      for (const n of [dst.left.left, dst.left.right, dst.left, dst.right]) { lab.flyAway(n.body, V(0, 8, 4)); n.body = null; }
+      setTag(cd.ls[4], '  temp->leftChild = orig->leftChild;'.padEnd(w, ' '));
+      setTag(cd.ls[5], '    // ✗ 沒有呼叫 Copy'.padEnd(w, ' '));
+      setTag(cd.ls[6], '  temp->rightChild = orig->rightChild;'.padEnd(w, ' '));
+      setTag(cd.ls[7], '    // ✗ 沒有呼叫 Copy'.padEnd(w, ' '));
+      cd.hl(4);
+      say('錯誤寫法：直接指定 pointer', '不是 assignment 就能複製子樹');
+      await beat(tok, 2200);
+      const r = dst.pos;
+      arrow(V(r.x - 0.2, r.y + 0.3, 0.3), V(src.left.pos.x, src.left.pos.y - 0.32, 0.3), '#c0392b', true);
+      arrow(V(r.x + 0.2, r.y + 0.3, 0.3), V(src.right.pos.x, src.right.pos.y - 0.32, 0.3), '#c0392b', true);
+      glow(src.left, RED); glow(src.right, RED); glow(src.left.left, RED); glow(src.left.right, RED);
+      say('只複製了 root，子樹跟原 tree 共用', '<span class="no">改原 tree，copy 也跟著變</span>');
+      await beat(tok, 3200);
+      say('思考：用 preorder／postorder 也能 copy 嗎？', '可以，關鍵是左右都遞迴 Copy');
+      await beat(tok, 2600);
+    } };
+
+    // 6) operator== → Equal(a, b)
+    const ECODE = ['bool operator==(s, t)', '  { return Equal(s.root, t.root); }', 'bool Equal(TreeNode* a, TreeNode* b) {', '  if (!a && !b) return true;', '  return (a && b', '    && a->data == b->data', '    && Equal(a->leftChild, b->leftChild)', '    && Equal(a->rightChild, b->rightChild));', '}'];
+    LECT['p13-equal'] = { title: '判斷兩棵 tree 相等（Equal）', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.4, 13.5], [0, 3.8, 0]);
+      const cd = code(padL(ECODE), 0, 7.7, 0.48);
+      const s = showTree('A(B(D,),C)', { cx: -3.4, width: 2.8, topY: 3.3, minY: 1.1, maxSp: 0.95 });
+      let t = showTree('A(B(D,),C)', { cx: 3.4, width: 2.8, topY: 3.3, minY: 1.1, maxSp: 0.95 });
+      tag('s（示意）', 'ptr', -5.9, 3.3); tag('t', 'ptr', 5.9, 3.3);
+      const ca = makeCursor(), cb = makeCursor();
+      cd.hl(0);
+      say('operator==：把兩個 root 交給 Equal', 'Equal(a, b)：兩個 TreeNode pointer');
+      await beat(tok, 2800);
+      async function eq(a, b, fast) {
+        if (!a && !b) { cd.hl(3); await beat(tok, fast ? 200 : 380); return true; }
+        cd.hl(4);
+        if (!a || !b) return false;
+        cursorTo(ca, a.pos); cursorTo(cb, b.pos);
+        glow(a, GOLD); glow(b, GOLD);
+        cd.hl(5);
+        if (a.label !== b.label) {
+          glow(a, RED); glow(b, RED);
+          say(a.label + ' ≠ ' + b.label + ' → false', '&& 短路：後面的都不用比');
+          await beat(tok, 2200);
+          return false;
+        }
+        say('比 ' + a.label + ' 與 ' + b.label + '：data 相同', '再 recursive 比左、右子樹');
+        await beat(tok, fast ? 500 : 900);
+        glow(a, GREEN); glow(b, GREEN);
+        cd.hl(6);
+        if (!(await eq(a.left, b.left, fast))) return false;
+        cd.hl(7);
+        return eq(a.right, b.right, fast);
+      }
+      const r1 = await eq(s, t, false);
+      cd.hl(-1);
+      say('每一層都相同 → s == t', '<span class="ok">' + r1 + '</span>（兩邊 empty 也回傳 true）');
+      await beat(tok, 2600);
+      allOff(s); allOff(t);
+      const D = t.left.left;
+      lab.flyAway(D.body, V(3, 8, 3));
+      const E = T('E'); E.depth = D.depth; E.pos = D.pos.clone();
+      t.left.left = E;
+      const eb = nodeBody(E); eb.obj.position.copy(E.pos).add(V(0, 4, 0)); lab.dropTo(eb, E.pos.clone());
+      say('把 t 最底下的 D 換成 E', '只比一層看不出來，要遞迴到底');
+      await beat(tok, 2200);
+      const r2 = await eq(s, t, true);
+      cd.hl(-1);
+      say('深層不同也會被抓到', '<span class="no">s == t 為 ' + r2 + '</span>');
+      await beat(tok, 2800);
+    } };
+
+    // 7) 只給一個 inorder，決定不了唯一的 tree
+    LECT['p13-same-inorder'] = { title: '一個走訪 string 決定不了唯一的 tree', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.4, 13.5], [0, 3.6, 0.8]);
+      const xs = [-4.4, 0, 4.4];
+      const trees = ['B(A,C)', 'A(,B(,C))', 'C(B(A,),)'].map((src, j) => showTree(src, { cx: xs[j], width: 2.4, topY: 6.6, minY: 3.6, maxSp: 1.1 }));
+      say('示意：三棵結構不同的 tree', '只給 inorder，能決定唯一的 tree 嗎？');
+      await beat(tok, 2800);
+      tag('inorder', 'idx', -6.6, 0.35, 2.0); tag('preorder', 'idx', -6.6, 0.35, 3.3);
+      const cur = makeCursor();
+      for (let j = 0; j < 3; j++) {
+        const seq = inorder(trees[j]);
+        for (let i = 0; i < 3; i++) { cursorTo(cur, seq[i].pos); glow(seq[i], GOLD); emit(seq[i], V(xs[j] - 0.75 + i * 0.75, 0.35, 2.0), SMALL); await beat(tok, 480); }
+        say('第 ' + (j + 1) + ' 棵的 inorder：A B C', 'L V R');
+        await beat(tok, 700);
+      }
+      cur.obj.visible = false;
+      say('三棵的 inorder 全是 A B C', '<span class="no">單一走訪 → 不唯一</span>');
+      await beat(tok, 3000);
+      trees.forEach(allOff);
+      for (let j = 0; j < 3; j++) {
+        const seq = preorder(trees[j]);
+        for (let i = 0; i < 3; i++) { emit(seq[i], V(xs[j] - 0.75 + i * 0.75, 0.35, 3.3), SMALL); await beat(tok, 300); }
+      }
+      say('加上 preorder 就分得開：BAC／ABC／CBA', '<span class="ok">inorder + preorder（或 postorder）→ 唯一</span>');
+      await beat(tok, 3400);
+    } };
+
+    // ── SAT：課本例 (x1 ∧ ¬x2) ∨ (¬x1 ∧ x3) ∨ ¬x3 ──
+    const SAT_SRC = '∨(∨(∧(x1,¬(,x2)),∧(¬(,x1),x3)),¬(,x3))';
+    const SAT_F = '(x1 ∧ ¬x2) ∨ (¬x1 ∧ x3) ∨ ¬x3';
+    const COMBOS = ['TTT', 'TTF', 'TFT', 'TFF', 'FTT', 'FTF', 'FFT', 'FFF'];
+    function satVal(n, asg) {
+      if (n.label === '¬') return !satVal(n.right, asg);
+      if (n.label === '∧') return satVal(n.left, asg) && satVal(n.right, asg);
+      if (n.label === '∨') return satVal(n.left, asg) || satVal(n.right, asg);
+      return asg[Number(n.label.slice(1)) - 1] === 'T';
+    }
+
+    // 8) SAT 問題：式子 → tree，窮舉 2^3 種組合
+    LECT['p13-sat-tree'] = { title: 'Satisfiability：式子、tree、2^n 種組合', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.6, 13.5], [0, 4.0, 0]);
+      tag(SAT_F, 'ptr', -2.0, 7.6);
+      say('運算子：¬ not、∧ and、∨ or', '變數 x1、x2、x3 只能是 T（1）或 F（0）');
+      await beat(tok, 2600);
+      say('這個式子可以用 tree 表示（課本例）', '¬ 是一元運算子：只有右孩子');
+      const root = await dropTree(tok, SAT_SRC, { cx: -2.0, width: 8.4, topY: 6.6, minY: 2.2, maxSp: 0.78 }, 200);
+      await beat(tok, 1400);
+      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.45, 24, 16), new THREE.MeshStandardMaterial({ color: '#d8cfc0', emissive: '#000' }));
+      lamp.position.set(5.6, 0.7, 1.6); lab.world.add(lamp);
+      tag('燈', 'idx', 5.6, 0.1, 2.4);
+      say('SAT：有沒有一組 assignment 讓式子為 true？', '像開燈電路：有沒有組合讓燈亮（輸出 1）');
+      await beat(tok, 2800);
+      tag('x1 x2 x3 → 值', 'idx', 4.6, 7.0);
+      const rows = COMBOS.map((c, k) => tag(c.split('').join('  ') + '  → ?', '', 4.6, 6.4 - k * 0.6));
+      say('3 個變數 → 2^3 = 8 種組合', '用迴圈把每一組代進去');
+      await beat(tok, 2200);
+      let first = null;
+      for (let k = 0; k < 8; k++) {
+        const v = satVal(root, COMBOS[k]);
+        setTag(rows[k], COMBOS[k].split('').join('  ') + '  → ' + (v ? 'T' : 'F'));
+        rows[k].element.className = 'lab-label ' + (v ? 'ptr alt' : 'idx');
+        lamp.material.emissive.set(v ? '#e0a800' : '#000');
+        if (v && !first) first = COMBOS[k];
+        say('代入 ' + COMBOS[k] + '：式子為 ' + (v ? 'true，燈亮' : 'false'), '第 ' + (k + 1) + ' / 8 組');
+        await beat(tok, 900);
+      }
+      say('8 組裡只有 TTT 不成立', '<span class="ok">satisfiable</span>：例如 ' + first);
+      await beat(tok, 3000);
+    } };
+
+    // 9) 兩階段 stack 求值 vs. 建好 tree 做一次 postorder
+    LECT['p13-eval-compare'] = { title: '求值：兩階段 stack vs. postorder', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.6, 13.5], [0, 3.9, 0]);
+      tag('Stack 法：兩個 phase', 'ptr', -3.6, 7.6);
+      tag('Tree 法：一次 postorder', 'ptr alt', 3.6, 7.6);
+      const tok2 = ['2', '+', '3', '*', '4'];
+      const inB = tok2.map((s, i) => cube(s, '#4b9ee2', SMALL, -5.6 + i * 0.75, 6.7));
+      tag('infix', 'idx', -6.6, 6.7);
+      say('之前 stack 章節的 expression：2 + 3 * 4', '先回想兩個 phase 的做法');
+      await beat(tok, 2600);
+      // phase 1：infix → postfix（operator 進 stack）
+      tag('postfix', 'idx', -6.6, 5.4);
+      tag('op stack', 'idx', -1.0, 3.7);
+      const ops = []; let k = 0;
+      const toOut = (s, from) => { const b = cube(s, '#2fc092', SMALL, from.x, from.y); lab.springTo(b, V(-5.6 + k * 0.75, 5.4, 0)); k++; };
+      say('Phase 1：infix → postfix', 'operand 直接輸出，operator 進 stack');
+      for (let i = 0; i < 5; i++) {
+        lit(inB[i], GOLD);
+        const p = inB[i].obj.position;
+        if ('+*'.includes(tok2[i])) {
+          const b = cube(tok2[i], '#dd8238', SMALL, p.x, p.y); lab.springTo(b, V(-1.0, 4.3 + ops.length * 0.55, 0)); ops.push(b);
+        } else toOut(tok2[i], p);
+        await beat(tok, 750);
+        lit(inB[i]);
+      }
+      while (ops.length) { const b = ops.pop(); lab.springTo(b, V(-5.6 + k * 0.75, 5.4, 0)); k++; await beat(tok, 650); }
+      say('postfix：2 3 4 * +', 'phase 1 完成');
+      await beat(tok, 1300);
+      // phase 2：postfix 求值
+      say('Phase 2：依 postfix 求值', '數字 push；operator pop 兩個、算完 push 回去');
+      tag('eval stack', 'idx', -4.0, 3.2);
+      const st = [];
+      const pushV = (v) => { const b = cube(String(v), '#9b7ef4', SMALL, -4.0, 0.4 + st.length * 0.55, 0, 2.5); st.push({ v, b }); };
+      for (const s of ['2', '3', '4', '*', '+']) {
+        if (s === '*' || s === '+') {
+          const y = st.pop(), x = st.pop();
+          lab.flyAway(y.b, V(2, 7, 3)); lab.flyAway(x.b, V(-2, 7, 3));
+          pushV(s === '*' ? x.v * y.v : x.v + y.v);
+          say('pop ' + x.v + '、' + y.v + ' → ' + x.v + ' ' + s + ' ' + y.v + ' = ' + st[st.length - 1].v + '，push', 'stack：' + st.map((e) => e.v).join(' '));
+        } else { pushV(Number(s)); say('看到 ' + s + ' → push', 'stack：' + st.map((e) => e.v).join(' ')); }
+        await beat(tok, 900);
+      }
+      say('stack 法：兩個 phase 算出 14', '<span class="ok">2 + 3 * 4 = 14</span>');
+      await beat(tok, 1600);
+      // tree 法
+      const root = showTree('+(2,*(3,4))', { cx: 3.6, width: 3.0, topY: 6.4, minY: 3.4, maxSp: 1.0 });
+      say('Tree 法：建好 tree，做一次 postorder', '走訪完答案就在 root');
+      await beat(tok, 1600);
+      const val = (n) => (n.label === '+' ? val(n.left) + val(n.right) : n.label === '*' ? val(n.left) * val(n.right) : Number(n.label));
+      const cur = makeCursor();
+      for (const n of postorder(root)) {
+        cursorTo(cur, n.pos); glow(n, GOLD);
+        tag('= ' + val(n), 'ptr alt', n.pos.x + 0.85, n.pos.y);
+        say('postorder 到 ' + n.label + '：value = ' + val(n), n.left ? '左右孩子的值先算好了' : 'leaf 的值就是自己');
+        await beat(tok, 850);
+      }
+      say('一個 phase 就完成，但要先建好 tree', '<span class="ok">root = 14</span>');
+      await beat(tok, 2200);
+      say('換成布林式：+ − × ÷ → ¬ ∧ ∨', '變數的值只有 0 和 1');
+      await beat(tok, 2800);
+    } };
+
+    // 10) SAT 用的 node：四個欄位；窮舉演算法
+    const ACODE = ['for (each of the 2^n combinations) {', '  generate the next combination;', '  replace variables by their values;', '  PostOrderEval(formula);   // 走訪 tree', '  if (formula.value) {', '    cout << combination; return; }', '}', 'cout << "No satisfiable combination";'];
+    LECT['p13-sat-node'] = { title: 'SAT 的 node 設計與窮舉演算法', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.4, 13.5], [0, 4.0, 0]);
+      tag('一般 TreeNode：3 個欄位', 'ptr', -1.0, 7.6);
+      const three = ['leftChild', 'data', 'rightChild'].map((s, i) => cube(s, '#c9b48e', [1.9, 0.55, 0.7], -3.0 + i * 1.95, 6.8));
+      say('原本的 tree node 只有三個欄位', 'leftChild ｜ data ｜ rightChild');
+      await beat(tok, 2400);
+      tag('SAT 用的 node：4 個欄位', 'ptr alt', 0, 5.9);
+      const four = [];
+      for (const [i, s, c] of [[0, 'leftChild', '#4b9ee2'], [1, 'data', '#2fc092'], [2, 'value', '#dd8238'], [3, 'rightChild', '#9b7ef4']]) {
+        four.push(cube(s, c, [1.9, 0.55, 0.7], -2.92 + i * 1.95, 5.1, 0, 2.5));
+        await beat(tok, 450);
+      }
+      say('要用 postorder 求值：每個 node 四個欄位', '多了一個 value');
+      await beat(tok, 2000);
+      lit(four[1], GOLD);
+      const t1 = tag('not／and／or／true／false', 'idx', -0.97, 4.45);
+      say('data：operator，或變數被設定的 T／F', '自己本身的資料');
+      await beat(tok, 2600);
+      lit(four[1]); lit(four[2], GOLD);
+      const t2 = tag('左右子樹運算後的結果', 'idx', 1.0, 4.45);
+      say('value：對左右子樹做完 operation 的結果', 'bool value');
+      await beat(tok, 2600);
+      lit(four[2]); kill(t1); kill(t2);
+      const cd = code(padL(ACODE), -1.0, 3.7, 0.44);
+      const cnt = tag('', 'ptr alt', 5.6, 2.2);
+      say('演算法：n 個變數 → 2^n 種組合', '每一組都走訪一次 tree');
+      await beat(tok, 1800);
+      for (let k = 0; k < 2; k++) {
+        const c = COMBOS[k];
+        setTag(cnt, '第 ' + (k + 1) + ' 組：' + c);
+        for (const i of [0, 1, 2, 3]) { cd.hl(i); await beat(tok, k ? 380 : 650); }
+        cd.hl(4);
+        const v = k === 1;
+        say('組合 ' + c + '：formula.value = ' + (v ? 'true' : 'false'), v ? '成立 → 印出這組並結束' : '不成立 → 換下一組');
+        await beat(tok, 1500);
+        if (v) { cd.hl(5); setTag(cnt, '輸出 ' + c); await beat(tok, 1600); }
+      }
+      cd.hl(-1);
+      say('最多試 2^n 組，每組走訪整棵 tree', '時間 O(g · 2^n)：指數時間');
+      await beat(tok, 3000);
+    } };
+
+    // 11) PostOrderEval：在 SAT tree 上算出每個 node 的 value
+    const PCODE = ['void PostOrderEval(TreeNode* x) {', '  if (!x) return;', '  PostOrderEval(x->leftChild);', '  PostOrderEval(x->rightChild);', '  switch (x->data) {', '  case NOT: v = !R.value;', '  case AND: v = L.value && R.value;', '  case OR:  v = L.value || R.value;', '  case TRUE:  v = true;', '  case FALSE: v = false;', '  }  // v = x->value', '}'];
+    LECT['p13-postorder-eval'] = { title: 'PostOrderEval 求布林式的值', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.6, 13.5], [0, 4.0, 0]);
+      const cd = code(padL(PCODE), -3.9, 7.5, 0.46);
+      const root = showTree(SAT_SRC, { cx: 3.3, width: 6.6, topY: 7.0, minY: 2.8, maxSp: 0.62 });
+      const asgTag = tag('', 'ptr alt', 3.3, 1.7, 1.2);
+      const vt = new Map();
+      const cur = makeCursor();
+      say('PostOrderEval：先左、再右、最後處理自己', 'L R V：子樹的值先算好');
+      cd.hl(2);
+      await beat(tok, 2600);
+      async function run(asg, ms) {
+        setTag(asgTag, '(x1, x2, x3) = (' + asg.split('').join(', ') + ')');
+        for (const n of postorder(root)) {
+          const v = satVal(n, asg) ? 'T' : 'F';
+          cursorTo(cur, n.pos);
+          const line = n.label === '¬' ? 5 : n.label === '∧' ? 6 : n.label === '∨' ? 7 : v === 'T' ? 8 : 9;
+          cd.hl(line);
+          if (!vt.has(n)) vt.set(n, tag('', 'ptr alt', n.pos.x, n.pos.y - 0.55, 0.3));
+          setTag(vt.get(n), v);
+          glow(n, v === 'T' ? GREEN : RED);
+          if (ms > 500) {
+            const L = n.left && (satVal(n.left, asg) ? 'T' : 'F'), R = n.right && (satVal(n.right, asg) ? 'T' : 'F');
+            const f = n.label === '¬' ? '!' + R + ' = ' + v : n.label === '∧' ? L + ' and ' + R + ' = ' + v : n.label === '∨' ? L + ' or ' + R + ' = ' + v : '變數設為 ' + v;
+            say(n.label + '：value = ' + v, f);
+          }
+          await beat(tok, ms);
+        }
+      }
+      await run('TTT', 950);
+      cur.obj.visible = false;
+      cd.hl(-1);
+      say('結果在 root 的 value：false', 'TTT 不滿足 → 換下一組');
+      await beat(tok, 2200);
+      allOff(root);
+      say('下一組 TTF 再走一次 postorder', '只有 x3 改成 F');
+      await beat(tok, 1200);
+      await run('TTF', 330);
+      cur.obj.visible = false;
+      cd.hl(-1);
+      say('root.value = true → 印出這組', '<span class="ok">(x1, x2, x3) = (T, T, F)</span>');
+      await beat(tok, 3000);
+    } };
+  }
+
+  // ─── pPMMUa8guTE：交大彭文志 Lec14（Satisfiability、Threaded tree、Huffman、Priority queue、Heap） ───
+  {
+    const P = () => ctx.params || {};
+    const ORANGE = '#dd8238', TAN = '#c9b48e', BLUE = '#4b9ee2', PURP = '#9b7ef4', TEAL = '#31aab0', GRAYB = '#8a7a62';
+    const setV = (b, t) => { const c = b.obj.children.find((o) => o.element); if (c) c.element.textContent = String(t); };
+    const under = (n, text, cls = 'ptr alt') => tag(text, cls, n.pos.x, n.pos.y - 0.66, 0.35);
+    // 圓柱：Huffman 的內部節點（課本畫成圓圈）
+    function disc(text, color, x, y, z = 0, drop = 0) {
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.6, 28), new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.05 }));
+      m.castShadow = true; m.receiveShadow = true;
+      m.add(lab.label(String(text), 'val'));
+      const b = lab.addBody(m);
+      m.position.set(x, y + drop, z);
+      if (drop) lab.dropTo(b, V(x, y, z)); else b.target.set(x, y, z);
+      return b;
+    }
+    // 虛線曲線（thread）：從 a 彎向鏡頭再到 b，b 端有箭頭
+    function arc(a, b, color = '#c08a1f', lift = V(0, -0.3, 1.2)) {
+      const mid = a.clone().add(b).multiplyScalar(0.5).add(lift);
+      const pts = new THREE.QuadraticBezierCurve3(a, mid, b).getPoints(28);
+      const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineDashedMaterial({ color, dashSize: 0.16, gapSize: 0.1 }));
+      ln.computeLineDistances();
+      const dir = pts[28].clone().sub(pts[25]).normalize();
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.24, 10), new THREE.MeshBasicMaterial({ color }));
+      cone.position.copy(b).addScaledVector(dir, -0.12);
+      cone.quaternion.setFromUnitVectors(V(0, 1, 0), dir);
+      ln.add(cone);
+      lab.world.add(ln);
+      return ln;
+    }
+    // node 的 left（side=-1）或 right（side=+1）thread 指向 target（節點或座標）
+    const TH_L = '#4b9ee2', TH_R = '#c08a1f';
+    function threadTo(from, side, target) {
+      const tp = target.pos || target;
+      return arc(from.clone().add(V(side * 0.32, -0.3, 0.2)), tp.clone().add(V(0, -0.32, 0.3)), side < 0 ? TH_L : TH_R);
+    }
+    function floorTile(x, z, w = 0.78, d = 0.9) {
+      const t = new THREE.Mesh(new THREE.BoxGeometry(w, 0.08, d), new THREE.MeshStandardMaterial({ color: '#e9dcc4', roughness: 1 }));
+      t.position.set(x, 0.04, z); t.receiveShadow = true; lab.world.add(t); return t;
+    }
+    const bitTag = (p, c, bit) => tag(bit, 'ptr alt', (p.pos.x + c.pos.x) / 2 + (bit === '0' ? -0.28 : 0.28), (p.pos.y + c.pos.y) / 2 + 0.12, 0.3);
+
+    // ════════ 1. Satisfiability：運算式樹 ════════
+    const SAT_SRC = '∨(∨(∧(x1,¬(,x2)),∧(¬(,x1),x3)),¬(,x3))';
+    const SAT_EXPR = '(x1 ∧ ¬x2) ∨ (¬x1 ∧ x3) ∨ ¬x3';
+    const satVal = (a, b, c) => (a && !b) || (!a && c) || !c;
+    LECT['p14-sat-tree'] = { title: 'Satisfiability：運算式樹與 8 種組合', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 5, 14], [0, 3.8, 0]);
+      tag(SAT_EXPR, 'ptr', -2.8, 7.6);
+      say('哪組 x1、x2、x3 讓式子為 true？', SAT_EXPR + '（課本例）');
+      await beat(tok, 2800);
+      say('優先序：¬ > ∧ > ∨', '變數只有 true / false 兩種值');
+      await beat(tok, 2200);
+      const root = await dropTree(tok, SAT_SRC, { cx: -2.8, width: 7.2, topY: 6.6, minY: 2.2 }, 200);
+      await beat(tok, 600);
+      const andL = root.left.left, notX2 = andL.right;
+      glow(notX2, GOLD);
+      say('括號 x1 ∧ ¬x2：先做 ¬x2', '¬ 只有一個運算元（放在右子）');
+      await beat(tok, 2200);
+      glow(andL, GOLD);
+      say('再跟 x1 做 ∧', 'x1 ∧ (¬x2)');
+      await beat(tok, 2000);
+      glow(notX2, OFF); glow(andL, OFF);
+      say('3 個變數：2³ = 8 種組合', '順序 x1 x2 x3；T = true、F = false');
+      tag('x1 x2 x3 → 值', 'ptr', 4.4, 6.9);
+      const rows = [];
+      for (let k = 0; k < 8; k++) {
+        const a = !!(k & 4), b = !!(k & 2), c = !!(k & 1), v = satVal(a, b, c);
+        rows.push([tag([a, b, c].map((t) => (t ? 'T' : 'F')).join('  ') + '  →  ' + (v ? 'T' : 'F'), 'idx', 4.4, 6.3 - k * 0.55), v]);
+        await beat(tok, 420);
+      }
+      await beat(tok, 800);
+      rows.forEach(([l, v]) => { if (v) l.element.className = 'lab-label ptr alt'; });
+      say('true 的組合可能不只一組：全部印出', '這裡 7 組為 true，只有 (T,T,T) 為 false');
+      await beat(tok, 3200);
+      glow(root, GREEN);
+      say('有了樹：postorder 走一次就算出值', 'n 個變數 → 2ⁿ 種組合，每種走一次樹');
+      await beat(tok, 3000);
+    } };
+
+    // ════════ 2. PostOrderEval ════════
+    LECT['p14-sat-eval'] = { title: 'PostOrderEval：LRV 邊走邊算 value', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 5, 14], [0, 3.6, 0.6]);
+      const root = showTree(SAT_SRC, { cx: -3.7, width: 5.8, topY: 6.6, minY: 2.6 });
+      const FN = [['leftChild', 'L'], ['data', '∧'], ['value', '?'], ['rightChild', 'R']];
+      const fb = FN.map(([nm, v], k) => {
+        const x = -5.6 + k * 1.2;
+        tag(nm, 'idx', x, 1.25, 2.5);
+        return cube(v, k === 1 ? PURP : k === 2 ? ORANGE : TAN, [1.05, 0.5, 0.7], x, 0.3, 2.5, 3);
+      });
+      say('節點四個欄位：left、data、value、right', 'data = 變數或運算子；value = 算出的結果');
+      await beat(tok, 3200);
+      const cd = code([
+        'PostOrderEval(Node *s) {',
+        ' if (s) {',
+        '  PostOrderEval(s->leftChild);',
+        '  PostOrderEval(s->rightChild);',
+        '  switch (s->data) {',
+        '   Not: v = !R->value;',
+        '   And: v = L->value && R->value;',
+        '   Or:  v = L->value || R->value;',
+        '   True:  v = true;',
+        '   False: v = false;',
+        ' } } }',
+      ], 3.9, 7.0, 0.48);
+      say('架構就是 postorder：L R V', 'V 從「印出」改成依 data 做 switch');
+      for (const i of [2, 3, 4]) { cd.hl(i); await beat(tok, 1300); }
+      say('取一組設定：x1 = T, x2 = F, x3 = T', 'v = s->value；L、R = 左、右子節點（共 5 個 case）');
+      await beat(tok, 2600);
+      const asg = { x1: true, x2: false, x3: true };
+      const cur = makeCursor();
+      const val = new Map();
+      const TF = (b) => (b ? 'T' : 'F');
+      for (const n of postorder(root)) {
+        cursorTo(cur, n.pos);
+        let v, line, why, f;
+        if (n.label === '¬') { v = !val.get(n.right); line = 5; why = '¬：對右子的 value 取 not'; f = '!' + TF(val.get(n.right)) + ' = ' + TF(v); }
+        else if (n.label === '∧') { v = val.get(n.left) && val.get(n.right); line = 6; why = '∧：左子 value 且 右子 value'; f = TF(val.get(n.left)) + ' && ' + TF(val.get(n.right)) + ' = ' + TF(v); }
+        else if (n.label === '∨') { v = val.get(n.left) || val.get(n.right); line = 7; why = '∨：左子 value 或 右子 value'; f = TF(val.get(n.left)) + ' || ' + TF(val.get(n.right)) + ' = ' + TF(v); }
+        else { v = asg[n.label]; line = v ? 8 : 9; why = '變數 ' + n.label + ' = ' + TF(v) + ' → case ' + (v ? 'True' : 'False'); f = '葉節點：value 直接設成 ' + (v ? 'true' : 'false'); }
+        val.set(n, v);
+        cd.hl(line);
+        glow(n, v ? GOLD : RED);
+        under(n, TF(v), v ? 'ptr alt' : 'ptr');
+        setV(fb[1], n.label); setV(fb[2], TF(v));
+        say(why, f + (n.left || n.right ? '（用子節點的 value，不是 data）' : ''));
+        await beat(tok, 1000);
+      }
+      cd.hl(-1);
+      say('root 的 value = T：這組設定成立', '<span class="ok">x1 = T, x2 = F, x3 = T → true</span>');
+      await beat(tok, 3000);
+    } };
+
+    // ════════ 3. 延伸：算術運算式 ════════
+    LECT['p14-arith-eval'] = { title: '延伸：用樹計算算術運算式', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 5, 14], [0, 3.6, 0.5]);
+      say('思考題：PostOrderEval 改算算術式', '例：2 + 3 * 4');
+      tag('x1 = 2, x2 = 3, x3 = 4', 'idx', -4.3, 7.5);
+      const r = await dropTree(tok, '+(2,*(3,4))', { cx: -4.3, width: 3.4, topY: 6.6, minY: 4.0 }, 300);
+      await beat(tok, 1000);
+      const cur = makeCursor();
+      const val = new Map();
+      for (const n of postorder(r)) {
+        cursorTo(cur, n.pos);
+        let v;
+        if (!n.left) { v = Number(n.label); say('葉子：value = ' + v, 'switch 換成 +、−、*、/'); }
+        else { const a = val.get(n.left), b = val.get(n.right); v = n.label === '+' ? a + b : a * b; say(n.label + '：左 value ' + n.label + ' 右 value', a + ' ' + n.label + ' ' + b + ' = ' + v); }
+        val.set(n, v); glow(n, GOLD); under(n, String(v));
+        await beat(tok, n.left ? 1700 : 900);
+      }
+      cur.obj.visible = false;
+      tag('stack：infix → postfix → EVAL', 'ptr', 2.6, 7.4);
+      tag('tree：infix → 建樹 → postorder', 'ptr alt', 2.6, 6.7);
+      say('stack 作法要兩支程式；tree 只要走訪', '前提：先把 infix 轉成一棵樹');
+      await beat(tok, 3400);
+      const r2 = await dropTree(tok, '-(+(-(/(A,B),C),*(D,E)),*(A,C))', { cx: 2.5, width: 7, topY: 5.6, minY: 1.0 }, 160);
+      say('第三章例：A/B−C+D*E−A*C 建成樹', '代入變數值，postorder 一次求值（可能會考）');
+      await beat(tok, 2000);
+      const cur2 = makeCursor();
+      const out = [];
+      for (const n of postorder(r2)) { cursorTo(cur2, n.pos); glow(n, GOLD); out.push(n.label); say('postorder 走訪', out.join(' ')); await beat(tok, 420); }
+      say('樹的 postorder 正是 postfix', '<span class="ok">' + out.join(' ') + '</span>');
+      await beat(tok, 3000);
+    } };
+
+    // ════════ 4. n+1 個空 link ════════
+    const F520 = 'A(B(D(H,I),E),C(F,G))';
+    LECT['p14-null-links'] = { title: 'Threaded tree 動機：n+1 個空 link', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 5, 13.5], [0, 3.6, 0.5]);
+      say('n 個節點，每個有 2 個 pointer', 'n = 9 → 共 2n = 18 個 link 欄位（Fig 5.20 的樹）');
+      const r = await dropTree(tok, F520, { topY: 6.6, minY: 2.5 }, 200);
+      await beat(tok, 1400);
+      say('除了 root，每個節點恰被一條 link 指到', '用到的 link = n − 1 = 8');
+      let k = 0;
+      for (const n of levelorder(r)) for (const c of [n.left, n.right]) if (c) {
+        k++; glow(c, GREEN);
+        tag(String(k), 'ptr', (n.pos.x + c.pos.x) / 2 + (c === n.left ? -0.3 : 0.3), (n.pos.y + c.pos.y) / 2 + 0.1, 0.2);
+        await beat(tok, 380);
+      }
+      await beat(tok, 1200);
+      say('沒用到的 link 都是 null', '2n − (n − 1) = n + 1');
+      let m = 0;
+      for (const n of inorder(r)) for (const side of [-1, 1]) {
+        if (side < 0 ? n.left : n.right) continue;
+        m++;
+        const a = V(n.pos.x + side * 0.3, n.pos.y - 0.3, 0), b = V(n.pos.x + side * 0.62, n.pos.y - 0.9, 0);
+        seg(a, b, '#b04040');
+        tag('null', 'idx', b.x, b.y - 0.22, 0.2);
+        say('空 link 第 ' + m + ' 個', '2n − (n − 1) = n + 1 = ' + (m === 10 ? '<span class="ok">10</span>' : '…'));
+        await beat(tok, 420);
+      }
+      await beat(tok, 1600);
+      say('Thread：把空 link 指向 inorder 鄰居', 'left 空 → inorder predecessor；right 空 → inorder successor');
+      await beat(tok, 3200);
+    } };
+
+    // ════════ 5. Fig 5.20 的 thread ════════
+    LECT['p14-thread-fig'] = { title: 'Threaded tree：虛線 = thread', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 5, 14], [0, 3.4, 1]);
+      const r = showTree(F520, { topY: 6.6, minY: 2.8 });
+      const N = (l) => find(r, l);
+      say('實線 = 原本的 link；虛線 = thread', '藍 = left thread，金 = right thread');
+      await beat(tok, 2600);
+      rowLabel('inorder', 1.9);
+      const ib = new Map();
+      for (const n of inorder(r)) { ib.set(n.label, cube(n.label, depthColor(n.depth), SMALL, n.pos.x, 0.3, 1.9, 2)); await beat(tok, 230); }
+      say('inorder：H D I B E A F C G', '每個節點正下方就是它在 inorder 的位置');
+      await beat(tok, 2000);
+      glow(N('E'), GOLD);
+      say('E 是 leaf：兩個 link 本來都是 null', '充分利用它們');
+      await beat(tok, 2200);
+      threadTo(N('E').pos, -1, N('B')); lit(ib.get('B'), GOLD);
+      say('E.left → inorder 前一個 B', 'predecessor');
+      await beat(tok, 2200);
+      threadTo(N('E').pos, 1, N('A')); lit(ib.get('B')); lit(ib.get('A'), GOLD);
+      say('E.right → inorder 後一個 A', 'successor');
+      await beat(tok, 2200);
+      lit(ib.get('A')); glow(N('E'), OFF); glow(N('I'), GOLD);
+      threadTo(N('I').pos, -1, N('D')); threadTo(N('I').pos, 1, N('B'));
+      say('I：left → D，right → B', 'inorder … D I B …');
+      await beat(tok, 2600);
+      glow(N('I'), OFF); glow(N('H'), RED); glow(N('G'), RED);
+      const hp = N('H').pos, gp = N('G').pos;
+      arc(hp.clone().add(V(-0.32, -0.3, 0.2)), hp.clone().add(V(-0.9, 0.7, 0.3)), TH_L, V(-0.3, 0, 0.6));
+      arc(gp.clone().add(V(0.32, -0.3, 0.2)), gp.clone().add(V(0.9, 0.7, 0.3)), TH_R, V(0.3, 0, 0.6));
+      tag('?', 'ptr', hp.x - 0.95, hp.y + 0.95, 0.3); tag('?', 'ptr', gp.x + 0.95, gp.y + 0.95, 0.3);
+      say('H 沒有前一個、G 沒有後一個', '這兩條懸空 → 老師：可指到 root；課本：指向 head node');
+      await beat(tok, 3200);
+      glow(N('H'), OFF); glow(N('G'), OFF);
+      for (const [l, side, t] of [['H', 1, 'D'], ['F', -1, 'A'], ['F', 1, 'C'], ['G', -1, 'C']]) {
+        threadTo(N(l).pos, side, N(t));
+        say(l + '.' + (side < 0 ? 'left' : 'right') + ' → ' + t, side < 0 ? 'inorder 前一個' : 'inorder 後一個');
+        await beat(tok, 900);
+      }
+      say('所有空 link 都變成 thread', 'n + 1 = 10 條（含 H、G 兩條指向 head）');
+      await beat(tok, 3000);
+    } };
+
+    // ════════ 6. leftThread / rightThread 與 head node ════════
+    function buildThreaded(o) {
+      const r = showTree(F520, o);
+      const A = find(r, 'A');
+      const head = { label: 'head', pos: V(A.pos.x - 1.5, o.topY + 1.25, 0) };
+      return { r, A, head };
+    }
+    function threadInfo(root, head) {
+      const ino = inorder(root), info = new Map();
+      info.set(head, { lc: root, rc: head, lt: false, rt: false });
+      ino.forEach((n, k) => info.set(n, { lc: n.left || ino[k - 1] || head, lt: !n.left, rc: n.right || ino[k + 1] || head, rt: !n.right }));
+      return info;
+    }
+    function drawThreads(root, head, skipHead) {
+      const info = threadInfo(root, head);
+      for (const n of inorder(root)) {
+        const f = info.get(n);
+        if (f.lt && !(skipHead && f.lc === head)) threadTo(n.pos, -1, f.lc === head ? head.pos.clone().add(V(-0.2, 0, 0)) : f.lc);
+        if (f.rt && !(skipHead && f.rc === head)) threadTo(n.pos, 1, f.rc === head ? head.pos.clone().add(V(0.2, 0, 0)) : f.rc);
+      }
+      return info;
+    }
+    function showHead(head, A, drop) {
+      head.body = cube('head', GRAYB, [1.1, 0.6, 0.8], head.pos.x, head.pos.y, 0, drop ? 3 : 0);
+      arrow(head.pos.clone().add(V(0.25, -0.3, 0)), A.pos.clone().add(V(-0.2, 0.32, 0)), '#7a6a52');
+      const h = head.pos;
+      arc(h.clone().add(V(0.55, 0, 0)), h.clone().add(V(0.25, 0.32, 0)), TH_R, V(0.75, 0.55, 0.4));
+    }
+    LECT['p14-thread-fields'] = { title: 'leftThread / rightThread 與 head node', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 5.2, 14], [0, 3.4, 0.8]);
+      const { r, A, head } = buildThreaded({ topY: 5.0, minY: 1.8, width: 10.4 });
+      drawThreads(r, head, true);
+      say('每條 link 都會指到某個節點', '分得出：真的子節點，還是 thread？');
+      await beat(tok, 2800);
+      const NM = ['leftThread', 'leftChild', 'data', 'rightChild', 'rightThread'];
+      const fb = NM.map((nm, k) => {
+        const x = -3 + k * 1.5;
+        tag(nm, 'idx', x, k % 2 ? 1.35 : 0.95, 2.9);
+        return cube('', k === 2 ? PURP : k % 4 === 0 ? ORANGE : TAN, [1.2, 0.5, 0.7], x, 0.3, 2.9, 3);
+      });
+      const I = find(r, 'I');
+      glow(I, GOLD);
+      ['t', '→D', 'I', '→B', 't'].forEach((v, k) => setV(fb[k], v));
+      say('I 的 left、right 出去都是虛線', '兩條都是 thread → leftThread = rightThread = true');
+      await beat(tok, 3000);
+      say('多兩個 Boolean 欄位', 'leftThread = true：leftChild 是 thread；false：一般子節點 pointer');
+      await beat(tok, 3000);
+      glow(I, OFF);
+      const B = find(r, 'B');
+      glow(B, GOLD);
+      ['f', '→D', 'B', '→E', 'f'].forEach((v, k) => setV(fb[k], v));
+      say('B 的兩條 link 指向真的子節點', 'leftThread = rightThread = false');
+      await beat(tok, 2800);
+      glow(B, OFF);
+      showHead(head, A, true);
+      const info = threadInfo(r, head);
+      threadTo(find(r, 'H').pos, -1, head.pos.clone().add(V(-0.2, 0, 0)));
+      threadTo(find(r, 'G').pos, 1, head.pos.clone().add(V(0.2, 0, 0)));
+      say('加 head node：H、G 不再懸空', 'head.leftChild → 真正的 root A（leftThread = false）');
+      await beat(tok, 3200);
+      ['f', '→A', '—', '→head', 'f'].forEach((v, k) => setV(fb[k], v));
+      say('head.rightChild 指回自己', '空樹：head.leftThread = true，leftChild 也指回 head');
+      await beat(tok, 3000);
+      for (const n of inorder(r)) { const f = info.get(n); under(n, (f.lt ? 't' : 'f') + ' ' + (f.rt ? 't' : 'f'), f.lt ? 'ptr alt' : 'ptr'); }
+      say('看 thread 欄位就知道 link 指向誰', '節點下方：leftThread rightThread（t / f）');
+      await beat(tok, 3200);
+    } };
+
+    // ════════ 7. InorderSucc ════════
+    LECT['p14-inorder-succ'] = { title: '用 thread 找 inorder successor', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 5.2, 14], [0, 3.6, 0.8]);
+      const { r, A, head } = buildThreaded({ cx: -1.8, width: 8, topY: 5.0, minY: 1.6 });
+      showHead(head, A, false);
+      const info = drawThreads(r, head, false);
+      const cd = code([
+        'T* InorderSucc(x) {',
+        ' temp = x->rightChild;',
+        ' if (!x->rightThread)',
+        '  while (!temp->leftThread)',
+        '   temp = temp->leftChild;',
+        ' return temp; }',
+      ], 4.9, 7.4, 0.45);
+      rowLabel('inorder', 2.6);
+      say('有 thread：很快找到 inorder 下一個', '不需 stack、不需遞迴（程式老師跳過，此為課本版）');
+      await beat(tok, 3000);
+      const cur = makeCursor();
+      let x = head, k = 0;
+      for (let guard = 0; guard < 12; guard++) {
+        const fx = info.get(x);
+        cursorTo(cur, x.pos); cd.hl(1);
+        let t = fx.rc;
+        await beat(tok, guard === 0 ? 900 : 450);
+        if (fx.rt) {
+          cd.hl(5); cursorTo(cur, t.pos);
+          say(x.label + '.rightThread = t → 直接跳到 ' + t.label, 'right thread 就是 successor');
+          await beat(tok, guard < 6 ? 1200 : 700);
+        } else {
+          cd.hl(2); cursorTo(cur, t.pos);
+          say(x.label === 'head' ? '從 head 開始：往右（指回自己）' : x.label + ' 有右子：先往右到 ' + t.label, '再沿 leftChild 一路往左');
+          await beat(tok, 800);
+          while (!info.get(t).lt) { t = info.get(t).lc; cd.hl(4); cursorTo(cur, t.pos); await beat(tok, 500); }
+          cd.hl(5);
+          say('走到 leftThread = t 的 ' + t.label + ' 停', '得到 successor = ' + t.label);
+          await beat(tok, 1000);
+        }
+        if (t === head) break;
+        glow(t, GOLD);
+        const ob = cube(t.label, depthColor(t.depth), SMALL, t.pos.x, t.pos.y, 0);
+        lab.springTo(ob, rowPos(k++, 2.6));
+        x = t;
+      }
+      cd.hl(-1);
+      say('回到 head 就結束', '<span class="ok">H D I B E A F C G</span>，O(n)');
+      await beat(tok, 2400);
+      say('代價：多 2 個 Boolean 欄位', 'insert / delete 時還要調整 thread（實務少用）');
+      await beat(tok, 3000);
+    } };
+
+    // ════════ 8. InsertRight ════════
+    LECT['p14-insert-right'] = { title: 'Threaded tree：把 R 插成 X 的右子', play: async (tok) => {
+      const CODE = [
+        'r->rightChild = s->rightChild;',
+        'r->rightThread = s->rightThread;',
+        'r->leftChild = s;',
+        'r->leftThread = true;',
+        's->rightChild = r;',
+        's->rightThread = false;',
+        'if (!r->rightThread)',
+        '  InorderSucc(r)->leftChild = r;',
+      ];
+      function setup() {
+        fresh();
+        lab.frameCamera([0, 5, 14], [0, 3.8, 0.5]);
+        const cd = code(CODE, -3.7, 6.6, 0.5);
+        tag('s = X，r = R（課本 InsertRight）', 'idx', -3.7, 7.4);
+        const E = [];
+        edgeLines(() => E.map(([a, b]) => [a.body.obj.position, b.body.obj.position]));
+        const mk = (l, x, y, color, drop = 0) => { const n = { label: l, pos: V(x, y, 0) }; n.body = cube(l, color, NODE, x, y, 0, drop); return n; };
+        const move = (n, x, y) => { n.pos = V(x, y, 0); lab.springTo(n.body, n.pos.clone()); };
+        return { cd, E, mk, move };
+      }
+      // Case 1
+      let S = setup();
+      const A = S.mk('A', 4.4, 6.4, '#2fc092'), X = S.mk('X', 2.4, 5.0, BLUE);
+      S.E.push([A, X]);
+      let xr = threadTo(X.pos, 1, A);
+      say('Case 1：X 沒有右子樹', 'X.rightChild 是 thread → 上方的 inorder successor A');
+      await beat(tok, 2800);
+      const R = S.mk('R', 3.4, 3.6, ORANGE, 3);
+      S.cd.hl(0);
+      say('新節點 R 先接手 X 的 right thread', 'R.rightChild = A，R.rightThread = true');
+      await beat(tok, 900); S.cd.hl(1);
+      threadTo(R.pos, 1, A);
+      await beat(tok, 1400);
+      S.cd.hl(2);
+      say('R.leftChild = X（thread）', 'R.leftThread = true：R 的 inorder 前一個就是 X');
+      await beat(tok, 900); S.cd.hl(3);
+      threadTo(R.pos, -1, X);
+      await beat(tok, 1400);
+      S.cd.hl(4);
+      kill(xr); S.E.push([X, R]);
+      say('X.rightChild = R', 'X.rightThread = false（指向真的子節點；老師口誤說 true）');
+      await beat(tok, 900); S.cd.hl(5);
+      await beat(tok, 1800);
+      S.cd.hl(6);
+      say('R 沒有右子樹 → 不用再修', 'inorder：X R A');
+      await beat(tok, 2000);
+      // Case 2
+      S = setup();
+      const A2 = S.mk('A', 5.6, 6.6, '#2fc092'), X2 = S.mk('X', 1.4, 5.4, BLUE), Y = S.mk('Y', 4.4, 4.2, PURP), Wn = S.mk('W', 3.4, 3.0, PURP);
+      S.E.push([A2, X2], [X2, Y], [Y, Wn]);
+      let wl = threadTo(Wn.pos, -1, X2), yr = threadTo(Y.pos, 1, A2), wr = threadTo(Wn.pos, 1, Y);
+      say('Case 2：X 已有右子樹（Y、W）', 'inorder：X W Y A → W 的 left thread 指向 X');
+      await beat(tok, 3000);
+      S.cd.hl(0);
+      kill(wl); kill(yr); kill(wr);
+      S.move(Y, 4.4, 3.0); S.move(Wn, 3.4, 1.8);
+      const R2 = S.mk('R', 2.4, 4.2, ORANGE, 3);
+      S.E.splice(1, 1, [R2, Y]);
+      say('整棵右子樹往下移，成為 R 的右子樹', 'R.rightChild = Y，R.rightThread = false');
+      await beat(tok, 900); S.cd.hl(1);
+      await beat(tok, 1300);
+      yr = threadTo(V(4.4, 3.0, 0), 1, A2); wr = threadTo(V(3.4, 1.8, 0), 1, Y);
+      wl = threadTo(V(3.4, 1.8, 0), -1, X2);
+      S.cd.hl(2);
+      threadTo(R2.pos, -1, X2);
+      say('R.leftChild = X（thread）', 'R.leftThread = true');
+      await beat(tok, 900); S.cd.hl(3);
+      await beat(tok, 1100);
+      S.cd.hl(4); S.E.push([X2, R2]);
+      say('X.rightChild = R', 'X.rightThread = false');
+      await beat(tok, 900); S.cd.hl(5);
+      await beat(tok, 1100);
+      S.cd.hl(6);
+      lit(Wn.body, GOLD);
+      say('W 原本的 left thread 還指著 X', 'W = R 右子樹的 inorder 第一個 = InorderSucc(R)');
+      await beat(tok, 2400);
+      S.cd.hl(7);
+      kill(wl); threadTo(V(3.4, 1.8, 0), -1, R2);
+      say('W.leftChild 改指向 R', 'inorder：X R W Y A，W 的前一個變成 R');
+      await beat(tok, 2600);
+      lit(Wn.body);
+      S.cd.hl(-1);
+      say('插入成左子同理', '也分「原本無左子樹」與「有左子樹」兩種 case');
+      await beat(tok, 3000);
+    } };
+
+    // ════════ 10. Huffman 概念 ════════
+    LECT['p14-huff-concept'] = { title: 'Huffman code：頻率高的字用短碼', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 5, 14], [0, 3.2, 0.6]);
+      const WORDS = ['the', 'I', 'you', 'data'], CNT = [0, 0, 0, 0];
+      const SEQ = [0, 1, 0, 2, 0, 1, 0, 3, 1, 0, 2, 1, 0];
+      WORDS.forEach((w, j) => tag(w, 'ptr', -5.4 + j * 1.3, 0, 1.0));
+      const art = tag('', 'idx', -3.4, 7.3);
+      say('一篇文章：統計每個字（message）出現次數', 'M1 … Mn 想成文章裡的 word（示意資料）');
+      const txt = [];
+      for (const j of SEQ) {
+        txt.push(WORDS[j]); setTag(art, '文章：' + txt.join(' '));
+        cube('', [ORANGE, BLUE, PURP, TEAL][j], [0.8, 0.4, 0.8], -5.4 + j * 1.3, 0.2 + CNT[j]++ * 0.42, 0, 3);
+        await beat(tok, 300);
+      }
+      CNT.forEach((c, j) => tag(c + ' 次', 'idx', -5.4 + j * 1.3, 0.4 + c * 0.42 + 0.3, 0.2));
+      await beat(tok, 1600);
+      tag('codebook（示意）', 'ptr', 3.8, 6.6);
+      const CODEB = ['0', '10', '110', '111'];
+      say('codebook：碼 ↔ 明文 的對照表', '最常出現的字配最短的碼');
+      for (let j = 0; j < 4; j++) { tag(WORDS[j] + ' → ' + CODEB[j], j === 0 ? 'ptr alt' : 'ptr', 3.8, 5.8 - j * 0.7); await beat(tok, 700); }
+      await beat(tok, 1400);
+      tag('傳送端', 'ptr', 0.6, 1.2, 2.6); tag('接收端', 'ptr', 5.6, 1.2, 2.6);
+      arrow(V(1.6, 0.9, 2.6), V(4.6, 0.9, 2.6), '#c08a1f');
+      tag('the I the → 0 10 0', 'idx', 3.1, 0.45, 2.6);
+      say('傳送端編碼、接收端用同一份 codebook 解碼', '碼越長，傳輸與解碼越花時間');
+      await beat(tok, 3200);
+      say('目標：整份文件編碼後總長度最小', '6·1 + 4·2 + 2·3 + 1·3 = 23 bits（固定 2 bits：26）');
+      await beat(tok, 3200);
+    } };
+
+    // ════════ 11. M1..M4 的 codebook 樹 ════════
+    // 依講師的樹畫出來；內部節點換成圓柱、葉子為橘色方塊
+    function huffTree(src, opts) {
+      const root = showTree(src, opts);
+      for (const n of allNodes(root)) {
+        if (n.left || n.right) { kill(n.body); n.body = disc(n.label, TAN, n.pos.x, n.pos.y); }
+        else n.body.obj.material.color.set(ORANGE);
+      }
+      return root;
+    }
+    function allBits(root) { for (const n of allNodes(root)) { if (n.left) bitTag(n, n.left, '0'); if (n.right) bitTag(n, n.right, '1'); } }
+    async function readPath(tok, root, leaf, cur, ms) {
+      const path = []; (function f(n, acc) { if (!n) return false; if (n === leaf) { path.push(...acc, n); return true; } return f(n.left, [...acc, n]) || f(n.right, [...acc, n]); })(root, []);
+      let bits = '';
+      cursorTo(cur, root.pos);
+      for (let k = 1; k < path.length; k++) { bits += path[k] === path[k - 1].left ? '0' : '1'; cursorTo(cur, path[k].pos); glow(path[k], GOLD); await beat(tok, ms); }
+      return bits;
+    }
+    LECT['p14-codebook4'] = { title: 'Codebook 長成一棵樹：M1～M4', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 5, 13.5], [0, 3.8, 0.4]);
+      const root = huffTree('•(•(•(M1,M2),M3),M4)', { cx: -1.6, width: 6.4, topY: 6.6, minY: 2.4 });
+      say('四個 message：M1、M2、M3、M4', '每個碼 = 從 root 走到該 leaf 的路徑');
+      await beat(tok, 2600);
+      allBits(root);
+      say('往左記 0、往右記 1', 'codebook 就是這棵樹');
+      await beat(tok, 2200);
+      tag('codebook', 'ptr', 4.8, 6.6);
+      const cur = makeCursor();
+      let k = 0;
+      for (const l of ['M1', 'M2', 'M3', 'M4']) {
+        const leaf = find(root, l);
+        const bits = await readPath(tok, root, leaf, cur, 450);
+        under(leaf, bits);
+        tag(l + ' = ' + bits, 'ptr alt', 4.8, 5.9 - k++ * 0.65);
+        say(l + ' 的碼 = ' + bits, '長度 ' + bits.length + ' bits');
+        await beat(tok, 1300);
+        allNodes(root).forEach((n) => glow(n, OFF));
+      }
+      cur.obj.visible = false;
+      say('樹可以有不同長法（例如 M4 放左邊）', '但要符合 objective function');
+      await beat(tok, 2600);
+      say('目標：頻率越高碼越短，總長最小', 'min Σ qᵢ × dᵢ（qᵢ = 頻率，dᵢ = 碼長 3, 3, 2, 1）');
+      await beat(tok, 3200);
+    } };
+
+    // ════════ 12/16. Huffman 建樹（forest：queue 中的每棵樹並排，root 對齊） ════════
+    function forest(ws, o) {
+      const O = Object.assign({ cx: 0, topY: 6.4, step: 1.15, spc: 1.0, gap: 0.6, tie: 'first' }, o);
+      const F = { trees: ws.map((w) => ({ w, leaf: true, left: null, right: null })) };
+      F.all = [...F.trees];
+      F.q = () => F.trees.map((t) => t.w).join(', ');
+      F.layout = () => {
+        let x = 0;
+        for (const t of F.trees) { (function w(n, d) { if (!n) return; w(n.left, d + 1); n.depth = d; n.lx = x; x += O.spc; w(n.right, d + 1); })(t, 0); x += O.gap; }
+        const span = x - O.gap - O.spc;
+        for (const n of F.all) n.pos = V(O.cx + n.lx - span / 2, O.topY - n.depth * O.step, 0);
+      };
+      F.spawn = () => {
+        F.layout();
+        for (const n of F.all) n.body = n.leaf ? cube(n.w, ORANGE, NODE, n.pos.x, n.pos.y, 0) : disc(n.w, TAN, n.pos.x, n.pos.y);
+        edgeLines(() => { const out = []; for (const n of F.all) for (const c of [n.left, n.right]) if (c && n.body && c.body) out.push([n.body.obj.position, c.body.obj.position]); return out; });
+      };
+      F.merge = () => {
+        const a = F.trees.shift(), b = F.trees.shift();
+        const t = { w: a.w + b.w, leaf: false, left: a, right: b };
+        let k = F.trees.findIndex((u) => (O.tie === 'first' ? u.w >= t.w : u.w > t.w));
+        if (k < 0) k = F.trees.length;
+        F.trees.splice(k, 0, t); F.all.push(t);
+        t.body = disc(t.w, TAN, (a.pos.x + b.pos.x) / 2, O.topY, 0, 1.2);
+        F.layout();
+        for (const n of F.all) lab.springTo(n.body, n.pos.clone());
+        return t;
+      };
+      return F;
+    }
+    LECT['p14-huff-build'] = { title: 'Huffman 建樹：每次合併最小的兩個', play: async (tok) => {
+      const bu = P().phase === 'bottomup';
+      fresh();
+      lab.frameCamera([0, 4.8, 14], [0, 3.8, 0]);
+      const F = forest([2, 3, 5, 7, 9, 13], { topY: 6.4 });
+      F.spawn();
+      say(bu ? 'Bottom-up：頻率最少的先合併' : '方塊 = leaf（message），數字 = 頻率', 'queue：' + F.q());
+      await beat(tok, 2800);
+      const slowN = bu ? 2 : 5;
+      for (let s = 0; s < 5; s++) {
+        const slow = s < slowN;
+        const [a, b] = F.trees;
+        lit(a.body, GOLD); lit(b.body, GOLD);
+        say('取最小的兩個：' + a.w + ' 和 ' + b.w, 'queue：' + F.q());
+        await beat(tok, slow ? 1800 : 500);
+        const t = F.merge();
+        lit(a.body); lit(b.body);
+        if (bu && s === 0) say('2 + 3 → 圓圈 5：虛擬的合併字', '內部節點的數字 = subtree 頻率總和');
+        else if (bu && s === 1) say('5 + 5 → 10：整棵 subtree 當一個字', 'queue：' + F.q());
+        else say('merge：' + a.w + ' + ' + b.w + ' = ' + t.w + '，放回 queue', 'queue：' + F.q());
+        await beat(tok, slow ? 2400 : 700);
+      }
+      if (bu) {
+        const r = F.trees[0], n23 = r.right, n10 = n23.left, n5 = n10.left;
+        bitTag(r, n23, '1'); bitTag(n23, n10, '0'); bitTag(n10, n5, '0'); bitTag(n5, n5.left, '0'); bitTag(n5, n5.right, '1');
+        lit(n5.body, GOLD);
+        say('到圓圈 5 的碼 = 100：2、3 共用', '下一層才分支：2 = 1000、3 = 1001');
+        await beat(tok, 3400);
+      } else {
+        say('queue 只剩一棵：Huffman tree 完成', 'n = 6 個 message → merge n − 1 = 5 次');
+        await beat(tok, 3000);
+      }
+    } };
+
+    // ════════ 13. Huffman 程式 ════════
+    LECT['p14-huff-code'] = { title: 'Huffman 程式：DeleteMinWeight + merge', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 5, 14], [0, 3.8, 0.6]);
+      const cd = code([
+        'BinaryTree(bt1, bt2) {',
+        '  root->leftChild = bt1.root;',
+        '  root->rightChild = bt2.root;',
+        '  root->weight = bt1.root->weight',
+        '               + bt2.root->weight; }',
+        'Huffman(List<BinaryTree> l, n) {',
+        '  for (i = 0; i < n-1; i++) {',
+        '    first = l.DeleteMinWeight();',
+        '    second = l.DeleteMinWeight();',
+        '    bt = new BinaryTree(first, second);',
+        '    l.Insert(*bt); } }',
+      ], -3.5, 7.3, 0.46);
+      tag('queue l', 'ptr', 1.0, 1.25, 2.4);
+      tag('first', 'idx', 2.5, 4.4); tag('second', 'idx', 5.3, 4.4);
+      const iTag = tag('i = 0', 'ptr alt', 3.9, 7.5);
+      const qx = (k) => V(1.0 + k * 1.05, 0.35, 2.4);
+      const q = [2, 3, 5, 7, 9, 13].map((w, k) => ({ w, leaf: true, body: cube(w, ORANGE, NODE, qx(k).x, 0.35, 2.4, 2) }));
+      const restack = () => q.forEach((e, k) => lab.springTo(e.body, qx(k)));
+      say('一開始：n 個 message 各是一棵單節點樹', 'queue l：2, 3, 5, 7, 9, 13');
+      await beat(tok, 2800);
+      for (let i = 0; i < 5; i++) {
+        const slow = i === 0, ms = slow ? 1500 : 480;
+        setTag(iTag, 'i = ' + i + '（共 n − 1 = 5 次）');
+        cd.hl(6); await beat(tok, slow ? 1000 : 300);
+        cd.hl(7);
+        const a = q.shift(); restack(); lab.springTo(a.body, V(2.5, 5.0, 0)); lit(a.body, GOLD);
+        if (slow) say('DeleteMinWeight：取出最小的 first = ' + a.w, '不是取最前面的，而是 weight 最小的');
+        await beat(tok, ms);
+        cd.hl(8);
+        const b = q.shift(); restack(); lab.springTo(b.body, V(5.3, 5.0, 0)); lit(b.body, GOLD);
+        if (slow) say('再取一次：second = ' + b.w, 'queue：' + q.map((e) => e.w).join(', '));
+        await beat(tok, ms);
+        cd.hl(9);
+        const t = { w: a.w + b.w, leaf: false, body: disc(a.w + b.w, TAN, 3.9, 6.2, 0, 1.2) };
+        const s1 = seg(V(3.9, 5.9, 0), V(2.5, 5.3, 0), '#7a6a52'), s2 = seg(V(3.9, 5.9, 0), V(5.3, 5.3, 0), '#7a6a52');
+        if (slow) {
+          for (const l of [1, 2]) { cd.hl(l); await beat(tok, 700); }
+          cd.hl(3);
+          say('new BinaryTree(first, second)', 'first、second 成為左右子樹；weight = ' + a.w + ' + ' + b.w + ' = ' + t.w);
+          await beat(tok, 2200);
+        } else { say('merge ' + a.w + ' + ' + b.w + ' = ' + t.w, 'queue：' + q.map((e) => e.w).join(', ')); await beat(tok, ms); }
+        cd.hl(10);
+        kill(s1); kill(s2); kill(a.body); kill(b.body);
+        let k = q.findIndex((u) => u.w >= t.w); if (k < 0) k = q.length;
+        q.splice(k, 0, t); restack();
+        if (slow) say('l.Insert(*bt)：新樹整棵放回 queue', 'queue：' + q.map((e) => e.w).join(', '));
+        await beat(tok, slow ? 2000 : 700);
+      }
+      cd.hl(-1);
+      say('queue 只剩一棵：root weight = 39', '也可改成「queue 只剩一棵就停」，不必數 n − 1 次');
+      await beat(tok, 3000);
+    } };
+
+    // ════════ 15. 讀碼 ════════
+    const HUFF6 = '39(16(7,9),23(10(5(2,3),5),13))';
+    LECT['p14-huff-read'] = { title: 'Huffman tree 讀碼：左 0 右 1', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 5, 13.5], [0, 3.8, 0.4]);
+      const root = huffTree(HUFF6, { topY: 6.6, minY: 2.2 });
+      const leaves = allNodes(root).filter((n) => !n.left);
+      const L = (w) => leaves.find((n) => n.label === String(w));
+      say('最後得到的就是 Huffman tree', '方塊 = message（字），圓 = 合併出的節點');
+      await beat(tok, 2600);
+      glow(L(13), GOLD); glow(L(2), RED); glow(L(3), RED);
+      say('字是什麼不重要，頻率才重要', '頻率高（13）靠近 root；頻率低（2、3）離 root 遠');
+      await beat(tok, 3000);
+      allNodes(root).forEach((n) => glow(n, OFF));
+      allBits(root);
+      say('讀碼：往左走記 0、往右走記 1', '從 root 走到 leaf 的路徑');
+      await beat(tok, 2200);
+      const cur = makeCursor();
+      for (const w of [2, 3]) {
+        const b = await readPath(tok, root, L(w), cur, 600);
+        under(L(w), b);
+        say('頻率 ' + w + ' 的字：碼 = ' + b, '右、左、左、' + (w === 2 ? '左' : '右'));
+        await beat(tok, 1800);
+        allNodes(root).forEach((n) => glow(n, OFF));
+      }
+      cur.obj.visible = false;
+      const CODES = { 7: '00', 9: '01', 5: '101', 13: '11' };
+      for (const w of [7, 9, 5, 13]) under(L(w), CODES[w]);
+      say('其餘：7=00、9=01、5=101、13=11', '頻率 13 只要 2 bits；2、3 要 4 bits');
+      await beat(tok, 3000);
+      say('總長 = Σ 頻率 × 碼長', '7·2 + 9·2 + 2·4 + 3·4 + 5·3 + 13·2 = 93 bits');
+      await beat(tok, 3000);
+    } };
+
+    // ════════ 17. Huffman tree 唯一嗎？→ priority queue ════════
+    LECT['p14-huff-tie'] = { title: 'Huffman tree 不唯一；DeleteMin 引出 priority queue', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 5, 14], [0, 3.6, 0.6]);
+      const FA = forest([1, 1, 2, 2], { cx: -3.4, topY: 6.4, step: 1.2, spc: 0.75, gap: 0.45, tie: 'first' });
+      const FB = forest([1, 1, 2, 2], { cx: 3.4, topY: 6.4, step: 1.2, spc: 0.75, gap: 0.45, tie: 'last' });
+      FA.spawn(); FB.spawn();
+      tag('樹 A', 'ptr', -3.4, 7.6); tag('樹 B', 'ptr', 3.4, 7.6);
+      say('同樣的頻率，Huffman tree 唯一嗎？', '示意：頻率 1, 1, 2, 2');
+      await beat(tok, 2800);
+      FA.merge(); FB.merge();
+      say('先合併 1 + 1 = 2', 'queue 裡出現三個 2：同分！');
+      await beat(tok, 2600);
+      [FA.trees[0], FA.trees[1]].forEach((t) => lit(t.body, GOLD));
+      [FB.trees[0], FB.trees[1]].forEach((t) => lit(t.body, GOLD));
+      say('同分時選哪兩個？', 'A：新的 2 + 原本的 2；B：兩個原本的 2');
+      await beat(tok, 2800);
+      FA.all.forEach((n) => lit(n.body)); FB.all.forEach((n) => lit(n.body));
+      FA.merge(); FB.merge();
+      await beat(tok, 1600);
+      FA.merge(); FB.merge();
+      say('兩棵形狀不同的 Huffman tree', 'A 碼長 3, 3, 2, 1；B 碼長 2, 2, 2, 2');
+      await beat(tok, 2600);
+      tag('Σ = 1·3 + 1·3 + 2·2 + 2·1 = 12', 'ptr alt', -3.4, 2.4, 0.4);
+      tag('Σ = 1·2 + 1·2 + 2·2 + 2·2 = 12', 'ptr alt', 3.4, 2.4, 0.4);
+      say('不唯一，但總長 Σ qᵢdᵢ 一樣是最小', '左右對調也會得到不同的樹');
+      await beat(tok, 3000);
+      tag('queue', 'ptr', -5.4, 0.5, 3.0);
+      const vals = [5, 2, 9, 3];
+      const qb = vals.map((v, k) => cube(v, BLUE, SMALL, -3.8 + k * 1.0, 0.3, 3.0, 2));
+      tag('front', 'idx', -3.8, 0.95, 3.0);
+      say('DeleteMinWeight：刪最小的，不是最前面的', 'queue（示意）：5, 2, 9, 3');
+      await beat(tok, 2200);
+      lit(qb[1], GOLD); await beat(tok, 900);
+      lab.flyAway(qb[1], V(0, 8, 3));
+      say('取出 2：不是 FIFO，而是依 priority', '這種 queue 就是 priority queue');
+      await beat(tok, 3000);
+    } };
+
+    // ════════ 18. Priority queue：max / min ════════
+    LECT['p14-pq'] = { title: 'Priority queue：max PQ 與 min PQ', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 5, 14], [0, 2.8, 0.6]);
+      const BX = [-3.3, 3.3];
+      BX.forEach((x, j) => { ghost(j ? TEAL : PURP, x, 1.1, 3.4, 2.2, 0, 2.2); tag(j ? 'min priority queue' : 'max priority queue', 'ptr', x, 2.7); });
+      say('Priority queue 也有 add 和 delete', '每個元素有自己的 priority');
+      await beat(tok, 2600);
+      const IN = [100, 1, 37, 8];
+      const boxes = [new Map(), new Map()];
+      for (let k = 0; k < IN.length; k++) {
+        BX.forEach((x, j) => boxes[j].set(IN[k], cube(IN[k], j ? TEAL : PURP, NODE, x - 1.05 + k * 0.7, 0.3 + (k % 2) * 0.7, (k % 2) * 0.5 - 0.3, 3)));
+        say('add ' + IN[k], '加入兩個 queue（示意資料）');
+        await beat(tok, 750);
+      }
+      const outs = [[], []];
+      async function del(j, v, cap, f) {
+        const b = boxes[j].get(v); lit(b, GOLD);
+        say(cap, f);
+        await beat(tok, 900);
+        lab.springTo(b, V(BX[j] - 0.9 + outs[j].length * 1.0, 4.4, 0)); outs[j].push(v);
+        await beat(tok, 1600);
+      }
+      await del(0, 100, 'max PQ：delete 回傳目前最大的', 'delete → 100');
+      await del(1, 1, 'min PQ：delete 回傳目前最小的', 'delete → 1');
+      await del(0, 37, '再 delete 一次', 'max PQ → 37');
+      await del(1, 8, '再 delete 一次', 'min PQ → 8');
+      tag('Huffman：每次取頻率最小 → min PQ', 'idx', 0, 0.2, 3.2);
+      tag('machine service：所需時間最短的 job 先做 → min PQ', 'idx', 0, 0.2, 3.9);
+      say('應用：Huffman、machine service', '都是 min priority queue');
+      await beat(tok, 3000);
+      say('實作 priority queue 最常用 heap', '嚴格說：PQ 是 ADT，heap 是實作它的資料結構');
+      await beat(tok, 3000);
+    } };
+
+    // ════════ 19. 實作方式比較 ════════
+    LECT['p14-pq-impl'] = { title: 'Priority queue 的實作方式比較', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 5, 14.5], [0, 3.6, 0.4]);
+      const ROWS = [['unordered linked list', 6.6], ['unordered array', 5.2], ['sorted linked list', 3.8], ['sorted array', 2.4]];
+      ROWS.forEach(([nm, y]) => tag(nm, 'ptr', -4.6, y));
+      const NX = [-1.4, 0.6];
+      say('插入 100、再插入 1：四種存法', '（老師的例子；課本以 max PQ 比較）');
+      await beat(tok, 2400);
+      // unordered linked list
+      let y = 6.6;
+      cube(100, PURP, [0.9, 0.5, 0.6], NX[0], y, 0, 2); await beat(tok, 600);
+      cube(1, PURP, [0.9, 0.5, 0.6], NX[1], y, 0, 2); arrow(V(NX[0] + 0.5, y, 0), V(NX[1] - 0.5, y, 0));
+      say('unordered list：來一個塞一個', '100 → 1');
+      await beat(tok, 1800);
+      // unordered array
+      y = 5.2;
+      NX.forEach((x, k) => { tag('a[' + k + ']', 'idx', x, y - 0.55, 0.4); });
+      cube(100, BLUE, [0.9, 0.5, 0.6], NX[0], y, 0, 2); await beat(tok, 600);
+      cube(1, BLUE, [0.9, 0.5, 0.6], NX[1], y, 0, 2);
+      say('unordered array：依序放入', '100 放 a[0]、1 放 a[1]');
+      await beat(tok, 1800);
+      // sorted linked list
+      y = 3.8;
+      cube(100, TEAL, [0.9, 0.5, 0.6], NX[1], y, 0, 2); await beat(tok, 600);
+      cube(1, TEAL, [0.9, 0.5, 0.6], NX[0], y, 0, 2); arrow(V(NX[0] + 0.5, y, 0), V(NX[1] - 0.5, y, 0), '#c08a1f');
+      say('sorted list：insert 時就排好 → 1、100', '只要改 pointer（pointer assignment）');
+      await beat(tok, 2200);
+      // sorted array
+      y = 2.4;
+      NX.forEach((x, k) => { tag('a[' + k + ']', 'idx', x, y - 0.55, 0.4); });
+      const big = cube(100, ORANGE, [0.9, 0.5, 0.6], NX[0], y, 0, 2); await beat(tok, 800);
+      lab.springTo(big, V(NX[1], y, 0)); await beat(tok, 700);
+      cube(1, ORANGE, [0.9, 0.5, 0.6], NX[0], y, 0, 2);
+      say('sorted array：100 要往後搬', 'data movement，再把 1 放進 a[0]');
+      await beat(tok, 2200);
+      const C = [['Insert Θ(1)｜Delete Θ(n)', 6.6], ['Insert Θ(1)｜Delete Θ(n)', 5.2], ['Insert O(n)｜Delete Θ(1)', 3.8], ['Insert O(n)｜Delete Θ(1)', 2.4]];
+      for (const [t, yy] of C.slice(0, 2)) tag(t, 'ptr alt', 4.4, yy);
+      say('unordered：insert 快，delete 要掃全部', '先甘後苦');
+      await beat(tok, 2800);
+      for (const [t, yy] of C.slice(2)) tag(t, 'ptr alt', 4.4, yy);
+      say('sorted：insert 要找位置，delete 很快', '先苦後甘');
+      await beat(tok, 2800);
+      tag('max heap', 'ptr', -4.6, 1.0);
+      cube(100, '#2fc092', [0.8, 0.5, 0.6], -0.4, 1.3, 0, 2); cube(1, '#2fc092', [0.8, 0.5, 0.6], -1.2, 0.35, 0, 2);
+      seg(V(-0.5, 1.05, 0), V(-1.1, 0.6, 0), '#7a6a52');
+      tag('Insert O(log n)｜Delete O(log n)', 'ptr alt', 4.4, 1.0);
+      say('max heap：兩者都是 O(log n)', 'heap 是樹，操作只沿樹高走 → log n');
+      await beat(tok, 3200);
+    } };
+
+    // ════════ 20–23. Heap ════════
+    function heapSet(vals, o) {
+      const O = Object.assign({ cx: 0, topY: 6.4, step: 1.4, width: 7, ax: -2.2, adx: 0.9, cells: 6, color: BLUE, drop: 0, ms: 0 }, o);
+      const pos = (i) => heapPos(i, O.topY, O.step, O.width).add(V(O.cx, 0, 0));
+      const cellP = (i) => V(O.ax + (i - 1) * O.adx, 0.35, 2.4);
+      const H = [null], A = [null];
+      for (let i = 1; i <= O.cells; i++) { floorTile(cellP(i).x, 2.4); tag('[' + i + ']', 'idx', cellP(i).x, 0, 3.05); const p = pos(i); tag(String(i), 'idx', p.x + 0.58, p.y - 0.32, 0.3); }
+      edgeLines(() => { const out = []; for (let i = 2; i < H.length; i++) if (H[i] && H[i >> 1]) out.push([H[i >> 1].obj.position, H[i].obj.position]); return out; });
+      const S = { O, pos, cellP, H, A,
+        put(i, v, color, drop) {
+          const p = pos(i), c = cellP(i);
+          H[i] = cube(v, color || O.color, NODE, p.x, p.y, 0, drop || 0); H[i].v = v;
+          A[i] = cube(v, color || O.color, SMALL, c.x, 0.35, 2.4, drop || 0); A[i].v = v;
+        },
+        async fill(tok) { for (let k = 0; k < vals.length; k++) { S.put(k + 1, vals[k], null, O.drop); if (O.ms) await beat(tok, O.ms); } },
+        // 交換 i、j 兩格（樹與陣列）
+        swap(i, j) {
+          [H[i], H[j]] = [H[j], H[i]]; [A[i], A[j]] = [A[j], A[i]];
+          lab.springTo(H[i], pos(i)); lab.springTo(H[j], pos(j));
+          lab.springTo(A[i], cellP(i)); lab.springTo(A[j], cellP(j));
+        },
+      };
+      return S;
+    }
+    const arrStr = (S) => '[' + S.H.slice(1).filter(Boolean).map((b) => b.v).join(', ') + ']';
+    LECT['p14-heap-def'] = { title: 'Max heap / Min heap 與陣列表示', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 5, 14], [0, 3.6, 0.8]);
+      tag('max heap', 'ptr', -3.4, 7.4); tag('min heap', 'ptr', 3.4, 7.4);
+      const MX = heapSet([14, 12, 7, 10, 8, 6], { cx: -3.4, width: 5.4, topY: 6.4, step: 1.35, ax: -5.6, adx: 0.8, color: BLUE, drop: 3, ms: 350 });
+      say('Max heap：root 是所有數中最大的', 'complete binary tree，且每個節點 ≥ 其子節點');
+      await MX.fill(tok);
+      await beat(tok, 1200);
+      for (const [p, cs] of [[1, [2, 3]], [2, [4, 5]], [3, [6]]]) {
+        [p, ...cs].forEach((i) => lit(MX.H[i], GREEN));
+        say('每個 subtree 也都是 max heap', MX.H[p].v + ' ≥ ' + cs.map((i) => MX.H[i].v).join('、'));
+        await beat(tok, 1300);
+        [p, ...cs].forEach((i) => lit(MX.H[i]));
+      }
+      for (let i = 1; i <= 4; i++) { lit(MX.A[i], GOLD); lit(MX.H[i], GOLD); await beat(tok, 450); }
+      say('節點旁的編號 = 陣列索引', '1 放 14、2 放 12、3 放 7、4 放 10（[0] 不用）');
+      await beat(tok, 2200);
+      for (let i = 1; i <= 4; i++) { lit(MX.A[i]); lit(MX.H[i]); }
+      const MN = heapSet([2, 7, 4, 10, 8, 6], { cx: 3.4, width: 5.4, topY: 6.4, step: 1.35, ax: 1.4, adx: 0.8, color: TEAL, drop: 3, ms: 300 });
+      say('Min heap：root 最小，下面沒有更小的', '2 ≤ 7、4；7 ≤ 10、8；4 ≤ 6');
+      await MN.fill(tok);
+      await beat(tok, 1600);
+      lit(MX.H[2], GOLD); lit(MX.H[3], GOLD); lit(MN.H[2], GOLD); lit(MN.H[3], GOLD);
+      say('左右子之間沒有大小規定', 'max：左 12 > 右 7；min：左 7 > 右 4，都合法');
+      await beat(tok, 3000);
+      say('不要和 BST（左小右大）搞混', 'heap 只管上下，不管左右；一定是 complete binary tree');
+      await beat(tok, 3000);
+    } };
+
+    LECT['p14-heap-insert'] = { title: 'Max heap insert：1、5、21', play: async (tok) => {
+      const BASE = [20, 15, 2, 14, 10];
+      async function demo(v, intro) {
+        fresh();
+        lab.frameCamera([0, 5, 13.5], [0, 3.6, 0.8]);
+        const S = heapSet(BASE, { cx: 0, width: 7, topY: 6.4, step: 1.45, ax: -2.2, adx: 0.9 });
+        await S.fill(tok);
+        const g = ghost('#c08a1f', S.pos(6).x, S.pos(6).y, 0.9, 0.7, 0, 0.9);
+        tag('insert ' + v, 'ptr alt', 4.6, 7.2);
+        say(intro[0], intro[1]);
+        await beat(tok, 2200);
+        kill(g);
+        S.put(6, v, ORANGE, 3);
+        say('先放在最後一個位置：6（2 的左子）', '維持 complete binary tree');
+        await beat(tok, 1600);
+        let i = 6;
+        while (i > 1) {
+          const p = i >> 1, pv = S.H[p].v;
+          lit(S.H[i], GOLD); lit(S.H[p], GOLD);
+          if (v > pv) {
+            say('跟 parent ' + pv + ' 比：' + v + ' > ' + pv, '往上換：' + pv + ' 掉下來，' + v + ' 上去');
+            await beat(tok, 1400);
+            lit(S.H[i]); lit(S.H[p]);
+            S.swap(i, p); i = p;
+            await beat(tok, 900);
+          } else {
+            say('跟 parent ' + pv + ' 比：' + v + ' < ' + pv + ' → 停', 'insert 結束');
+            await beat(tok, 1500);
+            lit(S.H[i]); lit(S.H[p]);
+            break;
+          }
+        }
+        if (i === 1) { say(v + ' 成為新的 root', '一直往上檢查，到 root 為止'); await beat(tok, 1400); }
+        say('結果', '<span class="ok">' + arrStr(S) + '</span>');
+        await beat(tok, 1600);
+      }
+      await demo(1, ['insert 1', '原 heap [20, 15, 2, 14, 10]；下一個位置一定是 6，不能放別處']);
+      await demo(5, ['同一個原 heap：insert 5', '比 parent 大就往上']);
+      await demo(21, ['同一個原 heap：insert 21', '比 root 還大會一路換到頂']);
+      await beat(tok, 1200);
+    } };
+
+    LECT['p14-heap-insert-code'] = { title: 'Max heap insert 程式：parent 往下搬', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 5, 14], [0, 3.6, 0.8]);
+      const cd = code([
+        'insert_max_heap(item, *n) {',
+        '  if (HEAP_FULL(*n)) exit(1);',
+        '  i = ++(*n);',
+        '  while (i != 1 &&',
+        '     item.key > heap[i/2].key) {',
+        '    heap[i] = heap[i/2];',
+        '    i /= 2;',
+        '  }',
+        '  heap[i] = item;',
+        '}',
+      ], -3.9, 7.2, 0.48);
+      const S = heapSet([20, 15, 2, 14, 10], { cx: 3.4, width: 5.2, topY: 6.4, step: 1.4, ax: 0.6, adx: 0.85 });
+      await S.fill(tok);
+      const nT = tag('n = 5', 'ptr', 6.3, 2.0, 2.4);
+      const iT = tag('', 'ptr alt', 0, 1.2, 2.4);
+      const showI = (i) => { const c = S.cellP(i); iT.position.set(c.x, 1.2, 2.4); setTag(iT, 'i = ' + i); };
+      say('heap 存在陣列 heap[1..n]', 'n = 最後一個元素的 index = 5（老師先說 6 後更正）');
+      await beat(tok, 2800);
+      cd.hl(1);
+      say('先檢查 heap 滿了沒', 'HEAP_FULL：n == MAX_ELEMENTS − 1');
+      await beat(tok, 1800);
+      const item = cube(21, ORANGE, NODE, 6.4, 7.4, 0, 2);
+      tag('item', 'idx', 6.4, 8.0);
+      cd.hl(2); setTag(nT, 'n = 6'); showI(6);
+      const g = ghost('#c08a1f', S.pos(6).x, S.pos(6).y, 0.9, 0.7, 0, 0.9);
+      say('i = ++(*n)：n 變 6，從位置 6 開始', '位置 i 的 parent 在 i/2');
+      await beat(tok, 2400);
+      let i = 6;
+      while (true) {
+        cd.hl(3);
+        if (i === 1) { say('i == 1（root）→ 迴圈結束', ''); await beat(tok, 1500); break; }
+        const p = i >> 1;
+        cd.hl(4); lit(S.H[p], GOLD); lit(item, GOLD);
+        say('parent = heap[' + i + '/2] = heap[' + p + '] = ' + S.H[p].v, '21 > ' + S.H[p].v + ' → 繼續');
+        await beat(tok, 1800);
+        lit(S.H[p]); lit(item);
+        cd.hl(5);
+        S.H[i] = S.H[p]; S.A[i] = S.A[p]; S.H[p] = null; S.A[p] = null;
+        lab.springTo(S.H[i], S.pos(i)); lab.springTo(S.A[i], S.cellP(i));
+        if (i === 6) kill(g);
+        say('heap[' + i + '] = heap[' + p + ']：parent ' + S.H[i].v + ' 往下搬', '不是 swap：21 還沒放進去');
+        await beat(tok, 2000);
+        cd.hl(6); i = p; showI(i);
+        say('i /= 2 → i = ' + i, '往上一層');
+        await beat(tok, 1100);
+      }
+      cd.hl(8);
+      S.H[1] = item; item.v = 21; lab.springTo(item, S.pos(1));
+      S.A[1] = cube(21, ORANGE, SMALL, S.cellP(1).x, 0.35, 2.4, 2); S.A[1].v = 21;
+      say('heap[1] = item：最後一次放好', '<span class="ok">' + arrStr(S) + '</span>');
+      await beat(tok, 2200);
+      cd.hl(-1);
+      say('每層搬一次：O(log n)', '老師口說 swap；程式其實只搬 parent，省一半的搬移');
+      await beat(tok, 3000);
+    } };
+
+    LECT['p14-heap-delete'] = { title: 'Max heap delete：笨方法 vs 課本作法', play: async (tok) => {
+      const BASE = [20, 15, 2, 14, 10];
+      async function setup(cap) {
+        fresh();
+        lab.frameCamera([0, 5, 13.5], [0, 3.6, 0.8]);
+        const S = heapSet(BASE, { cx: 0, width: 7, topY: 6.4, step: 1.45, ax: -2.2, adx: 0.9, cells: 5 });
+        await S.fill(tok);
+        tag(cap, 'ptr', 0, 7.6);
+        return S;
+      }
+      let S = await setup('老師的直覺作法');
+      say('Delete max：root 的 20 被拿走', '[20, 15, 2, 14, 10]');
+      await beat(tok, 1800);
+      lab.flyAway(S.H[1], V(0, 8, 4)); lab.flyAway(S.A[1], V(0, 8, 4)); S.H[1] = S.A[1] = null;
+      await beat(tok, 1200);
+      [2, 3, 4, 5].forEach((i) => lit(S.H[i], GOLD));
+      say('笨方法：在 15、2、14、10 找最大', '15 最大 → 移上 root');
+      await beat(tok, 1800);
+      [2, 3, 4, 5].forEach((i) => lit(S.H[i]));
+      const mv = (from, to) => { S.H[to] = S.H[from]; S.A[to] = S.A[from]; S.H[from] = S.A[from] = null; lab.springTo(S.H[to], S.pos(to)); lab.springTo(S.A[to], S.cellP(to)); };
+      mv(2, 1);
+      await beat(tok, 1400);
+      lit(S.H[4], GOLD); lit(S.H[5], GOLD);
+      say('15 的位置空了：從下面 14、10 挑大的', '14 補上位置 2');
+      await beat(tok, 1800);
+      lit(S.H[4]); lit(S.H[5]);
+      mv(4, 2);
+      await beat(tok, 1400);
+      ghost('#d64545', S.pos(4).x, S.pos(4).y, 0.9, 0.7, 0, 0.9);
+      ghost('#d64545', S.cellP(4).x, 0.35, 0.8, 0.5, 2.4, 0.8);
+      say('位置 4 空了，10 還在位置 5', '中間有洞 → 不是 complete binary tree');
+      await beat(tok, 2800);
+      say('老師：這不是最後的解法，下次再講', '補充：課本的作法如下');
+      await beat(tok, 2200);
+      S = await setup('補充：課本作法（trickle down）');
+      lab.flyAway(S.H[1], V(0, 8, 4)); lab.flyAway(S.A[1], V(0, 8, 4)); S.H[1] = S.A[1] = null;
+      say('同樣拿走 20', '把最後一個元素 10 移到 root，n 變 4');
+      await beat(tok, 1400);
+      mv(5, 1);
+      await beat(tok, 1600);
+      lit(S.H[1], GOLD); lit(S.H[2], GOLD);
+      say('10 跟較大的子 15 比：15 較大', '交換：15 上移');
+      await beat(tok, 1600);
+      lit(S.H[1]); lit(S.H[2]); S.swap(1, 2);
+      await beat(tok, 1200);
+      lit(S.H[2], GOLD); lit(S.H[4], GOLD);
+      say('10 跟子 14 比：14 較大', '交換：14 上移');
+      await beat(tok, 1600);
+      lit(S.H[2]); lit(S.H[4]); S.swap(2, 4);
+      await beat(tok, 1200);
+      say('結果仍是 complete binary tree', '<span class="ok">' + arrStr(S) + '</span>，O(log n)');
+      await beat(tok, 3000);
+    } };
+  }
+
+  // ─── ubLbvuWFDqM：交大彭文志 Lec15（Max heap insert／delete、heap sort、Huffman 入門） ───
+  {
+    const TB = '#e9dcc4', PINK = '#f4d9d0', TGOLD = '#f2c46d', TGREEN = '#cfe8dc';
+    const BLUE = '#4b9ee2', ORANGE = '#dd8238', PURPLE = '#9b7ef4', STALE = '#c9bfae', KCOL = '#e55a9b';
+    // 1-based heap 視圖：上面是樹、前面是 array（每個值 = 樹上方塊 n + 陣列格方塊 c）
+    function HView(vals, o = {}) {
+      const P = Object.assign({ cx: 0, top: 6.2, step: 1.35, width: 7, ax: 0, az: 2.6, dx: 0.9, cells: 6, col: BLUE }, o);
+      const H = { P, slot: new Map(), tiles: [] };
+      H.tp = (i) => heapPos(i, P.top, P.step, P.width).add(V(P.cx, 0, 0));
+      H.cp = (i) => V(P.ax + (i - (P.cells + 1) / 2) * P.dx, 0.3, P.az);
+      for (let i = 1; i <= P.cells; i++) {
+        const t = new THREE.Mesh(new THREE.BoxGeometry(P.dx * 0.88, 0.08, 0.9), new THREE.MeshStandardMaterial({ color: TB, roughness: 1 }));
+        t.position.copy(H.cp(i)).setY(0.04); t.receiveShadow = true; lab.world.add(t); H.tiles[i] = t;
+        tag('[' + i + ']', 'idx', H.cp(i).x, 0, P.az + 0.75);
+      }
+      edgeLines(() => {
+        const out = [];
+        for (const [i, p] of H.slot) for (const c of [2 * i, 2 * i + 1]) { const q = H.slot.get(c); if (q && p.n && q.n) out.push([p.n.obj.position, q.n.obj.position]); }
+        return out;
+      });
+      H.mk = (i, v, color = P.col, drop = 0) => {
+        const n = lab.addBody(block(v, NODE, color)), c = lab.addBody(block(v, SMALL, color));
+        const a = H.tp(i), b = H.cp(i);
+        if (drop) { n.obj.position.copy(a).add(V(0, drop, 0)); lab.dropTo(n, a); c.obj.position.copy(b).add(V(0, drop, 0)); lab.dropTo(c, b); }
+        else { n.obj.position.copy(a); n.target.copy(a); c.obj.position.copy(b); c.target.copy(b); }
+        const p = { v, n, c, color }; H.slot.set(i, p); return p;
+      };
+      H.at = (i) => H.slot.get(i);
+      H.mv = (p, i) => { lab.springTo(p.n, H.tp(i)); if (p.c) lab.springTo(p.c, H.cp(i)); };
+      H.swap = (i, j) => { const p = H.at(i), q = H.at(j); H.mv(p, j); H.mv(q, i); H.slot.set(i, q); H.slot.set(j, p); };
+      H.lit = (i, c) => { const p = H.at(i); if (p) { lit(p.n, c); if (p.c) lit(p.c, c); } };
+      H.off = () => { for (const p of H.slot.values()) { lit(p.n); if (p.c) lit(p.c); } };
+      H.tile = (i, c) => { if (H.tiles[i]) H.tiles[i].material.color.set(c || TB); };
+      H.gone = (i, dir = V(0, 8, -3)) => { const p = H.at(i); if (!p) return; lab.flyAway(p.n, dir); if (p.c) lab.flyAway(p.c, dir); H.slot.delete(i); };
+      H.drop = (p) => { kill(p.n); if (p.c) kill(p.c); };
+      // copy 語意：heap[to] = heap[from]（from 保留，變灰表示「舊值，之後會被蓋掉」）
+      H.copy = (from, to) => {
+        const s = H.at(from), old = H.at(to);
+        if (old) H.drop(old);
+        const n = lab.addBody(block(s.v, NODE, s.color)), c = lab.addBody(block(s.v, SMALL, s.color));
+        n.obj.position.copy(H.tp(from)); c.obj.position.copy(H.cp(from));
+        const p = { v: s.v, n, c, color: s.color }; H.slot.set(to, p); H.mv(p, to);
+        s.n.obj.material.color.set(STALE); s.c.obj.material.color.set(STALE);
+        return p;
+      };
+      // 一個只在樹上方的自由方塊（x、k、item 用）
+      H.free = (v, color, pos, drop = 0) => {
+        const n = lab.addBody(block(v, NODE, color));
+        n.obj.position.copy(pos).add(V(0, drop, 0)); if (drop) lab.dropTo(n, pos.clone()); else n.target.copy(pos);
+        return { v, n, c: null, color };
+      };
+      // 自由方塊放進 slot i：樹上那顆移過去，array 格掉進一顆
+      H.place = (p, i) => {
+        const old = H.at(i); if (old) H.drop(old);
+        lab.springTo(p.n, H.tp(i));
+        p.c = lab.addBody(block(p.v, SMALL, p.color)); p.c.obj.position.copy(H.cp(i)).add(V(0, 2.5, 0)); lab.dropTo(p.c, H.cp(i));
+        H.slot.set(i, p);
+      };
+      H.arr = (n) => { const a = []; for (let i = 1; i <= n; i++) a.push(H.at(i) ? H.at(i).v : '_'); return '[' + a.join(', ') + ']'; };
+      vals.forEach((v, k) => { if (v !== null && v !== undefined) H.mk(k + 1, v, Array.isArray(o.colors) ? o.colors[k] : P.col); });
+      return H;
+    }
+    function wire(pos) {
+      const g = new THREE.Mesh(new THREE.BoxGeometry(...NODE), new THREE.MeshBasicMaterial({ color: '#b08a4a', wireframe: true, transparent: true, opacity: 0.6 }));
+      g.position.copy(pos); lab.world.add(g); return g;
+    }
+    function bar(color, w, d, x, z) { const m = lab.box(color, [w, 1, d]); m.scale.y = 0.001; m.position.set(x, 0, z); lab.world.add(m); return m; }
+    function growBar(tok, m, h, ms) { const h0 = m.scale.y; return anim(tok, ms, (t) => { const v = h0 + (h - h0) * t; m.scale.y = v; m.position.y = v / 2; }); }
+    const BASE = [20, 15, 2, 14, 10];
+
+    // ── 1. Priority queue 各種實作比較 ──
+    LECT['p15-pq-compare'] = { title: 'Priority queue 實作比較：insert vs delete', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.6, 13.5], [0, 2.2, 0]);
+      const H = { '1': 0.5, 'log': 1.7, 'n': 3.8 };
+      const rows = [
+        ['unsorted array', '1', 'n', 'Θ(1)', 'Θ(n)'], ['unsorted list', '1', 'n', 'Θ(1)', 'Θ(n)'],
+        ['sorted array', 'n', '1', 'O(n)', 'Θ(1)'], ['sorted list', 'n', '1', 'O(n)', 'Θ(1)'], ['max heap', 'log', 'log', 'O(log n)', 'O(log n)'],
+      ];
+      tag('藍 = insert', 'ptr', -3, 6.6); tag('橘 = delete max', 'ptr alt', 3, 6.6);
+      const bs = rows.map((r, k) => {
+        const x = -5.2 + k * 2.6;
+        tag(r[0], 'ptr', x, 0, 1.3);
+        return { x, bi: bar(BLUE, 0.8, 0.8, x - 0.45, 0), bd: bar(ORANGE, 0.8, 0.8, x + 0.45, 0) };
+      });
+      say('Priority queue：插入任意值、刪最大', '比較 5 種實作的 insert／delete cost');
+      await beat(tok, 2600);
+      const show = async (k) => {
+        const r = rows[k], b = bs[k];
+        await growBar(tok, b.bi, H[r[1]], 500); tag(r[3], 'idx', b.x - 0.45, H[r[1]] + 0.4);
+        await growBar(tok, b.bd, H[r[2]], 500); tag(r[4], 'idx', b.x + 0.45, H[r[2]] + 0.4);
+      };
+      say('Sorted：insert 要維持排序 → 貴', '但最大值在一端，delete 很快');
+      await show(2); await show(3);
+      await beat(tok, 2600);
+      say('Unsorted：看到就丟進去，insert 快', 'delete 要掃整個 array／list 找最大 → Θ(n)');
+      await show(0); await show(1);
+      await beat(tok, 2600);
+      say('Max heap：兩種操作都不錯', 'insert、delete 皆 O(log n)（樹高）');
+      await show(4);
+      bs[4].bi.material.emissive.set(GOLD); bs[4].bd.material.emissive.set(GOLD);
+      await beat(tok, 2800);
+      say('沒有一種 list 能兩邊都快，heap 取得平衡', '<span class="ok">max heap：O(log n) / O(log n)</span>');
+      await beat(tok, 3000);
+    } };
+
+    // ── 2. Max heap 定義與 array 表示 ──
+    LECT['p15-maxheap-array'] = { title: 'Max heap：root 最大，用 array 存', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 5, 13.5], [0, 3.4, 1]);
+      const vals = [14, 12, 7, 10, 8, 6];
+      const H = HView([], { width: 7.5, cells: 6 });
+      say('Max heap 是 complete binary tree', '示意：課本 max heap 例（root 14）');
+      for (let i = 1; i <= 6; i++) { H.mk(i, vals[i - 1], depthColor(Math.floor(Math.log2(i))), 4); await beat(tok, 380); }
+      await beat(tok, 1200);
+      H.lit(1, GOLD); H.tile(1, TGOLD);
+      say('root 永遠放整棵樹最大的 element', 'root 14 ≥ 樹中所有值');
+      await beat(tok, 2600);
+      H.off(); H.tile(1);
+      say('旁邊的 array：root 放 index 1', '依 level order 放 [1]..[6]，[0] 不用');
+      for (let i = 1; i <= 6; i++) { H.lit(i, GOLD); await beat(tok, 300); H.lit(i); }
+      await beat(tok, 900);
+      for (const i of [5, 6]) {
+        const p = i >> 1;
+        H.lit(i, GOLD); H.tile(i, TGOLD); H.lit(p, GREEN); H.tile(p, TGREEN);
+        const a = arrow(H.cp(i).clone().add(V(0, 0.5, 0)), H.cp(p).clone().add(V(0, 0.5, 0)), '#c08a1f');
+        say('用 array 存：parent 一算就有', 'parent(' + i + ') = ⌊' + i + '/2⌋ = ' + p + '（' + H.at(i).v + ' 的 parent 是 ' + H.at(p).v + '）');
+        await beat(tok, 2600);
+        H.off(); H.tile(i); H.tile(p); kill(a);
+      }
+      const a2 = arrow(H.tp(5).clone().add(V(0.25, 0.35, 0)), H.tp(2).clone().add(V(0.35, -0.35, 0)), '#b04a4a', true);
+      tag('parent 指標？', 'ptr', H.tp(5).x + 1.3, H.tp(5).y + 0.8);
+      say('改用 node＋left／right pointer 也行', '但 insert／delete 要找 parent，需額外成本');
+      await beat(tok, 3000);
+      kill(a2);
+      say('所以 heap 常用 array 實作', '<span class="ok">parent = ⌊i/2⌋，children = 2i、2i+1</span>');
+      await beat(tok, 2800);
+    } };
+
+    // ── 3. Max heap insert：bottom-up ──
+    async function insertDemo(tok, H, x, lead) {
+      H.tile(6, TGOLD);
+      say('insert ' + x + '：先放在最後一個位置後面', lead);
+      H.mk(6, x, ORANGE, 4);
+      await beat(tok, 1500);
+      H.tile(6);
+      let i = 6;
+      while (i > 1) {
+        const p = i >> 1, a = H.at(i).v, b = H.at(p).v;
+        H.lit(i, GOLD); H.lit(p, GOLD);
+        if (a > b) {
+          say(a + ' 比 parent ' + b + ' 大 → 往上爬', 'swap：' + a + ' 上去、' + b + ' 下來');
+          await beat(tok, 1500);
+          H.off(); H.swap(i, p); i = p;
+          await beat(tok, 1000);
+        } else {
+          say('parent ' + b + ' 比 ' + a + ' 大 → 停', '');
+          await beat(tok, 1500);
+          break;
+        }
+      }
+      H.off(); H.lit(i, GREEN);
+      say(i === 1 ? x + ' 到達 root → 停' : '完成 insert ' + x, '<span class="ok">' + H.arr(6) + '</span>');
+      await beat(tok, 2200);
+    }
+    LECT['p15-heap-insert'] = { title: 'Max heap insert：放最後、往上爬', play: async (tok) => {
+      const setup = () => { fresh(); lab.frameCamera([0, 5, 13.5], [0, 3.4, 1]); return HView(BASE, { width: 7.5, cells: 6 }); };
+      let H = setup();
+      say('Max heap [20, 15, 2, 14, 10]', '1..5 已用，新元素放 6 號位置');
+      await beat(tok, 2600);
+      await insertDemo(tok, H, 1, '6 號 = 2 的 left child');
+      H = setup(); await insertDemo(tok, H, 5, '每次都從原本的 heap 開始');
+      H = setup(); await insertDemo(tok, H, 21, '一路跟 parent 比（bottom-up）');
+      say('insert：放 heap 最後一個位置，再跟 parent 比', '比較次數 ≤ 樹高 → O(log n)');
+      await beat(tok, 2800);
+    } };
+
+    // ── 4. Insert 程式碼（copy 而不是 swap）──
+    LECT['p15-heap-insert-code'] = { title: 'insert 程式碼：parent 往下 copy', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.8, 13.5], [0, 3.4, 0.8]);
+      const cd = code([
+        'void insert(element x) {',
+        '  if (n == MAX_SIZE-1) {',
+        '    heap is full; exit; }',
+        '  for (i = ++n; i != 1; i /= 2) {',
+        '    if (x.key <= heap[i/2].key) break;',
+        '    heap[i] = heap[i/2];',
+        '  }',
+        '  heap[i] = x;',
+        '}'], -3.5, 6.6, 0.5);
+      const H = HView(BASE, { cx: 3.6, width: 5, ax: 3.5, dx: 0.72, cells: 6, top: 6.3 });
+      const iT = tag('', 'ptr alt', 0, 1.0, 2.6);
+      const setI = (i) => { iT.position.copy(H.cp(i)).setY(1.0); setTag(iT, 'i = ' + i); };
+      const xPos = (i) => H.tp(i).clone().add(V(0.95, 0.35, 0));
+      cd.hl(1);
+      say('Array 有大小上限：滿了就 heap is full', 'n = 5，還沒滿');
+      await beat(tok, 2400);
+      cd.hl(3); setI(6); H.tile(6, TGOLD);
+      const ghostSlot = wire(H.tp(6));
+      const x = H.free(21, ORANGE, xPos(6), 3);
+      const xT = tag('x', 'ptr alt', xPos(6).x, xPos(6).y + 0.7);
+      const moveX = (i) => { lab.springTo(x.n, xPos(i)); xT.position.copy(xPos(i)).add(V(0, 0.7, 0)); };
+      say('i = ++n = 6：新的最後位置', 'n 記錄 heap 目前有幾個元素');
+      await beat(tok, 2400);
+      cd.hl(4); H.lit(3, GOLD); lit(x.n, GOLD);
+      say('x.key 21 > heap[3] = 2', '沒有 break');
+      await beat(tok, 2000);
+      cd.hl(5); H.off(); lit(x.n); kill(ghostSlot); H.tile(6);
+      H.copy(3, 6);
+      say('heap[6] = heap[3]：parent 2 copy 下來', H.arr(6));
+      await beat(tok, 2200);
+      cd.hl(3); setI(3); moveX(3);
+      say('i /= 2 → i = 3：往上爬一層', '');
+      await beat(tok, 1600);
+      cd.hl(4); H.lit(1, GOLD); lit(x.n, GOLD);
+      say('x.key 21 > heap[1] = 20', '還是沒有 break');
+      await beat(tok, 1900);
+      cd.hl(5); H.off(); lit(x.n);
+      H.copy(1, 3);
+      say('heap[3] = heap[1]：20 copy 下來', H.arr(6));
+      await beat(tok, 2200);
+      cd.hl(3); setI(1); moveX(1);
+      say('i = 1：已到 root，跳出迴圈', 'i != 1 不成立');
+      await beat(tok, 1800);
+      cd.hl(7);
+      kill(xT); H.place(x, 1);
+      say('heap[1] = x：最後才把 x 放進去', '<span class="ok">' + H.arr(6) + '</span>');
+      await beat(tok, 2200);
+      cd.hl(-1);
+      say('不是每層 swap：parent 往下 copy，x 只寫一次', '字幕的「heap 2i = heap i」應為 heap[i] = heap[i/2]');
+      await beat(tok, 3000);
+    } };
+
+    // ── 5. Delete（概念 / 逐步）──
+    LECT['p15-heap-delete'] = { title: 'Max heap delete：最後元素暫存 k，往下落', play: async (tok) => {
+      const steps = ((ctx.params || {}).phase) === 'steps';
+      fresh();
+      lab.frameCamera([0, 5, 13.5], [0, 3.4, 1]);
+      const H = HView(BASE, { width: 7.5, cells: 5 });
+      const kPos = V(-5.2, 5.6, 0);
+      const kTag = tag('暫存 k', 'ptr', kPos.x, kPos.y + 0.75);
+      let k, hole;
+      if (!steps) {
+        say('Max heap [20, 15, 2, 14, 10]', '分別存在 array[1]..[5]');
+        await beat(tok, 2600);
+        H.lit(1, GOLD);
+        say('deleteMax：把最大的 root 20 丟出來', 'root 位置變空');
+        await beat(tok, 1600);
+        H.gone(1, V(3, 9, -2)); hole = wire(H.tp(1));
+        await beat(tok, 1600);
+        const up = arrow(V(-4.2, 2.2, 0), V(-4.2, 5.4, 0), BLUE), dn = arrow(V(4.2, 5.4, 0), V(4.2, 2.2, 0), ORANGE);
+        const t1 = tag('insert：bottom-up', 'ptr', -4.2, 1.7), t2 = tag('delete：top-down', 'ptr alt', 4.2, 1.7);
+        say('insert 往上爬，delete 往下落', 'insert：bottom-up；delete：top-down');
+        await beat(tok, 2600);
+        kill(up); kill(dn); kill(t1); kill(t2);
+        H.tile(5, PINK);
+        say('剩 4 個元素，只需要 array[1]..[4]', '最後一格 [5] 要收回');
+        await beat(tok, 2400);
+        const p5 = H.at(5); H.slot.delete(5); kill(p5.c); p5.c = null;
+        lab.springTo(p5.n, kPos); k = p5; lit(k.n, GOLD);
+        say('把最後的 10 拿出來：k = 10', '像打彈珠一樣從 root 往下走');
+        await beat(tok, 2600);
+        lit(k.n);
+        say('先暫存在 k，不直接放進 root', '下面可能有比 10 大的 child');
+        await beat(tok, 3000);
+        return;
+      }
+      // phase: steps —— 從「root 空、k = 10、n = 4」開始
+      H.gone(1, V(3, 9, -2)); hole = wire(H.tp(1));
+      const p5 = H.at(5); H.slot.delete(5); kill(p5.c); p5.c = null; lab.springTo(p5.n, kPos); k = p5; k.n.obj.material.color.set(KCOL);
+      H.tile(5, PINK);
+      say('root 空了，k = 10，n = 4', '從 root 開始往下決定 k 的位置');
+      await beat(tok, 2600);
+      H.lit(2, GOLD); H.lit(3, GOLD);
+      say('root 的 child：15 和 2', '先挑較大的 child：15');
+      await beat(tok, 2200);
+      H.lit(3); lit(k.n, GOLD);
+      say('較大的 child 15 跟 k = 10 比', '15 > 10 → 15 往上搬到 root');
+      await beat(tok, 2200);
+      H.off(); lit(k.n);
+      const a = H.at(2); H.slot.delete(2); H.mv(a, 1); H.slot.set(1, a); hole.position.copy(H.tp(2));
+      await beat(tok, 1600);
+      H.lit(4, GOLD); lit(k.n, GOLD);
+      say('洞落到 [2]：它只有一個 child 14', '14 > 10 → 14 往上爬');
+      await beat(tok, 2400);
+      H.off(); lit(k.n);
+      const b = H.at(4); H.slot.delete(4); H.mv(b, 2); H.slot.set(2, b); hole.position.copy(H.tp(4));
+      await beat(tok, 1600);
+      say('洞落到 [4]：沒有 child 了', '10 就放在這裡');
+      await beat(tok, 1600);
+      kill(hole); kill(kTag); H.place(k, 4);
+      await beat(tok, 1400);
+      H.lit(4, GREEN);
+      say('結果：1 放 15、2 放 14、3 放 2、4 放 10', '<span class="ok">' + H.arr(4) + '</span>');
+      await beat(tok, 2600);
+      say('top-down 何時停？', '到 leaf，或 k ≥ 較大的 child');
+      await beat(tok, 2800);
+    } };
+
+    // ── 6. deleteMax 程式碼（解說 / trace）──
+    LECT['p15-heap-delete-code'] = { title: 'deleteMax 程式碼與 trace', play: async (tok) => {
+      const trace = ((ctx.params || {}).phase) === 'trace';
+      fresh();
+      lab.frameCamera([0, 4.8, 13.5], [0, 3.4, 0.8]);
+      const cd = code([
+        'element delete_max() {',
+        '  if (!n) { heap is empty; exit; }',
+        '  item = heap[1];',
+        '  k = heap[n--];',
+        '  for (i = 1, j = 2; j <= n; ) {',
+        '    if (j<n && heap[j].key<heap[j+1].key) j++;',
+        '    if (k.key >= heap[j].key) break;',
+        '    heap[i] = heap[j];',
+        '    i = j; j *= 2;',
+        '  }',
+        '  heap[i] = k;',
+        '  return item;',
+        '}'], -3.4, 6.9, 0.48);
+      const H = HView(BASE, { cx: 3.9, width: 4.6, ax: 3.9, dx: 0.72, cells: 5, top: 6.1 });
+      const kPos = V(1.5, 6.5, 0), itPos = V(6.2, 6.6, 0);
+      const iT = tag('', 'ptr alt', 0, 1.0, 2.6), jT = tag('', 'ptr', 0, 1.0, 2.6);
+      const showIJ = (i, j, n) => {
+        for (let s = 1; s <= 5; s++) H.tile(s, s > n ? PINK : s === i ? TGOLD : s === j || s === j + 1 ? TGREEN : TB);
+        iT.position.copy(H.cp(i)).setY(1.05); setTag(iT, 'i=' + i);
+        if (j <= 5) { jT.visible = true; jT.position.copy(H.cp(j)).setY(1.55); setTag(jT, 'j=' + j); } else jT.visible = false;
+      };
+      const slow = trace ? 0.75 : 1;
+      cd.hl(1);
+      say('先檢查 n：n == 0 表示 heap is empty', 'n = 5，不是 empty');
+      await beat(tok, 2200 * slow);
+      cd.hl(2);
+      H.free('20', PURPLE, itPos, 0); tag('item', 'ptr', itPos.x, itPos.y + 0.75); H.at(1).n.obj.material.color.set(STALE); H.at(1).c.obj.material.color.set(STALE);
+      say('item = heap[1]：要 return 的最大值', 'max heap 的 array[1] 最大');
+      await beat(tok, 2400 * slow);
+      cd.hl(3);
+      const p5 = H.at(5); H.slot.delete(5); kill(p5.c); p5.c = null; lab.springTo(p5.n, kPos); p5.n.obj.material.color.set(KCOL);
+      tag('k', 'ptr', kPos.x, kPos.y + 0.75);
+      H.tile(5, PINK);
+      say('k = heap[n--]：k = 10，n 從 5 變 4', 'array 只剩 [1]..[4]');
+      await beat(tok, 2600 * slow);
+      let i = 1, j = 2; const n = 4;
+      cd.hl(4); showIJ(i, j, n);
+      say('i 是待決定的位置，j、j+1 是 children', 'i = 1，j = 2（j+1 = 3），條件 j <= n');
+      await beat(tok, 2600 * slow);
+      let round = 0;
+      while (j <= n) {
+        round++;
+        cd.hl(5);
+        const hasR = j < n, r = hasR && H.at(j).v < H.at(j + 1).v;
+        H.lit(j, GOLD); if (hasR) H.lit(j + 1, GOLD);
+        const why = !hasR ? 'j == n：只有一個 child ' + H.at(j).v : r ? '右 child 較大 → j++' : 'heap[' + j + '] = ' + H.at(j).v + ' ≥ heap[' + (j + 1) + '] = ' + H.at(j + 1).v + ' → j 不動';
+        if (r) j++;
+        say(why,
+          trace ? '第 ' + round + ' 輪：i = ' + i + '，j = ' + j : 'j 要指向較大的 child（必須先確認 j < n）');
+        await beat(tok, 2400 * slow);
+        H.off(); showIJ(i, j, n);
+        cd.hl(6); H.lit(j, GOLD); lit(p5.n, GOLD);
+        say('k = 10 ≥ ' + H.at(j).v + '？ 不是 → 不 break', '若 k 比最大的 child 大就停止');
+        await beat(tok, 2200 * slow);
+        H.off(); lit(p5.n);
+        cd.hl(7);
+        H.copy(j, i);
+        say('heap[' + i + '] = heap[' + j + ']：child 往上 copy', H.arr(4) + (trace ? '' : '（' + j + ' 號暫時是舊值）'));
+        await beat(tok, 2600 * slow);
+        cd.hl(8); i = j; j *= 2; showIJ(i, j, n);
+        say('i = j、j *= 2：往下一層', 'i = ' + i + '，j = ' + j);
+        await beat(tok, 2000 * slow);
+        if (!trace) break;
+      }
+      if (!trace) {
+        cd.hl(-1);
+        say('同樣的步驟重複，直到 j > n 或 break', 'i 是要填的洞，j 是它較大的 child');
+        await beat(tok, 3000);
+        return;
+      }
+      cd.hl(4);
+      say('j = ' + j + ' > n = 4 → 迴圈結束', '');
+      await beat(tok, 1800);
+      cd.hl(10); H.place(p5, i); lit(p5.n, GREEN);
+      say('heap[' + i + '] = k', '<span class="ok">' + H.arr(4) + '</span>');
+      await beat(tok, 2200);
+      cd.hl(11);
+      say('return item（20）', 'root 拿掉、最後元素從上往下找位置');
+      await beat(tok, 2800);
+    } };
+
+    // ── 7. Heap 操作的複雜度 ──
+    LECT['p15-heap-cost'] = { title: 'Heap 的 cost：deleteMax vs 刪任意元素', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 5, 13.5], [0, 3.4, 1]);
+      const H = HView(BASE, { width: 6.5, cells: 5, cx: -1.2, ax: -1.2 });
+      say('deleteMax：拿掉 root 後調整 tree', '最多走一條 root 到 leaf 的路徑');
+      await beat(tok, 2200);
+      for (const i of [1, 2, 4]) { H.lit(i, GOLD); await beat(tok, 600); }
+      const hT = tag('樹高 ≈ log₂ n', 'ptr alt', -5.4, 4.8);
+      say('cost = 樹的高度', '<span class="ok">deleteMax：O(log n)</span>');
+      await beat(tok, 2400);
+      H.off(); kill(hT);
+      say('那要刪除（或找）任意元素，例如 10 呢？', 'heap 只保證 root 最大，其他位置沒有順序');
+      await beat(tok, 2600);
+      const cur = makeCursor(); cur.obj.scale.set(0.7, 0.7, 0.7);
+      for (let i = 1; i <= 5; i++) {
+        cursorTo(cur, H.cp(i).clone().setY(0.62)); H.lit(i, i === 5 ? GREEN : GOLD); H.tile(i, i === 5 ? TGREEN : TGOLD);
+        say('scan array：第 ' + i + ' 格 = ' + H.at(i).v, i === 5 ? '找到 10' : '不是 10，繼續');
+        await beat(tok, 750);
+        if (i < 5) H.lit(i);
+      }
+      say('只能 scan 整個 array', '找到：最壞 O(n)');
+      await beat(tok, 2200);
+      cur.obj.visible = false;
+      const b1 = bar(ORANGE, 0.9, 0.9, 4.6, 0.5), b2 = bar(BLUE, 0.9, 0.9, 5.9, 0.5);
+      await growBar(tok, b1, 4.2, 600); tag('scan n', 'idx', 4.6, 4.7, 0.5);
+      await growBar(tok, b2, 1.2, 400); tag('調整 log n', 'idx', 5.9, 1.7, 0.5);
+      say('刪任意元素 = 先找 O(n) + 再調整 O(log n)', 'n + log n');
+      await beat(tok, 2600);
+      b1.material.emissive.set(GOLD);
+      say('bottleneck 在 scan 那段', '<span class="ok">n + log n = O(n)</span>（老師口誤說 log n dominate）');
+      await beat(tok, 3000);
+    } };
+
+    // ── 8. Heap sort 概念（min heap：insert n 次、delete n 次）──
+    LECT['p15-heap-sort'] = { title: 'Heap sort：建 min heap，再 delete n 次', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 5, 13.5], [0, 3.2, 1.4]);
+      const H = HView([], { width: 7, cells: 5, col: PURPLE, top: 6.3 });
+      const nums = [5, 3, 8, 1, 4];
+      const inT = tag('待排序：' + nums.join(' '), 'ptr', -4.8, 7.2);
+      tag('輸出', 'ptr', -5.2, 0.35, 4.2);
+      say('Phase 1：n 個數字逐一 insert 進 min heap', '示意資料 [5, 3, 8, 1, 4]');
+      await beat(tok, 2200);
+      let n = 0;
+      for (const v of nums) {
+        n++; H.mk(n, v, PURPLE, 3.5);
+        await beat(tok, 650);
+        let i = n;
+        while (i > 1 && H.at(i).v < H.at(i >> 1).v) { H.swap(i, i >> 1); i >>= 1; await beat(tok, 550); }
+        say('insert ' + v + '：bottom-up，小的往上', H.arr(n));
+        await beat(tok, 500);
+      }
+      setTag(inT, 'min heap 建好（insert n 次）');
+      say('min heap：root 最小', H.arr(5));
+      await beat(tok, 2000);
+      say('Phase 2：delete n 次，輸出由小到大', '每次拿 root，最後元素放上去再 top-down');
+      await beat(tok, 1600);
+      const out = [];
+      for (let m = 5; m >= 1; m--) {
+        const r = H.at(1); H.slot.delete(1);
+        out.push(r.v);
+        lab.springTo(r.n, V(-3.6 + (out.length - 1) * 1.0, 0.35, 4.2)); kill(r.c);
+        if (m > 1) {
+          const last = H.at(m); H.slot.delete(m); H.slot.set(1, last); H.mv(last, 1);
+          H.tile(m, PINK);
+          await beat(tok, 600);
+          let i = 1;
+          for (;;) {
+            let c = 2 * i; if (c > m - 1) break;
+            if (c + 1 <= m - 1 && H.at(c + 1).v < H.at(c).v) c++;
+            if (H.at(i).v <= H.at(c).v) break;
+            H.swap(i, c); i = c; await beat(tok, 550);
+          }
+        } else H.tile(1, PINK);
+        say('delete → 輸出 ' + r.v, '輸出：' + out.join(' '));
+        await beat(tok, 700);
+      }
+      say('insert n 次＋delete n 次', '每次 O(log n) → <span class="ok">總共 O(n log n)</span>');
+      await beat(tok, 2600);
+      say('Heap 三原則', 'root 最大（max）／最小（min）；insert 放最後 bottom-up；delete 最後元素提到 root 再 top-down');
+      await beat(tok, 3200);
+    } };
+
+    // ── 9. ASCII（fixed length）與 Huffman 的頻率概念 ──
+    const SENT = 'Eerie eyes seen near lake.';
+    LECT['p15-huffman-freq'] = { title: 'Huffman：出現越多、碼越短', play: async (tok) => {
+      const ascii = ((ctx.params || {}).phase) === 'ascii';
+      fresh();
+      lab.frameCamera([0, 4.6, 13.5], [0, 3, 0.6]);
+      if (ascii) {
+        const w = 'Eerie';
+        const cs = [...w].map((ch, k) => {
+          const x = -4 + k * 2;
+          const b = cube(ch, ch === 'E' ? ORANGE : BLUE, NODE, x, 5.2, 0, 3);
+          const bits = ch.charCodeAt(0).toString(2).padStart(8, '0');
+          const l = tag(bits, 'idx', x, 4.3); Object.assign(l.element.style, MONO);
+          return { b, l };
+        });
+        say('ASCII：每個字元對到一個固定的 code', 'fixed length coding');
+        await beat(tok, 3400);
+        lit(cs[0].b, GOLD); lit(cs[1].b, GOLD);
+        say('大寫 E 和小寫 e：code 不同', 'E = 01000101，e = 01100101');
+        await beat(tok, 2800);
+        lit(cs[0].b); lit(cs[1].b);
+        say('但 code length 都一樣：8 bits', '不管字元出現幾次，長度都相同');
+        await beat(tok, 3200);
+        ghost('#4b9ee2', -3, 1.9, 4.2, 2.6); ghost('#dd8238', 3, 1.9, 4.2, 2.6);
+        tag('binary tree', 'ptr', -3, 3.5); tag('priority queue（heap）', 'ptr alt', 3, 3.5);
+        cube('', '#2fc092', SMALL, -3, 2.6); cube('', '#4b9ee2', SMALL, -3.9, 1.3); cube('', '#4b9ee2', SMALL, -2.1, 1.3);
+        seg(V(-3, 2.35, 0), V(-3.9, 1.55, 0), '#7a6a52'); seg(V(-3, 2.35, 0), V(-2.1, 1.55, 0), '#7a6a52');
+        [1, 2, 2, 4].forEach((v, k) => cube(v, PURPLE, SMALL, 1.8 + k * 0.8, 1.3, 0, 2));
+        say('Huffman code 會用到兩個技巧', '建一棵 binary tree ＋ 用 priority queue（heap）');
+        await beat(tok, 3200);
+        say('作業：Huffman 的編碼與解碼', '下週公布');
+        await beat(tok, 3000);
+        return;
+      }
+      const freq = new Map(); for (const ch of SENT) freq.set(ch, (freq.get(ch) || 0) + 1);
+      const keys = [...freq.keys()].sort((a, b) => freq.get(b) - freq.get(a) || SENT.indexOf(a) - SENT.indexOf(b));
+      const colX = (ch) => -5.5 + keys.indexOf(ch) * 1.0;
+      const show = (ch) => (ch === ' ' ? '␣' : ch);
+      say('1952 年 David Huffman：碼長最少', '例句（推測）：' + SENT + '（26 個字元）');
+      const bs = [...SENT].map((ch, k) => cube(show(ch), ch === 'e' ? ORANGE : ch === ' ' ? PURPLE : BLUE, [0.42, 0.42, 0.42], -6.25 + k * 0.5, 6.6, 0, 1.5));
+      await beat(tok, 2800);
+      keys.forEach((ch) => tag(show(ch), 'ptr', colX(ch), 0, 1.0));
+      say('統計每個「字元」出現幾次', '不是單字；空白和句點也要算');
+      const cnt = new Map();
+      for (let k = 0; k < bs.length; k++) {
+        const ch = SENT[k], c = cnt.get(ch) || 0; cnt.set(ch, c + 1);
+        lab.springTo(bs[k], V(colX(ch), 0.25 + c * 0.45, 0));
+        await beat(tok, 200);
+      }
+      keys.forEach((ch) => tag(String(freq.get(ch)), 'idx', colX(ch), 0.25 + freq.get(ch) * 0.45 + 0.1));
+      await beat(tok, 1200);
+      bs.forEach((b, k) => SENT[k] === 'e' && lit(b, GOLD));
+      say('小寫 e 出現最多：8 次', '大寫 E 只有 1 次（不同字元）');
+      await beat(tok, 2600);
+      bs.forEach((b, k) => lit(b, SENT[k] === ' ' ? GOLD : null));
+      say('空白（space）出現 4 次，也要編碼', '句點也要編碼');
+      await beat(tok, 2600);
+      bs.forEach((b) => lit(b));
+      say('ASCII：不管出現幾次，每字都 8 bits', 'Huffman：frequency 越高 → 編碼越短');
+      await beat(tok, 3000);
+    } };
+
+    // ── 10. Code table、編碼解碼與壓縮比 ──
+    LECT['p15-huffman-compress'] = { title: 'Huffman tree、code table 與 208 → 73 bits', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.4, 13.5], [0, 3.6, 0]);
+      const freq = new Map(); for (const ch of SENT) freq.set(ch, (freq.get(ch) || 0) + 1);
+      let id = 0;
+      const pq = [...freq.keys()].sort((a, b) => freq.get(a) - freq.get(b) || SENT.indexOf(a) - SENT.indexOf(b))
+        .map((ch) => ({ label: ch === ' ' ? '␣' : ch, ch, w: freq.get(ch), kids: [], id: id++ }));
+      while (pq.length > 1) {
+        pq.sort((a, b) => a.w - b.w || a.id - b.id);
+        const a = pq.shift(), b = pq.shift();
+        pq.push({ label: String(a.w + b.w), w: a.w + b.w, kids: [a, b], id: id++ });
+      }
+      const root = pq[0];
+      const codes = new Map();
+      (function walk(n, s) { if (!n.kids.length) { codes.set(n.ch, s || '0'); n.code = s; return; } walk(n.kids[0], s + '0'); walk(n.kids[1], s + '1'); })(root, '');
+      let maxD = 0; (function d(n, k) { maxD = Math.max(maxD, k); n.kids.forEach((c) => d(c, k + 1)); })(root, 0);
+      const step = Math.min(1.1, 5.2 / maxD);
+      layoutG(root, { width: 11, topY: 6.8, step });
+      const order = []; (function lv() { const q = [root]; while (q.length) { const n = q.shift(); order.push(n); q.push(...n.kids); } })();
+      edgeLines(() => { const out = []; for (const n of gAll(root)) for (const k of n.kids) if (n.body && k.body) out.push([n.body.obj.position, k.body.obj.position]); return out; }, 0.22);
+      say('依 frequency 建出 Huffman tree', '葉子 = 字元，內部節點 = 次數和');
+      for (const n of order) {
+        const b = lab.addBody(block(n.label, [0.62, 0.44, 0.6], n.kids.length ? '#c9b48e' : n.ch === 'e' ? ORANGE : BLUE));
+        b.obj.position.copy(n.pos).add(V(0, 3, 0)); lab.dropTo(b, n.pos.clone()); n.body = b;
+        await beat(tok, 150);
+      }
+      await beat(tok, 1200);
+      say('左 0、右 1：root 到葉子的路徑就是 code', 'code table（碼書）');
+      const cT = [];
+      for (const n of gAll(root)) if (!n.kids.length) { const l = tag(n.code, 'idx', n.pos.x, n.pos.y - 0.5); Object.assign(l.element.style, { fontSize: '10px' }); cT.push(l); }
+      await beat(tok, 2600);
+      const leaf = (ch) => gAll(root).find((n) => n.ch === ch);
+      lit(leaf('e').body, GOLD);
+      say('e 出現 8 次 → code 最短：' + codes.get('e'), '出現 1 次的字元 → code 最長');
+      await beat(tok, 2400);
+      lit(leaf('e').body);
+      const word = 'Eerie';
+      const enc = [...word].map((c) => codes.get(c)).join(' ');
+      const eT = tag('', 'ptr alt', 0, 0.3, 2.6); Object.assign(eT.element.style, MONO);
+      for (let k = 1; k <= word.length; k++) {
+        lit(leaf(word[k - 1]).body, GOLD);
+        setTag(eT, word.slice(0, k) + ' → ' + [...word.slice(0, k)].map((c) => codes.get(c)).join(' '));
+        say('編碼：照 code table 把字元換成 bits', '前 5 個字元示範');
+        await beat(tok, 650);
+        lit(leaf(word[k - 1]).body);
+      }
+      await beat(tok, 1000);
+      const cur = makeCursor(); cur.obj.scale.set(0.7, 0.7, 0.7);
+      const bitsE = codes.get('E');
+      say('解碼：從 root 依 bit 走到葉子', bitsE + ' → E，再回到 root 繼續');
+      let n = root; cursorTo(cur, n.pos);
+      await beat(tok, 700);
+      for (const b of bitsE) { n = n.kids[Number(b)]; cursorTo(cur, n.pos); await beat(tok, 550); }
+      lit(n.body, GREEN);
+      await beat(tok, 1200);
+      cur.obj.visible = false;
+      for (const x of gAll(root)) lab.flyAway(x.body, V(0, 8, -4));
+      kill(eT); cT.forEach(kill);
+      await beat(tok, 800);
+      const b1 = bar('#8fa3b8', 1.4, 1.2, -1.6, 0), b2 = bar(ORANGE, 1.4, 1.2, 1.6, 0);
+      tag('ASCII', 'ptr', -1.6, 0, 1.3); tag('Huffman', 'ptr alt', 1.6, 0, 1.3);
+      say('整句 26 個字元，每字 8 bits', 'ASCII：26 × 8 = 208 bits');
+      await growBar(tok, b1, 208 / 36, 900); tag('208 bits', 'idx', -1.6, 208 / 36 + 0.4);
+      await beat(tok, 1400);
+      say('用 Huffman code（投影片數字）', '只要 73 bits');
+      await growBar(tok, b2, 73 / 36, 700); tag('73 bits', 'idx', 1.6, 73 / 36 + 0.4);
+      await beat(tok, 2000);
+      say('208 → 73 bits：達成 compression', '註：依此頻率表重算最佳為 84 bits，仍遠小於 208');
+      await beat(tok, 3000);
+    } };
+  }
+
+  // ─── Rk3aap_HZHU：交大彭文志 Lec16（Huffman 2/2、BST、winner/loser tree、forest、disjoint sets） ───
+  {
+    // ── Huffman：課本例句 "Eerie eyes seen near lake."（␣ = space） ──
+    const HF = { E: 1, e: 8, r: 2, i: 1, '␣': 4, y: 1, s: 2, n: 2, a: 2, l: 1, k: 1, '.': 1 };
+    const HORDER = ['E', 'e', 'r', 'i', '␣', 'y', 's', 'n', 'a', 'l', 'k', '.'];
+    const SENT = [...'Eerie eyes seen near lake.'.replace(/ /g, '␣')];
+    const LEAFC = '#2fc092', INC = '#c9a86a', TOKC = '#8fa3b8';
+    const LSZ = [0.72, 0.55, 0.72];
+    const tl = (n) => (n.ch ? n.ch + n.f : String(n.f));
+    // 依 freq 由小到大的 priority queue（同 freq 時新節點排在後面），回傳每一次合併
+    function huffRun(order) {
+      let pq = order.map((c) => ({ ch: c, f: HF[c], label: c, kids: [] })).sort((a, b) => a.f - b.f);
+      const merges = [];
+      while (pq.length > 1) {
+        const a = pq.shift(), b = pq.shift();
+        const z = { f: a.f + b.f, label: String(a.f + b.f), kids: [a, b] };
+        let i = pq.findIndex((x) => x.f > z.f); if (i < 0) i = pq.length;
+        pq.splice(i, 0, z);
+        merges.push({ a, b, z, pq: pq.slice() });
+      }
+      return { root: pq[0], merges };
+    }
+    function huffCodes(root) { const m = {}; (function w(n, p) { n.code = p; if (!n.kids.length) m[n.ch] = p; else { w(n.kids[0], p + '0'); w(n.kids[1], p + '1'); } })(root, ''); return m; }
+    // 整棵 Huffman tree：葉子綠、內部節點金；可標 0/1
+    function hufShow(root, o, bits) {
+      layoutG(root, Object.assign({ width: 11.2, topY: 6.8, step: 1.32 }, o || {}));
+      for (const n of gAll(root)) {
+        const b = lab.addBody(block(n.ch ? n.ch : n.label, LSZ, n.ch ? LEAFC : INC));
+        b.obj.position.copy(n.pos); b.target.copy(n.pos); n.body = b;
+        if (n.ch) tag(String(n.f), 'idx', n.pos.x, n.pos.y - 0.5, 0.4);
+      }
+      edgeLines(() => { const out = []; for (const n of gAll(root)) for (const k of n.kids) if (n.body && k.body) out.push([n.body.obj.position, k.body.obj.position]); return out; }, 0.27);
+      if (bits) for (const n of gAll(root)) n.kids.forEach((k, j) => tag(String(j), 'ptr', (n.pos.x + k.pos.x) / 2 + (j ? 0.22 : -0.22), (n.pos.y + k.pos.y) / 2 + 0.1, 0.2));
+      return root;
+    }
+    const cursorAt = (cur, p) => cursorTo(cur, p.clone().add(V(0, -0.02, 0)));
+
+    // #0 統計頻率
+    LECT['p16-huff-freq'] = { title: 'Huffman：先統計字元頻率', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 5.4, 13.5], [0, 3.0, 0]);
+      tag('"Eerie eyes seen near lake."（含 space、句點共 26 字元）', 'ptr', 0, 7.2);
+      const sx = (k) => -5.6 + k * 0.45;
+      const cs = SENT.map((c, k) => cube(c, TOKC, [0.4, 0.42, 0.4], sx(k), 6.3));
+      const cx = (c) => -5.2 + HORDER.indexOf(c) * 0.95;
+      const cnt = {}, ct = {};
+      HORDER.forEach((c) => { cnt[c] = 0; tag(c === '␣' ? 'sp' : c, 'ptr', cx(c), 0.05, 1.7); ct[c] = tag('0', 'idx', cx(c), 0.05, 2.5); });
+      say('Huffman：binary tree + PQ 的應用', 'phase 1：開檔、scan 每個字元、統計 frequency');
+      await beat(tok, 2600);
+      say('逐字 scan：每看到一次就 +1', 'space、句點也要算（存檔時一樣要編碼）');
+      for (let k = 0; k < SENT.length; k++) {
+        const c = SENT[k];
+        lit(cs[k], GOLD); cs[k].obj.position.y = 6.55;
+        const b = lab.addBody(block('', [0.5, 0.26, 0.5], c === 'e' ? '#e55a9b' : c === 'E' ? '#4b9ee2' : LEAFC));
+        b.obj.position.set(sx(k), 6.0, 0);
+        lab.springTo(b, V(cx(c), 0.15 + cnt[c] * 0.28, 0.6));
+        cnt[c]++; setTag(ct[c], String(cnt[c]));
+        await beat(tok, 430);
+        lit(cs[k]); cs[k].obj.position.y = 6.3;
+      }
+      say('小寫 e 出現 8 次、大寫 E 只有 1 次', 'E1 e8 r2 i1 sp4 y1 s2 n2 a2 l1 k1 .1 → 合計 26');
+      await beat(tok, 3400);
+      say('frequency 越高的字元，碼要越短', '下一步（phase 2）：用 min heap 建 Huffman tree');
+      await beat(tok, 3000);
+    } };
+
+    // #1 Huffman node 與 bottom-up 原則
+    LECT['p16-huff-node'] = { title: 'Huffman node 與 bottom-up 合併', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 5.2, 13.5], [0, 3.2, 0.6]);
+      const F = ['ch', 'freq', 'left', 'right'], FV = ['E', '1', 'NULL', 'NULL'];
+      tag('HuffmanNode', 'ptr alt', -4.2, 7.3);
+      const fc = F.map((f, j) => { tag(f, 'idx', -5.6 + j * 1.0, 6.9); return cube(FV[j], j < 2 ? LEAFC : '#b9a582', [0.95, 0.55, 0.7], -5.6 + j * 1.0, 6.3); });
+      say('Huffman node：字元、frequency、左右指標', 'ch | freq | leftChild | rightChild');
+      await beat(tok, 3000);
+      const toks = HORDER.slice().sort((a, b) => HF[a] - HF[b]).map((c) => ({ n: { ch: c, f: HF[c] } }));
+      const px = (k) => -5.2 + k * 0.95;
+      tag('MyQueue（min heap，依 freq 排）', 'ptr', 0, 0.05, 3.2);
+      toks.forEach((t, k) => { t.b = cube(tl(t.n), TOKC, [0.8, 0.5, 0.7], px(k), 0.3, 2.2, 3); });
+      await beat(tok, 900);
+      say('priority queue 用 min heap：最小的在最前面', '每次 DeleteMin 都拿到目前 frequency 最小者');
+      await beat(tok, 2800);
+      const MX = [-1.2, 1.6, 4.4];
+      for (let m = 0; m < 3; m++) {
+        const a = toks.shift(), b = toks.shift();
+        lit(a.b, GOLD); lit(b.b, GOLD);
+        say('取出最小的兩個：' + a.n.ch + '、' + b.n.ch, a.n.ch + '.freq + ' + b.n.ch + '.freq = ' + (a.n.f + b.n.f));
+        await beat(tok, 900);
+        lab.springTo(a.b, V(MX[m] - 0.6, 2.4, 0)); lab.springTo(b.b, V(MX[m] + 0.6, 2.4, 0));
+        toks.forEach((t, k) => lab.springTo(t.b, V(px(k), 0.3, 2.2)));
+        await beat(tok, 700);
+        const z = cube(String(a.n.f + b.n.f), INC, [0.8, 0.55, 0.7], MX[m], 3.8, 0, 3);
+        seg(V(MX[m], 3.5, 0), V(MX[m] - 0.6, 2.7, 0), '#7a6a52'); seg(V(MX[m], 3.5, 0), V(MX[m] + 0.6, 2.7, 0), '#7a6a52');
+        lit(a.b); lit(b.b);
+        if (m === 0) { fc.forEach((c, j) => lit(c, j ? GOLD : OFF)); say('新 node：left = 先取出的、right = 後取出的', 'z.freq = 1 + 1 = 2，再 insert 回 queue'); await beat(tok, 2400); fc.forEach((c) => lit(c)); }
+        await beat(tok, 900);
+      }
+      arrow(V(-5.6, 2.0, 0), V(-5.6, 5.2, 0), '#c08a1f');
+      tag('bottom-up', 'ptr alt', -5.6, 5.6);
+      say('樹是由下往上長（bottom-up），不是 top-down', '頻率最小的最先合併 → 落在樹的最底層');
+      await beat(tok, 3600);
+    } };
+
+    // #2 把頻率表 insert 成 min heap（陣列）
+    LECT['p16-huff-heap'] = { title: '頻率表 insert 成 min heap', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 5.2, 13.5], [0, 3.6, 1]);
+      const P = (i) => heapPos(i, 6.7, 1.45, 11.6);
+      const TX = (i) => V(-5.9 + (i - 1) * 0.98, 0.3, 2.7);
+      for (let i = 1; i <= 12; i++) { const t = new THREE.Mesh(new THREE.BoxGeometry(0.88, 0.08, 0.8), new THREE.MeshStandardMaterial({ color: '#e9dcc4', roughness: 1 })); t.position.copy(TX(i)).setY(0.04); lab.world.add(t); tag('[' + i + ']', 'idx', TX(i).x, 0.05, 3.4); }
+      const H = [null], Hb = [null], Hc = [null];
+      edgeLines(() => { const o = []; for (let i = 2; i < Hb.length; i++) o.push([Hb[i >> 1].obj.position, Hb[i].obj.position]); return o; });
+      say('PQ 用 array 實作成 min heap', '依 frequency 表逐一 insert：E1、e8、r2、i1…');
+      await beat(tok, 2600);
+      for (const c of HORDER) {
+        let i = H.length;
+        H.push(c);
+        const b = lab.addBody(block(c + HF[c], [0.9, 0.55, 0.7], LEAFC)); b.obj.position.copy(P(i)).add(V(0, 3, 0)); lab.dropTo(b, P(i)); Hb.push(b);
+        const cc = lab.addBody(block(c + HF[c], [0.78, 0.45, 0.6], TOKC)); cc.obj.position.copy(TX(i)).add(V(0, 2, 0)); lab.dropTo(cc, TX(i)); Hc.push(cc);
+        say('Insert ' + c + '（freq ' + HF[c] + '）放到 [' + i + ']', '再往上和 parent 比，比較小就交換');
+        await beat(tok, 750);
+        while (i > 1 && HF[H[i]] < HF[H[i >> 1]]) {
+          const p = i >> 1;
+          lit(Hb[i], GOLD); lit(Hb[p], GOLD);
+          say(c + HF[c] + ' < parent ' + H[p] + HF[H[p]] + ' → 交換', '[' + i + '] ↔ [' + p + ']');
+          [H[i], H[p]] = [H[p], H[i]]; [Hb[i], Hb[p]] = [Hb[p], Hb[i]]; [Hc[i], Hc[p]] = [Hc[p], Hc[i]];
+          lab.springTo(Hb[i], P(i)); lab.springTo(Hb[p], P(p)); lab.springTo(Hc[i], TX(i)); lab.springTo(Hc[p], TX(p));
+          await beat(tok, 700);
+          lit(Hb[i]); lit(Hb[p]);
+          i = p;
+        }
+      }
+      lit(Hb[1], GOLD); lit(Hc[1], GOLD);
+      say('min heap 建好：[1] 一定是 frequency 最小者', 'heap = ' + H.slice(1).map((c) => c + HF[c]).join(' '));
+      await beat(tok, 3400);
+      say('同 freq 不交換；insert / delete 都要會寫', '投影片的初始排列未口述，這裡依字元出現順序 insert（示意）');
+      await beat(tok, 3000);
+    } };
+
+    // PQ 列：依 freq 排好的 token
+    function pqRow(z, x0 = -5.3, dx = 0.92) {
+      const R = { list: [], x: (k) => x0 + k * dx, z,
+        lay() { R.list.forEach((t, k) => lab.springTo(t.b, V(R.x(k), 0.3, z))); },
+        add(n, from, color) { const b = lab.addBody(block(tl(n), [0.78, 0.5, 0.66], color || (n.ch ? TOKC : INC))); b.obj.position.copy(from); const t = { n, b }; let i = R.list.findIndex((x) => x.n.f > n.f); if (i < 0) i = R.list.length; R.list.splice(i, 0, t); R.lay(); return t; } };
+      tag('PQ', 'ptr', x0 - 0.95, 0.3, z);
+      return R;
+    }
+
+    // #3 演算法主迴圈
+    LECT['p16-huff-algo'] = { title: 'Huffman 演算法主迴圈', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 5.2, 13.5], [0, 3.4, 0.8]);
+      const cd = code(['while (heap 內 element 數 >= 2) {', '  z = new HuffmanNode;', '  z->left  = heap.DeleteMin();', '  z->right = heap.DeleteMin();', '  z->freq  = z->left->freq + z->right->freq;', '  heap.Insert(z);', '}', 'root = heap.DeleteMin();  // 只剩 1 個'], -2.4, 7.2, 0.5);
+      const R = pqRow(2.4);
+      const { merges } = huffRun(HORDER);
+      HORDER.slice().sort((a, b) => HF[a] - HF[b]).forEach((c) => R.add({ ch: c, f: HF[c], kids: [] }, V(0, 4, 2.4)));
+      R.list.forEach((t) => { t.b.obj.position.copy(V(R.x(R.list.indexOf(t)), 0.3, 2.4)); });
+      say('不斷合併最小的兩個，直到只剩一個', 'heap 內有 12 個單一字元 node');
+      await beat(tok, 2600);
+      const MX = [2.2, 4.3];
+      for (let m = 0; m < 2; m++) {
+        const g = merges[m]; const x = MX[m];
+        cd.hl(0); say('element 數 ' + R.list.length + ' ≥ 2 → 進迴圈', 'while 條件成立'); await beat(tok, 1300);
+        cd.hl(1); const z = lab.addBody(block('?', [0.8, 0.55, 0.7], INC)); z.obj.position.set(x, 4.2, 0); z.target.set(x, 4.2, 0);
+        say('步驟一：產生新的 Huffman node z', ''); await beat(tok, m ? 700 : 1300);
+        const A = R.list.shift(); cd.hl(2); lit(A.b, GOLD); lab.springTo(A.b, V(x - 0.6, 2.9, 0)); R.lay();
+        const l1 = seg(V(x, 3.9, 0), V(x - 0.6, 3.15, 0), '#7a6a52');
+        say('DeleteMin → ' + tl(A.n) + ' 當 left child', '第一次取出最小'); await beat(tok, m ? 900 : 1500);
+        const B = R.list.shift(); cd.hl(3); lit(B.b, GOLD); lab.springTo(B.b, V(x + 0.6, 2.9, 0)); R.lay();
+        seg(V(x, 3.9, 0), V(x + 0.6, 3.15, 0), '#7a6a52');
+        say('再 DeleteMin → ' + tl(B.n) + ' 當 right child', '刪掉後原本第二小的變成最小'); await beat(tok, m ? 900 : 1500);
+        cd.hl(4); z.obj.children.forEach((c) => { if (c.element) c.element.textContent = String(g.z.f); });
+        say('z.freq = ' + A.n.f + ' + ' + B.n.f + ' = ' + g.z.f, ''); await beat(tok, m ? 800 : 1300);
+        cd.hl(5); const t = R.add(g.z, V(x, 4.2, 0)); lit(t.b, GOLD);
+        say('把 z insert 回 heap（要調整位置）', 'PQ：' + R.list.map((q) => tl(q.n)).join(' ')); await beat(tok, m ? 1100 : 1700);
+        lit(t.b); lit(A.b); lit(B.b);
+      }
+      cd.hl(0);
+      say('…重複，直到 heap 只剩 1 個 element', '共做 n − 1 = 11 次合併');
+      await beat(tok, 2400);
+      cd.hl(7);
+      say('最後剩下的那一個就是 Huffman tree 的 root', 'root.freq = 26 = 全部字元數');
+      await beat(tok, 3000);
+    } };
+
+    // #4 完整建樹動畫
+    LECT['p16-huff-build'] = { title: 'Huffman tree 建構實例', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 5.0, 14], [0, 3.4, 0.8]);
+      const { root, merges } = huffRun(HORDER);
+      layoutG(root, { width: 11.2, topY: 6.8, step: 1.32 });
+      const R = pqRow(2.8, -5.0, 0.95);
+      HORDER.slice().sort((a, b) => HF[a] - HF[b]).forEach((c) => { const n = gAll(root).find((q) => q.ch === c); n.tok = R.add(n, V(0, 2, 2.8)); });
+      R.list.forEach((t, k) => t.b.obj.position.set(R.x(k), 0.3, 2.8));
+      edgeLines(() => { const out = []; for (const n of gAll(root)) if (n.placed) for (const k of n.kids) if (k.placed) out.push([n.body.obj.position, k.body.obj.position]); return out; }, 0.27);
+      say('12 種字元依 freq 放進 PQ', '每輪：DeleteMin 兩次 → 合併 → Insert');
+      await beat(tok, 2800);
+      const NAR = ['E 與 i 最小，先被取出', '接著取出 y 與 l', '再取出 k 與句點'];
+      for (let m = 0; m < merges.length; m++) {
+        const { a, b, z } = merges[m];
+        const slow = m < 3 || m >= merges.length - 2;
+        for (const n of [a, b]) { lit(n.tok.b, GOLD); if (n.body) gLit(n, GOLD); }
+        say(m < 3 ? NAR[m] : m === merges.length - 1 ? 'heap 只剩 10 與 16 → 合併' : '取出 ' + tl(a) + '、' + tl(b), tl(a) + ' + ' + tl(b) + ' = ' + z.f + '（left = 先取出的）');
+        await beat(tok, slow ? 1000 : 600);
+        const dead = [];
+        R.list.splice(R.list.indexOf(a.tok), 1); R.list.splice(R.list.indexOf(b.tok), 1); R.lay();
+        for (const n of [a, b]) {
+          if (n.ch) { n.body = n.tok.b; lit(n.body); lab.springTo(n.body, n.pos.clone()); tag(String(n.f), 'idx', n.pos.x, n.pos.y - 0.5, 0.4); }
+          else { lab.springTo(n.tok.b, n.pos.clone()); dead.push(n.tok.b); gLit(n); }
+          n.placed = true;
+        }
+        await beat(tok, slow ? 800 : 500);
+        dead.forEach(kill);
+        z.body = lab.addBody(block(z.label, LSZ, INC)); z.body.obj.position.copy(z.pos).add(V(0, 2.5, 0)); lab.dropTo(z.body, z.pos.clone()); z.placed = true;
+        z.tok = R.add(z, z.pos.clone());
+        await beat(tok, slow ? 1100 : 700);
+      }
+      kill(root.tok.b);
+      gLit(root, GOLD);
+      say('root = 26：Huffman tree 完成', '每次 delete、insert 之後 heap 都要調整');
+      await beat(tok, 3200);
+      say('E、i 等低頻字元在最下層，e 只在第 2 層', '同 freq 的取法依課本範例');
+      await beat(tok, 2600);
+    } };
+
+    // #5 編碼：左 0 右 1
+    LECT['p16-huff-encode'] = { title: 'Huffman 編碼：左 0、右 1', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.8, 14], [0, 3.6, 0.5]);
+      const { root } = huffRun(HORDER);
+      hufShow(root, null, true);
+      const codes = huffCodes(root);
+      const cur = makeCursor();
+      say('編碼規則：往左走記 0，往右走記 1', '從 root 走到 leaf 的路徑 = 該字元的碼');
+      await beat(tok, 2600);
+      for (const c of ['E', 'i']) {
+        let n = root, p = '';
+        cursorAt(cur, n.pos); gLit(n, GOLD);
+        await beat(tok, 700);
+        for (const bit of codes[c]) {
+          n = n.kids[+bit]; p += bit; cursorAt(cur, n.pos); gLit(n, GOLD);
+          say('走向 ' + (n.ch || n.label) + '：' + (bit === '0' ? '往左 → 0' : '往右 → 1'), c + ' 的碼：' + p);
+          await beat(tok, c === 'E' ? 900 : 600);
+        }
+        say('大寫 ' + c + ' = ' + codes[c] + (c === 'i' ? '（和 E 只差最後一個 bit）' : ''), c === 'E' ? '26→10→4→2→E 共 4 步（老師口說 000，實為 0000）' : 'i = 0001');
+        await beat(tok, 2200);
+        gAll(root).forEach((q) => gLit(q));
+      }
+      cur.obj.visible = false;
+      say('每個字元都在 leaf → code table', 'prefix-free：沒有一個碼是另一個碼的前綴');
+      for (const n of gAll(root)) if (n.ch) { const l = tag(codes[n.ch], 'ptr alt', n.pos.x, n.pos.y - 0.95, 0.4); await beat(tok, 260); }
+      await beat(tok, 1200);
+      say('高頻 e = 10（2 bits），低頻 E = 0000', 'space = 011、r = 1100 …');
+      await beat(tok, 3200);
+    } };
+
+    // #6 Huffman tree 不唯一
+    LECT['p16-huff-tie'] = { title: 'Huffman tree 不唯一', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.6, 13], [0, 3.4, 0]);
+      const ONES = ['E', 'i', 'y', 'l', 'k', '.'];
+      const sides = [{ order: ONES, cx: -3.3, name: '先取 E、i' }, { order: ['l', 'k', 'E', 'i', 'y', '.'], cx: 3.3, name: '先取 l、k' }];
+      say('Huffman tree 唯一嗎？', '頻率 1 的字元有 6 個：E i y l k .（示意：只看這 6 個）');
+      await beat(tok, 3000);
+      const res = [];
+      for (const S of sides) {
+        const { root, merges } = huffRun(S.order);
+        layoutG(root, { cx: S.cx, width: 4.6, topY: 6.4, step: 1.5 });
+        tag(S.name, 'ptr', S.cx, 7.5);
+        edgeLines(() => { const o = []; for (const n of gAll(root)) for (const k of n.kids) if (n.body && k.body) o.push([n.body.obj.position, k.body.obj.position]); return o; }, 0.27);
+        say(S.name + '：同樣不違反 heap 性質', 'freq 一樣時，誰先出來都可以');
+        for (const n of gAll(root).filter((q) => q.ch)) { n.body = lab.addBody(block(n.ch, LSZ, LEAFC)); n.body.obj.position.copy(n.pos).add(V(0, 3, 0)); lab.dropTo(n.body, n.pos.clone()); }
+        await beat(tok, 800);
+        for (const { z } of merges) { z.body = lab.addBody(block(z.label, LSZ, INC)); z.body.obj.position.copy(z.pos).add(V(0, 2, 0)); lab.dropTo(z.body, z.pos.clone()); await beat(tok, 650); }
+        res.push(huffCodes(root));
+        await beat(tok, 800);
+      }
+      say('取出順序不同 → 樹形不同 → 碼不同', 'E：' + res[0].E + ' vs ' + res[1].E + '；l：' + res[0].l + ' vs ' + res[1].l);
+      await beat(tok, 3400);
+      const tot = (m) => ONES.reduce((s, c) => s + m[c].length, 0);
+      tag('總長 ' + tot(res[0]) + ' bits', 'ptr alt', -3.3, 0.4, 1); tag('總長 ' + tot(res[1]) + ' bits', 'ptr alt', 3.3, 0.4, 1);
+      say('Huffman tree / code 都不唯一', '但總編碼長度相同（都是最小）：' + tot(res[0]) + ' = ' + tot(res[1]));
+      await beat(tok, 3600);
+    } };
+
+    // #8 壓縮效益
+    LECT['p16-huff-ratio'] = { title: '壓縮效益與 overhead', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.6, 13], [0, 3.0, 0]);
+      const bars = [];
+      async function bar(x, bits, color, name, ms) {
+        const m = lab.box(color, [1.6, 1, 1.2]); m.scale.y = 0.001; m.position.set(x, 0, 0); lab.world.add(m);
+        const h = bits / 40;
+        await anim(tok, ms, (t) => { m.scale.y = h * t; m.position.y = h * t / 2; });
+        tag(bits + ' bits', 'ptr', x, h + 0.4); tag(name, 'idx', x, 0.05, 1.2);
+        bars.push(m); return h;
+      }
+      say('例句共 26 個字元（含 space、句點）', '比較 ASCII 與 Huffman 要幾個 bit');
+      await beat(tok, 2400);
+      say('ASCII：每字元 8 bits', '26 × 8 = 208 bits');
+      await bar(-4.2, 208, '#4b9ee2', 'ASCII', 1200);
+      await beat(tok, 1800);
+      say('老師假設每個 Huffman code 都 4 bits', '26 × 4 = 104 bits，省一半');
+      const h = await bar(0, 104, '#dd8238', '假設 4 bits', 1000);
+      await beat(tok, 1800);
+      const g = ghost('#c0392b', 0, h + 0.5, 1.6, 1.0, 0, 1.2);
+      tag('+ X（存 Huffman tree）', 'ptr alt', 0, h + 1.5);
+      say('但有 overhead：header 要存 Huffman tree', '檔案大小 = 104 + X');
+      await beat(tok, 3000);
+      say('實際照 code table：Σ freq × 碼長', 'e 8×2 + sp 4×3 + 其餘 14×4 = 16+12+56 = 84');
+      await bar(4.2, 84, '#2fc092', '實際（此樹）', 1000);
+      await beat(tok, 3000);
+      say('高頻字元碼短 → 壓得更多', '84 bits ≈ ASCII 的 40%（還要加 X）');
+      await beat(tok, 3000);
+    } };
+
+    // #9 解碼
+    LECT['p16-huff-decode'] = { title: 'Huffman 解碼：0 左 1 右走到 leaf', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.6, 14], [0, 3.4, 0.8]);
+      const { root } = huffRun(HORDER);
+      hufShow(root, null, true);
+      const BITS = '100010101101';
+      const bx = (k) => -3.0 + k * 0.5;
+      const bc = [...BITS].map((b, k) => cube(b, '#b9a582', [0.42, 0.42, 0.42], bx(k), 0.25, 2.6));
+      tag('bits', 'ptr', -4.0, 0.25, 2.6);
+      const outT = tag('解出：', 'ptr alt', 4.6, 0.3, 2.6);
+      const cur = makeCursor();
+      say('從頭 scan bit：0 往左、1 往右', '一定會走到 leaf');
+      await beat(tok, 2400);
+      let n = root, out = '';
+      cursorAt(cur, n.pos);
+      for (let k = 0; k < BITS.length; k++) {
+        const bit = BITS[k];
+        lit(bc[k], GOLD);
+        n = n.kids[+bit]; cursorAt(cur, n.pos); gLit(n, GOLD);
+        say('讀到 ' + bit + ' → ' + (bit === '0' ? '往左' : '往右') + '到 ' + (n.ch || n.label), out ? '解出：' + out : (k === 0 ? '先讀 1 → 走到右邊的 16' : '再讀 0 → 往左'));
+        await beat(tok, out ? 550 : 1100);
+        lit(bc[k]); bc[k].obj.material.color.set('#d8cfc0');
+        if (n.ch) {
+          out += n.ch; setTag(outT, '解出：' + out);
+          say('到 leaf ' + n.ch + ' → 輸出，回到 root', out === 'e' ? '老師的例子：10 → 小寫 e' : '解出：' + out);
+          await beat(tok, out === 'e' ? 1900 : 900);
+          gAll(root).forEach((q) => gLit(q));
+          n = root; cursorAt(cur, n.pos);
+          await beat(tok, 300);
+        }
+      }
+      say('不需要分隔符號（prefix-free）', '10 0010 10 1101 → ' + out + '（後段為示意）');
+      await beat(tok, 3400);
+    } };
+
+    // ── BST ──
+    function bstShow(src, o) { return showTree(src, Object.assign({ topY: 6.4, minY: 2.4, maxSp: 1.5 }, o || {})); }
+    const LS = { 30: 3, 5: 2, 2: 1, 40: 2, 32: 1, 45: 1 };
+    // #11 判斷是否為 BST
+    LECT['p16-bst-check'] = { title: '判斷是不是 BST', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.6, 13], [0, 3.6, 0]);
+      const L = bstShow('20(15(12,18),25(,22))', { cx: -3.3, width: 5, minY: 3.0 });
+      const R = bstShow('30(5(2,),40)', { cx: 3.3, width: 4, minY: 3.0 });
+      tag('樹 1', 'ptr', -3.3, 7.4); tag('樹 2', 'ptr', 3.3, 7.4);
+      say('BST：左子樹 < root < 右子樹', '每個 node 都要成立（洪逸：key 不重複）');
+      await beat(tok, 3200);
+      say('哪一棵是 binary search tree？', '常考：給兩棵樹判斷');
+      await beat(tok, 2200);
+      const n25 = find(L, '25'), n22 = find(L, '22');
+      glow(n25, GOLD); glow(n22, RED);
+      tag('22 < 25 卻在右邊', 'ptr alt', n22.pos.x, n22.pos.y - 0.8);
+      say('樹 1：22 比 25 小，卻在 25 的右邊', '<span class="no">不是 BST</span>');
+      await beat(tok, 3400);
+      for (const n of allNodes(R)) { glow(n, GREEN); await beat(tok, 350); }
+      say('樹 2：每個 node 都符合', '2 < 5 < 30 < 40 → <span class="ok">是 BST</span>');
+      await beat(tok, 3000);
+      say('要和整棵子樹比，不只看直接 parent', '樹 1 其餘數字為示意，22／25 為老師所指');
+      await beat(tok, 2800);
+    } };
+
+    // #12 search：recursive 與 iterative
+    LECT['p16-bst-search'] = { title: 'BST search：recursive 與 iterative', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.8, 13.5], [0, 3.6, 0]);
+      const root = bstShow('30(5(2,),40(32,45))', { cx: 3.4, width: 5, topY: 6.4, minY: 3.0 });
+      const cur = makeCursor();
+      const rec = code(['TreeNode* Search(TreeNode* b, int x) {', '  if (!b) return 0;', '  if (x == b->data) return b;', '  if (x < b->data)', '    return Search(b->leftChild, x);', '  return Search(b->rightChild, x);', '}'], -3.0, 7.0, 0.5);
+      say('Search(root, x)：x 在不在 BST 裡？', '比 root 小往左、比 root 大往右');
+      await beat(tok, 2600);
+      async function run(x, panel, L) {
+        let n = root;
+        const xt = tag('x = ' + x, 'ptr alt', 3.4, 7.5);
+        while (true) {
+          panel.hl(n ? L.top : L.nul);
+          if (!n) { say('走到 NULL → return 0', 'x = ' + x + ' 找不到'); await beat(tok, 1800); break; }
+          cursorTo(cur, n.pos); glow(n, GOLD);
+          await beat(tok, 700);
+          panel.hl(L.eq);
+          if (x === +n.label) { glow(n, GREEN); say(x + ' == ' + n.label + ' → 回傳這個 node', '找到了'); await beat(tok, 1800); break; }
+          const left = x < +n.label;
+          panel.hl(left ? L.lt : L.gt);
+          say(x + (left ? ' < ' : ' > ') + n.label + ' → 往' + (left ? '左' : '右'), panel === rec ? '遞迴呼叫 Search(' + (left ? 'leftChild' : 'rightChild') + ', x)' : 't = t->' + (left ? 'leftChild' : 'rightChild'));
+          await beat(tok, 1300);
+          glow(n, OFF);
+          n = left ? n.left : n.right;
+        }
+        allNodes(root).forEach((q) => glow(q, OFF)); kill(xt);
+      }
+      await run(32, rec, { top: 1, nul: 1, eq: 2, lt: 4, gt: 5 });
+      rec.kill();
+      const it = code(['for (TreeNode* t = root; t; ) {', '  if (x == t->data) return t;', '  if (x < t->data) t = t->leftChild;', '  else t = t->rightChild;', '}', 'return 0;'], -3.0, 7.0, 0.5);
+      say('iterative 版：for 迴圈直到 t == NULL', '結果一樣，不用遞迴堆疊');
+      await beat(tok, 2000);
+      await run(35, it, { top: 0, nul: 5, eq: 1, lt: 2, gt: 3 });
+      say('時間 O(h)：h = 樹高', '平衡 ≈ O(log n)，歪斜退化 O(n)（搜尋值為示意）');
+      await beat(tok, 3000);
+    } };
+
+    // #13 第 k 個：naive（max heap）與 leftSize 欄位
+    LECT['p16-bst-kth'] = { title: '找第 k 個：naive 作法與 leftSize', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.8, 13.5], [0, 3.4, 0.6]);
+      const root = bstShow('60(,70(65,80))', { cx: -3.0, width: 3.6, topY: 6.2, minY: 3.2 });
+      const cur = makeCursor();
+      say('search by rank：BST 60、70、65、80', '問：第 2 大的數字是？');
+      await beat(tok, 2800);
+      say('最笨的方法：traverse 全部丟進 max heap', '');
+      const HP = (i) => heapPos(i, 6.2, 1.4, 5.0).add(V(3.4, 0, 0));
+      const TX = (i) => V(1.6 + i * 0.95, 0.3, 2.4);
+      for (let i = 1; i <= 4; i++) tag('[' + i + ']', 'idx', TX(i).x, 0.05, 3.1);
+      tag('max heap', 'ptr', 3.4, 7.3);
+      const H = [null], Hb = [null], Hc = [null];
+      edgeLines(() => { const o = []; for (let i = 2; i < Hb.length; i++) o.push([Hb[i >> 1].obj.position, Hb[i].obj.position]); return o; });
+      for (const n of preorder(root)) {
+        cursorTo(cur, n.pos); glow(n, GOLD);
+        let i = H.length; H.push(+n.label);
+        const b = lab.addBody(block(n.label, NODE, '#e55a9b')); b.obj.position.copy(n.pos); lab.springTo(b, HP(i)); Hb.push(b);
+        const c = lab.addBody(block(n.label, SMALL, TOKC)); c.obj.position.copy(n.pos); lab.springTo(c, TX(i)); Hc.push(c);
+        say('看到 ' + n.label + ' → insert 進 max heap', 'heap：' + H.slice(1).join(' '));
+        await beat(tok, 1000);
+        while (i > 1 && H[i] > H[i >> 1]) {
+          const p = i >> 1;
+          [H[i], H[p]] = [H[p], H[i]]; [Hb[i], Hb[p]] = [Hb[p], Hb[i]]; [Hc[i], Hc[p]] = [Hc[p], Hc[i]];
+          lab.springTo(Hb[i], HP(i)); lab.springTo(Hb[p], HP(p)); lab.springTo(Hc[i], TX(i)); lab.springTo(Hc[p], TX(p));
+          say('比 parent 大 → 往上換', 'heap：' + H.slice(1).join(' '));
+          await beat(tok, 800); i = p;
+        }
+        glow(n, OFF);
+      }
+      cur.obj.visible = false;
+      lit(Hb[1], GOLD);
+      say('DeleteMax 兩次：80、70 → 第 2 大 = 70', '老師說 array[2] 是第二大：此例剛好成立，一般要 delete k 次');
+      await beat(tok, 3600);
+      const lsz = { 60: 1, 70: 2, 65: 1, 80: 1 };
+      say('課本作法：node 多一個欄位 leftSize', 'leftSize = left subtree 的 node 數 + 1（自己）');
+      for (const n of allNodes(root)) { tag('leftSize ' + lsz[n.label], 'ptr alt', n.pos.x, n.pos.y + 0.65); glow(n, GREEN); await beat(tok, 700); }
+      await beat(tok, 2400);
+      say('其實 inorder 走一遍就是由小到大', 'O(n)；有 leftSize 可做到 O(h)');
+      await beat(tok, 2800);
+    } };
+
+    // #14–16 leftSize、Rank 搜尋、程式碼（params.phase = size | rank | code）
+    LECT['p16-bst-rank'] = { title: 'leftSize 與 search by rank', play: async (tok) => {
+      const phase = (ctx.params || {}).phase || 'size';
+      fresh();
+      lab.frameCamera([0, 4.8, 13.5], [0, 3.6, 0.6]);
+      const root = bstShow('30(5(2,),40(32,45))', phase === 'code' ? { cx: 3.4, width: 5, topY: 6.2, minY: 3.0 } : { cx: 0, width: 7, topY: 6.4, minY: 3.0 });
+      const lt = {};
+      const setLS = (n) => { lt[n.label] = tag('leftSize ' + LS[n.label], 'ptr alt', n.pos.x, n.pos.y + 0.65); };
+      if (phase === 'size') {
+        say('node 上方的數字 = leftSize', 'leftSize = left subtree 的 node 數 + 1');
+        await beat(tok, 2600);
+        const NAR = { 5: '5 的 left subtree 只有 2', 2: '2 沒有 left subtree', 30: 'root 30 的 left subtree 有 5、2', 40: '40 的 left subtree 只有 32', 32: '32 是 leaf', 45: '45 是 leaf' };
+        for (const lbl of ['5', '2', '30', '40', '32', '45']) {
+          const n = find(root, lbl);
+          glow(n, GOLD);
+          const sub = n.left ? allNodes(n.left) : [];
+          let g = null;
+          if (sub.length) { const xs = sub.map((q) => q.pos.x), ys = sub.map((q) => q.pos.y); g = ghost('#4b9ee2', (Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2, Math.max(...xs) - Math.min(...xs) + 1.2, Math.max(...ys) - Math.min(...ys) + 1.0); sub.forEach((q) => glow(q, GREEN)); }
+          say(NAR[lbl], 'leftSize(' + lbl + ') = ' + sub.length + ' + 1 = ' + LS[lbl]);
+          await beat(tok, 900);
+          setLS(n);
+          await beat(tok, +lbl === 32 || +lbl === 45 ? 900 : 2100);
+          if (g) kill(g);
+          allNodes(root).forEach((q) => glow(q, OFF));
+        }
+        const n40 = find(root, '40'); glow(n40, GOLD);
+        say('以 40 自己為 root 看它的 left subtree', '不要把祖先 30 左邊的 node 算進來');
+        await beat(tok, 3200);
+        return;
+      }
+      allNodes(root).forEach(setLS);
+      const cur = makeCursor();
+      if (phase === 'rank') {
+        const SORT = [2, 5, 30, 32, 40, 45];
+        const rx = (k) => -3.75 + k * 1.5;
+        const rc = SORT.map((v, k) => { tag('第 ' + (k + 1) + ' 個', 'idx', rx(k), 0.05, 3.2); return cube(v, TOKC, SMALL, rx(k), 0.3, 2.4); });
+        say('找 k = 5：由小到大第 5 個（老師更正）', '一開始說成第 k 大，34:09 更正為由小到大');
+        await beat(tok, 3000);
+        lit(rc[4], GOLD);
+        say('排序後 2 5 30 32 40 45，第 5 個是 40', '用 leftSize 不必排序就能找到');
+        await beat(tok, 2800);
+        let n = root, k = 5;
+        const kt = tag('k = 5', 'ptr alt', -5.6, 6.6);
+        cursorTo(cur, n.pos); glow(n, GOLD);
+        say('在 30：leftSize 3 只涵蓋前 3 個', 'k = 5 > 3 → 第 5 個不在左邊');
+        await beat(tok, 3000);
+        rc.slice(0, 3).forEach((c) => lit(c, GREEN));
+        say('往右走，k 要減掉 leftSize', 'k = 5 − 3 = 2');
+        k -= LS[n.label]; setTag(kt, 'k = ' + k);
+        glow(n, OFF); n = n.right; cursorTo(cur, n.pos); glow(n, GOLD);
+        await beat(tok, 2800);
+        say('在 40：k = 2 == leftSize 2', '→ 回傳 40');
+        glow(n, GREEN);
+        await beat(tok, 2600);
+        say('第 5 小 = 40', '往右才減、往左不減');
+        await beat(tok, 2800);
+        return;
+      }
+      const cd = code(['TreeNode* RankGet(int k) {', '  TreeNode* t = root;', '  while (t) {', '    if (k == t->leftSize) return t;', '    if (k < t->leftSize)', '      t = t->leftChild;', '    else { k -= t->leftSize;', '           t = t->rightChild; }', '  }', '  return 0;', '}'], -3.0, 7.2, 0.46);
+      const kt = tag('', 'ptr alt', 3.4, 7.5);
+      say('Rank：輸入 k，找由小到大第 k 個', '從 root 開始');
+      await beat(tok, 2400);
+      for (const k0 of [5, 3, 1]) {
+        let k = k0, n = root;
+        cd.hl(1); setTag(kt, 'k = ' + k); cursorTo(cur, n.pos);
+        await beat(tok, 900);
+        while (n) {
+          glow(n, GOLD); cd.hl(3);
+          const s = LS[n.label];
+          if (k === s) { glow(n, GREEN); say('k = ' + k + ' == leftSize ' + s + ' → 回傳 ' + n.label, '找第 ' + k0 + ' 個 = ' + n.label); await beat(tok, 2000); break; }
+          await beat(tok, 700);
+          cd.hl(4);
+          if (k < s) { cd.hl(5); say('k = ' + k + ' < leftSize ' + s + ' → 往左', '往左不用減'); await beat(tok, 1500); glow(n, OFF); n = n.left; }
+          else { cd.hl(6); say('k = ' + k + ' > leftSize ' + s + ' → 往右', 'k −= ' + s + ' → ' + (k - s)); k -= s; setTag(kt, 'k = ' + k); await beat(tok, 1500); cd.hl(7); glow(n, OFF); n = n.right; }
+          if (n) cursorTo(cur, n.pos);
+        }
+        allNodes(root).forEach((q) => glow(q, OFF));
+      }
+      cd.hl(-1);
+      say('思考題：leftSize 怎麼維護？', 'insert 時沿路往左經過的 node，leftSize + 1');
+      await beat(tok, 3200);
+    } };
+
+    // #17 insert
+    LECT['p16-bst-insert'] = { title: 'BST insert：先 search 再放', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.6, 13], [0, 3.8, 0]);
+      const root = makeTree('30(5(2,),40(35,80))');
+      layoutTree(root, Object.assign({}, TREE_O, { width: 7, topY: 6.4, minY: 2.6, maxSp: 1.5 }));
+      for (const n of allNodes(root)) if (n.label !== '80' && n.label !== '35') { nodeBody(n).obj.position.copy(n.pos); n.body.target.copy(n.pos); }
+      edgeLines(() => treePairs(root));
+      const cur = makeCursor();
+      say('insert／delete 都不能破壞 BST 特性', '左 < parent < 右');
+      await beat(tok, 2600);
+      for (const x of [80, 35]) {
+        const xb = cube(x, '#e55a9b', NODE, -5.2, 6.4, 0, 2);
+        say('insert ' + x + '：先找它該待的位置', '');
+        await beat(tok, 1200);
+        let n = root, path = [];
+        while (true) {
+          cursorTo(cur, n.pos); glow(n, GOLD);
+          const right = x > +n.label;
+          say(x + (right ? ' > ' : ' < ') + n.label + ' → 往' + (right ? '右' : '左'), path.concat(n.label).join(' → '));
+          path.push(n.label);
+          await beat(tok, 1400);
+          glow(n, OFF);
+          const nx = right ? n.right : n.left;
+          if (!nx || !nx.body) {
+            const t = nx; lab.removeBody(xb); nodeBody(t); t.body.obj.position.copy(t.pos).add(V(0, 3.5, 0)); lab.dropTo(t.body, t.pos.clone());
+            cursorTo(cur, t.pos); glow(t, GREEN);
+            say('剛好是空的 → 放在 ' + n.label + ' 的 ' + (right ? 'right' : 'left') + ' child', '30(5(2,),40(' + (x === 35 ? '35' : '') + ',80))');
+            await beat(tok, 2200); glow(t, OFF);
+            break;
+          }
+          n = nx;
+        }
+      }
+      cur.obj.visible = false;
+      say('會 search 就會 insert：同樣的比較邏輯', '找到相同 key 就不插入（key 不重複）');
+      await beat(tok, 3000);
+    } };
+
+    // #18 delete
+    LECT['p16-bst-delete'] = { title: 'BST delete：單子樹與雙子樹', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.6, 13], [0, 3.6, 0]);
+      const mk = (txt, c, x, y) => { const b = lab.addBody(block(txt, [W(txt), 0.6, 0.8], c)); b.obj.position.set(x, y, 0); b.target.set(x, y, 0); return b; };
+      const n1 = mk('node1', '#2fc092', -1, 6.2), n2 = mk('node2', '#4b9ee2', 1.4, 4.6);
+      const T1 = mk('T1', '#c9b48e', -3.0, 4.6), T2 = mk('T2', '#c9b48e', 3.0, 3.0);
+      let n2alive = true;
+      edgeLines(() => n2alive ? [[n1.obj.position, T1.obj.position], [n1.obj.position, n2.obj.position], [n2.obj.position, T2.obj.position]] : [[n1.obj.position, T1.obj.position], [n1.obj.position, T2.obj.position]]);
+      say('最高準則：delete 後仍是 BST', '情況一：node2 只有 right subtree T2');
+      await beat(tok, 3000);
+      lit(n2, RED);
+      say('delete node2', '');
+      await beat(tok, 1000);
+      n2alive = false; lab.flyAway(n2, V(1, 8, 4));
+      lab.springTo(T2, V(1.4, 4.6, 0));
+      say('把 T2 整個接上來取代 node2', 'T2 都比 node1 大 → 仍是 BST');
+      await beat(tok, 3200);
+      fresh();
+      lab.frameCamera([0, 4.6, 13], [0, 3.6, 0]);
+      const O = { width: 10, topY: 6.6, minY: 1.8 };
+      let cur0 = makeTree('40(20(10,30),60(50(45,55(52,)),70))');
+      layoutTree(cur0, Object.assign({}, TREE_O, O));
+      allNodes(cur0).forEach((n) => { nodeBody(n).obj.position.copy(n.pos); n.body.target.copy(n.pos); });
+      let rootRef = cur0;
+      edgeLines(() => treePairs(rootRef));
+      say('情況二：delete 60（有兩棵 subtree）', 'left：以 50 為 root；right：70');
+      const n60 = find(cur0, '60'); glow(n60, RED);
+      await beat(tok, 3000);
+      const cur = makeCursor();
+      for (const l of ['50', '55']) { const n = find(cur0, l); cursorTo(cur, n.pos); glow(n, l === '55' ? GOLD : RED); say(l === '50' ? '紅線：進 left subtree' : '一路往右 → 最大值 55', 'left subtree 的最大值'); await beat(tok, 1500); }
+      const res = makeTree('40(20(10,30),55(50(45,52),70))');
+      layoutTree(res, Object.assign({}, TREE_O, O));
+      const old = {}; allNodes(cur0).forEach((n) => { old[n.label] = n; });
+      lab.flyAway(n60.body, V(0, 8, 5));
+      allNodes(res).forEach((n) => { n.body = old[n.label].body; lab.springTo(n.body, n.pos.clone()); });
+      rootRef = res; cur.obj.visible = false;
+      say('55 拉上來取代 60，52 遞補 55 的位置', '40(20(10,30),55(50(45,52),70))');
+      await beat(tok, 3400);
+      allNodes(res).forEach((n) => glow(n, OFF));
+      say('一般化：取 left 最大或 right 最小都可以', 'T2 最大（predecessor）或 T3 最小（successor）');
+      await beat(tok, 3000);
+    } };
+
+    // #19 插入順序 → skewed tree
+    LECT['p16-bst-skewed'] = { title: '插入順序造成 skewed BST', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.6, 13], [0, 3.8, 0]);
+      const P = (i) => V(-5 + i * 1.1, 7.0 - i * 0.68, 0);
+      const bs = [];
+      edgeLines(() => bs.slice(1).map((b, k) => [bs[k].obj.position, b.obj.position]));
+      say('BST 從 empty 開始，數字依序 insert', '順序 1, 2, 3, …, 10（已排好）');
+      await beat(tok, 2400);
+      for (let i = 0; i < 10; i++) {
+        bs.push(cube(i + 1, depthColor(i), NODE, P(i).x, P(i).y, 0, 2.5));
+        say(i ? (i + 1) + ' 比前面都大 → 一路往右' : '1 先當 root', '高度 = ' + (i + 1));
+        await beat(tok, 650);
+      }
+      say('得到往右歪斜的 skewed tree', '高度 = n = 10，search 跟 linked list 一樣 O(n)');
+      await beat(tok, 3400);
+      bs.splice(0).forEach((b) => lab.flyAway(b, V(rnd(4) - 2, 8, 4)));
+      await beat(tok, 800);
+      const root = makeTree('5(3(2(1,),4),8(7(6,),9(,10)))');
+      layoutTree(root, Object.assign({}, TREE_O, { width: 9, topY: 6.6, minY: 2.4 }));
+      edgeLines(() => treePairs(root));
+      say('同樣 10 個數換個順序 insert（示意）', '5, 3, 8, 2, 4, 7, 9, 1, 6, 10');
+      for (const v of [5, 3, 8, 2, 4, 7, 9, 1, 6, 10]) { const n = find(root, String(v)); nodeBody(n).obj.position.copy(n.pos).add(V(0, 3, 0)); lab.dropTo(n.body, n.pos.clone()); await beat(tok, 380); }
+      await beat(tok, 900);
+      say('高度只有 4 → search 約 O(log n)', 'insert 順序決定 BST 的形狀');
+      await beat(tok, 3000);
+      say('AVL tree：每次 insert 後調整', '左右子樹高度差 ≤ 1 → 高度保證 O(log n)');
+      await beat(tok, 3000);
+    } };
+
+    // ── Selection tree（Horowitz Fig 5.32–5.34，k = 8） ──
+    const RUNS = [[10, 15, 16], [9, 20, 38], [20, 20, 30], [6, 15, 25, 28], [8, 15, 50], [9, 11, 16], [90, 95, 99], [17, 18, 20]];
+    function selBase(topY, step, withNode0) {
+      const P = (i) => (i === 0 ? V(0, topY + step * 0.95, 0) : heapPos(i, topY, step, 11.4));
+      const node = {}, val = {}, runs = RUNS.map((r) => r.slice());
+      const pairs = [];
+      for (let i = withNode0 ? 1 : 2; i <= 15; i++) pairs.push(i === 1 ? [0, 1] : [i >> 1, i]);
+      edgeLines(() => pairs.filter(([a, b]) => node[a] && node[b]).map(([a, b]) => [node[a].obj.position, node[b].obj.position]));
+      for (let i = withNode0 ? 0 : 1; i <= 15; i++) tag(String(i), 'idx', P(i).x + 0.55, P(i).y - 0.3, 0.3);
+      const runB = runs.map((r, j) => { const x = P(8 + j).x; tag('run' + (j + 1), 'idx', x, 0.05, 0.9); return r.slice(1).map((v, k) => cube(v, '#d8cfc0', [0.6, 0.38, 0.55], x, P(8).y - 0.85 - k * 0.5)); });
+      const put = (i, v, color, from) => { if (node[i]) kill(node[i]); const b = lab.addBody(block(v, NODE, color)); b.obj.position.copy(from || P(i)); lab.springTo(b, P(i)); node[i] = b; val[i] = v; return b; };
+      return { P, node, val, runs, runB, put };
+    }
+    // 一個 run 送出隊首、下一個上到 leaf
+    async function nextFromRun(tok, S, leaf) {
+      const j = leaf - 8; S.runs[j].shift();
+      const nb = S.runB[j].shift();
+      lab.flyAway(S.node[leaf], V(0, 6, 5));
+      S.node[leaf] = nb; S.val[leaf] = S.runs[j][0];
+      lab.springTo(nb, S.P(leaf)); nb.obj.material.color.set(LEAFC);
+      S.runB[j].forEach((b, k) => lab.springTo(b, V(S.P(leaf).x, S.P(8).y - 0.85 - k * 0.5, 0)));
+      await beat(tok, 900);
+    }
+    LECT['p16-winner'] = { title: 'Winner tree（k = 8）', play: async (tok) => {
+      const phase = (ctx.params || {}).phase || 'build';
+      fresh();
+      lab.frameCamera([0, 4.6, 13.5], [0, 3.6, 0]);
+      const S = selBase(7.0, 1.3, false);
+      for (let j = 0; j < 8; j++) { S.put(8 + j, RUNS[j][0], LEAFC); if (phase === 'build') { S.node[8 + j].obj.position.y += 3; lab.dropTo(S.node[8 + j], S.P(8 + j)); } }
+      const win = (i) => Math.min(S.val[2 * i], S.val[2 * i + 1]);
+      if (phase === 'build') {
+        say('8 個 run，每個 run 已由小到大排好', '每個 leaf = 一個 run（queue）的第一個數');
+        await beat(tok, 3000);
+        say('像賽程表：兩兩比較，小的勝出往上', 'winner tree 是 complete binary tree');
+        await beat(tok, 2400);
+        for (let i = 7; i >= 1; i--) {
+          const a = S.node[2 * i], b = S.node[2 * i + 1];
+          lit(a, GOLD); lit(b, GOLD);
+          const w = win(i), wi = S.val[2 * i] === w ? 2 * i : 2 * i + 1;
+          say('node' + i + '：' + S.val[2 * i] + ' vs ' + S.val[2 * i + 1] + ' → ' + w + ' 勝', '小者為勝，往上一層');
+          await beat(tok, i === 1 ? 1000 : 700);
+          S.put(i, w, i === 1 ? '#c08a1f' : '#4b9ee2', S.P(wi).clone());
+          await beat(tok, i >= 4 ? 800 : 1200);
+          lit(a); lit(b);
+        }
+        lit(S.node[1], GOLD);
+        say('root = 6：所有 run 的最小值', 'leaf：10 9 20 6 8 9 90 17（run 的其餘數字依課本）');
+        await beat(tok, 3400);
+        return;
+      }
+      for (let i = 7; i >= 1; i--) S.put(i, win(i), i === 1 ? '#c08a1f' : '#4b9ee2');
+      const outT = tag('輸出：', 'ptr alt', -5.2, 7.5);
+      say('winner tree 建好：root = 6', '拿來做排序（merge k 個 run）');
+      await beat(tok, 2400);
+      lit(S.node[1], GOLD);
+      say('輸出 6，run4 的下一個 15 上來', 'leaf node11：6 → 15');
+      setTag(outT, '輸出：6');
+      await nextFromRun(tok, S, 11);
+      lit(S.node[1]);
+      const steps = [[5, 11, 10, '15 vs 旁邊的 20 → 15 往上'], [2, 5, 4, '到 node5，再和 node4 的 9 比 → 9 勝'], [1, 2, 3, '9 再和 node3 的 8 比 → 8 勝']];
+      for (const [i, me, sib, cap] of steps) {
+        lit(S.node[me], GOLD); lit(S.node[sib], GOLD);
+        const w = Math.min(S.val[me], S.val[sib]);
+        say(cap, 'node' + i + ' = ' + w);
+        await beat(tok, 1300);
+        S.put(i, w, i === 1 ? '#c08a1f' : '#4b9ee2', S.P(S.val[me] === w ? me : sib).clone());
+        await beat(tok, 1100);
+        lit(S.node[me]); lit(S.node[sib]);
+      }
+      lit(S.node[1], GOLD);
+      say('新的 winner = 8：只重賽一條路徑', '每次重建 O(log k)');
+      await beat(tok, 2800);
+      tag('k = run 數、n = record 數', 'ptr', 4.0, 8.0);
+      say('setup O(k)；每輸出一筆重賽 O(log k)', '共 n 筆 → merge 全部 O(n log k)');
+      await beat(tok, 3600);
+    } };
+
+    LECT['p16-loser'] = { title: 'Loser tree：node 存輸家', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.8, 13.5], [0, 3.8, 0]);
+      const S = selBase(6.6, 1.2, true);
+      for (let j = 0; j < 8; j++) S.put(8 + j, RUNS[j][0], LEAFC);
+      say('loser tree：winner tree 的小修改', 'internal node 存比賽的「輸家」（較大的數）');
+      await beat(tok, 3000);
+      const W2 = {}; for (let j = 8; j <= 15; j++) W2[j] = S.val[j];
+      const wt = {};
+      for (let i = 7; i >= 1; i--) {
+        const a = W2[2 * i], b = W2[2 * i + 1], w = Math.min(a, b), l = Math.max(a, b);
+        [2 * i, 2 * i + 1].forEach((c) => { if (wt[c]) lit(wt[c], GOLD); else lit(S.node[c], GOLD); });
+        await beat(tok, 600);
+        S.put(i, l, '#e55a9b', S.P(a === l ? 2 * i : 2 * i + 1).clone().add(V(0, 0.4, 0)));
+        say('node' + i + '：' + a + ' vs ' + b + ' → 存輸家 ' + l, '贏家 ' + w + ' 繼續往上比');
+        [2 * i, 2 * i + 1].forEach((c) => { if (wt[c]) { kill(wt[c]); delete wt[c]; } else lit(S.node[c]); });
+        const p = S.P(i);
+        wt[i] = cube(w, '#c08a1f', [0.5, 0.4, 0.5], p.x + 0.62, p.y + 0.45, 0.2, 0.6);
+        W2[i] = w;
+        await beat(tok, i >= 4 ? 1100 : 1500);
+      }
+      kill(wt[1]);
+      S.put(0, W2[1], '#c08a1f', S.P(1).clone());
+      lit(S.node[0], GOLD);
+      say('最上面多一個 node0：存整體 winner 6', 'node1 存的是決賽輸家 8');
+      await beat(tok, 3200);
+      lit(S.node[0]);
+      say('輸出 6，run4 的 15 上到 node11', '重賽：只跟路徑上 parent 存的 loser 比');
+      await nextFromRun(tok, S, 11);
+      let cw = 15, cwFrom = 11;
+      for (const i of [5, 2, 1]) {
+        lit(S.node[i], GOLD);
+        const st = S.val[i], w = Math.min(cw, st), l = Math.max(cw, st);
+        say('和 node' + i + ' 存的 ' + st + ' 比 → ' + w + ' 勝', 'node' + i + ' 存輸家 ' + l + '（不必找兄弟）');
+        await beat(tok, 1400);
+        if (l !== st) S.put(i, l, '#e55a9b', S.P(cwFrom).clone());
+        lit(S.node[i]);
+        cw = w; cwFrom = i;
+        await beat(tok, 900);
+      }
+      S.put(0, cw, '#c08a1f', S.P(1).clone()); lit(S.node[0], GOLD);
+      say('node0 = 新 winner 8', 'loser tree 重賽讀的 node 比較少（數值依課本）');
+      await beat(tok, 3200);
+    } };
+
+    // #23 external sort
+    LECT['p16-external'] = { title: '為什麼要 winner tree：external sort', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 5.0, 13.5], [0, 3.2, 0.5]);
+      const COLS = ['#2fc092', '#4b9ee2', '#9b7ef4', '#e55a9b', '#dd8238', '#31aab0', '#c08a1f', '#5c7a4a'];
+      const parts = COLS.map((c, j) => cube('', c, [1.32, 0.5, 0.9], -4.9 + j * 1.4, 0.25, -1.6));
+      tag('大量資料（memory 放不下）', 'ptr', 0, 0.9, -1.6);
+      const mem = ghost('#4b9ee2', 0, 3.4, 2.4, 1.4, -1.6, 1.4);
+      tag('memory', 'ptr alt', 0, 4.5, -1.6);
+      say('數字很多、memory 放不下怎麼辦？', '只有十幾個數字的話直接 sort 就好');
+      await beat(tok, 3000);
+      say('切成 8 個 partition，每個放得進 memory', '');
+      for (let j = 0; j < 8; j++) {
+        const b = parts[j], slow = j < 2;
+        lab.springTo(b, V(0, 3.4, -1.6)); await beat(tok, slow ? 800 : 320);
+        lit(b, GOLD);
+        if (slow) say('第 ' + (j + 1) + ' 塊進 memory 排序', '排好 → 成為 run ' + (j + 1));
+        await beat(tok, slow ? 900 : 260);
+        lit(b);
+        const P = heapPos(8 + j, 6.6, 1.0, 11.2);
+        b.obj.scale.set(0.6, 1.0, 0.7);
+        lab.springTo(b, V(P.x, 3.6, 0)); tag('run' + (j + 1), 'idx', P.x, 3.0, 0.4);
+        await beat(tok, slow ? 800 : 300);
+      }
+      kill(mem);
+      say('再用 k = 8 的 winner tree 合併 8 個 run', '這棵樹本身用不到多少 memory');
+      const nodes = [];
+      for (let i = 7; i >= 1; i--) { const P = heapPos(i, 6.6, 1.0, 11.2); nodes.push(cube('', '#d8cfc0', [0.6, 0.45, 0.6], P.x, P.y, 0, 2)); await beat(tok, 220); }
+      await beat(tok, 900);
+      const outs = [];
+      for (let k = 0; k < 8; k++) {
+        const c = cube('', COLS[(k * 3) % 8], [0.5, 0.4, 0.5], 0, 7.2, 0);
+        lab.springTo(c, V(-4.2 + k * 0.6, 0.25, 2.6));
+        outs.push(c); await beat(tok, 300);
+      }
+      tag('整體排序結果（由小到大輸出）', 'ptr', 0, 0.9, 2.6);
+      say('k-way merge：每次輸出最小者', 'partition + winner tree = 大量資料的排序');
+      await beat(tok, 2600);
+      say('sorting 分 internal 與 external', 'external sort：資料放不下 memory 時使用');
+      await beat(tok, 3000);
+    } };
+
+    // #25 forest → binary tree、forest traversal
+    LECT['p16-forest'] = { title: 'Forest 轉 binary tree 與 traversal', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.8, 13.5], [0, 3.4, 0.6]);
+      const Ts = [['A(B,C,D)', -3.8, 2.6], ['E(F)', 0.2, 0], ['G(H,I)', 3.4, 1.6]].map(([s, cx, w]) => { const r = parseG(s); layoutG(r, { cx, width: w, topY: 6.0, step: 1.7 }); return r; });
+      const body = {};
+      let mode = 'forest';
+      Ts.forEach((r) => gAll(r).forEach((n) => { const b = cube(n.label, depthColor(n.depth), NODE, n.pos.x, n.pos.y, 0, 2.5); body[n.label] = b; }));
+      const bt = makeTree('A(B(,C(,D)),E(F,G(H(,I))))');
+      layoutTree(bt, Object.assign({}, TREE_O, { width: 8.4, topY: 6.6, minY: 1.8 }));
+      edgeLines(() => {
+        const o = [];
+        if (mode === 'forest') Ts.forEach((r) => gAll(r).forEach((n) => n.kids.forEach((k) => o.push([body[n.label].obj.position, body[k.label].obj.position]))));
+        else allNodes(bt).forEach((n) => [n.left, n.right].forEach((c) => { if (c) o.push([body[n.label].obj.position, body[c.label].obj.position]); }));
+        return o;
+      });
+      say('forest：a set of disjoint trees', '這個 forest 有三棵樹 T1、T2、T3');
+      await beat(tok, 3000);
+      say('用 left child–right sibling 轉換', 'A 的 left = B；B→C→D 用 right sibling 串');
+      await beat(tok, 2600);
+      mode = 'bt';
+      allNodes(bt).forEach((n) => lab.springTo(body[n.label], n.pos.clone()));
+      await beat(tok, 1000);
+      say('各棵樹的 root A、E、G 也當 sibling 串起來', 'A(B(,C(,D)),E(F,G(H(,I))))');
+      await beat(tok, 3000);
+      const cur = makeCursor();
+      for (const [kind, name, seq] of [['pre', 'forest preorder', preorder(bt)], ['in', 'forest inorder', inorder(bt)]]) {
+        const row = [];
+        say(kind === 'pre' ? 'forest preorder：走 binary tree 前序' : 'forest inorder：走 binary tree 中序', '= 各棵樹的 ' + kind + 'order 依序接起來');
+        for (let k = 0; k < seq.length; k++) {
+          const n = seq[k]; cursorTo(cur, n.pos); lit(body[n.label], GOLD);
+          const b = lab.addBody(block(n.label, SMALL, depthColor(n.depth))); b.obj.position.copy(n.pos); lab.springTo(b, rowPos(k, kind === 'pre' ? 3.6 : 2.4)); row.push(b);
+          await beat(tok, 420);
+          lit(body[n.label]);
+        }
+        rowLabel(kind === 'pre' ? 'pre' : 'in', kind === 'pre' ? 3.6 : 2.4);
+        say(name + '：' + seq.map((n) => n.label).join(' '), '');
+        await beat(tok, 1800);
+      }
+      cur.obj.visible = false;
+      say('不必為 forest 另外發展理論', 'forest postorder 和 binary tree postorder 沒有自然對應');
+      await beat(tok, 3000);
+    } };
+
+    // ── Disjoint sets（Horowitz Fig 5.36–5.40） ──
+    const SETS = [['S1', '0(6,7,8)'], ['S2', '4(1,9)'], ['S3', '2(3,5)']];
+    function dsDraw(lay, opt = {}) {
+      const nodes = {};
+      const trees = SETS.map(([nm, s], j) => { const r = parseG(s); layoutG(r, lay[j]); gAll(r).forEach((n) => { n.body = cube(n.label, ['#2fc092', '#4b9ee2', '#9b7ef4'][j], NODE, n.pos.x, n.pos.y, 0, opt.drop ? 2.5 : 0); nodes[n.label] = n; n.set = nm; }); return r; });
+      trees.forEach((r) => gAll(r).forEach((n) => n.kids.forEach((k) => { k.parent = n; arrow(k.pos.clone().add(V(0, 0.32, 0)), n.pos.clone().add(V(0, -0.32, 0)), '#7a6a52'); })));
+      return { trees, nodes };
+    }
+    LECT['p16-dsets'] = { title: '用 tree 表示 disjoint sets', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.4, 13], [0, 3.4, 0]);
+      say('三個 set，每個 set 是一堆數字', '可用 linked list、array…這裡用 tree');
+      await beat(tok, 2600);
+      const D = dsDraw([{ cx: -3.6, width: 2.6, topY: 5.6, step: 2 }, { cx: 0.6, width: 1.6, topY: 5.6, step: 2 }, { cx: 4.4, width: 1.6, topY: 5.6, step: 2 }], { drop: true });
+      ['S1 = {0, 6, 7, 8}', 'S2 = {1, 4, 9}', 'S3 = {2, 3, 5}'].forEach((t, j) => tag(t, 'ptr', [-3.6, 0.6, 4.4][j], 7.0));
+      const caps = [['S1：root 0，6、7、8 指到 0', '指標由 child 指向 parent'], ['S2 = {1, 4, 9}：以 4 為 root', '不一定是 binary tree'], ['S3 = {2, 3, 5}：root 2', '同樣的表示法']];
+      for (let j = 0; j < 3; j++) {
+        const r = D.trees[j];
+        gAll(r).forEach((n) => lit(n.body, j ? GREEN : GOLD));
+        say(caps[j][0], caps[j][1]);
+        await beat(tok, 2800);
+        gAll(r).forEach((n) => lit(n.body));
+      }
+      tag('Si ∩ Sj = ∅（i ≠ j）', 'ptr alt', 0, 1.5, 1);
+      say('這些 set 是 disjoint', '任兩個 set 交集為空集合');
+      await beat(tok, 3200);
+      say('常用運算：Union 與 Find', '下一步：怎麼用這種 tree 做');
+      await beat(tok, 2600);
+    } };
+
+    LECT['p16-dfind'] = { title: 'Find：往上找到 root 再對 set name', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.6, 13.5], [0, 3.6, 0]);
+      const LAY = [{ cx: -2.0, width: 2.4, topY: 5.6, step: 2 }, { cx: 1.9, width: 1.4, topY: 5.6, step: 2 }, { cx: 4.9, width: 1.4, topY: 5.6, step: 2 }];
+      const D = dsDraw(LAY);
+      const names = SETS.map(([nm], j) => cube(nm, '#c08a1f', NODE, -5.6, 6.8 - j * 1.4));
+      tag('set name', 'idx', -5.6, 7.6);
+      say('兩種運算：Union（合併）與 Find（屬於哪個 set）', '');
+      await beat(tok, 3000);
+      say('每個 set name 有 pointer 指向它的 root', 'S1 → 0、S2 → 4、S3 → 2');
+      SETS.forEach((s, j) => { const r = D.trees[j]; arrow(V(-5.1, 6.8 - j * 1.4, 0), r.pos.clone().add(V(-0.45, 0.1, 0)), '#c08a1f', true); });
+      await beat(tok, 3000);
+      const cur = makeCursor();
+      for (const x of ['3', '8']) {
+        let n = D.nodes[x];
+        cursorTo(cur, n.pos); lit(n.body, GOLD);
+        say('Find(' + x + ')：從 ' + x + ' 出發往上', '');
+        await beat(tok, 1300);
+        while (n.parent) { n = n.parent; cursorTo(cur, n.pos); lit(n.body, GOLD); say('到 parent ' + n.label + (n.parent ? '' : '（root）'), ''); await beat(tok, 1200); }
+        const j = SETS.findIndex(([nm]) => nm === n.set);
+        lit(names[j], GREEN);
+        say('root ' + n.label + ' → ' + n.set + '：' + x + ' ∈ ' + n.set, x === '8' ? '老師口誤說 S2；S1 = {0,6,7,8}，8 ∈ S1' : '3 屬於第三個 set');
+        await beat(tok, 2800);
+        Object.values(D.nodes).forEach((q) => lit(q.body)); lit(names[j]);
+      }
+      cur.obj.visible = false;
+      say('find(i)：往上到 root 對 set name', '路徑越長，find 越慢');
+      await beat(tok, 2800);
+    } };
+
+    LECT['p16-dunion'] = { title: 'Union 的兩種接法', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.6, 13.5], [0, 3.6, 0]);
+      const body = {}, par = {};
+      const all = ['0', '6', '7', '8', '4', '1', '9'];
+      all.forEach((l, k) => { body[l] = lab.addBody(block(l, NODE, k < 4 ? '#2fc092' : '#4b9ee2')); });
+      edgeLines(() => Object.keys(par).filter((c) => par[c]).map((c) => [body[par[c]].obj.position, body[c].obj.position]));
+      function arrange(srcs) {
+        for (const [s, o] of srcs) { const r = parseG(s); layoutG(r, o); gAll(r).forEach((n) => { lab.springTo(body[n.label], n.pos.clone()); par[n.label] = null; n.kids.forEach((k) => { par[k.label] = n.label; }); }); }
+      }
+      arrange([['0(6,7,8)', { cx: -3, width: 2.6, topY: 5.8, step: 2 }], ['4(1,9)', { cx: 3, width: 1.6, topY: 5.8, step: 2 }]]);
+      Object.values(body).forEach((b) => { b.obj.position.copy(b.target); });
+      const lt = tag('S1', 'ptr', -3, 7.0), rt = tag('S2', 'ptr', 3, 7.0);
+      say('Union(S1, S2)：合成一個更大的 set', '只要改一個 root 的 parent 指標');
+      await beat(tok, 2800);
+      const cur = makeCursor();
+      async function findPath(x, hopsCap) {
+        let n = x, hops = 0; cursorTo(cur, body[n].target); lit(body[n], GOLD); await beat(tok, 700);
+        while (par[n]) { n = par[n]; hops++; cursorTo(cur, body[n].target); lit(body[n], GOLD); await beat(tok, 800); }
+        say(hopsCap, 'find(' + x + ')：' + hops + ' 個 hop 到 root ' + n);
+        await beat(tok, 2400);
+        all.forEach((l) => lit(body[l]));
+        return hops;
+      }
+      kill(lt); kill(rt);
+      arrange([['0(6,7,8,4(1,9))', { cx: 0, width: 6, topY: 6.2, step: 1.8 }]]);
+      say('第一種：S2 成為 S1 的 child（4 接到 0 底下）', '0(6, 7, 8, 4(1, 9))');
+      await beat(tok, 2800);
+      await findPath('1', '常 find(1)、find(9)：要先到 4 再到 0');
+      arrange([['4(1,9,0(6,7,8))', { cx: 0, width: 6, topY: 6.2, step: 1.8 }]]);
+      say('第二種：S1 成為 S2 的 child（0 接到 4 底下）', '4(1, 9, 0(6, 7, 8))');
+      await beat(tok, 2800);
+      await findPath('1', '同樣 find(1)：一個 hop 就到 root 4');
+      cur.obj.visible = false;
+      say('哪種好？看之後哪些元素常被 find', '課本後續：weighting rule，node 少的樹接到多的下面');
+      await beat(tok, 3200);
+    } };
+
+    LECT['p16-darray'] = { title: 'Disjoint set 的 parent 陣列', play: async (tok) => {
+      fresh();
+      lab.frameCamera([0, 4.6, 13.5], [0, 3.4, 1]);
+      const D = dsDraw([{ cx: -3.6, width: 2.6, topY: 6.6, step: 1.6 }, { cx: 0.6, width: 1.6, topY: 6.6, step: 1.6 }, { cx: 4.4, width: 1.6, topY: 6.6, step: 1.6 }]);
+      const TX = (i) => V(-5.4 + i * 1.2, 0.04, 2.4);
+      const tiles = [];
+      for (let i = 0; i <= 9; i++) { const t = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.08, 0.9), new THREE.MeshStandardMaterial({ color: '#e9dcc4', roughness: 1 })); t.position.copy(TX(i)); lab.world.add(t); tiles.push(t); tag('[' + i + ']', 'idx', TX(i).x, 0.05, 3.1); }
+      rowLabel('parent', 2.4);
+      say('剛才的 tree 可以直接用 array 表示', 'index = 元素數字，內容 = 它的 parent');
+      await beat(tok, 3000);
+      const cells = {};
+      for (let i = 0; i <= 9; i++) {
+        const n = D.nodes[String(i)];
+        const pv = n.parent ? +n.parent.label : -1;
+        lit(n.body, GOLD); tiles[i].material.color.set('#f2c46d');
+        cells[i] = lab.addBody(block(pv, SMALL, pv < 0 ? '#e55a9b' : '#8fa3b8'));
+        cells[i].obj.position.copy(n.pos); lab.springTo(cells[i], TX(i).clone().setY(0.33));
+        const slow = i === 9 || i === 4;
+        say(i + (pv < 0 ? ' 是 root' : ' 的 parent 是 ' + pv), 'parent[' + i + '] = ' + pv);
+        await beat(tok, slow ? 1600 : 750);
+        lit(n.body); tiles[i].material.color.set('#e9dcc4');
+      }
+      for (const [i, cap, f] of [[9, '9 的 parent 是 4', 'parent[9] = 4'], [4, '4 是 root', 'parent[4] = −1']]) {
+        lit(D.nodes[String(i)].body, GOLD); lit(cells[i], GOLD);
+        say(cap, f);
+        await beat(tok, 2200);
+        lit(D.nodes[String(i)].body); lit(cells[i]);
+      }
+      say('root 的 parent 一律 −1', 'parent = [−1, 4, −1, 2, −1, 2, 0, 0, 0, 4]');
+      await beat(tok, 3200);
+      say('看起來像 tree，實作只要一個 array', 'WeightedUnion 時 root 改存 −(node 數)');
+      await beat(tok, 2800);
+    } };
+  }
+
+  // ─── 4HDjWNV09QY 彭文志 Lec17：disjoint set（union／find）、equivalence class、inorder 不唯一 ───
+  {
+    const SETC = ['#2fc092', '#4b9ee2', '#9b7ef4', '#e55a9b', '#dd8238', '#31aab0', '#c08a1f', '#5c7a4a', '#8fa3b8', '#b9a582', '#2fc092', '#4b9ee2'];
+    // 森林：par[i] = parent（root 為 -1），kids 保留插入順序；layout 時 root 由左到右排
+    function forest(elems, o = {}) {
+      const O = Object.assign({ cx: 0, width: 11, topY: 6.2, step: 1.35, maxSp: 1.25, size: [0.75, 0.55, 0.75] }, o);
+      const F = { par: {}, kids: {}, body: {}, order: [], O };
+      elems.forEach((e) => { F.par[e] = -1; F.kids[e] = []; F.order.push(e); });
+      F.link = (c, p) => {
+        const old = F.par[c];
+        if (old !== -1) F.kids[old] = F.kids[old].filter((x) => x !== c);
+        else F.order = F.order.filter((x) => x !== c);
+        F.par[c] = p; F.kids[p].push(c);
+      };
+      F.root = (x) => { while (F.par[x] !== -1) x = F.par[x]; return x; };
+      F.count = (r) => 1 + F.kids[r].reduce((a, k) => a + F.count(k), 0);
+      F.pos = () => {
+        const mk = (e) => ({ label: e, kids: F.kids[e].map(mk) });
+        const top = { label: '', kids: F.order.map(mk) };
+        let L = 0; (function c(n) { if (!n.kids.length) L++; n.kids.forEach(c); })(top);
+        layoutG(top, { cx: O.cx, width: Math.min(O.width, Math.max(0, L - 1) * O.maxSp), topY: O.topY + O.step, step: O.step });
+        const P = {}; gAll(top).forEach((n) => { if (n !== top) P[n.label] = n.pos; });
+        return P;
+      };
+      F.spawn = (color) => {
+        const P = F.pos();
+        elems.forEach((e, k) => { F.body[e] = cube(e, color ? color(e, k) : SETC[k % SETC.length], O.size, P[e].x, P[e].y, 0); });
+        const pool = [];
+        for (let k = 0; k < 16; k++) { const c = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.24, 8), new THREE.MeshBasicMaterial({ color: '#7a6a52' })); c.visible = false; lab.world.add(c); pool.push(c); }
+        F.up = o.down ? false : true;
+        const ls = edgeLines(() => { const out = []; for (const e of elems) if (F.par[e] !== -1) out.push([F.body[F.par[e]].obj.position, F.body[e].obj.position]); return out; });
+        const hh = O.size[1] / 2;
+        ls.onAfterRender = () => {
+          let k = 0;
+          for (const e of elems) {
+            if (F.par[e] === -1 || k >= pool.length) continue;
+            const p = F.body[F.par[e]].obj.position, c = F.body[e].obj.position;
+            const a = V(p.x, p.y - hh, p.z), b = V(c.x, c.y + hh, c.z);
+            const dir = F.up ? a.clone().sub(b).normalize() : b.clone().sub(a).normalize();
+            const tip = F.up ? a : b;
+            pool[k].position.copy(tip).addScaledVector(dir, -0.14);
+            pool[k].quaternion.setFromUnitVectors(V(0, 1, 0), dir);
+            pool[k].visible = true; k++;
+          }
+          for (; k < pool.length; k++) pool[k].visible = false;
+        };
+        return F;
+      };
+      F.relayout = () => { const P = F.pos(); for (const e of elems) lab.springTo(F.body[e], P[e].clone()); };
+      return F;
+    }
+    // parent array 列（index 在下、值在格子上）
+    function parRow(F, elems, z = 2.7, x0 = -5.4, dx = 1.2) {
+      const R = { cells: {}, tiles: {} };
+      tag('index', 'idx', x0 - 1.05, 0.1, z + 0.6); tag('parent', 'ptr', x0 - 1.15, 0.4, z);
+      elems.forEach((e, k) => {
+        const x = x0 + k * dx;
+        R.tiles[e] = tile(V(x, 0.04, z), dx * 0.9, 0.9);
+        tag('[' + e + ']', 'idx', x, 0.1, z + 0.62);
+        R.cells[e] = tag(String(F.par[e]), 'val', x, 0.4, z);
+      });
+      R.set = (e) => setTag(R.cells[e], String(F.par[e]));
+      R.hl = (e, c) => R.tiles[e].material.color.set(c || '#e9dcc4');
+      return R;
+    }
+    const tile = (pos, w, d) => ctx.tile(pos, w, d);
+
+    // 1) 三個 set 的 tree 表示、find(7)、union 兩種結果、pointer 方向
+    LECT['p17-set-forest'] = { title: 'Set 的 tree 表示：find(7)、union 接 root', play: async (tok) => {
+      const phase = (ctx.params || {}).phase || 'union';
+      fresh(); lab.frameCamera([0, 5, 13.5], [0, 3.6, 0.5]);
+      const F = forest([0, 6, 7, 8, 4, 1, 9, 2, 3, 5], { cx: 1.2, width: 9, maxSp: 1.3 });
+      [6, 7, 8].forEach((c) => F.link(c, 0)); [1, 9].forEach((c) => F.link(c, 4)); [3, 5].forEach((c) => F.link(c, 2));
+      F.spawn((e) => ({ 0: '#2fc092', 6: '#2fc092', 7: '#2fc092', 8: '#2fc092', 4: '#4b9ee2', 1: '#4b9ee2', 9: '#4b9ee2', 2: '#9b7ef4', 3: '#9b7ef4', 5: '#9b7ef4' })[e]);
+      const tb = [['S1', 0], ['S2', 4], ['S3', 2]].map(([nm, r], k) => { const b = cube(nm, '#b9a582', [0.8, 0.5, 0.7], -6, 6 - k * 1.1); tag('→ root ' + r, 'idx', -4.9, 6 - k * 1.1); return b; });
+      tag('set name 表', 'ptr', -6, 7);
+      if (phase === 'dir') {
+        say('Set 也是 tree：只是 pointer 往上指 parent', 'child → parent（一般 tree 是 parent → child）');
+        await beat(tok, 4000);
+        F.up = false;
+        say('箭頭改成往下（root → element）也可以', '方向顛倒仍是 tree 的範疇');
+        await beat(tok, 4000);
+        F.up = true;
+        say('用 array 表示 root／parent 關係最方便', 'parent[i] = i 的 parent，root = −1');
+        await beat(tok, 4500);
+        return;
+      }
+      say('每個 set 用一棵 tree 表示', 'S1={0,6,7,8}、S2={4,1,9}、S3={2,3,5}');
+      await beat(tok, 3200);
+      say('pointer 由 child 指向 parent（往上）', 'root 就是 set 裡的某個 element');
+      await beat(tok, 2800);
+      const cur = makeCursor();
+      for (const e of [7, 0]) { cursorTo(cur, F.body[e].obj.position.clone()); lit(F.body[e], GOLD); say('find(7)：從 7 往上走', e === 7 ? '7' : '7 → 0（root）'); await beat(tok, 1300); }
+      lit(tb[0], GOLD); say('root 0 反查 set name 表', 'find(7) = <span class="ok">S1</span>');
+      await beat(tok, 2600); cur.obj.visible = false; lit(F.body[7]); lit(F.body[0]); lit(tb[0]);
+      F.link(4, 0); F.relayout();
+      say('union(S1, S2)：把 4 這個 root 接到 0 底下', '只動一個 root 的 pointer');
+      await beat(tok, 3400);
+      F.kids[0] = F.kids[0].filter((x) => x !== 4); F.par[4] = -1; F.order = [0, 4, 2]; F.link(0, 4); F.relayout();
+      say('反過來把 0 接到 4 底下也合法', 'S1 ∪ S2 的 root 可以是 0 或 4');
+      await beat(tok, 3600);
+    } };
+
+    // 2) parent array：find(7)；union(0,4) 後 find(1)
+    LECT['p17-parent-array'] = { title: 'Parent array：parent[i] 存 parent，root = −1', play: async (tok) => {
+      const phase = (ctx.params || {}).phase || 'find';
+      fresh(); lab.frameCamera([0, 5.4, 13.5], [0, 3.2, 1.2]);
+      const E = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+      const F = forest(E, { cx: 0.8, width: 8, topY: 6.3, maxSp: 1.2 });
+      F.order = [0, 4, 2];
+      [6, 7, 8].forEach((c) => F.link(c, 0)); [1, 9].forEach((c) => F.link(c, 4)); [3, 5].forEach((c) => F.link(c, 2));
+      F.order = [0, 4, 2];
+      F.spawn((e) => (F.root(e) === 0 ? '#2fc092' : F.root(e) === 4 ? '#4b9ee2' : '#9b7ef4'));
+      const R = parRow(F, E);
+      [['S1', 0], ['S2', 4], ['S3', 2]].forEach(([nm, r], k) => tag(nm + ' → ' + r, 'idx', -6.2, 6.2 - k * 0.6));
+      async function findWalk(x, why) {
+        const path = [x]; while (F.par[path[path.length - 1]] !== -1) path.push(F.par[path[path.length - 1]]);
+        const cur = makeCursor();
+        for (let k = 0; k < path.length; k++) {
+          const e = path[k];
+          R.hl(e, '#f2c46d'); cursorTo(cur, F.body[e].obj.position.clone());
+          say(why + '：看 parent[' + e + '] = ' + F.par[e], F.par[e] === -1 ? e + ' 是 root → 查 set name' : '往上到 ' + F.par[e]);
+          await beat(tok, 1700);
+        }
+        E.forEach((e) => R.hl(e)); cur.obj.visible = false;
+        return path;
+      }
+      if (phase === 'find') {
+        say('index 是 element，值是它的 parent', 'root 存 −1');
+        await beat(tok, 3200);
+        [6, 7, 8].forEach((e) => R.hl(e, '#cfe8dc')); R.hl(0, '#cfe0f5');
+        say('parent[6]、[7]、[8] 都是 0', '6、7、8 都掛在 root 0 底下');
+        await beat(tok, 3200); E.forEach((e) => R.hl(e));
+        const p = await findWalk(7, 'find(7)');
+        say('find(7) 走過 ' + p.join(' → '), 'root 0 → <span class="ok">S1</span>');
+        await beat(tok, 3000);
+      } else {
+        say('union(0, 4)：讓 4 接到 0 底下', '只要改一個數值');
+        await beat(tok, 2600);
+        R.hl(4, '#f2c46d'); F.link(4, 0); F.relayout(); R.set(4);
+        say('parent[4]：−1 → 0', '其他 element 都不用動');
+        await beat(tok, 3200); R.hl(4);
+        const p = await findWalk(1, 'find(1)');
+        say('find(1) 走過 ' + p.join(' → '), '一路走到值為 −1 的 root 0');
+        await beat(tok, 3000);
+      }
+    } };
+
+    // 3) simple union 退化成直線；find 總成本 O(n²)
+    LECT['p17-degenerate'] = { title: 'union(0,1)…union(n−2,n−1)：退化成一條直線', play: async (tok) => {
+      fresh(); lab.frameCamera([0, 4.6, 13.5], [0, 3.4, 0.5]);
+      const n = 6, E = [0, 1, 2, 3, 4, 5];
+      tag('示意 n = 6', 'idx', -6, 7.2);
+      const pos = {};
+      E.forEach((e, k) => { pos[e] = V(-6 + k * 1.5, 0.6, 0); });
+      const B = {}; E.forEach((e) => { B[e] = cube(e, SETC[e], [0.75, 0.55, 0.75], pos[e].x, pos[e].y, 0, 3); });
+      const par = {}; E.forEach((e) => { par[e] = -1; });
+      edgeLines(() => E.filter((e) => par[e] !== -1).map((e) => [B[par[e]].obj.position, B[e].obj.position]));
+      say('一開始每個數字各自是一個 set', '0, 1, …, n−1');
+      await beat(tok, 2600);
+      // 直線：root n−1 在最上面，0 在最下面
+      const chainPos = (e) => V(4.5, 6.6 - (n - 1 - e) * 1.15, 0);
+      for (let k = 0; k < n - 1; k++) {
+        par[k] = k + 1;
+        for (let j = 0; j <= k + 1; j++) lab.springTo(B[j], chainPos(j));
+        say('union(' + k + ', ' + (k + 1) + ')：' + k + ' 接到 ' + (k + 1) + ' 底下', '每次 union O(1)');
+        await beat(tok, 1300);
+      }
+      say('結果是一條直線：0 在最下、root ' + (n - 1) + ' 在最上', 'n − 1 次 union 共 O(n)');
+      await beat(tok, 2800);
+      const cur = makeCursor(); const cnt = tag('find 成本 0', 'ptr alt', -3, 5.5);
+      let total = 0;
+      for (const x of [0, 1, 2]) {
+        let e = x, steps = 1; cursorTo(cur, B[e].obj.position.clone());
+        await beat(tok, 350);
+        while (par[e] !== -1) { e = par[e]; steps++; cursorTo(cur, B[e].obj.position.clone()); await beat(tok, 280); }
+        total += steps; setTag(cnt, 'find 成本 ' + total);
+        say('find(' + x + ')：從 ' + x + ' 一路走到 root', '走了 ' + steps + ' 個 node');
+        await beat(tok, 900);
+      }
+      cursorTo(cur, B[n - 1].obj.position.clone());
+      say('find(' + (n - 1) + ')：自己就是 root，一步', '越往下的 find 越貴');
+      await beat(tok, 2000);
+      say('find(0)…find(n−1) 總成本', '<span class="no">Σ_{i=2}^{n} i = O(n²)</span>');
+      await beat(tok, 3200);
+    } };
+
+    // 4) weighting rule：同一串 union 變扁平
+    LECT['p17-weighted-flat'] = { title: 'Weighting rule：node 少的接到 node 多的', play: async (tok) => {
+      fresh(); lab.frameCamera([0, 4.6, 13.5], [0, 3.4, 0.5]);
+      const E = [0, 1, 2, 3, 4, 5];
+      tag('示意 n = 6', 'idx', -6, 7.2);
+      const F = forest(E, { cx: 0, width: 10, topY: 5.6, step: 1.7, maxSp: 2 });
+      F.spawn((e) => SETC[e]);
+      const cnts = {}; E.forEach((e) => { cnts[e] = tag('1 個', 'idx', 0, 0, 0); F.body[e].obj.add(cnts[e]); cnts[e].position.set(0, 0.6, 0); });
+      say('union(i, j)：比兩棵 tree 的 node 數', 'weighting rule：count(i) < count(j) → j 當 root；否則 i');
+      await beat(tok, 3600);
+      for (let k = 0; k < 5; k++) {
+        const ri = F.root(k), rj = F.root(k + 1);
+        const ci = F.count(ri), cj = F.count(rj);
+        lit(F.body[ri], GOLD); lit(F.body[rj], GOLD);
+        const [r, c] = ci < cj ? [rj, ri] : [ri, rj];
+        say('union(' + k + ',' + (k + 1) + ')：' + ci + ' 個 vs ' + cj + ' 個', 'root ' + ri + ' vs root ' + rj + ' → ' + c + ' 接到 ' + r + ' 底下' + (ci === cj ? '（一樣多，選 i）' : ''));
+        await beat(tok, 1500);
+        F.link(c, r); F.relayout(); lit(F.body[ri]); lit(F.body[rj]);
+        E.forEach((e) => setTag(cnts[e], F.par[e] === -1 ? F.count(e) + ' 個' : ''));
+        await beat(tok, 1100);
+      }
+      say('不再是一條直線：root 0 底下直接掛所有 node', '<span class="ok">tree 被打平，find 很快</span>');
+      await beat(tok, 3200);
+    } };
+
+    // 5) 8 個 node 的最差情況：兩兩合併三輪，高度 4 = log₂8 + 1
+    LECT['p17-weighted-worst'] = { title: 'Weighted union 最差情況：8 個 node 高度 4', play: async (tok) => {
+      fresh(); lab.frameCamera([0, 4.8, 13.5], [0, 3.6, 0.5]);
+      const E = [0, 1, 2, 3, 4, 5, 6, 7];
+      const F = forest(E, { cx: 0, width: 10.5, topY: 6.6, step: 1.45, maxSp: 1.5 });
+      F.spawn((e) => SETC[e]);
+      const hT = tag('高度 1', 'ptr alt', -5.6, 7.4);
+      const height = () => { let h = 0; for (const e of E) { let d = 1, x = e; while (F.par[x] !== -1) { x = F.par[x]; d++; } h = Math.max(h, d); } return h; };
+      say('一開始 0..7 各自是一個 set', 'n = 8');
+      await beat(tok, 2400);
+      const rounds = [[[0, 1], [2, 3], [4, 5], [6, 7]], [[0, 2], [4, 6]], [[0, 4]]];
+      for (let r = 0; r < 3; r++) {
+        for (const [i, j] of rounds[r]) { lit(F.body[i], GOLD); lit(F.body[j], GOLD); F.link(j, i); }
+        say('第 ' + (r + 1) + ' 輪：同樣大小兩兩 union', rounds[r].map(([i, j]) => 'union(' + i + ',' + j + ')').join('、') + '：一樣多 → 前者當 root');
+        await beat(tok, 1500);
+        F.relayout(); E.forEach((e) => lit(F.body[e])); setTag(hT, '高度 ' + height());
+        await beat(tok, 2200);
+      }
+      say('每次都是同樣大小合併 → 高度剛好到上界', '高度 4 = ⌊log₂8⌋ + 1');
+      await beat(tok, 3200);
+      say('Lemma：高度 ≤ ⌊log₂m⌋ + 1', 'm 個 node；find 只走樹高 → O(log m)');
+      await beat(tok, 3200);
+    } };
+
+    // 6) collapsing rule：連做 8 次 find(7)
+    LECT['p17-collapsing'] = { title: 'Collapsing rule：8 次 find(7) 從 24 步降到 10 步', play: async (tok) => {
+      fresh(); lab.frameCamera([0, 4.8, 13.5], [0, 3.6, 0.5]);
+      const E = [0, 1, 2, 3, 4, 5, 6, 7];
+      const F = forest(E, { cx: 0.8, width: 9, topY: 6.6, step: 1.45, maxSp: 1.6 });
+      F.order = [0];
+      [[1, 0], [2, 0], [3, 2], [4, 0], [5, 4], [6, 4], [7, 6]].forEach(([c, p]) => F.link(c, p));
+      F.spawn((e) => SETC[e]); F.relayout();
+      const cA = tag('不調整：0 步', 'ptr', -5.4, 7.3), cB = tag('collapsing：0 步', 'ptr alt', -5.4, 6.6);
+      const cur = makeCursor();
+      async function walk(fast) { let x = 7, s = 0; cursorTo(cur, F.body[7].obj.position.clone()); await beat(tok, fast); while (F.par[x] !== -1) { x = F.par[x]; s++; cursorTo(cur, F.body[x].obj.position.clone()); await beat(tok, fast); } return s; }
+      say('大家常做 find(7)：總共 8 次', '7 → 6 → 4 → 0，每次 3 步');
+      await beat(tok, 2600);
+      let a = 0;
+      for (let k = 0; k < 8; k++) { a += await walk(k < 1 ? 600 : 130); setTag(cA, '不調整：' + a + ' 步'); }
+      say('不調整：8 × 3 = 24 步', '<span class="no">每次都走同一條長路</span>');
+      await beat(tok, 2400);
+      let b = await walk(500); setTag(cB, 'collapsing：' + b + ' 步');
+      say('第一次走 3 步，再把 7、6 改接 root', 'collapsing：路徑上的 node 直接指向 root');
+      await beat(tok, 1500);
+      F.link(6, 0); F.link(7, 0); F.relayout();
+      await beat(tok, 2200);
+      for (let k = 0; k < 7; k++) { b += await walk(160); setTag(cB, 'collapsing：' + b + ' 步'); }
+      cur.obj.visible = false;
+      say('之後 7 次各 1 步：3 + 7 = 10 步', '<span class="ok">24 → 10</span>（課本另計重設 link 的成本）');
+      await beat(tok, 3400);
+    } };
+
+    // 7) 依 query 機率建 tree（延伸思考）
+    LECT['p17-query-freq'] = { title: '延伸：依 query 機率讓常查的 node 靠近 root', play: async (tok) => {
+      fresh(); lab.frameCamera([0, 4.6, 13.5], [0, 3, 0.5]);
+      const data = [['1', 0.9], ['2', 0.05], ['其他', 0.05]];
+      tag('30 天的 find 統計（老師舉例）', 'ptr', -3.6, 7.2);
+      const bars = data.map(([nm, p], k) => { const m = lab.box(SETC[k], [0.9, 1, 0.9]); m.scale.y = 0.001; m.position.set(-5.4 + k * 1.6, 0, 0); lab.world.add(m); tag(nm, 'idx', -5.4 + k * 1.6, 0.1, 0.9); return { m, p }; });
+      say('每個數字都有自己的 query 頻率', '例：1 佔 90%、2 佔 5%…');
+      await anim(tok, 1500, (t) => bars.forEach(({ m, p }) => { m.scale.y = 0.001 + p * 5 * t; m.position.y = m.scale.y / 2; }));
+      bars.forEach(({ p }, k) => tag(Math.round(p * 100) + '%', 'val', -5.4 + k * 1.6, p * 5 + 0.4));
+      await beat(tok, 2400);
+      const F = forest(['r', '1', '2', 'x', 'y'], { cx: 3.4, width: 4, topY: 5.8, step: 1.4, maxSp: 1.3 });
+      F.order = ['r']; F.link('1', 'r'); F.link('2', 'r'); F.link('x', '2'); F.link('y', '2');
+      F.spawn((e) => (e === '1' ? '#2fc092' : '#8fa3b8')); F.relayout();
+      lit(F.body['1'], GOLD);
+      say('目標：期望 cost 最小的 tree', 'input：數字與 query 機率；常查的 1 離 root 最近');
+      await beat(tok, 4200);
+      say('事後看 log 才知道；online 要預測', '類比：熱門內容多複製到使用者附近');
+      await beat(tok, 4600);
+    } };
+
+    // 8) equivalence class：逐對 union
+    LECT['p17-equivalence'] = { title: 'Equivalence class：每對 i ≡ j 做一次 union', play: async (tok) => {
+      const focus = (ctx.params || {}).focus || 'all';
+      fresh(); lab.frameCamera([0, 5.6, 13.5], [0, 3.4, 0.5]);
+      const E = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+      const F = forest(E, { cx: 0, width: 12, topY: 6.4, step: 1.5, maxSp: 1.05, size: [0.7, 0.5, 0.7] });
+      F.spawn((e) => SETC[e]);
+      const pairs = [[0, 4], [3, 1], [6, 10], [8, 9], [7, 4], [6, 8], [3, 5], [2, 11], [11, 0]];
+      const pl = tag('', 'ptr alt', -5.4, 7.5);
+      say('i ≡ j ⇒ 屬於同一個 set → union', 'n = 12；pairs 依課本例');
+      await beat(tok, 2600);
+      const fastMs = focus === 'find' ? 700 : 1000;
+      for (let k = 0; k < pairs.length; k++) {
+        const [i, j] = pairs[k];
+        const ri = F.root(i), rj = F.root(j);
+        setTag(pl, i + ' ≡ ' + j);
+        lit(F.body[i], GOLD); lit(F.body[j], GOLD);
+        const ci = F.count(ri), cj = F.count(rj);
+        const [r, c] = ci < cj ? [rj, ri] : [ri, rj];
+        say(i + ' ≡ ' + j + '：先 find root（' + ri + '、' + rj + '）', (ri !== i || rj !== j ? '要查 root 再 union；' : '') + c + ' 接到 ' + r);
+        await beat(tok, fastMs);
+        F.link(c, r); F.relayout(); lit(F.body[i]); lit(F.body[j]);
+        await beat(tok, fastMs);
+      }
+      setTag(pl, '完成');
+      say('剩下的 set 就是 equivalence class', '<span class="ok">{0,2,4,7,11}、{1,3,5}、{6,8,9,10}</span>');
+      await beat(tok, 3200);
+      if (focus === 'find') { say('用 array 查 root，比 linked list 快', '遞移關係由 union 自動處理'); await beat(tok, 3000); }
+    } };
+
+    // 9) 只給 inorder 不唯一
+    LECT['p17-inorder-not-unique'] = { title: '只給 inorder BCAEDGHFI：tree 不唯一', play: async (tok) => {
+      fresh(); lab.frameCamera([0, 5, 13.5], [0, 3.3, 1]);
+      const seq = 'BCAEDGHFI'.split('');
+      const xs = (k) => -5.6 + k * 1.4;
+      const cells = seq.map((c, k) => cube(c, '#8fa3b8', SMALL, xs(k), 0.33, 2.6));
+      rowLabel('in', 2.6);
+      const paint = (l, k, r) => cells.forEach((b, j) => b.obj.material.color.set(j === k ? '#f2c46d' : j < k && j >= l ? '#4b9ee2' : j > k && j <= r ? '#2fc092' : '#8fa3b8'));
+      say('只給 inorder：B C A E D G H F I', '能決定唯一的 binary tree 嗎？');
+      await beat(tok, 2800);
+      paint(0, 2, 8);
+      say('挑 A 當 root：左子樹 BC、右子樹 EDGHFI', '');
+      await beat(tok, 2600);
+      const t1 = showTree('A(B(,C),D(E,F(G(,H),I)))', { cx: -3.3, width: 5.2, topY: 7, minY: 3.6, maxSp: 0.7 });
+      tag('其中一棵', 'idx', -3.3, 7.8);
+      await beat(tok, 2400);
+      paint(0, 4, 8);
+      say('也可以挑 D 當 root：左 BCAE、右 GHFI', '');
+      await beat(tok, 2600);
+      const t2 = showTree('D(A(B(,C),E),F(G(,H),I))', { cx: 3.4, width: 5.2, topY: 7, minY: 3.6, maxSp: 0.7 });
+      tag('另一棵', 'idx', 3.4, 7.8);
+      say('兩棵形狀不同，inorder 都是 BCAEDGHFI', '<span class="no">只給 inorder → 不唯一</span>');
+      await beat(tok, 3600);
+      say('再加上 preorder（或 postorder）才唯一', '例：preorder ABCDEFGHI → 左邊那棵');
+      await beat(tok, 3200);
+    } };
+
+    // 10) 3 個 node、preorder 1 2 3 的 5 棵 distinct binary tree
+    LECT['p17-distinct-3'] = { title: 'Preorder 1 2 3 的 5 棵 distinct binary tree', play: async (tok) => {
+      fresh(); lab.frameCamera([0, 4.4, 13.5], [0, 3.4, 0]);
+      const shapes = ['1(2(3,),)', '1(2(,3),)', '1(2,3)', '1(,2(3,))', '1(,2(,3))'];
+      say('3 個 node、preorder 固定 1 2 3', '形狀不同就是不同的 binary tree');
+      await beat(tok, 2600);
+      for (let k = 0; k < 5; k++) {
+        const cx = -5.4 + k * 2.7;
+        const r = showTree(shapes[k], { cx, width: 1.6, topY: 6, minY: 3.4, maxSp: 0.8 });
+        const ino = str(inorder(r));
+        tag('in: ' + ino, 'ptr alt', cx, 1.9);
+        say('第 ' + (k + 1) + ' 棵：inorder = ' + ino, 'preorder 都是 1 2 3');
+        await beat(tok, 2200);
+      }
+      say('5 棵的 inorder 全部不同', 'preorder + inorder → 唯一決定（C₃ = 5）');
+      await beat(tok, 3400);
+    } };
+
+    // 11) Tree 章節重點整理
+    LECT['p17-summary'] = { title: 'Tree 章節重點：heap／BST、traversal 與應用', play: async (tok) => {
+      fresh(); lab.frameCamera([0, 4.6, 13.5], [0, 3.2, 0.5]);
+      const boxes = [['Heap、BST：insert、delete', -4.2], ['Traversal：pre／in／post／level', 0], ['應用：copy、equal、運算式求值', 4.2]];
+      const gs = boxes.map(([t, x]) => { const g = ghost('#c08a1f', x, 3.4, 3.9, 4.6, 0, 0.4); tag(t, 'ptr', x, 6.2); return g; });
+      const h = showTree('20(15(14,10),2)', { cx: -4.2, width: 2.6, topY: 5.2, minY: 2.4, maxSp: 0.9 });
+      const t = showTree('+(*(A,B),C)', { cx: 0, width: 2.6, topY: 5.2, minY: 2.4, maxSp: 0.9 });
+      const c1 = showTree('A(B,C)', { cx: 3.3, width: 1.2, topY: 4.6, minY: 2.6, maxSp: 0.6 });
+      const c2 = showTree('A(B,C)', { cx: 5.1, width: 1.2, topY: 4.6, minY: 2.6, maxSp: 0.6 });
+      say('Tree 章節結束：heap 也是一種 tree', '要知道各種 tree 的特質');
+      await beat(tok, 2800);
+      const caps = [['Heap、BST 會考 insert、delete', 'max heap root 最大；BST 左小右大'], ['第二個重點：traversal', 'inorder A*B+C 等'], ['traversal 的應用', 'copy、判斷相等、expression evaluation']];
+      for (let k = 0; k < 3; k++) {
+        gs.forEach((g, j) => { g.material.opacity = j === k ? 0.32 : 0.1; });
+        say(caps[k][0], caps[k][1]);
+        await beat(tok, 3200);
+      }
+      await beat(tok, 1000);
+    } };
+  }
+
+  // @@END@@
+
   const scenes = {
+    'trav-rules': { title: '三種走訪規則：root 在前／中／後', play: scTravRules },
+    'trav-flags': { title: '畫線法：左邊＝前序、下方＝中序、右邊＝後序', play: scTravFlags },
     'tree-terms': { title: '二元樹的名詞：root、leaf、degree、level', play: async (tok) => {
       fresh();
       lab.frameCamera([0, 5, 13.5], [0, 3.6, 0]);
@@ -696,6 +6555,8 @@ export default function (ctx) {
     } },
   };
 
+  Object.assign(scenes, LECT);
+
   return {
     kicker: '資料結構・第 3 章',
     title: '樹（基礎）：Binary Tree、走訪、完全二元樹',
@@ -709,7 +6570,7 @@ export default function (ctx) {
     ],
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
-    sceneOrder: ['tree-terms', 'preorder', 'inorder', 'postorder', 'level-order', 'complete-vs-full', 'array-rep', 'rebuild'],
+    sceneOrder: ['trav-rules', 'trav-flags', 'tree-terms', 'preorder', 'inorder', 'postorder', 'level-order', 'complete-vs-full', 'array-rep', 'rebuild', ...Object.keys(LECT)],
     stop() { stopTimer(); epoch++; },
   };
 }

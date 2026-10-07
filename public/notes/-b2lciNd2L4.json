@@ -1,0 +1,182 @@
+{
+ "video": "-b2lciNd2L4",
+ "label": "Binary Tree Traversals（Inorder, Preorder, Postorder）",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "三種走訪的定義",
+   "scene": "trav-rules",
+   "points": [
+    {
+     "text": "以一棵二元樹為例，要找出它的 inorder、preorder、postorder traversal。",
+     "t": 14
+    },
+    {
+     "text": "Inorder = left → root → right：root 夾在左右子樹中間（in = 中間）。",
+     "t": 25
+    },
+    {
+     "text": "Preorder = root → left → right：root 最先印。",
+     "t": 58
+    },
+    {
+     "text": "Postorder = left → right → root：root 最後印。",
+     "t": 67
+    }
+   ]
+  },
+  {
+   "title": "Inorder 走訪：B D A G E C H F I",
+   "scene": "inorder",
+   "params": {
+    "tree": "hindi"
+   },
+   "points": [
+    {
+     "text": "例子樹：A 的左子 B（B 只有右子 D），右子 C；C 的左子 E（E 只有左子 G），右子 F（F 有 H、I）。",
+     "t": 99
+    },
+    {
+     "text": "從 root A 開始，但不能先印 A，要先走完左子樹。",
+     "t": 117
+    },
+    {
+     "text": "B 的左邊是 null，所以印 B，再走右邊印 D；回到 A，左子樹做完才印 A。",
+     "t": 143
+    },
+    {
+     "text": "右子樹 C 也是一棵 subtree：先到 E，再到 G；G 沒有左子 → 印 G，再印 E。",
+     "t": 197
+    },
+    {
+     "text": "E 的子樹做完 → 印 C；F 有 H、I 兩個小孩，先印 H，再印 F，最後 I。",
+     "t": 246
+    },
+    {
+     "text": "Inorder 結果：B D A G E C H F I。",
+     "t": 290
+    }
+   ],
+   "trap": "每到一個節點都要先問「它是不是某棵 subtree 的 root」：是的話就還不能印，先處理它的左子樹。"
+  },
+  {
+   "title": "Preorder 走訪：A B D C E G F H I",
+   "scene": "preorder",
+   "params": {
+    "tree": "hindi"
+   },
+   "points": [
+    {
+     "text": "Preorder：先印 root，再左、再右。",
+     "t": 297
+    },
+    {
+     "text": "從 root 開始，A 直接印，接著到左子樹。",
+     "t": 310
+    },
+    {
+     "text": "B 是左子樹的 root → 印 B；B 沒有左子，右邊印 D，再回到 A。",
+     "t": 341
+    },
+    {
+     "text": "右子樹：C → E → G，再到 F，印 F 之後是 H、I。",
+     "t": 414
+    },
+    {
+     "text": "Preorder 結果：A B D C E G F H I。",
+     "t": 437
+    }
+   ],
+   "trap": "補充：6:00–6:36 的音訊辨識不清楚，右子樹 C、E、G 的順序依 V L R 規則推回。"
+  },
+  {
+   "title": "Postorder 走訪：D B G E H I F C A",
+   "scene": "postorder",
+   "params": {
+    "tree": "hindi"
+   },
+   "points": [
+    {
+     "text": "Postorder：左、右、最後才印 root；從 A 開始但 A 最後才印。",
+     "t": 444
+    },
+    {
+     "text": "B 也是 D 的 root，不能先印；B 左邊沒東西，右邊 D 先印。",
+     "t": 473
+    },
+    {
+     "text": "D 印完才印 B，A 的左子樹完成。",
+     "t": 495
+    },
+    {
+     "text": "右子樹：C 先走左邊，E 也是 root → 先到 G，印 G，再印 E。",
+     "t": 533
+    },
+    {
+     "text": "F 是 H、I 的 root：印 H、I，再印 F；然後 C，最後 A。",
+     "t": 592
+    },
+    {
+     "text": "Postorder 結果：D B G E H I F C A。",
+     "t": 635
+    }
+   ]
+  },
+  {
+   "title": "結語",
+   "scene": null,
+   "points": [
+    {
+     "text": "三種走訪的手算方式介紹完畢，之後可能再出更多練習影片。",
+     "t": 647
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "樹 A(B(,D),C(E(G,),F(H,I)))（括號內為左,右子）的 Inorder 是？",
+   "opts": [
+    "B D A G E C H F I",
+    "A B D C E G F H I",
+    "D B G E H I F C A",
+    "B D A C E G F H I"
+   ],
+   "ans": "B D A G E C H F I",
+   "why": "L V R：先走完 A 的左子樹 B D，印 A，再處理 C 的左子樹 G E、C、右子樹 H F I。"
+  },
+  {
+   "q": "同一棵樹的 Preorder 是？",
+   "opts": [
+    "A B C D E F G H I",
+    "A B D C E G F H I",
+    "A B D C E F G H I",
+    "B D A G E C H F I"
+   ],
+   "ans": "A B D C E G F H I",
+   "why": "V L R：A、左子樹 B D、右子樹 C E G F H I。A B C D… 是 level-order。"
+  },
+  {
+   "q": "同一棵樹的 Postorder 是？",
+   "opts": [
+    "D B G E H I F C A",
+    "D B G E C H I F A",
+    "B D G E H I F C A",
+    "A C F I H E G B D"
+   ],
+   "ans": "D B G E H I F C A",
+   "why": "L R V：B 的右子 D 先印、再 B；C 子樹是 G E H I F C；A 最後。"
+  },
+  {
+   "q": "哪一種走訪中 root 一定是最後一個輸出？",
+   "opts": [
+    "Preorder",
+    "Inorder",
+    "Postorder",
+    "Level-order"
+   ],
+   "ans": "Postorder",
+   "why": "Postorder = left、right、root，所以整棵樹的 root 一定最後。"
+  }
+ ]
+}

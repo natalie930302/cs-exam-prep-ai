@@ -1,0 +1,573 @@
+{
+ "video": "zLuuRC56uvI",
+ "label": "交大彭文志 Lec10 Lists (3/4)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Equivalence relation 三性質",
+   "scene": "llpeng34-equiv-props",
+   "points": [
+    {
+     "text": "複習上週：一堆數字 pair 若是 equivalence relation，要符合三個性質。",
+     "t": 0
+    },
+    {
+     "text": "Reflexive：x ≡ x。",
+     "t": 39
+    },
+    {
+     "text": "Symmetric：x ≡ y 則 y ≡ x。",
+     "t": 46
+    },
+    {
+     "text": "Transitive：x ≡ y 且 y ≡ z，就有 x ≡ z。",
+     "t": 52
+    },
+    {
+     "text": "0 ≡ 0 這種自己跟自己的 pair 太直覺，輸入裡不用寫出來。",
+     "t": 84
+    },
+    {
+     "text": "輸入 0 ≡ 4 其實還隱含 4 ≡ 0（symmetric）。",
+     "t": 107
+    },
+    {
+     "text": "0 ≡ 4、7 ≡ 4（⇒ 4 ≡ 7），依 transitive 得到 0 ≡ 7。",
+     "t": 137
+    }
+   ]
+  },
+  {
+   "title": "問題：輸入 pair，輸出 equivalence class",
+   "scene": "llpeng34-equiv-problem",
+   "points": [
+    {
+     "text": "Input 是數字的 pair；output 是一些數字的集合（set）。",
+     "t": 156
+    },
+    {
+     "text": "同一個 set 裡的數字彼此都滿足 equivalence 關係（自己與自己、自己與他人、transitive）。",
+     "t": 169
+    },
+    {
+     "text": "課本例子（n = 12，9 個 pair）輸出三個 set：{0,2,4,7,11}、{1,3,5}、{6,8,9,10}。",
+     "t": 187
+    },
+    {
+     "text": "看 1、3、5：讀到 3 ≡ 1，再讀到 3 ≡ 5，就推出 1 ≡ 5，三個是同一個 equivalence class。",
+     "t": 202
+    },
+    {
+     "text": "注意 symmetric：考試可能改成 asymmetric（x ≡ y 不代表 y ≡ x）。",
+     "t": 255
+    }
+   ],
+   "trap": "題目若把 symmetric 換成 asymmetric，就不再是 equivalence relation，不能用這套方法分 class。"
+  },
+  {
+   "title": "Rough 演算法：兩個 phase、兩個 array",
+   "scene": "llpeng34-seq-out",
+   "points": [
+    {
+     "text": "解法分兩個 phase：Phase 1 根據 pair 算出兩兩之間的關係。",
+     "t": 300
+    },
+    {
+     "text": "Phase 2 根據 Phase 1 建好的 structure，把所有 equivalence class 找出來。",
+     "t": 318
+    },
+    {
+     "text": "更進一步的版本（還不是程式）提出兩個 data structure：array 和掛在 array 上的 linked list。",
+     "t": 362
+    },
+    {
+     "text": "seq 是 array，index 就代表那個數字；n 個數字 array 大小就是 n。",
+     "t": 433
+    },
+    {
+     "text": "seq[i] 存一個 pointer，指向「跟 i 有關的數字」串成的 linked list。",
+     "t": 461
+    },
+    {
+     "text": "第二個 array 是 out：記錄某個數字在 Phase 2 是否已經印過，印過就不會再輸出。",
+     "t": 493
+    }
+   ]
+  },
+  {
+   "title": "Phase 1：while 讀 pair 建 list",
+   "scene": "llpeng34-phase1-build",
+   "points": [
+    {
+     "text": "Phase 1 就是 while 迴圈，專門處理 seq 這個 array。",
+     "t": 537
+    },
+    {
+     "text": "讀到 pair (i, j)：把 j 放進 seq[i] 的 linked list。",
+     "t": 543
+    },
+    {
+     "text": "同樣把 i 放進 seq[j] 的 list。",
+     "t": 555
+    },
+    {
+     "text": "因為 i ≡ j 代表兩者互相有關，兩邊都要記。",
+     "t": 566
+    },
+    {
+     "text": "while 做完，就建出每個數字各一條 linked list 的 structure。",
+     "t": 608
+    }
+   ],
+   "trap": "補充：課本程式把新 node 插在 list 最前面，所以 seq[0] 是 11 → 4（11 ≡ 0 比 0 ≡ 4 晚讀到）。"
+  },
+  {
+   "title": "Phase 2 的想法：直接相關＋transitive",
+   "scene": "llpeng34-phase2-idea",
+   "points": [
+    {
+     "text": "Phase 2 是 for 迴圈：i 從 0 到 n−1。",
+     "t": 631
+    },
+    {
+     "text": "out 是 boolean array，一開始 out[0] … out[11] 都是 false（都沒印過）。",
+     "t": 668
+    },
+    {
+     "text": "i = 0：out[0] 是 false → 印出 0，並把 out[0] 設成 true。",
+     "t": 698
+    },
+    {
+     "text": "接著印出 seq[0] 的 list 裡直接跟 0 有關的 11、4，也設成 true。",
+     "t": 753
+    },
+    {
+     "text": "每個數字只屬於一個 class，不會重複出現在不同 set。",
+     "t": 779
+    },
+    {
+     "text": "Transitive：去看 11 的 list，0 已印過就不印；2 沒印過 → 0 ≡ 2，印出 2。",
+     "t": 815
+    },
+    {
+     "text": "2 的 list 只有 11，已經印過，就停住。",
+     "t": 888
+    },
+    {
+     "text": "for 迴圈繼續 i = 1, 2, …：先找直接相關、再透過 transitive 找間接相關，跑完答案就出來。",
+     "t": 944
+    }
+   ],
+   "trap": "補充：這段口頭 trace 只看了 11 的 list；實際程式用 stack，4 的 list 也會走到（找到 7），完整輸出是 0 11 4 7 2。"
+  },
+  {
+   "title": "實作：宣告、初始化與 Phase 1 程式",
+   "scene": "llpeng34-phase1-code",
+   "points": [
+    {
+     "text": "這個程式要注意兩件事：分 phase 1、phase 2；用到 array 和 linked list 兩種 data structure。",
+     "t": 986
+    },
+    {
+     "text": "ListNode 的定義：data 存數字，link 是 pointer。",
+     "t": 1012
+    },
+    {
+     "text": "前兩行做初始化：從檔案讀資料，把 seq[i] 設成 0（null）、out[i] 設成 false。",
+     "t": 1052
+    },
+    {
+     "text": "宣告 ListNode pointer 的 array seq 和 boolean array out，大小都是 n。",
+     "t": 1069
+    },
+    {
+     "text": "Phase 1：從檔案讀 i 和 j。",
+     "t": 1104
+    },
+    {
+     "text": "new 一個 node x 放 j，接到 seq[i] 的 list 上。",
+     "t": 1120
+    },
+    {
+     "text": "另一行把 i 放到 seq[j] 的 list。",
+     "t": 1158
+    }
+   ]
+  },
+  {
+   "title": "Phase 2 程式：用 stack 走訪",
+   "scene": "llpeng34-phase2-stack",
+   "points": [
+    {
+     "text": "Phase 2 想法簡單但實作較難：同時用 linked list 和 stack。",
+     "t": 1170
+    },
+    {
+     "text": "先把跟 0 直接相關的數字都印出來，暫時不去看它們自己的 list。",
+     "t": 1204
+    },
+    {
+     "text": "看到 11 → 印出並 push 進 stack；看到 4 → 印出並 push。",
+     "t": 1236
+    },
+    {
+     "text": "pop 出 4，走 4 的 list：7 沒印過 → 印出、push；0 已印過不管。",
+     "t": 1294
+    },
+    {
+     "text": "list 走到 null 就從 stack pop 出下一個數字，再拜訪它的 list。",
+     "t": 1332
+    },
+    {
+     "text": "pop 7：7 的 list 只有 4，已印過。",
+     "t": 1354
+    },
+    {
+     "text": "最後 stack 只剩 11，pop 出來繼續（找到 2）。",
+     "t": 1376
+    }
+   ]
+  },
+  {
+   "title": "輸出順序要 trace code",
+   "scene": "llpeng34-classes-out",
+   "points": [
+    {
+     "text": "程式執行結果是三個 set。",
+     "t": 1384
+    },
+    {
+     "text": "第一個 set 的輸出順序：0、11、4、7、2。",
+     "t": 1397
+    },
+    {
+     "text": "不要寫成 2 4 7 11：順序錯就代表沒有 trace code。",
+     "t": 1414
+    },
+    {
+     "text": "第二個 set 從 1 開始、第三個從 6 開始，後面的順序自己 trace。",
+     "t": 1428
+    },
+    {
+     "text": "這個程式的輸出順序是有意義的。",
+     "t": 1448
+    }
+   ],
+   "trap": "補充：照課本程式 trace，三個 set 依序是 0 11 4 7 2、1 3 5、6 8 10 9。"
+  },
+  {
+   "title": "輸入順序改變，輸出順序就變",
+   "scene": "llpeng34-order-matters",
+   "points": [
+    {
+     "text": "把 input pair 的順序調換，出來的 set 一樣嗎？",
+     "t": 1469
+    },
+    {
+     "text": "set 還是三個，但 set 裡數字的順序不一定一樣。",
+     "t": 1482
+    },
+    {
+     "text": "因為輸入順序決定了 linked list 的 structure。",
+     "t": 1491
+    },
+    {
+     "text": "例：倒過來先輸入 11 和 0、2 和 11、3 和 5 …，建出的 list 就不同。",
+     "t": 1505
+    },
+    {
+     "text": "list 不同，Phase 2 輸出的順序就不同。",
+     "t": 1528
+    },
+    {
+     "text": "這是唯一解嗎？期中考會有加分題：想想別的寫法。",
+     "t": 1544
+    }
+   ],
+   "trap": "補充：9 個 pair 整個倒過來輸入，輸出變成 0 4 11 2 7｜1 3 5｜6 10 8 9。"
+  },
+  {
+   "title": "釋放 list 與寫程式的步驟",
+   "scene": null,
+   "points": [
+    {
+     "text": "第 39 頁只是把 linked list 清掉（釋放），重點是前兩頁。",
+     "t": 1584
+    },
+    {
+     "text": "從 rough 想法 → 更明確的 pseudo code → 程式；不要急著寫 code。",
+     "t": 1621
+    },
+    {
+     "text": "先知道方法，再想怎麼變成 data structure，最後才 implement。",
+     "t": 1672
+    },
+    {
+     "text": "Tree 那章會介紹用 tree 解 equivalence，更簡單。",
+     "t": 1708
+    }
+   ]
+  },
+  {
+   "title": "Sparse matrix 改用 linked list",
+   "scene": "llpeng34-sparse-array",
+   "points": [
+    {
+     "text": "Sparse matrix：裡面有很多元素是 0。",
+     "t": 1720
+    },
+    {
+     "text": "第二章用 1D array 存：只存非 0 元素的 row、column 和值。",
+     "t": 1742
+    },
+    {
+     "text": "也可以用 linked list 來表示 sparse matrix。",
+     "t": 1772
+    },
+    {
+     "text": "用環狀（circular）linked list 表示。",
+     "t": 1795
+    },
+    {
+     "text": "每一個 row、每一個 column 都對應一條環狀 linked list。",
+     "t": 1808
+    }
+   ]
+  },
+  {
+   "title": "Head node 與 row／column 環狀 list",
+   "scene": "llpeng34-sparse-lists",
+   "points": [
+    {
+     "text": "藍色是整個 matrix 的 head node（例子是 4×4）。",
+     "t": 1835
+    },
+    {
+     "text": "黃色 H0 … H3 是每個 row／column 對應的 head node。",
+     "t": 1845
+    },
+    {
+     "text": "上面一排和左邊一排畫了兩次，實際上只有 1 個藍色、4 個黃色 node。",
+     "t": 1868
+    },
+    {
+     "text": "entry 1 0 12：第 1 個 row、第 0 個 column，值是 12。",
+     "t": 1915
+    },
+    {
+     "text": "H1 記載 row 1 往右看到的非 0：只有 12，其他 0 不用記。",
+     "t": 1969
+    },
+    {
+     "text": "12 後面沒有東西，所以 link 指回頭端 H1 → 環狀 linked list。",
+     "t": 2038
+    },
+    {
+     "text": "紅色線代表 column 構成的 linked list，往下指；column 0 也只有 12，再指回 H0。",
+     "t": 2060
+    }
+   ]
+  },
+  {
+   "title": "Node 欄位與需要的 node 數",
+   "scene": "llpeng34-node-fields",
+   "points": [
+    {
+     "text": "Header node 最下面的欄位指向 header node 自己串成的 linked list。",
+     "t": 2170
+    },
+    {
+     "text": "H0 → H1 → H2 …：header node 本身也形成一條 linked list。",
+     "t": 2184
+    },
+    {
+     "text": "Header node 有三個 pointer：header list 的 next、row list、column list。",
+     "t": 2205
+    },
+    {
+     "text": "Entry node 有五個欄位：兩個 pointer、位置（row、col）、值。",
+     "t": 2232
+    },
+    {
+     "text": "r 個非 0 項需要 max{n, m} + r + 1 個 node。",
+     "t": 2297
+    },
+    {
+     "text": "+1 是藍色的 head node。",
+     "t": 2319
+    },
+    {
+     "text": "Header node：head、right（同一 row）、down（同一 column）、next。",
+     "t": 2337
+    },
+    {
+     "text": "Entry node：down、row、col、value、right，代表 a_ij。",
+     "t": 2351
+    }
+   ],
+   "trap": "補充：課本例子是 4×4（輸入第一行 4 4 4），head node = max{4, 4} = 4，總 node 數 4 + 4 + 1 = 9；影片中說成「4 乘以 3」應是口誤。若真的是 4×3，head node 仍是 max{4, 3} = 4 個。"
+  },
+  {
+   "title": "H0 是同一個 node；transpose 只改 pointer",
+   "scene": "llpeng34-sparse-transpose",
+   "points": [
+    {
+     "text": "上面的 H0 和左邊的 H0 是同一個 head node。",
+     "t": 2415
+    },
+    {
+     "text": "畫成 2D 只是示意：黃色看起來有 8 個，實際只有 4 個。",
+     "t": 2446
+    },
+    {
+     "text": "Head node 只有三個欄位：column list、row list、header list 的 pointer。",
+     "t": 2476
+    },
+    {
+     "text": "問題：這種 linked list 表示法有什麼好處？",
+     "t": 2518
+    },
+    {
+     "text": "Transpose：row 變 column、column 變 row。",
+     "t": 2536
+    },
+    {
+     "text": "Head node 不用變，要改的是 pointer。",
+     "t": 2550
+    },
+    {
+     "text": "Overhead 只在把 pointer 指到對的位置。",
+     "t": 2570
+    }
+   ]
+  },
+  {
+   "title": "MatrixNode：一個 class 加 union",
+   "scene": "llpeng34-matrixnode-union",
+   "points": [
+    {
+     "text": "紅字是重點：head node 和 entry node 看似該是兩個 data type。",
+     "t": 2594
+    },
+    {
+     "text": "課本只用一個 class 代表兩種 node。",
+     "t": 2610
+    },
+    {
+     "text": "struct Triple：記 matrix 裡的 row、col、value。",
+     "t": 2640
+    },
+    {
+     "text": "MatrixNode 的 private：down、right 兩個 pointer。",
+     "t": 2683
+    },
+    {
+     "text": "bool head：判斷這個 node 是不是 head node。",
+     "t": 2688
+    },
+    {
+     "text": "union 裡有 MatrixNode *next 和 Triple triple，兩個只能選一個。",
+     "t": 2717
+    },
+    {
+     "text": "head node 用 next（串 header list），entry node 用 triple（row、col、value）。",
+     "t": 2756
+    },
+    {
+     "text": "自己寫可能會宣告兩個 class；用一個 class + head + union 更精簡。",
+     "t": 2845
+    }
+   ]
+  },
+  {
+   "title": "Matrix 建構、練習與作業",
+   "scene": null,
+   "points": [
+    {
+     "text": "接著是 constructor、destructor；Matrix 的 private 變數 headnode 就是藍色那個。",
+     "t": 2900
+    },
+    {
+     "text": "練習：4×3 的 sparse matrix 會長什麼樣子，自己畫。",
+     "t": 2937
+    },
+    {
+     "text": "課本 4.8.2、4.8.3：用這種表示法做轉換、加法怎麼 implement。",
+     "t": 2953
+    },
+    {
+     "text": "期中考約在 11 月；每個月會有一個作業。",
+     "t": 2983
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "pair 依序輸入 0≡4、3≡1、6≡10、8≡9、7≡4、6≡8、3≡5、2≡11、11≡0，新 node 插在 list 最前面。Phase 1 結束後 seq[0] 的 list 是？",
+   "opts": [
+    "11 → 4",
+    "4 → 11",
+    "0 → 4 → 11",
+    "4 → 7"
+   ],
+   "ans": "11 → 4",
+   "why": "0≡4 先讀到，4 進 seq[0]；最後讀到 11≡0，11 插在最前面。"
+  },
+  {
+   "q": "照課本程式（用 stack）跑同一組輸入，第一個 class 的輸出順序是？",
+   "opts": [
+    "0, 2, 4, 7, 11",
+    "0, 11, 4, 7, 2",
+    "0, 4, 11, 2, 7",
+    "0, 11, 4, 2, 7"
+   ],
+   "ans": "0, 11, 4, 7, 2",
+   "why": "印 0 後印 11、4 並 push；pop 4 找到 7；pop 7 沒新的；pop 11 找到 2。"
+  },
+  {
+   "q": "0 ≡ 4、4 ≡ 7 推出 0 ≡ 7，用的是哪個性質？",
+   "opts": [
+    "reflexive",
+    "symmetric",
+    "transitive",
+    "asymmetric"
+   ],
+   "ans": "transitive",
+   "why": "x ≡ y 且 y ≡ z ⇒ x ≡ z 是 transitive。"
+  },
+  {
+   "q": "Equivalence class 程式裡 out 陣列的用途是？",
+   "opts": [
+    "存每個數字的 linked list",
+    "記錄數字是否已經印出，避免重複出現在別的 class",
+    "當作 stack 存待走訪的數字",
+    "記錄 pair 的輸入順序"
+   ],
+   "ans": "記錄數字是否已經印出，避免重複出現在別的 class",
+   "why": "out 是 boolean array，印出後設 true，之後碰到就跳過。"
+  },
+  {
+   "q": "n×m 的 sparse matrix 有 r 個非 0 項，用 linked list 表示需要幾個 node？",
+   "opts": [
+    "n + m + r",
+    "max{n, m} + r + 1",
+    "n × m + 1",
+    "r + 1"
+   ],
+   "ans": "max{n, m} + r + 1",
+   "why": "head node 共用給 row 和 column，所以是 max{n, m} 個，加 r 個 entry 和 1 個總 head node。"
+  },
+  {
+   "q": "MatrixNode 用 union 放 next 和 triple。當 head == true 時用哪個？",
+   "opts": [
+    "triple",
+    "next",
+    "兩個都用",
+    "都不用"
+   ],
+   "ans": "next",
+   "why": "header node 要用 next 串 header list；entry node 才用 triple 記 row、col、value。"
+  }
+ ]
+}

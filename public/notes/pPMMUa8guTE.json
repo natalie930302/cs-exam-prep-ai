@@ -1,0 +1,886 @@
+{
+ "video": "pPMMUa8guTE",
+ "label": "交大彭文志 Lec14 Trees (3/6)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "複習：Satisfiability 問題與運算式樹",
+   "scene": "p14-sat-tree",
+   "points": [
+    {
+     "text": "Satisfiability 問題：運算式只含 true/false 變數與 and、or、not，運算優先序 not > and > or。",
+     "t": 46
+    },
+    {
+     "text": "問題是：x1、x2、x3 各設成什麼值時，整個 expression 為 true。",
+     "t": 64
+    },
+    {
+     "text": "括號內如 x1 ∧ ¬x2，先做 ¬x2，再與 x1 做 and。",
+     "t": 92
+    },
+    {
+     "text": "3 個變數共有 2^3 = 8 種 true/false 組合，要逐一代入檢查。",
+     "t": 115
+    },
+    {
+     "text": "可能有多組組合都讓式子為 true，每一組都要印出來。",
+     "t": 141
+    },
+    {
+     "text": "運算式可以表示成一棵 binary tree（建樹過程請自行看課本）。",
+     "t": 228
+    },
+    {
+     "text": "有了樹以後，對它做 postorder traversal，在走訪過程中順便 evaluate 各節點的值。",
+     "t": 255
+    }
+   ],
+   "trap": "補充：n 個變數要試 2^n 種組合，每種都要走訪整棵樹一次，時間 O(g·2^n)（g 為樹的節點數），是指數時間。 補充：投影片式子 ASR 只聽清楚 x1 ∧ ¬x2，畫面採課本原式 (x1 ∧ ¬x2) ∨ (¬x1 ∧ x3) ∨ ¬x3，此式 8 組中只有 (T,T,T) 為 false。"
+  },
+  {
+   "title": "PostOrderEval：節點結構與 switch",
+   "scene": "p14-sat-eval",
+   "points": [
+    {
+     "text": "節點有四個欄位：leftChild、rightChild、data、value。",
+     "t": 284
+    },
+    {
+     "text": "value 存放用左右子樹的值運算後的結果。",
+     "t": 290
+    },
+    {
+     "text": "data 存的是變數（如 x2，其被設定的真假）或運算子。",
+     "t": 313
+    },
+    {
+     "text": "解法：列出 n 個變數所有組合，對每一種組合 traverse 一次這棵樹。",
+     "t": 327
+    },
+    {
+     "text": "架構就是 postorder（LRV）：先左、再右，最後的 V 由「印出」改成「依 operator 做運算」。",
+     "t": 385
+    },
+    {
+     "text": "V 的部分用 switch 依 data 的屬性分 case 處理。",
+     "t": 429
+    },
+    {
+     "text": "not：取 right child 的 value 做 not；and：left child 的 value 與 right child 的 value 做 and；or 同理。",
+     "t": 506
+    },
+    {
+     "text": "若 data 是變數且被設成 true，該節點 value 就設為 true；false 同理。",
+     "t": 526
+    }
+   ],
+   "trap": "老師強調：運算對象是子節點的 value，不是 data。not 節點只有右子（左子為空）。 補充：畫面以 x1=T、x2=F、x3=T 示意一次走訪。"
+  },
+  {
+   "title": "延伸思考：用樹計算算術運算式",
+   "scene": "p14-arith-eval",
+   "points": [
+    {
+     "text": "回家思考：若運算式是第三章的算術式，PostOrderEval 要怎麼改。",
+     "t": 582
+    },
+    {
+     "text": "例：2+3*4，把 2、3、4 看成 x1、x2、x3 的值，一樣可以算出結果。",
+     "t": 614
+    },
+    {
+     "text": "可能考題：不用 stack，改用 tree 寫出 expression evaluation 的程式。",
+     "t": 647
+    },
+    {
+     "text": "stack 作法要兩支程式：先轉 postfix，再把 postfix 交給 EVAL。",
+     "t": 668
+    },
+    {
+     "text": "tree 作法只需對樹做 traverse，程式更簡單。",
+     "t": 684
+    },
+    {
+     "text": "前提：必須先把 infix 運算式轉成一棵樹。",
+     "t": 699
+    },
+    {
+     "text": "例：A/B-C+D*E-A*C 先建成樹，再代入變數值以 traversal 算答案；可能在下週考試出現。",
+     "t": 744
+    }
+   ],
+   "trap": "補充：算術式樹的 switch 只要把 not/and/or 換成 +、-、*、/，葉節點 value 取變數值即可；注意減法與除法是 left op right，順序不能反。 補充：A/B-C+D*E-A*C 的變數值 ASR 不清，畫面只示範建樹與 postorder（= postfix AB/C-DE*+AC*-）。"
+  },
+  {
+   "title": "Threaded Binary Tree 動機：n+1 個空鏈結",
+   "scene": "p14-null-links",
+   "points": [
+    {
+     "text": "Threaded binary tree 的用意：把 binary tree 中沒用到的 link 充分利用。",
+     "t": 781
+    },
+    {
+     "text": "n 個節點，每個節點 2 個 pointer，共 2n 個 link。",
+     "t": 823
+    },
+    {
+     "text": "除了 root 沒人指向它，實際只用到 n-1 個 link。",
+     "t": 825
+    },
+    {
+     "text": "所以空指標有 2n-(n-1) = n+1 個。",
+     "t": 840
+    },
+    {
+     "text": "Thread 的概念：讓空的 link 依 inorder 順序指向前一個或後一個節點。",
+     "t": 890
+    },
+    {
+     "text": "若 ptr->leftChild 為空，改指向 ptr 的 inorder predecessor。",
+     "t": 923
+    },
+    {
+     "text": "若 ptr->rightChild 為空，改指向 ptr 的 inorder successor。",
+     "t": 937
+    }
+   ],
+   "trap": "老師口誤說「只會用到 n-1 個 node」，應為 n-1 個 link（即 n-1 條邊）。"
+  },
+  {
+   "title": "Thread 範例：Fig 5.20 的虛線",
+   "scene": "p14-thread-fig",
+   "points": [
+    {
+     "text": "圖中曲線（虛線）是 thread，實線是原本樹的 link。",
+     "t": 964
+    },
+    {
+     "text": "此樹的 inorder 為 H D I B E A F C G。",
+     "t": 991
+    },
+    {
+     "text": "E 是 leaf，原本兩個 pointer 都是 null。",
+     "t": 1002
+    },
+    {
+     "text": "E 的 left 指向 inorder 前一個 B。",
+     "t": 1027
+    },
+    {
+     "text": "E 的 right 指向 inorder 後一個 A。",
+     "t": 1037
+    },
+    {
+     "text": "I 的 left thread 指向 D，right thread 指向 B。",
+     "t": 1057
+    },
+    {
+     "text": "H 沒有 inorder 前一個、G 沒有後一個，這兩條會懸空。",
+     "t": 1067
+    },
+    {
+     "text": "老師說可以讓它們指到 root（課本是指向 head node）。",
+     "t": 1076
+    }
+   ],
+   "trap": "補充：課本做法是讓 H 的 left thread 與 G 的 right thread 都指向 head node，而不是直接指向 root A。"
+  },
+  {
+   "title": "LeftThread/RightThread 欄位與 Head Node",
+   "scene": "p14-thread-fields",
+   "points": [
+    {
+     "text": "每條 link 都會指到某個節點，所以要能判別它是真正的子節點 pointer 還是 thread。",
+     "t": 1135
+    },
+    {
+     "text": "例：I 的 left 與 right 出去都是虛線，兩者都是 thread。",
+     "t": 1150
+    },
+    {
+     "text": "因此節點多加兩個 Boolean 欄位：leftThread、rightThread。",
+     "t": 1172
+    },
+    {
+     "text": "leftThread 為 true：leftChild 是 thread。",
+     "t": 1194
+    },
+    {
+     "text": "leftThread 為 false：leftChild 是一般指向子節點的 pointer。",
+     "t": 1203
+    },
+    {
+     "text": "為避免 H、G 那種 dangling thread，引入 head node（課本 Fig 5.20/5.21）。",
+     "t": 1293
+    },
+    {
+     "text": "如同 linked list 的 head node，head 指到的才是真正的 root。",
+     "t": 1320
+    },
+    {
+     "text": "看 thread 欄位的 true/false 就知道該 link 是否指向真正的子節點。",
+     "t": 1339
+    }
+   ],
+   "trap": "老師一度口誤把欄位說成 left pointer / right pointer，隨即更正為 leftThread / rightThread。補充：課本 head node 的 leftChild 指向 root（leftThread=false），rightChild 指向 head 自己（rightThread=false）；空樹時 leftThread=true 且 leftChild 指回 head。"
+  },
+  {
+   "title": "Thread 的用途與代價",
+   "scene": "p14-inorder-succ",
+   "points": [
+    {
+     "text": "Thread 讓我們能很快找到某節點在 inorder 中的下一個（successor）或上一個（predecessor）。",
+     "t": 1391
+    },
+    {
+     "text": "依 thread 欄位 true/false 的狀態，就能輕鬆做 inorder traversal；程式老師跳過。",
+     "t": 1420
+    },
+    {
+     "text": "老師坦言實務上很少用到，它是 binary tree 研究演進中為了不浪費空間而出現的。",
+     "t": 1497
+    },
+    {
+     "text": "代價一：多了 leftThread、rightThread 兩個 Boolean 欄位。",
+     "t": 1535
+    },
+    {
+     "text": "代價二：insert、delete 時還要調整 thread link，要做更多 pointer assignment。",
+     "t": 1547
+    }
+   ],
+   "trap": "補充：threaded tree 的 inorder traversal 不需要 stack 也不需遞迴，時間 O(n)。"
+  },
+  {
+   "title": "在 threaded tree 插入節點為右子",
+   "scene": "p14-insert-right",
+   "points": [
+    {
+     "text": "範例：把 R 插入成 X 的右子。",
+     "t": 1589
+    },
+    {
+     "text": "Case 1：X 的 right link 原本是 thread，指向上方的 inorder successor。",
+     "t": 1605
+    },
+    {
+     "text": "X 的 right link 改指向 R，並更新 X 的 rightThread 欄位。",
+     "t": 1623
+    },
+    {
+     "text": "R 的 left、right 兩個 link 與兩個 thread 欄位都要設定。",
+     "t": 1630
+    },
+    {
+     "text": "Case 1 是 X 本來沒有右子樹，最簡單。",
+     "t": 1672
+    },
+    {
+     "text": "Case 2：X 已有右子樹，整個右子樹往下移一層成為 R 的右子樹，多條 link 都要調整。",
+     "t": 1709
+    },
+    {
+     "text": "原本 thread 指向 X 的節點（R 右子樹的 inorder 第一個）要改指向 R，因為 inorder 中它的前一個變成 R。",
+     "t": 1752
+    },
+    {
+     "text": "插入成左子同理，也分「原本無左子樹」與「有左子樹」兩種 case。",
+     "t": 1793
+    }
+   ],
+   "trap": "老師在 27:03 說 X 的 rightThread「要被設成 true」，這是口誤：X.rightChild 改成指向真正的子節點 R 後，rightThread 應設為 false；R 的 leftThread 才是 true。"
+  },
+  {
+   "title": "期中考與作業二公告",
+   "scene": null,
+   "points": [
+    {
+     "text": "下週五期中考。",
+     "t": 1871
+    },
+    {
+     "text": "考完後下週二出作業二，內容與 Huffman code 有關。",
+     "t": 1882
+    }
+   ]
+  },
+  {
+   "title": "Huffman Code 概念：依頻率編碼",
+   "scene": "p14-huff-concept",
+   "points": [
+    {
+     "text": "Huffman code 是一種編碼：依 message 的使用頻率決定它用怎樣的碼表示。",
+     "t": 1923
+    },
+    {
+     "text": "有 M1～Mn 個 message，可以把 message 想成文章中的 word（字）。",
+     "t": 1944
+    },
+    {
+     "text": "編碼時會有一份 codebook，就是碼與明文的對照表。",
+     "t": 1974
+    },
+    {
+     "text": "出現最頻繁的字，用最少的位元（最短的碼）表示。",
+     "t": 2020
+    },
+    {
+     "text": "接收方用 codebook 解碼；碼越長，解碼越花時間。",
+     "t": 2060
+    },
+    {
+     "text": "所以讓頻繁出現的 word 的 code size 小一點。",
+     "t": 2086
+    }
+   ],
+   "trap": "補充：老師沒給具體資料，畫面的字與次數（the 6、I 4、you 2、data 1）與 codebook 為示意。"
+  },
+  {
+   "title": "Codebook 樹：M1～M4 的碼與目標函數",
+   "scene": "p14-codebook4",
+   "points": [
+    {
+     "text": "例子：四個 message M1、M2、M3、M4（想成四個 word）。",
+     "t": 2105
+    },
+    {
+     "text": "M1 的 Huffman code 是 000，即從 root 往下走到該 leaf 的路徑。",
+     "t": 2121
+    },
+    {
+     "text": "M2 是 001、M3 是 01、M4 是 1。",
+     "t": 2145
+    },
+    {
+     "text": "這份 codebook 長成一棵 tree。",
+     "t": 2163
+    },
+    {
+     "text": "樹可以有不同長法（例如 M4 放左邊），但要符合 objective function。",
+     "t": 2181
+    },
+    {
+     "text": "目標：頻率越高碼越短，使整份編碼後文件的 code size 最小。",
+     "t": 2217
+    },
+    {
+     "text": "（閒聊）計概有教過 Huffman；作業二仍會出，題目會稍作修改。",
+     "t": 2268
+    }
+   ],
+   "trap": "補充：目標函數即 weighted external path length Σ q_i·d_i 最小。Huffman code 是 prefix code：因為每個 message 都在 leaf，沒有任何碼是另一個碼的前綴，所以可以唯一解碼。"
+  },
+  {
+   "title": "Huffman 建樹範例：2,3,5,7,9,13",
+   "scene": "p14-huff-build",
+   "points": [
+    {
+     "text": "方塊是 leaf，代表 message；方塊裡的數字是該 message 的頻率。",
+     "t": 2297
+    },
+    {
+     "text": "例子有六個 message，頻率 2、3、5、7、9、13。",
+     "t": 2315
+    },
+    {
+     "text": "每次挑出頻率最小的兩個 merge。",
+     "t": 2350
+    },
+    {
+     "text": "2 和 3 最小，merge 成一棵 subtree，頻率為 2+3=5。",
+     "t": 2366
+    },
+    {
+     "text": "剩五個：5、5、7、9、13。",
+     "t": 2429
+    },
+    {
+     "text": "再取最小的 5 與 5 merge，得到頻率 10 的更大的 tree。",
+     "t": 2463
+    },
+    {
+     "text": "把整棵 subtree 視為一個 message 丟回 queue；接著 7 和 9 合成 16。",
+     "t": 2495
+    },
+    {
+     "text": "重複到 queue 只剩兩個，最後一次 merge 得到整棵 Huffman tree。",
+     "t": 2519
+    }
+   ],
+   "trap": "補充：後續步驟老師以「依此類推」帶過：10+13=23，16+23=39。n 個 message 共 merge n-1 次。"
+  },
+  {
+   "title": "Huffman 程式：BinaryTree merge 與主迴圈",
+   "scene": "p14-huff-code",
+   "points": [
+    {
+     "text": "BinaryTree 類別的 private 部分有 root。",
+     "t": 2550
+    },
+    {
+     "text": "BinaryTree(bt1, bt2) 建構子做 merge：bt1、bt2 成為新 root 的左右子樹。",
+     "t": 2566
+    },
+    {
+     "text": "每個 tree node 有 weight（頻率），新 root 的 weight = bt1.root 的 weight + bt2.root 的 weight。",
+     "t": 2590
+    },
+    {
+     "text": "Huffman 函式：一開始 n 個 message 各自是一個節點，放入 queue。",
+     "t": 2648
+    },
+    {
+     "text": "做 n-1 次 merge。",
+     "t": 2653
+    },
+    {
+     "text": "每圈從 queue 取出最小的兩個 first、second，new BinaryTree(first, second)。",
+     "t": 2665
+    },
+    {
+     "text": "merge 出的新樹再 insert 回 queue。",
+     "t": 2715
+    },
+    {
+     "text": "也可以不數 n-1 次，改成檢查 queue 是否只剩一棵就停止。",
+     "t": 2726
+    }
+   ],
+   "trap": "補充：老師說檢查 queue「是空的」就停止，嚴格說應是 queue 只剩一棵樹（再取兩棵會失敗）時停止。"
+  },
+  {
+   "title": "作業二說明：壓縮與 DeleteMinWeight",
+   "scene": null,
+   "points": [
+    {
+     "text": "作業二：根據作業一統計的字頻給每個字 Huffman code，對文字做壓縮，輸出 binary 檔而非 .txt。",
+     "t": 2750
+    },
+    {
+     "text": "ZIP、RAR 等壓縮也是靠 codebook 把原檔還原回來。",
+     "t": 2787
+    },
+    {
+     "text": "DeleteMinWeight 是從 queue 中取出最小者，如何實作留到 priority queue 再講。",
+     "t": 2869
+    }
+   ],
+   "trap": "老師說 ZIP 的 codebook「不是 Huffman」。補充更正：ZIP 常用的 DEFLATE 是 LZ77 再加上 Huffman coding，Huffman 是其中一部分。"
+  },
+  {
+   "title": "Huffman tree 讀碼：左 0 右 1",
+   "scene": "p14-huff-read",
+   "points": [
+    {
+     "text": "最後得到的這棵就是 Huffman tree。",
+     "t": 2912
+    },
+    {
+     "text": "方形的 leaf 是 message（word，例如 I、the、you）。",
+     "t": 2922
+    },
+    {
+     "text": "方框內數字代表該字出現的頻率，字是什麼不重要，頻率才重要。",
+     "t": 2961
+    },
+    {
+     "text": "出現頻率高的字讓它越靠近 root 越好。",
+     "t": 2986
+    },
+    {
+     "text": "出現很少的字（如 2、3）離 root 越遠越好，用較長的碼表示。",
+     "t": 3014
+    },
+    {
+     "text": "碼的讀法：往左走記 0、往右走記 1。",
+     "t": 3031
+    },
+    {
+     "text": "頻率 2 的字碼為 1000。",
+     "t": 3051
+    },
+    {
+     "text": "頻率 3 的字碼為 1001。",
+     "t": 3054
+    }
+   ]
+  },
+  {
+   "title": "Bottom-up 合併與虛擬字",
+   "scene": "p14-huff-build",
+   "params": {
+    "phase": "bottomup"
+   },
+   "points": [
+    {
+     "text": "建 Huffman tree 的關鍵字是 bottom-up 方法。",
+     "t": 3091
+    },
+    {
+     "text": "頻率較少的字先 merge 成一棵 subtree。",
+     "t": 3097
+    },
+    {
+     "text": "六個字 2、3、5、7、9、13 中，出現次數最少的是 2 和 3。",
+     "t": 3116
+    },
+    {
+     "text": "合併後的圓圈 5 是一個虛擬的合併字，頻率 5。",
+     "t": 3139
+    },
+    {
+     "text": "到這個 subtree 也有碼 100，底下兩個 message 共用這段碼，到下一層才分支。",
+     "t": 3167
+    },
+    {
+     "text": "內部節點上的數字是其 subtree 頻率的總和。",
+     "t": 3227
+    },
+    {
+     "text": "接著在 5、5、7、9、13 中取最小的 5 和 5 合併成 10。",
+     "t": 3269
+    },
+    {
+     "text": "每次都從 queue 取頻率最小的兩個合併，直到結束。",
+     "t": 3306
+    }
+   ],
+   "trap": "老師一度說共用碼是「0100」，依圖應為 100（2=1000、3=1001 共用前綴 100）。ASR 把「十」聽成「死」。"
+  },
+  {
+   "title": "Huffman tree 是否唯一；引出 priority queue",
+   "scene": "p14-huff-tie",
+   "points": [
+    {
+     "text": "問題：給定同樣的頻率，Huffman tree 是否唯一？",
+     "t": 3338
+    },
+    {
+     "text": "不一定：同分時（如兩個 5）選哪一個會產生不同的樹。",
+     "t": 3364
+    },
+    {
+     "text": "DeleteMinWeight：在 queue 中刪掉最小的當 first，再刪一次取第二小的當 second。",
+     "t": 3404
+    },
+    {
+     "text": "這種 delete 不遵守 FIFO，而是依 priority，這就是 priority queue。",
+     "t": 3426
+    }
+   ],
+   "trap": "補充：樹可能不唯一（同分選擇、左右子樹互換），但所有 Huffman tree 的總加權路徑長 Σ q_i·d_i 都相同，皆為最佳。 補充（示意）：畫面以頻率 1,1,2,2 示範同分時不同選擇得到兩棵不同的樹，總長都是 12。"
+  },
+  {
+   "title": "Priority Queue：max/min 與 heap",
+   "scene": "p14-pq",
+   "points": [
+    {
+     "text": "Priority queue 也是 queue，有 add 和 delete。",
+     "t": 3465
+    },
+    {
+     "text": "重點在 delete：每個元素有自己的 priority，依 priority 決定取出誰。",
+     "t": 3496
+    },
+    {
+     "text": "分兩種：max priority queue 與 min priority queue。",
+     "t": 3504
+    },
+    {
+     "text": "Max priority queue 每次 delete 回傳目前最大的元素。",
+     "t": 3524
+    },
+    {
+     "text": "Min priority queue 每次 delete 回傳最小的元素。",
+     "t": 3543
+    },
+    {
+     "text": "應用：Huffman；machine service 中讓所需時間最短的 job 先做（min PQ）。",
+     "t": 3589
+    },
+    {
+     "text": "常聽到的 heap 就與 priority queue 畫上等號。",
+     "t": 3596
+    }
+   ],
+   "trap": "補充：嚴格說 priority queue 是 ADT，heap 是實作它最常用的資料結構，兩者不完全相同。 補充：畫面數字 100、1、37、8 與兩種 delete 結果為示意。"
+  },
+  {
+   "title": "Priority queue 實作方式比較",
+   "scene": "p14-pq-impl",
+   "points": [
+    {
+     "text": "Unordered linked list：來一個就塞一個，例如先放 100 再放 1。",
+     "t": 3632
+    },
+    {
+     "text": "Unordered array：100 放在 a[0]、1 放在 a[1]。",
+     "t": 3664
+    },
+    {
+     "text": "Sorted linked list：每次 insert 時排序，順序變成 1、100。",
+     "t": 3685
+    },
+    {
+     "text": "Sorted list 靠 pointer assignment 排序；sorted array 需要 data movement。",
+     "t": 3747
+    },
+    {
+     "text": "Unordered：insert 很快，但 delete 最大/最小時要 scan 整個 array 或 list（先甘後苦）。",
+     "t": 3831
+    },
+    {
+     "text": "Sorted：insert 要花 O(n) 比較，但 delete 很快。",
+     "t": 3844
+    },
+    {
+     "text": "Max heap 不論 insert 或 delete 都是 O(log n)。",
+     "t": 3892
+    },
+    {
+     "text": "log n 來自 heap 用 tree 表示，操作沿樹高進行。",
+     "t": 3933
+    }
+   ]
+  },
+  {
+   "title": "Max/Min Heap 定義與陣列表示",
+   "scene": "p14-heap-def",
+   "points": [
+    {
+     "text": "Max heap 的 root 永遠是所有數字中最大的。",
+     "t": 3975
+    },
+    {
+     "text": "Max heap 中，下面的 subtree 沒有任何數比它的根大。",
+     "t": 3985
+    },
+    {
+     "text": "Min heap 則是最小的放在 root，下面沒有更小的。",
+     "t": 3994
+    },
+    {
+     "text": "不論 max 或 min，heap 一定是 complete binary tree。",
+     "t": 4004
+    },
+    {
+     "text": "Heap 沒有規定左邊一定比右邊大或小。",
+     "t": 4020
+    },
+    {
+     "text": "例：max heap 14、12、7、10、8、6，節點旁的編號是陣列索引。",
+     "t": 4048
+    },
+    {
+     "text": "陣列 1 放 14、2 放 12、3 放 7、4 放 10：tree 也能用 array 表示。",
+     "t": 4070
+    },
+    {
+     "text": "要和稍後的 binary search tree（左小右大）區分。",
+     "t": 4149
+    }
+   ],
+   "trap": "補充：課本定義是「每個節點的 key 不小於其 children 的 key」（遞迴到每個 subtree），不只是 root 最大而已——每個 subtree 自己也必須是 max heap。老師說的「root 最大、其他不管」只指左右子之間不比大小。"
+  },
+  {
+   "title": "Max heap insert 範例：1、5、21",
+   "scene": "p14-heap-insert",
+   "points": [
+    {
+     "text": "Insert 可能需要調整，例如新值比 root 還大。",
+     "t": 4243
+    },
+    {
+     "text": "Insert 1：先放在 2 的下面（左子），位置 6。",
+     "t": 4273
+    },
+    {
+     "text": "1 沒有比 parent 大，就留在原地，insert 結束。",
+     "t": 4279
+    },
+    {
+     "text": "不能放到右邊子樹其他地方：heap 是 complete binary tree，必須依序填位置。",
+     "t": 4305
+    },
+    {
+     "text": "兩步驟：先把新元素放在 heap 最末端的位置，維持 complete binary tree。",
+     "t": 4375
+    },
+    {
+     "text": "再跟 parent 比，比 parent 大就往上，一直檢查到不能往上為止。",
+     "t": 4419
+    },
+    {
+     "text": "Insert 5：5 與 2 比，2 掉下來 5 上去；再與 20 比，比較小所以停止。",
+     "t": 4456
+    },
+    {
+     "text": "Insert 21：21 先換掉 2，再換掉 20，成為新的 root。",
+     "t": 4512
+    }
+   ],
+   "trap": "老師在 insert 1 時說「看 1 有沒有比 20 大」，正確應是與 parent 2 比；heap insert 永遠是與 parent 比，不是與 root 比。"
+  },
+  {
+   "title": "Max heap insert 程式（陣列實作）",
+   "scene": "p14-heap-insert-code",
+   "points": [
+    {
+     "text": "Heap 用 array 實作，陣列配置大小為 MaxSize。",
+     "t": 4577
+    },
+    {
+     "text": "若 n 等於 MaxSize，代表 heap 滿了。",
+     "t": 4595
+    },
+    {
+     "text": "n 記錄 heap（complete binary tree）最後一個元素的 array index。",
+     "t": 4613
+    },
+    {
+     "text": "例中元素放在 1～5，所以 n=5（老師先說 6 後更正）。",
+     "t": 4644
+    },
+    {
+     "text": "Insert 時 n++ 變 6，21 先放到位置 6。",
+     "t": 4686
+    },
+    {
+     "text": "位置 n 的 parent 是 n/2。",
+     "t": 4706
+    },
+    {
+     "text": "從 i=n 開始，i 到 1（root）就停止。",
+     "t": 4764
+    },
+    {
+     "text": "若新值比 parent 大就把 parent 往下搬，i 每次除以 2。",
+     "t": 4796
+    }
+   ],
+   "trap": "老師口說「swap」，但程式其實不是每步交換：是把 parent 往下搬（heap[i]=heap[i/2]），最後才把新值一次放到 heap[i]，省下一半的搬移。老師也口誤說「2 除上 i」，應為 i/2。補充：時間 O(log n)。"
+  },
+  {
+   "title": "Max heap delete：直覺作法（未完待續）",
+   "scene": "p14-heap-delete",
+   "points": [
+    {
+     "text": "Delete 比 insert 更複雜，先看例子不看程式。",
+     "t": 4835
+    },
+    {
+     "text": "Delete 時 root 的 20 被拿掉，位置空出。",
+     "t": 4849
+    },
+    {
+     "text": "需要從剩下的數字中找最大的補上。",
+     "t": 4865
+    },
+    {
+     "text": "笨方法：檢查 15、2、14、10，15 最大，把 15 移上來。",
+     "t": 4881
+    },
+    {
+     "text": "15 原來的位置又空了，從它下面挑 14 補上。",
+     "t": 4905
+    },
+    {
+     "text": "這種逐層從剩餘數字挑最大來補洞的方法太笨，不是最後的 solution，下次再講。",
+     "t": 4943
+    }
+   ],
+   "trap": "補充：笨方法可能在中間留洞（位置 4 空、10 在位置 5），破壞 complete binary tree。課本正解是把最後一個元素移到 root，再往下與較大的子節點交換（trickle down），時間 O(log n)。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "一棵有 n 個節點的 binary tree（以 leftChild/rightChild 鏈結表示）共有多少個 null link？",
+   "opts": [
+    "n-1",
+    "n",
+    "n+1",
+    "2n"
+   ],
+   "ans": "n+1",
+   "why": "共 2n 個 link，除 root 外每個節點被一條 link 指到，用掉 n-1 條，剩 2n-(n-1)=n+1 條。"
+  },
+  {
+   "q": "樹 A(B(D(H,I),E),C(F,G)) 做成 inorder threaded tree，E 的 right thread 指向誰？",
+   "opts": [
+    "B",
+    "A",
+    "C",
+    "head node"
+   ],
+   "ans": "A",
+   "why": "Inorder 為 H D I B E A F C G，E 的下一個是 A，所以空的 rightChild 指向 inorder successor A。"
+  },
+  {
+   "q": "在 threaded tree 中把 R 插入成 X 的 right child 後，X 的 rightThread 應設為？",
+   "opts": [
+    "true",
+    "false",
+    "與 R 的 leftThread 相同",
+    "不用改"
+   ],
+   "ans": "false",
+   "why": "X.rightChild 現在指向真正的子節點 R，不是 thread，所以 rightThread=false（老師口誤說 true）。"
+  },
+  {
+   "q": "頻率 2,3,5,7,9,13 建 Huffman tree（左 0 右 1，依課堂圖），頻率 2 的字的碼長為？",
+   "opts": [
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "ans": "4",
+   "why": "最終樹 39(16(7,9),23(10(5(2,3),5),13))，2 的碼為 1000，長 4 位元。"
+  },
+  {
+   "q": "關於 Huffman tree，下列何者正確？",
+   "opts": [
+    "給定頻率時樹一定唯一",
+    "每次合併頻率最大的兩個",
+    "n 個 message 需 merge n-1 次",
+    "內部節點也代表真實 message"
+   ],
+   "ans": "n 個 message 需 merge n-1 次",
+   "why": "每次 merge 讓 queue 中的樹少一棵，從 n 棵到 1 棵要 n-1 次；同分時樹不唯一；內部節點只是虛擬合併字。"
+  },
+  {
+   "q": "Max heap [20,15,2,14,10]（陣列 1-based）插入 21 後的陣列為？",
+   "opts": [
+    "[21,20,15,14,10,2]",
+    "[21,15,20,14,10,2]",
+    "[20,15,21,14,10,2]",
+    "[21,15,2,14,10,20]"
+   ],
+   "ans": "[21,15,20,14,10,2]",
+   "why": "21 放位置 6，parent 3 的 2 下移；再與位置 1 的 20 比，20 下移到 3，21 成為 root。"
+  },
+  {
+   "q": "以 max heap 實作 priority queue，insert 與 delete max 的時間複雜度為？",
+   "opts": [
+    "O(1) 與 O(n)",
+    "O(n) 與 O(1)",
+    "O(log n) 與 O(log n)",
+    "O(n) 與 O(n)"
+   ],
+   "ans": "O(log n) 與 O(log n)",
+   "why": "Heap 是 complete binary tree，高度約 log n，insert 往上爬、delete 往下調整都只沿一條路徑。"
+  },
+  {
+   "q": "下列哪一項不是 max heap 的要求？",
+   "opts": [
+    "必須是 complete binary tree",
+    "每個節點不小於其子節點",
+    "左子必須小於右子",
+    "root 為最大值"
+   ],
+   "ans": "左子必須小於右子",
+   "why": "Heap 不規定左右子之間的大小，左小右大是 binary search tree 的性質。"
+  }
+ ]
+}

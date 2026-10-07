@@ -1,343 +1,1486 @@
 {
  "video": "R0MpXbuqfZM",
- "label": "台大 林軒田《資料結構與演算法》Stack / Queue",
- "source": "whisper",
+ "label": "台大林軒田 DSA Stack / Queue",
+ "timing": "exact",
  "sections": [
   {
-   "title": "Q&A 補充：時間複雜度與實際執行時間",
+   "title": "開場：作業二的心態",
+   "scene": null,
    "points": [
     {
-     "text": "時間複雜度（asymptotic notation）描述的是「資料量增加時，執行時間成長的趨勢」；實際 running time 只是這條趨勢曲線上的某一個點。",
-     "t": 813
+     "text": "開場：先回答 slido 上的問題，再把上次沒講完的 stack 講完，接著進入 queue。",
+     "t": 418
     },
     {
-     "text": "知道趨勢就能從小資料往大資料推估：若演算法是 O(n²)，資料量變 10 倍，執行時間應約變 100 倍。",
-     "t": 880
+     "text": "作業二的資料規模接近學長參加比賽時面對的資料；第一次做不完是正常的，能拿多少拿多少，把沒學好的當成未來的目標。",
+     "t": 477
     },
     {
-     "text": "測試程式應先用小資料確認正確性並估計時間，再逐步放大，而不是一開始就把最大資料丟進去。",
-     "t": 938
+     "text": "Q：程式在 workstation 上順利跑完，是否代表沒超出 memory constraint？→ 只能說當下沒被 detect 出 memory violation，不代表沒有。",
+     "t": 584
+    }
+   ]
+  },
+  {
+   "title": "Q&A：作業 2.3 的設計題",
+   "scene": null,
+   "points": [
+    {
+     "text": "作業偏重實用，可以呼叫 library；但仍期待資工系同學有自己寫出這些資料結構的能力。",
+     "t": 684
     },
     {
-     "text": "Binary search 在 ordered array 上最多看 log n 個中間點；它屬於 Divide and Conquer 家族：把大問題切小，且丟掉不可能含答案的那一半，因此得到 O(log n)。",
+     "text": "2.3 用 linked list 存資料？是可能的方式，但好不好、哪些部分該用，要自己想。",
+     "t": 708
+    },
+    {
+     "text": "2.3 是職場常見的設計題：給你一個 task，要選什麼 data structure，沒有標準答案。",
+     "t": 733
+    },
+    {
+     "text": "分數不是重點，接受挑戰與思考的過程才重要。",
+     "t": 781
+    }
+   ]
+  },
+  {
+   "title": "Q&A：Running time 與時間複雜度",
+   "scene": "sqlin-trend",
+   "points": [
+    {
+     "text": "時間複雜度描述的是「隨著資料量增加，程式使用的時間怎麼變化」。",
+     "t": 822
+    },
+    {
+     "text": "分析工具是 asymptotic notation：看的是資料成長時那條曲線的趨勢。",
+     "t": 840
+    },
+    {
+     "text": "實際跑出來的 running time，就是這條趨勢曲線上的某一個點。",
+     "t": 853
+    },
+    {
+     "text": "若分析出與資料量是平方關係，可以從 10 筆、100 筆開始測。",
+     "t": 897
+    },
+    {
+     "text": "資料量 10 倍 → 執行時間約 100 倍；再到 1000 筆，就再乘約 100 倍。",
+     "t": 903
+    },
+    {
+     "text": "千萬別一開始就把最大的資料丟進去；先用小資料確認正確性並估計時間，再逐步放大。",
+     "t": 934
+    },
+    {
+     "text": "結論：複雜度做的是趨勢分析，running time 是其上的一點，可從小資料開始逼近、估計。",
+     "t": 964
+    }
+   ],
+   "trap": "補充：Big-O 只描述成長趨勢，忽略常數與低次項；n 很小時實測時間不一定符合這個比例。"
+  },
+  {
+   "title": "Q&A：作業繳交與可用的 library",
+   "scene": null,
+   "points": [
+    {
+     "text": "手寫作業拍照或掃描都可以，重點是清楚、讓助教好改。",
+     "t": 985
+    },
+    {
+     "text": "如果連 30 分都拿不到，代表對程式的掌握還有盲點，需要更努力解決。",
+     "t": 1049
+    },
+    {
+     "text": "可以用還沒教的資料結構：C/C++ 標準 library 裡的資料結構都可以用，先大概搞懂再呼叫。",
+     "t": 1124
+    }
+   ]
+  },
+  {
+   "title": "Q&A：O(log n) 與 Divide and Conquer",
+   "scene": "sqlin-binsearch",
+   "points": [
+    {
+     "text": "Q：Big-O log n 除了 binary search 還有別的例子嗎？",
      "t": 1172
     },
     {
-     "text": "在 C/C++ 中配置的 array 必須是連續記憶體；配置是否成功要檢查 malloc 的回傳值或 new 的結果。",
-     "t": 1418
+     "text": "Binary search 利用 ordered array 的特性，最多看 log n 個中間點，就能找到或確定要找的東西不在裡面。",
+     "t": 1188
+    },
+    {
+     "text": "Binary search 屬於更大的演算法家族：Divide and Conquer。",
+     "t": 1209
+    },
+    {
+     "text": "Divide and Conquer：把大問題切成小問題，再分頭解決。",
+     "t": 1215
+    },
+    {
+     "text": "Binary search 切成兩個小問題後，發現其中一半根本不含答案、可以丟掉，只剩一半。",
+     "t": 1229
+    },
+    {
+     "text": "切開後只留下少數小問題的演算法，分析起來常會有 O(log n) 的特性。",
+     "t": 1263
     }
-   ],
-   "trap": "程式跑完沒有偵測到 memory violation，不代表程式沒有記憶體錯誤，只是這次沒被抓到。",
-   "scene": "stack-lifo"
+   ]
   },
   {
-   "title": "Stack 複習：LIFO、頂端操作與括號配對",
+   "title": "Q&A：照 spec 做是自己的責任",
+   "scene": null,
    "points": [
     {
-     "text": "Stack 的核心特性是後進先出（LIFO）：像一疊盤子，只從頂端放上（push）、從頂端拿走（pop）。",
-     "t": 1832
+     "text": "多打一個空格或換行就變 0 分？會——確保輸出正確是重要的。",
+     "t": 1280
     },
     {
-     "text": "所有允許的運算都發生在頂端，有些實作會多提供「偷看頂端」（peek/top）的操作；壓在下面的元素不能直接存取。",
-     "t": 1854
+     "text": "spec 寫不清楚就給分；但 spec 寫清楚了（makefile 檔名、讀檔方式、在工作站 compile）沒照做就是 0 分。",
+     "t": 1312
     },
     {
-     "text": "括號配對（parentheses matching）：看到左括號就 push；看到右括號就與 stack top 的左括號配對並 pop，藉此找到「最近一個尚未配對的左括號」。",
-     "t": 1933
+     "text": "Follow the spec 是你自己的責任，不是助教的責任。",
+     "t": 1350
     },
     {
-     "text": "掃完整段程式碼即可判斷括號是否平衡，這是最入門的 stack 演算法。",
-     "t": 1985
+     "text": "執行時間給一小時，不會測得非常緊。",
+     "t": 1380
+    }
+   ]
+  },
+  {
+   "title": "Q&A：Array 的連續記憶體與 memory usage",
+   "scene": null,
+   "points": [
+    {
+     "text": "C/C++ 配置的 array 一定是連續記憶體；宣告 6.4G 的 array 可能在助教測試時配置失敗。",
+     "t": 1418
     },
     {
-     "text": "Stack 可用 array 或 linked list 實作；實作細節在於 top 要放哪：linked list 放 head 還是 tail、array 放靠開頭還是靠尾端（課本有詳述）。",
+     "text": "可以檢查 malloc 的回傳值或 new 的結果，判斷配置有沒有成功。",
+     "t": 1465
+    },
+    {
+     "text": "可用工作站上的指令查看自己程式的 memory usage。",
+     "t": 1487
+    },
+    {
+     "text": "程式佔很大記憶體時，若被排程換出再換回，需要較長的 process switch 時間。",
+     "t": 1519
+    },
+    {
+     "text": "目前沒有 memory violation 不代表一切都好，就像小偷只是還沒被抓到。",
+     "t": 1553
+    },
+    {
+     "text": "2.1、2.2 用 pseudo code（或短的 C/C++ 片段）即可；真正要執行的 code 只有 2.3。",
+     "t": 1606
+    }
+   ],
+   "trap": "程式跑完沒有偵測到 memory violation，不代表程式沒有記憶體錯誤，只是這次沒被抓到。"
+  },
+  {
+   "title": "直播問答的價值與學期安排",
+   "scene": null,
+   "points": [
+    {
+     "text": "直播意外的好處：大家發問比在教室踴躍得多。",
+     "t": 1693
+    },
+    {
+     "text": "讀課本也能學到很多，真正獨特的學習經驗來自問答的過程。",
+     "t": 1748
+    },
+    {
+     "text": "目前是第二次作業，之後至少還有四次作業和蠻困難的 final project。",
+     "t": 1780
+    }
+   ]
+  },
+  {
+   "title": "Stack 複習：LIFO 與頂端操作",
+   "scene": "stack-lifo",
+   "points": [
+    {
+     "text": "回到上次的 stack：在 computer science 裡有自己重要價值的資料結構。",
+     "t": 1809
+    },
+    {
+     "text": "最重要的特性是先進後出（LIFO），像電梯：先進去的人比較後出來。",
+     "t": 1834
+    },
+    {
+     "text": "通常想成一疊盤子：從頂端放上去（push）、從頂端拿出來（pop）。",
+     "t": 1857
+    },
+    {
+     "text": "有的實作會多提供「偷看頂端」（peek/top），甚至偷看頂端好幾個。",
+     "t": 1880
+    },
+    {
+     "text": "所有容許的運算都在 stack 頂端發生，壓在下面的不太管。",
+     "t": 1895
+    },
+    {
+     "text": "像待辦事項：一件件壓上來，壓在最下面的可能早就忘了。",
+     "t": 1909
+    }
+   ]
+  },
+  {
+   "title": "括號配對與 Stack 的實作",
+   "scene": "sqlin-paren",
+   "points": [
+    {
+     "text": "上次的入門演算法：檢查 C 語言程式碼裡的括號配對。",
+     "t": 1927
+    },
+    {
+     "text": "要幫「最近一個看到、還沒配對的左括號」找到配對的右括號。",
+     "t": 1946
+    },
+    {
+     "text": "看到左括號，就把它 push 到 stack 上。",
+     "t": 1954
+    },
+    {
+     "text": "看到右括號，就和 stack top 的左括號配對，並把它 pop 掉。",
+     "t": 1962
+    },
+    {
+     "text": "不看其他部分、只看括號：這樣掃完整段程式碼就能判斷括號是否平衡。",
+     "t": 1993
+    },
+    {
+     "text": "Stack 可用 array 或 linked list 實作；細節是 top 放哪：linked list 放 head 還是 tail、array 放開頭還是尾端（課本有寫）。",
      "t": 2007
     }
    ],
-   "trap": "用 linked list 實作 stack 時，top 放錯端（例如放在單向串列的 tail）會讓 pop 需要走訪整串，失去 O(1) 的優勢。",
-   "scene": "stack-lifo"
+   "trap": "用 linked list 實作 stack 時，top 放錯端（例如放在單向串列的 tail）會讓 pop 需要走訪整串，失去 O(1) 的優勢。補充：掃完 stack 還有左括號、或遇到右括號時 stack 已空，都是不平衡。"
   },
   {
-   "title": "Infix 與 Postfix 表示法",
+   "title": "Expression evaluation：先乘除後加減",
+   "scene": "sqlin-infix-order",
    "points": [
     {
-     "text": "我們平常寫的 A/B−C+D*E−A*C 是 infix（中序）：運算子放在兩個運算元中間，人依「先乘除後加減」理解它，但電腦需要被翻譯成明確步驟。",
+     "text": "今天講 stack 的另一個重要應用：expression evaluation，是 compiler 要做的事情的另一部分。",
+     "t": 2084
+    },
+    {
+     "text": "例子：程式裡寫 A/B−C+D*E−A*C。",
      "t": 2114
     },
     {
-     "text": "Postfix（後序）notation 把運算子（operator）放在運算元之後，例如 A/B 寫成 AB/，意思是「讀 A、讀 B、做除法」。",
+     "text": "小學教的語意：先乘除、後加減。",
+     "t": 2137
+    },
+    {
+     "text": "應該先做 A/B，再減 C，再做 D*E 才加起來，再做 A*C，最後相減。",
+     "t": 2149
+    },
+    {
+     "text": "看到 + 時不能直接把前面的結果和 D 加起來，因為 D 要先跟後面的 * 算。",
+     "t": 2175
+    },
+    {
+     "text": "希望電腦把人看得懂的先乘除後加減，翻譯成合理的步驟。",
+     "t": 2200
+    },
+    {
+     "text": "因此需要一路的計算過程（暫存中間值）。",
+     "t": 2223
+    }
+   ]
+  },
+  {
+   "title": "Postfix notation：動作放在數字後面",
+   "scene": "sqlin-postfix-idea",
+   "points": [
+    {
+     "text": "新觀念：Postfix notation。",
      "t": 2262
     },
     {
-     "text": "Infix 轉 postfix 時，運算元（A、B、C…）出現的順序完全不變，只是移動運算子的位置，讓它出現在該執行的時間點。",
+     "text": "A B C D E 不動，只把動作（加減乘除的 operator）放在數字之後。",
+     "t": 2273
+    },
+    {
+     "text": "A/B 寫成 A B /：對電腦來說就是讀 A、讀 B、做除法。",
+     "t": 2298
+    },
+    {
+     "text": "整串改成：A B / → C − → D E * → + → A C * → −，即 A B / C − D E * + A C * −。",
+     "t": 2364
+    },
+    {
+     "text": "Post 是「後面」：先準備好要算的東西，再下指令。",
+     "t": 2442
+    },
+    {
+     "text": "運算元 A B C D E 出現的順序與 infix 完全一樣，只是移動 operator 的位置。",
      "t": 2469
     },
     {
-     "text": "人工轉換法（human algorithm）：依優先序與由左至右的規則把每個運算加上括號，每個括號內恰有「左運算元、右運算元、運算子」三樣東西。",
+     "text": "把 operator 移到適當位置，電腦在那個時間點就做該做的事。",
+     "t": 2491
+    }
+   ]
+  },
+  {
+   "title": "人工轉換法：加括號再換位置",
+   "scene": "sqlin-human-paren",
+   "points": [
+    {
+     "text": "平常的寫法叫 infix（中序），運算子在中間；postfix 是後序。",
+     "t": 2525
+    },
+    {
+     "text": "給人用的演算法：先把要先做的（先乘除）用括號括起來。",
      "t": 2556
     },
     {
-     "text": "接著在每個括號內把順序改成「運算元1 運算元2 運算子」，由內往外做完再拿掉括號。例：3/4−5+6*7−8*9 → 3 4 / 5 − 6 7 * + 8 9 * −。",
-     "t": 2617
+     "text": "其他沒有優先順序的就從左到右，一層層再加上括號。",
+     "t": 2578
     },
     {
-     "text": "括號只是幫你圈出換位置的範圍，轉完後的 postfix 不需要括號；人工法適合考試手算短式子，但寫成程式不容易（要插括號、需多次掃描）。",
+     "text": "每個括號裡都恰有三樣東西：前面的運算元、後面的運算元、動作。",
+     "t": 2588
+    },
+    {
+     "text": "在每個括號裡把順序換成 postfix：3/4 → 3 4 /、6*7 → 6 7 *、8*9 → 8 9 *。",
+     "t": 2628
+    },
+    {
+     "text": "紅色（外層）括號也一樣：3 4 / 5 −、… 6 7 * +、… 8 9 * −。",
+     "t": 2652
+    },
+    {
+     "text": "括號只是輔助圈出換位置的範圍，轉完後不需要括號：3 4 / 5 − 6 7 * + 8 9 * −。",
      "t": 2756
+    },
+    {
+     "text": "式子不長時人做不難，但要寫成電腦演算法來做不太容易。",
+     "t": 2791
     }
    ],
-   "scene": "infix-to-postfix"
+   "trap": "人工法適合考試手算短式子：運算元順序永遠不變，只有運算子換位置。"
   },
   {
-   "title": "用 Stack 計算 Postfix 運算式",
-   "points": [
-    {
-     "text": "Postfix 的計算只需由左往右掃一次、不回頭：看到運算子時，取用「最近算好的兩個數字」來運算。",
-     "t": 2880
-    },
-    {
-     "text": "還用不到的中間結果（如 −4.25 要等 42 算完）必須先暫存並保持順序，而「最近的先用」正是 stack 的特性，與括號配對找最近左括號同一概念。",
-     "t": 2956
-    },
-    {
-     "text": "演算法：遇到 number 就 push 進 operand stack；遇到 operator 就 pop 出所需數量的運算元，計算後把結果 push 回去。",
-     "t": 3025
-    },
-    {
-     "text": "以 3 4 / 5 − 6 7 * + 8 9 * − 為例：3/4=0.75 → 0.75−5=−4.25 → 6*7=42 → −4.25+42=37.75 → 8*9=72 → 37.75−72=−34.25。",
-     "t": 3035
-    },
-    {
-     "text": "運算子需要幾個運算元就 pop 幾個：binary 取 2 個、unary（如負號）取 1 個、ternary（C 的 ?:）取 3 個。",
-     "t": 3224
-    },
-    {
-     "text": "正確跑完時，stack 上應只剩一個 element，它就是整個 postfix 運算式的值。",
-     "t": 3278
-    }
-   ],
-   "trap": "pop 出兩個數時，先 pop 出來的是右運算元、後 pop 的是左運算元；減法與除法順序弄反會算錯。",
+   "title": "Postfix 求值：最近的兩個數字",
    "scene": "postfix-eval",
    "params": {
     "expr": "3/4-5+6*7-8*9"
-   }
-  },
-  {
-   "title": "Infix 轉 Postfix 的 Stack 演算法",
+   },
    "points": [
     {
-     "text": "目標是 one-pass algorithm：只從左到右掃一次就完成轉換，比人工加括號、多次掃描更省時。",
-     "t": 4791
+     "text": "先想：已經拿到 postfix expression，電腦怎麼有效率地求值？",
+     "t": 2843
     },
     {
-     "text": "讀到運算子時往往還不能輸出（後面可能有優先序更高的運算），必須先存起來；例如讀到 / 要等看到後面的 − 才確定 A B / 可以輸出。",
+     "text": "由左到右：讀資料、下動作、讀資料、下動作。",
+     "t": 2877
+    },
+    {
+     "text": "3 4 / → 0.75；0.75 5 − → −4.25。",
+     "t": 2889
+    },
+    {
+     "text": "6 7 * 得到 42 時，−4.25 還不知道要跟誰做什麼，必須先存起來；37.75 在等 8 9 * 時也一樣。",
+     "t": 2914
+    },
+    {
+     "text": "存的地方不能亂存，要保持一定的順序。",
+     "t": 2969
+    },
+    {
+     "text": "Postfix 的特點：看到運算符號時，抓的是「最近算好的兩個數字」。",
+     "t": 2982
+    },
+    {
+     "text": "「最近」跟括號配對找最近的左括號是同一個概念 → 用 stack。",
+     "t": 3000
+    }
+   ]
+  },
+  {
+   "title": "用 operand stack 走一遍",
+   "scene": "postfix-eval",
+   "params": {
+    "expr": "3/4-5+6*7-8*9"
+   },
+   "points": [
+    {
+     "text": "看到數字就推進 stack：一開始 stack 是空的，先放 3、再放 4。",
+     "t": 3031
+    },
+    {
+     "text": "看到除：pop 出 3 和 4，除完得到 0.75 再放回 stack。",
+     "t": 3043
+    },
+    {
+     "text": "再看到 5 和減：0.75 − 5，放回 −4.25。",
+     "t": 3070
+    },
+    {
+     "text": "6、7 一路推進去；看到乘才把 6、7 叫出來，乘完塞回 42。",
+     "t": 3096
+    },
+    {
+     "text": "此時 stack 裡有 −4.25 和 42；看到加才 pop 出來相加，塞回 37.75。",
+     "t": 3125
+    },
+    {
+     "text": "這時 37.75 是唯一的 element，既是最底端也是最頂端；繼續做完 8 9 * − 得 −34.25。",
+     "t": 3140
+    }
+   ],
+   "trap": "pop 出兩個數時，先 pop 出來的是右運算元、後 pop 的是左運算元；減法與除法順序弄反會算錯。"
+  },
+  {
+   "title": "Postfix 求值演算法：需要幾個就 pop 幾個",
+   "scene": "sqlin-postfix-arity",
+   "points": [
+    {
+     "text": "Postfix evaluation 做的事非常單調而簡單。",
+     "t": 3155
+    },
+    {
+     "text": "從左掃到右，完全不用回頭。",
+     "t": 3202
+    },
+    {
+     "text": "如果是 number，就丟到 stack 裡。",
+     "t": 3208
+    },
+    {
+     "text": "如果是 operator，就從 stack 拿出它需要的數量，算完再塞回 stack。",
+     "t": 3211
+    },
+    {
+     "text": "例：5 乘以 −3 的負號只接受一個數字，所以只 pop 一個。",
+     "t": 3227
+    },
+    {
+     "text": "C 語言的 ?: 接受三個東西（條件、true 的結果、false 的結果），要 pop 三個。",
+     "t": 3247
+    },
+    {
+     "text": "順利跑完時，stack 上應該只有一個 element，它的值就是整個 postfix 運算式的結果。",
+     "t": 3281
+    },
+    {
+     "text": "還沒講怎麼從 infix 好好翻譯成 postfix。",
+     "t": 3310
+    }
+   ]
+  },
+  {
+   "title": "Q&A：作業的實際限制與效率",
+   "scene": null,
+   "points": [
+    {
+     "text": "2.1 要在意儲存空間嗎？盡量表達想法，但要考慮實體電腦的限制（整數範圍、記憶體大小）。",
+     "t": 3389
+    },
+    {
+     "text": "演算法有個 criteria 叫 effectiveness：要能說服人在一般電腦上能執行。",
+     "t": 3441
+    },
+    {
+     "text": "每次 query 都讀一次檔會很慢嗎？會。",
+     "t": 3477
+    },
+    {
+     "text": "Hint：6.4G 的資料不是全部都需要，合理讀進來、用基本資料結構存、適度排序。",
+     "t": 3499
+    }
+   ]
+  },
+  {
+   "title": "Q&A：十進位轉二進位需要 stack 嗎",
+   "scene": "sqlin-binary",
+   "points": [
+    {
+     "text": "Q：電腦把數字翻成二進位，會用到 stack 嗎？",
+     "t": 3560
+    },
+    {
+     "text": "典型做法：先找數字範圍，從最大的 2 的次方開始，用 for 迴圈一路直接輸出。",
+     "t": 3601
+    },
+    {
+     "text": "這樣不需要額外儲存，也就不用 stack。",
+     "t": 3626
+    },
+    {
+     "text": "但如果計算是從低位算到高位、輸出卻要從高位到低位，就可能需要像 stack 這樣的額外儲存。",
+     "t": 3661
+    },
+    {
+     "text": "能用 for 迴圈直接跑出來的話，不一定需要 stack。",
+     "t": 3677
+    }
+   ]
+  },
+  {
+   "title": "Q&A：怎麼量執行時間",
+   "scene": null,
+   "points": [
+    {
+     "text": "編譯器只檢查文法，不會告訴你執行時間；要用不同大小的資料測試來估算。",
+     "t": 3687
+    },
+    {
+     "text": "只存那四個函式會用到的資料就可以。",
+     "t": 3755
+    },
+    {
+     "text": "助教用實際時間（wall time）跑，並會多給一點時間。",
+     "t": 3777
+    }
+   ]
+  },
+  {
+   "title": "Q&A：只靠已教的方法夠嗎；休息",
+   "scene": null,
+   "points": [
+    {
+     "text": "能只靠已教的方法解嗎？例如更快的 sort 細節還沒教，但呼叫 C/C++ library 就能用。",
+     "t": 3821
+    },
+    {
+     "text": "只用 binary search 配 selection sort 要拿 90 分會很困難。",
+     "t": 3886
+    },
+    {
+     "text": "部分給分的細節，助教最後再決定。",
+     "t": 3917
+    },
+    {
+     "text": "休息十分鐘：下一節講 infix to postfix 的 conversion（parsing），postfix 不懂要趕快問。",
+     "t": 3983
+    }
+   ]
+  },
+  {
+   "title": "Infix → Postfix：想要 one-pass",
+   "scene": "sqlin-onepass",
+   "points": [
+    {
+     "text": "歡迎回來，講 stack 的最後一小段。",
+     "t": 4697
+    },
+    {
+     "text": "要做的是 expression parsing：從 infix 轉成 postfix。",
+     "t": 4743
+    },
+    {
+     "text": "不想用剛才的 human algorithm：加括號、轉換、拆括號，要把式子掃很多次。",
+     "t": 4761
+    },
+    {
+     "text": "能不能只從左到右掃一次？這叫 one-pass algorithm。",
+     "t": 4793
+    },
+    {
+     "text": "掃一次就完成，比掃很多次省時間。",
+     "t": 4807
+    }
+   ]
+  },
+  {
+   "title": "觀察：運算子什麼時候可以輸出",
+   "scene": "infix-to-postfix",
+   "params": {
+    "expr": "A/B-C+D*E-A*C"
+   },
+   "points": [
+    {
+     "text": "從剛才的式子 A/B−C+D*E−A*C 來觀察。",
+     "t": 4824
+    },
+    {
+     "text": "只掃一次，就必須有時先看看後面發生什麼，才能決定前面能不能操作。",
+     "t": 4835
+    },
+    {
+     "text": "讀了 A、讀到 / 時還不知道要做什麼：後面可能有優先序更高的事要先做。",
      "t": 4872
     },
     {
-     "text": "同優先序（如 − 和 +）依規定由左到右，所以看到 + 時，先前存著的 − 就可以輸出。",
+     "text": "就算知道 / 會先做，也要等看到 B 才能輸出，所以看到 / 一定要先存起來。",
+     "t": 4915
+    },
+    {
+     "text": "看到 −：優先序比 / 低，A/B 的意念已完整，可以輸出 A B /。",
+     "t": 4952
+    },
+    {
+     "text": "看到 +：與 − 同優先序，規定從左做到右，所以 C − 可以出來；+ 先存著。",
      "t": 5013
     },
     {
-     "text": "看到 * 時，先前的 + 還不能出來，* 自己也要先存；直到看到後面的 −，才依序輸出 *、再輸出 +。存放這些運算子的地方就是 stack（最晚存入的最先處理）。",
+     "text": "看到 *：+ 不能出來（* 優先序較高），* 自己也還不能做，兩個都先存。",
      "t": 5069
     },
     {
-     "text": "演算法：運算元（數字）直接輸出；運算子則與 stack top 比較，只要 top 的優先序「大於或等於」新運算子，就 pop 並輸出，重複到不能再 pop，最後把新運算子 push。",
+     "text": "看到後面的 −：確定 * 可以做，先輸出 *；再回頭看 +，同優先序也可以出來 → A B / C − D E * +。",
+     "t": 5126
+    }
+   ]
+  },
+  {
+   "title": "為什麼存在 Stack：最近存的先處理",
+   "scene": "sqlin-i2p-why",
+   "points": [
+    {
+     "text": "加跟乘都要先存起來，存的地方就是 stack。",
+     "t": 5173
+    },
+    {
+     "text": "Stack 表達的意念：後面看到要處理的，和最近塞進去的東西最接近。",
+     "t": 5188
+    },
+    {
+     "text": "+ 和 * 都塞進去了，看到後面的 − 時要先處理 *。",
+     "t": 5206
+    },
+    {
+     "text": "把最接近的那項完成後，才回頭處理 +。",
+     "t": 5218
+    },
+    {
+     "text": "從後往回追，像追疾病的感染來源一樣。",
+     "t": 5237
+    },
+    {
+     "text": "只掃一次、中間不確定的先存下來、輸出時從後往回追 → 用 stack 來做。",
+     "t": 5273
+    }
+   ]
+  },
+  {
+   "title": "Infix → Postfix 的 Stack 演算法",
+   "scene": "sqlin-i2p-rule",
+   "points": [
+    {
+     "text": "有了這個觀念，就有一個 stack 演算法把 infix 轉成 postfix。",
+     "t": 5283
+    },
+    {
+     "text": "從左掃到右；數字的順序在兩種表示法中一模一樣，看到數字直接輸出。",
      "t": 5325
     },
     {
-     "text": "這個 while 迴圈可能連續 pop 多次，例如 stack 有 + 與 *、新讀到 − 時，* 和 + 都會被 pop 出來。",
+     "text": "看到 operator：看 stack 頂端（最近還沒處理的那個）的優先序。",
+     "t": 5360
+    },
+    {
+     "text": "Stack 頂端比較優先或一樣優先，就表示可以處理了，把它 pop 出去當輸出（例：top 是 *、新來的是 −）。",
+     "t": 5377
+    },
+    {
+     "text": "Stack 頂端是 +、後面看到 *：* 要先做，所以 * 壓在上面。",
+     "t": 5428
+    },
+    {
+     "text": "這個迴圈可能 pop 很多次：+ 和 * 都在 stack 裡，看到 − 時 * 出來、+ 也出來。",
      "t": 5465
     },
     {
-     "text": "兩種 stack 要分清：計算 postfix 用 operand stack（存數字），轉換 infix→postfix 用 operator stack（存還沒處理的運算子）；兩者合起來就是一個計算機。",
-     "t": 5581
+     "text": "Pseudo code 大概十行：數字輸出，運算子進 stack 前做三行巧妙的運算。",
+     "t": 5506
     },
     {
-     "text": "計算機（包括 Google 搜尋框的算式）與 compiler 解析運算式，概念上都是「infix→postfix 轉換 + postfix evaluation」的組合。",
-     "t": 5640
+     "text": "新的不太優先，就先把前面比較急的債還了（pop 出來），最後再把新讀到的壓上去。",
+     "t": 5540
     }
    ],
-   "trap": "A/B−C+D*E−A*C 的 postfix 是 AB/C−DE*+AC*−；常見錯誤是把同優先序的 − 留在 stack 不 pop，導致變成右結合。",
-   "scene": "infix-to-postfix"
+   "trap": "A/B−C+D*E−A*C 的 postfix 是 A B / C − D E * + A C * −；常見錯誤是把同優先序的 − 留在 stack 不 pop，導致變成右結合。"
   },
   {
-   "title": "延伸：結合性、單元運算子與括號處理",
+   "title": "兩個 Stack 合起來就是計算機",
+   "scene": "sqlin-calc",
+   "params": {
+    "expr": "3/4-5+6*7-8*9"
+   },
    "points": [
     {
-     "text": "基本款適用於 binary operator 且為 left associative（同優先序時左邊先算），所以遇到相等優先序時 stack 內的要 pop。",
+     "text": "轉換時用的是 operator stack，放動作。",
+     "t": 5559
+    },
+    {
+     "text": "上一段的 evaluation 用的是 operand stack：計算暫存區，像計算機的 memory，只是疊起來的。",
+     "t": 5586
+    },
+    {
+     "text": "翻譯式子時，operator stack 放將要處理、但還沒處理的動作，等該處理時再拿出來。",
+     "t": 5619
+    },
+    {
+     "text": "兩個 stack 結合起來，基本上就是一個計算機。",
+     "t": 5640
+    },
+    {
+     "text": "例如在 Google search 框打算式也能得到結果。",
+     "t": 5649
+    },
+    {
+     "text": "做法：一、把 infix 翻成 postfix；二、用 postfix evaluator 算出來。",
+     "t": 5683
+    },
+    {
+     "text": "Compiler 從程式碼建立語意時，也用到這類 stack solution。",
+     "t": 5696
+    },
+    {
+     "text": "照慣例，作業三很可能要寫計算機。",
+     "t": 5722
+    }
+   ],
+   "trap": "兩種 stack 要分清：計算 postfix 用 operand stack（存數字），轉換 infix→postfix 用 operator stack（存還沒處理的運算子）。"
+  },
+  {
+   "title": "延伸：結合性、unary 與 ternary",
+   "scene": "sqlin-assoc",
+   "points": [
+    {
+     "text": "剛才的基本款適用於 binary operator。",
      "t": 5767
     },
     {
-     "text": "若是 right associative 的運算子，同優先序時 stack 內的不能 pop，新的要直接壓上去。",
-     "t": 5790
+     "text": "而且適用於 left associative：重要性一樣時左邊先算，所以相等時 stack 裡的可以出來。",
+     "t": 5783
     },
     {
-     "text": "Unary 與 ternary 運算子概念相同：運算元先輸出，運算子等到語意完整且比過優先序後才輸出。",
-     "t": 5842
+     "text": "有些 operator 是 right associative：優先序一樣時右邊先算。",
+     "t": 5793
     },
     {
-     "text": "實務難點：減號 − 到底是「減」還是「負號」，在這個架構下無法乾淨處理，需要特殊判斷。",
-     "t": 5880
+     "text": "Right associative 時，兩個一樣大不能 pop，新的要壓上去等後面再說。",
+     "t": 5822
     },
     {
-     "text": "左括號一律 push，而且會壓住 stack 中所有運算子不讓它們出來：在 stack 外時優先序最高、進入 stack 後優先序最低，括號內的運算子可以壓在它上面。",
-     "t": 5944
+     "text": "Unary（接一個數字）與 ternary（接三個）概念類似：數字先出，operator 等意念完整並比過優先序再出。",
+     "t": 5844
     },
     {
-     "text": "例如 3*(5+7)：* push、( push、+ 壓在 ( 上；直到遇到右括號，才把括號內的運算子 pop 完並「救出」左括號，這就是 parentheses matching。",
-     "t": 5973
-    },
-    {
-     "text": "整合三件事就能寫出簡單計算機：括號配對、運算子優先權處理（operator stack）、運算值計算（operand stack）。",
-     "t": 6134
+     "text": "困難處：C 語言裡打一個減號，到底是減還是負號，這個架構沒辦法乾淨處理，需要特殊處理。",
+     "t": 5881
     }
    ],
-   "trap": "左括號有兩種優先序：在 stack 外最高（一定 push）、在 stack 內最低（任何運算子都可壓在上面）；只有右括號能把它 pop 出來。",
-   "scene": "infix-to-postfix",
-   "params": {
-    "expr": "(A+B)*C-D^E^F"
-   }
+   "trap": "補充：A−B−C（左結合）→ A B − C −；A^B^C（右結合）→ A B C ^ ^。右結合的判斷是 top 優先序「>」才 pop。"
   },
   {
-   "title": "為什麼用 Stack：One-pass 演算法與 System Stack",
+   "title": "括號：左括號的兩種優先序",
+   "scene": "infix-to-postfix",
+   "params": {
+    "expr": "3*(5+7)"
+   },
    "points": [
     {
-     "text": "Stack 版的 infix→postfix 相較人工法容易寫成程式；人工法要正確插入括號、還可能需要 multiple pass。",
+     "text": "要寫簡單計算機，只剩括號怎麼處理還沒講。",
+     "t": 5902
+    },
+    {
+     "text": "括號是最高的優先序：看到左括號，要先把它右邊的東西通通算完，stack 裡的才能出來。",
+     "t": 5937
+    },
+    {
+     "text": "例子：3 * (5 + 7)。",
+     "t": 5974
+    },
+    {
+     "text": "一開始看到 * 放進去；看到左括號一樣放進去，壓在上面，不讓之前的東西出來。",
+     "t": 5985
+    },
+    {
+     "text": "下一個看到 +：在括號裡要先算，可以壓在左括號上面。",
+     "t": 6003
+    },
+    {
+     "text": "把括號裡的東西通通解決，直到右括號出現，把左括號「救出來」。",
+     "t": 6058
+    },
+    {
+     "text": "左括號比 stack 裡的都大（壓住所有 operator），但比 stack 外的都小（其他人都能壓在它上面）。",
+     "t": 6077
+    },
+    {
+     "text": "只有右括號能救它出來，這就是 stack 的第一個演算法：parentheses matching。",
+     "t": 6107
+    }
+   ],
+   "trap": "左括號有兩種優先序：在 stack 外最高（一定 push）、在 stack 內最低（任何運算子都可壓在上面）；只有右括號能把它 pop 出來。"
+  },
+  {
+   "title": "整合三件事：一個簡單計算機",
+   "scene": "sqlin-calc",
+   "params": {
+    "expr": "3*(5+7)"
+   },
+   "points": [
+    {
+     "text": "把 stack 這一講教過的三件事整合起來。",
+     "t": 6134
+    },
+    {
+     "text": "一：parentheses matching——右括號救出左括號。",
+     "t": 6136
+    },
+    {
+     "text": "二：運算優先權的處理（operator 丟進 stack，比較優先的先出來）。",
+     "t": 6144
+    },
+    {
+     "text": "左括號有特殊的優先權：比 stack 裡的都優先、比 stack 外的都不優先。",
+     "t": 6169
+    },
+    {
+     "text": "三：用 stack 算運算值，暫存已讀到或算完、還沒用到的數字。",
+     "t": 6180
+    },
+    {
+     "text": "三個 algorithm 整合起來，就是一個具體而微的四則運算計算機程式。",
+     "t": 6197
+    },
+    {
+     "text": "真正的 compiler 不會只為 expression 寫這個方法，但這些概念可以擴充成更複雜的 routine。",
+     "t": 6220
+    }
+   ]
+  },
+  {
+   "title": "閒聊問答",
+   "scene": null,
+   "points": [
+    {
+     "text": "問題時間：在家直播的原因之一是家裡有暖氣等閒聊。",
+     "t": 6242
+    },
+    {
+     "text": "作業三應該會比作業二簡單。",
+     "t": 6302
+    }
+   ]
+  },
+  {
+   "title": "Q&A：為什麼要學 Stack 版的轉換",
+   "scene": "sqlin-onepass",
+   "points": [
+    {
+     "text": "Q：infix to postfix 的 stack 方法有比較好嗎？",
      "t": 6329
     },
     {
-     "text": "在只讀一次輸入的 one-pass algorithm 中，常需要暫存資料並優先處理「最接近、最近存入」的那一筆，這時 stack 特別好用。",
-     "t": 6406
+     "text": "和 human algorithm 比：人好懂，但電腦要把括號插對地方，還可能 multiple pass，不容易寫。",
+     "t": 6355
     },
     {
-     "text": "Compiler 有時自己維護一個 stack，有時透過 recursive call 等於使用了 system stack。",
-     "t": 6472
+     "text": "Stack-based 演算法的價值：stack 讓我們設計出有巧思的演算法。",
+     "t": 6387
+    },
+    {
+     "text": "在只讀一次輸入的 one-pass algorithm 裡，常需要暫存並優先處理最接近的那筆，這時 stack 很有用。",
+     "t": 6408
+    },
+    {
+     "text": "Compiler 有時自己弄一個 stack，有時透過 recursive call 等於用了 system stack。",
+     "t": 6475
+    },
+    {
+     "text": "Infix to postfix 現在比較是教育性質的演算法，幫助了解 stack 能做什麼。",
+     "t": 6500
     }
-   ],
-   "scene": "stack-lifo"
+   ]
   },
   {
-   "title": "迷宮搜尋：Recursion 版與自訂 Stack 版",
+   "title": "Queue 預告：排隊",
+   "scene": "queue-fifo",
    "points": [
     {
-     "text": "問題：給定二維迷宮每格上下左右能否通行，判斷從入口能否走到出口（迷宮有沒有解）。",
+     "text": "進入 queue 的部分。",
+     "t": 6541
+    },
+    {
+     "text": "Queue 對大家來說難度可能比 stack 更低。",
+     "t": 6589
+    },
+    {
+     "text": "現在最常見的事之一：排隊買口罩，queue 就是排隊這件事。",
+     "t": 6626
+    },
+    {
+     "text": "未來做的搶票、選課系統，都需要排隊的概念。",
+     "t": 6673
+    },
+    {
+     "text": "從 stack 切到 queue 的好方法：再看一個 stack 演算法，比較兩者的差異。",
+     "t": 6703
+    },
+    {
+     "text": "看看 stack 和 queue 放進演算法裡時，會有什麼不同的 behavior。",
+     "t": 6720
+    }
+   ]
+  },
+  {
+   "title": "回顧：資料結構搭配演算法",
+   "scene": null,
+   "points": [
+    {
+     "text": "回顧：資料結構和演算法搭配著講，已經講了不少東西。",
+     "t": 6741
+    },
+    {
+     "text": "Array 上做 sequential search；找最小值的變形再配一個 for 迴圈就是 selection sort。",
+     "t": 6751
+    },
+    {
+     "text": "Linked list 方便 insertion → insertion sort；ordered array → binary search。",
+     "t": 6797
+    },
+    {
+     "text": "Sparse vector inner product、polynomial；linked list 上偵測 cycle 的龜兔賽跑演算法。",
+     "t": 6822
+    },
+    {
+     "text": "Stack：parentheses matching、postfix evaluation、infix to postfix。",
+     "t": 6846
+    }
+   ]
+  },
+  {
+   "title": "迷宮問題：有沒有解",
+   "scene": "sqlin-maze-problem",
+   "points": [
+    {
+     "text": "用 stack 來走迷宮。",
+     "t": 6870
+    },
+    {
+     "text": "典型的二維迷宮：每個格子點有資訊說哪邊可以通、哪邊有牆。",
+     "t": 6881
+    },
+    {
+     "text": "把資訊簡化成：每個點的上下左右能不能走。",
+     "t": 6915
+    },
+    {
+     "text": "能不能找一個演算法，從迷宮的頭走到迷宮的尾？",
+     "t": 6921
+    },
+    {
+     "text": "先簡化問題：到底有沒有路可以出來，也就是迷宮有沒有解。",
      "t": 6947
     },
     {
-     "text": "Recursive 版：走到 (i,j) 先標記為 visited 避免繞圈，再對每個還沒走過的鄰居 (k,l)：是出口就成功，否則遞迴從那裡出發；所有方向都失敗才回報無解。",
+     "text": "例如某處封起來就沒有解；電腦要怎麼判斷一個迷宮有沒有解？",
+     "t": 6956
+    }
+   ]
+  },
+  {
+   "title": "迷宮：Recursion 版",
+   "scene": "sqlin-maze-rec",
+   "points": [
+    {
+     "text": "其中一個做法：用 recursion。",
      "t": 6990
     },
     {
-     "text": "Recursion 其實偷偷使用 system stack：每次函式呼叫就像多拿一張計算紙壓在 system stack 上，失敗時自然退回上一層嘗試下一條路。",
+     "text": "想像現在在 (i,j) 這個位置，迷宮有些位置走過、有些還沒走過。",
+     "t": 7017
+    },
+    {
+     "text": "走過的不要再走，否則會一直在走過的地方繞圈圈。",
+     "t": 7037
+    },
+    {
+     "text": "呼叫之後，先把這個位置標成「走過」。",
+     "t": 7063
+    },
+    {
+     "text": "對每個還沒走過、走得到的 (k,l) 試走一步：如果它就是出口，就有解了。",
+     "t": 7084
+    },
+    {
+     "text": "不然就假裝從那裡出發，遞迴看看能不能走到終點。",
+     "t": 7107
+    },
+    {
+     "text": "每一條都試過、通通是死路，這個迷宮一定沒有解。",
+     "t": 7134
+    },
+    {
+     "text": "Recursion 一路長下去；那邊都走過沒有，就自然回到原來的地方試第二條、第三條路。",
+     "t": 7163
+    }
+   ]
+  },
+  {
+   "title": "迷宮：自己的 Stack 當記事本",
+   "scene": "maze-dfs",
+   "points": [
+    {
+     "text": "Recursion 其實是偷偷多花系統給你的空間：system stack。",
      "t": 7198
     },
     {
-     "text": "自訂 stack 版：不呼叫函式，而是把「待探索的點」push 進自己的 stack（當作記事本），每輪 pop 最新寫入的一筆去探索。",
-     "t": 7249
+     "text": "每次 function 呼叫，就是多拿一張計算紙壓在 system stack 上。",
+     "t": 7215
     },
     {
-     "text": "Recursive 版的 system stack 隨時保存一條「從起點探索中的路徑」；自訂 stack 存的則是一堆「計畫要看的位置」，兩者內容不同。",
-     "t": 7414
+     "text": "不如自己存：在自己的 stack 裡放還沒有探索過的點。",
+     "t": 7257
     },
     {
-     "text": "把鄰居放進 stack 時標記為 to-do，可避免同一位置被多次放入記事本（重複 entry）。",
+     "text": "放進去時標成 to-do：這個等一下會看，也不希望其他 routine 再踏進來。",
      "t": 7306
     },
     {
-     "text": "若不標 to-do，pop 出來時就得再檢查是否已 visited，否則會重複展開鄰居、浪費計算，有環的迷宮甚至可能一直繞圈。",
-     "t": 8401
-    }
-   ],
-   "trap": "visited（真的走到並展開鄰居）與 to-do（已寫進記事本但還沒拜訪）是不同狀態，漏了 to-do 標記會產生重複 entry。",
-   "scene": "maze-dfs"
-  },
-  {
-   "title": "Container 的觀點：換容器就換行為",
-   "points": [
-    {
-     "text": "迷宮演算法中的記事本只要能「放進一個、拿出一個」就行，這種結構統稱 container；array、linked list、stack 都是不同的容器。",
-     "t": 9414
+     "text": "像一本計畫本：在 (i,j) 看到一堆可能可以走的 (k,l)，先記在記事本裡。",
+     "t": 7348
     },
     {
-     "text": "若容器是隨機抽取的袋子，演算法就像醉漢亂走（random walk）。",
+     "text": "下一輪從記事本拿一個出來，想像走過去拜訪它，再把它還不是 to-do 的鄰居記上去。",
+     "t": 7372
+    },
+    {
+     "text": "Recursive 版的 system stack 無時無刻維持著一條正在從頭探索的路。",
+     "t": 7409
+    },
+    {
+     "text": "自己的 stack 則放一堆計畫要看的 position，每次拿最新寫上去的一筆來探索。",
+     "t": 7457
+    }
+   ],
+   "trap": "Recursive 版 system stack 存的是「一條路徑」，自訂 stack 存的是「待探索的點」；兩者內容不同。"
+  },
+  {
+   "title": "Q&A：Final project；休息",
+   "scene": null,
+   "points": [
+    {
+     "text": "Final project 盡量在下週公佈。",
+     "t": 7546
+    },
+    {
+     "text": "休息十分鐘，回來從 stack 走迷宮切到 queue。",
+     "t": 7615
+    }
+   ]
+  },
+  {
+   "title": "Q&A：Final project 分組",
+   "scene": null,
+   "points": [
+    {
+     "text": "Final project 分組人數還沒確定，很可能三人以下，一人一組也可以。",
+     "t": 8247
+    }
+   ]
+  },
+  {
+   "title": "為什麼要標 to-do：重複 entry",
+   "scene": "sqlin-todo",
+   "points": [
+    {
+     "text": "同學問 stack implementation 那頁：為什麼要把 (k,l) 標成 to-do？",
+     "t": 8300
+    },
+    {
+     "text": "有些迷宮裡，同一個點可以用兩種方式走到（剛好有兩邊開口）。",
+     "t": 8337
+    },
+    {
+     "text": "例如沒有這道牆時，這個點可以從下面走上來，也可以從右邊走過來。",
+     "t": 8356
+    },
+    {
+     "text": "沒標 to-do：等一下從另一條路過來，覺得它又是鄰居，又把它放進記事本一次。",
+     "t": 8401
+    },
+    {
+     "text": "記事本裡會有重複的位置：已經寫進記事本、但還沒 visit。",
+     "t": 8411
+    },
+    {
+     "text": "Visit 是真正走到那上面、開始派出它的鄰居的時候。",
+     "t": 8415
+    },
+    {
+     "text": "重複的 entry pop 出來時，就得檢查是否 visited 過（例如第二個「35 這個位置」），是的話直接跳過。",
+     "t": 8445
+    },
+    {
+     "text": "否則同一位置走第二次、又把鄰居堆上去，引入無謂的計算；有環的迷宮甚至一直繞圈。",
+     "t": 8523
+    }
+   ],
+   "trap": "visited（真的走到並展開鄰居）與 to-do（已寫進記事本但還沒拜訪）是不同狀態，漏了 to-do 標記會產生重複 entry。"
+  },
+  {
+   "title": "Q&A：找組員",
+   "scene": null,
+   "points": [
+    {
+     "text": "怎麼找組員自己決定；疫情期間面對面討論比較困難。",
+     "t": 8544
+    },
+    {
+     "text": "認真一起做完的隊友，感情通常會變好，可能成為一輩子的夥伴。",
+     "t": 8581
+    },
+    {
+     "text": "可能碰到很雷的組員，但那也是學習危機處理的一部分。",
+     "t": 8647
+    }
+   ]
+  },
+  {
+   "title": "Q&A：老師的 ICPC 經驗",
+   "scene": null,
+   "points": [
+    {
+     "text": "怕自己很雷拖累別人？那就努力不要很雷。",
+     "t": 8713
+    },
+    {
+     "text": "老師大二參加 ACM ICPC 拿到世界第十、亞洲第一；兩位隊友是資訊奧林匹亞金牌、銀牌。",
+     "t": 8752
+    },
+    {
+     "text": "給自己多一點信心，把握和優秀同學一起學習的機會。",
+     "t": 8883
+    }
+   ]
+  },
+  {
+   "title": "Q&A：怎麼練習寫程式",
+   "scene": null,
+   "points": [
+    {
+     "text": "怎麼練習？在紙上寫程式（pseudo code 或 exact code）。",
+     "t": 8950
+    },
+    {
+     "text": "在白紙、白板上模擬程式，比上機更能理清邏輯，不會只仰賴 compiler。",
+     "t": 9007
+    },
+    {
+     "text": "認真準備比賽時，上機與紙上磨練程式思考大約一半一半。",
+     "t": 9107
+    }
+   ]
+  },
+  {
+   "title": "Q&A：Recursive 是 DFS？Code vs pseudo code",
+   "scene": null,
+   "points": [
+    {
+     "text": "Q：剛才迷宮的 recursive 是 DFS、stack 是 BFS 嗎？短答：不是，depends on implementation，講 queue 時再比較。",
+     "t": 9127
+    },
+    {
+     "text": "大學除了知識，也要學與人合作、好的人生哲學，從別人的經驗學習。",
+     "t": 9163
+    },
+    {
+     "text": "寫 pseudo code 訓練高層邏輯的完整性；寫 code 訓練細心。",
+     "t": 9256
+    },
+    {
+     "text": "Code 像在算數學，pseudo code 像在想演算法。",
+     "t": 9365
+    }
+   ]
+  },
+  {
+   "title": "Container：換容器就換行為",
+   "scene": "sqlin-container",
+   "points": [
+    {
+     "text": "更 general 來看：走迷宮只是需要一本記事本。",
+     "t": 9416
+    },
+    {
+     "text": "Stack 的特性：最後寫進記事本的，會是最先探索下去的地方。",
+     "t": 9421
+    },
+    {
+     "text": "記事本不一定要用 stack；能當記事本、能裝東西的叫做 container。",
+     "t": 9450
+    },
+    {
+     "text": "Array、linked list 等都是不同的容器，放進去、拿出來的方法不一樣，但整個演算法長相類似。",
+     "t": 9469
+    },
+    {
+     "text": "例如一個袋子：東西丟進去，每次隨便抽一個出來。",
      "t": 9487
     },
     {
-     "text": "不論放哪種 container，這個演算法都能正確回答「有沒有解」；但放進/拿出規則不同，搜尋行為與找到的路徑就不同。",
+     "text": "這樣走迷宮就像喝醉酒跌跌撞撞，也就是 random walk。",
+     "t": 9560
+    },
+    {
+     "text": "只要每次能拿一個、塞一個，任何 container 都能動：有解一定找出一個解，沒解一定回報沒解。",
      "t": 9591
+    },
+    {
+     "text": "但不同 container 的 behavior 不同，找出的那條路也可能不同。",
+     "t": 9641
     }
-   ],
-   "scene": "maze-compare"
+   ]
   },
   {
-   "title": "Queue：FIFO、enqueue/dequeue 與實作",
+   "title": "Queue：FIFO、enqueue 與 dequeue",
+   "scene": "queue-fifo",
    "points": [
     {
-     "text": "Stack 是 LIFO；Queue 是先進先出（FIFO），就像排隊買票、印表機先送的先印。",
+     "text": "換一個跟 stack 特性非常不一樣的 container；stack 是 last in first out。",
+     "t": 9664
+    },
+    {
+     "text": "Queue 就是排隊：first in first out，排前面的先買到票；印表機先送的先印。",
      "t": 9676
     },
     {
-     "text": "Queue 有 front（前端）與 rear（後端）：新來的排在 rear，服務時從 front 取出。",
-     "t": 9740
+     "text": "後來的請排在隊伍後面。",
+     "t": 9704
     },
     {
-     "text": "Enqueue = insert at rear（只能從後面放）；dequeue = remove from front（只能從前面拿），也可另外提供只看 front 的操作。",
+     "text": "所以有 rear（後面）和 front（前面）的概念。",
+     "t": 9742
+    },
+    {
+     "text": "Enqueue 是放進去：insert at rear（insert at back）。",
      "t": 9781
     },
     {
-     "text": "Queue 適合需要依時間先後、講求公平性的處理順序。",
-     "t": 9833
+     "text": "Dequeue 是拿出來：remove from front；也可另外提供只看前面是誰的操作。",
+     "t": 9796
     },
     {
-     "text": "一種實作是 circular array：把 0~9 共 10 格的 array 想成首尾相接、繞完 9 再回到 0，有抽象的開頭與結尾（例如開頭在 2，結尾在其前一格 1），空間可循環利用。",
+     "text": "Queue 是一種相對公平的方式；電腦裡依時間先後決定處理順序時也會用 queue。",
+     "t": 9836
+    }
+   ]
+  },
+  {
+   "title": "Queue 的實作：Circular array",
+   "scene": "sqlin-circ10",
+   "points": [
+    {
+     "text": "課本講到 queue 要怎麼 implement。",
+     "t": 9888
+    },
+    {
+     "text": "其中一種是 circular array（之前列為 reading assignment）。",
      "t": 9894
     },
     {
-     "text": "也可用 linked list 或 circular list 實作；front/rear 如何決定屬課本 reading assignment，老師未在課堂細講。",
+     "text": "例如 array 有 0 號到 9 號共 10 個位置。",
+     "t": 9905
+    },
+    {
+     "text": "把它虛擬成連續的空間：0 到 9 繞完，再從 0 繼續繞下去。",
+     "t": 9920
+    },
+    {
+     "text": "有抽象的開頭（例如 2 號）和抽象結尾（2 號的前一格，1 號），10 個空間連續而循環地使用。",
+     "t": 9931
+    },
+    {
+     "text": "怎麼決定 queue 的 front 和 rear 在哪裡，不太難，留給大家回去自己讀。",
+     "t": 9950
+    },
+    {
+     "text": "也可以用 linked list 或 circular list 實作。",
      "t": 9975
     }
    ],
-   "trap": "Circular queue 的 front/rear 移動與判滿/判空細節老師留給課本自讀，考前務必自行補齊。",
-   "scene": "queue-fifo"
+   "trap": "Circular queue 的 front/rear 移動與判滿/判空細節老師留給課本自讀，考前務必自行補齊（Horowitz：front 指向第一個元素的前一格，n 格最多放 n−1 個）。"
   },
   {
-   "title": "Stack vs Queue 走迷宮：DFS 與 BFS",
+   "title": "把迷宮的 container 換成 Queue",
+   "scene": "maze-compare",
    "points": [
     {
-     "text": "迷宮演算法把 container 換成 queue：pop 改成 dequeue、push 改成 enqueue，其餘不變。",
-     "t": 10008
+     "text": "Queue 也是一個 container，也可以拿來解剛才的 maze 問題。",
+     "t": 10004
     },
     {
-     "text": "用 stack 時，剛 push 的鄰居會最先被拿出，於是一路往更深的鄰居走，走到不能走才退回，這叫 Depth First Search（DFS）。",
+     "text": "基本上就是把剛才的 container 換成 queue。",
+     "t": 10015
+    },
+    {
+     "text": "拿東西出來：stack 是 pop，queue 是 dequeue；塞東西進去：stack 是 push，queue 是 enqueue。差別就這樣。",
+     "t": 10021
+    },
+    {
+     "text": "一個演算法範本，把細節換成不同的 restricted data structure，就形成不一樣的演算法與 behavior。",
+     "t": 10039
+    }
+   ]
+  },
+  {
+   "title": "Stack 版：Depth First Search",
+   "scene": "sqlin-tree-search",
+   "params": {
+    "kind": "stack"
+   },
+   "points": [
+    {
+     "text": "Stack 版會發生什麼：回到同學剛才的問題。",
+     "t": 10073
+    },
+    {
+     "text": "記事本上會一直疊上去。",
      "t": 10080
     },
     {
-     "text": "DFS 找到的是依探索順序（類似字典序）「第一條」能出去的路，不保證最短。",
+     "text": "拿出一個點後，把它所有的鄰居堆進去，而這些鄰居會是下一步先拿出來的。",
+     "t": 10095
+    },
+    {
+     "text": "Stack 上可能是：入口，以及跟入口隔一步的那些鄰居。",
+     "t": 10109
+    },
+    {
+     "text": "抓出其中一個入口的鄰居 A，再疊上 A 的 neighbor；再抓出 AA，疊上 AA 的 neighbor。",
+     "t": 10131
+    },
+    {
+     "text": "入口的鄰居還沒看完，就已經一路深入到鄰居的鄰居的鄰居。",
+     "t": 10157
+    },
+    {
+     "text": "先走到不能再走為止才退回來，這種 behavior 叫 Depth First Search（DFS）。",
+     "t": 10190
+    },
+    {
+     "text": "有很多條路時，找到的是依某種（像字典）順序的第一條可以出去的路。",
      "t": 10242
+    }
+   ]
+  },
+  {
+   "title": "Queue 版：Breadth First Search",
+   "scene": "sqlin-tree-search",
+   "params": {
+    "kind": "queue"
+   },
+   "points": [
+    {
+     "text": "Queue 版本會怎麼樣呢？",
+     "t": 10272
     },
     {
-     "text": "用 queue 時，會先處理完距入口 0 步、再 1 步、2 步……的所有點，像同心圓向外擴展，這叫 Breadth First Search（BFS）。",
-     "t": 10275
+     "text": "一樣有入口，enqueue 之後排著入口的 first neighbors。",
+     "t": 10282
     },
     {
-     "text": "因為一層一層展開，BFS 找到的出口路徑是最短的那條（以步數計）。",
+     "text": "後面串著 A 的 neighbor、B 的 neighbor、C 的 neighbor，再一個個慢慢找。",
+     "t": 10296
+    },
+    {
+     "text": "等它找到一條路出去時，會是（某種角度）最短可以出去的路。",
      "t": 10321
     },
     {
-     "text": "Recursive 版本也呈現 DFS 行為，且可以寫出與它行為完全相同的 stack 版本。",
-     "t": 10487
+     "text": "因為會先把跟入口距離 0 的處理完，再處理距離 1、2、3、4 的。",
+     "t": 10330
     },
     {
-     "text": "哪個比較快取決於問題：出口剛好在 stack 第一條深路上時 DFS 快；出口很近但排在 DFS 嘗試順序後段時 BFS 快；兩者最壞情況可能差不多。",
+     "text": "這種搜尋方式叫 Breadth First Search（BFS，廣度優先）；stack 那個叫 DFS。",
+     "t": 10353
+    },
+    {
+     "text": "BFS 像同心圓一樣一層層展出去。",
+     "t": 10373
+    },
+    {
+     "text": "像疾管局疫調：第一層接觸者查完，才查第二層、第三層。",
+     "t": 10383
+    }
+   ],
+   "trap": "「BFS 保證最短」只適用於每步代價相同（無權重）的情況；DFS 找到的路不一定最短。"
+  },
+  {
+   "title": "Q&A：Recursive 版也是 DFS",
+   "scene": "sqlin-maze-rec",
+   "points": [
+    {
+     "text": "今天的課程差不多到這裡，看看大家的問題。",
+     "t": 10442
+    },
+    {
+     "text": "留言：剛才 recursive 感覺也是 DFS。",
+     "t": 10482
+    },
+    {
+     "text": "是的，recursive 也有 DFS 的 behavior。",
+     "t": 10492
+    },
+    {
+     "text": "但記在 system stack 上的東西，和記在自己 stack 上的東西不太一樣。",
+     "t": 10501
+    },
+    {
+     "text": "不過可以寫出某個 stack-based 版本，和 recursive 版本做 exactly 一樣的 DFS behavior。",
+     "t": 10510
+    }
+   ]
+  },
+  {
+   "title": "Q&A：DFS 與 BFS 哪個快",
+   "scene": "maze-compare",
+   "points": [
+    {
+     "text": "Q：怎麼走最快？要先 define 目標。",
      "t": 10527
     },
     {
-     "text": "若每條路有長度、要找真正最短路徑，需再換別的 container，未來會學到更有效率的演算法。",
-     "t": 10650
+     "text": "如果目標是找最短的路出迷宮，queue 會給你最短的路。",
+     "t": 10549
+    },
+    {
+     "text": "至於誰比較快找到一條路，跟問題的特性很有關係。",
+     "t": 10561
+    },
+    {
+     "text": "出口剛好在 stack 嘗試的第一條路上、而那條路很深（例如 20 層）→ stack 比 queue 快。",
+     "t": 10568
+    },
+    {
+     "text": "出口只要 3 步，但在 stack 嘗試順序的最尾巴 → queue 一層層轉，可能比較快。",
+     "t": 10587
+    },
+    {
+     "text": "兩個演算法的最壞情形可能差不多。",
+     "t": 10635
+    },
+    {
+     "text": "若每條路有長度、要找真正最短的路，再換別的 container，有很有效率的演算法。",
+     "t": 10659
     }
-   ],
-   "trap": "「BFS 保證最短」只適用於每步代價相同（無權重）的情況；DFS 找到的路不一定最短。",
-   "scene": "maze-compare"
+   ]
+  },
+  {
+   "title": "結尾",
+   "scene": null,
+   "points": [
+    {
+     "text": "還有問題歡迎到 Facebook forum 討論，也可以在上面找 final project 隊友。",
+     "t": 10680
+    },
+    {
+     "text": "今天的課程到這邊。",
+     "t": 10717
+    }
+   ]
   }
  ],
  "quiz": [
@@ -428,18 +1571,6 @@
    ],
    "ans": "避免同一位置被重複放入 stack，造成重複計算甚至繞圈",
    "why": "同一點可能從不同方向被看到；沒標 to-do 就會有重複 entry，pop 時還得再檢查 visited。"
-  },
-  {
-   "q": "Queue 的 enqueue 與 dequeue 分別發生在哪一端？",
-   "opts": [
-    "enqueue 在 rear，dequeue 在 front",
-    "enqueue 在 front，dequeue 在 rear",
-    "兩者都在 top",
-    "兩者都在 front"
-   ],
-   "ans": "enqueue 在 rear，dequeue 在 front",
-   "why": "Queue 是 FIFO：新來的排在隊伍後端，服務時從前端取出。"
   }
- ],
- "timing": "exact"
+ ]
 }

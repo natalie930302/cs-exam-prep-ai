@@ -1,0 +1,987 @@
+{
+ "video": "U_tNDdEooJU",
+ "label": "交大彭文志 Lec09 Lists (2/4)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "複習：linked list 的基本操作",
+   "scene": "llpeng12-delete-mid",
+   "points": [
+    {
+     "text": "每個 node 有 data 和 link；first 指向 linked list 的頭端。",
+     "t": 0
+    },
+    {
+     "text": "上次講了不同的 implement 方式：不同 class，或 class 裡再包 class。",
+     "t": 48
+    },
+    {
+     "text": "Create2 在 linked list 裡產生兩個 node。",
+     "t": 81
+    },
+    {
+     "text": "Insert：把 50 這個 node 插在 10 的後面。",
+     "t": 92
+    },
+    {
+     "text": "Delete 要看位置：刪第一個要調整 first；不是 first 就要從 first 找到它的位置。",
+     "t": 108
+    },
+    {
+     "text": "刪 50：把 50 指向 20 的 pointer assign 給 10。",
+     "t": 123
+    },
+    {
+     "text": "畫出原本和之後的圖，看圖說故事就能寫出程式。",
+     "t": 138
+    }
+   ]
+  },
+  {
+   "title": "ListIterator 的動機",
+   "scene": "llpeng12-iter-why",
+   "points": [
+    {
+     "text": "List 還可以宣告一個 class 叫 iterator。",
+     "t": 157
+    },
+    {
+     "text": "專門做 list 的運作：scan list、看有幾個 node、判斷是否 NULL、下一個是否 NULL、回傳 first／next。",
+     "t": 166
+    },
+    {
+     "text": "不管哪一種 list，這些 operation 都常常用到。",
+     "t": 195
+    },
+    {
+     "text": "課本認為這些 operation 不應該綁死在 list 的 class 裡，應該單獨列出來。",
+     "t": 206
+    },
+    {
+     "text": "否則 class A 的 list 寫一次 NotNull、Next、First，class B 的 list 又要再寫一次。",
+     "t": 254
+    },
+    {
+     "text": "把 general 的 operation 抽出來成為一個 class：ListIterator。",
+     "t": 282
+    }
+   ]
+  },
+  {
+   "title": "ListIterator 的宣告",
+   "scene": "llpeng12-iter-scan",
+   "points": [
+    {
+     "text": "宣告：template 的 List，以及新的 class ListIterator。",
+     "t": 307
+    },
+    {
+     "text": "ListIterator 要對 ListNode 做 scan、判斷，所以 ListNode 要宣告 friend class ListIterator。",
+     "t": 332
+    },
+    {
+     "text": "List 的 class 變得很簡單：public member function 都抽離到 ListIterator。",
+     "t": 352
+    },
+    {
+     "text": "List 的 private 一樣只有指向第一個 node 的 first，也要把 ListIterator 宣告成 friend class。",
+     "t": 365
+    },
+    {
+     "text": "ListIterator 的 private：list 指向要處理的那條 list，current 指向目前處理到的 node。",
+     "t": 416
+    },
+    {
+     "text": "NotNull／NextNotNull 判斷目前、下一個是否 NULL；First 回傳第一個元素，Next 回傳下一個元素。",
+     "t": 430
+    },
+    {
+     "text": "建構時 current = l.first：目前在第一個 element。",
+     "t": 457
+    },
+    {
+     "text": "以後不管宣告什麼 type 的 list class 都能用 ListIterator，只要寫一次。",
+     "t": 509
+    }
+   ]
+  },
+  {
+   "title": "Attach：接到 list 尾巴",
+   "scene": "llpeng12-attach",
+   "points": [
+    {
+     "text": "Program 4.11：attach 一個 node 到 list 的尾巴。",
+     "t": 526
+    },
+    {
+     "text": "List 只知道指向第一個 node 的 first，尾巴在哪？",
+     "t": 548
+    },
+    {
+     "text": "從頭端開始 scan：看 link 是不是 0／NULL，不是就表示還有元素，往下走。",
+     "t": 572
+    },
+    {
+     "text": "遇到 0（NULL）就到尾端了，把新 node 加上去。",
+     "t": 597
+    },
+    {
+     "text": "先 new 一個 node 存資料 k。",
+     "t": 611
+    },
+    {
+     "text": "若 first == 0（list 一開始沒東西），新 node 就是第一個（first = last = newnode）。",
+     "t": 645
+    },
+    {
+     "text": "否則 traverse 整條 linked list，找到最後一個 node 再接上。",
+     "t": 689
+    }
+   ],
+   "trap": "補充：課本的 Attach 另外維護 last 指標：last->link = newnode; last = newnode;，是 O(1)，不用從頭 traverse（traverse 要 O(n)）。"
+  },
+  {
+   "title": "Invert：用 p、q、r 反轉",
+   "scene": "llpeng12-invert",
+   "points": [
+    {
+     "text": "把 linked list 反轉：原本的頭變尾巴，每個 link 都轉 180 度。",
+     "t": 723
+    },
+    {
+     "text": "會用到三個 pointer p、q、r：p 是先鋒，q 跟著 p 走，r 跟著 q 走。",
+     "t": 804
+    },
+    {
+     "text": "一開始 p = first，q = 0（反轉後原本的頭會變成尾巴，指向 0）。",
+     "t": 893
+    },
+    {
+     "text": "迴圈裡：r = q; q = p;，接著 p = p->link 讓 p 往前一格。",
+     "t": 910
+    },
+    {
+     "text": "q->link = r：q 的 node 改指向前一個（第一輪是 0）。",
+     "t": 982
+    },
+    {
+     "text": "p、q、r 一個接一個前進，直到 p == 0 跳出迴圈；此時 q 指向原本最後一個 node。",
+     "t": 1064
+    },
+    {
+     "text": "最後 first = q 不能忘：它是反轉後的第一個元素。",
+     "t": 1167
+    },
+    {
+     "text": "這幾個指令的順序可以亂寫嗎？考試可能把 code 挖空要你寫。",
+     "t": 1196
+    }
+   ],
+   "trap": "逐字稿聽起來像「p 等於 q」「Q 等於 first」，依課本應為 q = p 與最後的 first = q。順序不能亂：若在 p = p->link 之前先做 q->link = r，p 就跟著走回前一個 node，後半段遺失。"
+  },
+  {
+   "title": "閒聊：做專題",
+   "scene": null,
+   "points": [
+    {
+     "text": "近來有些同學不做專題，直接選五年碩。",
+     "t": 1234
+    },
+    {
+     "text": "專題能展現大學的成果，可以寫進甄試資料。",
+     "t": 1312
+    },
+    {
+     "text": "專題訓練 teamwork，而且要寫出真正會動的系統。",
+     "t": 1369
+    }
+   ]
+  },
+  {
+   "title": "反轉的其他做法",
+   "scene": "llpeng12-invert-alt",
+   "points": [
+    {
+     "text": "反轉 linked list，p、q、r 是不是唯一的做法？",
+     "t": 1413
+    },
+    {
+     "text": "最笨的做法：new 一條新的 list，從 first 依序讀，每讀一個就插進新 list。",
+     "t": 1467
+    },
+    {
+     "text": "同學提的用 stack 也可以，最後一樣得到反轉後的 linked list。",
+     "t": 1500
+    },
+    {
+     "text": "代價：要多用一些記憶體空間來產生新的 node。",
+     "t": 1513
+    },
+    {
+     "text": "示意圖：第一個 run、第二個 run……看不懂程式就把圖畫出來。",
+     "t": 1562
+    }
+   ],
+   "trap": "補充：新 list 版本要把每個 node 插在新 list 的「最前面」才會反轉；p、q、r 版本是 in-place，O(n) 時間、O(1) 額外空間。"
+  },
+  {
+   "title": "Concatenate：串接兩條 list",
+   "scene": "llpeng12-concat",
+   "points": [
+    {
+     "text": "把兩條 linked list A、B 串接起來，變成一條更大的 linked list。",
+     "t": 1592
+    },
+    {
+     "text": "結果：A 的尾巴原本指向 0，現在改指向 b.first。",
+     "t": 1615
+    },
+    {
+     "text": "要做到這件事，得先知道 A 的尾巴在哪裡。",
+     "t": 1652
+    },
+    {
+     "text": "for 迴圈：p 從 first 開始，p->link 不是 0 就 p = p->link；迴圈本體是空的。",
+     "t": 1686
+    },
+    {
+     "text": "跳出時 p->link 是 0，p 是最後一個元素：p->link = b.first 就連上了。",
+     "t": 1771
+    },
+    {
+     "text": "前面的 if 是防呆：A 是空的（first == 0）就直接 first = b.first。",
+     "t": 1791
+    }
+   ]
+  },
+  {
+   "title": "List destructor",
+   "scene": "llpeng12-destructor",
+   "points": [
+    {
+     "text": "List 不要了：destructor 把裡面所有 node 都 delete／free 掉。",
+     "t": 1863
+    },
+    {
+     "text": "for 迴圈檢查 first 是不是空的。",
+     "t": 1887
+    },
+    {
+     "text": "不是空的：先 next = first->link 記住下一個 node。",
+     "t": 1904
+    },
+    {
+     "text": "delete first 刪掉自己，再 first = next 往下走一格。",
+     "t": 1924
+    },
+    {
+     "text": "每一次從 linked list 拿一個 node 出來刪掉。",
+     "t": 1934
+    }
+   ]
+  },
+  {
+   "title": "Circular linked list",
+   "scene": "llpeng12-circular",
+   "points": [
+    {
+     "text": "Linked list 也有環狀的：最後一個 node 指回頭端。",
+     "t": 1955
+    },
+    {
+     "text": "最後一個 node 也有一個指標代表它，叫 last。",
+     "t": 1972
+    },
+    {
+     "text": "環狀時尾巴的 link 永遠不是 NULL，不能再用「是不是 NULL」判斷尾巴。",
+     "t": 1993
+    },
+    {
+     "text": "first 指向頭，last 是在 first 之前、指到 first 的那個 node。",
+     "t": 2006
+    }
+   ],
+   "trap": "補充：很多課本的 circular list 只保留 last：first 就是 last->link，在頭或尾插入都是 O(1)。"
+  },
+  {
+   "title": "用 linked list 實作 stack、queue",
+   "scene": "llpeng12-linked-sq",
+   "points": [
+    {
+     "text": "Stack 和 queue 是不是只能用 array 來 implement？",
+     "t": 2030
+    },
+    {
+     "text": "可以用 linked list：stack 的 top 就等同於 first，指向第一個 element。",
+     "t": 2049
+    },
+    {
+     "text": "Queue 也一樣：linked list 的一端是頭、一端是尾。",
+     "t": 2070
+    },
+    {
+     "text": "Stack、queue 是 data structure，可以用 array，也可以用 linked list 實作。",
+     "t": 2097
+    }
+   ],
+   "trap": "補充：linked queue 要從 front（頭）刪除、從 rear（尾）加入；若反過來從尾端刪，singly linked list 找不到前一個 node，會變成 O(n)。"
+  },
+  {
+   "title": "用 linked list 表示多項式",
+   "scene": "llpeng12-poly-nodes",
+   "points": [
+    {
+     "text": "第二章講過用 array 表示多項式，課本至少有三種方法。",
+     "t": 2112
+    },
+    {
+     "text": "例如 a = 3x¹⁴ + 2x⁸ + 1，用 linked list 有三個 node。",
+     "t": 2140
+    },
+    {
+     "text": "每個 node 三個欄位：係數、指數，以及指向下一項的 link。",
+     "t": 2151
+    },
+    {
+     "text": "最後一項 1 = 1·x⁰，是尾巴。",
+     "t": 2171
+    },
+    {
+     "text": "上次的 2x¹⁰⁰⁰ + 1 用 linked list 只要兩個 node，不用開很大的 array。",
+     "t": 2194
+    },
+    {
+     "text": "Linked list 可以解決 sparse 的問題；那它的缺點在哪？回去想。",
+     "t": 2214
+    }
+   ],
+   "trap": "補充：缺點例如每個 node 多一個 link 的空間、不能用索引直接取第 i 項。"
+  },
+  {
+   "title": "Term、Polynomial 與 operator+",
+   "scene": "llpeng12-poly-class",
+   "points": [
+    {
+     "text": "List node 的 element 是一個 Term，包含係數和指數。",
+     "t": 2257
+    },
+    {
+     "text": "Polynomial 的 private 叫 poly：一條 data type 是 Term 的 linked list。",
+     "t": 2287
+    },
+    {
+     "text": "friend Polynomial operator+(...) 是在做什麼？",
+     "t": 2304
+    },
+    {
+     "text": "這是 operator overloading：把 + 改成自己要的多項式加法。",
+     "t": 2344
+    },
+    {
+     "text": "宣告 Polynomial a、b 之後寫 a + b，就會跳到自己定義的加法 procedure。",
+     "t": 2364
+    }
+   ]
+  },
+  {
+   "title": "多項式加法",
+   "scene": "llpeng12-poly-add",
+   "points": [
+    {
+     "text": "跟 array 版很像：指數一樣就係數相加；指數不一樣就 copy。",
+     "t": 2424
+    },
+    {
+     "text": "用 linked list 做多項式加法比 array 還簡單。",
+     "t": 2451
+    },
+    {
+     "text": "兩個 pointer p、q，一開始分別指向兩個多項式的第一個 element。",
+     "t": 2462
+    },
+    {
+     "text": "14 = 14：係數 3 + 8 = 11，new 一個 node 放進 c。",
+     "t": 2481
+    },
+    {
+     "text": "這項看完，p、q 都往下走。",
+     "t": 2510
+    },
+    {
+     "text": "一個指數 10、一個 8：10 比較大，把 q 那項 copy 下來，q 往下走。",
+     "t": 2522
+    },
+    {
+     "text": "接著 8 比 6 大，copy p 的 2x⁸。",
+     "t": 2568
+    },
+    {
+     "text": "準則：指數相同就相加；不同就先 copy 指數大的，被 copy 的往下走，直到 p、q 都到 0。",
+     "t": 2597
+    }
+   ],
+   "trap": "逐字稿把 b 的第二項聽成「3 4 0」，依課本例子 b = 8x¹⁴ − 3x¹⁰ + 10x⁶；結果 c = 11x¹⁴ − 3x¹⁰ + 2x⁸ + 10x⁶ + 1。"
+  },
+  {
+   "title": "加完後 a、b 的 node 怎麼辦",
+   "scene": "llpeng12-free-pool",
+   "params": {
+    "poly": true
+   },
+   "points": [
+    {
+     "text": "做 a + b = c 的過程中，要隨時 new 出 c 的 node。",
+     "t": 2646
+    },
+    {
+     "text": "做完後 a、b 都不用了，它們的空間可以 release。",
+     "t": 2683
+    },
+    {
+     "text": "一種做法：用 list destructor 把 a、b 佔用的 6 個 node 真的 delete 掉。",
+     "t": 2700
+    },
+    {
+     "text": "另一種：如果程式是專門做多項式加減的 service，可以不急著清掉。",
+     "t": 2717
+    }
+   ]
+  },
+  {
+   "title": "閒聊：雲端運算就是 service",
+   "scene": null,
+   "points": [
+    {
+     "text": "題外話：cloud computing 最重要的概念是 service。",
+     "t": 2757
+    },
+    {
+     "text": "IaaS（虛擬機器）、PaaS（Google App Engine、Windows Azure）、storage（Dropbox）、SaaS、DB 都是服務。",
+     "t": 2787
+    },
+    {
+     "text": "雲端更在乎依需求隨時對資源 grow 或 shrink。",
+     "t": 2896
+    }
+   ]
+  },
+  {
+   "title": "Free pool：資源再利用",
+   "scene": "llpeng12-free-pool",
+   "params": {
+    "poly": true
+   },
+   "points": [
+    {
+     "text": "多項式加減乘除的 service 會有很多 user 建立多項式、做運算。",
+     "t": 2947
+    },
+    {
+     "text": "多項式不用時，不急著把 node 丟回系統，而是放進 free pool。",
+     "t": 2975
+    },
+    {
+     "text": "a + b 用完了，就把那 6 個 node 丟到資源回收場。",
+     "t": 3001
+    },
+    {
+     "text": "新的 user 要多項式時，從回收場叫出 node，只要改掉指數和係數。",
+     "t": 3013
+    },
+    {
+     "text": "好處：不必花太多 overhead 再去 create 新的 node。",
+     "t": 3064
+    }
+   ]
+  },
+  {
+   "title": "GetNode：從 av 拿 node",
+   "scene": "llpeng12-av-getret",
+   "points": [
+    {
+     "text": "依照 free pool 的概念，要取得一個 node 怎麼辦？",
+     "t": 3089
+    },
+    {
+     "text": "指標 av（available list）指向 free pool 的第一個 element；free pool 也是一條 linked list。",
+     "t": 3120
+    },
+    {
+     "text": "av 是空的：回收場沒有資源，只好跟系統要。",
+     "t": 3136
+    },
+    {
+     "text": "有的話：拿 av 所指的第一個 node（x = av）。",
+     "t": 3159
+    },
+    {
+     "text": "av 往下移一格（av = av->link），再 return x。",
+     "t": 3179
+    },
+    {
+     "text": "拿到這個空間後，再設定它的係數和指數。",
+     "t": 3193
+    }
+   ]
+  },
+  {
+   "title": "RetNode：把 node 還給 av",
+   "scene": "llpeng12-av-getret",
+   "params": {
+    "op": "ret"
+   },
+   "points": [
+    {
+     "text": "多項式不要了，要把 node 丟回 free pool：RetNode。",
+     "t": 3215
+    },
+    {
+     "text": "注意它是 return，不是 delete。",
+     "t": 3240
+    },
+    {
+     "text": "就是把這個 node insert 進 av 這條 linked list。",
+     "t": 3253
+    },
+    {
+     "text": "先把 av 的值給 x->link（x->link = av）。",
+     "t": 3280
+    },
+    {
+     "text": "再修改 available 變數：av = x。",
+     "t": 3290
+    },
+    {
+     "text": "一樣看圖說故事。",
+     "t": 3297
+    }
+   ],
+   "trap": "逐字稿聽起來像「X 就等於 AV」，依課本應為 av = x：先 x->link = av，再讓 av 指向 x。"
+  },
+  {
+   "title": "環狀 list 一次歸還整個多項式",
+   "scene": "llpeng12-cerase",
+   "points": [
+    {
+     "text": "能不能一次歸還一整個 polynomial，而不是一個個 node？",
+     "t": 3320
+    },
+    {
+     "text": "寫一個 circular list 的 destructor：多項式表示成環狀。",
+     "t": 3344
+    },
+    {
+     "text": "a：3x¹⁴ → 2x⁸ → 1 → 尾巴指回頭；檢查 link 是否等於 a.first 就知道到尾。",
+     "t": 3376
+    },
+    {
+     "text": "四個步驟：① second = first->link。",
+     "t": 3417
+    },
+    {
+     "text": "② first->link = av。",
+     "t": 3448
+    },
+    {
+     "text": "③ av = second：available list 從這裡開始。",
+     "t": 3467
+    },
+    {
+     "text": "④ first = 0。",
+     "t": 3479
+    },
+    {
+     "text": "其他 node 之間的 link 都不用改，充分利用環狀的關係。",
+     "t": 3499
+    }
+   ],
+   "trap": "逐字稿第②步聽起來像「av = first 的 link」，依課本應為 first->link = av（把頭 node 接到原本的 av list）；第③步才是 av = second。"
+  },
+  {
+   "title": "不是環狀時怎麼歸還",
+   "scene": "llpeng12-cerase",
+   "params": {
+    "mode": "chain"
+   },
+   "points": [
+    {
+     "text": "如果不是環狀 linked list，要怎麼把整個多項式還給 free pool？",
+     "t": 3552
+    },
+    {
+     "text": "把原本指向 0 的尾巴改指向 av。",
+     "t": 3644
+    },
+    {
+     "text": "再 av = a.first；只做兩件事，原本的 list 沒被破壞。",
+     "t": 3651
+    },
+    {
+     "text": "最笨的做法：一個 node 一個 node 歸還，比較繁瑣但也能解決。",
+     "t": 3665
+    }
+   ],
+   "trap": "補充：非環狀時要先走到尾巴才能改它的 link，需要 O(n)；環狀版的四個指令是 O(1)。"
+  },
+  {
+   "title": "閒聊：作業規定",
+   "scene": null,
+   "points": [
+    {
+     "text": "作業不限定方法（例如可以用 KMP），但不能看測資硬湊答案。",
+     "t": 3684
+    },
+    {
+     "text": "報告要說明用什麼方法、為什麼比較好。",
+     "t": 3721
+    },
+    {
+     "text": "重點回顧：環狀 linked list 可以一次把整個多項式歸還。",
+     "t": 3743
+    }
+   ]
+  },
+  {
+   "title": "Header node",
+   "scene": "llpeng12-header-node",
+   "points": [
+    {
+     "text": "多項式是環狀時，可以多用一個 header node 來表示。",
+     "t": 3759
+    },
+    {
+     "text": "Header node 的指數部分放 −1，看到 −1 就知道是頭端。",
+     "t": 3775
+    },
+    {
+     "text": "3x¹⁴ + 2x⁸ + 1 的最後一項指回 header node。",
+     "t": 3791
+    },
+    {
+     "text": "多項式加減法用 linked list 實作的程式，請回去看課本。",
+     "t": 3811
+    }
+   ],
+   "trap": "補充：零多項式只剩 header node，它的 link 指向自己；有 header 後不用特別處理空 list。"
+  },
+  {
+   "title": "Equivalence relation",
+   "scene": "llpeng12-equiv-def",
+   "points": [
+    {
+     "text": "下一個重點：equivalence relationship（離散學過）。",
+     "t": 3867
+    },
+    {
+     "text": "要符合三個特性，第一個 reflexive：x ≡ x。",
+     "t": 3905
+    },
+    {
+     "text": "Symmetric：x 跟 y 有關係，y 也跟 x 有關係。",
+     "t": 3916
+    },
+    {
+     "text": "Transitive：x ≡ y、y ≡ z，則 x ≡ z。",
+     "t": 3922
+    },
+    {
+     "text": "例子：0≡4、3≡1、6≡10、8≡9、7≡4……共 9 個 pair；「≡」是一種 relation，不是數值相等。",
+     "t": 3944
+    },
+    {
+     "text": "這些數字可以分成三群，每一群裡的數字都有關係。",
+     "t": 4007
+    },
+    {
+     "text": "1 和 5 有關係：1≡3、3≡5（transitive）。",
+     "t": 4027
+    },
+    {
+     "text": "6 和 9 有關係：6≡8、8≡9。",
+     "t": 4070
+    }
+   ],
+   "trap": "補充：課本的 9 個 pair 為 0≡4、3≡1、6≡10、8≡9、7≡4、6≡8、3≡5、2≡11、11≡0（n = 12），三群為 {0,2,4,7,11}、{1,3,5}、{6,8,9,10}。"
+  },
+  {
+   "title": "直覺做法：邊讀邊分群",
+   "scene": "llpeng12-equiv-naive",
+   "points": [
+    {
+     "text": "要寫一個程式產生這樣的 output，你會怎麼做？",
+     "t": 4128
+    },
+    {
+     "text": "讀到 0≡4 就放一起；3≡1 跟前面無關，自己一群。",
+     "t": 4150
+    },
+    {
+     "text": "6≡10、8≡9 也各自成群。",
+     "t": 4161
+    },
+    {
+     "text": "但後來會合併：讀到 6≡8 時，兩群要合起來。",
+     "t": 4197
+    },
+    {
+     "text": "一下子新增、一下子又要合併，很複雜。",
+     "t": 4250
+    }
+   ]
+  },
+  {
+   "title": "演算法分兩個 phase",
+   "scene": "llpeng12-equiv-phase1",
+   "points": [
+    {
+     "text": "演算法分兩個步驟。",
+     "t": 4274
+    },
+    {
+     "text": "Phase 1：把所有還沒處理的 pair 讀進來處理。",
+     "t": 4282
+    },
+    {
+     "text": "Phase 2：根據第一階段的結果做輸出，會有一個 output array。",
+     "t": 4303
+    },
+    {
+     "text": "剛才邊讀邊輸出是不對的，因為後面可能合併。",
+     "t": 4354
+    },
+    {
+     "text": "所以 phase 1 先讀完所有 pair，了解數字之間的關係。",
+     "t": 4358
+    }
+   ]
+  },
+  {
+   "title": "Phase 1：seq 陣列的 linked lists",
+   "scene": "llpeng12-equiv-phase1",
+   "points": [
+    {
+     "text": "有 n 個數字；seq 是一個 array。",
+     "t": 4407
+    },
+    {
+     "text": "seq 的每一格都是一條 linked list：seq[0] 記錄跟 0 有關係的數字。",
+     "t": 4430
+    },
+    {
+     "text": "讀到 0≡4：把 4 放進 0 的 linked list。",
+     "t": 4472
+    },
+    {
+     "text": "同時 4 也等於 0，seq[4] 也要加一個 0。",
+     "t": 4494
+    },
+    {
+     "text": "3≡1、6≡10 也一樣，兩邊的 list 都要加。",
+     "t": 4527
+    },
+    {
+     "text": "所有 pair 做完：seq[0] 是 11、4……",
+     "t": 4559
+    },
+    {
+     "text": "Read pair (i, j)：i 的 list 擺上 j，j 的 list 擺上 i。",
+     "t": 4592
+    }
+   ]
+  },
+  {
+   "title": "Phase 2：out 陣列與間接關係",
+   "scene": "llpeng12-equiv-phase2",
+   "points": [
+    {
+     "text": "for i = 0 到 n−1：如果 i 還沒輸出過，就從 i 開始輸出一個 class。",
+     "t": 4626
+    },
+    {
+     "text": "out 是一個 boolean array，記錄這個數字有沒有被 output 過。",
+     "t": 4648
+    },
+    {
+     "text": "i = 0：輸出 0，看 seq[0]，11 也輸出，out[11] 設成 true。",
+     "t": 4684
+    },
+    {
+     "text": "看 11 的 list：0 已經輸出過，不再輸出。",
+     "t": 4744
+    },
+    {
+     "text": "4 跟 7、0 有關係，7 輸出；0、11、4、7、2 同一群。",
+     "t": 4871
+    },
+    {
+     "text": "seq[0] 上的 11、4 是直接有關（directed）。",
+     "t": 4924
+    },
+    {
+     "text": "0 和 2 有關是因為 0≡11、11≡2：間接有關（indirect），要再去查別人的 list。",
+     "t": 4946
+    },
+    {
+     "text": "out array 用來防止同一個數字印兩次。",
+     "t": 5043
+    }
+   ],
+   "trap": "逐字稿 out 的 true／false 常被聽成「fail／處／2」。老師的語意：印過就設 true。課本 C 版則是 out[i] 初值 TRUE 表示「還沒印」，印出後設 FALSE——語意相反、作法相同，作答時看清楚題目用哪一種。"
+  },
+  {
+   "title": "Phase 1 程式",
+   "scene": "llpeng12-equiv-phase1",
+   "points": [
+    {
+     "text": "Node 很簡單：只要 data 和 link。",
+     "t": 5075
+    },
+    {
+     "text": "前面是 seq、out 兩個 array 的初始化。",
+     "t": 5100
+    },
+    {
+     "text": "讀進 i、j：create 一個 node x，data = j，x->link = seq[i]，seq[i] = x。",
+     "t": 5138
+    },
+    {
+     "text": "j 那邊也一樣，把 i 放進 seq[j]。",
+     "t": 5184
+    },
+    {
+     "text": "Phase 1 就是把對應的 linked list 建立出來。",
+     "t": 5195
+    }
+   ],
+   "trap": "逐字稿這段順序聽起來顛倒，正確是 x->link = seq[i]; seq[i] = x;（新 node 插在 list 最前面）。"
+  },
+  {
+   "title": "Phase 2 程式：stack 找間接關係",
+   "scene": "llpeng12-equiv-phase2",
+   "points": [
+    {
+     "text": "Phase 2 裡有一個 stack（自己寫 push、pop）。",
+     "t": 5217
+    },
+    {
+     "text": "印出 11 時先不看 11 的 list，而是把 11 push 進 stack，等一下再檢查。",
+     "t": 5313
+    },
+    {
+     "text": "接著 4 也印出並 push：stack 裡是 11、4，output 是 0 11 4。",
+     "t": 5355
+    },
+    {
+     "text": "從 stack pop 出 4，掃 seq[4]：7 沒印過 → 印出並 push；0 已印過就不 push。",
+     "t": 5413
+    },
+    {
+     "text": "pop 出 7：4 已經印過，不輸出也不 push。",
+     "t": 5530
+    },
+    {
+     "text": "再處理 11 的 list：0 已檢查過，接著檢查 2。",
+     "t": 5568
+    },
+    {
+     "text": "push／pop 的目的：找出 indirect equivalence 的數字。",
+     "t": 5611
+    },
+    {
+     "text": "能不能寫得比這段 code 更簡單？回去想一想。",
+     "t": 5656
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Invert（p = first; q = 0;）迴圈本體的正確順序是？",
+   "opts": [
+    "r = q; q = p; p = p->link; q->link = r;",
+    "q->link = r; r = q; q = p; p = p->link;",
+    "r = q; q = p; q->link = r; p = p->link;",
+    "p = p->link; r = q; q = p; q->link = r;"
+   ],
+   "ans": "r = q; q = p; p = p->link; q->link = r;",
+   "why": "p 必須在 q->link 被改掉之前先往前走，否則會沿著反轉後的 link 走回去。"
+  },
+  {
+   "q": "Invert 的 while 迴圈結束後，最後一行應該是？",
+   "opts": [
+    "first = q;",
+    "first = p;",
+    "first = r;",
+    "q->link = 0;"
+   ],
+   "ans": "first = q;",
+   "why": "迴圈結束時 p == 0，q 指向原本最後一個 node，也就是反轉後的頭。"
+  },
+  {
+   "q": "Concatenate 中 for (p = first; p->link; p = p->link); 結束時 p 指向？",
+   "opts": [
+    "A 的最後一個 node",
+    "NULL",
+    "b.first",
+    "A 的第一個 node"
+   ],
+   "ans": "A 的最後一個 node",
+   "why": "條件是 p->link 不為 0；p->link == 0 時停下，p 就是尾巴，接著 p->link = b.first。"
+  },
+  {
+   "q": "GetNode 在 av 不是空的時候，正確的做法是？",
+   "opts": [
+    "x = av; av = av->link; return x;",
+    "av = av->link; x = av; return x;",
+    "x = new ListNode; return x;",
+    "x->link = av; av = x;"
+   ],
+   "ans": "x = av; av = av->link; return x;",
+   "why": "先拿 av 的第一個 node，再讓 av 往下一格；第二個選項會拿錯 node，最後一個是 RetNode。"
+  },
+  {
+   "q": "RetNode(x) 把 node 還回 free pool，正確的兩行是？",
+   "opts": [
+    "x->link = av; av = x;",
+    "av = x; x->link = av;",
+    "delete x;",
+    "av->link = x;"
+   ],
+   "ans": "x->link = av; av = x;",
+   "why": "x 插到 av list 最前面：先接上原本的 av，再讓 av 指向 x；反過來 x->link 會指向自己。"
+  },
+  {
+   "q": "a = 3x¹⁴ + 2x⁸ + 1，b = 8x¹⁴ − 3x¹⁰ + 10x⁶，c = a + b 的第二個 node 是？",
+   "opts": [
+    "−3x¹⁰",
+    "2x⁸",
+    "11x¹⁴",
+    "10x⁶"
+   ],
+   "ans": "−3x¹⁰",
+   "why": "第一項 14 = 14 相加得 11x¹⁴；接著比 8 和 10，copy 指數較大的 −3x¹⁰。"
+  },
+  {
+   "q": "用環狀 list 一次把整個多項式還給 av，需要的時間是？",
+   "opts": [
+    "O(1)",
+    "O(n)",
+    "O(log n)",
+    "O(n²)"
+   ],
+   "ans": "O(1)",
+   "why": "second = first->link; first->link = av; av = second; first = 0; 四個指令，與項數無關。"
+  },
+  {
+   "q": "pairs 0≡4、3≡1、6≡10、8≡9、7≡4、6≡8、3≡5、2≡11、11≡0，包含 0 的 equivalence class 是？",
+   "opts": [
+    "{0, 2, 4, 7, 11}",
+    "{0, 4, 7}",
+    "{0, 4, 11}",
+    "{0, 2, 4, 6, 7, 11}"
+   ],
+   "ans": "{0, 2, 4, 7, 11}",
+   "why": "0≡4、7≡4、11≡0、2≡11，經 symmetric 與 transitive 串起來；6 屬於另一群。"
+  }
+ ]
+}

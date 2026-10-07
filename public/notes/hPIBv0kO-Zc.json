@@ -1,0 +1,1037 @@
+{
+ "video": "hPIBv0kO-Zc",
+ "label": "交大彭文志 Lec03 Arrays (1/4)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Big-O 定義回顧",
+   "scene": "arrpeng12-asym",
+   "params": {
+    "kind": "O"
+   },
+   "points": [
+    {
+     "text": "這裡的 upper bound／lower bound 採課本、complexity 理論的定義，不是某些 library（如 VC）裡 upper_bound/lower_bound 函式的意思。",
+     "t": 39
+    },
+    {
+     "text": "看程式算出 step count（要執行的指令數），就是定義裡的 f(n)。",
+     "t": 62
+    },
+    {
+     "text": "f(n) = O(g(n))：存在常數 c 與 n₀，使 f(n) ≤ c·g(n) 對所有 n ≥ n₀ 成立。",
+     "t": 102
+    },
+    {
+     "text": "例：3n + 2 ≤ 4n 對所有 n ≥ 2 成立，所以 3n + 2 = O(n)。",
+     "t": 117
+    },
+    {
+     "text": "3n + 2 ≤ n² 也成立，n²、n³ 都是 upper bound。",
+     "t": 123
+    },
+    {
+     "text": "g(n) 要取最小的 upper bound（least upper bound），所以寫 O(n)。",
+     "t": 139
+    }
+   ],
+   "trap": "O(n²) 對 3n + 2 不算錯，但考試要寫最緊的 least upper bound：O(n)。"
+  },
+  {
+   "title": "Omega：最大的 lower bound",
+   "scene": "arrpeng12-asym",
+   "params": {
+    "kind": "Omega"
+   },
+   "points": [
+    {
+     "text": "Omega 的定義和 Big-O 幾乎一樣，只是不等式反過來。",
+     "t": 171
+    },
+    {
+     "text": "f(n) = Ω(g(n))：存在 c、n₀，使 f(n) ≥ c·g(n) 對所有 n ≥ n₀。",
+     "t": 181
+    },
+    {
+     "text": "例：3n + 3 ≥ 3n 對所有 n ≥ 1 成立，所以 3n + 3 = Ω(n)。",
+     "t": 193
+    },
+    {
+     "text": "g(n) 必須是 lower bound，而且是最大的 lower bound。",
+     "t": 209
+    },
+    {
+     "text": "例如 f(n) = n³ + 2，n²、n 都是 lower bound，但要找最大的那個。",
+     "t": 231
+    }
+   ]
+  },
+  {
+   "title": "Theta：上下夾住",
+   "scene": "arrpeng12-asym",
+   "params": {
+    "kind": "Theta"
+   },
+   "points": [
+    {
+     "text": "Theta 想成用同一個 g(n) 從上下兩邊把 f(n) 夾住。",
+     "t": 248
+    },
+    {
+     "text": "存在 c₁、c₂、n₀，使 c₁·g(n) ≤ f(n) ≤ c₂·g(n)。",
+     "t": 267
+    },
+    {
+     "text": "符合時 g(n) 既是 lower bound 也是 upper bound：f(n) = Θ(g(n))。",
+     "t": 295
+    },
+    {
+     "text": "Big-O、Omega、Theta 用來分析 time complexity；讀研究所、設計演算法一定會被問。",
+     "t": 312
+    }
+   ],
+   "trap": "補充：例 3n ≤ 3n + 2 ≤ 4n（n ≥ 2），所以 3n + 2 = Θ(n)。"
+  },
+  {
+   "title": "複雜度的組合規則",
+   "scene": "arrpeng12-rules",
+   "points": [
+    {
+     "text": "程式常由多個 procedure 組成，要從各自的 complexity 算出整體的。",
+     "t": 335
+    },
+    {
+     "text": "T₁(n) = O(f(n))、T₂(n) = O(g(n))。",
+     "t": 384
+    },
+    {
+     "text": "A 做完再做 B（循序）：T₁ + T₂ = O(max(f(n), g(n)))。",
+     "t": 423
+    },
+    {
+     "text": "A 的迴圈裡呼叫 B（巢狀）：T₁ · T₂ = O(f(n) · g(n))。",
+     "t": 453
+    },
+    {
+     "text": "Rule 2：T(n) 是 k 次多項式 → O(nᵏ)，例如 n³ + 4 = O(n³)。",
+     "t": 476
+    },
+    {
+     "text": "Rule 3：log nᵏ，請自己用定義找出 c 與 n₀ 證明。",
+     "t": 491
+    }
+   ],
+   "trap": "影片聽起來說 log nᵏ = O(n)；正確（最緊）的是 log nᵏ = k·log n = O(log n)。"
+  },
+  {
+   "title": "迴圈的 step count",
+   "scene": "arrpeng12-loops",
+   "params": {
+    "ex": "nested"
+   },
+   "points": [
+    {
+     "text": "for (i = 0; i < n; i++) 裡做 3 個加法：繞 n 圈、每圈 3 個指令。",
+     "t": 567
+    },
+    {
+     "text": "step count = 3n → O(n)。",
+     "t": 596
+    },
+    {
+     "text": "兩層 nested loop，裡面一個指令：共 n² 次 → O(n²)。",
+     "t": 601
+    },
+    {
+     "text": "這種題目只是基本分，期中考會更複雜。",
+     "t": 630
+    },
+    {
+     "text": "例如內圈改成 j < i/2，要自己算出總次數。",
+     "t": 643
+    }
+   ]
+  },
+  {
+   "title": "兩個 block：看 bottleneck",
+   "scene": "arrpeng12-loops",
+   "params": {
+    "ex": "blocks"
+   },
+   "points": [
+    {
+     "text": "程式分成兩個 block：第一塊用 for 把 a[i] 設成 0。",
+     "t": 658
+    },
+    {
+     "text": "第一個 block 執行 n 次指令。",
+     "t": 683
+    },
+    {
+     "text": "第二個 block 是兩層 for，要做 n² 次。",
+     "t": 689
+    },
+    {
+     "text": "整體看最慢的那段（bottleneck）。",
+     "t": 701
+    },
+    {
+     "text": "所以整個程式是 O(n²)。",
+     "t": 720
+    }
+   ]
+  },
+  {
+   "title": "if-else 取較大的分支",
+   "scene": "arrpeng12-loops",
+   "params": {
+    "ex": "ifelse"
+   },
+   "points": [
+    {
+     "text": "if 成立只做 2 個指令。",
+     "t": 738
+    },
+    {
+     "text": "else 是一個要跑 n 次的 for 迴圈，step count 是 n。",
+     "t": 743
+    },
+    {
+     "text": "if-else 的 complexity 看最大的分支：O(n)。",
+     "t": 752
+    }
+   ]
+  },
+  {
+   "title": "遞迴：n 階乘",
+   "scene": "arrpeng12-recur",
+   "points": [
+    {
+     "text": "recursive function 算 n 階乘：n ≤ 1 是 boundary condition。",
+     "t": 762
+    },
+    {
+     "text": "否則 return n × f(n − 1)。",
+     "t": 783
+    },
+    {
+     "text": "T(n) = T(n − 1) + c，c 是每次固定的 cost。",
+     "t": 785
+    },
+    {
+     "text": "T(n) 是執行 f(n) 需要的 step count；呼叫 f(n−1) 花 T(n−1)。",
+     "t": 798
+    },
+    {
+     "text": "解遞迴式（離散數學、演算法會教）得 T(n) = O(n)。",
+     "t": 841
+    }
+   ]
+  },
+  {
+   "title": "遞迴：Fibonacci",
+   "scene": "arrpeng12-recur",
+   "params": {
+    "fib": true
+   },
+   "points": [
+    {
+     "text": "FB 不是 Facebook，是 Fibonacci 數列。",
+     "t": 874
+    },
+    {
+     "text": "FB(n) = FB(n − 1) + FB(n − 2)。",
+     "t": 897
+    },
+    {
+     "text": "T(n) = T(n − 1) + T(n − 2) + c，比階乘的遞迴更複雜。",
+     "t": 905
+    },
+    {
+     "text": "怎麼解請看離散數學或演算法。",
+     "t": 917
+    }
+   ],
+   "trap": "補充：Fibonacci 的 T(n) 是指數級，T(n) = Θ(φⁿ)，φ ≈ 1.618（上界 O(2ⁿ)）。"
+  },
+  {
+   "title": "常見複雜度的大小順序",
+   "scene": "arrpeng12-growth",
+   "points": [
+    {
+     "text": "常見的 g(n)：c、log n、log²n、n、n log n、n²、n³、2ⁿ。",
+     "t": 936
+    },
+    {
+     "text": "constant：不論 n 多大都在常數時間算完，最強。",
+     "t": 941
+    },
+    {
+     "text": "n 是 100 萬筆或 1000 萬筆，速度都一樣。",
+     "t": 961
+    },
+    {
+     "text": "其他都會受資料個數 n 影響；希望能做到 log n。",
+     "t": 976
+    },
+    {
+     "text": "最差是指數成長 2ⁿ；越上面越好、越下面越慢。",
+     "t": 1007
+    },
+    {
+     "text": "示意圖：n 只到 5、6 時，2ⁿ 就開始往上飄；log n 一直最低。",
+     "t": 1035
+    }
+   ]
+  },
+  {
+   "title": "n² log n 落在哪個區間",
+   "scene": "arrpeng12-growth",
+   "params": {
+    "focus": "n2logn"
+   },
+   "points": [
+    {
+     "text": "考試會問：推出的 complexity 不在表上怎麼辦？",
+     "t": 1080
+    },
+    {
+     "text": "例如算出 n² log n，表上只有 n log n。",
+     "t": 1094
+    },
+    {
+     "text": "n² log n 落在 n² 到 n³ 之間。",
+     "t": 1113
+    },
+    {
+     "text": "把 n² 想成 n² × 1，比較 1 和 log n：log n 較大。",
+     "t": 1165
+    },
+    {
+     "text": "所以 n² log n > n²；表只是 typical 的大概區間，要自己推導。",
+     "t": 1182
+    }
+   ]
+  },
+  {
+   "title": "量執行時間：time.h",
+   "scene": "arrpeng12-timing",
+   "points": [
+    {
+     "text": "Complexity（time、storage）跟 machine 無關，只推 step count。",
+     "t": 1220
+    },
+    {
+     "text": "跟機器有關的是程式實際的執行時間。",
+     "t": 1232
+    },
+    {
+     "text": "C 用 time.h 抓系統時間：開始和結束各抓一次。",
+     "t": 1242
+    },
+    {
+     "text": "相減就是程式花的時間；不同平台抓 system time 的方式不同。",
+     "t": 1251
+    }
+   ]
+  },
+  {
+   "title": "第一章回顧",
+   "scene": null,
+   "points": [
+    {
+     "text": "第一章最重要：data structure 是幹嘛的、跟 algorithm 的關係。",
+     "t": 1291
+    },
+    {
+     "text": "algorithm 解決問題；data structure 用來把方法 implement 出來，影響 performance。",
+     "t": 1315
+    },
+    {
+     "text": "用 time 與 storage complexity 評估方法好壞。",
+     "t": 1343
+    }
+   ]
+  },
+  {
+   "title": "Array：<index, value> 的集合",
+   "scene": "arrpeng12-array-def",
+   "points": [
+    {
+     "text": "進入 array，快速複習。",
+     "t": 1377
+    },
+    {
+     "text": "Array 是一個 set，由 index 和 value 組成。",
+     "t": 1391
+    },
+    {
+     "text": "電腦用一塊連續的空間存放 array。",
+     "t": 1424
+    },
+    {
+     "text": "例：int list[5]，有 5 個位置。",
+     "t": 1434
+    },
+    {
+     "text": "index 就像門牌號碼，從 0 到 4。",
+     "t": 1455
+    },
+    {
+     "text": "每個格子裡存放的是 value。",
+     "t": 1467
+    }
+   ]
+  },
+  {
+   "title": "Key-value 與 Array",
+   "scene": "arrpeng12-array-def",
+   "params": {
+    "kv": true
+   },
+   "points": [
+    {
+     "text": "雲端運算裡很熱門的 key-value data store。",
+     "t": 1495
+    },
+    {
+     "text": "基於 key-value data store 衍生出 MapReduce。",
+     "t": 1540
+    },
+    {
+     "text": "key 就是 index，value 是那個 key 上的值。",
+     "t": 1557
+    },
+    {
+     "text": "概念上等同一個 array。",
+     "t": 1569
+    }
+   ]
+  },
+  {
+   "title": "Array 的 ADT",
+   "scene": "arrpeng12-adt",
+   "points": [
+    {
+     "text": "Array ADT：objects 是 a set of <index, value> pairs。",
+     "t": 1590
+    },
+    {
+     "text": "可以是一維，也可以是二維或多維 array。",
+     "t": 1624
+    },
+    {
+     "text": "Retrieve(A, i)：給 index i，回傳那裡存的 value。",
+     "t": 1647
+    },
+    {
+     "text": "Store(A, i, x)：把值 x 存到 index i。",
+     "t": 1676
+    },
+    {
+     "text": "ADT 很像 C++ class 宣告，但更 general，只說做什麼不說怎麼做。",
+     "t": 1704
+    }
+   ]
+  },
+  {
+   "title": "為什麼還要學 C",
+   "scene": null,
+   "points": [
+    {
+     "text": "UNIX、Linux 系統是用 C 寫的。",
+     "t": 1746
+    },
+    {
+     "text": "業界很多舊系統仍用 C 開發，要升級得有理由。",
+     "t": 1784
+    },
+    {
+     "text": "C 很嚴謹：printf 要指定輸出格式，對應 C++ 的 cout。",
+     "t": 1828
+    }
+   ]
+  },
+  {
+   "title": "int list[5] 與 int *plist[5]",
+   "scene": "arrpeng12-ptr-array",
+   "points": [
+    {
+     "text": "int list[5] 和 int *plist[5] 都是 array，但差很多。",
+     "t": 1847
+    },
+    {
+     "text": "list 的每格存 integer。",
+     "t": 1873
+    },
+    {
+     "text": "看到 * 就知道 plist 存的是 pointer。",
+     "t": 1877
+    },
+    {
+     "text": "plist 有 5 格，每格的 value 是指向 integer 的 pointer（memory address）。",
+     "t": 1896
+    },
+    {
+     "text": "兩個宣告不一樣，意義也不一樣。",
+     "t": 1907
+    }
+   ]
+  },
+  {
+   "title": "一維陣列的記憶體位址",
+   "scene": "arrpeng12-address",
+   "points": [
+    {
+     "text": "一維 array 實作成一塊連續的記憶體。",
+     "t": 1918
+    },
+    {
+     "text": "假設 list[0] 放在 α。",
+     "t": 1928
+    },
+    {
+     "text": "list[1] 在 α + sizeof(int)。",
+     "t": 1943
+    },
+    {
+     "text": "sizeof(int)：一個 integer 佔幾個 byte。",
+     "t": 1956
+    },
+    {
+     "text": "list[2] 在 α + 2·sizeof(int)：用 offset 做 shift。",
+     "t": 1997
+    }
+   ],
+   "trap": "補充：一般式 list[i] 的位址 = α + i·sizeof(int)。"
+  },
+  {
+   "title": "list1、list2 與 pointer 寫法",
+   "scene": "arrpeng12-ptr-notation",
+   "points": [
+    {
+     "text": "比較 int *list1; 和 int list2[5];。",
+     "t": 2025
+    },
+    {
+     "text": "list1、list2 其實都是 pointer。",
+     "t": 2039
+    },
+    {
+     "text": "list1 只指到一個 integer 的空間。",
+     "t": 2051
+    },
+    {
+     "text": "list2 指到一塊連續、5 個 integer 大小的空間。",
+     "t": 2060
+    },
+    {
+     "text": "不寫 index 時，list2 就是 &list2[0]。",
+     "t": 2097
+    },
+    {
+     "text": "list2 + i 等同 &list2[i]：pointer 加整數就是往後調整位置。",
+     "t": 2106
+    },
+    {
+     "text": "前面加 *：*(list2 + i) 取出 list2[i] 的 value。",
+     "t": 2126
+    },
+    {
+     "text": "兩者都是 pointer，不同在指到的空間大小。",
+     "t": 2240
+    }
+   ]
+  },
+  {
+   "title": "print1：印出位址與內容",
+   "scene": "arrpeng12-print1",
+   "points": [
+    {
+     "text": "例子：array one，用 procedure print1 印出來。",
+     "t": 2296
+    },
+    {
+     "text": "print1 的輸入是 pointer ptr 和元素個數 rows。",
+     "t": 2316
+    },
+    {
+     "text": "C 用 printf 輸出，要寫出格式控制。",
+     "t": 2356
+    },
+    {
+     "text": "%8u 佔 8 格印 address、%5d 印數值。",
+     "t": 2384
+    },
+    {
+     "text": "for 迴圈把每個元素的 memory address 和存的數值列出來。",
+     "t": 2414
+    },
+    {
+     "text": "書上的實際輸出：address 從 1228 開始。",
+     "t": 2456
+    }
+   ],
+   "trap": "補充：書上的例子 int 佔 2 bytes，所以位址是 1228、1230、1232…；現代機器 int 多為 4 bytes。"
+  },
+  {
+   "title": "Structure",
+   "scene": "arrpeng12-struct",
+   "points": [
+    {
+     "text": "課本前面帶過 C++ 概念，這裡講 structure。",
+     "t": 2504
+    },
+    {
+     "text": "structure：自己宣告一個 data type，例如 person。",
+     "t": 2514
+    },
+    {
+     "text": "有三個欄位：name、age、salary。",
+     "t": 2517
+    },
+    {
+     "text": "strcpy(person.name, \"james\")：把字串 copy 到 name。",
+     "t": 2533
+    },
+    {
+     "text": "person.age、person.salary 用「.」存取欄位。",
+     "t": 2558
+    }
+   ]
+  },
+  {
+   "title": "推薦 K&R 與 LaTeX（題外話）",
+   "scene": null,
+   "points": [
+    {
+     "text": "推薦 C 語言之父寫的那本很薄的 C 經典書。",
+     "t": 2614
+    },
+    {
+     "text": "LaTeX 也是靠寫 tag 排版，作者也出了使用手冊。",
+     "t": 2668
+    }
+   ]
+  },
+  {
+   "title": "typedef struct",
+   "scene": "arrpeng12-struct",
+   "params": {
+    "typedef": true
+   },
+   "points": [
+    {
+     "text": "Structure 有不同的宣告方式：typedef struct。",
+     "t": 2730
+    },
+    {
+     "text": "另一種：typedef struct {三個欄位} humanBeing;。",
+     "t": 2757
+    },
+    {
+     "text": "宣告後 humanBeing 就成為新的 data type，可宣告 person1、person2。",
+     "t": 2767
+    },
+    {
+     "text": "union 跳過。",
+     "t": 2785
+    },
+    {
+     "text": "structure 可以指到自己（self-referential），留到 linked list 再講。",
+     "t": 2801
+    }
+   ]
+  },
+  {
+   "title": "Ordered list",
+   "scene": "arrpeng12-ordered-list",
+   "points": [
+    {
+     "text": "有了 array 就能做 ordered list：一個接一個有順序。",
+     "t": 2845
+    },
+    {
+     "text": "例：一週有 7 天，可以用 array 存。",
+     "t": 2854
+    },
+    {
+     "text": "可以問這個 list 有多長。",
+     "t": 2876
+    },
+    {
+     "text": "可以 scan：由左到右把所有值印出來。",
+     "t": 2880
+    },
+    {
+     "text": "可以取出某個位置的值。",
+     "t": 2890
+    },
+    {
+     "text": "array 也可以看成是一種 list。",
+     "t": 2904
+    }
+   ]
+  },
+  {
+   "title": "多項式與加法",
+   "scene": "arrpeng12-poly-intro",
+   "points": [
+    {
+     "text": "用 array 實作多項式的表示法。",
+     "t": 2943
+    },
+    {
+     "text": "例：A(x) = 3x²⁰ + 2x⁵ + 4。",
+     "t": 2949
+    },
+    {
+     "text": "A(x) + B(x)：同指數係數相加，常數項 4 + 1 = 5。",
+     "t": 3017
+    },
+    {
+     "text": "目標：寫程式做多項式加減。",
+     "t": 3064
+    },
+    {
+     "text": "ADT 裡還有 Eval：代入 x（例如 5）算出值。",
+     "t": 3091
+    },
+    {
+     "text": "第一個問題：多項式在電腦裡怎麼表示？",
+     "t": 3112
+    }
+   ]
+  },
+  {
+   "title": "表示法 1：係數陣列",
+   "scene": "arrpeng12-poly-rep1",
+   "points": [
+    {
+     "text": "宣告 int degree 與一個係數 array。",
+     "t": 3132
+    },
+    {
+     "text": "degree 是指數的部分，前面的是係數。",
+     "t": 3138
+    },
+    {
+     "text": "例：x⁴ + 10x³ + 3x² + 1 存成 array。",
+     "t": 3154
+    },
+    {
+     "text": "index 就是指數，value 就是係數：位置 3 放 10。",
+     "t": 3187
+    },
+    {
+     "text": "大小 MaxDegree + 1：最高只能到 x^MaxDegree。",
+     "t": 3229
+    },
+    {
+     "text": "+1 是給常數項（index 0）。",
+     "t": 3263
+    }
+   ]
+  },
+  {
+   "title": "padd：多項式加法虛擬碼",
+   "scene": "arrpeng12-padd",
+   "points": [
+    {
+     "text": "pseudocode 做 d = a + b，a、b、d 都是多項式。",
+     "t": 3317
+    },
+    {
+     "text": "D = 0：初始化，所有係數清成 0。",
+     "t": 3346
+    },
+    {
+     "text": "while 先判斷 A、B 是否 IsZero（已經空了）。",
+     "t": 3376
+    },
+    {
+     "text": "COMPARE(LeadExp(A), LeadExp(B))：A 是 20、B 是 4。",
+     "t": 3417
+    },
+    {
+     "text": "三個 case：1（A 大）、−1（B 大）、0（相同）。",
+     "t": 3503
+    },
+    {
+     "text": "case 1：Attach 把 A 的最高項 copy 到 D，再 Remove 掉。",
+     "t": 3552
+    },
+    {
+     "text": "3x²⁰ 進 D；下一圈比 5 和 4，還是 A 大，2x⁵ 進 D。",
+     "t": 3602
+    },
+    {
+     "text": "指數相同就把係數相加。",
+     "t": 3698
+    }
+   ],
+   "trap": "老師口頭舉了「4x⁴ + x⁴」說明 case 0；以本例 A = 3x²⁰ + 2x⁵ + 4、B = x⁴ + 10x³ + 3x² + 1 而言，相等的是常數項 4 + 1 = 5。"
+  },
+  {
+   "title": "表示法 3：共用的 termArray",
+   "scene": "arrpeng12-term-array",
+   "points": [
+    {
+     "text": "還有別的表示法；表示法 2 跳過。",
+     "t": 3775
+    },
+    {
+     "text": "A(x) = 2x¹⁰⁰⁰ + 1 用表示法 1：絕大部分 array 是 0，浪費。",
+     "t": 3804
+    },
+    {
+     "text": "用一個很大的 array 存所有多項式。",
+     "t": 3837
+    },
+    {
+     "text": "每格存兩部分：係數與指數。",
+     "t": 3858
+    },
+    {
+     "text": "A.start／A.finish 是 A 在 array 裡的第一個、最後一個位置。",
+     "t": 3877
+    },
+    {
+     "text": "上面的 A.start 等文字電腦不存，只是方便說明。",
+     "t": 3947
+    },
+    {
+     "text": "B.start = 2：係數 1、指數 4；free 是剩餘空間的開頭。",
+     "t": 3996
+    },
+    {
+     "text": "A 在 0…1，B 在 2…5。",
+     "t": 4096
+    }
+   ]
+  },
+  {
+   "title": "class Term 與 static",
+   "scene": "arrpeng12-poly-class",
+   "points": [
+    {
+     "text": "宣告 class Term：private 有係數 coef 和指數 exp。",
+     "t": 4148
+    },
+    {
+     "text": "class Polynomial 的 private 宣告 static Term termArray[MaxTerms]。",
+     "t": 4201
+    },
+    {
+     "text": "MaxTerms 是 termArray 最多能放的 term 數。",
+     "t": 4217
+    },
+    {
+     "text": "static int free 指出可用空間在哪。",
+     "t": 4237
+    },
+    {
+     "text": "start、finish 是這個多項式的起頭與結束位置。",
+     "t": 4251
+    },
+    {
+     "text": "不寫 static：每個多項式都有自己的 termArray。",
+     "t": 4383
+    },
+    {
+     "text": "寫 static：Polynomial A、B 共用 termArray 和 free。",
+     "t": 4396
+    }
+   ],
+   "trap": "static 是關鍵：少了它就做不到「一個 global array 存所有多項式」。"
+  },
+  {
+   "title": "在 termArray 上做加法",
+   "scene": "arrpeng12-padd-global",
+   "points": [
+    {
+     "text": "改寫後的加法：A.Add(B) 把 B 加到 A。",
+     "t": 4492
+    },
+    {
+     "text": "結果放在 termArray 從 free 開始的位置。",
+     "t": 4515
+    },
+    {
+     "text": "Polynomial C；C.start = free。",
+     "t": 4569
+    },
+    {
+     "text": "while 比 A、B 開頭（指數最大）的 exp。",
+     "t": 4622
+    },
+    {
+     "text": "相同：係數相加；A 大就把 A 的項 copy 到 C，反之 copy B。",
+     "t": 4633
+    },
+    {
+     "text": "NewTerm：把新項的 coef、exp 寫到 termArray[free]。",
+     "t": 4693
+    },
+    {
+     "text": "寫完 free++，移到下一個空位。",
+     "t": 4749
+    },
+    {
+     "text": "free 超過 MaxTerms 就放不下，要跳出。",
+     "t": 4770
+    }
+   ]
+  },
+  {
+   "title": "演算法相同、細節不同；O(n + m)",
+   "scene": "arrpeng12-poly-cost",
+   "points": [
+    {
+     "text": "看重點：不同表示法，實作細節不一樣。",
+     "t": 4818
+    },
+    {
+     "text": "加法方法本身都一樣：while、比大小、大於／等於／小於三個 case。",
+     "t": 4846
+    },
+    {
+     "text": "方法就是演算法，演算法一模一樣；表示法只改變指令寫法。",
+     "t": 4874
+    },
+    {
+     "text": "時間 complexity 是 O(n + m)。",
+     "t": 4898
+    },
+    {
+     "text": "n、m 是 A、B 的非 0 項數，兩個都要 scan 過。",
+     "t": 4920
+    }
+   ]
+  },
+  {
+   "title": "Storage 分析",
+   "scene": "arrpeng12-poly-cost",
+   "params": {
+    "focus": "space"
+   },
+   "points": [
+    {
+     "text": "每個多項式要存 start、finish 兩個參數。",
+     "t": 4966
+    },
+    {
+     "text": "還要 finish − start + 1 個項。",
+     "t": 4976
+    },
+    {
+     "text": "前面乘 2：每項要存 exp 和 coef。",
+     "t": 4987
+    },
+    {
+     "text": "non-sparse 時，表示法 3 的空間約是表示法 1 的兩倍。",
+     "t": 5022
+    },
+    {
+     "text": "因為表示法 1 的 index 就是指數，不必存 exp。",
+     "t": 5044
+    },
+    {
+     "text": "但多數多項式是 sparse，所以這方法還是很好用。",
+     "t": 5080
+    }
+   ],
+   "trap": "補充：storage = 2 × (finish − start + 1)（再加 start、finish）；全非 0 時約為表示法 1 的 2 倍。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "3n + 2 的 least upper bound 用 Big-O 表示是？",
+   "opts": [
+    "O(1)",
+    "O(n)",
+    "O(n²)",
+    "O(n log n)"
+   ],
+   "ans": "O(n)",
+   "why": "3n + 2 ≤ 4n（n ≥ 2）；O(n²) 也是上界但不是最緊的。"
+  },
+  {
+   "q": "n² log n 落在哪個區間？",
+   "opts": [
+    "n log n 與 n² 之間",
+    "n² 與 n³ 之間",
+    "n³ 與 2ⁿ 之間",
+    "等於 n²"
+   ],
+   "ans": "n² 與 n³ 之間",
+   "why": "n² × 1 < n² × log n < n² × n。"
+  },
+  {
+   "q": "T(n) = T(n − 1) + c（n 階乘的遞迴）的複雜度？",
+   "opts": [
+    "O(1)",
+    "O(log n)",
+    "O(n)",
+    "O(2ⁿ)"
+   ],
+   "ans": "O(n)",
+   "why": "展開 n 層，每層加常數 c：n·c。"
+  },
+  {
+   "q": "int list[5]，list[0] 在位址 α，list[3] 在哪？",
+   "opts": [
+    "α + 3",
+    "α + 3·sizeof(int)",
+    "α + 4·sizeof(int)",
+    "α × 3"
+   ],
+   "ans": "α + 3·sizeof(int)",
+   "why": "連續存放，每格往後 shift 一個 int 的大小。"
+  },
+  {
+   "q": "int list2[5]; 下列哪個等於 list2[i] 的值？",
+   "opts": [
+    "list2 + i",
+    "&list2[i]",
+    "*(list2 + i)",
+    "*list2 + i"
+   ],
+   "ans": "*(list2 + i)",
+   "why": "list2 + i 是位址 &list2[i]，前面加 * 才取值；*list2 + i 是 list2[0] + i。"
+  },
+  {
+   "q": "表示法 1 存 x⁴ + 10x³ + 3x² + 1，coef[3] 是多少？",
+   "opts": [
+    "3",
+    "10",
+    "1",
+    "0"
+   ],
+   "ans": "10",
+   "why": "index 就是指數，x³ 的係數 10 放在 coef[3]。"
+  },
+  {
+   "q": "class Polynomial 裡的 termArray 為什麼宣告成 static？",
+   "opts": [
+    "讓存取比較快",
+    "讓所有多項式共用同一個 array",
+    "讓 array 可以自動變大",
+    "避免被 friend class 存取"
+   ],
+   "ans": "讓所有多項式共用同一個 array",
+   "why": "不加 static，每個物件各有一份 termArray，就不是一個 global array 了。"
+  },
+  {
+   "q": "A 有 n 個、B 有 m 個非 0 項，用 termArray 做 A + B 的時間？",
+   "opts": [
+    "O(n·m)",
+    "O(n + m)",
+    "O(max degree)",
+    "O(n²)"
+   ],
+   "ans": "O(n + m)",
+   "why": "兩個指標各掃一次，每圈至少一個前進。"
+  }
+ ]
+}

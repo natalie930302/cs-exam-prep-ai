@@ -1,0 +1,235 @@
+{
+ "video": "ygK0YON10sQ",
+ "label": "Abdul Bari：Recursion and Stack",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場與大綱",
+   "scene": null,
+   "points": [
+    {
+     "text": "本片講 Stack 如何用來執行遞迴函式，會用例子 trace。",
+     "t": 0
+    },
+    {
+     "text": "大綱：main memory → 函式呼叫 → 巢狀呼叫 → 兩個遞迴例子。",
+     "t": 19
+    }
+   ]
+  },
+  {
+   "title": "Main memory 與 activation record",
+   "scene": "engmisc-rec-memory",
+   "points": [
+    {
+     "text": "程式敘述分兩類：變數是 data，其他敘述是 instructions。",
+     "t": 38
+    },
+    {
+     "text": "Main memory（RAM）一部分給 OS，其餘分成 Code、Stack、Heap 三區來執行程式。",
+     "t": 70
+    },
+    {
+     "text": "Code 放指令；Stack 放函式的變數（data）；Heap 給動態配置；另有一小塊（屬於 code）放 global／static 變數。",
+     "t": 93
+    },
+    {
+     "text": "執行程式：machine code 載入 Code 區，變數在 Stack 配置；屬於 main 的這一塊叫 activation record。",
+     "t": 140
+    },
+    {
+     "text": "main 的指令要用資料時，到 Stack 上自己的 activation record 取。",
+     "t": 186
+    },
+    {
+     "text": "activation record 在函式開始執行（被呼叫）時建立，每個函式都有自己的。",
+     "t": 221
+    }
+   ]
+  },
+  {
+   "title": "函式呼叫：record 疊上去、結束就刪除",
+   "scene": "engmisc-rec-call",
+   "points": [
+    {
+     "text": "例子：main 把 x 加一，再把 11 傳給 A，A 印出 11。",
+     "t": 240
+    },
+    {
+     "text": "建立 main 的 activation record，x++。",
+     "t": 278
+    },
+    {
+     "text": "呼叫 A 時建立 A 的 activation record，疊在 main 上面；main 還沒結束。",
+     "t": 287
+    },
+    {
+     "text": "正在執行的函式只存取 Stack 最上面的 activation record。",
+     "t": 317
+    },
+    {
+     "text": "函式結束時它的 activation record 被刪除：A 結束、main 結束，Stack 清空。",
+     "t": 341
+    },
+    {
+     "text": "呼叫越多，record 一層一層往上疊。",
+     "t": 364
+    }
+   ]
+  },
+  {
+   "title": "巢狀呼叫：main → A → B",
+   "scene": "engmisc-rec-nested",
+   "points": [
+    {
+     "text": "main 呼叫 A（傳 11），A 再呼叫 B（傳 22），B 印出 22。",
+     "t": 387
+    },
+    {
+     "text": "依序建立 main、A、B 的 activation record。",
+     "t": 417
+    },
+    {
+     "text": "B 印 22 後結束，接著 A、main 依序結束，Stack 清空。",
+     "t": 437
+    }
+   ]
+  },
+  {
+   "title": "遞迴例一：先印再呼叫（tail recursion）",
+   "scene": "engmisc-rec-tail",
+   "points": [
+    {
+     "text": "recursive function：函式呼叫自己；一定要有終止條件，否則會一直呼叫下去。",
+     "t": 456
+    },
+    {
+     "text": "例子：main 呼叫 A(3)；A 先印 n 再呼叫 A(n-1)，直到 n 變 0，輸出 3 2 1。",
+     "t": 498
+    },
+    {
+     "text": "遞迴呼叫是最後一個敘述，這種叫 tail recursion。",
+     "t": 529
+    },
+    {
+     "text": "每次呼叫自己都建立新的 activation record，函式從頭開始執行並使用新 record；舊的仍留在 Stack，因為還沒結束。",
+     "t": 565
+    },
+    {
+     "text": "n = 0 時條件不成立，該次呼叫結束、record 移除，回到上一層（n = 1）。",
+     "t": 611
+    },
+    {
+     "text": "回去之後沒有事要做，各層依序結束，最後 main 結束。",
+     "t": 623
+    }
+   ]
+  },
+  {
+   "title": "遞迴例二：先呼叫再印",
+   "scene": "engmisc-rec-head",
+   "points": [
+    {
+     "text": "第二個例子只差在順序：先遞迴呼叫，再 printf。",
+     "t": 652
+    },
+    {
+     "text": "main 呼叫 A(3) → A(2) → A(1) → A(0)，之後一層層返回，返回時依序印 1、2、3。",
+     "t": 661
+    },
+    {
+     "text": "差別：例一「印再呼叫」，例二「呼叫再印」。",
+     "t": 681
+    },
+    {
+     "text": "n = 0 條件不成立，record 移除；回到 n = 1 那層，接著執行 printf 印出 1。",
+     "t": 733
+    },
+    {
+     "text": "再回到 n = 2 印 2、n = 3 印 3：值是在返回時才印出的。",
+     "t": 754
+    }
+   ],
+   "trap": "補充：例二遞迴呼叫後還有 printf，所以不是 tail recursion（常稱 head recursion）。兩例 Stack 最多同時有 main + A(3)…A(0) 共 5 層 record。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "正在執行的函式存取 Stack 上的哪一個 activation record？",
+   "opts": [
+    "最上面的那個",
+    "最底下 main 的",
+    "任何一個都可以",
+    "Heap 裡的"
+   ],
+   "ans": "最上面的那個",
+   "why": "被呼叫的函式 record 疊在最上面，執行中的函式就是它。"
+  },
+  {
+   "q": "函式結束時它的 activation record 會？",
+   "opts": [
+    "從 Stack 移除",
+    "移到 Heap",
+    "保留到 main 結束",
+    "移到 Code section"
+   ],
+   "ans": "從 Stack 移除",
+   "why": "呼叫時建立，結束時刪除。"
+  },
+  {
+   "q": "void A(int n){ if(n>0){ printf(\"%d \",n); A(n-1);} }，呼叫 A(3) 輸出？",
+   "opts": [
+    "3 2 1",
+    "1 2 3",
+    "3 2 1 0",
+    "0 1 2 3"
+   ],
+   "ans": "3 2 1",
+   "why": "先印再呼叫，n = 0 時不印。"
+  },
+  {
+   "q": "void A(int n){ if(n>0){ A(n-1); printf(\"%d \",n);} }，呼叫 A(3) 輸出？",
+   "opts": [
+    "1 2 3",
+    "3 2 1",
+    "0 1 2 3",
+    "3 2 1 0"
+   ],
+   "ans": "1 2 3",
+   "why": "先遞迴到底，返回時才印，所以從 1 開始。"
+  },
+  {
+   "q": "遞迴呼叫是函式的最後一個敘述，這叫？",
+   "opts": [
+    "tail recursion",
+    "head recursion",
+    "tree recursion",
+    "indirect recursion"
+   ],
+   "ans": "tail recursion",
+   "why": "影片的第一個例子就是 tail recursion。"
+  },
+  {
+   "q": "main 呼叫 A(3)（例一的 A），Stack 上最多同時有幾個 activation record？",
+   "opts": [
+    "5",
+    "4",
+    "3",
+    "1"
+   ],
+   "ans": "5",
+   "why": "main + A(3)、A(2)、A(1)、A(0)。"
+  },
+  {
+   "q": "遞迴函式一定要有什麼？",
+   "opts": [
+    "終止條件",
+    "全域變數",
+    "回傳值",
+    "迴圈"
+   ],
+   "ans": "終止條件",
+   "why": "否則會無限呼叫自己。"
+  }
+ ]
+}

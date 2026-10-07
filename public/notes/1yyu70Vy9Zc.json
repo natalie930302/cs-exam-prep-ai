@@ -1,0 +1,1011 @@
+{
+ "video": "1yyu70Vy9Zc",
+ "label": "台大林軒田 DSA C++ / Array",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場與作業一公告",
+   "scene": null,
+   "points": [
+    {
+     "text": "直播課開場；請還沒看上週錄影的同學這週補上進度。",
+     "t": 290
+    },
+    {
+     "text": "作業一已公布，約兩週多的時間，題目多，鼓勵及早開始、多和同學討論。",
+     "t": 319
+    },
+    {
+     "text": "助教時間週一到週五每天都有，善用助教資源。",
+     "t": 347
+    },
+    {
+     "text": "上課形式：講一段後切到 Slido 回答問題，中間下課約 10 分鐘。",
+     "t": 391
+    }
+   ]
+  },
+  {
+   "title": "Q&A：證明題與作業繳交",
+   "scene": null,
+   "points": [
+    {
+     "text": "作業有寫程式與寫證明；本課也會教如何驗證自己的程式是正確的。",
+     "t": 461
+    },
+    {
+     "text": "證明演算法前要先寫出一個 claim（定理），讓它和演算法的計算對應，之後的步驟才是數學。",
+     "t": 494
+    },
+    {
+     "text": "手寫（或打字）作業交到 Gradescope，程式部分另用線上平台繳交。",
+     "t": 521
+    },
+    {
+     "text": "作業 1.5 輸入最後的單獨 0 代表讀到這裡程式就結束。",
+     "t": 616
+    }
+   ]
+  },
+  {
+   "title": "從 C 到 C++",
+   "scene": "arrlin-c-cpp",
+   "points": [
+    {
+     "text": "第一段課程：從 C 到 C++。本課不是 C++ 導向，只講對資料結構方便的部分。",
+     "t": 751
+    },
+    {
+     "text": "只講 C 和 C++ 的五個「好用的不一樣」；課本第一章有更完整的介紹。",
+     "t": 808
+    },
+    {
+     "text": "C++ 是 C 的延伸版本。",
+     "t": 854
+    },
+    {
+     "text": "但不是百分之百向後相容：全部用 C 寫，在 C++ 不一定能過。",
+     "t": 872
+    },
+    {
+     "text": "兩者交集約占 C 的九成，很多東西是 C++ 另外加上去的。",
+     "t": 884
+    },
+    {
+     "text": "if、for 等 C 裡熟悉的運算，C++ 通通都有。",
+     "t": 902
+    }
+   ]
+  },
+  {
+   "title": "C 的 swap：透過指標交換",
+   "scene": "arrlin-swap-ptr",
+   "points": [
+    {
+     "text": "第一個好用的不一樣是 reference，對應到 C 裡的 pointer。",
+     "t": 929
+    },
+    {
+     "text": "例子：寫一段程式把兩個整數變數的值交換。",
+     "t": 956
+    },
+    {
+     "text": "C 的寫法：傳進兩個位置 pa、pb，用暫存變數 temp 先存 *pa。",
+     "t": 984
+    },
+    {
+     "text": "再把 *pb 搬到 *pa，最後把 temp 放進 *pb。",
+     "t": 997
+    },
+    {
+     "text": "pointer 常讓人覺得腦袋要轉好幾轉。",
+     "t": 1072
+    },
+    {
+     "text": "呼叫時要把 x、y 的位置送進去，透過位置間接操作才能交換。",
+     "t": 1107
+    }
+   ]
+  },
+  {
+   "title": "C++ reference：變數的暱稱",
+   "scene": "arrlin-swap-ref",
+   "points": [
+    {
+     "text": "C++ 在參數前加上 &（和 C 取位置的符號同一個）。",
+     "t": 1147
+    },
+    {
+     "text": "傳進來的不再是指標，而是 a、b 本身，可以直接寫典型的交換，呼叫 swap(x, y)。",
+     "t": 1172
+    },
+    {
+     "text": "為什麼 C 要用指標？因為 C 是 call by value。",
+     "t": 1247
+    },
+    {
+     "text": "x 的值複製給 a、y 的值複製給 b，像影印一份；交換的是影印本，原稿沒換到。",
+     "t": 1266
+    },
+    {
+     "text": "& 讓 a 不是影印本，而是 x 的暱稱（nickname），交換 a、b 就是交換 x、y。",
+     "t": 1316
+    },
+    {
+     "text": "這種帶 & 的東西在 C++ 叫做 Reference。",
+     "t": 1348
+    },
+    {
+     "text": "compiler 偷偷把暱稱換成對應的指標（例如 x 在第 156 張紙、y 在第 678 張紙）。",
+     "t": 1359
+    },
+    {
+     "text": "Reference 可以想成比較聰明、比較安全的 pointer（有型別檢查等機制）。",
+     "t": 1424
+    }
+   ],
+   "trap": "補充：reference 宣告時就必須綁定一個變數，之後不能改綁別的變數；pointer 可以是 NULL，也可以改指向。"
+  },
+  {
+   "title": "Q&A：課本與版權",
+   "scene": null,
+   "points": [
+    {
+     "text": "請勿分享非正版的課本 PDF，要尊重版權與別人的程式碼。",
+     "t": 1523
+    },
+    {
+     "text": "推薦大家想辦法讀到課本、練習讀課本。",
+     "t": 1642
+    }
+   ]
+  },
+  {
+   "title": "struct：把資料綁在一起",
+   "scene": "arrlin-struct-func",
+   "points": [
+    {
+     "text": "下一個差別：structure 和 class。",
+     "t": 1675
+    },
+    {
+     "text": "struct 把 real、imaginary 兩個變數綁在一起，宣告成一個新型態（複數）。",
+     "t": 1730
+    },
+    {
+     "text": "綁在一起，對這組變數的操作會比較完整，不會只改一個忘了另一個。",
+     "t": 1764
+    },
+    {
+     "text": "C++ 對應的叫 class；變數有權限觀念，public 代表所有程式都能 access。",
+     "t": 1805
+    },
+    {
+     "text": "C 的寫法：複數乘法 multiply(a, b) 是寫在 structure 之外的函式。",
+     "t": 1879
+    },
+    {
+     "text": "函式裡建立 result，result.real = a.real*b.real − a.imag*b.imag，再把結果回傳。",
+     "t": 1933
+    }
+   ]
+  },
+  {
+   "title": "class：資料與動作綁在一起",
+   "scene": "arrlin-class-method",
+   "points": [
+    {
+     "text": "class 和 structure 最大的差別：可以定義在 class 之內的程式。",
+     "t": 1987
+    },
+    {
+     "text": "例如 multiplyBy(另一個 complex)：自己這組複數去乘另一組。",
+     "t": 2009
+    },
+    {
+     "text": "語意是對已經存在的「物件」送指令，動作改變物件的內部狀態（real、imag）。",
+     "t": 2065
+    },
+    {
+     "text": "C 的寫法比較鬆散；class 把資料與動作綁起來，語意明確、可讀性較好。",
+     "t": 2113
+    },
+    {
+     "text": "物件導向程式設計：每個物件像一塊樂高積木，有自己的資料與動作，再拼成大軟體。",
+     "t": 2161
+    },
+    {
+     "text": "和物件有關的 function，可以選擇寫進 class 裡和物件綁在一起。",
+     "t": 2234
+    }
+   ]
+  },
+  {
+   "title": "Operator Overloading：c = a + b",
+   "scene": "arrlin-op-overload",
+   "points": [
+    {
+     "text": "C 裡寫 c = a + b，a、b、c 是數字時語意大家都很清楚。",
+     "t": 2272
+    },
+    {
+     "text": "若 a、b、c 是複數，C 只能寫 c = plus(a, b)，函式裡實部加實部、虛部加虛部。",
+     "t": 2307
+    },
+    {
+     "text": "運算符號和函數其實是同一回事，只是 int 的 + 是內建好的。",
+     "t": 2376
+    },
+    {
+     "text": "C++ compiler 看到 c = a + b，先把它翻譯成函數呼叫。",
+     "t": 2443
+    },
+    {
+     "text": "翻譯後的名字叫 operator+，你只要把 operator+ 寫好。",
+     "t": 2481
+    },
+    {
+     "text": "也有 a.operator+(b) 這種用 class 成員函式的翻譯方式。",
+     "t": 2541
+    },
+    {
+     "text": "compiler 依你的型別判斷要呼叫哪段程式碼。",
+     "t": 2608
+    }
+   ]
+  },
+  {
+   "title": "作業一：GCD 從整數改成大數",
+   "scene": "arrlin-gcd-bigint",
+   "points": [
+    {
+     "text": "作業一要寫兩個版本的最大公因數：正整數版與大數版。",
+     "t": 2625
+    },
+    {
+     "text": "大數：比一般整數能存的大很多，做一次加法可能就要跑迴圈處理各位數。",
+     "t": 2654
+    },
+    {
+     "text": "選擇一：砍掉重練，把每個加減乘除都換成大數運算重寫。",
+     "t": 2674
+    },
+    {
+     "text": "選擇二：把大數需要的運算子定義好，GCD 主程式完全不用改，只換型別。",
+     "t": 2693
+    },
+    {
+     "text": "這就是 Operator Overloading：同一個運算子在不同型別上重新定義。",
+     "t": 2742
+    }
+   ]
+  },
+  {
+   "title": "Q&A：this、效能與回傳 reference",
+   "scene": null,
+   "points": [
+    {
+     "text": "入門上可把 class 看成 struct 加上相關的 function（另外還有權限控制）。",
+     "t": 2803
+    },
+    {
+     "text": "this：系統偷偷藏著「目前物件在記憶體中位置」的指標。",
+     "t": 2855
+    },
+    {
+     "text": "operator overloading 和一般 function 執行速度幾乎沒差，差在寫程式的速度。",
+     "t": 2895
+    },
+    {
+     "text": "operator= 回傳 reference：避免多拷貝一份物件、避免多餘的記憶體。",
+     "t": 2940
+    }
+   ]
+  },
+  {
+   "title": "跨型態的程式：copy、paste、replace",
+   "scene": "arrlin-copy-paste",
+   "points": [
+    {
+     "text": "資料結構常要跨型態存在。",
+     "t": 3084
+    },
+    {
+     "text": "例：int array 10 個 element、double array 10 個、複數 array 4 個，意義相同只有型態不同。",
+     "t": 3108
+    },
+    {
+     "text": "要 sort 時，C 就得寫 intSort、doubleSort……每種型態一段。",
+     "t": 3159
+    },
+    {
+     "text": "偷懶做法：寫好 integer sort 後 copy、paste、replace（int 換成 double）。",
+     "t": 3237
+    },
+    {
+     "text": "小心不該換的被換到，例如迴圈 index 的 int 也被換成 double。",
+     "t": 3278
+    },
+    {
+     "text": "copy-paste-replace 是傳統 reuse 的第一個做法。",
+     "t": 3299
+    }
+   ]
+  },
+  {
+   "title": "template 與 STL",
+   "scene": "arrlin-template",
+   "points": [
+    {
+     "text": "C++ 的 template：寫一段型別暫時未定的程式碼，型別通常叫 T。",
+     "t": 3323
+    },
+    {
+     "text": "template 就是範本，像辦事情拿到的空白表格。",
+     "t": 3402
+    },
+    {
+     "text": "程式要 sort 一個 integer array 時，compiler 拿範本印一份，把 T 換成 int。",
+     "t": 3416
+    },
+    {
+     "text": "Complex array 也一樣；若 sort 要比較大小，就要找得到 Complex 的比較 operator。",
+     "t": 3458
+    },
+    {
+     "text": "C++ 集大成的 template 叫 STL（Standard Template Library）。",
+     "t": 3541
+    },
+    {
+     "text": "很多資料結構 STL 已經寫好，而且可以用在任何型別上。",
+     "t": 3558
+    },
+    {
+     "text": "寫一段 template 的 code，就能用在很多地方。",
+     "t": 3622
+    }
+   ]
+  },
+  {
+   "title": "Q&A：STL、auto 與 operator",
+   "scene": null,
+   "points": [
+    {
+     "text": "作業沒有寫不能用 STL，就可以用。",
+     "t": 3716
+    },
+    {
+     "text": "語言結構危不危險，取決於你了不了解它（以 auto 為例）。",
+     "t": 3825
+    },
+    {
+     "text": "用 STL 的 sort 排自訂型別，至少要有比較大小的 operator，否則 compile 不過。",
+     "t": 3859
+    },
+    {
+     "text": "reference 可以看成 pointer 的一種比較安全的包裝。",
+     "t": 3914
+    }
+   ]
+  },
+  {
+   "title": "下課與 Q&A：class 預設權限、測資",
+   "scene": null,
+   "points": [
+    {
+     "text": "C++ 部分到此，下課休息約 10 分鐘。",
+     "t": 3984
+    },
+    {
+     "text": "lecture 不會照課本上，但每週要讀課本的指定內容。",
+     "t": 4639
+    },
+    {
+     "text": "C++ 裡 class 預設 private、struct 預設 public；C++ 的 struct 也能寫 function。",
+     "t": 4696
+    },
+    {
+     "text": "不會提供太多測資：要學會自己測試自己的程式。",
+     "t": 4758
+    },
+    {
+     "text": "private / public 是權限控制：某些程式不能看到或改動某些資料。",
+     "t": 4979
+    }
+   ]
+  },
+  {
+   "title": "Array：有編號的置物櫃",
+   "scene": "arrlin-locker",
+   "points": [
+    {
+     "text": "下一段課程：array。",
+     "t": 5149
+    },
+    {
+     "text": "重點不是語法，而是用 data structure 的角度看 array。",
+     "t": 5170
+    },
+    {
+     "text": "Wikipedia：array 是一群 element 集合起來。",
+     "t": 5239
+    },
+    {
+     "text": "關鍵在後半句：each identified by one array index。",
+     "t": 5261
+    },
+    {
+     "text": "Array 就像系館地下室的置物櫃。",
+     "t": 5303
+    },
+    {
+     "text": "理想世界：每人一個櫃子，號碼連續。",
+     "t": 5327
+    },
+    {
+     "text": "用櫃子上的編號辨別，可以放東西進去、把東西拿出來。",
+     "t": 5378
+    }
+   ]
+  },
+  {
+   "title": "記憶體是最大的 array；pointer 是編號",
+   "scene": "arrlin-memory-pointer",
+   "points": [
+    {
+     "text": "電腦裡最大也最重要的 array：記憶體。",
+     "t": 5413
+    },
+    {
+     "text": "宣告變數就是劃出一塊記憶體位置，並給它一個名字。",
+     "t": 5437
+    },
+    {
+     "text": "記憶體的編號叫 address，就是 array 的 index。",
+     "t": 5511
+    },
+    {
+     "text": "例如 address 有 4 bytes = 32 bits，編號就有 2³² 個。",
+     "t": 5550
+    },
+    {
+     "text": "位置 00、01、02…；某處放一個 pointer，上面寫著 01。",
+     "t": 5593
+    },
+    {
+     "text": "pointer 只是把 index 存下來，像大地遊戲的紙條：下一關去 01 號找。",
+     "t": 5625
+    },
+    {
+     "text": "尋寶遊戲：櫃子裡放下一個櫃子的編號，一路找下去。",
+     "t": 5671
+    },
+    {
+     "text": "pointer 本質 = 記憶體位置 = array 編號，沒什麼好怕，只要別開到別人的櫃子。",
+     "t": 5806
+    }
+   ]
+  },
+  {
+   "title": "Array = 一塊連續記憶體：Fast Random Access",
+   "scene": "arrlin-block-address",
+   "points": [
+    {
+     "text": "array 是大記憶體裡劃起來的一小段（memory block）。",
+     "t": 5867
+    },
+    {
+     "text": "3 號櫃子就在 0 號櫃子旁邊第三格。",
+     "t": 5918
+    },
+    {
+     "text": "30 號在 0 號旁邊 30 格：只要知道 0 號在哪就能算出來。",
+     "t": 5952
+    },
+    {
+     "text": "一格多大看型別：int 可能 4 bytes、double 更大、char 更小。",
+     "t": 5980
+    },
+    {
+     "text": "arr 隱含的是第 0 格的位置，例如第 5566 號田，後面 5567、5568… 連續下去。",
+     "t": 6015
+    },
+    {
+     "text": "看 data structure 要看兩部分：取用（get）與維護（update）。",
+     "t": 6057
+    },
+    {
+     "text": "construct：C 用 malloc 劃出一塊連續記憶體。",
+     "t": 6121
+    },
+    {
+     "text": "Fast Random Access：random 是 arbitrary，任何 index 都很快；RAM 也是這個意思。",
+     "t": 6181
+    }
+   ]
+  },
+  {
+   "title": "Array ADT：insert 與 remove",
+   "scene": "arrlin-insert-remove",
+   "points": [
+    {
+     "text": "抽象化 array：get by index、update by index、construct。",
+     "t": 6238
+    },
+    {
+     "text": "比較有趣的兩個：insert by index、remove by index。",
+     "t": 6282
+    },
+    {
+     "text": "insert 到第 3 個位置：記憶體要大一格，後面的都要往後推。",
+     "t": 6330
+    },
+    {
+     "text": "remove 掉某個位置：後面的要往前補位。",
+     "t": 6336
+    },
+    {
+     "text": "這些都是比較吃力的運算。",
+     "t": 6351
+    },
+    {
+     "text": "update 叫「放進去」，insert 叫「塞進去」：像胖子擠進去要把別人擠開。",
+     "t": 6383
+    },
+    {
+     "text": "原生 array 最需要支援的只有 get、update，頂多再加 construct。",
+     "t": 6409
+    }
+   ],
+   "trap": "補充：在 n 個元素的 array 中 insert / remove by index，最壞要搬 n 個元素，時間 O(n)；get / update 是 O(1)。"
+  },
+  {
+   "title": "STL vector：會長大的 array",
+   "scene": "arrlin-vector-grow",
+   "points": [
+    {
+     "text": "STL 裡也有對應的 array。",
+     "t": 6425
+    },
+    {
+     "text": "get、update 概念和原生 array 相同，一樣很快。",
+     "t": 6449
+    },
+    {
+     "text": "多了一個概念：array 可以 grow。",
+     "t": 6460
+    },
+    {
+     "text": "原本 allocate 10 個且已滿，再塞到最後面時，會自動延伸成 15 或 20 個。",
+     "t": 6487
+    },
+    {
+     "text": "STL vector 連 insert、remove 都實作好了。",
+     "t": 6537
+    },
+    {
+     "text": "推薦去看 vector 提供哪些操作，豐富對 array as a data structure 的想像。",
+     "t": 6560
+    }
+   ],
+   "trap": "補充：擴充時要配置新空間並把舊元素全部搬過去，那一次是 O(n)；若容量每次倍增，push_back 攤銷後是 O(1)。"
+  },
+  {
+   "title": "Q&A：程式效率與作業",
+   "scene": null,
+   "points": [
+    {
+     "text": "作業效率有時會影響分數：超過助教設定的時間可能拿不到分；作業二有大資料處理。",
+     "t": 6620
+    }
+   ]
+  },
+  {
+   "title": "2D array：one block（row-major）",
+   "scene": "arrlin-2d-oneblock",
+   "points": [
+    {
+     "text": "剛才講的是 one-dimensional array。",
+     "t": 6721
+    },
+    {
+     "text": "更 general 的例子：two-dimensional array。",
+     "t": 6768
+    },
+    {
+     "text": "最熟悉的 2D array 是圖片，例如 1024 × 768。",
+     "t": 6777
+    },
+    {
+     "text": "以 2 × 5 為例：2 個 row、5 個 column，共 10 格。",
+     "t": 6806
+    },
+    {
+     "text": "index 變成一組 (row, column)，像座標。",
+     "t": 6852
+    },
+    {
+     "text": "實作一：拉成一塊長長的記憶體，第一個 row 接著第二個 row。",
+     "t": 6883
+    },
+    {
+     "text": "要拿 [1][3]：先算出 row 1 的起點，再往後走 3 步。",
+     "t": 6944
+    },
+    {
+     "text": "construct 時留一大塊 1D 記憶體，get / update 用式子算位置。",
+     "t": 6994
+    }
+   ],
+   "trap": "補充：row-major、每列 C 個元素時，arr[i][j] 位在 arr + (i × C + j) × 元素大小。"
+  },
+  {
+   "title": "2D array：array of arrays",
+   "scene": "arrlin-2d-aoa",
+   "points": [
+    {
+     "text": "剛才的方法不是唯一的實作。",
+     "t": 7050
+    },
+    {
+     "text": "每個 row 本身是一段連續記憶體，可以分開放（化整為零）。",
+     "t": 7094
+    },
+    {
+     "text": "例如 row 1 放在 5566、row 0 放在 1126。",
+     "t": 7154
+    },
+    {
+     "text": "要把 1126、5566 存下來：這就是指標陣列。",
+     "t": 7184
+    },
+    {
+     "text": "2D array 的入口放兩張小紙條，告訴你去哪找各個 row。",
+     "t": 7224
+    },
+    {
+     "text": "程式寫 arr[row][col]：先拿到該 row 的起點，再走 col 步。",
+     "t": 7250
+    },
+    {
+     "text": "construct 分三段：放紙條的一段加上每個 row 各一段，位置可以四散。",
+     "t": 7280
+    }
+   ]
+  },
+  {
+   "title": "one block vs array of arrays：trade-off",
+   "scene": "arrlin-2d-compare",
+   "points": [
+    {
+     "text": "第一種叫 one block，第二種叫 array of arrays。",
+     "t": 7356
+    },
+    {
+     "text": "array of arrays 比較花空間：要多一塊放小紙條。",
+     "t": 7377
+    },
+    {
+     "text": "construct 可能多花時間：每個 row 都要分開配置。",
+     "t": 7391
+    },
+    {
+     "text": "get 要兩層：先找紙條再算位置，像大地遊戲跑兩關。",
+     "t": 7412
+    },
+    {
+     "text": "但 array of arrays 常比較好寫，兩個維度分開處理。",
+     "t": 7445
+    },
+    {
+     "text": "差距通常不大；重點是程式設計處處有 trade-off。",
+     "t": 7474
+    }
+   ]
+  },
+  {
+   "title": "下三角矩陣與對稱矩陣",
+   "scene": "arrlin-lower-tri",
+   "points": [
+    {
+     "text": "三角矩陣：方形矩陣只有對角線以下有非零值，以上都是 0。",
+     "t": 7534
+    },
+    {
+     "text": "0 不需要存下來，只想存下三角。",
+     "t": 7589
+    },
+    {
+     "text": "第 1 個 row 1 個 element、第 2 個 row 2 個…第 n 個 row n 個。",
+     "t": 7623
+    },
+    {
+     "text": "用單一 block 只要 n(n+1)/2 個記憶體位置。",
+     "t": 7634
+    },
+    {
+     "text": "要找某格位置得多花數學力氣：算出前面已經經過多少 element。",
+     "t": 7667
+    },
+    {
+     "text": "也可以改用 array of arrays 省事：又是一個 trade-off。",
+     "t": 7689
+    },
+    {
+     "text": "對稱矩陣：左下和右上對稱，也只要存一半。",
+     "t": 7738
+    },
+    {
+     "text": "每個選擇都有好處和壞處，懂得取捨才是程式設計。",
+     "t": 7778
+    }
+   ],
+   "trap": "老師口頭舉「第 5 row 第 6 column」為例，但下三角中 column 不會大於 row（那格是 0）；動畫改用第 6 row 第 5 個（1-indexed）：前面 1+2+3+4+5 = 15 個，再走 5 步 → 第 20 個。一般式（1-indexed、row-major）：第 i row 第 j 個在 i(i−1)/2 + j。"
+  },
+  {
+   "title": "row sum vs column sum：哪個快？",
+   "scene": "arrlin-rowcol-sum",
+   "points": [
+    {
+     "text": "兩段程式都把 2D array 的每個東西加進 result。",
+     "t": 7870
+    },
+    {
+     "text": "C 的 native 2D array 寫成 arr[i][j]，實際上是 one block 的一大塊記憶體。",
+     "t": 7898
+    },
+    {
+     "text": "問題：哪一個比較快？為什麼？",
+     "t": 7933
+    },
+    {
+     "text": "row sum 由左到右再由上到下；column sum 由上到下再往右。",
+     "t": 7957
+    },
+    {
+     "text": "休息 5 分鐘，在 Slido 投票。",
+     "t": 7994
+    }
+   ]
+  },
+  {
+   "title": "實測：column sum 慢約一倍",
+   "scene": "arrlin-rowcol-timing",
+   "points": [
+    {
+     "text": "投票結果：七成以上同學覺得 row sum 比較快。",
+     "t": 8380
+    },
+    {
+     "text": "兩支程式只差兩行，initialize 也都用 row major 以求公平。",
+     "t": 8467
+    },
+    {
+     "text": "各跑 10 次，得到比較穩定的估計。",
+     "t": 8520
+    },
+    {
+     "text": "row sum：約 10 秒，一次約 1 秒。",
+     "t": 8527
+    },
+    {
+     "text": "column sum：約 2 倍，20 秒左右。",
+     "t": 8558
+    }
+   ]
+  },
+  {
+   "title": "原因：cache 與連續存取",
+   "scene": "arrlin-cache",
+   "points": [
+    {
+     "text": "看似無害的簡單程式，為什麼時間差這麼多？",
+     "t": 8581
+    },
+    {
+     "text": "程式最終變成機器碼在特定平台上執行，要了解平台才寫得出有效率的程式。",
+     "t": 8619
+    },
+    {
+     "text": "記憶體離 CPU 很「遙遠」，每次存取花的時間相對太長。",
+     "t": 8675
+    },
+    {
+     "text": "比喻：走很遠去井裡打水，不如一次用大桶打多一點放在家裡水槽。",
+     "t": 8705
+    },
+    {
+     "text": "那個水槽叫 cache（快取記憶體）。",
+     "t": 8794
+    },
+    {
+     "text": "one block 實作下，row sum 存取的記憶體是連續的。",
+     "t": 8824
+    },
+    {
+     "text": "column sum 則跳來跳去：第 1 個 → 第 1001 個 → 第 2001 個…再回到第 2 個。",
+     "t": 8842
+    },
+    {
+     "text": "cache 一次抓附近連續的一小段；row sum 吃香，column sum 常常 cache miss。",
+     "t": 8869
+    }
+   ],
+   "trap": "語音約 147:28 聽起來像「跳到 2001」，依上下文應是每列 1000 個元素、依序跳到 1001、2001、3001。這也是為什麼要修計算機結構、作業系統等必修課。"
+  },
+  {
+   "title": "Q&A：row-major 與 column-major",
+   "scene": null,
+   "points": [
+    {
+     "text": "array 較小時差距較小；大規模資料才看得出影響。",
+     "t": 9030
+    },
+    {
+     "text": "cache 的內容會被其他使用洗掉；cache 也不是唯一影響時間的因素。",
+     "t": 9073
+    },
+    {
+     "text": "剛才測的是 one block（C 的 native 2D array）。",
+     "t": 9151
+    },
+    {
+     "text": "C 的 one block 配置用 row major；這是語言特性，需要查，部分傳統語言用 column major。",
+     "t": 9173
+    }
+   ],
+   "trap": "補充：C / C++ 是 row-major；Fortran、MATLAB 是 column-major。"
+  },
+  {
+   "title": "Ordered array",
+   "scene": "arrlin-ordered-insert",
+   "points": [
+    {
+     "text": "下一段：ordered array。",
+     "t": 9233
+    },
+    {
+     "text": "差別一：有放東西的櫃子是連續的一段，例如 0 號到 7 號都有東西。",
+     "t": 9256
+    },
+    {
+     "text": "差別二：放的東西有可比較的值（例如成績），而且排序好。",
+     "t": 9306
+    },
+    {
+     "text": "由小到大：arr[0] ≤ arr[1] ≤ … ≤ arr[end]，後面是空的。",
+     "t": 9333
+    },
+    {
+     "text": "要有定義好的「小於等於」；struct / class 可以比較某個欄位。",
+     "t": 9369
+    },
+    {
+     "text": "加上 order 條件，會改變怎麼看待這個 data structure。",
+     "t": 9407
+    },
+    {
+     "text": "例：insert 13，位置已經固定，一定要在 10 和 25 中間。",
+     "t": 9485
+    },
+    {
+     "text": "不能 insert by index 把 13 插到第 0 個；ordered array 要有自己的 insert 演算法（下次講）。",
+     "t": 9498
+    }
+   ],
+   "trap": "老師念的數列語音辨識不清（約 157:50），這裡以 3, 7, 9, 10, 25, 27 呈現；確定的是 13 必須插在 10 和 25 之間。"
+  },
+  {
+   "title": "下課時間與 Q&A",
+   "scene": null,
+   "points": [
+    {
+     "text": "大約 4 點左右下課，有時稍長。",
+     "t": 9566
+    },
+    {
+     "text": "怎麼知道測試的是 one block？要了解語言特性、查資料。",
+     "t": 9642
+    },
+    {
+     "text": "不用演算法聖經是因為對大一程度太抽象。",
+     "t": 9723
+    },
+    {
+     "text": "時間與空間複雜度大約一個月後會教。",
+     "t": 9787
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "C 寫 void swap(int a, int b) 並呼叫 swap(x, y)，為什麼 x、y 沒有被交換？",
+   "opts": [
+    "C 是 call by value，函式交換的是複製出來的 a、b",
+    "C 不允許在函式裡寫賦值",
+    "沒有回傳值所以結果被丟掉",
+    "int 不能交換，要用 double"
+   ],
+   "ans": "C 是 call by value，函式交換的是複製出來的 a、b",
+   "why": "x、y 的值被複製到 a、b（影印本），換的是影印本，原稿不變；要用指標或 C++ reference。"
+  },
+  {
+   "q": "C++ 中 void swap(int &a, int &b) 的 a 是什麼？",
+   "opts": [
+    "傳進來變數 x 的 reference（暱稱）",
+    "x 的一份複本",
+    "一個可以是 NULL 的指標",
+    "x 的位置數值"
+   ],
+   "ans": "傳進來變數 x 的 reference（暱稱）",
+   "why": "& 讓 a 成為 x 的暱稱，對 a 的操作就是對 x 的操作；背後由 compiler 轉成指標。"
+  },
+  {
+   "q": "array arr 第 0 格在記憶體 5566 號，每格佔 1 個單位，arr[3] 在哪？",
+   "opts": [
+    "5569",
+    "5566",
+    "5563",
+    "5599"
+   ],
+   "ans": "5569",
+   "why": "arr[i] 在 arr + i × 每格大小 = 5566 + 3 = 5569，一步就能算出（Fast Random Access）。"
+  },
+  {
+   "q": "2 × 5 的 2D array 以 one block、row-major 存放，arr[1][3] 是第幾格（0-based）？",
+   "opts": [
+    "8",
+    "13",
+    "4",
+    "16"
+   ],
+   "ans": "8",
+   "why": "row 1 的起點是 1 × 5 = 5，再走 3 步 → 5 + 3 = 8。"
+  },
+  {
+   "q": "和 one block 相比，array of arrays 的 2D array 哪個敘述正確？",
+   "opts": [
+    "多存一組指標、get 要多一層，但通常比較好寫",
+    "一定比 one block 快",
+    "不需要額外空間",
+    "每個 row 必須在記憶體中相鄰"
+   ],
+   "ans": "多存一組指標、get 要多一層，但通常比較好寫",
+   "why": "要多存放各 row 位置的小紙條，construct 分段配置、get 跑兩關；好處是兩個維度分開處理較好寫。"
+  },
+  {
+   "q": "n × n 下三角矩陣只存對角線（含）以下的元素，需要幾個位置？",
+   "opts": [
+    "n(n+1)/2",
+    "n²",
+    "n(n−1)/2",
+    "2n − 1"
+   ],
+   "ans": "n(n+1)/2",
+   "why": "第 k 個 row 有 k 個元素，1 + 2 + … + n = n(n+1)/2。"
+  },
+  {
+   "q": "C 的 2D array 上，row sum（外層 i、內層 j）比 column sum 快約一倍的主因是？",
+   "opts": [
+    "row sum 存取連續記憶體，cache 一次抓回的資料用得到",
+    "row sum 做的加法比較少",
+    "column sum 的結果比較大",
+    "compiler 對 column sum 不做最佳化"
+   ],
+   "ans": "row sum 存取連續記憶體，cache 一次抓回的資料用得到",
+   "why": "C 是 row-major；column sum 每次跳一整列，常常 cache miss。"
+  },
+  {
+   "q": "ordered array 為 3, 7, 9, 10, 25, 27（從 [0] 開始），insert 13 後 13 會在哪個 index？",
+   "opts": [
+    "4",
+    "0",
+    "3",
+    "6"
+   ],
+   "ans": "4",
+   "why": "為維持由小到大，13 必須放在 10（[3]）與 25 之間，25、27 往後推，13 放進 [4]。"
+  }
+ ]
+}

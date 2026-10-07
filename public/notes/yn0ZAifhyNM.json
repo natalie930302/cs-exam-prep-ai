@@ -1,0 +1,424 @@
+{
+ "video": "yn0ZAifhyNM",
+ "label": "交大彭文志 Lec11 Lists (4/4)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "複習：head node 的欄位",
+   "scene": "llpeng34-node-fields",
+   "points": [
+    {
+     "text": "上週講到 sparse matrix 用 linked list 存的樣子。",
+     "t": 0
+    },
+    {
+     "text": "重點：它的表示方法，以及 class 的宣告。",
+     "t": 36
+    },
+    {
+     "text": "Node 分兩種：head node 和 entry node。",
+     "t": 53
+    },
+    {
+     "text": "Head node 是每一個 row 或 column 的頭端。",
+     "t": 63
+    },
+    {
+     "text": "head 欄位是 boolean，表示這個 node 是不是 head node。",
+     "t": 82
+    },
+    {
+     "text": "right 指向同一列（row），down 指向同一行（column）的 entry node。",
+     "t": 98
+    },
+    {
+     "text": "next 串起 head node 的 linked list，所以嚴格來說有三個 pointer。",
+     "t": 121
+    },
+    {
+     "text": "m×n matrix 的 head node 個數是 max{m, n}：看 row 和 column 哪個多。",
+     "t": 147
+    }
+   ]
+  },
+  {
+   "title": "Entry node 與 union",
+   "scene": "llpeng34-matrixnode-union",
+   "points": [
+    {
+     "text": "Entry node 記載它在哪個 row、哪個 column，以及值：跟 array 表示法很像。",
+     "t": 173
+    },
+    {
+     "text": "Entry node 的 right 指同一 row 的下一個非 0，down 指同一 column 的下一個非 0。",
+     "t": 209
+    },
+    {
+     "text": "head node 和 entry node 宣告成同一個 class，所以要有 head 欄位來分辨。",
+     "t": 247
+    },
+    {
+     "text": "共同欄位：down、head、right；不同的是 entry 有 row、col、value，head node 有 next。",
+     "t": 272
+    },
+    {
+     "text": "要宣告成同一個 class，用 union 處理不同的部分。",
+     "t": 297
+    },
+    {
+     "text": "head 是 true → union 選 next。",
+     "t": 356
+    },
+    {
+     "text": "head 是 false → union 選 triple（row、col、value）。",
+     "t": 380
+    },
+    {
+     "text": "不必為每種 node 各定義一個 class，程式更精簡。",
+     "t": 401
+    }
+   ]
+  },
+  {
+   "title": "圖上的 H0–H3 與 head 欄位",
+   "scene": "llpeng34-sparse-lists",
+   "points": [
+    {
+     "text": "上面黃色的 H0–H3 和左邊黃色的是同一組 node，只是 copy 一份畫，看起來像 matrix。",
+     "t": 436
+    },
+    {
+     "text": "Entry node 裡記載 row、col 和 value。",
+     "t": 456
+    },
+    {
+     "text": "head 欄位為了省空間沒畫出來：用顏色代表，黃色是 head node、黑色是 entry node。",
+     "t": 473
+    }
+   ]
+  },
+  {
+   "title": "輸入格式與 operator",
+   "scene": "llpeng34-sparse-input",
+   "points": [
+    {
+     "text": "Matrix 的 operator（>>）有做 overloading，為它量身訂做。",
+     "t": 511
+    },
+    {
+     "text": "課本的輸入：4 4 4、0 2 11、1 0 12、2 1 -4、3 3 -15。",
+     "t": 536
+    },
+    {
+     "text": "要從檔案讀 matrix，就用這個 input 格式。",
+     "t": 550
+    },
+    {
+     "text": "課本 4.8.2、4.8.3 回去複習。",
+     "t": 560
+    },
+    {
+     "text": "4.8.3 在 matrix node 上做 transpose 等操作。",
+     "t": 585
+    }
+   ],
+   "trap": "補充：第一行 4 4 4 是 rows、cols、非 0 項數；後面每行是 (row, col, value)。"
+  },
+  {
+   "title": "Doubly linked list 的 node",
+   "scene": "llpeng34-dll-node",
+   "points": [
+    {
+     "text": "今天重點：doubly linked list，講完 linked list 這章就結束。",
+     "t": 601
+    },
+    {
+     "text": "Double 代表 link 的數目比 singly linked list 多。",
+     "t": 624
+    },
+    {
+     "text": "Node 有兩個 link 欄位：llink（left link，指左邊）、data、rlink（right link，指右邊）。",
+     "t": 657
+    },
+    {
+     "text": "宣告跟 singly 很像，只是 node 有 llink、rlink 兩個 pointer。",
+     "t": 704
+    },
+    {
+     "text": "Doubly linked list 也有頭端 first，指向第一個 node。",
+     "t": 712
+    }
+   ]
+  },
+  {
+   "title": "Header node、empty 與單一 node",
+   "scene": "llpeng34-dll-header",
+   "points": [
+    {
+     "text": "可以允許 doubly linked list 有 header node。",
+     "t": 724
+    },
+    {
+     "text": "Header node 的 rlink 指向 list 的第一個 node。",
+     "t": 742
+    },
+    {
+     "text": "紅色是 rlink：往右串起來的 linked list。",
+     "t": 753
+    },
+    {
+     "text": "Header node 的 llink 指向最後（最右邊）那個 node：往左那條 list 的第一個。",
+     "t": 801
+    },
+    {
+     "text": "中間的 node：雙向指標分別指向前、後一個 node。",
+     "t": 862
+    },
+    {
+     "text": "Empty list 只有 header node，自己指向自己。",
+     "t": 886
+    },
+    {
+     "text": "只有一個 node 時：header 左右都指向它，它的左右也都指回 header（環狀）。",
+     "t": 921
+    }
+   ]
+  },
+  {
+   "title": "Insert：把 p 插在 x 後面",
+   "scene": "llpeng34-dll-insert",
+   "points": [
+    {
+     "text": "Insert 的做法：先把圖畫出來。",
+     "t": 959
+    },
+    {
+     "text": "目標：把 node p 插在 node x 的後面；藍色 node 是 x->rlink。",
+     "t": 1043
+    },
+    {
+     "text": "牽涉到四個 link，要做四個 pointer assignment。",
+     "t": 1102
+    },
+    {
+     "text": "① p->llink = x。",
+     "t": 1128
+    },
+    {
+     "text": "② p->rlink = x->rlink。",
+     "t": 1138
+    },
+    {
+     "text": "③ 藍色 node 的 llink 指向 p：x->rlink->llink = p（指標可以串著寫）。",
+     "t": 1168
+    },
+    {
+     "text": "④ x->rlink = p，完成。",
+     "t": 1191
+    },
+    {
+     "text": "問題：順序可以顛倒嗎？自己對調看看結果。",
+     "t": 1210
+    }
+   ],
+   "trap": "補充：① ② 可以對調；但 ② ③ 都要用到「舊的」x->rlink，所以必須在 ④ 之前。若先做 ④，x->rlink 已是 p，② 會變成 p->rlink = p，③ 會變成 p->llink = p，右邊那段就斷了。"
+  },
+  {
+   "title": "練習：插在 x 後面第 k 個",
+   "scene": "llpeng34-dll-insert-k",
+   "points": [
+    {
+     "text": "第二個問題：能不能寫一個 insert，插在 x 後面的第 k 個位置？",
+     "t": 1274
+    },
+    {
+     "text": "例：p 不是緊接在 x 後面，中間隔一個 node，在第二個位置。",
+     "t": 1324
+    },
+    {
+     "text": "想想 insertK：把 node p 插在 node x 後面的第 k 個，要怎麼寫。",
+     "t": 1338
+    },
+    {
+     "text": "這也可能是考題之一。",
+     "t": 1350
+    }
+   ],
+   "trap": "補充（一種寫法）：先沿 rlink 走 k−1 步到 q，再用同樣四行把 p 插在 q 後面；走到 header 就表示 list 不夠長。"
+  },
+  {
+   "title": "Delete：刪除 x",
+   "scene": "llpeng34-dll-delete",
+   "points": [
+    {
+     "text": "接著看 delete：要把 node x 刪掉。",
+     "t": 1366
+    },
+    {
+     "text": "結果：x 左邊（紅）和右邊（綠）的 node 要互相指到對方。",
+     "t": 1386
+    },
+    {
+     "text": "① x->llink->rlink = x->rlink：左邊那個的 rlink 改指 x 的右邊。",
+     "t": 1428
+    },
+    {
+     "text": "② x->rlink->llink = x->llink：右邊那個的 llink 改指 x 的左邊。",
+     "t": 1470
+    },
+    {
+     "text": "兩行的右邊：x 的 rlink、llink 所指的位置交給鄰居去指，delete 就很簡單。",
+     "t": 1506
+    }
+   ],
+   "trap": "補充：課本的 delete 會先檢查 x 不是 header node（不能刪 header），改完兩個 pointer 後再 delete x 釋放記憶體。"
+  },
+  {
+   "title": "Doubly 的好處與搜尋",
+   "scene": "llpeng34-dll-search",
+   "points": [
+    {
+     "text": "Linked list 講到這邊：靠 pointer 串起來，有頭端 first。",
+     "t": 1549
+    },
+    {
+     "text": "Doubly linked list 就是多一組 link。",
+     "t": 1580
+    },
+    {
+     "text": "好處之一：某個 link 斷掉，還能透過另一個方向接回來。",
+     "t": 1598
+    },
+    {
+     "text": "要找某個數字（例如 7）：沒有其他條件就跟 singly 一樣，從左或右一個一個檢查。",
+     "t": 1648
+    },
+    {
+     "text": "可以更好：insert 時就讓 list 排序（大到小）。",
+     "t": 1669
+    },
+    {
+     "text": "再依數字大小判斷從左邊或右邊找比較快。",
+     "t": 1684
+    }
+   ]
+  },
+  {
+   "title": "應用：檔案的 disk block",
+   "scene": "llpeng34-dll-disk",
+   "points": [
+    {
+     "text": "DB 課會講到 file（檔案）的結構。",
+     "t": 1697
+    },
+    {
+     "text": "檔案存在 disk 上，disk 最小的組成單位是 block。",
+     "t": 1728
+    },
+    {
+     "text": "實作在檔案上時，每個 item 存的其實是一個 disk block。",
+     "t": 1756
+    },
+    {
+     "text": "例：101.txt 的文字前段、中段、後段分別放在不同 block。",
+     "t": 1771
+    },
+    {
+     "text": "開檔、搜尋文字都會用到 doubly linked list。",
+     "t": 1802
+    },
+    {
+     "text": "Singly 也可以，但停電或磁頭壞掉弄壞一個 pointer，就找不到下一個 block。",
+     "t": 1840
+    },
+    {
+     "text": "Doubly 多一些 link，比較不會發生 missing node。",
+     "t": 1856
+    },
+    {
+     "text": "DS 是 DB 的基礎：item 實際上可以是字串、disk block。",
+     "t": 1880
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "把 p 插在 doubly linked list 的 x 後面，前兩步 p->llink = x；p->rlink = x->rlink。第三步是？",
+   "opts": [
+    "x->rlink->llink = p",
+    "x->rlink = p",
+    "p->rlink->rlink = p",
+    "x->llink = p"
+   ],
+   "ans": "x->rlink->llink = p",
+   "why": "要先讓原本 x 右邊那個 node 的 llink 改指 p，最後才改 x->rlink。"
+  },
+  {
+   "q": "插入的四行中，哪種調整順序會出錯？",
+   "opts": [
+    "① 和 ② 對調",
+    "把 x->rlink = p 移到最前面",
+    "先做 ② 再做 ①",
+    "都不會出錯"
+   ],
+   "ans": "把 x->rlink = p 移到最前面",
+   "why": "x->rlink 先變成 p，之後用到 x->rlink 的 ② ③ 都會指到 p 自己。"
+  },
+  {
+   "q": "有 header node 的環狀 doubly linked list，header 的 llink 指向？",
+   "opts": [
+    "第一個 node",
+    "最後一個 node",
+    "NULL",
+    "header 自己（永遠）"
+   ],
+   "ans": "最後一個 node",
+   "why": "rlink 指第一個，llink 指最右邊（最後）的 node；只有 empty 時才指向自己。"
+  },
+  {
+   "q": "Empty 的環狀 doubly linked list（有 header）長什麼樣？",
+   "opts": [
+    "header 的 llink、rlink 都指向自己",
+    "header 的兩個 link 都是 NULL",
+    "沒有 header",
+    "header 的 rlink 是 NULL、llink 指自己"
+   ],
+   "ans": "header 的 llink、rlink 都指向自己",
+   "why": "只剩 header node，自己指向自己。"
+  },
+  {
+   "q": "刪除 doubly linked list 的 node x，需要的兩行是？",
+   "opts": [
+    "x->llink->rlink = x->rlink；x->rlink->llink = x->llink",
+    "x->llink = x->rlink；x->rlink = x->llink",
+    "x->llink->llink = x->rlink；x->rlink->rlink = x->llink",
+    "first = x->rlink；delete x"
+   ],
+   "ans": "x->llink->rlink = x->rlink；x->rlink->llink = x->llink",
+   "why": "讓左邊的 rlink 越過 x 指到右邊，右邊的 llink 越過 x 指到左邊。"
+  },
+  {
+   "q": "m×n 的 sparse matrix 用 linked list 表示，黃色 head node 有幾個？",
+   "opts": [
+    "m + n",
+    "max{m, n}",
+    "m × n",
+    "min{m, n}"
+   ],
+   "ans": "max{m, n}",
+   "why": "第 i 個 head node 同時當 row i 和 column i 的頭，所以取 row、column 較多者。"
+  },
+  {
+   "q": "為什麼檔案的 disk block 適合用 doubly linked list 串？",
+   "opts": [
+    "比較省空間",
+    "一個 pointer 壞掉時，還能從另一個方向找到其他 block",
+    "可以 O(1) 隨機存取任一 block",
+    "不需要 header"
+   ],
+   "ans": "一個 pointer 壞掉時，還能從另一個方向找到其他 block",
+   "why": "Singly 斷一個 link 後面就找不到；doubly 多一組 link，比較不會 missing node。"
+  }
+ ]
+}

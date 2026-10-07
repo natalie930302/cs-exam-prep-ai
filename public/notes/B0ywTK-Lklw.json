@@ -1,0 +1,1155 @@
+{
+ "video": "B0ywTK-Lklw",
+ "label": "台大林軒田 DSA Array / Linked List",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "課前 Q&A：作業一",
+   "scene": null,
+   "points": [
+    {
+     "text": "作業一只剩一週，覺得難就找助教聊或在 forum 提問。",
+     "t": 366
+    },
+    {
+     "text": "不會證明時，先試幾個 special case，再推廣到 general case。",
+     "t": 525
+    },
+    {
+     "text": "證明沒有標準格式，能說服助教、邏輯合理就可以。",
+     "t": 533
+    },
+    {
+     "text": "助教用 makefile compile；先把 code 傳到 217 工作站用附的 makefile 確認能跑。",
+     "t": 584
+    },
+    {
+     "text": "作業二大概比作業一難十倍，作業一要趕快做好。",
+     "t": 1010
+    }
+   ]
+  },
+  {
+   "title": "Consecutive 與 Ordered array",
+   "scene": "arrlllin-consecutive",
+   "points": [
+    {
+     "text": "上次講了 1D、2D array，今天繼續把 array 當成 data structure 來看。",
+     "t": 1050
+    },
+    {
+     "text": "Array 像一排置物櫃，用編號就能任意開關、放東西。",
+     "t": 1125
+    },
+    {
+     "text": "使用時中間留空位看起來很浪費。",
+     "t": 1180
+    },
+    {
+     "text": "從最前面連續使用、中間不留空 → consecutive array。",
+     "t": 1208
+    },
+    {
+     "text": "在連續的基礎上，資料由小到大排好 → ordered array。",
+     "t": 1268
+    },
+    {
+     "text": "也可以由大到小（例如成績排行榜），課堂上簡化成由小到大。",
+     "t": 1279
+    }
+   ]
+  },
+  {
+   "title": "Ordered array 的 insert",
+   "scene": "arrlllin-ordered-insert",
+   "points": [
+    {
+     "text": "例子：ordered array 裡有 2, 6, 7, 13。",
+     "t": 1321
+    },
+    {
+     "text": "插入 10 只能放在 13 現在的位置，13 必須往後擠一格（插隊）。",
+     "t": 1385
+    },
+    {
+     "text": "Array 平常只要記開頭；維護 consecutive array 還要另一個變數記 tail。",
+     "t": 1466
+    },
+    {
+     "text": "tail 告訴我們資料到哪裡，也告訴我們空位從哪裡開始。",
+     "t": 1488
+    },
+    {
+     "text": "如果插入 4，要從 tail 開始把 13、7、6 一個一個搬家，才空出位置。",
+     "t": 1554
+    },
+    {
+     "text": "寫成程式：index 從 tail 往前，比 data 大的就往後搬一格。",
+     "t": 1597
+    },
+    {
+     "text": "搬到不比 data 大的位置時停下，把 data 放進去。",
+     "t": 1709
+    }
+   ],
+   "trap": "補充：越靠前面插入要搬越多，最壞要搬 tail + 1 個元素 → O(n)。"
+  },
+  {
+   "title": "抓 insert 程式的 bug",
+   "scene": "arrlllin-insert-bugs",
+   "points": [
+    {
+     "text": "老師故意寫一段似是而非的程式，請同學挑錯。",
+     "t": 1751
+    },
+    {
+     "text": "寫程式要時時帶著懷疑、用嚴格標準檢查；寫錯也沒關係，就 debug。",
+     "t": 1836
+    },
+    {
+     "text": "修正：加 else，arr[i] ≤ data 時把 data 放到 arr[i+1] 再 break。",
+     "t": 1933
+    },
+    {
+     "text": "追蹤 data = 10、tail = 3：13 往後 copy（暫時有兩份），7 < 10 → arr[3] = 10。",
+     "t": 1991
+    },
+    {
+     "text": "同學抓到：data 比全部都小（例如 1）時，迴圈跑完卻沒把 data 放進去。",
+     "t": 2105
+    },
+    {
+     "text": "另一個 bug：arr[tail+1] 不一定有空間。",
+     "t": 2210
+    },
+    {
+     "text": "演算法看似簡單，要用完整邏輯寫下來並自己想測試並不容易。",
+     "t": 2304
+    },
+    {
+     "text": "還有把 A 和 ARR 混用的 typo。",
+     "t": 2356
+    }
+   ],
+   "trap": "補充：完整版要在迴圈結束後處理 i = −1 的情形（arr[0] = data），插入前先檢查 tail + 1 < capacity，最後 tail++。"
+  },
+  {
+   "title": "把散亂的 array 排成 ordered",
+   "scene": "arrlllin-construct",
+   "points": [
+    {
+     "text": "insert 寫好後，一開始要怎麼讓 array 是排好的？空 array 本來就排好。",
+     "t": 2400
+    },
+    {
+     "text": "例子：已經有 1 3 7 4 6 5 2 這串沒排好的數字。",
+     "t": 2414
+    },
+    {
+     "text": "用之前的 getMinIndex：把最小的叫出來，跟開頭那格交換，再對剩下的重複。",
+     "t": 2444
+    },
+    {
+     "text": "這就是 selection sort。",
+     "t": 2506
+    },
+    {
+     "text": "另一種像玩撲克牌：抽一張插到手上排好的牌裡正確位置。",
+     "t": 2528
+    },
+    {
+     "text": "把 ordered array 的 insertion 跑很多次，左邊一直維持排好 → insertion sort。",
+     "t": 2565
+    }
+   ]
+  },
+  {
+   "title": "加限制的代價：維護",
+   "scene": "arrlllin-maintain",
+   "points": [
+    {
+     "text": "Ordered array 對 array 多加了要求：位置要連續、資料要按順序。",
+     "t": 2580
+    },
+    {
+     "text": "多了要求，access 與 maintenance 都要多花力氣。",
+     "t": 2604
+    },
+    {
+     "text": "不能任意 update：換掉值後要檢查是否仍比前一格大、比後一格小，不對就往前或往後移。",
+     "t": 2619
+    },
+    {
+     "text": "移除時為了維持連續，後面的要往前補位（fill in）。",
+     "t": 2665
+    },
+    {
+     "text": "很多 data structure 都是在儲存方式上加限制。",
+     "t": 2690
+    },
+    {
+     "text": "就像衣服要照某種方式排，就要花力氣整理；這些代價都要算進評估。",
+     "t": 2703
+    },
+    {
+     "text": "Insert 程式故意留洞，讓大家自己想辦法補起來。",
+     "t": 2730
+    }
+   ]
+  },
+  {
+   "title": "Q&A：收音、for fixed A",
+   "scene": null,
+   "points": [
+    {
+     "text": "處理直播收音雜音問題。",
+     "t": 2775
+    },
+    {
+     "text": "for fixed A：A 固定，當成常數看待。",
+     "t": 2908
+    }
+   ]
+  },
+  {
+   "title": "Sequential search：圖書館找書",
+   "scene": "arrlllin-seq-search",
+   "points": [
+    {
+     "text": "為什麼要 ordered array？想像到圖書館找書。",
+     "t": 2957
+    },
+    {
+     "text": "每本書有一個可比較的 ID（索書號），同一架上依 ID 大小排列。",
+     "t": 2990
+    },
+    {
+     "text": "已經依編號找到架子，現在要找出那一本書。",
+     "t": 3087
+    },
+    {
+     "text": "一種做法：從左邊找到右邊。",
+     "t": 3100
+    },
+    {
+     "text": "寫成 search algorithm，跟 getMinIndex 很像：i 從 0 到 tail，ID 相同就找到。",
+     "t": 3131
+    },
+    {
+     "text": "這叫 sequential search：一個一個看過去。",
+     "t": 3222
+    },
+    {
+     "text": "最壞情況：整架看完都找不到。",
+     "t": 3231
+    }
+   ]
+  },
+  {
+   "title": "Sequential search with cut",
+   "scene": "arrlllin-seq-cut",
+   "points": [
+    {
+     "text": "剛才的演算法根本沒用到「ordered」：書被弄亂也照樣一本本翻。",
+     "t": 3246
+    },
+    {
+     "text": "例：要找 5566，從 1、3、1234 … 一路往上找。",
+     "t": 3286
+    },
+    {
+     "text": "拿到的書已經是 6000，比 5566 大，後面的都不可能是要的書。",
+     "t": 3319
+    },
+    {
+     "text": "加一個偷吃步：看到的 ID 比要找的大，就直接回報沒找到（break 或 return）。",
+     "t": 3341
+    },
+    {
+     "text": "這是偷偷用了 ordered array 的性質。",
+     "t": 3367
+    },
+    {
+     "text": "偷吃步英文叫 shortcut；要找的編號越小，省下越多。",
+     "t": 3414
+    }
+   ]
+  },
+  {
+   "title": "Binary search：跟中間比，砍一半",
+   "scene": "arrlllin-binsearch-cut",
+   "points": [
+    {
+     "text": "還是一本一本找；能不能比一次就砍掉一堆不可能的選項？",
+     "t": 3457
+    },
+    {
+     "text": "這個演算法叫 binary search。",
+     "t": 3475
+    },
+    {
+     "text": "例子：9 格排好的數字 1, 4, 6, 7, 9, …，要找 8。",
+     "t": 3493
+    },
+    {
+     "text": "先跟中間位置（index 4，值 9）比，結果有小於、等於、大於三種。",
+     "t": 3542
+    },
+    {
+     "text": "9 > 8：mid 一直到 tail 都不用比，可以 cut 掉。",
+     "t": 3591
+    },
+    {
+     "text": "若要找 11：9 < 11，0 到 mid 都可以 cut 掉。",
+     "t": 3643
+    },
+    {
+     "text": "相等就找到；每次要嘛找到，要嘛砍掉超過一半。",
+     "t": 3695
+    }
+   ],
+   "trap": "示範陣列後幾格的數字錄音聽不清楚，動畫中 15、25、27、30 為示意值；前五格 1, 4, 6, 7, 9 與 mid = 9 是老師的例子。"
+  },
+  {
+   "title": "Binary search 的程式",
+   "scene": "arrlllin-binsearch-run",
+   "points": [
+    {
+     "text": "每一步算 mid = (begin + end) / 2。",
+     "t": 3744
+    },
+    {
+     "text": "begin 從 0、end 從 tail 開始，這是搜尋範圍。",
+     "t": 3762
+    },
+    {
+     "text": "arr[mid] > toFind：cut mid 到 tail，end = mid − 1。",
+     "t": 3795
+    },
+    {
+     "text": "arr[mid] < toFind：cut 0 到 mid，begin = mid + 1。",
+     "t": 3806
+    },
+    {
+     "text": "一直縮小範圍，直到「沒書可找」就回傳 NOT_FOUND；這個條件留作 exercise。",
+     "t": 3840
+    },
+    {
+     "text": "能很快算出 arr[mid]，靠的是 array 的 fast random access。",
+     "t": 3910
+    },
+    {
+     "text": "每次砍一半：9 個 → 4 個 → 2 或 1 個，很快就找到或確定不在。",
+     "t": 3945
+    },
+    {
+     "text": "Ordered 的好處是找得快，壞處是 maintenance 要花力氣。",
+     "t": 3973
+    }
+   ],
+   "trap": "補充：「有書可找」寫成 while (begin <= end)；begin > end 代表範圍已空，回傳 NOT_FOUND。"
+  },
+  {
+   "title": "Q&A：挑老師的錯",
+   "scene": null,
+   "points": [
+    {
+     "text": "同學抓到 binary search 的迴圈條件寫反，應該是「有書可找」才繼續。",
+     "t": 4052
+    },
+    {
+     "text": "sequential search 的 return NOT_FOUND 前不用 else：它在整個 for 迴圈外面。",
+     "t": 4169
+    },
+    {
+     "text": "迴圈跑完都沒跳出，代表 toFind 比全部都大。",
+     "t": 4311
+    },
+    {
+     "text": "休息十分鐘。",
+     "t": 4333
+    }
+   ]
+  },
+  {
+   "title": "Binary search 的正確性",
+   "scene": "arrlllin-bs-invariant",
+   "points": [
+    {
+     "text": "同學問：怎麼證明 binary search 是正確的？",
+     "t": 4995
+    },
+    {
+     "text": "證明有迴圈的演算法，常要找出每一輪都維持的性質。",
+     "t": 5046
+    },
+    {
+     "text": "Binary search 在維持範圍：要找的東西若存在，一定還在搜尋範圍內。",
+     "t": 5086
+    },
+    {
+     "text": "arr[mid] > toFind 時，利用排好的順序（遞移律）一次排除後面整段。",
+     "t": 5165
+    },
+    {
+     "text": "用這個 loop invariant 說明演算法正確。",
+     "t": 5190
+    },
+    {
+     "text": "正確性還包含會停（finiteness）。",
+     "t": 5210
+    },
+    {
+     "text": "剩下 candidate 的數量每輪至少少一半，又有下限，所以一定會停。",
+     "t": 5239
+    },
+    {
+     "text": "跟作業裡 GCD（Euclid）演算法要做的證明思路類似。",
+     "t": 5319
+    }
+   ]
+  },
+  {
+   "title": "分三區會更快嗎？",
+   "scene": "arrlllin-ternary",
+   "points": [
+    {
+     "text": "同學問：array 分三區搜尋會更快嗎？",
+     "t": 5352
+    },
+    {
+     "text": "分三區等於要做兩個比較才能 cut。",
+     "t": 5376
+    },
+    {
+     "text": "Binary search 做兩次比較，範圍約縮成 1/4。",
+     "t": 5404
+    },
+    {
+     "text": "分三區做兩次比較只縮成 1/3 → binary 較有效率。",
+     "t": 5419
+    },
+    {
+     "text": "數值方法求極值等場合，三分搜尋才可能有好處。",
+     "t": 5447
+    },
+    {
+     "text": "除非硬體能很快做三方比較，否則不見得有好處。",
+     "t": 5480
+    }
+   ]
+  },
+  {
+   "title": "Array 單元小結",
+   "scene": "arrlllin-array-recap",
+   "points": [
+    {
+     "text": "Array 部分先講到這裡。",
+     "t": 5518
+    },
+    {
+     "text": "Array 不只是 C 的 malloc 或宣告，要了解它和整塊記憶體的關係。",
+     "t": 5551
+    },
+    {
+     "text": "關鍵性質：fast random access。",
+     "t": 5565
+    },
+    {
+     "text": "加上 consecutive 或 ordered 條件，可以設計出更好的演算法（例如圖書館找書）。",
+     "t": 5569
+    },
+    {
+     "text": "上次的支線：2D array 的記憶體用法、特殊 array 省空間、架構上的考量。",
+     "t": 5596
+    }
+   ]
+  },
+  {
+   "title": "Linked list 動機：多項式",
+   "scene": "arrlllin-poly-array",
+   "points": [
+    {
+     "text": "進入 linked list：很多人對 C 的指標有痛苦回憶。",
+     "t": 5642
+    },
+    {
+     "text": "這裡從和 array 的不同點與應用場景切入。",
+     "t": 5718
+    },
+    {
+     "text": "例：f(x) = 5 + x + 4x² + 10x⁵ + x¹⁶。",
+     "t": 5767
+    },
+    {
+     "text": "把 4 改成 −4，讓例子有減號。",
+     "t": 5857
+    },
+    {
+     "text": "存成 (指數, 係數) 的 pair：(0,5) (1,1) (2,−4) (5,10) (16,1)。",
+     "t": 5871
+    },
+    {
+     "text": "另一個多項式 g(x) = 3 + 6x⁵ 就存 (0,3) (5,6)。",
+     "t": 5918
+    },
+    {
+     "text": "按指數順序存，加法時容易對齊同次項 → 用 ordered array（ordered by exponent）。",
+     "t": 6029
+    }
+   ]
+  },
+  {
+   "title": "用 ordered array 存多項式的麻煩",
+   "scene": "arrlllin-poly-array-ops",
+   "points": [
+    {
+     "text": "這個 solution 有什麼好處和壞處？",
+     "t": 6083
+    },
+    {
+     "text": "f(x) + 6x³：要插入 pair (3, 6)。",
+     "t": 6135
+    },
+    {
+     "text": "後面的要往後擠（cut in 插隊），牽涉資料搬移。",
+     "t": 6187
+    },
+    {
+     "text": "f(x) − 4x⁻²：要插到最前面，全部往後搬 → 不 flexible。",
+     "t": 6237
+    },
+    {
+     "text": "f(x) − 10x⁵：那一項變 0 要拿掉，後面往前搬。",
+     "t": 6276
+    },
+    {
+     "text": "還有 resizing：例如 f(x)·(x + 1) 結果變大。",
+     "t": 6318
+    },
+    {
+     "text": "需要一整塊連續記憶體，不一定拿得到。",
+     "t": 6350
+    },
+    {
+     "text": "不用 binary search 這類好處時，維持 ordered array 不見得值得。",
+     "t": 6387
+    }
+   ]
+  },
+  {
+   "title": "小紙條 next 與 head",
+   "scene": "arrlllin-poly-ll",
+   "points": [
+    {
+     "text": "Array index 也可以看成 memory index：1001 … 1005。",
+     "t": 6450
+    },
+    {
+     "text": "每一項記下一項在哪：1001 的下一項在 1002，依此類推。",
+     "t": 6502
+    },
+    {
+     "text": "新的 (3, 6) 放在別處 1126。",
+     "t": 6579
+    },
+    {
+     "text": "(2,−4) 的下一項改成 1126。",
+     "t": 6587
+    },
+    {
+     "text": "(3, 6) 的下一項是 1004。",
+     "t": 6596
+    },
+    {
+     "text": "坐哪都行，只要留聯絡方式不失聯 → linked list。",
+     "t": 6663
+    },
+    {
+     "text": "記下一項位置的小紙條叫 next，一開始那張叫 head。",
+     "t": 6744
+    },
+    {
+     "text": "整個 linked list 就是在維持這些小紙條的正確性。",
+     "t": 6767
+    }
+   ]
+  },
+  {
+   "title": "insert after：改兩張小紙條",
+   "scene": "arrlllin-insert-after",
+   "points": [
+    {
+     "text": "一般畫法：每格有內容 (0,5) 和一張小紙條 1002，依序串下去。",
+     "t": 6778
+    },
+    {
+     "text": "代價：有幾項就多付出幾張小紙條的空間。",
+     "t": 6833
+    },
+    {
+     "text": "換到 insert after 時不必放到記憶體的特定位置。",
+     "t": 6844
+    },
+    {
+     "text": "資料 + 小紙條 = node（節點）。",
+     "t": 6882
+    },
+    {
+     "text": "insert after 1003 這個 node：用 data 做出 new node（在 1126）。",
+     "t": 6900
+    },
+    {
+     "text": "newNode.next = node.next（原本的 1004）。",
+     "t": 6961
+    },
+    {
+     "text": "node.next = newNode。",
+     "t": 6977
+    },
+    {
+     "text": "從頭串到尾、單一方向 → singly linked list。",
+     "t": 7038
+    }
+   ],
+   "trap": "補充：兩行順序不能反；先做 node.next = newNode 會遺失原本的 1004。"
+  },
+  {
+   "title": "課堂秩序與聊天室",
+   "scene": null,
+   "points": [
+    {
+     "text": "聊天室擋到教學畫面，切回全螢幕。",
+     "t": 7090
+    },
+    {
+     "text": "討論區小聊天可以，聊太多會影響上課。",
+     "t": 7200
+    }
+   ]
+  },
+  {
+   "title": "Linked list 的 routine 與插在最前面",
+   "scene": "arrlllin-insert-head",
+   "points": [
+    {
+     "text": "Node 不必連續，就不用搬其他資料；node 資料很肥大時差很多。",
+     "t": 7353
+    },
+    {
+     "text": "另一選擇：ordered array 只存小紙條（指標），搬的時候只搬紙條。",
+     "t": 7365
+    },
+    {
+     "text": "Routine：head（第一張小紙條）與每個 node 的 next。",
+     "t": 7425
+    },
+    {
+     "text": "Get 要先照小紙條走到那個 node，才能拿裡面的內容。",
+     "t": 7483
+    },
+    {
+     "text": "Insert after：用某種機制重新設定兩個 pointer。",
+     "t": 7523
+    },
+    {
+     "text": "插在最前面：head 要改指向新 node。",
+     "t": 7591
+    },
+    {
+     "text": "Head 不在任何 node 裡，是一張特別的小紙條 → 要另一個 routine。",
+     "t": 7621
+    },
+    {
+     "text": "這類邊緣情形讓 linked list 的程式比較難寫。",
+     "t": 7679
+    }
+   ],
+   "trap": "只寫 insertAfter 沒寫 insertHead，就無法把很低次的項插到多項式最前面。"
+  },
+  {
+   "title": "Random access vs sequential access",
+   "scene": "arrlllin-random-vs-seq",
+   "points": [
+    {
+     "text": "一句話比較：array 是 random access，給 index 幾乎馬上拿到。",
+     "t": 7698
+    },
+    {
+     "text": "Linked list 是 sequential access：像大地遊戲一關一關跑。",
+     "t": 7706
+    },
+    {
+     "text": "Ordered linked list 的維護麻煩和 ordered array 類似。",
+     "t": 7732
+    },
+    {
+     "text": "一般 linked list：建立 n 個 node 串起來、已知 node 時 update 都很 trivial。",
+     "t": 7761
+    },
+    {
+     "text": "Node 就是一個 memory address，像一個特別長的 index。",
+     "t": 7776
+    }
+   ]
+  },
+  {
+   "title": "remove after",
+   "scene": "arrlllin-remove-after",
+   "points": [
+    {
+     "text": "比較有趣的是 remove，它也很 flexible。",
+     "t": 7787
+    },
+    {
+     "text": "移掉 node 的下一個：node.next 原本是 1126，1126 的 next 是 1234。",
+     "t": 7809
+    },
+    {
+     "text": "只要把 node 的小紙條換成 1234。",
+     "t": 7821
+    },
+    {
+     "text": "直接換掉就找不回中間那個，所以先用暫存變數存 node.next。",
+     "t": 7858
+    },
+    {
+     "text": "最後把中間的 node free 掉。",
+     "t": 7879
+    },
+    {
+     "text": "Head 與非 head 可能要分開處理。",
+     "t": 7897
+    }
+   ]
+  },
+  {
+   "title": "Dummy head",
+   "scene": "arrlllin-dummy-head",
+   "points": [
+    {
+     "text": "不想分開處理 head 的 coding 技巧：dummy head。",
+     "t": 7913
+    },
+    {
+     "text": "最前面放一個不存資料的 node，用它的 next 來放 head。",
+     "t": 7921
+    },
+    {
+     "text": "所有操作都能用 insert after / remove after，不用寫、維護兩份 code。",
+     "t": 7951
+    },
+    {
+     "text": "缺點：多用一個 node 的記憶體。",
+     "t": 7975
+    },
+    {
+     "text": "用空間換 coding 方便性；值不值得要自己判斷。",
+     "t": 7987
+    },
+    {
+     "text": "就像 singly linked list 用多的 next 換記憶體操作的 flexibility。",
+     "t": 8008
+    }
+   ]
+  },
+  {
+   "title": "Q&A 小插曲",
+   "scene": null,
+   "points": [
+    {
+     "text": "去 R102 找老師會得到 null pointer exception（玩笑）。",
+     "t": 8042
+    },
+    {
+     "text": "有問題還是要盡量問。",
+     "t": 8063
+    }
+   ]
+  },
+  {
+   "title": "為什麼需要 prev",
+   "scene": "arrlllin-why-prev",
+   "points": [
+    {
+     "text": "下一個主題 doubly linked list，從需求出發。",
+     "t": 8088
+    },
+    {
+     "text": "Singly linked list 只能 remove after。",
+     "t": 8122
+    },
+    {
+     "text": "如果想 remove here（直接刪 node2）呢？",
+     "t": 8152
+    },
+    {
+     "text": "要移除一關，得更新前一關的小紙條。",
+     "t": 8217
+    },
+    {
+     "text": "但前一關不容易取得：只能從 head next、next 找。",
+     "t": 8239
+    },
+    {
+     "text": "每個 node 放兩張小紙條：next（下一關）與 prev（前一關）。",
+     "t": 8281
+    },
+    {
+     "text": "也能從 tail 順著 prev 走回來，等於兩條反向的 list。",
+     "t": 8324
+    }
+   ]
+  },
+  {
+   "title": "Doubly linked list：remove here",
+   "scene": "arrlllin-dll-remove",
+   "points": [
+    {
+     "text": "Doubly linked list：從 head 走 next、從 tail 走 prev，兩個方向完全相反。",
+     "t": 8354
+    },
+    {
+     "text": "搞不清楚時，把小紙條上的位址寫出來：1111、2345、5566。",
+     "t": 8418
+    },
+    {
+     "text": "移掉 2345：5566 的 prev 要接到 1111。",
+     "t": 8460
+    },
+    {
+     "text": "1111 的 next 要接到 5566。",
+     "t": 8466
+    },
+    {
+     "text": "更新前後兩張小紙條，再砍掉中間 → remove here。",
+     "t": 8500
+    },
+    {
+     "text": "代價：每個 node 多一張紙條、多幾行 code、速度稍慢。",
+     "t": 8518
+    },
+    {
+     "text": "換到：看到 node 就能刪；insertion 也一樣。",
+     "t": 8541
+    }
+   ]
+  },
+  {
+   "title": "走訪與 iterator",
+   "scene": "arrlllin-iterator",
+   "points": [
+    {
+     "text": "典型用法：從 head 開始，還沒到結束就往 next 走。",
+     "t": 8601
+    },
+    {
+     "text": "結束常用 NULL 標示，但不是唯一的方式。",
+     "t": 8625
+    },
+    {
+     "text": "Doubly linked list 也能從 tail 順著 previous 反著走。",
+     "t": 8661
+    },
+    {
+     "text": "Array 也類似：index 從 0 到 tail，index++。",
+     "t": 8675
+    },
+    {
+     "text": "Sequential search 這類要看過所有資料的演算法，不同 structure 寫法不同。",
+     "t": 8706
+    },
+    {
+     "text": "抽象化成 iterator：開頭、結尾、下一個。",
+     "t": 8728
+    },
+    {
+     "text": "同一個演算法（如 sequential search with cut）就能套到 linked list 上。",
+     "t": 8787
+    },
+    {
+     "text": "這是 C++ STL 對「走訪整個 data structure」的抽象化。",
+     "t": 8841
+    }
+   ]
+  },
+  {
+   "title": "STL list 與 iterator 操作",
+   "scene": "arrlllin-stl-list",
+   "points": [
+    {
+     "text": "STL 的 list 就是課堂講的 doubly linked list。",
+     "t": 8877
+    },
+    {
+     "text": "Get head 對應 begin()，給一個 iterator（對應 node 的位址）。",
+     "t": 8892
+    },
+    {
+     "text": "Get next：用 operator overloading 重新定義 ++，代表往後走一格。",
+     "t": 8926
+    },
+    {
+     "text": "Get：用 * 取出 node 內容。",
+     "t": 8968
+    },
+    {
+     "text": "Insert / erase 就是 insert here / remove here，doubly 才容易做。",
+     "t": 8998
+    },
+    {
+     "text": "除了考試（研究所、入職考試），很少需要自己寫 linked list。",
+     "t": 9044
+    },
+    {
+     "text": "但要會用、了解每個操作會發生什麼，這是基本功。",
+     "t": 9067
+    }
+   ]
+  },
+  {
+   "title": "Q&A：iterator 是什麼",
+   "scene": "arrlllin-iterator",
+   "points": [
+    {
+     "text": "Array 用 index 0123… 跑過去，linked list 用 head、next、next。",
+     "t": 9122
+    },
+    {
+     "text": "兩套背後都是指標：array 位址往上加（1001→1002→1003），list 照紙條走。",
+     "t": 9148
+    },
+    {
+     "text": "Iterator 把兩者合起來：定義什麼是開頭、結尾、下一個。",
+     "t": 9171
+    },
+    {
+     "text": "往前走用 ++，在不同 structure 意思不同；doubly 還能 --。",
+     "t": 9229
+    },
+    {
+     "text": "用 * 取出所指的資料，可想成「高階指標」。",
+     "t": 9258
+    },
+    {
+     "text": "STL 把 list、array 這類叫容器，iterator 讓你輕鬆切換容器。",
+     "t": 9280
+    }
+   ]
+  },
+  {
+   "title": "Q&A：list vs vector、singly vs doubly",
+   "scene": "arrlllin-list-vs-vector",
+   "points": [
+    {
+     "text": "Linked list 可看成更有彈性的容器；只需要 array 的功能就用 array。",
+     "t": 9300
+    },
+    {
+     "text": "STL list 實作是 doubly linked list，vector 實作是 array（連續記憶體、沒有小紙條）。",
+     "t": 9346
+    },
+    {
+     "text": "實務上 singly 還是 doubly，要看代價和方便性，非常 application dependent。",
+     "t": 9419
+    },
+    {
+     "text": "空間限制強的小型系統、即時性要求高的系統，可能選 singly。",
+     "t": 9438
+    },
+    {
+     "text": "list 可以 pop_front、push_front，但不能 random access。",
+     "t": 9554
+    },
+    {
+     "text": "pop_front = remove from head；push_front = insert to head。",
+     "t": 9566
+    }
+   ]
+  },
+  {
+   "title": "Sparse vector",
+   "scene": "arrlllin-sparse",
+   "points": [
+    {
+     "text": "應用：sparse vector。",
+     "t": 9620
+    },
+    {
+     "text": "例：7 維向量，只有 3.5、7、4.2、9 不是 0。",
+     "t": 9641
+    },
+    {
+     "text": "最自然的存法是長度 7 的 array（和 C++ 的 vector 同名不是巧合）。",
+     "t": 9721
+    },
+    {
+     "text": "0 乘任何數是 0、加 0 不變，很多運算裡 0 是不必要的。",
+     "t": 9761
+    },
+    {
+     "text": "乾脆不存 0：第 2 維 3.5、第 5 維 7、第 6 維 4.2、第 7 維 9。",
+     "t": 9802
+    },
+    {
+     "text": "寫法跟多項式一模一樣，這種表示叫 sparse vector。",
+     "t": 9853
+    },
+    {
+     "text": "成本：sparse 看 number of non-zero × pair 大小，dense 看 number of dimensions。",
+     "t": 9905
+    },
+    {
+     "text": "Vector 非常稀疏時，sparse 在儲存上較划算。",
+     "t": 9939
+    }
+   ]
+  },
+  {
+   "title": "Sparse vector 的應用",
+   "scene": "arrlllin-sparse-apps",
+   "points": [
+    {
+     "text": "最高 1000 次的多項式：dense 要 1001 維的 array，sparse 只要 3 項。",
+     "t": 9968
+    },
+    {
+     "text": "拿 0 來算只是浪費計算和儲存資源。",
+     "t": 10006
+    },
+    {
+     "text": "推薦系統：十萬首歌只評了十首，其他不必存。",
+     "t": 10026
+    },
+    {
+     "text": "Sparse vector 可以存在 pair array 裡。",
+     "t": 10072
+    },
+    {
+     "text": "要新增或移除資料等動態操作時，可能選 linked list。",
+     "t": 10089
+    },
+    {
+     "text": "一般化：一長串資料裡很多是同一個不需要的值（例如 0），就用 sparse 表示。",
+     "t": 10123
+    },
+    {
+     "text": "下週比較 sparse vector 用 array 與 linked list 實作的好壞。",
+     "t": 10170
+    }
+   ]
+  },
+  {
+   "title": "課後 Q&A 與鼓勵",
+   "scene": null,
+   "points": [
+    {
+     "text": "下次補充 iterator，並釋出證明範本與 makefile 說明。",
+     "t": 10241
+    },
+    {
+     "text": "作業二會有和 linked list、array 有關的題目。",
+     "t": 10325
+    },
+    {
+     "text": "STL 的 vector、list 不是繼承 iterator；iterator 是各容器的輔助角色。",
+     "t": 10339
+    },
+    {
+     "text": "鼓勵到 Facebook forum 發問，全班一起回答效果比 email 好。",
+     "t": 10378
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Ordered array 內有 2, 6, 7, 13（tail = 3），用「從 tail 往前搬」的方法插入 4，需要把幾個元素往後搬？",
+   "opts": [
+    "1 個",
+    "2 個",
+    "3 個",
+    "4 個"
+   ],
+   "ans": "3 個",
+   "why": "13、7、6 都比 4 大，要依序往後搬一格，4 放到 arr[1]。"
+  },
+  {
+   "q": "老師示範的 insert 程式（for 從 tail 往前，arr[i] > data 就往後 copy，否則放到 arr[i+1] 並 break）在哪種輸入會出錯？",
+   "opts": [
+    "data 比全部元素都大",
+    "data 比全部元素都小",
+    "data 等於 arr[tail]",
+    "array 是空的以外都正確"
+   ],
+   "ans": "data 比全部元素都小",
+   "why": "每個元素都往後 copy，迴圈跑完卻沒進 else，data 從沒被放進 arr[0]。"
+  },
+  {
+   "q": "在排好的 9 格 array（arr[4] = 9）用 binary search 找 8，第一次比較後的搜尋範圍是？",
+   "opts": [
+    "[0, 3]",
+    "[0, 4]",
+    "[5, 8]",
+    "[4, 8]"
+   ],
+   "ans": "[0, 3]",
+   "why": "arr[mid] = 9 > 8，cut mid 到 tail，end = mid − 1 = 3。"
+  },
+  {
+   "q": "Binary search 能有效率，主要靠 array 的哪個性質？",
+   "opts": [
+    "Fast random access",
+    "Consecutive 之外還能留空位",
+    "可以動態 resize",
+    "每個元素有 next 指標"
+   ],
+   "ans": "Fast random access",
+   "why": "要能 O(1) 取出中間的 arr[mid] 來比較；linked list 只能 sequential access。"
+  },
+  {
+   "q": "同樣做兩次比較，binary search 與「分三區」搜尋分別把候選範圍縮成多少？",
+   "opts": [
+    "1/4 與 1/3",
+    "1/2 與 1/3",
+    "1/4 與 1/9",
+    "1/3 與 1/4"
+   ],
+   "ans": "1/4 與 1/3",
+   "why": "Binary 每次比較砍一半，兩次剩 1/4；分三區要兩次比較才砍到 1/3。"
+  },
+  {
+   "q": "Singly linked list 做 insertAfter(node, newNode)，正確的順序是？",
+   "opts": [
+    "先 newNode.next = node.next，再 node.next = newNode",
+    "先 node.next = newNode，再 newNode.next = node.next",
+    "只要 node.next = newNode",
+    "先 free(node.next)，再接上 newNode"
+   ],
+   "ans": "先 newNode.next = node.next，再 node.next = newNode",
+   "why": "先改 node.next 會遺失原本下一個節點（例子中的 1004）。"
+  },
+  {
+   "q": "Doubly linked list 比 singly linked list 多付出一個 prev 指標，主要換到什麼？",
+   "opts": [
+    "可以 remove here，不必從 head 找前一個",
+    "支援 random access",
+    "完全不需要 head",
+    "記憶體用量更少"
+   ],
+   "ans": "可以 remove here，不必從 head 找前一個",
+   "why": "刪除要更新前一個節點的 next；有 prev 就能直接拿到前一個。"
+  },
+  {
+   "q": "7 維向量 (0, 3.5, 0, 0, 7, 4.2, 9) 用 sparse vector 存，要存幾個 (維度, 值) pair？",
+   "opts": [
+    "3",
+    "4",
+    "7",
+    "11"
+   ],
+   "ans": "4",
+   "why": "只存非零項：(2,3.5)、(5,7)、(6,4.2)、(7,9)。"
+  }
+ ]
+}

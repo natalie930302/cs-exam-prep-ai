@@ -1,0 +1,205 @@
+{
+ "video": "OqLt2GfX6jg",
+ "label": "Abdul Bari：Why Pointers?",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "程式在記憶體中：code、stack、heap",
+   "scene": "bariarr-memlayout",
+   "points": [
+    {
+     "text": "指標是 address variable：存資料的位址，用來間接存取資料。",
+     "t": 0
+    },
+    {
+     "text": "程式要執行先載入 main memory；main memory 分成 code、stack、heap 三區。",
+     "t": 30
+    },
+    {
+     "text": "程式放在 code 區逐行執行；第一行宣告變數。",
+     "t": 55
+    },
+    {
+     "text": "變數配置在 stack；配給一個函式的那塊記憶體叫 activation record。",
+     "t": 81
+    },
+    {
+     "text": "stack 可直接存取：a 在 500、b 在 502，程式直接用位址取代變數名。",
+     "t": 94
+    },
+    {
+     "text": "stack 以外（例如 heap）程式不能直接存取，只能間接存取。",
+     "t": 125
+    }
+   ]
+  },
+  {
+   "title": "用途一：存取 heap",
+   "scene": "bariarr-heap-malloc",
+   "points": [
+    {
+     "text": "指標的第一個用途：存取 heap 記憶體。",
+     "t": 152
+    },
+    {
+     "text": "宣告指標 p，用 malloc 在 heap 配置 10 bytes。",
+     "t": 161
+    },
+    {
+     "text": "activation record 裡只有一個變數 p。",
+     "t": 176
+    },
+    {
+     "text": "heap 第一個 byte 的位址（假設 1000）存進 p，p 指向這塊 heap。",
+     "t": 186
+    },
+    {
+     "text": "程式直接存取 p，再透過 p 裡的位址間接存取 heap。",
+     "t": 204
+    }
+   ]
+  },
+  {
+   "title": "用途二：call by reference（swap）",
+   "scene": "bariarr-swap",
+   "points": [
+    {
+     "text": "第二個用途：call by reference。",
+     "t": 232
+    },
+    {
+     "text": "main 有兩個變數，想呼叫 swap 交換它們的值。",
+     "t": 243
+    },
+    {
+     "text": "swap(int x, int y) 收一般變數 → call by value，行不通。",
+     "t": 255
+    },
+    {
+     "text": "呼叫 swap 時另配 x、y、t，a、b 的值被複製過去。",
+     "t": 265
+    },
+    {
+     "text": "交換只發生在 swap 自己的變數；函式不能存取別的函式的 activation record。",
+     "t": 306
+    },
+    {
+     "text": "改成以指標為參數：傳入 &a（500）、&b（502），x、y 指向 main 的變數。",
+     "t": 362
+    },
+    {
+     "text": "swap 透過指標間接交換 main 的 a、b。",
+     "t": 386
+    }
+   ],
+   "trap": "補充：C 其實只有 call by value，這裡是「傳位址」（call by address）來模擬 call by reference；C++ 才有 int &x 這種 reference 參數。範例 a、b 的數值影片沒給，動畫用 10、20 示意。"
+  },
+  {
+   "title": "用途三、四：存取檔案與周邊裝置",
+   "scene": "bariarr-devices",
+   "points": [
+    {
+     "text": "第三個用途：存取檔案；讀寫磁碟上的檔案需要 file pointer（C 的 FILE *）。",
+     "t": 407
+    },
+    {
+     "text": "指標用來存取外部儲存裝置上的資料。",
+     "t": 438
+    },
+    {
+     "text": "第四個用途：存取周邊裝置，如讀鍵盤、寫螢幕、印表機。",
+     "t": 451
+    },
+    {
+     "text": "C 雖然用 printf、scanf 等內建函式，但這些函式內部用指標存取裝置。",
+     "t": 484
+    },
+    {
+     "text": "結論：只有 stack 能直接存取，其他地方的資料都靠指標間接存取。",
+     "t": 509
+    }
+   ]
+  },
+  {
+   "title": "總整理",
+   "scene": "bariarr-devices",
+   "params": {
+    "focus": "summary"
+   },
+   "points": [
+    {
+     "text": "指標用途：存取 heap、call by reference、存取檔案、存取周邊裝置。",
+     "t": 535
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "依影片，程式可以「直接」存取哪一區的記憶體？",
+   "opts": [
+    "stack",
+    "heap",
+    "磁碟上的檔案",
+    "周邊裝置"
+   ],
+   "ans": "stack",
+   "why": "stack 裡的變數名直接換成位址；其他地方都要靠指標間接存取。"
+  },
+  {
+   "q": "p = malloc(10); 之後 p 裡存的是？",
+   "opts": [
+    "heap 上那塊記憶體的起始位址",
+    "數字 10",
+    "p 自己的位址",
+    "stack 的頂端"
+   ],
+   "ans": "heap 上那塊記憶體的起始位址",
+   "why": "malloc 在 heap 配空間並回傳第一個 byte 的位址。"
+  },
+  {
+   "q": "void swap(int x, int y) 交換 x、y，main 呼叫 swap(a, b) 之後？",
+   "opts": [
+    "a、b 不變",
+    "a、b 互換",
+    "編譯錯誤",
+    "只有 a 改變"
+   ],
+   "ans": "a、b 不變",
+   "why": "call by value：x、y 是複本，在 swap 自己的 activation record 裡交換。"
+  },
+  {
+   "q": "要讓 swap 真的交換 main 的 a、b，應該？",
+   "opts": [
+    "參數改成 int *，呼叫 swap(&a, &b)",
+    "把 a、b 改成 float",
+    "在 swap 裡 return 交換後的值",
+    "呼叫 swap(*a, *b)"
+   ],
+   "ans": "參數改成 int *，呼叫 swap(&a, &b)",
+   "why": "傳位址後，swap 透過 *x、*y 間接改到 main 的變數。"
+  },
+  {
+   "q": "activation record 是？",
+   "opts": [
+    "函式執行時在 stack 配給它的變數區塊",
+    "heap 上 malloc 的區塊",
+    "程式碼所在的 code 區",
+    "檔案的指標"
+   ],
+   "ans": "函式執行時在 stack 配給它的變數區塊",
+   "why": "每個函式呼叫都有自己的 activation record，彼此不能直接存取。"
+  },
+  {
+   "q": "C 程式要讀寫磁碟上的檔案需要？",
+   "opts": [
+    "FILE * 檔案指標",
+    "一個 2D 陣列",
+    "malloc",
+    "遞迴"
+   ],
+   "ans": "FILE * 檔案指標",
+   "why": "檔案在 stack 以外，必須透過 file pointer 存取。"
+  }
+ ]
+}
