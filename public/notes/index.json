@@ -1,0 +1,457 @@
+{
+ "-FElVPKykgw": {
+  "label": "MIT 6.006 Rec10：Quiz 1 Review",
+  "points": 26,
+  "quiz": 6
+ },
+ "-JTq1BFBwmo": {
+  "label": "Abdul Bari：1.1 Priori Analysis and Posteriori Testing",
+  "points": 4,
+  "quiz": 3
+ },
+ "-qOVVRIZzao": {
+  "label": "Abdul Bari：2.8.2 QuickSort Analysis",
+  "points": 19,
+  "quiz": 6
+ },
+ "052VkKhIaQ4": {
+  "label": "Abdul Bari：6.3 Graph Coloring Problem - Backtracking",
+  "points": 25,
+  "quiz": 6
+ },
+ "0IAPZzGSbME": {
+  "label": "Abdul Bari：1. Introduction to Algorithms",
+  "points": 14,
+  "quiz": 4
+ },
+ "0J2eLvkuF8k": {
+  "label": "交大彭文志 Lec02 Introduction (2/2)",
+  "points": 58,
+  "quiz": 8
+ },
+ "0MtwqhIwdrI": {
+  "label": "MIT 18.06 L17：Orthogonal Matrices and Gram-Schmidt",
+  "points": 42,
+  "quiz": 6
+ },
+ "0M_kIqhwbFo": {
+  "label": "MIT 6.006 L8：Hashing with Chaining",
+  "points": 22,
+  "quiz": 5
+ },
+ "0NRkuhnupzs": {
+  "label": "清大周志遠 第18A講 Special Scheduling Issues",
+  "points": 34,
+  "quiz": 6
+ },
+ "0oJyNmEbS4w": {
+  "label": "Abdul Bari：2.9 Strassens Matrix Multiplication",
+  "points": 25,
+  "quiz": 6
+ },
+ "0vYydtG1Xi4": {
+  "label": "清大周志遠 第23C講 Directory Structure & File System",
+  "points": 34,
+  "quiz": 7
+ },
+ "13r9QY6cmjc": {
+  "label": "MIT OCW 18.06 L22：Diagonalization and Powers of A",
+  "points": 36,
+  "quiz": 6
+ },
+ "1FEP_sNb62k": {
+  "label": "Abdul Bari：7.3 Traveling Salesman Problem - Branch and Bound",
+  "points": 7,
+  "quiz": 3
+ },
+ "1gIwNYCcwAk": {
+  "label": "清大周志遠 第2D講 Special-purpose Systems",
+  "points": 23,
+  "quiz": 4
+ },
+ "1Hl-S_eFbhE": {
+  "label": "清大周志遠 第26B講 Mass Storage / I/O Systems",
+  "points": 34,
+  "quiz": 7
+ },
+ "1K9ebQJosvo": {
+  "label": "Abdul Bari：2.3.3 Recurrence [T(n)=2T(n/2)+n] #3",
+  "points": 13,
+  "quiz": 5
+ },
+ "1U3Uwct45IY": {
+  "label": "Abdul Bari：1.4 Frequency Count Method",
+  "points": 16,
+  "quiz": 6
+ },
+ "2-mxYrCNX60": {
+  "label": "TrevTutor：Pigeonhole Principle",
+  "points": 27,
+  "quiz": 5
+ },
+ "23LLB9mNJvc": {
+  "label": "MIT 18.06 L19：Determinant Formulas and Cofactors",
+  "points": 49,
+  "quiz": 7
+ },
+ "2dYV_lADfFI": {
+  "label": "Amdahl's Law in COA: Basics, Proof, and CPU Performance",
+  "points": 16,
+  "quiz": 5
+ },
+ "2E7MmKv0Y24": {
+  "label": "MIT 6.006 L16：Dijkstra",
+  "points": 33,
+  "quiz": 7
+ },
+ "2IdtqGM6KWU": {
+  "label": "MIT OCW 18.06 L11：Matrix Spaces; Rank 1; Small World Graphs",
+  "points": 35,
+  "quiz": 5
+ },
+ "2nTqrHZhVQ0": {
+  "label": "清大周志遠 第2A講 Historical Prospective(Mainframe)",
+  "points": 34,
+  "quiz": 5
+ },
+ "2Rr2tW9zvRg": {
+  "label": "Abdul Bari：2 Divide And Conquer（介紹）",
+  "points": 13,
+  "quiz": 4
+ },
+ "2YeJ-5UAke8": {
+  "label": "MIT 6.006 L12：Square Roots, Newton's Method",
+  "points": 26,
+  "quiz": 7
+ },
+ "3PfL2WIS22o": {
+  "label": "清大周志遠 第1A講",
+  "points": 15,
+  "quiz": 3
+ },
+ "3RBNPc0_Q6g": {
+  "label": "Abdul Bari：7 Branch and Bound Introduction",
+  "points": 22,
+  "quiz": 5
+ },
+ "48K3qS2531o": {
+  "label": "清大周志遠 第20D講 Classical Synchronization Problems & Monitors",
+  "points": 27,
+  "quiz": 6
+ },
+ "4iXLnF3hExw": {
+  "label": "MIT 6.006 Rec3：Document Distance, Insertion and Merge Sort",
+  "points": 21,
+  "quiz": 6
+ },
+ "4V30R3I1vLI": {
+  "label": "Abdul Bari：2.1.1 Recurrence Relation #1",
+  "points": 12,
+  "quiz": 5
+ },
+ "5dRGRueKU3M": {
+  "label": "Abdul Bari：4 Principle of Optimality",
+  "points": 20,
+  "quiz": 5
+ },
+ "5hO3MrzPa0A": {
+  "label": "MIT OCW 18.06 L4：Factorization into A = LU",
+  "points": 41,
+  "quiz": 7
+ },
+ "5JxShDZ_ylo": {
+  "label": "MIT 6.006 Rec13：BFS",
+  "points": 26,
+  "quiz": 6
+ },
+ "5v-tKX2uRAk": {
+  "label": "Abdul Bari：1.7 Compare Class of Functions",
+  "points": 11,
+  "quiz": 4
+ },
+ "6-wh6yvk6uc": {
+  "label": "MIT OCW 18.06 L12：Graphs, Networks, Incidence Matrices",
+  "points": 34,
+  "quiz": 5
+ },
+ "6LWj3CuOCPs": {
+  "label": "清大周志遠 第19A講 Critical Section(續)",
+  "points": 30,
+  "quiz": 7
+ },
+ "6pV2IF0fgKY": {
+  "label": "Abdul Bari：2.7.1 Two Way MergeSort - Iterative",
+  "points": 22,
+  "quiz": 6
+ },
+ "6WZvVJ0Q1FA": {
+  "label": "Spanning Tree：Discrete Mathematics",
+  "points": 43,
+  "quiz": 7
+ },
+ "7fujbpJ0LB4": {
+  "label": "WilliamFiset：DFS",
+  "points": 23,
+  "quiz": 5
+ },
+ "7gMLNiEz3nw": {
+  "label": "Gate Smashers：Banker Algorithm",
+  "points": 29,
+  "quiz": 7
+ },
+ "7z3hoaide-4": {
+  "label": "清大周志遠 第4B講 Computer-System Organization(續)",
+  "points": 18,
+  "quiz": 4
+ },
+ "8IOv2fnc01E": {
+  "label": "台大林軒田 DSA Introduction to Data Structures and Algorithms",
+  "points": 66,
+  "quiz": 8
+ },
+ "8MF3pz-oYHo": {
+  "label": "MIT OCW 18.06 L24：Markov Matrices; Fourier Series",
+  "points": 35,
+  "quiz": 6
+ },
+ "8o5Cmfpeo6g": {
+  "label": "MIT 18.06 L6：Column Space and Nullspace",
+  "points": 35,
+  "quiz": 5
+ },
+ "8RlCb74uFp0": {
+  "label": "清大周志遠 第17A講 Process Scheduling",
+  "points": 54,
+  "quiz": 8
+ },
+ "8RyRHYruy-8": {
+  "label": "清大周志遠 第11B講 Non-Contiguous Memory Allocation - Paging(續)",
+  "points": 25,
+  "quiz": 7
+ },
+ "8x6-r-maTZA": {
+  "label": "清大周志遠 第16A講 Multithreaded Programming",
+  "points": 42,
+  "quiz": 6
+ },
+ "9iE9Mj4m8jk": {
+  "label": "Abdul Bari：4.1 MultiStage Graph",
+  "points": 22,
+  "quiz": 6
+ },
+ "9Q1q7s1jTzU": {
+  "label": "MIT OCW 18.06 L8：Solving Ax = b: Row Reduced Form R",
+  "points": 31,
+  "quiz": 5
+ },
+ "9SgLBjXqwd4": {
+  "label": "Abdul Bari：1.5.2 Time Complexity Example #2",
+  "points": 20,
+  "quiz": 6
+ },
+ "9TlHvipP5yA": {
+  "label": "Abdul Bari：1.5.1 Time Complexity #1",
+  "points": 14,
+  "quiz": 5
+ },
+ "9vrPlp_f5A0": {
+  "label": "清大周志遠 第5A講 Nachos解說/OS Structure",
+  "points": 27,
+  "quiz": 4
+ },
+ "A03oI0znAoc": {
+  "label": "Abdul Bari：1.8.1 Asymptotic Notations #1",
+  "points": 19,
+  "quiz": 5
+ },
+ "A6sbcPRLkmg": {
+  "label": "黃婷婷教授計算機結構_第4A講 Computer Abstractions and Technology / Instruction Set Architecture",
+  "points": 47,
+  "quiz": 7
+ },
+ "Aa2sqUhIn-E": {
+  "label": "MIT 6.006 L15：Single-Source Shortest Paths Problem",
+  "points": 31,
+  "quiz": 6
+ },
+ "AfSk24UTFS8": {
+  "label": "MIT 6.006 L14：DFS, Topological Sort",
+  "points": 39,
+  "quiz": 7
+ },
+ "ARvQcqJ_-NY": {
+  "label": "Abdul Bari：Greedy Method - Introduction",
+  "points": 16,
+  "quiz": 5
+ },
+ "AztAXONxs7M": {
+  "label": "清大周志遠 第8A講 Processes Concept",
+  "points": 30,
+  "quiz": 5
+ },
+ "A_NNGOqui7s": {
+  "label": "清大OCW 趙啟超《離散數學》第1A講 Logic and Set Theory",
+  "points": 31,
+  "quiz": 7
+ },
+ "BaM7OCEm3G0": {
+  "label": "3Blue1Brown：Cross products as linear transformations",
+  "points": 27,
+  "quiz": 5
+ },
+ "BRO7mVIFt08": {
+  "label": "MIT 6.006 L9：Table Doubling, Karp-Rabin",
+  "points": 27,
+  "quiz": 6
+ },
+ "BtHlptO34wM": {
+  "label": "清大周志遠 第4A講 Computer-System Organization(續)",
+  "points": 47,
+  "quiz": 6
+ },
+ "C2apEw9pgtw": {
+  "label": "Abdul Bari：2.6.1 Binary Search Iterative Method",
+  "points": 20,
+  "quiz": 6
+ },
+ "C42WzJATHg0": {
+  "label": "清大周志遠 第25A講 File System / Mass Storage System",
+  "points": 35,
+  "quiz": 7
+ },
+ "C5SPsY72_CM": {
+  "label": "MIT 6.006 Rec14：DFS",
+  "points": 29,
+  "quiz": 6
+ },
+ "CHvQ3q_gJ7E": {
+  "label": "MIT 6.006 L18：Speeding up Dijkstra",
+  "points": 22,
+  "quiz": 5
+ },
+ "CNO_I8jhX3I": {
+  "label": "清大周志遠 第18C講 Background & Critical Section",
+  "points": 36,
+  "quiz": 7
+ },
+ "CyknhZbfMqc": {
+  "label": "Abdul Bari：2.2 Masters Theorem Decreasing Function",
+  "points": 11,
+  "quiz": 6
+ },
+ "d-PDYIqg_Kc": {
+  "label": "台大林軒田 DSA Analysis Tools",
+  "points": 39,
+  "quiz": 6
+ },
+ "DBugSTeX1zw": {
+  "label": "PERMUTATIONS and COMBINATIONS Review",
+  "points": 48,
+  "quiz": 7
+ },
+ "DKCbsiDBN6c": {
+  "label": "Abdul Bari：6 Introduction to Backtracking - Brute Force Approach",
+  "points": 18,
+  "quiz": 5
+ },
+ "E82x-cug9YE": {
+  "label": "Modes of Transfer | Programmed, Interrupt-initiated I/O & DMA",
+  "points": 24,
+  "quiz": 6
+ },
+ "ENyox7kNKeY": {
+  "label": "MIT 6.006 L12：DP II",
+  "points": 43,
+  "quiz": 8
+ },
+ "EpZgvKBf5eo": {
+  "label": "清大周志遠 第16C講 Basic Concepts",
+  "points": 32,
+  "quiz": 6
+ },
+ "Erea1QASjXY": {
+  "label": "Discrete Math II - 10.8.1 Graph Coloring",
+  "points": 26,
+  "quiz": 7
+ },
+ "ETPHC9DffdU": {
+  "label": "清大周志遠 第8B講 Processes Concept",
+  "points": 33,
+  "quiz": 5
+ },
+ "FbYzBWdhMb0": {
+  "label": "Abdul Bari：1.2 Characteristics of Algorithm",
+  "points": 16,
+  "quiz": 5
+ },
+ "FiRH2TYB1Mw": {
+  "label": "清大周志遠 第6B講 Processes Concept",
+  "points": 18,
+  "quiz": 4
+ },
+ "FrLWd1tJ_Wc": {
+  "label": "Bellman Ford Algorithm",
+  "points": 14,
+  "quiz": 4
+ },
+ "FtN3BYH2Zes": {
+  "label": "Abdul Bari：4.4 Bellman Ford Algorithm - DP",
+  "points": 22,
+  "quiz": 6
+ },
+ "FX4C-JpTFgY": {
+  "label": "MIT 18.06 L3：Multiplication and Inverse Matrices",
+  "points": 49,
+  "quiz": 7
+ },
+ "G3H-L-K9kM4": {
+  "label": "台大林軒田 DSA Class Introduction",
+  "points": 3,
+  "quiz": 0
+ },
+ "G4v9HUllv-Q": {
+  "label": "清大周志遠 第17B講 Special Scheduling Issues",
+  "points": 12,
+  "quiz": 4
+ },
+ "Go2aLo7ZOlU": {
+  "label": "MIT OCW 18.06 L33：Left and Right Inverses; Pseudoinverse",
+  "points": 35,
+  "quiz": 6
+ },
+ "HA96JKO9znE": {
+  "label": "清大周志遠 第5B講 OS Services",
+  "points": 24,
+  "quiz": 5
+ },
+ "HEQuN0QELSQ": {
+  "label": "Gram-Schmidt Orthogonalization（換個角度講解）",
+  "points": 19,
+  "quiz": 5
+ },
+ "HlFsexTpM4Q": {
+  "label": "Dijkstra Algorithm",
+  "points": 14,
+  "quiz": 4
+ },
+ "HUA_cVBdLw0": {
+  "label": "Semaphores in Operating Systems",
+  "points": 21,
+  "quiz": 5
+ },
+ "R0MpXbuqfZM": {
+  "label": "台大 林軒田《資料結構與演算法》Stack / Queue",
+  "points": 64,
+  "quiz": 9
+ },
+ "V42FBiohc6c": {
+  "label": "Time Complexity of a Computer Program",
+  "points": 13,
+  "quiz": 5
+ },
+ "xqM9NVKUWmg": {
+  "label": "交大 彭文志《資料結構》Lec07 Stacks & Queues (2/2)",
+  "points": 60,
+  "quiz": 8
+ }
+}

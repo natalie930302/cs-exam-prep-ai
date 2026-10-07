@@ -1,0 +1,242 @@
+{
+ "video": "6LWj3CuOCPs",
+ "label": "清大周志遠 第19A講 Critical Section(續)",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "Peterson's solution 回顧",
+   "scene": "peterson",
+   "points": [
+    {
+     "text": "兩個 process 的解法；記概念不用背：turn 是 token，值只有 0 或 1，表示誰可以進。",
+     "t": 4
+    },
+    {
+     "text": "進去之前或出來之後一定要把 token 交給對方，才有輪流的效果。",
+     "t": 33
+    },
+    {
+     "text": "只輪流會有 progress 問題：P0 把 token 給 P1，P1 卻不想進，P0 就再也進不去。",
+     "t": 53
+    },
+    {
+     "text": "加上 flag 表示「我 ready、想進去」；只有「對方有 token 而且對方想進」才會被擋住（while 後面是分號）。",
+     "t": 76
+    },
+    {
+     "text": "這樣沒有 progress 問題，又因為輪流交換 token 而滿足 bounded waiting。",
+     "t": 106
+    }
+   ]
+  },
+  {
+   "title": "寫法要注意的地方",
+   "scene": "peterson-wrong",
+   "points": [
+    {
+     "text": "flag[i] = true 要寫在進 critical section 之前（while 前一兩行），太早設會擋住對方，違反 progress。",
+     "t": 125
+    },
+    {
+     "text": "turn = j 只是把 token 交給對方，寫在前面或後面都可以，重點是一定要交換。",
+     "t": 169
+    },
+    {
+     "text": "寫成 turn = 自己（把 token 搶過來）一定錯：trace 會發現兩個人都能 break while、都進 critical section。",
+     "t": 201
+    }
+   ]
+  },
+  {
+   "title": "證明三個條件",
+   "scene": "peterson-bounded",
+   "points": [
+    {
+     "text": "mutual exclusion 用反證法：turn 是布林值，不可能同時是 0 又是 1。",
+     "t": 256
+    },
+    {
+     "text": "progress 的證明：只有一個人想進時他進得去；兩個人同時想進時其中一個會被選中（不可能兩個，否則 ME 已經違反）。",
+     "t": 273
+    },
+    {
+     "text": "bounded waiting：一人在等、另一人剛離開 critical section；剛離開的人可能沒被 context switch，跑完一圈又想進。",
+     "t": 350
+    },
+    {
+     "text": "它進去前一定先把 token 交給對方，而對方 flag 是 true → 剛出來的人被擋在 while，直到 context switch 讓對方進去。",
+     "t": 421
+    },
+    {
+     "text": "context switch 不是一人一行，可能執行任意數量的指令，但就是會卡在 entry section。",
+     "t": 498
+    },
+    {
+     "text": "critical section 選得越小越好，選錯可能造成 deadlock。",
+     "t": 515
+    }
+   ]
+  },
+  {
+   "title": "N 個 process：Bakery（抽號碼牌）",
+   "scene": "bakery",
+   "points": [
+    {
+     "text": "n 個 process 時不知道 token 要交給誰、誰手上有 token，Peterson 的作法不適用。",
+     "t": 530
+    },
+    {
+     "text": "概念是排隊：像郵局抽號碼牌輪流進去。",
+     "t": 558
+    },
+    {
+     "text": "抽號碼牌本身好幾個指令，可能抽到相同數字；tie breaker 用 unique 的 PID。",
+     "t": 573
+    },
+    {
+     "text": "num[i] 只有 Pi 自己寫、其他人只讀，所以 num 本身沒有 race 問題（flag 也是）。",
+     "t": 632
+    },
+    {
+     "text": "抽號碼：num[i] = max(所有 num) + 1；max 其實是一堆 if-else 的比較，不是一個指令。",
+     "t": 701
+    },
+    {
+     "text": "跟每個人比：對方 num 為 0（沒抽）就跳過；否則先比號碼再比 PID，對方比較小就卡在 while。",
+     "t": 768
+    },
+    {
+     "text": "號碼越小越先（first come, first serve）；離開時把 num 設回 0。",
+     "t": 884
+    }
+   ]
+  },
+  {
+   "title": "為什麼需要 choosing",
+   "scene": "bakery-choosing",
+   "points": [
+    {
+     "text": "choosing[i] 像一個 lock：抽號碼前設 true、抽完設 false，告訴別人「我正在抽」。",
+     "t": 943
+    },
+    {
+     "text": "比較之前先 while (choosing[j]) 等對方抽完，數字穩定了才比。",
+     "t": 969
+    },
+    {
+     "text": "否則晚抽的人可能抽到一樣的號碼又 PID 比較小，其實該先執行。",
+     "t": 992
+    },
+    {
+     "text": "正確性：一次只有 (num, PID) 最小的人能進 → ME；first come, first serve → bounded waiting；最小的人一定能 break while → progress。",
+     "t": 1085
+    }
+   ]
+  },
+  {
+   "title": "例子：P1、P4 都抽到 6",
+   "scene": "bakery-choosing",
+   "points": [
+    {
+     "text": "目前最大號碼是 5，P1 與 P4 要進 critical section；PID 1 比 4 小，P1 比較優先。",
+     "t": 1157
+    },
+    {
+     "text": "沒有 choosing：P4 先抽完得到 6，檢查時看到 P1 還是 0，就不理它進去了。",
+     "t": 1179
+    },
+    {
+     "text": "P1 這時才抽完也是 6；(6,1) < (6,4)，P1 也進去 → mutual exclusion 被 violate。",
+     "t": 1199
+    },
+    {
+     "text": "synchronization 難寫難驗證：每個指令都可能被切，n 個人的組合無窮。",
+     "t": 1227
+    },
+    {
+     "text": "有 choosing：P4 會被擋住，等 P1 抽完；兩人都是 6，P1 PID 較小，正確地讓 P1 先進。",
+     "t": 1265
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Peterson's solution 中，進入前應該寫？",
+   "opts": [
+    "flag[i] = true; turn = j;",
+    "flag[i] = true; turn = i;",
+    "turn = i; flag[j] = true;",
+    "flag[j] = false;"
+   ],
+   "ans": "flag[i] = true; turn = j;",
+   "why": "19A：token 一定要交給對方，寫成 turn = i 會讓兩人都進去。"
+  },
+  {
+   "q": "Peterson 的 entry section 中，P0 何時會被擋住？",
+   "opts": [
+    "flag[1] 為 true 且 turn == 1",
+    "flag[1] 為 true 或 turn == 1",
+    "turn == 0",
+    "flag[0] 為 true"
+   ],
+   "ans": "flag[1] 為 true 且 turn == 1",
+   "why": "對方想進「而且」token 在對方。"
+  },
+  {
+   "q": "只用 turn 輪流（沒有 flag）違反哪個條件？",
+   "opts": [
+    "progress",
+    "mutual exclusion",
+    "bounded waiting",
+    "都沒違反"
+   ],
+   "ans": "progress",
+   "why": "對方不想進時，自己也進不去。"
+  },
+  {
+   "q": "Bakery 抽號碼的方式？",
+   "opts": [
+    "num[i] = max(num) + 1",
+    "num[i] = PID",
+    "num[i] = num[i] + 1",
+    "num[i] = 0"
+   ],
+   "ans": "num[i] = max(num) + 1",
+   "why": "號碼越抽越大；max 不是 atomic，可能抽到一樣的號碼。"
+  },
+  {
+   "q": "Bakery 兩人號碼相同時誰先？",
+   "opts": [
+    "PID 小的",
+    "PID 大的",
+    "先抽的",
+    "隨機"
+   ],
+   "ans": "PID 小的",
+   "why": "(num, PID) 依序比較。"
+  },
+  {
+   "q": "沒有 choosing 時，課堂例子出了什麼錯？",
+   "opts": [
+    "P1、P4 都抽到 6 且都進了 critical section",
+    "P1、P4 都卡住（deadlock）",
+    "P4 永遠進不去",
+    "號碼被重複使用"
+   ],
+   "ans": "P1、P4 都抽到 6 且都進了 critical section",
+   "why": "P4 檢查時 P1 還是 0；P1 抽完也是 6 且 PID 較小。"
+  },
+  {
+   "q": "證明 bounded waiting 時常被忽略的情況？",
+   "opts": [
+    "剛出來的人沒被 context switch，馬上又想進去",
+    "兩人都不想進",
+    "只有一個 process",
+    "turn 的初值"
+   ],
+   "ans": "剛出來的人沒被 context switch，馬上又想進去",
+   "why": "要證明它會被擋住，讓等待的人先進。"
+  }
+ ]
+}

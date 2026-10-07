@@ -1,0 +1,150 @@
+{
+ "video": "FiRH2TYB1Mw",
+ "label": "清大周志遠 第6B講 Processes Concept",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "本章內容",
+   "scene": null,
+   "points": [
+    {
+     "text": "進入第三章：接下來每章介紹 OS 的一個重要 component，第一個是 process。",
+     "t": 16
+    },
+    {
+     "text": "這章的 scheduling 只講 scheduler 的分層架構，演算法留到 CPU scheduling 章。",
+     "t": 35
+    },
+    {
+     "text": "還會講 process 的 create，以及 interprocess communication（message passing、shared memory）。",
+     "t": 71
+    }
+   ]
+  },
+  {
+   "title": "Program vs Process",
+   "scene": "program-vs-process",
+   "points": [
+    {
+     "text": "中文都叫「程式」，英文卻分 program 和 process，鼓勵看原文。",
+     "t": 128
+    },
+    {
+     "text": "program 是 passive entity：只是 disk 上的 binary file，等著被執行的程式碼。",
+     "t": 166
+    },
+    {
+     "text": "process 是 active entity：正在 execute 的程式。",
+     "t": 200
+    },
+    {
+     "text": "關鍵區別：process 在 memory 裡（CPU 才能 access），program 在 disk 上。",
+     "t": 220
+    },
+    {
+     "text": "OS 這門課重視的是 process，不是 program；答題用字要分清楚。",
+     "t": 236
+    }
+   ]
+  },
+  {
+   "title": "Process 的 memory 內容",
+   "scene": "process-memory",
+   "points": [
+    {
+     "text": "每個 process 有自己的 memory space，裡面切成幾個區塊。",
+     "t": 270
+    },
+    {
+     "text": "code segment：compile 好的 instruction，load 進 memory 等 CPU fetch。",
+     "t": 306
+    },
+    {
+     "text": "變數放三個地方：data section 放 global variable，load 時就存在。",
+     "t": 376
+    },
+    {
+     "text": "stack 放 local variable：function return 就消失，用 stack 一次 pop 很有效率。",
+     "t": 433
+    },
+    {
+     "text": "heap 放 malloc 等 dynamic allocation：最自由，也最要小心。",
+     "t": 467
+    },
+    {
+     "text": "寫程式要清楚變數放在哪一區，因為管理方式不同。",
+     "t": 484
+    }
+   ],
+   "trap": "補充：動畫裡的 int g、x、malloc 範例是自訂的，用來對應課堂講的四個區塊（恐龍書 Fig. 3.1）。"
+  },
+  {
+   "title": "Process 的 metadata",
+   "scene": "pcb",
+   "points": [
+    {
+     "text": "除了 memory 內容，還需要管理 process 的 metadata。",
+     "t": 501
+    },
+    {
+     "text": "最重要的是 program counter：目前執行到哪裡。",
+     "t": 501
+    },
+    {
+     "text": "register 的內容：CPU 被很多程式共用，被 switch 走時要記下來讓出。",
+     "t": 535
+    },
+    {
+     "text": "resource 狀態：開了哪些 file、用了哪些 socket、port。",
+     "t": 554
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Program 和 process 的差別何者正確？",
+   "opts": [
+    "program 是 disk 上的 passive binary，process 是 memory 中執行的 active entity",
+    "兩者只是中英文翻譯不同",
+    "process 存在 disk 上",
+    "program 有 program counter"
+   ],
+   "ans": "program 是 disk 上的 passive binary，process 是 memory 中執行的 active entity",
+   "why": "課堂強調 passive vs active，以及位置 disk vs memory。"
+  },
+  {
+   "q": "global variable 放在 process 的哪一區？",
+   "opts": [
+    "data section",
+    "stack",
+    "heap",
+    "code segment"
+   ],
+   "ans": "data section",
+   "why": "global 在 load 時就存在、所有 function 都看得到。"
+  },
+  {
+   "q": "malloc 配置的空間放在哪一區？",
+   "opts": [
+    "heap",
+    "stack",
+    "data section",
+    "register"
+   ],
+   "ans": "heap",
+   "why": "dynamic allocation 在 heap。"
+  },
+  {
+   "q": "為什麼 register 的值要記在 process 的 metadata 裡？",
+   "opts": [
+    "CPU 被多個程式共用，被換走時要保存",
+    "為了加速 cache",
+    "因為 register 在 disk 上",
+    "為了 debug"
+   ],
+   "ans": "CPU 被多個程式共用，被換走時要保存",
+   "why": "switch 時把 register 存起來，回來時才能接著跑。"
+  }
+ ]
+}

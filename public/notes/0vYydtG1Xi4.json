@@ -1,0 +1,266 @@
+{
+ "video": "0vYydtG1Xi4",
+ "label": "清大周志遠 第23C講 Directory Structure & File System",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "三種 access method 的例子",
+   "scene": "access-methods",
+   "points": [
+    {
+     "text": "Sequential access 的例子是 C 的 fread / fwrite；index access 的例子是 database。",
+     "t": 5
+    },
+    {
+     "text": "Direct access：像 MATLAB load 一個檔案後，直接要 A(3,3)（第 3 列第 3 行）的資料，不需要 index。",
+     "t": 14
+    },
+    {
+     "text": "看 API 的參數就分得出來：沒給 position 是 sequential；給 position 是 direct；給名字（key）去查 index 是 index access。",
+     "t": 52
+    },
+    {
+     "text": "實作上差別在 mapping 與實體存取 pattern：sequential 盡量把資料串在一起放；index 需要額外 data structure 來快速搜尋位置。",
+     "t": 88
+    }
+   ]
+  },
+  {
+   "title": "General-graph directory 與 garbage collection",
+   "scene": "general-graph-gc",
+   "points": [
+    {
+     "text": "directory 從 single-level、two-level 演進到 tree，最一般化是 general graph：任意位置、任意方向都可以加 edge。",
+     "t": 128
+    },
+    {
+     "text": "和 acyclic graph 最大差別是會出現 cycle，要處理類似 dangling pointer 的問題。",
+     "t": 152
+    },
+    {
+     "text": "例子：刪掉 bin 到 g2 的 link 後，g2 和 t1 已經走不到，但它們互相 reference，counter 都不是 0，只看 counter 刪不掉。",
+     "t": 178
+    },
+    {
+     "text": "解法：做 cycle detection，或最常見的 garbage collection：週期性從 root 往下 label，沒被 label 的就是 unreachable，刪掉（兩個 pass）。",
+     "t": 211
+    },
+    {
+     "text": "檔案系統的使用者和檔案數量很大，週期性 GC 太貴，所以很多 FS 不支援 general graph：會造成 cycle 的 link 直接視為 invalid。",
+     "t": 242
+    }
+   ],
+   "trap": "reference count 只能處理 acyclic graph；有 cycle 時要靠 garbage collection。"
+  },
+  {
+   "title": "Mounting 與 mount point",
+   "scene": "mount-points",
+   "points": [
+    {
+     "text": "Mounting：把 storage device 掛進系統，讓 file system（directory structure）可以存取上面的資料。",
+     "t": 297
+    },
+    {
+     "text": "第一件事是決定 mount point：掛在 tree 上的哪個節點。",
+     "t": 339
+    },
+    {
+     "text": "三種時機：boot time（系統槽一開機就要 mount，否則無法載入 OS）、run time 自動 mount（插上就掛好）、手動 mount。",
+     "t": 365
+    },
+    {
+     "text": "例子：原本只有 local，usr、home 還沒有東西；把第二個 volume 掛在 usr 下，usr 就是 mount point。",
+     "t": 465
+    },
+    {
+     "text": "可以 recursive：在被 mount 的 volume 底下再掛別的；Windows 只能掛成 C:、D:、E:（root 底下），Linux / Mac 可掛在任何已存在的資料夾，例如 john 底下的 games。",
+     "t": 510
+    }
+   ]
+  },
+  {
+   "title": "Mount table：跨 partition 找檔案",
+   "scene": "mount-table",
+   "points": [
+    {
+     "text": "mount 一個 partition 時，OS 會維護一張 mount table，記錄這個 partition 存在。",
+     "t": 617
+    },
+    {
+     "text": "例子：root 下有三個 folder，其中 usr、mnt 來自其他 partition（P2、P3），在 directory 裡只要標記一個 m。",
+     "t": 638
+    },
+    {
+     "text": "traverse 時從 root（系統槽）開始，遇到標 m 的 usr 就查 mount table：接在哪個 port、用什麼 protocol。",
+     "t": 669
+    },
+    {
+     "text": "接著換到那個 partition，它的 root 就相當於 usr，繼續往下找到檔案，再讀出內容。",
+     "t": 700
+    },
+    {
+     "text": "總結：directory 上的標記 + mount table + partition table 存取所需資訊。",
+     "t": 721
+    }
+   ]
+  },
+  {
+   "title": "Sharing：user ID、group ID 與三種 class",
+   "scene": "share-ugo",
+   "points": [
+    {
+     "text": "檔案系統最重要的用途之一是多使用者間的 sharing，所以 permission 非常重要（作業不能被別人看到或覆寫）。",
+     "t": 750
+    },
+    {
+     "text": "使用者有唯一的 user ID，也屬於某個 group ID；預設的 group 就是自己，管理者可以建 students 這種 group。",
+     "t": 797
+    },
+    {
+     "text": "檔案這邊分三個 level：owner（只有一個）、和檔案同 group 的使用者、others；任何使用者一定落在其中一個。",
+     "t": 861
+    },
+    {
+     "text": "同一個 group 的人權限都相同，不能再細分。",
+     "t": 990
+    },
+    {
+     "text": "privilege 只有 read、write、execute；只有 owner 或 root 能修改檔案的權限與擁有者。",
+     "t": 1009
+    }
+   ]
+  },
+  {
+   "title": "ACL 簡化成 rwx 三個 bit",
+   "scene": "acl-bits",
+   "points": [
+    {
+     "text": "access control 問題：最直覺是每個檔案一張 list 列出每個使用者的權限，但使用者一多，list 很長又要一直改，還要 load 進 memory 才能判斷，不可行。",
+     "t": 1089
+    },
+    {
+     "text": "現在的做法：三個 class（owner、group、others）× 三種權限（r、w、x），每個 class 3 個 bit，共 9 bits。",
+     "t": 1163
+    },
+    {
+     "text": "例子：owner 111（可讀寫執行）、group 110（讀寫）、others 100（只能讀）。",
+     "t": 1225
+    },
+    {
+     "text": "ls -l 前面那串就是 ACL：第一個字元表示是 directory 還是 file，後面 9 個符號；例如 rw-rw-r--，group 是 staff。",
+     "t": 1281
+    },
+    {
+     "text": "對 folder 而言 x 代表能不能 traverse 進去；遇到 permission denied 要檢查路徑上每個 parent folder 有沒有 x。",
+     "t": 1395
+    },
+    {
+     "text": "修改指令是 chmod，例如 chmod 644：每個數字對應一個 class。",
+     "t": 1484
+    }
+   ],
+   "trap": "補充：r=4、w=2、x=1；644 = rw-r--r--。目錄的 r 是列出內容、x 是進入／穿過。"
+  },
+  {
+   "title": "Protection：damage 與 security",
+   "scene": "protection-two",
+   "points": [
+    {
+     "text": "Protection 有兩個層面；前面講的 access permission 也是 protection 的一部分。",
+     "t": 1516
+    },
+    {
+     "text": "damage：檔案絕不能遺失，方法是 RAID，用多顆硬碟存副本提高 reliability（之後儲存系統章節介紹）。",
+     "t": 1554
+    },
+    {
+     "text": "security / privacy：單一系統最基本是 password 登入，系統知道你的 ID 後再用 ACL 判斷能做什麼。",
+     "t": 1604
+    },
+    {
+     "text": "有網路後 password 封包可能被監聽偷走，需要加密等機制，這是資安的另一大領域。",
+     "t": 1666
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "MATLAB 載入檔案後直接讀 A(3,3) 的資料，屬於哪一種 access method？",
+   "opts": [
+    "Direct access",
+    "Sequential access",
+    "Index access",
+    "Hashed access"
+   ],
+   "ans": "Direct access",
+   "why": "直接給位置（座標）就讀，不需要 index。"
+  },
+  {
+   "q": "General-graph directory 中刪掉 bin→g2 的 link 後，g2 與 t1 互相參照。怎麼回收？",
+   "opts": [
+    "Garbage collection：從 root 標記走得到的，刪掉沒標記的",
+    "等 reference count 變 0",
+    "刪除 root",
+    "把 link 改成 hard link"
+   ],
+   "ans": "Garbage collection：從 root 標記走得到的，刪掉沒標記的",
+   "why": "cycle 裡的 counter 不會變 0，要靠 reachability 判斷。"
+  },
+  {
+   "q": "為什麼很多檔案系統不支援 general-graph directory？",
+   "opts": [
+    "週期性 garbage collection 對大量檔案太耗時",
+    "無法建立 link",
+    "不能有 mount point",
+    "權限無法設定"
+   ],
+   "ans": "週期性 garbage collection 對大量檔案太耗時",
+   "why": "所以會造成 cycle 的 link 直接拒絕。"
+  },
+  {
+   "q": "Traverse 到標記 m 的 usr 目錄時，OS 會去查什麼？",
+   "opts": [
+    "Mount table",
+    "Open-file table",
+    "Page table",
+    "FAT"
+   ],
+   "ans": "Mount table",
+   "why": "mount table 記錄該 mount point 對到哪個 partition / device。"
+  },
+  {
+   "q": "ls -l 顯示 -rw-rw-r--，others 能做什麼？",
+   "opts": [
+    "只能讀",
+    "讀和寫",
+    "讀寫執行",
+    "什麼都不能"
+   ],
+   "ans": "只能讀",
+   "why": "最後三個字元 r-- 屬於 others。"
+  },
+  {
+   "q": "chmod 644 對應的權限字串是？",
+   "opts": [
+    "rw-r--r--",
+    "rwxr--r--",
+    "rw-rw-r--",
+    "r--r--rw-"
+   ],
+   "ans": "rw-r--r--",
+   "why": "6 = 110 = rw-，4 = 100 = r--。"
+  },
+  {
+   "q": "對目錄沒有 x 權限會怎樣？",
+   "opts": [
+    "無法 traverse 進入該目錄",
+    "無法執行目錄內的程式但可進入",
+    "無法看到目錄名稱",
+    "沒有影響"
+   ],
+   "ans": "無法 traverse 進入該目錄",
+   "why": "路徑上任一層 parent 缺 x 都會 permission denied。"
+  }
+ ]
+}

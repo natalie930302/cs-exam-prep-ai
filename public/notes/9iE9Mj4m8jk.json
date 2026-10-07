@@ -1,0 +1,195 @@
+{
+ "video": "9iE9Mj4m8jk",
+ "label": "Abdul Bari：4.1 MultiStage Graph",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "Multistage graph 問題",
+   "scene": "msg-graph",
+   "points": [
+    {
+     "text": "Multistage graph 是有向、有權重的圖，頂點分成若干 stage，邊只會從一個 stage 連到下一個 stage。",
+     "t": 31
+    },
+    {
+     "text": "第一個與最後一個 stage 各只有一個頂點：source（起點）與 sink（終點）。",
+     "t": 50
+    },
+    {
+     "text": "常用來表示資源配置；目標是找 source 到 sink 成本最小的路徑，是最佳化（最小化）問題。",
+     "t": 68
+    }
+   ]
+  },
+  {
+   "title": "為什麼可以用 DP：principle of optimality",
+   "scene": "msg-graph",
+   "points": [
+    {
+     "text": "DP 依 principle of optimality：問題必須能用一連串決策來解。",
+     "t": 96
+    },
+    {
+     "text": "從 stage 2 選一個頂點（例如 5），再從 5 決定走 7 或 8……每個 stage 都要做一次決策。",
+     "t": 118
+    },
+    {
+     "text": "每個 stage 都能做決策，principle of optimality 成立，所以用 tabulation 把資料填進表。",
+     "t": 150
+    }
+   ]
+  },
+  {
+   "title": "由 sink 往回填 cost 表",
+   "scene": "msg-cost-table",
+   "points": [
+    {
+     "text": "從最後面算起：sink 到自己的成本 cost(5, 12) = 0。",
+     "t": 205
+    },
+    {
+     "text": "stage 4：cost(4,9) = 4、cost(4,10) = 2、cost(4,11) = 5，下一步（d）都是 12。",
+     "t": 245
+    },
+    {
+     "text": "cost(3,6) = min(c(6,9)+cost(4,9), c(6,10)+cost(4,10)) = min(6+4, 5+2) = 7，d = 10。",
+     "t": 340
+    },
+    {
+     "text": "cost(3,7) = min(4+4, 3+2) = 5，d = 10；cost(4,9) 這種已算好的值被 6、7 重複使用，這就是 overlapping subproblems。",
+     "t": 440
+    },
+    {
+     "text": "cost(3,8) = min(5+2, 6+5) = 7，d = 10。",
+     "t": 515
+    },
+    {
+     "text": "stage 2：cost(2,2) = min(4+7, 2+5, 1+7) = 7（d = 7）；cost(2,4) = 11+7 = 18（d = 8）；cost(2,5) = min(11+5, 8+7) = 15（d = 8）；表上 cost(2,3) = 9（d = 6，口頭沒有逐項計算）。",
+     "t": 640
+    },
+    {
+     "text": "cost(1,1) = min(9+7, 7+9, 3+18, 2+15) = 16，經頂點 2 或 3 都是 16，所以 d 寫 2 或 3。",
+     "t": 760
+    }
+   ],
+   "trap": "d 欄記的是「給出最小值的下一個頂點」，不是成本；cost(2,3) 由 2+cost(6)=9 與 7+cost(7)=12 取 9。"
+  },
+  {
+   "title": "遞迴公式與 forward method",
+   "scene": "msg-formula",
+   "points": [
+    {
+     "text": "雖然是從最後一個 stage 往回算，仍然叫 forward method，原因在於做決策的方向。",
+     "t": 843
+    },
+    {
+     "text": "公式：cost(i, j) = min{ c(j, l) + cost(i+1, l) }，i 是 stage 編號、j 是頂點編號。",
+     "t": 870
+    },
+    {
+     "text": "例：cost(2, 2) 就是 j = 2、l 分別取 6、7、8 三項再取最小。",
+     "t": 915
+    },
+    {
+     "text": "條件：(j, l) 是圖上的邊，且 l 屬於下一個 stage（i+1）。",
+     "t": 960
+    }
+   ]
+  },
+  {
+   "title": "用 d 值做決策：找出路徑",
+   "scene": "msg-path",
+   "points": [
+    {
+     "text": "填表時順便記下 d：讓 cost 最小的那個下一個頂點。表填完後才真正「做一連串決策」。",
+     "t": 1005
+    },
+    {
+     "text": "從 vertex 1 往 sink 方向依 d 決定下一步，決策方向是往前，所以叫 forward method。",
+     "t": 1045
+    },
+    {
+     "text": "d(1,1) = 2 → d(2,2) = 7 → d(3,7) = 10 → d(4,10) = 12：路徑 1→2→7→10→12。",
+     "t": 1110
+    },
+    {
+     "text": "若在 vertex 1 改選 3：d(2,3) = 6 → d(3,6) = 10 → 12，得到 1→3→6→10→12，成本同樣是 16。",
+     "t": 1210
+    },
+    {
+     "text": "最佳成本只有一個，但這個例子剛好有兩條路徑達到它。",
+     "t": 1260
+    }
+   ],
+   "trap": "補充：課本另有 backward method，以 bcost(i, j) 從 source 往後算；兩種得到的最短成本相同。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Multistage graph 中，邊只能怎麼連？",
+   "opts": [
+    "從一個 stage 連到下一個 stage",
+    "同一個 stage 內互連",
+    "任意兩點都可以連",
+    "只能連回 source"
+   ],
+   "ans": "從一個 stage 連到下一個 stage",
+   "why": "頂點分成 stages，邊只從 stage i 指向 stage i+1；第一與最後 stage 只有 source、sink。"
+  },
+  {
+   "q": "影片例子中 cost(3, 6) = ?",
+   "opts": [
+    "7",
+    "10",
+    "5",
+    "9"
+   ],
+   "ans": "7",
+   "why": "min(c(6,9)+cost(9), c(6,10)+cost(10)) = min(6+4, 5+2) = 7，d = 10。"
+  },
+  {
+   "q": "影片例子中 cost(2, 2) = ?（c(2,6)=4、c(2,7)=2、c(2,8)=1；cost(6)=7、cost(7)=5、cost(8)=7）",
+   "opts": [
+    "7",
+    "8",
+    "11",
+    "5"
+   ],
+   "ans": "7",
+   "why": "min(4+7, 2+5, 1+7) = min(11, 7, 8) = 7，d = 7。"
+  },
+  {
+   "q": "source 到 sink 的最小成本是多少？",
+   "opts": [
+    "16",
+    "15",
+    "17",
+    "21"
+   ],
+   "ans": "16",
+   "why": "cost(1,1) = min(9+7, 7+9, 3+18, 2+15) = 16。"
+  },
+  {
+   "q": "為什麼從 sink 往回填表，卻叫 forward method？",
+   "opts": [
+    "因為決策是從 source 依 d 值往前做的",
+    "因為邊都是往前指的",
+    "因為只算前半段",
+    "因為使用了 greedy"
+   ],
+   "ans": "因為決策是從 source 依 d 值往前做的",
+   "why": "cost 表從後往前填，但用 d 值做一連串決策是從 1 → 2 → 7 → 10 → 12。"
+  },
+  {
+   "q": "多段圖的遞迴公式是？",
+   "opts": [
+    "cost(i,j) = min{c(j,l) + cost(i+1,l)}",
+    "cost(i,j) = max{c(j,l) + cost(i+1,l)}",
+    "cost(i,j) = c(j,l) × cost(i−1,l)",
+    "cost(i,j) = min{cost(i−1,l)}"
+   ],
+   "ans": "cost(i,j) = min{c(j,l) + cost(i+1,l)}",
+   "why": "l 在下一個 stage 且 (j,l) 是邊；取最小值。"
+  }
+ ]
+}

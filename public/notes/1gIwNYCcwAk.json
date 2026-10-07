@@ -1,0 +1,182 @@
+{
+ "video": "1gIwNYCcwAk",
+ "label": "清大周志遠 第2D講 Special-purpose Systems",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "Real-time 的定義與 EDF",
+   "scene": "realtime-edf",
+   "points": [
+    {
+     "text": "這段以「用途」區分電腦系統。",
+     "t": 0
+    },
+    {
+     "text": "Real-time 不是越快越好：慢慢做沒關係，但每個工作要在 deadline 前完成。",
+     "t": 63
+    },
+    {
+     "text": "因此 real-time 系統裡 scheduler 最 critical，要確保執行順序讓大家都趕上 deadline。",
+     "t": 85
+    },
+    {
+     "text": "最有效的演算法之一：earliest deadline first（最早要交的作業先寫），但不保證一定不 miss。",
+     "t": 131
+    },
+    {
+     "text": "deadline 由使用者定義：可接受的 response time 或做決定的 critical point。",
+     "t": 173
+    }
+   ],
+   "trap": "補充：EDF 範例的作業長度與 deadline 是動畫自訂的，課堂只用寫作業比喻。"
+  },
+  {
+   "title": "Real-time 的應用",
+   "scene": "hard-soft-rt",
+   "points": [
+    {
+     "text": "一台車可以想成有四個輪子的電腦，全靠電腦控制。",
+     "t": 212
+    },
+    {
+     "text": "踩油門車不走、踩煞車車不停都會出事：控制都跟時間有關。",
+     "t": 233
+    },
+    {
+     "text": "武器、醫療、各種 control system 都是 real-time system。",
+     "t": 252
+    }
+   ]
+  },
+  {
+   "title": "Soft vs Hard real-time",
+   "scene": "hard-soft-rt",
+   "points": [
+    {
+     "text": "Soft：盡量趕 deadline，沒趕上也不會出人命；用 priority 處理。",
+     "t": 272
+    },
+    {
+     "text": "例：串流影片收訊差時先看到輪廓、再有顏色、最後解析度提高（重要的先送）。",
+     "t": 314
+    },
+    {
+     "text": "Hard：miss 任何一個 deadline 就是 fundamental failure，系統 crash。",
+     "t": 354
+    },
+    {
+     "text": "汽車、武器控制多是 hard real-time；歐洲（德國）在這塊很強。",
+     "t": 374
+    },
+    {
+     "text": "挑戰：scheduling 演算法；而且通常沒有 secondary storage，因為 disk 慢且存取時間難掌握。",
+     "t": 437
+    }
+   ]
+  },
+  {
+   "title": "Multimedia system",
+   "scene": "special-systems",
+   "points": [
+    {
+     "text": "圖形、speech、video、audio 等影音應用，屬於 soft real-time。",
+     "t": 536
+    },
+    {
+     "text": "分 on-demand 或 live；傳輸可先 buffer。",
+     "t": 556
+    },
+    {
+     "text": "資料太大又不全那麼重要 → 各式壓縮格式，畫質、壓縮/解壓速度各有取捨。",
+     "t": 597
+    }
+   ]
+  },
+  {
+   "title": "Handheld / embedded system",
+   "scene": "special-systems",
+   "points": [
+    {
+     "text": "mobile、體積小；硬體 specialized（例如手機沒有 keyboard）。",
+     "t": 637
+    },
+    {
+     "text": "OS 也是 customized，component 可以 modular 地增減以適應不同裝置。",
+     "t": 656
+    },
+    {
+     "text": "不裝傳統 OS：光跑 OS 就吃掉大部分資源，而且不管電力。",
+     "t": 698
+    },
+    {
+     "text": "memory 小、processor 慢 → 把計算丟到雲端；電力非常 critical。",
+     "t": 718
+    }
+   ]
+  },
+  {
+   "title": "Cloud computing 與 IoT",
+   "scene": "special-systems",
+   "points": [
+    {
+     "text": "這些名詞不用背，但要知道各系統的設計考量和差別。",
+     "t": 756
+    },
+    {
+     "text": "Cloud computing：透過 internet，把網路當成自己的電腦。",
+     "t": 796
+    },
+    {
+     "text": "IoT（物聯網）：把所有物品連在一起計算、溝通，需要新的 OS。",
+     "t": 815
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Real-time system 的核心要求是？",
+   "opts": [
+    "在 deadline 之前完成",
+    "反應越快越好",
+    "一次只執行一個工作",
+    "一定要有 GPU"
+   ],
+   "ans": "在 deadline 之前完成",
+   "why": "課堂強調 real-time 的定義是「慢慢做沒關係，但要在 deadline 前做完」。"
+  },
+  {
+   "q": "串流影片先送輪廓、再送細節，屬於？",
+   "opts": [
+    "Soft real-time",
+    "Hard real-time",
+    "Batch",
+    "Time sharing"
+   ],
+   "ans": "Soft real-time",
+   "why": "沒趕上 deadline 不會造成災難，用 priority 讓重要的先送。"
+  },
+  {
+   "q": "Hard real-time 系統通常避免使用什麼？",
+   "opts": [
+    "Secondary storage",
+    "Main memory",
+    "Scheduler",
+    "Interrupt"
+   ],
+   "ans": "Secondary storage",
+   "why": "disk 慢，存取時間又難以掌握，無法保證 deadline。"
+  },
+  {
+   "q": "課堂提到的 real-time 排程演算法是？",
+   "opts": [
+    "Earliest deadline first",
+    "First come first served",
+    "Round robin",
+    "Shortest job first"
+   ],
+   "ans": "Earliest deadline first",
+   "why": "就像寫作業：最早要交的先做。"
+  }
+ ]
+}

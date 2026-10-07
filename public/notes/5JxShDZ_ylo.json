@@ -1,0 +1,228 @@
+{
+ "video": "5JxShDZ_ylo",
+ "label": "MIT 6.006 Rec13：BFS",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "PSET 5：16-bit 處理器的算術（與本章無關）",
+   "scene": null,
+   "points": [
+    {
+     "text": "作業的假處理器只有 byte（8-bit）與 word（16-bit）；兩個 byte 相加會先轉成 word。",
+     "t": 213
+    },
+    {
+     "text": "word 加法、減法可能 overflow（取 mod 2¹⁶），乘法（byte × byte → word）不會，除法會、mod 不會。",
+     "t": 751
+    }
+   ]
+  },
+  {
+   "title": "圖、connected component 與 degree",
+   "scene": "graph-handshake",
+   "points": [
+    {
+     "text": "圖由 vertices 和 edges 組成；無向邊畫成線、有向邊畫成箭頭。",
+     "t": 1065
+    },
+    {
+     "text": "Connected：任兩點間都有路徑；connected component 是「彼此都走得到」的極大頂點集合。",
+     "t": 1197
+    },
+    {
+     "text": "例子：世界上的城市、只能騎腳踏車——components 大約是各大陸加上無數小島。",
+     "t": 1238
+    },
+    {
+     "text": "Handshaking lemma：所有頂點 degree 加總 = 2|E|，因為每條邊替兩端各加 1（例：9 條邊，degree 和是 18）。",
+     "t": 1370
+    }
+   ]
+  },
+  {
+   "title": "有向圖：in-degree 與 out-degree",
+   "scene": "graph-handshake",
+   "points": [
+    {
+     "text": "有向圖沒有 degree，只有 in-degree 與 out-degree；例如 A 有 2 條出邊、0 條入邊。",
+     "t": 1464
+    },
+    {
+     "text": "每條邊給起點的 out-degree 加 1、給終點的 in-degree 加 1。",
+     "t": 1595
+    },
+    {
+     "text": "所以 Σ out-degree = Σ in-degree = |E|。",
+     "t": 1549
+    }
+   ]
+  },
+  {
+   "title": "表示法：adjacency list vs adjacency matrix",
+   "scene": "graph-representation",
+   "points": [
+    {
+     "text": "Adjacency list：每個頂點對應一個鄰居串列（Python 用 dictionary）；A: [B, C]，B: [A, D, E]。",
+     "t": 1720
+    },
+    {
+     "text": "空間：頂點陣列 O(V) + 串列總長 Σdeg = 2E → O(V + E) 個 word（只存非空串列時可以更少）。",
+     "t": 1887
+    },
+    {
+     "text": "Adjacency matrix：V × V 的 0/1 表格，A–B 有邊就填 1；無向圖每條邊產生兩個 1。",
+     "t": 1970
+    },
+    {
+     "text": "matrix 需要 V² 個 bit；圖很稠密時可能比 list 的 V + E 個 word 更省。",
+     "t": 2210
+    }
+   ]
+  },
+  {
+   "title": "BFS：從 A 出發，用 queue 一層一層走",
+   "scene": "bfs-queue",
+   "points": [
+    {
+     "text": "把起點 A 放進待拜訪 list；取出 A，發現它的鄰居 B、C，放進 list。",
+     "t": 2254
+    },
+    {
+     "text": "取出 B：鄰居 A 已看過，D、E 是新發現的，放進 list；取出 C：沒有新鄰居。",
+     "t": 2333
+    },
+    {
+     "text": "再取出 D、E；F 跟 A 不相連，永遠不會被看到——BFS 只會拜訪起點所在的 connected component。",
+     "t": 2383
+    },
+    {
+     "text": "待拜訪的用 queue；「看過了沒」（smiley face）用 hash table（Python 的 dict/set）才能 O(1) 檢查。",
+     "t": 2475
+    }
+   ]
+  },
+  {
+   "title": "BFS 的時間：matrix O(V²)、list O(V + E)",
+   "scene": "bfs-runtime",
+   "points": [
+    {
+     "text": "每個頂點拜訪一次，至少 V；拜訪時要列出鄰居。",
+     "t": 2562
+    },
+    {
+     "text": "用 adjacency list 列鄰居是 O(deg)；用 matrix 要掃整列，O(V)。",
+     "t": 2606
+    },
+    {
+     "text": "matrix：每個頂點 O(V) → 總共 O(V²)。",
+     "t": 2648
+    },
+    {
+     "text": "list：每個頂點 O(deg)，總和由 handshaking lemma 得 2E → O(V + E)；Python 用 dict 不初始化未見過的頂點可做到 O(E)，CLRS 用陣列則是 V + E。",
+     "t": 2740
+    }
+   ]
+  },
+  {
+   "title": "BFS 給出最短路徑（邊數）",
+   "scene": "bfs-queue",
+   "points": [
+    {
+     "text": "BFS 從起點出發，算出起點到每個可達頂點的最短路徑長度（邊數）。",
+     "t": 2921
+    },
+    {
+     "text": "d(A) = 0；A 的鄰居 B、C 距離 1；B 的新鄰居 D、E 距離 2。",
+     "t": 2963
+    },
+    {
+     "text": "規則：只有「還沒看過」的鄰居才設成目前頂點距離 + 1；已看過的不能更新，否則 A 會被改成 2。",
+     "t": 3006
+    }
+   ],
+   "trap": "已經在 seen 裡的頂點不要再更新距離——這是 BFS 正確的關鍵。"
+  },
+  {
+   "title": "應用：社群網路",
+   "scene": null,
+   "points": [
+    {
+     "text": "Facebook 好友關係是無向圖；Twitter 的 follow、Facebook 的 subscribe 是有向圖——同一群頂點可以有兩張不同的圖。",
+     "t": 3084
+    },
+    {
+     "text": "BFS 可以算出你和某人之間「朋友的朋友的朋友」的最少層數。",
+     "t": 3219
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "一張無向圖有 9 條邊，所有頂點的 degree 加總是多少？",
+   "opts": [
+    "18",
+    "9",
+    "81",
+    "跟頂點數有關，無法確定"
+   ],
+   "ans": "18",
+   "why": "Handshaking lemma：每條邊替兩端各貢獻 1，Σdeg = 2|E|。"
+  },
+  {
+   "q": "有向圖中 Σ in-degree 與 Σ out-degree 的關係？",
+   "opts": [
+    "相等，都等於 |E|",
+    "相等，都等於 2|E|",
+    "Σ in-degree 較大",
+    "沒有固定關係"
+   ],
+   "ans": "相等，都等於 |E|",
+   "why": "每條有向邊恰好貢獻一個 out-degree 與一個 in-degree。"
+  },
+  {
+   "q": "用 adjacency matrix 做 BFS 的時間複雜度？",
+   "opts": [
+    "O(V²)",
+    "O(V + E)",
+    "O(E)",
+    "O(V log V)"
+   ],
+   "ans": "O(V²)",
+   "why": "列出一個頂點的鄰居要掃整列 O(V)，V 個頂點 → O(V²)。"
+  },
+  {
+   "q": "BFS 中「看過了沒」最適合用什麼資料結構？",
+   "opts": [
+    "hash table（dict / set）",
+    "queue",
+    "linked list",
+    "stack"
+   ],
+   "ans": "hash table（dict / set）",
+   "why": "要很頻繁地 O(1) 檢查；queue 是用來放待拜訪的頂點。"
+  },
+  {
+   "q": "從 A 做 BFS（A–B、A–C、B–D、B–E、C–D，F 獨立），哪一個頂點不會被拜訪？",
+   "opts": [
+    "F",
+    "E",
+    "D",
+    "全部都會"
+   ],
+   "ans": "F",
+   "why": "BFS 只拜訪起點所在的 connected component。"
+  },
+  {
+   "q": "adjacency list 的空間複雜度？",
+   "opts": [
+    "O(V + E)",
+    "O(V²)",
+    "O(E²)",
+    "O(V)"
+   ],
+   "ans": "O(V + E)",
+   "why": "V 個串列頭 + 串列總長 Σdeg = 2E。"
+  }
+ ]
+}

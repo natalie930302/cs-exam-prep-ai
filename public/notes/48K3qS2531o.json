@@ -1,0 +1,221 @@
+{
+ "video": "48K3qS2531o",
+ "label": "清大周志遠 第20D講 Classical Synchronization Problems & Monitors",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "Classical synchronization problems",
+   "scene": null,
+   "points": [
+    {
+     "text": "有些問題用 mutex、critical section 或 semaphore 很難寫，所以要介紹 monitor。",
+     "t": 0
+    },
+    {
+     "text": "系統中的問題常可 reduce 成幾個 classic problem，用來檢驗你的 synchronization 是不是正確。",
+     "t": 32
+    },
+    {
+     "text": "最常見三個：bounded-buffer、readers-writers、dining-philosophers。",
+     "t": 95
+    }
+   ]
+  },
+  {
+   "title": "Bounded-buffer",
+   "scene": "bounded-buffer",
+   "points": [
+    {
+     "text": "bounded-buffer 就是之前看過的 producer-consumer 例子，buffer size 固定（limited）。",
+     "t": 250
+    },
+    {
+     "text": "空的時候 consumer 要等，滿的時候 producer 要等。",
+     "t": 263
+    },
+    {
+     "text": "真實系統很多：compiler 輸出給 linker、linker 給 loader；I/O 系統每層之間都有 buffer。",
+     "t": 279
+    }
+   ],
+   "trap": "補充：課本的 semaphore 解法 mutex = 1、empty = n、full = 0；producer 要先 wait(empty) 再 wait(mutex)，順序反過來在 buffer 滿時會 deadlock。"
+  },
+  {
+   "title": "Readers-writers 問題",
+   "scene": "readers-writers",
+   "points": [
+    {
+     "text": "檔案操作的標準問題：writer 一次只能一個，writer 在寫時其他 reader、writer 都不能碰；reader 可以同時讀。",
+     "t": 310
+    },
+    {
+     "text": "first readers-writers problem：最低要求，只要保證 writer 有 exclusive access。",
+     "t": 381
+    },
+    {
+     "text": "second readers-writers problem：writer ready 後不能 starvation（老師一開始講反，後來更正為 writer 要比較高的 priority）。",
+     "t": 426
+    },
+    {
+     "text": "例子：reader 讀 10 秒，writer 第 2 秒就到，第二個 reader 第 8 秒到 → lock 傳給它，writer 可能永遠拿不到。",
+     "t": 515
+    },
+    {
+     "text": "還有 third readers-writers，要求更多。",
+     "t": 580
+    }
+   ],
+   "trap": "老師在 L166 先說「reader priority 要高」再更正：second RW 是 writer 優先；first RW 的解法會讓 writer starvation（second RW 的解法則可能讓 reader starvation）。"
+  },
+  {
+   "title": "First readers-writers 的 semaphore 解法",
+   "scene": "rw-solution",
+   "points": [
+    {
+     "text": "用 counting 的概念：要數現在有多少 reader 在讀；只要還有 reader，lock 就在 reader 這邊。",
+     "t": 615
+    },
+    {
+     "text": "writer：wrt 是 binary semaphore（當 mutex 用），存取前 wait(wrt)、存取後 signal(wrt)。",
+     "t": 656
+    },
+    {
+     "text": "reader：readcount++，若 readcount == 1（第一個 reader）才去 wait(wrt) 搶 lock；之後的 reader 直接讀。",
+     "t": 708
+    },
+    {
+     "text": "讀完 readcount--，若等於 0（最後一個 reader）才 signal(wrt) 讓 writer 有機會。",
+     "t": 783
+    },
+    {
+     "text": "readcount 本身是 reader 間共享的變數，也要用另一個 semaphore（mutex）保護，連同 if 判斷一起包起來。",
+     "t": 829
+    },
+    {
+     "text": "沒有關聯的資料用不同的 lock，有關聯的才用同一個；全部寫在一起會錯或沒效率。",
+     "t": 917
+    },
+    {
+     "text": "這個解法的問題：reader 會一直把 lock 傳給後來的 reader → writer starvation。",
+     "t": 978
+    }
+   ]
+  },
+  {
+   "title": "Dining philosophers",
+   "scene": "dining-deadlock",
+   "points": [
+    {
+     "text": "五個人、五根筷子放在人與人之間，要拿起左右兩支才能吃，吃完放回去。",
+     "t": 1037
+    },
+    {
+     "text": "每支筷子是獨立的 resource，一次只能拿一支，不能 magically 同時拿兩支。",
+     "t": 1063
+    },
+    {
+     "text": "需要多個資源的程式很常見，就跟這個問題一樣。",
+     "t": 1083
+    },
+    {
+     "text": "寫得不好：所有人都先拿左邊再拿右邊 → 全部卡住 → deadlock，接著 starvation。",
+     "t": 1097
+    }
+   ]
+  },
+  {
+   "title": "Monitor 的概念",
+   "scene": "monitor",
+   "points": [
+    {
+     "text": "semaphore、mutex 要自己呼叫一堆 wait / signal，順序寫錯就 deadlock，是很 low level 的工具。",
+     "t": 1139
+    },
+    {
+     "text": "monitor 是 high-level language construct，其實就是 OO 的概念：一個特殊 class 的 object。",
+     "t": 1172
+    },
+    {
+     "text": "要保護的變數是 local variable，操作它們的是 method；外面只能透過 method 碰它。",
+     "t": 1206
+    },
+    {
+     "text": "跟一般 OO 的差別：language 保證一次只有一個 method（thread）在執行 → mutual exclusion。",
+     "t": 1230
+    },
+    {
+     "text": "只要定義要保護的變數與操作行為，就不會有 critical section 問題，所以容易得多。",
+     "t": 1286
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "三個 classical synchronization problem 是？",
+   "opts": [
+    "bounded-buffer、readers-writers、dining-philosophers",
+    "producer、consumer、scheduler",
+    "deadlock、starvation、race condition",
+    "FCFS、SJF、RR"
+   ],
+   "ans": "bounded-buffer、readers-writers、dining-philosophers",
+   "why": "用來檢驗 synchronization 解法是否正確。"
+  },
+  {
+   "q": "First readers-writers 的解法中，誰去 wait(wrt)？",
+   "opts": [
+    "readcount 變成 1 的那個 reader",
+    "每一個 reader",
+    "最後一個 reader",
+    "只有 writer"
+   ],
+   "ans": "readcount 變成 1 的那個 reader",
+   "why": "第一個 reader 替整群 reader 拿 lock。"
+  },
+  {
+   "q": "First readers-writers 解法中，誰會 starvation？",
+   "opts": [
+    "writer",
+    "reader",
+    "沒有人",
+    "第一個 reader"
+   ],
+   "ans": "writer",
+   "why": "reader 把 lock 一路傳給後來的 reader。"
+  },
+  {
+   "q": "readcount 為什麼要用 mutex 保護？",
+   "opts": [
+    "它是 reader 之間共享、會被同時 ++/--",
+    "為了擋 writer",
+    "為了讓 writer 優先",
+    "不用保護"
+   ],
+   "ans": "它是 reader 之間共享、會被同時 ++/--",
+   "why": "跟 counter++ 一樣會 race。"
+  },
+  {
+   "q": "所有哲學家都先拿左邊筷子，會？",
+   "opts": [
+    "deadlock",
+    "正常吃飯",
+    "race condition",
+    "priority inversion"
+   ],
+   "ans": "deadlock",
+   "why": "每人都拿著一支等下一支。"
+  },
+  {
+   "q": "Monitor 跟一般 OO class 最大的差別？",
+   "opts": [
+    "同一時間只有一個 thread 能在裡面執行 method",
+    "不能有變數",
+    "method 不能有參數",
+    "只能被一個 thread 呼叫"
+   ],
+   "ans": "同一時間只有一個 thread 能在裡面執行 method",
+   "why": "語言層級保證 mutual exclusion。"
+  }
+ ]
+}

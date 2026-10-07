@@ -1,0 +1,279 @@
+{
+ "video": "Go2aLo7ZOlU",
+ "label": "MIT OCW 18.06 L33：Left and Right Inverses; Pseudoinverse",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "四個子空間與 two-sided inverse",
+   "scene": "inverse-cases",
+   "params": {
+    "focus": "two-sided"
+   },
+   "points": [
+    {
+     "text": "回到 m×n、rank r 矩陣的四個子空間圖：row space ⟂ null space，column space ⟂ N(Aᵀ)。",
+     "t": 83
+    },
+    {
+     "text": "主題：left inverse、right inverse，以及 pseudo-inverse（課本 7.4 節）。",
+     "t": 120
+    },
+    {
+     "text": "Two-sided inverse：AA⁻¹ = I = A⁻¹A，只在 r = m = n（方陣、full rank）時存在。",
+     "t": 173
+    }
+   ]
+  },
+  {
+   "title": "Full column rank：left inverse",
+   "scene": "left-inverse",
+   "points": [
+    {
+     "text": "Full column rank：r = n，columns 獨立，N(A) = {0}。",
+     "t": 261
+    },
+    {
+     "text": "Ax = b 有 0 或 1 個解：沒有 null space 可以加，但 rows 可能不獨立，所以可能無解。",
+     "t": 380
+    },
+    {
+     "text": "rank = n 時 AᵀA 是 n×n 對稱、可逆的矩陣。",
+     "t": 489
+    },
+    {
+     "text": "Left inverse：A⁻¹_left = (AᵀA)⁻¹Aᵀ，乘在左邊 (AᵀA)⁻¹AᵀA = I（n×n）。",
+     "t": 551
+    },
+    {
+     "text": "這正是 least squares 的關鍵：normal equation 的係數矩陣 AᵀA 可逆。",
+     "t": 600
+    },
+    {
+     "text": "長方形矩陣不可能有 two-sided inverse：A 或 Aᵀ 一定有 null space。",
+     "t": 690
+    }
+   ]
+  },
+  {
+   "title": "Full row rank：right inverse",
+   "scene": "right-inverse",
+   "points": [
+    {
+     "text": "Full row rank：r = m，rows 獨立，N(Aᵀ) = {0}。",
+     "t": 760
+    },
+    {
+     "text": "Ax = b 永遠有解（消去不會出現 0 = 1），而且有 n − m 個 free variables，解有無限多個。",
+     "t": 858
+    },
+    {
+     "text": "Right inverse：A⁻¹_right = Aᵀ(AAᵀ)⁻¹，A·A⁻¹_right = I（m×m）；和 left inverse 完全對稱。",
+     "t": 940
+    },
+    {
+     "text": "第四種情形 r < m 且 r < n：四個子空間都在，維度分別 r、n − r、r、m − r。",
+     "t": 1010
+    }
+   ]
+  },
+  {
+   "title": "反過來乘：得到投影",
+   "scene": "inverse-projection",
+   "points": [
+    {
+     "text": "A·A⁻¹_left = A(AᵀA)⁻¹Aᵀ = P：投影到 column space。",
+     "t": 1093
+    },
+    {
+     "text": "投影矩陣「想當 I」：在 column space 上是 I，其他方向是 0。",
+     "t": 1130
+    },
+    {
+     "text": "A⁻¹_right·A = Aᵀ(AAᵀ)⁻¹A：投影到 row space。",
+     "t": 1190
+    }
+   ]
+  },
+  {
+   "title": "一般情形：row space ↔ column space 一對一",
+   "scene": "pinv-map",
+   "params": {
+    "focus": "map"
+   },
+   "points": [
+    {
+     "text": "一般 rank r < m, n：兩個 null space 讓 inverse 不存在——被打成 0 的向量回不來。",
+     "t": 1260
+    },
+    {
+     "text": "x 在 row space，Ax 一定在 column space；兩個空間都是 r 維。",
+     "t": 1350
+    },
+    {
+     "text": "從 row space 到 column space，A 是一對一的：不同的 x、y 給出不同的 Ax、Ay。",
+     "t": 1429
+    },
+    {
+     "text": "限制在這兩個空間上 A 可逆，它的反方向就是 pseudo-inverse A⁺：y = A⁺(Ay)。",
+     "t": 1599
+    },
+    {
+     "text": "A 把 null space 打成 0，A⁺ 把 N(Aᵀ) 打成 0。",
+     "t": 1630
+    }
+   ]
+  },
+  {
+   "title": "證明：Ax = Ay ⇒ x = y",
+   "scene": "pinv-map",
+   "params": {
+    "focus": "proof"
+   },
+   "points": [
+    {
+     "text": "假設 x、y 都在 row space 且 Ax = Ay，則 A(x − y) = 0，x − y 在 null space。",
+     "t": 1700
+    },
+    {
+     "text": "row space 是向量空間，x − y 也在 row space。",
+     "t": 1760
+    },
+    {
+     "text": "同時在 row space 和 null space（互為正交補）只有零向量，所以 x = y。",
+     "t": 1800
+    }
+   ]
+  },
+  {
+   "title": "為什麼統計學家需要 A⁺",
+   "scene": "rank-deficient-ls",
+   "points": [
+    {
+     "text": "統計的 linear regression 就是 least squares，需要 full column rank。",
+     "t": 1845
+    },
+    {
+     "text": "重複做同一個實驗，columns 不獨立，AᵀA 變成 singular，normal equation 解不出唯一 x̂。",
+     "t": 1900
+    },
+    {
+     "text": "這時 pseudo-inverse 剛好派上用場。",
+     "t": 1950
+    }
+   ],
+   "trap": "補充：rank 不足時最小平方解有無限多個，A⁺b 是其中長度最短（落在 row space）的那一個。"
+  },
+  {
+   "title": "Σ 的 pseudo-inverse",
+   "scene": "pinv-sigma",
+   "points": [
+    {
+     "text": "從 SVD 出發：A = UΣVᵀ，U、V 是 orthogonal，Σ 是 m×n 對角、只有 r 個非零 σ。",
+     "t": 1971
+    },
+    {
+     "text": "σ 來自 AᵀA 與 AAᵀ；Σ 是 rank r 最簡單的例子。",
+     "t": 2030
+    },
+    {
+     "text": "Σ⁺ 是 n×m：對角放 1/σ₁ … 1/σᵣ，其他全是 0。",
+     "t": 2090
+    },
+    {
+     "text": "ΣΣ⁺（m×m）與 Σ⁺Σ（n×n）都是前 r 個 1、其他 0：分別是投影到 column space 與 row space。",
+     "t": 2177
+    },
+    {
+     "text": "Pseudo-inverse 左乘右乘都得不到 I，只得到投影：把東西帶回兩個好空間、清掉 null space。",
+     "t": 2250
+    }
+   ]
+  },
+  {
+   "title": "A⁺ = VΣ⁺Uᵀ",
+   "scene": "pinv-svd",
+   "points": [
+    {
+     "text": "Vᵀ 的反矩陣是 V，U 的反矩陣是 Uᵀ；所有麻煩都集中在 Σ。",
+     "t": 2300
+    },
+    {
+     "text": "A⁺ = VΣ⁺Uᵀ：SVD 把問題放進對角矩陣，怎麼「反」一目了然。",
+     "t": 2340
+    },
+    {
+     "text": "Σ⁺ 其他位置放東西也不影響 ΣΣ⁺，但最小（全 0）的那個才是 pseudo-inverse。",
+     "t": 2398
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "A 是 5×3、rank 3。下列何者存在？",
+   "opts": [
+    "Left inverse (AᵀA)⁻¹Aᵀ",
+    "Right inverse Aᵀ(AAᵀ)⁻¹",
+    "Two-sided inverse",
+    "以上皆無"
+   ],
+   "ans": "Left inverse (AᵀA)⁻¹Aᵀ",
+   "why": "r = n = 3 是 full column rank，AᵀA（3×3）可逆；AAᵀ（5×5）rank 只有 3，不可逆。"
+  },
+  {
+   "q": "A 是 2×4、rank 2。Ax = b 的解有幾個？",
+   "opts": [
+    "永遠無限多個",
+    "0 或 1 個",
+    "恰好 1 個",
+    "0 或無限多個"
+   ],
+   "ans": "永遠無限多個",
+   "why": "full row rank 一定有解，且有 n − m = 2 個 free variables。"
+  },
+  {
+   "q": "full column rank 時，A·(AᵀA)⁻¹Aᵀ 是什麼？",
+   "opts": [
+    "投影到 column space 的矩陣",
+    "I",
+    "投影到 row space 的矩陣",
+    "0"
+   ],
+   "ans": "投影到 column space 的矩陣",
+   "why": "這就是 P = A(AᵀA)⁻¹Aᵀ；只有 m = n 時才等於 I。"
+  },
+  {
+   "q": "Σ = [3 0 0; 0 0 0]（2×3），Σ⁺ 是？",
+   "opts": [
+    "[1/3 0; 0 0; 0 0]（3×2）",
+    "[1/3 0 0; 0 0 0]（2×3）",
+    "[3 0; 0 0; 0 0]",
+    "不存在"
+   ],
+   "ans": "[1/3 0; 0 0; 0 0]（3×2）",
+   "why": "Σ⁺ 是 n×m，非零 σ 取倒數，其他都是 0。"
+  },
+  {
+   "q": "x、y 在 row space 且 Ax = Ay，為什麼 x = y？",
+   "opts": [
+    "x − y 同時在 row space 與 null space，只能是 0",
+    "因為 A 可逆",
+    "因為 x、y 正交",
+    "因為 Ax 在 column space"
+   ],
+   "ans": "x − y 同時在 row space 與 null space，只能是 0",
+   "why": "row space 與 null space 是正交補，交集只有零向量。"
+  },
+  {
+   "q": "A = UΣVᵀ，A⁺ = ？",
+   "opts": [
+    "VΣ⁺Uᵀ",
+    "UΣ⁺Vᵀ",
+    "VᵀΣ⁺U",
+    "Σ⁺UᵀV"
+   ],
+   "ans": "VΣ⁺Uᵀ",
+   "why": "倒過來乘，每個因子取（pseudo-）inverse：(Vᵀ)⁻¹ = V、U⁻¹ = Uᵀ。"
+  }
+ ]
+}

@@ -1,0 +1,257 @@
+{
+ "video": "0NRkuhnupzs",
+ "label": "清大周志遠 第18A講 Special Scheduling Issues",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "Affinity 回顧：提高 cache hit rate",
+   "scene": "affinity",
+   "points": [
+    {
+     "text": "本章前半是 OS（software）的 scheduling，hardware level 也有 scheduling decision，分兩層。",
+     "t": 5
+    },
+    {
+     "text": "processor 的 scheduling 跟 memory access、cache 息息相關。",
+     "t": 41
+    },
+    {
+     "text": "affinity：把 process / thread pin（bind）到特定 processor 或 core，目的是 reuse cache、提高 hit rate；不同 processor 的 cache 通常不共用。",
+     "t": 57
+    }
+   ]
+  },
+  {
+   "title": "NUMA 與排程",
+   "scene": "numa",
+   "points": [
+    {
+     "text": "memory architecture 分 UMA 與 NUMA；規模大、processor 多的系統通常是 NUMA，memory 也有 hierarchy。",
+     "t": 107
+    },
+    {
+     "text": "不同 CPU access 放在不同 memory chip 上的資料，速度不一樣。",
+     "t": 156
+    },
+    {
+     "text": "資料建立後就在那裡，搬資料（memory copy）很貴；所以 schedule 時希望放回跟資料同一個位置。",
+     "t": 170
+    },
+    {
+     "text": "寫 thread programming 時可以用 flag 給 OS hint，要求 local memory 或綁在同一顆 CPU（同一顆 CPU 上哪個 core 都可以）。",
+     "t": 225
+    }
+   ]
+  },
+  {
+   "title": "Load balancing：push 與 pull",
+   "scene": "load-balance",
+   "points": [
+    {
+     "text": "為了 locality 綁在特定 processor，會造成有的 CPU loading 比別人重、wait time 變久 → 跟 load balancing 是 trade-off。",
+     "t": 282
+    },
+    {
+     "text": "hardware level 的 CPU 內部通常都有 load balancing 機制，讓每個 core loading 差不多。",
+     "t": 344
+    },
+    {
+     "text": "push：loading 高的人主動發起，把工作 push 給 loading 低的人。",
+     "t": 372
+    },
+    {
+     "text": "pull：loading 低（queue 空了甚至 idle）的人主動把工作拉過來。",
+     "t": 426
+    },
+    {
+     "text": "每次詢問都是 overhead，希望發起的人越少越好：系統 loading 高用 pull，loading 低用 push。",
+     "t": 461
+    }
+   ],
+   "trap": "補充：恐龍書只定義 push / pull migration（Linux 兩種都用）；「高負載用 pull、低負載用 push」是本講從減少發起次數推出的實作考量。"
+  },
+  {
+   "title": "Multicore 與 memory stall",
+   "scene": "memory-stall",
+   "points": [
+    {
+     "text": "一顆 CPU 多個 core、一個 core 多個 thread 時，還要考慮 memory stall。",
+     "t": 607
+    },
+    {
+     "text": "指令執行分好幾個 cycle，其中 access memory 時 memory bus 共用會撞到，CPU 卡在 memory 沒在執行指令。",
+     "t": 644
+    },
+    {
+     "text": "hyper-threading、GPU 一個 core 好多 hardware thread：利用 memory stall 的空檔塞另一個 thread 進來，速度不變慢。",
+     "t": 694
+    },
+    {
+     "text": "coarse-grained：flush 整個 pipeline 再換人；fine-grained：增加 hardware register 保留 pipeline state，直接切到沒有 stall 的 thread。",
+     "t": 827
+    },
+    {
+     "text": "這些是 hardware level 的 scheduling；OS 只管有多少可執行的位置、順序是什麼。",
+     "t": 908
+    }
+   ],
+   "trap": "補充：恐龍書說 coarse-grained 只在遇到長延遲事件（如 memory stall）才切換，切換要 flush pipeline、成本高；fine-grained 在指令邊界就切換，靠額外硬體所以成本低。"
+  },
+  {
+   "title": "Real-time：deadline 與 (period, execution)",
+   "scene": "rt-periodic",
+   "points": [
+    {
+     "text": "real-time 的定義：必須在 deadline 之前完成，不是越快越好。",
+     "t": 986
+    },
+    {
+     "text": "soft：盡量避免 miss deadline（media streaming）；hard：必須保證（汽車、武器、核電廠等 control system）。",
+     "t": 1015
+    },
+    {
+     "text": "用 tuple 描述：ready time、execution（CPU burst 長度）、period（多久來一次 burst）。",
+     "t": 1088
+    },
+    {
+     "text": "real-time job 要很有規律才能保證；例如每 10 個 time unit 來一次、每次要執行 4，要在下一次來之前做完。",
+     "t": 1131
+    },
+    {
+     "text": "這裡介紹的兩個演算法用在 soft real-time。",
+     "t": 1203
+    }
+   ]
+  },
+  {
+   "title": "Rate-Monotonic",
+   "scene": "rate-monotonic",
+   "points": [
+    {
+     "text": "Rate-Monotonic 是 static priority scheduling：依 period 排，period 越短越急、priority 越高，run time 不變。",
+     "t": 1213
+    },
+    {
+     "text": "例子（先寫 period 再寫 execution）：T1 (4,1)、T2 (5,2)、T3 (20,5) → T1 > T2 > T3。",
+     "t": 1400
+    },
+    {
+     "text": "決定 priority 後就是 priority scheduling：T1 做 1，T2 做 2，再 T3。",
+     "t": 1463
+    },
+    {
+     "text": "preemptive：t = 4 紅色 T1 又出現，T3 才做一個 time unit 就被打斷；T2 也比 T3 優先。",
+     "t": 1519
+    },
+    {
+     "text": "只有 T1、T2 都不在時才做 T3；模擬時要小心交錯。",
+     "t": 1557
+    },
+    {
+     "text": "只看 period，不看 execution：T3 改成 19 一樣是最低 priority；static 結果不一定特別好。",
+     "t": 1584
+    }
+   ],
+   "trap": "補充：題目的 tuple 順序要看清楚（本例先 period 再 execution）。RM 保證可排程的 CPU 使用率上界是 n(2^{1/n} − 1)。"
+  },
+  {
+   "title": "EDF（Earliest Deadline First）",
+   "scene": "edf",
+   "points": [
+    {
+     "text": "EDF 是 dynamic priority：誰的 deadline 最近誰先做（就像寫作業）；period 長不代表 deadline 遠。",
+     "t": 1282
+    },
+    {
+     "text": "EDF 可以被證明 missed deadline rate 的上界，是不錯的演算法，但不能保證不 miss。",
+     "t": 1345
+    },
+    {
+     "text": "例子：T1 (2, 0.9)、T2 (5, 2.3)；t = 0 時 T1 deadline 2 比 5 近，先做 T1，剩下時間做 T2。",
+     "t": 1628
+    },
+    {
+     "text": "t = 2 新的 T1 deadline 4 < T2 的 5 → T1 先做。",
+     "t": 1659
+    },
+    {
+     "text": "t = 4 新的 T1 deadline 6 > T2 的 5 → T2 繼續做完剩下的；同一個 task 的 priority 會倒過來。",
+     "t": 1686
+    },
+    {
+     "text": "每次有新 task 進 ready queue 都要重新決定 priority；一個 period 內只要做 execution time 那麼多。",
+     "t": 1753
+    }
+   ],
+   "trap": "影片說 T2 第一段做完 1.1 後剩 1.2；第二段又做 1.1，所以 t = 4 時只剩 0.1，做到 4.1 結束。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Rate-Monotonic 的 priority 依據？",
+   "opts": [
+    "period 越短越高，固定不變",
+    "deadline 越近越高，隨時變",
+    "execution 越短越高",
+    "到達順序"
+   ],
+   "ans": "period 越短越高，固定不變",
+   "why": "RM 是 static priority；EDF 才是 dynamic。"
+  },
+  {
+   "q": "T1 (4,1)、T2 (5,2)、T3 (20,5) 用 RM，t = 4 時發生什麼？",
+   "opts": [
+    "T1 到達，搶佔正在跑的 T3",
+    "T3 繼續跑完",
+    "T2 搶佔 T1",
+    "T3 miss deadline"
+   ],
+   "ans": "T1 到達，搶佔正在跑的 T3",
+   "why": "T3 在 3–4 才做 1 單位，T1 period 最短 priority 最高。"
+  },
+  {
+   "q": "EDF 例子 T1 (2, 0.9)、T2 (5, 2.3)，t = 4 時誰先做？",
+   "opts": [
+    "T2，因為 deadline 5 < 6",
+    "T1，因為 period 較短",
+    "T1，因為剛到達",
+    "兩個輪流"
+   ],
+   "ans": "T2，因為 deadline 5 < 6",
+   "why": "新的 T1 deadline 是 6，T2 是 5。"
+  },
+  {
+   "q": "系統整體 loading 很高時，適合哪種 migration？",
+   "opts": [
+    "pull",
+    "push",
+    "hard affinity",
+    "不做"
+   ],
+   "ans": "pull",
+   "why": "閒的人少，讓少數閒的人發起，詢問次數最少。"
+  },
+  {
+   "q": "NUMA 系統排程時希望？",
+   "opts": [
+    "把 process 排在資料所在 memory 附近的 CPU",
+    "每次都換 CPU 平均負載",
+    "把資料複製到每個 node",
+    "只用一顆 CPU"
+   ],
+   "ans": "把 process 排在資料所在 memory 附近的 CPU",
+   "why": "remote access 慢，搬資料又貴。"
+  },
+  {
+   "q": "Fine-grained multithreading 的特點？",
+   "opts": [
+    "靠額外 hardware register 保留 state，切換成本低",
+    "每次切換都 flush pipeline",
+    "由 OS 做 context switch",
+    "只在 I/O 時切換"
+   ],
+   "ans": "靠額外 hardware register 保留 state，切換成本低",
+   "why": "coarse-grained 才會 flush pipeline。"
+  }
+ ]
+}

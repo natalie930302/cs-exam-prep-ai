@@ -1,0 +1,174 @@
+{
+ "video": "A03oI0znAoc",
+ "label": "Abdul Bari：1.8.1 Asymptotic Notations #1",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "為什麼需要漸近符號",
+   "scene": "bound-ladder",
+   "points": [
+    {
+     "text": "Asymptotic notation 來自數學，用簡單的符號表示一個函數屬於哪一類。",
+     "t": 10
+    },
+    {
+     "text": "Big-O 是 upper bound、Big-Ω 是 lower bound、Θ 是 average（tight）bound。",
+     "t": 94
+    },
+    {
+     "text": "能寫 Θ 就寫 Θ；無法精確定出類別時，才退而用 O 或 Ω 表示上界或下界。",
+     "t": 138
+    }
+   ]
+  },
+  {
+   "title": "Big-O 定義與 2n + 3 ≤ 5n",
+   "scene": "bigo-5n",
+   "points": [
+    {
+     "text": "f(n) = O(g(n)) ⇔ 存在正常數 c、n₀，使所有 n ≥ n₀ 都有 f(n) ≤ c·g(n)。",
+     "t": 198
+    },
+    {
+     "text": "例 f(n) = 2n + 3：右邊要寫「單一項」乘係數，例如 10n；n = 1 時 10 ≥ 5 成立 → O(n)。",
+     "t": 216
+    },
+    {
+     "text": "7n、1000n 也都可以，只要從某個 n 起比 f(n) 大。",
+     "t": 323
+    },
+    {
+     "text": "簡單做法：把每一項都變成 n 的倍數：2n + 3 ≤ 2n + 3n = 5n（n ≥ 1）。",
+     "t": 342
+    }
+   ]
+  },
+  {
+   "title": "上界可以很多，寫最接近的",
+   "scene": "bound-ladder",
+   "points": [
+    {
+     "text": "2n + 3 ≤ 2n² + 3n² = 5n²（n ≥ 1）→ f(n) = O(n²) 也成立。",
+     "t": 396
+    },
+    {
+     "text": "f 屬於 n 這一類：n 和右邊所有更大的類別（n²、2ⁿ…）都是它的上界。",
+     "t": 446
+    },
+    {
+     "text": "但 f(n) = O(log n) 是錯的，log n 在下界那一側。",
+     "t": 492
+    },
+    {
+     "text": "寫 Big-O 時要寫最接近（closest）的函數，寫太大的雖然對但沒有用。",
+     "t": 526
+    }
+   ]
+  },
+  {
+   "title": "Big-Ω：2n + 3 ≥ 1·n",
+   "scene": "bound-ladder",
+   "params": {
+    "focus": "omega"
+   },
+   "points": [
+    {
+     "text": "f(n) = Ω(g(n)) ⇔ 存在正常數 c、n₀，使 n ≥ n₀ 時 f(n) ≥ c·g(n)；只有不等號方向不同。",
+     "t": 569
+    },
+    {
+     "text": "2n + 3 ≥ 1·n（n ≥ 1）→ f(n) = Ω(n)。",
+     "t": 610
+    },
+    {
+     "text": "f(n) = Ω(log n) 也成立，但 Ω(n²) 是錯的。",
+     "t": 661
+    },
+    {
+     "text": "下界也要寫最接近的：Ω(n) 最有用，log log n、√n 雖對但沒價值。",
+     "t": 716
+    }
+   ]
+  },
+  {
+   "title": "Θ：上下界夾住 1·n ≤ 2n + 3 ≤ 5n",
+   "scene": "theta-sandwich",
+   "points": [
+    {
+     "text": "f(n) = Θ(g(n)) ⇔ 存在 c₁、c₂、n₀，使 c₁·g(n) ≤ f(n) ≤ c₂·g(n)。",
+     "t": 756
+    },
+    {
+     "text": "2n + 3：下界 1·n、上界 5·n，兩邊的 g(n) 都是 n → f(n) = Θ(n)。",
+     "t": 774
+    },
+    {
+     "text": "Θ(n²)、Θ(log n) 都是錯的，Θ 只能寫唯一的那一類。",
+     "t": 821
+    },
+    {
+     "text": "不要把 O 等同 worst case、Ω 等同 best case：符號只是表示函數的界，和 case analysis 無關。",
+     "t": 880
+    }
+   ],
+   "trap": "補充：Θ 不是「平均情況」——Abdul Bari 口語說 average bound，CLRS 稱 asymptotically tight bound；best/worst/average case 各自都可以用 O、Ω、Θ 描述。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "f(n) = 2n + 3，下列何者錯誤？",
+   "opts": [
+    "f(n) = O(log n)",
+    "f(n) = O(n²)",
+    "f(n) = Ω(n)",
+    "f(n) = Θ(n)"
+   ],
+   "ans": "f(n) = O(log n)",
+   "why": "log n 成長比 f 慢，不能當上界。"
+  },
+  {
+   "q": "證明 2n + 3 = O(n) 時，影片的快速做法是？",
+   "opts": [
+    "2n + 3 ≤ 2n + 3n = 5n，n ≥ 1",
+    "2n + 3 ≤ 2n，n ≥ 1",
+    "2n + 3 ≥ n，n ≥ 1",
+    "2n + 3 ≤ 3，n ≥ 1"
+   ],
+   "ans": "2n + 3 ≤ 2n + 3n = 5n，n ≥ 1",
+   "why": "把常數項也放大成 n 的倍數，取 c = 5、n₀ = 1。"
+  },
+  {
+   "q": "Θ 定義中需要哪些常數？",
+   "opts": [
+    "c₁、c₂、n₀",
+    "只要 c、n₀",
+    "只要 n₀",
+    "c₁、c₂ 就好，不用 n₀"
+   ],
+   "ans": "c₁、c₂、n₀",
+   "why": "c₁·g(n) ≤ f(n) ≤ c₂·g(n) 對所有 n ≥ n₀ 成立。"
+  },
+  {
+   "q": "f(n) = 2n + 3，下列哪個 Ω 敘述是錯的？",
+   "opts": [
+    "Ω(n²)",
+    "Ω(n)",
+    "Ω(log n)",
+    "Ω(1)"
+   ],
+   "ans": "Ω(n²)",
+   "why": "n² 長得比 f 快，不能當下界。"
+  },
+  {
+   "q": "關於 O 與 worst case 的關係，何者正確？",
+   "opts": [
+    "兩者無關，任何 case 都可用任何符號",
+    "O 只能描述 worst case",
+    "Ω 只能描述 best case",
+    "Θ 只能描述 average case"
+   ],
+   "ans": "兩者無關，任何 case 都可用任何符號",
+   "why": "漸近符號描述函數的界；case analysis 決定要分析哪個函數。"
+  }
+ ]
+}

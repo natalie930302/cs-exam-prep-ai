@@ -1,0 +1,140 @@
+{
+ "video": "FrLWd1tJ_Wc",
+ "label": "Bellman Ford Algorithm",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "Bellman-Ford 與 Dijkstra 的差別",
+   "scene": "dij-neg-fail",
+   "points": [
+    {
+     "text": "Bellman-Ford 也是 single-source shortest path，但能處理負權重邊。",
+     "t": 10
+    },
+    {
+     "text": "沒有負 cycle 時，它會算出從起點到所有頂點的最短距離；有負 cycle 時則能把它找出來。",
+     "t": 60
+    },
+    {
+     "text": "有負權重邊時 Dijkstra 可能給出錯誤答案；全部權重為正就可以放心用 Dijkstra。",
+     "t": 230
+    }
+   ],
+   "trap": "此影片的自動字幕是印地語辨識結果，雜訊極大；此處只整理能確定的部分。"
+  },
+  {
+   "title": "負權重 cycle 是什麼",
+   "scene": "bf-cycle-sign",
+   "points": [
+    {
+     "text": "負權重的邊代表「不花費反而得到好處」。",
+     "t": 130
+    },
+    {
+     "text": "cycle 權重 2 + 3 + (−3) = 2 是正的，不是負 cycle；把 −3 換成 −6 才是負 cycle。",
+     "t": 160
+    },
+    {
+     "text": "2 + 3 + (−6) = −1：每多繞一圈總成本就減 1，永遠找不到最小值。",
+     "t": 985
+    }
+   ]
+  },
+  {
+   "title": "演算法：所有邊 relax V − 1 次",
+   "scene": "bf-bari7",
+   "points": [
+    {
+     "text": "初始化起點距離 0、其他 ∞；每一輪把所有邊各 relax 一次。",
+     "t": 400
+    },
+    {
+     "text": "對 (u, v)：若 d(u) + w(u, v) < d(v) 就更新 d(v)。",
+     "t": 430
+    },
+    {
+     "text": "最短路徑最多 V − 1 條邊，所以做 V − 1 輪就夠。",
+     "t": 470
+    }
+   ]
+  },
+  {
+   "title": "多做一輪：偵測負 cycle",
+   "scene": "bf-detect-cycle",
+   "points": [
+    {
+     "text": "做完 V − 1 輪後，再把所有邊檢查一次。",
+     "t": 495
+    },
+    {
+     "text": "如果還有距離能被更新，代表有負 cycle，回報「無解」。",
+     "t": 700
+    },
+    {
+     "text": "沒有任何更新，算出的距離就是最短距離。",
+     "t": 760
+    }
+   ]
+  },
+  {
+   "title": "時間複雜度比較",
+   "scene": "sp-compare",
+   "points": [
+    {
+     "text": "Bellman-Ford：V − 1 輪 × E 條邊 = O(VE)。",
+     "t": 793
+    },
+    {
+     "text": "Dijkstra（priority queue）約 O(E log V)，快得多；沒有負權重時優先用 Dijkstra。",
+     "t": 820
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "三條邊權重 2、3、x 形成 cycle，x 至少要小於多少才是負權重 cycle？",
+   "opts": [
+    "−5",
+    "0",
+    "−3",
+    "−6"
+   ],
+   "ans": "−5",
+   "why": "2 + 3 + x < 0 ⇔ x < −5；影片用 −6（總和 −1）當例子，−3 則總和 2 不是負 cycle。"
+  },
+  {
+   "q": "Bellman-Ford 做完 V − 1 輪後再掃一次仍有邊能 relax，代表？",
+   "opts": [
+    "從起點可到達一個負權重 cycle",
+    "輪數不夠，要再多跑幾輪",
+    "圖不連通",
+    "有負權重邊（但沒有 cycle）"
+   ],
+   "ans": "從起點可到達一個負權重 cycle",
+   "why": "沒有負 cycle 時，V − 1 輪後所有 d 都已等於 δ，不可能再變小。"
+  },
+  {
+   "q": "為什麼 Bellman-Ford 做 V − 1 輪就夠？",
+   "opts": [
+    "沒有負 cycle 時最短路徑是 simple path，最多 V − 1 條邊",
+    "每輪至少確定一半頂點",
+    "V − 1 是 spanning tree 的邊數，剛好巧合",
+    "因為要配合 Dijkstra"
+   ],
+   "ans": "沒有負 cycle 時最短路徑是 simple path，最多 V − 1 條邊",
+   "why": "第 i 輪後，所有「最多 i 條邊」的最短路徑都已正確。"
+  },
+  {
+   "q": "Bellman-Ford 與 Dijkstra（binary heap）的複雜度？",
+   "opts": [
+    "O(VE) vs O((V + E) log V)",
+    "O(V + E) vs O(VE)",
+    "O(V²) vs O(V³)",
+    "兩者相同"
+   ],
+   "ans": "O(VE) vs O((V + E) log V)",
+   "why": "Bellman-Ford 較慢，但能處理負權重與偵測負 cycle。"
+  }
+ ]
+}

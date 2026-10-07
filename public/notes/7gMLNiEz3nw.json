@@ -1,0 +1,249 @@
+{
+ "video": "7gMLNiEz3nw",
+ "label": "Gate Smashers：Banker Algorithm",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "Banker's algorithm 是 deadlock avoidance",
+   "scene": "banker-avoid",
+   "points": [
+    {
+     "text": "Banker's algorithm 是 deadlock avoidance algorithm：要事先告訴 OS 有哪些 process、各要哪些資源、要多少。",
+     "t": 0
+    },
+    {
+     "text": "系統依這些資訊決定讓誰執行、讓誰等。",
+     "t": 35
+    },
+    {
+     "text": "常考它是 prevention 還是 avoidance：答案是 avoidance。",
+     "t": 54
+    },
+    {
+     "text": "影片接著說它「也用於 deadlock detection」，並一再稱它為 detection algorithm（這是錯誤用語，見易錯點）。",
+     "t": 67
+    }
+   ],
+   "trap": "影片把 Banker's 叫做 deadlock detection algorithm 是錯的。Banker's 是 avoidance：配置前用 Max 檢查是否仍在 safe state。Deadlock detection 是另一個演算法（比較目前的 Request 矩陣，不需要 Max），用在 deadlock 已經發生之後找出卡住的 process。"
+  },
+  {
+   "title": "題目給的狀態：Total、Allocation、Max",
+   "scene": "banker-tables",
+   "points": [
+    {
+     "text": "5 個 process P1–P5、3 種資源 A、B、C（可以想成 CPU、memory、printer，instance 數就是個數）。",
+     "t": 86
+    },
+    {
+     "text": "系統共有 A 10、B 5、C 7 個 instance。",
+     "t": 183
+    },
+    {
+     "text": "Allocation：已經配給各 process 的；P1 (0,1,0)、P2 (2,0,0)、P3 (3,0,2)、P4 (2,1,1)、P5 (0,0,2)。",
+     "t": 197
+    },
+    {
+     "text": "Max（maximum need）：每個 process 事先宣告最多要多少，例如 P1 (7,5,3)、P3 (9,0,2)；給夠就能做完並結束。",
+     "t": 274
+    },
+    {
+     "text": "事先告知需求，正是它被稱為 avoidance 的原因。",
+     "t": 283
+    }
+   ],
+   "trap": "影片的 P1–P5 就是恐龍書 P0–P4 的同一題（Available 3,3,2）；對答案時注意編號差 1。"
+  },
+  {
+   "title": "Safe 與 unsafe",
+   "scene": "safe-unsafe",
+   "points": [
+    {
+     "text": "題目可能問：是否會 deadlock？用 safe / unsafe 回答。",
+     "t": 348
+    },
+    {
+     "text": "影片說：safe = 不會 deadlock，unsafe = 會 deadlock（這是簡化說法）。",
+     "t": 364
+    },
+    {
+     "text": "如果 safe，要寫出 safe sequence：讓 process 依序做完而不 deadlock 的順序。",
+     "t": 377
+    }
+   ],
+   "trap": "unsafe 不等於 deadlock：unsafe 只代表 OS 無法保證避開 deadlock、「可能」走到 deadlock；deadlock 是 unsafe 的子集合。"
+  },
+  {
+   "title": "Available = Total − ΣAllocation",
+   "scene": "banker-available",
+   "points": [
+    {
+     "text": "不是從時間 0 開始，而是某個時間點已經配出去一些資源。",
+     "t": 411
+    },
+    {
+     "text": "Allocation 各欄加總：A 0+2+3+2+0 = 7、B 1+1 = 2、C 2+1+2 = 5。",
+     "t": 441
+    },
+    {
+     "text": "Available = (10,5,7) − (7,2,5) = (3,3,2)，這是目前（current）的可用量。",
+     "t": 466
+    }
+   ]
+  },
+  {
+   "title": "Need = Max − Allocation",
+   "scene": "banker-need",
+   "points": [
+    {
+     "text": "Remaining need（Need）= Max − Allocation；像小孩要 10 顆蘋果、已給 3 顆，還要給 7 顆。",
+     "t": 495
+    },
+    {
+     "text": "P1：(7,5,3) − (0,1,0) = (7,4,3)；P2：(3,2,2) − (2,0,0) = (1,2,2)。",
+     "t": 577
+    },
+    {
+     "text": "P3：(9,0,2) − (3,0,2) = (6,0,0)；要 A 對 A、B 對 B、C 對 C 逐欄相減，常在這裡算錯。",
+     "t": 626
+    },
+    {
+     "text": "P4：(4,2,2) − (2,1,1) = (2,1,1)；P5：(5,3,3) − (0,0,2) = (5,3,1)。",
+     "t": 645
+    }
+   ]
+  },
+  {
+   "title": "Safety check：找 safe sequence",
+   "scene": "banker-safety",
+   "points": [
+    {
+     "text": "Work 先等於 Available (3,3,2)；P1 要 (7,4,3)：A、B、C 都不夠 → 先跳過。",
+     "t": 679
+    },
+    {
+     "text": "P2 要 (1,2,2) ≤ (3,3,2) → 可以；三種資源要「同時」都夠，只夠 C 一種不算。",
+     "t": 735
+    },
+    {
+     "text": "P2 做完，連同原本持有的 (2,0,0) 一起釋放：Work = (5,3,2)。",
+     "t": 869
+    },
+    {
+     "text": "P3 要 6 個 A，只有 5 → 不行；P4 要 (2,1,1) ≤ (5,3,2) → 可以，Work + (2,1,1) = (7,4,3)。",
+     "t": 957
+    },
+    {
+     "text": "接著往下看 P5：(5,3,1) ≤ (7,4,3) → 可以，Work + (0,0,2) = (7,4,5)。",
+     "t": 1091
+    },
+    {
+     "text": "回頭 P1：(7,4,3) ≤ (7,4,5) → Work = (7,5,5)；最後 P3：(6,0,0) → Work = (10,5,7)。",
+     "t": 1164
+    },
+    {
+     "text": "最後 Work 回到 Total (10,5,7)，可以拿來驗算；得到 safe sequence P2 → P4 → P5 → P1 → P3。",
+     "t": 1260
+    }
+   ],
+   "trap": "影片在 L186 說 P5 持有「0, 1, 2」，但加的是 (0,0,2)；P5 的 Allocation 是 (0,0,2)。判斷條件是 Need ≤ Work（每一種都要），更新是 Work += Allocation（不是加 Need）。"
+  },
+  {
+   "title": "Safe sequence 不唯一；Banker 的限制",
+   "scene": "banker-nonunique",
+   "points": [
+    {
+     "text": "safe sequence 不唯一，例如 P3 也可以排得更前面；考題可能給一個序列要你檢查。",
+     "t": 1298
+    },
+    {
+     "text": "只要某一步找不到任何 process 的 Need ≤ Work，就是 unsafe。",
+     "t": 1324
+    },
+    {
+     "text": "現實中 process 很少事先告訴系統固定的 Max，需求是動態的，所以 Banker 難以實際使用，但是很重要的理論基礎。",
+     "t": 1355
+    }
+   ],
+   "trap": "影片 L212–213 說「能滿足任何一個就排第一個」容易誤解：要整個過程每一步都能找到 Need ≤ Work 的 process、最後全部 Finish 才是 safe。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Banker's algorithm 屬於？",
+   "opts": [
+    "deadlock avoidance",
+    "deadlock detection",
+    "deadlock prevention",
+    "deadlock recovery"
+   ],
+   "ans": "deadlock avoidance",
+   "why": "影片說它也是 detection 是錯誤用語；detection 用 Request 矩陣、不需要 Max。"
+  },
+  {
+   "q": "影片例子 Total (10,5,7)，ΣAllocation (7,2,5)，Available？",
+   "opts": [
+    "(3,3,2)",
+    "(7,2,5)",
+    "(17,7,12)",
+    "(10,5,7)"
+   ],
+   "ans": "(3,3,2)",
+   "why": "Available = Total − ΣAllocation。"
+  },
+  {
+   "q": "P3 的 Max (9,0,2)、Allocation (3,0,2)，Need？",
+   "opts": [
+    "(6,0,0)",
+    "(12,0,4)",
+    "(9,0,2)",
+    "(3,0,2)"
+   ],
+   "ans": "(6,0,0)",
+   "why": "Need = Max − Allocation，逐欄相減。"
+  },
+  {
+   "q": "Work = (5,3,2) 時，P3 Need (6,0,0) 可以先做嗎？",
+   "opts": [
+    "不行，A 只有 5",
+    "可以，B、C 都夠",
+    "可以，總數 6 ≤ 10",
+    "要看 Max"
+   ],
+   "ans": "不行，A 只有 5",
+   "why": "每一種資源都要 Need ≤ Work。"
+  },
+  {
+   "q": "P2 做完後 Work 怎麼更新？",
+   "opts": [
+    "Work + Allocation(P2) = (5,3,2)",
+    "Work + Need(P2) = (4,5,4)",
+    "Work − Need(P2) = (2,1,0)",
+    "Work 不變"
+   ],
+   "ans": "Work + Allocation(P2) = (5,3,2)",
+   "why": "它做完會把全部持有的資源還回來，淨增加 Allocation。"
+  },
+  {
+   "q": "影片得到的 safe sequence？",
+   "opts": [
+    "P2 → P4 → P5 → P1 → P3",
+    "P1 → P2 → P3 → P4 → P5",
+    "P2 → P3 → P4 → P5 → P1",
+    "不存在（unsafe）"
+   ],
+   "ans": "P2 → P4 → P5 → P1 → P3",
+   "why": "安全序列不唯一，但這個是影片的答案。"
+  },
+  {
+   "q": "Unsafe state 代表？",
+   "opts": [
+    "可能會 deadlock，但不一定已經 deadlock",
+    "一定已經 deadlock",
+    "一定不會 deadlock",
+    "有 process 的 Need 為負"
+   ],
+   "ans": "可能會 deadlock，但不一定已經 deadlock",
+   "why": "deadlock ⊂ unsafe。"
+  }
+ ]
+}

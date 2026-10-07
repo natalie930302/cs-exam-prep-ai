@@ -1,0 +1,210 @@
+{
+ "video": "E82x-cug9YE",
+ "label": "Modes of Transfer | Programmed, Interrupt-initiated I/O & DMA",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "資料傳輸：記憶體是來源與目標",
+   "scene": "three-modes",
+   "points": [
+    {
+     "text": "電腦處理的是 binary 資訊；從外部裝置收到的資料最後都存進記憶體。",
+     "t": 20
+    },
+    {
+     "text": "CPU 送到外部裝置的資料也來自記憶體：CPU 只負責處理，真正的 source 與 target 是 memory unit。",
+     "t": 69
+    },
+    {
+     "text": "CPU 與 I/O 之間的傳輸有不同模式：有的以 CPU 為中間路徑，有的直接在記憶體與 I/O 之間傳。",
+     "t": 90
+    },
+    {
+     "text": "三種方式：programmed I/O、interrupt-initiated I/O、direct memory access（DMA）。",
+     "t": 104
+    }
+   ]
+  },
+  {
+   "title": "Programmed I/O",
+   "scene": "programmed-io",
+   "points": [
+    {
+     "text": "最簡單的 I/O 方式：所有工作都由 CPU 做，資料經 CPU 在處理器與 I/O module 之間傳。",
+     "t": 116
+    },
+    {
+     "text": "I/O 指令寫在程式裡，每一筆資料傳輸都由程式中的一個指令發動；通常是 CPU 暫存器與記憶體之間。",
+     "t": 160
+    },
+    {
+     "text": "CPU 必須持續監看周邊裝置是否 ready（polling），監看期間不能做別的事，很耗時間。",
+     "t": 195
+    },
+    {
+     "text": "優點：容易實作、需要的硬體很少。",
+     "t": 235
+    },
+    {
+     "text": "缺點：busy waiting，CPU 長時間被綁住卻沒做有用的事。",
+     "t": 250
+    }
+   ],
+   "trap": "補充：polling 的 CPU 負擔要用「每秒 poll 次數 × 每次 cycles ÷ clock rate」算，而且不論裝置忙不忙都得一直 poll（P&H 例題）。"
+  },
+  {
+   "title": "Interrupt-initiated I/O",
+   "scene": "interrupt-io",
+   "points": [
+    {
+     "text": "解決 programmed I/O 的問題：CPU 不必一直監看周邊裝置。",
+     "t": 270
+    },
+    {
+     "text": "改由 interface 監看裝置；資料 ready 時，interface 發出 interrupt request 訊號。",
+     "t": 320
+    },
+    {
+     "text": "在這之前 CPU 可以繼續執行其他程式。",
+     "t": 345
+    },
+    {
+     "text": "CPU 收到中斷後，停下目前的工作去服務這個請求，完成後回到原本的工作繼續。",
+     "t": 380
+    }
+   ],
+   "trap": "補充：同儕筆記常把 exception（處理器內部，如 overflow）與 interrupt（外部 I/O）流程混著講；MIPS 兩者都存 EPC、Cause 再跳 handler，但 EPC 指向的指令不同，要分開記。"
+  },
+  {
+   "title": "前兩種方式共同的缺點",
+   "scene": "pio-limits",
+   "points": [
+    {
+     "text": "Programmed I/O 與 interrupt I/O 都由處理器管理每一筆傳輸，每個 I/O 都要執行好幾個指令。",
+     "t": 435
+    },
+    {
+     "text": "傳輸率受限於處理器處理資料的速度。",
+     "t": 455
+    },
+    {
+     "text": "這兩個缺點由第三種方式 DMA 解決。",
+     "t": 468
+    }
+   ]
+  },
+  {
+   "title": "Direct Memory Access（DMA）",
+   "scene": "dma",
+   "points": [
+    {
+     "text": "DMA：interface 透過 memory bus 直接把資料搬進／搬出記憶體，不必每次都經過 CPU。",
+     "t": 475
+    },
+    {
+     "text": "CPU 只負責發動傳輸：提供起始位址等資訊給 interface。",
+     "t": 500
+    },
+    {
+     "text": "DMA 經 memory bus 要求記憶體 cycle；被允許後直接把資料寫進記憶體，CPU 只是延後自己的記憶體存取。",
+     "t": 540
+    },
+    {
+     "text": "DMA 期間由 DMA controller 掌控 bus，CPU 沒有 bus 的控制權。",
+     "t": 569
+    }
+   ],
+   "trap": "補充：P&H 的 DMA 傳完一整塊後會發一次中斷通知 CPU；所以 DMA 只在開頭（設定）與結尾（中斷）打擾 CPU。"
+  },
+  {
+   "title": "DMA 的優缺點",
+   "scene": "dma-pros-cons",
+   "points": [
+    {
+     "text": "優點：周邊可以直接讀寫記憶體，不需要 CPU 參與。",
+     "t": 594
+    },
+    {
+     "text": "優點：傳輸期間處理器可以做別的事，處理更快。",
+     "t": 605
+    },
+    {
+     "text": "缺點：需要 DMA controller，增加系統成本。",
+     "t": 620
+    },
+    {
+     "text": "缺點：可能產生 cache coherence 問題。",
+     "t": 634
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "影片中，CPU 與 I/O 資料傳輸真正的 source 與 target 是？",
+   "opts": [
+    "Memory unit",
+    "CPU 暫存器",
+    "I/O interface",
+    "DMA controller"
+   ],
+   "ans": "Memory unit",
+   "why": "外部裝置的資料最後存進記憶體，送出去的資料也來自記憶體；CPU 只是處理與居中搬運。"
+  },
+  {
+   "q": "Programmed I/O 的主要缺點是？",
+   "opts": [
+    "CPU busy waiting，持續監看周邊而無法做別的事",
+    "需要額外的 DMA controller",
+    "可能產生 cache coherence 問題",
+    "硬體非常複雜"
+   ],
+   "ans": "CPU busy waiting，持續監看周邊而無法做別的事",
+   "why": "programmed I/O 硬體最少、最簡單，但 CPU 一直在 polling。"
+  },
+  {
+   "q": "Interrupt-initiated I/O 中，裝置 ready 時是誰發出 interrupt request？",
+   "opts": [
+    "I/O interface",
+    "CPU",
+    "Memory",
+    "Bus arbiter"
+   ],
+   "ans": "I/O interface",
+   "why": "interface 監看裝置，資料可用時發出中斷請求；CPU 平常做其他工作。"
+  },
+  {
+   "q": "Programmed I/O 與 interrupt I/O 共同的兩個缺點是？",
+   "opts": [
+    "每筆傳輸都要處理器管理，且傳輸率受限於處理器速度",
+    "需要 DMA controller 且有 coherence 問題",
+    "無法處理慢速裝置且需要 polling",
+    "需要 bus arbitration 且不能中斷"
+   ],
+   "ans": "每筆傳輸都要處理器管理，且傳輸率受限於處理器速度",
+   "why": "兩者資料都經過 CPU，所以由 DMA 解決。"
+  },
+  {
+   "q": "DMA 傳輸期間，CPU 做什麼？",
+   "opts": [
+    "延後自己的記憶體存取，bus 由 DMA controller 掌控",
+    "逐一搬每一個 word",
+    "持續 polling DMA controller",
+    "關機等待"
+   ],
+   "ans": "延後自己的記憶體存取，bus 由 DMA controller 掌控",
+   "why": "CPU 只發動傳輸（給起始位址等），之後 DMA 直接存取記憶體。"
+  },
+  {
+   "q": "影片提到 DMA 的缺點是？",
+   "opts": [
+    "需要 DMA controller 增加成本，且可能有 cache coherence 問題",
+    "CPU busy waiting",
+    "每筆資料都要中斷一次",
+    "傳輸率受限於 CPU 速度"
+   ],
+   "ans": "需要 DMA controller 增加成本，且可能有 cache coherence 問題",
+   "why": "DMA 直接改記憶體，cache 中可能還留著舊資料。"
+  }
+ ]
+}

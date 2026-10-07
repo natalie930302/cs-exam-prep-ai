@@ -1,0 +1,161 @@
+{
+ "video": "DKCbsiDBN6c",
+ "label": "Abdul Bari：6 Introduction to Backtracking - Brute Force Approach",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "回溯是什麼：Brute force 策略",
+   "scene": "strategy-map",
+   "points": [
+    {
+     "text": "Backtracking 是一種解題策略，用的是 brute force approach。",
+     "t": 0
+    },
+    {
+     "text": "Brute force：把所有可能的解都試過，再挑出想要的解。",
+     "t": 17
+    },
+    {
+     "text": "DP 也會考慮所有可能，但它解的是 optimization problem。",
+     "t": 30
+    },
+    {
+     "text": "Backtracking 不是拿來做最佳化：用在有多組解、而且要全部找出來的時候。",
+     "t": 36
+    }
+   ]
+  },
+  {
+   "title": "3 人坐 3 椅：狀態空間樹",
+   "scene": "bt-seats-tree",
+   "points": [
+    {
+     "text": "例子：2 個男生（B1、B2）、1 個女生（G1）坐 3 張椅子，共 3! = 6 種坐法。",
+     "t": 58
+    },
+    {
+     "text": "解可以畫成一棵樹：solution tree，也叫 state space tree。",
+     "t": 94
+    },
+    {
+     "text": "第 1 層決定椅子 1 坐誰，第 2 層椅子 2，第 3 層椅子 3。",
+     "t": 110
+    },
+    {
+     "text": "走到底得到一組解後，把人拿掉、退回上一層試別的可能（backtrack）。",
+     "t": 145
+    },
+    {
+     "text": "共 6 條 root→葉子的路徑，每條就是一種坐法。",
+     "t": 193
+    }
+   ]
+  },
+  {
+   "title": "加上條件：bounding function 殺節點",
+   "scene": "bt-seats-bound",
+   "points": [
+    {
+     "text": "回溯的問題通常有限制條件；這裡加上「女生不能坐中間」。",
+     "t": 231
+    },
+    {
+     "text": "第 2 層（中間椅子）出現 G1 就停，不再往下產生。",
+     "t": 266
+    },
+    {
+     "text": "這個節點被「殺掉」，用來判斷的條件叫 bounding function。",
+     "t": 302
+    },
+    {
+     "text": "只要沒被 bounding function 擋下、走到最後一層，就是一組解：共 4 組。",
+     "t": 340
+    },
+    {
+     "text": "N-Queens、Sum of subsets、Graph coloring 都是回溯的典型題。",
+     "t": 367
+    }
+   ],
+   "trap": "補充：bounding function 殺掉的是「節點」，它底下整棵子樹都不必產生，這才是省時間的來源。"
+  },
+  {
+   "title": "回溯 DFS vs 分支界限 BFS",
+   "scene": "bt-dfs-bfs",
+   "points": [
+    {
+     "text": "Branch and bound 也是 brute force，也會產生狀態空間樹。",
+     "t": 385
+    },
+    {
+     "text": "回溯產生節點的順序是 depth-first search。",
+     "t": 416
+    },
+    {
+     "text": "Branch and bound 用 breadth-first search，一層一層產生。",
+     "t": 424
+    },
+    {
+     "text": "兩者的差別在樹的產生方式；分支界限的細節留到之後的影片。",
+     "t": 469
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Backtracking 主要用在哪類問題？",
+   "opts": [
+    "要找出所有符合條件的解",
+    "只求最佳化（最小或最大）",
+    "只求一組近似解",
+    "排序問題"
+   ],
+   "ans": "要找出所有符合條件的解",
+   "why": "影片說回溯不是給 optimization 用的，是有多組解且都要的時候用。"
+  },
+  {
+   "q": "3 位學生坐 3 張椅子，不加條件時狀態空間樹有幾片葉子？",
+   "opts": [
+    "6",
+    "3",
+    "9",
+    "27"
+   ],
+   "ans": "6",
+   "why": "每片葉子是一種排列：3! = 6。"
+  },
+  {
+   "q": "加上「女生不能坐中間」後有幾組解？",
+   "opts": [
+    "4",
+    "6",
+    "2",
+    "3"
+   ],
+   "ans": "4",
+   "why": "G1 只能坐椅子 1 或 3，各配 B1、B2 兩種順序 → 4 組。"
+  },
+  {
+   "q": "把違反條件的節點殺掉、不再往下產生的條件叫什麼？",
+   "opts": [
+    "Bounding function",
+    "Cost function",
+    "Hash function",
+    "Objective function"
+   ],
+   "ans": "Bounding function",
+   "why": "影片用 bounding function 稱呼這個判斷條件。"
+  },
+  {
+   "q": "Backtracking 與 Branch and bound 產生狀態空間樹的方式分別是？",
+   "opts": [
+    "DFS／BFS",
+    "BFS／DFS",
+    "都是 DFS",
+    "都是 BFS"
+   ],
+   "ans": "DFS／BFS",
+   "why": "回溯一路往下再回頭；分支界限一層一層產生。"
+  }
+ ]
+}

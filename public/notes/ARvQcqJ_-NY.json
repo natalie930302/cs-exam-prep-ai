@@ -1,0 +1,161 @@
+{
+ "video": "ARvQcqJ_-NY",
+ "label": "Abdul Bari：Greedy Method - Introduction",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "最佳化問題：feasible 與 optimal",
+   "scene": "feasible-optimal",
+   "points": [
+    {
+     "text": "Greedy method 是一種解題策略，就像 divide and conquer；用來解最佳化問題。",
+     "t": 30
+    },
+    {
+     "text": "例：問題是從 A 地到 B 地，可以走路、騎車、開車、搭火車、搭飛機……一個問題可以有很多 solution。",
+     "t": 75
+    },
+    {
+     "text": "加上限制「12 小時內到」：走路、開車都來不及，只剩火車、飛機；滿足限制的解叫 feasible solution。",
+     "t": 125
+    },
+    {
+     "text": "再要求「成本最小」就是 minimization 問題；既 feasible 又成本最小的解（例如火車）叫 optimal solution。",
+     "t": 200
+    },
+    {
+     "text": "要求最小或最大結果的問題叫 optimization problem。",
+     "t": 260
+    }
+   ],
+   "trap": "補充：影片說最佳解只有一個；精確說法是最佳「值」唯一，達到最佳值的解可以不只一個（例如多段圖 1→2→7→10→12 與 1→3→6→10→12 都是 16）。"
+  },
+  {
+   "title": "三種最佳化策略",
+   "scene": "feasible-optimal",
+   "points": [
+    {
+     "text": "解最佳化問題有三種策略（板書），做法不同。",
+     "t": 300
+    },
+    {
+     "text": "有的問題只適合其中一種策略，有的問題三種都能用；之後會一題一題學。",
+     "t": 320
+    }
+   ],
+   "trap": "補充：板書的三種是 Greedy、Dynamic Programming、Branch and Bound（逐字稿只說 these three methods，此為推斷）。"
+  },
+  {
+   "title": "Greedy 的一般演算法",
+   "scene": "greedy-general",
+   "points": [
+    {
+     "text": "Greedy 把問題分成 stages 來解，每個 stage 考慮一個 input。",
+     "t": 357
+    },
+    {
+     "text": "若這個 input 是 feasible 的，就把它加進解裡；把所有 feasible 的 input 加進去，就得到最佳解。",
+     "t": 375
+    },
+    {
+     "text": "Algorithm Greedy(a, n)：for i = 1 to n { x = Select(a); if Feasible(x) then Solution = Solution + x }。",
+     "t": 405
+    }
+   ],
+   "trap": "補充：Select 的規則是 greedy 的核心；規則必須證明能得到最佳解，否則只是近似。"
+  },
+  {
+   "title": "例子：選一台最好的車",
+   "scene": "greedy-filter",
+   "points": [
+    {
+     "text": "一種做法是看遍全世界（至少全市）所有品牌、所有型號再挑：非常花時間。",
+     "t": 455
+    },
+    {
+     "text": "實際做法：先篩出喜歡的品牌（例如 Toyota、Hyundai），再挑頂級型號，最後選最新、口碑好的那台。",
+     "t": 515
+    },
+    {
+     "text": "依照自己的選擇方法得到「最好的車」：這就是 greedy approach，不用檢查市場上每一台。",
+     "t": 560
+    }
+   ]
+  },
+  {
+   "title": "例子：從 1000 人中錄取一人",
+   "scene": "greedy-filter",
+   "points": [
+    {
+     "text": "1000 人來應徵，經過筆試、技術測驗、團體討論、面試等關卡層層篩選，最後錄取一人。",
+     "t": 610
+    },
+    {
+     "text": "若讓每個人都考完所有關卡再挑最好的，太耗時、成本也高。",
+     "t": 665
+    },
+    {
+     "text": "照已知的篩選方法快速解題，就是 greedy；依這套程序選出的人就是最佳。",
+     "t": 690
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "滿足問題限制條件的解稱為？",
+   "opts": [
+    "feasible solution",
+    "optimal solution",
+    "greedy solution",
+    "partial solution"
+   ],
+   "ans": "feasible solution",
+   "why": "例如「12 小時內到達」：火車、飛機符合限制，是 feasible；其中成本最小的才是 optimal。"
+  },
+  {
+   "q": "既滿足限制、又達成目標（最小或最大）的解稱為？",
+   "opts": [
+    "optimal solution",
+    "feasible solution",
+    "trivial solution",
+    "approximate solution"
+   ],
+   "ans": "optimal solution",
+   "why": "optimal solution 一定是 feasible，且達到最小／最大的目標值。"
+  },
+  {
+   "q": "什麼是 optimization problem？",
+   "opts": [
+    "要求最小或最大結果的問題",
+    "只問有沒有解的問題",
+    "要列出所有解的問題",
+    "一定能在多項式時間解的問題"
+   ],
+   "ans": "要求最小或最大結果的問題",
+   "why": "影片定義：requires either minimum result or maximum result。"
+  },
+  {
+   "q": "Greedy 一般演算法每個 stage 做什麼？",
+   "opts": [
+    "選一個 input，若 feasible 就加入解",
+    "把所有 input 排列組合",
+    "遞迴拆成兩半",
+    "回溯上一步"
+   ],
+   "ans": "選一個 input，若 feasible 就加入解",
+   "why": "for i = 1 to n：x = Select(a)；if Feasible(x) then Solution = Solution + x。"
+  },
+  {
+   "q": "影片的「篩選應徵者」例子說明了 greedy 的什麼特點？",
+   "opts": [
+    "照已知的選擇程序快速得到解，而不是檢查所有可能",
+    "一定要讓每個人考完所有關卡",
+    "最佳解一定不唯一",
+    "greedy 只適用於排序問題"
+   ],
+   "ans": "照已知的選擇程序快速得到解，而不是檢查所有可能",
+   "why": "讓 1000 人都考完所有關卡太耗時；greedy 依篩選程序直接選出結果。"
+  }
+ ]
+}

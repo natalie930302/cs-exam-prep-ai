@@ -1,0 +1,226 @@
+{
+ "video": "8RyRHYruy-8",
+ "label": "清大周志遠 第11B講 Non-Contiguous Memory Allocation - Paging(續)",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "Page table 放在 memory：PTBR",
+   "scene": "ptbr-context-switch",
+   "points": [
+    {
+     "text": "Page table 是 OS 的 memory structure，放在 memory 裡；做 translation 的是硬體 MMU。",
+     "t": 23
+    },
+    {
+     "text": "MMU 要把 page table 的內容 load 進自己的 register 才能翻譯，所以要知道 table 存在哪：PTBR（page-table base register）。",
+     "t": 87
+    },
+    {
+     "text": "PTBR 裡放的是 physical address：硬體直接讀，沒有人再幫它 translate。",
+     "t": 104
+    },
+    {
+     "text": "PTBR 的值存在 process 的 PCB；context switch 時除了 CPU register，也要把它重新 load 進 MMU。",
+     "t": 139
+    },
+    {
+     "text": "這樣下一個 process 翻譯時才會用到自己的 page table，不會亂掉。",
+     "t": 156
+    }
+   ],
+   "trap": "PTBR 存的是 physical address，不是 logical address；每個 process 有自己的 page table，PTBR 跟著 PCB 切換。"
+  },
+  {
+   "title": "一次讀取變兩次 memory access",
+   "scene": "two-memory-access",
+   "points": [
+    {
+     "text": "CPU 發一個 memory read，實際上碰 memory 兩次：第一次讀 page table，第二次才讀真正的資料。",
+     "t": 179
+    },
+    {
+     "text": "使用者看不到第一次，但 memory access time 變兩倍：100 GB/s 的記憶體只剩 50 GB/s 的效果。",
+     "t": 225
+    },
+    {
+     "text": "解法：加入 TLB，本質是 cache；之前翻譯過的直接 lookup，hit 時只要一次 access。",
+     "t": 243
+    }
+   ]
+  },
+  {
+   "title": "TLB：associative memory",
+   "scene": "tlb-associative",
+   "points": [
+    {
+     "text": "TLB 記錄查過的 page → frame 對應，速度通常比一般 memory 快 10 倍以上。",
+     "t": 290
+    },
+    {
+     "text": "Cache 裡沒有順序（例如 page 1、7、5、2），一般 memory 要逐一掃描就變 O(n)。",
+     "t": 318
+    },
+    {
+     "text": "Associative memory 的硬體可以同時比對所有 entry，lookup time 是 O(1)。",
+     "t": 352
+    },
+    {
+     "text": "邏輯複雜、昂貴，所以 entry 不多（數千筆等級），不可能放下整張 page table。",
+     "t": 398
+    }
+   ],
+   "trap": "TLB 雖然是「搜尋」，但是平行比對，時間是 O(1) 而不是 O(n)。"
+  },
+  {
+   "title": "TLB 與 page table 一起用：hit / miss 流程",
+   "scene": "tlb-hit-miss",
+   "points": [
+    {
+     "text": "TLB 在 MMU 裡，是 MMU 的 cache；page table 在 memory。",
+     "t": 468
+    },
+    {
+     "text": "每個 process 都有自己的 page table，但 TLB 只有一個，大家共用。",
+     "t": 497
+    },
+    {
+     "text": "翻譯時先查 TLB：hit 就直接拿到 frame number，總共只碰 memory 一次。",
+     "t": 554
+    },
+    {
+     "text": "Miss 就走老路：讀 page table 再讀資料，兩次 memory access；翻完把 (p, f) 放進 TLB，滿了踢掉不常用的。",
+     "t": 577
+    }
+   ]
+  },
+  {
+   "title": "Context switch 時的 TLB：flush 或加 PID",
+   "scene": "tlb-flush-asid",
+   "points": [
+    {
+     "text": "不同 process 的 page number 會重複，但對到不同 frame，TLB 的 entry 不能混用。",
+     "t": 606
+    },
+    {
+     "text": "解法一（最常用）：context switch 時 flush TLB，全部清空。",
+     "t": 635
+    },
+    {
+     "text": "解法二：每個 entry 多一個 process ID 欄位，page number 和 PID 都相符才算 hit。",
+     "t": 664
+    },
+    {
+     "text": "每筆多存 4 bytes 的 PID：從 8 bytes 變 12 bytes（多出的部分佔 1/3，老師說 33% 的 cost）；而且程式通常會把 TLB 塞滿自己的 page，所以多半選 flush。",
+     "t": 722
+    },
+    {
+     "text": "Flush 後接下來的 access 全部 miss、時間變兩倍，這是 context switch 拖慢效能的主要原因之一。",
+     "t": 780
+    }
+   ],
+   "trap": "context switch 的成本不只切換本身：TLB 被清空後的一連串 miss 也算在內。"
+  },
+  {
+   "title": "EMAT：effective memory access time",
+   "scene": "emat-calc",
+   "points": [
+    {
+     "text": "例子：TLB lookup 20 ns，memory access 100 ns。",
+     "t": 866
+    },
+    {
+     "text": "Hit：20 + 100 = 120 ns；Miss：20 + 100 + 100 = 220 ns（不論 hit 或 miss，TLB 都一定要先查）。",
+     "t": 895
+    },
+    {
+     "text": "Hit rate 70%：0.7 × 120 + 0.3 × 220 = 150 ns。",
+     "t": 912
+    },
+    {
+     "text": "Hit rate 98%：0.98 × 120 + 0.02 × 220 = 122 ns，比沒有 TLB 的 200 ns 快將近一倍。",
+     "t": 930
+    }
+   ],
+   "trap": "Miss 的時間要記得加上 TLB 的 20 ns：是 220 不是 200。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "PTBR（page-table base register）裡存的是什麼？",
+   "opts": [
+    "Page table 在 memory 的 physical address",
+    "Page table 在 memory 的 logical address",
+    "目前 process 的 page 數",
+    "TLB 的大小"
+   ],
+   "ans": "Page table 在 memory 的 physical address",
+   "why": "MMU 是硬體直接讀 page table，沒有人再幫它翻譯，所以是 physical address。"
+  },
+  {
+   "q": "沒有 TLB 時，CPU 發出一次 memory read，實際上會存取 memory 幾次？",
+   "opts": [
+    "2 次",
+    "1 次",
+    "3 次",
+    "看 page 大小"
+   ],
+   "ans": "2 次",
+   "why": "第一次讀 page table 取得 frame number，第二次才讀真正的資料。"
+  },
+  {
+   "q": "TLB 用 associative memory 實作，它的 lookup time 是？",
+   "opts": [
+    "O(1)，所有 entry 平行比對",
+    "O(n)，要逐一掃描",
+    "O(log n)，用二分搜尋",
+    "跟 page table 一樣要讀 memory"
+   ],
+   "ans": "O(1)，所有 entry 平行比對",
+   "why": "Associative memory 的硬體同時比對所有 entry，所以雖然是 search 但是 O(1)；代價是昂貴、容量小。"
+  },
+  {
+   "q": "Context switch 時，一般系統最常怎麼處理 TLB？",
+   "opts": [
+    "Flush（清空）TLB",
+    "保留 TLB 讓下一個 process 繼續用",
+    "把 TLB 寫回 PCB",
+    "把 TLB 擴大一倍"
+   ],
+   "ans": "Flush（清空）TLB",
+   "why": "不同 process 的 page number 對到不同 frame，不能混用；加 PID 欄位要多 33% 空間，所以多半直接 flush。"
+  },
+  {
+   "q": "TLB 20 ns、memory 100 ns、hit rate 70%，EMAT 是多少？",
+   "opts": [
+    "150 ns",
+    "120 ns",
+    "140 ns",
+    "220 ns"
+   ],
+   "ans": "150 ns",
+   "why": "0.7 × (20 + 100) + 0.3 × (20 + 100 + 100) = 84 + 66 = 150 ns。"
+  },
+  {
+   "q": "同上，hit rate 提升到 98% 時 EMAT 是？",
+   "opts": [
+    "122 ns",
+    "120 ns",
+    "102 ns",
+    "150 ns"
+   ],
+   "ans": "122 ns",
+   "why": "0.98 × 120 + 0.02 × 220 = 117.6 + 4.4 = 122 ns。"
+  },
+  {
+   "q": "為什麼 context switch 之後程式會暫時變慢？",
+   "opts": [
+    "TLB 被 flush，接下來的 access 都 miss，每次要兩次 memory access",
+    "Page table 被刪掉要重建",
+    "CPU 時脈下降",
+    "Physical memory 被清空"
+   ],
+   "ans": "TLB 被 flush，接下來的 access 都 miss，每次要兩次 memory access",
+   "why": "要等 TLB 重新裝進常用的 (p, f) 才會恢復加速。"
+  }
+ ]
+}

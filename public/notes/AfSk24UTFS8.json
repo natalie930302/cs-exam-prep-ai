@@ -1,0 +1,297 @@
+{
+ "video": "AfSk24UTFS8",
+ "label": "MIT 6.006 L14：DFS, Topological Sort",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "DFS 像走迷宮：遞迴探索、必要時回頭",
+   "scene": "dfs-visit-code",
+   "points": [
+    {
+     "text": "輸入是 adjacency list；目標是把所有頂點各拜訪一次。BFS 一層一層走、能給最短路徑，DFS 則常用來探索整張圖。",
+     "t": 45
+    },
+    {
+     "text": "DFS 就像走玉米迷宮：沿路留麵包屑，走到死路就回頭，看下一條還沒走過的路。",
+     "t": 182
+    },
+    {
+     "text": "電腦上用遞迴就能做到：遞迴探索圖，必要時 backtrack。",
+     "t": 250
+    }
+   ]
+  },
+  {
+   "title": "DFS-visit 與外層 DFS 的程式碼",
+   "scene": "dfs-visit-code",
+   "points": [
+    {
+     "text": "DFS-visit(Adj, s)：掃 s 的每條出邊 (s, v)，v 不在 parent 字典裡就設 parent[v] = s，再遞迴 DFS-visit(v)。",
+     "t": 318
+    },
+    {
+     "text": "parent 字典同時當作「看過了沒」：起點 parent[s] = None 也算已看過；看過的直接跳過，所以每個點最多拜訪一次。",
+     "t": 367
+    },
+    {
+     "text": "DFS-visit 只會走到從 s 走得到的點；外層 DFS(V, Adj) 依序試每個頂點當起點，沒看過的才呼叫 DFS-visit。",
+     "t": 412
+    },
+    {
+     "text": "圖不連通或不是 strongly connected 時，外層迴圈會啟動好幾次搜尋，確保全部頂點都被拜訪。",
+     "t": 470
+    }
+   ]
+  },
+  {
+   "title": "例子：a～f 的有向圖（依字母順序）",
+   "scene": "dfs-clrs-run",
+   "points": [
+    {
+     "text": "從 a 開始（s1 = a）：a → b（parent[b] = a）→ e → d；d 的出邊指回 b，b 已看過，跳過。",
+     "t": 633
+    },
+    {
+     "text": "d、e、b 依序結束、回到 a；a 的另一條出邊到 d，d 已看過，跳過。",
+     "t": 723
+    },
+    {
+     "text": "外層迴圈：b 已看過；c 沒看過 → 第二次搜尋 s2 = c：c → f，f 的自迴圈 f → f 指向已看過的 f。",
+     "t": 811
+    },
+    {
+     "text": "c 的另一條出邊到 e，e 已在第一次搜尋拜訪過；d、e、f 都已看過，DFS 結束。",
+     "t": 854
+    },
+    {
+     "text": "粗線（parent 指標）是 DFS 走過的邊；a 到 d 用了長度 3 的路徑，DFS 不保證最短路徑。",
+     "t": 1078
+    }
+   ]
+  },
+  {
+   "title": "時間複雜度 Θ(V + E)",
+   "scene": "dfs-runtime",
+   "points": [
+    {
+     "text": "外層迴圈每個頂點看一次：O(V)。",
+     "t": 944
+    },
+    {
+     "text": "DFS-visit(v) 只在 v 第一次被設 parent 前呼叫，所以每個頂點最多呼叫一次。",
+     "t": 990
+    },
+    {
+     "text": "每次呼叫要掃 |Adj[v]| 條出邊；全部加起來 Σ|Adj[v]| = E（有向）或 2E（無向，handshaking lemma）。",
+     "t": 1035
+    },
+    {
+     "text": "總共 Θ(V + E)，是線性時間，跟輸入大小成正比，和 BFS 一樣。",
+     "t": 921
+    }
+   ]
+  },
+  {
+   "title": "邊的分類：tree / forward / backward / cross",
+   "scene": "edge-classify",
+   "points": [
+    {
+     "text": "Tree edge：走到一個新頂點的邊（parent 指標），它們構成一個 forest。",
+     "t": 1168
+    },
+    {
+     "text": "Forward edge：從節點指向樹中後代的非樹邊，例如 a → d。",
+     "t": 1250
+    },
+    {
+     "text": "Backward edge：從節點指向樹中祖先的邊，例如 d → b（f → f 自迴圈也算 back edge）。",
+     "t": 1270
+    },
+    {
+     "text": "Cross edge：其他所有邊，兩端沒有祖先關係，例如 c → e（可跨不同樹，也可在同一棵樹的兩個子樹之間）。",
+     "t": 1300
+    },
+    {
+     "text": "計算方法：parent 決定 tree edge；DFS-visit 開始時標記「in process」、結束時取消，指向 in-process 頂點的就是 back edge。",
+     "t": 1422
+    },
+    {
+     "text": "要分 forward 與 cross，課本記錄每個頂點的開始時間與結束時間（一個每步遞增的計數器）來判斷。",
+     "t": 1510
+    }
+   ],
+   "trap": "補充：CLRS 用 d[v]/f[v] 判斷——u → v 是 forward edge 當 d[u] < d[v] 且 v 已是黑色；cross edge 當 d[v] < d[u] 且 v 已是黑色。"
+  },
+  {
+   "title": "無向圖有哪些邊？",
+   "scene": "edge-undirected",
+   "points": [
+    {
+     "text": "無向圖每條邊會被看兩次（兩端各一次），有向圖每條邊看一次。",
+     "t": 1125
+    },
+    {
+     "text": "Tree edge 一定存在；forward edge 不可能：若有一條「捷徑」，在走到後代時會先從另一端看到它，被分類成 back edge。",
+     "t": 1694
+    },
+    {
+     "text": "Cross edge 也不可能：若兩個子樹之間有邊，第一個子樹探索時就會沿它走過去，變成 tree edge。",
+     "t": 1778
+    },
+    {
+     "text": "結論：無向圖的 DFS 只有 tree edge 和 back edge（老師也承認很容易搞混）。",
+     "t": 1821
+    }
+   ]
+  },
+  {
+   "title": "Cycle detection：有 cycle ⇔ 有 back edge",
+   "scene": "cycle-back-edge",
+   "points": [
+    {
+     "text": "定理：G 有 cycle 若且唯若 DFS（外層版本，探索整張圖）出現 back edge；有向、無向都成立。",
+     "t": 1868
+    },
+    {
+     "text": "⇐：back edge 指向祖先，祖先沿 tree edges 能走到自己，再加上這條邊就是 cycle。",
+     "t": 1959
+    },
+    {
+     "text": "⇒：設 v0 是 cycle 上第一個被 DFS 拜訪的頂點，其他依序 v1…vk。",
+     "t": 2145
+    },
+    {
+     "text": "v1…vk 都能從 v0 走到，所以都會在 v0 結束前被拜訪並結束：start v0、start vk、finish vk、finish v0（balanced parentheses）。",
+     "t": 2321
+    },
+    {
+     "text": "看到邊 vk → v0 時 v0 還在遞迴堆疊上，所以它是 back edge；線性時間就能判斷有沒有 cycle，還能沿 tree edges 找出那個 cycle。",
+     "t": 2463
+    }
+   ]
+  },
+  {
+   "title": "Topological sort：job scheduling",
+   "scene": "topo-dressing",
+   "points": [
+    {
+     "text": "給一個 DAG（directed acyclic graph），要把頂點排成一列，使所有邊都從前面指向後面。",
+     "t": 2547
+    },
+    {
+     "text": "課本的穿衣服例子：襪子要在鞋子前、內褲要在褲子前；手錶什麼時候戴都可以（不相關的部分）。",
+     "t": 2592
+    },
+    {
+     "text": "白板例子的一種合法順序：g, a, h, d, b, e, c, f, i——每個工作的前置都已先做完。",
+     "t": 2676
+    },
+    {
+     "text": "演算法：跑（外層）DFS，把頂點依 finishing time 的反序輸出，就是 topological order，Θ(V + E)。",
+     "t": 2723
+    }
+   ]
+  },
+  {
+   "title": "為什麼 finishing time 反序是對的",
+   "scene": "topo-proof",
+   "points": [
+    {
+     "text": "DAG 沒有 cycle → 沒有 back edge；只剩 tree、forward、cross edge。",
+     "t": 2823
+    },
+    {
+     "text": "要證：對每條邊 (u, v)，v 比 u 先 finish，反序後 u 就排在 v 前面。",
+     "t": 2866
+    },
+    {
+     "text": "情況 1：u 先開始。v 從 u 走得到，會在 u 的遞迴裡被完整拜訪，v 先 finish。",
+     "t": 2909
+    },
+    {
+     "text": "情況 2：v 先開始。若 v 走得到 u 就會形成 cycle，矛盾；所以 v 結束時根本還沒碰到 u，v 一樣先 finish。",
+     "t": 2954
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "DFS 例子（a→b, a→d, b→e, e→d, d→b, c→f, f→f, c→e，依字母順序）中，d → b 是哪種邊？",
+   "opts": [
+    "back edge",
+    "forward edge",
+    "cross edge",
+    "tree edge"
+   ],
+   "ans": "back edge",
+   "why": "b 是 d 在 DFS 樹中的祖先（a→b→e→d），指向祖先就是 back edge。"
+  },
+  {
+   "q": "同一個例子中 a → d 是哪種邊？",
+   "opts": [
+    "forward edge",
+    "back edge",
+    "cross edge",
+    "tree edge"
+   ],
+   "ans": "forward edge",
+   "why": "d 是 a 的後代，但 DFS 是經由 b、e 走到 d 的，所以 a → d 是指向後代的非樹邊。"
+  },
+  {
+   "q": "同一個例子中 c → e 是哪種邊？",
+   "opts": [
+    "cross edge",
+    "forward edge",
+    "back edge",
+    "tree edge"
+   ],
+   "ans": "cross edge",
+   "why": "e 在第一棵樹（從 a 開始），c 是第二棵樹的根，兩者沒有祖先關係。"
+  },
+  {
+   "q": "無向圖的 DFS 可能出現哪些邊？",
+   "opts": [
+    "只有 tree edge 和 back edge",
+    "四種都可能",
+    "只有 tree edge",
+    "tree、forward、cross edge"
+   ],
+   "ans": "只有 tree edge 和 back edge",
+   "why": "無向邊會先從較深的那一端被看到成為 back edge；子樹間的邊會被當成 tree edge 走過去。"
+  },
+  {
+   "q": "「G 有 cycle ⇔ DFS 有 back edge」的 ⇒ 方向，證明的關鍵是？",
+   "opts": [
+    "取 cycle 上第一個被拜訪的 v0，vk 會在 v0 結束前被拜訪，看 vk → v0 時 v0 還在堆疊上",
+    "任取 cycle 上一條邊都是 back edge",
+    "BFS 會找到最短的 cycle",
+    "cycle 的長度至少是 3"
+   ],
+   "ans": "取 cycle 上第一個被拜訪的 v0，vk 會在 v0 結束前被拜訪，看 vk → v0 時 v0 還在堆疊上",
+   "why": "這是講者的證明：balanced parentheses 保證 vk 在 v0 的區間內。"
+  },
+  {
+   "q": "DFS 版 topological sort 輸出的是？",
+   "opts": [
+    "依 finishing time 由大到小（反序）",
+    "依 discovery time 由小到大",
+    "依 finishing time 由小到大",
+    "依 in-degree 由小到大"
+   ],
+   "ans": "依 finishing time 由大到小（反序）",
+   "why": "每條邊 (u, v) 都有 f[v] < f[u]，反過來輸出 u 就在 v 前面。"
+  },
+  {
+   "q": "DFS 的總時間 Θ(V + E) 中，E 這一項來自？",
+   "opts": [
+    "所有 adjacency list 的長度總和",
+    "外層迴圈",
+    "遞迴深度",
+    "parent 字典的大小"
+   ],
+   "ans": "所有 adjacency list 的長度總和",
+   "why": "每個頂點的 DFS-visit 掃自己的 Adj[v]，總和是 E（無向是 2E）。"
+  }
+ ]
+}

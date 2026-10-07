@@ -1,0 +1,189 @@
+{
+ "video": "0M_kIqhwbFo",
+ "label": "MIT 6.006 L8：Hashing with Chaining",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "Dictionary ADT",
+   "scene": null,
+   "points": [
+    {
+     "text": "Dictionary 存放有 key 的 items，支援 insert、delete、search(key)。",
+     "t": 86
+    },
+    {
+     "text": "Search 是 exact search：找到該 key 的 item，或回報不存在（Python 的 KeyError）；不像 BST 能找 successor／predecessor。",
+     "t": 104
+    },
+    {
+     "text": "假設 key 唯一：插入相同 key 時覆寫舊的（Python 的行為）。",
+     "t": 161
+    },
+    {
+     "text": "用 AVL tree 可做到 O(log n)；本講目標是 O(1)（with high probability）的隨機化結構。",
+     "t": 201
+    }
+   ]
+  },
+  {
+   "title": "Dictionary 的應用",
+   "scene": null,
+   "points": [
+    {
+     "text": "Python dict、docdist 計算字頻與內積都靠 dictionary。",
+     "t": 356
+    },
+    {
+     "text": "資料庫、拼字檢查、早期搜尋引擎、登入帳號查詢、編譯器的變數名稱表、路由器、網路 port 對應都在用。",
+     "t": 422
+    },
+    {
+     "text": "字串搜尋（grep、Ctrl-F）、DNA 相似度、rsync／Dropbox 檔案同步、密碼學雜湊也用到 hashing 的概念。",
+     "t": 753
+    }
+   ]
+  },
+  {
+   "title": "Direct access table 與 prehashing",
+   "scene": null,
+   "points": [
+    {
+     "text": "Direct access table：用 key 當陣列索引，insert／delete／search 都是 O(1)。",
+     "t": 918
+    },
+    {
+     "text": "缺點一：key 不一定是整數；缺點二：key 範圍大時極度浪費空間（64-bit key 要 2⁶⁴ 格）。",
+     "t": 1018
+    },
+    {
+     "text": "Prehash：把任何 key 對應成非負整數；理論上任何資料都是一串位元，就是一個整數。",
+     "t": 1159
+    },
+    {
+     "text": "Python 的 hash() 其實是 prehash；prehash 值不能隨時間改變，所以 list 這種 mutable 物件不能當 key。",
+     "t": 1263
+    }
+   ]
+  },
+  {
+   "title": "Hashing：把 key space 縮到 m 格",
+   "scene": null,
+   "points": [
+    {
+     "text": "Hash function h 把巨大的 key universe 映射到 {0, 1, …, m−1}，m 是 table 大小。",
+     "t": 1621
+    },
+    {
+     "text": "希望 m = Θ(n)，n 是目前存放的 key 數，空間才會是線性。",
+     "t": 1731
+    },
+    {
+     "text": "鴿籠原理：key 遠多於格子，一定有 h(kᵢ) = h(kⱼ) 但 kᵢ ≠ kⱼ 的 collision。",
+     "t": 1768
+    }
+   ]
+  },
+  {
+   "title": "Chaining 與 simple uniform hashing",
+   "scene": null,
+   "points": [
+    {
+     "text": "Chaining：同一格的 items 存成 linked list。",
+     "t": 1847
+    },
+    {
+     "text": "最壞情況所有 key 都撞在同一格，退化成長度 n 的 list → Θ(n)。",
+     "t": 1961
+    },
+    {
+     "text": "Simple uniform hashing 假設：每個 key 均勻且彼此獨立地落到各格（不實際但便於分析）。",
+     "t": 2021
+    },
+    {
+     "text": "期望 chain 長度 = n/m = α（load factor）；操作時間 Θ(1 + α)，m = Θ(n) 時為常數。",
+     "t": 2237
+    }
+   ]
+  },
+  {
+   "title": "三種 hash function",
+   "scene": null,
+   "points": [
+    {
+     "text": "Division method：h(k) = k mod m；m 取不靠近 2 或 10 次方的質數較好。",
+     "t": 2523
+    },
+    {
+     "text": "Multiplication method：h(k) = [(a·k) mod 2ʷ] >> (w − r)，m = 2ʳ，取乘積中間混得最均勻的 r 位元；a 要是奇數。",
+     "t": 2616
+    },
+    {
+     "text": "Universal hashing：h(k) = [(a·k + b) mod p] mod m，p 是大於 universe 的質數，a、b 隨機。",
+     "t": 2860
+    },
+    {
+     "text": "對任意兩個不同 key，碰撞機率 ≤ 1/m（機率來自隨機選 a、b），期望 chain 長度仍是 α。",
+     "t": 2953
+    }
+   ],
+   "trap": "補充：Θ(1 + α) 是「期望」時間，最壞仍是 Θ(n)；這與第 1 章的 best/worst/average case 分析是同一個觀念。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Hashing with chaining 在 simple uniform hashing 下，search 的期望時間是？",
+   "opts": [
+    "Θ(1 + α)",
+    "Θ(log n)",
+    "Θ(n)",
+    "Θ(α²)"
+   ],
+   "ans": "Θ(1 + α)",
+   "why": "計算 hash 與第一個指標要常數，再走期望長度 α 的 chain。"
+  },
+  {
+   "q": "load factor α 的定義是？",
+   "opts": [
+    "n/m",
+    "m/n",
+    "1/m",
+    "n·m"
+   ],
+   "ans": "n/m",
+   "why": "n 個 key 平均分到 m 格。"
+  },
+  {
+   "q": "Direct access table 的主要問題是？",
+   "opts": [
+    "key 不一定是整數，且 key 範圍大時浪費空間",
+    "search 要 O(n)",
+    "insert 要 O(log n)",
+    "無法刪除"
+   ],
+   "ans": "key 不一定是整數，且 key 範圍大時浪費空間",
+   "why": "操作都是 O(1)，但空間與 key universe 成正比。"
+  },
+  {
+   "q": "Division method 若 m 是 2 的次方且 key 都是偶數，會發生什麼？",
+   "opts": [
+    "只用到一半的 slot",
+    "完全不會碰撞",
+    "hash 值都是 0",
+    "沒有影響"
+   ],
+   "ans": "只用到一半的 slot",
+   "why": "k mod m 和 k 有公因數 2，奇數 slot 永遠用不到。"
+  },
+  {
+   "q": "Universal hashing 中「碰撞機率 ≤ 1/m」的機率來自？",
+   "opts": [
+    "隨機選擇 hash function 的 a、b",
+    "隨機的輸入 key",
+    "隨機的 table 大小",
+    "隨機的插入順序"
+   ],
+   "ans": "隨機選擇 hash function 的 a、b",
+   "why": "對最壞情況的 key，隨機挑選 hash function 也能保證期望表現。"
+  }
+ ]
+}

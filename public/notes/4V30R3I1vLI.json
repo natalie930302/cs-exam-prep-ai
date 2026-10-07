@@ -1,0 +1,130 @@
+{
+ "video": "4V30R3I1vLI",
+ "label": "Abdul Bari：2.1.1 Recurrence Relation #1",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "追蹤 test(3)：tracing tree",
+   "scene": "trace-test3",
+   "points": [
+    {
+     "text": "void test(int n) { if (n > 0) { printf(n); test(n − 1); } }",
+     "t": 30
+    },
+    {
+     "text": "test(3)：印 3 → 呼叫 test(2)：印 2 → test(1)：印 1 → test(0)：0 不大於 0，停止。",
+     "t": 60
+    },
+    {
+     "text": "印了 3 次、呼叫了 4 次；傳入 n 就會呼叫 n + 1 次、印 n 次。",
+     "t": 145
+    },
+    {
+     "text": "時間取決於呼叫次數：f(n) = n + 1 → O(n)，也可寫 Θ(n)。",
+     "t": 240
+    },
+    {
+     "text": "這張圖叫 tracing tree 或 recursive tree。",
+     "t": 278
+    }
+   ]
+  },
+  {
+   "title": "寫出 recurrence relation",
+   "scene": "back-sub-decreasing",
+   "points": [
+    {
+     "text": "設 test(n) 花 T(n)：printf 1 單位，遞迴呼叫 test(n−1) 花 T(n−1)。",
+     "t": 320
+    },
+    {
+     "text": "T(n) = T(n−1) + 1；if 判斷也算的話是 +2，但常數都可以當成 1（或 c）。",
+     "t": 380
+    },
+    {
+     "text": "邊界：n = 0 時不做事，但時間不寫 0，寫成常數 1。",
+     "t": 456
+    }
+   ]
+  },
+  {
+   "title": "Back substitution 解遞迴",
+   "scene": "back-sub-decreasing",
+   "points": [
+    {
+     "text": "T(n−1) = T(n−2) + 1，代回得 T(n) = T(n−2) + 2。",
+     "t": 549
+    },
+    {
+     "text": "再代：T(n) = T(n−3) + 3；持續 k 次：T(n) = T(n−k) + k。",
+     "t": 598
+    },
+    {
+     "text": "要碰到已知的 T(0)，令 n − k = 0 → k = n。",
+     "t": 701
+    },
+    {
+     "text": "T(n) = T(0) + n = 1 + n → Θ(n)，和 tracing tree 的 n + 1 次呼叫一致。",
+     "t": 739
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "test(3) 會印出幾個數字、呼叫 test 幾次？",
+   "opts": [
+    "印 3 個、呼叫 4 次",
+    "印 3 個、呼叫 3 次",
+    "印 4 個、呼叫 4 次",
+    "印 2 個、呼叫 3 次"
+   ],
+   "ans": "印 3 個、呼叫 4 次",
+   "why": "test(3)、test(2)、test(1)、test(0) 共 4 次，test(0) 不印。"
+  },
+  {
+   "q": "test(n) 的遞迴式為？",
+   "opts": [
+    "T(n) = T(n−1) + 1",
+    "T(n) = 2T(n−1) + 1",
+    "T(n) = T(n/2) + 1",
+    "T(n) = T(n−1) + n"
+   ],
+   "ans": "T(n) = T(n−1) + 1",
+   "why": "一個 printf 加一次規模 n−1 的遞迴呼叫。"
+  },
+  {
+   "q": "Back substitution 進行 k 次後得到？",
+   "opts": [
+    "T(n) = T(n−k) + k",
+    "T(n) = T(n−k) + kn",
+    "T(n) = 2ᵏT(n−k)",
+    "T(n) = T(n/k) + k"
+   ],
+   "ans": "T(n) = T(n−k) + k",
+   "why": "每代一次常數多 1。"
+  },
+  {
+   "q": "令 n − k = 0 後，T(n) 的解是？",
+   "opts": [
+    "n + 1 → Θ(n)",
+    "n² → Θ(n²)",
+    "log n → Θ(log n)",
+    "2ⁿ → Θ(2ⁿ)"
+   ],
+   "ans": "n + 1 → Θ(n)",
+   "why": "T(n) = T(0) + n = 1 + n。"
+  },
+  {
+   "q": "為什麼邊界 T(0) 寫成 1 而不是 0？",
+   "opts": [
+    "任何常數時間都記為 1（或 c），不影響漸近結果",
+    "因為 test(0) 會印出 0",
+    "因為 n 不能是 0",
+    "因為 T(0) 一定等於 T(1)"
+   ],
+   "ans": "任何常數時間都記為 1（或 c），不影響漸近結果",
+   "why": "判斷 n > 0 也要時間，以常數代表即可。"
+  }
+ ]
+}

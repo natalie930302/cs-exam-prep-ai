@@ -1,0 +1,178 @@
+{
+ "video": "3RBNPc0_Q6g",
+ "label": "Abdul Bari：7 Branch and Bound Introduction",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "分支界限是什麼；解的兩種表示",
+   "scene": "bb-solution-forms",
+   "points": [
+    {
+     "text": "Branch and bound 和回溯一樣用 state space tree。",
+     "t": 0
+    },
+    {
+     "text": "用來解 optimization problem，而且只做 minimization（最大化可轉成最小化）。",
+     "t": 15
+    },
+    {
+     "text": "例子：job sequencing with deadlines，4 個 job。",
+     "t": 40
+    },
+    {
+     "text": "解可寫成子集合 {J1, J4}（variable size），或 (1, 0, 0, 1)（fixed size）。",
+     "t": 60
+    },
+    {
+     "text": "先用子集合（variable size）的方法畫樹。",
+     "t": 110
+    }
+   ]
+  },
+  {
+   "title": "FIFO Branch and Bound（queue）",
+   "scene": "bb-fifo",
+   "points": [
+    {
+     "text": "第一層把 J1、J2、J3、J4 全部產生：BFS，不是 DFS。",
+     "t": 120
+    },
+    {
+     "text": "回溯是 DFS，分支界限是 BFS。",
+     "t": 139
+    },
+    {
+     "text": "展開節點 2（已選 J1）：可再選 J2、J3、J4 → 節點 6、7、8。",
+     "t": 165
+    },
+    {
+     "text": "接著展開節點 3（J2）：J3、J4；節點 4（J3）只剩 J4 → 節點 11。",
+     "t": 200
+    },
+    {
+     "text": "一直展開到每條路都到 J4，整棵樹就產生完了。",
+     "t": 236
+    }
+   ],
+   "trap": "補充：字幕裡最後一個節點說成 17，照 BFS 正確編號應為 16（4 個 job 的子集合樹共 16 個節點）。"
+  },
+  {
+   "title": "LIFO Branch and Bound（stack）",
+   "scene": "bb-lifo",
+   "points": [
+    {
+     "text": "第二種：產生的節點放進 stack。",
+     "t": 250
+    },
+    {
+     "text": "pop 出節點 5（J4）：已是最後一個 job，不能展開。",
+     "t": 280
+    },
+    {
+     "text": "pop 節點 4（J3）→ 產生節點 6（J4）。",
+     "t": 319
+    },
+    {
+     "text": "pop 節點 3（J2）→ 產生 7、8；之後節點 2（J1）→ 10、11、12。",
+     "t": 338
+    },
+    {
+     "text": "用 queue 叫 FIFO B&B，用 stack 叫 LIFO B&B。",
+     "t": 395
+    },
+    {
+     "text": "不論哪種，選到一個節點就要把它所有的孩子都產生。",
+     "t": 410
+    }
+   ]
+  },
+  {
+   "title": "LC（Least Cost）Branch and Bound",
+   "scene": "bb-lc",
+   "points": [
+    {
+     "text": "第三種：least cost branch and bound。",
+     "t": 429
+    },
+    {
+     "text": "每個節點用 cost function 算 cost；FIFO、LIFO、LC 都要算才能解最小化。",
+     "t": 456
+    },
+    {
+     "text": "例：root ∞，J1、J2、J3 三個節點 cost 25、12、19（老師隨手舉的數字）。",
+     "t": 478
+    },
+    {
+     "text": "下一個展開 cost 最小的節點（J2，cost 12）。",
+     "t": 502
+    },
+    {
+     "text": "孩子 cost 8 和 7 → 選 7；它是 J2、J4，已是最後一個 job → 解。",
+     "t": 535
+    },
+    {
+     "text": "不必產生整棵樹，比 FIFO、LIFO 快。",
+     "t": 564
+    }
+   ],
+   "trap": "補充：J4 那個節點的 cost 字幕聽不清，場景暫用 30（只要比 12 大，結論都一樣）。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Branch and bound 原本是用來解哪種問題？",
+   "opts": [
+    "最小化的最佳化問題",
+    "找所有解",
+    "只有判定問題",
+    "最大化問題，不能轉換"
+   ],
+   "ans": "最小化的最佳化問題",
+   "why": "影片：只做 minimization，最大化可轉成最小化。"
+  },
+  {
+   "q": "4 個 job 的子集合狀態空間樹，FIFO 下展開節點 2（J1）會產生哪些節點？",
+   "opts": [
+    "節點 6、7、8",
+    "節點 3、4、5",
+    "節點 10、11、12",
+    "節點 6、7"
+   ],
+   "ans": "節點 6、7、8",
+   "why": "節點 2–5 是第一層；節點 2 的孩子 J2、J3、J4 接著編為 6、7、8。"
+  },
+  {
+   "q": "LIFO Branch and bound 用什麼資料結構選下一個 E-node？",
+   "opts": [
+    "Stack",
+    "Queue",
+    "Min-heap",
+    "Hash table"
+   ],
+   "ans": "Stack",
+   "why": "LIFO = 後進先出 = stack；FIFO 用 queue。"
+  },
+  {
+   "q": "LC branch and bound 下一個展開的節點是？",
+   "opts": [
+    "cost 最小的活節點",
+    "最早產生的節點",
+    "最後產生的節點",
+    "深度最深的節點"
+   ],
+   "ans": "cost 最小的活節點",
+   "why": "Least cost：挑 cost 最小的。"
+  },
+  {
+   "q": "(1, 0, 0, 1) 這種解的表示法屬於？",
+   "opts": [
+    "Fixed size",
+    "Variable size",
+    "Subset size",
+    "Cost size"
+   ],
+   "ans": "Fixed size",
+   "why": "長度永遠等於 job 數；{J1, J4} 才是長度會變的子集合表示。"
+  }
+ ]
+}

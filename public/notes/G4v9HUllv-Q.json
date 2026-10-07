@@ -1,0 +1,119 @@
+{
+ "video": "G4v9HUllv-Q",
+ "label": "清大周志遠 第17B講 Special Scheduling Issues",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "軟體排程與硬體排程",
+   "scene": "smp",
+   "points": [
+    {
+     "text": "前面談的都是 OS（software level）的 ready queue scheduling；下面還有 hardware。",
+     "t": 9
+    },
+    {
+     "text": "現在的電腦是 multi-processor（主機板多個 CPU 插槽）加 multi-core，甚至一個 core 跑兩個 hardware thread（Intel hyper-threading），GPU 更多。",
+     "t": 32
+    },
+    {
+     "text": "OS 只排順序；被選中的 process 實際跑在哪顆 CPU、哪個 core、跟誰共用，是 hardware 的決定 → 兩層 scheduling。",
+     "t": 100
+    },
+    {
+     "text": "之後會介紹 real-time scheduling：要 meet deadline，演算法要非常嚴謹。",
+     "t": 151
+    }
+   ]
+  },
+  {
+   "title": "Asymmetric vs symmetric multiprocessing",
+   "scene": "smp",
+   "points": [
+    {
+     "text": "asymmetric：其中一顆 CPU 是 master，管理所有 process，OS 選中的交給 master 再分配到各 processor。",
+     "t": 216
+    },
+    {
+     "text": "symmetric（SMP）：沒有 master，所有 CPU 去競爭同一個 ready queue。",
+     "t": 254
+    },
+    {
+     "text": "SMP dequeue 時要 synchronization：一個 process 不能同時跑在兩顆 CPU 上，所以稍微慢一點點。",
+     "t": 271
+    },
+    {
+     "text": "master 不執行一般程式，使用率可能很低；所以一般電腦都是 SMP。",
+     "t": 311
+    }
+   ]
+  },
+  {
+   "title": "Processor affinity",
+   "scene": "affinity",
+   "points": [
+    {
+     "text": "affinity：把程式綁在指定的 CPU core 上，那個 core 被佔走就等。",
+     "t": 332
+    },
+    {
+     "text": "好處：cache 可以 reuse，因為最底層的 L1 cache 各 core 分開，所以跑得更快。",
+     "t": 359
+    },
+    {
+     "text": "效能要求高、process 數量可控時大家都會用 affinity；它是透過 scheduler 實現的排程限制。",
+     "t": 372
+    },
+    {
+     "text": "soft affinity：core 太忙或等太久還是會排到別的 core；hard affinity：無論如何都不換，寧可等。",
+     "t": 403
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "SMP 共用一個 ready queue 時，dequeue 要注意什麼？",
+   "opts": [
+    "synchronization：同一個 process 不能被兩顆 CPU 拿走",
+    "需要 master CPU 分派",
+    "只能用 FCFS",
+    "不能用 affinity"
+   ],
+   "ans": "synchronization：同一個 process 不能被兩顆 CPU 拿走",
+   "why": "所以 SMP 會稍微慢一點，但沒有 master 使用率低的問題。"
+  },
+  {
+   "q": "Asymmetric multiprocessing 的缺點？",
+   "opts": [
+    "master CPU 不跑一般程式，使用率可能低",
+    "要處理 ready queue 的 synchronization",
+    "不能用 cache",
+    "不能做 load balancing"
+   ],
+   "ans": "master CPU 不跑一般程式，使用率可能低",
+   "why": "master 負責管理與分派。"
+  },
+  {
+   "q": "Processor affinity 主要為了？",
+   "opts": [
+    "重用 L1 cache",
+    "降低 context switch 次數",
+    "避免 starvation",
+    "讓 load 平均"
+   ],
+   "ans": "重用 L1 cache",
+   "why": "不同 core 的 L1 cache 不共用，換 core 就要重抓。"
+  },
+  {
+   "q": "Hard affinity 與 soft affinity 的差別？",
+   "opts": [
+    "hard 寧可等也不換 core；soft 太忙時可以換",
+    "hard 用在 GPU；soft 用在 CPU",
+    "hard 由硬體決定；soft 由使用者決定",
+    "沒有差別"
+   ],
+   "ans": "hard 寧可等也不換 core；soft 太忙時可以換",
+   "why": "17B 的定義。"
+  }
+ ]
+}

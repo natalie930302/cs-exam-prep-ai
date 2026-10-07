@@ -1,0 +1,244 @@
+{
+ "video": "2nTqrHZhVQ0",
+ "label": "清大周志遠 第2A講 Historical Prospective(Mainframe)",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "Batch 系統",
+   "scene": "batch-idle",
+   "points": [
+    {
+     "text": "最早的系統是 batch：一次只處理一個 job。",
+     "t": 0
+    },
+    {
+     "text": "OS 幾乎不用做事：把程式 load 進 memory、讓 CPU 執行、讀卡片輸入、印出結果。",
+     "t": 38
+    },
+    {
+     "text": "缺點：一次一個 job、執行中沒有 interaction、資源使用率低。",
+     "t": 56
+    },
+    {
+     "text": "任何 program 都可以拆成兩種 phase：計算或 I/O。",
+     "t": 113
+    },
+    {
+     "text": "只放一個程式時，做 I/O 的期間 CPU 毫無選擇只能 idle。",
+     "t": 132
+    }
+   ],
+   "trap": "batch 的 CPU 使用率低不是因為 CPU 慢，而是 I/O 時沒有別的 job 可以用 CPU。"
+  },
+  {
+   "title": "Multiprogramming",
+   "scene": "multiprog-overlap",
+   "points": [
+    {
+     "text": "解法：在系統（memory）裡同時放多個 program。",
+     "t": 189
+    },
+    {
+     "text": "一個 program 做 I/O 時，讓另一個 program 用 CPU → CPU 與 I/O 的時間 overlap。",
+     "t": 208
+    },
+    {
+     "text": "program 越多，越能保證 always 有人要用 CPU，CPU 就不 idle。",
+     "t": 252
+    }
+   ]
+  },
+  {
+   "title": "Spooling",
+   "scene": "spooling",
+   "points": [
+    {
+     "text": "難處：I/O device 很被動，需要 CPU 一直下指令、監測狀態。",
+     "t": 309
+    },
+    {
+     "text": "就像屬下寫一行字就問主管下一步，主管根本做不了自己的事。",
+     "t": 327
+    },
+    {
+     "text": "Spooling：I/O 進行中 CPU 完全不 involve，做完再 notify CPU（例如從 disk 搬 1 GB 到 memory）。",
+     "t": 366
+    },
+    {
+     "text": "spooling 是概念，實現它的機制是 interrupt（下一章重點）。",
+     "t": 424
+    }
+   ]
+  },
+  {
+   "title": "Multiprogramming 需要的管理",
+   "scene": "job-cpu-sched",
+   "points": [
+    {
+     "text": "memory 裡除了 OS，還有 job 1、2、3、4…；CPU 只能讀 memory，所以要先 load。",
+     "t": 481
+    },
+    {
+     "text": "program 一開始在 disk：決定 load 哪些進 memory 叫 job scheduling。",
+     "t": 543
+    },
+    {
+     "text": "每個 job 分多少 memory、動態配置 → memory management。",
+     "t": 599
+    },
+    {
+     "text": "CPU core 更少（就算 64 核），挑哪個 job 上 CPU → CPU scheduling（作業三）。",
+     "t": 636
+    },
+    {
+     "text": "現在 memory 很大通常全部 load，job scheduling 比較不重要。",
+     "t": 691
+    },
+    {
+     "text": "很多 I/O device 自帶小 chip 幫 CPU 處理 I/O，讓 CPU 專心算。",
+     "t": 766
+    }
+   ]
+  },
+  {
+   "title": "Time sharing",
+   "scene": "time-sharing",
+   "points": [
+    {
+     "text": "multiprogramming 提高了使用率，但沒有 interactive；單一 program 甚至因禮讓而變慢。",
+     "t": 820
+    },
+    {
+     "text": "使用者想要：隨時跟 program 互動、很多人同時用、卻感覺不到別人。",
+     "t": 857
+    },
+    {
+     "text": "Time sharing（multi-tasking）：所有人一起執行，用時間切割 CPU。",
+     "t": 915
+    },
+    {
+     "text": "頻繁在 CPU 和 device 之間切換，使用者一按鍵就能立刻反應 → interactive。",
+     "t": 976
+    },
+    {
+     "text": "每個 program 只跑幾個 ms 就換下一個，看起來大家同時在跑。",
+     "t": 1052
+    },
+    {
+     "text": "差別：原本做完才換；time sharing 把 CPU 切成 time slot，時間一到就 switch。",
+     "t": 1126
+    }
+   ]
+  },
+  {
+   "title": "Time sharing 衍生的問題",
+   "scene": "ts-needs",
+   "points": [
+    {
+     "text": "Virtual memory：把 disk 當 memory 用，讓 memory 看起來更大。",
+     "t": 1181
+    },
+    {
+     "text": "要更多 memory，是因為要塞進更多程式輪流用 CPU。",
+     "t": 1239
+    },
+    {
+     "text": "使用者互動最常做的是開檔、編輯、存檔 → 需要 file system。",
+     "t": 1300
+    },
+    {
+     "text": "多個程式合作、同時改同一個 memory counter → synchronization 問題。",
+     "t": 1372
+    },
+    {
+     "text": "用 lock 解同步，lock 多了又會互相擋住 → deadlock。",
+     "t": 1431
+    },
+    {
+     "text": "切換發生在 CPU 的 low-level instruction 之間，跟寫程式看到的世界不同，所以更難。",
+     "t": 1468
+    }
+   ]
+  },
+  {
+   "title": "總結：三種系統的目的",
+   "scene": "os-generations",
+   "points": [
+    {
+     "text": "Batch：一次一個 job，一個使用者獨占整台電腦，當作 baseline。",
+     "t": 1489
+    },
+    {
+     "text": "Multiprogramming：塞很多 program，目的是提高資源使用率（系統角度）。",
+     "t": 1533
+    },
+    {
+     "text": "Time sharing：加入人的因素，要 interactive、短 response time、多人 sharing（使用者角度）。",
+     "t": 1551
+    },
+    {
+     "text": "這些需求剛好對應到課本後面重要的章節，概念從來沒變過。",
+     "t": 1590
+    }
+   ],
+   "trap": "常考：multiprogramming 為了 CPU utilization；time sharing 為了 response time / interactive。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Multiprogramming 主要想解決什麼問題？",
+   "opts": [
+    "I/O 時 CPU idle、資源使用率低",
+    "使用者無法互動",
+    "程式無法在 deadline 前完成",
+    "memory 太小"
+   ],
+   "ans": "I/O 時 CPU idle、資源使用率低",
+   "why": "放多個 program，讓 CPU 與 I/O 時間 overlap。"
+  },
+  {
+   "q": "Time sharing 相對於 multiprogramming 多了什麼？",
+   "opts": [
+    "依 time slot 頻繁切換，提供 interactive 與短 response time",
+    "一次只執行一個 job",
+    "把 disk 當 memory",
+    "不需要 CPU scheduling"
+   ],
+   "ans": "依 time slot 頻繁切換，提供 interactive 與短 response time",
+   "why": "multiprogramming 做完（或去 I/O）才換；time sharing 每幾 ms 就換。"
+  },
+  {
+   "q": "課堂說「實現 spooling 的機制」是什麼？",
+   "opts": [
+    "interrupt",
+    "virtual memory",
+    "cache",
+    "compiler"
+   ],
+   "ans": "interrupt",
+   "why": "I/O 做完用 interrupt notify CPU，CPU 才不必 involve 在 I/O 中間。"
+  },
+  {
+   "q": "決定「disk 上哪些 program 要 load 進 memory」的是？",
+   "opts": [
+    "job scheduling",
+    "CPU scheduling",
+    "disk scheduling",
+    "spooling"
+   ],
+   "ans": "job scheduling",
+   "why": "disk → memory 是 job scheduling；memory → CPU 是 CPU scheduling。"
+  },
+  {
+   "q": "下列何者不是課堂提到的 time sharing 衍生問題？",
+   "opts": [
+    "卡片讀取速度",
+    "virtual memory",
+    "synchronization / deadlock",
+    "file system"
+   ],
+   "ans": "卡片讀取速度",
+   "why": "time sharing 需要更多 memory（VM）、檔案管理、同步與死鎖處理。"
+  }
+ ]
+}

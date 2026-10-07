@@ -1,0 +1,412 @@
+{
+ "video": "0J2eLvkuF8k",
+ "label": "交大彭文志 Lec02 Introduction (2/2)",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "演算法與資料結構的關係",
+   "scene": null,
+   "points": [
+    {
+     "text": "演算法在解決問題：運用不同的演算法設計理念，設計出解決問題的方法。",
+     "t": 33
+    },
+    {
+     "text": "設計好的演算法先用 pseudocode（虛擬碼）寫出來。",
+     "t": 78
+    },
+    {
+     "text": "資料結構關心如何把演算法 implement 出來，可用 array、linked list、tree 等方式。",
+     "t": 103
+    },
+    {
+     "text": "兩者互相影響：選用不同的資料結構會影響效率，也可能幫助你找出更好的演算法。",
+     "t": 155
+    }
+   ]
+  },
+  {
+   "title": "遞迴的類型與終止條件",
+   "scene": "recursion-kinds",
+   "points": [
+    {
+     "text": "演算法中會呼叫自己的步驟稱為 recursive（遞迴）。",
+     "t": 194
+    },
+    {
+     "text": "Direct recursion：函數 A 直接呼叫 A 自己。",
+     "t": 215
+    },
+    {
+     "text": "Indirect recursion：A 不直接呼叫自己，而是呼叫 B，再經由 B 呼叫回來。",
+     "t": 221
+    },
+    {
+     "text": "寫遞迴的關鍵是 boundary condition（終止條件），確保遞迴會停。",
+     "t": 266
+    }
+   ]
+  },
+  {
+   "title": "遞迴範例：乘法與加總",
+   "scene": "recursive-multiply",
+   "points": [
+    {
+     "text": "遞迴乘法：a × b = a × (b−1) + a，b 每呼叫一次就遞減 1。",
+     "t": 281
+    },
+    {
+     "text": "boundary condition：b = 1 時不能再減，直接回傳 a。",
+     "t": 324
+    },
+    {
+     "text": "設計遞迴的重點是先把遞迴式寫出來，寫出來就成功一半。",
+     "t": 395
+    },
+    {
+     "text": "1 加到 n 也能寫成遞迴：(1 加到 n−1) + n，再一路展開下去。",
+     "t": 453
+    },
+    {
+     "text": "但這不是唯一解，用公式或 for 迴圈計算更直接，要多想有沒有必要搞得那麼複雜。",
+     "t": 479
+    },
+    {
+     "text": "迴圈通常較有效率：遞迴每次函數呼叫都要記錄返回位置、再回到原呼叫處，有額外 overhead。",
+     "t": 581
+    }
+   ],
+   "trap": "補充：遞迴寫法簡潔，但函數呼叫有額外時間與堆疊空間成本，能用迴圈或公式時不一定要用遞迴。"
+  },
+  {
+   "title": "Binary search：迭代版與遞迴版",
+   "scene": "binary-search",
+   "points": [
+    {
+     "text": "Binary search：對已排序的數列，每次比較後把搜尋範圍切一半。",
+     "t": 614
+    },
+    {
+     "text": "第一種寫法用 while 迴圈，沒有用到遞迴。",
+     "t": 629
+    },
+    {
+     "text": "用 left、right 兩個邊界指標表示目前搜尋範圍，藉由調整邊界決定要搜尋哪一段。",
+     "t": 673
+    },
+    {
+     "text": "用 compare 函數搭配 switch-case 判斷要往左半還是右半繼續找。",
+     "t": 700
+    },
+    {
+     "text": "遞迴版：在 binsearch 裡呼叫 binsearch 自己去搜尋左半或右半。",
+     "t": 721
+    },
+    {
+     "text": "找到就回傳（boundary condition），找不到則回傳表示沒找到的結果。",
+     "t": 811
+    }
+   ],
+   "trap": "補充：binary search 每次範圍減半，比較次數為 O(log n)，前提是資料已排序。"
+  },
+  {
+   "title": "用遞迴產生所有排列（permutation）",
+   "scene": "perm-tree",
+   "points": [
+    {
+     "text": "問題：輸出 a、b、c 的所有排列，共 6 種。",
+     "t": 830
+    },
+    {
+     "text": "直接寫 6 行 cout 是「工人智慧」；字元很多（如 100 個）時必須讓程式自動產生。",
+     "t": 899
+    },
+    {
+     "text": "遞迴設計：先固定第一個字元，剩下的字元在後面的位置做 permutation；第一個字元輪流是 a、b、c。",
+     "t": 1034
+    },
+    {
+     "text": "perm 函數有三個參數：字串、排列範圍的起點、終點（例如 1 到 3）。",
+     "t": 1126
+    },
+    {
+     "text": "範圍只剩一個位置（例如 3 到 3）就是 boundary condition，直接輸出結果。",
+     "t": 1279
+    },
+    {
+     "text": "實作時用 swap 交換字元來固定位置，可拿 abc 自己 trace 一次程式碼。",
+     "t": 1503
+    }
+   ]
+  },
+  {
+   "title": "不用遞迴的排列解法與多元思考",
+   "scene": "perm-loops",
+   "points": [
+    {
+     "text": "不用遞迴也可以：用多層 for 迴圈，讓每個位置都試 a、b、c。",
+     "t": 1580
+    },
+    {
+     "text": "但這樣會產生字元重複的組合，必須偵測已出現過的並排除。",
+     "t": 1622
+    },
+    {
+     "text": "同一個問題不只一種 solution，鼓勵多想自己的解法。",
+     "t": 1655
+    }
+   ]
+  },
+  {
+   "title": "效能評估與空間複雜度",
+   "scene": "space-sp",
+   "points": [
+    {
+     "text": "解決問題的流程：發現問題、提出想法、寫成程式讓電腦執行，接著評估這個 solution 的效能。",
+     "t": 1757
+    },
+    {
+     "text": "Performance evaluation 有兩個層次：與機器無關的複雜度分析，以及實際量測程式從開始到結束的時間。",
+     "t": 1796
+    },
+    {
+     "text": "實測時間會受 CPU、memory 等硬體影響。",
+     "t": 1820
+    },
+    {
+     "text": "常用兩種複雜度：space complexity（用多少 memory）與 time complexity。",
+     "t": 1885
+    },
+    {
+     "text": "S(P) = c + S_P：c 是固定部分，例如存放程式碼本身的空間。",
+     "t": 1915
+    },
+    {
+     "text": "S_P 與輸入資料量（instance characteristics）有關，是分析的重點。",
+     "t": 1957
+    }
+   ]
+  },
+  {
+   "title": "時間複雜度與 program step",
+   "scene": "time-tp",
+   "points": [
+    {
+     "text": "T(P) = compile time + 執行時間 T_P；compile time 與輸入無關，所以只分析 T_P。",
+     "t": 2028
+    },
+    {
+     "text": "CPU 實際執行的是 add、sub、load、store 等 instruction，執行時間取決於 instruction set。",
+     "t": 2131
+    },
+    {
+     "text": "這些細節太瑣碎，資料結構與演算法改為計算 program step（程式步數）。",
+     "t": 2185
+    }
+   ]
+  },
+  {
+   "title": "用 count 變數計算 program step",
+   "scene": "count-steps",
+   "points": [
+    {
+     "text": "在程式中宣告全域變數 count，初值 0，每執行一個敘述就 count++。",
+     "t": 2241
+    },
+    {
+     "text": "以加總 n 個數字的程式為例，算出約 2n+3 步。",
+     "t": 2313
+    },
+    {
+     "text": "assignment（如 tempsum = 0）算一步；只有宣告、沒有 assignment 的不算。",
+     "t": 2397
+    },
+    {
+     "text": "2n+3 和 2n+5 在 n 很大時沒有差別，重點是步數與 n 的關係。",
+     "t": 2420
+    },
+    {
+     "text": "矩陣加法（A + B 存入 C）用兩層 for 迴圈，step 數與 rows、cols 有關。",
+     "t": 2480
+    },
+    {
+     "text": "若 rows 遠大於 cols，可把內外迴圈交換，以降低 step 數。",
+     "t": 2561
+    }
+   ]
+  },
+  {
+   "title": "Tabular method：用表格算步數",
+   "scene": "step-table",
+   "points": [
+    {
+     "text": "另一種方法是列表：每行敘述的 s/e（每次執行的步數）乘上 frequency（執行次數）。",
+     "t": 2619
+    },
+    {
+     "text": "例：float tempsum = 0 是 assignment，s/e = 1，只執行 1 次。",
+     "t": 2633
+    },
+    {
+     "text": "for 迴圈的標頭要執行 n+1 次（最後多一次判斷才結束）。",
+     "t": 2669
+    },
+    {
+     "text": "把每行的 total steps 相加，得到 2n+3。",
+     "t": 2681
+    }
+   ],
+   "trap": "for 迴圈的條件判斷比迴圈本體多執行一次：本體 n 次，標頭 n+1 次。"
+  },
+  {
+   "title": "漸近分析與 Big-O 定義",
+   "scene": "bigo-def",
+   "params": {
+    "a": 3,
+    "b": 2,
+    "c": 4,
+    "n0": 2
+   },
+   "points": [
+    {
+     "text": "算 step 的最終目的是求複雜度 Big-O，並看 best、worst、average case。",
+     "t": 2728
+    },
+    {
+     "text": "program step 不等於實際執行時間，重點是與 n 的關係，例如 n² + … 與 10n 的效率差別。",
+     "t": 2768
+    },
+    {
+     "text": "定義：f(n) = O(g(n)) 若存在常數 c 與 n₀，使所有 n ≥ n₀ 時 f(n) ≤ c·g(n)。",
+     "t": 2838
+    },
+    {
+     "text": "例：3n+2 = O(n)，取 c = 4、n₀ = 2，此時 3n+2 ≤ 4n。",
+     "t": 2873
+    },
+    {
+     "text": "例：10n²+4n+2 = O(n²)，取 c = 11、n₀ = 10。",
+     "t": 2912
+    },
+    {
+     "text": "符合定義的 g(n) 有很多（3n+2 也 ≤ c·n²），但要取所有 upper bound 中最小的那一個。",
+     "t": 2965
+    }
+   ],
+   "trap": "定義用的是「≤」，而且只需 n ≥ n₀ 時成立；3n+2 = O(n²) 在數學上成立，但不是我們要的最緊上界。"
+  },
+  {
+   "title": "Ω 與 Θ",
+   "scene": "omega-theta",
+   "points": [
+    {
+     "text": "Ω：存在常數 c、n₀，使 n ≥ n₀ 時 f(n) ≥ c·g(n)；差別只在不等號方向。",
+     "t": 3010
+    },
+    {
+     "text": "例：3n+3 = Ω(n)，取 c = 3。",
+     "t": 3046
+    },
+    {
+     "text": "Ω 代表 lower bound；lower bound 有很多，要取其中最大的那一個。",
+     "t": 3078
+    },
+    {
+     "text": "Θ：同時是 upper bound 與 lower bound，用兩個常數把 f(n) 夾住（夾擠）。",
+     "t": 3117
+    }
+   ],
+   "trap": "補充：f(n) = Θ(g(n)) 若且唯若 f(n) = O(g(n)) 且 f(n) = Ω(g(n))，即 c₁·g(n) ≤ f(n) ≤ c₂·g(n)。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "遞迴乘法 a × b = a × (b−1) + a 的 boundary condition 是？",
+   "opts": [
+    "b = 1 時回傳 a",
+    "a = 0 時回傳 b",
+    "b = 0 時回傳 1",
+    "a = b 時回傳 a²"
+   ],
+   "ans": "b = 1 時回傳 a",
+   "why": "b 每次遞減 1，減到 1 時 a × 1 = a，不能再往下減。"
+  },
+  {
+   "q": "函數 A 不直接呼叫自己，而是呼叫 B，再由 B 呼叫回 A，這稱為？",
+   "opts": [
+    "Direct recursion",
+    "Indirect recursion",
+    "Tail recursion",
+    "Iteration"
+   ],
+   "ans": "Indirect recursion",
+   "why": "A 直接呼叫 A 是 direct；經由其他函數繞回來是 indirect。"
+  },
+  {
+   "q": "空間需求 S(P) = c + S_P 中，分析時主要關注哪一部分？",
+   "opts": [
+    "c，固定部分",
+    "S_P，與輸入資料量有關的部分",
+    "compile time",
+    "兩者都不需要分析"
+   ],
+   "ans": "S_P，與輸入資料量有關的部分",
+   "why": "c 是程式碼本身等固定空間，S_P 隨輸入大小改變，才是分析重點。"
+  },
+  {
+   "q": "用 count 或表格法計算「加總 n 個數字」的程式，課堂得到的 program step 是？",
+   "opts": [
+    "n",
+    "2n+3",
+    "n²",
+    "3n+2"
+   ],
+   "ans": "2n+3",
+   "why": "for 標頭 n+1 次、迴圈本體 n 次，加上初始化與 return 等常數步，共 2n+3。"
+  },
+  {
+   "q": "for (i = 0; i < n; i++) 的迴圈標頭（條件判斷）會執行幾次？",
+   "opts": [
+    "n−1",
+    "n",
+    "n+1",
+    "2n"
+   ],
+   "ans": "n+1",
+   "why": "前 n 次判斷為真進入本體，第 n+1 次判斷為假才離開迴圈。"
+  },
+  {
+   "q": "要證明 3n+2 = O(n)，課堂用的一組常數是？",
+   "opts": [
+    "c = 3, n₀ = 1",
+    "c = 4, n₀ = 2",
+    "c = 2, n₀ = 3",
+    "c = 1, n₀ = 0"
+   ],
+   "ans": "c = 4, n₀ = 2",
+   "why": "n ≥ 2 時 3n+2 ≤ 4n 成立，符合 f(n) ≤ c·g(n) 的定義。"
+  },
+  {
+   "q": "f(n) = Ω(g(n)) 的定義是？",
+   "opts": [
+    "存在 c、n₀ 使 n ≥ n₀ 時 f(n) ≤ c·g(n)",
+    "存在 c、n₀ 使 n ≥ n₀ 時 f(n) ≥ c·g(n)",
+    "對所有 n，f(n) = g(n)",
+    "f(n) / g(n) 趨近 0"
+   ],
+   "ans": "存在 c、n₀ 使 n ≥ n₀ 時 f(n) ≥ c·g(n)",
+   "why": "Ω 是 lower bound，不等號方向與 Big-O 相反。"
+  },
+  {
+   "q": "關於 Big-O 中 g(n) 的選擇，課堂強調的是？",
+   "opts": [
+    "任何 upper bound 都一樣好",
+    "要取所有 upper bound 中最小（最緊）的那一個",
+    "要取最大的 upper bound",
+    "g(n) 必須等於 f(n)"
+   ],
+   "ans": "要取所有 upper bound 中最小（最緊）的那一個",
+   "why": "3n+2 也是 O(n²)，但我們要的是最緊的上界 O(n)。"
+  }
+ ]
+}

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>互動實驗室</title>
+<link rel="icon" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="/theme.css?v=20261007e">
+<link rel="stylesheet" href="lab.css?v=15">
+</head>
+<body>
+<script>{ const q = new URLSearchParams(location.search); if (q.has('embed') || q.has('stage')) document.body.classList.add('embed'); if (q.has('stage')) document.body.classList.add('stage'); }</script>
+<header class="lab-top">
+  <a class="lab-back" href="/">← 回備考中心</a>
+  <div>
+    <div class="lab-kicker" id="kicker"></div>
+    <h1 id="title">載入中…</h1>
+  </div>
+</header>
+
+<nav class="lab-tabs" role="tablist" id="tabs"></nav>
+
+<main class="lab-main">
+  <section class="lab-stage" id="stage">
+    <div class="lab-canvas" id="canvas">
+      <div class="lab-caption" id="caption"></div>
+      <div class="lab-formula-ov" id="formulaOv"></div>
+      <button class="lab-handson" id="handsOn" type="button">自己操作</button>
+    </div>
+    <div class="lab-controls" id="controls"></div>
+  </section>
+  <aside class="lab-side">
+    <div class="lab-card" id="stateCard"></div>
+    <div class="lab-card">
+      <div class="lab-card-hd">每一步發生什麼</div>
+      <ol class="lab-log" id="log"></ol>
+    </div>
+  </aside>
+  <section class="lab-page" id="page" hidden></section>
+</main>
+
+<script type="importmap">
+{ "imports": {
+  "three": "/vendor/three/build/three.module.js",
+  "three/addons/": "/vendor/three/examples/jsm/"
+} }
+</script>
+<script type="module" src="lab-shell.js?v=16"></script>
+</body>
+</html>

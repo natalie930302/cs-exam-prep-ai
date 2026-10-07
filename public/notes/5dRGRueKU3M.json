@@ -1,0 +1,171 @@
+{
+ "video": "5dRGRueKU3M",
+ "label": "Abdul Bari：4 Principle of Optimality",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "Greedy 與 DP 的差別",
+   "scene": "greedy-vs-dp",
+   "points": [
+    {
+     "text": "Greedy 與 dynamic programming 都用來解最佳化問題（要求最小或最大結果），只是策略不同。",
+     "t": 33
+    },
+    {
+     "text": "Greedy 照一個已知會得到最佳解的既定程序做，例如 Kruskal 每次選最小成本的邊、Dijkstra 每次選最短距離的頂點再 relax。",
+     "t": 55
+    },
+    {
+     "text": "DP 則是找出所有可能的（feasible）解，再從中挑最佳解；比 greedy 花時間。",
+     "t": 86
+    },
+    {
+     "text": "DP 問題多半用遞迴式（recursive formula）描述，但實作通常用迭代（iteration），也可以用遞迴。",
+     "t": 113
+    },
+    {
+     "text": "DP 遵循 principle of optimality：問題可以藉由一連串的決策（sequence of decisions）得到最佳解。",
+     "t": 130
+    },
+    {
+     "text": "差別：greedy 只決定一次程序然後照做；DP 在每個 stage 都做決策。",
+     "t": 144
+    }
+   ],
+   "trap": "補充：greedy 的既定程序必須先被證明是最佳的；隨便訂的貪婪規則（例如 0/1 knapsack 照價值密度挑）可能得不到最佳解。"
+  },
+  {
+   "title": "Fibonacci 遞迴：tracing tree 與 O(2ⁿ)",
+   "scene": "fib-tree",
+   "points": [
+    {
+     "text": "Fibonacci 數列 0, 1, 1, 2, 3, 5, 8, 13…：每一項是前兩項的和，函式 fib(n) 本身就是遞迴定義。",
+     "t": 194
+    },
+    {
+     "text": "追蹤 fib(5)：n ≤ 1 直接回傳 n，否則呼叫 fib(n−2) 與 fib(n−1) 再相加。",
+     "t": 233
+    },
+    {
+     "text": "畫出 tracing tree，算 fib(5) 一共做了 15 次呼叫。",
+     "t": 332
+    },
+    {
+     "text": "把 n−2 近似成 n−1，得到 T(n) = 2T(n−1) + 1，用 decreasing function 的 Master theorem 得上界 O(2ⁿ)：指數時間。",
+     "t": 360
+    },
+    {
+     "text": "觀察：fib(1)、fib(2) 等相同參數被重複呼叫很多次，可以把結果存起來避免重算。",
+     "t": 425
+    }
+   ],
+   "trap": "T(n) = 2T(n−1) + 1 是把 n−2 放大後得到的上界，所以寫 O(2ⁿ) 而不是 Θ(2ⁿ)；實際成長率約 1.618ⁿ。"
+  },
+  {
+   "title": "Memoization：存結果、少呼叫",
+   "scene": "fib-memo",
+   "points": [
+    {
+     "text": "準備一個全域陣列 F[0..5]，一開始全部填 −1，表示還不知道答案。",
+     "t": 463
+    },
+    {
+     "text": "呼叫前先查表：F[x] 已經有值就不呼叫，直接拿來用；第一次算出的值存進 F。",
+     "t": 524
+    },
+    {
+     "text": "fib(5) 只呼叫 fib(5)、fib(3)、fib(1)、fib(2)、fib(0)、fib(4) 共 6 次 = n + 1 次。",
+     "t": 599
+    },
+    {
+     "text": "時間從 O(2ⁿ) 降到 O(n)：指數變線性。",
+     "t": 652
+    },
+    {
+     "text": "從 fib(5) 開始往下呼叫，所以 memoization 是 top-down approach。",
+     "t": 696
+    }
+   ],
+   "trap": "memo 的呼叫次數是 n + 1，不是 2n 也不是 15；已經在表上的值完全不會產生呼叫。"
+  },
+  {
+   "title": "Tabulation：迴圈 bottom-up 填表",
+   "scene": "fib-table",
+   "points": [
+    {
+     "text": "DP 通常不用 memoization，而是用迭代的 tabulation method。",
+     "t": 709
+    },
+    {
+     "text": "迴圈版：n ≤ 1 直接回傳；否則 F[0] = 0、F[1] = 1，i 從 2 到 n，F[i] = F[i−2] + F[i−1]，最後回傳 F[n]。",
+     "t": 750
+    },
+    {
+     "text": "填表從最小的值開始往上，所以 tabulation 是 bottom-up approach；遞迴是從 fib(5) 開始的 top-down。",
+     "t": 812
+    },
+    {
+     "text": "兩種方法都可以，DP 大多用 tabulation；最重要的是抓到解題的策略。",
+     "t": 864
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Greedy 與 DP 最主要的差別是？",
+   "opts": [
+    "Greedy 照既定程序做一次決定；DP 考慮所有可能、每個 stage 都做決策",
+    "Greedy 只能求最大值，DP 只能求最小值",
+    "DP 一定比 greedy 快",
+    "Greedy 一定要用遞迴"
+   ],
+   "ans": "Greedy 照既定程序做一次決定；DP 考慮所有可能、每個 stage 都做決策",
+   "why": "兩者都解最佳化問題；DP 依 principle of optimality 在每個階段做決策，比較花時間但不依賴貪婪規則。"
+  },
+  {
+   "q": "純遞迴 fib(5)（fib(n) = fib(n−2) + fib(n−1)）共呼叫幾次？",
+   "opts": [
+    "15",
+    "6",
+    "5",
+    "32"
+   ],
+   "ans": "15",
+   "why": "影片畫出的 tracing tree 有 15 個節點；一般式為 2F(n+1) − 1。"
+  },
+  {
+   "q": "加上 memoization（F[] 初值 −1）後，fib(5) 呼叫幾次？",
+   "opts": [
+    "6",
+    "15",
+    "5",
+    "10"
+   ],
+   "ans": "6",
+   "why": "fib(5)、fib(3)、fib(1)、fib(2)、fib(0)、fib(4)：n + 1 = 6 次，O(n)。"
+  },
+  {
+   "q": "影片對純遞迴 Fibonacci 寫出的遞迴關係與上界是？",
+   "opts": [
+    "T(n) = 2T(n−1) + 1，O(2ⁿ)",
+    "T(n) = T(n−1) + 1，O(n)",
+    "T(n) = 2T(n/2) + 1，O(n)",
+    "T(n) = T(n−1) + n，O(n²)"
+   ],
+   "ans": "T(n) = 2T(n−1) + 1，O(2ⁿ)",
+   "why": "把 n−2 放大成 n−1，兩次呼叫加一次加法 → 2T(n−1)+1，得上界 O(2ⁿ)。"
+  },
+  {
+   "q": "Memoization 與 tabulation 分別是哪種方向？",
+   "opts": [
+    "memoization top-down、tabulation bottom-up",
+    "memoization bottom-up、tabulation top-down",
+    "兩者都是 top-down",
+    "兩者都是 bottom-up"
+   ],
+   "ans": "memoization top-down、tabulation bottom-up",
+   "why": "memo 從 fib(5) 往下呼叫；tabulation 從 F[0]、F[1] 往上填。"
+  }
+ ]
+}

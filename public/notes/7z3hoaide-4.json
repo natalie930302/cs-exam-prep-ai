@@ -1,0 +1,143 @@
+{
+ "video": "7z3hoaide-4",
+ "label": "清大周志遠 第4B講 Computer-System Organization(續)",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "Storage hierarchy",
+   "scene": "storage-hierarchy",
+   "points": [
+    {
+     "text": "資料儲存是 hierarchical：越上面越快、空間越小；越下面存越多、越慢、越便宜。",
+     "t": 19
+    },
+    {
+     "text": "有限的錢下，用 hierarchy 通常達到最好的效益；每層多大、放什麼看設計。",
+     "t": 58
+    },
+    {
+     "text": "register、cache（L1、L2、L3；上層 per-core、下層 shared）、main memory。",
+     "t": 113
+    },
+    {
+     "text": "memory 以下統稱 secondary storage：hard drive、光碟、tape。",
+     "t": 154
+    },
+    {
+     "text": "tape 便宜、容量大、不容易壞：大型系統最後一層仍是 tape。",
+     "t": 175
+    },
+    {
+     "text": "flash、SSD、non-volatile memory 等新技術插在中間。",
+     "t": 214
+    },
+    {
+     "text": "不變的三個因素：速度、價錢、volatile 與否；memory 以上全是 volatile。",
+     "t": 271
+    }
+   ]
+  },
+  {
+   "title": "Main memory 是分界",
+   "scene": "memory-boundary",
+   "points": [
+    {
+     "text": "von Neumann 架構：CPU、memory、I/O，memory 是主角。",
+     "t": 350
+    },
+    {
+     "text": "memory 是 CPU 能直接 access 的最後一層，資料要在 memory 才能被 CPU 使用。",
+     "t": 369
+    },
+    {
+     "text": "register、cache 都只是 copy，最後以 memory 上的資料為準。",
+     "t": 389
+    },
+    {
+     "text": "secondary storage 的資料要先搬到 memory 才能被讀，所以 real-time system 不用它。",
+     "t": 429
+    },
+    {
+     "text": "secondary storage 比較大、比較便宜、而且 non-volatile。",
+     "t": 468
+    }
+   ]
+  },
+  {
+   "title": "DRAM vs SRAM、random access",
+   "scene": "dram-sram",
+   "points": [
+    {
+     "text": "DRAM 只需一個 transistor：小、便宜、省電，但較慢 → main memory。",
+     "t": 526
+    },
+    {
+     "text": "DDR 幾代改進的是存取 DRAM 的 bus；多核心搶著讀，bus 常是 bottleneck。",
+     "t": 566
+    },
+    {
+     "text": "SRAM 快但大、耗電、貴 → cache 甚至 register。",
+     "t": 603
+    },
+    {
+     "text": "技術都有 tradeoff，若某技術全面勝出，舊的就會從 hierarchy 消失。",
+     "t": 642
+    },
+    {
+     "text": "random access：讀任何位置的時間都一樣，效能可預期。",
+     "t": 682
+    },
+    {
+     "text": "disk 不同：讀寫位置不同時間就不同。",
+     "t": 721
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "CPU 能直接存取的最後一層儲存是？",
+   "opts": [
+    "main memory",
+    "cache",
+    "hard disk",
+    "SSD"
+   ],
+   "ans": "main memory",
+   "why": "memory 以下的 secondary storage 都要先搬到 memory。"
+  },
+  {
+   "q": "main memory 通常用哪種技術？",
+   "opts": [
+    "DRAM",
+    "SRAM",
+    "flash",
+    "tape"
+   ],
+   "ans": "DRAM",
+   "why": "DRAM 只要一個 transistor，便宜、省電，適合大容量。"
+  },
+  {
+   "q": "下列哪一個是 volatile？",
+   "opts": [
+    "cache",
+    "SSD",
+    "hard disk",
+    "tape"
+   ],
+   "ans": "cache",
+   "why": "memory 以上（register、cache、memory）斷電資料就消失。"
+  },
+  {
+   "q": "課堂說大型系統最後一層仍常用 tape 的原因？",
+   "opts": [
+    "便宜、容量大、不容易壞",
+    "速度最快",
+    "可以 random access",
+    "CPU 可以直接讀"
+   ],
+   "ans": "便宜、容量大、不容易壞",
+   "why": "tape 可靠，上面再用多層加速。"
+  }
+ ]
+}

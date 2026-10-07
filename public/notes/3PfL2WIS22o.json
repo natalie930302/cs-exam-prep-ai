@@ -1,0 +1,126 @@
+{
+ "video": "3PfL2WIS22o",
+ "label": "清大周志遠 第1A講",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "課本：Operating System Concepts",
+   "scene": null,
+   "points": [
+    {
+     "text": "課本是 Silberschatz 的 Operating System Concepts（恐龍書），資工的聖經之一，本課以第九版為主。",
+     "t": 15
+    },
+    {
+     "text": "各版差異很小，核心內容幾乎沒變，借到舊版也可以。",
+     "t": 60
+    },
+    {
+     "text": "不要只看 slides：課本才有 details，定義與例子講得最清楚，考試以課本為主。",
+     "t": 100
+    }
+   ]
+  },
+  {
+   "title": "為什麼書名叫 Concepts",
+   "scene": null,
+   "points": [
+    {
+     "text": "電腦形式變化很大，但 OS 的核心 concepts 幾十年沒變。",
+     "t": 180
+    },
+    {
+     "text": "這門課不教最新手機 OS 怎麼運作，而是教不會變的核心基礎。",
+     "t": 250
+    },
+    {
+     "text": "書只講到概念，沒有實作 → 用程式作業補上 hands-on 的部分。",
+     "t": 330
+    }
+   ]
+  },
+  {
+   "title": "Nachos 作業",
+   "scene": "nachos-vm",
+   "points": [
+    {
+     "text": "四個作業：修改一個教學用、模擬的作業系統 Nachos，該有的 component 都有。",
+     "t": 400
+    },
+    {
+     "text": "Nachos 在國外與國內重要學校都很普遍，資料要用英文查。",
+     "t": 450
+    },
+    {
+     "text": "demo 時助教會問兩位組員問題，分數依貢獻度與回答調整，不要只找答案。",
+     "t": 540
+    },
+    {
+     "text": "程式是 C++ 寫的：會 C 加上物件導向觀念就夠。",
+     "t": 580
+    }
+   ]
+  },
+  {
+   "title": "Linux 環境與 code tracing",
+   "scene": "nachos-folders",
+   "points": [
+    {
+     "text": "開發環境是 Linux 的 command line，不是 GUI 的 IDE。",
+     "t": 620
+    },
+    {
+     "text": "用指令操作更貼近 OS，能感受到指令背後 OS 在做的事。",
+     "t": 700
+    },
+    {
+     "text": "真實世界多半是修改別人幾萬、幾十萬行的程式，而不是從 main 自己寫。",
+     "t": 790
+    },
+    {
+     "text": "code tracing：先看懂架構與 code path，知道要改的部分在哪些檔案、哪些 function。",
+     "t": 860
+    },
+    {
+     "text": "改完要能 compile、用 printf 之類的方式 debug。",
+     "t": 920
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "周志遠老師這門課使用的課本是？",
+   "opts": [
+    "Operating System Concepts（恐龍書）",
+    "Modern Operating Systems（Tanenbaum）",
+    "Computer Organization and Design",
+    "The C Programming Language"
+   ],
+   "ans": "Operating System Concepts（恐龍書）",
+   "why": "課堂開頭就說明以 Operating System Concepts 第九版為主。"
+  },
+  {
+   "q": "Nachos 是什麼？",
+   "opts": [
+    "教學用、模擬的作業系統",
+    "Linux 的一個 shell",
+    "一種 CPU 排程演算法",
+    "一種檔案系統格式"
+   ],
+   "ans": "教學用、模擬的作業系統",
+   "why": "作業要修改這個 simulated、for education 的 OS。"
+  },
+  {
+   "q": "課堂所說的 code tracing 指的是？",
+   "opts": [
+    "先了解程式架構與 code path，再判斷要改哪裡",
+    "從第一個檔案第一行逐行讀完",
+    "用 GUI 除錯器單步執行",
+    "把程式重寫一遍"
+   ],
+   "ans": "先了解程式架構與 code path，再判斷要改哪裡",
+   "why": "修改別人的大型程式，要先知道檔案、function 之間的呼叫順序。"
+  }
+ ]
+}

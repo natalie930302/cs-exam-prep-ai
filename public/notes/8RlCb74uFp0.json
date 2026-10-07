@@ -1,0 +1,399 @@
+{
+ "video": "8RlCb74uFp0",
+ "label": "清大周志遠 第17A講 Process Scheduling",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "回顧：preemptive 的兩種情況",
+   "scene": "preempt-vs-non",
+   "points": [
+    {
+     "text": "non-preemptive：一旦進 running 就做到它自己去 I/O burst 或結束，才重新 scheduling。",
+     "t": 25
+    },
+    {
+     "text": "preemptive：CPU burst 做到一半就 context switch 換人。",
+     "t": 45
+    },
+    {
+     "text": "情況一：有新 process 進 ready queue（剛 create 的，或剛做完 I/O、sleep 回來的）。",
+     "t": 70
+    },
+    {
+     "text": "情況二：time sharing 的 timer interrupt，強迫目前的程式回 ready state 重選一次。",
+     "t": 96
+    }
+   ]
+  },
+  {
+   "title": "FCFS",
+   "scene": "fcfs-convoy",
+   "points": [
+    {
+     "text": "First come, first serve：先來的先做，課堂直說它明顯不好。",
+     "t": 141
+    },
+    {
+     "text": "一開始排到的先進來 process，可能是執行時間很長的 process。",
+     "t": 146
+    },
+    {
+     "text": "後面的人 wait time 都被拉高，從整個系統看 average wait time 很大，不是使用者想見到的。",
+     "t": 154
+    }
+   ],
+   "trap": "補充：恐龍書例子 P1 24、P2 3、P3 3 依序到達，FCFS 平均 WT = (0+24+27)/3 = 17；改成 P2、P3、P1 只要 3。短工被長工卡住叫 convoy effect。"
+  },
+  {
+   "title": "SJF（non-preemptive）",
+   "scene": "sjf-nonpre",
+   "points": [
+    {
+     "text": "要讓 average wait time 最小，理論上可證明就是 shortest job first：ready queue 裡最短的先排。",
+     "t": 167
+    },
+    {
+     "text": "non-preemptive：P1 雖然很長，但它先進來、沒有選擇，只好讓它先做，一旦開始就不能打斷。",
+     "t": 190
+    },
+    {
+     "text": "打斷指的是打斷「這一個 CPU burst」，真實程式有很多 burst；考題可能給第一個 burst 7、第二個 burst 4、中間隔多久。",
+     "t": 200
+    },
+    {
+     "text": "non-preemptive 的 Gantt chart 上，每段長度一定剛好等於它的 burst。",
+     "t": 261
+    }
+   ]
+  },
+  {
+   "title": "SRTF（preemptive SJF）",
+   "scene": "srtf",
+   "points": [
+    {
+     "text": "preemptive 要隨時判斷有沒有新的人進 ready queue。",
+     "t": 272
+    },
+    {
+     "text": "剛剛的 P1 還是先執行，但被打斷了，CPU burst 被切開。",
+     "t": 282
+    },
+    {
+     "text": "P1 的 response time 很快（一進來就執行），但中間一直在 ready queue 等，wait time 還是很久。",
+     "t": 293
+    },
+    {
+     "text": "preemptive 時 response time 和 wait time 很容易不同，是兩個不同的 performance metric。",
+     "t": 323
+    }
+   ],
+   "trap": "補充：例題 P1(0,7) P2(2,4) P3(4,1) P4(5,4)：SJF 平均 WT 4、SRTF 平均 WT 3；SRTF 比的是「剩餘時間」，不是原本的 burst。"
+  },
+  {
+   "title": "預測下一個 CPU burst",
+   "scene": "sjf-predict",
+   "points": [
+    {
+     "text": "SJF 理論很好，但實際上不知道 burst time，所以不知道誰最短。",
+     "t": 363
+    },
+    {
+     "text": "burst time 是一串 time series，可用 exponential decay（exponential averaging）的方式預測。",
+     "t": 382
+    },
+    {
+     "text": "一開始亂猜可能不準，但程式通常有規律（例如迴圈），burst time 很穩定，預測會貼近。",
+     "t": 404
+    },
+    {
+     "text": "真實 OS 會用比較直覺的方式（後面介紹），概念一樣：CPU burst 短的先做。",
+     "t": 440
+    }
+   ],
+   "trap": "補充：τₙ₊₁ = α·tₙ + (1 − α)·τₙ；α = 0 只看歷史、α = 1 只看上一次。恐龍書例子 τ₀ = 10、α = 1/2。"
+  },
+  {
+   "title": "Priority scheduling 與 aging",
+   "scene": "priority-aging",
+   "points": [
+    {
+     "text": "priority scheduling 是最 general 的；SJF 可視為 priority = CPU burst time 的特例。",
+     "t": 463
+    },
+    {
+     "text": "真實 OS 都是 priority-based，只是決定 priority 時摻雜很多規則與經驗。",
+     "t": 509
+    },
+    {
+     "text": "最大的問題是 starvation：priority 低的人可能永遠輪不到（像貧富不均翻不了身）。",
+     "t": 527
+    },
+    {
+     "text": "解法 aging：沒被執行的 process 每過一段時間就提高 priority，遲早升到最高被執行。",
+     "t": 558
+    },
+    {
+     "text": "多久升、每次升多少只是 policy，看怎麼 tune；作業三要 implement 基本的 aging。",
+     "t": 579
+    }
+   ],
+   "trap": "補充：恐龍書慣例是數字越小 priority 越高；題目若沒說清楚要先確認。"
+  },
+  {
+   "title": "Round-robin 與 time quantum",
+   "scene": "rr-quantum",
+   "points": [
+    {
+     "text": "round-robin：大家輪流做，supposedly 最 fair；參數 time quantum 決定每次輪到可以做多久。",
+     "t": 607
+    },
+    {
+     "text": "quantum 固定，不管 CPU burst 多長，時間到就讓出來 → 本質上是 preemptive。",
+     "t": 651
+    },
+    {
+     "text": "剛做完的人放到 ready queue 最後面排隊。",
+     "t": 673
+    },
+    {
+     "text": "quantum 非常大 → 每個人都一次做完，就變成 FIFO / FCFS。",
+     "t": 682
+    },
+    {
+     "text": "quantum 非常小 → 非常 fair，但 context switch 次數很多，overhead 大；一般系統不設太大也不設太小。",
+     "t": 704
+    }
+   ]
+  },
+  {
+   "title": "RR 例子：q = 20",
+   "scene": "rr-q20",
+   "points": [
+    {
+     "text": "time quantum 20：P1 要 53，但做 20 就得換人。",
+     "t": 734
+    },
+    {
+     "text": "P2 只要 17，不會做滿 20，t = 37 就提早結束，接著換 P3。",
+     "t": 752
+    },
+    {
+     "text": "P3 超過 20 也只能做 20，再換下一個，以此類推到大家做完。",
+     "t": 770
+    }
+   ],
+   "trap": "補充：這組（53、17、68、24）平均 WT = (81+20+94+97)/4 = 73。剛好用完 quantum 的瞬間若有人同時到達，課本慣例是新到的先排進 queue。"
+  },
+  {
+   "title": "RR 的 turnaround 與 response",
+   "scene": "rr-tradeoff",
+   "points": [
+    {
+     "text": "經驗上（無法證明）RR 的 average turnaround time 通常比較高：fair 的結果是大家都被拉長。",
+     "t": 785
+    },
+    {
+     "text": "但 response time 非常好：輪流做，最多等 process 數 × quantum 就輪到你。",
+     "t": 852
+    },
+    {
+     "text": "演算法沒有好壞，要看使用者的 metric：要 response 好用 RR，要 average wait time 最小用 SJF。",
+     "t": 887
+    }
+   ]
+  },
+  {
+   "title": "Multilevel queue",
+   "scene": "mlq",
+   "points": [
+    {
+     "text": "實際系統把多種作法 mix 在一起；第一種：ready queue 不只一個，而是很多個。",
+     "t": 933
+    },
+    {
+     "text": "每個 queue 放不同類型的工作、用不同演算法：interactive 用 RR（response 好），system process 用 priority。",
+     "t": 961
+    },
+    {
+     "text": "每個時間點只能選一個人，所以還要決定 queue 之間怎麼選：用 weight（例如 system 50%，其他 20、10、10、10）機率挑 queue。",
+     "t": 1020
+    },
+    {
+     "text": "這裡 queue 的上下沒有意義，純粹是機率；queue 空了就重選。process 不會在 queue 之間移動。",
+     "t": 1085
+    }
+   ],
+   "trap": "補充：恐龍書的 MLQ 是 queue 之間 fixed-priority preemptive（上層有人下層就不能跑），或 time slice（例如 foreground 80%、background 20%）；本講的「按權重機率挑 queue」屬於 time-slice 這一類。"
+  },
+  {
+   "title": "Multilevel feedback queue",
+   "scene": "mlfq",
+   "points": [
+    {
+     "text": "feedback：queue 有上下之分，上面的一定先做，第一個 queue 空了才去第二個拿 job。",
+     "t": 1134
+    },
+    {
+     "text": "process 會在 queue 之間移動：run time 觀察它的行為再決定放在第幾層。",
+     "t": 1177
+    },
+    {
+     "text": "call I/O system call、CPU burst 短的往上提；quantum 用完還沒做完（CPU-bound）就往下踢。",
+     "t": 1292
+    },
+    {
+     "text": "也要有 aging：等太久往上提；這樣的設計會自動貼近 SJF，排程資訊記在 PCB 裡。",
+     "t": 1384
+    },
+    {
+     "text": "例子：Q0 RR q = 8、Q1 RR q = 16、Q2 FCFS；用完 8 ms 就降到第二層，16 以內留在第二層。",
+     "t": 1443
+    },
+    {
+     "text": "最下層 FCFS 不會 starvation；只有上層都空了才輪到下層，但下層也有機會執行。",
+     "t": 1520
+    },
+    {
+     "text": "MLFQ 要設計：queue 數量、每層演算法、何時 upgrade、何時 downgrade；大部分系統都用 feedback queue。",
+     "t": 1705
+    }
+   ],
+   "trap": "MLQ 與 MLFQ 名字很像但完全不同：MLQ 的 process 固定在一個 queue；MLFQ 依 run time 行為升降級，而且一定從最上層開始選。"
+  },
+  {
+   "title": "評估排程演算法",
+   "scene": "eval-methods",
+   "points": [
+    {
+     "text": "先定義 performance metric：minimize response time、wait time 還是 turnaround time。",
+     "t": 1797
+    },
+    {
+     "text": "Deterministic modeling：給定全部輸入手動模擬（課堂例子都是）；不 general，FCFS 先短後長很好、先長後短最糟。",
+     "t": 1840
+    },
+    {
+     "text": "Queueing model：把 scheduling 對應到 queueing theory，用機率分析；但常找不到完全吻合的 model，assumption 有落差。",
+     "t": 1896
+    },
+    {
+     "text": "Simulation：寫程式模擬，用 real system log 等大量 workload。",
+     "t": 1987
+    },
+    {
+     "text": "Implementation：放進真的系統，才會看到 context switch 等 overhead（quantum 太小的壞處）。",
+     "t": 2043
+    }
+   ]
+  },
+  {
+   "title": "本章要記清楚的重點",
+   "scene": "metrics",
+   "points": [
+    {
+     "text": "最重要：各演算法，尤其 preemptive / non-preemptive 怎麼模擬。",
+     "t": 2133
+    },
+    {
+     "text": "要能區分 multilevel feedback queue 與 multilevel queue。",
+     "t": 2144
+    },
+    {
+     "text": "waiting、response、turnaround 的定義一定要記清楚，記錯就算錯。",
+     "t": 2151
+    }
+   ],
+   "trap": "補充：Turnaround = 完成 − 到達；Waiting = Turnaround − burst（只算在 ready queue 等的時間）；Response = 第一次上 CPU − 到達。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "P1(0,7)、P2(2,4)、P3(4,1)、P4(5,4)，non-preemptive SJF 的平均 waiting time？",
+   "opts": [
+    "4",
+    "3",
+    "5.75",
+    "7"
+   ],
+   "ans": "4",
+   "why": "P1 0–7、P3 7–8、P2 8–12、P4 12–16；WT = 0、6、3、7。"
+  },
+  {
+   "q": "同一組用 SRTF（preemptive SJF），平均 waiting time？",
+   "opts": [
+    "3",
+    "4",
+    "2.5",
+    "6"
+   ],
+   "ans": "3",
+   "why": "P1 0–2、P2 2–4、P3 4–5、P2 5–7、P4 7–11、P1 11–16；WT = 9、1、0、2。"
+  },
+  {
+   "q": "RR q = 20，P1 53、P2 17、P3 68、P4 24 都在 0 到達，P2 何時結束？",
+   "opts": [
+    "37",
+    "20",
+    "17",
+    "57"
+   ],
+   "ans": "37",
+   "why": "P1 先做 20，P2 只要 17 → 20 + 17 = 37，不會做滿 20。"
+  },
+  {
+   "q": "Time quantum 設得非常大，RR 會變成？",
+   "opts": [
+    "FCFS",
+    "SJF",
+    "Priority",
+    "SRTF"
+   ],
+   "ans": "FCFS",
+   "why": "每個人都一次做完整個 CPU burst。"
+  },
+  {
+   "q": "Priority scheduling 的 starvation 用什麼解？",
+   "opts": [
+    "aging",
+    "縮小 quantum",
+    "context switch",
+    "affinity"
+   ],
+   "ans": "aging",
+   "why": "等越久 priority 越高，遲早被執行。"
+  },
+  {
+   "q": "17A 的 MLFQ 例子中，process 何時被降到下一層？",
+   "opts": [
+    "用完該層的 time quantum 還沒做完",
+    "做了一次 I/O",
+    "剛到達時",
+    "等了太久"
+   ],
+   "ans": "用完該層的 time quantum 還沒做完",
+   "why": "用完 8 ms → 判定 CPU burst 長 → 往下踢；等太久是 aging，往上提。"
+  },
+  {
+   "q": "MLQ（17A 版）在多個 queue 之間如何選？",
+   "opts": [
+    "依 weight 的機率挑 queue",
+    "永遠先挑最上層",
+    "輪流各挑一個",
+    "挑最長的 queue"
+   ],
+   "ans": "依 weight 的機率挑 queue",
+   "why": "本講的 MLQ 上下沒有意義，純粹看權重；MLFQ 才是從最上層開始。"
+  },
+  {
+   "q": "Deterministic modeling 的主要缺點？",
+   "opts": [
+    "結果只對那組輸入成立，不 general",
+    "太難計算",
+    "需要真的實作進 OS",
+    "一定要有 queueing model"
+   ],
+   "ans": "結果只對那組輸入成立，不 general",
+   "why": "例：FCFS 先短後長很好，先長後短最糟。"
+  }
+ ]
+}

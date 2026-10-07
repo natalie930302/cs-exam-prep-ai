@@ -1,0 +1,159 @@
+{
+ "video": "FbYzBWdhMb0",
+ "label": "Abdul Bari：1.2 Characteristics of Algorithm",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "Input 與 Output",
+   "scene": "recipe-procedure",
+   "points": [
+    {
+     "text": "演算法可以接收 0 個或多個 input；有些演算法完全不需要輸入。",
+     "t": 10
+    },
+    {
+     "text": "演算法至少要產生 1 個 output，否則寫它沒有意義。",
+     "t": 30
+    },
+    {
+     "text": "可以把演算法想成 C 的函數：可能沒有參數，但一定會做出某個結果；即使回傳型別是 void，也一定完成了某件工作。",
+     "t": 42
+    }
+   ]
+  },
+  {
+   "title": "Definiteness：每個敘述只有一種意義",
+   "scene": "recipe-procedure",
+   "points": [
+    {
+     "text": "每一個敘述都必須清楚、不模稜兩可，只能有一種確定的意義。",
+     "t": 72
+    },
+    {
+     "text": "人類自己都解不出來的敘述，不能要求電腦去做。",
+     "t": 82
+    },
+    {
+     "text": "例：不能把 √−1 這種虛數當成一般實數值放進演算法裡運算。",
+     "t": 98
+    }
+   ]
+  },
+  {
+   "title": "Finiteness：一定要停",
+   "scene": "recipe-procedure",
+   "points": [
+    {
+     "text": "演算法像函數一樣，由有限個步驟組成，執行到某個點必須停下並回傳結果。",
+     "t": 120
+    },
+    {
+     "text": "不論 10 個還是 10,000 個敘述，都必須是有限的，執行時間也必須有限。",
+     "t": 143
+    },
+    {
+     "text": "像 Oracle、SQL Server、Web server 這類一直執行到被關掉的是 service，不是演算法；演算法是 procedure，必須終止。",
+     "t": 160
+    }
+   ]
+  },
+  {
+   "title": "Effectiveness：不寫多餘的敘述",
+   "scene": "recipe-procedure",
+   "points": [
+    {
+     "text": "演算法中不能寫不必要的敘述。",
+     "t": 194
+    },
+    {
+     "text": "寫下的每個敘述，目的都是要在演算法的程序和步驟中發揮作用。",
+     "t": 200
+    },
+    {
+     "text": "每一步都必須是已知、做得到的步驟，沒有「魔法」。",
+     "t": 275
+    }
+   ]
+  },
+  {
+   "title": "用日常程序類比五個特性",
+   "scene": "recipe-procedure",
+   "points": [
+    {
+     "text": "化學實驗、物理實驗、做菜食譜都是 procedure，和演算法一樣有輸入：藥品、儀器、食材。",
+     "t": 217
+    },
+    {
+     "text": "程序的目的是得到結果：做了菜卻沒有成品、做了實驗卻沒有溶液都不行。",
+     "t": 250
+    },
+    {
+     "text": "Finiteness：做菜到某個時間點就完成、實驗到某個時間點就得到溶液。",
+     "t": 293
+    },
+    {
+     "text": "Effectiveness：不會把切好卻不放進菜裡的蔬菜、煮了卻不用的化學品當成步驟。",
+     "t": 311
+    }
+   ],
+   "trap": "補充：CLRS 與 Knuth 的定義中，output 至少一個、input 可以為零；「可以一直跑的 server 程式」不符合 finiteness，所以不是演算法。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "依影片，演算法的 input 與 output 數量限制為何？",
+   "opts": [
+    "input ≥ 0，output ≥ 1",
+    "input ≥ 1，output ≥ 1",
+    "input ≥ 1，output ≥ 0",
+    "input、output 都可以是 0"
+   ],
+   "ans": "input ≥ 0，output ≥ 1",
+   "why": "有些演算法不需要輸入，但一定要至少產生一個結果。"
+  },
+  {
+   "q": "「在演算法中把 √−1 當作一般實數來運算」違反哪一個特性？",
+   "opts": [
+    "Definiteness",
+    "Finiteness",
+    "Output",
+    "Effectiveness"
+   ],
+   "ans": "Definiteness",
+   "why": "每個敘述都要有明確、唯一的意義；未定義的值不能當實數用。"
+  },
+  {
+   "q": "持續執行直到被手動關閉的資料庫伺服器，為什麼不算演算法？",
+   "opts": [
+    "違反 Finiteness",
+    "違反 Definiteness",
+    "沒有 input",
+    "沒有 output"
+   ],
+   "ans": "違反 Finiteness",
+   "why": "演算法是 procedure，必須在有限步驟後終止；server 是持續提供的 service。"
+  },
+  {
+   "q": "食譜裡切了蔬菜卻沒有放進菜裡，類比到演算法違反哪個特性？",
+   "opts": [
+    "Effectiveness",
+    "Input",
+    "Finiteness",
+    "Definiteness"
+   ],
+   "ans": "Effectiveness",
+   "why": "Effectiveness 要求不寫沒有用途的多餘敘述。"
+  },
+  {
+   "q": "下列哪一項不是影片列出的演算法特性？",
+   "opts": [
+    "必須用 C 語言撰寫",
+    "Definiteness",
+    "Finiteness",
+    "Effectiveness"
+   ],
+   "ans": "必須用 C 語言撰寫",
+   "why": "演算法與語言無關；五個特性是 input、output、definiteness、finiteness、effectiveness。"
+  }
+ ]
+}

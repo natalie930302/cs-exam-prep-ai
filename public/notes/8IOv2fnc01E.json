@@ -1,0 +1,437 @@
+{
+ "video": "8IOv2fnc01E",
+ "label": "台大林軒田 DSA Introduction to Data Structures and Algorithms",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "演算法是什麼：程式譜",
+   "scene": null,
+   "points": [
+    {
+     "text": "Algorithm 就像「譜」：樂譜描述演奏方式、食譜描述做菜方式，演算法描述計算方式。",
+     "t": 934
+    },
+    {
+     "text": "演算法說明要下哪一串指令、用什麼步驟叫電腦做事。",
+     "t": 1015
+    },
+    {
+     "text": "遵循這些步驟，電腦就能正確而且有效率地算出結果；正確與有效率是大部分演算法的著眼點。",
+     "t": 1036
+    }
+   ]
+  },
+  {
+   "title": "看待演算法的五個面向",
+   "scene": "five-criteria",
+   "points": [
+    {
+     "text": "Input 與 Output：電腦接收資料，經過運算轉成想要的形式（少數短程式可以沒有輸入）。",
+     "t": 1062
+    },
+    {
+     "text": "Definiteness（明確性）：描述要清楚、不能模稜兩可，讓 programmer 看了就知道要做什麼。",
+     "t": 1109
+    },
+    {
+     "text": "Effectiveness（有效性）：電腦要做得到，且與平台有關，例如平行演算法放到一般平台上就做不到。",
+     "t": 1178
+    },
+    {
+     "text": "Finiteness（有限性）：照步驟執行要能停下，不能跑到天荒地老，並非指程式行數有限。",
+     "t": 1258
+    },
+    {
+     "text": "Output 隱含正確性：要得到我們想要的輸入與輸出關係，不能隨便吐一個答案。",
+     "t": 1349
+    },
+    {
+     "text": "這五個面向由 Stanford 退休教授 Knuth 提出。",
+     "t": 1377
+    }
+   ],
+   "trap": "老師提醒：Finiteness 不是說程式碼行數有限（兩三行就能寫出無窮迴圈），而是執行步驟有限、最終會停。"
+  },
+  {
+   "title": "範例：找陣列最小值的 index",
+   "scene": "min-index",
+   "points": [
+    {
+     "text": "需求：給一個 array（與長度），回傳最小值所在的 index。",
+     "t": 1435
+    },
+    {
+     "text": "寫法：先假設第 0 個最小並抓在手上，for 迴圈從第 1 個起逐一比較，較小就更新位置。",
+     "t": 1534
+    },
+    {
+     "text": "對照五面向：input 是 array 與長度，output 是最小元素的 index；用 C 寫成，明確性沒有問題。",
+     "t": 1634
+    },
+    {
+     "text": "Effectiveness：compiler 能把 for、if 轉成一般平台上的機器碼，所以電腦做得到。",
+     "t": 1709
+    },
+    {
+     "text": "Finiteness：只有一個 for 迴圈，給正確的輸入（如長度為正整數）就會停。",
+     "t": 1749
+    },
+    {
+     "text": "正確性則要靠數學證明來說服別人。",
+     "t": 1793
+    }
+   ]
+  },
+  {
+   "title": "正確性證明：loop invariant 與數學歸納法",
+   "scene": "loop-invariant",
+   "points": [
+    {
+     "text": "先把正確性寫成數學命題：回傳的 m 滿足 arr[m] 不大於其他任何 arr[j]。",
+     "t": 1858
+    },
+    {
+     "text": "轉成對應命題：第 k 輪迴圈結束時，min position 存的是 arr[0..k] 範圍內的最小值。",
+     "t": 1949
+    },
+    {
+     "text": "i = 1 時容易驗證；假設 i = k 成立，再證明 i = k+1 也成立，這就是數學歸納法。",
+     "t": 2053
+    },
+    {
+     "text": "一路推到 len−1 也成立，就能說演算法最後是正確的。",
+     "t": 2107
+    },
+    {
+     "text": "這類在離散結構上推論的證明工具，離散數學課會教。",
+     "t": 2150
+    },
+    {
+     "text": "這種「每輪迴圈結束時維持不變的性質」稱為 loop invariant，是之後演算法證明的重要概念。",
+     "t": 2216
+    }
+   ]
+  },
+  {
+   "title": "效率：淘汰賽演算法",
+   "scene": "tournament",
+   "points": [
+    {
+     "text": "五個 criteria 沒有列 efficiency，但讓電腦有效率地計算一直是潛藏的願望。",
+     "t": 2248
+    },
+    {
+     "text": "Efficiency 要問的是：array 變成 2 倍、10 倍大時，演算法要多花多少時間。",
+     "t": 2277
+    },
+    {
+     "text": "另一種找最小值的做法：兩兩比較的淘汰賽（knockout tournament），8 個 → 4 個 → 2 個 → 1 個。",
+     "t": 2339
+    },
+    {
+     "text": "以比較次數計算：8 筆資料的淘汰賽比 7 次，for 迴圈逐一掃描也是 7 次，並沒有比較快。",
+     "t": 2444
+    },
+    {
+     "text": "但淘汰賽的比較可以高度平行化：4 顆 CPU 同時比，一輪只要一個單位時間，所以效率與平台高度相關。",
+     "t": 2483
+    },
+    {
+     "text": "在非平行架構下可能有隱藏成本（儲存比較結果、額外變數），要嚴謹說明快慢並不容易。",
+     "t": 2600
+    }
+   ],
+   "trap": "補充：n 個數找最小值，不論逐一掃描或淘汰賽，都需要 n−1 次比較。"
+  },
+  {
+   "title": "Pseudocode：電腦科學的口語",
+   "scene": "pseudo-min",
+   "points": [
+    {
+     "text": "程式碼的定義很嚴謹（要讓 compiler 看得懂），用來和人溝通不一定有效率。",
+     "t": 2939
+    },
+    {
+     "text": "Pseudo code 是虛擬的程式，像電腦科學裡的「口語」，沒有嚴格的語法規定。",
+     "t": 2991
+    },
+    {
+     "text": "例：get minimum index 可寫成 minimum position ← 0，for i from 1 to len−1 …，不綁定特定語言。",
+     "t": 3106
+    },
+    {
+     "text": "重點是表達意圖：先初始化、跑一個迴圈、在某條件成立時更新，不需要分號、大括號等語法。",
+     "t": 3169
+    }
+   ]
+  },
+  {
+   "title": "不好的 pseudocode",
+   "scene": "pseudo-styles",
+   "points": [
+    {
+     "text": "太詳細：塞滿無聊細節（例如先把值放進多餘的暫存變數再比較），反而掩蓋真正意圖。",
+     "t": 3241
+    },
+    {
+     "text": "已隱含在 for 迴圈中的變數宣告（如 i）可以省略。",
+     "t": 3345
+    },
+    {
+     "text": "太神秘：把 minimum position、i 改成 a、b，每行都看得懂，卻看不出意圖。",
+     "t": 3376
+    },
+    {
+     "text": "pseudocode 的目標是 communicate correctly，可以靠變數命名、註解傳達意圖。",
+     "t": 3483
+    },
+    {
+     "text": "太抽象（惜字如金）：只寫一句「run a loop that updates minimum position」，多數人無法完整理解。",
+     "t": 3536
+    },
+    {
+     "text": "要在字太少與字太多之間取得平衡，並清楚表達意思。",
+     "t": 3583
+    }
+   ]
+  },
+  {
+   "title": "好的 pseudocode：Selection sort",
+   "scene": "selection-sort",
+   "points": [
+    {
+     "text": "以 get minimum index 為基礎，寫出 selection sort 的 pseudocode。",
+     "t": 3642
+    },
+    {
+     "text": "核心意念：每一輪在還沒排好的範圍（i 到 len−1）中找出最小值的 index。",
+     "t": 3681
+    },
+    {
+     "text": "再把該最小值換到第 i 個位置。",
+     "t": 3753
+    },
+    {
+     "text": "第 0 小放第 0 位、第 1 小放第 1 位……全部做完 array 就排好了。",
+     "t": 3788
+    },
+    {
+     "text": "pseudocode 沒有嚴格定義，但這樣的描述多數程式設計師都能接受、理解。",
+     "t": 3810
+    },
+    {
+     "text": "pseudocode 常用左箭頭 ← 表示 assignment（賦值）。",
+     "t": 3949
+    }
+   ],
+   "trap": "補充：selection sort 的比較次數是 (n−1)+(n−2)+…+1 = n(n−1)/2，時間複雜度 Θ(n²)。"
+  },
+  {
+   "title": "Data structure 是什麼",
+   "scene": "exam-papers",
+   "points": [
+    {
+     "text": "Data structure 是在電腦裡整理（收納）資料的方式：organizing your data。",
+     "t": 4108
+    },
+    {
+     "text": "類比：衣櫃是收納衣服的方式，冰箱是收納食物的方式。",
+     "t": 4129
+    },
+    {
+     "text": "algorithm 把 input 變成 output，這些 data 要放在記憶體或磁碟的哪裡、怎麼擺，就是資料結構。",
+     "t": 4231
+    },
+    {
+     "text": "例：200 份考卷可以隨意疊、依分數高低排、依學號排，或依學號尾數分成 10 堆方便發回。",
+     "t": 4326
+    },
+    {
+     "text": "要怎麼收納取決於使用情境；用哪種資料結構，與要解決的問題（演算法）有關。",
+     "t": 4488
+    }
+   ]
+  },
+  {
+   "title": "資料結構如何加速演算法與基本操作",
+   "scene": "growth-race",
+   "points": [
+    {
+     "text": "把資料收納好，就能加速演算法。",
+     "t": 4547
+    },
+    {
+     "text": "selection sort 最花力氣的是找最小值；之後會教能很快找到最小值的資料結構。",
+     "t": 4572
+    },
+    {
+     "text": "1000 筆資料逐一找要 1000 的力氣，用特別方式排好只要約 10，selection sort 就能快得多。",
+     "t": 4596
+    },
+    {
+     "text": "比喻：algorithm 像食譜，data structure 像廚房裡調味料和食材的擺放方式。",
+     "t": 4670
+    },
+    {
+     "text": "每個資料結構至少有兩個操作：get（拿出來）與 insert（放進去），它們本身就是一段演算法。",
+     "t": 4700
+    },
+    {
+     "text": "常用的東西放在快拿得到的地方，整體效率就會比較好。",
+     "t": 4834
+    },
+    {
+     "text": "還要維護規則：一開始的建構、拿出並移除後的調整等；維護的成本常是資料結構最隱藏的力氣。",
+     "t": 4881
+    }
+   ],
+   "trap": "補充：「1000 筆只要約 10」對應 log₂1000 ≈ 10，也就是之後 heap 這類結構 O(log n) 的效果。"
+  },
+  {
+   "title": "為何要學 DSA：資源與 trade-off",
+   "scene": "tradeoff-tidy",
+   "points": [
+    {
+     "text": "Algorithm 描述電腦的計算方式，data structure 描述電腦收納、排列資料的方式。",
+     "t": 5152
+    },
+    {
+     "text": "Data structure 對應 storage 資源（記憶體、硬碟），algorithm 對應 computation 資源（CPU、GPU、雲端機器）。",
+     "t": 5169
+    },
+    {
+     "text": "計算與儲存兩大資源相輔相成，也常有 trade-off，例如用多一點計算換少一點儲存。",
+     "t": 5262
+    },
+    {
+     "text": "妥善使用資源還要考慮電力（穿戴式裝置）、網路頻寬，甚至寫程式所需的人力。",
+     "t": 5375
+    },
+    {
+     "text": "例：花 5 分鐘寫出的短程式卻要跑很久，划不划算要看情境。",
+     "t": 5509
+    },
+    {
+     "text": "時間與空間的 trade-off：愛整理的人拿東西快但維護成本高；隨便丟的人放入很快，找東西卻很慢。",
+     "t": 5520
+    },
+    {
+     "text": "不同平台（平行、分散式、GPU 與 CPU）各有不同的 trade-off。",
+     "t": 5618
+    }
+   ]
+  },
+  {
+   "title": "Programming 與 Coding 的差別",
+   "scene": null,
+   "points": [
+    {
+     "text": "重要的不是程式語言本身，而是依應用情境掌握各平台的重要概念。",
+     "t": 5700
+    },
+    {
+     "text": "Coding 只是寫 code；programming 是從需求一路到完成交付，像蓋房子 vs. 其中的木工、水泥工。",
+     "t": 5774
+    },
+    {
+     "text": "Programming 流程：requirement → analysis → design → refine → coding → proof、testing、debug。",
+     "t": 5833
+    },
+    {
+     "text": "相較 C 程式設計，DSA 開始走向 analysis 與 design，並帶入 proof，從 coding 帶到 designing。",
+     "t": 5904
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Knuth 的演算法五面向中，「電腦必須做得到、與平台有關」指的是？",
+   "opts": [
+    "Definiteness",
+    "Effectiveness",
+    "Finiteness",
+    "Input"
+   ],
+   "ans": "Effectiveness",
+   "why": "Definiteness 是給 programmer 看得懂，Effectiveness 是給 computer 做得到，例如平行演算法在一般平台做不到。"
+  },
+  {
+   "q": "關於 Finiteness，下列敘述何者正確？",
+   "opts": [
+    "程式碼行數必須有限",
+    "照步驟執行要在有限步驟內停下",
+    "輸入資料量必須有限",
+    "記憶體用量必須有限"
+   ],
+   "ans": "照步驟執行要在有限步驟內停下",
+   "why": "老師強調不是指程式行數有限，兩三行就能寫出無窮迴圈；重點是執行會停。"
+  },
+  {
+   "q": "證明 get minimum index 正確時，使用的 loop invariant 是？",
+   "opts": [
+    "每輪結束時 i 等於 len",
+    "第 k 輪結束時，min position 是 arr[0..k] 中最小值的位置",
+    "陣列在每輪後都已排序",
+    "每輪都會交換兩個元素"
+   ],
+   "ans": "第 k 輪結束時，min position 是 arr[0..k] 中最小值的位置",
+   "why": "每輪多檢查一個元素並維持這個性質，再用數學歸納法推到 len−1。"
+  },
+  {
+   "q": "用淘汰賽方式在 8 筆資料中找最小值，需要幾次比較？",
+   "opts": [
+    "3",
+    "4",
+    "7",
+    "8"
+   ],
+   "ans": "7",
+   "why": "4 + 2 + 1 = 7 次，和逐一掃描相同；優勢在於可以平行化。"
+  },
+  {
+   "q": "下列哪一種「不是」課堂提到的不好 pseudocode？",
+   "opts": [
+    "塞滿無關細節，太詳細",
+    "變數命名成 a、b，讓人看不出意圖",
+    "只寫一句話，太抽象",
+    "用 ← 表示 assignment"
+   ],
+   "ans": "用 ← 表示 assignment",
+   "why": "左箭頭是 pseudocode 表示 assignment 的常見慣例；其他三種分別是太詳細、太神秘、太抽象。"
+  },
+  {
+   "q": "Selection sort 中最花力氣、最值得用資料結構加速的步驟是？",
+   "opts": [
+    "交換兩個元素",
+    "在未排序部分找出最小值",
+    "初始化 index",
+    "輸出結果"
+   ],
+   "ans": "在未排序部分找出最小值",
+   "why": "老師指出找最小值是核心成本，若有資料結構能從 1000 降到約 10，整體會快得多。"
+  },
+  {
+   "q": "依課堂說法，每個資料結構至少要有哪兩個操作？",
+   "opts": [
+    "sort 與 search",
+    "get 與 insert",
+    "push 與 pop",
+    "read 與 write file"
+   ],
+   "ans": "get 與 insert",
+   "why": "怎麼把東西拿出來（get）、怎麼放進去（insert），而且兩者本身都是演算法。"
+  },
+  {
+   "q": "「愛整理的人」對應到資料結構的哪種 trade-off？",
+   "opts": [
+    "拿東西快，但維護成本高",
+    "放東西快，但找東西慢",
+    "時間與空間都最省",
+    "完全沒有成本"
+   ],
+   "ans": "拿東西快，但維護成本高",
+   "why": "一直整理讓 get 很快，但維護規則花很多力氣；不整理則相反。"
+  }
+ ]
+}

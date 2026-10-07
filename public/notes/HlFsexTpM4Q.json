@@ -1,0 +1,145 @@
+{
+ "video": "HlFsexTpM4Q",
+ "label": "Dijkstra Algorithm",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "問題：從 s 到每個頂點的最短路徑",
+   "scene": "dij-video-sets",
+   "points": [
+    {
+     "text": "給加權圖 G 與起點 s，Dijkstra 回傳 s 到每個其他頂點的最短（權重最小）路徑。",
+     "t": 0
+    },
+    {
+     "text": "例：s 到 b 直接走權重 3；經過 a 是 1 + 1 = 2，所以最短路徑走 a。",
+     "t": 40
+    },
+    {
+     "text": "把頂點分成兩個集合：explored 與 unexplored，一開始全部都是 unexplored。",
+     "t": 100
+    }
+   ],
+   "sceneBy": {
+    "ds-10": "dijkstra-explored-sets"
+   }
+  },
+  {
+   "title": "每個頂點標 D 與 P",
+   "scene": "dij-video-sets",
+   "points": [
+    {
+     "text": "D：從 s 到該頂點、只經過 explored 頂點的路徑中最短的距離。",
+     "t": 150
+    },
+    {
+     "text": "P：那條路徑上該頂點的 parent。",
+     "t": 220
+    },
+    {
+     "text": "初始：s 的 D = 0、沒有 parent；a、b、c 沒有路可走，D = ∞。",
+     "t": 260
+    }
+   ],
+   "sceneBy": {
+    "ds-10": "dijkstra-explored-sets"
+   }
+  },
+  {
+   "title": "逐步執行：每次 explore D 最小的頂點",
+   "scene": "dij-video-sets",
+   "points": [
+    {
+     "text": "explore s：a 的 D = 1（P = s）、b 的 D = 3（P = s），c 還是 ∞。",
+     "t": 400
+    },
+    {
+     "text": "explore a：經過 a 到 b 是 2 < 3，把 b 更新成 D = 2、P = a；到 c 是 1 + 10 = 11 < ∞，c 設成 11、P = a。",
+     "t": 488
+    },
+    {
+     "text": "只在新距離「更小」時才更新；比較大的路徑不換。",
+     "t": 540
+    },
+    {
+     "text": "explore b：b → c 的 4 加上 b 已算好的 2 = 6 < 11，c 更新成 D = 6、P = b。",
+     "t": 605
+    },
+    {
+     "text": "更新距離 = 已 explored 頂點的 D + 連到未 explored 頂點的那條邊；最後 explore c，全部 explored 就停。",
+     "t": 667
+    }
+   ],
+   "sceneBy": {
+    "ds-10": "dijkstra-explored-sets"
+   }
+  },
+  {
+   "title": "沿 P 回推最短路徑",
+   "scene": "dij-video-path",
+   "points": [
+    {
+     "text": "到 a：P(a) = s，路徑 s → a，cost 1。",
+     "t": 730
+    },
+    {
+     "text": "到 b：P(b) = a、P(a) = s，路徑 s → a → b，cost 2。",
+     "t": 760
+    },
+    {
+     "text": "到 c：P(c) = b → a → s，路徑 s → a → b → c，cost 6。",
+     "t": 793
+    }
+   ],
+   "sceneBy": {
+    "ds-10": "dijkstra-path-trace"
+   }
+  }
+ ],
+ "quiz": [
+  {
+   "q": "影片的圖（s–a 1、s–b 3、a–b 1、a–c 10、b–c 4），explore s 和 a 之後 c 的 D 是？",
+   "opts": [
+    "11",
+    "6",
+    "10",
+    "∞"
+   ],
+   "ans": "11",
+   "why": "只經過 explored 的 s、a：1 + 10 = 11；經過 b 的 6 要等 b 被 explore 之後才出現。"
+  },
+  {
+   "q": "同一張圖，最後 s 到 c 的最短路徑是？",
+   "opts": [
+    "s → a → b → c，cost 6",
+    "s → a → c，cost 11",
+    "s → b → c，cost 7",
+    "s → c，cost 10"
+   ],
+   "ans": "s → a → b → c，cost 6",
+   "why": "1 + 1 + 4 = 6，沿 P(c) = b、P(b) = a、P(a) = s 回推。"
+  },
+  {
+   "q": "Dijkstra 每一步選哪個頂點 explore？",
+   "opts": [
+    "unexplored 中 D 最小的",
+    "unexplored 中編號最小的",
+    "離 s 邊數最少的",
+    "explored 中 D 最大的"
+   ],
+   "ans": "unexplored 中 D 最小的",
+   "why": "greedy：D 最小的那個，它的距離已經不可能再被改小（在非負權重下）。"
+  },
+  {
+   "q": "P（parent）用來做什麼？",
+   "opts": [
+    "回推出實際的最短路徑",
+    "計算時間複雜度",
+    "判斷有沒有負 cycle",
+    "決定下一個 explore 誰"
+   ],
+   "ans": "回推出實際的最短路徑",
+   "why": "從目的地沿 P 一路往回走到 s，反過來就是路徑。"
+  }
+ ]
+}

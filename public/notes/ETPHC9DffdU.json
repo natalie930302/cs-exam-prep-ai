@@ -1,0 +1,239 @@
+{
+ "video": "ETPHC9DffdU",
+ "label": "清大周志遠 第8B講 Processes Concept",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "三種 scheduler 回顧",
+   "scene": "lt-st-scheduler",
+   "points": [
+    {
+     "text": "CPU（short-term）一定要 efficient；long-term 控制 degree；mid-term 做 swapping。",
+     "t": 0
+    },
+    {
+     "text": "現代電腦把它們跟其他機制綁在一起，但要做的事情原則一樣。",
+     "t": 22
+    }
+   ]
+  },
+  {
+   "title": "PID 與 process tree",
+   "scene": "process-tree",
+   "points": [
+    {
+     "text": "process 是 entity，被 create 時就 assign 一個 unique 的 PID。",
+     "t": 62
+    },
+    {
+     "text": "process 不是一開始就全部存在：開機只有一個，其他都由它 create，形成 parent / children 關係。",
+     "t": 105
+    },
+    {
+     "text": "任何系統任何時刻都能畫出 tree of processes，沒有例外。",
+     "t": 126
+    },
+    {
+     "text": "不會有 parent 不存在的 process（像 dangling pointer）；parent 不見了，下面的全部砍掉。",
+     "t": 147
+    },
+    {
+     "text": "在 server 上用 ps -ael 列出所有 process，看 PID 和 parent，可以自己重建這棵 tree。",
+     "t": 169
+    }
+   ],
+   "trap": "補充：課本稱為 cascading termination（有些系統如此）；Linux 實際上會把孤兒 process 交給 init（systemd）收養。"
+  },
+  {
+   "title": "Parent 與 child 的關係選擇",
+   "scene": "creation-options",
+   "points": [
+    {
+     "text": "parent 和 child 是不同程式但有關聯，關聯性由 OS 設計者決定。",
+     "t": 231
+    },
+    {
+     "text": "resource sharing：child 能不能繼承 parent 開的 file handler、memory？",
+     "t": 274
+    },
+    {
+     "text": "三種：share all、只 share subset、完全不 share（各自一份）。",
+     "t": 313
+    },
+    {
+     "text": "execution：concurrent（由 scheduler 決定誰先），或 parent 等到 children terminate。",
+     "t": 410
+    },
+    {
+     "text": "若選擇等待，parent 會因為 create child 而被放進 waiting queue。",
+     "t": 448
+    },
+    {
+     "text": "address space：duplicate（連 PC 都一樣），或 create 時直接 load 新的 program、reset PC。",
+     "t": 528
+    }
+   ]
+  },
+  {
+   "title": "Linux / UNIX 的 fork()",
+   "scene": "fork-return",
+   "points": [
+    {
+     "text": "Linux 用 fork 這個 system call create child。",
+     "t": 604
+    },
+    {
+     "text": "fork 選擇 duplicate：global、heap 的內容與值都一模一樣，PC 位置也一樣。",
+     "t": 642
+    },
+    {
+     "text": "選擇 concurrent execution：誰先跑由 OS 決定，parent 不用進 waiting。",
+     "t": 697
+    },
+    {
+     "text": "唯一不同是回傳值：child 拿到 0，parent 拿到新 child 的 PID。",
+     "t": 755
+    },
+    {
+     "text": "parent 一定知道 child 是誰；child 不知道 parent，要另外 call system call 問 OS。",
+     "t": 792
+    },
+    {
+     "text": "程式用回傳值判斷自己是 child 還是 parent，做不同的事。",
+     "t": 814
+    }
+   ]
+  },
+  {
+   "title": "execlp",
+   "scene": "exec-replace",
+   "points": [
+    {
+     "text": "fork 完內容一樣，但開新 process 通常是要它做不同的事。",
+     "t": 853
+    },
+    {
+     "text": "execlp 給一個 binary file，把 child 的 code segment 整個換掉。",
+     "t": 894
+    },
+    {
+     "text": "heap、stack 清空，program counter 設回起點：等於 reset 成另一支程式。",
+     "t": 912
+    },
+    {
+     "text": "還是要先 create：要跟 OS 註冊 PID、配置 memory space，再把內容重來一遍。",
+     "t": 931
+    }
+   ]
+  },
+  {
+   "title": "wait",
+   "scene": "fork-exec-wait",
+   "points": [
+    {
+     "text": "Linux 是 concurrent，parent 和 child 的順序無法控制；想控制可以 call wait。",
+     "t": 968
+    },
+    {
+     "text": "wait 指定要等哪個 child 結束，等於強迫把 parent 放進 waiting queue。",
+     "t": 987
+    },
+    {
+     "text": "這是 programmer 自己下的同步指令，不是 OS 預設。",
+     "t": 1008
+    },
+    {
+     "text": "parent 還能對 child 做 kill、suspend；最基本的是 fork、exec、wait 三個。",
+     "t": 1027
+    }
+   ]
+  },
+  {
+   "title": "Duplicate 的實作：copy-on-write",
+   "scene": "copy-on-write",
+   "points": [
+    {
+     "text": "A call fork 產生 A'，內容一樣（同顏色）。",
+     "t": 1101
+    },
+    {
+     "text": "naive 作法 exact copy：A 佔 100 MB 就再配置 100 MB 全部 copy，很浪費。",
+     "t": 1139
+    },
+    {
+     "text": "實際作法 copy-on-write：只 copy 一定會改的部分（像 PC），其他用 pointer 共用 parent 的。",
+     "t": 1178
+    },
+    {
+     "text": "parent 或 child 修改共用的值時，run time 才真的 copy，兩邊分家。",
+     "t": 1235
+    },
+    {
+     "text": "A' 會慢慢長到跟 A 一樣大，但內容不同；對使用者而言內容一模一樣。",
+     "t": 1252
+    },
+    {
+     "text": "call execlp 之後，那塊空間整個換掉，跟 A 完全脫鉤。",
+     "t": 1308
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "pid = fork(); 之後，child 中 pid 的值是？",
+   "opts": [
+    "0",
+    "child 自己的 PID",
+    "parent 的 PID",
+    "-1"
+   ],
+   "ans": "0",
+   "why": "child 拿到 0，parent 拿到 child 的 PID。"
+  },
+  {
+   "q": "Linux fork 對 address space 與執行順序的選擇是？",
+   "opts": [
+    "duplicate + concurrent",
+    "load 新程式 + parent 等待",
+    "share all + parent 等待",
+    "duplicate + child 一定先跑"
+   ],
+   "ans": "duplicate + concurrent",
+   "why": "child 是 parent 的完整複製，兩者誰先跑由 scheduler 決定。"
+  },
+  {
+   "q": "execlp 做了什麼？",
+   "opts": [
+    "把 code 換成新程式、清空 heap/stack、PC 重設",
+    "建立新的 process",
+    "等待 child 結束",
+    "複製 parent 的 memory"
+   ],
+   "ans": "把 code 換成新程式、清空 heap/stack、PC 重設",
+   "why": "exec 不會建立新 process，而是 reset 目前這個。"
+  },
+  {
+   "q": "Copy-on-write 什麼時候才真的複製？",
+   "opts": [
+    "parent 或 child 寫入共用的內容時",
+    "fork 一呼叫就複製",
+    "exec 時",
+    "process 結束時"
+   ],
+   "ans": "parent 或 child 寫入共用的內容時",
+   "why": "一開始共用，run time 有人修改才分家。"
+  },
+  {
+   "q": "下列何者會讓 parent 進入 waiting queue？",
+   "opts": [
+    "parent 呼叫 wait()",
+    "parent 呼叫 fork()（Linux）",
+    "child 呼叫 execlp",
+    "child 被 create"
+   ],
+   "ans": "parent 呼叫 wait()",
+   "why": "Linux 的 fork 是 concurrent，parent 不必等；是 programmer 用 wait 讓它等。"
+  }
+ ]
+}

@@ -1,0 +1,444 @@
+{
+ "video": "R0MpXbuqfZM",
+ "label": "台大 林軒田《資料結構與演算法》Stack / Queue",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "Q&A 補充：時間複雜度與實際執行時間",
+   "points": [
+    {
+     "text": "時間複雜度（asymptotic notation）描述的是「資料量增加時，執行時間成長的趨勢」；實際 running time 只是這條趨勢曲線上的某一個點。",
+     "t": 813
+    },
+    {
+     "text": "知道趨勢就能從小資料往大資料推估：若演算法是 O(n²)，資料量變 10 倍，執行時間應約變 100 倍。",
+     "t": 880
+    },
+    {
+     "text": "測試程式應先用小資料確認正確性並估計時間，再逐步放大，而不是一開始就把最大資料丟進去。",
+     "t": 938
+    },
+    {
+     "text": "Binary search 在 ordered array 上最多看 log n 個中間點；它屬於 Divide and Conquer 家族：把大問題切小，且丟掉不可能含答案的那一半，因此得到 O(log n)。",
+     "t": 1172
+    },
+    {
+     "text": "在 C/C++ 中配置的 array 必須是連續記憶體；配置是否成功要檢查 malloc 的回傳值或 new 的結果。",
+     "t": 1418
+    }
+   ],
+   "trap": "程式跑完沒有偵測到 memory violation，不代表程式沒有記憶體錯誤，只是這次沒被抓到。",
+   "scene": "stack-lifo"
+  },
+  {
+   "title": "Stack 複習：LIFO、頂端操作與括號配對",
+   "points": [
+    {
+     "text": "Stack 的核心特性是後進先出（LIFO）：像一疊盤子，只從頂端放上（push）、從頂端拿走（pop）。",
+     "t": 1832
+    },
+    {
+     "text": "所有允許的運算都發生在頂端，有些實作會多提供「偷看頂端」（peek/top）的操作；壓在下面的元素不能直接存取。",
+     "t": 1854
+    },
+    {
+     "text": "括號配對（parentheses matching）：看到左括號就 push；看到右括號就與 stack top 的左括號配對並 pop，藉此找到「最近一個尚未配對的左括號」。",
+     "t": 1933
+    },
+    {
+     "text": "掃完整段程式碼即可判斷括號是否平衡，這是最入門的 stack 演算法。",
+     "t": 1985
+    },
+    {
+     "text": "Stack 可用 array 或 linked list 實作；實作細節在於 top 要放哪：linked list 放 head 還是 tail、array 放靠開頭還是靠尾端（課本有詳述）。",
+     "t": 2007
+    }
+   ],
+   "trap": "用 linked list 實作 stack 時，top 放錯端（例如放在單向串列的 tail）會讓 pop 需要走訪整串，失去 O(1) 的優勢。",
+   "scene": "stack-lifo"
+  },
+  {
+   "title": "Infix 與 Postfix 表示法",
+   "points": [
+    {
+     "text": "我們平常寫的 A/B−C+D*E−A*C 是 infix（中序）：運算子放在兩個運算元中間，人依「先乘除後加減」理解它，但電腦需要被翻譯成明確步驟。",
+     "t": 2114
+    },
+    {
+     "text": "Postfix（後序）notation 把運算子（operator）放在運算元之後，例如 A/B 寫成 AB/，意思是「讀 A、讀 B、做除法」。",
+     "t": 2262
+    },
+    {
+     "text": "Infix 轉 postfix 時，運算元（A、B、C…）出現的順序完全不變，只是移動運算子的位置，讓它出現在該執行的時間點。",
+     "t": 2469
+    },
+    {
+     "text": "人工轉換法（human algorithm）：依優先序與由左至右的規則把每個運算加上括號，每個括號內恰有「左運算元、右運算元、運算子」三樣東西。",
+     "t": 2556
+    },
+    {
+     "text": "接著在每個括號內把順序改成「運算元1 運算元2 運算子」，由內往外做完再拿掉括號。例：3/4−5+6*7−8*9 → 3 4 / 5 − 6 7 * + 8 9 * −。",
+     "t": 2617
+    },
+    {
+     "text": "括號只是幫你圈出換位置的範圍，轉完後的 postfix 不需要括號；人工法適合考試手算短式子，但寫成程式不容易（要插括號、需多次掃描）。",
+     "t": 2756
+    }
+   ],
+   "scene": "infix-to-postfix"
+  },
+  {
+   "title": "用 Stack 計算 Postfix 運算式",
+   "points": [
+    {
+     "text": "Postfix 的計算只需由左往右掃一次、不回頭：看到運算子時，取用「最近算好的兩個數字」來運算。",
+     "t": 2880
+    },
+    {
+     "text": "還用不到的中間結果（如 −4.25 要等 42 算完）必須先暫存並保持順序，而「最近的先用」正是 stack 的特性，與括號配對找最近左括號同一概念。",
+     "t": 2956
+    },
+    {
+     "text": "演算法：遇到 number 就 push 進 operand stack；遇到 operator 就 pop 出所需數量的運算元，計算後把結果 push 回去。",
+     "t": 3025
+    },
+    {
+     "text": "以 3 4 / 5 − 6 7 * + 8 9 * − 為例：3/4=0.75 → 0.75−5=−4.25 → 6*7=42 → −4.25+42=37.75 → 8*9=72 → 37.75−72=−34.25。",
+     "t": 3035
+    },
+    {
+     "text": "運算子需要幾個運算元就 pop 幾個：binary 取 2 個、unary（如負號）取 1 個、ternary（C 的 ?:）取 3 個。",
+     "t": 3224
+    },
+    {
+     "text": "正確跑完時，stack 上應只剩一個 element，它就是整個 postfix 運算式的值。",
+     "t": 3278
+    }
+   ],
+   "trap": "pop 出兩個數時，先 pop 出來的是右運算元、後 pop 的是左運算元；減法與除法順序弄反會算錯。",
+   "scene": "postfix-eval",
+   "params": {
+    "expr": "3/4-5+6*7-8*9"
+   }
+  },
+  {
+   "title": "Infix 轉 Postfix 的 Stack 演算法",
+   "points": [
+    {
+     "text": "目標是 one-pass algorithm：只從左到右掃一次就完成轉換，比人工加括號、多次掃描更省時。",
+     "t": 4791
+    },
+    {
+     "text": "讀到運算子時往往還不能輸出（後面可能有優先序更高的運算），必須先存起來；例如讀到 / 要等看到後面的 − 才確定 A B / 可以輸出。",
+     "t": 4872
+    },
+    {
+     "text": "同優先序（如 − 和 +）依規定由左到右，所以看到 + 時，先前存著的 − 就可以輸出。",
+     "t": 5013
+    },
+    {
+     "text": "看到 * 時，先前的 + 還不能出來，* 自己也要先存；直到看到後面的 −，才依序輸出 *、再輸出 +。存放這些運算子的地方就是 stack（最晚存入的最先處理）。",
+     "t": 5069
+    },
+    {
+     "text": "演算法：運算元（數字）直接輸出；運算子則與 stack top 比較，只要 top 的優先序「大於或等於」新運算子，就 pop 並輸出，重複到不能再 pop，最後把新運算子 push。",
+     "t": 5325
+    },
+    {
+     "text": "這個 while 迴圈可能連續 pop 多次，例如 stack 有 + 與 *、新讀到 − 時，* 和 + 都會被 pop 出來。",
+     "t": 5465
+    },
+    {
+     "text": "兩種 stack 要分清：計算 postfix 用 operand stack（存數字），轉換 infix→postfix 用 operator stack（存還沒處理的運算子）；兩者合起來就是一個計算機。",
+     "t": 5581
+    },
+    {
+     "text": "計算機（包括 Google 搜尋框的算式）與 compiler 解析運算式，概念上都是「infix→postfix 轉換 + postfix evaluation」的組合。",
+     "t": 5640
+    }
+   ],
+   "trap": "A/B−C+D*E−A*C 的 postfix 是 AB/C−DE*+AC*−；常見錯誤是把同優先序的 − 留在 stack 不 pop，導致變成右結合。",
+   "scene": "infix-to-postfix"
+  },
+  {
+   "title": "延伸：結合性、單元運算子與括號處理",
+   "points": [
+    {
+     "text": "基本款適用於 binary operator 且為 left associative（同優先序時左邊先算），所以遇到相等優先序時 stack 內的要 pop。",
+     "t": 5767
+    },
+    {
+     "text": "若是 right associative 的運算子，同優先序時 stack 內的不能 pop，新的要直接壓上去。",
+     "t": 5790
+    },
+    {
+     "text": "Unary 與 ternary 運算子概念相同：運算元先輸出，運算子等到語意完整且比過優先序後才輸出。",
+     "t": 5842
+    },
+    {
+     "text": "實務難點：減號 − 到底是「減」還是「負號」，在這個架構下無法乾淨處理，需要特殊判斷。",
+     "t": 5880
+    },
+    {
+     "text": "左括號一律 push，而且會壓住 stack 中所有運算子不讓它們出來：在 stack 外時優先序最高、進入 stack 後優先序最低，括號內的運算子可以壓在它上面。",
+     "t": 5944
+    },
+    {
+     "text": "例如 3*(5+7)：* push、( push、+ 壓在 ( 上；直到遇到右括號，才把括號內的運算子 pop 完並「救出」左括號，這就是 parentheses matching。",
+     "t": 5973
+    },
+    {
+     "text": "整合三件事就能寫出簡單計算機：括號配對、運算子優先權處理（operator stack）、運算值計算（operand stack）。",
+     "t": 6134
+    }
+   ],
+   "trap": "左括號有兩種優先序：在 stack 外最高（一定 push）、在 stack 內最低（任何運算子都可壓在上面）；只有右括號能把它 pop 出來。",
+   "scene": "infix-to-postfix",
+   "params": {
+    "expr": "(A+B)*C-D^E^F"
+   }
+  },
+  {
+   "title": "為什麼用 Stack：One-pass 演算法與 System Stack",
+   "points": [
+    {
+     "text": "Stack 版的 infix→postfix 相較人工法容易寫成程式；人工法要正確插入括號、還可能需要 multiple pass。",
+     "t": 6329
+    },
+    {
+     "text": "在只讀一次輸入的 one-pass algorithm 中，常需要暫存資料並優先處理「最接近、最近存入」的那一筆，這時 stack 特別好用。",
+     "t": 6406
+    },
+    {
+     "text": "Compiler 有時自己維護一個 stack，有時透過 recursive call 等於使用了 system stack。",
+     "t": 6472
+    }
+   ],
+   "scene": "stack-lifo"
+  },
+  {
+   "title": "迷宮搜尋：Recursion 版與自訂 Stack 版",
+   "points": [
+    {
+     "text": "問題：給定二維迷宮每格上下左右能否通行，判斷從入口能否走到出口（迷宮有沒有解）。",
+     "t": 6947
+    },
+    {
+     "text": "Recursive 版：走到 (i,j) 先標記為 visited 避免繞圈，再對每個還沒走過的鄰居 (k,l)：是出口就成功，否則遞迴從那裡出發；所有方向都失敗才回報無解。",
+     "t": 6990
+    },
+    {
+     "text": "Recursion 其實偷偷使用 system stack：每次函式呼叫就像多拿一張計算紙壓在 system stack 上，失敗時自然退回上一層嘗試下一條路。",
+     "t": 7198
+    },
+    {
+     "text": "自訂 stack 版：不呼叫函式，而是把「待探索的點」push 進自己的 stack（當作記事本），每輪 pop 最新寫入的一筆去探索。",
+     "t": 7249
+    },
+    {
+     "text": "Recursive 版的 system stack 隨時保存一條「從起點探索中的路徑」；自訂 stack 存的則是一堆「計畫要看的位置」，兩者內容不同。",
+     "t": 7414
+    },
+    {
+     "text": "把鄰居放進 stack 時標記為 to-do，可避免同一位置被多次放入記事本（重複 entry）。",
+     "t": 7306
+    },
+    {
+     "text": "若不標 to-do，pop 出來時就得再檢查是否已 visited，否則會重複展開鄰居、浪費計算，有環的迷宮甚至可能一直繞圈。",
+     "t": 8401
+    }
+   ],
+   "trap": "visited（真的走到並展開鄰居）與 to-do（已寫進記事本但還沒拜訪）是不同狀態，漏了 to-do 標記會產生重複 entry。",
+   "scene": "maze-dfs"
+  },
+  {
+   "title": "Container 的觀點：換容器就換行為",
+   "points": [
+    {
+     "text": "迷宮演算法中的記事本只要能「放進一個、拿出一個」就行，這種結構統稱 container；array、linked list、stack 都是不同的容器。",
+     "t": 9414
+    },
+    {
+     "text": "若容器是隨機抽取的袋子，演算法就像醉漢亂走（random walk）。",
+     "t": 9487
+    },
+    {
+     "text": "不論放哪種 container，這個演算法都能正確回答「有沒有解」；但放進/拿出規則不同，搜尋行為與找到的路徑就不同。",
+     "t": 9591
+    }
+   ],
+   "scene": "maze-compare"
+  },
+  {
+   "title": "Queue：FIFO、enqueue/dequeue 與實作",
+   "points": [
+    {
+     "text": "Stack 是 LIFO；Queue 是先進先出（FIFO），就像排隊買票、印表機先送的先印。",
+     "t": 9676
+    },
+    {
+     "text": "Queue 有 front（前端）與 rear（後端）：新來的排在 rear，服務時從 front 取出。",
+     "t": 9740
+    },
+    {
+     "text": "Enqueue = insert at rear（只能從後面放）；dequeue = remove from front（只能從前面拿），也可另外提供只看 front 的操作。",
+     "t": 9781
+    },
+    {
+     "text": "Queue 適合需要依時間先後、講求公平性的處理順序。",
+     "t": 9833
+    },
+    {
+     "text": "一種實作是 circular array：把 0~9 共 10 格的 array 想成首尾相接、繞完 9 再回到 0，有抽象的開頭與結尾（例如開頭在 2，結尾在其前一格 1），空間可循環利用。",
+     "t": 9894
+    },
+    {
+     "text": "也可用 linked list 或 circular list 實作；front/rear 如何決定屬課本 reading assignment，老師未在課堂細講。",
+     "t": 9975
+    }
+   ],
+   "trap": "Circular queue 的 front/rear 移動與判滿/判空細節老師留給課本自讀，考前務必自行補齊。",
+   "scene": "queue-fifo"
+  },
+  {
+   "title": "Stack vs Queue 走迷宮：DFS 與 BFS",
+   "points": [
+    {
+     "text": "迷宮演算法把 container 換成 queue：pop 改成 dequeue、push 改成 enqueue，其餘不變。",
+     "t": 10008
+    },
+    {
+     "text": "用 stack 時，剛 push 的鄰居會最先被拿出，於是一路往更深的鄰居走，走到不能走才退回，這叫 Depth First Search（DFS）。",
+     "t": 10080
+    },
+    {
+     "text": "DFS 找到的是依探索順序（類似字典序）「第一條」能出去的路，不保證最短。",
+     "t": 10242
+    },
+    {
+     "text": "用 queue 時，會先處理完距入口 0 步、再 1 步、2 步……的所有點，像同心圓向外擴展，這叫 Breadth First Search（BFS）。",
+     "t": 10275
+    },
+    {
+     "text": "因為一層一層展開，BFS 找到的出口路徑是最短的那條（以步數計）。",
+     "t": 10321
+    },
+    {
+     "text": "Recursive 版本也呈現 DFS 行為，且可以寫出與它行為完全相同的 stack 版本。",
+     "t": 10487
+    },
+    {
+     "text": "哪個比較快取決於問題：出口剛好在 stack 第一條深路上時 DFS 快；出口很近但排在 DFS 嘗試順序後段時 BFS 快；兩者最壞情況可能差不多。",
+     "t": 10527
+    },
+    {
+     "text": "若每條路有長度、要找真正最短路徑，需再換別的 container，未來會學到更有效率的演算法。",
+     "t": 10650
+    }
+   ],
+   "trap": "「BFS 保證最短」只適用於每步代價相同（無權重）的情況；DFS 找到的路不一定最短。",
+   "scene": "maze-compare"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Infix 運算式 A/B−C+D*E−A*C 轉成 postfix 的結果是？",
+   "opts": [
+    "AB/C−DE*+AC*−",
+    "AB/CDE*+−AC*−",
+    "ABC/−DE*+AC*−",
+    "AB/C−DE+*AC*−"
+   ],
+   "ans": "AB/C−DE*+AC*−",
+   "why": "運算元順序不變；/ 在看到 − 時輸出，− 在看到 + 時輸出，* 與 + 在看到後面的 − 時依序輸出。"
+  },
+  {
+   "q": "用 stack 計算 postfix 運算式 3 4 / 5 − 6 7 * + 時，處理到最後的 + 之前，stack 內容（由底到頂）為何？",
+   "opts": [
+    "−4.25, 42",
+    "0.75, 5, 42",
+    "−4.25, 6, 7",
+    "42, −4.25"
+   ],
+   "ans": "−4.25, 42",
+   "why": "3/4=0.75、0.75−5=−4.25 被 push；6*7=42 再 push 到頂端，接著 + 才把兩者 pop 出來相加。"
+  },
+  {
+   "q": "以 stack 計算 postfix 運算式，若輸入正確且完整，結束時 stack 應該是什麼狀態？",
+   "opts": [
+    "只剩一個元素，即運算結果",
+    "完全空的",
+    "剩下所有運算子",
+    "剩下所有原始運算元"
+   ],
+   "ans": "只剩一個元素，即運算結果",
+   "why": "每個運算子都把運算元消耗並推回一個結果，最後只剩整個式子的值。"
+  },
+  {
+   "q": "Infix 轉 postfix 時（left associative），新讀到運算子 op，stack top 運算子的優先序與 op 相同，應如何處理？",
+   "opts": [
+    "先把 stack top pop 並輸出，再繼續比較，最後 push op",
+    "直接把 op push 到 stack 上",
+    "把 op 直接輸出",
+    "清空整個 stack 再 push op"
+   ],
+   "ans": "先把 stack top pop 並輸出，再繼續比較，最後 push op",
+   "why": "同優先序時左邊先算，stack 內的較早出現，可以先輸出；right associative 才會直接壓上去。"
+  },
+  {
+   "q": "關於左括號在 infix→postfix 演算法中的優先序，下列何者正確？",
+   "opts": [
+    "在 stack 外時最高、在 stack 內時最低",
+    "在 stack 外時最低、在 stack 內時最高",
+    "在任何時候都最高",
+    "與乘除相同"
+   ],
+   "ans": "在 stack 外時最高、在 stack 內時最低",
+   "why": "左括號一定會被 push 並擋住下面的運算子；進入 stack 後括號內的運算子都能壓在它上面，直到右括號把它 pop 出來。"
+  },
+  {
+   "q": "計算 postfix 與轉換 infix→postfix 分別主要使用哪一種 stack？",
+   "opts": [
+    "計算用 operand stack；轉換用 operator stack",
+    "計算用 operator stack；轉換用 operand stack",
+    "兩者都只用 operand stack",
+    "兩者都不需要 stack"
+   ],
+   "ans": "計算用 operand stack；轉換用 operator stack",
+   "why": "計算時暫存待用的數字；轉換時運算元直接輸出，暫存的是尚未能輸出的運算子。"
+  },
+  {
+   "q": "迷宮搜尋中，把存放「待探索點」的 container 從 stack 換成 queue，最主要的差異是？",
+   "opts": [
+    "由 DFS 變成 BFS，找到的出口路徑以步數計最短",
+    "由 BFS 變成 DFS，一定更快找到出口",
+    "只有 queue 版本能正確判斷迷宮有沒有解",
+    "queue 版本不需要標記 visited"
+   ],
+   "ans": "由 DFS 變成 BFS，找到的出口路徑以步數計最短",
+   "why": "Queue 依距離一層層展開；stack 則一路深入。兩者都能正確判斷有無解，速度快慢視問題而定。"
+  },
+  {
+   "q": "自訂 stack 版迷宮演算法中，將鄰居放入 stack 時標記為 to-do 的主要目的？",
+   "opts": [
+    "避免同一位置被重複放入 stack，造成重複計算甚至繞圈",
+    "讓 stack 改成 FIFO 的行為",
+    "保證找到最短路徑",
+    "讓遞迴呼叫使用 system stack"
+   ],
+   "ans": "避免同一位置被重複放入 stack，造成重複計算甚至繞圈",
+   "why": "同一點可能從不同方向被看到；沒標 to-do 就會有重複 entry，pop 時還得再檢查 visited。"
+  },
+  {
+   "q": "Queue 的 enqueue 與 dequeue 分別發生在哪一端？",
+   "opts": [
+    "enqueue 在 rear，dequeue 在 front",
+    "enqueue 在 front，dequeue 在 rear",
+    "兩者都在 top",
+    "兩者都在 front"
+   ],
+   "ans": "enqueue 在 rear，dequeue 在 front",
+   "why": "Queue 是 FIFO：新來的排在隊伍後端，服務時從前端取出。"
+  }
+ ]
+}

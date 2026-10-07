@@ -1,0 +1,328 @@
+{
+ "video": "6WZvVJ0Q1FA",
+ "label": "Spanning Tree：Discrete Mathematics",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "Spanning tree 的定義",
+   "scene": "st-remove-circuits",
+   "points": [
+    {
+     "text": "本講對應 Rosen 第 11 章 Trees 的 11.4：spanning tree、DFS、BFS、有向圖的 DFS。",
+     "t": 10
+    },
+    {
+     "text": "定義：G 是 simple graph，G 的 spanning tree 是「包含 G 所有頂點、而且本身是樹」的子圖。",
+     "t": 39
+    },
+    {
+     "text": "例圖 a～g：所有頂點都連通，但它不是樹，因為含有 simple circuit（例如 a–b–f–e–a）。",
+     "t": 67
+    },
+    {
+     "text": "樹的特點：從一點出發不會繞一圈回到同一點；只要有 simple circuit 就不是樹。",
+     "t": 140
+    }
+   ]
+  },
+  {
+   "title": "拿掉 simple circuit 上的邊",
+   "scene": "st-remove-circuits",
+   "points": [
+    {
+     "text": "作法：保留所有頂點，把 simple circuit 上的邊拿掉，直到沒有 circuit。",
+     "t": 195
+    },
+    {
+     "text": "先拿掉 {a,e}，circuit a–b–f–e–a 消失。",
+     "t": 268
+    },
+    {
+     "text": "還有 e–g–f–e：拿掉 {e,f}；還有 f–c–g–f：拿掉 {c,g}。",
+     "t": 320
+    },
+    {
+     "text": "剩下的圖連通、沒有 simple circuit、頂點一個不少 → 就是一棵 spanning tree。",
+     "t": 400
+    },
+    {
+     "text": "拿掉的順序不重要：先拿 {c,g} 或先拿 {e,f} 都可以，所以 spanning tree 通常不唯一。",
+     "t": 440
+    }
+   ],
+   "trap": "補充：n 個頂點的 spanning tree 一定恰有 n − 1 條邊（這例 7 點 → 6 邊，原本 9 邊要拿掉 3 條）。"
+  },
+  {
+   "title": "用 DFS 建 spanning tree",
+   "scene": "st-dfs",
+   "points": [
+    {
+     "text": "建 spanning tree 有兩個主要演算法：depth-first search 和 breadth-first search。",
+     "t": 490
+    },
+    {
+     "text": "DFS：任選一個頂點當根，一直往「與路徑最後一點相鄰、還沒在路徑上」的點延伸，能走多遠走多遠。",
+     "t": 530
+    },
+    {
+     "text": "走不動時 backtrack：退回前一個點，看能不能從那裡走到還沒拜訪的點，再形成新路徑。",
+     "t": 600
+    },
+    {
+     "text": "例：從 f 出發走 f→g→h→k→j；j 走不動，退回 k、再退回 h，接上 i。",
+     "t": 700
+    },
+    {
+     "text": "再退回 f，走 f→d→e→c→a；a 走不動，退回 c 接上 b，全部頂點都進樹。",
+     "t": 900
+    },
+    {
+     "text": "根可以任選；換一個根（例如 h）也會得到 spanning tree，只是路徑不同。",
+     "t": 1031
+    }
+   ]
+  },
+  {
+   "title": "Tree edge、back edge 與 DFS 虛擬碼",
+   "scene": "st-dfs-code",
+   "points": [
+    {
+     "text": "DFS 選到的邊叫 tree edges。",
+     "t": 1138
+    },
+    {
+     "text": "圖中其他的邊都連接某個頂點和它的祖先或子孫，稱為 back edges。",
+     "t": 1150
+    },
+    {
+     "text": "虛擬碼：T 先只含 v₁，呼叫 visit(v₁)；visit(v) 對每個與 v 相鄰、還不在 T 的 w，把 w 和 {v,w} 加入 T 再遞迴 visit(w)。",
+     "t": 1187
+    },
+    {
+     "text": "加了邊 {v,w} 之後，要先把 w 探索完，才回到 v 繼續看下一個鄰居。",
+     "t": 1210
+    }
+   ]
+  },
+  {
+   "title": "用 BFS 建 spanning tree",
+   "scene": "st-bfs",
+   "points": [
+    {
+     "text": "BFS：任選根，先把所有跟根相鄰的邊與點加入 → level 1。",
+     "t": 1243
+    },
+    {
+     "text": "接著對前一層的每個點，加入它相鄰、而且不會造成 simple circuit 的邊，直到所有點都加入。",
+     "t": 1290
+    },
+    {
+     "text": "例：選 e 當根；e 相鄰 b、d、f、i → level 1（a 不和 e 相鄰）。",
+     "t": 1402
+    },
+    {
+     "text": "level 2：b 接 a、c；d 接 h；f 接 g、j；i 接 k（h、j 已經在樹裡就不再接）。",
+     "t": 1439
+    },
+    {
+     "text": "level 3：g 接 l、k 接 m；a、c、h、j 沒有新點可接。",
+     "t": 1600
+    }
+   ]
+  },
+  {
+   "title": "同一張圖：DFS 與 BFS 的差別",
+   "scene": "st-dfs-vs-bfs",
+   "points": [
+    {
+     "text": "BFS 一層一層往外，樹比較矮；DFS 一路走到底才回溯，樹比較深。",
+     "t": 1700
+    },
+    {
+     "text": "同樣以 e 為根做 DFS，會先走出一條很長的路徑，再回溯補上剩下的點。",
+     "t": 1753
+    },
+    {
+     "text": "根和鄰居順序不同，得到的 spanning tree 也不同，但都有 n − 1 條邊。",
+     "t": 1820
+    }
+   ]
+  },
+  {
+   "title": "BFS 虛擬碼：未處理頂點的 list L",
+   "scene": "st-bfs",
+   "points": [
+    {
+     "text": "T 先只含 v₁，把 v₁ 放進未處理頂點的 list L。",
+     "t": 1861
+    },
+    {
+     "text": "當 L 不空：移除 L 最前面的 v；對 v 的每個鄰居 w，若 w 不在 L 也不在 T，就把 w 放到 L 尾端，並把 w 和 {v,w} 加進 T。",
+     "t": 1890
+    },
+    {
+     "text": "L 的作用就是 queue：先進先出，所以會一層一層處理。",
+     "t": 1930
+    }
+   ]
+  },
+  {
+   "title": "有向圖的 DFS：spanning forest",
+   "scene": "st-directed-forest",
+   "points": [
+    {
+     "text": "DFS 和 BFS 都能改到有向圖上，但結果不一定是 spanning tree，而是 spanning forest。",
+     "t": 1953
+    },
+    {
+     "text": "要照箭頭方向走：從 a 出發得到路徑 a→b→c→g，c 不能走到 d，因為箭頭是 d→c。",
+     "t": 2000
+    },
+    {
+     "text": "回溯後再接上 f、e；回到 a 無法再擴充，就從還沒拜訪的點另起一棵樹。",
+     "t": 2075
+    },
+    {
+     "text": "最後可能只剩單獨一個點自己成一棵樹。",
+     "t": 2140
+    },
+    {
+     "text": "應用：搜尋引擎的 web spider（crawler）就是從已知網頁出發，有系統地探索整個 Web。",
+     "t": 2168
+    }
+   ],
+   "trap": "補充：場景中的有向圖依影片口述重建，邊的細節可能與原圖不同，但「照箭頭走、得到多棵樹」的結論一致。"
+  },
+  {
+   "title": "練習：拿掉 circuit 上的邊",
+   "scene": "st-exercise-remove",
+   "points": [
+    {
+     "text": "練習 1：圖有兩個 simple circuit a–b–d 和 b–c–e；各拿掉一條邊（例如 {a,b}、{b,c}）就得到 spanning tree。",
+     "t": 2193
+    },
+    {
+     "text": "練習 2：圖有很多 circuit（a–h–i–b、b–i–j–c、c–j–d…），每個 circuit 都要拿掉一條邊。",
+     "t": 2283
+    },
+    {
+     "text": "拿完要檢查：所有頂點都還在、而且沒有 simple circuit。",
+     "t": 2350
+    }
+   ]
+  },
+  {
+   "title": "練習：三角形的所有 spanning tree",
+   "scene": "st-triangle-all",
+   "points": [
+    {
+     "text": "三角形 a–b–c 只有一個 circuit，拿掉 {a,b}、{a,c} 或 {b,c} 任一條都得到一棵 spanning tree。",
+     "t": 2373
+    },
+    {
+     "text": "所以共有 3 棵 spanning tree。",
+     "t": 2400
+    }
+   ],
+   "trap": "補充：這就是 Cayley 公式 n^(n−2) 在 n = 3 的情形：3¹ = 3。"
+  },
+  {
+   "title": "練習：指定根的 DFS",
+   "scene": "st-dfs",
+   "points": [
+    {
+     "text": "題目指定以 a 為根做 DFS，根不同 spanning tree 就不同，一定要照題目指定。",
+     "t": 2424
+    },
+    {
+     "text": "每一步都選字母順序最前面、還沒用過的鄰居，能走多遠走多遠。",
+     "t": 2492
+    },
+    {
+     "text": "路徑走到 l 時 backtrack 到 h，再一路走到 n；最後回到 i 補上 m。",
+     "t": 2520
+    }
+   ],
+   "trap": "考題沒指定鄰居順序時，通常假設依字母（或編號）由小到大。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "G 是 simple graph，G 的 spanning tree 是什麼？",
+   "opts": [
+    "包含 G 所有頂點、本身是樹的子圖",
+    "G 中邊數最少的 circuit",
+    "包含 G 所有邊的樹",
+    "G 中任意一棵子樹"
+   ],
+   "ans": "包含 G 所有頂點、本身是樹的子圖",
+   "why": "spanning = 頂點一個都不能少；tree = 連通且沒有 simple circuit。"
+  },
+  {
+   "q": "一個連通圖有 7 個頂點、9 條邊，要得到 spanning tree 至少要拿掉幾條邊？",
+   "opts": [
+    "3",
+    "2",
+    "6",
+    "1"
+   ],
+   "ans": "3",
+   "why": "spanning tree 有 7 − 1 = 6 條邊，所以要拿掉 9 − 6 = 3 條。"
+  },
+  {
+   "q": "DFS 走到一個所有鄰居都已拜訪的頂點時要做什麼？",
+   "opts": [
+    "backtrack 回前一個頂點",
+    "結束整個演算法",
+    "重新選一個根",
+    "把該頂點刪掉"
+   ],
+   "ans": "backtrack 回前一個頂點",
+   "why": "DFS 走不動就回溯，看前一點能否走到新頂點。"
+  },
+  {
+   "q": "無向圖做 DFS 後，不是 tree edge 的邊一定是哪一種？",
+   "opts": [
+    "back edge（連到祖先或子孫）",
+    "cross edge",
+    "bridge",
+    "loop"
+   ],
+   "ans": "back edge（連到祖先或子孫）",
+   "why": "無向圖的 DFS 不會產生 cross edge，其他邊都連接祖先與子孫。"
+  },
+  {
+   "q": "BFS 建 spanning tree 時，用來存放「未處理頂點」的 list L 行為像？",
+   "opts": [
+    "queue（先進先出）",
+    "stack（後進先出）",
+    "priority queue",
+    "hash table"
+   ],
+   "ans": "queue（先進先出）",
+   "why": "每次取出 L 最前面的頂點，新點加在尾端 → 一層一層處理。"
+  },
+  {
+   "q": "對有向圖做 DFS，結果一般是？",
+   "opts": [
+    "spanning forest",
+    "一定是一棵 spanning tree",
+    "一個 circuit",
+    "complete graph"
+   ],
+   "ans": "spanning forest",
+   "why": "照箭頭方向可能到不了某些頂點，只好另起新樹。"
+  },
+  {
+   "q": "三角形 a–b–c 有幾棵不同的 spanning tree？",
+   "opts": [
+    "3",
+    "1",
+    "2",
+    "6"
+   ],
+   "ans": "3",
+   "why": "三條邊任拿掉一條；也等於 Cayley 公式 3^(3−2) = 3。"
+  }
+ ]
+}

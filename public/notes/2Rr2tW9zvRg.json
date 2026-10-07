@@ -1,0 +1,130 @@
+{
+ "video": "2Rr2tW9zvRg",
+ "label": "Abdul Bari：2 Divide And Conquer（介紹）",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "Divide and conquer 是一種解題策略",
+   "scene": null,
+   "points": [
+    {
+     "text": "第一單元是演算法分析；接下來是 divide and conquer，屬於解題 strategy 之一。",
+     "t": 0
+    },
+    {
+     "text": "同類的策略還有 greedy、dynamic programming、backtracking、branch and bound。",
+     "t": 19
+    },
+    {
+     "text": "沒有公式告訴你哪題適用哪個策略，但有一些 guideline 可以判斷。",
+     "t": 58
+    }
+   ]
+  },
+  {
+   "title": "Divide → Conquer → Combine",
+   "scene": "dc-general",
+   "points": [
+    {
+     "text": "規模 n 的問題 P 太大時，切成 k 個子問題 P₁、P₂、…、P_k。",
+     "t": 76
+    },
+    {
+     "text": "分別解出 S₁、S₂、…、S_k，再把子問題的解 combine 成原問題的解。",
+     "t": 110
+    },
+    {
+     "text": "子問題如果還是太大，就對它再套用 divide and conquer。",
+     "t": 149
+    }
+   ]
+  },
+  {
+   "title": "子問題必須是同一種問題",
+   "scene": "dc-same-kind",
+   "points": [
+    {
+     "text": "原問題是排序，子問題也必須是排序，不能變成別的問題。",
+     "t": 167
+    },
+    {
+     "text": "反例：籌辦研討會拆成做邀請函、海報、邀請講者——每項都是不同的工作，不是 divide and conquer。",
+     "t": 187
+    },
+    {
+     "text": "因為子問題和原問題一樣，divide and conquer 天生就是遞迴的。",
+     "t": 227
+    },
+    {
+     "text": "還必須有合併子問題解的方法；無法 combine 就不能用這個策略。",
+     "t": 245
+    }
+   ]
+  },
+  {
+   "title": "一般演算法 DAC(P) 與本單元題目",
+   "scene": "dc-general",
+   "points": [
+    {
+     "text": "DAC(P)：if small(P) 直接解；否則分成 P₁…P_k，對每個 DAC(Pᵢ)，再 combine(DAC(P₁), …, DAC(P_k))。",
+     "t": 301
+    },
+    {
+     "text": "本單元題目：binary search、找最大最小值、merge sort、quick sort、Strassen 矩陣乘法。",
+     "t": 354
+    },
+    {
+     "text": "因為是遞迴演算法，分析時要用 recurrence relation。",
+     "t": 376
+    }
+   ],
+   "trap": "補充：CLRS 的三步驟是 Divide、Conquer、Combine；時間寫成 T(n) = aT(n/b) + D(n) + C(n)。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "下列何者不符合 divide and conquer？",
+   "opts": [
+    "把籌辦研討會拆成做海報、寄邀請函、找講者",
+    "把排序 n 個數拆成排序兩半再合併",
+    "在排序陣列的一半中繼續二分搜尋",
+    "把矩陣乘法拆成子矩陣乘法"
+   ],
+   "ans": "把籌辦研討會拆成做海報、寄邀請函、找講者",
+   "why": "子問題必須和原問題是同一種問題。"
+  },
+  {
+   "q": "Divide and conquer 的三個步驟順序是？",
+   "opts": [
+    "Divide → Conquer → Combine",
+    "Conquer → Divide → Combine",
+    "Combine → Divide → Conquer",
+    "Divide → Combine → Conquer"
+   ],
+   "ans": "Divide → Conquer → Combine",
+   "why": "先切、再遞迴解、最後合併。"
+  },
+  {
+   "q": "為什麼 divide and conquer 演算法通常用 recurrence relation 分析？",
+   "opts": [
+    "因為它們是遞迴的",
+    "因為它們一定是 O(n log n)",
+    "因為沒有迴圈",
+    "因為子問題大小都是 1"
+   ],
+   "ans": "因為它們是遞迴的",
+   "why": "子問題與原問題相同，所以會呼叫自己。"
+  },
+  {
+   "q": "DAC(P) 中 small(P) 成立時要做什麼？",
+   "opts": [
+    "直接求解",
+    "繼續切割",
+    "回傳錯誤",
+    "合併子解"
+   ],
+   "ans": "直接求解",
+   "why": "遞迴必須有可直接解決的小問題作為終止。"
+  }
+ ]
+}

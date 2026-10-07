@@ -1,0 +1,217 @@
+{
+ "video": "-FElVPKykgw",
+ "label": "MIT 6.006 Rec10：Quiz 1 Review",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "Q&A：搬移整張 table 的成本",
+   "scene": "table-doubling",
+   "points": [
+    {
+     "text": "Python 的 table 存的是物件的 reference（位址），搬一個元素是 O(1)，跟物件大小無關。",
+     "t": 135
+    },
+    {
+     "text": "空 table：m 次 index、0 次搬移 → O(m)；滿 table：m 次 index、m 次搬移 → O(2m) = O(m)。",
+     "t": 245
+    },
+    {
+     "text": "所以 resize 成本不論 table 滿或空都是 Θ(m)。",
+     "t": 289
+    }
+   ]
+  },
+  {
+   "title": "Warm-up：T(n) = T(√n) + 1 的遞迴樹",
+   "scene": "tree-sqrt",
+   "points": [
+    {
+     "text": "提示：n^(1/log n) = 2 = Θ(1)。解遞迴兩招：substitution（展開）與 recursion tree。",
+     "t": 310
+    },
+    {
+     "text": "每個節點成本 1，規模 n → n^(1/2) → n^(1/4) → n^(1/8)…",
+     "t": 373
+    },
+    {
+     "text": "第 h 層規模 n^(1/2ʰ)；要展開到 base case：令 n^(1/2ʰ) = n^(1/log n)（= 2，常數）。",
+     "t": 483
+    },
+    {
+     "text": "2ʰ = log n → h = log log n；每層成本 1 → T(n) = Θ(log log n)。",
+     "t": 798
+    },
+    {
+     "text": "沒給 base case 時，自己寫：任何常數 c，T(c) = Θ(1)。",
+     "t": 858
+    }
+   ]
+  },
+  {
+   "title": "假硬幣：決策樹下界 log₃ N",
+   "scene": "coin-decision-tree",
+   "points": [
+    {
+     "text": "N 枚金幣中有一枚較輕的假幣，天平完全精準，最少要秤幾次？",
+     "t": 898
+    },
+    {
+     "text": "二分法每次只用到「左重／右重」兩種結果，浪費了「平衡」這個答案，得 1 bit 而不是 1 trit（log₂3 bit）。",
+     "t": 960
+    },
+    {
+     "text": "Decision tree：每次秤重有 <、=、> 三種結果，h 次秤重最多 3ʰ 個葉子（答案）。",
+     "t": 1219
+    },
+    {
+     "text": "3 次最多分辨 27 枚，30 枚就不夠；要 3ʰ ≥ N → h ≥ log₃ N，任何演算法都逃不掉。",
+     "t": 1332
+    },
+    {
+     "text": "下界也提示了策略：每次分三堆，比較其中兩堆。",
+     "t": 1453
+    }
+   ],
+   "trap": "補充：同樣的論證給出 comparison sort 的下界：n! 個葉子、二元比較 → h ≥ log₂ n! = Ω(n log n)。"
+  },
+  {
+   "title": "Bunker hill：2D 樣式比對",
+   "scene": null,
+   "points": [
+    {
+     "text": "W×H 的亮度圖中找 w×h 的樣式出現次數；暴力法 O(WHwh)。",
+     "t": 1537
+    },
+    {
+     "text": "先比左上角可加速一般資料，但遇到大量相同值仍會有很多 false positive。",
+     "t": 1912
+    },
+    {
+     "text": "每一欄做垂直 rolling hash，再對 w 個欄 hash 做水平 Karp-Rabin（hash of hashes）。",
+     "t": 2145
+    },
+    {
+     "text": "往下移一列時每個欄 hash O(1) 滾動 → 總時間 O(WH)，額外空間 O(W)。",
+     "t": 2235
+    }
+   ]
+  },
+  {
+   "title": "兩個已排序陣列的第 k 小",
+   "scene": "kth-two-lists",
+   "points": [
+    {
+     "text": "兩個已排序串列 [5,13,22,43,56,62,81,86,87] 與 [2,3,7,9,15,19,24,28,32]，找合併後第 k 小。",
+     "t": 2342
+    },
+    {
+     "text": "完整 merge 再取第 k 個 O(N)；merge 到第 k 個就停，空間 O(1)。",
+     "t": 2404
+    },
+    {
+     "text": "更快：兩邊各看第 k/2 個（例 15 與 43），比較兩者大小。",
+     "t": 2700
+    },
+    {
+     "text": "較小者（15）左邊的都不可能是答案，可以丟；較大者（43）右邊的也可以丟，再在剩下的找對應的 rank。",
+     "t": 2842
+    },
+    {
+     "text": "每輪 k 減半 → O(log k)，比 O(log(N₁+N₂)) 更緊。",
+     "t": 2921
+    }
+   ]
+  },
+  {
+   "title": "依成長率排序函數",
+   "scene": "order-by-log",
+   "points": [
+    {
+     "text": "先化簡每個函數再排序：n⁴；C(n,3) ≈ n³/6 → Θ(n³)；n + log⁴ n → Θ(n)。",
+     "t": 3047
+    },
+    {
+     "text": "比較 n^(log n) 與 2ⁿ：同時取 log（log 單調遞增，大小關係不變）。",
+     "t": 3156
+    },
+    {
+     "text": "log(n^(log n)) = log² n，log(2ⁿ) = n → n 大，所以 2ⁿ 比較大。",
+     "t": 3177
+    },
+    {
+     "text": "含階乘的 C(n, n/2) 用 Stirling：n! ≈ √(2πn)(n/e)ⁿ。",
+     "t": 3217
+    }
+   ],
+   "trap": "補充：取 log 比較時，log f < log g 只保證 f 最終比 g 小，但若 log f 與 log g 只差常數，f、g 仍可能差常數倍以上（例如 2ⁿ 與 4ⁿ）。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "T(n) = T(√n) + 1 的解？",
+   "opts": [
+    "Θ(log log n)",
+    "Θ(log n)",
+    "Θ(√n)",
+    "Θ(1)"
+   ],
+   "ans": "Θ(log log n)",
+   "why": "n^(1/2ʰ) 縮到常數需要 2ʰ = log n，h = log log n 層，每層 1。"
+  },
+  {
+   "q": "N 枚硬幣找一枚較輕的假幣，用天平最少要秤幾次？",
+   "opts": [
+    "⌈log₃ N⌉",
+    "⌈log₂ N⌉",
+    "N − 1",
+    "N/2"
+   ],
+   "ans": "⌈log₃ N⌉",
+   "why": "每次三種結果，h 次最多 3ʰ 個答案。"
+  },
+  {
+   "q": "3 次秤重最多能從幾枚硬幣中找出假幣？",
+   "opts": [
+    "27",
+    "8",
+    "9",
+    "30"
+   ],
+   "ans": "27",
+   "why": "3³ = 27。"
+  },
+  {
+   "q": "兩個已排序陣列找合併後第 k 小，最佳的分治法時間是？",
+   "opts": [
+    "O(log k)",
+    "O(k)",
+    "O(N₁ + N₂)",
+    "O(k log k)"
+   ],
+   "ans": "O(log k)",
+   "why": "每次比較兩邊第 k/2 個，丟掉約一半的候選。"
+  },
+  {
+   "q": "比較 n^(log n) 與 2ⁿ 的方法與結果？",
+   "opts": [
+    "取 log：log² n vs n，2ⁿ 較大",
+    "取 log：log² n vs n，n^(log n) 較大",
+    "兩者一樣",
+    "直接代 n = 2 比較"
+   ],
+   "ans": "取 log：log² n vs n，2ⁿ 較大",
+   "why": "log 是單調函數，n 遠大於 log² n。"
+  },
+  {
+   "q": "C(n, 3) 的成長率是？",
+   "opts": [
+    "Θ(n³)",
+    "Θ(n)",
+    "Θ(3ⁿ)",
+    "Θ(n!)"
+   ],
+   "ans": "Θ(n³)",
+   "why": "n(n−1)(n−2)/6。"
+  }
+ ]
+}

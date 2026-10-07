@@ -1,0 +1,269 @@
+{
+ "video": "A_NNGOqui7s",
+ "label": "清大OCW 趙啟超《離散數學》第1A講 Logic and Set Theory",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "課程定位與先修",
+   "scene": null,
+   "points": [
+    {
+     "text": "清大 EECS 2060 Discrete Mathematics，授課教師趙啟超（清大電機系）。",
+     "t": 8
+    },
+    {
+     "text": "先修：高中數學，最好修過微積分（大一數學）。",
+     "t": 23
+    },
+    {
+     "text": "課名是 Discrete and Combinatorial Mathematics：離散數學加組合數學，對象是電機系大二。",
+     "t": 55
+    },
+    {
+     "text": "離散數學不像線性代數那樣有標準範圍，各校、各系教的內容不完全一樣。",
+     "t": 75
+    }
+   ]
+  },
+  {
+   "title": "全課三大部分與 50 小時",
+   "scene": "course-map",
+   "params": {
+    "part": 0
+   },
+   "points": [
+    {
+     "text": "全課分三大部分：Fundamentals、Enumeration、Graph Theory。",
+     "t": 110
+    },
+    {
+     "text": "一學期 18 週扣掉期末考週，每週 3 小時，上課約 50 小時。",
+     "t": 535
+    },
+    {
+     "text": "三部分時數加起來剛好 50 小時；考試不佔上課時間。",
+     "t": 551
+    }
+   ],
+   "trap": "補充：影片只講了基礎 13 小時、圖論 22 小時；Enumeration 約 15 小時是用 50 − 13 − 22 推算的。"
+  },
+  {
+   "title": "第一部分：Fundamentals（約 13 小時）",
+   "scene": "course-map",
+   "params": {
+    "part": 1
+   },
+   "points": [
+    {
+     "text": "基礎部分約 13 小時，Logic 與 Set Theory 以前學過，會很快帶過。",
+     "t": 116
+    },
+    {
+     "text": "Mathematical Induction 也學過，課上只強調要注意的地方。",
+     "t": 133
+    },
+    {
+     "text": "Functions：基本定義、幾類函數的性質，以及 Pigeonhole Principle。",
+     "t": 143
+    },
+    {
+     "text": "Binary Relation 的定義，特別講 equivalence relation 與 partial ordering 兩類。",
+     "t": 153
+    }
+   ]
+  },
+  {
+   "title": "第二部分：Enumeration（計數）",
+   "scene": "course-map",
+   "params": {
+    "part": 2
+   },
+   "points": [
+    {
+     "text": "Enumeration 就是計數：數東西有幾個、方法有幾種，類似高中排列組合。",
+     "t": 175
+    },
+    {
+     "text": "先回顧 Principle of Counting，再學 Principle of Inclusion and Exclusion（排容原理）。",
+     "t": 205
+    },
+    {
+     "text": "計數常會化成 Recurrence Relation（差分方程），先解 homogeneous，再解 non-homogeneous。",
+     "t": 222
+    },
+    {
+     "text": "解法和微分方程很像但更簡單，因為離散通常比連續簡單。",
+     "t": 250
+    },
+    {
+     "text": "Generating Function 解遞迴關係，就像微分方程用 Laplace transform：換到另一個 domain 解完再變回來。",
+     "t": 283
+    },
+    {
+     "text": "Generating Function 也能直接拿來計數，例如 Partition of Integer。",
+     "t": 309
+    },
+    {
+     "text": "計數常用來估計 algorithm 的複雜度：要花多少時間、多少計算量。",
+     "t": 332
+    }
+   ]
+  },
+  {
+   "title": "第三部分：Graph Theory（約 22 小時）",
+   "scene": "course-map",
+   "params": {
+    "part": 3
+   },
+   "points": [
+    {
+     "text": "圖論對電機系很重要、很多課沒教，這門課教得比一般離散數學多，約 22 小時。",
+     "t": 380
+    },
+    {
+     "text": "先介紹 Graph 的定義與性質，再講 Graph isomorphism。",
+     "t": 403
+    },
+    {
+     "text": "Euler Trail、Euler Circuit（Euler Cycle）及相關問題。",
+     "t": 415
+    },
+    {
+     "text": "Planar Graph：能畫在平面上的圖。",
+     "t": 425
+    },
+    {
+     "text": "Tree 的定義與性質、rooted tree、spanning tree，以及 tree 與 sorting。",
+     "t": 434
+    }
+   ]
+  },
+  {
+   "title": "Optimization 與 Matching 四個問題",
+   "scene": "course-map",
+   "params": {
+    "part": 4
+   },
+   "points": [
+    {
+     "text": "Shortest Paths Problem，常用 Dijkstra's algorithm 解。",
+     "t": 460
+    },
+    {
+     "text": "Minimal Spanning Tree：一個 graph 有很多 spanning tree，要找最小的。",
+     "t": 474
+    },
+    {
+     "text": "Matching Problem：在 bipartite graph 找 Maximum Matching。",
+     "t": 490
+    },
+    {
+     "text": "Max Flow：在網路中定義 flow 並找最大流，對應 Max-Flow Min-Cut Theorem。",
+     "t": 505
+    }
+   ],
+   "trap": "補充：字幕的「代數 algorithm」是 Dijkstra's algorithm 的誤聽；「Max Flow Mean Cut」是 Max-Flow Min-Cut。"
+  },
+  {
+   "title": "課本與參考書",
+   "scene": null,
+   "points": [
+    {
+     "text": "課本：Grimaldi《Discrete and Combinatorial Mathematics》第 5 版。",
+     "t": 562
+    },
+    {
+     "text": "參考書包含 McEliece（老師的博士指導教授，已絕版）與 Biggs，兩本較簡潔。",
+     "t": 590
+    },
+    {
+     "text": "台灣最常用的是 Grimaldi 與 Rosen 兩本，內容字數較多。",
+     "t": 639
+    },
+    {
+     "text": "另列劉炯朗（C. L. Liu）的兩本書，以及 Ron Graham、Donald Knuth 等人的書。",
+     "t": 655
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "趙啟超的離散數學課把內容分成哪三大部分？",
+   "opts": [
+    "Fundamentals、Enumeration、Graph Theory",
+    "Logic、Calculus、Linear Algebra",
+    "Set Theory、Probability、Algorithms",
+    "Counting、Statistics、Number Theory"
+   ],
+   "ans": "Fundamentals、Enumeration、Graph Theory",
+   "why": "基礎（邏輯、集合、歸納、函數、關係）→ 計數 → 圖論。"
+  },
+  {
+   "q": "課程說的兩類重要 binary relation 是？",
+   "opts": [
+    "equivalence relation 與 partial ordering",
+    "function 與 inverse function",
+    "reflexive 與 symmetric",
+    "bijection 與 injection"
+   ],
+   "ans": "equivalence relation 與 partial ordering",
+   "why": "基礎部分講 relation 時特別挑出 equivalence relation 和 partial order。"
+  },
+  {
+   "q": "用 Generating Function 解 recurrence relation，被類比成微分方程裡的哪個工具？",
+   "opts": [
+    "Laplace transform",
+    "Taylor 展開",
+    "分離變數法",
+    "Euler 方法"
+   ],
+   "ans": "Laplace transform",
+   "why": "都是換到另一個 domain 先解，再變回原本的 domain。"
+  },
+  {
+   "q": "Recurrence relation 又稱為什麼？",
+   "opts": [
+    "Difference equation（差分方程）",
+    "Differential equation",
+    "Partial order",
+    "Characteristic polynomial"
+   ],
+   "ans": "Difference equation（差分方程）",
+   "why": "離散版本的微分方程，所以解法和微分方程很像但更簡單。"
+  },
+  {
+   "q": "解 recurrence relation 的順序是？",
+   "opts": [
+    "先 homogeneous，再 non-homogeneous",
+    "先 non-homogeneous，再 homogeneous",
+    "只解 homogeneous",
+    "先用 generating function 才能解 homogeneous"
+   ],
+   "ans": "先 homogeneous，再 non-homogeneous",
+   "why": "non-homogeneous 的解 = homogeneous 通解 + particular solution，所以要先會 homogeneous。"
+  },
+  {
+   "q": "Graph Theory 部分的四個最佳化/配對問題不包含哪一個？",
+   "opts": [
+    "Traveling Salesman Problem",
+    "Shortest Paths",
+    "Minimal Spanning Tree",
+    "Max Flow"
+   ],
+   "ans": "Traveling Salesman Problem",
+   "why": "課程列的是 Shortest Paths、MST、Maximum Matching、Max Flow（Max-Flow Min-Cut）。"
+  },
+  {
+   "q": "這門課指定的課本是？",
+   "opts": [
+    "Grimaldi 第 5 版",
+    "Rosen 第 8 版",
+    "CLRS 第 3 版",
+    "Biggs 第 2 版"
+   ],
+   "ans": "Grimaldi 第 5 版",
+   "why": "Grimaldi 為課本；Rosen 是台灣另一本常用的書，列為參考。"
+  }
+ ]
+}

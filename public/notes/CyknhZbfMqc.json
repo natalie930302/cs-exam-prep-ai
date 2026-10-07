@@ -1,0 +1,138 @@
+{
+ "video": "CyknhZbfMqc",
+ "label": "Abdul Bari：2.2 Masters Theorem Decreasing Function",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "從已解過的遞減遞迴觀察規律",
+   "scene": "master-decreasing",
+   "points": [
+    {
+     "text": "T(n) = T(n−1) + 1 → O(n)；T(n−1) + n → O(n²)；T(n−1) + log n → O(n log n)。",
+     "t": 24
+    },
+    {
+     "text": "T(n) = 2T(n−1) + 1 → O(2ⁿ)；3T(n−1) + 1 → O(3ⁿ)；2T(n−1) + n → O(n·2ⁿ)。",
+     "t": 41
+    },
+    {
+     "text": "係數 a = 1 時：f(n) 被乘上 n。",
+     "t": 74
+    },
+    {
+     "text": "係數 a > 1 時：f(n) 被乘上 aⁿ。",
+     "t": 90
+    }
+   ]
+  },
+  {
+   "title": "一般式：T(n) = aT(n−b) + f(n)",
+   "scene": "master-decreasing",
+   "points": [
+    {
+     "text": "一般式 T(n) = aT(n − b) + f(n)，a > 0、b > 0，f(n) = O(nᵏ)，k ≥ 0。",
+     "t": 121
+    },
+    {
+     "text": "Case 2：a = 1 → O(nᵏ⁺¹)，也就是 O(n·f(n))。",
+     "t": 217
+    },
+    {
+     "text": "Case 3：a > 1 → O(nᵏ · a^(n/b))；b = 2 時是 a^(n/2)。",
+     "t": 309
+    },
+    {
+     "text": "Case 1：a < 1（例如 0.5）→ O(nᵏ)，也就是 O(f(n))。",
+     "t": 361
+    }
+   ]
+  },
+  {
+   "title": "如何記住",
+   "scene": "master-decreasing",
+   "points": [
+    {
+     "text": "這個定理是由觀察例子歸納出來的，沒有特別的推導邏輯。",
+     "t": 400
+    },
+    {
+     "text": "依照這個定理，任何 aT(n − b) + f(n) 形式的遞減遞迴都能直接寫出答案。",
+     "t": 437
+    },
+    {
+     "text": "要自己動手解幾題、至少寫一遍，光看記不住。",
+     "t": 459
+    }
+   ],
+   "trap": "補充：這個「遞減型 Master Theorem」是 Abdul Bari 的整理，不在 CLRS 中；考試若用遞減式，最好仍以 back substitution 或遞迴樹寫出推導。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "T(n) = T(n−1) + n 的解？",
+   "opts": [
+    "O(n²)",
+    "O(n)",
+    "O(2ⁿ)",
+    "O(n log n)"
+   ],
+   "ans": "O(n²)",
+   "why": "a = 1，f(n) = n 乘上 n。"
+  },
+  {
+   "q": "T(n) = 2T(n−1) + 1 的解？",
+   "opts": [
+    "O(2ⁿ)",
+    "O(n)",
+    "O(n²)",
+    "O(n·2ⁿ)"
+   ],
+   "ans": "O(2ⁿ)",
+   "why": "a = 2 > 1，f(n) = 1 乘上 2ⁿ。"
+  },
+  {
+   "q": "T(n) = 2T(n−1) + n 的解？",
+   "opts": [
+    "O(n·2ⁿ)",
+    "O(2ⁿ)",
+    "O(n²)",
+    "O(n³)"
+   ],
+   "ans": "O(n·2ⁿ)",
+   "why": "a > 1：nᵏ · aⁿ/ᵇ = n · 2ⁿ。"
+  },
+  {
+   "q": "T(n) = 2T(n−2) + 1 的解？",
+   "opts": [
+    "O(2^(n/2))",
+    "O(2ⁿ)",
+    "O(n)",
+    "O(n²)"
+   ],
+   "ans": "O(2^(n/2))",
+   "why": "b = 2，指數是 n/b。"
+  },
+  {
+   "q": "遞減型 Master Theorem 中，a = 1 時答案是？",
+   "opts": [
+    "O(n·f(n))",
+    "O(f(n))",
+    "O(aⁿ f(n))",
+    "O(log n · f(n))"
+   ],
+   "ans": "O(n·f(n))",
+   "why": "每層都做 f(n) 的工作，共約 n 層。"
+  },
+  {
+   "q": "T(n) = T(n−1) + log n 的解？",
+   "opts": [
+    "O(n log n)",
+    "O(log n)",
+    "O(n)",
+    "O(log² n)"
+   ],
+   "ans": "O(n log n)",
+   "why": "a = 1，log n 乘上 n（嚴格說 Σ log i = log n! = Θ(n log n)）。"
+  }
+ ]
+}

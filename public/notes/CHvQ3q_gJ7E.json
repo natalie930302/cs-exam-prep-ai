@@ -1,0 +1,189 @@
+{
+ "video": "CHvQ3q_gJ7E",
+ "label": "MIT 6.006 L18：Speeding up Dijkstra",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "三種最短路徑問題",
+   "scene": "sp-compare",
+   "points": [
+    {
+     "text": "這講的優化不改變最壞情況複雜度，只改善實際執行時間。",
+     "t": 48
+    },
+    {
+     "text": "Single source → 所有目的地（原本的 Dijkstra、Bellman-Ford）；single source、single target（s 到特定 t）；all pairs（任兩點）。",
+     "t": 91
+    },
+    {
+     "text": "All-pairs 要變動起點，工作量比 single source 更多（6.046 才教）。",
+     "t": 222
+    }
+   ]
+  },
+  {
+   "title": "優化一：找到 t 就停",
+   "scene": "dij-early-stop",
+   "points": [
+    {
+     "text": "Dijkstra：Extract-Min 取出 u 時，u 的最短路徑已經確定（invariant）。",
+     "t": 307
+    },
+    {
+     "text": "只要一行：如果 u == t 就停止，不用等 Q 變空。",
+     "t": 352
+    },
+    {
+     "text": "t 很近時快很多；t 是最後一個時也不會比較慢。",
+     "t": 396
+    }
+   ]
+  },
+  {
+   "title": "優化二：雙向搜尋（bi-directional）",
+   "scene": "bidir-wrong-w",
+   "points": [
+    {
+     "text": "從 s 做 forward Dijkstra、從 t 沿反向邊做 backward Dijkstra，一步一步交替。",
+     "t": 441
+    },
+    {
+     "text": "資料結構全部加倍：d_f、d_b、Q_f、Q_b、π_f、π_b；初始 d_f(s) = 0、d_b(t) = 0，其餘 ∞。",
+     "t": 663
+    },
+    {
+     "text": "終止條件：某個頂點 w 已經從 Q_f 和 Q_b 都被取出（兩個 frontier 相遇）。",
+     "t": 855
+    },
+    {
+     "text": "直覺做法：用 π_f 從 w 回推到 s、用 π_b 從 w 推到 t，接起來——但 w 不一定在最短路徑上。",
+     "t": 1368
+    }
+   ]
+  },
+  {
+   "title": "反例：s、u、u′、w、t",
+   "scene": "bidir-wrong-w",
+   "points": [
+    {
+     "text": "上面三條邊 s → u → u′ → t 權重都是 3（共 9）；下面 s → w → t 權重都是 5（共 10）。",
+     "t": 1698
+    },
+    {
+     "text": "forward：d_f(w) = 5、d_f(u) = 3；backward：d_b(u′) = 3、d_b(w) = 5。",
+     "t": 1746
+    },
+    {
+     "text": "forward 取 u → d_f(u′) = 6；backward 取 u′ → d_b(u) = 6。",
+     "t": 1890
+    },
+    {
+     "text": "forward 取 w → d_f(t) = 10；backward 取 w → w 兩邊都被取出，終止；但經過 w 的路徑是 10。",
+     "t": 2079
+    },
+    {
+     "text": "交替搜尋讓兩個 frontier 在「邊數最少」的路徑相遇，而這裡邊數最少的不是權重最小的。",
+     "t": 2275
+    }
+   ]
+  },
+  {
+   "title": "修正：找 d_f(x) + d_b(x) 最小的 x",
+   "scene": "bidir-fix-x",
+   "points": [
+    {
+     "text": "終止條件不變，但終止後要再掃一次：找 d_f(x) + d_b(x) 最小的頂點 x（可能不是 w）。",
+     "t": 2609
+    },
+    {
+     "text": "例子中 u：3 + 6 = 9；u′：6 + 3 = 9，都比經過 w 的 10 小。",
+     "t": 2655
+    },
+    {
+     "text": "用 x 取代 w，再用 π_f、π_b 接出最短路徑，就正確了。",
+     "t": 2704
+    }
+   ]
+  },
+  {
+   "title": "優化三：位能（potential）改權重、landmark",
+   "scene": "potential-reweight",
+   "points": [
+    {
+     "text": "goal-directed search（類似 A*）：改邊權重讓搜尋往目標「下坡」走。",
+     "t": 2754
+    },
+    {
+     "text": "w̄(u, v) = w(u, v) − λ(u) + λ(v)；任一條 s 到 t 的路徑都平移同樣的 λ(t) − λ(s)，所以最短路徑不變。",
+     "t": 2799
+    },
+    {
+     "text": "例：s 有兩條權重 5 的出邊到 t1、t2；提高不太可能的那一側的位能，讓它變成上坡。",
+     "t": 2843
+    },
+    {
+     "text": "Landmark：選頂點 l，預先算所有 δ(u, l)，取 λ_t(u) = δ(u, l) − δ(t, l)；用三角不等式可證正確。",
+     "t": 3070
+    }
+   ],
+   "trap": "補充：同樣的「位能改權重」也是 Johnson 演算法的核心（CLRS 25.3），用 Bellman-Ford 算出 h(v) 讓所有新權重 ≥ 0。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "單一目標 t 的 Dijkstra 可以在何時停止？",
+   "opts": [
+    "Extract-Min 取出 t 時",
+    "第一次 relax 到 t 時",
+    "d(t) < ∞ 時",
+    "Q 只剩 t 時"
+   ],
+   "ans": "Extract-Min 取出 t 時",
+   "why": "取出時 d(t) 才確定是 δ(s, t)；第一次被 relax 時可能還會再變小。"
+  },
+  {
+   "q": "雙向 Dijkstra 的終止條件？",
+   "opts": [
+    "某頂點已從 Q_f 與 Q_b 都被取出",
+    "兩邊的 d 值相等",
+    "某頂點被兩邊都 relax 過",
+    "forward 取出 t"
+   ],
+   "ans": "某頂點已從 Q_f 與 Q_b 都被取出",
+   "why": "講者說這個終止條件是對的，問題出在終止後怎麼組路徑。"
+  },
+  {
+   "q": "講者的反例（s→u→u′→t 各 3；s→w→t 各 5）中，雙向搜尋在 w 終止，正確答案是？",
+   "opts": [
+    "9，取 d_f(x) + d_b(x) 最小的 x（u 或 u′）",
+    "10，經過 w",
+    "6",
+    "15"
+   ],
+   "ans": "9，取 d_f(x) + d_b(x) 最小的 x（u 或 u′）",
+   "why": "u：3 + 6、u′：6 + 3，都是 9 < 10。"
+  },
+  {
+   "q": "位能改權重 w̄(u, v) = w(u, v) − λ(u) + λ(v) 後，s 到 t 的任一路徑權重會？",
+   "opts": [
+    "都加上相同的 λ(t) − λ(s)",
+    "都變成非負",
+    "保持不變",
+    "乘上同一個常數"
+   ],
+   "ans": "都加上相同的 λ(t) − λ(s)",
+   "why": "中間頂點的 λ 會互相抵銷（telescoping），所以最短路徑不變。"
+  },
+  {
+   "q": "本講的優化對 Dijkstra 最壞情況複雜度的影響？",
+   "opts": [
+    "不變",
+    "降成 O(V + E)",
+    "降成 O(E)",
+    "升成 O(VE)"
+   ],
+   "ans": "不變",
+   "why": "講者一開始就強調只改善實際（或平均）表現。"
+  }
+ ]
+}

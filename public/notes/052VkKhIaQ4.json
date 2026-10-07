@@ -1,0 +1,208 @@
+{
+ "video": "052VkKhIaQ4",
+ "label": "Abdul Bari：6.3 Graph Coloring Problem - Backtracking",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "問題：相鄰頂點不同色",
+   "scene": "gc-intro",
+   "points": [
+    {
+     "text": "給一張圖和幾種顏色（紅、綠、藍），相鄰頂點不能同色。",
+     "t": 0
+    },
+    {
+     "text": "從頂點 1 塗紅；頂點 2 和 1 相鄰不能紅 → 綠。",
+     "t": 37
+    },
+    {
+     "text": "頂點 3 不和 1 相鄰 → 可以紅；頂點 5 和紅、綠都相鄰 → 藍。",
+     "t": 60
+    },
+    {
+     "text": "得到一組解：紅 綠 紅 綠 藍。",
+     "t": 100
+    },
+    {
+     "text": "換個開頭（1 塗綠）會得到另一組解 → 解不只一組。",
+     "t": 113
+    },
+    {
+     "text": "要找所有塗法、又要檢查條件 → 用 backtracking。",
+     "t": 141
+    }
+   ],
+   "trap": "補充：例圖的邊是從字幕推回來的（場景用 1-2、2-3、3-4、4-1、3-5、4-5），和影片的畫法可能不同，但著色結果一致。"
+  },
+  {
+   "title": "m-coloring 判定與最佳化",
+   "scene": "gc-types",
+   "points": [
+    {
+     "text": "只給 2 種顏色時這張圖塗不完；給 4 種也可以塗。",
+     "t": 183
+    },
+    {
+     "text": "給定 m 色、只問「能不能塗」：m-coloring decision problem。",
+     "t": 222
+    },
+    {
+     "text": "問「最少要幾色」：m-coloring optimization problem。",
+     "t": 243
+    },
+    {
+     "text": "三種問題：列出所有塗法、m 色夠不夠、最少幾色。",
+     "t": 246
+    },
+    {
+     "text": "最少色數也叫 chromatic number。",
+     "t": 306
+    }
+   ],
+   "trap": "補充：decision 問「m 色夠不夠」，optimization 問「最少幾色」，題目常故意混用。"
+  },
+  {
+   "title": "不加條件的狀態空間樹有多大",
+   "scene": "gc-tree-size",
+   "points": [
+    {
+     "text": "一張 4 個頂點的小圖、3 種顏色，先不檢查任何條件畫出整棵樹。",
+     "t": 323
+    },
+    {
+     "text": "第 i 層代表頂點 xi，每個節點都分成紅、綠、藍 3 支。",
+     "t": 346
+    },
+    {
+     "text": "節點數 1 + 3 + 3² + 3³ + 3⁴ = (3⁵ − 1)/2。",
+     "t": 456
+    },
+    {
+     "text": "大約 3^(n+1)，一般是 c^(n+1)：指數時間。",
+     "t": 467
+    }
+   ]
+  },
+  {
+   "title": "回溯＋bounding function 塗正方形圖",
+   "scene": "gc-backtrack",
+   "points": [
+    {
+     "text": "x1 塗紅；x2 試紅和 1 相鄰 → 被 bounding function 殺掉，改綠。",
+     "t": 494
+    },
+    {
+     "text": "x3 塗紅合法；x4 紅被殺，綠、藍都可以 → 解 R G R G、R G R B。",
+     "t": 560
+    },
+    {
+     "text": "退回 x3：綠和 2 相鄰被殺；藍可以 → x4 綠 → R G B G。",
+     "t": 650
+    },
+    {
+     "text": "退回 x2 改藍 → R B R G、R B R B，依此類推找出全部解。",
+     "t": 720
+    },
+    {
+     "text": "剪掉一些節點，但最壞仍是 3ⁿ：時間複雜度 O(3ⁿ)。",
+     "t": 770
+    }
+   ]
+  },
+  {
+   "title": "應用：地圖著色",
+   "scene": "gc-map",
+   "points": [
+    {
+     "text": "地圖上相鄰區域不能同色。",
+     "t": 786
+    },
+    {
+     "text": "早期印刷每種顏色要過一次印刷機，所以想用最少顏色。",
+     "t": 800
+    },
+    {
+     "text": "每個區域變成頂點，有共同邊界就連一條邊。",
+     "t": 841
+    },
+    {
+     "text": "解出圖的著色，再把顏色填回地圖。",
+     "t": 900
+    },
+    {
+     "text": "其他能轉成圖著色的問題也可以這樣解。",
+     "t": 930
+    }
+   ],
+   "trap": "補充：地圖的區域形狀是自己畫的（影片的地圖由字幕無法還原），鄰接關係依字幕：2 與 3、4 相鄰，3 與 4 相鄰，4 與 5 相鄰。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "只問「給 m 種顏色能不能把圖塗完」是哪一種問題？",
+   "opts": [
+    "m-coloring decision problem",
+    "m-coloring optimization problem",
+    "找出所有塗法",
+    "Hamiltonian cycle"
+   ],
+   "ans": "m-coloring decision problem",
+   "why": "只回答能或不能 → decision。"
+  },
+  {
+   "q": "把圖塗完所需的最少顏色數叫什麼？",
+   "opts": [
+    "Chromatic number",
+    "Clique number",
+    "Degree",
+    "Independence number"
+   ],
+   "ans": "Chromatic number",
+   "why": "影片：m-coloring optimization problem 也叫 chromatic number problem。"
+  },
+  {
+   "q": "4 個頂點、3 種顏色，不加條件的狀態空間樹共有幾個節點？",
+   "opts": [
+    "121",
+    "81",
+    "243",
+    "40"
+   ],
+   "ans": "121",
+   "why": "1 + 3 + 9 + 27 + 81 = (3⁵ − 1)/2 = 121。"
+  },
+  {
+   "q": "正方形圖 1-2-3-4-1，x1 = 紅、x2 = 綠、x3 = 紅，x4 可以塗什麼？",
+   "opts": [
+    "綠或藍",
+    "只有藍",
+    "只有綠",
+    "紅"
+   ],
+   "ans": "綠或藍",
+   "why": "x4 和 1（紅）、3（紅）相鄰，不能紅；綠、藍都可以。"
+  },
+  {
+   "q": "有三角形的圖用 2 種顏色？",
+   "opts": [
+    "一定塗不完",
+    "一定塗得完",
+    "看頂點順序",
+    "看邊的權重"
+   ],
+   "ans": "一定塗不完",
+   "why": "三角形三個頂點兩兩相鄰，需要 3 色。"
+  },
+  {
+   "q": "Graph coloring 用回溯的最壞時間複雜度？",
+   "opts": [
+    "O(mⁿ)",
+    "O(n²)",
+    "O(n log n)",
+    "O(m·n)"
+   ],
+   "ans": "O(mⁿ)",
+   "why": "狀態空間樹節點數約 m^(n+1)，bounding 只是剪掉一部分。"
+  }
+ ]
+}

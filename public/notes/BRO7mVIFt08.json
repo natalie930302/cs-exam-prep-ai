@@ -1,0 +1,228 @@
+{
+ "video": "BRO7mVIFt08",
+ "label": "MIT 6.006 L9：Table Doubling, Karp-Rabin",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "回顧 chaining：缺的是 m 該多大",
+   "scene": null,
+   "points": [
+    {
+     "text": "Hashing with chaining 的空間是 n + m，期望操作時間 O(1 + α)，α = n/m。",
+     "t": 27
+    },
+    {
+     "text": "問題：n 會隨插入成長，我們不知道 n，要讓 m = Θ(n)：m = Ω(n) 讓 α 為常數、m = O(n) 讓空間線性。",
+     "t": 297
+    },
+    {
+     "text": "做法：從小的常數 m 開始，必要時讓 table 變大或變小。",
+     "t": 390
+    }
+   ]
+  },
+  {
+   "title": "Grow table：重建要 Θ(n + m + m′)",
+   "scene": "table-doubling",
+   "points": [
+    {
+     "text": "從 m = 8 開始，插入第 9 個時 n > m，要擴大 table。",
+     "t": 452
+    },
+    {
+     "text": "擴大 = 配置大小 m′ 的新 table，並把每個 item 用新的 hash function h′ 重新 insert。",
+     "t": 526
+    },
+    {
+     "text": "成本 Θ(n + m + m′)：走訪所有 slot、所有 list、初始化新 table；m、m′ = Θ(n) 時為 Θ(n)。",
+     "t": 589
+    },
+    {
+     "text": "一定要換 hash function：舊的 h 只會映射到前 m 格，新格子用不到。",
+     "t": 646
+    }
+   ]
+  },
+  {
+   "title": "m′ = m + 1 vs m′ = 2m",
+   "scene": "table-doubling",
+   "points": [
+    {
+     "text": "錯誤做法 m′ = m + 1：之後每次插入都要重建，成本 1 + 2 + 3 + … → n 次插入共 Θ(n²)。",
+     "t": 706
+    },
+    {
+     "text": "正確做法 table doubling：m′ = 2m，在 8、16、32、64… 時才重建。",
+     "t": 805
+    },
+    {
+     "text": "只重建 log n 次，但不是 n log n：重建成本 8、16、32… 是等比級數，總和 Θ(n)。",
+     "t": 846
+    }
+   ]
+  },
+  {
+   "title": "Amortized analysis 的定義",
+   "scene": "table-doubling",
+   "params": {
+    "focus": "amortized"
+   },
+   "points": [
+    {
+     "text": "單一次插入可能花 Θ(n)（最後一次重建），但昂貴的操作很少，其他都是常數。",
+     "t": 921
+    },
+    {
+     "text": "Amortized 時間 T(n)：任意 k 次操作的總時間 ≤ k·T(n)，不是對單一操作的保證。",
+     "t": 1004
+    },
+    {
+     "text": "類比：每月付一次房租，可以想成每天付 1/30——把高成本平攤掉。",
+     "t": 1062
+    },
+    {
+     "text": "Table doubling：k 次 insert 共 Θ(k) → 每次 insert amortized Θ(1)。",
+     "t": 1147
+    },
+    {
+     "text": "只看總時間時（例如用 hash 數重複字），amortized 就夠用；real-time 系統才在乎單一操作。",
+     "t": 1170
+    }
+   ]
+  },
+  {
+   "title": "Deletion：縮小要在 1/4 才縮",
+   "scene": "shrink-quarter",
+   "points": [
+    {
+     "text": "只做 delete 不縮小：n 次插入再 n 次刪除後 m 仍很大，空間不再是 O(n)。",
+     "t": 1278
+    },
+    {
+     "text": "錯誤：n = m/2 就縮成一半。8 個 item 加第 9 個擴成 16，刪掉又縮回 8，來回每次都 Θ(n)。",
+     "t": 1339
+    },
+    {
+     "text": "正確：n = m/4 時才縮成 m/2；縮完半滿，要再插入 m/2 個才會再擴大。",
+     "t": 1415
+    },
+    {
+     "text": "維持 n ≤ m ≤ 4n，空間線性，任意 insert／delete 序列的 amortized 時間為 O(1)。",
+     "t": 1494
+    }
+   ]
+  },
+  {
+   "title": "Python list = 可變長陣列",
+   "scene": "table-doubling",
+   "points": [
+    {
+     "text": "Python list 支援 O(1) 隨機存取、append、pop 最後一個；刪第一個是 O(n)。",
+     "t": 1542
+    },
+    {
+     "text": "list 用 table doubling 實作：append、pop 是 constant amortized，不是最壞 O(1)。",
+     "t": 1604
+    },
+    {
+     "text": "若要最壞 O(1)：快滿時在旁邊建兩倍大的新表，每次插入順便搬幾個過去（de-amortization）。",
+     "t": 1649
+    }
+   ]
+  },
+  {
+   "title": "String matching：Karp-Rabin",
+   "scene": null,
+   "points": [
+    {
+     "text": "問題：字串 s 是否出現在 t 中（grep、Ctrl-F、搜尋引擎）。",
+     "t": 1777
+    },
+    {
+     "text": "暴力法比對每個長度 |s| 的子字串：O(|s|·|t|)。",
+     "t": 1899
+    },
+    {
+     "text": "Rolling hash：r.append(c) 加到尾、r.skip(c) 刪掉頭，兩者 O(1)，r() 給出目前字串的 hash。",
+     "t": 2269
+    },
+    {
+     "text": "滑動視窗每次只換一個字元；hash 相等時才逐字比對，hash 碰撞機率 ≤ 1/|s| 時期望時間 O(|s| + |t|)。",
+     "t": 2469
+    },
+    {
+     "text": "實作：把字串看成以字母表大小 a 為底的數，append：u → u·a + ord(c)；skip：u → u − c·a^(|u|−1)，全部 mod 隨機質數 m。",
+     "t": 2993
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Table 每滿就只加大 1 格（m′ = m + 1），連續插入 n 個的總成本？",
+   "opts": [
+    "Θ(n²)",
+    "Θ(n)",
+    "Θ(n log n)",
+    "Θ(log n)"
+   ],
+   "ans": "Θ(n²)",
+   "why": "幾乎每次插入都重建：1 + 2 + … + n。"
+  },
+  {
+   "q": "Table doubling 下連續插入 n 個的總成本？",
+   "opts": [
+    "Θ(n)",
+    "Θ(n log n)",
+    "Θ(n²)",
+    "Θ(log n)"
+   ],
+   "ans": "Θ(n)",
+   "why": "重建成本是等比級數 1 + 2 + 4 + … + n < 2n。"
+  },
+  {
+   "q": "「amortized O(1)」的意思是？",
+   "opts": [
+    "任意 k 次操作總時間是 O(k)",
+    "每一次操作都保證 O(1)",
+    "平均輸入下 O(1)",
+    "機率上 O(1)"
+   ],
+   "ans": "任意 k 次操作總時間是 O(k)",
+   "why": "是對一串操作總和的保證，單次仍可能很貴。"
+  },
+  {
+   "q": "n = m/2 就縮表為一半，會出什麼問題？",
+   "opts": [
+    "在邊界來回插入刪除時每次都 Θ(n)",
+    "空間變成 O(n²)",
+    "hash 碰撞變多",
+    "沒有問題"
+   ],
+   "ans": "在邊界來回插入刪除時每次都 Θ(n)",
+   "why": "8 ↔ 16 來回 grow／shrink（thrashing）。"
+  },
+  {
+   "q": "MIT 的做法：何時縮表、縮成多大？",
+   "opts": [
+    "n = m/4 時縮成 m/2",
+    "n = m/2 時縮成 m/2",
+    "n = m/4 時縮成 m/4",
+    "永遠不縮"
+   ],
+   "ans": "n = m/4 時縮成 m/2",
+   "why": "縮完半滿，離下一次擴大還有 m/2 次插入的距離。"
+  },
+  {
+   "q": "Python 的 list.append 時間複雜度是？",
+   "opts": [
+    "amortized O(1)",
+    "worst-case O(1)",
+    "O(n)",
+    "O(log n)"
+   ],
+   "ans": "amortized O(1)",
+   "why": "底層用 table doubling，偶爾要整個搬家。"
+  }
+ ]
+}

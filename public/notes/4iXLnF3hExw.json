@@ -1,0 +1,184 @@
+{
+ "video": "4iXLnF3hExw",
+ "label": "MIT 6.006 Rec3：Document Distance, Insertion and Merge Sort",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "Document distance 回顧：各函數成本",
+   "scene": null,
+   "points": [
+    {
+     "text": "Call graph：main → word_frequencies_for_file →（get_words_from_line_list、count_frequency）；main → vector_angle → inner_product。",
+     "t": 221
+    },
+    {
+     "text": "常數：W = 文件字數、L = 不重複字數（document vector 長度）、w̄ = 字長（英文 5–10 字元，視為有界）。",
+     "t": 303
+    },
+    {
+     "text": "get_words_from_line_list 是 O(W²)，元凶是 word_list = word_list + words_in_line 的 +。",
+     "t": 398
+    },
+    {
+     "text": "inner_product O(L₁L₂)；vector_angle 還要 L₁² + L₂²，但 L₁² + L₂² ≥ L₁L₂；總計 W₁² + W₂²（W ≥ L）。",
+     "t": 455
+    }
+   ]
+  },
+  {
+   "title": "逐行分析 count_frequency",
+   "scene": "count-frequency-cost",
+   "points": [
+    {
+     "text": "方法：每行算「執行一次的成本 × 執行次數」，再加總。",
+     "t": 635
+    },
+    {
+     "text": "功能：把字串列 ['the','fox','is','in','the','hat'] 變成 [[the,2],[fox,1],[is,1],[in,1],[hat,1]]。",
+     "t": 711
+    },
+    {
+     "text": "for new_word in word_list：W 次；內層 for entry in L：最壞每次走 L 個 → L·W 次。",
+     "t": 933
+    },
+    {
+     "text": "if new_word == entry[0]：字串比較不是 O(1)，成本 w̄（字長），執行 L·W 次 → 這行主導，W·L·w̄。",
+     "t": 1305
+    },
+    {
+     "text": "entry[1] += 1 與 break：只有重複字會執行 → W − L 次（精確）；粗略上界 W 次也可以。",
+     "t": 1456
+    },
+    {
+     "text": "else: L.append：只有新字才執行 → L 次（緊）或 W 次（鬆）；漸近分析用哪個上界都會得到正確結果。",
+     "t": 1604
+    }
+   ],
+   "trap": "補充：比較兩個長字串時要逐字元比到不同處，成本與字長成正比；只有字長有界時才能當常數。"
+  },
+  {
+   "title": "Profiler 與 + 改成 extend",
+   "scene": "plus-vs-extend",
+   "points": [
+    {
+     "text": "上千行程式不能逐行手算，用 profiler：看 total time（函數本身）而非 cumulative time（含子函數）找瓶頸。",
+     "t": 1891
+    },
+    {
+     "text": "瓶頸是 get_words_from_line_list 第 5 行的 +，它每次都複製整個串列。",
+     "t": 2009
+    },
+    {
+     "text": "+ 改成 extend：改幾個字元，執行時間改善約 30%。",
+     "t": 2029
+    },
+    {
+     "text": "Python list 是陣列（CLRS 的 array），不是 linked list：隨機存取 O(1)，但串接要複製。",
+     "t": 2239
+    },
+    {
+     "text": "extend 長度 K 的串列 = K 次 append，每次 O(1) → O(K)；共 Z 行 → K·Z = W。",
+     "t": 2335
+    }
+   ]
+  },
+  {
+   "title": "已排序向量的內積：binary search vs 兩指標",
+   "scene": "sorted-inner-product",
+   "points": [
+    {
+     "text": "若把字（以編號表示）排好序，內積可以更快。例：文件 1 = {3:2, 4:1, 6:1, 8:1, 9:1}、文件 2 = {2:1, 3:1, 6:1, 7:1, 8:1}。",
+     "t": 2557
+    },
+    {
+     "text": "原做法：對 L₁ 每個字在 L₂ 找相同字 → O(L₁L₂)。",
+     "t": 2613
+    },
+    {
+     "text": "第二個向量已排序 → 每次用 binary search：O(L₁ log L₂)。",
+     "t": 2666
+    },
+    {
+     "text": "兩指標法：L₂ 的指標只往下走，找 4 時看到 6 > 4 就停在原地；總共 O(L₁ + L₂)。",
+     "t": 2741
+    },
+    {
+     "text": "為何不在兩指標中改用 binary search？兩串列都是 1…10,000 時，binary search 要約 N log N，兩指標只要 2N。",
+     "t": 2911
+    },
+    {
+     "text": "這個指標技巧就是 merge sort 的 merge。",
+     "t": 3215
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "count_frequency 中 if new_word == entry[0] 的總成本是？",
+   "opts": [
+    "O(W·L·w̄)",
+    "O(W)",
+    "O(L)",
+    "O(W + L)"
+   ],
+   "ans": "O(W·L·w̄)",
+   "why": "執行 L·W 次，每次字串比較花 w̄。"
+  },
+  {
+   "q": "count_frequency 中 entry[1] += 1 精確執行幾次？",
+   "opts": [
+    "W − L",
+    "W",
+    "L",
+    "W·L"
+   ],
+   "ans": "W − L",
+   "why": "只有已出現過的字（重複字）會遞增計數。"
+  },
+  {
+   "q": "get_words_from_line_list 原本 O(W²) 的原因？",
+   "opts": [
+    "word_list = word_list + words 每次都複製整個串列",
+    "for 迴圈多跑一圈",
+    "字串比較太慢",
+    "用了 dictionary"
+   ],
+   "ans": "word_list = word_list + words 每次都複製整個串列",
+   "why": "改成 extend 後只搬新加入的 K 個元素。"
+  },
+  {
+   "q": "兩個已排序、長度 L₁、L₂ 的向量做內積，兩指標法的時間是？",
+   "opts": [
+    "O(L₁ + L₂)",
+    "O(L₁ log L₂)",
+    "O(L₁L₂)",
+    "O(log L₁ + log L₂)"
+   ],
+   "ans": "O(L₁ + L₂)",
+   "why": "兩個指標都只往前走。"
+  },
+  {
+   "q": "用 profiler 找瓶頸時應該看？",
+   "opts": [
+    "total time（函數本身花的時間）",
+    "cumulative time",
+    "程式行數",
+    "函數被呼叫的順序"
+   ],
+   "ans": "total time（函數本身花的時間）",
+   "why": "cumulative time 包含子函數，會把瓶頸算到呼叫者頭上。"
+  },
+  {
+   "q": "Python list 對應 CLRS 中的哪種結構？",
+   "opts": [
+    "array",
+    "linked list",
+    "hash table",
+    "binary search tree"
+   ],
+   "ans": "array",
+   "why": "連續儲存、隨機存取 O(1)，串接要複製。"
+  }
+ ]
+}

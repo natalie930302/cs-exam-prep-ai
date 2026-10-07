@@ -1,0 +1,134 @@
+{
+ "video": "0IAPZzGSbME",
+ "label": "Abdul Bari：1. Introduction to Algorithms",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "課程介紹",
+   "scene": null,
+   "points": [
+    {
+     "text": "演算法是資工必修，也是競試、程式競賽、面試題目的主要來源。",
+     "t": 38
+    },
+    {
+     "text": "這門課提供解題的 strategy（設計方法），學會後才能自己發展解題邏輯。",
+     "t": 59
+    },
+    {
+     "text": "影片會編號，建議依編號順序觀看，因為大主題會拆成多支小影片。",
+     "t": 132
+    }
+   ]
+  },
+  {
+   "title": "演算法的定義：Design 階段 vs Implementation 階段",
+   "scene": "algo-vs-program",
+   "points": [
+    {
+     "text": "Algorithm：解決一個計算問題的 step-by-step procedure。",
+     "t": 210
+    },
+    {
+     "text": "Program 也是解決問題的步驟，所以要比較兩者的差異才能看懂演算法的角色。",
+     "t": 228
+    },
+    {
+     "text": "軟體開發生命週期中，先 design、再 implementation；不能用試錯法蓋東西。",
+     "t": 260
+    },
+    {
+     "text": "設計階段用類似英文、不講究語法的敘述描述程式要怎麼運作，這就是演算法。",
+     "t": 355
+    },
+    {
+     "text": "演算法寫於 design time，程式寫於 implementation time。",
+     "t": 385
+    }
+   ]
+  },
+  {
+   "title": "誰來寫、用什麼語言寫",
+   "scene": "algo-vs-program",
+   "points": [
+    {
+     "text": "寫演算法的人要有 domain knowledge，例如會計軟體找會計、醫院系統找醫護行政人員；寫程式的是 programmer。",
+     "t": 410
+    },
+    {
+     "text": "演算法可以用任何語言或數學符號，只要團隊看得懂；程式只能用 C、C++、Java、Python 等程式語言。",
+     "t": 487
+    },
+    {
+     "text": "設計者寫的演算法要讓 programmer 與整個開發團隊都看得懂。",
+     "t": 527
+    }
+   ]
+  },
+  {
+   "title": "平台相依性與分析 vs 測試",
+   "scene": "algo-vs-program",
+   "points": [
+    {
+     "text": "演算法與 hardware、OS 無關；程式則依賴硬體與作業系統（Linux、Windows）。",
+     "t": 562
+    },
+    {
+     "text": "寫完演算法要做 analysis：在時間與空間上是否有效率；程式則是直接執行做 testing。",
+     "t": 610
+    },
+    {
+     "text": "本課程演算法採用接近 C 語言的語法，因為大多數人都學過 C。",
+     "t": 677
+    }
+   ],
+   "trap": "補充：考試寫 pseudocode 時以 CLRS 風格為準（← 表示指定、陣列從 1 開始），不必拘泥 C 語法。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "依影片，演算法是在軟體開發的哪個階段撰寫？",
+   "opts": [
+    "Design 階段",
+    "Implementation 階段",
+    "Testing 階段",
+    "Maintenance 階段"
+   ],
+   "ans": "Design 階段",
+   "why": "先設計（演算法）再實作（程式）。"
+  },
+  {
+   "q": "下列哪一項描述「程式」而非「演算法」？",
+   "opts": [
+    "依賴硬體與作業系統",
+    "可以用數學符號撰寫",
+    "由具 domain knowledge 的設計者撰寫",
+    "寫完後進行 analysis"
+   ],
+   "ans": "依賴硬體與作業系統",
+   "why": "演算法與平台無關，程式要選定硬體與 OS。"
+  },
+  {
+   "q": "演算法寫完後要做什麼？程式呢？",
+   "opts": [
+    "演算法做 analysis，程式做 testing",
+    "兩者都做 testing",
+    "演算法做 testing，程式做 analysis",
+    "兩者都只要編譯"
+   ],
+   "ans": "演算法做 analysis，程式做 testing",
+   "why": "分析演算法的時間與空間效率；程式則直接執行測試。"
+  },
+  {
+   "q": "為什麼設計醫院系統的演算法時，常由醫院人員參與？",
+   "opts": [
+    "他們具有 domain knowledge",
+    "他們比較會寫 C",
+    "演算法一定要由非工程師寫",
+    "醫院系統不需要程式設計師"
+   ],
+   "ans": "他們具有 domain knowledge",
+   "why": "了解問題領域的人最能設計出正確的解法。"
+  }
+ ]
+}

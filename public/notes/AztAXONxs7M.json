@@ -1,0 +1,221 @@
+{
+ "video": "AztAXONxs7M",
+ "label": "清大周志遠 第8A講 Processes Concept",
+ "source": "whisper",
+ "sections": [
+  {
+   "title": "狀態與位置的對應",
+   "scene": "state-location",
+   "points": [
+    {
+     "text": "CPU 只有個位數到十幾個 core，要執行的程式卻很多：需要 scheduling。",
+     "t": 0
+    },
+    {
+     "text": "memory 也有限，使用者要跑的程式不一定能 load 進來，也要排程。",
+     "t": 42
+    },
+    {
+     "text": "在 CPU 上＝running；在 memory 裡＝ready（ready to run）。",
+     "t": 62
+    },
+    {
+     "text": "還在 disk 上、只是被 create＝new；執行完離開＝terminated。",
+     "t": 83
+    },
+    {
+     "text": "waiting：在 memory 但就算 CPU 空也不能跑，例如等別人、等 interrupt、自己 call sleep。",
+     "t": 122
+    }
+   ]
+  },
+  {
+   "title": "Long-term vs Short-term scheduler",
+   "scene": "lt-st-scheduler",
+   "points": [
+    {
+     "text": "進 CPU 的排程叫 CPU scheduling；進 memory 的叫 job scheduling。",
+     "t": 161
+    },
+    {
+     "text": "CPU scheduler 又叫 short-term：time sharing 每幾 ms 就有 alarm 打斷、重新排程。",
+     "t": 197
+    },
+    {
+     "text": "job scheduler 又叫 long-term：幾秒、幾分鐘才做一次。",
+     "t": 217
+    },
+    {
+     "text": "long-term 頻率低，是因為要等使用者 launch 新 process 才需要排。",
+     "t": 236
+    }
+   ]
+  },
+  {
+   "title": "Mid-term scheduler",
+   "scene": "midterm-swap",
+   "points": [
+    {
+     "text": "兩者中間還有 mid-term scheduler：把 process 從 memory swap 回 disk。",
+     "t": 296
+    },
+    {
+     "text": "它跟 virtual memory 結合：用 disk 的一塊空間來擴充 memory。",
+     "t": 315
+    },
+    {
+     "text": "memory 不夠時，把一些 process 踢回 disk，這個動作叫 swapping。",
+     "t": 336
+    },
+    {
+     "text": "程式 allocate 的大空間常常不會立刻用到，可以先放到 disk。",
+     "t": 375
+    },
+    {
+     "text": "swap 的是 memory content，不是原本的檔案；被 swap out 的要先搬回 memory 才能回 ready。",
+     "t": 453
+    }
+   ]
+  },
+  {
+   "title": "Degree of multiprogramming 與 process mix",
+   "scene": "dop-mix",
+   "points": [
+    {
+     "text": "long-term scheduler 控制 degree of multiprogramming：memory 裡有幾個 process。",
+     "t": 508
+    },
+    {
+     "text": "degree 太低：CPU 可能 idle（batch 的 degree 永遠是 1）。",
+     "t": 565
+    },
+    {
+     "text": "degree 太高：太多 process 搶 memory，一直 swapping → thrashing。",
+     "t": 583
+    },
+    {
+     "text": "目的是 CPU 和 I/O 的時間 overlap：全是 CPU-bound，I/O 閒著；全是 I/O-bound，CPU 閒著。",
+     "t": 681
+    },
+    {
+     "text": "long-term 要挑出 CPU-bound 與 I/O-bound 平衡的 mix。",
+     "t": 718
+    },
+    {
+     "text": "現代電腦 memory 大，long-term 角色淡化，改由 mid-term（VM 管理）控制 mix。",
+     "t": 811
+    }
+   ],
+   "trap": "課堂原音把 thrashing 說成 trashing，正確拼法是 thrashing。"
+  },
+  {
+   "title": "Short-term scheduler 的設計",
+   "scene": "st-overhead",
+   "points": [
+    {
+     "text": "short-term 通常 100 ms 甚至更短就執行一次，由 timer alarm 控制。",
+     "t": 887
+    },
+    {
+     "text": "system call 和 I/O interrupt 也會叫起它，所以頻率更高。",
+     "t": 925
+    },
+    {
+     "text": "它決定 wait time：同樣的 process、不同演算法，平均等待時間不同。",
+     "t": 980
+    },
+    {
+     "text": "也要顧 fairness：平均低不代表大家滿意（像國家收入高不代表均富）。",
+     "t": 1037
+    },
+    {
+     "text": "演算法必須非常有效率：每 100 ms 排一次、每次跑 10 ms → 10% overhead。",
+     "t": 1130
+    },
+    {
+     "text": "若要 50 ms，CPU 一半時間沒在做使用者的事，電腦會覺得很慢。",
+     "t": 1148
+    }
+   ]
+  },
+  {
+   "title": "Mid-term：swap out 與 swap in",
+   "scene": "midterm-swap",
+   "points": [
+    {
+     "text": "mid-term 在 disk 和 memory 之間做 swap out、swap in。",
+     "t": 1207
+    },
+    {
+     "text": "swap out：控制 degree，避免 thrashing。",
+     "t": 1226
+    },
+    {
+     "text": "swap in：memory 空出來時，讓等在 disk 的 process 回來執行。",
+     "t": 1262
+    },
+    {
+     "text": "可以改善 process mix，也可以 free 出 memory 給正在執行的程式。",
+     "t": 1298
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Process 在 disk 上剛被 create、還沒進 memory，是哪個狀態？",
+   "opts": [
+    "new",
+    "ready",
+    "waiting",
+    "running"
+   ],
+   "ans": "new",
+   "why": "課堂對應：disk＝new、memory＝ready、CPU＝running。"
+  },
+  {
+   "q": "為什麼 CPU scheduler 叫 short-term？",
+   "opts": [
+    "每幾 ms 就要執行一次",
+    "只排程很短的 process",
+    "只執行很短的時間就關掉",
+    "因為 queue 很短"
+   ],
+   "ans": "每幾 ms 就要執行一次",
+   "why": "time sharing 的 timer alarm 讓它非常頻繁。"
+  },
+  {
+   "q": "Degree of multiprogramming 太高會發生？",
+   "opts": [
+    "thrashing",
+    "CPU 一直 idle",
+    "starvation",
+    "deadlock 一定發生"
+   ],
+   "ans": "thrashing",
+   "why": "太多 process 搶 memory，一直在 swapping。"
+  },
+  {
+   "q": "每 100 ms 做一次 scheduling，演算法每次跑 10 ms，overhead 是？",
+   "opts": [
+    "10%",
+    "1%",
+    "50%",
+    "90%"
+   ],
+   "ans": "10%",
+   "why": "10 / 100 = 10%。"
+  },
+  {
+   "q": "把 process 從 memory swap out 到 disk 的是哪個 scheduler？",
+   "opts": [
+    "mid-term",
+    "long-term",
+    "short-term",
+    "disk scheduler"
+   ],
+   "ans": "mid-term",
+   "why": "mid-term 跟 virtual memory 結合，負責 swapping。"
+  }
+ ]
+}
