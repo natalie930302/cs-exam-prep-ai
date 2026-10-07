@@ -7226,3 +7226,38 @@ body#appRoot .cb { background: var(--surf) !important; border: 1.5px solid var(-
 body#appRoot > #globalTimer { background: var(--surf) !important; border: 1px solid var(--bd) !important; }
 /* page titles no longer sit on a photo */
 body#appRoot :is(.sh, .ss) { text-shadow: none !important; }
+
+/* ── 主頁只留「日曆」和「六科」：其他分頁、提示卡、浮動助教先收起來 ──
+   （程式和資料都還在，要恢復只要刪掉這段。） */
+#appRoot .pill[data-sec="materials"], #appRoot .pill[data-sec="schools"], #appRoot .pill[data-sec="ai"],
+#appRoot #checkinBanner, #appRoot #restartCard, #appRoot #smartOverview, #appRoot #aiDailyBriefBtn,
+#appRoot #calPaceWarning, #appRoot #calNextInfo, #appRoot .ai-context-dock,
+#appRoot .rec-books:not(.rec-series) { display: none !important; }
+
+/* 六科：每章的影片清單，一列一支 */
+#appRoot .ch-video { display: grid; grid-template-columns: auto auto 1fr auto auto auto; align-items: center; gap: 8px; }
+#appRoot .ch-video .video-series-order { font-variant-numeric: tabular-nums; color: var(--mt); font-size: 12px; }
+#appRoot .ch-video .video-series-label { min-width: 0; }
+#appRoot .ch-video-teacher { font-size: 11px; color: var(--mt); white-space: nowrap; }
+#appRoot .ch-video-pl { font-size: 11px; color: var(--mt); text-decoration: none; white-space: nowrap; padding: 1px 6px; border-radius: 999px; border: 1px solid var(--bd); }
+#appRoot .ch-video-pl:hover { color: var(--tx); background: var(--surf2); }
+@media (max-width: 640px) {
+  #appRoot .ch-video { grid-template-columns: auto auto 1fr; }
+  #appRoot .ch-video-teacher, #appRoot .ch-video .mat-dur { grid-column: 3; }
+}
+#appRoot .ch-video .video-series-label { color: var(--tx); text-decoration: none; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#appRoot .ch-video .video-series-label:hover { text-decoration: underline; text-underline-offset: 3px; }
+#appRoot .ch-video.done .video-series-label { color: var(--mt); }
+
+/* 今日主任務底下：連續天數＋六科進度條 */
+#appRoot .progress-strip { display: flex; align-items: center; gap: 14px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--bd); }
+#appRoot .ps-streak { display: flex; flex-direction: column; align-items: center; min-width: 52px; color: var(--mt); }
+#appRoot .ps-streak b { font-size: 22px; line-height: 1; color: var(--mt); font-variant-numeric: tabular-nums; }
+#appRoot .ps-streak.on b { color: #d9822b; }
+#appRoot .ps-streak span { font-size: 11px; margin-top: 3px; }
+#appRoot .ps-subjs { flex: 1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 14px; }
+#appRoot .ps-subj { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--mt); }
+#appRoot .ps-name { flex: 0 0 auto; }
+#appRoot .ps-bar { flex: 1; height: 6px; border-radius: 99px; background: color-mix(in srgb, var(--tx) 12%, transparent); overflow: hidden; }
+#appRoot .ps-bar span { display: block; height: 100%; border-radius: 99px; transition: width .6s cubic-bezier(.2,.8,.2,1); }
+@media (max-width: 520px) { #appRoot .ps-subjs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

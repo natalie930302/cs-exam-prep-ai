@@ -23,7 +23,7 @@ function videoSeriesName(label){
     [/MIT(?: OCW)? 18\.06/i,'MIT OCW 18.06']
   ];
   for(let i=0;i<rules.length;i++) if(rules[i][0].test(text)) return rules[i][1];
-  return '精選單篇';
+  return '';
 }
 // Sort key for a video inside one teacher's series. Playlist position first
 // (video-order.js — the order the course is actually taught), then lecture
@@ -70,27 +70,37 @@ function groupVideoSeries(options){
   });
   return groups.sort(function(a,b){ return a.firstIndex-b.firstIndex; });
 }
+// A chapter's materials are its videos and nothing else: every video of every
+// teacher's series is required, each one its own task. Order is the teaching
+// order — teachers in the order the chapter lists them, each teacher's videos
+// in playlist order — and a video listed twice in a chapter appears once.
 function chapterDisplayMaterials(c){
-  const firstVideoIndex = c.mats.findIndex(function(m){ return m.type === 'vid' || m.type === 'vidgroup'; });
-  const videoOptions = [];
+  const options = [];
   c.mats.forEach(function(m){
-    if(m.type === 'vidgroup') m.options.forEach(function(o){ videoOptions.push(Object.assign({},o,{topic:m.text})); });
-    else if(m.type === 'vid') videoOptions.push({label:m.text,url:m.url,dur:m.dur,note:m.note,topic:''});
+    if(m.type === 'vidgroup') m.options.forEach(function(o){ options.push(Object.assign({},o,{topic:m.text})); });
+    else if(m.type === 'vid') options.push({label:m.text,url:m.url,dur:m.dur,note:m.note,topic:''});
   });
-  const display = [];
-  c.mats.forEach(function(m, sourceIndex){
-    if(sourceIndex === firstVideoIndex && videoOptions.length){
-      display.push({type:'vidgroup',text:'本章影片',options:videoOptions,series:groupVideoSeries(videoOptions),taskKey:'video'});
-    }
-    if(m.type !== 'vid' && m.type !== 'vidgroup'){
-      const copy = Object.assign({},m);
-      copy.taskKey = m.type+'-'+stableTaskKey(m.text || String(sourceIndex));
-      display.push(copy);
-    }
+  const videos = [], seen = new Set();
+  groupVideoSeries(options).forEach(function(series){
+    series.options.forEach(function(o){
+      const id = youtubeId(o.url);
+      if(id && seen.has(id)) return;
+      if(id) seen.add(id);
+      videos.push({type:'vid',text:o.label,url:o.url,dur:o.dur,note:o.note,topic:o.topic,series:series.name,videoId:id,
+        taskKey:id ? 'vid-'+id : 'vid-'+stableTaskKey(o.label)});
+    });
   });
-  return display;
+  return videos;
 }
+// The video opened inside its original YouTube course playlist, or '' when
+// it isn't part of one of the tracked playlists (video-order.js).
+function videoPlaylistUrl(videoId){
+  const list = typeof VIDEO_PLAYLIST !== 'undefined' && VIDEO_PLAYLIST[videoId];
+  return list ? 'https://www.youtube.com/watch?v='+videoId+'&list='+list : '';
+}
+// Video tasks are shared with the study room, which marks 'vid-<youtube id>'.
 function chapterMaterialTaskId(subjectId, chapter, material){
+  if(material.videoId) return 'vid-'+material.videoId;
   return 'mat-v2-'+subjectId+'-'+stableTaskKey(chapter.t)+'-'+material.taskKey;
 }
 function weekMaterialTasks(wk){
@@ -105,32 +115,17 @@ function weekMaterialTasks(wk){
   });
   return rows;
 }
-// Mirror a foundation week's per-type queue tasks (w<N>-video/book/…) from
-// the chapter material checkboxes of every chapter scheduled in that week.
+// A foundation week's single queue task (w<N>-video) is done once every video
+// of every chapter scheduled in that week is done.
 async function syncFoundationWeekTasks(wk, doneIds){
   if(!wk) return;
   const rows = weekMaterialTasks(wk);
   if(!rows.length) return;
   const done = new Set(doneIds);
-  const groups = {
-    video:rows.filter(function(r){ return r.type === 'vidgroup'; }),
-    book:rows.filter(function(r){ return r.type === 'book'; }),
-    practice:rows.filter(function(r){ return r.type === 'ex'; }),
-    notes:rows.filter(function(r){ return r.type === 'rec'; })
-  };
-  const allDone = rows.every(function(r){ return done.has(r.id); });
-  const targets = {
-    video:groups.video.length > 0 && groups.video.every(function(r){ return done.has(r.id); }),
-    book:groups.book.length > 0 && groups.book.every(function(r){ return done.has(r.id); }),
-    practice:groups.practice.length > 0 && groups.practice.every(function(r){ return done.has(r.id); }),
-    notes:groups.notes.length ? groups.notes.every(function(r){ return done.has(r.id); }) : allDone,
-    review:allDone
-  };
-  await Promise.all(Object.keys(targets).map(function(type){
-    return fetch('/api/tasks/w'+wk+'-'+type+'/set', {
-      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({done:targets[type]})
-    });
-  }));
+  await fetch('/api/tasks/w'+wk+'-video/set', {
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({done:rows.every(function(r){ return done.has(r.id); })})
+  });
 }
 
 // Interactive 3D chapter labs (public/lab/). Keyed by subject id, then
@@ -155,4 +150,50 @@ function studyRoomUrl(subjectId, idx, videoId){
 function youtubeId(url){
   const m = String(url || '').match(/(?:v=|youtu\.be\/)([\w-]{11})/);
   return m ? m[1] : '';
+}
+
+// Share of a subject's videos already watched: {done, total}.
+function subjectVideoProgress(subject, doneSet){
+  let done = 0, total = 0;
+  subject.chapters.forEach(function(c){
+    chapterDisplayMaterials(c).forEach(function(m){
+      total++;
+      if(doneSet.has(chapterMaterialTaskId(subject.id, c, m))) done++;
+    });
+  });
+  return {done:done, total:total};
+}
+function chapterVideosDone(subjectId, chapter, doneSet){
+  const videos = chapterDisplayMaterials(chapter);
+  return videos.length > 0 && videos.every(function(m){ return doneSet.has(chapterMaterialTaskId(subjectId, chapter, m)); });
+}
+
+// A short, quiet celebration when a whole chapter is finished: a card that
+// rises in the middle of the screen with a burst of confetti, gone in ~2.4 s.
+// Self-contained (injects its own styles) so both pages can use it.
+function celebrate(title, sub, color){
+  if(!document.getElementById('celebrateCss')){
+    const css = document.createElement('style'); css.id = 'celebrateCss';
+    css.textContent = '.cel-wrap{position:fixed;inset:0;pointer-events:none;z-index:9999;display:grid;place-items:center}'
+      +'.cel-card{background:var(--surf,#fff);color:var(--tx,#2e2418);border:1px solid var(--bd,#e6dccb);border-radius:18px;padding:18px 26px;text-align:center;'
+      +'box-shadow:0 18px 50px rgba(60,40,10,.18);animation:celIn .5s cubic-bezier(.2,1.4,.4,1) both, celOut .4s ease-in 2s both}'
+      +'.cel-card b{display:block;font-size:20px;margin-bottom:4px}.cel-card span{font-size:13px;color:var(--mt,#8a7a62)}'
+      +'.cel-bit{position:absolute;left:50%;top:50%;width:8px;height:12px;border-radius:2px;animation:celBurst 1.5s cubic-bezier(.15,.7,.3,1) forwards}'
+      +'@keyframes celIn{from{opacity:0;transform:translateY(18px) scale(.9)}to{opacity:1;transform:none}}'
+      +'@keyframes celOut{to{opacity:0;transform:translateY(-10px)}}'
+      +'@keyframes celBurst{0%{transform:translate(-50%,-50%) rotate(0);opacity:1}100%{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) rotate(var(--r));opacity:0}}'
+      +'@media (prefers-reduced-motion:reduce){.cel-bit{display:none}.cel-card{animation:celOut .4s ease-in 1.8s both}}';
+    document.head.appendChild(css);
+  }
+  const wrap = document.createElement('div'); wrap.className = 'cel-wrap'; wrap.setAttribute('role', 'status');
+  const palette = [color || '#2fc092', '#e2a33b', '#4b9ee2', '#d96a8a', '#8bc34a'];
+  let bits = '';
+  for(let i = 0; i < 28; i++){
+    const a = i / 28 * Math.PI * 2, d = 120 + Math.random() * 120;
+    bits += '<i class="cel-bit" style="background:'+palette[i % palette.length]+';--dx:'+Math.round(Math.cos(a)*d)+'px;--dy:'+Math.round(Math.sin(a)*d - 40)+'px;--r:'+Math.round(Math.random()*540)+'deg"></i>';
+  }
+  const esc = function(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); };
+  wrap.innerHTML = bits + '<div class="cel-card"><b>'+esc(title)+'</b>'+(sub ? '<span>'+esc(sub)+'</span>' : '')+'</div>';
+  document.body.appendChild(wrap);
+  setTimeout(function(){ wrap.remove(); }, 2600);
 }

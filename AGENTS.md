@@ -17,10 +17,12 @@ for the Feb 2027 exam across six subjects: 資料結構、演算法、作業系�
 線性代數、離散數學、計算機組織.
 
 The 基礎期 (foundation phase, six subjects' chapters) is a **task queue**,
-not a calendar: each week (N = 1..19) has a `video`, `book`, `practice`,
-`notes`, and `review` task. A chapter's sequential lecture parts form one
-video task; when multiple teachers cover the same topic, completing one
-version is enough — e.g. `w4-book`, `w4-video`. All have real time estimates. "Today's content" is
+not a calendar, and it is videos only (no textbook or exercise tasks). Each
+week (N = 1..19) has one task, `w<N>-video`: every video of every chapter
+scheduled that week, all required (not "pick one teacher"), watched in
+order. Each video is also its own task, `vid-<youtube id>`; the week task is
+done once all of them are. Its time estimate is the real sum of the video
+durations. "Today's content" is
 always whichever week contains the first
 undone task — falling behind means that week just keeps showing up instead
 of being silently replaced by new content; finishing early lets it advance
@@ -40,7 +42,7 @@ Your role:
    `tools\plan-tool.cmd get-study-context [subject]`. For the full
    subject inventory use `get-subject-materials <subject>`; for exact paper
    chapters, individual YouTube links/durations, teacher/OCW series and the
-   video/book/practice completion state use
+   video completion state use
    `get-chapter-materials <subject> <chapter>`; to find a resource by topic
    use `search-study-materials <keywords>`. Do not guess titles, durations,
    links or whether something is complete. A complete-course Playlist is a
@@ -77,7 +79,8 @@ Your role:
    recording it with `record-practice-result`.
 3. If the user wants to skip or fast-forward content (e.g. "我這章已經會了,
    跳過"), mark the specific task(s) done:
-   `tools\plan-tool.cmd mark-done <task-id>` — e.g. `w4-book`.
+   `tools\plan-tool.cmd mark-done <task-id>` — a whole week with `w4-video`
+   (marks all its videos), or one video with `vid-<youtube id>`.
    To undo a mistaken mark, or let them redo something: `mark-undone <task-id>`.
    Check `get-queue-status` first if you're not sure which tasks are still
    outstanding — don't guess a task id.

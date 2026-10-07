@@ -25,16 +25,30 @@ a { color: inherit; }
 .st-chbtn { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--bd); background: var(--surf); text-decoration: none; font-size: 18px; color: var(--mt2); }
 .st-chbtn[aria-disabled="true"] { opacity: .35; pointer-events: none; }
 
-.st-main { max-width: 1680px; margin: 0 auto; padding: 16px 24px 40px; }
+.st-main { max-width: 1680px; margin: 0 auto; padding: 14px 24px 40px; }
 
-/* ── Video + stage ── */
-.st-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.st-player-wrap, .st-side {
-  position: relative; aspect-ratio: 16 / 9; border-radius: var(--r); overflow: hidden; box-shadow: var(--shadow);
+/* ── Video + stage ──
+   Desktop: the video, the "now" line and the segment timeline stack in the
+   left column; the 3D stage fills the whole right column, so it is taller
+   (≈ 1.5× the area of a 16:9 box) and sits level with what it explains.
+   .st-duo / .st-now-concept use display:contents so this works without
+   changing study.html's markup. Phones: one column (video, stage, now…). */
+.st-main {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto auto auto auto; column-gap: 16px; align-items: start;
 }
-.st-player-wrap { background: #1d1810; }
+.st-duo { display: contents; }
+.st-player-wrap { grid-column: 1; grid-row: 1; }
+.st-side { grid-column: 2; grid-row: 1 / span 3; align-self: stretch; min-height: 360px; }
+.st-now { grid-column: 1; grid-row: 2; }
+.st-timeline { grid-column: 1; grid-row: 3; }
+.st-more { grid-column: 1 / -1; grid-row: 4; margin-top: 10px; }
+.st-player-wrap, .st-side {
+  position: relative; border-radius: var(--r); overflow: hidden; box-shadow: var(--shadow);
+}
+.st-player-wrap { aspect-ratio: 16 / 9; background: #1d1810; }
 .st-player-wrap iframe, #player { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-.st-side { background: var(--surf); border: 1px solid var(--bd); }
+.st-side { background: #f8f2e7; border: 1px solid var(--bd); }
 .st-stage { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .st-empty-player { position: absolute; inset: 0; display: grid; place-items: center; color: #e9dcc4; text-align: center; padding: 20px; }
 
@@ -61,15 +75,29 @@ a { color: inherit; }
 .st-src { color: var(--mt); font-size: 12px; padding: 4px 8px; }
 .st-notes-full { max-width: 900px; }
 
-/* ── Now: what is being taught this moment ── */
-.st-now { display: flex; align-items: center; gap: 16px; padding: 14px 4px 10px; }
-.st-now-concept { flex: 1; min-width: 0; }
-.st-now-sec { font-size: 12px; font-weight: 800; color: color-mix(in srgb, var(--subj) 72%, var(--tx)); letter-spacing: .02em; }
+/* ── Now: what is being taught this moment ──
+   Row 1: section name (with a live dot) + playback actions; row 2: the point. */
+.st-now {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 12px; row-gap: 2px;
+  padding: 12px 2px 10px;
+}
+.st-now-concept { display: contents; }
+.st-now-sec {
+  grid-column: 1; grid-row: 1; min-width: 0; display: flex; align-items: center; gap: 7px;
+  font-size: 12px; font-weight: 800; color: color-mix(in srgb, var(--subj) 72%, var(--tx)); letter-spacing: .02em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.st-now-sec:not(:empty)::before {
+  content: ''; flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; background: var(--subj);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--subj) 20%, transparent);
+}
 .st-now-point {
-  font-size: 17px; font-weight: 700; line-height: 1.5; min-height: 1.5em;
+  grid-column: 1 / -1; grid-row: 2;
+  font-size: 16.5px; font-weight: 700; line-height: 1.5; min-height: 1.5em; text-wrap: pretty;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-.st-now-actions { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.st-now-actions { grid-column: 2; grid-row: 1; display: flex; align-items: center; gap: 6px; }
+.st-now-actions .st-btn { padding: 4px 10px; }
 .st-follow { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--mt); cursor: pointer; user-select: none; white-space: nowrap; margin-right: 4px; }
 .st-btn { border: 1px solid var(--bd2); background: var(--surf); padding: 7px 12px; border-radius: var(--r-sm); font-weight: 600; cursor: pointer; transition: border-color var(--dur-1) var(--ease); }
 .st-btn:hover { border-color: var(--mt); }
@@ -77,7 +105,7 @@ a { color: inherit; }
 .st-btn-watch.done { background: color-mix(in srgb, var(--grn) 14%, var(--surf)); border-color: var(--grn); color: color-mix(in srgb, var(--grn) 70%, var(--tx)); }
 
 /* ── Segment timeline ── */
-.st-timeline { display: flex; gap: 6px; overflow-x: auto; padding: 2px 2px 12px; scrollbar-width: thin; }
+.st-timeline { position: relative; display: flex; gap: 6px; overflow-x: auto; padding: 2px 2px 12px; scrollbar-width: thin; }
 .st-timeline:empty { display: none; }
 .st-seg {
   flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; max-width: 220px;
@@ -97,6 +125,20 @@ a { color: inherit; }
 .st-tabs button[aria-selected="true"] { color: var(--tx); border-bottom-color: var(--subj); }
 .st-tabs .count { font-weight: 600; color: var(--mt); font-size: 12px; margin-left: 4px; }
 .st-panel { padding: 14px 0 0; }
+
+/* ── Focus mode: less on screen ──
+   Video + stage read first, then the now line + timeline; everything below
+   is quieter. All seven tabs stay; badges/hints that don't help the learner
+   act right now are hidden (data is untouched). */
+.st-tabs button { font-size: 13.5px; padding: 9px 12px; }
+.st-kicker { display: none; }          /* subject・章・預估 hours: the title is enough here */
+.st-follow { display: none; }          /* follow stays on; the switch only mattered for the notes panel */
+#nowSeries, .st-series-hd { display: none; } /* 「第 x / N 支」and 「全部 N 支都要看」 repeat the header pill */
+.st-v-meta .st-badge { display: none; }      /* 「有重點」 on every row */
+#notesCount { display: none; }
+.st-now-video { margin-bottom: 8px; }
+.st-seg-note { color: var(--mt); background: none; border: 0; padding: 0 4px; font-weight: 600; }
+
 
 .st-now-video { font-size: 13px; color: var(--mt); margin-bottom: 10px; }
 .st-now-video b { color: var(--tx); }
@@ -150,19 +192,23 @@ a { color: inherit; }
 .st-peer p { margin: 0; font-size: 13px; color: var(--mt2); }
 
 @media (max-width: 900px) {
-  .st-main { padding: 12px 16px 32px; }
+  .st-main { padding: 12px 16px 32px; grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+  .st-player-wrap, .st-side, .st-now, .st-timeline, .st-more { grid-column: 1; grid-row: auto; }
+  .st-side { margin-top: 12px; min-height: 0; height: min(calc((100vw - 32px) * 0.75), 62vh); }
   .st-top { padding: 8px 16px; }
-  .st-duo { grid-template-columns: 1fr; }
-  .st-chprog { display: none; }
+  .st-chprog .st-pill { font-size: 11px; padding: 2px 8px; }
   .st-top h1 { font-size: 16px; }
-  .st-now { flex-wrap: wrap; }
-  .st-now-actions { width: 100%; justify-content: flex-end; }
 }
 @media (max-width: 640px) {
-  .st-duo { margin: -12px -16px 0; gap: 0; }
+  .st-player-wrap { margin: -12px -16px 0; }
+  .st-side { margin: 0 -16px; height: min(75vw, 58vh); }
   .st-player-wrap, .st-side { border-radius: 0; box-shadow: none; }
   .st-side { border-left: 0; border-right: 0; }
   .st-now-point { font-size: 15px; }
+  .st-top { gap: 10px; }
+  .st-top h1 { font-size: 15px; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .st-back { padding: 5px 10px; }
+  .st-now-actions { grid-column: 1 / -1; grid-row: 3; justify-content: flex-end; margin-top: 6px; }
   .st-trap { margin-left: 8px; }
   .st-lab-frame { height: 860px; }
 }
@@ -189,3 +235,28 @@ a { color: inherit; }
   background: color-mix(in srgb, var(--amb) 10%, var(--surf)); border: 1px dashed color-mix(in srgb, var(--amb) 50%, transparent);
   border-radius: 999px; padding: 4px 10px; cursor: help; white-space: nowrap;
 }
+
+/* ── 影片字幕：逐字稿疊在影片下方，不擋點擊 ── */
+.st-sub {
+  position: absolute; left: 50%; bottom: 13%; transform: translateX(-50%);
+  max-width: 88%; width: max-content; z-index: 2; pointer-events: none;
+  padding: 5px 12px 6px; border-radius: 8px;
+  background: rgba(18, 14, 8, .74); color: #fff;
+  font-size: clamp(13px, 1.55vw, 19px); line-height: 1.45; font-weight: 500; text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .6);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.st-sub[hidden] { display: none; }
+.st-btn-sub[aria-pressed="false"] { opacity: .6; }
+@media (max-width: 760px) {
+  .st-sub { bottom: 15%; font-size: 13px; max-width: 94%; padding: 4px 9px; }
+}
+
+/* 影片清單：每支影片右上角的「播放清單」連結（開原本的 YouTube 清單） */
+#vlist li { position: relative; }
+.st-v-pl {
+  position: absolute; top: 6px; right: 8px; font-size: 11px; color: var(--mt); text-decoration: none;
+  padding: 1px 6px; border-radius: 999px; border: 1px solid transparent;
+}
+.st-v-pl:hover, .st-v-pl:focus-visible { color: var(--tx); border-color: var(--bd); background: var(--surf2); }
+.st-v-teacher { display: block; font-size: 11px; color: var(--mt); font-weight: 500; margin-top: 1px; }

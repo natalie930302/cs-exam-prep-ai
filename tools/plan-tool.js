@@ -68,20 +68,29 @@ function stableTaskKey(value) {
   for (let i = 0; i < text.length; i++) { hash ^= text.charCodeAt(i); hash = Math.imul(hash, 16777619); }
   return (hash >>> 0).toString(36);
 }
-function chapterTasks(subject, chapter) {
-  const tasks = [];
-  const hasVideo = chapter.mats.some((m) => m.type === 'vid' || m.type === 'vidgroup');
-  if (hasVideo) tasks.push({ type: 'video', id: `mat-v2-${subject.id}-${stableTaskKey(chapter.t)}-video` });
-  chapter.mats.forEach((m, index) => {
-    if (m.type === 'vid' || m.type === 'vidgroup') return;
-    const taskKey = m.type + '-' + stableTaskKey(m.text || String(index));
-    const type = m.type === 'book' ? 'book' : m.type === 'ex' ? 'practice' : 'notes';
-    tasks.push({ type, id: `mat-v2-${subject.id}-${stableTaskKey(chapter.t)}-${taskKey}` });
+// Mirrors chapterDisplayMaterials (public/chapter-core.js): a chapter's tasks
+// are its videos, every one required, each tracked as 'vid-<youtube id>'.
+function youtubeId(url) {
+  const m = String(url || '').match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/);
+  return m ? m[1] : '';
+}
+function chapterVideos(chapter) {
+  const out = [], seen = new Set();
+  chapter.mats.forEach((m) => {
+    const opts = m.type === 'vidgroup' ? m.options : m.type === 'vid' ? [{ label: m.text, url: m.url, dur: m.dur }] : [];
+    opts.forEach((o) => {
+      const id = youtubeId(o.url);
+      if (!id || seen.has(id)) return;
+      seen.add(id); out.push({ id, label: o.label, url: o.url, dur: o.dur });
+    });
   });
-  return tasks;
+  return out;
+}
+function chapterTasks(subject, chapter) {
+  return chapterVideos(chapter).map((v) => ({ type: 'video', id: `vid-${v.id}` }));
 }
 function taskDone(task, chapter, doneSet) {
-  return doneSet.has(task.id) || (chapter.wk && (doneSet.has(`w${chapter.wk}-review`) || doneSet.has(`w${chapter.wk}-${task.type}`)));
+  return doneSet.has(task.id);
 }
 function resolveSubject(query) {
   const subjects = loadStudyData().subjects;
@@ -207,7 +216,7 @@ function masteryEvidenceMap() {
   return map;
 }
 function chapterMastery(subject, chapter, doneSet, evidenceMap) {
-  const weights = { video: 20, book: 25, practice: 45, notes: 10 };
+  const weights = { video: 1 };
   const tasks = chapterTasks(subject, chapter);
   const availableWeight = tasks.reduce((sum, task) => sum + (weights[task.type] || 0), 0) || 1;
   const completedWeight = tasks.filter((task) => taskDone(task, chapter, doneSet)).reduce((sum, task) => sum + (weights[task.type] || 0), 0);
@@ -222,9 +231,7 @@ function chapterMastery(subject, chapter, doneSet, evidenceMap) {
     : score < 85 ? '基本掌握'
     : '掌握良好';
   const missing = tasks.filter((task) => !taskDone(task, chapter, doneSet)).map((task) => task.type);
-  const nextAction = missing.includes('video') ? '完成一套對應影片系列'
-    : missing.includes('book') ? '完成紙本對應範圍並整理重點'
-    : missing.includes('practice') ? '完成章節練習並回報正確題數'
+  const nextAction = missing.includes('video') ? '依序看完本章全部影片'
     : !evidence ? '用考古題或小測驗驗證並回報正確題數'
     : practicePercent < 70 ? '重做錯題並再次測驗' : '間隔複習維持熟練度';
   return {
@@ -296,12 +303,9 @@ function smartLearningSummary() {
 // estimated minutes only — no titles/links, those live in public/app.js
 // and are what the browser actually renders). This only exists so this CLI
 // tool can compute aggregate numbers (undone count, remaining hours) without
-// duplicating the full content. If a task's estimate changes in app.js's
-// FOUNDATION_BOOK_MINUTES table, mirror it here too.
+// duplicating the full content. Keep it in step with buildFoundationTasks
+// in public/app.js: one video task per week, minutes = the week's videos.
 const FOUNDATION_WEEKS = 19;
-const FOUNDATION_BOOK_MINUTES = {
-  1:480, 2:600, 3:660, 4:720, 5:480, 6:720, 7:660, 8:720, 9:480, 10:720, 11:480, 12:480, 13:600, 14:720, 15:600, 16:900, 17:720, 18:600, 19:900,
-};
 function foundationCatalog() {
   const tasks = [];
   const foundation = loadStudyData().foundation;
@@ -312,14 +316,14 @@ function foundationCatalog() {
       : parts.length === 2 ? parts[0] * 60 + parts[1] : 0;
     return Math.max(0, Math.ceil(seconds / 60));
   };
+  // One task per week: every video of every chapter scheduled that week.
+  const subjects = loadStudyData().subjects;
   for (let wk = 1; wk <= FOUNDATION_WEEKS; wk++) {
-    const videos = foundation[wk]?.vid || [];
+    if (!foundation[wk]) continue;
+    const videos = subjects.flatMap((sub) => sub.chapters.filter((c) => c.wk === wk).flatMap(chapterVideos));
+    if (!videos.length) continue;
     const videoMinutes = videos.reduce((sum, video) => sum + durationMinutes(video.dur), 0) || 60;
     tasks.push({ id: `w${wk}-video`, week: wk, minutes: videoMinutes });
-    tasks.push({ id: `w${wk}-book`, week: wk, minutes: FOUNDATION_BOOK_MINUTES[wk] || 480 });
-    tasks.push({ id: `w${wk}-practice`, week: wk, minutes: 60 });
-    tasks.push({ id: `w${wk}-notes`, week: wk, minutes: 30 });
-    tasks.push({ id: `w${wk}-review`, week: wk, minutes: 150 });
   }
   return tasks;
 }
@@ -352,7 +356,7 @@ function usage() {
       'record-review-result <subject> <chapter> <0-3>  # 0 forgot, 1 difficult, 2 remembered, 3 fluent; schedules next review',
       'log-study-time <task-id> <planned-min> <actual-min> [subject] [chapter] # calibrate future estimates',
       'set-start-date <YYYY-MM-DD>                     # change the 備考開始日期 — this is the ONLY way to set it now, there is no UI for it',
-      'mark-done <task-id>                             # mark one foundation task done, e.g. "w4-book" or "w7-video"',
+      'mark-done <task-id>                             # mark done: a whole week "w7-video" (all its videos) or one video "vid-<youtube id>"',
       'mark-undone <task-id>                           # unmark a foundation task',
       'mark-checklist-done <YYYY-MM-DD> <item_index>    # drilling/convergence only: mark a recurring daily checklist item done (item_index is 0-based)',
       'mark-checklist-undone <YYYY-MM-DD> <item_index>  # unmark a recurring daily checklist item',
@@ -363,7 +367,8 @@ function usage() {
   });
 }
 
-const TASK_ID_RE = /^w([1-9]|1[0-9])-(video|book|practice|notes|review)$/;
+// A week's queue task (w<N>-video) or one video (vid-<youtube id>).
+const TASK_ID_RE = /^(w([1-9]|1[0-9])-video|vid-[\w-]{11})$/;
 
 switch (cmd) {
   case 'get-status': {
@@ -553,10 +558,16 @@ switch (cmd) {
   case 'mark-undone': {
     const taskId = args[0];
     if (!taskId || !TASK_ID_RE.test(taskId)) {
-      out({ error: 'usage: ' + cmd + ' <task-id>, e.g. w4-book (see get-queue-status for what\'s outstanding)' });
+      out({ error: 'usage: ' + cmd + ' <task-id>, e.g. w4-video or vid-<youtube id> (see get-queue-status for what\'s outstanding)' });
       process.exit(1);
     }
-    db.setTaskDone(taskId, cmd === 'mark-done');
+    const value = cmd === 'mark-done';
+    db.setTaskDone(taskId, value);
+    // A week's task is derived from its videos: marking the week marks them all.
+    const wk = taskId.match(/^w(\d+)-video$/);
+    if (wk) loadStudyData().subjects.forEach((sub) => sub.chapters
+      .filter((c) => c.wk === Number(wk[1]))
+      .forEach((c) => chapterVideos(c).forEach((v) => db.setTaskDone(`vid-${v.id}`, value))));
     out({ ok: true, queue: queueStatus() });
     break;
   }

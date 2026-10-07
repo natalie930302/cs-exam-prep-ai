@@ -196,6 +196,7 @@ tip:"主題1–9按順序打基礎（約4週），圖論演算法與字串處理
     {type:"vidgroup",text:"課程導論（背景，非必要）",options:[
       {label:"台大林軒田 DSA Class Introduction",url:"https://www.youtube.com/watch?v=G3H-L-K9kM4",dur:"37:23"},
       {label:"台大林軒田 DSA Introduction to Data Structures and Algorithms",url:"https://www.youtube.com/watch?v=8IOv2fnc01E",dur:"1:45:17"},
+      {label:"交大彭文志 Lec01 Introduction (1/2)",url:"https://www.youtube.com/watch?v=3503j2L6qNA",dur:"1:10:42"},
       {label:"交大彭文志 Lec02 Introduction (2/2)",url:"https://www.youtube.com/watch?v=0J2eLvkuF8k",dur:"52:57"}
     ]}
    ]},
@@ -522,6 +523,7 @@ tip:"DP是最常出大題的考點，主題3、4要花最多時間，務必手�
       {label:"Abdul Bari：Optimal BST (Successful Search Only)",url:"https://www.youtube.com/watch?v=vLS-zRCHo-Y",dur:"30:19"},
       {label:"Abdul Bari：4.6.2 Optimal BST Successful and Unsuccessful",url:"https://www.youtube.com/watch?v=wAy6nDMPYAE",dur:"57:00"}
     ]},
+    {type:"vid",text:"MIT 6.006 L21：DP III: Parenthesization, Edit Distance, Knapsack",url:"https://www.youtube.com/watch?v=ocZMDMZwhCY",dur:"52:41"},
     {type:"vid",text:"MIT 6.006 L22：DP IV: Guitar Fingering, Tetris, Super Mario Bros.（進階DP範例，補充）",url:"https://www.youtube.com/watch?v=tp4_UXaVyx8",dur:"49:19"},
     {type:"vid",text:"MIT 6.006 Rec22：DP: Dance Dance Revolution（進階DP範例，補充）",url:"https://www.youtube.com/watch?v=PptQgy89cN8",dur:"53:15"},
     {type:"vid",text:"Abdul Bari：4.8 Reliability Design - DP",url:"https://www.youtube.com/watch?v=uJOmqBwENB8",dur:"26:32"},

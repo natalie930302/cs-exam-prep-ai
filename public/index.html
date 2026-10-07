@@ -11,7 +11,7 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme.css?v=20261007e">
-<link rel="stylesheet" href="styles.css?v=20261007f">
+<link rel="stylesheet" href="styles.css?v=20261008q">
 </head>
 <body id="appRoot">
 
@@ -124,31 +124,6 @@
 </main>
 
 <div class="task-toast" id="taskToast" role="status" aria-live="polite"></div>
-<div class="chapter-tool-modal" id="chapterToolModal" aria-hidden="true" onclick="if(event.target===this)closeChapterToolModal()">
-  <div class="chapter-tool-dialog" role="dialog" aria-modal="true" aria-labelledby="chapterToolModalTitle">
-    <button class="chapter-tool-close ui-btn ui-btn-icon" type="button" onclick="closeChapterToolModal()" aria-label="關閉">×</button>
-    <div class="chapter-tool-kicker" id="chapterToolModalKicker"></div>
-    <h2 id="chapterToolModalTitle"></h2>
-    <div class="chapter-tool-body" id="chapterToolModalBody"></div>
-    <button class="chapter-tool-submit" id="chapterToolModalSubmit" type="button" onclick="submitChapterToolModal()">儲存</button>
-  </div>
-</div>
-<div class="chapter-tool-modal diagnostic-modal" id="diagnosticModal" aria-hidden="true" onclick="if(event.target===this)closeDiagnosticModal()">
-  <div class="chapter-tool-dialog diagnostic-dialog" role="dialog" aria-modal="true" aria-labelledby="diagnosticTitle">
-    <button class="chapter-tool-close ui-btn ui-btn-icon" type="button" onclick="closeDiagnosticModal()" aria-label="關閉">×</button>
-    <div class="chapter-tool-kicker" id="diagnosticKicker">章節診斷</div>
-    <h2 id="diagnosticTitle">準備題目中</h2>
-    <div id="diagnosticBody" class="diagnostic-body"><div class="diagnostic-loading"><span></span><p>正在依本章考點準備 5 題測驗…</p></div></div>
-  </div>
-</div>
-<div class="chapter-tool-modal diagnostic-modal" id="chapterSummaryModal" aria-hidden="true" onclick="if(event.target===this)closeChapterSummaryModal()">
-  <div class="chapter-tool-dialog diagnostic-dialog" role="dialog" aria-modal="true" aria-labelledby="chapterSummaryTitle">
-    <button class="chapter-tool-close ui-btn ui-btn-icon" type="button" onclick="closeChapterSummaryModal()" aria-label="關閉">×</button>
-    <div class="chapter-tool-kicker" id="chapterSummaryKicker">重點統整</div>
-    <h2 id="chapterSummaryTitle">整理中</h2>
-    <div id="chapterSummaryBody" class="diagnostic-body"><div class="diagnostic-loading"><span></span><p>正在統整本章重點…</p></div></div>
-  </div>
-</div>
 <div class="chapter-tool-modal diagnostic-modal" id="dailyBriefModal" aria-hidden="true" onclick="if(event.target===this)closeDailyBriefModal()">
   <div class="chapter-tool-dialog diagnostic-dialog" role="dialog" aria-modal="true" aria-labelledby="dailyBriefTitle">
     <button class="chapter-tool-close ui-btn ui-btn-icon" type="button" onclick="closeDailyBriefModal()" aria-label="關閉">×</button>
@@ -181,22 +156,10 @@
   </button>
 </div>
 
-<div class="global-timer" id="globalTimer" aria-live="polite">
-  <button class="global-timer-main" type="button" onclick="goToActiveTimerChapter()">
-    <span class="global-timer-pulse"></span>
-    <span class="global-timer-copy"><small id="globalTimerState">正在計時</small><b id="globalTimerTitle">章節</b></span>
-    <strong id="globalTimerElapsed">00:00</strong>
-  </button>
-  <div class="global-timer-actions">
-    <button class="ui-btn" id="globalTimerPause" type="button" onclick="toggleActiveTimerFromDock()">暫停</button>
-    <button class="ui-btn ui-btn-primary" type="button" onclick="finishActiveTimerFromDock()">完成</button>
-  </div>
-</div>
-
-<script src="data.js?v=20260903a"></script>
+<script src="data.js?v=20261008m"></script>
 <script src="/vendor/katex/katex.min.js"></script>
-<script src="video-order.js?v=20261008a"></script>
-<script src="chapter-core.js?v=20261008a"></script>
-<script src="app.js?v=20261007a"></script>
+<script src="video-order.js?v=20261008m"></script>
+<script src="chapter-core.js?v=20261008p"></script>
+<script src="app.js?v=20261008p"></script>
 </body>
 </html>

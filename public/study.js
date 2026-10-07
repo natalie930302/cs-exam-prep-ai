@@ -10,9 +10,13 @@
   const chIndex = Math.max(0, Math.min(subject.chapters.length - 1, Number(params.get('c')) || 0));
   const chapter = subject.chapters[chIndex];
   const chKey = subject.id + '-' + stableTaskKey(chapter.t);
+  // One list: every video of the chapter is required, in teaching order
+  // (teacher by teacher, each in playlist order). Kept as a single "series"
+  // so the player, next/prev and notes code stay unchanged.
   const display = chapterDisplayMaterials(chapter);
-  const videoMat = display.find(function(m){ return m.type === 'vidgroup'; });
-  const series = videoMat ? videoMat.series : [];
+  const series = display.length ? [{name: '本章影片', options: display.map(function(m){
+    return {label: m.text, url: m.url, dur: m.dur, note: m.note, topic: m.topic, teacher: m.series};
+  })}] : [];
   const labUrl = chapterLabUrl(subject.id, chIndex);
   const hasStage = !!labUrl;
 
@@ -60,11 +64,18 @@
     $('notesSide').hidden = false;
   }
   let stageScene = null, stageReady = false, pendingScene = null;
-  $('stage').addEventListener('load', function(){
+  // The stage is ready when lab-shell says so ('lab-ready', sent after its
+  // message listener exists). The iframe 'load' event can fire before the
+  // chapter module has finished loading, and a scene posted then was lost,
+  // leaving the stage empty until the next section change.
+  function stageIsReady(){
+    if (stageReady) return;
     stageReady = true;
-    if (pendingScene && pendingScene.tour) $('stage').contentWindow.postMessage({type: 'tour'}, location.origin);
-    else if (pendingScene) postScene(pendingScene);
-  });
+    const p = pendingScene; pendingScene = null;
+    if (p && p.tour) $('stage').contentWindow.postMessage({type: 'tour'}, location.origin);
+    else if (p && sceneFor(p)) postScene(p);
+    else if (p) { stageScene = null; startTour(); }
+  }
   function postScene(sec){
     $('stage').contentWindow.postMessage({type: 'scene', scene: sec.scene, params: sec.params || {}}, location.origin);
   }
@@ -81,10 +92,10 @@
     if (e.origin !== location.origin || !e.data) return;
     if (e.data.type === 'tour-scene' && touring && !curNotes) {
       const t = (stageScenes[e.data.id] || {}).title || '';
-      $('nowSec').textContent = '概念導覽：右邊不是影片目前在講的內容';
+      $('nowSec').textContent = '概念導覽（和影片進度無關）';
       $('nowPoint').textContent = t;
     }
-    if (e.data.type === 'lab-ready') e.data.scenes.forEach(function(x){ stageScenes[x.id] = x; });
+    if (e.data.type === 'lab-ready') { e.data.scenes.forEach(function(x){ stageScenes[x.id] = x; }); stageIsReady(); }
   });
   const stageScenes = {};
   // A video can belong to several chapters; a section may name a different
@@ -142,42 +153,20 @@
     });
   }
   function renderTasks(){
-    $('tasks').innerHTML = display.map(function(m){
-      const id = chapterMaterialTaskId(subject.id, chapter, m);
-      const d = done.has(id);
-      const label = m.type === 'vidgroup' ? '本章影片（看完任一套系列）' : m.text;
-      const tag = m.type === 'vidgroup' ? '影片' : m.type === 'book' ? '讀本' : m.type === 'ex' ? '練習' : '建議';
-      return '<button class="st-check' + (d ? ' done' : '') + '" data-task="' + id + '"><span class="st-box">' + (d ? '✓' : '') + '</span><span class="st-check-text"><b>' + tag + '</b>　' + esc(label) + '</span></button>';
-    }).join('');
-    $('tasks').querySelectorAll('.st-check').forEach(function(b){
-      b.onclick = async function(){
-        await setTask(b.dataset.task, !done.has(b.dataset.task));
-        if (chapter.wk) await syncFoundationWeekTasks(chapter.wk, Array.from(done));
-        renderTasks();
-      };
-    });
+    $('tasks').innerHTML = '';
     renderProgress();
   }
   function renderProgress(){
-    const s = series[activeSeries];
-    const pills = [];
-    if (s) {
-      const w = s.options.filter(function(o){ return done.has(vidTask(youtubeId(o.url))); }).length;
-      pills.push('<span class="st-pill' + (w === s.options.length ? ' ok' : '') + '">影片 ' + w + '/' + s.options.length + '</span>');
-    }
-    display.forEach(function(m){
-      if (m.type === 'vidgroup') return;
-      const d = done.has(chapterMaterialTaskId(subject.id, chapter, m));
-      const tag = m.type === 'book' ? '讀本' : m.type === 'ex' ? '練習' : '建議';
-      pills.push('<span class="st-pill' + (d ? ' ok' : '') + '">' + tag + (d ? ' ✓' : '') + '</span>');
-    });
-    $('chProg').innerHTML = pills.join('');
+    const s = series[0];
+    if (!s) { $('chProg').innerHTML = ''; return; }
+    const w = s.options.filter(function(o){ return done.has(vidTask(youtubeId(o.url))); }).length;
+    $('chProg').innerHTML = '<span class="st-pill' + (w === s.options.length ? ' ok' : '') + '">影片 ' + w + '/' + s.options.length + '</span>';
   }
 
   // ── Video list ──
   function seriesNotesCount(s){ return s.options.filter(function(o){ return notesIndex[youtubeId(o.url)]; }).length; }
   function renderSeriesChips(){
-    $('seriesHint').textContent = series.length > 1 ? series.length + ' 位老師，任選一套看完即可' : '';
+    $('seriesHint').textContent = series[0] ? '全部 ' + series[0].options.length + ' 支都要看，照順序' : '';
     $('seriesChips').innerHTML = series.length > 1 ? series.map(function(s, i){
       const n = seriesNotesCount(s);
       return '<button aria-pressed="' + (i === activeSeries) + '" data-i="' + i + '">' + esc(s.name) + '（' + s.options.length + '）' + (n ? ' · 有重點 ' + n : '') + '</button>';
@@ -204,10 +193,12 @@
       const pct = !w && durS && pos > 30 ? Math.min(100, Math.round(pos / durS * 100)) : 0;
       return '<li><button class="st-v' + (isCur ? ' current' : '') + (w ? ' watched' : '') + '" data-i="' + i + '">'
         + '<span class="st-v-n">' + (w ? '✓' : String(i + 1).padStart(2, '0')) + '</span>'
-        + '<span class="st-v-title">' + esc(o.label) + '</span>'
+        + '<span class="st-v-title">' + esc(o.label) + (o.teacher ? '<small class="st-v-teacher">' + esc(o.teacher) + '</small>' : '') + '</span>'
         + '<span class="st-v-meta">' + esc(o.dur || '') + (notesIndex[id] ? '<span class="st-badge">有重點</span>' : '') + '</span>'
         + (pct ? '<span class="st-progress"><span style="width:' + pct + '%"></span></span>' : '')
-        + '</button></li>';
+        + '</button>'
+        + (videoPlaylistUrl(id) ? '<a class="st-v-pl" href="' + videoPlaylistUrl(id) + '" target="_blank" rel="noopener" title="在原本的 YouTube 播放清單中開啟">播放清單</a>' : '')
+        + '</li>';
     }).join('');
     $('vlist').querySelectorAll('.st-v').forEach(function(b){
       b.onclick = function(){ playVideo(activeSeries, Number(b.dataset.i), true); window.scrollTo({top: 0, behavior: 'smooth'}); };
@@ -233,6 +224,7 @@
     renderVideoList();
     const start = startAt != null ? startAt : (Number(store.get('yt-pos-' + id)) || 0);
     renderNotes().then(function(){ syncNotes(start, false); });
+    loadSubs(id).then(function(){ showSub(start); });
     if (playerReady) {
       if (autoplay) player.loadVideoById({videoId: id, startSeconds: start});
       else player.cueVideoById({videoId: id, startSeconds: start});
@@ -249,13 +241,8 @@
 
   async function markWatched(id, value){
     await setTask(vidTask(id), value);
-    // Finishing every video of one teacher's series completes the chapter's video task.
-    const s = series[activeSeries];
-    if (value && s && videoMat && s.options.every(function(o){ return done.has(vidTask(youtubeId(o.url))); })) {
-      await setTask(chapterMaterialTaskId(subject.id, chapter, videoMat), true);
-      if (chapter.wk) await syncFoundationWeekTasks(chapter.wk, Array.from(done));
-      renderTasks();
-    }
+    // The week's queue task follows the per-video marks (all videos = done).
+    if (chapter.wk) await syncFoundationWeekTasks(chapter.wk, Array.from(done));
     renderWatchBtn(); renderVideoList();
   }
 
@@ -289,11 +276,51 @@
     if (Date.now() - lastSave > 4000) { store.set('yt-pos-' + current.id, String(Math.floor(t))); lastSave = Date.now(); }
     syncNotes(t, false);
   }, 500);
+  // Subtitles follow the player more tightly than the notes (every 200 ms,
+  // also while paused or seeking, so the line matches the frame on screen).
+  setInterval(function(){
+    if (playerReady && current && typeof player.getCurrentTime === 'function') showSub(player.getCurrentTime());
+  }, 200);
   function seek(t){
     if (!playerReady) return;
     player.seekTo(t, true);
     player.playVideo();
     syncNotes(t, true);
+    showSub(t);
+  }
+
+  // ── Subtitles: the video's timed transcript (captions, or speech-to-text
+  // when the video has none), shown over the bottom of the player ──
+  let subs = null, subsFor = null, subIdx = -1;
+  let subsOn = store.get('study-subs') !== '0';
+  async function loadSubs(id){
+    subsFor = id; subs = null; subIdx = -1;
+    let cues = null;
+    try { const r = await fetch('/transcripts/' + id + '.json'); if (r.ok) cues = await r.json(); } catch (e) {}
+    if (subsFor !== id) return;
+    subs = cues && cues.length ? cues : null;
+    $('subBtn').hidden = !subs;
+    renderSubBtn();
+  }
+  function renderSubBtn(){
+    $('subBtn').setAttribute('aria-pressed', String(subsOn));
+    $('subBtn').textContent = subsOn ? '字幕 開' : '字幕 關';
+  }
+  $('subBtn').onclick = function(){
+    subsOn = !subsOn; store.set('study-subs', subsOn ? '1' : '0'); renderSubBtn(); subIdx = -2;
+    if (playerReady) showSub(player.getCurrentTime());
+  };
+  function showSub(t){
+    const el = $('subLine');
+    if (!subs || !subsOn) { el.hidden = true; subIdx = -1; return; }
+    // binary search for the last cue starting at or before t
+    let lo = 0, hi = subs.length - 1, k = -1;
+    while (lo <= hi) { const mid = (lo + hi) >> 1; if (subs[mid][0] <= t) { k = mid; lo = mid + 1; } else hi = mid - 1; }
+    if (k >= 0 && t >= subs[k][1]) k = -1;
+    if (k === subIdx) return;
+    subIdx = k;
+    el.hidden = k < 0;
+    if (k >= 0) el.textContent = subs[k][2];
   }
 
   // ── Notes, timeline, and the "now" line ──
@@ -522,7 +549,7 @@
     renderGoals();
     renderTasks();
     if (start) playVideo(start[0], start[1], false);
-    else { $('player').outerHTML = '<div class="st-empty-player">這章沒有指定影片，請直接讀課本與練習題。</div>'; renderSeriesChips(); renderVideoList(); }
+    else { $('player').outerHTML = '<div class="st-empty-player">這章沒有指定影片。</div>'; renderSeriesChips(); renderVideoList(); }
     loadMine();
     loadResources();
     $('followChk').onchange = function(e){ follow = e.target.checked; };

@@ -140,19 +140,10 @@ async function fetchLearningEvidence(){
   return LEARNING_EVIDENCE;
 }
 
+// Queue tasks (w<N>-video) are derived from the per-video marks, never the
+// other way round, so the stored ids are used as they are.
 function expandQueueDoneIds(ids){
-  const expanded = new Set(ids || []);
-  SUBJECTS.forEach(function(s){
-    s.chapters.forEach(function(c){
-      if(!c.wk) return;
-      const reviewDone = expanded.has('w'+c.wk+'-review');
-      chapterDisplayMaterials(c).forEach(function(m){
-        const queueType = m.type === 'vidgroup' ? 'video' : m.type === 'book' ? 'book' : m.type === 'ex' ? 'practice' : 'notes';
-        if(reviewDone || expanded.has('w'+c.wk+'-'+queueType)) expanded.add(chapterMaterialTaskId(s.id,c,m));
-      });
-    });
-  });
-  return Array.from(expanded);
+  return Array.from(new Set(ids || []));
 }
 
 function startDate(){
@@ -238,6 +229,7 @@ function dayInfo(d){
   const drillSubj = phase === 'drilling' ? drillingSubject(t, dow) : null;
   return {dow, wk, examLeft, ps, isDayOff, isRest, phase, phase2, hrs, queueStatus, drillSubj};
 }
+
 
 // ── Schedule content (accurate per chapter, not generic playlist) ──
 // Maps each week to specific subject+chapter. Order is DM → DS → LA → ALG
@@ -372,115 +364,12 @@ const FOUNDATION_CONTENT = {
 // Week-specific task text (matches FOUNDATION_CONTENT — same DM→DS→LA→
 // ALG→CA→OS order, see the comment there for why). Shared by getChecklist()
 // and buildFoundationTasks() so the two never drift out of sync.
-const FOUNDATION_TASK_TEXT = {
-    1: {subj:'資料結構',
-        am:'讀《資結七版》Ch1 基本概念（複雜度分析、Master Method）+ Ch2 陣列與結構 + Ch3 堆疊與佇列',
-        pm:'做課本後附練習題 Ch1–Ch3（至少各5題）',
-        vid:'看 Abdul Bari：Asymptotic Notations（20分鐘）',
-        note:'在書上標記 Master Theorem 三種情況'},
-    2: {subj:'資料結構',
-        am:'讀《資結七版》Ch4 鏈結串列（各類型LL）+ Ch5 樹與二元樹（5-5走訪【非常重要】）',
-        pm:'手寫Circular Queue操作 × 5題 + 給定一棵樹手寫三種走訪結果 × 5題',
-        vid:'看 Abdul Bari：Linked List Introduction + Binary Tree Traversals',
-        note:'走訪程式碼抄一遍，用手跑過一棵樹'},
-    3: {subj:'資料結構',
-        am:'讀《資結七版》Ch6 圖形（表示法、Traversal、最短路徑、拓撲排序）+ Ch7 搜尋與排序',
-        pm:'DFS/BFS手算 × 3題 + Merge/Quick Sort手跑過程 × 3題',
-        vid:'看 Abdul Bari：Graph Data Structure + Merge Sort + Quick Sort',
-        note:'圖形走訪與排序都要能手算完整過程'},
-    4: {subj:'資料結構',
-        am:'讀《資結七版》Ch8 雜湊（衝突處理）+ Ch9 高等樹結構（Heap、AVL樹、2-3/紅黑/B樹）',
-        pm:'Hash Table衝突手算 × 3題 + 手畫AVL Tree旋轉過程（LL/RR/LR/RL）各3次',
-        vid:'看 Abdul Bari：Hashing + Heap + AVL Tree',
-        note:'AVL樹其實在真書Ch9（不是Ch5），資料結構到此結束，下週起轉線性代數'},
-    5: {subj:'演算法',
-        am:'讀《演算法~1~》Ch1 Analyzing Algorithms（Asymptotic notation、Recurrence relation）+ Ch2 Divide-and-Conquer（Maximum subarray、Matrix multiplication）',
-        pm:'Recurrence Relation用Master Theorem求解 × 5題 + Maximum Subarray手推 × 2題',
-        vid:'看 Abdul Bari：Merge Sort（分治法範例）+ Recurrence Relation教學影片',
-        note:'這兩章是全書基礎，複雜度分析要練到直覺反應'},
-    6: {subj:'演算法',
-        am:'讀《演算法~1~》Ch3 Dynamic Programming（Rod cutting、Knapsack、Matrix-chain、LCS、KMP）',
-        pm:'手推 LCS 狀態表 × 3 題 + 手推 0/1 Knapsack dp table × 2 題 + 手填 Matrix Chain m[i][j] 表格 × 3 題',
-        vid:'看 MIT 6.006 L11 DP I + L12 DP II + L14 DP IV（Matrix Chain）+ Abdul Bari：Matrix Chain Multiplication',
-        note:'DP 是全科最高頻考點，這週要花最多時間，之前的遞迴/歸納法基礎這裡會用上，KMP也在這章（不是資結章節）'},
-    7: {subj:'演算法',
-        am:'讀《演算法~1~》Ch4 Graph Algorithms（BFS/DFS/最短路徑/MST/最大流）+ Ch6 NP-completeness',
-        pm:'手算 BFS/DFS 執行過程 × 3 題 + Dijkstra手算 × 2 題 + NP-Complete問題判斷 × 3 題',
-        vid:'看 Abdul Bari：BFS + DFS + Topological Sort + Strongly Connected Components',
-        note:'NP理論列為重點；計算幾何與其他問題放到刷題期補強'},
-    8: {subj:'作業系統',
-        am:'讀《金寶典》Ch1 導論 + Ch2 電腦系統架構（Dual Mode）+ Ch3 系統作業結構（System Call）+ Ch4 處理程序（CPU排程）',
-        pm:'做 Q講義 Q1（Ch1–Ch3）所有例題 + 五狀態圖默寫 × 5 次 + Gantt Chart排程計算 × 5 題（Q講義 Q2）',
-        vid:'看 清大OCW 周志遠 第1A–1C講（OS概論）+ 第9A–9B講 Process',
-        note:'五狀態圖要能閉眼默寫，Gantt Chart 排程計算每校必出'},
-    9: {subj:'作業系統',
-        am:'讀《金寶典》Ch5 死結（四條件、Banker Algorithm）+ Ch6 處理程序的協調（Critical Section、Semaphore、Monitor）',
-        pm:'Banker Algorithm 安全狀態判斷 × 5 題（Q講義 Q3）+ Semaphore解同步問題 × 3 題（Q講義 Q4）',
-        vid:'看 Abdul Bari：Banker Algorithm + Process Synchronization（Critical Section／Semaphore）',
-        note:'Banker Algorithm 要能手算'},
-    10:{subj:'作業系統',
-        am:'讀《金寶典》Ch7 記憶管理（Paging）+ Ch8 虛擬記憶體（Page Replacement）+ Ch9 輔助儲存體管理（磁碟排程）+ Ch10 檔案系統',
-        pm:'Page Table 位址轉換計算 × 5 題 + FIFO/LRU/Optimal 計算 × 3 題（Q講義 Q5）+ SCAN/C-SCAN磁碟排程手算 × 3 題（Q講義 Q6）',
-        vid:'看 Page Replacement Algorithms（LRU/Optimal）+ SCAN Disk Scheduling Algorithm',
-        note:'Page Fault與磁碟排程要能快速手算；完成後進入刷題期'},
-    11:{subj:'離散數學',
-        am:'讀《離散上冊》Ch1 邏輯（命題與真值表、邏輯等價）+ Ch2 集合論（集合論、排容原理）',
-        pm:'真值表練習 × 5 題 + 排容原理應用題 × 3 題',
-        vid:'看 交大易志偉 Logic and Proofs + The Principle of Inclusion-Exclusion',
-        note:'排容原理其實是Ch2（跟集合論同一章），不是跟圖論放一起'},
-    12:{subj:'離散數學',
-        am:'讀《離散上冊》Ch3 函數（鴿籠原理）+ Ch4 數學歸納法與數論（數學歸納法、質數）',
-        pm:'鴿籠原理應用題 × 3 題 + 數學歸納法完整證明 × 5 題',
-        vid:'看 Neso Academy：Pigeonhole Principle + Mathematical Induction',
-        note:'數學歸納法的證明格式要練到能一次寫對，演算法正確性證明會一直用到'},
-    13:{subj:'離散數學',
-        am:'讀《離散上冊》Ch5 組合計數（排列組合、二項式係數）+ Ch6 生成函數 + Ch7 遞迴關係式（求解法）',
-        pm:'排列組合應用題 × 10 題 + 生成函數求解 × 3 題 + 遞迴關係式求通解 × 5 題',
-        vid:'看 Generating Functions Part 1 + Solving Recurrences Using Substitution Method',
-        note:'組合計數、生成函數與遞迴關係式是高頻題型，先寫清楚初始條件再計算'},
-    14:{subj:'離散數學',
-        am:'讀《離散下冊》Ch8 圖論I（路徑、連通、最短路徑）+ Ch9 圖論II（著色、平面圖）+ Ch10 樹（生成樹）',
-        pm:'Euler/Hamilton路徑判斷 × 3 題 + 圖著色問題 × 2 題 + 生成樹手畫 × 3 題',
-        vid:'看 交大易志偉 Lec22 Graphs + Spanning Tree：Discrete Mathematics',
-        note:'圖論與樹一起讀，生成樹可同時銜接資料結構的圖演算法'},
-    15:{subj:'離散數學',
-        am:'讀《離散下冊》Ch11 二元關係及其應用（等價關係、偏序集、布林代數）+ Ch12 代數結構（群）+ Ch13 有限狀態機',
-        pm:'等價關係判斷 × 3 題 + Boolean Algebra基本運算 × 5 題 + 有限狀態機設計 × 2 題',
-        vid:'看 Equivalence Relation + Neso Academy：Finite State Machine',
-        note:'有限狀態機與二元關係列為重點；玻里亞計數掌握基礎公式即可'},
-    16:{subj:'線性代數',
-        am:'讀《線代上冊》Ch1 矩陣與線性方程組（高斯消去）+ Ch2 矩陣運算（逆矩陣）+ Ch3 行列式 + Ch4 向量空間',
-        pm:'高斯消去法手算 × 5 題 + 3×3逆矩陣手算 × 3 題 + 行列式Cofactor展開 × 5 題',
-        vid:'看 MIT 18.06 L1 Geometry of Linear Equations + L2 Elimination + L18 Determinants',
-        note:'高斯消去和行列式計算幾乎每校必考，練到能快速手算'},
-    17:{subj:'線性代數',
-        am:'讀《線代下冊》Ch5 對角化理論（特徵值/特徵向量、對角化）+ Ch7 內積空間（Gram-Schmidt）+ Ch8 各內積算子（SVD）',
-        pm:'特徵值/特徵向量計算 × 5 題 + Gram-Schmidt正交化 × 3 題 + SVD分解步驟練習 × 2 題',
-        vid:'看 MIT 18.06 L21 Eigenvalues + 3Blue1Brown Eigenvectors + L29 SVD',
-        note:'特徵多項式 det(A-λI)=0 要熟練；Jordan Form掌握定義與基本求法'},
-    18:{subj:'計算機組織',
-        am:'讀《數位邏輯講義》Ch1–Ch3（二進位系統、布林代數、組合邏輯，精簡讀過即可）+ 《計組上冊》Ch1 指令（MIPS）+ Ch2 計算機算術（IEEE 754）',
-        pm:'IEEE 754 浮點數轉換 × 5 題 + 布林函數化簡 × 3 題',
-        vid:'看 Neso Academy：Logic Gates + IEEE 754 Floating Point Representation',
-        note:'數位邏輯是計組的前置基礎，掌握二進位、布林代數與組合邏輯即可'},
-    19:{subj:'計算機組織',
-        am:'讀《計組上冊》Ch3 效能評估（Amdahl定律）+ Ch4 處理器資料路徑 + Ch5 管線（Pipeline Hazard）+ 《計組下冊》Ch6 記憶體階層與Cache（AMAT計算）',
-        pm:'Amdahl定律計算 × 3 題 + Pipeline CPI/Stall 手算 × 5 題 + AMAT計算 × 5 題',
-        vid:'看 Pipeline Hazards + Average Memory Access Time（AMAT）',
-        note:'Pipeline跟Cache幾乎每校必考，這週花最多時間；Ch7儲存裝置、Ch8多重處理器、Ch9基本概念較低頻，留到刷題期，計組到此結束'},
-};
 
 // ── Task queue (foundation phase only) ───────────────────────────────
 // Foundation has genuinely finite content (six subjects' chapters) — it's
 // the one phase where "did I actually finish this" should matter more than
 // "how many calendar days have passed". Drilling/convergence stay date-
 // driven below: they're open-ended recurring practice, not a queue to drain.
-//
-// Book-task minutes are grounded in SUBJECTS' real per-chapter `hrs` figures
-// (data.js), summed for whichever chapters that week covers — not guessed.
-const FOUNDATION_BOOK_MINUTES = {
-  1:480, 2:600, 3:660, 4:720, 5:480, 6:720, 7:660, 8:720, 9:480, 10:720, 11:480, 12:480, 13:600, 14:720, 15:600, 16:900, 17:720, 18:600, 19:900,
-};
 function durationToMinutes(value){
   const parts = String(value || '').split(':').map(Number);
   if(parts.some(function(n){ return !Number.isFinite(n); })) return 0;
@@ -493,22 +382,24 @@ function foundationVideoMinutes(videos){
   return exact || 60;
 }
 
+// The week's chapters, in subject order, with every one of their videos.
+function foundationWeekVideos(wk){
+  const out = [];
+  SUBJECTS.forEach(function(s){
+    s.chapters.forEach(function(c){ if(c.wk === wk) out.push.apply(out, chapterDisplayMaterials(c)); });
+  });
+  return out;
+}
 function buildFoundationTasks(){
   const tasks = [];
   for(let wk=1; wk<=FOUNDATION_WEEKS; wk++){
     const c = FOUNDATION_CONTENT[wk];
-    const t = FOUNDATION_TASK_TEXT[wk];
-    if(!c || !t) continue;
-    // One grouped video task per week. Sequential parts in the selected
-    // series belong to the same task; alternate teachers are equivalent paths.
-    const videos = c.vid || [];
-    if(videos.length){
-      tasks.push({id:'w'+wk+'-video', week:wk, subject:c.subj, type:'video', title:'本週影片（依序完成指定系列）', url:videos[0].url, estMinutes:foundationVideoMinutes(videos)});
-    }
-    tasks.push({id:'w'+wk+'-book', week:wk, subject:c.subj, type:'book', title:t.am, estMinutes:FOUNDATION_BOOK_MINUTES[wk] || 480});
-    tasks.push({id:'w'+wk+'-practice', week:wk, subject:c.subj, type:'practice', title:t.pm, estMinutes:60});
-    tasks.push({id:'w'+wk+'-notes', week:wk, subject:c.subj, type:'notes', title:'整理筆記：'+t.note, estMinutes:30});
-    tasks.push({id:'w'+wk+'-review', week:wk, subject:c.subj, type:'review', title:'本週複習＋本科歷屆題目練習', estMinutes:150});
+    if(!c) continue;
+    // One task per week: every video of every chapter scheduled that week,
+    // watched in order. Its minutes are the real sum of those videos.
+    const videos = foundationWeekVideos(wk);
+    if(!videos.length) continue;
+    tasks.push({id:'w'+wk+'-video', week:wk, subject:c.subj, type:'video', title:'本週影片（全部依序看完，共 '+videos.length+' 支）', url:videos[0].url, estMinutes:foundationVideoMinutes(videos)});
   }
   return tasks;
 }
@@ -530,19 +421,10 @@ function getFoundationQueueStatus(doneIds){
 }
 
 
-// True once every video/book/practice/notes task for a week is done — the
-// review task is deliberately excluded (it's what "content done" unlocks).
-// Used by the 六科 page to light up a chapter's dot once its mapped week
-// is fully done.
+// True once every video of every chapter in that week is done. Used by the
+// 六科 page to light up a chapter's dot once its mapped week is fully done.
 function foundationContentDone(wk){
-  const weekTasks = buildFoundationTasks().filter((t) => t.week === wk);
-  const videos = weekTasks.filter((t) => t.type === 'video');
-  const byType = {};
-  weekTasks.forEach((t) => { if(t.type !== 'video') byType[t.type] = t; });
-  return videos.every((v) => DONE_TASK_IDS.includes(v.id))
-    && (!byType.book || DONE_TASK_IDS.includes(byType.book.id))
-    && (!byType.practice || DONE_TASK_IDS.includes(byType.practice.id))
-    && (!byType.notes || DONE_TASK_IDS.includes(byType.notes.id));
+  return foundationWeekVideos(wk).every(function(m){ return DONE_TASK_IDS.includes('vid-'+m.videoId); });
 }
 
 // ── Render ─────────────────────────────────────────────────────────
@@ -577,7 +459,7 @@ function goSubjWeek(subjName, wk, taskType){
   const s = SUBJECTS.find(function(x){ return x.name === subjName; });
   if(!s) return;
   goSec('subjects', document.querySelector('.pill[data-sec="subjects"]'));
-  const matchingTypes = taskType === 'video' ? ['vidgroup','vid'] : taskType === 'practice' ? ['ex'] : taskType === 'book' ? ['book'] : [];
+  const matchingTypes = ['vid'];
   const candidates = s.chapters.map(function(c,i){ return {chapter:c,index:i}; }).filter(function(x){ return x.chapter.wk === wk; });
   let targetMaterialId = '';
   let target = candidates.find(function(x){
@@ -735,7 +617,7 @@ function calibratedTimeFactor(){
 function chapterEstimatedMastery(s,c){
   const mats=chapterDisplayMaterials(c), done=new Set(DONE_TASK_IDS);
   let available=0,completed=0;
-  mats.forEach(function(m){const w=m.type==='vidgroup'?20:m.type==='book'?25:m.type==='ex'?45:10;available+=w;if(done.has(chapterMaterialTaskId(s.id,c,m)))completed+=w;});
+  mats.forEach(function(m){available+=1;if(done.has(chapterMaterialTaskId(s.id,c,m)))completed+=1;});
   const base=available?Math.round(completed/available*100):0;
   const key=stableTaskKey(c.t);
   const attempt=(LEARNING_EVIDENCE.attempts||[]).find(function(a){return a.subject_id===s.id&&a.chapter_key===key;});
@@ -878,107 +760,7 @@ function startVoiceInput(targetId,button){
   recognition.onerror=function(e){if(e.error!=='aborted')showTaskToast(e.error==='not-allowed'?'請允許麥克風權限後再試':'沒有聽清楚，請再說一次');};
   recognition.onend=function(){button.classList.remove('listening');if(activeVoiceRecognition===recognition)activeVoiceRecognition=null;};recognition.start();
 }
-function chapterLearningFlowHtml(s,c,index,chapterDoneCount,chapterTaskCount){
-  const key=stableTaskKey(c.t), today=isoDate(new Date());
-  const attempt=(LEARNING_EVIDENCE.attempts||[]).find(function(a){return a.subject_id===s.id&&a.chapter_key===key;});
-  const review=(LEARNING_EVIDENCE.reviews||[]).find(function(r){return r.subject_id===s.id&&r.chapter_key===key;});
-  let active=null;try{active=JSON.parse(localStorage.getItem('activeStudySessionV2')||'null');}catch(e){}
-  const isTiming=active&&active.subjectId===s.id&&active.index===index;
-  const materialDone=chapterTaskCount>0&&chapterDoneCount===chapterTaskCount;
-  const primary=isTiming?'timer':review&&review.due_date<=today?'review':materialDone&&!attempt?'diagnostic':'timer';
-  function step(title,action,role){
-    return '<button class="learning-step ui-btn '+(primary===role?'is-next ':'')+(role==='timer'&&isTiming?'is-active ':'')+'" type="button" onclick="event.stopPropagation();'+action+'">'+title+'</button>';
-  }
-  const timerTitle=isTiming?(active.paused?'繼續計時':'暫停計時'):'開始計時';
-  return '<div class="chapter-learning-flow"><div class="learning-steps">'
-    +step(timerTitle,'toggleChapterTimer(\''+s.id+'\','+index+',this)','timer')
-    +step('重點統整','requestChapterSummary(\''+s.id+'\','+index+')','summary')
-    +step('章節診斷','requestDiagnostic(\''+s.id+'\','+index+')','diagnostic')
-    +step('回報複習','reportReviewResult(\''+s.id+'\','+index+')','review')
-    +'</div></div>';
-}
-function refreshChapterLearningFlow(subjectId,index){
-  const ref=chapterRef(subjectId,index),row=document.querySelectorAll('#sp-'+subjectId+' .ch-row')[index];if(!ref||!row)return;
-  const ids=chapterDisplayMaterials(ref.chapter).map(function(m){return chapterMaterialTaskId(subjectId,ref.chapter,m);});
-  const done=ids.filter(function(id){return DONE_TASK_IDS.indexOf(id)!==-1;}).length;
-  const old=row.querySelector('.chapter-learning-flow');if(old)old.outerHTML=chapterLearningFlowHtml(ref.subject,ref.chapter,index,done,ids.length);
-}
-let chapterToolModalState=null;
-let chapterToolReturnFocus=null;
-function closeChapterToolModal(){const modal=document.getElementById('chapterToolModal');if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}chapterToolModalState=null;if(chapterToolReturnFocus?.isConnected)chapterToolReturnFocus.focus();chapterToolReturnFocus=null;}
-function openChapterToolModal(mode,subjectId,index){
-  const ref=chapterRef(subjectId,index),modal=document.getElementById('chapterToolModal'),body=document.getElementById('chapterToolModalBody');if(!ref||!modal||!body)return;
-  chapterToolReturnFocus=document.activeElement;
-  chapterToolModalState={mode:mode,subjectId:subjectId,index:index};
-  document.getElementById('chapterToolModalKicker').textContent=ref.subject.name;
-  document.getElementById('chapterToolModalTitle').textContent=mode==='result'?'紀錄「'+ref.chapter.t+'」測驗':'回報「'+ref.chapter.t+'」複習';
-  if(mode==='result') body.innerHTML='<label class="tool-field voice-tool-field"><span>答對題數</span><input id="toolCorrect" type="number" min="0" inputmode="numeric" placeholder="例如 8">'+voiceButtonHtml('toolCorrect')+'</label><label class="tool-field voice-tool-field"><span>總題數</span><input id="toolTotal" type="number" min="1" inputmode="numeric" placeholder="例如 10">'+voiceButtonHtml('toolTotal')+'</label><div class="tool-field tool-field-wide"><span>主要卡住的地方（可不選）</span><div class="tool-choice-row" id="toolErrorChoices">'+['概念','公式','計算','讀題','時間'].map(function(x){return '<button type="button" data-value="'+x+'" onclick="selectToolChoice(this)">'+x+'</button>';}).join('')+'</div></div>';
-  else body.innerHTML='<div class="tool-review-grid">'+[['0','幾乎忘記','需要盡快重學'],['1','有點吃力','縮短複習間隔'],['2','大致記得','照正常節奏複習'],['3','已經熟練','延後下次複習']].map(function(x){return '<button type="button" data-quality="'+x[0]+'" onclick="selectReviewQuality(this)"><b>'+x[1]+'</b><span>'+x[2]+'</span></button>';}).join('')+'</div>';
-  const submit=document.getElementById('chapterToolModalSubmit');submit.textContent=mode==='result'?'儲存測驗結果':'儲存複習狀況';submit.disabled=mode==='review';modal.classList.add('open');modal.setAttribute('aria-hidden','false');
-  setTimeout(function(){var target=mode==='result'?document.getElementById('toolCorrect'):modal.querySelector('.tool-review-grid button');target?.focus();},50);
-}
-function selectToolChoice(el){el.parentElement.querySelectorAll('button').forEach(function(x){x.classList.toggle('selected',x===el);});}
-function selectReviewQuality(el){el.parentElement.querySelectorAll('button').forEach(function(x){x.classList.toggle('selected',x===el);});document.getElementById('chapterToolModalSubmit').disabled=false;}
-async function submitChapterToolModal(){
-  if(!chapterToolModalState)return;const ref=chapterRef(chapterToolModalState.subjectId,chapterToolModalState.index);if(!ref)return;
-  if(chapterToolModalState.mode==='result'){
-    const correct=Number(document.getElementById('toolCorrect').value),total=Number(document.getElementById('toolTotal').value);
-    if(!Number.isInteger(correct)||!Number.isInteger(total)||total<1||correct<0||correct>total){showTaskToast('請確認答對題數與總題數');return;}
-    const selected=document.querySelector('#toolErrorChoices .selected');
-    await fetch('/api/learning/attempt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subject_id:chapterToolModalState.subjectId,chapter_key:stableTaskKey(ref.chapter.t),correct:correct,total:total,error_type:selected?selected.dataset.value:''})});
-    closeChapterToolModal();await fetchLearningEvidence();renderGreetingHeader();refreshChapterLearningFlow(chapterToolModalState?.subjectId||ref.subject.id,chapterToolModalState?.index??ref.subject.chapters.indexOf(ref.chapter));showTaskToast('已更新掌握程度與弱點排序');
-    signalAiNudge(correct/total<.7?{label:'AI 建議先處理這次錯題',detail:ref.subject.name+' · '+ref.chapter.t+' · '+correct+'/'+total+' 題',prompt:'我剛完成「'+ref.subject.name+'／'+ref.chapter.t+'」測驗，答對 '+correct+'/'+total+' 題。請根據這個真實結果與我的錯誤類型，安排一次精簡補強；先處理錯因，不要直接推進新章節。'}:null);
-  }else{
-    const selected=document.querySelector('.tool-review-grid .selected');if(!selected)return;
-    await fetch('/api/learning/review',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subject_id:chapterToolModalState.subjectId,chapter_key:stableTaskKey(ref.chapter.t),quality:Number(selected.dataset.quality)})});
-    const sid=chapterToolModalState.subjectId,idx=chapterToolModalState.index;closeChapterToolModal();await fetchLearningEvidence();renderGreetingHeader();refreshChapterLearningFlow(sid,idx);showTaskToast('已排好下一次複習');signalAiNudge();
-  }
-}
-async function reportChapterResult(subjectId,index){
-  openChapterToolModal('result',subjectId,index);
-}
-let diagnosticState=null;
-let diagnosticLoadingInterval=null;
-let diagnosticReturnFocus=null;
-function stopDiagnosticLoading(){clearInterval(diagnosticLoadingInterval);diagnosticLoadingInterval=null;}
-function startDiagnosticLoading(){stopDiagnosticLoading();const started=Date.now();diagnosticLoadingInterval=setInterval(function(){const el=document.getElementById('diagnosticLoadingStatus');if(el)el.textContent='正在整理考點 · '+Math.floor((Date.now()-started)/1000)+' 秒';},1000);}
-function closeDiagnosticModal(){stopDiagnosticLoading();const modal=document.getElementById('diagnosticModal');if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}diagnosticState=null;if(diagnosticReturnFocus?.isConnected)diagnosticReturnFocus.focus();diagnosticReturnFocus=null;}
-// Most recent diagnostic attempt for this chapter, if any — used for the
-// "prior_score" shown to the AI, since the latest score is what's actually
-// relevant right now.
-function priorAttemptFor(subjectId,chapter){
-  const key=stableTaskKey(chapter.t);
-  return (LEARNING_EVIDENCE.attempts||[]).find(function(a){return a.subject_id===subjectId&&a.chapter_key===key;})||null;
-}
-// Error-type pattern aggregated across every recorded attempt for this
-// chapter, not just the latest one — a single attempt can be noisy (one
-// careless mistake), so the recurring weakness is a sturdier signal to
-// personalize question generation / summary emphasis around.
-function dominantErrorType(subjectId,chapter){
-  const key=stableTaskKey(chapter.t);
-  const attempts=(LEARNING_EVIDENCE.attempts||[]).filter(function(a){return a.subject_id===subjectId&&a.chapter_key===key&&a.error_type;});
-  if(!attempts.length)return '';
-  const counts={};
-  attempts.forEach(function(a){counts[a.error_type]=(counts[a.error_type]||0)+1;});
-  return Object.keys(counts).sort(function(a,b){return counts[b]-counts[a];})[0];
-}
-async function requestDiagnostic(subjectId,index){
-  const ref=chapterRef(subjectId,index),modal=document.getElementById('diagnosticModal'),body=document.getElementById('diagnosticBody');if(!ref||!modal||!body)return;
-  if(!modal.classList.contains('open'))diagnosticReturnFocus=document.activeElement;
-  diagnosticState={subjectId:subjectId,index:index,questions:[],answers:[],current:0};
-  document.getElementById('diagnosticKicker').textContent=ref.subject.name+' · 5 題診斷';document.getElementById('diagnosticTitle').textContent=ref.chapter.t;
-  body.innerHTML='<div class="diagnostic-loading"><span></span><p>正在依本章考點準備 5 題測驗…</p><small id="diagnosticLoadingStatus">正在整理考點 · 0 秒</small></div>';modal.classList.add('open');modal.setAttribute('aria-hidden','false');modal.querySelector('.chapter-tool-close')?.focus();startDiagnosticLoading();
-  try{
-    const r=await fetch('/api/diagnostic',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subject:ref.subject.name,chapter:ref.chapter.t,key_points:ref.chapter.key,peer_note:ref.chapter.peerNote||'',prior_error_type:dominantErrorType(subjectId,ref.chapter)})});const j=await r.json();
-    if(!r.ok||!Array.isArray(j.questions))throw new Error(j.message||'目前無法產生題目');
-    stopDiagnosticLoading();diagnosticState.questions=j.questions;renderDiagnosticQuestion();
-  }catch(e){stopDiagnosticLoading();body.innerHTML='<div class="diagnostic-error"><b>題目暫時載入失敗</b><span>'+escapeHtml(e.message)+'</span><button type="button" onclick="requestDiagnostic(\''+subjectId+'\','+index+')">重新準備</button></div>';}
-}
-function renderDiagnosticQuestion(){
-  if(!diagnosticState)return;const q=diagnosticState.questions[diagnosticState.current],body=document.getElementById('diagnosticBody'),n=diagnosticState.current+1;
-  body.innerHTML='<div class="diagnostic-progress"><span style="width:'+(n/diagnosticState.questions.length*100)+'%"></span></div><div class="diagnostic-count">第 '+n+' 題／'+diagnosticState.questions.length+'</div><div class="diagnostic-question">'+formatDiagnosticMath(q.question)+'</div><div class="diagnostic-choices">'+q.choices.map(function(choice,i){return '<button type="button" onclick="answerDiagnostic('+i+')"><span>'+String.fromCharCode(65+i)+'</span><span class="diagnostic-choice-text">'+formatDiagnosticMath(choice)+'</span></button>';}).join('')+'</div>';
-}
-function answerDiagnostic(choice){if(!diagnosticState)return;diagnosticState.answers.push(choice);diagnosticState.current++;if(diagnosticState.current<diagnosticState.questions.length)renderDiagnosticQuestion();else finishDiagnostic();}
+// Light markdown (## headings, - lists, $math$) for AI brief text.
 function formatDiagnosticMath(text){
   const source=String(text||''),pattern=/(\$\$[\s\S]+?\$\$|\$[^$\n]+?\$|\\\([\s\S]+?\\\)|\\\[[\s\S]+?\\\])/g;let out='',last=0,match;
   while((match=pattern.exec(source))){
@@ -987,25 +769,6 @@ function formatDiagnosticMath(text){
   }
   return out+escapeHtml(source.slice(last));
 }
-async function finishDiagnostic(){
-  if(!diagnosticState)return;const state=diagnosticState,ref=chapterRef(state.subjectId,state.index);let correct=0;const errors={};
-  state.questions.forEach(function(q,i){if(state.answers[i]===q.answer)correct++;else{const type=q.error_type||'概念';errors[type]=(errors[type]||0)+1;}});
-  const mainError=Object.keys(errors).sort(function(a,b){return errors[b]-errors[a];})[0]||'';
-  await fetch('/api/learning/attempt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subject_id:state.subjectId,chapter_key:stableTaskKey(ref.chapter.t),correct:correct,total:state.questions.length,error_type:mainError})});
-  await fetchLearningEvidence();renderGreetingHeader();refreshChapterLearningFlow(state.subjectId,state.index);
-  signalAiNudge(correct/state.questions.length<.7?{label:'AI 已把錯題列為優先',detail:ref.subject.name+' · '+ref.chapter.t+' · '+correct+'/'+state.questions.length+' 題',prompt:'我剛完成「'+ref.subject.name+'／'+ref.chapter.t+'」診斷，答對 '+correct+'/'+state.questions.length+' 題，主要錯誤類型是「'+(mainError||'尚未分類')+'」。請根據這份真實結果，先解釋最可能的觀念缺口，再給我一個30分鐘補強流程。'}:null);
-  document.getElementById('diagnosticTitle').textContent='診斷完成';document.getElementById('diagnosticBody').innerHTML='<div class="diagnostic-result"><div class="diagnostic-score"><b>'+correct+'</b><span>/ '+state.questions.length+' 題</span></div><p>'+(correct===5?'本章核心內容掌握良好。':correct>=3?'已有基礎，請優先確認下方錯題。':'建議先回到本章素材補強，再重新測驗。')+'</p><div class="diagnostic-review-list">'+state.questions.map(function(q,i){const ok=state.answers[i]===q.answer;return '<details class="diagnostic-review '+(ok?'correct':'wrong')+'"><summary><span>'+(ok?'✓':'×')+'</span>第 '+(i+1)+' 題 · '+(ok?'答對':'答錯')+'</summary><div><b>正確答案：'+String.fromCharCode(65+q.answer)+'</b><p>'+formatDiagnosticMath(q.explanation)+'</p></div></details>';}).join('')+'</div><button class="chapter-tool-submit" type="button" onclick="closeDiagnosticModal()">完成</button></div>';
-}
-let chapterSummaryReturnFocus=null;
-function closeChapterSummaryModal(){
-  const modal=document.getElementById('chapterSummaryModal');
-  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
-  if(chapterSummaryReturnFocus&&chapterSummaryReturnFocus.isConnected)chapterSummaryReturnFocus.focus();
-  chapterSummaryReturnFocus=null;
-}
-// Minimal markdown → HTML for the AI's chapter-summary reply: "## " headers,
-// "- " bullets, blank-line paragraphs. Reuses formatDiagnosticMath so $...$
-// math renders through the same KaTeX pipeline as the diagnostic quiz.
 function renderChapterSummaryText(text){
   const lines=String(text||'').split(/\r?\n/);
   let html='',inList=false;
@@ -1020,67 +783,46 @@ function renderChapterSummaryText(text){
   closeList();
   return html;
 }
-async function requestChapterSummary(subjectId,index){
-  const ref=chapterRef(subjectId,index),modal=document.getElementById('chapterSummaryModal'),body=document.getElementById('chapterSummaryBody');if(!ref||!modal||!body)return;
-  if(!modal.classList.contains('open'))chapterSummaryReturnFocus=document.activeElement;
-  document.getElementById('chapterSummaryKicker').textContent=ref.subject.name;
-  document.getElementById('chapterSummaryTitle').textContent=ref.chapter.t;
-  body.innerHTML='<div class="diagnostic-loading"><span></span><p>正在統整本章重點…</p></div>';
-  modal.classList.add('open');modal.setAttribute('aria-hidden','false');modal.querySelector('.chapter-tool-close')?.focus();
-  const materialsOutline=chapterDisplayMaterials(ref.chapter).map(function(m){return m.text||'';}).filter(Boolean).join('；');
-  const priorAttempt=priorAttemptFor(subjectId,ref.chapter);
-  try{
-    const r=await fetch('/api/chapter-summary',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subject:ref.subject.name,chapter:ref.chapter.t,key_points:ref.chapter.key,peer_note:ref.chapter.peerNote||'',materials:materialsOutline,prior_score:priorAttempt?(priorAttempt.correct+'/'+priorAttempt.total):'',prior_error_type:dominantErrorType(subjectId,ref.chapter)})});
-    const j=await r.json();
-    if(!r.ok||!j.summary)throw new Error(j.message||'目前無法產生整理');
-    body.innerHTML='<div class="chapter-summary-content">'+renderChapterSummaryText(j.summary)+'</div>';
-  }catch(e){
-    body.innerHTML='<div class="diagnostic-error"><b>整理暫時載入失敗</b><span>'+escapeHtml(e.message)+'</span><button type="button" onclick="requestChapterSummary(\''+subjectId+'\','+index+')">重新產生</button></div>';
+// Days in a row (ending today, or yesterday if nothing yet today) on which at
+// least one video was checked off — from the real completion dates.
+function studyStreak(){
+  const days = new Set(Object.keys(TASK_DONE_DATES || {}).filter(function(d){
+    return (TASK_DONE_DATES[d] || []).some(function(id){ return id.indexOf('vid-') === 0; });
+  }));
+  const d = new Date(); d.setHours(12,0,0,0);
+  if(!days.has(isoDate(d))) d.setDate(d.getDate()-1);
+  let n = 0;
+  while(days.has(isoDate(d))){ n++; d.setDate(d.getDate()-1); }
+  return n;
+}
+// Streak plus one small bar per subject that fills as its videos are watched.
+function progressStripHtml(doneSet){
+  const streak = studyStreak();
+  const bars = SUBJECTS.map(function(s){
+    const p = subjectVideoProgress(s, doneSet), pct = p.total ? Math.round(p.done/p.total*100) : 0;
+    return '<div class="ps-subj" title="'+s.name+' '+p.done+'/'+p.total+' 支"><span class="ps-name">'+s.name.slice(0,2)+'</span>'
+      +'<span class="ps-bar"><span style="width:'+pct+'%;background:'+s.color+'"></span></span></div>';
+  }).join('');
+  return '<div class="progress-strip"><div class="ps-streak'+(streak?' on':'')+'"><b>'+streak+'</b><span>天連續</span></div><div class="ps-subjs">'+bars+'</div></div>';
+}
+// First unwatched video of a foundation week, in chapter order, with the
+// study-room link that opens it.
+// Total length of a chapter's videos, e.g. "12.5hr".
+function chapterVideoHours(videos){
+  const minutes = videos.reduce(function(t,m){ return t + durationToMinutes(m.dur); },0);
+  return Math.round(minutes/6)/10+'hr';
+}
+function nextUnwatchedVideo(wk){
+  const done = new Set(DONE_TASK_IDS);
+  for(const sub of SUBJECTS){
+    for(let i=0;i<sub.chapters.length;i++){
+      const c = sub.chapters[i];
+      if(c.wk !== wk) continue;
+      const v = chapterDisplayMaterials(c).find(function(m){ return !done.has(chapterMaterialTaskId(sub.id,c,m)); });
+      if(v) return {label:v.text, href:studyRoomUrl(sub.id,i,v.videoId)};
+    }
   }
-}
-async function reportReviewResult(subjectId,index){
-  openChapterToolModal('review',subjectId,index);
-}
-async function toggleChapterTimer(subjectId,index,el){
-  const ref=chapterRef(subjectId,index);if(!ref)return;const storageKey='activeStudySessionV2';
-  let active=null;try{active=JSON.parse(localStorage.getItem(storageKey)||'null');}catch(e){}
-  if(!active){
-    const planned=Math.max(15,Math.round((parseFloat(ref.chapter.hrs)||1)*60));
-    const r=await fetch('/api/learning/session/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({task_id:'chapter-'+subjectId+'-'+stableTaskKey(ref.chapter.t),subject_id:subjectId,chapter_key:stableTaskKey(ref.chapter.t),planned_minutes:planned})});
-    const row=await r.json();active={id:row.id,runningSince:Date.now(),elapsedMs:0,paused:false,subjectId:subjectId,index:index};localStorage.setItem(storageKey,JSON.stringify(active));renderGlobalTimer();refreshChapterLearningFlow(subjectId,index);showTaskToast('已開始記錄實際學習時間');
-  }else{
-    if(active.subjectId!==subjectId||active.index!==index){showTaskToast('另一個章節正在計時，請先回到該章節結束計時');return;}
-    if(active.paused){active.paused=false;active.runningSince=Date.now();localStorage.setItem(storageKey,JSON.stringify(active));showTaskToast('已繼續計時');}
-    else{active.elapsedMs=(active.elapsedMs||0)+Math.max(0,Date.now()-(active.runningSince||active.started||Date.now()));active.paused=true;active.runningSince=null;localStorage.setItem(storageKey,JSON.stringify(active));showTaskToast('已暫停，下次可以接著計時');}
-    renderGlobalTimer();refreshChapterLearningFlow(subjectId,index);
-  }
-}
-function activeTimerElapsed(active){return (active.elapsedMs||0)+(active.paused?0:Math.max(0,Date.now()-(active.runningSince||active.started||Date.now())));}
-function getActiveTimer(){try{return JSON.parse(localStorage.getItem('activeStudySessionV2')||'null');}catch(e){return null;}}
-function formatActiveTimer(ms){const total=Math.max(0,Math.floor(ms/1000)),h=Math.floor(total/3600),m=Math.floor((total%3600)/60),s=total%60;return h?String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'):String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');}
-function renderGlobalTimer(){
-  const el=document.getElementById('globalTimer');if(!el)return;const active=getActiveTimer();
-  if(!active){el.classList.remove('show','paused');return;}
-  const ref=chapterRef(active.subjectId,active.index);if(!ref){el.classList.remove('show','paused');return;}
-  el.classList.add('show');el.classList.toggle('paused',!!active.paused);
-  document.getElementById('globalTimerState').textContent=active.paused?'計時已暫停':'正在計時';
-  document.getElementById('globalTimerTitle').textContent=ref.subject.name+' · '+ref.chapter.t;
-  document.getElementById('globalTimerElapsed').textContent=formatActiveTimer(activeTimerElapsed(active));
-  document.getElementById('globalTimerPause').textContent=active.paused?'繼續':'暫停';
-}
-function goToActiveTimerChapter(){const active=getActiveTimer();if(!active)return;const ref=chapterRef(active.subjectId,active.index);if(ref)goSearchChapter(ref.subject.name,active.index);}
-function toggleActiveTimerFromDock(){const active=getActiveTimer();if(active)toggleChapterTimer(active.subjectId,active.index,null);}
-function finishActiveTimerFromDock(){const active=getActiveTimer();if(active)finishChapterTimer(active.subjectId,active.index);}
-setInterval(renderGlobalTimer,1000);
-async function finishChapterTimer(subjectId,index){
-  let active=null;try{active=JSON.parse(localStorage.getItem('activeStudySessionV2')||'null');}catch(e){}if(!active||active.subjectId!==subjectId||active.index!==index)return;
-  const minutes=Math.max(1,Math.round(activeTimerElapsed(active)/60000));
-  await fetch('/api/learning/session/'+active.id+'/finish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({actual_minutes:minutes})});
-  localStorage.removeItem('activeStudySessionV2');renderGlobalTimer();await fetchLearningEvidence();renderGreetingHeader();refreshChapterLearningFlow(subjectId,index);showTaskToast('本次已記錄 '+minutes+' 分鐘');
-}
-async function discardChapterTimer(subjectId,index){
-  let active=null;try{active=JSON.parse(localStorage.getItem('activeStudySessionV2')||'null');}catch(e){}if(!active||active.subjectId!==subjectId||active.index!==index)return;
-  await fetch('/api/learning/session/'+active.id,{method:'DELETE'});localStorage.removeItem('activeStudySessionV2');renderGlobalTimer();refreshChapterLearningFlow(subjectId,index);showTaskToast('已放棄這次計時，不會列入紀錄');
+  return null;
 }
 function renderDailyFocus(){
   const el = document.getElementById('dailyFocus');
@@ -1093,11 +835,13 @@ function renderDailyFocus(){
   if(info.phase === 'foundation'){
     const next = nextFoundationTask(DONE_TASK_IDS);
     if(!next){ el.innerHTML = ''; return; }
-    const minimum = next.type === 'video' ? '依序看完本週指定系列' : next.type === 'book' ? '讀完核心段落' : next.type === 'practice' ? '完成基本題' : '完成本週整理';
+    const nextVideo = nextUnwatchedVideo(next.week);
+    const minimum = nextVideo ? '下一支：'+nextVideo.label : '依序看下一支還沒看的影片';
     el.innerHTML = '<div class="daily-focus-kicker">今日主任務</div>'
       +'<div class="daily-focus-row"><div><div class="daily-focus-title">'+next.title+'</div><div class="daily-focus-meta">'+next.subject+' · 約 '+Math.max(1,Math.round(next.estMinutes/60*10)/10)+' 小時 · 最小目標：'+minimum+'</div></div>'
-      +'<button class="daily-focus-btn ui-btn ui-btn-primary" onclick="goSubjWeek(\''+next.subject+'\','+next.week+',\''+next.type+'\')">繼續讀</button></div>'
-      +'<div class="daily-focus-progress"><span style="width:'+pct+'%"></span></div><div class="daily-focus-pct">整體 '+pct+'% · '+completed+'/'+queue.length+' 項</div>';
+      +(nextVideo?'<a class="daily-focus-btn ui-btn ui-btn-primary" href="'+nextVideo.href+'">開始看</a>':'<button class="daily-focus-btn ui-btn ui-btn-primary" onclick="goSubjWeek(\''+next.subject+'\','+next.week+',\''+next.type+'\')">開始看</button>')+'</div>'
+      +'<div class="daily-focus-progress"><span style="width:'+pct+'%"></span></div><div class="daily-focus-pct">整體 '+pct+'% · '+completed+'/'+queue.length+' 週</div>'
+      +progressStripHtml(done);
   }else{
     const title = info.phase === 'drilling' ? (info.drillSubj || '複習整理')+'歷屆試題' : '錯題本與速記清單';
     el.innerHTML = '<div class="daily-focus-kicker">今日主任務</div><div class="daily-focus-row"><div><div class="daily-focus-title">'+title+'</div><div class="daily-focus-meta">完成今天的主要練習後，再補弱點項目</div></div></div>';
@@ -1154,31 +898,18 @@ function toggleRcLinks(id, btn){
 // `el`, if passed, gets its own `.done` class toggled directly (used by
 // callers like the 六科 material checkboxes that don't otherwise re-render).
 async function toggleTask(taskId, el){
-  let chapter = null, materialType = null;
-  if(taskId.indexOf('mat-v2-') === 0 && el){
+  let chapter = null, subject = null;
+  if(el){
     const panel = el.closest('.sp');
     const row = el.closest('.ch-row');
-    const subject = SUBJECTS.find(function(s){ return panel && panel.id === 'sp-'+s.id; });
+    subject = SUBJECTS.find(function(s){ return panel && panel.id === 'sp-'+s.id; });
     const rowIndex = row ? Array.from(row.parentNode.children).indexOf(row) : -1;
     chapter = subject && subject.chapters[rowIndex];
-    if(chapter){
-      const displayed = chapterDisplayMaterials(chapter);
-      const match = displayed.find(function(m){ return chapterMaterialTaskId(subject.id,chapter,m) === taskId; });
-      materialType = match && (match.type === 'vidgroup' ? 'video' : match.type === 'book' ? 'book' : match.type === 'ex' ? 'practice' : 'notes');
-    }
   }
-  const toggleResponse = await fetch('/api/tasks/' + encodeURIComponent(taskId) + '/toggle', { method:'POST' });
-  const toggleResult = await toggleResponse.json();
-  if(toggleResult.done === false && chapter && chapter.wk && materialType){
-    await Promise.all([
-      fetch('/api/tasks/w'+chapter.wk+'-'+materialType+'/set',{method:'POST',headers:{'Content-Type':'application/json'},body:'{"done":false}'}),
-      fetch('/api/tasks/w'+chapter.wk+'-review/set',{method:'POST',headers:{'Content-Type':'application/json'},body:'{"done":false}'})
-    ]);
-  }
+  const wasComplete = chapter ? chapterVideosDone(subject.id, chapter, new Set(DONE_TASK_IDS)) : false;
+  await fetch('/api/tasks/' + encodeURIComponent(taskId) + '/toggle', { method:'POST' });
   await fetchDoneTasks();
-  if(taskId.indexOf('mat-v2-') === 0 && el){
-    if(chapter && chapter.wk) await syncFoundationWeek(chapter.wk);
-  }
+  if(chapter && chapter.wk) await syncFoundationWeek(chapter.wk);
   // Toggling can shift the effective week / change what's done, which
   // affects the header progress pills and the calendar's per-day tags.
   renderGreetingHeader();
@@ -1188,7 +919,10 @@ async function toggleTask(taskId, el){
     el.classList.toggle('done', isDone);
     el.setAttribute('aria-checked', String(isDone));
     refreshVisibleSubjectProgress(el);
-    showTaskToast(isDone ? '已完成，進度已同步到日曆與 AI 助教' : '已取消完成');
+    if(isDone && chapter && !wasComplete && chapterVideosDone(subject.id, chapter, new Set(DONE_TASK_IDS))){
+      const p = subjectVideoProgress(subject, new Set(DONE_TASK_IDS));
+      celebrate(chapter.t+' 完成！', subject.name+' 已看 '+p.done+'/'+p.total+' 支', subject.color);
+    }else showTaskToast(isDone ? '已看完，進度已同步到日曆' : '已取消完成');
     if(isDone)signalAiNudge();
   }
 }
@@ -1382,9 +1116,7 @@ function buildWeekDayBlocks(d, info){
   const chLabel = c ? shortChapterLabel(c.ch) : '複習';
   const click = c ? {subj:subj, wk:projWk} : null;
   return [
-    {time:'09:00–11:30', title:subj+' 影片', colorVar:cv, click:click},
-    {time:'14:00–16:30', title:chLabel, colorVar:cv, click:click},
-    {time:'19:00–20:00', title:'筆記＋練習', colorVar:cv, click:click}
+    {time:subj, title:chLabel+' 影片', colorVar:cv, click:click}
   ];
 }
 
@@ -1657,7 +1389,6 @@ function aiContextSnapshot(){
   const active=document.querySelector('.sec.on'),section=active?active.id.replace('sec-',''):'schedule';
   const subjectTab=document.querySelector('.stab.on'),openChapter=document.querySelector('.sp.on .ch-row:not(.collapsed) .ch-title');
   const school=document.querySelector('.uni-card[open] .uni-name');
-  let timer='';try{const saved=JSON.parse(localStorage.getItem('activeStudySessionV2')||'null');if(saved){const ref=chapterRef(saved.subjectId,saved.index);timer=ref?(ref.subject.name+'／'+ref.chapter.t+(saved.paused?'（已暫停）':'（計時中）')):'';}}catch(e){}
   return {
     section:section,
     page_label:lastAiContextLabel,
@@ -1668,7 +1399,6 @@ function aiContextSnapshot(){
     visible_subject:section==='subjects'&&subjectTab?subjectTab.textContent.trim():'',
     visible_chapter:section==='subjects'&&openChapter?openChapter.textContent.trim():'',
     visible_school:section==='schools'&&school?school.textContent.trim():'',
-    active_timer:timer,
     daily_energy:energyLabel(dailyEnergy()),
     today_study_minutes:todayStudyMinutes()
   };
@@ -1756,7 +1486,6 @@ async function init(){
 
   renderGreetingHeader();
   renderCalContainer();
-  renderGlobalTimer();
 
   // Schools (priority schools first)
   // No more 主力校/有複試 categorization or filter chips — the user
@@ -1906,43 +1635,23 @@ async function init(){
     // so a 12-chapter list reads as a path to scan down rather than a
     // stack of identical boxes that blur together.
     var chaptersHtml = s.chapters.map(function(c, idx){
-      // A chapter has one video task. All complete lecture-series parts and
-      // alternate teachers live inside that task instead of becoming one
-      // checkbox per YouTube link. Books and exercises remain independent.
+      // A chapter is its videos: every one is required and checked off on its
+      // own, listed in teaching order (teacher by teacher, playlist order).
       var displayMats = chapterDisplayMaterials(c);
       var chapterTaskIds = displayMats.map(function(m){ return chapterMaterialTaskId(s.id,c,m); });
       var chapterDoneCount = chapterTaskIds.filter(function(id){ return DONE_TASK_IDS.indexOf(id) !== -1; }).length;
 
-      var matsHtml = displayMats.map(function(m){
+      var matsHtml = displayMats.map(function(m, vi){
         var matTaskId = chapterMaterialTaskId(s.id,c,m);
         var matDone = DONE_TASK_IDS.indexOf(matTaskId) !== -1;
-        if(m.type === 'vidgroup'){
-          var seriesHtml = m.series.map(function(series){
-            var links = series.options.map(function(o,oi){
-              return '<a class="mat-link mat-opt video-series-link" href="'+o.url+'" target="_blank" rel="noopener" onclick="event.stopPropagation();">'
-                +'<span class="video-series-order">'+String(oi+1).padStart(2,'0')+'</span>'
-                +'<span class="video-series-label">'+o.label+'</span>'
-                +(o.dur?'<span class="mat-dur">'+o.dur+'</span>':'')+'</a>';
-            }).join('');
-            return '<div class="video-series-card"><div class="video-series-head"><span>'+series.name+'</span><small>'+series.options.length+' 部</small></div>'
-              +(series.topics.length?'<div class="video-series-topics">'+series.topics.join(' · ')+'</div>':'')
-              +'<div class="video-series-links">'+links+'</div></div>';
-          }).join('');
-          return '<div class="ch-mat ch-mat-group'+(matDone?' done':'')+'" data-material-task="'+matTaskId+'" role="checkbox" tabindex="0" aria-checked="'+matDone+'" onclick="toggleTask(\''+matTaskId+'\', this)">'
-            +'<div class="cb"></div>'
-            +'<span class="mat-badge mb-vid">影片</span>'
-            +'<div class="mat-group-body"><div class="mat-group-title">'+m.text+'</div>'
-            +'<div class="mat-group-note">'+m.series.length+' 個系列 · 同一主題任選一套，框內依序觀看</div>'
-            +'<div class="video-series-list">'+seriesHtml+'</div></div></div>';
-        }
-        var badge = m.type==='book'?'mb-book':m.type==='vid'?'mb-vid':m.type==='ex'?'mb-ex':'mb-rec';
-        var label = m.type==='book'?'書':m.type==='vid'?'影片':m.type==='ex'?'練習':'推薦';
-        var linkText = m.url ? '<a class="mat-link" href="'+m.url+'" target="_blank" rel="noopener" onclick="event.stopPropagation();">'+m.text+'</a>' : m.text;
-        var durHtml = m.dur ? '<span class="mat-dur">'+m.dur+'</span>' : '';
-        var noteHtml = m.note ? '<span style="color:var(--mt);font-size:10px;"> — '+m.note+'</span>' : '';
-        return '<div class="ch-mat'+(matDone?' done':'')+'" data-material-task="'+matTaskId+'" role="checkbox" tabindex="0" aria-checked="'+matDone+'" onclick="toggleTask(\''+matTaskId+'\', this)">'
+        var href = m.videoId ? studyRoomUrl(s.id, idx, m.videoId) : m.url;
+        return '<div class="ch-mat ch-video'+(matDone?' done':'')+'" data-material-task="'+matTaskId+'" role="checkbox" tabindex="0" aria-checked="'+matDone+'" onclick="toggleTask(\''+matTaskId+'\', this)">'
           +'<div class="cb"></div>'
-          +'<span class="mat-badge '+badge+'">'+label+'</span>'+durHtml+'<span>'+linkText+noteHtml+'</span></div>';
+          +'<span class="video-series-order">'+String(vi+1).padStart(2,'0')+'</span>'
+          +'<a class="mat-link video-series-label" href="'+href+'" onclick="event.stopPropagation();">'+m.text+'</a>'
+          +(m.series?'<span class="ch-video-teacher">'+m.series+'</span>':'')
+          +(videoPlaylistUrl(m.videoId)?'<a class="ch-video-pl" href="'+videoPlaylistUrl(m.videoId)+'" target="_blank" rel="noopener" onclick="event.stopPropagation();" title="在原本的 YouTube 播放清單中開啟">播放清單</a>':'')
+          +(m.dur?'<span class="mat-dur">'+m.dur+'</span>':'')+'</div>';
       }).join('');
       var priKey = c.pri==='must'?'must':c.pri==='hi'?'hi':'lo';
       var priClass = priKey==='must'?'p-must':priKey==='hi'?'p-hi':'p-lo';
@@ -1957,11 +1666,11 @@ async function init(){
         +'<div class="ch-content">'
         +'<div class="ch-head" data-chtoggle role="button" tabindex="0" aria-expanded="false"><span class="expand-icon ch-chevron" aria-hidden="true"></span><div style="flex:1;"><div class="ch-title">'+c.t+'</div><div class="ch-sub">'+c.sub+'</div></div>'
         +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">'
-        +'<span class="pri '+priClass+'">'+priLabel+'</span><span class="ch-hrs">'+c.hrs+' · <b class="ch-progress-count">'+chapterDoneCount+'/'+chapterTaskIds.length+'</b></span></div></div>'
+        +'<span class="pri '+priClass+'">'+priLabel+'</span><span class="ch-hrs">'+chapterVideoHours(displayMats)+' · <b class="ch-progress-count">'+chapterDoneCount+'/'+chapterTaskIds.length+'</b></span></div></div>'
         +'<div class="ch-body"><div>'
-        +'<div class="ch-section"><div class="ch-section-lbl">核心考點</div><div class="ch-key">'+c.key+'</div>'+chapterStudyHtml(s.id,idx)+chapterLearningFlowHtml(s,c,idx,chapterDoneCount,chapterTaskIds.length)+'</div>'
+        +'<div class="ch-section"><div class="ch-section-lbl">核心考點</div><div class="ch-key">'+c.key+'</div>'+chapterStudyHtml(s.id,idx)+'</div>'
         +(c.peerNote ? '<div class="ch-section ch-peernote-section"><div class="ch-section-lbl">同儕筆記提醒</div><div class="ch-peernote">'+c.peerNote+'</div></div>' : '')
-        +'<div class="ch-section"><div class="ch-section-lbl">素材與練習</div><div class="ch-mats">'+matsHtml+'</div></div>'
+        +'<div class="ch-section"><div class="ch-section-lbl">本章影片 · 全部 '+displayMats.length+' 支，依序看完</div><div class="ch-mats">'+(matsHtml||'<div class="ch-video-empty">這章沒有指定影片</div>')+'</div></div>'
         +'</div></div>'
         +'</div></div>';
     }).join('');
@@ -1982,7 +1691,10 @@ async function init(){
       return ids.length > 0 && ids.every(function(id){ return DONE_TASK_IDS.indexOf(id) !== -1; });
     });
     var doneChapterCount = chapterDoneFlags.filter(Boolean).length;
-    var remainingHours = Math.max(0,Math.round((Number(s.hours)||0)*(1-subjPct/100)*10)/10);
+    var remainingHours = Math.round(s.chapters.reduce(function(sum,c){
+      return sum + chapterDisplayMaterials(c).filter(function(m){ return DONE_TASK_IDS.indexOf(chapterMaterialTaskId(s.id,c,m)) === -1; })
+        .reduce(function(t,m){ return t + durationToMinutes(m.dur); },0);
+    },0)/6)/10;
     var donutHtml = '<div class="sp-donut"><div class="sp-donut-svg">'+buildDonutSVG(chapterDoneFlags, s.color)+'</div>'
       +'<div class="sp-donut-label"><div class="sp-donut-pct" style="color:'+s.color+';">'+subjPct+'%</div><div class="sp-donut-sub">'+subjDone+'/'+subjTasks.length+' 項</div></div></div>';
 
@@ -1995,8 +1707,8 @@ async function init(){
     p.innerHTML = '<div class="subject-overview-card"><div class="sp-top">'
       +donutHtml
       +'<div class="smeta">'
-        +'<div class="sm"><div class="sm-n" style="color:'+s.color+';">'+(subjTasks.length-subjDone)+'</div><div class="sm-l">剩餘任務</div></div>'
-        +'<div class="sm"><div class="sm-n" style="color:'+s.color+';">~'+remainingHours+'hr</div><div class="sm-l">預估剩餘時間</div></div>'
+        +'<div class="sm"><div class="sm-n" style="color:'+s.color+';">'+(subjTasks.length-subjDone)+'</div><div class="sm-l">還沒看的影片</div></div>'
+        +'<div class="sm"><div class="sm-n" style="color:'+s.color+';">'+remainingHours+'hr</div><div class="sm-l">剩餘影片長度</div></div>'
         +'<div class="sm"><div class="sm-n" style="color:'+s.color+';">'+doneChapterCount+'/'+s.chapters.length+'</div><div class="sm-l">完成章節</div></div>'
       +'</div>'
       +'</div>'
@@ -2187,7 +1899,8 @@ async function init(){
 
   loadChatHistory();
   loadMemories();
-  loadDailyCheckin();
+  // The AI check-in banner is hidden on the simplified 日曆 page, so don't
+  // ask the server to generate it (that runs the AI CLI).
   loadRestart();
   document.body.classList.add('ui-ready');
   renderAiContextDock();
@@ -2458,9 +2171,7 @@ document.addEventListener('DOMContentLoaded', function(){
   document.addEventListener('keydown',function(e){
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openGlobalSearch();}
     if(e.key==='Escape'){
-      if(document.getElementById('diagnosticModal')?.classList.contains('open'))closeDiagnosticModal();
-      else if(document.getElementById('chapterToolModal')?.classList.contains('open'))closeChapterToolModal();
-      else if(document.getElementById('globalSearchPanel')?.classList.contains('open'))closeGlobalSearch();
+      if(document.getElementById('globalSearchPanel')?.classList.contains('open'))closeGlobalSearch();
       else closeAiContextDock();
     }
     if(e.key==='Tab'){
