@@ -345,7 +345,7 @@
   "label": "Abdul Bari：Quick Sort",
   "points": 38,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "7z3hoaide-4": {
   "label": "清大周志遠 第4B講 Computer-System Organization(續)",
@@ -403,9 +403,9 @@
  },
  "9bkvws_vqLU": {
   "label": "MIT 6.006 Rec7：Comparison/Counting/Radix Sort",
-  "points": 86,
+  "points": 87,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "9iE9Mj4m8jk": {
   "label": "Abdul Bari：4.1 MultiStage Graph",
@@ -939,7 +939,7 @@
   "label": "Abdul Bari：Merge Sort",
   "points": 45,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "MfhjkfocRR0": {
   "label": "What is a HashTable Data Structure",
@@ -1017,7 +1017,7 @@
   "label": "MIT 6.006 L7：Counting Sort, Radix Sort",
   "points": 93,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "oNI0rf2P9gE": {
   "label": "Abdul Bari：4.2 All Pairs Shortest Path (Floyd-Warshall)",
