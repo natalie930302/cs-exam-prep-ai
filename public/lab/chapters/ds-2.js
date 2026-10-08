@@ -11115,9 +11115,9 @@ function vbox(name, v, x, z, color, addr) {
 // three memory sections side by side
 function memory(withCode = true) {
   const out = {};
-  if (withCode) out.code = zone('code', -4.2, 0, 0, 3.4, 4.2, C_CODE);
-  out.stack = zone('stack', withCode ? -0.4 : -2.2, 0, 0, 3.4, 4.2, C_STACK);
-  out.heap = zone('heap', withCode ? 3.8 : 2.6, 0, 0, 4.2, 4.2, C_HEAP);
+  if (withCode) out.code = zone('code 區・放程式指令', -4.2, 0, 0, 3.4, 4.2, C_CODE);
+  out.stack = zone('stack 區・放函式的變數', withCode ? -0.4 : -2.2, 0, 0, 3.4, 4.2, C_STACK);
+  out.heap = zone('heap 區・要用才去借', withCode ? 3.8 : 2.6, 0, 0, 4.2, 4.2, C_HEAP);
   return out;
 }
 
@@ -11125,12 +11125,12 @@ function memory(withCode = true) {
 FRAG.push(['ptrwhy-intro', '指標：存「位址」的變數', async (tok) => {
   P.fresh([0, 6, 11], [0, 0.8, 0]);
   await step(tok);                                   // 0:05 uses of pointers
-  const shelf = zone('記憶體某處', 3, 0, 0, 3.2, 2.6, C_HEAP);
-  const box = icon('📦', '資料', 3, 1.1, 0, 'lg');
+  const shelf = zone('記憶體 1000 號', 3, 0, 0, 3.2, 2.6, C_HEAP);
+  const box = icon('📦', '資料本身', 3, 1.1, 0, 'lg');
   const addr = tag('位址 1000', 'idx', 3, 0.05, 1.0);
   say('指標有什麼用？');
   await step(tok);                                   // 0:08 pointers are called address variables
-  const p = vbox('p', '', -3, 0, '#c9b48e');
+  const p = vbox('p（指標）', '', -3, 0, '#c9b48e');
   const n = note('1000', -3, 2.2, 0);
   await travel(tok, n, V3(-3, 2.2, 0), V3(-3, 0.55, 0), 700);
   say('指標 = 位址變數', 'p 裡面存的不是資料，是「地址」');
@@ -11149,7 +11149,7 @@ FRAG.push(['ptrwhy-intro', '指標：存「位址」的變數', async (tok) => {
 FRAG.push(['ptrwhy-memory', '程式在記憶體裡：code、stack、heap', async (tok) => {
   P.fresh([0, 8, 12.5], [0, 0.5, 0.5]);
   await step(tok);                                   // 0:27 how our program works
-  const prog = icon('📄', '程式', -7.2, 1, 0, 'lg');
+  const prog = icon('📄', '你寫的程式', -7.2, 1, 0, 'lg');
   say('先看：程式是怎麼跑起來的');
   await step(tok);                                   // 0:40 loaded in the main memory
   const ram = tag('🧠 主記憶體 RAM', 'say', -0.2, 3.0, -2.4);
@@ -11199,7 +11199,7 @@ FRAG.push(['ptrwhy-heap', '用途一：透過指標存取 heap', async (tok) => 
   P.fresh([0, 7.5, 12], [0.2, 0.5, 0.5]);
   const m = memory();
   const cd = code(['int *p;', 'p = malloc(10);'], -4.2, 1.1, 0.55, 1.0);
-  const cpu = icon('⚙️', '程式', -7.4, 0.8, 1.4);
+  const cpu = icon('⚙️', 'CPU（執行程式）', -7.4, 0.8, 1.4);
   say('用途一：存取 heap');
   await step(tok);                                   // 2:31 first usage of pointer is accessing heap
   icon('1️⃣', '', -6.8, 2.4, -1.2, 'sm');
@@ -11207,13 +11207,13 @@ FRAG.push(['ptrwhy-heap', '用途一：透過指標存取 heap', async (tok) => 
   cd.hl(1);
   say('malloc：向 heap 要 10 bytes', '');
   await step(tok);                                   // 2:54 activation record is created
-  const p = vbox('p', '', -0.4, 0.4, '#c9b48e');
+  const p = vbox('p（指標）', '', -0.4, 0.4, '#c9b48e');
   const fr = P.ghostBox(C_MAIN, 2.0, 1.5, 2.0); fr.position.set(-0.4, 0.75, 0.4);
   say('activation record 只有一個變數：p');
   await step(tok);                                   // 3:02 executes malloc → heap block
   const cells = [];
   for (let i = 0; i < 10; i++) cells.push(cube('', C_SWAP, [0.36, 0.36, 0.6], 2.2 + i * 0.38, 0.18, 0.2, 2 + i * 0.15));
-  const hb = tag('10 bytes', 'idx', 3.9, -0.05, 1.0);
+  const hb = tag('向 heap 借來的 10 bytes', 'idx', 3.9, -0.05, 1.0);
   say('heap 裡配出一塊 10 bytes');
   await step(tok);                                   // 3:10 address of very first byte 1000
   const n = note('1000', 2.2, 1.0, 0.2);
@@ -11245,7 +11245,7 @@ FRAG.push(['ptrwhy-swapval', '用途二（上）：call by value 換不了', asy
   icon('2️⃣', '', -6.8, 2.4, -1.2, 'sm');
   const cd = code(['void swap(int x, int y) {', '  int t = x; x = y; y = t;', '}', 'swap(a, b);'], -5.2, 3.6, 0.5, -1.5);
   await step(tok);                                   // 3:57 main is having two variables
-  const st = zone('stack', 1.6, 0, 0.6, 6.4, 4.4, C_STACK);
+  const st = zone('stack 區・每個函式一塊', 1.6, 0, 0.6, 6.4, 4.4, C_STACK);
   const mainN = tag('main', 'say', -2.9, 0.5, 2.0);
   const a = vbox('a', 10, -1.2, 2.0, C_MAIN), b = vbox('b', 20, 0.0, 2.0, C_MAIN);
   say('main 有 a、b，想交換它們');
@@ -11288,7 +11288,7 @@ FRAG.push(['ptrwhy-swapval', '用途二（上）：call by value 換不了', asy
 // 5:35 用途二：傳位址
 FRAG.push(['ptrwhy-swapref', '用途二（下）：傳位址，間接交換', async (tok) => {
   P.fresh([0, 7.5, 12], [0, 0.6, 0]);
-  const st = zone('stack', 1.6, 0, 0.6, 6.4, 4.4, C_STACK);
+  const st = zone('stack 區・每個函式一塊', 1.6, 0, 0.6, 6.4, 4.4, C_STACK);
   await step(tok);                                   // 5:35 modify our swap
   const cd = code(['void swap(int *x, int *y) {', '  int t = *x; *x = *y; *y = t;', '}', 'swap(&a, &b);'], -5.4, 3.6, 0.5, -1.5);
   say('改寫 swap');
@@ -11300,7 +11300,7 @@ FRAG.push(['ptrwhy-swapref', '用途二（下）：傳位址，間接交換', as
   const a = vbox('a', 10, -1.2, 2.0, C_MAIN, '500'), b = vbox('b', 20, 0.0, 2.0, C_MAIN, '502');
   await step(tok);                                   // 5:56 memory for x y t
   tag('swap', 'say', 6.3, 0.5, -0.8);
-  const x = vbox('x', '', 2.4, -0.8, C_SWAP), y = vbox('y', '', 3.6, -0.8, C_SWAP), t = vbox('t', '', 4.8, -0.8, C_SWAP);
+  const x = vbox('x 指標', '', 2.4, -0.8, C_SWAP), y = vbox('y 指標', '', 3.6, -0.8, C_SWAP), t = vbox('t', '', 4.8, -0.8, C_SWAP);
   await step(tok);                                   // 6:02 passing the addresses
   cd.hl(3);
   const na = note('500', -1.2, 1.0, 2.8), nb = note('502', 0.0, 1.0, 2.8);

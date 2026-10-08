@@ -351,12 +351,55 @@
       : '<span class="st-sub-zh">' + esc(subs[k][2]) + '</span>';
   }
 
+  // ── 講解: the animation step being shown, explained from the basics ──
+  // section.explain[k] belongs to step k (the k-th cue); [[term]] marks a
+  // word that gets a card from glossary.json (what it is + an everyday picture).
+  let glossary = {}, lastTeach = null;
+  fetch('/glossary.json').then(function(r){ return r.ok ? r.json() : {}; }).then(function(g){ glossary = g || {}; lastTeach = null; }).catch(function(){});
+  function setTeach(on){
+    $('teach').hidden = !on;
+    document.querySelector('.st-main').classList.toggle('has-teach', !!on);
+  }
+  function showTeach(sec, t){
+    if ($('teach').hidden) return;
+    let k = -1, text, total = sec.cues ? sec.cues.length : 0;
+    if (sec.explain && sec.cues) {
+      sec.cues.forEach(function(c, i){ if (c <= t + 0.15) k = i; });
+      text = sec.explain[Math.max(0, k)];
+    } else {
+      text = sec.explain_idle || (sec.points[0] && sec.points[0].text) || '';
+    }
+    const key = sec.title + '|' + k + '|' + Object.keys(glossary).length;
+    if (key === lastTeach) return;
+    lastTeach = key;
+    $('teachStep').textContent = total ? sec.title + '・第 ' + (Math.max(0, k) + 1) + ' / ' + total + ' 步' : sec.title;
+    // every glossary word in the step is marked and gets a card (longest
+    // first, so 主記憶體 wins over 記憶體); [[ ]] marks are just removed
+    const seen = [];
+    const keys = Object.keys(glossary).sort(function(x, y){ return y.length - x.length; });
+    const re = keys.length ? new RegExp(keys.map(function(k){
+      const q = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return /^[\w ]+$/.test(k) ? '\\b' + q + '\\b' : q;
+    }).join('|'), 'g') : null;
+    let html = esc(String(text).replace(/\[\[(.+?)\]\]/g, '$1'));
+    if (re) html = html.replace(re, function(w){ if (seen.indexOf(w) < 0) seen.push(w); return '<span class="st-term-w">' + w + '</span>'; });
+    const body = $('teachBody');
+    body.innerHTML = html;
+    body.classList.remove('swap'); void body.offsetWidth; body.classList.add('swap');
+    $('teachTerms').innerHTML = seen.filter(function(w){ return glossary[w]; }).map(function(w){
+      const g = glossary[w];
+      return '<div class="st-tcard"><h4>' + esc(w) + (g.en && g.en !== w ? '<small>' + esc(g.en) + '</small>' : '') + '</h4><p>' + esc(g.what) + '</p>'
+        + (g.like ? '<p class="like">' + esc(g.like) + '</p>' : '') + '</div>';
+    }).join('');
+  }
+
   // ── Notes, timeline, and the "now" line ──
   async function renderNotes(){
     const el = notesEl();
     curNotes = current ? await loadNotes(current.id) : null;
     const n = curNotes;
-    lastSec = -1; lastPt = null;
+    lastSec = -1; lastPt = null; lastTeach = null;
+    setTeach(n && n.sections.some(function(x){ return x.explain; }));
     updateCounts();
     if (!n) {
       const others = [];
@@ -367,7 +410,7 @@
       el.querySelectorAll('a[data-si]').forEach(function(a){ a.onclick = function(){ playVideo(Number(a.dataset.si), Number(a.dataset.i), true); }; });
       $('timeline').innerHTML = '';
       $('nowSec').textContent = current ? current.opt.label : '';
-      $('nowPoint').textContent = hasStage ? '這支影片還沒整理重點，右邊先輪流介紹這章的概念（跟影片進度無關）' : '這支影片的重點整理中';
+      $('nowPoint').textContent = hasStage ? '這支影片的重點和動畫還在製作中' : '這支影片的重點整理中';
       showIdle(IDLE_NONE);
       return;
     }
@@ -397,6 +440,7 @@
     $('nowSec').textContent = sec.title;
     $('nowPoint').textContent = pt ? pt.text : sec.points[0].text;
     showScene(sec);
+    showTeach(sec, t);
     $('timeline').querySelectorAll('.st-seg').forEach(function(b){
       const i = Number(b.dataset.sec);
       b.classList.toggle('active', i === secIdx);
