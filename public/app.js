@@ -955,7 +955,7 @@ const SUBJ_COLOR_VAR = {
 
 // ── Calendar: 週曆 (time-blocked week agenda) + 月曆 (simple subject/phase
 // grid), toggle between the two — no other view. ──────────────────────
-let calViewMode = 'week';
+let calViewMode = 'month';
 let calWeekStart = null; // Date, Sunday of the currently-shown week
 let calMonthCursor = null; // Date, first-of-month currently shown
 let pendingCalMotion = 'fade';
@@ -984,10 +984,90 @@ function renderCalContainer(){
 // Clicking a day (from month view) jumps straight to that day's week in
 // week view — there's no separate day-detail page anymore.
 function goCalDay(iso){
+  noteUiAction();
+  calSelectedIso = iso;
+  pendingCalMotion = 'none';
+  renderCalContainer();
+}
+
+// ── Day-by-day video plan: starting today, the unwatched videos are laid
+// out in queue order (week, subject, chapter, playlist order) and each study
+// day takes as many minutes as DAILY_CAPACITY_HOURS allows; a video longer
+// than what is left of a day continues on the next study day. So every
+// calendar day can say exactly which videos it is for. ──
+let calSelectedIso = null;
+let dayPlanCache = null;
+function foundationVideoQueue(){
+  const done = new Set(DONE_TASK_IDS), out = [];
+  for(let wk=1; wk<=FOUNDATION_WEEKS; wk++){
+    SUBJECTS.forEach(function(sub){
+      sub.chapters.forEach(function(c, ci){
+        if(c.wk !== wk) return;
+        chapterDisplayMaterials(c).forEach(function(m, vi, all){
+          if(done.has(chapterMaterialTaskId(sub.id, c, m))) return;
+          out.push({subj:sub.name, subjId:sub.id, ci:ci, ch:c.t, vi:vi, vn:all.length, title:m.text,
+            series:m.series || '', dur:m.dur, min:Math.max(1, durationToMinutes(m.dur)), href:studyRoomUrl(sub.id, ci, m.videoId), wk:wk});
+        });
+      });
+    });
+  }
+  return out;
+}
+function dayPlan(){
+  const key = DONE_TASK_IDS.length + '|' + isoDate(new Date());
+  if(dayPlanCache && dayPlanCache.key === key) return dayPlanCache.map;
+  const map = new Map(), q = foundationVideoQueue();
+  const cur = new Date(); cur.setHours(12,0,0,0);
+  let i = 0, usedOfVideo = 0, guard = 0;
+  while(i < q.length && guard++ < 800){
+    let cap = (DAILY_CAPACITY_HOURS[cur.getDay()] || 0) * 60;
+    const items = [];
+    while(cap > 0 && i < q.length){
+      const v = q[i], left = v.min - usedOfVideo;
+      const take = Math.min(left, cap);
+      items.push(Object.assign({}, v, {take:take, from:usedOfVideo, cont:usedOfVideo > 0, more:take < left}));
+      cap -= take; usedOfVideo += take;
+      if(usedOfVideo >= v.min){ i++; usedOfVideo = 0; }
+    }
+    if(items.length) map.set(isoDate(cur), items);
+    cur.setDate(cur.getDate() + 1);
+  }
+  dayPlanCache = {key:key, map:map};
+  return map;
+}
+// "資料結構 第1章 複雜度分析" for the first chapter a day's videos belong to
+function dayPlanHeadline(items){
+  const a = items[0];
+  const chs = [];
+  items.forEach(function(x){ const k = x.subj+'|'+x.ci; if(chs.indexOf(k) < 0) chs.push(k); });
+  return {subj:a.subj, ch:'第'+(a.ci+1)+'章 '+a.ch, more:chs.length - 1};
+}
+function fmtMin(m){ const h = Math.floor(m/60), r = Math.round(m%60); return h ? h+' 小時'+(r ? ' '+r+' 分' : '') : r+' 分'; }
+function renderCalDayDetail(iso){
   const p = iso.split('-');
   const d = new Date(Number(p[0]), Number(p[1])-1, Number(p[2]));
-  calWeekStart = new Date(d); calWeekStart.setDate(d.getDate() - d.getDay());
-  setCalView('week');
+  const info = dayInfo(d);
+  const dow7 = ['日','一','二','三','四','五','六'];
+  const head = '<div class="calday-hd"><b>'+(d.getMonth()+1)+'/'+d.getDate()+'（'+dow7[d.getDay()]+'）</b>';
+  const today0 = new Date(); today0.setHours(0,0,0,0);
+  if(d < today0) return head+'<span>已經過去了</span></div>';
+  if(info.isRest) return head+'<span>休息日：不排讀書</span></div>';
+  if(info.isDayOff) return head+'<span>打工日：不排讀書</span></div>';
+  const items = dayPlan().get(iso);
+  if(!items){
+    if(d > EXAM_DATE) return head+'<span>複試準備</span></div>';
+    return head+'<span>'+(info.phase === 'converge' ? '收斂複習：速記清單、模擬考、錯題本' : '影片都看完了：這天做歷屆試題'+(info.drillSubj ? '（'+escapeHtml(info.drillSubj)+'）' : '')+'、對答案、整理錯題')+'</span></div>';
+  }
+  const total = items.reduce(function(a, x){ return a + x.take; }, 0);
+  const h = dayPlanHeadline(items);
+  return head+'<span>'+escapeHtml(h.subj)+'・'+escapeHtml(h.ch)+(h.more ? ' 等' : '')+'・共 '+items.length+' 支・約 '+fmtMin(total)+'</span></div>'
+    +'<ol class="calday-list">'+items.map(function(x){
+      const part = x.cont || x.more
+        ? '<span class="calday-part">'+(x.cont ? '從 '+fmtMin(x.from)+' 處接著看' : '從頭看')+(x.more ? '到 '+fmtMin(x.from + x.take)+' 處，剩下的下一個讀書日接著看' : '到結束')+'</span>' : '';
+      return '<li><a href="'+x.href+'"><span class="calday-ch" style="color:var('+(SUBJ_COLOR_VAR[x.subj] || '--ac2')+')">'+escapeHtml(x.subj)+' 第'+(x.ci+1)+'章・第 '+(x.vi+1)+'/'+x.vn+' 支</span>'
+        +'<span class="calday-title">'+escapeHtml(x.title)+'</span>'
+        +'<span class="calday-meta">'+(x.series ? escapeHtml(x.series)+'・' : '')+escapeHtml(x.dur || '')+'</span>'+part+'</a></li>';
+    }).join('')+'</ol>';
 }
 
 // ── Month view: just subject/phase per day, nothing else — the detailed
@@ -1017,18 +1097,22 @@ function buildCalMonthCells(y, m, ctx){
         if(info.isRest) label = '休息';
         else if(info.isDayOff) label = '打工';
         else if(info.dow === 6 && info.phase !== 'foundation'){ label = '模考'; colorVar = '--red'; }
-        else if(info.phase === 'foundation'){
-          const projWk = d > today0 ? projectedWeekForDate(d) : info.wk;
-          const c = FOUNDATION_CONTENT[Math.min(projWk, FOUNDATION_WEEKS)];
-          label = c ? c.subj : null;
-          colorVar = (label && SUBJ_COLOR_VAR[label]) ? SUBJ_COLOR_VAR[label] : '--ac2';
-        } else if(info.phase === 'drilling'){
+        else if(dayPlan().has(iso)){
+          const items = dayPlan().get(iso), h = dayPlanHeadline(items);
+          const mins = items.reduce(function(a, x){ return a + x.take; }, 0);
+          colorVar = SUBJ_COLOR_VAR[h.subj] || '--ac2';
+          tagHtml = '<div class="cal-tag" style="background:var('+colorVar+');color:#fff;">'+escapeHtml(h.subj)+'</div>'
+            +'<div class="cal-what">'+escapeHtml(h.ch)+(h.more ? ' 等' : '')+'</div>'
+            +'<div class="cal-howmuch">'+items.length+' 支・'+fmtMin(mins)+'</div>';
+        }
+        else if(info.phase === 'foundation' && d < today0){ label = null; }
+        else if(info.phase === 'foundation'){ label = '歷屆試題'; colorVar = '--ac2'; } else if(info.phase === 'drilling'){
           label = info.drillSubj;
           colorVar = (label && SUBJ_COLOR_VAR[label]) ? SUBJ_COLOR_VAR[label] : '--ac2';
         } else {
           label = '收斂複習'; colorVar = '--ac2';
         }
-        if(label){
+        if(label && !tagHtml){
           const style = colorVar
             ? 'background:var('+colorVar+');color:#fff;'
             : 'background:var(--mt);color:#fff;';
@@ -1041,6 +1125,7 @@ function buildCalMonthCells(y, m, ctx){
     if(!inMonth) classes.push('out');
     if(beforeStart) classes.push('disabled');
     if(iso === todayIso) classes.push('today');
+    if(iso === (calSelectedIso || todayIso)) classes.push('selected');
     const onclick = beforeStart ? '' : ' onclick="goCalDay(\''+iso+'\')"';
     cellsHtml += '<div class="'+classes.join(' ')+'"'+onclick+'>'
       +'<div class="cal-daynum">'+d.getDate()+'</div>'+tagHtml+'</div>';
@@ -1071,6 +1156,7 @@ function renderCalMonthView(container){
       +'</div>'
     +'</div>'
     +'<div class="cal-grid">'+dowRowHtml+cellsHtml+'</div>'
+    +'<div class="calday" id="calDay">'+renderCalDayDetail(calSelectedIso || todayIso)+'</div>'
     +'</div>';
 }
 function shiftCalMonth(delta){

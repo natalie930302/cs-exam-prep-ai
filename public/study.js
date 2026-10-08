@@ -156,14 +156,34 @@
     if (value) done.add(id); else done.delete(id);
   }
 
-  // ── Goals & tasks ──
+  // ── Goals & tasks: concrete, countable, with what is left ──
+  function secsLeft(list){ return list.reduce(function(a, m){ return a + durToSec(m.dur); }, 0); }
+  function hm(sec){ const h = Math.floor(sec / 3600), m = Math.round(sec % 3600 / 60); return (h ? h + ' 小時 ' : '') + m + ' 分'; }
   function renderGoals(){
+    const vids = chapterDisplayMaterials(chapter);
+    const left = vids.filter(function(m){ return !done.has(chapterMaterialTaskId(subject.id, chapter, m)); });
+    let sTotal = 0, sLeftN = 0, sLeftSec = 0;
+    subject.chapters.forEach(function(c){
+      chapterDisplayMaterials(c).forEach(function(m){
+        sTotal++;
+        if (!done.has(chapterMaterialTaskId(subject.id, c, m))) { sLeftN++; sLeftSec += durToSec(m.dur); }
+      });
+    });
     const items = String(chapter.key || '').split(/[、；;]/).map(function(x){ return x.trim(); }).filter(Boolean);
-    $('goals').innerHTML = items.map(function(t){
-      const id = 'kp-' + chKey + '-' + stableTaskKey(t);
+    const check = function(id, text){
       const d = done.has(id);
-      return '<li><button class="st-check' + (d ? ' done' : '') + '" data-task="' + id + '"><span class="st-box">' + (d ? '✓' : '') + '</span><span class="st-check-text">' + esc(t) + '</span></button></li>';
-    }).join('') + '<li class="st-src">看完、做完實驗後，自己覺得「會了」再打勾。</li>';
+      return '<li><button class="st-check' + (d ? ' done' : '') + '" data-task="' + id + '"><span class="st-box">' + (d ? '✓' : '') + '</span><span class="st-check-text">' + text + '</span></button></li>';
+    };
+    $('goals').innerHTML =
+      '<li class="st-goal-left"><b>還剩多少</b>這章還有 <b>' + left.length + '</b> / ' + vids.length + ' 支影片，約 <b>' + hm(secsLeft(left)) + '</b>。'
+      + esc(subject.name) + '整科還有 ' + sLeftN + ' / ' + sTotal + ' 支，約 ' + hm(sLeftSec) + '。</li>'
+      + '<li class="st-goal-h">任務</li>'
+      + '<li class="st-goal-auto' + (left.length ? '' : ' done') + '"><span class="st-box">' + (left.length ? '' : '✓') + '</span>① 照順序看完這章的影片（看完一支按「標記看完」）</li>'
+      + check('kq-' + chKey, '② 做「小測驗」，答對 8 成以上')
+      + check('kt-' + chKey, '③ 不看畫面，能用自己的話說出這章每張名詞小卡在講什麼')
+      + '<li class="st-goal-h">看完要會</li>'
+      + items.map(function(t){ return check('kp-' + chKey + '-' + stableTaskKey(t), esc(t)); }).join('')
+      + '<li class="st-src">任務 ② ③ 和「看完要會」：自己覺得做到了再打勾。</li>';
     $('goals').querySelectorAll('.st-check').forEach(function(b){
       b.onclick = async function(){ await setTask(b.dataset.task, !done.has(b.dataset.task)); renderGoals(); };
     });
@@ -176,7 +196,8 @@
     const s = series[0];
     if (!s) { $('chProg').innerHTML = ''; return; }
     const w = s.options.filter(function(o){ return done.has(vidTask(youtubeId(o.url))); }).length;
-    $('chProg').innerHTML = '<span class="st-pill' + (w === s.options.length ? ' ok' : '') + '">影片 ' + w + '/' + s.options.length + '</span>';
+    const leftSec = s.options.filter(function(o){ return !done.has(vidTask(youtubeId(o.url))); }).reduce(function(a, o){ return a + durToSec(o.dur); }, 0);
+    $('chProg').innerHTML = '<span class="st-pill' + (w === s.options.length ? ' ok' : '') + '">影片 ' + w + '/' + s.options.length + (leftSec ? '・還剩 ' + hm(leftSec) : '') + '</span>';
   }
 
   // ── Video list ──
@@ -264,7 +285,7 @@
     }
     // The week's queue task follows the per-video marks (all videos = done).
     if (chapter.wk) await syncFoundationWeekTasks(chapter.wk, Array.from(done));
-    renderWatchBtn(); renderVideoList();
+    renderWatchBtn(); renderVideoList(); renderGoals();
   }
 
   window.onYouTubeIframeAPIReady = function(){
@@ -410,7 +431,6 @@
       el.querySelectorAll('a[data-si]').forEach(function(a){ a.onclick = function(){ playVideo(Number(a.dataset.si), Number(a.dataset.i), true); }; });
       $('timeline').innerHTML = '';
       $('nowSec').textContent = current ? current.opt.label : '';
-      $('nowPoint').textContent = hasStage ? '這支影片的重點和動畫還在製作中' : '這支影片的重點整理中';
       showIdle(IDLE_NONE);
       return;
     }
@@ -438,7 +458,6 @@
     });
     const sec = curNotes.sections[secIdx];
     $('nowSec').textContent = sec.title;
-    $('nowPoint').textContent = pt ? pt.text : sec.points[0].text;
     showScene(sec);
     showTeach(sec, t);
     $('timeline').querySelectorAll('.st-seg').forEach(function(b){
@@ -599,13 +618,12 @@
   window.__studyCheck = {sectionChallenge: sectionChallenge, endCard: endCard, plan: function(){ return curNotes && quizPlan(curNotes); }, seek: function(t){ if (playerReady) player.seekTo(t, true); }};
 
   // ── Tabs ──
-  const TABS = ['videos', 'full', 'lab', 'res', 'quiz', 'mine', 'goals'];
+  const TABS = ['videos', 'full', 'lab', 'quiz', 'goals'];
   function setTab(tab){
     document.querySelectorAll('.st-tabs button').forEach(function(b){ b.setAttribute('aria-selected', String(b.dataset.tab === tab)); });
     TABS.forEach(function(t){ $('panel-' + t).hidden = t !== tab; });
     if (tab === 'lab') renderLab();
     if (tab === 'quiz') renderQuiz();
-    if (tab === 'res') renderResources();
     store.set('study-tab', tab);
   }
   document.querySelectorAll('.st-tabs button').forEach(function(b){ b.onclick = function(){ setTab(b.dataset.tab); }; });
@@ -629,34 +647,6 @@
     el.dataset.loaded = '1';
     el.innerHTML = '<iframe class="st-lab-frame" src="' + labUrl + '&embed=1" title="互動實驗室" loading="lazy"></iframe>'
       + '<a class="st-lab-open" href="' + labUrl + '" target="_blank" rel="noopener">在新分頁全螢幕開啟實驗室 ↗</a>';
-  }
-
-  // ── Extra resources (public/resources.json): visual tools first ──
-  let resources = null;
-  async function loadResources(){
-    try { const r = await fetch('/resources.json'); resources = await r.json(); } catch (e) { resources = null; }
-    const n = resources ? ((resources.chapters[subject.id] || {})[chIndex] || []).length : 0;
-    $('resTab').innerHTML = '延伸資源' + (n ? '<span class="count">' + n + '</span>' : '');
-  }
-  const KIND = {visual: '動手看', read: '讀', course: '課程', practice: '練習'};
-  function resCard(r){
-    return '<a class="st-res st-res-' + esc(r.kind) + '" href="' + esc(r.url) + '" target="_blank" rel="noopener">'
-      + '<span class="st-res-kind">' + (KIND[r.kind] || r.kind) + (r.lang ? '・' + esc(r.lang) : '') + '</span>'
-      + '<span class="st-res-name">' + esc(r.name) + ' ↗</span>'
-      + (r.note ? '<span class="st-res-note">' + esc(r.note) + '</span>' : '') + '</a>';
-  }
-  function renderResources(){
-    const el = $('panel-res');
-    if (!resources) { el.innerHTML = '<div class="st-nonotes">延伸資源整理中。</div>'; return; }
-    const list = (resources.chapters[subject.id] || {})[chIndex] || [];
-    const visual = list.filter(function(r){ return r.kind === 'visual'; });
-    const rest = list.filter(function(r){ return r.kind !== 'visual'; });
-    const subj = resources.subjects[subject.id] || [];
-    el.innerHTML = (visual.length ? '<h3 class="st-res-h">動手看：這章的視覺化工具</h3><div class="st-res-grid st-res-grid-big">' + visual.map(resCard).join('') + '</div>' : '')
-      + (rest.length ? '<h3 class="st-res-h">閱讀與練習</h3><div class="st-res-grid">' + rest.map(resCard).join('') + '</div>' : '')
-      + (subj.length ? '<h3 class="st-res-h">' + esc(subject.name) + '：其他完整課程</h3><div class="st-res-grid">' + subj.map(resCard).join('') + '</div>' : '')
-      + (!list.length && !subj.length ? '<div class="st-nonotes">這章還沒有延伸資源。</div>' : '')
-      + '<p class="st-src">所有連結都實際開過確認；外部網站會在新分頁開啟。</p>';
   }
 
   // ── Quiz ──
@@ -692,46 +682,7 @@
     });
   }
 
-  // ── My notes ──
-  let saveTimer = null;
-  async function loadMine(){
-    try { const r = await fetch('/api/chapter-notes/' + encodeURIComponent(chKey)); const j = await r.json(); $('mineText').value = j.content || ''; renderStamps(); } catch (e) {}
-  }
-  $('mineText').addEventListener('input', function(){
-    $('mineStatus').textContent = '編輯中…';
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(saveMine, 800);
-    renderStamps();
-  });
-  async function saveMine(){
-    try {
-      await fetch('/api/chapter-notes/' + encodeURIComponent(chKey), {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({content: $('mineText').value})});
-      $('mineStatus').textContent = '已儲存';
-    } catch (e) { $('mineStatus').textContent = '儲存失敗，稍後會再試'; }
-  }
-  $('stampBtn').onclick = function(){
-    if (!current) return;
-    const t = playerReady ? player.getCurrentTime() : 0;
-    const stamp = '▶ ' + fmt(t) + '〔' + current.id + '〕 ';
-    const ta = $('mineText');
-    const pos = ta.selectionStart || ta.value.length;
-    const before = ta.value.slice(0, pos);
-    ta.value = before + (before && !before.endsWith('\n') ? '\n' : '') + stamp + ta.value.slice(pos);
-    ta.focus();
-    ta.dispatchEvent(new Event('input'));
-  };
-  function renderStamps(){
-    const re = /▶ ([\d:]+)〔([\w-]{11})〕/g; const out = []; let m;
-    while ((m = re.exec($('mineText').value))) out.push({t: m[1], id: m[2]});
-    $('stamps').innerHTML = out.map(function(x){ return '<button data-id="' + x.id + '" data-t="' + x.t + '">▶ ' + x.t + '</button>'; }).join('');
-    $('stamps').querySelectorAll('button').forEach(function(b){
-      b.onclick = function(){
-        const sec = b.dataset.t.split(':').map(Number).reduce(function(a, x){ return a * 60 + x; }, 0);
-        if (current && current.id === b.dataset.id) { seek(sec); return; }
-        series.forEach(function(s, si){ s.options.forEach(function(o, i){ if (youtubeId(o.url) === b.dataset.id) playVideo(si, i, true, sec); }); });
-      };
-    });
-  }
+
 
   // ── Start ──
   (async function(){
@@ -755,8 +706,6 @@
     renderTasks();
     if (start) playVideo(start[0], start[1], false);
     else { $('player').outerHTML = '<div class="st-empty-player">這章沒有指定影片。</div>'; renderSeriesChips(); renderVideoList(); }
-    loadMine();
-    loadResources();
     $('followChk').onchange = function(e){ follow = e.target.checked; };
     const tab = store.get('study-tab');
     const usable = tab && $('panel-' + tab) && !((tab === 'lab' || tab === 'full') && !hasStage);

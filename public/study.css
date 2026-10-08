@@ -338,3 +338,9 @@ a { color: inherit; }
   .st-teach-body { font-size: 16px; }
 }
 @media (prefers-reduced-motion: reduce) { .st-teach-body.swap { animation: none; } }
+.st-goal-left { background: color-mix(in srgb, var(--subj) 9%, var(--surf)); border-radius: var(--r-sm); padding: 10px 12px; font-size: 14px; line-height: 1.7; margin-bottom: 6px; }
+.st-goal-left > b:first-child { display: block; font-size: 12px; color: color-mix(in srgb, var(--subj) 72%, var(--tx)); letter-spacing: .04em; }
+.st-goal-h { font-size: 12px; font-weight: 800; color: var(--mt2); margin: 10px 2px 2px; letter-spacing: .04em; }
+.st-goal-auto { display: flex; align-items: center; gap: 10px; padding: 7px 8px; font-size: 14px; }
+.st-goal-auto.done { color: var(--mt); }
+.st-goal-auto.done .st-box { background: var(--grn); border-color: var(--grn); color: #fff; }

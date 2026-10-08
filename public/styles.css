@@ -7261,3 +7261,24 @@ body#appRoot :is(.sh, .ss) { text-shadow: none !important; }
 #appRoot .ps-bar { flex: 1; height: 6px; border-radius: 99px; background: color-mix(in srgb, var(--tx) 12%, transparent); overflow: hidden; }
 #appRoot .ps-bar span { display: block; height: 100%; border-radius: 99px; transition: width .6s cubic-bezier(.2,.8,.2,1); }
 @media (max-width: 520px) { #appRoot .ps-subjs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* 月曆：每天直接寫要學什麼（科目、章、幾支影片、多久）；點一天看清單 */
+.cal-what { margin-top: 4px; font-size: 11.5px; font-weight: 700; line-height: 1.35; color: var(--tx);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.cal-howmuch { margin-top: 2px; font-size: 10.5px; color: var(--mt); font-variant-numeric: tabular-nums; }
+.cal-cell.selected { outline: 2px solid var(--ac); outline-offset: -2px; }
+.calday { margin-top: 14px; padding: 14px 16px; border-radius: var(--r); background: var(--glass-bg); border: 1px solid var(--glass-bd); }
+.calday-hd { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; font-size: 14px; color: var(--mt2); }
+.calday-hd b { font-size: 16px; color: var(--tx); }
+.calday-list { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; counter-reset: cd; }
+.calday-list li a { display: grid; gap: 1px; padding: 9px 12px 9px 40px; position: relative; border-radius: var(--r-sm); background: var(--surf); border: 1px solid var(--bd); text-decoration: none; color: var(--tx); }
+.calday-list li a:hover { border-color: var(--ac); }
+.calday-list li a::before { counter-increment: cd; content: counter(cd); position: absolute; left: 12px; top: 10px; width: 20px; height: 20px; border-radius: 50%; background: var(--surf2); font-size: 11px; font-weight: 800; display: grid; place-items: center; color: var(--mt2); }
+.calday-ch { font-size: 11.5px; font-weight: 800; }
+.calday-title { font-size: 14px; font-weight: 700; line-height: 1.45; }
+.calday-meta { font-size: 12px; color: var(--mt); }
+.calday-part { font-size: 12px; color: var(--amb, #a8730f); font-weight: 700; }
+@media (max-width: 640px) {
+  .cal-what { font-size: 10px; -webkit-line-clamp: 3; }
+  .cal-howmuch { font-size: 9.5px; }
+}

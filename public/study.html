@@ -48,7 +48,6 @@
   <section class="st-now">
     <div class="st-now-concept">
       <div class="st-now-sec" id="nowSec"></div>
-      <div class="st-now-point" id="nowPoint"></div>
     </div>
     <div class="st-now-actions">
       <label class="st-follow"><input type="checkbox" id="followChk" checked> 跟著影片</label>
@@ -67,9 +66,7 @@
       <button role="tab" data-tab="videos" aria-selected="true">本章影片</button>
       <button role="tab" data-tab="full" id="fullTab" hidden>重點全文</button>
       <button role="tab" data-tab="lab" id="labTab" hidden>實驗室（自己操作）</button>
-      <button role="tab" data-tab="res" id="resTab">延伸資源</button>
       <button role="tab" data-tab="quiz">小測驗</button>
-      <button role="tab" data-tab="mine">我的筆記</button>
       <button role="tab" data-tab="goals">目標與任務</button>
     </div>
 
@@ -81,16 +78,7 @@
     </div>
     <div class="st-panel" id="panel-full" hidden><div class="st-notes-body st-notes-full" id="notesFull"></div></div>
     <div class="st-panel" id="panel-lab" hidden></div>
-    <div class="st-panel" id="panel-res" hidden></div>
     <div class="st-panel" id="panel-quiz" hidden></div>
-    <div class="st-panel" id="panel-mine" hidden>
-      <div class="st-mine-bar">
-        <button class="st-btn" id="stampBtn">插入目前影片時間</button>
-        <span class="st-mine-status" id="mineStatus"></span>
-      </div>
-      <textarea id="mineText" class="st-mine" placeholder="邊看邊寫。按「插入目前影片時間」會加上 ▶ 時間，之後點下面的時間就能跳回那一段。"></textarea>
-      <div class="st-stamps" id="stamps"></div>
-    </div>
     <div class="st-panel st-goals-panel" id="panel-goals" hidden>
       <div class="st-card">
         <div class="st-card-hd">這章要學會</div>
