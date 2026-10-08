@@ -263,6 +263,7 @@
     renderNotes().then(function(){ syncNotes(start, false); });
     loadSubs(id).then(function(){ showSub(start); });
     if (playerReady) {
+      { const er = document.getElementById('ytErr'); if (er) er.hidden = true; }
       if (autoplay) player.loadVideoById({videoId: id, startSeconds: start});
       else player.cueVideoById({videoId: id, startSeconds: start});
     }
@@ -297,6 +298,14 @@
           playerReady = true;
           if (current) player.cueVideoById({videoId: current.id, startSeconds: Number(store.get('yt-pos-' + current.id)) || 0});
         },
+        // a video YouTube refuses to embed (owner setting, region, removed)
+        // would otherwise leave a black box: say so and offer YouTube itself
+        onError: function(e){
+          lastYtError = e.data;
+          const msg = e.data === 101 || e.data === 150 || e.data === 153 ? '這支影片的作者不允許在其他網站播放'
+            : e.data === 100 ? '這支影片已被移除或設為私人' : '這支影片暫時無法播放（錯誤 ' + e.data + '）';
+          showPlayerError(msg);
+        },
         onStateChange: function(e){
           if (e.data === YT.PlayerState.ENDED && current) {
             store.set('yt-pos-' + current.id, '0');
@@ -307,6 +316,13 @@
       }
     });
   };
+  let lastYtError = null;
+  function showPlayerError(msg){
+    let el = document.getElementById('ytErr');
+    if (!el) { el = document.createElement('div'); el.id = 'ytErr'; el.className = 'st-yterr'; document.querySelector('.st-player-wrap').appendChild(el); }
+    el.innerHTML = '<b>' + esc(msg) + '</b>' + (current ? '<a href="https://www.youtube.com/watch?v=' + current.id + '" target="_blank" rel="noopener">到 YouTube 看這支 ↗</a>' : '');
+    el.hidden = false;
+  }
   const yt = document.createElement('script');
   yt.src = 'https://www.youtube.com/iframe_api';
   document.head.appendChild(yt);
@@ -633,7 +649,7 @@
     ask(0);
   }
   // Development aid, like the lab's __labCheck: trigger the cards by hand.
-  window.__studyCheck = {sectionChallenge: sectionChallenge, endCard: endCard, plan: function(){ return curNotes && quizPlan(curNotes); }, seek: function(t){ if (playerReady) player.seekTo(t, true); }};
+  window.__studyCheck = {sectionChallenge: sectionChallenge, endCard: endCard, plan: function(){ return curNotes && quizPlan(curNotes); }, seek: function(t){ if (playerReady) player.seekTo(t, true); }, yt: function(){ return player && playerReady ? {state: player.getPlayerState(), data: player.getVideoData(), err: lastYtError} : {ready: playerReady}; }};
 
   // ── Tabs ──
   const TABS = ['videos', 'full', 'lab', 'quiz', 'goals'];

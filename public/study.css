@@ -359,3 +359,6 @@ a { color: inherit; }
 @media (max-width: 900px) { .st-course-banner { margin-left: 16px; margin-right: 16px; } }
 .st-course-banner span { flex: 1; font-size: 13.5px; color: var(--mt2); min-width: 240px; }
 .st-course-banner i { font-style: normal; font-weight: 800; color: color-mix(in srgb, var(--subj) 80%, var(--tx)); }
+.st-yterr { position: absolute; inset: 0; z-index: 5; display: grid; place-content: center; gap: 12px; text-align: center; padding: 20px; background: #1d1810; color: #f3e9d6; font-size: 15px; }
+.st-yterr[hidden] { display: none; }
+.st-yterr a { color: #ffd37a; font-weight: 800; }
