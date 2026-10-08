@@ -2514,8 +2514,16 @@ FRAG.push(['bst63-23-delete', '2-3 tree delete：rotate 與 combine', async (tok
   // ═══ bsta.js ═══
   {
 // ─── cvooTtquDlQ（BST 定義與 size 9 / depth 3 範例）＋ 9Jry5-82I68（MIT 6.006 L5：BST、跑道預約、augmentation） ───
-const { V3, fresh, tag, cube, move, fly, kill, glow, tint, relabel, code, line, arrow, ghostBox, lnode, GOLD, GREEN, RED, GRAY } = K;
+// Cued scenes: every `await step(tok)` waits for the sentence it shows; beats are motion only.
+const { V3, fresh, tag, cube, move, fly, kill, glow, relabel, txt, code, line, arrow, ghostBox, lnode, icon, travel, remove, buddy, prop, bob, anim, step, GOLD, GREEN, RED, GRAY } = K;
 const BLUE = '#17396a', PTR = '#d8c29b', NS = [0.9, 0.9, 0.9];
+const cap = (a, b = '') => say(a, b);
+const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const pkt = (t, x, y, z = 0) => tag(t, 'pkt', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+const cls = (l, c) => { l.element.className = 'lab-label ' + c; };
 // draw a tree from [[value, x, y, parentValue]] ; drop > 0 makes nodes fall in
 function bsTree(spec, drop = 0) {
   const N = {}, P = {};
@@ -2531,115 +2539,267 @@ function bsRing() {
 }
 function ringTo(r, P) { if (!r.visible) { r.position.set(P[0], P[1], 0); r.visible = true; } move(r, P[0], P[1], 0); }
 const T9 = [[8, 0, 6.2], [3, -3, 4.6, 8], [10, 3, 4.6, 8], [1, -4.6, 3, 3], [6, -1.4, 3, 3], [14, 4.6, 3, 10], [4, -2.3, 1.4, 6], [7, -0.5, 1.4, 6], [13, 3.7, 1.4, 14]];
-const T4 = [[49, 0, 5.6], [46, -2.6, 4, 49], [79, 2.6, 4, 49], [41, -4, 2.4, 46]];
+
+// ── the module's own BST drawing (inorder x, depth y), driven one sentence at a time ──
+function bsv(seq, o = {}) {
+  fresh([0, 4.6, 13.5], [0, 3.7, 0]);
+  const t = makeView(Object.assign({ tag: 'none' }, o));
+  seq.forEach((k) => attach(t, mk(k)));
+  layout(t, true);
+  bst.t = t; bst.cur = makeCursor();
+  return t;
+}
+const nd = (t, k) => findKey(t, k);
+const ng = (n, c) => { if (n && n.body) glow(n.body.obj, c); };
+const ringN = (t, k) => cursorTo(bst.cur, nd(t, k).pos);
+function grow(t, k) { const z = attach(t, mk(k)); layout(t); dropIn(z); return z; }
+const above = (n, dy = 0.95) => n.pos.clone().add(V3(0, dy, 0.5));
+async function hover(tok, l, n, ms = 500) { await travel(tok, l, l.position.clone(), above(n), ms); }
+// subtree-size numbers written next to the nodes (only the ones the lecturer has said so far)
+function paint(t, SZ) {
+  for (const n of inorder(t.root)) {
+    const s = SZ.get(n.key);
+    n.tag.element.textContent = s === undefined ? '' : String(s);
+    n.tag.element.className = 'lab-label ' + (s === undefined ? 'idx' : 'note');
+    n.tag.element.style.display = s === undefined ? 'none' : '';
+  }
+}
 
 // ══════════ cvooTtquDlQ ══════════
 // 00:00 node 的三個欄位
 FRAG.push(['bsta-node-struct', 'BST 的 node：value + left + right', async (tok) => {
-  fresh([0, 5, 12], [0, 2.2, 0]);
-  const g = ghostBox(GOLD, 4.4, 1.3, 1.5); g.position.set(0, 4.2, 0);
-  tag('node A', 'ptr', 0, 5.4);
-  const L = cube('left', PTR, [1.2, 0.8, 1.0], -1.4, 4.2, 0, 3);
-  const A = cube('A', colorFor(1), [1.2, 0.8, 1.0], 0, 4.2, 0, 3);
-  const R = cube('right', PTR, [1.2, 0.8, 1.0], 1.4, 4.2, 0, 3);
-  say('每個 node 有三個欄位', 'value + left 指標 + right 指標');
-  await beat(tok, 3600);
-  glow(A, GOLD);
-  say('value：存任何一種資料項目', 'node A 的 value = A');
-  await beat(tok, 2600);
-  glow(A, null); glow(L, GOLD);
-  const B = cube('B', colorFor(2), [1.0, 0.8, 1.0], -3.6, 1.2, 0, 4);
-  arrow(V3(-1.6, 3.7, 0), V3(-3.4, 1.7, 0));
-  say('left 指向左子', 'left → B');
-  await beat(tok, 2600);
-  glow(L, null); glow(R, GOLD);
-  const n = tag('NULL', 'ptr alt', 3.4, 1.4);
-  arrow(V3(1.6, 3.7, 0), V3(3.2, 1.8, 0), 0x9a3a2a);
-  say('right 指向右子，可以是 NULL', 'right = NULL（沒有右子）');
-  await beat(tok, 2800);
-  glow(R, null); glow(B, GREEN);
-  say('B 的兩個指標都是 NULL', 'B 自己也是一個 node');
-  await beat(tok, 2600);
-  glow(B, null);
-  say('樹＝用 left / right 串起來的 node', '');
-  await beat(tok, 2800);
+  fresh([0, 5, 12], [0, 2.4, 0]);
+  await step(tok);                                   // 0:00 composed of zero or more nodes
+  const pile = [];
+  for (let i = 0; i < 4; i++) pile.push(cube('', colorFor(i + 1), [0.7, 0.5, 0.7], -5.4 + i * 0.95, 5.6, 0, 2));
+  const pl = bub('BST：0 個或更多個 node', -4, 6.8);
+  cap('BST 是由 node 組成的', '0 個或更多個');
+  await step(tok);                                   // 0:36 each node contains a value
+  pile.forEach(kill); kill(pl);
+  const A = buddy('node A', '', colorFor(1), 0, 3.0, 0, 1);
+  const vt = tag('value', 'idx', 0, 2.75, 0.8);
+  cap('每個 node 第一格：value', '');
+  await step(tok);                                   // 0:47 value = any sort of data item
+  const d = pkt('A', -5, 1.4, 0.6);
+  bub('數字、文字…什麼資料都可以', -4.6, 2.4);
+  await travel(tok, d, V3(-5, 1.4, 0.6), V3(0, 3.3, 0.6), 900);
+  remove(d); A.set('A'); A.mood('happy');
+  cap('value：存任何一種資料', 'node A 的 value = A');
+  await step(tok);                                   // 0:53 a pointer to the left child
+  const L = cube('left', PTR, [1.1, 0.7, 0.9], -1.5, 3.35, 0, 2);
+  A.look(-1);
+  cap('第二格：指向左子的指標', 'left');
+  await step(tok);                                   // 1:01 may be NULL
+  const n1 = note('NULL', -3.2, 1.8);
+  const a1 = arrow(V3(-1.8, 3.0, 0), V3(-3.0, 2.1, 0), 0x9a3a2a);
+  cap('左子可以是 NULL', 'NULL = 沒有指向任何 node');
+  await step(tok);                                   // 1:15 a pointer to the right child
+  const R = cube('right', PTR, [1.1, 0.7, 0.9], 1.5, 3.35, 0, 2);
+  A.look(1);
+  cap('第三格：指向右子的指標', 'right');
+  await step(tok);                                   // 1:22 may be NULL too
+  const n2 = note('NULL', 3.2, 1.8);
+  const a2 = arrow(V3(1.8, 3.0, 0), V3(3.0, 2.1, 0), 0x9a3a2a);
+  cap('右子也可以是 NULL', '');
+  await step(tok);                                   // 1:33 A is a node
+  A.look(0); A.mood('wow');
+  const g = ghostBox(GOLD, 4.4, 1.6, 1.4); g.position.set(0, 3.5, 0);
+  bub('一個 node = left ｜ value ｜ right', 0, 5.0);
+  cap('node A：三個欄位一組', 'left + value + right');
+  await step(tok);                                   // 1:42 left pointer → left child
+  kill(n1); kill(a1); glow(L, GOLD);
+  const B = buddy('B', 'B', colorFor(2), -3.6, -0.2, 0, 0.7);
+  arrow(V3(-1.8, 3.0, 0), V3(-3.3, 0.9, 0));
+  cap('left 指向左子 B', 'B 自己也是一個 node');
+  await step(tok);                                   // 1:50 right pointer → right child
+  glow(L, null); glow(R, GOLD); kill(n2); kill(a2);
+  const C = buddy('C', 'C', colorFor(3), 3.6, -0.2, 0, 0.7);
+  const a3 = arrow(V3(1.8, 3.0, 0), V3(3.3, 0.9, 0));
+  cap('right 指向右子 C', '');
+  await step(tok);                                   // 2:01 the child may or may not have a value
+  glow(R, null);
+  await travel(tok, C.g, C.g.position.clone(), V3(6.5, 4.5, 0), 700);
+  kill(C.g); kill(a3);
+  note('NULL', 3.2, 1.8); arrow(V3(1.8, 3.0, 0), V3(3.0, 2.1, 0), 0x9a3a2a);
+  B.mood('happy'); A.mood('calm');
+  cap('子節點可能有，也可能沒有', '左邊有 B，右邊是 NULL');
 }]);
 
 // 02:07 空樹、root、唯一路徑、leaf
 FRAG.push(['bsta-root-leaf', 'root、唯一路徑與 leaf node', async (tok) => {
   fresh([0, 5, 13.5], [0, 3.6, 0]);
+  await step(tok);                                   // 2:08 a binary tree may be empty
   const e = ghostBox(GRAY, 3, 1.6, 2); e.position.set(0, 4, 0);
-  const el = tag('空樹：0 個 node', 'ptr', 0, 5.4);
-  say('binary tree 可以是空的', '由 0 個或更多 node 組成');
-  await beat(tok, 2600);
+  const el = bub('空樹：0 個 node', 0, 5.4);
+  cap('binary tree 可以是空的', '0 個 node 也算一棵樹');
+  await step(tok);                                   // 2:35 if non-empty it has some nodes
   kill(e); kill(el);
   const { N, P } = bsTree(T9, 3);
+  cap('不是空的，就有一些 node', '');
+  await step(tok);                                   // 2:42 the starting node is the root
   tag('root', 'ptr alt', 0, 7.3);
   glow(N[8], GOLD);
-  say('非空就有一個 root', 'root = 8（最上面的起點）');
-  await beat(tok, 2600);
+  cap('最上面的起點叫 root', 'root = 8');
+  await step(tok);                                   // 3:00 every node reachable by a unique path
   const r = bsRing();
-  for (const v of [8, 3, 6, 7]) { ringTo(r, P[v]); glow(N[v], GOLD); say('從 root 走到 7 的路只有一條', '8 → 3 → 6 → 7'); await beat(tok, 1100); }
-  say('每個 node 都由 root 唯一路徑到達', '');
-  await beat(tok, 1800);
+  for (const v of [8, 3, 6, 7]) { ringTo(r, P[v]); glow(N[v], GOLD); await beat(tok, 350); }
+  cap('從 root 到 7 只有一條路', '8 → 3 → 6 → 7');
+  await step(tok);                                   // 3:14 whatever node you take
+  for (const v of [3, 6, 7]) glow(N[v], null);
+  for (const v of [8, 10, 14, 13]) { ringTo(r, P[v]); glow(N[v], GOLD); await beat(tok, 350); }
+  cap('任何 node 都一樣：路徑唯一', '8 → 10 → 14 → 13');
+  await step(tok);                                   // 3:22 neither left nor right child → leaf
   r.visible = false;
-  for (const v of [8, 3, 6, 7]) glow(N[v], null);
-  for (const v of [1, 4, 7, 13]) { glow(N[v], GREEN); tag('leaf', 'idx', P[v][0], P[v][1] - 0.9); }
-  say('沒有左子也沒有右子 → leaf', 'leaf：1、4、7、13');
-  await beat(tok, 3000);
+  for (const v of [8, 10, 14, 13]) glow(N[v], null);
+  bub('leaf：沒有左子、也沒有右子', 4.2, 7.0);
+  cap('兩個子都沒有的 node 叫 leaf', '');
+  await step(tok);                                   // 3:58 here no left, no right → leaf
+  for (const v of [1, 4]) { glow(N[v], GREEN); tag('leaf', 'good', P[v][0], P[v][1] - 0.9); }
+  cap('1、4 底下什麼都沒有 → leaf', '');
+  await step(tok);                                   // 4:03 these are also leaf nodes
+  for (const v of [7, 13]) { glow(N[v], GREEN); tag('leaf', 'good', P[v][0], P[v][1] - 0.9); }
+  cap('7、13 也是 leaf', 'leaf：1、4、7、13');
+  await step(tok);                                   // 4:09 and this is a root node
   glow(N[8], GOLD);
-  say('最上面是 root，最下面是 leaf', 'root = 8');
-  await beat(tok, 2600);
+  cap('最上面是 root，最下面是 leaf', 'root = 8');
 }]);
 
-// 04:21 BST 性質：左子樹 < x < 右子樹
+// 04:37 BST 性質：左子樹 < x < 右子樹
 FRAG.push(['bsta-property', 'BST 性質：左小右大（整棵子樹）', async (tok) => {
   fresh([0, 5, 13.5], [0, 3.6, 0]);
-  const { N } = bsTree(T9);
-  const LS = { 8: [3, 1, 6, 4, 7], 3: [1] }, RS = { 8: [10, 14, 13], 3: [6, 4, 7] };
-  for (const x of [8, 3]) {
-    Object.values(N).forEach((m) => glow(m, null));
-    glow(N[x], GOLD);
-    say('x = ' + x + '：看它的左子樹', 'y ∈ left(x) ⇒ key(y) < key(x)');
-    await beat(tok, 1600);
-    for (const v of LS[x]) { glow(N[v], GREEN); await beat(tok, 350); }
-    say('左子樹全部都比 ' + x + ' 小', LS[x].join('、') + ' < ' + x);
-    await beat(tok, 2200);
-    for (const v of RS[x]) { glow(N[v], BLUE); await beat(tok, 350); }
-    say('右子樹全部都比 ' + x + ' 大', 'y ∈ right(x) ⇒ key(y) > key(x)');
-    await beat(tok, 2400);
-  }
+  await step(tok);                                   // 4:37 for all nodes x and y
+  const { N, P } = bsTree(T9);
+  const xt = tag('x', 'ptr alt', 0, 7.2);
+  cap('性質：對所有 node x、y 都要成立', '');
+  await step(tok);                                   // 4:43 y belongs to the left subtree of x
+  const gl = ghostBox(GREEN, 5.4, 5.6, 1.4); gl.position.set(-2.9, 3.5, 0);
+  const yt = tag('y', 'ptr', -1.4, 3.9);
+  cap('y 在 x 的左子樹裡', '左子樹 = 左邊整串');
+  await step(tok);                                   // 5:08 key(y) < key(x)
+  for (const v of [3, 1, 6, 4, 7]) { glow(N[v], GREEN); await beat(tok, 250); }
+  const n1 = note('6 < 8', -1.4, 2.1, 0.6);
+  cap('y 的 key 一定比 x 小', 'y ∈ left(x) ⇒ key(y) < key(x)');
+  await step(tok);                                   // 5:44 less value left side, greater right side
+  const s = pkt('5', 0, 8.2), b = pkt('12', 0, 8.2);
+  await Promise.all([travel(tok, s, V3(0, 8.2, 0), V3(-4.6, 6.6, 0), 900), travel(tok, b, V3(0, 8.2, 0), V3(4.6, 6.6, 0), 900)]);
+  bub('小的 ← 左　右 → 大的', 0, 8.3);
+  cap('小的放左邊，大的放右邊', '');
+  await step(tok);                                   // 6:06 if y belongs to the right subtree
+  remove(s); remove(b); kill(n1);
+  const gr = ghostBox(BLUE, 3.4, 4.0, 1.4); gr.position.set(3.7, 3.0, 0);
+  yt.position.set(4.6, 3.9, 0);
+  cap('換 y 在 x 的右子樹裡', '');
+  await step(tok);                                   // 6:15 key(y) > key(x)
+  for (const v of [10, 14, 13]) { glow(N[v], BLUE); await beat(tok, 250); }
+  note('14 > 8', 4.6, 2.1, 0.6);
+  cap('y 的 key 一定比 x 大', 'y ∈ right(x) ⇒ key(y) > key(x)');
+  await step(tok);                                   // 6:35 these two properties must hold (every node)
+  kill(gl); kill(gr); remove(yt);
   Object.values(N).forEach((m) => glow(m, null));
-  say('每個 node 都要成立，不只 root', '小的放左邊，大的放右邊');
-  await beat(tok, 3000);
+  xt.position.set(-3, 5.6, 0);
+  glow(N[3], GOLD); glow(N[1], GREEN);
+  for (const v of [6, 4, 7]) glow(N[v], BLUE);
+  bub('x = 3：1 < 3 < 4、6、7', -3, 7.6);
+  cap('每個 node 都要遵守這兩條', '換 x = 3 也成立');
+  await step(tok);                                   // 7:00 nodes less than root go left
+  Object.values(N).forEach((m) => glow(m, null));
+  const p = pkt('5', 0, 7.2);
+  for (const [v, w] of [[8, '5 < 8 → 左'], [3, '5 > 3 → 右'], [6, '5 < 6 → 左']]) {
+    await travel(tok, p, p.position.clone(), V3(P[v][0] + 0.9, P[v][1] + 0.5, 0.5), 500);
+    glow(N[v], GOLD);
+  }
+  cap('插入時：比它小往左、比它大往右', '5：8 左 → 3 右 → 6 左');
 }]);
 
-// 07:12 範例：size 9、depth 3、root 8、leaves 1, 4, 7, 13
+// 07:21 範例：size 9、depth 3、root 8、leaves 1, 4, 7, 13
 FRAG.push(['bsta-size9', '造一棵 size 9、depth 3 的 BST', async (tok) => {
   fresh([0, 5, 14], [0, 3.8, 0]);
-  const cd = code(['size = 9', 'depth = 3', 'root = 8', 'leaves = 1, 4, 7, 13'], -5.2, 8.6, 0.5);
-  say('題目：size 9、depth 3', 'root = 8，leaves = 1、4、7、13');
-  await beat(tok, 2800);
   const P = {}, N = {};
-  const why = { 8: 'root = 8', 3: '3 < 8 → 左', 10: '10 > 8 → 右', 1: '1 < 3 → 左（leaf）', 6: '6 > 3 → 右', 4: '4 < 6 → 左（leaf）', 7: '7 > 6 → 右（leaf）', 14: '14 > 10 → 右', 13: '13 < 14 → 左（leaf）' };
-  for (const [v, x, y, p] of T9) {
-    cd.hl(v === 8 ? 2 : [1, 4, 7, 13].includes(v) ? 3 : -1);
+  let cd;
+  const put = async (v, w) => {
+    const [, x, y, p] = T9.find((s) => s[0] === v);
+    const k = pkt(String(v), -5.2, 8.2, 0.4);
+    await travel(tok, k, V3(-5.2, 8.2, 0.4), V3(x, y + 0.9, 0.4), 700);
+    remove(k);
     if (p !== undefined) line(P[p][0], P[p][1], x, y);
-    N[v] = cube(v, colorFor(v), NS, x, y, 0, 3); P[v] = [x, y];
-    say('放 ' + v, why[v]);
-    await beat(tok, 1300);
-  }
+    N[v] = cube(v, colorFor(v), NS, x, y, 0, 1.5); P[v] = [x, y];
+    cap('放 ' + v, w);
+  };
+  await step(tok);                                   // 7:21 a BST of size 9
+  cd = code(['size = 9', 'depth = 3', 'root = 8', 'leaves = 1, 4, 7, 13'], -5.2, 8.6, 0.5);
+  cd.ls.forEach((l, i) => { if (i) l.element.style.visibility = 'hidden'; });
+  cd.hl(0);
+  cap('題目：造一棵 size 9 的 BST', '還有幾個條件');
+  await step(tok);                                   // 7:38 depth 3, root 8
+  cd.ls[1].element.style.visibility = ''; cd.ls[2].element.style.visibility = '';
+  cd.hl(2);
+  cap('depth 3、root 是 8', '');
+  await step(tok);                                   // 7:46 leaves are 1, 4, 7, 13
+  cd.ls[3].element.style.visibility = '';
+  cd.hl(3);
+  cap('leaf 必須是 1、4、7、13', '');
+  await step(tok);                                   // 8:00 size 9 = total 9 nodes
+  cd.hl(0);
+  const dots = [];
+  for (let i = 0; i < 9; i++) dots.push(cube('', GRAY, [0.4, 0.4, 0.4], -3.2 + i * 0.8, 0.0, 1.2, 1.5 + i * 0.2));
+  cap('size 9 = 一共 9 個 node', '');
+  await step(tok);                                   // 8:05 depth 3: levels 0, 1, 2, 3
+  dots.forEach(kill);
   cd.hl(1);
   [0, 1, 2, 3].forEach((d) => tag('depth ' + d, 'idx', 6.3, 6.2 - d * 1.6));
-  say('depth = 離 root 的距離', '8 在 0，13 在第 3 層 → depth 3');
-  await beat(tok, 2800);
-  cd.hl(0);
-  let c = 0;
-  for (const [v] of T9) { c++; glow(N[v], GREEN); say('size = node 的總數', 'size = ' + c); await beat(tok, 380); }
-  for (const v of [1, 4, 7, 13]) glow(N[v], GOLD);
+  cap('depth 3：層數 0、1、2、3', '');
+  await step(tok);                                   // 8:21 leaves have no left and right child
+  cd.hl(3);
+  cap('1、4、7、13 不能有左右子', '');
+  await step(tok);                                   // 8:29 8 is the root
+  cd.hl(2);
+  await put(8, 'root = 8');
+  await step(tok);                                   // 8:34 left must be less than 8 → 3
   cd.hl(-1);
-  say('四個條件都滿足', '1、4、7、13 沒有子 → leaf');
-  await beat(tok, 3000);
+  await put(3, '3 < 8 → 左');
+  await step(tok);                                   // 8:44 right greater → 10
+  await put(10, '10 > 8 → 右');
+  await step(tok);                                   // 8:53 1 is less than 3 → left
+  await put(1, '1 < 3 → 3 的左邊');
+  await step(tok);                                   // 9:01 right side 6
+  await put(6, '6 > 3 → 3 的右邊');
+  await step(tok);                                   // 9:09 1 is a leaf: don't extend
+  glow(N[1], GREEN); tag('leaf', 'good', P[1][0], P[1][1] - 0.9);
+  cap('1 是 leaf：不再往下長', '');
+  await step(tok);                                   // 9:15 4 < 6 → left
+  await put(4, '4 < 6 → 6 的左邊（leaf）');
+  await step(tok);                                   // 9:24 7 > 6 → right ; 1, 4, 7 are leaves
+  await put(7, '7 > 6 → 6 的右邊（leaf）');
+  for (const v of [4, 7]) { glow(N[v], GREEN); tag('leaf', 'good', P[v][0], P[v][1] - 0.9); }
+  await step(tok);                                   // 9:32 14 > 10
+  await put(14, '14 > 10 → 10 的右邊');
+  await step(tok);                                   // 9:40 13 < 14
+  await put(13, '13 < 14 → 14 的左邊（leaf）');
+  glow(N[13], GREEN); tag('leaf', 'good', P[13][0], P[13][1] - 0.9);
+  await step(tok);                                   // 9:51 level 0, 1, 2, 3
+  for (const lv of [[8], [3, 10], [1, 6, 14], [4, 7, 13]]) { lv.forEach((v) => glow(N[v], GOLD)); await beat(tok, 450); lv.forEach((v) => glow(N[v], [1, 4, 7, 13].includes(v) ? GREEN : null)); }
+  cap('第 0 層 → 第 3 層', '8 在第 0 層，13 在第 3 層');
+  await step(tok);                                   // 9:58 depth = distance from the root
+  cd.hl(1);
+  const r = bsRing();
+  const cnt = note('0 步', 5.6, 7.4);
+  let k = 0;
+  for (const v of [8, 10, 14, 13]) { ringTo(r, P[v]); txt(cnt, k++ + ' 步'); await beat(tok, 450); }
+  cap('depth = 離 root 的距離', '8 → 13 走 3 步 → depth 3');
+  await step(tok);                                   // 10:15 size = number of nodes
+  r.visible = false; cd.hl(0);
+  let c = 0;
+  const sc = note('size = 0', -5.4, 3.8);
+  for (const [v] of T9) { c++; glow(N[v], GOLD); txt(sc, 'size = ' + c); await beat(tok, 180); }
+  cap('size = node 的個數', '1、2、…、9');
+  await step(tok);                                   // 10:32 the size is 9
+  for (const [v] of T9) glow(N[v], [1, 4, 7, 13].includes(v) ? GREEN : null);
+  cls(sc, 'good');
+  cap('size = 9 ✓', '四個條件都滿足');
+  await step(tok);                                   // 10:39 the property you follow
+  cd.hl(-1);
+  bub('一路照「左小右大」放下去', 0, 8.1);
+  cap('建 BST：一直遵守左小右大', '');
 }]);
 
 // ══════════ 9Jry5-82I68（MIT 6.006 L5） ══════════
@@ -2648,300 +2808,857 @@ function timeline() {
   line(-6.8, 0, 6.6, 0, 0, '#7a6a52');
   for (const t of [36, 40, 44, 48, 52, 56]) { line(tx(t), -0.15, tx(t), 0.15); tag(String(t), 'idx', tx(t), -0.5, 0.6); }
 }
-const RS = [0.62, 0.62, 0.62];
-// 00:51 問題定義
+const RSZ = [0.62, 0.62, 0.62];
+// 00:22 BST 與跑道預約問題
 FRAG.push(['bsta-runway-def', '跑道預約系統：要做什麼', async (tok) => {
   fresh([0, 4.2, 11], [0, 1.2, 0]);
+  await step(tok);                                   // 0:22 today: binary search tree
+  const t1 = bub('今天：Binary Search Tree（BST）', 0, 3.6);
+  cap('今天的主角：BST', 'binary search tree');
+  await step(tok);                                   // 0:34 binary search: divide and conquer
+  const row = [3, 8, 12, 20, 31, 40, 52].map((v, i) => cube(v, colorFor(v), [0.8, 0.6, 0.8], -3.6 + i * 1.2, 1.4));
+  glow(row[3], GOLD);
+  const t2 = note('binary search：每次看中間、砍一半', 0, 0.4, 0.6);
+  cap('binary search：分而治之', 'BST 就是它的資料結構版');
+  await step(tok);                                   // 1:04 runway reservation system
+  kill(t1); kill(t2); row.forEach(kill);
+  const rw = new THREE.Mesh(new THREE.BoxGeometry(13.4, 0.05, 1.1), new THREE.MeshStandardMaterial({ color: '#cfcac0', roughness: 1 }));
+  rw.position.set(-0.1, -0.05, -0.9); lab.world.add(rw);
+  const plane = icon('✈️', '', -6.2, 3.2, -0.9, 'sm');
+  bub('跑道預約系統', -3.6, 3.6);
+  cap('用一個問題帶出 BST：跑道預約', '');
+  await step(tok);                                   // 1:53 an airport with a single runway
+  tag('只有一條跑道', 'zone', 3.8, 0.1, -1.6);
+  cap('機場只有一條跑道', '');
+  await step(tok);                                   // 2:04 Logan has six runways, weather → one
+  const lg = note('Logan 有 6 條；天氣一差只剩 1 條', 2.6, 2.6);
+  cap('就算有很多條，天氣差也只剩一條', '');
+  await step(tok);                                   // 2:15 safety: constraints to obey
+  kill(lg);
+  const p2 = icon('✈️', '', -4.6, 3.0, -0.9, 'sm');
+  const dz = bad('兩架太近 → 危險！', -5.2, 2.0);
+  cap('安全：兩架飛機不能太靠近', '要把限制寫進資料結構');
+  await step(tok);                                   // 2:43 reservations for future landings, time
+  kill(p2); kill(dz);
   timeline();
   tag('time →', 'idx', 6.2, 0.6);
-  const now = tag('now', 'ptr alt', tx(37), 1.3);
+  cap('預約的是「未來」的降落時間', '');
+  await step(tok);                                   // 2:50 time is continuous (a real number)
+  const rn = note('時間是實數：41.2 也可以', 3.4, 2.4);
+  cap('時間是連續的實數', '');
+  await step(tok);                                   // 3:20 each request specifies a landing time t
+  kill(rn);
+  const q = cube('t', GRAY, RSZ, tx(53), 2.4, 0, 0);
+  cap('每個請求：一個降落時間 t', '');
+  await step(tok);                                   // 3:26 add t to R if none within k minutes
   const R = {};
-  for (const t of [41.2, 49, 56.3]) R[t] = cube(t, colorFor(Math.round(t)), RS, tx(t), 0.35, 0, 3);
-  say('單一跑道：預約未來的降落時間', 'R = 已排定的降落時間集合');
-  await beat(tok, 2800);
-  const q = cube('t', GRAY, RS, tx(53), 2.6, 0, 0);
+  for (const t of [41.2, 49, 56.3]) R[t] = cube(t, colorFor(Math.round(t)), RSZ, tx(t), 0.35, 0, 3);
+  tag('R', 'ptr', tx(49), 1.3);
   const w = ghostBox(GOLD, 6 * 0.55, 1.4, 1.2); w.position.set(tx(53), 0.7, 0);
-  say('要求 t：前後 k 分鐘內不能有別班', 'k = 3 分鐘（可依天氣調整）');
-  await beat(tok, 2800);
-  move(q, tx(53), 0.35, 0); kill(w);
-  say('檢查通過才 insert 到 R', 'insert(t)');
-  await beat(tok, 2400);
-  now.position.x = tx(41.2);
+  cap('前後 k 分鐘內沒別班 → 加進 R', 'R = 已排定的降落時間');
+  await step(tok);                                   // 3:52 k is a parameter (3, or 4, weather)
+  await anim(tok, 900, (u) => { w.scale.x = 1 + (8 / 6 - 1) * Math.sin(u * Math.PI); });
+  cap('k 是參數：3 或 4，看天氣調', '');
+  await step(tok);                                   // 4:16 today k = 3
+  tag('k = 3', 'ptr alt', tx(53), 2.0 + 1.2);
+  cap('今天的例子都用 k = 3 分鐘', '');
+  await step(tok);                                   // 4:28 an insert with a constraint
+  kill(w); move(q, tx(53), 0.35, 0); glow(q, GREEN);
+  cap('檢查通過 → insert(t)', '');
+  await step(tok);                                   // 4:34 violated → don't insert
+  const q2 = cube(50, GRAY, RSZ, tx(50), 2.4, 0); glow(q2, RED);
+  bad('離 49 太近 ✗', tx(50), 3.2);
+  cap('違反限制 → 不插入', '50 離 49 不到 3');
+  await step(tok);                                   // 4:49 current notion of time
+  fly(q2);
+  const now = tag('now', 'ptr alt', tx(37), 1.3);
+  cap('系統裡有「現在時間」', '');
+  await step(tok);                                   // 4:58 plane landed → remove from R
+  await travel(tok, plane, plane.position.clone(), V3(tx(41.2), 0.9, -0.9), 900);
   fly(R[41.2]);
-  say('飛機降落後就從 R 刪掉', 'delete(41.2)');
-  await beat(tok, 2400);
-  say('目標：每個操作都 O(log n)', 'n = |R|');
-  await beat(tok, 3000);
+  bub('delete(41.2)', tx(41.2), 2.6);
+  cap('飛機降落了 → 從 R 刪掉', 'delete');
+  await step(tok);                                   // 5:23 as time increments, check
+  await travel(tok, now, now.position.clone(), V3(tx(42.5), 1.3, 0), 800);
+  cap('時間往前走，定期檢查 R', '');
+  await step(tok);                                   // 5:38 all operations O(log n)
+  good('insert / delete：都要 O(log n)', 0, 3.8);
+  cap('目標：每個操作都 O(log n)', '');
+  await step(tok);                                   // 5:59 n = size of the set
+  note('n = |R|（R 裡有幾個）', 0, 2.9);
+  cap('n 是集合 R 的大小', '');
 }]);
 
-// 06:17 例子：now = 37，R = {41.2, 49, 56.3}
+// 06:16 例子：now = 37，R = {41.2, 49, 56.3}
 FRAG.push(['bsta-runway-ex', '例子：53 可以、44 不行、20 不行', async (tok) => {
   fresh([0, 4.2, 11], [0, 1.2, 0]);
+  await step(tok);                                   // 6:16 a straightforward example
   timeline();
-  tag('now = 37', 'ptr alt', tx(37), 1.4);
+  cap('來看一個例子', '');
+  await step(tok);                                   // 6:32 right now we are at time 37
+  const now = tag('now = 37', 'ptr alt', tx(37), 1.4);
+  cap('現在時間 37', '');
+  await step(tok);                                   // 6:37 R has 41.2, 49 and 53
   const R = {};
-  for (const t of [41.2, 49, 56.3]) R[t] = cube(t, colorFor(Math.round(t)), RS, tx(t), 0.35, 0, 3);
-  say('現在 37，R = {41.2, 49, 56.3}', 'k = 3');
-  await beat(tok, 2600);
-  const a = cube(53, GRAY, RS, tx(53), 2.8, 0);
+  for (const t of [41.2, 49, 53]) R[t] = cube(t, colorFor(Math.round(t)), RSZ, tx(t), 0.35, 0, 3);
+  cap('R = {41.2, 49, 53}…', '');
+  await step(tok);                                   // 6:55 I want to call this 56.3
+  R[56.3] = R[53];
+  relabel(R[56.3], 56.3); move(R[56.3], tx(56.3), 0.35, 0);
+  note('口誤更正：53 → 56.3', tx(56.3) - 0.8, 2.0);
+  cap('更正：R = {41.2, 49, 56.3}', '');
+  await step(tok);                                   // 7:01 request 53, now is 37 → future
+  const a = cube(53, GRAY, RSZ, tx(53), 2.8, 0);
+  cap('要求 53：在 37 之後 → 是未來 ✓', '');
+  await step(tok);                                   // 7:11 k = 3
   const w = ghostBox(GOLD, 6 * 0.55, 1.4, 1.2); w.position.set(tx(53), 0.7, 0);
+  cap('k = 3：53 前後 3 分鐘', '50 ~ 56');
+  await step(tok);                                   // 7:15 4 ahead of 49, 3.3 before 56.3 → OK
   glow(R[49], GOLD); glow(R[56.3], GOLD);
-  say('要求 53：離 49 差 4，離 56.3 差 3.3', '都 ≥ 3 → OK');
-  await beat(tok, 2600);
-  glow(R[49], null); glow(R[56.3], null); kill(w);
-  move(a, tx(53), 0.35, 0); glow(a, GREEN);
-  await beat(tok, 1400);
-  const b = cube(44, GRAY, RS, tx(44), 2.8, 0);
+  note('差 4', tx(51), 1.9); note('差 3.3', tx(54.6), 1.9);
+  move(a, tx(53), 0.35, 0); kill(w);
+  await beat(tok, 500);
+  glow(a, GREEN); glow(R[49], null); glow(R[56.3], null);
+  cap('53：離 49 差 4、離 56.3 差 3.3', '都 ≥ 3 → 接受');
+  await step(tok);                                   // 7:24 44 too close to 41.2
+  const b = cube(44, GRAY, RSZ, tx(44), 2.8, 0);
   const w2 = ghostBox(RED, 6 * 0.55, 1.4, 1.2); w2.position.set(tx(44), 0.7, 0);
   glow(R[41.2], RED); glow(b, RED);
-  say('要求 44：離 41.2 只差 2.8', '< 3 → 拒絕');
-  await beat(tok, 2600);
+  bad('離 41.2 只差 2.8 ✗', tx(44), 3.6);
+  cap('44：離 41.2 只差 2.8', '< 3 → 拒絕');
+  await step(tok);                                   // 7:38 20 not allowed: it's passed
   fly(b); kill(w2); glow(R[41.2], null);
-  await beat(tok, 900);
-  tag('≈', 'idx', -6, 0.3);
-  const c = cube(20, GRAY, RS, -6.6, 2.8, 0); glow(c, RED);
-  say('要求 20：已經過去了', '20 < now = 37 → 拒絕');
-  await beat(tok, 2400);
+  const c = cube(20, GRAY, RSZ, -6.4, 2.8, 0); glow(c, RED);
+  bad('20 < now ✗', -6.0, 3.6);
+  cap('20：已經過去了，不能排', '');
+  await step(tok);                                   // 7:46 time is monotonically increasing
   fly(c);
-  say('結果 R = {41.2, 49, 53, 56.3}', '');
-  await beat(tok, 2600);
+  arrow(V3(-5.6, -1.1, 0), V3(6.0, -1.1, 0), 0xa8730f);
+  note('時間只會往前（用 64-bit 數字）', 0, -1.6);
+  cap('假設時間只增不減', '');
 }]);
 
 // 08:12 unsorted array
 FRAG.push(['bsta-unsorted', 'Unsorted array：插入 O(1)、檢查 O(n)', async (tok) => {
   fresh([0, 5, 11], [0, 1, 0]);
   const vals = [49, 56.3, 41.2], M = [];
-  vals.forEach((v, i) => { M.push(cube(v, colorFor(Math.round(v)), [1.4, 0.8, 1.2], -3 + i * 1.6, 0.4)); tag('[' + (i + 1) + ']', 'idx', -3 + i * 1.6, -0.4, 0.9); });
-  say('R 存成沒排序的 array（數字示意）', '');
-  await beat(tok, 3000);
+  let cand;
+  await step(tok);                                   // 8:12 shoot down each known data structure
+  cand = ['unsorted array', 'sorted array', 'sorted list', 'heap'].map((s, i) => bub(s, -4.8 + i * 3.2, 4.2));
+  cap('把學過的資料結構一個一個試', '看它們哪裡不夠快');
+  await step(tok);                                   // 8:41 an unsorted list or array for R
+  cls(cand[0], 'ptr alt');
+  vals.forEach((v, i) => { M.push(cube(v, colorFor(Math.round(v)), [1.4, 0.8, 1.2], -3 + i * 1.6, 0.4, 0, 2)); tag('[' + (i + 1) + ']', 'idx', -3 + i * 1.6, -0.4, 0.9); });
+  note('數字為示意', -3, 1.7);
+  cap('R 存成沒排序的 array', '');
+  await step(tok);                                   // 8:55 everything is linear
+  const st = buddy('同學', '', '#9fc5e8', 5.0, 0, 0, 0.7); st.mood('wow');
+  bub('幾乎都是線性時間！', 5.0, 2.0);
+  cap('同學：幾乎每件事都是線性', '');
+  await step(tok);                                   // 9:08 you can insert: just add to it
   const n = cube(53, GRAY, [1.4, 0.8, 1.2], 1.8, 0.4, 0, 3); tag('[4]', 'idx', 1.8, -0.4, 0.9);
-  say('insert 直接接在最後', '<span class="ok">O(1)</span>（沒做檢查的話）');
-  await beat(tok, 2400);
+  good('insert：接在最後 O(1)', 1.8, 2.2);
+  cap('insert：直接接在最後', '這步是常數時間');
+  await step(tok);                                   // 9:20 unsorted: no idea where they are
   glow(n, GOLD);
-  for (let i = 0; i < M.length; i++) {
-    glow(M[i], GOLD);
-    say('k 分鐘檢查：不知道誰離 53 近', '只能一個一個比 |53 − ' + vals[i] + '|');
-    await beat(tok, 1100);
-    glow(M[i], null);
-  }
+  for (let i = 0; i < M.length; i++) { glow(M[i], GOLD); await beat(tok, 350); glow(M[i], null); }
+  cap('k 分鐘檢查：不知道誰離 53 近', '只能整個掃一遍');
+  await step(tok);                                   // 9:39 order n
   glow(n, null);
-  say('檢查要掃整個 array', '<span class="no">O(n)</span>');
-  await beat(tok, 2600);
-  say('幾乎每件事都是線性時間', 'insert O(1)，但 check O(n)');
-  await beat(tok, 3000);
+  bad('k 檢查：O(n)', -1.4, 2.2);
+  cap('掃整個 array → O(n)', '');
+  await step(tok);                                   // 9:54 sadly the check takes order n
+  cand[0].element.textContent = 'unsorted array ✗'; cls(cand[0], 'bad');
+  st.mood('happy');
+  cap('insert O(1) 沒用：檢查要 O(n)', '淘汰');
 }]);
 
-// 10:09 sorted array：binary search + shift
+// 10:15 sorted array：binary search + shift
 FRAG.push(['bsta-sorted-array', 'Sorted array：找位置 O(log n)、插入要 shift', async (tok) => {
-  fresh([0, 5, 12], [0, 1, 0]);
+  fresh([0, 5, 12], [0, 1.4, 0]);
   const A = [4, 20, 32, 37, 45], X = (i) => -5 + i * 2.2, M = [];
-  A.forEach((v, i) => { M.push(cube(v, colorFor(v), [1.4, 0.8, 1.2], X(i), 0.4)); tag(String(i + 1), 'idx', X(i), -0.4, 0.9); });
-  tag('6', 'idx', X(5), -0.4, 0.9);
-  const t = cube(34, GRAY, [1.2, 0.8, 1.0], 0, 3.2);
-  say('sorted array：4, 20, 32, 37, 45', 't = 34');
-  await beat(tok, 2400);
+  let t, rows = [];
+  const row = (i, s, c = 'say') => { if (rows[i]) kill(rows[i]); rows[i] = tag(s, c, -3.2, 5.0 - i * 0.7); };
+  await step(tok);                                   // 10:15 sorted array
+  bub('候選二：sorted array', 3.6, 5.0);
+  cap('換 sorted array 試試', '');
+  await step(tok);                                   // 10:33 binary search
+  const st = buddy('同學', '', '#9fc5e8', 5.6, 2.2, 0, 0.6); st.mood('wow');
+  bub('用 binary search！', 5.6, 3.6);
+  cap('同學：可以 binary search', '');
+  await step(tok);                                   // 10:47 4, 20, 32, 37, 45
+  A.forEach((v, i) => { M.push(cube(v, colorFor(v), [1.4, 0.8, 1.2], X(i), 0.4, 0, 2)); tag(String(i + 1), 'idx', X(i), -0.4, 0.9); });
+  cap('sorted array：4, 20, 32, 37, 45', '由小到大');
+  await step(tok);                                   // 11:02 time t = 34
+  t = cube(34, GRAY, [1.2, 0.8, 1.0], X(2), 2.6);
+  cap('新的時間 t = 34', '');
+  await step(tok);                                   // 11:07 go to the midpoint: 34 > 32
   glow(M[2], GOLD);
-  say('binary search：中間 32，34 > 32', '→ 往右半邊');
-  await beat(tok, 2400);
-  glow(M[2], null); glow(M[3], GOLD);
-  say('37 ≥ 34：插入點 i = 4', '最小的 i 使 R[i] ≥ t：O(log n)');
-  await beat(tok, 2600);
-  glow(M[2], GOLD);
-  say('只比左右鄰居 R[i−1]、R[i]', 'k 分鐘檢查 <span class="ok">O(1)</span>');
-  await beat(tok, 2400);
+  note('34 > 32', X(2), 1.5, 0.7);
+  cap('先看中間 32：34 比較大', '');
+  await step(tok);                                   // 11:26 move to the right
+  for (const i of [0, 1, 2]) glow(M[i], '#333333');
+  move(t, X(3.5), 2.6);
+  cap('所以往右半邊找', '左半邊直接不看');
+  await step(tok);                                   // 11:31 the insertion point
+  for (const i of [0, 1, 2]) glow(M[i], null);
+  move(t, (X(2) + X(3)) / 2, 2.6);
+  arrow(V3((X(2) + X(3)) / 2, 2.0, 0), V3((X(2) + X(3)) / 2, 1.0, 0), 0xa8730f);
+  cap('找到插入點：32 和 37 之間', 'log n 步就找到');
+  await step(tok);                                   // 11:44 look left and right: k-minute check
+  glow(M[2], GOLD); glow(M[3], GOLD);
+  cap('看左右鄰居 32、37 做 k 檢查', '');
+  await step(tok);                                   // 12:08 log n for the search
   glow(M[2], null); glow(M[3], null);
-  say('但插入要把後面全部往右搬', '（這裡只看插入的代價）');
-  await beat(tok, 1400);
-  move(M[4], X(5), 0.4); await beat(tok, 700);
-  move(M[3], X(4), 0.4); await beat(tok, 700);
+  row(0, '找位置：O(log n)');
+  cap('同學：找位置 O(log n)', '');
+  await step(tok);                                   // 12:13 constant for the comparison
+  row(1, '比鄰居：O(1)');
+  cap('比較左右鄰居 O(1)', '');
+  await step(tok);                                   // 12:20 insertion is constant?
+  row(2, '插入：O(1)？');
+  cap('插入也是 O(1)？', '老師：大家同意嗎？');
+  await step(tok);                                   // 12:51 you have to shift every element over
+  move(M[4], X(5), 0.4); await beat(tok, 450);
+  move(M[3], X(4), 0.4); await beat(tok, 450);
   move(t, X(3), 0.4);
-  say('shift 最壞要搬 n 個', '<span class="no">O(n)</span>');
-  await beat(tok, 3000);
+  tag('6', 'idx', X(5), -0.4, 0.9);
+  st.mood('happy');
+  cap('不對：要把後面的全部往右搬', '37、45 都得移一格');
+  await step(tok);                                   // 13:25 smallest i with R[i] ≥ t, O(log n)
+  row(0, '找最小的 i 使 R[i] ≥ t：O(log n)', 'good');
+  cap('精確說：找最小的 i，R[i] ≥ t', 'binary search，O(log n)');
+  await step(tok);                                   // 13:49 compare R[i], R[i−1] in O(1)
+  row(1, '比 R[i−1]、R[i]：O(1)', 'good');
+  cap('比較 R[i−1] 和 R[i]：O(1)', '');
+  await step(tok);                                   // 14:10 the actual insertion: shifting O(n)
+  row(2, '插入要 shift：O(n)', 'bad');
+  cap('真正插入要 shift：最壞 O(n)', '差一點點就成功');
 }]);
 
-// 14:40 sorted list
+// 14:38 sorted list
 FRAG.push(['bsta-sorted-list', 'Sorted list：插入 O(1)、但不能 binary search', async (tok) => {
   fresh([0, 5.5, 11], [0, 0.6, 0.6]);
   const A = [4, 20, 32, 37, 45], X = (i) => -5.6 + i * 2.5, G = [], AR = [];
+  await step(tok);                                   // 14:38 a sorted list
+  bub('候選三：sorted list', 0, 3.6);
+  cap('那 sorted list 呢？', '');
+  await step(tok);                                   // 14:50 a bunch of pointers
   A.forEach((v, i) => { G.push(lnode(v, X(i), 0.35)); if (i) AR.push(arrow(V3(X(i - 1) + 0.95, 0.35, 0), V3(X(i) - 0.5, 0.35, 0))); });
-  say('sorted list：4 → 20 → 32 → 37 → 45', 't = 34');
-  await beat(tok, 3000);
-  for (let i = 0; i < 3; i++) {
-    glow(G[i].userData.data, GOLD);
-    say('沒有 random access：不能跳到中間', '只能從頭一個一個走');
-    await beat(tok, 1200);
-    glow(G[i].userData.data, null);
-  }
-  glow(G[2].userData.data, GOLD);
-  say('找到 32 後面，花了 O(n)', '<span class="no">binary search 用不上</span>');
-  await beat(tok, 2400);
-  const n = lnode(34, (X(2) + X(3)) / 2, 0.35, 2.4, GRAY);
+  cap('list：一格一格用指標串起來', '4 → 20 → 32 → 37 → 45');
+  await step(tok);                                   // 15:05 insert by moving pointers in O(1)
+  lnode(34, (X(2) + X(3)) / 2, 0.35, 2.4, GRAY);
   kill(AR[1]);
   arrow(V3(X(2) + 0.95, 0.35, 0.3), V3((X(2) + X(3)) / 2 - 0.5, 0.35, 2.1));
   arrow(V3((X(2) + X(3)) / 2 + 0.95, 0.35, 2.1), V3(X(3) - 0.5, 0.35, 0.3));
-  say('插入只要改兩個指標', '<span class="ok">O(1)</span>');
-  await beat(tok, 2400);
-  glow(G[2].userData.data, null);
-  say('list 會插入、array 會找：各缺一半', 'BST 要兩個都做到');
-  await beat(tok, 3000);
+  good('找到位置後：改兩個指標 O(1)', 0, 2.6, 1.2);
+  cap('找到位置後，改指標就插好', 'O(1)');
+  await step(tok);                                   // 15:18 what's the problem?
+  const st = buddy('同學', '', '#9fc5e8', 5.6, 1.6, -1.6, 0.6); st.mood('wow');
+  cap('那問題在哪？', '');
+  await step(tok);                                   // 15:21 you can't do binary search
+  const p = pkt('找 34', X(0), 1.6, 0);
+  for (let i = 1; i <= 2; i++) await travel(tok, p, p.position.clone(), V3(X(i), 1.6, 0), 500);
+  cap('不能 binary search', '只能從頭一格一格走');
+  await step(tok);                                   // 15:26 no random access to index n/2
+  bad('不能直接跳到第 n/2 格', -2.5, 3.0);
+  cap('list 沒有 random access', '跳不到中間 → 找位置要 O(n)');
+  await step(tok);                                   // 15:36 the list does one thing right
+  note('list：插入 ✓　搜尋 ✗', -3.6, -1.0, 1.0);
+  cap('list 只做對一半：會插入', '');
+  await step(tok);                                   // 15:41 the array does the other thing right
+  note('array：搜尋 ✓　插入 ✗', 2.6, -1.0, 1.0);
+  cap('array 做對另一半：會搜尋', '');
+  await step(tok);                                   // 15:48 motivate the BST
+  st.mood('happy');
+  bub('BST：兩件事都要做到', 0, 4.4);
+  cap('這就是 BST 要解決的事', '');
 }]);
 
-// 15:59 heap 的 invariant 太弱
+// 16:02 heap 的 invariant 太弱
 FRAG.push(['bsta-heap', 'Min-heap：插入 25 不會檢查到 23 那邊', async (tok) => {
-  fresh([0, 5, 12.5], [0, 3.2, 0]);
+  fresh([0, 5, 12.5], [0, 3.0, 0]);
   const P = { a: [0, 5.6], b: [-2.6, 4], c: [2.6, 4], d: [-3.9, 2.4], e: [-1.3, 2.4], f: [1.3, 2.4] };
+  let N, n, arr;
+  await step(tok);                                   // 16:03 heaps: talked about last time
   line(...P.a, ...P.b); line(...P.a, ...P.c); line(...P.b, ...P.d); line(...P.b, ...P.e);
-  const N = { 21: cube(21, colorFor(21), NS, ...P.a), 23: cube(23, colorFor(23), NS, ...P.b), 30: cube(30, colorFor(30), NS, ...P.c),
-    24: cube(24, colorFor(24), NS, ...P.d), 28: cube(28, colorFor(28), NS, ...P.e) };
+  N = { 21: cube(21, colorFor(21), NS, ...P.a, 0, 2), 23: cube(23, colorFor(23), NS, ...P.b, 0, 2), 30: cube(30, colorFor(30), NS, ...P.c, 0, 2),
+    24: cube(24, colorFor(24), NS, ...P.d, 0, 2), 28: cube(28, colorFor(28), NS, ...P.e, 0, 2) };
   tag('24、28 為示意', 'idx', -2.6, 1.4);
-  say('min-heap：parent ≤ 兩個 children', '只管父子，invariant 很弱');
-  await beat(tok, 2800);
+  cap('候選四：heap（上一講）', '');
+  await step(tok);                                   // 16:12 heaps are arrays, seen as trees
+  arr = [21, 23, 30, 24, 28].map((v, i) => cube(v, colorFor(v), [0.7, 0.5, 0.7], -3 + i * 0.8, 0.2, 0.8));
+  tag('其實是 array', 'idx', -4.4, 0.2, 0.8);
+  cap('heap 其實是 array，只是畫成樹', '');
+  await step(tok);                                   // 16:37 a fairly weak invariant
+  bub('規則很弱：只管 parent ≤ children', 3.6, 6.8);
+  cap('heap 的 invariant 很弱', '');
+  await step(tok);                                   // 17:04 the min element has to be the root
+  glow(N[21], GOLD);
+  good('min 在 root：O(1)', 0, 6.7);
+  cap('只保證最小值在 root', '拿 min 很快');
+  await step(tok);                                   // 17:18 k-minute check → O(n)
+  glow(N[21], null);
+  bad('找 t 附近 k 以內的：O(n)', 4.0, 2.4);
+  cap('但 k 分鐘檢查要 O(n)', '');
+  await step(tok);                                   // 17:46 dictionaries: same problem
+  note('dictionary（hash table）也一樣，下週講', 3.4, 1.4);
+  cap('dictionary 也有同樣問題', '');
+  await step(tok);                                   // 18:47 min heap: 21 < 23 and 30
+  for (const v of [21, 23, 30]) glow(N[v], GOLD);
+  cap('min-heap：21 ≤ 23、21 ≤ 30', '一層一層往下都一樣');
+  await step(tok);                                   // 19:07 insert 25
+  for (const v of [21, 23, 30]) glow(N[v], null);
+  const p = pkt('insert 25', 5.4, 5.6);
+  cap('同學問：為什麼要 O(n)？', '老師：insert 25 看看');
+  await step(tok);                                   // 19:23 adds to the end
+  remove(p);
   line(...P.c, ...P.f);
-  const n = cube(25, GRAY, NS, ...P.f, 0, 3);
-  say('insert 25：先放在最後一格', '再往上跟 parent 比');
-  await beat(tok, 2200);
+  n = cube(25, GRAY, NS, ...P.f, 0, 3);
+  arr.push(cube(25, GRAY, [0.7, 0.5, 0.7], 1.0, 0.2, 0.8, 2));
+  cap('先接在最後一格', '');
+  await step(tok);                                   // 19:34 start flipping
   glow(n, GOLD); glow(N[30], GOLD);
-  say('25 < 30 → 交換', '');
-  await beat(tok, 1600);
   move(n, ...P.c); move(N[30], ...P.f);
-  await beat(tok, 1400);
-  glow(N[30], null); glow(N[21], GOLD);
-  say('21 ≤ 25 → 停，仍是 min-heap', '');
-  await beat(tok, 2000);
+  cap('25 < 30 → 往上交換', '');
+  await step(tok);                                   // 19:48 a legitimate min heap
+  glow(N[30], null); glow(N[21], GREEN);
+  cap('21 ≤ 25 → 停，仍是 min-heap', '');
+  await step(tok);                                   // 19:52 never check the left part, 23
   glow(N[21], null); glow(n, null);
   for (const v of [23, 24, 28]) glow(N[v], RED);
-  say('23 那邊從沒被看過', '|25 − 24| < 3 卻沒被檢查到');
-  await beat(tok, 2800);
-  say('heap 做 k 分鐘檢查要掃全部', '<span class="no">O(n)</span>');
-  await beat(tok, 3000);
+  bad('|25 − 24| < 3，卻沒被看到', -2.6, 6.6);
+  cap('23 那一邊從頭到尾沒看過', '插入時沒辦法順便檢查');
+  await step(tok);                                   // 20:20 would require O(n)
+  bad('要檢查只能全部掃：O(n)', 4.0, 1.4);
+  cap('想檢查只能另外掃全部', 'O(n)');
+  await step(tok);                                   // 20:35 we're stuck
+  for (const v of [23, 24, 28]) glow(N[v], null);
+  bub('目前沒有誰能全部 O(log n)', 0, 7.6);
+  cap('卡住了：沒有一個全都 O(log n)', '');
+  await step(tok);                                   // 20:52 fast insertion into a sorted array
+  good('sorted array + 快速插入 = BST', 0, 0.9, 1.5);
+  cap('sorted array 最接近', '只差「插入要快」');
 }]);
 
-// 21:14 BST 的結構與 invariant
+// 21:17 BST 的結構與 invariant
 FRAG.push(['bsta-invariant-30', 'BST invariant：30 的左右子樹', async (tok) => {
   fresh([0, 5, 12.5], [0, 3.4, 0]);
-  const { N, P } = bsTree([[30, 0, 5.8], [17, -2.6, 4.2, 30], [40, 2.6, 4.2, 30], [14, -3.9, 2.4, 17], [20, -1.3, 2.4, 17]], 3);
-  say('BST：真正用指標串起來的樹', '每個 node：key、parent、left、right');
-  await beat(tok, 2600);
+  let N, P, xt;
+  await step(tok);                                   // 21:17 BSTs enable binary search + fast insertion
+  const b1 = bub('BST：能 binary search，也能快速插入', 0, 7.4);
+  cap('BST：sorted array 做不到的它可以', '');
+  await step(tok);                                   // 21:31 a nice invariant
+  const b2 = note('invariant = 永遠要成立的規則', -3.6, 6.6);
+  cap('BST 也有一條 invariant', '');
+  await step(tok);                                   // 21:43 stronger than the heap invariant
+  const b3 = note('比 heap 的規則強', 3.6, 6.6);
+  cap('它比 heap 的規則更強', '');
+  await step(tok);                                   // 21:49 different, for this problem better
+  cap('不一定處處更好，但這題更好', '');
+  await step(tok);                                   // 22:02 one example of a BST
+  kill(b1); kill(b2); kill(b3);
+  ({ N, P } = bsTree([[30, 0, 5.8], [17, -2.6, 4.2, 30], [40, 2.6, 4.2, 30], [14, -3.9, 2.4, 17], [20, -1.3, 2.4, 17]], 3));
+  note('40 為示意', 2.6, 3.2);
+  cap('一棵 BST 的例子', 'root 30');
+  await step(tok);                                   // 22:19 each node has a key
+  glow(N[30], GOLD); glow(N[17], GOLD);
+  tag('key', 'idx', 0.9, 6.5); tag('key', 'idx', -1.7, 4.9);
+  cap('每個 node 有一個 key', '30、17 都是 key');
+  await step(tok);                                   // 22:36 a tree that has pointers, unlike a heap
+  glow(N[30], null); glow(N[17], null);
+  note('heap = array　BST = 真的用指標串', 3.8, 1.6);
+  cap('BST 是真的用指標連的樹', 'heap 只是 array 畫成樹');
+  await step(tok);                                   // 22:55 the pointers: parent of x
   glow(N[17], GOLD);
-  const a = [arrow(V3(-2.3, 4.8, 0.5), V3(-0.5, 5.6, 0.5), 0x6a4a00), arrow(V3(-2.9, 3.7, 0.5), V3(-3.7, 2.9, 0.5)), arrow(V3(-2.3, 3.7, 0.5), V3(-1.5, 2.9, 0.5))];
-  const l = [tag('parent', 'idx', -1.3, 5.6, 0.5), tag('left', 'idx', -4.0, 3.4, 0.5), tag('right', 'idx', -1.1, 3.4, 0.5)];
-  say('17 的三個指標', 'parent = 30、left = 14、right = 20');
-  await beat(tok, 2800);
-  a.forEach(kill); l.forEach(kill); glow(N[17], null);
-  glow(N[30], GOLD);
-  for (const v of [17, 14, 20]) glow(N[v], GREEN);
-  say('30 的整個左子樹都 ≤ 30', 'y ∈ left(x) ⇒ key(y) ≤ key(x)');
-  await beat(tok, 2600);
+  arrow(V3(-2.2, 4.7, 0.5), V3(-0.5, 5.5, 0.5), 0x6a4a00);
+  tag('parent', 'idx', -1.6, 5.6, 0.5);
+  cap('17 有一個指標指回 parent 30', '');
+  await step(tok);                                   // 23:14 parent, left child, right child
+  arrow(V3(-2.9, 3.7, 0.5), V3(-3.7, 2.9, 0.5)); arrow(V3(-2.3, 3.7, 0.5), V3(-1.5, 2.9, 0.5));
+  tag('left', 'idx', -4.0, 3.4, 0.5); tag('right', 'idx', -1.1, 3.4, 0.5);
+  cap('每個 node 三個指標', 'parent、left、right');
+  await step(tok);                                   // 23:53 for all x: y in the left subtree
+  glow(N[17], null);
+  xt = tag('x', 'ptr alt', 0, 6.9);
+  const gl = ghostBox(GREEN, 4.2, 3.2, 1.4); gl.position.set(-2.6, 3.4, 0);
+  cap('對每個 x：看它的左子樹', '');
+  await step(tok);                                   // 24:18 key(y) ≤ key(x)
+  for (const v of [17, 14, 20]) { glow(N[v], GREEN); await beat(tok, 250); }
+  cap('左子樹的 key 都 ≤ x', 'y ∈ left(x) ⇒ key(y) ≤ key(x)');
+  await step(tok);                                   // 24:28 y in the right subtree: ≥
   glow(N[40], BLUE);
-  say('右子樹都 ≥ 30', 'y ∈ right(x) ⇒ key(y) ≥ key(x)');
-  await beat(tok, 2400);
+  cap('右子樹的 key 都 ≥ x', 'y ∈ right(x) ⇒ key(y) ≥ key(x)');
+  await step(tok);                                   // 24:42 subtrees: everything underneath
+  note('看整棵子樹（heap 只看 children）', -3.4, 0.9);
+  cap('是「整棵子樹」，不只子節點', '這就是比 heap 強的地方');
+  await step(tok);                                   // 24:58 look right: only greater than 30
+  kill(gl);
   Object.values(N).forEach((m) => glow(m, null));
+  glow(N[40], BLUE);
+  const e1 = pkt('看右邊 → 都 > 30', 2.6, 5.4);
+  cap('從 30 往右看：都比 30 大', '');
+  await step(tok);                                   // 25:04 look left: only less than 30
+  for (const v of [17, 14, 20]) { glow(N[v], GREEN); await beat(tok, 250); }
+  const e2 = pkt('← 看左邊都 < 30', -2.6, 5.4);
+  cap('往左看，整棵都比 30 小', '');
+  await step(tok);                                   // 25:13 true for any intermediate node: 17
+  remove(e1); remove(e2);
+  Object.values(N).forEach((m) => glow(m, null));
+  xt.position.set(-2.6, 5.3, 0);
   glow(N[17], GOLD); glow(N[14], GREEN); glow(N[20], BLUE);
-  say('中間的 17 也要成立', '14 ≤ 17 ≤ 20');
-  await beat(tok, 2400);
-  say('比 heap 強：看整棵子樹', 'heap 只比 parent 和 children');
-  await beat(tok, 3000);
+  note('14 < 17 < 20', -2.6, 1.4);
+  cap('中間的 17 也要成立', '14 < 17 < 20');
+  await step(tok);                                   // 25:29 that's the BST
+  good('這就是 BST ✓', 3.2, 6.6);
+  cap('這就是 BST 和它的 invariant', '');
 }]);
 
-// 32:31 find 回傳指標、重複 key、平衡問題
+// 25:35 BST insert：49, 79, 46, 41（cued copy of the module's bst-insert）
+FRAG.push(['bsta-insert', 'BST 插入：49, 79, 46, 41', async (tok) => {
+  let t, p;
+  await step(tok);                                   // 25:35 why BSTs could solve it: insert
+  t = bsv([]);
+  bub('用 BST 來做跑道預約', 0, 7.4);
+  cap('看看 BST 怎麼插入', '');
+  await step(tok);                                   // 25:55 start with an empty R
+  const em = note('R = 空的', 0, 6.0);
+  cap('從空的 R 開始', '');
+  await step(tok);                                   // 26:08 insert 49: a node with key 49
+  kill(em);
+  grow(t, 49);
+  cap('insert 49：直接當 root', '');
+  await step(tok);                                   // 26:19 insert 79: look at 49
+  p = pkt('79', 5, 7.6);
+  ringN(t, 49);
+  await hover(tok, p, nd(t, 49));
+  cap('insert 79：先跟 49 比', '');
+  await step(tok);                                   // 26:32 79 > 49 → right child
+  remove(p); grow(t, 79);
+  cap('79 > 49 → 接在右邊', '');
+  await step(tok);                                   // 26:37 then insert 46
+  p = pkt('46', 5, 7.6);
+  hideCursor(bst.cur);
+  cap('接著 insert 46', '');
+  await step(tok);                                   // 26:49 compare 49 and 46: less → left
+  ringN(t, 49);
+  await hover(tok, p, nd(t, 49));
+  remove(p); grow(t, 46);
+  cap('46 < 49 → 接在左邊', '');
+  await step(tok);                                   // 26:59 next insert 41
+  p = pkt('41', 5, 7.6);
+  hideCursor(bst.cur);
+  cap('再 insert 41', '');
+  await step(tok);                                   // 27:04 k-minute checks: in a second
+  note('k 分鐘檢查：等一下再講', 4.6, 3.0);
+  cap('先不管 k 分鐘檢查', '等一下講');
+  await step(tok);                                   // 27:20 41 < 49 → left
+  ringN(t, 49);
+  await hover(tok, p, nd(t, 49));
+  cap('41 < 49 → 往左', '');
+  await step(tok);                                   // 27:25 41 < 46 → left child
+  ringN(t, 46);
+  await hover(tok, p, nd(t, 46));
+  remove(p); grow(t, 41);
+  cap('41 < 46 → 接成 46 的左子', '只走一條路徑');
+}]);
+
+// 27:31 插入時順便做 k 分鐘檢查（cued copy of the module's runway-k-check）
+FRAG.push(['bsta-kcheck', '跑道預約：插入時順便做 k 分鐘檢查', async (tok) => {
+  let t, p, gh;
+  await step(tok);                                   // 27:31 now the k-minute check
+  t = bsv([49, 79, 46, 41]);
+  bub('現在加上 k 分鐘檢查', 0, 7.6);
+  cap('來看 k 分鐘檢查', '');
+  await step(tok);                                   // 27:41 k = 3
+  note('k = 3', 4.8, 6.6);
+  cap('k = 3', '');
+  await step(tok);                                   // 27:47 checks while doing binary search
+  bub('一邊找位置、一邊檢查', -4.2, 6.6);
+  cap('一邊 binary search，一邊檢查', '');
+  await step(tok);                                   // 27:53 compare 42
+  p = pkt('42', 5, 7.6);
+  cap('要求 42', '');
+  await step(tok);                                   // 27:58 with 49: 7 apart → OK
+  ringN(t, 49);
+  await hover(tok, p, nd(t, 49));
+  good('|42 − 49| = 7 ✓', 2.0, 7.0);
+  cap('42 vs 49：差 7 ≥ 3 → OK', '');
+  await step(tok);                                   // 28:05 less than 49 → left, compare with 46
+  ringN(t, 46);
+  await hover(tok, p, nd(t, 46));
+  cap('42 < 49 → 往左，跟 46 比', '');
+  await step(tok);                                   // 28:12 more than 3 away from 46 → OK
+  good('|42 − 46| = 4 ✓', -1.2, 6.2);
+  cap('42 vs 46：差 4 ≥ 3 → OK', '');
+  await step(tok);                                   // 28:18 go left, get to 41
+  ringN(t, 41);
+  await hover(tok, p, nd(t, 41));
+  cap('再往左，遇到 41', '');
+  await step(tok);                                   // 28:25 greater, but not k more
+  ng(nd(t, 41), RED);
+  bad('|42 − 41| = 1 ✗', -3.2, 5.4);
+  cap('42 vs 41：只差 1 < 3', '');
+  await step(tok);                                   // 28:34 would be putting 42 here
+  const a = nd(t, 41).pos;
+  gh = ghostBox(RED, 0.8, 0.6, 0.8); gh.position.set(a.x + 0.7, a.y - 1.3, 0);
+  tag('42 本來會在這', 'idx', a.x + 0.7, a.y - 2.0);
+  cap('沒檢查的話，42 會接在這', '');
+  await step(tok);                                   // 28:40 violates the safety → reject
+  kill(gh); remove(p);
+  bad('拒絕預約 42', 0, 1.0, 1.0);
+  cap('違反安全條件 → 不插入', '');
+  await step(tok);                                   // 28:50 a sorted array plus pointers
+  ng(nd(t, 41), null); hideCursor(bst.cur);
+  note('由左到右讀：41 46 49 79（排好序）', 0, 0.2, 1.0);
+  cap('BST ≈ 排好序的 array + 指標', '介於 sorted list 和 array 之間');
+  await step(tok);                                   // 29:09 attaching the new node to a pointer
+  bub('找到位置後：接上指標就好', 4.2, 1.6);
+  cap('找到位置，只要接一個指標', '不用搬其他元素');
+  await step(tok);                                   // 29:19 h = height of the tree
+  tag('h = 樹高 = 3', 'ptr alt', -5.6, 4.6);
+  arrow(V3(-6.3, 6.6, 0), V3(-6.3, 3.8, 0), 0xa8730f);
+  cap('h = 樹的高度', '');
+  await step(tok);                                   // 29:38 with or without the check: O(h)
+  good('insert（有沒有檢查）= O(h)', -4.4, 7.4);
+  cap('有沒有檢查，insert 都是 O(h)', '');
+  await step(tok);                                   // 31:25 the beauty: checks while finding the place
+  cap('BST 的好處：找位置時順便檢查', '');
+  await step(tok);                                   // 31:33 what about 45?
+  p = pkt('45', 5, 7.6);
+  cap('同學問：那 45 呢？', '');
+  await step(tok);                                   // 31:45 45 < 49, more than 3 away → pass
+  ringN(t, 49);
+  await hover(tok, p, nd(t, 49));
+  cap('45 vs 49：差 4 → 通過，往左', '');
+  await step(tok);                                   // 31:58 45 vs 46 → fail right here
+  ringN(t, 46);
+  await hover(tok, p, nd(t, 46));
+  ng(nd(t, 46), RED);
+  bad('|45 − 46| = 1 ✗', 1.2, 5.0);
+  cap('45 vs 46：只差 1 → 失敗', '');
+  await step(tok);                                   // 32:16 just following a path: O(h)
+  remove(p); ng(nd(t, 46), null);
+  for (const k of [49, 46]) ng(nd(t, k), GOLD);
+  cap('只沿一條路徑走 → O(h)', '');
+}]);
+
+// 32:46 find 回傳指標、重複 key、平衡問題
 FRAG.push(['bsta-find-46', 'find(46)：回傳指向那筆資料的指標', async (tok) => {
-  fresh([0, 5, 12.5], [0, 3.2, 0]);
-  const { N, P } = bsTree(T4);
-  const r = bsRing();
-  say('find(46)：沿路比大小', '');
-  await beat(tok, 1600);
-  ringTo(r, P[49]); glow(N[49], GOLD);
-  say('46 < 49 → 往左', '');
-  await beat(tok, 1600);
-  ringTo(r, P[46]); glow(N[46], GREEN); glow(N[49], null);
-  say('找到 46', '已經在樹裡 → 不插入');
-  await beat(tok, 1800);
-  const rec = cube('record', GRAY, [1.8, 0.7, 1.0], -2.6, 1.0, 2.2, 3);
-  arrow(V3(-2.6, 3.5, 0.4), V3(-2.6, 1.5, 2));
-  say('回傳指向 46 那筆資料的指標', '要覆蓋就改這筆 record');
-  await beat(tok, 2600);
-  kill(rec); r.visible = false;
-  const a = cube('46a', colorFor(46), [1.0, 0.7, 0.8], 4.4, 1.2, 1.5, 3), b = cube('46b', colorFor(46), [1.0, 0.7, 0.8], 5.8, 1.2, 1.5, 3);
-  say('允許重複 key = multiset', '要另外區分 46a、46b');
-  await beat(tok, 2600);
-  kill(a); kill(b); glow(N[46], null);
-  say('樹不平衡怎麼辦？之後回答', '目前只保證 O(h)');
-  await beat(tok, 3000);
+  let t, rec, n46;
+  await step(tok);                                   // 32:46 vanilla BST: find or insert
+  t = bsv([49, 79, 46, 41]);
+  bub('一般的 BST：find 或 insert', 0, 7.6);
+  cap('一般 BST 做的就是 find、insert', '');
+  await step(tok);                                   // 32:58 return the pointer
+  note('find → 回傳一個指標', 4.4, 6.6);
+  cap('找到了：回傳指向它的指標', '');
+  await step(tok);                                   // 33:00 find 46
+  ringN(t, 49); await beat(tok, 500); ringN(t, 46);
+  n46 = nd(t, 46); ng(n46, GREEN);
+  cap('find 46：49 → 往左 → 46', '');
+  await step(tok);                                   // 33:08 a record associated with it
+  rec = prop('file', -4.6, 1.6, 1.0, 1.0, 'record：46 的資料');
+  cap('46 只是 key，背後掛著一筆資料', '');
+  await step(tok);                                   // 33:10 a pointer to that record
+  arrow(V3(n46.pos.x - 0.4, n46.pos.y - 0.3, 0.5), V3(-4.2, 2.6, 1.0), 0xa8730f);
+  note('指標', -2.4, 2.6, 1.0);
+  cap('拿到一個指向那筆資料的指標', '');
+  await step(tok);                                   // 33:14 you can override
+  rec.userData.label.element.textContent = 'record：覆蓋成新資料';
+  cap('可以直接覆蓋那筆資料', '');
+  await step(tok);                                   // 33:17 duplicates: a multiset
+  const d2 = cube(46, colorFor(46), [0.8, 0.6, 0.8], n46.pos.x + 1.1, n46.pos.y, 1.2, 2);
+  cap('也可以允許重複：multiset', '同一個 key 出現兩次');
+  await step(tok);                                   // 33:26 differentiate 46a, 46b
+  tag('46a', 'ptr', n46.pos.x, n46.pos.y + 0.8, 0.5); tag('46b', 'ptr', n46.pos.x + 1.1, n46.pos.y + 0.8, 1.2);
+  cap('要能分辨：46a、46b', '');
+  await step(tok);                                   // 33:44 not balanced → a problem?
+  const st = buddy('同學', '', '#9fc5e8', 5.4, 0.4, 0, 0.7); st.mood('wow');
+  bub('樹不平衡怎麼辦？', 5.4, 2.0);
+  cap('同學問：樹不平衡會怎樣？', '老師：好問題，先留著');
+  await step(tok);                                   // 34:11 I said O(h) — not quite what we want
+  bad('目前只有 O(h)，還不是 O(log n)', 0, 0.4, 1.2);
+  cap('目前只說了 O(h)', '還不是想要的 O(log n)');
 }]);
 
-// 34:58 find min / max / next-larger
+// 35:05 find min / max / next-larger
 FRAG.push(['bsta-minmax-next', 'find min、find max、next-larger(46)', async (tok) => {
-  fresh([0, 5, 12.5], [0, 3.2, 0]);
-  const { N, P } = bsTree(T4);
-  const r = bsRing();
-  for (const v of [49, 46, 41]) { ringTo(r, P[v]); glow(N[v], GOLD); say('find min：一直往左', '49 → 46 → 41'); await beat(tok, 900); }
-  glow(N[41], GREEN);
-  say('走到沒有左子為止', 'min = 41，O(h)');
-  await beat(tok, 2200);
-  Object.values(N).forEach((m) => glow(m, null));
-  for (const v of [49, 79]) { ringTo(r, P[v]); glow(N[v], GOLD); say('find max：一直往右', '49 → 79'); await beat(tok, 900); }
-  glow(N[79], GREEN);
-  say('max = 79', '一樣 O(h)');
-  await beat(tok, 2200);
-  Object.values(N).forEach((m) => glow(m, null));
-  ringTo(r, P[46]); glow(N[46], GOLD);
-  say('next-larger(46)：比 46 大的下一個', '46 沒有右子樹 → 往上找');
-  await beat(tok, 2400);
-  ringTo(r, P[49]); glow(N[49], GREEN);
-  say('第一個「從左邊上來」的祖先', 'next-larger(46) = 49');
-  await beat(tok, 2400);
-  say('這些操作都只走一條路徑', '<span class="ok">O(h)</span>');
-  await beat(tok, 3000);
+  let t;
+  await step(tok);                                   // 35:05 many operations in O(h)
+  t = bsv([49, 79, 46, 41]);
+  bub('很多操作都是 O(h)', 0, 7.6);
+  cap('BST 很多操作都是 O(h)', '有些甚至 O(1)');
+  await step(tok);                                   // 35:16 min-heap: min is the root, O(1)
+  note('min-heap：min 就是 root，O(1)', 4.0, 6.6);
+  cap('對照：min-heap 找 min 是 O(1)', '');
+  await step(tok);                                   // 35:26 how do you find the min in a BST?
+  cap('那 BST 怎麼找 min？', '');
+  await step(tok);                                   // 35:34 keep going to the left
+  for (const k of [49, 46, 41]) { ringN(t, k); ng(nd(t, k), GOLD); await beat(tok, 450); }
+  ng(nd(t, 41), GREEN);
+  cap('一直往左走', 'min = 41');
+  await step(tok);                                   // 35:39 max: keep going to the right
+  for (const k of [49, 46, 41]) ng(nd(t, k), null);
+  for (const k of [49, 79]) { ringN(t, k); ng(nd(t, k), GOLD); await beat(tok, 450); }
+  ng(nd(t, 79), GREEN);
+  cap('max：一直往右走', 'max = 79');
+  await step(tok);                                   // 35:47 it's the height: O(h)
+  good('走幾步？最多樹高 → O(h)', -4.0, 6.6);
+  cap('複雜度就是樹高 O(h)', '');
+  await step(tok);                                   // 35:50 go left until you hit a leaf
+  for (const k of [49, 79]) ng(nd(t, k), null);
+  ringN(t, 41);
+  cap('往左走到底就停', 'max 也一樣');
+  await step(tok);                                   // 36:09 next larger x
+  hideCursor(bst.cur);
+  bub('next-larger(x)：比 x 大的下一個', 0, 0.3, 1.2);
+  cap('next-larger(x)', '排序後 x 的下一個');
+  await step(tok);                                   // 36:21 46 → what's next larger?
+  ringN(t, 46); ng(nd(t, 46), GOLD);
+  cap('例：next-larger(46) = ？', '');
+  await step(tok);                                   // 36:27 it's 49
+  ringN(t, 49); ng(nd(t, 49), GREEN);
+  cap('答案是 49', '');
+  await step(tok);                                   // 36:35 in general O(h)
+  good('一般情況也是 O(h)', 4.0, 1.4);
+  cap('一般情況也能 O(h) 做到', '');
 }]);
 
-// 36:46 augmentation：rank(t) 需求 + 子樹大小 + insert 43
+// 36:45 augmentation：rank(t) 需求 + 子樹大小 + insert 43
 FRAG.push(['bsta-size-aug', 'Augmentation：每個 node 記子樹大小', async (tok) => {
-  bst.kcheck = false; bst.showSize = true; bst.del = 'succ';
-  enterBst([49, 46, 79, 64, 83]);
-  say('新需求：rank(t)', 'rank(t) = 降落時間 ≤ t 的班數');
-  await beat(tok, 2600);
-  say('每個 node 多記子樹大小', 'size(x) = size(左) + size(右) + 1');
-  await beat(tok, 2600);
-  say('79 的 size = 3，49 的 size = 5', '葉節點 46、64、83 都是 1');
-  await beat(tok, 2600);
-  say('insert 43：沿插入路徑走', '');
-  await bstInsert(43, tok);
-  say('經過的 49、46 各 +1', '49：5 → 6，46：1 → 2，43 = 1');
-  await beat(tok, 2600);
-  say('有 k 檢查：先檢查成功再更新', '整體仍是 <span class="ok">O(h)</span>');
-  await beat(tok, 3000);
+  fresh([0, 4.6, 13.5], [0, 3.7, 0]);
+  const SZ = new Map();
+  let t, boss, p;
+  await step(tok);                                   // 36:45 augmented BSTs: more data in a node
+  bub('augmented BST：node 裡多存一點資料', 0, 6.4);
+  cap('augmentation：替 node 加資料', '');
+  await step(tok);                                   // 37:32 the specification changed on us
+  boss = buddy('老闆', '', '#f4a56a', 5.2, 0.6, 0, 0.8); boss.mood('wow');
+  bub('規格又改了！', 5.2, 2.4);
+  cap('需求改了（規格常常會變）', '');
+  await step(tok);                                   // 37:50 the new requirement: rank(t)
+  note('新需求：rank(t)', -4.2, 5.2);
+  cap('新需求：算 rank(t)', '');
+  await step(tok);                                   // 38:00 how many planes land at times ≤ t
+  bub('rank(t) = 降落時間 ≤ t 的有幾班', -3.2, 4.2);
+  cap('rank(t) = 有幾班 ≤ t', '');
+  await step(tok);                                   // 38:42 don't change the complexity from O(h)
+  bad('不能變慢：還是要 O(h)', 3.4, 4.2);
+  boss.mood('calm');
+  cap('而且不能讓 O(h) 變差', '');
+  await step(tok);                                   // 39:07 add information to the node
+  cap('在 node 裡多放一個數字', '');
+  await step(tok);                                   // 39:45 49, 46
+  t = makeView({ tag: 'none' });
+  [49, 46].forEach((k) => attach(t, mk(k)));
+  layout(t, true); bst.t = t; bst.cur = makeCursor();
+  cap('例子：49，底下 46', '');
+  await step(tok);                                   // 39:58 over here 79, 64, 83
+  for (const k of [79, 64, 83]) grow(t, k);
+  cap('右邊：79，底下 64、83', '');
+  await step(tok);                                   // 40:16 a number written outside the node
+  for (const n of inorder(t.root)) SZ.set(n.key, '?');
+  paint(t, SZ);
+  cap('每個 node 旁邊多寫一個數', '');
+  await step(tok);                                   // 40:44 these are subtree sizes
+  note('size = 子樹的 node 數（含自己）', -3.6, 0.4, 1.0);
+  cap('這個數 = 子樹大小', '');
+  await step(tok);                                   // 40:57 the subtree size here is 1, 1, 1
+  for (const k of [46, 64, 83]) { SZ.set(k, 1); ng(nd(t, k), GREEN); }
+  paint(t, SZ);
+  cap('葉節點 46、64、83：size 1', '只有自己');
+  await step(tok);                                   // 41:31 79 is 3
+  for (const k of [46, 64, 83]) ng(nd(t, k), null);
+  SZ.set(79, 3); paint(t, SZ);
+  for (const k of [79, 64, 83]) ng(nd(t, k), GOLD);
+  cap('79 的 size = 3', '79、64、83');
+  await step(tok);                                   // 41:39 49 is 5
+  for (const k of [79, 64, 83]) ng(nd(t, k), null);
+  SZ.set(49, 5); paint(t, SZ);
+  for (const n of inorder(t.root)) ng(n, GOLD);
+  cap('49 的 size = 5', '整棵樹都算');
+  await step(tok);                                   // 42:05 insert 43
+  for (const n of inorder(t.root)) ng(n, null);
+  p = pkt('insert 43', 5, 7.4);
+  cap('insert 43 時，size 怎麼改？', '');
+  await step(tok);                                   // 42:15 follow the insertion path, +1
+  bub('沿插入路徑：經過的 node 都 +1', -3.6, 7.4);
+  cap('沿插入路徑，經過的都 +1', '');
+  await step(tok);                                   // 42:28 5 plus 1, because you see 49
+  ringN(t, 49); await hover(tok, p, nd(t, 49));
+  SZ.set(49, 6); paint(t, SZ); ng(nd(t, 49), GOLD);
+  cap('經過 49：5 → 6', '');
+  await step(tok);                                   // 42:40 then 46: add 1
+  ringN(t, 46); await hover(tok, p, nd(t, 46));
+  SZ.set(46, 2); paint(t, SZ); ng(nd(t, 46), GOLD);
+  cap('經過 46：1 → 2', '');
+  await step(tok);                                   // 42:47 add 43: a leaf, size 1
+  remove(p); hideCursor(bst.cur);
+  grow(t, 43); SZ.set(43, 1); paint(t, SZ);
+  cap('43 是新的 leaf：size 1', '');
+  await step(tok);                                   // 43:10 with the k check: run regular insert first
+  ng(nd(t, 49), null); ng(nd(t, 46), null);
+  note('有 k 檢查：先照常 insert，失敗就結束', 3.0, 0.4, 1.0);
+  cap('有 k 檢查時：先做一般 insert', '失敗就什麼都不改');
+  await step(tok);                                   // 43:25 if it succeeds, increment: O(h)
+  for (const k of [49, 46, 43]) ng(nd(t, k), GREEN);
+  good('成功了再沿路 +1 → 仍是 O(h)', 3.0, 7.4);
+  boss.mood('happy');
+  cap('成功才沿路 +1', '整體仍是 O(h)');
 }]);
 
-// 44:13 Q&A：刪除 79
+// 44:12 Q&A：刪除 79
 FRAG.push(['bsta-del79', '刪除 79：83 補上來、64 接左邊', async (tok) => {
-  bst.kcheck = false; bst.showSize = false; bst.del = 'succ';
-  enterBst([49, 46, 43, 79, 64, 83]);
-  say('問：刪掉 79 要重建整棵樹嗎？', '不用，只要搬指標');
-  await beat(tok, 2800);
-  say('79 有左子 64、右子 83', '兩個子都在');
-  await beat(tok, 2400);
-  await bstDelete(79, tok);
-  say('83 上來，64 接在 83 左邊', 'BST 性質仍成立');
-  await beat(tok, 2800);
-  say('只動了幾個指標', 'inorder：' + keys(inorder(bst.t.root)));
-  await beat(tok, 3000);
+  let t, x;
+  await step(tok);                                   // 44:13 delete 79: rewrite the whole BST?
+  t = bsv([49, 46, 43, 79, 64, 83]);
+  const st = buddy('同學', '', '#9fc5e8', 5.4, 0.4, 0, 0.7); st.mood('wow');
+  bub('刪 79 要整棵重建嗎？', 5.0, 2.0);
+  cap('同學問：刪掉 79 要重寫整棵嗎？', '');
+  await step(tok);                                   // 44:20 bubble up pointers
+  x = nd(t, 79);
+  ringN(t, 79); ng(x, RED);
+  cap('不用：只要搬指標', '');
+  await step(tok);                                   // 44:30 83 would come up
+  const s = x.right;
+  hideCursor(bst.cur);
+  transplant(t, x, s);
+  lab.flyAway(x.body, V3(0, 8, 5));
+  layout(t);
+  cap('79 拿掉，83 升上來', '');
+  await step(tok);                                   // 44:36 64 to the left
+  s.left = x.left; x.left.parent = s;
+  layout(t);
+  cap('64 接到 83 的左邊', 'BST 性質仍成立');
+  await step(tok);                                   // 44:42 move pointers in the case of delete
+  st.mood('happy');
+  good('只改了幾個指標', 0, 0.6, 1.2);
+  cap('刪除也只是搬指標', 'inorder：' + keys(inorder(t.root)));
 }]);
 
-// 44:58 rank(79) = 1 + 2 + 1 + 1 = 5
+// 45:07 rank(79) = 1 + 2 + 1 + 1 = 5
 FRAG.push(['bsta-rank79', 'rank(79)：往右走時加自己與左子樹', async (tok) => {
-  bst.kcheck = false; bst.showSize = true; bst.del = 'succ';
-  enterBst([49, 46, 43, 79, 64, 83]);
-  say('rank(79)：有幾班 ≤ 79？', '沿搜尋路徑，把比較小的加起來');
-  await beat(tok, 2800);
-  say('規則：key ≤ t 就加自己', '再加它左子樹的 size');
-  await beat(tok, 2600);
-  const r = await bstRank(79, tok);
-  say('49：+1，46 子樹：+2', '79：+1，64 子樹：+1');
-  await beat(tok, 2800);
-  say('1 + 2 + 1 + 1 = ' + r, '<span class="ok">rank(79) = ' + r + '</span>，O(h)');
-  await beat(tok, 2600);
-  say('真的數一下：43 46 49 64 79', '5 個 ≤ 79 ✓');
-  await beat(tok, 3000);
+  fresh([0, 4.6, 13.5], [0, 3.7, 0]);
+  const SZ = new Map();
+  let t, sum = 0, sl, p;
+  const add = (k, why) => { sum += k; txt(sl, 'rank = ' + sum); cap(why, 'rank = ' + sum); };
+  await step(tok);                                   // 45:11 how to compute rank(t) from subtree sizes?
+  bub('怎麼用子樹大小算 rank(t)？', 0, 7.4);
+  cap('最後一步：用 size 算 rank(t)', '');
+  await step(tok);                                   // 45:17 subtree size: nodes underneath, count yourself
+  note('size = 底下的 node 數（記得算自己）', -3.2, 6.6);
+  cap('size：底下有幾個，加上自己', '');
+  await step(tok);                                   // 45:23 rank(t) = how many ≤ t
+  note('rank(t) = ≤ t 的有幾個', 3.6, 6.6);
+  cap('rank(t)：有幾班 ≤ t', '');
+  await step(tok);                                   // 45:41 the tree after 43: 49(6), 46(2) …
+  t = makeView({ tag: 'none' });
+  [49, 46, 43, 79, 64, 83].forEach((k) => attach(t, mk(k)));
+  layout(t, true); bst.t = t; bst.cur = makeCursor();
+  for (const n of inorder(t.root)) SZ.set(n.key, size(n));
+  paint(t, SZ);
+  cap('插入 43 之後的樹', '49 是 6、46 是 2');
+  await step(tok);                                   // 46:07 what lands before t, in O(h)?
+  cap('要在 O(h) 內算出來', '');
+  await step(tok);                                   // 46:38 student: first find where to insert
+  const st = buddy('同學', '', '#9fc5e8', 5.6, 0.2, 0, 0.6); st.mood('wow');
+  bub('先找插入位置…', 5.6, 1.6);
+  cap('同學：先找 t 的位置', '');
+  await step(tok);                                   // 46:56 student: subtract what's on the right
+  bub('…再用總數減掉右邊的', 5.0, 2.4);
+  cap('再用總數減掉右邊比較大的', '答案對，老師換個方式');
+  await step(tok);                                   // 47:23 add up the things we want
+  st.mood('happy');
+  cap('老師：改成「加」比較小的', '');
+  await step(tok);                                   // 47:38 walk down the tree: it's a search
+  cap('沿搜尋 t 的路徑往下走', '');
+  await step(tok);                                   // 47:43 add 1 + left subtree sizes
+  note('key ≤ t：+1（自己）+ 左子樹 size', -3.4, 0.4, 1.0);
+  cap('遇到 key ≤ t：加自己和左子樹', '');
+  await step(tok);                                   // 49:00 t = 79
+  p = pkt('t = 79', 5.0, 7.4);
+  sl = note('rank = 0', -5.6, 4.6);
+  cap('例：t = 79', 'rank = 0');
+  await step(tok);                                   // 49:10 look at 49
+  ringN(t, 49); await hover(tok, p, nd(t, 49));
+  cap('先看 49', '');
+  await step(tok);                                   // 49:22 49 < 79: add 1
+  ng(nd(t, 49), GOLD);
+  add(1, '49 ≤ 79：+1（49 自己）');
+  await step(tok);                                   // 49:30 move to the right
+  arrow(V3(nd(t, 49).pos.x + 0.5, nd(t, 49).pos.y - 0.2, 0.4), V3(nd(t, 79).pos.x - 0.4, nd(t, 79).pos.y + 0.3, 0.4), 0xa8730f);
+  cap('79 > 49 → 往右走', '');
+  await step(tok);                                   // 49:50 add the subtree sizes to the left: 2
+  for (const k of [46, 43]) ng(nd(t, k), GREEN);
+  add(2, '左邊 46 子樹全都 < 79：+2');
+  await step(tok);                                   // 50:14 move right, see 79
+  ringN(t, 79); await hover(tok, p, nd(t, 79));
+  cap('往右，看到 79', '');
+  await step(tok);                                   // 50:26 79 ≤ 79: add 1
+  ng(nd(t, 79), GOLD);
+  add(1, '79 ≤ 79：+1（79 自己）');
+  await step(tok);                                   // 50:37 subtree to the left of 79: 1
+  ng(nd(t, 64), GREEN);
+  add(1, '79 左邊 64 子樹：+1');
+  await step(tok);                                   // 50:50 found the location: matches 79
+  hideCursor(bst.cur);
+  cap('找到 79 的位置，結束', '');
+  await step(tok);                                   // 51:01 if it was 78: same steps
+  note('t = 78：路徑一樣，但 79 不算', 3.6, 1.4, 1.0);
+  cap('t = 78：步驟差不多', '');
+  await step(tok);                                   // 51:13 1 + 2 + 1 + 1 = 5
+  remove(p);
+  cls(sl, 'good'); txt(sl, 'rank = 1 + 2 + 1 + 1 = 5');
+  cap('1 + 2 + 1 + 1 = 5', 'rank(79) = 5，O(h)');
+  await step(tok);                                   // 51:23 the correct answer
+  for (const k of [43, 46, 49, 64, 79]) ng(nd(t, k), GREEN);
+  ng(nd(t, 83), null);
+  cap('數數看：43 46 49 64 79', '5 個 ≤ 79 ✓');
+}]);
+
+// 51:28 壞消息：依序插入會退化成 list（cued copy of the module's degenerate-path）
+FRAG.push(['bsta-degenerate', '依序插入會退化成 list', async (tok) => {
+  fresh([0, 4.3, 13.5], [0, 3.8, 0]);
+  const seq = [43, 46, 48, 49, 52, 56, 61, 64];
+  const small = { size: [0.55, 0.42, 0.55], width: 5.6, maxSp: 0.8, topY: 6.6, minY: 0.4, maxStep: 1.3 };
+  const L = makeView(Object.assign({ cx: -3.0 }, small));
+  let hl;
+  const ins = (k) => { const z = attach(L, mk(k)); layout(L); dropIn(z); txt(hl, 'BST　h = ' + height(L.root)); };
+  await step(tok);                                   // 51:28 the bad news
+  bub('壞消息：還沒真的解決', 0, 7.6);
+  cap('壞消息：問題還沒解決', '');
+  await step(tok);                                   // 51:37 h could be O(n)
+  bad('h 可能是 O(n)', 3.6, 6.4);
+  cap('樹高 h 可能跟 n 一樣大', '');
+  await step(tok);                                   // 51:49 give you a sorted list
+  hl = tag('BST　h = 0', 'ptr', -3.0, 7.0);
+  note('依序：43, 46, 48, 49, …', -3.0, -0.2, 1.0);
+  cap('給你一串排好序的數字', '');
+  await step(tok);                                   // 51:54 insert 43, then 46
+  ins(43); await beat(tok, 500); ins(46);
+  cap('insert 43，再 insert 46', '46 > 43 → 右');
+  await step(tok);                                   // 52:02 insert 48, insert 49
+  ins(48); await beat(tok, 500); ins(49);
+  cap('48、49：每次都接在最右邊', '');
+  await step(tok);                                   // 52:07 these could be any numbers
+  for (const k of seq.slice(4)) { ins(k); await beat(tok, 450); }
+  cap('任何遞增的數字都一樣', '');
+  await step(tok);                                   // 52:14 looks like a list
+  bad('長得像一條 linked list', -3.0, 1.2);
+  cap('不像樹，像一條 list', 'h = n → O(n)');
+  await step(tok);                                   // 52:17 good news next week
+  cap('好消息下週由 Eric 講', '');
+  await step(tok);                                   // 52:23 balanced binary search trees
+  const Rv = makeView(Object.assign({ cx: 3.5, kind: 'avl' }, small));
+  seq.forEach((k) => avlInsertRaw(Rv, k));
+  layout(Rv);
+  inorder(Rv.root).forEach(dropIn);
+  tag('平衡的 BST　h = ' + height(Rv.root), 'ptr alt', 3.5, 7.0);
+  cap('需要 balanced BST', '同樣的數字，高度小很多');
+  await step(tok);                                   // 52:32 h = O(log n): then everything works
+  good('h = O(log n) → 前面全都成立', 3.5, 0.2, 1.0);
+  cap('讓 h = O(log n)', '前面說的才全部成立');
 }]);
   }
 

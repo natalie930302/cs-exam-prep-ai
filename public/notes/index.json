@@ -417,7 +417,7 @@
   "label": "MIT 6.006 L5：Binary Search Trees, BST Sort",
   "points": 97,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "9Q1q7s1jTzU": {
   "label": "MIT OCW 18.06 L8：Solving Ax = b: Row Reduced Form R",
@@ -609,7 +609,7 @@
   "label": "Binary Search Tree | BST | Design & Algorithms",
   "points": 24,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "CwM-Cxilk4g": {
   "label": "Hashing - Collision Resolution with Linear Probing",
