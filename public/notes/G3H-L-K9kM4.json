@@ -1,7 +1,7 @@
 {
  "video": "G3H-L-K9kM4",
  "label": "台大林軒田 DSA Class Introduction",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
    "title": "課程定位：資料結構與演算法為何合併",
@@ -22,6 +22,5 @@
    ]
   }
  ],
- "quiz": [],
- "timing": "exact"
+ "quiz": []
 }

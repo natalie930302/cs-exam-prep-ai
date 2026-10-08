@@ -55,9 +55,9 @@
  },
  "0J2eLvkuF8k": {
   "label": "交大彭文志 Lec02 Introduction (2/2)",
-  "points": 58,
+  "points": 61,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "0MtwqhIwdrI": {
   "label": "MIT 18.06 L17：Orthogonal Matrices and Gram-Schmidt",
@@ -190,6 +190,12 @@
   "points": 92,
   "quiz": 7,
   "cued": false
+ },
+ "3503j2L6qNA": {
+  "label": "交大彭文志 Lec01 Introduction (1/2)",
+  "points": 51,
+  "quiz": 8,
+  "cued": true
  },
  "359YMyqbEG4": {
   "label": "交大江蕙如 Lec17 Dynamic Programming (1/3)",
@@ -361,9 +367,9 @@
  },
  "8IOv2fnc01E": {
   "label": "台大林軒田 DSA Introduction to Data Structures and Algorithms",
-  "points": 66,
+  "points": 79,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "8MF3pz-oYHo": {
   "label": "MIT OCW 18.06 L24：Markov Matrices; Fourier Series",
@@ -625,9 +631,9 @@
  },
  "d-PDYIqg_Kc": {
   "label": "台大林軒田 DSA Analysis Tools",
-  "points": 39,
+  "points": 44,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "DBRW8nwZV-g": {
   "label": "Graph Data Structure Intro（表示法）",
@@ -753,7 +759,7 @@
   "label": "台大林軒田 DSA Class Introduction",
   "points": 3,
   "quiz": 0,
-  "cued": false
+  "cued": true
  },
  "G4v9HUllv-Q": {
   "label": "清大周志遠 第17B講 Special Scheduling Issues",
@@ -1291,9 +1297,9 @@
  },
  "V42FBiohc6c": {
   "label": "Time Complexity of a Computer Program",
-  "points": 13,
+  "points": 14,
   "quiz": 5,
-  "cued": false
+  "cued": true
  },
  "V5-7GzOfADQ": {
   "label": "Knuth-Morris-Pratt（KMP）String Matching Algorithm",
