@@ -255,7 +255,7 @@
   "label": "交大彭文志 Lec06 Arrays (4/4)",
   "points": 58,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "5hO3MrzPa0A": {
   "label": "MIT OCW 18.06 L4：Factorization into A = LU",
@@ -579,7 +579,7 @@
   "label": "交大彭文志 Lec05 Arrays (3/4)",
   "points": 146,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "cH8nH0Enjhw": {
   "label": "台大林軒田 DSA AVL Tree / 2-3-4 Tree / Red-Black Tree",
@@ -793,9 +793,9 @@
  },
  "hPIBv0kO-Zc": {
   "label": "交大彭文志 Lec03 Arrays (1/4)",
-  "points": 175,
+  "points": 176,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "HqPJF2L5h9U": {
   "label": "Abdul Bari：Heap Sort",
@@ -1365,7 +1365,7 @@
   "label": "交大彭文志 Lec04 Arrays (2/4)",
   "points": 98,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "XaXsJJh-Q5Y": {
   "label": "Abdul Bari：4.7 TSP - DP",

@@ -9,6 +9,17 @@
    "params": {
     "poly": "sparse"
    },
+   "cues": [
+    0,
+    58.8,
+    78.8,
+    86.8,
+    103.8,
+    125.8,
+    142.8,
+    151.8,
+    162.8
+   ],
    "points": [
     {
      "text": "Array 是 a set of pairs：<index, value>。",
@@ -38,11 +49,36 @@
      "text": "表示法 2 課堂不講，請回去看書，期中可能會考。",
      "t": 167
     }
+   ],
+   "explain": [
+    "複習：[[陣列]]（array）是 a set of pairs，每一對是 <index, value>：index 是位置，value 是那個位置存的資料。",
+    "上次用 array 來表示多項式，例如 A(x) = 一串「係數 × x 的幾次方」相加。",
+    "表示法 1：每一個多項式都有自己的一個 array。",
+    "這個 array 的名字叫 coef（coefficient，係數），名字不是亂取的：裡面存的全部都是係數。",
+    "那指數存在哪？就是 index。coef[3] 存的就是 x³ 的係數。",
+    "缺點：如果多項式很 sparse（稀疏，大部分是 0），例如 2x¹⁰⁰⁰ + 1，就要開一個 1001 格的大 array。",
+    "整個 array 只有兩個地方有值：x¹⁰⁰⁰ 的位置存 2……",
+    "……index 0 存 1（常數項）。其他 999 格全是 0（紅色），非常浪費空間。",
+    "表示法 2 課堂上不講，請回去看書，期中考有可能會考。"
    ]
   },
   {
    "title": "複習：表示法 3 的 global array",
    "scene": "arrpeng12-term-array",
+   "params": {
+    "recap": true
+   },
+   "cues": [
+    186.8,
+    199.8,
+    216.8,
+    224.8,
+    242.8,
+    260.8,
+    276.8,
+    286.8,
+    304.8
+   ],
    "points": [
     {
      "text": "表示法 3：所有多項式都放在一個 global array（很重要）。",
@@ -68,11 +104,39 @@
      "text": "A.finish 那格：係數 1、指數 0。",
      "t": 301
     }
+   ],
+   "explain": [
+    "表示法 3：所有的多項式都用「一個」global array 來存（global 是大家共用的意思）。這個很重要。藍色是 A(x) = 2x¹⁰⁰⁰ + 1，橘色是 B(x)。",
+    "最下面那一行 0、1、2…6 是這個 array 的 index。",
+    "index 也告訴我們：哪一個多項式佔用了哪些格子。",
+    "A.start 到 A.finish 這兩格存的是多項式 A。",
+    "B.start 到 B.finish（index 2 到 5）存的是多項式 B。",
+    "所以用 index 來記錄每個多項式在整個 array 裡的 start 和 end。",
+    "仔細看 A.start 那一格：它存兩個資訊，係數部分是 2……",
+    "……指數部分是 1000。合起來就是 A 的第一項：2x¹⁰⁰⁰。",
+    "A.finish 那一格：係數 1、指數 0，就是 1·x⁰ = 1，A 的第二項。"
    ]
   },
   {
    "title": "複習：class Term 與 static termArray",
    "scene": "arrpeng12-poly-class",
+   "params": {
+    "recap": true
+   },
+   "cues": [
+    340.8,
+    348.8,
+    360.8,
+    369.8,
+    379.8,
+    387.8,
+    401.8,
+    443.8,
+    457.8,
+    471.8,
+    479.8,
+    507.8
+   ],
    "points": [
     {
      "text": "實作時，class 宣告要特別注意。",
@@ -106,11 +170,39 @@
      "text": "static int free：指到第一個沒用到的 index。",
      "t": 484
     }
+   ],
+   "explain": [
+    "概念不難，但要實作的時候，class 怎麼宣告要特別注意。",
+    "表上的每一格，都用一個 class Term（項）來表示。",
+    "Term 的 friend class 是 Polynomial（多項式）。friend 的意思是：Polynomial 可以直接存取 Term 的 private 資料。",
+    "Term 有兩個重要的 data，第一個是係數 coef……",
+    "……第二個是指數 exp。一個 Term 就是一格：一個係數加一個指數。",
+    "再看 class Polynomial 的 private 部分，有三個變數的宣告。",
+    "每一個多項式都用 start 和 finish，記錄它在整個 global array 裡的位置。A 記 0…1，B 記 2…5。",
+    "那 global array 在哪？就是 static Term termArray：一個由 Term 組成的 array。",
+    "前面一定要有 static：宣告成 static，不同的多項式才會佔用「同一個」termArray 的空間。",
+    "所以這個 static 有它的意義，不要拿掉。拿掉的話每個多項式都各有一份 array。",
+    "還需要一個指標，記錄 termArray 裡哪些空間還沒用：static int free，一樣是大家共用。",
+    "free 指到第一個還沒用到的 index，以這個例子是最後面的 6。"
    ]
   },
   {
    "title": "NewTerm：C(x) = x¹⁰⁰ + 1",
    "scene": "arrpeng12-newterm",
+   "cues": [
+    523.8,
+    528.8,
+    538.8,
+    546.8,
+    578.8,
+    590.8,
+    606.8,
+    618.8,
+    644.8,
+    651.8,
+    658.8,
+    665.8
+   ],
    "points": [
     {
      "text": "free 的用處：新多項式 C(x) = x¹⁰⁰ + 1 要放哪？",
@@ -144,11 +236,38 @@
      "text": "第二項 coef 1、exp 0，C 就塞進 termArray 了。",
      "t": 665
     }
+   ],
+   "explain": [
+    "free 有什麼用？假設要宣告一個新的多項式 C(x) = x¹⁰⁰ + 1，它要放在哪？",
+    "就從 free 開始放：位置 6 以後都還沒用。",
+    "所以 C 的 start 是 6。",
+    "x¹⁰⁰ + 1 有兩項，所以 C 的 finish 是 7。",
+    "怎麼放進去？每一項都要 new 一個 term，也就是呼叫 NewTerm(c, e)：c 是係數、e 是指數。",
+    "NewTerm 第一件事：檢查 free 有沒有超過 MaxTerms。termArray 有上限，例如最多只能放 100 個 term。",
+    "如果超過，就印錯誤訊息（Too many terms），表示放不下了。",
+    "沒超過，就做：termArray[free].coef = c，把係數寫進 free 那一格。",
+    "第一項 x¹⁰⁰：位置 6 的係數是 1、指數是 100。",
+    "接著 free++：把 free 往後移一格，指到下一個空位 7。",
+    "還有另外一項，再 new 一個 term。",
+    "第二項係數 1、指數 0，放進位置 7，free 變 8。C 就整個塞進 termArray 了。這是一個很不錯的設計。"
    ]
   },
   {
    "title": "Add 的 while 迴圈與剩餘項",
    "scene": "arrpeng12-padd-global",
+   "params": {
+    "recap": true
+   },
+   "cues": [
+    717.8,
+    723.8,
+    732.8,
+    738.8,
+    748.8,
+    767.8,
+    801.8,
+    815.8
+   ],
    "points": [
     {
      "text": "多項式加法的概念跟上次一樣，不細講。",
@@ -178,6 +297,16 @@
      "text": "A 先到 finish、B 還沒：用 for 迴圈把 B 剩餘的項 copy 到新 array。",
      "t": 820
     }
+   ],
+   "explain": [
+    "多項式加法的概念跟上週講的很像，這裡不仔細講。",
+    "兩個多項式相加，就從最大的項開始比指數大小。a、b 是指到 A、B 目前那一項的指標。",
+    "如果指數相同，係數就相加。",
+    "如果 A 比較大（1000 > 4），就把 A 那一項 copy 一份到新的多項式。",
+    "處理完一項，指標要往後 shift 一格（a++）。",
+    "while (a <= A.finish && b <= B.finish)：A、B 都還沒走到 finish，才繼續比。動畫把剩下幾圈跑完：B 的三項先進去，最後常數 1 + 1 = 2。",
+    "如果 a 已經超過 finish，代表 A 這個多項式都檢查完了。",
+    "這時 B 可能還沒到 finish，就用下面的 for 迴圈，把 B 剩下的項 copy 到新的多項式。這個例子剛好同時走完，所以不用 copy。"
    ]
   },
   {
@@ -201,6 +330,19 @@
   {
    "title": "加法的 complexity：O(n + m)",
    "scene": "arrpeng12-poly-cost",
+   "params": {
+    "focus": "time2"
+   },
+   "cues": [
+    1016,
+    1025.8,
+    1033.8,
+    1043.8,
+    1058.8,
+    1065.8,
+    1080.8,
+    1107.8
+   ],
    "points": [
     {
      "text": "A 多項式有 n 個 element。",
@@ -230,11 +372,36 @@
      "text": "概念跟表示法 1 的加法很像，但細節不同。",
      "t": 1120
     }
+   ],
+   "explain": [
+    "分析 complexity：多項式 A 有 n 個 element（非 0 項），B 有 m 個。",
+    "整個程式實際上要把 A 的 n 個和 B 的 m 個都 scan 過一次。",
+    "想像 A 和 B 各有一個 pointer（a 和 b）。",
+    "每一項都要拿來比較；每比一次，至少有一個 pointer 往前走一格。",
+    "所以 complexity 是 O(n + m)。",
+    "注意：n 和 m 是 non-zero（非 0）的項數。",
+    "係數是 0 的項不用管，因為它根本不會出現在 termArray 裡。例如 2x¹⁰⁰⁰ + 1 的 x⁹⁹⁹ 係數是 0，就沒有存。",
+    "跟表示法 1 的多項式加法比，概念很像；但表示法不同，程式裡的宣告和細節就不一樣。"
    ]
   },
   {
    "title": "free 超過 MaxTerms：回收空間",
    "scene": "arrpeng12-reuse",
+   "cues": [
+    1143.8,
+    1165.8,
+    1177.8,
+    1208.8,
+    1227.8,
+    1280.8,
+    1306.8,
+    1319.8,
+    1345.8,
+    1397.8,
+    1451.8,
+    1490.8,
+    1524.8
+   ],
    "points": [
     {
      "text": "問題：free 已超過 MaxTerms 時怎麼辦？",
@@ -269,6 +436,21 @@
      "t": 1494
     }
    ],
+   "explain": [
+    "問題：如果 free 已經超過 MaxTerms 怎麼辦？這裡畫一個最多 10 格的 termArray，已經全部被 A、B、C、D 佔滿。",
+    "又來一個新的多項式 E，global array 已經滿了，放不下。",
+    "最笨的方法：送一個「已經滿了」的訊息就結束。使用者會覺得這程式寫得很懶。",
+    "比較好的方法：有些多項式已經用過、不再需要了，它們的位置可以回收再用。",
+    "例如 A 和 B 加完之後就不用了，把 A、B 佔的位置回收回來，空出淺色的格子。",
+    "期中可能會考：要回收使用，光靠「一個」free 指標做得到嗎？注意 free 還停在最後面，它只會往後配。",
+    "而且空出來的位置不一定在 array 前面，也可能在中間（金框那一段）。",
+    "回收這件事要寫在哪裡？destructor（解構子）：物件不用了、要被刪掉時自動執行的 member function。",
+    "destructor 要告訴系統：這個多項式以後不用了，把它佔的空間交還給 termArray。",
+    "這樣 termArray 會變成有些格空、有些被佔用。那 NewTerm 要怎麼改寫？它不能只看最後的 free，因為前面也有能用的空間。",
+    "這個問題很像作業系統的 memory management：程式結束後，記憶體要 release 出來給別的程式用。",
+    "也很像 Windows 的磁碟重組：把還在用的資料 shift、集中到前面，讓空間連成一塊。C、D 往前搬，free 回到 4（C、D 的 start、finish 也要跟著改）。",
+    "提示：在 destructor 裡做一些事，讓 NewTerm 比較好做。現在新的多項式 E 放得下了。（另一種做法是用 free list 記錄所有空洞。）"
+   ],
    "trap": "補充（老師沒公布答案）：一個 free 只能往後配；要回收中間的洞，可用 free list 記錄空洞，或像磁碟重組把仍在用的項往前搬（compaction）並更新各多項式的 start、finish。"
   },
   {
@@ -296,6 +478,15 @@
   {
    "title": "Sparse matrix",
    "scene": "arrpeng12-sparse-2d",
+   "cues": [
+    2034.8,
+    2088.8,
+    2117.8,
+    2135.8,
+    2145.8,
+    2159.8,
+    2175.8
+   ],
    "points": [
     {
      "text": "回到正題：第二個問題是 matrix（矩陣）。",
@@ -325,11 +516,30 @@
      "text": "能不能想出更省空間的方式存 sparse matrix？",
      "t": 2187
     }
+   ],
+   "explain": [
+    "回到正題，第二個問題是 [[矩陣]]（matrix）。矩陣運算有加、減、乘，也有轉換。",
+    "要讓程式做矩陣運算，先想清楚：矩陣在電腦裡要怎麼表示？",
+    "最直接的方法：n × m 的矩陣，就宣告一個 n × m 的二維陣列來存。",
+    "Sparse matrix（稀疏矩陣）：矩陣裡很多 element 都是 0。",
+    "例如這個 B 是 6 × 6 的矩陣，總共有 36 個 element。",
+    "大部分格子都是 0，只有 8 個不是（發亮的）。用二維陣列存，就要花 36 格，浪費很多空間。",
+    "問題：對於 sparse matrix，能不能想出比二維陣列更省空間的存法？"
    ]
   },
   {
    "title": "SparseMatrix ADT",
    "scene": "arrpeng12-sparse-adt",
+   "cues": [
+    2217,
+    2225.8,
+    2238.8,
+    2246.8,
+    2251.8,
+    2259.8,
+    2267.8,
+    2275.8
+   ],
    "points": [
     {
      "text": "class SparseMatrix 可以想成一個 ADT。",
@@ -355,11 +565,32 @@
      "text": "重點：sparse matrix 怎麼表示、怎麼做 transpose。",
      "t": 2276
     }
+   ],
+   "explain": [
+    "先看 class SparseMatrix，可以把它想成一個 ADT（抽象資料型態），它包含 row、column 和 value。",
+    "第一個是 constructor（建構子）：建立時告訴它這個矩陣有幾個 row、幾個 column。",
+    "還要知道矩陣裡有哪些 element 不是 0（發亮的那 8 個）。",
+    "Transpose：矩陣的轉置。",
+    "轉置就是 row 變 column、column 變 row：(i, j) 位置的值搬到 (j, i)。對角線上的不動，其他沿對角線翻過去。",
+    "還可以做 Add：矩陣相加。",
+    "還有 Multiply：矩陣相乘。",
+    "等一下的重點有兩個：sparse matrix 怎麼表示，以及怎麼做 transpose。"
    ]
   },
   {
    "title": "用 <row, col, value> 存",
    "scene": "arrpeng12-triples",
+   "cues": [
+    2291.8,
+    2309.8,
+    2332.8,
+    2353.8,
+    2386.8,
+    2404.8,
+    2454.8,
+    2467.8,
+    2479.8
+   ],
    "points": [
     {
      "text": "不用二維陣列：只記非 0 element 的位置。",
@@ -393,11 +624,30 @@
      "text": "row 0 放完（a[2] = (0, 5, −15)）才放 row 1。",
      "t": 2480
     }
+   ],
+   "explain": [
+    "答案很簡單：不用二維陣列，只記錄那些「不是 0」的 element 在哪裡。",
+    "位置怎麼表示？矩陣是二維的，就看它的 row（列）和 column（行）。15 在第 0 row、第 0 column。",
+    "22 在第 0 row、第 3 column。",
+    "所以只要記錄非 0 element 的位置和值，用 <row, col, value> 三個數存一筆，叫一個 triple。",
+    "這個例子總共 8 個非 0 的值，所以只要 8 筆。",
+    "這 8 筆怎麼排？先依 row 由小到大排；row 相同，再依 column 由左到右排。",
+    "存成一維陣列 a[0]…a[7]。第一筆 a[0] = (0, 0, 15)。",
+    "第二筆 a[1] = (0, 3, 22)：第 0 row、第 3 column、值 22。",
+    "a[2] = (0, 5, −15) 把 row 0 放完了，接著才放 row 1 的 (1, 1, 11)……這就是 sparse matrix 的表示法。"
    ]
   },
   {
    "title": "Transpose 的目標",
    "scene": "arrpeng12-transpose-goal",
+   "cues": [
+    2535,
+    2568.8,
+    2578.8,
+    2601.8,
+    2610.8,
+    2626.8
+   ],
    "points": [
     {
      "text": "只用一個一維 array，每格存 row、col、value。",
@@ -419,6 +669,14 @@
      "text": "先依 row 排，同 row 再依 column 排。",
      "t": 2622
     }
+   ],
+   "explain": [
+    "這個表示法只用了一個一維陣列，每一格存 row、col、value，並且先依 row、再依 column 排好。",
+    "要做 transpose。先看一筆：(0, 3, 22)，在第 0 row、第 3 column，值 22。",
+    "transpose 後它應該在第 3 row、第 0 column：(3, 0, 22)。",
+    "整個 matrix A 要 transpose 成 B。",
+    "transpose 後的 B 還是要符合同一個規則：row 0 的放完才是 row 1、再來 row 2……",
+    "同一個 row 裡，還是依 column 排。像 B 的 row 0 有兩筆：(0, 0, 15) 在前、(0, 4, 91) 在後。"
    ]
   },
   {
@@ -427,6 +685,14 @@
    "params": {
     "cls": true
    },
+   "cues": [
+    2651.8,
+    2659.8,
+    2665.8,
+    2679.8,
+    2685.8,
+    2695.8
+   ],
    "points": [
     {
      "text": "先講最 naive 的方法，先看宣告。",
@@ -452,11 +718,31 @@
      "text": "array 有上限：最多能容許多少 term。",
      "t": 2702
     }
+   ],
+   "explain": [
+    "怎麼做 transpose？先講最 naive（最笨）的方法，先看宣告。",
+    "class MatrixTerm：matrix 裡的一個 term（非 0 的那一格）。名字都不是亂取的。",
+    "它的 friend class 是 SparseMatrix，所以 SparseMatrix 可以直接用它的 private 資料。",
+    "MatrixTerm 有三個重要的 data：row、col、value。",
+    "class SparseMatrix 裡有一個 smArray（sparse matrix array），每一格是一個 MatrixTerm。",
+    "這個 array 有上限：最多能容許多少個 term。"
    ]
   },
   {
    "title": "最笨的 transpose",
    "scene": "arrpeng12-naive-transpose",
+   "cues": [
+    2719.8,
+    2729.8,
+    2739.8,
+    2773.8,
+    2799.8,
+    2827.8,
+    2853.8,
+    2882.8,
+    2898.8,
+    2925.8
+   ],
    "points": [
     {
      "text": "最笨的方法：一行一行來，row、col 對調。",
@@ -490,6 +776,18 @@
      "text": "有更聰明的調整方式，下次講。",
      "t": 2932
     }
+   ],
+   "explain": [
+    "最笨的方法：一行一行來，把 row 和 column 對調。(0, 0, 15) 轉過去還是 (0, 0, 15)。",
+    "(0, 3, 22) 轉成 (3, 0, 22)：第 3 row、第 0 column。",
+    "(0, 5, −15) 轉成 (5, 0, −15)。到這裡都直接接在後面就好。",
+    "第四個 (1, 1, 11) 轉過去還是 (1, 1, 11)，先放在最後面？",
+    "不行！它是 row 1，應該排在 (0, 0, 15) 和 (3, 0, 22) 之間，放在最後就不符合排序規則（紅色）。",
+    "合理的做法：把 (1, 1, 11) 往上移，後面的往下搬一格，才能擺到該擺的位置。",
+    "同樣，(1, 2, 3) 轉成 (2, 1, 3)，不能放最後，要移到 row 3 那筆的前面。",
+    "transpose 對人來說很簡單，但電腦很笨：你要告訴它每一筆轉過去以後要放到正確的位置。剩下的幾筆也一樣處理。",
+    "照這個方法，每轉一筆就要調整一次位置，搬動非常頻繁（右上角的計數）。",
+    "有沒有更聰明的方法？當然有，下次講。（補充：依 column 掃 A 是 O(cols·terms)；FastTranspose 是 O(cols + terms)。）"
    ],
    "trap": "補充：課本的 Transpose 改成「依 column 0、1、2… 掃描 A」直接產生排好的 B，時間 O(cols·terms)；FastTranspose 先數每個 column 的項數算起始位置，O(cols + terms)。"
   }
