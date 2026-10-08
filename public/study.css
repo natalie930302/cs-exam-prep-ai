@@ -369,3 +369,29 @@ a { color: inherit; }
 .st-where-b { border: 1px solid var(--bd); background: var(--surf2); border-radius: 999px; padding: 2px 10px; font: inherit; font-size: 12px; color: var(--mt2); cursor: pointer; }
 .st-where-b:hover { border-color: var(--subj); color: var(--tx); }
 .st-peer-li { font-size: 13.5px; color: var(--mt2); line-height: 1.7; padding: 4px 8px; }
+
+/* ── 動畫講解 (walkthrough): no video; the stage is large on the left, the
+   explanation with the lecturer's sentence and the step buttons on the right ── */
+.st-main.walk .st-player-wrap { display: none; }
+.st-main.walk { grid-template-rows: auto auto auto auto; }
+.st-main.walk .st-side { grid-column: 1; grid-row: 1; align-self: stretch; min-height: min(62vh, 620px); }
+.st-main.walk .st-teach { grid-column: 2; grid-row: 1; margin-top: 0; }
+.st-main.walk .st-now { grid-column: 1 / -1; grid-row: 2; }
+.st-main.walk .st-timeline { grid-column: 1 / -1; grid-row: 3; }
+.st-main.walk .st-more { grid-row: 4; }
+.st-walk { margin-top: 14px; border-top: 1px solid var(--bd); padding-top: 12px; }
+.st-walk[hidden] { display: none; }
+.st-walk-quote { font-size: 13.5px; line-height: 1.7; color: var(--mt2); background: var(--surf2); border-radius: var(--r-sm); padding: 8px 12px; }
+.st-walk-quote:empty { display: none; }
+.st-walk-quote b { display: block; font-size: 11.5px; color: var(--mt); letter-spacing: .04em; }
+.st-walk-quote .zh { display: block; color: var(--tx); }
+.st-walk-quote .en { display: block; font-size: 12px; color: var(--mt); }
+.st-walk-btns { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.st-walk-btns #walkHear { flex: 1; }
+.st-walk-next, .st-walk-toggle.on { background: var(--subj) !important; border-color: var(--subj) !important; color: #fff !important; font-weight: 800; }
+.st-walk-toggle { font-weight: 800; border-color: color-mix(in srgb, var(--subj) 50%, var(--bd2)) !important; color: color-mix(in srgb, var(--subj) 80%, var(--tx)) !important; }
+@media (max-width: 900px) {
+  .st-main.walk { grid-template-rows: none; }
+  .st-main.walk .st-side, .st-main.walk .st-teach, .st-main.walk .st-now, .st-main.walk .st-timeline, .st-main.walk .st-more { grid-column: 1; grid-row: auto; }
+  .st-main.walk .st-side { min-height: 0; }
+}

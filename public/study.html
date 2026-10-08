@@ -42,6 +42,15 @@
     <div class="st-teach-hd"><b>講解</b><span class="st-teach-step" id="teachStep"></span></div>
     <p class="st-teach-body" id="teachBody"></p>
     <div class="st-terms" id="teachTerms"></div>
+    <!-- 動畫講解模式：自己按下一步；每一步＝老師的一句話 -->
+    <div class="st-walk" id="walkBar" hidden>
+      <div class="st-walk-quote" id="walkQuote"></div>
+      <div class="st-walk-btns">
+        <button class="st-btn" id="walkPrev" type="button">‹ 上一步</button>
+        <button class="st-btn" id="walkHear" type="button"></button>
+        <button class="st-btn st-walk-next" id="walkNext" type="button">下一步 ›</button>
+      </div>
+    </div>
   </section>
 
   <!-- 現在在講什麼：一行就好 -->
@@ -53,6 +62,7 @@
     <div class="st-now-actions">
       <label class="st-follow"><input type="checkbox" id="followChk" checked> 跟著影片</label>
       <button class="st-btn" id="prevVid" aria-label="上一支影片">‹</button>
+      <button class="st-btn st-walk-toggle" id="walkBtn" type="button" hidden>動畫講解</button>
       <button class="st-btn st-btn-sub" id="subBtn" aria-pressed="true" title="影片字幕（逐字稿）" hidden>字幕</button>
       <button class="st-btn st-btn-watch" id="watchBtn"></button>
       <button class="st-btn" id="nextVid" aria-label="下一支影片">›</button>

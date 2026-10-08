@@ -456,7 +456,10 @@
     const key = sec.title + '|' + k + '|' + Object.keys(glossary).length;
     if (key === lastTeach) return;
     lastTeach = key;
-    $('teachStep').textContent = total ? sec.title + '・第 ' + (Math.max(0, k) + 1) + ' / ' + total + ' 步' : sec.title;
+    renderTeach(total ? sec.title + '・第 ' + (Math.max(0, k) + 1) + ' / ' + total + ' 步' : sec.title, text);
+  }
+  function renderTeach(head, text){
+    $('teachStep').textContent = head;
     // every glossary word in the step is marked and gets a card (longest
     // first, so 主記憶體 wins over 記憶體); [[ ]] marks are just removed
     const seen = [];
@@ -477,13 +480,101 @@
     }).join('');
   }
 
+  // ── 動畫講解: the cued animation as a walkthrough without the video ──
+  // Every step is one sentence of the lecturer (a cue): the learner presses
+  // 下一步, sees the step, its explanation and the lecturer's own words, and
+  // can jump back into the video at that sentence. Idle (chat) sections are
+  // left out. The stage runs the same scenes in manual mode.
+  let walk = false, wSteps = [], wi = 0;
+  function cuedNotes(){ return !!(curNotes && curNotes.sections.some(function(x){ return x.cues && x.explain; })); }
+  function buildWalk(){
+    wSteps = [];
+    curNotes.sections.forEach(function(sec, si){
+      if (!sec.cues || !sec.explain || !sceneFor(sec)) return;
+      sec.cues.forEach(function(t, k){ wSteps.push({si: si, k: k + 1, t: t}); });
+    });
+  }
+  function renderWalkBtn(){
+    const ok = hasStage && cuedNotes();
+    $('walkBtn').hidden = !ok;
+    $('walkBtn').textContent = walk ? '回到影片' : '動畫講解';
+    $('walkBtn').classList.toggle('on', walk);
+    if (!ok && walk) exitWalk(null);
+  }
+  function enterWalk(){
+    if (!cuedNotes()) return;
+    buildWalk();
+    if (!wSteps.length) return;
+    if (playerReady && player.pauseVideo) player.pauseVideo();
+    const t = playerReady ? player.getCurrentTime() : 0;
+    const saved = Number(store.get('walk-' + current.id));
+    wi = 0;
+    wSteps.forEach(function(x, i){ if (x.t <= t + 0.5) wi = i; });
+    if (t < 1 && saved > 0 && saved < wSteps.length) wi = saved;
+    walk = true; stageScene = null;
+    document.querySelector('.st-main').classList.add('walk');
+    $('walkBar').hidden = false;
+    renderWalkBtn(); renderWalk();
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  }
+  function exitWalk(t){
+    walk = false; stageScene = null; lastTeach = null; lastSec = -1;
+    document.querySelector('.st-main').classList.remove('walk');
+    $('walkBar').hidden = true;
+    renderWalkBtn();
+    if (t != null) seek(t);
+    else if (playerReady) syncNotes(player.getCurrentTime(), true);
+  }
+  function quoteAt(t0, t1){
+    if (!subs) return '';
+    const zh = [], en = [];
+    subs.forEach(function(c){ if (c[0] < t1 - 0.3 && c[1] > t0 + 0.2) { zh.push(c[3] || c[2]); if (c[3]) en.push(c[2]); } });
+    return {zh: zh.join(''), en: en.join(' ')};
+  }
+  function renderWalk(){
+    const st = wSteps[wi], sec = curNotes.sections[st.si];
+    const key = 'walk:' + st.si;
+    if (stageReady) {
+      if (stageScene !== key) {
+        stageScene = key;
+        $('stage').contentWindow.postMessage({type: 'scene', scene: sceneFor(sec), params: sec.params || {}, manual: true, step: st.k}, location.origin);
+      } else $('stage').contentWindow.postMessage({type: 'goto', step: st.k}, location.origin);
+    }
+    store.set('walk-' + current.id, String(wi));
+    renderTeach(sec.title + '・第 ' + st.k + ' / ' + sec.cues.length + ' 步（全片 ' + (wi + 1) + ' / ' + wSteps.length + '）', sec.explain[st.k - 1]);
+    const next = wSteps[wi + 1];
+    const end = next && next.si === st.si ? next.t : st.t + 12;
+    const q = quoteAt(st.t, end);
+    $('walkQuote').innerHTML = q && q.zh ? '<b>老師這句（' + fmt(st.t) + '）</b><span class="zh">' + esc(q.zh) + '</span>' + (q.en ? '<span class="en">' + esc(q.en) + '</span>' : '') : '';
+    $('walkHear').textContent = '▶ 聽老師講這句';
+    $('walkHear').onclick = function(){ exitWalk(Math.max(0, st.t - 0.5)); };
+    $('walkPrev').disabled = wi === 0;
+    $('walkNext').textContent = wi < wSteps.length - 1 ? '下一步 ›' : '這支講完了';
+    $('walkNext').disabled = wi >= wSteps.length - 1;
+    $('nowSec').textContent = sec.title;
+    $('timeline').querySelectorAll('.st-seg').forEach(function(b){
+      const i = Number(b.dataset.sec);
+      b.classList.toggle('active', i === st.si); b.classList.toggle('past', i < st.si);
+    });
+  }
+  $('walkBtn').onclick = function(){ if (walk) exitWalk(wSteps[wi] ? Math.max(0, wSteps[wi].t - 0.5) : null); else enterWalk(); };
+  $('walkNext').onclick = function(){ if (wi < wSteps.length - 1) { wi++; renderWalk(); } };
+  $('walkPrev').onclick = function(){ if (wi > 0) { wi--; renderWalk(); } };
+  document.addEventListener('keydown', function(e){
+    if (!walk || e.target.closest('input, textarea')) return;
+    if (e.key === 'ArrowRight') { e.preventDefault(); $('walkNext').click(); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); $('walkPrev').click(); }
+  });
+
   // ── Notes, timeline, and the "now" line ──
   async function renderNotes(){
     const el = notesEl();
     curNotes = current ? await loadNotes(current.id) : null;
     const n = curNotes;
     lastSec = -1; lastPt = null; lastTeach = null;
+    if (walk) exitWalk(null);
     setTeach(n && n.sections.some(function(x){ return x.explain; }));
+    renderWalkBtn();
     updateCounts();
     if (!n) {
       const others = [];
@@ -509,11 +600,15 @@
       const t = s.points.length ? s.points[0].t : 0;
       return '<button class="st-seg" data-sec="' + si + '" data-t="' + t + '"><span class="st-seg-t">' + fmt(t) + '</span><span class="st-seg-name">' + esc(s.title) + '</span></button>';
     }).join('');
-    $('timeline').querySelectorAll('.st-seg').forEach(function(b){ b.onclick = function(){ seek(Number(b.dataset.t)); }; });
+    $('timeline').querySelectorAll('.st-seg').forEach(function(b){ b.onclick = function(){
+      if (walk) { const i = wSteps.findIndex(function(x){ return x.si === Number(b.dataset.sec); }); if (i >= 0) { wi = i; renderWalk(); } return; }
+      seek(Number(b.dataset.t));
+    }; });
+    renderWalkBtn();
   }
   let lastPt = null, lastSec = -1;
   function syncNotes(t, force){
-    if (!curNotes) return;
+    if (!curNotes || walk) return;
     // which point / section is being taught at time t
     let secIdx = 0, pt = null;
     curNotes.sections.forEach(function(s, si){
