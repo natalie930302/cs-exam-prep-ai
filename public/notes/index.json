@@ -3,7 +3,7 @@
   "label": "台大林軒田 DSA Analysis Tools / Stack",
   "points": 201,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "-b2lciNd2L4": {
   "label": "Binary Tree Traversals（Inorder, Preorder, Postorder）",
@@ -1137,7 +1137,7 @@
   "label": "台大林軒田 DSA Stack / Queue",
   "points": 284,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "r5pXu1PAUkI": {
   "label": "MIT 6.006 Rec5：Recursion Trees, Binary Search Trees",

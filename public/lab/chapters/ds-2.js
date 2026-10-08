@@ -12328,18 +12328,25 @@ FRAG.push(['llpeng34-dll-disk', '檔案的 disk block 用 doubly linked list', a
   // ═══ sqlin.js ═══
   {
 // ─── R0MpXbuqfZM：林軒田 DSA Stack / Queue（postfix、迷宮、DFS/BFS） ───
-const OPN = '#4b9ee2', OPR = '#dd8238', PAR = '#9b7ef4', OKC = '#2fc092', TODO = '#f2c46d';
+// cued scenes: each `await step(tok)` waits until the lecturer says that sentence; beats are motion only.
+const step = (tok) => ctx.step(tok);
+const OPN = '#4b9ee2', OPR = '#dd8238', PAR = '#9b7ef4', OKC = '#2fc092', TODO = '#f2c46d', REDC = '#d64545';
 const isOp = (t) => !!PREC[t] || t === 'neg' || t === '?:';
 const tcol = (t) => (t === '(' || t === ')') ? PAR : isOp(t) ? OPR : OPN;
-const disp = (t) => (t === '-' ? '−' : t === 'neg' ? '負' : String(t));
+const disp = (t) => (t === '-' ? '−' : t === 'neg' ? '負' : t === '*' ? '×' : t === '/' ? '÷' : String(t));
 const sx = (n, sp, i) => (i - (n - 1) / 2) * sp;
 const DIRS = [[0, 1], [1, 0], [0, -1], [-1, 0]];
-function tcube(t, x, y, z, sz = 0.6, dropH = 0) { const m = cube(disp(t), tcol(t), [sz, sz * 0.8, sz], x, y, z, dropH); m.userData.t = t; return m; }
+function tcube(t, x, y, z, sz = 0.6, dropH = 0) { const m = cube(disp(t), tcol(t), [sz * (String(t).length > 2 ? 1.5 : 1), sz * 0.8, sz], x, y, z, dropH); m.userData.t = t; return m; }
 function ring(r = 0.5) {
   const m = new THREE.Mesh(new THREE.TorusGeometry(r, 0.05, 8, 32), new THREE.MeshBasicMaterial({ color: '#c08a1f' }));
   m.rotation.x = Math.PI / 2; lab.world.add(m); return m;
 }
 function seg(a, b, color = '#b9a582') { const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), new THREE.LineBasicMaterial({ color })); lab.world.add(l); return l; }
+// play evs[from..to) with apply(ev), spreading at most ~2.6 s of motion over them
+async function chunk(tok, evs, from, to, apply, maxMs = 350) {
+  const n = Math.max(1, to - from), ms = Math.min(maxMs, 2600 / n);
+  for (let i = from; i < to && i < evs.length; i++) { await apply(evs[i], i); await beat(tok, ms); }
+}
 // a vertical stack column of value cubes at (x, z)
 function col(x, z, opt = {}) {
   const dy = opt.dy || 0.56, size = opt.size || [1.2, 0.5, 1.0], y0 = opt.y0 || 0.3;
@@ -12348,10 +12355,11 @@ function col(x, z, opt = {}) {
     push(t, color) { const m = cube(disp(t), color || tcol(t), size, x, y0 + c.items.length * dy, z, 4); m.userData.t = String(t); c.items.push(m); return m; },
     pop() { const m = c.items.pop(); if (m) fly(m, V3(2, 7, 3)); return m; },
     top() { return c.items[c.items.length - 1]; },
+    clear() { c.items.forEach(kill); c.items = []; },
   };
   return c;
 }
-// infix → postfix trace (same rules as infixSteps, but one event per action, with token index)
+// infix → postfix trace: one event per action, with the token index it belongs to
 function i2pTrace(toks) {
   const st = [], out = [], ev = [];
   const e = (o) => ev.push(Object.assign(o, { st: [...st], out: [...out] }));
@@ -12371,171 +12379,306 @@ function i2pTrace(toks) {
   while (st.length) { const o = st.pop(); out.push(o); e({ i: toks.length, t: 'end', kind: 'pop', op: o }); }
   return ev;
 }
-function capI2P(ev, n) {
-  const f = 'output：' + (ev.out.map(disp).join(' ') || '—') + '　｜　stack：' + (ev.st.map(disp).join(' ') || '空');
-  if (ev.kind === 'out') return [disp(ev.t) + '：運算元直接輸出', f];
-  if (ev.kind === 'lparen') return ['右括號救出左括號，一起丟掉', f];
-  if (ev.kind === 'pop') return [ev.i >= n ? '掃完：pop 出 ' + disp(ev.op) : ev.t === ')' ? '遇到 )：pop 出 ' + disp(ev.op) : 'top ' + disp(ev.op) + ' 優先序 ≥ ' + disp(ev.t) + ' → pop', f];
-  if (ev.t === '(') return ['左括號：直接 push', f];
-  return ['push ' + disp(ev.t) + (ev.st.length > 1 && ev.st[ev.st.length - 2] === '(' ? '（壓在 ( 上）' : ''), f];
-}
-// animate the stack conversion: input row → (operator stack) → output row
-async function animI2P(tok, toks, c) {
-  const ms = c.ms || 700, sz = c.sz || 0.6, n = toks.length;
+// the stack conversion as a player: input row → operator stack → output row; play token by token
+function i2p(toks, c) {
+  const sz = c.sz || 0.6, n = toks.length;
   const inC = toks.map((t, i) => tcube(t, c.inX(i), 0.3, c.inZ, sz));
-  const rg = ring(sz * 0.8);
-  const st = [], stT = [], out = [];
+  const rg = ring(sz * 0.8); rg.position.set(c.inX(0), 0.03, c.inZ);
+  const st = [], out = [], evs = i2pTrace(toks);
   const stY = (k) => 0.3 + k * sz * 0.92;
-  let prev = -1;
-  for (const ev of i2pTrace(toks)) {
+  let k = 0;
+  function apply(ev) {
     if (ev.i < n) rg.position.set(c.inX(ev.i), 0.03, c.inZ); else rg.visible = false;
-    if (ev.i !== prev && ev.i < n && c.onTok) await c.onTok(ev, stT.slice());
-    prev = ev.i;
-    let hl = -1;
-    if (ev.kind === 'out') { const m = inC[ev.i]; out.push(m); move(m, c.outX(out.length - 1), 0.3, c.outZ); hl = 1; }
-    else if (ev.kind === 'push') { const m = inC[ev.i]; st.push(m); stT.push(ev.t); move(m, c.stX, stY(st.length - 1), c.stZ); hl = 5; }
-    else if (ev.kind === 'pop') { const m = st.pop(); stT.pop(); out.push(m); glow(m, GOLD); move(m, c.outX(out.length - 1), 0.3, c.outZ); hl = ev.i < n ? 4 : 6; }
-    else if (ev.kind === 'lparen') { fly(st.pop()); stT.pop(); fly(inC[ev.i]); }
-    if (c.code) c.code.hl(hl);
-    const cf = (c.cap && c.cap(ev)) || capI2P(ev, n);
-    say(cf[0], cf[1]);
-    await beat(tok, ms);
     out.forEach((m) => glow(m, null));
+    if (ev.kind === 'out') { const m = inC[ev.i]; out.push(m); move(m, c.outX(out.length - 1), 0.3, c.outZ); }
+    else if (ev.kind === 'push') { const m = inC[ev.i]; st.push(m); move(m, c.stX, stY(st.length - 1), c.stZ); }
+    else if (ev.kind === 'pop') { const m = st.pop(); out.push(m); glow(m, GOLD); move(m, c.outX(out.length - 1), 0.3, c.outZ); }
+    else if (ev.kind === 'lparen') { fly(st.pop()); fly(inC[ev.i]); }
   }
-  kill(rg);
-  return { outC: out, post: out.map((m) => m.userData.t) };
+  return {
+    inC, out, st, evs, rg,
+    look(i) { rg.position.set(c.inX(i), 0.03, c.inZ); glow(inC[i], GOLD); },
+    // play every event of tokens [a, b) (b = n + 1 includes the final pops)
+    async toks(tok, a, b, maxMs = 450) {
+      const from = evs.findIndex((e) => e.i >= a), to0 = evs.findIndex((e) => e.i >= b), to = to0 < 0 ? evs.length : to0;
+      if (from < 0) return;
+      for (let i = a; i < Math.min(b, n); i++) glow(inC[i], null);
+      await chunk(tok, evs, Math.max(from, k), to, (e) => apply(e), maxMs); k = Math.max(k, to);
+    },
+    async toks1(tok, idx) { if (idx < k) return; apply(evs[idx]); k = idx + 1; await beat(tok, 450); },
+    post() { return out.map((m) => m.userData.t); },
+  };
+}
+// postfix evaluation as a player over an operand stack
+function evalP(post, c) {
+  const sz = c.sz || 0.6;
+  const inC = post.map((t, i) => tcube(t, c.inX(i), 0.3, c.inZ, sz));
+  const stk = col(c.stX, c.stZ, { size: [1.3, 0.5, 1.0] });
+  const rg = ring(sz * 0.8); rg.position.set(c.inX(0), 0.03, c.inZ);
+  const vals = [];
+  const fmt = (v) => String(+(+v).toFixed(2));
+  return {
+    inC, stk, vals,
+    async run(tok, a, b, maxMs = 450) {
+      const ms = Math.min(maxMs, 2600 / Math.max(1, b - a));
+      for (let i = a; i < b; i++) {
+        const t = post[i]; rg.position.set(c.inX(i), 0.03, c.inZ); glow(inC[i], GOLD);
+        if (!PREC[t]) { vals.push(Number(t)); stk.push(t); }
+        else {
+          const y = vals.pop(), x = vals.pop(); stk.pop(); stk.pop();
+          const r = t === '+' ? x + y : t === '-' ? x - y : t === '*' ? x * y : t === '/' ? x / y : Math.pow(x, y);
+          vals.push(r); stk.push(fmt(r), OKC);
+        }
+        await beat(tok, ms); glow(inC[i], null); tint(inC[i], GRAY);
+      }
+    },
+  };
 }
 // match each postfix token to its (unused) position in the infix row
 function slideOrder(toks, post) { const used = new Set(); return post.map((p) => { const i = toks.findIndex((t, k) => t === p && !used.has(k)); used.add(i); return i; }); }
+// maze search with a container: events {key, adds[], goal}
+function mazeEvents(kind, rnd) {
+  const s = findCell('S'), cont = [s], par = { [s]: null }, mark = new Set([s]), evs = [];
+  while (cont.length) {
+    const key = kind === 'stack' ? cont.pop() : kind === 'queue' ? cont.shift() : cont.splice(Math.floor(rnd() * cont.length), 1)[0];
+    const [r, c] = key.split(',').map(Number);
+    if (MAZE[r][c] === 'G') { evs.push({ key, adds: [], goal: true, cont: [...cont] }); break; }
+    const adds = [];
+    for (const [dr, dc] of DIRS) { const k2 = (r + dr) + ',' + (c + dc); if (MAZE[r + dr][c + dc] !== '#' && !mark.has(k2)) { mark.add(k2); par[k2] = key; cont.push(k2); adds.push(k2); } }
+    evs.push({ key, adds, cont: [...cont] });
+  }
+  return { evs, par };
+}
+// recursive maze visit order: events visit / back / goal
+function mazeRecEvents() {
+  const seen = new Set(), evs = []; let depth = 0;
+  function visit(r, c) {
+    const key = r + ',' + c; seen.add(key); evs.push({ type: 'visit', key, depth: depth++ });
+    for (const [dr, dc] of DIRS) {
+      const nr = r + dr, nc = c + dc, k = nr + ',' + nc;
+      if (MAZE[nr][nc] === '#' || seen.has(k)) continue;
+      if (MAZE[nr][nc] === 'G') { evs.push({ type: 'goal', key: k }); return true; }
+      if (visit(nr, nc)) return true;
+    }
+    depth--; evs.push({ type: 'back', key }); return false;
+  }
+  const [r0, c0] = findCell('S').split(',').map(Number); visit(r0, c0);
+  return evs;
+}
+// a maze stage with a notebook (container) shown as a column / row of labels
+function mazeStage(cam) {
+  fresh(cam || [1, 13, 9], [1, 0, 0.5]);
+  mz.kind = 'stack'; enterMaze(); controls('');
+  lab.frameCamera(cam || [1, 13, 9], [1, 0, 0.5]);
+  let boxes = [], cur = null;
+  const lbl = (k) => '(' + k + ')';
+  return {
+    show(list, kind) {
+      boxes.forEach(kill); boxes = [];
+      list.slice(-9).forEach((k, i) => boxes.push(kind === 'queue'
+        ? cube(lbl(k), TODO, [1.25, 0.4, 0.5], 6.3, 0.2, -3.6 + i * 0.6)
+        : cube(lbl(k), TODO, [1.25, 0.4, 0.8], 6.3, 0.2 + i * 0.45, 2.6)));
+    },
+    visit(key) { if (cur) paint(cur, '#cfe8dc'); cur = key; paint(key, OKC); },
+    path(par, goal) { let len = 0; for (let k = goal; k; k = par[k]) { paint(k, '#c08a1f'); len++; } return len - 1; },
+  };
+}
 
-// ── 13:33 Q&A：running time 與時間複雜度 ──
+// ── 13:42 Q&A：running time 與時間複雜度 ──
 FRAG.push(['sqlin-trend', '時間複雜度是趨勢，running time 是一點', async (tok) => {
   fresh([0, 5, 14], [0, 2.8, 0]);
   line(-6, 0.05, 6, 0.05); line(-6, 0.05, -6, 6.6);
   tag('資料量 n →', 'idx', 5, -0.3); tag('執行時間', 'idx', -6, 7);
-  say('時間複雜度：時間隨資料量成長的趨勢', 'asymptotic notation 看的是曲線的形狀');
+  await step(tok);                                   // 13:46 時間怎麼變化
+  say('時間複雜度：資料量增加時', '程式的執行時間怎麼變化？');
+  await step(tok);                                   // 14:00 asymptotic notation：曲線的趨勢
   const P = []; for (let k = 0; k <= 20; k++) { const u = k / 20; P.push(V3(-6 + 12 * u, 0.05 + 6 * u * u, 0)); }
-  for (let k = 1; k <= 20; k++) { seg(P[k - 1], P[k], '#dd8238'); if (k % 4 === 0) await beat(tok, 260); }
+  for (let k = 1; k <= 20; k++) { seg(P[k - 1], P[k], '#dd8238'); if (k % 4 === 0) await beat(tok, 200); }
   tag('O(n²)', 'ptr alt', 4.6, 6.2);
-  await beat(tok, 1200);
+  say('Asymptotic notation 看的是', '資料成長時這條曲線的趨勢');
+  await step(tok);                                   // 14:13 running time 是曲線上一點
   const u0 = 0.55, px = -6 + 12 * u0, py = 0.05 + 6 * u0 * u0;
   cube('', '#c08a1f', [0.35, 0.35, 0.35], px, py, 0, 3);
   tag('這次實際跑的時間', 'ptr', px, py + 0.8);
-  say('實際 running time 是曲線上的一個點', '知道趨勢，就能從小資料往大資料估計');
-  await beat(tok, 3000);
+  say('實際跑出來的 running time', '就是曲線上的某一個點');
+  await step(tok);                                   // 14:37 從小一點的資料開始測
   fresh([0, 5, 14], [0, 2.8, 0]);
-  say('若分析出平方關係：從小資料開始測', 'n × 10 → 時間約 × 100');
-  const rows = [['10 筆', 't', 1, '10 筆：先確認程式正確'], ['100 筆', '≈ 100 t', 3, '100 筆：時間約 ×100'], ['1,000 筆', '≈ 10,000 t', 5, '1,000 筆：再 ×100']];
-  for (let k = 0; k < rows.length; k++) {
-    const [nm, tl, h, cap] = rows[k], x = -4.5 + k * 3;
-    const b = lab.box('#4b9ee2', [1.3, 1, 1.3]); b.scale.y = 0.01; b.position.set(x, 0, 0); lab.world.add(b);
+  say('知道趨勢，就能從小資料開始測', '');
+  const rows = [['10 筆', 't', 1], ['100 筆', '≈ 100 t', 3], ['1,000 筆', '≈ 10,000 t', 5]], bars = [];
+  const grow = async (k) => {
+    const [nm, tl, h] = rows[k], x = -4.5 + k * 3;
+    const b = lab.box('#4b9ee2', [1.3, 1, 1.3]); b.scale.y = 0.01; b.position.set(x, 0, 0); lab.world.add(b); bars.push(b);
     tag(nm, 'idx', x, 0, 1.3);
-    say(cap, '高度為對數尺度：每兩格 ×100');
     await anim(tok, 700, (t) => { b.scale.y = h * t; b.position.y = h * t / 2; });
     tag(tl, 'idx', x, h + 0.4);
-    await beat(tok, 1300);
-  }
+  };
+  await step(tok);                                   // 14:53 平方關係：從 10 筆開始
+  await grow(0);
+  say('分析出平方關係：先測 10 筆', '');
+  await step(tok);                                   // 15:02 10 倍資料 → 約 100 倍時間
+  await grow(1);
+  say('10 倍的資料量', '約 100 倍的執行時間（高度是對數尺度）');
+  await step(tok);                                   // 15:10 1000 筆再 ×100
+  await grow(2);
+  say('1000 筆：再乘約 100', '');
+  await step(tok);                                   // 15:18 一邊測正確、一邊估時間
   const g = ghostBox('#dd8238', 1.3, 6.4, 1.3); g.position.set(4.5, 3.2, 0);
-  tag('最大資料？', 'idx', 4.5, 0, 1.3); tag('估計：1 小時內跑得完嗎', 'ptr alt', 4.5, 6.9);
-  say('逐步放大資料，估計大資料要跑多久', '別一開始就把最大的資料丟進去');
-  await beat(tok, 3200);
+  tag('最大資料？', 'idx', 4.5, 0, 1.3);
+  say('一邊測程式是否正確', '一邊估計時限內跑不跑得完');
+  await step(tok);                                   // 15:30 千萬別一開始就丟最大的
+  const no = tag('✕ 一開始就丟最大的資料', 'ptr alt', 4.5, 6.9);
+  say('千萬不要一開始就把最大的資料丟進去', '');
+  await step(tok);                                   // 15:44 逐步放大
+  txt(no, '估計：1 小時內跑得完嗎？');
+  say('資料一點一點放大', '才有好的估計');
+  await step(tok);                                   // 16:06 running time 是趨勢上的一點
+  say('複雜度：趨勢的分析', 'running time：趨勢上的一點，可從小資料逼近');
 }]);
 
-// ── 19:32 Q&A：O(log n) 與 binary search ──
+// ── 19:32 Q&A：O(log n) 與 Divide and Conquer ──
 FRAG.push(['sqlin-binsearch', 'Binary search：每次丟掉一半', async (tok) => {
   fresh([0, 7, 11], [0, 0.5, 0]);
   const A = [3, 8, 12, 17, 21, 25, 30, 34, 41, 47, 52, 58, 63, 70, 77, 85], T = 63;
   const X = (i) => sx(16, 0.82, i);
   const cs = A.map((v, i) => { tag(String(i), 'idx', X(i), 0, 0.8); return cube(v, '#4b9ee2', [0.7, 0.6, 0.7], X(i), 0.3, 0); });
-  const tl = tag('lo', 'ptr', X(0), 1.2, -0.4), th = tag('hi', 'ptr', X(15), 1.2, -0.4), tm = tag('mid', 'ptr alt', 0, 1.9, -0.4);
-  showL(tm, false);
-  say('Ordered array 裡找 ' + T, '利用「有序」：看中間點就知道往哪邊');
-  await beat(tok, 2000);
+  await step(tok);                                   // 19:45 ordered array 的特性
+  say('Binary search：在 ordered array 裡找', '例：找 ' + T);
+  await step(tok);                                   // 19:52 最多 log n 個中間點
   let lo = 0, hi = 15, k = 0;
+  const tm = tag('mid', 'ptr alt', 0, 1.9, -0.4);
   while (lo <= hi) {
     const mid = (lo + hi) >> 1; k++;
-    showL(tm, true); tm.position.set(X(mid), 1.9, -0.4); glow(cs[mid], GOLD);
-    say('第 ' + k + ' 個中間點：A[' + mid + '] = ' + A[mid], A[mid] === T ? A[mid] + ' == ' + T : A[mid] + (A[mid] < T ? ' < ' : ' > ') + T);
-    await beat(tok, 1500);
+    tm.position.set(X(mid), 1.9, -0.4); glow(cs[mid], GOLD);
+    await beat(tok, 350);
     if (A[mid] === T) { tint(cs[mid], OKC); break; }
     const [a, b] = A[mid] < T ? [lo, mid] : [mid, hi];
     for (let i = a; i <= b; i++) { tint(cs[i], GRAY); move(cs[i], X(i), 0.3, 1.6); }
     glow(cs[mid], null);
     if (A[mid] < T) lo = mid + 1; else hi = mid - 1;
-    tl.position.set(X(lo), 1.2, -0.4); th.position.set(X(hi), 1.2, -0.4);
-    say(A[mid] < T ? '答案不可能在左半：整半丟掉' : '答案不可能在右半：整半丟掉', '剩下 A[' + lo + '..' + hi + ']，共 ' + (hi - lo + 1) + ' 個');
-    await beat(tok, 1600);
+    await beat(tok, 300);
   }
-  say('找到了：只看了 ' + k + ' 個中間點', '16 個數 → log₂16 = 4 → O(log n)');
-  await beat(tok, 2400);
-  say('Divide & Conquer：切成小問題，丟掉不可能的那半', '大問題 → 兩個小問題 → 只留一個');
-  await beat(tok, 2800);
+  say('只看了 ' + k + ' 個中間點就找到', '16 個數 → log₂16 = 4');
+  await step(tok);                                   // 20:09 Divide and Conquer 家族
+  tag('Divide and Conquer', 'ptr', 0, 3.2);
+  say('Binary search 屬於更大的家族', 'Divide and Conquer');
+  await step(tok);                                   // 20:14 大問題切成小問題
+  const L = ghostBox('#4b9ee2', 6.4, 0.9, 1.4), R = ghostBox('#dd8238', 6.4, 0.9, 1.4);
+  L.position.set(-3.3, 0.45, 0); R.position.set(3.3, 0.45, 0);
+  say('把大問題切成小問題', '再分頭解決');
+  await step(tok);                                   // 20:30 有一半可以丟掉
+  R.visible = false; L.material.opacity = 0.05;
+  tag('不在這半 → 整個丟掉', 'ptr alt', -3.3, 2.4);
+  say('Binary search：切成兩半', '發現一半根本不含答案，丟掉');
+  await step(tok);                                   // 20:44 只留下少數小問題
+  say('切完沒有分散成很多個', '只留下少數小問題');
+  await step(tok);                                   // 21:02 O(log n)
+  tag('→ 常有 O(log n) 的特性', 'ptr', 0, 4.0);
+  say('這類演算法分析起來', '常會有 O(log n) 的特性');
+}]);
+
+// ── 30:13 Stack 複習：LIFO 與頂端操作（stack-lifo 的 cued 版） ──
+FRAG.push(['sqlin-lifo', 'Stack 複習：只在頂端操作', async (tok) => {
+  fresh([0, 5, 12], [0, 1.6, 0]);
+  const stk = col(-2.5, 0, { size: [2.2, 0.3, 2.2], dy: 0.34, y0: 0.15 });
+  let top = null;
+  await step(tok);                                   // 30:13 獨特的資料結構
+  tag('Stack', 'ptr alt', -2.5, 4.4);
+  say('Stack：在 computer science 裡', '有自己重要價值的資料結構');
+  await step(tok);                                   // 30:32 先進後出，像電梯
+  tag('先進後出（LIFO）', 'ptr', -2.5, 3.8);
+  say('最重要的特性：先進後出', '像坐電梯：先進去的比較後出來');
+  await step(tok);                                   // 30:54 一疊盤子
+  for (let i = 0; i < 4; i++) { stk.push('', i % 2 ? '#efe6d6' : '#dcd0bb'); await beat(tok, 300); }
+  top = tag('top', 'ptr', -0.8, 0.15 + 3 * 0.34);
+  say('想成一疊盤子', '');
+  await step(tok);                                   // 31:03 頂端放上去、拿下來
+  stk.push('', '#f6e3c8'); top.position.y = 0.15 + 4 * 0.34;
+  await beat(tok, 800);
+  stk.pop(); top.position.y = 0.15 + 3 * 0.34;
+  say('從頂端放上去（push）', '從頂端拿出來（pop）');
+  await step(tok);                                   // 31:20 偷看頂端
+  glow(stk.top(), GOLD);
+  say('有的實作會讓你偷看頂端', '甚至偷看頂端好幾個（peek / top）');
+  await step(tok);                                   // 31:28 所有運算都在頂端
+  glow(stk.top(), null);
+  tag('所有運算都在 top', 'ptr', 1.6, 2.4);
+  say('所有容許的運算都在頂端發生', '壓在下面的不太管');
+  await step(tok);                                   // 31:46 待辦事項
+  ['報告', '洗衣服', '作業 2', '回信'].forEach((t, i) => tag(t, 'idx', -0.3, 0.15 + i * 0.34, 1.2));
+  stk.items[0].material.transparent = true; stk.items[0].material.opacity = 0.35;
+  say('像待辦事項：一件件壓上來', '壓在最下面的，可能早就忘了');
 }]);
 
 // ── 32:07 括號配對 ──
 FRAG.push(['sqlin-paren', '括號配對：左括號 push、右括號 pop', async (tok) => {
   fresh([0, 6, 11], [-0.6, 1.2, 0]);
   tag('stack', 'ptr', 4, 0, 1.2);
-  async function run(s) {
-    const X = (i) => -6 + i * 0.6;
-    const cs = [...s].map((ch, i) => cube(ch, ch === '(' || ch === ')' ? PAR : GRAY, [0.48, 0.45, 0.48], X(i), 0.25, 0));
-    const stk = col(4, 0, { size: [1.1, 0.5, 1.0] });
-    const rg = ring(0.35);
-    let ok = true;
-    for (let i = 0; i < s.length; i++) {
-      const ch = s[i]; rg.position.set(X(i), 0.03, 0);
-      if (ch === '(') {
-        const m = stk.push('(', PAR); m.userData.src = cs[i];
-        say('左括號：push', 'stack 裡有 ' + stk.items.length + ' 個左括號');
-        await beat(tok, 900);
-      } else if (ch === ')') {
-        if (!stk.items.length) { tint(cs[i], '#d64545'); say('右括號找不到左括號', '<span class="no">stack 已空 → 不平衡</span>'); await beat(tok, 2200); ok = false; break; }
-        const m = stk.top(); glow(m, GOLD); glow(cs[i], GOLD); glow(m.userData.src, GOLD);
-        say('右括號：和 stack top 的左括號配對', '最近一個還沒配對的左括號');
-        await beat(tok, 1000);
-        tint(cs[i], OKC); tint(m.userData.src, OKC); glow(cs[i], null); glow(m.userData.src, null);
-        stk.pop();
-        await beat(tok, 500);
-      } else { await beat(tok, 260); }
-    }
-    kill(rg);
-    if (ok) say(stk.items.length ? '掃完還有左括號 → 不平衡' : '掃完 stack 是空的 → 括號平衡', stk.items.length ? '<span class="no">unbalanced</span>' : '<span class="ok">balanced</span>');
-    await beat(tok, 2200);
-    cs.forEach(kill); stk.items.forEach(kill);
-  }
-  say('只看括號：用 stack 檢查有沒有平衡', '');
-  await beat(tok, 1400);
-  await run('((a+b)*(c-d))');
-  await run('(a+b))');
-  say('Stack 可用 array 或 linked list 實作', '關鍵：top 放哪一端，push/pop 才是 O(1)');
-  await beat(tok, 2600);
+  const s = '((a+b)*(c-d))', X = (i) => -6 + i * 0.6;
+  const cs = [...s].map((ch, i) => cube(ch, ch === '(' || ch === ')' ? PAR : GRAY, [0.48, 0.45, 0.48], X(i), 0.25, 0));
+  const stk = col(4, 0, { size: [1.1, 0.5, 1.0] });
+  const rg = ring(0.35); rg.position.set(X(0), 0.03, 0);
+  const doCh = (i) => {
+    const ch = s[i]; rg.position.set(X(i), 0.03, 0);
+    if (ch === '(') { const m = stk.push('(', PAR); m.userData.src = cs[i]; }
+    else if (ch === ')') { const m = stk.top(); tint(cs[i], OKC); tint(m.userData.src, OKC); stk.pop(); }
+  };
+  await step(tok);                                   // 32:09 括號配對
+  say('上次的入門演算法', '檢查 C 語言裡的括號配對');
+  await step(tok);                                   // 32:19 最近看到的左括號找右括號
+  say('幫「最近看到、還沒配對的左括號」', '找一個配對的右括號');
+  await step(tok);                                   // 32:37 左括號 push；右括號和 top 配對
+  for (let i = 0; i <= 6; i++) { doCh(i); await beat(tok, 300); }
+  say('看到左括號：push', '看到右括號：和 stack top 的左括號配對、pop');
+  await step(tok);                                   // 32:46 一路配下去
+  for (let i = 7; i < s.length; i++) { doCh(i); await beat(tok, 300); }
+  kill(rg);
+  say('這樣一路配下去', '');
+  await step(tok);                                   // 32:57 只看括號：平衡嗎
+  say('只看括號：掃完 stack 是空的', '<span class="ok">balanced</span>');
+  await step(tok);                                   // 33:27 array 或 linked list 實作
+  cs.forEach(kill);
+  tag('array', 'ptr', -4, 2.6); tag('linked list', 'ptr', 0, 2.6);
+  say('Stack 可以用 array 或 linked list 實作', '');
+  await step(tok);                                   // 33:35 top 放哪一端
+  tag('top 放開頭還是尾巴？', 'ptr alt', -4, 1.9); tag('top 放 head 還是 tail？', 'ptr alt', 0, 1.9);
+  say('細節：top 放在哪一端', 'push / pop 才會是 O(1)');
+  await step(tok);                                   // 33:50 課本有寫
+  say('這部分課本上有寫', '回去讀一讀');
+  await step(tok);                                   // 34:09 compiler 的一小部分
+  say('括號配對只是編譯器裡的一小部分', '今天看另一個重要應用');
 }]);
 
-// ── 35:00 A/B−C+D*E−A*C：先乘除後加減 ──
+// ── 35:14 A/B−C+D*E−A*C：先乘除後加減 ──
 FRAG.push(['sqlin-infix-order', 'Infix：先乘除後加減的計算順序', async (tok) => {
   fresh([0, 6, 11], [0, 0.6, 0]);
   const toks = tokenize('A/B-C+D*E-A*C'), X = (i) => sx(13, 0.85, i);
-  const cs = toks.map((t, i) => tcube(t, X(i), 0.3, 0, 0.66));
-  say('程式裡寫 A/B−C+D*E−A*C', '人知道：先乘除、後加減');
-  await beat(tok, 2200);
+  let cs = [];
   const NUM = ['①', '②', '③', '④', '⑤', '⑥'];
-  const plan = [[1, 0, 2, '先做 A / B', 't₁ = A / B'], [3, 0, 4, '再減 C', 't₂ = t₁ − C'], [5, -1, -1, '看到 + 先別加：D 要先乘', '不能先算 t₂ + D'],
-    [7, 6, 8, 'D * E 先做', 't₃ = D * E'], [5, 0, 8, '才做加法', 't₄ = t₂ + t₃'], [11, 10, 12, 'A * C', 't₅ = A * C'], [9, 0, 12, '最後相減', 't₆ = t₄ − t₅']];
   let k = 0;
-  for (const [op, a, b, cap, f] of plan) {
-    if (a < 0) {
-      glow(cs[op], '#7a1010'); glow(cs[6], GOLD); glow(cs[7], GOLD);
-      say(cap, f); await beat(tok, 2400);
-      glow(cs[op], null); glow(cs[6], null); glow(cs[7], null); continue;
-    }
-    for (let i = a; i <= b; i++) glow(cs[i], GOLD);
-    tag(NUM[k++], 'ptr alt', X(op), 1.2);
-    say(cap, f);
-    await beat(tok, 1700);
-    for (let i = a; i <= b; i++) glow(cs[i], null);
-  }
-  say('電腦需要的是這樣一步一步的計算過程', '① ÷ ② − ③ × ④ + ⑤ × ⑥ −');
-  await beat(tok, 3000);
+  const mark = (op, a, b) => { for (let i = a; i <= b; i++) glow(cs[i], GOLD); tag(NUM[k++], 'ptr alt', X(op), 1.2); };
+  const unmark = () => cs.forEach((m) => glow(m, null));
+  await step(tok);                                   // 35:14 A/B−C+D*E−A*C
+  cs = toks.map((t, i) => tcube(t, X(i), 0.3, 0, 0.66, 3));
+  say('程式裡寫：A / B − C + D * E − A * C', '');
+  await step(tok);                                   // 35:33 先乘除後加減
+  say('小學老師教：先乘除、後加減', '');
+  await step(tok);                                   // 35:44 先 A/B，再減 C
+  mark(1, 0, 2); await beat(tok, 600); unmark(); mark(3, 0, 4);
+  say('先做 A / B，再減 C', 't₁ = A / B、t₂ = t₁ − C');
+  await step(tok);                                   // 36:08 看到 + 時
+  unmark(); glow(cs[5], '#7a1010');
+  say('看到 + 的時候', '能直接把前面的結果加 D 嗎？');
+  await step(tok);                                   // 36:23 D 要先跟後面的乘
+  glow(cs[5], null); mark(7, 6, 8);
+  say('不行：D 要先跟後面的 * 算', 't₃ = D * E');
+  await step(tok);                                   // 36:54 先乘才加，A*C 才減
+  unmark(); mark(5, 0, 8); await beat(tok, 500); unmark(); mark(11, 10, 12); await beat(tok, 500); unmark(); mark(9, 0, 12);
+  say('先 D * E 才做加法；先 A * C 才做減法', 't₄ = t₂ + t₃、t₅ = A * C、t₆ = t₄ − t₅');
+  await step(tok);                                   // 37:03 一路的計算過程
+  unmark();
+  say('電腦需要一路的計算過程', '暫存中間的值');
+  await step(tok);                                   // 37:24 翻譯成電腦看得懂的
+  say('要把人看得懂的「先乘除後加減」', '翻譯成電腦看得懂的步驟');
 }]);
 
 // ── 37:42 Postfix：運算元不動，動作放後面 ──
@@ -12544,306 +12687,792 @@ FRAG.push(['sqlin-postfix-idea', 'Postfix：把運算子移到運算元後面', 
   const toks = tokenize('A/B-C+D*E-A*C'), post = 'A B / C - D E * + A C * -'.split(' '), X = (i) => sx(13, 0.85, i);
   tag('infix（中序）', 'idx', 0, 0, -2.6); tag('postfix（後序）', 'idx', 0, 0, 3);
   const cs = toks.map((t, i) => tcube(t, X(i), 0.3, -1.6, 0.66));
-  say('Postfix notation：A B C D E 不動', '只把動作（operator）放到數字後面');
-  await beat(tok, 2200);
   const ord = slideOrder(toks, post);
-  for (let k = 0; k < post.length; k++) {
-    const m = cs[ord[k]];
-    move(m, X(k), 0.3, 1.8);
-    if (k === 2) say('A / B → A B /：讀 A、讀 B、做除法', 'postfix：' + post.slice(0, 3).map(disp).join(' '));
-    else say(isOp(post[k]) ? '運算元都備好了 → 下指令 ' + disp(post[k]) : '運算元 ' + post[k] + '：照原來順序', 'postfix：' + post.slice(0, k + 1).map(disp).join(' '));
-    await beat(tok, k === 2 ? 2200 : 1050);
-  }
+  let k = 0;
+  const slide = async (upto) => { for (; k < upto; k++) { move(cs[ord[k]], X(k), 0.3, 1.8); await beat(tok, 260); } };
+  await step(tok);                                   // 37:42 Postfix notation
+  tag('Postfix notation', 'ptr alt', 0, 2.2, -2.6);
+  say('新觀念：Postfix notation', '');
+  await step(tok);                                   // 37:50 A B C D E 不動
   cs.forEach((m, i) => { if (!isOp(toks[i])) glow(m, GOLD); });
-  say('A B C D E 出現順序和 infix 一樣', '只移動 operator：A B / C − D E * + A C * −');
-  await beat(tok, 3200);
+  say('A B C D E 不動', '');
+  await step(tok);                                   // 38:06 動作放在數字後面
+  cs.forEach((m) => glow(m, null));
+  say('把動作（加減乘除）', '放在數字之後');
+  await step(tok);                                   // 38:18 A / B → A B /
+  await slide(3);
+  say('A / B 寫成 A B /', '讀 A、讀 B、做除法');
+  await step(tok);                                   // 39:34 再跟 C 相減
+  await slide(5);
+  say('結果跟 C 相減', 'A B / C −');
+  await step(tok);                                   // 39:44 先做加的另一側
+  await slide(8);
+  say('先做出加號的另一側', 'D E *');
+  await step(tok);                                   // 39:57 兩邊備好，做加法
+  await slide(9);
+  say('兩邊都準備好了：做加法', '');
+  await step(tok);                                   // 40:09 A C *，最後相減
+  await slide(13);
+  say('再算 A C *，最後相減', 'A B / C − D E * + A C * −');
+  await step(tok);                                   // 40:41 post = 後面
+  say('Post 是「後面」', '動作放在後面');
+  await step(tok);                                   // 40:56 先備好再下指令
+  say('先準備好要算的東西', '再下指令');
+  await step(tok);                                   // 41:03 A B C D E 順序一樣
+  cs.forEach((m, i) => { if (!isOp(toks[i])) glow(m, GOLD); });
+  say('A B C D E 出現的順序', '跟原來一模一樣');
+  await step(tok);                                   // 41:20 只移動 operator
+  cs.forEach((m, i) => glow(m, isOp(toks[i]) ? GOLD : null));
+  say('只是把 operator 移到適當位置', '電腦到那個時間點就做事');
+  await step(tok);                                   // 41:59 平常叫 infix
+  cs.forEach((m) => glow(m, null));
+  say('平常的寫法叫 infix（中序）', '');
 }]);
 
-// ── 42:05 人工法：加括號再換位置（3/4−5+6*7−8*9） ──
+// ── 42:08 人工法：加括號再換位置（3/4−5+6*7−8*9） ──
 FRAG.push(['sqlin-human-paren', '人工轉換：加括號、括號內換成 postfix', async (tok) => {
   fresh([0, 7.5, 11], [0, 0.2, 0.4]);
   const toks = tokenize('3/4-5+6*7-8*9'), post = '3 4 / 5 - 6 7 * + 8 9 * -'.split(' '), X = (i) => sx(13, 0.85, i), Z = -1.2;
   const cs = toks.map((t, i) => tcube(t, X(i), 0.3, Z, 0.62));
-  say('3 / 4 − 5 + 6 * 7 − 8 * 9', '人工演算法：先用括號標出運算順序');
-  await beat(tok, 2000);
-  const boxes = [];
-  function wrap(a, b, color, pad, h) { const g = ghostBox(color, X(b) - X(a) + 0.7 + pad, h, h); g.position.set((X(a) + X(b)) / 2, h / 2, Z); boxes.push(g); }
-  for (const [a, b] of [[0, 2], [6, 8], [10, 12]]) wrap(a, b, '#4b9ee2', 0.15, 0.9);
-  say('藍括號：先乘除的先括起來', '(3/4)　(6*7)　(8*9)');
-  await beat(tok, 2200);
-  [[0, 4, 0.4, 1.15], [0, 8, 0.65, 1.4], [0, 12, 0.9, 1.65]].forEach(([a, b, p, h]) => wrap(a, b, '#d64545', p, h));
-  say('紅括號：其餘由左到右一層層括', '每個括號裡：左運算元、右運算元、運算子');
-  await beat(tok, 2600);
+  const boxes = [], blue = [];
+  function wrap(a, b, color, pad, h) { const g = ghostBox(color, X(b) - X(a) + 0.7 + pad, h, h); g.position.set((X(a) + X(b)) / 2, h / 2, Z); boxes.push(g); return g; }
   const ord = slideOrder(toks, post);
-  const caps = { 2: '(3 4 /)', 4: '((3 4 /) 5 −)', 7: '(6 7 *)', 8: '+ 接在兩半之後', 11: '(8 9 *)', 12: '最外層 −' };
-  for (let k = 0; k < post.length; k++) {
-    move(cs[ord[k]], X(k), 0.3, 2.2);
-    say(caps[k] ? '括號內換成 postfix：' + caps[k] : '運算元：順序不變', 'postfix：' + post.slice(0, k + 1).map(disp).join(' '));
-    await beat(tok, caps[k] ? 1300 : 650);
-  }
+  let k = 0;
+  const slide = async (upto) => { for (; k < upto; k++) { move(cs[ord[k]], X(k), 0.3, 2.2); await beat(tok, 300); } };
+  await step(tok);                                   // 42:08 infix 中間、postfix 後面
+  say('Infix：運算子在中間', 'Postfix：運算子在後面');
+  await step(tok);                                   // 42:25 給人用的演算法
+  say('先來一個「給人用」的演算法', '例：3 / 4 − 5 + 6 * 7 − 8 * 9');
+  await step(tok);                                   // 42:32 先乘除的括起來
+  for (const [a, b] of [[0, 2], [6, 8], [10, 12]]) wrap(a, b, '#4b9ee2', 0.15, 0.9);
+  say('藍括號：先做的先括起來', '(3/4)　(6*7)　(8*9)');
+  await step(tok);                                   // 42:52 其他從左到右一層層
+  [[0, 4, 0.4, 1.15], [0, 8, 0.65, 1.4], [0, 12, 0.9, 1.65]].forEach(([a, b, p, h]) => wrap(a, b, '#d64545', p, h));
+  say('紅括號：其餘從左到右一層層括', '');
+  await step(tok);                                   // 43:00 每個括號三樣東西
+  say('每個括號裡恰好三樣東西', '左運算元、右運算元、動作');
+  await step(tok);                                   // 43:47 括號內換成 postfix
+  [['3 4 /', 1], ['6 7 *', 7], ['8 9 *', 11]].forEach(([t, i]) => blue.push(tag(t, 'ptr', X(i), 1.3, Z)));
+  say('在每個括號裡換成 postfix', '3 4 /　6 7 *　8 9 *');
+  await step(tok);                                   // 44:11 紅括號：3 4 / 5 −
+  blue.forEach(kill);
+  await slide(5);
+  say('紅括號也一樣', '(3 4 /) 5 −');
+  await step(tok);                                   // 44:29 6 7 * 再加
+  await slide(9);
+  say('6 7 * 做完再加', '… 6 7 * +');
+  await step(tok);                                   // 44:38 8 9 * 再減
+  await slide(13);
+  say('8 9 * 做完再減', '… 8 9 * −');
+  await step(tok);                                   // 44:51 考試解題
+  say('考試手算短式子時', '這個方法很好用');
+  await step(tok);                                   // 45:55 括號不需要，只是輔助
   boxes.forEach(kill);
-  say('括號只是輔助：轉完就拿掉', '3 4 / 5 − 6 7 * + 8 9 * −');
-  await beat(tok, 3000);
+  say('括號只是輔助圈出範圍', '轉完就拿掉：3 4 / 5 − 6 7 * + 8 9 * −');
+  await step(tok);                                   // 46:10 人做不難
+  say('式子不長的話', '人可以跳躍式地做，不難');
+  await step(tok);                                   // 46:48 電腦做不容易
+  say('但要寫成電腦的演算法', '把括號插對地方，不太容易');
+  await step(tok);                                   // 47:08 用 stack 好好做
+  say('怎麼用 Stack 來好好做？', '');
 }]);
 
-// ── 47:23 / 50:31 用 stack 求值：用 postfix-eval（現成）。52:35 一般化：需要幾個就 pop 幾個 ──
+// ── 47:30 Postfix 求值：最近的兩個數字（postfix-eval 的 cued 版之一） ──
+FRAG.push(['sqlin-pfeval-near', 'Postfix 求值：抓最近的兩個數字', async (tok) => {
+  fresh([0, 7, 12], [0, 0.6, 0.6]);
+  const post = '3 4 / 5 - 6 7 * + 8 9 * -'.split(' '), X = (i) => sx(13, 0.85, i);
+  let cs = [];
+  const res = (t, i, z = 1.6) => cube(t, OKC, [1.2, 0.5, 0.8], X(i), 0.25, z, 3);
+  const wait = tag('等候區', 'idx', -5.4, 0, 3.6);
+  const done = [];
+  const hlr = (a, b) => { for (let i = a; i <= b; i++) glow(cs[i], GOLD); };
+  const unh = () => cs.forEach((m) => glow(m, null));
+  await step(tok);                                   // 47:30 已經拿到 postfix
+  cs = post.map((t, i) => tcube(t, X(i), 0.3, -1.2, 0.62, 3));
+  say('先想：已經拿到 postfix', '電腦怎麼有效率地求值？');
+  await step(tok);                                   // 47:54 由左到右
+  const rg = ring(0.5); rg.position.set(X(0), 0.03, -1.2);
+  say('由左到右', '讀資料、下動作、讀資料、下動作');
+  await step(tok);                                   // 48:09 3 4 / → 0.75
+  rg.position.x = X(2); hlr(0, 2);
+  done.push(res('0.75', 2));
+  say('3 4 ÷：讀出 3 和 4', '得到 0.75');
+  await step(tok);                                   // 48:17 0.75 5 − → −4.25
+  unh(); rg.position.x = X(4); hlr(3, 4);
+  kill(done.pop()); done.push(res('−4.25', 4));
+  say('0.75 5 −', '得到 −4.25');
+  await step(tok);                                   // 48:25 6 7 * → 42
+  unh(); rg.position.x = X(7); hlr(5, 7);
+  const r42 = res('42', 7);
+  say('6 7 ×', '得到 42');
+  await step(tok);                                   // 48:33 −4.25 還不知道要怎麼辦
+  move(done[0], -5.4, 0.25, 2.8);
+  say('−4.25 還不知道要跟 42 做什麼', '先存在某個地方');
+  await step(tok);                                   // 48:49 加起來 37.75
+  unh(); rg.position.x = X(8); glow(cs[8], GOLD);
+  kill(done.pop()); kill(r42); done.push(res('37.75', 8));
+  say('看到 +：加起來', '37.75');
+  await step(tok);                                   // 48:58 37.75 等 8 9 *
+  unh(); rg.position.x = X(11); hlr(9, 11);
+  move(done[0], -5.4, 0.25, 2.8);
+  const r72 = res('72', 11);
+  say('37.75 在等候區等著', '8 9 × = 72');
+  await step(tok);                                   // 49:06 最後做減法
+  unh(); rg.position.x = X(12); glow(cs[12], GOLD);
+  kill(done.pop()); kill(r72); res('−34.25', 12);
+  say('最後做減法', '= −34.25');
+  await step(tok);                                   // 49:25 存的地方要有順序
+  unh(); kill(rg);
+  say('存起來的東西不能亂存', '要保持一定的順序');
+  await step(tok);                                   // 49:42 抓最近算好的兩個數字
+  say('看到運算符號時', '抓的是「最近」算好的兩個數字');
+  await step(tok);                                   // 50:00 像括號配對的「最近」
+  say('「最近」：括號配對也是找最近的左括號', '');
+  await step(tok);                                   // 50:16 → Stack
+  tag('最近的先處理 → Stack', 'ptr alt', 0, 2.6);
+  say('遠一點的先存起來', '用 Stack');
+}]);
+
+// ── 50:32 用 operand stack 走一遍（postfix-eval 的 cued 版之二） ──
+FRAG.push(['sqlin-pfeval-walk', '用 operand stack 走一遍', async (tok) => {
+  fresh([0, 6.5, 12], [0, 1.6, 0]);
+  const post = '3 4 / 5 - 6 7 * + 8 9 * -'.split(' '), X = (i) => sx(13, 0.85, i);
+  tag('operand stack', 'ptr', 4.6, 0, 1.4);
+  const ev = evalP(post, { inX: X, inZ: -2.2, stX: 4.6, stZ: 0, sz: 0.6 });
+  const pending = async (i, popOnly) => { // the operator at i: glow the two operands first
+    glow(ev.inC[i], GOLD); ev.stk.items.slice(-2).forEach((m) => glow(m, GOLD)); await beat(tok, 500);
+  };
+  await step(tok);                                   // 50:33 stack 空；放 3、放 4
+  await ev.run(tok, 0, 2);
+  say('一開始 stack 是空的', '先放 3，再放 4');
+  await step(tok);                                   // 50:42 看到 ÷：3、4 出來
+  await pending(2);
+  say('看到 ÷：3 出來、4 出來', 'pop 兩個');
+  await step(tok);                                   // 50:51 0.75 放回去
+  await ev.run(tok, 2, 3);
+  say('除完得到 0.75', '放回 stack');
+  await step(tok);                                   // 51:03 再看到 5
+  await ev.run(tok, 3, 4);
+  say('再看到 5：push', '');
+  await step(tok);                                   // 51:12 減：0.75 − 5
+  await ev.run(tok, 4, 5);
+  say('看到 −：0.75 和 5 叫出來相減', '放回 −4.25');
+  await step(tok);                                   // 51:30 6、7 推進去
+  await ev.run(tok, 5, 7);
+  say('又來了 6、又來了 7', '數字一路推進去');
+  await step(tok);                                   // 51:48 乘：塞回 42
+  await ev.run(tok, 7, 8);
+  say('看到 ×：6 和 7 叫出來', '乘完塞回 42');
+  await step(tok);                                   // 51:59 −4.25 和 42；看到 +
+  glow(ev.inC[8], GOLD); ev.stk.items.forEach((m) => glow(m, GOLD));
+  say('stack 裡有 −4.25 和 42', '看到 +');
+  await step(tok);                                   // 52:09 加起來 37.75
+  await ev.run(tok, 8, 9);
+  say('42 出來、−4.25 出來', '加起來塞回 37.75');
+  await step(tok);                                   // 52:20 唯一 element
+  glow(ev.stk.items[0], GOLD);
+  say('37.75 是唯一的 element', '既是最底端，也是最頂端');
+}]);
+
+// ── 52:35 一般化：需要幾個就 pop 幾個 ──
 FRAG.push(['sqlin-postfix-arity', 'Postfix 求值：運算子要幾個運算元就 pop 幾個', async (tok) => {
   fresh([0, 6, 12], [0, 1.8, 0]);
+  const cd = code(['for x in postfix（左→右）:', '  number:   push(x)', '  operator: pop 它需要的個數，算完 push'], -2.4, 6.0, 0.55);
   tag('operand stack', 'ptr', 3, 0, 1.3);
-  async function run(toks, intro, f) {
-    const X = (i) => -5.2 + i * 1.25;
-    const cs = toks.map((t, i) => tcube(t, X(i), 0.3, -1.6, 0.8));
-    const stk = col(3, 0, { size: [1.3, 0.5, 1.0] });
-    const rg = ring(0.6);
-    say(intro, f); await beat(tok, 2000);
-    for (let i = 0; i < toks.length; i++) {
-      const t = toks[i]; rg.position.set(X(i), 0.03, -1.6); glow(cs[i], GOLD);
-      if (!isOp(t)) { stk.push(t); say('數字：push', 'stack：' + stk.items.map((m) => m.userData.t).join('，')); await beat(tok, 1000); glow(cs[i], null); continue; }
-      const k = t === 'neg' ? 1 : t === '?:' ? 3 : 2;
-      const args = stk.items.slice(-k).map((m) => Number(m.userData.t));
-      stk.items.slice(-k).forEach((m) => glow(m, GOLD));
-      say(k === 1 ? 'unary 負號：只 pop 1 個' : k === 3 ? 'ternary ?: ：pop 3 個' : 'binary ×：pop 2 個', 'pop 出 ' + args.join('、'));
-      await beat(tok, 1500);
-      for (let j = 0; j < k; j++) stk.pop();
-      const r = k === 1 ? -args[0] : k === 3 ? (args[0] ? args[1] : args[2]) : args[0] * args[1];
-      stk.push(r, OKC);
-      say('算完把結果 push 回去', k === 3 ? args[0] + ' ? ' + args[1] + ' : ' + args[2] + ' = ' + r : k === 1 ? '−(' + args[0] + ') = ' + r : args[0] + ' × ' + args[1] + ' = ' + r);
-      await beat(tok, 1300); glow(cs[i], null);
-    }
-    kill(rg);
-    say('跑完：stack 只剩一個 element', '它就是運算式的值 = <span class="ok">' + stk.items[0].userData.t + '</span>');
-    await beat(tok, 2200);
-    cs.forEach(kill); stk.items.forEach(kill);
+  let cs = [], stk = null, rg = null;
+  const X = (i) => -5.2 + i * 1.25;
+  function setup(toks) { cs.forEach(kill); if (stk) stk.clear(); cs = toks.map((t, i) => tcube(t, X(i), 0.3, -1.6, 0.8)); stk = col(3, 0, { size: [1.3, 0.5, 1.0] }); if (!rg) rg = ring(0.6); }
+  async function num(i) { rg.position.set(X(i), 0.03, -1.6); stk.push(cs[i].userData.t); await beat(tok, 400); }
+  async function op(i, k, f) {
+    rg.position.set(X(i), 0.03, -1.6); glow(cs[i], GOLD);
+    const args = stk.items.slice(-k).map((m) => Number(m.userData.t));
+    stk.items.slice(-k).forEach((m) => glow(m, GOLD)); await beat(tok, 600);
+    for (let j = 0; j < k; j++) stk.pop();
+    stk.push(f(args), OKC); await beat(tok, 500); glow(cs[i], null);
   }
-  await run(['5', '3', 'neg', '*'], '5 × (−3)：負號只接一個數字', 'postfix：5 3 負 ×');
-  await run(['1', '7', '9', '?:'], 'C 的 1 ? 7 : 9：接三個東西', 'postfix：1 7 9 ?:');
+  await step(tok);                                   // 52:44 數字丟進去、動作抓出來
+  say('Postfix evaluation 非常單調而簡單', '看到數字丟進 stack；看到動作，抓數字出來算');
+  await step(tok);                                   // 53:16 從左掃到右，不回頭
+  cd.hl(0);
+  say('從左掃到右', '完全不用回頭');
+  await step(tok);                                   // 53:24 number：丟進 stack
+  cd.hl(1);
+  say('是 number：丟到 stack', '');
+  await step(tok);                                   // 53:31 operator：拿需要的個數
+  cd.hl(2);
+  say('是 operator：從 stack 拿它需要的數量', '算完塞回去');
+  await step(tok);                                   // 53:44 5 乘以 −3：負號
+  setup(['5', '3', 'neg', '*']);
+  await num(0); await num(1);
+  say('例：5 × (−3)', 'postfix：5 3 負 ×');
+  await step(tok);                                   // 53:52 負號只要一個
+  await op(2, 1, (a) => -a[0]);
+  await op(3, 2, (a) => a[0] * a[1]);
+  say('負號只接一個數字：只 pop 1 個', '× 再 pop 2 個：5 × (−3) = −15');
+  await step(tok);                                   // 54:07 ?: 接三個
+  setup(['1', '7', '9', '?:']);
+  await num(0); await num(1); await num(2);
+  say('C 的 ?: 接三個東西', '條件、true 的結果、false 的結果');
+  await step(tok);                                   // 54:25 pop 三個
+  await op(3, 3, (a) => (a[0] ? a[1] : a[2]));
+  say('pop 三個出來，算完塞回', '1 ? 7 : 9 = 7');
+  await step(tok);                                   // 54:41 只剩一個 element
+  glow(stk.items[0], GOLD);
+  say('順利跑完：stack 只剩一個 element', '它就是整個運算式的結果');
+  await step(tok);                                   // 55:08 還沒講怎麼轉
+  cd.hl(-1);
+  say('還沒講：怎麼從 infix', '好好翻譯成 postfix');
+  await step(tok);                                   // 55:19 精神
+  say('數字推進 stack；看到動作就拿出來', '揉一揉、捏一捏、塞回去');
 }]);
 
-// ── 59:20 Q&A：十進位轉二進位需要 stack 嗎 ──
+// ── 59:43 Q&A：十進位轉二進位需要 stack 嗎 ──
 FRAG.push(['sqlin-binary', '十進位轉二進位：何時需要 stack', async (tok) => {
   fresh([0, 6, 12], [0, 1.6, 0]);
-  say('13 轉二進位：從最大的 2 的次方往下', 'for 迴圈直接輸出，不需要額外儲存');
-  await beat(tok, 1800);
-  let n = 13; const outs = [];
+  let n = 13;
+  await step(tok);                                   // 59:43 十進位 → 二進位
+  tag('13 → 二進位？', 'ptr alt', 0, 3.6);
+  say('同學問：十進位翻成二進位', '會用到 stack 嗎？');
+  await step(tok);                                   // 60:03 從最大的 2 的次方開始
   [8, 4, 2, 1].forEach((p, i) => tag(String(p), 'idx', -4.5 + i * 1.3, 0, -1.4));
+  say('先找數字範圍', '從最大的 2 的次方開始：8、4、2、1');
+  await step(tok);                                   // 60:12 for 迴圈一路輸出
+  const outs = [];
   for (let i = 0; i < 4; i++) {
     const p = [8, 4, 2, 1][i], b = n >= p ? 1 : 0; if (b) n -= p;
-    outs.push(cube(b, b ? OKC : GRAY, [0.9, 0.7, 0.9], -4.5 + i * 1.3, 0.35, 0, 3));
-    say(p + (b ? ' ≤ 剩下的數 → 輸出 1' : ' > 剩下的數 → 輸出 0'), '剩下 ' + n);
-    await beat(tok, 1100);
+    outs.push(cube(b, b ? OKC : GRAY, [0.9, 0.7, 0.9], -4.5 + i * 1.3, 0.35, 0, 3)); await beat(tok, 450);
   }
-  say('高位先算出、高位先輸出：直接印', '13 = 8 + 4 + 1 → 1101');
-  await beat(tok, 2200);
-  outs.forEach((m) => fly(m)); await beat(tok, 600);
-  fresh([0, 6, 12], [0, 1.6, 0]);
+  say('跑個 for 迴圈一路輸出', '13 = 8 + 4 + 1 → 1101');
+  await step(tok);                                   // 60:20 不需要額外儲存
+  say('高位先算、高位先輸出', '不需要額外儲存 → 不用 stack');
+  await step(tok);                                   // 60:43 先暫存再處理？
+  say('但如果算出來要先暫存', '再做一些處理……');
+  await step(tok);                                   // 61:01 低位先算出
+  outs.forEach((m) => fly(m));
   tag('stack', 'ptr', 3, 0, 1.3);
-  say('換一種做法：一直除以 2', '先得到的是最低位');
-  await beat(tok, 1600);
   const stk = col(3, 0, { size: [1.1, 0.5, 1.0] });
   n = 13;
-  while (n > 0) {
-    const r = n % 2, q = n >> 1;
-    stk.push(r, r ? OKC : GRAY);
-    say('餘數 push 進 stack', n + ' ÷ 2 = ' + q + ' 餘 ' + r);
-    n = q; await beat(tok, 1200);
-  }
-  say('算出：低位 → 高位；輸出要：高位 → 低位', '用 stack 反轉順序');
-  await beat(tok, 1800);
+  while (n > 0) { stk.push(n % 2, n % 2 ? OKC : GRAY); n >>= 1; await beat(tok, 450); }
+  say('如果一直除以 2：先算出最低位', '13 ÷ 2 … 餘數 1、0、1、1');
+  await step(tok);                                   // 61:07 輸出要高位先 → stack
   const res = [];
-  for (let i = 0; stk.items.length; i++) {
-    const m = stk.items.pop(); res.push(m.userData.t); move(m, -4.5 + i * 1.3, 0.3, 1.2);
-    say('pop：最後算的最高位先出', '輸出：' + res.join(''));
-    await beat(tok, 900);
-  }
-  say('需不需要 stack，看計算順序和輸出順序', '13 → 1101');
-  await beat(tok, 2600);
+  for (let i = 0; stk.items.length; i++) { const m = stk.items.pop(); res.push(m.userData.t); move(m, -4.5 + i * 1.3, 0.3, 1.2); await beat(tok, 400); }
+  say('輸出卻要從高位到低位', '用 stack 反轉順序：' + res.join(''));
+  await step(tok);                                   // 61:13 for 迴圈不一定需要
+  say('能用 for 迴圈直接跑出來', '就不一定需要 stack');
 }]);
 
-// ── 79:51 / 105:29 人工法多次掃描 vs stack 的 one-pass ──
-FRAG.push(['sqlin-onepass', '人工法掃很多次 vs Stack 只掃一次', async (tok) => {
+// ── 79:57 人工法多次掃描 vs one-pass ──
+FRAG.push(['sqlin-onepass', 'Infix → Postfix：想要只掃一次', async (tok) => {
   fresh([0, 7.5, 12], [0, 0.4, 0.3]);
   const toks = tokenize('A/B-C+D*E-A*C'), X = (i) => sx(13, 0.75, i);
-  let cs = toks.map((t, i) => tcube(t, X(i), 0.3, -1.6, 0.58));
-  const rg = ring(0.45);
-  const passes = ['加上先乘除的括號', '由左到右加其餘括號', '括號內換成 postfix', '把括號拿掉'];
-  say('人工法（human algorithm）', '要把整個式子掃很多次');
-  await beat(tok, 1500);
-  for (let k = 0; k < passes.length; k++) {
-    say('第 ' + (k + 1) + ' 次掃描：' + passes[k], 'human algorithm：multiple pass');
-    await anim(tok, 1300, (t) => rg.position.set(X(0) + (X(12) - X(0)) * t, 0.03, -1.6));
-    await beat(tok, 300);
-  }
-  kill(rg); cs.forEach(kill); cs = [];
-  say('Stack 演算法：從左到右只掃一次', 'one-pass algorithm：讀完就完成');
-  await beat(tok, 1800);
-  await animI2P(tok, toks, { inX: X, inZ: -1.6, outX: X, outZ: 2, stX: 6, stZ: 0, sz: 0.58, ms: 420 });
-  say('只掃一次就得到 postfix', 'A B / C − D E * + A C * −');
-  await beat(tok, 2800);
+  const cs = toks.map((t, i) => tcube(t, X(i), 0.3, -1.6, 0.58));
+  const rg = ring(0.45); rg.position.set(X(0), 0.03, -1.6);
+  const sweep = (ms) => anim(tok, ms, (t) => rg.position.set(X(0) + (X(12) - X(0)) * t, 0.03, -1.6));
+  await step(tok);                                   // 78:58 expression parsing
+  say('Stack 的最後一小段', 'expression parsing');
+  await step(tok);                                   // 79:07 infix → postfix
+  say('要做的：infix 轉成 postfix', '');
+  await step(tok);                                   // 79:21 不想用 human algorithm
+  say('不想用 human algorithm', '加括號、轉換、再拆括號');
+  await step(tok);                                   // 79:36 掃很多次
+  const lab4 = tag('', 'idx', 0, 0, -2.6);
+  for (const p of ['加括號', '轉換', '拆括號']) { txt(lab4, '掃描：' + p); await sweep(750); }
+  say('那樣要把式子掃很多次', 'multiple pass');
+  await step(tok);                                   // 79:49 能不能掃一次
+  kill(lab4);
+  say('能不能只掃一次？', '');
+  await step(tok);                                   // 79:56 one-pass algorithm
+  rg.material.color.set(OKC);
+  await sweep(1600);
+  tag('one-pass algorithm', 'ptr alt', 0, 1.4, -1.6);
+  say('從左到右掃一次就完成', 'one-pass algorithm');
+  await step(tok);                                   // 80:07 省時間
+  say('掃一次就讀完', '比掃很多次省時間');
+  await step(tok);                                   // 80:18 從式子觀察
+  say('先從剛才的式子來觀察', '');
 }]);
+
+// ── 80:30 觀察：運算子什麼時候可以輸出（infix-to-postfix 的 cued 版之一） ──
+FRAG.push(['sqlin-i2p-observe', '觀察：運算子什麼時候可以輸出', async (tok) => {
+  fresh([0, 6.5, 12.5], [0, 1.2, 0.3]);
+  const toks = tokenize('A/B-C+D*E-A*C'), X = (i) => sx(13, 0.72, i);
+  tag('先存起來（stack）', 'ptr', 5, 0, 1.2); tag('output', 'idx', -5.6, 0, 3.6);
+  const P = i2p(toks, { inX: X, inZ: -2.6, outX: X, outZ: 2.8, stX: 5, stZ: 0, sz: 0.56 });
+  await step(tok);                                   // 80:30 有時要先看後面
+  say('只掃一次的話', '有時要先看看後面，才能決定前面');
+  await step(tok);                                   // 80:46 數字順序沒變
+  P.inC.forEach((m, i) => { if (!isOp(toks[i])) glow(m, GOLD); });
+  say('數字的順序沒變', '只要決定符號移到哪');
+  await step(tok);                                   // 81:09 先讀 A
+  P.inC.forEach((m) => glow(m, null));
+  await P.toks(tok, 0, 1);
+  say('先讀 A：直接輸出', '');
+  await step(tok);                                   // 81:18 讀到 ÷：還不知道
+  P.look(1);
+  say('讀到 ÷：還不知道要做什麼', '後面可能有更優先的事');
+  await step(tok);                                   // 81:47 看到 ÷ 先存起來
+  await P.toks(tok, 1, 2);
+  say('看到 ÷ 時，無論如何先存起來', '要等看到 B 才能輸出');
+  await step(tok);                                   // 82:10 讀到 B
+  await P.toks(tok, 2, 3);
+  say('A ÷ B：三個都讀了', '直到看到 − 才知道');
+  await step(tok);                                   // 82:35 看到 −：優先序比 ÷ 低
+  P.look(3);
+  say('看到 −：優先序比 ÷ 低', '');
+  await step(tok);                                   // 83:02 A ÷ B 意念完整 → 輸出
+  await P.toks(tok, 3, 4);
+  say('A ÷ B 的意念已經完整', '輸出 A B ÷；− 先存起來');
+  await step(tok);                                   // 83:22 又看到 C
+  await P.toks(tok, 4, 5);
+  say('又看到 C：輸出', '');
+  await step(tok);                                   // 83:30 看到 +：同優先序
+  P.look(5);
+  say('看到 +：和 − 同優先序', '規定從左做到右');
+  await step(tok);                                   // 83:55 C − 可以出來
+  await P.toks(tok, 5, 6);
+  say('所以 − 可以出來', '+ 先存著');
+  await step(tok);                                   // 84:24 看到 ×
+  await P.toks(tok, 6, 7); P.look(7);
+  say('D 輸出；看到 ×', '還不知道 × 後面是什麼');
+  await step(tok);                                   // 84:48 + 不能出來
+  say('+ 能出來嗎？不行', '× 的優先序比較大');
+  await step(tok);                                   // 85:14 + 和 × 都先放著
+  await P.toks(tok, 7, 9);
+  say('+ 和 × 都暫時放著', 'E 輸出');
+  await step(tok);                                   // 85:24 看到後面的 −
+  P.look(9);
+  say('看到後面的 −', '');
+  await step(tok);                                   // 85:32 × 可以出來
+  await ev0(P, tok, 9, 1);
+  say('確定 × 可以做了', '× 先出來');
+  await step(tok);                                   // 85:41 + 也可以出來
+  await ev0(P, tok, 9, 2);
+  say('回頭看 +：同優先序，也可以出來', '− 再壓進去');
+  await step(tok);                                   // 85:49 結果
+  say('到這裡的輸出', 'A B ÷ C − D E × +');
+}]);
+// play the first `upto` events (count) of token i, continuing where the player stopped
+async function ev0(P, tok, i, upto) {
+  const evs = P.evs.filter((e) => e.i === i);
+  if (!P._done) P._done = {};
+  const d = P._done[i] || 0;
+  for (let j = d; j < Math.min(upto, evs.length); j++) {
+    const all = P.evs.indexOf(evs[j]);
+    await P.toks1(tok, all);
+  }
+  P._done[i] = Math.max(d, upto);
+}
 
 // ── 86:13 為什麼存在 stack：最近存入的先處理 ──
 FRAG.push(['sqlin-i2p-why', '運算子先存起來：最近存的最先處理', async (tok) => {
   fresh([0, 6, 12], [0, 1.6, 0.4]);
   const OX = (k) => -5.2 + k * 0.72;
   const done = ['A', 'B', '/', 'C', '-', 'D', 'E'];
-  const outC = done.map((t, k) => tcube(t, OX(k), 0.3, 2.6, 0.58));
-  tag('output', 'idx', -5.6, 0, 3.5); tag('stack', 'ptr', 2.5, 0, 1.2);
-  tag('A/B−C+D*E −A*C', 'idx', -2.5, 0, -2.8);
+  done.forEach((t, k) => tcube(t, OX(k), 0.3, 2.6, 0.58));
+  tag('output', 'idx', -5.6, 0, 3.5); tag('A/B−C+D*E −A*C', 'idx', -2.5, 0, -2.8);
   const stk = [];
-  for (const t of ['+', '*']) { const m = tcube(t, 2.5, 0.3 + stk.length * 0.56, 0, 0.62, 4); stk.push(m); }
-  say('讀到 + 和 *：都還不能輸出，先存起來', 'stack（底→頂）：+ *　｜ output：A B / C − D E');
-  await beat(tok, 3000);
-  const inc = tcube('-', -2.5, 0.35, -1.4, 0.66, 3);
-  tag('剛讀到', 'ptr alt', -2.5, 1.2, -1.4);
-  say('讀到後面的 −', '* 和 + 誰先處理？');
-  await beat(tok, 2200);
-  let k = done.length;
-  for (const [cap, f] of [['最近存入的 * 先處理（優先序較高）', 'pop * → output'], ['回頭處理 +：同優先序、較早出現', 'pop + → output']]) {
-    const m = stk.pop(); glow(m, GOLD);
-    say(cap, f); await beat(tok, 1500);
-    move(m, OX(k++), 0.3, 2.6); glow(m, null);
-    await beat(tok, 1300);
-  }
+  let k = done.length, inc = null;
+  await step(tok);                                   // 86:14 + 和 × 存在哪
+  for (const t of ['+', '*']) { const m = tcube(t, 2.5, 0.3 + stk.length * 0.56, 0, 0.62, 4); stk.push(m); await beat(tok, 300); }
+  say('+ 和 × 都要先存起來', '存在哪裡？');
+  await step(tok);                                   // 86:22 存在 stack 上
+  tag('stack', 'ptr', 2.5, 0, 1.2);
+  say('存的地方就是 stack', '');
+  await step(tok);                                   // 86:28 最近塞進去的最接近
+  glow(stk[1], GOLD);
+  say('後面要處理的', '和最近塞進去的東西最接近');
+  await step(tok);                                   // 86:45 看到 −：先處理 ×
+  inc = tcube('-', -2.5, 0.35, -1.4, 0.66, 3);
+  const m1 = stk.pop(); move(m1, OX(k++), 0.3, 2.6); glow(m1, null);
+  say('看到後面的 −', '先處理最近的 ×');
+  await step(tok);                                   // 86:59 回頭處理 +
+  const m2 = stk.pop(); glow(m2, GOLD); move(m2, OX(k++), 0.3, 2.6);
+  say('最接近的完成後', '才回頭處理 +');
+  await step(tok);                                   // 87:15 從後往回追
+  glow(m2, null);
+  say('從後面一路往回追', '像疫調追感染來源');
+  await step(tok);                                   // 87:35 只看一次，不確定的先存
   move(inc, 2.5, 0.3, 0);
-  say('最後把 − 壓進 stack', 'output：A B / C − D E * +　｜ stack：−');
-  await beat(tok, 2200);
-  say('從後往前追：最後存的最先處理 → Stack', 'LIFO 正好符合「最接近的先完成」');
-  await beat(tok, 3000);
-  outC.length = 0;
+  say('只看一次；不確定的先存下來', '− 壓進 stack');
+  await step(tok);                                   // 87:45 從後往回追 → stack
+  tag('最後存的最先處理 → Stack', 'ptr alt', 0, 2.2, -1.4);
+  say('輸出時從後往回追', '就用 Stack 來做');
 }]);
 
-// ── 88:03 演算法：pseudo code + stack ──
+// ── 88:04 演算法：pseudo code + stack ──
 FRAG.push(['sqlin-i2p-rule', 'Infix → Postfix 的 stack 演算法（逐行）', async (tok) => {
   fresh([0, 6.5, 13], [0, 2.4, 0]);
   const cd = code(['for x in infix（左→右）:', '  運算元: 輸出 x', '  運算子:', '    while top 優先序 ≥ x:', '      輸出 pop()', '    push(x)', '掃完: pop 剩下的全部輸出'], -3.4, 6.2);
   const toks = tokenize('A/B-C+D*E-A*C'), X = (i) => sx(13, 0.72, i);
-  tag('stack', 'ptr', 5, 0, 1.2); tag('output', 'idx', -5.6, 0, 3.6);
+  tag('operator stack', 'ptr', 5, 0, 1.2); tag('output', 'idx', -5.6, 0, 3.6);
+  const P = i2p(toks, { inX: X, inZ: -2.6, outX: X, outZ: 2.8, stX: 5, stZ: 0, sz: 0.56 });
+  await step(tok);                                   // 88:04 stack 演算法
+  say('有了這個觀念：一個 stack 演算法', '把 infix 轉成 postfix');
+  await step(tok);                                   // 88:14 從左掃到右
   cd.hl(0);
-  say('A/B−C+D*E−A*C：從左到右掃一次', '');
-  await beat(tok, 1800);
-  await animI2P(tok, toks, {
-    inX: X, inZ: -2.6, outX: X, outZ: 2.8, stX: 5, stZ: 0, sz: 0.56, ms: 780, code: cd,
-    onTok: async (ev, stT) => {
-      if (!PREC[ev.t]) return;
-      cd.hl(3);
-      say('讀到 ' + disp(ev.t) + '：和 stack top 比優先序', 'top = ' + (stT.length ? disp(stT[stT.length - 1]) : '空 → 直接 push'));
-      await beat(tok, 900);
-    },
-  });
+  say('一個 for 迴圈：從左邊掃到右邊', '');
+  await step(tok);                                   // 88:42 數字直接輸出
+  cd.hl(1); await P.toks(tok, 0, 1);
+  say('數字的順序兩邊一模一樣', '看到數字直接輸出');
+  await step(tok);                                   // 89:20 operator：用 stack
+  cd.hl(2); await P.toks(tok, 1, 2);
+  say('看到 operator：用 stack', '÷：stack 空，直接 push');
+  await step(tok);                                   // 89:27 看 stack 頂端的優先序
+  cd.hl(3); await P.toks(tok, 2, 3); P.look(3);
+  say('B 輸出；看到 −', '看 stack 頂端（最近還沒處理的）優先序');
+  await step(tok);                                   // 89:37 頂端優先或一樣 → pop
+  cd.hl(4); await P.toks(tok, 3, 4);
+  say('頂端比較優先或一樣優先', '可以處理了：pop 出去輸出');
+  await step(tok);                                   // 90:03 頂端 −、後面 +：也沒問題
+  cd.hl(4); await P.toks(tok, 4, 6);
+  say('C 輸出；看到 +', '頂端 − 一樣優先：pop');
+  await step(tok);                                   // 90:23 頂端 +、後面 ×：壓上去
+  cd.hl(5); await P.toks(tok, 6, 9);
+  say('頂端是 +、後面看到 ×', '× 要先做：壓在上面');
+  await step(tok);                                   // 91:05 while 可能做很多次
+  cd.hl(3); P.look(9);
+  say('這個 while 可能做很多次', '');
+  await step(tok);                                   // 91:18 × 是快車，先出來
+  await ev0(P, tok, 9, 1); cd.hl(4);
+  say('看到 −：× 先 pop 出來', '');
+  await step(tok);                                   // 91:26 + 也出來，再壓 −
+  await ev0(P, tok, 9, 3); cd.hl(5);
+  say('+ 比 − 早一步：也 pop', '跑到不能再跑，再把 − 壓上去');
+  await step(tok);                                   // 91:42 大概十行
   cd.hl(-1);
-  say('while 可能連 pop 好幾次（* 和 + 一起出）', 'A B / C − D E * + A C * −');
-  await beat(tok, 3000);
+  say('Pseudo code 大概十行', '');
+  await step(tok);                                   // 91:50 剩下的
+  await P.toks(tok, 10, 14);
+  cd.hl(6);
+  say('A、C 輸出，× 壓上去', '掃完：剩下的全部 pop');
+  await step(tok);                                   // 92:15 很優先：壓在上面
+  say('新來的很優先', '就壓在所有人上面');
+  await step(tok);                                   // 92:20 不優先：先還債
+  cd.hl(-1);
+  say('不太優先：先把前面比較急的債還了', 'A B ÷ C − D E × + A C × −');
 }]);
 
-// ── 92:39 / 101:57 兩個 stack 合起來＝計算機 ──
+// ── 92:44 兩個 stack 合起來＝計算機 ──
 FRAG.push(['sqlin-calc', '計算機：operator stack 轉換 + operand stack 求值', async (tok) => {
-  const expr = (ctx.params || {}).expr || '3*(5+7)';
   fresh([0, 7.5, 13], [0, 1.4, 0.4]);
-  const toks = tokenize(expr), n = toks.length, np = toks.filter((t) => t !== '(' && t !== ')').length;
-  const IX = (i) => sx(n, 0.75, i), OX = (k) => sx(np, 0.68, k);
-  tag('operator stack', 'ptr', -6, 0, 1.4); tag('operand stack', 'ptr alt', 6, 0, 1.4); tag('postfix', 'idx', 0, 0, 3.4);
-  say('① 轉換：用 operator stack', expr.replace(/-/g, '−'));
-  await beat(tok, 1800);
-  const { outC, post } = await animI2P(tok, toks, { inX: IX, inZ: -3, outX: OX, outZ: 2.6, stX: -6, stZ: 0.4, sz: 0.58, ms: 520 });
-  say('得到 postfix', post.map(disp).join(' '));
-  await beat(tok, 1600);
-  say('② 求值：用 operand stack', '數字 push；運算子 pop 兩個、算完 push');
-  await beat(tok, 1600);
-  const steps = evalSteps(post), stk = col(6, 0.4, { size: [1.3, 0.5, 1.0] }), rg = ring(0.4);
-  for (let i = 0; i < steps.length; i++) {
-    const s = steps[i]; rg.position.set(OX(i), 0.03, 2.6); glow(outC[i], GOLD);
-    if (!PREC[s.tok]) { stk.push(s.tok); say('數字：push', 'stack：' + s.stack.join('，')); }
-    else { stk.pop(); stk.pop(); stk.push(s.stack[s.stack.length - 1], OKC); say('pop 兩個、計算、push 回去', s.why); }
-    await beat(tok, PREC[s.tok] ? 1100 : 650);
-    glow(outC[i], null);
-  }
-  kill(rg);
-  say('stack 只剩一個：就是答案', expr.replace(/-/g, '−') + ' = <span class="ok">' + steps[steps.length - 1].stack[0] + '</span>');
-  await beat(tok, 3000);
+  const toks = tokenize('3*5+5566-126'), n = toks.length;
+  const IX = (i) => sx(n, 0.9, i), OX = (k) => sx(n, 0.9, k);
+  let P = null, E = null;
+  await step(tok);                                   // 92:44 operator stack
+  tag('operator stack：放動作', 'ptr', -5.6, 0, 1.4);
+  say('轉換時用 operator stack', '放還沒處理的動作');
+  await step(tok);                                   // 92:51 頂端最接近
+  say('stack 頂端', '是最快需要處理的 operator');
+  await step(tok);                                   // 93:04 operand stack
+  tag('operand stack：放數字', 'ptr alt', 5.6, 0, 1.4);
+  say('上一段求值用的是 operand stack', '要計算的數字放在上面');
+  await step(tok);                                   // 93:23 計算暫存區
+  say('operand stack 是計算暫存區', '像計算機的 memory，只是疊起來的');
+  await step(tok);                                   // 93:39 operator stack：等著處理
+  say('operator stack 放將要處理、還沒處理的動作', '等該處理時再拿出來');
+  await step(tok);                                   // 93:58 合起來 = 計算機
+  tag('兩個 stack ＝ 計算機', 'ptr', 0, 3.2, -3.6);
+  say('兩個 stack 結合起來', '基本上就是一個計算機');
+  await step(tok);                                   // 94:13 Google 搜尋框打算式
+  P = i2p(toks, { inX: IX, inZ: -2.4, outX: OX, outZ: 1.4, stX: -5.6, stZ: -0.2, sz: 0.58 });
+  say('例：在 Google 搜尋框打', '3 × 5 + 5566 − 126');
+  await step(tok);                                   // 94:30 ① infix → postfix
+  await P.toks(tok, 0, n + 1, 260);
+  say('① 搞懂式子：infix 翻成 postfix', P.post().map(disp).join(' '));
+  await step(tok);                                   // 94:43 ② postfix evaluator
+  const post = P.post(); P.out.forEach(kill);
+  E = evalP(post, { inX: OX, inZ: 1.4, stX: 5.6, stZ: -0.2, sz: 0.58 });
+  await E.run(tok, 0, post.length, 350);
+  say('② postfix evaluator 算出來', '= <span class="ok">' + E.vals[0] + '</span>');
+  await step(tok);                                   // 94:58 compiler 也用
+  say('Compiler 從程式碼建立語意', '也用到這類 stack solution');
+  await step(tok);                                   // 95:17 作業三
+  say('照慣例：作業三很可能要寫計算機', '');
 }]);
 
 // ── 96:07 left / right associative、unary 減號 ──
 FRAG.push(['sqlin-assoc', '同優先序：左結合要 pop，右結合壓上去', async (tok) => {
   fresh([0, 6.5, 12], [0, 1.2, 0.2]);
   tag('left associative', 'ptr', -3.5, 2.6, -3.2); tag('right associative', 'ptr alt', 3.5, 2.6, -3.2);
-  say('基本款：binary operator、left associative', '同優先序時左邊先算');
-  await beat(tok, 2000);
-  for (const [px, expr, sX] of [[-3.5, 'A-B-C', -0.7], [3.3, 'A^B^C', 6.2]]) {
-    const toks = tokenize(expr), X = (i) => px + sx(5, 0.72, i);
-    await animI2P(tok, toks, {
-      inX: X, inZ: -2.2, outX: X, outZ: 2.2, stX: sX, stZ: 0, sz: 0.56, ms: 900,
-      cap: (ev) => {
-        const f = 'output：' + (ev.out.map(disp).join(' ') || '—') + '　｜　stack：' + (ev.st.map(disp).join(' ') || '空');
-        if (ev.kind === 'pop' && ev.i < 5) return ['同優先序、左結合 → stack 內的先 pop', f];
-        if (ev.kind === 'push' && ev.t === '^' && ev.st.length === 2) return ['右結合：同優先序不 pop，直接壓上去', f];
-        return null;
-      },
-    });
-    say(expr === 'A-B-C' ? 'A−B−C = (A−B)−C' : 'A^B^C = A^(B^C)', expr === 'A-B-C' ? 'A B − C −' : 'A B C ^ ^');
-    await beat(tok, 2000);
-  }
-  say('難處：「−」是減號還是負號？', '例：5 * −3，這個架構要特殊處理');
-  await beat(tok, 3000);
+  let L = null, R = null;
+  await step(tok);                                   // 96:07 binary operator
+  say('剛才的基本款：binary operator', '兩個運算元，運算子在中間');
+  await step(tok);                                   // 96:23 left associative
+  L = i2p(tokenize('A-B-C'), { inX: (i) => -3.5 + sx(5, 0.72, i), inZ: -2.2, outX: (i) => -3.5 + sx(5, 0.72, i), outZ: 2.2, stX: -0.7, stZ: 0, sz: 0.56 });
+  await L.toks(tok, 0, 6, 300);
+  say('left associative：一樣重要時左邊先算', '相等 → stack 裡的先出來：A B − C −');
+  await step(tok);                                   // 96:35 right associative
+  R = i2p(tokenize('A^B^C'), { inX: (i) => 3.3 + sx(5, 0.72, i), inZ: -2.2, outX: (i) => 3.3 + sx(5, 0.72, i), outZ: 2.2, stX: 6.2, stZ: 0, sz: 0.56 });
+  say('有些 operator 是 right associative', '一樣優先時右邊先算');
+  await step(tok);                                   // 97:02 一樣大：壓上去
+  await R.toks(tok, 0, 6, 300);
+  say('一樣大時不能出來：壓上去', 'A^B^C = A^(B^C) → A B C ^ ^');
+  await step(tok);                                   // 97:20 unary、ternary
+  say('Unary：接一個數字', 'Ternary：接三個');
+  await step(tok);                                   // 97:35 概念類似
+  say('概念類似：數字先出', 'operator 等意念完整、比過優先序再出');
+  await step(tok);                                   // 97:59 減還是負
+  tag('5 * −3：減號？負號？', 'ptr alt', 0, 3.4, -1);
+  say('困難處：打一個「−」', '到底是減還是負？');
+  await step(tok);                                   // 98:14 特殊處理
+  say('這個架構沒辦法乾淨處理', '需要一些特殊處理');
 }]);
 
-// ── 114:30 迷宮問題：有沒有解 ──
+// ── 98:32 括號：左括號的兩種優先序（infix-to-postfix 的 cued 版之二） ──
+FRAG.push(['sqlin-i2p-paren', '括號：左括號的兩種優先序', async (tok) => {
+  fresh([0, 6.5, 12], [0, 1.4, 0.3]);
+  const toks = tokenize('3*(5+7)'), X = (i) => sx(7, 0.9, i);
+  tag('operator stack', 'ptr', 4.6, 0, 1.2); tag('output', 'idx', -4.6, 0, 3.4);
+  let P = null;
+  await step(tok);                                   // 98:32 括號怎麼做
+  say('寫簡單計算機，只剩括號還沒講', '');
+  await step(tok);                                   // 98:57 括號是最高優先序
+  say('括號是最高優先序', '左括號右邊的東西要先通通算完');
+  await step(tok);                                   // 99:26 例：3 × (5 + 7)
+  P = i2p(toks, { inX: X, inZ: -2.4, outX: X, outZ: 2.6, stX: 4.6, stZ: 0, sz: 0.62 });
+  say('例：3 × (5 + 7)', '');
+  await step(tok);                                   // 99:40 × 放進去，( 也放進去
+  await P.toks(tok, 0, 3);
+  say('× 放進去；左括號一樣放進去', '');
+  await step(tok);                                   // 99:49 壓在上面
+  glow(P.st[1], GOLD);
+  say('左括號壓在上面', '不讓之前的東西出來');
+  await step(tok);                                   // 100:07 看到 +：壓在 ( 上
+  glow(P.st[1], null);
+  await P.toks(tok, 3, 5);
+  say('看到 +：在括號裡要先算', '可以壓在左括號上面');
+  await step(tok);                                   // 100:37 一夫當關
+  glow(P.st[1], GOLD);
+  say('左括號一夫當關', '下面的通通不要跑出來');
+  await step(tok);                                   // 100:46 外面的都比它優先
+  glow(P.st[1], null);
+  say('還沒進 stack 的', '都比左括號優先');
+  await step(tok);                                   // 100:56 右括號把左括號救出來
+  await P.toks(tok, 5, 7);
+  say('7 輸出；右括號出現', '+ 出來，把左括號「救出來」');
+  await step(tok);                                   // 101:13 兩種優先序
+  tag('「(」在 stack 外：最大（一定 push）', 'ptr', 0, 4.4, -2.4);
+  tag('「(」在 stack 內：最小（誰都能壓上去）', 'ptr alt', 0, 3.8, -2.4);
+  say('左括號：比 stack 裡的都大', '但比 stack 外的都小');
+  await step(tok);                                   // 101:44 只有右括號能救它
+  await P.toks(tok, 7, 8);
+  say('只有右括號能救它出來', '這就是 parentheses matching：3 5 7 + ×');
+}]);
+
+// ── 102:15 整合三件事：一個簡單計算機 ──
+FRAG.push(['sqlin-calc3', '整合三件事：一個簡單計算機', async (tok) => {
+  fresh([0, 7.5, 13], [0, 1.4, 0.4]);
+  const toks = tokenize('3*(5+7)'), n = toks.length;
+  const IX = (i) => sx(n, 0.85, i), OX = (k) => sx(5, 0.85, k);
+  tag('operator stack', 'ptr', -6, 0, 1.4); tag('operand stack', 'ptr alt', 6, 0, 1.4);
+  let P = null;
+  await step(tok);                                   // 102:18 ① parentheses matching
+  tag('① 括號配對：右括號救出左括號', 'ptr', -3.5, 4.4, -3.4);
+  say('一：parentheses matching', '右括號救出左括號');
+  await step(tok);                                   // 102:28 ② 運算優先權
+  tag('② 優先權：比較優先的先出來', 'ptr', -3.5, 3.8, -3.4);
+  say('二：運算優先權', 'operator 丟進 stack，比較優先的先出來');
+  await step(tok);                                   // 102:48 左括號的特殊優先權
+  say('左括號有特殊的優先權', '比 stack 裡的都優先、比外面的都不優先');
+  await step(tok);                                   // 103:00 ③ stack 算值
+  tag('③ 求值：operand stack 暫存數字', 'ptr', -3.5, 3.2, -3.4);
+  say('三：用 stack 算運算值', '暫存讀到、算完但還沒用到的數字');
+  await step(tok);                                   // 103:15 整合起來
+  P = i2p(toks, { inX: IX, inZ: -2.4, outX: OX, outZ: 2.4, stX: -6, stZ: 0.4, sz: 0.6 });
+  await P.toks(tok, 0, n + 1, 300);
+  say('整合起來：3 × (5 + 7)', '先轉成 ' + P.post().map(disp).join(' '));
+  await step(tok);                                   // 103:22 四則運算計算機
+  const post = P.post(); P.out.forEach(kill);
+  const E = evalP(post, { inX: OX, inZ: 2.4, stX: 6, stZ: 0.4, sz: 0.6 });
+  await E.run(tok, 0, post.length, 400);
+  say('再求值：一個具體而微的計算機', '= <span class="ok">' + E.vals[0] + '</span>');
+  await step(tok);                                   // 103:36 compiler 不只為 expression
+  say('真正的 compiler 不會只為 expression 寫這個', '');
+  await step(tok);                                   // 103:47 擴充成更複雜的 routine
+  say('但這些概念可以擴充成', 'compiler 裡更複雜的 routine');
+}]);
+
+// ── 105:29 Q&A：為什麼要學 stack 版的轉換 ──
+FRAG.push(['sqlin-onepass-qa', 'Q&A：為什麼要學 Stack 版的轉換', async (tok) => {
+  fresh([0, 7.5, 12], [0, 0.4, 0.3]);
+  const toks = tokenize('A/B-C+D*E-A*C'), X = (i) => sx(13, 0.75, i);
+  let cs = toks.map((t, i) => tcube(t, X(i), 0.3, -1.6, 0.58));
+  const rg = ring(0.45); rg.position.set(X(0), 0.03, -1.6);
+  const sweep = (ms) => anim(tok, ms, (t) => rg.position.set(X(0) + (X(12) - X(0)) * t, 0.03, -1.6));
+  await step(tok);                                   // 105:29 有比較好嗎
+  say('同學問：infix to postfix 的 stack 方法', '有比較好嗎？跟什麼比？');
+  await step(tok);                                   // 105:50 human algorithm
+  tag('human algorithm：加括號 → 轉 → 拔括號', 'idx', 0, 0, -2.7);
+  say('跟 human algorithm 比', '人看得懂');
+  await step(tok);                                   // 106:13 插對括號、multiple pass
+  for (let k = 0; k < 3; k++) await sweep(750);
+  say('但電腦要把括號插對地方', '還可能要 multiple pass');
+  await step(tok);                                   // 106:23 stack 版的原因
+  say('教 stack 版的原因', '');
+  await step(tok);                                   // 106:39 one-pass
+  rg.visible = false; cs.forEach(kill);
+  const P = i2p(toks, { inX: X, inZ: -1.6, outX: X, outZ: 2, stX: 6, stZ: 0, sz: 0.58 });
+  await P.toks(tok, 0, 14, 130);
+  say('stack 讓我們設計出有巧思的演算法', 'one-pass：輸入只讀一次');
+  await step(tok);                                   // 106:59 處理最接近的那筆
+  say('one-pass 裡常要暫存', '並優先處理「最接近」的那筆 → stack 很有用');
+  await step(tok);                                   // 107:45 compiler 自己弄 stack
+  tag('compiler：自己弄一個 stack', 'ptr', -3.5, 2.4, -2.6);
+  say('Compiler 有時自己弄一個 stack', '');
+  await step(tok);                                   // 107:54 recursive → system stack
+  tag('或用 recursive call → system stack', 'ptr alt', 3.5, 2.4, -2.6);
+  say('有時用 recursive call', '等於用了 system stack');
+  await step(tok);                                   // 108:20 教育性質
+  say('現在 infix to postfix 比較是教育性質', '幫助了解 stack 能做什麼');
+}]);
+
+// ── 109:46 Queue 預告：排隊（queue-fifo 的 cued 版之一） ──
+FRAG.push(['sqlin-queue-intro', 'Queue 預告：排隊', async (tok) => {
+  fresh([0, 5.5, 12], [0, 1.2, 0]);
+  await step(tok);                                   // 109:46 Queue
+  tag('Queue', 'ptr alt', 0, 4.2);
+  say('下一個資料結構：Queue', '');
+  await step(tok);                                   // 110:02 難度更低
+  say('對大家來說', '難度可能比 stack 更低');
+  await step(tok);                                   // 110:22 排隊買口罩
+  tag('窗口', 'ptr', -5.6, 1.9);
+  cube('', '#c9b48e', [0.6, 1.6, 2.0], -6.2, 0.8, 0);
+  for (let i = 0; i < 5; i++) { cube('', colorFor(i + 1), [0.7, 1.3, 0.7], -4.8 + i * 1.2, 0.65, 0, 4); await beat(tok, 300); }
+  say('Queue 就是排隊', '像排隊買口罩');
+  await step(tok);                                   // 111:07 搶票、選課系統
+  tag('搶票系統', 'idx', 2.6, 2.6); tag('選課系統', 'idx', 4.8, 2.6);
+  say('搶票、選課系統', '都需要排隊的概念');
+  await step(tok);                                   // 111:30 再看一個 stack 演算法
+  say('從 stack 切到 queue 的好方法', '先再看一個 stack 演算法');
+  await step(tok);                                   // 111:53 不同 behavior
+  tag('stack vs queue：放進演算法，行為不同', 'ptr', 0, 3.4, -1.2);
+  say('Stack 和 Queue 放進演算法裡', '會有什麼不同的 behavior？');
+  await step(tok);                                   // 112:16 資料結構搭配演算法
+  say('資料結構和演算法', '一直是搭配著講');
+}]);
+
+// ── 114:29 迷宮問題：有沒有解 ──
 FRAG.push(['sqlin-maze-problem', '迷宮問題：從入口走得到出口嗎', async (tok) => {
-  fresh([0, 13, 9], [0, 0, 0.5]);
-  mz.kind = 'stack'; enterMaze(); controls('');
-  say('二維迷宮：每一格只知道上下左右能不能走', '');
-  await beat(tok, 2200);
-  const s = cellPos(1, 1).setY(0.6), arws = [];
+  mazeStage([0, 13, 9]);
+  let arws = [];
+  await step(tok);                                   // 114:29 走迷宮
+  say('來走迷宮', '');
+  await step(tok);                                   // 114:41 二維迷宮的格子點
+  say('典型的二維迷宮', '每個點都是格子點');
+  await step(tok);                                   // 115:06 上下左右能不能走
+  const s = cellPos(1, 1).setY(0.6);
   for (const [dr, dc] of DIRS) {
-    const r = 1 + dr, c = 1 + dc, open = MAZE[r][c] !== '#';
-    if (open) arws.push(arrow(s, cellPos(r, c).setY(0.6), 0x2fc092));
-    else { const t = tag('✕', 'ptr', ...cellPos(r, c).setY(1.2).toArray()); arws.push(t); }
+    const r = 1 + dr, c = 1 + dc;
+    if (MAZE[r][c] !== '#') arws.push(arrow(s, cellPos(r, c).setY(0.6), 0x2fc092));
+    else arws.push(tag('✕', 'ptr', ...cellPos(r, c).setY(1.2).toArray()));
   }
-  say('起點：右、下可以走；上、左是牆', '可走 → 箭頭；牆 → ✕');
-  await beat(tok, 2600);
+  say('資訊簡化成：每個點的上下左右', '能不能走（箭頭 = 可走、✕ = 牆）');
+  await step(tok);                                   // 115:21 從頭走到尾
   arws.forEach(kill);
-  say('問題：從起點走得到終點嗎？', '先不管路線，只問「迷宮有沒有解」');
-  await beat(tok, 2600);
-  for (const k of ['6,7', '5,7', '4,7', '3,7', '2,7', '1,7']) paint(k, '#cfe8dc');
-  say('這個迷宮：終點只能從上面這條通道進去', '');
-  await beat(tok, 2000);
+  paint(findCell('S'), TODO); paint(findCell('G'), TODO);
+  say('能不能找個演算法', '從迷宮的頭走到尾？');
+  await step(tok);                                   // 115:49 有沒有解
+  say('先簡化：到底有沒有路可以出來？', '迷宮有沒有解');
+  await step(tok);                                   // 115:56 封起來就沒解
   const p = cellPos(6, 7);
   cube('', '#b9a582', [1.05, 0.9, 1.05], p.x, 0.45, p.z, 5);
   paint('6,7', '#e9c9c0');
-  say('如果這裡被封起來……', '<span class="no">迷宮無解</span>：電腦要怎麼確定？');
-  await beat(tok, 3200);
+  say('如果這裡封起來', '<span class="no">就沒有解</span>');
+  await step(tok);                                   // 116:02 電腦怎麼判斷
+  say('電腦怎麼判斷', '一個迷宮有沒有解？');
+  await step(tok);                                   // 116:25 用 recursion
+  say('其中一個做法', '用 recursion');
 }]);
 
-// ── 116:30 / 174:42 遞迴走迷宮：system stack ──
-FRAG.push(['sqlin-maze-rec', '遞迴走迷宮：system stack 上是一條路', async (tok) => {
-  fresh([1, 13, 9], [1, 0, 0.5]);
-  mz.kind = 'stack'; enterMaze(); controls('');
-  tag('system stack', 'ptr', 6, 0.4, 5.2);
-  const seen = new Set(), frames = [];
+// ── 116:30 遞迴走迷宮 ──
+const recPlayer = () => {
+  const evs = mazeRecEvents(), frames = [];
   const fz = (k) => 4.4 - k * 0.42;
-  say('maze(i, j)：標記走過，再試每個沒走過的鄰居', '鄰居是出口 → 成功；否則遞迴呼叫');
-  await beat(tok, 2200);
-  async function visit(r, c) {
-    const key = r + ',' + c; seen.add(key); paint(key, OKC);
-    frames.push(cube('(' + r + ',' + c + ')', '#9b7ef4', [1.3, 0.3, 0.36], 6, 0.15, fz(frames.length), 2));
-    say('呼叫 maze(' + r + ',' + c + ')：標記走過', 'system stack 深度 = ' + frames.length);
-    await beat(tok, 260);
-    for (const [dr, dc] of DIRS) {
-      const nr = r + dr, nc = c + dc, k = nr + ',' + nc;
-      if (MAZE[nr][nc] === '#' || seen.has(k)) continue;
-      if (MAZE[nr][nc] === 'G') { paint(k, '#c08a1f'); return true; }
-      if (await visit(nr, nc)) return true;
-    }
-    paint(key, '#e9c9c0'); fly(frames.pop(), V3(2, 6, 2));
-    say('四個方向都不通：return，退回上一層', 'system stack 深度 = ' + frames.length);
-    await beat(tok, 200);
-    return false;
-  }
-  await visit(1, 1);
-  frames.forEach((f) => { tint(f, '#c08a1f'); const m = /\((\d+),(\d+)\)/.exec(f.userData.lbl.element.textContent); paint(m[1] + ',' + m[2], '#c08a1f'); });
-  say('鄰居是出口：成功！', 'system stack 上剛好是一條從起點出發的路（' + frames.length + ' 層）');
-  await beat(tok, 3400);
-  say('遞迴 = 偷偷用 system stack，一路深入、走不通退回', '這就是 DFS 的行為');
-  await beat(tok, 2600);
+  tag('system stack', 'ptr', 6, 0.4, 5.2);
+  const apply = (e) => {
+    if (e.type === 'visit') { paint(e.key, OKC); frames.push(cube('(' + e.key + ')', '#9b7ef4', [1.3, 0.3, 0.36], 6, 0.15, fz(frames.length))); }
+    else if (e.type === 'back') { paint(e.key, '#e9c9c0'); kill(frames.pop()); }
+    else { paint(e.key, '#c08a1f'); frames.forEach((f) => { tint(f, '#c08a1f'); paint(f.userData.lbl.element.textContent.slice(1, -1), '#c08a1f'); }); }
+  };
+  return { evs, frames, apply };
+};
+FRAG.push(['sqlin-maze-rec', '遞迴走迷宮：system stack 上是一條路', async (tok) => {
+  mazeStage();
+  const R = recPlayer();
+  const half = R.evs.findIndex((e, i) => e.type === 'back' && i > 4);
+  await step(tok);                                   // 116:47 現在在 (i,j)
+  glow(mz.tiles[findCell('S')], GOLD);
+  say('想像現在站在 (i, j)', '');
+  await step(tok);                                   // 117:07 有些走過、有些沒走過
+  say('迷宮裡有些位置走過', '有些還沒走過');
+  await step(tok);                                   // 117:17 走過的不要再走
+  say('走過的不要再走', '不然會一直繞圈圈');
+  await step(tok);                                   // 117:22 沒走過的試走一步
+  say('還沒走過的', '試著往那邊走一步看看');
+  await step(tok);                                   // 117:43 先標成走過
+  glow(mz.tiles[findCell('S')], null);
+  await chunk(tok, R.evs, 0, 1, R.apply);
+  say('maze(i, j) 一呼叫', '先把這個位置標成「走過」');
+  await step(tok);                                   // 118:04 試走一步：是出口就有解
+  say('對每個沒走過、走得到的 (k, l)', '如果它就是出口 → 有解');
+  await step(tok);                                   // 118:21 假裝從那裡出發：遞迴
+  await chunk(tok, R.evs, 1, half + 1, R.apply, 250);
+  say('不然就假裝從那裡出發', '遞迴呼叫 maze(k, l)；走不通就退回');
+  await step(tok);                                   // 118:42 每一條都試過
+  await chunk(tok, R.evs, half + 1, R.evs.length, R.apply, 200);
+  say('迴圈把每一條路都試過', '這裡找到出口了');
+  await step(tok);                                   // 118:51 都是死路就沒解
+  say('如果每一條都是死路', '這個迷宮一定沒有解');
+  await step(tok);                                   // 119:14 從起點出發，一路長下去
+  R.frames.forEach((f) => glow(f, GOLD));
+  say('從起點出發，recursion 一路長下去', 'system stack 上剛好是一條路（' + R.frames.length + ' 層）');
+  await step(tok);                                   // 119:37 自然回到原來的地方
+  R.frames.forEach((f) => glow(f, null));
+  say('一條走不通，recursion 自然回到原來的地方', '再試第二條、第三條路');
+  await step(tok);                                   // 119:55 recursion 與 system stack
+  say('想想上次講的', 'recursion 跟 system stack 的關係');
+}]);
+
+// ── 120:05 自己的 stack 當記事本（maze-dfs 的 cued 版） ──
+FRAG.push(['sqlin-maze-dfs', '迷宮：自己的 Stack 當記事本', async (tok) => {
+  const M = mazeStage();
+  const { evs, par } = mazeEvents('stack');
+  let i = 0;
+  const apply = (e) => { M.visit(e.key); e.adds.forEach((k) => paint(k, TODO)); M.show(e.cont, 'stack'); };
+  await step(tok);                                   // 120:05 recursion 偷偷花空間
+  say('Recursion 其實偷偷多花了空間', '系統給你的 system stack');
+  await step(tok);                                   // 120:14 多拿一張計算紙
+  say('每次 function 呼叫', '就多拿一張計算紙壓在上面');
+  await step(tok);                                   // 120:50 自己的 stack
+  tag('自己的 stack（記事本）', 'ptr', 6.3, 0.2, 3.6);
+  say('不如自己存', '用自己的 stack');
+  await step(tok);                                   // 121:00 存還沒探索過的點
+  M.show([findCell('S')], 'stack'); paint(findCell('S'), TODO);
+  say('自己的 stack 裡', '存「還沒探索過的點」');
+  await step(tok);                                   // 121:41 標成 to-do
+  await chunk(tok, evs, 0, 1, apply); i = 1;
+  say('拿出起點，鄰居放進去', '標成 to-do：等一下會看，別人別再放');
+  await step(tok);                                   // 122:26 像計畫本
+  say('像一本計畫本：在 (i, j) 看到', '一堆可能可以走的 (k, l)，先記下來');
+  await step(tok);                                   // 122:47 下一輪拿一個出來
+  await chunk(tok, evs, 1, 4, apply, 500); i = 4;
+  say('下一輪：從記事本拿一個出來', '走過去拜訪它');
+  await step(tok);                                   // 123:03 還不是 to-do 的寫上去
+  await chunk(tok, evs, 4, 8, apply, 450); i = 8;
+  say('它的鄰居如果還不是 to-do', '就寫到記事本上');
+  await step(tok);                                   // 123:31 recursive：一條路
+  say('Recursive 版：system stack', '無時無刻維持一條正在探索的路');
+  await step(tok);                                   // 123:52 自己的 stack：一堆計畫
+  say('自己的 stack：放一堆', '計畫要看的 position');
+  await step(tok);                                   // 124:08 拿最新寫上去的那筆
+  await chunk(tok, evs, 8, evs.length, apply, 300);
+  say('每次拿最新寫上去的那一筆', '一路往深處探索');
+  await step(tok);                                   // 124:49 也可以寫自己的 stack
+  const len = M.path(par, evs[evs.length - 1].key);
+  say('recursion 偷偷用 stack；也可以自己寫 stack', '找到出口：這條路 ' + len + ' 步');
+  await step(tok);                                   // 125:13 迷宮有沒有出口
+  say('一樣能回答：', '這個迷宮到底有沒有出口');
 }]);
 
 // ── 138:20 為什麼要標 to-do：重複 entry ──
@@ -12854,107 +13483,209 @@ FRAG.push(['sqlin-todo', '放進 stack 時標 to-do：避免重複 entry', async
   for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) { tiles[r + ',' + c] = cube('', '#f3ead9', [1.2, 0.1, 1.2], X(c), 0.05, Z(r)); tag('(' + r + ',' + c + ')', 'idx', X(c), 0.3, Z(r)); }
   tag('stack（記事本）', 'ptr', 2.6, 0, 1.3);
   const info = tag('', 'ptr alt', 5.6, 0, -1.6);
-  async function run(useTodo) {
-    Object.values(tiles).forEach((t) => tint(t, '#f3ead9'));
-    const stk = col(2.6, 0, { size: [1.3, 0.42, 1.0], dy: 0.46 });
-    const vis = new Set(), todo = new Set(), inStk = [];
-    let pushes = 0, dups = 0, wasted = 0;
-    const push = (k) => { const dup = inStk.includes(k); const m = stk.push('(' + k + ')', dup ? '#d64545' : TODO); m.userData.k = k; inStk.push(k); pushes++; if (dup) dups++; if (useTodo) todo.add(k); tint(tiles[k], TODO); return dup; };
-    say(useTodo ? '有標 to-do：放進記事本就標記' : '沒有標 to-do：只記 visited', '從 (2,0) 出發，依 右、下、左、上 看鄰居');
-    push('2,0'); await beat(tok, 1600);
-    while (stk.items.length) {
-      const m = stk.items[stk.items.length - 1], k = m.userData.k; glow(m, GOLD);
-      await beat(tok, 300);
-      stk.pop(); inStk.pop();
-      if (vis.has(k)) { wasted++; say('pop 出 (' + k + ')：已經 visited → 白拿一次', '重複的 entry'); await beat(tok, 900); continue; }
-      vis.add(k); tint(tiles[k], OKC);
-      const [r, c] = k.split(',').map(Number); let anyDup = false;
+  // build the event list of one run
+  function events(useTodo) {
+    const st = [], vis = new Set(), todo = new Set(), ev = [];
+    let pushes = 0, dups = 0;
+    const push = (k) => { const dup = st.includes(k); st.push(k); pushes++; if (dup) dups++; if (useTodo) todo.add(k); ev.push({ kind: 'push', k, dup, pushes, dups }); };
+    push('2,0');
+    while (st.length) {
+      const k = st.pop();
+      if (vis.has(k)) { ev.push({ kind: 'waste', k }); continue; }
+      vis.add(k); ev.push({ kind: 'visit', k });
+      const [r, c] = k.split(',').map(Number);
       for (const [dr, dc] of DIRS) {
         const nr = r + dr, nc = c + dc, k2 = nr + ',' + nc;
         if (nr < 0 || nc < 0 || nr >= R || nc >= C || vis.has(k2) || (useTodo && todo.has(k2))) continue;
-        if (push(k2)) anyDup = true;
+        push(k2);
       }
-      say(anyDup ? '同一格又被寫進記事本一次！' : 'visit (' + k + ')：鄰居寫進記事本', 'push ' + pushes + ' 次，重複 entry ' + dups + ' 個');
-      txt(info, (useTodo ? '有 to-do' : '無 to-do') + '：push ' + pushes + '、重複 ' + dups);
-      await beat(tok, anyDup ? 1500 : 800);
-      tint(tiles[k], '#cfe8dc');
     }
-    return { pushes, dups, wasted };
+    return { ev, pushes, dups };
   }
-  const a = await run(false);
-  say('沒標 to-do：' + a.dups + ' 個重複 entry', 'pop 出來還得檢查 visited，否則重複展開');
-  await beat(tok, 2600);
-  const b = await run(true);
-  say('標 to-do：同一格只進記事本一次', 'push 次數 ' + a.pushes + ' → ' + b.pushes + '，重複 ' + a.dups + ' → ' + b.dups);
-  await beat(tok, 3000);
+  let stk = null, label = '';
+  function reset(useTodo) { Object.values(tiles).forEach((t) => tint(t, '#f3ead9')); if (stk) stk.clear(); stk = col(2.6, 0, { size: [1.3, 0.42, 1.0], dy: 0.46 }); label = useTodo ? '有 to-do' : '無 to-do'; }
+  const apply = (e) => {
+    if (e.kind === 'push') { const m = stk.push('(' + e.k + ')', e.dup ? REDC : TODO); m.userData.k = e.k; tint(tiles[e.k], e.dup ? REDC : TODO); txt(info, label + '：push ' + e.pushes + '、重複 ' + e.dups); }
+    else { const m = stk.items[stk.items.length - 1]; stk.pop(); tint(tiles[e.k], e.kind === 'waste' ? REDC : OKC); if (e.kind === 'waste') glow(m, RED); }
+  };
+  const A = events(false), B = events(true);
+  let firstDup = A.ev.findIndex((e) => e.kind === 'push' && e.dup), firstWaste = A.ev.findIndex((e) => e.kind === 'waste');
+  if (firstDup < 0) firstDup = Math.floor(A.ev.length / 3);
+  if (firstWaste <= firstDup) firstWaste = Math.min(A.ev.length - 2, firstDup + Math.floor(A.ev.length / 3));
+  const mid = Math.max(1, Math.floor(firstDup / 2));
+  await step(tok);                                   // 138:21 為什麼標 to-do
+  say('為什麼要把 (k, l) 標成 to-do？', '');
+  await step(tok);                                   // 138:41 同一點兩種走法
+  glow(tiles['1,1'], GOLD);
+  say('同一個點', '可能有兩種方式走到');
+  await step(tok);                                   // 139:14 從下面、從右邊
+  const a1 = arrow(V3(X(1), 0.4, Z(2)), V3(X(1), 0.4, Z(1) + 0.4), 0x2fc092), a2 = arrow(V3(X(2), 0.4, Z(1)), V3(X(1) + 0.4, 0.4, Z(1)), 0x2fc092);
+  say('例：可以從下面走上來', '也可以從右邊走過來');
+  await step(tok);                                   // 139:33 沒標 to-do
+  kill(a1); kill(a2); glow(tiles['1,1'], null);
+  reset(false);
+  await chunk(tok, A.ev, 0, mid, apply);
+  say('沒標 to-do：只記 visited', '從 (2,0) 出發，依右、下、左、上');
+  await step(tok);                                   // 139:51 又放進記事本一次
+  await chunk(tok, A.ev, mid, firstDup + 1, apply);
+  say('等一下從另一條路過來', '又把它放進記事本一次！');
+  await step(tok);                                   // 140:06 重複的位置
+  say('記事本裡出現重複的位置', '已經寫進記事本，但還沒 visit');
+  await step(tok);                                   // 140:14 visit 是真正走到
+  say('visit：真正走到那上面', '開始派出它的鄰居');
+  await step(tok);                                   // 140:37 pop 出來要檢查 visited
+  await chunk(tok, A.ev, firstDup + 1, firstWaste + 1, apply);
+  say('重複的 pop 出來時', '得檢查是否 visited 過，是的話跳過');
+  await step(tok);                                   // 141:06 redundancy
+  await chunk(tok, A.ev, firstWaste + 1, A.ev.length, apply);
+  say('多了 redundancy', '還要多寫 code 確保同一格不走兩次');
+  await step(tok);                                   // 141:25 標 to-do
+  reset(true);
+  await chunk(tok, B.ev, 0, B.ev.length, apply);
+  say('有標 to-do：同一格只進記事本一次', 'push ' + A.pushes + ' → ' + B.pushes + '，重複 ' + A.dups + ' → ' + B.dups);
+  await step(tok);                                   // 141:49 無謂的計算
+  say('否則同一格走第二次、鄰居又堆上去', '無謂的計算；有環的迷宮甚至一直繞');
 }]);
 
-// ── 156:54 Container：隨手抽一個的袋子 → random walk ──
+// ── 156:57 Container：隨手抽一個的袋子 → random walk ──
 FRAG.push(['sqlin-container', 'Container 換成隨機袋子：random walk', async (tok) => {
-  fresh([1, 13, 9], [1, 0, 0.5]);
-  mz.kind = 'stack'; enterMaze(); controls('');
-  const bag = ghostBox('#9b7ef4', 1.8, 1.6, 1.8); bag.position.set(6, 0.8, 0);
-  tag('袋子（container）', 'ptr', 6, 2.2, 0); const cnt = tag('裡面 1 格', 'idx', 6, 0, 1.4);
-  say('記事本只要能「放進一個、拿出一個」', '這種東西叫 container');
-  await beat(tok, 2200);
+  const M = mazeStage();
   let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  const s = findCell('S'), cont = [s], par = { [s]: null }, mark = new Set([s]);
-  let pops = 0, goal = null;
-  say('這個袋子：每次隨便抽一個出來', '像喝醉酒亂走：random walk');
-  await beat(tok, 1600);
-  let cur = null;
-  while (cont.length) {
-    if (cur) paint(cur, '#cfe8dc');
-    const key = cont.splice(Math.floor(rnd() * cont.length), 1)[0]; cur = key; pops++;
-    paint(key, OKC);
-    const [r, c] = key.split(',').map(Number);
-    if (MAZE[r][c] === 'G') { goal = key; break; }
-    for (const [dr, dc] of DIRS) {
-      const k2 = (r + dr) + ',' + (c + dc);
-      if (MAZE[r + dr][c + dc] !== '#' && !mark.has(k2)) { mark.add(k2); par[k2] = key; cont.push(k2); paint(k2, TODO); }
-    }
-    txt(cnt, '裡面 ' + cont.length + ' 格');
-    say('隨機抽出一格，鄰居放進袋子', '已抽 ' + pops + ' 次');
-    await beat(tok, 230);
-  }
-  let len = 0; for (let k = goal; k; k = par[k]) { paint(k, '#c08a1f'); len++; }
-  say('亂走也找到出口了', '抽了 ' + pops + ' 次，這條路長 ' + (len - 1) + ' 步');
-  await beat(tok, 2800);
-  say('任何 container：有解一定找到、沒解一定回報', '但放進/拿出的規則不同 → 行為與找到的路不同');
-  await beat(tok, 3200);
+  const { evs, par } = mazeEvents('random', rnd);
+  const t1 = Math.floor(evs.length / 3), t2 = Math.floor(evs.length * 2 / 3);
+  let bag = null, cnt = null;
+  const apply = (e) => { M.visit(e.key); e.adds.forEach((k) => paint(k, TODO)); txt(cnt, '裡面 ' + e.cont.length + ' 格'); };
+  await step(tok);                                   // 156:58 記事本
+  say('更 general 來看', '走迷宮只是需要一本記事本');
+  await step(tok);                                   // 157:04 最後寫的最先探索
+  say('Stack 當記事本：', '最後寫進去的，最先探索');
+  await step(tok);                                   // 157:14 一定要 stack 嗎
+  say('記事本一定要用 stack 嗎？', '沒有');
+  await step(tok);                                   // 157:30 container
+  tag('container（容器）', 'ptr alt', 6, 2.4, -2.2);
+  say('能當記事本、能裝東西的', '叫做 container');
+  await step(tok);                                   // 157:45 array、list 不同容器
+  say('array、linked list 都是不同的容器', '放進去、拿出來的方法不一樣');
+  await step(tok);                                   // 158:04 隨便抽一個的袋子
+  bag = ghostBox('#9b7ef4', 1.8, 1.6, 1.8); bag.position.set(6, 0.8, 0);
+  tag('袋子', 'ptr', 6, 2.2, 0); cnt = tag('裡面 1 格', 'idx', 6, 0, 1.4);
+  say('例：一個袋子', '東西丟進去，每次隨便抽一個出來');
+  await step(tok);                                   // 158:31 每次抽一個
+  await chunk(tok, evs, 0, t1, apply);
+  say('每次從袋子抽一格出來', '看看從那裡能不能走');
+  await step(tok);                                   // 159:15 喝醉酒
+  await chunk(tok, evs, t1, t2, apply);
+  say('像喝醉酒跌跌撞撞', '');
+  await step(tok);                                   // 159:26 random walk
+  await chunk(tok, evs, t2, evs.length, apply);
+  const len = M.path(par, evs[evs.length - 1].key);
+  say('random walk：好死不死找到出口', '這條路 ' + len + ' 步');
+  await step(tok);                                   // 159:51 任何 container 都能動
+  say('任何 container：能拿一個、塞一個', '有解一定找到，沒解一定回報');
+  await step(tok);                                   // 160:15 behavior 不同
+  say('但放不同 container', 'behavior 不一樣');
+  await step(tok);                                   // 160:27 找出的路不同
+  say('有很多條路時', '找出的那條路也可能不同');
+  await step(tok);                                   // 160:51 換一個很不一樣的
+  say('換一個跟 stack 特性', '非常不一樣的 container');
 }]);
 
-// ── 164:54 Circular array：0~9 首尾相接 ──
+// ── 161:06 Queue：FIFO、enqueue 與 dequeue（queue-fifo 的 cued 版之二） ──
+FRAG.push(['sqlin-queue-fifo', 'Queue：FIFO、enqueue 與 dequeue', async (tok) => {
+  fresh([0, 5.5, 12], [0, 1.2, 0]);
+  const QX = (i) => -4.6 + i * 1.3, line_ = [];
+  let nv = 1;
+  const add = (x0) => { const m = cube(nv, colorFor(nv), [0.9, 1.1, 0.9], QX(line_.length), 0.55, 0, 4); nv++; line_.push(m); return m; };
+  await step(tok);                                   // 161:06 stack：LIFO
+  const s1 = tag('Stack：Last In, First Out', 'idx', 4, 4.4);
+  say('Stack 是 last in first out', '最後進去的最先出來');
+  await step(tok);                                   // 161:16 queue：FIFO
+  tag('Queue：First In, First Out', 'ptr alt', -2, 4.4);
+  for (let i = 0; i < 4; i++) { add(); await beat(tok, 300); }
+  say('Queue 就是排隊', 'first in first out');
+  await step(tok);                                   // 161:28 印表機
+  say('排前面的先買到票', '印表機：先送的先印');
+  await step(tok);                                   // 161:47 後來的排後面
+  add();
+  say('後面來的', '請排在隊伍後面');
+  await step(tok);                                   // 162:22 rear、front
+  const fr = tag('front', 'ptr', QX(0), 1.6), rr = tag('rear', 'ptr alt', QX(4), 1.6);
+  say('所以有 rear（後面）', '和 front（前面）');
+  await step(tok);                                   // 162:39 售票口
+  cube('', '#c9b48e', [0.6, 1.6, 2.0], -6.0, 0.8, 0); tag('售票口', 'idx', -6.0, 0, 1.4);
+  say('這邊是售票口：front', '另一頭是 rear');
+  await step(tok);                                   // 162:58 enqueue：insert at rear
+  add(); rr.position.x = QX(5);
+  say('Enqueue：放進去', 'insert at rear');
+  await step(tok);                                   // 163:10 dequeue：remove from front
+  const m = line_.shift(); fly(m, V3(-6, 6, 2));
+  await beat(tok, 500);
+  line_.forEach((x, i) => move(x, QX(i), 0.55, 0)); rr.position.x = QX(4);
+  say('Dequeue：拿出來', 'remove from front');
+  await step(tok);                                   // 163:35 只看前面是誰
+  glow(line_[0], GOLD);
+  say('也可以另外提供', '只看前面是誰的操作');
+  await step(tok);                                   // 163:53 公平
+  glow(line_[0], null);
+  say('Queue 是一種相對公平的方式', '');
+  await step(tok);                                   // 164:26 電腦按時間先後
+  say('電腦裡要依時間先後處理事情時', '也會用 queue');
+}]);
+
+// ── 164:49 Circular array：0~9 首尾相接 ──
 FRAG.push(['sqlin-circ10', 'Circular array：10 格首尾相接', async (tok) => {
   fresh([0, 11, 9], [0, 0, 0.4]);
   const N = 10, P = (i, r = 3.8) => { const a = Math.PI / 2 - (i / N) * Math.PI * 2; return V3(Math.cos(a) * r, 0, -Math.sin(a) * r); };
-  for (let i = 0; i < N; i++) { const p = P(i); cube('', '#e9dcc4', [1.3, 0.08, 1.3], p.x, 0.02, p.z); const q = P(i, 5.1); tag('[' + i + ']', 'idx', q.x, 0.1, q.z); }
-  say('array：0 號到 9 號，10 個位置', '把它想成頭尾接起來');
-  await beat(tok, 1800);
+  await step(tok);                                   // 164:49 queue 怎麼實作
+  say('課本講到 Queue 要怎麼 implement', '');
+  await step(tok);                                   // 164:54 circular array
+  for (let i = 0; i < N; i++) { const p = P(i); cube('', '#e9dcc4', [1.3, 0.08, 1.3], p.x, 0.02, p.z); }
+  say('其中一種：circular array', '');
+  await step(tok);                                   // 165:05 0 號到 9 號
+  for (let i = 0; i < N; i++) { const q = P(i, 5.1); tag('[' + i + ']', 'idx', q.x, 0.1, q.z); }
+  say('array：0 號到 9 號', '10 個位置');
+  await step(tok);                                   // 165:15 繞完繼續繞
   const rg = ring(0.75);
-  for (let k = 0; k <= 13; k++) {
-    const p = P(k % N); rg.position.set(p.x, 0.05, p.z);
-    say(k < N ? '往後走：' + k : '9 之後繞回 0，繼續走', k >= N ? '(' + (k - 1) % N + ' + 1) % 10 = ' + (k % N) : 'index = ' + k);
-    await beat(tok, k === N ? 1300 : 380);
-  }
+  for (let k = 0; k <= 13; k++) { const p = P(k % N); rg.position.set(p.x, 0.05, p.z); await beat(tok, 180); }
+  say('0 到 9 繞完', '再從 0 繼續繞下去');
+  await step(tok);                                   // 165:31 抽象開頭 2 號、結尾 1 號
   kill(rg);
   const pf = P(2, 2.3), pe = P(1, 2.3);
   tag('抽象開頭', 'ptr', pf.x, 1.4, pf.z); tag('抽象結尾', 'ptr alt', pe.x, 1.4, pe.z);
-  say('抽象的開頭在 2 號，結尾在它的前一格 1 號', '');
-  await beat(tok, 2200);
-  for (let k = 0; k < N; k++) {
-    const i = (2 + k) % N, p = P(i);
-    cube(k + 1, colorFor(k + 1), [1.0, 0.7, 1.0], p.x, 0.4, p.z, 4);
-    say(i === 0 ? '過了 9 號，繞回 0 號繼續放' : '從 2 號往後連續使用', '放在 [' + i + ']');
-    await beat(tok, i === 0 ? 1200 : 450);
-  }
-  say('10 格空間連續又循環地使用', 'front / rear 怎麼定、怎麼判滿：課本 reading assignment');
-  await beat(tok, 3200);
+  say('抽象的開頭在 2 號', '抽象的結尾在它前一格：1 號');
+  await step(tok);                                   // 165:39 連續又循環地使用
+  for (let k = 0; k < N; k++) { const i = (2 + k) % N, p = P(i); cube(k + 1, colorFor(k + 1), [1.0, 0.7, 1.0], p.x, 0.4, p.z, 4); await beat(tok, 220); }
+  say('10 格空間連續又循環地使用', '9 號之後繞回 0 號');
+  await step(tok);                                   // 166:00 front、rear 留給大家讀
+  say('front、rear 怎麼決定', '不太難，留給大家回去讀課本');
+  await step(tok);                                   // 166:14 linked list 也行
+  say('也可以用 linked list', '或 circular list 實作');
+}]);
+
+// ── 166:45 把迷宮的 container 換成 Queue（maze-compare 的 cued 版之一） ──
+FRAG.push(['sqlin-maze-swap', '把迷宮的 container 換成 Queue', async (tok) => {
+  mazeStage();
+  const cd = code(['          Stack   Queue', '拿出來：  pop     dequeue', '塞進去：  push    enqueue'], 5.0, 4.2, 0.55, -2.6);
+  await step(tok);                                   // 166:45 queue 也是 container
+  say('Queue 也是一個 container', '也可以拿來解迷宮');
+  await step(tok);                                   // 166:51 換成 queue
+  cd.hl(0);
+  say('基本上就是', '把剛才的 container 換成 Queue');
+  await step(tok);                                   // 166:58 pop → dequeue
+  cd.hl(1);
+  say('拿東西出來：', 'stack 是 pop，queue 是 dequeue');
+  await step(tok);                                   // 167:04 push → enqueue
+  cd.hl(2);
+  say('塞東西進去：', 'stack 是 push，queue 是 enqueue');
+  await step(tok);                                   // 167:19 演算法範本
+  cd.hl(-1);
+  say('一個演算法範本', '換成不同的 restricted data structure → 不同的 behavior');
+  await step(tok);                                   // 167:40 記事本存還沒探索的
+  say('不管用哪個', '都是自己的記事本，存還沒探索過的地方');
 }]);
 
 // ── 167:53 / 171:12 Stack → DFS、Queue → BFS（入口、A、AA…） ──
-FRAG.push(['sqlin-tree-search', '記事本是 Stack 還是 Queue：DFS vs BFS', async (tok) => {
-  const kind = (ctx.params || {}).kind === 'queue' ? 'queue' : 'stack';
+function treeStage(kind) {
   fresh([0.5, 10, 10], [0.5, 0.3, 0.3]);
   const P = { E: [-6, 0], A: [-3.4, -3], B: [-3.4, 0], C: [-3.4, 3], AA: [-0.8, -4], AB: [-0.8, -2], X2: [-0.8, 0], CA: [-0.8, 3], AAA: [1.8, -4], X1: [4.4, -4] };
   const NAME = { E: '入口', X1: '出口₁', X2: '出口₂' };
@@ -12964,33 +13695,161 @@ FRAG.push(['sqlin-tree-search', '記事本是 Stack 還是 Queue：DFS vs BFS', 
   for (const k in P) node[k] = cube(nm(k), k[0] === 'X' ? '#c08a1f' : k === 'E' ? '#5c7a4a' : '#b9a582', [1.25, 0.6, 0.9], P[k][0], 0.3, P[k][1]);
   const CX = 6.1, cont = [];
   tag(kind === 'stack' ? 'stack（top 在上）' : 'queue（front 在前）', 'ptr', CX, kind === 'stack' ? 0 : 1.2, kind === 'stack' ? 3.8 : -0.8);
-  const pos = (i) => kind === 'stack' ? [CX, 0.3 + i * 0.6, 2.6] : [CX, 0.3, 0.4 + i * 1.0];
+  const pos = (i) => kind === 'stack' ? [CX, 0.3 + i * 0.6, 2.6] : [CX, 0.3, 0.4 + i * 0.9];
   const place = () => cont.forEach((m, i) => move(m, ...pos(i)));
   const push = (k) => { const m = cube(nm(k), TODO, [1.1, 0.5, 0.8], ...pos(cont.length), 3); m.userData.k = k; cont.push(m); if (k !== 'E') tint(node[k], TODO); };
-  const list = () => (kind === 'stack' ? 'stack（底→頂）：' : 'queue（front→rear）：') + (cont.map((m) => nm(m.userData.k)).join(' ') || '空');
-  push('E');
-  say(kind === 'stack' ? '記事本是 Stack：最後放的最先拿' : '記事本換成 Queue：最早放的最先拿', list());
-  await beat(tok, 2200);
+  let last = null;
+  return {
+    P, node, par, dep, nm,
+    start() { push('E'); },
+    // take one out, expand it; returns its key
+    take() {
+      if (last) glow(node[last], null);
+      const m = kind === 'stack' ? cont.pop() : cont.shift(), k = m.userData.k;
+      fly(m, V3(0, 6, 2)); place();
+      tint(node[k], OKC); glow(node[k], GOLD); last = k;
+      if (k[0] !== 'X') { const kids = kind === 'stack' ? [...KIDS[k]].reverse() : KIDS[k]; kids.forEach((ch) => { par[ch] = k; dep[ch] = dep[k] + 1; push(ch); }); }
+      return k;
+    },
+    path(goal) { const p = []; for (let k = goal; k; k = par[k]) { p.unshift(nm(k)); tint(node[k], '#c08a1f'); glow(node[k], GOLD); } return p; },
+  };
+}
+FRAG.push(['sqlin-tree-search', 'Stack 版：Depth First Search', async (tok) => {
+  const T = treeStage('stack');
   let goal = null;
-  while (cont.length) {
-    const m = kind === 'stack' ? cont.pop() : cont.shift(), k = m.userData.k;
-    fly(m, V3(0, 6, 2)); place();
-    tint(node[k], OKC); glow(node[k], GOLD);
-    if (kind === 'queue') tag('距離 ' + dep[k], 'idx', P[k][0], 1.0, P[k][1] - 0.7);
-    if (k[0] === 'X') { goal = k; break; }
-    const kids = kind === 'stack' ? [...KIDS[k]].reverse() : KIDS[k];
-    kids.forEach((ch) => { par[ch] = k; dep[ch] = dep[k] + 1; push(ch); });
-    const cap = kind === 'stack'
-      ? (k === 'E' ? '入口的鄰居放進 stack（A 在最上面）' : '拿出 ' + nm(k) + '，它的鄰居疊上去' + (kids.length ? '' : '（死路）'))
-      : (k === 'E' ? '入口的鄰居 A、B、C 排進 queue' : '拿出 ' + nm(k) + '（距離 ' + dep[k] + '），鄰居排到後面');
-    say(cap, list());
-    await beat(tok, 2000);
-    glow(node[k], null);
+  await step(tok);                                   // 167:55 記事本一直疊上去
+  T.start();
+  say('記事本是 stack', '會一直疊上去');
+  await step(tok);                                   // 168:08 拿出來，鄰居堆進去
+  T.take();
+  say('拿出入口', '它所有的鄰居堆進去（A 在最上面）');
+  await step(tok);                                   // 168:19 鄰居下一步先拿出來
+  say('這些鄰居', '會是下一步先拿出來的');
+  await step(tok);                                   // 168:51 抓出 A，疊上 A 的鄰居
+  T.take();
+  say('抓出入口的鄰居 A', '再疊上 A 的 neighbor');
+  await step(tok);                                   // 169:01 AA 抓出來，疊上 AA 的鄰居
+  T.take();
+  say('再抓出 AA', '疊上 AA 的 neighbor');
+  await step(tok);                                   // 169:23 入口鄰居還沒看完，已經一路深入
+  T.take();
+  say('入口的鄰居 B、C 還沒看', '已經一路深入到鄰居的鄰居的鄰居');
+  await step(tok);                                   // 169:49 DFS
+  goal = T.take();
+  tag('DFS', 'ptr alt', 0, 2.2, -5);
+  say('先走到不能再走才退回來', 'Depth First Search（DFS）');
+  await step(tok);                                   // 170:20 先看深處再退回淺的
+  say('更深入的鄰居一直堆在 stack 上面', '先看最深的，再退回淺的地方');
+  await step(tok);                                   // 170:38 很多條路時
+  say('有很多條路可以出去時', '找到哪條，跟某種順序有關');
+  await step(tok);                                   // 170:54 第一條可以出去的路
+  const p = T.path(goal);
+  say('找到「第一條」可以出去的路', p.join(' → ') + '（' + (p.length - 1) + ' 步，不保證最短）');
+}]);
+FRAG.push(['sqlin-tree-bfs', 'Queue 版：Breadth First Search', async (tok) => {
+  const T = treeStage('queue');
+  T.start();
+  const dist = (k) => tag('距離 ' + T.dep[k], 'idx', T.P[k][0], 1.0, T.P[k][1] - 0.7);
+  const seen = [];
+  const take = () => { const k = T.take(); seen.push(k); return k; };
+  let goal = null;
+  await step(tok);                                   // 171:18 入口；first neighbors
+  take();
+  say('Queue 版：入口拿出來', '排進入口的 first neighbors：A、B、C');
+  await step(tok);                                   // 171:35 A 的鄰居
+  take();
+  say('A 的 neighbor', '串在後面');
+  await step(tok);                                   // 171:43 B、C 的鄰居
+  take(); await beat(tok, 700); take();
+  say('B 的 neighbor、C 的 neighbor', '也一路串在後面');
+  await step(tok);                                   // 171:53 慢慢找
+  take(); await beat(tok, 700); take();
+  say('再慢慢找 AA、AB……', '');
+  await step(tok);                                   // 171:58 找到 → 最短
+  goal = take();
+  const p = T.path(goal);
+  say('找到一條路出去時', p.join(' → ') + '：最短（' + (p.length - 1) + ' 步）');
+  await step(tok);                                   // 172:08 距離 0、1
+  seen.filter((k) => T.dep[k] <= 1).forEach(dist);
+  say('先把跟入口距離 0 的處理完', '再處理距離 1 的');
+  await step(tok);                                   // 172:15 2、3、4
+  seen.filter((k) => T.dep[k] >= 2).forEach(dist);
+  say('才處理距離 2、3、4……', '');
+  await step(tok);                                   // 172:27 BFS
+  tag('BFS', 'ptr alt', 0, 2.2, -5);
+  say('這種搜尋方式叫', 'Breadth First Search（BFS，廣度優先）');
+  await step(tok);                                   // 172:37 BFS vs DFS
+  say('Stack 那個叫 DFS', 'Queue 這個叫 BFS');
+  await step(tok);                                   // 172:48 同心圓
+  for (const r of [2.6, 5.2]) { const m = new THREE.Mesh(new THREE.TorusGeometry(r, 0.04, 6, 60), new THREE.MeshBasicMaterial({ color: '#2fc092' })); m.rotation.x = Math.PI / 2; m.position.set(-6, 0.05, 0); lab.world.add(m); await beat(tok, 500); }
+  say('BFS 像同心圓', '一層一層展出去');
+  await step(tok);                                   // 173:04 疫調
+  say('像疫調：第一層接觸者查完', '才查第二層、第三層');
+  await step(tok);                                   // 173:53 behavior 不一樣
+  say('學了 Stack、Queue', '看到兩種方法的 behavior 不一樣');
+}]);
+
+// ── 174:40 Q&A：recursive 版也是 DFS ──
+FRAG.push(['sqlin-maze-rec-qa', 'Q&A：Recursive 版也是 DFS', async (tok) => {
+  mazeStage();
+  const R = recPlayer();
+  await step(tok);                                   // 174:41 recursive 也是 DFS？
+  await chunk(tok, R.evs, 0, R.evs.length, R.apply, 120);
+  say('留言：剛才 recursive', '感覺也是 DFS');
+  await step(tok);                                   // 174:52 是的
+  say('是的：recursive 也有', 'DFS 的 behavior');
+  await step(tok);                                   // 174:59 記的東西不一樣
+  tag('system stack：一條路', 'ptr', -3, 1.6, -5.3); tag('自己的 stack：待探索的點', 'ptr alt', 3, 1.6, -5.3);
+  say('但記在 system stack 上的', '和記在自己 stack 上的不太一樣');
+  await step(tok);                                   // 175:10 寫得出一樣的
+  say('不過可以寫出某個 stack 版本', '做出 exactly 一樣的 DFS behavior');
+}]);
+
+// ── 175:27 Q&A：DFS 與 BFS 哪個快 ──
+FRAG.push(['sqlin-maze-race', 'Q&A：DFS 與 BFS 哪個快', async (tok) => {
+  fresh([0, 6, 13], [0, 1.4, 0]);
+  const LX = (d, max) => -5.5 + d * (11 / max);
+  // a row: levels 0..max, exit at level `ex`; stack checks `sc` cells, queue checks `qc`
+  function race(z, max, ex, title) {
+    tag(title, 'ptr', 0, 0, z - 1.0);
+    for (let d = 0; d <= max; d++) cube('', d === ex ? '#c08a1f' : '#e9dcc4', [0.4, 0.1, 0.4], LX(d, max), 0.05, z);
+    tag('出口', 'idx', LX(ex, max), 0.4, z + 0.5);
+    const s = cube('S', '#9b7ef4', [0.5, 0.5, 0.5], LX(0, max), 0.3, z - 0.4), q = cube('Q', '#4b9ee2', [0.5, 0.5, 0.5], LX(0, max), 0.3, z + 0.4);
+    const sc = tag('stack：', 'idx', 6.2, 0.3, z - 0.4), qc = tag('queue：', 'idx', 6.2, 0.3, z + 0.4);
+    return { s, q, sc, qc, max, z };
   }
-  const path = []; for (let k = goal; k; k = par[k]) { path.unshift(nm(k)); glow(node[k], GOLD); tint(node[k], '#c08a1f'); }
-  say(kind === 'stack' ? 'DFS：一路深入，先找到深處的出口₁' : 'BFS：一層一層往外，先找到最近的出口₂',
-    path.join(' → ') + '（' + (path.length - 1) + ' 步）' + (kind === 'stack' ? '，不保證最短' : '，最短'));
-  await beat(tok, 3600);
+  await step(tok);                                   // 175:34 要先 define 目標
+  say('怎麼走最快？', '要先 define 目標');
+  await step(tok);                                   // 175:44 最短：queue
+  tag('目標：最短的路 → Queue（BFS）', 'ptr alt', 0, 3.6);
+  say('如果目標是找最短的路出去', 'Queue 會給你最短的路');
+  await step(tok);                                   // 175:55 誰先找到：看問題
+  say('至於誰比較快找到一條路', '跟問題的特性很有關係');
+  let A = null, B = null;
+  await step(tok);                                   // 176:01 stack 第一條路就出去，但很深
+  A = race(-1.6, 20, 20, '情況一：出口在 stack 第一條路上，但很深（20 層）');
+  say('如果 stack 試的第一條路就走得出去', '但那條路有 20 層');
+  await step(tok);                                   // 176:12 queue 要一層一層轉
+  await anim(tok, 1500, (t) => { A.s.position.x = LX(20 * t, 20); });
+  txt(A.sc, 'stack：21 格就到');
+  await anim(tok, 1000, (t) => { A.q.position.x = LX(20 * t, 20); });
+  txt(A.qc, 'queue：每一層都要轉完');
+  say('Stack 直衝到底：比較快', 'Queue 要從第 0 層轉到第 20 層');
+  await step(tok);                                   // 176:27 三步就到，但在最尾巴
+  B = race(1.6, 8, 3, '情況二：出口只要 3 步，但在 stack 嘗試順序的最尾巴');
+  say('如果出口只要 3 步', '卻在 stack 嘗試的最尾巴');
+  await step(tok);                                   // 176:45 queue 三層就出去
+  await anim(tok, 900, (t) => { B.q.position.x = LX(3 * t, 8); });
+  txt(B.qc, 'queue：轉 3 層就出去');
+  await anim(tok, 1400, (t) => { B.s.position.x = LX(8 * Math.abs(Math.sin(t * Math.PI * 2)), 8); });
+  txt(B.sc, 'stack：四處碰壁');
+  say('Queue 轉三層就出去了', 'Stack 深入、碰壁、退回……');
+  await step(tok);                                   // 177:09 看問題性質
+  say('哪一個比較快', '跟問題的性質比較有關');
+  await step(tok);                                   // 177:16 最壞差不多
+  say('兩個演算法的最壞情形', '搞不好差不多');
+  await step(tok);                                   // 177:34 路有長度：換 container
+  say('如果每條路有長度、要找真正最短的', '再換別的 container，有很有效率的演算法');
 }]);
   }
 
@@ -13464,6 +14323,8 @@ FRAG.push(['sqpeng-multistack', 'Multiple stacks 與 Stack ≠ Array', async (to
   // ═══ stklin.js ═══
   {
   // ─── -1FYYVpgyUo：林軒田 DSA（Analysis Tools 的 asymptotic notation ＋ Stack 入門） ───
+  // cued scenes: each `await step(tok)` waits until the lecturer says that sentence; beats are motion only.
+  const step = (tok) => ctx.step(tok);
   const B_ = '#4b9ee2', O_ = '#dd8238', R_ = '#d64545', G_ = '#2fc092', Y_ = '#c08a1f';
   function bar(color, w, d, x, z = 0) { const m = lab.box(color, [w, 1, d]); m.scale.y = 0.001; m.position.set(x, 0, z); lab.world.add(m); return m; }
   function growBar(tok, m, h, ms) { const h0 = m.scale.y; return anim(tok, ms, (t) => { const v = Math.max(0.001, h0 + (h - h0) * t); m.scale.y = v; m.position.y = v / 2; }); }
@@ -13482,245 +14343,375 @@ FRAG.push(['sqpeng-multistack', 'Multiple stacks 與 Stack ≠ Array', async (to
   const dot = (v, color, s = 0.2) => cube('', color, [s, s, s], v.x, v.y, v.z);
   const hl = (ox, w, y, color) => line(ox, y, ox + w, y, 0, color);
 
-  // 23:14 為什麼只要「大概」
+  // 23:23 為什麼只要「大概」
   FRAG.push(['stklin-why-approx', '只要「大概」：常數不重要', async (tok) => {
     fresh([0, 5, 14], [0, 2.6, 0]);
-    const q = tag('n 個 int：4 bytes 還是 8 bytes？看平台', 'ptr', 0, 6.2);
-    say('可以一個 byte、一個指令去算', '但不需要 exact，只要「大概」');
-    await beat(tok, 2800);
+    await step(tok);                                   // 24:26 一個一個 byte、一個一個指令去算
+    const q = tag('要多少 byte？要多少個指令？', 'ptr', 0, 6.2);
+    say('可以一個 byte、一個指令去算');
+    await step(tok);                                   // 24:34 不需要 exact
+    say('但很多時候不需要 exact', '只要「大概」就好');
+    await step(tok);                                   // 25:00 int 4 bytes 還是 8 bytes
+    txt(q, 'n 個 int：4 bytes 還是 8 bytes？看平台');
+    say('細節跟平台有關', '');
+    await step(tok);                                   // 25:08 2n 個指令要 2 秒還 20 秒
     txt(q, '2n 個指令：2 秒、20 秒還是 30 秒？看架構');
-    say('這些細節跟平台、架構有關', '只在乎：要 n 個指令，還是 n² 個？');
-    await beat(tok, 3000);
-    kill(q);
+    say('細節跟計算機架構有關', '這些我們不太在意');
+    await step(tok);                                   // 25:33 n 個指令還是 n² 個
+    txt(q, '在乎的是：n 個指令，還是 n² 個指令？');
+    say('只在乎大概：n 還是 n²', '');
+    await step(tok);                                   // 25:49 asymptotic notation
+    tag('描述「大概」的語言：asymptotic notation', 'ptr alt', 0, 7.0);
+    say('描述「大概」的語言', 'asymptotic notation');
+    await step(tok);                                   // 26:27 固定要花一秒鐘
     tag('固定成本', 'ptr alt', -4.6, 0, 1.6);
     const fx = bar(Y_, 1.3, 1.3, -4.6);
-    await growBar(tok, fx, 1.6, 500);
+    await growBar(tok, fx, 1.6, 600);
     tag('1 秒', 'idx', -4.6, 2.1);
+    say('假設某件事固定要花 1 秒', '不管資料多少');
+    await step(tok);                                   // 26:37 100 筆、1000 筆、1 萬筆都 1 秒
+    const N = [100, 1000, 10000], X = (k) => -1 + k * 2.6;
+    N.forEach((v, k) => tag(v + ' 筆', 'idx', X(k), 0, 1.4));
+    say('100 筆、1000 筆、1 萬筆', '都是那固定的 1 秒');
+    await step(tok);                                   // 26:48 攤平到一萬筆：一萬分之一秒
+    glow(fx, GOLD);
+    say('1 萬筆資料攤平', '每筆只多 1/10000 秒');
+    await step(tok);                                   // 26:56 100 筆要 100 個指令
+    glow(fx, null);
     tag('跟資料量一起長的部分（高度為 log 尺度）', 'ptr', 1.6, 0, 2.6);
-    const N = [100, 1000, 10000];
-    for (let k = 0; k < 3; k++) {
-      const x = -1 + k * 2.6, h = 1.2 + k * 1.7;
-      tag(N[k] + ' 筆', 'idx', x, 0, 1.4);
-      const b = bar(B_, 1.3, 1.3, x);
-      say('資料 ' + N[k] + ' 筆：要 ' + N[k] + ' 個指令', '固定的 1 秒攤到每筆只剩 1/' + N[k] + ' 秒');
-      await growBar(tok, b, h, 700);
-      tag(N[k] + ' 個指令', 'idx', x, h + 0.4);
-      glow(fx, GOLD); await beat(tok, 1000); glow(fx, null);
-      await beat(tok, 500);
-    }
-    say('資料一大，跟資料量有關的部分浮出來', '常數（固定 1 秒、每步幾毫秒）不重要');
-    await beat(tok, 3200);
+    const bs = N.map((v, k) => bar(B_, 1.3, 1.3, X(k)));
+    await growBar(tok, bs[0], 1.2, 600); tag('100 個指令', 'idx', X(0), 1.6);
+    say('100 筆要 100 個指令', '');
+    await step(tok);                                   // 27:02 1000 筆 1000 個、1 萬筆 1 萬個
+    await growBar(tok, bs[1], 2.9, 600); tag('1000 個指令', 'idx', X(1), 3.3);
+    await growBar(tok, bs[2], 4.6, 600); tag('10000 個指令', 'idx', X(2), 5.0);
+    say('1000 筆 1000 個、1 萬筆 1 萬個', '隨資料量成長');
+    await step(tok);                                   // 27:30 資料量一大，浮出來
+    bs.forEach((b) => glow(b, GOLD));
+    say('資料一大，跟資料量有關的部分浮出來', '');
+    await step(tok);                                   // 27:38 常數不那麼重要
+    tint(fx, GRAY);
+    say('常數（固定 1 秒、每步幾毫秒）', '就沒那麼重要了');
   }]);
 
-  // 28:02 n³ vs 1126n
+  // 28:09 n³ vs 1126n
   FRAG.push(['stklin-n3-vs-1126n', 'n³ 與 1126n：n 夠大才看得出來', async (tok) => {
     fresh([0, 4.2, 14], [0, 3.4, 0]);
     const OX = -5.5, OY = 0.3, W = 11, H = 6.6;
     const map = (n, v) => V3(OX + n / 50 * W, OY + Math.min(v / 125000, 1.03) * H);
     axes(OX, OY, W, H, 'n', '步數');
     const b = plot((n) => 1126 * n, 0, 50, map, B_), r = plot((n) => n ** 3, 0, 50, map, R_);
-    say('兩個選擇：n³ 與 1126n', '紅 = n³，藍 = 1126n（斜率很高）');
-    await reveal(tok, b, 1200); tagV('1126n', 'ptr', map(50, 56300), 0.3, 0.4);
+    await step(tok);                                   // 28:20 兩個函數 f、g，隨 n 變大
+    say('比兩個函數 f、g', '隨資料量 n 變大，誰長得快？');
+    await step(tok);                                   // 28:45 f = n³
     await reveal(tok, r, 1600); tagV('n³', 'ptr alt', map(50, 125000), -0.7, 0.3);
-    await beat(tok, 1000);
+    say('紅色：n³', '');
+    await step(tok);                                   // 29:04 1126n，斜率很高
+    await reveal(tok, b, 1200); tagV('1126n', 'ptr', map(50, 56300), 0.3, 0.4);
+    say('藍色：1126n', '斜率很高的直線');
+    await step(tok);                                   // 29:19 兩個選擇
+    say('兩個演算法：n³ 與 1126n', '要選哪一個？');
+    await step(tok);                                   // 29:45 資料不大：選紅色
     dot(map(10, 1000), R_); dot(map(10, 11260), B_);
     tagV('n = 10', 'idx', map(10, 11260), 0, 0.5);
-    say('資料不大：選紅色 n³ 比較省', 'n = 10：n³ = 1,000 < 1126n = 11,260');
-    await beat(tok, 3000);
+    say('資料不大：選紅色 n³ 比較省', 'n = 10：1,000 < 11,260');
+    await step(tok);                                   // 29:56 資料夠大：選藍色
+    dot(map(50, 125000), R_); dot(map(50, 56300), B_);
+    say('資料夠大：選藍色 1126n', 'n = 50：125,000 > 56,300');
+    await step(tok);                                   // 30:14 不同區域情形不一樣
     const cx = Math.sqrt(1126);
     dot(map(cx, 1126 * cx), Y_, 0.3);
     tagV('交點 n = √1126 ≈ 33.6', 'ptr alt', map(cx, 1126 * cx), -1.8, 0.6);
-    say('過了交點，n³ 衝上去', 'n³ = 1126n ⇔ n² = 1126');
-    await beat(tok, 3000);
-    dot(map(50, 125000), R_); dot(map(50, 56300), B_);
-    say('資料夠大：選藍色 1126n', 'n = 50：n³ = 125,000 > 1126n = 56,300');
-    await beat(tok, 3000);
-    say('只看 n 夠大時的行為', 'asymptotic behavior：斜率再大也輸給 n³');
-    await beat(tok, 3000);
+    say('交點兩邊，答案不一樣', 'n³ = 1126n ⇔ n² = 1126');
+    await step(tok);                                   // 30:40 n 夠大時的行為
+    const sh = ghostBox(G_, W * 0.32, H, 0.2); sh.position.set(map(42, 0).x, OY + H / 2, -0.2);
+    say('我們追求 n 夠大時的行為', 'asymptotic behavior');
+    await step(tok);                                   // 30:46 所以叫 asymptotic notation
+    tag('asymptotic notation：描述 n 夠大時「大概」怎樣', 'ptr', 0, 7.6);
+    say('描述它的語言', 'asymptotic notation');
   }]);
 
-  // 31:00 Big-O 的意思
+  // 31:22 Big-O 的意思
   FRAG.push(['stklin-bigo-meaning', 'Big-O：長得比較慢或差不多', async (tok) => {
     fresh([0, 4.5, 14], [0, 3, 0]);
-    tag('f(n) = O(g(n))', 'ptr alt', 0, 7.2);
-    say('Big-O：電腦科學的行話', 'f(n) = O(g(n))：f 長得比 g 慢，或差不多');
-    await beat(tok, 2800);
-    const OX = -6.2, OY = 0.3, W = 5.4, H = 5.6;
+    await step(tok);                                   // 31:27 CS 的行話
+    const jt = tag('行話：這一行描述事情的說法', 'ptr', 0, 7.6);
+    say('Asymptotic notation 是一種「行話」', '');
+    await step(tok);                                   // 31:51 當兵無線電：么、拐
+    txt(jt, '行話：軍中無線電報「么、兩、拐」');
+    say('像軍中無線電的說法', '圈內人一聽就懂');
+    await step(tok);                                   // 32:11 直升機駕駛的錄音
+    txt(jt, '行話：駕駛艙錄音裡的專業用語');
+    say('像機師的專業用語', '');
+    await step(tok);                                   // 32:24 asymptotic notation = CS 的行話
+    txt(jt, 'asymptotic notation：電腦科學的行話');
+    say('把它當成一個語言來學', '');
+    await step(tok);                                   // 32:53 慢像 <、相等像 =
+    const sym = tag('f 比 g 慢 ≈「<」　差不多 ≈「=」　合起來 ≈「≤」', 'idx', 0, 6.9);
+    say('要說 f 長得比 g 慢，或差不多', '有點像 ≤');
+    await step(tok);                                   // 33:04 f(n) = O(g(n))
+    tag('f(n) = O(g(n))　念作 big O of g', 'ptr alt', 0, 6.2);
+    say('寫成 f(n) = O(g(n))', 'big O of g');
+    const OX = -6.2, OY = 0.3, W = 5.4, H = 5.0;
     const map = (n, v) => V3(OX + n / 10 * W, OY + Math.min(v / 100, 1.03) * H);
     axes(OX, OY, W, H, 'n', '');
+    await step(tok);                                   // 33:33 f 是 n，比 n² 慢
     const c1 = plot((n) => n, 0, 10, map, B_), c2 = plot((n) => n * n, 0, 10, map, R_);
     await reveal(tok, c1, 700); tagV('n', 'ptr', map(10, 10), 0.4, 0.2);
     await reveal(tok, c2, 900); tagV('n²', 'ptr alt', map(10, 100), 0.4, 0);
-    say('n 跑得比 n² 慢', 'n = O(n²)');
-    await beat(tok, 2400);
+    say('n 跑得比 n² 慢', '');
+    await step(tok);                                   // 33:47 寫成 n = O(n²)
+    tagV('n = O(n²)', 'ptr', map(5, 25), 0.4, 1.2);
+    say('所以寫成 n = O(n²)', '');
+    await step(tok);                                   // 34:11 3n 比 n 慢或差不多
     const c3 = plot((n) => 3 * n, 0, 10, map, Y_);
-    await reveal(tok, c3, 700); tagV('3n', 'idx', map(10, 30), 0.4, 0);
-    say('3n 跟 n 同一級：差不多', '3n = O(n)：O 是「慢或差不多」');
-    await beat(tok, 2600);
-    tag('直覺：看 f / g 的極限', 'ptr', 3.0, 6.4);
-    const fl = tag('', 'idx', 3.0, 5.7);
+    await reveal(tok, c3, 700); tagV('3n = O(n)', 'idx', map(10, 30), 0.6, 0);
+    say('3n 跟 n 同一級：差不多', '3n = O(n)');
+    await step(tok);                                   // 35:06 n → ∞，用除的來比
+    tag('直覺：f / g，n 跑到無限大', 'ptr', 3.0, 5.0);
+    say('怎麼比？n 很大時，把 f 和 g 相除', '');
+    await step(tok);                                   // 35:19 極限 ≤ 某個常數
+    tag('lim f/g ≤ c → f 被 g 包住', 'ptr alt', 3.0, 4.3);
+    say('相除的極限 ≤ 某個常數 c', '沒有跑出去 → 被包住');
+    await step(tok);                                   // 35:51 f=1,2,3；g=10,20,30
+    const fl = tag('', 'idx', 3.0, 3.6);
     for (let k = 1; k <= 3; k++) {
       const x = 1.0 + (k - 1) * 2.0;
       const bf = bar(B_, 0.7, 0.7, x - 0.4), bg = bar(R_, 0.7, 0.7, x + 0.4);
       tag('f=' + k, 'idx', x - 0.4, 0, 0.8); tag('g=' + 10 * k, 'idx', x + 0.4, 0, 0.8);
-      await growBar(tok, bf, 0.15 * k, 300); await growBar(tok, bg, 1.5 * k, 500);
-      txt(fl, 'f/g = ' + k + '/' + 10 * k + ' = 1/10');
-      say('f = ' + k + '、g = ' + 10 * k, 'f / g = 1/10');
-      await beat(tok, 1000);
+      await Promise.all([growBar(tok, bf, 0.1 * k, 400), growBar(tok, bg, 1.0 * k, 600)]);
     }
-    say('相除一直是 1/10：沒有暴衝出去', 'lim f/g ≤ c → f 被 g 包住 → f = O(g)');
-    await beat(tok, 3200);
+    say('f = 1、2、3 時，g = 10、20、30', '');
+    await step(tok);                                   // 36:01 一直是 1/10，沒有暴衝
+    txt(fl, 'f / g 一直是 1/10');
+    say('相除一直是 1/10：沒有暴衝出去', 'f = O(g)');
+    await step(tok);                                   // 36:58 big O 最常用
+    say('Big O：電腦科學最常被使用的行話', '當之無愧');
   }]);
 
-  // 36:32 O(n²) 是集合、也像 ≤
+  // 37:21 O(n²) 是集合、也像 ≤
   FRAG.push(['stklin-bigo-set', 'O(n²) 是一個函數的集合', async (tok) => {
     fresh([0, 6.5, 13], [0, 1.5, 0]);
+    await step(tok);                                   // 37:26 O(n²) 比較像一個集合
     const S = ghostBox(B_, 7, 2.6, 4.2); S.position.set(-2, 1.3, 0);
     tag('O(n²)：長得比 n² 慢或差不多', 'ptr', -2, 3.1);
     say('O(n²) 像一個集合', '裡面有各式各樣的函數');
-    await beat(tok, 2000);
-    const F = [['n', '比 n² 慢'], ['n²', '差不多'], ['0.1n²', '差不多'], ['3n²', '差不多'], ['√n', '比 n² 慢']];
-    const ms = [];
-    for (let k = 0; k < F.length; k++) {
+    const F = ['n', 'n²', '0.1n²', '3n²', '√n'], ms = [];
+    const put = async (k) => {
       const x = -4.4 + (k % 3) * 2.4 + (k >= 3 ? 1.2 : 0), z = k < 3 ? -0.9 : 0.9;
-      ms.push(cube(F[k][0], k === 1 ? R_ : B_, [1.5, 0.6, 1.0], x, 0.3, z, 5));
-      say(F[k][0] + ' 跑得比 n² 慢嗎？', F[k][1] + ' → ' + F[k][0] + ' = O(n²)');
-      await beat(tok, 1300);
-    }
-    const n3 = cube('n³', R_, [1.5, 0.6, 1.0], 4.6, 0.3, 0, 5);
-    say('n³ 呢？長得比 n² 快', 'n³ ≠ O(n²)：不在集合裡');
-    await beat(tok, 1600);
-    fly(n3, V3(4, 8, 3));
-    await beat(tok, 900);
-    say('所以「=」其實比較像「∈」', 'n = O(n²) 的意思是 n ∈ O(n²)');
-    await beat(tok, 2600);
+      ms.push(cube(F[k], k === 1 ? R_ : B_, [1.5, 0.6, 1.0], x, 0.3, z, 5)); await beat(tok, 450);
+    };
+    await step(tok);                                   // 37:42 n、n²、0.1n²
+    for (let k = 0; k < 3; k++) await put(k);
+    say('n：比 n² 慢；n²、0.1n²：差不多', '都在 O(n²) 裡');
+    await step(tok);                                   // 37:50 3n²
+    await put(3);
+    say('3n²：差不多', '也在裡面');
+    await step(tok);                                   // 37:59 √n
+    await put(4);
+    say('√n：比 n² 慢', '也在裡面');
+    await step(tok);                                   // 38:06 「=」其實像「屬於」
+    tag('「=」比較像「∈」：n ∈ O(n²)', 'ptr alt', -2, 4.0);
+    say('所以「=」其實有點像「屬於」', 'n = O(n²) 意思是 n ∈ O(n²)');
+    await step(tok);                                   // 38:23 同一個函數屬於很多集合
+    const S3 = ghostBox(O_, 9.6, 3.2, 5.4); S3.position.set(-1.2, 1.6, 0);
+    tag('O(n³)', 'ptr', 3.0, 3.6);
+    say('同一個函數可以屬於好多個集合', 'Big O 描述的是一個性質');
+    await step(tok);                                   // 38:45 像「≤」的排序
     ms.forEach((m) => glow(m, GOLD));
-    say('也像函數之間的「≤」', '比 n 夠大時的大小：慢像 <、差不多像 =');
-    await beat(tok, 2800);
+    say('另一個看法：像函數之間的「≤」', '比的是 n 夠大時的大小');
+    await step(tok);                                   // 39:25 之後證遞移律
     ms.forEach((m) => glow(m, null));
-    cube('1126n', Y_, [1.6, 0.6, 1.0], 4.6, 0.3, 0, 5);
-    tag('O(n)', 'ptr alt', 4.6, 1.4);
-    say('常數不重要：1126n = O(n)', '1126n / n = 1126 ≤ 某個固定的 c');
-    await beat(tok, 3000);
-    const mainT = cube('主要項', R_, [1.8, 0.8, 1.2], 4.6, 0.4, 2.6, 4);
-    const sub = [cube('次要項', B_, [1.1, 0.4, 0.8], 2.4, 0.2, 2.6, 4), cube('常數', GRAY, [0.9, 0.4, 0.8], 6.4, 0.2, 2.6, 4)];
-    say('真實步數裡的次要項、常數', '都會被主要項吃掉');
-    await beat(tok, 1600);
-    sub.forEach((m) => move(m, 4.6, 0.4, 2.6));
+    tag('f ≤ g、g ≤ h ⇒ f ≤ h？（等一下證）', 'idx', -2, 4.8);
+    say('之後會證明類似不等式的遞移律', '');
+    await step(tok);                                   // 40:10 1126n = O(n)？
+    cube('1126n', Y_, [1.6, 0.6, 1.0], 4.6, 0.3, 2.6, 5);
+    tag('O(n)', 'ptr alt', 4.6, 1.4, 2.6);
+    say('常數不重要：1126n = O(n) 嗎？', '');
+    await step(tok);                                   // 40:16 相除 1126 ≤ 固定數字
+    tag('1126n / n = 1126 ≤ c ✓', 'ptr', 4.6, 2.1, 2.6);
+    say('相除 = 1126，≤ 某個固定數字', '所以 1126n = O(n)');
+    await step(tok);                                   // 40:37 左邊是真實步數
+    const mainT = cube('主要項', R_, [1.8, 0.8, 1.2], 0, 0.4, 3.6, 4);
+    const sub = [cube('次要項', B_, [1.1, 0.4, 0.8], -2.4, 0.2, 3.6, 4), cube('常數', GRAY, [0.9, 0.4, 0.8], 2.2, 0.2, 3.6, 4)];
+    say('左邊常是「真實」要花的步數', '右邊是「大概」');
+    await step(tok);                                   // 40:54 次要項被吃掉
+    sub.forEach((m) => move(m, 0, 0.4, 3.6));
     await beat(tok, 700);
-    sub.forEach(kill); glow(mainT, GOLD);
-    say('只留主要項寫進 O( )', '把常數丟掉，留下跟成長有關的部分');
-    await beat(tok, 2600);
+    sub.forEach(kill);
+    say('長得比較慢的次要項，通通被吃掉', '');
+    await step(tok);                                   // 41:16 只留主要項寫進 O
+    glow(mainT, GOLD);
+    say('刪掉次要項、丟掉常數', '留下主要項寫進 O( )');
   }]);
 
-  // 41:50 formal definition ＋ |sin n|
+  // 41:56 formal definition ＋ |sin n|
   FRAG.push(['stklin-formal-def', 'Formal 定義：n ≥ n0 時 f ≤ c·g', async (tok) => {
     fresh([0, 4.2, 14], [0, 3.4, 0]);
     const OX = -5.5, OY = 0.3, W = 11, H = 6.4;
     const map = (n, v) => V3(OX + n / 14 * W, OY + Math.min(v / 14, 1.03) * H);
     axes(OX, OY, W, H, 'n', '');
-    say('lim f/g ≤ c 只是直覺', '先假設 f、g 都是正函數（示意圖）');
-    await beat(tok, 2400);
+    await step(tok);                                   // 41:59 lim f/g ≤ c 寫得不 rigorous
+    tag('直覺：lim f/g ≤ c（不嚴謹）', 'idx', 0, 7.4);
+    say('剛才的極限版本只是直覺', '寫得不 rigorous');
+    await step(tok);                                   // 42:09 假設 f、g 都是正的
+    tag('先假設 f、g 都是正函數', 'idx', 0, 6.9);
+    say('避免除以零之類的麻煩', 'f、g 都是正的');
     const f = (n) => 0.5 * n + 3 + 0.8 * Math.sin(1.3 * n);
     const cg = plot((n) => n, 0, 14, map, R_), fl = plot(f, 0, 14, map, B_, 140);
+    await step(tok);                                   // 42:47 f 要比 c·g 小
     await reveal(tok, cg, 900); tagV('c·g(n)', 'ptr alt', map(14, 14), -0.4, 0.3);
     await reveal(tok, fl, 1200); tagV('f(n)', 'ptr', map(14, f(14)), 0.5, 0);
-    say('真正定義：找得到 c 和 n0', 'n ≥ n0 時，f(n) ≤ c·g(n)');
-    await beat(tok, 2400);
+    say('真正的定義：f 要 ≤ c 乘上 g', '');
+    await step(tok);                                   // 43:02 n 夠大：n0
     const x0 = map(8, 0).x;
     line(x0, OY, x0, OY + H, 0, Y_); tag('n0', 'ptr alt', x0, 0, 0.6);
-    for (let n = 8; n <= 14; n++) { dot(map(n, f(n)), G_, 0.18); await beat(tok, 200); }
-    say('n0 之前怎樣都沒關係', 'n0 之後 f 一直被 c·g 壓在下面');
-    await beat(tok, 2600);
+    for (let n = 8; n <= 14; n++) { dot(map(n, f(n)), G_, 0.18); await beat(tok, 150); }
+    say('只要 n ≥ n0 之後成立就好', 'n0 之前怎樣都沒關係');
+    await step(tok);                                   // 43:44 極限版要求極限存在，比較嚴格
+    say('為什麼不用極限版？', '極限版要求「極限要存在」，比較嚴格');
+    await step(tok);                                   // 44:18 f = |sin n|、g = 1
     fresh([0, 4.2, 14], [0, 3.4, 0]);
     const map2 = (n, v) => V3(OX + n / 40 * W, OY + v / 1.4 * H);
     axes(OX, OY, W, H, 'n', '');
     const one = plot(() => 1, 0, 40, map2, R_, 2), s = plot((n) => Math.abs(Math.sin(n)), 0, 40, map2, B_, 400);
-    say('例子：f(n) = |sin n|、g(n) = 1', 'f / g = |sin n|');
     await reveal(tok, one, 500); tagV('g(n) = 1', 'ptr alt', map2(40, 1), 0.2, 0.45);
-    await reveal(tok, s, 2400); tagV('|sin n|', 'ptr', map2(40, 0.75), 0.7, 0);
-    say('跳上跳下，n 再大也不收斂', 'lim |sin n| 不存在 → 直覺版用不了');
-    await beat(tok, 2800);
+    say('例子：f(n) = |sin n|、g(n) = 1', 'f / g = |sin n|');
+    await step(tok);                                   // 44:33 |sin n| 長這樣
+    await reveal(tok, s, 2200); tagV('|sin n|', 'ptr', map2(40, 0.75), 0.7, 0);
+    say('|sin n| 長這個樣子', '');
+    await step(tok);                                   // 44:43 不收斂，跳來跳去
+    tag('lim |sin n| 不存在', 'ptr alt', 0, 7.4);
+    say('n 再大也不收斂，一直跳上跳下', '極限不存在 → 直覺版用不了');
+    await step(tok);                                   // 45:11 一直被 1 壓住
     for (let n = 1; n <= 40; n++) dot(map2(n, Math.abs(Math.sin(n))), G_, 0.13);
-    say('但它一直被 1 壓在下面', 'c = 1：|sin n| ≤ 1·g(n) → |sin n| = O(1)');
-    await beat(tok, 3000);
+    say('但它一直被 1 壓在下面', 'c = 1：|sin n| ≤ 1 → |sin n| = O(1)');
+    await step(tok);                                   // 45:59 定義比較廣
     say('Formal 定義比較廣', '沒有極限的情形也包進來了');
-    await beat(tok, 2600);
+    await step(tok);                                   // 46:21 n 夠大時 f 被 c·g 壓住
+    say('n 夠大時，f 一直被 c·g 壓住', '這就是 formal definition');
   }]);
 
-  // 46:40 證明：limit ⇒ Big-O
+  // 46:56 證明：limit ⇒ Big-O
   FRAG.push(['stklin-lim-proof', '證明：lim f/g ≤ c ⇒ f = O(g)', async (tok) => {
     fresh([0, 4.4, 14.5], [0, 4, 0]);
     const OX = -5.5, OY = 0.3, W = 11, H = 5.6, C = 3, E = 0.5;
     const map = (n, v) => V3(OX + n / 30 * W, OY + Math.min(v / 10, 1.03) * H);
     axes(OX, OY, W, H, 'n', 'f/g');
     const cd = code(['lim f(n)/g(n) = c', '給 ε → 有 n0：n > n0 ⇒ |f/g − c| < ε', 'n > n0 ⇒ f/g < c + ε', '改名：c′ = c + ε，n0′ = n0', 'n ≥ n0′ ⇒ f ≤ c′·g  ∴ f = O(g)'], 1.2, 9.4, 0.5);
-    cd.hl(0);
     const r = (n) => C + 6 / n;
-    say('已知：f/g 的極限是 c', '舉例：f/g = 3 + 6/n → c = 3');
     const ds = [];
-    for (let n = 1; n <= 30; n++) { ds.push(dot(map(n, r(n)), B_, 0.17)); await beat(tok, 60); }
+    await step(tok);                                   // 46:56 兩個 positive function，滿足 limit
+    cd.hl(0);
+    for (let n = 1; n <= 30; n++) { ds.push(dot(map(n, r(n)), B_, 0.17)); await beat(tok, 50); }
     const yc = map(0, C).y;
     hl(OX, W, yc, R_); tag('c = 3', 'ptr alt', OX - 0.7, yc);
-    await beat(tok, 1600);
+    say('已知：兩個正函數，f/g 的極限是 c', '舉例：f/g = 3 + 6/n → c = 3');
+    await step(tok);                                   // 47:10 目標：Big O 的定義
+    const goal = tag('目標：找 c、n0，使 n ≥ n0 時 f ≤ c·g', 'ptr', 0, 6.8);
+    say('要證的是 Big O 的定義', '找得到 c 和 n0');
+    await step(tok);                                   // 47:30 limit 的定義
     cd.hl(1);
     hl(OX, W, map(0, C + E).y, Y_); hl(OX, W, map(0, C - E).y, Y_);
     tag('c ± ε', 'idx', OX + W + 0.5, map(0, C + E).y);
-    say('Limit 定義：給一個 ε 就有 n0', 'ε = 0.5 → n0 = 12（6/n < 0.5 ⇔ n > 12）');
-    await beat(tok, 2600);
+    say('Limit 的定義：有 ε、有 n0', 'n0 之後 f/g 和 c 差不到 ε');
+    await step(tok);                                   // 48:01 給任何 ε 都有 n0
+    say('嚴格說：給任何 ε，都找得到 n0', '');
+    await step(tok);                                   // 48:14 我們只需要一個
     const x0 = map(12, 0).x;
     line(x0, OY, x0, OY + H, 0, Y_); tag('n0 = 12', 'ptr alt', x0, 0, 0.7);
     ds.forEach((d, i) => { if (i + 1 > 12) tint(d, G_); });
+    say('我們只需要一個 ε 和它的 n0', 'ε = 0.5 → n0 = 12');
+    await step(tok);                                   // 48:57 n > n0 時 f/g < c + ε
     cd.hl(2);
     say('只要上半邊：f/g < c + ε', 'n > 12 時 f/g < 3.5');
-    await beat(tok, 2600);
+    await step(tok);                                   // 49:13 重新取名
     cd.hl(3);
-    say('重新取名：c′ = c + ε', 'c′ = 3.5、n0′ = 12（< 放寬成 ≤ 也成立）');
-    await beat(tok, 2600);
-    cd.hl(4);
-    say('符合 Big-O 定義：證完', 'Limit（直覺）⇒ Formal（定義）');
-    await beat(tok, 3000);
+    say('重新取名：c′ = c + ε、n0′ = n0', 'c′ = 3.5、n0′ = 12');
+    await step(tok);                                   // 49:26 < 改成 ≤ 有點 tricky
+    say('嚴格說 < 要改成 ≤', '這裡稍微忽略這個細節');
+    await step(tok);                                   // 49:39 滿足 Big O 定義
+    cd.hl(4); txt(goal, '找到了：c′ = 3.5、n0′ = 12 ✓');
+    say('符合 Big O 的定義：證完', 'Limit（直覺）⇒ Formal（定義）');
+    await step(tok);                                   // 50:15 formal vs intuitive
     cd.hl(-1);
-    say('直覺和定義兩個都要懂', '直覺幫你想像，定義才是真理的來源');
-    await beat(tok, 2600);
+    say('Formal：n ≥ n0 時 f ≤ c·g', 'Intuitive：相除看誰跑得快');
+    await step(tok);                                   // 50:57 intuition 像藝術家的想像
+    tag('Intuition：像建築師腦中的藍圖', 'ptr', -3, 7.6);
+    say('直覺：幫你想像、跟人描述', '');
+    await step(tok);                                   // 51:20 definition 一步一步蓋起來
+    tag('Definition：一磚一瓦蓋起來', 'ptr alt', 3, 7.6);
+    say('定義：從數學出發，一步一步蓋起來', '');
+    await step(tok);                                   // 52:03 兩件事都要知道
+    say('直覺和定義兩個都要懂', '才是紮實的 computer scientist');
   }]);
 
-  // 52:26 Q&A：分塊 array，極限不存在但被常數壓住
+  // 53:09 Q&A：分塊 array，極限不存在但被常數壓住
   FRAG.push(['stklin-chunk-array', '分塊 array：不收斂也能是 O(1)', async (tok) => {
     fresh([0, 6, 13], [0, 1.6, 0]);
-    say('array 化整為零：每 100 筆一小塊', '塊與塊之間像 linked list 串起來');
-    const fills = [1, 1, 1, 0.37];
-    let last = null;
+    await step(tok);                                   // 53:09 書籍用 formal 定義
+    const t1 = tag('書上的定義：n ≥ n0 時 f ≤ c·g', 'ptr', 0, 6.8);
+    say('大部分書不用極限定義 Big O', '用的是 formal definition');
+    await step(tok);                                   // 53:47 limit 是充分條件
+    const t2 = tag('lim f/g ≤ c ⇒ f = O(g)：充分條件', 'ptr alt', 0, 6.1);
+    say('Limit 是 Big O 的 sufficient condition', '它對，Big O 就對');
+    await step(tok);                                   // 53:56 不是必要條件
+    const t3 = tag('f = O(g) ⇏ 極限存在（例：|sin n|）', 'idx', 0, 5.4);
+    say('但不是 necessary condition', 'Big O 成立時，極限不一定存在');
+    await step(tok);                                   // 55:08 有沒有 sin 的例子？
+    say('同學問：一般演算法會出現這種', '跳來跳去的函數嗎？');
+    await step(tok);                                   // 55:59 array 每 100 筆一小段
+    [t1, t2, t3].forEach(kill);
+    const fills = [1, 1, 1, 0.37], blocks = [];
     for (let k = 0; k < 4; k++) {
       const x = -5.1 + k * 3.4;
       const shell = ghostBox('#c9b48e', 2.4, 0.8, 1.2); shell.position.set(x, 0.4, 0);
       const fl = lab.box(B_, [2.4, 0.6, 1.0]); fl.scale.x = fills[k]; fl.position.set(x - 1.2 + 1.2 * fills[k], 0.3, 0); lab.world.add(fl);
-      tag('第 ' + (k + 1) + ' 塊', 'idx', x, 0, 1.1);
-      if (k) arrow(V3(x - 3.4 + 1.25, 0.4, 0), V3(x - 1.25, 0.4, 0));
-      last = { fl, x };
-      await beat(tok, 700);
+      tag('第 ' + (k + 1) + ' 塊（100 筆）', 'idx', x, 0, 1.1);
+      blocks.push({ fl, x });
+      await beat(tok, 350);
     }
+    say('array 化整為零：每 100 筆一小塊', '');
+    await step(tok);                                   // 56:30 用類似 linked list 串起來
+    for (let k = 1; k < 4; k++) arrow(V3(blocks[k - 1].x + 1.25, 0.4, 0), V3(blocks[k].x - 1.25, 0.4, 0));
+    say('塊與塊之間，用類似 linked list 串起來', '');
+    await step(tok);                                   // 56:44 像 linked list 一樣跳
+    const hop = tag('▼', 'ptr alt', blocks[0].x, 1.4);
+    for (let k = 1; k < 4; k++) { await anim(tok, 400, (t) => { hop.position.x = blocks[k - 1].x + (blocks[k].x - blocks[k - 1].x) * t; }); }
+    say('一個成分：在區塊之間跳', '像 linked list');
+    await step(tok);                                   // 56:50 塊裡像 array，看有多滿
+    const last = blocks[3];
     const meterS = ghostBox(R_, 6, 0.5, 0.5); meterS.position.set(0, 3.2, 0);
     const meter = lab.box(R_, [6, 0.4, 0.4]); meter.position.set(0, 3.2, 0); lab.world.add(meter);
+    meter.scale.x = 0.37; meter.position.x = -3 + 3 * 0.37;
     tag('塊內成本', 'ptr', -4.2, 3.2); tag('上限 100', 'ptr alt', 3.6, 3.9);
-    const mv = tag('', 'idx', 0, 3.9);
-    say('塊內操作的成本：看這塊多滿', '在 0 ~ 100 之間跳來跳去');
-    for (const v of [37, 80, 5, 99, 52, 100, 12, 64]) {
+    const mv = tag('這次 = 37', 'idx', 0, 3.9);
+    say('另一個成分：在塊裡像 array', '花的力氣跟這塊有多滿有關');
+    await step(tok);                                   // 57:07 小小會跳動的常數
+    for (const v of [80, 5, 99, 52, 100, 12]) {
       const p = Math.max(v, 2) / 100;
       last.fl.scale.x = p; last.fl.position.x = last.x - 1.2 + 1.2 * p;
       meter.scale.x = p; meter.position.x = -3 + 3 * p;
       txt(mv, '這次 = ' + v);
-      await beat(tok, 650);
+      await beat(tok, 380);
     }
-    say('n 再大也不收斂，但永遠 ≤ 100', 'f(n) ≤ 100 → f = O(1)；極限卻不存在');
-    await beat(tok, 3000);
-    say('Limit 是充分條件，不是必要條件', 'limit ≤ c ⇒ O；O 不保證極限存在');
-    await beat(tok, 2800);
-    say('證明兩條路', '證 limit 存在且 ≤ c｜或直接找出 c、n0');
-    await beat(tok, 2800);
+    say('像 sin、cos 一樣：小小的、會跳動', '');
+    await step(tok);                                   // 57:21 當成 constant，O(1)
+    tag('O(1)', 'ptr alt', 0, 4.7);
+    say('我們直接把它當成 constant', 'O(1)');
+    await step(tok);                                   // 57:33 0~100 跳，不收斂但被壓住
+    line(-3, 3.65, 3, 3.65, 0, R_);
+    say('在 0 到 100 之間跳，一點也不收斂', '但永遠 ≤ 100 → 被常數壓著');
+    await step(tok);                                   // 57:56 證了 limit，formal 一定成立嗎
+    say('證得出 limit 版本，formal 就一定成立嗎？', '');
+    await step(tok);                                   // 58:27 兩條路
+    tag('路 ①：證 limit 存在且 ≤ c', 'ptr', -3.2, 5.6); tag('路 ②：直接找出 c 和 n0', 'ptr alt', 3.2, 5.6);
+    say('成立！證明有兩條路', '證 limit 存在且 ≤ c｜或直接找出 c、n0');
+    await step(tok);                                   // 58:57 正函數拆不拆絕對值都一樣
+    say('f、g 都是正函數時', '拆不拆絕對值沒差；麻煩的是負函數');
   }]);
 
-  // 73:52 Ω 與 Θ
+  // 74:10 Ω 與 Θ
   FRAG.push(['stklin-omega-theta', 'Big Omega 與 Big Theta', async (tok) => {
     fresh([0, 4.2, 14], [0, 3.4, 0]);
     const OX = -5.5, OY = 0.3, W = 11, H = 6.4;
@@ -13728,159 +14719,245 @@ FRAG.push(['sqpeng-multistack', 'Multiple stacks 與 Stack ≠ Array', async (to
     axes(OX, OY, W, H, 'n', '');
     const f = (n) => n * (1.2 + 0.35 * Math.sin(n * 1.4));
     const fl = plot(f, 0, 12, map, B_, 160), up = plot((n) => 2 * n, 0, 12, map, R_), lo = plot((n) => 0.5 * n, 0, 12, map, G_);
-    await reveal(tok, fl, 1200); tagV('f(n)', 'ptr', map(12, f(12)), 0.6, 0);
-    say('Big O：上限，像 ≤', 'f(n) ≤ c₂·g(n) → f = O(g)');
-    await reveal(tok, up, 900); tagV('c₂·g', 'ptr alt', map(12, 24), -0.4, 0.3);
-    await beat(tok, 1800);
-    say('Big Omega：下限，像 ≥', 'f(n) ≥ c₁·g(n) → f = Ω(g)');
-    await reveal(tok, lo, 900); tagV('c₁·g', 'ptr', map(12, 6), 0.6, 0);
-    await beat(tok, 1800);
-    say('又 O 又 Ω → Big Theta', 'f = Θ(g)：差不多（c₁、c₂ 都要 > 0）');
-    await beat(tok, 2600);
+    await step(tok);                                   // 74:10 formal 是真理的來源
+    tag('Formal 定義：真理的來源　Intuitive：幫助想像', 'idx', 0, 7.5);
+    say('Formal 定義是一切真理的來源', '直覺幫我們想像 well-behaved 的函數');
+    await step(tok);                                   // 74:48 Big Omega
+    say('另一個重要成員', 'Big Omega（Ω）');
+    await step(tok);                                   // 74:57 Big O 是上限
+    await reveal(tok, fl, 1000); tagV('f(n)', 'ptr', map(12, f(12)), 0.6, 0);
+    await reveal(tok, up, 800); tagV('c₂·g：O 上限', 'ptr alt', map(12, 24), -0.6, 0.3);
+    say('Big O 是上限，像 ≤', 'f(n) ≤ c·g(n)');
+    await step(tok);                                   // 75:22 Omega 是下限
+    await reveal(tok, lo, 800); tagV('c₁·g：Ω 下限', 'ptr', map(12, 6), 0.9, 0);
+    say('Big Omega 是下限，像 ≥', '定義一模一樣，只差不等號方向');
+    await step(tok);                                   // 75:48 又 O 又 Ω → Θ
+    tag('又 O 又 Ω → Θ（差不多）', 'ptr alt', 0, 6.9);
+    say('又有上限又有下限', 'Big Theta：差不多');
+    await step(tok);                                   // 76:15 c 要大於 0
+    say('小細節：這些 c 都要 > 0', '');
+    await step(tok);                                   // 76:24 f/g 收斂到 8
     fresh([0, 4.2, 14], [0, 3.4, 0]);
     const map2 = (n, v) => V3(OX + n / 40 * W, OY + Math.max(0, Math.min(v / 14, 1.03)) * H);
     axes(OX, OY, W, H, 'n', 'f/g');
     const y8 = map2(0, 8).y;
     hl(OX, W, y8, R_); tag('8', 'ptr alt', OX - 0.5, y8);
-    hl(OX, W, map2(0, 9).y, Y_); hl(OX, W, map2(0, 7).y, Y_);
-    tag('8 + ε', 'idx', OX + W + 0.6, map2(0, 9).y); tag('8 − ε', 'idx', OX + W + 0.6, map2(0, 7).y);
     const r = (n) => 8 + 14 * Math.cos(n) / n;
     const ds = [];
-    say('f/g 收斂到 8（例：ε = 1）', 'n 夠大時：8 − ε < f/g < 8 + ε');
-    for (let n = 1; n <= 40; n++) { ds.push(dot(map2(n, r(n)), B_, 0.16)); await beat(tok, 70); }
-    await beat(tok, 1200);
+    for (let n = 1; n <= 40; n++) { ds.push(dot(map2(n, r(n)), B_, 0.16)); await beat(tok, 40); }
+    say('假如 f/g 最後收斂到 8', '');
+    await step(tok);                                   // 76:36 夾在 8 ± ε
+    hl(OX, W, map2(0, 9).y, Y_); hl(OX, W, map2(0, 7).y, Y_);
+    tag('8 + ε', 'idx', OX + W + 0.6, map2(0, 9).y); tag('8 − ε', 'idx', OX + W + 0.6, map2(0, 7).y);
     ds.forEach((d, i) => { if (i + 1 > 14) tint(d, G_); });
-    say('上面那條 → O、下面那條 → Ω', '兩邊都成立 → f = Θ(g)');
-    await beat(tok, 2800);
-    say('實務上 Big O 最常用', '大約八成；Ω、Θ 合起來一成多');
-    await beat(tok, 2600);
+    say('n 夠大時，f/g 在 8 − ε 和 8 + ε 之間', '');
+    await step(tok);                                   // 76:56 上面 O、下面 Ω
+    tag('上面 → O', 'ptr alt', 3.5, map2(0, 9).y + 0.5); tag('下面 → Ω', 'ptr', 3.5, map2(0, 7).y - 0.5);
+    say('上面那條符合 O、下面那條符合 Ω', '兩邊都成立 → Θ');
+    await step(tok);                                   // 77:10 收斂到常數 → 差不多
+    say('相除收斂到一個常數', '常數又不算 → f 和 g 差不多：Θ');
+    await step(tok);                                   // 77:40 Big O 八成
+    tag('實務上：Big O 約八成，Ω、Θ 合起來一成多', 'ptr', 0, 7.5);
+    say('實務上 Big O 最常用', '大一先搞懂 Big O 最重要');
   }]);
 
-  // 78:18 七個常用函數
+  // 78:28 七個常用函數
   FRAG.push(['stklin-seven-funcs', '七個常用函數與 log 的底', async (tok) => {
     fresh([0, 4.2, 14.5], [0, 3.2, 0]);
     const SEV = [['1', 1, '常數'], ['log n', 4, 'logarithmic'], ['n', 16, 'linear'], ['n log n', 64, ''], ['n²', 256, 'square'], ['n³', 4096, 'cubic'], ['2ⁿ', 65536, 'exponential']];
-    say('課本的七個常用函數', '以 n = 16 為例（高度是 log 尺度）');
-    await beat(tok, 2000);
     const bars = [];
-    for (let k = 0; k < SEV.length; k++) {
-      const [nm, v, d] = SEV[k], x = -6 + 2 * k, h = 0.4 + Math.log2(v) * 0.38;
+    tag('以 n = 16 為例（高度是 log 尺度）', 'idx', 0, 7.6);
+    const show = async (k) => {
+      const [nm, v] = SEV[k], x = -6 + 2 * k, h = 0.4 + Math.log2(v) * 0.38;
       tag(nm, 'ptr', x, 0, 1.3);
-      const b = bar(colorFor(k), 1.2, 1.2, x); bars.push(b);
-      say(nm + (d ? '：' + d : ''), 'n = 16 → ' + v.toLocaleString());
+      const b = bar(colorFor(k), 1.2, 1.2, x); bars[k] = b;
       await growBar(tok, b, h, 500);
       tag(v.toLocaleString(), 'idx', x, h + 0.4);
-      await beat(tok, 700);
-    }
-    glow(bars[1], GOLD); glow(bars[3], GOLD);
-    say('log n 夾在 1 和 n 中間', 'n log n 夾在 n 和 n² 中間');
-    await beat(tok, 2800);
+    };
+    await step(tok);                                   // 78:28 七個常用函數
+    say('課本的七個常用函數', '這學期幾乎都會用到');
+    await step(tok);                                   // 78:55 1：常數
+    await show(0);
+    say('1：被某個常數壓住', '常數函數');
+    await step(tok);                                   // 79:22 寫 2、5、1126 也行
+    say('寫 2、5、1126 也可以', '大家習慣寫 1');
+    await step(tok);                                   // 79:44 增加 1 漲一點：linear
+    await show(2);
+    say('n：linear（線性）', '資料多 1，就漲一點');
+    await step(tok);                                   // 79:52 square、cubic
+    await show(4); await show(5);
+    say('n²：square　n³：cubic', '');
+    await step(tok);                                   // 79:59 polynomial；三次方跑不動
+    glow(bars[4], RED); glow(bars[5], RED);
+    say('多項式成長', '三次方、甚至二次方，資料一大就不一定跑得動');
+    await step(tok);                                   // 80:27 log n
+    glow(bars[4], null); glow(bars[5], null);
+    await show(1);
+    say('log n：還會長，但長得比 n 慢', '');
+    await step(tok);                                   // 81:13 log 以 10 還是 2 為底？
+    tag('log₁₀？log₂？', 'ptr alt', -4, 5.8);
+    say('log 的底是 10 還是 2？', '不太重要');
+    await step(tok);                                   // 81:43 換底只差一個常數
+    tag('log₂ n = log₁₀ n ÷ log₁₀ 2 ≈ 3.32·log₁₀ n', 'ptr', -1.6, 6.6);
+    say('換底只差一個常數倍', '常數吸收進 c → 底不重要');
+    await step(tok);                                   // 82:33 log n 介於 1 和 n
+    glow(bars[1], GOLD);
+    say('log n 夾在 1 和 n 中間', '');
+    await step(tok);                                   // 82:47 n log n 介於 n 和 n²
+    glow(bars[1], null);
+    await show(3); glow(bars[3], GOLD);
+    say('n log n 夾在 n 和 n² 中間', '');
+    await step(tok);                                   // 83:04 exponential 2ⁿ
     glow(bars[3], null);
-    say('log 的底不重要', 'log₂ n = log₁₀ n ÷ log₁₀ 2 ≈ 3.32·log₁₀ n');
-    await beat(tok, 3000);
-    glow(bars[1], null); glow(bars[6], RED);
-    tag('5ⁿ / 2ⁿ = 2.5ⁿ → ∞', 'ptr alt', 4.4, 7.4);
-    say('但指數的底不能隨便換！', '5ⁿ / 2ⁿ = 2.5ⁿ 沒有上限 → 5ⁿ ≠ O(2ⁿ)');
-    await beat(tok, 3400);
+    await show(6);
+    say('長得很快的：exponential 2ⁿ', '');
+    await step(tok);                                   // 83:22 老師：5ⁿ、1126ⁿ 也能換底吸收？
+    glow(bars[6], RED);
+    tag('更正：5ⁿ / 2ⁿ = 2.5ⁿ → ∞，5ⁿ ≠ O(2ⁿ)', 'ptr alt', 3.6, 7.0);
+    say('老師說指數也能換底吸收——這裡要小心！', '指數的底不能隨便換，只有 log 的底可以');
+    await step(tok);                                   // 83:50 各自的名字
+    say('七個函數各有名字', 'logarithmic、linear、exponential…');
   }]);
 
-  // 84:17 sequential search
+  // 84:38 sequential search
   FRAG.push(['stklin-seq-search', 'Sequential search：最差 Θ(n)', async (tok) => {
     fresh([0, 6, 12], [0, 0.8, 0]);
     const A = [7, 3, 9, 1, 6, 4, 8, 2], X = (i) => -5.25 + i * 1.5;
     const cs = A.map((v, i) => { tag('[' + i + ']', 'idx', X(i), 0, 1.1); return cube(v, B_, [1.1, 0.7, 1.1], X(i), 0.35, 0); });
     const cur = tag('▼ i', 'ptr alt', X(0), 1.5);
     const cnt = tag('', 'ptr', 0, 3.2);
-    say('Sequential search：從頭找到尾', '找到回傳 index；找不到回傳 −1');
-    await beat(tok, 2200);
+    await step(tok);                                   // 84:38 從頭找到尾
+    say('Sequential search：從頭找到尾', '找到就傳回；找不到就說找不到');
+    await step(tok);                                   // 84:50 最佳：第一輪就找到
     glow(cs[0], GREEN); txt(cnt, '找 7：比較 1 次');
-    say('最佳：第一輪就找到', '常數時間');
-    await beat(tok, 2600);
+    say('最佳：第一輪就找到', '只花常數時間');
+    await step(tok);                                   // 85:12 最差：整個 array 跑完
     glow(cs[0], null);
     for (let i = 0; i < A.length; i++) {
       cur.position.x = X(i); glow(cs[i], GOLD); txt(cnt, '找 5：比較 ' + (i + 1) + ' 次');
-      say('最差：要找 5，一個一個比', 'A[' + i + '] = ' + A[i] + ' ≠ 5');
-      await beat(tok, 550);
+      await beat(tok, 260);
       glow(cs[i], null); tint(cs[i], GRAY);
     }
-    say('整個 array 跑完：找不到', 'return −1；比較了 n = 8 次');
-    await beat(tok, 2400);
-    say('最差要花「約 n」的時間', '例如 5n + 7 步 → Θ(n)：有上限也有下限');
-    await beat(tok, 2800);
-    say('O(n)：linear complexity', '力氣跟 array 大小 n 成正比');
-    await beat(tok, 2600);
+    say('最差：整個 array 跑完才說找不到', '比較了 n = 8 次');
+    await step(tok);                                   // 85:20 大概 n 的時間
+    say('最差大概要花 n 的時間', '');
+    await step(tok);                                   // 85:27 Θ：有上限有下限，5n + 7
+    tag('最差 ≈ 5n + 7 步 → Θ(n)', 'ptr alt', 0, 4.0);
+    say('例如 5n + 7 步', '有上限也有下限 → Θ(n)');
+    await step(tok);                                   // 85:50 O(n) algorithm
+    tag('O(n) algorithm', 'ptr', 0, 4.8);
+    say('叫它 O(n) 的 algorithm', '');
+    await step(tok);                                   // 86:03 linear complexity
+    say('也叫 linear complexity algorithm', '力氣跟 array 大小 n 成正比');
   }]);
 
-  // 86:15 binary search
+  // 86:18 binary search
   FRAG.push(['stklin-binsearch', 'Binary search：每次砍一半 → log n', async (tok) => {
     fresh([0, 6, 12.5], [0, 1, 0]);
     const X = (i) => -6 + i * 0.8;
     const cs = []; for (let i = 0; i < 16; i++) cs.push(cube((i + 1) * 3, B_, [0.62, 0.5, 0.62], X(i), 0.25, 0));
     const rd = tag('剩 16 個', 'ptr', 0, 3.4), chain = tag('16', 'ptr alt', 0, 4.4);
-    say('Binary search：array 已經排好', '要找 50（比全部都大 → 最壞情況）');
-    await beat(tok, 2400);
     let lo = 0, hi = 15, seq = '16';
-    while (lo <= hi) {
+    const round = async () => {
       const mid = (lo + hi) >> 1;
-      glow(cs[mid], GOLD);
-      say('看中間 A[' + mid + '] = ' + (mid + 1) * 3, (mid + 1) * 3 + ' < 50 → 左半邊（含中間）全丟掉');
-      await beat(tok, 1100);
+      glow(cs[mid], GOLD); await beat(tok, 300);
       for (let i = lo; i <= mid; i++) { glow(cs[i], null); tint(cs[i], GRAY); }
       lo = mid + 1;
       const left = hi - lo + 1;
-      txt(rd, '剩 ' + left + ' 個');
-      if (left) { seq += ' → ' + left; txt(chain, seq); }
-      await beat(tok, 700);
-    }
-    say('16 → 8 → 4 → 2 → 1：4 個箭頭', 'log₂ 16 = 4；保守說每輪至少砍一半');
-    await beat(tok, 2800);
-    say('最差約 log n 輪', '每輪的 if、比較只是常數；底數 2 也不寫');
-    await beat(tok, 2600);
+      txt(rd, '剩 ' + left + ' 個'); if (left) { seq += ' → ' + left; txt(chain, seq); }
+      await beat(tok, 300);
+    };
+    await step(tok);                                   // 86:26 最佳：第一輪就找到
+    glow(cs[7], GREEN);
+    say('Binary search 最佳：第一輪就找到', '運氣好而已');
+    await step(tok);                                   // 86:38 在乎的是最壞
+    glow(cs[7], null);
+    say('我們在乎的是最壞情況', '例：要找 50（比全部都大）');
+    await step(tok);                                   // 86:51 只看中心，偷吃步
+    glow(cs[7], GOLD);
+    say('每次只看中間那一個', 'A[7] = 24 < 50');
+    await step(tok);                                   // 87:07 這一半先丟掉
+    await round();
+    say('左半邊都不是要的：先丟掉', '每次至少丟掉一半');
+    await step(tok);                                   // 87:21 8 → 4 → 2 → 1
+    await round(); await round(); await round();
+    say('第 3 輪剩 4、第 4 輪剩 2、最後剩 1', '');
+    await step(tok);                                   // 87:29 其實更 aggressive
+    say('其實每輪還多丟掉中間那一個', '保守一點：說它至少砍一半');
+    await step(tok);                                   // 87:50 中間有幾個箭頭
+    say('16 → 8 → 4 → 2 → 1', '中間有 4 個箭頭');
+    await step(tok);                                   // 88:07 取 log₂
+    tag('log₂ 16 = 4', 'ptr alt', 0, 5.3);
+    say('取 log₂ 就知道砍幾輪', '最差大約 log n 輪');
+    await step(tok);                                   // 88:28 if、比較只是常數
+    say('每輪裡的 if、比較', '最多常數那麼多個，不重要');
+    await step(tok);                                   // 88:40 連 2 也不寫
+    tag('O(log n)', 'ptr', 0, 6.1);
+    say('連底數 2 也不寫', '差不多 log n 輪');
+    await step(tok);                                   // 89:03 第一個 log n 的 algorithm
     fresh([0, 5, 13], [0, 2.8, 0]);
-    tag('n = 1000（log₂ 1000 ≈ 10）', 'ptr', 0, 6.8);
     tag('Sequential', 'ptr', -2.2, 0, 1.4); tag('Binary', 'ptr alt', 2.2, 0, 1.4);
     const bs = bar(B_, 1.6, 1.6, -2.2), bb = bar(O_, 1.6, 1.6, 2.2);
-    say('Sequential：1000 輪 × 10 個指令', '= 10,000 個指令');
+    say('第一個 log n 的 algorithm', 'sequential：100 個要 100 的力氣');
+    await step(tok);                                   // 89:18 n = 1000：log ≈ 10
+    tag('n = 1000（2¹⁰ = 1024 → log₂ 1000 ≈ 10）', 'ptr', 0, 6.8);
+    say('n = 1000：binary 約 10 輪', 'sequential 要 1000 輪');
+    await step(tok);                                   // 89:44 sequential：1000 × 10
     await growBar(tok, bs, 5.5, 900); tag('10,000', 'idx', -2.2, 5.9);
-    await beat(tok, 1400);
-    say('Binary：10 輪 × 50 個指令', '= 500 個指令');
+    say('Sequential：每輪算 10 個指令', '1000 × 10 = 1 萬');
+    await step(tok);                                   // 89:51 binary：10 × 50
     await growBar(tok, bb, 0.28, 500); tag('500', 'idx', 2.2, 0.7);
-    await beat(tok, 1800);
-    say('資料夠大，binary search 一定贏', 'worst-case analysis：估計資料變大要跑多久');
-    await beat(tok, 3000);
+    say('Binary：每輪算 50 個指令', '10 × 50 = 500');
+    await step(tok);                                   // 90:28 資料夠大 binary 一定贏
+    glow(bb, GREEN);
+    say('資料夠大時，binary search 一定贏', '每輪多花一點力氣也沒關係');
+    await step(tok);                                   // 90:39 worst-case analysis
+    tag('Worst-case analysis', 'ptr alt', 0, 7.6);
+    say('Big O ＝ 最差情況分析', '告訴我們資料量大時大概要跑多久');
+    await step(tok);                                   // 91:13 作業 2：小資料 vs 中資料
+    say('作業 2：中資料是小資料的 10 倍', '能估出慢幾倍，就知道該怎麼測');
   }]);
 
-  // 92:21 沒排序：直接找 vs 排序再找
+  // 92:45 沒排序：直接找 vs 排序再找
   FRAG.push(['stklin-sort-or-not', '直接找，還是先排序再找？', async (tok) => {
     fresh([0, 6, 13], [0, 1.2, 0]);
     const U = [5, 2, 8, 1, 9, 3], X = (i) => -3.75 + i * 1.5;
-    let cs = U.map((v, i) => { tag('[' + i + ']', 'idx', X(i), 0, 1.1); return cube(v, colorFor(v), [1.1, 0.7, 1.1], X(i), 0.35, 0); });
-    const m1 = tag('方法一：sequential search ≈ n', 'ptr', -2.5, 3.6), m2 = tag('', 'ptr alt', 2.5, 3.0);
-    say('array 還沒排好，要找東西？', '兩個方法');
-    await beat(tok, 2000);
-    say('方法一：直接 sequential search', '約 n 的時間');
-    for (const c of cs) { glow(c, GOLD); await beat(tok, 250); glow(c, null); }
-    await beat(tok, 800);
-    txt(m2, '方法二：selection sort + binary search');
-    say('方法二：先 selection sort', '每一輪 = 一次 getMinIndex（≈ n）');
+    const cs = U.map((v, i) => { tag('[' + i + ']', 'idx', X(i), 0, 1.1); return cube(v, colorFor(v), [1.1, 0.7, 1.1], X(i), 0.35, 0); });
+    const m1 = tag('', 'ptr', -2.5, 3.6), m2 = tag('', 'ptr alt', 2.5, 3.0);
+    await step(tok);                                   // 92:45 還沒排好
+    say('array 還沒排好，要找東西？', '');
+    await step(tok);                                   // 92:52 方法一：直接 sequential search
+    txt(m1, '方法一：直接 sequential search');
+    for (const c of cs) { glow(c, GOLD); await beat(tok, 180); glow(c, null); }
+    say('方法一：排都不排，直接找', '');
+    await step(tok);                                   // 92:59 方法二：先排序再 binary search
+    txt(m2, '方法二：先排序，再 binary search');
+    say('方法二：先排一排，再 binary search', '');
+    await step(tok);                                   // 93:22 sequential ≈ n
+    txt(m1, '方法一：sequential search ≈ n');
+    say('方法一最多約 n 的時間', '');
+    await step(tok);                                   // 93:35 binary ≈ log n；排序呢？
+    txt(m2, '方法二：排序 ? + binary search log n');
+    say('binary search 要 log n', '排序要多少？');
+    await step(tok);                                   // 93:48 selection sort：每次選一個（getMinIndex）
     const a = [...U];
     for (let i = 0; i < a.length; i++) {
-      let m = i;
-      for (let j = i; j < a.length; j++) { glow(cs[j], GOLD); if (a[j] < a[m]) m = j; await beat(tok, 120); glow(cs[j], null); }
-      if (m !== i) {
-        move(cs[i], X(m), 0.35); move(cs[m], X(i), 0.35);
-        [a[i], a[m]] = [a[m], a[i]]; [cs[i], cs[m]] = [cs[m], cs[i]];
-      }
-      glow(cs[i], GREEN);
-      await beat(tok, 400);
+      let m = i; for (let j = i; j < a.length; j++) if (a[j] < a[m]) m = j;
+      glow(cs[m], GOLD);
+      if (m !== i) { move(cs[i], X(m), 0.35); move(cs[m], X(i), 0.35); [a[i], a[m]] = [a[m], a[i]]; [cs[i], cs[m]] = [cs[m], cs[i]]; }
+      await beat(tok, 350);
+      glow(cs[i], null); tint(cs[i], G_);
     }
-    say('n 輪 × 每輪約 n', 'selection sort ≈ n²');
-    await beat(tok, 2400);
-    say('排好之後再 binary search', 'log n');
-    await beat(tok, 2000);
+    say('Selection sort：每次選一個最小的出來', '選的過程就是 getMinIndex');
+    await step(tok);                                   // 93:58 跑 n 次，每次 sequential search
+    say('跑 n 次，每次做一次 sequential search', '');
+    await step(tok);                                   // 94:04 大概 n²
     txt(m2, '方法二 ≈ n² + log n');
-    say('哪個快？要把 Big-O 組合起來', 'n  vs  n² + log n');
-    await beat(tok, 3000);
+    say('n 次 × 每次約 n', '大概 n²');
+    await step(tok);                                   // 94:10 n vs n² 與 log n 怎麼比
+    say('方法一 n，方法二 n² 與 log n', 'n 夠大時誰快？');
+    await step(tok);                                   // 94:37 要把 Big O 組合起來
+    say('需要把好幾個 Big O 組合起來', '這是下一段的工具');
   }]);
 
   // 99:54 Q&A：mid 的 overflow
@@ -13889,219 +14966,348 @@ FRAG.push(['sqpeng-multistack', 'Multiple stacks 與 Stack ≠ Array', async (to
     const cd = code(['mid = (left + right) / 2;', 'mid = left + (right - left) / 2;'], 0, 6.6, 0.6);
     const X0 = -5, X1 = 1.5, X = (p) => X0 + (X1 - X0) * p;
     line(X0, 0.05, 6.5, 0.05, 0, '#c9b48e');
-    tag('0', 'idx', X0, 0, 0.8); tag('INT_MAX', 'ptr alt', X1, 0, 0.8); tag('½', 'idx', X(0.5), 0, 0.8);
+    tag('0', 'idx', X0, 0, 0.8); tag('INT_MAX', 'ptr alt', X1, 0, 0.8);
     line(X1, 0, X1, 3, 0, R_);
+    await step(tok);                                   // 99:57 兩個加起來會 overflow
+    cd.hl(0);
+    say('同學提醒：left + right 可能 overflow', '寫程式要小心');
+    await step(tok);                                   // 100:18 know your program
+    tag('know your program', 'ptr', -3.2, 4.2);
+    say('Know your program', '知道程式在什麼環境下執行');
+    await step(tok);                                   // 100:26 left、right 都超過一半
+    tag('½', 'idx', X(0.5), 0, 0.8);
     tag('left', 'ptr', X(0.6), 1.0); tag('right', 'ptr', X(0.8), 1.6);
     cube('', B_, [0.15, 0.6, 0.6], X(0.6), 0.3, 0); cube('', B_, [0.15, 0.6, 0.6], X(0.8), 0.3, 0);
-    cd.hl(0);
-    say('left、right 都超過整數範圍一半', '同學提醒：left + right 會 overflow');
-    await beat(tok, 3400);
+    say('left、right 都大到超過整數範圍一半', '');
+    await step(tok);                                   // 100:33 加起來才 overflow
     const sum = lab.box(R_, [1, 0.4, 0.5]); sum.position.set(X0, 2.3, 0); lab.world.add(sum);
     await anim(tok, 1200, (t) => { const w = (X(1.4) - X0) * t; sum.scale.x = Math.max(0.01, w); sum.position.x = X0 + w / 2; });
-    tag('left + right 超過 INT_MAX！', 'ptr alt', X(1.4) - 0.4, 2.9);
-    say('相加先爆掉，再除以 2 也救不回來', 'overflow → mid 變成錯的（甚至負數）');
-    await beat(tok, 3000);
+    tag('left + right > INT_MAX！', 'ptr alt', X(1.4) - 0.4, 2.9);
+    say('這時相加才會爆掉', '再除以 2 也救不回來');
+    await step(tok);                                   // 100:55 總要做一些假設
+    say('寫程式總要做一些假設', '在假設之下，不見得會 overflow');
+    await step(tok);                                   // 101:17 資料、index 很大時的替代寫法
     cd.hl(1); kill(sum);
     const d = lab.box(G_, [1, 0.4, 0.5]); d.position.set(X(0.6), 2.3, 0); lab.world.add(d);
-    await anim(tok, 800, (t) => { const w = (X(0.8) - X(0.6)) * (1 - 0.5 * t); d.scale.x = w; d.position.x = X(0.6) + w / 2; });
+    await anim(tok, 800, (t) => { const w = (X(0.8) - X(0.6)) * (1 - 0.5 * t); d.scale.x = Math.max(0.01, w); d.position.x = X(0.6) + w / 2; });
     tag('left + (right − left)/2：不會超過 right', 'ptr', X(0.7), 3.0);
-    say('改寫：left + (right − left) / 2', '中間值都不會超過 right');
-    await beat(tok, 2600);
-    say('know your program', '資料或 index 不大時兩種都 OK；很大時用改寫版');
-    await beat(tok, 3000);
+    say('資料或 index 非常大時', '改寫成 left + (right − left) / 2');
   }]);
 
-  // 111:27 和的規則、遞移律
+  // 111:49 和的規則、遞移律
   FRAG.push(['stklin-sum-rule', '從定義證明：和的規則與遞移律', async (tok) => {
     fresh([0, 5, 14], [0, 3, 0]);
     let cd = code(['f₁ ≤ c₁·g₂   (n ≥ n₁)', 'f₂ ≤ c₂·g₂   (n ≥ n₂)', 'n ≥ max(n₁, n₂)：兩式都成立', 'f₁ + f₂ ≤ (c₁ + c₂)·g₂', '∴ f₁ + f₂ = O(g₂)'], -2.6, 7.4, 0.5);
     const XN = (n) => -6 + n / 8000 * 12;
     line(-6, 0.05, 6, 0.05, 0, '#6e5f49'); tag('n', 'idx', 6.5, 0);
+    let b1, b2, l1, l2;
+    await step(tok);                                   // 111:49 從定義證明定理
+    say('從定義出發，證明幾個定理', '之後操作會比較方便');
+    await step(tok);                                   // 111:57 兩段程式各有 Big O，怎麼合
+    say('兩段程式各有自己的 Big O', '合起來是什麼？');
+    await step(tok);                                   // 112:27 f₁ ≤ g₂、f₂ ≤ g₂
+    say('假設 f₁ = O(g₂)、f₂ = O(g₂)', '都被 g₂ 壓著走');
+    await step(tok);                                   // 112:50 n₁、c₁
     cd.hl(0);
-    const b1 = lab.box(B_, [XN(8000) - XN(1126), 0.2, 0.6]); b1.position.set((XN(1126) + 6) / 2, 0.1, -0.5); lab.world.add(b1);
-    tag('n₁ = 1126', 'ptr', XN(1126), 0.6, -0.5);
-    say('f₁ = O(g₂)：n ≥ n₁ 後被 c₁·g₂ 壓住', '寫下定義就先賺兩行');
-    await beat(tok, 2400);
+    b1 = lab.box(B_, [XN(8000) - XN(1126), 0.2, 0.6]); b1.position.set((XN(1126) + 6) / 2, 0.1, -0.5); lab.world.add(b1);
+    l1 = tag('n₁', 'ptr', XN(1126), 0.6, -0.5);
+    say('定義寫下來：n ≥ n₁ 時 f₁ ≤ c₁·g₂', '');
+    await step(tok);                                   // 113:00 n₂、c₂
     cd.hl(1);
-    const b2 = lab.box(O_, [XN(8000) - XN(5566), 0.2, 0.6]); b2.position.set((XN(5566) + 6) / 2, 0.1, 0.5); lab.world.add(b2);
-    tag('n₂ = 5566', 'ptr alt', XN(5566), 0.6, 0.9);
-    say('f₂ = O(g₂)：n ≥ n₂ 後被 c₂·g₂ 壓住', '');
-    await beat(tok, 2200);
+    b2 = lab.box(O_, [XN(8000) - XN(5566), 0.2, 0.6]); b2.position.set((XN(5566) + 6) / 2, 0.1, 0.5); lab.world.add(b2);
+    l2 = tag('n₂', 'ptr alt', XN(5566), 0.6, 0.9);
+    say('n ≥ n₂ 時 f₂ ≤ c₂·g₂', '寫下定義就先賺兩行');
+    await step(tok);                                   // 113:20 n₁ = 1126、n₂ = 5566
+    txt(l1, 'n₁ = 1126'); txt(l2, 'n₂ = 5566');
+    say('要兩個都成立：n 要比兩個都大', '例：n₁ = 1126、n₂ = 5566');
+    await step(tok);                                   // 113:28 取比較大的
     cd.hl(2); glow(b2, GREEN);
-    say('兩個都要成立：取比較大的', "n₀' = max(1126, 5566) = 5566");
-    await beat(tok, 2600);
+    say('取比較大的那個', "n₀' = max(1126, 5566) = 5566");
+    await step(tok);                                   // 113:37 兩式加起來
     cd.hl(3);
     const f1 = cube('f₁', B_, [1.2, 1.2, 1.2], -4.2, 2.4, 0), f2 = cube('f₂', O_, [1.2, 0.9, 1.2], -2.4, 2.25, 0);
-    say('兩式加起來', "f₁ + f₂ ≤ (c₁ + c₂)·g₂ → c' = c₁ + c₂");
-    await beat(tok, 1000);
     move(f2, -4.2, 3.45, 0);
-    await beat(tok, 1600);
+    await beat(tok, 900);
+    say('兩式加起來', 'f₁ + f₂ ≤ (c₁ + c₂)·g₂');
+    await step(tok);                                   // 113:48 新的 n₀'、c'
+    say("找到新的 n₀' 和 c'", "c' = c₁ + c₂");
+    await step(tok);                                   // 114:05 QED
     cd.hl(4);
-    say("找到 n₀' 和 c' → 符合定義", 'QED：合起來還是被 g₂ 壓住');
-    await beat(tok, 2600);
-    cd.kill(); kill(f1); kill(f2);
-    cd = code(['f ≤ c₁·g₁     (n ≥ n₁)', 'g₁ ≤ c₂·g₂    (n ≥ n₂)', 'f ≤ c₁·c₂·g₂  (n ≥ max(n₁, n₂))', '∴ f = O(g₂)'], -2.6, 7.4, 0.5);
-    const fs = [['f', 0.8, B_], ['g₁', 1.6, O_], ['g₂', 2.6, R_]].map(([t, h, c], i) => { const m = cube(t, c, [1.2, h, 1.2], 1.8 + i * 1.8, 1.5 + h / 2, 0, 3); return m; });
+    say('符合 Big O 的定義', 'QED：合起來還是被 g₂ 壓住');
+    await step(tok);                                   // 114:35 遞移律
+    cd.kill(); kill(f1); kill(f2); kill(b1); kill(b2); kill(l1); kill(l2);
+    cd = code(['f ≤ c₁·g₁     (n ≥ n₁)', 'g₁ ≤ c₂·g₂    (n ≥ n₂)', 'n ≥ max(n₁, n₂)', 'f ≤ c₁·c₂·g₂  ∴ f = O(g₂)'], -2.6, 7.4, 0.5);
+    const fs = [['f', 0.8, B_], ['g₁', 1.6, O_], ['g₂', 2.6, R_]].map(([t, h, c], i) => cube(t, c, [1.2, h, 1.2], 1.8 + i * 1.8, 1.5 + h / 2, 0, 3));
     tag('≤', 'val', 2.7, 2.2); tag('≤', 'val', 4.5, 2.6);
-    cd.hl(0); say('遞移律：像 ≤ 一樣可以串', 'f = O(g₁)、g₁ = O(g₂)');
-    await beat(tok, 2400);
-    cd.hl(2); say("c' = c₁·c₂、n₀' = max(n₁, n₂)", '兩行定義一路代下去');
-    await beat(tok, 2600);
-    cd.hl(3); fs.forEach((m) => glow(m, GOLD));
-    say('f = O(g₂)', '從定義出發：湊出需要的 n₀ 和 c');
-    await beat(tok, 2600);
+    say('遞移律：f ≤ g₁、g₁ ≤ g₂', '那 f ≤ g₂ 嗎？');
+    await step(tok);                                   // 114:53 先寫兩個定義
+    cd.hl(0); await beat(tok, 500); cd.hl(1);
+    say('一樣先把兩個定義寫下來', '');
+    await step(tok);                                   // 115:04 max
+    cd.hl(2);
+    say("新的下限：n₀' = max(n₁, n₂)", '');
+    await step(tok);                                   // 115:25 c₁·c₂ 是新的 c
+    cd.hl(3);
+    say("兩式串起來：f ≤ c₁·c₂·g₂", "c' = c₁·c₂");
+    await step(tok);                                   // 115:36 符合定義
+    fs.forEach((m) => glow(m, GOLD));
+    say('符合定義：f = O(g₂)', '');
+    await step(tok);                                   // 115:55 先寫定義，賺兩行
+    say('從定義出發：先寫下定義', '再湊出需要的 n₀ 和 c');
   }]);
 
-  // 116:15 組合：selection sort + binary search
+  // 116:42 組合：selection sort + binary search
   FRAG.push(['stklin-combine', '組合：selection sort + binary search', async (tok) => {
     fresh([0, 5, 13], [0, 2, 0]);
-    const f1 = cube('f₁：selection sort', B_, [3.2, 2.4, 2.0], -3, 1.2, 0, 5);
+    let f1, f2, t2;
+    await step(tok);                                   // 116:42 selection sort：n²
+    f1 = cube('f₁：selection sort', B_, [3.2, 2.4, 2.0], -3, 1.2, 0, 5);
     tag('O(n²)', 'ptr', -3, 3.0);
     say('f₁ = selection sort', 'O(n²)');
-    await beat(tok, 2000);
-    const f2 = cube('f₂：binary search', O_, [2.4, 0.5, 1.2], 3, 0.25, 0, 5);
-    const t2 = tag('O(log n)', 'ptr alt', 3, 1.1);
+    await step(tok);                                   // 116:59 binary search：log n
+    f2 = cube('f₂：binary search', O_, [2.4, 0.5, 1.2], 3, 0.25, 0, 5);
+    t2 = tag('O(log n)', 'ptr alt', 3, 1.1);
     say('f₂ = binary search', 'O(log n)');
-    await beat(tok, 2000);
+    await step(tok);                                   // 117:22 log n 漲得比 n² 慢
     glow(f1, GOLD); glow(f2, GOLD);
+    tag('log n = O(n²)', 'ptr', 0, 4.4);
     say('log n 漲得比 n² 慢', 'log n = O(n²)');
-    await beat(tok, 2200);
+    await step(tok);                                   // 117:48 f₁ + f₂ = O(n²)
     glow(f1, null); glow(f2, null);
     move(f2, -3, 1.2, 0); kill(t2);
-    await beat(tok, 900);
+    await beat(tok, 800);
     kill(f2);
     say('合起來被大的那個壓住', 'f₁ + f₂ = O(n²)');
-    await beat(tok, 2400);
-    say('先排序再搜尋：最差 O(n²)', 'bottleneck：selection sort');
-    await beat(tok, 2400);
-    say('程式切小段 → 各自分析 → 揉起來', '一眼看出最花時間的步驟');
-    await beat(tok, 2400);
+    await step(tok);                                   // 118:37 先排序再搜尋：最差 n²
+    say('先 selection sort 再 binary search', '最差要 n² 的力氣');
+    await step(tok);                                   // 119:05 切小段分析，揉起來
+    say('程式切成小段 → 各自分析 → 揉起來', '');
+    await step(tok);                                   // 119:19 bottleneck
+    glow(f1, RED);
+    tag('bottleneck', 'ptr alt', -3, 3.8);
+    say('一眼看出最花時間的步驟', 'bottleneck：selection sort');
+    await step(tok);                                   // 119:26 多項式只留最大項
     fly(f1, V3(-3, 8, 3));
     const big = cube('n³', R_, [2.4, 2.4, 2.0], 0, 1.2, 0, 5);
     const small = [['n²', -4.6], ['n', 4.2], ['1', 5.8]].map(([t, x]) => cube(t, B_, [1.0, 0.6, 1.0], x, 0.3, 0, 5));
-    say('多項式：最大項把其他項吞掉', '例：n³ + n² + n + 1');
-    await beat(tok, 2000);
-    for (const s of small) { move(s, 0, 1.2, 0); await beat(tok, 600); kill(s); }
+    say('多項式：最後只留最大項', '例：n³ + n² + n + 1');
+    await step(tok);                                   // 119:33 其他項被吞掉
+    for (const s of small) { move(s, 0, 1.2, 0); await beat(tok, 450); kill(s); }
+    say('其他項都被比較大的項吞掉', '');
+    await step(tok);                                   // 119:47 秦吞六國
     glow(big, GOLD);
-    say('像秦吞六國，一個一個吞掉', 'n³ + n² + n + 1 = O(n³)');
-    await beat(tok, 2800);
+    say('像秦朝把六國一個一個吞掉', 'n³ + n² + n + 1 = O(n³)');
+    await step(tok);                                   // 119:52 Ω、Θ 也有類似證明
+    say('Ω、Θ 也有類似的證明', '但最常操作的還是 Big O');
+    await step(tok);                                   // 120:09 用行話溝通
+    say('之後就能用行話溝通', '「這是 n² 的演算法」');
   }]);
 
-  // 120:43 最緊的上限
+  // 120:56 最緊的上限
   FRAG.push(['stklin-tight', 'Big O 要說最緊的上限', async (tok) => {
     fresh([0, 5, 13.5], [0, 3, 0]);
     const Y = (v) => 0.6 + Math.log10(v) * 1.3;
+    await step(tok);                                   // 120:56 big O 像 ≤
     cube('1', B_, [1.2, 0.6, 1.2], -3.8, 0.3, 0, 3);
-    say('「≤」可以有很多個上限', '1 ≤ 10、1 ≤ 1126、1 ≤ 5566');
+    say('Big O 像「≤」', '');
+    await step(tok);                                   // 121:05 1 ≤ 10、1 ≤ 1126、1 ≤ 5566
+    const shelves = [];
     for (const v of [10, 1126, 5566]) {
-      const s = lab.box('#c9b48e', [2.4, 0.1, 1.6]); s.position.set(-3.8, Y(v), 0); lab.world.add(s);
+      const s = lab.box('#c9b48e', [2.4, 0.1, 1.6]); s.position.set(-3.8, Y(v), 0); lab.world.add(s); shelves.push(s);
       tag('≤ ' + v, 'idx', -2.0, Y(v));
-      await beat(tok, 800);
+      await beat(tok, 450);
     }
-    await beat(tok, 1400);
+    say('1 ≤ 10、1 ≤ 1126、1 ≤ 5566', '都對');
+    await step(tok);                                   // 121:19 很多種上限
+    shelves.forEach((s) => glow(s, GOLD));
+    say('左邊一個東西，右邊可以有很多上限', '');
+    await step(tok);                                   // 121:36 最低、最緊的上限
+    shelves.forEach((s) => glow(s, null));
     const al = cube('n² 的演算法', O_, [2.0, 2.4, 1.6], 3, 1.2, 0, 3);
     const caps = [['O(n²)', 2.55, G_], ['O(n³)', 4.2, GRAY], ['O(n¹¹²⁶)', 6.4, GRAY]].map(([t, y, c]) => {
       const s = lab.box(c, [2.6, 0.12, 1.8]); s.position.set(3, y, 0); lab.world.add(s); tag(t, 'ptr', 5.2, y); return s;
     });
-    say('n² 的演算法：O(n²)、O(n³)、O(n¹¹²⁶) 都對', '數學上都是上限');
-    await beat(tok, 3000);
+    say('說 Big O 時，指的是最緊的上限', '');
+    await step(tok);                                   // 121:45 O(n²) 心裡想的就是 n²
     glow(caps[0], GREEN); glow(al, GOLD);
-    say('說 O(…) 時隱含：最緊的上限', '想得到、證得出的最緊那個');
-    await beat(tok, 2800);
+    say('說它是 O(n²)', '心裡想的就是：它是個 n² 的演算法');
+    await step(tok);                                   // 121:56 不會說是 n¹¹²⁶ 的演算法
     tint(caps[2], R_);
-    say('O(n¹¹²⁶) 也對，但沒有幫助', '上限不緊，描述不了演算法的性質');
-    await beat(tok, 2800);
-    say('行規：數學正確，還要最緊', '不是隨便給一個很鬆的上限');
-    await beat(tok, 2600);
+    say('不會說它是 n¹¹²⁶ 的演算法', '數學上沒錯，但……');
+    await step(tok);                                   // 122:04 上限不緊，描述不了性質
+    say('上限不緊', '就描述不了演算法的性質');
+    await step(tok);                                   // 122:41 行話、行規
+    tag('講行話，有行規', 'ptr alt', 0, 7.6);
+    say('講行話時有行規', '');
+    await step(tok);                                   // 122:55 最緊，不是任意寬鬆
+    say('除了數學正確，還要最緊', '想得到、證得出的最緊那個');
   }]);
 
-  // 123:10 實際要跑多久
+  // 123:31 實際要跑多久
   FRAG.push(['stklin-runtime', '每秒 10⁹ 步：實際要跑多久', async (tok) => {
     fresh([0, 4.2, 15.5], [0, 3.4, 0]);
-    const RT = [['n', '10⁶', 1e-3, '1 ms', '10⁶ / 10⁹ = 10⁻³ 秒'], ['n log n', '10⁶', 0.02, '20 ms', '10⁶ × 20 / 10⁹ = 0.02 秒'],
-      ['n²', '10³', 1e-3, '1 ms', '10⁶ / 10⁹ = 1 ms'], ['n²', '10⁶', 1000, '16.67 分', '10¹² / 10⁹ = 1000 秒'],
-      ['n³', '10³', 1, '1 秒', '10⁹ / 10⁹ = 1 秒'], ['n³', '10⁵', 1e6, '11.57 天', '10¹⁵ / 10⁹ = 10⁶ 秒'],
-      ['n³', '10⁶', 1e9, '≈ 32 年', '10¹⁸ / 10⁹ = 10⁹ 秒 ≈ 31.7 年'], ['n⁴', '10⁴', 1e7, '≈ 1/3 年', '10¹⁶ / 10⁹ = 10⁷ 秒 ≈ 115.7 天'],
-      ['2ⁿ', '50', 1.13e6, '≈ 13 天', '2⁵⁰ ≈ 1.13×10¹⁵ 步'], ['2ⁿ', '100', 1.3e21, '跑不完', '2¹⁰⁰ / 10⁹ ≈ 4×10¹³ 年']];
     const H = (s) => Math.min(7.6, 0.3 + (Math.log10(s) + 3) * 0.5);
-    tag('高度 = 秒數（log 尺度）', 'idx', 0, 8.6);
-    for (const [nm, s] of [['1 秒', 1], ['1 天', 86400], ['1 年', 3.15e7]]) { line(-6.6, H(s), 6.6, H(s), -0.8, '#c9b48e'); tag(nm, 'idx', -6.6, H(s) + 0.25, -0.8); }
-    say('f 就是實際步數，CPU 每秒 10⁹ 步', 'f = n：n = 10 只要 0.01 μs');
-    await beat(tok, 2600);
-    for (let k = 0; k < RT.length; k++) {
-      const [nm, n, s, lb, fm] = RT[k], x = -5.85 + k * 1.3;
+    let k = 0;
+    const show = async (nm, n, s, lb) => {
+      const x = -5.85 + k * 1.3; k++;
       tag(nm, 'ptr', x, 0, 1.2); tag('n=' + n, 'idx', x, 0, 1.9);
       const b = bar(s >= 86400 ? R_ : s >= 1 ? O_ : G_, 0.9, 0.9, x);
-      say(nm + '，n = ' + n + '：' + lb, fm);
       await growBar(tok, b, H(s), 500);
       tag(lb, 'idx', x, H(s) + 0.35);
-      await beat(tok, 1100);
-    }
-    say('n³ 碰到大資料就危險了', '多項式次方、指數一大，資料一多就跑不完');
-    await beat(tok, 2600);
-    say('空間也一樣要估', '50000 × 50000 個 double × 8 bytes = 20 GB');
-    await beat(tok, 3000);
+      return b;
+    };
+    tag('高度 = 秒數（log 尺度）', 'idx', 0, 8.6);
+    for (const [nm, s] of [['1 秒', 1], ['1 天', 86400], ['1 年', 3.15e7]]) { line(-6.6, H(s), 6.6, H(s), -0.8, '#c9b48e'); tag(nm, 'idx', -6.6, H(s) + 0.25, -0.8); }
+    await step(tok);                                   // 123:33 f 就是實際步數
+    say('不用 Big O 了：f 就是實際步數', 'n、n log n、n²、n³、n⁴');
+    await step(tok);                                   // 123:51 每秒 10⁹ 步
+    tag('CPU：每秒 10⁹ 步（1 billion）', 'ptr alt', 0, 7.9);
+    say('電腦每秒可以跑 1 billion 步', '');
+    await step(tok);                                   // 124:23 f = n
+    await show('n', '10⁶', 1e-3, '1 ms');
+    say('f = n：10 筆 0.01 μs', '10⁶ 筆也才 1 毫秒');
+    await step(tok);                                   // 124:40 n log n
+    await show('n log n', '10⁶', 0.02, '20 ms');
+    say('n log n：10⁶ 筆約 20 毫秒', '可以接受');
+    await step(tok);                                   // 124:49 n²：開始吃力
+    await show('n²', '10³', 1e-3, '1 ms');
+    say('n²：10 筆 0.1 μs、1000 筆 1 毫秒', '開始有點吃力');
+    await step(tok);                                   // 125:15 n²，10⁶ 筆 16.67 分
+    await show('n²', '10⁶', 1000, '16.67 分');
+    say('n²、10⁶ 筆：16.67 分鐘', '作業馬馬虎虎還跑得完');
+    await step(tok);                                   // 125:42 n³：100 筆 1 毫秒
+    say('n³：100 筆還是 1 毫秒', '');
+    await step(tok);                                   // 125:50 1000 筆 1 秒、10⁶ 筆 32 年
+    await show('n³', '10³', 1, '1 秒');
+    const big = await show('n³', '10⁶', 1e9, '≈ 32 年');
+    say('n³：1000 筆 1 秒', '10⁶ 筆要 32 年！');
+    await step(tok);                                   // 126:03 10⁵ 筆 11.57 天
+    await show('n³', '10⁵', 1e6, '11.57 天');
+    say('n³、10⁵ 筆：11.57 天', '');
+    await step(tok);                                   // 126:33 寫到 n³ 就危險
+    glow(big, RED);
+    say('小心：寫到 n³ 就危險了', '');
+    await step(tok);                                   // 126:45 n⁴
+    await show('n⁴', '10⁴', 1e7, '≈ 1/3 年');
+    say('n⁴：1000 筆馬馬虎虎', '1 萬筆要三分之一年');
+    await step(tok);                                   // 126:58 n¹⁰
+    tag('n¹⁰：40、50 筆都不一定跑得出來', 'ptr', 3.5, 8.0);
+    say('n¹⁰：50 筆可能就跑不出來', '');
+    await step(tok);                                   // 127:07 2ⁿ
+    await show('2ⁿ', '50', 1.13e6, '≈ 13 天');
+    await show('2ⁿ', '100', 1.3e21, '跑不完');
+    say('2ⁿ：50 筆就不太妙', '100 筆肯定不行');
+    await step(tok);                                   // 127:27 可行性
+    say('這些函數告訴我們可行性', '要不要更好的資料結構、演算法？');
+    await step(tok);                                   // 127:56 空間也會影響
+    say('空間也一樣要估', '');
+    await step(tok);                                   // 128:22 5 萬 × 5 萬矩陣
+    tag('50000 × 50000 個 double', 'ptr alt', 3.0, 7.2);
+    say('例：5 萬 × 5 萬的 double 矩陣', '存得下嗎？');
+    await step(tok);                                   // 128:40 算算看
+    tag('× 8 bytes = 20 GB', 'ptr alt', 3.0, 6.5);
+    say('double 8 bytes', '50000 × 50000 × 8 = 20 GB');
+    await step(tok);                                   // 129:13 professional
+    say('身為 professional computer scientist', '先估時間和空間，再寫程式');
   }]);
 
-  // 134:20 Stack = 堆疊，餐盤
-  FRAG.push(['stklin-plates', 'Stack：一疊餐盤，只能放最上面', async (tok) => {
+  // 135:29 Stack = 堆疊，餐盤
+  FRAG.push(['stklin-plates', 'Stack：一疊東西，只能放最上面', async (tok) => {
     fresh([0, 5, 12], [0, 1.8, 0]);
-    say('Stack 中文叫堆疊', '像辦公桌上一疊紙、一疊作業');
-    await beat(tok, 2200);
-    const top = tag('top', 'ptr', 2.2, 0.2);
+    let top = null;
+    await step(tok);                                   // 135:29 堆疊
+    tag('Stack ＝ 堆疊', 'ptr alt', 0, 4.6);
+    say('Stack 中文叫堆疊', '你最會堆東西的地方在哪裡？');
+    await step(tok);                                   // 135:43 一張紙兩張紙疊上去
+    const papers = [];
+    for (let k = 0; k < 3; k++) { papers.push(cube('', '#fbf6ea', [2.4, 0.08, 1.8], -3.6 + (k % 2) * 0.1, 0.05 + k * 0.1, 0, 3)); await beat(tok, 300); }
+    tag('桌上一疊紙', 'idx', -3.6, 0, 1.6);
+    say('像辦公桌上一張一張疊上去的紙', '公文、作業也一樣');
+    await step(tok);                                   // 136:15 人類最原始的動作
+    say('不知道放哪，就往上疊', '人類最原始的動作');
+    await step(tok);                                   // 136:31 「疊上去」很重要
+    say('重點是「疊上去」', '');
+    await step(tok);                                   // 136:57 疊在已出現的資料上面
+    say('資料疊在已經出現的資料上面', '這樣的資料結構叫堆疊');
+    await step(tok);                                   // 137:15 頂端 top
+    top = tag('top', 'ptr', -1.6, 0.4);
+    say('所以有一個「頂端」的概念', 'top');
+    await step(tok);                                   // 137:24 餐廳的餐盤
+    tag('餐廳的餐盤', 'idx', 2.4, 0, 1.8);
+    say('像自助餐廳的空餐盤', '');
+    await step(tok);                                   // 137:41 一盤一盤往上疊
     const ps = [];
-    for (let k = 0; k < 5; k++) {
-      const y = 0.11 + k * 0.26;
-      ps.push(cube('', k % 2 ? '#efe6d6' : '#dcd0bb', [2.6, 0.22, 2.6], 0, y, 0, 5));
-      top.position.y = y + 0.1;
-      say('餐盤一盤一盤往上疊', '第 ' + (k + 1) + ' 盤放在最上面 = top');
-      await beat(tok, 900);
+    for (let k = 0; k < 4; k++) {
+      ps.push(cube('', k % 2 ? '#efe6d6' : '#dcd0bb', [2.2, 0.22, 2.2], 2.4, 0.11 + k * 0.26, 0, 5));
+      top.position.set(4.2, 0.2 + k * 0.26, 0);
+      await beat(tok, 350);
     }
-    say('新東西只能放最上面', 'insert 只在 top → 叫 push');
-    await beat(tok, 2200);
-    const mid = cube('', '#f6c9a8', [2.6, 0.22, 2.6], 4.2, 0.6, 0);
-    const x = tag('✕ 不能塞中間', 'ptr alt', 4.2, 1.3);
+    say('一盤一盤往上疊', '');
+    await step(tok);                                   // 137:51 Insert Top：只能放最上面
+    say('有新的只能疊在最上面', 'insert top');
+    await step(tok);                                   // 138:13 老闆把洗好的盤子放進去
+    ps.push(cube('', '#f6e3c8', [2.2, 0.22, 2.2], 2.4, 0.11 + 4 * 0.26, 0, 5));
+    top.position.y = 0.2 + 4 * 0.26;
+    say('老闆把洗好的盤子放進去', '放在最上面');
+    await step(tok);                                   // 138:21 restricted
+    say('Stack 是 restricted 的', '只准你在這裡放');
+    await step(tok);                                   // 138:30 不能塞中間
+    const mid = cube('', '#f6c9a8', [2.2, 0.22, 2.2], 5.6, 0.6, 0);
+    const x = tag('✕ 不能塞中間', 'ptr alt', 5.6, 1.3);
     glow(mid, RED);
-    say('restricted：不准插到中間', '只能在 top 放東西');
-    await beat(tok, 2400);
+    say('不能把盤子塞到中間', '');
+    await step(tok);                                   // 138:53 push
     fly(mid, V3(4, 6, 3)); kill(x);
     glow(ps[4], GOLD);
-    say('只看得到、拿得到最上面那盤', 'stack 有「頂端」top 的概念');
-    await beat(tok, 2600);
+    tag('放到最上面 ＝ push', 'ptr', 2.4, 2.8);
+    say('放到最上面這個動作', '叫 push');
   }]);
 
-  // 138:51 push / pop / peek 與 LIFO（老師的例子：push 3、push 5、pop）
+  // 139:03 push / pop / peek 與 LIFO（老師的例子：push 3、push 5、pop）
   FRAG.push(['stklin-lifo-35', 'push 3、push 5、pop → 5', async (tok) => {
     fresh([0, 5, 13], [0, 2.4, 0]);
     const col = ghostBox(B_, 1.9, 4.4, 1.9); col.position.set(-3, 2.2, 0);
     const cd = code(['get    → peek：只看 top，不拿走', 'insert → push：放到 top', 'remove → pop ：從 top 拿走'], 2.6, 5.6, 0.6);
-    const top = tag('top', 'ptr', -1.4, 0.45);
+    let c3, c5;
+    await step(tok);                                   // 139:03 只能從最上面拿
+    say('也只能從最上面拿東西', '拿＝移掉');
+    await step(tok);                                   // 139:15 get、remove、insert
+    say('回想基本操作：get、remove、insert', '');
+    await step(tok);                                   // 139:29 remove 只能從頂上：pop
+    cd.hl(2);
+    say('remove 只能從頂端做', '叫 pop');
+    await step(tok);                                   // 139:37 最基本：push、pop
+    cd.hl(1); await beat(tok, 500); cd.hl(2); await beat(tok, 500); cd.hl(-1);
     say('stack 最基本的兩個操作', 'push 和 pop');
-    await beat(tok, 1800);
-    cd.hl(1);
-    const c3 = cube(3, colorFor(3), [1.6, 0.85, 1.6], -3, 0.45, 0, 6);
-    say('push(3)', 'stack（底→頂）：3');
-    await beat(tok, 1600);
-    const c5 = cube(5, colorFor(5), [1.6, 0.85, 1.6], -3, 1.35, 0, 6);
-    top.position.y = 1.35;
-    say('push(5)：5 壓在 3 上面', 'stack（底→頂）：3, 5');
-    await beat(tok, 2600);
-    cd.hl(0); glow(c5, GOLD);
-    say('peek：偷看 top = 5', 'get top，top 不變');
-    await beat(tok, 2000);
-    glow(c5, null); cd.hl(2);
-    fly(c5, V3(4, 9, 2)); top.position.y = 0.45;
-    say('pop() → 5', '後進去的 5 比 3 先出來');
-    await beat(tok, 2200);
-    tag('Last In, First Out', 'ptr alt', -3, 4.9);
-    say('LIFO：後進先出', 'stack 的特性');
-    await beat(tok, 2600);
-    say('再 pop() → 3', 'stack 空了：top 回到最底');
-    fly(c3, V3(4, 9, 2)); top.position.y = 0.2;
-    await beat(tok, 2400);
+    await step(tok);                                   // 140:08 只看不拿：peek
+    cd.hl(0);
+    say('只看不拿：peek', '偷看最上面那筆是什麼');
+    await step(tok);                                   // 140:26 last in first out
+    cd.hl(-1);
+    const lifo = tag('Last In, First Out', 'ptr alt', -3, 4.9);
+    say('特性：Last In, First Out', '最後進去的最先被拿出來');
+    await step(tok);                                   // 140:46 push 3、push 5
+    c3 = cube(3, colorFor(3), [1.6, 0.85, 1.6], -3, 0.45, 0, 6);
+    await beat(tok, 700);
+    c5 = cube(5, colorFor(5), [1.6, 0.85, 1.6], -3, 1.35, 0, 6);
+    say('先 push(3)，再 push(5)', '');
+    await step(tok);                                   // 140:56 5 壓在 3 上面
+    say('5 壓在 3 的上面', 'stack（底→頂）：3, 5');
+    await step(tok);                                   // 141:14 這邊是 top
+    tag('top', 'ptr', -1.4, 1.35);
+    glow(c5, GOLD);
+    say('這邊是 top', '');
+    await step(tok);                                   // 141:23 pop 出 5
+    glow(c5, null);
+    fly(c5, V3(4, 9, 2));
+    say('pop() → 5', '');
+    await step(tok);                                   // 141:32 後進的先出
+    glow(c3, null);
+    lifo.element.className = 'lab-label ptr';
+    say('5 後進去，卻比 3 先出來', 'LIFO：後進先出');
   }]);
 
-  // 141:43 LIFO 的生活例子：擠電梯、餐盤
+  // 141:46 LIFO 的生活例子：擠電梯、餐盤
   FRAG.push(['stklin-elevator', '擠電梯：最後進去的先出來', async (tok) => {
     fresh([0, 7, 10.5], [0, 0.8, 0.5]);
     const car = ghostBox('#c9b48e', 3.4, 2.6, 4.6); car.position.set(0, 1.3, -0.4);
@@ -14109,201 +15315,301 @@ FRAG.push(['sqpeng-multistack', 'Multiple stacks 與 Stack ≠ Array', async (to
     line(-1.7, 0.02, 1.7, 0.02, 1.9, R_); tag('門', 'idx', 2.3, 0.1, 1.9);
     const P = [['A', -2.0], ['B', -0.8], ['C', 0.4]];
     const ps = [];
-    say('大家擠進同一台電梯', '先進去的被擠到最裡面');
+    await step(tok);                                   // 141:46 擠電梯
     for (const [nm, z] of P) {
       const m = cube(nm, colorFor(nm.charCodeAt(0)), [0.8, 1.4, 0.8], 0, 0.7, 4.5);
-      ps.push(m);
-      move(m, 0, 0.7, z);
-      say(nm + ' 進電梯', '進去順序：' + P.slice(0, ps.length).map((p) => p[0]).join(' → '));
-      await beat(tok, 1300);
+      ps.push(m); move(m, 0, 0.7, z);
+      await beat(tok, 600);
     }
-    await beat(tok, 1000);
+    say('擠電梯：A、B、C 依序進去', '先進去的被擠到最裡面');
+    await step(tok);                                   // 141:52 最後進的先出來
     const out = [];
     for (let k = ps.length - 1; k >= 0; k--) {
       move(ps[k], 0, 0.7, 4.5); out.push(P[k][0]);
-      say('到了：' + P[k][0] + ' 先出去', '出來順序：' + out.join(' → '));
-      await beat(tok, 1100);
+      await beat(tok, 500);
       fly(ps[k], V3(3, 6, 2));
-      await beat(tok, 400);
     }
-    say('最後進去的最先出來', 'LIFO；餐盤也一樣：老闆最後放的先被拿走');
-    await beat(tok, 3000);
-    say('看似有限制，卻非常有用', '很多複雜問題能轉成簡單的 stack 操作');
-    await beat(tok, 2600);
+    say('到同一層：最後進去的先出來', '出來順序：C → B → A');
+    await step(tok);                                   // 142:08 小孩四五歲就觀察到
+    say('老師的小孩四五歲就觀察到了', '');
+    await step(tok);                                   // 142:22 餐廳的餐盤
+    const ps2 = [];
+    for (let k = 0; k < 3; k++) ps2.push(cube('', k % 2 ? '#efe6d6' : '#dcd0bb', [1.8, 0.2, 1.8], 4.2, 0.1 + k * 0.24, 0.5, 4));
+    say('餐廳的餐盤也一樣', '老闆最後放的，先被學生拿去用');
+    await step(tok);                                   // 142:35 有限制的資料結構
+    say('看起來只是個有限制的資料結構', '為什麼要花這麼大力氣介紹？');
+    await step(tok);                                   // 142:56 非常有用
+    say('它在電腦科學裡非常有用', '概念上、實作上都是');
+    await step(tok);                                   // 143:11 複雜問題變簡單操作
+    say('把看似複雜的問題', '轉成記憶體裡很簡單的操作');
   }]);
 
-  // 143:34 括號配對
+  // 143:49 括號配對
   FRAG.push(['stklin-paren', '用 Stack 檢查括號配對', async (tok) => {
     const PAIR = { ')': '(', ']': '[', '}': '{' };
-    async function run(s) {
-      fresh([0, 6, 13], [0, 1.8, 0]);
-      const st = ghostBox(B_, 1.5, 4.2, 1.5); st.position.set(-5.2, 2.1, 0);
-      tag('stack', 'ptr', -5.2, 4.6);
-      const X = (i) => -2.6 + i * 1.3;
-      const ts = [...s].map((ch, i) => cube(ch, '#e9dcc4', [1.0, 0.6, 1.0], X(i), 0.3, 1.8));
-      const cur = tag('▲', 'ptr alt', X(0), 0, 2.9);
-      const stack = [];
-      for (let i = 0; i < s.length; i++) {
-        const ch = s[i]; cur.position.x = X(i);
-        if (!PAIR[ch]) {
-          const m = cube(ch, O_, [1.2, 0.6, 1.2], -5.2, 0.3 + stack.length * 0.65, 0, 5);
-          stack.push({ ch, m }); tint(ts[i], GRAY);
-          say('左括號 ' + ch + '：push', '先在 stack 裡等人來配');
-          await beat(tok, 1100);
-        } else {
-          const t = stack.pop();
-          move(t.m, X(i), 1.2, 1.8);
-          await beat(tok, 700);
-          if (t && t.ch === PAIR[ch]) {
-            tint(t.m, G_); tint(ts[i], G_);
-            say('右括號 ' + ch + '：pop 出 ' + t.ch, '同一種 → 配對成功，一起離開');
-            await beat(tok, 1000);
-            fly(t.m); fly(ts[i]);
-          } else {
-            tint(t.m, R_); tint(ts[i], R_);
-            say('右括號 ' + ch + '：pop 出 ' + t.ch, '小括號配到大括號 → 配錯了！');
-            await beat(tok, 3000);
-            return;
-          }
-        }
-      }
-      say('讀完而且 stack 是空的', '括號平衡 ✓');
-      await beat(tok, 2400);
+    fresh([0, 6, 13], [0, 1.8, 0]);
+    const st = ghostBox(B_, 1.5, 4.2, 1.5); st.position.set(-5.2, 2.1, 0);
+    tag('stack', 'ptr', -5.2, 4.6);
+    const X = (i) => -2.6 + i * 1.3;
+    let ts = [], cur = null, stack = [];
+    function input(s) {
+      ts.forEach(kill); stack.forEach((t) => kill(t.m)); stack = [];
+      ts = [...s].map((ch, i) => cube(ch, '#e9dcc4', [1.0, 0.6, 1.0], X(i), 0.3, 1.8));
+      if (cur) kill(cur); cur = tag('▲', 'ptr alt', X(0), 0, 2.9);
     }
-    say('最裡面、最後看到的左括號要先配', '最後的先出來 → Stack');
-    await run('{([])}');
-    await run('{([]}');
+    // process character i of s; returns false on a mismatch
+    async function doChar(s, i) {
+      const ch = s[i]; cur.position.x = X(i);
+      if (!PAIR[ch]) {
+        const m = cube(ch, O_, [1.2, 0.6, 1.2], -5.2, 0.3 + stack.length * 0.65, 0, 5);
+        stack.push({ ch, m }); tint(ts[i], GRAY);
+        await beat(tok, 450); return true;
+      }
+      const t = stack.pop();
+      move(t.m, X(i), 1.2, 1.8);
+      await beat(tok, 450);
+      if (t.ch === PAIR[ch]) { tint(t.m, G_); tint(ts[i], G_); await beat(tok, 300); fly(t.m); fly(ts[i]); return true; }
+      tint(t.m, R_); tint(ts[i], R_); return false;
+    }
+    await step(tok);                                   // 143:49 左右對稱、成雙成對
+    input('{([])}');
+    say('C 語言的括號要成雙成對', '小括號、中括號、大括號、引號');
+    await step(tok);                                   // 144:12 寫編譯器：檢查平衡
+    tag('編譯器的任務：括號有沒有平衡？', 'ptr', 2.0, 4.4);
+    say('寫編譯器的人要檢查', '括號有沒有平衡');
+    await step(tok);                                   // 144:41 小括號對到大括號
+    input('{(}');
+    tint(ts[1], R_); tint(ts[2], R_);
+    say('左邊小括號，對到右邊大括號？', '');
+    await step(tok);                                   // 145:00 小括號落單
+    say('這樣小括號就落單了', '配錯！');
+    await step(tok);                                   // 145:37 Lisp 括號特別多
+    const lisp = tag('(defun f (x) (if (= x 0) 1 (* x (f (- x 1)))))', 'idx', 2.0, 5.2);
+    Object.assign(lisp.element.style, MONO);
+    say('Lisp 這種語言，括號特別多', '');
+    await step(tok);                                   // 146:04 肉眼對括號
+    say('以前要用肉眼對括號', '後來有人寫了括號平衡輔助程式');
+    await step(tok);                                   // 146:46 簡單一點的問題
+    input('{([])}');
+    say('先解簡單的問題', '給一段文字：括號平衡嗎？');
+    await step(tok);                                   // 147:21 最裡面的左括號先配
+    glow(ts[2], GOLD); glow(ts[3], GOLD);
+    say('看最裡面的左括號', '能不能配到一個右括號');
+    await step(tok);                                   // 148:01 最裡面、最後看到的先平衡
+    say('配掉之後，再配外面那一層', '最裡面、最後看到的要先平衡');
+    await step(tok);                                   // 148:22 最後的先出來 → Stack
+    glow(ts[2], null); glow(ts[3], null);
+    tag('最後的先出來 → Stack', 'ptr alt', -5.2, 5.3);
+    say('最後的要先出來', '這就是 Stack');
+    await step(tok);                                   // 148:29 左括號：push
+    for (let i = 0; i < 3; i++) await doChar('{([])}', i);
+    say('左括號：push，在 stack 裡等', '');
+    await step(tok);                                   // 148:50 右括號：找 stack 頂端那個
+    await doChar('{([])}', 3);
+    say('右括號：找 stack 最頂端的那個配', 'pop 出 [，配對成功');
+    await step(tok);                                   // 149:04 看到右括號就 pop
+    await doChar('{([])}', 4); await doChar('{([])}', 5);
+    say('看到左括號 push，看到右括號 pop', '讀完 stack 是空的 → 平衡 ✓');
+    await step(tok);                                   // 149:17 檢查是不是一對
+    input('{(}');
+    for (let i = 0; i < 2; i++) await doChar('{(}', i);
+    await doChar('{(}', 2);
+    say('pop 完要檢查是不是同一種', '小括號配大括號 → 配錯了！');
+    await step(tok);                                   // 149:41 引號比較複雜
+    say('引號的情況比較複雜', '不在這個簡單版本裡');
+    await step(tok);                                   // 150:30 最接近的資訊先處理
+    say('Stack 的精神：資訊先留著', '最接近（最裡面）的先處理');
   }]);
 
-  // 150:54 system stack
+  // 151:04 system stack
   FRAG.push(['stklin-system-stack', 'System stack：函數呼叫的草稿紙', async (tok) => {
     fresh([0, 5.5, 13.5], [0, 3.2, 0]);
-    const cd = code(['int f(int n) {', '  if (n == 0) return 0;', '  return f(n - 1) + n;', '}'], 3.8, 6.8, 0.55);
+    const cd = code(['int f(int n) {  // 示意', '  if (n == 0) return 0;', '  return f(n - 1) + n;', '}'], 3.8, 6.8, 0.55);
     const X = -2.4, FH = 0.7, Y = (k) => 0.36 + k * 0.76;
     const fr = [cube('main()', GRAY, [3.8, FH, 2.0], X, Y(0), 0)];
-    tag('每張草稿紙：參數、區域變數、回傳值放哪、previous', 'idx', 1.0, 0, 2.6);
-    say('呼叫函數 = 拿一張新的草稿紙', '舊的壓在下面等');
-    await beat(tok, 2400);
-    for (let n = 3; n >= 0; n--) {
-      cd.hl(n ? 2 : 1);
-      fr.push(cube('f(' + n + ')：n = ' + n, colorFor(n), [3.8, FH, 2.0], X, Y(fr.length), 0, 5));
-      say('呼叫 f(' + n + ')', n === 0 ? 'n == 0：直接 return 0' : (n === 3 ? 'main()' : 'f(' + (n + 1) + ')') + ' 還沒算完，壓在下面等');
-      await beat(tok, 1200);
-    }
+    const call = async (n) => { cd.hl(n ? 2 : 1); fr.push(cube('f(' + n + ')：n = ' + n, colorFor(n), [3.8, FH, 2.0], X, Y(fr.length), 0, 5)); await beat(tok, 450); };
+    await step(tok);                                   // 151:04 system stack、recursive call
+    say('補充：system stack', '先想想 recursive call');
+    await step(tok);                                   // 151:17 還沒算完的函數要等
+    await call(3);
+    say('函數還沒算完就呼叫下一個', '原來的要在某個地方等');
+    await step(tok);                                   // 151:51 新函數拿新的草稿紙
+    await call(2); await call(1);
+    say('新的函數 = 拿一張新的草稿紙', '');
+    await step(tok);                                   // 152:21 舊的壓在下面
+    await call(0);
+    say('舊的草稿紙壓在下面等', 'Stack 就是一疊紙');
+    await step(tok);                                   // 152:33 System Stack
+    tag('System Stack', 'ptr alt', X, 4.6);
+    say('這疊草稿紙叫 System Stack', '系統用它追蹤函數呼叫');
+    await step(tok);                                   // 153:04 區域變數、參數
+    const info = tag('草稿紙上：區域變數、參數', 'idx', 1.0, 0, 2.6);
+    say('草稿紙上有：區域變數', '傳進來的參數');
+    await step(tok);                                   // 153:20 return value 放哪
+    txt(info, '草稿紙上：區域變數、參數、return value 放哪');
+    say('做完的結果要放哪', 'return value');
+    await step(tok);                                   // 153:28 回到哪一張：previous
+    txt(info, '草稿紙上：區域變數、參數、return value 放哪、previous');
+    say('做完要回到哪一張', 'previous pointer');
+    await step(tok);                                   // 153:40 撕掉 = pop
     let ret = 0;
-    for (let n = 0; n <= 3; n++) {
-      ret += n;
-      fly(fr.pop(), V3(4, 7, 2));
-      say('f(' + n + ') 做完，回傳 ' + ret, '撕掉最上面那張 → 回到上一張');
-      await beat(tok, 1100);
-    }
+    for (let n = 0; n <= 3; n++) { ret += n; fly(fr.pop(), V3(4, 7, 2)); await beat(tok, 400); }
     cd.hl(-1);
+    say('撕掉最上面那張 = pop', '自然回到上一張');
+    await step(tok);                                   // 153:52 呼叫太多層
     line(X - 2.2, 6.2, X + 2.2, 6.2, 0, R_); tag('system stack 空間上限', 'ptr alt', X, 6.6);
-    say('如果呼叫太多層呢？', '例如 f(100000)');
-    for (let k = 1; k <= 7; k++) { fr.push(cube('f(' + (100001 - k) + ')', colorFor(k), [3.8, FH, 2.0], X, Y(k), 0, 4)); await beat(tok, 320); }
+    for (let k = 1; k <= 7; k++) { fr.push(cube('f(' + (100001 - k) + ')', colorFor(k), [3.8, FH, 2.0], X, Y(k), 0, 4)); await beat(tok, 250); }
+    say('如果呼叫太多層', '例如 f(100000)');
+    await step(tok);                                   // 154:16 堆不下
     fr.slice(1).forEach((m) => glow(m, RED));
-    say('草稿紙堆不下了', 'Stack Overflow：系統負荷不來');
-    await beat(tok, 2600);
+    say('草稿紙用完、堆不下', '系統負荷不了');
+    await step(tok);                                   // 154:46 疊在一起
     fr.slice(1).forEach((m) => glow(m, null));
+    say('草稿紙在記憶體裡真的疊在一起', '沒保護好的話……');
+    await step(tok);                                   // 154:52 惡意程式偷看
     arrow(V3(X + 2.4, Y(7), 0), V3(X + 2.4, Y(3), 0), 0xd64545);
     tag('偷看別張草稿紙', 'ptr', X + 4.1, Y(5));
-    say('草稿紙疊在一起：沒保護好', '惡意程式可能偷看別張 → 安全漏洞');
-    await beat(tok, 3000);
+    say('惡意程式可能偷看別張', '形成安全漏洞');
   }]);
 
-  // 156:50 用 array 實作 stack（老師的例子：已有 3、5，push 4、pop）
+  // 157:02 用 array 實作 stack（老師的例子：已有 3、5，push 4、pop）
   FRAG.push(['stklin-array-impl', '用 array 實作：top 放尾巴', async (tok) => {
     fresh([0, 6, 12], [0, 0.8, 0]);
     const X = (i) => -5 + i * 2, S = [1.5, 0.8, 1.5];
+    let c3, c5, c4, top;
+    await step(tok);                                   // 157:02 只要 top 能放、能拿
+    say('stack 只要求：', '能輕易在 top 放、從 top 拿');
+    await step(tok);                                   // 157:25 consecutive array，一開始是空的
     for (let i = 0; i < 6; i++) { slotTile(V3(X(i), 0.02, 0)); tag('[' + i + ']', 'idx', X(i), 0, 1.3); }
-    const c3 = cube(3, colorFor(3), S, X(0), 0.45, 0), c5 = cube(5, colorFor(5), S, X(1), 0.45, 0);
-    const top = tag('top = 1', 'ptr', X(1), 1.6);
-    say('用連續的 array 實作', '已經有 3、5，top 放在尾巴');
-    await beat(tok, 2600);
-    const c4 = cube(4, colorFor(4), S, X(2), 0.45, 0, 5);
+    say('用一個 consecutive array', '一開始是空的');
+    await step(tok);                                   // 157:32 已經有 3、5
+    c3 = cube(3, colorFor(3), S, X(0), 0.45, 0, 4); c5 = cube(5, colorFor(5), S, X(1), 0.45, 0, 4);
+    say('假設已經有 3 和 5', '');
+    await step(tok);                                   // 157:38 top 放最尾巴
+    top = tag('top = 1', 'ptr', X(1), 1.6);
+    say('top 放在 array 最尾巴', '');
+    await step(tok);                                   // 157:46 push 4
+    say('push(4)', '');
+    await step(tok);                                   // 157:50 top 後面那一格，top 移過去
+    c4 = cube(4, colorFor(4), S, X(2), 0.45, 0, 5);
     top.position.x = X(2); txt(top, 'top = 2');
-    say('push(4)：放在 top 的下一格', 'stack[++top] = 4');
-    await beat(tok, 2200);
+    say('放在 top 後面那一格，top 往後移', 'stack[++top] = 4');
+    await step(tok);                                   // 158:05 pop：拿出 4
+    glow(c4, GOLD);
+    say('pop：從尾巴拿出 4', '');
+    await step(tok);                                   // 158:10 top 往前一格
     fly(c4, V3(2, 9, 3)); top.position.x = X(1); txt(top, 'top = 1');
-    say('pop() → 4：top 往前一格', 'return stack[top--]');
-    await beat(tok, 2600);
-    say('push、pop 都只動尾巴', '其他元素完全不用搬');
-    await beat(tok, 1800);
-    txt(top, 'top 放頭？');  top.position.x = X(0);
-    say('如果 top 放在 array 的頭？', 'push 要先把全部往後搬');
-    move(c5, X(2), 0.45); await beat(tok, 500); move(c3, X(1), 0.45); await beat(tok, 600);
+    say('top 往前一格', 'return stack[top--]');
+    await step(tok);                                   // 158:19 push、pop 都在尾巴
+    say('push、pop 都在尾巴進行', '其他元素不用動');
+    await step(tok);                                   // 158:31 尾端維護最省力
+    say('連續 array 的尾端', '維護的 effort 最小');
+    await step(tok);                                   // 158:37 top 放頭：push 沒空間
+    txt(top, 'top 放頭？'); top.position.x = X(0);
+    move(c5, X(2), 0.45); await beat(tok, 400); move(c3, X(1), 0.45); await beat(tok, 400);
     const n4 = cube(4, colorFor(4), S, X(0), 0.45, 0, 5);
-    tag('每次 push / pop 都搬資料 → O(n)', 'ptr alt', 0, 2.6);
-    await beat(tok, 2400);
-    fly(n4, V3(-2, 9, 3)); await beat(tok, 400);
+    say('如果 top 放在頭', 'push：頭沒空間，要先整排往後搬');
+    await step(tok);                                   // 158:45 pop 又要搬
+    fly(n4, V3(-2, 9, 3)); await beat(tok, 300);
     move(c3, X(0), 0.45); move(c5, X(1), 0.45);
-    say('pop 也要整排往前搬', 'top 放尾端：push、pop 都 O(1)');
-    await beat(tok, 2800);
+    tag('每次 push / pop 都搬資料 → O(n)', 'ptr alt', 0, 2.6);
+    say('pop：後面又要整排往前搬', '');
+    await step(tok);                                   // 158:53 最自然：top 放尾端
+    txt(top, 'top = 1'); top.position.x = X(1);
+    glow(c5, GREEN);
+    say('最自然的實作：top 對應 array 尾端', 'push、pop 都 O(1)');
   }]);
 
-  // 159:05 用 singly linked list 實作 stack
+  // 159:06 用 singly linked list 實作 stack
   FRAG.push(['stklin-list-impl', '用 linked list 實作：top 放 head', async (tok) => {
     fresh([0, 6, 12.5], [0, 0.8, 0]);
     const XS = [-3.5, -0.5, 2.5];
-    let nodes = [null, lnode(5, XS[1], 0.35), lnode(3, XS[2], 0.35)];
+    const nodes = [null, lnode(5, XS[1], 0.35), lnode(3, XS[2], 0.35)];
     tag('NULL', 'idx', XS[2] + 1.8, 0.35);
     let arrs = [];
-    const head = tag('head = top', 'ptr', XS[1], 1.5);
+    const head = tag('head', 'ptr', XS[1], 1.5);
     function link() { arrs.forEach(kill); arrs = []; for (let i = 0; i < 2; i++) if (nodes[i]) arrs.push(arrow(V3(XS[i] + 0.95, 0.35, 0), V3(XS[i + 1] - 0.52, 0.35, 0))); }
     link();
-    say('用 singly linked list 實作', 'head 就當 stack 的 top');
-    await beat(tok, 2400);
-    const n4 = lnode(4, XS[0], 4.5); move(n4, XS[0], 0.35);
+    let n4;
+    await step(tok);                                   // 159:06 singly linked list
+    say('如果用 singly linked list 呢？', '');
+    await step(tok);                                   // 159:13 東西放哪
+    say('這是 head', 'push 的東西要放哪裡？');
+    await step(tok);                                   // 159:22 push 放頭：head = top
+    n4 = lnode(4, XS[0], 4.5); move(n4, XS[0], 0.35);
     nodes[0] = n4;
     await beat(tok, 600);
-    link(); head.position.x = XS[0];
-    say('push(4)：接在 head 前面', 'new.link = head；head = new → O(1)');
-    await beat(tok, 2600);
-    const p = tag('p', 'ptr alt', XS[0], 1.2, 0.8);
-    say('top 放尾巴？pop = 刪尾巴', '要改「尾巴前一個」的 pointer');
-    for (let i = 0; i < 2; i++) { p.position.x = XS[i]; glow(nodes[i].userData.data, GOLD); await beat(tok, 700); glow(nodes[i].userData.data, null); }
-    glow(nodes[1].userData.data, RED);
-    say('得從 head 一路走過去才找到', 'singly：刪尾巴 O(n)');
-    await beat(tok, 2600);
-    glow(nodes[1].userData.data, null); kill(p);
+    link(); head.position.x = XS[0]; txt(head, 'head = top');
+    say('push 傾向放在頭', '把 head 當成 stack 的 top');
+    await step(tok);                                   // 159:38 在頭 insert 比較容易
+    say('在 head insert 比較容易', 'new.link = head；head = new');
+    await step(tok);                                   // 159:54 pop = removal，head 也容易
     fly(n4, V3(-3, 8, 3)); nodes[0] = null; link(); head.position.x = XS[1];
-    say('pop()：直接拿掉 head', 'head = head.link → O(1)');
-    await beat(tok, 2400);
-    say('singly：top 放 head 最自然', 'doubly linked list 頭尾對稱，放哪都行');
-    await beat(tok, 2800);
+    say('pop 就是 removal', '在 head 移掉也容易：head = head.link');
+    await step(tok);                                   // 160:01 removal 在尾巴？
+    const p = tag('p', 'ptr alt', XS[1], 1.2, 0.8);
+    glow(nodes[2].userData.data, GOLD);
+    say('如果 removal 發生在尾巴呢？', '');
+    await step(tok);                                   // 160:05 要改尾巴前一個的 pointer
+    for (let i = 1; i < 3; i++) { p.position.x = XS[i]; await beat(tok, 400); }
+    p.position.x = XS[1];
+    glow(nodes[1].userData.data, RED);
+    say('要改「尾巴前一個」的 pointer', 'singly：得從頭走過去才找到 → 比較難');
+    await step(tok);                                   // 160:22 push/pop = insert/remove
+    glow(nodes[1].userData.data, null); glow(nodes[2].userData.data, null); kill(p);
+    say('push、pop 對應 insert、remove', 'insert 頭尾差不多；remove 頭比較簡單');
+    await step(tok);                                   // 160:41 top 放頭比較 natural
+    glow(nodes[1].userData.data, GREEN);
+    say('singly：top 放 head 最自然', '');
+    await step(tok);                                   // 160:49 doubly 沒差
+    say('doubly linked list 是對稱結構', 'top 放頭放尾都沒差');
   }]);
 
-  // 161:10 STL stack：container adapter
+  // 161:17 STL stack：container adapter
   FRAG.push(['stklin-adapter', 'STL stack：container adapter', async (tok) => {
     fresh([0, 5.5, 13], [0, 2.2, 0]);
     const cd = code(['#include <stack>', 'stack<int, vector<int>> s1;  // 底層用 array', 'stack<int, list<int>>   s2;  // 底層用 linked list', 's1.push(3); s1.push(5); s1.pop();'], 0, 7.2, 0.55);
     const X = (i) => -4 + i * 2;
     const cs = [3, 5, 4, 8, 1].map((v, i) => { tag('[' + i + ']', 'idx', X(i), 0, 1.2); return cube(v, colorFor(v), [1.3, 0.7, 1.3], X(i), 0.35, 0); });
+    await step(tok);                                   // 161:17 STL 已經寫好
+    cd.hl(0);
+    say('STL 已經寫好 stack', '指定要裝什麼型別');
+    await step(tok);                                   // 161:32 底層 vector 或 list
+    cd.hl(1); await beat(tok, 700); cd.hl(2);
+    say('還能指定底層用 vector 或 list', '');
+    await step(tok);                                   // 161:44 不指定：有 default
+    tag('不指定：default 底層（STL 用 deque）', 'idx', 0, 4.6);
+    say('不指定的話也有 default', '');
+    await step(tok);                                   // 162:04 container adapter：轉接器
+    cd.hl(-1);
+    say('STL 的 stack 是 container adapter', 'adapter = 轉接器');
+    await step(tok);                                   // 162:11 像變壓器
+    say('像變壓器', '把一種插座轉成另一種需要的樣子');
+    await step(tok);                                   // 162:21 array、list：什麼都能做
     const gt = tag('底層 container：什麼都能做', 'ptr', 0, 1.6, -1.2);
-    say('STL 已經寫好 stack', '可以指定底層用 vector 或 list');
-    cd.hl(1);
-    await beat(tok, 2600);
-    cd.hl(2);
-    for (const i of [2, 0, 3]) { glow(cs[i], GOLD); say('array／list：general container', '[' + i + '] 想存取哪裡都行'); await beat(tok, 700); glow(cs[i], null); }
+    for (const i of [2, 0, 3]) { glow(cs[i], GOLD); await beat(tok, 400); glow(cs[i], null); }
+    say('array、linked list：general container', '想存取哪裡都行');
+    await step(tok);                                   // 162:31 stack：受限制
     kill(gt);
+    tag('stack：只在 top 做 push、pop', 'ptr', 0, 1.6, -1.2);
+    say('stack 是受限制的資料結構', '只需要、也只能在 top 做事');
+    await step(tok);                                   // 162:40 加上轉接器、保護套
     const cover = ghostBox(Y_, 10.8, 1.5, 2.2); cover.position.set(0, 0.75, 0);
-    tag('stack adapter（轉接器）', 'ptr alt', 0, 2.2);
+    tag('stack adapter（保護套）', 'ptr alt', 0, 2.2);
     tag('▼ top 開口', 'ptr', 4, 2.2, 1.2);
-    say('stack = container adapter', '外面包一層：只留 top 一個開口');
-    await beat(tok, 2600);
-    tint(cs[2], R_);
-    const no = tag('✕ 不准碰中間', 'ptr alt', 0, 1.2, 1.4);
-    say('受限制的 data structure', '只能 push、pop、top');
-    await beat(tok, 2200);
-    tint(cs[2], colorFor(4)); kill(no);
+    say('在包山包海的 array 外面', '加一個轉接器、保護套');
+    await step(tok);                                   // 162:47 只能用 push、pop
     cd.hl(3);
     const c = cube(7, colorFor(7), [1.3, 0.7, 1.3], 6, 0.35, 0, 5);
-    say('push：從 top 開口放進去', 'pop：從 top 開口拿出來');
-    await beat(tok, 1600);
+    await beat(tok, 900);
     fly(c, V3(2, 9, 2));
-    await beat(tok, 1000);
-    say('像變壓器：把通用的轉成受限的', 'reuse 基本資料結構，做出新的資料結構');
-    await beat(tok, 3000);
+    say('只能用 push、pop 操作底層', '');
+    await step(tok);                                   // 163:20 其他方式違反 stack 特性
+    tint(cs[2], R_);
+    tag('✕ 不准碰中間', 'ptr alt', 0, 1.2, 1.4);
+    say('用其他方式碰底層', '就違反 stack 的特性');
+    await step(tok);                                   // 163:36 reuse 基本資料結構
+    say('reuse 基本的資料結構', '加一層限制，做出新的資料結構');
   }]);
   }
   // ═══ ptrwhy.js ═══
