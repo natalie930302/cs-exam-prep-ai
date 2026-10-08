@@ -892,259 +892,575 @@ export default function (ctx) {
   const FRAG = [];
   // ═══ hasha.js ═══
   {
-const { V3, fresh, tag, cube, move, kill, glow, tint, txt, relabel, code, arrow, ghostBox, GOLD, GREEN, RED, GRAY } = K;
+const { V3, fresh, tag, cube, move, kill, glow, tint, txt, code, arrow, ghostBox, step, buddy, travel, remove, prop, bob, GOLD, GREEN, RED, GRAY } = K;
 // ─── MfhjkfocRR0（Paul：What is a HashTable）、CwM-Cxilk4g（Linear Probing）、mFY0J5W8Udk（Abdul Bari：Hashing Technique） ───
+// Cued scenes: every `await step(tok)` waits for the sentence it shows; the
+// beats after it are only the motion (short), then the picture holds.
+// every step replaces both caption lines, so an old formula never lingers
+const say = (a, b = '') => ctx.say(a, b);
 const HA = ['#4b9ee2', '#9b7ef4', '#dd8238', '#31aab0', '#e55a9b', '#2fc092', '#c08a1f', '#5c7a4a'];
 const haCol = (k) => HA[(typeof k === 'number' ? k : [...String(k)].reduce((a, c) => a + c.charCodeAt(0), 0)) % HA.length];
 const haSub = (i) => String(i).split('').map((d) => '₀₁₂₃₄₅₆₇₈₉'[+d]).join('');
+const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
 // a row of m empty slots centred on x = 0 at depth z
 function haRow(m, dx, z) {
-  const x0 = -(m - 1) * dx / 2, xs = [], slots = [];
-  for (let i = 0; i < m; i++) { const x = x0 + i * dx; xs.push(x); slots.push(cube('', GRAY, [dx * 0.9, 0.12, 1.2], x, 0.06, z)); tag(String(i), 'idx', x, 0, z + 1.0); }
-  return { m, dx, z, xs, slots, keys: new Array(m).fill(null), vals: new Array(m).fill(null), ks: Math.min(0.9, dx * 0.8) };
+  const x0 = -(m - 1) * dx / 2, xs = [], slots = [], idx = [];
+  for (let i = 0; i < m; i++) { const x = x0 + i * dx; xs.push(x); slots.push(cube('', GRAY, [dx * 0.9, 0.12, 1.2], x, 0.06, z)); idx.push(tag(String(i), 'idx', x, 0, z + 1.0)); }
+  return { m, dx, z, xs, slots, idx, keys: new Array(m).fill(null), vals: new Array(m).fill(null), ks: Math.min(0.9, dx * 0.8) };
 }
 function haPlace(T, i, k, drop) { const c = cube(k, haCol(k), [T.ks, 0.7, 0.9], T.xs[i], 0.47, T.z, drop ? 3 : 0); T.keys[i] = c; T.vals[i] = k; return c; }
+// a key hovering over slot j (before it is placed): red = that slot is taken
+function haHover(T, j, k) { const c = cube(k, haCol(k), [T.ks, 0.7, 0.9], T.xs[j], 1.5, T.z); return c; }
 const haLin = (i) => i, haQuad = (i) => i * i;
-const haF = (f, i) => (f === haQuad ? i + '²' : String(i));
-// open-addressing insert with a moving probe cursor; one caption per probe
-async function haInsert(tok, T, k, f, cur, ms = 1000) {
-  const h = k % T.m;
-  for (let i = 0; i < T.m; i++) {
-    const j = (h + f(i)) % T.m;
-    cur.position.set(T.xs[j], 1.8, T.z); txt(cur, 'h' + haSub(i));
-    const fm = 'h' + haSub(i) + '(' + k + ') = (' + h + ' + ' + haF(f, i) + ') mod ' + T.m + ' = ' + j;
-    if (T.keys[j] === null) {
-      haPlace(T, j, k, true);
-      say('insert ' + k + '：放進 [' + j + ']', fm);
-      await beat(tok, ms);
-      return i + 1;
-    }
-    glow(T.keys[j], RED);
-    say('insert ' + k + '：[' + j + '] 已被 ' + T.vals[j] + ' 佔', fm + '　collision');
-    await beat(tok, ms);
-    glow(T.keys[j], null);
-  }
-  return -1;
+// one probe: the cursor jumps to slot j; red if taken (returns false), else the key lands (true)
+async function haTry(tok, T, k, j, cur, lbl, ms = 700) {
+  cur.position.set(T.xs[j], 2.1, T.z); txt(cur, lbl);
+  if (T.keys[j] !== null) { glow(T.keys[j], RED); await beat(tok, ms); return false; }
+  haPlace(T, j, k, true); await beat(tok, ms); return true;
 }
-// open-addressing find: same probe sequence, stops at the key or an empty slot
-async function haFind(tok, T, k, f, cur, ms = 1000) {
-  const h = k % T.m;
-  for (let i = 0; i < T.m; i++) {
-    const j = (h + f(i)) % T.m;
-    cur.position.set(T.xs[j], 1.8, T.z); txt(cur, 'h' + haSub(i));
-    const fm = 'h' + haSub(i) + '(' + k + ') = (' + h + ' + ' + haF(f, i) + ') mod ' + T.m + ' = ' + j;
-    if (T.keys[j] === null) {
-      glow(T.slots[j], RED);
-      say('find ' + k + '：[' + j + '] 是空格 → 不在表裡', fm + '　共 ' + (i + 1) + ' 次 probe');
-      await beat(tok, ms + 600); glow(T.slots[j], null);
-      return -(i + 1);
-    }
-    if (T.vals[j] === k) {
-      glow(T.keys[j], GREEN);
-      say('find ' + k + '：在 [' + j + '] 找到', fm + '　共 ' + (i + 1) + ' 次 probe');
-      await beat(tok, ms + 600); glow(T.keys[j], null);
-      return i + 1;
-    }
-    glow(T.keys[j], GOLD);
-    say('find ' + k + '：[' + j + '] 是 ' + T.vals[j] + '，不是', fm);
-    await beat(tok, ms);
-    glow(T.keys[j], null);
-  }
-  return 0;
-}
+const unglow = (T) => T.keys.forEach((c) => c && glow(c, null));
+// a person: a little buddy carrying "name + phone"
+const person = (name, color, x, z, size = 0.62) => buddy(name, '☎', color, x, 0, z, size);
 
 // ════════ MfhjkfocRR0（Paul） ════════
-// 00:00 key / value 與底層陣列
+// 00:04 key / value 與底層陣列
 FRAG.push(['hasha-kv', 'Hash table：key 對應 value', async (tok) => {
   fresh([0, 7, 12], [0, 0.6, 0]);
-  cube('Paul', HA[0], [1.8, 0.7, 1.0], -3.5, 0.35, -2.5, 3); tag('key', 'idx', -3.5, 0, -1.6);
-  say('Hash table：用來存資料', '每筆資料 = (key, value)');
-  await beat(tok, 3200);
-  cube('電話號碼', HA[1], [1.8, 0.7, 1.0], 3.5, 0.35, -2.5, 3); tag('value / record', 'idx', 3.5, 0, -1.6);
-  arrow(V3(-2.5, 0.4, -2.5), V3(2.5, 0.4, -2.5));
-  say('例：key = 名字、value = 電話', 'Paul → Paul 的電話號碼');
-  await beat(tok, 2800);
-  say('實作 associative array 的方法', '把 key 對應（map）到 value');
-  await beat(tok, 2600);
-  haRow(5, 1.7, 1.6);
-  tag('array', 'ptr', -5.2, 0.8, 1.6);
-  say('核心：一個陣列', 'index 0、1、2、3、4');
-  await beat(tok, 3400);
-  say('真正實作時表會大很多', '5 格只是為了畫在白板上');
-  await beat(tok, 3000);
+  await step(tok);                                   // 0:04 a data structure used to store information
+  const shelf = prop('warehouse', 0, 0, -3.4, 1.0, 'hash table：存資料的倉庫'); bob(shelf, 0.04);
+  say('Hash table：一種用來存資料的資料結構');
+  await step(tok);                                   // 0:12 two main components: some sort of key
+  const kc = cube('key', HA[0], [1.8, 0.7, 1.0], -3.6, 0.35, -0.8, 3);
+  say('每筆資料有兩部分：先是 key');
+  await step(tok);                                   // 0:20 and some sort of value or record
+  const vc = cube('value', HA[1], [1.8, 0.7, 1.0], 3.6, 0.35, -0.8, 3);
+  say('另一部分是 value（也叫 record）');
+  await step(tok);                                   // 0:26 key = my name, value = my phone number
+  const paul = person('Paul', HA[0], -5.6, 1.2);
+  note('key = 名字「Paul」', -3.6, 1.3, -0.8); note('value = Paul 的電話', 3.6, 1.3, -0.8);
+  await paul.hop(tok); paul.mood('happy');
+  say('例：key 是名字，value 是電話號碼', '可以拿來存一堆人的電話');
+  await step(tok);                                   // 0:42 implement an associative array: map key to value
+  arrow(V3(-2.5, 0.4, -0.8), V3(2.5, 0.4, -0.8), 0xa8730f);
+  bub('map：key → value', 0, 1.0, -0.8);
+  say('Hash table 實作 associative array', '把 key 對應（map）到 value');
+  await step(tok);                                   // 0:52 at the heart: an array structure
+  [kc, vc].forEach((c) => glow(c, null));
+  const T = haRow(5, 1.7, 2.4);
+  T.idx.forEach((l) => { l.element.style.visibility = 'hidden'; });
+  bub('核心：一個陣列', -5.6, 1.0, 2.4);
+  say('它的核心，就是一個陣列（array）');
+  await step(tok);                                   // 0:57 index 0, 1, 2, 3 and 4
+  for (let i = 0; i < 5; i++) { T.idx[i].element.style.visibility = ''; glow(T.slots[i], GOLD); await beat(tok, 250); glow(T.slots[i], null); }
+  say('每一格有編號：index 0、1、2、3、4');
+  await step(tok);                                   // 1:04 a real table would be much bigger than this
+  bub('白板上 5 格只是示意，真的會開大很多 …', 2.6, 1.4, 3.6);
+  for (let i = 0; i < 2; i++) { const m = cube('', GRAY, [0.9, 0.12, 1.2], T.xs[4] + 1.3 + i * 1.0, 0.06, T.z); m.material.transparent = true; m.material.opacity = 0.45; }
+  tag('…', 'idx', T.xs[4] + 2.9, 0.3, T.z);
+  say('真正寫程式時，表會開得大很多');
 }]);
 
 // 01:27 hash function：key → index（Paul → 3、其他人 → 1、2、4）
-async function haHashTo(tok, T, label, idx, color, cap, fm) {
-  const c = cube(label, color, [1.4, 0.7, 0.9], -5.5, 0.35, -2.6, 3);
-  await beat(tok, 600);
-  move(c, 0, 0.5, -2.6);
-  await beat(tok, 900);
-  const o = tag('index ' + idx, 'ptr alt', 1.9, 1.5, -2.6);
-  say(cap, fm);
-  await beat(tok, 1300);
-  move(c, T.xs[idx], 0.47, T.z); kill(o);
-  T.keys[idx] = c; T.vals[idx] = label;
-  await beat(tok, 1300);
-  return c;
-}
 FRAG.push(['hasha-paul', 'Hash function：hash(Paul) = 3', async (tok) => {
   fresh([0, 7.5, 12], [0, 0.6, -0.4]);
-  const T = haRow(5, 1.7, 1.6);
-  const hb = ghostBox('#c08a1f', 2.2, 1.4, 1.6); hb.position.set(0, 0.7, -2.6);
+  const T = haRow(5, 1.7, 1.8);
+  const HB = V3(0, 0.7, -2.6);
+  await step(tok);                                   // 1:27 we're going to write a hash function
+  const hb = ghostBox('#c08a1f', 2.2, 1.4, 1.6); hb.position.copy(HB);
   tag('hash( )', 'ptr', 0, 1.9, -2.6);
-  say('hash function：吃 key、吐 index', 'hash(key) → index');
-  await beat(tok, 2600);
-  await haHashTo(tok, T, '● Paul', 3, HA[0], 'hash(Paul) = 3：存到 index 3', 'hash("Paul") = 3');
-  const again = cube('● Paul', HA[0], [1.4, 0.7, 0.9], -5.5, 0.35, -2.6, 3);
-  await beat(tok, 500); move(again, 0, 0.5, -2.6); await beat(tok, 900);
-  const o = tag('index 3', 'ptr alt', 1.9, 1.5, -2.6); glow(T.keys[3], GOLD);
+  say('要寫一個 hash function');
+  await step(tok);                                   // 1:36 look at a key ... spit out an index number
+  const kp = tag('key', 'pkt', -5.4, 1.0, -2.6);
+  await travel(tok, kp, V3(-5.4, 1.0, -2.6), V3(-0.4, 1.0, -2.6), 800); remove(kp);
+  const ip = tag('index', 'pkt', 0.4, 1.0, -2.6);
+  await travel(tok, ip, V3(0.4, 1.0, -2.6), V3(4.6, 1.0, -2.6), 800);
+  say('吃進一個 key，吐出一個 index', 'index 告訴我們：資料放陣列哪一格');
+  await step(tok);                                   // 1:51 takes a key value, gives an index number
+  remove(ip);
+  bub('hash(key) → index', 4.2, 1.6, -3.6);
+  say('寫成式子：hash(key) → index');
+  await step(tok);                                   // 2:00 hash, with my name as the argument
+  const paul = person('● Paul', HA[0], -5.2, -2.6);
+  await travel(tok, paul.g, V3(-5.2, 0, -2.6), V3(-1.6, 0, -2.6), 1000);
+  paul.look(1);
+  say('把名字 Paul 當 key 丟進去', 'hash("Paul") = ?');
+  await step(tok);                                   // 2:07 it said: that should go in index 3
+  const o3 = tag('index 3', 'pkt', 1.6, 1.2, -2.6);
+  await travel(tok, o3, V3(0.6, 1.2, -2.6), V3(2.6, 1.2, -2.6), 600);
+  glow(T.slots[3], GOLD);
+  say('算出來：應該放在 index 3', 'hash("Paul") = 3');
+  await step(tok);                                   // 2:18 same key → same index every time
+  const again = tag('Paul', 'pkt', -5.0, 1.6, -1.6);
+  await travel(tok, again, V3(-5.0, 1.6, -1.6), V3(-0.4, 1.0, -2.6), 700); remove(again);
+  const o3b = tag('又是 3', 'pkt', 1.6, 1.9, -2.6);
+  await travel(tok, o3b, V3(0.6, 1.9, -2.6), V3(2.6, 1.9, -2.6), 500);
   say('同一個 key，每次都得到同一個 index', '再算一次 hash("Paul") 還是 3');
-  await beat(tok, 2600);
-  kill(again); kill(o); glow(T.keys[3], null);
-  await haHashTo(tok, T, '■ 某人', 1, HA[1], '另一個人：hash 得 1', 'hash(某人) = 1');
-  await haHashTo(tok, T, '▲ 某人', 2, HA[2], '再一個：index 2', 'hash(某人) = 2');
-  await haHashTo(tok, T, '◆ 某人', 4, HA[3], '菱形那位：index 4', 'hash(某人) = 4');
-  say('每個圖形 = 一筆名字＋電話', '位置全由 hash function 決定');
-  await beat(tok, 3000);
+  await step(tok);                                   // 2:32 represent Paul as a circle, put it here
+  remove(o3); remove(o3b); glow(T.slots[3], null);
+  await travel(tok, paul.g, V3(-1.6, 0, -2.6), V3(T.xs[3], 0.12, T.z), 1100);
+  paul.mood('happy'); paul.look(0);
+  say('圓圈 = Paul 的名字＋電話，放進 [3]');
+  // 2:42 another person → 1；3:05 → 2；3:16 diamond → 4
+  async function another(name, color, idx, hashMs) {
+    const p = person(name, color, -5.2, -2.6);
+    await travel(tok, p.g, V3(-5.2, 0, -2.6), V3(-1.6, 0, -2.6), hashMs);
+    return p;
+  }
+  await step(tok);                                   // 2:42 add some other person: evaluate that person
+  const sq = await another('■ 某人', HA[1], 1, 900);
+  say('再加一個人：一樣丟進 hash function');
+  await step(tok);                                   // 2:52 spits out an index value of one
+  const o1 = tag('index 1', 'pkt', 1.6, 1.2, -2.6);
+  await travel(tok, o1, V3(0.6, 1.2, -2.6), V3(2.6, 1.2, -2.6), 500); remove(o1);
+  await travel(tok, sq.g, V3(-1.6, 0, -2.6), V3(T.xs[1], 0.12, T.z), 1000);
+  say('方塊這位：hash 得 1 → 放進 [1]');
+  await step(tok);                                   // 3:05 another person's hash value goes in index two
+  const tr = await another('▲ 某人', HA[2], 2, 700);
+  await travel(tok, tr.g, V3(-1.6, 0, -2.6), V3(T.xs[2], 0.12, T.z), 900);
+  say('三角形這位：index 2');
+  await step(tok);                                   // 3:16 a diamond ... they go in index 4
+  const di = await another('◆ 某人', HA[3], 4, 700);
+  await travel(tok, di.g, V3(-1.6, 0, -2.6), V3(T.xs[4], 0.12, T.z), 1100);
+  [paul, sq, tr, di].forEach((p) => p.mood('happy'));
+  say('菱形這位：index 4', '每個人放哪一格，全由 hash function 決定');
 }]);
 
-// 03:24 collision：又一個人 hash 到 3 → chaining
+// 03:27 collision：又一個人 hash 到 3 → chaining
 FRAG.push(['hasha-chain3', 'Collision 與 chaining：index 3', async (tok) => {
   fresh([0, 8, 12], [0, 0.4, 0.4]);
-  const T = haRow(5, 1.7, -1.8);
-  [['■ 某人', 1, HA[1]], ['▲ 某人', 2, HA[2]], ['● Paul', 3, HA[0]], ['◆ 某人', 4, HA[3]]].forEach(([l, i, c]) => { T.keys[i] = cube(l, c, [1.4, 0.7, 0.9], T.xs[i], 0.47, T.z); });
-  say('再加一個人：hash 結果也是 3', 'hash(〰 某人) = 3');
-  const n1 = cube('〰 某人', HA[4], [1.4, 0.7, 0.9], -5.5, 0.4, 1.6, 3);
-  await beat(tok, 2400);
-  glow(T.keys[3], RED); move(n1, T.xs[3] - 2.6, 0.4, 0.6);
-  say('index 3 已經有人了：collision', 'Paul 已經占住 [3]');
-  await beat(tok, 2800);
-  glow(T.keys[3], null);
-  say('解法很多；這裡用 chaining', '從 index 3 拉出一條 linked list');
-  await beat(tok, 2200);
-  move(n1, T.xs[3], 0.4, 0.4);
-  arrow(V3(T.xs[3], 0.5, -1.15), V3(T.xs[3], 0.5, -0.05));
-  await beat(tok, 1200);
-  say('〰 接在 [3] 的串列上', '[3]：Paul → 〰');
-  await beat(tok, 2400);
-  const n2 = cube('≀ 某人', HA[5], [1.4, 0.7, 0.9], -5.5, 0.4, 2.6, 3);
-  say('又一個 hash 到 3：繼續往後接', 'hash(≀ 某人) = 3');
-  await beat(tok, 1600);
-  move(n2, T.xs[3], 0.4, 2.2);
-  arrow(V3(T.xs[3], 0.5, 0.85), V3(T.xs[3], 0.5, 1.75));
-  await beat(tok, 1200);
-  say('這就叫 chaining', '[3]：Paul → 〰 → ≀，都屬於 index 3');
-  await beat(tok, 3000);
+  const T = haRow(5, 1.7, -2.4);
+  const P = [['■', 1, HA[1]], ['▲', 2, HA[2]], ['● Paul', 3, HA[0]], ['◆', 4, HA[3]]].map(([l, i, c]) => person(l, c, T.xs[i], T.z));
+  const paul = P[2];
+  await step(tok);                                   // 3:27 we're wanting to add another person
+  const sq = person('〰 某人', HA[4], -5.6, 1.8);
+  say('再加一個人');
+  await step(tok);                                   // 3:40 their hash value ends up being three
+  const h3 = tag('hash = 3', 'pkt', -5.6, 1.6, 0.4);
+  await travel(tok, sq.g, V3(-5.6, 0, 1.8), V3(T.xs[3] - 1.7, 0, -0.6), 1000);
+  await travel(tok, h3, V3(-5.6, 1.6, 0.4), V3(T.xs[3], 1.8, -1.0), 600);
+  say('他的 hash 值也是 3');
+  await step(tok);                                   // 3:47 uh-oh, there's already someone in index 3
+  remove(h3); paul.glow(RED); paul.mood('wow'); sq.mood('wow');
+  bad('collision！', T.xs[3], 2.0, T.z);
+  say('糟糕，[3] 已經有 Paul 了', '兩個 key 搶同一格 = collision');
+  await step(tok);                                   // 3:52 a lot of different ways to go about this
+  paul.glow(null);
+  bub('處理 collision 的方法有很多種', -4.0, 2.2, -0.6);
+  say('解決 collision 的方法很多');
+  await step(tok);                                   // 4:02 create a linked list off of each index
+  for (let i = 0; i < 5; i++) arrow(V3(T.xs[i], 0.3, T.z + 0.65), V3(T.xs[i], 0.3, T.z + 1.35), 0x9a8a70);
+  say('Paul 的做法：每一格往下拉一條 linked list', 'linked list = 一節一節串起來的串列');
+  await step(tok);                                   // 4:17 put squiggly line's name and phone in there
+  await travel(tok, sq.g, V3(T.xs[3] - 1.7, 0, -0.6), V3(T.xs[3], 0, -0.5), 800);
+  sq.mood('happy'); paul.mood('calm');
+  say('〰 接在 [3] 的串列上');
+  await step(tok);                                   // 4:23 this is called chaining
+  good('這叫 chaining', T.xs[3] + 2.1, 1.6, -0.5);
+  say('這種做法叫 chaining（串起來）');
+  await step(tok);                                   // 4:30 another one in index 3
+  const sw = person('≀ 某人', HA[5], -5.6, 2.6);
+  say('又有一個人 hash 到 3');
+  await step(tok);                                   // 4:34 link that off of squiggly line
+  arrow(V3(T.xs[3], 0.3, 0.05), V3(T.xs[3], 0.3, 0.85), 0x9a8a70);
+  await travel(tok, sw.g, V3(-5.6, 0, 2.6), V3(T.xs[3], 0, 1.4), 1000);
+  sw.mood('happy');
+  say('就接在 〰 的後面', '[3]：Paul → 〰 → ≀');
+  await step(tok);                                   // 4:54 a collision → link it off of that same element
+  [paul, sq, sw].forEach((p) => p.glow(GOLD));
+  say('只要 collision，就掛在同一格的串列上');
+  await step(tok);                                   // 5:01 each of these people got index 3
+  bub('這三位的 index 都是 3', T.xs[3] + 2.6, 0.6, 1.4);
+  await Promise.all([paul.hop(tok), sq.hop(tok), sw.hop(tok)]);
+  say('他們都屬於 index 3');
 }]);
 
-// 05:03 查詢：hash(某人) = 1，只看 index 1 的串列
+// 05:06 查詢：hash(某人) = 1，只看 index 1 的串列
 FRAG.push(['hasha-lookup', '查詢：hash 直接告訴你去哪一格', async (tok) => {
   fresh([0, 8.5, 12], [0, 0.4, 0.6]);
   const T = haRow(5, 1.7, -2.6);
-  ['▲', '■', '◆', '●', '♣'].forEach((l, i) => { T.keys[i] = cube(l, HA[i], [1.2, 0.7, 0.9], T.xs[i], 0.47, T.z); });
-  const ch = [['甲', HA[5]], ['乙', HA[6]], ['★ 要找的人', HA[4]]].map(([l, c], r) => {
-    arrow(V3(T.xs[1], 0.5, T.z + 0.5 + r * 1.6), V3(T.xs[1], 0.5, T.z + 1.3 + r * 1.6));
-    return cube(l, c, [1.5, 0.6, 0.8], T.xs[1], 0.35, T.z + 1.75 + r * 1.6);
+  const HB = V3(-4.6, 0.7, 2.6);
+  await step(tok);                                   // 5:06 a whole bunch of names and phone numbers
+  ['▲', '■', '◆', '●', '♣'].forEach((l, i) => { T.keys[i] = cube(l, HA[i], [1.2, 0.7, 0.9], T.xs[i], 0.47, T.z, 2); });
+  const ch = [['甲', HA[5]], ['乙', HA[6]], ['★', HA[4]]].map(([l, c], r) => {
+    arrow(V3(T.xs[1], 0.5, T.z + 0.5 + r * 1.5), V3(T.xs[1], 0.5, T.z + 1.2 + r * 1.5), 0x9a8a70);
+    return cube(l, c, [1.2, 0.6, 0.8], T.xs[1], 0.35, T.z + 1.6 + r * 1.5, 2);
   });
-  say('存了一大堆人之後，想查某人的電話', '已知 key（名字），要找 value');
-  await beat(tok, 2800);
-  const k = cube('★', HA[4], [0.9, 0.7, 0.9], -5.6, 0.4, 3.2, 3);
-  say('把 key 丟進 hash function', 'hash(★) = 1');
-  await beat(tok, 2200);
+  say('表裡已經存了一大堆人的名字和電話');
+  await step(tok);                                   // 5:16 you have the name, want the phone number
+  const me = person('★ 要找的人', HA[4], -6.2, 0.4);
+  note('只知道名字，要查電話', -6.0, 1.6, 0.4);
+  say('現在：知道某人的名字，想查他的電話', '已知 key，要找 value');
+  await step(tok);                                   // 5:23 enter their key inside the hash function
+  const hb = ghostBox('#c08a1f', 1.8, 1.2, 1.4); hb.position.copy(HB);
+  tag('hash( )', 'ptr', HB.x, 1.7, HB.z);
+  const kp = tag('★', 'pkt', -6.2, 1.2, 0.4);
+  await travel(tok, kp, V3(-6.2, 1.2, 0.4), V3(HB.x, 1.0, HB.z), 800); remove(kp);
+  say('把 key 丟進同一個 hash function');
+  await step(tok);                                   // 5:40 it spits out an index: tells you exactly where
+  const out = tag('index ?', 'pkt', HB.x, 1.0, HB.z);
+  await travel(tok, out, V3(HB.x, 1.0, HB.z), V3(HB.x + 2.4, 1.0, HB.z - 1.6), 700);
+  say('吐出 index：直接告訴你他在哪一格');
+  await step(tok);                                   // 5:53 might get a hash value of two
+  txt(out, 'index 2？');
+  say('老師先說成 2 ……');
+  await step(tok);                                   // 6:01 sorry, I meant to say one
+  txt(out, 'index 1');
   const cur = tag('hash → 1', 'ptr alt', T.xs[1], 1.9, T.z);
+  glow(T.keys[1], GOLD);
+  say('更正：hash 結果是 1');
+  await step(tok);                                   // 6:04 even a million long: no need to look at 0, 2, 3, 4
   const skip = [0, 2, 3, 4].map((i) => tag('不用看', 'idx', T.xs[i], 1.5, T.z));
-  say('直接去 index 1，其他格都不用看', '就算表有一百萬格也一樣');
-  await beat(tok, 3000);
-  skip.forEach(kill);
-  for (let r = 0; r < ch.length; r++) {
-    const c = ch[r];
-    cur.position.set(T.xs[1] + 1.6, 1.0, T.z + 1.75 + r * 1.6); txt(cur, '比對');
-    glow(c, r === 2 ? GREEN : GOLD);
-    say(r === 2 ? '找到了，取出他的電話' : '沿著 chain 往下找', r === 2 ? '只走了 index 1 的串列' : '第 ' + (r + 1) + ' 個節點：不是');
-    await beat(tok, 1600);
-    if (r < 2) glow(c, null);
+  [0, 2, 3, 4].forEach((i) => { T.keys[i].material.transparent = true; T.keys[i].material.opacity = 0.35; });
+  say('其他格子都不用看', '就算陣列有一百萬格也一樣');
+  await step(tok);                                   // 6:18 if we had chaining, go down the list
+  skip.forEach(remove);
+  for (let r = 0; r < 2; r++) {
+    cur.position.set(T.xs[1] + 1.5, 1.0, T.z + 1.6 + r * 1.5); txt(cur, '不是');
+    glow(ch[r], GOLD); await beat(tok, 700); glow(ch[r], null);
   }
-  move(k, T.xs[1] - 1.9, 0.4, T.z + 1.75 + 2 * 1.6);
-  say('做得好的話，每條 chain 都很短', 'collision 時才用 linked list 接起來');
-  await beat(tok, 3000);
+  say('沿著 [1] 的串列往下找', '甲不是、乙不是 ……');
+  await step(tok);                                   // 6:30 figure out where that person is, grab it
+  cur.position.set(T.xs[1] + 1.5, 1.0, T.z + 4.6); txt(cur, '找到！');
+  glow(ch[2], GREEN); me.mood('happy'); await me.hop(tok);
+  good('拿到他的電話 ☎', T.xs[1] + 2.8, 0.4, T.z + 4.6);
+  say('找到了，把他的電話拿出來');
+  await step(tok);                                   // 6:35 done right: not many links off one index
+  bub('hash function 設計得好 → 每串都很短', 2.4, 2.2, -0.6);
+  say('hash function 設計得好，每一串都不會太長');
+  await step(tok);                                   // 6:46 collisions → a linked list per index = chaining
+  bub('collision → 接成 linked list = chaining', 2.4, 1.4, 0.4);
+  say('碰到 collision 就用 linked list 接起來', '這就叫 chaining');
 }]);
 
 // ════════ CwM-Cxilk4g（Linear Probing） ════════
-// 03:36 把空格用起來：10, 20, 30, 40 往下一格放
-FRAG.push(['hasha-lp-idea', 'Linear probing：撞了就放下一格', async (tok) => {
-  fresh([0, 7, 12], [0, 0.6, 0]);
-  const T = haRow(10, 1.15, 0.6);
-  const cur = tag('h₀', 'ptr alt', T.xs[0], 1.8, T.z);
-  say('同樣 h(x) = x mod 10，表有 10 格', '想把空著的格子用起來');
-  await beat(tok, 2400);
-  for (const k of [10, 20, 30, 40]) await haInsert(tok, T, k, haLin, cur, 1050);
-  say('一般式：h_i(x) = (hash(x) + f(i)) mod 10', 'linear probing：f(i) = i');
-  await beat(tok, 2800);
-  say('第一次 f(0) = 0，就是原本的 hash(x)', '撞了再 +1、+2、+3… 直到不撞');
-  await beat(tok, 3000);
+// 00:00 open addressing vs separate chaining（10, 20, 30, 40, 50）
+FRAG.push(['hasha-cvo', 'Open addressing 對照 separate chaining', async (tok) => {
+  fresh([0, 8, 12], [0, 0.4, 0.6]);
+  let T = haRow(10, 1.15, -2.4);
+  await step(tok);                                   // 0:00 collision resolution strategies
+  const t1 = bub('這一講：collision 發生了怎麼辦？', -3.2, 1.8, -3.6);
+  say('Collision resolution：撞在一起時怎麼處理');
+  await step(tok);                                   // 0:06 in particular: open addressing
+  const t2 = tag('open addressing', 'ptr alt', 3.0, 1.8, -3.6);
+  say('重點：open addressing');
+  await step(tok);                                   // 0:15 all the data go inside the table itself
+  const tmp = [2, 5, 7].map((i) => haPlace(T, i, ['a', 'b', 'c'][[2, 5, 7].indexOf(i)], true));
+  const g1 = good('資料全部放在表「裡面」', 3.6, 1.0, -0.6);
+  say('Open addressing：所有資料都放在 hash table 本身');
+  await step(tok);                                   // 0:22 last time: separate chaining (open hashing)
+  const old = [];
+  for (let r = 0; r < 2; r++) { old.push(arrow(V3(T.xs[2], 0.3, T.z + 0.6 + r * 1.2), V3(T.xs[2], 0.3, T.z + 1.1 + r * 1.2), 0x9a8a70)); old.push(cube('', HA[r + 4], [0.8, 0.5, 0.7], T.xs[2], 0.3, T.z + 1.5 + r * 1.2, 2)); }
+  const t3 = bub('上一講：separate chaining = 每格掛 linked list', -3.0, 1.0, 1.4);
+  say('上一講的 separate chaining（又叫 open hashing）', '每個 index 掛一條 linked list');
+  await step(tok);                                   // 0:36 it grew in size: more than the table cells
+  for (let r = 2; r < 5; r++) { old.push(arrow(V3(T.xs[2], 0.3, T.z + 0.6 + r * 1.2), V3(T.xs[2], 0.3, T.z + 1.1 + r * 1.2), 0x9a8a70)); old.push(cube('', HA[r + 1], [0.8, 0.5, 0.7], T.xs[2], 0.3, T.z + 1.5 + r * 1.2, 2)); await beat(tok, 300); }
+  say('串列越掛越長，節點數可以比格子數還多');
+  await step(tok);                                   // 0:45 don't use anything extra than the table memory
+  old.forEach(kill); remove(t3);
+  say('今天的方法：不用表以外的任何記憶體');
+  await step(tok);                                   // 0:52 requires a bigger table, load factor below 0.5
+  bub('代價：表要大一點，load factor λ < 0.5', 0, 2.6, 0.4);
+  say('但表要夠大：load factor λ 最好低於 0.5', 'λ = 資料筆數 ÷ 表的格數');
+  await step(tok);                                   // 1:13 like 10, 20, 30, 40, 50 with h(x) = x mod 10
+  tmp.forEach(kill); T.keys.fill(null); T.vals.fill(null); remove(g1);
+  note('例：10, 20, 30, 40, 50，h(x) = x mod 10 → 全到 [0]', 0, 1.2, 1.6);
+  say('上次的例子：10, 20, 30, 40, 50', 'x mod 10 全部是 0');
+  await step(tok);                                   // 1:39 linked list also needs memory
+  bad('linked list 也要額外記憶體', 0, 0.6, 2.6);
+  say('串成 linked list，又要額外的記憶體');
+  await step(tok);                                   // 2:14 h(x) = x mod 10 again, cells 0..9
+  fresh([0, 8, 12], [0, 0.4, 0.6]);
+  T = haRow(10, 1.15, -2.4);
+  T.slots.forEach((s) => glow(s, GOLD)); await beat(tok, 500); T.slots.forEach((s) => glow(s, null));
+  tag('h(x) = x mod 10', 'ptr', -4.6, 1.8, -3.6);
+  say('在白板上再做一次：h(x) = x mod 10', '表有 0～9 共 10 格');
+  await step(tok);                                   // 2:33 inputs 10 20 30 40 50
+  const ks = [10, 20, 30, 40, 50].map((k, i) => cube(k, haCol(k), [0.9, 0.7, 0.9], 1.0 + i * 1.2, 0.4, 1.4, 3));
+  say('輸入：10, 20, 30, 40, 50');
+  await step(tok);                                   // 2:42 10 mod 10 is zero, 20 mod 10 is zero …
+  const ar = ks.map((c, i) => arrow(V3(1.0 + i * 1.2, 0.8, 0.9), V3(T.xs[0] + 0.3, 0.8, T.z + 0.6), 0x7a1010));
+  bad('全部 mod 10 = 0', 3.4, 1.8, 0.4);
+  say('每個 mod 10 都是 0', '全部撞在 index 0');
+  await step(tok);                                   // 2:53 a linked list like this: 50 40 30 20 10
+  ar.forEach(kill);
+  [50, 40, 30, 20, 10].forEach((k, r) => {
+    arrow(V3(T.xs[0], 0.3, T.z + 0.6 + r * 1.0), V3(T.xs[0], 0.3, T.z + 1.0 + r * 1.0), 0x9a8a70);
+    move(ks[[10, 20, 30, 40, 50].indexOf(k)], T.xs[0], 0.35, T.z + 1.35 + r * 1.0);
+  });
+  await beat(tok, 900);
+  say('chaining：在 [0] 串成 50 → 40 → 30 → 20 → 10');
+  await step(tok);                                   // 3:10 so many places in the table are free
+  for (let i = 1; i < 10; i++) glow(T.slots[i], GREEN);
+  good('這 9 格都空著！', 2.4, 1.2, T.z);
+  say('可是表裡明明還有很多空格');
+  await step(tok);                                   // 3:19 but we are using extra memory in this list
+  ks.forEach((c) => glow(c, RED));
+  say('卻另外花記憶體去做 linked list');
+  await step(tok);                                   // 3:26 we want these memories utilized
+  ks.forEach((c) => glow(c, null));
+  [20, 30, 40, 50].forEach((k, i) => arrow(V3(T.xs[0] + 0.5, 0.6, T.z + 2.35 + i * 1.0), V3(T.xs[i + 1], 0.6, T.z + 0.55), 0x0f5a3a));
+  say('想把這些空格用起來 → open addressing');
 }]);
 
-// 06:01 正式定義：h₀, h₁, h₂… 依序嘗試、wrap around
+// 03:39 把空格用起來：10, 20, 30, 40 往下一格放
+FRAG.push(['hasha-lp-idea', 'Linear probing：撞了就放下一格', async (tok) => {
+  fresh([0, 7, 12], [0, 0.6, 0]);
+  const T = haRow(10, 1.15, 0.4);
+  const cur = tag('', 'ptr alt', T.xs[0], 2.1, T.z);
+  await step(tok);                                   // 3:40 I utilize these places
+  T.slots.forEach((s) => glow(s, GREEN)); await beat(tok, 500); T.slots.forEach((s) => glow(s, null));
+  say('目標：把表裡的空格用起來', 'h(x) = x mod 10');
+  await step(tok);                                   // 3:47 when I inserted 10, 10 came here
+  await haTry(tok, T, 10, 0, cur, 'h(10) = 0');
+  say('insert 10：10 mod 10 = 0 → 放 [0]');
+  await step(tok);                                   // 3:54 20: collision, so it should come here
+  await haTry(tok, T, 20, 0, cur, 'h(20) = 0', 600); unglow(T);
+  await haTry(tok, T, 20, 1, cur, '下一格');
+  say('insert 20：[0] 撞了 → 放下一格 [1]');
+  await step(tok);                                   // 4:00 h(30) = 0, already filled
+  await haTry(tok, T, 30, 0, cur, 'h(30) = 0');
+  say('insert 30：h(30) = 0，但 [0] 已經滿了');
+  await step(tok);                                   // 4:11 go to the next place, one: also filled
+  unglow(T); await haTry(tok, T, 30, 1, cur, '+1');
+  say('去下一格 [1]：也滿了');
+  await step(tok);                                   // 4:18 next place … this is known as linear probing
+  unglow(T); await haTry(tok, T, 30, 2, cur, '+2');
+  tag('linear probing', 'ptr', 3.6, 2.0, -1.0);
+  say('再下一格 [2] 是空的 → 放進去', '一格一格往下找：linear probing');
+  await step(tok);                                   // 4:42 h(40): 0 not empty, 20, 30 … not empty
+  for (const j of [0, 1, 2]) { await haTry(tok, T, 40, j, cur, '+' + j, 500); }
+  say('insert 40：[0]、[1]、[2] 都不是空的');
+  await step(tok);                                   // 4:54 I will put it here
+  unglow(T); await haTry(tok, T, 40, 3, cur, '+3');
+  say('40 放進 [3]');
+  await step(tok);                                   // 5:01 h(x) becomes (hash(x) + f(i)) mod 10
+  bub('h_i(x) = (hash(x) + f(i)) mod 10', 0, 2.8, -2.0);
+  say('寫成式子：h_i(x) = (hash(x) + f(i)) mod 10', 'i = 第幾次嘗試（從 0 開始）');
+  await step(tok);                                   // 5:14 in linear probing f(i) is nothing but i
+  note('linear probing：f(i) = i', 3.6, 1.2, -2.0);
+  say('linear probing 的 f(i) 就是 i');
+  await step(tok);                                   // 5:25 h₀(x) = hash(x) + f(0) = hash(x)
+  cur.position.set(T.xs[0], 2.1, T.z); txt(cur, 'h₀ = hash(x)');
+  say('第一次 i = 0：f(0) = 0', 'h₀(x) = hash(x)，就是原本的位置');
+  await step(tok);                                   // 5:52 others vary: +1, +2, +3 till resolved
+  for (let i = 1; i <= 3; i++) { cur.position.set(T.xs[i], 2.1, T.z); txt(cur, 'h' + haSub(i) + ' = +' + i); await beat(tok, 500); }
+  say('撞了就 +1、+2、+3 …… 直到不撞為止');
+}]);
+
+// 06:05 正式定義：h₀, h₁, h₂… 依序嘗試、wrap around
 FRAG.push(['hasha-probe-def', 'Probe sequence：h_i(x) = (hash(x) + f(i)) mod m', async (tok) => {
   fresh([0, 7.5, 12], [0, 1.2, -0.4]);
+  const T = haRow(10, 1.15, 1.6);
+  const cur = tag('', 'ptr alt', T.xs[0], 2.1, T.z);
   const cd = code(['h_i(x) = (hash(x) + f(i)) mod TableSize', 'f(0) = 0', 'linear     f(i) = i', 'quadratic  f(i) = i²', 'double     f(i) = i·hash₂(x)'], 0, 5.4, 0.5, -3.2);
-  const T = haRow(10, 1.15, 1.4);
-  cd.hl(0);
-  say('h₀、h₁、h₂… 依序嘗試', 'h_i(x) = (hash(x) + f(i)) mod TableSize');
-  await beat(tok, 2800);
-  cd.hl(1);
-  say('f(0) = 0：第一格就是 hash(x)', 'hash(x) = x mod 10');
-  await beat(tok, 2200);
+  cd.ls.forEach((l) => { l.element.style.visibility = 'hidden'; });
+  const show = (i) => { cd.ls[i].element.style.visibility = ''; };
+  await step(tok);                                   // 6:06 cells h₀(x), h₁(x), h₂(x) tried in succession
+  for (let i = 0; i < 3; i++) { cur.position.set(T.xs[i], 2.1, T.z); txt(cur, 'h' + haSub(i)); await beat(tok, 450); }
+  say('h₀(x)、h₁(x)、h₂(x)……依序嘗試');
+  await step(tok);                                   // 6:14 h_i(x) = (hash(x) + f(i)) mod TableSize, f(0) = 0
+  show(0); show(1); cd.hl(0);
+  say('h_i(x) = (hash(x) + f(i)) mod TableSize', '而且 f(0) = 0');
+  await step(tok);                                   // 6:22 three common: linear, quadratic, double hashing
+  show(2); show(3); show(4); cd.hl(2);
+  say('三種常見：linear、quadratic、double hashing', '這一講用 linear probing');
+  await step(tok);                                   // 6:38 resolved sequentially scanning, with wrap around
+  for (const j of [7, 8, 9]) { cur.position.set(T.xs[j], 2.1, T.z); txt(cur, '[' + j + ']'); await beat(tok, 350); }
+  arrow(V3(T.xs[9], 1.3, T.z - 0.9), V3(T.xs[0], 1.3, T.z - 0.9), 0xc08a1f);
+  cur.position.set(T.xs[0], 2.1, T.z); txt(cur, '繞回 [0]');
+  say('依序往下掃，到底就 wrap around 回到開頭', '直到找到空格');
+  await step(tok);                                   // 6:49 h(20) is zero but occupied → next place
+  haPlace(T, 0, 10, true); await beat(tok, 400);
+  await haTry(tok, T, 20, 0, cur, 'h(20) = 0', 500); unglow(T);
+  await haTry(tok, T, 20, 1, cur, '下一格', 500);
+  say('就像剛才：20 的 [0] 被 10 佔了 → 放下一格');
+  await step(tok);                                   // 7:01 h(30): 0 and 1 occupied, come to [2]
+  await haTry(tok, T, 30, 0, cur, '[0]', 400); await haTry(tok, T, 30, 1, cur, '[1]', 400); unglow(T);
+  await haTry(tok, T, 30, 2, cur, '[2]', 500);
+  say('30：[0]、[1] 都被佔 → 放 [2]');
+  await step(tok);                                   // 7:08 f is linear, typically f(i) = i
   cd.hl(2);
-  say('三種常見：linear、quadratic、double', '這一講用 linear：f(i) = i');
-  await beat(tok, 2600);
-  haPlace(T, 0, 10, true);
-  await beat(tok, 700);
-  const cur = tag('h₀', 'ptr alt', T.xs[0], 1.8, T.z);
-  await haInsert(tok, T, 20, haLin, cur, 1300);
-  say('20 第一次撞 → f(1) = 1 → 下一格', '依序掃描，找到空格為止');
-  await beat(tok, 2400);
-  cur.position.set(T.xs[9], 1.8, T.z); txt(cur, '[9]');
-  await beat(tok, 900);
-  arrow(V3(T.xs[9], 1.2, T.z - 0.9), V3(T.xs[0], 1.2, T.z - 0.9), 0xc08a1f);
-  cur.position.set(T.xs[0], 1.8, T.z - 0.2); txt(cur, '→ [0]');
-  say('走到最後一格就 wrap around 回 [0]', '(9 + 1) mod 10 = 0');
-  await beat(tok, 3000);
+  say('f 是線性函數，通常取 f(i) = i');
+  await step(tok);                                   // 7:15 h(20) collided: f(1) = 1, moved to next place
+  glow(T.keys[1], GOLD);
+  arrow(V3(T.xs[0], 1.4, T.z - 0.9), V3(T.xs[1], 1.4, T.z - 0.9), 0xc08a1f);
+  say('20 第一次撞 → f(1) = 1，所以 +1 到下一格', 'h₁(20) = (0 + 1) mod 10 = 1');
 }]);
 
 // 07:30 依序 insert 89, 18, 49, 58, 9
 FRAG.push(['hasha-lp-89', 'Linear probing：insert 89, 18, 49, 58, 9', async (tok) => {
   fresh([0, 7, 12], [0, 0.6, 0]);
-  const T = haRow(10, 1.15, 0.6);
-  const cur = tag('h₀', 'ptr alt', T.xs[9], 1.8, T.z);
-  say('表大小 10，hash(x) = x mod 10', '依序 insert 89, 18, 49, 58, 9');
-  await beat(tok, 2400);
-  const cnt = [];
-  for (const k of [89, 18, 49, 58, 9]) cnt.push([k, await haInsert(tok, T, k, haLin, cur, 1000)]);
-  say('49→[0]、58→[1]、9→[2]', cnt.map(([k, n]) => k + '：' + n + ' 次').join('　'));
-  await beat(tok, 3200);
+  let T;
+  const cur = tag('', 'ptr alt', 0, 2.1, 0.4);
+  await step(tok);                                   // 7:30 linear probing hash table after each insertion
+  T = haRow(10, 1.15, 0.4);
+  say('看每次 insert 之後，表長什麼樣子', '表大小 10');
+  await step(tok);                                   // 7:47 h_i(x) = (hash(x) + f(i)) mod size, hash(x) = x mod 10
+  bub('h_i(x) = (x mod 10 + i) mod 10', 0, 2.9, -1.6);
+  say('hash(x) = x mod 10，撞了就 + i', '依序 insert 89, 18, 49, 58, 9');
+  await step(tok);                                   // 8:09 89 mod 10 = 9, 9 is free
+  await haTry(tok, T, 89, 9, cur, 'h₀ = 9');
+  say('89 mod 10 = 9，[9] 空的 → 放 [9]');
+  await step(tok);                                   // 8:19 18 mod 10 = 8, cell 8 free
+  await haTry(tok, T, 18, 8, cur, 'h₀ = 8');
+  say('18 mod 10 = 8 → 放 [8]');
+  await step(tok);                                   // 8:35 49 mod 10 = 9: now 9 is filled
+  await haTry(tok, T, 49, 9, cur, 'h₀ = 9');
+  say('49 mod 10 = 9，但 [9] 已經放了 89', 'collision');
+  await step(tok);                                   // 8:56 H₁(49) = (9 + 1) mod 10 = 0 → 49 comes here
+  unglow(T); await haTry(tok, T, 49, 0, cur, 'h₁ = 0');
+  say('h₁(49) = (9 + 1) mod 10 = 0 → 放 [0]', '不用掛 linked list，表裡還有很多空位');
+  await step(tok);                                   // 9:27 58 → h₀ = 8: collision
+  await haTry(tok, T, 58, 8, cur, 'h₀ = 8');
+  say('58 mod 10 = 8：[8] 被 18 佔了');
+  await step(tok);                                   // 9:37 H₁(58) = (8 + 1) mod 10 = 9: again collision
+  unglow(T); await haTry(tok, T, 58, 9, cur, 'h₁ = 9');
+  say('h₁(58) = (8 + 1) mod 10 = 9：又撞');
+  await step(tok);                                   // 9:45 H₂(58) = (8 + 2) mod 10 = 0: collision here also
+  unglow(T); await haTry(tok, T, 58, 0, cur, 'h₂ = 0');
+  say('h₂(58) = (8 + 2) mod 10 = 0：還是撞');
+  await step(tok);                                   // 10:02 H₃(58) = (8 + 3) mod 10 = 1 → 58 comes here
+  unglow(T); await haTry(tok, T, 58, 1, cur, 'h₃ = 1');
+  say('h₃(58) = (8 + 3) mod 10 = 1 → 放 [1]', '58 一共試了 4 次');
+  await step(tok);                                   // 10:23 9: tries to come here, not available
+  await haTry(tok, T, 9, 9, cur, 'h₀ = 9');
+  say('insert 9：9 mod 10 = 9，[9] 不能放');
+  await step(tok);                                   // 10:29 tries plus one: not available
+  unglow(T); await haTry(tok, T, 9, 0, cur, 'h₁ = 0');
+  say('+1 → [0]：也不能放');
+  await step(tok);                                   // 10:43 let's do the last one again: h(9) = 9, filled
+  unglow(T); await haTry(tok, T, 9, 9, cur, 'h₀ = 9');
+  say('老師用公式再算一次：h₀(9) = 9，滿了');
+  await step(tok);                                   // 10:50 H₁(9) = (9 + 1) mod 10 = 0
+  unglow(T); await haTry(tok, T, 9, 0, cur, 'h₁ = 0');
+  say('h₁(9) = (9 + 1) mod 10 = 0：滿了');
+  await step(tok);                                   // 10:59 H₂(9) = 11 mod 10 = 1: cannot go here
+  unglow(T); await haTry(tok, T, 9, 1, cur, 'h₂ = 1');
+  say('h₂(9) = (9 + 2) mod 10 = 1：還是滿的');
+  await step(tok);                                   // 11:10 H₃(9) = 12 mod 10 = 2 → finds its place
+  unglow(T); await haTry(tok, T, 9, 2, cur, 'h₃ = 2');
+  say('h₃(9) = (9 + 3) mod 10 = 2 → 放 [2]', '9 也試了 4 次');
+  await step(tok);                                   // 11:21 each step has a different h_i
+  bub('49→[0]、58→[1]、9→[2]：每次撞了就換下一個 h_i', 0, 1.5, 2.8);
+  say('每多撞一次，就用下一個 h_i 算');
 }]);
 
-// 13:19 表大小 11：成功搜尋平均 15/8、失敗搜尋要走到空格
+// 11:41 Find：走同一條 probe sequence（58：4 次；19：5 次）
+FRAG.push(['hasha-find', 'Find：走同一條 probe sequence（58 要 4 次、19 要 5 次）', async (tok) => {
+  fresh([0, 7, 12], [0, 0.6, 0]);
+  const T = haRow(10, 1.15, -0.4);
+  const cur = tag('', 'ptr alt', 0, 2.1, T.z);
+  const look = async (j, k, lbl) => { cur.position.set(T.xs[j], 2.1, T.z); txt(cur, lbl); const c = T.keys[j]; if (!c) { glow(T.slots[j], RED); return 'empty'; } glow(c, T.vals[j] === k ? GREEN : GOLD); return T.vals[j] === k ? 'hit' : 'miss'; };
+  await step(tok);                                   // 11:41 find follows the same probe sequence as insert
+  [[9, 89], [8, 18], [0, 49], [1, 58], [2, 9]].forEach(([i, k]) => haPlace(T, i, k, true));
+  say('Find（搜尋）跟 insert 走同一條 probe sequence');
+  await step(tok);                                   // 11:45 to find 58 would involve four probes
+  const q = buddy('找 58', 58, haCol(58), -6.2, 0, 2.2, 0.7);
+  say('find 58：要 probe 4 次');
+  await step(tok);                                   // 11:58 h(58) = 8: 58 is not there
+  await look(8, 58, 'h₀ = 8');
+  say('h(58) = 8：[8] 是 18，不是');
+  await step(tok);                                   // 12:06 H₁(58) = 9: not found
+  unglow(T); await look(9, 58, 'h₁ = 9');
+  say('h₁(58) = 9：是 89，不是');
+  await step(tok);                                   // 12:16 H₂(58) = 0: doesn't find it here
+  unglow(T); await look(0, 58, 'h₂ = 0');
+  say('h₂(58) = 0：是 49，不是');
+  await step(tok);                                   // 12:25 H₃(58) = 1: finds it
+  unglow(T); await look(1, 58, 'h₃ = 1');
+  q.mood('happy'); await q.hop(tok);
+  say('h₃(58) = (8 + 3) mod 10 = 1：找到了！');
+  await step(tok);                                   // 12:33 so it requires four probes
+  good('find 58：4 次 probe', T.xs[1], 1.2, T.z - 1.0);
+  say('所以 find 58 總共 probe 4 次');
+  await step(tok);                                   // 12:39 19 would involve five probes
+  unglow(T); q.set(19); q.mood('calm');
+  for (const [i, j] of [[0, 9], [1, 0], [2, 1], [3, 2]]) { await look(j, 19, 'h' + haSub(i)); await beat(tok, 380); unglow(T); }
+  await look(3, 19, 'h₄ = 3');
+  q.mood('sad');
+  bad('19：遇到空格 → 不在表裡（5 次）', T.xs[3] + 1.2, 1.2, T.z + 1.6);
+  say('find 19：9 → 0 → 1 → 2 → 3（空格）', '5 次 probe 才確定「不在表裡」');
+}]);
+
+// 12:44 clustering：89,18,49,58,9 擠成 [8]～[2] 一大塊
+FRAG.push(['hasha-cluster', 'Clustering：撞進群聚就要走到底', async (tok) => {
+  fresh([0, 7, 12], [0, 0.6, 0]);
+  const T = haRow(10, 1.15, 0.4);
+  const cur = tag('', 'ptr alt', T.xs[8], 2.1, T.z);
+  await step(tok);                                   // 12:44 clustering problem; free cells always found
+  [[9, 89], [8, 18], [0, 49], [1, 58], [2, 9]].forEach(([i, k]) => haPlace(T, i, k));
+  say('問題：clustering（群聚）', '只要表夠大，空格一定找得到');
+  await step(tok);                                   // 12:49 but the time to find will become larger
+  for (const j of [8, 9, 0, 1, 2, 3]) { cur.position.set(T.xs[j], 2.1, T.z); txt(cur, '[' + j + ']'); await beat(tok, 300); }
+  say('但找的時間會變長');
+  await step(tok);                                   // 12:56 called the clustering problem
+  for (const i of [8, 9, 0, 1, 2]) glow(T.keys[i], GOLD);
+  tag('cluster', 'ptr', T.xs[0] + 0.6, 1.4, T.z - 1.3);
+  say('連續被占的一大塊 = cluster', '[8] [9] [0] [1] [2]');
+  await step(tok);                                   // 13:02 hit something here → go all the way down
+  const seq = [8, 9, 0, 1, 2, 3];
+  for (let i = 0; i < seq.length; i++) { cur.position.set(T.xs[seq[i]], 2.1, T.z); txt(cur, 'h' + haSub(i)); await beat(tok, 380); }
+  glow(T.slots[3], GREEN);
+  say('hash 到這一塊的任何位置，都要一路走到底', '例：hash 到 8 → 第 6 次才到空格 [3]');
+  await step(tok);                                   // 13:13 λ should be less than 0.5
+  bub('所以 λ 要 < 0.5：空格夠多，cluster 才不會太長', 0, 1.2, 2.6);
+  say('所以 load factor λ 要小於 0.5');
+}]);
+
+// 13:20 表大小 11：成功搜尋平均 15/8、失敗搜尋要走到空格
 FRAG.push(['hasha-avg11', '平均 probe 次數：表大小 11', async (tok) => {
   fresh([0, 7.5, 12], [0, 0.6, 0]);
-  const T = haRow(11, 1.05, 0.6);
-  [[0, 9], [2, 2], [3, 13], [4, 25], [5, 24], [8, 30], [9, 20], [10, 10]].forEach(([i, k]) => haPlace(T, i, k));
-  say('表大小 11，已放 8 個 key', 'hash(x) = x mod 11');
-  await beat(tok, 2600);
-  const cur = tag('h₀', 'ptr alt', T.xs[9], 1.8, T.z);
-  for (const k of [20, 30, 2, 13, 25]) {
-    const n = await haFind(tok, T, k, haLin, cur, 700);
-    tag(n + ' 次', 'idx', T.xs[T.vals.indexOf(k)], 1.2, T.z - 0.7);
-  }
-  tag('4 次', 'idx', T.xs[5], 1.2, T.z - 0.7); tag('1 次', 'idx', T.xs[10], 1.2, T.z - 0.7); tag('3 次', 'idx', T.xs[0], 1.2, T.z - 0.7);
-  say('8 個 key 的 probe 次數加起來 = 15', '成功搜尋平均 = 15/8 ≈ 1.88 < 2');
-  await beat(tok, 3200);
-  await haFind(tok, T, 0, haLin, cur, 1000);
-  await haFind(tok, T, 4, haLin, cur, 1000);
-  say('失敗搜尋要走到空格才能停', '<span class="no">失敗搜尋比成功搜尋貴</span>');
-  await beat(tok, 3000);
+  const T = haRow(11, 1.05, 0.2);
+  const cur = tag('', 'ptr alt', T.xs[9], 2.1, T.z);
+  const cnt = (i, n) => tag(n + ' 次', 'idx', T.xs[i], 1.25, T.z - 0.75);
+  await step(tok);                                   // 13:20 average probes for successful / unsuccessful search
+  [[0, 9], [2, 2], [3, 13], [4, 25], [5, 24], [8, 30], [9, 20], [10, 10]].forEach(([i, k]) => haPlace(T, i, k, true));
+  say('平均要 probe 幾次？成功搜尋 vs 失敗搜尋', '表大小 11，hash(x) = x mod 11');
+  await step(tok);                                   // 13:30 h(20) = 20 mod 11 = 9: find 20 here
+  cur.position.set(T.xs[9], 2.1, T.z); txt(cur, '9'); glow(T.keys[9], GREEN); cnt(9, 1);
+  say('find 20：20 mod 11 = 9 → 一次就找到');
+  await step(tok);                                   // 13:39 h(30) = 8: just one hit
+  glow(T.keys[9], null); cur.position.set(T.xs[8], 2.1, T.z); txt(cur, '8'); glow(T.keys[8], GREEN); cnt(8, 1);
+  say('30 mod 11 = 8 → 也是一次');
+  await step(tok);                                   // 13:57 2 mod 11 = 2
+  glow(T.keys[8], null); cur.position.set(T.xs[2], 2.1, T.z); txt(cur, '2'); glow(T.keys[2], GREEN); cnt(2, 1);
+  say('2 mod 11 = 2 → 一次');
+  await step(tok);                                   // 14:06 13 mod 11 = 2, not here; +1 → 3, found
+  glow(T.keys[2], GOLD); await beat(tok, 600); glow(T.keys[2], null);
+  cur.position.set(T.xs[3], 2.1, T.z); txt(cur, '3'); glow(T.keys[3], GREEN); cnt(3, 2);
+  say('13 mod 11 = 2 不是 → +1 到 [3] 找到', '2 次');
+  await step(tok);                                   // 14:24 25 … (說成 25 mod 11 = 4，其實是 3)
+  glow(T.keys[3], GOLD); await beat(tok, 600); glow(T.keys[3], null);
+  cur.position.set(T.xs[4], 2.1, T.z); txt(cur, '4'); glow(T.keys[4], GREEN); cnt(4, 2);
+  say('25：老師說 25 mod 11 = 4，其實是 3', '[3] 是 13 → +1 到 [4] 找到，2 次');
+  await step(tok);                                   // 14:39 average number of probes is 15/8
+  glow(T.keys[4], null);
+  cnt(5, 4); cnt(10, 1); cnt(0, 3);
+  say('8 個 key 的 probe 次數加起來 = 15', '1+1+1+2+2+4+1+3 = 15 → 平均 15/8');
+  await step(tok);                                   // 14:49 less than two
+  good('成功搜尋平均 15/8 ≈ 1.88 < 2', 0, 2.9, -1.6);
+  say('成功搜尋平均不到 2 次');
+  await step(tok);                                   // 14:59 unsuccessful search: searching 0
+  cur.position.set(T.xs[0], 2.1, T.z); txt(cur, 'find 0'); glow(T.keys[0], GOLD);
+  say('失敗搜尋：find 0', '0 mod 11 = 0 → [0] 是 9，不是');
+  await step(tok);                                   // 15:22 H₁(0) = 1: empty → stop
+  glow(T.keys[0], null); cur.position.set(T.xs[1], 2.1, T.z); txt(cur, '空格 → 停'); glow(T.slots[1], RED);
+  say('h₁(0) = 1：遇到空格就停', '0 不在表裡（2 次）');
+  await step(tok);                                   // 15:47 find 4: 4 mod 11 = 4, not found
+  glow(T.slots[1], null); cur.position.set(T.xs[4], 2.1, T.z); txt(cur, 'find 4'); glow(T.keys[4], GOLD);
+  say('find 4：4 mod 11 = 4 → [4] 是 25，不是');
+  await step(tok);                                   // 15:53 increment by one: 5, don't find it
+  glow(T.keys[4], null); cur.position.set(T.xs[5], 2.1, T.z); txt(cur, '+1'); glow(T.keys[5], GOLD);
+  say('+1 → [5] 是 24，也不是');
+  await step(tok);                                   // 16:00 increment again: empty cell → not found
+  glow(T.keys[5], null); cur.position.set(T.xs[6], 2.1, T.z); txt(cur, '空格'); glow(T.slots[6], RED);
+  say('再 +1 → [6] 是空格 → 4 不在表裡', '3 次 probe');
+  await step(tok);                                   // 16:05 unsuccessful search requires more comparisons
+  bad('失敗搜尋一定要走到空格才能停 → 比較貴', 0, 2.3, 2.6);
+  say('失敗搜尋要找到空格才能停', '所以比成功搜尋更花時間');
 }]);
 
 // ════════ mFY0J5W8Udk（Abdul Bari） ════════
@@ -1153,203 +1469,322 @@ const BARI = [8, 3, 13, 6, 4, 10];
 FRAG.push(['hasha-search-cmp', 'Linear search O(n) vs Binary search O(log n)', async (tok) => {
   fresh([0, 7.5, 12], [0, 0.6, 0]);
   const xs = BARI.map((_, i) => -3.75 + i * 1.5);
-  const top = BARI.map((v, i) => cube(v, haCol(v), [1.1, 0.7, 1.0], xs[i], 0.35, -2.2, 3));
+  const cur = tag('', 'ptr alt', xs[0], 1.6, -2.2);
+  let top, bot;
+  await step(tok);                                   // 0:01 hashing technique is useful for searching
+  bub('Hashing：為了「搜尋」而設計', 0, 3.0, -4.0);
+  say('Hashing 這個技巧是用來做搜尋的');
+  await step(tok);                                   // 0:17 linear search: elements in any order
+  top = BARI.map((v, i) => cube(v, haCol(v), [1.1, 0.7, 1.0], xs[i], 0.35, -2.2, 3));
+  tag('linear search：隨便排', 'ptr', -6.0, 0.9, -2.2);
+  say('先複習 [[線性搜尋]]：元素在陣列裡隨便排');
+  await step(tok);                                   // 0:29 time for searching is order of n
+  note('O(n)', 5.6, 1.2, -2.2);
+  say('搜尋時間 O(n)');
+  await step(tok);                                   // 0:38 start from the left toward the right
+  for (let i = 0; i < top.length; i++) { cur.position.set(xs[i], 1.6, -2.2); txt(cur, '找 10'); glow(top[i], BARI[i] === 10 ? GREEN : GOLD); await beat(tok, 380); if (BARI[i] !== 10) glow(top[i], null); }
+  say('從左邊開始一個一個比，比到 10 才停', '找 10：比了 6 次');
+  await step(tok);                                   // 0:52 binary search: elements must be sorted
   const srt = [...BARI].sort((a, b) => a - b);
-  tag('任意順序', 'ptr', -5.8, 0.9, -2.2);
-  say('Linear search：元素任意排列', '從左到右一個一個找 → O(n)');
-  await beat(tok, 2200);
-  const cur = tag('▼', 'ptr alt', xs[0], 1.6, -2.2);
-  for (let i = 0; i < top.length; i++) {
-    cur.position.set(xs[i], 1.6, -2.2); glow(top[i], BARI[i] === 10 ? GREEN : GOLD);
-    say('找 10：比對 ' + BARI[i], BARI[i] === 10 ? '比了 ' + (i + 1) + ' 次才找到' : '不是，往右');
-    await beat(tok, 800);
-    if (BARI[i] !== 10) glow(top[i], null);
-  }
-  await beat(tok, 1000);
-  const bot = srt.map((v, i) => cube(v, haCol(v), [1.1, 0.7, 1.0], xs[i], 0.35, 1.8, 3));
-  srt.forEach((_, i) => tag(String(i), 'idx', xs[i], 0, 2.8));
-  tag('已排序', 'ptr', -5.8, 0.9, 1.8);
-  say('Binary search：必須先排好序', '每次看中間，砍掉一半 → O(log n)');
-  await beat(tok, 2400);
-  cur.position.set(xs[2], 1.6, 1.8); glow(bot[2], GOLD);
-  say('mid = 2：6 < 10 → 往右半邊', 'low = 0, high = 5, mid = 2');
-  await beat(tok, 2000);
+  bot = srt.map((v, i) => cube(v, haCol(v), [1.1, 0.7, 1.0], xs[i], 0.35, 1.8, 3));
+  tag('binary search：要先排序', 'ptr', -6.0, 0.9, 1.8);
+  say('[[二分搜尋]]：元素必須先由小到大排好');
+  await step(tok);                                   // 0:59 look in the middle; larger → right, smaller → left
+  cur.position.set(xs[2], 1.6, 1.8); txt(cur, 'mid'); glow(bot[2], GOLD); await beat(tok, 700);
   for (let i = 0; i <= 2; i++) tint(bot[i], GRAY);
   cur.position.set(xs[4], 1.6, 1.8); glow(bot[4], GREEN);
-  say('mid = 4：找到 10', '只比了 2 次（但要先花時間排序）');
-  await beat(tok, 2400);
-  say('想要更快：O(n) → O(log n) → O(1)', '這就是 hashing 的目標');
-  await beat(tok, 3000);
+  say('每次看中間：6 < 10 → 往右半邊', '下一個中間就是 10，比 2 次');
+  await step(tok);                                   // 1:11 the time for searching is order of log n
+  note('O(log n)', 5.6, 1.2, 1.8);
+  say('每次砍掉一半 → O(log n)');
+  await step(tok);                                   // 1:39 must spend some extra time sorting
+  bad('但要先花時間排序', -1.0, 2.6, 0.0);
+  say('前提：要先排序，得多花排序的時間');
+  await step(tok);                                   // 1:43 we want constant time: n → log n → O(1)
+  bub('O(n) → O(log n) → O(1)？', 2.6, 3.2, 0.0);
+  say('想要更快：只花常數時間的搜尋', 'O(n) → O(log n) → O(1)');
+  await step(tok);                                   // 1:56 this introduces the hashing technique
+  good('→ hashing', 5.6, 2.4, 0.0);
+  say('這個需求，就引出了 hashing');
 }]);
 
-// 01:55 直接拿值當 index
+// 02:03 直接拿值當 index
 FRAG.push(['hasha-direct', '直接拿 key 當 index：O(1) 但浪費空間', async (tok) => {
   fresh([0, 7.5, 12], [0, 0.6, 0]);
-  const T = haRow(14, 0.92, 0.6);
-  say('最簡單的 hashing：值是多少就放第幾格', '8 放 [8]、3 放 [3]…');
-  await beat(tok, 2200);
-  for (const k of BARI) { haPlace(T, k, k, true); await beat(tok, 650); }
-  await beat(tok, 900);
-  const cur = tag('▼', 'ptr alt', T.xs[10], 1.8, T.z);
+  let T;
+  await step(tok);                                   // 2:03 list of elements and array space given
+  T = haRow(14, 0.92, 0.6);
+  BARI.forEach((k, i) => tag(String(k), 'pkt', -5.0 + i * 0.9, 2.6, -2.6));
+  say('手上有一串元素，和一個陣列');
+  await step(tok);                                   // 2:16 take the value itself as the index
+  bub('值是多少，就放第幾格', 0, 2.8, -1.2);
+  say('最簡單的 hashing：拿元素的值當 index');
+  await step(tok);                                   // 2:22 8 is stored at 8
+  haPlace(T, 8, 8, true);
+  say('8 放在 [8]');
+  await step(tok);                                   // 2:27 3 at location 3, and so on
+  for (const k of [3, 13, 6, 4, 10]) { haPlace(T, k, k, true); await beat(tok, 300); }
+  say('3 放 [3]，其他依此類推');
+  await step(tok);                                   // 2:39 search for 10: directly go to index 10
+  const cur = tag('search 10', 'ptr alt', T.xs[10], 2.0, T.z);
   glow(T.keys[10], GREEN);
-  say('search 10：直接看 [10] → 找到', 'O(1)');
-  await beat(tok, 2400);
-  glow(T.keys[10], null);
-  cur.position.set(T.xs[12], 1.8, T.z); glow(T.slots[12], RED);
-  say('search 12：[12] 是空的 → not found', '一步就知道，還是 O(1)');
-  await beat(tok, 2400);
-  glow(T.slots[12], null); kill(cur);
-  cube(50, haCol(50), [0.8, 0.7, 0.9], 5.6, 0.4, -2.4, 3);
-  tag('要 index 50？', 'ptr', 5.6, 1.6, -2.4);
-  say('再來一個 50：表得開到 index 50', '<span class="no">只存 7 個數，卻要 51 格</span>');
-  await beat(tok, 2800);
+  say('search 10：直接看 [10] → 有');
+  await step(tok);                                   // 2:50 search for 12: index 12 → not found
+  glow(T.keys[10], null); cur.position.set(T.xs[12], 2.0, T.z); txt(cur, 'search 12'); glow(T.slots[12], RED);
+  say('search 12：直接看 [12] → 空的，找不到');
+  await step(tok);                                   // 2:56 search time is order of 1
+  glow(T.slots[12], null);
+  good('O(1)：一步就知道', T.xs[12], 1.3, T.z - 1.0);
+  say('不管有沒有，一步就知道 → O(1)');
+  await step(tok);                                   // 3:00 one more element 50 → index 50, far away
+  const c50 = cube(50, haCol(50), [0.8, 0.7, 0.9], 5.6, 0.4, -2.4, 3);
+  arrow(V3(5.6, 0.4, -1.8), V3(7.0, 0.4, 0.6), 0x7a1010);
+  bad('要開到 index 50！', 5.4, 1.6, -2.4);
+  say('多一個 50：表就得開到 index 50', '可能非常遠');
+  await step(tok);                                   // 3:16 a lot of space is wasted; most places vacant
   for (let i = 0; i < T.m; i++) if (T.keys[i] === null) glow(T.slots[i], RED);
-  say('為了省時間，浪費大量空格', '大部分格子都空著');
-  await beat(tok, 3000);
+  say('為了省時間，浪費大量空間', '只存幾個數，卻要很大的陣列，大部分空著');
 }]);
 
 // 03:34 數學模型：key space → hash table，h(x) = x
 FRAG.push(['hasha-model', 'Key space → Hash table：h(x) = x', async (tok) => {
   fresh([0, 8, 12], [0, 0.4, 0]);
-  const ks = ghostBox('#9b7ef4', 9.6, 1.2, 1.6); ks.position.set(0, 0.6, -3.2);
-  tag('key space', 'ptr', -5.6, 1.2, -3.2);
   const kx = BARI.map((_, i) => -3.75 + i * 1.5);
+  let T, ks;
+  await step(tok);                                   // 3:34 a mathematical model based on functions
+  bub('用「函數」來描述 hashing', 0, 3.0, -4.6);
+  say('為了改進，先用數學（函數）把它寫清楚');
+  await step(tok);                                   // 3:47 the list of elements: key space
+  ks = ghostBox('#9b7ef4', 9.6, 1.2, 1.6); ks.position.set(0, 0.6, -3.2);
+  tag('key space', 'ptr', -5.6, 1.2, -3.2);
   BARI.forEach((v, i) => cube(v, haCol(v), [0.9, 0.7, 0.9], kx[i], 0.4, -3.2, 3));
-  const T = haRow(14, 0.92, 1.8);
+  say('手上的這些元素，叫 key space');
+  await step(tok);                                   // 3:53 the place where we store them: hash table
+  T = haRow(14, 0.92, 1.8);
   tag('hash table', 'ptr', -6.3, 1.0, 1.8);
-  say('key space：手上的這些 key', 'hash table：存放的地方');
-  await beat(tok, 2600);
-  const arr = [];
-  for (let i = 0; i < BARI.length; i++) {
-    const k = BARI[i];
-    arr.push(arrow(V3(kx[i], 0.5, -2.35), V3(T.xs[k], 0.6, T.z - 0.65), 0x9b7ef4));
-    haPlace(T, k, k, true);
-    say('h(' + k + ') = ' + k, 'hash function 把 key 映射到 table');
-    await beat(tok, 900);
-  }
-  say('h(x) = x：理想的 hash function', '<span class="ok">one-to-one</span>：每個 key 一格');
-  await beat(tok, 3000);
-  say('但 key = 50 就要 index 50', '表還是太長、太浪費');
-  await beat(tok, 2600);
-  arr.forEach(kill);
-  say('函數分兩種：one-to-one、many-to-one', '其他 hash function 多半是 many-to-one');
-  await beat(tok, 2800);
-  say('要改函數，把空間用得更有效率', '下一步：h(x) = x mod size');
-  await beat(tok, 3000);
+  say('存放它們的地方，叫 hash table');
+  await step(tok);                                   // 3:57 some function h(x) = x mapping key space → table
+  const hx = bub('h(x) = x', 5.6, 2.2, -1.0);
+  say('中間有一個函數 h(x) = x，負責「映射」', '把 key space 的 key 對應到 hash table');
+  await step(tok);                                   // 4:04 h(8) = 8 → stored at index 8
+  arrow(V3(kx[0], 0.5, -2.35), V3(T.xs[8], 0.6, T.z - 0.65), 0x9b7ef4); haPlace(T, 8, 8, true);
+  say('h(8) = 8 → 放 [8]');
+  await step(tok);                                   // 4:11 3 stored at 3, h(13) = 13 → index 13
+  for (let i = 1; i < BARI.length; i++) { const k = BARI[i]; arrow(V3(kx[i], 0.5, -2.35), V3(T.xs[k], 0.6, T.z - 0.65), 0x9b7ef4); haPlace(T, k, k, true); await beat(tok, 300); }
+  say('h(3) = 3、h(13) = 13 ……');
+  await step(tok);                                   // 4:38 h(x) = x: an ideal hash function
+  good('理想的 hash function', 5.6, 1.4, -1.0);
+  say('h(x) = x 是「理想」的 hash function', '每個 key 一格，搜尋 O(1)');
+  await step(tok);                                   // 4:54 key 50 → index 50: very lengthy table
+  bad('key 50 → 要 index 50', 5.0, 0.6, 3.4);
+  say('問題一樣：key 是 50 就要 index 50', '表太長，浪費空間');
+  await step(tok);                                   // 5:11 two types: one-to-one and many-to-one
+  remove(hx);
+  bub('one-to-one：一個 key 一格', -3.6, 2.6, -0.6); bub('many-to-one：好幾個 key 共用一格', 2.6, 2.6, -0.6);
+  say('函數有兩種：one-to-one、many-to-one');
+  await step(tok);                                   // 5:25 h(x) = x is one-to-one; others mostly many-to-one
+  note('h(x) = x 是 one-to-one', -3.6, 1.6, -0.6); note('換別的函數，多半是 many-to-one', 2.6, 1.6, -0.6);
+  say('h(x) = x 是 one-to-one', '換成其他函數，多半是 many-to-one');
+  await step(tok);                                   // 5:44 modify the function to use the space efficiently
+  good('改函數 → 空間用得更有效率', 0, 3.4, 3.2);
+  say('h 決定 key 放哪 → 改 h，就能更省空間');
 }]);
 
 // 05:59 h(x) = x mod 10：13 撞 3 → collision
 FRAG.push(['hasha-mod10', 'h(x) = x mod 10：13 與 3 撞在一起', async (tok) => {
   fresh([0, 7.5, 12], [0, 0.6, -0.4]);
-  const T = haRow(10, 1.15, 1.2);
-  say('改用 h(x) = x mod size', 'size = 10 → 只要 10 格');
-  await beat(tok, 3200);
-  const cur = tag('h₀', 'ptr alt', T.xs[8], 1.8, T.z);
-  for (const k of [8, 3]) {
-    cur.position.set(T.xs[k % 10], 1.8, T.z); txt(cur, 'h(' + k + ')');
-    haPlace(T, k % 10, k, true);
-    say(k + ' mod 10 = ' + (k % 10), '放進 [' + (k % 10) + ']');
-    await beat(tok, 1500);
-  }
-  const c13 = cube(13, haCol(13), [0.9, 0.7, 0.9], T.xs[3], 1.9, T.z, 0);
-  cur.position.set(T.xs[3], 2.8, T.z); txt(cur, 'h(13)');
-  glow(T.keys[3], RED); glow(c13, RED);
-  say('13 mod 10 = 3：[3] 已經有 3 了', '<span class="no">collision</span>');
-  await beat(tok, 3400);
-  say('兩個以上 key 對到同一個 index', '這就叫 collision，必須處理');
-  await beat(tok, 2400);
-  tag('open hashing → chaining', 'ptr', -2.8, 1.0, -2.8);
-  tag('closed hashing → linear / quadratic probing', 'ptr', 2.0, 1.0, -4.2);
-  say('解法：open hashing 與 closed hashing', 'chaining｜linear probing、quadratic probing');
-  await beat(tok, 3200);
+  let T;
+  const cur = tag('', 'ptr alt', 0, 2.1, 1.2);
+  await step(tok);                                   // 5:59 h(x) = x mod size
+  bub('h(x) = x mod size', 0, 2.8, -2.6);
+  say('改用 h(x) = x mod size', 'size = hash table 的大小；mod = 取餘數');
+  await step(tok);                                   // 6:16 take the hash table size as 10
+  T = haRow(10, 1.15, 1.2);
+  say('例子：size 取 10 → 只要 10 格');
+  await step(tok);                                   // 6:38 8 mod 10 gives 8 → stored here
+  await haTry(tok, T, 8, 8, cur, 'h(8) = 8');
+  say('8 mod 10 = 8 → 放 [8]');
+  await step(tok);                                   // 6:46 3 mod 10 = 3 → stored here
+  await haTry(tok, T, 3, 3, cur, 'h(3) = 3');
+  say('3 mod 10 = 3 → 放 [3]');
+  await step(tok);                                   // 6:58 13 mod 10 also 3 → collision
+  const c13 = haHover(T, 3, 13); glow(c13, RED); glow(T.keys[3], RED);
+  cur.position.set(T.xs[3], 2.6, T.z); txt(cur, 'h(13) = 3');
+  bad('collision', T.xs[3] + 1.6, 1.9, T.z);
+  say('13 mod 10 也是 3 → 撞了', 'collision');
+  await step(tok);                                   // 7:06 two or more elements mapped at the same index
+  bub('兩個以上的 key 對到同一個 index = collision', 0, 2.4, -1.4);
+  say('換了 hash function，就可能好幾個 key 對到同一格', '這就叫 collision，必須處理');
+  await step(tok);                                   // 7:29 open hashing → chaining
+  tag('open hashing → chaining', 'ptr', -3.0, 1.0, -3.6);
+  say('解法一：open hashing（chaining）');
+  await step(tok);                                   // 7:35 closed hashing → linear / quadratic probing
+  tag('closed hashing → linear / quadratic probing', 'ptr alt', 2.4, 1.0, -4.4);
+  say('解法二：closed hashing', 'linear probing、quadratic probing');
 }]);
 
-// 07:41 chaining：8, 3, 13, 6, 4, 10；search 13
+// 07:45 chaining：8, 3, 13, 6, 4, 10；search 13
 FRAG.push(['hasha-bari-chain', 'Chaining：8, 3, 13, 6, 4, 10', async (tok) => {
   fresh([0, 8, 12], [0, 0.4, 0.2]);
-  const T = haRow(10, 1.15, -2.6);
+  let T;
   const len = new Array(10).fill(0), nodes = {};
-  say('chaining：元素不放在表本身', '每個 index 掛一條 chain（linked list）');
-  await beat(tok, 2400);
-  for (const k of BARI) {
-    const j = k % 10, z = T.z + 1.75 + len[j] * 1.6;
-    arrow(V3(T.xs[j], 0.5, z - 1.25), V3(T.xs[j], 0.5, z - 0.45));
+  const hang = (k) => {
+    const j = k % 10, z = T.z + 1.65 + len[j] * 1.5;
+    arrow(V3(T.xs[j], 0.4, z - 1.15), V3(T.xs[j], 0.4, z - 0.45), 0x9a8a70);
     nodes[k] = cube(k, haCol(k), [0.9, 0.6, 0.8], T.xs[j], 0.35, z, 3);
     len[j]++;
-    say('insert ' + k + '：' + k + ' mod 10 = ' + j, len[j] > 1 ? 'collision → 接在 [' + j + '] 的 chain 後面' : '在 [' + j + '] 加一個節點');
-    await beat(tok, k === 13 ? 2400 : 1300);
-  }
-  const cur = tag('h(13) = 3', 'ptr alt', T.xs[3], 1.8, T.z);
-  say('search 13：13 mod 10 = 3', '到 index 3 的 chain 裡找');
-  await beat(tok, 2200);
-  glow(nodes[3], GOLD); cur.position.set(T.xs[3] + 1.4, 1.0, nodes[3].position.z); txt(cur, '比對');
-  say('第一個是 3，不是', '同一條 chain 可能有好幾個');
-  await beat(tok, 1800);
-  glow(nodes[3], null); glow(nodes[13], GREEN); cur.position.set(T.xs[3] + 1.4, 1.0, nodes[13].position.z);
-  say('下一個是 13：找到', '要搜整條 linked list');
-  await beat(tok, 2200);
-  say('不是 O(1)，但比 O(log n) 快', '時間取決於 chain 長度');
-  await beat(tok, 3000);
+  };
+  await step(tok);                                   // 7:45 first method: chaining
+  T = haRow(10, 1.15, -2.6);
+  tag('chaining（open hashing）', 'ptr', -4.6, 1.6, -3.8);
+  say('第一種方法：chaining');
+  await step(tok);                                   // 7:57 8 mapped at 8: not in the table, add a chain
+  hang(8);
+  say('8 → index 8：不放在表本身，而是在 [8] 掛一條 chain');
+  await step(tok);                                   // 8:08 chain is nothing but a linked list
+  note('chain = linked list', T.xs[8] + 0.6, 1.2, T.z + 2.8);
+  say('chain 就是 linked list（一節一節串起來）');
+  await step(tok);                                   // 8:16 3 mapped here: add a node, insert 3
+  hang(3);
+  say('3 → index 3：在 [3] 的 chain 加一個節點');
+  await step(tok);                                   // 8:25 13 also mapped here: add a new node
+  hang(13);
+  say('13 也到 index 3 → 再加一個節點存 13');
+  await step(tok);                                   // 8:30 on collision: insert at the same index, in a chain
+  glow(nodes[3], GOLD); glow(nodes[13], GOLD);
+  say('collision 就接在同一個 index 的 chain 上');
+  await step(tok);                                   // 8:37 all elements inserted into their chains
+  glow(nodes[3], null); glow(nodes[13], null);
+  for (const k of [6, 4, 10]) { hang(k); await beat(tok, 350); }
+  say('其他元素也照樣放：6、4、10');
+  await step(tok);                                   // 9:03 search 13: h(13) = 13 mod 10 = 3
+  const cur = tag('h(13) = 3', 'ptr alt', T.xs[3], 2.0, T.z);
+  glow(T.slots[3], GOLD);
+  say('search 13：h(13) = 13 mod 10 = 3');
+  await step(tok);                                   // 9:21 go to index 3, search the chain there
+  glow(T.slots[3], null);
+  cur.position.set(T.xs[3] + 1.4, 1.0, nodes[3].position.z); txt(cur, '3？不是'); glow(nodes[3], GOLD); await beat(tok, 800);
+  glow(nodes[3], null); cur.position.set(T.xs[3] + 1.4, 1.0, nodes[13].position.z); txt(cur, '13 找到'); glow(nodes[13], GREEN);
+  say('到 index 3 的 chain 裡一個一個找');
+  await step(tok);                                   // 9:27 may be more than one: search the entire list
+  bub('chain 上可能不只一個 → 要搜整條', 3.4, 1.6, 0.6);
+  say('一條 chain 可能有好幾個，要搜整條 linked list');
+  await step(tok);                                   // 9:31 not O(1), but faster than log n
+  good('不是 O(1)，但比 O(log n) 快（平均）', 3.4, 0.6, 2.2);
+  say('時間不再是 O(1)，但比 log n 快');
 }]);
 
-// 09:44 linear probing：8, 3, 13, 6, 4, 10；search 4、24；clustering
+// 09:51 linear probing：8, 3, 13, 6, 4, 10；search 4、24；clustering
 FRAG.push(['hasha-bari-lp', 'Linear probing：search 4 與 24', async (tok) => {
   fresh([0, 7, 12], [0, 0.6, 0]);
-  const T = haRow(10, 1.15, 0.6);
-  const cur = tag('h₀', 'ptr alt', T.xs[8], 1.8, T.z);
-  say('同一個 h(x) = x mod 10', 'h\'(x) = (h(x) + f(i)) mod 10，f(i) = i');
-  await beat(tok, 2600);
-  for (const k of BARI) await haInsert(tok, T, k, haLin, cur, k === 13 || k === 4 ? 1300 : 900);
-  say('13 → [4]、4 → [5]、10 → [0]', '撞了就找下一個空位');
-  await beat(tok, 2400);
-  await haFind(tok, T, 4, haLin, cur, 1100);
-  await haFind(tok, T, 24, haLin, cur, 900);
-  say('search：找到或遇到空格才停', '從 h(x) 開始往後連續找');
-  await beat(tok, 2200);
+  let T;
+  const cur = tag('', 'ptr alt', 0, 2.1, 0.6);
+  await step(tok);                                   // 9:51 next method: linear probing, h(x) = x mod size
+  T = haRow(10, 1.15, 0.6);
+  tag('linear probing（closed hashing）', 'ptr', -4.0, 2.4, -1.4);
+  say('下一個方法：linear probing', '一樣用 h(x) = x mod 10');
+  await step(tok);                                   // 9:59 8 mapped at 8, 3 mapped at 3
+  haPlace(T, 8, 8, true); haPlace(T, 3, 3, true);
+  say('8 → [8]、3 → [3]');
+  await step(tok);                                   // 10:10 13 also mapped at the same location: collision
+  const c13 = haHover(T, 3, 13); glow(c13, RED); glow(T.keys[3], RED);
+  say('13 也對到 [3] → collision');
+  await step(tok);                                   // 10:14 store it at the next free space
+  kill(c13); unglow(T); await haTry(tok, T, 13, 4, cur, '下一格');
+  say('放到下一個空位 [4]');
+  await step(tok);                                   // 10:38 h'(x) = (h(x) + f(i)) mod size
+  bub("h'(x) = (h(x) + f(i)) mod 10", 0, 3.2, -2.6);
+  say("用數學說明：h'(x) = (h(x) + f(i)) mod size");
+  await step(tok);                                   // 10:51 f(i) = i, i = 0, 1, 2, …
+  note('f(i) = i，i = 0, 1, 2, …', 4.4, 2.4, -1.4);
+  say('f(i) = i，i 從 0 開始：0、1、2、……');
+  await step(tok);                                   // 11:06 13: i = 0 → 3, collision
+  note('i = 0：(3 + 0) mod 10 = 3 ✗', T.xs[3] - 0.6, 1.3, T.z + 1.9);
+  glow(T.keys[3], RED);
+  say("insert 13：i = 0 → (3 + 0) mod 10 = 3", '撞了');
+  await step(tok);                                   // 11:28 next value of i: (3 + 1) mod 10 = 4
+  glow(T.keys[3], null); glow(T.keys[4], GREEN);
+  note('i = 1：(3 + 1) mod 10 = 4 ✓', T.xs[4] + 0.6, 1.3, T.z + 2.7);
+  say("i = 1 → (3 + 1) mod 10 = 4 → 放 [4]", '再撞就再增加 i');
+  await step(tok);                                   // 12:01 6 at 6; 4: collision
+  glow(T.keys[4], null);
+  await haTry(tok, T, 6, 6, cur, 'h(6) = 6', 500);
+  await haTry(tok, T, 4, 4, cur, 'h(4) = 4', 500);
+  say('6 → [6]；4 → [4] 已經有 13 了');
+  await step(tok);                                   // 12:10 store it at the next place; 10 stored here
+  unglow(T); await haTry(tok, T, 4, 5, cur, '下一格', 500);
+  await haTry(tok, T, 10, 0, cur, 'h(10) = 0', 500);
+  say('4 往下放到 [5]；10 → [0]');
+  await step(tok);                                   // 12:18 search 4: go to index 4, not present
+  cur.position.set(T.xs[4], 2.1, T.z); txt(cur, 'search 4'); glow(T.keys[4], GOLD);
+  say('search 4：h(4) = 4 → [4] 是 13，不是');
+  await step(tok);                                   // 12:29 look at the next location: found at index 5
+  glow(T.keys[4], null); cur.position.set(T.xs[5], 2.1, T.z); txt(cur, '找到'); glow(T.keys[5], GREEN);
+  say('看下一格 [5]：找到 4');
+  await step(tok);                                   // 12:53 search 24: 24 mod 10 → index 4, not present
+  glow(T.keys[5], null); cur.position.set(T.xs[4], 2.1, T.z); txt(cur, 'search 24'); glow(T.keys[4], GOLD);
+  say('search 24：24 mod 10 = 4 → [4] 不是');
+  await step(tok);                                   // 13:01 next location: not present, not present
+  glow(T.keys[4], null);
+  for (const j of [5, 6]) { cur.position.set(T.xs[j], 2.1, T.z); glow(T.keys[j], GOLD); await beat(tok, 500); glow(T.keys[j], null); }
+  say('[5] 不是、[6] 也不是');
+  await step(tok);                                   // 13:06 next location empty: stop, 24 not found
+  cur.position.set(T.xs[7], 2.1, T.z); txt(cur, '空格 → 停'); glow(T.slots[7], RED);
+  say('[7] 是空格 → 停，24 不在表裡');
+  await step(tok);                                   // 13:17 until the element is found or empty space reached
+  glow(T.slots[7], null);
+  bub('搜尋規則：找到它，或遇到空格才停', 0, 1.2, 2.8);
+  say('搜尋：從 h(x) 開始往後找，直到找到或遇到空格');
+  await step(tok);                                   // 13:28 not O(1), but better than log n
+  good('不是 O(1)，但通常比 O(log n) 快', 0, 0.5, 3.6);
+  say('時間不是 O(1)，但比 log n 好');
+  await step(tok);                                   // 13:41 problem: clustering of elements
   for (const i of [3, 4, 5, 6]) glow(T.keys[i], GOLD);
-  tag('cluster', 'ptr', T.xs[4] + 0.6, 1.4, T.z - 1.3);
-  say('問題：元素擠在連續的一塊', '<span class="no">clustering → 搜尋變慢</span>');
-  await beat(tok, 3000);
+  tag('cluster', 'ptr', T.xs[4] + 0.6, 1.5, T.z - 1.3);
+  say('問題：clustering，元素擠在連續的一塊', 'cluster 越長，搜尋越慢');
 }]);
 
-// 14:00 quadratic probing：f(i) = i²，23 跳到 [7]
+// 13:58 quadratic probing：f(i) = i²，23 跳到 [7]
 FRAG.push(['hasha-bari-qp', 'Quadratic probing：23 跳到 [7]', async (tok) => {
   fresh([0, 7, 12], [0, 0.6, 0]);
-  const T = haRow(10, 1.15, 0.6);
-  const cur = tag('h₀', 'ptr alt', T.xs[8], 1.8, T.z);
-  say('quadratic probing：避免 clustering', 'h\'(x) = (h(x) + f(i)) mod 10，f(i) = i²');
-  await beat(tok, 2800);
-  for (const k of [8, 3, 13]) await haInsert(tok, T, k, haQuad, cur, 1000);
-  say('13：3 撞 → 3 + 1² = 4', '和 linear 一樣放在 [4]');
-  await beat(tok, 2200);
-  await haInsert(tok, T, 23, haQuad, cur, 1600);
-  arrow(V3(T.xs[3], 1.3, T.z - 0.9), V3(T.xs[7], 1.3, T.z - 0.9), 0xc08a1f);
-  say('23 被放到離衝突處遠一點的 [7]', '中間留空格 → 不容易擠成一團');
-  await beat(tok, 3200);
-}]);
-
-// 12:44 clustering：89,18,49,58,9 擠成 [8]～[2] 一大塊
-FRAG.push(['hasha-cluster', 'Clustering：撞進群聚就要走到底', async (tok) => {
-  fresh([0, 7, 12], [0, 0.6, 0]);
-  const T = haRow(10, 1.15, 0.6);
-  [[9, 89], [8, 18], [0, 49], [1, 58], [2, 9]].forEach(([i, k]) => haPlace(T, i, k));
-  say('剛才的表：89, 18, 49, 58, 9', '表夠大，空格一定找得到');
-  await beat(tok, 3200);
-  for (const i of [8, 9, 0, 1, 2]) glow(T.keys[i], GOLD);
-  tag('cluster', 'ptr', T.xs[0] + 0.6, 1.4, T.z - 1.3);
-  say('連續被占的一大塊 = cluster', '[8] [9] [0] [1] [2]');
-  await beat(tok, 3200);
-  const cur = tag('h₀', 'ptr alt', T.xs[8], 1.8, T.z);
-  const seq = [8, 9, 0, 1, 2, 3];
-  for (let i = 0; i < seq.length; i++) {
-    cur.position.set(T.xs[seq[i]], 1.8, T.z); txt(cur, 'h' + haSub(i));
-    const last = i === seq.length - 1;
-    if (last) glow(T.slots[3], GREEN);
-    say(last ? '第 6 次才到空格 [3]' : 'hash 到 8：一路往下走', 'probe ' + (i + 1) + '：[' + seq[i] + ']');
-    await beat(tok, last ? 1600 : 800);
-  }
-  say('cluster 越大，找的時間越長', 'primary clustering → 要讓 λ < 0.5');
-  await beat(tok, 3000);
+  let T;
+  const cur = tag('', 'ptr alt', 0, 2.1, 0.6);
+  await step(tok);                                   // 13:58 to avoid clustering: quadratic probing
+  T = haRow(10, 1.15, 0.6);
+  tag('quadratic probing', 'ptr', -4.6, 2.4, -1.4);
+  say('為了避免 clustering → quadratic probing');
+  await step(tok);                                   // 14:07 same as linear: h'(x) = (h(x) + f(i)) mod size
+  bub("h'(x) = (h(x) + f(i)) mod 10", 0, 3.2, -2.6);
+  say('跟 linear probing 一樣的式子');
+  await step(tok);                                   // 14:25 but f(i) is i², i = 0, 1, 2, …
+  note('f(i) = i²', 4.4, 2.4, -1.4);
+  say('只是 f(i) = i²，i = 0、1、2 ……');
+  await step(tok);                                   // 14:48 linear: f(i) = i；quadratic: f(i) = i²
+  bub('linear：+1, +2, +3 …　quadratic：+1, +4, +9 …', 0, 1.4, 2.8);
+  say('linear：f(i) = i；quadratic：f(i) = i²', '跳 1, 2, 3… 對比 跳 1, 4, 9…');
+  await step(tok);                                   // 15:08 8 stored here, 3 same place
+  haPlace(T, 8, 8, true); haPlace(T, 3, 3, true);
+  say('8 → [8]、3 → [3]');
+  await step(tok);                                   // 15:18 13: collision, for i = 1 next location
+  await haTry(tok, T, 13, 3, cur, 'i = 0', 500); unglow(T);
+  await haTry(tok, T, 13, 4, cur, 'i = 1：+1²', 600);
+  say('13：[3] 撞了 → i = 1，3 + 1² = 4 → 放 [4]');
+  await step(tok);                                   // 15:26 23: h(23) + f(0) = 3, collision
+  await haTry(tok, T, 23, 3, cur, 'i = 0：3');
+  say('insert 23：i = 0 → (3 + 0²) mod 10 = 3', '撞了');
+  await step(tok);                                   // 15:54 i = 1: 3 + 1 = 4, also collision
+  unglow(T); await haTry(tok, T, 23, 4, cur, 'i = 1：3 + 1');
+  say('i = 1 → (3 + 1²) mod 10 = 4', '也撞了');
+  await step(tok);                                   // 16:22 i = 2: 3 + 4 = 7 → stored at index 7
+  unglow(T); await haTry(tok, T, 23, 7, cur, 'i = 2：3 + 4');
+  say('i = 2 → (3 + 2²) mod 10 = 7 → 放 [7]');
+  await step(tok);                                   // 16:33 kept a few locations away: a gap in between
+  arrow(V3(T.xs[3], 1.4, T.z - 0.9), V3(T.xs[7], 1.4, T.z - 0.9), 0xc08a1f);
+  [5, 6].forEach((j) => glow(T.slots[j], GREEN));
+  say('23 被放到離衝突處遠一點的地方', '中間留了空格');
+  await step(tok);                                   // 16:49 avoids clustering, improves searching time
+  good('不容易擠成一團 → 搜尋比較快', 0, 1.6, 3.6);
+  say('元素不擠成一團，搜尋時間就改善了');
 }]);
   }
 
@@ -4509,12 +4944,19 @@ FRAG.push(['hashlin2-recap', 'Hash table 總整理', async (tok) => {
 
   // ═══ hashpeng.js ═══
   {
-const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, code, line, arrow, ghostBox, GOLD, GREEN, RED, GRAY } = K;
+const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, code, line, arrow, ghostBox, step, buddy, travel, remove, prop, bob, GOLD, GREEN, RED, GRAY } = K;
 // ─── bULIs7AVDNk（交大彭文志 Lec23 Hashing，洪逸／Horowitz 第 8 章 ＋ 第 10 章開頭） ───
+// Cued scenes: every `await step(tok)` waits for the sentence it shows; the
+// beats after it are only the motion (short), then the picture holds.
+const say = (a, b = '') => ctx.say(a, b);
 const PP = ['#4b9ee2', '#9b7ef4', '#dd8238', '#31aab0', '#e55a9b', '#2fc092', '#c08a1f', '#5c7a4a'];
 const ppCol = (k) => PP[[...String(k)].reduce((a, c) => a + c.charCodeAt(0), 0) % PP.length];
 const ppSub = (i) => String(i).split('').map((d) => '₀₁₂₃₄₅₆₇₈₉'[+d]).join('');
 const ppLet = (k) => k.charCodeAt(0) - 65; // h(x) = 第一個字母的順序（A = 0）
+const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
 // a row of m one-slot buckets centred on x = 0 (only the first `show` drawn)
 function ppRow(m, dx, z, show = m) {
   const x0 = -(show - 1) * dx / 2, xs = [], slots = [];
@@ -4522,451 +4964,922 @@ function ppRow(m, dx, z, show = m) {
   return { m, dx, z, xs, slots, keys: new Array(m).fill(null), vals: new Array(m).fill(null), ks: Math.min(0.9, dx * 0.85) };
 }
 function ppPut(T, i, k, drop) { const c = cube(k, ppCol(k), [T.ks, 0.7, 0.9], T.xs[i], 0.47, T.z, drop ? 3 : 0); T.keys[i] = c; T.vals[i] = k; return c; }
-// open-addressing insert: H_i(k) = (h(k) + f(i)) mod m, cursor shows i
-async function ppIns(tok, T, k, h, f, fs, cur, ms = 1100) {
-  for (let i = 0; i < T.m; i++) {
-    const j = (h + f(i)) % T.m;
-    cur.position.set(T.xs[j], 1.8, T.z); txt(cur, 'i = ' + i);
-    const fm = 'H' + ppSub(i) + '(' + k + ') = (' + h + ' + ' + fs(i) + ') mod ' + T.m + ' = ' + j;
-    if (T.keys[j] === null) { ppPut(T, j, k, true); say('insert ' + k + '：放進 [' + j + ']', fm); await beat(tok, ms); return i; }
-    glow(T.keys[j], RED); say(k + '：[' + j + '] 已被 ' + T.vals[j] + ' 佔', fm + '　滿了，i + 1');
-    await beat(tok, ms); glow(T.keys[j], null);
-  }
-  return -1;
+// one probe: cursor to bucket j; taken → red (false), empty → the key lands (true)
+async function ppTry(tok, T, k, j, cur, lbl, ms = 650) {
+  cur.position.set(T.xs[j], 2.1, T.z); txt(cur, lbl);
+  if (T.keys[j] !== null) { glow(T.keys[j], RED); await beat(tok, ms); return false; }
+  ppPut(T, j, k, true); await beat(tok, ms); return true;
 }
-const ppLin = [(i) => i, (i) => String(i)], ppQuad = [(i) => i * i, (i) => i + '²'];
+const ppUnglow = (T) => T.keys.forEach((c) => c && glow(c, null));
+// a queue of keys waiting to be inserted (little packets); take(k) removes one
+function ppQueue(keys, x0, y, z, dx = 1.0) {
+  const q = {}; keys.forEach((k, i) => { q[k] = tag(String(k), 'pkt', x0 + i * dx, y, z); });
+  return { take(k) { remove(q[k]); delete q[k]; } };
+}
 
-// ════════ 00:00 symbol table：retrieve / insert / delete ════════
+// ════════ 00:00 bucket sort → symbol table：retrieve / insert / delete ════════
 FRAG.push(['hashpeng-symtab', 'Symbol table：查表、insert、delete', async (tok) => {
   fresh([0, 7, 12], [0, 0.8, 0]);
   const bx = [-4.5, -1.5, 1.5, 4.5];
-  ['00', '01', '10', '11'].forEach((b, i) => { cube('', GRAY, [2.4, 0.12, 1.4], bx[i], 0.06, -2.5); tag('bucket ' + b, 'idx', bx[i], 0, -1.5); });
-  say('Bucket sort：看數字的幾個 bit 分桶', '這就是 hash 的概念');
-  await beat(tok, 2600);
-  const nums = [[5, '101'], [8, '1000'], [6, '110'], [3, '11']], cs = [];
-  for (const [n, b] of nums) {
-    const i = parseInt(b.slice(-2), 2);
-    cs.push(cube(n, ppCol(n), [0.8, 0.7, 0.8], bx[i], 0.47, -2.5, 3));
-    say(n + ' = ' + b + '₂ → 看最後兩個 bit', '丟進 bucket ' + b.slice(-2));
-    await beat(tok, 1200);
-  }
-  await beat(tok, 800);
-  cs.forEach((c) => fly(c));
-  const rows = [['INT', 'machine code'], ['LOOP', 'address'], ['SUM', 'address']];
-  tag('symbol', 'ptr', -2.2, 0.9, 0.4); tag('attribute', 'ptr', 2.2, 0.9, 0.4);
-  const R = rows.map(([s, a], i) => [cube(s, PP[i], [2.2, 0.6, 0.8], -2.2, 0.3, 1.5 + i * 1.1, 3), cube(a, GRAY, [3.0, 0.6, 0.8], 2.2, 0.3, 1.5 + i * 1.1, 3)]);
-  say('Assembler 的 symbol table', '左邊字串、右邊對應的 attribute');
-  await beat(tok, 3200);
+  const nums = [[5, '101'], [8, '1000'], [6, '110'], [3, '11']];
+  await step(tok);                                   // 0:00 bucket sort: numbers dropped into buckets
+  ['00', '01', '10', '11'].forEach((b, i) => { cube('', GRAY, [2.4, 0.12, 1.4], bx[i], 0.06, -2.0); tag('bucket ' + b, 'idx', bx[i], 0, -1.0); });
+  for (const [n, b] of nums) { cube(n, ppCol(n), [0.8, 0.7, 0.8], bx[parseInt(b.slice(-2), 2)], 0.47, -2.0, 3); await beat(tok, 350); }
+  say('Bucket sort：一堆 bucket，把數字丟進去');
+  await step(tok);                                   // 0:39 decided by the first or last bits
+  nums.forEach(([n, b]) => note(n + ' = ' + b + '₂', bx[parseInt(b.slice(-2), 2)], 1.4, -2.0));
+  say('丟進哪個 bucket，看數字的最後幾個 bit', '例：看最後兩個 bit');
+  await step(tok);                                   // 0:47 that's the concept of hash
+  bub('這就是 hash 的概念', 0, 2.6, 0.4);
+  say('這其實就是 hash 的概念');
+  await step(tok);                                   // 1:47 in an assembler the most important: symbol table
+  fresh([0, 7, 12], [0, 0.8, 0]);
+  const pg = prop('file', -5.4, 0, -2.4, 1.0, '組合語言程式'); bob(pg, 0.04);
+  prop('cpu', 5.4, 0, -2.4, 0.9, 'machine code');
+  tag('symbol table', 'ptr', 0, 2.4, -1.6);
+  say('寫 assembler 時最重要的資料結構：symbol table', 'assembler：把組合語言翻成機器碼');
+  await step(tok);                                   // 2:16 see INT → look up the table → its machine code
+  const R = [['INT', 'machine code']].map(([s, a], i) => [cube(s, PP[0], [2.2, 0.6, 0.8], -1.6, 0.3, -0.6, 3), cube(a, GRAY, [3.0, 0.6, 0.8], 2.2, 0.3, -0.6, 3)]);
+  const hand = tag('INT？', 'pkt', -5.4, 1.4, -1.4);
+  await travel(tok, hand, V3(-5.4, 1.4, -1.4), V3(-1.6, 1.0, -0.6), 800);
+  glow(R[0][1], GREEN); remove(hand);
+  say('看到 INT，就去查表，知道它對應的 machine code');
+  await step(tok);                                   // 2:34 a directory: matching strings, then the thing they map to
+  glow(R[0][1], null);
+  [['LOOP', 'address 0100'], ['SUM', 'address 0204']].forEach(([s, a], i) => R.push([cube(s, PP[i + 1], [2.2, 0.6, 0.8], -1.6, 0.3, 0.5 + i * 1.1, 3), cube(a, GRAY, [3.0, 0.6, 0.8], 2.2, 0.3, 0.5 + i * 1.1, 3)]));
+  tag('symbol（字串）', 'idx', -1.6, 0.9, -1.4); tag('attribute', 'idx', 2.2, 0.9, -1.4);
+  say('symbol table 像一個目錄', '左邊是字串（symbol），右邊是對應的 attribute');
+  await step(tok);                                   // 3:09 this is called retrieve
   glow(R[0][0], GOLD); glow(R[0][1], GREEN);
-  say('看到 INT → 查表拿 machine code', 'retrieve：找 key 對應的 attribute');
-  await beat(tok, 3000);
+  good('retrieve', 4.6, 1.0, -0.6);
+  say('用 key 找出對應的 attribute，叫 retrieve');
+  await step(tok);                                   // 3:17 a huge table: how to find it fast?
   glow(R[0][0], null); glow(R[0][1], null);
-  const n1 = cube('NEW', PP[5], [2.2, 0.6, 0.8], -2.2, 0.3, 4.8, 4), n2 = cube('…', GRAY, [3.0, 0.6, 0.8], 2.2, 0.3, 4.8, 4);
-  say('修改 table：insert 一筆', 'insert');
-  await beat(tok, 2200);
+  for (let i = 0; i < 3; i++) { const a = cube('…', GRAY, [2.2, 0.4, 0.6], -1.6, 0.2, 2.8 + i * 0.75); const b = cube('…', GRAY, [3.0, 0.4, 0.6], 2.2, 0.2, 2.8 + i * 0.75); [a, b].forEach((m) => { m.material.transparent = true; m.material.opacity = 0.45; }); }
+  bub('筆數很多時，怎麼很快找到？', -5.0, 1.2, 2.8);
+  say('表很大、筆數很多時，怎麼很快找到要的那筆？');
+  await step(tok);                                   // 3:30 modify: insert or delete
+  const n1 = cube('NEW', PP[5], [2.2, 0.6, 0.8], -5.2, 0.3, 0.5, 4); glow(n1, GREEN);
   fly(R[2][0]); fly(R[2][1]);
-  say('也可以 delete 一筆', 'delete');
-  await beat(tok, 2200);
-  say('通訊錄、database 也都是這種 table', '最頻繁的運算：search');
-  glow(n1, null); glow(n2, null);
-  await beat(tok, 3000);
+  say('table 也要能修改：insert 一筆、delete 一筆');
+  await step(tok);                                   // 3:49 is a phone book a table? yes
+  bub('通訊錄也是 table：名字 → 電話', 4.4, 2.4, 1.6);
+  say('通訊錄也是這種 table');
+  await step(tok);                                   // 4:04 a database is also a kind of symbol table
+  bub('database 也是一種 symbol table', 4.4, 1.6, 2.6);
+  say('之後會看到：database 也是一種 symbol table');
+  await step(tok);                                   // 4:21 operations: insert, delete, search
+  ['insert', 'delete', 'search'].forEach((t, i) => tag(t, i === 2 ? 'ptr alt' : 'idx', -1.6 + i * 2.0, 2.4, -2.8));
+  say('這種 table 都要做：insert、delete、search');
 }]);
 
-// ════════ 04:25 search：O(n)、binary search、hash ════════
+// ════════ 04:35 search：O(n)、binary search、hash ════════
 FRAG.push(['hashpeng-search-cost', 'Search：O(n)、O(log n)、hash 的 O(1)', async (tok) => {
   fresh([0, 7, 12], [0, 0.6, 0]);
-  const K8 = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'], xs = K8.map((_, i) => -5.25 + i * 1.5);
-  const cs = K8.map((k, i) => cube(k, ppCol(k), [1.2, 0.7, 1.0], xs[i], 0.35, -1.5));
-  const cur = tag('', 'ptr', xs[0], 1.6, -1.5);
-  say('最笨：每一筆都看過', 'search G：worst case O(n)');
-  for (let i = 0; i <= 6; i++) { cur.position.set(xs[i], 1.6, -1.5); txt(cur, '第 ' + (i + 1) + ' 次'); glow(cs[i], i === 6 ? GREEN : GOLD); await beat(tok, 600); glow(cs[i], null); }
-  await beat(tok, 1200);
-  say('先排序，再用 binary search', 'O(log n)：每次砍一半');
-  let lo = 0, hi = 7, step = 0;
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1; step++;
-    cur.position.set(xs[mid], 1.6, -1.5); txt(cur, '第 ' + step + ' 次'); glow(cs[mid], mid === 6 ? GREEN : GOLD);
-    await beat(tok, 1100); glow(cs[mid], null);
-    if (mid === 6) break; if (mid < 6) lo = mid + 1; else hi = mid - 1;
-  }
-  say('還是不夠快 → hash', '兩個關鍵：key 與 hash function');
-  await beat(tok, 2600);
-  const bk = [0, 1, 2, 3].map((i) => { cube('', GRAY, [1.6, 0.12, 1.2], -2.4 + i * 1.6, 0.06, 2.6); tag('bucket ' + i, 'idx', -2.4 + i * 1.6, 0, 3.6); return -2.4 + i * 1.6; });
-  const k = cube('G', ppCol('G'), [1.0, 0.7, 0.9], -5.6, 0.35, 2.6, 3);
+  const K8 = ['D', 'A', 'F', 'C', 'H', 'B', 'G', 'E'], X = (i) => -5.25 + i * 1.5;
+  const cs = {}; let cur;
+  await step(tok);                                   // 4:35 search; the dumbest way…
+  K8.forEach((k, i) => { cs[k] = cube(k, ppCol(k), [1.2, 0.7, 1.0], X(i), 0.35, -2.2, 2); });
+  cur = tag('', 'ptr alt', X(0), 1.6, -2.2);
+  say('最常做的運算：search', '要找 G');
+  await step(tok);                                   // 4:42 worst case: look at every record → O(n)
+  for (let i = 0; i <= 6; i++) { cur.position.set(X(i), 1.6, -2.2); txt(cur, '第 ' + (i + 1) + ' 次'); glow(cs[K8[i]], i === 6 ? GREEN : GOLD); await beat(tok, 280); if (i < 6) glow(cs[K8[i]], null); }
+  note('worst case O(n)', 5.6, 1.4, -2.2);
+  say('最笨的方法：一筆一筆看', '最差要全部看過 → O(n)');
+  await step(tok);                                   // 4:52 sort the records first
+  glow(cs.G, null);
+  [...K8].sort().forEach((k, i) => move(cs[k], X(i), 0.35, -2.2));
   await beat(tok, 900);
-  arrow(V3(-5.0, 0.6, 2.6), V3(bk[2] - 0.6, 0.6, 2.6), 0x0f5a3a);
-  move(k, bk[2], 0.47, 2.6); glow(k, GREEN);
-  say('算一次 h(key) 就知道在哪個 bucket', 'insert / delete / search：constant time');
-  await beat(tok, 3200);
+  say('先把 table 排序');
+  await step(tok);                                   // 5:00 then binary search — still not fast enough
+  for (const [i, k, ok] of [[3, 'D', 0], [5, 'F', 0], [6, 'G', 1]]) { cur.position.set(X(i), 1.6, -2.2); txt(cur, ok ? '找到' : '往右'); glow(cs[k], ok ? GREEN : GOLD); await beat(tok, 550); if (!ok) glow(cs[k], null); }
+  note('O(log n)', 5.6, 0.7, -2.2);
+  say('再用 binary search：O(log n)', '還是不夠快');
+  await step(tok);                                   // 5:08 hash: two keys. First: decide the key
+  bub('Hash 的兩個關鍵', -4.6, 2.6, 0.2);
+  say('另一種方法：hash', '兩個關鍵，第一個：要 hash 的 key 是什麼');
+  await step(tok);                                   // 5:18 e.g. a phone book: the name
+  const cols = ['名字', '公司', '電話', '地址'];
+  const row = cols.map((c, i) => cube(c, i === 0 ? PP[0] : GRAY, [1.5, 0.5, 0.8], -2.4 + i * 1.6, 0.25, 0.4, 2));
+  glow(row[0], GOLD); note('key = 名字', -2.4, 1.1, 0.4);
+  say('例：通訊錄用「名字」當 key');
+  await step(tok);                                   // 5:46 second: decide the hash function
+  const hb = ghostBox('#c08a1f', 1.8, 1.2, 1.4); hb.position.set(-4.6, 0.6, 2.8);
+  tag('hash function？', 'ptr', -4.6, 1.6, 2.8);
+  say('第二個關鍵：用哪一個 hash function');
+  await step(tok);                                   // 5:56 different hash functions → different effects
+  bub('不同 hash function → 效果不同', 1.6, 1.8, 2.0);
+  say('選不同的 hash function，效果會不一樣');
+  await step(tok);                                   // 6:09 insert / delete / search: just one function evaluation
+  const bk = [0, 1, 2, 3].map((i) => { cube('', GRAY, [1.4, 0.12, 1.2], -0.8 + i * 1.7, 0.06, 3.4); tag('bucket ' + i, 'idx', -0.8 + i * 1.7, 0, 4.4); return -0.8 + i * 1.7; });
+  const k = tag('G', 'pkt', -6.6, 1.0, 2.8);
+  await travel(tok, k, V3(-6.6, 1.0, 2.8), V3(-4.6, 1.0, 2.8), 600);
+  await travel(tok, k, V3(-4.6, 1.0, 2.8), V3(bk[2], 0.8, 3.4), 800);
+  say('只要算一次 function，就知道資料在哪個 bucket');
+  await step(tok);                                   // 6:27 so it's constant time
+  good('insert / delete / search：constant time', 2.0, 1.4, 4.6);
+  say('所以 hash 的 insert、delete、search 都是常數時間');
 }]);
 
 // ════════ 06:41 static vs dynamic hashing ════════
 FRAG.push(['hashpeng-static-dynamic', 'Static hashing 與 dynamic hashing', async (tok) => {
   fresh([0, 7, 12], [0, 0.8, 0]);
-  tag('static', 'ptr', -3.6, 3.4, -1); tag('dynamic', 'ptr alt', 3.6, 3.4, -1);
   const sx = [-5.4, -4.2, -3.0, -1.8];
+  let d;
+  await step(tok);                                   // 6:41 two kinds: static hash, dynamic hash
+  tag('static hashing', 'ptr', -3.6, 3.4, -1); tag('dynamic hashing', 'ptr alt', 3.6, 3.4, -1);
+  say('Hash 分兩大類：static 與 dynamic');
+  await step(tok);                                   // 6:54 static: once decided, the function stays
   sx.forEach((x, i) => { cube('', GRAY, [1.0, 0.12, 1.2], x, 0.06, 0); tag(String(i), 'idx', x, 0, 1); });
-  say('Static：h 一旦決定就不變', '不管資料怎麼分佈都一樣');
-  await beat(tok, 2600);
-  for (let n = 0; n < 4; n++) { cube('', PP[n], [0.8, 0.5, 0.8], sx[1], 0.37 + n * 0.55, 0, 3); await beat(tok, 500); }
-  say('資料偏向某一格也照樣丟進去', 'h(x) 固定');
-  await beat(tok, 2400);
+  note('h(x) 決定後就固定', -3.6, 2.6, -1);
+  say('Static：hash function 一旦決定就一成不變');
+  await step(tok);                                   // 7:08 no matter how the data are distributed
+  for (let n = 0; n < 4; n++) { cube('', PP[n], [0.8, 0.5, 0.8], sx[1], 0.37 + n * 0.55, 0, 3); await beat(tok, 350); }
+  say('不管資料怎麼分佈，都照同一個 h 丟', '資料偏向某一格也照樣丟進去');
+  await step(tok);                                   // 7:32 dynamic: what is dynamic?
   const b = cube('', GRAY, [2.2, 0.12, 1.2], 3.6, 0.06, 0);
-  const d = [];
-  for (let n = 0; n < 3; n++) { d.push(cube('', PP[n + 4], [0.6, 0.5, 0.8], 2.9 + n * 0.7, 0.37, 0, 3)); await beat(tok, 500); }
-  say('Dynamic：依資料的 distribution', '自動調整 hash function');
-  await beat(tok, 2400);
+  d = [0, 1, 2].map((n) => cube('', PP[n + 4], [0.6, 0.5, 0.8], 2.9 + n * 0.7, 0.37, 0, 3));
+  say('Dynamic：動態的 hash');
+  await step(tok);                                   // 7:42 adjusts the hash function to the data distribution
   kill(b);
   cube('', GRAY, [1.4, 0.12, 1.2], 2.6, 0.06, 0); cube('', GRAY, [1.4, 0.12, 1.2], 4.6, 0.06, 0);
   move(d[0], 2.3, 0.37, 0); move(d[1], 2.9, 0.37, 0); move(d[2], 4.6, 0.37, 0);
-  say('滿了就分裂，bucket 跟著資料長', 'database 常用 dynamic hashing');
-  await beat(tok, 3000);
-  say('本章先講 static，再講 dynamic', 'dynamic：trie、directory、directoryless');
-  await beat(tok, 3000);
+  await beat(tok, 700);
+  say('依資料的分佈，自動調整 hash function', '滿了就分裂，bucket 跟著資料長');
+  await step(tok);                                   // 8:04 static part: common hash functions
+  bub('常用的 hash function', -3.6, 1.2, 2.4);
+  say('Static 部分：介紹常用的 hash function');
+  await step(tok);                                   // 8:19 collision / overflow handling
+  bub('collision、overflow 怎麼處理', -3.6, 0.4, 3.4);
+  say('還有遇到 collision、overflow 時怎麼處理');
+  await step(tok);                                   // 8:26 dynamic: a tree called trie
+  bub('trie（一種樹）', 3.6, 1.2, 2.4);
+  say('Dynamic 部分：trie 這種資料結構');
+  await step(tok);                                   // 8:33 directoryless hashing
+  bub('directoryless', 3.6, 0.4, 3.4);
+  say('以及 directoryless 的做法');
+  await step(tok);                                   // 8:42 dynamic hash → database course
+  good('database 常用 dynamic hashing', 3.6, 2.4, 1.2);
+  say('Database 的 hash 會隨資料改變', '所以常用 dynamic hashing');
 }]);
 
 // ════════ 09:04 h(x)、b 個 bucket、s 個 slot、兩種 density ════════
 FRAG.push(['hashpeng-density', 'b 個 bucket、每個 s 格：identifier density 與 loading density', async (tok) => {
   fresh([0, 7.5, 12], [0, 0.8, 0]);
-  const b = 6, s = 2, xs = [...Array(b)].map((_, i) => -3.75 + i * 1.5);
-  xs.forEach((x, i) => { for (let j = 0; j < s; j++) cube('', GRAY, [1.2, 0.1, 0.9], x, 0.05, -0.6 + j * 1.1); tag(String(i), 'idx', x, 0, 1.4); });
-  tag('slot 1', 'idx', -5.6, 0, -0.6); tag('slot 2', 'idx', -5.6, 0, 0.5);
-  say('Hash table：b 個 bucket，編號 0 ～ b−1', '這裡 b = 6，每個 bucket 放 s = 2 筆');
-  await beat(tok, 3000);
-  const put = [['x₁', 4, 0], ['x₂', 1, 0], ['x₃', 4, 1], ['x₄', 0, 0]];
-  const fx = tag('', 'ptr', 0, 2.4, -0.2);
-  for (const [k, h, j] of put) {
-    txt(fx, 'h(' + k + ') = ' + h);
-    cube(k, ppCol(k), [0.9, 0.6, 0.8], xs[h], 0.4, -0.6 + j * 1.1, 3);
-    say('資料 ' + k + ' 放進 bucket h(' + k + ')', '放的時候算 h，找的時候也算 h');
-    await beat(tok, 1500);
-  }
-  say('identifier density = n / T', 'T = 所有可能的 key 個數；n = 4 筆在表裡');
-  await beat(tok, 3400);
-  say('loading density α = n / (s·b)', 'α = 4 / (2·6) = 1/3');
-  await beat(tok, 3400);
+  const b = 6, s = 2, xs = [...Array(b)].map((_, i) => -2.75 + i * 1.5), sz = (j) => -0.6 + j * 1.1;
+  const slots = [], idx = [];
+  const ks = ['x₁', 'x₂', 'x₃', 'x₄'], pk = {};
+  await step(tok);                                   // 9:04 identifier = key
+  ks.forEach((k, i) => { pk[k] = tag(k, 'pkt', -6.2, 2.6 - i * 0.7, -2.0); });
+  note('identifier = key', -6.0, 3.4, -2.0);
+  say('identifier（識別子）就是 key');
+  await step(tok);                                   // 9:21 which bucket does x go in?
+  xs.forEach((x, i) => { for (let j = 0; j < s; j++) slots.push(cube('', GRAY, [1.2, 0.1, 0.9], x, 0.05, sz(j))); idx.push(tag(String(i), 'idx', x, 0, 1.4)); });
+  say('資料 x 要放進哪一個 bucket（籃子）？');
+  await step(tok);                                   // 9:30 a function h decides: h(x)
+  const fx = bub('h(x) 決定放哪個 bucket', 0, 2.6, -2.0);
+  say('由一個函數 h 來決定：h(x)');
+  await step(tok);                                   // 9:51 data x comes in → put it in bucket h(x)
+  const put = [['x₁', 4, 0], ['x₂', 1, 0], ['x₃', 4, 1], ['x₄', 0, 0]], cs = {};
+  for (const [k, h, j] of put) { pk[k].element.textContent = k + ' → ' + h; await travel(tok, pk[k], pk[k].position.clone(), V3(xs[h], 0.6, sz(j)), 450); remove(pk[k]); cs[k] = cube(k, ppCol(k), [0.9, 0.6, 0.8], xs[h], 0.4, sz(j)); }
+  say('資料 x 就放進 h(x) 算出來的 bucket');
+  await step(tok);                                   // 10:09 know how it is placed → know how to search
+  bub('怎麼放，就怎麼找', 0, 2.0, -3.0);
+  say('知道怎麼放，就知道怎麼找');
+  await step(tok);                                   // 10:36 search x: compute h(x), look in that bucket
+  const cur = tag('h(x₃) = 4', 'ptr alt', xs[4], 2.0, 0);
+  glow(cs['x₃'], GREEN);
+  say('找 x₃：一樣算 h(x₃) = 4，到 bucket 4 裡找');
+  await step(tok);                                   // 10:56 a bucket holds at most s records
+  glow(cs['x₃'], null); remove(cur);
+  tag('slot 1', 'idx', -4.6, 0, sz(0)); tag('slot 2', 'idx', -4.6, 0, sz(1));
+  note('每個 bucket 最多放 s 筆（s = 2）', -3.0, 1.2, 2.6);
+  say('每個 bucket 最多放 s 筆 record', '這裡 s = 2');
+  await step(tok);                                   // 11:06 the table has b buckets
+  note('共 b 個 bucket（b = 6）', 3.0, 1.2, 2.6);
+  say('hash table 有 b 個 bucket', '這裡 b = 6');
+  await step(tok);                                   // 11:14 h(x) is always between 0 and b − 1
+  idx.forEach((l) => { l.element.className = 'lab-label ptr alt'; });
+  say('所以 h(x) 的值一定在 0 ～ b − 1');
+  await step(tok);                                   // 11:32 identifier density
+  remove(fx);
+  bub('identifier density = n / T', 0, 3.0, -2.6);
+  say('identifier density = n / T');
+  await step(tok);                                   // 11:41 n = keys in the table; T = all possible keys
+  note('n = 表裡的 key 數 = 4', -2.6, 2.2, -2.6); note('T = 所有可能的 key 個數', 2.6, 2.2, -2.6);
+  say('n：表裡現在有的 key 數；T：所有「可能」的 key 個數');
+  await step(tok);                                   // 12:09 loading density / loading factor
+  bub('loading density α = n / (s·b)', 0, 3.4, 3.4);
+  say('loading density（loading factor）', 'α = n / (s·b)');
+  await step(tok);                                   // 12:24 b buckets × s each → can hold s·b records
+  slots.forEach((m) => glow(m, GOLD));
+  say('表總共能放 s × b = 2 × 6 = 12 筆');
+  await step(tok);                                   // 12:32 only n are used: how full the table is
+  slots.forEach((m) => glow(m, null));
+  good('α = 4 / 12 = 1/3：表佔用了三分之一', 0, 2.6, 4.2);
+  say('現在只用了 n = 4 筆', 'α = 4 / 12 = 1/3：表被佔用的比例');
 }]);
 
-// ════════ 12:52 collision vs overflow（83:33 Q&A 也用） ════════
+// ════════ 13:09 collision vs overflow ════════
 FRAG.push(['hashpeng-collide-overflow', 'Collision 與 overflow：s = 1 時同時發生', async (tok) => {
   fresh([0, 7, 12], [0, 0.8, 0]);
-  tag('s = 2', 'ptr', -3.2, 3.2, -1); tag('s = 1', 'ptr alt', 3.2, 3.2, -1);
-  [-4.4, -3.2, -2.0].forEach((x, i) => { cube('', GRAY, [1.0, 0.12, 1.2], x, 0.06, 0); tag(String(i), 'idx', x, 0, 1); });
-  const a = cube('i₁', PP[0], [0.8, 0.5, 0.9], -3.2, 0.37, 0, 3);
-  say('h(i₁) = h(i₂) = 1', '兩個 key 撞同一個 bucket');
-  await beat(tok, 2200);
-  const b = cube('i₂', PP[1], [0.8, 0.5, 0.9], -3.2, 0.92, 0, 3);
-  glow(a, GOLD); glow(b, GOLD);
-  say('這叫 collision', 'bucket 還有空位 → 放得下，沒問題');
-  await beat(tok, 4100);
-  const c = cube('i₃', PP[2], [0.8, 0.5, 0.9], -3.2, 2.6, 0);
-  glow(c, RED);
-  say('第三個再撞進來：bucket 滿了', '放不下 → overflow');
-  await beat(tok, 3500);
-  fly(c, V3(-2, 6, 3));
-  [2.0, 3.2, 4.4].forEach((x, i) => { cube('', GRAY, [1.0, 0.12, 1.2], x, 0.06, 0); tag(String(i), 'idx', x, 0, 1); });
-  cube('i₁', PP[0], [0.8, 0.5, 0.9], 3.2, 0.37, 0, 3);
-  await beat(tok, 900);
-  const d = cube('i₂', PP[1], [0.8, 0.5, 0.9], 3.2, 1.6, 0); glow(d, RED);
-  say('bucket size s = 1：只能放一個', 'collision 一發生就 overflow');
-  await beat(tok, 4100);
-  say('collision 必然；overflow 看滿沒滿', 's = 1 時兩者同時發生');
-  await beat(tok, 4100);
+  const L = [-5.6, -3.6, -1.6], R = [1.8, 3.4, 5.0];
+  L.forEach((x, i) => { cube('', GRAY, [1.8, 0.12, 1.2], x, 0.06, 0); tag(String(i), 'idx', x, 0, 1); });
+  tag('bucket size s = 2', 'ptr', -3.6, 3.2, -1);
+  let i1, i2;
+  await step(tok);                                   // 13:09 first situation: two data i₁ and i₂
+  i1 = buddy('i₁', '', PP[0], -5.0, 0, -2.6, 0.55); i2 = buddy('i₂', '', PP[1], -2.6, 0, -2.6, 0.55);
+  say('兩筆資料：i₁、i₂');
+  await step(tok);                                   // 13:19 h(i₁) = h(i₂)
+  note('h(i₁) = 1', -5.0, 1.6, -2.6); note('h(i₂) = 1', -2.6, 1.6, -2.6);
+  say('hash 的結果一樣：h(i₁) = h(i₂)');
+  await step(tok);                                   // 13:40 both grab the same bucket → collision
+  await Promise.all([travel(tok, i1.g, V3(-5.0, 0, -2.6), V3(-4.05, 0.12, 0), 900), travel(tok, i2.g, V3(-2.6, 0, -2.6), V3(-3.15, 0.12, 0), 900)]);
+  i1.mood('wow'); i2.mood('wow');
+  tag('collision', 'ptr alt', -3.6, 2.2, 0);
+  say('兩個都要搶 bucket 1 → collision');
+  await step(tok);                                   // 13:52 enough space for both → no problem
+  i1.mood('happy'); i2.mood('happy');
+  good('還有空位 → 沒問題', -3.6, 1.5, 1.4);
+  say('bucket 有足夠空間放兩筆 → 沒有問題');
+  await step(tok);                                   // 14:08 the bucket is already full → overflow
+  const i3 = buddy('i₃', '', PP[2], -3.6, 1.4, 0, 0.55); i3.glow(RED); i3.mood('sad');
+  bad('滿了，放不下 → overflow', -3.6, 3.0, 1.0);
+  say('要塞進去時 bucket 已經滿了 → overflow');
+  await step(tok);                                   // 14:24 collision always happens with hash
+  bub('collision：用 hash 就一定會發生', 0, 2.6, -3.4);
+  say('collision 和 overflow 不一樣', '用 hash 就一定會有 collision');
+  await step(tok);                                   // 14:37 overflow depends on whether the bucket is full
+  bub('overflow：要看 bucket 滿了沒', 0, 1.8, -3.4);
+  say('overflow 要看 bucket 滿了沒');
+  await step(tok);                                   // 14:45 bucket size s = 1
+  R.forEach((x, i) => { cube('', GRAY, [1.2, 0.12, 1.2], x, 0.06, 0); tag(String(i), 'idx', x, 0, 1); });
+  tag('bucket size s = 1', 'ptr alt', 3.4, 3.2, -1);
+  buddy('j₁', '', PP[3], R[1], 0.12, 0, 0.55);
+  say('如果 bucket size s = 1');
+  await step(tok);                                   // 14:50 collision ⇒ overflow
+  const j2 = buddy('j₂', '', PP[4], R[1] + 2.0, 0, -2.4, 0.55);
+  await travel(tok, j2.g, V3(R[1] + 2.0, 0, -2.4), V3(R[1], 1.2, 0), 800);
+  j2.glow(RED); j2.mood('sad');
+  bad('collision ＝ overflow', R[1], 2.9, 1.0);
+  say('一發生 collision 就一定 overflow', 'bucket 只能放一個');
+  await step(tok);                                   // 15:19 s = 1: both at the same time
+  good('s = 1 時，collision 和 overflow 同時發生', 0, 0.5, 3.4);
+  say('bucket size = 1 時，兩者同時發生');
 }]);
 
 // ════════ 15:26 26 個 bucket、s = 2：GA, D, A, G, L, A2, A1, A3, A4 ════════
 FRAG.push(['hashpeng-letters26', '26 個 bucket、s = 2：A1 開始 overflow', async (tok) => {
   fresh([0, 10, 10.5], [0, 0.3, 0.4]);
   const X = (i) => -6.3 + (i % 13) * 1.05, Z = (i) => (i < 13 ? -1.4 : 2.2);
-  for (let i = 0; i < 26; i++) { cube('', GRAY, [0.95, 0.1, 1.0], X(i), 0.05, Z(i)); tag(String(i), 'idx', X(i), 0, Z(i) + 0.9); }
-  say('h(x) = 第一個字母的順序', 'A → 0、B → 1 … Z → 25；s = 2');
-  await beat(tok, 3000);
-  const cnt = new Array(26).fill(0), cubes = {};
-  for (const k of ['GA', 'D', 'A', 'G', 'L', 'A2', 'A1', 'A3', 'A4']) {
-    const h = ppLet(k);
-    if (cnt[h] < 2) {
-      cubes[k] = cube(k, ppCol(k), [0.85, 0.5, 0.85], X(h), 0.35 + cnt[h] * 0.55, Z(h), 3); cnt[h]++;
-      say(k + '：h = ' + h + '，放進 bucket ' + h, 'bucket ' + h + '：' + cnt[h] + ' / 2');
-      await beat(tok, 1100);
-    } else {
-      const c = cube(k, RED, [0.85, 0.5, 0.85], X(h), 1.9, Z(h)); glow(c, RED);
-      say(k + '：bucket 0 已經滿了', '<span class="no">overflow</span>');
-      await beat(tok, 1300); fly(c, V3(-3, 6, -3));
-    }
-  }
-  say('A1、A3、A4 都 overflow', '資料不能丟 → 要有 overflow 處理方法');
-  await beat(tok, 3200);
+  const keys = ['GA', 'D', 'A', 'G', 'L', 'A2', 'A1', 'A3', 'A4'];
+  const cnt = new Array(26).fill(0), bs = [], cs = {};
+  let Q;
+  const drop = (k) => { const h = ppLet(k); Q.take(k); cs[k] = cube(k, ppCol(k), [0.85, 0.5, 0.85], X(h), 0.35 + cnt[h] * 0.55, Z(h), 3); cnt[h]++; };
+  await step(tok);                                   // 15:26 a very simple hash table
+  for (let i = 0; i < 26; i++) { bs.push(cube('', GRAY, [0.95, 0.1, 1.0], X(i), 0.05, Z(i))); }
+  say('來看一個很簡單的 hash table');
+  await step(tok);                                   // 15:41 hash by alphabet order: A → bucket 0
+  glow(bs[0], GOLD); tag('A → 0', 'ptr alt', X(0), 1.2, Z(0));
+  say('hash function：照英文字母順序', 'A 是第一個字母 → bucket 0');
+  await step(tok);                                   // 15:58 26 letters → buckets 0 … 25
+  glow(bs[0], null);
+  for (let i = 0; i < 26; i++) tag(String(i), 'idx', X(i), 0, Z(i) + 0.9);
+  say('26 個字母 → 26 個 bucket，編號 0 ～ 25', '（字幕把 b = 26 聽成「bucket size 20」）');
+  await step(tok);                                   // 16:08 each bucket holds at most two
+  note('s = 2：每個 bucket 最多放 2 筆', 3.4, 1.4, -3.4);
+  say('每個 bucket 最多只能放兩筆資料');
+  await step(tok);                                   // 16:14 data: GA, D, A, G, L, A2, A1, A3, A4
+  Q = ppQueue(keys, -6.0, 1.0, -3.4, 0.95);
+  say('依序放入：GA, D, A, G, L, A2, A1, A3, A4');
+  await step(tok);                                   // 16:24 GA: the 7th letter → bucket 6
+  drop('GA');
+  say('GA：G 是第 7 個字母 → bucket 6');
+  await step(tok);                                   // 16:33 D: the 4th → bucket 3
+  drop('D');
+  say('D：第 4 個字母 → bucket 3');
+  await step(tok);                                   // 16:42 and so on
+  for (const k of ['A', 'G', 'L', 'A2']) { drop(k); await beat(tok, 450); }
+  say('依此類推：A → 0、G → 6、L → 11、A2 → 0');
+  await step(tok);                                   // 16:52 buckets 0 and 6 are full; A1, A3, A4 → bucket 0
+  glow(bs[0], RED); glow(bs[6], RED);
+  say('bucket 0 和 bucket 6 都塞滿了', '後面的 A1、A3、A4 都要進 bucket 0');
+  await step(tok);                                   // 17:02 but it's full → overflow
+  for (const k of ['A1', 'A3', 'A4']) { Q.take(k); const c = cube(k, RED, [0.85, 0.5, 0.85], X(0) + 0.3, 1.9, Z(0)); glow(c, RED); await beat(tok, 400); fly(c, V3(-2, 6, -3)); }
+  bad('overflow！', X(0) + 1.4, 1.6, Z(0) - 0.9);
+  say('bucket 0 已經滿了 → overflow');
+  await step(tok);                                   // 17:21 data can't be thrown away → must be handled
+  bub('資料不能丟 → 需要處理 overflow 的方法', 0, 2.6, 0.4);
+  say('這些資料不能丟掉', '要有處理 overflow 的方法（後面會講）');
 }]);
 
-// ════════ 17:57 uniform hash function ════════
+// ════════ 17:59 uniform hash function ════════
 FRAG.push(['hashpeng-uniform', 'Uniform hash function：每格機率 1/b', async (tok) => {
   fresh([0, 7, 12], [0, 1, 0]);
   const xa = [-5.4, -4.2, -3.0, -1.8], xb = [1.8, 3.0, 4.2, 5.4];
-  tag('skewed', 'ptr', -3.6, 4.6, -1); tag('uniform', 'ptr alt', 3.6, 4.6, -1);
   xa.forEach((x, i) => { cube('', GRAY, [1.0, 0.12, 1.2], x, 0.06, 0); tag(String(i), 'idx', x, 0, 1); });
   xb.forEach((x, i) => { cube('', GRAY, [1.0, 0.12, 1.2], x, 0.06, 0); tag(String(i), 'idx', x, 0, 1); });
-  say('設計不好：每筆都丟到 bucket 0', '其他 bucket 閒著，很快 overflow');
-  for (let n = 0; n < 6; n++) { const c = cube('', PP[n], [0.8, 0.45, 0.8], xa[0], 0.35 + n * 0.5, 0, 3); if (n >= 2) glow(c, RED); await beat(tok, 450); }
-  await beat(tok, 2400);
-  say('Uniform：丟到每個 bucket 機率一樣', 'P(h(x) = i) = 1/b');
-  for (let n = 0; n < 8; n++) { cube('', PP[n], [0.8, 0.45, 0.8], xb[n % 4], 0.35 + Math.floor(n / 4) * 0.5, 0, 3); await beat(tok, 450); }
-  await beat(tok, 2400);
-  say('目標：collision 少、每格平均', '1/b 是理想，實際只能接近');
-  await beat(tok, 4100);
+  const right = [], left = [];
+  await step(tok);                                   // 17:59 a hash function should not be too complex
+  bub('hash function 不要太複雜', 0, 4.4, -2.0);
+  say('設計 hash function：第一，不要太複雜');
+  await step(tok);                                   // 18:06 goal: collision probability as small as possible
+  bub('目標①：collision 越少越好', 0, 3.6, -2.0);
+  say('目標：發生 collision 的機率越小越好');
+  await step(tok);                                   // 18:21 every bucket evenly: no bucket gets much more
+  bub('目標②：每個 bucket 平均', 0, 2.8, -2.0);
+  say('第二：每個 bucket 的資料要平均', '不要某些 bucket 特別多');
+  await step(tok);                                   // 18:49 each record thrown evenly into every bucket
+  tag('uniform', 'ptr alt', 3.6, 4.4, 0.4);
+  for (let n = 0; n < 8; n++) { right.push(cube('', PP[n], [0.8, 0.45, 0.8], xb[n % 4], 0.35 + Math.floor(n / 4) * 0.5, 0, 3)); await beat(tok, 260); }
+  say('希望每筆資料進來，都平均丟到每個 bucket');
+  await step(tok);                                   // 19:04 such a function: uniform hash function
+  good('uniform hash function', 3.6, 3.0, 1.6);
+  say('做得到的話，叫 uniform hash function');
+  await step(tok);                                   // 19:18 b buckets: each with probability 1/b
+  note('P(丟到第 i 格) = 1/b', 3.6, 2.2, 2.4);
+  say('b 個 bucket：丟到每一格的機率都是 1/b');
+  await step(tok);                                   // 19:30 skewed extreme: always bucket 0
+  tag('skewed（極端）', 'ptr', -3.6, 4.4, 0.4);
+  for (let n = 0; n < 6; n++) { left.push(cube('', PP[n], [0.8, 0.45, 0.8], xa[0], 0.35 + n * 0.5, 0, 3)); await beat(tok, 300); }
+  say('反例：每一次都丟到 bucket 0', '其他 bucket 都空著');
+  await step(tok);                                   // 19:43 bad: overflows easily, others idle
+  left.slice(2).forEach((c) => glow(c, RED));
+  bad('很快 overflow，其他 bucket 閒著', -3.6, 1.4, 2.0);
+  say('這種 hash function 不好：很快就 overflow');
+  await step(tok);                                   // 19:50 best: every bucket's space used well
+  right.forEach((c) => glow(c, GREEN));
+  say('最好：每個 bucket 的空間都被善用');
+  await step(tok);                                   // 20:08 probability exactly 1/b — the ideal
+  bub('機率剛好 1/b：這是理想', 3.6, 1.2, 3.2);
+  say('每格機率剛好 1/b，不過那是理想');
 }]);
 
-// ════════ 20:14 mid-square 與 division（M = 2^i 不好） ════════
+// ════════ 20:16 mid-square 與 division（M = 2^i 不好） ════════
 FRAG.push(['hashpeng-midsq-div', 'Mid-square 與 division：除以 2ⁱ 只看最後 i 個 bit', async (tok) => {
   fresh([0, 7, 12], [0, 0.8, 0]);
   const bits = '10101001', bx = (i) => -2.8 + i * 0.8;
+  let bs;
+  await step(tok);                                   // 20:16 first form: mid-square
+  tag('① mid-square', 'ptr', -4.6, 2.2, -2.2);
   cube('13', PP[0], [1.0, 0.7, 0.9], -5.4, 0.35, -2.2, 3); tag('x', 'idx', -5.4, 0, -1.3);
-  say('Mid-square：key 化成二進位後平方', '例：x = 13，x² = 169 = 10101001₂');
-  const bs = [...bits].map((b, i) => cube(b, GRAY, [0.7, 0.6, 0.8], bx(i), 0.3, -2.2, 3));
-  await beat(tok, 3000);
+  say('第一種 hash function：mid-square（平方取中）');
+  await step(tok);                                   // 20:28 the key written in binary
+  note('13 = 1101₂', -5.4, 1.4, -2.2);
+  say('key 先用二進位表示', '例：x = 13 = 1101₂');
+  await step(tok);                                   // 20:39 take the middle bits
+  note('課本：先平方 13² = 169 = 10101001₂', 0.6, 1.5, -3.0);
+  bs = [...bits].map((b, i) => cube(b, GRAY, [0.7, 0.6, 0.8], bx(i), 0.3, -2.2, 3));
+  await beat(tok, 500);
   [3, 4].forEach((i) => glow(bs[i], GOLD));
-  say('取中間幾個 bit 當 bucket 編號', '取 2 bit：01₂ → bucket 1（取幾個不限定）');
-  await beat(tok, 3200);
+  say('取中間的幾個 bit 當 bucket 編號', '取中間 2 個：01₂ → bucket 1');
+  await step(tok);                                   // 20:50 how many: not fixed
+  [2, 5].forEach((i) => glow(bs[i], GOLD));
+  say('取幾個 bit 不限定', '取 4 個：1010₂ → bucket 10（表就要 2⁴ = 16 格）');
+  await step(tok);                                   // 20:57 …then square
+  bad('老師口述「取中間再平方」；課本是「先平方再取中間」', 0.6, 2.4, -1.0);
+  say('注意順序：課本是先平方，再取中間');
+  await step(tok);                                   // 21:08 second: division, mod
+  tag('② division', 'ptr alt', -4.6, 1.2, 0.2);
+  bub('h(x) = x mod M', -1.6, 1.2, 0.2);
+  say('第二種：division（除法），h(x) = x mod M', '取除以 M 的餘數');
+  await step(tok);                                   // 21:32 M = 2ⁱ, i = 1 → mod 2: only two buckets
+  [0, 1].forEach((i) => { cube('', GRAY, [1.6, 0.12, 1.2], 3.0 + i * 2.0, 0.06, 2.0); tag('bucket ' + i, 'idx', 3.0 + i * 2.0, 0, 3.0); });
+  say('如果 M = 2ⁱ，例如 i = 1 → M = 2', '只有 bucket 0、bucket 1 兩個');
+  await step(tok);                                   // 21:50 A1, B1, C1 all fall into the same bucket
   const keys = [['A1', '100001'], ['B1', '101001'], ['C1', '110001']];
-  say('Division：h(x) = x mod M', 'M = 2ⁱ 的話只剩最後 i 個 bit');
-  const rows = keys.map(([k, b], r) => {
-    cube(k, ppCol(k), [0.9, 0.6, 0.8], -5.4, 0.3, 0.6 + r * 1.1, 3);
-    return [...b].map((c, i) => cube(c, GRAY, [0.6, 0.5, 0.8], -3.6 + i * 0.7, 0.25, 0.6 + r * 1.1, 3));
-  });
-  await beat(tok, 3000);
-  rows.forEach((r) => glow(r[5], RED));
-  const bk = cube('', GRAY, [1.6, 0.12, 1.2], 3.6, 0.06, 1.7); tag('bucket 1', 'idx', 3.6, 0, 2.8);
-  arrow(V3(1.0, 0.5, 1.7), V3(2.6, 0.5, 1.7), 0x7a1010);
-  say('A1、B1、C1 最後一個 bit 都是 1', 'x mod 2 = 1 → 全擠在 bucket 1');
-  await beat(tok, 3400);
-  say('M = 2 只有兩個 bucket，很快就滿', 'M 不一定要 2 的倍數，例如 10、15');
-  await beat(tok, 3200);
+  const rows = keys.map(([k, b], r) => [cube(k, ppCol(k), [0.9, 0.6, 0.8], -6.2, 0.3, 1.0 + r * 1.0, 3), [...b].map((c, i) => cube(c, GRAY, [0.55, 0.5, 0.8], -5.0 + i * 0.62, 0.25, 1.0 + r * 1.0, 3))]);
+  await beat(tok, 500);
+  rows.forEach((r) => glow(r[1][5], RED));
+  say('A1、B1、C1 的最後一個 bit 都是 1');
+  await step(tok);                                   // 22:05 the last bit is 1 → result 1
+  rows.forEach((r, i) => move(r[0], 5.0, 0.42 + i * 0.6, 2.0));
+  await beat(tok, 900);
+  say('x mod 2 就是最後一個 bit → 全部落在 bucket 1');
+  await step(tok);                                   // 22:21 fills up fast: as if no hash at all
+  bad('很快就滿：有用 hash 跟沒用差不多', 4.0, 2.6, 3.4);
+  say('M = 2 只有兩個 bucket，很快就滿', '有用 hash 跟沒用差不多');
+  await step(tok);                                   // 22:29 M need not be a power of 2: 10, 15 …
+  good('M 不必是 2 的倍數：10、15 …（通常選質數）', 0, 3.4, -0.6);
+  say('M 不一定要是 2 的倍數，可以用 10、15 ……', '（實務上常選[[質數]]）');
+}]);
+
+// ════════ 22:58 folding：shift 與 boundary ════════
+FRAG.push(['hashpeng-fold', 'Folding：shift 699、boundary 897', async (tok) => {
+  fresh([0, 6, 13], [0, 2.8, 0]);
+  const s = '12320324111220', segs = ['123', '203', '241', '112', '20'];
+  const colX = (c) => 1.8 + (c - 1) * 0.62, rowY = (r) => 4.6 - r * 0.75;
+  let D = [], sum = [];
+  const digitsOf = (r) => D.slice(r * 3, r * 3 + segs[r].length);
+  const place = (r, rev) => { const ds = digitsOf(r), n = segs[r].length; ds.forEach((c, d) => move(c, colX(3 - n + (rev ? n - 1 - d : d)), rowY(r), 0)); };
+  const total = (str) => { sum.forEach(kill); sum = [...str].map((d, i) => cube(d, '#c08a1f', [0.5, 0.5, 0.5], colX(i), rowY(5) - 0.1, 0, 3)); };
+  await step(tok);                                   // 22:58 third: folding
+  tag('③ folding', 'ptr', -5.6, 6.4, 0);
+  say('第三種 hash function：folding（折疊）');
+  await step(tok);                                   // 23:13 segment first, then operate on the segments
+  bub('先切段（segment），再把各段加起來', 0, 6.6, -1.0);
+  say('把 key 先切成一段一段，再對各段做運算');
+  await step(tok);                                   // 23:21 example: x = 12320324111220
+  D = [...s].map((d, i) => cube(d, PP[Math.floor(i / 3) % PP.length], [0.5, 0.5, 0.5], -4.2 + i * 0.62, 5.6, 0, 2));
+  tag('x', 'idx', -5.0, 5.6, 0);
+  say('例：x = 12320324111220');
+  await step(tok);                                   // 23:51 three digits per segment → five segments
+  D.forEach((c, i) => move(c, -5.4 + Math.floor(i / 3) * 2.3 + (i % 3) * 0.55, 5.6, 0));
+  await beat(tok, 800);
+  say('每 3 位一段（也可以 4 位）', '切成 123 | 203 | 241 | 112 | 20 五段');
+  await step(tok);                                   // 24:03 add the five segments up
+  segs.forEach((_, r) => place(r, false));
+  await beat(tok, 900);
+  tag('+', 'ptr', colX(-1), rowY(4), 0);
+  say('第一種：五段直接相加（像直式加法）');
+  await step(tok);                                   // 24:19 shift folding = 699
+  total('699');
+  good('shift folding = 699', -2.6, 1.0, 0);
+  say('shift folding = 699', '123 + 203 + 241 + 112 + 20 = 699');
+  await step(tok);                                   // 24:30 second: folding at the boundaries
+  bub('像摺紙：沿著邊界對折', -3.6, 3.4, 0);
+  say('第二種：folding at the boundaries（邊界折疊）');
+  await step(tok);                                   // 25:00 folded over: the digits read backwards
+  [1, 3].forEach((r) => { digitsOf(r).forEach((c) => glow(c, GOLD)); place(r, true); });
+  await beat(tok, 900);
+  say('摺過去的段，數字會顛倒', '203 → 302、112 → 211；241、20 不變');
+  await step(tok);                                   // 26:08 123 + 302 + 211 + 241 + 20
+  total('897');
+  good('boundary folding = 897', -2.6, 0.3, 0);
+  say('123 + 302 + 241 + 211 + 20 = 897', '（老師口述時 241／142 一度說反）');
+  await step(tok);                                   // 26:38 different from shift folding
+  bad('699 ≠ 897：兩種折法結果不同', 4.6, 1.0, 0);
+  say('跟 shift folding 的結果不一樣');
+  await step(tok);                                   // 27:00 the most used: division (mod)
+  bub('三種裡最常用的是 division（mod）', 0, 0.0, 1.6);
+  say('三種 hash function 裡，最常用的是 division（mod）');
 }]);
 
 // ════════ 27:17 overflow 的兩種處理 ════════
 FRAG.push(['hashpeng-two-ways', 'Overflow 處理：open addressing 與 chaining', async (tok) => {
   fresh([0, 7, 12], [0, 1, 0]);
-  tag('open addressing', 'ptr', -3.6, 3.8, -1); tag('chaining', 'ptr alt', 3.6, 3.8, -1);
-  const xa = [-5.4, -4.2, -3.0, -1.8];
+  const xa = [-5.4, -4.2, -3.0, -1.8], hx = 3.6;
   xa.forEach((x, i) => { cube('', GRAY, [1.0, 0.12, 1.2], x, 0.06, 0); tag(String(i), 'idx', x, 0, 1); });
-  cube('A', PP[0], [0.85, 0.6, 0.9], xa[0], 0.42, 0, 3);
-  const n = cube('A2', PP[1], [0.85, 0.6, 0.9], xa[0], 2.2, 0); glow(n, RED);
+  const a = buddy('A', '', PP[0], xa[0], 0.12, 0, 0.6);
+  let a2;
+  await step(tok);                                   // 27:17 does overflow happen in hashing?
+  a2 = buddy('A2', '', PP[1], xa[0], 1.3, 0, 0.6); a2.glow(RED); a2.mood('sad');
   say('bucket 0 滿了，A2 要放哪？', 'overflow');
-  await beat(tok, 3200);
-  move(n, xa[1], 0.42, 0); glow(n, null);
-  say('Open addressing：開放別的 bucket', '去附近找空的 bucket 放');
-  await beat(tok, 4100);
-  const hx = 3.0;
+  await step(tok);                                   // 27:24 more data → it will overflow
+  bub('資料一多，一定會 overflow', -3.6, 3.2, -1.6);
+  say('資料一多，overflow 一定會發生');
+  await step(tok);                                   // 27:33 two strategies; first: open addressing
+  tag('① open addressing', 'ptr', -3.6, 2.4, -1.0);
+  say('處理策略有兩種，第一種：open addressing');
+  await step(tok);                                   // 27:41 open up other buckets' space
+  await travel(tok, a2.g, V3(xa[0], 1.3, 0), V3(xa[1], 0.12, 0), 900);
+  a2.glow(null); a2.mood('happy');
+  good('開放別的 bucket 給它用', -3.6, 1.6, 1.8);
+  say('開放「其他 bucket」的空間給 overflow 的資料用');
+  await step(tok);                                   // 28:00 chaining: string them together
+  tag('② chaining', 'ptr alt', hx, 2.4, -1.0);
   cube('[0]', GRAY, [1.0, 0.6, 1.0], hx, 0.3, -1.2);
-  lnodeP('A', hx, 0.3, 0.4);
-  await beat(tok, 1000);
+  cube('A', PP[0], [1.0, 0.6, 1.0], hx, 0.3, 0.4, 3);
   arrow(V3(hx, 0.4, -0.7), V3(hx, 0.4, -0.15));
-  const c = lnodeP('A2', hx, 0.3, 2.0);
+  say('第二種：chaining，顧名思義「串在一起」');
+  await step(tok);                                   // 28:17 chaining doesn't open any other bucket
+  const c = cube('A2', PP[1], [1.0, 0.6, 1.0], hx, 0.3, 2.0, 3);
   arrow(V3(hx, 0.4, 0.95), V3(hx, 0.4, 1.45));
-  say('Chaining：不佔別人的 bucket', '同一個 bucket 用 linked list 串起來排隊');
-  await beat(tok, 4300);
-  say('兩種策略', 'open addressing ／ chaining');
-  await beat(tok, 3200);
-  function lnodeP(v, x, y, z) { const m = cube(v, ppCol(v), [1.0, 0.6, 1.0], x, y, z, 3); return m; }
+  say('chaining 不佔用別人的 bucket', 'A2 還是屬於 bucket 0');
+  await step(tok);                                   // 28:26 still in this bucket, but queue up (linked list)
+  bub('在自己這一格排隊：linked list', hx + 1.6, 1.4, 2.6);
+  say('overflow 的資料就排隊吧：用 linked list 串起來');
+  await step(tok);                                   // 28:46 open addressing: use others' buckets
+  a2.glow(GOLD);
+  say('回到 open addressing：用別人的 bucket 放資料');
 }]);
 
-// ════════ 28:38 linear open addressing：GA, D, A, G, L, A2, A1（s = 1） ════════
+// ════════ 28:60 linear open addressing：GA, D, A, G, L, A2, A1（s = 1） ════════
 FRAG.push(['hashpeng-lp-letters', 'Linear open addressing：G 放到 7、A1 放到 2', async (tok) => {
   fresh([0, 8, 11], [0, 0.4, 0]);
-  const T = ppRow(26, 1.0, 0, 13);
-  tag('（26 格，只畫 0～12）', 'idx', 4.8, 2.6, -1.2);
-  const cur = tag('', 'ptr', 0, 1.8, 0);
-  say('同一個例子，改成 s = 1', 'h(x) = 第一個字母的順序');
-  await beat(tok, 2200);
-  for (const k of ['GA', 'D', 'A', 'G', 'L', 'A2', 'A1']) {
-    let j = ppLet(k), tries = 0;
-    while (T.keys[j] !== null) {
-      cur.position.set(T.xs[j], 1.8, 0); txt(cur, '[' + j + '] 滿');
-      glow(T.keys[j], RED); say(k + '：bucket ' + j + ' 被 ' + T.vals[j] + ' 佔了', '往下一個 bucket 找');
-      await beat(tok, 1000); glow(T.keys[j], null); j = (j + 1) % 26; tries++;
-    }
-    cur.position.set(T.xs[j], 1.8, 0); txt(cur, '[' + j + ']');
-    ppPut(T, j, k, true);
-    say(k + '：放進 bucket ' + j, tries ? 'h(' + k + ') = ' + ppLet(k) + '，往下 ' + tries + ' 格' : 'h(' + k + ') = ' + j);
-    await beat(tok, 1000);
-  }
-  say('search G：h(G) = 6', '');
-  cur.position.set(T.xs[6], 1.8, 0); txt(cur, '[6]'); glow(T.keys[6], GOLD);
-  say('bucket 6 是 GA，不是 G', '不能馬上說「G 不在表裡」');
-  await beat(tok, 2600); glow(T.keys[6], null);
-  cur.position.set(T.xs[7], 1.8, 0); txt(cur, '[7]'); glow(T.keys[7], GREEN);
-  say('往下一格找：bucket 7 找到 G', '可能 overflow 了，要多走幾步');
-  await beat(tok, 3000);
+  let T;
+  const cur = tag('', 'ptr alt', 0, 2.1, 0);
+  const hover = (j, k) => { const c = cube(k, RED, [0.8, 0.6, 0.8], T.xs[j], 1.5, 0); glow(c, RED); return c; };
+  await step(tok);                                   // 28:60 the bucket is full and overflow happens
+  T = ppRow(26, 1.0, 0, 13);
+  tag('（26 個 bucket，只畫 0～12）', 'idx', 4.4, 2.8, -1.4);
+  say('bucket 滿了，又發生 overflow');
+  await step(tok);                                   // 29:08 look for an empty bucket nearby
+  bub('附近有空的 bucket，就放進去', -3.6, 2.6, -1.4);
+  say('最好的方法：看附近有沒有空的 bucket');
+  await step(tok);                                   // 29:15 linear probing / linear open addressing
+  tag('linear open addressing', 'ptr', 0, 3.4, -1.4);
+  say('這叫 linear open addressing', '也就是 linear probing');
+  await step(tok);                                   // 29:30 bucket holds only one data (s = 1)
+  note('s = 1：每個 bucket 只放 1 筆', 4.4, 2.0, -1.4);
+  say('同一個例子，改成每個 bucket 只放一筆', 'h(x) = 第一個字母的順序');
+  await step(tok);                                   // 29:38 GA → bucket 6
+  await ppTry(tok, T, 'GA', 6, cur, 'h = 6');
+  say('GA → bucket 6');
+  await step(tok);                                   // 29:50 D at 3, A at bucket 0
+  await ppTry(tok, T, 'D', 3, cur, 'h = 3', 500); await ppTry(tok, T, 'A', 0, cur, 'h = 0', 500);
+  say('D → bucket 3、A → bucket 0');
+  await step(tok);                                   // 30:00 G should go to 6, but it's full
+  const hg = hover(6, 'G'); glow(T.keys[6], RED); cur.position.set(T.xs[6], 2.6, 0); txt(cur, 'h(G) = 6');
+  say('G 應該放 bucket 6，但已經被 GA 佔了');
+  await step(tok);                                   // 30:08 bucket 7 is empty → G goes there
+  kill(hg); ppUnglow(T); await ppTry(tok, T, 'G', 7, cur, '往下 → 7');
+  say('往下看，bucket 7 是空的 → G 放 7', '空的 bucket 開放給你用');
+  await step(tok);                                   // 30:44 L somewhere; where does A2 go?
+  await ppTry(tok, T, 'L', 11, cur, 'h = 11');
+  say('L → bucket 11；接下來 A2 放哪？');
+  await step(tok);                                   // 30:51 bucket 0 is taken by A → A2 to the next
+  await ppTry(tok, T, 'A2', 0, cur, 'h = 0', 500); ppUnglow(T);
+  await ppTry(tok, T, 'A2', 1, cur, '下一個', 500);
+  say('A2：bucket 0 被 A 佔了 → 放下一個 bucket 1');
+  await step(tok);                                   // 31:00 A1 comes: bucket 0
+  await ppTry(tok, T, 'A1', 0, cur, 'h = 0');
+  say('A1 也要放 bucket 0：滿了');
+  await step(tok);                                   // 31:11 bucket 1 is also full
+  ppUnglow(T); await ppTry(tok, T, 'A1', 1, cur, '1？');
+  say('往下到 bucket 1：也滿了');
+  await step(tok);                                   // 31:20 bucket 2 is free → A1 goes in
+  ppUnglow(T); await ppTry(tok, T, 'A1', 2, cur, '2 空');
+  say('再往下，bucket 2 還沒滿 → A1 放進去');
+  await step(tok);                                   // 31:52 now: find G
+  const q = buddy('找 G', '', ppCol('G'), -6.0, 0, 2.4, 0.6);
+  say('問題：要找 G，G 在哪裡？');
+  await step(tok);                                   // 32:05 h(G) = 6, but bucket 6 holds GA
+  cur.position.set(T.xs[6], 2.1, 0); txt(cur, 'h(G) = 6'); glow(T.keys[6], GOLD);
+  say('h(G) = 6，可是 bucket 6 放的是 GA，不是 G');
+  await step(tok);                                   // 32:18 don't answer "not here" right away
+  bad('不能馬上說「G 不在」！', T.xs[6], 3.0, 0);
+  q.mood('wow');
+  say('千萬不要馬上回答「G 不在表裡」', '它可能 overflow 到附近了');
+  await step(tok);                                   // 32:36 probe: walk a few more steps
+  glow(T.keys[6], null); cur.position.set(T.xs[7], 2.1, 0); txt(cur, '找到'); glow(T.keys[7], GREEN);
+  q.mood('happy'); await q.hop(tok);
+  say('往下多走一步：bucket 7 找到 G', '這就是 linear open addressing 的搜尋');
 }]);
 
-// ════════ 32:53 general form：H_i(k) = (h(k) + f(i)) mod ts ════════
+// ════════ 33:19 general form：H_i(k) = (h(k) + f(i)) mod ts ════════
 FRAG.push(['hashpeng-probe-forms', 'H_i(k) = (h(k) + f(i)) mod ts：linear、quadratic、double', async (tok) => {
   fresh([0, 8, 11], [0, 0.4, 0]);
-  const T = ppRow(10, 1.2, 0);
-  const cur = tag('', 'ptr', 0, 1.8, 0);
-  say('一般式：H_i(k) = (h(k) + f(i)) mod ts', 'h = 原本的 hash function，ts = bucket 數');
-  await beat(tok, 3400);
-  ppPut(T, 0, 'A', false);
-  say('第 i 次 probe 多跳 f(i) 格', 'i = 0 就是原本的 h(k)');
-  await beat(tok, 2600);
-  for (const [name, f, fs] of [['linear：f(i) = i', (i) => i, (i) => String(i)], ['quadratic：f(i) = i²', (i) => i * i, (i) => i + '²']]) {
-    for (let i = 0; i < 4; i++) {
-      const j = f(i) % 10; cur.position.set(T.xs[j], 1.8, 0); txt(cur, 'i = ' + i);
-      glow(T.slots[j], GOLD);
-      say(name, 'H' + ppSub(i) + ' = (0 + ' + fs(i) + ') mod 10 = ' + j);
-      await beat(tok, 1000); glow(T.slots[j], null);
-    }
-  }
-  say('quadratic 跳得比較遠', '不會全擠在 A 旁邊');
-  await beat(tok, 2600);
-  say('double hash：改用另一個 hash', 'probe：問鄰居「有沒有人住？」');
-  await beat(tok, 3000);
+  const T = ppRow(10, 1.2, 0.6);
+  const cur = tag('', 'ptr alt', T.xs[0], 2.1, T.z);
+  const cd = code(['H_i(k) = (h(k) + f(i)) mod ts', 'h    = 原本的 hash function', 'f(i) = 第 i 次多跳幾格（offset）', 'ts   = bucket 的個數'], -1.0, 4.4, 0.5, -3.0);
+  cd.ls.forEach((l) => { l.element.style.visibility = 'hidden'; });
+  const show = (i) => { cd.ls[i].element.style.visibility = ''; cd.hl(i); };
+  await step(tok);                                   // 33:19 open addressing can be written more generally
+  show(0);
+  say('open addressing 可以寫成更一般的式子');
+  await step(tok);                                   // 33:42 lowercase h is the original hash function
+  show(1);
+  ppPut(T, 0, 'A', true);
+  cur.position.set(T.xs[0], 2.1, T.z); txt(cur, 'h(k)');
+  say('小寫 h 是原本的 hash function', 'h(k) 算出原本要放的 bucket');
+  await step(tok);                                   // 34:11 full → not necessarily the next one: an offset
+  bub('滿了不一定放隔壁：可以跳一段 offset', 3.4, 2.2, -1.2);
+  say('bucket 滿了，不一定放下一個', '可以給它一個 offset，多跳幾格');
+  await step(tok);                                   // 34:21 plus f(i), then mod ts
+  show(2);
+  say('就是加上 f(i)，再 mod ts');
+  await step(tok);                                   // 34:35 ts = number of buckets
+  show(3);
+  note('這裡 ts = 10', T.xs[9], 1.4, T.z - 1.2);
+  say('ts 是 bucket 的個數', 'mod ts 讓位置不會超出表');
+  await step(tok);                                   // 34:55 f linear → linear probe
+  for (let i = 1; i <= 3; i++) { cur.position.set(T.xs[i], 2.1, T.z); txt(cur, 'i = ' + i + '：+' + i); await beat(tok, 450); }
+  say('f 是線性函數（f(i) = i）→ linear probe', '1、2、3：一格一格往下');
+  await step(tok);                                   // 35:06 probe = ask the neighbour: anyone living here?
+  const nb = buddy('A1', '', ppCol('A1'), T.xs[1], 0.12, T.z + 2.2, 0.55);
+  bub('「有人住嗎？」沒人就住進去', T.xs[3], 1.6, T.z + 2.4);
+  await nb.hop(tok);
+  say('probe（試探）：去問鄰居「有沒有人住？」', '有人住，就再問下一個鄰居');
+  await step(tok);                                   // 35:39 f can be quadratic: i², jump farther
+  for (const i of [1, 2, 3]) { cur.position.set(T.xs[i * i], 2.1, T.z); txt(cur, 'i = ' + i + '：+' + i + '²'); glow(T.slots[i * i], GOLD); await beat(tok, 500); }
+  say('f 也可以是 quadratic：f(i) = i²', '一次跳遠一點：+1、+4、+9');
+  await step(tok);                                   // 35:53 A1, A2 can be farther away from A
+  bub('A1、A2 不必都擠在 A 旁邊', T.xs[5], 2.8, T.z - 1.6);
+  say('這樣 A1、A2 可以離 A 遠一點，不會擠成一團');
+  await step(tok);                                   // 36:02 double hash: use another hash function
+  bub('double hash：再用另一個 hash function 算 offset', 0, 0.4, 3.6);
+  say('double hash：hash 不到，就再用另一個 hash function');
 }]);
 
 // ════════ 36:16 linear probing：89, 18, 49, 58（mod 10） ════════
 FRAG.push(['hashpeng-lp-89', 'Linear probing：89, 18, 49, 58 → 49 在 [0]、58 在 [1]', async (tok) => {
   fresh([0, 8, 12], [0, 0.6, 0]);
-  const T = ppRow(10, 1.2, -1.2);
-  const cur = tag('', 'ptr', 0, 1.8, -1.2);
-  say('H_i(k) = (k mod 10 + i) mod 10', 'linear：f(i) = i，i 從 0 開始');
-  await beat(tok, 2800);
-  for (const k of [89, 18, 49, 58]) await ppIns(tok, T, k, k % 10, ppLin[0], ppLin[1], cur, 1200);
-  say('58 試了 i = 0,1,2,3 才放進 [1]', '8 → 9 → 0 → 1');
-  await beat(tok, 2600);
-  const P = code(['for (i = 0; ; i++) {', '  b = (h(k) + i) % 10;', '  if (bucket[b] 空) break;', '}', 'bucket[b] = k;'], -1.2, 0.6, 0.5, 2.6);
-  for (const l of [0, 1, 2, 4]) { P.hl(l); say('寫程式：一個 for 迴圈套公式', '找到空 bucket 就跳出來'); await beat(tok, 900); }
-  await beat(tok, 2000);
+  let T, Q;
+  const cur = tag('', 'ptr alt', 0, 2.1, -1.0);
+  const hover = (j, k) => { const c = cube(k, RED, [0.9, 0.6, 0.8], T.xs[j], 1.5, T.z); glow(c, RED); return c; };
+  await step(tok);                                   // 36:16 linear probing: f(i) = i
+  T = ppRow(10, 1.2, -1.0);
+  tag('linear probing：f(i) = i', 'ptr', -4.6, 2.8, -2.4);
+  say('linear probing：f(i) = i');
+  await step(tok);                                   // 36:31 H_i(k) = (h(k) + i) mod 10; 10 buckets
+  bub('H_i(k) = (h(k) + i) mod 10', 2.6, 2.8, -2.4);
+  say('H_i(k) = (h(k) + i) mod 10', 'i = 第幾次 try；表有 10 個 bucket');
+  await step(tok);                                   // 36:46 the numbers: 89, 18, 49, 58, 69
+  Q = ppQueue([89, 18, 49, 58, 69], -2.0, 1.0, 1.6);
+  say('要放的數字：89、18、49、58、69');
+  await step(tok);                                   // 37:07 89 mod 10 = 9; 9 + 0 → bucket 9
+  Q.take(89); await ppTry(tok, T, 89, 9, cur, 'i = 0');
+  say('89：i = 0，(9 + 0) mod 10 = 9 → bucket 9');
+  await step(tok);                                   // 37:28 i = 0 is just the original hash function
+  note('i = 0：就是原本的 h(k)', T.xs[9] - 1.2, 1.4, T.z - 1.4);
+  say('i = 0 時不用套公式，就是原本的 hash function');
+  await step(tok);                                   // 37:40 18 → bucket 8
+  Q.take(18); await ppTry(tok, T, 18, 8, cur, 'i = 0');
+  say('18 → bucket 8');
+  await step(tok);                                   // 38:10 49: i = 0 → bucket 9, full → i = 1
+  Q.take(49); const h49 = hover(9, 49); glow(T.keys[9], RED); cur.position.set(T.xs[9], 2.6, T.z); txt(cur, 'i = 0');
+  say('49：i = 0 → bucket 9，已經滿了', '所以 i 加 1 → i = 1');
+  await step(tok);                                   // 38:49 H₁(49) = (9 + 1) mod 10 = 0 → bucket 0
+  kill(h49); ppUnglow(T); await ppTry(tok, T, 49, 0, cur, 'i = 1');
+  say('H₁(49) = (9 + 1) mod 10 = 0 → bucket 0');
+  await step(tok);                                   // 39:00 uppercase H vs lowercase h
+  bub('大寫 H_i：第 i 次 probe 的位置　小寫 h：原本的 hash function', 0, 3.6, 0.8);
+  say('大寫 H 和小寫 h 不一樣', 'H_i 是 overflow 後第 i 次 probe 的位置');
+  await step(tok);                                   // 39:43 58: i = 0 → 8, full
+  Q.take(58); const h58 = hover(8, 58); glow(T.keys[8], RED); cur.position.set(T.xs[8], 2.6, T.z); txt(cur, 'i = 0');
+  say('58：i = 0，58 mod 10 = 8 → 滿了');
+  await step(tok);                                   // 40:01 i = 1 → 9, full
+  kill(h58); ppUnglow(T); await ppTry(tok, T, 58, 9, cur, 'i = 1');
+  say('i = 1：(8 + 1) mod 10 = 9 → 也滿了');
+  await step(tok);                                   // 40:18 i = 2 → 0, full again
+  ppUnglow(T); await ppTry(tok, T, 58, 0, cur, 'i = 2');
+  say('i = 2：(8 + 2) mod 10 = 0 → 又滿了');
+  await step(tok);                                   // 40:37 i = 3 → 1: 58 in bucket 1
+  ppUnglow(T); await ppTry(tok, T, 58, 1, cur, 'i = 3');
+  say('i = 3：(8 + 3) mod 10 = 1 → 58 放 bucket 1');
+  await step(tok);                                   // 40:57 in a program: a for loop
+  const P = code(['for (i = 0; ; i++) {', '  b = (h(k) + i) % 10;', '  if (bucket[b] 是空的) break;', '}', 'bucket[b] = k;'], -1.4, 0.4, 0.5, 2.4);
+  P.hl(0);
+  say('寫程式時：一個 for 迴圈，i 從 0 開始');
+  await step(tok);                                   // 41:04 break when an empty bucket is found
+  for (const l of [1, 2, 4]) { P.hl(l); await beat(tok, 600); }
+  say('每次套公式算 bucket，找到空的就跳出來');
 }]);
 
-// ════════ 41:56 primary clustering ════════
+// ════════ 42:00 primary clustering ════════
 FRAG.push(['hashpeng-primary', 'Primary clustering：8、9、0、1 連成一坨', async (tok) => {
   fresh([0, 8, 12], [0, 0.6, 0]);
   const T = ppRow(10, 1.2, -0.6);
-  [89, 18, 49, 58].forEach((k) => { let j = k % 10; while (T.keys[j] !== null) j = (j + 1) % 10; ppPut(T, j, k, false); });
-  say('linear probing 插完 89, 18, 49, 58', '8, 9, 0, 1 全被佔');
-  await beat(tok, 2600);
+  const cur = tag('', 'ptr alt', T.xs[9], 2.1, T.z);
+  await step(tok);                                   // 42:00 why "linear": + i
+  [[9, 89], [8, 18], [0, 49], [1, 58]].forEach(([j, k]) => ppPut(T, j, k, false));
+  note('+ i：i 的一次方 → linear', 0, 2.8, -2.2);
+  say('為什麼叫 linear？因為加的是 i（一次方）');
+  await step(tok);                                   // 42:19 problem: primary clustering
+  tag('primary clustering', 'ptr', -3.6, 2.0, -2.2);
+  say('問題：primary clustering（主要群聚）');
+  await step(tok);                                   // 42:27 more data hashed to the same bucket …
+  bub('hash 到同一區的資料越多……', 3.6, 2.0, -2.2);
+  say('hash 到同一區的資料越多……');
+  await step(tok);                                   // 42:37 … they occupy others' space: a lump
   [8, 9, 0, 1].forEach((j) => glow(T.keys[j], GOLD));
-  say('hash 到同一區的資料越多', '就佔用別人的空間，聚成一坨');
-  await beat(tok, 3000);
-  const cur = tag('', 'ptr', 0, 1.8, -0.6);
-  say('之後撞進來的要一格一格試', 'i 變大 = 要 hash 好多次');
-  for (const j of [9, 0, 1, 2]) { cur.position.set(T.xs[j], 1.8, -0.6); txt(cur, j === 2 ? '空' : '滿'); await beat(tok, 800); }
-  say('例：69 用 linear 要 9 → 0 → 1 → 2', 'i = 3 才找到空位');
-  await beat(tok, 2600);
-  say('改進：一次跳遠一點', 'f(i) = i² → quadratic probing');
-  await beat(tok, 2800);
+  say('就會佔用到別人的空間，聚成一坨', '8、9、0、1 連成一塊');
+  await step(tok);                                   // 42:57 only checks the next bucket each time
+  for (const [i, j] of [[0, 9], [1, 0], [2, 1]]) { cur.position.set(T.xs[j], 2.1, T.z); txt(cur, 'i = ' + i); await beat(tok, 450); }
+  ppPut(T, 2, 69, true); cur.position.set(T.xs[2], 2.1, T.z); txt(cur, 'i = 3');
+  say('每次只往下一個 bucket 檢查', '例：69 要試 9 → 0 → 1 → 2');
+  await step(tok);                                   // 43:10 clustering → i grows → more tries
+  note('i 變大 = 要 hash 好多次', T.xs[2], 1.3, T.z + 1.8);
+  say('一旦聚集，i 就會變大，要多試好幾次');
+  await step(tok);                                   // 43:28 jump farther to find an empty bucket
+  bub('改進：一次跳遠一點找空 bucket', 0, 1.0, 3.4);
+  say('解法：一次不要只找隔壁，跳遠一點');
 }]);
 
-// ════════ 43:25 quadratic probing：89, 18, 49, 58, 69 ════════
+// ════════ 43:37 quadratic probing：89, 18, 49, 58, 69 ════════
 FRAG.push(['hashpeng-qp-89', 'Quadratic probing：58 → [2]、69 → [3]', async (tok) => {
   fresh([0, 8, 12], [0, 0.6, 0]);
   const T = ppRow(10, 1.2, -0.6);
-  const cur = tag('', 'ptr', 0, 1.8, -0.6);
-  say('H_i(k) = (k mod 10 + i²) mod 10', '指數從 1 變 2 → quadratic');
-  await beat(tok, 2800);
-  for (const k of [89, 18, 49, 58, 69]) await ppIns(tok, T, k, k % 10, ppQuad[0], ppQuad[1], cur, 1100);
-  say('58 跳過 0、1 直接到 [2]', '不像 linear 一格一格擠');
-  await beat(tok, 2600);
-  say('前面也可乘常數：3i²、4i²', 'f(i) = c·i²');
-  await beat(tok, 2600);
+  const cur = tag('', 'ptr alt', 0, 2.1, T.z);
+  const hover = (j, k) => { const c = cube(k, RED, [0.9, 0.6, 0.8], T.xs[j], 1.5, T.z); glow(c, RED); return c; };
+  const Q = ppQueue([89, 18, 49, 58, 69], -2.0, 1.0, 2.2);
+  let pre = [];
+  await step(tok);                                   // 43:37 f(i) = i²
+  tag('quadratic probing：f(i) = i²', 'ptr', -3.6, 2.8, -2.2);
+  say('一次跳遠一點：f(i) = i²');
+  await step(tok);                                   // 43:46 i = 1 same as before; i = 2 jumps 4
+  pre = [arrow(V3(T.xs[0], 1.2, T.z - 0.9), V3(T.xs[1], 1.2, T.z - 0.9), 0xc08a1f), arrow(V3(T.xs[0], 1.6, T.z - 1.1), V3(T.xs[4], 1.6, T.z - 1.1), 0xc08a1f), tag('+1²', 'idx', T.xs[1], 1.5, T.z - 1.2), tag('+2² = +4', 'idx', T.xs[4], 1.9, T.z - 1.4)];
+  say('i = 1 跟原本一樣跳 1 格；i = 2 一次跳 4 格', '指數從 1 變 2 → quadratic');
+  await step(tok);                                   // 44:03 a constant in front: 3i², 4i²
+  note('也可乘常數：3i²、4i²', 3.6, 2.8, -2.2);
+  say('前面也可以乘常數，例如 3i²、4i²');
+  await step(tok);                                   // 44:22 H_i(k) = (h(k) + i²) mod 10; 89 → 9
+  pre.forEach((o) => (o.element ? remove(o) : kill(o)));
+  Q.take(89); await ppTry(tok, T, 89, 9, cur, 'i = 0');
+  say('H_i(k) = (h(k) + i²) mod 10', '89 → bucket 9');
+  await step(tok);                                   // 44:31 18 → 8
+  Q.take(18); await ppTry(tok, T, 18, 8, cur, 'i = 0');
+  say('18 → bucket 8');
+  await step(tok);                                   // 44:40 49: 9 is full → i = 1
+  Q.take(49); const h49 = hover(9, 49); glow(T.keys[9], RED); cur.position.set(T.xs[9], 2.6, T.z); txt(cur, 'i = 0');
+  say('49：bucket 9 被佔滿 → i = 1');
+  await step(tok);                                   // 44:48 H₁(49) = (9 + 1²) mod 10 = 0
+  kill(h49); ppUnglow(T); await ppTry(tok, T, 49, 0, cur, 'i = 1');
+  say('H₁(49) = (9 + 1²) mod 10 = 0', '跟 linear 一樣');
+  await step(tok);                                   // 44:59 58: bucket 8, then i = 1 → 9
+  Q.take(58); const h58 = hover(8, 58); glow(T.keys[8], RED); cur.position.set(T.xs[8], 2.6, T.z); txt(cur, 'i = 0'); await beat(tok, 600);
+  kill(h58); ppUnglow(T); await ppTry(tok, T, 58, 9, cur, 'i = 1：+1');
+  say('58：bucket 8 滿 → i = 1', '(8 + 1) mod 10 = 9，也滿');
+  await step(tok);                                   // 45:27 i = 2: (8 + 4) mod 10 = 2
+  ppUnglow(T); await ppTry(tok, T, 58, 2, cur, 'i = 2：+4');
+  say('i = 2 → (8 + 2²) mod 10 = 12 mod 10 = 2', '58 放 bucket 2');
+  await step(tok);                                   // 45:35 58 jumps more at once
+  arrow(V3(T.xs[8], 1.2, T.z - 0.9), V3(T.xs[2], 1.2, T.z - 0.9), 0xc08a1f);
+  bub('一次跳比較多格（linear 要先撞 [0] 才放 [1]）', 0, 2.0, 2.6);
+  say('58 一次跳比較遠，不用一格一格擠');
+  await step(tok);                                   // 45:48 69: bucket 9 is full
+  Q.take(69); const h69 = hover(9, 69); glow(T.keys[9], RED); cur.position.set(T.xs[9], 2.6, T.z); txt(cur, 'i = 0');
+  say('69：bucket 9 被佔滿');
+  await step(tok);                                   // 45:56 i = 1 → 0 full; i = 2
+  kill(h69); ppUnglow(T); await ppTry(tok, T, 69, 0, cur, 'i = 1：+1');
+  say('i = 1 → bucket 0（49）也滿 → i = 2');
+  await step(tok);                                   // 46:04 (9 + 4) mod 10 = 13 mod 10 = 3
+  ppUnglow(T); await ppTry(tok, T, 69, 3, cur, 'i = 2：+4');
+  say('i = 2 → (9 + 2²) mod 10 = 13 mod 10 = 3', '69 放 bucket 3');
+  await step(tok);                                   // 46:14 jumps farther: quadratic probe
+  good('跳得比較遠 → 不容易聚成一坨', 0, 1.2, 3.6);
+  say('一次跳得比較遠，這就是 quadratic probe');
 }]);
 
 // ════════ 46:53 rehash：h₁, h₂, …, h_m ════════
 FRAG.push(['hashpeng-rehash-hm', 'Rehash：滿了就換下一個 hash function', async (tok) => {
   fresh([0, 8, 11], [0, 0.4, 0]);
   const T = ppRow(10, 1.2, 0);
+  const cur = tag('', 'ptr alt', 0, 2.1, 0);
+  let x;
+  await step(tok);                                   // 46:53 rehash: use several hash functions
   [3, 7].forEach((j) => ppPut(T, j, j === 3 ? 'p' : 'q', false));
-  const k = cube('x', PP[4], [0.9, 0.7, 0.9], -5.6, 0.47, 2.6, 3);
-  const cur = tag('', 'ptr', 0, 1.8, 0);
-  say('準備 m 個 hash function h₁ … h_m', '例：h₁(x) = 3、h₂(x) = 7、h₃(x) = 1');
-  await beat(tok, 4100);
-  for (const [i, j] of [[1, 3], [2, 7], [3, 1]]) {
-    cur.position.set(T.xs[j], 1.8, 0); txt(cur, 'h' + ppSub(i));
-    if (T.keys[j]) { glow(T.keys[j], RED); say('i = ' + i + '：用 h' + ppSub(i) + ' → bucket ' + j + ' 滿了', '換下一個 hash function'); await beat(tok, 2400); glow(T.keys[j], null); }
-    else { move(k, T.xs[j], 0.47, 0); glow(k, GREEN); say('i = ' + i + '：h' + ppSub(i) + ' → bucket ' + j + ' 空的', '放進去'); await beat(tok, 3000); }
-  }
-  say('最多試到 h_m', '考古題常考（課本的 rehashing）');
-  await beat(tok, 3800);
+  x = buddy('x', '', PP[4], -5.8, 0, 2.6, 0.6);
+  tag('rehash', 'ptr', -4.0, 2.6, -1.4);
+  say('Rehash：顧名思義，多用幾個 hash function');
+  await step(tok);                                   // 47:05 m hash functions h₁ … h_m
+  bub('h₁, h₂, …, h_m', 0, 2.8, -1.4);
+  say('準備 m 個 hash function：h₁ ～ h_m');
+  await step(tok);                                   // 47:23 i = 1: use h₁ … bucket full
+  cur.position.set(T.xs[3], 2.1, 0); txt(cur, 'h₁(x) = 3'); glow(T.keys[3], RED); x.mood('wow');
+  say('i = 1：先用 h₁ → bucket 3 已被佔滿');
+  await step(tok);                                   // 47:31 i = 2: use h₂
+  glow(T.keys[3], null); cur.position.set(T.xs[7], 2.1, 0); txt(cur, 'h₂(x) = 7'); glow(T.keys[7], RED);
+  say('i = 2：改用 h₂ → bucket 7 也滿了');
+  await step(tok);                                   // 47:43 i = 3: use h₃
+  glow(T.keys[7], null); cur.position.set(T.xs[1], 2.1, 0); txt(cur, 'h₃(x) = 1');
+  await travel(tok, x.g, V3(-5.8, 0, 2.6), V3(T.xs[1], 0.12, 0), 900);
+  x.mood('happy');
+  say('i = 3：用 h₃ → bucket 1 是空的，放進去');
+  await step(tok);                                   // 47:52 until h_m; it'll be on the exam
+  bub('最多試到 h_m｜考古題常考', 0, 1.2, 2.6);
+  say('一直試到 h_m 為止', '考試、考古題都會考');
 }]);
 
-// ════════ 48:08 chaining：12 個 identifier，平均搜尋長度 2 ════════
+// ════════ 48:10 chaining：12 個 identifier，平均搜尋長度 2 ════════
 FRAG.push(['hashpeng-chain12', 'Chaining：12 個 identifier，平均 24/12 = 2', async (tok) => {
   fresh([0, 4.2, 13], [0, 3.6, 0]);
   const B = [0, 3, 4, 6, 11, 25], X = (h) => -5.5 + B.indexOf(h) * 2.2, Y = (d) => 5.8 - d * 1.05;
-  B.forEach((h) => { cube('[' + h + ']', GRAY, [1.2, 0.6, 0.8], X(h), 6.9, 0); });
-  tag('其他 bucket 是空的', 'idx', 0, 7.9, 0);
-  say('bucket = linked list 的頭', 'h(x) = 第一個字母的順序');
-  await beat(tok, 2400);
   const L = {}; B.forEach((h) => { L[h] = []; });
+  const heads = [];
+  const dtag = (h, d) => tag(String(d + 1), 'ptr alt', X(h) + 0.8, Y(d) + 0.2, 0);
+  await step(tok);                                   // 48:10 chaining
+  B.forEach((h) => heads.push(cube('[' + h + ']', GRAY, [1.2, 0.6, 0.8], X(h), 6.9, 0)));
+  tag('chaining（其他 bucket 是空的）', 'ptr', 0, 7.9, 0);
+  say('另一種 overflow 處理：chaining');
+  await step(tok);                                   // 48:20 i.e. a linked list
+  bub('chaining = linked list', 4.6, 7.8, 0);
+  say('顧名思義，就是 linked list');
+  await step(tok);                                   // 48:44 the bucket becomes the head of a linked list
+  heads.forEach((c) => glow(c, GOLD));
+  say('bucket 變成 linked list 的頭', 'h(x) 一樣是第一個字母的順序');
+  await step(tok);                                   // 49:05 things come in → linked on
+  heads.forEach((c) => glow(c, null));
   for (const k of ['GA', 'D', 'A', 'G', 'L', 'A2', 'A1', 'A3', 'A4', 'Z', 'ZA', 'E']) {
     const h = ppLet(k), ch = L[h];
     ch.forEach((c, d) => move(c, X(h), Y(d + 1), 0));
-    const c = cube(k, ppCol(k), [1.0, 0.6, 0.8], X(h), Y(0), 0, 3); ch.unshift(c);
-    say(k + '：接到 bucket ' + h + ' 的串列', '建新 node 接上去，不佔別人的 bucket');
-    await beat(tok, 750);
+    ch.unshift(cube(k, ppCol(k), [1.0, 0.6, 0.8], X(h), Y(0), 0, 2));
+    await beat(tok, 200);
   }
-  await beat(tok, 900);
-  say('找 A3：從 bucket 0 開頭走', 'A4 → A3：比 2 次');
-  glow(L[0][0], GOLD); await beat(tok, 1000); glow(L[0][1], GREEN); await beat(tok, 1600);
+  say('資料進來，就串到自己 bucket 的串列上', '12 個 identifier');
+  await step(tok);                                   // 49:15 find A3: bucket 0, traverse from the head
+  glow(L[0][0], GOLD); await beat(tok, 600); glow(L[0][1], GREEN);
+  say('找 A3：只看 bucket 0，從串列的頭開始走', 'A4 → A3：不會用到別人的 bucket');
+  await step(tok);                                   // 49:45 a new node is created and attached
   glow(L[0][0], null); glow(L[0][1], null);
-  const tags = [];
-  B.forEach((h) => L[h].forEach((c, d) => tags.push(tag(String(d + 1), 'ptr alt', X(h) + 0.8, Y(d) + 0.2, 0))));
-  say('每個 key 要比幾次？', '6×1 + 3×2 + 1×3 + 1×4 + 1×5 = 24');
-  await beat(tok, 3400);
-  say('平均搜尋長度 = 24 / 12 = 2', 'A 最慘，要比 5 次');
+  bub('新資料：create 一個新 node 接上去', 4.6, 7.0, 0);
+  say('有東西 hash 到這個 bucket，就建一個新 node 接上去');
+  await step(tok);                                   // 50:02 average search length of the 12
+  bub('平均搜尋長度 = ？', -3.4, 1.0, 0);
+  say('全部 insert 完，來算 12 筆資料的平均搜尋長度');
+  await step(tok);                                   // 50:21 6 × 1
+  B.forEach((h) => dtag(h, 0));
+  say('6 筆只要比 1 次（在串列第一個）', '6 × 1');
+  await step(tok);                                   // 50:40 3 of length 2
+  [0, 6, 25].forEach((h) => dtag(h, 1));
+  say('3 筆要比 2 次', '3 × 2');
+  await step(tok);                                   // 50:56 one 3, … the worst: A takes 5
+  [2, 3, 4].forEach((d) => dtag(0, d));
   glow(L[0][4], RED);
-  await beat(tok, 3000);
-  say('hash 選不好：全掛在同一串', 'worst case O(n)');
-  await beat(tok, 2800);
+  say('各 1 筆要 3、4、5 次', '最慘的是 A：比 5 次');
+  await step(tok);                                   // 51:05 average = 2
+  good('(6×1 + 3×2 + 1×3 + 1×4 + 1×5) / 12 = 24 / 12 = 2', 0, 0.3, 0);
+  say('平均搜尋長度 = 24 / 12 = 2');
+  await step(tok);                                   // 51:12 no other bucket used, but search slows
+  bub('不佔別人的 bucket，但要沿串列搜尋', 3.6, 1.0, 0);
+  say('chaining 不用別人的 bucket', '但搜尋效能受串列長度影響');
+  await step(tok);                                   // 52:02 the hardest: choosing the hash function
+  bub('最難：決定 hash function', -3.6, 7.8, 0);
+  say('overflow 處理是瓶頸，但最難的是決定 hash function');
+  await step(tok);                                   // 52:29 bad hash: one long chain → worst O(n)
+  bad('hash 取不好：全掛一串 → worst case O(n)', 0, -0.4, 0);
+  say('hash function 取不好：全部掛在同一串', 'worst case O(n)');
 }]);
 
-// ════════ 52:40 hash index（database 的 table） ════════
+// ════════ 52:39 hash index（database 的 table） ════════
 FRAG.push(['hashpeng-hash-index', 'Hash index：用 name 找 Chris', async (tok) => {
   fresh([0, 7, 12], [0, 0.8, 0.5]);
   const cols = ['sid', 'name', 'login', 'age', 'gpa'], cx = (i) => 0.6 + i * 1.35;
+  const names = ['Jones', 'Smith', 'Chris'];
+  let rows, q;
+  const ix = -5.0;
+  await step(tok);                                   // 52:39 back to the symbol table
+  bub('回想：symbol table', -3.6, 2.6, -3.2);
+  say('之前講過的 symbol table');
+  await step(tok);                                   // 53:06 login, age, GPA: a database
   cols.forEach((c, i) => tag(c, 'ptr', cx(i), 0.9, -2.4));
-  const names = ['Jones', 'Smith', 'Chris'], rows = names.map((n, r) => cols.map((c, i) => cube(i === 1 ? n : '…', i === 1 ? ppCol(n) : GRAY, [1.25, 0.5, 0.8], cx(i), 0.25, -1.2 + r * 1.0, 3)));
-  say('Database 的 table：每列一筆資料', 'degree = 5 個 attribute、cardinality = 3 列');
-  await beat(tok, 3200);
-  say('資料多了，怎麼快速找到 Chris？', '對 name 建 hash index');
-  await beat(tok, 2600);
-  const bk = [[2, 'Chris', 2], [9, 'Jones', 0], [18, 'Smith', 1]], ix = -5.0;
-  const bks = bk.map(([h, n, r], i) => { const z = -1.2 + i * 1.6; cube('[' + h + ']', GRAY, [0.9, 0.5, 0.8], ix, 0.25, z); const c = cube(n, ppCol(n), [1.2, 0.5, 0.8], ix + 1.2, 0.25, z, 3); return { c, z, r }; });
-  tag('hash index', 'ptr alt', ix + 0.6, 1.0, -2.4);
-  say('h = 第一個字母：C→2、J→9、S→18', '書架上 D 開頭那一區 = 一個 bucket');
-  await beat(tok, 3000);
-  const t = bks[0];
-  glow(t.c, GOLD);
-  say('找 Chris：h(C) = 2 → bucket 2', '在 bucket 2 的串列找到 Chris');
-  await beat(tok, 2600);
-  arrow(V3(ix + 1.9, 0.4, t.z), V3(cx(1) - 0.7, 0.4, -1.2 + t.r * 1.0), 0x0f5a3a);
-  rows[t.r].forEach((c) => glow(c, GREEN));
-  say('再經 pointer 拿其他 attribute', 'login、age、gpa');
-  await beat(tok, 3200);
-  say('有 index：查詢從幾分鐘變一瞬間', 'index 影響 database 效能');
-  await beat(tok, 2800);
+  rows = names.map((n, r) => cols.map((c, i) => cube(i === 1 ? n : '…', i === 1 ? ppCol(n) : GRAY, [1.25, 0.5, 0.8], cx(i), 0.25, -1.2 + r * 1.0, 3)));
+  say('工作站的 login、年紀、GPA', 'database 最常見的表示方法');
+  await step(tok);                                   // 53:14 it's called a table
+  tag('table', 'ptr alt', cx(2), 1.7, -2.4);
+  say('這叫 table');
+  await step(tok);                                   // 53:31 with lots of data it gets hard
+  for (let r = 0; r < 2; r++) cols.forEach((c, i) => { const m = cube('…', GRAY, [1.25, 0.4, 0.7], cx(i), 0.2, 1.8 + r * 0.8); m.material.transparent = true; m.material.opacity = 0.4; });
+  say('看起來簡單，但資料很多時就難了');
+  await step(tok);                                   // 53:45 find Chris (out of 10,000): sid, login, age, gpa
+  q = buddy('找 Chris', '', ppCol('Chris'), -6.0, 0, 2.6, 0.6);
+  say('要從一萬筆裡找到 Chris，取出他的 sid、login、age、gpa');
+  await step(tok);                                   // 54:28 hash index; an index is like a library
+  tag('hash index', 'ptr alt', ix + 0.6, 1.4, -2.6);
+  bub('index：像圖書館依書名分書架', ix + 0.4, 2.4, -3.4);
+  say('一種跟 hash 有關的做法：hash index', 'index（索引）就像圖書館的書架分類');
+  await step(tok);                                   // 54:50 a Database book → the D shelf
+  note('找「Database」的書 → D 開頭的書架', ix + 0.4, 3.2, -1.6);
+  say('要找 Database 的書，就去 D 開頭的書架');
+  await step(tok);                                   // 55:10 the shelf is a bucket
+  bub('書架 = bucket', ix + 2.6, 2.4, -1.0);
+  say('書架就是一個 bucket');
+  await step(tok);                                   // 55:28 a hash index on name: Jones, Smith, Chris
+  const bk = [[2, 'Chris', 2], [9, 'Jones', 0], [18, 'Smith', 1]];
+  const bks = bk.map(([h, n, r], i) => { const z = -1.2 + i * 1.3; cube('[' + h + ']', GRAY, [0.9, 0.5, 0.8], ix, 0.25, z); const c = cube(n, ppCol(n), [1.2, 0.5, 0.8], ix + 1.2, 0.25, z, 3); return { c, z, r }; });
+  say('對 name 欄位建 hash index', 'h = 第一個字母順序：C → 2、J → 9、S → 18');
+  await step(tok);                                   // 56:06 Chris starts with C → bucket 2
+  glow(bks[0].c, GOLD);
+  say('Chris 是 C 開頭 → bucket 2');
+  await step(tok);                                   // 56:11 search its linked list: Chris found
+  glow(bks[0].c, GREEN); q.mood('happy');
+  say('在 bucket 2 的串列找到 Chris');
+  await step(tok);                                   // 56:18 then a pointer into the file for the other attributes
+  arrow(V3(ix + 1.9, 0.4, bks[0].z), V3(cx(1) - 0.7, 0.4, -1.2 + bks[0].r * 1.0), 0x0f5a3a);
+  rows[bks[0].r].forEach((c) => glow(c, GREEN));
+  say('通常再透過 pointer 到檔案裡', '抓其他 attribute：login、age、gpa');
+  await step(tok);                                   // 56:38 performance: minutes without, instant with
+  bad('沒 index：查好幾分鐘', 3.4, 2.6, 2.6); good('有 index：一下就出來', 3.4, 1.8, 3.4);
+  say('index 影響 database 的效能', '沒建 index 可能查好幾分鐘');
+  await step(tok);                                   // 57:04 cardinality = 3 rows, degree = 5 attributes
+  note('cardinality = 3（列數）', cx(4) + 0.4, 0.6, -0.2); note('degree = 5（attribute 數）', cx(2), 1.7, -3.2);
+  say('cardinality = 列數 = 3', 'degree = attribute 個數 = 5');
 }]);
 
-// ════════ 59:28 另一種 index：binary search tree ════════
+// ════════ 59:56 另一種 index：binary search tree ════════
 FRAG.push(['hashpeng-bst-index', '另一種 search structure：對 name 建 BST', async (tok) => {
   fresh([0, 6, 12], [0, 1.6, 0]);
-  const root = cube('Jones', ppCol('Jones'), [1.3, 0.7, 0.8], -2.5, 3.6, 0, 3);
-  say('依字母順序對 name 建 BST', '小的放左邊、大的放右邊');
-  await beat(tok, 2400);
-  line(-2.5, 3.6, -4.3, 1.8); const c = cube('Chris', ppCol('Chris'), [1.3, 0.7, 0.8], -4.3, 1.8, 0, 3);
-  say('Chris < Jones → 左邊', '');
-  await beat(tok, 2200);
-  line(-2.5, 3.6, -0.7, 1.8); const s = cube('Smith', ppCol('Smith'), [1.3, 0.7, 0.8], -0.7, 1.8, 0, 3);
-  say('Smith > Jones → 右邊', '');
-  await beat(tok, 2200);
+  let root, c, s;
   const rx = 4.4;
-  [['Jones', 3.6], ['Smith', 2.6], ['Chris', 1.6]].forEach(([n, y]) => { cube(n + ' 的資料', GRAY, [2.6, 0.6, 0.8], rx, y, 0); });
-  tag('disk / memory', 'idx', rx, 4.4, 0);
-  arrow(V3(-1.8, 3.6, 0.5), V3(rx - 1.4, 3.6, 0.5)); arrow(V3(0, 1.8, 0.5), V3(rx - 1.4, 2.6, 0.5)); arrow(V3(-3.6, 1.6, 0.5), V3(rx - 1.4, 1.6, 0.5));
-  say('每個 node 都要帶 pointer', '指到真正的其他欄位');
-  await beat(tok, 4300);
-  glow(root, GOLD); await beat(tok, 900); glow(c, GREEN);
-  say('找 Chris：Jones → 左 → Chris', '第十章：BST、AVL tree、B+ tree');
-  await beat(tok, 4300);
+  await step(tok);                                   // 59:56 index the data with hash
+  bub('hash：對資料建索引的一種方法', 0, 5.0, -1.4);
+  say('hash 是對資料「建索引」的一種方法');
+  await step(tok);                                   // 60:07 other ways besides hash
+  bub('還有別的方法 → 第十章', 0, 4.2, -1.4);
+  say('除了 hash，還有其他建索引的方式');
+  await step(tok);                                   // 60:24 build a binary search tree
+  root = cube('Jones', ppCol('Jones'), [1.3, 0.7, 0.8], -2.5, 3.0, 0, 3);
+  say('對 name 建一棵 binary search tree');
+  await step(tok);                                   // 60:30 by alphabetical order
+  line(-2.5, 3.0, -4.3, 1.4); c = cube('Chris', ppCol('Chris'), [1.3, 0.7, 0.8], -4.3, 1.4, 0, 3);
+  line(-2.5, 3.0, -0.7, 1.4); s = cube('Smith', ppCol('Smith'), [1.3, 0.7, 0.8], -0.7, 1.4, 0, 3);
+  say('依英文字母順序：小的放左邊、大的放右邊', 'Chris < Jones < Smith');
+  await step(tok);                                   // 60:38 a search structure
+  tag('search structure', 'ptr alt', -2.5, 4.2, 0);
+  say('這種結構叫 search structure');
+  await step(tok);                                   // 61:05 each node needs a pointer to the real fields
+  [['Jones', 3.0], ['Smith', 2.0], ['Chris', 1.0]].forEach(([n, y]) => { cube(n + ' 的其他欄位', GRAY, [2.6, 0.6, 0.8], rx, y, 0); });
+  tag('disk', 'idx', rx, 3.8, 0);
+  arrow(V3(-1.8, 3.0, 0.5), V3(rx - 1.4, 3.0, 0.5)); arrow(V3(0, 1.4, 0.5), V3(rx - 1.4, 2.0, 0.5)); arrow(V3(-3.6, 1.2, 0.5), V3(rx - 1.4, 1.0, 0.5));
+  say('每個 node 還是要有 pointer', '指到真正的其他欄位（在 disk 裡）');
+  await step(tok);                                   // 61:13 loaded into memory → points into memory
+  note('load 到 memory，就指到 memory', rx, 4.6, 0);
+  say('如果 load 到 memory，pointer 就直接指到 memory');
+  await step(tok);                                   // 61:23 chapter 10: AVL tree, B+ tree
+  glow(root, GOLD); glow(c, GOLD); glow(s, GOLD);
+  bub('第十章：BST、AVL tree、B+ tree', -2.5, 0.2, 1.6);
+  say('第十章會介紹 AVL tree，也會提到 B+ tree');
 }]);
 
 // ════════ dynamic hashing：Horowitz 的 6-bit 表示（A = 100、B = 101、C = 110） ════════
@@ -4975,22 +5888,38 @@ const prevBit = (k, d) => PBITS[k][5 - d]; // d-th bit from the right (d = 0 is 
 
 FRAG.push(['hashpeng-bits', 'Dynamic hashing：key 化成二進位，看最右邊的 bit', async (tok) => {
   fresh([0, 5, 13], [0, 3.4, 0]);
-  const ks = Object.keys(PBITS), Y = (r) => 7.0 - r * 0.8;
-  say('A0, A1, B0, B1, C0, C1, C2, C3, C5', '每個 key 化成 6 bit 二進位');
-  const B = ks.map((k, r) => {
-    cube(k, ppCol(k), [0.9, 0.55, 0.6], -4.0, Y(r), 0);
-    return [...PBITS[k]].map((b, i) => cube(b, GRAY, [0.55, 0.55, 0.6], -2.6 + i * 0.65 + (i >= 3 ? 0.3 : 0), Y(r), 0));
-  });
-  tag('字母', 'idx', -1.3, 7.8, 0); tag('數字', 'idx', 1.0, 7.8, 0);
-  await beat(tok, 4300);
-  say('A = 100、B = 101、C = 110', '後 3 bit 是數字：0 = 000、5 = 101');
-  await beat(tok, 4300);
+  const ks = Object.keys(PBITS), Y = (r) => 6.6 - r * 0.75;
+  let B;
+  await step(tok);                                   // 61:44 dynamic hashing
+  tag('dynamic hashing', 'ptr alt', -4.4, 7.6, 0);
+  say('Dynamic hashing：database 裡更常用');
+  await step(tok);                                   // 62:03 choosing a good static hash function is hard
+  bub('好的 static hash function 很難選', 3.4, 7.6, 0);
+  say('要選一個好的 static hash function 很困難');
+  await step(tok);                                   // 62:10 let the data distribution decide the hash
+  bub('讓資料的分佈決定 hash', 3.4, 6.8, 0);
+  say('乾脆讓資料的分佈來決定 hash', '同時保留 hash 快速擷取的好處');
+  await step(tok);                                   // 62:40 A0, A1, B0, B1, C0, C1, C2, C3, C5
+  ks.forEach((k, r) => cube(k, ppCol(k), [0.9, 0.55, 0.6], -4.0, Y(r), 0, 2));
+  say('例子：A0、A1、B0、B1、C0、C1、C2、C3、C5');
+  await step(tok);                                   // 63:07 written in binary
+  B = ks.map((k, r) => [...PBITS[k]].map((b, i) => cube(b, GRAY, [0.55, 0.55, 0.6], -2.6 + i * 0.65 + (i >= 3 ? 0.3 : 0), Y(r), 0)));
+  tag('字母', 'idx', -1.3, 7.3, 0); tag('數字', 'idx', 1.0, 7.3, 0);
+  say('每個 key 表示成二進位', '前 3 bit 是字母、後 3 bit 是數字');
+  await step(tok);                                   // 63:15 A0 = 100000
+  B[0].forEach((c) => glow(c, GOLD));
+  note('A0 = 100 000', 2.8, Y(0), 0);
+  say('A = 100、B = 101、C = 110（課本的表示）', 'A0 = 100 000；（老師口述 A 是 16 進位的 10）');
+  await step(tok);                                   // 63:47 the rightmost bit
+  B[0].forEach((c) => glow(c, null));
   B.forEach((r) => glow(r[5], GOLD));
-  say('注意最右邊的 bit（LSB）', '從右往左讀來決定 bucket');
-  await beat(tok, 4100);
+  say('注意最右邊那個 bit');
+  await step(tok);                                   // 64:00 the red "00"
   B.forEach((r) => glow(r[4], GOLD));
-  say('跟 bucket sort 很像', '看最右邊幾個 bit 就能分桶');
-  await beat(tok, 4100);
+  say('再看右邊數來第 2 個 bit', '例：A0、B0 最右兩個 bit 都是 00');
+  await step(tok);                                   // 64:13 hash on the least significant bits, like bucket sort
+  bub('像 bucket sort：依最右邊的 bit 分桶', 3.4, 0.4, 0);
+  say('依 least significant bit 做 hash', '跟 bucket sort 很像');
 }]);
 
 // trie drawer: buckets = [[suffix (bit0 first), [keys]]]; returns { objs, pos(prefix), bkt(suffix) }
@@ -5017,159 +5946,311 @@ function ppTrie(buckets) {
 const TRIE_A = [['00', ['A0', 'B0']], ['01', ['C2']], ['10', ['A1', 'B1']], ['11', ['C3']]]; // suffix strings are bit0-first
 const TRIE_B = [['00', ['A0', 'B0']], ['01', ['C2']], ['100', ['A1', 'B1']], ['101', ['C5']], ['11', ['C3']]];
 const TRIE_C = [['00', ['A0', 'B0']], ['01', ['C2']], ['1000', ['A1', 'C1']], ['1001', ['B1']], ['101', ['C5']], ['11', ['C3']]];
-// walk a key down the trie with a cursor; returns the leaf suffix reached
-async function ppWalk(tok, Tr, k, cur) {
+const ppAt = (Tr, cur, p, t) => { cur.position.set(Tr.pos[p][0], Tr.pos[p][1] + 0.6, 0); if (t !== undefined) txt(cur, t); };
+// walk a key down the trie (short motion only); returns the leaf suffix reached
+async function ppWalk(tok, Tr, k, cur, ms = 450) {
   let p = '';
-  cur.position.set(Tr.pos[''][0], Tr.pos[''][1] + 0.6, 0); txt(cur, k);
-  await beat(tok, 900);
+  ppAt(Tr, cur, '', k);
   for (let d = 0; d < 6; d++) {
-    const b = prevBit(k, d); p += b;
+    p += prevBit(k, d);
     if (!Tr.pos[p]) break;
-    cur.position.set(Tr.pos[p][0], Tr.pos[p][1] + 0.6, 0);
-    say(k + '：右數第 ' + (d + 1) + ' 個 bit = ' + b, b === '0' ? '0 往上走' : '1 往下走');
-    await beat(tok, 1100);
+    await beat(tok, ms);
+    ppAt(Tr, cur, p, k + '：' + prevBit(k, d) + (prevBit(k, d) === '0' ? ' ↑' : ' ↓'));
     if (Tr.bkt[p]) return p;
   }
   return p;
 }
-async function ppTrieInsert(tok, before, after, k, splitBit) {
-  let Tr = ppTrie(before);
-  const cur = tag('', 'ptr', 0, 0, 0);
-  say('insert ' + k + ' = ' + PBITS[k], '從 root 開始，從右往左讀 bit');
-  await beat(tok, 2200);
-  const s = await ppWalk(tok, Tr, k, cur);
-  const B = Tr.bkt[s];
-  glow(B.box, RED);
-  const n = cube(k, RED, [0.95, 0.6, 0.6], 3.6, B.y + 1.0, 0.1); glow(n, RED);
-  say('bucket 已經有 ' + B.cs.length + ' 個（最多 2）', '<span class="no">overflow</span>');
-  await beat(tok, 2400);
-  kill(n); Tr.kill(); kill(cur);
-  Tr = ppTrie(after);
-  const ch = after.filter(([x]) => x.length === s.length + 1 && x.startsWith(s));
-  ch.forEach(([x]) => glow(Tr.bkt[x].box, GOLD));
-  say('Split：這個 bucket 再分岔成 0 / 1', '依右數第 ' + splitBit + ' 個 bit 重新分配');
-  await beat(tok, 3200);
-  return { Tr, ch };
-}
+const findKey = (Tr, s, k) => Tr.bkt[s].cs.find((x) => x.userData.lbl.element.textContent === k);
 
-// 64:30 trie：A0, B0, A1, B1, C2, C3（bucket 最多 2 個）
+// 64:21 trie：A0, B0, A1, B1, C2, C3（bucket 最多 2 個）
 FRAG.push(['hashpeng-trie6', 'Trie：6 個 key，0 往上、1 往下', async (tok) => {
   fresh([0, 4.2, 12.5], [0, 4.4, 0]);
-  const Tr = ppTrie(TRIE_A);
-  say('Insert A0, B0, A1, B1, C2, C3 之後', '每個 bucket 最多放 2 個');
-  await beat(tok, 3000);
-  say('這棵 trie 就是 hash function', '從 root 出發，從最右邊的 bit 讀起');
-  await beat(tok, 2800);
-  const cur = tag('', 'ptr', 0, 0, 0);
-  for (const k of ['A0', 'B0']) {
-    say('找 ' + k + ' = ' + PBITS[k], '最後兩個 bit 是 00');
-    await beat(tok, 1600);
-    const s = await ppWalk(tok, Tr, k, cur);
-    const c = Tr.bkt[s].cs.find((x) => x.userData.lbl.element.textContent === k);
-    glow(c, GREEN); say(k + ' 在 …00 這個 bucket', 'A0、B0 最右兩個 bit 一樣才放一起');
-    await beat(tok, 2200); glow(c, null);
-  }
-  await beat(tok, 1200);
+  let Tr = null;
+  const cur = tag('', 'ptr alt', -6.2, 6.0, 0);
+  const redraw = (b) => { if (Tr) Tr.kill(); Tr = ppTrie(b); };
+  await step(tok);                                   // 64:21 the hash function is a tree
+  const r0 = cube('', '#8a7a62', [0.35, 0.35, 0.35], -6.2, 5.0, 0);
+  bub('hash function = 一棵樹', -4.4, 6.4, 0);
+  say('這個 hash function 長得像一棵樹');
+  await step(tok);                                   // 64:29 called a trie
+  tag('trie', 'ptr', -6.2, 5.8, 0);
+  say('這種樹特別叫做 trie');
+  await step(tok);                                   // 64:40 read the key from right to left
+  note('從右往左讀 key 的 bit', -2.0, 1.2, 0);
+  say('讀 key 的 bit：從右邊讀到左邊');
+  await step(tok);                                   // 64:52 0 goes up, 1 goes down
+  note('0 往上、1 往下', 2.0, 1.2, 0);
+  say('在這個例子裡：bit 0 往上走、bit 1 往下走');
+  await step(tok);                                   // 65:12 A0, B0: first bit 0 → up, into a bucket
+  kill(r0); redraw([['0', ['A0', 'B0']]]);
+  say('A0、B0：右數第 1 個 bit 是 0 → 往上，放進 bucket');
+  await step(tok);                                   // 65:26 A1 goes down: two branches
+  redraw([['0', ['A0', 'B0']], ['1', ['A1']]]);
+  say('A1：第 1 個 bit 是 1 → 往下，長出兩個分支');
+  await step(tok);                                   // 65:44 B1 also goes down
+  redraw([['0', ['A0', 'B0']], ['1', ['A1', 'B1']]]);
+  say('B0 跟 A0 同一桶；B1 往下，跟 A1 同一桶');
+  await step(tok);                                   // 65:51 after inserting the 6 identifiers
+  redraw(TRIE_A);
+  say('insert 6 個 identifier（再加 C2、C3）後長成這樣', '每個 bucket 滿了就再分岔');
+  await step(tok);                                   // 66:08 each bucket holds at most two
+  Object.values(Tr.bkt).forEach((b) => glow(b.box, GOLD));
+  say('黃色的就是 bucket，每個最多放兩筆');
+  await step(tok);                                   // 66:35 is A0 here? A0 = 100000
+  Object.values(Tr.bkt).forEach((b) => glow(b.box, null));
+  ppAt(Tr, cur, '', 'A0 = 100000');
+  say('找 A0 = 100000：從 root 出發');
+  await step(tok);                                   // 66:45 last two bits 00: up, up
+  await ppWalk(tok, Tr, 'A0', cur);
+  say('最後兩個 bit 是 00：往上、再往上');
+  await step(tok);                                   // 66:54 reaches a bucket: A0 is here
+  glow(findKey(Tr, '00', 'A0'), GREEN);
+  say('走到一個 bucket，A0 就在這裡');
+  await step(tok);                                   // 67:02 B0: rightmost two bits also 00
+  glow(findKey(Tr, '00', 'B0'), GREEN);
+  say('B0 最右兩個 bit 也是 00 → 同一個 bucket');
 }]);
 
-// 67:31 insert C5 → split
+// 67:30 insert C5 → split
 FRAG.push(['hashpeng-trie-c5', 'Trie：insert C5 → overflow → split', async (tok) => {
   fresh([0, 4.2, 12.5], [0, 4.4, 0]);
-  const { Tr } = await ppTrieInsert(tok, TRIE_A, TRIE_B, 'C5', 3);
-  say('A1、B1 是 …001，C5 是 …101', 'C5 放進新的 bucket');
-  glow(Tr.bkt['101'].cs[0], GREEN);
-  await beat(tok, 3200);
-  say('兩個重點：overflow 就 split', 'split 完依 bit 重新調整資料');
-  await beat(tok, 2800);
+  let Tr = ppTrie(TRIE_A), n;
+  const cur = tag('', 'ptr alt', 0, 0, 0);
+  await step(tok);                                   // 67:30 insert C5 = 110 101
+  ppAt(Tr, cur, '', 'C5 = 110101');
+  say('接著 insert C5 = 110 101');
+  await step(tok);                                   // 67:55 from the root: first bit from the right is 1
+  ppAt(Tr, cur, '1', 'C5：1 ↓');
+  say('從 root 開始：右數第 1 個 bit 是 1 → 往下');
+  await step(tok);                                   // 68:08 second bit is 0 → up
+  ppAt(Tr, cur, '10', 'C5：0 ↑');
+  say('右數第 2 個 bit 是 0 → 往上');
+  await step(tok);                                   // 68:16 into the A1, B1 bucket
+  n = cube('C5', RED, [0.95, 0.6, 0.6], 3.6, Tr.bkt['10'].y + 1.0, 0.1);
+  say('C5 要放進 A1、B1 那個 bucket');
+  await step(tok);                                   // 68:24 already two in there → overflow
+  glow(Tr.bkt['10'].box, RED); glow(n, RED);
+  say('可是已經有兩個了 → overflow');
+  await step(tok);                                   // 68:30 grow two branches from it (split)
+  kill(n); kill(cur); Tr.kill();
+  Tr = ppTrie(TRIE_B);
+  ['100', '101'].forEach((s) => glow(Tr.bkt[s].box, GOLD));
+  say('從這個 bucket 再長出上下兩個分支：split', '往上是 0、往下是 1');
+  await step(tok);                                   // 69:07 A1, B1, C5 redistributed by 3 bits from the right
+  ['100', '101'].forEach((s) => glow(Tr.bkt[s].box, null));
+  Tr.bkt['100'].cs.forEach((c) => glow(c, GOLD)); glow(Tr.bkt['101'].cs[0], GOLD);
+  say('A1、B1、C5 依右數 3 個 bit 重新分配', 'A1、B1 是 …001；C5 是 …101');
+  await step(tok);                                   // 69:18 C5 is 101 → this bucket
+  Tr.bkt['100'].cs.forEach((c) => glow(c, null)); glow(Tr.bkt['101'].cs[0], GREEN);
+  say('C5 右數三個 bit 是 101 → 放進新的 bucket');
+  await step(tok);                                   // 69:29 two points: overflow → split; then adjust
+  bub('① overflow 就 split　② split 完依 bit 調整資料', 0, 0.6, 0);
+  say('兩個重點：overflow 就 split', 'split 完要依 bit 重新調整資料');
 }]);
 
-// 69:44 insert C1 → split；trie 的缺點
+// 69:41 insert C1 → split；trie 的缺點
 FRAG.push(['hashpeng-trie-c1', 'Trie：insert C1 → A1、C1 同一桶', async (tok) => {
   fresh([0, 4.2, 12.5], [0, 4.4, 0]);
-  const { Tr } = await ppTrieInsert(tok, TRIE_B, TRIE_C, 'C1', 4);
-  Tr.bkt['1000'].cs.forEach((c) => glow(c, GREEN));
-  say('A1、C1 右數四個 bit 都是 0001', 'B1 是 1001 → 分到另一桶');
-  await beat(tok, 3400);
-  say('hash function 隨資料長大', '資料減少時也可以 merge 縮回去');
-  await beat(tok, 3000);
-  say('缺點：要 traverse 整棵 trie', 'access time 跟樹高有關，還可能 skew');
-  await beat(tok, 3200);
+  let Tr = ppTrie(TRIE_B);
+  const cur = tag('', 'ptr alt', 0, 0, 0);
+  await step(tok);                                   // 69:41 insert C1 = 110001
+  ppAt(Tr, cur, '', 'C1 = 110001');
+  say('再 insert C1 = 110 001');
+  await step(tok);                                   // 69:52 from the right: 1, 0, 0 → this bucket
+  const s = await ppWalk(tok, Tr, 'C1', cur);
+  say('從右邊讀：1 ↓、0 ↑、0 ↑ → A1、B1 那個 bucket');
+  await step(tok);                                   // 70:07 full → overflow → split, then adjust
+  glow(Tr.bkt[s].box, RED); await beat(tok, 700);
+  kill(cur); Tr.kill(); Tr = ppTrie(TRIE_C);
+  ['1000', '1001'].forEach((x) => glow(Tr.bkt[x].box, GOLD));
+  say('bucket 滿了 → overflow → split 成兩個，再調整資料');
+  await step(tok);                                   // 70:21 A1 and C1 together, B1 on its own
+  ['1000', '1001'].forEach((x) => glow(Tr.bkt[x].box, null));
+  Tr.bkt['1000'].cs.forEach((c) => glow(c, GREEN)); glow(Tr.bkt['1001'].cs[0], GOLD);
+  say('A1 和 C1 在一起，B1 分到另一桶');
+  await step(tok);                                   // 70:35 their four bits from the right are the same
+  note('A1、C1：最右 4 bit 都是 0001｜B1 是 1001', 3.4, 0.4, 0);
+  say('因為 A1、C1 最右邊 4 個 bit 一樣（0001）', '（老師從右往左念成 1000）');
+  await step(tok);                                   // 71:03 not because they were together last round
+  bub('放一起是因為 bit 相同，不是因為上一回合在一起', -2.6, 0.4, 1.4);
+  say('放在一起，不是因為上一回合在一起', '而是右數的 bit 相同');
+  await step(tok);                                   // 71:31 this tree is the hash function
+  Tr.objs.forEach((o) => { if (o.isMesh && o.material && o.material.emissive) o.material.emissive.set('#3a2a00'); });
+  say('這整棵 trie 就是 hash function');
+  await step(tok);                                   // 71:40 it grows with the inserted data
+  bub('hash function 隨資料長大', -4.6, 8.2, 0);
+  say('它會隨著 insert 進來的資料長大，不是固定的');
+  await step(tok);                                   // 72:14 data removed → merge, shrink
+  bub('資料減少 → merge 縮回去', -0.6, 8.2, 0);
+  say('資料減少時，也可以 merge 縮減');
+  await step(tok);                                   // 72:28 drawback: traverse the trie (tree height)
+  Tr.objs.forEach((o) => { if (o.isMesh && o.material && o.material.emissive) o.material.emissive.set('#000000'); });
+  const c2 = tag('C1', 'pkt', -6.2, 5.0, 0); const path = ['', '1', '10', '100', '1000'];
+  for (const p of path) { c2.position.set(Tr.pos[p][0], Tr.pos[p][1] + 0.6, 0); await beat(tok, 380); }
+  bad('缺點：每次都要 traverse trie，跟樹高有關', -1.6, 0.0, 1.4);
+  say('缺點：access 要 traverse 這棵 trie', '時間跟樹的高度有關');
+  await step(tok);                                   // 73:11 the tree can be skewed
+  bad('資料不好時 trie 會 skew（歪一邊）', -1.6, -0.8, 1.4);
+  say('資料長得不好，trie 還會整個 skew（歪斜）');
 }]);
 
-// 73:30 extendible hashing：把 trie 變成 directory
+// 73:22 extendible hashing：把 trie 變成 directory
 FRAG.push(['hashpeng-directory', 'Directory：global depth 4，直接查表找 bucket', async (tok) => {
   fresh([0, 4.4, 13], [0, 4.2, 0]);
   const bks = [['00', ['A0', 'B0']], ['01', ['C2']], ['11', ['C3']], ['101', ['C5']], ['1000', ['A1', 'C1']], ['1001', ['B1']]];
   const bucketOf = (e) => bks.find(([s]) => [...s].every((b, i) => e[3 - i] === b)); // e is written b3 b2 b1 b0
   const BX = 3.6, BY = (i) => 7.4 - i * 1.35;
-  say('Extendible hashing：不 traverse trie', '把 trie 攤平成一個 directory');
-  await beat(tok, 2600);
-  const B = bks.map(([s, ks], i) => {
-    cube('', '#e8d9a8', [2.4, 0.8, 0.5], BX, BY(i), -0.3);
-    const cs = ks.map((k, j) => cube(k, ppCol(k), [0.95, 0.6, 0.6], BX - 0.55 + j * 1.1, BY(i), 0.1));
-    tag('local ' + s.length, 'idx', BX + 2.0, BY(i), 0);
-    return cs;
-  });
   const ents = [...Array(16)].map((_, n) => n.toString(2).padStart(4, '0'));
   const EY = (n) => 8.1 - n * 0.5, EX = -4.6;
-  const E = ents.map((e, n) => cube(e, '#d8c29b', [1.3, 0.42, 0.5], EX, EY(n), 0));
-  tag('global depth = 4', 'ptr alt', EX, 8.85, 0);
-  await beat(tok, 1200);
+  let Tr, E, B;
+  await step(tok);                                   // 73:22 improvement: extendible hashing
+  Tr = ppTrie(TRIE_C);
+  tag('extendible hashing', 'ptr alt', -3.0, 8.9, 0);
+  say('改進方法：extendible hashing');
+  await step(tok);                                   // 73:39 don't traverse the tree
+  Tr.objs.forEach((o) => { if (o.material) { o.material = o.material.clone(); o.material.transparent = true; o.material.opacity = 0.2; } if (o.element) o.element.style.opacity = '0.25'; });
+  say('既然每次 traverse trie 很慢，能不能不要走樹？');
+  await step(tok);                                   // 73:46 build a directory
+  Tr.kill();
+  E = ents.map((e, n) => cube(e, '#d8c29b', [1.3, 0.42, 0.5], EX, EY(n), 0));
+  tag('directory', 'ptr', EX, 8.85, 0);
+  say('那就建一個目錄：directory');
+  await step(tok);                                   // 74:24 pointers to the buckets
+  B = bks.map(([s, ks], i) => { cube('', '#e8d9a8', [2.4, 0.8, 0.5], BX, BY(i), -0.3); return ks.map((k, j) => cube(k, ppCol(k), [0.95, 0.6, 0.6], BX - 0.55 + j * 1.1, BY(i), 0.1)); });
+  say('trie 末端的紅線都是 pointer，指到 bucket');
+  await step(tok);                                   // 74:44 each number ↔ a pointer
   ents.forEach((e, n) => { const i = bks.indexOf(bucketOf(e)); arrow(V3(EX + 0.7, EY(n), 0), V3(BX - 1.25, BY(i), 0), 0x9a8a70); });
-  say('用最右 4 個 bit 當 entry 編號', '16 個 entry，每個存一個 pointer');
-  await beat(tok, 3600);
-  [0, 4, 8, 12].forEach((n) => glow(E[n], GOLD));
-  say('…00 的 bucket 被 4 個 entry 指到', 'local depth 2 < global depth 4');
-  await beat(tok, 3400);
-  [0, 4, 8, 12].forEach((n) => glow(E[n], null));
-  glow(E[1], GREEN);
-  say('找 C1：最右 4 bit = 0001', '查 directory 一次 → 跟 pointer 到 bucket');
-  await beat(tok, 3000);
-  B[4].forEach((c) => glow(c, GREEN));
-  say('兩次 access 就到，不用走樹', 'directory 記 global depth，bucket 記 local depth');
-  await beat(tok, 3400);
+  say('每個編號對應一個 pointer，指到一個 bucket');
+  await step(tok);                                   // 75:02 no tree, just a table
+  bub('樹不要了，直接用一張 table', 0, 9.2, 0);
+  say('整棵樹都不要了，直接用一張 table 表示');
+  await step(tok);                                   // 75:21 the trie reaches 4 levels → 4 bits
+  tag('global depth = 4', 'ptr alt', EX + 2.2, 8.85, 0);
+  say('trie 最多長到 4 層 → 用 4 個 bit 編號', '共 2⁴ = 16 個 entry');
+  await step(tok);                                   // 75:45 0000 → the A0, B0 bucket
+  glow(E[0], GREEN); B[0].forEach((c) => glow(c, GREEN));
+  say('0000 指到 A0、B0 那個 bucket');
+  await step(tok);                                   // 76:06 other entries point to the same bucket
+  [4, 8, 12].forEach((n) => glow(E[n], GOLD));
+  say('0100、1000、1100 也指到同一個 bucket', '這個 bucket 只用到最右 2 bit（local depth 2）');
+  await step(tok);                                   // 77:18 global depth and local depth
+  bks.forEach(([s], i) => tag('local ' + s.length, 'idx', BX + 2.0, BY(i), 0));
+  say('directory 記 global depth', '每個 bucket 記自己的 local depth');
+  await step(tok);                                   // 79:00 the basics: be able to draw the trie
+  bub('最基本：會把一組 key 畫成 trie', 0, -0.2, 1.4);
+  say('最基本要會：把一組 key 畫成 trie', '其他都是從 trie 延伸出來的');
+  await step(tok);                                   // 79:29 look up the directory → pointer → bucket
+  [0, 4, 8, 12].forEach((n) => glow(E[n], null)); B[0].forEach((c) => glow(c, null));
+  glow(E[0], null); glow(E[1], GREEN); B[4].forEach((c) => glow(c, GREEN));
+  say('查 directory 就拿到 pointer，直接找到 bucket', '例：C1 → 最右 4 bit 0001 → A1、C1 那桶');
 }]);
 
-// 79:50 directoryless dynamic hashing
+// 79:49 directoryless dynamic hashing
 FRAG.push(['hashpeng-dirless', 'Directoryless：位址直接當 bucket，overflow 用 chain', async (tok) => {
   fresh([0, 7, 12], [0, 0.8, 0.5]);
   const ad = ['00', '01', '10', '11'], xs = [-4.5, -1.5, 1.5, 4.5];
   const keys = { '00': ['A0', 'B0'], '01': ['A1', 'B1'], '10': ['C2'], '11': ['C3'] };
+  let dir, n;
+  await step(tok);                                   // 79:49 is there something faster?
+  dir = [...Array(4)].map((_, i) => cube(ad[i], '#d8c29b', [1.0, 0.4, 0.5], -6.4, 0.2, -2.4 + i * 0.6));
+  say('還有沒有更快的？');
+  await step(tok);                                   // 80:00 pointers are troublesome
+  bad('pointer 還要記 memory address，好麻煩', -4.4, 1.4, -3.4);
+  say('pointer 很麻煩：還要記錄它的 memory address');
+  await step(tok);                                   // 80:06 no pointers: directoryless
+  dir.forEach(kill);
+  tag('directoryless dynamic hashing', 'ptr alt', 0, 2.6, -3.0);
+  say('連 pointer 都不要：directoryless');
+  await step(tok);                                   // 80:21 not a pointer: a memory address directly
   xs.forEach((x, i) => { cube('', '#e8d9a8', [2.6, 0.12, 1.4], x, 0.06, -1.5); tag('address …' + ad[i], 'idx', x, 0, -0.4); });
-  say('連 pointer 都不要', 'bucket 直接放在連續的 memory address');
-  await beat(tok, 3500);
+  say('對應到的不是 pointer，而是 memory address');
+  await step(tok);                                   // 80:46 00 → address 00, 01 → …
   ad.forEach((a, i) => keys[a].forEach((k, j) => cube(k, ppCol(k), [1.0, 0.6, 0.9], xs[i] - 0.55 + j * 1.1, 0.4, -1.5, 3)));
-  say('最右兩個 bit 就是 memory address', 'A0、B0 → …00；A1、B1 → …01');
-  await beat(tok, 4100);
-  const n = cube('C5', RED, [1.0, 0.6, 0.9], xs[1], 2.2, -1.5); glow(n, RED);
-  say('insert C5：…01 滿了', '<span class="no">overflow</span>');
-  await beat(tok, 3200);
+  say('…00 就是 memory address 00；…01、…10 也一樣');
+  await step(tok);                                   // 81:00 the 2 bits from the right are the address
+  note('最右 2 個 bit = memory address', 0, 1.6, -1.5);
+  say('從右邊數過來的兩個 bit，就是它的 memory address');
+  await step(tok);                                   // 81:09 overflow may happen
+  n = cube('C5', RED, [1.0, 0.6, 0.9], xs[1], 1.9, -1.5); glow(n, RED);
+  say('insert C5（…01）：那一格滿了 → overflow');
+  await step(tok);                                   // 81:19 linked list: chaining
   glow(n, null); tint(n, ppCol('C5'));
   move(n, xs[1], 0.4, 1.6);
   arrow(V3(xs[1], 0.4, -0.7), V3(xs[1], 0.4, 1.0));
   tag('overflow chain', 'ptr alt', xs[1] + 2.0, 0.6, 1.6);
   say('overflow 就用 linked list 串起來', '= 用 chaining 解決');
-  await beat(tok, 4600);
 }]);
 
-// 81:41 本章重點回顧
+// 81:48 本章重點回顧
 FRAG.push(['hashpeng-recap', '第八章重點：static 與 dynamic hashing', async (tok) => {
   fresh([0, 7, 12], [0, 0.8, 0.5]);
-  const rowA = [['hash table', -4.8], ['hash function', -1.6], ['collision', 1.6], ['overflow', 4.8]];
-  const rowB = [['mid-square', -4.0], ['division', -1.6], ['folding', 0.8], ['open addr.', 3.2], ['chaining', 5.6]];
-  const rowC = [['trie', -3.2], ['directory', 0], ['directoryless', 3.2]];
+  const row = (items, z, col, w) => items.forEach(([t, x]) => cube(t, col, [w, 0.5, 0.9], x, 0.25, z, 3));
+  await step(tok);                                   // 81:48 chapter 8 key points
+  tag('第八章重點', 'ptr', 0, 2.8, -3.4);
+  say('第八章的重點');
+  await step(tok);                                   // 81:59 a hash table and a hash function
   tag('static hashing', 'ptr', -6, 0.9, -3.2);
-  say('Static hashing：先有 hash table', '決定 hash function');
-  for (const [t, x] of rowA) { cube(t, PP[0], [2.8, 0.5, 0.9], x, 0.25, -2.2, 3); await beat(tok, 500); }
-  await beat(tok, 2200);
-  say('3 種 hash function、2 種處理', 'collision 免不了，怕的是 overflow');
-  for (const [t, x] of rowB) { cube(t, PP[2], [2.2, 0.5, 0.9], x, 0.25, 0, 3); await beat(tok, 500); }
-  await beat(tok, 2400);
+  row([['hash table', -4.8], ['hash function', -1.6]], -2.2, PP[0], 2.8);
+  say('要有一個 hash table，並決定 hash function');
+  await step(tok);                                   // 82:11 three common hash functions
+  row([['mid-square', -4.0], ['division', -1.6], ['folding', 0.8]], 0, PP[2], 2.2);
+  say('介紹了三種常用的 hash function');
+  await step(tok);                                   // 82:18 collision, overflow
+  row([['collision', 1.6], ['overflow', 4.8]], -2.2, PP[0], 2.8);
+  say('要注意 collision 與 overflow', 'collision 免不了，怕的是 overflow');
+  await step(tok);                                   // 82:38 open addressing and chaining
+  row([['open addr.', 3.2], ['chaining', 5.6]], 0, PP[2], 2.2);
+  say('overflow 至少有兩種解法', 'open addressing、chaining');
+  await step(tok);                                   // 82:46 all of these: static hash
+  bub('以上都是 static hash', 2.0, 1.4, -1.0);
+  say('以上講的都是 static hash');
+  await step(tok);                                   // 82:52 dynamic hash: trie
   tag('dynamic hashing', 'ptr alt', -6, 0.9, 1.4);
-  say('Dynamic：hash function 隨資料改變', 'trie 要 traverse → 建目錄 → 連目錄都不要');
-  for (const [t, x] of rowC) { cube(t, PP[5], [2.6, 0.5, 0.9], x, 0.25, 2.4, 3); await beat(tok, 700); }
-  arrow(V3(-1.8, 0.3, 2.4), V3(-1.4, 0.3, 2.4)); arrow(V3(1.4, 0.3, 2.4), V3(1.8, 0.3, 2.4));
-  await beat(tok, 4100);
+  row([['trie', -3.2]], 2.4, PP[5], 2.6);
+  say('Dynamic hash：用 trie，hash 到的 bucket 隨資料改變');
+  await step(tok);                                   // 83:17 avoid the traverse: build a directory
+  row([['directory', 0]], 2.4, PP[5], 2.6);
+  arrow(V3(-1.8, 0.3, 2.4), V3(-1.4, 0.3, 2.4));
+  say('為了不要 traverse trie → 建目錄（directory）');
+  await step(tok);                                   // 83:25 even faster: directoryless
+  row([['directoryless', 3.2]], 2.4, PP[5], 2.6);
+  arrow(V3(1.4, 0.3, 2.4), V3(1.8, 0.3, 2.4));
+  say('還可以更快：連目錄都不要 → directoryless');
+}]);
+
+// 83:46 Q&A：collision 與 overflow 的差別
+FRAG.push(['hashpeng-qa', 'Q&A：collision 與 overflow 是兩種現象', async (tok) => {
+  fresh([0, 7, 12], [0, 0.8, 0]);
+  const BX = -3.4, SX = 3.6;
+  await step(tok);                                   // 83:46 think of them as two phenomena
+  tag('現象 ① collision', 'ptr', -3.4, 3.2, -1.6); tag('現象 ② overflow', 'ptr alt', 3.6, 3.2, -1.6);
+  say('把 collision 和 overflow 想成兩種現象');
+  await step(tok);                                   // 83:59 two data map to the same bucket
+  cube('', GRAY, [3.0, 0.12, 1.3], BX, 0.06, 0); tag('bucket（很大，s = 4）', 'idx', BX, 0, 1.0);
+  const a = buddy('i₁', '', PP[0], BX - 1.0, 0.12, 0, 0.55), b = buddy('i₂', '', PP[1], BX - 0.3, 0.12, 0, 0.55);
+  a.mood('wow'); b.mood('wow');
+  say('collision：兩筆資料對到同一個 bucket', '經過 hash function 後撞在一起');
+  await step(tok);                                   // 84:16 buckets are limited → collision is inevitable
+  const ps = [0, 1, 2, 3].map((i) => tag('x' + ppSub(i + 3), 'pkt', -6.6 + i * 0.6, 2.2, -2.6));
+  await Promise.all(ps.map((p, i) => travel(tok, p, p.position.clone(), V3(BX + 0.4 + (i % 2) * 0.6, 1.6, 0), 800)));
+  ps.forEach(remove);
+  say('bucket 有限、資料很多 → 一定會有 collision');
+  await step(tok);                                   // 84:39 collision ≠ overflow: a big bucket just takes more
+  buddy('i₃', '', PP[2], BX + 0.4, 0.12, 0, 0.55); buddy('i₄', '', PP[3], BX + 1.1, 0.12, 0, 0.55);
+  good('bucket 夠大：多塞幾個，沒有 overflow', BX, 1.8, 1.4);
+  say('collision 不代表 overflow', 'bucket 夠大，就多塞幾個進來');
+  await step(tok);                                   // 84:58 a small bucket, full → overflow
+  cube('', GRAY, [1.2, 0.12, 1.3], SX, 0.06, 0); tag('bucket（很小）', 'idx', SX, 0, 1.0);
+  buddy('j₁', '', PP[4], SX, 0.12, 0, 0.55);
+  const j2 = buddy('j₂', '', PP[5], SX, 1.3, 0, 0.55); j2.glow(RED); j2.mood('sad');
+  bad('滿了還要塞 → overflow', SX, 2.6, 1.0);
+  say('bucket 很小、已經滿了還要塞 → overflow');
+  await step(tok);                                   // 85:39 (student) bucket space vs a linked list
+  bub('bucket：一塊連續的 memory 空間｜linked list：要靠 pointer 串', 0, 0.4, 3.4);
+  say('同學問：bucket size 跟 linked list 有什麼不同？', 'bucket 是 memory 空間；linked list 還要 pointer');
+  await step(tok);                                   // 86:36 s = 1: a collision is an overflow
+  good('bucket size = 1：看到 collision 就等於看到 overflow', 0, 4.0, -0.4);
+  say('bucket size = 1 時', '看到 collision 就等於看到 overflow');
 }]);
 
 // ════════ 第十章開頭：BST 會受輸入順序影響（月份例子） ════════
@@ -5189,59 +6270,118 @@ function ppBST(keys) {
   const dy = maxD > 7 ? 0.68 : 1.25;
   keys.forEach((k) => { N[k].x = -6 + sorted.indexOf(k) * (12 / 11); N[k].y = 8.3 - (N[k].d - 1) * dy; });
   const h = (n) => (n ? 1 + Math.max(h(n.l), h(n.r)) : 0);
-  keys.forEach((k) => { N[k].bf = h(N[k].l) - h(N[k].r); });
+  keys.forEach((k) => { N[k].h = h(N[k]); N[k].hl = h(N[k].l); N[k].hr = h(N[k].r); N[k].bf = N[k].hl - N[k].hr; });
   return { N, root, maxD, sum: keys.reduce((a, k) => a + N[k].d, 0) };
 }
-async function ppBuild(tok, keys, ms) {
-  const T = ppBST(keys);
-  for (const k of keys) {
-    const n = T.N[k];
-    if (n.p) n.edge = line(n.p.x, n.p.y, n.x, n.y);
-    n.c = cube(k, ppCol(k), [0.95, 0.6, 0.6], n.x, n.y, 0, 2.5);
-    await beat(tok, ms);
-  }
-  return T;
-}
-FRAG.push(['hashpeng-bst-months', 'BST 的形狀看輸入順序：平均 3.5、3.1、6.5', async (tok) => {
-  const P = ctx.params || {}, orders = P.orders || [0, 1, 2];
-  const ms = orders.length > 2 ? 420 : 700;
-  for (const o of orders) {
-    fresh([0, 4.6, 14], [0, 4.6, 0]);
-    const keys = MONTH_ORDERS[o];
-    say(o === 0 ? '依 JAN, FEB, MAR … 的順序 insert' : o === 1 ? '換個順序：JULY 先進來' : '照字母順序 APR, AUG, DEC …', '比字母大小：小的往左、大的往右');
-    const T = await ppBuild(tok, keys, ms);
-    if (o === 0) {
-      const cur = tag('', 'ptr', 0, 0, 0); let n = T.root, c = 0;
-      while (n) { c++; cur.position.set(n.x, n.y + 0.7, 0); txt(cur, '第 ' + c + ' 次'); glow(n.c, n.k === 'NOV' ? GREEN : GOLD); say('找 NOV：最深的 node', '比 ' + c + ' 次'); await beat(tok, ms + 300); if (n.k === 'NOV') break; glow(n.c, null); n = 'NOV' < n.k ? n.l : n.r; }
-      await beat(tok, 900); kill(cur);
-    }
-    keys.forEach((k) => tag(String(T.N[k].d), 'ptr alt', T.N[k].x + 0.55, T.N[k].y + 0.45, 0));
-    const avg = (T.sum / 12).toFixed(1);
-    say(o === 2 ? 'Skewed：根本就是 linked list' : o === 1 ? '這次蠻 balanced' : '每個 node 要比幾次 = 它的深度', '最多 ' + T.maxD + ' 次，平均 ' + T.sum + '/12 ≈ ' + avg);
-    await beat(tok, 3000);
-  }
-  say('BST 好不好看 input 的順序', '要讓樹 balance → AVL tree');
-  await beat(tok, 2600);
+// draw nodes (optionally a few at a time); returns the tree
+function ppDraw(T, keys) { keys.forEach((k) => { const n = T.N[k]; if (n.p) n.edge = line(n.p.x, n.p.y, n.x, n.y); n.c = cube(k, ppCol(k), [0.95, 0.6, 0.6], n.x, n.y, 0, 2.5); }); }
+async function ppGrow(tok, T, keys, ms) { for (const k of keys) { ppDraw(T, [k]); await beat(tok, ms); } }
+const depthTags = (T, keys) => keys.forEach((k) => tag(String(T.N[k].d), 'ptr alt', T.N[k].x + 0.55, T.N[k].y + 0.45, 0));
+
+// 87:43 BST：JAN, FEB, MAR … 平均 3.5
+FRAG.push(['hashpeng-bst-jan', 'BST 的形狀看輸入順序：JAN 先進來，平均 3.5', async (tok) => {
+  fresh([0, 4.6, 14], [0, 4.6, 0]);
+  const keys = MONTH_ORDERS[0], T = ppBST(keys);
+  await step(tok);                                   // 87:43 why isn't a BST balanced?
+  bub('為什麼 binary search tree 會不 balance？', 0, 9.6, 0);
+  say('Binary search tree 為什麼會不 balance？');
+  await step(tok);                                   // 87:56 luck: right order → balanced; wrong → skewed
+  note('看輸入順序的運氣：對了 balanced，錯了 skew', 0, 8.9, 0);
+  say('要看運氣：輸入順序對，就 balanced；錯了就 skew（歪一邊）');
+  await step(tok);                                   // 88:11 smaller left, larger right; JAN first → root
+  ppDraw(T, ['JAN']);
+  say('依字母比大小：小的放左邊、大的放右邊', '第一個輸入 JAN → 成為 root');
+  await step(tok);                                   // 88:27 FEB < JAN → left
+  ppDraw(T, ['FEB']);
+  say('FEB：F 比 J 小 → 放 JAN 左邊');
+  await step(tok);                                   // 88:36 MAR > JAN → right
+  ppDraw(T, ['MAR']);
+  say('MAR：比 JAN 大 → 放右邊');
+  await step(tok);                                   // 88:47 and so on: the tree grows by the input order
+  await ppGrow(tok, T, keys.slice(3), 200);
+  say('依此類推：樹照輸入順序慢慢長出來');
+  await step(tok);                                   // 89:04 search NOV: the deepest
+  glow(T.N.NOV.c, GOLD);
+  say('找 NOV：它是這棵樹最深的 node');
+  await step(tok);                                   // 89:20 NOV vs JAN → right, vs MAR → right …
+  const cur = tag('', 'ptr alt', 0, 0, 0);
+  let n = T.root, c = 0;
+  while (n && c < 4) { c++; cur.position.set(n.x, n.y + 0.7, 0); txt(cur, '第 ' + c + ' 次'); glow(n.c, GOLD); await beat(tok, 400); if (n.k !== 'NOV') glow(n.c, null); n = 'NOV' < n.k ? n.l : n.r; }
+  say('NOV 跟 JAN 比 → 比較大往右；跟 MAR 比 → 往右 ……', '1、2、3、4 次');
+  await step(tok);                                   // 89:42 5, 6 times: NOV at the bottom
+  while (n) { c++; cur.position.set(n.x, n.y + 0.7, 0); txt(cur, '第 ' + c + ' 次'); glow(n.c, n.k === 'NOV' ? GREEN : GOLD); await beat(tok, 400); if (n.k === 'NOV') break; glow(n.c, null); n = 'NOV' < n.k ? n.l : n.r; }
+  say('第 5 次、第 6 次：到最底才找到 NOV', '最多要比 6 次');
+  await step(tok);                                   // 89:53 comparisons for every node
+  kill(cur);
+  depthTags(T, keys);
+  say('每個 node 的比較次數 = 它在第幾層', 'JAN 是 root：1 次');
+  await step(tok);                                   // 90:30 sum / 12 = 3.5
+  good('平均 = ' + T.sum + ' / 12 = 3.5', 3.6, 9.4, 0);
+  say('全部加起來除以 12：平均 3.5 次');
 }]);
 
-// 91:50 AVL tree 的定義與 balance factor
+// 90:38 JULY 先進來：平均 3.1；skew：平均 6.5
+FRAG.push(['hashpeng-bst-two', 'Balanced 與 skewed：平均 3.1 與 6.5', async (tok) => {
+  fresh([0, 4.6, 14], [0, 4.6, 0]);
+  let T = ppBST(MONTH_ORDERS[1]);
+  await step(tok);                                   // 90:38 JULY first: the tree grows by the order
+  say('換個順序：JULY 先進來', '樹一樣照輸入順序慢慢長大');
+  await ppGrow(tok, T, MONTH_ORDERS[1], 200);
+  await step(tok);                                   // 90:59 fairly balanced: at most 4, average 3.1
+  depthTags(T, MONTH_ORDERS[1]);
+  good('最多 4 次，平均 ' + T.sum + '/12 ≈ 3.1', 3.6, 9.4, 0);
+  say('這棵蠻 balanced：最多比 4 次，平均 3.1');
+  await step(tok);                                   // 91:08 unlucky: skewed
+  fresh([0, 4.6, 14], [0, 4.6, 0]);
+  T = ppBST(MONTH_ORDERS[2]);
+  say('運氣不好：依字母順序 APR, AUG, DEC … 輸入');
+  await ppGrow(tok, T, MONTH_ORDERS[2], 180);
+  await step(tok);                                   // 91:20 a linked list: up to 12 comparisons
+  bad('整棵 skew = linked list：最多 12 次', 3.0, 9.4, 0);
+  say('整棵歪成一條，等於 linked list', '最多要比 12 次');
+  await step(tok);                                   // 91:32 average 6.5: BST depends on the input
+  good('平均 ' + T.sum + '/12 = 6.5', 3.0, 8.6, 0);
+  say('平均 6.5 次', 'BST 的效能受輸入資料的順序影響');
+}]);
+
+// 91:55 AVL tree 的定義與 balance factor
 FRAG.push(['hashpeng-avl-def', 'AVL tree：|h_L − h_R| ≤ 1，BF ∈ {−1, 0, 1}', async (tok) => {
-  for (const o of [1, 0]) {
-    fresh([0, 4.6, 14], [0, 4.6, 0]);
-    const keys = MONTH_ORDERS[o], T = ppBST(keys);
-    keys.forEach((k) => { const n = T.N[k]; if (n.p) line(n.p.x, n.p.y, n.x, n.y); n.c = cube(k, ppCol(k), [0.95, 0.6, 0.6], n.x, n.y, 0); });
-    say(o === 1 ? 'AVL：height-balanced binary tree' : '第一棵（JAN 先進來）呢？', o === 1 ? 'T_L、T_R 都 balanced，且 |h_L − h_R| ≤ 1' : 'BF = h_L − h_R');
-    await beat(tok, 3000);
-    const bad = [];
-    for (const k of [...keys].sort((a, b) => T.N[a].d - T.N[b].d)) {
-      const n = T.N[k]; tag('BF ' + (n.bf > 0 ? '+' : '') + n.bf, Math.abs(n.bf) > 1 ? 'ptr' : 'idx', n.x, n.y - 0.55, 0);
-      if (Math.abs(n.bf) > 1) { glow(n.c, RED); bad.push(k); }
-    }
-    say(o === 1 ? '每個 node 的 BF 都是 −1、0、1' : 'FEB 的 BF = 3、超過 1', o === 1 ? 'BF = 左子樹高 − 右子樹高' : '<span class="no">不是 AVL tree：' + bad.join('、') + ' 不 balance</span>');
-    await beat(tok, 3600);
-  }
-  say('下週：insert 時怎麼調整 AVL', 'BF 超出 ±1 就要旋轉');
-  await beat(tok, 2600);
+  fresh([0, 4.6, 14], [0, 4.6, 0]);
+  let T = ppBST(MONTH_ORDERS[0]);
+  await step(tok);                                   // 91:55 a BST that grows badly searches badly
+  ppDraw(T, MONTH_ORDERS[0]);
+  say('BST 是搜尋用的 structure', '長得不好，搜尋就慢');
+  await step(tok);                                   // 92:16 make the tree balanced
+  bub('讓樹 balance 一點 → 輸入時就調整', 0, 9.6, 0);
+  say('要增進效能：讓樹 balance 一點', '輸入資料時就對樹做調整');
+  await step(tok);                                   // 92:34 AVL tree: a balanced binary tree
+  fresh([0, 4.6, 14], [0, 4.6, 0]);
+  const keys = MONTH_ORDERS[1]; T = ppBST(keys); ppDraw(T, keys);
+  tag('AVL tree = balanced binary tree', 'ptr alt', 0, 9.6, 0);
+  say('AVL tree 是一種 balanced binary search tree');
+  await step(tok);                                   // 92:52 the root has a left and a right subtree
+  const R = T.root, L = keys.filter((k) => k < R.k), Rt = keys.filter((k) => k > R.k);
+  const box = (ks, col) => { const xs = ks.map((k) => T.N[k].x), ys = ks.map((k) => T.N[k].y); const g = ghostBox(col, Math.max(...xs) - Math.min(...xs) + 1.4, Math.max(...ys) - Math.min(...ys) + 1.2, 1.0); g.position.set((Math.max(...xs) + Math.min(...xs)) / 2, (Math.max(...ys) + Math.min(...ys)) / 2, 0); };
+  box(L, '#4b9ee2'); box(Rt, '#dd8238');
+  tag('T_L', 'ptr', T.N[L[0]].x - 1.4, T.N[L[0]].y + 0.6, 0); tag('T_R', 'ptr', T.N[Rt[0]].x + 1.4, T.N[Rt[0]].y + 0.6, 0);
+  say('條件一：root 的左子樹 T_L、右子樹 T_R 也都要 balanced', '（recursive 的定義）');
+  await step(tok);                                   // 93:10 |h_L − h_R| ≤ 1
+  note('h_L = ' + R.hl + '、h_R = ' + R.hr + '：|' + R.hl + ' − ' + R.hr + '| ≤ 1', R.x, R.y + 0.9, 0);
+  say('條件二：左右子樹高度相減取絕對值 ≤ 1', '|h_L − h_R| ≤ 1');
+  await step(tok);                                   // 94:03 recursive: every node must satisfy it
+  for (const k of keys) { glow(T.N[k].c, GOLD); await beat(tok, 140); glow(T.N[k].c, null); }
+  say('條件一是 recursive：每個 node 都要符合條件二');
+  await step(tok);                                   // 94:21 balance factor BF
+  keys.forEach((k) => { const n = T.N[k]; tag('BF ' + (n.bf > 0 ? '+' : '') + n.bf, 'idx', n.x, n.y - 0.55, 0); });
+  say('Balance factor：BF = 左子樹高度 − 右子樹高度');
+  await step(tok);                                   // 94:40 BF ∈ {1, 0, −1}
+  good('AVL：每個 node 的 BF 只能是 1、0、−1', 3.4, 8.8, 0);
+  say('AVL tree 裡每個 node 的 BF 只能是 1、0、−1');
+  await step(tok);                                   // 94:50 beyond that → not balanced
+  fresh([0, 4.6, 14], [0, 4.6, 0]);
+  T = ppBST(MONTH_ORDERS[0]); ppDraw(T, MONTH_ORDERS[0]);
+  MONTH_ORDERS[0].forEach((k) => { const n = T.N[k]; tag('BF ' + (n.bf > 0 ? '+' : '') + n.bf, Math.abs(n.bf) > 1 ? 'bad' : 'idx', n.x, n.y - 0.55, 0); if (Math.abs(n.bf) > 1) glow(n.c, RED); });
+  say('BF 超過 1 或小於 −1 → 不 balance', '例：JAN 先進來那棵，FEB 的 BF = 3、MAY 的 BF = −3');
 }]);
   }
   // @@FRAGMENTS@@

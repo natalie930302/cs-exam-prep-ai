@@ -561,7 +561,7 @@
   "label": "交大彭文志 Lec23 Hashing",
   "points": 185,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "C2apEw9pgtw": {
   "label": "Abdul Bari：2.6.1 Binary Search Iterative Method",
@@ -615,7 +615,7 @@
   "label": "Hashing - Collision Resolution with Linear Probing",
   "points": 48,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "cxbabnqtWsk": {
   "label": "台大林軒田 DSA Sorting / Summary",
@@ -945,13 +945,13 @@
   "label": "What is a HashTable Data Structure",
   "points": 27,
   "quiz": 5,
-  "cued": false
+  "cued": true
  },
  "mFY0J5W8Udk": {
   "label": "Abdul Bari：Hashing Technique - Simplified",
   "points": 48,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "MhT7XmxhaCE": {
   "label": "Abdul Bari：2.1.3 Recurrence Relation #3",
