@@ -1775,6 +1775,8 @@ FRAG.push(['arrlin-ordered-insert', 'Ordered array 的 insert', async (tok) => {
   // ═══ arrlllin.js ═══
   {
   // ─── B0ywTK-Lklw：林軒田 DSA — Ordered array、Binary search、Linked list、Sparse vector ───
+  // cued scenes: every `await step(tok)` waits for the sentence the lecturer is saying; beats are motion only
+  const step = ctx.step;
   const C = { v: '#4b9ee2', pr: '#9b7ef4', ok: '#2fc092', hot: '#dd8238', bad: '#d64545', note: '#d8c29b', dim: '#d8cfc0' };
   const SZ = [1.0, 0.7, 1.0], PS = [1.55, 0.7, 1.0];
   const at = (l, x, y, z = 0) => l.position.set(x, y, z);
@@ -1806,302 +1808,372 @@ FRAG.push(['arrlin-ordered-insert', 'Ordered array 的 insert', async (tok) => {
     if (dropH > 0) lab.dropTo(lab.addBody(g), V3(x, 0.35, z)); else lab.world.add(g);
     return g;
   }
-  function dlinks(xs, z, old) {
+  function dlinks(xs, z, old, backOnly) {
     (old || []).forEach(kill);
     const out = [];
     for (let i = 0; i + 1 < xs.length; i++) {
-      out.push(arrow(V3(xs[i] + 0.94, 0.55, z - 0.25), V3(xs[i + 1] - 0.5, 0.55, z - 0.25)));
+      if (!backOnly) out.push(arrow(V3(xs[i] + 0.94, 0.55, z - 0.25), V3(xs[i + 1] - 0.5, 0.55, z - 0.25)));
       out.push(arrow(V3(xs[i + 1] - 0.94, 0.15, z + 0.25), V3(xs[i] + 0.5, 0.15, z + 0.25), 0xc08a1f));
     }
     return out;
   }
+  const relabelG = (g, t) => { const l = g.userData.data.children[0]; if (l && l.element) l.element.textContent = String(t); };
   function book(id, x, z = 0) { const m = cube(id, C.pr, [0.95, 1.7, 0.75], x, 0.85, z); m.userData.v = id; return m; }
 
   // 17:30 consecutive → ordered
   FRAG.push(['arrlllin-consecutive', 'Consecutive 與 Ordered array', async (tok) => {
     fresh([0, 6.5, 11], [0, 0.4, 0]);
     const xs = spread(7, 1.5); cells(xs, 0);
+    await step(tok);                                   // 17:30 繼續把 array 當成 data structure
+    say('繼續看 array：把它當成 data structure', '今天：讓 array 裡的東西有順序');
+    await step(tok);                                   // 18:45 array 像一排櫃子，用編號開關
     say('Array 像一排置物櫃：用編號任意開關', '7 個櫃子 [0] … [6]');
-    await beat(tok, 2200);
+    await step(tok);                                   // 19:02 可以任意放來放去
     const loose = [[1, 4], [4, 9], [6, 2]].map(([i, v]) => vc(v, xs[i], 0, 3));
-    say('可以任意放：中間留著空位', '空位散在中間 → 有點浪費');
-    await beat(tok, 2600);
+    say('可以任意放：這格放 4、那格放 9', '中間留著空位');
+    await step(tok);                                   // 19:34 留空位看起來有點浪費
+    loose.forEach((m) => glow(m, GOLD));
+    say('中間留空位，看起來有點浪費', '');
+    await step(tok);                                   // 19:51 中間不留空：填 5、7、4、6
     loose.forEach((m) => fly(m));
-    await beat(tok, 700);
+    await beat(tok, 500);
     const vals = [5, 7, 4, 6], cs = [];
-    for (let i = 0; i < 4; i++) {
-      cs.push(vc(vals[i], xs[i], 0, 3));
-      say('中間不留空：從最前面連續放', '填入 ' + vals.slice(0, i + 1).join(', '));
-      await beat(tok, 900);
-    }
+    for (let i = 0; i < 4; i++) { cs.push(vc(vals[i], xs[i], 0, 3)); await beat(tok, 300); }
+    say('中間不留空：從最前面連續放', '填入 5, 7, 4, 6');
+    await step(tok);                                   // 20:11 consecutive array
     const g = ghostBox(C.ok, 4 * 1.5 - 0.2, 0.9, 1.6); g.position.set((xs[0] + xs[3]) / 2, 0.45, 0);
     tag('tail = 3', 'ptr alt', xs[3], 1.4, 0);
     say('Consecutive array：用掉前面連續一段', '[0 … tail] 有資料，後面是連續空位');
-    await beat(tok, 2800);
+    await step(tok);                                   // 20:38 範圍內的資料再由小到大排好
     [2, 0, 3, 1].forEach((k, i) => move(cs[k], xs[i], 0.35, 0));
-    say('再要求由小到大排好 → Ordered array', '4 ≤ 5 ≤ 6 ≤ 7');
-    await beat(tok, 2600);
-    say('Ordered array 一定是 consecutive array', '這裡採由小到大（排行榜則是由大到小）');
-    await beat(tok, 2800);
+    say('再要求：資料由小到大排好', '4 ≤ 5 ≤ 6 ≤ 7');
+    await step(tok);                                   // 21:06 這叫 ordered array
+    say('這樣的 array 叫 Ordered array', 'ordered 一定是 consecutive');
+    await step(tok);                                   // 21:19 也可以由大到小（排行榜）
+    say('也可以由大到小，例如成績排行榜', '課堂上簡化成由小到大');
   }]);
 
-  // 21:43 insert into ordered array
-  async function shiftInsert(tok, A, data, xs, ms) {
-    let i = A.indexOf(null); i = (i < 0 ? A.length : i) - 1;
-    const dc = vc(data, xs[i + 1], 0, 0, C.hot); dc.position.y = 2.3;
-    say('插入 ' + data + '：從 tail = ' + i + ' 往前比', 'data = ' + data);
-    await beat(tok, ms * 1.4);
-    while (i >= 0) {
-      glow(A[i], GOLD); move(dc, xs[i], 2.3, 0);
-      if (A[i].userData.v > data) {
-        say(A[i].userData.v + ' > ' + data + '：往後搬一格', 'arr[' + (i + 1) + '] = arr[' + i + ']');
-        await beat(tok, ms * 0.6);
-        move(A[i], xs[i + 1], 0.35, 0); glow(A[i], null); A[i + 1] = A[i]; A[i] = null;
-        await beat(tok, ms); i--;
-      } else {
-        say(A[i].userData.v + ' ≤ ' + data + '：停，放在它後面', 'arr[' + (i + 1) + '] = ' + data);
-        await beat(tok, ms * 0.8); glow(A[i], null); break;
-      }
-    }
-    move(dc, xs[i + 1], 0.35, 0); A[i + 1] = dc;
-    await beat(tok, ms);
-  }
+  // 22:01 insert into ordered array
   FRAG.push(['arrlllin-ordered-insert', 'Ordered array 的插入', async (tok) => {
-    fresh([0, 6.5, 11.5], [0, 0.9, 0]);
+    fresh([0, 6.5, 12.5], [0, 1.6, 0]);
     const xs = spread(7, 1.5); cells(xs, 0);
-    let A = [2, 6, 7, 13].map((v, i) => vc(v, xs[i])); while (A.length < 7) A.push(null);
-    const tl = tag('tail = 3', 'ptr', xs[3], 0.05, -1.3);
-    say('Ordered array：2, 6, 7, 13', '除了開頭，還要一個變數記 tail');
-    await beat(tok, 2600);
-    say('插入 10：只能放在 13 現在的位置', '13 往後擠一格，10 插隊進去');
-    await beat(tok, 2200);
-    await shiftInsert(tok, A, 10, xs, 1000);
-    txt(tl, 'tail = 4'); at(tl, xs[4], 0.05, -1.3);
-    say('插入完成，tail + 1', '2, 6, 7, 10, 13');
-    await beat(tok, 2000);
-    A.forEach((m) => m && fly(m));
-    await beat(tok, 700);
+    let A = [];
+    const tl = tag('tail = 3', 'ptr', xs[3], 0.05, -1.3); showL(tl, false);
+    await step(tok);                                   // 22:01 例子：2, 6, 7, 13
+    A = [2, 6, 7, 13].map((v, i) => vc(v, xs[i], 0, 3)); while (A.length < 7) A.push(null);
+    say('Ordered array：2, 6, 7, 13', '有新東西要放進去，沒那麼容易了');
+    await step(tok);                                   // 22:49 10 只能放在 13 現在的位置
+    const d10 = vc(10, xs[3], 0, 0, C.hot); d10.position.y = 2.3;
+    glow(A[3], GOLD);
+    say('插入 10：只能放在 13 現在的位置', '要維持連續、又要維持順序');
+    await step(tok);                                   // 23:07 13 往後擠一格，10 放進去
+    glow(A[3], null);
+    move(A[3], xs[4], 0.35, 0); A[4] = A[3];
+    await beat(tok, 600);
+    move(d10, xs[3], 0.35, 0); A[3] = d10;
+    say('13 往後擠一格，10 放進原來的位置', '2, 6, 7, 10, 13');
+    await step(tok);                                   // 23:34 像插隊：要找到插在哪
+    say('像「插隊」：先找到要插在哪裡', '');
+    await step(tok);                                   // 24:26 維護 consecutive array 要記 tail
+    showL(tl, true); txt(tl, 'tail = 4'); at(tl, xs[4], 0.05, -1.3);
+    say('除了開頭，還要一個變數記 tail', 'tail = 最後一筆資料的位置');
+    await step(tok);                                   // 24:46 tail：資料到哪、空位從哪開始
+    glow(A[4], GOLD);
+    say('tail 告訴我們：資料到哪為止', '也告訴我們：空位從 tail + 1 開始');
+    await step(tok);                                   // 25:50 換成插入 4
+    glow(A[4], null);
+    A.forEach((m) => m && fly(m)); A = [];
+    await beat(tok, 500);
     A = [2, 6, 7, 13].map((v, i) => vc(v, xs[i], 0, 2)); while (A.length < 7) A.push(null);
     txt(tl, 'tail = 3'); at(tl, xs[3], 0.05, -1.3);
-    say('換成插入 4', '從 tail 開始搬家：13、7、6');
-    await beat(tok, 1600);
-    await shiftInsert(tok, A, 4, xs, 800);
+    const d4 = vc(4, xs[4], 0, 0, C.hot); d4.position.y = 2.3;
+    say('如果插入的是 4 呢？', '從 tail 開始一個一個搬家');
+    await step(tok);                                   // 26:11 搬 13、搬 7、搬 6，才空出位置
+    for (let i = 3; i >= 1; i--) { move(d4, xs[i], 2.3, 0); move(A[i], xs[i + 1], 0.35, 0); A[i + 1] = A[i]; A[i] = null; await beat(tok, 550); }
+    move(d4, xs[1], 0.35, 0); A[1] = d4;
     txt(tl, 'tail = 4'); at(tl, xs[4], 0.05, -1.3);
-    say('插得越前面，要搬的越多', '最壞要搬 tail + 1 個 → O(n)');
-    await beat(tok, 2800);
+    say('搬 13、搬 7、搬 6，才空出一格放 4', '插得越前面，要搬的越多');
+    await step(tok);                                   // 26:37 寫成程式：index 從 tail 開始往前
+    const cd = code(['for (i = tail; i >= 0; i--)', '  if (arr[i] > data) arr[i+1] = arr[i];  // 往後搬', '  else 停下來', 'arr[i+1] = data;'], 0, 5.6, 0.5, -1.8);
+    cd.hl(0);
+    say('寫成程式：index 從 tail 開始往前看', '不能超出 array 的範圍');
+    await step(tok);                                   // 28:14 比 data 大就往後搬
+    cd.hl(1);
+    say('arr[i] 比 data 大：往後搬一格', 'arr[i+1] = arr[i]');
+    await step(tok);                                   // 28:34 不比 data 大就停，放進去
+    cd.hl(3);
+    say('找到不比 data 大的位置：停下來放 data', '最壞要搬 tail + 1 個 → O(n)');
   }]);
 
-  // 28:49 the buggy insert code
+  // 29:10 the buggy insert code
   FRAG.push(['arrlllin-insert-bugs', '抓 insert 程式的 bug', async (tok) => {
     fresh([0, 5.5, 12.5], [0, 2.4, 0]);
     const xs = spread(6, 1.5), real = xs.slice(0, 5), z = 1.2;
     cells(real, z);
     const cd = code(['for (i = tail; i >= 0; i--) {', '  if (arr[i] > data)', '    arr[i+1] = arr[i];', '  else {', '    arr[i+1] = data; break;', '  }', '}'], 0, 6.4, 0.5, -1.6);
     const dl = tag('data = 10', 'ptr alt', -5.4, 1.6, z);
-    const il = tag('i', 'ptr', real[3], 1.5, z);
+    const il = tag('i', 'ptr', real[3], 1.5, z); showL(il, false);
     let S = [];
     const load = (vals) => { S.forEach((m) => m && kill(m)); S = vals.map((v, i) => vc(v, real[i], z)); while (S.length < 5) S.push(null); };
     const put = (i, v, col) => { if (S[i]) { setV(S[i], v); tint(S[i], col || C.v); } else S[i] = vc(v, real[i], z, 2, col || C.v); };
     load([2, 6, 7, 13]);
-    say('老師故意寫一段「似是而非」的 insert', '你看得出哪裡有問題嗎？');
-    await beat(tok, 2600);
-    cd.hl(0); say('追蹤 data = 10：i 從 tail = 3 開始', 'arr = 2, 6, 7, 13');
-    await beat(tok, 1800);
-    glow(S[3], GOLD); cd.hl(1); say('arr[3] = 13 > 10', '條件成立');
-    await beat(tok, 1300);
+    await step(tok);                                   // 29:10 這段程式有沒有問題？
+    say('這段 insert 程式有沒有問題？', '同學：怪怪的、會超出範圍…');
+    await step(tok);                                   // 30:34 帶著懷疑、用嚴格標準檢查
+    say('寫程式要帶著懷疑、用嚴格標準檢查', '寫錯也沒關係：就 debug');
+    await step(tok);                                   // 32:09 修正：這邊應該有個 else
+    cd.hl(3);
+    say('修正：arr[i] ≤ data 時進 else', '把 data 放到 arr[i+1]，然後 break');
+    await step(tok);                                   // 32:56 追蹤：data = 10，i 從 tail = 3
+    cd.hl(0); showL(il, true);
+    say('追蹤 data = 10：i 從 tail = 3 開始', 'arr = 2, 6, 7, 13');
+    await step(tok);                                   // 33:14 arr[3] 有沒有比 data 大？
+    glow(S[3], GOLD); cd.hl(1);
+    say('arr[3] = 13 > 10', '條件成立');
+    await step(tok);                                   // 33:25 13 往後 copy
     cd.hl(2); put(4, 13, C.hot); glow(S[3], null); tint(S[3], C.dim);
     say('arr[4] = arr[3]：只是 copy', '13 暫時有兩份，舊的等著被蓋掉');
-    await beat(tok, 2000);
-    at(il, real[2], 1.5, z); glow(S[2], GOLD); cd.hl(1);
+    await step(tok);                                   // 33:52 i = 2：7 < 10，跳到 else
+    at(il, real[2], 1.5, z); glow(S[2], GOLD); cd.hl(3);
     say('i = 2：arr[2] = 7 不比 10 大', '進 else');
-    await beat(tok, 1400);
+    await step(tok);                                   // 34:02 10 放到 arr[3]，break
     cd.hl(4); glow(S[2], null); put(3, 10, C.ok); tint(S[4], C.v);
     say('arr[3] = 10，break', '2, 6, 7, 10, 13');
-    await beat(tok, 2000);
-    load([2, 6, 7, 13]); txt(dl, 'data = 1'); cd.hl(-1);
-    say('換成 data = 1（比全部都小）', '再跑一次');
-    await beat(tok, 1600);
+    await step(tok);                                   // 34:53 同學：data 是 1 會放不進去
+    load([2, 6, 7, 13]); txt(dl, 'data = 1'); cd.hl(2);
     for (let i = 3; i >= 0; i--) {
-      at(il, real[i], 1.5, z); cd.hl(2); put(i + 1, S[i].userData.v); tint(S[i], C.dim);
-      say(S[i].userData.v + ' > 1：往後 copy', 'arr[' + (i + 1) + '] = arr[' + i + ']');
-      await beat(tok, 750);
+      at(il, real[i], 1.5, z); put(i + 1, S[i].userData.v); tint(S[i], C.dim);
+      await beat(tok, 450);
     }
+    say('data = 1（比全部都小）：每格都往後 copy', '');
+    await step(tok);                                   // 36:15 迴圈跑完：沒進 else，1 沒放進去
     cd.hl(6); txt(il, 'i = -1'); at(il, real[0] - 1.2, 1.5, z); glow(S[0], RED); tint(S[0], C.bad);
-    say('迴圈就結束了：1 根本沒放進去！', 'Bug 1：arr[0] 還是舊的 2');
-    await beat(tok, 2600);
+    say('迴圈就結束了：1 根本沒放進去！', 'Bug 1：arr[0] 讓出來了，卻沒填 data');
+    await step(tok);                                   // 36:47 arr[tail+1] 不一定有空間
     glow(S[0], null); tint(S[0], C.v); txt(il, 'tail = 4'); at(il, real[4], 1.5, z);
     const gb = ghostBox(C.bad, 1.1, 0.7, 1.1); gb.position.set(xs[5], 0.35, z);
     tag('[5]？', 'idx', xs[5], 0.05, z + 1.1);
     say('陣列滿了時，arr[tail+1] 會寫出界', 'Bug 2：沒檢查後面還有沒有空間');
-    await beat(tok, 2600);
-    say('還有 A 與 ARR 混用的 typo', '寫程式要帶著懷疑檢查，錯了就 debug');
-    await beat(tok, 2800);
+    await step(tok);                                   // 38:18 要用完整邏輯寫下來，不容易
+    cd.hl(-1);
+    say('演算法看似簡單，寫成完整邏輯不容易', '還要自己想怎麼測試、debug');
+    await step(tok);                                   // 39:20 A 跟 ARR 混用的 typo
+    say('還有 A 與 ARR 混用的 typo', '這些洞留給大家自己補');
   }]);
 
-  // 39:41 selection sort / insertion sort on 1 3 7 4 6 5 2
+  // 40:03 selection sort / insertion sort on 1 3 7 4 6 5 2
   FRAG.push(['arrlllin-construct', '把亂的 array 排成 ordered', async (tok) => {
     fresh([0, 6.5, 12], [0, 0.6, 0]);
     const V0 = [1, 3, 7, 4, 6, 5, 2], xs = spread(7, 1.4); cells(xs, 0);
-    let S = V0.map((v, i) => vc(v, xs[i]));
-    say('一堆沒排好的資料：1 3 7 4 6 5 2', '怎麼變成 ordered array？');
-    await beat(tok, 2200);
-    say('Selection sort：用 getMinIndex 找最小的', '跟開頭那格交換');
-    await beat(tok, 1600);
-    for (let p = 0; p < 6; p++) {
+    let S = [];
+    const pass = (p) => {
       let m = p; for (let k = p + 1; k < 7; k++) if (S[k].userData.v < S[m].userData.v) m = k;
-      glow(S[m], GOLD);
-      say('第 ' + (p + 1) + ' 小的是 ' + S[m].userData.v, 'getMinIndex(arr[' + p + ' … 6]) = ' + m);
-      await beat(tok, 900);
       if (m !== p) { move(S[m], xs[p], 0.35, 0); move(S[p], xs[m], 0.35, 0); [S[p], S[m]] = [S[m], S[p]]; }
-      glow(S[p], null); tint(S[p], C.ok);
-      await beat(tok, 700);
-    }
+      tint(S[p], C.ok);
+    };
+    await step(tok);                                   // 40:03 一開始怎麼排好？空 array 本來就排好
+    say('insert 寫好了，一開始怎麼讓 array 排好？', '空的 array：本來就是排好的');
+    await step(tok);                                   // 40:10 已經有一串 1 3 7 4 6 5 2
+    S = V0.map((v, i) => vc(v, xs[i], 0, 3));
+    say('已經有一串沒排好的：1 3 7 4 6 5 2', '像整理房間：要變成 ordered array');
+    await step(tok);                                   // 40:44 用 getMinIndex 找最小的，換到開頭
+    glow(S[0], GOLD);
+    say('用 getMinIndex：把最小的叫出來', '跟開頭那格交換（1 已經在開頭）');
+    await beat(tok, 700);
+    glow(S[0], null); pass(0);
+    await step(tok);                                   // 40:58 在剩下的裡面再叫出最小的…
+    for (let p = 1; p < 6; p++) { pass(p); await beat(tok, 450); }
     tint(S[6], C.ok);
-    say('Selection sort 完成', '1 2 3 4 5 6 7');
-    await beat(tok, 1800);
+    say('在剩下的裡面再叫出最小的，一直重複', '第 2 小、第 3 小…依序放好');
+    await step(tok);                                   // 41:39 這叫 selection sort
+    say('這就是 Selection sort', '1 2 3 4 5 6 7');
+    await step(tok);                                   // 41:59 另一種：像玩撲克牌
     S.forEach((m) => kill(m));
     S = V0.map((v, i) => vc(v, xs[i]));
     tint(S[0], C.ok);
-    say('Insertion sort：像玩撲克牌', '右邊抽一張，插到左手排好的牌裡');
-    await beat(tok, 1800);
+    say('另一種：像玩撲克牌', '抽一張牌，插到手上排好的牌裡');
+    await step(tok);                                   // 42:24 左邊維持排好，右邊抽一張插進去
     for (let k = 1; k < 7; k++) {
       const c = S[k], v = c.userData.v;
-      move(c, xs[k], 1.6, 0);
-      await beat(tok, 350);
       let j = k - 1;
       while (j >= 0 && S[j].userData.v > v) { move(S[j], xs[j + 1], 0.35, 0); S[j + 1] = S[j]; j--; }
       S[j + 1] = c; move(c, xs[j + 1], 0.35, 0); tint(c, C.ok);
-      say('抽出 ' + v + '，插到左邊正確位置', '= 把 ordered array insertion 跑很多次');
-      await beat(tok, 800);
+      await beat(tok, 380);
     }
-    say('兩種都能把散亂的 array 變成 ordered', 'selection sort、insertion sort');
-    await beat(tok, 2400);
+    say('左邊一直維持排好；右邊抽一個插到左邊', '= 把 ordered array 的 insertion 跑很多次');
+    await step(tok);                                   // 42:39 這叫 insertion sort
+    say('這叫 Insertion sort', '兩種都能把散亂的 array 排好');
   }]);
 
-  // 42:50 maintenance cost: update must roll, remove must fill in
+  // 43:05 maintenance cost: update must roll, remove must fill in
   FRAG.push(['arrlllin-maintain', 'Ordered 的維護代價', async (tok) => {
     fresh([0, 6, 11.5], [0, 0.6, 0]);
     const xs = spread(6, 1.5); cells(xs, 0);
     const S = [2, 6, 7, 13].map((v, i) => vc(v, xs[i])); S.push(null, null);
     const tl = tag('tail = 3', 'ptr', xs[3], 0.05, -1.3);
-    say('Ordered array 不能隨便 update', '改完要檢查：比前一格大、比後一格小');
-    await beat(tok, 2400);
+    await step(tok);                                   // 43:05 多了要求：連續、按順序
+    say('Ordered array 多了要求', '位置要連續、資料要按順序');
+    await step(tok);                                   // 43:26 access 與 maintenance 都要多花力氣
+    say('有要求，就要多花力氣', 'access 和 maintenance 都是');
+    await step(tok);                                   // 43:39 不能任意 update
     setV(S[1], 11); glow(S[1], RED);
-    say('把 arr[1] 從 6 改成 11', '11 > 後一格的 7：順序亂了');
-    await beat(tok, 2200);
+    say('不能隨便 update：把 6 改成 11', '前後的順序可能就亂了');
+    await step(tok);                                   // 43:59 要檢查：比前一格大、比後一格小
+    say('改完要檢查：比前一格大？比後一格小？', '11 > 後一格的 7 → 不對');
+    await step(tok);                                   // 44:06 比後面大就往後滾
     move(S[1], xs[2], 0.35, 0); move(S[2], xs[1], 0.35, 0); [S[1], S[2]] = [S[2], S[1]];
-    say('比後面大 → 往後滾', '11 和 7 交換');
-    await beat(tok, 1500);
+    await beat(tok, 700);
     glow(S[2], null);
-    say('11 < 13：停下來', '2, 7, 11, 13 又排好了');
-    await beat(tok, 1800);
+    say('比後面大 → 往後滾，直到順序對', '2, 7, 11, 13');
+    await step(tok);                                   // 44:25 移除：後面要往前補位
     glow(S[1], RED);
-    say('移除 7', '要維持連續：後面的要補位（fill in）');
-    await beat(tok, 1300);
+    await beat(tok, 500);
     fly(S[1]); S[1] = null;
-    await beat(tok, 600);
-    for (let k = 2; k <= 3; k++) { move(S[k], xs[k - 1], 0.35, 0); S[k - 1] = S[k]; S[k] = null; await beat(tok, 600); }
+    await beat(tok, 400);
+    for (let k = 2; k <= 3; k++) { move(S[k], xs[k - 1], 0.35, 0); S[k - 1] = S[k]; S[k] = null; await beat(tok, 400); }
     txt(tl, 'tail = 2'); at(tl, xs[2], 0.05, -1.3);
-    say('後面往前補位', 'tail 從 3 變 2');
-    await beat(tok, 2000);
-    say('加上限制（consecutive、ordered）就要花力氣維護', 'access 和 maintenance 的代價都要算進去');
-    await beat(tok, 3000);
+    say('移除 7：後面的要往前補位（fill in）', 'tail 從 3 變 2');
+    await step(tok);                                   // 44:50 很多 DS 都是在儲存方式上加限制
+    say('很多 data structure 都在儲存方式上加限制', 'ordered、consecutive 都是限制');
+    await step(tok);                                   // 45:03 像房間的衣服要照順序擺
+    say('像衣服要照某種方式排，就要花力氣整理', '這些代價都要算進評估');
+    await step(tok);                                   // 45:26 insert 的 code 故意留洞
+    say('insert 的程式故意留了洞', '讓大家自己想辦法補起來');
   }]);
 
-  // 49:04 sequential search on a shelf
+  // 49:18 sequential search on a shelf
   FRAG.push(['arrlllin-seq-search', 'Sequential search：找書', async (tok) => {
     fresh([0, 5.6, 12.5], [0, 2.4, 0]);
     const IDS = [12, 27, 35, 48, 56, 63, 79, 85], xs = spread(8, 1.3), z = 1.2;
-    const B = IDS.map((v, i) => book(v, xs[i], z));
+    let B = [], cd, il, fl;
+    await step(tok);                                   // 49:18 到圖書館找書
+    B = IDS.map((v, i) => book(v, xs[i], z));
+    say('Ordered array 的應用：到圖書館找書', '');
+    await step(tok);                                   // 49:35 每本書有一個編號 ID
     xs.forEach((x, i) => tag('[' + i + ']', 'idx', x, 0.05, z + 0.9));
-    const cd = code(['for (i = 0; i <= tail; i++)', '  if (arr[i].id == toFind)', '    return i;      // 找到了', 'return NOT_FOUND;'], 0, 6.2, 0.52, -1.6);
-    const il = tag('i', 'ptr', xs[0], 2.2, z), fl = tag('toFind = 56', 'ptr alt', -5.6, 2.2, z);
-    say('圖書館：書照 ID 排在架子上', '已經找到架子，要找出那一本');
-    await beat(tok, 2200);
-    for (let i = 0; i <= 4; i++) {
-      at(il, xs[i], 2.2, z); cd.hl(1); glow(B[i], GOLD);
-      say('從左找到右：第 ' + i + ' 本 ID = ' + IDS[i], IDS[i] === 56 ? '相同！' : IDS[i] + ' ≠ 56');
-      await beat(tok, 600);
-      if (i < 4) glow(B[i], null);
-    }
-    cd.hl(2); tint(B[4], C.ok); say('找到了', 'return 4');
-    await beat(tok, 1800);
-    glow(B[4], null); tint(B[4], C.pr); txt(fl, 'toFind = 50');
-    say('換成找 ID = 50（不在架上）', '');
-    await beat(tok, 1200);
-    for (let i = 0; i < 8; i++) { at(il, xs[i], 2.2, z); cd.hl(1); glow(B[i], GOLD); await beat(tok, 380); glow(B[i], null); tint(B[i], C.dim); }
-    cd.hl(3); say('最壞情況：整排看完都找不到', 'return NOT_FOUND → 看了 tail + 1 本');
-    await beat(tok, 2200);
-    say('Sequential search：一本一本看過去', '這個演算法根本沒用到「排好了」');
-    await beat(tok, 2600);
+    say('每本書都有一個編號（ID、索書號）', 'ID 可以比大小');
+    await step(tok);                                   // 50:22 同一架上依 ID 大小排列
+    for (let i = 0; i < 8; i++) { glow(B[i], GOLD); await beat(tok, 150); glow(B[i], null); }
+    say('同一個架子上：書依 ID 由小到大排', '最左最小、最右最大');
+    await step(tok);                                   // 50:50 就像 ordered array
+    say('就像排好的 ordered array', '');
+    await step(tok);                                   // 51:21 已經找到架子，要找那一本
+    fl = tag('toFind = 56', 'ptr alt', -5.6, 2.2, z);
+    say('已經照編號找到架子了', '現在要找出 ID = 56 那一本');
+    await step(tok);                                   // 51:37 從左邊找到右邊
+    il = tag('i', 'ptr', xs[0], 2.2, z);
+    for (let i = 0; i <= 4; i++) { at(il, xs[i], 2.2, z); glow(B[i], GOLD); await beat(tok, 350); if (i < 4) glow(B[i], null); }
+    tint(B[4], C.ok);
+    say('從左邊找到右邊', '12、27、35、48、56 → 找到了');
+    await step(tok);                                   // 52:10 寫成 search algorithm，像 getMinIndex
+    glow(B[4], null); tint(B[4], C.pr);
+    cd = code(['for (i = 0; i <= tail; i++)', '  if (arr[i].id == toFind)', '    return i;      // 找到了', 'return NOT_FOUND;'], 0, 6.2, 0.52, -1.6);
+    cd.hl(0); at(il, xs[0], 2.2, z);
+    say('寫成 search algorithm', '跟 getMinIndex 很像：i 從 0 跑到 tail');
+    await step(tok);                                   // 52:40 ID 一樣就說找到了
+    cd.hl(2);
+    say('arr[i] 的 ID 跟要找的一樣：找到了', '整個找完都沒有：NOT_FOUND');
+    await step(tok);                                   // 53:35 sequential search
+    cd.hl(1);
+    say('這叫 Sequential search', '按順序，一個一個看過去');
+    await step(tok);                                   // 53:51 最壞：整個找完都找不到
+    txt(fl, 'toFind = 50');
+    for (let i = 0; i < 8; i++) { at(il, xs[i], 2.2, z); glow(B[i], GOLD); await beat(tok, 230); glow(B[i], null); tint(B[i], C.dim); }
+    cd.hl(3);
+    say('最壞情況：整排看完都找不到', '找 50 → 看了 tail + 1 本，return NOT_FOUND');
   }]);
 
-  // 54:03 sequential search with cut (5566 vs 6000)
+  // 54:09 sequential search with cut (5566 vs 6000)
   FRAG.push(['arrlllin-seq-cut', 'Sequential search with cut', async (tok) => {
     fresh([0, 5.6, 12.5], [0, 2.4, 0]);
     const IDS = [1, 3, 1234, 2046, 4096, 5000, 6000, 6001, 7000], xs = spread(9, 1.25), z = 1.2;
     const B = IDS.map((v, i) => book(v, xs[i], z));
-    const cd = code(['for (i = 0; i <= tail; i++)', '  if (arr[i].id == toFind) return i;', '  else if (arr[i].id > toFind)', '    return NOT_FOUND;  // 偷吃步 cut', 'return NOT_FOUND;'], 0, 6.2, 0.52, -1.6);
-    const il = tag('i', 'ptr', xs[0], 2.2, z);
+    const il = tag('i', 'ptr', xs[0], 2.2, z); showL(il, false);
+    let cd;
+    await step(tok);                                   // 54:09 剛才根本沒用到 ordered
+    say('剛才的演算法根本沒用到「排好了」', '書被小孩弄亂，也照樣一本本翻');
+    await step(tok);                                   // 54:24 如果書真的照編號排好呢？
+    say('如果書真的照編號排好了呢？', '');
+    await step(tok);                                   // 54:40 要找 5566
     tag('toFind = 5566', 'ptr alt', -5.6, 2.6, z);
-    say('如果書真的照編號排好了呢？', '找 ID = 5566');
-    await beat(tok, 2200);
-    for (let i = 0; i <= 6; i++) {
-      at(il, xs[i], 2.2, z); glow(B[i], GOLD);
-      cd.hl(IDS[i] > 5566 ? 2 : 1);
-      say(IDS[i] < 5566 ? IDS[i] + ' < 5566：繼續' : IDS[i] + ' > 5566！', i < 6 ? '一本一本往右' : '後面只會更大');
-      await beat(tok, i < 6 ? 550 : 1600);
-      if (i < 6) glow(B[i], null);
-    }
-    glow(B[6], RED); cd.hl(3);
+    say('例：要找 ID = 5566', '從小找到大');
+    await step(tok);                                   // 54:59 1、3、1234 … 一路找上去
+    showL(il, true);
+    for (let i = 0; i <= 5; i++) { at(il, xs[i], 2.2, z); glow(B[i], GOLD); await beat(tok, 300); glow(B[i], null); }
+    say('1、3、1234 … 一路往上找', '都比 5566 小：繼續');
+    await step(tok);                                   // 55:09 拿到的已經是 6000
+    at(il, xs[6], 2.2, z); glow(B[6], RED);
+    say('拿下一本：ID 已經是 6000', '6000 > 5566！');
+    await step(tok);                                   // 55:19 後面的都不可能是要的書
     for (let k = 7; k < 9; k++) tint(B[k], C.dim);
-    say('6000、6001、7000 … 都不可能是 5566', '直接 return NOT_FOUND：不用看完');
-    await beat(tok, 2400);
-    say('偷偷用了 ordered 的性質：shortcut（偷吃步）', '找的編號越小，省得越多');
-    await beat(tok, 2600);
+    say('6001、7000 … 只會更大', '都不可能是 5566');
+    await step(tok);                                   // 55:41 偷吃步：比要找的大就說沒找到
+    cd = code(['for (i = 0; i <= tail; i++)', '  if (arr[i].id == toFind) return i;', '  else if (arr[i].id > toFind)', '    return NOT_FOUND;  // 偷吃步 cut', 'return NOT_FOUND;'], 0, 6.2, 0.52, -1.6);
+    cd.hl(3);
+    say('偷吃步：看到的 ID 比要找的大，直接回報沒找到', 'break 或 return 都可以');
+    await step(tok);                                   // 56:02 偷偷用了 ordered array 的性質
+    cd.hl(2);
+    say('偷偷用了 ordered array 的性質', '後面只會更大，不用再找');
+    await step(tok);                                   // 56:31 要找的編號越小，省得越多
+    say('要找的編號越小，省得越多', '找 4 號：看到 5 就停');
+    await step(tok);                                   // 56:48 英文叫 shortcut
+    cd.hl(-1);
+    say('偷吃步：英文叫 shortcut', 'Sequential search with cut');
+    await step(tok);                                   // 57:08 但還是一本一本找
+    glow(B[6], null);
     say('但還是一本一本找，到中間才能 cut', '能不能更早砍掉一大堆？');
-    await beat(tok, 2600);
   }]);
 
-  // 57:13 binary search: compare with the middle, cut half
+  // 57:41 binary search: compare with the middle, cut half
   const BSA = [1, 4, 6, 7, 9, 15, 25, 27, 30];
   FRAG.push(['arrlllin-binsearch-cut', 'Binary search：跟中間比', async (tok) => {
     fresh([0, 6, 12], [0, 0.6, 0]);
-    const xs = spread(9, 1.3); cells(xs, 0, { w: 1.15 });
-    const S = BSA.map((v, i) => vc(v, xs[i], 0, 0, C.v, [0.95, 0.7, 0.95]));
-    const fl = tag('toFind = 8', 'ptr alt', 0, 2.4, 0), ml = tag('mid', 'ptr', xs[4], 1.4, 0);
-    const reset = () => S.forEach((m, k) => { tint(m, C.v); glow(m, null); m.position.y = 0.35; });
-    say('9 格排好的資料：先跟最中間的比', 'mid = 4，arr[4] = 9');
-    await beat(tok, 2400);
+    const xs = spread(9, 1.3);
+    let S = [], fl, ml;
+    const reset = () => S.forEach((m) => { tint(m, C.v); glow(m, null); m.position.y = 0.35; });
+    await step(tok);                                   // 57:41 比一次就砍掉一堆不可能的
+    say('更多偷吃步：比一次就砍掉一大堆', '前提：array 是 ordered');
+    await step(tok);                                   // 57:49 binary search
+    say('這個演算法叫 Binary search', '');
+    await step(tok);                                   // 57:59 畫 9 格、放數字
+    cells(xs, 0, { w: 1.15 });
+    S = BSA.map((v, i) => vc(v, xs[i], 0, 3, C.v, [0.95, 0.7, 0.95]));
+    say('9 格排好的數字', '1, 4, 6, 7, 9, …');
+    await step(tok);                                   // 58:35 要找 8：先跟中間比
+    fl = tag('toFind = 8', 'ptr alt', 0, 2.4, 0); ml = tag('mid', 'ptr', xs[4], 1.4, 0);
     glow(S[4], GOLD);
-    say('9 > 8：mid 和後面全都比 8 大', 'cut mid … tail');
-    await beat(tok, 2000);
+    say('要找 8：先跟最中間的比', 'mid = 4，arr[4] = 9');
+    await step(tok);                                   // 59:36 三種情形：小於、等於、大於
+    say('比完有三種情形', 'arr[mid] 小於、等於、大於 toFind');
+    await step(tok);                                   // 59:50 9 > 8：arr[mid] > toFind
+    say('9 > 8：arr[mid] > toFind', '');
+    await step(tok);                                   // 60:08 cut mid … tail
     for (let k = 4; k < 9; k++) { tint(S[k], C.dim); S[k].position.y = 0.12; }
-    say('一次比較就砍掉 5 個', '剩下 [0 … 3]');
-    await beat(tok, 2000);
+    say('mid 和後面全都比 8 大：cut mid … tail', '一次比較砍掉 5 個');
+    await step(tok);                                   // 60:30 換成找 11：9 < 11
     reset(); txt(fl, 'toFind = 11'); glow(S[4], GOLD);
-    say('換成找 11：9 < 11', '9、7、6、4、1 都不可能');
-    await beat(tok, 2000);
+    say('換成找 11：9 < 11', 'arr[mid] < toFind');
+    await step(tok);                                   // 60:58 另一個方向的 cut：0 … mid
     for (let k = 0; k <= 4; k++) { tint(S[k], C.dim); S[k].position.y = 0.12; }
-    say('另一個方向的 cut', 'cut 0 … mid → 剩 [5 … 8]');
-    await beat(tok, 2000);
+    say('9、7、6、4、1 都不可能：cut 0 … mid', '另一個方向的 cut');
+    await step(tok);                                   // 61:29 相等就找到
     reset(); txt(fl, 'toFind = 9'); glow(S[4], GOLD); tint(S[4], C.ok);
     say('相等：找到了', 'arr[mid] == toFind');
-    await beat(tok, 1800);
+    await step(tok);                                   // 61:43 每次：要嘛找到，要嘛砍掉超過一半
     showL(ml, false);
     say('每比一次：要嘛找到，要嘛砍掉超過一半', 'Binary search');
-    await beat(tok, 2800);
   }]);
 
-  // 62:02 the binary search algorithm, traced
+  // 62:20 the binary search algorithm, traced
   FRAG.push(['arrlllin-binsearch-run', 'Binary search 演算法', async (tok) => {
     fresh([0, 5.6, 13], [0, 2.6, 0]);
     const xs = spread(9, 1.3), z = 1.4; cells(xs, z, { w: 1.15 });
     const S = BSA.map((v, i) => vc(v, xs[i], z, 0, C.v, [0.95, 0.7, 0.95]));
     const cd = code(['begin = 0; end = tail;', 'while (begin <= end) {  // 還有書可找', '  mid = (begin + end) / 2;', '  if (arr[mid] > toFind) end = mid - 1;', '  else if (arr[mid] < toFind) begin = mid + 1;', '  else return mid;', '}', 'return NOT_FOUND;'], 0, 6.7, 0.48, -1.8);
-    const rb = ghostBox(C.ok, 1, 0.9, 1.3);
+    const rb = ghostBox(C.ok, 1, 0.9, 1.3); rb.visible = false;
     const bL = tag('begin', 'ptr', xs[0], 0.05, z + 1.6), eL = tag('end', 'ptr', xs[8], 0.05, z + 2.2), mL = tag('mid', 'ptr alt', xs[4], 1.5, z);
-    const fl = tag('', 'ptr alt', -5.9, 1.6, z);
+    showL(bL, false); showL(eL, false); showL(mL, false);
+    tag('toFind = 8', 'ptr alt', -5.9, 1.6, z);
     const cl = (i) => xs[Math.max(0, Math.min(8, i))];
     function range(b, e) {
       at(bL, cl(b), 0.05, z + 1.6); at(eL, cl(e), 0.05, z + 2.2);
@@ -2109,39 +2181,53 @@ FRAG.push(['arrlin-ordered-insert', 'Ordered array 的 insert', async (tok) => {
       if (b <= e) { rb.scale.x = (e - b) * 1.3 + 1.2; rb.position.set((xs[b] + xs[e]) / 2, 0.45, z); }
       S.forEach((m, k) => tint(m, k >= b && k <= e ? C.v : C.dim));
     }
-    async function run(find) {
-      S.forEach((m) => glow(m, null)); txt(fl, 'toFind = ' + find); showL(mL, false);
-      let b = 0, e = 8; cd.hl(0); range(b, e);
-      say('toFind = ' + find + '：begin = 0，end = tail = 8', '搜尋範圍 [0, 8]');
-      await beat(tok, 1800);
-      while (b <= e) {
-        const m = Math.floor((b + e) / 2);
-        cd.hl(2); showL(mL, true); at(mL, xs[m], 1.5, z); glow(S[m], GOLD);
-        say('mid = (' + b + ' + ' + e + ') / 2 = ' + m, 'arr[' + m + '] = ' + BSA[m]);
-        await beat(tok, 1300);
-        if (BSA[m] > find) { cd.hl(3); e = m - 1; say(BSA[m] + ' > ' + find + '：end = mid − 1 = ' + e, '砍掉 mid 和右邊'); }
-        else if (BSA[m] < find) { cd.hl(4); b = m + 1; say(BSA[m] + ' < ' + find + '：begin = mid + 1 = ' + b, '砍掉 mid 和左邊'); }
-        else { cd.hl(5); tint(S[m], C.ok); say('arr[' + m + '] == ' + find + '：找到了', 'return ' + m); await beat(tok, 2200); return; }
-        glow(S[m], null); range(b, e);
-        await beat(tok, 1400);
-      }
-      cd.hl(7); showL(mL, false);
-      say('begin > end：沒書可找了', 'return NOT_FOUND');
-      await beat(tok, 2200);
-    }
-    await run(8);
-    await run(25);
+    let b = 0, e = 8;
+    const mid = (m) => { showL(mL, true); at(mL, xs[m], 1.5, z); S.forEach((s) => glow(s, null)); glow(S[m], GOLD); };
+    await step(tok);                                   // 62:20 每一步算一個 mid
+    cd.hl(2); mid(4);
+    say('每一步：算出中間 mid', 'mid = (begin + end) / 2');
+    await step(tok);                                   // 62:37 begin 從 0、end 從 tail
+    cd.hl(0); showL(bL, true); showL(eL, true); range(0, 8);
+    say('begin = 0，end = tail：這是搜尋範圍', '找 8：範圍 [0, 8]，mid = 4');
+    await step(tok);                                   // 63:00 arr[mid] > toFind：end = mid − 1
+    cd.hl(3); e = 3; range(b, e);
+    say('arr[4] = 9 > 8：cut mid … tail', 'end = mid − 1 = 3');
+    await step(tok);                                   // 63:23 arr[mid] < toFind：begin = mid + 1
+    cd.hl(2); mid(1);
+    await beat(tok, 700);
+    cd.hl(4); b = 2; range(b, e);
+    say('mid = 1：arr[1] = 4 < 8 → cut 0 … mid', 'begin = mid + 1 = 2');
+    await step(tok);                                   // 63:35 每一輪縮小搜尋範圍
+    cd.hl(2); mid(2); await beat(tok, 500); cd.hl(4); b = 3; range(b, e);
+    await beat(tok, 600);
+    cd.hl(2); mid(3); await beat(tok, 500); cd.hl(4); b = 4; range(b, e);
+    say('每一輪把範圍縮小一點', '6 < 8 → begin = 3；7 < 8 → begin = 4');
+    await step(tok);                                   // 63:57 縮到沒書可找：NOT_FOUND
+    showL(mL, false); S.forEach((s) => glow(s, null));
+    cd.hl(7);
+    say('begin = 4 > end = 3：沒書可找了', 'return NOT_FOUND（8 不在裡面）');
+    await step(tok);                                   // 64:22 「沒書可找」怎麼寫：留作 exercise
+    cd.hl(1);
+    say('「還有書可找」怎麼寫？留作 exercise', '');
+    await step(tok);                                   // 64:48 要能很快算出 arr[mid]
     cd.hl(-1);
-    say('O(1) 抓出 arr[mid]：靠 fast random access', '9 → 4 → 2 → 1：每次砍一半');
-    await beat(tok, 3000);
+    say('Binary search 要成功：要能很快拿到 arr[mid]', '');
+    await step(tok);                                   // 65:08 array：fast random access
+    glow(S[4], GOLD);
+    say('Array 給 index 就一步到位', 'fast random access：其他 DS 做不到');
+    await step(tok);                                   // 65:41 每次砍一半：9 → 4 → 2 → 1
+    glow(S[4], null);
+    say('每次砍一半：9 個 → 4 個 → 2 或 1 個', '很快就找到，或確定不在');
+    await step(tok);                                   // 66:08 好處找得快、壞處要維護
+    say('Ordered 的好處：找得快', '壞處：maintenance 要花力氣');
   }]);
 
-  // 82:56 correctness: loop invariant + finiteness
+  // 83:15 correctness: loop invariant + finiteness
   FRAG.push(['arrlllin-bs-invariant', 'Binary search 的正確性', async (tok) => {
     fresh([0, 6, 12], [0, 0.8, 0]);
     const xs = spread(9, 1.3); cells(xs, 0, { w: 1.15 });
     const S = BSA.map((v, i) => vc(v, xs[i], 0, 0, C.v, [0.95, 0.7, 0.95]));
-    const rb = ghostBox(C.ok, 1, 0.9, 1.3);
+    const rb = ghostBox(C.ok, 1, 0.9, 1.3); rb.visible = false;
     const cnt = tag('', 'ptr alt', 0, 2.4, 0);
     tag('toFind = 8', 'ptr', -5.6, 1.4, 0);
     function range(b, e) {
@@ -2150,30 +2236,35 @@ FRAG.push(['arrlin-ordered-insert', 'Ordered array 的 insert', async (tok) => {
       S.forEach((m, k) => tint(m, k >= b && k <= e ? C.v : C.dim));
       txt(cnt, 'candidate：[' + b + ', ' + e + ']，共 ' + Math.max(0, e - b + 1) + ' 個');
     }
+    await step(tok);                                   // 83:15 怎麼證明 binary search 是對的？
+    say('同學問：怎麼證明 binary search 是對的？', '');
+    await step(tok);                                   // 83:48 有迴圈：找每輪都維持的性質
+    say('有迴圈的演算法：找每一輪都維持的性質', '');
+    await step(tok);                                   // 84:34 binary search 在維持範圍
     range(0, 8);
-    say('怎麼證明 binary search 是對的？', '有迴圈的演算法：找每輪都維持的性質');
-    await beat(tok, 2400);
-    say('Loop invariant：toFind 一定在範圍內', '若存在，必在 [begin, end]；一開始是 [0, tail]');
-    await beat(tok, 2600);
+    say('Binary search 在維持一個範圍', '要找的東西若存在，一定還在範圍裡');
+    await step(tok);                                   // 84:50 0..tail → 0..mid−1 或 mid+1..tail
+    say('一開始是 [0, tail]', '下一步變 [0, mid − 1] 或 [mid + 1, tail]');
+    await step(tok);                                   // 85:17 arr[mid] > toFind 時
     glow(S[4], GOLD);
-    say('arr[4] = 9 > 8，而 9 ≤ 15 ≤ 25 ≤ 27 ≤ 30', '遞移律：後面全都 > 8 → 可以排除');
-    await beat(tok, 2800);
+    say('arr[mid] > toFind 時：為什麼後面能排除？', 'arr[4] = 9 > 8');
+    await step(tok);                                   // 85:55 排好的順序：遞移律
     glow(S[4], null); range(0, 3);
-    say('排除之後，性質還成立', '[0, 8] → [0, 3]');
-    await beat(tok, 1800);
-    for (const [b, e, m] of [[2, 3, 1], [3, 3, 2], [4, 3, 3]]) {
-      glow(S[m], GOLD); await beat(tok, 500); glow(S[m], null);
-      range(b, e);
-      say('每輪 candidate 至少少一半', 'arr[' + m + '] = ' + BSA[m] + ' < 8 → begin = ' + b);
-      await beat(tok, 1100);
-    }
-    say('Finiteness：數量每輪變小，又不會小於 0', '→ 迴圈一定會停');
-    await beat(tok, 2600);
-    say('作業的 GCD 演算法也是同一套想法', '什麼東西每輪變小？有沒有下限？');
-    await beat(tok, 2800);
+    say('9 ≤ 15 ≤ 25 ≤ 27 ≤ 30：遞移律', '後面全都 > 8 → 排除；[0, 8] → [0, 3]');
+    await step(tok);                                   // 86:29 loop invariant 說明正確
+    say('Loop invariant：要找的一定還在範圍內', '用它說明演算法正確');
+    await step(tok);                                   // 86:41 正確性還包含：會停
+    say('正確性還包含：一定會停（finiteness）', '');
+    await step(tok);                                   // 87:07 candidate 數量每輪少一半
+    for (const [b, e] of [[2, 3], [3, 3], [4, 3]]) { range(b, e); await beat(tok, 600); }
+    say('剩下的 candidate 數量每輪至少少一半', '4 個 → 2 個 → 1 個 → 0 個');
+    await step(tok);                                   // 87:46 不能無限少下去 → 會停
+    say('數量有下限，不能無限少下去', '→ 迴圈一定會停');
+    await step(tok);                                   // 88:33 跟作業的 Euclid（GCD）證明類似
+    say('作業的 GCD（Euclid）演算法也是同一套想法', '什麼東西每輪變小？有沒有下限？');
   }]);
 
-  // 89:12 ternary vs binary with the same number of comparisons
+  // 89:11 ternary vs binary with the same number of comparisons
   FRAG.push(['arrlllin-ternary', '分三區會更快嗎？', async (tok) => {
     fresh([0, 7.5, 9.5], [0, 0, 0.2]);
     const xs = spread(36, 0.32);
@@ -2181,55 +2272,54 @@ FRAG.push(['arrlin-ordered-insert', 'Ordered array 的 insert', async (tok) => {
     const rowT = xs.map((x) => cube('', C.pr, [0.27, 0.3, 0.6], x, 0.15, 1.6));
     const lb = tag('Binary：剩 36', 'ptr', 0, 0.9, -2.5), lt = tag('Ternary（分三區）：剩 36', 'ptr alt', 0, 0.9, 2.7);
     const cut = (row, a, b) => { for (let k = a; k < b; k++) { tint(row[k], C.dim); row[k].position.y = 0.05; } };
-    say('同學問：分三區會比較快嗎？', '比較次數一樣時，誰砍得多？');
-    await beat(tok, 2400);
-    glow(rowB[18], GOLD);
-    say('Binary：第 1 次比較', '砍一半 → 剩 18');
-    await beat(tok, 1000);
-    cut(rowB, 18, 36); glow(rowB[18], null); txt(lb, 'Binary：1 次比較，剩 18');
-    await beat(tok, 1300);
-    glow(rowB[9], GOLD);
-    say('Binary：第 2 次比較', '再砍一半 → 剩 9');
-    await beat(tok, 1000);
-    cut(rowB, 9, 18); glow(rowB[9], null); txt(lb, 'Binary：2 次比較，剩 9（1/4）');
-    await beat(tok, 1500);
+    await step(tok);                                   // 89:11 分三區會比較快嗎？
+    say('同學問：array 分三區搜尋會更快嗎？', '可以分三區，沒人限制');
+    await step(tok);                                   // 89:28 分三區 = 要做兩個比較才能 cut
     glow(rowT[12], GOLD); glow(rowT[24], GOLD);
-    say('分三區：要比 2 次才知道落在哪一區', '跟 1/3、2/3 兩個點比');
-    await beat(tok, 1800);
+    say('分三區：要比兩次，才知道落在哪一區', '跟 1/3、2/3 兩個點比');
+    await step(tok);                                   // 89:47 binary：兩次比較 → 剩 1/4
+    glow(rowB[18], GOLD); await beat(tok, 500);
+    cut(rowB, 18, 36); glow(rowB[18], null); txt(lb, 'Binary：1 次比較，剩 18');
+    await beat(tok, 600);
+    glow(rowB[9], GOLD); await beat(tok, 500);
+    cut(rowB, 9, 18); glow(rowB[9], null); txt(lb, 'Binary：2 次比較，剩 9（1/4）');
+    say('Binary：每次比較就砍一半', '兩次比較 → 範圍剩 1/4');
+    await step(tok);                                   // 90:07 分三區：兩次比較只剩 1/3
     cut(rowT, 12, 36); glow(rowT[12], null); glow(rowT[24], null); txt(lt, 'Ternary：2 次比較，剩 12（1/3）');
-    await beat(tok, 1500);
-    say('兩次比較：binary 剩 1/4，分三區剩 1/3', 'discrete 搜尋時 binary 較有效率');
-    await beat(tok, 2800);
-    say('三分搜尋在數值方法求極值時才有好處', '除非硬體能很快做三方比較');
-    await beat(tok, 2800);
+    say('分三區：兩次比較只剩 1/3', '1/3 > 1/4：砍得比較少');
+    await step(tok);                                   // 90:25 binary 比較有效率
+    say('同樣兩次比較：binary search 比較有效率', 'discrete 搜尋時看不到三分更好');
+    await step(tok);                                   // 90:44 數值方法求極值時，三分有好處
+    say('三分搜尋在數值方法求極值時有用', '同樣概念可以用在別的地方');
+    await step(tok);                                   // 91:13 除非硬體能很快三方比較
+    say('除非硬體能很快做三方比較', '用兩兩比較來做，就沒那麼大好處');
   }]);
 
-  // 91:57 array recap
+  // 91:53 array recap
   FRAG.push(['arrlllin-array-recap', 'Array 小結', async (tok) => {
     fresh([0, 6, 11.5], [0, 0.8, 0]);
     const xs = spread(7, 1.45); cells(xs, 0);
-    xs.forEach((x, i) => tag(String(1000 + 4 * i), 'idx', x, 0.05, -1.25));
     const S = [2, 6, 7, 10, 13].map((v, i) => vc(v, xs[i]));
-    const p = tag('arr[0]', 'ptr', xs[0], 1.4, 0);
-    say('Array = 一塊連續記憶體', '每格 4 bytes：位址 = 1000 + 4 × i');
-    await beat(tok, 2400);
-    await beat(tok, 500);
-    at(p, xs[3], 1.4, 0); txt(p, 'arr[3]'); glow(S[3], GOLD);
-    say('Fast random access：給 index 一步到位', 'arr[3] → 1000 + 4 × 3 = 1012');
-    await beat(tok, 2400);
-    glow(S[3], null);
+    let p;
+    await step(tok);                                   // 91:53 Array 部分先講到這裡
+    say('Array 的部分先講到這裡', '還有很多更有趣的 data structure 要講');
+    await step(tok);                                   // 92:21 array 不只是宣告：和整塊記憶體的關係
+    xs.forEach((x, i) => tag(String(1000 + 4 * i), 'idx', x, 0.05, -1.25));
+    say('Array 不只是 C 裡的 malloc 或宣告', '要了解它跟整塊記憶體的關係（位址 = 1000 + 4i）');
+    await step(tok);                                   // 92:40 fast random access
+    p = tag('arr[3]', 'ptr', xs[3], 1.4, 0); glow(S[3], GOLD);
+    say('關鍵性質：Fast random access', 'arr[3] → 1000 + 4 × 3 = 1012，一步到位');
+    await step(tok);                                   // 92:47 加上 consecutive、ordered 條件
+    glow(S[3], null); kill(p);
     const g = ghostBox(C.ok, 5 * 1.45 - 0.2, 0.9, 1.6); g.position.set((xs[0] + xs[4]) / 2, 0.45, 0);
     tag('tail', 'ptr alt', xs[4], 1.4, 0);
-    say('Consecutive：資料連續放，記住 tail', '2 ≤ 6 ≤ 7 ≤ 10 ≤ 13 → Ordered');
-    await beat(tok, 2400);
+    say('再加上條件：consecutive、ordered', '2 ≤ 6 ≤ 7 ≤ 10 ≤ 13');
+    await step(tok);                                   // 92:53 設計出更好的演算法：圖書館找書
     glow(S[2], GOLD);
-    say('Ordered + random access → binary search', '找東西變很快（圖書館找書）');
-    await beat(tok, 2400);
+    say('可以設計出更好的演算法', '例：圖書館找書 → binary search');
+    await step(tok);                                   // 93:11 上次的支線：2D array 等
     glow(S[2], null);
-    say('代價：insert、update、remove 要維護順序', '用 maintenance 換搜尋速度');
-    await beat(tok, 2400);
-    say('上次：2D array、特殊 array 省空間、架構考量', 'Array 不只是 C 裡的一個宣告');
-    await beat(tok, 2800);
+    say('上次的支線：2D array 的記憶體用法', '特殊 array 省空間、architecture 上的考量');
   }]);
 
   // 94:01 polynomial as ordered array of (exp, coef)
@@ -2237,191 +2327,249 @@ FRAG.push(['arrlin-ordered-insert', 'Ordered array 的 insert', async (tok) => {
   const pl = (e, c) => '(' + e + ', ' + c + ')';
   FRAG.push(['arrlllin-poly-array', '多項式存成 pair 的 ordered array', async (tok) => {
     fresh([0, 6.5, 12], [0, 0.6, 0.4]);
-    const xs = spread(5, 1.9); cells(xs, -0.8, { w: 1.75 });
-    say('f(x) = 5 + x + 4x² + 10x⁵ + x¹⁶', '寫科學計算軟體：多項式怎麼存？');
-    await beat(tok, 2600);
-    say('把 4 改成 −4，比較不枯燥', 'f(x) = 5 + x − 4x² + 10x⁵ + x¹⁶');
-    await beat(tok, 2000);
+    const xs = spread(5, 1.9);
     const fs = [];
-    for (let k = 0; k < 5; k++) {
-      const [e, c] = FP[k];
-      fs.push(vc(pl(e, c), xs[k], -0.8, 3, C.v, PS));
-      say('存一個 pair：(指數, 係數)', c + ' · x^' + e + ' → ' + pl(e, c));
-      await beat(tok, 900);
-    }
+    let ft;
+    await step(tok);                                   // 94:01 進入 linked list：指標的痛苦回憶
+    say('下一個課題：Linked list', '很多人學 C 的指標時有點痛苦的回憶');
+    await step(tok);                                   // 95:18 從和 array 的不同、應用場景切入
+    say('這裡從「和 array 哪裡不同」切入', '再看它用在什麼場景');
+    await step(tok);                                   // 96:07 例：f(x) 多項式
+    ft = tag('f(x) = 5 + x + 4x² + 10x⁵ + x¹⁶', 'ptr alt', 0, 2.6, -2.6);
+    say('例：一個多項式 f(x)', '寫科學計算軟體：多項式怎麼存？');
+    await step(tok);                                   // 96:55 要存係數和它是幾次方
+    say('要存的：每一項的係數，以及它是幾次方', '5 在 x⁰、1 在 x¹、4 在 x² …');
+    await step(tok);                                   // 97:31 把 4 改成 −4
+    txt(ft, 'f(x) = 5 + x − 4x² + 10x⁵ + x¹⁶');
+    say('把 4 改成 −4，比較不枯燥', '');
+    await step(tok);                                   // 97:48 存成一個一個的 pair
+    cells(xs, -0.8, { w: 1.75 });
+    for (let k = 0; k < 5; k++) { const [e, c] = FP[k]; fs.push(vc(pl(e, c), xs[k], -0.8, 3, C.v, PS)); await beat(tok, 300); }
     tag('f', 'ptr', xs[0] - 1.5, 0.9, -0.8);
-    say('5 個 pair 就表示了 f', '前面是指數，後面是係數');
-    await beat(tok, 2000);
+    say('存成一個一個的 pair', '(0,5) (1,1) (2,−4) (5,10) (16,1)');
+    await step(tok);                                   // 98:06 前面是指數、後面是係數
+    say('pair 前面是指數，後面是係數', '5 個 pair 就表示了 f');
+    await step(tok);                                   // 98:38 另一個多項式 g
     cells([xs[0], xs[1]], 1.6, { w: 1.75, idx: false });
     tag('g', 'ptr alt', xs[0] - 1.5, 0.9, 1.6);
     vc(pl(0, 3), xs[0], 1.6, 3, C.pr, PS); vc(pl(5, 6), xs[1], 1.6, 3, C.pr, PS);
     say('另一個多項式 g(x) = 3 + 6x⁵', '(0, 3)、(5, 6)');
-    await beat(tok, 2200);
-    for (const m of fs) { glow(m, GOLD); await beat(tok, 350); glow(m, null); }
-    say('按指數排好 → ordered array', 'ordered by exponent：0 < 1 < 2 < 5 < 16');
-    await beat(tok, 3000);
+    await step(tok);                                   // 99:46 按指數順序寫，加法容易對齊
+    say('習慣按指數順序寫', '兩式相加時，容易看出哪些項要合併');
+    await step(tok);                                   // 100:38 → ordered array（by exponent）
+    for (const m of fs) { glow(m, GOLD); await beat(tok, 250); glow(m, null); }
+    say('按指數排好存 → ordered array', 'ordered by exponent：0 < 1 < 2 < 5 < 16');
   }]);
 
-  // 101:20 insert / remove / resize hurt on the ordered array
+  // 101:23 insert / remove / resize hurt on the ordered array
   FRAG.push(['arrlllin-poly-array-ops', 'Ordered array 存多項式的麻煩', async (tok) => {
     fresh([0, 6.5, 12], [0, 0.6, 0]);
     const xs = spread(7, 1.75); cells(xs, 0, { w: 1.6 });
     const S = FP.map(([e, c], i) => vc(pl(e, c), xs[i], 0, 0, C.v, PS)); S.push(null, null);
-    async function insertAt(pos, label, ms) {
-      const nc = vc(label, xs[Math.min(pos, 6)], 0, 0, C.hot, PS); nc.position.y = 2.3;
-      await beat(tok, ms);
+    async function shiftFrom(pos, nc) {
       let t = S.indexOf(null) - 1;
-      for (; t >= pos; t--) { move(S[t], xs[t + 1], 0.35, 0); S[t + 1] = S[t]; S[t] = null; await beat(tok, ms * 0.6); }
+      for (; t >= pos; t--) { move(S[t], xs[t + 1], 0.35, 0); S[t + 1] = S[t]; S[t] = null; await beat(tok, 300); }
       S[pos] = nc; move(nc, xs[pos], 0.35, 0);
-      await beat(tok, ms);
     }
-    say('用 ordered array 存 f', 'f = (0,5) (1,1) (2,−4) (5,10) (16,1)');
-    await beat(tok, 2000);
-    say('f(x) + 6x³：(3, 6) 要插隊到 (2,−4) 後面', 'cut in：後面的往後擠');
-    await insertAt(3, pl(3, 6), 700);
-    await beat(tok, 900);
+    let n36, nm2;
+    await step(tok);                                   // 101:23 這個 solution 的好處和壞處？
+    say('用 ordered array 存 f：好處和壞處？', 'f = (0,5) (1,1) (2,−4) (5,10) (16,1)');
+    await step(tok);                                   // 102:11 f(x) + 6x³
+    n36 = vc(pl(3, 6), xs[3], 0, 0, C.hot, PS); n36.position.y = 2.3;
+    say('f(x) + 6x³：要加入 pair (3, 6)', '它該排在 (2,−4) 後面');
+    await step(tok);                                   // 103:11 cut in：後面往後擠
+    await shiftFrom(3, n36);
+    say('就是 ordered array 的 insertion', 'cut in（插隊）：後面的往後擠、資料要搬');
+    await step(tok);                                   // 103:38 靠近尾巴還好；靠前面要搬很多
+    say('插在靠近尾巴的地方還好', '靠前面的話，要搬好多東西');
+    await step(tok);                                   // 103:54 f(x) − 4x⁻²：插到最前面
+    nm2 = vc(pl(-2, -4), xs[0], 0, 0, C.hot, PS); nm2.position.y = 2.3;
+    await beat(tok, 400);
+    await shiftFrom(0, nm2);
     say('f(x) − 4x⁻²：(−2, −4) 要插到最前面', '全部往後搬：不太 flexible');
-    await insertAt(0, pl(-2, -4), 500);
-    await beat(tok, 1400);
+    await step(tok);                                   // 104:30 f(x) − 10x⁵：這一項變 0
     glow(S[5], RED);
-    say('f(x) − 10x⁵：這一項變 0，要拿掉', '');
-    await beat(tok, 1400);
+    say('f(x) − 10x⁵：這一項變成 0', '要把它拿掉');
+    await step(tok);                                   // 104:59 拿掉後，後面往前搬
     fly(S[5]); S[5] = null;
-    await beat(tok, 500);
+    await beat(tok, 400);
     move(S[6], xs[5], 0.35, 0); S[5] = S[6]; S[6] = null;
-    say('後面的往前補位', '(16, 1) 往前一格');
-    await beat(tok, 1600);
+    say('拿掉後，後面的要往前搬', '(16, 1) 往前一格');
+    await step(tok);                                   // 105:13 resizing：f(x)·(x + 1)
+    say('f(x)·(x + 1)：結果變大，要 resize', '');
+    await step(tok);                                   // 105:46 拿不到一塊連續的記憶體
     const gb = ghostBox(C.bad, 13.6, 0.9, 1.7); gb.position.set(0, 0.45, 0);
-    say('f(x)·(x + 1)：結果變大，要 resize', '要一整塊連續記憶體，不一定拿得到');
-    await beat(tok, 2600);
-    say('不用 binary search 時', '維持 ordered array 不見得值得');
-    await beat(tok, 2600);
+    say('需要一整塊連續記憶體', '連續的區塊有限，不一定拿得到');
+    await step(tok);                                   // 106:19 不用 binary search 時不見得值得
+    say('如果用不到 binary search 這類好處', '維持 ordered array 不見得值得');
+    await step(tok);                                   // 106:36 linked list：能不能不要這麼麻煩
+    say('Linked list 的出發點', '能不能不要這麼麻煩？');
   }]);
 
-  // 106:36 memory addresses + next notes → linked list
+  // 107:33 memory addresses + next notes → linked list
   FRAG.push(['arrlllin-poly-ll', '小紙條 next 與 head', async (tok) => {
     fresh([0, 7.5, 10.5], [0, 0.3, -0.8]);
     const AD = [1001, 1002, 1003, 1004, 1005], xs = spread(5, 2.1), z = 0.6;
     cells(xs, z, { w: 1.85 });
     const S = FP.map(([e, c], i) => vc(pl(e, c), xs[i], z, 0, C.v, PS));
     const adL = xs.map((x, i) => { const l = tag(String(AD[i]), 'idx', x, 1.05, z); showL(l, false); return l; });
-    say('Array 的 index 其實就是記憶體位址', 'index 0 … 4 ↔ 1001 … 1005');
-    await beat(tok, 1400);
-    adL.forEach((l) => showL(l, true));
-    await beat(tok, 1400);
     const nx = xs.map((x) => tag('', 'ptr alt', x, 0.05, z - 1.2));
-    for (let i = 0; i < 5; i++) {
-      txt(nx[i], i < 4 ? 'next ' + AD[i + 1] : 'next 無');
-      say('每一項多記一張小紙條：下一項在哪', pl(...FP[i]) + ' 的下一項 → ' + (i < 4 ? AD[i + 1] : '沒有'));
-      await beat(tok, 650);
-    }
-    tag('head = 1001', 'ptr', xs[0] - 0.4, 1.7, z);
-    say('head：從 1001 進去', '1001 → 1002 → 1003 → 1004 → 1005');
-    await beat(tok, 2000);
     const nX = 1.05, nZ = -2.7;
+    let p, N, nN;
+    const walk = async (path, ms) => { for (const [x, zz] of path) { at(p, x, 1.7, zz); await beat(tok, ms); } };
+    await step(tok);                                   // 107:33 array index 也是 memory index
+    adL.forEach((l) => showL(l, true));
+    say('Array 的 index 其實就是記憶體位址', 'index 0 … 4 ↔ 1001 … 1005');
+    await step(tok);                                   // 107:54 要把 6x³ 放進來
+    say('現在要把 6x³，也就是 (3, 6) 放進來', '');
+    await step(tok);                                   // 108:17 記下一項在哪：1002、1003
+    txt(nx[0], 'next 1002'); await beat(tok, 300); txt(nx[1], 'next 1003');
+    say('每一項記下「下一項在哪」', '第一項的下一項在 1002，再下一項在 1003');
+    await step(tok);                                   // 108:41 1004、1005、沒有
+    txt(nx[2], 'next 1004'); await beat(tok, 300); txt(nx[3], 'next 1005'); await beat(tok, 300); txt(nx[4], 'next 無');
+    say('下一項在 1004、1005', '最後一項：沒有下一項');
+    await step(tok);                                   // 109:03 從 1001 進來，一項一項找
+    p = tag('p', 'ptr', xs[0], 1.7, z);
+    await walk(xs.map((x) => [x, z]), 300);
+    say('從 1001 進來，順著找下一項', '1001 → 1002 → 1003 → 1004 → 1005');
+    await step(tok);                                   // 109:29 (3, 6) 放在別處 1126
+    showL(p, false);
     slotTile(V3(nX, 0.02, nZ), 1.85, 1.4);
     tag('1126', 'idx', nX, 1.05, nZ);
-    const N = vc(pl(3, 6), nX, nZ, 3, C.hot, PS);
-    const nN = tag('next ?', 'ptr alt', nX, 0.05, nZ - 1.15);
-    say('加 6x³：(3, 6) 放在別的地方 1126', '不用跟其他項擠在一起');
-    await beat(tok, 2400);
-    glow(N, GOLD); txt(nN, 'next 1004');
-    say('(3, 6) 的下一項 = 1004', '');
-    await beat(tok, 1800);
-    glow(N, null); glow(S[2], GOLD); txt(nx[2], 'next 1126');
-    say('(2, −4) 的下一項改成 1126', '只改了兩張小紙條');
-    await beat(tok, 2000);
-    glow(S[2], null);
+    N = vc(pl(3, 6), nX, nZ, 3, C.hot, PS);
+    nN = tag('next ?', 'ptr alt', nX, 0.05, nZ - 1.15);
+    say('(3, 6) 要放在 (2,−4) 和 (5,10) 中間', '但它其實放在別的地方：1126');
+    await step(tok);                                   // 109:43 (2,−4) 的下一項是 1126
+    glow(S[2], GOLD); txt(nx[2], 'next 1126');
+    say('(2, −4) 的下一項改成 1126', '');
+    await step(tok);                                   // 109:56 (3, 6) 的下一項是 1004
+    glow(S[2], null); glow(N, GOLD); txt(nN, 'next 1004');
+    say('(3, 6) 的下一項是 1004', '只改了兩張小紙條');
+    await step(tok);                                   // 110:05 用箭頭畫
+    glow(N, null);
     arrow(V3(xs[2] + 0.2, 0.8, z - 0.4), V3(nX - 0.2, 0.8, nZ + 0.55), 0xc08a1f);
     arrow(V3(nX + 0.3, 0.8, nZ + 0.55), V3(xs[3] - 0.2, 0.8, z - 0.4), 0xc08a1f);
-    const p = tag('p', 'ptr', xs[0], 1.7, z);
-    const path = [[xs[0], z], [xs[1], z], [xs[2], z], [nX, nZ], [xs[3], z], [xs[4], z]], nm = [1001, 1002, 1003, 1126, 1004, 1005];
-    for (let k = 0; k < 6; k++) {
-      at(p, path[k][0], 1.7, path[k][1]);
-      say('從 head 順著 next 走', nm.slice(0, k + 1).join(' → '));
-      await beat(tok, 650);
-    }
-    say('Linked list：維護好每張小紙條', '代價：每個抽屜多放一張紙條');
-    await beat(tok, 2800);
+    say('常用箭頭來畫：看完 (2,−4) 去 1126', '在 1126 再拿到下一張小紙條');
+    await step(tok);                                   // 110:56 坐別處也行，別失聯 → linked list
+    say('坐在別的地方也沒關係', '只要留下聯絡方式、不失聯 → Linked list');
+    await step(tok);                                   // 111:24 抽屜多放一張小紙條
+    say('每個抽屜要大一點', '兩個數字 + 一張小紙條');
+    await step(tok);                                   // 112:10 1001 1002 1003 1126 1004 1005
+    showL(p, true);
+    await walk([[xs[0], z], [xs[1], z], [xs[2], z], [nX, nZ], [xs[3], z], [xs[4], z]], 350);
+    say('從前面找到後面', '1001 → 1002 → 1003 → 1126 → 1004 → 1005');
+    await step(tok);                                   // 112:24 小紙條叫 next，開頭那張叫 head
+    showL(p, false);
+    tag('head = 1001', 'ptr', xs[0] - 0.4, 1.7, z);
+    say('記下一項的小紙條叫 next', '一開始那張叫 head');
+    await step(tok);                                   // 112:41 linked list = 維持小紙條的正確性
+    say('Linked list：維持這些小紙條的正確性', '');
   }]);
 
-  // 112:51 insert after with the standard drawing
+  // 112:58 insert after with the standard drawing
   FRAG.push(['arrlllin-insert-after', 'insert after：改兩張小紙條', async (tok) => {
     fresh([0, 6, 12], [0, 1.2, 0]);
     const L = ['(0,5)', '(1,1)', '(2,-4)', '(5,10)', '(16,1)'], AD = [1001, 1002, 1003, 1004, 1005];
     const xs = spread(5, 2.3);
-    const G = L.map((v, i) => lnode(v, xs[i], 0.35, 0, C.v));
-    const adL = AD.map((a, i) => tag(String(a), 'idx', xs[i], 0.05, 1.0));
-    let ar = slinks(xs, 0);
-    const nul = tag('NULL', 'idx', xs[4] + 1.5, 0.35, 0);
-    const hd = tag('head', 'ptr', xs[0], 1.3, 0);
-    const cd = code(['newNode = Node(data);      // 放在 1126', 'newNode.next = node.next;  // = 1004', 'node.next = newNode;       // = 1126'], 0, 5.2, 0.52, -1.5);
-    say('一般畫法：node = 資料 + next', 'head → (0,5) → … → (16,1) → NULL');
-    await beat(tok, 2400);
-    glow(G[2].userData.data, GOLD); const nl = tag('node', 'ptr alt', xs[2], 1.3, 0);
-    say('insertAfter(node = 1003, (3, 6))', '插在 (2,−4) 後面');
-    await beat(tok, 2000);
+    let G = [], adL = [], ar = [], nul, hd, cd, nl, N, nAd, a1, a2;
     const mx = (xs[2] + xs[3]) / 2;
-    cd.hl(0); const N = lnode('(3,6)', mx, 2.4, 0, C.hot); const nAd = tag('1126', 'idx', mx, 3.1, 0);
-    say('用 data 做出新的 node（在 1126）', 'newNode');
-    await beat(tok, 1800);
-    cd.hl(1); const a1 = arrow(V3(mx + 0.96, 2.4, 0), V3(xs[3] - 0.3, 0.8, 0), 0xc08a1f);
-    say('newNode.next = node.next', '新 node 先指向 1004');
-    await beat(tok, 2000);
-    cd.hl(2); kill(ar[2]); const a2 = arrow(V3(xs[2] + 0.96, 0.6, 0), V3(mx - 0.52, 2.2, 0), 0xc08a1f);
+    await step(tok);                                   // 112:58 一般的 linked list 畫法
+    G = L.map((v, i) => lnode(v, xs[i], 0.35, 0, C.v));
+    adL = AD.map((a, i) => tag(String(a), 'idx', xs[i], 0.05, 1.0));
+    ar = slinks(xs, 0);
+    nul = tag('NULL', 'idx', xs[4] + 1.5, 0.35, 0);
+    say('一般畫法：內容 + 一張小紙條', '(0,5) 的小紙條寫 1002，依序串下去');
+    await step(tok);                                   // 113:32 head 這張小紙條
+    hd = tag('head', 'ptr', xs[0], 1.3, 0);
+    say('head：一開始請去 1001', '');
+    await step(tok);                                   // 113:53 代價：多付出小紙條的空間
+    say('代價：有幾項，就多幾張小紙條的空間', '');
+    await step(tok);                                   // 114:02 換到：insert after 不必放特定位置
+    say('換到：insert after 時不必放在特定位置', '放別處，設定好小紙條就行');
+    await step(tok);                                   // 114:30 資料 + 小紙條 = node
+    G.forEach((g) => glow(g.userData.data, GOLD));
+    say('資料 + 小紙條 = node（節點）', '');
+    await step(tok);                                   // 115:00 insert after 1003 這個 node
+    G.forEach((g) => glow(g.userData.data, null));
+    cd = code(['newNode = Node(data);      // 放在 1126', 'newNode.next = node.next;  // = 1004', 'node.next = newNode;       // = 1126'], 0, 5.2, 0.52, -1.5);
+    glow(G[2].userData.data, GOLD); nl = tag('node', 'ptr alt', xs[2], 1.3, 0);
+    say('insertAfter(node = 1003, (3, 6))', '插在 (2,−4) 後面');
+    await step(tok);                                   // 115:24 用 data 做出新的 node（1126）
+    cd.hl(0); N = lnode('(3,6)', mx, 2.4, 0, C.hot); nAd = tag('1126', 'idx', mx, 3.1, 0);
+    say('用 data 做出一個新的 node', 'newNode，放在 1126');
+    await step(tok);                                   // 116:01 newNode.next = node.next
+    cd.hl(1); a1 = arrow(V3(mx + 0.96, 2.4, 0), V3(xs[3] - 0.3, 0.8, 0), 0xc08a1f);
+    say('newNode.next = node.next', '新 node 的小紙條抄原本的 1004');
+    await step(tok);                                   // 116:13 node.next = newNode
+    cd.hl(2); kill(ar[2]); a2 = arrow(V3(xs[2] + 0.96, 0.6, 0), V3(mx - 0.52, 2.2, 0), 0xc08a1f);
     say('node.next = newNode', '1003 的小紙條改成 1126');
-    await beat(tok, 2200);
+    await step(tok);                                   // 116:23 幾行程式 = 圖上兩個箭頭
     say('兩行程式 = 圖上兩個箭頭', '資料完全不用搬');
-    await beat(tok, 1800);
+    await step(tok);                                   // 117:05 從頭串到尾、單一方向 → singly
     cd.hl(-1); glow(G[2].userData.data, null);
     const nx = spread(6, 2.1), order = [G[0], G[1], G[2], N, G[3], G[4]], ads = [...adL.slice(0, 3), nAd, ...adL.slice(3)];
     order.forEach((g, i) => move(g, nx[i], 0.35, 0));
     ads.forEach((l, i) => at(l, nx[i], 0.05, 1.0));
     kill(a1); kill(a2); ar.forEach(kill); ar = slinks(nx, 0);
     at(nul, nx[5] + 1.4, 0.35, 0); at(hd, nx[0], 1.3, 0); at(nl, nx[2], 1.3, 0);
-    say('Singly linked list：單一方向一個接一個', '… → (2,−4) → (3,6) → (5,10) → …');
-    await beat(tok, 3000);
+    say('從頭串到尾、單一方向：Singly linked list', '… → (2,−4) → (3,6) → (5,10) → …');
+    await step(tok);                                   // 117:29 大地遊戲：一關一關跑
+    const p = tag('p', 'ptr', nx[0], 1.9, 0);
+    for (let k = 1; k < 6; k++) { at(p, nx[k], 1.9, 0); await beat(tok, 300); }
+    say('像大地遊戲：一關一關跑下去', '小紙條沒寫錯，就會從起點跑到終點');
   }]);
 
-  // 121:56 routines: get by walking, insert at head (head is special)
+  // 122:35 routines: get by walking, insert at head (head is special)
   FRAG.push(['arrlllin-insert-head', 'get 與插在最前面', async (tok) => {
     fresh([0, 6.5, 11.5], [0, 1.0, -0.6]);
     const L = ['(0,5)', '(1,1)', '(2,-4)', '(3,6)'], xs = [-2.4, -0.1, 2.2, 4.5];
     const G = L.map((v, i) => lnode(v, xs[i], 0.35, 0, C.v));
-    slinks(xs, 0); tag('NULL', 'idx', xs[3] + 1.4, 0.35, 0);
-    const H = cube('head', C.note, [1.0, 0.7, 1.0], -5.3, 0.35, 0);
-    let ha = arrow(V3(-4.8, 0.35, 0), V3(xs[0] - 0.52, 0.35, 0), 0xc08a1f);
-    const cd = code(['get(node):          return node.data', 'insertAfter(node,d): new.next = node.next; node.next = new', 'insertHead(d):       new.next = head;      head = new'], 0, 5.4, 0.55, -2.2);
-    say('Linked list 的 routine：head、next', '沒有 index 可以直接跳');
-    await beat(tok, 2400);
-    const p = tag('p', 'ptr', -5.3, 1.3, 0);
-    for (let k = 0; k < 3; k++) {
-      at(p, xs[k], 1.3, 0);
-      say(k ? 'p = p.next' : 'p = head', '走了 ' + (k + 1) + ' 步');
-      await beat(tok, 750);
-    }
+    const ar = slinks(xs, 0); tag('NULL', 'idx', xs[3] + 1.4, 0.35, 0);
+    let H, ha, cd, p, N;
+    await step(tok);                                   // 122:35 node 不必連續 → 不用搬資料
+    say('Node 不必在一起 → 不用搬其他資料', '每個 node 資料很肥大時，差很多');
+    await step(tok);                                   // 122:43 另一選擇：ordered array 只存小紙條
+    say('另一個選擇：ordered array 只存小紙條', '要搬時只搬紙條，不搬資料');
+    await step(tok);                                   // 123:45 routine：head
+    H = cube('head', C.note, [1.0, 0.7, 1.0], -5.3, 0.35, 0);
+    ha = arrow(V3(-4.8, 0.35, 0), V3(xs[0] - 0.52, 0.35, 0), 0xc08a1f);
+    say('Linked list 的 routine：head', '第一張小紙條在哪');
+    await step(tok);                                   // 123:53 每個 node 的 next
+    ar.forEach((a) => a.setColor(new THREE.Color(0xc08a1f)));
+    say('還有：每個 node 的 next', '下一個 node 在哪');
+    await step(tok);                                   // 124:40 get：走三步到這個 node
+    cd = code(['get(node):          return node.data', 'insertAfter(node,d): new.next = node.next; node.next = new', 'insertHead(d):       new.next = head;      head = new'], 0, 5.4, 0.55, -2.2);
+    p = tag('p', 'ptr', -5.3, 1.3, 0);
+    for (let k = 0; k < 3; k++) { at(p, xs[k], 1.3, 0); await beat(tok, 450); }
+    say('get：先照小紙條走到那個 node', 'p = head → p.next → p.next（走三步）');
+    await step(tok);                                   // 124:47 走到了才能拿內容
     cd.hl(0); glow(G[2].userData.data, GOLD);
-    say('走到 node 之後才能 get 內容', 'get = (2,−4)');
-    await beat(tok, 2000);
+    say('走到 node 之後，才能拿裡面的內容', 'get = (2,−4)');
+    await step(tok);                                   // 125:21 insert after：重設兩個 pointer
     glow(G[2].userData.data, null); showL(p, false);
+    cd.hl(1);
+    say('insertAfter：重新設定兩個 pointer', '');
+    await step(tok);                                   // 126:29 要插在最前面
     cd.hl(2);
-    const N = lnode('(-2,-4)', -4.2, 2.6, -2.4, C.hot);
+    N = lnode('(-2,-4)', -4.2, 2.6, -2.4, C.hot);
     move(N, -4.2, 0.35, -2.4);
     tag('1126', 'idx', -4.2, 1.2, -2.4);
-    say('低次項 (−2,−4) 要插到最前面', '新 node 放在 1126');
-    await beat(tok, 2000);
+    say('如果要插在最前面呢？', '低次項 (−2,−4) 放在 1126');
+    await step(tok);                                   // 126:41 head 要改指新的 node
     arrow(V3(-3.3, 0.35, -2.4), V3(xs[0] - 0.5, 0.35, -0.3), 0xc08a1f);
-    say('new.next = head', '新 node 指向原本的第一個');
-    await beat(tok, 2000);
+    await beat(tok, 500);
     kill(ha); ha = arrow(V3(-5.3, 0.35, -0.5), V3(-4.75, 0.35, -2.0), 0xc08a1f); glow(H, GOLD);
-    say('head = new：head 改指 1126', '這張小紙條不在任何 node 裡');
-    await beat(tok, 2200);
+    say('new.next = head；head = new', 'head 改指 1126');
+    await step(tok);                                   // 126:57 head 是特別的小紙條：不在 node 裡
+    say('一樣換兩張小紙條，但其中一張是 head', 'head 很特別：它不在任何 node 裡');
+    await step(tok);                                   // 127:33 只寫一個 routine 就插不到最前面
     glow(H, null);
-    say('head 很特別：要另寫一個 routine', '只寫 insertAfter 就插不到最前面（邊緣情形）');
-    await beat(tok, 3000);
+    say('只寫 insertAfter、沒寫 insertHead', '就沒辦法插到最前面');
+    await step(tok);                                   // 127:52 邊緣情形讓 code 難寫
+    say('這類邊緣情形', '讓 linked list 的程式比較難寫');
   }]);
 
-  // 128:05 random access vs sequential access
+  // 128:12 random access vs sequential access
   FRAG.push(['arrlllin-random-vs-seq', 'Random vs sequential access', async (tok) => {
     fresh([0, 7.5, 10.5], [0, 0.3, 0]);
     const L = ['(0,5)', '(1,1)', '(2,-4)', '(3,6)', '(5,10)'];
@@ -2433,90 +2581,106 @@ FRAG.push(['arrlin-ordered-insert', 'Ordered array 的 insert', async (tok) => {
     slinks(lx, lz);
     tag('Linked list', 'ptr', lx[0] - 0.4, 1.3, lz - 0.9);
     const pa = tag('index 0', 'ptr alt', ax[0], 1.4, az), pl_ = tag('p = head', 'ptr alt', lx[0], 1.3, lz);
-    say('要拿第 3 項', 'array 給 index；linked list 只有 head');
-    await beat(tok, 2000);
+    await step(tok);                                   // 128:12 array：random access
     at(pa, ax[3], 1.4, az); txt(pa, 'index 3'); glow(A[3], GOLD);
-    say('Array：一步到位', 'random access：O(1)');
-    await beat(tok, 2000);
-    for (let k = 1; k <= 3; k++) {
-      at(pl_, lx[k], 1.3, lz); txt(pl_, 'p = p.next');
-      say('Linked list：照小紙條一關一關跑', '第 ' + k + ' 次 next');
-      await beat(tok, 800);
-    }
+    say('一句話比較：Array 是 random access', '給 index，幾乎馬上拿到');
+    await step(tok);                                   // 128:26 linked list：sequential access
+    for (let k = 1; k <= 3; k++) { at(pl_, lx[k], 1.3, lz); txt(pl_, 'p = p.next'); await beat(tok, 450); }
     glow(G[3].userData.data, GOLD);
-    say('像大地遊戲：跑到那一關才拿得到', 'sequential access：O(k)');
-    await beat(tok, 2400);
-    say('一般 linked list：建立、update 都很 trivial', 'node 位址就像一個特別長的 index');
-    await beat(tok, 2600);
-    say('比較有趣的是 remove', '下一段');
-    await beat(tok, 2000);
+    say('Linked list 是 sequential access', '像大地遊戲：跑到那一關才拿得到');
+    await step(tok);                                   // 128:48 ordered linked list 的維護和 ordered array 類似
+    glow(A[3], null); glow(G[3].userData.data, null);
+    say('Ordered linked list：維護也麻煩', '跟 ordered array 類似：麻煩都來自「要排好」');
+    await step(tok);                                   // 129:05 一般 linked list：建立很 trivial
+    say('一般的 linked list：不管順序', '要 5 個：做 5 個 node 串起來就好');
+    await step(tok);                                   // 129:26 已知 node 時 update 也 trivial
+    glow(G[1].userData.data, GOLD);
+    say('已經找到某個 node，要 update 內容', '跟 array 有 index 時一樣簡單');
+    await step(tok);                                   // 129:36 node 就是一個特別長的 index
+    say('Node 就是一個 memory address', '像一個特別長的 index');
   }]);
 
-  // 129:44 remove after with a temp
+  // 129:49 remove after with a temp
   FRAG.push(['arrlllin-remove-after', 'remove after', async (tok) => {
     fresh([0, 6, 12], [0, 1.4, 0]);
     const L = ['(1,1)', '(2,-4)', '(3,6)', '(5,10)'], AD = ['1002', '1003', '1126', '1234'], xs = spread(4, 2.7);
     const G = L.map((v, i) => lnode(v, xs[i], 0.35, 0, C.v));
     const adL = AD.map((a, i) => tag(a, 'idx', xs[i], 0.05, 1.0));
-    let ar = slinks(xs, 0);
+    let ar = slinks(xs, 0), cd, tl, jump;
+    await step(tok);                                   // 129:49 remove 也很 flexible
+    say('比較有趣的是 remove', '它一樣很 flexible');
+    await step(tok);                                   // 129:57 把 node 的下一個移掉
     const nl = tag('node', 'ptr', xs[1], 1.3, 0);
-    const cd = code(['tmp = node.next;       // 1126，先存起來', 'node.next = tmp.next;  // 1234', 'free(tmp);'], 0, 5.2, 0.55, -1.6);
     glow(G[1].userData.data, GOLD);
-    say('removeAfter(node)：移掉 node 的下一個', 'node.next = 1126，1126 的 next = 1234');
-    await beat(tok, 2600);
-    say('只要把 node 的小紙條換成 1234', '但直接換掉，就找不回中間那個了');
-    await beat(tok, 2400);
-    cd.hl(0); const tl = tag('tmp', 'ptr alt', xs[2], 1.3, 0); glow(G[2].userData.data, RED);
-    say('先用暫存變數記下來', 'tmp = node.next = 1126');
-    await beat(tok, 2000);
+    say('removeAfter(node)：移掉 node 的下一個', '');
+    await step(tok);                                   // 130:09 原本指 1126，1126 指 1234
+    glow(G[2].userData.data, RED);
+    say('node.next 原本是 1126', '1126 的 next 是 1234');
+    await step(tok);                                   // 130:17 只要把小紙條換成 1234
+    say('只要把 node 的小紙條換成 1234', '再把中間那塊處理掉');
+    await step(tok);                                   // 130:30 node.next = node.next.next
+    cd = code(['tmp = node.next;       // 1126，先存起來', 'node.next = tmp.next;  // 1234', 'free(tmp);'], 0, 5.2, 0.55, -1.6);
+    cd.hl(1);
+    say('步驟：node.next = node.next.next', '1126 換成 1234');
+    await step(tok);                                   // 130:58 直接換掉就找不回中間 → 先存 tmp
+    cd.hl(0); tl = tag('tmp', 'ptr alt', xs[2], 1.3, 0);
+    say('直接換掉，就找不回中間那個了', '所以先用暫存變數記下來：tmp = 1126');
+    await beat(tok, 900);
     cd.hl(1); kill(ar[1]); kill(ar[2]);
-    const jump = arrow(V3(xs[1] + 0.9, 0.95, 0), V3(xs[3] - 0.45, 0.95, 0), 0xc08a1f);
-    say('node.next = tmp.next', '跳過 1126，直接接到 1234');
-    await beat(tok, 2200);
+    jump = arrow(V3(xs[1] + 0.9, 0.95, 0), V3(xs[3] - 0.45, 0.95, 0), 0xc08a1f);
+    await step(tok);                                   // 131:19 最後把它 free 掉
     cd.hl(2); fly(G[2]); kill(tl); kill(adL[2]);
-    say('free(tmp)：把中間那塊還回去', '');
-    await beat(tok, 1600);
+    await beat(tok, 500);
     kill(jump); move(G[3], xs[2], 0.35, 0); at(adL[3], xs[2], 0.05, 1.0);
     ar = slinks([xs[0], xs[1], xs[2]], 0, [ar[0]]);
-    cd.hl(-1); glow(G[1].userData.data, null);
-    say('一樣只是改小紙條＋free', 'head 和非 head 可能要分開寫');
-    await beat(tok, 2800);
+    say('free(tmp)：把中間那塊還回去', '改小紙條 + free = remove after');
+    await step(tok);                                   // 131:34 head 和非 head 可能要分開做
+    cd.hl(-1); glow(G[1].userData.data, null); kill(nl);
+    say('跟 insert 一樣', 'head 和非 head 可能要分開處理');
   }]);
 
   // 131:44 dummy head
   FRAG.push(['arrlllin-dummy-head', 'Dummy head', async (tok) => {
     fresh([0, 6, 12], [0, 1.2, 0]);
     let xs = spread(4, 2.5);
-    const D = lnode('—', xs[0], 0.35, 0, '#b9a582');
     let G = ['(0,5)', '(1,1)', '(2,-4)'].map((v, i) => lnode(v, xs[i + 1], 0.35, 0, C.v));
-    let ar = slinks(xs, 0);
-    const hd = tag('head（dummy）', 'ptr', xs[0], 1.3, 0);
-    say('Dummy head：最前面放一個不存資料的 node', '用它的 next 當作 head');
-    await beat(tok, 2600);
-    const mx = (xs[0] + xs[1]) / 2;
-    const N = lnode('(-2,-4)', mx, 2.4, 0, C.hot);
-    say('插到最前面 = insertAfter(dummy, …)', '跟插在中間是同一份 code');
-    await beat(tok, 1800);
+    let ar = slinks(xs.slice(1), 0), D, hd, N;
+    await step(tok);                                   // 131:44 不想分開處理 head
+    say('不想把 head 和非 head 分開寫？', 'coding 技巧：dummy head');
+    await step(tok);                                   // 131:53 最前面放一個空的 node
+    D = lnode('—', xs[0], 0.35, 0, '#b9a582');
+    ar = slinks(xs, 0, ar);
+    say('最前面放一個空的 node', '裡面沒有真正有價值的 data');
+    await step(tok);                                   // 132:13 用它的 next 放 head
+    hd = tag('head（dummy）', 'ptr', xs[0], 1.3, 0);
+    glow(D.userData.data, GOLD);
+    say('用它的 next 偷偷當作 head', 'head 也在一個 node 裡了');
+    await step(tok);                                   // 132:27 都能用 insert after
+    glow(D.userData.data, null);
     const nx = spread(5, 2.3);
+    N = lnode('(-2,-4)', nx[1], 2.4, 0, C.hot);
     move(D, nx[0], 0.35, 0); move(N, nx[1], 0.35, 0); G.forEach((g, i) => move(g, nx[i + 2], 0.35, 0));
     ar = slinks(nx, 0, ar); at(hd, nx[0], 1.3, 0);
     G = [N, ...G];
-    await beat(tok, 2000);
+    say('插到最前面 = insertAfter(dummy, …)', '跟插在中間是同一份 code');
+    await step(tok);                                   // 132:46 不用寫、維護兩份 code
     glow(G[0].userData.data, RED);
-    say('刪掉第一個 = removeAfter(dummy)', '一樣不用特別處理 head');
-    await beat(tok, 1600);
+    await beat(tok, 500);
     fly(G[0]); G.shift();
     move(D, xs[0], 0.35, 0); G.forEach((g, i) => move(g, xs[i + 1], 0.35, 0));
     ar = slinks(xs, 0, ar); at(hd, xs[0], 1.3, 0);
-    await beat(tok, 1800);
-    say('只要一份 code：不用分 head／非 head', 'insertAfter、removeAfter 通吃');
-    await beat(tok, 2400);
+    say('刪掉第一個 = removeAfter(dummy)', '不用寫兩份、維護兩份 code');
+    await step(tok);                                   // 132:53 缺點：多用一個 node
     glow(D.userData.data, GOLD);
-    say('代價：多用一個 node 的空間', '用空間換 coding 方便性');
-    await beat(tok, 3000);
+    say('缺點：多用一個 node 的記憶體', 'node 很大時更明顯');
+    await step(tok);                                   // 133:10 用空間換 coding 方便性
+    say('用空間換 coding 的方便性', '有人這樣做、有人不會：值不值得自己判斷');
+    await step(tok);                                   // 133:24 就像 singly 用 next 換 flexibility
+    glow(D.userData.data, null);
+    say('就像 singly linked list', '用多放的 next，換記憶體操作的 flexibility');
   }]);
 
-  // 134:43 why a prev pointer
+  // 134:52 why a prev pointer
   FRAG.push(['arrlllin-why-prev', '為什麼要 prev', async (tok) => {
     fresh([0, 6, 12], [0, 0.8, 0]);
     const L = ['(0,5)', '(1,1)', '(2,-4)', '(3,6)'], xs = spread(4, 2.6);
@@ -2524,241 +2688,355 @@ FRAG.push(['arrlin-ordered-insert', 'Ordered array 的 insert', async (tok) => {
     slinks(xs, 0); tag('NULL', 'idx', xs[3] + 1.4, 0.35, 0);
     tag('head', 'ptr', xs[0], 1.3, 0);
     tag('node', 'idx', xs[1], 0.05, 1.0); tag('node2', 'idx', xs[2], 0.05, 1.0);
-    say('Singly：只能 removeAfter(node)', 'node.next = node.next.next');
-    await beat(tok, 2400);
-    tint(G[2].userData.data, C.bad);
-    say('removeHere(node2)：看到它就想刪掉', '');
-    await beat(tok, 1800);
+    let p;
+    await step(tok);                                   // 134:52 doubly：從需求出發
+    say('下一個：Doubly linked list', '一樣從需求出發');
+    await step(tok);                                   // 135:16 singly 只能 remove after
     glow(G[1].userData.data, GOLD);
-    say('要更新的是「前一關」的小紙條', '但 node2 不知道前一個是誰');
-    await beat(tok, 2400);
+    say('Singly：只能 removeAfter(node)', '要更新的是 node 自己的小紙條');
+    await step(tok);                                   // 135:50 如果想 remove here(node2)？
+    glow(G[1].userData.data, null); tint(G[2].userData.data, C.bad);
+    say('如果想直接 removeHere(node2) 呢？', '看到它就想刪掉');
+    await step(tok);                                   // 136:18 要更新的是前一關的小紙條
+    glow(G[1].userData.data, GOLD);
+    say('node2 自己可以 free 掉', '但要更新的是「前一關」的小紙條');
+    await step(tok);                                   // 136:41 大地遊戲：沒通知前一關
+    say('像大地遊戲：中間一關撤了，沒通知前一關', '前一關還叫人去那裡 → 找不到');
+    await step(tok);                                   // 137:05 前一關不容易取得：只能從 head 找
     glow(G[1].userData.data, null);
-    const p = tag('p', 'ptr alt', xs[0], 1.3, 0);
-    for (let k = 0; k < 2; k++) {
-      at(p, xs[k], 1.9, 0);
-      say('只能從 head 一個一個找', 'p.next == node2 ? ' + (k === 1 ? '是！' : '不是'));
-      await beat(tok, 900);
-    }
-    say('串很長時，每次刪都要從頭找', 'O(n)');
-    await beat(tok, 1800);
+    p = tag('p', 'ptr alt', xs[0], 1.9, 0);
+    for (let k = 0; k < 2; k++) { at(p, xs[k], 1.9, 0); await beat(tok, 600); }
+    say('Singly 裡前一關不好拿', '只能從 head 一路 next、next 找');
+    await step(tok);                                   // 137:27 串很長時更麻煩
+    say('串很長時，每次刪都要從頭找', '');
+    await step(tok);                                   // 137:53 乾脆放兩張小紙條
     showL(p, false);
-    for (let i = 3; i >= 1; i--) {
-      arrow(V3(xs[i] - 0.55, 0.15, 0.45), V3(xs[i - 1] + 0.55, 0.15, 0.45), 0xc08a1f);
-      await beat(tok, 450);
-    }
+    say('乾脆每個 node 放兩張小紙條', '');
+    await step(tok);                                   // 138:06 第二張：previous（前一關）
+    for (let i = 3; i >= 1; i--) { arrow(V3(xs[i] - 0.55, 0.15, 0.45), V3(xs[i - 1] + 0.55, 0.15, 0.45), 0xc08a1f); await beat(tok, 350); }
+    say('第一張 next：下一關；第二張 previous：前一關', 'prev');
+    await step(tok);                                   // 138:42 從 tail 順著 prev 也能走
     tag('tail', 'ptr', xs[3], 1.3, 0);
-    say('每個 node 再放一張小紙條：prev（前一關）', 'next + prev');
-    await beat(tok, 2400);
-    say('從 tail 順著 prev 也能走完', '兩條反方向的 list → doubly linked list');
-    await beat(tok, 2800);
+    say('也可以從 tail 出發', '順著 prev、prev 走完每一個');
+    await step(tok);                                   // 138:56 等於兩條 linked list
+    say('等於兩條方向相反的 linked list', '→ Doubly linked list');
   }]);
 
-  // 139:14 doubly linked list remove here (1111, 2345, 5566)
+  // 139:16 doubly linked list remove here (1111, 2345, 5566)
   FRAG.push(['arrlllin-dll-remove', 'Doubly linked list：remove here', async (tok) => {
     fresh([0, 6, 11], [0, 1.4, 0]);
     const xs = [-4, 0, 4], AD = ['1111', '2345', '5566'];
-    const G = AD.map((a, i) => dnode(a, xs[i], 0, C.v));
-    let ar = dlinks(xs, 0);
-    const n0 = tag('next 2345', 'ptr alt', xs[0] + 0.72, 1.0, 0);
-    const p1 = tag('prev 1111', 'idx', xs[1] - 0.72, 1.0, 0), n1 = tag('next 5566', 'idx', xs[1] + 0.72, 1.45, 0);
-    const p2 = tag('prev 2345', 'ptr alt', xs[2] - 0.72, 1.0, 0);
-    const cd = code(['node.prev.next = node.next;  // 1111.next = 5566', 'node.next.prev = node.prev;  // 5566.prev = 1111', 'free(node);'], 0, 5.2, 0.55, -1.6);
-    say('Doubly linked list：每個 node 有 prev 與 next', '紙條上寫的是位址：1111、2345、5566');
-    await beat(tok, 2600);
+    let G = [], ar = [], n0, p1, n1, p2, cd;
+    await step(tok);                                   // 139:16 每個 node 兩部分的連結
+    G = AD.map((a, i) => dnode('', xs[i], 0, C.v, 3));
+    ar = dlinks(xs, 0);
+    say('Doubly linked list：每個 node 有兩種連結', '從 head 走 next；從 tail 走 prev');
+    await step(tok);                                   // 139:41 兩個方向完全相反
+    say('兩個方向完全相反', '一條順著走、一條反著走');
+    await step(tok);                                   // 140:04 搞不清楚就把位址寫出來
+    G.forEach((g, i) => relabelG(g, AD[i]));
+    say('搞不清楚時：把小紙條上的位址寫出來', '1111、2345、5566');
+    await step(tok);                                   // 140:32 小紙條上的數字
+    n0 = tag('next 2345', 'ptr alt', xs[0] + 0.72, 1.0, 0);
+    p1 = tag('prev 1111', 'idx', xs[1] - 0.72, 1.0, 0); n1 = tag('next 5566', 'idx', xs[1] + 0.72, 1.45, 0);
+    p2 = tag('prev 2345', 'ptr alt', xs[2] - 0.72, 1.0, 0);
+    say('每張小紙條上都有一個位址', '1111 → 2345 → 5566，反過來也是');
+    await step(tok);                                   // 140:54 移掉 2345：5566 要接到 1111
+    cd = code(['node.next.prev = node.prev;  // 5566.prev = 1111', 'node.prev.next = node.next;  // 1111.next = 5566', 'free(node);'], 0, 5.2, 0.55, -1.6);
     glow(G[1].userData.data, RED);
-    say('removeHere(2345)：看到 node 就能直接刪', '');
-    await beat(tok, 2000);
-    cd.hl(0); txt(n0, 'next 5566'); glow(G[0].userData.data, GOLD);
-    say('1111 的 next 改成 5566', '前一個 = node.prev，不用從 head 找');
-    await beat(tok, 2200);
-    glow(G[0].userData.data, null); cd.hl(1); txt(p2, 'prev 1111'); glow(G[2].userData.data, GOLD);
-    say('5566 的 prev 改成 1111', '兩張小紙條都更新好');
-    await beat(tok, 2200);
-    glow(G[2].userData.data, null); cd.hl(2);
+    cd.hl(0); txt(p2, 'prev 1111'); glow(G[2].userData.data, GOLD);
+    say('移掉 2345：5566 的 prev 要接到 1111', '前一個 = node.prev，不用從 head 找');
+    await step(tok);                                   // 141:06 1111 要接到 5566
+    glow(G[2].userData.data, null); cd.hl(1); txt(n0, 'next 5566'); glow(G[0].userData.data, GOLD);
+    say('1111 的 next 要接到 5566', '這兩張才是最重要要更新的');
+    await step(tok);                                   // 141:52 中間砍掉 → remove here
+    glow(G[0].userData.data, null); cd.hl(2);
     fly(G[1]); kill(p1); kill(n1);
     ar = dlinks([xs[0], xs[2]], 0, ar);
     say('再把中間砍掉：free', 'remove here 完成');
-    await beat(tok, 2000);
+    await step(tok);                                   // 141:59 代價：多一張紙條、多幾行 code
     cd.hl(-1);
-    say('代價：多一張紙條、多幾行 code、稍慢', '換到：看到 node 就能刪（insert 也一樣）');
-    await beat(tok, 3000);
+    say('代價：每個 node 多一張紙條', '多幾行 code、比 singly 稍慢');
+    await step(tok);                                   // 142:18 換到：看到 node 就能刪
+    say('換到：看到 node 就能把它刪掉', '不用先回頭找前一個');
+    await step(tok);                                   // 142:40 insertion 也一樣
+    say('Insertion 也一樣', 'doubly 也能很方便地 insert here');
   }]);
 
-  // 142:47 traversal pattern → iterator（也用於 151:32 的 Q&A）
-  FRAG.push(['arrlllin-iterator', '走訪與 iterator', async (tok) => {
-    fresh([0, 7.5, 10.5], [0, 0.8, -0.4]);
-    const L = ['(0,5)', '(1,1)', '(2,-4)', '(3,6)'];
-    const ax = spread(4, 1.9), az = -1.6; cells(ax, az, { w: 1.7, d: 1.2, idx: false });
-    const A = L.map((v, i) => vc(v, ax[i], az, 0, C.v, [1.5, 0.7, 0.9]));
-    ax.forEach((x, i) => tag(String(1001 + i), 'idx', x, 0.05, az + 1.0));
-    tag('Array', 'ptr', ax[0] - 1.9, 0.6, az);
-    const LA = [1001, 1002, 1003, 1126], lx = spread(4, 2.6), lz = 2.2;
-    const G = L.map((v, i) => lnode(v, lx[i], 0.35, lz, C.pr));
-    LA.forEach((a, i) => tag(String(a), 'idx', lx[i], 0.05, lz + 1.0));
-    slinks(lx, lz);
-    tag('List', 'ptr', lx[0] - 1.7, 0.6, lz);
-    const cd = code(['for (it = begin(); it != end(); ++it)', '    visit(*it);'], 0, 4.4, 0.55, -3.6);
-    const pa = tag('', 'ptr alt', ax[0], 1.4, az), pl2 = tag('', 'ptr alt', lx[0], 1.3, lz);
-    say('走訪整個 data structure', 'array：index 0 → tail；list：head → next → …');
-    await beat(tok, 2400);
-    for (let k = 0; k < 4; k++) {
-      cd.hl(0);
-      at(pa, ax[k], 1.4, az); txt(pa, 'it = ' + (1001 + k));
-      at(pl2, lx[k], 1.3, lz); txt(pl2, 'it = ' + LA[k]);
-      glow(A[k], GOLD); glow(G[k].userData.data, GOLD);
-      say(k ? '++it：array 位址 +1；list 照 next 走' : 'begin()：開頭', 'array ' + (1001 + k) + '　list ' + LA[k]);
-      await beat(tok, 1300);
-      cd.hl(1); glow(A[k], null); glow(G[k].userData.data, null);
-    }
-    at(pa, ax[3] + 1.6, 1.4, az); txt(pa, 'end'); at(pl2, lx[3] + 1.6, 1.3, lz); txt(pl2, 'end = NULL');
-    cd.hl(0);
-    say('it == end()：結束', 'array：tail 之後；list：NULL');
-    await beat(tok, 2200);
-    cd.hl(-1);
-    say('Iterator：開頭、結尾、下一個 + 用 * 取資料', '像一個「高階指標」');
-    await beat(tok, 2600);
-    say('同一段 sequential search 兩種容器都能用', '演算法不再綁死在 array 上');
-    await beat(tok, 2800);
-  }]);
+  // 143:10 traversal pattern → iterator
+  function travScene(qa) {
+    return async (tok) => {
+      fresh([0, 7.5, 10.5], [0, 0.8, -0.4]);
+      const L = ['(0,5)', '(1,1)', '(2,-4)', '(3,6)'];
+      const ax = spread(4, 1.9), az = -1.6; cells(ax, az, { w: 1.7, d: 1.2, idx: false });
+      const A = L.map((v, i) => vc(v, ax[i], az, 0, C.v, [1.5, 0.7, 0.9]));
+      ax.forEach((x, i) => tag(String(1001 + i), 'idx', x, 0.05, az + 1.0));
+      tag('Array', 'ptr', ax[0] - 1.9, 0.6, az);
+      const LA = [1001, 1002, 1003, 1126], lx = spread(4, 2.6), lz = 2.2;
+      const G = L.map((v, i) => lnode(v, lx[i], 0.35, lz, C.pr));
+      LA.forEach((a, i) => tag(String(a), 'idx', lx[i], 0.05, lz + 1.0));
+      slinks(lx, lz);
+      tag('List', 'ptr', lx[0] - 1.7, 0.6, lz);
+      const pa = tag('', 'ptr alt', ax[0], 1.4, az), pl2 = tag('', 'ptr alt', lx[0], 1.3, lz);
+      showL(pa, false); showL(pl2, false);
+      const walkA = async (ms) => { showL(pa, true); for (let k = 0; k < 4; k++) { at(pa, ax[k], 1.4, az); txt(pa, 'index ' + k); glow(A[k], GOLD); await beat(tok, ms); glow(A[k], null); } };
+      const walkL = async (ms) => { showL(pl2, true); for (let k = 0; k < 4; k++) { at(pl2, lx[k], 1.3, lz); txt(pl2, k ? 'next' : 'head'); glow(G[k].userData.data, GOLD); await beat(tok, ms); glow(G[k].userData.data, null); } };
+      let cd;
+      if (!qa) {
+        await step(tok);                               // 143:10 從 head 開始
+        showL(pl2, true); txt(pl2, 'it = head'); glow(G[0].userData.data, GOLD);
+        say('Linked list 典型用法：從 head 開始', '');
+        await step(tok);                               // 143:23 還沒到停下來的地方
+        say('還沒走到「停下來的地方」就繼續', '');
+        await step(tok);                               // 143:41 常用 NULL 標示結尾
+        tag('NULL', 'idx', lx[3] + 1.4, 0.35, lz);
+        say('結尾常用 NULL 標示', '但不是唯一的方式');
+        await step(tok);                               // 143:53 每一步往 next 找
+        glow(G[0].userData.data, null);
+        await walkL(400);
+        say('每拜訪一個，就往它的 next 找', 'singly linked list 就能這樣做');
+        await step(tok);                               // 144:13 doubly：從 tail 順著 prev 反著走
+        for (let k = 3; k >= 0; k--) { at(pl2, lx[k], 1.3, lz); txt(pl2, k === 3 ? 'tail' : 'prev'); await beat(tok, 350); }
+        say('Doubly：也能從 tail 順著 prev 反著走', '');
+        await step(tok);                               // 144:30 array：index 從 0 到 tail，index++
+        showL(pl2, false);
+        await walkA(400);
+        say('Array 也類似：index 從 0 到 tail', 'index++');
+        await step(tok);                               // 145:01 像 sequential search 要看過全部
+        say('有些演算法要看過 DS 裡所有東西', '例如 sequential search');
+        await step(tok);                               // 145:16 不同 DS 要不同 code
+        say('但不同的 data structure 要寫不同的 code', 'array 用 index；list 用 head、next');
+        await step(tok);                               // 145:22 抽象化：iterator
+        cd = code(['for (it = begin(); it != end(); ++it)', '    visit(*it);'], 0, 4.4, 0.55, -3.6);
+        say('再抽象化一層：Iterator', '');
+        await step(tok);                               // 145:41 開頭、結尾、下一個
+        cd.hl(0);
+        say('Iterator 定義三件事', '開頭 begin、結尾 end、下一個 ++');
+        await step(tok);                               // 146:15 sequential search 也能套到 linked list
+        await walkA(250); await walkL(250);
+        say('同一個演算法，array 和 list 都能套', 'sequential search（with cut）也能用在 linked list');
+        await step(tok);                               // 147:11 C++ STL 的抽象化
+        cd.hl(-1);
+        say('C++ STL 裡會看到這個概念', '對「走訪整個 data structure」的抽象化');
+      } else {
+        await step(tok);                               // 151:44 iterator 是什麼？
+        say('同學問：Iterator 是什麼？', '');
+        await step(tok);                               // 152:03 array：index 0123… 跑過去
+        await walkA(400);
+        say('Array 用一套：index 0、1、2、3… 跑過去', '');
+        await step(tok);                               // 152:09 linked list：head、next、next
+        await walkL(400);
+        say('Linked list 用另一套：head、next、next…', '');
+        await step(tok);                               // 152:23 兩套背後都是指標
+        say('這兩套背後其實都是指標', '只是操作方式不一樣');
+        await step(tok);                               // 152:30 array 位址往上加；list 照紙條走
+        showL(pa, true); for (let k = 0; k < 4; k++) { at(pa, ax[k], 1.4, az); txt(pa, String(1001 + k)); await beat(tok, 300); }
+        showL(pl2, true); for (let k = 0; k < 4; k++) { at(pl2, lx[k], 1.3, lz); txt(pl2, String(LA[k])); await beat(tok, 300); }
+        say('Array：位址往上加 1001 → 1002 → 1003', 'List：照著小紙條跳，1003 → 1126');
+        await step(tok);                               // 152:45 iterator 把兩個合起來
+        cd = code(['for (it = begin(); it != end(); ++it)', '    visit(*it);'], 0, 4.4, 0.55, -3.6);
+        say('Iterator 把兩個概念合起來', '反正裡面都是指標操作');
+        await step(tok);                               // 153:02 開頭、結尾、下一個
+        cd.hl(0);
+        say('對每種 DS 寫清楚三件事', '什麼叫開頭、什麼叫結尾、什麼叫下一個');
+        await step(tok);                               // 153:10 同一段 code 能用在兩邊
+        cd.hl(1);
+        say('同一段 code 就能用在 array 和 linked list', '');
+        await step(tok);                               // 153:26 想成「高階指標」
+        say('可以把 iterator 想成「高階指標」', '');
+        await step(tok);                               // 153:44 ++ 在不同 DS 意思不同；doubly 還能 --
+        cd.hl(0);
+        say('往前走用 ++：在 array、list 意思不同', 'doubly linked list 還能 -- 往回走');
+        await step(tok);                               // 154:18 用 * 取資料
+        cd.hl(1);
+        say('用 * 取出它指到的資料', '跟指標的寫法一樣');
+        await step(tok);                               // 154:38 容器：輕鬆切換
+        cd.hl(-1);
+        say('STL 把 list、array 這類叫「容器」', 'iterator 讓你輕鬆切換容器');
+      }
+    };
+  }
+  FRAG.push(['arrlllin-iterator', '走訪與 iterator', travScene(false)]);
+  FRAG.push(['arrlllin-iterator-qa', 'Q&A：iterator 是什麼', travScene(true)]);
 
-  // 147:44 STL list
+  // 147:52 STL list
   FRAG.push(['arrlllin-stl-list', 'STL list 的 iterator 操作', async (tok) => {
     fresh([0, 6, 11.5], [0, 1.5, 0]);
-    let vals = [10, 20, 30, 40], xs = spread(4, 2.6);
-    let G = vals.map((v, i) => dnode(v, xs[i], 0, C.v));
+    const xs = spread(4, 2.6);
+    const G = [10, 20, 30, 40].map((v, i) => dnode(v, xs[i], 0, C.v));
     let ar = dlinks(xs, 0);
     const cd = code(['list<int> l = {10, 20, 30, 40};', 'auto it = l.begin();', '++it;', 'cout << *it;       // 20', 'l.insert(it, 15);  // 插在 it 前面', 'l.erase(it);       // 刪掉 20'], 0, 6.0, 0.5, -1.8);
     const it = tag('it', 'ptr alt', xs[0], 1.3, 0); showL(it, false);
-    cd.hl(0); say('STL 的 list = doubly linked list', 'l = 10 ⇄ 20 ⇄ 30 ⇄ 40');
-    await beat(tok, 2200);
-    cd.hl(1); showL(it, true); say('begin()：給一個 iterator', '指到第一個 node');
-    await beat(tok, 1600);
-    cd.hl(2); at(it, xs[1], 1.3, 0); say('++ 被 overload：往 next 走一格', '不是整數 +1');
-    await beat(tok, 1800);
-    cd.hl(3); glow(G[1].userData.data, GOLD); say('*it：取出 node 裡的資料', '= 20');
-    await beat(tok, 1800);
+    const nx = spread(5, 2.35);
+    let N;
+    await step(tok);                                   // 147:52 STL list = doubly linked list
+    cd.hl(0); say('C++ STL 的 list', '就是課堂上講的 doubly linked list');
+    await step(tok);                                   // 148:06 get head → begin()，給一個 iterator
+    cd.hl(1); showL(it, true); say('get head → begin()', '給你一個 iterator');
+    await step(tok);                                   // 148:21 iterator 對應 node 的位址
+    glow(G[0].userData.data, GOLD);
+    say('在 linked list 裡，iterator 對應 node 的位址', '');
+    await step(tok);                                   // 148:39 ++ 被 overload：往後走一格
+    glow(G[0].userData.data, null);
+    cd.hl(2); at(it, xs[1], 1.3, 0); say('get next → ++', 'operator overloading：++ 代表往後走一格');
+    await step(tok);                                   // 149:03 vector 裡 ++ 是 index 往前
+    say('在 vector（array）裡也有 ++', '代表 index 往前、位址往上加');
+    await step(tok);                                   // 149:13 get → *：取出 node 的內容
+    cd.hl(3); glow(G[1].userData.data, GOLD); say('get → *it', '取出 node 裡的資料 = 20');
+    await step(tok);                                   // 149:53 insert here
     glow(G[1].userData.data, null);
     cd.hl(4);
-    const nx = spread(5, 2.35);
-    const N = dnode(15, nx[1], 0, C.hot, 3);
-    const order = [G[0], N, G[1], G[2], G[3]];
-    [G[0], G[1], G[2], G[3]].forEach((g, i) => move(g, nx[i === 0 ? 0 : i + 1], 0.35, 0));
+    N = dnode(15, nx[1], 0, C.hot, 3);
+    G.forEach((g, i) => move(g, nx[i === 0 ? 0 : i + 1], 0.35, 0));
     ar = dlinks(nx, 0, ar); at(it, nx[2], 1.3, 0);
-    say('insert(it, 15)：插在 it 前面', '只改前後的 prev／next');
-    await beat(tok, 2200);
+    say('insert(it, 15)：insert here', 'doubly 做 insert here 很容易');
+    await step(tok);                                   // 150:04 remove here = erase
     cd.hl(5); glow(G[1].userData.data, RED);
-    await beat(tok, 700);
-    fly(G[1]); order.splice(2, 1);
-    order.forEach((g, i) => move(g, xs[i], 0.35, 0));
+    await beat(tok, 500);
+    fly(G[1]);
+    [G[0], N, G[2], G[3]].forEach((g, i) => move(g, xs[i], 0.35, 0));
     ar = dlinks(xs, 0, ar); showL(it, false);
-    say('erase(it)：remove here', 'doubly 才能這麼容易');
-    await beat(tok, 2000);
+    say('erase(it)：remove here', '');
+    await step(tok);                                   // 150:29 除了考試，很少自己寫 linked list
     cd.hl(-1);
-    say('除了考試，很少自己寫 linked list', '但要懂每個操作背後發生什麼');
-    await beat(tok, 3000);
+    say('除了考試（研究所、入職考試）', '很少需要自己寫 linked list');
+    await step(tok);                                   // 150:56 但要會用、了解每個操作
+    say('但要會用、要懂每個操作背後發生什麼', '這是基本功');
   }]);
 
   // 155:00 list vs vector, push_front / pop_front
   FRAG.push(['arrlllin-list-vs-vector', 'list 與 vector', async (tok) => {
     fresh([0, 7.5, 10.5], [0, 0.5, 0]);
     const vx = spread(5, 1.5), vz = -2.0; cells(vx, vz, { d: 1.2 });
-    let V = [10, 20, 30, 40].map((v, i) => vc(v, vx[i], vz)); V.push(null);
+    const V = [10, 20, 30, 40].map((v, i) => vc(v, vx[i], vz)); V.push(null);
     tag('vector（array）', 'ptr', vx[0] - 0.2, 1.3, vz - 0.8);
-    let lx = spread(4, 2.6); const lz = 2.0;
+    const lx = spread(4, 2.6), lz = 2.0;
     let G = [10, 20, 30, 40].map((v, i) => dnode(v, lx[i], lz, C.pr));
     let ar = dlinks(lx, lz);
     tag('list（doubly linked list）', 'ptr', lx[0] + 0.6, 1.3, lz - 0.9);
-    say('vector：連續記憶體、沒有小紙條', 'list：每個 node 多兩張小紙條');
-    await beat(tok, 2400);
+    await step(tok);                                   // 155:00 linked list 當成更有彈性的 array？
+    say('Q：能把 linked list 當成更有彈性的 array 嗎？', '');
+    await step(tok);                                   // 155:22 只需要 array 的功能就用 array
+    say('只需要 array 的功能，就用 array', 'array 的概念比較簡單');
+    await step(tok);                                   // 155:40 linked list 是更有彈性的容器
+    say('Linked list 可以想成更有彈性的容器', '');
+    await step(tok);                                   // 155:46 list = doubly；vector = array
+    say('STL：list 是 doubly linked list', 'vector 是 array：連續記憶體、沒有小紙條');
+    await step(tok);                                   // 156:59 singly 還是 doubly：看代價
+    say('實務上選 singly 還是 doubly？', '看付出的代價和 coding 的方便');
+    await step(tok);                                   // 157:15 application dependent：小型系統
+    say('非常 application dependent', '空間限制很強的小型系統，可能選 singly');
+    await step(tok);                                   // 157:31 即時性要求高
+    say('即時性要求高的系統也可能選 singly', '不想花兩倍時間更新小紙條');
+    await step(tok);                                   // 158:54 list 不能 random access
     glow(V[2], GOLD);
-    say('v[2]：random access 一步到位', 'list 沒有 random access');
-    await beat(tok, 2200);
+    say('list 不能 random access', 'vector 的 v[2] 一步到位；list 要一個一個走');
+    await step(tok);                                   // 159:23 pop_front = remove from head
     glow(V[2], null);
-    for (let k = 3; k >= 0; k--) { move(V[k], vx[k + 1], 0.35, vz); V[k + 1] = V[k]; }
-    V[0] = vc(5, vx[0], vz, 3, C.hot);
-    const nx = spread(5, 2.35);
-    G.forEach((g, i) => move(g, nx[i + 1], 0.35, lz));
-    G = [dnode(5, nx[0], lz, C.hot, 3), ...G];
-    ar = dlinks(nx, lz, ar);
-    say('push_front(5)：vector 全部往後搬', 'list 只改 head 附近的指標（insert to head）');
-    await beat(tok, 2600);
     fly(V[0]); fly(G[0]);
-    for (let k = 1; k < 5; k++) { move(V[k], vx[k - 1], 0.35, vz); V[k - 1] = V[k]; } V[4] = null;
+    for (let k = 1; k < 4; k++) { move(V[k], vx[k - 1], 0.35, vz); V[k - 1] = V[k]; } V[3] = null;
     G.shift(); G.forEach((g, i) => move(g, lx[i], 0.35, lz));
+    ar = dlinks(lx.slice(0, 3), lz, ar);
+    say('pop_front = remove from head', 'list 只改指標；vector 後面要往前補位');
+    await step(tok);                                   // 159:30 push_front = insert to head
+    for (let k = 2; k >= 0; k--) { move(V[k], vx[k + 1], 0.35, vz); V[k + 1] = V[k]; }
+    V[0] = vc(5, vx[0], vz, 3, C.hot);
+    G.forEach((g, i) => move(g, lx[i + 1], 0.35, lz));
+    G = [dnode(5, lx[0], lz, C.hot, 3), ...G];
     ar = dlinks(lx, lz, ar);
-    say('pop_front = remove from head', 'list O(1)；vector 要往前補位');
-    await beat(tok, 2400);
-    say('Singly 還是 doubly？看應用', '空間吃緊的小系統、即時系統可能選 singly');
-    await beat(tok, 2800);
-    say('只需要 array 的功能就用 array', 'list 是更有彈性的容器');
-    await beat(tok, 2600);
+    say('push_front = insert to head', 'list 很快；vector 要全部往後搬');
   }]);
 
-  // 159:58 sparse vector (0, 3.5, 0, 0, 7, 4.2, 9)
+  // 160:22 sparse vector (0, 3.5, 0, 0, 7, 4.2, 9)
   FRAG.push(['arrlllin-sparse', 'Sparse vector', async (tok) => {
     fresh([0, 6.5, 11.5], [0, 0.4, 0.4]);
     const V = [0, 3.5, 0, 0, 7, 4.2, 9], xs = spread(7, 1.45), z = -1.2;
+    let S = [];
+    await step(tok);                                   // 160:22 sparse vector；向量是多維數字
+    say('應用：Sparse vector', '向量 = 一串多維度的數字');
+    await step(tok);                                   // 160:38 7 維向量
     cells(xs, z, { lab: (i) => '第 ' + (i + 1) + ' 維' });
-    const S = V.map((v, i) => vc(v, xs[i], z, 0, v ? C.v : C.dim));
-    say('7 維向量：(0, 3.5, 0, 0, 7, 4.2, 9)', '最直接：長度 7 的 array（C++ 的 vector）');
-    await beat(tok, 2600);
+    S = V.map((v, i) => vc(v, xs[i], z, 3, v ? C.v : C.dim));
+    say('一個 7 維向量：(0, 3.5, 0, 0, 7, 4.2, 9)', '7 個浮點數');
+    await step(tok);                                   // 161:19 最自然：長度 7 的 array（vector）
+    say('最自然的存法：長度 7 的 array', '跟 C++ 的 vector 同名，不是巧合');
+    await step(tok);                                   // 162:05 只有 3.5、7、4.2、9 不是 0
     S.forEach((m, i) => V[i] && glow(m, GOLD));
-    say('只有 4 個不是 0', '3.5、7、4.2、9');
-    await beat(tok, 2000);
+    say('只有 4 個地方不是 0', '3.5、7、4.2、9');
+    await step(tok);                                   // 162:41 0 乘任何數是 0、加 0 不變
     S.forEach((m) => glow(m, null));
-    say('0 乘任何數是 0、加 0 不變', '0 不必存，也不必算');
-    await beat(tok, 2200);
+    S.forEach((m, i) => { if (!V[i]) glow(m, RED); });
+    say('0 乘任何數是 0、加 0 不變', '很多運算裡 0 是不必要的');
+    await step(tok);                                   // 163:22 乾脆不存 0
     S.forEach((m, i) => { if (!V[i]) fly(m); });
-    await beat(tok, 900);
+    say('乾脆儲存時就不存 0', '');
+    await step(tok);                                   // 163:30 第 2 維 3.5、第 5 維 7 …
     const px = spread(4, 2.0); let k = 0;
     S.forEach((m, i) => { if (V[i]) { move(m, px[k], 0.35, 1.8); setV(m, '(' + (i + 1) + ', ' + V[i] + ')'); k++; } });
-    say('只存 (維度, 值) 的 pair', '(2, 3.5) (5, 7) (6, 4.2) (7, 9)');
-    await beat(tok, 2400);
-    say('跟多項式的 (指數, 係數) 一模一樣', '→ Sparse vector');
-    await beat(tok, 2200);
+    say('只存（維度, 值）', '(2, 3.5) (5, 7) (6, 4.2) (7, 9)');
+    await step(tok);                                   // 164:15 跟多項式的寫法一樣
+    say('跟多項式的 (指數, 係數) 一模一樣', '');
+    await step(tok);                                   // 164:28 這叫 sparse vector
+    say('0 很多的向量叫 Sparse vector', '只存不是 0 的部分');
+    await step(tok);                                   // 165:03 sparse 的成本：number of non-zero
+    tag('sparse：number of non-zero × pair 大小', 'ptr alt', 0, 1.5, 1.8);
+    say('Sparse 要花的空間：非零個數 × pair 大小', '這裡 4 個 pair');
+    await step(tok);                                   // 165:23 dense 的成本：number of dimensions
     tag('dense：number of dimensions = 7 個數', 'idx', 0, 1.6, z);
-    tag('sparse：number of non-zero = 4 個 pair', 'ptr alt', 0, 1.5, 1.8);
-    say('哪個省空間不一定', '非常稀疏（0 超多）時 sparse 才划算');
-    await beat(tok, 3000);
+    say('Dense 要花的空間：維度數', '這裡 7 個數');
+    await step(tok);                                   // 165:33 非常稀疏時 sparse 划算
+    say('哪個省不一定', '非常稀疏（0 超多）時，sparse 比較划算');
   }]);
 
-  // 166:03 sparse vector applications; dynamic → linked list
+  // 166:09 sparse vector applications; dynamic → linked list
   FRAG.push(['arrlllin-sparse-apps', 'Sparse vector 的應用', async (tok) => {
     fresh([0, 7, 11], [0, 0.4, 0]);
-    const bar = cube('', C.dim, [11.5, 0.4, 0.8], 0, 0.2, -2.4);
-    const bl = tag('1001 維 array：幾乎全是 0', 'idx', 0, 0.9, -2.4);
-    const P = [-1.6, 0, 1.6].map((x, i) => vc(['(0, a)', '(…, b)', '(1000, c)'][i], x, -0.6, 3, C.v, [1.45, 0.6, 0.8]));
-    say('最高 1000 次、只有 3 項的多項式', 'dense 要 1001 格；sparse 只要 3 個 pair');
-    await beat(tok, 2800);
-    txt(bl, '十萬首歌（100,000 維）');
+    let bar, bl, P = [], songs = [], G = [], ar = [], xs, N;
+    await step(tok);                                   // 166:09 最高 1000 次的多項式
+    say('例：最高 1000 次的多項式', '只有 3 項');
+    await step(tok);                                   // 166:19 dense：1001 維的 array
+    bar = cube('', C.dim, [11.5, 0.4, 0.8], 0, 0.2, -2.4);
+    bl = tag('1001 維 array：幾乎全是 0', 'idx', 0, 0.9, -2.4);
+    say('Dense：1001 維的 array', '塞了一堆 0');
+    await step(tok);                                   // 166:36 sparse：只有 3 項
+    P = [-1.6, 0, 1.6].map((x, i) => vc(['(0, a)', '(…, b)', '(1000, c)'][i], x, -0.6, 3, C.v, [1.45, 0.6, 0.8]));
+    say('Sparse：只要 3 個 pair', '');
+    await step(tok);                                   // 166:42 拿 0 來算只是浪費
+    say('拿 0 來算只是浪費', '浪費計算資源、儲存資源');
+    await step(tok);                                   // 167:01 推薦系統
     P.forEach((m) => fly(m));
-    await beat(tok, 500);
-    const songs = spread(10, 0.5).map((x) => cube('', C.hot, [0.35, 0.35, 0.35], x, 0.2, -0.6, 2));
-    say('推薦系統：每人只評了 10 首歌', '其他 99,990 個 0 不用存');
-    await beat(tok, 2800);
+    txt(bl, '十萬首歌（100,000 維）');
+    say('真實應用：推薦系統', '存每個使用者給每首歌的分數');
+    await step(tok);                                   // 167:24 十萬首只評了十首
+    songs = spread(10, 0.5).map((x) => cube('', C.hot, [0.35, 0.35, 0.35], x, 0.2, -0.6, 2));
+    say('十萬首歌，只聽了十首、打了分數', '其他 99,990 個 0 不用存');
+    await step(tok);                                   // 167:50 可以存成 pair array
     songs.forEach((m) => fly(m));
     const L = ['(17,5)', '(204,3)', '(9031,4)'];
-    let xs = spread(3, 2.6);
-    let G = L.map((v, i) => lnode(v, xs[i], 0.35, 1.8, C.pr));
-    let ar = slinks(xs, 1.8);
+    xs = spread(3, 2.6);
+    G = L.map((v, i) => lnode(v, xs[i], 0.35, 1.8, C.pr));
+    ar = slinks(xs, 1.8);
     tag('(歌 ID, 分數)', 'ptr', -5.2, 1.3, 1.8);
-    say('資料常變動：多聽一首、刪一首', '');
-    await beat(tok, 1800);
+    say('Sparse vector 可以存成 pair array', '像一開始的多項式那樣');
+    await step(tok);                                   // 168:06 多聽一首 → 多存一筆
     const nx = spread(4, 2.4);
-    const N = lnode('(560,5)', nx[2], 2.6, 1.8, C.hot);
+    N = lnode('(560,5)', nx[2], 2.6, 1.8, C.hot);
     G.forEach((g, i) => move(g, nx[i < 2 ? i : i + 1], 0.35, 1.8));
     move(N, nx[2], 0.35, 1.8);
     G = [G[0], G[1], N, G[2]]; ar = slinks(nx, 1.8, ar);
-    say('多聽一首 → 插入', '改指標就好，不用搬');
-    await beat(tok, 2200);
+    say('多聽一首歌 → 多存一筆', '');
+    await step(tok);                                   // 168:11 移除某一首
     glow(G[1].userData.data, RED);
-    await beat(tok, 600);
+    await beat(tok, 500);
     fly(G[1]); G.splice(1, 1);
     G.forEach((g, i) => move(g, xs[i], 0.35, 1.8)); ar = slinks(xs, 1.8, ar);
-    say('不喜歡了 → 移除', '');
-    await beat(tok, 1800);
-    say('動態操作多 → sparse vector 用 linked list 存', '靜態就用 pair array');
-    await beat(tok, 3000);
+    say('不喜歡了 → 從清單移除', '');
+    await step(tok);                                   // 168:19 動態操作多 → linked list
+    say('這種動態操作多時', '可能選 linked list 來存 sparse vector');
+    await step(tok);                                   // 168:39 一般化：一長串裡很多同一個值
+    say('一般化：一長串資料裡，很多是同一個值', '例如 0；不想存它 → sparse 表示');
+    await step(tok);                                   // 169:21 下週：array vs linked list 實作比較
+    say('下週：sparse vector 用 array 和 linked list', '實作的好壞比較');
   }]);
   }
 
@@ -4609,33 +4887,35 @@ FRAG.push(['arrpeng34-queue-adt', 'Queue ADT 與 Stack ADT', async (tok) => {
 
   // ═══ bariarr.js ═══
   {
-// ═══ Abdul Bari：陣列位址、指標（MJZd6uPi88E、868qXWoGS9E、uMGwjNuidZU、OqLt2GfX6jg） ═══
+// ═══ Abdul Bari：陣列位址、指標（MJZd6uPi88E、868qXWoGS9E、uMGwjNuidZU）— cued: each step(tok) waits for the sentence it shows ═══
 const P = () => (ctx.params || {});
+const step = (tok) => ctx.step(tok);
 const BLUE = '#4b9ee2', TEAL = '#2fc092', ORANGE = '#dd8238', SKIP = '#cfc6b6';
 const ROWC = [BLUE, TEAL, ORANGE];
+const cls = (l, c) => { l.element.className = 'lab-label' + (c ? ' ' + c : ''); };
 
 // 一排記憶體格（地上）：回傳每格的 x、底座、位址標籤、索引標籤
 function memRow(n, x0, dx, z, addr0, opts = {}) {
-  const step = opts.step || 2, idx0 = opts.idx0 || 0, w = opts.w || Math.min(1.7, dx * 0.9);
+  const st = opts.step || 2, idx0 = opts.idx0 || 0, w = opts.w || Math.min(1.7, dx * 0.9);
   const xs = [], tiles = [], at = [], it = [];
   for (let i = 0; i < n; i++) {
     const x = x0 + i * dx; xs.push(x);
     tiles.push(cube('', GRAY, [w, 0.2, 1.2], x, 0.1, z));
-    if (addr0 !== null && addr0 !== undefined) at.push(tag(String(addr0 + i * step), 'idx', x, 0, z + 1.0));
+    if (addr0 !== null && addr0 !== undefined) { const a = tag(String(addr0 + i * st), 'idx', x, 0, z + 1.0); if (opts.hideAddr) showL(a, false); at.push(a); }
     if (opts.noIdx !== true) it.push(tag('[' + (idx0 + i) + ']', 'idx', x, 0, z - 1.0));
   }
   return { xs, tiles, at, it, z };
 }
 // 指標標記：標籤＋箭頭指到第 i 格；front=true 時從前方指過去
-function ptrMark(name, cls, xs, z, i, front) {
-  const o = { i, l: tag(name, cls, 0, 0, 0), a: null };
+function ptrMark(name, c, xs, z, i, front) {
+  const o = { i, l: tag(name, c, 0, 0, 0), a: null };
   o.at = (x) => {
     if (o.a) kill(o.a);
     if (!front) { o.l.position.set(x, 2.5, z); o.a = arrow(V3(x, 2.2, z), V3(x, 0.95, z)); }
     else { o.l.position.set(x, 0.3, z + 2.6); o.a = arrow(V3(x, 0.3, z + 2.3), V3(x, 0.3, z + 0.75)); }
   };
   o.place = (j) => { o.i = j; o.at(xs[j]); };
-  o.slide = async (tok, j, ms = 700) => { const a = xs[o.i], b = xs[j]; await anim(tok, ms, (t) => o.at(a + (b - a) * t)); o.i = j; };
+  o.slide = async (tok, j, ms = 800) => { const a = xs[o.i], b = xs[j]; await anim(tok, ms, (t) => o.at(a + (b - a) * t)); o.i = j; };
   o.kill = () => { kill(o.l); if (o.a) kill(o.a); };
   o.place(i); return o;
 }
@@ -4643,76 +4923,113 @@ function ptrMark(name, cls, xs, z, i, front) {
 // ─── MJZd6uPi88E：一維陣列的位址公式 ───
 async function scAddr1D(tok) {
   fresh([0, 6, 12.5], [0, 1.4, 0]);
+  say('一維陣列：編譯器怎麼找到每一格？');
+  await step(tok);                                   // 0:27 declared an array of size 5
   const cd = code(['int A[5];', 'A[2] = 15;'], -4.6, 5.2);
+  cd.hl(0);
   tag('A', 'ptr', -6.2, 0.2, 0);
-  say('宣告 int A[5]：拿到 5 格連續空間', 'C 語言索引 0 … 4');
-  const m = memRow(5, -4, 2, 0, 100);
-  await beat(tok, 2600);
+  const m = memRow(5, -4, 2, 0, 100, { noIdx: true, hideAddr: true });
+  say('宣告 int A[5]：執行時拿到 5 格連續空間');
+  await step(tok);                                   // 0:43 indices 0 to 4
+  m.xs.forEach((x, i) => tag('[' + i + ']', 'idx', x, 0, -1.0));
+  say('C 語言的索引：0 … 4');
+  await step(tok);                                   // 0:51 base address L0 = 100
+  showL(m.at[0], true);
   const l0 = tag('L0 = 100（base address）', 'ptr alt', -4, 2.4, 0);
   glow(m.tiles[0], GOLD);
-  say('第一格的位址叫 base address L0', '執行期才知道 L0，這裡假設 L0 = 100');
-  await beat(tok, 2800);
+  say('第一格的位址叫 base address，記作 L0', '這裡假設 L0 = 100');
+  await step(tok);                                   // 1:21 compiler will convert this statement
   cd.hl(1);
-  say('A[2] = 15：編譯器要 A[2] 的位址', '位址不能寫死，要寫成公式');
-  await beat(tok, 2600);
-  glow(m.tiles[0]);
+  say('程式寫 A[2] = 15', '編譯器要把這行翻成機器碼');
+  await step(tok);                                   // 1:25 it needs the address: 104
+  m.at.forEach((a) => showL(a, true));
+  glow(m.tiles[0]); glow(m.tiles[2], GOLD);
+  say('要存 15，得先知道 A[2] 的位址', '每格 2 bytes：A[2] 在 104');
+  await step(tok);                                   // 1:36 replaced with 104
+  txt(cd.ls[1], '[104] = 15;');
+  say('A[2] 要換成位址 104');
+  await step(tok);                                   // 1:45 converted into a formula at runtime
+  txt(cd.ls[1], 'A[2] = 15; ');
+  const f = tag('104 不能寫死：L0 執行時才知道', 'bad', 2.4, 2.4, 0);
+  say('但 100 要到執行時才知道', '所以編譯器寫「公式」，不寫固定數字');
+  await step(tok);                                   // 2:16 relative address: L0 + index × size
+  cls(f, 'ptr alt'); txt(f, 'Addr(A[2]) = L0 + 2 × w');
+  say('相對位址：L0 + 索引 × 型態大小');
+  await step(tok);                                   // 2:32 integer is two bytes
+  txt(f, 'Addr(A[2]) = L0 + 2 × 2');
+  say('int 佔 2 bytes（影片的假設）', '所以 w = 2');
+  await step(tok);                                   // 2:53 base 100: 100 + 2 × 2 = 104
   const cur = tag('▼', 'ptr', m.xs[0], 1.3, 0);
-  for (let k = 0; k < 2; k++) {
-    tint(m.tiles[k], SKIP);
-    say('跳過第 ' + (k + 1) + ' 個元素（int 佔 w = 2 bytes）', '100 + ' + (k + 1) + ' × 2 = ' + (100 + (k + 1) * 2));
-    await anim(tok, 700, (t) => cur.position.set(m.xs[k] + 2 * t, 1.3, 0));
-    await beat(tok, 700);
-  }
-  glow(m.tiles[2], GOLD);
+  await anim(tok, 1200, (t) => cur.position.set(m.xs[0] + 4 * t, 1.3, 0));
+  tint(m.tiles[0], SKIP); tint(m.tiles[1], SKIP);
   const v = cube(15, BLUE, [1.2, 0.7, 1.0], m.xs[2], 0.55, 0, 3);
-  say('A[2] 換成位址 104，把 15 存進去', 'Addr(A[2]) = L0 + 2 × 2 = 104');
-  await beat(tok, 3000);
-  kill(cur); txt(l0, 'Addr(A[i]) = L0 + i × w');
-  say('通式：Addr(A[i]) = L0 + i × w', 'w = sizeof：int 2（影片假設）、float 4、char 1');
-  await beat(tok, 3600);
-  glow(v, GREEN);
-  say('程式寫 A[i]，編譯器換成這條公式', 'i 是索引、w 是資料型態大小');
-  await beat(tok, 2800);
+  txt(f, '100 + 2 × 2 = 104');
+  say('執行時 L0 = 100：100 + 2 × 2 = 104', '跳過前面 2 格，15 放進 104');
+  await step(tok);                                   // 3:16 any location: L0 + i × w
+  kill(cur); txt(l0, 'Addr(A[i]) = L0 + i × w'); kill(f);
+  say('任何一格：Addr(A[i]) = L0 + i × w', 'i 是索引，w 是 word size（型態大小）');
+  await step(tok);                                   // 3:40 float 4 bytes, char 1 byte
+  tag('w：int 2・float 4・char 1', 'note', 3.2, 2.4, 0);
+  say('w 隨資料型態改變', 'float 4 bytes、char 1 byte');
+  await step(tok);                                   // 3:55 we write A[i], it is replaced by the formula
+  glow(v, GREEN); cd.hl(1);
+  say('我們只寫 A[i]', '編譯器自動換成這條公式');
 }
 
 // ─── MJZd6uPi88E：索引從 1 開始、任意下界 ───
 async function scLowerBound(tok) {
   fresh([0, 6, 12.5], [0, 1.4, 0]);
+  say('如果索引不是從 0 開始呢？');
+  await step(tok);                                   // 4:07 languages before C: from 1
   const l0 = tag('A[1 … 5]（C 以前的語言）', 'ptr alt', 0, 4.4, 0);
   let m = memRow(5, -4, 2, 0, 100, { idx0: 1 });
-  say('早期語言允許索引從 1 開始', '宣告 A[1 … 5]，第一格還是 L0 = 100');
-  await beat(tok, 2800);
-  tint(m.tiles[0], SKIP); glow(m.tiles[1], GOLD);
-  const v = cube(15, BLUE, [1.2, 0.7, 1.0], m.xs[1], 0.55, 0, 3);
-  say('A[2] 前面只有 1 個元素', 'Addr(A[2]) = 100 + (2 − 1) × 2 = 102');
-  await beat(tok, 3200);
+  say('C 以前的語言：索引可以從 1 開始', '宣告 A[1 … 5]，第一格還是 L0 = 100');
+  await step(tok);                                   // 4:35 formula L0 + (i − 1) × w
   txt(l0, 'Addr(A[i]) = L0 + (i − 1) × w');
-  say('從 1 開始：多一次「減 1」', '從 0 開始：L0 + i × w，少一次運算');
-  await beat(tok, 3200);
-  say('所以 C 之後的語言都規定從 0 開始', '每次存取陣列都省一個減法');
-  await beat(tok, 2800);
-  [...m.tiles, ...m.at, ...m.it].forEach(kill); kill(v);
+  say('公式要先減 1', '因為 A[1] 才是第一格');
+  await step(tok);                                   // 4:47 A[2] = 100 + (2 − 1) × 2 = 102
+  tint(m.tiles[0], SKIP); glow(m.tiles[1], GOLD);
+  say('A[2] = 100 + (2 − 1) × 2 = 102', '前面只要跳 1 格');
+  await step(tok);                                   // 5:18 after C: indices start from 0
+  const c0 = tag('從 0：L0 + i × w', 'ptr', -3.4, 3.3, 0), c1 = tag('從 1：L0 + (i − 1) × w', 'ptr', 3.4, 3.3, 0);
+  showL(c0, false); showL(c1, false);
+  say('C 之後的語言：索引一律從 0 開始', '為什麼？比一比兩條公式');
+  await step(tok);                                   // 5:33 formula for 0: L0 + i × w
+  showL(c0, true); showL(c1, true);
+  say('從 0 開始的公式 vs 從 1 開始的公式');
+  await step(tok);                                   // 5:43 one operation extra: minus
+  cls(c1, 'bad');
+  say('從 1 開始多了一個減法', '每次存取陣列都要多算一次');
+  await step(tok);                                   // 5:49 C removed it, forces index 0
+  cls(c0, 'good');
+  say('C 拿掉這個多餘的運算', '規定陣列從索引 0 開始');
+  await step(tok);                                   // 6:10 any start, e.g. A[−3 … 5]
+  [...m.tiles, ...m.at, ...m.it, c0, c1].forEach(kill);
   m = memRow(9, -5.6, 1.4, 0, 100, { idx0: -3, w: 1.2 });
   txt(l0, 'A[−3 … 5]');
-  say('更早的編譯器甚至允許 A[−3 … 5]', '下界 lb = −3，共 9 個元素');
-  await beat(tok, 3000);
-  for (let k = 0; k < 3; k++) tint(m.tiles[k], SKIP);
-  glow(m.tiles[3], GOLD);
+  say('更早的編譯器：起點、終點都能自訂', '例如 A[−3 … 5]，共 9 格');
+  await step(tok);                                   // 6:43 L0 + (i − lb) × w
   txt(l0, 'Addr(A[i]) = L0 + (i − lb) × w');
-  say('一般式：先減掉下界再乘 w', '例：A[0] = 100 + (0 − (−3)) × 2 = 106');
-  await beat(tok, 3800);
+  glow(m.tiles[0], GOLD);
+  tag('lb = −3（下界）', 'ptr', m.xs[0], 1.6, 0);
+  say('一般式：先減掉下界 lb，再乘 w', '從 0 開始時 lb = 0，就回到 L0 + i × w');
 }
 
 // ─── MJZd6uPi88E：二維陣列 → 一維記憶體 ───
 const GX = (c) => -2.4 + c * 1.6, GY = (r) => 4.5 - r * 1.0, GZ = -1.6;
 const LX = (k) => -6 + k * 1.09, LY = 0.4, LZ = 1.4;
-// order: 'row' | 'col'；base1：用 1 起算的名字；instant：直接擺在一維記憶體
-function build2D(order, instant, base1) {
-  const cubes = [], tiles = [], at = [];
-  for (let k = 0; k < 12; k++) { tiles.push(cube('', GRAY, [0.95, 0.15, 0.9], LX(k), 0.08, LZ)); at.push(tag(String(500 + 2 * k), 'idx', LX(k), 0, LZ + 0.9)); }
+// 一維記憶體 12 格（位址 500 …）
+function mem12(hideAddr) {
+  const tiles = [], at = [];
+  for (let k = 0; k < 12; k++) { tiles.push(cube('', GRAY, [0.95, 0.15, 0.9], LX(k), 0.08, LZ)); const a = tag(String(500 + 2 * k), 'idx', LX(k), 0, LZ + 0.9); if (hideAddr) showL(a, false); at.push(a); }
+  return { tiles, at };
+}
+// order: 'row' | 'col'；instant：直接擺在一維記憶體
+function build2D(order, instant) {
+  const cubes = [];
   for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) {
     const k = order === 'row' ? r * 4 + c : c * 3 + r;
-    const nm = base1 ? 'a' + (r + 1) + (c + 1) : 'a' + r + c;
+    const nm = 'a' + r + c;
     const m = instant ? cube(nm, ROWC[r], [0.92, 0.5, 0.8], LX(k), LY, LZ) : cube(nm, ROWC[r], [1.3, 0.75, 0.6], GX(c), GY(r), GZ);
     m.userData.k = k; m.userData.r = r; m.userData.c = c; cubes.push(m);
   }
@@ -4721,258 +5038,430 @@ function build2D(order, instant, base1) {
     for (let r = 0; r < 3; r++) heads.push(tag('row ' + r, 'idx', -3.9, GY(r), GZ));
     for (let c = 0; c < 4; c++) heads.push(tag('col ' + c, 'idx', GX(c), 5.3, GZ));
   }
-  return { cubes, tiles, at, heads, byK: (k) => cubes.find((m) => m.userData.k === k) };
+  return { cubes, heads, byK: (k) => cubes.find((m) => m.userData.k === k) };
 }
-async function lay2D(tok, g, order) {
-  const groups = order === 'row' ? [0, 1, 2] : [0, 1, 2, 3];
-  for (const gi of groups) {
-    const ms = g.cubes.filter((m) => (order === 'row' ? m.userData.r : m.userData.c) === gi);
-    ms.forEach((m) => glow(m, GOLD));
-    say((order === 'row' ? 'row ' : 'col ') + gi + ' 整' + (order === 'row' ? '列' : '行') + '搬進記憶體',
-      order === 'row' ? 'a' + gi + '0, a' + gi + '1, a' + gi + '2, a' + gi + '3' : 'a0' + gi + ', a1' + gi + ', a2' + gi);
-    await beat(tok, 500);
-    for (const m of ms) { m.scale.set(0.72, 0.67, 1.33); move(m, LX(m.userData.k), LY, LZ); await beat(tok, 380); }
-    ms.forEach((m) => glow(m));
-    const k0 = Math.min(...ms.map((m) => m.userData.k)), k1 = Math.max(...ms.map((m) => m.userData.k));
-    tag((order === 'row' ? 'row ' : 'col ') + gi, 'ptr', (LX(k0) + LX(k1)) / 2, 1.3, LZ);
-    await beat(tok, 900);
-  }
+// 把一整列（或一整行）搬進一維記憶體
+async function layGroup(tok, g, order, gi, ms = 160) {
+  const ms_ = g.cubes.filter((m) => (order === 'row' ? m.userData.r : m.userData.c) === gi);
+  ms_.forEach((m) => glow(m, GOLD));
+  for (const m of ms_) { m.scale.set(0.72, 0.67, 1.33); move(m, LX(m.userData.k), LY, LZ); await beat(tok, ms); }
+  ms_.forEach((m) => glow(m));
 }
+const groupTag = (order, gi) => {
+  const ks = order === 'row' ? [gi * 4, gi * 4 + 3] : [gi * 3, gi * 3 + 2];
+  return tag((order === 'row' ? 'row ' : 'col ') + gi, 'ptr', (LX(ks[0]) + LX(ks[1])) / 2, 1.3, LZ);
+};
 async function scRowLayout(tok) {
   fresh([0, 5.2, 13], [0, 2.3, 0]);
+  say('接下來：二維陣列');
+  await step(tok);                                   // 7:01 two options: row-major or column-major
+  const opt = tag('2D 陣列：row-major 或 column-major', 'ptr alt', 0, 6.0, GZ);
+  say('編譯器有兩種做法', 'row-major 或 column-major');
+  await step(tok);                                   // 7:14 a 3 × 4 array drawn on paper
+  kill(opt);
   tag('int A[3][4]', 'ptr alt', -5.2, 5.3, GZ);
-  say('A[3][4]：紙上畫成 3 列 4 行', '每格 int 佔 2 bytes，起點 500');
   const g = build2D('row', false);
-  await beat(tok, 3000);
-  say('但記憶體是線性的，只有一維位址', '實際配置 12 格連續空間：500 … 522');
-  await beat(tok, 3000);
-  await lay2D(tok, g, 'row');
-  say('Row-major：一列一列放', 'row 0 → row 1 → row 2');
-  await beat(tok, 3200);
+  say('A[3][4]：紙上畫成 3 列 4 行的表格');
+  await step(tok);                                   // 7:25 in real: a single dimension
+  const mm = mem12(true);
+  say('但實際上是一維的：12 格連成一排', '記憶體是線性的，位址只有一個數字');
+  await step(tok);                                   // 7:52 addresses 500, 502, 504 …
+  mm.at.forEach((a) => showL(a, true));
+  say('假設位址從 500 開始', '500、502、504、506 …（int 2 bytes）');
+  await step(tok);                                   // 8:02 row-major mapping first
+  say('先看 row-major mapping');
+  await step(tok);                                   // 8:13 a00 a01 a02 a03: first row
+  await layGroup(tok, g, 'row', 0);
+  say('a00、a01、a02、a03：row 0 先放');
+  await step(tok);                                   // 8:29 next row: a10 … a13
+  await layGroup(tok, g, 'row', 1);
+  say('接著 a10 … a13：row 1');
+  await step(tok);                                   // 8:47 filled row by row
+  await layGroup(tok, g, 'row', 2);
+  say('最後 row 2：一列一列填進去', '這就是 row-major');
+  await step(tok);                                   // 8:55 compiler maps 2D onto single dimension
+  g.heads.forEach(kill);
+  say('編譯器把 2D 對應到一維陣列', '但我們照樣用 A[i][j] 兩個下標存取');
+  await step(tok);                                   // 9:16 this is row 0, 1, row 2
+  [0, 1, 2].forEach((r) => groupTag('row', r));
+  say('記憶體裡：row 0 → row 1 → row 2');
 }
 async function scRowAddr(tok) {
   fresh([0, 5.2, 13], [0, 2.3, 0]);
+  mem12(false);
   const g = build2D('row', true);
-  for (let r = 0; r < 3; r++) tag('row ' + r, 'ptr', (LX(r * 4) + LX(r * 4 + 3)) / 2, 1.3, LZ);
-  const f = tag('Addr(A[i][j]) = L0 + (i × n + j) × w', 'ptr alt', 0, 4.6, 0);
-  say('求 A[2][1] 的位址（m × n = 3 × 4）', 'L0 = 500，w = 2');
-  await beat(tok, 2800);
-  for (let k = 0; k < 8; k++) { tint(g.byK(k), SKIP); if (k % 4 === 3) { say('先跳過 ' + ((k + 1) / 4) + ' 整列', '每列 n = 4 個元素'); await beat(tok, 1300); } else await beat(tok, 200); }
+  for (let r = 0; r < 3; r++) groupTag('row', r);
+  const f = tag('Addr(A[2][1]) = ?', 'ptr alt', 0, 4.6, 0);
+  showL(f, false);
+  say('編譯器怎麼寫 row-major 的位址公式？');
+  await step(tok);                                   // 9:44 A[2][1] is at 518
+  showL(f, true); glow(g.byK(9), GOLD);
+  say('例子：A[2][1]，答案是 518');
+  await step(tok);                                   // 10:00 L0 + …, go to the second row
+  glow(g.byK(9)); glow(g.byK(0), GOLD);
+  txt(f, 'Addr(A[2][1]) = 500 + …');
+  say('從 L0 = 500 出發', '要先走到 row 2');
+  await step(tok);                                   // 10:15 skip two rows
+  glow(g.byK(0));
+  for (let k = 0; k < 8; k++) { tint(g.byK(k), SKIP); await beat(tok, 140); }
+  txt(f, '500 + (2 × …');
+  say('先跳過 row 0、row 1：2 整列');
+  await step(tok);                                   // 10:24 each row has four elements
+  txt(f, '500 + (2 × 4 …');
+  say('每列有 n = 4 個元素', '2 列 = 2 × 4 = 8 個');
+  await step(tok);                                   // 10:41 beginning of row 2, one element ahead
   tint(g.byK(8), SKIP);
-  say('到 row 2 開頭，再往後 1 格', '2 × 4 + 1 = 9 個元素');
-  await beat(tok, 1800);
+  txt(f, '500 + (2 × 4 + 1) …');
+  say('到 row 2 開頭，再往後 1 格');
+  await step(tok);                                   // 10:48 multiplied by the size of int
+  txt(f, '500 + (2 × 4 + 1) × 2');
+  say('整個乘上 int 的大小 2');
+  await step(tok);                                   // 10:56 500 + 9 × 2 = 518
   glow(g.byK(9), GOLD);
-  say('A[2][1] 在 518', '500 + (2 × 4 + 1) × 2 = 518');
-  await beat(tok, 3200);
-  say('Row-major 公式（索引從 0）', 'L0 + (i × n + j) × w');
-  await beat(tok, 2800);
-  g.cubes.forEach((m, i) => { relabel(m, 'a' + (m.userData.r + 1) + (m.userData.c + 1)); tint(m, ROWC[m.userData.r]); });
-  txt(f, 'Addr(A[i][j]) = L0 + [(i − 1) × n + (j − 1)] × w');
-  say('索引從 1 起算：i、j 都先減 1', '同一格現在叫 A[3][2]');
-  await beat(tok, 3000);
-  say('A[3][2] = 500 + [(3−1)×4 + (2−1)] × 2', '= 500 + 9 × 2 = 518');
-  await beat(tok, 3600);
+  txt(f, '500 + 9 × 2 = 518');
+  say('500 + 9 × 2 = 518', '和圖上一樣');
+  await step(tok);                                   // 11:23 m × n: L0 + (i × n + j) × w
+  txt(f, 'Addr(A[i][j]) = L0 + (i × n + j) × w');
+  say('m × n 陣列，row-major 公式（索引從 0）', 'i 列前面有 i × n 個，再加 j');
+  await step(tok);                                   // 11:50 indices starting from one
+  glow(g.byK(9));
+  g.cubes.forEach((m) => { relabel(m, 'a' + (m.userData.r + 1) + (m.userData.c + 1)); tint(m, ROWC[m.userData.r]); });
+  say('如果索引從 1 開始？', '同一批格子，名字都 +1');
+  await step(tok);                                   // 11:58 L0 + [(i − 1) × n + (j − 1)] × w
+  txt(f, 'L0 + [(i − 1) × n + (j − 1)] × w');
+  say('i、j 都先減 1');
+  await step(tok);                                   // 12:18 address of A[3][2]
+  glow(g.byK(9), GOLD);
+  say('例子：A[3][2]', '就是剛剛那一格 518');
+  await step(tok);                                   // 12:26 500 + [(3 − 1) × 4 + (2 − 1)] × 2
+  txt(f, '500 + [(3 − 1) × 4 + (2 − 1)] × 2');
+  say('代進公式');
+  await step(tok);                                   // 12:57 = 500 + 9 × 2 = 518
+  txt(f, '500 + 9 × 2 = 518');
+  say('= 500 + 9 × 2 = 518 ✓');
 }
 async function scColMajor(tok) {
   fresh([0, 5.2, 13], [0, 2.3, 0]);
-  tag('int A[3][4]（m = 3, n = 4）', 'ptr alt', -4.6, 5.3, GZ);
+  say('另一種：column-major');
+  await step(tok);                                   // 13:18 column-major mapping
+  tag('Column-major：一行一行放', 'ptr alt', 3.6, 6.1, GZ);
+  await step(tok);                                   // 13:30 same 2D array, memory from 500
+  tag('int A[3][4]（m = 3, n = 4）', 'ptr alt', -4.4, 6.1, GZ);
+  mem12(false);
   const g = build2D('col', false);
-  say('Column-major：一行一行放', '同一個 3 × 4 陣列，起點 500');
-  await beat(tok, 2600);
-  await lay2D(tok, g, 'col');
+  say('同一個 3 × 4 陣列', '記憶體一樣是一維，從 500 開始');
+  await step(tok);                                   // 13:49 a00, a10, a20: column 0
+  await layGroup(tok, g, 'col', 0);
+  say('a00、a10、a20：column 0 先放');
+  await step(tok);                                   // 13:56 then column 1
+  await layGroup(tok, g, 'col', 1);
+  say('再放 column 1');
+  await step(tok);                                   // 14:02 column 2 and so on
+  await layGroup(tok, g, 'col', 2, 120);
+  await layGroup(tok, g, 'col', 3, 120);
+  say('column 2、column 3 …', '一行一行填進去');
+  await step(tok);                                   // 14:28 A[1][2] is at 514
   g.heads.forEach(kill);
-  const f = tag('Addr(A[i][j]) = L0 + (j × m + i) × w', 'ptr alt', 0, 4.6, 0);
-  say('求 A[1][2]：先跳過 2 整行', '每行 m = 3 個元素');
-  for (let k = 0; k < 6; k++) { tint(g.byK(k), SKIP); await beat(tok, 260); }
-  tint(g.byK(6), SKIP);
-  say('到 col 2 開頭，再往後 1 格', '2 × 3 + 1 = 7 個元素');
-  await beat(tok, 1800);
+  for (let c = 0; c < 4; c++) groupTag('col', c);
+  const f = tag('Addr(A[1][2]) = ?', 'ptr alt', 0, 4.6, 0);
   glow(g.byK(7), GOLD);
-  say('A[1][2] 在 514', '500 + (2 × 3 + 1) × 2 = 514');
-  await beat(tok, 3200);
+  say('例子：A[1][2]，它在 514');
+  await step(tok);                                   // 14:36 L0 + …, go into the second column
+  glow(g.byK(7)); glow(g.byK(0), GOLD);
+  txt(f, 'Addr(A[1][2]) = 500 + …');
+  say('從 L0 = 500 出發', '要先走到 column 2');
+  await step(tok);                                   // 14:56 skip two columns
+  glow(g.byK(0));
+  for (let k = 0; k < 6; k++) { tint(g.byK(k), SKIP); await beat(tok, 160); }
+  txt(f, '500 + (2 × …');
+  say('先跳過 2 整行');
+  await step(tok);                                   // 15:05 each column has m = 3 elements
+  txt(f, '500 + (2 × 3 …');
+  say('每行有 m = 3 個元素', '2 行 = 2 × 3 = 6 個');
+  await step(tok);                                   // 15:16 beginning of third column, one more
+  tint(g.byK(6), SKIP);
+  txt(f, '500 + (2 × 3 + 1) × 2');
+  say('到 column 2 開頭，再往後 1 格', '整個乘上 2 bytes');
+  await step(tok);                                   // 15:33 500 + 7 × 2 = 514
+  glow(g.byK(7), GOLD);
+  txt(f, '500 + 7 × 2 = 514');
+  say('500 + 7 × 2 = 514');
+  await step(tok);                                   // 15:50 L0 + (j × m + i) × w
   glow(g.byK(7));
+  txt(f, 'Addr(A[i][j]) = L0 + (j × m + i) × w');
+  say('column-major 公式（索引從 0）', '前面有 j 整行，每行 m 個，再加 i');
+  await step(tok);                                   // 16:24 indices from one: L0 + [(j − 1) × m + (i − 1)] × w
   g.cubes.forEach((m) => { relabel(m, 'a' + (m.userData.r + 1) + (m.userData.c + 1)); tint(m, ROWC[m.userData.r]); });
-  txt(f, 'Addr(A[i][j]) = L0 + [(j − 1) × m + (i − 1)] × w');
-  for (let k = 0; k < 9; k++) tint(g.byK(k), SKIP);
+  txt(f, 'L0 + [(j − 1) × m + (i − 1)] × w');
+  say('索引從 1 開始：i、j 都先減 1');
+  await step(tok);                                   // 16:48 A[1][4] is 518
   glow(g.byK(9), GOLD);
-  say('索引從 1：A[1][4]', '500 + [(4−1)×3 + (1−1)] × 2 = 518');
-  await beat(tok, 3800);
+  say('例子：A[1][4]，在 518');
+  await step(tok);                                   // 17:14 500 + [(4 − 1) × 3 + (1 − 1)] × 2
+  for (let k = 0; k < 9; k++) tint(g.byK(k), SKIP);
+  txt(f, '500 + [(4 − 1) × 3 + (1 − 1)] × 2');
+  say('跳過 3 整行，再加 0 格');
+  await step(tok);                                   // 17:42 = 500 + 9 × 2 = 518
+  txt(f, '500 + 9 × 2 = 518');
+  say('= 500 + 9 × 2 = 518 ✓');
 }
 async function scCompare(tok) {
   fresh([0, 5, 13], [0, 2.4, 0]);
+  say('最後：比較兩條公式');
+  await step(tok);                                   // 18:00 row-major and column-major formulas
   tag('Row-major', 'ptr', -3.5, 4.8, 0); tag('Column-major', 'ptr', 3.5, 4.8, 0);
-  tag('L0 + (i × n + j) × w', 'ptr alt', -3.5, 4.0, 0); tag('L0 + (j × m + i) × w', 'ptr alt', 3.5, 4.0, 0);
-  say('兩條公式（索引從 0）', '只差 i、j 和 m、n 的位置');
-  await beat(tok, 2800);
-  const ops = ['+', '+', '×', '×'];
+  const fr = tag('L0 + (i × n + j) × w', 'ptr alt', -3.5, 4.0, 0), fc = tag('L0 + (j × m + i) × w', 'ptr alt', 3.5, 4.0, 0);
+  say('兩條公式（索引從 0）');
+  await step(tok);                                   // 18:14 i × n + j vs j × m + i
+  tag('i、j 和 n、m 的位置對調', 'note', 0, 3.2, 0);
+  say('只差在 i、j 和 n、m 的位置');
+  await step(tok);                                   // 18:22 two addition operations
   const cs = [];
-  for (const side of [-1, 1]) for (let k = 0; k < 4; k++) {
-    cs.push(cube(ops[k], k < 2 ? TEAL : ORANGE, [1.0, 0.8, 1.0], side * 3.5 - 1.8 + k * 1.2, 0.45, 0, 3));
-    await beat(tok, 350);
-  }
-  say('各是 2 次加法 + 2 次乘法', '兩者一樣有效率');
-  await beat(tok, 3200);
+  for (const side of [-1, 1]) for (let k = 0; k < 2; k++) cs.push(cube('+', TEAL, [1.0, 0.8, 1.0], side * 3.5 - 1.8 + k * 1.2, 0.45, 0, 3));
+  say('各有 2 次加法');
+  await step(tok);                                   // 18:28 two multiplications
+  for (const side of [-1, 1]) for (let k = 2; k < 4; k++) cs.push(cube('×', ORANGE, [1.0, 0.8, 1.0], side * 3.5 - 1.8 + k * 1.2, 0.45, 0, 3));
+  say('也各有 2 次乘法');
+  await step(tok);                                   // 18:37 equally efficient
   cs.forEach((m) => glow(m, GREEN));
-  say('自己設計編譯器時選哪個都可以', '效率相同，只是慣例不同');
-  await beat(tok, 2800);
-  const t = tag('C 家族：row-major', 'ptr alt', 0, 2.2, 2);
-  say('C／C++／Java 都採用 row-major', '補充：Fortran、MATLAB 採 column-major');
-  await beat(tok, 3400);
+  say('運算量一樣：兩者一樣有效率', '編譯器用哪一條都可以');
+  await step(tok);                                   // 18:44 designing our own compiler / language
+  say('自己設計編譯器或語言時', '任選一種就行');
+  await step(tok);                                   // 18:51 C family uses row-major
+  cls(fr, 'good'); void fc;
+  tag('C 家族：row-major', 'ptr alt', 0, 2.2, 2);
+  say('C 以及 C 家族的語言：row-major', '補充：Fortran、MATLAB 用 column-major');
 }
 
 // ─── 868qXWoGS9E：指向一維陣列的指標 ───
 async function scPtr1D(tok) {
   fresh([0, 6, 12.5], [0, 1.6, 0]);
-  const m = memRow(5, -4, 2, 0, 100);
-  cube(9, BLUE, [1.2, 0.7, 1.0], m.xs[2], 0.55, 0);
+  say('指向陣列的指標：先看一維');
+  await step(tok);                                   // 0:22 single-dimension array of size 5
+  const m = memRow(5, -4, 2, 0, 100, { hideAddr: true });
+  cube(9, BLUE, [1.2, 0.7, 1.0], m.xs[2], 0.55, 0, 3);
   tag('int A[5]', 'ptr alt', -6, 0.2, 0);
-  say('陣列名 A 本身就是 base address', 'A 不是指標變數，是位址 100');
-  const ex = tag('', 'ptr alt', 0, 4.6, 0);
-  await beat(tok, 2800);
-  const rows = [['A', '100', 0], ['&A', '100', 0], ['&A[0]', '100', 0]];
-  for (const [e, r, i] of rows) { txt(ex, 'printf(' + e + ') → ' + r); glow(m.tiles[i], GOLD); say(e + ' 印出 ' + r, 'A、&A、&A[0] 都是起始位址'); await beat(tok, 1600); }
-  glow(m.tiles[0]);
-  txt(ex, 'A[2] → 9　　2[A] → 9');
-  glow(m.tiles[2], GOLD);
-  say('A[2] 和 2[A] 都取到 9', 'A[i] 就是 *(A + i)，加法可交換');
-  await beat(tok, 3000);
-  const cur = tag('A + 2', 'ptr', m.xs[0], 1.6, 0);
-  await anim(tok, 900, (t) => cur.position.set(m.xs[0] + 4 * t, 1.6, 0));
-  txt(ex, 'A + 2 → 104');
-  say('A + 2 = 100 + 2 × 2 = 104', '加 2 是跳 2 個 int，不是 2 個 byte');
-  await beat(tok, 3000);
-  txt(ex, '*(A + 2) → 9');
-  say('*(A + 2)：取 104 的值', '= 9');
-  await beat(tok, 2400);
-  kill(cur); glow(m.tiles[2]);
+  say('一個大小 5 的陣列，放了一些值', 'A[2] = 9');
+  await step(tok);                                   // 0:29 addresses; each int two bytes
+  m.at.forEach((a) => showL(a, true));
+  say('位址：100、102、104 …', '每個 int 佔 2 bytes');
+  await step(tok);                                   // 0:37 name of the array = base address
+  const an = tag('A = 100', 'ptr', m.xs[0], 2.5, 0); const aa = arrow(V3(m.xs[0], 2.2, 0), V3(m.xs[0], 0.95, 0));
+  glow(m.tiles[0], GOLD);
+  say('陣列名 A 就是 base address', 'A 本身就是 100');
+  await step(tok);                                   // 0:55 a pointer stores an address; this IS an address
+  say('指標是「存位址的變數」', 'A 不是變數，它本身就是位址');
+  await step(tok);                                   // 1:13 one pointer p pointing to A
   const pc = cube(100, TEAL, [1.3, 0.8, 1.0], -4, 0.5, 3.4, 3);
-  tag('p', 'ptr', -5.4, 0.5, 3.4); tag('&p = 500', 'idx', -4, 0, 4.5);
-  const a = arrow(V3(-4, 0.5, 2.8), V3(-4, 0.5, 0.75));
-  txt(ex, 'int *p = A;');
-  say('指標 p = A：p 存 100', '假設 p 自己的位址是 500');
-  await beat(tok, 3000);
-  txt(ex, 'p[2] = 2[p] = *(p+2) → 9　p+2 → 104');
+  tag('p', 'ptr', -5.4, 0.5, 3.4);
+  arrow(V3(-4, 0.5, 2.8), V3(-4, 0.5, 0.75));
+  say('另外宣告指標 p，指向 A', 'p 裡存 100');
+  await step(tok);                                   // 1:36 printf A → 100
+  glow(m.tiles[0]);
+  const ex = tag('printf(A) → 100', 'ptr alt', 0, 4.6, 0);
+  glow(m.tiles[0], GOLD);
+  say('印 A → 100', 'A 就是起始位址');
+  await step(tok);                                   // 1:46 &A → 100
+  txt(ex, '&A → 100');
+  say('印 &A → 也是 100');
+  await step(tok);                                   // 1:55 &A[0] → 100
+  txt(ex, '&A[0] → 100');
+  say('印 &A[0] → 還是 100', 'A、&A、&A[0] 都是起始位址');
+  await step(tok);                                   // 2:02 A[2] → 9
+  glow(m.tiles[0]); glow(m.tiles[2], GOLD);
+  txt(ex, 'A[2] → 9');
+  say('A[2]：索引 2 的值 = 9');
+  await step(tok);                                   // 2:08 also 2[A] → 9
+  txt(ex, 'A[2] → 9　　2[A] → 9');
+  say('也可以寫成 2[A]，一樣是 9', 'A[i] 就是 *(A + i)，加法可交換');
+  await step(tok);                                   // 2:30 A + 2: two integers
+  glow(m.tiles[2]); kill(an); kill(aa);
+  const cur = tag('A + 2', 'ptr', m.xs[0], 1.6, 0);
+  txt(ex, 'A + 2 → ?');
+  await anim(tok, 1000, (t) => cur.position.set(m.xs[0] + 4 * t, 1.6, 0));
+  say('A + 2：往後 2 個 int', '不是 2 個 byte');
+  await step(tok);                                   // 2:47 100 + 4 = 104
+  txt(ex, 'A + 2 → 104');
+  say('100 + 2 × 2 = 104');
+  await step(tok);                                   // 2:56 *(A + 2) → 9
   glow(m.tiles[2], GOLD);
-  say('同一套語法也能用在 p 上', 'p → 100，&p → 500');
-  await beat(tok, 3600);
+  txt(ex, '*(A + 2) → 9');
+  say('*(A + 2)：104 那格的值 = 9');
+  await step(tok);                                   // 3:10 same syntax with pointers
+  kill(cur); glow(m.tiles[2]);
+  glow(pc, GOLD);
+  txt(ex, '同一套語法用在 p 上');
+  say('同一套語法也能用在指標 p 上');
+  await step(tok);                                   // 3:21 p → 100, &p → 500
+  tag('&p = 500', 'idx', -4, 0, 4.5);
+  txt(ex, 'p → 100　　&p → 500');
+  say('p → 100', '&p 是 p 自己的位址，假設 500');
+  await step(tok);                                   // 3:29 p[2] → 9, 2[p] → 9
+  glow(pc); glow(m.tiles[2], GOLD);
+  txt(ex, 'p[2] → 9　　2[p] → 9');
+  say('p[2]、2[p] → 9');
+  await step(tok);                                   // 3:37 p + 2 → 104, *(p + 2) → 9
+  txt(ex, 'p + 2 → 104　　*(p + 2) → 9');
+  say('p + 2 → 104，*(p + 2) → 9', '和陣列名的寫法完全一樣');
 }
 
 // ─── 868qXWoGS9E：用 double pointer 在 heap 建 2D 陣列 ───
 const HY = (r) => 3.8 - r * 1.25;
 const HX = (c) => -1.0 + c * 1.6;
-function buildHeap2D(full) {
+function buildHeap2D() {
   const o = {};
-  o.p = cube(500, TEAL, [1.2, 0.8, 0.8], -5.6, 2.6, 0); tag('p', 'ptr', -5.6, 3.5, 0); o.pa = tag('&p = 700', 'idx', -5.6, 1.9, 0);
-  o.ptr = []; o.rows = [];
+  o.p = cube(' ', TEAL, [1.2, 0.8, 0.8], -5.6, 2.6, 0); tag('p', 'ptr', -5.6, 3.5, 0); o.pa = tag('&p = 700', 'idx', -5.6, 1.9, 0);
+  o.ptr = []; o.rows = []; o.pt = [];
   return o;
 }
-function addPtrArr(o) {
-  for (let r = 0; r < 3; r++) { o.ptr.push(cube('', GRAY, [1.2, 0.8, 0.8], -3.3, HY(r), 0)); tag('[' + r + '] ' + (500 + 2 * r), 'idx', -3.3, HY(r) - 0.6, 0); }
-  o.pArrow = arrow(V3(-5.0, 2.8, 0), V3(-3.95, HY(0), 0));
+function addPtrArr(o, hidden) {
+  for (let r = 0; r < 3; r++) { o.ptr.push(cube('', GRAY, [1.2, 0.8, 0.8], -3.3, HY(r), 0)); const t = tag('[' + r + '] ' + (500 + 2 * r), 'idx', -3.3, HY(r) - 0.6, 0); if (hidden) showL(t, false); o.pt.push(t); }
 }
+function linkP(o) { relabel(o.p, 500); o.pt.forEach((t) => showL(t, true)); o.pArrow = arrow(V3(-5.0, 2.8, 0), V3(-3.95, HY(0), 0)); }
 function addRow(o, r, base) {
   const row = [];
   for (let c = 0; c < 4; c++) { row.push(cube('', GRAY, [1.3, 0.8, 0.8], HX(c), HY(r), 0)); tag(base === null ? '' : String(base + 2 * c), 'idx', HX(c), HY(r) - 0.6, 0); }
   o.rows[r] = row;
-  relabel(o.ptr[r], base === null ? '…' : base);
   if (o.ptr[r].userData.lbl === undefined) { o.ptr[r].userData.lbl = lab.label(base === null ? '…' : String(base), 'val'); o.ptr[r].add(o.ptr[r].userData.lbl); }
   arrow(V3(-2.65, HY(r), 0), V3(-1.7, HY(r), 0));
 }
 async function scHeap2D(tok) {
   fresh([0, 4, 14], [0, 3.0, 0]);
-  const cd = code(['int **p;', 'p = new int*[3];', 'p[0] = new int[4];', 'p[1] = new int[4];', 'p[2] = new int[4];'], 4.6, 6.6, 0.5);
-  const lv = tag('1D → *　2D → **　3D → ***', 'ptr alt', -3, 6.4, 0);
-  say('幾維陣列就要幾層指標', '1D 用 *p，2D 用 **p，3D 用 ***p');
-  await beat(tok, 3200);
+  say('接著：指向二維陣列的指標');
+  await step(tok);                                   // 3:51 one pointer for a 2D array
+  const lv = tag('2D 陣列要用哪種指標？', 'ptr alt', -3, 6.4, 0);
+  await step(tok);                                   // 4:02 1D single pointer, 2D double pointer
+  txt(lv, '1D → *p　　2D → **p');
+  say('一維用單指標，二維要用 double pointer');
+  await step(tok);                                   // 4:28 3D triple; as many levels as dimensions
+  txt(lv, '1D → *　2D → **　3D → ***');
+  say('三維用 triple pointer', '幾維就要幾層指標');
+  await step(tok);                                   // 4:42 create the 2D array in heap
   kill(lv);
+  const cd = code(['int **p;', 'p = new int*[3];', 'p[0] = new int[4];', 'p[1] = new int[4];', 'p[2] = new int[4];'], 4.6, 6.6, 0.5);
   cd.hl(0);
   const o = buildHeap2D();
-  say('不直接宣告 2D 陣列，改在 heap 動態建', 'p 是 double pointer');
-  await beat(tok, 2600);
-  cd.hl(1); addPtrArr(o);
-  say('new int*[3]：一個「指標陣列」', '位址 500、502、504，p = 500');
-  await beat(tok, 3000);
-  const bases = [550, 600, null];
-  for (let r = 0; r < 3; r++) {
-    cd.hl(2 + r); addRow(o, r, bases[r]);
-    say('p[' + r + '] = new int[4]', bases[r] === null ? '第三列的位址影片沒給' : 'p[' + r + '] 存這列的起點 ' + bases[r]);
-    await beat(tok, 2200);
-  }
+  say('不直接宣告 2D 陣列', '改用指標在 heap 動態建立');
+  await step(tok);                                   // 4:53 p = new int*[3]: array of pointers
+  cd.hl(1); addPtrArr(o, true);
+  say('p = new int*[3]：3 格「指標陣列」', '每格都是 int *');
+  await step(tok);                                   // 5:14 base address stored in p (double pointer)
+  linkP(o);
+  say('指標陣列的 base 500 存進 p', 'p 是 double pointer：指向「指標」');
+  await step(tok);                                   // 5:33 p[0] = new int[4], base 550
+  cd.hl(2); addRow(o, 0, 550);
+  say('p[0] = new int[4]', '一列 4 格，起點 550 存進 p[0]');
+  await step(tok);                                   // 5:46 p[1], p[2] also
+  cd.hl(3); addRow(o, 1, 600);
+  await beat(tok, 500);
+  cd.hl(4); addRow(o, 2, null);
+  say('p[1]、p[2] 也各建一列', 'p[1] 存 600（第三列位址影片沒給）');
+  await step(tok);                                   // 5:53 double pointer, array of pointers, arrays
   cd.hl(-1);
-  tag('double pointer', 'ptr', -5.6, 0.6, 0); tag('array of pointers', 'ptr', -3.3, 0.6, 0); tag('array of arrays', 'ptr', 1.4, 0.6, 0);
-  say('三者合起來就是一個 2D 陣列', '指標陣列 + 每列一個陣列 = array of arrays');
-  await beat(tok, 3800);
+  tag('double pointer', 'ptr', -5.6, 0.6, 0); tag('array of pointers', 'ptr', -3.3, 0.6, 0); tag('arrays', 'ptr', 1.4, 0.6, 0);
+  say('double pointer → 指標陣列 → 一列列陣列');
+  await step(tok);                                   // 6:19 array of arrays = 2D array
+  tag('array of arrays = 2D 陣列', 'ptr alt', 1.4, 5.7, 0);
+  say('三者合起來就是一個 2D 陣列', 'array of arrays');
 }
 
 // ─── 868qXWoGS9E：double pointer 的語法 ───
 async function scDPtrSyntax(tok) {
   fresh([0, 4, 14], [0, 3.0, 0]);
-  const o = buildHeap2D(); addPtrArr(o);
+  const o = buildHeap2D(); addPtrArr(o); linkP(o);
   [550, 600, null].forEach((b, r) => addRow(o, r, b));
-  cube(10, BLUE, [1.0, 0.6, 0.6], HX(0), HY(0) + 0.5, 0);
   const ex = tag('', 'ptr alt', 0, 6.3, 0);
+  say('完整的 2D 陣列建好了', '用 p 寫出各種語法');
+  let v10 = null;
   const steps = [
-    ['p', '500', () => glow(o.p, GOLD)],
-    ['&p', '700', () => glow(o.p, GOLD)],
-    ['*p', '550', () => glow(o.ptr[0], GOLD)],
-    ['p + 1', '502', () => glow(o.ptr[1], '#3a3a00')],
-    ['*(p + 1)', '600', () => glow(o.ptr[1], GOLD)],
-    ['*(p + 1) + 2', '604', () => glow(o.rows[1][2], '#3a3a00')],
-    ['*(*(p + 1) + 2)', '25', () => cube(25, ORANGE, [1.0, 0.6, 0.6], HX(2), HY(1) + 0.5, 0, 2)],
-    ['*(*(p + 1) + 3) = p[1][3]', '位址 606 那格',() => glow(o.rows[1][3], GOLD)],
-    ['**p = *(*(p + 0) + 0)', '10', () => glow(o.rows[0][0], GOLD)],
+    ['p', '500', () => glow(o.p, GOLD), 'p 存指標陣列的起點'],
+    ['&p', '700', () => glow(o.p, GOLD), 'p 自己的位址，假設 700'],
+    ['*p', '550', () => glow(o.ptr[0], GOLD), '到 500 取內容：row 0 的起點'],
+    ['p + 1', '502', () => glow(o.ptr[1], '#3a3a00'), '下一個指標（+2 bytes）'],
+    ['*(p + 1)', '600', () => glow(o.ptr[1], GOLD), '取 502 的內容：row 1 的起點'],
+    ['*(p + 1) + 2', '604', () => glow(o.rows[1][2], '#3a3a00'), '600 + 2 × 2 = 604'],
+    ['*(*(p + 1) + 2)', '25', () => { glow(o.rows[1][2], GOLD); cube(25, ORANGE, [1.0, 0.6, 0.6], HX(2), HY(1) + 0.5, 0, 2); }, '再加一個 *：取 604 的值'],
+    ['*(*(p + i) + j)', '任一格', () => o.rows.flat().forEach((m) => glow(m, '#3a3a00')), '換 i、j 就能存取任何位置'],
+    ['*(*(p + 1) + 3)', '[1][3]', () => glow(o.rows[1][3], GOLD), 'row 1、第 3 格（606）'],
+    ['*(*(p + i) + j) = p[i][j]', '', () => glow(o.rows[1][3], GOLD), '兩種寫法意思一樣'],
+    ['p 500・&p 700・*p 550・p+1 502', '…', () => {}, '*(p+1) 600・*(p+1)+2 604・*(*(p+1)+2) 25'],
+    ['**p = *(*(p + 0) + 0)', '?', () => glow(o.rows[0][0], '#3a3a00'), '+0 沒有作用'],
+    ['**p', '10', () => { glow(o.rows[0][0], GOLD); v10 = cube(10, BLUE, [1.0, 0.6, 0.6], HX(0), HY(0) + 0.5, 0, 2); }, '去掉 0：就是 p[0][0]'],
   ];
-  const why = ['p 存指標陣列的起點', '假設 p 自己放在 700', '取 500 的內容：row 0 起點', '下一個指標（+2 bytes）', '取 502 的內容：row 1 起點',
-    '600 + 2 × 2 = 604', '再取一次值', '*(*(p+i)+j) 就是 p[i][j]', '0 可以省略：**p 是 p[0][0]'];
-  say('用 p 存取整個 2D 陣列', '每加一個 * 就往下走一層');
-  await beat(tok, 2400);
-  for (let i = 0; i < steps.length; i++) {
-    const [e, r, fn] = steps[i];
+  for (const [e, r, fn, w] of steps) {
+    await step(tok);                                 // 6:52 p … 10:43 **p (one per expression)
     [o.p, ...o.ptr, ...o.rows.flat()].forEach((m) => glow(m));
-    fn(); txt(ex, e + '  →  ' + r);
-    say(e + ' → ' + r, why[i]);
-    await beat(tok, 2300);
+    fn(); txt(ex, r ? e + '  →  ' + r : e);
+    say(r ? e + ' → ' + r : e, w);
   }
-  await beat(tok, 1200);
+  void v10;
 }
 
 // ─── 868qXWoGS9E：靜態 2D 陣列名用指標語法 ───
 async function scArr2DSyntax(tok) {
   fresh([0, 5.2, 13], [0, 2.3, 0]);
-  const g = build2D('row', true);
-  const grid = [];
+  say('改成直接宣告 2D 陣列');
+  await step(tok);                                   // 10:53 declare a 2D array directly
+  const grid = [], gat = [];
   for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) {
     const k = r * 4 + c;
     grid[k] = cube('a' + r + c, ROWC[r], [1.3, 0.75, 0.6], GX(c), GY(r), GZ);
-    tag(String(500 + 2 * k), 'idx', GX(c) + 0.45, GY(r) - 0.48, GZ + 0.4);
+    const a = tag(String(500 + 2 * k), 'idx', GX(c) + 0.45, GY(r) - 0.48, GZ + 0.4); showL(a, false); gat.push(a);
   }
   for (let r = 0; r < 3; r++) tag('row ' + r, 'idx', -3.9, GY(r), GZ);
-  relabel(g.byK(0), 10); relabel(g.byK(6), 25); relabel(grid[0], 10); relabel(grid[6], 25);
-  tag('int A[3][4]', 'ptr alt', -5.2, 5.3, GZ);
-  say('直接宣告 A[3][4]，起點 500', '畫成 2D，實際是 12 格連續的 int');
-  await beat(tok, 3000);
+  const A = tag('int A[3][4]', 'ptr alt', -5.0, 5.3, GZ);
+  say('int A[3][4]：索引 0..2、0..3');
+  await step(tok);                                   // 11:06 starting address 500
+  gat.forEach((a) => showL(a, true));
+  say('假設起始位址 500', '500、502、504、506，再接下一列');
+  await step(tok);                                   // 11:20 really a single dimension: 12 ints
+  mem12(false);
+  const g = build2D('row', true);
+  say('畫成 2D，實際是 12 個連續的 int', '用兩個下標存取，所以畫成表格');
   const ex = tag('', 'ptr alt', 3.6, 6.2, GZ);
   const all = () => { g.cubes.forEach((m) => glow(m)); grid.forEach((m) => glow(m)); };
-  const gl0 = glow;
-  const glowK = (k, c) => { gl0(g.byK(k), c); gl0(grid[k], c); };
-  const steps = [
-    ['A = &A = *A', '500', () => glowK(0, GOLD), '都是起始位址；*A 還是位址'],
-    ['A + 1', '508', () => [4, 5, 6, 7].forEach((k) => glowK(k, GOLD)), '跳一整列（4 個 int），不是 502'],
-    ['*(A + 1) = A[1]', '508', () => glowK(4, GOLD), '把列「打開」成第 1 列的起點'],
-    ['*(A + 1) + 2 = A[1] + 2', '512', () => glowK(6, '#3a3a00'), '508 + 2 × 2 = 512'],
-    ['*(*(A + 1) + 2) = A[1][2]', '25', () => glowK(6, GOLD), '再取一次值'],
-    ['**A', '10', () => glowK(0, GOLD), '= A[0][0]'],
-  ];
-  for (const [e, r, fn, w] of steps) { all(); fn(); txt(ex, e + '  →  ' + r); say(e + ' → ' + r, w); await beat(tok, 2800); }
-  all();
-  say('規則和 double pointer 一樣', '把 A 想成「指標陣列 + 列陣列」');
-  await beat(tok, 2800);
+  const glowK = (k, c) => { glow(g.byK(k), c); glow(grid[k], c); };
+  const show = (e, r, fn, w) => { all(); fn(); txt(ex, e + '  →  ' + r); say(e + ' → ' + r, w); };
+  await step(tok);                                   // 12:05 A → 500
+  show('A', '500', () => glowK(0, GOLD), '陣列名 = base address');
+  await step(tok);                                   // 12:14 &A → 500
+  show('&A', '500', () => glowK(0, GOLD), '數值一樣是 500');
+  await step(tok);                                   // 12:23 *A → 500 (still an address)
+  show('*A', '500', () => glowK(0, GOLD), '*A 還是位址，不是資料');
+  await step(tok);                                   // 12:31 A + 1 → 508 (next row)
+  show('A + 1', '508', () => [4, 5, 6, 7].forEach((k) => glowK(k, GOLD)), '跳到下一列');
+  await step(tok);                                   // 12:37 same rule as double pointer, not 502
+  say('A + 1 不是 502，是 508', '一次跳一整列（4 個 int），規則和 double pointer 一樣');
+  await step(tok);                                   // 12:52 array of arrays with an array of pointers in front
+  const ph = [];
+  for (let r = 0; r < 3; r++) { const b = ghostBox('#9b8b72', 0.9, 0.7, 0.6); b.position.set(-5.6, GY(r), GZ); ph.push(b); arrow(V3(-5.1, GY(r), GZ), V3(-3.25, GY(r), GZ), 0x9b8b72); }
+  tag('想像的指標陣列', 'note', -5.6, GY(2) - 0.8, GZ);
+  say('把 A 想成 array of arrays', '前面假裝有一個指標陣列');
+  await step(tok);                                   // 12:58 *(A + 1) → 508
+  show('*(A + 1)', '508', () => glowK(4, GOLD), '其實沒有真的指標，所以還是 508');
+  await step(tok);                                   // 13:04 *(A + 1) + 2 → 512
+  show('*(A + 1) + 2', '512', () => glowK(6, '#3a3a00'), '508 + 2 × 2 = 512');
+  await step(tok);                                   // 13:15 *(*(A + 1) + 2) → 25
+  relabel(grid[6], 25); relabel(g.byK(6), 25);
+  show('*(*(A + 1) + 2)', '25', () => glowK(6, GOLD), '再取一次值');
+  await step(tok);                                   // 13:24 = A[i][j]
+  show('*(*(A + i) + j) = A[i][j]', '任一格', () => {}, '和 double pointer 一樣');
+  await step(tok);                                   // 13:32 **A → 10
+  relabel(grid[0], 10); relabel(g.byK(0), 10);
+  show('**A', '10', () => glowK(0, GOLD), '= A[0][0]');
+  await step(tok);                                   // 13:43 A[1] = *(A + 1) → 508
+  show('A[1] = *(A + 1)', '508', () => glowK(4, GOLD), 'row 1 的起點');
+  await step(tok);                                   // 14:02 A[1] + 2 → 512
+  show('A[1] + 2', '512', () => glowK(6, '#3a3a00'), '508 + 2 × 2');
+  await step(tok);                                   // 14:11 *(A[1] + 2) → 25
+  show('*(A[1] + 2)', '25', () => glowK(6, GOLD), '取值 = A[1][2]');
+  void A; void ph;
 }
 
 // ─── uMGwjNuidZU：指標的算術運算 ───
-function arithBase() {
+function arithBase(hideAddr) {
   fresh([0, 6, 13], [0, 1.6, 0.6]);
-  const m = memRow(5, -4, 2, 0, 100);
+  const m = memRow(5, -4, 2, 0, 100, { hideAddr });
   const vals = [5, 8, '', '', ''];
   const vs = vals.map((v, i) => (v === '' ? null : cube(v, BLUE, [1.2, 0.7, 1.0], m.xs[i], 0.55, 0)));
   tag('int A[5]', 'ptr alt', -6, 0.2, 0);
@@ -4980,219 +5469,187 @@ function arithBase() {
 }
 async function scPtrArith(tok) {
   const op = P().op || 'incdec';
-  const { m, vs } = arithBase();
-  const ex = tag('', 'ptr alt', 0, 4.6, 0);
   if (op === 'setup') {
-    say('int 陣列，每格 2 bytes', '位址 100、102、104、106、108');
-    await beat(tok, 2800);
+    fresh([0, 6, 13], [0, 1.6, 0.6]);
+    say('指標的算術運算', '先準備一個陣列當例子');
+    await step(tok);                                 // 0:16 an array with elements, indices, addresses
+    const { m } = arithBase(true);
+    const ex = tag('', 'ptr alt', 0, 4.6, 0);
+    say('一個 int 陣列：有值、有索引');
+    await step(tok);                                 // 0:31 integer is two bytes: 100, 102 …
+    m.at.forEach((a) => showL(a, true));
+    say('int 佔 2 bytes', '位址 100、102、104、106、108');
+    await step(tok);                                 // 1:00 two pointers P and Q
+    say('拿兩個指標：p 和 q');
+    await step(tok);                                 // 1:10 p = &A[0] → 100
     txt(ex, 'int *p = &A[0];');
-    const p = ptrMark('p = 100', 'ptr', m.xs, 0, 0);
-    say('p = &A[0]：p 存 100', '也可寫 p = A');
-    await beat(tok, 3000);
+    ptrMark('p = 100', 'ptr', m.xs, 0, 0);
+    say('p = &A[0]：p 存 100');
+    await step(tok);                                 // 1:20 q = &A[3] → 106
     txt(ex, 'int *q = &A[3];');
-    const q = ptrMark('q = 106', 'ptr alt', m.xs, 0, 3, true);
+    ptrMark('q = 106', 'ptr alt', m.xs, 0, 3, true);
     say('q = &A[3]：q 存 106', '100 + 3 × 2 = 106');
-    await beat(tok, 3000);
-    txt(ex, 'p = &A[0]　p = A　(p = &A)');
-    say('三種寫法都得到 100', '補充：&A 型別是 int (*)[5]，要轉型');
-    await beat(tok, 3600);
+    await step(tok);                                 // 1:29 can also be written p = A
+    txt(ex, 'p = &A[0]　或　p = A');
+    say('p = &A[0] 也能寫成 p = A', '陣列名就是起始位址');
+    await step(tok);                                 // 1:38 even p = &A: all three same
+    txt(ex, 'p = &A[0]　p = A　p = &A');
+    say('甚至 p = &A：三種都得到 100', '補充：&A 型別是 int (*)[5]，嚴格要轉型');
     return;
   }
+  const { m } = arithBase(false);
+  const ex = tag('', 'ptr alt', 0, 4.6, 0);
   const p = ptrMark('p = 100', 'ptr', m.xs, 0, 0);
   const q = ptrMark('q = 106', 'ptr alt', m.xs, 0, 3, true);
   say('p 指 A[0]（100），q 指 A[3]（106）', 'int 每格 2 bytes');
-  await beat(tok, 2600);
   if (op === 'incdec') {
+    await step(tok);                                 // 1:49 pointer increment: p++
     txt(ex, 'p++;');
-    say('p++：移到下一個元素', '不是 +1 byte，是 + sizeof(int) = 2');
+    say('第一種：遞增 p++');
+    await step(tok);                                 // 1:59 move to next element: +2
     await p.slide(tok, 1); txt(p.l, 'p = 102');
-    await beat(tok, 2600);
-    say('如果 p 是 float*，p++ 會 +4', '移動量 = 指向型態的大小');
-    await beat(tok, 2800);
+    say('p++：移到下一個元素', '不是 +1 byte，是 + sizeof(int) = 2');
+    await step(tok);                                 // 2:39 float pointer: +4 bytes
+    say('如果 p 是 float *，p++ 會 +4', '移動量 = 指向的型態大小');
+    await step(tok);                                 // 2:54 pointer decrement: q--
     txt(ex, 'q--;');
-    say('q--：移到前一個元素', '106 − 2 = 104');
+    say('第二種：遞減 q--');
+    await step(tok);                                 // 3:02 q from 106 to 104
     await q.slide(tok, 2); txt(q.l, 'q = 104');
-    await beat(tok, 3000);
+    say('q 從 106 移到 104', '減 2 bytes');
+    await step(tok);                                 // 3:19 move to the previous element
+    say('q--：移到前一個元素');
   } else if (op === 'const') {
+    await step(tok);                                 // 3:26 constant addition
     txt(ex, 'p = p + 2;');
-    say('p + 2：往前走 2 個元素', '100 + 2 × 2 = 104');
+    say('加一個常數：p + 2');
+    await step(tok);                                 // 3:32 move by two elements forward
+    say('往前移 2 個元素', '不是 2 個 byte');
+    await step(tok);                                 // 3:38 p at 100 → 104
     await p.slide(tok, 2, 1000); txt(p.l, 'p = 104');
-    await beat(tok, 3000);
+    say('100 + 2 × 2 = 104');
+    await step(tok);                                 // 3:56 constant subtraction
     txt(ex, 'q = q − 2;');
-    say('q − 2：往回走 2 個元素', '106 − 2 × 2 = 102');
+    say('減一個常數：q − 2');
+    await step(tok);                                 // 4:01 move backward by two elements
+    say('往回移 2 個元素');
+    await step(tok);                                 // 4:09 q points on 102
     await q.slide(tok, 1, 1000); txt(q.l, 'q = 102');
-    await beat(tok, 3200);
+    say('106 − 2 × 2 = 102');
   } else if (op === 'sub') {
+    await step(tok);                                 // 4:20 subtracting two pointers
     txt(ex, 'q − p');
-    say('兩個指標相減', '106 − 100 = 6 bytes？');
-    await beat(tok, 2800);
-    for (let i = 0; i < 3; i++) { glow(m.tiles[i], GOLD); await beat(tok, 600); }
+    say('兩個指標相減');
+    await step(tok);                                 // 4:31 p, q at 100 and 106
+    glow(m.tiles[0], GOLD); glow(m.tiles[3], GOLD);
+    say('p 在 100，q 在 106');
+    await step(tok);                                 // 4:37 106 − 100 = 6
+    txt(ex, 'q − p = 106 − 100 = 6 ?');
+    say('106 − 100 = 6', '這個數字本身沒有意義');
+    await step(tok);                                 // 4:50 six bytes away
+    say('它們相隔 6 個 bytes');
+    await step(tok);                                 // 4:56 divide by 2 → 3
     txt(ex, 'q − p = (106 − 100) / 2 = 3');
-    say('結果是中間隔了幾個元素', '6 bytes ÷ sizeof(int) 2 = 3');
-    await beat(tok, 3600);
+    say('除以 int 的大小 2', '得到 3');
+    await step(tok);                                 // 5:04 first, second, third element
+    glow(m.tiles[3]);
+    for (let i = 0; i < 3; i++) { glow(m.tiles[i], GREEN); await beat(tok, 400); }
+    say('中間的元素：第 1、2、3 個');
+    await step(tok);                                 // 5:11 q is three elements away from p
+    say('q − p = 3：相隔 3 個元素', '相減得到的是「元素個數」');
   } else {
-    say('合法：p++、p−−、p ± k、p − q', '每個都有意義：移動或算距離');
-    await beat(tok, 3000);
-    const bad = ['p + q', 'p × q', 'p × 2'].map((s, i) => cube(s, '#c0504d', [1.6, 0.7, 1.0], -2 + i * 2, 2.6, 2.2, 2));
-    say('不合法：兩指標相加、相乘、乘常數', '這些位址沒有意義');
-    await beat(tok, 3200);
-    for (const b of bad) { fly(b); await beat(tok, 400); }
-    say('只有這 5 種算術運算可以用', 'p++、p−−、p + k、p − k、q − p');
-    await beat(tok, 3000);
+    await step(tok);                                 // 5:37 only these are allowed
+    const ok = code(['p++', 'p--', 'p + k', 'p − k', 'q − p'], -6.2, 4.4, 0.5, 2.4);
+    say('允許的只有這 5 種', '遞增、遞減、加常數、減常數、兩指標相減');
+    const bad = [];
+    const mk = (s, i) => { bad.push(cube(s, '#c0504d', [1.6, 0.7, 1.0], -1 + i * 2.2, 2.6, 2.2, 2)); };
+    await step(tok);                                 // 5:53 cannot add two pointers
+    mk('p + q', 0);
+    say('不能兩個指標相加');
+    await step(tok);                                 // 5:57 cannot multiply two pointers
+    mk('p × q', 1);
+    say('不能兩個指標相乘');
+    await step(tok);                                 // 6:00 cannot multiply a constant with a pointer
+    mk('p × 2', 2);
+    say('也不能拿常數乘指標');
+    await step(tok);                                 // 6:03 they don't have any meaning
+    for (const b of bad) { fly(b); await beat(tok, 300); }
+    say('這些運算沒有意義', '所以不允許');
+    await step(tok);                                 // 6:07 p++ makes sense: next element
+    ok.hl(0);
+    await p.slide(tok, 1); txt(p.l, 'p = 102');
+    say('p++ 有意義：移到下一個元素', 'p-- 就是移到前一個');
+    await step(tok);                                 // 6:23 only these arithmetic operations
+    ok.hl(-1);
+    say('記住：指標只有這幾種算術運算');
   }
-  await beat(tok, 600);
 }
 async function scPtrUnary(tok) {
-  const { m, vs } = arithBase();
+  const { m, vs } = arithBase(false);
   const ex = tag('', 'ptr alt', 0, 4.6, 0);
   const rd = tag('', 'ptr', 4.4, 2.4, 2.4);
-  say('一元運算子從右往左讀', 'p 一開始指 100（值 5）');
-  const p = ptrMark('p', 'ptr', m.xs, 0, 0);
-  await beat(tok, 2600);
+  let p = null;
   const reset = () => { p.place(0); relabel(vs[0], 5); glow(vs[0]); glow(vs[1]); txt(rd, ''); };
-  // *++p
+  say('特別的寫法：* 和 ++ 放在一起');
+  await step(tok);                                   // 6:35 p on the first integer (5)
+  p = ptrMark('p', 'ptr', m.xs, 0, 0);
+  say('p 指向第一個整數：100，值 5');
+  await step(tok);                                   // 6:42 *++p
   txt(ex, '*++p');
-  say('*++p：先移 p，再取值', '++p → 102');
-  await p.slide(tok, 1); await beat(tok, 900);
-  glow(vs[1], GOLD); txt(rd, '結果 8');
-  say('*++p 得到 8，p 停在 102', '移指標 → 讀資料');
-  await beat(tok, 2800);
-  reset();
-  // ++*p
-  txt(ex, '++*p');
-  say('++*p：先取值，再把值加 1', '*p = 5');
-  glow(vs[0], GOLD); await beat(tok, 1500);
-  relabel(vs[0], 6); txt(rd, '結果 6');
-  say('5 變成 6，p 不動', '讀資料 → 加資料');
-  await beat(tok, 2800);
-  reset();
-  // *p++
-  txt(ex, '*p++');
-  say('*p++：後置 ++ 等整個式子結束才做', '先 *p 讀到 5');
-  glow(vs[0], GOLD); txt(rd, '結果 5'); await beat(tok, 2000);
+  say('*++p 是什麼意思？');
+  await step(tok);                                   // 6:50 unary: read right to left
+  txt(rd, '① ++p　② *');
+  say('兩個都是一元運算子：從右往左讀', '先 ++，再 *');
+  await step(tok);                                   // 6:56 p first moves to 102
   await p.slide(tok, 1);
-  say('讀完 5 之後，p 才移到 102', '讀資料 → 移指標');
-  await beat(tok, 2800);
+  say('p 先移到 102');
+  await step(tok);                                   // 7:03 then take the value 8
+  glow(vs[1], GOLD); txt(rd, '結果 8');
+  say('再取值：得到 8', 'p 停在 102');
+  await step(tok);                                   // 7:10 ++*p
+  reset(); txt(ex, '++*p');
+  say('下一個：++*p');
+  await step(tok);                                   // 7:23 first take the data: 5
+  glow(vs[0], GOLD); txt(rd, '① *p = 5');
+  say('先取資料：5');
+  await step(tok);                                   // 7:27 ++ → 6
+  relabel(vs[0], 6); txt(rd, '結果 6');
+  say('資料 +1：5 變成 6', 'p 不動');
+  await step(tok);                                   // 7:30 *p++ (very interesting)
+  reset(); txt(ex, '*p++');
+  say('很有趣的一個：*p++');
+  await step(tok);                                   // 7:53 ++ is post increment: after the expression
+  txt(rd, '++ 等式子結束才做');
+  say('先看到 ++，但它是「後置」', '要等整個式子結束才做');
+  await step(tok);                                   // 8:03 * is performed first: reads 5
+  glow(vs[0], GOLD); txt(rd, '結果 5');
+  say('所以先做 *p：讀到 5');
+  await step(tok);                                   // 8:18 then p moves to the next integer
+  await p.slide(tok, 1);
+  say('之後 p 才移到下一個整數', '結果是 5，p 在 102');
+  await step(tok);                                   // 8:44 ++*p: take data, increment data
   reset();
-  // (*p)++
-  txt(ex, '(*p)++');
-  say('(*p)++：括號讓 ++ 作用在資料', '資料 5 → 6，p 不動');
-  glow(vs[0], GOLD); await beat(tok, 1200); relabel(vs[0], 6); txt(rd, '值 5 → 6');
-  await beat(tok, 2600);
-  txt(ex, '++*p、(*p)++ 改資料；*++p、*p++ 移指標');
-  say('記法：* 先碰到誰，++ 就作用在誰', '後置 ++ 在式子結束後才生效');
-  await beat(tok, 3200);
-}
-
-// ─── OqLt2GfX6jg：為什麼需要指標 ───
-function memMap() {
-  fresh([0, 6.5, 12.5], [0, 1.2, 0]);
-  const secs = [['Code', -4.6, '#e6dccb'], ['Stack', 0, '#d9e7f2'], ['Heap', 4.6, '#e8dcef']];
-  secs.forEach(([n, x, c]) => { cube('', c, [4.2, 0.1, 5.2], x, 0.05, 0); tag(n, 'ptr', x, 0.2, -3.1); });
-  tag('Main Memory', 'idx', 0, 0.2, 3.2);
-}
-async function scMemLayout(tok) {
-  memMap();
-  say('程式要執行，先載入 main memory', '分成 code、stack、heap 三區');
-  await beat(tok, 2800);
-  const cd = code(['int a, b, c;', '...'], -4.6, 2.4, 0.5);
-  say('程式碼放在 code 區，一行一行執行', '第一行宣告變數');
-  await beat(tok, 2600);
-  cd.hl(0);
-  ghostBox('#4b9ee2', 3.6, 1.2, 1.4).position.set(0, 0.7, 0);
-  tag('activation record', 'idx', 0, 1.6, 0);
-  const vs = ['a', 'b', 'c'].map((n, i) => cube(n, BLUE, [1.0, 0.6, 1.0], -1.2 + i * 1.2, 0.4, 0, 2));
-  ['500', '502', '504'].forEach((a, i) => tag(a, 'idx', -1.2 + i * 1.2, 0, 1.0));
-  say('變數配置在 stack：activation record', '假設 a、b、c 在 500、502、504');
-  await beat(tok, 3000);
-  vs.forEach((v) => glow(v, GREEN));
-  say('stack 可以直接存取', '程式裡的 a 直接換成位址 500');
-  await beat(tok, 3000);
-  const h = tag('✗ 不能直接存取', 'ptr', 4.6, 1.2, 0);
-  say('stack 以外（例如 heap）不能直接存取', '只能透過指標「間接」存取');
-  await beat(tok, 3200);
-}
-async function scHeapMalloc(tok) {
-  memMap();
-  const cd = code(['int *p;', 'p = (int *)malloc(10);'], -4.6, 2.4, 0.5);
-  cd.hl(0);
-  const p = cube('p', TEAL, [1.2, 0.7, 1.0], 0, 0.45, 0, 2);
-  say('activation record 只有一個變數 p', 'p 是指標，放在 stack');
-  await beat(tok, 2800);
-  cd.hl(1);
-  const bytes = [];
-  for (let i = 0; i < 10; i++) { bytes.push(cube('', '#b98fd0', [0.32, 0.5, 1.0], 3.0 + i * 0.36, 0.3, 0, 2)); await beat(tok, 120); }
-  tag('1000', 'idx', 3.0, 0, 1.0); tag('10 bytes', 'idx', 4.6, 0, 1.0);
-  say('malloc(10)：在 heap 配 10 bytes', '第一個 byte 位址假設 1000');
-  await beat(tok, 2800);
-  relabel(p, 1000);
-  arrow(V3(0.6, 0.45, 0), V3(2.8, 0.45, 0));
-  say('位址 1000 存進 p，p 指向 heap', 'p = 1000');
-  await beat(tok, 2800);
-  glow(p, GREEN); bytes.forEach((b) => glow(b, GOLD));
-  say('程式直接讀 p，再透過 p 間接存取 heap', '用途一：存取 heap 記憶體');
-  await beat(tok, 3400);
-}
-async function scSwap(tok) {
-  fresh([0, 6, 12.5], [0, 1.6, 0]);
-  tag('Stack', 'ptr', -5.5, 0.2, 0);
-  const cd = code(['void swap(int x, int y) {', '  int t = x; x = y; y = t;', '}', 'main: swap(a, b);'], 3.4, 5.6, 0.48);
-  tag('main', 'idx', -4.4, 0.2, 2.0);
-  const a = cube(10, BLUE, [1.3, 0.8, 1.0], -2.2, 0.45, 2.0, 2), b = cube(20, TEAL, [1.3, 0.8, 1.0], -0.4, 0.45, 2.0, 2);
-  tag('a  500', 'idx', -2.2, 0, 3.0); tag('b  502', 'idx', -0.4, 0, 3.0);
-  say('main 有 a、b，想用 swap 交換', 'a = 10，b = 20（示意數值）');
-  await beat(tok, 2800);
-  cd.hl(3);
-  tag('swap', 'idx', -4.4, 0.2, -1.6);
-  const x = cube(10, BLUE, [1.3, 0.8, 1.0], -2.2, 0.45, -1.6, 3), y = cube(20, TEAL, [1.3, 0.8, 1.0], -0.4, 0.45, -1.6, 3), t = cube('t', GRAY, [1.3, 0.8, 1.0], 1.4, 0.45, -1.6, 3);
-  tag('x', 'idx', -2.2, 0, -2.6); tag('y', 'idx', -0.4, 0, -2.6);
-  say('call by value：值複製到 x、y', 'swap 有自己的 activation record');
-  await beat(tok, 3000);
-  cd.hl(1);
-  move(x, -0.4, 0.45, -1.6); move(y, -2.2, 0.45, -1.6); relabel(t, 10);
-  say('只交換了 x、y', 'swap 碰不到 main 的 a、b');
-  await beat(tok, 2600);
-  glow(a, RED); glow(b, RED);
-  say('a、b 沒變：call by value 失敗', '函式不能存取別人的 activation record');
-  await beat(tok, 3000);
-  [x, y, t].forEach((m) => fly(m)); glow(a); glow(b);
-  cd.kill();
-  const cd2 = code(['void swap(int *x, int *y) {', '  int t = *x; *x = *y; *y = t;', '}', 'main: swap(&a, &b);'], 3.4, 5.6, 0.48);
-  cd2.hl(3);
-  await beat(tok, 800);
-  const px = cube(500, ORANGE, [1.3, 0.8, 1.0], -2.2, 0.45, -1.6, 3), py = cube(502, ORANGE, [1.3, 0.8, 1.0], -0.4, 0.45, -1.6, 3);
-  cube('t', GRAY, [1.3, 0.8, 1.0], 1.4, 0.45, -1.6, 3);
-  arrow(V3(-2.2, 0.9, -1.0), V3(-2.2, 0.9, 1.4)); arrow(V3(-0.4, 0.9, -1.0), V3(-0.4, 0.9, 1.4));
-  say('改傳位址：x = &a = 500，y = &b = 502', 'x、y 是指標，指向 main 的變數');
-  await beat(tok, 3000);
-  cd2.hl(1);
-  move(a, -0.4, 0.45, 2.0); move(b, -2.2, 0.45, 2.0);
-  await beat(tok, 900);
-  glow(a, GREEN); glow(b, GREEN);
-  say('透過 *x、*y 間接改到 a、b', '用途二：call by reference');
-  await beat(tok, 3400);
-}
-async function scDevices(tok) {
-  fresh([0, 6, 12.5], [0, 1.2, 0]);
-  const sum = P().focus === 'summary';
-  cube('', '#d9e7f2', [3.4, 0.1, 5.2], -4.4, 0.05, 0); tag('Stack（可直接存取）', 'ptr', -4.4, 0.2, -3.1);
-  const p = cube('ptr', ORANGE, [1.3, 0.8, 1.0], -4.4, 0.45, 0, 2);
-  const devs = [['Heap', '#e8dcef', -3.0], ['檔案（disk）', '#e6dccb', -1.0], ['鍵盤／螢幕', '#cfe3d2', 1.0], ['印表機', '#f0d9c4', 3.0]];
-  const ds = [];
-  const why = ['malloc 回傳位址給指標', 'FILE *fp 才能讀寫磁碟上的檔案', 'scanf／printf 內部用指標存取裝置', '輸出到印表機也要透過指標'];
-  say(sum ? '指標的用途總整理' : 'stack 以外的東西都要間接存取', '指標 = 存位址的變數');
-  await beat(tok, 2400);
-  for (let i = 0; i < devs.length; i++) {
-    const [n, c, z] = devs[i];
-    ds.push(cube('', c, [2.0, 0.9, 1.4], 4.2, 0.5, z, 2)); tag(n, 'idx', 4.2, 1.3, z);
-    arrow(V3(-3.6, 0.5, 0), V3(3.1, 0.5, z));
-    if (!sum && i === 0) { await beat(tok, 900); continue; }
-    say(sum ? ['① 存取 heap', '② call by reference', '③ 存取檔案', '④ 存取周邊裝置'][i] : n + '：靠指標', why[i]);
-    await beat(tok, sum ? 1800 : 2800);
-  }
-  ds.forEach((d) => glow(d, GOLD));
-  say('只有 stack 能直接存取', '其他地方的資料都靠指標間接存取');
-  await beat(tok, 3200);
+  kill(ex);
+  const sm = code(['++*p   ：讀資料 → 資料 +1', '*++p   ：移指標 → 讀資料', '*p++   ：讀資料 → 移指標', '(*p)++ ：資料 +1（同 ++*p）'], -1.2, 5.0, 0.5, 0);
+  sm.ls.forEach((l, i) => { if (i) showL(l, false); });
+  sm.hl(0);
+  say('整理：++*p', '讀資料，再把資料加 1');
+  await step(tok);                                   // 9:00 *++p: move pointer, read data
+  showL(sm.ls[1], true); sm.hl(1);
+  say('*++p', '先移指標，再讀資料');
+  await step(tok);                                   // 9:25 *p++: read data, then move p
+  showL(sm.ls[2], true); sm.hl(2);
+  say('*p++', '先讀資料，再移指標');
+  await step(tok);                                   // 9:45 (*p)++ increments the data
+  showL(sm.ls[3], true); sm.hl(3);
+  glow(vs[0], GOLD);
+  await beat(tok, 600);
+  relabel(vs[0], 6); txt(rd, '資料 5 → 6');
+  say('(*p)++：括號讓 ++ 作用在資料上', '和 ++*p 一樣是改資料');
+  await step(tok);                                   // 10:12 *p++ moves pointer, (*p)++ increments data
+  sm.hl(-1);
+  cls(sm.ls[2], 'ptr'); cls(sm.ls[3], 'ptr alt');
+  say('*p++ 移指標；(*p)++ 改資料', '只差一個括號，意思完全不同');
 }
 
 FRAG.push(['bariarr-addr1d', '一維陣列位址公式 L0 + i×w', scAddr1D]);
@@ -5207,10 +5664,6 @@ FRAG.push(['bariarr-dptr-syntax', 'double pointer 存取 2D 陣列', scDPtrSynta
 FRAG.push(['bariarr-arr2d-syntax', '2D 陣列名的指標語法', scArr2DSyntax]);
 FRAG.push(['bariarr-ptr-arith', '指標的算術運算', scPtrArith]);
 FRAG.push(['bariarr-ptr-unary', '*++p、++*p、*p++、(*p)++', scPtrUnary]);
-FRAG.push(['bariarr-memlayout', 'Code／Stack／Heap 與直接存取', scMemLayout]);
-FRAG.push(['bariarr-heap-malloc', '用指標存取 heap（malloc）', scHeapMalloc]);
-FRAG.push(['bariarr-swap', 'Call by value vs call by reference', scSwap]);
-FRAG.push(['bariarr-devices', '指標存取檔案與周邊裝置', scDevices]);
   }
 
   // ═══ contlin.js ═══
@@ -6097,8 +6550,11 @@ FRAG.push(['contlin-iter-end', 'Iterator 細節：end 不用配置、*p 只取�
 
   // ═══ engmisc.js ═══
   {
-// ─── engmisc：akErwS16DUg（Linked List 入門）、PdvGEI-P3-M（Stack vs Heap）、ygK0YON10sQ（Recursion 與 Stack） ───
-const C_STACK = '#4b9ee2', C_HEAP = '#2fc092', C_CODE = '#c08a1f', C_LINK = '#d8c29b';
+// ─── engmisc：akErwS16DUg（Linked List 入門）、PdvGEI-P3-M（Stack vs Heap）、ygK0YON10sQ（Recursion 與 Stack）— cued: each step(tok) waits for the sentence it shows ───
+const K = kit(ctx);
+const step = (tok) => ctx.step(tok);
+const C_STACK = '#4b9ee2', C_HEAP = '#2fc092', C_CODE = '#c08a1f', C_LINK = '#d8c29b', C_PTR = '#f2c46d';
+const cls = (l, c) => { l.element.className = 'lab-label' + (c ? ' ' + c : ''); };
 // arrow from node g1's link box to node g2's data box (lnode groups)
 function llink(g1, g2) {
   return arrow(V3(g1.position.x + 0.96, g1.position.y, g1.position.z), V3(g2.position.x - 0.52, g2.position.y, g2.position.z));
@@ -6111,310 +6567,462 @@ function ring(r = 0.8) {
 // a translucent memory region with a title
 function region(name, color, x, w, h = 5.4, d = 2.6, z = 0) {
   const g = ghostBox(color, w, h, d); g.position.set(x, h / 2, z);
-  tag(name, 'ptr', x, h + 0.4, z);
+  g.userData.title = tag(name, 'ptr', x, h + 0.4, z);
   return g;
 }
 
 // ════════ akErwS16DUg：陣列的問題 → Linked List ════════
 FRAG.push(['engmisc-array-fixed', '陣列大小固定的問題', async (tok) => {
   fresh([0, 6, 13], [0, 1, 0]);
-  const decl = tag('int A[10];', 'ptr alt', 0, 3.2, 0);
+  say('為什麼需要 Linked List？');
+  await step(tok);                                   // 0:08 problems with arrays, array vs linked list
+  const t1 = tag('① 陣列的問題', 'ptr', -3, 3.6, 0), t2 = tag('② array 和 linked list 的差別', 'ptr', 3, 3.6, 0);
+  say('這段講兩件事', '陣列有什麼問題、array 和 linked list 差在哪');
+  await step(tok);                                   // 0:17 array is of a fixed size
+  kill(t1); kill(t2);
+  const decl = tag('int A[ 大小 ];', 'ptr alt', 0, 3.2, 0);
+  const lock = tag('建好之後：不能變大、不能變小', 'bad', 0, 2.4, 0);
+  say('陣列是 fixed size', '建立時就要給大小，之後改不了');
+  await step(tok);                                   // 0:40 know the count → that size; otherwise can't decide
+  say('知道要存幾個，就開剛好的大小', '不知道的話，大小根本決定不了');
+  await step(tok);                                   // 0:51 a random size: insufficient or excess
+  say('隨便取一個大小？', '可能不夠用，也可能太多');
+  await step(tok);                                   // 1:04 declare an array of size 10
+  kill(lock);
+  txt(decl, 'int A[10];');
   const slots = [];
   for (let i = 0; i < 10; i++) {
     const g = ghostBox('#c9b48e', 0.9, 0.8, 0.9); g.position.set(-4.5 + i, 0.4, 0); slots.push(g);
     tag('[' + i + ']', 'idx', -4.5 + i, 0, 0.9);
   }
-  say('宣告陣列時就要給大小', 'int A[10]：之後不能變大、也不能變小');
-  await beat(tok, 2400);
+  say('例如宣告 A[10]：10 格');
+  await step(tok);                                   // 1:11 more than 10 elements → cannot store
   const cs = [];
-  for (let i = 0; i < 10; i++) { cs.push(cube('e' + (i + 1), C_STACK, [0.8, 0.7, 0.8], -4.5 + i, 0.35, 0, 4)); await beat(tok, 220); }
+  for (let i = 0; i < 10; i++) { cs.push(cube('e' + (i + 1), C_STACK, [0.8, 0.7, 0.8], -4.5 + i, 0.35, 0, 4)); await beat(tok, 80); }
   const extra = cube('e11', '#c0563a', [0.8, 0.7, 0.8], 5.8, 0.35, 0, 4);
-  await beat(tok, 600);
   glow(extra, RED);
-  say('執行時來了第 11 個：放不下', '使用者輸入幾個，寫程式時根本不知道');
-  await beat(tok, 2200);
+  say('執行時來了第 11 個：放不下');
+  await step(tok);                                   // 1:18 only 2–3 elements → lots of space wasted
   fly(extra, V3(3, 8, 4));
   for (let i = 3; i < 10; i++) fly(cs[i], V3(0, 8, 4));
-  await beat(tok, 900);
   for (let i = 3; i < 10; i++) tint(slots[i], '#c0563a');
-  say('只有 2、3 個元素：大部分空間浪費', '7 格空著');
-  await beat(tok, 2400);
+  say('只有 2、3 個元素時', '其他 7 格空著，浪費');
+  await step(tok);                                   // 1:25 take a larger size 100 → still a limit
   txt(decl, 'int A[100];');
-  say('改成 100 格？一樣有上限', '超過 100 個放不下，太少又浪費');
-  await beat(tok, 2400);
-  say('大小在 compile time 決定，元素數在 runtime 才知道', '這就是陣列的問題：fixed size');
-  await beat(tok, 3000);
+  say('改成 100 格？', '超過 100 個一樣放不下');
+  await step(tok);                                   // 1:41 users decide how many elements
+  tag('要輸入幾個？使用者決定', 'note', 0, 2.4, 0);
+  say('程式是寫給使用者用的', '要存幾個，是使用者執行時才決定');
+  await step(tok);                                   // 2:05 runtime vs compile time: the problem
+  say('數量在 runtime 才知道', '大小卻要在寫程式（compile time）時決定 → 問題');
 }]);
 
 FRAG.push(['engmisc-array-stack-heap', '陣列在 Stack 與 Heap', async (tok) => {
   fresh([0, 7, 13], [0, 1.4, 0]);
+  say('先複習陣列');
+  await step(tok);                                   // 2:24 array either in stack or in heap
   region('Stack（main 的 activation record）', C_STACK, -3.5, 5.2, 2.2, 4.2);
   region('Heap', C_HEAP, 3.5, 5.2, 2.2, 4.2);
   const cd = code(['int A[5];', 'int *p = new int[5];'], -0.2, 5.2);
+  say('陣列可以建在 Stack，也可以建在 Heap');
+  await step(tok);                                   // 2:34 int A[5]: inside main's activation record
   cd.hl(0);
-  say('int A[5]：陣列直接建在 Stack', 'main 的 activation record 裡');
   const A = [];
-  for (let i = 0; i < 5; i++) { A.push(cube('', C_STACK, [0.85, 0.6, 0.85], -5.4 + i * 0.95, 0.3, -0.8, 3)); tag('A[' + i + ']', 'idx', -5.4 + i * 0.95, 0, 0.1); await beat(tok, 200); }
-  await beat(tok, 1400);
+  for (let i = 0; i < 5; i++) { A.push(cube('', C_STACK, [0.85, 0.6, 0.85], -5.4 + i * 0.95, 0.3, -0.8, 3)); tag('A[' + i + ']', 'idx', -5.4 + i * 0.95, 0, 0.1); }
+  say('int A[5]：建在 main 的 activation record 裡');
+  await step(tok);                                   // 2:45 pointer p here; array of 5 in heap
   cd.hl(1);
-  const p = cube('p', '#f2c46d', [0.9, 0.6, 0.9], -3.5, 0.3, 1.3, 3);
-  say('用 pointer p 在 Heap 配置 5 格', 'p = new int[5]');
-  await beat(tok, 900);
+  cube('p', C_PTR, [0.9, 0.6, 0.9], -3.5, 0.3, 1.3, 3);
   const H = [];
   for (let i = 0; i < 5; i++) { H.push(cube('', C_HEAP, [0.85, 0.6, 0.85], 1.6 + i * 0.95, 0.3, 0, 3)); tag('[' + i + ']', 'idx', 1.6 + i * 0.95, 0, 0.9); }
-  await beat(tok, 600);
+  say('指標 p 在 Stack', '5 格的陣列建在 Heap');
+  await step(tok);                                   // 3:13 p is pointing on that one
   arrow(V3(-3.05, 0.3, 1.3), V3(1.15, 0.3, 0.1));
-  await beat(tok, 1600);
+  say('p 指向 Heap 上的那塊');
+  await step(tok);                                   // 3:24 benefit: contiguous, side by side
   cd.hl(-1);
-  say('優點：所有格子連續、一格挨一格', '所以能用 index 直接存取');
-  for (let i = 0; i < 5; i++) { glow(A[i], GOLD); glow(H[i], GOLD); await beat(tok, 300); glow(A[i]); glow(H[i]); }
+  for (let i = 0; i < 5; i++) { glow(A[i], GOLD); glow(H[i], GOLD); await beat(tok, 250); }
+  say('陣列的優點：格子一格挨一格', 'contiguous（連續）');
+  await step(tok);                                   // 3:28 access them with index
+  A.forEach((m) => glow(m)); H.forEach((m) => glow(m));
+  say('所以可以用 index 0 … 4 存取');
+  await step(tok);                                   // 3:32 reach any element randomly
   glow(A[3], GREEN);
-  say('random access：直接跳到 A[3]', '位址 = 起點 + 3 × 元素大小');
-  await beat(tok, 2200);
+  say('想去哪一格就直接跳過去', 'random access：例如直接到 A[3]');
+  await step(tok);                                   // 3:37 like a bench of capacity 5
   glow(A[3]);
-  say('就像 5 人座長椅：做好就固定容量', '人多坐不下，人少浪費位子');
-  await beat(tok, 3000);
+  cube('5 人座長椅', '#b8844b', [4.8, 0.2, 0.5], -3.5, 0.1, -1.7);
+  say('陣列就像一張 5 人座長椅', '做好時容量就固定了');
+  await step(tok);                                   // 3:52 more people no space, fewer wasted
+  say('人多：坐不下', '人少：位子浪費');
 }]);
 
 FRAG.push(['engmisc-ll-build', 'Linked List 的想法：每個元素自帶空間', async (tok) => {
   fresh([0, 7, 12.5], [0, 0.6, 0]);
+  say('Linked List 的想法');
+  await step(tok);                                   // 4:07 we don't want a fixed-size bench
+  const want = tag('不要固定大小的長椅', 'bad', 0, 3.6, 0);
+  say('不知道使用者要存幾個', '所以不要固定大小');
+  await step(tok);                                   // 4:33 grow and reduce in size
+  cls(want, 'good'); txt(want, '要：能變大、能變小（variable size）');
+  say('使用者可以加、也可以刪', '資料結構要能跟著變大變小');
+  await step(tok);                                   // 4:46 create memory in heap during runtime
   region('Heap（runtime 動態配置）', C_HEAP, 0.6, 11.2, 1.6, 6);
-  const first = cube('first', '#f2c46d', [1.1, 0.6, 0.9], -6, 0.3, 2.2);
-  say('想要能變大、變小的資料結構', '在 Heap 配置記憶體 + 用 link 串起來');
-  await beat(tok, 2600);
-  say('先準備一個 pointer：first', '還沒有任何元素');
-  await beat(tok, 1800);
+  kill(want);
+  say('做法：執行時在 Heap 配置記憶體');
+  await step(tok);                                   // 4:52 use linking
+  say('再用 link 把它們串起來');
+  await step(tok);                                   // 5:16 one pointer: first
+  cube('first', C_PTR, [1.1, 0.6, 0.9], -6, 0.3, 2.2);
+  say('先準備一個指標：first', '還沒有任何元素');
+  await step(tok);                                   // 5:35 store 8: allocate, first points on it
   const n8 = lnode(8, -3.8, 0.4, -1.2, colorFor(8));
-  let a0 = arrow(V3(-5.45, 0.3, 2.2), V3(-4.3, 0.4, -0.9));
+  n8.children[1].visible = false;
+  arrow(V3(-5.45, 0.3, 2.2), V3(-4.3, 0.4, -0.9));
+  say('要存 8：配一格空間', 'first 指向它');
+  await step(tok);                                   // 5:46 also allocate a pointer to the next one → NULL
+  n8.children[1].visible = true;
   let nl = nullAfter(n8);
-  say('存 8：配置空間給元素 + 指向下一個的 pointer', '後面還沒有東西 → NULL');
-  await beat(tok, 2600);
-  say('元素 + pointer 合起來叫一個 node', 'node = data + next');
-  glow(n8.userData.data, GOLD); await beat(tok, 1600); glow(n8.userData.data);
+  say('同時多配一個「指向下一個」的指標', '後面還沒有東西 → NULL');
+  await step(tok);                                   // 6:03 that's it, we made a node
+  glow(n8.userData.data, GOLD);
+  const nt = tag('node = data + next', 'ptr alt', -3.8, 1.6, -1.2);
+  say('元素 + 指標，合起來叫一個 node');
+  await step(tok);                                   // 6:19 one more element: allocate, point to it
+  glow(n8.userData.data); kill(nt);
   kill(nl);
   const n3 = lnode(3, -0.4, 0.4, 1.4, colorFor(3));
-  const a1 = llink(n8, n3); nl = nullAfter(n3);
-  say('再存 3：再建一個 node，前一個指向它', '8 → 3 → NULL');
-  await beat(tok, 2400);
+  llink(n8, n3); nl = nullAfter(n3);
+  say('再存 3：再建一個 node', '前一個 node 指向它：8 → 3');
+  await step(tok);                                   // 6:41 element 12: a new node
   kill(nl);
   const n12 = lnode(12, 3.2, 0.4, -1.0, colorFor(12));
-  const a2 = llink(n3, n12); nl = nullAfter(n12);
-  say('再存 12：要存一個元素就建一個 node', '8 → 3 → 12 → NULL');
-  await beat(tok, 2400);
-  say('像自己帶椅子來的人：一個接一個牽起來', 'node 散在 Heap 各處，靠 link 連起來');
-  await beat(tok, 3000);
-  void a0; void a1; void a2;
+  llink(n3, n12);
+  say('再存 12：再建一個 node', '3 指向 12');
+  await step(tok);                                   // 6:50 nothing beyond → NULL; a node per element
+  nl = nullAfter(n12);
+  say('12 後面沒有了 → NULL', '要存一個元素，就建一個 node');
+  await step(tok);                                   // 7:02 not a bench: everyone brings a chair
+  const ppl = [n8, n3, n12].map((g) => { const b = K.buddy('', '', '#f4a56a', g.position.x, 0, g.position.z - 1.1, 0.5); b.mood('happy'); return b; });
+  say('不是長椅：每個人自己帶椅子來', '來一個，就牽上前一個');
+  await step(tok);                                   // 7:14 a chain of chairs; leaving takes the chair
+  ppl[1].mood('wow');
+  say('一個牽一個，連成一串', '有人離開，就把自己的椅子帶走');
+  await step(tok);                                   // 7:26 every element brings its own memory
+  ppl.forEach((b) => b.mood('happy'));
+  say('每個元素自帶記憶體，並指向下一個', 'node 散在 Heap 各處，靠 link 連起來');
 }]);
 
 FRAG.push(['engmisc-ll-relink', '改 link 就能刪除與插入', async (tok) => {
   fresh([0, 7, 12.5], [0, 0.6, 0.5]);
-  const first = tag('first', 'ptr', -6, 1.4, 0);
+  tag('first', 'ptr', -6, 1.4, 0);
   const n8 = lnode(8, -4.5, 0.4, 0, colorFor(8)), n3 = lnode(3, -1.5, 0.4, 0, colorFor(3)), n12 = lnode(12, 3.5, 0.4, 0, colorFor(12));
-  let a83 = llink(n8, n3), a312 = llink(n3, n12); const nl = nullAfter(n12);
-  void first; void nl;
-  say('8 → 3 → 12', '');
-  await beat(tok, 1600);
+  let a83 = llink(n8, n3), a312 = llink(n3, n12); nullAfter(n12);
+  say('8 → 3 → 12');
+  await step(tok);                                   // 7:44 remove 3
+  glow(n3.userData.data, RED);
+  say('想刪掉 3');
+  await step(tok);                                   // 7:48 8 points on 12 instead of 3
   kill(a83); kill(a312);
   const a812 = llink(n8, n12);
   glow(n8.userData.data, GOLD);
-  say('刪除 3：讓 8 改指向 12', '8.next = 3.next');
-  await beat(tok, 2000);
+  say('讓 8 改指向 12 就好', '只改一個 link');
+  await step(tok);                                   // 7:54 easy, remove it
   glow(n8.userData.data);
   move(n3, -1.5, 0.4, -2.6);
-  await beat(tok, 900);
-  say('3 被跳過，記憶體可以釋放', '只改了一個 link');
-  await beat(tok, 1800);
+  say('3 被跳過了：等於刪掉');
+  await step(tok);                                   // 7:56 bring it back as it is
   kill(a812);
-  move(n3, -1.5, 0.4, 0);
-  await beat(tok, 700);
+  move(n3, -1.5, 0.4, 0); glow(n3.userData.data);
   a83 = llink(n8, n3); a312 = llink(n3, n12);
-  say('把 3 放回去', '8 → 3 → 12');
-  await beat(tok, 1500);
+  say('先把 3 放回去', '8 → 3 → 12');
+  await step(tok);                                   // 7:59 new element between 3 and 12
+  say('想在 3 和 12 中間插入新元素');
+  await step(tok);                                   // 8:04 create node 7
   const n7 = lnode(7, 1.0, 0.4, 2.4, colorFor(7));
-  say('在 3 和 12 之間插入 7：先建 node 7', '');
-  await beat(tok, 1600);
-  const a712 = llink(n7, n12);
-  say('7 指向 12', '7.next = 3.next');
-  await beat(tok, 1600);
+  say('先建一個 node：7');
+  await step(tok);                                   // 8:06 7 points on 12
+  llink(n7, n12);
+  say('7 指向 12');
+  await step(tok);                                   // 8:08 3 points on 7
   kill(a312);
-  const a37 = llink(n3, n7);
-  say('3 改指向 7', '3.next = 7');
-  await beat(tok, 1800);
-  void a712; void a37;
+  llink(n3, n7);
+  say('3 改指向 7');
+  await step(tok);                                   // 8:10 start from first: 8 → 3 → 7 → 12
   const cur = ring();
-  for (const g of [n8, n3, n7, n12]) {
-    cur.position.set(g.position.x, 0.05, g.position.z);
-    say('從 first 走：8 → 3 → 7 → 12', '走訪只能順著 link');
-    await beat(tok, 800);
-  }
-  say('大小可增可減，插入／刪除只要改 link', 'Linked List 一律建在 Heap');
-  await beat(tok, 3000);
+  for (const g of [n8, n3, n7, n12]) { cur.position.set(g.position.x, 0.05, g.position.z); await beat(tok, 550); }
+  say('從 first 走：8 → 3 → 7 → 12');
+  await step(tok);                                   // 8:22 just by changing links
+  say('插入也只是改 link');
+  await step(tok);                                   // 8:24 more flexible than an array
+  say('比陣列有彈性', '大小可增可減，插入、刪除都容易');
+  await step(tok);                                   // 8:45 remember: arrays in stack or heap
+  kill(cur);
+  say('整理：陣列可以建在 Stack 或 Heap');
+  await step(tok);                                   // 8:52 linked list: always in heap
+  region('Heap', C_HEAP, -0.5, 11.4, 1.4, 5.4, 0.8);
+  say('Linked List 一律建在 Heap', '建在 Stack 沒有意義');
+  await step(tok);                                   // 9:01 each element allocated separately; size variable
+  say('每個元素各自配置記憶體', '移除就釋放：大小是可變的');
 }]);
 
 FRAG.push(['engmisc-ll-address', 'Linked List 的位址與 head', async (tok) => {
   fresh([0, 8, 12], [0, 0.4, 0.3]);
   function anode(data, link, addr, x, z) {
-    const d = cube(data, C_STACK, [1.0, 0.7, 1.0], x, 0.35, z, 3);
-    const k = cube(link, C_LINK, [1.1, 0.7, 1.0], x + 1.05, 0.35, z, 3);
+    const d = cube(data, C_STACK, [1.0, 0.7, 1.0], x, 0.35, z);
+    const k = cube(link, C_LINK, [1.1, 0.7, 1.0], x + 1.05, 0.35, z);
     tag('@' + addr, 'idx', x + 0.5, 1.15, z);
     return { d, k, x, z };
   }
-  const f = cube('200', '#f2c46d', [1.0, 0.6, 0.9], -5.5, 0.3, 2.6);
-  tag('first（head）@100', 'ptr', -5.5, 1.2, 2.6);
-  say('Linked List：node 的集合', '每個 node = data + 指向下一個的 pointer');
-  await beat(tok, 1600);
+  say('下一部分：Linked List 的細節');
+  await step(tok);                                   // 9:17 what is a linked list, node, define, create, access
+  const plan = tag('定義 → node 結構 → 建立 node → 存取成員', 'ptr alt', 0, 3.4, 0);
+  say('接下來依序看', '定義、node 怎麼寫、怎麼建立、怎麼存取');
+  await step(tok);                                   // 9:45 a collection of nodes: data + pointer to next
+  kill(plan);
   const N = [anode(8, '210', 200, -4.8, -1.4), anode(3, '270', 210, -1.6, 0.9), anode('…', '300', 270, 1.4, -1.6), anode('…', 'NULL', 300, 4.4, 0.6)];
-  arrow(V3(-5.5, 0.3, 2.1), V3(-4.9, 0.35, -0.85));
-  await beat(tok, 700);
   for (let i = 0; i < 3; i++) arrow(V3(N[i].x + 1.6, 0.35, N[i].z), V3(N[i + 1].x - 0.5, 0.35, N[i + 1].z));
-  say('first 存 200：指向第一個 node（head node）', 'first 自己的位址是 100');
+  say('Linked List：node 的集合', '每個 node = data + 指向下一個 node 的指標');
+  await step(tok);                                   // 10:03 node@200: data 8, link 210
+  glow(N[0].d, GOLD); glow(N[0].k, GOLD);
+  say('第一個 node 在 200', 'data 8，link 存 210');
+  await step(tok);                                   // 10:10 210 is this node; data 3, link 270
+  glow(N[0].d); glow(N[0].k); glow(N[1].d, GOLD); glow(N[1].k, GOLD);
+  say('210 就是下一個 node 的位址', '它存 data 3、link 270');
+  await step(tok);                                   // 10:23 first (head) points on the first node
+  glow(N[1].d); glow(N[1].k);
+  const f = cube('200', C_PTR, [1.0, 0.6, 0.9], -5.5, 0.3, 2.6);
+  tag('first（head）', 'ptr', -5.5, 1.2, 2.6);
+  arrow(V3(-5.5, 0.3, 2.1), V3(-4.9, 0.35, -0.85));
   glow(f, GOLD); glow(N[0].d, GOLD);
-  await beat(tok, 2400);
+  say('first 指向第一個 node', '也叫 head；第一個 node 叫 head node');
+  await step(tok);                                   // 10:37 first holds 200; its own address is 100
+  tag('@100', 'idx', -5.5, 0, 3.4);
+  say('first 裡存 200', 'first 自己的位址是 100');
+  await step(tok);                                   // 10:52 the list is created inside the heap
   glow(f); glow(N[0].d);
-  say('node@200：data 8，link 存 210', '下一個 node 的位址 = 210');
-  glow(N[0].k, GOLD); glow(N[1].d, GOLD);
-  await beat(tok, 2400);
-  glow(N[0].k); glow(N[1].d);
-  say('node@210：data 3，link 存 270', '最後一個 node 的 link = NULL');
-  glow(N[1].k, GOLD); await beat(tok, 2000); glow(N[1].k);
-  say('位址不連續：200、210、270、300', '連續性靠 link（位址）維持');
-  for (const n of N) { glow(n.d, GREEN); await beat(tok, 400); }
-  await beat(tok, 800);
+  region('Heap', C_HEAP, 0, 11.6, 1.6, 4.2, -0.4);
+  say('這些 node 都建在 Heap');
+  await step(tok);                                   // 11:04 addresses are random; real ones are in thousands
+  tag('位址是隨便取的（真的通常是幾千）', 'note', 0, 2.6, -0.4);
+  say('這些位址只是舉例', '真實位址通常是幾千');
+  await step(tok);                                   // 11:16 in an array addresses are contiguous
   for (let i = 0; i < 4; i++) { cube('', GRAY, [0.9, 0.4, 0.6], -1.5 + i * 0.95, 0.2, -4.2); tag(String(200 + 2 * i), 'idx', -1.5 + i * 0.95, 0.7, -4.2); }
   tag('陣列', 'ptr alt', -3, 0.6, -4.2);
-  say('對照陣列：200、202、204… 一格挨一格', '陣列連續；Linked List 散在 Heap');
-  await beat(tok, 3000);
+  say('對照陣列：200、202、204…', '一格挨一格');
+  await step(tok);                                   // 11:30 here 200, 210, 270, 300: not side by side
+  N.forEach((n) => glow(n.d, GOLD));
+  say('Linked List：200、210、270、300', '不是一格挨一格');
+  await step(tok);                                   // 11:36 continuity through links (addresses)
+  N.forEach((n) => { glow(n.d); glow(n.k, GREEN); });
+  say('那順序靠什麼？靠 link（位址）', '每個 node 記住下一個在哪');
 }]);
 
 FRAG.push(['engmisc-node-struct', '定義 node：self-referential structure', async (tok) => {
   fresh([0, 5, 12], [0, 2, 0]);
-  const cd = code(['struct Node {', '    int data;', '    struct Node *next;', '};'], -3.6, 5.2);
+  say('怎麼定義一個 node？');
+  await step(tok);                                   // 11:56 two things: data and pointer
   const d = cube('data', C_STACK, [2.0, 0.9, 1.2], 1.6, 0.45, 0);
-  const n = cube('next', C_LINK, [2.0, 0.9, 1.2], 3.6, 0.45, 0);
-  say('node 有兩個成員：data 和 next', 'data 可以是 int、float、double……');
-  cd.hl(1); glow(d, GOLD);
-  await beat(tok, 2400);
-  glow(d); cd.hl(2); glow(n, GOLD);
-  say('next 指向下一個 node：型別是 struct Node *', 'pointer 指向自己這種型別');
-  await beat(tok, 2400);
-  const g2 = lnode('', 5.6, 0.45, -2.2, '#9fb7cc');
+  const n = cube('pointer', C_LINK, [2.0, 0.9, 1.2], 3.6, 0.45, 0);
+  say('node 要兩樣東西：data 和 pointer', 'data 可以是 int、float、double…');
+  await step(tok);                                   // 12:10 the pointer points to the next node
+  lnode('', 5.6, 0.45, -2.2, '#9fb7cc');
   arrow(V3(4.6, 0.45, -0.3), V3(5.1, 0.45, -1.9));
+  say('pointer 指向下一個 node');
+  await step(tok);                                   // 12:16 a pointer of its own type
+  glow(n, GOLD);
+  say('下一個也是 node', '所以 pointer 的型別就是 node 自己的型別');
+  await step(tok);                                   // 12:29 two members: data and next
+  glow(n); relabel(n, 'next');
+  say('兩個成員：data 和 next');
+  await step(tok);                                   // 12:55 C structure: struct Node
+  const cd = code(['struct Node {', '    int data;', '    struct Node *next;', '};'], -3.6, 5.2);
+  cd.hl(0);
+  say('用 C 的 structure 來寫', 'struct Node { … };');
+  await step(tok);                                   // 13:09 int data
+  cd.hl(1); glow(d, GOLD);
+  say('int data;', '學習時通常用 int');
+  await step(tok);                                   // 13:24 pointer to a node: struct Node *next
+  glow(d); cd.hl(2); glow(n, GOLD);
+  say('struct Node *next;', '指向「同一種 node」的指標');
+  await step(tok);                                   // 14:03 self-referential structure
+  glow(n); cd.hl(-1);
   tag('self-referential structure', 'ptr alt', 0.5, 3.4, 0);
-  say('自己參照自己的 structure', 'Linked List 就是靠它');
-  await beat(tok, 2600);
-  glow(n);
-  say('C++ 也可以用 struct 或 class', 'class 預設 private；struct 預設 public');
-  await beat(tok, 2600);
-  cd.hl(-1);
+  say('structure 裡有指向自己型別的指標', '叫 self-referential structure，Linked List 就靠它');
+  await step(tok);                                   // 14:19 C++ also supports structure
+  say('C++ 也可以用 struct', '也可以用 class');
+  await step(tok);                                   // 14:35 class private, struct public
+  say('差別：class 預設 private', 'struct 預設 public');
+  await step(tok);                                   // 14:52 int takes 2 bytes
   const bytes = [];
-  for (let i = 0; i < 4; i++) { bytes.push(cube('', i < 2 ? C_STACK : C_LINK, [0.9, 0.3, 0.9], 1.1 + i * 1.0, 0.15, 2.2, 2)); tag(String(200 + i), 'idx', 1.1 + i * 1.0, 0.6, 3.0); await beat(tok, 300); }
-  say('影片假設 int 2 bytes、pointer 2 bytes', 'sizeof(struct Node) = 2 + 2 = 4 bytes');
-  await beat(tok, 2600);
-  glow(bytes[0], GOLD);
-  say('pointer 只記第一個 byte 的位址', 'node 的位址 = 200');
-  await beat(tok, 2800);
-  void g2;
+  for (let i = 0; i < 2; i++) bytes.push(cube('', C_STACK, [0.9, 0.3, 0.9], 1.1 + i * 1.0, 0.15, 2.2, 2));
+  say('node 多大？int 佔 2 bytes（影片假設）');
+  await step(tok);                                   // 15:05 pointer also 2 bytes
+  for (let i = 2; i < 4; i++) bytes.push(cube('', C_LINK, [0.9, 0.3, 0.9], 1.1 + i * 1.0, 0.15, 2.2, 2));
+  say('pointer 也是 2 bytes', '影片說：int 2 bytes 的編譯器，pointer 也 2 bytes');
+  await step(tok);                                   // 15:24 bytes 200, 201, 202, 203
+  for (let i = 0; i < 4; i++) tag(String(200 + i), 'idx', 1.1 + i * 1.0, 0.6, 3.0);
+  say('位址 200、201、202、203');
+  await step(tok);                                   // 15:40 each node is 4 bytes
+  bytes.forEach((b) => glow(b, '#3a3a00'));
+  say('一個 node = 2 + 2 = 4 bytes');
+  await step(tok);                                   // 15:42 a pointer needs only the first byte address
+  bytes.forEach((b) => glow(b)); glow(bytes[0], GOLD);
+  say('指標只要記第一個 byte 的位址', '所以 node 的位址 = 200');
 }]);
 
 FRAG.push(['engmisc-node-malloc', '建立 node 與存取成員', async (tok) => {
   fresh([0, 6.5, 12.5], [0, 1.6, 0]);
+  say('怎麼建立一個 node？');
+  await step(tok);                                   // 16:00 first of all we need a pointer
   region('Stack', C_STACK, -4.6, 3.2, 1.4, 3);
   region('Heap', C_HEAP, 2.8, 6.4, 1.4, 3);
-  const cd = code(['struct Node *p;', 'p = (struct Node *)malloc(sizeof(struct Node));', 'p = new Node;          // C++', 'p->data = 10;', 'p->next = 0;            // NULL'], -2.2, 6.0);
+  const p = cube('p', C_PTR, [1.2, 0.7, 1.0], -4.6, 0.35, 0, 3);
+  say('首先要一個指標');
+  await step(tok);                                   // 16:07 nodes must be in heap: struct Node *p
+  const cd = code(['struct Node *p;', 'p = malloc( ? );', 'p = new Node;          // C++', 'p->data = 10;', 'p->next = 0;            // NULL'], -2.6, 6.0);
   cd.hl(0);
-  const p = cube('p', '#f2c46d', [1.2, 0.7, 1.0], -4.6, 0.35, 0, 3);
-  say('node 一定要建在 Heap：先準備 pointer p', 'struct Node *p;');
-  await beat(tok, 2600);
+  say('node 一定要建在 Heap', '所以先宣告 struct Node *p;');
+  await step(tok);                                   // 16:36 C function: malloc
   cd.hl(1);
-  say('malloc 要 4 bytes：寫 sizeof(struct Node)', 'malloc 回傳 void *，要強制轉型');
-  await beat(tok, 1400);
+  say('C 用 malloc 在 Heap 配置');
+  await step(tok);                                   // 16:47 how many bytes? 2 + 2 = 4
+  txt(cd.ls[1], 'p = malloc(4);');
+  say('要幾個 bytes？2 + 2 = 4');
+  await step(tok);                                   // 16:53 or sizeof(struct Node)
+  txt(cd.ls[1], 'p = malloc(sizeof(struct Node));');
+  say('也可以寫 sizeof(struct Node)', '讓編譯器幫你算大小');
+  await step(tok);                                   // 17:01 malloc returns void *: typecast
+  txt(cd.ls[1], 'p = (struct Node *)malloc(sizeof(struct Node));');
+  say('malloc 回傳 void *', '要強制轉型成 struct Node *');
+  await step(tok);                                   // 17:31 C++: p = new Node
+  cd.hl(2);
+  say('C++ 簡單多了：p = new Node;');
+  await step(tok);                                   // 17:55 a new node is created
   const d = cube('', C_STACK, [1.2, 0.8, 1.2], 2.2, 0.4, 0, 4);
   const k = cube('', C_LINK, [1.2, 0.8, 1.2], 3.4, 0.4, 0, 4);
-  tag('@500', 'idx', 2.8, 1.3, 0);
   tag('data', 'idx', 2.2, 0, 1.0); tag('next', 'idx', 3.4, 0, 1.0);
-  await beat(tok, 900);
+  say('Heap 裡建出一個新 node', '有 data 和 next 兩格');
+  await step(tok);                                   // 18:06 address 500 stored in p
+  tag('@500', 'idx', 2.8, 1.3, 0);
   relabel(p, '500');
-  const a = arrow(V3(-3.95, 0.35, 0), V3(1.55, 0.4, 0));
-  say('新 node 在 500，p 存 500 → p 指向它', '');
-  await beat(tok, 2400);
-  cd.hl(2);
-  say('C++ 簡單多了', 'p = new Node;');
-  await beat(tok, 2200);
-  cd.hl(3);
-  glow(d, GOLD);
-  await beat(tok, 500);
+  arrow(V3(-3.95, 0.35, 0), V3(1.55, 0.4, 0));
+  say('新 node 在 500', 'p 存 500 → p 指向它');
+  await step(tok);                                   // 18:29 members accessed with the arrow operator
+  cd.hl(3); glow(d, GOLD);
+  say('p 是指向 structure 的指標', '成員用箭頭 -> 存取：p->data');
+  await step(tok);                                   // 18:43 assign 10
   relabel(d, 10);
-  say('p 是指向 structure 的 pointer：成員用 ->', 'p->data = 10');
-  await beat(tok, 2400);
+  say('p->data = 10：10 存進 data');
+  await step(tok);                                   // 18:56 p->next = 0: NULL
   glow(d); cd.hl(4); glow(k, GOLD);
   relabel(k, 'NULL');
-  say('next 設 0（NULL）：不指向任何 node', 'p->next = 0');
-  await beat(tok, 2600);
+  say('p->next = 0：0 就是 NULL', '不指向任何 node');
+  await step(tok);                                   // 19:05 creating a node and accessing its members
   glow(k); cd.hl(-1);
-  void a;
-  say('建立 node + 存取成員', 'malloc／new 配置，-> 存取');
-  await beat(tok, 2600);
+  say('建立 node：malloc／new', '存取成員：->');
 }]);
 
 FRAG.push(['engmisc-ptr-move', 'q = p、q = p->next、p = p->next', async (tok) => {
   fresh([0, 7, 12], [0, 0.8, 0.6]);
   const xs = [-3.6, -0.6, 2.4, 5.4], addrs = [200, 210, 270, 300];
   const G = xs.map((x, i) => { const g = lnode('', x, 0.4, 0, '#9fb7cc'); tag('@' + addrs[i], 'idx', x + 0.3, 1.2, 0); return g; });
-  for (let i = 0; i < 3; i++) llink(G[i], G[i + 1]);
-  const pb = cube('200', '#f2c46d', [1.0, 0.6, 0.8], -6, 0.3, 2.8), qb = cube('', '#f2c46d', [1.0, 0.6, 0.8], -6, 0.3, 4.4);
-  tag('p', 'ptr', -6.6, 1.0, 2.8); tag('q', 'ptr alt', -6.6, 1.0, 4.4);
-  const pl = tag('p', 'ptr', xs[0], 0.4, 1.4), ql = tag('q', 'ptr alt', xs[0], 0.4, 2.2);
-  showL(ql, false);
   const cd = code(['q = p;', 'q = p->next;', 'p = p->next;'], 0.8, 4.4);
-  say('p 指向 node@200；另外有一個 pointer q', '');
-  await beat(tok, 2200);
-  cd.hl(0); relabel(qb, '200'); showL(ql, true);
-  say('q = p：把 p 裡的 200 存進 q', '兩個 pointer 指向同一個 node');
-  await beat(tok, 2800);
-  cd.hl(1); glow(G[0].children[1], GOLD);
-  await beat(tok, 900);
-  relabel(qb, '210'); ql.position.set(xs[1], 0.4, 2.2);
-  say('q = p->next：p 的 next 欄位是 210', 'q 指向 p 的下一個 node');
-  await beat(tok, 2800);
+  say('幾個常用的指標敘述');
+  await step(tok);                                   // 19:24 a list; p points on some node
+  for (let i = 0; i < 3; i++) llink(G[i], G[i + 1]);
+  const pb = cube('200', C_PTR, [1.0, 0.6, 0.8], -6, 0.3, 2.8);
+  tag('p', 'ptr', -6.6, 1.0, 2.8);
+  const pl = tag('p', 'ptr', xs[0], 0.4, 1.4);
+  say('p 指向位址 200 的 node');
+  await step(tok);                                   // 19:35 also one pointer q
+  const qb = cube(' ', C_PTR, [1.0, 0.6, 0.8], -6, 0.3, 4.4);
+  tag('q', 'ptr alt', -6.6, 1.0, 4.4);
+  const ql = tag('q', 'ptr alt', xs[0], 0.4, 2.2); showL(ql, false);
+  say('另外有一個指標 q');
+  await step(tok);                                   // 19:41 q = p
+  cd.hl(0);
+  say('q = p 是什麼意思？');
+  await step(tok);                                   // 19:49 what is in p is stored in q: 200
+  relabel(qb, '200'); showL(ql, true);
+  say('p 裡的 200 複製到 q', 'q 也指向 200');
+  await step(tok);                                   // 20:10 two pointers on the same node
+  glow(G[0].userData.data, GOLD);
+  say('兩個指標指向同一個 node');
+  await step(tok);                                   // 20:18 q = p->next
+  glow(G[0].userData.data);
+  cd.hl(1);
+  say('q = p->next 呢？');
+  await step(tok);                                   // 20:29 p is 200, its next is 210
+  glow(G[0].children[1], GOLD);
+  say('p 是 200，它的 next 欄位存 210');
+  await step(tok);                                   // 20:38 q gets 210: q on the next node
   glow(G[0].children[1]);
+  relabel(qb, '210');
+  await anim(tok, 700, (t) => ql.position.set(xs[0] + (xs[1] - xs[0]) * t, 0.4, 2.2));
+  say('q 拿到 210', 'q 指向 p 的下一個 node');
+  await step(tok);                                   // 21:04 p = p->next
   cd.hl(2);
-  say('p = p->next：把 210 存回 p 自己', '');
-  await beat(tok, 1500);
-  relabel(pb, '210'); pl.position.set(xs[1], 0.4, 1.4);
-  say('p 往下一個 node 移動', '走訪 Linked List 最常用的一行');
-  await beat(tok, 2400);
-  for (let i = 2; i < 4; i++) {
-    relabel(pb, String(addrs[i])); pl.position.set(xs[i], 0.4, 1.4);
-    say('一直 p = p->next，就能走過整串', 'p = ' + addrs[i]);
-    await beat(tok, 1100);
-  }
-  cd.hl(-1);
-  await beat(tok, 2000);
+  say('p = p->next 呢？', '讓 p 指向自己的下一個 node');
+  await step(tok);                                   // 21:30 210 is stored in p
+  glow(G[0].children[1], GOLD);
+  relabel(pb, '210');
+  say('p->next 是 210', '把 210 存回 p 自己');
+  await step(tok);                                   // 21:37 p is now pointing on the next node
+  glow(G[0].children[1]);
+  await anim(tok, 700, (t) => pl.position.set(xs[0] + (xs[1] - xs[0]) * t, 0.4, 1.4));
+  say('p 不再指 200 的 node', '移到 210 的 node 了');
+  await step(tok);                                   // 21:47 p moved to the next node: very useful
+  cd.hl(-1); cls(cd.ls[2], 'ptr alt');
+  say('p = p->next：讓 p 往下走一格', '走訪 Linked List 最常用的一行');
 }]);
 
 FRAG.push(['engmisc-null-check', '判斷 pointer 是不是 NULL', async (tok) => {
   fresh([0, 6.5, 12.5], [0, 1.5, 0]);
-  const p1 = cube('0', '#f2c46d', [1.2, 0.7, 1.0], -4.5, 0.35, 1.2); tag('情況一：p 不指向任何 node', 'ptr', -4.5, 1.3, 1.2);
-  const p2 = cube('200', '#f2c46d', [1.2, 0.7, 1.0], 1.0, 0.35, 1.2); tag('情況二：p 指向某個 node', 'ptr', 1.0, 1.3, 1.2);
-  const g = lnode('', 4.4, 0.4, 1.2, '#9fb7cc'); arrow(V3(1.65, 0.35, 1.2), V3(3.88, 0.4, 1.2));
-  void g;
-  say('p = 0 或 p = NULL：兩種寫法一樣', 'NULL = 位址 0');
-  await beat(tok, 2600);
-  say('C/C++：0 是 false，非 0 是 true', '情況一 p = 0 → false；情況二 p = 200 → true');
-  glow(p2, GREEN); glow(p1, RED);
-  await beat(tok, 2800);
-  glow(p1); glow(p2);
-  const cd = code(['if (p == NULL)', 'if (p == 0)', 'if (!p)', 'if (p != NULL)', 'if (p != 0)', 'if (p)'], 0, 5.4);
-  const conds = [[0, p1, 'p 是 NULL 才成立'], [1, p1, 'p 是 0 才成立'], [2, p1, '!0 = true'], [3, p2, '反過來：p 有指向 node'], [4, p2, '非 0'], [5, p2, '200 非 0 → true']];
-  for (const [i, box, why] of conds) {
-    cd.hl(i); glow(box, GOLD);
-    say(i < 3 ? '檢查 p 是不是 NULL（三種寫法）' : '檢查 p 有沒有指向 node（三種寫法）', cd.ls[i].element.textContent.trim() + ' → 情況' + (box === p1 ? '一' : '二') + '成立：' + why);
-    await beat(tok, 1900);
-    glow(box);
-  }
+  say('換一個例子：檢查指標');
+  await step(tok);                                   // 22:21 two examples
+  const p1 = cube(' ', C_PTR, [1.2, 0.7, 1.0], -4.5, 0.35, 1.2); tag('情況一：p 不指向任何 node', 'ptr', -4.5, 1.3, 1.2);
+  const p2 = cube('200', C_PTR, [1.2, 0.7, 1.0], 1.0, 0.35, 1.2); tag('情況二：p 指向某個 node', 'ptr', 1.0, 1.3, 1.2);
+  lnode('', 4.4, 0.4, 1.2, '#9fb7cc'); arrow(V3(1.65, 0.35, 1.2), V3(3.88, 0.4, 1.2));
+  say('兩種情況', 'p 沒指向 node；p 指向某個 node');
+  await step(tok);                                   // 22:36 p = 0 or p = NULL
+  relabel(p1, '0');
+  const ex = tag('p = 0;　或　p = NULL;', 'ptr alt', 0, 4.2, 0);
+  say('讓 p 變 NULL：寫 0 或 NULL 都可以', '兩者一樣');
+  await step(tok);                                   // 23:05 not pointing → 0; pointing → non-zero
+  say('沒指向 node：值是 0', '有指向：是一個不為 0 的有效位址');
+  await step(tok);                                   // 23:15 0 is false, non-zero is true
+  glow(p1, RED); glow(p2, GREEN);
+  txt(ex, 'C／C++：0 = false，非 0 = true');
+  say('C／C++：0 是 false，非 0 是 true', '情況一 false，情況二 true');
+  await step(tok);                                   // 23:45 if (p == NULL)
+  glow(p1); glow(p2); kill(ex);
+  const cd = code(['if (p == NULL)', 'if (p == 0)', 'if (!p)', 'if (p != NULL)', 'if (p != 0)', 'if (p)'], 0, 5.0);
+  cd.ls.forEach((l, i) => { if (i) showL(l, false); });
+  cd.hl(0); glow(p1, GOLD);
+  say('if (p == NULL)', '情況一成立：p 沒指向任何 node');
+  await step(tok);                                   // 24:09 if (p == 0)
+  showL(cd.ls[1], true); cd.hl(1);
+  say('if (p == 0)', '一樣是情況一成立');
+  await step(tok);                                   // 24:21 if (!p)
+  showL(cd.ls[2], true); cd.hl(2);
+  say('if (!p)', 'p 是 0 → false，!false → true');
+  await step(tok);                                   // 24:43 three methods to check NULL
   cd.hl(-1);
-  say('三種寫法等價，看到都要認得', 'p == NULL ⇔ p == 0 ⇔ !p');
-  await beat(tok, 2600);
+  say('三種寫法：檢查 p 是不是 NULL');
+  await step(tok);                                   // 25:05 inverse: if (p != NULL)
+  glow(p1); glow(p2, GOLD);
+  showL(cd.ls[3], true); cd.hl(3);
+  say('反過來：if (p != NULL)', '情況二成立：p 有指向 node');
+  await step(tok);                                   // 25:26 if (p != 0)
+  showL(cd.ls[4], true); cd.hl(4);
+  say('if (p != 0)');
+  await step(tok);                                   // 25:33 if (p): 200 is true
+  showL(cd.ls[5], true); cd.hl(5);
+  say('if (p)', 'p = 200 → 非 0 → true');
+  await step(tok);                                   // 25:52 important conditions
+  cd.hl(-1); glow(p2);
+  say('三種 vs 三種，寫法等價', '看到都要認得');
 }]);
 
 FRAG.push(['engmisc-last-node', 'p->next == NULL：最後一個 node', async (tok) => {
@@ -6424,92 +7032,110 @@ FRAG.push(['engmisc-last-node', 'p->next == NULL：最後一個 node', async (to
   llink(G[0], G[1]); llink(G[1], G[2]); nullAfter(G[2]);
   const pl = tag('p', 'ptr', xs[1], 0.4, 1.3);
   const cd = code(['if (p->next == NULL)   // p 是最後一個', 'if (p->next != NULL)   // p 後面還有'], -0.6, 4.4);
-  say('想知道 p 後面還有沒有 node', '看 p->next');
-  await beat(tok, 2200);
-  for (const [i, at] of [[0, 2], [1, 1]]) {
-    pl.position.set(xs[at], 0.4, 1.3);
-    cd.hl(i);
-    glow(G[at].children[1], at === 2 ? GOLD : GREEN);
-    say(at === 2 ? 'p 的 next 是 NULL → p 是最後一個 node' : 'p 的 next 有位址 → 後面還有 node',
-      (at === 2 ? 'p->next == NULL' : 'p->next != NULL') + ' → true');
-    await beat(tok, 3200);
-    glow(G[at].children[1]);
-  }
-  pl.position.set(xs[0], 0.4, 1.3); cd.hl(1);
-  say('走訪時常用：p->next != NULL 就繼續', '');
-  await beat(tok, 2400);
-  cd.hl(-1);
-  say('分清楚兩種檢查', 'p == NULL：p 沒指向 node；p->next == NULL：p 是最後一個');
-  await beat(tok, 3000);
+  say('再一個條件');
+  await step(tok);                                   // 26:03 after node p: more nodes, or last?
+  say('node p 後面還有沒有 node？', '還是 p 就是最後一個？');
+  await step(tok);                                   // 26:08 if (p->next == NULL)
+  cd.hl(0);
+  await anim(tok, 600, (t) => pl.position.set(xs[1] + (xs[2] - xs[1]) * t, 0.4, 1.3));
+  say('看 p->next', 'if (p->next == NULL)');
+  await step(tok);                                   // 26:24 it is 0: p is the last node
+  glow(G[2].children[1], GOLD);
+  say('next 是 0：後面沒有 node', '成立 → p 是最後一個 node');
+  await step(tok);                                   // 26:40 if (p->next != NULL): an address is there
+  glow(G[2].children[1]);
+  cd.hl(1);
+  await anim(tok, 600, (t) => pl.position.set(xs[2] + (xs[1] - xs[2]) * t, 0.4, 1.3));
+  glow(G[1].children[1], GREEN);
+  say('if (p->next != NULL)', 'next 裡有位址 → p 後面還有 node');
+  await step(tok);                                   // 26:56 we usually need these checks
+  glow(G[1].children[1]); cd.hl(-1);
+  say('p == NULL：p 沒指向 node', 'p->next == NULL：p 是最後一個');
 }]);
 
 // ════════ PdvGEI-P3-M：Stack vs Heap ════════
 function memLayout() {
-  region('Code', C_CODE, -4.3, 3.0, 5.2, 2.6);
-  region('Stack', C_STACK, 0, 3.0, 5.2, 2.6);
-  region('Heap', C_HEAP, 4.3, 3.0, 5.2, 2.6);
+  return [region('Code', C_CODE, -4.3, 3.0, 5.2, 2.6), region('Stack', C_STACK, 0, 3.0, 5.2, 2.6), region('Heap', C_HEAP, 4.3, 3.0, 5.2, 2.6)];
 }
 FRAG.push(['engmisc-mem-code', 'Main memory 與 code section', async (tok) => {
   fresh([0, 6.5, 14], [0, 2.6, 0]);
+  say('Stack 和 Heap 差在哪？', '先認識電腦的記憶體');
+  await step(tok);                                   // 0:23 memory divided into three major sections
+  const mm = region('Main memory', '#9b8b72', 0, 11.6, 5.2, 2.6);
+  say('記憶體分成三大區');
+  await step(tok);                                   // 0:42 code section, stack, heap
+  kill(mm.userData.title); kill(mm);
   memLayout();
-  say('Main memory 分三區：Code、Stack、Heap', '');
-  await beat(tok, 2400);
+  say('Code、Stack、Heap');
+  await step(tok);                                   // 0:56 if I write a program
   const src = cube('C 程式', '#9fb7cc', [1.6, 0.8, 1.2], -6.2, 4.6, 3.2);
-  say('寫好程式，裡面宣告了一些變數', 'int a, b, c; …');
-  await beat(tok, 2000);
-  relabel(src, '機器碼'); tint(src, '#7a6a52');
-  say('compile：C 程式 → machine code', '');
-  await beat(tok, 2000);
+  say('寫一個程式，看三區怎麼被使用');
+  await step(tok);                                   // 1:04 declaring some variables
+  const cd = code(['int a, b, c;', '…'], -6.2, 6.4, 0.5, 3.2);
+  say('程式裡宣告了一些變數', 'int a, b, c; …');
+  await step(tok);                                   // 1:14 compile → machine code
+  relabel(src, '機器碼'); tint(src, '#7a6a52'); cd.kill();
+  say('compile：C 程式 → machine code');
+  await step(tok);                                   // 1:37 machine code brought into code section: loading
   move(src, -4.3, 0.4, 0);
-  say('要執行：先把 machine code 載入 Code 區', '這個動作叫 loading（像把 DVD 放進播放器）');
-  await beat(tok, 2600);
+  say('要執行：機器碼搬進 Code 區', '這叫 loading');
+  await step(tok);                                   // 1:56 like loading a DVD into the player
+  say('就像看 DVD 要先放進播放器');
+  await step(tok);                                   // 2:16 CPU executes one instruction at a time
   kill(src);
   const ins = [];
-  for (let i = 0; i < 4; i++) ins.push(cube('指令 ' + (i + 1), C_CODE, [2.4, 0.5, 1.6], -4.3, 0.25 + i * 0.55, 0));
-  await beat(tok, 600);
-  for (let i = 3; i >= 0; i--) {
-    glow(ins[i], GOLD);
-    say('CPU 一次拿一個指令來執行', '指令 ' + (4 - i));
-    await beat(tok, 900);
-    glow(ins[i]);
-  }
-  say('Code 區：放要執行的程式', '變數放哪？下一段：Stack');
-  await beat(tok, 2600);
+  for (let i = 0; i < 4; i++) ins.push(cube('指令 ' + (4 - i), C_CODE, [2.4, 0.5, 1.6], -4.3, 0.25 + i * 0.55, 0));
+  for (let i = 3; i >= 0; i--) { glow(ins[i], GOLD); await beat(tok, 450); glow(ins[i]); }
+  say('CPU 一次拿一個指令來執行');
+  await step(tok);                                   // 2:25 code section holds the program
+  say('Code 區：放程式本身');
 }]);
 
 FRAG.push(['engmisc-mem-stack', 'Stack：靜態大小、直接存取', async (tok) => {
   fresh([0, 6.5, 14], [0, 2.6, 0]);
   memLayout();
-  const prog = cube('main', C_CODE, [2.4, 1.2, 1.6], -4.3, 0.6, 0);
-  void prog;
+  cube('main', C_CODE, [2.4, 1.2, 1.6], -4.3, 0.6, 0);
   const cd = code(['int a, b, c;'], -4.3, 6.4);
-  say('程式宣告了三個變數 a、b、c', '記憶體從 Stack 配置');
-  await beat(tok, 2200);
+  say('接著看 Stack');
+  await step(tok);                                   // 2:36 the program has three variables
+  cd.hl(0);
+  say('程式宣告了三個變數', '它們需要記憶體');
+  await step(tok);                                   // 2:45 allocated from stack once the program starts
   const fr = ghostBox(C_STACK, 2.6, 2.0, 2.0); fr.position.set(0, 1.0, 0);
   const V = [];
-  for (const [i, nm] of [[0, 'a'], [1, 'b'], [2, 'c']]) {
-    V.push(cube(nm, C_STACK, [1.6, 0.55, 1.2], 0, 0.3 + i * 0.6, 0, 3));
-    tag(String(1000 + 2 * i), 'idx', -1.7, 0.3 + i * 0.6, 0);
-    await beat(tok, 450);
-  }
-  say('程式開始執行時才配置：allocation 是 runtime', '但要多少空間 compile time 就決定了');
-  await beat(tok, 2800);
-  say('size static，allocation dynamic', '大小由宣告的變數決定');
-  await beat(tok, 2400);
-  const ar = tag('main 的 activation record（stack frame）', 'ptr alt', 0, 2.5, 1.4);
-  void ar;
-  say('main 這一塊叫 activation record', '也叫 stack frame');
-  await beat(tok, 2400);
-  for (const v of V) {
-    glow(v, GOLD);
-    const a = arrow(V3(-3.0, 0.6, 0), V3(-0.85, v.position.y, 0));
-    say('程式直接用位址存取 Stack', '例如 a 在 1000');
-    await beat(tok, 900);
-    kill(a); glow(v);
-  }
+  for (const [i, nm] of [[0, 'a'], [1, 'b'], [2, 'c']]) { V.push(cube(nm, C_STACK, [1.6, 0.55, 1.2], 0, 0.3 + i * 0.6, 0, 3)); await beat(tok, 300); }
+  say('程式一開始執行，就從 Stack 配置 a、b、c');
+  await step(tok);                                   // 3:07 allocation is done at run time
+  say('配置發生在 runtime（執行時）');
+  await step(tok);                                   // 3:11 how much: decided at compile time
+  say('但要多少空間，compile time 就決定了', '看宣告了哪些變數');
+  await step(tok);                                   // 3:26 size static, allocation dynamic
+  tag('size：static　allocation：dynamic', 'ptr alt', 0, 6.0, 0);
+  say('大小是靜態的，配置是動態的');
+  await step(tok);                                   // 3:48 program directly accesses stack by address
   cd.hl(-1);
-  say('Stack：直接存取、大小是靜態的', '');
-  await beat(tok, 2800);
+  say('程式可以直接用位址存取 Stack');
+  await step(tok);                                   // 4:04 addresses 1000, 1002, 1004
+  V.forEach((v, i) => tag(String(1000 + 2 * i), 'idx', -1.7, 0.3 + i * 0.6, 0));
+  say('假設 a 在 1000、b 在 1002、c 在 1004');
+  await step(tok);                                   // 4:12 accesses them directly using addresses
+  for (const v of V) { glow(v, GOLD); const a = arrow(V3(-3.0, 0.6, 0), V3(-0.85, v.position.y, 0)); await beat(tok, 500); kill(a); glow(v); }
+  arrow(V3(-3.0, 0.6, 0), V3(-0.85, 0.9, 0), 0x0f5a3a);
+  say('直接照位址去拿');
+  await step(tok);                                   // 4:21 this block is the activation record
+  tag('main 的 activation record', 'ptr alt', 0, 2.5, 1.4);
+  say('main 在 Stack 上的這一塊', '叫 activation record');
+  await step(tok);                                   // 4:25 also called stack frame
+  tag('（stack frame）', 'idx', 0, 2.1, 1.4);
+  say('也叫 stack frame');
+  await step(tok);                                   // 4:48 stack memory accessed directly
+  say('重點一：Stack 可以直接存取');
+  await step(tok);                                   // 5:00 the size is static, pre-decided by the compiler
+  tag('大小：編譯時就決定', 'note', 0, 3.1, 1.4);
+  say('重點二：Stack 的大小是靜態的', '編譯器事先決定好');
+  await step(tok);                                   // 5:23 two important things about the stack
+  V.forEach((v) => glow(v, GREEN));
+  say('Stack：直接存取、大小靜態');
 }]);
 
 FRAG.push(['engmisc-mem-heap', 'Heap：透過 pointer 間接存取', async (tok) => {
@@ -6517,37 +7143,60 @@ FRAG.push(['engmisc-mem-heap', 'Heap：透過 pointer 間接存取', async (tok)
   memLayout();
   cube('main', C_CODE, [2.4, 1.2, 1.6], -4.3, 0.6, 0);
   const cd = code(['int a, b, c;', 'int *p;', 'p = malloc(10);'], -4.3, 6.9);
-  const block = cube('', '#c0563a', [0.5, 0.5, 0.5], 4.3, 1.5, 0);
-  const x = tag('✗ 不能直接存取 Heap', 'ptr', 1.9, 3.6, 0);
-  say('程式只能直接存取 Stack，不能直接碰 Heap', '');
-  await beat(tok, 2400);
-  kill(block); kill(x);
-  say('為什麼要 Heap？執行時可能需要更多記憶體', '要多少由使用者在 runtime 決定');
-  await beat(tok, 2600);
+  showL(cd.ls[1], false); showL(cd.ls[2], false);
+  say('接著看 Heap');
+  await step(tok);                                   // 6:08 the program can directly access only the stack
+  arrow(V3(-3.0, 1.0, 0), V3(-0.8, 1.0, 0), 0x0f5a3a);
+  tag('直接 ✓', 'good', -1.9, 1.7, 0);
+  say('程式只能直接存取 Stack');
+  await step(tok);                                   // 6:17 it cannot access heap directly
+  const x = tag('直接進 Heap ✗', 'bad', 3.0, 3.6, 0);
+  say('不能直接存取 Heap', '那要怎麼用 Heap？');
+  await step(tok);                                   // 6:28 why is heap required?
+  kill(x);
+  say('先想：為什麼需要 Heap？');
+  await step(tok);                                   // 6:50 more memory than the declared variables
+  say('執行時可能需要更多記憶體', '比宣告的變數還多');
+  await step(tok);                                   // 7:00 get it from heap during runtime
+  say('就要在 runtime 向 Heap 要');
+  await step(tok);                                   // 7:14 the user decides how much
+  say('要多少？使用者用程式時才決定');
+  await step(tok);                                   // 7:21 pre-plan: declare an integer pointer
+  showL(cd.ls[1], true); cd.hl(1);
+  say('寫程式時先準備一個指標', 'int *p;');
+  await step(tok);                                   // 7:32 this pointer helps access heap
+  say('靠這個指標去存取 Heap');
+  await step(tok);                                   // 7:45 variables allocated from stack
   cd.hl(0);
-  for (let i = 0; i < 3; i++) cube('abc'[i], C_STACK, [1.6, 0.5, 1.2], 0, 0.3 + i * 0.55, 0, 3);
-  await beat(tok, 600);
+  for (let i = 0; i < 3; i++) { cube('abc'[i], C_STACK, [1.6, 0.5, 1.2], 0, 0.3 + i * 0.55, 0, 3); await beat(tok, 200); }
+  say('程式載入後，變數在 Stack 配置');
+  await step(tok);                                   // 8:33 memory for p is also allocated (stack)
   cd.hl(1);
-  const p = cube('p', '#f2c46d', [1.6, 0.5, 1.2], 0, 1.95, 0, 3);
-  say('先宣告一個 pointer p（它也在 Stack）', 'int *p;');
-  await beat(tok, 2400);
-  cd.hl(2);
+  const p = cube('p', C_PTR, [1.6, 0.5, 1.2], 0, 1.95, 0, 3);
+  say('p 也一樣配置在 Stack');
+  await step(tok);                                   // 8:56 p = malloc(10)
+  showL(cd.ls[2], true); cd.hl(2);
+  say('程式某處寫 p = malloc(10)');
+  await step(tok);                                   // 9:12 10 bytes allocated from heap
   const h = cube('10 bytes', C_HEAP, [2.4, 0.9, 1.6], 4.3, 0.45, 0, 4);
+  say('從 Heap 配置 10 bytes');
+  await step(tok);                                   // 9:28 beginning address 5000
   tag('@5000', 'idx', 4.3, 1.3, 1.0);
-  say('malloc(10)：在 Heap 配置 10 bytes', '起始位址 5000');
-  await beat(tok, 2200);
+  say('這塊的起始位址：假設 5000');
+  await step(tok);                                   // 9:35 5000 stored in p, p points to it
   relabel(p, '5000');
-  arrow(V3(0.85, 1.95, 0), V3(3.05, 0.6, 0));
-  say('位址 5000 存進 p：p 指向這塊記憶體', 'p = 5000');
-  await beat(tok, 2600);
+  arrow(V3(0.85, 1.95, 0), V3(3.05, 0.6, 0), 0xa8730f);
+  say('5000 存進 p', 'p 指向這塊記憶體');
+  await step(tok);                                   // 9:44 not directly, but with the pointer
   cd.hl(-1);
-  glow(p, GOLD); say('程式先讀 p……', '');
-  await beat(tok, 1200);
-  glow(p); glow(h, GOLD); say('……再照 p 的位址去 Heap', '間接存取（indirect）');
-  await beat(tok, 2000);
+  glow(p, GOLD);
+  say('程式先直接讀 p……');
+  await step(tok);                                   // 9:50 the pointer gives the address
+  glow(p); glow(h, GOLD);
+  say('……p 給出位址，再去 Heap', '間接存取');
+  await step(tok);                                   // 9:55 indirect; size decided at runtime
   glow(h);
-  say('Heap：間接存取，大小在 runtime 決定', 'pointer 是存取 Heap 的必要工具');
-  await beat(tok, 2800);
+  say('Heap：間接存取', '大小在 runtime 決定（dynamic）');
 }]);
 
 FRAG.push(['engmisc-mem-compare', 'Stack 與 Heap 的兩大差異', async (tok) => {
@@ -6556,19 +7205,28 @@ FRAG.push(['engmisc-mem-compare', 'Stack 與 Heap 的兩大差異', async (tok) 
   const s = cube('a b c p', C_STACK, [2.2, 0.9, 1.6], 0, 0.45, 0);
   const h = cube('malloc', C_HEAP, [2.2, 0.9, 1.6], 4.3, 0.45, 0);
   arrow(V3(1.15, 0.45, 0), V3(3.15, 0.45, 0));
-  const rows = [
-    ['差異一：存取方式', 'Stack 直接存取', 'Heap 透過 pointer 間接存取', s, h],
-    ['差異二：大小何時決定', 'Stack 靜態（compile time，看宣告的變數）', 'Heap 動態（runtime，用 malloc）', s, h],
-  ];
-  for (const [cap, a, b, m1, m2] of rows) {
-    glow(m1, GOLD); say(cap, a);
-    await beat(tok, 2600);
-    glow(m1); glow(m2, GOLD); say(cap, b);
-    await beat(tok, 2600);
-    glow(m2);
-  }
-  say('Heap 不是給變數用，而是 malloc + pointer', '要用 Heap 一定要有 pointer');
-  await beat(tok, 3000);
+  say('總結');
+  await step(tok);                                   // 10:22 two major differences
+  say('Stack 和 Heap 的兩大差異');
+  await step(tok);                                   // 10:27 stack is directly accessible
+  glow(s, GOLD);
+  tag('① 直接存取', 'good', 0, 5.9, 1.4);
+  say('差異一：Stack 直接存取');
+  await step(tok);                                   // 10:30 heap is indirectly accessible
+  glow(s); glow(h, GOLD);
+  tag('① 間接（靠 pointer）', 'bad', 4.3, 5.9, 1.4);
+  say('Heap 間接存取', '要透過 pointer');
+  await step(tok);                                   // 10:33 stack size pre-decided
+  glow(h); glow(s, GOLD);
+  tag('② 大小事先決定', 'good', 0, 5.3, 1.4);
+  say('差異二：Stack 的大小事先決定', '看宣告了幾個變數');
+  await step(tok);                                   // 10:44 heap: not variables but malloc + pointer
+  glow(s); glow(h, GOLD);
+  tag('② runtime 用 malloc 要', 'bad', 4.3, 5.3, 1.4);
+  say('Heap 不靠變數', '靠 malloc 加上 pointer');
+  await step(tok);                                   // 10:54 pointer compulsory for heap
+  glow(h);
+  say('要存取 Heap，一定需要 pointer');
 }]);
 
 // ════════ ygK0YON10sQ：Recursion 與 Stack ════════
@@ -6580,26 +7238,58 @@ function memLayout4() {
 }
 FRAG.push(['engmisc-rec-memory', 'Main memory 與 activation record', async (tok) => {
   fresh([0, 6.5, 14], [0, 2.6, 0]);
+  say('先看程式和記憶體');
+  await step(tok);                                   // 0:38 statements in two categories
   const cd = code(['void main() {', '    int x = 10;    // data', '    x++;           // instruction', '}'], -2.2, 7.6, 0.5);
-  say('程式分兩部分：變數 = data，其他敘述 = instructions', '');
-  cd.hl(1); await beat(tok, 1600); cd.hl(2); await beat(tok, 1600); cd.hl(-1);
-  memLayout4();
-  say('Main memory：一部分給 OS，剩下分三區', 'Code／Stack／Heap');
-  await beat(tok, 2600);
-  const st = cube('global/static', '#e0a64a', [2.2, 0.5, 1.6], -1.75, 4.6, 0);
-  void st;
-  say('Code 區還有一小塊給 global／static 變數', 'Heap：動態配置記憶體用');
-  await beat(tok, 2600);
-  cube('main 機器碼', C_CODE, [2.2, 1.0, 1.6], -1.75, 0.5, 0, 4);
-  say('執行：machine code 載入 Code 區', '');
-  await beat(tok, 1800);
+  say('程式裡的敘述分成兩類');
+  await step(tok);                                   // 0:50 variables as data
+  cd.hl(1);
+  say('變數：data（資料）');
+  await step(tok);                                   // 0:57 other statements as instructions
+  cd.hl(2);
+  say('其他敘述：instructions（指令）');
+  await step(tok);                                   // 1:09 main memory (RAM)
+  cd.hl(-1);
+  const mm = region('Main memory（RAM）', '#9b8b72', 0, 13.0, 5.2, 2.4);
+  say('主記憶體，也叫 RAM');
+  await step(tok);                                   // 1:18 one portion occupied by the OS
+  kill(mm.userData.title); kill(mm);
+  region('OS', '#9b8b72', -5.25, 2.6, 5.2, 2.4);
+  say('一部分給作業系統（OS）');
+  await step(tok);                                   // 1:25 remaining divided into three sections
+  region('Code', C_CODE, -1.75, 2.6, 5.2, 2.4);
+  region('Stack', C_STACK, 1.75, 2.6, 5.2, 2.4);
+  region('Heap', C_HEAP, 5.25, 2.6, 5.2, 2.4);
+  say('剩下的分成三區，給我們的程式用');
+  await step(tok);                                   // 1:33 code: instructions
+  const ins = cube('指令', C_CODE, [2.2, 1.0, 1.6], -1.75, 0.5, 0);
+  glow(ins, GOLD);
+  say('Code 區：放程式的指令');
+  await step(tok);                                   // 1:41 stack: variables of a function
+  glow(ins);
+  say('Stack：放函式的變數（data）');
+  await step(tok);                                   // 1:52 heap: dynamic allocation
+  say('Heap：動態配置記憶體用');
+  await step(tok);                                   // 2:03 a small portion for global / static
+  cube('global/static', '#e0a64a', [2.2, 0.5, 1.6], -1.75, 4.6, 0);
+  say('還有一小塊屬於 Code', '放 global、static 變數');
+  await step(tok);                                   // 2:33 machine code loaded into code
+  relabel(ins, 'main 機器碼');
+  say('執行時：機器碼載入 Code 區');
+  await step(tok);                                   // 2:41 variables allocated inside the stack
   const ar = cube('main：x = 10', C_STACK, [2.2, 0.8, 1.6], 1.75, 0.4, 0, 4);
-  say('main 的變數放 Stack：這塊叫 activation record', '函式被呼叫時建立');
-  await beat(tok, 2600);
+  say('main 的變數在 Stack 配置');
+  await step(tok);                                   // 3:06 this portion: activation record of main
   glow(ar, GOLD);
+  say('屬於 main 的這一塊', '叫 activation record');
+  await step(tok);                                   // 3:11 instructions access data from the stack
   arrow(V3(-0.6, 0.5, 0), V3(0.6, 0.4, 0));
-  say('main 的指令執行時，到 Stack 取 x', '每個函式都有自己的 activation record');
-  await beat(tok, 3000);
+  say('main 的指令要用 x 時', '就到 Stack 上自己的 record 去拿');
+  await step(tok);                                   // 3:35 created when the function is called
+  glow(ar);
+  say('activation record 在函式被呼叫時建立');
+  await step(tok);                                   // 3:48 for every function
+  say('每個函式都有自己的 activation record');
 }]);
 
 // shared stack-trace helpers for the recursion scenes
@@ -6615,112 +7305,234 @@ function traceStage(lines, yTop = 6.4) {
 
 FRAG.push(['engmisc-rec-call', '函式呼叫：activation record 疊上去', async (tok) => {
   fresh([0, 6, 13.5], [0, 2.6, 0]);
+  say('函式呼叫時，Stack 怎麼變？');
+  await step(tok);                                   // 4:00 an example
   const T = traceStage(['void A(int a) {', '    printf("%d", a);', '}', 'void main() {', '    int x = 10;', '    x++;', '    A(x);', '}']);
+  say('來看一個例子');
+  await step(tok);                                   // 4:08 main increments x, passes 11 to A, A prints 11
+  T.cd.hl(6);
+  say('main 把 x 加 1，把 11 傳給 A', 'A 印出 11');
+  await step(tok);                                   // 4:24 program loaded in the code section
+  T.cd.hl(-1);
+  say('程式先載入 Code 區');
+  await step(tok);                                   // 4:31 activation record for main
   T.cd.hl(4);
   const m = T.push('main：x = 10');
-  say('main 開始：建立 main 的 activation record', '');
-  await beat(tok, 2200);
+  say('建立 main 的 activation record');
+  await step(tok);                                   // 4:39 x++
   T.cd.hl(5); relabel(m, 'main：x = 11');
-  say('x++', 'x = 11');
-  await beat(tok, 1800);
+  say('x++：x 變 11');
+  await step(tok);                                   // 4:47 A is called: its record is created
   T.cd.hl(6);
   T.push('A：a = 11');
-  say('呼叫 A(11)：A 的 activation record 疊在上面', 'main 還沒結束');
-  await beat(tok, 2600);
+  say('呼叫 A：A 的 activation record', '疊在 main 上面');
+  await step(tok);                                   // 5:02 main has not yet terminated
+  glow(m, '#3a3a00');
+  say('main 還沒結束', '它只是在等 A');
+  await step(tok);                                   // 5:17 running function accesses the topmost record
+  glow(m);
   T.cd.hl(1);
-  say('正在執行的函式只用最上面的 record', '');
-  await beat(tok, 1600);
+  say('正在執行的 A', '只用 Stack 最上面那一層');
+  await step(tok);                                   // 5:41 when a function terminates, its record is deleted
+  say('函式結束時', '它的 activation record 就刪掉');
+  await step(tok);                                   // 5:52 A prints 11
   txt(T.out, '輸出：11');
-  say('A 印出 11', 'output = 11');
-  await beat(tok, 2000);
+  say('A 印出 11');
+  await step(tok);                                   // 5:55 A ended: record gone
   T.cd.hl(2); T.pop();
-  say('A 結束：它的 record 刪掉', '');
-  await beat(tok, 2000);
+  say('A 結束：record 刪掉');
+  await step(tok);                                   // 5:58 main ended: record gone
   T.cd.hl(7); T.pop();
-  say('main 結束：Stack 清空', '');
-  await beat(tok, 2000);
+  say('main 結束：record 也刪掉');
+  await step(tok);                                   // 6:04 the stack is clear
   T.cd.hl(-1);
-  say('呼叫就建立、結束就刪除，一層疊一層', '執行中的函式用最上面那層');
-  await beat(tok, 2800);
+  say('Stack 清空了');
+  await step(tok);                                   // 6:11 one above another; topmost is running
+  say('呼叫一次就疊一層', '執行中的函式用最上面那層');
 }]);
 
 FRAG.push(['engmisc-rec-nested', '巢狀呼叫：main → A → B', async (tok) => {
   fresh([0, 6, 13.5], [0, 2.6, 0]);
+  say('巢狀呼叫的例子');
+  await step(tok);                                   // 6:30 main calls A, A calls B
   const T = traceStage(['main 呼叫 A(11)', 'A 呼叫 B(22)', 'B 印出 k = 22']);
-  T.push('main');
-  say('main 的 record 先建立', '');
-  await beat(tok, 1800);
-  T.cd.hl(0); T.push('A：a = 11');
-  say('main 呼叫 A(11)', 'A 的 record 疊上去');
-  await beat(tok, 2000);
-  T.cd.hl(1); T.push('B：k = 22');
-  say('A 呼叫 B(22)', 'B 的 record 再疊上去');
-  await beat(tok, 2000);
-  T.cd.hl(2); txt(T.out, '輸出：22');
-  say('B 印出 22', 'Stack：main、A、B');
-  await beat(tok, 2000);
+  say('main 呼叫 A，A 再呼叫 B');
+  await step(tok);                                   // 6:36 main calls A passing 11
+  T.cd.hl(0);
+  say('main 呼叫 A，傳 11');
+  await step(tok);                                   // 6:42 then calls B passing 22
+  T.cd.hl(1);
+  say('A 呼叫 B，傳 22');
+  await step(tok);                                   // 6:46 B prints 22
+  T.cd.hl(2);
+  say('B 印出 22');
+  await step(tok);                                   // 6:53 record for main created
   T.cd.hl(-1);
-  for (const nm of ['B', 'A', 'main']) {
-    T.pop();
-    say(nm + ' 結束：record 移除', '後呼叫的先結束（LIFO）');
-    await beat(tok, 1500);
-  }
-  say('Stack 清空', '');
-  await beat(tok, 2400);
+  T.push('main');
+  say('執行：先建立 main 的 record');
+  await step(tok);                                   // 7:03 main calls A: A's record
+  T.cd.hl(0); T.push('A：a = 11');
+  say('main 呼叫 A', 'A 的 record 疊上去');
+  await step(tok);                                   // 7:11 A calls B: B's record
+  T.cd.hl(1); T.push('B：k = 22');
+  say('A 呼叫 B', 'B 的 record 再疊上去');
+  await step(tok);                                   // 7:15 B prints 22
+  T.cd.hl(2); txt(T.out, '輸出：22');
+  say('B 印出 22', 'Stack：main、A、B 三層');
+  await step(tok);                                   // 7:21 B ends: record gone
+  T.cd.hl(-1); T.pop();
+  say('B 結束：record 移除');
+  await step(tok);                                   // 7:25 A ends: record gone
+  T.pop();
+  say('A 結束：record 移除');
+  await step(tok);                                   // 7:29 main ends: stack clear
+  T.pop();
+  say('main 結束：Stack 清空', '後呼叫的先結束（LIFO）');
 }]);
 
-async function recTrace(tok, printFirst) {
+FRAG.push(['engmisc-rec-tail', '遞迴：先印再呼叫（印 3 2 1）', async (tok) => {
   fresh([0, 6, 13.5], [0, 2.6, 0]);
-  const body = printFirst ? ['        printf("%d ", n);', '        A(n - 1);'] : ['        A(n - 1);', '        printf("%d ", n);'];
-  const T = traceStage(['void A(int n) {', '    if (n > 0) {', ...body, '    }', '}', 'main() { A(3); }']);
-  const L_IF = 1, L_PRINT = printFirst ? 2 : 3, L_CALL = printFirst ? 3 : 2;
-  let out = '';
-  T.push('main');
+  say('遞迴（recursion）');
+  await step(tok);                                   // 7:36 recursive functions call themselves
+  const def = tag('遞迴：函式呼叫自己', 'ptr alt', -2.8, 5.8, 0);
+  say('自己呼叫自己的函式', '叫 recursive function');
+  await step(tok);                                   // 7:45 must have a termination condition
+  txt(def, '遞迴：函式呼叫自己 + 終止條件');
+  say('一定要有終止條件', '否則會一直呼叫下去');
+  await step(tok);                                   // 8:03 an example of recursion
+  kill(def);
+  const T = traceStage(['void A(int n) {', '    if (n > 0) {', '        printf("%d ", n);', '        A(n - 1);', '    }', '}', 'main() { A(3); }']);
+  say('例子：A(n) 先印 n，再呼叫 A(n − 1)');
+  await step(tok);                                   // 8:16 main calls A(3): prints 3, calls A(2)
+  const tr = tag('A(3)：印 3 → A(2)', 'note', -3.8, 2.4, 0);
   T.cd.hl(6);
-  say(printFirst ? '先印、再呼叫自己：tail recursion' : '先呼叫自己、再印', 'main 呼叫 A(3)');
-  await beat(tok, 2200);
-  for (let n = 3; n >= 0; n--) {
-    T.push('A：n = ' + n);
-    T.cd.hl(L_IF);
-    say('新的 record：n = ' + n, n > 0 ? 'n > 0 成立' : '<span class="no">n > 0 不成立</span> → 結束');
-    await beat(tok, 1400);
-    if (n === 0) break;
-    if (printFirst) {
-      T.cd.hl(L_PRINT); out += n + ' '; txt(T.out, '輸出：' + out);
-      say('印出 ' + n, '輸出：' + out);
-      await beat(tok, 1200);
-    }
-    T.cd.hl(L_CALL);
-    say('呼叫 A(' + (n - 1) + ')：舊 record 留著，還沒結束', '');
-    await beat(tok, 1200);
-  }
+  say('main 呼叫 A(3)', 'A(3) 印 3，再呼叫 A(2)');
+  await step(tok);                                   // 8:29 print 2, call 1, print 1, call 0
+  txt(tr, 'A(3) 印 3 → A(2) 印 2 → A(1) 印 1 → A(0) 停');
+  say('A(2) 印 2 → A(1) 印 1 → A(0)', '直到 n 變 0 為止');
+  await step(tok);                                   // 8:48 last statement is the recursive call: tail recursion
+  T.cd.hl(3);
+  say('遞迴呼叫是最後一個敘述', '這種叫 tail recursion');
+  await step(tok);                                   // 9:05 loaded; record for main
+  T.cd.hl(6); T.push('main');
+  say('執行：建立 main 的 record');
+  await step(tok);                                   // 9:11 A is called: record created
+  T.push('A：n = 3');
+  say('呼叫 A(3)：建立它的 record');
+  await step(tok);                                   // 9:15 condition checked, 3 printed
+  T.cd.hl(1); await beat(tok, 500);
+  T.cd.hl(2); txt(T.out, '輸出：3');
+  say('3 > 0 成立 → 印出 3');
+  await step(tok);                                   // 9:25 calling again: a new record
+  T.cd.hl(3); T.push('A：n = 2');
+  say('再呼叫自己：A(2)', '又建一個新的 record');
+  await step(tok);                                   // 9:31 same function starts again from the beginning
+  T.cd.hl(0);
+  say('同一個函式從頭開始跑', '這次用的是新的 record（n = 2）');
+  await step(tok);                                   // 9:37 the old record remains: not terminated
+  glow(T.frames[1], '#3a3a00');
+  say('舊的 record（n = 3）還留著', '因為它還沒結束');
+  await step(tok);                                   // 9:44 second call: check, print
+  glow(T.frames[1]);
+  T.cd.hl(2); txt(T.out, '輸出：3 2');
+  say('檢查 2 > 0 → 印出 2');
+  await step(tok);                                   // 9:56 new record again
+  T.cd.hl(3); T.push('A：n = 1');
+  say('再呼叫自己：A(1)');
+  await step(tok);                                   // 10:03 value printed
+  T.cd.hl(2); txt(T.out, '輸出：3 2 1');
+  say('印出 1');
+  await step(tok);                                   // 10:07 calls itself again
+  T.cd.hl(3); T.push('A：n = 0');
+  say('再呼叫：A(0)');
+  await step(tok);                                   // 10:11 condition failed: terminated
+  T.cd.hl(1);
+  say('0 > 0 不成立', '這次呼叫結束');
+  await step(tok);                                   // 10:19 its record is gone
   T.pop();
-  say('A(0) 結束，回到上一層呼叫', '');
-  await beat(tok, 1500);
-  for (let n = 1; n <= 3; n++) {
-    if (!printFirst) {
-      T.cd.hl(L_PRINT); out += n + ' '; txt(T.out, '輸出：' + out);
-      say('回到 n = ' + n + ' 這層：接著印出 ' + n, '輸出：' + out);
-      await beat(tok, 1600);
-    } else {
-      T.cd.hl(4);
-      say('回到 n = ' + n + '：呼叫是最後一行，直接結束', '');
-      await beat(tok, 1000);
-    }
-    T.pop();
-    await beat(tok, 600);
-  }
+  say('A(0) 的 record 移除');
+  await step(tok);                                   // 10:25 back to the previous call: n = 1
+  T.cd.hl(4);
+  say('回到上一層：n = 1', '呼叫已是最後一行，沒事要做');
+  await step(tok);                                   // 10:31 goes back and terminates
+  T.pop();
+  say('n = 1 那層結束');
+  await step(tok);                                   // 10:37 next record gone, previous gone
+  T.pop(); await beat(tok, 600); T.pop();
+  say('n = 2、n = 3 依序結束');
+  await step(tok);                                   // 10:44 main ended
   T.cd.hl(-1); T.pop();
-  say(printFirst ? '呼叫時就印：3 2 1' : '返回時才印：1 2 3', '最多同時 5 層 record：main + A(3)…A(0)');
-  await beat(tok, 3000);
-}
-FRAG.push(['engmisc-rec-tail', '遞迴：先印再呼叫（印 3 2 1）', (tok) => recTrace(tok, true)]);
-FRAG.push(['engmisc-rec-head', '遞迴：先呼叫再印（印 1 2 3）', (tok) => recTrace(tok, false)]);
+  say('main 結束：輸出 3 2 1', '呼叫的時候就印了');
+}]);
+
+FRAG.push(['engmisc-rec-head', '遞迴：先呼叫再印（印 1 2 3）', async (tok) => {
+  fresh([0, 6, 13.5], [0, 2.6, 0]);
+  say('第二個例子');
+  await step(tok);                                   // 10:52 recursive call first, then printf
+  const T = traceStage(['void A(int n) {', '    if (n > 0) {', '        A(n - 1);', '        printf("%d ", n);', '    }', '}', 'main() { A(3); }']);
+  T.cd.hl(2);
+  say('只改順序：先遞迴呼叫，再 printf');
+  await step(tok);                                   // 11:01 A(3) → A(2) → A(1) → A(0)
+  const tr = tag('A(3) → A(2) → A(1) → A(0)', 'note', -3.8, 2.4, 0);
+  say('main 呼叫 A(3)，接著 A(2)、A(1)、A(0)');
+  await step(tok);                                   // 11:13 goes back and prints 1, 2, 3
+  txt(tr, 'A(3) → A(2) → A(1) → A(0)，返回時印 1、2、3');
+  say('然後一層層回去', '回去時才印 1、2、3');
+  await step(tok);                                   // 11:21 difference from the previous example
+  say('例一：印完再呼叫', '例二：呼叫完再印');
+  await step(tok);                                   // 11:38 record for main
+  T.cd.hl(6); T.push('main');
+  say('執行：建立 main 的 record');
+  await step(tok);                                   // 11:42 A(3) is called: record created
+  T.push('A：n = 3');
+  say('呼叫 A(3)：建立 record');
+  await step(tok);                                   // 11:46 condition checked, call itself with 2
+  T.cd.hl(2); T.push('A：n = 2');
+  say('3 > 0 → 呼叫 A(2)', '還沒印！');
+  await step(tok);                                   // 11:55 checked again, call with 1
+  T.push('A：n = 1');
+  say('2 > 0 → 呼叫 A(1)');
+  await step(tok);                                   // 12:04 call with 0
+  T.push('A：n = 0');
+  say('1 > 0 → 呼叫 A(0)');
+  await step(tok);                                   // 12:07 condition fails
+  T.cd.hl(1);
+  say('0 > 0 不成立');
+  await step(tok);                                   // 12:13 function terminates: record gone
+  T.pop();
+  say('A(0) 結束，record 移除');
+  await step(tok);                                   // 12:21 back to the previous call: now it prints
+  T.cd.hl(3);
+  say('回到 n = 1 那層', '呼叫做完了，接著執行 printf');
+  await step(tok);                                   // 12:28 print 1
+  txt(T.out, '輸出：1');
+  say('印出 1');
+  await step(tok);                                   // 12:31 this call terminated
+  T.pop();
+  say('n = 1 結束');
+  await step(tok);                                   // 12:36 back: n was 2, print 2
+  txt(T.out, '輸出：1 2');
+  say('回到 n = 2：印出 2');
+  await step(tok);                                   // 12:40 terminated
+  T.pop();
+  say('n = 2 結束');
+  await step(tok);                                   // 12:45 n was 3: print 3
+  txt(T.out, '輸出：1 2 3');
+  say('回到 n = 3：印出 3');
+  await step(tok);                                   // 12:48 while returning it prints
+  T.pop();
+  say('返回的時候才印');
+  await step(tok);                                   // 12:51 main has gone
+  T.cd.hl(-1); T.pop();
+  say('main 結束：輸出 1 2 3', '最多同時 5 層：main + A(3)…A(0)');
+}]);
   }
 
   // ═══ lllin.js ═══
   {
 // ─── lllin：pAs8Swu1Y3Y（台大林軒田 DSA：Linked List 應用：Sparse Vector、Running Cursors、面試題） ───
+// cued scenes: every `await step(tok)` waits for the sentence the lecturer is saying; beats are motion only
+const step = ctx.step;
 const LB = '#4b9ee2', LR = '#e06a5a', LG = '#9a9080', LK = '#c08a1f';
 const A_RED = 0xc0392b, A_GREEN = 0x2e8b57, A_GOLD = 0xc08a1f;
 // a list node (data + link) that optionally drops in from dropH
@@ -6741,136 +7553,155 @@ function sRow(vec, z, color, name, dropH = 0) {
   const ars = [];
   for (let i = 0; i + 1 < vec.length; i++) ars.push(lk(dx(vec[i][0]), dx(vec[i + 1][0]), z));
   ars.push(tag('NULL', 'idx', dx(vec[vec.length - 1][0]) + 1.6, 0.35, z));
-  tag(name, 'ptr', dx(vec[0][0]), 1.35, z);
-  return { ns, ars };
+  const h = tag(name, 'ptr', dx(vec[0][0]), 1.35, z);
+  return { ns, ars, h };
 }
 
 // ════════ 15:15 回顧：singly / doubly ════════
 FRAG.push(['lllin-recap', '回顧：Singly 與 Doubly Linked List', async (tok) => {
   fresh([0, 7.5, 12.5], [0, 0.4, 0.3]);
   const vals = [3, 7, 1, 9], xs = [-4.5, -1.5, 1.5, 4.5];
-  say('指標：指向記憶體位置的小紙條', 'node = data + link');
+  await step(tok);                                   // 15:29 一開始有 singly linked list
+  say('Singly linked list：一塊一塊的記憶體', 'node = data + link');
   const ns = [];
-  for (let i = 0; i < 4; i++) { ns.push(nd(vals[i], xs[i], 0.35, -1.8, null, 4)); await beat(tok, 450); }
-  for (let i = 0; i < 3; i++) { lk(xs[i], xs[i + 1], -1.8); await beat(tok, 350); }
+  for (let i = 0; i < 4; i++) { ns.push(nd(vals[i], xs[i], 0.35, -1.8, null, 4)); await beat(tok, 300); }
+  await step(tok);                                   // 15:43 指標＝小紙條，把記憶體串起來
+  say('指標：指向記憶體位置的小紙條', '一塊接一塊串起來，像大地遊戲的關卡');
+  for (let i = 0; i < 3; i++) { lk(xs[i], xs[i + 1], -1.8); await beat(tok, 300); }
   tag('NULL', 'idx', xs[3] + 1.6, 0.35, -1.8);
+  await step(tok);                                   // 15:57 進去的地方叫 head，一路走到結尾
   tag('head', 'ptr', xs[0], 1.4, -1.8);
-  say('Singly：從 head 一路走到結尾', 'head → 3 → 7 → 1 → 9 → NULL');
+  say('進去的地方叫 head，一路走到結尾', 'head → 3 → 7 → 1 → 9 → NULL');
   const p = tag('p', 'ptr alt', xs[0], 2.0, -1.8);
   for (let i = 0; i < 4; i++) {
     p.position.set(xs[i], 2.0, -1.8); glow(ns[i].userData.data, GOLD);
-    await beat(tok, 700); glow(ns[i].userData.data, null);
+    await beat(tok, 450); glow(ns[i].userData.data, null);
   }
   kill(p);
+  await step(tok);                                   // 16:04 也可以反著串
   say('Doubly：正著串、也反著串', 'node = prev + data + next');
-  await beat(tok, 900);
   for (let i = 0; i < 4; i++) {
     nd(vals[i], xs[i], 0.35, 2.0, null, 4);
     cube('', '#d8c29b', [0.45, 0.7, 1.0], xs[i] - 0.73, 0.35, 2.0, 4);
-    await beat(tok, 400);
+    await beat(tok, 250);
   }
   for (let i = 0; i < 3; i++) {
     arrow(V3(xs[i] + 0.95, 0.55, 2.0), V3(xs[i + 1] - 0.95, 0.55, 2.0));
     arrow(V3(xs[i + 1] - 0.95, 0.15, 2.0), V3(xs[i] + 0.95, 0.15, 2.0), A_GOLD);
-    await beat(tok, 450);
+    await beat(tok, 250);
   }
+  await step(tok);                                   // 16:14 從頭一串、從尾一串 = doubly linked list
   tag('head', 'ptr', xs[0], 1.4, 2.0); tag('tail', 'ptr alt', xs[3], 1.4, 2.0);
   say('從頭串一串、從尾串一串', 'doubly linked list：head 與 tail 都能出發');
-  await beat(tok, 2600);
-  say('講完一個 DS，就看它在哪裡有用', '依情境在多種資料結構中做選擇');
-  await beat(tok, 2600);
+  await step(tok);                                   // 16:27 講完一個 DS，就講它在哪有用
+  say('講完一個 DS，就看它在哪裡有用', '這門課的習慣');
+  await step(tok);                                   // 16:53 手上三五種 DS，依情境選
+  say('手上有好幾種 DS：依情境比較好壞來選', '不是「只能用這個」');
 }]);
 
 // ════════ 17:24 Sparse Vector ════════
 FRAG.push(['lllin-sparse', 'Sparse Vector：只存非零項', async (tok) => {
   fresh([0, 7, 12], [0, 0.8, 0.5]);
   const V = [0, 0, 6, 0, 4, 0, 0], xs = (i) => -4.5 + i * 1.5;
-  const cs = V.map((v, i) => { tag(String(i + 1), 'idx', xs(i), 0, -0.6); return cube(v, v ? LB : '#c9bfae', [1.1, 0.8, 1.1], xs(i), 0.4, -1.6, 3 + i * 0.4); });
+  await step(tok);                                   // 17:23 情境：Sparse Vector；向量是一串數字
+  say('情境：Sparse Vector', '向量 = 一串數字（這裡是 7 維）');
+  const cs = V.map((v, i) => { tag(String(i + 1), 'idx', xs(i), 0, -0.6); return cube(v, v ? LB : '#c9bfae', [1.1, 0.8, 1.1], xs(i), 0.4, -1.6, 3 + i * 0.3); });
   tag('第幾維（從 1 數）', 'idx', 0, 0, 0.2);
-  say('7 維向量：一串數字', 'v = (0, 0, 6, 0, 4, 0, 0)');
-  await beat(tok, 2000);
+  await step(tok);                                   // 18:32 一堆 0，只有 6 和 4 不是 0
   glow(cs[2], GOLD); glow(cs[4], GOLD);
-  say('只有 6 和 4 不是 0', '7 格裡有 5 個 0');
-  await beat(tok, 2200);
+  say('只有 6 和 4 不是 0', 'v = (0, 0, 6, 0, 4, 0, 0)');
+  await step(tok);                                   // 18:41 科學、工程計算常有很多 0
+  say('科學、工程計算的向量和矩陣：很多 0', '');
+  await step(tok);                                   // 19:17 0 乘什麼都是 0、加 0 不變
   cs.forEach((m, i) => { if (!V[i]) glow(m, RED); });
   say('0 乘什麼都是 0、加 0 不變', '0 × a = 0，a + 0 = a → 算了也白算');
-  await beat(tok, 2600);
+  await step(tok);                                   // 19:55 只把不是 0 的兩項存下來
   cs.forEach((m, i) => { if (!V[i]) fly(m, V3(0, 8, -4)); });
-  say('那就只存不是 0 的項', '');
-  await beat(tok, 1200);
+  say('那就只存不是 0 的項', '是 0 的就不管了');
+  await step(tok);                                   // 20:23 註記維度：(第 3 維, 6)、(第 5 維, 4)
   glow(cs[2], null); glow(cs[4], null);
   move(cs[2], -1.6, 0.4, 2.2); move(cs[4], 1.6, 0.4, 2.2);
-  await beat(tok, 700);
+  await beat(tok, 600);
   relabel(cs[2], '(3, 6)'); relabel(cs[4], '(5, 4)');
   say('每筆記成（維度, 值）', '(3, 6)、(5, 4)');
-  await beat(tok, 2400);
+  await step(tok);                                   // 20:55 少存 5 個 0、多存 2 個 index
   say('這例子不明顯：少 5 個 0、多 2 個 index', '7 個數 → 2 組 pair = 4 個數');
-  await beat(tok, 2800);
+  await step(tok);                                   // 21:04 1000 維只有 10 個非零
   tag('1000 維、只有 10 個非零', 'ptr alt', 0, 2.4, 2.2);
   say('1000 維只有 10 個非零', '1000 個數 → 10 組 pair = 20 個數');
-  await beat(tok, 3000);
 }]);
 
 // ════════ 21:30 多項式 = sparse vector；ordered linked list ════════
 FRAG.push(['lllin-poly-list', '多項式與 Ordered Linked List', async (tok) => {
   fresh([0, 7.5, 12], [0, 0.6, 0.4]);
+  await step(tok);                                   // 21:34 用 linked list 表示 polynomial
+  say('切入點：用 linked list 表示多項式', 'polynomial');
+  await step(tok);                                   // 21:55 6x³ ↔ 第 3 項是 6
   tag('6x³ + 4x⁵', 'ptr alt', 0, 2.6, -2.4);
-  say('多項式就是一種 sparse vector', '6x³ ↔ 第 3 維是 6');
-  await beat(tok, 2200);
+  say('6x³ 就是「第 3 項是 6」', '4x⁵ 就是「第 5 項是 4」');
+  await step(tok);                                   // 22:21 多項式做的事就是 sparse vector
+  say('多項式就是一種 sparse vector', 'sparse vector：很多 0 的向量');
+  await step(tok);                                   // 22:40 插入、刪除很有彈性
+  say('用 list 表示：插入、刪除都很有彈性', 'sparse vector 也能照樣用');
+  await step(tok);                                   // 23:20 dense array：0 0 6 0 4 0 0
   const V = [0, 0, 6, 0, 4, 0, 0], xs = (i) => -4.5 + i * 1.5;
   const cs = V.map((v, i) => { tag(String(i + 1), 'idx', xs(i), 0, -1.4); return cube(v, v ? LB : '#c9bfae', [1.1, 0.8, 1.1], xs(i), 0.4, -2.4, 3); });
   say('Dense array：0 也全部存', '[0, 0, 6, 0, 4, 0, 0]');
-  await beat(tok, 2400);
+  await step(tok);                                   // 23:32 linked list：(3, 6) → (5, 4)
   glow(cs[2], GOLD); glow(cs[4], GOLD);
   tag('head', 'ptr', -1.6, 1.4, 2.0);
   const n1 = nd('(3, 6)', -1.6, 0.35, 2.0, LB, 4);
-  await beat(tok, 600);
+  await beat(tok, 400);
   const n2 = nd('(5, 4)', 1.6, 0.35, 2.0, LB, 4);
-  await beat(tok, 600);
+  await beat(tok, 400);
   lk(-1.6, 1.6, 2.0); tag('NULL', 'idx', 3.2, 0.35, 2.0);
   say('Linked list：只串非零項', 'head → (3, 6) → (5, 4) → NULL');
-  await beat(tok, 2600);
-  say('維度從 1 開始數（一般向量慣例）', '第 1、2、3… 維，不說第 0 維');
-  await beat(tok, 2400);
+  await step(tok);                                   // 23:52 維度從 1 開始數
   glow(cs[2], null); glow(cs[4], null);
-  glow(n1.userData.data, GOLD); await beat(tok, 700);
+  say('維度從 1 開始數（一般向量慣例）', '第 1、2、3… 維，不說第 0 維');
+  await step(tok);                                   // 24:40 嚴格說是 ordered linked list
+  glow(n1.userData.data, GOLD); await beat(tok, 600);
   glow(n1.userData.data, null); glow(n2.userData.data, GOLD);
-  say('Ordered linked list：依維度排好', '3 < 5：由小到大串');
-  await beat(tok, 2200);
-  glow(n2.userData.data, null);
-  say('串起來後，插入刪除都有彈性', '改 link 就好，不用搬資料');
-  await beat(tok, 2800);
+  say('Ordered linked list：依維度事先排好', '3 < 5：由小到大串');
 }]);
 
 // ════════ 25:13 兩個 sparse vector 相加：目標 ════════
 FRAG.push(['lllin-merge-goal', '兩個 Sparse Vector 相加：要得到什麼', async (tok) => {
   fresh([0, 8, 12], [0, 0.4, 0.4]);
-  say('V1：第 3 維 6、第 5 維 4', 'V1 = 6x³ + 4x⁵');
-  sRow(V1, -2.4, LB, 'H1', 4);
-  await beat(tok, 2200);
-  say('V2：第 1 維 2、第 4 維 9、第 5 維 −4', 'V2 = 2x + 9x⁴ − 4x⁵');
-  sRow(V2, 0, LR, 'H2', 4);
-  await beat(tok, 2400);
-  say('兩條 singly list，各有一個 head', '想要：V1 + V2，結果也要排好');
-  await beat(tok, 2400);
+  await step(tok);                                   // 25:31 兩個 polynomial 的加法
+  say('像兩個多項式相加', '把兩個 sparse vector 合起來');
+  await step(tok);                                   // 25:47 V1：第 3 維 6、第 5 維 4
+  const r1 = sRow(V1, -2.4, LB, 'V1', 4);
+  say('V1：第 3 維 6、第 5 維 4', 'V1 = (3, 6) → (5, 4)');
+  await step(tok);                                   // 26:11 V2：第 1 維 2、第 4 維 9、第 5 維 −4
+  const r2 = sRow(V2, 0, LR, 'V2', 4);
+  say('V2：第 1 維 2、第 4 維 9、第 5 維 −4', 'V2 = (1, 2) → (4, 9) → (5, −4)');
+  await step(tok);                                   // 26:37 當成多項式相加
+  say('當成多項式：兩式相加', '(6x³ + 4x⁵) + (2x + 9x⁴ − 4x⁵)');
+  await step(tok);                                   // 27:40 兩個開頭：H1、H2
+  txt(r1.h, 'H1'); txt(r2.h, 'H2');
+  say('兩條 list 各有一個開頭：H1、H2', 'H = head');
   const R = [[1, 2, LR], [3, 6, LB], [4, 9, LR]];
+  await step(tok);                                   // 28:07 先從 (1, 2) 串一個過來
   tag('result', 'ptr alt', dx(1), 1.35, 2.6);
-  for (let i = 0; i < R.length; i++) {
-    nd(pl(R[i]), dx(R[i][0]), 0.35, 2.6, R[i][2], 4);
-    if (i) lk(dx(R[i - 1][0]), dx(R[i][0]), 2.6);
-    say('依維度由小到大串上 ' + pl(R[i]), i === 0 ? '第 1 維只有 V2 有' : i === 1 ? '第 3 維只有 V1 有' : '第 4 維只有 V2 有');
-    await beat(tok, 1500);
-  }
+  nd(pl(R[0]), dx(1), 0.35, 2.6, LR, 4);
+  say('結果先串上 (1, 2)', '第 1 維只有 V2 有');
+  await step(tok);                                   // 28:16 再串 (3, 6)、(4, 9)
+  nd(pl(R[1]), dx(3), 0.35, 2.6, LB, 4); lk(dx(1), dx(3), 2.6);
+  await beat(tok, 600);
+  nd(pl(R[2]), dx(4), 0.35, 2.6, LR, 4); lk(dx(3), dx(4), 2.6);
+  say('再串上 (3, 6)、(4, 9)', '依維度由小到大');
+  await step(tok);                                   // 28:35 第 5 維加起來消掉 → 這裡就是尾巴
   const z = cube('(5, 0)', LG, [1.0, 0.7, 1.0], dx(5), 0.35, 2.6, 4);
-  say('第 5 維：4 + (−4) = 0', '相加後消掉');
-  await beat(tok, 1600);
+  await beat(tok, 700);
   fly(z, V3(2, 8, 4));
   tag('NULL', 'idx', dx(4) + 1.6, 0.35, 2.6);
-  say('結果：(1,2) → (3,6) → (4,9)', '2x + 6x³ + 9x⁴');
-  await beat(tok, 3000);
+  say('第 5 維：4 + (−4) = 0，消掉', '所以 (4, 9) 就是尾巴');
+  await step(tok);                                   // 28:43 希望產生的結果
+  say('想要的結果：(1,2) → (3,6) → (4,9)', '2x + 6x³ + 9x⁴；要怎麼寫成演算法？');
 }]);
 
-// ════════ 29:05 Merge 的程式：三種情形 ════════
+// ════════ 29:05 Merge 的程式：三種情形與前進 ════════
 const MERGE_CODE = [
   'c1 = H1;  c2 = H2;',
   'while (c1 未到尾 && c2 未到尾) {',
@@ -6885,39 +7716,42 @@ const MERGE_CODE = [
 ];
 FRAG.push(['lllin-merge-cases', 'Merge 程式：三種情形與前進', async (tok) => {
   fresh([0, 6.5, 13], [0, 2.6, 0]);
+  await step(tok);                                   // 29:08 故意畫成 singly：只能從頭出發
+  const r1 = sRow(V1, 0.4, LB, 'H1', 3), r2 = sRow(V2, 2.4, LR, 'H2', 3);
+  say('故意畫成 singly linked list', '兩條都只能從頭出發');
+  await step(tok);                                   // 29:42 c1 從 H1、c2 從 H2 出發
   const cd = code(MERGE_CODE, 0, 6.4, 0.48, -2.6);
-  const r1 = sRow(V1, 0.4, LB, 'H1'), r2 = sRow(V2, 2.4, LR, 'H2');
   const c1 = tag('c1', 'ptr alt', dx(3), 1.0, 0.4), c2 = tag('c2', 'ptr alt', dx(1), 1.0, 2.4);
   cd.hl(0);
-  say('c1 從 H1、c2 從 H2 出發', 'singly：兩條都只能從頭走');
-  await beat(tok, 2600);
-  cd.hl(2); glow(r1.ns[0].userData.data, GOLD);
-  say('情形一：c1 的 order 比較小', '小的先串到 result 最後面，維持順序');
-  await beat(tok, 2600);
-  glow(r1.ns[0].userData.data, null); cd.hl(4); glow(r2.ns[0].userData.data, GOLD);
-  say('情形二：c2 的 order 比較小', 'insert(c2)');
-  await beat(tok, 2400);
-  glow(r2.ns[0].userData.data, null); cd.hl(6);
+  say('c1 從 H1、c2 從 H2 出發', 'c = cursor（游標）');
+  await step(tok);                                   // 29:56 三種情形：小、大、一樣大
+  cd.hl(2);
+  say('三種情形：c1 的 order 比較小／比較大／一樣大', 'order = 第幾維');
+  await step(tok);                                   // 30:27 比較小的先串到 result 最後面
+  cd.hl(3); glow(r2.ns[0].userData.data, GOLD);
+  say('比較小的先串到 result 最後面', '這樣 result 才會維持由小到大');
+  await step(tok);                                   // 30:55 另一種：c2 塞過去
+  cd.hl(5);
+  say('c1 比較大：就換 c2 串上去', 'insert(c2)');
+  await step(tok);                                   // 31:52 一樣大：insert(c1 + c2)
+  glow(r2.ns[0].userData.data, null); cd.hl(7);
   glow(r1.ns[1].userData.data, GOLD); glow(r2.ns[2].userData.data, GOLD);
-  say('情形三：order 一樣大', 'insert(c1 + c2)：值相加');
-  await beat(tok, 2600);
+  say('一樣大：insert(c1 + c2)', '值相加（細節等一下再談）');
+  await step(tok);                                   // 32:17 串完的那邊要前進
   glow(r1.ns[1].userData.data, null); glow(r2.ns[2].userData.data, null);
   cd.hl(3);
-  say('串完的那邊要前進：c1++', '概念上的 ++，其實是 c1 = c1->next');
-  await beat(tok, 1200);
   c1.position.set(dx(5), 1.0, 0.4);
-  await beat(tok, 1600);
-  say('像 STL iterator：overload ++', '一樣大時 c1、c2 都前進');
-  await beat(tok, 2200);
+  say('串完 c1，c1 就要前進', 'c1++');
+  await beat(tok, 900);
   c1.position.set(dx(3), 1.0, 0.4);
-  cd.hl(1);
-  say('兩條都還沒到尾，才能比大小', 'while (c1 != NULL && c2 != NULL)');
-  await beat(tok, 2600);
-  cd.hl(9);
-  say('有一條先走完：剩下的整段接上', '');
-  await beat(tok, 2600);
+  await step(tok);                                   // 32:32 一樣大：兩個都前進
+  cd.hl(7);
+  say('一樣大時兩個都處理完：c1、c2 都前進', 'c1++;  c2++;');
+  await step(tok);                                   // 32:38 ++ 是概念寫法：c1 = c1->next
+  say('++ 是概念寫法', 'linked list 真正寫：c1 = c1->next');
+  await step(tok);                                   // 33:07 像 STL iterator 把 ++ overload
   cd.hl(-1);
-  await beat(tok, 1000);
+  say('像 C++ STL 的 iterator：overload ++', 'iterator 的 ++ 就是「走到 next」');
 }]);
 
 // ════════ 33:44 Running cursors：完整走一次 ════════
@@ -6927,51 +7761,58 @@ FRAG.push(['lllin-merge-trace', 'Running Cursors：V1 + V2 走一遍', async (to
   const r1 = sRow(V1, -0.8, LB, 'H1'), r2 = sRow(V2, 1.2, LR, 'H2');
   const c1 = tag('c1', 'ptr alt', dx(3), 1.0, -0.8), c2 = tag('c2', 'ptr alt', dx(1), 1.0, 1.2);
   tag('result', 'ptr', dx(1), 1.35, 3.3);
-  say('兩個游標交互前進', 'c1 走 V1、c2 走 V2');
+  await step(tok);                                   // 33:48 核心步驟想清楚，難的是包起來
+  say('核心步驟想清楚了，難的是把它包起來', '');
+  await step(tok);                                   // 34:18 兩條都還沒到尾巴才能比
   cd.hl(1);
-  await beat(tok, 2200);
+  say('c1、c2 都還沒到尾巴，才能比大小', 'while (c1 != NULL && c2 != NULL)');
   const res = [];
   async function put(p, color, line, cap, f) {
     cd.hl(line);
     say(cap, f);
-    await beat(tok, 1200);
     nd(pl(p), dx(p[0]), 0.35, 3.3, color, 4);
     if (res.length) lk(dx(res[res.length - 1][0]), dx(p[0]), 3.3);
     res.push(p);
-    await beat(tok, 1000);
+    await beat(tok, 700);
   }
+  await step(tok);                                   // 34:56 c1、c2 從這裡出發
+  glow(r1.ns[0].userData.data, GOLD); glow(r2.ns[0].userData.data, GOLD);
+  say('c1、c2 從頭出發，先比大小', '3 vs 1');
+  await step(tok);                                   // 35:03 c2 比較小，塞 c2，c2 前進
+  glow(r1.ns[0].userData.data, null); glow(r2.ns[0].userData.data, null);
   await put([1, 2], LR, 5, '3 > 1：c2 比較小，串 c2', 'insert (1, 2)，c2++');
   c2.position.set(dx(4), 1.0, 1.2);
-  await beat(tok, 700);
+  await step(tok);                                   // 35:13 下一步 c1 比較小，換 c1
   await put([3, 6], LB, 3, '3 < 4：c1 比較小，串 c1', 'insert (3, 6)，c1++');
   c1.position.set(dx(5), 1.0, -0.8);
-  await beat(tok, 700);
+  await step(tok);                                   // 35:22 c2 比較小，c2 前進
   await put([4, 9], LR, 5, '5 > 4：c2 比較小，串 c2', 'insert (4, 9)，c2++');
   c2.position.set(dx(5), 1.0, 1.2);
-  await beat(tok, 700);
+  await step(tok);                                   // 35:32 交互前進；後面一段 code 接上沒走完的
+  cd.hl(9);
+  say('兩個游標交互前進', '最後：把還沒走完的那條接上去');
+  await step(tok);                                   // 36:18 cursor：指示位置的游標
+  cd.hl(-1);
+  say('cursor（游標）：標示現在走到哪', '寫演算法的人決定：這步哪個游標前進');
+  await step(tok);                                   // 36:39 叫 running cursors
   cd.hl(7);
   glow(r1.ns[1].userData.data, GOLD); glow(r2.ns[2].userData.data, GOLD);
-  say('5 == 5：一樣大，值相加', '4 + (−4) = 0');
-  await beat(tok, 1600);
   const z = cube('(5, 0)', LG, [1.0, 0.7, 1.0], dx(5), 0.35, 3.3, 4);
-  await beat(tok, 900);
+  await beat(tok, 700);
   fly(z, V3(2, 8, 4));
-  say('和是 0：不該串進 result', '補充：要檢查 c1 + c2 != 0');
-  await beat(tok, 2200);
   glow(r1.ns[1].userData.data, null); glow(r2.ns[2].userData.data, null);
   c1.position.set(dx(5) + 1.6, 1.0, -0.8); c2.position.set(dx(5) + 1.6, 1.0, 1.2);
-  cd.hl(9);
-  say('兩條都走完，沒有剩下要接的', 'c1 == NULL、c2 == NULL');
-  await beat(tok, 1800);
   tag('NULL', 'idx', dx(4) + 1.6, 0.35, 3.3);
   cd.hl(-1);
-  say('結果：2x + 6x³ + 9x⁴', '每個節點只看一次：O(m + n)');
-  await beat(tok, 3000);
+  say('Running Cursors：兩個游標一路走完', '結果 2x + 6x³ + 9x⁴；每個節點只看一次 O(m + n)');
 }]);
 
 // ════════ 37:01 內積：同一個架構 ════════
 FRAG.push(['lllin-dot', '內積：同樣的 Running Cursors', async (tok) => {
   fresh([0, 8, 12], [0, 1.6, 0.4]);
+  const r1 = sRow(V1, -0.6, LB, 'H1'), r2 = sRow(V2, 1.6, LR, 'H2');
+  const c1 = tag('c1', 'ptr alt', dx(3), 1.0, -0.6), c2 = tag('c2', 'ptr alt', dx(1), 1.0, 1.6);
+  await step(tok);                                   // 37:00 求內積：對應項相乘，同樣演算法
   const cd = code([
     'while (c1 && c2) {',
     '  if (c1.index < c2.index)       c1++;',
@@ -6979,64 +7820,91 @@ FRAG.push(['lllin-dot', '內積：同樣的 Running Cursors', async (tok) => {
     '  else { sum += c1.value * c2.value;  c1++;  c2++; }',
     '}',
   ], 0, 6.2, 0.5, -3.2);
-  const r1 = sRow(V1, -0.6, LB, 'H1'), r2 = sRow(V2, 1.6, LR, 'H2');
-  const c1 = tag('c1', 'ptr alt', dx(3), 1.0, -0.6), c2 = tag('c2', 'ptr alt', dx(1), 1.0, 1.6);
   const sm = tag('sum = 0', 'ptr', 0, 0.3, 3.6);
-  say('內積：對應維度相乘再加總', '架構不變，只改 if 裡做的事');
-  await beat(tok, 2600);
-  cd.hl(2); say('3 > 1：c2 前進，乘不出東西', '只有一邊有值 → 乘積是 0');
-  await beat(tok, 1300); c2.position.set(dx(4), 1.0, 1.6); await beat(tok, 1100);
-  cd.hl(1); say('3 < 4：c1 前進', '一樣不產生乘積');
-  await beat(tok, 1300); c1.position.set(dx(5), 1.0, -0.6); await beat(tok, 1100);
-  cd.hl(2); say('5 > 4：c2 前進', '');
-  await beat(tok, 1300); c2.position.set(dx(5), 1.0, 1.6); await beat(tok, 1100);
+  say('內積：對應維度相乘再加總', '同樣用兩個游標走過去');
+  await step(tok);                                   // 37:12 只改 if 裡做的事
+  cd.hl(3);
+  say('架構不變，只改 if 裡做的事', '');
+  await step(tok);                                   // 37:19 order 不同：只前進，乘不出東西
+  cd.hl(2);
+  say('3 > 1：c2 前進，乘不出東西', '只有一邊有值 → 乘積是 0');
+  c2.position.set(dx(4), 1.0, 1.6);
+  await step(tok);                                   // 37:25 另一邊前進，怎麼乘還是 0
+  cd.hl(1); c1.position.set(dx(5), 1.0, -0.6);
+  say('3 < 4：c1 前進；5 > 4：c2 前進', '一樣乘不出東西');
+  await beat(tok, 900);
+  cd.hl(2); c2.position.set(dx(5), 1.0, 1.6);
+  await step(tok);                                   // 37:30 合起來的部分改成相乘
   cd.hl(3); glow(r1.ns[1].userData.data, GOLD); glow(r2.ns[2].userData.data, GOLD);
-  say('index 一樣：值相乘、加進 sum', 'sum += 4 × (−4)');
-  await beat(tok, 1600);
+  say('一樣大：改成相乘、加進 sum', 'sum += 4 × (−4)');
+  await beat(tok, 900);
   txt(sm, 'sum = −16');
-  await beat(tok, 1600);
+  await step(tok);                                   // 37:52 LibSVM
   glow(r1.ns[1].userData.data, null); glow(r2.ns[2].userData.data, null);
   c1.position.set(dx(5) + 1.6, 1.0, -0.6); c2.position.set(dx(5) + 1.6, 1.0, 1.6);
   cd.hl(-1);
-  say('V1 · V2 = −16', '合併時「一樣大」的串接，改成「相乘累加」');
-  await beat(tok, 2600);
-  say('LibSVM 的內積也是這樣寫', '它用 (index, value) 陣列，不是真的 linked list');
-  await beat(tok, 3000);
+  tag('LibSVM', 'ptr alt', 4.6, 2.6, -1.8);
+  say('LibSVM：台大林智仁老師實驗室的機器學習軟體', '全世界大量使用；V1 · V2 = −16');
+  await step(tok);                                   // 38:48 它先處理第三種情形：index 一樣就相乘相加
+  cd.hl(3);
+  say('LibSVM 的內積：index 一樣，value 相乘加起來', 'index 就像剛才的 order');
+  await step(tok);                                   // 39:11 index 小的往前走
+  cd.hl(1);
+  say('index 不一樣：小的那個往前走', '和我們的演算法本質一樣');
+  await step(tok);                                   // 39:21 不是 exactly linked list
+  cd.hl(-1);
+  say('LibSVM 用 (index, value) 陣列', '不完全是 linked list：linked list 記憶體不連續');
+  await step(tok);                                   // 40:42 這段計算是效率核心
+  say('這段計算是 LibSVM 效率的核心', '學會的演算法，真的會用上');
 }]);
 
 // ════════ 42:26 高維又稀疏：影像與 one-hot ════════
 FRAG.push(['lllin-onehot', '高維稀疏向量：影像與 One-hot', async (tok) => {
   fresh([0, 7, 12.5], [0, 1, 0.4]);
-  const img = cube('1024 × 768', '#9b7ef4', [4, 0.3, 3], 0, 0.15, -1.2);
+  await step(tok);                                   // 42:30 機器學習裡隨便都上千維
+  say('哪裡用得到 1000 維的向量？', '機器學習裡到處都是');
+  await step(tok);                                   // 42:40 一張 1024 × 768 的影像
+  const img = cube('1024 × 768', '#9b7ef4', [4, 0.3, 3], 0, 0.15, -1.2, 3);
   say('一張影像 1024 × 768', '平常看成矩陣');
-  await beat(tok, 2200);
+  await step(tok);                                   // 42:45 拉長成一個向量：七十幾萬維
   await anim(tok, 1200, (t) => { img.scale.set(1 + 2.2 * t, 1, 1 - 0.85 * t); });
   relabel(img, '786,432 維');
   say('拉長成一個向量', '1024 × 768 = 786,432 維');
-  await beat(tok, 2400);
+  await step(tok);                                   // 43:16 這麼大又 sparse 也很常見
   fly(img, V3(0, 8, -4));
-  await beat(tok, 700);
-  say('廣告資料：在哪個網站被點', '原始資料是離散選項');
+  say('這麼大、又是 sparse 的向量也很常見', '');
+  await step(tok);                                   // 43:25 作業二：線上廣告平台的資料
+  say('作業二：線上廣告平台的資料', '原始資料是離散（discrete）選項');
+  await step(tok);                                   // 43:40 廣告在哪個網站被點，網站上千上萬
   const sites = ['www.google.com', 'www.yahoo.com', '… 上萬個網站'];
   const sl = sites.map((s, i) => tag(s, 'idx', -4.6, 0.3, -2.4 + i * 0.9));
-  await beat(tok, 2200);
+  say('例：這個廣告在哪個網站被點', '網站有上千上萬個');
+  await step(tok);                                   // 43:49 一筆：在 google 被點
+  sl[0].element.className = 'lab-label ptr alt';
+  say('這一筆：在 google 被點', '');
+  await step(tok);                                   // 43:55 另一筆：在 yahoo 被點
+  sl[0].element.className = 'lab-label idx'; sl[1].element.className = 'lab-label ptr alt';
+  say('另一筆：在 yahoo 被點', '');
+  await step(tok);                                   // 44:03 模型沒辦法直接處理 → 轉成數值
+  sl[1].element.className = 'lab-label idx';
+  say('模型沒辦法直接吃文字', '要先轉成數字');
+  await step(tok);                                   // 44:22 one-hot：是哪個選項，那一維填 1
   const xs = (i) => -1.6 + i * 1.05;
   const cs = [];
-  for (let i = 0; i < 8; i++) { cs.push(cube(i === 0 ? 1 : 0, i === 0 ? LK : '#c9bfae', [0.85, 0.7, 0.85], xs(i), 0.35, -2.4, 3)); }
+  for (let i = 0; i < 8; i++) cs.push(cube(i === 0 ? 1 : 0, i === 0 ? LK : '#c9bfae', [0.85, 0.7, 0.85], xs(i), 0.35, -2.4, 3));
   tag('…', 'idx', xs(8) - 0.2, 0.35, -2.4);
   sl[0].element.className = 'lab-label ptr alt';
-  say('One-hot：是哪個選項，那一維填 1', '其他維全部填 0');
-  await beat(tok, 2600);
+  say('One-hot：列出所有選項，是哪個就在那一維填 1', 'google 那筆 → 第 1 維是 1');
+  await step(tok);                                   // 44:28 其他維填 0；一萬個網站 → 一萬維
   sl[0].element.className = 'lab-label idx'; sl[1].element.className = 'lab-label ptr alt';
   relabel(cs[0], 0); tint(cs[0], '#c9bfae'); relabel(cs[1], 1); tint(cs[1], LK);
-  say('換一筆：yahoo 那一維才是 1', '1 萬個網站 → 1 萬維，只有 1 個非零');
-  await beat(tok, 2600);
+  say('其他維全部填 0', 'yahoo 那筆 → 第 2 維是 1；一萬個網站 → 一萬維');
+  await step(tok);                                   // 44:33 一萬維只有一個是 1
   cs.forEach((m, i) => { if (i !== 1) fly(m, V3(0, 8, -4)); });
-  await beat(tok, 900);
+  await beat(tok, 700);
   move(cs[1], 0, 0.35, 2.0);
   relabel(cs[1], '(yahoo, 1)');
-  say('Sparse 表示：只存一組（維度, 值）', '超高維又超稀疏，在機器學習很常見');
-  await beat(tok, 3000);
+  say('一萬維只有一個是 1 → 超 sparse', 'sparse 表示只要存一組（維度, 值）');
 }]);
 
 // ════════ 45:20 new / malloc 時記憶體發生什麼事 ════════
@@ -7049,93 +7917,129 @@ FRAG.push(['lllin-malloc', 'malloc、free 與 C++ new', async (tok) => {
     T.push(cube('', used.has(k) ? '#b9a582' : '#e9dcc4', [1.2, 0.1, 1.2], -3.25 + c * 1.3, 0.05, -1.6 + r * 1.3));
   }
   tag('記憶體（灰：別人在用）', 'idx', 0, 0.2, -2.9);
-  const p = tag('p', 'ptr', -5.8, 0.6, 0.35);
-  say('程式要一塊記憶體', '例：要放一個新的 node');
-  await beat(tok, 2200);
+  tag('p', 'ptr', -5.8, 0.6, 0.35);
+  await step(tok);                                   // 45:20 用指標 new 一個物件，記憶體發生什麼事？
+  say('問題：new 一個新物件時，記憶體裡發生什麼事？', '');
   const blk = [13, 14];
-  blk.forEach((k) => tint(T[k], LK));
   const bx = -3.25 + 1 * 1.3 + 0.65, bz = -1.6 + 2 * 1.3;
+  await step(tok);                                   // 45:28 C：malloc 要一塊記憶體
+  blk.forEach((k) => tint(T[k], LK));
   let a = arrow(V3(-5.4, 0.4, 0.35), V3(bx - 1.3, 0.2, bz));
-  say('malloc：OS 把這塊登記給你的程式', 'p = malloc(sizeof(Node))');
-  await beat(tok, 2800);
-  say('像地政單位：這塊地有人用了', '別的程式不會再拿到這塊');
-  await beat(tok, 2400);
+  say('C 用 malloc 要一塊記憶體', 'p = malloc(sizeof(Node))；malloc = memory allocation');
+  await step(tok);                                   // 45:38 OS 把這塊登記給你的程式
+  say('作業系統把這塊登記給你的程式', '別的程式不會再拿到這塊');
+  await step(tok);                                   // 45:51 像地政單位管土地
+  say('像地政單位：這塊地有人用了', '');
+  await step(tok);                                   // 45:59 free：還給系統
   blk.forEach((k) => tint(T[k], '#e9dcc4')); kill(a);
   say('free：還給系統，之後可再配置', 'free(p)');
-  await beat(tok, 2600);
+  await step(tok);                                   // 46:12 C++ new：除了配置以外
   blk.forEach((k) => tint(T[k], LK));
   a = arrow(V3(-5.4, 0.4, 0.35), V3(bx - 1.3, 0.2, bz));
   say('C++ new：一樣先配置一塊', 'p = new Node();');
-  await beat(tok, 1800);
+  await step(tok);                                   // 46:17 還會執行一段初始化程式
   cube('data=0', LB, [1.1, 0.6, 1.1], bx - 0.65, 0.4, bz, 3);
   cube('NULL', '#d8c29b', [1.1, 0.6, 1.1], bx + 0.65, 0.4, bz, 3);
-  say('再執行初始化程式（constructor）', '像整地：把初值填好');
-  await beat(tok, 3000);
+  say('還會執行一段初始化程式', 'C++ 正式名稱：constructor（建構子）');
+  await step(tok);                                   // 46:33 像整地：把初值放好
+  say('像整地：不只給你地，還把初值放好', 'new = 配置記憶體 + 初始化');
 }]);
 
-// ════════ 50:41 真正的 merge：搬節點，不 copy ════════
+// ════════ 50:38 真正的 merge：搬節點，不 copy ════════
 FRAG.push(['lllin-inplace-merge', '真正的 Merge：搬節點而不 copy', async (tok) => {
   fresh([0, 8, 12], [0, 0.4, 0.4]);
   const r1 = sRow(V1, -2.4, LB, 'H1'), r2 = sRow(V2, 0, LR, 'H2');
   tag('result', 'ptr alt', dx(1), 1.35, 2.6);
-  say('剛才的版本：insert 時複製新節點', '多配置 3 個 node');
-  await beat(tok, 1400);
+  await step(tok);                                   // 50:38 回傳新 list 不會很浪費記憶體嗎？
   const cp = [];
-  for (const [d, v, c] of [[1, 2, LR], [3, 6, LB], [4, 9, LR]]) { cp.push(nd(pl([d, v]), dx(d), 0.35, 2.6, c, 4)); await beat(tok, 500); }
-  say('回傳新 list：原本兩條還在', '記憶體用了兩份');
-  await beat(tok, 2400);
+  for (const [d, v, c] of [[1, 2, LR], [3, 6, LB], [4, 9, LR]]) { cp.push(nd(pl([d, v]), dx(d), 0.35, 2.6, c, 4)); await beat(tok, 300); }
+  say('剛才的版本：複製新節點、回傳新 list', '原本兩條還在 → 不會很浪費記憶體嗎？');
+  await step(tok);                                   // 50:47 剛才講的是 conceptual 的演算法
+  say('剛才講的是很 conceptual 的演算法', '重點在想法，不在省記憶體');
+  await step(tok);                                   // 50:55 真正的 merge：把 node 移來移去
   cp.forEach((g) => fly(g, V3(0, 8, 4)));
-  await beat(tok, 900);
   r1.ars.concat(r2.ars).forEach(kill);
-  say('真正的 merge：把節點本身移過去', '只改 link，不 copy');
-  await beat(tok, 1600);
-  move(r2.ns[0], dx(1), 0.35, 2.6); await beat(tok, 700);
-  move(r1.ns[0], dx(3), 0.35, 2.6); await beat(tok, 700);
-  move(r2.ns[1], dx(4), 0.35, 2.6); await beat(tok, 700);
-  say('第 5 維相加為 0：兩個節點 free 掉', '4 + (−4) = 0');
-  await beat(tok, 1200);
+  await beat(tok, 600);
+  move(r2.ns[0], dx(1), 0.35, 2.6); await beat(tok, 400);
+  move(r1.ns[0], dx(3), 0.35, 2.6); await beat(tok, 400);
+  move(r2.ns[1], dx(4), 0.35, 2.6);
+  say('真正的 merge：把節點本身移到 result', '');
+  await step(tok);                                   // 51:03 而不是重新 copy 一份
   fly(r1.ns[1], V3(3, 8, -4)); fly(r2.ns[2], V3(3, 8, -2));
-  await beat(tok, 1000);
   lk(dx(1), dx(3), 2.6); lk(dx(3), dx(4), 2.6); tag('NULL', 'idx', dx(4) + 1.6, 0.35, 2.6);
-  say('result：同樣的節點，重新串好', '不用多配置記憶體');
-  await beat(tok, 3000);
+  say('只改 link，不重新 copy 一份', '和為 0 的第 5 維兩個節點 free 掉');
 }]);
 
 // ════════ 58:25 Linked list 的缺點與「基本功」 ════════
 FRAG.push(['lllin-scatter', 'Linked List 的缺點：記憶體四散', async (tok) => {
   fresh([0, 9, 10.5], [0, 0, 0.6]);
-  tag('Array：連續', 'ptr', -4.6, 0.4, -3.2);
-  const ac = [];
-  for (let i = 0; i < 5; i++) ac.push(cube(i + 1, LB, [1.0, 0.6, 1.0], -1.6 + i * 1.05, 0.3, -3.2, 3));
   for (let r = 0; r < 3; r++) for (let c = 0; c < 8; c++) cube('', '#e9dcc4', [1.2, 0.08, 1.2], -4.9 + c * 1.4, 0.04, -0.6 + r * 1.5);
-  tag('Linked list：哪裡有空就挖一塊', 'ptr alt', 0, 0.4, 4.0);
   const spots = [[0, 2], [6, 0], [2, 1], [7, 2], [3, 0]];
   const P = spots.map(([c, r]) => V3(-4.9 + c * 1.4, 0.35, -0.6 + r * 1.5));
-  say('Array：記憶體連在一起', '一路讀過去');
-  const cur = tag('▼', 'ptr', 0, 1.3, -3.2);
-  for (let i = 0; i < 5; i++) { cur.position.set(-1.6 + i * 1.05, 1.1, -3.2); glow(ac[i], GOLD); await beat(tok, 300); glow(ac[i], null); }
-  await beat(tok, 800);
+  await step(tok);                                   // 58:33 Linked list in job interviews
+  say('最後一段：Linked list in job interviews', '其實它不是特別好用的資料結構');
+  await step(tok);                                   // 59:00 顯著缺點：哪裡有空就挖一塊
+  tag('Linked list：哪裡有空就挖一塊', 'ptr alt', 0, 0.4, 4.0);
   const ln = [];
-  for (let i = 0; i < 5; i++) { ln.push(cube(i + 1, LR, [0.9, 0.7, 0.9], P[i].x, 0.35, P[i].z, 3)); await beat(tok, 350); }
+  for (let i = 0; i < 5; i++) { ln.push(cube(i + 1, LR, [0.9, 0.7, 0.9], P[i].x, 0.35, P[i].z, 3)); await beat(tok, 250); }
+  say('記憶體哪裡有一塊空的，就挖一塊', '優點：不用找一整段連續空間');
+  await step(tok);                                   // 59:08 東占一塊、西占一塊，四散各地
   for (let i = 0; i < 4; i++) {
     const d = P[i + 1].clone().sub(P[i]).normalize();
     arrow(P[i].clone().addScaledVector(d, 0.55).setY(0.75), P[i + 1].clone().addScaledVector(d, -0.55).setY(0.75));
   }
-  say('Linked list：節點四散各地', '東占一塊、西占一塊');
-  await beat(tok, 2200);
-  for (let i = 0; i < 5; i++) { cur.position.set(P[i].x, 1.3, P[i].z); glow(ln[i], GOLD); await beat(tok, 700); glow(ln[i], null); }
-  say('有 cache 時效率差：東奔西跑', '東市買駿馬，西市買鞍韉');
-  await beat(tok, 2800);
-  say('概念簡單，但要寫到沒 bug 不容易', '實務：自刻求極致效能，或直接用 STL');
-  await beat(tok, 2800);
-  say('但很適合考基本功', '像考主廚煎荷包蛋');
-  await beat(tok, 3000);
+  say('缺點：節點四散各地', '東占一塊、西占一塊');
+  await step(tok);                                   // 59:17 在 Array 那邊講過
+  tag('Array：連續', 'ptr', -4.6, 0.4, -3.2);
+  const ac = [];
+  for (let i = 0; i < 5; i++) ac.push(cube(i + 1, LB, [1.0, 0.6, 1.0], -1.6 + i * 1.05, 0.3, -3.2, 3));
+  const cur = tag('▼', 'ptr', -1.6, 1.1, -3.2);
+  await beat(tok, 500);
+  for (let i = 0; i < 5; i++) { cur.position.set(-1.6 + i * 1.05, 1.1, -3.2); await beat(tok, 200); }
+  say('Array 那邊講過：記憶體連在一起最好讀', '存取的位置隔很遠會影響效率');
+  await step(tok);                                   // 59:33 cache 架構下：要用的東西四散各地
+  for (let i = 0; i < 5; i++) { cur.position.set(P[i].x, 1.3, P[i].z); glow(ln[i], GOLD); await beat(tok, 400); glow(ln[i], null); }
+  say('有 cache 時：東西四散，效率不好', '東邊搬一個、西邊再搬一個');
+  await step(tok);                                   // 59:48 東市買駿馬，西市買鞍韉
+  say('像《木蘭詩》：東市買駿馬，西市買鞍韉', '跑來跑去');
+  await step(tok);                                   // 60:08 概念簡單，但寫到沒 bug 不容易
+  say('概念很簡單，畫圖也簡單', '但要寫成沒有錯的程式，其實蠻困難');
+  await step(tok);                                   // 60:45 自刻求極致效能／用 STL／不用
+  say('實務：為極致效能自己刻，或用 STL', '或乾脆選別的做法、不用 linked list');
+  await step(tok);                                   // 61:25 但它很適合考基本功
+  say('但它一直很適合考程式設計師的基本功', '');
+  await step(tok);                                   // 61:47 像考主廚煎荷包蛋
+  say('像考五星級主廚煎荷包蛋', '考煎牛排太貴，荷包蛋剛好');
+  await step(tok);                                   // 62:21 三分鐘就看出很多東西
+  say('三分鐘煎一個，就看得出很多東西', '熟練 linked list 考題 = 會煎荷包蛋');
 }]);
 
-// ════════ 63:15 Linked List Reversal ════════
+// ════════ 63:25 Linked List Reversal ════════
 FRAG.push(['lllin-reverse', 'Linked List Reversal：先存再改', async (tok) => {
   fresh([0, 7.5, 12], [0, 2.2, 0.4]);
-  const cd = code([
+  const Z = 1.4, xs = (i) => -5.2 + i * 2.6;
+  const ns = [], red = [];
+  let cd, endNull, head, tp, tc, tn, startNull;
+  await step(tok);                                   // 63:34 經典考題：把 linked list 倒過來
+  for (let i = 0; i < 5; i++) ns.push(nd(i + 1, xs(i), 0.35, Z, null, 3));
+  for (let i = 0; i < 4; i++) red.push(lk(xs(i), xs(i + 1), Z, 0.35, A_RED));
+  endNull = tag('NULL', 'idx', xs(4) + 1.6, 0.35, Z);
+  head = tag('head', 'ptr', xs(0), 2.9, Z);
+  say('經典考題：Linked List Reversal', '把 linked list 倒過來');
+  await step(tok);                                   // 63:56 通常考 singly
+  say('通常考 singly linked list', '每個節點只有一個 next');
+  await step(tok);                                   // 64:02 doubly 太簡單：交換 head/tail、prev/next
+  say('Doubly 太簡單', '交換 head、tail，再把每個 prev 和 next 交換');
+  await step(tok);                                   // 64:15 singly 比較 tricky
+  say('Singly 比較 tricky', '常常太快或太慢 update 某個 link');
+  await step(tok);                                   // 64:52 把所有箭頭打斷、反過來
+  red.forEach((a) => a.setColor(new THREE.Color('#ff3b2f')));
+  say('Reversal：所有箭頭打斷、反過來', '1 → 2 → 3 → 4 → 5 變成 5 → 4 → 3 → 2 → 1');
+  await step(tok);                                   // 65:11 實務中想不到一定要 reversal 的理由
+  red.forEach((a) => a.setColor(new THREE.Color(A_RED)));
+  say('實務中幾乎找不到一定要 reversal 的理由', 'convolution 也有更好的做法');
+  await step(tok);                                   // 66:20 難在：更新時還要拿得到下一串
+  cd = code([
     'prev = NULL;  cur = head;',
     'while (cur != NULL) {',
     '  next = cur->next;   // 先存紅箭頭',
@@ -7144,125 +8048,193 @@ FRAG.push(['lllin-reverse', 'Linked List Reversal：先存再改', async (tok) =
     '}',
     'head = prev;',
   ], 0, 6.4, 0.5, -2.6);
-  const Z = 1.4, xs = (i) => -5.2 + i * 2.6;
-  const ns = [];
-  for (let i = 0; i < 5; i++) ns.push(nd(i + 1, xs(i), 0.35, Z, null, 3));
-  const red = [];
-  for (let i = 0; i < 4; i++) red.push(lk(xs(i), xs(i + 1), Z, 0.35, A_RED));
-  const endNull = tag('NULL', 'idx', xs(4) + 1.6, 0.35, Z);
-  const head = tag('head', 'ptr', xs(0), 2.9, Z);
-  say('把 singly linked list 反過來', 'doubly 只要交換 head/tail 與每個 prev/next');
-  await beat(tok, 3000);
   cd.hl(0);
-  const tp = tag('prev', 'ptr', xs(0) - 1.6, 1.6, Z), tc = tag('cur', 'ptr alt', xs(0), 2.2, Z), tn = tag('next', 'ptr', xs(1), 1.6, Z);
+  tp = tag('prev', 'ptr', xs(0) - 1.6, 1.6, Z); tc = tag('cur', 'ptr alt', xs(0), 2.2, Z); tn = tag('next', 'ptr', xs(1), 1.6, Z);
   showL(tn, false);
-  const startNull = tag('NULL', 'idx', xs(0) - 1.6, 0.9, Z);
-  say('prev = NULL，cur = head', '');
-  await beat(tok, 1800);
-  for (let i = 0; i < 5; i++) {
-    cd.hl(2); showL(tn, true);
-    if (i < 4) { tn.position.set(xs(i + 1), 1.6, Z); red[i].setColor(new THREE.Color('#ff3b2f')); } else tn.position.set(xs(4) + 1.6, 1.6, Z);
-    say(i === 0 ? '先把紅箭頭存起來' : '存下 next', 'next = ' + (i < 4 ? String(i + 2) : 'NULL'));
-    await beat(tok, i === 0 ? 1600 : 900);
-    cd.hl(3);
+  startNull = tag('NULL', 'idx', xs(0) - 1.6, 0.9, Z);
+  say('難在：更新時，還要拿得到還沒更新的下一串', 'prev = NULL，cur = head');
+  await step(tok);                                   // 66:38 原本有紅箭頭往右指
+  cd.hl(2); showL(tn, true);
+  red[0].setColor(new THREE.Color('#ff3b2f'));
+  say('原本有個紅箭頭往右指：先存起來', 'next = cur->next（next = 2）');
+  await step(tok);                                   // 66:46 要更新成綠色
+  cd.hl(3); kill(red[0]); glow(ns[0].userData.data, GREEN);
+  say('再改成綠箭頭：指回 prev', '1->next = NULL');
+  await step(tok);                                   // 66:55 蓋掉就沒有紅箭頭可以走
+  glow(ns[0].userData.data, null);
+  say('如果沒先存，紅箭頭一蓋掉', '就再也找不到 2 了');
+  await step(tok);                                   // 67:01 先存紅、改綠、再沿紅走
+  cd.hl(4);
+  tp.position.set(xs(0), 1.6, Z); tc.position.set(xs(1), 2.2, Z);
+  say('沿著存下來的紅箭頭前進', 'prev = cur，cur = next；之後每個節點都一樣');
+  await beat(tok, 500);
+  for (let i = 1; i < 5; i++) {
+    if (i < 4) tn.position.set(xs(i + 1), 1.6, Z); else tn.position.set(xs(4) + 1.6, 1.6, Z);
     if (i < 4) kill(red[i]); else kill(endNull);
-    if (i > 0) arrow(V3(xs(i) + 0.73, 0.95, Z), V3(xs(i - 1) + 0.2, 0.95, Z), A_GREEN);
-    else glow(ns[0].userData.data, GREEN);
-    say(i === 0 ? '再改成綠箭頭：指回 prev' : 'cur->next = prev', i === 0 ? '1->next = NULL' : (i + 1) + '->next = ' + i);
-    await beat(tok, i === 0 ? 1600 : 900);
-    if (i === 0) glow(ns[0].userData.data, null);
-    cd.hl(4);
+    arrow(V3(xs(i) + 0.73, 0.95, Z), V3(xs(i - 1) + 0.2, 0.95, Z), A_GREEN);
     tp.position.set(xs(i), 1.6, Z); tc.position.set(i < 4 ? xs(i + 1) : xs(4) + 1.6, 2.2, Z);
-    say(i === 0 ? '最後沿著存下的紅箭頭前進' : 'prev = cur，cur = next', '');
-    await beat(tok, i === 0 ? 1600 : 800);
+    await beat(tok, 450);
   }
+  await step(tok);                                   // 67:11 程式碼順序要邏輯上想清楚
   kill(startNull);
   tag('NULL', 'idx', xs(0) - 1.5, 0.95, Z);
   cd.hl(6); showL(tn, false);
   head.position.set(xs(4), 2.9, Z);
-  say('head = prev：反轉完成', '5 → 4 → 3 → 2 → 1 → NULL');
-  await beat(tok, 2600);
-  cd.hl(-1);
-  say('約十行，但順序一錯後半段就斷了', '先在紙上想清楚再上機');
-  await beat(tok, 2800);
+  say('head = prev：反轉完成', '順序要想清楚：先存、再改、再走');
 }]);
 
-// ════════ 70:41 Cycle detection：龜兔賽跑 ════════
+// ════════ 67:18 在白板上寫程式的能力 ════════
+FRAG.push(['lllin-whiteboard', '在白板上寫程式的能力', async (tok) => {
+  fresh([0, 8, 11.5], [0, 0.8, 0.2]);
+  const loop = ['寫 code', 'compile', '丟測資', 'debugger 改'];
+  const LP = [V3(-4.6, 0.4, -2.2), V3(-1.8, 0.4, -2.2), V3(-1.8, 0.4, 0.4), V3(-4.6, 0.4, 0.4)];
+  let ls = [], ars = [];
+  await step(tok);                                   // 67:18 太仰賴 debugger 和電腦
+  for (let i = 0; i < 4; i++) { ls.push(cube(loop[i], '#c9d7ea', [2.2, 0.5, 1.0], LP[i].x, 0.25, LP[i].z, 3)); await beat(tok, 250); }
+  for (let i = 0; i < 4; i++) {
+    const a = LP[i], b = LP[(i + 1) % 4], d = b.clone().sub(a).normalize();
+    ars.push(arrow(a.clone().addScaledVector(d, i % 2 ? 0.7 : 1.25).setY(0.7), b.clone().addScaledVector(d, i % 2 ? -0.7 : -1.25).setY(0.7)));
+  }
+  say('很多人寫程式太仰賴 debugger 和電腦', '寫完 → compile → 丟測資 → 再改');
+  await step(tok);                                   // 67:45 面試時沒有 compiler 幫你 debug
+  ls.forEach((m) => tint(m, '#d8cfc0'));
+  const no = tag('面試：沒有 compiler ✗', 'bad', -3.2, 2.0, -0.9);
+  say('面試時沒有 compiler 幫你 debug', '');
+  await step(tok);                                   // 68:03 要知道白板上每一行在電腦裡發生什麼
+  const wb = cube('', '#f6f2e8', [5.2, 3.2, 0.15], 3.0, 1.7, -1.6);
+  const cd = code(['prev = NULL;  cur = head;', 'while (cur) {', '  next = cur->next;', '  cur->next = prev;', '  prev = cur;  cur = next;', '}'], 3.0, 2.9, 0.42, -1.4);
+  say('白板上每一行，要清楚電腦裡發生什麼', '靠腦袋裡清楚的邏輯');
+  await step(tok);                                   // 68:24 從現在就練：紙上寫 code / pseudo code
+  cd.hl(2);
+  say('從現在開始練：先在紙上寫出來', 'code 或 pseudo code，再上機');
+  await step(tok);                                   // 69:32 reversal 只是十行左右的 code
+  cd.hl(-1);
+  tag('約 10 行', 'ptr alt', 3.0, 0.1, 0.4);
+  say('Reversal 只是十行左右的 code', '考的是你有沒有磨練過這種邏輯');
+  await step(tok);                                   // 69:45 想清楚再寫，還是先打 20 行再碰運氣
+  say('想清楚再寫？還是打 20 行再碰運氣改？', '不在電腦上寫程式的能力很重要');
+  await step(tok);                                   // 70:31 像煎荷包蛋：看得出基本功
+  kill(no);
+  say('Reversal 就像煎荷包蛋', '很看得出一個程式設計師的基本功');
+}]);
+
+// ════════ 70:39 Cycle detection：龜兔賽跑 ════════
 FRAG.push(['lllin-cycle', 'Cycle Detection：龜兔賽跑', async (tok) => {
   fresh([0, 9, 10.5], [0, 0, 0.3]);
   const P = { 1: V3(-5.6, 0.35, 0), 2: V3(-3.2, 0.35, 0), 3: V3(-0.8, 0.35, 0), 4: V3(1.6, 0.35, -2.2), 5: V3(4.0, 0.35, 0), 6: V3(1.6, 0.35, 2.2) };
   const NX = { 1: 2, 2: 3, 3: 4, 4: 5, 5: 6, 6: 3 };
   const cs = {};
-  for (let k = 1; k <= 6; k++) { cs[k] = cube(k, colorFor(k), [0.9, 0.7, 0.9], P[k].x, 0.35, P[k].z, 3); }
   function link(a, b, color) {
     const d = P[b].clone().sub(P[a]).normalize();
     return arrow(P[a].clone().addScaledVector(d, 0.6), P[b].clone().addScaledVector(d, -0.6), color);
   }
+  await step(tok);                                   // 70:39 linked list 裡到底有沒有 cycle？
+  for (let k = 1; k <= 6; k++) { cs[k] = cube(k, colorFor(k), [0.9, 0.7, 0.9], P[k].x, 0.35, P[k].z, 3); }
   for (let k = 1; k <= 5; k++) link(k, k + 1);
   tag('head', 'ptr', P[1].x, 1.4, 0);
+  say('面試題：linked list 裡有沒有 cycle？', '');
+  await step(tok);                                   // 70:50 正常的從 head 走到尾巴
   const nul = tag('NULL', 'idx', P[6].x - 1.6, 0.35, P[6].z);
-  say('正常的 linked list 沒有 cycle', '從 head 走到尾巴 NULL');
-  await beat(tok, 2600);
+  say('正常的 linked list 沒有 cycle', '從 head 走走走，走到尾巴 NULL');
+  await step(tok);                                   // 71:07 某次更新 link 沒寫對：繞回來
   kill(nul);
   link(6, 3, A_RED);
-  say('某次更新 link 沒寫對：繞回去', '6->next = 3 → cycle');
-  await beat(tok, 2600);
-  say('硬算：每個 node 出發，看能否繞回', '會 work，但不巧妙');
-  await beat(tok, 2400);
+  say('某次更新 link 沒寫對：繞回前面', '6->next = 3 → cycle（錯誤的 list）');
+  await step(tok);                                   // 71:28 怎麼 detect？
+  say('怎麼把 cycle 偵測（detect）出來？', '有名的面試題');
+  await step(tok);                                   // 71:46 硬算：從每個 node 出發看能否繞回
+  for (const k of [1, 2, 3]) { glow(cs[k], GOLD); await beat(tok, 450); glow(cs[k], null); }
+  say('硬算：從每個 node 出發，看能不能繞回', '會 work，但不巧妙');
+  await step(tok);                                   // 72:19 龜兔賽跑演算法
   const tT = tag('烏龜', 'ptr', P[1].x, 1.4, P[1].z), tH = tag('兔子', 'ptr alt', P[1].x, 2.0, P[1].z);
   let T = 1, H = 1;
-  say('兩個指標從 head 出發', '兔子一次兩步，烏龜一次一步');
-  await beat(tok, 2200);
-  for (let r = 1; r <= 4; r++) {
+  say('龜兔賽跑演算法', 'tortoise and hare：兩個指標從 head 出發');
+  async function round(r) {
     T = NX[T]; tT.position.set(P[T].x, 1.4, P[T].z);
     H = NX[H]; tH.position.set(P[H].x, 2.0, P[H].z);
-    await beat(tok, 450);
+    await beat(tok, 350);
     H = NX[H]; tH.position.set(P[H].x, 2.0, P[H].z);
-    say('第 ' + r + ' 輪', '烏龜在 ' + T + '，兔子在 ' + H);
-    await beat(tok, 1100);
+    await beat(tok, 350);
   }
+  await step(tok);                                   // 72:43 兔子一次兩步、烏龜一次一步
+  await round(1);
+  say('每一輪：兔子走兩步、烏龜走一步', '第 1 輪：烏龜在 2，兔子在 3');
+  await step(tok);                                   // 73:04 有 cycle：兔子繞一圈回來
+  await round(2); await beat(tok, 300); await round(3);
+  say('有 cycle：兔子先進圈，繞一圈回來', '第 3 輪：烏龜在 4，兔子繞回 3');
+  await step(tok);                                   // 73:19 兔子追到烏龜 → 有 cycle
+  await round(4);
   glow(cs[5], GOLD);
-  say('兔子追到烏龜 → 有 cycle', '兩者都在 5');
-  await beat(tok, 2600);
-  say('沒有 cycle：兔子會先走到 NULL', '兔子走的是「兩步算一步」的虛擬 list');
-  await beat(tok, 3000);
+  say('兔子追到烏龜 → 有 cycle', '第 4 輪：兩者都在 5');
+  await step(tok);                                   // 73:27 沒追到就走到 tail → 沒有 cycle
+  say('沒有 cycle：兔子會先走到尾巴', '走到 NULL → 沒有 cycle');
+  await step(tok);                                   // 74:03 兔子走的是「兩步算一個」的虛擬 list
+  glow(cs[5], null);
+  say('跟 merge 一樣是兩個 cursor', '兔子走的是「兩步算一個」的虛擬 linked list');
 }]);
 
-// ════════ 74:42 找中間那一項 ════════
+// ════════ 74:47 找中間那一項 ════════
 FRAG.push(['lllin-middle', '找 Linked List 的中間項', async (tok) => {
-  const idx0 = !!(ctx.params || {}).idx0;
   fresh([0, 7.5, 11.5], [0, 0.6, 0.4]);
   const Z = 0.2, xs = (i) => -5.2 + i * 2.6;
   const ns = [];
-  for (let i = 0; i < 5; i++) { ns.push(nd(i + 1, xs(i), 0.35, Z, null, 3)); tag('[' + i + ']', 'idx', xs(i), 0, Z + 1.1); }
+  await step(tok);                                   // 74:47 能不能很巧妙地找出中間那一項？
+  say('變化題：能不能巧妙地找出最中間那一項？', '');
+  await step(tok);                                   // 74:57 5 項的 list，中間是第 3 項
+  for (let i = 0; i < 5; i++) ns.push(nd(i + 1, xs(i), 0.35, Z, null, 3));
   for (let i = 0; i < 4; i++) lk(xs(i), xs(i + 1), Z);
   tag('NULL', 'idx', xs(4) + 1.6, 0.35, Z);
-  say('5 項的 list：中間是第 3 項', '怎麼找最巧妙？');
-  await beat(tok, 2400);
+  say('5 項的 list：中間是第 3 項', '');
+  await step(tok);                                   // 75:16 先掃一次：5 項
   const p = tag('p', 'ptr alt', xs(0), 1.4, Z), cnt = tag('n = 0', 'ptr', 0, 2.8, Z);
-  say('Two-pass：先數有幾項', '');
-  for (let i = 0; i < 5; i++) { p.position.set(xs(i), 1.4, Z); txt(cnt, 'n = ' + (i + 1)); await beat(tok, 500); }
-  await beat(tok, 600);
-  say('再從頭走到第 3 項', '總共約 n + n/2 步');
-  for (let i = 0; i < 3; i++) { p.position.set(xs(i), 1.4, Z); await beat(tok, 600); }
+  for (let i = 0; i < 5; i++) { p.position.set(xs(i), 1.4, Z); txt(cnt, 'n = ' + (i + 1)); await beat(tok, 350); }
+  say('Two-pass：先掃一次，知道有 5 項', '');
+  await step(tok);                                   // 75:25 再從頭數到第 3 項：n + n/2
+  for (let i = 0; i < 3; i++) { p.position.set(xs(i), 1.4, Z); await beat(tok, 400); }
   glow(ns[2].userData.data, GOLD);
-  await beat(tok, 1400);
+  say('再從頭數到第 3 項', '總共約 n + n/2 步');
+  await step(tok);                                   // 75:42 用龜兔賽跑
   glow(ns[2].userData.data, null); kill(p); kill(cnt);
   const tT = tag('烏龜', 'ptr', xs(0), 1.4, Z), tH = tag('兔子', 'ptr alt', xs(0), 2.0, Z);
-  say('One-pass：龜兔賽跑', '兔子兩步、烏龜一步');
-  await beat(tok, 2000);
+  say('One-pass：用龜兔賽跑', '兔子跑到結尾時，烏龜停在中間');
+  await step(tok);                                   // 76:00 兔子 1、3、5；烏龜 1、2、3
   for (let r = 1; r <= 2; r++) {
     tT.position.set(xs(r), 1.4, Z); tH.position.set(xs(2 * r), 2.0, Z);
-    say('兔子到 ' + (2 * r + 1) + '，烏龜到 ' + (r + 1), '兔子：1 → 3 → 5；烏龜：1 → 2 → 3');
-    await beat(tok, 1400);
+    await beat(tok, 700);
   }
+  say('兔子兩步兩步：1 → 3 → 5', '烏龜一步一步：1 → 2 → 3');
+  await step(tok);                                   // 76:14 烏龜在中間那一項
   glow(ns[2].userData.data, GOLD);
-  say('兔子走到尾，烏龜就在中間', '移動總數其實一樣，差在少一次 loop');
-  await beat(tok, 2600);
-  if (idx0) { say('從 0 數：中間是第 2 項', '[0] [1] [2] [3] [4] → [2]'); await beat(tok, 2600); }
-  say('變化題：找 1/3、3/4 處', '改兩個游標的速度比');
-  await beat(tok, 2600);
-  if (!idx0) { say('從 0 數的話，中間是 index 2', '定義要先跟主考官講清楚'); await beat(tok, 2400); }
+  say('兔子到尾，烏龜就在中間', '');
+  await step(tok);                                   // 76:22 變化：1/3、3/4 處
+  say('再變化：找 1/3、3/4 的地方', 'two cursor 演算法的變形：改速度比');
+  await step(tok);                                   // 76:36 面試看兩件事
+  glow(ns[2].userData.data, null);
+  say('面試題看兩件事', '基本功（reversal）＋活用巧思（middle）');
+  await step(tok);                                   // 78:34 one-pass 和 two-pass 移動數一樣
+  say('Q：one-pass 和 two-pass 移動數一樣？', '對：差在美感、少一次 loop');
+}]);
+
+// ════════ 83:34 中間項從 0 數；先寫 pseudo code ════════
+FRAG.push(['lllin-middle0', '中間項從 0 數、先寫 pseudo code', async (tok) => {
+  fresh([0, 7.5, 11.5], [0, 0.6, 0.4]);
+  const Z = 0.2, xs = (i) => -5.2 + i * 2.6;
+  const ns = [];
+  for (let i = 0; i < 5; i++) ns.push(nd(i + 1, xs(i), 0.35, Z));
+  for (let i = 0; i < 4; i++) lk(xs(i), xs(i + 1), Z);
+  await step(tok);                                   // 83:34 從 0 數：0 1 2 3 4，中間是第 2 項
+  for (let i = 0; i < 5; i++) tag('[' + i + ']', 'idx', xs(i), 0, Z + 1.1);
+  glow(ns[2].userData.data, GOLD);
+  say('從 0 數：0 1 2 3 4', '中間是 index 2（同一個節點）');
+  await step(tok);                                   // 83:46 面試時要先把問題講清楚
+  say('這裡沒嚴格定義 middle', '面試時要先跟主考官把問題講清楚');
+  await step(tok);                                   // 83:58 coding 前先寫 pseudo code
+  glow(ns[2].userData.data, null);
+  say('Coding 前，先想好、寫好 pseudo code', '');
+  await step(tok);                                   // 84:20 sparse vector 的 0 沒有存
+  nd('(3, 6)', -1.6, 0.35, 3.2, LB, 3); nd('(5, 4)', 1.6, 0.35, 3.2, LB, 3);
+  lk(-1.6, 1.6, 3.2); tag('sparse vector', 'ptr', -4.2, 0.35, 3.2);
+  say('Q：sparse vector 裡的 0 有存嗎？', '沒有：只存 (維度, 值)');
 }]);
   }
 

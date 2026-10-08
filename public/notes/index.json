@@ -349,9 +349,9 @@
  },
  "868qXWoGS9E": {
   "label": "Abdul Bari：Pointer to Array",
-  "points": 32,
+  "points": 33,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "8gt0D0IqU5w": {
   "label": "Abdul Bari：2.3.1 Recurrence Dividing Function #1",
@@ -475,9 +475,9 @@
  },
  "akErwS16DUg": {
   "label": "Linked List Introduction & Concepts",
-  "points": 51,
+  "points": 52,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "ARvQcqJ_-NY": {
   "label": "Abdul Bari：Greedy Method - Introduction",
@@ -525,7 +525,7 @@
   "label": "台大林軒田 DSA Array / Linked List",
   "points": 212,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "B7hVxCmfPtM": {
   "label": "MIT 6.006 L4：Heaps and Heap Sort",
@@ -957,7 +957,7 @@
   "label": "Abdul Bari：Row-Major and Column-Major Mapping",
   "points": 40,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "moPtwq_cVH8": {
   "label": "MIT 6.006 L23：Computational Complexity",
@@ -1065,7 +1065,7 @@
   "label": "台大林軒田 DSA Linked List",
   "points": 133,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "pcKY4hjDrxk": {
   "label": "Abdul Bari：BFS",
@@ -1077,7 +1077,7 @@
   "label": "Abdul Bari：Stack vs Heap",
   "points": 18,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "pPMMUa8guTE": {
   "label": "交大彭文志 Lec14 Trees (3/6)",
@@ -1269,7 +1269,7 @@
   "label": "Abdul Bari：Pointer Arithmetic",
   "points": 27,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "UO0B1SQOAgk": {
   "label": "交大彭文志 Lec13 Trees (2/6)",
@@ -1413,7 +1413,7 @@
   "label": "Abdul Bari：Recursion and Stack",
   "points": 28,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "yn0ZAifhyNM": {
   "label": "交大彭文志 Lec11 Lists (4/4)",
