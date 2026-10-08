@@ -142,6 +142,7 @@ if (STAGE) {
     if (e.origin !== location.origin || !e.data) return;
     if (e.data.type === 'scene') playScene(e.data.scene, e.data.params);
     if (e.data.type === 'tour') tour(e.data.from);
+    if (e.data.type === 'visible') lab.setVisible(e.data.visible);
   });
   $('handsOn').onclick = () => {
     stopAll();

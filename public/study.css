@@ -298,3 +298,8 @@ a { color: inherit; }
 .st-end-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 @media (max-width: 760px) { .st-qz { right: 10px; left: 10px; bottom: 10px; width: auto; } }
 @media (prefers-reduced-motion: reduce) { .st-qz, .st-qz.right { transition: none; animation: none; } .st-qz-bit { display: none; } }
+
+/* 字幕兩行：中文在上；英文課再加一行較小的英文原文 */
+.st-sub { display: flex; flex-direction: column; align-items: center; gap: 1px; -webkit-line-clamp: unset; }
+.st-sub-zh { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.st-sub-en { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: .78em; opacity: .82; font-weight: 400; }

@@ -75,7 +75,19 @@
     if (p && p.tour) $('stage').contentWindow.postMessage({type: 'tour'}, location.origin);
     else if (p && sceneFor(p)) postScene(p);
     else if (p) { stageScene = null; startTour(); }
+    tellStageVisible();
   }
+  // Let the stage stop drawing while it's scrolled out of view or the tab
+  // is in the background (saves battery and heat on phones).
+  let stageOnScreen = true;
+  function tellStageVisible(){
+    if (!stageReady) return;
+    $('stage').contentWindow.postMessage({type: 'visible', visible: stageOnScreen && !document.hidden}, location.origin);
+  }
+  if (hasStage && 'IntersectionObserver' in window) {
+    new IntersectionObserver(function(entries){ stageOnScreen = entries[0].isIntersecting; tellStageVisible(); }).observe($('stage'));
+  }
+  document.addEventListener('visibilitychange', tellStageVisible);
   function postScene(sec){
     $('stage').contentWindow.postMessage({type: 'scene', scene: sec.scene, params: sec.params || {}}, location.origin);
   }
@@ -326,7 +338,10 @@
     if (k === subIdx) return;
     subIdx = k;
     el.hidden = k < 0;
-    if (k >= 0) el.textContent = subs[k][2];
+    // English lectures carry a Chinese line too: Chinese on top, English below.
+    if (k >= 0) el.innerHTML = subs[k][3]
+      ? '<span class="st-sub-zh">' + esc(subs[k][3]) + '</span><span class="st-sub-en">' + esc(subs[k][2]) + '</span>'
+      : '<span class="st-sub-zh">' + esc(subs[k][2]) + '</span>';
   }
 
   // ── Notes, timeline, and the "now" line ──

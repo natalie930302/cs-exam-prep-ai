@@ -29,7 +29,7 @@ export function createLab(container) {
   camera.position.set(0, 7, 16);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, SMALL ? 1.75 : 2));
+  renderer.setPixelRatio(Math.min(devicePixelRatio, SMALL ? 1.5 : 2));
   renderer.setClearColor(0x000000, 0);
   renderer.toneMapping = THREE.NeutralToneMapping;
   renderer.toneMappingExposure = 1.05;
@@ -301,12 +301,18 @@ export function createLab(container) {
     applyFit(dt);
   }
 
+  // The study room says when the stage is scrolled out of view; motion keeps
+  // stepping (so nothing jumps on return) but nothing is drawn, which is
+  // what makes phones hot.
+  let visible = true;
+  function setVisible(v) { visible = !!v; }
   let last = performance.now();
   function tick(now) {
     const dt = Math.min(0.033, (now - last) / 1000);
     last = now;
     for (const b of bodies) stepBody(b, dt);
     stepPops(dt);
+    if (!visible) { requestAnimationFrame(tick); return; }
     fitTick(dt);
     controls.update();
     renderer.render(scene, camera);
@@ -488,7 +494,7 @@ export function createLab(container) {
     renderer.render(scene, camera);
     labels.render(scene, camera);
   }
-  return { advance, scene, world, camera, controls, addBody, removeBody, dropTo, springTo, flyAway, clear, label, box, frameCamera, bodies, renderer };
+  return { advance, scene, world, camera, controls, addBody, removeBody, dropTo, springTo, flyAway, clear, label, box, frameCamera, bodies, renderer, setVisible };
 }
 
 // Distinct but harmonious block colours, picked by value so the same
