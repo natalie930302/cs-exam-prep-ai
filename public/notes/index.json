@@ -544,6 +544,11 @@
   "points": 78,
   "quiz": 7
  },
+ "eKkXU3uu2zk": {
+  "label": "Abdul Bari：4.3.1 Matrix Chain Multiplication (Program)",
+  "points": 40,
+  "quiz": 5
+ },
  "ENyox7kNKeY": {
   "label": "MIT 6.006 L12：DP II",
   "points": 43,
@@ -834,10 +839,20 @@
   "points": 157,
   "quiz": 8
  },
+ "PptQgy89cN8": {
+  "label": "MIT 6.006 Rec22：DP: Dance Dance Revolution（進階DP範例，補充）",
+  "points": 73,
+  "quiz": 7
+ },
  "PqN0aJeYtuA": {
   "label": "交大江蕙如 Lec22 Beyond Polynomial Running Times (1/2)",
   "points": 101,
   "quiz": 7
+ },
+ "prx1psByp7U": {
+  "label": "Abdul Bari：4.3 Matrix Chain Multiplication - DP",
+  "points": 47,
+  "quiz": 6
  },
  "q6RicK1FCUs": {
   "label": "Abdul Bari：Tower of Hanoi Problem",
@@ -914,6 +929,11 @@
   "points": 27,
   "quiz": 4
  },
+ "tp4_UXaVyx8": {
+  "label": "MIT 6.006 L22：DP IV: Guitar Fingering, Tetris, Super Mario Bros.（進階DP範例，補充）",
+  "points": 102,
+  "quiz": 8
+ },
  "tTFolqL1TX4": {
   "label": "交大江蕙如 Lec05 Chapter 2 Algorithm Analysis (2/2)",
   "points": 148,
@@ -938,6 +958,11 @@
   "label": "Abdul Bari：2.6.2 Binary Search Recursive Method",
   "points": 21,
   "quiz": 5
+ },
+ "uJOmqBwENB8": {
+  "label": "Abdul Bari：4.8 Reliability Design - DP",
+  "points": 52,
+  "quiz": 6
  },
  "uMGwjNuidZU": {
   "label": "Abdul Bari：Pointer Arithmetic",
@@ -969,6 +994,11 @@
   "points": 47,
   "quiz": 7
  },
+ "vLS-zRCHo-Y": {
+  "label": "Abdul Bari：Optimal BST (Successful Search Only)",
+  "points": 65,
+  "quiz": 6
+ },
  "VwQeypxlevE": {
   "label": "交大彭文志 Lec12 Trees (1/6)",
   "points": 179,
@@ -983,6 +1013,11 @@
   "label": "Abdul Bari：1.6 Classes of Functions",
   "points": 8,
   "quiz": 3
+ },
+ "wAy6nDMPYAE": {
+  "label": "Abdul Bari：4.6.2 Optimal BST Successful and Unsuccessful",
+  "points": 91,
+  "quiz": 6
  },
  "WlBBTSL0ZRc": {
   "label": "Abdul Bari：1.10.2 Comparison of Functions #2",
@@ -1062,6 +1097,11 @@
  "zXhWPrMLXGo": {
   "label": "Abdul Bari：Merge Sort - Hindi",
   "points": 54,
+  "quiz": 6
+ },
+ "_WncuhSJZyA": {
+  "label": "Abdul Bari：Matrix Chain Multiplication",
+  "points": 79,
   "quiz": 6
  }
 }
