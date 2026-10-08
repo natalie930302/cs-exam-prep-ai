@@ -5752,15 +5752,31 @@ FRAG.push(['bstc-bari-42', '大樹插入 42：RL 旋轉，45 升上來', async (
 
   // ═══ bstlin.js ═══
   {
-// ─── Lzr5-m7ap-8：台大林軒田 DSA Skip List / BST / AVL Tree ───
+// ─── Lzr5-m7ap-8：台大林軒田 DSA Skip List / BST / AVL Tree — cued: each step(tok) waits for the sentence it shows ───
 // 例子取自影片：extendible hash 的 cat / good / cool；linked list 2 4 5 9 10 11 15 20（找 10、找 15）；
 // 第二個 skip list 2 3 5 8 9 10 13（找 9、找 6、插 6、丟銅板）；skip list → BST（8 / 3,13 / 2,5,10）；
 // complete BST 1 2 3 插 4；AVL 插 3 5 8；RR 通例（A、B、AL、BL、BR，高度 10 / 11）；AVL 依序插 1…7。
 // 高度以層數計（空樹 0、一個 node 1），bf = hL − hR；RR = 插在失衡點 A 的右邊的右邊。
-const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, code, anim, line, arrow, ghostBox, GOLD, GREEN, RED, GRAY } = K;
+// 一個小乘客（buddy）在 skip list 上「坐車」找東西；key 用小角色走進樹裡。
+const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, code, anim, line, arrow, ghostBox, step, buddy, travel, prop, bob, GOLD, GREEN, RED, GRAY } = K;
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const pkt = (t, x, y, z = 0) => tag(t, 'pkt', x, y, z);
+const okT = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const noT = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+const RIDER = '#f4a56a';
+const rider = (v, p, size = 0.5) => buddy(null, v, RIDER, p.x, p.y, p.z || 0, size);
+const hopTo = (tok, b, p, ms = 420) => travel(tok, b.g, b.g.position.clone(), p, ms);
+async function hops(tok, b, ps, ms = 380) { for (const p of ps) await hopTo(tok, b, p, ms); }
+// several objects slide together (one animation, so the step's motion stays short)
+async function moveAll(tok, list, ms = 900) {
+  const from = list.map(([o]) => o.position.clone());
+  await anim(tok, ms, (u) => list.forEach(([o, to], i) => o.position.lerpVectors(from[i], to, u)));
+}
 
 // ── skip list 共用：slots 決定 x 位置（可以留空位給之後插入的 key） ──
-function SL(slots, levels, names, o = {}) {
+function SL(slots0, levels, names, o = {}) {
+  const slots = [...slots0];
   const dx = o.dx || 1.35, y0 = 0.4, dy = o.dy || 1.35;
   const X = (k) => (slots.indexOf(k) - (slots.length - 1) / 2) * dx;
   const HX = X(slots[0]) - dx * 1.15;
@@ -5768,8 +5784,10 @@ function SL(slots, levels, names, o = {}) {
   const lv = [], heads = [];
   let arrs = [];
   const s = {
-    X, Y, HX, lv,
+    X, Y, HX, lv, slots,
     get: (l, k) => lv[l] && lv[l].get(k),
+    // where a rider stands on top of node (l, k); 'H' = the head of level l
+    at: (l, k) => V3(k === 'H' ? HX : X(k), Y(l) + (k === 'H' ? 0.2 : l ? 0.25 : 0.33), 0),
     add(l, k, drop) {
       while (lv.length <= l) lv.push(new Map());
       const sz = l ? [0.72, 0.5, 0.72] : [0.92, 0.66, 0.92];
@@ -5786,14 +5804,13 @@ function SL(slots, levels, names, o = {}) {
         for (const k of ks) { const x = X(k); if (x - w - px > 0.1) arrs.push(arrow(V3(px, Y(l), 0), V3(x - w, Y(l), 0))); px = x + w; }
       });
     },
+    arrows: () => arrs,
+    // re-order the bottom row (e.g. unordered → ordered): every cube slides to its new slot
+    reorder(ns) { slots.splice(0, slots.length, ...ns); lv.forEach((mp, l) => mp.forEach((m, k) => move(m, X(k), Y(l), 0))); },
   };
-  levels.forEach((ks, l) => ks.forEach((k) => s.add(l, k)));
-  s.links();
+  levels.forEach((ks, l) => ks.forEach((k) => s.add(l, k, o.drop)));
+  if (!o.noLinks) s.links();
   return s;
-}
-function cursor() {
-  const c = tag('▼', 'ptr alt', 0, -5, 0);
-  return { c, at(s, l, k) { c.position.set(k === 'H' ? s.HX : s.X(k), s.Y(l) + 0.62, 0); } };
 }
 const LIN8 = [2, 4, 5, 9, 10, 11, 15, 20];
 
@@ -5813,12 +5830,8 @@ function rotUp(t, a, dir) { // dir 'L'：右小孩拉上來（RR 用）；'R'：
   if (!p) t.root = b; else if (p.l === a) p.l = b; else p.r = b;
   return b;
 }
-function firstBad(t, k) { // 從 k 往上找回來：第一個（最深的）|bf| > 1
-  let x = t.root, bad = null;
-  while (x) { if (Math.abs(hgt(x.l) - hgt(x.r)) > 1) bad = x; if (k === x.k) break; x = k < x.k ? x.l : x.r; }
-  return bad;
-}
 function findN(t, k) { let x = t.root; while (x && x.k !== k) x = k < x.k ? x.l : x.r; return x; }
+function pathTo(t, k) { const ks = []; let x = t.root; while (x) { ks.push(x.k); if (k === x.k) break; x = k < x.k ? x.l : x.r; } return ks; }
 function TV(t, o = {}) {
   const dx = o.dx || 1.25, dy = o.dy || 1.45, top = o.top || 5.2, cx = o.cx || 0;
   const cubes = o.cubes || new Map(), labs = new Map();
@@ -5835,191 +5848,393 @@ function TV(t, o = {}) {
       if (!cubes.has(n.k)) cubes.set(n.k, cube(n.k, colorFor(n.k), [0.85, 0.85, 0.85], p.x, p.y, 0, n.k === newK ? 3.5 : 0));
       else move(cubes.get(n.k), p.x, p.y, 0);
       for (const c of [n.l, n.r]) if (c) { const q = v.P.get(c.k); edges.push(line(p.x, p.y, q.x, q.y, 0)); }
-      if (o.lab) {
-        const b = hgt(n.l) - hgt(n.r);
-        let l = labs.get(n.k); if (!l) { l = tag('', 'idx', 0, 0, 0); labs.set(n.k, l); }
-        txt(l, o.lab(n)); l.position.set(p.x + 0.8, p.y + 0.5, 0);
-        l.element.className = 'lab-label ' + (Math.abs(b) > 1 ? 'ptr' : 'idx');
-        glow(cubes.get(n.k), Math.abs(b) > 1 ? RED : null);
-      }
       walk(n.l); walk(n.r);
     })(t.root);
+    labs.forEach((l, k) => { const p = v.P.get(k); if (p) l.position.set(p.x + 0.8, p.y + 0.5, 0); });
   };
+  // show / refresh the balance factor of some nodes (red when |bf| > 1)
+  v.bf = (keys) => {
+    for (const k of keys) {
+      const n = findN(t, k); if (!n) continue;
+      const b = hgt(n.l) - hgt(n.r);
+      let l = labs.get(k); if (!l) { l = tag('', 'idx', 0, 0, 0); labs.set(k, l); }
+      txt(l, 'bf ' + (b > 0 ? '+' + b : b));
+      const p = v.P.get(k); l.position.set(p.x + 0.8, p.y + 0.5, 0);
+      l.element.className = 'lab-label ' + (Math.abs(b) > 1 ? 'ptr' : 'idx');
+      glow(cubes.get(k), Math.abs(b) > 1 ? RED : null);
+    }
+  };
+  v.hide = () => labs.forEach((l, k) => { txt(l, ""); glow(cubes.get(k), null); });
+  v.all = () => [...v.P.keys()];
   v.c = (k) => cubes.get(k);
+  v.top = (k) => { const p = v.P.get(k); return V3(p.x, p.y + 0.43, 0); };
   return v;
 }
-const BF = (n) => { const b = hgt(n.l) - hgt(n.r); return 'bf ' + (b > 0 ? '+' + b : b); };
 
-// ═════════ 0. 開場 Q&A：extendible hash 的懶惰分家 ═════════
+// ═════════ 0. 回顧 extendible hash：滿出來才分家 ═════════
 FRAG.push(['bstlin-lazy-split', 'Extendible hash：滿出來才分家', async (tok) => {
   fresh([0, 7, 12.5], [0, 1.4, 0]);
-  const BX = (i) => (i - 3.5) * 1.55, BY = (j) => 0.4 + j * 0.68;
+  const BX = (i) => (i - 3.5) * 1.55, BY = (j) => 0.05 + j * 0.62;
   const slot = (i) => { ctx.tile(V3(BX(i), 0.02, 0), 1.35, 1.35); tag('[' + i + ']', 'idx', BX(i), 0.1, 1.25); };
   for (let i = 0; i < 4; i++) slot(i);
-  const W = (w, i, j, d) => cube(w, w === 'good' ? '#4b9ee2' : '#dd8238', [1.25, 0.58, 1.1], BX(i), BY(j), 0, d ? 4 : 0);
-  say('hash：看首字母（a=0…）mod 4', 'cat → c = 2；good → g = 6 mod 4 = 2');
-  const cat = W('cat', 2, 0, true); await beat(tok, 900);
-  const good = W('good', 2, 1, true);
-  await beat(tok, 2200);
-  say('表格變大：mod 4 → mod 8', 'good：6 mod 8 = 6，應該去 [6]');
+  const W = (w, i, j) => buddy(null, w, w === 'good' ? '#7cb8ee' : w === 'cat' ? '#f4a56a' : '#9fd6a8', BX(i), BY(j), 0, 0.55);
+  say('上次的 extendible hash，再講一次', '');
+  await step(tok);                                   // 17:12 原來的 hash table：每格一串 linked list
+  const cat = W('cat', 2, 0), good = W('good', 2, 1);
+  const rule = bub('hash：首字母的順序 mod 4', -3.4, 3.0);
+  say('每一格掛一串 linked list（chaining）', 'cat：c = 2 → [2]；good：g = 6 → 6 mod 4 = 2');
+  await step(tok);                                   // 17:50 mod 4 → mod 8
   for (let i = 4; i < 8; i++) slot(i);
-  await beat(tok, 2400);
-  say('笨方法：每個 key 全部重新 hash', '<span class="no">花重複的力氣</span>');
-  await beat(tok, 2200);
-  const note = tag('找 [6] → 去 [2] 找', 'ptr alt', BX(6), 2.1, 0);
-  const ar = arrow(V3(BX(6) - 0.4, 1.7, 0), V3(BX(2) + 0.8, 1.2, 0));
-  say('偷懶：[6] 留張紙條指向 [2]', '還沒滿：cat、good 先共用一串（最多 2 個）');
-  await beat(tok, 2800);
-  const cool = W('cool', 2, 2, true);
-  say('insert cool（c 開頭）：[2] 變 3 個', '<span class="no">超過上限 → 這時才分家</span>');
-  glow(cool, RED); await beat(tok, 2200);
-  glow(cool, null); kill(ar); kill(note);
-  move(good, BX(6), BY(0), 0); move(cool, BX(2), BY(1), 0);
-  say('分家：good 搬去 [6]，cat、cool 留下', '用到的時候才做（lazy）');
-  glow(good, GREEN);
-  await beat(tok, 3000);
+  txt(rule, 'hash：首字母的順序 mod 8');
+  say('表格變大：mod 4 改成 mod 8', 'hash function 跟著 extend');
+  await step(tok);                                   // 18:15 cat 放 [2]、good 放 [6]
+  const gh = pkt('good 照理該去 [6]', BX(2), 1.9);
+  await travel(tok, gh, V3(BX(2), 1.9, 0), V3(BX(6), 1.9, 0), 1100);
+  say('照 mod 8 重算：cat 留 [2]，good 該去 [6]', '如果每個 key 都這樣重算……');
+  await step(tok);                                   // 18:39 重複的力氣
+  kill(gh);
+  const bad1 = noT('每個都重算 = 花重複的力氣', 0, 3.0); cat.mood('sad'); good.mood('sad');
+  say('naive：全部重新 hash', '<span class="no">做很多重複的工</span>');
+  await step(tok);                                   // 18:47 lazy：只重做滿出來的地方
+  kill(bad1); cat.mood('calm'); good.mood('calm');
+  const lazy = okT('lazy：只有滿出來的格子才重分', 0, 3.0);
+  say('偷懶的做法', '只在滿出來的地方重做');
+  await step(tok);                                   // 19:40 [6] 留小紙條指向 [2]
+  const nt = note('要找 [6]？去 [2] 找', BX(6), 2.2);
+  const ar = arrow(V3(BX(6) - 0.3, 1.9, 0), V3(BX(2) + 0.75, 1.3, 0), 0xa8730f);
+  say('[6] 只留一張小紙條：去 [2] 找', 'cat、good 還沒分家，共用同一串');
+  await step(tok);                                   // 19:55 找的時候頂多看 2 個
+  const pk = pkt('找 good', BX(6), 3.0);
+  await travel(tok, pk, V3(BX(6), 3.0, 0), V3(BX(2), 1.9, 0), 900);
+  good.mood('happy');
+  say('找東西照樣去 [2]', '這串還很短（最多 2 個），不會花太多時間');
+  await step(tok);                                   // 20:08 再塞一個 c 開頭的：cool
+  kill(pk); good.mood('calm');
+  const cool = W('cool', 2, 2); cool.mood('wow');
+  cool.glow(RED);
+  say('insert cool（c 開頭）：[2] 變 3 個', '<span class="no">超過上限 → 這時才真的分家</span>');
+  await step(tok);                                   // 20:24 拜訪每個人：good 搬去 [6]
+  cool.glow(null); kill(ar); kill(nt); kill(lazy);
+  await moveAll(tok, [[good.g, V3(BX(6), BY(0), 0)], [cool.g, V3(BX(2), BY(1), 0)]], 1100);
+  good.mood('happy'); cool.mood('happy');
+  say('分家：good 搬去 [6]，cat、cool 留在 [2]', '要用到的時候才做（lazy）');
+  await step(tok);                                   // 20:43 新的一格也放不下，才 extend 整張表
+  bub('連新的一格都塞不下 → 才再 extend 表格大小', 0, 3.0);
+  say('還是塞不下？', '那才把整個 hash table 再變大');
 }]);
 
 // ═════════ 1. Linked list 做 map：只能慢慢找 ═════════
 FRAG.push(['bstlin-list-map', 'Linked list 做 map：search 只能一站一站停', async (tok) => {
   fresh([0, 4.5, 12.5], [0, 1.4, 0]);
-  const s = SL(LIN8, [LIN8], ['head']);
-  const cu = cursor();
-  say('unordered list：insert 很快', '但 search 只能從頭一個一個比');
-  await beat(tok, 2600);
-  say('排好序（ordered）也一樣', '沒有 random access → 找不到中點，不能 binary search');
-  await beat(tok, 2800);
-  let cnt = 0;
-  for (const k of LIN8) {
-    cnt++; cu.at(s, 0, k); const m = s.get(0, k); glow(m, GOLD);
-    say('search 10：比 ' + k, '比較次數 = ' + cnt);
-    await beat(tok, 750);
-    if (k === 10) { glow(m, GREEN); break; }
-    glow(m, null);
-  }
-  say('10 排第 5 個：比了 5 次', 'sequential search：<span class="no">O(n)</span>');
-  await beat(tok, 2400);
-  say('ordered insert 也得先找位置', 'slow search，而且 slow insertion');
-  await beat(tok, 2800);
+  const UN = [9, 2, 15, 10, 4, 20, 5, 11];
+  say('array 做 map 已經會了（hash）', '那 linked list 呢？');
+  await step(tok);                                   // 24:29 直接拿 linked list 來做 map
+  const s = SL(UN, [UN], ['head'], { noLinks: true, drop: true });
+  bub('linked list 也能當 map 嗎？', 0, 2.6);
+  say('直接拿 linked list 來做 map', '每個 node 放一個 key（和它的 value）');
+  await step(tok);                                   // 25:04 key 不能比大小 → 串成一串
+  s.links();
+  say('key 沒辦法比大小：只好串成一串', '這叫 unordered list');
+  await step(tok);                                   // 25:18 整條走過去，每個 key 比一下
+  const r = rider('10', s.at(0, 'H'));
+  for (const k of [9, 2, 15, 10]) { await hopTo(tok, r, s.at(0, k), 380); glow(s.get(0, k), k === 10 ? GREEN : GOLD); }
+  r.mood('happy');
+  say('search 10：從 head 一個一個比', '比到第 4 個才找到');
+  await step(tok);                                   // 25:31 slow search
+  for (const k of UN) glow(s.get(0, k), null);
+  r.mood('sad');
+  const slow = noT('slow search：最差要比 n 次', 0, 2.0);
+  say('unordered list：slow search', '沒有 random access，也沒有 hash 幫忙標位置');
+  await step(tok);                                   // 25:54 唯一快的：insertion
+  kill(slow);
+  const nw = cube(7, colorFor(7), [0.8, 0.6, 0.8], s.HX + 0.2, 1.7, 0, 2);
+  const na = arrow(V3(s.HX + 0.2, 1.3, 0), V3(s.X(9) - 0.5, 0.75, 0), 0x0f5a3a);
+  okT('insert：直接插在最前面，很快', -1, 2.6);
+  say('unordered 唯一快的事：insertion', '新 key 插在最前面就好');
+  await step(tok);                                   // 26:23 排好序（ordered）呢？
+  kill(nw); kill(na);
+  r.g.position.copy(s.at(0, 'H')); r.mood('calm');
+  s.reorder(LIN8); s.links();
+  say('那排好序（ordered）呢？', '2 4 5 9 10 11 15 20');
+  await step(tok);                                   // 26:32 還是不能 binary search
+  const q = pkt('中點在哪？', (s.X(9) + s.X(10)) / 2, 1.9);
+  noT('不能直接跳到中間 → 不能 binary search', 0, 2.8);
+  r.mood('sad');
+  say('linked list 不能跳著看', '還是 <span class="no">slow search</span>');
+  await step(tok);                                   // 26:41 排隊盤查：一個一個查
+  kill(q); r.mood('calm');
+  for (const k of [2, 4, 5, 9, 10]) { await hopTo(tok, r, s.at(0, k), 340); glow(s.get(0, k), k === 10 ? GREEN : GOLD); }
+  say('像排隊盤查：一個一個查', 'search 10 要比 5 次');
+  await step(tok);                                   // 27:11 還會 slow insertion
+  for (const k of LIN8) glow(s.get(0, k), null);
+  const n12 = rider('12', V3(s.HX, 2.2, 0), 0.5); n12.mood('wow');
+  r.g.position.copy(s.at(0, 'H'));
+  await hops(tok, r, [2, 4, 5, 9, 10, 11].map((k) => s.at(0, k)), 260);
+  await hopTo(tok, n12, V3((s.X(11) + s.X(15)) / 2, 1.5, 0), 700);
+  say('ordered list 要 insert 12', '<span class="no">先一個一個找位置 → slow insertion</span>');
+  await step(tok);                                   // 27:32 不管 ordered 還是 unordered，都有慢的地方
+  bub('ordered / unordered：linked list 都有慢的地方', 0, 3.1);
+  say('search 一定慢；insertion 快不快看情況', '接下來要解決這些「慢」');
 }]);
 
 // ═════════ 2. 在 list 上做 binary search：先存中點 ═════════
 FRAG.push(['bstlin-mid-pointer', '多存「中點」：在 linked list 上做 binary search', async (tok) => {
   fresh([0, 4.8, 12.5], [0, 1.6, 0]);
   const s = SL(LIN8, [LIN8], ['head']);
-  say('binary search 第一步：找中點', 'list 只能從 head 走 → 有心無力');
-  await beat(tok, 2600);
-  const m1 = tag('中點', 'ptr alt', s.X(9), 2.6, 0), a1 = arrow(V3(s.X(9), 2.3, 0), V3(s.X(9), 0.9, 0));
-  say('額外存一張紙條：中點在 9', '8 筆資料，中點 = 9');
-  await beat(tok, 2400);
+  const r = rider('', s.at(0, 'H'));
+  say('為什麼 slow search？', '');
+  await step(tok);                                   // 27:53 只能 sequential：像慢車每站都停
+  await hops(tok, r, [2, 4, 5].map((k) => s.at(0, k)), 500);
+  bub('慢車：每一站都停', s.X(4), 2.2);
+  say('只能 sequential search', '像坐慢車：台北到高雄每站都停');
+  await step(tok);                                   // 28:46 快車：只停大站，再轉車
+  bub('快車：只停大站，到了再轉車去小站', 1.5, 3.0);
+  say('有沒有「快車」？', '高鐵、台鐵的快車只停大站');
+  await step(tok);                                   // 29:33 binary search 的條件 ①：排好
+  r.g.position.copy(s.at(0, 'H'));
+  okT('① 東西排好了 ✓', -3.2, 2.4);
+  say('能不能在 linked list 上做 binary search？', '條件一：資料要排好（ordered）');
+  await step(tok);                                   // 30:06 條件 ②：很快找到中點
+  const q = pkt('② 中點在哪？', (s.X(9) + s.X(10)) / 2, 2.0);
+  say('條件二：要能很快找到中點', '');
+  await step(tok);                                   // 30:39 有心無力
+  r.mood('sad');
+  const st = bub('我只能從 head 一站一站走……', s.HX + 1.6, 1.6);
+  say('一般的 linked list：有心無力', '第一步「找中點」就做不快');
+  await step(tok);                                   // 31:13 額外存中點：在 9
+  kill(st); kill(q); r.mood('calm');
+  const m1 = note('中點', s.X(9), 2.7); arrow(V3(s.X(9), 2.4, 0), V3(s.X(9), 0.9, 0), 0xa8730f);
+  say('多花一點空間：存一張「中點」紙條', '8 筆資料，中點在 9');
+  await step(tok);                                   // 31:48 search 10：從中點切進去
+  r.set('10');
+  await hopTo(tok, r, s.at(0, 9), 800);
   glow(s.get(0, 9), GOLD);
-  say('search 10：先跟中點 9 比', '10 > 9 → 在 9 的後面');
-  await beat(tok, 2200);
-  for (const k of [2, 4, 5, 9]) tint(s.get(0, k), GRAY);
-  say('一次就消掉一半：2、4、5 不用找', '跟 binary search 一樣砍一半');
-  await beat(tok, 2600);
-  const m2 = tag('中點 2', 'ptr alt', s.X(11), 2.6, 0), a2 = arrow(V3(s.X(11), 2.3, 0), V3(s.X(11), 0.9, 0));
-  glow(s.get(0, 11), GOLD);
-  say('9 後面再存一個中點：11', '10 < 11 → 在 9 和 11 之間');
-  await beat(tok, 2600);
+  say('search 10：直接從中點 9 切進去', '');
+  await step(tok);                                   // 31:55 10 > 9：在 9 的後面
+  r.look(1);
+  bub('10 > 9 → 在 9 的後面', s.X(9) + 0.8, 1.7);
+  say('先跟 9 比：10 比 9 大', '所以在 9 的後面');
+  await step(tok);                                   // 32:21 消掉一半：2、4、5 不用找
+  for (const k of [2, 4, 5]) tint(s.get(0, k), GRAY);
+  say('一次消掉一半的可能', '2、4、5 都不用找了，跟 binary search 一樣');
+  await step(tok);                                   // 32:45 9 後面再存「中點 2 號」11
+  const m2 = note('中點 2 號', s.X(11), 2.7); arrow(V3(s.X(11), 2.4, 0), V3(s.X(11), 0.9, 0), 0xa8730f);
+  say('9 後面沒有中點了 → 再存一個', '像四分位點：中點 2 號在 11');
+  await step(tok);                                   // 33:16 跟中點 2 號比：10 < 11
+  glow(s.get(0, 9), null);
+  await hopTo(tok, r, s.at(0, 11), 600); r.look(-1);
+  glow(s.get(0, 11), RED);
+  say('跟中點 2 號 11 比', '10 < 11 → 在 11 的前面');
+  await step(tok);                                   // 33:31 在 9 和 11 之間慢慢找
   for (const k of [11, 15, 20]) tint(s.get(0, k), GRAY);
-  glow(s.get(0, 10), GREEN);
-  say('找到 10', '要很多「中點」紙條帶路');
-  await beat(tok, 2800);
-  [m1, a1, m2, a2].forEach(kill);
+  glow(s.get(0, 11), null);
+  await hopTo(tok, r, s.at(0, 10), 600);
+  glow(s.get(0, 10), GREEN); r.mood('happy');
+  say('只剩 9 和 11 之間', '慢慢找 → 找到 10');
+  await step(tok);                                   // 33:46 存一堆中點帶路 → 快車
+  m1.element.className = 'lab-label pkt'; m2.element.className = 'lab-label pkt';
+  bub('中點 1 號、中點 2 號……整理起來？', 0, 3.4);
+  say('在一些地方存「中點」紙條', '讓它們帶路，就能快速比較');
 }]);
 
 // ═════════ 3. 快車：兩站一停 ═════════
 FRAG.push(['bstlin-fast-lane', '快車 linked list：兩站一停', async (tok) => {
   fresh([0, 5, 12.5], [0, 1.4, 0]);
   const s = SL(LIN8, [LIN8], ['普通車', '快車']);
-  say('原本的 list = 每站都停的普通車', '');
-  await beat(tok, 2000);
-  for (const k of [4, 9, 11, 20]) { s.add(1, k, true); await beat(tok, 350); }
-  s.links();
-  say('加一條快車：head → 4 → 9 → 11 → 20', '兩站才停一次');
-  await beat(tok, 2600);
-  const cu = cursor(); let cnt = 0;
-  for (const k of [4, 9, 11]) {
-    cnt++; cu.at(s, 1, k); const m = s.get(1, k); glow(m, k === 11 ? RED : GOLD);
-    say(k === 11 ? '11 > 10：過頭了' : 'search 10：比 ' + k + '，還在後面', '比較次數 = ' + cnt);
-    await beat(tok, 1300);
-  }
-  cu.at(s, 0, 9); glow(s.get(1, 11), null);
-  say('在 9 這站轉普通車', '');
-  await beat(tok, 1300);
-  cnt++; cu.at(s, 0, 10); glow(s.get(0, 10), GREEN);
-  say('普通車下一站就是 10', '4、9、11、10：3～4 次比較');
-  await beat(tok, 2400);
-  say('原本要比 5 次，現在比較少', '先坐快車，接近了再換慢車');
-  await beat(tok, 2600);
+  say('把剛才的中點整理起來', '');
+  await step(tok);                                   // 34:13 剛才用到中點 9、11
+  for (const k of [9, 11]) s.add(1, k, true);
+  say('剛才找 10 用到兩個中點：9、11', '把它們放到上面一層');
+  await step(tok);                                   // 34:17 完整的話還需要 4
+  s.add(1, 4, true);
+  say('完整的話，4 也要有一個', '');
+  await step(tok);                                   // 34:29 普通車之外，多一班兩站一停的快車
+  s.add(1, 20, true); s.links();
+  say('普通車之外，多一班快車', '兩站才停一次');
+  await step(tok);                                   // 34:40 head → 4 → 9 → 11 → 20
+  const tr = pkt('快車', s.HX, s.Y(1) + 0.6);
+  for (const k of [4, 9, 11, 20]) await travel(tok, tr, tr.position.clone(), V3(s.X(k), s.Y(1) + 0.6, 0), 450);
+  kill(tr);
+  say('快車路線：head → 4 → 9 → 11 → 20', '');
+  await step(tok);                                   // 34:53 = 原來的 list 砍一半
+  tag('約 n/2 站', 'ptr alt', 6.2, s.Y(1), 0);
+  say('快車就是另一條 linked list', '原來那條砍一半：小站不停');
+  await step(tok);                                   // 35:26 找 10：先坐快車
+  const r = rider('10', s.at(1, 'H'));
+  say('search 10：先坐快車', '');
+  await step(tok);                                   // 35:34 4 跟 10 比：還在後面
+  await hopTo(tok, r, s.at(1, 4)); glow(s.get(1, 4), GOLD);
+  say('4 跟 10 比：還在後面', '比較 1 次');
+  await step(tok);                                   // 35:37 9 跟 10 比：還在後面
+  glow(s.get(1, 4), null);
+  await hopTo(tok, r, s.at(1, 9)); glow(s.get(1, 9), GOLD);
+  say('9 跟 10 比：還在後面', '比較 2 次');
+  await step(tok);                                   // 35:40 11 跟 10 比：過頭了
+  await hopTo(tok, r, s.at(1, 11)); glow(s.get(1, 11), RED); r.mood('wow');
+  say('11 跟 10 比：過頭了！', '比較 3 次');
+  await step(tok);                                   // 35:43 在 9 轉慢車，找到 10
+  glow(s.get(1, 11), null);
+  await hops(tok, r, [s.at(1, 9), s.at(0, 9), s.at(0, 10)], 450);
+  glow(s.get(1, 9), null); glow(s.get(0, 10), GREEN); r.mood('happy');
+  say('回到 9 這站轉普通車', '下一站就是 10：找到了');
+  await step(tok);                                   // 36:19 原來 10 排第 5：要比 5 次
+  LIN8.slice(0, 5).forEach((k, i) => tag(String(i + 1), 'idx', s.X(k), -0.35, 0.6));
+  say('原來 10 排第 5 個', '只坐普通車要比 5 次');
+  await step(tok);                                   // 36:27 現在 4、9、11 再回頭：3～4 次
+  okT('快車：比 4、9、11，再回頭 → 3～4 次', 0, 3.5);
+  say('現在比 4、9、11 再回頭', '大約 3～4 次就找到');
+  await step(tok);                                   // 36:44 快車 = 最低層的中點
+  bub('快車上的站 = 最低一層的「中點」', 0, 4.3);
+  say('binary search 是 top-down 想', '快車是 bottom-up：從普通車往上加');
 }]);
 
 // ═════════ 4. 特快車、超快車 = Skip List；找 15 ═════════
 FRAG.push(['bstlin-skip-15', 'Skip list：特快車 → 快車 → 普通車，找 15', async (tok) => {
   fresh([0, 6, 13], [0, 2.2, 0]);
   const s = SL(LIN8, [LIN8, [4, 9, 11, 20]], ['普通車', '快車', '特快車', '超快車']);
-  say('快車之上再加特快車：9 → 20', '一樣兩個一數');
-  for (const k of [9, 20]) { s.add(2, k, true); await beat(tok, 400); }
-  s.links(); await beat(tok, 2000);
-  const cu = cursor();
-  const step = async (l, k, cap, f, col) => { cu.at(s, l, k); const m = s.get(l, k); glow(m, col || GOLD); say(cap, f || ''); await beat(tok, 1500); glow(m, null); };
-  await step(2, 9, 'search 15：特快車先到 9', '15 > 9，還在後面');
-  await step(2, 20, '跟 20 比：過頭了', '在 9 往下換一層', RED);
-  await step(1, 9, '快車：從 9 出發', '');
-  await step(1, 11, '11 < 15：往前到 11', '');
-  await step(1, 20, '20 又過頭 → 在 11 往下', '', RED);
-  await step(0, 11, '普通車：從 11 出發', '');
-  cu.at(s, 0, 15); glow(s.get(0, 15), GREEN);
-  say('找到 15：有效比較幾乎只有 9、11、15', '（再加兩次跟 20 比）');
-  await beat(tok, 2600);
+  say('同樣的想法可以再往上做', '');
+  await step(tok);                                   // 37:01 特快車：在快車上再兩個一數
+  for (const k of [9, 20]) s.add(2, k, true);
+  s.links();
+  say('特快車：在快車上再兩個一數', '9 → 20');
+  await step(tok);                                   // 37:23 先坐特快車，接近了換快車、再換普通車
+  bub('特快車 → 快車 → 普通車', 4.4, s.Y(2) + 1.0);
+  say('要去某個地方：先坐特快車', '接近了換快車，再接近換普通車');
+  await step(tok);                                   // 37:38 找 15：特快車到 9，還在後面
+  const r = rider('15', s.at(2, 'H'));
+  await hopTo(tok, r, s.at(2, 9), 600); glow(s.get(2, 9), GOLD);
+  say('search 15：特快車先到 9', '15 > 9，還在後面');
+  await step(tok);                                   // 37:46 跟 20 比：過頭，往下一層
+  glow(s.get(2, 20), RED); r.look(1); r.mood('wow');
+  say('跟 20 比：過頭了', '在 9 這站往下換快車');
+  await step(tok);                                   // 37:51 快車：9 → 11
+  glow(s.get(2, 20), null); glow(s.get(2, 9), null); r.mood('calm');
+  await hops(tok, r, [s.at(1, 9), s.at(1, 11)], 450); glow(s.get(1, 11), GOLD);
+  say('快車：從 9 往前到 11', '11 < 15，可以');
+  await step(tok);                                   // 37:56 20 又過頭
+  glow(s.get(1, 20), RED); r.mood('wow');
+  say('下一站 20 又太後面', '在 11 再往下');
+  await step(tok);                                   // 38:01 從 11 走到 15
+  glow(s.get(1, 20), null); glow(s.get(1, 11), null);
+  await hops(tok, r, [s.at(0, 11), s.at(0, 15)], 450);
+  glow(s.get(0, 15), GREEN); r.mood('happy');
+  say('普通車：從 11 走到 15', '找到了');
+  await step(tok);                                   // 38:06 有效比較：9、11、15（再加兩次 20）
+  glow(s.get(2, 9), GOLD); glow(s.get(1, 11), GOLD);
+  tag('（再加跟 20 比兩次）', 'idx', s.X(20), s.Y(2) + 0.7, 0);
+  say('有效比較的 node 幾乎只有 9、11、15', '加上跟 20 比的兩次');
+  await step(tok);                                   // 38:25 超快車：只有一個 node
+  glow(s.get(2, 9), null); glow(s.get(1, 11), null); glow(s.get(0, 15), null);
   s.add(3, 9, true); s.links();
-  say('最上面的超快車只剩 9：就是中點', '從上往下看：list of mid、list of quad…');
-  await beat(tok, 2600);
-  say('這就是 Skip List', '每層砍一半：約 log n 層，<span class="ok">O(log n)</span> 次比較');
-  await beat(tok, 3000);
+  say('再加一條超快車', '裡面只有一個 node：9');
+  await step(tok);                                   // 38:44 它就是 binary search 的第一個中點
+  const gL = ghostBox('#2fc092', s.X(9) - s.X(2) + 1.0, 0.9, 1.2); gL.position.set((s.X(2) + s.X(9)) / 2 - 0.3, s.Y(0), 0);
+  const gR = ghostBox('#4b9ee2', s.X(20) - s.X(10) + 1.0, 0.9, 1.2); gR.position.set((s.X(10) + s.X(20)) / 2, s.Y(0), 0);
+  glow(s.get(3, 9), GOLD);
+  say('它就是 binary search 的第一個中點', '決定往整條 list 的左半邊還是右半邊找');
+  await step(tok);                                   // 39:11 這就叫 Skip List
+  kill(gL); kill(gR); glow(s.get(3, 9), null);
+  okT('Skip List = ordered linked list + 一堆快車', 0, 6.3);
+  say('普通車 + 一堆更快的 linked list', '這個資料結構叫 <span class="ok">Skip List</span>');
+  await step(tok);                                   // 40:16 從上往下看：list of mid、list of quad
+  tag('list of mid', 'ptr alt', 5.9, s.Y(3), 0); tag('list of quad', 'ptr alt', 5.9, s.Y(2), 0);
+  say('從下往上看：車越來越快', '從上往下看：中點的 list、四分位點的 list……');
+  await step(tok);                                   // 40:34 search 像 zooming
+  const zs = [];
+  for (const [a, b, l] of [[9, 20, 2], [11, 20, 1], [15, 15, 0]]) {
+    const z = ghostBox('#f5c04a', s.X(b) - s.X(a) + 1.1, 0.8, 1.3); z.position.set((s.X(a) + s.X(b)) / 2, s.Y(l), 0); zs.push(z);
+    await anim(tok, 500, () => {});
+  }
+  say('search 像一路 zoom in', '每比一次就縮小到某一段');
+  await step(tok);                                   // 41:39 每層砍一半：約 log N 層
+  zs.forEach(kill);
+  bub('每層砍掉一半 → 約 log N 層', 0, 6.3);
+  say('跟 binary search 一樣：每次砍一半', '約 log N 層，search 約 <span class="ok">O(log N)</span> 次比較');
 }]);
 
 // ═════════ 5. Skip list 吃多少記憶體 ═════════
 FRAG.push(['bstlin-skip-space', 'Skip list 的空間：n + n/2 + n/4 + … ≈ 2n', async (tok) => {
   fresh([0, 6, 13], [0, 2.2, 0]);
   const s = SL(LIN8, [LIN8, [4, 9, 11, 20], [9, 20], [9]], ['普通車', '快車', '特快車', '超快車']);
-  say('問題：skip list 很吃記憶體嗎？', '');
-  await beat(tok, 2000);
+  const kid = buddy('同學', '?', '#9fd6a8', 5.6, -0.2, 1.2, 0.7);
+  say('同學問：skip list 很吃記憶體嗎？', '');
+  await step(tok);                                   // 44:10 好問題：比原本多吃多少？
+  kid.mood('wow');
+  bub('這樣很吃記憶體吧？', 5.6, 1.4, 1.2);
+  say('好問題：比原來的 linked list 多吃多少？', '');
   const lab = ['n', 'n/2', 'n/4', 'n/8 …'];
-  for (let l = 0; l < 4; l++) {
-    s.lv[l].forEach((m) => glow(m, GOLD));
-    tag(lab[l], 'ptr alt', 5.9, s.Y(l), 0);
-    say('第 ' + (l + 1) + ' 層：' + s.lv[l].size + ' 個 node', '約 ' + lab[l]);
-    await beat(tok, 1400);
-    s.lv[l].forEach((m) => glow(m, null));
-  }
-  say('上面各層加起來 ≤ 一條 list', 'n(1 + 1/2 + 1/4 + …) ≈ <span class="ok">2n</span>');
-  await beat(tok, 2800);
-  say('每個箭頭也是一張小紙條，會多一些', '但還是 O(n)，不會變 n²');
-  await beat(tok, 2600);
-  say('多花約一倍記憶體換快速 search', '有時可以，有時不行（如作業的 DEPQ）');
-  await beat(tok, 3000);
+  const shine = (l) => { s.lv.forEach((mp, i) => mp.forEach((m) => glow(m, i === l ? GOLD : null))); tag(lab[l], 'ptr alt', 5.9, s.Y(l), 0); };
+  await step(tok);                                   // 44:28 原來的 list：n 個 → O(n)
+  shine(0);
+  say('底層原本就有 n 個 node', '本來就要 O(n) 的記憶體');
+  await step(tok);                                   // 44:38 兩兩一數：一半
+  shine(1);
+  say('快車：兩兩一數', '大約 n/2 個');
+  await step(tok);                                   // 44:53 四個一數：四分之一
+  shine(2);
+  say('特快車：四個一數', '大約 n/4 個');
+  await step(tok);                                   // 45:00 八分之一……
+  shine(3);
+  say('再上去：n/8、n/16……', '');
+  await step(tok);                                   // 45:09 1/2 + 1/4 + … 最多 1
+  s.lv.forEach((mp) => mp.forEach((m) => glow(m, null)));
+  for (let l = 1; l < 4; l++) s.lv[l].forEach((m) => glow(m, GOLD));
+  bub('1/2 + 1/4 + 1/8 + … ≤ 1', 0, 6.0);
+  say('上面各層加起來', '最多再一條 list 那麼多');
+  await step(tok);                                   // 45:29 大概多花一倍
+  okT('總共 ≈ n + n = 2n', 0, 6.7);
+  say('所以大約多花一倍記憶體', 'n(1 + 1/2 + 1/4 + …) ≈ <span class="ok">2n</span>');
+  await step(tok);                                   // 45:39 有時不行：作業 5 的 DEPQ
+  for (let l = 1; l < 4; l++) s.lv[l].forEach((m) => glow(m, null));
+  kid.mood('calm');
+  bub('作業 5：DEPQ 要塞進同一棵 tree', -3.6, 6.2);
+  noT('兩棵 tree = 兩倍記憶體 ✗', -3.6, 5.5);
+  say('多花一倍有時不行', '例如作業的 double-ended priority queue');
+  await step(tok);                                   // 46:28 skip list：多花一倍換快速 search
+  okT('skip list：多一倍空間 → 換到快速 search', 2.6, 5.5);
+  say('有時為了目的多用一倍也還好', 'skip list 就是用空間換 faster search');
+  await step(tok);                                   // 46:56 還是 O(n)；每個箭頭也是小紙條
+  for (const a of s.arrows().slice(0, 4)) note('紙條', a.position.x + 0.3, a.position.y + 0.35, 0.3);
+  kid.mood('happy');
+  say('每個箭頭也是一張小紙條，要另外算', '會再多一點點');
+  await step(tok);                                   // 47:23 不是 n²，還是 n 乘上常數
+  okT('還是 O(n)，不會變成 n²', 0, -0.6, 1.0);
+  say('多的只是常數倍', '空間仍然是 <span class="ok">O(n)</span>');
 }]);
 
 // ═════════ 6. 怎麼存：獨立 list 或一個 node 多個 next；insert 的難題 ═════════
 FRAG.push(['bstlin-skip-impl', 'Skip list 怎麼實作，insert 卡在哪', async (tok) => {
   fresh([0, 6, 13], [0, 2.2, 0]);
   const s = SL(LIN8, [LIN8, [4, 9, 11, 20], [9, 20], [9]], ['普通車', '快車', '特快車', '超快車']);
-  say('寫法一：真的維護好幾條 linked list', '用小紙條表示上下層是同一個 key');
-  await beat(tok, 2600);
+  say('同學問：要在 node 上加 pointer 嗎？', '');
+  await step(tok);                                   // 47:41 很多做法
+  bub('要在原本的 node 上加指標嗎？', 4.2, 5.6);
+  say('實作方法有很多種', '');
+  await step(tok);                                   // 48:03 做法一：真的維護好幾條 list
+  const vs = [];
+  for (let l = 1; l < 4; l++) s.lv[l].forEach((m, k) => vs.push(line(s.X(k), s.Y(l - 1) + 0.3, s.X(k), s.Y(l) - 0.25, 0.5, '#c08a1f')));
+  say('做法一：真的維護好幾條 linked list', '再用小紙條（黃線）表示上下是同一個 key');
+  await step(tok);                                   // 48:18 做法二：一個 node 存好幾個 next
+  vs.forEach(kill);
   for (let l = 0; l < 4; l++) glow(s.get(l, 9), GOLD);
-  const ts = ['next[0] 普通車', 'next[1] 快車', 'next[2] 特快車', 'next[3] 超快車'].map((x, l) => tag(x, 'idx', s.X(9) + 0.5, s.Y(l) + 0.55, 0));
-  say('寫法二：一個 node 存好幾個 next', '9 這站有 4 種車的「下一站」');
-  await beat(tok, 2800);
-  say('通常不複製資料，只多存 pointer', '怎麼實作看你的選擇');
-  await beat(tok, 2400);
+  const ts = ['普通車的下一站', '快車的下一站', '特快車的下一站', '超快車的下一站'].map((x, l) => tag(x, 'note', s.X(9) + 0.4, s.Y(l) + 0.62, 0.4));
+  say('做法二：在原本的 node 上標註', '搭每一種車的「下一站」在哪');
+  await step(tok);                                   // 48:37 不複製資料，只多存 pointer
+  bub('資料只存一份，上層只多存 pointer', -3.2, 6.0);
+  say('通常不會複製資料', '連 key 都可能太大 → 只多存 pointer');
+  await step(tok);                                   // 49:50 目前只說了：已經有 ordered list 怎麼變快
   ts.forEach(kill); for (let l = 0; l < 4; l++) glow(s.get(l, 9), null);
-  say('還沒講：這個結構怎麼「從無到有」？', '亂序資料排成 ordered list = insertion sort');
-  await beat(tok, 2800);
+  say('目前只講了 search', '假設已經有排好的 list，再加上快車');
+  await step(tok);                                   // 50:21 從無到有：先排成 ordered list = insertion sort
+  noT('亂序資料 → ordered list：本質就是 insertion sort，很花時間', 0, 6.3);
+  say('但 map 要「從無到有」建起來', '一個一個 insert 成 ordered list = insertion sort');
+  await step(tok);                                   // 50:46 一次 insertion 要改很多條 list
   for (let l = 0; l < 4; l++) s.lv[l].forEach((m) => glow(m, RED));
-  say('一次 insert 可能要改好幾層 list', '目前只解決了 slow search，還有 slow insertion');
-  await beat(tok, 3000);
+  say('skip list 的一次 insertion', '<span class="no">可能要在好幾條 list 裡做 → 更慢</span>');
+  await step(tok);                                   // 50:55 兩個缺點只解決了一個
+  for (let l = 0; l < 4; l++) s.lv[l].forEach((m) => glow(m, null));
+  okT('slow search ✓ 用快車解決', -3.2, -0.5, 1.0); noT('slow insertion ✗ 還沒解決', 2.6, -0.5, 1.0);
+  say('ordered list 的兩個缺點', 'slow search 解決了，slow insertion 還沒');
 }]);
 
 // ═════════ 7. 第二個例子：找 9、找 6 ═════════
@@ -6027,110 +6242,244 @@ const SL2 = [2, 3, 5, 6, 8, 9, 10, 13];
 const SL2LV = () => [[2, 3, 5, 8, 9, 10, 13], [3, 8, 13], [8]];
 FRAG.push(['bstlin-skip-search-9-6', 'Skip list：找 9（找到）與找 6（找不到）', async (tok) => {
   fresh([0, 5.5, 13], [0, 1.8, 0]);
-  const s = SL(SL2, SL2LV(), ['L1', 'L2', 'L3']);
-  say('底層排好：2 3 5 8 9 10 13', '上一層 3 → 8 → 13，最上層 8');
-  await beat(tok, 2600);
-  const cu = cursor();
-  const step = async (l, k, cap, f, col, ms = 1500) => { cu.at(s, l, k); const m = s.get(l, k); glow(m, col || GOLD); say(cap, f || ''); await beat(tok, ms); glow(m, null); };
-  await step(2, 8, 'search 9：從 8 進來', '9 > 8 → 往右，右邊沒了 → 下一層');
-  await step(1, 8, '第二層從 8 往右看', '');
-  await step(1, 13, '13 > 9：過頭了', '在 8 再往下', RED);
-  await step(0, 8, '底層從 8 往右', '');
-  cu.at(s, 0, 9); glow(s.get(0, 9), GREEN);
-  say('找到 9', '快車 → 慢車');
-  await beat(tok, 2000); glow(s.get(0, 9), null);
-  await step(2, 8, 'search 6：8 已經過頭', '6 < 8', RED);
-  await step(1, 3, '回到 3，從 3 找下來', '');
-  await step(0, 3, '底層：3 往右', '');
-  await step(0, 5, '5 < 6：往前', '');
-  await step(0, 8, '下一個是 8：過頭了', '', RED);
+  say('第二個例子', '');
+  await step(tok);                                   // 1:02:59 底層：2 3 5 8 9 10 13
+  const s = SL(SL2, [SL2LV()[0]], ['L1', 'L2', 'L3'], { drop: true });
+  say('底層排好：2 3 5 8 9 10 13', '');
+  await step(tok);                                   // 1:03:08 快一點的 list：3 → 8 → 13
+  for (const k of [3, 8, 13]) s.add(1, k, true);
+  s.links();
+  say('上面一條兩兩一走的 list', '3 → 8 → 13');
+  await step(tok);                                   // 1:03:31 上下兩個 3 其實是同一個
+  const v3 = line(s.X(3), s.Y(0) + 0.3, s.X(3), s.Y(1) - 0.25, 0.5, '#c08a1f');
+  glow(s.get(0, 3), GOLD); glow(s.get(1, 3), GOLD);
+  say('上下兩層的 3 其實是同一個', '看到 8 要往前或往後時，就回到下一層去決定');
+  await step(tok);                                   // 1:03:55 也可以用雙箭頭
+  glow(s.get(0, 3), null); glow(s.get(1, 3), null); kill(v3);
+  const back = [arrow(V3(s.X(8) - 0.4, s.Y(1) - 0.18, 0), V3(s.X(3) + 0.4, s.Y(1) - 0.18, 0), 0x2f7fc0), arrow(V3(s.X(13) - 0.4, s.Y(1) - 0.18, 0), V3(s.X(8) + 0.4, s.Y(1) - 0.18, 0), 0x2f7fc0)];
+  bub('雙箭頭：好做，但更吃記憶體', s.X(8), s.Y(1) + 0.8);
+  say('圖上畫單箭頭', '也可以用雙箭頭：能走回頭，但多佔記憶體');
+  await step(tok);                                   // 1:04:15 四個一跳：最上層只有 8
+  back.forEach(kill);
+  s.add(2, 8, true); s.links();
+  say('再上去：四個四個跳', '最上層只有 8 → 這就是一個 skip list');
+  await step(tok);                                   // 1:04:37 找 9：從 8 進來，右邊沒了
+  const r = rider('9', s.at(2, 'H'));
+  await hopTo(tok, r, s.at(2, 8), 600); glow(s.get(2, 8), GOLD); r.look(1);
+  const nb = bub('9 > 8 往右……沒路了', s.X(10), s.Y(2) + 0.6);
+  say('search 9：從 8 進來', '9 比 8 大要往右，但右邊沒東西 → 下一層');
+  await step(tok);                                   // 1:04:47 下一層：往右看
+  kill(nb); glow(s.get(2, 8), null);
+  await hopTo(tok, r, s.at(1, 8), 450);
+  say('到下一層，一樣往右看', '');
+  await step(tok);                                   // 1:04:52 13 過頭了
+  glow(s.get(1, 13), RED); r.mood('wow');
+  say('13 太過頭了', '不用往 13 走');
+  await step(tok);                                   // 1:04:56 在 8 再往下 → 找到 9
+  glow(s.get(1, 13), null); r.mood('calm');
+  await hops(tok, r, [s.at(0, 8), s.at(0, 9)], 450);
+  glow(s.get(0, 9), GREEN); r.mood('happy');
+  say('在 8 再往下一層', '往右一步就找到 9');
+  await step(tok);                                   // 1:05:15 找 6：一樣從 8 進來
+  glow(s.get(0, 9), null);
+  r.set('6'); r.mood('calm'); r.g.position.copy(s.at(2, 'H'));
+  await hopTo(tok, r, s.at(2, 8), 600);
+  say('也能找「不在」的東西：search 6', '一樣從 8 進來');
+  await step(tok);                                   // 1:05:22 8 已經過頭 → 回到 3
+  glow(s.get(2, 8), RED); r.mood('wow');
+  await anim(tok, 400, () => {});
+  glow(s.get(2, 8), null);
+  await hopTo(tok, r, s.at(1, 3), 700); r.mood('calm');
+  say('6 < 8：8 已經過頭了', '回到 3 這站');
+  await step(tok);                                   // 1:05:33 從 3 找下來：3 → 5
+  await hops(tok, r, [s.at(0, 3), s.at(0, 5)], 450); glow(s.get(0, 5), GOLD);
+  say('從 3 往下一層', '往前到 5');
+  await step(tok);                                   // 1:05:42 下一個已經是 8：沒有 6
+  glow(s.get(0, 8), RED); r.mood('sad');
   const gh = cube('6?', '#d8cfc0', [0.8, 0.5, 0.8], s.X(6), s.Y(0), 0);
-  say('沒有 6：找不到', '而且停在 5 和 8 之間');
-  await beat(tok, 2800); kill(gh);
+  say('下一個已經是 8：沒有 6', '找不到，而且剛好停在 5 和 8 之間');
+  await step(tok);                                   // 1:05:55 詳細 pseudocode 課本有
+  glow(s.get(0, 5), null); glow(s.get(0, 8), null); kill(gh);
+  const bk = prop('file', 5.6, s.Y(2) - 0.6, 0, 1.0, '課本：完整 pseudocode'); bob(bk, 0.05);
+  say('整個過程就是：快車 → 慢車', '詳細的 pseudocode 在課本上');
 }]);
 
 // ═════════ 8. 插入 6：嚴格兩兩一數會怎樣 ═════════
 FRAG.push(['bstlin-skip-strict', 'Insert 6：嚴格規則會讓每層都要改', async (tok) => {
   fresh([0, 5.5, 13], [0, 1.8, 0]);
   const s = SL(SL2, SL2LV(), ['L1', 'L2', 'L3']);
-  say('找不到 6 時，已經停在 5 和 8 之間', '');
-  await beat(tok, 2000);
+  const r = rider('6', s.at(2, 'H'));
+  say('剛才找不到 6', '');
+  await step(tok);                                   // 1:06:12 找不到 → 把 6 塞進 map
+  r.mood('wow');
+  bub('那就把我放進去吧！', s.HX + 0.6, s.Y(2) + 1.1);
+  say('map 很常見的操作：找不到就 insert', '把 6 塞進去');
+  await step(tok);                                   // 1:06:35 找不到時已經在 5 和 8 中間
+  await hopTo(tok, r, V3(s.X(6), s.Y(0) + 0.9, 0), 900); r.mood('calm');
+  say('最底層塞進去不是問題', '找不到 6 的時候，已經停在 5 和 8 中間');
+  await step(tok);                                   // 1:07:00 改兩張小紙條：5 → 6 → 8
+  kill(r.g);
   s.add(0, 6, true); s.links();
-  say('底層 insert 6：改兩張小紙條', '5 → 6 → 8，linked list 的強項');
-  await beat(tok, 2600);
-  say('可是上面還有好幾條 list', '嚴格規定：兩兩一數、四四一數…');
-  await beat(tok, 2200);
-  glow(s.get(1, 8), RED); glow(s.get(2, 8), RED);
-  say('L2 該變成 3 6 9 13', '8 要塗掉、換成 6 和 9');
-  await beat(tok, 2200);
-  s.del(1, 8, true); s.del(2, 8, true);
-  await beat(tok, 500);
-  s.add(1, 6, true); s.add(1, 9, true); s.add(2, 6, true); s.add(2, 13, true); s.links();
-  say('L3 也跟著變：四個一數 → 6、13', '幾乎每一層都要更新');
-  await beat(tok, 2600);
-  say('上面各層加起來 ≈ n 個 node', '照嚴格規則更新：insert <span class="no">O(n)</span>');
-  await beat(tok, 3000);
+  note('改兩張小紙條', s.X(6), -0.5, 0.8);
+  say('已經知道位置的 insertion = linked list 的強項', '5 → 6 → 8 連起來了');
+  await step(tok);                                   // 1:07:15 可是上面還有好多條 list
+  for (let l = 1; l < 3; l++) s.lv[l].forEach((m) => glow(m, GOLD));
+  say('問題是：上面還有好多條 list', '如果堅持「嚴格」兩兩一數……');
+  await step(tok);                                   // 1:07:34 L2 要變成 3 6 9 …
+  for (let l = 1; l < 3; l++) s.lv[l].forEach((m) => glow(m, null));
+  bub('L2 應該是：3 6 9 13', 0, s.Y(1) + 0.75);
+  say('底層第 2、4、6、8 個：3、6、9、13', '跟原本的 3 8 13 完全不一樣');
+  await step(tok);                                   // 1:07:54 8 塗掉，換成 6 和 9
+  s.del(1, 8, true);
+  await anim(tok, 500, () => {});
+  s.add(1, 6, true); s.add(1, 9, true); s.links();
+  say('把 8 塗掉，換成 6、9', '');
+  await step(tok);                                   // 1:08:02 每一層都要更新
+  s.del(2, 8, true);
+  await anim(tok, 500, () => {});
+  s.add(2, 6, true); s.add(2, 13, true); s.links();
+  say('L3（四個一數）也要變：6、13', '幾乎每一層都要更新');
+  await step(tok);                                   // 1:08:19 上面加起來 ≈ 底層的 n 個
+  tag('上面各層加起來 ≈ n 個', 'ptr alt', 0, s.Y(2) + 0.9, 0);
+  say('還記得空間的分析嗎？', '上面各層的 node 加起來 ≈ 底層 n 個');
+  await step(tok);                                   // 1:08:45 嚴格規則：2、4、8、16 個一數
+  for (let l = 1; l < 3; l++) s.lv[l].forEach((m) => glow(m, RED));
+  say('照嚴格規則（2、4、8、16 個一數）', '上面幾乎每個 node 都要換');
+  await step(tok);                                   // 1:09:12 insertion = O(n)
+  noT('if update all upper lists：insertion O(n)', 0, -0.6, 0.8);
+  say('維護成本很高', '一次 insertion 就是 <span class="no">O(n)</span>');
 }]);
 
 // ═════════ 9. 偷懶：丟銅板決定 6 要上幾層 ═════════
 FRAG.push(['bstlin-skip-coin', 'Randomized：丟銅板決定新 node 的層數', async (tok) => {
   fresh([0, 5.5, 13], [0, 1.8, 0]);
   const s = SL(SL2, SL2LV(), ['L1', 'L2', 'L3']);
-  say('放鬆規則：「大概」兩兩一數就好', '');
-  await beat(tok, 2000);
+  const lazy = buddy('偷懶', 'zz', '#c9b2f2', 5.6, -0.2, 1.4, 0.7);
+  say('有沒有偷懶的方法？', '');
+  await step(tok);                                   // 1:09:36 所有設計都在偷懶
+  lazy.mood('happy');
+  bub('能不能少做一點？', 5.6, 1.5, 1.4);
+  say('資料結構和演算法的設計', '其實都是在想辦法偷懶');
+  await step(tok);                                   // 1:10:07 像 extendible hash：還不用分家就共用
+  note('extendible hash：還不用分家，就先共用', -2.6, 5.0);
+  say('今天一開始的 extendible hash 也是', '還沒必要分家，就先共用');
+  await step(tok);                                   // 1:10:35 力氣花在哪：嚴格規定
+  for (let l = 1; l < 3; l++) s.lv[l].forEach((m) => glow(m, RED));
+  const strict = noT('嚴格：一定 2 個一數、4 個一數…', 0, 4.4);
+  say('力氣從哪來？', '因為嚴格規定兩個一數、四個一數……');
+  await step(tok);                                   // 1:11:27 放鬆：「差不多」就好
+  for (let l = 1; l < 3; l++) s.lv[l].forEach((m) => glow(m, null));
+  kill(strict); okT('放鬆：「差不多」2 個一數就好', 0, 4.4);
+  say('能不能放鬆一點？', '「差不多」兩個一數、四個一數就好');
+  await step(tok);                                   // 1:11:48 6 已經塞進底層
   s.add(0, 6, true); s.links();
-  say('6 先放進底層', '一定在 L1');
-  await beat(tok, 1600);
+  say('6 已經塞進底層了', '它一定在 L1');
   const coin = cube('', '#c08a1f', [0.9, 0.12, 0.9], 5.6, 4.6, 0); const ct = tag('', 'ptr alt', 5.6, 5.3, 0);
   const flip = async (face) => { txt(ct, '…'); await anim(tok, 900, (f) => { coin.rotation.x = f * Math.PI * 4; }); txt(ct, face); };
-  say('幫 6 丟一次銅板', '');
+  await step(tok);                                   // 1:11:57 丟銅板：正面就上一層也放 6
   await flip('正面');
   s.add(1, 6, true); s.links();
-  say('正面 → 上一層也放 6', 'P(6 在 L2) = 1/2');
-  await beat(tok, 2200);
-  say('再丟一次', '');
+  say('幫 6 丟一個銅板', '正面 → 上一層也留一個 6 的位置');
+  await step(tok);                                   // 1:12:06 反面就上不去：機率一半
+  tag('機率 1/2', 'ptr alt', s.X(6), s.Y(1) + 0.6, 0);
+  say('反面的話，6 就不上去', '所以 6 有一半的機率出現在 L2');
+  await step(tok);                                   // 1:12:21 上去了就再丟一次
   await flip('反面');
-  say('反面 → 停，6 不上 L3', 'P(6 在 L3) = 1/4');
-  await beat(tok, 2400);
-  say('每個 key 都這樣丟', '期望值：L2 ≈ n/2、L3 ≈ n/4 …');
-  await beat(tok, 2600);
-  say('只改 6 自己那幾層', '改 1 層機率 1/2、2 層 1/4…：<span class="ok">期望很少</span>');
-  await beat(tok, 2800);
-  say('randomized data structure', 'search 像 binary search，insert 靠隨機');
-  await beat(tok, 2600);
+  const gh = cube('', '#d8cfc0', [0.6, 0.4, 0.6], s.X(6), s.Y(2), 0);
+  tag('機率 1/4', 'ptr alt', s.X(6), s.Y(2) + 0.6, 0);
+  say('上去了就再丟一次：要不要上 L3？', '反面 → 停。上 L3 的機率 = 1/2 × 1/2 = 1/4');
+  await step(tok);                                   // 1:12:38 越往上機率越小
+  kill(gh);
+  ['一定在', '1/2', '1/4'].forEach((p, l) => tag(p, 'idx', -6.3, s.Y(l) - 0.45, 0));
+  say('L1 一定有、L2 機率 1/2、L3 機率 1/4', '越往上，出現的機率越小');
+  await step(tok);                                   // 1:12:53 每個 insertion 都這樣：期望值
+  ['n', '≈ n/2', '≈ n/4'].forEach((p, l) => tag(p, 'ptr', 6.2, s.Y(l), 0));
+  say('每個 key 插進來都這樣丟', '期望值：L2 約 n/2 個、L3 約 n/4 個……');
+  await step(tok);                                   // 1:13:23 「大概」兩兩一數，還是能快速 search
+  okT('大概兩兩一數 → 一樣能快速 search', 0, 5.1);
+  say('從嚴格改成「大概」', '一樣符合快速搜尋的性質');
+  await step(tok);                                   // 1:13:48 不用 update 所有上層 list
+  note('只改 1 層：1/2　2 層：1/4　3 層：1/8 …', 0, -0.6, 0.8);
+  say('insertion 不用 update 所有上層 list', '要改幾層靠機率：通常很少');
+  await step(tok);                                   // 1:14:27 每次 update 都是簡單的 linked list insertion
+  glow(s.get(0, 6), GOLD); glow(s.get(1, 6), GOLD);
+  lazy.mood('happy');
+  say('每個 update 只是把 6 插進那一層', '<span class="ok">simple linked list insertion</span>，不牽動別人');
+  await step(tok);                                   // 1:14:49 randomized data structure
+  glow(s.get(0, 6), null); glow(s.get(1, 6), null);
+  bub('randomized data structure', 5.6, 1.5, 1.4);
+  say('課程裡少數的 randomized 資料結構', '用隨機性讓它「很大機率」符合需求');
 }]);
 
-// ═════════ 10. Skip list 看起來像一棵樹 → BST ═════════
+// ═════════ 10. Skip list 的搜尋路徑 = 一棵 Binary Search Tree ═════════
 FRAG.push(['bstlin-skip-to-tree', 'Skip list 的搜尋路徑 = 一棵 Binary Search Tree', async (tok) => {
   fresh([0, 5.5, 13], [0, 2.4, 0]);
   const S6 = [2, 3, 5, 8, 10, 13];
-  const s = SL(S6, [S6, [3, 8, 13], [8]], ['L1', 'L2', 'L3'], { dx: 1.6 });
-  say('龜毛版 skip list：2 3 5 8 10 13', '上層 3 8 13，最上層 8');
-  await beat(tok, 2400);
-  const cu = cursor();
-  for (const [goal, path] of [[2, [[2, 8], [1, 3], [0, 2]]], [5, [[2, 8], [1, 3], [0, 5]]], [10, [[2, 8], [1, 13], [0, 10]]]]) {
-    for (const [l, k] of path) {
-      cu.at(s, l, k); const m = s.get(l, k); glow(m, k === goal ? GREEN : GOLD);
-      say('search ' + goal + '：' + path.map((p) => p[1]).join(' → '), '');
-      await beat(tok, 750);
-    }
-    path.forEach(([l, k]) => glow(s.get(l, k), null));
+  say('還是同一個問題：map', '');
+  await step(tok);                                   // 1:18:07 array → linked list → tree？
+  const ic = [['array', '#f3dcc0', -4.2], ['list', '#cfe3d4', -1.4], ['tree?', '#dfe0ee', 1.4]].map(([n, c, x]) => buddy(null, n, c, x, 0.8, 1.0, 0.8));
+  ic[2].mood('wow');
+  say('map 已經會用 array、linked list 做', '那 tree 呢？跟 skip list 有什麼關係？');
+  await step(tok);                                   // 1:18:27 再畫一次 skip list
+  ic.forEach((b) => kill(b.g));
+  const s = SL(S6, [S6, [3, 8, 13], [8]], ['L1', 'L2', 'L3'], { dx: 1.6, drop: true });
+  say('再畫一次 skip list', '2 3 5 8 10 13；上層 3 8 13；最上層 8');
+  await step(tok);                                   // 1:19:20 用「龜毛」方式建的，不是隨機
+  note('龜毛版：照規則建，不是丟銅板', 0, 4.4);
+  say('為了好講，用嚴格規則建的版本', '同學說：這看起來有點像 tree？');
+  const r = rider('2', s.at(2, 'H'));
+  const red = [];
+  await step(tok);                                   // 1:20:01 找 2：8 → 3 → 2
+  await hops(tok, r, [s.at(2, 8), s.at(1, 3), s.at(0, 2)], 650);
+  glow(s.get(0, 2), GREEN);
+  say('search 2：從 8 進來，8 過頭往 3', '3 還是過頭 → 找到 2');
+  await step(tok);                                   // 1:20:24 找 5：8 → 3 → 5
+  glow(s.get(0, 2), null); r.set('5'); r.g.position.copy(s.at(2, 'H'));
+  await hops(tok, r, [s.at(2, 8), s.at(1, 3), s.at(0, 3), s.at(0, 5)], 520);
+  glow(s.get(0, 5), GREEN);
+  say('search 5：8 過頭回到 3', '從 3 往右下找到 5');
+  await step(tok);                                   // 1:20:46 找 10：8 → 13 → 10
+  glow(s.get(0, 5), null); r.set('10'); r.g.position.copy(s.at(2, 'H'));
+  await hops(tok, r, [s.at(2, 8), s.at(1, 8), s.at(1, 13), s.at(0, 10)], 520);
+  glow(s.get(0, 10), GREEN);
+  say('search 10：從 8 到 13', '13 過頭 → 往左找到 10');
+  await step(tok);                                   // 1:21:14 把比較的關係另外畫出來
+  glow(s.get(0, 10), null); kill(r.g);
+  const P = (l, k) => V3(s.X(k), s.Y(l), 0.5);
+  for (const [a, b] of [[[2, 8], [1, 3]], [[1, 3], [0, 2]], [[1, 3], [0, 5]], [[2, 8], [1, 13]], [[1, 13], [0, 10]]]) {
+    const p = P(...a), q = P(...b); red.push(line(p.x, p.y, q.x, q.y, 0.5, '#d64545'));
   }
-  say('每一站只有「往左」或「往右」兩種選擇', '把比較的順序畫出來……');
-  await beat(tok, 2200);
+  say('把找的過程碰到的點和關係畫出來（紅線）', '8 之後比 3 或 13；3 之後是 2 或 5；13 之後是 10');
+  await step(tok);                                   // 1:21:42 其他可能：不在資料裡
+  const nf = [noT('10~13 之間：沒有', (s.X(10) + s.X(13)) / 2, -0.4, 0.6), noT('5~8 之間：沒有', (s.X(5) + s.X(8)) / 2, -0.4, 0.6)];
+  say('其他情況：比 13 小但比 10 大……', '那就是不在資料裡');
+  await step(tok);                                   // 1:22:09 每一站只有往左、往右
+  nf.forEach(kill); red.forEach(kill);
   for (let l = 1; l < s.lv.length; l++) [...s.lv[l].keys()].forEach((k) => s.del(l, k, true));
-  s.links(); kill(cu.c);
+  s.links(); s.arrows().forEach(kill);
   const t = { root: null }; [8, 3, 13, 2, 5, 10].forEach((k) => bstIns(t, k));
   const tv = TV(t, { cubes: new Map([...s.lv[0].entries()]), dx: 1.5, top: 5 });
-  await beat(tok, 500);
   tv.sync();
-  say('就是一棵 binary tree：root = 8', '');
-  await beat(tok, 2200);
+  say('每個 node 只有「往左」或「往右」兩種可能', '把紅線拉直……');
+  await step(tok);                                   // 1:22:35 就是一棵 binary tree
+  glow(tv.c(8), GOLD); tag('root', 'ptr alt', tv.P.get(8).x, tv.P.get(8).y + 0.9, 0);
+  say('畫出來就是一棵 binary tree', '從中點 8 進去 → 8 就是 root');
+  await step(tok);                                   // 1:22:58 往左都比 8 小，往右都比 8 大
   const gl = ghostBox('#2fc092', 4.0, 2.6, 1.4); gl.position.set(-2.25, 2.85, 0);
   const gr = ghostBox('#4b9ee2', 2.6, 2.6, 1.4); gr.position.set(3.0, 2.85, 0);
   tag('都 < 8', 'ptr', -2.25, 1.2, 0); tag('都 > 8', 'ptr', 3.0, 1.2, 0);
-  say('左子樹都比 root 小，右子樹都比 root 大', '每一棵 subtree 都成立 → <span class="ok">Binary Search Tree</span>');
-  await beat(tok, 3200);
+  say('從 8 往左走的都比 8 小', '往右走的都比 8 大');
+  await step(tok);                                   // 1:23:09 每棵 subtree 也一樣
+  glow(tv.c(8), null); glow(tv.c(3), GOLD); glow(tv.c(13), GOLD);
+  note('2 < 3 < 5', tv.P.get(3).x, tv.P.get(3).y + 0.9); note('10 < 13', tv.P.get(13).x, tv.P.get(13).y + 0.9);
+  say('看進每棵 subtree 也一樣', '3 的左邊比 3 小、右邊比 3 大；13 也是');
+  await step(tok);                                   // 1:23:50 性質：左子樹 < root < 右子樹
+  glow(tv.c(3), null); glow(tv.c(13), null);
+  bub('左邊 subtree < root < 右邊 subtree（每一棵都成立）', 0, 6.4);
+  say('任何一個 node：整棵左 subtree 都比它小', '整棵右 subtree 都比它大，每棵 subtree 都成立');
+  await step(tok);                                   // 1:24:56 = Binary Search Tree
+  okT('Binary Search Tree', 0, 7.0);
+  say('這樣的樹叫做 Binary Search Tree', '像自我複製的結構：每棵 subtree 都有同樣性質');
 }]);
 
 // ═════════ 11. BST search 演算法（遞迴）與終止條件 ═════════
@@ -6138,288 +6487,813 @@ FRAG.push(['bstlin-bst-search', 'BST search：跟 root 比，往左或往右', a
   fresh([0, 5.5, 13], [0, 2.6, 0]);
   const t = { root: null }; [8, 3, 13, 2, 5, 10].forEach((k) => bstIns(t, k));
   const tv = TV(t, { cx: 2.6, dx: 1.2, top: 5 }); tv.sync();
-  const cd = code(['BSTSearch(T, key):', '  if T is empty: NOT FOUND', '  if key < T.mid:', '    return BSTSearch(T.left, key)', '  if key > T.mid:', '    return BSTSearch(T.right, key)', '  return T.data   // key == mid'], -3.6, 5.4, 0.56);
-  const cu = tag('▼', 'ptr alt', 0, -5, 0);
-  const at = (k) => { const p = tv.P.get(k); cu.position.set(p.x, p.y + 0.75, 0); };
-  say('「中點」就是 root', '跟 root 比：小去左、大去右');
-  await beat(tok, 2400);
-  // search 10
-  at(8); cd.hl(4); say('search 10：10 > 8', '去右子樹'); await beat(tok, 1500);
-  at(13); cd.hl(2); say('10 < 13', '去左子樹'); await beat(tok, 1500);
-  at(10); cd.hl(6); glow(tv.c(10), GREEN); say('10 == 10：找到', '回傳對應的 value'); await beat(tok, 1800);
-  glow(tv.c(10), null);
-  // search 7
-  at(8); cd.hl(2); say('search 7：7 < 8', '去左子樹'); await beat(tok, 1400);
+  say('Binary Search Tree 怎麼找東西？', '');
+  await step(tok);                                   // 1:25:16 跟 root 比：小去左、大去右
+  const l1 = pkt('比 root 小 → 左', tv.P.get(3).x - 0.6, 6.0), l2 = pkt('比 root 大 → 右', tv.P.get(13).x + 0.4, 6.0);
+  say('跟 root 比', '比 root 小去左 subtree，比 root 大去右 subtree');
+  await step(tok);                                   // 1:25:31 subtree 再做同樣的事
+  const z = ghostBox('#2fc092', 3.0, 2.4, 1.4); z.position.set(tv.P.get(3).x, 3.0, 0);
+  say('進到 subtree 再做同樣的事', '概念上就是 recursive call（zoom in）');
+  await step(tok);                                   // 1:25:50 root 是 8，我是 7：去左邊
+  kill(z); kill(l1); kill(l2);
+  const r = rider('7', V3(tv.P.get(8).x - 1.6, 5.6, 0));
+  await hopTo(tok, r, tv.top(8), 500); glow(tv.c(8), GOLD);
+  await hopTo(tok, r, tv.top(3), 600);
+  say('search 7：7 < 8', '去左邊找');
+  await step(tok);                                   // 1:25:57 右邊整個不用考慮
+  glow(tv.c(8), null);
   [13, 10].forEach((k) => tint(tv.c(k), GRAY));
-  say('右子樹整個不用考慮了', '跟 binary search 一樣的偷吃步'); await beat(tok, 2200);
-  at(3); cd.hl(4); say('7 > 3', '去右子樹'); await beat(tok, 1400);
-  at(5); cd.hl(4); say('7 > 5', '去右子樹……是空的'); await beat(tok, 1600);
-  cu.position.set(tv.P.get(5).x + 0.7, tv.P.get(5).y - 1.2, 0); cd.hl(1);
-  say('老師板書沒寫終止條件', '<span class="no">要補：T 是空的 → 找不到</span>');
-  await beat(tok, 3000);
+  say('右邊的通通不用考慮了', '跟 binary search 一樣的偷吃步');
+  await step(tok);                                   // 1:26:07 左邊找不到就是沒有
+  bub('7 要嘛在左邊，要嘛根本不在', tv.P.get(3).x - 1.2, 1.0);
+  say('左邊找不到，就是沒有', '這樣的資料結構叫 Binary Search Tree');
+  await step(tok);                                   // 1:26:37 延伸一：怎麼做出「好的」BST
+  bub('延伸一：好的 BST（像 max tree + complete → heap）', -2.6, -0.4, 1.0);
+  say('接下來兩週：BST 的延伸', '一：再加條件，做出「好的」BST');
+  await step(tok);                                   // 1:27:25 延伸二：multi-way search tree
+  bub('延伸二：multi-way search tree（一個 node 放好幾個 key）', -2.2, -1.1, 1.0);
+  say('二：一個 node 放好幾個比較基準點', '叫 multi-way search tree');
+  await step(tok);                                   // 1:27:56 寫下 BST 的 search algorithm
+  const cd = code(['BSTSearch(T, key):', '  if key < T.mid:', '    return BSTSearch(T.left, key)', '  if key > T.mid:', '    return BSTSearch(T.right, key)', '  return T.data   // key == mid'], -3.8, 5.4, 0.56);
+  say('把 BST 當 map：寫下 search', '給 key，找出它在樹的哪裡（和它的 value）');
+  await step(tok);                                   // 1:28:31 中點其實就是 root
+  cd.hl(0); glow(tv.c(8), GOLD);
+  say('binary search 要有中點', '中點 mid 就是 root');
+  await step(tok);                                   // 1:28:38 key < mid → 去左邊
+  glow(tv.c(8), null); cd.hl(2);
+  say('key < mid', '→ BSTSearch(T.left, key)：去左邊找');
+  await step(tok);                                   // 1:29:01 key > mid → 去右邊
+  cd.hl(4);
+  say('key > mid', '→ BSTSearch(T.right, key)：去右邊找');
+  await step(tok);                                   // 1:29:19 相等：回傳對應的 value
+  cd.hl(5);
+  say('不大不小 → 等於', '回傳 root 對應的 value（data）');
+  await step(tok);                                   // 1:29:48 結構跟 array 上的 binary search 一樣
+  cd.hl(-1);
+  say('整個演算法的結構', '跟 array 上的 binary search 一模一樣');
+  await step(tok);                                   // 1:30:27 沒寫終止條件：找不到不會停
+  await hopTo(tok, r, tv.top(5), 500); await hopTo(tok, r, V3(tv.P.get(5).x + 0.7, tv.P.get(5).y - 1.3, 0), 500);
+  r.mood('sad'); cd.hl(3);
+  say('search 7：7 > 3 → 5，7 > 5 → 右邊是空的', '<span class="no">板書沒寫終止條件：找不到時停不下來</span>');
+  await step(tok);                                   // 1:30:46 補上：T 是空的就停
+  txt(cd.ls[0], 'BSTSearch(T, key):  if T is empty: NOT FOUND');
+  cd.hl(0);
+  say('真的要用時要補一行', '<span class="ok">T 是空的 → 找不到，停</span>');
 }]);
 
 // ═════════ 12. 花多少力氣：O(h)，最差 O(n)、最好 O(log n) ═════════
 FRAG.push(['bstlin-bst-height', 'BST search 是 O(h)：歪斜的樹 vs 矮的樹', async (tok) => {
   fresh([0, 5, 13], [0, 2.8, 0]);
-  const a = { root: null }; [8, 5, 3, 2].forEach((k) => bstIns(a, k));
   const b = { root: null }; [5, 3, 8, 2].forEach((k) => bstIns(b, k));
-  const va = TV(a, { cx: -3.4, dx: 1.0, dy: 1.3, top: 5.4 }); va.sync();
   const vb = TV(b, { cx: 3.4, dx: 1.2, dy: 1.3, top: 5.4 }); vb.sync();
-  tag('不好的 BST', 'ptr', -3.4, 0.4, 0); tag('好的 BST', 'ptr', 3.4, 0.4, 0);
-  say('search 從 root 一路走到 leaf', '花的力氣 = 樹高 h：<span class="ok">O(h)</span>');
-  await beat(tok, 2600);
-  const walk = async (v, ks, side) => { for (const [i, k] of ks.entries()) { glow(v.c(k), k === 2 ? GREEN : GOLD); say(side + ' search 2', '比較 ' + (i + 1) + ' 次'); await beat(tok, 800); } };
-  await walk(va, [8, 5, 3, 2], '左：');
-  say('8 → 5 → 3 → 2：比 4 次', '最差：偽裝的 linked list，h = n → <span class="no">O(n)</span>');
-  await beat(tok, 2600);
-  await walk(vb, [5, 3, 2], '右：');
-  say('像 complete binary tree 一樣矮', '最好：h ≈ log n → <span class="ok">O(log n)</span>（跟 skip list 一樣）');
-  await beat(tok, 2800);
-  say('目標：加條件，讓 BST 不要長歪', '就像 max tree 加上 complete → heap');
-  await beat(tok, 2800);
+  say('這個 algorithm 要花多少力氣？', '');
+  await step(tok);                                   // 1:31:05 找到或宣告找不到要多少力氣
+  const kid = buddy(null, '?', '#9fd6a8', -1.0, 0.0, 1.0, 0.7); kid.mood('wow');
+  say('找到東西、或宣告找不到', '要花多少力氣？');
+  await step(tok);                                   // 1:31:16 從 root 進去，一路往 subtree 走
+  const r = rider('2', V3(vb.P.get(5).x - 1.4, 5.8, 0));
+  for (const k of [5, 3, 2]) { await hopTo(tok, r, vb.top(k), 450); glow(vb.c(k), k === 2 ? GREEN : GOLD); }
+  say('從 root 進去，進到某個 subtree……', '一路走到沒有為止');
+  await step(tok);                                   // 1:31:38 = 樹高那麼多力氣：O(h)
+  bub('走過的路 = root 到 leaf：最多 h 層', 3.4, 0.4);
+  say('路徑最長就是 root 到 leaf', '力氣 = 樹高 h：<span class="ok">O(h)</span>');
+  await step(tok);                                   // 1:32:26 h 最糟是多少？
+  kid.mood('calm');
+  say('那 h 最糟會是多少？', '還記得 binary tree 可以很矮、也可以很高');
+  await step(tok);                                   // 1:32:54 很高的樹 = 偽裝的 linked list
+  const a = { root: null };
+  const va = TV(a, { cx: -3.4, dx: 1.0, dy: 1.3, top: 5.4 });
+  for (const k of [8, 5, 3, 2]) { bstIns(a, k); va.sync(k); }
+  tag('不好的 BST', 'ptr', -3.4, 0.2, 0);
+  say('很高的樹：一個偽裝的 linked list', 'worst case：h = n → <span class="no">O(n)</span>');
+  await step(tok);                                   // 1:33:30 8 → 5 → 3 → 2：走 4 個 node
+  kill(kid.g);
+  const r2 = rider('2', V3(va.P.get(8).x - 1.2, 5.8, 0));
+  for (const k of [8, 5, 3, 2]) { await hopTo(tok, r2, va.top(k), 400); glow(va.c(k), k === 2 ? GREEN : GOLD); }
+  r2.mood('sad');
+  say('8、5、3、2：從 8 要找到 2', '一路走下去，走 4 個 node');
+  await step(tok);                                   // 1:33:41 linked list 也是 4 個
+  [8, 5, 3, 2].forEach((k, i) => cube(k, colorFor(k), [0.6, 0.45, 0.6], -5.6 + i * 1.0, -0.6, 1.2));
+  for (let i = 0; i < 3; i++) arrow(V3(-5.25 + i * 1.0, -0.6, 1.2), V3(-4.95 + i * 1.0, -0.6, 1.2));
+  say('linked list 也是 4 個 node 才找到 2', '這棵樹就沒什麼好處');
+  await step(tok);                                   // 1:34:00 best：像 complete binary tree，log n
+  tag('好的 BST', 'ptr', 3.4, 0.2, 0);
+  say('best case：像 complete binary tree', '高度約 log n → <span class="ok">O(log n)</span>');
+  await step(tok);                                   // 1:34:17 目前唯一 log n 的 map：skip list
+  bub('目前唯一 log n 的 map：skip list（n、n/2、n/4…約 log n 層）', 0, 7.0);
+  say('到目前為止，花 log n 力氣的 map', '只有 skip list');
+  await step(tok);                                   // 1:34:59 好的 vs 不好的
+  [8, 5, 3, 2].forEach((k) => glow(va.c(k), null)); [5, 3, 2].forEach((k) => glow(vb.c(k), null));
+  r.mood('happy');
+  say('同樣是 BST', '右邊叫「好的」，左邊叫「不好的」');
+  await step(tok);                                   // 1:35:10 不要長歪：樹高低一點
+  noT('長歪 ✗', -3.4, 6.3); okT('矮一點、還是 BST ✓', 3.4, 6.3);
+  say('我們想避免長歪的 BST', '讓樹高低一點，但還維持 binary search 的性質');
+  await step(tok);                                   // 1:35:43 像 heap：max tree + complete
+  note('heap = max tree + complete（加了條件就變好用）', 0, -1.4, 1.2);
+  say('heap 的時候成功過一次', '在 BST 上也加條件，讓樹高變「好」');
 }]);
 
-// ═════════ 13. 限制強度的取捨：BST、RB、AVL、Complete ═════════
-FRAG.push(['bstlin-tradeoff', '限制寬鬆 ↔ 嚴格：BST、紅黑樹、AVL、complete BST', async (tok) => {
-  fresh([0, 6, 13], [0, 2, 0]);
-  const part = (ctx.params || {}).part || 0;
+// ═════════ 13. 限制強度的取捨：BST ↔ complete BST（AVL、紅黑樹在中間） ═════════
+const XS = { BST: -4.8, RB: -1.5, AVL: 1.5, CBT: 4.8 };
+function tradeAxis() {
   line(-6.2, 0.15, 6.2, 0.15, 0, '#6e5f49');
   tag('限制寬鬆', 'idx', -5.6, 0.2, 1.3); tag('限制嚴格', 'idx', 5.6, 0.2, 1.3);
-  const XS = { BST: -4.8, RB: -1.5, AVL: 1.5, CBT: 4.8 };
-  const box = (n, k, col) => cube(n, col, [1.9, 0.8, 1.2], XS[k], 0.6, 0, 3);
-  const note = (k, a, b) => { tag(a, 'idx', XS[k], 2.0, 0); tag(b, 'idx', XS[k], 1.5, 0); };
-  if (part !== 2) {
-    say('取捨：insert 後的維護 vs 最差 search', '');
-    const bst = box('BST', 'BST', '#31aab0'); await beat(tok, 900);
-    note('BST', 'search 最差 O(n)', '維護 ≈ 0');
-    say('最寬鬆：一般 BST', '隨便找位置放 → 最差像 linked list');
-    await beat(tok, 2600);
-    const cb = box('Complete', 'CBT', '#9b7ef4'); await beat(tok, 900);
-    note('CBT', 'search O(log n)', '維護 O(n)');
-    say('最嚴格：complete BST', '≈ ordered array，一個蘿蔔一個坑');
-    await beat(tok, 2800);
-    const av = box('AVL', 'AVL', '#2fc092'), rb = box('紅黑樹', 'RB', '#d64545'); await beat(tok, 900);
-    note('AVL', 'search O(log n)', '維護 O(1) 次調整'); note('RB', 'search O(log n)', '維護 O(1) 次調整');
-    say('中間：AVL tree 與 Red-Black tree', '<span class="ok">worst search O(log n)</span>，維護便宜');
-    await beat(tok, 3000);
-    if (part === 1) { await beat(tok, 1000); return; }
-  } else {
-    box('BST', 'BST', '#31aab0'); box('Complete', 'CBT', '#9b7ef4');
-    box('AVL', 'AVL', '#2fc092'); box('紅黑樹', 'RB', '#d64545');
-    say('AVL 與紅黑樹複雜度看起來差不多', '都是 O(log n)');
-    await beat(tok, 2200);
-  }
-  tag('search 稍快', 'ptr alt', XS.AVL, 3.0, 0); tag('insert 稍慢・好教', 'ptr alt', XS.AVL, 2.5, 0);
-  say('AVL：限制較嚴', 'search 稍快、維護稍慢、比較好教');
-  await beat(tok, 2600);
-  tag('維護稍快', 'ptr', XS.RB, 3.0, 0); tag('search 稍慢・較常用', 'ptr', XS.RB, 2.5, 0);
-  say('紅黑樹：寫在 AVL 左邊一點（較寬鬆）', '維護快、較能適應動態調整 → 實務常用');
-  await beat(tok, 3000);
-  say('今天先教 AVL，再進紅黑樹', '');
-  await beat(tok, 2200);
+}
+const tb = (v, k, color) => buddy(null, v, color, XS[k], 0.2, 0, 0.9);
+const tnote = (k, a, y, cls = 'idx') => tag(a, cls, XS[k], y, 0);
+FRAG.push(['bstlin-tradeoff', '限制寬鬆 ↔ 嚴格：一般 BST、complete BST、AVL、紅黑樹', async (tok) => {
+  fresh([0, 6, 13], [0, 2, 0]);
+  say('在 BST 上可以做些什麼？', '');
+  await step(tok);                                   // 1:37:24 設計上有很多 trade-off
+  tradeAxis();
+  say('資料結構的設計有很多 trade-off', '再加一些限制，來確保樹高');
+  await step(tok);                                   // 1:38:00 以 insertion 後的維護為例
+  bub('比較：insert 後要花多少力氣維護？ vs 最差 search 多快？', 0, 4.4);
+  say('以 insertion 為例', '放進去之後要花多少力氣維護（maintenance）');
+  await step(tok);                                   // 1:38:11 寬鬆：隨便找位置放
+  const bst = tb('BST', 'BST', '#7cb8ee'); bst.mood('happy');
+  tnote('BST', '維護 ≈ 0', 1.7);
+  say('限制很寬鬆：只要滿足 binary search 性質', 'insert 隨便找個可以放的位置就好');
+  await step(tok);                                   // 1:38:38 但樹高顧不住：worst O(n)
+  tnote('BST', 'search 最差 O(n)', 2.2, 'bad');
+  say('但樹高就顧不住', '最差像 linked list：search <span class="no">O(n)</span>');
+  await step(tok);                                   // 1:39:34 = 一般的 arbitrary BST
+  tnote('BST', 'arbitrary BST', -0.5, 'ptr');
+  say('最寬鬆的一端', '就是一般的（arbitrary）Binary Search Tree');
+  await step(tok);                                   // 1:39:58 最嚴格：complete binary tree
+  const cb = tb('Complete', 'CBT', '#c9b2f2');
+  tnote('CBT', 'complete BST', -0.5, 'ptr');
+  say('最嚴格的一端', '要求它是 complete binary tree + BST');
+  await step(tok);                                   // 1:40:38 complete = array：一個蘿蔔一個坑
+  bub('complete tree = array：一個蘿蔔一個坑', XS.CBT - 0.6, 3.2);
+  say('complete binary tree 就是一個 array', '限制強度差不多就是 ordered array');
+  await step(tok);                                   // 1:41:24 worst search O(log n)
+  tnote('CBT', 'search 最差 O(log n)', 2.2, 'good');
+  say('樹高就是 log n', 'worst search <span class="ok">O(log n)</span>');
+  await step(tok);                                   // 1:41:46 但要花 n 的力氣排好
+  tnote('CBT', '維護 O(n)', 1.7, 'bad'); cb.mood('sad');
+  say('可是 insert 後', '要花 <span class="no">n 的力氣</span>才能把蘿蔔排回各自的坑');
+  await step(tok);                                   // 1:42:01 heap 只要浮一浮；BST 性質更強
+  bub('heap：沿一條 path 浮一浮就好；BST 要「每個人」的位置都對', 0, 5.4);
+  say('heap 只要選出領導人，上下浮一浮', 'BST 的性質更強：所有大小關係都要對');
+  await step(tok);                                   // 1:42:55 AVL：比 complete 寬鬆一點
+  const av = tb('AVL', 'AVL', '#9fd6a8'); av.mood('happy');
+  say('中間第一種：AVL tree', '比 complete BST 再寬鬆一點');
+  await step(tok);                                   // 1:43:29 維護 constant，search 仍 log n
+  tnote('AVL', '維護：常數次調整', 1.7, 'good'); tnote('AVL', 'search 最差 O(log n)', 2.2, 'good');
+  say('insert 後只要 constant 的力氣維護', '還是保證 worst search <span class="ok">O(log n)</span>');
+  await step(tok);                                   // 1:44:10 紅黑樹：一樣的複雜度
+  const rb = tb('紅黑樹', 'RB', '#e88a8a'); rb.mood('happy');
+  tnote('RB', '維護：常數次調整', 1.7, 'good'); tnote('RB', 'search 最差 O(log n)', 2.2, 'good');
+  say('中間第二種：Red-Black tree', '一樣：constant 維護、O(log n) worst search');
+}]);
+FRAG.push(['bstlin-avlrb', 'AVL vs 紅黑樹：一個好教，一個實務常用', async (tok) => {
+  fresh([0, 6, 13], [0, 2, 0]);
+  tradeAxis();
+  const bst = tb('BST', 'BST', '#7cb8ee'), cb = tb('Complete', 'CBT', '#c9b2f2'), av = tb('AVL', 'AVL', '#9fd6a8'), rb = tb('紅黑樹', 'RB', '#e88a8a');
+  say('複雜度看起來差不多', '但在這條線上的位置不一樣');
+  await step(tok);                                   // 1:44:45 越右邊樹越矮
+  tag('樹高：越右越矮（complete 最矮）→', 'ptr alt', 0, 3.4, 0);
+  say('看樹高：越往右越好', 'complete 已經是最矮的 binary tree');
+  await step(tok);                                   // 1:45:01 維護：左邊幾乎不用，右邊很多
+  tag('← 維護：越左越省力', 'ptr', 0, 2.8, 0);
+  bst.mood('happy'); cb.mood('sad');
+  say('看 maintenance：剛好相反', '左邊幾乎不用維護，右邊要很多');
+  await step(tok);                                   // 1:45:22 中間其實有十幾二十種選擇
+  for (const x of [-3.2, -0.2, 0.4, 3.1]) cube('', '#d8cfc0', [0.3, 0.3, 0.3], x, 0.3, 0);
+  say('為什麼選兩種？', '中間其實可能有十種、二十種選擇');
+  await step(tok);                                   // 1:45:36 這兩種有代表性又實用
+  av.glow('#3a2a00'); rb.glow('#3a2a00');
+  say('選這兩種：有代表性', '又好教、又有實用性');
+  await step(tok);                                   // 1:45:44 AVL：easy to teach
+  av.glow(null); tag('easy to teach', 'good', XS.AVL, 1.7, 0);
+  say('AVL：easy to teach', '');
+  await step(tok);                                   // 1:45:55 紅黑樹：faster in general（維護快）
+  rb.glow(null); tag('faster in general', 'good', XS.RB - 0.6, 1.7, 0);
+  await travel(tok, rb.g, rb.g.position.clone(), V3(XS.RB - 0.6, 0.2, 0), 700);
+  say('紅黑樹：faster in general', '這個 faster 是指維護比較快：它比較寬鬆，寫在左邊一點');
+  await step(tok);                                   // 1:46:24 worst search 稍慢一點點
+  tag('search 稍慢一點點', 'bad', XS.RB - 0.6, 2.2, 0);
+  say('比較能適應動態調整', '但 worst search 稍微慢一點點（沒有很誇張）');
+  await step(tok);                                   // 1:46:36 實務常用紅黑樹，但難教
+  tag('實務常用・但難教', 'ptr alt', XS.RB - 0.6, 2.7, 0);
+  say('實務上比較常用紅黑樹', '只是它不適合當入門');
+  await step(tok);                                   // 1:46:53 先教 AVL，再進紅黑樹
+  av.mood('happy');
+  bub('今天：AVL → 之後：紅黑樹', XS.AVL, 3.0);
+  say('所以先很快講 AVL 的觀念', '再進入紅黑樹（今天只教 AVL）');
+  await step(tok);                                   // 1:47:56 重講：complete 太 strict
+  noT('太 strict ✗', XS.CBT, 3.0);
+  say('重講一次：最右邊 complete 太嚴格', '維護要很大力氣，本質就是 ordered array');
+  await step(tok);                                   // 1:48:30 arbitrary 太 loose
+  noT('太 loose ✗', XS.BST, 3.0); bst.mood('sad');
+  say('最左邊 arbitrary BST 太寬鬆', 'worst search 沒有任何保證');
+  await step(tok);                                   // 1:48:37 AVL search 快 insert 慢；紅黑樹相反
+  okT('search 稍快・insertion 稍慢', XS.AVL, 3.6); okT('search 稍慢・維護稍快', XS.RB - 0.6, 3.6);
+  say('中間兩個：AVL search 稍快、insertion 稍慢', '紅黑樹剛好相反');
 }]);
 
 // ═════════ 14. 為什麼 complete BST 的維護是 O(n)：1 2 3 插 4 ═════════
 FRAG.push(['bstlin-complete-insert4', 'Complete BST 插入 4：每個元素都換位置', async (tok) => {
   fresh([0, 5.5, 13], [0, 2.4, 0]);
-  const t = { root: null }; [2, 1, 3].forEach((k) => bstIns(t, k));
-  const tv = TV(t, { cx: -3.2, dx: 1.3, top: 5 }); tv.sync();
+  const kid = buddy('同學', '?', '#9fd6a8', 5.6, 3.4, 0, 0.7);
+  say('休息時同學問', '');
+  await step(tok);                                   // 1:59:46 strict 那邊為什麼維護很貴？
+  kid.mood('wow'); bub('strict 那邊為什麼維護要很大力氣？', 3.6, 5.0);
+  say('為什麼 strict 那邊維護很貴？', '用一個例子說明');
+  await step(tok);                                   // 2:00:19 complete BST 放 1 2 3
+  kill(kid.g);
+  const t = { root: null };
+  const tv = TV(t, { cx: -3.2, dx: 1.3, top: 5 });
+  for (const k of [2, 1, 3]) { bstIns(t, k); tv.sync(k); }
+  say('complete binary search tree 裡放 1 2 3', 'root 2，左 1、右 3');
+  await step(tok);                                   // 2:00:47 對應的 array：[2, 1, 3]
   const AX = (i) => 1.6 + i * 1.3;
   for (let i = 0; i < 4; i++) { ctx.tile(V3(AX(i), 0.02, 0), 1.15, 1.15); tag('[' + (i + 1) + ']', 'idx', AX(i), 0.1, 1.1); }
-  const ac = new Map(); [2, 1, 3].forEach((k, i) => ac.set(k, cube(k, colorFor(k), [0.8, 0.6, 0.8], AX(i), 0.4, 0)));
-  say('complete BST 存 1 2 3', 'array = [2, 1, 3]');
-  await beat(tok, 2600);
-  say('insert 4：還要是 complete，還要是 BST', '');
-  await beat(tok, 1800);
+  const ac = new Map(); [2, 1, 3].forEach((k, i) => ac.set(k, cube(k, colorFor(k), [0.8, 0.6, 0.8], AX(i), 0.4, 0, 2)));
+  say('complete binary tree 就是 array', 'array = [2, 1, 3]');
+  await step(tok);                                   // 2:01:08 insert 4
+  const four = rider('4', V3(-6.0, 0.3, 0), 0.6); four.mood('wow');
+  const g4 = ghostBox('#d64545', 0.85, 0.85, 0.85); g4.position.set(-3.2 - 1.3, 5 - 2 * 1.45, 0);
+  say('insert 4：又要 complete、又要 BST', '形狀只能是：多出左下角那一格');
+  await step(tok);                                   // 2:01:34 只能長成：3 當 root
+  kill(g4); kill(four.g);
   t.root = mkN(3); t.root.l = mkN(2); t.root.l.l = mkN(1); t.root.r = mkN(4);
   tv.sync(4);
-  say('只有一種長法：3 當 root', '左 2（下面接 1），右 4');
-  await beat(tok, 2400);
+  say('仔細想：只能長成這樣', 'root 3；左 2（下面接 1）；右 4');
+  await step(tok);                                   // 2:01:41 新的 array：[3, 2, 4, 1]
+  [3, 2, 4, 1].forEach((k, i) => tag(String(k), 'ptr alt', AX(i), 1.5, 0));
+  say('對應的 array', '[3, 2, 4, 1]');
+  await step(tok);                                   // 2:02:24 原本 3 個東西全部換位置
   [3, 2, 4, 1].forEach((k, i) => { if (ac.has(k)) { move(ac.get(k), AX(i), 0.4, 0); glow(ac.get(k), RED); } else ac.set(k, cube(k, colorFor(k), [0.8, 0.6, 0.8], AX(i), 0.4, 0, 3)); });
-  say('array 變 [3, 2, 4, 1]', '原本的 3 個元素全部換位置');
-  await beat(tok, 2800);
-  say('跟 ordered array 插入一樣：大家都要讓', '維護要 <span class="no">O(n)</span>');
-  await beat(tok, 2600);
-  say('heap 只要修一條 path', 'BST 性質更強：只修一條 path 不夠');
-  await beat(tok, 2800);
+  say('原本的 3 個全部換位置', '3：第 3 格 → 第 1 格；1：第 2 → 第 4；2：第 1 → 第 2');
+  await step(tok);                                   // 2:02:58 像 ordered array 插入：大家都要讓
+  bub('像 ordered array 插隊：後面的全部讓開', AX(1.5), 2.4);
+  say('就像 ordered array 的 insertion', '擠進去，大家都要讓開');
+  await step(tok);                                   // 2:03:26 O(n) 的 effort
+  noT('每個都換位置 → O(n)', AX(1.5), 3.2);
+  say('每個都要換位置', '就要花跟元素數量差不多的力氣：<span class="no">O(n)</span>');
+  await step(tok);                                   // 2:03:41 heap：只修一條 path
+  [3, 2, 1].forEach((k) => glow(tv.c(k), GOLD));
+  note('heap：只修「最後一格 → root」這條 path', -3.2, 6.2);
+  say('heap 為什麼不一樣？', 'insertion 只要修最後一格到 root 那條 path');
+  await step(tok);                                   // 2:03:54 BST：修一條 path 不夠
+  [3, 2, 1].forEach((k) => glow(tv.c(k), null));
+  noT('complete BST：每個東西只有一個固定位置，沒彈性', -2.0, -0.6, 1.0);
+  say('BST 的性質更強', '只修一條 path 不夠：每個人都得搬到「一定要在」的位置');
+  await step(tok);                                   // 2:04:33 所以 maintenance 是 O(n)
+  say('所以 complete BST 的維護', '是 <span class="no">O(n)</span>：我們不想選它');
 }]);
 
 // ═════════ 15. AVL 的定義：|hL − hR| ≤ 1 ═════════
 FRAG.push(['bstlin-avl-def', 'AVL tree：每個 node 的 bf ∈ {−1, 0, +1}', async (tok) => {
   fresh([0, 5, 12], [0, 2.8, 0]);
-  const r = cube('root', '#4b9ee2', [1.1, 0.8, 1.1], 0, 5.2, 0);
+  say('什麼是 AVL tree？', '先做名詞解釋');
+  await step(tok);                                   // 2:05:14 A、V、L：發明者名字的縮寫
+  const who = [['A', 'Adelson-', '#7cb8ee', -2.6], ['V', '-Velsky', '#f4a56a', 0], ['L', 'Landis', '#9fd6a8', 2.6]].map(([v, n, c, x]) => buddy(n, v, c, x, 2.4, 0, 0.9));
+  who.forEach((b) => b.mood('happy'));
+  say('AVL = 發明者名字的縮寫', 'Adelson-Velsky 和 Landis');
+  await step(tok);                                   // 2:05:34 1962 年
+  note('1962 年就有了', 0, 4.4);
+  say('非常早的資料結構', '1962 年就有');
+  await step(tok);                                   // 2:05:40 定義：BST + 一些條件
+  who.forEach((b) => fly(b.g, V3(0, 6, 4)));
+  const r = cube('root', '#4b9ee2', [1.1, 0.8, 1.1], 0, 5.2, 0, 2);
   const U = 0.85, TOP = 4.4;
   const gL = ghostBox('#2fc092', 1.8, 1, 1.4), gR = ghostBox('#dd8238', 1.8, 1, 1.4);
   const lL = tag('', 'ptr', -2.0, 1, 0), lR = tag('', 'ptr', 2.0, 1, 0), lb = tag('', 'ptr alt', 1.4, 5.9, 0);
   line(0, 5.2, -1.6, TOP, 0); line(0, 5.2, 1.6, TOP, 0);
-  let hl = 2, hr = 2;
+  let hl = 2, hr = 2, showH = false, showB = false;
   const set = (a, b) => {
     gL.scale.y = a * U; gL.position.set(-1.6, TOP - a * U / 2, 0); gR.scale.y = b * U; gR.position.set(1.6, TOP - b * U / 2, 0);
-    txt(lL, 'hL = ' + Math.round(a)); txt(lR, 'hR = ' + Math.round(b)); lL.position.y = TOP - a * U - 0.3; lR.position.y = TOP - b * U - 0.3;
-    const bf = Math.round(a) - Math.round(b); txt(lb, 'bf = ' + (bf > 0 ? '+' + bf : bf)); glow(r, Math.abs(bf) > 1 ? RED : null);
+    txt(lL, showH ? 'hL = ' + Math.round(a) : ''); txt(lR, showH ? 'hR = ' + Math.round(b) : ''); lL.position.y = TOP - a * U - 0.3; lR.position.y = TOP - b * U - 0.3;
+    const bf = Math.round(a) - Math.round(b); txt(lb, showB ? 'bf = ' + (bf > 0 ? '+' + bf : bf) : ''); glow(r, Math.abs(bf) > 1 ? RED : null);
   };
   const to = async (a, b) => { const a0 = hl, b0 = hr; await anim(tok, 700, (f) => set(a0 + (a - a0) * f, b0 + (b - b0) * f)); hl = a; hr = b; set(a, b); };
   set(2, 2);
-  say('AVL：Adelson-Velsky 與 Landis（1962）', '就是 BST，再多一條限制');
-  await beat(tok, 2600);
-  say('從每個 root 看：左右要差不多高', '|hL − hR| ≤ 1，每棵 subtree 都要');
-  await beat(tok, 2600);
-  say('balance factor：bf = hL − hR', 'hL = hR → bf = 0');
-  await beat(tok, 2000);
-  await to(2, 3); say('右邊高一點', 'bf = −1，OK'); await beat(tok, 1800);
-  await to(3, 2); say('左邊高一點', 'bf = +1，OK'); await beat(tok, 1800);
-  await to(1, 3); say('差 2：違反 AVL', '<span class="no">bf = −2 → 要調整</span>');
-  await beat(tok, 2400);
-  say('所有維護都在把 bf 保持在 −1、0、+1', '可以證明樹高 = O(log n)');
-  await beat(tok, 2800);
+  say('定義：還是一棵 binary search tree', '再加上一點條件（complete 那種太嚴格）');
+  await step(tok);                                   // 2:06:00 從任何 root 看：左右要差不多高
+  tag('左 subtree', 'idx', -1.6, 4.7, 0.8); tag('右 subtree', 'idx', 1.6, 4.7, 0.8);
+  say('從任何一個 root 看下去', '左邊和右邊要長得差不多高，才不會歪一邊');
+  await step(tok);                                   // 2:06:35 |左高 − 右高| ≤ 1，每棵 subtree 都要
+  bub('|左邊高度 − 右邊高度| ≤ 1', -3.6, 6.0);
+  say('左高減右高，取絕對值 ≤ 1', '每一棵 subtree 都要成立；就這一條限制');
+  await step(tok);                                   // 2:07:11 像剪頭髮：左右要差不多長
+  bub('像理髮：左右兩邊要剪得差不多', 3.6, 6.0);
+  say('就像剪頭髮', '左邊和右邊要差不多長，才不會歪一邊');
+  await step(tok);                                   // 2:07:37 左高寫 hL、右高寫 hR
+  showH = true; set(hl, hr);
+  say('每次寫「左邊的高度」太長', '簡寫成 hL、hR');
+  await step(tok);                                   // 2:08:04 balance factor：bf = hL − hR
+  showB = true; set(hl, hr);
+  say('BF 不是 boyfriend', 'balance factor：<span class="ok">bf = hL − hR</span>');
+  await step(tok);                                   // 2:08:22 可能一：一樣高 → 0
+  say('AVL 裡 bf 只有三種可能', '一樣高：bf = 0');
+  await step(tok);                                   // 2:08:27 左邊高一點 → +1
+  await to(3, 2);
+  say('左邊高一點', 'bf = +1，OK');
+  await step(tok);                                   // 2:08:32 右邊高一點 → −1
+  await to(2, 3);
+  say('右邊高一點', 'bf = −1，OK');
+  await step(tok);                                   // 2:08:40 所有維護都在保持這三種值
+  await to(1, 3);
+  noT('差 2 → 不行，要調整', 2.6, 1.0, 0.8);
+  say('一切的維護，都是為了讓 bf 留在 −1、0、+1', '像這樣差 2（bf = −2）就要修');
+  await step(tok);                                   // 2:09:00 先講特例，再講通例
+  await to(2, 3);
+  bub('先看特例 → 再看通例', 0, 0.2, 1.0);
+  say('講解的流程', '先看特例，順便熟悉 BST insertion；再講通例');
 }]);
 
 // ═════════ 16. 特例：依序插入 3、5、8 ═════════
+async function walkIn(tok, tv, t, b, k, firstAt) {
+  // the key (a buddy) walks the search path, then becomes a node where the search fails
+  const path = pathTo(t, k);
+  if (!path.length) await hopTo(tok, b, firstAt, 700);
+  for (const x of path) await hopTo(tok, b, tv.top(x), 380);
+}
+function place(tv, t, b, k) { kill(b.g); bstIns(t, k); tv.sync(k); }
 FRAG.push(['bstlin-avl-358', 'AVL 特例：插入 3、5、8 → 把 5 拉起來', async (tok) => {
   fresh([0, 5, 12], [0, 3, 0]);
-  const t = { root: null }; const tv = TV(t, { dx: 1.6, dy: 1.5, top: 5.6, lab: BF });
-  say('依序插入 3、5、8，每次都看 bf', 'bf = hL − hR');
-  await beat(tok, 1800);
-  bstIns(t, 3); tv.sync(3);
-  say('insert 3：左右都空', 'bf(3) = 0 − 0 = 0');
-  await beat(tok, 2000);
-  bstIns(t, 5); tv.sync(5);
-  say('insert 5：5 > 3 → 放 3 的右邊', 'bf(5) = 0，bf(3) = 0 − 1 = −1');
-  await beat(tok, 2400);
-  bstIns(t, 8); tv.sync(8);
-  say('insert 8：比 3 大、比 5 大 → 一路往右', 'bf(3) = 0 − 2 = <span class="no">−2</span>');
-  await beat(tok, 2600);
-  say('長成一長串：從中間的 5 把它拉起來', '像拎葡萄一樣');
-  await beat(tok, 2200);
-  rotUp(t, t.root, 'L'); tv.sync();
-  say('5 當新 root：左 3、右 8', 'bf 全部 = 0，恢復 AVL');
-  await beat(tok, 2600);
-  say('大體上只有 4 種情形，兩兩對稱', 'insert / search 都是 <span class="ok">O(log n)</span>');
-  await beat(tok, 2600);
+  const t = { root: null }; const tv = TV(t, { cx: 0.6, dx: 1.6, dy: 1.5, top: 5.6 });
+  say('先看一個特例', '');
+  await step(tok);                                   // 2:09:44 依序插入 3、5、8
+  const q = { 3: '#5b5b5b', 5: '#7cb8ee', 8: '#e57373' };
+  const kb = {}; [3, 5, 8].forEach((k, i) => { kb[k] = buddy(null, k, q[k], -5.6 + i * 0.85, 0.2, 1.0, 0.6); });
+  say('依序插入 3、5、8', '每插一個，就看看 balance factor');
+  await step(tok);                                   // 2:10:24 只有 3：空樹插一個
+  await walkIn(tok, tv, t, kb[3], 3, V3(0.6, 6.1, 0)); place(tv, t, kb[3], 3);
+  say('insert 3：空的樹插一個', '它就待在 root');
+  await step(tok);                                   // 2:10:35 bf(3) = 0 − 0 = 0
+  tv.bf([3]);
+  note('hL = 0、hR = 0', 2.4, 6.4);
+  say('左右都是空的：高度 0 和 0', 'bf(3) = 0 − 0 = 0');
+  await step(tok);                                   // 2:10:55 插入 5
+  await hopTo(tok, kb[5], tv.top(3), 900);
+  say('insert 5', '');
+  await step(tok);                                   // 2:11:00 insertion = search：該找到卻找不到的地方
+  await hopTo(tok, kb[5], V3(tv.P.get(3).x + 0.9, 5.6 - 1.5 + 0.43, 0), 600);
+  bub('3 的右邊找不到 5 → 就放這裡', 3.6, 4.8);
+  say('BST 的 insertion 跟 search 是同一回事', '5 > 3 → 去 3 的右邊找 → 找不到');
+  await step(tok);                                   // 2:11:21 放在那裡
+  place(tv, t, kb[5], 5);
+  say('「該找到它卻找不到」的地方', '就是要放它的地方');
+  await step(tok);                                   // 2:11:41 bf(5) = 0、bf(3) = −1
+  tv.bf([5, 3]);
+  say('bf(5) = 0', 'bf(3) = 0 − 1 = −1');
+  await step(tok);                                   // 2:12:19 還是 AVL：沒什麼好 maintain
+  okT('還是 AVL ✓', -2.6, 6.2);
+  say('−1 還是合法的', '大部分時候 AVL 的 insertion 就是 BST 的 insertion');
+  await step(tok);                                   // 2:12:31 insert 8：比 3 大、比 5 大
+  await walkIn(tok, tv, t, kb[8], 8);
+  say('insert 8：比 3 大走右邊', '又比 5 大，再走右邊');
+  await step(tok);                                   // 2:12:53 放進去
+  place(tv, t, kb[8], 8);
+  say('找不到 8 了', '這就是 8 該放的位置');
+  await step(tok);                                   // 2:13:02 bf(8) = 0、bf(5) = −1
+  tv.bf([8, 5]);
+  say('bf(8) = 0（沒有小孩）', 'bf(5)：左邊沒有、右邊有 → −1');
+  await step(tok);                                   // 2:13:11 bf(3) = 0 − 2 = −2
+  tv.bf([3]);
+  say('bf(3)：左邊 0，右邊高度 2', '0 − 2 = <span class="no">−2</span>');
+  await step(tok);                                   // 2:13:20 違反 AVL 的規則
+  noT('bf 只能是 −1、0、+1 → 違反！', -2.6, 5.4);
+  say('出問題了', '違反 AVL tree 的規則，需要調整');
+  await step(tok);                                   // 2:13:56 一長串：從中間的 5 拉起來
+  glow(tv.c(5), GOLD);
+  const hk = pkt('從 5 拎起來（像拎葡萄）', tv.P.get(5).x + 0.4, tv.P.get(5).y + 1.2);
+  say('它變成一長串了', '從中間的 5 把它拉起來');
+  await step(tok);                                   // 2:14:36 5 當新的 root：左 3、右 8
+  kill(hk);
+  tv.hide(); glow(tv.c(5), null); rotUp(t, t.root, 'L'); tv.sync();
+  say('讓 5 當新的 root', '左邊 3、右邊 8：從 5 進去，左右都只要再比一次');
+  await step(tok);                                   // 2:15:10 bf 全部 = 0
+  tv.bf([8, 3, 5]);
+  okT('全部 bf = 0，恢復 AVL ✓', -2.6, 6.2);
+  say('調整後：8、3 的 bf = 0', '5 左右各 1 → bf = 0');
+  await step(tok);                                   // 2:15:51 只有 4 種情形，兩兩對稱
+  ['RR', 'LL', 'RL', 'LR'].forEach((c, i) => tag(c, i < 2 ? 'ptr alt' : 'ptr', -4.8 + i * 1.0, 1.0, 0.8));
+  say('要調整的情形大體上只有 4 種', '而且兩兩對稱 → 學會 2 種就夠');
+  await step(tok);                                   // 2:16:19 樹高 log n → search、insert 都 log n
+  bub('樹高 = O(log n) → search、insert 都 O(log n)', 1.2, 0.2, 1.0);
+  say('每個 node 左右都差不多高', '可以證明樹高是 log n：search / insert 都 <span class="ok">O(log n)</span>');
 }]);
 
-// ═════════ 17–18. RR 通例：A、B、AL、BL、BR ═════════
-function rrDiagram(nums) {
-  const A = cube('A', '#4b9ee2', [0.9, 0.9, 0.9], -1, 6, 0), B = cube('B', '#dd8238', [0.9, 0.9, 0.9], 1.5, 4.8, 0);
-  const gb = (name, c, x, top, h) => { const m = ghostBox(c, 1.3, h, 1.3); m.position.set(x, top - h / 2, 0); const l = lab.label(name, 'idx'); m.add(l); return { m, l, h }; };
-  const AL = gb(nums ? 'AL  h = 10' : 'AL', '#2fc092', -3, 5.2, 1.6), BL = gb(nums ? 'BL  h = 10' : 'BL', '#9b7ef4', 0.3, 4.0, 1.6), BR = gb(nums ? 'BR  h = 10' : 'BR', '#31aab0', 2.8, 4.0, 1.6);
-  const bA = tag('bf −1', 'idx', -0.2, 6.6, 0), bB = tag('bf 0', 'idx', 2.3, 5.4, 0);
-  let es = [];
-  const st = { A, B, AL, BL, BR, bA, bB, nw: null };
-  const top = (g) => V3(g.m.position.x, g.m.position.y + g.h / 2, 0);
-  st.edges = (after) => {
-    es.forEach(kill); es = [];
-    const pa = after ? V3(-1.8, 4.8, 0) : V3(-1, 6, 0), pb = after ? V3(0.3, 6, 0) : V3(1.5, 4.8, 0);
-    const L = (p, q) => es.push(line(p.x, p.y, q.x, q.y, 0));
-    if (!after) { L(pa, top(AL)); L(pa, pb); L(pb, top(BL)); L(pb, top(BR)); }
-    else { L(pb, pa); L(pb, V3(2.6, 5.2, 0)); L(pa, V3(-3.2, 4.0, 0)); L(pa, V3(-0.5, 4.0, 0)); }
+// ═════════ 17–19. RR 通例：A、B、AL、BL、BR ═════════
+const LVH = 1.2, BS = 0.75;
+const RRPOS = {
+  before: { A: [-1, 6.0], B: [1.4, 4.8], AL: [-2.6, 5.4], BL: [0.2, 4.2], BR: [2.6, 4.2] },
+  after: { B: [0.6, 6.0], A: [-1.4, 4.8], AL: [-2.9, 4.2], BL: [-0.2, 4.2], BR: [2.1, 5.4] },
+};
+function rrKit(o = {}) {
+  const oy = o.oy || 0;
+  const k = { state: 'before', es: [] };
+  const P = (n, st) => { const [x, y] = RRPOS[st || k.state][n]; return [x, y + oy]; };
+  k.nodeAt = (n, st) => { const [x, y] = P(n, st); return V3(x, y - BS / 2, 0); };
+  k.subAt = (n, st) => { const [x, top] = P(n, st); return V3(x, top - LVH / 2, 0); };
+  k.mk = (n) => {
+    if (n === 'A' || n === 'B') { const p = k.nodeAt(n); k[n] = buddy(null, n, n === 'A' ? '#7cb8ee' : '#f4a56a', p.x, p.y, 0, BS); return k[n]; }
+    const m = ghostBox({ AL: '#2fc092', BL: '#9b7ef4', BR: '#31aab0' }[n], 1.2, LVH, 1.2); m.position.copy(k.subAt(n));
+    const l = lab.label(n, 'idx'); l.position.set(0, 0, 0.7); m.add(l); m.userData.l = l;
+    k[n] = m; return m;
   };
-  st.edges(false);
-  st.insert = () => { st.nw = cube('新', '#d64545', [0.7, 0.7, 0.7], 2.8, 1.85, 0, 3); };
-  st.rotate1 = () => { // B 拉上來、A 滾下去；BL 先留在原地
-    es.forEach(kill); es = [];
-    move(B, 0.3, 6, 0); move(A, -1.8, 4.8, 0);
-    move(AL.m, -3.2, 3.2, 0); move(BR.m, 2.6, 4.4, 0); if (st.nw) move(st.nw, 2.6, 3.05, 0);
-    bA.position.set(-2.6, 5.4, 0); bB.position.set(1.1, 6.6, 0);
+  k.name = (n, s, cls = 'idx') => { txt(k[n].userData.l, s); k[n].userData.l.element.className = 'lab-label ' + cls; };
+  k.slab = (drop = true) => {
+    const p = k.subAt('BR'); const to = V3(p.x, p.y - LVH, 0);
+    k.N = cube('新', '#d64545', [1.1, LVH * 0.9, 1.0], to.x, to.y + (drop ? 2.5 : 0), 0);
+    return drop ? (tok) => travel(tok, k.N, k.N.position.clone(), to, 600) : null;
   };
-  st.rotate2 = () => { move(BL.m, -0.5, 3.2, 0); BR.m.position.set(2.6, 4.4, 0); AL.m.position.set(-3.2, 3.2, 0); st.edges(true); };
-  return st;
+  k.cen = (n) => (n === 'A' || n === 'B' ? k[n].g.position.clone().add(V3(0, BS / 2, 0)) : k[n].position.clone().add(V3(0, LVH / 2, 0)));
+  k.edges = (hi = []) => {
+    k.es.forEach(kill); k.es = [];
+    const pairs = k.state === 'before' ? [['A', 'AL'], ['A', 'B'], ['B', 'BL'], ['B', 'BR']] : [['B', 'A'], ['B', 'BR'], ['A', 'AL'], ['A', 'BL']];
+    for (const [a, b] of pairs) { if (!k[a] || !k[b]) continue; const p = k.cen(a), q = k.cen(b); k.es.push(line(p.x, p.y, q.x, q.y, -0.1, hi.includes(a + b) ? '#d64545' : '#a99470')); }
+  };
+  k.bf = (n, v) => {
+    let t = k['bf' + n]; if (!t) { t = tag('', 'idx', 0, 0, 0); k['bf' + n] = t; }
+    const c = k.cen(n); t.position.set(c.x + 0.8, c.y + 0.45, 0);
+    txt(t, 'bf ' + v); t.element.className = 'lab-label ' + (String(v).includes('2') ? 'ptr' : 'idx');
+  };
+  k.go = async (tok, names, ms = 900) => {
+    k.es.forEach(kill); k.es = [];
+    const list = names.map((n) => {
+      if (n === 'A' || n === 'B') return [k[n].g, k.nodeAt(n, 'after')];
+      if (n === 'N') { const p = k.subAt('BR', 'after'); return [k.N, V3(p.x, p.y - LVH, 0)]; }
+      return [k[n], k.subAt(n, 'after')];
+    });
+    await moveAll(tok, list, ms);
+  };
+  k.all = () => { ['A', 'B', 'AL', 'BL', 'BR'].forEach(k.mk); k.edges(); };
+  return k;
 }
 FRAG.push(['bstlin-rr-general', 'AVL 的 RR：rotate(A, B) 只改兩個 pointer', async (tok) => {
   fresh([0, 5, 13], [0, 3.6, 0]);
-  const d = rrDiagram(false);
-  const cd = code(['A.right = B.left;', 'B.left  = A;'], 5.2, 1.6, 0.56);
-  say('通例：A 是失衡點，B = A 的右小孩', '每個 node 下面都可能有 subtree');
-  await beat(tok, 2800);
-  say('原本 B 平衡：BL、BR 一樣高', 'A 原本 bf = −1（右邊高一層）');
-  await beat(tok, 2600);
-  d.insert(); txt(d.bB, 'bf −1'); txt(d.bA, 'bf −2'); d.bA.element.className = 'lab-label ptr'; glow(d.A, RED);
-  say('insert 進 BR，BR 多一層', '<span class="no">bf(A) = −2</span>，bf(B) = −1');
-  await beat(tok, 2800);
-  say('不平衡在 A 的右邊的右邊：RR', '把 B 拉上來，A 滾下去');
-  await beat(tok, 2200);
-  d.rotate1(); glow(d.A, null);
-  await beat(tok, 1600);
-  glow(d.BL.m, GOLD);
-  say('BL 要去哪？它比 A 大、比 B 小', '→ 接到 A 的右邊');
-  await beat(tok, 2600);
-  d.rotate2(); glow(d.BL.m, null);
-  txt(d.bA, 'bf 0'); txt(d.bB, 'bf 0'); d.bA.element.className = 'lab-label idx';
-  say('AL 底、BL 底、BR 底切齊了', 'bf(A) = 0，bf(B) = 0');
-  await beat(tok, 2600);
-  cd.hl(0); say('不變：AL 還在 A 左、BR 還在 B 右', '變的只有兩個 link');
-  await beat(tok, 2400);
-  cd.hl(1); say('兩行程式 = rotate(A, B)', 'B 逆時針轉上去當 root');
-  await beat(tok, 3000);
+  const k = rrKit();
+  const mini = [[3, 4.4, 6.6], [5, 5.1, 5.9], [8, 5.8, 5.2]].map(([v, x, y]) => cube(v, colorFor(v), [0.45, 0.45, 0.45], x, y, 0));
+  line(4.4, 6.6, 5.1, 5.9, 0); line(5.1, 5.9, 5.8, 5.2, 0);
+  say('從 3、5、8 的特例出發', '');
+  await step(tok);                                   // 2:18:28 通例：圖要複雜一點
+  tag('特例：3 5 8', 'idx', 5.1, 7.1, 0);
+  say('來看通例', '剛才的圖複製一份放旁邊對照');
+  await step(tok);                                   // 2:19:27 3 的位置叫 A
+  k.mk('A'); glow(mini[0], GOLD);
+  say('剛才 3 所在的位置', '這個 node 叫 A');
+  await step(tok);                                   // 2:19:36 5 的位置叫 B
+  k.mk('B'); k.edges(); glow(mini[0], null); glow(mini[1], GOLD);
+  say('剛才 5 所在的位置', '這個 node 叫 B');
+  await step(tok);                                   // 2:19:52 每個 node 都可能有 subtree
+  glow(mini[1], null);
+  bub('每個 node 下面都可能掛著一棵 subtree', -3.2, 7.0);
+  say('通例不能只畫幾個 node', '每個 node 下面都可能有 subtree');
+  await step(tok);                                   // 2:20:13 B 的左 subtree：BL
+  k.mk('BL'); k.edges();
+  say('B 的左邊 subtree', '叫 BL（B 的 Left）');
+  await step(tok);                                   // 2:20:41 B 的右 subtree：BR
+  k.mk('BR'); k.edges(); glow(mini[2], GOLD);
+  say('剛才 8 的位置在 B 的右邊', '這棵叫 BR');
+  await step(tok);                                   // 2:20:50 原來 B 是平衡的
+  glow(mini[2], null);
+  k.bf('B', 0);
+  say('原來 B 是平衡的', 'BL 和 BR 一樣高 → bf(B) = 0');
+  await step(tok);                                   // 2:21:19 insert 進 BR：多了一層
+  await k.slab()(tok);
+  say('insert 進 BR', 'BR 多了一層');
+  await step(tok);                                   // 2:21:30 A 的左邊 AL 太矮了
+  k.mk('AL'); k.edges();
+  say('再看 A 的左邊 subtree：AL', '跟右邊比起來太矮了');
+  await step(tok);                                   // 2:21:46 差 2 → bf(A) = −2
+  const gap = [line(-3.6, 4.2, -3.6, 1.8, 0.4, '#d64545'), noT('差 2 層', -4.4, 3.0, 0.4)];
+  k.bf('A', -2); k.A.mood('sad'); k.A.glow('#5a0000');
+  say('AL 的底和 BR（加新的一層）的底', '差了 2 → <span class="no">bf(A) = −2</span>');
+  await step(tok);                                   // 2:22:19 bf(B) = −1
+  k.bf('B', -1);
+  say('B 自己還好', 'BL 和 BR 差 1 → bf(B) = −1');
+  await step(tok);                                   // 2:22:35 把 B 放到上面
+  gap.forEach(kill);
+  const up = pkt('B 拉上來 ↑', 2.4, 5.6); k.B.glow('#3a2a00');
+  say('維護：剛才是把 5 拉起來', '通例就是把 B 拉上來');
+  await step(tok);                                   // 2:22:55 A 滾下去
+  kill(up); k.B.glow(null); k.A.glow(null);
+  await k.go(tok, ['A', 'B'], 1000);
+  k.bf('A', -2); k.bf('B', -1);
+  say('B 拉上來，A 就滾下去', 'B 當 root 比較公正：兩邊高度比較接近');
+  await step(tok);                                   // 2:23:48 A 往下一層，AL 跟著往下
+  await k.go(tok, ['AL'], 700);
+  say('A 往下一層', '它帶的左邊 AL 也跟著往下一層');
+  await step(tok);                                   // 2:24:08 BR 跟著 B 往上一層
+  await k.go(tok, ['BR', 'N'], 700);
+  say('B 往上一層', 'BR（連同新的那一層）也跟著往上');
+  await step(tok);                                   // 2:24:55 AL 底和 BR 底切齊了
+  const lvl = line(-4.0, 3.0, 3.6, 3.0, 0.7, '#2fc092');
+  say('剛才最不平衡的：AL 的底和 BR 的底', '現在切齊了');
+  await step(tok);                                   // 2:25:04 BL 要去哪？
+  kill(lvl);
+  k.name('BL', 'BL 要去哪？', 'ptr alt');
+  say('還沒處理的：BL', '它原本是 B 的左小孩，現在 A 佔了那個位置');
+  await step(tok);                                   // 2:25:25 BL 比 A 大、比 B 小 → A 的右邊
+  await k.go(tok, ['BL'], 900);
+  k.state = 'after'; k.edges();
+  k.name('BL', 'BL：A < BL < B');
+  say('BL 裡的資料：比 A 大、比 B 小', '所以它一定在 A 的右邊');
+  await step(tok);                                   // 2:26:27 bf(A) = 0
+  k.bf('A', 0); k.A.mood('happy');
+  say('重新檢查：只有 A、B 的 bf 會變', 'A：左邊 AL、右邊 BL 切得很齊 → bf(A) = 0');
+  await step(tok);                                   // 2:26:36 bf(B) = 0
+  k.bf('B', 0); k.B.mood('happy');
+  say('B：左右切得很齊', 'bf(B) = 0，跟 3 5 8 的特例一致');
+  await step(tok);                                   // 2:26:54 不變的：AL 在 A 左、BR 在 B 右
+  k.name('BL', 'BL');
+  okT('AL 還在 A 的左邊', -2.9, 2.5); okT('BR 還在 B 的右邊', 2.4, 3.7);
+  say('先看不變的', 'AL 還在 A 的左邊、BR 還在 B 的右邊');
+  await step(tok);                                   // 2:27:16 變的只有兩個 link
+  k.edges(['BA', 'ABL']);
+  say('變的只有兩個 link（紅線）', '其實只換了兩張小紙條');
+  await step(tok);                                   // 2:27:39 A.right = B.left
+  const cd = code(['A.right = B.left;', 'B.left  = A;'], 4.4, 1.6, 0.56);
+  cd.hl(0);
+  say('A 的右邊紙條', '換成 B 原來的左邊：A.right = B.left');
+  await step(tok);                                   // 2:27:56 B.left = A
+  cd.hl(1);
+  say('B 的左邊', '變成 A：B.left = A');
+  await step(tok);                                   // 2:28:32 rotate(A, B)：B 逆時針轉上去
+  cd.hl(-1);
+  bub('↺ rotate(A, B)：B 逆時針轉上去當 root', 2.6, 7.0);
+  say('這兩行叫 rotate(A, B)', '想像 A 不動，B 逆時針轉上去');
+  await step(tok);                                   // 2:29:01 這種情形叫 RR
+  tag('RR', 'pkt', -4.6, 6.6, 0);
+  say('這種情形叫 <span class="ok">RR</span>', '不平衡發生在 A 的右邊的右邊');
+}]);
+FRAG.push(['bstlin-rr-once', 'AVL insertion：找到第一個失衡點，轉一次就結束', async (tok) => {
+  fresh([0, 5.4, 13.5], [0, 3.6, 0]);
+  const k = rrKit({ oy: -0.4 }); k.all();
+  const PX = -2.9, PY = 6.6;
+  const par = cube('…', '#d8cfc0', [0.6, 0.6, 0.6], PX, PY, 0);
+  let pe = line(PX, PY, k.cen('A').x, k.cen('A').y, -0.1);
+  k.bf('A', -1); k.bf('B', 0);
+  say('真正的 AVL insertion 是這樣做的', '');
+  await step(tok);                                   // 2:29:21 先做 BST insertion：找找找
+  const r = rider('新', V3(PX - 0.8, PY + 0.2, 0));
+  const br = k.subAt('BR');
+  await hops(tok, r, [V3(PX, PY + 0.3, 0), k.cen('A').add(V3(0, 0.4, 0)), k.cen('B').add(V3(0, 0.4, 0)), V3(br.x, br.y + 0.7, 0.4), V3(br.x, br.y - LVH + 0.2, 0.6)], 400);
+  say('先做 binary search tree 的 insertion', '一路找下去，找到要放的地方');
+  await step(tok);                                   // 2:29:26 紅色這裡是 insert 的地方
+  kill(r.g);
+  await k.slab()(tok);
+  say('紅色這一層就是 insert 進來的', '');
+  await step(tok);                                   // 2:29:34 這條 path 上的 bf 可能改變
+  glow(par, GOLD); k.A.glow('#3a2a00'); k.B.glow('#3a2a00');
+  say('insert 之後', '這條 path 上的 balance factor 可能會變');
+  await step(tok);                                   // 2:29:39 一個一個往回重算 bf
+  glow(par, null); k.A.glow(null); k.B.glow(null);
+  const pk = pkt('↑ 重算 bf', br.x + 0.9, br.y);
+  await travel(tok, pk, pk.position.clone(), k.cen('B').add(V3(0.9, 0, 0)), 700);
+  k.bf('B', -1);
+  await travel(tok, pk, pk.position.clone(), k.cen('A').add(V3(0.9, 0, 0)), 700);
+  say('從下往上，一個一個重算 bf', 'B 變 −1，還可以……');
+  await step(tok);                                   // 2:29:45 A：第一個失衡點
+  kill(pk);
+  k.bf('A', -2); k.A.mood('sad'); k.A.glow('#5a0000');
+  say('算到 A：不平衡了', '<span class="no">bf(A) = −2</span>，A 是第一個失衡點');
+  await step(tok);                                   // 2:29:52 插在 A 的右邊的右邊
+  const rr = [pkt('R', (k.cen('A').x + k.cen('B').x) / 2 + 0.3, (k.cen('A').y + k.cen('B').y) / 2 + 0.2), pkt('R', (k.cen('B').x + br.x) / 2 + 0.4, (k.cen('B').y + br.y + 0.6) / 2)];
+  say('insert 到哪裡了？', '相對 A：往右、再往右的 subtree → RR');
+  await step(tok);                                   // 2:30:06 rotate(A, B)
+  rr.forEach(kill); k.A.glow(null);
+  await k.go(tok, ['A', 'B', 'AL', 'BL', 'BR', 'N'], 1500);
+  k.state = 'after'; k.edges();
+  kill(pe); pe = line(PX, PY, k.cen('B').x, k.cen('B').y, -0.1);
+  k.bf('A', 0); k.bf('B', 0);
+  say('需要的調整：rotate(A, B)', '');
+  await step(tok);                                   // 2:30:14 A、B 平衡了，其他 subtree 不動
+  k.A.mood('happy'); k.B.mood('happy');
+  say('轉完：B 平衡了，A 也平衡了', '其他的 subtree 都不動');
+  await step(tok);                                   // 2:30:51 上面的 bf 會不會變？
+  bub('上面還要再修嗎？', PX - 0.6, PY + 0.8);
+  say('理論上還要往上追', '但上面的 bf 其實不會變。為什麼？');
+  await step(tok);                                   // 2:31:04 insert 讓這棵多了一層
+  const orig = line(-4.6, 3.0 - 0.4, 3.6, 3.0 - 0.4, 0.7, '#2fc092');
+  const lab1 = tag('insert 前這棵 subtree 的底', 'idx', -4.4, 2.9 - 0.4, 0.7);
+  const ghostLow = line(1.6, 1.8 - 0.4, 3.0, 1.8 - 0.4, 0.7, '#d64545');
+  say('insert 進來時', '這棵 subtree 比原來多了一層（紅線）→ 才會不平衡');
+  await step(tok);                                   // 2:31:24 調整後高度跟原來一模一樣
+  kill(ghostLow);
+  okT('轉完：頂端還在原處，底端切齊原本的線 → 高度不變', 0, -0.4, 1.0);
+  say('調整完，這棵樹的高度？', '跟 insert 前一模一樣');
+  await step(tok);                                   // 2:31:42 上面的 bf 通通不會變：轉一次就結束
+  kill(orig); kill(lab1);
+  glow(par, GREEN);
+  say('高度沒變 → 再往上的 bf 通通不會變', '找到第一個出錯的地方，<span class="ok">調整一次就結束</span>');
+  await step(tok);                                   // 2:32:29 RR：insert 在右邊的右邊
+  tag('RR：插在失衡點的右邊的右邊', 'pkt', 0, 7.3, 0);
+  say('這就是 AVL 的 RR 情形', '只對失衡點做一次調整就解決');
+  await step(tok);                                   // 2:32:42 對稱：LL 也一樣
+  const mx = 4.6, my = 6.6;
+  [[mx, my], [mx - 0.6, my - 0.7], [mx - 1.2, my - 1.4]].forEach(([x, y], i) => cube(['A', 'B', '新'][i], ['#7cb8ee', '#f4a56a', '#d64545'][i], [0.42, 0.42, 0.42], x, y, 0));
+  line(mx, my, mx - 1.2, my - 1.4, -0.1);
+  tag('LL：左邊的左邊（對稱）', 'idx', mx - 0.6, my + 0.6, 0);
+  say('對稱地：插在左邊的左邊（LL）', '一樣一次 rotation 解決');
 }]);
 FRAG.push(['bstlin-rr-height', 'RR 為什麼一次就夠：高度 10、11 的數字版', async (tok) => {
   fresh([0, 5, 13], [0, 3.6, 0]);
-  const d = rrDiagram(true);
-  const hT = tag('A 這棵 subtree 高 12', 'ptr alt', -4.6, 6.6, 0);
-  say('A 是第一個失衡點：之前大家都平衡', 'h(AL) = h(BL) = h(BR) = 10');
-  await beat(tok, 2800);
-  say('B 那層高 11，A 原本 bf = 10 − 11', '= −1，subtree 高 12');
-  await beat(tok, 2600);
-  const lBL = d.BL.l; txt(lBL, 'BL  h = 9 ?'); lBL.element.className = 'lab-label ptr';
-  say('BL 會不會只有 9？', '那 insert 後 B 自己就 bf = −2，失衡點會是 B');
-  await beat(tok, 3000);
-  txt(lBL, 'BL  h = 10'); lBL.element.className = 'lab-label idx';
-  d.insert(); txt(d.BR.l, 'BR  h = 11'); txt(d.bA, 'bf −2'); txt(d.bB, 'bf −1'); glow(d.A, RED); txt(hT, 'A 這棵 subtree 高 13');
-  say('insert 進 BR：BR 變 11', 'bf(A) = 10 − 12 = <span class="no">−2</span>');
-  await beat(tok, 2800);
-  d.rotate1(); await beat(tok, 900); d.rotate2(); glow(d.A, null);
-  txt(d.bA, 'bf 0'); txt(d.bB, 'bf 0');
-  say('轉完：A 下面 10 對 10，B 下面 11 對 11', 'bf 全部 0');
-  await beat(tok, 2800);
-  txt(hT, 'B 這棵 subtree 高 12'); glow(d.B, GREEN);
-  say('subtree 高度回到 insert 前的 12', '<span class="ok">上面的 bf 全都不會變</span>');
-  await beat(tok, 2800);
-  say('從新 node 往上找第一個失衡點', '轉一次就結束；LL 是對稱的');
-  await beat(tok, 3000);
+  const k = rrKit(); k.all(); k.slab(false);
+  k.bf('A', -2); k.bf('B', -1); k.A.mood('sad');
+  const kid = buddy('同學', '?', '#9fd6a8', 5.4, 3.6, 0, 0.7);
+  say('同學問了一個好問題', '');
+  await step(tok);                                   // 2:34:10 BL 接到 A 的右邊，bf 不會變 2 嗎？
+  kid.mood('wow');
+  bub('BL 接到 A 的右邊，bf 不會變 2 嗎？', 3.6, 5.2);
+  say('BL 接到 A 的右邊', 'A 的 bf 會不會變成 2？');
+  await step(tok);                                   // 2:34:17 BL 要跟 AL 比
+  k.name('AL', 'AL', 'ptr alt'); k.name('BL', 'BL', 'ptr alt');
+  say('BL 接過去後，要比的對象是 AL', '所以要看 AL 和 BL 原本的高度');
+  await step(tok);                                   // 2:34:40 之前 A 兩邊最多差 1
+  k.name('AL', 'AL'); k.name('BL', 'BL');
+  say('insert 前：A 兩邊最多差 1', '不然 A 早在上一輪就不平衡了');
+  await step(tok);                                   // 2:34:57 要差到 2，原本就差 1
+  k.bf('A', '−1 → −2');
+  const d1 = [line(-3.6, 4.2, 0.9, 4.2, 0.7, '#a8730f'), line(-0.6, 3.0, 0.9, 3.0, 0.7, '#a8730f'), noT('差 1', -1.5, 3.6, 0.7)];
+  say('A 會差到 2，表示它原本就是 −1', 'AL 的底和 BL 的底，本來就差 1 層');
+  await step(tok);                                   // 2:35:16 數字：BL 高 10
+  d1.forEach(kill);
+  k.name('BL', 'BL  h = 10'); k.name('BR', 'BR  h = 10');
+  say('用數字看：BL 高度 10', 'BR 也是 10（B 原本平衡）');
+  await step(tok);                                   // 2:35:27 B 這層 11，AL 是 10
+  k.name('AL', 'AL  h = 10');
+  const hb = tag('B 這棵：11', 'ptr alt', 2.4, 5.6, 0);
+  say('B 這一層整棵高 11', 'AL 跟 B 同一級 → AL 高 10（A 原本 bf = 10 − 11 = −1）');
+  await step(tok);                                   // 2:35:35 轉完：AL 和 BL 10 對 10
+  kill(hb);
+  k.name('BR', 'BR + 新 = 11');
+  await k.go(tok, ['A', 'B', 'AL', 'BL', 'BR', 'N'], 1500);
+  k.state = 'after'; k.edges();
+  say('轉完之後', 'A 下面：AL 和 BL 是 10 對 10');
+  await step(tok);                                   // 2:35:42 bf(A) = 0；BL 不會原本就比較高
+  k.bf('A', 0); k.bf('B', 0); k.A.mood('happy');
+  say('bf(A) = 10 − 10 = 0', 'BL 也不會原本就比較高：那之前就違規了');
+  await step(tok);                                   // 2:36:14 BL 會不會少一層？
+  k.name('BL', 'BL  h = 9 ?', 'ptr alt');
+  kid.mood('wow');
+  say('那 BL 會不會矮一層（9）？', '');
+  await step(tok);                                   // 2:36:22 那 B 自己就先不平衡
+  const bad = noT('BL = 9、BR + 新 = 11 → B 自己先 −2', 2.0, 7.0); k.B.mood('sad');
+  say('如果 BL 是 9，BR 插完變 11', '那 B 自己就先不平衡，第一個失衡點會是 B，不是 A');
+  await step(tok);                                   // 2:36:37 所以 BL 一定是 10，AL = BL
+  kill(bad); k.B.mood('happy'); kid.mood('happy');
+  k.name('BL', 'BL  h = 10');
+  okT('A 是第一個失衡點 → BL 一定 = 10 = AL', -1.2, 1.6, 0.6);
+  say('既然第一個失衡點是 A', 'BL 一定跟圖上畫的一樣高：AL、BL 一樣高');
+  await step(tok);                                   // 2:37:05 不像 strict 的 array：只轉一次
+  okT('其他 subtree 都留在原處', -2.4, 7.1);
+  say('不像 complete（strict）那樣', '只轉一次，其他 subtree 都不動：沒有一對一對應 array，有自由度');
+  await step(tok);                                   // 2:37:53 一個步驟、兩個 pointer
+  k.edges(['BA', 'ABL']);
+  say('只需要一個修改步驟', '而且只是兩個 pointer（兩張小紙條）的改變');
+  await step(tok);                                   // 2:38:18 成本跟樹高有關：從下往上找
+  tag('↓ insertion：從上往下', 'ptr', -5.0, 2.6, 0); tag('↑ 維護：從下往上找第一個', 'ptr alt', -5.0, 2.0, 0);
+  say('便宜：力氣只花在樹裡上上下下', 'insert 從上往下；維護從下往上，找到第一個要修的地方轉回來');
 }]);
 
-// ═════════ 19. 完整例子：依序插入 1 … 7 ═════════
+// ═════════ 20. 完整例子：依序插入 1 … 7 ═════════
 FRAG.push(['bstlin-avl-1to7', 'AVL 依序插入 1, 2, 3, 4, 5, 6, 7', async (tok) => {
   fresh([0, 5, 12.5], [0, 2.8, 0]);
-  const t = { root: null }; const tv = TV(t, { dx: 1.15, dy: 1.45, top: 5.6, lab: BF });
-  const cap = { 1: 'insert 1：沒問題', 2: 'insert 2：放 1 的右邊，還是 AVL', 4: 'insert 4：往回看 4、3、2 都平衡', 6: 'insert 6：往回找到 2' };
-  for (let k = 1; k <= 7; k++) {
-    bstIns(t, k); tv.sync(k);
-    const bad = firstBad(t, k);
-    say(cap[k] || ('insert ' + k), bad ? '從 ' + k + ' 往上找回來……' : '');
-    await beat(tok, bad ? 1500 : 1700);
-    if (bad) {
-      const b = bad.r.k;
-      say('第一個失衡點 ' + bad.k + '：bf = −2', k + ' 在 ' + bad.k + ' 的右邊的右邊 → <span class="no">RR</span>');
-      await beat(tok, 2200);
-      rotUp(t, bad, 'L'); tv.sync();
-      say(b + ' 拉上來，' + bad.k + ' 轉下去', k === 6 ? '原本 4 的左子樹 3 接到 2 的右邊' : '子樹高度不變，上面不受影響');
-      await beat(tok, 2400);
-    }
-  }
-  say('意外得到一棵 full binary tree', '過程中並沒有堅持 complete');
-  await beat(tok, 3000);
+  const t = { root: null }; const tv = TV(t, { cx: 0.8, dx: 1.15, dy: 1.45, top: 5.6 });
+  const kb = {}; const tmp = [];
+  const clr = () => { tmp.forEach(kill); tmp.length = 0; };
+  const ins = async (k) => { clr(); await walkIn(tok, tv, t, kb[k], k, V3(0.8, 6.1, 0)); place(tv, t, kb[k], k); };
+  const rrTag = (a) => { const p = tv.P.get(a); tmp.push(pkt('RR', p.x + 0.6, p.y + 1.0)); };
+  const rot = (a) => { clr(); rotUp(t, findN(t, a), 'L'); tv.sync(); tv.bf(tv.all()); };
+  say('一個完整的例子', '');
+  await step(tok);                                   // 2:39:09 依序塞 1 到 7
+  for (let k = 1; k <= 7; k++) kb[k] = buddy(null, k, '#f4d7a1', -6.0 + (k - 1) * 0.7, -0.3, 1.2, 0.5);
+  say('依序把 1、2、3、4、5、6、7', '塞進 AVL tree');
+  await step(tok);                                   // 2:39:26 insert 1
+  await ins(1); tv.bf(tv.all());
+  say('insert 1', '沒什麼問題');
+  await step(tok);                                   // 2:39:33 insert 2：放在 1 的右邊
+  await ins(2); tv.bf(tv.all());
+  say('insert 2：放在 1 的右邊', '沒有違反 AVL 的性質');
+  await step(tok);                                   // 2:39:48 insert 3
+  await ins(3);
+  say('insert 3：1、2、3', '');
+  await step(tok);                                   // 2:39:52 從 3 往上找：1 的 bf = −2
+  tv.bf([3, 2, 1]);
+  say('從 3 往上找回來', '在 1 這裡：<span class="no">bf = −2</span>');
+  await step(tok);                                   // 2:40:08 3 在 1 的右邊的右邊 → RR
+  rrTag(1);
+  say('3 相對於 1 在哪？', '右邊的右邊 → 啟動 RR 的救援');
+  await step(tok);                                   // 2:40:28 1、2 一個上來一個下去
+  rot(1);
+  say('修正 1 和 2 的關係', '2 上來、1 下去；3 不變 → 世界和平');
+  await step(tok);                                   // 2:40:52 insert 4：比 2 大、比 3 大
+  await ins(4);
+  say('insert 4：比 2 大、比 3 大', '放在 3 的右邊');
+  await step(tok);                                   // 2:41:14 往回看：4、3、2 都平衡
+  tv.bf(tv.all());
+  say('找回來：4 平衡；3 是 0 和 1；2 是 1 和 2', '都沒問題');
+  await step(tok);                                   // 2:41:25 insert 5
+  await ins(5);
+  say('insert 5：2 的右邊到 3、3 的右邊到 4', '4 的右邊沒東西 → 放進來');
+  await step(tok);                                   // 2:41:49 5、4 平衡，3 出問題
+  tv.bf([5, 4, 3]); rrTag(3);
+  say('5 平衡、4 平衡，3 又出了問題', 'bf = −2；5 在 3 的右邊的右邊 → RR');
+  await step(tok);                                   // 2:42:15 4 提上來、3 轉下去
+  rot(3);
+  say('修正 3 和它的右邊', '4 提起來當新的 root，3 轉下去');
+  await step(tok);                                   // 2:42:47 subtree 高度不變 → 上面沒影響
+  tmp.push(okT('這棵 subtree 高度：插 5 前 2，插完還是 2', 2.2, 1.0, 0.6));
+  say('5、4、3 都平衡了', '這棵 subtree 高度沒變 → 2 號、1 號的生活完全沒變');
+  await step(tok);                                   // 2:43:46 insert 6
+  await ins(6);
+  say('insert 6', '');
+  await step(tok);                                   // 2:43:55 往上：5、4 沒有不平衡
+  tv.bf([6, 5, 4]);
+  say('往上找：5 沒有不平衡', '4 也沒有不平衡');
+  await step(tok);                                   // 2:44:06 2：左高 1、右高 3
+  tv.bf([2, 1, 3]); rrTag(2);
+  say('再往上到 2：左邊高 1、右邊高 3', '<span class="no">bf = −2</span>；不平衡在 2 的右邊的右邊');
+  await step(tok);                                   // 2:44:33 旋轉 2 和 4
+  rot(2);
+  say('修正 2 和它的右邊 4', '旋轉：4 在上面、2 在下面');
+  await step(tok);                                   // 2:44:56 1、5、6 不變；3 接到 2 的右邊
+  glow(tv.c(3), GOLD);
+  tmp.push(note('原本 4 的左子樹 3 → 接到 2 的右邊', tv.P.get(3).x, tv.P.get(3).y - 0.9, 0.6));
+  say('1 沒變，5、6 也沒變', '變的只有：原本 4 左邊的 3，要接到 2 的右邊');
+  await step(tok);                                   // 2:45:23 insert 7
+  glow(tv.c(3), null);
+  await ins(7);
+  say('insert 7：比 4、5、6 都大', '一路往右放');
+  await step(tok);                                   // 2:45:55 7、6 沒事，5 不平衡
+  tv.bf([7, 6, 5]);
+  say('找回去：7、6 沒有不平衡', '5 不平衡了');
+  await step(tok);                                   // 2:46:01 不平衡來源：右邊的右邊
+  rrTag(5);
+  say('不平衡的來源', '右邊的右邊 → RR');
+  await step(tok);                                   // 2:46:08 6 上來當 root、5 變小弟
+  rot(5);
+  say('調整 5 和它的右邊', '6 上來當這棵的 root，5 變成它的小弟');
+  await step(tok);                                   // 2:46:25 樹高維持 → 上面不用動
+  say('7 沒變；樹高維持', '再往上也不用做任何事');
+  await step(tok);                                   // 2:46:42 得到一棵完美的樹
+  tmp.push(okT('1~7 → 一棵 full binary tree', 0.8, 0.4, 0.6));
+  say('1 到 7 全部放進去', '得到一棵非常完美的 complete（也是 full）binary tree');
+  await step(tok);                                   // 2:46:49 過程中沒有堅持 complete
+  say('但過程中我們沒有堅持 complete', 'AVL 比 complete 鬆，只是這個例子剛好長得完美');
+  await step(tok);                                   // 2:47:12 RR / LL：一次調整就恢復
+  bub('RR（右右）、LL（左左）：一次調整就恢復 AVL', 0.8, 7.1);
+  say('錯誤發生在右邊的右邊、或左邊的左邊', '一次調整，就能恢復 AVL 的性質');
 }]);
 
-// ═════════ 20. 小結：bf 怎麼算得快 ═════════
+// ═════════ 21. 小結：bf 怎麼算得快 ═════════
 FRAG.push(['bstlin-avl-height-store', 'AVL 小結：每個 node 存 hL、hR', async (tok) => {
   fresh([0, 5, 12.5], [0, 2.8, 0]);
   const t = { root: null }; [4, 2, 6, 1, 3, 5, 7].forEach((k) => bstIns(t, k));
   const tv = TV(t, { dx: 1.2, dy: 1.45, top: 5.6 }); tv.sync();
-  say('insert = search 失敗的地方放進去', 'AVL 再多一步：往上調整');
-  await beat(tok, 2400);
-  say('RR、LL：一次旋轉、只動兩個 node', 'RL、LR 下次上課');
-  await beat(tok, 2600);
-  const ls = [];
-  (function w(n) { if (!n) return; const p = tv.P.get(n.k); ls.push(tag('(' + hgt(n.l) + ', ' + hgt(n.r) + ')', 'idx', p.x + 0.85, p.y + 0.45, 0)); w(n.l); w(n.r); })(t.root);
-  say('bf 怎麼算？每個 node 多存 (hL, hR)', 'bf = hL − hR：<span class="ok">O(1)</span>');
-  await beat(tok, 2800);
-  for (const k of [4, 6, 7]) { glow(tv.c(k), GOLD); await beat(tok, 500); }
-  say('insert 只會改 root → leaf 那條 path 的高度', '往回調整時順便更新');
-  await beat(tok, 2800);
-  say('只需要 −1、0、+1：可以再省 bit', '實作細節自己取捨');
-  await beat(tok, 2800);
+  say('最後小結', '');
+  await step(tok);                                   // 2:47:54 還差 RL、LR：下次上課
+  tag('RR ✓', 'good', -5.2, 6.2); tag('LL ✓', 'good', -5.2, 5.6); tag('RL：下次', 'ptr', -5.2, 5.0); tag('LR：下次', 'ptr', -5.2, 4.4);
+  say('還差：插在右邊的左邊、左邊的右邊', 'RL、LR 稍微複雜，下次上課講');
+  await step(tok);                                   // 2:48:14 BST search：順著樹做 binary search
+  const r = rider('5', V3(-1.4, 6.3, 0));
+  for (const k of [4, 6, 5]) { await hopTo(tok, r, tv.top(k), 420); glow(tv.c(k), k === 5 ? GREEN : GOLD); }
+  say('BST 的 search', '順著這棵樹做 binary search');
+  await step(tok);                                   // 2:48:24 insertion：search 不到的地方放進去；AVL 多一步調整
+  [4, 6, 5].forEach((k) => glow(tv.c(k), null));
+  r.set('8'); r.mood('wow'); r.g.position.set(-1.4, 6.3, 0);
+  for (const k of [4, 6, 7]) await hopTo(tok, r, tv.top(k), 380);
+  await hopTo(tok, r, V3(tv.P.get(7).x + 0.6, tv.P.get(7).y - 1.2, 0), 380);
+  say('insertion：search 不到的地方就放進去', 'AVL 在 insertion 完多加一步調整');
+  await step(tok);                                   // 2:48:39 RR、LL：只牽涉兩個 node
+  kill(r.g);
+  glow(tv.c(6), GOLD); glow(tv.c(7), GOLD);
+  say('RR、LL 的調整', '都只牽涉兩個 node，其他 node 完全不受影響');
+  await step(tok);                                   // 2:49:06 同學：它只在乎平衡？其實一直在排序
+  glow(tv.c(6), null); glow(tv.c(7), null);
+  bub('每次決定往左往右，都在跟 node 比大小 = 排序', 0, 7.0);
+  say('同學：這棵樹只在乎平不平衡？', '其實插入和 search 時一直在比大小，就是在排序');
+  await step(tok);                                   // 2:49:34 bf 怎麼算得快？
+  const kid = buddy('同學', '?', '#9fd6a8', 5.4, 0.2, 1.0, 0.7); kid.mood('wow');
+  say('另一個問題', '計算 balance factor 的時間複雜度是多少？');
+  await step(tok);                                   // 2:49:42 不是存節點總數，是存兩邊的樹高
+  bub('存的是左右兩邊的「高度」（不是 node 數）', 5.0, 1.6, 1.0);
+  say('同學說：把左右的 node 總數存起來？', '其實要存的是左右兩邊的樹高');
+  await step(tok);                                   // 2:49:59 每個 node 存 (hL, hR)
+  kid.mood('happy');
+  (function w(n) { if (!n) return; const p = tv.P.get(n.k); tag('(' + hgt(n.l) + ', ' + hgt(n.r) + ')', 'idx', p.x + 0.85, p.y + 0.45, 0); w(n.l); w(n.r); })(t.root);
+  say('每個 node 多存 (hL, hR)', 'bf = hL − hR，一減就有：<span class="ok">O(1)</span>');
+  await step(tok);                                   // 2:50:11 insertion 只改 root → leaf 那條 path
+  const g8 = cube('8', '#d8cfc0', [0.7, 0.7, 0.7], tv.P.get(7).x + 0.6, tv.P.get(7).y - 1.3, 0);
+  line(tv.P.get(7).x, tv.P.get(7).y, g8.position.x, g8.position.y, -0.1, '#d64545');
+  for (const k of [4, 6, 7]) glow(tv.c(k), GOLD);
+  say('insertion 時會變的樹高', '只有 root 到 leaf 那條 path 上的 node');
+  await step(tok);                                   // 2:50:25 往回修正時順便更新
+  const up = pkt('↑ 順便更新高度', g8.position.x + 0.8, g8.position.y);
+  await travel(tok, up, up.position.clone(), V3(tv.P.get(4).x + 1.0, tv.P.get(4).y + 0.9, 0), 1400);
+  say('從 leaf 往回找、修正的時候', '順便把高度更新就好');
+  await step(tok);                                   // 2:50:31 其實只要 −1、0、+1：可以更省 bit
+  for (const k of [4, 6, 7]) glow(tv.c(k), null);
+  note('bf 只要 −1、0、+1 → 可以用更少的 bit', 0, -0.6, 1.0);
+  say('其實只需要知道 −1、0、+1', '存樹高要比較大的數字；能不能更省 bit？可以，那是實作細節');
 }]);
   }
 

@@ -933,7 +933,7 @@
   "label": "台大林軒田 DSA Skip List / BST / AVL Tree",
   "points": 192,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "mB5HXBb_HY8": {
   "label": "Abdul Bari：Merge Sort",
