@@ -235,9 +235,9 @@
  },
  "4tSdhWBVv6A": {
   "label": "Priority Queue, Binary Heap",
-  "points": 111,
+  "points": 116,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "4V30R3I1vLI": {
   "label": "Abdul Bari：2.1.1 Recurrence Relation #1",
@@ -1153,9 +1153,9 @@
  },
  "RjvhXL0WTrY": {
   "label": "台大林軒田 DSA Tree / Heap",
-  "points": 163,
+  "points": 166,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "Rk3aap_HZHU": {
   "label": "交大彭文志 Lec16 Trees (5/6) / Huffman (2/2)",
