@@ -777,7 +777,7 @@
   "label": "台大林軒田 DSA 2-3-4 Tree / Red-Black Tree",
   "points": 201,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "HA96JKO9znE": {
   "label": "清大周志遠 第5B講 OS Services",
