@@ -3,6 +3,8 @@
 // before every scene, so fresh() only has to clear the stage and aim the camera.
 export default function kit(ctx) {
   const { THREE, lab, colorFor, controls, beat } = ctx;
+  // next lecture step: waits until the lecturer says it (see lab-shell step())
+  const step = (tok) => ctx.step(tok);
   const V3 = (x, y, z = 0) => new THREE.Vector3(x, y, z);
   const GOLD = '#6a4a00', GREEN = '#0f5a3a', RED = '#7a1010', GRAY = '#d8cfc0';
   const MONO = { whiteSpace: 'pre', fontFamily: 'ui-monospace, SFMono-Regular, Consolas, monospace', fontSize: '11px', fontWeight: '600' };
@@ -38,7 +40,7 @@ export default function kit(ctx) {
   // eased (in-out sine) and smoother for longer moves; still ends exactly at t = 1
   const REDUCED = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
   const ease = (t) => (REDUCED ? t : 0.5 - 0.5 * Math.cos(Math.PI * t));
-  async function anim(tok, ms, fn) { const steps = Math.max(10, Math.min(30, Math.round(ms / 33))); for (let k = 1; k <= steps; k++) { fn(ease(k / steps)); await beat(tok, ms / steps); } }
+  async function anim(tok, ms, fn) { if (ctx.behind && ctx.behind(tok)) { fn(1); return beat(tok, 0); } const steps = Math.max(10, Math.min(30, Math.round(ms / 33))); for (let k = 1; k <= steps; k++) { fn(ease(k / steps)); await beat(tok, ms / steps); } }
   function line(x1, y1, x2, y2, z = 0, color = '#a99470') {
     const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([V3(x1, y1, z), V3(x2, y2, z)]), new THREE.LineBasicMaterial({ color }));
     lab.world.add(l); return l;
@@ -66,5 +68,28 @@ export default function kit(ctx) {
     if (parent) m.userData.edge = line(parent.position.x, parent.position.y, x, y, z);
     return m;
   }
-  return { V3, GOLD, GREEN, RED, GRAY, MONO, fresh, tag, cube, bodyOf, move, fly, kill, glow, tint, txt, relabel, showL, code, anim, line, arrow, ghostBox, lnode, tnode };
+  // ── pictures with a purpose (lecture-synced scenes) ──
+  // a picture: big glyph (emoji) with a short name under it; cls 'sm' | 'lg'
+  function icon(glyph, name, x, y, z = 0, cls = '') {
+    const l = lab.label('', 'icon ' + cls);
+    l.element.innerHTML = '<span class="g"></span>' + (name ? '<span class="t"></span>' : '');
+    l.element.querySelector('.g').textContent = glyph;
+    if (name) l.element.querySelector('.t').textContent = name;
+    l.position.set(x, y, z); lab.world.add(l); return l;
+  }
+  const rename = (l, name) => { const t = l.element.querySelector('.t'); if (t) t.textContent = name; };
+  const dim = (l, on = true) => l.element.classList.toggle('off', on);
+  // a region (memory section, function frame, device): a soft floor panel and its name
+  function zone(name, x, y, z, w, d, color = '#e9dcc4') {
+    const t = new THREE.Mesh(new THREE.BoxGeometry(w, 0.06, d), new THREE.MeshStandardMaterial({ color, roughness: 1 }));
+    t.position.set(x, y, z); t.receiveShadow = true; lab.world.add(t);
+    const l = tag(name, 'zone', x - w / 2 + 0.2, y + 0.05, z - d / 2 - 0.25); l.center.set(0, 0.5);
+    t.userData.name = l; return t;
+  }
+  // a label that moves along a straight path (data travelling, a hand following an arrow)
+  async function travel(tok, l, a, b, ms = 900) {
+    await anim(tok, ms, (u) => l.position.lerpVectors(a, b, u));
+  }
+  function remove(l) { if (l) { lab.world.remove(l); if (l.element) l.element.remove(); if (l.userData && l.userData.name) remove(l.userData.name); } }
+  return { V3, GOLD, GREEN, RED, GRAY, MONO, fresh, tag, cube, bodyOf, move, fly, kill, glow, tint, txt, relabel, showL, code, anim, line, arrow, ghostBox, lnode, tnode, step, icon, rename, dim, zone, travel, remove };
 }

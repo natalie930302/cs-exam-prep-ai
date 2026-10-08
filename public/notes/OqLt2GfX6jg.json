@@ -4,132 +4,235 @@
  "timing": "exact",
  "sections": [
   {
-   "title": "程式在記憶體中：code、stack、heap",
-   "scene": "bariarr-memlayout",
+   "title": "指標是什麼：存位址的變數",
+   "scene": "ptrwhy-intro",
+   "cues": [
+    5.31,
+    8.51,
+    12.87,
+    18.77
+   ],
    "points": [
     {
-     "text": "指標是 address variable：存資料的位址，用來間接存取資料。",
-     "t": 0
+     "t": 0,
+     "text": "指標是 address variable：存資料的位址，用來間接存取資料。"
+    }
+   ]
+  },
+  {
+   "title": "程式在記憶體中：code、stack、heap",
+   "scene": "ptrwhy-memory",
+   "cues": [
+    27.04,
+    40.19,
+    43.47,
+    55.95,
+    61.73,
+    71.55,
+    83.99,
+    93.33,
+    97.23,
+    105.97,
+    123.99,
+    142.73
+   ],
+   "points": [
+    {
+     "t": 24,
+     "text": "程式要執行先載入 main memory；main memory 分成 code、stack、heap 三區。"
     },
     {
-     "text": "程式要執行先載入 main memory；main memory 分成 code、stack、heap 三區。",
-     "t": 30
+     "t": 56,
+     "text": "程式放在 code 區逐行執行；第一行宣告變數。"
     },
     {
-     "text": "程式放在 code 區逐行執行；第一行宣告變數。",
-     "t": 55
+     "t": 84,
+     "text": "變數配置在 stack；配給一個函式的那塊記憶體叫 activation record。"
     },
     {
-     "text": "變數配置在 stack；配給一個函式的那塊記憶體叫 activation record。",
-     "t": 81
+     "t": 93,
+     "text": "stack 可直接存取：a 在 500、b 在 502，程式直接用位址取代變數名。"
     },
     {
-     "text": "stack 可直接存取：a 在 500、b 在 502，程式直接用位址取代變數名。",
-     "t": 94
-    },
-    {
-     "text": "stack 以外（例如 heap）程式不能直接存取，只能間接存取。",
-     "t": 125
+     "t": 124,
+     "text": "stack 以外（例如 heap）程式不能直接存取，只能間接存取。"
     }
    ]
   },
   {
    "title": "用途一：存取 heap",
-   "scene": "bariarr-heap-malloc",
+   "scene": "ptrwhy-heap",
+   "cues": [
+    151.29,
+    162.58,
+    173.78,
+    181.58,
+    189.84,
+    194.0,
+    197.34,
+    208.26,
+    215.49
+   ],
    "points": [
     {
-     "text": "指標的第一個用途：存取 heap 記憶體。",
-     "t": 152
+     "t": 151,
+     "text": "指標的第一個用途：存取 heap 記憶體。"
     },
     {
-     "text": "宣告指標 p，用 malloc 在 heap 配置 10 bytes。",
-     "t": 161
+     "t": 162,
+     "text": "宣告指標 p，用 malloc 在 heap 配置 10 bytes。"
     },
     {
-     "text": "activation record 裡只有一個變數 p。",
-     "t": 176
+     "t": 174,
+     "text": "activation record 裡只有一個變數 p。"
     },
     {
-     "text": "heap 第一個 byte 的位址（假設 1000）存進 p，p 指向這塊 heap。",
-     "t": 186
+     "t": 190,
+     "text": "heap 第一個 byte 的位址（假設 1000）存進 p，p 指向這塊 heap。"
     },
     {
-     "text": "程式直接存取 p，再透過 p 裡的位址間接存取 heap。",
-     "t": 204
+     "t": 208,
+     "text": "程式直接存取 p，再透過 p 裡的位址間接存取 heap。"
     }
    ]
   },
   {
-   "title": "用途二：call by reference（swap）",
-   "scene": "bariarr-swap",
+   "title": "用途二：call by value 為什麼換不了",
+   "scene": "ptrwhy-swapval",
+   "cues": [
+    224.18,
+    236.74,
+    244.08,
+    253.26,
+    263.44,
+    277.42,
+    287.02,
+    296.16,
+    298.7,
+    305.96,
+    311.22,
+    325.32
+   ],
+   "trap": "補充：C 其實只有 call by value，這裡是「傳位址」（call by address）來模擬 call by reference；C++ 才有 int &x 這種 reference 參數。範例 a、b 的數值影片沒給，動畫用 10、20 示意。",
    "points": [
     {
-     "text": "第二個用途：call by reference。",
-     "t": 232
+     "t": 223,
+     "text": "第二個用途：call by reference。"
     },
     {
-     "text": "main 有兩個變數，想呼叫 swap 交換它們的值。",
-     "t": 243
+     "t": 237,
+     "text": "main 有兩個變數，想呼叫 swap 交換它們的值。"
     },
     {
-     "text": "swap(int x, int y) 收一般變數 → call by value，行不通。",
-     "t": 255
+     "t": 253,
+     "text": "swap(int x, int y) 收一般變數 → call by value，行不通。"
     },
     {
-     "text": "呼叫 swap 時另配 x、y、t，a、b 的值被複製過去。",
-     "t": 265
+     "t": 277,
+     "text": "呼叫 swap 時另配 x、y、t，a、b 的值被複製過去。"
     },
     {
-     "text": "交換只發生在 swap 自己的變數；函式不能存取別的函式的 activation record。",
-     "t": 306
-    },
-    {
-     "text": "改成以指標為參數：傳入 &a（500）、&b（502），x、y 指向 main 的變數。",
-     "t": 362
-    },
-    {
-     "text": "swap 透過指標間接交換 main 的 a、b。",
-     "t": 386
+     "t": 299,
+     "text": "交換只發生在 swap 自己的變數；函式不能存取別的函式的 activation record。"
     }
+   ]
+  },
+  {
+   "title": "用途二：傳位址，間接交換",
+   "scene": "ptrwhy-swapref",
+   "cues": [
+    335.64,
+    340.54,
+    352.16,
+    356.02,
+    361.46,
+    370.44,
+    375.58,
+    382.04,
+    392.44
    ],
-   "trap": "補充：C 其實只有 call by value，這裡是「傳位址」（call by address）來模擬 call by reference；C++ 才有 int &x 這種 reference 參數。範例 a、b 的數值影片沒給，動畫用 10、20 示意。"
+   "points": [
+    {
+     "t": 335,
+     "text": "改成以指標為參數：int *x, int *y。"
+    },
+    {
+     "t": 361,
+     "text": "傳入 &a（500）、&b（502），x、y 指向 main 的變數。"
+    },
+    {
+     "t": 382,
+     "text": "swap 透過指標間接交換 main 的 a、b。"
+    }
+   ]
   },
   {
    "title": "用途三、四：存取檔案與周邊裝置",
-   "scene": "bariarr-devices",
+   "scene": "ptrwhy-devices",
+   "cues": [
+    407.06,
+    412.38,
+    416.64,
+    426.8,
+    431.88,
+    438.18,
+    441.0,
+    451.39,
+    458.4,
+    462.64,
+    470.06,
+    475.72,
+    499.19
+   ],
    "points": [
     {
-     "text": "第三個用途：存取檔案；讀寫磁碟上的檔案需要 file pointer（C 的 FILE *）。",
-     "t": 407
+     "t": 406,
+     "text": "第三個用途：存取檔案；讀寫磁碟上的檔案需要 file pointer（C 的 FILE *）。"
     },
     {
-     "text": "指標用來存取外部儲存裝置上的資料。",
-     "t": 438
+     "t": 438,
+     "text": "指標用來存取外部儲存裝置上的資料。"
     },
     {
-     "text": "第四個用途：存取周邊裝置，如讀鍵盤、寫螢幕、印表機。",
-     "t": 451
+     "t": 441,
+     "text": "第四個用途：存取周邊裝置，如讀鍵盤、寫螢幕、印表機。"
     },
     {
-     "text": "C 雖然用 printf、scanf 等內建函式，但這些函式內部用指標存取裝置。",
-     "t": 484
-    },
-    {
-     "text": "結論：只有 stack 能直接存取，其他地方的資料都靠指標間接存取。",
-     "t": 509
+     "t": 484,
+     "text": "C 雖然用 printf、scanf 等內建函式，但這些函式內部用指標存取裝置。"
     }
    ]
   },
   {
    "title": "總整理",
-   "scene": "bariarr-devices",
-   "params": {
-    "focus": "summary"
-   },
+   "scene": "ptrwhy-summary",
+   "cues": [
+    504.51,
+    514.77,
+    516.85,
+    524.55,
+    535.56,
+    541.54,
+    545.06
+   ],
    "points": [
     {
-     "text": "指標用途：存取 heap、call by reference、存取檔案、存取周邊裝置。",
-     "t": 535
+     "t": 504,
+     "text": "結論：只有 stack 能直接存取，其他地方的資料都靠指標間接存取。"
+    },
+    {
+     "t": 535,
+     "text": "指標用途：存取 heap、call by reference、存取檔案、存取周邊裝置。"
+    }
+   ]
+  },
+  {
+   "title": "結尾",
+   "scene": null,
+   "points": [
+    {
+     "t": 547,
+     "text": "影片結尾。"
     }
    ]
   }
@@ -201,5 +304,6 @@
    "ans": "FILE * 檔案指標",
    "why": "檔案在 stack 以外，必須透過 file pointer 存取。"
   }
- ]
+ ],
+ "cued": true
 }

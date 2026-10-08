@@ -45,6 +45,7 @@ app.use('/vendor/three', express.static(path.join(__dirname, 'node_modules', 'th
 // Chapter labs change often while their content is being built — always revalidate.
 app.use('/lab', express.static(path.join(PUBLIC_DIR, 'lab'), { maxAge: 0, etag: true }));
 app.use('/notes', express.static(path.join(PUBLIC_DIR, 'notes'), { maxAge: 0, etag: true }));
+app.use('/transcripts', express.static(path.join(PUBLIC_DIR, 'transcripts'), { maxAge: 0, etag: true }));
 // Assets are versioned with ?v= and cached long; HTML pages must always
 // revalidate so a new ?v= reference is picked up immediately.
 app.use(express.static(PUBLIC_DIR, {

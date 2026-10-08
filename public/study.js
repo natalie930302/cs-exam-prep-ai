@@ -72,9 +72,9 @@
     if (stageReady) return;
     stageReady = true;
     const p = pendingScene; pendingScene = null;
-    if (p && p.tour) $('stage').contentWindow.postMessage({type: 'tour'}, location.origin);
+    if (p && p.idle) postIdle(p.idle);
     else if (p && sceneFor(p)) postScene(p);
-    else if (p) { stageScene = null; startTour(); }
+    else if (p) { stageScene = null; showIdle(IDLE_CHAT); }
     tellStageVisible();
   }
   // Let the stage stop drawing while it's scrolled out of view or the tab
@@ -88,25 +88,25 @@
     new IntersectionObserver(function(entries){ stageOnScreen = entries[0].isIntersecting; tellStageVisible(); }).observe($('stage'));
   }
   document.addEventListener('visibilitychange', tellStageVisible);
+  // A section's scene, with its step times (cues) and where the section ends,
+  // so each step of the animation starts when the lecturer says it.
   function postScene(sec){
-    $('stage').contentWindow.postMessage({type: 'scene', scene: sec.scene, params: sec.params || {}}, location.origin);
+    $('stage').contentWindow.postMessage({type: 'scene', scene: sec.scene, params: sec.params || {},
+      cues: sec.cues || null, end: sec._end == null ? null : sec._end}, location.origin);
   }
-  // No notes for this video yet: let the stage walk through every concept of
-  // the chapter, and show which one is playing in the "now" line.
-  let touring = false;
-  function startTour(){
+  function postIdle(text){ $('stage').contentWindow.postMessage({type: 'idle', text: text}, location.origin); }
+  // Nothing to show (logistics, chat, or no animation for this video yet):
+  // a quiet stage rather than an unrelated animation.
+  const IDLE_CHAT = '老師在講課務或閒聊';
+  const IDLE_NONE = '這支影片的動畫還在製作中';
+  function showIdle(text){
     if (!hasStage) return;
-    stageScene = 'tour'; touring = true;
-    const go = function(){ $('stage').contentWindow.postMessage({type: 'tour'}, location.origin); };
-    if (stageReady) go(); else pendingScene = {tour: true};
+    if (stageScene === 'idle:' + text) return;
+    stageScene = 'idle:' + text;
+    if (stageReady) postIdle(text); else pendingScene = {idle: text};
   }
   window.addEventListener('message', function(e){
     if (e.origin !== location.origin || !e.data) return;
-    if (e.data.type === 'tour-scene' && touring && !curNotes) {
-      const t = (stageScenes[e.data.id] || {}).title || '';
-      $('nowSec').textContent = '概念導覽（和影片進度無關）';
-      $('nowPoint').textContent = t;
-    }
     if (e.data.type === 'lab-ready') { e.data.scenes.forEach(function(x){ stageScenes[x.id] = x; }); stageIsReady(); }
   });
   const stageScenes = {};
@@ -123,11 +123,15 @@
   function showScene(sec){
     if (!hasStage || !sec) return;
     const id = sceneFor(sec);
-    if (!id) { if (stageScene !== 'tour') startTour(); return; }
-    sec = Object.assign({}, sec, {scene: id});
-    const key = sec.scene + JSON.stringify(sec.params || {});
+    if (!id) { showIdle(IDLE_CHAT); return; }
+    const si = curNotes ? curNotes.sections.indexOf(sec) : -1;
+    const nxt = si >= 0 ? curNotes.sections[si + 1] : null;
+    sec = Object.assign({}, sec, {scene: id, _end: nxt && nxt.points.length ? nxt.points[0].t : null});
+    // the section (not just the scene) is the key: two sections may share a
+    // scene with different step times
+    const key = si + ':' + sec.scene + JSON.stringify(sec.params || {});
     if (key === stageScene) return;
-    stageScene = key; touring = false;
+    stageScene = key;
     if (stageReady) postScene(sec); else pendingScene = sec;
   }
 
@@ -297,7 +301,10 @@
   // Subtitles follow the player more tightly than the notes (every 200 ms,
   // also while paused or seeking, so the line matches the frame on screen).
   setInterval(function(){
-    if (playerReady && current && typeof player.getCurrentTime === 'function') showSub(player.getCurrentTime());
+    if (!playerReady || !current || typeof player.getCurrentTime !== 'function') return;
+    const t = player.getCurrentTime();
+    showSub(t);
+    if (stageReady) $('stage').contentWindow.postMessage({type: 'time', t: t}, location.origin);
   }, 200);
   function seek(t){
     if (!playerReady) return;
@@ -361,7 +368,7 @@
       $('timeline').innerHTML = '';
       $('nowSec').textContent = current ? current.opt.label : '';
       $('nowPoint').textContent = hasStage ? '這支影片還沒整理重點，右邊先輪流介紹這章的概念（跟影片進度無關）' : '這支影片的重點整理中';
-      startTour();
+      showIdle(IDLE_NONE);
       return;
     }
     el.innerHTML = n.sections.map(function(s, si){
@@ -545,7 +552,7 @@
     ask(0);
   }
   // Development aid, like the lab's __labCheck: trigger the cards by hand.
-  window.__studyCheck = {sectionChallenge: sectionChallenge, endCard: endCard, plan: function(){ return curNotes && quizPlan(curNotes); }};
+  window.__studyCheck = {sectionChallenge: sectionChallenge, endCard: endCard, plan: function(){ return curNotes && quizPlan(curNotes); }, seek: function(t){ if (playerReady) player.seekTo(t, true); }};
 
   // ── Tabs ──
   const TABS = ['videos', 'full', 'lab', 'res', 'quiz', 'mine', 'goals'];

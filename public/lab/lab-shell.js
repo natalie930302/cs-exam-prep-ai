@@ -26,10 +26,20 @@ const lab = createLab($('canvas'));
 window.__lab = lab;
 
 let demoToken = 0;
+// The cued scene now playing: its step times, how many steps have started,
+// and the video time last reported by the study room.
+const cue = { tok: 0, list: null, k: 0, shown: 0, t: 0, end: Infinity, id: null, params: null };
+// the video is ahead of the scene: its next step is already due
+function behind(tok) {
+  if (!cue.list || tok !== cue.tok) return false;
+  return cue.t > cue.end || (cue.k < cue.list.length && cue.t >= cue.list[cue.k] + 0.3);
+}
 function makeCtx() {
   const logEl = $('log');
   return {
     THREE, lab, colorFor, sleep, stage: STAGE,
+    // true while the video is ahead of the scene: animations may jump to their end
+    behind,
     $: $,
     log(text, warn = false) {
       const li = document.createElement('li');
@@ -57,9 +67,27 @@ function makeCtx() {
       cap.classList.toggle('on', !!text);
       if (formula !== undefined) { $('formulaOv').innerHTML = formula || ''; $('formulaOv').classList.toggle('on', !!formula); }
     },
-    // inside a scene: wait, and abort if the study room switched scenes
+    // inside a scene: wait (animation timing only), and abort if the study
+    // room switched scenes. When the video is already past the next step (a
+    // jump ahead, or the section is over) the remaining motion runs quickly.
     async beat(tok, ms) {
-      await sleep(ms);
+      await sleep(behind(tok) ? Math.min(ms, 30) : ms);
+      if (tok !== demoToken) throw new Error('scene changed');
+    },
+    // a cued scene's next step: wait until the lecturer reaches cues[k], the
+    // moment that step is spoken, so every step lines up with its sentence;
+    // a paused video holds the step. Outside the study room (no cues) steps
+    // just follow each other with a short pause.
+    async step(tok) {
+      if (cue.list && tok === cue.tok) {
+        if (cue.k < cue.list.length) {
+          const at = cue.list[cue.k++];
+          while (tok === demoToken && cue.t < at) await sleep(60);
+          cue.shown = cue.k;
+        }
+      } else {
+        await sleep(1600);
+      }
       if (tok !== demoToken) throw new Error('scene changed');
     },
     // a value block with its label, the common building piece
@@ -79,7 +107,7 @@ function makeCtx() {
 }
 
 const ctx = makeCtx();
-const mod = await import('./chapters/' + CH + '.js?v=15');
+const mod = await import('./chapters/' + CH + '.js?v=16');
 const def = mod.default(ctx);
 const modes = def.modes || [];
 const pages = def.pages || [];
@@ -111,16 +139,27 @@ function setTab(id) {
 document.querySelectorAll('#tabs button').forEach((b) => (b.onclick = () => setTab(b.dataset.mode || b.dataset.page)));
 
 // ── stage mode: scenes, guided tour, hands-on ──
-async function playScene(id, params, loop = true) {
+async function playScene(id, params, loop = true, cues = null, end = Infinity) {
   const tok = ++demoToken;
   if (def.stop) def.stop();
-  document.body.classList.remove('hands-on');
+  document.body.classList.remove('hands-on', 'idle');
   const sc = scenes[id] || scenes[order[0]];
   if (!sc) return;
   ctx.params = params || {};
+  Object.assign(cue, { tok, list: cues && cues.length ? cues.slice() : null, k: 0, shown: 0, end, id, params });
+  // In the study room a scene plays once and holds its last step: the
+  // lecture moves on by itself, so replaying would only distract.
+  if (STAGE && parent !== window) loop = false;
   do {
     try { ctx.clearLog(); await sc.play(tok); } catch (e) { if (tok !== demoToken) return; console.error(e); return; }
   } while (loop && tok === demoToken);
+}
+// The lecturer is not teaching (logistics, chat): a calm empty stage.
+function idle(text) {
+  stopAll();
+  lab.clear();
+  document.body.classList.add('idle');
+  ctx.say(text || '', '');
 }
 // Guided tour: every scene once, in order, then start over — used while the
 // current video has no notes yet, so the stage is never idle.
@@ -140,7 +179,15 @@ async function tour(startId) {
 if (STAGE) {
   window.addEventListener('message', (e) => {
     if (e.origin !== location.origin || !e.data) return;
-    if (e.data.type === 'scene') playScene(e.data.scene, e.data.params);
+    if (e.data.type === 'scene') playScene(e.data.scene, e.data.params, true, e.data.cues, e.data.end);
+    if (e.data.type === 'idle') idle(e.data.text);
+    if (e.data.type === 'time') {
+      cue.t = e.data.t;
+      // jumped back before a step that is already showing: replay up to here
+      if (cue.list && cue.tok === demoToken && cue.shown > 0 && cue.t < cue.list[cue.shown - 1] - 0.5) {
+        playScene(cue.id, cue.params, true, cue.list, cue.end);
+      }
+    }
     if (e.data.type === 'tour') tour(e.data.from);
     if (e.data.type === 'visible') lab.setVisible(e.data.visible);
   });

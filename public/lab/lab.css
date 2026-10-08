@@ -166,3 +166,28 @@ body.stage.hands-on .lab-handson { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .lab-caption.swap { animation: none; }
 }
+
+/* ── Lecture-synced imagery: pictures with a purpose, not only blocks ──
+   .icon = a picture (emoji glyph) with a short name under it; .zone = the name
+   of a region (memory section, function frame, device); .note = an address on a
+   sticky note (what a pointer holds); .pkt = data travelling between places.
+   Labels arrive with a short fade so each new step is noticed. */
+.lab-label.icon { background: transparent; border: 0; box-shadow: none; padding: 0; text-align: center; line-height: 1.15; animation: lbl-in .5s var(--ease); }
+.lab-label.icon .g { display: block; font-size: 34px; font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif; filter: drop-shadow(0 3px 4px rgba(46,36,24,.18)); }
+.lab-label.icon .t { display: inline-block; margin-top: 2px; font-size: 12px; font-weight: 700; color: var(--mt2); background: rgba(255,253,248,.85); border-radius: 6px; padding: 0 5px; }
+.lab-label.icon.sm .g { font-size: 24px; }
+.lab-label.icon.lg .g { font-size: 46px; }
+.lab-label.icon.off { opacity: .28; filter: grayscale(1); }
+.lab-label.zone { background: transparent; border: 0; box-shadow: none; font-size: 13px; font-weight: 800; letter-spacing: .06em; color: var(--mt2); animation: lbl-in .5s var(--ease); }
+.lab-label.note { background: #fff1a6; border-color: #e3c75a; color: #4a3a00; font-weight: 800; font-size: 13px; box-shadow: 0 3px 8px -3px rgba(120,90,0,.35); animation: lbl-in .5s var(--ease); }
+.lab-label.pkt { background: #a8730f; border-color: #a8730f; color: #fff; font-weight: 800; border-radius: 999px; padding: 1px 9px; box-shadow: 0 0 0 4px rgba(168,115,15,.18); }
+.lab-label.say { background: #fffdf8; border-color: var(--bd2); color: var(--tx); font-weight: 700; font-size: 12.5px; border-radius: 10px; padding: 2px 9px; animation: lbl-in .5s var(--ease); }
+.lab-label.bad { background: #fde8e6; border-color: #e6a39b; color: #7a1010; font-weight: 800; }
+.lab-label.good { background: #e3f3ea; border-color: #93c9a9; color: #0f5a3a; font-weight: 800; }
+@keyframes lbl-in { from { opacity: 0; filter: blur(3px); } to { opacity: 1; filter: none; } }
+/* idle: the lecturer is not teaching right now — a calm, empty stage */
+body.idle .lab-caption { top: 50%; transform: translateY(-50%); background: transparent; border: 0; box-shadow: none; color: var(--mt); font-weight: 600; font-size: 15px; }
+body.idle .lab-caption::before { background: var(--bd2); box-shadow: none; }
+@media (prefers-reduced-motion: reduce) {
+  .lab-label.icon, .lab-label.zone, .lab-label.note, .lab-label.say { animation: none; }
+}
