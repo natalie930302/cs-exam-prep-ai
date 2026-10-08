@@ -605,7 +605,7 @@ export default function (ctx) {
     await W(tok, 2200);
     for (const n of [2, 4, 8, 16, 64]) {
       am.N = n; const s = amUpdate();
-      say('N = ' + n + '：speedup ≈ ' + s.toFixed(2), n === 2 ? '課本例子：2 核 1.6' : n === 4 ? '課本例子：4 核約 2.28' : '');
+      say('N = ' + n + '：speedup ≈ ' + s.toFixed(2), n === 2 ? '例子：2 核 1.6' : n === 4 ? '例子：4 核約 2.28' : '');
       await W(tok, 1600);
     }
     say('N → ∞：上限 1 / S = 4', 'serial 部分決定加核心的效益');

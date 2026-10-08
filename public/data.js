@@ -360,14 +360,7 @@ tip:"主題1–9按順序打基礎（約4週），圖論演算法與字串處理
     {type:"vid",text:"Knuth-Morris-Pratt（KMP）String Matching Algorithm",url:"https://www.youtube.com/watch?v=V5-7GzOfADQ",dur:"18:55",note:"這集講得非常清楚"},
     {type:"vid",text:"MIT 6.006 Rec9b：DNA Sequence Matching",url:"https://www.youtube.com/watch?v=-DwGrJ8JxDc",dur:"57:27"},
     {type:"vid",text:"Abdul Bari：9.2 Rabin-Karp String Matching Algorithm",url:"https://www.youtube.com/watch?v=qQ8vS2btsxI",dur:"23:50"},
-    {type:"ex",text:"給定pattern，手建Failure Function × 3題"}]},
-  {n:"主題12",t:"綜合刷題",sub:"歷屆考題演練",pri:"must",hrs:"7hr",wk:null,
-   key:"台大、清大、交大資工所近10年DS題，重點：樹相關操作、排序複雜度分析、圖演算法",
-   mats:[
-    {type:"ex",text:"台大資工所官網下載近5年歷屆試題 → 限時作答DS題"},
-    {type:"ex",text:"清大資工所官網下載近5年歷屆試題"},
-    {type:"rec",text:"大碩 Y講義 Y2–Y8（DS各校歷屆分類）— 8月起刷"}
-   ]}]},
+    {type:"ex",text:"給定pattern，手建Failure Function × 3題"}]}]},
 {id:"alg",name:"演算法",color:"#9B7EF4",hours:127.5,weeks:3,coverage:"全11校",
 tip:"DP是最常出大題的考點，主題3、4要花最多時間，務必手推LCS、Knapsack狀態轉移表。NP理論以理解概念與歸約思路為主。同一主題有多位老師時，完成任一版本即可。",
  recommended_books:[

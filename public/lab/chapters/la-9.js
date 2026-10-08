@@ -1,7 +1,7 @@
 // 線性代數 第9章：SVD 與應用（旋轉-伸縮-旋轉、σ 從 AᵀA 來、四個子空間、低秩近似、pseudo-inverse）。
 // Chapter module for lab-shell.js — see the contract at the top of lab-shell.js.
 // 有逐字稿的只有 MIT 18.06 L33（Go2aLo7ZOlU：left / right inverse、pseudo-inverse），那部分場景照講課順序與內容；
-// L29 SVD 等影片尚無逐字稿，SVD 本身的場景以 Strang 課本例題建立（標題標「課本」）：A = [3 0; 4 5]、[4 4; −3 3]、[4 3; 8 6]、旗子的 rank。
+// L29 SVD 等影片尚無逐字稿，SVD 本身的場景以 Strang 例題建立（標題標「課本」）：A = [3 0; 4 5]、[4 4; −3 3]、[4 3; 8 6]、旗子的 rank。
 export default function (ctx) {
   const { THREE, lab, $, log, clearLog, setState, controls, on, say, beat } = ctx;
 
@@ -242,7 +242,7 @@ export default function (ctx) {
     fresh([0, 3.4, 12.5], [0, 3.2, 0]);
     const A = [[3, 0], [4, 5]];
     tag('A =', 'idx', -5.0, 6.4); mtag(A, -4.0, 6.4, 0, 'ptr');
-    say('手算 SVD：先算 AᵀA', 'A = [3 0; 4 5]（課本例子）');
+    say('手算 SVD：先算 AᵀA', 'A = [3 0; 4 5]（例子）');
     await beat(tok, 2600);
     const steps = [
       ['① AᵀA', 'AᵀA = [25 20; 20 25]', '對稱、半正定'],

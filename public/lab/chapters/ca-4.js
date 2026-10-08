@@ -426,7 +426,7 @@ export default function (ctx) {
   }
   async function scSpeedup(tok) {
     fresh([0, 3.6, 13.5], [0, 2.8, 0]);
-    say('課本例：IF 200、ID 100、EX 200、MEM 200、WB 100 ps', '三個 lw');
+    say('例：IF 200、ID 100、EX 200、MEM 200、WB 100 ps', '三個 lw');
     const sc = 0.0042;
     tag('單週期', 'ptr', -6.3, 5.6);
     for (let k = 0; k < 3; k++) { cube('lw', '#4b9ee2', [800 * sc - 0.08, 0.5, 0.6], -5.6 + 800 * sc * (k + 0.5), 5.6, 0, 1.5); await beat(tok, 500); }
@@ -453,16 +453,16 @@ export default function (ctx) {
   };
   const scStruct = pipeScene('struct', { fwd: true, br: 'pnt', mem1: true }, ['Structural hazard：只有一個記憶體', 'lw 的 MEM 和第 4 個指令的 IF 搶記憶體'],
     [['第 4 個指令的 IF 只好晚一個 cycle', '同一個 cycle 不能「讀指令」又「讀資料」'], ['解法：指令、資料分開（split cache）', 'MIPS 的 pipeline 就是這樣設計，所以沒有這個 hazard']]);
-  const scData = pipeScene('dep', { fwd: false, br: 'pnt', mem1: false }, ['課本例：sub $2 之後一串都用 $2', '沒有 forwarding'],
+  const scData = pipeScene('dep', { fwd: false, br: 'pnt', mem1: false }, ['例：sub $2 之後一串都用 $2', '沒有 forwarding'],
     [['$2 要到 cycle 5 的 WB 才寫回', 'and 得等，後面的指令也跟著停'], ['register file：前半寫、後半讀', 'and 停到 cycle 5 的 ID 就讀得到新的 $2'], ['沒有 forwarding：多了 2 個 stall', '']]);
   const scFwd = pipeScene('dep', { fwd: true, br: 'pnt', mem1: false }, ['同一段程式，加上 forwarding', 'ALU 結果在 EX 結束就有了'],
     [['and 從 EX/MEM 拿 $2；or 從 MEM/WB 拿', '金色箭頭：往右（時間往後）才合法'], ['完全不用 stall', 'CPI 回到 1']]);
-  const scLoadUse = pipeScene('load', { fwd: true, br: 'pnt', mem1: false }, ['課本例：lw $2 之後馬上用 $2', 'load-use data hazard'],
+  const scLoadUse = pipeScene('load', { fwd: true, br: 'pnt', mem1: false }, ['例：lw $2 之後馬上用 $2', 'load-use data hazard'],
     [['lw 的資料要 MEM 結束才有', 'and 的 EX 已經開始了 → 來不及'], ['hazard detection unit：stall 1 cycle（bubble）', '條件：ID/EX.MemRead 且 ID/EX.Rt = IF/ID.Rs 或 Rt'], ['stall 之後再從 MEM/WB forward', 'forwarding 救不了 load-use，只能少 stall']]);
   async function scReorder(tok) {
     fresh([0.6, 3.6, 13.2], [0.6, 3.6, 0]);
     const opt = { fwd: true, br: 'pnt', mem1: false };
-    say('課本例：a = b + e; c = b + f;', '有 forwarding，照 C 的順序編譯');
+    say('例：a = b + e; c = b + f;', '有 forwarding，照 C 的順序編譯');
     await beat(tok, 2400);
     let G = await drawPipe(mkProg('abc'), opt, tok, 160, true);
     say('兩個 load-use：' + G.S.total + ' cycles', 'add $t3 等 $t2、add $t5 等 $t4');
@@ -478,7 +478,7 @@ export default function (ctx) {
     [['MEM/WB → MEM forwarding：不用 stall', '真正一定 stall 的是 load-use（EX 就要用）'], ['補充：P&H 基本版的 hazard unit 只比對暫存器號碼', '會保守地 stall；題目沒說就以 load-use 判斷']]);
   async function scControl(tok) {
     fresh([0.6, 3.6, 13.2], [0.6, 3.6, 0]);
-    say('Control hazard：beq 要到 ID 才知道跳不跳', '課本例：40 beq $1, $3, 7（成立）');
+    say('Control hazard：beq 要到 ID 才知道跳不跳', '例：40 beq $1, $3, 7（成立）');
     await beat(tok, 2600);
     let G = await drawPipe(mkProg('br'), { fwd: true, br: 'stall', mem1: false }, tok, 300, true);
     say('做法一：分支一律 stall 1 cycle', '安全但每個分支都慢');
@@ -552,7 +552,7 @@ export default function (ctx) {
   async function scCpi(tok) {
     fresh([0, 3.6, 13.5], [0, 2.8, 0]);
     Object.assign(cpiS, { ld: 25, use: 50, st: 10, br: 11, mis: 25, bpen: 1, jp: 2, jpen: 1 });
-    say('課本例：25% lw、10% sw、11% branch、2% jump、52% ALU', 'CPI = 1 + 平均 stall');
+    say('例：25% lw、10% sw、11% branch、2% jump、52% ALU', 'CPI = 1 + 平均 stall');
     await beat(tok, 2800);
     const c = await drawCPI(tok, 700, true);
     say('lw：一半有 load-use → CPI 1.5', 'branch：1/4 猜錯、penalty 1 → 1.25；jump → 2');
@@ -625,7 +625,7 @@ export default function (ctx) {
       return { q: q[0], opts: uniq(q[1], q[2]), ans: q[1], why: q[3] };
     }
     const q = pickOne([
-      ['把 lw 往前挪、避開 load-use，屬於哪種技巧？', 'compiler 指令重排（scheduling）', ['forwarding', 'branch prediction', 'delayed branch'], '課本例：a = b + e; c = b + f 從 13 cycles 變 11 cycles。'],
+      ['把 lw 往前挪、避開 load-use，屬於哪種技巧？', 'compiler 指令重排（scheduling）', ['forwarding', 'branch prediction', 'delayed branch'], '例：a = b + e; c = b + f 從 13 cycles 變 11 cycles。'],
       ['delay slot 裡的指令？', '不論分支成不成立都會執行', ['只有成立才執行', '只有不成立才執行', '永遠被 flush'], 'compiler 要找不影響分支結果的指令填進去，找不到就 nop。'],
     ]);
     return { q: q[0], opts: uniq(q[1], q[2]), ans: q[1], why: q[3] };

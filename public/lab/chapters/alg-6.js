@@ -1119,7 +1119,7 @@ export default function (ctx) {
   async function scBfsClrs(tok) {
     fresh();
     buildGraph(GRAPHS.bfs22);
-    say('課本例子：從 s 做 BFS', 'd[v] = 最少邊數，π 畫出 BFS tree');
+    say('例子：從 s 做 BFS', 'd[v] = 最少邊數，π 畫出 BFS tree');
     await wait(tok, 2400);
     run.gen = bfsGen(1, { k: 0.75 });
     await playGen(tok);
@@ -1141,7 +1141,7 @@ export default function (ctx) {
   async function scKosaraju(tok) {
     fresh();
     buildGraph(GRAPHS.scc22);
-    say('SCC：互相走得到的極大頂點集合', '課本例子（CLRS 圖 22.9）');
+    say('SCC：互相走得到的極大頂點集合', '例子（CLRS 圖 22.9）');
     await wait(tok, 2600);
     run.gen = kosarajuGen({ k: 0.8 });
     await playGen(tok);

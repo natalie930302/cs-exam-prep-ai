@@ -4050,8 +4050,8 @@ FRAG.push(['sortpeng-pivot-choice', 'Pivot 怎麼選：random、三數取中、�
   kill(sm);
 }]);
 
-// 62:07 課本例子（Horowitz）：26 5 37 1 61 11 59 15 48 19，pivot = 第一個，看 left/right
-FRAG.push(['sortpeng-quick-textbook', '課本例子：每次遞迴的 left、right', async (tok) => {
+// 62:07 例子（Horowitz）：26 5 37 1 61 11 59 15 48 19，pivot = 第一個，看 left/right
+FRAG.push(['sortpeng-quick-textbook', '例子：每次遞迴的 left、right', async (tok) => {
   fresh([0, 7, 12.5], [0, 2.4, 0]);
   const R = pRow([26, 5, 37, 1, 61, 11, 59, 15, 48, 19], { dx: 1.25, idx: true, base: 1 });
   const calls = [

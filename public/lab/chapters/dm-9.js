@@ -135,7 +135,7 @@ export default function (ctx) {
     lt: { name: 'a < b', R: () => relOf(A4, (a, b) => N(a) < N(b)) },
     div: { name: 'a | b（整除）', R: () => relOf(A4, (a, b) => N(b) % N(a) === 0) },
     mod2: { name: 'a ≡ b (mod 2)', R: () => relOf(A4, (a, b) => (N(a) - N(b)) % 2 === 0) },
-    ex: { name: '課本例：{(1,1),(1,2),(2,1),(2,2),(3,4),(4,1),(4,4)}', R: () => new Set(['1,1', '1,2', '2,1', '2,2', '3,4', '4,1', '4,4']) },
+    ex: { name: '例：{(1,1),(1,2),(2,1),(2,2),(3,4),(4,1),(4,4)}', R: () => new Set(['1,1', '1,2', '2,1', '2,2', '3,4', '4,1', '4,4']) },
     empty: { name: '空關係 ∅', R: () => new Set() },
     rand: { name: '隨機', R: () => relOf(A4, () => Math.random() < 0.35) },
   };
@@ -487,7 +487,7 @@ export default function (ctx) {
       ref: [['le', '≤：每個 a ≤ a → 對角線全是 1', 'Reflexive：∀a，(a,a) ∈ R'], ['lt', '<：沒有 a < a → 一個 loop 都沒有', '反例 (1,1) ∉ R → 不反身（其實是 irreflexive）']],
       sym: [['mod2', 'a ≡ b (mod 2)：有 a→b 就有 b→a', 'Symmetric：矩陣對主對角線鏡射不變'], ['le', '≤：1→2 有、2→1 沒有', '反例 (1,2) ∈ R、(2,1) ∉ R']],
       anti: [['div', '整除：a | b 且 b | a 只可能 a = b', 'Antisymmetric：a≠b 時不會互指'], ['mod2', 'mod 2：1→3 和 3→1 都有', '反例：互指但 1 ≠ 3']],
-      tra: [['le', '≤：a ≤ b、b ≤ c ⇒ a ≤ c', 'Transitive：a→b→c 一定有 a→c'], ['ex', '課本例：3→4、4→1，但 3→1 沒有', '反例：(3,4)、(4,1) ∈ R，(3,1) ∉ R']],
+      tra: [['le', '≤：a ≤ b、b ≤ c ⇒ a ≤ c', 'Transitive：a→b→c 一定有 a→c'], ['ex', '例：3→4、4→1，但 3→1 沒有', '反例：(3,4)、(4,1) ∈ R，(3,1) ∉ R']],
     }[key];
     for (const [pk, cap, f] of cases) {
       const R = PRESETS[pk].R(), pr = props(A4, R)[key];

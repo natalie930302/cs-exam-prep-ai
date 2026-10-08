@@ -678,7 +678,7 @@ export default function (ctx) {
     const pA = pgram(POS); setPg(pA, bd, c1, c2, 0.02, false);
     setArrow(arrow(COL.a), O, bd.P(...c1).setZ(0.1)); setArrow(arrow(COL.b), O, bd.P(...c2).setZ(0.1)); setArrow(arrow(COL.u, 0.07), O, bd.P(...b).setZ(0.12));
     tag('col₁', 'idx', ...bd.P(2.6, 0.6).toArray()); tag('col₂', 'idx', ...bd.P(0.4, 3.4).toArray()); tag('b = (4, 7)', 'ptr alt', ...bd.P(4.9, 7.4).toArray());
-    say('課本例：兩個方程式', '2x₁ + x₂ = 4、x₁ + 3x₂ = 7；det A = 6 − 1 = 5（藍色面積）');
+    say('例：兩個方程式', '2x₁ + x₂ = 4、x₁ + 3x₂ = 7；det A = 6 − 1 = 5（藍色面積）');
     await W(tok, 2800);
     const pB = pgram('#2fc092');
     let v = b.slice();

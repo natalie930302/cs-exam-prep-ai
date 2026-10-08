@@ -311,7 +311,7 @@ export default function (ctx) {
     fresh([0, 3.4, 12.5], [0, 1.6, 0]);
     controls('<input id="eT" value="' + enc.text + '" style="width:190px"><button class="primary" id="eGo">組譯（assembly → 機器碼）</button>'
       + '<input id="eH" value="" placeholder="0x02324020" style="width:100px"><button id="eDec">反組譯</button>'
-      + '<select id="ePre"><option value="">課本例子…</option><option>add $t0, $s1, $s2</option><option>sub $t0, $s1, $s2</option><option>lw $t0, 32($s3)</option><option>sw $t0, 1200($t1)</option><option>addi $s3, $s3, 1</option><option>sll $t2, $s0, 4</option><option>beq $s1, $s2, 25</option><option>bne $t0, $s5, 2</option><option>j 80000</option><option>jr $ra</option><option>lui $s0, 61</option></select>');
+      + '<select id="ePre"><option value="">例子…</option><option>add $t0, $s1, $s2</option><option>sub $t0, $s1, $s2</option><option>lw $t0, 32($s3)</option><option>sw $t0, 1200($t1)</option><option>addi $s3, $s3, 1</option><option>sll $t2, $s0, 4</option><option>beq $s1, $s2, 25</option><option>bne $t0, $s5, 2</option><option>j 80000</option><option>jr $ra</option><option>lui $s0, 61</option></select>');
     on('eGo', () => doEncode($('eT').value));
     on('eDec', () => {
       const h = String($('eH').value).trim().replace(/^0x/i, '');
@@ -611,7 +611,7 @@ export default function (ctx) {
     await Promise.all([growBar(tok, bF, 6, 900), growBar(tok, bV, 2 / 25 * 2, 900), growBar(tok, bP, 5.4, 900)]);
     tag('×1000', 'idx', 1.4, 6.4); tag('5V→1V：平方 ÷25', 'idx', -1.3, 0.9); tag('×30', 'idx', 4.6, 5.8);
     await beat(tok, 3000);
-    say('課本例：C、V、f 都變成 85%', 'P_new / P_old = 0.85 × 0.85² × 0.85');
+    say('例：C、V、f 都變成 85%', 'P_new / P_old = 0.85 × 0.85² × 0.85');
     lab.clear();
     const cb = cube('P', '#d64545', [2.4, 2.4, 2.4], 0, 1.2, 0);
     const lt = tag('1.00', 'ptr alt', 0, 3.4);
@@ -725,14 +725,14 @@ export default function (ctx) {
       await beat(tok, 1700);
     }
     V.regs.forEach((m) => glow(m, null));
-    say('課本例：f = (g + h) − (i + j)', 'g、h、i、j 在 $s1–$s4，f 在 $s0');
+    say('例：f = (g + h) − (i + j)', 'g、h、i、j 在 $s1–$s4，f 在 $s0');
     await beat(tok, 2600);
     while (V.S.prog[V.S.pc]) await simStep(V, tok, 1800, true);
     say('f = 8 − 6 = 2', '算術指令：三個運算元都是暫存器');
     await beat(tok, 2800);
   }
   async function scArray(tok) {
-    await runPreset(tok, 'array', 2200, null, ['課本例：A[12] = h + A[8]', 'A 的起始位址在 $s3 = 100，h 在 $s2']);
+    await runPreset(tok, 'array', 2200, null, ['例：A[12] = h + A[8]', 'A 的起始位址在 $s3 = 100，h 在 $s2']);
     say('byte addressing：A[i] 在 base + 4i', 'offset 32 = 8 × 4，48 = 12 × 4');
     await beat(tok, 3200);
   }
@@ -742,7 +742,7 @@ export default function (ctx) {
     const row = fieldRow(e); const bits = bitsOf(e);
     row.set(bits, 0);
     tag('add $t0, $s1, $s2', 'ptr alt', 0, 2.8);
-    say('課本例：add $t0, $s1, $s2 編成機器碼', 'R-format：op rs rt rd shamt funct');
+    say('例：add $t0, $s1, $s2 編成機器碼', 'R-format：op rs rt rd shamt funct');
     await beat(tok, 2600);
     const caps = [['op = 0', 'R-format 的 op 都是 0'], ['rs = $s1 = 17', '第一個來源'], ['rt = $s2 = 18', '第二個來源'], ['rd = $t0 = 8', '目的暫存器'], ['shamt = 0', '只有 shift 指令用'], ['funct = 32', 'funct 決定是 add']];
     for (let k = 0; k < 6; k++) {
@@ -770,7 +770,7 @@ export default function (ctx) {
     say('rt 在 lw 是「目的」', '16 bits 常數：±2¹⁵ bytes 的 offset');
     await beat(tok, 2600);
     lab.clear();
-    say('課本例：A[300] = h + A[300]', '$t1 = A 的位址，h 在 $s2');
+    say('例：A[300] = h + A[300]', '$t1 = A 的位址，h 在 $s2');
     const cd = code(['lw  $t0, 1200($t1)', 'add $t0, $s2, $t0', 'sw  $t0, 1200($t1)'], -4.2, 5.4, 0.7);
     const dec = [['35', '9', '8', '1200'], ['0', '18', '8', '8', '0', '32'], ['43', '9', '8', '1200']];
     for (let k = 0; k < 3; k++) {
@@ -787,7 +787,7 @@ export default function (ctx) {
   }
   async function scLuiOri(tok) {
     fresh([0, 3.4, 13], [0, 1.8, 0]);
-    say('32-bit 常數放不進 16-bit 欄位', '課本例：4,000,000 = 0x003D0900');
+    say('32-bit 常數放不進 16-bit 欄位', '例：4,000,000 = 0x003D0900');
     const w = 0.38;
     const r = []; for (let i = 0; i < 32; i++) { const m = cube('0', i < 16 ? '#c6def5' : '#c2ecdc', [w * 0.86, 0.3, w * 0.86], -6.1 + i * w + (i >= 16 ? 0.2 : 0), 0.6, 0); small(m.userData.lbl, 10); r.push(m); }
     tag('$s0 高 16 bits', 'ptr', -3.1, 1.4); tag('低 16 bits', 'ptr', 3.3, 1.4);
@@ -806,7 +806,7 @@ export default function (ctx) {
     await beat(tok, 3400);
   }
   async function scIfElse(tok) {
-    await runPreset(tok, 'ifelse', 1900, null, ['課本例：if (i == j) f = g + h; else f = g − h;', '這次 i = j = 4']);
+    await runPreset(tok, 'ifelse', 1900, null, ['例：if (i == j) f = g + h; else f = g − h;', '這次 i = j = 4']);
     say('i = j：執行 then，f = 10', 'j Exit 跳過 else');
     await beat(tok, 2600);
     await runPreset(tok, 'ifelse', 1900, { $s4: 5 }, ['再跑一次：i = 4、j = 5', '']);
@@ -814,7 +814,7 @@ export default function (ctx) {
     await beat(tok, 3000);
   }
   async function scWhile(tok) {
-    await runPreset(tok, 'loop', 1000, null, ['課本例：while (save[i] == k) i += 1;', 'i 在 $s3、k = 5 在 $s5、save 起點 $s6 = 200']);
+    await runPreset(tok, 'loop', 1000, null, ['例：while (save[i] == k) i += 1;', 'i 在 $s3、k = 5 在 $s5、save 起點 $s6 = 200']);
     say('save[3] = 7 ≠ 5 → 離開，i = 3', '每圈 6 個指令；sll 2 就是 ×4');
     await beat(tok, 3200);
   }
@@ -829,7 +829,7 @@ export default function (ctx) {
       if (f) tag(f, 'idx', 2.6, y);
       return { y, l };
     });
-    say('課本例：迴圈從位址 80000 開始', '右邊是各欄位的十進位值');
+    say('例：迴圈從位址 80000 開始', '右邊是各欄位的十進位值');
     await beat(tok, 3000);
     const pcm = tag('PC', 'ptr alt', -5.2, blocks[3].y);
     blocks[3].l.element.className = 'lab-label ptr alt';
@@ -851,7 +851,7 @@ export default function (ctx) {
     await beat(tok, 3200);
   }
   async function scLeaf(tok) {
-    const V = await runPreset(tok, 'leaf', 1500, null, ['課本例：leaf_example(g, h, i, j)', '參數在 $a0–$a3：5、3、4、2']);
+    const V = await runPreset(tok, 'leaf', 1500, null, ['例：leaf_example(g, h, i, j)', '參數在 $a0–$a3：5、3、4、2']);
     say('回傳 $v0 = 2；$s0、$t0、$t1 都還原了', '$sp 回到 1000');
     await beat(tok, 3200);
     say('課本：$t 其實不必存（caller-saved）', '只有 $s 要由被呼叫者（callee）保存');
@@ -859,7 +859,7 @@ export default function (ctx) {
     return V;
   }
   async function scFact(tok) {
-    await runPreset(tok, 'fact', 650, null, ['課本例：遞迴 fact(n)，算 fact(3)', '每層把 $ra、$a0 存進堆疊']);
+    await runPreset(tok, 'fact', 650, null, ['例：遞迴 fact(n)，算 fact(3)', '每層把 $ra、$a0 存進堆疊']);
     say('fact(3) = 6：$v0 = 6', '每呼叫一層就多 8 bytes 的 stack frame');
     await beat(tok, 3400);
   }

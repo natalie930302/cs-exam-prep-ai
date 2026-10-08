@@ -900,7 +900,7 @@ export default function (ctx) {
     'creation-options': { title: 'Parent 與 child 的三種關係選擇', play: scCreationOpts },
     'fork-return': { title: 'fork()：duplicate，回傳 PID / 0', play: scForkReturn },
     'exec-replace': { title: 'execlp：換掉 code、清空 heap 與 stack', play: scExecReplace },
-    'fork-exec-wait': { title: 'fork → exec → wait（課本範例）', play: scForkExecWait },
+    'fork-exec-wait': { title: 'fork → exec → wait（範例）', play: scForkExecWait },
     'copy-on-write': { title: 'Duplicate 的實作：copy-on-write', play: scCow },
     'five-state': { title: '課本：五狀態圖', play: scFiveState },
     'queueing-diagram': { title: '課本：ready queue 與 I/O queue', play: scQueues },

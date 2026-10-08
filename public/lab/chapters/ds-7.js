@@ -428,7 +428,7 @@ export default function (ctx) {
     tv.lbA = lab.label('', 'ptr alt'); tv.lbB = lab.label('', 'ptr alt'); lab.world.add(tv.lbA, tv.lbB);
     controls(
       '<select id="tKind"><option value="dfs">DFS（stack）</option><option value="bfs">BFS（queue）</option></select>'
-      + '<select id="tGraph"><option value="book">課本範例圖</option><option value="rand">隨機連通圖</option></select>'
+      + '<select id="tGraph"><option value="book">範例圖</option><option value="rand">隨機連通圖</option></select>'
       + '<label>起點 <input id="tS" type="number" min="0" max="7" value="' + tv.start + '"></label>'
       + '<button class="primary" id="tStep">下一步</button><button id="tAuto">自動播放</button><button id="tReset">重來</button>'
     );
@@ -581,7 +581,7 @@ export default function (ctx) {
     const a = lab.label('DFS 生成樹', 'ptr'); a.position.set(-3.7, 0.3, -2.2); lab.world.add(a);
     const b = lab.label('BFS 生成樹', 'ptr'); b.position.set(3.7, 0.3, -2.2); lab.world.add(b);
     controls(
-      '<select id="sG"><option value="book">課本範例圖</option><option value="rand">隨機連通圖</option></select>'
+      '<select id="sG"><option value="book">範例圖</option><option value="rand">隨機連通圖</option></select>'
       + '<label>起點 <input id="sS" type="number" min="0" max="7" value="' + sp.start + '"></label>'
       + '<button class="primary" id="sStep">下一步</button><button id="sAuto">自動播放</button><button id="sAll">直接完成</button>'
       + '<button id="sCyc">加一條非樹邊</button><button id="sReset">重來</button>'

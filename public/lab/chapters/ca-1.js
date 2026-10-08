@@ -1,7 +1,7 @@
 // 計算機組織 第1章：數字系統與運算（二進位／十六進位、2's complement、加減法與 overflow、
 // ALU、乘法器、除法器、IEEE 754、浮點加法與捨入、CPU time、Amdahl's law）。
 // 課本：Patterson & Hennessy, Computer Organization and Design (MIPS)，第 1、3 章與附錄 B/C。
-// 本章影片目前都還沒有逐字稿，場景全部依課本例題（數字照課本），名稱標「課本」。
+// 本章影片目前都還沒有逐字稿，場景全部依例題（數字照課本），名稱標「課本」。
 // Chapter module for lab-shell.js — see the contract at the top of lab-shell.js.
 export default function (ctx) {
   const { THREE, lab, sleep, $, log, setState, controls, on, say, beat } = ctx;
@@ -467,7 +467,7 @@ export default function (ctx) {
     }
   }
 
-  // ───────────────────────── 場景（課本例題） ─────────────────────────
+  // ───────────────────────── 場景（例題） ─────────────────────────
   async function scBinHex(tok) {
     fresh([0, 5, 13.5], [0, 1.2, 0]);
     const row = bitRow(8, 0, 0.45, 0, 1.3);
@@ -496,7 +496,7 @@ export default function (ctx) {
     lab.clear();
     lab.frameCamera([0, 5, 13.5], [0, 1.2, 0]);
     const r16 = bitRow(16, 0, 0.45, 0, 0.78);
-    say('課本例：eca8₁₆ 轉二進位', '一個 hex 位數直接展開成 4 bits');
+    say('例：eca8₁₆ 轉二進位', '一個 hex 位數直接展開成 4 bits');
     await beat(tok, 1800);
     const H = ['e', 'c', 'a', '8'];
     let acc = '';
@@ -517,7 +517,7 @@ export default function (ctx) {
     const row = bitRow(8, 0, 0.45, 0, 1.3);
     row.xs.forEach((x, i) => tag(i === 0 ? '−128' : String(2 ** (7 - i)), i === 0 ? 'ptr' : 'idx', x, 0, 1.1));
     row.set('00000010');
-    say('課本例：把 2 變成 −2', '2 = 0000 0010');
+    say('例：把 2 變成 −2', '2 = 0000 0010');
     await beat(tok, 2200);
     for (let i = 0; i < 8; i++) { row.set('11111101'.slice(0, i + 1) + '00000010'.slice(i + 1), true); await beat(tok, 160); }
     say('步驟 1：每個 bit 反相', '0000 0010 → 1111 1101');
@@ -565,7 +565,7 @@ export default function (ctx) {
   async function scRipple(tok) {
     fresh([0, 3.4, 14], [0, 2.3, 0]);
     const st = buildAdd(7, 6, '+');
-    say('課本例：7 + 6（這裡用 8 bits）', '0000 0111 + 0000 0110');
+    say('例：7 + 6（這裡用 8 bits）', '0000 0111 + 0000 0110');
     await beat(tok, 2200);
     const r = await animateAdd(st, tok, 750, true);
     say('= 0000 1101 = 13', 'carry 從右往左一位一位傳：ripple carry');
@@ -577,7 +577,7 @@ export default function (ctx) {
   async function scSub(tok) {
     fresh([0, 3.4, 14], [0, 2.3, 0]);
     const st = buildAdd(7, 6, '-');
-    say('課本例：7 − 6 = 7 + (−6)', '減法 = 加上 2\'s complement');
+    say('例：7 − 6 = 7 + (−6)', '減法 = 加上 2\'s complement');
     await beat(tok, 2400);
     const r = await animateAdd(st, tok, 700, true);
     say('= 0000 0001 = 1', '最左邊跑出去的 carry ' + r.cout + ' 丟掉');
@@ -695,7 +695,7 @@ export default function (ctx) {
   async function scIeeeEncode(tok) {
     fresh([0, 4.2, 13.5], [0, 1.0, 0]);
     const row = floatRow();
-    say('課本例：−0.75 用 single precision 表示', '');
+    say('例：−0.75 用 single precision 表示', '');
     await beat(tok, 2000);
     const t = tag('−0.75 = −3/4 = −0.11₂', 'ptr alt', 0, 3.6);
     await beat(tok, 1800);
@@ -723,7 +723,7 @@ export default function (ctx) {
     const row = floatRow();
     const b = '1' + '10000001' + '01' + '0'.repeat(21);
     row.set(b, true);
-    say('課本例：這 32 bits 是多少？', '1 10000001 0100…0');
+    say('例：這 32 bits 是多少？', '1 10000001 0100…0');
     await beat(tok, 2400);
     row.clearGlow(); glow(row.ms[0], GOLD);
     say('S = 1 → 負數', '');
@@ -767,7 +767,7 @@ export default function (ctx) {
     const slot = (k) => -1.6 + k * 1.0;
     const mk = (bits, y, color) => bits.split('').map((b, k) => cube(b, color, [0.8, 0.6, 0.8], slot(k), y, 0, 2));
     const dot = (y) => tag('.', 'val', slot(0) + 0.5, y);
-    say('課本例：0.5 + (−0.4375)，有效位數 4 bits', '');
+    say('例：0.5 + (−0.4375)，有效位數 4 bits', '');
     await beat(tok, 2000);
     let X = mk('1000', 4.6, '#4b9ee2'); dot(4.6); const ex = tag('× 2⁻¹', 'ptr', 3.6, 4.6); tag('0.5 =', 'idx', -3.6, 4.6);
     let Y = mk('1110', 3.2, '#dd8238'); dot(3.2); const ey = tag('× 2⁻²', 'ptr', 3.6, 3.2); tag('−0.4375 = −', 'idx', -3.8, 3.2);
@@ -799,7 +799,7 @@ export default function (ctx) {
     const tiles = [3, 4].map((k) => { const g = new THREE.Mesh(new THREE.BoxGeometry(1.0, 4.2, 0.2), new THREE.MeshBasicMaterial({ color: '#f3dd9a', transparent: true, opacity: 0.45, depthWrite: false })); g.position.set(slot(k), 3.1, -0.6); lab.world.add(g); return g; });
     tag('guard', 'idx', slot(3), 5.5); tag('round', 'idx', slot(4), 5.5);
     const mk = (ds, y, c) => ds.map((d, k) => (d === null ? null : cube(String(d), c, [0.85, 0.6, 0.85], slot(k), y, 0, 2)));
-    say('課本例：2.56 × 10⁰ + 2.34 × 10²', '十進位、只能存 3 位有效數字');
+    say('例：2.56 × 10⁰ + 2.34 × 10²', '十進位、只能存 3 位有效數字');
     await beat(tok, 2200);
     mk([2, 3, 4], 4.6, '#4b9ee2'); tag('.', 'val', slot(0) + 0.55, 4.6); tag('× 10²', 'ptr', 3.6, 4.6);
     const B = mk([2, 5, 6], 3.4, '#dd8238'); tag('× 10⁰', 'ptr', 3.6, 3.4);
@@ -860,7 +860,7 @@ export default function (ctx) {
   }
   async function scCpuTime(tok) {
     fresh([0, 4.5, 14], [0, 3, 0]);
-    say('課本例：A 是 2 GHz，程式跑 10 秒', 'cycles = 10 s × 2×10⁹ = 20×10⁹');
+    say('例：A 是 2 GHz，程式跑 10 秒', 'cycles = 10 s × 2×10⁹ = 20×10⁹');
     const stackA = [], stackB = [];
     for (let k = 0; k < 10; k++) { stackA.push(cube(k === 9 ? '20×10⁹' : '', '#4b9ee2', [1.6, 0.42, 1.2], -3.5, 0.21 + k * 0.46, 0, 3)); await beat(tok, 120); }
     tag('A：2 GHz', 'ptr', -3.5, 0, 1.4);
@@ -883,7 +883,7 @@ export default function (ctx) {
     setBar(u, 20 * H); setBar(a, 80 * H, 20 * H);
     tag('乘法 80 s', 'idx', -6.2, 20 * H + 40 * H); tag('其他 20 s', 'idx', -6.2, 10 * H);
     tag('原本 100 s', 'ptr', -4, 0, 1.4);
-    say('課本例：程式 100 秒，乘法占 80 秒', '想讓整個程式快 5 倍（20 秒）？');
+    say('例：程式 100 秒，乘法占 80 秒', '想讓整個程式快 5 倍（20 秒）？');
     await beat(tok, 2800);
     const u2 = bar('#c9b48e', 2, 1.6, 2, 0), a2 = bar('#9b7ef4', 2, 1.6, 2, 0);
     setBar(u2, 20 * H);

@@ -198,7 +198,7 @@ export default function (ctx) {
     });
     log(used.join(' + ') + ' = ' + sum + ' → 位址 ' + sum + '（表比較小時再 mod 表大小）');
     setState(F.fold === 'shift' ? '移位折疊' : '邊界折疊', [['k', s], ['分段', parts.join(' | ')], ['相加', used.join(' + ')], ['位址', String(sum)]],
-      '移位：各段直接相加<br>邊界：偶數段（第 2、4…段）反轉後相加<br>課本例：移位 699、邊界 897');
+      '移位：各段直接相加<br>邊界：偶數段（第 2、4…段）反轉後相加<br>例：移位 699、邊界 897');
     say('相加得到位址', used.join(' + ') + ' = <span class="ok">' + sum + '</span>');
     await W(1500);
   }

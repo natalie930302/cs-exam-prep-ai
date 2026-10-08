@@ -40,7 +40,7 @@ export default function (ctx) {
     cycle: { title: '含負 cycle', directed: true, names: ['s', 'a', 'b', 'c'],
       pos: [[-4.5, 0], [-0.6, -2.4], [3.8, 0], [-0.6, 2.4]],
       edges: [[0, 1, 1], [1, 2, -1], [2, 3, -1], [3, 1, 1], [0, 3, 4]] },
-    fw3: { title: '3 頂點（課本例）', directed: true, names: ['0', '1', '2'],
+    fw3: { title: '3 頂點（例）', directed: true, names: ['0', '1', '2'],
       pos: [[-5.6, -1.6], [-2.2, -1.6], [-3.9, 1.7]],
       edges: [[0, 1, 4], [0, 2, 11], [1, 0, 6], [1, 2, 2], [2, 0, 3]] },
     fw4: { title: '4 頂點', directed: true, names: ['0', '1', '2', '3'],
@@ -526,7 +526,7 @@ export default function (ctx) {
   function enterFloyd() {
     fresh([0, 10, 9], [0, 0, 0]);
     buildGraph(FW.key);
-    stepControls('<select id="fwG"><option value="fw3">3 頂點（課本例）</option><option value="fw4">4 頂點</option></select>');
+    stepControls('<select id="fwG"><option value="fw3">3 頂點（例）</option><option value="fw4">4 頂點</option></select>');
     $('fwG').value = FW.key;
     $('fwG').onchange = (e) => { FW.key = e.target.value; clearLog(); enterFloyd(); };
     on('gReset', () => { clearLog(); enterFloyd(); });

@@ -811,6 +811,23 @@ function chapterVideoHours(videos){
   const minutes = videos.reduce(function(t,m){ return t + durationToMinutes(m.dur); },0);
   return Math.round(minutes/6)/10+'hr';
 }
+// The site's own chapter number and title for a foundation week (the same
+// numbering the 六科 page and study room use), e.g. "第2章 陣列、Linked List…".
+function weekChapterLabel(wk){
+  for(const sub of SUBJECTS){
+    const i = sub.chapters.findIndex(function(c){ return c.wk === wk; });
+    if(i >= 0){
+      const t = sub.chapters[i].t, more = sub.chapters.filter(function(c){ return c.wk === wk; }).length - 1;
+      return '第'+(i+1)+'章 '+(t.length > 14 ? t.slice(0,13)+'…' : t)+(more > 0 ? ' 等 '+(more+1)+' 章' : '');
+    }
+  }
+  return '';
+}
+// Calendar click: straight into the study room at the week's next video.
+function openWeekVideo(subjName, wk){
+  const v = nextUnwatchedVideo(wk);
+  if(v) location.href = v.href; else goSubjWeek(subjName, wk);
+}
 function nextUnwatchedVideo(wk){
   const done = new Set(DONE_TASK_IDS);
   for(const sub of SUBJECTS){
@@ -935,15 +952,6 @@ const SUBJ_COLOR_VAR = {
   '資料結構':'--ds', '演算法':'--alg', '作業系統':'--os',
   '線性代數':'--la', '離散數學':'--dm', '計算機組織':'--ca'
 };
-// Chapter text like "DM Ch1 邏輯（命題與真值表、邏輯等價）+ Ch2 集合論（...）" is too
-// long for a calendar block — take just the first chapter's code+name before
-// any "＋" or parenthetical detail, so the block shows real content (not
-// just a subject-colored blob) without needing more space.
-function shortChapterLabel(ch){
-  if(!ch) return '';
-  const first = ch.split('+')[0].split('（')[0].trim();
-  return first.length > 18 ? first.slice(0,17)+'…' : first;
-}
 
 // ── Calendar: 週曆 (time-blocked week agenda) + 月曆 (simple subject/phase
 // grid), toggle between the two — no other view. ──────────────────────
@@ -1103,7 +1111,7 @@ function buildWeekDayBlocks(d, info){
       {time:'傍晚', title:'補弱點＋筆記', colorVar:cv}
     ];
   }
-  // foundation — clickable: jumps to the matching chapter on 六科. Future
+  // foundation — clickable: opens the week's next unwatched video. Future
   // dates use a forward projection (projectedWeekForDate) instead of
   // freezing on today's week, so a day that isn't finished effectively
   // pushes its content later on the calendar.
@@ -1112,10 +1120,10 @@ function buildWeekDayBlocks(d, info){
   const c = FOUNDATION_CONTENT[Math.min(projWk, FOUNDATION_WEEKS)];
   const subj = c ? c.subj : '複習';
   const cv = SUBJ_COLOR_VAR[subj] || '--ac2';
-  const chLabel = c ? shortChapterLabel(c.ch) : '複習';
+  const chLabel = c ? weekChapterLabel(projWk) : '複習';
   const click = c ? {subj:subj, wk:projWk} : null;
   return [
-    {time:subj, title:chLabel+' 影片', colorVar:cv, click:click}
+    {time:subj, title:chLabel, colorVar:cv, click:click}
   ];
 }
 
@@ -1144,7 +1152,7 @@ function renderCalWeekView(container){
           : b.colorVar
             ? '--task-accent:var('+b.colorVar+');'
             : '--task-accent:var(--mt);';
-        const clickAttr = b.click ? ' onclick="goSubjWeek(\''+b.click.subj+'\','+b.click.wk+')"' : '';
+        const clickAttr = b.click ? ' onclick="openWeekVideo(\''+b.click.subj+'\','+b.click.wk+')"' : '';
         return '<div class="calweek-block'+(b.click?' clickable':'')+'" style="'+style+'"'+clickAttr+'>'
           +'<div class="calweek-block-title">'+b.title+'</div>'
         +'</div>';
@@ -1901,6 +1909,10 @@ async function init(){
   // no chat history fetch, no AI check-in generation, no 60 s restart poll.
   document.body.classList.add('ui-ready');
   renderAiContextDock();
+  // 六科 opens on the subject of the current task, not always the first tab.
+  const cur = nextFoundationTask(DONE_TASK_IDS), curSub = cur && SUBJECTS.find(function(s){ return s.name === cur.subject; });
+  const curTab = curSub && document.querySelector('.stab[data-id="'+curSub.id+'"]');
+  if(curTab) curTab.click();
   // Links like the study room's 「← 六科」 point at /#subjects.
   if(location.hash === '#subjects') goSec('subjects', document.querySelector('.pill[data-sec="subjects"]'));
 }

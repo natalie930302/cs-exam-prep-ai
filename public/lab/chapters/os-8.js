@@ -349,7 +349,7 @@ export default function (ctx) {
     fresh([0, 4.0, 13], [0, 2.8, 0]);
     controls('<label>memory <input id="aM" type="range" min="50" max="300" step="10" value="' + ea.m + '"> <b id="aMv"></b> ns</label>'
       + '<label>fault service <input id="aS" type="range" min="1" max="20" value="' + ea.s + '"> <b id="aSv"></b> ms</label>'
-      + '<label>p = 10^−<input id="aX" type="range" min="2" max="8" step="0.25" value="' + ea.x + '"> <b id="aXv"></b></label><button id="aBook">課本例子</button>');
+      + '<label>p = 10^−<input id="aX" type="range" min="2" max="8" step="0.25" value="' + ea.x + '"> <b id="aXv"></b></label><button id="aBook">例子</button>');
     const read = () => { ea.m = Number($('aM').value); ea.s = Number($('aS').value); ea.x = Number($('aX').value); eaUpdate(); };
     ['aM', 'aS', 'aX'].forEach((id) => { $(id).oninput = read; });
     on('aBook', () => { $('aM').value = 200; $('aS').value = 8; $('aX').value = 3; read(); log('課本：200 ns、8 ms、p = 1/1000 → 8.2 µs，慢了 40 倍。'); });

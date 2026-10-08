@@ -10,7 +10,7 @@
 // 章名要求的近似／隨機演算法以 CLRS 第 35 章與第 5、7 章為準：
 //   APPROX-VERTEX-COVER（CLRS 圖 35.1 的 a–g 圖）、APPROX-TSP-TOUR（MST 前序走訪，需三角不等式）、
 //   GREEDY-SET-COVER、RANDOMIZED-QUICKSORT（Las Vegas）、Monte Carlo 測試（Freivalds 矩陣乘積驗證，錯誤率 ≤ 1/2^k）。
-//   N-Queens（4 皇后）與 Sum of Subsets（w = 5,10,12,13,15,18，m = 30）取自 Horowitz/Sahni 課本例題。
+//   N-Queens（4 皇后）與 Sum of Subsets（w = 5,10,12,13,15,18，m = 30）取自 Horowitz/Sahni 例題。
 export default function (ctx) {
   const { THREE, lab, sleep, $, log, clearLog, setState, controls, on, say, beat } = ctx;
   const V3 = (x, y, z = 0) => new THREE.Vector3(x, y, z);
@@ -608,7 +608,7 @@ export default function (ctx) {
     const res = tspLC(M5);
     layout(res.root, -0.2, 6.6, 6.8, 1.45);
     const R0 = res.root.red;
-    say('課本例：先做 reduced matrix', '每列減掉該列最小值，再每行減掉該行最小值');
+    say('例：先做 reduced matrix', '每列減掉該列最小值，再每行減掉該行最小值');
     await wait(tok, 2600);
     let A = M5.map((r) => r.slice());
     for (let i = 0; i < 5; i++) {
@@ -967,7 +967,7 @@ export default function (ctx) {
     void caught;
   }
 
-  // ═════════════════════════ 回溯：課本例題 4-Queens、Sum of Subsets ═════════════════════════
+  // ═════════════════════════ 回溯：例題 4-Queens、Sum of Subsets ═════════════════════════
   function queensEvents(n, maxSol) {
     const ev = []; let sols = 0;
     const col = [];
@@ -1415,13 +1415,13 @@ export default function (ctx) {
     'rand-quicksort': { title: '隨機快排：pivot 隨機、答案永遠對（Las Vegas）', play: scRandQs },
     'lv-vs-mc': { title: 'Las Vegas vs Monte Carlo', play: scLvMc },
     'mc-trials': { title: 'Monte Carlo 重複 k 次：錯誤率 ≤ 1/2^k', play: scMcTrials },
-    // 回溯（Abdul Bari 6、6.3；課本例題）
+    // 回溯（Abdul Bari 6、6.3；例題）
     'strategy-map': { title: '回溯／分支界限：brute force 的兩種走法', play: scStrategy },
     'bt-seats-tree': { title: '回溯：3 人坐 3 椅的狀態空間樹（3! = 6）', play: (tok) => scSeats(tok, false) },
     'bt-seats-bound': { title: '回溯：女生不坐中間 → bounding function 殺節點', play: (tok) => scSeats(tok, true) },
     'bt-dfs-bfs': { title: '回溯 DFS vs 分支界限 BFS：節點產生順序', play: scDfsBfs },
-    'nqueens-4': { title: '回溯：4-Queens（課本例）', play: scQueens },
-    'sum-subsets': { title: '回溯：Sum of subsets，m = 30（課本例）', play: scSos },
+    'nqueens-4': { title: '回溯：4-Queens（例）', play: scQueens },
+    'sum-subsets': { title: '回溯：Sum of subsets，m = 30（例）', play: scSos },
     'gc-intro': { title: '回溯：Graph coloring，相鄰不同色', play: scGcIntro },
     'gc-types': { title: '回溯：m-coloring 判定與最少色數', play: scGcTypes },
     'gc-tree-size': { title: '回溯：著色狀態空間樹 1+3+…+3⁴ 個節點', play: scGcTreeSize },
@@ -1434,7 +1434,7 @@ export default function (ctx) {
     'bb-lc': { title: '分支界限：LC，挑 cost 最小的節點', play: scBbLc },
     'tsp-problem': { title: '分支界限 TSP：問題與成本矩陣', play: scTspProblem },
     'tsp-bb-small': { title: '分支界限 TSP：4 城市的狀態空間樹', play: scTspSmall },
-    'tsp-bb-reduce': { title: '分支界限 TSP：reduced matrix 下界與 LC 展開（課本例）', play: scTspReduce },
+    'tsp-bb-reduce': { title: '分支界限 TSP：reduced matrix 下界與 LC 展開（例）', play: scTspReduce },
   };
 
   return {

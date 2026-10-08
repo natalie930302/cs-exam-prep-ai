@@ -1,7 +1,7 @@
 // 線性代數 第7章：正交性（正交子空間、投影、最小平方、Gram-Schmidt、A = QR、正交矩陣）。
 // Chapter module for lab-shell.js — see the contract at the top of lab-shell.js.
 // 場景依 MIT 18.06 L17（0MtwqhIwdrI）與 Gram-Schmidt 習題課（HEQuN0QELSQ）的例子；
-// L14–L16 與 3Blue1Brown Ch9 沒有逐字稿，相關場景以 Strang 課本例題建立（標題標「課本」）。
+// L14–L16 與 3Blue1Brown Ch9 沒有逐字稿，相關場景以 Strang 例題建立（標題標「課本」）。
 export default function (ctx) {
   const { THREE, lab, $, log, clearLog, setState, controls, on, say, beat } = ctx;
 

@@ -612,7 +612,7 @@ export default function (ctx) {
   async function scRow2D(tok) {
     fresh([0, 3.3, 11], [0, 3.2, 0]);
     const bd = board(0, 3.2, 0.62, 4);
-    say('課本例：2x − y = 0、−x + 2y = 3', 'Row picture：一個方程式 = 一條線');
+    say('例：2x − y = 0、−x + 2y = 3', 'Row picture：一個方程式 = 一條線');
     await W(tok, 2200);
     const r1 = rod(COL.a, 0.05), r2 = rod(COL.b, 0.05);
     const s1 = clipLine(2, -1, 0, 4), s2 = clipLine(-1, 2, 3, 4);
@@ -659,7 +659,7 @@ export default function (ctx) {
     fresh([6.2, 6.2, 10.5], [0, 3, 0]);
     const sp = space([0, 2.6, 0], 0.85, 2.6);
     const eqs = [[2, -1, 0, 0], [-1, 2, -1, -1], [0, -3, 4, 4]], f = [0, 0, 1], colors = [COL.a, COL.b, COL.c];
-    say('課本例：三個未知數、三個方程式', '2x − y = 0　−x + 2y − z = −1　−3y + 4z = 4');
+    say('例：三個未知數、三個方程式', '2x − y = 0　−x + 2y − z = −1　−3y + 4z = 4');
     await W(tok, 2600);
     const pls = [];
     for (let k = 0; k < 3; k++) {
@@ -705,7 +705,7 @@ export default function (ctx) {
     fresh([0, 3.2, 10.5], [0, 3, 0]);
     const M = STRANG_A.map((r, i) => [...r, STRANG_B[i]]);
     const mv = mview(M, 0, 3.4, { aug: 3, name: '[A | b]', s: 1 });
-    say('課本例：A 和 b 並排成增廣矩陣', 'x + 2y + z = 2　3x + 8y + z = 12　4y + z = 2');
+    say('例：A 和 b 並排成增廣矩陣', 'x + 2y + z = 2　3x + 8y + z = 12　4y + z = 2');
     await W(tok, 2600);
     for (const st of planElim(M, 3, false).steps) {
       if (st.t === 'sub' && st.tg === 1) { say('ℓ₂₁ = 3 ÷ 1 = 3', 'R₂ − 3·R₁：從第 2 列減掉 3 倍第 1 列'); await rowOp(tok, mv, 1, 0, 3, 1300); await W(tok, 900); continue; }
@@ -763,7 +763,7 @@ export default function (ctx) {
   async function scBreakdown(tok) {
     fresh([0, 3.2, 10.5], [0, 3, 0]);
     const mv = mview([[1, 1, 1], [2, 2, 5], [4, 6, 8]], -2.6, 3.4, { name: 'A', s: 0.9 });
-    say('課本例：消去時 pivot 位置變成 0', 'A = [1 1 1; 2 2 5; 4 6 8]');
+    say('例：消去時 pivot 位置變成 0', 'A = [1 1 1; 2 2 5; 4 6 8]');
     await W(tok, 2400);
     mv.pivot(0, 0);
     say('消第 1 行：ℓ₂₁ = 2、ℓ₃₁ = 4', 'R₂ − 2R₁、R₃ − 4R₁');
@@ -786,7 +786,7 @@ export default function (ctx) {
     fresh([0, 3.2, 10.5], [0, 3, 0]);
     const mv = mview(STRANG_R, 0, 3.7, { name: 'A', s: 0.95 });
     const colL = [0, 1, 2, 3].map((j) => tag('x' + sub(j + 1), 'idx', mv.X(j), mv.Y(2) - 0.8));
-    say('課本例：3×4 的 A，解 Ax = 0', 'A = [1 2 2 2; 2 4 6 8; 3 6 8 10]');
+    say('例：3×4 的 A，解 Ax = 0', 'A = [1 2 2 2; 2 4 6 8; 3 6 8 10]');
     await W(tok, 2400);
     const pl = planElim(STRANG_R, 4, true);
     for (const st of pl.steps) await doStep(tok, mv, st, 1000);

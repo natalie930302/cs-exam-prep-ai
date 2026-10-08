@@ -1,6 +1,6 @@
 // 線性代數 第8章：對稱矩陣與二次型（Spectral theorem、正交對角化、xᵀAx 曲面、正定判斷、主軸）。
 // Chapter module for lab-shell.js — see the contract at the top of lab-shell.js.
-// 本章影片（MIT 18.06 L25–L27）尚無逐字稿，所有場景以 Strang 課本例題建立（標題標「課本」）：
+// 本章影片（MIT 18.06 L25–L27）尚無逐字稿，所有場景以 Strang 例題建立（標題標「課本」）：
 //   S = [1 2; 2 4]、[2 1; 1 2]、f = 2x² + 12xy + cy²（c = 20 / 18 / 7）、5x² + 8xy + 5y² = 1、[2 −1 0; −1 2 −1; 0 −1 2]。
 export default function (ctx) {
   const { THREE, lab, $, log, clearLog, setState, controls, on, say, beat } = ctx;

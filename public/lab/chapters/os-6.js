@@ -387,7 +387,7 @@ export default function (ctx) {
       } finally { busy = false; }
     });
     on('dReset', () => { clearLog(); enterDetect(); });
-    log('課本例子：A、B、C 共 7、2、6，Available = (0, 0, 0)。detection 不需要事先知道 Max。');
+    log('例子：A、B、C 共 7、2、6，Available = (0, 0, 0)。detection 不需要事先知道 Max。');
     setState('Deadlock detection', [['Available', vec(avail0(S))]], 'Request ≤ Work → 假設它會做完，Work += Allocation');
   }
 

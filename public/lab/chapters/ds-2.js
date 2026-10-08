@@ -7149,7 +7149,7 @@ FRAG.push(['llpeng12-array-cons', 'Array 的缺點：大小固定、要搬資料
 FRAG.push(['llpeng12-ll-intro', 'Linked List：data、link 與 first', async (tok) => {
   fresh([0, 5.5, 12.5], [0, 0.8, 0]);
   const W = ['BAT', 'CAT', 'EAT', 'FAT', 'HAT'];
-  say('課本例子：依字母順序排好的單字', 'BAT → CAT → EAT → FAT → HAT');
+  say('例子：依字母順序排好的單字', 'BAT → CAT → EAT → FAT → HAT');
   const ns = [];
   for (let i = 0; i < 5; i++) { ns.push(node(W[i], -5.6 + i * 2.4)); await dropIn(tok, ns[i], 330); }
   await beat(tok, 700);
@@ -8238,7 +8238,7 @@ function ringAt(r = 0.5) {
   m.rotation.x = Math.PI / 2; m.visible = false; lab.world.add(m); return m;
 }
 
-// ═════════════ Equivalence class（Horowitz 課本範例：n = 12，9 個 pair） ═════════════
+// ═════════════ Equivalence class（Horowitz 範例：n = 12，9 個 pair） ═════════════
 const EQP = [[0, 4], [3, 1], [6, 10], [8, 9], [7, 4], [6, 8], [3, 5], [2, 11], [11, 0]];
 const EQN = 12;
 const EQX = (i) => (i - 5.5) * 0.95;

@@ -898,7 +898,7 @@ export default function (ctx) {
     const R = [[1, 3], [2, 3], [4, 1]], S = matMul(R, T2(R));
     mview(R, -5, 3.4, { name: 'R（3×2）', s: 0.75 }); tag('×', 'val', -3.9, 3.4);
     mview(T2(R), -2.2, 3.4, { name: 'Rᵀ', s: 0.75, color: COL.b }); tag('=', 'val', -0.6, 3.4);
-    say('課本例：R 乘它的轉置', 'R = [1 3; 2 3; 4 1]');
+    say('例：R 乘它的轉置', 'R = [1 3; 2 3; 4 1]');
     await W(tok, 2400);
     const mS = mview(S, 1.6, 3.4, { name: 'RRᵀ', nameCls: 'ptr alt', s: 0.75, color: COL.c });
     say('乘出來是 3×3 的對稱矩陣', 'RRᵀ = [10 11 7; 11 13 11; 7 11 17]');

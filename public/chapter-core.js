@@ -134,7 +134,7 @@ async function syncFoundationWeekTasks(wk, doneIds){
 // Chapters whose lab module exists in public/lab/chapters/<subject>-<n>.js
 // (n = 1-based chapter number). Add an entry when a chapter's lab ships.
 const CHAPTER_LABS = {
-  ds:[1,2,3,4,5,6,7,8,9,10,11,12],
+  ds:[1,2,3,4,5,6,7,8,9,10,11],
   alg:[1,2,3,4,5,6,7,8,9,10],
   os:[1,2,3,4,5,6,7,8,9,10,11],
   la:[1,2,3,4,5,6,7,8,9],

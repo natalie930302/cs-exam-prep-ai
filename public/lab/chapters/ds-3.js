@@ -47,7 +47,7 @@ export default function (ctx) {
   }
 
   const TREES = {
-    expr: { name: '運算式樹 A/B*C*D+E（課本例）', make: () => T('+', T('*', T('*', T('/', T('A'), T('B')), T('C')), T('D')), T('E')) },
+    expr: { name: '運算式樹 A/B*C*D+E（例）', make: () => T('+', T('*', T('*', T('/', T('A'), T('B')), T('C')), T('D')), T('E')) },
     sample: { name: '一般二元樹（9 個節點）', make: () => T('A', T('B', T('D'), T('E', T('G'))), T('C', null, T('F', T('H'), T('I')))) },
     random: { name: '隨機樹', make: () => labelLevel(randomShape(6 + rnd(4))) },
     hindi: { name: '影片例 A(B(,D),C(E(G,),F(H,I)))', make: () => parseTree('A(B(,D),C(E(G,),F(H,I)))') },
@@ -2096,7 +2096,7 @@ export default function (ctx) {
       await beat(tok, 3000);
     } };
 
-    // ── 2/3/5. 課本範例樹：level、degree、parent／child、sibling、ancestor ──
+    // ── 2/3/5. 範例樹：level、degree、parent／child、sibling、ancestor ──
     async function sampleBase(tok) {
       fresh(); lab.frameCamera([0, 5, 13.5], [0, 3.8, 0]);
       const root = await dropG(tok, HT, { width: 10, topY: 6.6, step: 1.6 }, 140);
@@ -2104,7 +2104,7 @@ export default function (ctx) {
     }
     async function scLevels(tok) {
       const { root, N } = await sampleBase(tok);
-      say('課本範例樹：A 是 root', 'A(B(E(K,L),F), C(G), D(H,I,J))');
+      say('範例樹：A 是 root', 'A(B(E(K,L),F), C(G), D(H,I,J))');
       await beat(tok, 2000);
       const all = gAll(root);
       for (let d = 0; d < 4; d++) {
@@ -2189,7 +2189,7 @@ export default function (ctx) {
       say('path 上經過的 node 是 K 的 ancestors', 'ancestors(K) = A、B、E');
       await beat(tok, 3200);
     }
-    LECT['p12-sample'] = { title: '課本範例樹：level、degree、parent、sibling', play: (tok) => {
+    LECT['p12-sample'] = { title: '範例樹：level、degree、parent、sibling', play: (tok) => {
       const f = PP().focus;
       return f === 'parent' ? scParent(tok) : f === 'sibling' ? scSibling(tok) : scLevels(tok);
     } };
@@ -3286,7 +3286,7 @@ export default function (ctx) {
       tag(SAT_F, 'ptr', -2.0, 7.6);
       say('運算子：¬ not、∧ and、∨ or', '變數 x1、x2、x3 只能是 T（1）或 F（0）');
       await beat(tok, 2600);
-      say('這個式子可以用 tree 表示（課本例）', '¬ 是一元運算子：只有右孩子');
+      say('這個式子可以用 tree 表示（例）', '¬ 是一元運算子：只有右孩子');
       const root = await dropTree(tok, SAT_SRC, { cx: -2.0, width: 8.4, topY: 6.6, minY: 2.2, maxSp: 0.78 }, 200);
       await beat(tok, 1400);
       const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.45, 24, 16), new THREE.MeshStandardMaterial({ color: '#d8cfc0', emissive: '#000' }));
@@ -3517,7 +3517,7 @@ export default function (ctx) {
       fresh();
       lab.frameCamera([0, 5, 14], [0, 3.8, 0]);
       tag(SAT_EXPR, 'ptr', -2.8, 7.6);
-      say('哪組 x1、x2、x3 讓式子為 true？', SAT_EXPR + '（課本例）');
+      say('哪組 x1、x2、x3 讓式子為 true？', SAT_EXPR + '（例）');
       await beat(tok, 2800);
       say('優先序：¬ > ∧ > ∨', '變數只有 true / false 兩種值');
       await beat(tok, 2200);
@@ -5315,7 +5315,7 @@ export default function (ctx) {
       gLit(root, GOLD);
       say('root = 26：Huffman tree 完成', '每次 delete、insert 之後 heap 都要調整');
       await beat(tok, 3200);
-      say('E、i 等低頻字元在最下層，e 只在第 2 層', '同 freq 的取法依課本範例');
+      say('E、i 等低頻字元在最下層，e 只在第 2 層', '同 freq 的取法依範例');
       await beat(tok, 2600);
     } };
 

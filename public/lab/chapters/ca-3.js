@@ -557,7 +557,7 @@ export default function (ctx) {
   async function scSingleTime(tok) {
     fresh([0, 3.8, 14], [0, 3.0, 0]);
     tm.lat = [200, 100, 200, 200, 100]; tm.mix = [25, 10, 45, 15, 5];
-    say('課本例：IF 200、Reg 100、ALU 200、Mem 200、WB 100 ps', '各指令要經過哪些單元？');
+    say('例：IF 200、Reg 100、ALU 200、Mem 200、WB 100 ps', '各指令要經過哪些單元？');
     await beat(tok, 2600);
     await drawTiming(tok, 260);
     say('lw 最長：200 + 100 + 200 + 200 + 100 = 800 ps', '單週期的 clock 必須 = 800 ps');
