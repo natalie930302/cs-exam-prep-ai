@@ -1,0 +1,480 @@
+{
+ "video": "ozsuci5pIso",
+ "label": "MIT 6.006 L17：Bellman-Ford",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場：Bellman-Ford 要做到什麼",
+   "scene": "spmit2-bf-spec",
+   "points": [
+    {
+     "text": "最短路徑單元第三講，今天的對手是負 cycle 與負權重邊。",
+     "t": 31
+    },
+    {
+     "text": "Bellman-Ford 由 Bellman 與 Ford 各自提出，能處理有負邊的圖。",
+     "t": 46
+    },
+    {
+     "text": "圖裡有負 cycle 也正確：回報負 cycle 存在；對中間沒有負 cycle 的頂點仍給出正確最短路徑。",
+     "t": 58
+    },
+    {
+     "text": "它是多項式時間演算法；今天描述它、分析複雜度，並正式證明正確性。",
+     "t": 85
+    },
+    {
+     "text": "例子：起點 u 走得到一個負權重 cycle，cycle 上的 v1、v2、v3 的 δ(u, ·) undefined——可以一直繞。",
+     "t": 131
+    },
+    {
+     "text": "v0：δ(u, v0) = 2，是一條邊的簡單路徑，中途沒有負 cycle。",
+     "t": 196
+    },
+    {
+     "text": "u 走不到的 z：δ(u, z) = ∞。",
+     "t": 219
+    },
+    {
+     "text": "初始化 d(u) = 0、其他 ∞；最後有的變有限、有的留 ∞、有的 undefined——這就是規格。",
+     "t": 231
+    }
+   ],
+   "trap": "補充：undefined 只發生在「從 s 走得到負 cycle，且能從 cycle 走到」的頂點；CLRS 的寫法是 Bellman-Ford 回傳 FALSE。動畫中 cycle 上的權重是示意。"
+  },
+  {
+   "title": "通用演算法的兩個問題",
+   "scene": "spmit2-generic-problems",
+   "points": [
+    {
+     "text": "複習之前寫的通用最短路徑演算法，順便複習符號。",
+     "t": 269
+    },
+    {
+     "text": "初始化：所有 d = ∞、π = NIL，d(s) = 0。",
+     "t": 301
+    },
+    {
+     "text": "主迴圈 repeat：選一條邊 relax；選邊方式不同就是不同的演算法（Dijkstra 選 d 最小的）。",
+     "t": 320
+    },
+    {
+     "text": "Relax：d(v) > d(u) + w(u, v) 就更新，並設 π(v) = u；一直做到不能再 relax。",
+     "t": 360
+    },
+    {
+     "text": "問題 1：邊選得很差時，即使權重都是正的也可能指數時間，n 個點可到 O(2^(n/2))。",
+     "t": 411
+    },
+    {
+     "text": "問題 2：若從 s 走得到負權重 cycle，照原樣寫的演算法不會終止。",
+     "t": 465
+    },
+    {
+     "text": "Dijkstra 解決了非負權重下的問題 1；DAG 能處理負邊；一般圖的負 cycle 今天才處理。",
+     "t": 511
+    }
+   ]
+  },
+  {
+   "title": "Five-Minute University",
+   "scene": null,
+   "points": [
+    {
+     "text": "SNL 小品：畢業五年後你只記得五分鐘份量的東西。",
+     "t": 541
+    },
+    {
+     "text": "6.006 十秒版：多項式時間很好、指數時間很糟、無限時間會被開除。",
+     "t": 618
+    },
+    {
+     "text": "對應今天的兩個問題：選錯邊 → 指數時間；遇到負 cycle → 永遠不會結束。",
+     "t": 644
+    }
+   ]
+  },
+  {
+   "title": "Bellman-Ford 演算法",
+   "scene": "spmit2-bf-code",
+   "points": [
+    {
+     "text": "今天用 Bellman-Ford 修好問題 2；描述上只有四行程式。",
+     "t": 689
+    },
+    {
+     "text": "輸入：圖、權重、起點 s，用 adjacency list；初始化跟通用版相同。",
+     "t": 714
+    },
+    {
+     "text": "for i = 1 to |V| − 1：每一輪對每條邊 (u, v) ∈ E 都做 relax。",
+     "t": 748
+    },
+    {
+     "text": "Relax(u, v, w)：若 d(v) > d(u) + w(u, v)，設 d(v) = d(u) + w(u, v)、π(v) = u。",
+     "t": 782
+    },
+    {
+     "text": "沒有負 cycle 時，|V| − 1 輪後就得到正確的最短路徑權重（之後證明）。",
+     "t": 837
+    },
+    {
+     "text": "再做第 |V| 輪檢查：若還有邊滿足 d(v) > d(u) + w(u, v)，回報負 cycle 存在。",
+     "t": 866
+    },
+    {
+     "text": "前半是計算，後半是檢查。",
+     "t": 911
+    },
+    {
+     "text": "學生問 i 用在哪：它只是計數器，確保做 |V| − 1 輪。",
+     "t": 939
+    }
+   ]
+  },
+  {
+   "title": "複雜度 O(VE)",
+   "scene": "spmit2-bf-cost",
+   "points": [
+    {
+     "text": "問：用最好的資料結構，複雜度是多少？",
+     "t": 954
+    },
+    {
+     "text": "主迴圈 |V| − 1 輪 × E 條邊 = O(VE)；用陣列或 adjacency list 都一樣，不像 Dijkstra 需要 priority queue。",
+     "t": 1001
+    },
+    {
+     "text": "檢查輪只掃一次所有邊：O(E)，總共 O(VE)。",
+     "t": 1025
+    },
+    {
+     "text": "簡單圖 E 可以到 O(V²)，Bellman-Ford 會到 O(V³)。",
+     "t": 1035
+    },
+    {
+     "text": "實務上比 Dijkstra 慢很多；Dijkstra 可以做到接近線性。",
+     "t": 1050
+    },
+    {
+     "text": "能用 Dijkstra 就用；可能有負 cycle 時才被迫用 Bellman-Ford。",
+     "t": 1072
+    }
+   ]
+  },
+  {
+   "title": "定理與推論；為什麼 k ≤ |V| − 1",
+   "scene": "spmit2-bf-theorem",
+   "points": [
+    {
+     "text": "要證兩件事：沒有負 cycle 時算對；有負 cycle 時偵測得到。",
+     "t": 1083
+    },
+    {
+     "text": "定理：G = (V, E) 沒有負權重 cycle → Bellman-Ford 結束後所有 v 都有 d(v) = δ(s, v)。",
+     "t": 1119
+    },
+    {
+     "text": "推論：若某個 d(v) 在 |V| − 1 輪後還沒收斂，就存在從 s 走得到的負權重 cycle。",
+     "t": 1177
+    },
+    {
+     "text": "證明要記住的圖：s = v0、v1、…、vk = v 的一條路徑。",
+     "t": 1253
+    },
+    {
+     "text": "k 最大多少？|V| − 1。",
+     "t": 1299
+    },
+    {
+     "text": "k > |V| − 1 一定重複走到某個頂點 → 有 cycle，不是簡單路徑。",
+     "t": 1323
+    },
+    {
+     "text": "證定理時假設沒有負 cycle，所以最短路徑是簡單的，k ≤ |V| − 1。",
+     "t": 1378
+    }
+   ]
+  },
+  {
+   "title": "證明：每一輪推進一個頂點",
+   "scene": "spmit2-bf-induction",
+   "points": [
+    {
+     "text": "用歸納法；取 p 為「邊數最少」的那條最短路徑 v0 … vk。",
+     "t": 1408
+    },
+    {
+     "text": "最短路徑可能不唯一：4 條邊和 3 條邊的路徑同權重時，選 3 條邊那條。",
+     "t": 1479
+    },
+    {
+     "text": "沒有負 cycle → p 是簡單路徑 → k ≤ |V| − 1。",
+     "t": 1499
+    },
+    {
+     "text": "每一輪都 relax 所有的邊，沒有任何選擇。",
+     "t": 1530
+    },
+    {
+     "text": "第一輪一定會 relax 到 (v0, v1)；由 optimal substructure，之後 d(v1) = δ(s, v1)。",
+     "t": 1560
+    },
+    {
+     "text": "第二輪會 relax (v1, v2) → d(v2) = δ(s, v2)；k 輪後 d(vk) = δ(s, vk)，frontier 每輪前進一格。",
+     "t": 1698
+    },
+    {
+     "text": "做滿 |V| − 1 輪，所有走得到的頂點都有正確的 δ。",
+     "t": 1756
+    },
+    {
+     "text": "這個證明比 Dijkstra 的證明簡單，兩塊黑板就寫得完。",
+     "t": 1791
+    }
+   ],
+   "trap": "補充：動畫中的路徑權重（2、1、3、1 與三條較差的邊）是示意；重點是不管邊的順序多差，第 i 輪後 d(v_i) 一定正確。"
+  },
+  {
+   "title": "推論的證明：還能 relax 就有負 cycle",
+   "scene": "spmit2-bf-corollary",
+   "points": [
+    {
+     "text": "推論沿用定理的論證。",
+     "t": 1821
+    },
+    {
+     "text": "做完 |V| − 1 輪後，若還找得到能 relax 的邊……",
+     "t": 1852
+    },
+    {
+     "text": "代表目前到某個頂點的最佳路徑不是簡單路徑：有重複的頂點。",
+     "t": 1883
+    },
+    {
+     "text": "重複頂點 = 找到 cycle；加上它權重反而變小 → 這個 cycle 一定是負的。",
+     "t": 1928
+    },
+    {
+     "text": "演算法並不聰明：只是固定次數地 relax 所有邊。",
+     "t": 1966
+    },
+    {
+     "text": "等於通用演算法加上終止條件：做了一定輪數還沒結束，就是有負 cycle，可以停。",
+     "t": 1990
+    }
+   ],
+   "trap": "補充：老師沒有畫具體例子；動畫的 s、a、b、c（cycle 1 + 1 − 3）是示意。"
+  },
+  {
+   "title": "學生提問：2、3、−1 的例子",
+   "scene": "spmit2-bf-qa-order",
+   "points": [
+    {
+     "text": "學生問：如果只是樹上有負邊，多 relax 一次不就被誤當成 cycle？",
+     "t": 2030
+    },
+    {
+     "text": "例子：三條邊權重 2、3、−1，S 是起點。",
+     "t": 2066
+    },
+    {
+     "text": "每一輪都用同樣的邊順序 ①②③；初始 S = 0，其他 ∞。",
+     "t": 2094
+    },
+    {
+     "text": "第一輪：① 時 A 還是 ∞ 沒變；② 讓 A = 2；③ 的起點是 ∞，也沒變。",
+     "t": 2118
+    },
+    {
+     "text": "第二輪：① 2 − 1 讓 B = 1；其他沒變。",
+     "t": 2147
+    },
+    {
+     "text": "第三輪（4 個頂點 → 3 輪）什麼都沒變：A = 2、B = 1，走不到的維持 ∞。",
+     "t": 2168
+    },
+    {
+     "text": "重點：每一輪都 relax 所有的邊；講義有更複雜的例子。",
+     "t": 2185
+    }
+   ],
+   "trap": "補充：逐字稿看不到白板，圖的接法（① A→B = −1、② S→A = 2、③ C→A = 3）是依敘述重建的。樹上的負邊不會讓檢查輪誤報：|V| − 1 輪後已經收斂。"
+  },
+  {
+   "title": "更快的演算法？走不到的負 cycle",
+   "scene": "spmit2-bf-unreachable",
+   "points": [
+    {
+     "text": "一般情況（可能有負 cycle）沒有已知更好的演算法。",
+     "t": 2209
+    },
+    {
+     "text": "有些演算法假設權重在某個範圍，複雜度同時含 V、E 與權重範圍 W，不容易直接比較。",
+     "t": 2213
+    },
+    {
+     "text": "DAG 等特殊情況可以更快。",
+     "t": 2240
+    },
+    {
+     "text": "學生問：推論是否假設圖連通？負 cycle 在不相連的另一部分呢？",
+     "t": 2257
+    },
+    {
+     "text": "只有 Initialize 跟 s 有關：d(s) = 0、其他 ∞，其餘步驟只是 relax 邊。",
+     "t": 2283
+    },
+    {
+     "text": "s 沒有出邊時演算法很 trivial；從 s 走不到的負 cycle 不會被偵測到。",
+     "t": 2319
+    }
+   ]
+  },
+  {
+   "title": "取負號求 longest path 行不行",
+   "scene": "spmit2-longest-negate",
+   "points": [
+    {
+     "text": "接著談 shortest path 與 longest path 的關係（預告之後的複雜度課）。",
+     "t": 2354
+    },
+    {
+     "text": "問題：所有邊權重為正，全部取負號再跑 Bellman-Ford，能找到 longest path 嗎？",
+     "t": 2398
+    },
+    {
+     "text": "例子 s、v1、v2、v3：到 v3 最長是 6（走三段），最短是 4。",
+     "t": 2457
+    },
+    {
+     "text": "最短與最長路徑看起來有對偶性，似乎取負號就好。",
+     "t": 2489
+    },
+    {
+     "text": "Bellman-Ford 會回報 undefined：圖中有 cycle，取負號後就是負 cycle。",
+     "t": 2553
+    },
+    {
+     "text": "正權重的 cycle 一取負號就變成負 cycle，Bellman-Ford 只會 abort，這個策略一般不行。",
+     "t": 2607
+    }
+   ],
+   "trap": "老師在 42:33 先說 undefined，接著承認自己畫的圖沒有 cycle，補了一條邊才成立。補充：若圖是 DAG（沒有 cycle），取負號求 longest path 是可行的。權重 1、2、3、4 是示意。"
+  },
+  {
+   "title": "有負 cycle 時的最短簡單路徑是 NP-hard",
+   "scene": "spmit2-simple-path-np",
+   "points": [
+    {
+     "text": "更細的觀察：沒有負 cycle 時，Bellman-Ford 給的是最短「簡單」路徑（長度 ≤ |V| − 1）。",
+     "t": 2635
+    },
+    {
+     "text": "換一張有負 cycle 的圖：cycle 2、3、−6，加上一條水平路徑。",
+     "t": 2689
+    },
+    {
+     "text": "s 到 v 的最短簡單路徑是水平那條：3 + 2 + 3 + 3 + 2 = 13。",
+     "t": 2724
+    },
+    {
+     "text": "Bellman-Ford 給不出 13：v 走得到，但到 v 前可能經過負 cycle，它會 abort。",
+     "t": 2748
+    },
+    {
+     "text": "有負 cycle 時求最短簡單路徑是 NP-hard：目前只知道指數時間的演算法。",
+     "t": 2774
+    },
+    {
+     "text": "它跟 longest path 一樣難：會解一個就會解另一個。",
+     "t": 2835
+    },
+    {
+     "text": "允許遇到負 cycle 就 abort → O(VE)；多要求一點點 → 指數時間。",
+     "t": 2849
+    }
+   ],
+   "trap": "補充：動畫中負 cycle 掛在哪個點、邊怎麼接是依敘述重建的示意。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Bellman-Ford 的主迴圈對所有邊 relax 幾輪？",
+   "opts": [
+    "|V| − 1 輪",
+    "|V| 輪",
+    "|E| − 1 輪",
+    "log |V| 輪"
+   ],
+   "ans": "|V| − 1 輪",
+   "why": "沒有負 cycle 時最短路徑最多 |V| − 1 條邊，每輪至少推進一個頂點；第 |V| 輪只用來檢查。"
+  },
+  {
+   "q": "做完 |V| − 1 輪後，檢查時發現還有邊能 relax，代表什麼？",
+   "opts": [
+    "存在從 s 走得到的負權重 cycle",
+    "圖不連通",
+    "圖裡有負權重邊，但不一定有 cycle",
+    "邊的 relax 順序選錯了"
+   ],
+   "ans": "存在從 s 走得到的負權重 cycle",
+   "why": "還能變小代表最佳路徑超過 |V| − 1 條邊、有重複頂點，形成的 cycle 必為負。"
+  },
+  {
+   "q": "在簡單圖（E = O(V²)）上，Bellman-Ford 最壞的時間是？",
+   "opts": [
+    "O(V³)",
+    "O(V²)",
+    "O(V log V + E)",
+    "O(E log V)"
+   ],
+   "ans": "O(V³)",
+   "why": "Bellman-Ford 是 O(VE)，E = O(V²) 時就是 O(V³)。"
+  },
+  {
+   "q": "證明中為什麼可以說最短路徑 v0…vk 的 k ≤ |V| − 1？",
+   "opts": [
+    "沒有負 cycle 時最短路徑是簡單路徑，超過就會重複頂點",
+    "因為 Bellman-Ford 只做 |V| − 1 輪",
+    "因為每個頂點最多一條出邊",
+    "因為權重都是正的"
+   ],
+   "ans": "沒有負 cycle 時最短路徑是簡單路徑，超過就會重複頂點",
+   "why": "k 條邊的路徑有 k + 1 個頂點；k ≥ |V| 必有重複頂點（cycle）。"
+  },
+  {
+   "q": "圖裡有負 cycle，但從 s 走不到它。Bellman-Ford 會？",
+   "opts": [
+    "不回報，走得到的頂點 d 正確，其他維持 ∞",
+    "回報負 cycle 存在",
+    "進入無窮迴圈",
+    "所有 d 變成 −∞"
+   ],
+   "ans": "不回報，走得到的頂點 d 正確，其他維持 ∞",
+   "why": "Initialize 只讓 d(s) = 0；∞ + w 還是 ∞，負 cycle 上的邊永遠無法 relax。"
+  },
+  {
+   "q": "把正權重圖的邊全部取負號再跑 Bellman-Ford 來求 longest path，一般會怎樣？",
+   "opts": [
+    "只要圖有 cycle，取負後就是負 cycle，Bellman-Ford abort",
+    "一定得到 longest path",
+    "得到 shortest path",
+    "時間變成指數"
+   ],
+   "ans": "只要圖有 cycle，取負後就是負 cycle，Bellman-Ford abort",
+   "why": "正 cycle 取負號變負 cycle；只有 DAG 這招才行得通。"
+  },
+  {
+   "q": "圖中有負 cycle 時，求「最短簡單路徑」的難度是？",
+   "opts": [
+    "NP-hard，目前只知道指數時間演算法",
+    "O(VE)，用 Bellman-Ford",
+    "O(V log V + E)，用 Dijkstra",
+    "O(V + E)，用 BFS"
+   ],
+   "ans": "NP-hard，目前只知道指數時間演算法",
+   "why": "這跟 longest path 一樣難；Bellman-Ford 只能在遇到負 cycle 時 abort。"
+  }
+ ]
+}

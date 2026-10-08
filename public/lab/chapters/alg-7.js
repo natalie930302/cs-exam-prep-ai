@@ -1360,6 +1360,2344 @@ FRAG.push(['dijk-path', 'Dijkstra：沿 parent 回推最短路徑', async (tok) 
   await beat(tok, 1000);
 }]);
   }
+
+  // ═══ spbari.js ═══
+  {
+const { cube, glow, kill, GOLD, RED } = K;
+// ─── Abdul Bari 3.6 Dijkstra（XB4MIexjvY0）、TechDose Bellman-Ford（FrLWd1tJ_Wc）、Abdul Bari 4.4 Bellman-Ford（FtN3BYH2Zes）、
+//     Abdul Bari 4.2 Floyd-Warshall（oNI0rf2P9gE）、Abdul Bari Shortest Path Algorithms（2raV0H9KqY8）───
+// 用本章模組的畫圖工具（buildGraph、dijkstraGen、bfGen、nodeTag、edgeColor…）；fresh / tag / code / anim 是模組自己的版本。
+// 4.4 的 7 頂點、4 頂點、負 cycle 例子直接沿用 bf-bari7 / bf-bari4 / bf-detect-cycle。
+const SB = {
+  // 3.6：起點 1，1→2 = 2、2→3 = 4
+  d3: { title: '1, 2, 3', directed: true, names: ['1', '2', '3'], pos: [[-4.4, 0.8], [0, -2.0], [4.2, 0.8]], edges: [[0, 1, 2], [1, 2, 4]] },
+  // 3.6：6 頂點（d = 0, 2, 3, 8, 6, 9）
+  d6: { title: 'Bari 6 頂點', directed: true, names: ['1', '2', '3', '4', '5', '6'],
+    pos: [[-5, 0], [-1.8, -2.4], [-1.8, 2.4], [1.8, -2.4], [1.8, 2.4], [5, 0]],
+    edges: [[0, 1, 2], [0, 2, 4], [1, 2, 1], [1, 3, 7], [2, 4, 3], [4, 3, 2], [3, 5, 1], [4, 5, 5]] },
+  // 3.6：課本有向圖（逐字稿沒唸到的 2→4 15、4→1 20、5→3 35、6→5 3 依 Horowitz／Sahni 原圖）
+  hs: { title: '課本有向圖', directed: true, names: ['1', '2', '3', '4', '5', '6'],
+    pos: [[-5, -1.2], [-1.4, -2.7], [2.8, -2.0], [-3.2, 2.2], [0.8, 2.2], [5, 2.2]],
+    edges: [[0, 1, 50], [0, 2, 45, 0.22], [0, 3, 10], [1, 2, 10], [1, 3, 15], [2, 4, 30], [3, 0, 20], [3, 4, 15], [4, 1, 20], [4, 2, 35], [5, 4, 3]] },
+  // 2raV0H9KqY8
+  tuv: { title: 't, u, v', directed: true, names: ['t', 'u', 'v'], pos: [[-4.4, 0.8], [0, -2.0], [4.2, 0.8]], edges: [[0, 1, 5], [1, 2, 3]] },
+  pq: { title: 'P～U', directed: true, names: ['P', 'Q', 'R', 'S', 'T', 'U'],
+    pos: [[-5, 0], [-2, -2.3], [1.6, -2.3], [1.6, 0.9], [-0.6, 3.0], [5, -2.3]],
+    edges: [[0, 1, 1], [0, 4, 7], [0, 3, 6], [1, 2, 1], [1, 3, 4], [2, 5, 1], [2, 3, 2], [3, 4, 3]] },
+  af: { title: 'A～F', directed: true, names: ['A', 'B', 'C', 'D', 'E', 'F'],
+    pos: [[-5, 0], [-1.8, -2.4], [-1.8, 2.4], [1.8, -2.4], [1.8, 2.4], [5, 0]],
+    edges: [[0, 1, 1], [0, 2, 2], [1, 2, 1], [1, 3, 3], [1, 4, 2, 0.14], [2, 4, 2], [2, 3, 1, 0.14], [3, 5, 3], [3, 4, 4], [4, 5, 3]] },
+};
+const sbNeg = (w) => ({ title: '負邊', directed: true, names: ['1', '2', '3', '4'], pos: [[-4.6, 0], [0, -2.4], [4.4, 0], [0, 2.4]], edges: [[0, 1, 3], [0, 3, 5], [3, 2, 2], [2, 1, w]] });
+// 2raV0H9KqY8：1→2 = 2、2→3 = 3、3→4 = −6，1→4 = w14
+const sbNeg2 = (w14) => ({ title: '負邊', directed: true, names: ['1', '2', '3', '4'], pos: [[-4.6, 0], [0, -2.4], [4.4, 0], [0, 2.4]], edges: [[0, 1, 2], [0, 3, w14], [1, 2, 3], [2, 3, -6]] });
+// 2raV0H9KqY8 Bellman-Ford：邊的順序 D→B、C→D、A→C、A→B（再加 B→C = 1 形成負 cycle）
+const sbAbcd = (extra) => ({ title: 'A～D', directed: true, names: ['A', 'B', 'C', 'D'], pos: [[-4.6, 0], [0, -2.4], [0, 2.4], [4.4, 0]],
+  edges: [[3, 1, -6], [2, 3, 3], [0, 2, 2], [0, 1, 1]].concat(extra ? [[1, 2, 1]] : []) });
+// TechDose：0～4（0→1 1、0→2 4、1→2 −2、1→3 2、2→3 3、3→4 4、4→1 −3）與 3 頂點 cycle
+const SBT5 = { title: 'TechDose 5 頂點', directed: true, names: ['0', '1', '2', '3', '4'],
+  pos: [[-5, 0.2], [-1.6, -2.4], [-1.6, 2.4], [2.0, 1.2], [5, -1.4]],
+  edges: [[0, 1, 1], [0, 2, 4], [1, 2, -2], [1, 3, 2], [2, 3, 3], [3, 4, 4], [4, 1, -3, -0.12]] };
+const sbTri = (w) => ({ title: '0, 1, 2', directed: true, names: ['0', '1', '2'], pos: [[-2.8, 1.4], [0, -2.4], [2.8, 1.4]], edges: [[0, 1, 2], [1, 2, 3], [2, 0, w]] });
+const sbE = (u, v) => findEdge(u, v);
+const sbPath = (vs, color, k = 2.2) => { for (let i = 0; i + 1 < vs.length; i++) edgeColor(sbE(vs[i], vs[i + 1]), color, k); };
+const sbD = (arr) => arr.forEach((v, i) => nodeTag(i, v === null ? '' : fmt(v), 'ptr'));
+// 一顆小方塊沿著 cycle 走；回傳最後總和
+async function sbLoop(tok, pts, ws, laps, sumTag, start = 0) {
+  const m = lab.box('#e8b02a', [0.4, 0.4, 0.4]); m.position.set(pts[0].x, 0.9, pts[0].z); lab.world.add(m);
+  let total = start;
+  for (let l = 0; l < laps; l++) for (let i = 0; i < pts.length; i++) {
+    const a = pts[i], b = pts[(i + 1) % pts.length];
+    await anim(tok, 520, (t) => m.position.set(a.x + (b.x - a.x) * t, 0.9, a.z + (b.z - a.z) * t));
+    total += ws[i]; txt(sumTag, '走過的總權重 = ' + fmt(total));
+  }
+  kill(m);
+  return total;
+}
+
+// ══════════ Abdul Bari 3.6 Dijkstra（XB4MIexjvY0）══════════
+// 00:00 單一起點最短路徑；minimization → optimization → greedy
+FRAG.push(['spbari-dij-problem', 'Dijkstra：單一起點最短路徑（greedy）', async (tok) => {
+  fresh();
+  buildGraph(SB.d6);
+  nodeColor(0, C.ok, 0.3); nodeTag(0, '起點', 'ptr alt');
+  say('起點選 1', '找 1 到其他每個頂點的最短路徑');
+  await beat(tok, 3000);
+  edgeColor(sbE(0, 2), C.hot, 1.8);
+  say('可以直接走：1 → 3 = 4', 'direct path');
+  await beat(tok, 2400);
+  edgeColor(sbE(0, 2), C.edge, 1); sbPath([0, 1, 2], C.tree);
+  say('也可以經過別的頂點', '1 → 2 → 3 = 2 + 1 = 3');
+  await beat(tok, 2800);
+  sbPath([0, 1, 2], C.edge, 1);
+  say('求最短：minimization problem', '= optimization problem');
+  await beat(tok, 2600);
+  const st = ['階段 1', '階段 2', '階段 3'].map((s, i) => cube(s, '#efe3c8', [1.6, 0.4, 0.8], -3.2 + i * 2.2, 0.2, 4.2, 3));
+  say('用 greedy method', '分階段，每次只考慮一個輸入');
+  await beat(tok, 3000);
+  st.forEach(kill);
+  say('Dijkstra 給出 greedy 的程序', '有向、無向圖都能用');
+  await beat(tok, 3000);
+}]);
+
+// 01:23 小例子：先選最近的 2，再 relax 3：2 + 4 = 6
+FRAG.push(['spbari-dij-relax', 'Dijkstra 的想法：選最近的，再 relax', async (tok) => {
+  fresh();
+  buildGraph(SB.d3);
+  sbD([0, 2, INF]);
+  say('起點 1：到 2 有直接邊 2', '到 3 沒有直接邊 → ∞');
+  await beat(tok, 3000);
+  nodeColor(1, C.ok, 0.3); edgeColor(sbE(0, 1), C.tree, 2);
+  say('先選距離最小的頂點 2', '2 < ∞');
+  await beat(tok, 2600);
+  edgeColor(sbE(1, 2), C.hot, 1.8);
+  say('從 2 到 3：2 + 4 = 6', '6 < ∞ → 改成 6');
+  await beat(tok, 2400);
+  nodeTag(2, '6', 'ptr alt');
+  say('找到 1 → 2 → 3，長度 6', '不是直接邊，但有路');
+  await beat(tok, 2800);
+  nodeNote(1, 'u'); nodeNote(2, 'v');
+  say('這種更新叫 relaxation', 'if d[u] + c(u,v) < d[v]');
+  await beat(tok, 3000);
+  say('條件成立就改小 d[v]', 'd[v] = d[u] + c(u,v)');
+  await beat(tok, 3000);
+  say('每選一個頂點就 relax 鄰居', '2 + 4 < ∞ → d[3] = 6');
+  await beat(tok, 2800);
+}]);
+
+// 04:16 6 頂點例子：d = 2, 3, 8, 6, 9
+FRAG.push(['spbari-dij-g6', 'Dijkstra：6 頂點例子（2, 3, 8, 6, 9）', async (tok) => {
+  fresh();
+  buildGraph(SB.d6);
+  say('起點 1 = 0，其他先 ∞', '每次選最小的，再 relax 它的出邊');
+  await beat(tok, 2600);
+  run.gen = dijkstraGen(0, { k: 0.8, endCap: '1 到 2～6：2, 3, 8, 6, 9', endF: '藍色邊 = 最短路徑' });
+  await playGen(tok);
+}]);
+
+// 07:48 時間複雜度：n 個頂點 × 每次最多 relax n 個 = Θ(n²)（2raV0H9KqY8 用 params.rb 多講 red-black tree）
+FRAG.push(['spbari-dij-n2', 'Dijkstra 複雜度：n × n = Θ(n²)', async (tok) => {
+  const p = ctx.params || {};
+  fresh();
+  buildGraph(SB.d6, { scale: 0.55, dx: -3.6, dz: 0 });
+  say('n 個頂點都要選一次', '外層：n 次');
+  await beat(tok, 2600);
+  const cs = [];
+  for (let i = 0; i < 6; i++) {
+    nodeColor(i, C.ok, 0.3);
+    cs.push(cube(String(i + 1), '#bfe8d6', [0.7, 0.35, 0.7], 0.6, 0.18, -2.6 + i * 1.0, 2));
+    await beat(tok, 380);
+  }
+  say('每選一個，最多 relax n 個', '完全圖：每個頂點都相連');
+  await beat(tok, 2600);
+  for (let i = 0; i < 6; i++) {
+    for (let j = 0; j < 6; j++) cs.push(cube('', '#efe3c8', [0.62, 0.3, 0.62], 1.6 + j * 0.85, 0.15, -2.6 + i * 1.0, 1.5));
+    await beat(tok, 300);
+  }
+  say('n × n', 'worst case Θ(n²) = Θ(V²)');
+  await beat(tok, 3000);
+  if (p.rb) {
+    say('影片：用 red-black tree 更快', '約 n log n（細節影片沒講）');
+    await beat(tok, 3000);
+    say('課本：binary heap', 'O((V + E) log V)');
+    await beat(tok, 2800);
+  }
+  await beat(tok, 2400);
+}]);
+
+// 09:23 課本有向圖：寫成表格；6 沒有進來的邊 → ∞
+FRAG.push(['spbari-dij-table', 'Dijkstra：課本有向圖（50, 45, 10…）', async (tok) => {
+  fresh();
+  buildGraph(SB.hs, { scale: 0.95 });
+  say('起點 1：直接邊 50、45、10', '5、6 沒有直接邊 → ∞');
+  await beat(tok, 3000);
+  run.gen = dijkstraGen(0, { k: 0.75, endCap: '6 沒有進來的邊 → 一直 ∞', endF: '2→45、3→45、4→10、5→25、6→∞' });
+  await playGen(tok);
+}]);
+
+// 12:58 無向圖：一條邊 = 兩條反向、同權重的有向邊
+FRAG.push(['spbari-dij-undirected', '無向邊拆成兩條有向邊', async (tok) => {
+  fresh();
+  buildGraph({ title: '無向', directed: false, names: ['a', 'b'], pos: [[-5.2, 0], [-1.6, 0]], edges: [[0, 1, 3]] });
+  say('無向邊：兩個方向都能走', '權重 3');
+  await beat(tok, 3000);
+  buildGraph({ title: '有向', directed: true, names: ['a', 'b'], pos: [[1.6, 0], [5.2, 0]], edges: [[0, 1, 3], [1, 0, 3]] });
+  edgeColor(sbE(0, 1), C.hot, 1.8); edgeColor(sbE(1, 0), C.hot, 1.8);
+  say('換成兩條平行的有向邊', 'a → b = 3，b → a = 3');
+  await beat(tok, 3400);
+  edgeColor(sbE(1, 0), C.edge, 1);
+  say('a → b：權重 3', '');
+  await beat(tok, 1800);
+  edgeColor(sbE(0, 1), C.edge, 1); edgeColor(sbE(1, 0), C.hot, 1.8);
+  say('b → a：權重也是 3', '');
+  await beat(tok, 1800);
+  edgeColor(sbE(0, 1), C.hot, 1.8);
+  say('無向圖就變成有向圖', 'Dijkstra 有向、無向都能用');
+  await beat(tok, 3000);
+}]);
+
+// 13:38 缺點：負邊 −3 時剛好對，改成 −10 就錯
+FRAG.push(['spbari-dij-neg', 'Dijkstra 的缺點：負權重邊', async (tok) => {
+  fresh();
+  buildGraph(sbNeg(-3));
+  edgeColor(sbE(2, 1), C.back, 1.8);
+  say('3 → 2 的權重是 −3', '權重不一定是距離，可以是負的');
+  await beat(tok, 3000);
+  run.gen = dijkstraGen(0, { k: 0.7, endCap: '檢查 3 → 2：7 − 3 = 4 > 3', endF: '這次答案剛好正確' });
+  await playGen(tok);
+  fresh();
+  buildGraph(sbNeg(-10));
+  edgeColor(sbE(2, 1), C.back, 1.8);
+  say('把 −3 改成 −10 再做一次', '');
+  await beat(tok, 2400);
+  run.gen = dijkstraGen(0, { k: 0.7, endCap: '真正答案：1→4→3→2 = −3', endF: 'greedy 太早把 2 定案成 3 → 錯' });
+  await playGen(tok);
+}]);
+
+// ══════════ TechDose Bellman-Ford（FrLWd1tJ_Wc）══════════
+// 00:00 Dijkstra vs Bellman-Ford：誰能偵測負 cycle
+FRAG.push(['spbari-td-compare', 'Dijkstra vs Bellman-Ford：能否偵測負 cycle', async (tok) => {
+  fresh([0, 11, 9], [0, 0, 0]);
+  const dj = cube('Dijkstra', '#4b9ee2', [3.4, 0.5, 1.1], -3.2, 0.25, -2.2, 4);
+  const bf = cube('Bellman-Ford', '#dd8238', [3.4, 0.5, 1.1], 3.2, 0.25, -2.2, 4);
+  say('有負 cycle：兩個都找不到最短路徑', 'single source shortest path');
+  await beat(tok, 3200);
+  const a = tag('偵測不到負 cycle', 'ptr', -3.2, 0.3, -0.6);
+  glow(dj, RED);
+  say('Dijkstra 偵測不到', '照樣給答案 → 可能是錯的');
+  await beat(tok, 3000);
+  const b = tag('偵測得到負 cycle', 'ptr alt', 3.2, 0.3, -0.6);
+  glow(dj, null); glow(bf, GOLD);
+  say('Bellman-Ford 偵測得到', '有負 cycle 就回報');
+  await beat(tok, 3000);
+  const c = tag('沒有負 cycle → 最短路徑', 'ptr', 3.2, 0.3, 0.6);
+  say('沒有負 cycle', '就給出 source 到每個點的最短路徑');
+  await beat(tok, 3000);
+  glow(bf, null);
+  tag('O(E log V)', 'idx', -3.2, 0.3, 1.8); tag('O(VE)', 'idx', 3.2, 0.3, 1.8);
+  say('代價：Bellman-Ford 比較慢', '複雜度最後再比');
+  await beat(tok, 3000);
+  [a, b, c].forEach((l) => l.element.className = 'lab-label ptr');
+  await beat(tok, 1000);
+}]);
+
+// 01:38 負權重 cycle：2 + 3 − 6 = −1；換成 −3 → 2
+FRAG.push(['spbari-td-cycle', '負 cycle：2 + 3 − 6 = −1', async (tok) => {
+  fresh();
+  buildGraph(sbTri(-6));
+  edgeColor(sbE(2, 0), C.back, 1.8);
+  const sum = tag('', 'ptr alt', 0, 0.3, 3.6);
+  const P = GR.nodes.map((nd) => nd.home);
+  say('0 → 1 → 2 → 0，權重 2、3、−6', '從 0 出發再回到 0');
+  await beat(tok, 2600);
+  await sbLoop(tok, P, [2, 3, -6], 1, sum);
+  say('2 + 3 + (−6) = −1', '沒花成本，反而賺 1');
+  await beat(tok, 3000);
+  say('總和為負 → negative weight cycle', '');
+  await beat(tok, 2400);
+  setW(sbE(2, 0), -3);
+  txt(sum, '');
+  say('把 −6 換成 −3', '');
+  await beat(tok, 1600);
+  await sbLoop(tok, P, [2, 3, -3], 1, sum);
+  say('2 + 3 + (−3) = 2 > 0', '不是負 cycle');
+  await beat(tok, 3000);
+  say('有負邊 ≠ 有負 cycle', '−3：兩個演算法都對');
+  await beat(tok, 2800);
+}]);
+
+// 03:12 無向圖有負邊 → 一定有負 cycle
+FRAG.push(['spbari-td-undirected', '無向圖有負邊 = 一定有負 cycle', async (tok) => {
+  fresh();
+  buildGraph({ title: '無向', directed: false, names: ['0', '1'], pos: [[-5.4, 0], [-2.0, 0]], edges: [[0, 1, -2]] });
+  say('無向邊 0 — 1，權重 −2', '');
+  await beat(tok, 2600);
+  buildGraph({ title: '有向', directed: true, names: ['0', '1'], pos: [[1.4, 0], [5.2, 0]], edges: [[0, 1, -2], [1, 0, -2]] });
+  say('等於 0 → 1 和 1 → 0', '兩條都是 −2');
+  await beat(tok, 2800);
+  nodeTag(0, '0', 'ptr'); nodeTag(1, '∞', 'ptr');
+  const seq = [[0, 1, -2], [1, 0, -4], [0, 1, -6], [1, 0, -8]];
+  for (const [u, v, d] of seq) {
+    edgeColor(sbE(u, v), C.hot, 1.8);
+    nodeTag(v, fmt(d), 'ptr alt');
+    say(nm(u) + ' → ' + nm(v) + '：再加 −2', 'd(' + nm(v) + ') = ' + fmt(d));
+    await beat(tok, 1700);
+    edgeColor(sbE(u, v), C.edge, 1);
+  }
+  say('越繞越小：無限迴圈', '0 → 1 → 0 就是負 cycle');
+  await beat(tok, 3000);
+  say('無向圖：先掃有沒有負邊', '有 → 兩個演算法都不能用');
+  await beat(tok, 3000);
+}]);
+
+// 05:20 Bellman-Ford 三步驟；為什麼是 V − 1 次
+FRAG.push(['spbari-td-steps', 'Bellman-Ford 三步驟', async (tok) => {
+  fresh();
+  buildGraph({ title: '0, 1, 2', directed: true, names: ['0', '1', '2'], pos: [[-5.4, -1.4], [-3.6, 1.6], [-1.6, -1.4]], edges: [[0, 1, 1], [1, 2, 1]] });
+  const cd = code([
+    '1. d[src] = 0，其他 = ∞',
+    '2. 重複 V − 1 次：',
+    '     每條邊 (u, v) 都 relax',
+    '     if d[u] + c(u,v) < d[v]:',
+    '         d[v] = d[u] + c(u,v)',
+    '3. 再 relax 一次：',
+    '     還會變 → 有負 cycle',
+  ], 2.6, -2.8, 0.75);
+  cd.hl(0); sbD([0, INF, INF]);
+  say('第 1 步：初始化', 'source = 0，其他 ∞');
+  await beat(tok, 3000);
+  cd.hl(1);
+  say('第 2 步：relax 全部邊 V − 1 次', '');
+  await beat(tok, 2400);
+  sbPath([0, 1, 2], C.hot, 2);
+  say('3 個頂點：最少 2 條邊才到得了', 'V 個頂點 → V − 1 條邊');
+  await beat(tok, 3200);
+  sbPath([0, 1, 2], C.edge, 1);
+  cd.hl(3); nodeNote(0, 'u'); nodeNote(1, 'v'); edgeColor(sbE(0, 1), C.hot, 1.8);
+  say('relax (u, v)：新路比較短嗎？', 'd[u] + c(u,v) < d[v]');
+  await beat(tok, 3000);
+  cd.hl(4); nodeTag(1, '1', 'ptr alt');
+  say('是 → 換成新路', 'd[v] = d[u] + c(u,v)');
+  await beat(tok, 2600);
+  say('比較大就跳過', '不更新');
+  await beat(tok, 2000);
+  cd.hl(5); edgeColor(sbE(0, 1), C.edge, 1);
+  say('第 3 步：再全部 relax 一次', '');
+  await beat(tok, 2200);
+  cd.hl(6);
+  say('還有新的更短距離', '→ 有 negative weight cycle');
+  await beat(tok, 3000);
+}]);
+
+// 08:31 Dry run：5 頂點，第 2 輪沒變化就停
+FRAG.push(['spbari-td-dryrun', 'Bellman-Ford：TechDose 5 頂點 dry run', async (tok) => {
+  fresh();
+  buildGraph(SBT5);
+  say('起點 0；V = 5 → 最多 4 輪', '每輪依序 relax 7 條邊');
+  await beat(tok, 2800);
+  run.gen = bfGen(0, { k: 0.9 });
+  await playGen(tok);
+  say('連續兩輪一樣 → 可以提早停', '0、1、−1、2、6');
+  await beat(tok, 2600);
+}]);
+
+// 12:59 提早停止；O(VE) vs Dijkstra O(E log V)
+FRAG.push(['spbari-td-complexity', 'Bellman-Ford：提早停止與 O(VE)', async (tok) => {
+  fresh([0, 11, 9], [0, 0, 0]);
+  say('每一輪：relax 全部 E 條邊', '最多 V − 1 輪');
+  const cs = [];
+  for (let r = 0; r < 4; r++) {
+    tag('第 ' + (r + 1) + ' 輪', 'idx', -5.6, 0.3, -2.8 + r * 1.2);
+    for (let j = 0; j < 7; j++) cs.push(cube('', r < 2 ? '#efe3c8' : '#e4dccb', [0.7, 0.3, 0.7], -4.2 + j * 0.95, 0.15, -2.8 + r * 1.2, 1.5));
+    await beat(tok, 550);
+  }
+  await beat(tok, 1600);
+  for (let k = 14; k < 28; k++) cs[k].material.color.set('#c9c1b2');
+  const cut = tag('第 2 輪沒變化 → break', 'ptr alt', 2.6, 0.3, 1.0);
+  say('某一輪完全沒更新', '下一輪也一樣 → 直接停');
+  await beat(tok, 3200);
+  kill(cut);
+  tag('Bellman-Ford：O(VE)', 'ptr', -2.6, 0.3, 2.6);
+  say('E 條邊 × (V − 1) 輪', 'O(VE)');
+  await beat(tok, 2800);
+  tag('Dijkstra：O(E log V)', 'ptr alt', 2.8, 0.3, 2.6);
+  say('Dijkstra 快很多', '確定沒有負邊就用 Dijkstra');
+  await beat(tok, 3000);
+  say('無向圖：先掃一遍邊', '沒有負邊 → 用 Dijkstra');
+  await beat(tok, 2800);
+}]);
+
+// 14:57 偵測負 cycle：relax 2 輪後再一輪，0→1 又變小
+FRAG.push(['spbari-td-detect', 'Bellman-Ford：多 relax 一輪偵測負 cycle', async (tok) => {
+  fresh();
+  buildGraph(sbTri(-6));
+  say('3 個頂點 → relax 2 輪', '之後多做 1 輪檢查');
+  await beat(tok, 2600);
+  run.gen = bfGen(0, { k: 1 });
+  await playGen(tok);
+  say('每繞一圈少 1：−1、−2…', '2 + 3 − 6 = −1');
+  await beat(tok, 3000);
+}]);
+
+// ══════════ Abdul Bari 4.4 Bellman-Ford（FtN3BYH2Zes）══════════
+// 00:00 為什麼需要：Dijkstra 遇負邊不保證對；BF 是 DP
+FRAG.push(['spbari-bf-why', '為什麼要 Bellman-Ford：DP 試遍所有可能', async (tok) => {
+  fresh();
+  buildGraph(GRAPHS.bari7);
+  nodeColor(0, C.ok, 0.3);
+  say('有向加權圖，起點 1', '找 1 到每個頂點的最短路徑');
+  await beat(tok, 2800);
+  GR.edges.forEach((e) => { if (e.w < 0) edgeColor(e, C.back, 1.8); });
+  say('有負邊：Dijkstra 可能對、可能錯', '沒辦法確認答案');
+  await beat(tok, 3200);
+  say('Bellman-Ford：保證答案正確', 'dynamic programming');
+  await beat(tok, 2800);
+  GR.edges.forEach((e) => edgeColor(e, C.hot, 1.4));
+  say('DP：試遍所有可能，挑最好的', '所有邊反覆 relax');
+  await beat(tok, 3200);
+  GR.edges.forEach((e) => edgeColor(e, e.w < 0 ? C.back : C.edge, e.w < 0 ? 1.8 : 1));
+  say('有負邊也能確認答案', '代價：比 Dijkstra 慢');
+  await beat(tok, 2800);
+}]);
+
+// 01:12 所有邊 relax n − 1 = 6 次；relax 的定義（以 2、5 為例）
+FRAG.push(['spbari-bf-relax', 'Bellman-Ford：所有邊 relax n − 1 次', async (tok) => {
+  fresh();
+  buildGraph(GRAPHS.bari7);
+  say('7 個頂點 → relax 7 − 1 = 6 次', '');
+  await beat(tok, 2600);
+  const lp = [0, 3, 2, 1, 4, 6];
+  sbPath(lp, C.hot, 2);
+  say('從起點出發的路徑最多 6 條邊', 'relax 6 次就涵蓋所有路徑');
+  await beat(tok, 3400);
+  sbPath(lp, C.edge, 1);
+  GR.edges.forEach((e) => { if (e.w < 0) edgeColor(e, C.edge, 1); });
+  nodeNote(1, 'u'); nodeNote(4, 'v'); nodeTag(1, 'd[u]', 'ptr'); nodeTag(4, 'd[v]', 'ptr');
+  edgeColor(sbE(1, 4), C.hot, 2);
+  say('以 2、5 為例：u = 2、v = 5', '');
+  await beat(tok, 2600);
+  say('relax (u, v)', 'if d[u] + c(u,v) < d[v]');
+  await beat(tok, 3000);
+  nodeTag(4, 'd[u] + c(u,v)', 'ptr alt');
+  say('成立就改 d[v]', 'd[v] = d[u] + c(u,v)');
+  await beat(tok, 3000);
+  say('邊的順序任選，但每條都要', '一輪 = 全部邊各 relax 一次');
+  await beat(tok, 2800);
+}]);
+
+// 09:04 複雜度：(V − 1) × E = O(VE)；一般 n²，完全圖 n³（2raV0H9KqY8 也用）
+FRAG.push(['spbari-bf-complexity', 'Bellman-Ford 複雜度：O(VE)，完全圖 O(n³)', async (tok) => {
+  fresh([0, 11, 9], [0, 0, 0]);
+  say('每一輪 relax 全部 E 條邊', '做 V − 1 輪');
+  for (let r = 0; r < 6; r++) {
+    cube('E 條邊', '#efe3c8', [4.2, 0.35, 0.6], -3.4, 0.18, -3.0 + r * 0.8, 2);
+    tag('第 ' + (r + 1) + ' 輪', 'idx', -6.1, 0.3, -3.0 + r * 0.8);
+    await beat(tok, 420);
+  }
+  say('時間 = O(V · E)', 'V、E 都是 n → O(n²)');
+  await beat(tok, 3000);
+  buildGraph({ title: 'K5', directed: false, names: ['1', '2', '3', '4', '5'],
+    pos: [[3.4, -2.6], [5.6, -1.0], [4.8, 1.6], [2.0, 1.6], [1.2, -1.0]],
+    edges: [[0, 1], [0, 2], [0, 3], [0, 4], [1, 2], [1, 3], [1, 4], [2, 3], [2, 4], [3, 4]] });
+  say('完全圖：每對頂點都有邊', 'E = n(n − 1) / 2');
+  await beat(tok, 3200);
+  say('n(n − 1)/2 × (n − 1)', '= O(n³)');
+  await beat(tok, 3000);
+  say('最少 O(n²)，完全圖最多 O(n³)', '');
+  await beat(tok, 2800);
+}]);
+
+// ══════════ Abdul Bari 4.2 Floyd-Warshall（oNI0rf2P9gE）══════════
+const FW4 = { title: 'Bari 4 頂點', directed: true, names: ['1', '2', '3', '4'],
+  pos: [[-5.6, -2.2], [-1.8, -2.2], [-1.8, 1.6], [-5.6, 1.6]],
+  edges: [[0, 1, 3], [0, 3, 7], [1, 0, 8], [1, 2, 2], [2, 0, 5], [2, 3, 1], [3, 0, 2]] };
+const SUP = ['⁰', '¹', '²', '³', '⁴'];
+function fwA0() { const D = [...Array(4)].map((_, i) => [...Array(4)].map((_, j) => (i === j ? 0 : INF))); FW4.edges.forEach(([u, v, w]) => { D[u][v] = w; }); return D; }
+function fwStep(D, k) { const N = D.map((r) => r.slice()); for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) N[i][j] = Math.min(D[i][j], D[i][k] + D[k][j]); return N; }
+function fwAt(k) { let D = fwA0(); for (let t = 0; t < k; t++) D = fwStep(D, t); return D; }
+const FWBASE = '#efe6d2', FWROW = '#f3dfa8';
+function fwMat(D, k) {
+  const mx = (j) => 1.4 + j * 1.15, mz = (i) => -2.3 + i * 1.0;
+  for (let i = 0; i < 4; i++) { tag(String(i + 1), 'idx', 0.55, 0.3, mz(i)); tag(String(i + 1), 'idx', mx(i), 0.3, -3.2); }
+  const kl = tag('A' + SUP[k], 'ptr alt', 0.5, 0.3, -3.3);
+  const cells = D.map((row, i) => row.map((v, j) => {
+    const m = lab.box(FWBASE, [1.0, 0.2, 0.85]); m.position.set(mx(j), 0.1, mz(i));
+    m.userData.l = lab.label(fmt(v), 'val'); m.add(m.userData.l); lab.world.add(m); return m;
+  }));
+  return {
+    cells, kl,
+    set(i, j, v, c) { txt(cells[i][j].userData.l, fmt(v)); if (c) cells[i][j].material.color.set(c); },
+    paint(kk) { cells.forEach((row, i) => row.forEach((m, j) => { m.material.color.set(kk >= 0 && (i === kk || j === kk) ? FWROW : FWBASE); glow(m, null); })); },
+    title(t) { txt(kl, t); },
+  };
+}
+function fwScene(k) { fresh([0, 12.5, 8], [0, 0, -0.3]); buildGraph(FW4, { scale: 0.85, dx: -0.4 }); const D = fwAt(k); return { D, M: fwMat(D, k) }; }
+// 算 A^(k+1)：detail 裡的格子逐一講解，其餘變小的格子快速更新
+async function fwK(tok, M, D, k, detail, quick = true) {
+  M.title('A' + SUP[k + 1]); M.paint(k); nodeColor(k, C.hot, 0.5);
+  say('A' + SUP[k + 1] + '：中間頂點 = ' + (k + 1), '第 ' + (k + 1) + ' 列、第 ' + (k + 1) + ' 行照抄');
+  await beat(tok, 2400);
+  const old = D.map((r) => r.slice());
+  const N = fwStep(old, k);
+  for (const [i, j] of detail) {
+    const c = M.cells;
+    glow(c[i][j], GOLD); glow(c[i][k], RED); glow(c[k][j], RED);
+    say((i + 1) + ' → ' + (j + 1) + '：經過 ' + (k + 1) + ' 會更短嗎？', 'min(' + fmt(old[i][j]) + ', ' + fmt(old[i][k]) + ' + ' + fmt(old[k][j]) + ')');
+    await beat(tok, 2600);
+    M.set(i, j, N[i][j], N[i][j] < old[i][j] ? C.ok : null);
+    say(N[i][j] < old[i][j] ? '更新成 ' + fmt(N[i][j]) : '維持 ' + fmt(N[i][j]), N[i][j] < old[i][j] ? (i + 1) + ' → ' + (k + 1) + ' → ' + (j + 1) + ' 比較短' : '經過 ' + (k + 1) + ' 沒有更短');
+    await beat(tok, 2200);
+    glow(c[i][j], null); glow(c[i][k], null); glow(c[k][j], null);
+  }
+  if (quick) {
+    const rest = [];
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) if (N[i][j] < old[i][j] && !detail.some(([a, b]) => a === i && b === j)) rest.push([i, j]);
+    if (rest.length) {
+      say('其他格子同樣算', rest.map(([i, j]) => (i + 1) + '→' + (j + 1) + ' = ' + fmt(N[i][j])).join('、'));
+      for (const [i, j] of rest) { M.set(i, j, N[i][j], C.ok); await beat(tok, 500); }
+      await beat(tok, 1800);
+    }
+  }
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) D[i][j] = N[i][j];
+  nodeColor(k, C.white, 0);
+}
+
+// 00:00 所有點對最短路徑；Dijkstra 跑 n 次 = O(n³)
+FRAG.push(['spbari-fw-problem', 'All pairs shortest path', async (tok) => {
+  fresh();
+  buildGraph(FW4, { scale: 1.1, dx: 3.6, dz: 0.3 });
+  say('每一對頂點都要最短路徑', 'all pairs shortest path');
+  await beat(tok, 2800);
+  for (let s = 0; s < 4; s++) {
+    for (let v = 0; v < 4; v++) nodeColor(v, v === s ? C.ok : C.white, v === s ? 0.4 : 0);
+    nodeTag(s, '起點', 'ptr alt');
+    say('起點 ' + (s + 1) + '：到其他 3 個頂點', [0, 1, 2, 3].filter((v) => v !== s).map((v) => (s + 1) + '→' + (v + 1)).join('、'));
+    await beat(tok, 1900);
+    nodeTag(s, '', '');
+  }
+  nodeColor(3, C.white, 0);
+  say('像 single source：Dijkstra', '一次 O(n²)');
+  await beat(tok, 2800);
+  say('每個頂點各跑一次 Dijkstra', 'n × O(n²) = O(n³)');
+  await beat(tok, 3000);
+  say('這裡改用 dynamic programming', '');
+  await beat(tok, 2400);
+}]);
+
+// 01:30 DP：一連串決策——要不要經過中間頂點 k
+FRAG.push(['spbari-fw-idea', 'Floyd-Warshall 的決策：經過哪個中間頂點', async (tok) => {
+  fresh();
+  buildGraph(FW4, { scale: 1.1, dx: 3.6, dz: 0.3 });
+  say('DP：每個階段做一個決策', 'sequence of decisions');
+  await beat(tok, 2600);
+  edgeColor(sbE(0, 1), C.hot, 2);
+  say('1 → 2：有直接邊 3', '');
+  await beat(tok, 2400);
+  nodeColor(2, C.pq, 0.4); nodeTag(2, '經過 3？', 'ptr alt');
+  say('還是經過頂點 3 比較短？', '');
+  await beat(tok, 2400);
+  nodeColor(2, C.white, 0); nodeTag(2, '', '');
+  nodeColor(3, C.pq, 0.4); nodeTag(3, '經過 4？', 'ptr alt');
+  say('或經過頂點 4？', '');
+  await beat(tok, 2400);
+  nodeColor(3, C.white, 0); nodeTag(3, '', ''); edgeColor(sbE(0, 1), C.edge, 1);
+  for (let k = 0; k < 4; k++) {
+    nodeColor(k, C.hot, 0.5);
+    say('第 ' + (k + 1) + ' 階段：中間頂點 = ' + (k + 1), '所有點對都檢查一次');
+    await beat(tok, 1500);
+    nodeColor(k, C.white, 0);
+  }
+  say('依序決定：經過 1、2、3、4', '每階段一個矩陣');
+  await beat(tok, 2800);
+}]);
+
+// 02:24 A⁰：鄰接矩陣（對角線 0，沒有邊 ∞）
+FRAG.push(['spbari-fw-a0', 'Floyd-Warshall：A⁰ 鄰接矩陣', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(FW4, { scale: 0.85, dx: -0.4 });
+  const D = fwA0();
+  const M = fwMat(D.map((r) => r.map(() => null)), 0);
+  M.cells.forEach((row) => row.forEach((m) => txt(m.userData.l, '')));
+  say('A⁰：原本的鄰接矩陣', '');
+  await beat(tok, 2200);
+  for (let i = 0; i < 4; i++) M.set(i, i, 0, '#d8cfc0');
+  say('對角線 = 0', '自己到自己，沒有 self loop');
+  await beat(tok, 2600);
+  const ex = [[0, 1], [1, 2]];
+  for (const [i, j] of ex) {
+    edgeColor(sbE(i, j), C.hot, 2); glow(M.cells[i][j], GOLD); M.set(i, j, D[i][j]);
+    say((i + 1) + ' → ' + (j + 1) + ' 有邊', '權重 ' + D[i][j]);
+    await beat(tok, 2400);
+    edgeColor(sbE(i, j), C.edge, 1); glow(M.cells[i][j], null);
+  }
+  glow(M.cells[2][1], RED); M.set(2, 1, INF);
+  say('3 → 2 沒有邊', '記成 ∞');
+  await beat(tok, 2600);
+  glow(M.cells[2][1], null);
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { M.set(i, j, D[i][j]); }
+  say('填完 A⁰', '有邊 = 權重，沒邊 = ∞');
+  await beat(tok, 3000);
+}]);
+
+// 03:19 A¹：經過頂點 1（2→3 不變、2→4 = 15、3→2 = 8）
+FRAG.push(['spbari-fw-a1', 'Floyd-Warshall：A¹（經過頂點 1）', async (tok) => {
+  const { D, M } = fwScene(0);
+  say('A¹ 由 A⁰ 算出來', '只多允許經過頂點 1');
+  await beat(tok, 2600);
+  await fwK(tok, M, D, 0, [[1, 2], [1, 3], [2, 1]]);
+  say('A¹ 完成', '下一步：經過頂點 2');
+  await beat(tok, 2600);
+}]);
+
+// 06:37 A²、A³、A⁴：最後的矩陣就是答案
+FRAG.push(['spbari-fw-a2a4', 'Floyd-Warshall：A² → A³ → A⁴', async (tok) => {
+  const { D, M } = fwScene(1);
+  await fwK(tok, M, D, 1, [[0, 2], [0, 3]]);
+  await fwK(tok, M, D, 2, [[0, 1]]);
+  await fwK(tok, M, D, 3, []);
+  M.paint(-1);
+  say('A⁴ = 每一對頂點的最短距離', '每階段一個決策 → 一個矩陣');
+  await beat(tok, 3200);
+}]);
+
+// 10:09 公式：A^k[i,j] = min(A^(k−1)[i,j], A^(k−1)[i,k] + A^(k−1)[k,j])
+FRAG.push(['spbari-fw-formula', 'Floyd-Warshall 公式', async (tok) => {
+  const { M } = fwScene(2);
+  say('A³ 從 A² 算出來', 'A^k 由 A^(k−1) 來');
+  await beat(tok, 2600);
+  M.paint(2); nodeColor(2, C.hot, 0.5);
+  const c = M.cells;
+  glow(c[1][3], GOLD);
+  say('A^k[i, j] = min(', 'A^(k−1)[i, j], A^(k−1)[i, k] + A^(k−1)[k, j] )');
+  await beat(tok, 3600);
+  say('不經過 k：A²[2, 4] = 15', 'A^(k−1)[i, j]');
+  await beat(tok, 2600);
+  glow(c[1][2], RED); glow(c[2][3], RED);
+  say('經過 k = 3：2 + 1 = 3', 'A^(k−1)[i, k] + A^(k−1)[k, j]');
+  await beat(tok, 3000);
+  M.set(1, 3, 3, C.ok);
+  say('兩者取小：min(15, 3) = 3', 'A³[2, 4] = 3');
+  await beat(tok, 3000);
+  glow(c[1][2], null); glow(c[2][3], null); glow(c[1][3], null);
+  say('每個矩陣都用同一個公式', 'k 插在中間相加，取較小的');
+  await beat(tok, 3000);
+}]);
+
+// 11:47 程式：三層迴圈、一個 2D 陣列就地更新 → Θ(n³)
+FRAG.push(['spbari-fw-code', 'Floyd-Warshall 程式：Θ(n³)', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  const D = fwA0();
+  const M = fwMat(D, 0);
+  const cd = code([
+    'for (k = 1; k <= n; k++)',
+    '  for (i = 1; i <= n; i++)',
+    '    for (j = 1; j <= n; j++)',
+    '      A[i][j] = min(A[i][j],',
+    '                A[i][k] + A[k][j]);',
+  ], -3.4, -2.4, 0.7);
+  cd.hl(1);
+  say('一個矩陣 n × n 個值', '兩層迴圈 i、j');
+  await beat(tok, 3000);
+  cd.hl(3);
+  say('取兩者中較小的', 'A[i][j] = min(A[i][j], A[i][k] + A[k][j])');
+  await beat(tok, 3200);
+  say('只用一個 2D 陣列', '就地更新，不必存 n 個矩陣');
+  await beat(tok, 2600);
+  cd.hl(0);
+  say('外層 k：第 k 個矩陣', 'k = 1, 2, 3, 4');
+  await beat(tok, 2400);
+  let A = D;
+  for (let k = 0; k < 4; k++) {
+    M.title('A' + SUP[k + 1]); M.paint(k);
+    const N = fwStep(A, k);
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
+      if (N[i][j] < A[i][j]) M.set(i, j, N[i][j], C.ok);
+    }
+    cd.hl(3);
+    await beat(tok, 1300);
+    A = N;
+  }
+  M.paint(-1); cd.hl(-1);
+  say('三層巢狀迴圈', 'Θ(n³)');
+  await beat(tok, 3000);
+}]);
+
+// ══════════ Abdul Bari：Shortest Path Algorithms（2raV0H9KqY8）══════════
+// 00:00 t → u → v：單邊路徑與 relaxation（5 + 3 = 8）
+FRAG.push(['spbari-sp-tuv', '最短路徑與 relax：t → u → v', async (tok) => {
+  fresh();
+  buildGraph(SB.tuv);
+  nodeColor(0, C.ok, 0.3);
+  say('起點 t：找 t → u、t → v', '');
+  await beat(tok, 2600);
+  sbD([0, 5, INF]); edgeColor(sbE(0, 1), C.hot, 1.8);
+  say('t → u 直接邊 5', 't → v 沒直接邊 → ∞');
+  await beat(tok, 3000);
+  say('路徑可以不只一條邊', '經過 u 就到得了 v');
+  await beat(tok, 2600);
+  edgeColor(sbE(0, 1), C.tree, 2); nodeColor(1, C.ok, 0.3);
+  edgeColor(sbE(1, 2), C.hot, 1.8);
+  say('選 u，檢查 relaxation 條件', 'd[u] + c(u,v) < d[v]');
+  await beat(tok, 3000);
+  say('5 + 3 = 8 < ∞', '→ d[v] = 8');
+  nodeTag(2, '8', 'ptr alt');
+  await beat(tok, 2800);
+  edgeColor(sbE(1, 2), C.tree, 2);
+  say('v 被 relax 了', 't → u → v = 8');
+  await beat(tok, 2600);
+}]);
+
+// 02:57 P～U：Q1、R2、U3、S4、T7
+FRAG.push(['spbari-sp-dij-pq', 'Dijkstra：P、Q、R、S、T、U', async (tok) => {
+  fresh();
+  buildGraph(SB.pq);
+  say('起點 P：Q 1、T 7、S 6', 'R、U 沒有直接邊 → ∞');
+  await beat(tok, 2800);
+  run.gen = dijkstraGen(0, { k: 0.8, endCap: 'Q 1、R 2、U 3、S 4、T 7', endF: 'T 是直接邊 7；S 走 P→Q→R→S' });
+  await playGen(tok);
+}]);
+
+// 06:41 A～F：B 1、C 2、D 3、E 3、F 6
+FRAG.push(['spbari-sp-dij-af', 'Dijkstra：A～F', async (tok) => {
+  fresh();
+  buildGraph(SB.af);
+  say('起點 A：B 1、C 2', 'D、E、F → ∞');
+  await beat(tok, 2600);
+  run.gen = dijkstraGen(0, { k: 0.75, endCap: 'B 1、C 2、D 3、E 3、F 6', endF: 'D、E 同為 3：先選 D' });
+  await playGen(tok);
+}]);
+
+// 10:38 有負邊，但這張圖 Dijkstra 剛好對
+FRAG.push(['spbari-sp-neg-ok', '負邊：Dijkstra 剛好正確的例子', async (tok) => {
+  fresh();
+  buildGraph(sbNeg2(8));
+  edgeColor(sbE(2, 3), C.back, 1.8);
+  say('3 → 4 = −6：有負邊', '起點 1：8、2、∞');
+  await beat(tok, 2800);
+  run.gen = dijkstraGen(0, { k: 0.75, endCap: '4 還沒選就被改成 −1', endF: '這張圖有負邊也正確' });
+  await playGen(tok);
+}]);
+
+// 12:07 1 → 4 改成 1：4 先被選，之後又被改 → 出錯
+FRAG.push(['spbari-sp-neg-fail', '負邊：Dijkstra 出錯的例子', async (tok) => {
+  fresh();
+  buildGraph(sbNeg2(1));
+  edgeColor(sbE(2, 3), C.back, 1.8);
+  say('1 → 4 改成 1', '起點 1：1、2、∞');
+  await beat(tok, 2800);
+  run.gen = dijkstraGen(0, { k: 0.75, endCap: '已選的 4 又被改小 → 錯', endF: '負邊時 Dijkstra 可能對、可能錯' });
+  await playGen(tok);
+}]);
+
+// 14:28 Bellman-Ford：列出所有邊、全部設 ∞（即使有直接邊）
+FRAG.push(['spbari-sp-bf-list', 'Bellman-Ford：列出邊、其他全部 ∞', async (tok) => {
+  fresh();
+  buildGraph(sbAbcd(false));
+  edgeColor(sbE(3, 1), C.back, 1.8);
+  say('Dijkstra：每個頂點 relax 一次', 'Bellman-Ford：反覆 relax');
+  await beat(tok, 3000);
+  const L = [[3, 1, -6], [2, 3, 3], [0, 2, 2], [0, 1, 1]];
+  const bl = [];
+  say('先列出所有邊', '刻意從 D → B 開始');
+  for (let i = 0; i < L.length; i++) {
+    const [u, v, w] = L[i];
+    const m = cube(fmt(w), C.q, [1.6, 0.45, 0.7], -4.4 + i * 1.9, 0.23, -4.4, 3);
+    const l = lab.label('(' + nm(u) + ',' + nm(v) + ')', 'idx'); l.position.set(0, 0, 0.62); m.add(l);
+    bl.push(m);
+    edgeColor(sbE(u, v), C.hot, 1.8);
+    await beat(tok, 900);
+    edgeColor(sbE(u, v), w < 0 ? C.back : C.edge, w < 0 ? 1.8 : 1);
+  }
+  await beat(tok, 1600);
+  sbD([0, INF, INF, INF]);
+  say('起點 A = 0，其他全部 ∞', '有直接邊也先不管');
+  await beat(tok, 3200);
+  say('4 個頂點 → relax 3 次', 'V − 1');
+  await beat(tok, 2800);
+  say('反覆 relax，直到正確', '有負邊也保證正確');
+  await beat(tok, 2400);
+}]);
+
+// 16:51 逐輪 relax：B −1、C 2、D 5
+FRAG.push(['spbari-sp-bf-abcd', 'Bellman-Ford：A～D 三輪 relax', async (tok) => {
+  fresh();
+  buildGraph(sbAbcd(false));
+  say('邊的順序：D→B、C→D、A→C、A→B', '4 個頂點 → 3 輪');
+  await beat(tok, 2800);
+  run.gen = bfGen(0, { k: 0.85 });
+  await playGen(tok);
+}]);
+
+// 20:39 加 B → C = 1：B→C→D→B = 1 + 3 − 6 = −2，第 4 輪還在變
+FRAG.push(['spbari-sp-bf-cycle', 'Bellman-Ford：加 B → C 形成負 cycle', async (tok) => {
+  fresh();
+  buildGraph(sbAbcd(true));
+  edgeColor(sbE(1, 2), C.hot, 1.8);
+  say('同一張圖加一條 B → C = 1', '邊的順序最後多一條 B→C');
+  await beat(tok, 2800);
+  edgeColor(sbE(1, 2), C.edge, 1);
+  run.gen = bfGen(0, { k: 0.75 });
+  await playGen(tok);
+  sbPath([1, 2, 3, 1], C.back, 2.2);
+  say('B → C → D → B', '1 + 3 − 6 = −2 < 0');
+  await beat(tok, 3200);
+  say('負 cycle：Bellman-Ford 也解不了', '但多 relax 一輪就偵測得到');
+  await beat(tok, 3000);
+}]);
+  }
+
+  // ═══ spmit1.js ═══
+  {
+const { V3, cube, glow, kill, arrow, GOLD, GREEN, RED } = K;
+// ─── MIT 6.006 L15／L16／L18（Aa2sqUhIn-E、2E7MmKv0Y24、CHvQ3q_gJ7E）補上的場景 ───
+// 用本章模組的畫圖工具（buildGraph、nodeTag、edgeColor…）；fresh / tag / code / anim 是模組自己的版本。
+const SM = {
+  // L15 δ 定義的小例子（示意）
+  delta: { title: 'δ(u, v)', directed: true, names: ['u', 'x', 'v', 'z'], pos: [[-4.4, 0.6], [0, -2.2], [4.0, 0.6], [1.6, 3.0]], edges: [[0, 1, 2], [1, 2, 3], [0, 2, 7]] },
+  // L15 負權重的動機（示意）：a → t 是「倒貼的收費站」
+  toll: { title: '倒貼收費', directed: true, names: ['s', 'a', 't'], pos: [[-4.6, 0.8], [0, -2.4], [4.4, 0.8]], edges: [[0, 1, 3], [1, 2, -2], [0, 2, 2]] },
+  // L16 relaxation 安全性：s、u、v 三角形（標籤是符號）
+  tri: { title: 's, u, v', directed: true, names: ['s', 'u', 'v'], pos: [[-4.4, 1.2], [0, -2.0], [4.2, 1.2]], edges: [[0, 1, 'δ(s,u)'], [1, 2, 'w(u,v)'], [0, 2, 'δ(s,v)', 0.25]] },
+  // L16 DAG：A、B 在 S 的左邊（走不到）
+  dagL: { title: 'A, B, S', directed: true, names: ['A', 'B', 'S'], pos: [[-4.6, 0], [-1.2, 0], [2.2, 0]], edges: [[0, 1, 1], [1, 2, 1], [0, 2, 4, 0.3]] },
+  // L18 雙向搜尋的示意圖（沒有權重）
+  bi: { title: 's … t', directed: true, names: ['s', 'v1', 'v3', 'v2', 't', 'x'], pos: [[-5.2, 0], [-2.6, -2.2], [0.4, -2.2], [2.8, 0], [5.4, 0], [-1.0, 2.2]], edges: [[0, 1], [0, 5], [1, 2], [2, 3], [5, 3], [3, 4]] },
+  // L18 位能：s 出去兩條 5（t1→t、t2→t 的權重是示意）
+  pot: { title: 'potential', directed: true, names: ['s', 't1', 't2', 't'], pos: [[-5, 0], [-0.6, -2.4], [-0.6, 2.4], [4.4, 0]], edges: [[0, 1, 5], [0, 2, 5], [1, 3, 4], [2, 3, 8]] },
+  land: { title: 'landmark', directed: true, names: ['s', 't1', 't2', 't', 'L'], pos: [[-5.6, 0], [-2, -2.4], [-2, 2.4], [2.4, 0], [5.6, 0]], edges: [[0, 1, 5], [0, 2, 5], [1, 3, 4], [2, 3, 8], [3, 4, 2]] },
+};
+const smE = (u, v) => findEdge(u, v);
+const smPath = (vs, color, k = 2.2) => { for (let i = 0; i + 1 < vs.length; i++) edgeColor(smE(vs[i], vs[i + 1]), color, k); };
+
+// ══════════ L15 ══════════
+// 00:19 / 03:59 加權圖 G = (V, E, W)；Dijkstra vs Bellman-Ford
+FRAG.push(['spmit1-two-algos', 'L15：加權圖與兩個演算法', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(GRAPHS.tri, { scale: 0.75, dx: -2.6, dz: -0.2 });
+  say('邊上多了權重', 'G = (V, E, W)，W：E → ℝ');
+  await beat(tok, 3000);
+  setW(smE(0, 2), 0.5); edgeColor(smE(0, 2), C.hot, 1.8);
+  say('權重可以是整數、實數', '也可以是負的');
+  await beat(tok, 2200);
+  setW(smE(1, 2), -1); edgeColor(smE(1, 2), C.back, 1.8);
+  await beat(tok, 1600);
+  setW(smE(0, 2), 3); setW(smE(1, 2), 1); edgeColor(smE(0, 2), C.edge, 1); edgeColor(smE(1, 2), C.edge, 1);
+  const dj = cube('Dijkstra', '#4b9ee2', [3.0, 0.5, 1.0], 3.4, 0.25, -1.8, 4);
+  tag('權重 ≥ 0', 'ptr', 3.4, 0.3, -0.9);
+  say('Dijkstra：權重必須非負', 'O(V log V + E)：幾乎線性');
+  await beat(tok, 3200);
+  const eL = tag('簡單圖：E = O(V²)', 'idx', 3.4, 0.3, 0.1);
+  say('簡單圖每對頂點最多一條邊', '完全圖 E = Θ(V²)；通常 E 主導');
+  await beat(tok, 3000);
+  const bf = cube('Bellman-Ford', '#dd8238', [3.0, 0.5, 1.0], 3.4, 0.25, 1.6, 4);
+  tag('可有負權重', 'ptr', 3.4, 0.3, 2.5);
+  say('Bellman-Ford：正負權重都行', 'O(VE)，E = V² 時是 O(V³)');
+  await beat(tok, 3200);
+  glow(dj, GOLD);
+  say('能用 Dijkstra 就用 Dijkstra', '有負邊才換 Bellman-Ford');
+  await beat(tok, 2600);
+  glow(dj, null); glow(bf, RED);
+  say('負邊麻煩在負 cycle', 'Bellman-Ford 要多做事');
+  await beat(tok, 2800);
+  kill(eL);
+}]);
+
+// 11:23 複雜度裡沒有權重 W
+FRAG.push(['spmit1-weight-range', 'L15：複雜度與權重大小無關', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(GRAPHS.tri, { scale: 0.8, dx: -2.4, dz: -0.6 });
+  say('觀察：兩個複雜度都沒有 W', 'O(V log V + E)、O(VE)');
+  await beat(tok, 3000);
+  const ws = ['0.0001', '10⁹⁸', '2⁶⁴'];
+  [smE(0, 1), smE(1, 2), smE(0, 2)].forEach((e, i) => { txt(e.lbl, ws[i]); edgeColor(e, C.hot, 1.8); });
+  say('權重可以 0.0001，也可以 10⁹⁸', '最多 E 種值，但範圍可以指數大');
+  await beat(tok, 3400);
+  [smE(0, 1), smE(1, 2), smE(0, 2)].forEach((e) => edgeColor(e, C.edge, 1));
+  const a = tag('Dijkstra：O(V log V + E)', 'ptr', 3.6, 0.3, -1.4);
+  const b = tag('Bellman-Ford：O(VE)', 'ptr', 3.6, 0.3, -0.4);
+  const n = tag('不含 W', 'ptr alt', 3.6, 0.3, 0.6);
+  say('好演算法不受權重範圍影響', '只跟 V、E 有關');
+  await beat(tok, 3200);
+  say('BFS 只數邊數，不能直接用', '提示：權重的範圍太大');
+  edgeColor(smE(0, 2), C.back, 2);
+  await beat(tok, 3200);
+  say('難處一：指數多條路徑', '難處二：權重範圍可以很大');
+  edgeColor(smE(0, 2), C.edge, 1);
+  await beat(tok, 3000);
+  [a, b, n].forEach(kill);
+}]);
+
+// 14:19 δ(u, v) 的定義
+FRAG.push(['spmit1-delta-def', 'L15：δ(u, v) 的定義', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(SM.delta);
+  say('v₀ →ᵖ vₖ：一條從 v₀ 到 vₖ 的路徑', '單一頂點 v₀ 自己就是長度 0 的路徑');
+  nodeColor(0, C.pq, 0.3); nodeTag(0, 'w = 0');
+  await beat(tok, 3000);
+  nodeColor(0, C.white, 0);
+  smPath([0, 2], C.hot);
+  say('u → v 直接走：7', '');
+  await beat(tok, 2000);
+  smPath([0, 2], C.dim, 1); smPath([0, 1, 2], C.tree);
+  say('u → x → v：2 + 3 = 5', '');
+  await beat(tok, 2200);
+  nodeTag(2, 'δ = 5');
+  say('δ(u, v) = 所有 u→v 路徑的最小 w(p)', 'min(7, 5) = 5');
+  await beat(tok, 3000);
+  nodeColor(3, C.dim, 0); nodeTag(3, 'δ = ∞');
+  say('沒有路徑就是 ∞', '從這裡開車到東京：∞');
+  await beat(tok, 2800);
+  say('不只要 δ，也要那條路徑本身', '');
+  await beat(tok, 2200);
+  smPath([0, 1, 2], C.edge, 1);
+  nodeTag(0, 'd 0'); nodeTag(1, 'd ∞'); nodeTag(2, 'd ∞'); nodeTag(3, 'd ∞');
+  say('從起點出發：d(s) = 0，其他 ∞', '把 ∞ 一路降下來');
+  await beat(tok, 2600);
+  nodeTag(1, 'd 2'); await beat(tok, 700); nodeTag(2, 'd 7'); await beat(tok, 700); nodeTag(2, 'd 5');
+  say('走得到的會降到 δ', '走不到的 z 永遠是 ∞');
+  nodeColor(3, C.back, 0.3);
+  await beat(tok, 3000);
+}]);
+
+// 23:46 predecessor π
+FRAG.push(['spmit1-pred', 'L15：predecessor π 與回推路徑', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(GRAPHS.l15);
+  const d = [0, 1, 2, 5, 3, 6, 8], par = [-1, 0, 0, 4, 2, 3, 4];
+  for (let v = 0; v < 7; v++) { nodeTag(v, String(d[v])); nodeNote(v, par[v] >= 0 ? 'π = ' + nm(par[v]) : 'π = NIL'); if (par[v] >= 0) edgeColor(smE(par[v], v), C.tree, 2); }
+  say('d(v)：圈裡的數字，目前最佳權重', 'π(v)：最佳路徑上的前一個頂點');
+  await beat(tok, 3400);
+  say('π(S) = NIL', '目前的最佳路徑沿 π 往回走就得到');
+  nodeColor(0, C.pq, 0.3);
+  await beat(tok, 2600);
+  nodeColor(0, C.white, 0);
+  say('現在 π(E) = C，π(C) = D …', 'E 目前 6');
+  nodeColor(5, C.hot, 0.4);
+  await beat(tok, 2800);
+  const e = smE(1, 5);
+  edgeColor(e, C.hot, 2);
+  await beat(tok, 800);
+  edgeColor(smE(3, 5), C.edge, 1); edgeColor(e, C.tree, 2);
+  d[5] = 3; par[5] = 1; nodeTag(5, '3'); nodeNote(5, 'π = A');
+  say('找到 A → E 更好：d 6 → 3', 'π 也跟著改：π(E) = A');
+  await beat(tok, 3000);
+  edgeColor(smE(4, 6), C.edge, 1); edgeColor(smE(5, 6), C.tree, 2);
+  nodeTag(6, '6'); nodeNote(6, 'π = E');
+  say('最後回推：E ← A ← S', 'π(E) = A，π(A) = S');
+  nodeColor(1, C.hot, 0.4); await beat(tok, 900); nodeColor(0, C.hot, 0.4);
+  await beat(tok, 2400);
+  say('d 與 π 兩個資料結構一起更新', 'd 等於 δ 時，π 也正確');
+  await beat(tok, 3000);
+}]);
+
+// 26:37 為什麼有負權重；能不能平移成非負
+FRAG.push(['spmit1-neg-why', 'L15：負權重從哪來？能平移掉嗎？', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(SM.toll);
+  say('負權重：開這段路反而有錢拿', '倒貼的收費站、社群網路的好惡');
+  edgeColor(smE(1, 2), C.back, 2);
+  await beat(tok, 3200);
+  smPath([0, 1, 2], C.tree);
+  say('s → a → t：3 + (−2) = 1', '比直接 s → t 的 2 還短');
+  await beat(tok, 3000);
+  say('想法：每條邊都加 2，變成非負？', '就能用 Dijkstra');
+  await beat(tok, 2600);
+  setW(smE(0, 1), 5); setW(smE(1, 2), 0); setW(smE(0, 2), 4);
+  smPath([0, 1, 2], C.edge, 1);
+  await beat(tok, 900);
+  smPath([0, 1, 2], C.hot, 1.8);
+  say('s → a → t 變 5 + 0 = 5', '');
+  await beat(tok, 2200);
+  smPath([0, 1, 2], C.dim, 1); edgeColor(smE(0, 2), C.tree, 2.2);
+  say('s → t 變 4：最短路徑換人了！', '邊數多的路加得多');
+  await beat(tok, 3200);
+  say('要證明答案不變才能平移', '能做到：O(VE) → O(V log V + E)');
+  await beat(tok, 3200);
+}]);
+
+// ══════════ L16 ══════════
+// 08:00 relaxation 安全的證明（歸納 + 三角不等式）
+FRAG.push(['spmit1-relax-lemma', 'L16：證明 relax 永遠 d(v) ≥ δ(s, v)', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(SM.tri, { dz: -1.2 });
+  say('引理：只用 relax 改 d，就有 d(v) ≥ δ(s,v)', '不管 relax 的順序');
+  await beat(tok, 3200);
+  const L = [];
+  const row = (s, z, cls) => { const l = tag(s, cls || 'ptr', 0, 0.3, z); L.push(l); return l; };
+  nodeTag(1, 'd(u) ≥ δ(s,u)', 'ptr alt');
+  say('歸納假設：d(u) ≥ δ(s, u)', '現在 relax 邊 (u, v)');
+  edgeColor(smE(1, 2), C.hot, 2);
+  await beat(tok, 3000);
+  edgeColor(smE(0, 1), C.tree, 2); edgeColor(smE(0, 2), C.tree, 2);
+  row('δ(s,v) ≤ δ(s,u) + δ(u,v)', 2.2);
+  say('三角不等式（講的是路徑，不是邊）', '經過 u 不會比最短的更短');
+  await beat(tok, 3400);
+  row('≤ d(u) + δ(u,v)', 3.0);
+  say('δ(s,u) 換成 d(u)：只會變大', '因為 d(u) ≥ δ(s,u)');
+  nodeColor(1, C.pq, 0.3);
+  await beat(tok, 3200);
+  nodeColor(1, C.white, 0);
+  row('≤ d(u) + w(u,v)', 3.8);
+  say('δ(u,v) 換成 w(u,v)：單一條邊不會比最短短', '');
+  await beat(tok, 3200);
+  row('= relax 後的 d(v)', 4.6, 'ptr alt');
+  nodeTag(2, 'd(v) ≥ δ(s,v)', 'ptr alt');
+  nodeColor(2, C.ok, 0.3);
+  say('所以 relax 之後仍有 d(v) ≥ δ(s,v)', '證畢：relaxation 是安全的');
+  await beat(tok, 3200);
+  say('s→b 邊 3 > s→a→b 的 2 不矛盾', 'δ(s,b) = 2：三角不等式講最短路徑');
+  await beat(tok, 3000);
+}]);
+
+// 17:37 DAG：topological sort + 一次 relax；起點左邊都是 ∞
+FRAG.push(['spmit1-dag-idea', 'L16：DAG 最短路徑的作法', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(SM.dagL, { dz: -2.2 });
+  say('DAG：沒有 cycle → 不會有負 cycle', '負邊可以，只走一次就照減');
+  await beat(tok, 3200);
+  const cd = code(['1. topological sort（DFS，O(V + E)）', '   u → v 的路徑 ⇒ u 排在 v 前面', '2. 由左到右走一次', '   relax 這個頂點的每條出邊', '總共 O(V + E)'], -2.2, 0.6, 0.62);
+  cd.hl(0);
+  say('第一步：topological sort', '有 DAG 就先試 topo sort');
+  await beat(tok, 3000);
+  cd.hl(2);
+  for (let v = 0; v < 3; v++) { nodeColor(v, C.hot, 0.35); await beat(tok, 600); nodeColor(v, C.white, 0); }
+  say('第二步：由左到右，一個頂點處理一次', '每條邊只 relax 一次');
+  await beat(tok, 2600);
+  cd.hl(4);
+  say('時間 O(V + E)', '');
+  await beat(tok, 2000);
+  cd.hl(-1);
+  nodeColor(2, C.ok, 0.3); nodeTag(2, '0'); nodeTag(0, '∞'); nodeTag(1, '∞');
+  say('起點是 S：A、B 在它左邊', 'δ(S, A) = δ(S, B) = ∞');
+  await beat(tok, 3200);
+  nodeColor(0, C.dim, 0); nodeColor(1, C.dim, 0);
+  say('先排好，再決定起點', '起點左邊的全部 ∞');
+  await beat(tok, 3000);
+}]);
+
+// 33:29 Dijkstra pseudocode（L16 的 5 頂點例子）；params.target：L18 的「取出 t 就停」
+FRAG.push(['spmit1-dij-pseudo', 'Dijkstra pseudocode（Extract-Min、S、Q）', async (tok) => {
+  const P = ctx.params || {};
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(GRAPHS.clrs5, { scale: 0.62, dx: 3.2, dz: -0.6 });
+  const T = P.target ? GRAPHS.clrs5.names.indexOf(P.target) : -1;
+  const lines = ['Dijkstra(G, w, s):', '  Initialize：d(s)=0，其他 ∞', '  S = ∅ ;  Q = V', '  while Q ≠ ∅:', '    u = Extract-Min(Q)'];
+  if (T >= 0) lines.push('    if u == t: stop');
+  lines.push('    S = S ∪ {u}', '    for v in Adj[u]:', '      Relax(u, v, w)');
+  const I = (s) => lines.findIndex((l) => l.includes(s));
+  const cd = code(lines, -4.0, -2.8, 0.6);
+  const n = GR.n, d = Array(n).fill(INF), inS = Array(n).fill(false), Sl = [];
+  d[0] = 0;
+  const sT = tag('S = { }', 'ptr alt', -4.4, 0.3, 3.0), qT = tag('', 'ptr', -4.4, 0.3, 3.8);
+  const showQ = () => txt(qT, 'Q：' + [...Array(n).keys()].filter((v) => !inS[v]).map((v) => nm(v) + ' ' + fmt(d[v])).join('  '));
+  for (let v = 0; v < n; v++) nodeTag(v, fmt(d[v]));
+  if (T >= 0) { nodeNote(T, '目標 t'); nodeColor(T, C.purple, 0); }
+  cd.hl(1); showQ();
+  say(T >= 0 ? '同一份 Dijkstra，只多一行' : 'Initialize：起點 A 的 d = 0', T >= 0 ? '單一目標 t = ' + nm(T) : '其他頂點 ∞');
+  await beat(tok, 2600);
+  cd.hl(2);
+  say('S：已知最短路徑的頂點', 'Q：priority queue，key = d');
+  await beat(tok, 2600);
+  for (;;) {
+    let u = -1;
+    for (let v = 0; v < n; v++) if (!inS[v] && (u < 0 || d[v] < d[u])) u = v;
+    if (u < 0) break;
+    cd.hl(I('Extract-Min'));
+    nodeColor(u, C.hot, 0.4);
+    say('Extract-Min：' + nm(u) + '（d = ' + fmt(d[u]) + '）', 'greedy：Q 裡最小的就是確定的');
+    await beat(tok, 1500);
+    if (T >= 0) {
+      cd.hl(I('stop'));
+      if (u === T) {
+        nodeColor(u, C.ok, 0.4);
+        say('u == t：停！', 'δ(A, ' + nm(u) + ') = ' + fmt(d[u]) + '；剩下的不用做');
+        await beat(tok, 3200);
+        return;
+      }
+      await beat(tok, 500);
+    }
+    cd.hl(I('S = S'));
+    inS[u] = true; Sl.push(u); nodeColor(u, C.ok, 0.3); txt(sT, 'S = { ' + Sl.map(nm).join(', ') + ' }'); showQ();
+    await beat(tok, 800);
+    for (const { e, to: v } of adjOf(u)) {
+      cd.hl(I('Relax'));
+      edgeColor(e, C.hot, 1.8);
+      const nd = d[u] + e.w;
+      if (nd < d[v]) {
+        const old = d[v]; d[v] = nd; nodeTag(v, fmt(nd)); showQ();
+        say('Relax ' + nm(u) + '→' + nm(v) + '：' + fmt(old) + ' → ' + nd, 'Decrease-Key');
+        await beat(tok, 1100);
+        edgeColor(e, C.tree, 1.6);
+      } else {
+        say(nm(u) + '→' + nm(v) + '：' + nd + ' ≥ ' + fmt(d[v]) + '，不變', '');
+        await beat(tok, 800);
+        edgeColor(e, C.edge, 1);
+      }
+    }
+    nodeColor(u, C.ok, 0);
+  }
+  cd.hl(3);
+  say('Q 空了：' + [...Array(n).keys()].map((v) => nm(v) + ' ' + fmt(d[v])).join('、'), '每個頂點只取出一次');
+  await beat(tok, 3000);
+}]);
+
+// ══════════ L18 ══════════
+// 00:41 三種最短路徑問題
+FRAG.push(['spmit1-three-problems', 'L18：三種最短路徑問題', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(GRAPHS.l15);
+  say('今天：不改最壞複雜度', '但實際跑得更快');
+  await beat(tok, 2600);
+  nodeColor(0, C.ok, 0.3); nodeColor(3, C.purple, 0.3);
+  smPath([0, 2, 4, 3], C.tree);
+  say('① single source、single target', '只要 S 到 C');
+  await beat(tok, 3000);
+  nodeColor(3, C.white, 0);
+  smPath([0, 2, 4, 3], C.edge, 1);
+  for (const [u, v] of [[0, 1], [0, 2], [2, 4], [4, 3], [1, 5], [5, 6]]) { edgeColor(smE(u, v), C.tree, 2); await beat(tok, 350); }
+  say('② single source、所有目的地', '原本的 Dijkstra、Bellman-Ford');
+  await beat(tok, 2800);
+  for (const [u, v] of [[0, 1], [0, 2], [2, 4], [4, 3], [1, 5], [5, 6]]) edgeColor(smE(u, v), C.edge, 1);
+  nodeColor(0, C.white, 0);
+  say('③ all pairs：任兩點都要', '起點也在變，工作更多（6.046）');
+  for (const [a, b] of [[1, 6], [2, 5], [4, 6]]) {
+    nodeColor(a, C.ok, 0.3); nodeColor(b, C.purple, 0.3);
+    await beat(tok, 1000);
+    nodeColor(a, C.white, 0); nodeColor(b, C.white, 0);
+  }
+  say('今天專攻 ①：提早停、雙向搜尋、位能', '');
+  nodeColor(0, C.ok, 0.3); nodeColor(3, C.purple, 0.3);
+  await beat(tok, 3000);
+}]);
+
+// 07:18 雙向搜尋：forward + backward、資料結構加倍
+FRAG.push(['spmit1-bidir-setup', 'L18：雙向搜尋的設定', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(SM.bi, { dz: -0.6 });
+  say('從 s 往前、從 t 往回', '兩個 frontier 相遇就能找到路徑');
+  await beat(tok, 3000);
+  nodeTag(0, 'd_f 0'); nodeNote(4, 'd_b 0');
+  const t1 = tag('d_f(s) = 0、d_b(t) = 0，其他 ∞', 'ptr alt', 0, 0.3, 3.6);
+  say('兩套 priority：d_f、d_b', '兩個 queue：Q_f、Q_b');
+  await beat(tok, 3000);
+  nodeColor(0, '#bfe8d6', 0.3);
+  edgeColor(smE(0, 1), C.ok, 2); edgeColor(smE(0, 5), C.ok, 2);
+  say('forward 一步：取出 s', '處理 s 的兩條出邊');
+  await beat(tok, 2800);
+  nodeColor(4, '#cfe0f5', 0.3);
+  edgeColor(smE(3, 4), C.tree, 2);
+  const ar = arrow(V3(5.0, 0.9, -1.1), V3(3.2, 0.9, -1.1), 0x2f7fd0);
+  say('backward 一步：取出 t', '沿著邊「反方向」走到 v2');
+  await beat(tok, 3200);
+  say('圖要能反向走訪邊', '權重不變，只是方向倒過來');
+  await beat(tok, 2800);
+  kill(ar);
+  say('forward、backward 交替', '什麼時候停？');
+  await beat(tok, 2600);
+  kill(t1);
+}]);
+
+// 12:22 終止條件；用 π_f、π_b 從 w 組路徑
+FRAG.push(['spmit1-bidir-stop', 'L18：雙向搜尋何時停、怎麼組路徑', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(SM.bi, { dz: -0.6 });
+  for (const v of [0, 1, 5]) nodeColor(v, '#bfe8d6', 0.3);
+  for (const v of [4, 3]) nodeColor(v, '#cfe0f5', 0.3);
+  edgeColor(smE(0, 1), C.ok, 2); edgeColor(smE(0, 5), C.ok, 2); edgeColor(smE(3, 4), C.tree, 2);
+  say('frontier「相遇」寫不成程式', '要更具體的條件');
+  await beat(tok, 2800);
+  edgeColor(smE(1, 2), C.ok, 2); edgeColor(smE(2, 3), C.tree, 2);
+  nodeColor(2, C.back, 0.5); nodeTag(2, 'w');
+  say('停：某個 w 同時被 Q_f、Q_b 取出', '這裡 w = v3');
+  await beat(tok, 3200);
+  nodeNote(1, 'π_f = s'); nodeNote(2, 'π_f = v1');
+  say('從 w 套 π_f：v3 → v1 → s', 'π_f(v3) = v1，π_f(v1) = s');
+  smPath([0, 1, 2], C.hot, 2.4);
+  await beat(tok, 3200);
+  nodeNote(3, 'π_b = t');
+  say('老師先寫 π_b(t) = v2，學生糾正', '反向搜尋時 t 是 v2 的前一個：π_b(v2) = t');
+  await beat(tok, 3400);
+  nodeNote(2, 'π_b = v2');
+  smPath([2, 3, 4], C.hot, 2.4);
+  say('從 w 套 π_b：v3 → v2 → t', '兩段接起來就是 s → t');
+  await beat(tok, 3000);
+  say('聽起來對…但 w 不一定在最短路徑上', '終止條件沒錯，錯在用 w 組路徑');
+  await beat(tok, 3200);
+}]);
+
+// 28:05 反例 s、u、u′、w、t：part 1 = 前四步，part 2 = 後兩步與 10 ≠ 9
+FRAG.push(['spmit1-bidir-trace', 'L18：雙向搜尋反例逐步執行', async (tok) => {
+  const part = (ctx.params || {}).part === 2 ? 2 : 1;
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(GRAPHS.bidir);
+  tag('上 = d_f、下 = d_b', 'idx', 0, 0.3, 4.2);
+  const df = [0, INF, INF, INF, INF], db = [INF, INF, INF, 0, INF];
+  const doneF = new Set(), doneB = new Set();
+  const sh = () => { for (let v = 0; v < 5; v++) { nodeTag(v, 'f ' + fmt(df[v])); nodeNote(v, 'b ' + fmt(db[v])); } };
+  const S = [
+    [0, 'f', [[0, 1], [0, 4]], 'forward 取 s：d_f(u)=3、d_f(w)=5', 'Q_f 只有 s 是 0'],
+    [3, 'b', [[2, 3], [4, 3]], 'backward 取 t：d_b(u′)=3、d_b(w)=5', '沿反向邊走'],
+    [1, 'f', [[1, 2]], 'forward 取 u（3 < 5）', 'd_f(u′) = 3 + 3 = 6'],
+    [2, 'b', [[1, 2]], 'backward 取 u′（3 < 5）', 'd_b(u) = 3 + 3 = 6'],
+    [4, 'f', [[4, 3]], 'forward 取 w（5 < 6）', 'd_f(t) = 5 + 5 = 10'],
+    [4, 'b', [[0, 4]], 'backward 取 w（5 < 6）', 'd_b(s) = 10；w 兩邊都取出 → 停'],
+  ];
+  const doStep = (st, quiet) => {
+    const [u, dir, es2] = st;
+    (dir === 'f' ? doneF : doneB).add(u);
+    nodeColor(u, doneF.has(u) && doneB.has(u) ? C.back : dir === 'f' ? '#bfe8d6' : '#cfe0f5', 0.3);
+    for (const [a, b] of es2) {
+      const e = smE(a, b); edgeColor(e, dir === 'f' ? C.ok : C.tree, 2);
+      if (dir === 'f') df[b] = Math.min(df[b], df[a] + e.w); else db[a] = Math.min(db[a], db[b] + e.w);
+    }
+    if (!quiet) sh();
+  };
+  if (part === 1) {
+    sh();
+    say('上面 3 + 3 + 3 = 9 是最短', '下面 5 + 5 = 10');
+    await beat(tok, 3200);
+    for (let i = 0; i < 4; i++) { doStep(S[i]); say(S[i][3], S[i][4]); await beat(tok, 2600); }
+    say('綠 = 已從 Q_f 取出，藍 = 已從 Q_b 取出', '下一步輪到 forward');
+    await beat(tok, 3000);
+    return;
+  }
+  for (let i = 0; i < 4; i++) doStep(S[i], true);
+  sh();
+  say('接著做：前四步之後的狀態', 'Q_f：w 5、u′ 6；Q_b：w 5、u 6');
+  await beat(tok, 3200);
+  for (let i = 4; i < 6; i++) { doStep(S[i]); say(S[i][3], S[i][4]); await beat(tok, 2800); }
+  say('用 w 組路徑：d_f(w) + d_b(w) = 10', '<span class="no">但最短是 9！</span>');
+  await beat(tok, 3200);
+  [[0, 1], [1, 2], [2, 3]].forEach(([a, b]) => edgeColor(smE(a, b), C.hot, 2.4));
+  say('交替搜尋在「邊數最少」的路徑相遇', '邊數最少 ≠ 權重最小');
+  await beat(tok, 3200);
+}]);
+
+// 45:38 位能 λ：w̄(u,v) = w(u,v) − λ(u) + λ(v)
+FRAG.push(['spmit1-potential', 'L18：位能改權重，讓搜尋往下坡走', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(SM.pot);
+  say('s 出去兩條邊都是 5', 'Dijkstra 不知道該先往哪');
+  edgeColor(smE(0, 1), C.hot, 1.8); edgeColor(smE(0, 2), C.hot, 1.8);
+  await beat(tok, 3000);
+  edgeColor(smE(0, 1), C.edge, 1); edgeColor(smE(0, 2), C.edge, 1);
+  const lam = [9, 4, 8, 0];
+  say('給每個頂點一個位能 λ（紫柱高度）', 'w̄(u,v) = w(u,v) − λ(u) + λ(v)');
+  const bars = [];
+  for (let v = 0; v < 4; v++) { nodeNote(v, 'λ = ' + lam[v]); const h = Math.max(0.05, lam[v] * 0.32); const p = GR.nodes[v].home; bars.push(cube('', '#c9b6f2', [0.22, h, 0.22], p.x + 0.75, h / 2, p.z)); }
+  await beat(tok, 3400);
+  say('t2 的位能拉高：往 t2 變上坡', '往 t1 是下坡（λ 是示意的數字）');
+  glow(bars[2], GOLD); nodeColor(2, C.pq, 0.3);
+  await beat(tok, 3000);
+  glow(bars[2], null); nodeColor(2, C.white, 0);
+  for (const e of GR.edges) {
+    const nw = e.w - lam[e.u] + lam[e.v];
+    edgeColor(e, C.hot, 1.8);
+    say(nm(e.u) + '→' + nm(e.v) + '：' + e.w + ' − ' + lam[e.u] + ' + ' + lam[e.v] + ' = ' + nw, '');
+    await beat(tok, 1300);
+    setW(e, nw); edgeColor(e, nw === 0 ? C.ok : C.edge, nw === 0 ? 2 : 1);
+  }
+  say('任一條 s→t 路徑：w̄(p) = w(p) − λ(s) + λ(t)', '全部平移同一個量 → 最短路徑不變');
+  await beat(tok, 3400);
+  smPath([0, 1, 3], C.tree, 2.4);
+  say('s→t1→t：9 → 0；s→t2→t：13 → 4', 'Dijkstra 先往下坡的 t1 走，更快到 t');
+  await beat(tok, 3400);
+}]);
+
+// 50:59 landmark：λ_t(u) = δ(u, L) − δ(t, L)
+FRAG.push(['spmit1-landmark', 'L18：用 landmark 算位能', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(SM.land);
+  nodeColor(4, C.purple, 0.3);
+  say('選一個 landmark L ∈ V', '例：Caltech → Boston 必經 Austin');
+  await beat(tok, 3000);
+  const dl = [11, 6, 10, 2, 0];
+  for (let v = 0; v < 5; v++) { nodeTag(v, 'δ(·,L) ' + dl[v], 'ptr'); await beat(tok, 450); }
+  say('預先算每個 u 到 L 的 δ(u, L)', '工作量大，但只做一次');
+  await beat(tok, 2800);
+  nodeColor(3, C.hot, 0.3);
+  say('對目標 t 再算一次 δ(t, L) = 2', '只有一個 t，很便宜');
+  await beat(tok, 2600);
+  nodeColor(3, C.white, 0);
+  const lam = dl.map((x) => x - dl[3]);
+  for (let v = 0; v < 5; v++) nodeNote(v, 'λ = ' + fmt(lam[v]));
+  say('λ_t(u) = δ(u, L) − δ(t, L)', 's 9、t1 4、t2 8、t 0（數字是示意）');
+  await beat(tok, 3400);
+  for (const e of GR.edges) { const nw = e.w - lam[e.u] + lam[e.v]; setW(e, nw); edgeColor(e, nw === 0 ? C.ok : C.edge, nw === 0 ? 2 : 1); }
+  say('新權重全部 ≥ 0：三角不等式', 'δ(u, L) ≤ w(u, v) + δ(v, L)');
+  await beat(tok, 3400);
+  smPath([0, 1, 3], C.tree, 2.4);
+  say('Dijkstra 照跑，答案一樣', '選對 landmark：實際快 20%～2 倍');
+  await beat(tok, 3200);
+}]);
+  }
+
+  // ═══ spmit2.js ═══
+  {
+const { V3, cube, glow, kill, arrow, move, fly, tint, relabel, GOLD, GREEN, RED } = K;
+// ─── MIT 6.006 L17 Bellman-Ford（ozsuci5pIso）、R15 Shortest Paths（mQSp6VmfakA）、R18 Quiz 2 Review（sPuazUPiV1k）───
+// 用本章模組的畫圖工具（buildGraph、nodeTag、edgeColor、addEdge、makeStrip…）；fresh / tag / code 是模組自己的版本。
+// 白板上的圖只有部分權重出現在逐字稿：標「示意」的數字是依描述補上的。
+const S2R = '#d64545', S2B = '#2f7fd0';
+const S2G = {
+  // L17 開場：u 起點、v0（δ = 2）、v1→v2→v3 負 cycle、z 走不到
+  spec: { directed: true, names: ['u', 'v0', 'v1', 'v2', 'v3', 'z'], pos: [[-5, 0], [-1.5, -2.8], [-1.5, 1.4], [2.2, -0.4], [2.2, 3.2], [5, -2.8]],
+    edges: [[0, 1, 2], [0, 2, 4], [2, 3, 2], [3, 4, 3], [4, 2, -6], [5, 1, 1]] },
+  loop: { directed: true, names: ['s', 'a', 'b', 'c'], pos: [[-4.6, 0.6], [-1.2, 0.6], [2.6, -1.8], [2.6, 3.0]], edges: [[0, 1, 1], [1, 2, 1], [2, 3, 1], [3, 1, -3]] },
+  // L17 歸納證明用的路徑（示意）：s = v0 → v1 → … → v4，外加三條較差的邊
+  ind: { directed: true, names: ['v0', 'v1', 'v2', 'v3', 'v4'], pos: [[-5.2, 0], [-2.6, -1.2], [0, 0], [2.6, -1.2], [5.2, 0]],
+    edges: [[0, 1, 2], [1, 2, 1], [2, 3, 3], [3, 4, 1], [0, 2, 5, -0.35], [1, 3, 6, 0.35], [2, 4, 5, -0.35]] },
+  path5: { directed: true, names: ['v0', 'v1', 'v2', 'v3', 'vk'], pos: [[-5.2, 0], [-2.6, 0], [0, 0], [2.6, 0], [5.2, 0]], edges: [[0, 1], [1, 2], [2, 3], [3, 4]] },
+  // L17 學生提問的例子：邊的權重 2、3、−1；第 1 條 = A→B（−1）、第 2 條 = S→A（2）、第 3 條 = C→A（3）
+  qa: { directed: true, names: ['S', 'A', 'B', 'C'], pos: [[-4.6, 0], [0, -1.6], [4.4, -1.6], [0, 2.8]], edges: [[1, 2, -1], [0, 1, 2], [3, 1, 3]] },
+  unr: { directed: true, names: ['s', 'x', 'y', 'z'], pos: [[-4.8, 0], [0, -2.2], [4, -0.2], [0.6, 2.8]], edges: [[1, 2, 1], [2, 3, 1], [3, 1, -3]] },
+  // L17 longest path：s→v1→v2→v3 = 6，s→v3 = 4（示意的權重）
+  lng: { directed: true, names: ['s', 'v1', 'v2', 'v3'], pos: [[-5, 0.8], [-1.6, -2.2], [1.9, -2.2], [5, 0.8]], edges: [[0, 1, 1], [1, 2, 2], [2, 3, 3], [0, 3, 4]] },
+  // L17 最短簡單路徑：水平 3 + 2 + 3 + 3 + 2 = 13，b 上掛一個 2、3、−6 的負 cycle
+  np: { directed: true, names: ['s', 'a', 'b', 'c', 'd', 'v', 'x', 'y'], pos: [[-5.8, 0.6], [-3.4, 0.6], [-1, 0.6], [1.4, 0.6], [3.7, 0.6], [6, 0.6], [-2.4, -2.6], [0.6, -2.6]],
+    edges: [[0, 1, 3], [1, 2, 2], [2, 3, 3], [3, 4, 3], [4, 5, 2], [2, 6, 2], [6, 7, 3], [7, 2, -6]] },
+  // R15 白板的 A～E（BFS 順序 A,B,C,D,E；4、2、1 與 A,C,D,E 路徑來自逐字稿，其餘權重示意）
+  r15: { directed: false, names: ['A', 'B', 'C', 'D', 'E'], pos: [[-5, 0], [-1.6, -2.4], [-1.6, 2.4], [2.2, 1.8], [5.2, -0.6]],
+    edges: [[0, 1, 4], [0, 2, 2], [1, 2, 1], [1, 3, 2], [1, 4, 3], [2, 3, 1], [3, 4, 2]] },
+  // R18 一個菱形，四條邊都是 1
+  dia: { directed: true, names: ['s', 'a', 'b', 't'], pos: [[-4.6, 0], [0, -2.4], [0, 2.4], [4.6, 0]], edges: [[0, 1, 1], [1, 3, 1], [0, 2, 1], [2, 3, 1]] },
+  // R18 紅藍邊（示意）：S→X 紅 3、X→A 紅 1、X→B 藍 1、A→T 藍 1、B→T 藍 4
+  rb: { directed: true, names: ['S', 'X', 'A', 'B', 'T'], pos: [[-5, 0], [-2, 0], [1.2, -2.2], [1.2, 2.2], [4.6, 0]],
+    edges: [[0, 1, 3], [1, 2, 1], [1, 3, 1], [2, 4, 1], [3, 4, 4]] },
+  tri3: { directed: true, names: ['S', 'A', 'B'], pos: [[-4, 0], [0.6, -2.4], [2.8, 2]], edges: [[0, 1], [0, 2], [1, 2]] },
+  // R18 DFS 邊的種類（依描述重建）：S→A、S→B、A→C、A→E、C→D、C→E、D→A、B→C
+  dfs: { directed: true, names: ['S', 'A', 'B', 'C', 'D', 'E'], pos: [[-5.4, 0], [-2.2, -1.8], [-2.2, 2.6], [1.2, -1.2], [4.4, -3.2], [4.4, 1.2]],
+    edges: [[0, 1], [0, 2], [1, 3], [1, 5, undefined, 0.2], [3, 4], [3, 5], [4, 1, undefined, -0.25], [2, 3]] },
+};
+const RB_COL = [S2R, S2R, S2B, S2B, S2B];
+const s2E = (u, v) => findEdge(u, v);
+const s2Path = (vs, color, k = 2.2) => { for (let i = 0; i + 1 < vs.length; i++) edgeColor(s2E(vs[i], vs[i + 1]), color, k); };
+function s2Rod(x1, z1, x2, z2, color = C.edge, r = 0.05) {
+  const a = V3(x1, 0.3, z1), b = V3(x2, 0.3, z2), d = b.clone().sub(a);
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, Math.max(0.01, d.length()), 8), new THREE.MeshStandardMaterial({ color }));
+  m.position.copy(a).add(b).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(V3(0, 1, 0), d.normalize());
+  lab.world.add(m); return m;
+}
+function s2Dij(src) {
+  const n = GR.n, d = Array(n).fill(INF), par = Array(n).fill(-1), done = Array(n).fill(false); d[src] = 0;
+  for (;;) {
+    let u = -1;
+    for (let v = 0; v < n; v++) if (!done[v] && d[v] < INF && (u < 0 || d[v] < d[u])) u = v;
+    if (u < 0) break;
+    done[u] = true;
+    for (const { e, to } of GR.adj[u]) if (d[u] + e.w < d[to]) { d[to] = d[u] + e.w; par[to] = u; }
+  }
+  return { d, par };
+}
+function s2Bfs(src) {
+  const n = GR.n, lv = Array(n).fill(-1), par = Array(n).fill(-1), q = [src]; lv[src] = 0;
+  for (let i = 0; i < q.length; i++) for (const { to } of GR.adj[q[i]]) if (lv[to] < 0) { lv[to] = lv[q[i]] + 1; par[to] = q[i]; q.push(to); }
+  return { lv, par, order: q };
+}
+const s2Back = (par, t) => { const p = [t]; while (par[p[0]] >= 0) p.unshift(par[p[0]]); return p; };
+// one Bellman-Ford pass over `order` (pairs [u, v]); updates d / par and the node tags
+async function s2Pass(tok, d, par, order, ms) {
+  let changed = false;
+  for (const [u, v] of order) {
+    const e = s2E(u, v);
+    edgeColor(e, C.hot, 1.8);
+    await beat(tok, ms);
+    if (d[u] !== INF && d[u] + e.w < d[v]) { d[v] = d[u] + e.w; par[v] = u; nodeTag(v, fmt(d[v]), 'ptr alt'); changed = true; await beat(tok, ms); }
+    edgeColor(e, C.edge, 1);
+  }
+  return changed;
+}
+function s2Bar(text, color, h, x, z, w = 0.9) { const m = cube('', color, [w, Math.max(0.05, h), w], x, Math.max(0.05, h) / 2, z); tag(text, 'idx', x, 0.3, z + 0.9); return m; }
+
+// ══════════ L17 Bellman-Ford ══════════
+// 01:52 規格：δ 可能有限、∞ 或 undefined
+FRAG.push(['spmit2-bf-spec', 'L17：Bellman-Ford 要做到什麼', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(S2G.spec);
+  say('今天的對手：負邊與負 cycle', '有負 cycle 也要正確回報');
+  await beat(tok, 3000);
+  nodeColor(0, C.pq, 0.3);
+  for (let v = 0; v < 6; v++) nodeTag(v, v === 0 ? '0' : '∞');
+  say('起點 u：d = 0，其他 ∞', '之後有的變有限、有的留 ∞、有的 undefined');
+  await beat(tok, 3000);
+  s2Path([0, 1], C.tree); nodeTag(1, 'δ = 2');
+  say('v0：一條邊的簡單路徑', 'δ(u, v0) = 2，途中沒有負 cycle');
+  await beat(tok, 2800);
+  s2Path([2, 3, 4, 2], C.back, 2.2);
+  say('v1→v2→v3→v1：2 + 3 − 6 = −1', '負 cycle（cycle 上的權重是示意）');
+  await beat(tok, 2800);
+  const base = [4, 6, 9];
+  for (let lap = 0; lap < 4; lap++) { for (let i = 0; i < 3; i++) nodeTag(2 + i, String(base[i] - lap), 'ptr alt'); await beat(tok, 650); }
+  for (let i = 0; i < 3; i++) nodeTag(2 + i, 'undefined', 'ptr alt');
+  say('每繞一圈少 1，可以無限繞', 'δ(u, v1)、δ(u, v2)、δ(u, v3) undefined');
+  await beat(tok, 3000);
+  nodeColor(5, C.dim, 0); nodeTag(5, 'δ = ∞');
+  say('z 從 u 走不到', 'δ(u, z) = ∞');
+  await beat(tok, 2600);
+  say('偵測負 cycle，其餘照算 δ', '這就是 Bellman-Ford 的規格');
+  await beat(tok, 3000);
+}]);
+
+// 04:29 通用演算法與兩個問題：指數時間、負 cycle 永不停止
+FRAG.push(['spmit2-generic-problems', 'L17：通用演算法的兩個問題', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  const cd = code(['Initialize：d(v) = ∞，π(v) = NIL，d(s) = 0', 'repeat', '  選一條邊 (u, v)', '  Relax(u, v, w)：d(v) > d(u) + w 就更新', 'until 沒有邊能 relax'], 0, -4.2, 0.55);
+  cd.hl(0);
+  say('複習：通用最短路徑演算法', 'd(v) = ∞、π(v) = NIL、d(s) = 0');
+  await beat(tok, 2800);
+  cd.hl(2);
+  say('怎麼選邊，決定是哪個演算法', 'Dijkstra：取 d 最小的');
+  await beat(tok, 2600);
+  cd.hl(3);
+  say('Relax 時也設 π(v) = u', '一直做到不能再 relax');
+  await beat(tok, 2600);
+  cd.hl(4);
+  buildGraph(GRAPHS.chain, { scale: 0.8, dz: 2.6, ns: 0.8 });
+  say('問題 1：選錯邊 → 指數時間', '正權重也會：n 個點 O(2^(n/2)) 次 relax');
+  for (const [u, v] of [[0, 2], [2, 4], [4, 6], [0, 1], [1, 2], [2, 3], [3, 4]]) { edgeColor(s2E(u, v), C.hot, 1.8); await beat(tok, 380); edgeColor(s2E(u, v), C.edge, 1); }
+  await beat(tok, 1600);
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(S2G.loop);
+  s2Path([1, 2, 3, 1], C.back, 2);
+  const d = [0, INF, INF, INF];
+  for (let v = 0; v < 4; v++) nodeTag(v, fmt(d[v]));
+  const cnt = tag('relax 0 次', 'ptr alt', -4.6, 0.3, 3.4);
+  say('問題 2：走得到負 cycle', '1 + 1 − 3 = −1');
+  let c = 0;
+  const ord = [[0, 1], [1, 2], [2, 3], [3, 1]];
+  for (let k = 0; k < 11; k++) {
+    const [u, v] = ord[k < 4 ? k : 1 + ((k - 4) % 3)];
+    const e = s2E(u, v);
+    edgeColor(e, C.hot, 2.2);
+    if (d[u] + e.w < d[v]) { d[v] = d[u] + e.w; c++; nodeTag(v, fmt(d[v]), 'ptr alt'); txt(cnt, 'relax ' + c + ' 次'); }
+    await beat(tok, 420);
+    edgeColor(e, v === 1 && u === 0 ? C.edge : C.back, 2);
+  }
+  say('d 一直降，until 永遠不成立', '照原樣寫，演算法不會停');
+  await beat(tok, 3200);
+}]);
+
+const BF_CODE = ['Bellman-Ford(G, W, s)', '  Initialize()', '  for i = 1 to |V| − 1:', '    for each edge (u, v) ∈ E:', '      Relax(u, v, w)', '  for each edge (u, v) ∈ E:', '    if d[v] > d[u] + w(u, v):', '      report 負 cycle 存在'];
+// 11:29 四行程式：|V| − 1 輪 relax 每條邊，再一輪檢查
+FRAG.push(['spmit2-bf-code', 'L17：Bellman-Ford 的程式', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  const cd = code(BF_CODE, -2.8, -4.3, 0.5);
+  const rl = code(['Relax(u, v, w):', '  if d[v] > d[u] + w(u, v):', '    d[v] = d[u] + w(u, v)', '    π[v] = u'], 3.6, -4.3, 0.5);
+  cd.hl(0);
+  say('輸入：圖、權重、起點 s', '用 adjacency list 表示');
+  await beat(tok, 2600);
+  cd.hl(1);
+  say('初始化跟通用版一樣', 'd(s) = 0，其他 ∞，π = NIL');
+  await beat(tok, 2400);
+  const E = 5, rows = [];
+  for (let p = 1; p <= 3; p++) {
+    cd.hl(2);
+    const z = -0.2 + (p - 1) * 1.15;
+    tag('第 ' + p + ' 輪', 'idx', -5.4, 0.3, z);
+    say('第 ' + p + ' 輪：每一條邊都 relax', 'i 只是計數器（例：|V| = 4 → 3 輪）');
+    const row = [];
+    for (let k = 0; k < E; k++) { cd.hl(k % 2 ? 4 : 3); rl.hl(1 + (k % 3)); row.push(cube('e' + (k + 1), '#efe3c8', [0.9, 0.4, 0.7], -3.6 + k * 1.3, 0.2, z, 2)); await beat(tok, 300); }
+    rows.push(row);
+    await beat(tok, 700);
+  }
+  rl.hl(-1);
+  cd.hl(5);
+  const z4 = -0.2 + 3 * 1.15;
+  tag('第 |V| 輪', 'ptr alt', -5.4, 0.3, z4);
+  for (let k = 0; k < E; k++) { cube('e' + (k + 1), C.pq, [0.9, 0.4, 0.7], -3.6 + k * 1.3, 0.2, z4, 2); await beat(tok, 260); }
+  cd.hl(6);
+  say('多做一輪：只檢查、不更新', '還能 relax → 有負 cycle');
+  await beat(tok, 2800);
+  cd.hl(7);
+  say('沒有負 cycle：|V| − 1 輪後 d = δ', '前半是計算，後半是檢查');
+  await beat(tok, 3000);
+}]);
+
+// 15:54 複雜度 O(VE)；E = O(V²) → O(V³)
+FRAG.push(['spmit2-bf-cost', 'L17：Bellman-Ford 的複雜度', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  say('每輪看全部 E 條邊', '共 |V| − 1 輪');
+  for (let p = 0; p < 4; p++) {
+    for (let k = 0; k < 6; k++) cube('', '#efe3c8', [0.7, 0.35, 0.6], -5.2 + k * 0.85, 0.2, -2.8 + p * 0.9, 1.5);
+    await beat(tok, 450);
+  }
+  tag('(V − 1) × E', 'ptr', -3.1, 0.3, 0.9);
+  for (let k = 0; k < 6; k++) cube('', C.pq, [0.7, 0.35, 0.6], -5.2 + k * 0.85, 0.2, 1.8, 1.5);
+  tag('檢查：E', 'ptr alt', -3.1, 0.3, 2.7);
+  say('計算 O(VE) + 檢查 O(E)', '= O(VE)，用陣列或 adjacency list 都一樣');
+  await beat(tok, 3400);
+  const t1 = tag('簡單圖：E = O(V²)', 'idx', 3.6, 0.3, -3.4);
+  say('簡單圖 E 可以到 O(V²)', 'Bellman-Ford → O(V³)');
+  await beat(tok, 3000);
+  const dj = s2Bar('Dijkstra O(V log V + E)', C.ok, 0.8, 2.2, 0.6, 1.0);
+  await beat(tok, 900);
+  const bf = s2Bar('Bellman-Ford O(VE)', '#dd8238', 4.5, 5.0, 0.6, 1.0);
+  say('實務上 Bellman-Ford 慢很多', 'Dijkstra 接近線性；BF 可到 V³');
+  await beat(tok, 3000);
+  glow(dj, GOLD);
+  say('能用 Dijkstra 就用 Dijkstra', '可能有負 cycle 時只好用 Bellman-Ford');
+  await beat(tok, 3200);
+  kill(t1); glow(bf, null);
+}]);
+
+// 18:03 定理與推論；k ≤ |V| − 1
+FRAG.push(['spmit2-bf-theorem', 'L17：Bellman-Ford 的定理與推論', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  const th = tag('定理：無負 cycle → 結束後 d(v) = δ(s, v)', 'ptr', 0, 0.3, -4.2);
+  say('定理：沒有負 cycle', '結束後所有 v 的 d(v) = δ(s, v)');
+  await beat(tok, 3200);
+  const co = tag('推論：|V| − 1 輪後 d(v) 還在變 → 有負 cycle', 'ptr alt', 0, 0.3, -3.3);
+  say('推論：|V| − 1 輪後還沒收斂', '→ 存在從 s 走得到的負 cycle');
+  await beat(tok, 3200);
+  buildGraph(S2G.path5, { dz: 0.6 });
+  nodeNote(0, 's = v0'); nodeNote(4, 'v = vk');
+  s2Path([0, 1, 2, 3, 4], C.tree, 2);
+  say('最短路徑 p = v0, v1, …, vk', 's = v0，v = vk');
+  await beat(tok, 3000);
+  say('最壞情況 k 多大？', '');
+  await beat(tok, 2200);
+  const e = addEdge(GR, 4, 2, null, 0.45);
+  edgeColor(e, C.back, 2.2); nodeColor(2, C.back, 0.4);
+  say('k > |V| − 1 一定重複走到某個點', '重複頂點 = 有 cycle，不是簡單路徑');
+  await beat(tok, 3200);
+  edgeColor(e, C.dim, 1); nodeColor(2, C.white, 0);
+  const kk = tag('k ≤ |V| − 1', 'ptr alt', 0, 0.3, 3.4);
+  say('沒有負 cycle → 最短路徑是簡單的', '所以 k ≤ |V| − 1');
+  await beat(tok, 3200);
+  kill(th); kill(co); kill(kk);
+}]);
+
+// 23:28 歸納：第 i 輪結束時 d(v_i) = δ(s, v_i)
+FRAG.push(['spmit2-bf-induction', 'L17：證明——每一輪前進一個頂點', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(S2G.ind);
+  const d = [0, INF, INF, INF, INF], par = [-1, -1, -1, -1, -1];
+  for (let v = 0; v < 5; v++) nodeTag(v, fmt(d[v]));
+  nodeNote(0, 's');
+  const dl = [0, 2, 3, 6, 7];
+  say('取邊數最少的最短路徑 v0→…→v4', 'δ：0, 2, 3, 6, 7（權重是示意）');
+  s2Path([0, 1, 2, 3, 4], C.tree, 1.6);
+  await beat(tok, 3000);
+  s2Path([0, 1, 2, 3, 4], C.edge, 1);
+  const ord = [[3, 4], [2, 4], [2, 3], [1, 3], [1, 2], [0, 2], [0, 1]];
+  const pt = tag('', 'ptr alt', 0, 0.3, 3.2);
+  for (let p = 1; p <= 4; p++) {
+    txt(pt, '第 ' + p + ' 輪');
+    say('第 ' + p + ' 輪：每條邊都 relax', '故意用最差的順序：從尾巴往前');
+    await s2Pass(tok, d, par, ord, 170);
+    nodeColor(p, C.ok, 0.3);
+    edgeColor(s2E(p - 1, p), C.tree, 2);
+    say('第 ' + p + ' 輪後：d(v' + p + ') = δ = ' + dl[p], p === 1 ? '這輪一定 relax 到 (v0, v1)' : 'd(v' + (p - 1) + ') 已正確，這輪 relax (v' + (p - 1) + ', v' + p + ')');
+    await beat(tok, 2000);
+  }
+  say('frontier 每輪前進一格', 'k ≤ |V| − 1 輪 → 所有走得到的點 d = δ');
+  await beat(tok, 3200);
+}]);
+
+// 30:16 推論的證明：多一輪還能 relax → 路徑有重複頂點 → 負 cycle
+FRAG.push(['spmit2-bf-corollary', 'L17：還能 relax 就有負 cycle', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(S2G.loop);
+  const d = [0, INF, INF, INF], par = [-1, -1, -1, -1];
+  for (let v = 0; v < 4; v++) nodeTag(v, fmt(d[v]));
+  const ord = [[0, 1], [1, 2], [2, 3], [3, 1]];
+  const pt = tag('', 'ptr alt', -4.6, 0.3, 3.4);
+  say('先跑 |V| − 1 = 3 輪', '邊的順序：s→a、a→b、b→c、c→a');
+  for (let p = 1; p <= 3; p++) { txt(pt, '第 ' + p + ' 輪'); await s2Pass(tok, d, par, ord, 160); await beat(tok, 500); }
+  say('3 輪後：a −2、b 0、c 1', '照理應該已經收斂');
+  await beat(tok, 2600);
+  txt(pt, '檢查輪');
+  const e = s2E(1, 2);
+  edgeColor(e, C.back, 2.4); nodeColor(2, C.back, 0.4);
+  say('a→b 還能 relax：0 > −2 + 1', '→ report 負 cycle');
+  await beat(tok, 3000);
+  for (const [v, p] of [[2, 1], [1, 3], [3, 2]]) { nodeNote(v, 'π = ' + nm(p)); await beat(tok, 700); }
+  say('沿 π 往回：b ← a ← c ← b', '頂點 b 重複 → 不是簡單路徑');
+  await beat(tok, 3000);
+  s2Path([1, 2, 3, 1], C.back, 2.4);
+  say('重複頂點 = cycle', '還能讓 d 變小 → 權重 1 + 1 − 3 < 0');
+  await beat(tok, 3200);
+}]);
+
+// 33:48 學生提問：2、3、−1 的例子，每輪都照同樣順序 relax 全部的邊
+FRAG.push(['spmit2-bf-qa-order', 'L17：2、3、−1 的例子逐輪執行', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(S2G.qa);
+  const d = [0, INF, INF, INF], par = [-1, -1, -1, -1];
+  for (let v = 0; v < 4; v++) nodeTag(v, fmt(d[v]));
+  const ord = [[1, 2], [0, 1], [3, 1]];
+  tag('順序：① A→B ② S→A ③ C→A', 'idx', 0, 0.3, 4.3);
+  say('|V| = 4 → 3 輪，每輪順序相同', '① −1、② 2、③ 3');
+  await beat(tok, 3000);
+  const pt = tag('', 'ptr alt', -4.6, 0.3, 3.2);
+  const caps = [['①：A 還是 ∞，沒變；② A = 2', '③：C 是 ∞，沒變'], ['① A→B：2 − 1 = 1', '② ③ 都沒變'], ['什麼都沒變', '']];
+  for (let p = 1; p <= 3; p++) {
+    txt(pt, '第 ' + p + ' 輪');
+    say('第 ' + p + ' 輪', '');
+    await s2Pass(tok, d, par, ord, 420);
+    say(caps[p - 1][0], caps[p - 1][1]);
+    await beat(tok, 2200);
+  }
+  nodeColor(3, C.dim, 0);
+  say('結果：A = 2、B = 1、C = ∞', 'C 從 S 走不到，一直是 ∞');
+  await beat(tok, 3000);
+  say('每一輪 relax「所有」的邊', '順序不影響最後答案');
+  await beat(tok, 2600);
+}]);
+
+// 36:38 只偵測從 s 走得到的負 cycle；權重範圍的演算法
+FRAG.push(['spmit2-bf-unreachable', 'L17：走不到的負 cycle 偵測不到', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  say('一般情況沒有更好的演算法', '假設權重範圍 W 的演算法：複雜度含 W，不好比');
+  await beat(tok, 3400);
+  buildGraph(S2G.unr);
+  const d = [0, INF, INF, INF];
+  for (let v = 0; v < 4; v++) nodeTag(v, fmt(d[v]));
+  nodeColor(0, C.pq, 0.3);
+  s2Path([1, 2, 3, 1], C.back, 2);
+  say('負 cycle x→y→z：1 + 1 − 3', '但 s 沒有出邊');
+  await beat(tok, 3000);
+  say('Initialize 由 s 決定', 'd(s) = 0，其他 ∞');
+  await beat(tok, 2400);
+  for (const [u, v] of [[1, 2], [2, 3], [3, 1]]) { const e = s2E(u, v); edgeColor(e, C.hot, 2.4); await beat(tok, 700); edgeColor(e, C.back, 2); }
+  say('∞ + w 還是 ∞：什麼都沒變', '檢查輪也找不到能 relax 的邊');
+  await beat(tok, 3000);
+  say('只偵測得到 s 走得到的負 cycle', '其他 d 正確地留在 ∞');
+  await beat(tok, 3000);
+}]);
+
+// 39:14 longest path：把權重變負再跑 Bellman-Ford？
+FRAG.push(['spmit2-longest-negate', 'L17：取負號求 longest path 行不行', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(S2G.lng);
+  say('s 到 v3：最長 6、最短 4', '1 + 2 + 3 = 6；直接 4（權重示意）');
+  s2Path([0, 1, 2, 3], C.hot, 2.2);
+  await beat(tok, 2400);
+  s2Path([0, 3], C.tree, 2.2);
+  await beat(tok, 2200);
+  s2Path([0, 1, 2, 3], C.edge, 1); s2Path([0, 3], C.edge, 1);
+  for (const e of GR.edges) setW(e, -e.w);
+  say('全部取負號，跑 Bellman-Ford', '最短 −6 → 最長 6？');
+  await beat(tok, 2800);
+  s2Path([0, 1, 2, 3], C.ok, 2.2); nodeTag(3, 'd = −6');
+  say('這張圖剛好可以', '沒有 cycle 就沒有負 cycle');
+  await beat(tok, 2600);
+  s2Path([0, 1, 2, 3], C.edge, 1); nodeTag(3, '');
+  const e = addEdge(GR, 3, 1, -1, 0.3);
+  say('學生指出：還有一條邊形成 cycle', 'v1→v2→v3→v1（示意）');
+  edgeColor(e, C.hot, 2);
+  await beat(tok, 3000);
+  s2Path([1, 2, 3, 1], C.back, 2.4);
+  say('取負後：−2 − 3 − 1 = −6 < 0', 'Bellman-Ford 回報負 cycle，abort');
+  await beat(tok, 3400);
+  say('正權重的 cycle 一取負就變負 cycle', '這招求 longest path 一般行不通');
+  await beat(tok, 3000);
+}]);
+
+// 43:55 有負 cycle 時求「最短簡單路徑」是 NP-hard
+FRAG.push(['spmit2-simple-path-np', 'L17：最短簡單路徑是 NP-hard', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(S2G.np, { ns: 0.85 });
+  s2Path([2, 6, 7, 2], C.back, 2);
+  say('另一張圖：b 上掛著負 cycle', '2 + 3 − 6 = −1');
+  await beat(tok, 3000);
+  const acc = [3, 5, 8, 11, 13];
+  for (let i = 0; i < 5; i++) { edgeColor(s2E(i, i + 1), C.tree, 2.2); nodeTag(i + 1, String(acc[i])); await beat(tok, 600); }
+  say('水平那條是最短的簡單路徑', '3 + 2 + 3 + 3 + 2 = 13');
+  await beat(tok, 2800);
+  nodeColor(5, C.back, 0.4); nodeTag(5, 'undefined', 'ptr alt');
+  say('Bellman-Ford 不會告訴你 13', '到 v 之前會經過負 cycle → abort');
+  await beat(tok, 3000);
+  const a = tag('允許 abort：O(VE)', 'ptr', -3, 0.3, 3.6);
+  const b = tag('要最短簡單路徑：NP-hard', 'ptr alt', 3, 0.3, 3.6);
+  say('只多要一點點，就從多項式變難題', '目前只知道指數時間的演算法');
+  await beat(tok, 3400);
+  say('跟 longest path 一樣難', '會解一個就會解另一個');
+  await beat(tok, 3000);
+  kill(a); kill(b);
+}]);
+
+// ══════════ R15 Shortest Paths ══════════
+// 02:16 從 BFS 出發：沒有權重時的 levels
+FRAG.push(['spmit2-r15-bfs-levels', 'R15：沒有權重就用 BFS', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  say('邊權重：正整數、最大 W', '暴力法：列出所有路徑');
+  await beat(tok, 2800);
+  buildGraph({ directed: false, names: S2G.r15.names, pos: S2G.r15.pos, edges: S2G.r15.edges.map(([u, v]) => [u, v]) }, { dx: -0.4, dz: -0.8 });
+  say('先簡化：所有邊一樣長', 'A 到 E 的最短路徑 → BFS');
+  await beat(tok, 2600);
+  const q = makeStrip(-4.4, 3.9, 'list');
+  const { lv, par, order } = s2Bfs(0);
+  const inQ = [0];
+  q.set([{ key: 'A', text: 'A' }]);
+  nodeTag(0, 'L0');
+  for (let i = 0; i < order.length; i++) {
+    const u = order[i];
+    nodeColor(u, C.ok, 0.3);
+    const nw = order.filter((v) => par[v] === u);
+    for (const v of nw) { inQ.push(v); nodeTag(v, 'L' + lv[v]); edgeColor(s2E(u, v), C.tree, 2); }
+    q.set(inQ.slice(i + 1).map((v) => ({ key: nm(v), text: nm(v) })));
+    say('取出 ' + nm(u) + '，沒看過的鄰居放到尾巴', nw.length ? '加入 ' + nw.map(nm).join('、') : '鄰居都看過了');
+    await beat(tok, 1700);
+  }
+  say('levels：0, 1, 1, 2, 2', '半徑 1 的圈、半徑 2 的圈');
+  await beat(tok, 2800);
+  const F = cube('F', C.white, [0.7, 0.5, 0.7], 3.8, 0.25, 3.6, 3);
+  const r = s2Rod(1.8, 1.0, 3.8, 3.6, C.tree);
+  tag('L3', 'ptr', 3.8, 1.2, 3.6);
+  say('在 D 旁加 F：從 D 發現，level 3', 'parent 永遠指向上一層');
+  await beat(tok, 3000);
+  say('BFS = 邊數最少的最短路徑', '有權重就不能直接用');
+  await beat(tok, 2600);
+  kill(F); kill(r);
+}]);
+
+// 07:01 加權：直接把鄰居照權重排進 queue 會出錯
+FRAG.push(['spmit2-r15-naive-queue', 'R15：鄰居照權重排序，為什麼不夠', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(S2G.r15, { dx: -0.4, dz: -0.8 });
+  say('想讓 BFS 走短邊比長邊快', '');
+  await beat(tok, 2400);
+  const q = makeStrip(-4.4, 3.9, 'list');
+  nodeColor(0, C.ok, 0.3);
+  edgeColor(s2E(0, 2), C.hot, 2); edgeColor(s2E(0, 1), C.hot, 2);
+  say('取出 A：鄰居 C 2、B 4', '學生：排序，C 先進');
+  q.set([{ key: 'C', text: 'C 2' }, { key: 'B', text: 'B 4' }]);
+  nodeNote(2, 'π = A'); nodeNote(1, 'π = A');
+  await beat(tok, 3000);
+  edgeColor(s2E(0, 1), C.back, 2.2);
+  nodeTag(1, 'B：4');
+  say('B 已經放進去，π(B) = A', '');
+  await beat(tok, 2400);
+  s2Path([0, 2, 1], C.tree, 2.4);
+  say('但 A→C→B = 2 + 1 = 3 < 4', '放進去的那一刻就輸了');
+  await beat(tok, 3200);
+  say('要處理這個就是 Dijkstra', '今天先找更簡單的辦法');
+  await beat(tok, 2800);
+  s2Path([0, 2, 1], C.edge, 1); edgeColor(s2E(0, 1), C.edge, 1);
+  say('BFS 本身改不動', '下一招：改圖');
+  await beat(tok, 2200);
+}]);
+
+function s2SplitGraph() {
+  const b = S2G.r15, names = [...b.names], pos = b.pos.map((p) => [...p]), edges = [];
+  for (const [u, v, w] of b.edges) {
+    let prev = u;
+    for (let k = 1; k < w; k++) { const t = k / w; pos.push([b.pos[u][0] * (1 - t) + b.pos[v][0] * t, b.pos[u][1] * (1 - t) + b.pos[v][1] * t]); names.push(''); edges.push([prev, names.length - 1]); prev = names.length - 1; }
+    edges.push([prev, v]);
+  }
+  return { directed: false, names, pos, edges };
+}
+// 10:30 拆邊：權重 c 的邊換成 c 條長度 1 的邊，再跑 BFS
+FRAG.push(['spmit2-r15-dummy-nodes', 'R15：加假節點，把權重拆成單位邊', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(S2G.r15, { dx: -0.4, dz: -0.8 });
+  say('提示：可以改圖', '權重 c 的邊 → c 條長度 1 的邊');
+  await beat(tok, 2800);
+  edgeColor(s2E(0, 1), C.hot, 2); edgeColor(s2E(0, 2), C.hot, 2);
+  say('A–B 的 4 → 四段；A–C 的 2 → 兩段', '中間塞假節點');
+  await beat(tok, 2600);
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(s2SplitGraph(), { dx: -0.4, dz: -0.8, ns: 0.8 });
+  for (let i = 5; i < GR.n; i++) { GR.nodes[i].mesh.scale.set(0.45, 1, 0.45); GR.nodes[i].mesh.material.color.set(C.dim); }
+  say('所有邊都一樣長了 → BFS', 'BFS 要走 c 步才通過原本的邊');
+  await beat(tok, 2600);
+  const { lv, par } = s2Bfs(0);
+  const mx = Math.max(...lv);
+  for (let L = 0; L <= mx; L++) {
+    for (let v = 0; v < GR.n; v++) if (lv[v] === L) { if (v < 5) { nodeColor(v, C.ok, 0.3); nodeTag(v, nm(v) + '：' + L); } else GR.nodes[v].mesh.material.color.set(C.ok); if (par[v] >= 0) edgeColor(s2E(par[v], v), C.tree, 1.8); }
+    say('BFS 第 ' + L + ' 層', L === 3 ? 'B 從 C 先到：距離 3，不是 4' : '');
+    await beat(tok, L === 3 ? 2400 : 900);
+  }
+  const p = s2Back(par, 4);
+  s2Path(p, C.hot, 2.4);
+  say('A, 假, C, D, 假, E', '距離 2 + 1 + 2 = 5');
+  await beat(tok, 3200);
+}]);
+
+// 13:09 reduction：transform → 已知演算法（黑盒）→ interpret
+FRAG.push(['spmit2-r15-reduction', 'R15：轉換 → 黑盒 → 解讀', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  const box = (t, col, x, z) => cube(t, col, [2.6, 0.6, 1.1], x, 0.3, z, 3);
+  const b1 = box('原始輸入：加權圖', '#efe3c8', -4.2, -2.6);
+  say('問題的原始輸入：白板上的圖', '');
+  await beat(tok, 2000);
+  const b2 = box('新輸入：單位邊', '#efe3c8', 0, -2.6);
+  arrow(V3(-2.8, 0.4, -2.6), V3(-1.4, 0.4, -2.6));
+  tag('transform：拆邊', 'idx', -2.1, 0.3, -1.6);
+  say('transform：好寫的轉換', '拆邊、塞假節點');
+  await beat(tok, 2600);
+  const b3 = box('BFS（黑盒）', C.pq, 4.2, -2.6);
+  arrow(V3(1.4, 0.4, -2.6), V3(2.8, 0.4, -2.6));
+  say('已知演算法當黑盒', '正確性、時間都不用再證');
+  await beat(tok, 2800);
+  const b4 = box('A, 假, C, D, 假, E', '#efe3c8', 4.2, 1.2);
+  arrow(V3(4.2, 0.4, -1.9), V3(4.2, 0.4, 0.5));
+  say('原始輸出有假節點', '出題的人看不懂');
+  await beat(tok, 2600);
+  const b5 = box('A, C, D, E', C.ok, -1.6, 1.2);
+  arrow(V3(2.8, 0.4, 1.2), V3(0, 0.4, 1.2));
+  tag('interpret：拿掉假節點', 'idx', 1.4, 0.3, 2.2);
+  say('interpret / read out', '得到原問題的答案');
+  await beat(tok, 2800);
+  say('6.006 最常用的方式', '難的是 transform，不是 read out');
+  await beat(tok, 3000);
+}]);
+
+// 16:00 拆邊後的執行時間 vs Dijkstra
+FRAG.push(['spmit2-r15-split-cost', 'R15：拆邊的代價', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  say("原圖：V′ 點、E′ 邊、權重 ≤ W′", '');
+  await beat(tok, 2200);
+  const a = tag("新圖邊數 ≤ W′E′", 'ptr', -3, 0.3, -3.6);
+  say('每條邊最多拆成 W′ 段', "E ≤ W′E′");
+  await beat(tok, 2600);
+  const b = tag("新圖點數 ≤ V′ + W′E′", 'ptr', 3, 0.3, -3.6);
+  say('別忘了原本的點', "V ≤ V′ + W′E′");
+  await beat(tok, 2600);
+  const c = tag("BFS：O(V′ + W′E′)", 'ptr alt', 0, 0.3, -2.6);
+  say('BFS 是 O(V + E)', "→ O(V′ + W′E′)");
+  await beat(tok, 2600);
+  s2Bar('BFS 拆邊 W′E′', C.ok, 1.6, -2, 0.6, 1.1);
+  s2Bar('Dijkstra E′ log V′', '#4b9ee2', 1.6, 2, 0.6, 1.1);
+  say('Dijkstra：理論 O(V log V + E)', '實務（binary heap）O(E log V)');
+  await beat(tok, 3000);
+  say("W′ ≤ log V′ 時不比 Dijkstra 差", '權重小的圖，不用發明新演算法');
+  await beat(tok, 3200);
+  kill(a); kill(b); kill(c);
+}]);
+
+// 19:54 Tim 與 Jim：Tim 開第一段和最後一段 → 奇數條邊
+FRAG.push(['spmit2-r15-tim-jim', 'R15：兄弟輪流開車 = 奇數條邊', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(S2G.r15, { dx: -0.4, dz: -0.8 });
+  nodeNote(0, 's'); nodeNote(4, 't');
+  say('去年小考題：兩兄弟輪流開', '每過一段路就換人');
+  await beat(tok, 2800);
+  say('出城、進城最難：都要 Tim 開', '第一段、最後一段都是 Tim');
+  await beat(tok, 2800);
+  const lbl = [];
+  const path = [0, 2, 3, 4], who = ['Tim', 'Jim', 'Tim'];
+  for (let i = 0; i < 3; i++) {
+    edgeColor(s2E(path[i], path[i + 1]), C.tree, 2.2);
+    const p = GR.nodes[path[i]].home, q2 = GR.nodes[path[i + 1]].home;
+    lbl.push(tag(who[i], 'ptr alt', (p.x + q2.x) / 2, 0.9, (p.z + q2.z) / 2 + 0.5));
+    await beat(tok, 800);
+  }
+  say('Tim, Jim, Tim：3 條邊', '要的是「邊數為奇數」的最短路徑');
+  await beat(tok, 3000);
+  s2Path(path, C.edge, 1); lbl.forEach(kill);
+  edgeColor(s2E(0, 1), C.back, 2.2); edgeColor(s2E(1, 4), C.back, 2.2);
+  const x1 = tag('Tim', 'ptr alt', -3.6, 0.9, -1.6), x2 = tag('Jim', 'ptr alt', 1.7, 0.9, -1.6);
+  say('A→B→E 只有 2 條：Jim 收尾 ✗', 'Tim 不能連開兩段');
+  await beat(tok, 3000);
+  kill(x1); kill(x2);
+  say('Tim 開 3 段、Jim 開 2 段也行', '只要總邊數是奇數');
+  await beat(tok, 2600);
+}]);
+
+// 25:09 列舉路徑不可行：菱形串 → 指數多條
+FRAG.push(['spmit2-r15-diamonds', 'R15：菱形串有指數多條路徑', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  const nm3 = ['s', '', '', '', '', '', '', '', '', 't'];
+  const pos = [[-5.4, 0], [-4, -1.6], [-4, 1.6], [-2.6, 0], [-1.2, -1.6], [-1.2, 1.6], [0.2, 0], [1.6, -1.6], [1.6, 1.6], [3, 0]];
+  const edges = [];
+  for (let k = 0; k < 3; k++) { const m = 3 * k; edges.push([m, m + 1], [m, m + 2], [m + 1, m + 3], [m + 2, m + 3]); }
+  buildGraph({ directed: true, names: nm3, pos, edges }, { dx: 0.8, ns: 0.8 });
+  say('想法：列出所有奇數長度的路徑', '每條邊都是 1');
+  await beat(tok, 2800);
+  const cnt = tag('0 條', 'ptr alt', 0.8, 0.3, 3.2);
+  for (let m = 0; m < 8; m++) {
+    const vs = [0];
+    for (let k = 0; k < 3; k++) vs.push(3 * k + ((m >> k) & 1 ? 2 : 1), 3 * k + 3);
+    s2Path(vs, C.hot, 2.2); txt(cnt, (m + 1) + ' 條');
+    await beat(tok, 520);
+    s2Path(vs, C.edge, 1);
+  }
+  say('每個菱形 2 種走法：2 × 2 × 2 = 8', '');
+  await beat(tok, 2800);
+  txt(cnt, '再加一個菱形 → 16 條');
+  say('多一個菱形就翻倍', '路徑數 ≈ 2 的 (頂點數 / 3) 次方：指數');
+  await beat(tok, 3200);
+  say('列舉所有路徑一定太慢', '不管演算法多聰明');
+  await beat(tok, 2600);
+}]);
+
+function s2ParityGraph() {
+  const b = S2G.r15, names = [], pos = [], edges = [];
+  b.names.forEach((n, i) => { names.push(n + 'ₑ'); pos.push([b.pos[i][0] * 0.9, b.pos[i][1] * 0.55 - 2.7]); });
+  b.names.forEach((n, i) => { names.push(n + 'ₒ'); pos.push([b.pos[i][0] * 0.9, b.pos[i][1] * 0.55 + 2.7]); });
+  for (const [u, v, w] of b.edges) edges.push([u, v + 5, w], [u + 5, v, w]);
+  return { directed: false, names, pos, edges };
+}
+// 28:24 缺少的 state（奇偶）→ 每個點複製 even / odd 兩份；params.part = 2：接邊、起點 Aₑ、終點 Eₒ
+FRAG.push(['spmit2-r15-parity', 'R15：用 even / odd 兩層記住奇偶', async (tok) => {
+  const part = (ctx.params || {}).part === 2 ? 2 : 1;
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  if (part === 1) {
+    buildGraph(S2G.r15, { dx: -0.4, dz: -0.8 });
+    say('最短路徑只告訴你距離', '不知道用了奇數還是偶數條邊');
+    await beat(tok, 2800);
+    edgeColor(s2E(0, 1), C.hot, 2.2); nodeTag(1, '1 條邊');
+    await beat(tok, 1400);
+    edgeColor(s2E(0, 1), C.edge, 1); s2Path([0, 2, 1], C.hot, 2.2); nodeTag(1, '或 2 條邊');
+    say('到 B 可以 1 條邊，也可以 2 條邊', '缺少的 state：路徑長度的奇偶');
+    await beat(tok, 3200);
+    say('像 Rubik 方塊：一個 state 一個點', '把 state 放進圖裡');
+    await beat(tok, 2600);
+    fresh([0, 12.5, 8], [0, 0, -0.3]);
+    buildGraph({ ...s2ParityGraph(), edges: [] }, { ns: 0.85 });
+    tag('even 層', 'ptr', -5.9, 0.3, -2.7); tag('odd 層', 'ptr alt', -5.9, 0.3, 2.7);
+    say('每個點複製兩份', 'Aₑ / Aₒ、Bₑ / Bₒ … Eₑ / Eₒ');
+    for (let i = 0; i < 5; i++) { nodeColor(i, '#cfe0f5', 0.2); nodeColor(i + 5, '#f6e2b8', 0.2); await beat(tok, 400); }
+    say('ₑ：走偶數條邊到這裡', 'ₒ：走奇數條邊到這裡');
+    await beat(tok, 3200);
+    return;
+  }
+  buildGraph(s2ParityGraph(), { ns: 0.85 });
+  tag('even 層', 'ptr', -5.9, 0.3, -2.7); tag('odd 層', 'ptr alt', -5.9, 0.3, 2.7);
+  for (const e of GR.edges) edgeColor(e, C.dim, 1);
+  say('原本的 A–B（4）變成兩條', 'Aₑ–Bₒ、Aₒ–Bₑ：走一條邊奇偶翻轉');
+  edgeColor(s2E(0, 6), C.hot, 2); edgeColor(s2E(5, 1), C.hot, 2);
+  await beat(tok, 3200);
+  say('B–E 也一樣', 'Bₑ–Eₒ、Bₒ–Eₑ');
+  edgeColor(s2E(1, 9), C.hot, 2); edgeColor(s2E(6, 4), C.hot, 2);
+  await beat(tok, 2600);
+  say('A–C：Aₑ–Cₒ、Aₒ–Cₑ', '所有邊都只在兩層之間跳');
+  edgeColor(s2E(0, 7), C.hot, 2); edgeColor(s2E(5, 2), C.hot, 2);
+  await beat(tok, 2600);
+  for (const e of GR.edges) edgeColor(e, C.edge, 1);
+  say('想像兩張紙疊起來：第三維是 state', '');
+  await beat(tok, 2600);
+  nodeColor(0, C.ok, 0.4); nodeColor(9, C.purple, 0.4);
+  say('起點 Aₑ（長度 0 是偶數）', '終點 Eₒ（要奇數條邊）');
+  await beat(tok, 3000);
+  const { par, d } = s2Dij(0);
+  const p = s2Back(par, 9);
+  s2Path(p, C.tree, 2.4);
+  say(p.map(nm).join(' → ') + '：' + d[9], '路徑自動在兩層之間交替');
+  await beat(tok, 3400);
+}]);
+
+// 36:41 新圖大小與選哪個黑盒
+FRAG.push(['spmit2-r15-parity-cost', 'R15：兩層圖的執行時間', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  const v1 = s2Bar('V', '#cfe0f5', 1.0, -4.6, -1.6), v2 = s2Bar('2V', '#cfe0f5', 2.0, -3.2, -1.6);
+  say('頂點：每個複製兩份', 'V → 2V');
+  await beat(tok, 2400);
+  s2Bar('E', '#f6e2b8', 1.2, -1.2, -1.6); s2Bar('2E', '#f6e2b8', 2.4, 0.2, -1.6);
+  say('邊：每條剛好複製兩次', 'E → 2E');
+  await beat(tok, 2400);
+  const bf = cube('BFS ✗：有權重', '#e8d8d0', [2.6, 0.5, 0.9], 3.8, 0.25, -3.0, 3);
+  say('有權重，BFS 不行', '');
+  await beat(tok, 2200);
+  const dj = cube('Dijkstra（較快）', C.ok, [2.6, 0.5, 0.9], 3.8, 0.25, -1.6, 3);
+  const bm = cube('Bellman-Ford', '#dd8238', [2.6, 0.5, 0.9], 3.8, 0.25, -0.2, 3);
+  say('兩個黑盒：哪個快？', 'Dijkstra 快；有負權重才換 Bellman-Ford');
+  await beat(tok, 3000);
+  glow(dj, GOLD);
+  say('開車時間都是正的 → Dijkstra', 'O(V log V + E)，實務 O(E log V)');
+  await beat(tok, 3000);
+  tag('跟原圖同一個量級', 'ptr alt', -2.0, 0.3, 1.8);
+  say('圖只變大常數倍', '執行時間跟原圖一樣');
+  await beat(tok, 2800);
+}]);
+
+// 39:01 難題：油耗固定、通過時間跟出發時刻有關
+FRAG.push(['spmit2-r15-traffic-setup', 'R15：塞車路網：時間優先，再省油', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  const bo = cube('Boston', '#cfe0f5', [1.8, 0.6, 1.0], -4.4, 0.3, -2.8, 3), ny = cube('New York', '#f6e2b8', [1.8, 0.6, 1.0], 4.4, 0.3, -2.8, 3);
+  arrow(V3(-3.4, 0.4, -2.8), V3(3.4, 0.4, -2.8));
+  tag('fc：油耗固定', 'ptr', 0, 0.3, -3.7);
+  say('每條（有向）邊兩個數', '油耗 fc 固定');
+  await beat(tok, 2800);
+  tag('tc(t)：何時出發決定花多久', 'ptr alt', 0, 0.3, -1.9);
+  say('通過時間 tc(t) 看出發時刻', '凌晨 2 點 3 小時，尖峰 6 小時');
+  const hrs = [3, 3, 4, 6, 4, 4, 6, 4];
+  for (let i = 0; i < 8; i++) { s2Bar(String(i * 3) + '時', hrs[i] === 6 ? C.back : C.pq, hrs[i] * 0.35, -4.2 + i * 1.2, 0.8, 0.8); await beat(tok, 250); }
+  await beat(tok, 1600);
+  tag('m = 24 × 60 = 1440 分鐘', 'idx', 0, 0.3, 3.3);
+  say('一天切成 m 分鐘', 'm = 3600 × 24 / 60 = 1440');
+  await beat(tok, 2800);
+  say('目標 1：最早到達', '目標 2：同樣最早，選最省油');
+  await beat(tok, 3000);
+  say('把油耗當 state？不行', 'fc 不一定是整數，複製不完');
+  await beat(tok, 3000);
+  glow(bo, null); glow(ny, null);
+}]);
+
+// 46:03 時間當 state：(u, t) 複製 m 份，路的邊與等待的邊
+FRAG.push(['spmit2-r15-time-expanded', 'R15：時間展開圖', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  const T = 6, tc = [3, 3, 2, 1, 1], fc = 4;
+  const names = [], pos = [];
+  for (let t = 0; t < T; t++) { names.push('u' + t); pos.push([-5 + 2 * t, -2]); }
+  for (let t = 0; t < T; t++) { names.push('v' + t); pos.push([-5 + 2 * t, 2]); }
+  buildGraph({ directed: true, names, pos, edges: [] }, { ns: 0.85 });
+  tag('時間 t →', 'idx', 0, 0.3, 3.6);
+  say('時間當 state：每個點複製 m 份', '(城市, 分鐘)：u0 … u5、v0 … v5');
+  await beat(tok, 3000);
+  const roads = [];
+  for (let t = 0; t < 5; t++) if (t + tc[t] < T) { const e = addEdge(GR, t, T + t + tc[t], fc); roads.push(e); edgeColor(e, C.tree, 1.6); await beat(tok, 500); }
+  say('路 u→v：(u, t) → (v, t + tc(t))', '油耗都是 fc = 4（tc 是示意）');
+  await beat(tok, 3200);
+  const waits = [];
+  for (let t = 0; t + 1 < T; t++) { waits.push(addEdge(GR, t, t + 1, 0), addEdge(GR, T + t, T + t + 1, 0)); }
+  for (const e of waits) edgeColor(e, C.ok, 1.6);
+  say('等待邊：(u, t) → (u, t + 1)', '油耗 0：塞車時先去吃個東西');
+  await beat(tok, 3200);
+  for (const e of waits) edgeColor(e, C.edge, 1);
+  edgeColor(roads[0], C.hot, 2.4);
+  say('u0 出發：(u, 0) → (v, 3)', 'tc(0) = 3 分鐘');
+  await beat(tok, 2600);
+  edgeColor(roads[0], C.tree, 1.6);
+  edgeColor(waits[0], C.hot, 2.4); edgeColor(waits[2], C.hot, 2.4); edgeColor(roads[2], C.hot, 2.4);
+  say('等 2 分鐘再走：u0→u1→u2→v4', '還是一條普通的路徑');
+  await beat(tok, 3200);
+}]);
+
+// 53:11 大小、用 Dijkstra、讀答案：目的地的 m 個副本
+FRAG.push(['spmit2-r15-read-answer', 'R15：時間展開圖怎麼讀答案', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  const a = tag('頂點：V · m', 'ptr', -3.4, 0.3, -3.8);
+  const b = tag('邊：E · m（路）+ V · m（等待）', 'ptr', 2.4, 0.3, -3.8);
+  say('頂點 V·m；邊 E·m + V·m', '等待邊：每個城市每分鐘一條');
+  await beat(tok, 3200);
+  const c = tag('油耗 ≥ 0 → Dijkstra', 'ptr alt', 0, 0.3, -2.9);
+  say('權重是油耗，非負', '丟進 Dijkstra');
+  await beat(tok, 2600);
+  const vals = [INF, INF, INF, 12, 10, 10, 9];
+  const cs = [];
+  for (let t = 0; t < vals.length; t++) { cs.push(cube(fmt(vals[t]), C.white, [1.2, 0.5, 1.0], -4.8 + t * 1.6, 0.25, 0.4, 2)); tag('NY@' + (t + 1), 'idx', -4.8 + t * 1.6, 0.3, 1.4); await beat(tok, 300); }
+  say('讀終點的 m 個副本', '太早的時刻：∞，到不了');
+  for (let t = 0; t < 3; t++) tint(cs[t], C.dim);
+  await beat(tok, 3000);
+  tint(cs[3], C.ok); glow(cs[3], GOLD);
+  say('第一個有限值 = 最早到達', '它的值 = 這個時刻最省的油（數字示意）');
+  await beat(tok, 3400);
+  for (let t = 4; t < 7; t++) tint(cs[t], '#bfe8d6');
+  say('再晚一點到，油可能更省', '整條「等待 vs 省油」的取捨曲線');
+  await beat(tok, 3200);
+  kill(a); kill(b); kill(c);
+}]);
+
+// ══════════ R18 Quiz 2 Review ══════════
+// 04:43 relax 的順序決定最後拿到哪一條路徑
+FRAG.push(['spmit2-r18-relax-order', 'R18：relax 順序決定 parent', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(S2G.dia);
+  const run = async (ord, label) => {
+    const d = [0, INF, INF, INF], par = [-1, -1, -1, -1];
+    for (let v = 0; v < 4; v++) { nodeTag(v, fmt(d[v])); nodeNote(v, ''); }
+    for (const e of GR.edges) edgeColor(e, C.edge, 1);
+    say(label, '四條邊都是 1');
+    await beat(tok, 2000);
+    for (const [u, v] of ord) {
+      const e = s2E(u, v); edgeColor(e, C.hot, 2);
+      await beat(tok, 700);
+      if (d[u] + e.w < d[v]) { d[v] = d[u] + e.w; par[v] = u; nodeTag(v, String(d[v]), 'ptr alt'); nodeNote(v, 'π = ' + nm(u)); edgeColor(e, C.tree, 2); say('Relax ' + nm(u) + '→' + nm(v) + '：d = ' + d[v], 'π(' + nm(v) + ') = ' + nm(u)); }
+      else { edgeColor(e, C.edge, 1); say(nm(u) + '→' + nm(v) + '：已經是 2，不變', ''); }
+      await beat(tok, 1300);
+    }
+    return par;
+  };
+  await run([[0, 1], [1, 3], [0, 2], [2, 3]], '順序 1：s→a、a→t、s→b、b→t');
+  say('沿 π 回推：t → a → s', 'π(t) = a');
+  await beat(tok, 2600);
+  await run([[0, 2], [2, 3], [0, 1], [1, 3]], '順序 2：下面兩條先');
+  say('同樣長 2，π(t) = b', '路徑由 relax 順序決定');
+  await beat(tok, 2800);
+  say('Dijkstra、Bellman-Ford 都會這樣', 'Dijkstra：priority queue 怎麼破平手');
+  await beat(tok, 3000);
+}]);
+
+// 08:54 Newton：∛6006，f(x) = x³ − 6006，x0 = 1
+FRAG.push(['spmit2-r18-newton-6006', 'R18：Newton 法求 ∛6006', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  const f = tag('x_{i+1} = x_i − f(x_i) / f′(x_i)', 'ptr', 0, 0.3, -4.0);
+  say('Newton：x_{i+1} = x_i − f / f′', '這條要寫在小抄上（是減號）');
+  await beat(tok, 3000);
+  const good = tag('f(x) = x³ − 6006', 'ptr alt', -3, 0.3, -3.0);
+  say('選 f(x) = x³ − 6006', '答案處 f = 0，而且 f / f′ 好算');
+  await beat(tok, 3000);
+  const bad = tag('f(x) = x − ∛6006 ✗', 'idx', 3, 0.3, -3.0);
+  say('f(x) = x − ∛6006 也是 0 在答案', '但 f / f′ 要先知道 ∛6006 ✗');
+  await beat(tok, 3200);
+  kill(bad);
+  const it = tag('x_{i+1} = 2x_i / 3 + 2002 / x_i²', 'ptr', 0, 0.3, -2.0);
+  say('化簡：x − (x³ − 6006) / 3x²', '= 2x/3 + 2002/x²');
+  await beat(tok, 3000);
+  const xs = [1, 2002.67, 1335.11, 890.08];
+  const hs = [0.15, 4.4, 3.0, 2.0];
+  for (let i = 0; i < xs.length; i++) {
+    s2Bar('x' + i + ' = ' + xs[i], i === 0 ? C.pq : '#cfe0f5', hs[i], -4.5 + i * 2.2, 0.8, 1.0);
+    say('x' + i + ' = ' + xs[i], i === 1 ? '2/3 + 2002 = 2002.67：離答案很遠' : i === 0 ? '題目給的初始值' : '再代回去');
+    await beat(tok, i === 1 ? 2800 : 1800);
+  }
+  tag('… x₁₆ ≈ 18.1773 = ∛6006', 'ptr alt', 2.4, 0.3, 3.2);
+  say('一直代回去，越來越接近', '第 16 步左右才收斂到 18.1773');
+  await beat(tok, 3200);
+  kill(f); kill(good); kill(it);
+}]);
+
+// 15:06 初始值：x_i = x*(1 + ε_i)，ε 每步平方（quadratic convergence）
+FRAG.push(['spmit2-r18-newton-guess', 'R18：quadratic convergence 與初始值', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  tag('x_i = x* (1 + ε_i)', 'ptr', -3, 0.3, -4.0);
+  tag('ε_{i+1} ≈ ε_i²', 'ptr alt', 3, 0.3, -4.0);
+  say('寫成 x_i = 真答案 × (1 + ε_i)', 'Newton 保證誤差每步平方');
+  await beat(tok, 3200);
+  const good = [0.5, 0.25, 0.0625, 0.0039];
+  for (let i = 0; i < 4; i++) { s2Bar('ε' + i + ' = ' + good[i], C.ok, good[i] * 4, -5 + i * 1.5, -1.6, 0.8); await beat(tok, 700); }
+  say('|ε0| < 1：越來越小', '正確位數每步加倍');
+  await beat(tok, 2800);
+  const bad = [1.5, 2.25, 5.06];
+  for (let i = 0; i < 3; i++) { s2Bar('ε' + i + ' = ' + bad[i], C.back, Math.min(5, bad[i] * 0.9), 1.4 + i * 1.6, -1.6, 0.8); await beat(tok, 700); }
+  say('|ε0| > 1：平方後越來越大', '不會收斂');
+  await beat(tok, 3000);
+  s2Rod(-5, 2.8, 5, 2.8, C.edge);
+  tag('0', 'idx', -5, 0.3, 3.4); tag('x*', 'ptr', 0, 0.3, 3.4); tag('2x*', 'idx', 5, 0.3, 3.4);
+  cube('', C.ok, [10, 0.12, 0.3], 0, 0.36, 2.8);
+  say('需要 −1 < ε0 < 1', '0 < x0 < 2 × 真答案：粗糙但保證收斂');
+  await beat(tok, 3400);
+}]);
+
+// 18:05 integer land：b = 10、d = 2，∛2 → ⌊∛(2 · 10⁶)⌋ = 125 → 1.25
+FRAG.push(['spmit2-r18-integer-land', 'R18：只用整數算 ∛2 到小數 d 位', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  say('程式裡不想處理小數', '搬到整數的世界');
+  await beat(tok, 2600);
+  const dg = ['1', '.', '2', '5', '9', '9'];
+  const cs = dg.map((c, i) => cube(c, c === '.' ? C.pq : C.white, [0.8, 0.5, 0.8], -2.5 + i * 1.0, 0.25, -2.2, 2));
+  say('∛2 = 1.2599…', 'base b = 10，要 d = 2 位');
+  await beat(tok, 2800);
+  move(cs[1], -2.5 + 3 * 1.0, 0.25, -2.2); move(cs[2], -2.5 + 1 * 1.0, 0.25, -2.2); move(cs[3], -2.5 + 2 * 1.0, 0.25, -2.2);
+  say('乘 b^d = 100：小數點右移兩格', '125.99…');
+  await beat(tok, 2800);
+  fly(cs[1]); fly(cs[4]); fly(cs[5]);
+  say('整數演算法給的是 floor', '⌊∛2 · 100⌋ = 125');
+  await beat(tok, 2800);
+  tag('∛(2 · b^{3d}) = ∛2 · b^d', 'ptr alt', 0, 0.3, 0.4);
+  say('b^d 要放進根號：變成 b^{3d}', '算 ⌊∛(2 · 10⁶)⌋ = 125');
+  await beat(tok, 3200);
+  const pt = cube('.', C.pq, [0.4, 0.5, 0.8], -1.95, 0.25, 2.4, 3);
+  for (const [i, c] of [[0, '1'], [1, '2'], [2, '5']]) cube(c, '#bfe8d6', [0.8, 0.5, 0.8], i === 0 ? -2.5 : -1.4 + (i - 1) * 1.0, 0.25, 2.4, 3);
+  say('最後右移 d 位', '1.25：兩位精度');
+  await beat(tok, 3000);
+  glow(pt, GOLD);
+}]);
+
+// 23:33 好的初始值：位數對、第一位用 binary search；何時停
+FRAG.push(['spmit2-r18-first-digit', 'R18：好的初始值與停止條件', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  say('好的初始值：數量級要對', '= 位數要對');
+  await beat(tok, 2600);
+  tag('r 是一位數（0 ≤ r < b）', 'idx', -3, 0.3, -4.0);
+  const g0 = tag('∛(r · b^{3d}) 約 d + 1 位 → 初值 1 後面 d 個 0', 'ptr', 0, 0.3, -3.2);
+  say('答案大約 d + 1 位', '初值：1 後面接 d 個 0（d = 2 → 100）');
+  await beat(tok, 3200);
+  say('更好：第一位也猜對', 'binary search 在 0 到 r 之間');
+  const cs = [0, 1, 2].map((g) => cube(String(g), C.white, [0.9, 0.5, 0.9], -2 + g * 2, 0.25, -0.8, 2));
+  tag('r = 2', 'ptr alt', 4.4, 0.3, -0.8);
+  await beat(tok, 2600);
+  glow(cs[1], GOLD);
+  say('猜 g = 1：不能直接算 ∛r', '改比 g³ = 1 ≤ 2');
+  await beat(tok, 3000);
+  glow(cs[1], null); glow(cs[2], GOLD); tint(cs[2], '#f3c9c0');
+  say('猜 g = 2：g³ = 8 > 2', 'g³ 只要兩次乘法');
+  await beat(tok, 2800);
+  glow(cs[2], null); tint(cs[1], C.ok);
+  say('第一位是 1', '');
+  await beat(tok, 2000);
+  for (let i = 0; i < 4; i++) cube('x' + i, '#cfe0f5', [0.9, 0.5, 0.9], -3 + i * 1.6, 0.25, 2.2, 2);
+  tag('x_i = x_{i+1} 就停', 'ptr alt', 0, 0.3, 3.3);
+  say('什麼時候停？', '兩個整數近似值一樣就停');
+  await beat(tok, 3200);
+  kill(g0);
+}]);
+
+// 28:37 Newton log d 次 vs binary search O(d) 次
+FRAG.push(['spmit2-r18-newton-vs-bs', 'R18：Newton 比 binary search 快在哪', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  say('Newton：正確位數每步加倍', '1, 2, 4, 8, 16, 32 → log d 步');
+  const dd = [1, 2, 4, 8, 16, 32];
+  for (let i = 0; i < 6; i++) { s2Bar(dd[i] + ' 位', C.ok, dd[i] * 0.13, -5.2 + i * 1.0, -2.2, 0.7); await beat(tok, 450); }
+  tag('d = 32：約 6 次', 'ptr', -2.7, 0.3, -0.6);
+  await beat(tok, 2200);
+  say('binary search 在 0 到 R 之間', 'R = r · b^{3d}');
+  await beat(tok, 2600);
+  s2Bar('約 320 次', '#dd8238', 4.6, 3.5, -2.2, 1.0);
+  say('猜 log R = log r + 3d log b 次', 'b 是常數 → O(d)');
+  await beat(tok, 3200);
+  tag('Newton O(log d) vs O(d)', 'ptr alt', 0, 0.3, 1.6);
+  say('位數多時 Newton 指數級地快', '代價：要好的 f、好的初值');
+  await beat(tok, 3000);
+  tag('上面是猜的次數，不是總時間', 'idx', 0, 0.3, 2.6);
+  say('數字很大時乘法不是 O(1)', 'Newton 除法 ≈ 一次乘法的時間');
+  await beat(tok, 3200);
+}]);
+
+// 34:46 紅藍邊 + 換色要付 5；只用紅、只用藍兩份圖不夠
+FRAG.push(['spmit2-r18-redblue-setup', 'R18：紅藍邊，換色要付 5', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(S2G.rb);
+  GR.edges.forEach((e, i) => edgeColor(e, RB_COL[i], 1.8));
+  say('每條邊是紅或藍，有權重', '紅↔藍 換色一次付 5');
+  await beat(tok, 3000);
+  nodeTag(2, '3 + 1 = 4');
+  say('S→X→A：都是紅', '3 + 1 = 4');
+  await beat(tok, 2600);
+  nodeTag(3, '3 + 1 + 5 = 9');
+  say('S→X→B：紅轉藍', '3 + 1 + 5 = 9');
+  await beat(tok, 2800);
+  nodeTag(2, ''); nodeTag(3, '');
+  const r = tag('只用紅：到不了 T', 'ptr', -3, 0.3, 3.6), b = tag('只用藍：S 沒有藍邊', 'ptr', 3, 0.3, 3.6);
+  say('學生想法：只用紅、只用藍各算一次', '兩份圖各跑最短路徑');
+  await beat(tok, 3200);
+  say('這張圖兩邊都是 ∞', '沒表達「可以換色」（權重示意）');
+  await beat(tok, 3000);
+  kill(r); kill(b);
+  s2Path([0, 1, 2], S2R, 2.6); edgeColor(s2E(2, 4), S2B, 2.6);
+  nodeTag(4, '3 + 1 + 5 + 1 = 10');
+  say('正解要能換色：S→X→A→T', '3 + 1 + 5 + 1 = 10');
+  await beat(tok, 3200);
+}]);
+
+function s2Layers(cross) {
+  const b = S2G.rb, names = [], pos = [], edges = [];
+  const lay = (i, s) => [b.pos[i][0], b.pos[i][1] * 0.5 + s];
+  b.names.forEach((n, i) => { names.push(n + 'ʀ'); pos.push(lay(i, -2.6)); });
+  b.names.forEach((n, i) => { names.push(n + 'ʙ'); pos.push(lay(i, 2.6)); });
+  b.edges.forEach(([u, v, w], i) => { if (RB_COL[i] === S2R) edges.push([u, v, w]); else edges.push([u + 5, v + 5, w]); });
+  for (let i = 0; i < 5; i++) { if (cross >= 1) edges.push([i, i + 5, 5]); if (cross >= 2) edges.push([i + 5, i, 5]); }
+  return { directed: true, names, pos, edges };
+}
+function s2LayerColors() {
+  for (let i = 0; i < 5; i++) { nodeColor(i, '#f3c9c0', 0); nodeColor(i + 5, '#c9dcf3', 0); }
+  for (const e of GR.edges) if (e.u < 5 && e.v < 5) edgeColor(e, S2R, 1.8); else if (e.u >= 5 && e.v >= 5 && e.v < 10) edgeColor(e, S2B, 1.8);
+}
+// 40:12 兩層：紅層、藍層，同一點的兩份之間連權重 5 的邊
+FRAG.push(['spmit2-r18-redblue-layers', 'R18：紅層＋藍層，層間邊權重 5', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(s2Layers(0), { ns: 0.85 });
+  s2LayerColors();
+  tag('紅層', 'ptr', -6.3, 0.3, -2.6); tag('藍層', 'ptr', -6.3, 0.3, 2.6);
+  say('紅邊放紅層，藍邊放藍層', '每個點兩份：在紅世界 / 在藍世界');
+  await beat(tok, 3200);
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(s2Layers(2), { ns: 0.85 });
+  s2LayerColors();
+  tag('紅層', 'ptr', -6.3, 0.3, -2.6); tag('藍層', 'ptr', -6.3, 0.3, 2.6);
+  for (const e of GR.edges) if (e.w === 5 && Math.abs(e.u - e.v) === 5) edgeColor(e, C.purple, 1.4);
+  say('同一點的紅、藍副本互連', '權重 5：付錢就能換世界');
+  await beat(tok, 3200);
+  const { d, par } = s2Dij(0);
+  const p = s2Back(par, 9);
+  s2Path(p, C.hot, 2.6);
+  say('Sʀ→Xʀ→Aʀ→Aʙ→Tʙ = ' + d[9], '3 + 1 + 5 + 1');
+  await beat(tok, 3200);
+  say('權重都是正的 → Dijkstra', '理論 O(V log V + E)；binary heap O(E log V)');
+  await beat(tok, 3000);
+  say('新圖：2V 個點、E + 2V 條邊', 'Bellman-Ford O(VE) 比較慢');
+  await beat(tok, 3000);
+}]);
+
+// 45:14 layer 的直覺：2D 地圖疊成 3D；layer 可以很多
+FRAG.push(['spmit2-r18-layers-idea', 'R18：layer = 把 state 疊成第三維', async (tok) => {
+  fresh([0, 11.5, 9], [0, 1.2, -0.3]);
+  say('原圖是一張 2D 地圖', '');
+  const pl = [];
+  pl.push(cube('紅層', '#f3c9c0', [7, 0.15, 3.4], 0, 0.1, 0, 3));
+  await beat(tok, 2600);
+  pl.push(cube('藍層', '#c9dcf3', [7, 0.15, 3.4], 0, 1.4, 0, 3));
+  say('複製成兩層：每層一份原圖', '多出來的維度 = state');
+  await beat(tok, 2800);
+  for (let i = 0; i < 4; i++) cube('', C.purple, [0.08, 1.25, 0.08], -2.4 + i * 1.6, 0.75, 0.6 - (i % 2) * 1.2);
+  say('science：做副本', 'art：選哪些 layer、怎麼連');
+  await beat(tok, 3000);
+  pl.forEach(kill);
+  const t = [];
+  for (let i = 0; i < 6; i++) t.push(cube(i === 4 ? '…' : i === 5 ? 't = 1439' : 't = ' + i, i % 2 ? '#efe3c8' : '#e6d8b8', [6, 0.12, 3], 0, 0.1 + i * 0.9, 0, 2));
+  say('塞車路網：一分鐘一層', '約 1440 層；StarCraft 題更多層');
+  await beat(tok, 3600);
+  tag('層數合理就沒問題', 'ptr alt', 0, 0.3, 2.6);
+  say('轉換通常 O(V + E) 線性時間', '要會算：新圖多大 → 代進演算法');
+  await beat(tok, 3200);
+}]);
+
+// 48:06 只能紅 → 藍（有向）；想要 SR/SB 到 TR/TB 的最小 → 超級起點與終點
+FRAG.push(['spmit2-r18-oneway-super', 'R18：單向換色與超級起點 / 終點', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  const G = s2Layers(1);
+  G.names.push('s*', 't*'); G.pos.push([-6.5, 0], [6.5, 0]);
+  buildGraph({ ...G, edges: G.edges.slice() }, { ns: 0.85 });
+  s2LayerColors();
+  nodeColor(10, C.dim, 0); nodeColor(11, C.dim, 0);
+  for (const e of GR.edges) if (e.w === 5) edgeColor(e, C.purple, 1.4);
+  say('變形：只能紅 → 藍，不能回頭', '層間邊改成有向');
+  await beat(tok, 3200);
+  say('只是限制、不收錢：權重 0', '要收錢：權重 5');
+  await beat(tok, 2800);
+  nodeColor(0, C.ok, 0.3); nodeColor(5, C.ok, 0.3); nodeColor(4, C.purple, 0.3); nodeColor(9, C.purple, 0.3);
+  say('起點 Sʀ 或 Sʙ，終點 Tʀ 或 Tʙ', '4 種組合；從兩個起點各跑一次');
+  await beat(tok, 3200);
+  const e1 = addEdge(GR, 10, 0, 0), e2 = addEdge(GR, 10, 5, 0), e3 = addEdge(GR, 4, 11, 0), e4 = addEdge(GR, 9, 11, 0);
+  computeAdj(GR);
+  [e1, e2, e3, e4].forEach((e) => edgeColor(e, C.ok, 1.6));
+  nodeColor(10, C.pq, 0.3); nodeColor(11, C.pq, 0.3);
+  say('只跑一次：加超級起點 s*、終點 t*', '權重 0 的有向邊');
+  await beat(tok, 3200);
+  const { d, par } = s2Dij(10);
+  s2Path(s2Back(par, 11), C.hot, 2.6);
+  say('s* → t* 的最短路徑 = ' + d[11], '一次 Dijkstra 涵蓋 4 種組合');
+  await beat(tok, 3200);
+}]);
+
+// 51:21 BFS 給 levels，DFS 給邊的種類與結束時間；兩者都用 parent 指標建樹
+FRAG.push(['spmit2-r18-bfs-dfs-trees', 'R18：BFS 樹與 DFS 樹不一樣', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(S2G.tri3);
+  say('BFS：邊數最少的最短路徑', '頂點分成 levels');
+  await beat(tok, 2800);
+  say('DFS：邊的種類、結束時間', '結束時間 → topological sort');
+  await beat(tok, 2800);
+  nodeTag(0, 'L0'); nodeTag(1, 'L1'); nodeTag(2, 'L1');
+  edgeColor(s2E(0, 1), C.tree, 2.2); edgeColor(s2E(0, 2), C.tree, 2.2);
+  nodeNote(1, 'π = S'); nodeNote(2, 'π = S');
+  say('BFS 樹：S→A、S→B', '用 parent 指標記下來');
+  await beat(tok, 3000);
+  for (const e of GR.edges) edgeColor(e, C.edge, 1);
+  for (let v = 0; v < 3; v++) { nodeTag(v, ''); nodeNote(v, ''); }
+  edgeColor(s2E(0, 1), C.ok, 2.2); nodeNote(1, 'π = S');
+  await beat(tok, 900);
+  edgeColor(s2E(1, 2), C.ok, 2.2); nodeNote(2, 'π = A');
+  say('DFS 樹：S→A→B', '同一張圖，兩棵不同的樹');
+  await beat(tok, 3200);
+  edgeColor(s2E(0, 2), C.hot, 2.2);
+  say('S→B 在 DFS 裡不是 tree edge', 'B 已經從 A 拜訪過了');
+  await beat(tok, 2600);
+}]);
+
+// 54:11 DFS 四種邊：tree、back、forward、cross（params.part = 2：判斷條件與摘要）
+FRAG.push(['spmit2-r18-dfs-edge-types', 'R18：DFS 的四種邊', async (tok) => {
+  const part = (ctx.params || {}).part === 2 ? 2 : 1;
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(S2G.dfs);
+  const tree = [[0, 1], [1, 3], [3, 4], [3, 5], [0, 2]];
+  if (part === 1) {
+    say('四種：tree、back、forward、cross', '照 adjacency list 的字母順序走');
+    await beat(tok, 3000);
+    const ev = [['d', 0], ['d', 1], ['d', 3], ['d', 4], ['f', 4], ['d', 5], ['f', 5], ['f', 3], ['f', 1], ['d', 2], ['f', 2], ['f', 0]];
+    const dt = Array(6).fill(0), ft = Array(6).fill(0);
+    for (let i = 0; i < ev.length; i++) {
+      const [k, v] = ev[i];
+      if (k === 'd') { dt[v] = i + 1; nodeColor(v, C.pq, 0.3); const te = tree.find(([a, b]) => b === v); if (te) edgeColor(s2E(te[0], te[1]), C.tree, 2.2); say('進入 ' + nm(v), te ? 'tree edge ' + nm(te[0]) + '→' + nm(v) : '從 S 開始'); }
+      else { ft[v] = i + 1; nodeColor(v, C.ok, 0.3); say(nm(v) + ' 結束', '結束時間 ' + (i + 1)); }
+      nodeNote(v, dt[v] + ' / ' + (ft[v] || ''));
+      await beat(tok, 900);
+    }
+    say('tree edge：DFS 真的走過去的邊', 'SA、AC、CD、CE、SB');
+    await beat(tok, 3000);
+    return;
+  }
+  for (const [a, b] of tree) edgeColor(s2E(a, b), C.tree, 2.2);
+  say('藍色是 tree edge', '在 u 看 (u, v)：v 沒拜訪過，v.parent = u');
+  await beat(tok, 3200);
+  edgeColor(s2E(1, 5), C.ok, 2.4);
+  say('A→E：forward edge', '往下跳不只一層；沿 v 的 parent 往上會遇到 u');
+  await beat(tok, 3400);
+  edgeColor(s2E(4, 1), C.back, 2.4);
+  say('D→A：back edge', 'v 是 u 的祖先；沿 u 的 parent 往上會遇到 v');
+  await beat(tok, 3400);
+  edgeColor(s2E(2, 3), C.purple, 2.4);
+  say('B→C：cross edge', '誰都不是誰的祖先；共同祖先只有 S');
+  await beat(tok, 3400);
+  say('順 DFS 走 = tree；逆著走 = back', '一次跳好幾層 = forward；其他 = cross');
+  await beat(tok, 3200);
+  say('種類取決於 adjacency list 的順序', '換個順序，A→E 可能變 tree edge');
+  await beat(tok, 3000);
+}]);
+  }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
 

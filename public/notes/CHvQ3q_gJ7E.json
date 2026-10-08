@@ -1,190 +1,457 @@
 {
  "video": "CHvQ3q_gJ7E",
  "label": "MIT 6.006 L18：Speeding up Dijkstra",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
+   "title": "開場與公告",
+   "scene": null,
+   "points": [
+    {
+     "text": "MIT OpenCourseWare 授權說明。",
+     "t": 0
+    },
+    {
+     "text": "作業要交、週四晚上小考、明天 recitation 是考前複習。",
+     "t": 23
+    }
+   ]
+  },
+  {
    "title": "三種最短路徑問題",
-   "scene": "sp-compare",
+   "scene": "spmit1-three-problems",
    "points": [
     {
-     "text": "這講的優化不改變最壞情況複雜度，只改善實際執行時間。",
-     "t": 48
+     "text": "最短路徑單元最後一講：講不改變最壞複雜度、但實際跑更快的優化。",
+     "t": 45
     },
     {
-     "text": "Single source → 所有目的地（原本的 Dijkstra、Bellman-Ford）；single source、single target（s 到特定 t）；all pairs（任兩點）。",
-     "t": 91
+     "text": "第一個：只要單一目標 t 時優化 Dijkstra。",
+     "t": 71
     },
     {
-     "text": "All-pairs 要變動起點，工作量比 single source 更多（6.046 才教）。",
-     "t": 222
+     "text": "之前隱含解的是 single source、所有目的地；現在是 s 到特定 t。",
+     "t": 88
+    },
+    {
+     "text": "雙向搜尋：從 s 往前、從 t 沿反向邊往回，兩個 frontier 相遇。",
+     "t": 125
+    },
+    {
+     "text": "雙向搜尋沒有聽起來那麼簡單，要仔細看。",
+     "t": 184
+    },
+    {
+     "text": "All-pairs shortest paths：任兩點都要，比 single source 更多工作（6.046）。",
+     "t": 196
+    },
+    {
+     "text": "強調：今天所有 Dijkstra 版本的最壞複雜度都不變。",
+     "t": 258
     }
    ]
   },
   {
-   "title": "優化一：找到 t 就停",
-   "scene": "dij-early-stop",
+   "title": "優化一：取出 t 就停",
+   "scene": "spmit1-dij-pseudo",
+   "params": {
+    "target": "E"
+   },
    "points": [
     {
-     "text": "Dijkstra：Extract-Min 取出 u 時，u 的最短路徑已經確定（invariant）。",
-     "t": 307
+     "text": "複習 Dijkstra pseudocode。",
+     "t": 265
     },
     {
-     "text": "只要一行：如果 u == t 就停止，不用等 Q 變空。",
-     "t": 352
+     "text": "Initialize：d(s) = 0，其他 ∞；Q 是待處理的頂點。",
+     "t": 288
     },
     {
-     "text": "t 很近時快很多；t 是最後一個時也不會比較慢。",
-     "t": 396
+     "text": "Extract-Min 取出 u 時，u 的最短路徑已經確定（Dijkstra 的 invariant）。",
+     "t": 302
+    },
+    {
+     "text": "relax 更新 priority，也設定 π(v) = u。",
+     "t": 336
+    },
+    {
+     "text": "只多一行：如果 u == t 就停，不用等 Q 變空。",
+     "t": 361
+    },
+    {
+     "text": "把 t 從 Q 取出時就停，一定更快（只多一個比較）。",
+     "t": 386
+    },
+    {
+     "text": "t 剛好是最後一個取出時，也不會比較慢。",
+     "t": 411
+    }
+   ],
+   "trap": "補充：動畫沿用 L16 的 5 頂點圖，取 E 當目標示範；影片這段沒有畫例子。"
+  },
+  {
+   "title": "優化二：雙向搜尋的設定",
+   "scene": "spmit1-bidir-setup",
+   "points": [
+    {
+     "text": "雙向搜尋：s 與 t 中間有一堆頂點。",
+     "t": 438
+    },
+    {
+     "text": "forward 與 backward 交替，每次做一步標準 Dijkstra。",
+     "t": 486
+    },
+    {
+     "text": "forward 第一步：從 Q 取出 s，處理它的兩條出邊。",
+     "t": 495
+    },
+    {
+     "text": "backward 從 t 開始，沿著邊「反方向」走。",
+     "t": 526
+    },
+    {
+     "text": "資料結構要能反向走訪邊。",
+     "t": 548
+    },
+    {
+     "text": "兩套 priority：d_f(s) = 0、d_b(t) = 0，其他都 ∞。",
+     "t": 571
+    },
+    {
+     "text": "兩個 min priority queue：Q_f、Q_b。",
+     "t": 650
+    },
+    {
+     "text": "d_f(u) 是 forward 的距離，d_b(u) 是 backward 的距離。",
+     "t": 683
     }
    ]
   },
   {
-   "title": "優化二：雙向搜尋（bi-directional）",
+   "title": "何時停？怎麼組出路徑？",
+   "scene": "spmit1-bidir-stop",
+   "points": [
+    {
+     "text": "直覺是「frontier 相遇」就停，但這寫不成程式。",
+     "t": 744
+    },
+    {
+     "text": "學生答：某個頂點同時從 Q_f 與 Q_b 被取出。",
+     "t": 846
+    },
+    {
+     "text": "終止條件：某個頂點 u 在 forward、backward 都被處理過（被取出）。",
+     "t": 903
+    },
+    {
+     "text": "較難的問題：停下後怎麼找出 s 到 t 的最短路徑？",
+     "t": 953
+    },
+    {
+     "text": "還需要 π_f 與 π_b；π_b 是沿反向邊的 predecessor。",
+     "t": 976
+    },
+    {
+     "text": "若 w 是第一個兩邊都被取出的頂點：用 π_f 從 w 回到 s。",
+     "t": 1095
+    },
+    {
+     "text": "再用 π_b 從 w 一路走到 t。",
+     "t": 1163
+    },
+    {
+     "text": "學生糾正：應該是 π_b(v2) = t，而不是 π_b(t) = v2。",
+     "t": 1215
+    },
+    {
+     "text": "π_f、π_b 都從造成終止的 w 開始套用。",
+     "t": 1399
+    }
+   ],
+   "trap": "影片中老師先寫 π_b(t) = v2，後來更正為 π_b(v2) = t：backward 搜尋把邊反過來看，t 是 v2 的前一個。"
+  },
+  {
+   "title": "w 不一定在最短路徑上",
    "scene": "bidir-wrong-w",
    "points": [
     {
-     "text": "從 s 做 forward Dijkstra、從 t 沿反向邊做 backward Dijkstra，一步一步交替。",
-     "t": 441
+     "text": "上面的作法「還不完全正確」。",
+     "t": 1451
     },
     {
-     "text": "資料結構全部加倍：d_f、d_b、Q_f、Q_b、π_f、π_b；初始 d_f(s) = 0、d_b(t) = 0，其餘 ∞。",
-     "t": 663
+     "text": "問題：造成終止的 w 不一定在最短路徑上。",
+     "t": 1495
     },
     {
-     "text": "終止條件：某個頂點 w 已經從 Q_f 和 Q_b 都被取出（兩個 frontier 相遇）。",
-     "t": 855
+     "text": "終止條件是對的；錯的是拿 w 來組路徑。",
+     "t": 1525
     },
     {
-     "text": "直覺做法：用 π_f 從 w 回推到 s、用 π_b 從 w 推到 t，接起來——但 w 不一定在最短路徑上。",
-     "t": 1368
+     "text": "一定要同時用 π_f 和 π_b：兩個 frontier 才剛碰到就停了。",
+     "t": 1605
+    },
+    {
+     "text": "權重仍是 Dijkstra 的要求：非負；backward 走同一條邊權重一樣。",
+     "t": 1650
     }
    ]
   },
   {
-   "title": "反例：s、u、u′、w、t",
-   "scene": "bidir-wrong-w",
+   "title": "反例：s、u、u′、w、t（前四步）",
+   "scene": "spmit1-bidir-trace",
+   "params": {
+    "part": 1
+   },
    "points": [
     {
-     "text": "上面三條邊 s → u → u′ → t 權重都是 3（共 9）；下面 s → w → t 權重都是 5（共 10）。",
-     "t": 1698
+     "text": "花了一陣子設計的 5 頂點反例。",
+     "t": 1685
     },
     {
-     "text": "forward：d_f(w) = 5、d_f(u) = 3；backward：d_b(u′) = 3、d_b(w) = 5。",
-     "t": 1746
+     "text": "權重 5, 5, 3, 3, 3：上面三條邊的路徑 9 是最短。",
+     "t": 1740
     },
     {
-     "text": "forward 取 u → d_f(u′) = 6；backward 取 u′ → d_b(u) = 6。",
-     "t": 1890
+     "text": "forward 第一步：d_f(w) = 5、d_f(u) = 3、d_f(s) = 0。",
+     "t": 1775
     },
     {
-     "text": "forward 取 w → d_f(t) = 10；backward 取 w → w 兩邊都被取出，終止；但經過 w 的路徑是 10。",
-     "t": 2079
+     "text": "backward 第一步：d_b(t) = 0，d_b(u′) = 3、d_b(w) = 5。",
+     "t": 1808
     },
     {
-     "text": "交替搜尋讓兩個 frontier 在「邊數最少」的路徑相遇，而這裡邊數最少的不是權重最小的。",
-     "t": 2275
+     "text": "forward：u（3）比 w（5）小，取 u，d_f(u′) = 6。",
+     "t": 1909
+    },
+    {
+     "text": "橫線 = 已從 Q_f 取出、直線 = 已從 Q_b 取出。",
+     "t": 1984
+    },
+    {
+     "text": "backward：u′（3）比 w（5）小，取 u′，d_b(u) = 6。",
+     "t": 2000
     }
    ]
+  },
+  {
+   "title": "反例：後兩步與 10 ≠ 9",
+   "scene": "spmit1-bidir-trace",
+   "params": {
+    "part": 2
+   },
+   "points": [
+    {
+     "text": "forward：Q_f 裡 w 是 5、u′ 是 6，取 w，d_f(t) = 10。",
+     "t": 2086
+    },
+    {
+     "text": "backward：Q_b 裡 w 是 5、u 是 6，取 w，d_b(s) = 10。",
+     "t": 2203
+    },
+    {
+     "text": "w 兩邊都被取出 → 終止；但兩個方向都得到 10，最短其實是 9。",
+     "t": 2316
+    },
+    {
+     "text": "交替搜尋讓 frontier 在「邊數最少」的路徑上相遇，與權重無關。",
+     "t": 2345
+    },
+    {
+     "text": "這個例子的邊數最少路徑不是權重最小路徑，所以不能直接用 w。",
+     "t": 2384
+    }
+   ],
+   "trap": "影片口誤：37:51 說「從 Q_f 移除 w」，應是 Q_b；38:44 說「d_b(t) = 10」，應是 d_f(t) = 10；比較時說的「d_f(u′) = 6」在 backward 這步應是 d_b(u) = 6。"
   },
   {
    "title": "修正：找 d_f(x) + d_b(x) 最小的 x",
    "scene": "bidir-fix-x",
    "points": [
     {
-     "text": "終止條件不變，但終止後要再掃一次：找 d_f(x) + d_b(x) 最小的頂點 x（可能不是 w）。",
-     "t": 2609
+     "text": "怎麼修？終止條件不變。",
+     "t": 2391
     },
     {
-     "text": "例子中 u：3 + 6 = 9；u′：6 + 3 = 9，都比經過 w 的 10 小。",
-     "t": 2655
+     "text": "學生提議依權重決定交替；老師覺得可能可行但難實作。",
+     "t": 2426
     },
     {
-     "text": "用 x 取代 w，再用 π_f、π_b 接出最短路徑，就正確了。",
-     "t": 2704
+     "text": "照樣嚴格交替、照樣終止，之後多做一點事。",
+     "t": 2579
+    },
+    {
+     "text": "找一個 x（可能不是 w）使 d_f(x) + d_b(x) 最小。",
+     "t": 2615
+    },
+    {
+     "text": "掃 Q_f、Q_b；w 有可能就是最小的，但這個例子不是。",
+     "t": 2640
+    },
+    {
+     "text": "u：3 + 6 = 9；u′：6 + 3 = 9，都比 10 小，挑其中一個當 x。",
+     "t": 2664
+    },
+    {
+     "text": "用 x 取代 w：π_f 接到 s、π_b 接到 t，就對了。",
+     "t": 2695
     }
    ]
   },
   {
-   "title": "優化三：位能（potential）改權重、landmark",
-   "scene": "potential-reweight",
+   "title": "優化三：位能改權重（goal-directed）",
+   "scene": "spmit1-potential",
    "points": [
     {
-     "text": "goal-directed search（類似 A*）：改邊權重讓搜尋往目標「下坡」走。",
-     "t": 2754
+     "text": "用啟發式修改圖，讓實際跑更快。",
+     "t": 2731
     },
     {
-     "text": "w̄(u, v) = w(u, v) − λ(u) + λ(v)；任一條 s 到 t 的路徑都平移同樣的 λ(t) − λ(s)，所以最短路徑不變。",
-     "t": 2799
+     "text": "goal-directed search，和 A* 有共通之處。",
+     "t": 2761
     },
     {
-     "text": "例：s 有兩條權重 5 的出邊到 t1、t2；提高不太可能的那一側的位能，讓它變成上坡。",
-     "t": 2843
+     "text": "修改權重讓搜尋「往下坡」朝最短路徑走，修剪搜尋範圍。",
+     "t": 2780
     },
     {
-     "text": "Landmark：選頂點 l，預先算所有 δ(u, l)，取 λ_t(u) = δ(u, l) − δ(t, l)；用三角不等式可證正確。",
-     "t": 3070
+     "text": "位能函數 λ：w̄(u, v) = w(u, v) − λ(u) + λ(v)。",
+     "t": 2827
+    },
+    {
+     "text": "例：s 出去兩條權重 5 的邊，能不能猜哪條比較可能在最短路徑上？",
+     "t": 2876
+    },
+    {
+     "text": "提高 t2 的位能：往 t2 變上坡，往 t1 是下坡，Dijkstra 被引導往下坡走。",
+     "t": 2908
+    },
+    {
+     "text": "不改變漸近複雜度，選對位能時實際會快一點。",
+     "t": 2934
+    },
+    {
+     "text": "任一條 s→t 路徑：w̄(p) = w(p) − λ(s) + λ(t)，全部平移同一量。",
+     "t": 3005
+    },
+    {
+     "text": "所以最短路徑不變，只是可能更快找到。",
+     "t": 3051
     }
    ],
-   "trap": "補充：同樣的「位能改權重」也是 Johnson 演算法的核心（CLRS 25.3），用 Bellman-Ford 算出 h(v) 讓所有新權重 ≥ 0。"
+   "trap": "補充：動畫裡 t1→t、t2→t 的權重與 λ 是示意的數字；要讓 Dijkstra 正確還需每條 w̄ ≥ 0。"
+  },
+  {
+   "title": "Landmark 算位能",
+   "scene": "spmit1-landmark",
+   "points": [
+    {
+     "text": "取位能的一種方法：landmark L ∈ V。",
+     "t": 3068
+    },
+    {
+     "text": "預先算所有 u 到 L 的 δ(u, L)（像換起點、終點固定）。",
+     "t": 3091
+    },
+    {
+     "text": "λ_t(u) = δ(u, L) − δ(t, L)。",
+     "t": 3127
+    },
+    {
+     "text": "δ(t, L) 對給定的 t 只要算一次。",
+     "t": 3136
+    },
+    {
+     "text": "用三角不等式可以證明它是正確的。",
+     "t": 3151
+    },
+    {
+     "text": "這是 heuristic：選對 landmark，Dijkstra 實際跑得更快。",
+     "t": 3160
+    },
+    {
+     "text": "例：Caltech 到 Boston 必經美國中部，選 Austin 當 landmark，可能快 20%～2 倍。",
+     "t": 3170
+    }
+   ]
   }
  ],
  "quiz": [
   {
-   "q": "單一目標 t 的 Dijkstra 可以在何時停止？",
+   "q": "單一目標 t 的 Dijkstra 優化是什麼？",
    "opts": [
-    "Extract-Min 取出 t 時",
-    "第一次 relax 到 t 時",
-    "d(t) < ∞ 時",
-    "Q 只剩 t 時"
+    "Extract-Min 取出 t 時就停",
+    "第一次 relax 到 t 時就停",
+    "Q 只放 t 的鄰居",
+    "從 t 開始跑"
    ],
-   "ans": "Extract-Min 取出 t 時",
-   "why": "取出時 d(t) 才確定是 δ(s, t)；第一次被 relax 時可能還會再變小。"
+   "ans": "Extract-Min 取出 t 時就停",
+   "why": "取出時 d(t) 才確定；第一次 relax 到 t 時 d(t) 還可能再變小。"
   },
   {
-   "q": "雙向 Dijkstra 的終止條件？",
+   "q": "雙向 Dijkstra 的終止條件是？",
    "opts": [
-    "某頂點已從 Q_f 與 Q_b 都被取出",
-    "兩邊的 d 值相等",
-    "某頂點被兩邊都 relax 過",
+    "某個頂點同時被 Q_f 與 Q_b 取出",
+    "兩邊第一次 relax 到同一個頂點",
+    "Q_f 或 Q_b 變空",
     "forward 取出 t"
    ],
-   "ans": "某頂點已從 Q_f 與 Q_b 都被取出",
-   "why": "講者說這個終止條件是對的，問題出在終止後怎麼組路徑。"
+   "ans": "某個頂點同時被 Q_f 與 Q_b 取出",
+   "why": "這個終止條件是對的，但造成終止的 w 不一定在最短路徑上。"
   },
   {
-   "q": "講者的反例（s→u→u′→t 各 3；s→w→t 各 5）中，雙向搜尋在 w 終止，正確答案是？",
+   "q": "影片反例（上 3+3+3、下 5+5）停下時，經由 w 得到的長度與真正最短各是？",
    "opts": [
-    "9，取 d_f(x) + d_b(x) 最小的 x（u 或 u′）",
-    "10，經過 w",
-    "6",
-    "15"
+    "10 與 9",
+    "9 與 9",
+    "10 與 10",
+    "6 與 9"
    ],
-   "ans": "9，取 d_f(x) + d_b(x) 最小的 x（u 或 u′）",
-   "why": "u：3 + 6、u′：6 + 3，都是 9 < 10。"
+   "ans": "10 與 9",
+   "why": "d_f(w) + d_b(w) = 5 + 5 = 10；但 s→u→u′→t = 9。"
   },
   {
-   "q": "位能改權重 w̄(u, v) = w(u, v) − λ(u) + λ(v) 後，s 到 t 的任一路徑權重會？",
+   "q": "停下之後怎麼得到正確的最短路徑？",
    "opts": [
-    "都加上相同的 λ(t) − λ(s)",
-    "都變成非負",
-    "保持不變",
-    "乘上同一個常數"
+    "找 d_f(x) + d_b(x) 最小的 x",
+    "繼續跑到 Q_f 空",
+    "改用 w 的鄰居",
+    "取 d_f(t) 與 d_b(s) 較小的"
    ],
-   "ans": "都加上相同的 λ(t) − λ(s)",
-   "why": "中間頂點的 λ 會互相抵銷（telescoping），所以最短路徑不變。"
+   "ans": "找 d_f(x) + d_b(x) 最小的 x",
+   "why": "例子中 u 或 u′ 都是 9 < 10，用 x 接起 π_f 與 π_b。"
   },
   {
-   "q": "本講的優化對 Dijkstra 最壞情況複雜度的影響？",
+   "q": "為什麼交替搜尋會在 w 相遇？",
    "opts": [
-    "不變",
-    "降成 O(V + E)",
-    "降成 O(E)",
-    "升成 O(VE)"
+    "兩個 frontier 在邊數最少的路徑上碰到",
+    "w 的權重最小",
+    "w 是 t 的唯一鄰居",
+    "Dijkstra 不能處理 3 條邊的路徑"
    ],
-   "ans": "不變",
-   "why": "講者一開始就強調只改善實際（或平均）表現。"
+   "ans": "兩個 frontier 在邊數最少的路徑上碰到",
+   "why": "交替一步一步走，相遇點跟路徑的邊數有關；s→w→t 只有 2 條邊。"
+  },
+  {
+   "q": "位能改權重 w̄(u,v) = w(u,v) − λ(u) + λ(v) 後，任一條 s→t 路徑的權重變成？",
+   "opts": [
+    "w(p) − λ(s) + λ(t)",
+    "w(p)",
+    "w(p) − λ(t) + λ(s)",
+    "w(p) 乘上 λ(t)"
+   ],
+   "ans": "w(p) − λ(s) + λ(t)",
+   "why": "中間頂點的 λ 互相抵消（telescoping），所有 s→t 路徑平移同一量，最短路徑不變。"
+  },
+  {
+   "q": "Landmark 方法的位能 λ_t(u) 是？",
+   "opts": [
+    "δ(u, L) − δ(t, L)",
+    "δ(s, u) − δ(s, t)",
+    "δ(u, t)",
+    "δ(L, u) + δ(L, t)"
+   ],
+   "ans": "δ(u, L) − δ(t, L)",
+   "why": "預先算所有 δ(u, L)，對目標 t 再算 δ(t, L)；三角不等式保證正確。"
   }
- ],
- "timing": "estimated"
+ ]
 }

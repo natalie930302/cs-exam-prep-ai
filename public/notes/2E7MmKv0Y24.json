@@ -1,71 +1,151 @@
 {
  "video": "2E7MmKv0Y24",
  "label": "MIT 6.006 L16：Dijkstra",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
+  {
+   "title": "開場與今天內容",
+   "scene": null,
+   "points": [
+    {
+     "text": "MIT OpenCourseWare 授權說明。",
+     "t": 0
+    },
+    {
+     "text": "最短路徑四講的第二講：上次講通用結構，今天看具體的 Dijkstra。",
+     "t": 30
+    },
+    {
+     "text": "兩個特例：DAG（可有負邊）與沒有負邊時的 Dijkstra。",
+     "t": 63
+    }
+   ]
+  },
   {
    "title": "複習：d、δ、π 與 relaxation",
    "scene": "relax-safe",
    "points": [
     {
-     "text": "d(v) 是目前從 s 到 v 的最短路徑長度；透過 relaxation 把 d 降到 δ(s, v)。π(v) 用來回推路徑。",
-     "t": 93
+     "text": "小例子：頂點裡的數字是 priority 值 d(v)。",
+     "t": 102
     },
     {
-     "text": "小例子：s → a 權重 1、s → b 權重 3、a → b 權重 1。",
-     "t": 183
+     "text": "d(v)：目前 s 到 v 最短路徑的長度；d(s) = 0，其他初始化為 ∞。",
+     "t": 116
     },
     {
-     "text": "relax s 的出邊：a 變 1、b 變 3；再 relax a → b：b 從 3 變成 2，完成。",
-     "t": 222
+     "text": "relaxation 把 d 一路降到 δ（真正的最短路徑長度）；全部收斂就結束。",
+     "t": 149
     },
     {
-     "text": "relax(u, v)：若 d(v) > d(u) + w(u, v)，更新 d(v) 和 π(v) = u。",
-     "t": 347
+     "text": "π(v)：最短路徑上 v 的前一個頂點，沿 π 回推可重建路徑。",
+     "t": 194
+    },
+    {
+     "text": "relax s 的出邊：a 從 ∞ 變 1，b 從 ∞ 變 3。",
+     "t": 244
+    },
+    {
+     "text": "s → a → b 長度 2，比 3 短：b 再降成 2，結束。",
+     "t": 284
+    },
+    {
+     "text": "每個演算法都要證明會收斂到 δ、會停，還要算複雜度。",
+     "t": 313
     }
    ]
   },
   {
-   "title": "Relaxation 是安全的（引理）",
+   "title": "Relaxation 是安全的",
    "scene": "relax-safe",
    "points": [
     {
-     "text": "不論用什麼順序 relax，演算法始終維持 d(v) ≥ δ(s, v)：從上面收斂，不會降過頭。",
-     "t": 389
+     "text": "要證明 relaxation 有用而且「安全」。",
+     "t": 354
     },
     {
-     "text": "證明（歸納）：假設 d(u) ≥ δ(s, u)；由三角不等式 δ(s, v) ≤ δ(s, u) + δ(u, v)。",
-     "t": 615
+     "text": "Relax：若 d(v) > d(u) + w(u, v)，就更新 d(v) 與 π(v) = u。",
+     "t": 362
     },
     {
-     "text": "δ(s, u) ≤ d(u)、δ(u, v) ≤ w(u, v)，所以 δ(s, v) ≤ d(u) + w(u, v) = relax 後的 d(v)。",
-     "t": 796
+     "text": "安全 = 從上面收斂：從 ∞ 往下降到 δ，絕不降過頭。",
+     "t": 432
     },
     {
-     "text": "三角不等式講的是最短路徑，不是單一邊：s → b 的邊 3 大於 s → a → b 的 2，並不矛盾。",
-     "t": 705
+     "text": "引理：不管 relax 的順序，只用 relax 更新 d，就永遠 d(v) ≥ δ(s, v)。",
+     "t": 484
+    },
+    {
+     "text": "所以通用結構（挑邊、relax、再挑邊）中途也不會出現比最短還小的值。",
+     "t": 549
+    }
+   ]
+  },
+  {
+   "title": "引理的證明：歸納 + 三角不等式",
+   "scene": "spmit1-relax-lemma",
+   "points": [
+    {
+     "text": "對步數做歸納：假設 relax 前 d(u) ≥ δ(s, u)。",
+     "t": 596
+    },
+    {
+     "text": "三角不等式：δ(s, v) ≤ δ(s, u) + δ(u, v)；這裡講的是路徑，不是邊。",
+     "t": 660
+    },
+    {
+     "text": "例子裡 s→a→b 是 2 而邊 s→b 是 3，並不矛盾：δ(s, b) = 2。",
+     "t": 759
+    },
+    {
+     "text": "把 δ(s, u) 換成更大的 d(u)：δ(s, v) ≤ d(u) + δ(u, v)。",
+     "t": 894
+    },
+    {
+     "text": "把 δ(u, v) 換成 w(u, v)（單一條邊不會比最短路徑短）。",
+     "t": 923
+    },
+    {
+     "text": "右邊 d(u) + w(u, v) 正是 relax 之後的 d(v)：得證。",
+     "t": 1017
+    },
+    {
+     "text": "之後每個演算法都是「某種順序的 relax」，差別只在順序。",
+     "t": 1029
     }
    ]
   },
   {
    "title": "DAG 的最短路徑：topological sort + 一次 relax",
-   "scene": "dag-sp",
+   "scene": "spmit1-dag-idea",
    "points": [
     {
-     "text": "DAG 沒有 cycle，也就沒有負 cycle；可以有負權重邊。",
-     "t": 1038
+     "text": "DAG 沒有 cycle，自然沒有負 cycle；允許負邊。",
+     "t": 1060
     },
     {
-     "text": "步驟一：topological sort；步驟二：由左到右掃過每個頂點，relax 它的每條出邊。",
-     "t": 1132
+     "text": "負邊只走一次就照減，問題只出在能一直繞的負 cycle。",
+     "t": 1107
     },
     {
-     "text": "topological sort O(V + E)，每條邊只 relax 一次 → 總共 O(V + E)。",
-     "t": 1173
+     "text": "遇到 DAG 先試 topological sort：u → v 有路徑代表 u 排在 v 前面。",
+     "t": 1138
     },
     {
-     "text": "起點左邊的頂點走不到，維持 ∞；起點可以在 topological sort 之後才決定。",
-     "t": 1215
+     "text": "第二步：依 topo 順序由左到右，relax 每個頂點的出邊。",
+     "t": 1186
+    },
+    {
+     "text": "topo sort O(V + E)，每條邊只碰一次：總共 O(V + E)。",
+     "t": 1232
+    },
+    {
+     "text": "小例子：起點 S 左邊的 A、B 走不到，δ = ∞。",
+     "t": 1277
+    },
+    {
+     "text": "可以先排好，再決定起點。",
+     "t": 1312
     }
    ]
   },
@@ -74,24 +154,40 @@
    "scene": "dag-sp",
    "points": [
     {
-     "text": "圖已排成 topological 順序；起點是左邊第二個頂點 s，最左邊的頂點維持 ∞。",
-     "t": 1300
+     "text": "排好的 DAG 可以畫成一列。",
+     "t": 1336
     },
     {
-     "text": "relax s 的出邊：2 和 6。",
-     "t": 1443
+     "text": "權重：5, 3, 2, 6, 7, 4, 2, −1, −2（後來補一條 1）。",
+     "t": 1372
     },
     {
-     "text": "處理 a（d = 2）：2 + 7 = 9 > 6 不更新；2 + 4 = 6；2 + 2 = 4。",
-     "t": 1465
+     "text": "選第二個頂點當起點，它左邊的全部是 ∞。",
+     "t": 1433
     },
     {
-     "text": "處理 b（d = 6）：6 − 1 = 5 < 6 更新；之後 5 − 2 = 3；6 + 1 = 7 > 4 不更新。",
-     "t": 1491
+     "text": "relax 起點出邊：右邊兩個變成 2 和 6。",
+     "t": 1464
     },
     {
-     "text": "最終：∞、0、2、6、5、3；這是 dynamic programming 最簡單的例子。",
-     "t": 1533
+     "text": "處理 a（2）：2 + 7 = 9 > 6 不更新；2 + 4 = 6；2 + 2 = 4。",
+     "t": 1504
+    },
+    {
+     "text": "處理 b（6）：6 − 1 = 5 < 6 更新；6 + 1 = 7 > 4 不更新；再來 5 − 2 = 3。",
+     "t": 1536
+    },
+    {
+     "text": "最終：∞、0、2、6、5、3。",
+     "t": 1558
+    },
+    {
+     "text": "這是 dynamic programming 最簡單的例子。",
+     "t": 1587
+    },
+    {
+     "text": "Dijkstra 不能有負邊、DAG 演算法不能有 cycle：兩者互不包含。",
+     "t": 1633
     }
    ]
   },
@@ -100,43 +196,71 @@
    "scene": "dij-ball-demo",
    "points": [
     {
-     "text": "Dijkstra 適用有 cycle 的圖，但權重必須 ≥ 0；它和 DAG 演算法各有用途，互不涵蓋。",
-     "t": 1580
+     "text": "Dijkstra 是 greedy、一個頂點一個頂點建出最短路徑。",
+     "t": 1666
     },
     {
-     "text": "示範：球是頂點、繩子長度是權重；提起綠球 G，其他球依最短距離往下掛。",
-     "t": 1713
+     "text": "球 = 頂點、繩子長度 = 權重；G 到 Y 的繩子 19 公分。",
+     "t": 1728
     },
     {
-     "text": "最靠近 G 的是紫球 P（7），接著藍球 B（7 + 5 = 12），再來黃 Y、紅 R。",
-     "t": 1807
+     "text": "怎麼「機械地」算最短路徑？把起點的球提起來。",
+     "t": 1791
     },
     {
-     "text": "拉緊的繩子就是 predecessor（π）；Dijkstra 是 greedy，就像 gravity 也是 greedy。",
-     "t": 1854
+     "text": "從 G 開始：P 是 7，最近；B 是 7 + 5 = 12。",
+     "t": 1810
+    },
+    {
+     "text": "依序離地：G、P、B、Y、R；拉緊的繩子就是 predecessor π。",
+     "t": 1861
+    },
+    {
+     "text": "改提 R：順序變成 R、Y、B、P、G。",
+     "t": 1900
+    },
+    {
+     "text": "gravity 也是 greedy；Dijkstra 直接算出這個穩定狀態。",
+     "t": 1929
     }
    ],
-   "trap": "補充：逐字稿只給出 G–P 7、P–B 5、G–Y 19 三條繩長；動畫中其他繩長是依「G、P、B、Y、R」的順序補上的示意值。"
+   "trap": "補充：逐字稿只提到 G–P 7、P–B 5、G–Y 19，動畫其他繩長是示意。"
   },
   {
    "title": "Dijkstra pseudocode",
-   "scene": "dij-clrs5",
+   "scene": "spmit1-dij-pseudo",
    "points": [
     {
-     "text": "Initialize：d(s) = 0，其他 ∞；S = ∅；Q = V（priority queue，key 是 d 值）。",
-     "t": 2079
+     "text": "Dijkstra(G, w, s)：Initialize 把 d(s) 設 0、其他 ∞。",
+     "t": 2010
     },
     {
-     "text": "while Q ≠ ∅：u = Extract-Min(Q)，S = S ∪ {u}，對 u 的每條出邊 relax(u, v, w)。",
-     "t": 2170
+     "text": "S（已知最短路徑的集合）= ∅，Q（待處理）= V。",
+     "t": 2062
     },
     {
-     "text": "不變量：S 裡的頂點都已知道最短路徑；greedy 在於每次挑 Q 中 d 最小的。",
-     "t": 2122
+     "text": "Invariant：S 裡都是已知最短路徑的頂點。",
+     "t": 2101
     },
     {
-     "text": "正確性證明在 CLRS 約一頁，用到 relaxation 安全的引理。",
-     "t": 2347
+     "text": "while Q ≠ ∅：u = Extract-Min(Q)，從 Q 刪掉 u。",
+     "t": 2114
+    },
+    {
+     "text": "S = S ∪ {u}，再對 Adj[u] 的每個 v 做 Relax(u, v, w)。",
+     "t": 2190
+    },
+    {
+     "text": "Greedy：取出 Q 中 priority 最小的，就宣稱它的最短路徑已確定。",
+     "t": 2234
+    },
+    {
+     "text": "relax 會改變 priority，所以下一輪的最小值會不同。",
+     "t": 2271
+    },
+    {
+     "text": "Q 是 priority queue，key 是 d 值；正確性證明見 CLRS。",
+     "t": 2374
     }
    ]
   },
@@ -145,49 +269,81 @@
    "scene": "dij-clrs5",
    "points": [
     {
-     "text": "起點 A：d = 0、∞、∞、∞、∞，S = ∅。",
-     "t": 2527
+     "text": "走前幾步，看 priority queue 怎麼運作。",
+     "t": 2470
     },
     {
-     "text": "Extract-Min 取 A，relax 兩條出邊 → 0、10、3、∞、∞。",
-     "t": 2569
+     "text": "5 個頂點的有向圖，起點 A：d(A) = 0，B～E 都是 ∞；S = ∅，Q 有全部。",
+     "t": 2528
     },
     {
-     "text": "取 C（3）：像 BFS 與 DFS 的混合——先看一圈鄰居，再貪心挑最近的。",
-     "t": 2613
+     "text": "Extract-Min 取 A，relax 兩條出邊：0, 10, 3, ∞, ∞。",
+     "t": 2556
     },
     {
-     "text": "relax C 的三條出邊 → 0、7、3、11、5；下一個取 E（5），S = {A, C, E}……",
-     "t": 2662
+     "text": "下一個取 3（C），S = {A, C}；像 BFS 但 greedy 地挑最近的。",
+     "t": 2584
+    },
+    {
+     "text": "處理 C 的三條出邊：0, 7, 3, 11, 5。",
+     "t": 2637
+    },
+    {
+     "text": "已在 S 的值不會再變（正確性證明的重點）。",
+     "t": 2648
+    },
+    {
+     "text": "接著取 5（E），S = {A, C, E}，依此類推。",
+     "t": 2673
     }
    ]
   },
   {
-   "title": "複雜度：看 priority queue 怎麼實作",
+   "title": "複雜度：priority queue 怎麼實作",
    "scene": "dij-complexity",
    "points": [
     {
-     "text": "操作次數：Θ(V) 次 insert、Θ(V) 次 Extract-Min、Θ(E) 次 Decrease-Key。",
-     "t": 2748
+     "text": "分析複雜度：看 priority queue 這個 ADT 的操作次數。",
+     "t": 2690
     },
     {
-     "text": "Array：Extract-Min Θ(V)、Decrease-Key Θ(1) → Θ(V·V + E) = Θ(V²)。",
-     "t": 2837
+     "text": "Θ(V) 次 insert、Θ(V) 次 Extract-Min、Θ(E) 次 Decrease-Key。",
+     "t": 2733
     },
     {
-     "text": "Binary min-heap：兩者都是 Θ(log V) → Θ(V log V + E log V)。",
-     "t": 2928
+     "text": "Array：Extract-Min Θ(V)、Decrease-Key Θ(1) → Θ(V² + E) = Θ(V²)。",
+     "t": 2820
     },
     {
-     "text": "Fibonacci heap：Extract-Min Θ(log V)、Decrease-Key 攤銷 Θ(1) → Θ(V log V + E)。",
-     "t": 3021
+     "text": "Binary min-heap：兩者都 Θ(log V) → Θ(V log V + E log V)。",
+     "t": 2893
+    },
+    {
+     "text": "Fibonacci heap（攤銷）：Extract-Min Θ(log V)、Decrease-Key Θ(1) → Θ(V log V + E)。",
+     "t": 3017
+    },
+    {
+     "text": "DAG 線性、Dijkstra 近乎線性；下次處理可能有負 cycle 的一般情況。",
+     "t": 3059
     }
-   ]
+   ],
+   "trap": "補充：老師在 49:13 說 binary heap「找最小是常數」，但 Extract-Min 要刪除並調整，是 Θ(log V)。稠密圖（E ≈ V²）時 array 版 Θ(V²) 反而比 binary heap 的 Θ(V² log V) 好。"
   }
  ],
  "quiz": [
   {
-   "q": "DAG 最短路徑演算法的時間複雜度？",
+   "q": "relaxation 安全性引理保證什麼？",
+   "opts": [
+    "任何時刻 d(v) ≥ δ(s, v)",
+    "任何時刻 d(v) = δ(s, v)",
+    "relax 一次後 d(v) 就正確",
+    "d(v) 永遠 ≤ δ(s, v)"
+   ],
+   "ans": "任何時刻 d(v) ≥ δ(s, v)",
+   "why": "不管 relax 的順序，d 都從上面逼近 δ，不會降過頭。"
+  },
+  {
+   "q": "DAG 最短路徑演算法的複雜度？",
    "opts": [
     "O(V + E)",
     "O(V log V + E)",
@@ -195,32 +351,43 @@
     "O(V²)"
    ],
    "ans": "O(V + E)",
-   "why": "topological sort O(V + E)，再依序 relax，每條邊一次。"
+   "why": "topological sort O(V + E)，再依序每條邊 relax 一次。"
   },
   {
-   "q": "下列何者正確？",
+   "q": "影片的 DAG（5,3,2,6,7,4,2,−1,1,−2）從第二個頂點出發，最終的 d 是？",
    "opts": [
-    "DAG 演算法可處理負權重邊，Dijkstra 可處理 cycle，兩者互不涵蓋",
-    "Dijkstra 涵蓋 DAG 演算法",
-    "DAG 演算法涵蓋 Dijkstra",
-    "兩者都不能處理負權重"
+    "∞、0、2、6、5、3",
+    "∞、0、2、6、5、4",
+    "5、0、2、6、5、3",
+    "∞、0、2、6、6、4"
    ],
-   "ans": "DAG 演算法可處理負權重邊，Dijkstra 可處理 cycle，兩者互不涵蓋",
-   "why": "講者特別強調：這個演算法不被 Dijkstra 涵蓋。"
+   "ans": "∞、0、2、6、5、3",
+   "why": "6 − 1 = 5 更新 y，5 − 2 = 3 更新 z；起點左邊走不到是 ∞。"
   },
   {
-   "q": "Relaxation 安全引理保證什麼？",
+   "q": "下列哪個敘述正確？",
    "opts": [
-    "任何時候都有 d(v) ≥ δ(s, v)",
-    "每條邊只會被 relax 一次",
-    "d(v) 每次都會變小",
-    "演算法一定在 V 輪內結束"
+    "DAG 演算法可處理負邊，Dijkstra 可處理 cycle",
+    "Dijkstra 可處理負邊",
+    "DAG 演算法被 Dijkstra 完全取代",
+    "兩者都不能有 cycle"
    ],
-   "ans": "任何時候都有 d(v) ≥ δ(s, v)",
-   "why": "d 值只會從上方逼近 δ，不會降過頭。"
+   "ans": "DAG 演算法可處理負邊，Dijkstra 可處理 cycle",
+   "why": "Dijkstra 要求非負權重但允許 cycle；DAG 演算法允許負邊但不能有 cycle。"
   },
   {
-   "q": "用 array 實作 priority queue 的 Dijkstra 時間？",
+   "q": "影片 5 頂點例子：取出 A、C 之後 d 值是？",
+   "opts": [
+    "0, 7, 3, 11, 5",
+    "0, 10, 3, ∞, ∞",
+    "0, 7, 3, 9, 5",
+    "0, 8, 3, 11, 5"
+   ],
+   "ans": "0, 7, 3, 11, 5",
+   "why": "C 的出邊：3 + 4 = 7（B）、3 + 8 = 11（D）、3 + 2 = 5（E）。9 是之後處理 B 才得到的。"
+  },
+  {
+   "q": "用 array 實作 priority queue，Dijkstra 的時間是？",
    "opts": [
     "Θ(V²)",
     "Θ(V log V + E)",
@@ -228,41 +395,18 @@
     "Θ(VE)"
    ],
    "ans": "Θ(V²)",
-   "why": "V 次 Extract-Min 各 Θ(V)，E 次 Decrease-Key 各 Θ(1)。"
+   "why": "V 次 Extract-Min 各 Θ(V)、E 次 Decrease-Key 各 Θ(1)：Θ(V² + E) = Θ(V²)。"
   },
   {
-   "q": "用 binary heap 的 Dijkstra 時間？",
+   "q": "Fibonacci heap 讓 Dijkstra 變成 Θ(V log V + E)，關鍵是哪個操作變快？",
    "opts": [
-    "Θ((V + E) log V)",
-    "Θ(V²)",
-    "Θ(V log V + E)",
-    "Θ(E log E + V²)"
+    "Decrease-Key 攤銷 Θ(1)",
+    "Extract-Min 變 Θ(1)",
+    "Insert 變 Θ(1)",
+    "不需要 Decrease-Key"
    ],
-   "ans": "Θ((V + E) log V)",
-   "why": "Extract-Min 與 Decrease-Key 都是 Θ(log V)。"
-  },
-  {
-   "q": "講者的 5 頂點例子，取出 A、C 之後 d 值是 0、7、3、11、5，下一個 Extract-Min 取出？",
-   "opts": [
-    "E（5）",
-    "B（7）",
-    "D（11）",
-    "C（3）"
-   ],
-   "ans": "E（5）",
-   "why": "Q 中剩 B、D、E，E 的 5 最小。"
-  },
-  {
-   "q": "DAG 例子中起點左邊的頂點最後的 d 值是？",
-   "opts": [
-    "∞",
-    "0",
-    "−1",
-    "跟右邊頂點一樣"
-   ],
-   "ans": "∞",
-   "why": "topological 順序在起點之前的頂點不可能從起點走到。"
+   "ans": "Decrease-Key 攤銷 Θ(1)",
+   "why": "E 次 Decrease-Key 從 Θ(log V) 降到攤銷 Θ(1)，E log V 項就消失了。"
   }
- ],
- "timing": "estimated"
+ ]
 }
