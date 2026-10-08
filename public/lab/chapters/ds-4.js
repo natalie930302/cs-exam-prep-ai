@@ -1809,12 +1809,29 @@ FRAG.push(['avllin-rb-height', '紅黑樹高度 ≤ 2 倍 2-3-4 樹高度', asyn
   {
 // ─── 63Dp2MjLlUo：交大彭文志 Lec25 Search Structures (2/3) ───
 // Optimal BST（Horowitz 的 do/if/while、do/if/return/while 例子）→ m-way / B-tree → 2-3 tree insert / delete
-const { V3, fresh, tag, cube, move, fly, kill, glow, txt, line, ghostBox, GOLD, GREEN, RED, GRAY, MONO } = K;
+// Cued scenes: every `await step(tok)` waits for the sentence it shows; motion between steps is short.
+// The word being searched is a little orange character (buddy) that hops from node to node.
+const { V3, fresh, tag, cube, move, fly, kill, glow, txt, relabel, line, ghostBox, GOLD, GREEN, RED, GRAY, MONO, step, buddy, travel, anim, remove } = K;
+const say = (a, b = '') => ctx.say(a, b);
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const pkt = (t, x, y, z = 0) => tag(t, 'pkt', x, y, z);
+const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const okT = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const noT = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
 const B63 = '#4b9ee2', F63 = '#b9ad98', O63 = '#dd8238';
+
+// the searcher: an orange buddy holding the word it looks for
+const seeker = (v, x, y, s = 0.5, nm = '要找') => buddy(nm, v, O63, x, y, 0.45, s);
+async function hop63(tok, b, x, y, ms = 600) {
+  const a = b.g.position.clone();
+  await anim(tok, ms, (u) => b.g.position.set(a.x + (x - a.x) * u, a.y + (y - a.y) * u + Math.sin(u * Math.PI) * 0.45, a.z));
+}
+const hopOver = (tok, b, m, ms = 600, dy = 0.42) => hop63(tok, b, m.position.x, m.position.y + dy, ms);
+async function tour(tok, b, ms, ...ms_) { for (const m of ms_) await hopOver(tok, b, m, ms); }
 
 // extended BST：spec = [key, left, right]，null = fail node（方塊）。依 inorder 排 x。
 function ext63(spec, o) {
-  const R = { nodes: {}, fails: [], all: [] };
+  const R = { nodes: {}, fails: [], flines: [], all: [] };
   let idx = 0;
   const place = (s, d) => {
     if (!s) return o.noFail ? null : { fail: true, d, i: idx++ };
@@ -1826,12 +1843,14 @@ function ext63(spec, o) {
   const draw = (t, px, py) => {
     if (!t) return;
     const x = X(t.i), y = Y(t.d);
-    if (px !== undefined) R.all.push(line(px, py, x, y));
+    if (px !== undefined) { const ln = line(px, py, x, y); R.all.push(ln); if (t.fail) R.flines.push(ln); }
     if (t.fail) { const m = cube('', F63, [fs, fs * 0.5, fs], x, y); m.userData.lv = t.d + 1; R.fails.push(m); R.all.push(m); return; }
     const m = cube(t.key, o.col || B63, [sz, sz * 0.75, sz], x, y); m.userData.lv = t.d + 1; R.nodes[t.key] = m; R.all.push(m);
     draw(t.L, x, y); draw(t.R, x, y);
   };
-  draw(root); return R;
+  draw(root);
+  R.showFails = (on) => { R.fails.concat(R.flines).forEach((m) => { m.visible = on; }); };
+  return R;
 }
 // cost = Σ p·level(a) + Σ q·(level(E) − 1)，P、Q 依 inorder
 function cost63(spec, P, Q) {
@@ -1839,71 +1858,131 @@ function cost63(spec, P, Q) {
   const w = (s, d) => { if (!s) { c += Q[fi++] * d; return; } w(s[1], d + 1); c += P[ki++] * (d + 1); w(s[2], d + 1); };
   w(spec, 0); return c;
 }
-const ptr63 = (m, t, cur) => { cur.position.set(m.position.x, m.position.y + 0.85, m.position.z); txt(cur, t); };
+const glowAll = (T, c) => T.all.forEach((m) => { if (m.material && m.material.emissive) glow(m, c); });
 
 // Horowitz Fig 10.1：左 = for/do/while/return/if，右 = 平衡的那棵
 const FIG1L = ['for', ['do', null, null], ['while', ['return', ['if', null, null], null], null]];
 const FIG1R = ['for', ['do', null, null], ['return', ['if', null, null], ['while', null, null]]];
 
-FRAG.push(['bst63-worst-compare', 'Optimal BST：用 worst case 比較次數評估', async (tok) => {
-  fresh([0, 3.2, 13], [0, 2.6, 0]);
+// 0:00 用什麼標準評估「最佳」
+FRAG.push(['bst63-worst-compare', 'Optimal BST：用什麼標準評估', async (tok) => {
+  fresh([0, 3.2, 13], [0, 2.8, 0]);
+  await step(tok);                                    // 0:00 什麼叫 optimal BST
   const L = ext63(FIG1L, { x: -3.6, y: 5.4, sx: 1.05, dy: 1.4, noFail: true });
   const R = ext63(FIG1R, { x: 3.6, y: 5.4, sx: 1.15, dy: 1.7, noFail: true });
-  tag('tree 1', 'idx', -3.6, 6.6); tag('tree 2', 'idx', 3.6, 6.6);
-  const cur = tag('', 'ptr alt', 0, 8);
-  say('什麼樣的 BST 才算 optimal？', '先看：最壞情況要幾次 comparison');
-  await beat(tok, 2600);
-  for (const [T, path, nm] of [[L, ['for', 'while', 'return', 'if'], '左樹'], [R, ['for', 'return', 'if'], '右樹']]) {
-    let k = 0;
-    for (const key of path) {
-      k++; const m = T.nodes[key]; glow(m, key === 'if' ? GREEN : GOLD); ptr63(m, 'if ? ' + key, cur);
-      say(nm + ' search if：第 ' + k + ' 次比較', 'if 跟 ' + key + ' 比');
-      await beat(tok, 900);
-    }
-    say(nm + '找 if 要 ' + path.length + ' 次', path.join(' → '));
-    await beat(tok, 2000);
-  }
-  say('右樹較矮：worst case 較好', 'worst case 比較次數 = 樹高');
-  await beat(tok, 2400);
-  say('但 worst case 不一定常發生', 'cost 要考慮每個字被搜尋的機率');
-  await beat(tok, 2800);
+  tag('tree 1', 'idx', -3.6, 6.4); tag('tree 2', 'idx', 3.6, 6.4);
+  bub('哪一棵才叫「最佳」？', 0, 7.4);
+  say('optimal BST：先講清楚用什麼標準說它「最佳」', '同樣 5 個字，可以排成不同的 BST');
+  await step(tok);                                    // 1:13 cost = 從 root 開始比較幾次
+  const s = seeker('?', -6.2, 4.6);
+  say('最簡單的 cost：從 root 開始搜尋', '找到那個 node 要比較幾次（comparison）');
+  await step(tok);                                    // 1:45 反映在 level 上
+  for (const m of Object.values(L.nodes)) tag('L' + m.userData.lv, 'idx', m.position.x + 0.62, m.position.y + 0.3);
+  say('比較次數 = 那個 node 的 level', 'root 是 level 1，往下一層 +1');
+  await step(tok);                                    // 2:14 最笨的：看最壞情況
+  bub('標準一：最壞情況要比幾次？', 0, 7.4);
+  say('一種最簡單的標準：worst case', '最壞的情況下要比較幾次');
+  await step(tok);                                    // 2:32 左樹找 if：4 次
+  s.set('if');
+  await tour(tok, s, 520, L.nodes.for, L.nodes.while, L.nodes.return, L.nodes.if);
+  glow(L.nodes.if, GREEN); s.mood('wow');
+  pkt('找 if：4 次', -3.6, 0.1);
+  say('tree 1 找 if：for → while → return → if', '比較 4 次');
+  await step(tok);                                    // 2:55 右樹找 if：3 次
+  await tour(tok, s, 600, R.nodes.for, R.nodes.return, R.nodes.if);
+  glow(R.nodes.if, GREEN); s.mood('happy');
+  pkt('找 if：3 次', 3.6, 0.1);
+  say('tree 2 找 if：for → return → if', '只要 3 次');
+  await step(tok);                                    // 3:21 worst case = 樹高
+  glowAll(R, GREEN);
+  okT('樹高 3：worst case 較好', 3.6, -0.6); note('樹高 4', -3.6, -0.6);
+  say('用 worst case 評估：看樹的高度', 'tree 2 比較矮 → 比較好');
+  await step(tok);                                    // 3:25 但 worst case 不一定常發生
+  glowAll(R, null);
+  note('最壞情況不見得常發生', 0, 1.4);
+  say('但最壞的情況不見得常常發生', '只看它，不一定公平');
+  await step(tok);                                    // 3:43 cost 跟搜尋頻率有關
+  bub('標準二：考慮每個字被搜尋的頻率', 0, 7.4);
+  say('更好的 cost：跟每個字被搜尋的頻率有關', '');
+  await step(tok);                                    // 3:51 大部分人都在查 for
+  const q = pkt('大家都在查 for！', -6.4, 7.0);
+  await travel(tok, q, V3(-6.4, 7.0, 0), V3(-4.65, 6.2, 0.3), 900);
+  glow(L.nodes.for, GOLD); glow(R.nodes.for, GOLD);
+  say('例：大部分人都在搜尋 for', 'for 被搜尋的 probability 就很高');
+  await step(tok);                                    // 4:06 每個字都有 probability
+  for (const T of [L, R]) for (const m of Object.values(T.nodes)) tag('p', 'note', m.position.x - 0.6, m.position.y + 0.3);
+  say('每個字都有自己被搜尋的 probability', '有了它，就能 model 整棵樹的 search cost');
+  await step(tok);                                    // 4:46 只看樹高不大好
+  noT('只看樹高（worst case）✗', 0, 0.6);
+  s.mood('sad');
+  say('用最差情況評估 BST 的 cost，不大好', '接下來把機率放進 cost');
 }]);
 
+// 4:57 internal / external path
 FRAG.push(['bst63-ext-path', 'Internal / External path 與 fail node', async (tok) => {
   fresh([0, 3, 13.5], [0, 2.8, 0]);
   const T = ext63(FIG1L, { x: 0, y: 5.8, sx: 1.05, dy: 1.3, sz: 0.85, fs: 0.6 });
-  const cur = tag('', 'ptr alt', 0, 8);
-  say('方塊 = fail node：搜尋失敗落在這裡', '實際上不存在，用來 model 失敗的搜尋');
-  for (const f of T.fails) glow(f, GOLD);
-  await beat(tok, 2600);
-  for (const f of T.fails) glow(f, null);
-  for (const key of ['for', 'do']) {
-    glow(T.nodes[key], GOLD); ptr63(T.nodes[key], 'cc ? ' + key, cur);
-    say('找 cc：cc < ' + key + '，往左', '');
-    await beat(tok, 1100);
-  }
-  glow(T.fails[0], RED); ptr63(T.fails[0], 'fail', cur);
-  say('落到 do 左邊的 fail node', 'external path 長度 = 2（2 條 edge）');
-  await beat(tok, 2400);
-  for (const m of Object.values(T.nodes)) glow(m, null); glow(T.fails[0], null); cur.position.set(0, 9, 0);
-  let I = 0; const terms = [];
-  for (const key of ['for', 'do', 'while', 'return', 'if']) {
-    const m = T.nodes[key], d = m.userData.lv - 1; I += d; terms.push(d);
-    tag(String(d), 'ptr', m.position.x + 0.6, m.position.y + 0.55); glow(m, GREEN);
-    say('I：tree node 到 root 的 edge 數', 'I = ' + terms.join(' + ') + (terms.length === 5 ? ' = ' + I : ''));
-    await beat(tok, 800);
-  }
-  await beat(tok, 1400);
+  T.showFails(false);
+  await step(tok);                                    // 4:57 兩種 path
+  bub('external path 與 internal path', 0, 7.3);
+  say('推導 cost 之前：先分兩種 path', 'external path、internal path');
+  await step(tok);                                    // 5:04 external：要找的字不在樹裡
+  note('要找的字不在樹裡 → 走到底都找不到', 0, 0.2);
+  say('external path：要找的字不在這棵樹裡', '一路找到樹的最下面都沒找到');
+  await step(tok);                                    // 5:33 fail node
+  T.showFails(true); T.fails.forEach((f) => glow(f, GOLD));
+  say('為了 model 失敗的搜尋：加上 fail node', '方塊 = fail node（實際上不存在）');
+  await step(tok);                                    // 5:39 internal：字都在樹上
+  T.fails.forEach((f) => glow(f, null));
+  Object.values(T.nodes).forEach((m) => glow(m, GREEN));
+  say('internal path：要找的字就在樹上', '走到那個字的 node 就停');
+  await step(tok);                                    // 6:10 例：找 cc
+  Object.values(T.nodes).forEach((m) => glow(m, null));
+  const s = seeker('cc', -6.2, 5.2);
+  say('例：找 cc（寄 email 時的副本）', 'cc 不在這棵樹裡');
+  await step(tok);                                    // 6:23 cc < for → 往左
+  await hopOver(tok, s, T.nodes.for, 700); glow(T.nodes.for, GOLD);
+  say('cc 跟 for 比：cc 比較小', '→ 往左走');
+  await step(tok);                                    // 6:33 cc < do → 找不到
+  await hopOver(tok, s, T.nodes.do, 700); glow(T.nodes.do, GOLD);
+  say('cc 跟 do 比：還是比較小', 'do 左邊已經沒有字了 → 找不到');
+  await step(tok);                                    // 6:42 落到 do 左邊的方塊
+  await hopOver(tok, s, T.fails[0], 700, 0.3); glow(T.fails[0], RED); s.mood('sad');
+  say('落到 do 左下方的方塊', '這就是 fail node');
+  await step(tok);                                    // 7:02 path 長度 2
+  pkt('external path = 2', T.fails[0].position.x + 0.4, T.fails[0].position.y - 0.7);
+  say('從 root 到這個方塊走了 2 條 edge', '這條 external path 長度 = 2');
+  await step(tok);                                    // 7:18 I、E
+  kill(s.g); Object.values(T.nodes).forEach((m) => glow(m, null)); glow(T.fails[0], null);
+  bub('I = internal path 總和　E = external path 總和', 0, 7.3);
+  say('I：所有 internal path 加起來', 'E：所有 external path 加起來');
+  await step(tok);                                    // 7:35 算 hop，不是 comparison
+  T.all.forEach((m) => { if (m.isLine) m.material.color.set('#c08a1f'); });
+  say('path 長度算的是跨過幾條 edge（hop）', '不是算 comparison 次數');
+  await step(tok);                                    // 7:53 for 是 root：0
+  T.all.forEach((m) => { if (m.isLine) m.material.color.set('#a99470'); });
+  const lv = (k) => { const m = T.nodes[k]; glow(m, GREEN); return tag(String(m.userData.lv - 1), 'ptr', m.position.x + 0.55, m.position.y + 0.5); };
+  lv('for');
+  say('for 是 root：起點，不用走', 'path = 0');
+  await step(tok);                                    // 8:09 do、while：1
+  lv('do'); lv('while');
+  say('do、while：從 for 走一條 edge', 'path = 1');
+  await step(tok);                                    // 8:28 return 2、if 3 → I = 7
+  lv('return'); lv('if');
+  pkt('I = 0 + 1 + 1 + 2 + 3 = 7', -4.2, 0.2);
+  say('return = 2、if = 3', 'I = 0 + 1 + 1 + 2 + 3 = 7');
+  await step(tok);                                    // 8:41 E：root 到每個方塊
   let E = 0; const et = [];
-  for (const f of T.fails) {
-    const d = f.userData.lv - 1; E += d; et.push(d);
-    tag(String(d), 'idx', f.position.x, f.position.y - 0.55); glow(f, RED);
-    say('E：root 到每個 fail node 的 edge 數', 'E = ' + et.join(' + ') + (et.length === T.fails.length ? ' = ' + E : ''));
-    await beat(tok, 700);
-  }
-  await beat(tok, 1600);
-  say('補充：extended tree 有 E = I + 2n', E + ' = ' + I + ' + 2 × 5');
-  await beat(tok, 3000);
+  const eT = pkt('E = ', 3.6, 0.2);
+  await anim(tok, 1800, (u) => {
+    const k = Math.min(T.fails.length, Math.round(u * T.fails.length));
+    while (et.length < k) { const f = T.fails[et.length], d = f.userData.lv - 1; E += d; et.push(d); glow(f, RED); tag(String(d), 'idx', f.position.x, f.position.y - 0.5); }
+    txt(eT, 'E = ' + et.join(' + ') + (k === T.fails.length ? ' = ' + E : ''));
+  });
+  say('E：從 root 走到每個方塊，經過幾條 edge', 'E = ' + E);
+  await step(tok);                                    // 9:20 skewed / complete 的 path
+  note('skewed tree：I = Σ i（i = 0 … n−1）', -3.4, -0.6); note('complete tree：I = Σ ⌊log₂ i⌋', 3.4, -0.6);
+  say('推導：skewed 與 complete binary tree 的 I', '補充：一定有 E = I + 2n（17 = 7 + 2×5）');
 }]);
 
 // Horowitz Fig 10.12：do < if < while 的 5 棵 BST
@@ -1911,137 +1990,281 @@ const TA63 = ['while', ['if', ['do', null, null], null], null];
 const FIVE63 = [['a', TA63], ['b', ['if', ['do', null, null], ['while', null, null]]], ['c', ['do', null, ['if', null, ['while', null, null]]]],
   ['d', ['while', ['do', null, ['if', null, null]], null]], ['e', ['do', null, ['while', ['if', null, null], null]]]];
 
+// 9:37 加入機率的 cost 公式
 FRAG.push(['bst63-cost-terms', 'BST cost：Σ p·level + Σ q·(level − 1)', async (tok) => {
   fresh([0, 3, 12], [0, 3, 0]);
   const T = ext63(TA63, { x: 0, y: 5.8, sx: 1.3, dy: 1.35 });
-  const cur = tag('', 'ptr alt', 0, 9);
-  say('每個字 ai 被搜尋的機率是 pi', '成功：Σ pi × level(ai)');
-  for (const k of ['while', 'if', 'do']) { const m = T.nodes[k]; tag('p × ' + m.userData.lv, 'ptr', m.position.x + 1.1, m.position.y + 0.2); glow(m, GREEN); await beat(tok, 700); }
-  await beat(tok, 1600);
-  say('pi 越大，越該放在靠近 root', 'level 小 → cost 低');
-  await beat(tok, 2400);
-  say('搜尋樹中沒有的字 → 落到 fail node', '機率 qi');
-  for (const f of T.fails) glow(f, GOLD);
-  await beat(tok, 2200);
-  for (const f of T.fails) glow(f, null);
-  for (const k of ['while', 'if', 'do']) {
-    glow(T.nodes[k], GOLD); ptr63(T.nodes[k], 'cc ? ' + k, cur);
-    say('例：找 cc', '跟 ' + k + ' 比');
-    await beat(tok, 900);
-  }
-  glow(T.fails[0], RED);
-  say('到 leaf do 就知道失敗，不會走到方塊', '比 3 次 = level(E0) − 1 = 4 − 1');
-  await beat(tok, 2800);
-  for (const f of T.fails) tag('q × ' + (f.userData.lv - 1), 'idx', f.position.x, f.position.y - 0.55);
-  say('失敗那項要減 1', '失敗：Σ qi × (level(Ei) − 1)');
-  await beat(tok, 2400);
-  say('cost = 成功 + 失敗', 'Σ pi·level(ai) + Σ qi·(level(Ei) − 1)');
-  await beat(tok, 3000);
+  T.showFails(false);
+  await step(tok);                                    // 9:37 hop 數不是真正的 cost
+  note('只算 hop：沒考慮誰常被搜尋', 0, 0.2);
+  say('只算經過幾個 hop，還不是真正的 cost', '因為沒考慮每個字被搜尋的機率');
+  await step(tok);                                    // 10:21 a1 < a2 < … < an
+  const AN = { do: 'a1', if: 'a2', while: 'a3' };
+  for (const [k, a] of Object.entries(AN)) tag(a + ' = ' + k, 'idx', T.nodes[k].position.x - 1.3, T.nodes[k].position.y);
+  say('樹裡的字（identifier）a1 < a2 < … < an', '依字母順序排好：do < if < while');
+  await step(tok);                                    // 10:34 機率 pi
+  for (const [k, a] of Object.entries(AN)) tag('p' + a.slice(1), 'note', T.nodes[k].position.x, T.nodes[k].position.y + 0.65);
+  say('搜尋 ai 這個字的機率叫 pi', '例：搜尋 a1 的機率是 p1');
+  await step(tok);                                    // 10:55 Σ pi × level(ai)
+  for (const k of ['while', 'if', 'do']) { const m = T.nodes[k]; tag('p × ' + m.userData.lv, 'ptr', m.position.x + 1.25, m.position.y + 0.15); glow(m, GREEN); }
+  bub('成功：Σ pi × level(ai)', 0, 7.4);
+  say('成功搜尋的 cost：每個字的機率 × 它的 level', '全部加起來：Σ pi × level(ai)');
+  await step(tok);                                    // 11:31 常被搜尋 → 放靠近 root
+  const up = pkt('常被搜尋 → 往上放！', T.nodes.do.position.x + 1.6, T.nodes.do.position.y);
+  await travel(tok, up, up.position.clone(), V3(T.nodes.while.position.x + 2.3, T.nodes.while.position.y + 0.6, 0), 1000);
+  say('pi 越大，越希望放在靠近 root 的地方', 'level 小 → 乘出來的 cost 就小');
+  await step(tok);                                    // 12:23 也可能搜尋不在樹上的字
+  remove(up);
+  Object.values(T.nodes).forEach((m) => glow(m, null));
+  say('但不一定每次都搜尋樹上的字', '有時候會搜尋一個樹裡沒有的字');
+  await step(tok);                                    // 12:36 落到 fail node
+  T.showFails(true); T.fails.forEach((f) => glow(f, GOLD));
+  say('不存在的字 → 搜尋失敗，落在方塊（fail node）裡', '');
+  await step(tok);                                    // 12:51 fail node 的機率 qi
+  T.fails.forEach((f, i) => tag('q' + i, 'note', f.position.x, f.position.y + 0.45));
+  say('落到每個 fail node Ei 也有機率：qi', '例：100 次搜尋有 50 次落在這裡 → 50%');
+  await step(tok);                                    // 13:10 fail node 的 level
+  T.fails.forEach((f) => glow(f, null));
+  T.fails.forEach((f) => tag('L' + f.userData.lv, 'idx', f.position.x + 0.55, f.position.y - 0.1));
+  say('fail node 也有 level', '它在 leaf 再往下一層');
+  await step(tok);                                    // 13:32 cost 只算到 leaf
+  const s = seeker('cc', -5.4, 5.6);
+  await tour(tok, s, 550, T.nodes.while, T.nodes.if, T.nodes.do);
+  glow(T.fails[0], RED); s.mood('sad');
+  say('找 cc：到 leaf do 就知道沒有了', '不會真的走進方塊：比 3 次就停');
+  await step(tok);                                    // 14:05 level(Ei) − 1
+  T.fails.forEach((f) => tag('q × ' + (f.userData.lv - 1), 'ptr', f.position.x, f.position.y - 0.6));
+  bub('失敗：Σ qi × (level(Ei) − 1)', 0, 7.4);
+  say('所以失敗那一項用 level(Ei) − 1', '到 leaf 就 stop，不必再往下走');
+  await step(tok);                                    // 14:44 兩大項加起來
+  okT('cost = Σ pi·level(ai) + Σ qi·(level(Ei) − 1)', 0, 0.2);
+  say('整棵 BST 的 cost = 成功 + 失敗 兩大項', 'Σ pi·level(ai) + Σ qi·(level(Ei) − 1)');
 }]);
 
-async function five63(tok, P, Q, fmt, intro, introF) {
-  fresh([0, 3, 13.5], [0, 2.6, 0]);
-  const Ts = FIVE63.map(([nm, s], i) => { const x = -5.6 + i * 2.8; tag('(' + nm + ')', 'idx', x, 6.3); return { nm, s, x, T: ext63(s, { x, y: 5.4, sx: 0.36, dy: 1.15, sz: 0.48, fs: 0.3 }) }; });
-  say(intro, introF);
-  await beat(tok, 2800);
-  let best = null;
-  for (const t of Ts) {
-    const c = cost63(t.s, P, Q); t.c = c;
-    tag('cost = ' + fmt(c), 'ptr', t.x, 1.1);
-    for (const m of t.T.all) if (m.material && m.material.emissive) glow(m, GOLD);
-    say('tree ' + t.nm + ' 的 cost', fmt(c));
-    await beat(tok, 1100);
-    for (const m of t.T.all) if (m.material && m.material.emissive) glow(m, null);
-    if (!best || c < best.c - 1e-9) best = t;
-  }
-  for (const m of Object.values(best.T.nodes)) glow(m, GREEN);
-  return best;
+// 五棵樹（小）：回傳 [{nm, s, x, T}]
+function five63() {
+  return FIVE63.map(([nm, s], i) => {
+    const x = -5.6 + i * 2.8; tag('(' + nm + ')', 'idx', x, 6.3);
+    return { nm, s, x, T: ext63(s, { x, y: 5.4, sx: 0.36, dy: 1.15, sz: 0.48, fs: 0.3 }) };
+  });
 }
+
+// 15:30 do / if / while 五棵 BST，uniform
 FRAG.push(['bst63-five-uniform', 'do / if / while 五棵 BST：p = q = 1/7', async (tok) => {
-  const best = await five63(tok, [1, 1, 1], [1, 1, 1, 1], (c) => c + '/7', '3 個字可組成 5 棵 BST', 'pi = qi = 1/7（3 個字 + 4 個 fail node）');
-  say('tree a 怎麼算？', '成功 (1+2+3)/7 + 失敗 (3+3+2+1)/7 = 15/7');
-  await beat(tok, 2800);
-  say('最小的是 tree ' + best.nm + '：optimal', 'cost(' + best.nm + ') = 13/7，其餘都是 15/7');
-  await beat(tok, 3000);
-}]);
-FRAG.push(['bst63-five-nonuniform', '機率不 uniform：tree c 變成最佳', async (tok) => {
-  const best = await five63(tok, [0.5, 0.1, 0.05], [0.15, 0.1, 0.05, 0.05], (c) => String(+c.toFixed(2)),
-    '機率不 uniform：p = 0.5, 0.1, 0.05', 'q = 0.15, 0.1, 0.05, 0.05');
-  say('最小 cost 1.5：tree ' + best.nm + ' 是最佳解', 'do 被搜尋最多 → 放 root');
-  await beat(tok, 2800);
-  say('機率給定、不隨時間變：static set', '真實搜尋的字是 dynamic（思考題）');
-  await beat(tok, 3000);
+  fresh([0, 3, 13.5], [0, 2.6, 0]);
+  await step(tok);                                    // 15:30 三個字
+  const ws = ['do', 'if', 'while'].map((w, i) => buddy(null, w, B63, -2.4 + i * 2.4, 2.4, 0, 0.9));
+  say('給你三個字：do、if、while', '照字母順序 do < if < while');
+  await step(tok);                                    // 15:46 可以排出 5 棵
+  ws.forEach((b) => kill(b.g));
+  const Ts = five63(); Ts.forEach((t) => t.T.showFails(false));
+  say('這三個字可以排出 5 棵不同的 BST', '(a) ～ (e)');
+  await step(tok);                                    // 15:55 哪一棵 optimal？
+  bub('哪一棵最 optimal？', 0, 7.4);
+  say('要回答：這五棵哪一棵最 optimal', '');
+  await step(tok);                                    // 16:03 先要知道機率
+  note('p：字被搜尋的機率　q：落到 fail node 的機率', 0, 0.3);
+  say('cost 跟機率有關：先要知道 pi 和 qi', 'node 被搜尋、落到 fail node 的機率');
+  await step(tok);                                    // 16:23 uniform 1/7
+  pkt('pi = qi = 1/7', 0, -0.4);
+  say('最簡單：假設 uniform', '每一種都是 1/7');
+  await step(tok);                                    // 16:31 3 個字 + 4 個 fail node
+  Ts.forEach((t) => { t.T.showFails(true); t.T.fails.forEach((f) => glow(f, GOLD)); });
+  say('為什麼是 7？3 個字 + 4 個 fail node', '一共 7 種結果，各 1/7');
+  await step(tok);                                    // 16:50 tree a 的 cost
+  Ts.forEach((t) => t.T.fails.forEach((f) => glow(f, null)));
+  const A = Ts[0].T; glowAll(A, GOLD);
+  const f = pkt('cost(a) = ', -5.6, 1.1);
+  say('來算 tree a 的 cost', '前面成功、後面（紅字）失敗');
+  await step(tok);                                    // 17:12 while level 1
+  glowAll(A, null); glow(A.nodes.while, GREEN);
+  txt(f, 'cost(a) = 1·1/7');
+  say('搜尋 while：機率 1/7 × level 1', '');
+  await step(tok);                                    // 17:20 if level 2
+  glow(A.nodes.if, GREEN); txt(f, 'cost(a) = (1 + 2)/7');
+  say('搜尋 if：1/7 × level 2', '');
+  await step(tok);                                    // 17:27 do level 3
+  glow(A.nodes.do, GREEN); txt(f, 'cost(a) = (1 + 2 + 3)/7 + …');
+  say('搜尋 do：1/7 × level 3', '成功部分 = (1 + 2 + 3)/7');
+  await step(tok);                                    // 17:41 再算方塊
+  A.fails.forEach((m) => glow(m, RED));
+  say('再算每個方塊（fail node）的 cost', '每個方塊的機率也是 1/7');
+  await step(tok);                                    // 18:15 level 4 但只走到 do → 3
+  tag('4 − 1 = 3', 'note', A.fails[0].position.x - 0.3, A.fails[0].position.y - 0.5);
+  say('最下面的方塊在 level 4', '但只走到 leaf do 就停 → 算 4 − 1 = 3');
+  await step(tok);                                    // 18:45 3 + 3 + 2 + 1
+  txt(f, '(1+2+3)/7 + (3+3+2+1)/7');
+  say('四個方塊：3 + 3 + 2 + 1', '失敗部分 = (3 + 3 + 2 + 1)/7');
+  await step(tok);                                    // 18:55 = 15/7
+  txt(f, 'cost(a) = 15/7');
+  say('加起來：tree a 的 cost = 15/7', '');
+  await step(tok);                                    // 19:01 b、c、d、e 依此類推
+  glowAll(A, null);
+  for (const t of Ts) { t.c = cost63(t.s, [1, 1, 1], [1, 1, 1, 1]); if (t !== Ts[0]) tag('cost = ' + t.c + '/7', 'ptr', t.x, 1.1); }
+  say('b、c、d、e 依此類推', '每一棵都算出 cost');
+  await step(tok);                                    // 19:18 最小的是 b
+  glowAll(Ts[1].T, GREEN);
+  okT('tree b 最小 → optimal', 0, -0.4);
+  say('cost 最小的是 tree b（13/7）', '在 p = q = 1/7 的條件下，b 是 optimal');
 }]);
 
+// 19:37 非 uniform 與 static set
+FRAG.push(['bst63-five-nonuniform', '機率不 uniform：tree c 變成最佳', async (tok) => {
+  fresh([0, 3, 13.5], [0, 2.6, 0]);
+  const Ts = five63();
+  const P = [0.5, 0.1, 0.05], Q = [0.15, 0.1, 0.05, 0.05];
+  await step(tok);                                    // 19:41 p 不 uniform
+  pkt('p1 = 0.5　p2 = 0.1　p3 = 0.05', 0, 0.5);
+  say('第二組：機率不是 uniform', '搜尋 do 的機率 0.5、if 0.1、while 0.05');
+  await step(tok);                                    // 19:57 q 也不同
+  pkt('q0 = 0.15　q1 = 0.1　q2 = q3 = 0.05', 0, -0.3);
+  Ts.forEach((t) => t.T.fails.forEach((m) => glow(m, GOLD)));
+  say('落到各個 fail node 的機率也不一樣', 'q0 ～ q3');
+  await step(tok);                                    // 20:05 每棵算 cost
+  Ts.forEach((t) => t.T.fails.forEach((m) => glow(m, null)));
+  let best = null;
+  await anim(tok, 1500, (u) => {
+    const k = Math.min(5, Math.round(u * 5));
+    for (const t of Ts.slice(0, k)) if (t.c === undefined) { t.c = cost63(t.s, P, Q); tag('cost = ' + (+t.c.toFixed(2)), 'ptr', t.x, 1.1); if (!best || t.c < best.c - 1e-9) best = t; }
+  });
+  say('用同樣的公式算每棵樹的 cost', '');
+  await step(tok);                                    // 20:12 最小 1.5：tree c
+  glowAll(best.T, GREEN);
+  okT('tree ' + best.nm + '：cost 1.5 最小', best.x, 0.3, 1);
+  say('最小的 cost 是 1.5：tree ' + best.nm + ' 是最佳解', 'do 最常被搜尋 → 放在 root');
+  await step(tok);                                    // 20:49 static set
+  Ts.forEach((t) => t.T.all.forEach(kill));
+  fresh([0, 3, 12], [0, 2.4, 0]);
+  const ws = [['do', 0.5], ['if', 0.1], ['while', 0.05]].map(([w, p], i) => buddy(w, p, B63, -3 + i * 3, 1.2, 0, 1));
+  bub('static set：字和機率都先給定', 0, 5.6);
+  say('optimal BST 解的是 static set 的問題', '給你一堆字，和它們被搜尋的機率');
+  await step(tok);                                    // 21:16 機率不隨時間改變
+  note('機率固定，不會隨時間改變', 0, 4.4);
+  say('機率是 static：不隨時間改變', '在這個條件下，幫你建出 optimal BST');
+  await step(tok);                                    // 21:39 搜尋引擎：每個月不一樣
+  const mon = pkt('這個月', -5.6, 3.4);
+  const seq = [[0.5, 0.1, 0.05], [0.2, 0.4, 0.05], [0.05, 0.1, 0.6]];
+  await anim(tok, 2200, (u) => {
+    const k = Math.min(2, Math.floor(u * 3));
+    txt(mon, ['這個月', '下個月', '再下個月'][k]);
+    ws.forEach((b, i) => b.set(seq[k][i]));
+  });
+  ws.forEach((b) => b.mood('wow'));
+  say('真實的搜尋引擎：這個月和上個月搜尋的字不一樣', '那是 dynamic set');
+  await step(tok);                                    // 22:24 dynamic set 的 cost 怎麼定？
+  bub('dynamic set 的 optimal BST，cost 怎麼定？', 0, 5.6);
+  say('思考題：dynamic set 的 optimal BST', '它的 cost 要怎麼定義？');
+  await step(tok);                                    // 22:42 期末考不考
+  note('想想看就好：期末考不考', 0, -0.6);
+  ws.forEach((b) => b.mood('happy'));
+  say('太難了沒關係：期末考不會出', '但可以自己想想看');
+}]);
+
+// 23:22 暴力法
 FRAG.push(['bst63-brute-force', '暴力法：列出所有 BST 再算 cost', async (tok) => {
   fresh([0, 3, 13], [0, 2.8, 0]);
-  const minis = [];
-  for (const [i, [nm, s]] of FIVE63.entries()) {
-    const x = -5.6 + i * 2.8;
-    const T = ext63(s, { x, y: 6, sx: 0.55, dy: 0.8, sz: 0.45, noFail: true }); minis.push({ T, s, x, nm });
-    say('step 1：產生 n 個字的所有 BST', 'n = 3 → ' + (i + 1) + ' 棵');
-    await beat(tok, 600);
-  }
-  await beat(tok, 1400);
-  const cl = [];
-  for (const t of minis) { cl.push(tag(cost63(t.s, [1, 1, 1], [1, 1, 1, 1]) + '/7', 'ptr', t.x, 3.5)); }
-  say('step 2：每棵都算 cost，選最小', '這就是暴力法');
-  await beat(tok, 1600);
-  for (const m of Object.values(minis[1].T.nodes)) glow(m, GREEN);
-  await beat(tok, 1600);
-  for (const t of minis) for (const m of t.T.all) kill(m);
+  await step(tok);                                    // 23:22 回到 static set
+  bub('回到 static set', 0, 7.2);
+  say('回到 static set：機率都給定', '問哪一棵 BST 最 optimal');
+  await step(tok);                                    // 23:46 給 n 個字
+  const ws = [];
+  for (let i = 0; i < 5; i++) ws.push(buddy(i < 4 ? 'p' + (i + 1) : 'pn', i < 4 ? 'a' + (i + 1) : 'an', B63, -4.8 + i * 2.4, 1.5, 0, 0.8));
+  note('… 還有每個 fail node 的 q', 0, 0.7, 1);
+  say('進階：給 n 個字、每個字的 pi、fail node 的 qi', '哪一棵 BST 最佳？你會怎麼做');
+  await step(tok);                                    // 24:33 最笨：全部產生
+  ws.forEach((b) => kill(b.g));
+  const minis = FIVE63.map(([nm, s], i) => ({ nm, s, x: -5.6 + i * 2.8 }));
+  const drawMini = (t) => { t.T = ext63(t.s, { x: t.x, y: 6, sx: 0.55, dy: 0.8, sz: 0.45, noFail: true }); };
+  drawMini(minis[0]);
+  say('最笨的方法：把 n 個 node 能組成的 BST 全部產生出來', '');
+  await step(tok);                                    // 24:49 三個字就是這五棵
+  await anim(tok, 1200, (u) => { const k = Math.min(5, 1 + Math.round(u * 4)); for (const t of minis.slice(0, k)) if (!t.T) drawMini(t); });
+  say('例如 3 個字：就是這 5 棵', '');
+  await step(tok);                                    // 25:17 每棵算 cost，選最小
+  const cl = minis.map((t) => tag(cost63(t.s, [1, 1, 1], [1, 1, 1, 1]) + '/7', 'ptr', t.x, 3.5));
+  glowAll(minis[1].T, GREEN);
+  say('每一棵都算出 cost，排序，選最小', '最小的就是 optimal');
+  await step(tok);                                    // 25:27 光第一步就很難
+  for (const t of minis) t.T.all.forEach(kill);
   cl.forEach(kill);
   const cat = [1, 2, 5, 14, 42, 132, 429];
-  for (const [i, c] of cat.entries()) {
-    const h = 0.4 + Math.log2(c) * 0.42, x = -4.5 + i * 1.5;
-    cube(c, i === 2 ? GREEN : O63, [0.9, h, 0.9], x, h / 2, 0, 4);
-    tag('n=' + (i + 1), 'idx', x, -0.4);
-    say('n 一變大，BST 的數量爆炸', 'n = ' + (i + 1) + '：' + c + ' 棵');
-    await beat(tok, 700);
-  }
-  say('光 step 1 就做不完', '補充：C(n) = (2n)! / (n!(n+1)!)，n = 10 → 16796');
-  await beat(tok, 3000);
-  say('改用 dynamic programming', '用小 subtree 的最佳解組出大樹');
-  await beat(tok, 2800);
+  let nb = 0;
+  await anim(tok, 1800, (u) => {
+    const k = Math.min(cat.length, Math.round(u * cat.length));
+    while (nb < k) { const i = nb++; const c = cat[i], h = 0.4 + Math.log2(c) * 0.42, x = -4.5 + i * 1.5; cube(c, i === 2 ? GREEN : O63, [0.9, h, 0.9], x, h / 2, 0); tag('n=' + (i + 1), 'idx', x, -0.4); }
+  });
+  noT('暴力法：光是第一步就做不完', 0, 5.6);
+  say('這是暴力法：光是「產生所有 BST」就很難', '補充：n 個字有 C(n) = (2n)!/(n!(n+1)!) 棵，n = 10 → 16796');
+  await step(tok);                                    // 25:46 有比較有效率的方法
+  bub('有更有效率的方法！', 0, 7.2);
+  say('接下來看比較有效率的方法', '演算法課也會講到');
+  await step(tok);                                    // 25:58 DP
+  okT('dynamic programming', 0, 6.4);
+  say('它是 dynamic programming 的方法', '用小 subtree 的最佳解，組出大樹');
 }]);
 
+// 26:03 DP 符號
 FRAG.push(['bst63-tij-def', 'DP 符號：Tij、wij、cij、rij', async (tok) => {
-  fresh([0, 2.6, 12], [0, 1.6, 0]);
+  fresh([0, 2.6, 12], [0, 1.8, 0]);
   const A = [], Qs = [];
+  await step(tok);                                    // 26:03 符號定義
   for (let i = 0; i <= 4; i++) {
-    Qs.push(cube('q' + i, F63, [0.8, 0.4, 0.8], -4 + i * 2, 0.3, 0, 3));
-    if (i < 4) A.push(cube('a' + (i + 1), B63, [1, 0.8, 1], -3 + i * 2, 2.2, 0, 3));
-    await beat(tok, 300);
+    Qs.push(cube('q' + i, F63, [0.8, 0.4, 0.8], -4 + i * 2, 0.3, 0, 2));
+    if (i < 4) A.push(cube('a' + (i + 1), B63, [1, 0.8, 1], -3 + i * 2, 2.2, 0, 2));
   }
-  say('a1 < a2 < … < an 已排序', 'fail node q0 … qn 夾在它們之間');
-  await beat(tok, 2400);
+  say('先定義一些符號', 'a1 < a2 < … < an 排好，fail node q0 … qn 夾在中間');
+  await step(tok);                                    // 26:12 Tij
   let box = ghostBox('#c58a10', 5, 3.2, 1.6); box.position.set(0, 1.3, 0);
   let bt = tag('T13', 'ptr alt', 0, 3.3);
-  [A[1], A[2], Qs[1], Qs[2], Qs[3]].forEach((m) => glow(m, GOLD));
-  say('Tij：含 a(i+1) … aj 的 optimal BST', 'T13 = {a2, a3}，fail node q1、q2、q3');
-  await beat(tok, 3000);
-  say('wij：裡面所有 p 與 q 加總', 'w13 = p2 + p3 + q1 + q2 + q3');
-  await beat(tok, 2800);
-  say('cij = Tij 的 cost，rij = Tij 的 root', 'weight 只加機率；cost 還要乘 level');
-  await beat(tok, 2800);
-  [A[1], A[2], Qs[1], Qs[3]].forEach((m) => glow(m, null));
+  [A[1], A[2]].forEach((m) => glow(m, GOLD));
+  say('Tij：用 a(i+1) … aj 這些字建出的 optimal BST', '例：T13 含 a2、a3（i 不含、j 含）');
+  await step(tok);                                    // 26:50 cij
+  const ct = note('c13 = T13 的 cost', -4.6, 4.2);
+  say('cij：Tij 這棵樹的 cost', '');
+  await step(tok);                                    // 26:59 rij
+  const rt = note('r13 = T13 的 root', 4.6, 4.2);
+  say('rij：Tij 這棵樹的 root', '');
+  await step(tok);                                    // 27:07 wij
+  const wt = pkt('w13 = p2 + p3 + …', 0, 4.6);
+  const sum = [A[1], A[2]].map((m) => pkt('p', m.position.x, m.position.y + 0.6));
+  await anim(tok, 900, (u) => sum.forEach((s, i) => s.position.set(A[i + 1].position.x * (1 - u), A[i + 1].position.y + 0.6 + (4.0 - A[i + 1].position.y - 0.6) * u, 0)));
+  sum.forEach(remove);
+  say('wij（weight）：裡面所有字的 p 加總', '再加上 fail node 的 q');
+  await step(tok);                                    // 28:04 最左邊的 fail node qi 也算
+  [Qs[1], Qs[2], Qs[3]].forEach((m) => glow(m, GOLD)); glow(Qs[1], RED);
+  txt(wt, 'w13 = p2 + p3 + q1 + q2 + q3');
+  say('fail node 從 qi 算到 qj：最左邊的 q1 也要算', 'w13 = p2 + p3 + q1 + q2 + q3');
+  await step(tok);                                    // 28:42 weight ≠ cost
+  glow(Qs[1], GOLD);
+  note('weight：只把機率加起來', -3.6, -0.6); note('cost：機率 × level 再加', 3.6, -0.6);
+  say('weight 和 cost 不一樣', 'weight 只加機率；cost 還要乘上 level');
+  await step(tok);                                    // 29:28 Tii
+  A.concat(Qs).forEach((m) => glow(m, null)); [ct, rt].forEach(remove);
   kill(box); kill(bt);
   box = ghostBox('#c58a10', 1.4, 1.2, 1.4); box.position.set(0, 0.3, 0); bt = tag('T22', 'ptr alt', 0, 1.2);
-  say('Tii：沒有字，只有 fail node qi', 'wii = qi，cii = 0，rii = 0');
-  await beat(tok, 2800);
+  glow(Qs[2], GOLD);
+  txt(wt, 'T22：w22 = q2，c22 = 0，r22 = 0');
+  say('初始條件 Tii：沒有字，只有一個 fail node qi', 'wii = qi，cii = 0，rii = 0');
+  await step(tok);                                    // 29:40 目標 T0n
   glow(Qs[2], null); kill(box); kill(bt);
   box = ghostBox('#0f5a3a', 9.4, 3.4, 1.8); box.position.set(0, 1.3, 0); bt = tag('T04', 'ptr alt', 0, 3.4);
-  for (const m of A.concat(Qs)) glow(m, GREEN);
-  say('目標是 T0n（這裡 n = 4）', 'cost c0n、weight w0n、root r0n');
-  await beat(tok, 3000);
+  A.concat(Qs).forEach((m) => glow(m, GREEN));
+  txt(wt, '要找：T0n（這裡 n = 4）');
+  say('要找的是 T0n：全部 n 個字的 optimal BST', 'cost c0n、weight w0n、root r0n');
+  await step(tok);                                    // 30:06 拆成 subtree
+  const l = ghostBox('#4b9ee2', 3.6, 2.8, 1.5); l.position.set(-2.6, 1.3, 0);
+  const r = ghostBox('#dd8238', 3.6, 2.8, 1.5); r.position.set(2.6, 1.3, 0);
+  tag('subtree 最佳', 'idx', -2.6, -0.4); tag('subtree 最佳', 'idx', 2.6, -0.4);
+  say('做法：拆成很多 subtree', '每棵 subtree 都 optimal → 組出來的 T0n 也 optimal');
 }]);
 
+// 30:48 遞迴式
 FRAG.push(['bst63-recurrence', '遞迴式：選 ak 當 root，試每個 k', async (tok) => {
-  fresh([0, 3, 12.5], [0, 2.4, 0]);
-  const A = [1, 2, 3, 4].map((k) => cube('a' + k, B63, [1, 0.8, 1], -4.5 + k * 1.8, 1, 0, 3));
+  fresh([0, 3, 12.5], [0, 2.8, 0]);
+  const A = [1, 2, 3, 4].map((k) => cube('a' + k, B63, [1, 0.8, 1], -4.5 + k * 1.8, 1, 0));
   const deco = [];
   const clear = () => { deco.splice(0).forEach(kill); };
-  async function split(k, cap, f, ms) {
+  function split(k) {
     clear();
     A.forEach((m, idx) => {
       const kk = idx + 1;
@@ -2051,46 +2274,107 @@ FRAG.push(['bst63-recurrence', '遞迴式：選 ak 當 root，試每個 k', asyn
     });
     const lb = ghostBox('#4b9ee2', 4, 1.6, 1.4); lb.position.set(-3.4, 2.4, 0);
     const rb = ghostBox('#4b9ee2', 4, 1.6, 1.4); rb.position.set(3.4, 2.4, 0);
-    deco.push(lb, rb, line(0, 5.2, -3.4, 3.2), line(0, 5.2, 3.4, 3.2),
-      tag('L = T0,' + (k - 1), 'ptr', -3.4, 1.1), tag('R = T' + k + ',4', 'ptr', 3.4, 1.1));
-    say(cap, f);
-    await beat(tok, ms);
+    deco.push(lb, rb, line(0, 5.2, -3.4, 3.2), line(0, 5.2, 3.4, 3.2));
   }
-  say('Tij 的 root 是 ak：i < k ≤ j', '例：T04，n = 4');
-  await beat(tok, 2200);
-  await split(2, 'ak 當 root，左右各長一棵 subtree', '左 a(i+1)…a(k−1)，右 a(k+1)…aj', 2600);
-  say('subtree 每個點都往下多一層', 'cij = pk + cL + cR + wL + wR');
-  await beat(tok, 2800);
-  say('pk + wL + wR 剛好是 wij', 'cij = wij + c(i,k−1) + c(k,j)');
-  await beat(tok, 2800);
-  for (const k of [1, 2, 3, 4]) await split(k, 'root 不知道選誰：每個 k 都試', 'k = ' + k + '：c0,' + (k - 1) + ' + c' + k + ',4', 1700);
-  say('wij 與 k 無關，取最小的那個 k', 'cij = wij + min(c(i,k−1) + c(k,j))');
-  await beat(tok, 3200);
+  const fT = pkt('', 0, -0.5);
+  await step(tok);                                    // 30:49 root 是 ak
+  glow(A[1], GOLD); move(A[1], A[1].position.x, 2.4, 0);
+  tag('T04：a1 … a4', 'idx', -5.6, 6.2);
+  say('假設 Tij 的 root 是 ak', 'i < k ≤ j（從 a(i+1) … aj 挑一個字）');
+  await step(tok);                                    // 31:35 長出兩棵 subtree
+  split(2);
+  say('ak 當 root：一定長出兩棵 subtree', 'left subtree、right subtree');
+  await step(tok);                                    // 31:40 左 a(i+1)…a(k−1)、右 a(k+1)…aj
+  deco.push(tag('L：a(i+1) … a(k−1)', 'ptr', -3.4, 1.1), tag('R：a(k+1) … aj', 'ptr', 3.4, 1.1));
+  say('左邊：a(i+1) … a(k−1)', '右邊：a(k+1) … aj');
+  await step(tok);                                    // 32:01 cij = pk + cL + cR + wL + wR
+  txt(fT, 'cij = pk + cost(L) + cost(R) + w(L) + w(R)');
+  await anim(tok, 700, (u) => deco.forEach((d) => { if (d.isMesh) d.position.y = 2.4 - 0.5 * u; }));
+  A.forEach((m, i) => { if (i !== 1) move(m, m.position.x, 1.9, 0); });
+  say('cij = pk + cL + cR + w(L) + w(R)', '掛到 ak 下面：subtree 每個點都多一層 → 再加一次 weight');
+  await step(tok);                                    // 32:31 cost(L)、cost(R) 再遞迴算
+  bub('cost(L)、cost(R) 再 recursive 下去算', 0, 7.0);
+  say('cost(L)、cost(R) 會再 recursive 下去算', '先當它們已經算好');
+  await step(tok);                                    // 32:52 cost(L) = c(i,k−1)、cost(R) = c(k,j)
+  deco.push(tag('c(i, k−1)', 'note', -3.4, 3.5), tag('c(k, j)', 'note', 3.4, 3.5));
+  say('cost(L) 寫成 c(i, k−1)', 'cost(R) 寫成 c(k, j)');
+  await step(tok);                                    // 33:13 pk + wL + wR = wij
+  txt(fT, 'pk + w(i,k−1) + w(k,j) = wij');
+  glow(A[1], GREEN);
+  say('w(L) + w(R) 再加 pk', '剛好就是整棵樹的 wij');
+  await step(tok);                                    // 33:42 cij = wij + c(i,k−1) + c(k,j)
+  txt(fT, 'cij = wij + c(i, k−1) + c(k, j)');
+  say('所以 cij = wij + c(i, k−1) + c(k, j)', '整棵樹的 weight + 左右 subtree 的 cost');
+  await step(tok);                                    // 34:20 要讓 cost 最小
+  bub('Tij 要 optimal → 讓 cij 最小', 0, 7.0);
+  say('希望 Tij 是 optimal', '就要讓這個 cost 最小');
+  await step(tok);                                    // 34:37 k 是誰不知道
+  relabel(A[1], 'a?');
+  say('可是 root 要選哪一個字？', '其實你不知道 k 是多少');
+  await step(tok);                                    // 35:02 每個 k 都試
+  relabel(A[1], 'a2');
+  for (const k of [1, 2, 3, 4]) { split(k); txt(fT, 'k = ' + k + '：c(i,' + (k - 1) + ') + c(' + k + ',j)'); await beat(tok, 450); }
+  say('k 從 i+1 試到 j', '看哪一個讓 c(i, k−1) + c(k, j) 最小');
+  await step(tok);                                    // 35:41 wij 跟 k 無關
+  txt(fT, 'cij = wij + min{ c(i, k−1) + c(k, j) }');
+  okT('wij 不管選哪個 k 都一樣', 0, 7.0);
+  say('wij 跟選哪個 k 無關', 'cij = wij + min{ c(i, k−1) + c(k, j) }');
 }]);
 
+// 36:10 例：T02 以 a2 為 root
 FRAG.push(['bst63-t02-verify', 'T02 以 a2 為 root：驗證 cost 公式', async (tok) => {
   fresh([0, 3, 12], [0, 2.6, 0]);
+  const f = pkt('', 2.6, 0.2);
+  await step(tok);                                    // 36:11 T02 含 a1、a2、q0、q1、q2
+  const ws = ['a1', 'a2'].map((w, i) => buddy(null, w, B63, -3 + i * 2, 4.6, 0, 0.7));
+  const qs = [0, 1, 2].map((i) => cube('q' + i, F63, [0.7, 0.35, 0.7], -4 + i * 2, 3.5, 0));
+  say('例子：T02', '含兩個字 a1、a2，三個 fail node q0、q1、q2');
+  await step(tok);                                    // 36:48 a2 當 root
+  ws.forEach((b) => kill(b.g)); qs.forEach(kill);
   const T = ext63(['a2', ['a1', null, null], null], { x: -1.5, y: 5.4, sx: 1.6, dy: 1.6 });
-  T.fails.forEach((f, i) => tag('q' + i, 'idx', f.position.x, f.position.y - 0.55));
-  say('T02：a1、a2 與 q0、q1、q2', '假設 root = a2');
-  await beat(tok, 2600);
+  T.fails.forEach((m, i) => tag('q' + i, 'idx', m.position.x, m.position.y - 0.55));
+  say('假設 root 是 a2', 'a1 在左邊，q2 在右邊');
+  await step(tok);                                    // 37:23 cost = p2 + cL + cR + wL + wR
   const lb = ghostBox('#4b9ee2', 3.8, 2.8, 1.4); lb.position.set(-3.1, 3.0, 0);
   const rb = ghostBox('#dd8238', 1.2, 1.2, 1.2); rb.position.set(1.7, 3.8, 0);
+  txt(f, 'cost(T02) = p2 + cost(L) + cost(R) + wL + wR');
+  say('照公式：cost(T02) = p2 + cL + cR + wL + wR', 'L = 大三角形、R = 小三角形');
+  await step(tok);                                    // 38:12 cost(L) = T01、cost(R) = T22
   tag('L = T01', 'ptr', -3.1, 1.1); tag('R = T22', 'ptr', 1.7, 2.8);
-  say('cost(T02) = p2 + cL + cR + wL + wR', 'wL = q0 + p1 + q1，wR = q2');
-  await beat(tok, 3000);
-  say('cL = c01 = p1 + q0 + q1，cR = c22 = 0', '');
-  await beat(tok, 2600);
-  say('代進去整理', 'cost(T02) = 2p1 + p2 + 2q0 + 2q1 + q2');
-  await beat(tok, 3000);
+  say('大三角形就是 T01，小三角形就是 T22', 'cost(L) = cost(T01)，cost(R) = cost(T22)');
+  await step(tok);                                    // 38:31 wL、wR
+  note('wL = q0 + p1 + q1', -3.1, 0.4); note('wR = q2', 1.7, 2.2);
+  say('wL = q0 + p1 + q1', 'wR = q2');
+  await step(tok);                                    // 39:07 cost(T01) = p1 + q0 + q1
+  note('cost(T01) = p1 + q0 + q1，cost(T22) = 0', -1.4, -0.4);
+  say('cost(T01) 再照公式算：p1 + q0 + q1', 'T22 沒有字：cost = 0');
+  await step(tok);                                    // 39:17 代進去
+  txt(f, 'cost(T02) = 2p1 + p2 + 2q0 + 2q1 + q2');
+  say('全部代進去', 'cost(T02) = 2p1 + p2 + 2q0 + 2q1 + q2');
+  await step(tok);                                    // 39:57 不看公式，直接算
   kill(lb); kill(rb);
-  for (const [k, m] of Object.entries(T.nodes)) { tag('level ' + m.userData.lv, 'ptr alt', m.position.x + 1.2, m.position.y + 0.3); glow(m, GOLD); }
-  for (const f of T.fails) { tag('×' + (f.userData.lv - 1), 'ptr alt', f.position.x + 0.7, f.position.y + 0.3); glow(f, GOLD); }
-  say('直接用 level 算一次', 'p1·2 + p2·1 + q0·2 + q1·2 + q2·1');
-  await beat(tok, 3000);
-  for (const m of T.all) if (m.material && m.material.emissive) glow(m, GREEN);
-  say('一模一樣：遞迴把 level 乘進去了', '<span class="ok">公式裡不用出現 level</span>');
-  await beat(tok, 3000);
+  bub('不用公式：直接看 level 算？', 0, 7.0);
+  say('換個問法：不看公式，這棵樹的 cost 怎麼算？', '直接用 level 算');
+  await step(tok);                                    // 40:24 a1 level 2
+  const m1 = T.nodes.a1; tag('level 2 → p1·2', 'ptr alt', m1.position.x - 0.2, m1.position.y + 0.75); glow(m1, GOLD);
+  say('a1 在 level 2', 'p1 × 2');
+  await step(tok);                                    // 40:43 a2 level 1，q0、q1、q2
+  const m2 = T.nodes.a2; tag('level 1 → p2', 'ptr alt', m2.position.x + 1.6, m2.position.y + 0.3); glow(m2, GOLD);
+  for (const q of T.fails) { tag('×' + (q.userData.lv - 1), 'ptr alt', q.position.x + 0.6, q.position.y + 0.3); glow(q, GOLD); }
+  say('a2 在 level 1；q0、q1 × 2，q2 × 1', 'p1·2 + p2·1 + q0·2 + q1·2 + q2·1');
+  await step(tok);                                    // 42:07 一模一樣
+  glowAll(T, GREEN);
+  okT('兩種算法一模一樣 ✓', 2.6, 1.0);
+  say('跟遞迴公式算出來的完全一樣', '');
+  await step(tok);                                    // 42:27 公式裡沒有 level
+  note('公式裡沒有 level：weight 一層層加，就乘進去了', 0, -1.0);
+  say('遞迴公式裡根本沒算 level', 'weight 一層層累加，自然把 level 乘進去');
+  await step(tok);                                    // 43:52 第二個訊息：recursive
+  bub('第二件事：cost 可以從 subtree recursive 算出來', 0, 7.0);
+  say('這頁的第二個訊息', '找 optimal 就是一直往 subtree recursive 下去算');
+  await step(tok);                                    // 44:20 誰當 root？
+  txt(f, '下一個問題：到底誰當 root ak？');
+  say('cost function 確認無誤', '接下來回答：到底誰當 root？');
 }]);
 
 // Horowitz 例：(a1..a4) = (do, if, return, while)，p = 3 3 1 1，q = 2 3 1 1 1
@@ -2107,256 +2391,486 @@ const DP63 = (() => {
 })();
 const TX63 = (i) => -4.6 + i * 2.5, TY63 = (d) => 4.9 - d * 1.15;
 function cell63(i, j, drop, col) {
-  const m = cube('', col || '#efe4cf', [2.3, 0.95, 0.25], TX63(i), TY63(j - i), 0, drop ? 3 : 0);
+  const m = cube('', col || '#efe4cf', [2.3, 0.95, 0.25], TX63(i), TY63(j - i), 0, drop ? 2 : 0);
   const l = lab.label('T' + i + j + ' w=' + DP63.w[i][j] + '\nc=' + DP63.c[i][j] + ' r=' + DP63.r[i][j], '');
   Object.assign(l.element.style, MONO); l.position.set(0, 0, 0.2); m.add(l); return m;
 }
+const HDR63 = 'a = do if return while　p = 3 3 1 1　q = 2 3 1 1 1';
+function axes63() {
+  return { rows: [0, 1, 2, 3, 4].map((d) => tag(d + ' 字', 'idx', -6.4, TY63(d))), cols: [0, 1, 2, 3, 4].map((i) => tag('i=' + i, 'idx', TX63(i), 5.65)) };
+}
 function table63(rows) {
-  tag('a = do if return while　p = 3 3 1 1　q = 2 3 1 1 1', 'ptr', 0, 6.3);
-  for (let d = 0; d <= 4; d++) tag((d) + ' 字', 'idx', -6.4, TY63(d));
-  for (let i = 0; i <= 4; i++) tag('i=' + i, 'idx', TX63(i), 5.65);
-  const cells = {};
-  for (let d = 0; d <= rows; d++) for (let i = 0; i + d <= 4; i++) cells[i + ',' + (i + d)] = cell63(i, i + d, false);
-  return cells;
+  tag(HDR63, 'ptr', 0, 6.3); axes63();
+  for (let d = 0; d <= rows; d++) for (let i = 0; i + d <= 4; i++) cell63(i, i + d, false);
 }
 const candTxt63 = (i, j) => DP63.cand[i][j].map(([k, a, b]) => 'k=' + k + '：' + a + '+' + b).join('，');
+const hot63 = (ls, on) => ls.forEach((l) => { l.element.className = 'lab-label ' + (on ? 'ptr alt' : 'idx'); });
 
+// 44:46 DP 表：第 0、1 列
 FRAG.push(['bst63-obst-row1', 'Optimal BST 表：第 0、1 列', async (tok) => {
   fresh([0, 3, 12.5], [0, 3.1, 0]);
-  table63(-1);
-  say('do、if、return、while 已依字母排序', 'p = 3 3 1 1，q = 2 3 1 1 1（次數）');
-  await beat(tok, 2800);
-  say('橫軸 i，縱軸 = 樹裡有幾個字', '每格 Tij 記 w、c、r');
-  await beat(tok, 2200);
-  for (let i = 0; i <= 4; i++) { cell63(i, i, true); await beat(tok, 300); }
-  say('第 0 列：沒有字，只剩 fail node', 'wii = qi，cii = 0，rii = 0');
-  await beat(tok, 2400);
-  for (let i = 0; i < 4; i++) {
-    cell63(i, i + 1, true, '#f6d9a8');
-    say('T' + i + (i + 1) + '：只有 ' + N63[i] + '，左右是 q' + i + '、q' + (i + 1),
-      'w = ' + Q63[i] + '+' + P63[i + 1] + '+' + Q63[i + 1] + ' = ' + DP63.w[i][i + 1] + '，c = w + 0 + 0 = ' + DP63.c[i][i + 1]);
-    await beat(tok, 2000);
-  }
-  say('一個字的樹，root 就是它自己', 'r(i,i+1) = i + 1');
-  await beat(tok, 2600);
+  const hd = tag('', 'ptr', 0, 6.3);
+  await step(tok);                                    // 44:46 四個字
+  const ws = N63.map((w, i) => buddy('a' + (i + 1), w, B63, -4.5 + i * 3, 2.2, 0, 0.9));
+  txt(hd, 'a = do if return while');
+  say('例子：4 個字 a1 … a4', 'do、if、return、while（已照字母排好）');
+  await step(tok);                                    // 44:59 p = 3 3 1 1
+  ws.forEach((b, i) => tag('p' + (i + 1) + ' = ' + P63[i + 1], 'note', b.g.position.x, 1.6));
+  txt(hd, 'a = do if return while　p = 3 3 1 1');
+  say('被搜尋的次數 p1 … p4 = 3、3、1、1', '還沒 normalize 成機率，用次數就好');
+  await step(tok);                                    // 45:08 q = 2 3 1 1 1
+  txt(hd, HDR63);
+  say('落到 fail node 的次數 q0 … q4 = 2、3、1、1、1', '');
+  await step(tok);                                    // 45:26 重點是這張表
+  ws.forEach((b) => kill(b.g));
+  fresh([0, 3, 12.5], [0, 3.1, 0]);
+  tag(HDR63, 'ptr', 0, 6.3);
+  const fr = ghostBox('#c58a10', 12.6, 5.6, 0.2); fr.position.set(0.4, 2.6, -0.3);
+  say('重點是這張表', '一格一格從上往下推');
+  await step(tok);                                    // 45:45 橫軸
+  const cols = [0, 1, 2, 3, 4].map((i) => tag('i=' + i, 'ptr alt', TX63(i), 5.65));
+  say('橫軸 i：從第幾個字開始', '');
+  await step(tok);                                    // 45:56 縱軸
+  hot63(cols, false);
+  const rows = [0, 1, 2, 3, 4].map((d) => tag(d + ' 字', 'ptr alt', -6.4, TY63(d)));
+  say('縱軸：這棵樹裡包含幾個字', '');
+  await step(tok);                                    // 46:07 第 0 列
+  hot63(rows, false);
+  for (let i = 0; i <= 4; i++) cell63(i, i, true);
+  say('第 0 列：沒有任何字，只剩 fail node', 'w00 = q0 = 2，c00 = 0，r00 = 0');
+  await step(tok);                                    // 47:26 Tij 含哪些字
+  const rem = note('Tij：字 a(i+1) … aj，fail node qi … qj', 0.4, -0.4);
+  say('再提醒一次：Tij 包含 a(i+1) … aj', 'fail node 則是 qi … qj');
+  await step(tok);                                    // 49:21 要找這組的 optimal BST
+  remove(rem);
+  const qn = bub('這組字的 optimal BST 長什麼樣？', 0.4, 7.2);
+  say('問題：給定這些 p、q', '最佳的 BST 到底長什麼樣子？');
+  await step(tok);                                    // 49:57 每一列的意義
+  hot63(rows, true);
+  say('每一列：樹裡有 0、1、2、3、4 個字', '從上往下，字越來越多');
+  await step(tok);                                    // 50:51 一個字：4 種
+  hot63(rows, false); hot63([rows[1]], true);
+  const g1 = ghostBox('#4b9ee2', 10.2, 1.1, 0.4); g1.position.set(TX63(1.5), TY63(1), 0);
+  say('只含一個字的樹：只有 4 種', 'a1、a2、a3、a4 各自一棵');
+  await step(tok);                                    // 51:23 T01
+  kill(g1); remove(qn);
+  const mt = ext63(['a1', null, null], { x: 4.8, y: 2.7, sx: 0.8, dy: 1.0, sz: 0.6, fs: 0.4 });
+  mt.fails.forEach((m, i) => tag('q' + i, 'idx', m.position.x, m.position.y - 0.4));
+  tag('T01', 'ptr alt', 4.8, 3.5);
+  say('T01：a1 當 root', '左右兩邊是 q0、q1');
+  await step(tok);                                    // 51:53 w01 = 8
+  const wt = pkt('w01 = 2 + 3 + 3 = 8', 4.4, 0.6);
+  say('w01 = q0 + p1 + q1', '= 2 + 3 + 3 = 8');
+  await step(tok);                                    // 52:25 c01 = 8
+  txt(wt, 'c01 = 8 + c00 + c11 = 8');
+  say('c01 = w01 + c00 + c11', '左右都是空的（fail node）→ 8 + 0 + 0 = 8');
+  await step(tok);                                    // 52:46 r01 = 1
+  cell63(0, 1, true, '#f6d9a8');
+  txt(wt, 'r01 = 1（a1 = do）');
+  say('只有一個字：root 自然就是 a1', 'r01 = 1');
+  await step(tok);                                    // 53:00 T12
+  mt.all.forEach(kill);
+  cell63(1, 2, true, '#f6d9a8');
+  txt(wt, 'T12：只有 a2（if）');
+  say('T12：只含 a2 這一個字', 'w12 = 3 + 3 + 1 = 7，c12 = 7');
+  await step(tok);                                    // 53:22 T23、T34
+  cell63(2, 3, true, '#f6d9a8'); cell63(3, 4, true, '#f6d9a8');
+  txt(wt, 'T23、T34 依此類推');
+  say('a3、a4 也一樣', '只含一個字的情況就是這 4 種');
 }]);
 
+// 53:45 DP 表：第 2 列
 FRAG.push(['bst63-obst-row2', 'Optimal BST 表：第 2 列（T02 取最小）', async (tok) => {
   fresh([0, 3, 12.5], [0, 3.1, 0]);
   table63(1);
-  say('第 2 列：樹裡有兩個字', 'T02 = {do, if}，w02 = 3+3 + 2+3+1 = 12');
-  await beat(tok, 2800);
-  const t1 = ext63(['do', null, ['if', null, null]], { x: -2.2, y: 1.9, sx: 0.9, dy: 0.9, sz: 0.55, noFail: true });
-  const t2 = ext63(['if', ['do', null, null], null], { x: 2.8, y: 1.9, sx: 0.9, dy: 0.9, sz: 0.55, noFail: true });
-  const l1 = tag('k=1：c00 + c12 = 0 + 7', 'ptr', -2.2, 0.0), l2 = tag('k=2：c01 + c22 = 8 + 0', 'ptr', 2.8, 0.0);
-  say('兩種 root：do 或 if', '比較 c(0,k−1) + c(k,2)');
-  await beat(tok, 3000);
-  for (const m of Object.values(t1.nodes)) glow(m, GREEN);
-  say('7 比 8 小：選 do 當 root', 'c02 = 12 + 7 = 19，r02 = 1');
-  await beat(tok, 2600);
+  const f = pkt('', 0.4, -0.5);
+  let t1 = null, t2 = null, l1 = null, l2 = null;
+  await step(tok);                                    // 53:45 兩個字
+  const g2 = ghostBox('#4b9ee2', 7.7, 1.1, 0.4); g2.position.set(TX63(1), TY63(2), 0);
+  say('第 2 列：樹裡包含兩個字', '');
+  await step(tok);                                    // 54:01 T02 = a1、a2
+  kill(g2);
+  const gb = ghostBox('#c58a10', 2.3, 1.0, 0.4); gb.position.set(TX63(0), TY63(2), 0);
+  say('第一個組合：a1 和 a2', '這棵樹就是 T02');
+  await step(tok);                                    // 54:19 w02 = 12
+  txt(f, 'w02 = 3 + 3 + 2 + 3 + 1 = 12');
+  say('w02 = p1 + p2 + q0 + q1 + q2', '= 12');
+  await step(tok);                                    // 54:30 c02 = w + 左右
+  txt(f, 'c02 = 12 + min{ 左 + 右 }');
+  say('c02 = weight + 左右 subtree 的 cost', '左右怎麼組？');
+  await step(tok);                                    // 54:55 藍：0 + 7
+  t1 = ext63(['do', null, ['if', null, null]], { x: -2.2, y: 2.0, sx: 0.9, dy: 0.9, sz: 0.55, noFail: true });
+  l1 = tag('k=1：c00 + c12 = 0 + 7', 'ptr', -2.2, 0.2);
+  say('第一種：a1 當 root', '左 c00 = 0，右 c12 = 7 → 0 + 7');
+  await step(tok);                                    // 55:18 綠：8 + 0
+  t2 = ext63(['if', ['do', null, null], null], { x: 2.8, y: 2.0, sx: 0.9, dy: 0.9, sz: 0.55, noFail: true });
+  l2 = tag('k=2：c01 + c22 = 8 + 0', 'ptr', 2.8, 0.2);
+  say('第二種：a2 當 root', '左 c01 = 8，右 c22 = 0 → 8 + 0');
+  await step(tok);                                    // 55:37 最小 7 → c02 = 19
+  l1.element.className = 'lab-label ptr alt';
+  txt(f, 'c02 = 12 + 7 = 19');
+  say('7 比 8 小 → 選第一種', 'c02 = 12 + 7 = 19');
+  await step(tok);                                    // 55:47 長這樣：do 當 root
+  glowAll(t1, GREEN);
+  say('它的樹長這樣：a1（do）當 root', '左邊來自 c00，右邊來自 c12');
+  await step(tok);                                    // 56:23 綠色：a2 往上拉
+  glowAll(t2, GOLD);
+  say('8 + 0 那種：a2 往上拉當 root，a1 變左子', '也是一棵 BST，只是 cost 比較大');
+  await step(tok);                                    // 56:50 選小的
+  glowAll(t2, null);
+  kill(gb);
   cell63(0, 2, true, '#bfe3cf');
-  await beat(tok, 1400);
+  txt(f, 'T02：c = 19，r = 1');
+  say('選小的：c02 = 19，r02 = 1', '');
+  await step(tok);                                    // 57:01 T13
   t1.all.concat(t2.all).forEach(kill); kill(l1); kill(l2);
-  for (const [i, j] of [[1, 3], [2, 4]]) {
-    cell63(i, j, true, '#f6d9a8');
-    say('T' + i + j + '：每個 k 都試，取最小', candTxt63(i, j) + ' → c' + i + j + ' = ' + DP63.w[i][j] + ' + ' + (DP63.c[i][j] - DP63.w[i][j]) + ' = ' + DP63.c[i][j] + '，r' + i + j + ' = ' + DP63.r[i][j]);
-    await beat(tok, 2800);
-  }
-  await beat(tok, 1200);
+  cell63(1, 3, true, '#f6d9a8');
+  txt(f, 'T13：' + candTxt63(1, 3) + ' → c13 = ' + DP63.c[1][3]);
+  say('T13 依此類推：含 a2、a3', '每個 k 都試，取最小');
+  await step(tok);                                    // 57:12 一直推
+  cell63(2, 4, true, '#f6d9a8');
+  txt(f, 'T24：' + candTxt63(2, 4) + ' → c24 = ' + DP63.c[2][4]);
+  say('一直往下推：T24 也一樣', '');
 }]);
 
+// 57:23 DP 表：T04 與最後的樹
 FRAG.push(['bst63-obst-final', 'Optimal BST 表：T04 與最後的樹', async (tok) => {
   fresh([0, 3, 12.5], [0, 3.1, 0]);
   table63(2);
-  for (const [i, j] of [[0, 3], [1, 4]]) {
-    cell63(i, j, true, '#f6d9a8');
-    say('T' + i + j + '：每個 k 都試，取最小', candTxt63(i, j) + ' → c' + i + j + ' = ' + DP63.w[i][j] + ' + ' + (DP63.c[i][j] - DP63.w[i][j]) + ' = ' + DP63.c[i][j] + '，r = ' + DP63.r[i][j]);
-    await beat(tok, 2800);
-  }
-  say('答案在最下面那格 T04', 'c04 = w04 + min(c0,k−1 + ck,4)，w04 = 16');
-  await beat(tok, 2600);
+  const f = pkt('', 0.4, -0.5);
+  await step(tok);                                    // 57:23 三個字
+  cell63(0, 3, true, '#f6d9a8'); cell63(1, 4, true, '#f6d9a8');
+  say('第 3 列：樹裡有三個字', 'T03 含 a1、a2、a3；T14 含 a2、a3、a4');
+  await step(tok);                                    // 57:36 c03 = 25
+  txt(f, 'c03 = w03 + 11 = 14 + 11 = 25');
+  say('c03 = w03 + 11 = 25', '11 怎麼來？回去推（k = 2：8 + 3）');
+  await step(tok);                                    // 57:58 答案在 T04
+  const gb = ghostBox('#0f5a3a', 2.4, 1.1, 0.5); gb.position.set(TX63(0), TY63(4), 0);
+  say('答案一定在最下面那格：T04', '它包含 a1 … a4 全部四個字');
+  await step(tok);                                    // 58:27 套公式
+  txt(f, 'c04 = w04 + min{ c(0,k−1) + c(k,4) }，w04 = 16');
+  say('套公式：c04 = w04 + min{ c(0,k−1) + c(k,4) }', 'k 從 1 試到 4');
   const cs = DP63.cand[0][4], ls = [];
-  let bi = 0;
-  cs.forEach((c, n) => { if (c[3] < cs[bi][3]) bi = n; });
-  for (const [n, [k, a, b, v]] of cs.entries()) {
-    ls.push(tag('k=' + k + '：' + a + ' + ' + b + ' = ' + v, 'ptr', 3.0, 2.2 - n * 0.6));
-    say('試 k = ' + k, 'c0,' + (k - 1) + ' + c' + k + ',4 = ' + v);
-    await beat(tok, 900);
-  }
+  let bi = 0; cs.forEach((c, n) => { if (c[3] < cs[bi][3]) bi = n; });
+  const show = (n) => { const [k, a, b, v] = cs[n]; ls.push(tag('k=' + k + '：' + a + ' + ' + b + ' = ' + v, 'ptr', 4.2, 2.6 - n * 0.6)); };
+  await step(tok);                                    // 58:50 k = 1
+  show(0);
+  say('k = 1：c00 + c14', '= 0 + 19');
+  await step(tok);                                    // 58:57 k = 2
+  show(1);
+  say('k = 2：c01 + c24', '= 8 + 8');
+  await step(tok);                                    // 59:09 全部算出來
+  show(2); show(3);
+  say('k = 3、k = 4 也全部算出來', '');
+  await step(tok);                                    // 59:18 最小 16 在 k = 2
   ls[bi].element.className = 'lab-label ptr alt';
-  say('最小 16 在 k = 2', 'c04 = 16 + 16 = 32，r04 = 2');
-  cell63(0, 4, true, '#bfe3cf');
-  await beat(tok, 2800);
+  kill(gb); cell63(0, 4, true, '#bfe3cf');
+  txt(f, 'c04 = 16 + 16 = 32，r04 = 2');
+  say('19、16、22、25 → 最小的是 16（k = 2）', 'root 是 a2：r04 = 2');
+  await step(tok);                                    // 59:55 從上往下推，最後的樹
   fresh([0, 3, 11], [0, 3, 0]);
   const pos = { if: [0, 5.4], do: [-2.4, 3.6], return: [2.4, 3.6], while: [4.2, 1.8] };
   const par = { do: 'if', return: 'if', while: 'return' };
-  for (const [w, cap, f] of [['if', 'r04 = 2 → if 當 root', '左 T01、右 T24'], ['do', 'r01 = 1 → do', 'T01 只有 do'],
-    ['return', 'r24 = 3 → return', '右邊剩 T34'], ['while', 'r34 = 4 → while', '']]) {
-    const [x, y] = pos[w];
-    if (par[w]) line(pos[par[w]][0], pos[par[w]][1], x, y);
-    cube(w, B63, [1.1, 0.8, 1], x, y, 0, 3);
-    say(cap, f);
-    await beat(tok, 1500);
-  }
-  say('從小表一路推到大表：Dynamic Programming', '<span class="ok">optimal cost = 32</span>');
-  await beat(tok, 3000);
+  const rt = [['if', 'r04 = 2'], ['do', 'r01 = 1'], ['return', 'r24 = 3'], ['while', 'r34 = 4']];
+  let n = 0;
+  await anim(tok, 2000, (u) => {
+    const k = Math.min(4, Math.round(u * 4));
+    while (n < k) { const [w, r] = rt[n++]; const [x, y] = pos[w]; if (par[w]) line(pos[par[w]][0], pos[par[w]][1], x, y); cube(w, B63, [1.1, 0.8, 1], x, y, 0); tag(r, 'idx', x, y + 0.75); }
+  });
+  say('從表裡讀出整棵樹', 'if 當 root → 左 T01（do），右 T24（return → while）');
+  await step(tok);                                    // 60:17 DP
+  okT('最佳解來自之前算好的結果 = Dynamic Programming', 0, 0.4);
+  say('最佳解來自之前慢慢算好的小表', '這就是 Dynamic Programming');
+  await step(tok);                                    // 60:29 要先排序
+  note('a1 … a4 一定要先排序', 0, -0.4);
+  say('注意：a1 … a4 一定要先排序過', 'optimal cost = 32');
 }]);
 
+// 60:44 回顧：cost 與 weight
+FRAG.push(['bst63-review', '回顧：cost 與 weight、DP 的意義', async (tok) => {
+  fresh([0, 3, 12], [0, 2.6, 0]);
+  let wb, cb, T, qn;
+  await step(tok);                                    // 60:53 cost 和 weight 分開看
+  wb = buddy('weight', 'Σ 機率', '#9ad0b4', -4.6, 3.4, 0, 1.0);
+  cb = buddy('cost', 'Σ 機率×level', '#f4a56a', 4.6, 3.4, 0, 1.0);
+  say('老師說：cost 和 weight 要分開來看', '當年也是修了演算法才搞懂');
+  await step(tok);                                    // 61:03 樹已知 → cost 會算
+  T = ext63(['if', ['do', null, null], ['return', null, null]], { x: 0, y: 5.0, sx: 0.8, dy: 1.2, sz: 0.7, noFail: true });
+  cb.mood('happy');
+  okT('樹給你了 → cost 一定會算', 0, 1.4);
+  say('如果樹已經給你：cost 一定會算', '用 Σ p·level + Σ q·(level − 1)');
+  await step(tok);                                    // 61:31 但不知道樹長什麼樣
+  T.all.forEach(kill);
+  qn = cube('?', GRAY, [1.1, 0.9, 1], 0, 5.0, 0, 2);
+  cb.mood('wow');
+  say('但現在不知道樹長什麼樣子', '還要讓 cost 最小');
+  await step(tok);                                    // 61:56 weight 加總 + recursive
+  const lb = ghostBox('#4b9ee2', 2.4, 1.6, 1.2); lb.position.set(-1.6, 2.6, 0);
+  const rb = ghostBox('#dd8238', 2.4, 1.6, 1.2); rb.position.set(1.6, 2.6, 0);
+  line(0, 4.6, -1.6, 3.4); line(0, 4.6, 1.6, 3.4);
+  tag('left 最佳', 'idx', -1.6, 1.5); tag('right 最佳', 'idx', 1.6, 1.5);
+  wb.mood('happy');
+  say('做法：weight 加總 + recursive', '讓 left、right subtree 都是最佳解');
+  await step(tok);                                    // 62:10 cij 沒說 root 是誰
+  const rt = note('root = ?', 0, 6.2);
+  say('cij 這個式子沒告訴你 root 是誰', '它只說 cij 等於這個東西');
+  await step(tok);                                    // 62:29 k 全部試
+  for (const k of [1, 2, 3, 4]) { relabel(qn, 'a' + k); await beat(tok, 400); }
+  relabel(qn, 'min');
+  txt(rt, 'k 從 i+1 試到 j，選最小');
+  say('決定 k 的方法其實很笨', 'k 從 i+1 到 j 全部試過，選最小的');
+  await step(tok);                                    // 62:50 意義一
+  okT('① T02：公式算的 = level 算的', -4.6, 6.2);
+  say('這頁的意義一：cost(T02) 怎麼算', '用公式和用 level，答案一樣');
+  await step(tok);                                    // 63:09 意義二
+  const up = pkt('cost(L) + cost(R) + weight', 0, 1.0);
+  await travel(tok, up, V3(0, 1.0, 0), V3(0, 4.0, 0.5), 900);
+  okT('② cost 可以由 subtree recursive 加出來', 4.4, 6.2);
+  say('意義二：cost 由左右 subtree 的 cost 加起來', 'recursive 一路推上去');
+  await step(tok);                                    // 63:41 DP
+  remove(up); relabel(qn, 'if'); glow(qn, GREEN);
+  wb.mood('happy'); cb.mood('happy');
+  bub('這就是 dynamic programming', 0, 7.2);
+  say('這就是 dynamic programming 的概念', '回去再自己推一次');
+}]);
+
+// 63:49 m-way search tree
 FRAG.push(['bst63-mway', 'm-way search tree：一個 node 多個 key', async (tok) => {
   fresh([0, 3, 12], [0, 3, 0]);
-  const Ks = ['K1', 'K2', 'K3'].map((k, i) => cube(k, B63, [1.3, 0.8, 1], -1.5 + i * 1.5, 5.2, 0));
+  await step(tok);                                    // 63:49 前面都是 binary
+  const bn = [cube('key', B63, [1.2, 0.8, 1], 0, 5.2, 0)];
+  bn.push(line(-0.3, 4.8, -1.6, 2.6), line(0.3, 4.8, 1.6, 2.6));
+  bn.push(tag('< key', 'idx', -1.6, 2.2), tag('> key', 'idx', 1.6, 2.2));
+  bub('BST、AVL、optimal BST：都是 binary', 0, 7.0);
+  say('前面的 BST、AVL、optimal BST', '都是 binary：一個 node 只有兩個 child');
+  await step(tok);                                    // 64:05 m-way
+  bn.forEach(kill);
+  const Ks = ['K1', 'K2', 'K3'].map((k, i) => cube(k, B63, [1.3, 0.8, 1], -1.5 + i * 1.5, 5.2, 0, 2));
+  say('m-way search tree：不只兩個方向', '最多可以有 m 個 child');
+  await step(tok);                                    // 64:28 m 個 pointer
   const sx = [-4.6, -1.55, 1.55, 4.6], rng = ['< K1', 'K1 ~ K2', 'K2 ~ K3', '> K3'];
   sx.forEach((x, i) => {
     const px = -2.25 + i * 1.5;
-    tag('A' + i, 'idx', px, 4.45); line(px, 4.7, x, 2.3);
-    const g = ghostBox('#4b9ee2', 2.4, 1.4, 1.4); g.position.set(x, 1.6, 0); tag(rng[i], 'idx', x, 1.6);
+    line(px, 4.7, x, 2.3);
+    const g = ghostBox('#4b9ee2', 2.4, 1.4, 1.4); g.position.set(x, 1.6, 0);
   });
-  say('m-way：一個 node 最多 m 個 subtree', 'K1 < K2 < … < Kn，pointer A0 … An，n < m');
-  await beat(tok, 3000);
-  const x = cube('x', O63, [0.8, 0.8, 0.8], 0, 7.2, 0);
-  say('搜尋 x：先看 node 內有沒有 key = x', '有就直接回報');
-  await beat(tok, 2000);
-  for (const [i, m] of Ks.entries()) {
-    glow(m, GOLD); move(x, m.position.x, 6.4, 0);
-    say('x 跟 ' + ['K1', 'K2', 'K3'][i] + ' 比', i < 2 ? 'x > K' + (i + 1) : 'x < K3');
-    await beat(tok, 1100); glow(m, null);
-  }
-  say('沒有相等：看 x 落在哪個區間', 'K2 < x < K3');
-  await beat(tok, 1800);
-  move(x, 1.55, 2.6, 0);
-  say('往兩個 key 之間的 pointer 走', 'Ki < x < Ki+1 → 走 Ai（這裡是 A2）');
-  await beat(tok, 2600);
-  say('高度 h 的 m-way search tree', 'node 最多 Σ m^i = (m^h − 1)/(m − 1) 個');
-  await beat(tok, 3000);
+  say('root 最多 m 個 subtree', '也就是有 m 個 pointer 連出去');
+  await step(tok);                                    // 64:40 key 與 pointer 的順序
+  sx.forEach((x, i) => { tag('A' + i, 'idx', -2.25 + i * 1.5, 4.45); tag(rng[i], 'idx', x, 1.6); });
+  say('node 裡有 key：K1 < K2 < … < Kn', 'pointer A0 … An 夾在 key 之間（n < m）');
+  await step(tok);                                    // 65:26 比 BST 更強
+  note('BST：一個 key，只比「大或小」', 0, 0.2);
+  say('BST 只有一個 key、兩個 pointer', 'm-way 有很多 key、很多 pointer');
+  await step(tok);                                    // 65:49 搜尋 x
+  const s = seeker('x', 0, 6.8, 0.55, '要找');
+  say('搜尋一個值 x：從 root 開始', '要決定往哪個 pointer 走');
+  await step(tok);                                    // 66:00 有沒有 key 等於 x
+  for (const m of Ks) { glow(m, GOLD); await hopOver(tok, s, m, 500, 0.5); glow(m, null); }
+  say('先看 root 裡有沒有 key 等於 x', '有就直接回報');
+  await step(tok);                                    // 66:10 落在哪個區間
+  glow(Ks[1], GOLD); glow(Ks[2], GOLD);
+  await hop63(tok, s, 0.75, 6.0, 600);
+  say('沒有相等：看 x 落在哪個區間', '例：K2 < x < K3');
+  await step(tok);                                    // 66:43 走那個 pointer
+  glow(Ks[1], null); glow(Ks[2], null);
+  await hop63(tok, s, 1.55, 1.9, 900); s.mood('happy');
+  say('Ki < x < Ki+1 → 走 Ai 往下', '這裡走 A2');
+  await step(tok);                                    // 66:57 高度與 node 數
+  note('高度 h：最多 Σ m^i = (m^h − 1)/(m − 1) 個 node', 0, -0.6);
+  say('推導：高度 h 的 m-way search tree', 'node 最多 Σ m^i 個');
 }]);
 
 // order 4 的 B-tree（投影片例子；只畫到搜尋 30 會經過的部分）
 function btree63() {
-  const R = { keys: {}, deco: [] };
+  const R = { keys: {}, ptrs: [] };
   const node = (keys, cx, y, col) => keys.map((k, i) => { const m = cube(k, col || B63, [1, 0.7, 0.9], cx + (i - (keys.length - 1) / 2) * 1.1, y, 0); R.keys[k] = m; return m; });
   R.root = node([21, 48, 72], 0, 5.8);
   R.lv2 = [node(['…'], -5.2, 3.8, GRAY), node([25, 31, 41], -1.8, 3.8), node(['…'], 1.9, 3.8, GRAY), node(['…'], 5.2, 3.8, GRAY)];
-  [-5.2, -1.8, 1.9, 5.2].forEach((x, i) => line(-1.65 + i * 1.1, 5.45, x, 4.15));
+  [-5.2, -1.8, 1.9, 5.2].forEach((x, i) => { R.ptrs.push([-1.65 + i * 1.1, 5.45]); line(-1.65 + i * 1.1, 5.45, x, 4.15); });
   R.leaf = node([26, '…'], -2.7, 1.8, '#9b7ef4');
   [-4.4, -2.7, -1.0, 0.5].forEach((x, i) => { line(-3.45 + i * 1.1, 3.45, x, 2.15); if (i !== 1) cube('…', GRAY, [0.8, 0.6, 0.8], x, 1.8, 0); });
   R.strip = ghostBox('#7a1010', 13, 0.4, 1.2); R.strip.position.set(0, 0.4, 0);
   tag('fail nodes', 'idx', 5.4, 0.9);
   return R;
 }
+// 67:25 B-tree 的定義
 FRAG.push(['bst63-btree-def', 'B-tree 的定義（order m）', async (tok) => {
   fresh([0, 3.2, 13], [0, 3, 0]);
   const B = btree63();
-  say('B-tree：特殊的 m-way search tree', 'm = order，這棵是 order 4');
-  await beat(tok, 2600);
+  const f = pkt('', 0, -0.5);
+  await step(tok);                                    // 67:25 B-tree
+  bub('B-tree：很重要的 m-way search tree', 0, 7.2);
+  say('m-way search tree 裡很重要的一種：B-tree', 'B-tree 就是 m-way search tree，再加幾個條件');
+  await step(tok);                                    // 68:00 root ≥ 2
   B.root.forEach((m) => glow(m, GOLD));
-  say('① root 至少 2 個 child', 'root 有 21、48、72 → 4 個 pointer');
-  await beat(tok, 2800);
-  B.root.forEach((m) => glow(m, null));
-  B.lv2[1].forEach((m) => glow(m, GOLD));
-  say('② 其他 internal node 至少 ⌈m/2⌉ 個 child', 'order 4 → 至少 ⌈4/2⌉ = 2 個 pointer');
-  await beat(tok, 2800);
+  txt(f, '① root 至少 2 個 pointer');
+  say('條件一：root 至少要有 2 個 pointer（child）', '');
+  await step(tok);                                    // 68:15 其他 node（leaf 以外）
+  B.root.forEach((m) => glow(m, null)); B.lv2[1].forEach((m) => glow(m, GOLD));
+  txt(f, '② root、leaf 以外的 node……');
+  say('條件二：除了 root 和最下面的 node', '其他 node 也要符合一個下限');
+  await step(tok);                                    // 68:30 至少 ⌈m/2⌉
+  txt(f, '② 其他 node 至少 ⌈m/2⌉ 個 child（m = order）');
+  say('至少要有 ⌈m/2⌉ 個 child', 'm 叫做 order（一個 node 最多幾個 child）');
+  await step(tok);                                    // 68:41 order 3 的例子
+  const o3 = note('order 3：root ≥ 2，其他 ≥ ⌈3/2⌉ = 2', -3.6, 7.0);
+  say('例：order 3 → m = 3', 'root 至少 2 個；其他 node 至少 ⌈3/2⌉ = 2 個 child');
+  await step(tok);                                    // 69:15 fail node 同一層
   B.lv2[1].forEach((m) => glow(m, null));
-  say('order 3 就是至少 ⌈3/2⌉ = 2 個 child', '');
-  await beat(tok, 2200);
-  say('③ 所有 fail node 都在同一個 level', '樹永遠是平的');
-  await beat(tok, 3000);
+  B.strip.material.opacity = 0.4;
+  txt(f, '③ 所有 fail node 都在同一個 level');
+  say('條件三：所有 fail node 都在同一個 level', '樹永遠是平的');
+  await step(tok);                                    // 69:31 看這個例子
+  B.strip.material.opacity = 0.16; remove(o3);
+  txt(f, '這棵 B-tree 的 order 是多少？');
+  say('來看這個 B-tree 的例子', '它的 order 是多少？');
+  await step(tok);                                    // 70:05 pointer 1 2 3 4 → order 4
+  B.ptrs.forEach(([x, y], i) => tag(String(i + 1), 'ptr alt', x - 0.25, y - 0.45));
+  txt(f, 'root 有 4 個 pointer → order 4');
+  say('數 pointer：1、2、3、4', 'order 是 4');
+  await step(tok);                                    // 70:15 最下面一層
+  B.leaf.forEach((m) => glow(m, GOLD));
+  say('最下面這些 node（leaf）', 'fail node 都在同一個 level');
+  await step(tok);                                    // 70:21 其他 node ≥ 2
+  B.leaf.forEach((m) => glow(m, null)); B.lv2[1].forEach((m) => glow(m, GREEN));
+  txt(f, '其他 node 至少 ⌈4/2⌉ = 2 個 pointer');
+  say('其他 node 至少 ⌈4/2⌉ = 2 個 pointer', '中間這一層都符合');
 }]);
 
+// 70:37 B-tree 搜尋 30
 FRAG.push(['bst63-btree-search30', 'B-tree 搜尋 30', async (tok) => {
   fresh([0, 3.2, 13], [0, 3, 0]);
   const B = btree63();
-  const x = cube(30, O63, [0.8, 0.8, 0.8], 0, 7.3, 0);
-  say('在這棵 order 4 的 B-tree 找 30', '');
-  await beat(tok, 2000);
-  for (const k of [21, 48, 72]) {
-    glow(B.keys[k], GOLD); move(x, B.keys[k].position.x, 6.7, 0);
-    say('root：30 跟 ' + k + ' 比', k === 21 ? '30 > 21' : (k === 48 ? '30 < 48' : '30 < 72'));
-    await beat(tok, 900); glow(B.keys[k], null);
-  }
-  say('30 落在 21 和 48 之間', '走第 2 個 pointer');
-  move(x, -1.8, 4.7, 0);
-  await beat(tok, 2000);
-  for (const k of [25, 31, 41]) {
-    glow(B.keys[k], GOLD);
-    say('30 跟 ' + k + ' 比', k === 25 ? '30 > 25' : '30 < ' + k);
-    await beat(tok, 900); glow(B.keys[k], null);
-  }
-  say('30 落在 25 和 31 之間', '往下走');
-  move(x, -2.7, 2.7, 0);
-  await beat(tok, 2000);
-  glow(B.leaf[0], RED);
-  say('這個 node 也沒有 30', '再往下就是 fail node');
-  await beat(tok, 1800);
-  move(x, -2.7, 0.9, 0); glow(x, RED);
-  say('回報：找不到', '每一層只走一個 node');
-  await beat(tok, 2800);
+  await step(tok);                                    // 70:37 搜尋 30
+  const s = seeker(30, 3.6, 6.4, 0.5);
+  say('在這棵 order 4 的 B-tree 搜尋 30', '它存不存在？');
+  await step(tok);                                    // 71:00 root：21、48、72 都不是
+  for (const k of [21, 48, 72]) { glow(B.keys[k], GOLD); await hopOver(tok, s, B.keys[k], 450, 0.45); glow(B.keys[k], null); }
+  say('從 root 開始：21、48、72', '沒有一個是 30');
+  await step(tok);                                    // 71:11 落在 21 ~ 48
+  glow(B.keys[21], GOLD); glow(B.keys[48], GOLD);
+  await hop63(tok, s, -0.55, 6.25, 500);
+  await hop63(tok, s, -1.8, 4.25, 800);
+  glow(B.keys[21], null); glow(B.keys[48], null);
+  say('30 落在 21 和 48 之間', '往中間那個 pointer 走下去');
+  await step(tok);                                    // 71:24 25、31、41
+  for (const k of [25, 31, 41]) { glow(B.keys[k], GOLD); await hopOver(tok, s, B.keys[k], 450, 0.45); glow(B.keys[k], null); }
+  say('到了 25、31、41 這個 node', '先看有沒有相同的');
+  await step(tok);                                    // 71:32 落在 25 ~ 31
+  glow(B.keys[25], GOLD); glow(B.keys[31], GOLD);
+  await hop63(tok, s, -2.35, 4.25, 500);
+  await hop63(tok, s, -2.7, 2.25, 800);
+  glow(B.keys[25], null); glow(B.keys[31], null);
+  say('沒有相同：30 落在 25 和 31 之間', '往下走');
+  await step(tok);                                    // 71:39 找不到
+  glow(B.leaf[0], RED); s.mood('sad');
+  await hop63(tok, s, -2.7, 0.75, 700);
+  noT('找不到 30', -2.7, -0.4);
+  say('這個 node 只有 26：30 不在', '再往下就是 fail node → 回報找不到');
 }]);
 
+// 71:55 為什麼用 B-tree
 FRAG.push(['bst63-btree-fat', '為什麼用 B-tree：矮胖＝少讀 disk', async (tok) => {
   fresh([0, 3, 13], [0, 3, 0]);
   const chain = [];
-  for (let d = 0; d < 7; d++) {
-    const x = -5 + (d % 2) * 1.2, y = 6 - d * 0.95;
-    if (d) line(-5 + ((d - 1) % 2) * 1.2, y + 0.95, x, y);
-    chain.push(cube('', B63, [0.6, 0.5, 0.6], x, y, 0, 2));
-    await beat(tok, 250);
-  }
-  tag('⋮', 'ptr', -4.4, -0.4);
-  say('binary tree：每個 node 只有 2 個 child', 'n = 10⁶ → 高度 ≈ log₂ n ≈ 20');
-  await beat(tok, 2800);
-  say('AVL 雖然 balanced，key 很多時還是很高', '高又瘦 → 走很多層');
-  await beat(tok, 2600);
-  const root = [21, 48, 72].map((k, i) => cube(k, B63, [1, 0.7, 0.9], 2.6 + (i - 1) * 1.1, 5.6, 0, 3));
-  const rg = ghostBox('#c58a10', 3.8, 1.1, 1.3); rg.position.set(2.6, 5.6, 0);
-  [-0.6, 1.6, 3.6, 5.8].forEach((x) => {
-    line(2.6, 5.2, x, 3.4);
-    cube('', '#9b7ef4', [1.8, 0.6, 0.9], x, 3.0, 0, 3);
+  await step(tok);                                    // 71:56 binary tree 太高
+  await anim(tok, 1400, (u) => {
+    const k = Math.min(7, Math.round(u * 7));
+    while (chain.length < k) { const d = chain.length, x = -5 + (d % 2) * 1.2, y = 6 - d * 0.95; if (d) line(-5 + ((d - 1) % 2) * 1.2, y + 0.95, x, y); chain.push(cube('', B63, [0.6, 0.5, 0.6], x, y, 0)); }
   });
-  tag('disk block（page）', 'idx', 2.6, 6.5);
-  say('B-tree：長胖、變矮，很快到 leaf', 'm 通常 32～256 → 只要 3～4 層');
-  await beat(tok, 3000);
-  say('每個 node = 一個 disk block', '少走一層 = 少讀一次 disk');
-  await beat(tok, 2800);
-  const x = cube(30, O63, [0.7, 0.7, 0.7], 2.6, 7.2, 0);
+  tag('⋮', 'ptr', -4.4, -0.4);
+  say('只用 binary tree：每個 node 只有 2 個 child', '數字一多，樹就很高');
+  await step(tok);                                    // 72:10 AVL 也一樣
+  note('AVL：balanced，但還是很高', -4.4, 6.9);
+  say('AVL 雖然 balanced', '數字太多時，高度還是很高 → 影響 performance');
+  await step(tok);                                    // 72:27 長胖
+  const root = [21, 48, 72].map((k, i) => cube(k, B63, [1, 0.7, 0.9], 2.6 + (i - 1) * 1.1, 5.6, 0, 2));
+  [-0.6, 1.6, 3.6, 5.8].forEach((x) => { line(2.6, 5.2, x, 3.4); cube('', '#9b7ef4', [1.8, 0.6, 0.9], x, 3.0, 0, 2); });
+  say('與其又高又瘦，不如讓樹長胖', 'm-way / B-tree：又矮又胖');
+  await step(tok);                                    // 72:51 disk 檔案結構
+  const dk = buddy('disk', '', '#8a94a6', 5.6, 0.0, 0.6, 0.8);
+  okT('很快就到 leaf', 2.6, 1.6);
+  say('disk 的 file structure 常用 B-tree、B+ tree', '因為很快就能到達 leaf node');
+  await step(tok);                                    // 73:16 每個 node = 一個 disk block
+  const rg = ghostBox('#c58a10', 3.8, 1.1, 1.3); rg.position.set(2.6, 5.6, 0);
+  const pg = pkt('一個 page', 5.6, 1.2);
+  await travel(tok, pg, V3(5.6, 1.2, 0.6), V3(2.6, 6.5, 0.6), 1200);
+  dk.mood('happy');
+  say('每個 node 就是一個 disk block（page）', '每次抓一整個 page 到 memory');
+  await step(tok);                                    // 73:36 node 內要比的變多
+  remove(pg);
+  dk.mood('wow');
+  note('代價：一個 node 裡要比的 key 變多', 2.6, 7.2);
+  say('問題：樹雖然矮了', '每個 node 裡要比較的數字變多');
+  await step(tok);                                    // 74:21 用 binary search
+  const x = buddy(null, 30, O63, 2.6, 6.4, 0.6, 0.5);
+  say('所以 node 內不是一個一個比', '是用 binary search 比');
+  await step(tok);                                    // 74:30 先跟中間比
   glow(root[1], GOLD);
-  say('代價：node 內要比的 key 變多', '用 binary search：先跟中間的 48 比');
-  await beat(tok, 2400);
-  glow(root[1], null); glow(root[0], GOLD); move(x, 1.5, 6.7, 0);
-  say('30 < 48 → 再跟 21 比', '30 > 21 → 落在 21 ~ 48 之間');
-  await beat(tok, 2600);
-  glow(root[0], null); move(x, 2.05, 6.7, 0);
-  await beat(tok, 2000);
+  say('binary search：先拿中間的 48 比', '30 < 48');
+  await step(tok);                                    // 74:35 決定 range
+  glow(root[1], null); glow(root[0], GOLD);
+  await hop63(tok, x, 2.05, 6.0, 700);
+  say('再跟 21 比：30 > 21', '決定落在 21 ~ 48 這個 range');
+  await step(tok);                                    // 74:45 search 回顧
+  glow(root[0], null);
+  await hop63(tok, x, 1.6, 3.5, 800); x.mood('happy');
+  say('B-tree search：從 root 一路往下', '直到找到，或到 leaf 回報 fail');
 }]);
 
+// 75:09 B-tree insert / delete 概念
 FRAG.push(['bst63-btree-split-merge', 'B-tree insert 溢位 split、delete 不足 merge', async (tok) => {
   fresh([0, 3, 12], [0, 2.8, 0]);
   const ks = {};
-  const place = (keys, cx, y) => keys.forEach((k, i) => { const x = cx + (i - (keys.length - 1) / 2) * 1.05; if (ks[k]) move(ks[k], x, y, 0); else ks[k] = cube(k, B63, [0.95, 0.7, 0.9], x, y, 0, 4); });
+  const place = (keys, cx, y) => keys.forEach((k, i) => { const x = cx + (i - (keys.length - 1) / 2) * 1.05; if (ks[k]) move(ks[k], x, y, 0); else ks[k] = cube(k, B63, [0.95, 0.7, 0.9], x, y, 0); });
+  place([10, 20, 40, 50], 0, 2);
+  tag('（示意）一個 node 最多 5 個 key', 'idx', 0, 0.8);
+  let s = null;
+  await step(tok);                                    // 75:09 insert：先 find
+  s = seeker(30, 0, 5.6, 0.55, 'insert');
+  say('B-tree insert：前面跟 BST 一樣', '先 find：看這個數字存不存在');
+  await step(tok);                                    // 75:28 找到該放的 node
+  await hop63(tok, s, 0.5, 2.5, 900);
+  say('不存在 → 找到它該放的 leaf', '放到對的位置');
+  await step(tok);                                    // 76:00 沒滿就放
+  kill(s.g);
+  ks[30] = cube(30, O63, [0.95, 0.7, 0.9], 0, 2, 0, 2);
   place([10, 20, 30, 40, 50], 0, 2);
-  say('（示意）order 6：一個 node 最多 5 個 key', 'insert：先像 search 找到該放的 leaf');
-  await beat(tok, 2800);
-  ks[35] = cube(35, O63, [0.95, 0.7, 0.9], 0, 6, 0);
+  say('leaf 還沒滿：直接放上去', '');
+  await step(tok);                                    // 76:08 已經滿了，塞第 6 個
+  ks[35] = cube(35, O63, [0.95, 0.7, 0.9], 0, 4.4, 0);
+  await beat(tok, 500);
   place([10, 20, 30, 35, 40, 50], 0, 2);
   [10, 20, 30, 35, 40, 50].forEach((k) => glow(ks[k], RED));
-  say('塞第 6 個：overflow', '沒滿就直接放；滿了就要 split');
-  await beat(tok, 2600);
+  say('滿了怎麼辦？最多 5 個，又塞第 6 個', 'overflow！');
+  await step(tok);                                    // 76:14 split
   [10, 20, 30, 35, 40, 50].forEach((k) => glow(ks[k], null));
   place([30], 0, 4.8); place([10, 20], -3, 2); place([35, 40, 50], 2.5, 2);
   const l1 = line(-0.3, 4.45, -3, 2.35), l2 = line(0.3, 4.45, 2.5, 2.35);
+  say('split：拆成兩個 node', '中間的 key 推到上一層');
+  await step(tok);                                    // 76:22 上層 index 調整
   glow(ks[30], GOLD);
-  say('split：中間的 key 推到上層', '上層的 index 也跟著調整');
-  await beat(tok, 3000);
+  say('上面的 index 也要跟著調整', '');
+  await step(tok);                                    // 76:27 delete：先 find
   glow(ks[30], null);
   fly(ks[20]); delete ks[20];
-  say('delete 20：先找到再刪掉', '');
-  await beat(tok, 1800);
+  say('delete：一樣先找這個數字在不在', '找到就殺掉它（刪 20）');
+  await step(tok);                                    // 76:55 檢查 ⌈m/2⌉
   glow(ks[10], RED);
-  say('只剩 1 個 key：child 少於 ⌈m/2⌉', 'underflow → 要合併');
-  await beat(tok, 2600);
+  say('刪完要檢查 B-tree 的性質', '至少要有 ⌈m/2⌉ 個 child → 太少了（underflow）');
+  await step(tok);                                    // 77:10 merge
   glow(ks[10], null); kill(l1); kill(l2);
   place([10, 30, 35, 40, 50], 0, 2);
-  say('跟兄弟、parent 的 key 合併（merge）', 'insert 會 split，delete 會 merge');
-  await beat(tok, 3000);
+  say('不符合 → 跟別人合併（merge）', '');
+  await step(tok);                                    // 77:27 overflow / 太少
+  okT('insert 太多 → split', -3.2, 4.6); okT('delete 太少 → merge', 3.2, 4.6);
+  say('insert 可能 overflow → split', 'delete 可能太少 → merge；細節用 2-3 tree 例子講');
+  await step(tok);                                    // 77:43 complexity ≈ 樹高
+  note('時間 ≈ 樹的高度', 0, 6.2);
+  say('這些操作的 complexity', '大致跟樹的高度差不多');
+  await step(tok);                                    // 77:51 m 32～256
+  note('disk 上 m 通常 32 ～ 256', 0, 5.5);
+  say('實作在 disk 上', 'm 通常介於 32 到 256');
 }]);
 
 // ─── 2-3 tree：key 方塊依值保存，重新排版時用 move 移過去 ───
@@ -2374,10 +2888,12 @@ function lay63(spec) {
 function show63(st, spec, drop) {
   st.deco.splice(0).forEach(kill);
   const seen = new Set();
+  st.at = {};
   for (const o of lay63(spec)) {
+    st.at[o.n] = o;
     o.k.forEach((v, i) => {
       const x = o.x + (i - (o.k.length - 1) / 2) * 1.0; seen.add(v);
-      if (st.cubes[v]) move(st.cubes[v], x, o.y, 0); else st.cubes[v] = cube(v, B63, [0.9, 0.7, 0.9], x, o.y, 0, drop ? 4 : 0);
+      if (st.cubes[v]) move(st.cubes[v], x, o.y, 0); else st.cubes[v] = cube(v, B63, [0.9, 0.7, 0.9], x, o.y, 0, drop ? 2 : 0);
     });
     if (!o.k.length) st.deco.push(cube('', GRAY, [0.9, 0.2, 0.9], o.x, o.y, 0));
     st.deco.push(tag(o.n, 'idx', o.x - Math.max(1, o.k.length) * 0.5 - 0.4, o.y + 0.1));
@@ -2386,128 +2902,231 @@ function show63(st, spec, drop) {
   for (const v of Object.keys(st.cubes)) if (!seen.has(+v)) { fly(st.cubes[v]); delete st.cubes[v]; }
 }
 const glowK63 = (st, ks, c) => ks.forEach((k) => { if (st.cubes[k]) glow(st.cubes[k], c); });
+const toNode = (tok, b, st, n, ms = 700) => hop63(tok, b, st.at[n].x, st.at[n].y + 0.45, ms);
 const DEL0 = { n: 'A', k: [50, 80], c: [{ n: 'B', k: [10, 20] }, { n: 'C', k: [60, 70] }, { n: 'D', k: [90, 95] }] };
 
+// 78:17 2-3 tree 與 search
 FRAG.push(['bst63-23-search', '2-3 tree：B-tree order 3 與三向搜尋', async (tok) => {
   fresh([0, 3, 12], [0, 3.2, 0]);
   const st = { cubes: {}, deco: [] };
-  show63(st, DEL0, false);
-  say('2-3 tree = order 3 的 B-tree', '2-3-4 tree = order 4，兩者都是 B-tree');
-  await beat(tok, 2800);
+  await step(tok);                                    // 78:17 order 4 / order 3
+  note('order 4 → 2-3-4 tree', -3.4, 6.8); note('order 3 → 2-3 tree', 3.4, 6.8);
+  say('B-tree order 4 叫 2-3-4 tree', 'order 3 叫 2-3 tree');
+  await step(tok);                                    // 78:36 都是 B-tree
+  okT('兩個都是 B-tree', 0, 7.5);
+  say('2-3 tree 和 2-3-4 tree 都是 B-tree', 'B-tree 是很 general 的名字');
+  await step(tok);                                    // 78:49 2-3 tree 例子
+  show63(st, DEL0, true);
+  say('這是一棵 2-3 tree（m = 3）', '');
+  await step(tok);                                    // 78:57 root 有兩個以上 child
   glowK63(st, [50, 80], GOLD);
-  say('root 有 ≥ 2 個 child；leaf 都在同一層', 'internal node 至少 ⌈3/2⌉ = 2 個 child');
-  await beat(tok, 2600);
-  glowK63(st, [50, 80], null);
-  say('n 個 key 的高度', 'log₃(n+1) ≤ h ≤ log₂(n+1)');
-  await beat(tok, 2400);
-  const cur = tag('', 'ptr alt', 0, 9);
-  const at = (k, t) => { const m = st.cubes[k]; cur.position.set(m.position.x, m.position.y + 0.8, 0); txt(cur, t); };
-  at(50, 'x = 70'); glowK63(st, [50, 80], GOLD);
-  say('search 70：50 < 70 < 80', '介於兩個 key 之間 → 走中間');
-  await beat(tok, 2400);
-  glowK63(st, [50, 80], null); at(60, 'x = 70'); glowK63(st, [60], GOLD);
-  say('到 C：70 > 60，再比第二個 key', '');
-  await beat(tok, 1600);
-  glowK63(st, [60], null); glowK63(st, [70], GREEN); at(70, '找到');
-  say('x = key：回報找到', '');
-  await beat(tok, 2000);
-  glowK63(st, [70], null); at(50, 'x = 15'); glowK63(st, [50], GOLD);
-  say('search 15：15 < 第一個 key', '→ 走左邊');
-  await beat(tok, 2000);
-  glowK63(st, [50], null); at(10, 'x = 15'); glowK63(st, [10, 20], GOLD);
-  say('B：10 < 15 < 20', '中間沒有 child → <span class="no">search 失敗</span>');
-  await beat(tok, 2800);
+  say('檢查：root 至少兩個 child', '有，它有三個');
+  await step(tok);                                    // 79:04 每個 node ≥ 2 pointer
+  glowK63(st, [50, 80], null); glowK63(st, [10, 20, 60, 70, 90, 95], GOLD);
+  say('其他 node 至少 ⌈3/2⌉ = 2 個 pointer', '每個都符合');
+  await step(tok);                                    // 79:22 高度
+  glowK63(st, [10, 20, 60, 70, 90, 95], null);
+  note('n 個 key：log₃(n+1) ≤ h ≤ log₂(n+1)', 0, -0.2);
+  say('n 個 key 的 2-3 tree 高度', '介於 log₃(n+1) 和 log₂(n+1) 之間');
+  await step(tok);                                    // 79:38 怎麼搜尋
+  const s = seeker(15, -6.2, 5.4, 0.5);
+  say('2-3 tree 怎麼搜尋？很簡單', 'node 裡只有兩個 key，跟它們比');
+  await step(tok);                                    // 79:56 比第一個小 → 左
+  await toNode(tok, s, st, 'A', 600); glowK63(st, [50], GOLD);
+  await toNode(tok, s, st, 'B', 700);
+  say('x 比第一個 key 小：走最左邊的 pointer', '例：15 < 50 → 往左');
+  await step(tok);                                    // 80:05 中間 → 中間
+  glowK63(st, [50], null); s.set(70);
+  await toNode(tok, s, st, 'A', 600); glowK63(st, [50, 80], GOLD);
+  await toNode(tok, s, st, 'C', 700);
+  say('x 介於兩個 key 之間：走中間', '例：50 < 70 < 80 → 中間');
+  await step(tok);                                    // 80:10 大於第二個 → 右
+  glowK63(st, [50, 80], null); s.set(95);
+  await toNode(tok, s, st, 'A', 600); glowK63(st, [80], GOLD);
+  await toNode(tok, s, st, 'D', 700);
+  say('x 比第二個 key 大：走右邊', '例：95 > 80 → 往右（投影片把 x 打成 X）');
+  await step(tok);                                    // 80:40 三個 case + 相同
+  glowK63(st, [80], null); glowK63(st, [95], GREEN); s.mood('happy');
+  okT('相同 → 找到', 4.0, 2.4);
+  say('search function：左、中、右三個 case', '再加上相同時回報找到');
 }]);
 
 const INS0 = { n: 'A', k: [40], c: [{ n: 'B', k: [10, 20] }, { n: 'C', k: [80] }] };
 const INS3 = { n: 'A', k: [20, 40], c: [{ n: 'B', k: [10] }, { n: 'D', k: [30] }, { n: 'C', k: [70, 80] }] };
+// 81:11 2-3 tree insert 70、30
 FRAG.push(['bst63-23-insert-70-30', '2-3 tree insert 70、insert 30（split）', async (tok) => {
   fresh([0, 3, 12], [0, 3.2, 0]);
   const st = { cubes: {}, deco: [] };
   show63(st, INS0, false);
-  say('2-3 tree：A(40)、B(10, 20)、C(80)', 'insert 先用 search 找位置');
-  await beat(tok, 2600);
-  glowK63(st, [40], GOLD);
-  say('insert 70：70 > 40 → 往 C 走', '');
-  await beat(tok, 1800);
-  glowK63(st, [40], null);
+  const rule = [];
+  let s = null;
+  await step(tok);                                    // 81:11 先找位置
+  s = seeker('x', -6.2, 5.4, 0.5, 'insert');
+  say('insert：先用 search function 找位置', '');
+  await step(tok);                                    // 81:25 已存在就不用插
+  note('已經在樹裡 → 不用 insert', 0, 7.4);
+  say('如果 key 已經在樹裡', '根本不用 insert');
+  await step(tok);                                    // 81:49 leaf 叫 u
+  const u = tag('u', 'ptr alt', st.at.C.x + 1.0, st.at.C.y + 0.6);
+  say('要插入的數字會落在某個 leaf', '這個 leaf node 叫 u');
+  await step(tok);                                    // 82:06 case 1
+  rule.push(note('u 只有 1 個 key → 直接塞進去', -3.6, -0.4));
+  say('情況一：u 只有 1 個 key', '把值塞進去就結束');
+  await step(tok);                                    // 82:24 case 2
+  rule.push(note('u 已有 2 個 → 滿了 → split', 3.4, -0.4));
+  say('情況二：u 已經有 2 個 key', '再塞就滿了 → split');
+  await step(tok);                                    // 82:43 新 node 放最大
+  rule.push(pkt('最大 → 新 node', -4.0, -1.2));
+  say('split 規則：產生一個新 node', '放三個數字裡最大的');
+  await step(tok);                                    // 83:02 中間 → parent
+  rule.push(pkt('中間 → parent', 0, -1.2));
+  say('中間那個 key（middle key）', '推到 u 的 parent');
+  await step(tok);                                    // 83:09 最小留在 u
+  rule.push(pkt('最小 → 留在 u', 4.0, -1.2));
+  say('最小的', '留在原來的 node u');
+  await step(tok);                                    // 83:21 insert 70
+  remove(u); rule.forEach(remove);
+  s.set(70);
+  await toNode(tok, s, st, 'A', 600); glowK63(st, [40], GOLD);
+  await toNode(tok, s, st, 'C', 700);
+  say('insert 70：70 > 40', '往 C 走');
+  await step(tok);                                    // 83:31 直接放
+  glowK63(st, [40], null); kill(s.g);
   show63(st, { n: 'A', k: [40], c: [{ n: 'B', k: [10, 20] }, { n: 'C', k: [70, 80] }] }, true);
-  say('C 只有 1 個 key：直接放進去', 'C = 70, 80');
-  await beat(tok, 2400);
-  glowK63(st, [40], GOLD);
-  say('insert 30：30 < 40 → 往 B 走', 'B 已經有 10、20');
-  await beat(tok, 2000);
-  glowK63(st, [40], null);
+  say('C 只有 80，還有一個空位', '70 直接放進去');
+  await step(tok);                                    // 83:50 insert 30
+  s = seeker(30, -6.2, 5.4, 0.5, 'insert');
+  await toNode(tok, s, st, 'A', 600); glowK63(st, [40], GOLD);
+  await toNode(tok, s, st, 'B', 700);
+  say('insert 30：30 < 40', '從 A 走到 B');
+  await step(tok);                                    // 84:02 B 已滿
+  glowK63(st, [40], null); glowK63(st, [10, 20], RED);
+  say('B 已經放了 10、20', '滿了');
+  await step(tok);                                    // 84:21 split，新 node D
+  kill(s.g);
   show63(st, { n: 'A', k: [40], c: [{ n: 'B', k: [10, 20, 30] }, { n: 'C', k: [70, 80] }] }, true);
   glowK63(st, [10, 20, 30], RED);
-  say('B 塞不下：split', '最大 → 新 node，中間 → parent，最小留下');
-  await beat(tok, 2800);
+  say('30 放不進去 → B 要 split', '會產生一個新 node，叫 D');
+  await step(tok);                                    // 84:38 最大 30 → D
   glowK63(st, [10, 20, 30], null);
-  show63(st, INS3, false);
-  glowK63(st, [20], GOLD);
-  say('30 到新 node D，20 上 parent', '10 留在 B；A = 20, 40');
-  await beat(tok, 3000);
+  show63(st, { n: 'A', k: [40], c: [{ n: 'B', k: [10, 20] }, { n: 'D', k: [30] }, { n: 'C', k: [70, 80] }] }, false);
+  glowK63(st, [30], GOLD);
+  say('10、20、30 裡最大的 30', '放進新 node D');
+  await step(tok);                                    // 84:48 中位數 20 → parent
+  glowK63(st, [30], null);
+  show63(st, INS3, false); glowK63(st, [20], GOLD);
+  say('中位數 20', '推到 parent A：A = 20, 40');
+  await step(tok);                                    // 84:55 10 留在 B
+  glowK63(st, [20], null); glowK63(st, [10], GOLD);
+  say('最小的 10', '留在原來的 node B');
+  await step(tok);                                    // 85:09 結果
+  glowK63(st, [10], null);
+  okT('只多了一個 node D', 0, 7.4);
+  say('結果長這樣', '只是多了一個 node D：滿了就 split');
 }]);
 
+// 85:33 insert 60：連鎖 split
 FRAG.push(['bst63-23-insert-60', '2-3 tree insert 60：連鎖 split', async (tok) => {
   fresh([0, 3, 12.5], [0, 2.8, 0]);
   const st = { cubes: {}, deco: [] };
   show63(st, INS3, false);
-  glowK63(st, [20, 40], GOLD);
-  say('insert 60：60 > 40 → 往 C 走', 'C 是 70, 80');
-  await beat(tok, 2400);
-  glowK63(st, [20, 40], null);
-  show63(st, { n: 'A', k: [20, 40], c: [{ n: 'B', k: [10] }, { n: 'D', k: [30] }, { n: 'C', k: [60, 70, 80] }] }, true);
+  const B = { n: 'B', k: [10] }, D = { n: 'D', k: [30] };
+  await step(tok);                                    // 85:33 insert 60 → C
+  const s = seeker(60, -6.2, 5.4, 0.5, 'insert');
+  await toNode(tok, s, st, 'A', 600); glowK63(st, [40], GOLD);
+  await toNode(tok, s, st, 'C', 700);
+  say('insert 60：從 A 往 40 的右邊走', '到 C');
+  await step(tok);                                    // 85:42 C 滿了
+  glowK63(st, [40], null); kill(s.g);
+  show63(st, { n: 'A', k: [20, 40], c: [B, D, { n: 'C', k: [60, 70, 80] }] }, true);
   glowK63(st, [60, 70, 80], RED);
-  say('C 滿了：split', '60 留 C，80 → 新 node E，70 往上推');
-  await beat(tok, 2600);
+  say('C 是 70、80：塞 60 進去就滿了', '要 split');
+  await step(tok);                                    // 86:04 80 → 新 node E
   glowK63(st, [60, 70, 80], null);
-  show63(st, { n: 'A', k: [20, 40, 70], c: [{ n: 'B', k: [10] }, { n: 'D', k: [30] }, { n: 'C', k: [60] }, { n: 'E', k: [80] }] }, false);
-  await beat(tok, 1400);
-  glowK63(st, [20, 40, 70], RED);
-  say('70 推進 A：A = 20, 40, 70', '<span class="no">A 又爆了</span>');
-  await beat(tok, 2600);
+  show63(st, { n: 'A', k: [20, 40], c: [B, D, { n: 'C', k: [60, 70] }, { n: 'E', k: [80] }] }, false);
+  glowK63(st, [80], GOLD);
+  say('split C：最大的 80 → 新 node E', '60 留在 C');
+  await step(tok);                                    // 86:16 70 往上
+  glowK63(st, [80], null);
+  show63(st, { n: 'A', k: [20, 40, 70], c: [B, D, { n: 'C', k: [60] }, { n: 'E', k: [80] }] }, false);
+  glowK63(st, [70], GOLD);
+  say('中間的 70 往上送', '送進 A（20、40）');
+  await step(tok);                                    // 86:25 A 又爆了
+  glowK63(st, [70], null); glowK63(st, [20, 40, 70], RED);
+  say('A 變成 20、40、70', 'A 又爆了！');
+  await step(tok);                                    // 86:34 再 split
   glowK63(st, [20, 40, 70], null);
-  show63(st, { n: 'G', k: [40], c: [{ n: 'A', k: [20], c: [{ n: 'B', k: [10] }, { n: 'D', k: [30] }] },
-    { n: 'F', k: [70], c: [{ n: 'C', k: [60] }, { n: 'E', k: [80] }] }] }, false);
-  glowK63(st, [40], GOLD);
-  say('A 再 split：40 變新 root G', '70 → 新 node F；連鎖 split，樹高 +1');
-  await beat(tok, 3000);
+  glowK63(st, [20], '#17396a'); glowK63(st, [40], GOLD); glowK63(st, [70], O63);
+  say('只好再 split 一次', '20 留下、40 往上、70 到新 node');
+  await step(tok);                                    // 86:44 F 是新 node
+  glowK63(st, [20, 40, 70], null);
+  show63(st, { n: 'G', k: [40], c: [{ n: 'A', k: [20], c: [B, D] }, { n: 'F', k: [70], c: [{ n: 'C', k: [60] }, { n: 'E', k: [80] }] }] }, false);
+  glowK63(st, [70], GOLD);
+  say('70 到新 node F', 'A 是舊的 node，只剩 20');
+  await step(tok);                                    // 86:52 40 拉到新 root G
+  glowK63(st, [70], null); glowK63(st, [40], GOLD);
+  say('40 被拉到更新的 node：G', 'G 成為新的 root，樹長高一層');
+  await step(tok);                                    // 87:02 連鎖反應
+  okT('兩次 split：連鎖反應', 0, 7.5);
+  say('兩次 split：連鎖反應', '往上推，上面又滿，就再 split');
+  await step(tok);                                    // 87:19 E、F、G
   glowK63(st, [40], null);
-  say('新 node 依序是 E、F、G', '2-3 tree 是往上長的');
-  await beat(tok, 2600);
+  ['E', 'F', 'G'].forEach((n, i) => { const o = st.at[n]; st.deco.push(tag((i + 1) + '', 'ptr alt', o.x + 0.9, o.y + 0.6)); });
+  say('split 產生的新 node 依序是 E、F、G', '2-3 tree 是往上長的');
 }]);
 
+// 87:29 2-3 tree delete
 FRAG.push(['bst63-23-delete', '2-3 tree delete：rotate 與 combine', async (tok) => {
   fresh([0, 3, 12], [0, 3.2, 0]);
   const st = { cubes: {}, deco: [] };
   show63(st, DEL0, false);
-  say('2-3 tree：A(50, 80)、B、C、D', '');
-  await beat(tok, 2200);
-  glowK63(st, [50, 80], GOLD);
-  say('delete 70：50 < 70 < 80 → C', '找到就刪掉');
-  await beat(tok, 1800);
-  glowK63(st, [50, 80], null);
+  let s = null;
+  await step(tok);                                    // 87:29 delete
+  say('2-3 tree 的 deletion', '一樣先找到要刪的 key');
+  await step(tok);                                    // 87:39 delete 70
+  s = seeker(70, -6.2, 5.4, 0.5, 'delete');
+  say('例：delete 70', '');
+  await step(tok);                                    // 87:47 落在 50 ~ 80 → C，刪掉
+  await toNode(tok, s, st, 'A', 600); glowK63(st, [50, 80], GOLD);
+  await toNode(tok, s, st, 'C', 700);
+  glowK63(st, [50, 80], null); kill(s.g);
   show63(st, { n: 'A', k: [50, 80], c: [{ n: 'B', k: [10, 20] }, { n: 'C', k: [60] }, { n: 'D', k: [90, 95] }] }, false);
-  await beat(tok, 1600);
+  say('70 落在 50 和 80 之間 → 走到 C', '找到 70，殺掉它');
+  await step(tok);                                    // 87:59 再 delete 90
   show63(st, { n: 'A', k: [50, 80], c: [{ n: 'B', k: [10, 20] }, { n: 'C', k: [60] }, { n: 'D', k: [95] }] }, false);
-  say('delete 90：D 還剩 95', '沒事');
-  await beat(tok, 2200);
+  say('接著 delete 90', '（回去自己推一次）');
+  await step(tok);                                    // 88:06 沒事
+  okT('D 還有 95：沒事', st.at.D.x, st.at.D.y - 0.9);
+  say('D 還剩 95', '沒事');
+  await step(tok);                                    // 88:18 delete 60
   show63(st, { n: 'A', k: [50, 80], c: [{ n: 'B', k: [10, 20] }, { n: 'C', k: [] }, { n: 'D', k: [95] }] }, false);
-  say('delete 60：C 空了', '左兄弟 B 有 2 個 key → rotate');
-  await beat(tok, 2600);
+  say('接下來 delete 60', '');
+  await step(tok);                                    // 88:48 C 空了
+  const em = noT('C 空了！', st.at.C.x, st.at.C.y - 0.8);
+  say('60 刪掉後，C 這個 node 空了', '要做調整');
+  await step(tok);                                    // 88:57 rotate
+  remove(em);
+  bub('rotate：旋轉一下', 0, 7.4);
+  glowK63(st, [10, 20], GOLD);
+  say('左兄弟 B 有兩個 key → 可以 rotate', '旋轉一下');
+  await step(tok);                                    // 89:09 50 下來、20 上去
+  glowK63(st, [10, 20], null);
   show63(st, { n: 'A', k: [20, 80], c: [{ n: 'B', k: [10] }, { n: 'C', k: [50] }, { n: 'D', k: [95] }] }, false);
   glowK63(st, [50, 20], GOLD);
-  say('rotate：50 下來、20 上去', '只讓 key 在 node 間轉，不動 pointer');
-  await beat(tok, 3000);
+  say('像搓湯圓：parent 的 50 搓下來給 C', '兄弟的 20 丟上去給 parent');
+  await step(tok);                                    // 89:35 不動 pointer
   glowK63(st, [50, 20], null);
+  note('只讓 key 在 node 之間轉，pointer 不動', 0, -0.4);
+  say('重點：盡量不去動 pointer', '只讓 key 在 node 間旋轉，維持 2-3 tree 的性質');
+  await step(tok);                                    // 89:51 也會有 combine
+  say('delete 也會遇到 combine', '');
+  await step(tok);                                    // 90:01 delete 95 → D 空了
   show63(st, { n: 'A', k: [20, 80], c: [{ n: 'B', k: [10] }, { n: 'C', k: [50] }, { n: 'D', k: [] }] }, false);
-  say('delete 95：D 空了', '兄弟 C 只有 1 個 key → 不能 rotate，要 combine');
-  await beat(tok, 2600);
+  say('例：把 95 delete 掉', 'D 空了，兄弟 C 只有一個 key → 不能 rotate');
+  await step(tok);                                    // 90:12 combine
   show63(st, { n: 'A', k: [20], c: [{ n: 'B', k: [10] }, { n: 'C', k: [50, 80] }] }, false);
   glowK63(st, [80], GOLD);
-  say('combine：80 下來跟 C 合併', 'D 被拿掉，A = 20');
-  await beat(tok, 3000);
+  say('combine：80 拉下來跟 C 合併', 'D 被拿掉，A 只剩 20');
 }]);
   }
 
