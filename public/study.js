@@ -249,7 +249,7 @@
     current = {seriesIdx: si, idx: i, opt: opt, id: id};
     activeSeries = si;
     store.set('study-last-' + chKey, id);
-    history.replaceState(null, '', studyRoomUrl(subject.id, chIndex, id));
+    history.replaceState(null, '', videoRoomUrl(subject.id, chIndex, id));
     $('nowSeries').textContent = s.name + '・第 ' + (i + 1) + ' / ' + s.options.length + ' 支' + (opt.dur ? '・' + opt.dur : '');
     $('nowTitle').textContent = opt.label;
     $('prevVid').disabled = i === 0;
@@ -719,6 +719,14 @@
     if (!start && series[si]) {
       const firstUnwatched = series[si].options.findIndex(function(o){ return !done.has(vidTask(youtubeId(o.url))); });
       start = [si, Math.max(0, firstUnwatched)];
+    }
+    // chapters with a concept course: the course is the way in; this page
+    // is the full video list for looking things up
+    if (typeof hasCourse === 'function' && hasCourse(subject.id, chIndex)) {
+      const bn = document.createElement('a');
+      bn.className = 'st-course-banner'; bn.href = studyRoomUrl(subject.id, chIndex);
+      bn.innerHTML = '<b>這章有從零開始的概念課程</b><span>先上課：動畫講解＋只看講最清楚的片段＋小檢查。這裡是完整影片，查資料用。</span><i>去上課 ›</i>';
+      document.querySelector('.st-main').before(bn);
     }
     renderGoals();
     renderTasks();

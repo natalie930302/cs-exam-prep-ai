@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>章節課程</title>
+<link rel="icon" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap">
+<link rel="stylesheet" href="theme.css?v=20261007e">
+<link rel="stylesheet" href="study.css?v=1">
+<link rel="stylesheet" href="course.css?v=1">
+</head>
+<body>
+<header class="st-top">
+  <a class="st-back" href="/#subjects" id="backLink">← 六科</a>
+  <div class="st-title">
+    <div class="st-kicker" id="kicker"></div>
+    <h1 id="chTitle">載入中…</h1>
+  </div>
+  <div class="st-chprog" id="coProg"></div>
+</header>
+
+<main class="co-main">
+  <!-- 這章的課：照「從零開始」的順序 -->
+  <nav class="co-side" aria-label="這章的課">
+    <div class="co-side-hd">這章的課</div>
+    <ol class="co-lessons" id="lessons"></ol>
+    <a class="co-videos-link" id="videosLink">看完整影片清單 ›</a>
+  </nav>
+
+  <section class="co-lesson" id="lesson">
+    <div class="co-lhead">
+      <div class="co-lnum" id="lNum"></div>
+      <h2 id="lTitle"></h2>
+      <p class="co-why" id="lWhy"></p>
+    </div>
+    <ol class="co-phases" id="phases">
+      <li data-p="1"><button type="button">① 先搞懂</button></li>
+      <li data-p="2"><button type="button">② 看老師講</button></li>
+      <li data-p="3"><button type="button">③ 小檢查</button></li>
+    </ol>
+
+    <!-- ① 動畫＋保母式講解，自己按下一步 -->
+    <div class="co-phase" id="p1">
+      <div class="co-stage-wrap"><iframe class="co-stage" id="stage" title="概念動畫"></iframe></div>
+      <section class="st-teach co-teach" id="teach">
+        <div class="st-teach-hd"><b>講解</b><span class="st-teach-step" id="teachStep"></span></div>
+        <p class="st-teach-body" id="teachBody"></p>
+        <div class="st-terms" id="teachTerms"></div>
+        <div class="co-stepbtns">
+          <button class="st-btn" id="prevStep" type="button">‹ 上一步</button>
+          <button class="st-btn co-primary" id="nextStep" type="button">下一步 ›</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- ② 影片片段：只看講這個概念最清楚的那幾段 -->
+    <div class="co-phase" id="p2" hidden>
+      <div class="co-clips" id="clips"></div>
+      <div class="st-player-wrap co-player"><div id="player"></div><div class="st-sub" id="subLine" aria-live="off" hidden></div><button class="st-skip" id="skipBtn" type="button" hidden></button>
+        <div class="co-clipdone" id="clipDone" hidden></div></div>
+      <div class="co-clipbar">
+        <button class="st-btn st-btn-sub" id="subBtn" type="button" aria-pressed="true">字幕 開</button>
+        <span class="co-cliptime" id="clipTime"></span>
+        <button class="st-btn co-primary" id="clipNext" type="button">這段看完了 ›</button>
+      </div>
+    </div>
+
+    <!-- ③ 小檢查 -->
+    <div class="co-phase" id="p3" hidden>
+      <div id="check"></div>
+    </div>
+  </section>
+</main>
+
+<script src="data.js?v=1"></script>
+<script src="video-order.js?v=1"></script>
+<script src="chapter-core.js?v=1"></script>
+<script src="course.js?v=1"></script>
+</body>
+</html>

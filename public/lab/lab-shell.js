@@ -28,9 +28,11 @@ window.__lab = lab;
 let demoToken = 0;
 // The cued scene now playing: its step times, how many steps have started,
 // and the video time last reported by the study room.
-const cue = { tok: 0, list: null, k: 0, shown: 0, t: 0, end: Infinity, id: null, params: null };
+// manual: a lesson page drives the steps itself (下一步): target = how many steps may show.
+const cue = { tok: 0, list: null, k: 0, shown: 0, t: 0, end: Infinity, id: null, params: null, manual: false, target: 0 };
 // the video is ahead of the scene: its next step is already due
 function behind(tok) {
+  if (cue.manual && tok === cue.tok) return cue.k < cue.target;
   if (!cue.list || tok !== cue.tok) return false;
   return cue.t > cue.end || (cue.k < cue.list.length && cue.t >= cue.list[cue.k] + 0.3);
 }
@@ -79,7 +81,10 @@ function makeCtx() {
     // a paused video holds the step. Outside the study room (no cues) steps
     // just follow each other with a short pause.
     async step(tok) {
-      if (cue.list && tok === cue.tok) {
+      if (cue.manual && tok === cue.tok) {
+        while (tok === demoToken && cue.k >= cue.target) await sleep(60);
+        cue.k++; cue.shown = cue.k;
+      } else if (cue.list && tok === cue.tok) {
         if (cue.k < cue.list.length) {
           const at = cue.list[cue.k++];
           while (tok === demoToken && cue.t < at) await sleep(60);
@@ -139,14 +144,14 @@ function setTab(id) {
 document.querySelectorAll('#tabs button').forEach((b) => (b.onclick = () => setTab(b.dataset.mode || b.dataset.page)));
 
 // ── stage mode: scenes, guided tour, hands-on ──
-async function playScene(id, params, loop = true, cues = null, end = Infinity) {
+async function playScene(id, params, loop = true, cues = null, end = Infinity, manual = 0) {
   const tok = ++demoToken;
   if (def.stop) def.stop();
   document.body.classList.remove('hands-on', 'idle');
   const sc = scenes[id] || scenes[order[0]];
   if (!sc) return;
   ctx.params = params || {};
-  Object.assign(cue, { tok, list: cues && cues.length ? cues.slice() : null, k: 0, shown: 0, end, id, params });
+  Object.assign(cue, { tok, list: cues && cues.length ? cues.slice() : null, k: 0, shown: 0, end, id, params, manual: !!manual, target: manual || 0 });
   // In the study room a scene plays once and holds its last step: the
   // lecture moves on by itself, so replaying would only distract.
   if (STAGE && parent !== window) loop = false;
@@ -179,7 +184,13 @@ async function tour(startId) {
 if (STAGE) {
   window.addEventListener('message', (e) => {
     if (e.origin !== location.origin || !e.data) return;
-    if (e.data.type === 'scene') playScene(e.data.scene, e.data.params, true, e.data.cues, e.data.end);
+    if (e.data.type === 'scene') playScene(e.data.scene, e.data.params, true, e.data.cues, e.data.end, e.data.manual ? Math.max(1, e.data.step || 1) : 0);
+    // lesson pages: show up to step k (1-based); going back replays quickly to it
+    if (e.data.type === 'goto' && cue.manual && cue.tok === demoToken) {
+      const k = Math.max(1, e.data.step | 0);
+      if (k < cue.shown) playScene(cue.id, cue.params, false, null, Infinity, k);
+      else cue.target = k;
+    }
     if (e.data.type === 'idle') idle(e.data.text);
     if (e.data.type === 'time') {
       cue.t = e.data.t;
