@@ -1,0 +1,465 @@
+{
+ "video": "yWZHGsd06dA",
+ "label": "交大江蕙如 Lec12 Greedy Algorithms (3/5)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "回顧：證明 greedy 最佳的兩招",
+   "scene": "grjiang2-proof-strategies",
+   "points": [
+    {
+     "text": "Greedy algorithm 每一步依設計好的 criterion 選當下最好的解；criterion 要特別設計。",
+     "t": 47
+    },
+    {
+     "text": "如果 criterion 能證明某些 property，greedy 就能到達 optimal solution。",
+     "t": 71
+    },
+    {
+     "text": "第一招 greedy stays ahead：證明每一步 greedy 都不落後於其他解，一路領先到最後。",
+     "t": 92
+    },
+    {
+     "text": "第二招 exchange argument（較常用）：先假設有人用別的方法得到一個 optimal solution。",
+     "t": 118
+    },
+    {
+     "text": "把 optimal 裡不符合 greedy rule 的部分挑出來砍掉，換成 greedy 選的貼回去。",
+     "t": 164
+    },
+    {
+     "text": "每次交換要證兩件事：解仍然 feasible，而且 solution quality 不變差。",
+     "t": 189
+    },
+    {
+     "text": "交換完品質沒損失 → greedy 得到的解也是 optimal。",
+     "t": 223
+    }
+   ]
+  },
+  {
+   "title": "本單元兩大問題：Shortest path 與 MST",
+   "scene": null,
+   "points": [
+    {
+     "text": "接下來介紹兩個有名的問題：shortest path（最簡單的版本）與 minimum spanning tree。",
+     "t": 242
+    },
+    {
+     "text": "Shortest path 的解法是 Dijkstra 在 1959 年提出；同一篇 paper 也解了 MST。",
+     "t": 277
+    },
+    {
+     "text": "Prim 單獨對 MST 提出同樣本質的方法，所以 MST 版本叫 Prim's algorithm，只差一個小地方。",
+     "t": 337
+    }
+   ]
+  },
+  {
+   "title": "Dijkstra 的軼事與 shortest path 的應用",
+   "scene": null,
+   "points": [
+    {
+     "text": "Dijkstra 1972 年得到 Turing Award；得獎演說建議寫程式前就讓 procedure 在邏輯上完美，不要讓 bug 產生。",
+     "t": 414
+    },
+    {
+     "text": "應用：Google Map、車用 GPS 找兩點間路線，可選距離最短、時間最短、油耗最少，也會加入塞車資訊。",
+     "t": 543
+    },
+    {
+     "text": "大型 shopping mall 的導覽機輸入店名就能顯示怎麼走，也是 shortest path。",
+     "t": 627
+    }
+   ]
+  },
+  {
+   "title": "Single-source shortest path 問題",
+   "scene": "grjiang2-sssp-def",
+   "points": [
+    {
+     "text": "Input 是一個 directed graph；undirected graph 可看成每條 edge 有兩個方向。",
+     "t": 674
+    },
+    {
+     "text": "Edge 上有 weight，這裡代表兩個地點之間的距離（也可以換成時間或機票錢等 cost）。",
+     "t": 721
+    },
+    {
+     "text": "另外給定起點 source s，所以叫 single-source shortest path（SSSP）。",
+     "t": 808
+    },
+    {
+     "text": "目標：找出從 s 出發到「剩下所有點」的最短距離。",
+     "t": 821
+    },
+    {
+     "text": "路徑長度 = 路徑上經過的 edge 距離總和。",
+     "t": 843
+    },
+    {
+     "text": "不限定終點，因為 Dijkstra 的方法本來就能一次算出 s 到所有點的最短距離。",
+     "t": 888
+    }
+   ]
+  },
+  {
+   "title": "Dijkstra 的 procedure：集合 S 與 d 值",
+   "scene": "grjiang2-dijkstra-procedure",
+   "points": [
+    {
+     "text": "Dijkstra's algorithm 的基本精神是 greedy；input 是 directed graph 與長度函數 ℓ。",
+     "t": 950
+    },
+    {
+     "text": "要維護集合 S：裡面放「已經算好從 s 出發最短距離」的點；所有點都進 S 時結束。",
+     "t": 984
+    },
+    {
+     "text": "每個點有一個 d 值，存 source 到它的最短距離。",
+     "t": 1022
+    },
+    {
+     "text": "一開始就知道 s 到 s 是 0：先把 s 放進 S，d(s) = 0。",
+     "t": 1083
+    },
+    {
+     "text": "每個 iteration 從 S 的點往外看一條 edge，找能 reach 到的最近新點。",
+     "t": 1135
+    },
+    {
+     "text": "第 3、4 行：選 v 使 d(u) + ℓ(u,v)（u ∈ S）最小，d(u) + ℓ(e) 要加括號視為一項。",
+     "t": 1197
+    },
+    {
+     "text": "把 v 放進 S，d(v) 設成剛算出的值，之後不再改變；做到所有點都在 S 或走不下去為止。",
+     "t": 1254
+    }
+   ]
+  },
+  {
+   "title": "小例子：一步一步長出 S",
+   "scene": "grjiang2-dijkstra-small",
+   "points": [
+    {
+     "text": "Directed graph，source = s，每條 edge 長度都已給定。",
+     "t": 1289
+    },
+    {
+     "text": "d(s) = 0；從 s 往外看到 u、v、x：0+1、0+2、0+4。",
+     "t": 1327
+    },
+    {
+     "text": "1、2、4 中 u 最近，走過去，S 變成 {s, u}；再長到 v。",
+     "t": 1366
+    },
+    {
+     "text": "S = {s, u, v}（粉紅色區）時：x 是 1+1 = 2、y 是 1+3 = 4、z 是 2+3 = 5。",
+     "t": 1399
+    },
+    {
+     "text": "最近的是 x，放進 S，d(x) = 2 確認後不再改變。",
+     "t": 1455
+    },
+    {
+     "text": "經過 x：y 更新成 2+1 = 3，z 更新成 2+2 = 4（比原來的 5 小）。",
+     "t": 1502
+    },
+    {
+     "text": "3 比 4 小，下一步放 y，最後放 z，procedure 結束。",
+     "t": 1524
+    }
+   ]
+  },
+  {
+   "title": "觀察：d 只降不升、由近走到遠",
+   "scene": "grjiang2-dijkstra-observe",
+   "points": [
+    {
+     "text": "一開始只確定 s 的距離是 0，其他人可以想成 ∞。",
+     "t": 1556
+    },
+    {
+     "text": "運算過程中每個點的 d 值不斷下降，因為新 explore 的點帶來更近的走法。",
+     "t": 1563
+    },
+    {
+     "text": "降到真正最短距離後就不再改變；放進 S 就 freeze。",
+     "t": 1591
+    },
+    {
+     "text": "Explore 的點按 d 值由小到大：從近的走到遠的，這就是 greedy 的想法。",
+     "t": 1603
+    },
+    {
+     "text": "實作的困難在第 3、4 行：要知道 S 有誰，並每輪找出距離最近的點。",
+     "t": 1660
+    },
+    {
+     "text": "照字面每輪要從 S 每個點往外 reach 一次，很慢；需要能快速 take minimum 的 data structure。",
+     "t": 1735
+    }
+   ]
+  },
+  {
+   "title": "正確性：loop invariant 與 induction",
+   "scene": "grjiang2-loop-invariant",
+   "points": [
+    {
+     "text": "要證明最後每個點的 d 值就是 s 到它的最短距離；這裡用 greedy stays ahead。",
+     "t": 1761
+    },
+    {
+     "text": "Iterative 的 procedure 常用 loop invariant 證明：loop 有一個不變的 property。",
+     "t": 1843
+    },
+    {
+     "text": "Invariant：任何時刻 S 裡每個點的 d 值都已是最短距離，且不再改變。",
+     "t": 1888
+    },
+    {
+     "text": "while loop 在所有點都進 S 時結束，所以 invariant 成立 → 全部的 d 都正確。",
+     "t": 1914
+    },
+    {
+     "text": "S 從 1 個點一個一個長大，最適合用 induction（數學歸納法），對 |S| 做。",
+     "t": 1980
+    },
+    {
+     "text": "Basis：S 只有 source，d(s) = 0，trivial 成立。",
+     "t": 2035
+    },
+    {
+     "text": "Inductive step 用 weak induction：|S| = k 成立 → 多放一個點（k+1）也成立。",
+     "t": 2076
+    }
+   ]
+  },
+  {
+   "title": "Inductive step：另一條路不會比 P_v 短",
+   "scene": "grjiang2-dijkstra-proof",
+   "points": [
+    {
+     "text": "設第 k+1 輪加入的是 v，是經過 u 進來的：d(u) + ℓ(u,v) 最小。",
+     "t": 2160
+    },
+    {
+     "text": "紅色路徑 P_v = s ⇝ u → v；由 induction hypothesis，s ⇝ u 已是最短。",
+     "t": 2264
+    },
+    {
+     "text": "假設還有另一條綠色路徑從 s 到 v。",
+     "t": 2397
+    },
+    {
+     "text": "綠色路徑一定在某處離開 S：前一點叫 x（在 S 裡），跨出去的點叫 y。",
+     "t": 2427
+    },
+    {
+     "text": "第 4 行選了 v 沒選 y，所以 d(x) + ℓ(x,y) ≥ d(u) + ℓ(u,v) = d(v)。",
+     "t": 2491
+    },
+    {
+     "text": "綠色的 s ⇝ y 已經 ≥ d(v)，剩下 y ⇝ v 這段 ≥ 0，加上去只會更大。",
+     "t": 2628
+    },
+    {
+     "text": "所以綠色總長 ≥ 紅色，v 記錄的 d 值確實是最短距離。",
+     "t": 2646
+    }
+   ]
+  },
+  {
+   "title": "適用條件：edge weight 必須非負",
+   "scene": "grjiang2-negative-weight",
+   "points": [
+    {
+     "text": "這個版本假設每條 edge 長度 ℓ(e) ≥ 0（投影片用紅色標出）。",
+     "t": 2690
+    },
+    {
+     "text": "點一放進 S 就不再更改，因為證明中後半段 y ⇝ v 一定 ≥ 0。",
+     "t": 2705
+    },
+    {
+     "text": "這件事成立是因為所有 edge 長度都非負。",
+     "t": 2757
+    },
+    {
+     "text": "Dijkstra 只能用在 edge weight 非負的 graph；有負數會產生錯誤結果。",
+     "t": 2797
+    },
+    {
+     "text": "有負的 weight 要用其他 shortest path 演算法，留到 dynamic programming 再介紹。",
+     "t": 2821
+    }
+   ],
+   "trap": "補充：場景的反例（s→a 2、s→b 3、b→a −2）是補充的，不是投影片上的圖：Dijkstra 先把 d(a)=2 定案，但 s→b→a 只要 1。"
+  },
+  {
+   "title": "實作：用 min-priority queue 找最小值",
+   "scene": "grjiang2-pq-costs",
+   "points": [
+    {
+     "text": "要讓第 4 行很快找出 d 值 + edge weight 最小的點，需要好的 data structure。",
+     "t": 2867
+    },
+    {
+     "text": "實作時換個角度：每個點身上隨時記錄目前知道從 source 到它的最短距離。",
+     "t": 2905
+    },
+    {
+     "text": "一開始都設 ∞，運算中往下降，到真正的 shortest path length 就停。",
+     "t": 2922
+    },
+    {
+     "text": "把所有點都放進 min-priority queue，key 是 d 值；它能快速輸出並移除最小值。",
+     "t": 2944
+    },
+    {
+     "text": "Array：存在一起，每次找最小值要整個掃一遍，比較慢。",
+     "t": 2993
+    },
+    {
+     "text": "Binary heap：用 binary tree 形式、存成一個 sequence；Fibonacci heap 更快一些。",
+     "t": 3005
+    },
+    {
+     "text": "本課至少要會用 binary heap 實作 min-priority queue。",
+     "t": 3030
+    }
+   ]
+  },
+  {
+   "title": "CLRS 例子：Extract-Min 依序 0、5、7、8、9",
+   "scene": "grjiang2-dijkstra-clrs",
+   "points": [
+    {
+     "text": "例子取自 Cormen（CLRS）的書，看實作時 Dijkstra 怎麼運作。",
+     "t": 3057
+    },
+    {
+     "text": "圈圈裡的數字是當下的 d 值：source 是 0，其他人都是 ∞，全部放進 min-priority queue。",
+     "t": 3083
+    },
+    {
+     "text": "Extract-Min 吐出 s；變黑色 = 正在處理、已放進 S。",
+     "t": 3121
+    },
+    {
+     "text": "從 s 往外：t = 0+10 = 10、y = 0+5 = 5，都比 ∞ 好。",
+     "t": 3168
+    },
+    {
+     "text": "吐出 y（5）：t 更新成 5+3 = 8，x = 5+9 = 14，z = 5+2 = 7。",
+     "t": 3198
+    },
+    {
+     "text": "吐出 z（7）：x 更新成 7+6 = 13；接著吐出 t（8），x 更新成 8+1 = 9。",
+     "t": 3256
+    },
+    {
+     "text": "每個點的 d 都從 ∞ 往下降，降到最後就不再動。",
+     "t": 3301
+    },
+    {
+     "text": "Visit 順序的 d 值 0、5、7、8、9 由小到大：從近的走到遠的，這是 greedy 的想法。",
+     "t": 3311
+    }
+   ]
+  },
+  {
+   "title": "下週：助教複習 priority queue 實作",
+   "scene": null,
+   "points": [
+    {
+     "text": "後面十幾頁投影片是 priority queue 的實作，下週由助教討論完作業後帶過。",
+     "t": 3339
+    },
+    {
+     "text": "這個實作很重要：之後的 Prim's algorithm 也會用到，因為兩者本質相同。",
+     "t": 3355
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "江老師說證明 greedy algorithm 能達到最佳解，常用的兩種策略是？",
+   "opts": [
+    "greedy stays ahead 與 exchange argument",
+    "divide and conquer 與 recursion",
+    "反證法與窮舉法",
+    "loop unrolling 與 memoization"
+   ],
+   "ans": "greedy stays ahead 與 exchange argument",
+   "why": "stays ahead 證明每一步都不落後；exchange argument 把最佳解中不符合 greedy rule 的部分換掉，證明仍 feasible 且品質不變差。"
+  },
+  {
+   "q": "Exchange argument 每做一次交換，需要證明哪兩件事？",
+   "opts": [
+    "解仍然 feasible，且 solution quality 不變差",
+    "解變得更短，且步數減少",
+    "解唯一，且是 greedy 的",
+    "時間複雜度不變，且空間不變"
+   ],
+   "ans": "解仍然 feasible，且 solution quality 不變差",
+   "why": "兩個要件都成立，就能把別人的 optimal 一步步改成 greedy 的解而不損失品質。"
+  },
+  {
+   "q": "小例子中 S = {s, u, v}，d(u)=1、d(v)=2，edge u→x 1、u→y 3、v→z 3、s→x 4。下一個放進 S 的點與它的 d？",
+   "opts": [
+    "x，d = 2",
+    "y，d = 4",
+    "z，d = 5",
+    "x，d = 4"
+   ],
+   "ans": "x，d = 2",
+   "why": "x 的候選是 min(0+4, 1+1) = 2，比 y 的 4、z 的 5 都小。"
+  },
+  {
+   "q": "Dijkstra's algorithm 正確的前提是？",
+   "opts": [
+    "所有 edge weight 非負",
+    "graph 沒有 cycle",
+    "graph 必須是 undirected",
+    "所有 edge weight 相同"
+   ],
+   "ans": "所有 edge weight 非負",
+   "why": "證明中 y ⇝ v 那段必須 ≥ 0；有負 weight 時，已放進 S 的點可能還有更短的路，Dijkstra 會算錯。"
+  },
+  {
+   "q": "老師證明 Dijkstra 正確時，用的是哪種方式？",
+   "opts": [
+    "loop invariant，對 |S| 做 induction",
+    "exchange argument",
+    "master theorem",
+    "potential function"
+   ],
+   "ans": "loop invariant，對 |S| 做 induction",
+   "why": "invariant：S 裡每個點的 d 都是最短距離。basis 是 S = {s}，inductive step 用 weak induction 從 k 推到 k+1。"
+  },
+  {
+   "q": "CLRS 例子（s→t 10、s→y 5、y→t 3、y→z 2、y→x 9、z→x 6、t→x 1…）Extract-Min 的順序是？",
+   "opts": [
+    "s, y, z, t, x",
+    "s, t, y, x, z",
+    "s, y, t, z, x",
+    "s, t, x, y, z"
+   ],
+   "ans": "s, y, z, t, x",
+   "why": "d 值依序 0、5、7、8、9：Dijkstra 由近走到遠。"
+  },
+  {
+   "q": "用 array 實作 min-priority queue 時，Dijkstra 的時間？",
+   "opts": [
+    "O(n²)",
+    "O(m log n)",
+    "O(n + m)",
+    "O(n log n)"
+   ],
+   "ans": "O(n²)",
+   "why": "n 次 Extract-Min 每次都要掃整個 array（O(n)），合計 O(n²)。"
+  }
+ ]
+}

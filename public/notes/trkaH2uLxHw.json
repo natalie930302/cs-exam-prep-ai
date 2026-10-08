@@ -1,0 +1,656 @@
+{
+ "video": "trkaH2uLxHw",
+ "label": "交大江蕙如 Lec13 Greedy Algorithms (4/5)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "回顧：Dijkstra 只適用非負 weight",
+   "scene": "grjiang2-negative-weight",
+   "points": [
+    {
+     "text": "Dijkstra 是有名的 shortest path algorithm；適用時機：edge weight 一定要 non-negative。",
+     "t": 15
+    },
+    {
+     "text": "它是 greedy 本質：決定之後不會回頭 revisit 已看過的點。",
+     "t": 50
+    },
+    {
+     "text": "如果 edge weight 是負的，會影響後續決定，整個 algorithm 就會運作錯誤。",
+     "t": 61
+    },
+    {
+     "text": "允許負 weight 的問題，後續章節會介紹其他 shortest path 演算法處理。",
+     "t": 99
+    }
+   ]
+  },
+  {
+   "title": "實作：每個點記 shortest-path estimate",
+   "scene": "grjiang2-edge-vs-vertex",
+   "points": [
+    {
+     "text": "整個過程中每個點都記錄一個 d 值，是 shortest path 距離的估計值（estimate）。",
+     "t": 133
+    },
+    {
+     "text": "除了 source 都從 ∞ 開始，慢慢往下降，降到真正的 shortest path 長度就不再改變。",
+     "t": 152
+    },
+    {
+     "text": "確認後把它 mark 成 explored，也就是放進集合 S。",
+     "t": 182
+    },
+    {
+     "text": "原始版本是以 edge 的角度：對所有「已確認的點 + 往外一條 edge」的和取 minimum，複雜度很高。",
+     "t": 238
+    },
+    {
+     "text": "加速：反過來以點的角度，每個點先對自己的多個來源取 min，存成自己的 d 值。",
+     "t": 295
+    },
+    {
+     "text": "Take minimum 的對象從 edge 變成點，運算就比較快。",
+     "t": 324
+    }
+   ]
+  },
+  {
+   "title": "CLRS 例子：Extract-Min 與只 update 鄰居",
+   "scene": "grjiang2-dijkstra-clrs",
+   "params": {
+    "count": 1
+   },
+   "points": [
+    {
+     "text": "圈圈裡的數字是當下的 shortest-path estimate：source 是 0，其他設成 ∞。",
+     "t": 338
+    },
+    {
+     "text": "s 到不了的點（unreachable）的 ∞ 不會被改變；有路可走的一定會降到最短距離。",
+     "t": 365
+    },
+    {
+     "text": "把每個點的 d 值當 key 放進 min-priority queue，隨時吐出最小的那個。",
+     "t": 400
+    },
+    {
+     "text": "吐出 s 後 update：t 改成 0+10 = 10，y 改成 5。",
+     "t": 476
+    },
+    {
+     "text": "吐出 y（5），mark 成黑色 = explored、放進 S，不會再改。",
+     "t": 518
+    },
+    {
+     "text": "經過 y：t 從 10 降到 5+3 = 8，x、z 也從 ∞ 降下來。",
+     "t": 575
+    },
+    {
+     "text": "每次只 update 被取出點的鄰居（往外連出的 edge），不是所有人。",
+     "t": 647
+    },
+    {
+     "text": "所以 update 的總次數只有 edge 的總數 m 次，比原本 high-level 的版本快。",
+     "t": 724
+    }
+   ]
+  },
+  {
+   "title": "Min-PQ 的操作次數與三種實作",
+   "scene": "grjiang2-pq-costs",
+   "points": [
+    {
+     "text": "Dijkstra 對 min-priority queue 做的操作：Insert 所有點（n 次）。",
+     "t": 803
+    },
+    {
+     "text": "每個 iteration Extract-Min 一次，共 n 次；update 用 ChangeKey，共 m 次；另有 n 次 IsEmpty。",
+     "t": 823
+    },
+    {
+     "text": "Array 實作：ChangeKey 直接 indexing 很快，但每次 Extract-Min 要掃一遍 O(n)。",
+     "t": 985
+    },
+    {
+     "text": "用 array 整體是 n × n = O(n²)。",
+     "t": 1022
+    },
+    {
+     "text": "理論上最快是 Fibonacci heap，把每個操作的 Big-O 壓得很低。",
+     "t": 1060
+    },
+    {
+     "text": "但 Fibonacci heap 係數很大，資料量不大時不見得比較快。",
+     "t": 1104
+    },
+    {
+     "text": "一般最好用的是 binary heap；用 heap 還能順便做 n log n 的排序。",
+     "t": 1126
+    }
+   ],
+   "trap": "補充：場景表格中 binary heap 版 Dijkstra 為 O((n+m) log n)、Fibonacci heap 為 O(m + n log n)（amortized），這些總和是依課本補上的。"
+  },
+  {
+   "title": "Priority queue：max／min 與四種操作",
+   "scene": "grjiang2-pq-ops",
+   "points": [
+    {
+     "text": "Heap 宣告成 array，但操作方式讓它表現得像 heap，硬體上的結構非常簡單。",
+     "t": 1196
+    },
+    {
+     "text": "Priority queue 每筆 data 帶一個 key value 代表 priority。",
+     "t": 1291
+    },
+    {
+     "text": "key 越大越優先是 max priority queue，越小越優先是 min priority queue；Dijkstra 用 min。",
+     "t": 1325
+    },
+    {
+     "text": "以下例子用 max priority queue 講，min 對稱可自己推。",
+     "t": 1334
+    },
+    {
+     "text": "Find-Max（Find-Min）：看 priority 最高的那筆。",
+     "t": 1364
+    },
+    {
+     "text": "Extract：find and remove，像 OS 處理完 process 就移除，剩下的要維持 priority queue。",
+     "t": 1384
+    },
+    {
+     "text": "Insert：動態加入新 data，例如突然開一個 video 產生新 process。",
+     "t": 1442
+    },
+    {
+     "text": "ChangeKey：priority 太低的 process 會 starving，要提高它的 priority。",
+     "t": 1468
+    }
+   ]
+  },
+  {
+   "title": "Max heap 的定義",
+   "scene": "grjiang2-heap-def",
+   "points": [
+    {
+     "text": "Heap 是一棵 binary tree，每個點是一筆 data，存它的 key value。",
+     "t": 1528
+    },
+    {
+     "text": "Max heap：每個點的 key ≥ 小孩的 key。",
+     "t": 1586
+    },
+    {
+     "text": "例：14 > 12 且 14 > 7；12 > 10 且 12 > 8；7 > 6。",
+     "t": 1605
+    },
+    {
+     "text": "Min heap 相反：自己 ≤ 小孩。",
+     "t": 1616
+    },
+    {
+     "text": "Max heap 的最大值一定在 root；最小值一定在某個 leaf（否則有小孩比它小，矛盾）。",
+     "t": 1640
+    },
+    {
+     "text": "Heap 是 complete binary tree：root 編號 1，小孩 2、3，依序一層一層排。",
+     "t": 1686
+    },
+    {
+     "text": "只有最後一層的右半段可能缺，上面都要滿；有缺漏就不是 heap。",
+     "t": 1720
+    }
+   ]
+  },
+  {
+   "title": "用 array 存 heap",
+   "scene": "grjiang2-heap-array",
+   "points": [
+    {
+     "text": "因為是 complete binary tree，index 連續，直接用 array 實作。",
+     "t": 1770
+    },
+    {
+     "text": "投影片把 index 0 捨棄不用，從 1 開始，比較好對應。",
+     "t": 1805
+    },
+    {
+     "text": "例子是 6 筆 data 的 max heap：14 12 7 10 8 6，後面是空的。",
+     "t": 1825
+    },
+    {
+     "text": "Index 1（root）的小孩在 2、3；index 2 的小孩在 4、5，也就是 10 和 8。",
+     "t": 1874
+    },
+    {
+     "text": "規則：小孩在 2i 與 2i+1；parent 是 ⌊i/2⌋。",
+     "t": 1888
+    },
+    {
+     "text": "Heap size：從 index 1 開始有幾筆維持 heap 的形式。",
+     "t": 1954
+    },
+    {
+     "text": "Capacity：宣告的 array 長度（例如 100 萬），超出 heap size 的格子不在 heap 裡。",
+     "t": 1971
+    }
+   ]
+  },
+  {
+   "title": "Insert：放尾巴、往上浮",
+   "scene": "grjiang2-heap-insert",
+   "points": [
+    {
+     "text": "Insert key 1 到 max heap 20 15 2 14 10。",
+     "t": 2027
+    },
+    {
+     "text": "要維持 complete binary tree：先塞在最尾巴（第 6 筆）。",
+     "t": 2068
+    },
+    {
+     "text": "1 沒有比 parent 2 大，仍是 max heap，insert 結束。",
+     "t": 2096
+    },
+    {
+     "text": "再 insert key 21：塞在第 7 筆，比 parent 2 大 → 交換。",
+     "t": 2142
+    },
+    {
+     "text": "21 還是比 20 大，再交換；worst case 一路浮到 root。",
+     "t": 2178
+    },
+    {
+     "text": "最多往上跳到 root：O(log n)。",
+     "t": 2236
+    }
+   ]
+  },
+  {
+   "title": "Pop：拔 root、尾巴補上、往下沉",
+   "scene": "grjiang2-heap-pop",
+   "points": [
+    {
+     "text": "Remove 一定是拿出 priority 最高的那筆處理掉；max heap 就是 remove root。",
+     "t": 2286
+    },
+    {
+     "text": "7 筆 data 拔掉 21 後剩 6 筆；先叫最尾巴那個人（2）填到 root 的洞。",
+     "t": 2362
+    },
+    {
+     "text": "除了新 root，其餘仍是原來的 max heap，只要修正它。",
+     "t": 2384
+    },
+    {
+     "text": "跟左右兩個小孩比，較大的那個有資格交換：15 和 20 中 20 跳上來。",
+     "t": 2423
+    },
+    {
+     "text": "2 再往下 check，大小關係正常就停下來。",
+     "t": 2440
+    },
+    {
+     "text": "拔 root、搬尾巴都是 O(1)；worst case 沉到 leaf，O(log n)。",
+     "t": 2461
+    }
+   ]
+  },
+  {
+   "title": "MAX-HEAPIFY 的想法",
+   "scene": "grjiang2-max-heapify",
+   "points": [
+    {
+     "text": "MAX-HEAPIFY：讓 data structure 修正成 max heap 的形式（min heap 有對應的 min-heapify）。",
+     "t": 2521
+    },
+    {
+     "text": "問題：array 裡亂放的數字要怎麼有系統地修成 heap？",
+     "t": 2565
+    },
+    {
+     "text": "從 root 往下一直換會做很多 redundant 的交換。",
+     "t": 2644
+    },
+    {
+     "text": "同學提到 recursive；真正修正是 bottom-up，從下面修上來，也可寫成 iterative。",
+     "t": 2715
+    },
+    {
+     "text": "背後是數學歸納法：假設左右 subtree 各自已是 heap，只處理自己和兩個小孩。",
+     "t": 2794
+    },
+    {
+     "text": "自己不是最大就和較大的小孩交換，再往下比，一路沉到底。",
+     "t": 2823
+    },
+    {
+     "text": "最簡單的 case 是 leaf 的 parent（一個 node 本身就是 heap），從那裡開始做。",
+     "t": 2948
+    },
+    {
+     "text": "修正一個點的時間看它的高度：最多換到底。",
+     "t": 3013
+    }
+   ]
+  },
+  {
+   "title": "MAX-HEAPIFY 例子：5 個點",
+   "scene": "grjiang2-max-heapify",
+   "points": [
+    {
+     "text": "從最後一個 leaf 的 parent 開始：heap size 是 n，就從 n/2 開始。",
+     "t": 3058
+    },
+    {
+     "text": "5 個點：最後一個 leaf 在 index 5，parent 是 index 2。",
+     "t": 3093
+    },
+    {
+     "text": "15 和小孩 14、10 已經是 max heap，沒事。",
+     "t": 3101
+    },
+    {
+     "text": "再往上到 root：1 和小孩 15、2 不正常，把較大的換上來。",
+     "t": 3127
+    },
+    {
+     "text": "1 沉下去後繼續往下確認，直到大小關係正確（沉到底）。",
+     "t": 3137
+    },
+    {
+     "text": "複雜度看當下這個點的高度：worst case 沉到底。",
+     "t": 3152
+    }
+   ],
+   "trap": "補充：逐字稿這段聽不太清楚，場景用 1 15 2 14 10 重建（root 1、小孩 15 與 2、15 的小孩 14 與 10）。"
+  },
+  {
+   "title": "Build max heap（CLRS 例子）",
+   "scene": "grjiang2-build-heap",
+   "points": [
+    {
+     "text": "Build heap：反覆使用 MAX-HEAPIFY，從 leaf 的 parent 開始。",
+     "t": 3214
+    },
+    {
+     "text": "例子：10 筆資料 4 1 3 2 16 9 10 14 8 7，並不維持 max heap。",
+     "t": 3243
+    },
+    {
+     "text": "最後一筆在 index 10，parent 是 index 5（16），和小孩比直接符合。",
+     "t": 3274
+    },
+    {
+     "text": "往前做 index 4（2）：和 14、8 不對，swap。",
+     "t": 3301
+    },
+    {
+     "text": "Index 3 也 swap；index 2 比較複雜：16 換上來，1 再和 7 換，一路沉到底。",
+     "t": 3311
+    },
+    {
+     "text": "最後修正 root：左右 subtree 都是 heap，4 換下去再一路修到底。",
+     "t": 3352
+    },
+    {
+     "text": "整個 build-up 就是 bottom-up 的數學歸納法：basis 是 leaf 的 parent。",
+     "t": 3401
+    }
+   ]
+  },
+  {
+   "title": "Build heap 的時間",
+   "scene": "grjiang2-build-heap-cost",
+   "points": [
+    {
+     "text": "老師說 build up 整個 heap 需要 n log n。",
+     "t": 3428
+    },
+    {
+     "text": "算法：看每一層，leaf 的 parent 往下只有一層，最多換一次。",
+     "t": 3453
+    },
+    {
+     "text": "再上一層最多換兩次、三次……分別數有多少個 node。",
+     "t": 3467
+    },
+    {
+     "text": "把每層的交換次數加總到 root，就得到總時間。",
+     "t": 3490
+    }
+   ],
+   "trap": "影片說 build heap 是 n log n：這是正確的上界但不緊。照老師的方法真的加總：高度 h 的點約 n/2^(h+1) 個，Σ h·n/2^(h+1) = O(n)，所以 BUILD-MAX-HEAP 是線性時間（CLRS 6.3）。"
+  },
+  {
+   "title": "為什麼在這裡複習 heap",
+   "scene": null,
+   "points": [
+    {
+     "text": "這段是 data structure 的複習；之後寫作業、其他課 assignment 很常用到。",
+     "t": 3505
+    },
+    {
+     "text": "老師很喜歡 heap：超簡單而且做起來非常快速。",
+     "t": 3522
+    }
+   ]
+  },
+  {
+   "title": "Heapsort",
+   "scene": "grjiang2-heapsort",
+   "points": [
+    {
+     "text": "建好 max heap 後，能不能利用它由小排到大？",
+     "t": 3536
+    },
+    {
+     "text": "第一階段：把亂放的數字 build 成 max heap。",
+     "t": 3669
+    },
+    {
+     "text": "第二階段：root 是最大值，應該在輸出的最尾端，先把 16 和尾巴的 1 交換。",
+     "t": 3707
+    },
+    {
+     "text": "換上來的 1 讓左右都是 heap、只有 root 不對：MAX-HEAPIFY(root)。",
+     "t": 3742
+    },
+    {
+     "text": "交換後把 heap size 改成 9，只維持前 9 個人的 heap。",
+     "t": 3758
+    },
+    {
+     "text": "修正後 root 又是剩下的最大，放到第 9 個位置，反覆做就把位置一個個固定。",
+     "t": 3784
+    },
+    {
+     "text": "Build heap 加第二階段，heapsort 整體 O(n log n)；merge sort 也一樣快。",
+     "t": 3827
+    },
+    {
+     "text": "只用原本的 array、不開額外 data structure：in-place sorting，很省 memory。",
+     "t": 3895
+    }
+   ]
+  },
+  {
+   "title": "Min heap 與 Dijkstra 的實作",
+   "scene": "grjiang2-pq-costs",
+   "points": [
+    {
+     "text": "Max heap 和 min heap 是對稱的，往另一個方向推就得到 min heap。",
+     "t": 3912
+    },
+    {
+     "text": "用 min heap 實作 min priority queue，就能寫出自己的 Dijkstra implementation。",
+     "t": 3920
+    }
+   ]
+  },
+  {
+   "title": "Minimum spanning tree：第四台拉線",
+   "scene": "grjiang2-mst-cable",
+   "points": [
+    {
+     "text": "本單元最後的問題 minimum spanning tree：會介紹 Prim's、Kruskal's 與 reverse-delete。",
+     "t": 3944
+    },
+    {
+     "text": "Reverse-delete 是對的，但實務上很耗時，現在沒人用。",
+     "t": 3979
+    },
+    {
+     "text": "第四台業者要用總長最短的 cable 把訊號送到每個客戶家，成本才最少。",
+     "t": 4037
+    },
+    {
+     "text": "這問題用 greedy algorithm 就能達到 optimal；而且很直覺的 greedy 方法都會對。",
+     "t": 4088
+    },
+    {
+     "text": "Input：undirected graph，edge 有 cost（cable 費用或距離）。",
+     "t": 4143
+    },
+    {
+     "text": "每條 edge 的 cost 非負（拉線就要花錢）。",
+     "t": 4173
+    },
+    {
+     "text": "目標：選一個 edge 的 subset，讓所有點 connected，且總 cost 最小。",
+     "t": 4220
+    },
+    {
+     "text": "Spanning = 蓋住所有點；minimum = total cost 最低。",
+     "t": 4271
+    }
+   ],
+   "trap": "補充：場景裡的 6 戶與 edge cost 是示意，影片在這段沒有給具體數字。"
+  },
+  {
+   "title": "為什麼答案一定是 tree",
+   "scene": "grjiang2-mst-tree",
+   "points": [
+    {
+     "text": "最後找的 subgraph 是一般的 graph 嗎？推敲後發現只要一棵 tree 就行。",
+     "t": 4307
+    },
+    {
+     "text": "選出的 edge 要把所有點黏起來，存在 subset T 裡。",
+     "t": 4363
+    },
+    {
+     "text": "這個 graph 一定沒有 cycle。",
+     "t": 4376
+    },
+    {
+     "text": "若有 cycle，隨便剪掉 cycle 上一條 edge，剩下變成一條線，仍然 connected。",
+     "t": 4401
+    },
+    {
+     "text": "剪掉後 cost 變低，所以最佳解不會有 cycle → 是一棵 tree。",
+     "t": 4451
+    },
+    {
+     "text": "Summary：從 edge 中選 subset，蓋住所有點、彼此 connected、形成 tree，total cost 最小。",
+     "t": 4474
+    },
+    {
+     "text": "接下來看這個問題的有趣 property，延伸出三種演算法。",
+     "t": 4523
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Heap 存在 array、index 從 1 開始時，index i 的兩個小孩與 parent 分別在？",
+   "opts": [
+    "2i、2i+1；⌊i/2⌋",
+    "2i−1、2i；⌈i/2⌉",
+    "i+1、i+2；i−1",
+    "2i+1、2i+2；⌊(i−1)/2⌋"
+   ],
+   "ans": "2i、2i+1；⌊i/2⌋",
+   "why": "Complete binary tree 由上而下、由左而右編號；index 0 不用時就是 2i、2i+1 與 ⌊i/2⌋（從 0 開始才是 2i+1、2i+2）。"
+  },
+  {
+   "q": "Max heap 20 15 2 14 10 1，再 insert 21 之後的 array？",
+   "opts": [
+    "21 15 20 14 10 1 2",
+    "21 20 15 14 10 1 2",
+    "20 15 21 14 10 1 2",
+    "21 15 2 14 10 1 20"
+   ],
+   "ans": "21 15 20 14 10 1 2",
+   "why": "21 先放 index 7，比 parent 2 大交換到 index 3，再比 20 大交換到 root。"
+  },
+  {
+   "q": "Max heap 21 15 20 14 10 1 2 做一次 pop（Extract-Max）後？",
+   "opts": [
+    "20 15 2 14 10 1",
+    "20 15 1 14 10 2",
+    "15 20 2 14 10 1",
+    "20 14 15 2 10 1"
+   ],
+   "ans": "20 15 2 14 10 1",
+   "why": "拔掉 21，尾巴的 2 補到 root；和小孩 15、20 中較大的 20 交換，之後 2 ≥ 1 停下。"
+  },
+  {
+   "q": "對 4 1 3 2 16 9 10 14 8 7 做 build max heap 的結果？",
+   "opts": [
+    "16 14 10 8 7 9 3 2 4 1",
+    "16 14 10 4 7 9 3 2 8 1",
+    "16 10 14 8 7 9 3 2 4 1",
+    "16 14 9 8 7 10 3 2 4 1"
+   ],
+   "ans": "16 14 10 8 7 9 3 2 4 1",
+   "why": "i = 5,4,3,2,1 依序 MAX-HEAPIFY（CLRS 圖 6.3）。"
+  },
+  {
+   "q": "Build max heap 最緊的時間界是？",
+   "opts": [
+    "O(n)",
+    "O(n log n)",
+    "O(log n)",
+    "O(n²)"
+   ],
+   "ans": "O(n)",
+   "why": "影片說 n log n 是上界；高度 h 的點約 n/2^(h+1) 個，加總 Σ h·n/2^(h+1) = O(n)。"
+  },
+  {
+   "q": "Heapsort 的哪個特點是老師強調的？",
+   "opts": [
+    "in-place：只用原本的 array",
+    "stable：相同 key 順序不變",
+    "最好情況 O(n)",
+    "需要額外 O(n) 的暫存陣列"
+   ],
+   "ans": "in-place：只用原本的 array",
+   "why": "build heap 後反覆把 root 換到尾巴、縮小 heap size、MAX-HEAPIFY，全在原 array 上做，O(n log n)。"
+  },
+  {
+   "q": "Dijkstra 每取出一個點只 update 它的鄰居，整個過程 ChangeKey 最多幾次？",
+   "opts": [
+    "m（edge 數）",
+    "n（點數）",
+    "n²",
+    "n log n"
+   ],
+   "ans": "m（edge 數）",
+   "why": "每個點只檢查自己往外連出的 edge，所有點加起來就是 edge 總數 m。"
+  },
+  {
+   "q": "為什麼 minimum spanning 的最佳解一定是 tree？",
+   "opts": [
+    "有 cycle 就能剪掉 cycle 上一條 edge，仍 connected 且 cost 不增",
+    "因為 graph 本身就是 tree",
+    "因為 edge cost 都相同",
+    "因為 greedy 只能產生 tree"
+   ],
+   "ans": "有 cycle 就能剪掉 cycle 上一條 edge，仍 connected 且 cost 不增",
+   "why": "cost 非負，剪掉 cycle 上的 edge 不會變貴，也不會斷開，所以最佳解可以沒有 cycle。"
+  }
+ ]
+}

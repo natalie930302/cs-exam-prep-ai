@@ -1,0 +1,621 @@
+{
+ "video": "hZjp35QI-40",
+ "label": "交大江蕙如 Lec10 Greedy Algorithms (1/5)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "單元導覽",
+   "scene": null,
+   "points": [
+    {
+     "text": "第四單元進入 greedy algorithms：前半在 interval graph 上做 scheduling 題目。",
+     "t": 15
+    },
+    {
+     "text": "透過前面的例子示範 greedy 正確性的兩大證明技巧。",
+     "t": 68
+    },
+    {
+     "text": "之後談 shortest path、minimum spanning tree；Kruskal 需要搭配一個 data structure（union-find）。",
+     "t": 87
+    }
+   ]
+  },
+  {
+   "title": "什麼是 Greedy algorithm",
+   "scene": "grjiang1-myopic",
+   "points": [
+    {
+     "text": "Greedy 是短視近利的方法：step by step 兜出 solution，每一步做一個 decision。",
+     "t": 124
+    },
+    {
+     "text": "每次決定都選「當下看起來最好」的，而何謂最好要由一個 criterion（greedy rule）定義，這需要設計。",
+     "t": 156
+    },
+    {
+     "text": "任何問題都很容易想出一個 greedy heuristic：直覺、通常一個 loop 就寫完。",
+     "t": 204
+    },
+    {
+     "text": "做完決定不再回頭，沒有反覆，所以跑得快、好寫、好懂。",
+     "t": 232
+    },
+    {
+     "text": "缺點是 solution quality 常常很差；但確實有些問題用它就能得到最佳解。",
+     "t": 253
+    },
+    {
+     "text": "挑戰：為問題設計出能保證 optimal solution 的 greedy algorithm，並證明它。",
+     "t": 280
+    }
+   ]
+  },
+  {
+   "title": "兩種證明法：stays ahead 與 exchange argument",
+   "scene": "grjiang1-two-proofs",
+   "points": [
+    {
+     "text": "證明 greedy optimal 常用兩招。",
+     "t": 297
+    },
+    {
+     "text": "第一招 the greedy algorithm stays ahead：每一步都不輸，像 100 公尺短跑一路領先到底拿冠軍。",
+     "t": 306
+    },
+    {
+     "text": "第二招 exchange argument 更常用、一定要學會。",
+     "t": 354
+    },
+    {
+     "text": "先假設某個神人找到 optimal solution（不管怎麼找到的）。",
+     "t": 379
+    },
+    {
+     "text": "把 OPT 裡不符合 greedy 選法的部分挖掉，換成 greedy 的選擇貼上。",
+     "t": 424
+    },
+    {
+     "text": "證明交換後 quality 沒變差、仍是 optimal，就代表 greedy 能達到最佳解。",
+     "t": 448
+    },
+    {
+     "text": "其他課本證 greedy 也大多用第二招，它是 general 的手法。",
+     "t": 492
+    }
+   ]
+  },
+  {
+   "title": "Interval scheduling problem",
+   "scene": "grjiang1-is-problem",
+   "points": [
+    {
+     "text": "Interval scheduling：先用 stays ahead 證明。",
+     "t": 515
+    },
+    {
+     "text": "背景：single core CPU 排程，有 n 個 request（process）。",
+     "t": 545
+    },
+    {
+     "text": "每個 request 事先知道開始與結束時間，對應時間軸上一段 interval。",
+     "t": 581
+    },
+    {
+     "text": "第 i 個 request 佔用 [s(i), f(i))，左閉右開，讓頭尾可以無縫接起來。",
+     "t": 614
+    },
+    {
+     "text": "目標：選出最多個 request 執行，彼此 interval 不能 overlap（compatible）。",
+     "t": 648
+    },
+    {
+     "text": "例子 8 個 request 最多選 3 個；2 一結束馬上接 5 是允許的。",
+     "t": 679
+    },
+    {
+     "text": "選了 2 就不能選和它 overlap 的 1、3、4。",
+     "t": 710
+    },
+    {
+     "text": "演藝廳借場地也是這題：要讓最多社團表演，first come first serve 不一定最好。",
+     "t": 741
+    }
+   ],
+   "trap": "compatible 的條件是 f(i) ≤ s(j)（相等也可以，因為區間右端是 open）。補充：動畫中 8 個 request 的確切時間為示意，與投影片圖形的關係相同（2→5 無縫、1/3/4 跟 2 overlap、最多 3 個）。"
+  },
+  {
+   "title": "Greedy 的一般流程與候選 rule",
+   "scene": "grjiang1-is-template",
+   "points": [
+    {
+     "text": "（插話）寫作業時知道這章要用 greedy；考試時要先決定用哪一招，走錯路很花時間。",
+     "t": 833
+    },
+    {
+     "text": "要先想清楚怎麼 select 適當的 request。",
+     "t": 895
+    },
+    {
+     "text": "「當下最好」要給一個 criterion，叫 greedy rule。",
+     "t": 925
+    },
+    {
+     "text": "流程：依 rule 選一個 request 並 accept。",
+     "t": 952
+    },
+    {
+     "text": "跟它 overlap 的 request 全部 reject。",
+     "t": 965
+    },
+    {
+     "text": "從剩下的 request 用同樣的 rule 再選，直到全部處理完。",
+     "t": 972
+    },
+    {
+     "text": "選法至少有四種候選，可以討論哪個比較好。",
+     "t": 999
+    }
+   ]
+  },
+  {
+   "title": "四個 greedy rule 與反例",
+   "scene": "grjiang1-four-rules",
+   "points": [
+    {
+     "text": "① 最早開始的先選。",
+     "t": 1014
+    },
+    {
+     "text": "② shortest interval：佔用時間短，看似比較不會跟人打架。",
+     "t": 1023
+    },
+    {
+     "text": "③ fewest conflicts：最少跟人打架的先選。",
+     "t": 1042
+    },
+    {
+     "text": "④ 最早結束的先選。",
+     "t": 1054
+    },
+    {
+     "text": "答案是第四個，很不直覺；真正能得最佳解的 greedy rule 通常都不直覺。",
+     "t": 1101
+    },
+    {
+     "text": "推翻一個 rule 只要舉一個反例：只要有一個 case 不 optimal，就不能保證最佳。",
+     "t": 1132
+    },
+    {
+     "text": "反例①：最早開始的又很晚結束，選它只有 1 個，其他選法有 4 個。",
+     "t": 1153
+    },
+    {
+     "text": "反例②：短的跟兩個彼此 compatible 的長 request 都打架，選它只有 1 個。",
+     "t": 1180
+    },
+    {
+     "text": "反例③：conflict 最少的那個只跟 2 個打架，選了它反而湊不到上面那 4 個。",
+     "t": 1216
+    }
+   ],
+   "trap": "最少 conflict 聽起來最安全，但有反例；只要一個反例就足以推翻 greedy rule。"
+  },
+  {
+   "title": "最早結束優先：最早釋放 resource",
+   "scene": "grjiang1-eft-run",
+   "points": [
+    {
+     "text": "最早結束的人最早把 resource 放出來，讓給後面的人用。",
+     "t": 1284
+    },
+    {
+     "text": "先把所有 request 依 finish time 排序。",
+     "t": 1326
+    },
+    {
+     "text": "選最早結束的 accept，砍掉跟它 conflict 的，再從剩下的選最早結束的。",
+     "t": 1336
+    },
+    {
+     "text": "resource 越早釋放，剩下的 request 越有機會使用。",
+     "t": 1364
+    }
+   ]
+  },
+  {
+   "title": "Pseudocode 與 feasible",
+   "scene": "grjiang1-eft-code",
+   "points": [
+    {
+     "text": "輸入 R：所有 request 的 set，各有 s、f；輸出 A（accepted）。",
+     "t": 1377
+    },
+    {
+     "text": "greedy 寫成程式通常只是 while／for loop 加 if-else。",
+     "t": 1397
+    },
+    {
+     "text": "一開始 A 設成空集合 ∅（投影片的符號只是替代品）。",
+     "t": 1428
+    },
+    {
+     "text": "只要 R 還有 request：從 R 選 f(i) 最小的。",
+     "t": 1530
+    },
+    {
+     "text": "把 i 放進 A。",
+     "t": 1551
+    },
+    {
+     "text": "R 扣掉 i，也扣掉跟 i overlap 的 request（第 5 行）。",
+     "t": 1575
+    },
+    {
+     "text": "先問 feasible：輸出的 A 一定互相 compatible 嗎？",
+     "t": 1636
+    },
+    {
+     "text": "會，因為第 5 行每次都把 overlap 的扣掉。接著要問：是否 optimal、running time 多少。",
+     "t": 1670
+    }
+   ]
+  },
+  {
+   "title": "第二堂：複習 interval scheduling",
+   "scene": "grjiang1-eft-code",
+   "points": [
+    {
+     "text": "複習：選一部分 request 在單一機器上執行，interval 不能 overlap，越多越好。",
+     "t": 1734
+    },
+    {
+     "text": "Greedy 一般形式：step by step，每步依 greedy rule 選當下最好的。",
+     "t": 1804
+    },
+    {
+     "text": "四種 rule 中前三種已被反例推翻，採用最早結束時間。",
+     "t": 1904
+    },
+    {
+     "text": "理由：比較早把 resource release 出來，能接受更多 request。",
+     "t": 1972
+    },
+    {
+     "text": "Procedure：A 為空，R 為未處理的 request；選最早結束放進 A，再扣掉它與 overlap 的。",
+     "t": 2010
+    },
+    {
+     "text": "先證合理（compatible，由第 5 行保證），再證最佳。",
+     "t": 2118
+    }
+   ]
+  },
+  {
+   "title": "Stays ahead：只要個數一樣",
+   "scene": "grjiang1-stays-ahead-idea",
+   "points": [
+    {
+     "text": "第一種證法：證明 procedure always stays ahead，一路都是第一名。",
+     "t": 2206
+    },
+    {
+     "text": "題目只在乎選出的個數，兩個解個數一樣就一樣好。",
+     "t": 2255
+    },
+    {
+     "text": "設 O 是某人找到的最佳解；不用證 A 跟 O 一模一樣，只要個數一樣。",
+     "t": 2322
+    },
+    {
+     "text": "做法：step by step 比較 A 與 O 的 partial solution，證明 greedy 每一步都不比 O 差。",
+     "t": 2384
+    }
+   ]
+  },
+  {
+   "title": "Lemma：f(i_r) ≤ f(j_r) 與 base case",
+   "scene": "grjiang1-lemma-base",
+   "points": [
+    {
+     "text": "目標 |A| = |O|，分兩步：先證一個小 lemma。",
+     "t": 2407
+    },
+    {
+     "text": "A = {i1, …, ik}，依 greedy 選進來的順序。",
+     "t": 2444
+    },
+    {
+     "text": "O = {j1, …, jm}，個數未知，依時間從小排到大（彼此不 overlap 所以排得出來）。",
+     "t": 2485
+    },
+    {
+     "text": "Lemma：對 r = 1..k，f(i_r) ≤ f(j_r)。",
+     "t": 2594
+    },
+    {
+     "text": "直覺：i1 是全部 request 裡最早結束的，j1 只是 O 裡最早結束的。",
+     "t": 2611
+    },
+    {
+     "text": "用數學歸納法。Base r = 1：整體的最小值 ≤ subset 的最小值，所以 f(i1) ≤ f(j1)。",
+     "t": 2645
+    }
+   ]
+  },
+  {
+   "title": "Inductive step",
+   "scene": "grjiang1-lemma-induct",
+   "points": [
+    {
+     "text": "Inductive step 用 weak induction，每次前進一步。",
+     "t": 2705
+    },
+    {
+     "text": "假設 r−1 成立：f(i_{r−1}) ≤ f(j_{r−1})，要推 f(i_r) ≤ f(j_r)。",
+     "t": 2725
+    },
+    {
+     "text": "O 是 compatible set，所以 f(j_{r−1}) ≤ s(j_r)。",
+     "t": 2810
+    },
+    {
+     "text": "f(i_{r−1}) 更小，所以 j_r 跟 i_{r−1} 也 compatible。",
+     "t": 2848
+    },
+    {
+     "text": "選 i_{r−1} 後 j_r 不會被槓掉，選 i_r 那輪 j_r 還在 R 裡。",
+     "t": 2905
+    },
+    {
+     "text": "i_r 是當下 R 裡 finish time 最小的，所以 f(i_r) ≤ f(j_r)（同一個就是等號）。",
+     "t": 3002
+    },
+    {
+     "text": "結論：對齊比較，greedy 每一個的結束時間都比最佳解早或一樣。",
+     "t": 3129
+    }
+   ]
+  },
+  {
+   "title": "反證法：A 是 optimal",
+   "scene": "grjiang1-optimal-contra",
+   "points": [
+    {
+     "text": "第二部分用反證法證 A 是 optimal。",
+     "t": 3172
+    },
+    {
+     "text": "假設 A 不是 optimal，則 O 個數較多：m > k。",
+     "t": 3193
+    },
+    {
+     "text": "由 lemma，f(i_k) ≤ f(j_k)。",
+     "t": 3238
+    },
+    {
+     "text": "m > k，所以 O 裡存在 j_{k+1}，且 s(j_{k+1}) ≥ f(j_k)。",
+     "t": 3295
+    },
+    {
+     "text": "串起來 f(i_k) ≤ s(j_{k+1})，j_{k+1} 跟 i_k compatible。",
+     "t": 3429
+    },
+    {
+     "text": "選完 i_k 後 R 裡至少還有 j_{k+1}，while loop 會再跑，應該有 i_{k+1}。",
+     "t": 3468
+    },
+    {
+     "text": "與 A 只有 k 個矛盾，所以 A 是 optimal，|A| = |O|。",
+     "t": 3501
+    },
+    {
+     "text": "這就是 stays ahead：一路領先到底就證完了。",
+     "t": 3560
+    }
+   ],
+   "trap": "影片 57:36 附近口誤說「JK−1」，指的是 O 裡的 j_{k+1}（排在 j_k 後面的那一個）。"
+  },
+  {
+   "title": "直接實作：O(n²)",
+   "scene": "grjiang1-naive-n2",
+   "points": [
+    {
+     "text": "接著談 implementation 與 efficiency。",
+     "t": 3597
+    },
+    {
+     "text": "要每次選最早結束，先把 request 依 finish time 從小排到大。",
+     "t": 3655
+    },
+    {
+     "text": "排序需要 O(n log n)（之後課程再講為什麼）。",
+     "t": 3673
+    },
+    {
+     "text": "第 5 行刪 overlap：finish 比較晚不代表不 overlap，因為 starting time 可能很早。",
+     "t": 3713
+    },
+    {
+     "text": "worst case 第 1 個要跟 n−1 個比、第 2 個跟 n−2 個……",
+     "t": 3737
+    },
+    {
+     "text": "加起來 O(n²)，整個演算法變成 O(n²)。",
+     "t": 3776
+    },
+    {
+     "text": "排序 O(n log n) 省不掉，目標是其他部分不超過它。",
+     "t": 3811
+    }
+   ]
+  },
+  {
+   "title": "改進：只掃一次 R",
+   "scene": "grjiang1-onepass",
+   "points": [
+    {
+     "text": "另外維護 starting time sequence S。",
+     "t": 3833
+    },
+    {
+     "text": "依已排好的 finish 順序，記下每個 request 的 starting time。",
+     "t": 3852
+    },
+    {
+     "text": "希望 R 從頭到尾只掃一次，不要來回反覆掃。",
+     "t": 3903
+    },
+    {
+     "text": "這樣第 5 行合計 O(n)，整體仍是 O(n log n)。",
+     "t": 3915
+    },
+    {
+     "text": "關鍵：第 5 行只 reject partially conflicting 的那些。",
+     "t": 3943
+    },
+    {
+     "text": "選定一個 request 後往後看 starting time，比到 s ≥ 目前的 finish time 就停。",
+     "t": 3998
+    }
+   ]
+  },
+  {
+   "title": "一次掃描的例子",
+   "scene": "grjiang1-onepass",
+   "points": [
+    {
+     "text": "例子：先花 O(n log n) 依 finish time 排好，starting time 可能凸出去很多。",
+     "t": 4009
+    },
+    {
+     "text": "選 1（finish 最小）。",
+     "t": 4040
+    },
+    {
+     "text": "2 的 starting time < f(1)，一定 overlap，槓掉。",
+     "t": 4074
+    },
+    {
+     "text": "3 的 starting time ≥ f(1)，安全，停下來。",
+     "t": 4098
+    },
+    {
+     "text": "6 其實也跟 1 打架，但先不理，後面一定有人槓掉它。",
+     "t": 4120
+    },
+    {
+     "text": "下一輪選 3，4 的 starting time < f(3) 被槓掉。",
+     "t": 4150
+    },
+    {
+     "text": "選 5，6、7 被槓掉。",
+     "t": 4182
+    },
+    {
+     "text": "6 從 f(1) 之前一直佔到很後面，必定跟後面 compatible 的人衝突，不會漏網。",
+     "t": 4222
+    },
+    {
+     "text": "R 只掃一遍，第 5 行合計 O(n)，總時間由排序的 O(n log n) 決定。",
+     "t": 4313
+    }
+   ],
+   "trap": "補充：動畫中 1–7 的時間為示意（依老師描述的衝突關係建構）。這等價於 Kleinberg–Tardos 的寫法：依 finish 順序掃，s(j) ≥ 上一個選中的 f 就選。"
+  },
+  {
+   "title": "Interval partitioning 的開頭",
+   "scene": "grjiang1-partition-intro",
+   "points": [
+    {
+     "text": "下一題 interval partitioning，也叫 interval coloring。",
+     "t": 4366
+    },
+    {
+     "text": "前一題只有一個 core 只能選最大 compatible set；現在有 multiple resource。",
+     "t": 4431
+    },
+    {
+     "text": "反過來問：最少需要多少 core 才能把所有 request 處理完。",
+     "t": 4451
+    },
+    {
+     "text": "把 request 分成越少越好的 compatible subset，對應越少的 resource。",
+     "t": 4483
+    },
+    {
+     "text": "例子只需要三個 core。",
+     "t": 4503
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Interval scheduling（single resource，選最多 compatible request）中，哪個 greedy rule 能保證 optimal？",
+   "opts": [
+    "最早開始的先選",
+    "最短 interval 先選",
+    "最少 conflict 的先選",
+    "最早結束的先選"
+   ],
+   "ans": "最早結束的先選",
+   "why": "最早結束 = 最早釋放 resource；前三個都有反例（例如最少 conflict 的反例中選它只能湊到 3 個，最佳是 4 個）。"
+  },
+  {
+   "q": "request [1, 4) 與 [4, 8) 在這門課的定義下是什麼關係？",
+   "opts": [
+    "overlap，不能同時選",
+    "compatible，可以無縫接",
+    "要看機器數量",
+    "只有 finish 相同才 compatible"
+   ],
+   "ans": "compatible，可以無縫接",
+   "why": "區間左閉右開，f(i) = s(j) 時一個結束馬上接下一個，不算 overlap。"
+  },
+  {
+   "q": "Stays ahead 證明中的 lemma 是哪一個？（A = {i1..ik} 依選取順序，O = {j1..jm} 依時間排序）",
+   "opts": [
+    "f(i_r) ≤ f(j_r)",
+    "s(i_r) ≥ s(j_r)",
+    "f(i_r) ≥ f(j_r)",
+    "|A| ≥ |O| 對每個 prefix"
+   ],
+   "ans": "f(i_r) ≤ f(j_r)",
+   "why": "greedy 每一步選的都比 O 對應的那個早結束或一樣，所以一路領先。"
+  },
+  {
+   "q": "證明 |A| = |O| 時假設 m > k，矛盾出在哪裡？",
+   "opts": [
+    "j_{k+1} 在選完 i_k 後仍在 R，while loop 會再選一個",
+    "O 一定有 overlap",
+    "排序結果不唯一",
+    "f(i_k) > f(j_k)"
+   ],
+   "ans": "j_{k+1} 在選完 i_k 後仍在 R，while loop 會再選一個",
+   "why": "f(i_k) ≤ f(j_k) ≤ s(j_{k+1})，j_{k+1} 沒被槓掉，所以 A 應該有第 k+1 個，與 |A| = k 矛盾。"
+  },
+  {
+   "q": "照 pseudocode 直接實作，每次選完都跟剩下的所有 request 比 overlap，總時間是？",
+   "opts": [
+    "O(n)",
+    "O(n log n)",
+    "O(n²)",
+    "O(2ⁿ)"
+   ],
+   "ans": "O(n²)",
+   "why": "(n−1)+(n−2)+…+1 = O(n²)；改成只掃一次 S 才能讓整體回到 O(n log n)。"
+  },
+  {
+   "q": "改良版實作（依 finish 排序後只掃一次 starting time sequence）的總時間由什麼決定？",
+   "opts": [
+    "掃描 O(n)",
+    "排序 O(n log n)",
+    "overlap 比較 O(n²)",
+    "interval 總長度"
+   ],
+   "ans": "排序 O(n log n)",
+   "why": "掃描 cursor 只往前，合計 O(n)，比排序小，所以總共 O(n log n)。"
+  }
+ ]
+}
