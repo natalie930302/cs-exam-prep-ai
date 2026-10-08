@@ -5,10 +5,7 @@
  "sections": [
   {
    "title": "Set 的 tree 表示與 find／union 概念",
-   "scene": "p17-set-forest",
-   "params": {
-    "phase": "union"
-   },
+   "scene": "treec-p17set",
    "points": [
     {
      "text": "每個 set 用一棵 tree 表示，root 就是該 set 的某一個 element。",
@@ -39,18 +36,39 @@
      "t": 163
     }
    ],
-   "trap": "補充：disjoint set 的 tree 是 pointer 由 child 指向 parent（parent pointer），與一般 binary tree 往下指的方向相反。"
+   "trap": "補充：disjoint set 的 tree 是 pointer 由 child 指向 parent（parent pointer），與一般 binary tree 往下指的方向相反。",
+   "cues": [
+    38.8,
+    50.8,
+    56.8,
+    80.8,
+    93.8,
+    103.8,
+    132.8,
+    141,
+    156.8,
+    168.8
+   ],
+   "explain": [
+    "上次講到用 tree 表示 set（集合）：這裡有三個 set，每個 set 是一棵樹，樹的 root 就是這個 set 裡的某一個 element。",
+    "set 有兩個主要的 operation。第一個是 union：把兩個 set 合併成一個。",
+    "第二個是 find：給你一個數字，回答它屬於哪一個 set。",
+    "為了回答「set 的名字」，另外有一張 table，存 set name 和一個 pointer。pointer 是雙向的，指到那個 set 的 root。",
+    "例：find(7)，7 屬於哪一個 set？",
+    "先找到 7，看它的 root 是誰（往上走到 0），再透過 root 反查 set name，得到 S1。",
+    "用 pointer 實作時，一開始要先對所有 set 做 matching，找出 7 到底在哪一棵樹裡。",
+    "接著看 union，例如把 S1 和 S2 合併。",
+    "union 的做法：把某個 set 的 root 直接連到另一個 set 的 root 底下。這裡 S2 的 root 4 接到 S1 的 root 0 底下。",
+    "反過來，讓 0 接到 4 底下、以 4 為 root，也是合法的 union 結果。"
+   ]
   },
   {
    "title": "用 parent array 表示 set 與 find",
-   "scene": "p17-parent-array",
-   "params": {
-    "phase": "find"
-   },
+   "scene": "treec-p17arr",
    "points": [
     {
      "text": "set 除了用 node + pointer，也可以用 array 表示。",
-     "t": 199
+     "t": 196
     },
     {
      "text": "array 的 index 是 element，存的值是它的 parent。",
@@ -77,18 +95,41 @@
      "t": 350
     }
    ],
-   "trap": "補充：課本也有用 parent[root] 存「負的 node 個數」（例如 -4）的寫法，供 weighting rule 使用；此處老師只用 -1 表示 root。 補充：parent array 中 1、2、3、5、9 的值依課本圖補上（老師只念出 0、6、7、8）。"
+   "trap": "補充：課本也有用 parent[root] 存「負的 node 個數」（例如 -4）的寫法，供 weighting rule 使用；此處老師只用 -1 表示 root。 補充：parent array 中 1、2、3、5、9 的值依課本圖補上（老師只念出 0、6、7、8）。",
+   "cues": [
+    195.8,
+    200.8,
+    207.8,
+    214.8,
+    221.8,
+    232,
+    249.8,
+    269.8,
+    297.8,
+    304.8,
+    347.8
+   ],
+   "explain": [
+    "set 除了用 node 加 pointer，也可以用 array 表示。",
+    "array 的 index 0～9，就代表這些數字。",
+    "array 裡存的值，代表這個數字的 parent 是誰。",
+    "只要看到 -1，就代表它是 root（沒有 parent）。",
+    "對照剛才的圖：0 是 root，所以 parent[0] = -1。",
+    "6、7、8 都指向 0，所以 parent[6]、parent[7]、parent[8] 都是 0。",
+    "不是 -1 的，代表的就是它往上連到的那個 node。其他格（1、2、3、4、5、9）照課本的圖補上。",
+    "所以有兩種表示法：node 加 pointer，或用 array。兩者的優缺點請自己比較，期末考可能會問。",
+    "用 array 做 find(7)：先看 array[7]，是 0，就去 0 這一格看。",
+    "array[0] 是 -1，表示已經走到 root 了。",
+    "要回答 S1、S2、S3，還需要另一張 table，存每個 root 對應的 set name：root 0 對到 S1。"
+   ]
   },
   {
    "title": "Array 上的 union 與 find(1)",
-   "scene": "p17-parent-array",
-   "params": {
-    "phase": "union"
-   },
+   "scene": "treec-p17aun",
    "points": [
     {
      "text": "例：union 0 與 4，讓 4 接到 0 底下。",
-     "t": 372
+     "t": 362
     },
     {
      "text": "用 array 實作時只需要改一個數值。",
@@ -111,11 +152,35 @@
      "t": 483
     }
    ],
-   "trap": "補充：find 必須一路走到 root，不能只看 parent[i] 一層；union 前要先確定傳入的是兩個 root（課本 union(i,j) 假設 i、j 都是 root）。"
+   "trap": "補充：find 必須一路走到 root，不能只看 parent[i] 一層；union 前要先確定傳入的是兩個 root（課本 union(i,j) 假設 i、j 都是 root）。",
+   "cues": [
+    362.1,
+    370.2,
+    378.5,
+    391.7,
+    420.8,
+    441.6,
+    449.8,
+    461.9,
+    478.8,
+    494.9
+   ],
+   "explain": [
+    "如果在 array 上做 union，要怎麼做？",
+    "例：union 0 和 4，讓 4 這棵接到 0 底下。",
+    "用 array 表示的話，只要動到一個數值。",
+    "就是 4 這一格：本來是 -1（它是 root），現在它的 parent 變成 0，所以改成 0。",
+    "只有被合併那棵樹的 root 要改，其他 element（像 1、9 還是指向 4）都不用動。",
+    "union 完之後做 find(1)：1 屬於哪個 set？",
+    "看 array[1] 是 4，再看 array[4] 是 0。",
+    "array[0] 是 -1，到 root 了，再去查 set name 的 table，得到 S1。",
+    "好處：find 和 union 都只要讀、改 array 裡的數值，不用讓 pointer 指來指去。",
+    "缺點是什麼？老師留給大家自己想。任何表示法都不可能完美。"
+   ]
   },
   {
    "title": "退化成直線的 union 序列：find 為 O(n²)",
-   "scene": "p17-degenerate",
+   "scene": "treec-p17line",
    "points": [
     {
      "text": "一開始 0 到 n-1 每個數字各自是一個 set。",
@@ -150,15 +215,41 @@
      "t": 675
     }
    ],
-   "trap": "補充：O(n²) 是「整串 n 個 find」的總成本，單一次 find 最差是 O(n)。"
+   "trap": "補充：O(n²) 是「整串 n 個 find」的總成本，單一次 find 最差是 O(n)。",
+   "cues": [
+    530.8,
+    539.8,
+    549.3,
+    556.8,
+    567.7,
+    585.8,
+    603.8,
+    625.7,
+    652.8,
+    671.8,
+    703.8
+   ],
+   "explain": [
+    "看一個極端例子：0 到 n−1，一開始每個數字各自是一個 set（動畫用 n = 6）。",
+    "做 union(0, 1)：0 接到 1 底下。",
+    "再做 union(1, 2)：1 那一棵接到 2 底下。",
+    "接著 union(2, 3)……一直做到 union(n−2, n−1)。",
+    "結果長成一條直線：最下面是 0，最上面（root）是 n−1。",
+    "然後做 find(0)：要從最底部一路往上走，才找到 root。",
+    "find(1) 也差不多長；find(n−1) 最短，它自己就是 root，一看到 -1 就找到了。",
+    "這串 union 每次只是把兩堆串起來，O(1)，做 n−1 次，總共 O(n)。",
+    "但這串 find 的總時間是 O(n²)。",
+    "為什麼？find(0) 走 n 步、find(1) 走 n−1 步……加起來是 2 + 3 + … + n（Σ i），大約 n²/2，所以是 O(n²)。",
+    "照這樣做，find 的 cost 太高了。要想辦法讓樹不要長成一直線。"
+   ]
   },
   {
    "title": "Weighting rule for union",
-   "scene": "p17-weighted-flat",
+   "scene": "treec-p17wflat",
    "points": [
     {
      "text": "為了降低 find 成本，引入 weighting rule。",
-     "t": 717
+     "t": 713
     },
     {
      "text": "union(i,j)：若以 i 為 root 的 node 數少於以 j 為 root 的 node 數，就讓 j 當 root。",
@@ -185,15 +276,37 @@
      "t": 872
     }
    ],
-   "trap": "補充：比較的是兩棵 tree 的 node 數（要先 find 到 root 再比），不是比數字大小；課本 weightedUnion 把 node 數以負數存在 root 的 parent 欄位。"
+   "trap": "補充：比較的是兩棵 tree 的 node 數（要先 find 到 root 再比），不是比數字大小；課本 weightedUnion 把 node 數以負數存在 root 的 parent 欄位。",
+   "cues": [
+    713.1,
+    717.8,
+    731.3,
+    760.8,
+    785.5,
+    810.8,
+    830.8,
+    841.2,
+    865.8
+   ],
+   "explain": [
+    "為了降低 find 的成本，引入一個規則：weighting rule。",
+    "現在要把 i 和 j 兩個 set union 起來。",
+    "如果以 i 為 root 的樹，node 個數比以 j 為 root 的少，就讓 j 當 root（i 接到 j 底下）。",
+    "否則（otherwise）讓 i 當 root。簡單說：node 少的，歸到 node 多的那一邊。",
+    "用同一串 union 試試看。union(0, 1)：一開始大家都只有一個 node，沒差，選 0 當 root。（×數字是那棵樹的 node 數）",
+    "union(1, 2)：1 的 root 是 0，那棵有 2 個 node；2 那棵只有 1 個。",
+    "node 少的 {2} 歸到 node 多的那邊，所以 2 接到 0。",
+    "union(2, 3)：2 的 root 0 那棵比較大，所以 3 也接到 0 底下。",
+    "最後樹不會變成一直線，而是被「打平」：root 0 底下直接掛所有 node，每個 find 一步就到。"
+   ]
   },
   {
    "title": "Weighted union 的高度上界（Lemma）",
-   "scene": "p17-weighted-worst",
+   "scene": "treec-p17lemma",
    "points": [
     {
      "text": "用 weighting rule 做 union，union 的總時間仍是 O(n) 等級，沒有差別。",
-     "t": 900
+     "t": 884
     },
     {
      "text": "但 find 有改進。",
@@ -208,11 +321,25 @@
      "t": 945
     }
    ],
-   "trap": "補充：課本 Lemma 5.5 為：以 weightedUnion 建出、含 m 個 node 的 tree，高度 ≤ ⌊log₂m⌋ + 1；因此單次 find 為 O(log m)。單次 weighted union 本身是 O(1)。"
+   "trap": "補充：課本 Lemma 5.5 為：以 weightedUnion 建出、含 m 個 node 的 tree，高度 ≤ ⌊log₂m⌋ + 1；因此單次 find 為 O(log m)。單次 weighted union 本身是 O(1)。",
+   "cues": [
+    883.8,
+    896.8,
+    913.8,
+    929.8,
+    940.8
+   ],
+   "explain": [
+    "weighting rule 有一個 lemma（小定理），講的是樹的高度。左邊是沒用規則的直線，右邊是用了規則的樹。",
+    "用 weighting rule 做 union，union 的時間沒差：還是要一個一個合，總共 O(n)。",
+    "但是 find 有改進。",
+    "可以證明：用 weighted union 建出、有 m 個 node 的樹，高度不超過 ⌊log₂m⌋ + 1（⌊ ⌋ 是無條件捨去）。證明請自己看課本。",
+    "find 只要走樹的高度，不用走那一長串，所以一次 find 是 O(log m)。"
+   ]
   },
   {
    "title": "Weighted union 的最差情況（8 個 node）",
-   "scene": "p17-weighted-worst",
+   "scene": "treec-p17worst",
    "points": [
     {
      "text": "另一種情況：一開始每個數字各自是一個 set。",
@@ -239,11 +366,31 @@
      "t": 1090
     }
    ],
-   "trap": "補充：每次都是「同樣大小的兩棵 tree 合併」時，高度會剛好達到 ⌊log₂m⌋ + 1，這正是 Lemma 的最差情況。"
+   "trap": "補充：每次都是「同樣大小的兩棵 tree 合併」時，高度會剛好達到 ⌊log₂m⌋ + 1，這正是 Lemma 的最差情況。",
+   "cues": [
+    970.8,
+    980.7,
+    1002.8,
+    1030.8,
+    1053.3,
+    1078.7,
+    1087.8,
+    1098.8
+   ],
+   "explain": [
+    "另一種情況：一開始 0～7 每個數字各自是一個 set。",
+    "先兩兩 union：(0,1)、(2,3)、(4,5)、(6,7)。",
+    "兩邊的 node 數一樣，隨便選一個當 root 都可以，這裡選左邊的。",
+    "再把兩人一組的合併：{0,1} 和 {2,3}、{4,5} 和 {6,7}。",
+    "{0,1,2,3} 以 0 為 root（2 接到 0 底下）；{4,5,6,7} 以 4 為 root。",
+    "最後把 0 和 4 union 起來。",
+    "合併成一棵 8 個 node 的樹，最深的 7 要走 7 → 6 → 4 → 0。",
+    "每次都是「一樣大的兩棵」合併時，樹最高：高度 4 = ⌊log₂8⌋ + 1，剛好碰到 lemma 的上界，這就是 worst case bound。"
+   ]
   },
   {
    "title": "Collapsing rule：find(7) 做 8 次",
-   "scene": "p17-collapsing",
+   "scene": "treec-p17coll",
    "points": [
     {
      "text": "weighting rule 只依 node 個數合併，沒有考慮之後的 find operation（query）。",
@@ -278,11 +425,37 @@
      "t": 1309
     }
    ],
-   "trap": "補充：課本的 collapsingFind 不是「發現常被查才做」，而是每次 find 都把 i 到 root 路徑上的所有 node 直接改指 root。老師算 10 步只算往上走的步數；課本 Example 5.6 還把第一次 find 後重設 link 的成本算進去，總數會比 10 多（課本記為 13 moves），但結論相同：遠少於 24。"
+   "trap": "補充：課本的 collapsingFind 不是「發現常被查才做」，而是每次 find 都把 i 到 root 路徑上的所有 node 直接改指 root。老師算 10 步只算往上走的步數；課本 Example 5.6 還把第一次 find 後重設 link 的成本算進去，總數會比 10 多（課本記為 13 moves），但結論相同：遠少於 24。",
+   "cues": [
+    1109.1,
+    1121.6,
+    1146.8,
+    1170.8,
+    1188.8,
+    1199.8,
+    1220.8,
+    1240.8,
+    1277.8,
+    1296.5,
+    1309.7
+   ],
+   "explain": [
+    "weighting rule 有個不足：它只依 node 個數合併，沒有考慮之後的 operation（find，也叫 query）。",
+    "例：在這棵樹上做 find(7)。",
+    "統計後發現，大家常做 find(7)，總共做了 8 次。",
+    "每次 find(7) 都要往上走：7 → 6 → 4 → 0，走 3 步，再查 table。",
+    "query 8 次 find(7)，就要走 8 × 3 步。",
+    "= 24 步，這是不調整時的 cost。",
+    "改法：把 7（和路上的 6）直接拉到 root 0 底下。",
+    "第一次 find(7) 還是照原本的樹走 3 步，走完順便把 7 拉上去。",
+    "之後第 2～8 次 find(7)，7 → 0 一步就到。總共 3 + 7 = 10 步。（課本把重設 link 的成本也算進去，數字會多一點，結論一樣。）",
+    "從 24 步降到 10 步，cost 降了一半以上。",
+    "這就叫 collapse（collapsing rule）：find 時，把路徑上的 node 直接接到 root。課本的版本是每次 find 都這樣做，不用先知道誰常被查。"
+   ]
   },
   {
    "title": "事後諸葛與線上預測 query",
-   "scene": "p17-collapsing",
+   "scene": "treec-p17hind",
    "points": [
     {
      "text": "依 weighting rule 建出的 tree 只看 node 個數，不考慮查詢。",
@@ -313,11 +486,33 @@
      "t": 1555
     }
    ],
-   "trap": "補充：這段是老師的延伸討論，非課本考點；考試的 collapsing rule 不需要預測，每次 find 都做。"
+   "trap": "補充：這段是老師的延伸討論，非課本考點；考試的 collapsing rule 不需要預測，每次 find 都做。",
+   "cues": [
+    1349.8,
+    1370.8,
+    1382.8,
+    1413.9,
+    1427.3,
+    1454.8,
+    1473,
+    1506.8,
+    1554.8
+   ],
+   "explain": [
+    "依 weighting rule 建的樹，只看 node 個數，不考慮查詢。",
+    "這棵樹本身沒有不好，但可以更好。",
+    "可以根據使用者的 find operation，結構性地調整這棵樹（例如把常查的 7 拉上去），讓 cost 變低。",
+    "但老師說這有點像「事後諸葛亮」：事情發生完才知道該怎麼做。",
+    "我們是看了 query log（查詢紀錄）才知道 find(7) 會做 8 次，早知道就該一開始把 7 拉上去。",
+    "可是 online（即時）的時候：現在有人做了第一次 find(7)……",
+    "你怎麼保證後面還會有 7 次？也許做完這次就沒有了。",
+    "難的地方在於：要在 online 時，根據現在的 query 去 predict（預測）未來的 query。",
+    "一種方法是看過去的資料：統計過去一個月的 log，find(7) 出現後，通常還會跟著幾次。（這段是老師的延伸討論，課本的 collapsing rule 不需要預測。）"
+   ]
   },
   {
    "title": "依 query 機率建最小 cost 的 tree（延伸思考）",
-   "scene": "p17-query-freq",
+   "scene": "treec-p17qf",
    "points": [
     {
      "text": "「find(7) 後常伴隨 7 次 find(7)」有一個 probability，不見得是 100%。",
@@ -348,15 +543,37 @@
      "t": 1833
     }
    ],
-   "trap": "補充：老師提到期末可能出這類思考題；課本中對應的正式主題是依搜尋機率建 optimal binary search tree（之後章節），不是 union-find 的內容。"
+   "trap": "補充：老師提到期末可能出這類思考題；課本中對應的正式主題是依搜尋機率建 optimal binary search tree（之後章節），不是 union-find 的內容。",
+   "cues": [
+    1592.3,
+    1621.8,
+    1658.8,
+    1693.8,
+    1714.8,
+    1745.8,
+    1778.8,
+    1793.8,
+    1824.8
+   ],
+   "explain": [
+    "「find(7) 之後常跟著 7 次 find(7)」其實有一個 probability（機率），不見得是 100%。",
+    "而且每一個數字都有自己的 find 統計資料。",
+    "問題變成：給你每個數字和它被 query 的頻率，造出一棵 cost 最小的 tree。老師說期末考可能出這種思考題。",
+    "例：觀察 30 天，發現 1 佔了 90% 的 query，2 大約 5%，其他更少。",
+    "input 是這些數字和它們被查的機率，output 是期望 cost 最小的 tree：常被查的放在 root 附近。",
+    "這很像網路上看電影：熱門電影常常被看，也就是常常被 query。",
+    "那就把熱門電影多複製幾份，放到看的人旁邊。",
+    "本來電影在台大的 node，交大的人要跑三個 hop 去拿；在交大也放一份，一個 hop 就到。",
+    "P2P 複製熱門內容、調整 tree 的結構，問題的本質很像：讓常用的東西離使用者近一點。"
+   ]
   },
   {
    "title": "用 union-find 求 equivalence class",
-   "scene": "p17-equivalence",
+   "scene": "treec-p17eq",
    "points": [
     {
      "text": "set operation 可以拿來求 equivalence class。",
-     "t": 1869
+     "t": 1865
     },
     {
      "text": "i ≡ j 就代表 i、j 屬於同一個 set，把它們 union 起來。",
@@ -387,18 +604,41 @@
      "t": 2016
     }
    ],
-   "trap": "補充：遞移關係（1≡2、2≡3 ⇒ 1≡3）由 union 自動處理，不必像第 4 章演算法那樣另外追蹤。本例最終答案為三個 class：{0,2,4,7,11}、{1,3,5}、{6,8,9,10}。"
+   "trap": "補充：遞移關係（1≡2、2≡3 ⇒ 1≡3）由 union 自動處理，不必像第 4 章演算法那樣另外追蹤。本例最終答案為三個 class：{0,2,4,7,11}、{1,3,5}、{6,8,9,10}。",
+   "cues": [
+    1864.6,
+    1872.5,
+    1883.8,
+    1915.8,
+    1952.8,
+    1965.8,
+    1973.8,
+    1982.8,
+    1998.6,
+    2006.8,
+    2015.8
+   ],
+   "explain": [
+    "set operation 可以拿來求 equivalence class（等價類）：把彼此有關係的數字分成同一組。",
+    "i ≡ j 就代表 i、j 屬於同一個 set，所以把它們 union 起來。",
+    "題目給定這些數字的 pair：0≡4、3≡1、6≡10、8≡9……（n = 12）。",
+    "做法：每個數字先各自當一個 set，0～11 共 12 個。",
+    "0 和 4 有關係，就 union。",
+    "1 和 3 有關係，也 union。6≡10、8≡9 也一樣。",
+    "7≡4：要先找到 4 屬於哪一個 set（往上找到 root 0），再把 7 union 進去。",
+    "6 和 8 有關係：把這兩個 set union 起來。（動畫照 weighting rule：小的接到大的底下。）",
+    "3 和 5 有關係，union。",
+    "就這樣不斷 union，直到所有 pair 都處理完（2≡11、11≡0）。",
+    "最後剩下的每一個 set，就是一個 equivalence class：{0,2,4,7,11}、{1,3,5}、{6,8,9,10}。遞移關係（1≡2、2≡3 ⇒ 1≡3）由 union 自動處理。"
+   ]
   },
   {
    "title": "Array 實作的方便性與兩種解法比較",
-   "scene": "p17-equivalence",
-   "params": {
-    "focus": "find"
-   },
+   "scene": "treec-p17eqarr",
    "points": [
     {
      "text": "實作上，如 7≡4 要先知道 4 的 root，用 array 會很方便。",
-     "t": 2048
+     "t": 2045
     },
     {
      "text": "直接查表就能一路找到 root。",
@@ -421,18 +661,33 @@
      "t": 2161
     }
    ],
-   "trap": "補充：第 4 章 linked list + stack 解法為 O(m + n)；union-find 版本（weighted union + collapsing find）總時間近乎線性，課本以 Ackermann 反函數 α 表示，實務上視為常數。老師要求回去查課本的 complexity。"
+   "trap": "補充：第 4 章 linked list + stack 解法為 O(m + n)；union-find 版本（weighted union + collapsing find）總時間近乎線性，課本以 Ackermann 反函數 α 表示，實務上視為常數。老師要求回去查課本的 complexity。",
+   "cues": [
+    2044.7,
+    2053.8,
+    2067.8,
+    2090.8,
+    2124.1,
+    2139.4,
+    2160.5
+   ],
+   "explain": [
+    "實作上，像 7≡4 要先知道 4 的 root 是誰，用 array 會很方便。",
+    "直接查表：parent[4] = 0，parent[0] = -1，所以 root 是 0；再把 parent[7] 設成 0 就完成 union。",
+    "這比之前用 linked list 一個一個找要快。",
+    "同樣的問題（給 number pair，輸出 equivalence class）有不同的解法，要會分析兩種的優缺點和 complexity。",
+    "第 4 章的解法要兩個 phase。phase 1：替每個數字建一條 linked list，記下跟它有關係的數字。",
+    "phase 2：用 stack 把 transitive（遞移）的關係找出來，例如 1≡2、2≡3 推出 1≡3。",
+    "用 union-find 只要掃過所有 pair 做 union，複雜度很低（課本說近乎線性）。兩種解法的 complexity 請回去查課本比較。"
+   ]
   },
   {
    "title": "Set 表示為什麼仍屬 tree",
-   "scene": "p17-set-forest",
-   "params": {
-    "phase": "dir"
-   },
+   "scene": "treec-p17dir",
    "points": [
     {
      "text": "set operation 今天用 array 表示，因為很容易表示 root 與 parent 的關係。",
-     "t": 2185
+     "t": 2183
     },
     {
      "text": "另一種表示是用 tree node。",
@@ -450,15 +705,29 @@
      "text": "箭頭方向顛倒仍做得到，所以它仍屬於 tree 的範疇。",
      "t": 2258
     }
+   ],
+   "cues": [
+    2182.8,
+    2197.8,
+    2209.7,
+    2226.8,
+    2253.8
+   ],
+   "explain": [
+    "set operation 今天用 array 表示，因為 root 和 parent 的關係很容易表示。",
+    "另一種表示法是用 tree node。你可能會想：這跟 tree 有什麼關係？",
+    "它也有 root，只是 pointer 的方向不一樣：一般的 tree 是 parent 往下指 child，這裡是 child 往上指 parent。",
+    "讓 pointer 往下（root 指向 set 裡的 element）可以嗎？基本上也可以。",
+    "箭頭方向顛倒也做得到，所以它仍然屬於 tree 的範疇。"
    ]
   },
   {
    "title": "只給 inorder 無法決定唯一 binary tree",
-   "scene": "p17-inorder-not-unique",
+   "scene": "treec-p17inord",
    "points": [
     {
      "text": "回顧 preorder、inorder、postorder traversal。",
-     "t": 2278
+     "t": 2262
     },
     {
      "text": "問題：只給 inorder BCAEDGHFI，對應的 binary tree 是否唯一？",
@@ -484,15 +753,37 @@
      "text": "因此只給 inorder，binary tree 不是唯一的。",
      "t": 2392
     }
+   ],
+   "cues": [
+    2262.2,
+    2277.8,
+    2292.8,
+    2307.8,
+    2314.8,
+    2332.8,
+    2350.8,
+    2372.8,
+    2386.8
+   ],
+   "explain": [
+    "回顧三種 traversal：preorder（根左右）、inorder（左根右）、postorder（左右根）。",
+    "題目只給你 inorder 的順序：B C A E D G H F I。",
+    "它對應的 binary tree 是唯一的嗎？當然不是，來試試看。",
+    "可以在 inorder 裡隨便挑一個，例如 A，當 root。",
+    "inorder 是「左、根、右」，所以 A 左邊的 B、C 是 left subtree，右邊其他的是 right subtree。",
+    "照 inorder 的順序繼續往下長，得到一棵樹。",
+    "但也可以改挑 D 當 root。",
+    "這時 left subtree 由 B C A E 構成，right subtree 由 G H F I 構成，又長出另一棵樹。",
+    "兩棵不同的樹，inorder 卻一模一樣。所以只給 inorder，binary tree 不是唯一的。"
    ]
   },
   {
    "title": "Inorder + preorder 才唯一；distinct binary trees（習題）",
-   "scene": "p17-distinct-3",
+   "scene": "treec-p17dist",
    "points": [
     {
      "text": "要讓 binary tree 唯一，除了 inorder 還要再加上 preorder。",
-     "t": 2410
+     "t": 2405
     },
     {
      "text": "這是課本習題，要自己證明。",
@@ -515,15 +806,33 @@
      "t": 2495
     }
    ],
-   "trap": "補充：inorder + preorder、inorder + postorder 都能唯一決定 binary tree；只有 preorder + postorder 一般不唯一（除非是 full binary tree 等特例）。3 個 node 的 distinct binary tree 共 5 種（Catalan number C₃ = 5）。"
+   "trap": "補充：inorder + preorder、inorder + postorder 都能唯一決定 binary tree；只有 preorder + postorder 一般不唯一（除非是 full binary tree 等特例）。3 個 node 的 distinct binary tree 共 5 種（Catalan number C₃ = 5）。",
+   "cues": [
+    2404.8,
+    2424.1,
+    2443.8,
+    2458.8,
+    2466.8,
+    2486,
+    2494.1
+   ],
+   "explain": [
+    "要讓 binary tree 唯一，除了 inorder 以外，還要再加上 preorder。",
+    "這是課本的習題，要自己證明。",
+    "為什麼合起來就唯一？preorder 的第一個一定是 root；在 inorder 裡找到 root，左邊就是左子樹、右邊就是右子樹，一層一層切下去，只有一種切法。",
+    "什麼是 distinct binary tree？形狀不一樣，就算是不同的 binary tree。",
+    "例如用 1、2、3 三個 node，preorder 都是 1 2 3，可以畫出 5 棵不同的 binary tree。",
+    "提示：這 5 棵的 preorder 一樣，但 inorder 各不相同，可以用 preorder 和 inorder 的關係來判斷是不是 distinct。",
+    "這是課本 P109 的習題，回去自己證明。"
+   ]
   },
   {
    "title": "Tree 章節結語與重點",
-   "scene": "p17-summary",
+   "scene": "treec-p17sum",
    "points": [
     {
      "text": "Tree 章節結束，heap 也是一種 tree，要知道各種 tree 的特質。",
-     "t": 2580
+     "t": 2572
     },
     {
      "text": "針對 heap 與 binary search tree，會考 insert、delete。",
@@ -538,7 +847,25 @@
      "t": 2663
     }
    ],
-   "trap": "41:53–42:07 錄音空白，後段 ASR 雜訊大（如「batterncent tree」= binary search tree、「hip」= heap）。"
+   "trap": "41:53–42:07 錄音空白，後段 ASR 雜訊大（如「batterncent tree」= binary search tree、「hip」= heap）。",
+   "cues": [
+    2572.4,
+    2586.6,
+    2600.2,
+    2637.7,
+    2664.6,
+    2670.4,
+    2678.5
+   ],
+   "explain": [
+    "Tree 這一章結束了。heap 也是一種 tree，各種 tree 的特質都要知道。",
+    "重點一：heap 和 binary search tree，它們的特質是什麼。",
+    "針對 heap 和 BST，會考資料的 insert、delete。",
+    "第二個重點：tree 的 traversal 方式。",
+    "為什麼要 traversal？例如要 copy 一棵 tree、判斷兩棵 tree 是否相等。",
+    "還有 expression evaluation，例如用 postorder 算出運算式的值。",
+    "總結兩個重點：各種 tree 的 insert／delete，以及 traversal 和它的應用。"
+   ]
   }
  ],
  "quiz": [

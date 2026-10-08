@@ -225,7 +225,7 @@
   "label": "交大彭文志 Lec17 Trees (6/6)",
   "points": 103,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "4iXLnF3hExw": {
   "label": "MIT 6.006 Rec3：Document Distance, Insertion and Merge Sort",
@@ -1161,7 +1161,7 @@
   "label": "交大彭文志 Lec16 Trees (5/6) / Huffman (2/2)",
   "points": 191,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "rP2wm4bEfXo": {
   "label": "交大江蕙如 Lec04 Chapter 2 Algorithm Analysis (1/2)",
@@ -1249,9 +1249,9 @@
  },
  "ubLbvuWFDqM": {
   "label": "交大彭文志 Lec15 Trees (4/6) / Huffman (1/2)",
-  "points": 67,
+  "points": 72,
   "quiz": 9,
-  "cued": false
+  "cued": true
  },
  "ucL0BLz2OGk": {
   "label": "交大彭文志 Lec26 Search Structures (3/3)",

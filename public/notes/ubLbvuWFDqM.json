@@ -5,7 +5,7 @@
  "sections": [
   {
    "title": "Priority queue 各種實作比較",
-   "scene": "p15-pq-compare",
+   "scene": "treec-pq",
    "points": [
     {
      "text": "上次考試前講到 max／min priority queue，今天接續把它講完。",
@@ -21,18 +21,34 @@
     },
     {
      "text": "Max heap 不論 insert 或 delete 表現都不錯（皆 O(log n)）。",
-     "t": 78
+     "t": 77
     }
    ],
-   "trap": "補充：sorted 結構的 delete 為 O(1)（最大值在一端），unsorted 的 insert 為 O(1)、delete 為 O(n)；heap 兩者皆 O(log n)。"
+   "trap": "補充：sorted 結構的 delete 為 O(1)（最大值在一端），unsorted 的 insert 為 O(1)、delete 為 O(n)；heap 兩者皆 O(log n)。",
+   "cues": [
+    25.8,
+    52.8,
+    57.8,
+    62.8,
+    69.8,
+    76.8
+   ],
+   "explain": [
+    "priority queue（優先佇列）是一種「每次都拿出最重要的那個」的容器，這裡的「最重要」就是最大的數字。它只要會兩件事：insert（放進去）和 delete（拿出最大的）。下面比五種做法。",
+    "sorted 是「隨時保持排好順序」。每放進一個新數字，都要先找到它該插的位置、把後面的往後挪，所以 insert 要 O(n)（O(n) 意思是：數字有 n 個，最壞就要做大約 n 次工作）。",
+    "因為排好序，最大的數字一定在最後（或最前）那一端，直接拿走就好，delete 只要 O(1)，也就是一步完成。",
+    "unsorted 是「不管順序，看到就丟到最後面」。所以 insert 超快，只要 O(1)。",
+    "代價是：要拿最大的時候，不知道它在哪，只好從頭到尾全部看一遍，delete 變成 O(n)。sorted 和 unsorted 剛好一邊快一邊慢。",
+    "max heap 兩種都不差：insert、delete 都是 O(log n)。log n 長得很慢，n 是一百萬時 log₂ n 也才大約 20，所以 priority queue 通常用 heap 來做。"
+   ]
   },
   {
    "title": "Max heap 定義與 array 表示",
-   "scene": "p15-maxheap-array",
+   "scene": "treec-maxheap",
    "points": [
     {
      "text": "Max heap：root 永遠放整棵 tree 中最大的 element。",
-     "t": 90
+     "t": 85
     },
     {
      "text": "旁邊的 array 代表用 array 來 implement 這棵 tree，root 放在 index 1，其餘依序排列。",
@@ -40,18 +56,36 @@
     },
     {
      "text": "用 array 存是為了 insert／delete 時能快速找到 parent（i/2），方便維護。",
-     "t": 120
+     "t": 124
     },
     {
      "text": "也可以用 node＋left/right pointer 實作，但需要找 parent 的操作會比較麻煩、需額外成本。",
      "t": 140
     }
    ],
-   "trap": "補充：heap 必須是 complete binary tree，array 表示才不會浪費空間；min heap 則是 root 放最小。補充：投影片的 max heap 只聽得出 root 14 放在 [1]，動畫用課本同型的 14(12(10,8),7(6)) 示意。"
+   "trap": "補充：heap 必須是 complete binary tree，array 表示才不會浪費空間；min heap 則是 root 放最小。補充：投影片的 max heap 只聽得出 root 14 放在 [1]，動畫用課本同型的 14(12(10,8),7(6)) 示意。",
+   "cues": [
+    84.8,
+    93.8,
+    109.8,
+    115.8,
+    123.8,
+    139.8,
+    153.8
+   ],
+   "explain": [
+    "heap 是一種資料結構，畫出來像一棵樹，而且是 complete binary tree：每一層由左到右排滿才換下一層，中間不留空洞。",
+    "max heap 的規則：root（最上面那個）永遠放全部裡面最大的數字。這裡 root 是 14，比下面每一個都大。",
+    "老師說旁邊那排 array（陣列，一格一格編號的格子）就是這棵樹：樹其實是用 array 存的，畫成樹只是方便我們看。",
+    "放法是一層一層、由左到右：root 14 放 [1]，下一層的 12、7 放 [2]、[3]，再下一層放 [4]、[5]、[6]。[0] 這格不用。",
+    "為什麼要用 array？因為要找 parent（上一層的那個）只要算 ⌊i/2⌋（i 除以 2 取整數）。例如 [5] 的 parent 就是 [2]，一步就找到，insert、delete 時要一直找 parent，這就很方便。",
+    "當然也可以像一般的樹那樣，用 node 加上 left／right pointer（指向左、右小孩的箭頭）來做。",
+    "但 pointer 只往下指，想往上找 parent 就很麻煩，要多存東西或多花時間。所以 heap 通常用 array 實作。"
+   ]
   },
   {
    "title": "Max heap insert：bottom-up 往上爬",
-   "scene": "p15-heap-insert",
+   "scene": "treec-hinsert",
    "points": [
     {
      "text": "Insert 時新元素一律先放在 heap array 最後一個 element 的後面；例中 1 2 3 4 5 已用，新元素放 6 號位置。",
@@ -77,11 +111,41 @@
      "text": "重點觀念：insert 的元素放在 heap 最後一個位置，然後一路跟 parent 比。",
      "t": 371
     }
+   ],
+   "cues": [
+    168.8,
+    181.8,
+    204.8,
+    237.8,
+    245.8,
+    281.8,
+    290.8,
+    308.8,
+    319.8,
+    328.8,
+    349.8,
+    356.8,
+    366.8
+   ],
+   "explain": [
+    "現在的 max heap 是 [20, 15, 2, 14, 10]。老師要示範：如果要 insert（放進）一個 1，會怎麼做？",
+    "第一個規則：新的數字一律先放在「最後一個 element 的後面」，也就是 array 裡最後一格的下一格。這樣樹的形狀才會一直保持 complete（不留洞）。",
+    "[1] 到 [5] 都已經用了，所以 1 放進 6 號。對照樹，6 號就是 2 的 left child（左小孩）。",
+    "放好以後要檢查有沒有違反「parent 比較大」的規則：拿它跟自己的 parent 比。6 號的 parent 是 ⌊6/2⌋ = 3 號，也就是 2。",
+    "這叫 bottom-up（由下往上）：如果比 parent 大就交換、往上爬一層，一直爬到 parent 比它大，或已經爬到 root 為止。",
+    "1 跟 2 比，2 比較大，規則沒被破壞，所以 1 不用動，insert 結束。",
+    "換一個例子：從原本的 heap 重新來，這次 insert 5。一樣先放在 6 號（2 的 left child）。",
+    "5 比 parent 2 大，違反規則，所以交換：5 上去、2 下來。",
+    "5 再跟新的 parent 20 比，20 比較大，停在這裡。結果是 [20, 15, 5, 14, 10, 2]。",
+    "再換一個：insert 21。還是先放 6 號。",
+    "21 比 2 大，交換：21 上去、2 下來。",
+    "21 再跟 20 比，還是比較大，再交換：21 爬到 root，20 往下。到 root 就一定停。",
+    "總結：insert 就是「放最後一格，然後一路跟 parent 比、往上爬」。最多爬樹的高度那麼多次，所以是 O(log n)。"
    ]
   },
   {
    "title": "Insert 程式碼：for 迴圈往上搬",
-   "scene": "p15-heap-insert-code",
+   "scene": "treec-hinscode",
    "points": [
     {
      "text": "Array 有大小上限（MAX size），若已滿就回報 heap is full。",
@@ -108,14 +172,35 @@
      "t": 538
     }
    ],
-   "trap": "補充：程式並不是真的每層 swap，而是把 parent 往下 copy、最後才把 x 放入 heap[i]，比 swap 省一半的搬移。字幕「heap 2i = heap i」應為 heap[i] = heap[i/2]。"
+   "trap": "補充：程式並不是真的每層 swap，而是把 parent 往下 copy、最後才把 x 放入 heap[i]，比 swap 省一半的搬移。字幕「heap 2i = heap i」應為 heap[i] = heap[i/2]。",
+   "cues": [
+    403.8,
+    425.8,
+    441.8,
+    467.8,
+    475.8,
+    505.8,
+    512.8,
+    519.8,
+    533.8,
+    539.8
+   ],
+   "explain": [
+    "程式第一步：array 的大小是固定的（MAX_SIZE），如果已經滿了就不能再放，回報 heap is full。現在只有 5 個，還有空間。",
+    "n 記錄 heap 現在有幾個元素，也剛好是最後一格的編號。++n 先把 n 加 1 變成 6，新的數字 x（用老師的例子 21）就要從 6 號開始試。",
+    "接著進 for 迴圈：變數 i 一開始等於 n，代表「x 目前要試放的位置」。",
+    "迴圈的條件是 i != 1：i 變成 1 表示已經到 root，不能再往上比，就跳出迴圈。",
+    "迴圈裡的 if：拿 x.key（x 的數值）跟 parent heap[i/2] 比。現在是 21 跟 heap[3] 的 2 比。",
+    "如果 x 沒有比 parent 大，就 break（立刻跳出迴圈），x 就放在 i。這裡 21 比 2 大，所以不 break。",
+    "比 parent 大，就做 heap[i] = heap[i/2]：把 parent 的值「copy」下來到 i 的位置。注意 x 還拿在手上，沒有真的交換，這樣比 swap 少搬一半。",
+    "i /= 2 就是 i = i / 2：往上爬一層，現在 i = 3。",
+    "再比一次：21 比 heap[1] 的 20 大，所以 20 也 copy 下來到 [3]，i 變成 1。",
+    "i == 1，迴圈結束，最後才寫 heap[i] = x，把 21 放進 root。結果 [21, 15, 20, 14, 10, 2]，跟剛剛手動做的一樣。"
+   ]
   },
   {
    "title": "考試檢討與 trace code 的重要性",
-   "scene": "postorder",
-   "params": {
-    "tree": "+(2,*(3,4))"
-   },
+   "scene": "treec-exam",
    "points": [
     {
      "text": "考題延伸：若不用 array，改用 node＋left/right pointer 實作 heap，insert 程式該怎麼改寫。",
@@ -127,91 +212,170 @@
     },
     {
      "text": "老師要求 trace code 要自己做，不會就把 code 放進 C/C++/Java 用 debugger step by step 追。",
-     "t": 798
+     "t": 739
     }
    ],
-   "trap": "Expression tree 題要先建樹、再用 postorder 求值：2+3*4 的樹為 +(2, *(3,4))，postorder = 2 3 4 * +，結果 14。"
+   "trap": "Expression tree 題要先建樹、再用 postorder 求值：2+3*4 的樹為 +(2, *(3,4))，postorder = 2 3 4 * +，結果 14。",
+   "cues": [
+    559.8,
+    660.8,
+    677.8,
+    683.8,
+    699.8,
+    738.8,
+    810.8
+   ],
+   "explain": [
+    "考試延伸題：如果 heap 不用 array，改用 node 加 left／right pointer 來做，insert 要怎麼改？難處在於 pointer 只往下指，往上找 parent 不方便。",
+    "另一題：用 tree 表示 expression（運算式）2 + 3 * 4，並算出它的值。",
+    "第一步要先把運算式建成 tree：運算子（+、*）當 parent，數字當葉子。因為先乘後加，3 * 4 要放在比較下面，+ 在 root。",
+    "第二步再用 postorder（後序：先左、再右、最後自己）走這棵樹，得到 2 3 4 * +。",
+    "照 postorder 從左到右算：看到 * 就把前面的 3、4 相乘得 12，看到 + 再算 2 + 12 = 14。老師強調兩步都要寫，只寫 postorder 不算解完。",
+    "老師叫你 trace code（一行一行追程式在做什麼），就要自己追，不要直接問助教這段在幹嘛。",
+    "真的追不懂，就把程式打進 C、C++ 或 Java，用 debugger 一步一步（step by step）執行，看每個變數怎麼變，這是「不求人」的方法。"
+   ]
+  },
+  {
+   "title": "題外話：trace code 與寫 code 的重要性",
+   "scene": null,
+   "points": [
+    {
+     "text": "會 trace code 對未來很重要：進公司常要讀別人已寫好的大型 project。",
+     "t": 841
+    },
+    {
+     "text": "就算不愛寫 code，大學還是要練；寫 code 像打電動，越寫經驗值越高。",
+     "t": 882
+    },
+    {
+     "text": "回顧 insert 概念：放最後、跟 parent 比，到 root 或 parent 較大就停；懂概念之外還要會 trace 它的 code。",
+     "t": 911
+    }
+   ]
   },
   {
    "title": "Max heap delete 概念：root 移出、最後元素暫存",
-   "scene": "p15-heap-delete",
-   "params": {
-    "phase": "concept"
-   },
+   "scene": "treec-hdel",
    "points": [
     {
      "text": "Delete（未指定元素時）在 max heap 就是把最大的 root 20 丟出來，root 位置變空。",
-     "t": 951
+     "t": 949
     },
     {
      "text": "Insert 是 bottom-up，delete 則是 top-down。",
-     "t": 1016
+     "t": 1013
     },
     {
      "text": "原本 5 個元素 20、15、2、14、10 分別存在 array 1~5；delete 後只剩 4 個，只需 array 1~4。",
-     "t": 1033
+     "t": 1036
     },
     {
      "text": "因此最後一個元素（array[5] 的 10）所佔空間要收回，把它拿出來放到 root 開始比大小，像打彈珠一樣往下走。",
-     "t": 1105
+     "t": 1097
     },
     {
      "text": "10 先暫存在變數 k（k = 10），而不是直接放進 root，因為下面可能有比它大的 child。",
-     "t": 1171
+     "t": 1165
     }
+   ],
+   "cues": [
+    961.8,
+    969.8,
+    1002.8,
+    1012.8,
+    1035.8,
+    1050.8,
+    1096.8,
+    1108.8,
+    1172.8,
+    1184.8
+   ],
+   "explain": [
+    "這是一個 max heap：20、15、2、14、10。接下來看 delete（刪除）。",
+    "沒有指定要刪哪一個時，max heap 的 delete 就是把最大的 root（20）拿出來，這也是 priority queue「拿出最大的」那個動作。",
+    "20 被拿走後，root 這個位置就空了，要想辦法補上。",
+    "記住方向：insert 是 bottom-up（從下往上爬），delete 是 top-down（從上往下調整）。",
+    "原本 5 個元素放在 array 的 [1] 到 [5]：20 在 1、15 在 2、2 在 3、14 在 4、10 在 5。",
+    "刪掉一個後只剩 4 個數字，只需要 [1] 到 [4] 這 4 格。",
+    "所以最後一格 [5] 要收回來（樹也要維持 complete，最後一個位置要拿掉），那原本放在 [5] 的 10 怎麼辦？要替它找新位置。",
+    "老師的比喻：把 10 丟到 root 那裡，像打彈珠一樣，打上去之後再往下落，落到它該停的地方。",
+    "其實程式不會直接把 10 放進 root，而是先存在一個變數 k 裡：k = 10。",
+    "為什麼不直接放進 root？因為下面可能有比它大的 child（例如 15），直接放會違反「root 最大」的規則，所以要先比一比。"
    ]
   },
   {
    "title": "Delete 逐步：與較大的 child 比、往下落",
-   "scene": "p15-heap-delete",
-   "params": {
-    "phase": "steps"
-   },
+   "scene": "treec-hdel2",
    "points": [
     {
      "text": "Root 下有兩個 child：15 與 2，先挑出較大的 15。",
-     "t": 1216
+     "t": 1213
     },
     {
      "text": "把最大的 child 跟 k = 10 比；15 比 10 大，所以 15 往上搬到 root。",
-     "t": 1238
+     "t": 1236
     },
     {
      "text": "15 原本的位置變空，10 往下落一格，再看這個位置的 child：只有 14。",
-     "t": 1276
+     "t": 1279
     },
     {
      "text": "14 比 10 大，14 往上爬；10 再落到 14 原來的位置，該位置沒有 child，10 就放在這裡。",
-     "t": 1321
+     "t": 1318
     },
     {
      "text": "最終 array：1 放 15、2 放 14、3 放 2、4 放 10。",
-     "t": 1346
+     "t": 1349
     },
     {
      "text": "Top-down 停止條件：到達 leaf，或 k 比較大的 child 還大。",
-     "t": 1430
+     "t": 1428
     }
+   ],
+   "cues": [
+    1212.8,
+    1221.8,
+    1235.8,
+    1258.8,
+    1267.8,
+    1278.8,
+    1308.8,
+    1317.8,
+    1337.8,
+    1348.8,
+    1427.8,
+    1436.8
+   ],
+   "explain": [
+    "現在 root 空著，k = 10。先看 root 底下的兩個 child（小孩）：15 和 2。",
+    "兩個裡面比較大的是 15。只有比較大的那個才有資格往上當 root，不然換上去會比另一個小孩小。",
+    "把這個最大的 child 15 跟 k 的 10 比。",
+    "15 比 10 大，所以 root 應該是 15，不能是 10。",
+    "15 往上搬到 root。",
+    "15 原本的位置空了，10 就往下落一格，試著放在這個空位。",
+    "再看這個空位底下的 child：只有一個，14。",
+    "14 又比 10 大，所以 14 往上爬到空位，10 再往下落一格。",
+    "這個位置底下已經沒有 child 了（它是 leaf，葉子），10 就放在這裡。",
+    "最後的 array：[1] 15、[2] 14、[3] 2、[4] 10。檢查一下，每個 parent 都比自己的 child 大，還是 max heap。",
+    "這就是 top-down：從 root 開始一層一層往下比。",
+    "什麼時候停？走到 leaf（下面沒小孩），或 k 已經比較大的那個 child 還大，就停下來把 k 放進去。"
    ]
   },
   {
    "title": "deleteMax 程式碼解說",
-   "scene": "p15-heap-delete-code",
-   "params": {
-    "phase": "explain"
-   },
+   "scene": "treec-hdelcode",
    "points": [
     {
      "text": "先檢查 n 是否為 0；n == 0 表示 heap 是 empty。",
-     "t": 1461
+     "t": 1458
     },
     {
      "text": "item = heap[1]：要 return 的是 array 第一個位置（max heap 中最大的元素）。",
-     "t": 1479
+     "t": 1476
     },
     {
      "text": "第三行把最後一個元素 heap[n] 指定給 k（例中 k = 10），並做 n-- （n 從 5 變 4）。",
-     "t": 1506
+     "t": 1504
     },
     {
      "text": "迴圈從 i = 1、j = 2 開始，條件 j <= n；i 是待決定的位置，j 與 j+1 是它的兩個 child。",
@@ -219,29 +383,56 @@
     },
     {
      "text": "若 heap[j].key < heap[j+1].key 就 j++，讓 j 指向較大的 child（走 right subtree）。",
-     "t": 1637
+     "t": 1631
     },
     {
      "text": "若 k 比最大的 child 還大就停止；否則 heap[i] = heap[j] 把 child 往上搬，i 移到 j、j 乘 2 繼續往下。",
-     "t": 1675
+     "t": 1666
     }
    ],
-   "trap": "補充：j++ 前必須先確認 j < n（右 child 存在），否則會讀到範圍外的元素。"
+   "trap": "補充：j++ 前必須先確認 j < n（右 child 存在），否則會讀到範圍外的元素。",
+   "cues": [
+    1457.8,
+    1463.8,
+    1475.8,
+    1511.8,
+    1531.8,
+    1547.8,
+    1585.8,
+    1609.8,
+    1639.8,
+    1665.8,
+    1679.8,
+    1692.8,
+    1702.8
+   ],
+   "explain": [
+    "現在看 deleteMax 的程式碼。第一行先檢查 n（heap 裡元素的個數）。",
+    "如果 n == 0，代表 heap 是空的（empty），沒東西可以刪，就回報錯誤。現在 n = 5。",
+    "item = heap[1]：delete 要把一個元素 return（交回去），交回的就是 array 第一格，也就是最大的 20。",
+    "第三行 k = heap[n]：把最後一個元素存到變數 k，例子裡 k = 10。",
+    "同一行的 n-- 讓 n 從 5 變 4：刪掉一個，heap 剩 4 個元素。",
+    "for 迴圈一開始 i = 1、j = 2，只要 j <= n 就繼續。i 代表「現在要決定放誰的位置」，一開始是 root。",
+    "j 和 j+1 是 i 的兩個 child：root 的 child 就是 [2] 和 [3]。",
+    "迴圈第一行要讓 j 指向兩個 child 裡比較大的那個。",
+    "如果 heap[j] 比 heap[j+1] 小，代表右邊的 child 比較大，就 j++ 改指右邊（往 right subtree 走）。前面的 j < n 是在確認右邊的 child 真的存在。這裡 15 比 2 大，j 不動。",
+    "下一行拿 k 跟這個最大的 child 比：10 對 15。",
+    "如果 k 比最大的 child 還大（或相等），就 break：k 就放在 i 這個位置。這裡 10 比 15 小，不能停。",
+    "否則 heap[i] = heap[j]：把 child 往上搬（copy）到 i。15 copy 到 root。",
+    "接著 i = j（往下走到剛剛那個 child 的位置）、j *= 2（j 改看新位置的 child）。同樣的比較會一直重複。"
+   ]
   },
   {
    "title": "deleteMax 程式 trace",
-   "scene": "p15-heap-delete-code",
-   "params": {
-    "phase": "trace"
-   },
+   "scene": "treec-hdeltrace",
    "points": [
     {
      "text": "一開始 i = 1、j = 2、n = 4，k = 10；array 只剩 1~4，第 5 格已不見。",
-     "t": 1737
+     "t": 1735
     },
     {
      "text": "第一輪：比較 15 和 2，最大 child 是 15；15 比 10 大，copy 到 root，此時 1 放 15、2 也放 15、3 放 2、4 放 14。",
-     "t": 1783
+     "t": 1781
     },
     {
      "text": "第二輪 i = 2：決定 2 號位置要放 10 還是它下面最大的 child（14）。",
@@ -249,18 +440,48 @@
     },
     {
      "text": "第三輪 j > n，迴圈結束，最後把 k 放進 i 的位置。",
-     "t": 1859
+     "t": 1858
     },
     {
      "text": "概念：root 拿掉、把 array 最後一個 element 提上來，從上往下決定它該放的位置。",
      "t": 1884
     }
    ],
-   "trap": "老師口誤說第三輪「i 等於 4、j 等於 4」；正確是第二輪後 i = 4、j = 8 > n = 4，所以停止，heap[4] = 10。"
+   "trap": "老師口誤說第三輪「i 等於 4、j 等於 4」；正確是第二輪後 i = 4、j = 8 > n = 4，所以停止，heap[4] = 10。",
+   "cues": [
+    1734.8,
+    1741.8,
+    1752.8,
+    1770.8,
+    1780.8,
+    1790.8,
+    1798.8,
+    1805.8,
+    1825.8,
+    1833.8,
+    1857.8,
+    1869.8,
+    1883.8
+   ],
+   "explain": [
+    "現在照著程式實際跑一次（trace）。一開始 i = 1、j = 2、n = 4。",
+    "這一輪要決定的是 [1]（原本 20 的位置）要給誰。",
+    "k = 10。array 只剩 [1] 到 [4]，[5] 的 10 已經抓出來存在 k 了。",
+    "j 指向 [2]，j+1 指向 [3]，這是 [1] 的兩個 child。",
+    "比較 15 和 2：最大的 child 是 15，所以 j 維持 2。",
+    "再比 15 和 k = 10：15 比較大，所以不 break。",
+    "heap[1] = heap[2]：15 copy 到 root。",
+    "這時 array 是 1 放 15、2 也放 15、3 放 2、4 放 14。[2] 的 15 是舊值，等等會被蓋掉。",
+    "i = j = 2、j = 2 × 2 = 4，進入第二輪。",
+    "這輪決定 [2] 要放 10 還是它下面最大的 child。[2] 只有一個 child [4] 的 14，14 比 10 大，所以 14 copy 上來。然後 i = 4、j = 8。",
+    "第三輪先檢查 j <= n：j = 8 但 n 只有 4。（老師說成「i 等於 4、j 等於 4」是口誤。）",
+    "j 大於 n，迴圈結束，最後 heap[i] = k，也就是 heap[4] = 10。結果 [15, 14, 2, 10]。",
+    "整個概念：root 拿掉，把 array 最後一個元素提上來，從上往下替它找位置，最後把一開始存的 item（20）return 回去。"
+   ]
   },
   {
    "title": "Heap 操作的複雜度",
-   "scene": "p15-heap-cost",
+   "scene": "treec-hcost",
    "points": [
     {
      "text": "Max／min heap 的 delete（刪 root）要調整 tree，cost 為 O(log n)，即 tree 的高度。",
@@ -268,22 +489,44 @@
     },
     {
      "text": "若要 delete 或 search heap 中任意指定元素（例如 10），需 O(n)：heap 用 array 實作，只能 scan 整個 array 找。",
-     "t": 1944
+     "t": 1952
     },
     {
      "text": "Delete 任意元素有兩步：先 scan 找到（O(n)），刪除後留下空洞，再往 subtree 調整（O(log n)）。",
-     "t": 2050
+     "t": 2049
     },
     {
      "text": "總共 n + log n，bottleneck 在 O(n) 那段，所以是 O(n)。",
-     "t": 2126
+     "t": 2117
     }
    ],
-   "trap": "老師一度說「log n 當然 dominate 它」是口誤，隨即改口：n + log n 由 n 主導，整體 O(n)。補充：刪除任意位置後可能需要往上或往下調整，但仍是 O(log n)。"
+   "trap": "老師一度說「log n 當然 dominate 它」是口誤，隨即改口：n + log n 由 n 主導，整體 O(n)。補充：刪除任意位置後可能需要往上或往下調整，但仍是 O(log n)。",
+   "cues": [
+    1914.8,
+    1930.8,
+    1951.8,
+    1962.8,
+    1978.8,
+    2048.8,
+    2065.8,
+    2116.8,
+    2135.8
+   ],
+   "explain": [
+    "整理一下成本。max heap 或 min heap 做 delete，就是把 root 丟出來。",
+    "丟出來後要調整 tree，最多沿著一條路從 root 走到 leaf，所以成本是樹的高度。n 個元素的 complete binary tree 高度大約 log₂ n，所以是 O(log n)。",
+    "那如果要 delete（或 search）heap 裡「任意指定」的元素呢？例如要刪掉 10。",
+    "這要 O(n)。heap 只保證 root 最大，其他位置沒有排序，看不出 10 在哪裡。",
+    "只能從頭 scan（一格一格看）整個 array，最壞要看完全部 n 格。",
+    "所以刪任意元素有兩個動作：第一，scan 找到它，O(n)。",
+    "第二，刪掉後留下一個空洞，不能放著不管，要往它的 subtree 調整，這也是樹高 O(log n)。",
+    "兩段加起來是 n + log n。",
+    "兩段程式接在一起時，時間由比較慢的那段決定（bottleneck，瓶頸）。n 比 log n 大很多，所以整體是 O(n)。老師一度說成「log n dominate」是口誤。"
+   ]
   },
   {
    "title": "Heap sort 與 heap 三原則",
-   "scene": "p15-heap-sort",
+   "scene": "treec-hsort",
    "points": [
     {
      "text": "問題：heap 能不能拿來 sort？這就是 heap sort。",
@@ -291,63 +534,122 @@
     },
     {
      "text": "把 n 個數字建成 min heap（Phase 1），再對它 delete n 次（Phase 2），輸出就是由小到大。",
-     "t": 2187
+     "t": 2185
     },
     {
      "text": "建 heap 最直接的方法：把 n 個數字逐一 insert 到 empty heap，共 insert n 次。",
-     "t": 2258
+     "t": 2254
     },
     {
      "text": "每次 insert 與每次 delete 都是 O(log n)，各做 n 次，總共 O(n log n)。",
-     "t": 2325
+     "t": 2321
     },
     {
      "text": "三原則：max heap root 最大／min heap root 最小；insert 放最後位置再 bottom-up；delete 把最後元素提到 root 再 top-down。",
      "t": 2361
     }
    ],
-   "trap": "補充：逐一 insert 建 heap 是 O(n log n)；課本另有 bottom-up 的 heapify 可在 O(n) 建好 heap。教科書 heap sort 通常用 max heap 在原 array 中排序成遞增，此處老師講的是概念版（min heap 逐次刪除）。"
+   "trap": "補充：逐一 insert 建 heap 是 O(n log n)；課本另有 bottom-up 的 heapify 可在 O(n) 建好 heap。教科書 heap sort 通常用 max heap 在原 array 中排序成遞增，此處老師講的是概念版（min heap 逐次刪除）。",
+   "cues": [
+    2161.8,
+    2171.8,
+    2184.8,
+    2206.8,
+    2212.8,
+    2253.8,
+    2271.8,
+    2279.8,
+    2320.8,
+    2330.8,
+    2360.8,
+    2374.8,
+    2381.8
+   ],
+   "explain": [
+    "老師問：heap 可以拿來 sort（排序）嗎？有沒有聽過 heap sort？",
+    "假設有一堆數字，要排成從小到大。老師沒給數字，動畫用 5、3、8、1、4 示範。",
+    "想法：先把這 n 個數字建成一個 min heap。min heap 跟 max heap 相反：root 永遠是最小的。",
+    "第二步：對這個 min heap 做 n 次 delete。",
+    "每次 delete 拿出來的都是「目前最小的」，所以依序拿出來就是從小到大，這就是 heap sort。",
+    "Phase 1 怎麼建 heap？最直接的方法：從空的 heap 開始，把數字一個一個 insert 進去。先放 5，再放 3（3 比 5 小，往上爬）。",
+    "第三、四、五個也一樣 insert，總共 insert n 次。建好後 root 是最小的 1。",
+    "Phase 2：delete 5 次。每次拿走 root，再把最後一個元素提到 root、往下調整。拿出來的順序是 1 3 4 5 8，正好由小到大。",
+    "算成本：每次 insert 要 bottom-up 跟 parent 比，最多樹高，O(log n)，總共做 n 次。",
+    "每次 delete 也是 O(log n)，做 n 次。加起來 2n log n，所以 heap sort 是 O(n log n)。",
+    "老師要大家記住 heap 的三個原則。第一：max heap 的 root 放最大，min heap 的 root 放最小。",
+    "第二：insert 時，新元素放在 heap 最後一個位置，再 bottom-up 跟 parent 比。",
+    "第三：delete 時，把最後一個位置的元素提到 root，再 top-down 往下找它該放的位置。"
+   ]
   },
   {
-   "title": "作業預告與 Huffman code 的兩個技巧",
-   "scene": "p15-huffman-freq",
-   "params": {
-    "phase": "ascii"
-   },
+   "title": "作業預告",
+   "scene": null,
    "points": [
     {
-     "text": "作業（Huffman code）預計下週由另一位老師出，題目包含編碼與解碼。",
-     "t": 2412
+     "text": "作業原本預計週二出，改由另一位老師出題，可能下週才公布，主題是 Huffman code（含編碼與解碼）。",
+     "t": 2400
     },
+    {
+     "text": "老師推薦網路上講 Huffman code 的投影片，希望大家理解它為什麼能壓縮。",
+     "t": 2443
+    }
+   ],
+   "trap": "作業細節（出題老師、時程）以課堂公告為準。"
+  },
+  {
+   "title": "Huffman code 的兩個技巧與 ASCII",
+   "scene": "treec-huf2",
+   "points": [
     {
      "text": "Huffman code 會用到兩個技巧：建一棵 binary tree，以及用 priority queue（也就是 heap）。",
      "t": 2478
     },
     {
+     "text": "用途：把文字編碼（encode）傳給對方，對方再依 code 解碼（decode），像以前的傳真機。",
+     "t": 2505
+    },
+    {
      "text": "ASCII 是 fixed length coding：每個字元的 code length 都一樣，大寫與小寫字母對應不同 code。",
-     "t": 2525
+     "t": 2522
     }
    ],
-   "trap": "作業細節（出題老師、時程）以課堂公告為準；ASCII 標準為 7 bits，通常以 8 bits（1 byte）儲存。"
+   "trap": "作業細節（出題老師、時程）以課堂公告為準；ASCII 標準為 7 bits，通常以 8 bits（1 byte）儲存。",
+   "cues": [
+    2477.8,
+    2483.8,
+    2495.8,
+    2504.8,
+    2512.8,
+    2521.8,
+    2529.8,
+    2551.8
+   ],
+   "explain": [
+    "Huffman code 會用到兩個前面學過的技巧。第一個：建一棵 binary tree（每個 node 最多兩個小孩的樹）。",
+    "第二個：建一個 priority queue，每次都能很快拿出「最小的」那個。",
+    "priority queue 用什麼做？就是剛剛學的 heap。所以這兩堂課的東西會合在一起用。",
+    "Huffman 是用來 encode（編碼）的：把文字變成一串 0 和 1 傳給對方，就像以前的傳真機。",
+    "對方收到這串 bits 後，要照同一套 code 把它 decode（解碼）回原本的文字。",
+    "先回想 ASCII：它是一套標準，每個字元（字母、標點、控制字元）都對應到一個固定的 code。",
+    "大寫和小寫是不同的字元，code 也不同：E 是 01000101，e 是 01100101。",
+    "ASCII 是 fixed length coding（固定長度編碼）：每個字元的 code 長度都一樣，不管它常不常出現。"
+   ]
   },
   {
    "title": "Huffman 概念：出現越多、碼越短",
-   "scene": "p15-huffman-freq",
-   "params": {
-    "phase": "freq"
-   },
+   "scene": "treec-hfreq",
    "points": [
     {
      "text": "1952 年 David Huffman 發明 Huffman code，目的是用最少的 code length 來編碼。",
-     "t": 2578
+     "t": 2573
     },
     {
      "text": "觀察例句中各字母出現次數，小寫 e 出現最多次。",
-     "t": 2641
+     "t": 2639
     },
     {
      "text": "ASCII 不論字母出現幾次，長度都一樣（老師說每個字母 8 bits）。",
-     "t": 2675
+     "t": 2673
     },
     {
      "text": "Huffman 依每個字元出現的 frequency 編碼：出現次數越高，編碼長度越短。",
@@ -355,22 +657,48 @@
     },
     {
      "text": "統計的是字元不是單字，空白（space，出現 4 次）與句點也都要編碼。",
-     "t": 2745
+     "t": 2747
     }
    ],
-   "trap": "補充：標準 ASCII 是 7 bits，一般以 1 byte（8 bits）儲存；本例以 8 bits 計算。例句未唸出，動畫用的「Eerie eyes seen near lake.」是推測（26 字元、空白 4 次、小寫 e 最多、大小寫 E 並存，都與課堂描述吻合）。"
+   "trap": "補充：標準 ASCII 是 7 bits，一般以 1 byte（8 bits）儲存；本例以 8 bits 計算。例句未唸出，動畫用的「Eerie eyes seen near lake.」是推測（26 字元、空白 4 次、小寫 e 最多、大小寫 E 並存，都與課堂描述吻合）。",
+   "cues": [
+    2572.8,
+    2586.8,
+    2608.8,
+    2621.8,
+    2638.8,
+    2657.8,
+    2672.8,
+    2701.8,
+    2746.8,
+    2763.8,
+    2775.8
+   ],
+   "explain": [
+    "一點歷史：1952 年，David Huffman 發明了 Huffman code。",
+    "他的目標是用最少的 code length（編碼長度，也就是 bit 數）來表示一段文字。",
+    "看投影片上這一行字（字幕沒唸出句子，動畫用課本常見的例句 \"Eerie eyes seen near lake.\" 示意）。用 ASCII 存，每個字元換成一個 code。",
+    "大寫 E 對到一個 ASCII code，小寫 e 也對到一個，兩個的 code length 一樣長。",
+    "老師問：這行字裡哪個字母出現最多次？大寫 E 還是小寫 e？",
+    "小寫 e 出現最多（8 次）。既然它這麼常出現，能不能用最少的 bit 來表示它？",
+    "傳統 ASCII 不管字母出現幾次，長度都一樣，每個字母 8 bits。",
+    "Huffman 的想法：依每個字元出現的 frequency（次數）來編碼，越常出現的給越短的 code，總長度就會變少。",
+    "所以第一步是統計：注意統計的是「字元」，不是單字。每個字元出現幾次，就疊幾塊。",
+    "空白（space）也是字元，出現 4 次，也要編碼；句點也要。電腦很笨，存檔時每個字元都要存下來。",
+    "作業就是要 scan 整個檔案的每一行，把每個字元的 frequency 找出來。"
+   ]
   },
   {
    "title": "Code table、編碼解碼與壓縮比",
-   "scene": "p15-huffman-compress",
+   "scene": "treec-hcomp",
    "points": [
     {
      "text": "根據頻率建出 Huffman tree，再得到 code table（碼書）。",
-     "t": 2801
+     "t": 2797
     },
     {
      "text": "依 code table 把原句子寫成 bit 串就是編碼。",
-     "t": 2836
+     "t": 2832
     },
     {
      "text": "解碼：給一串 bits（如 1010…），透過 code table 還原原句。",
@@ -378,14 +706,36 @@
     },
     {
      "text": "例句共 26 個字元，用 Huffman 只需 73 bits；用 ASCII 每字 8 bits 需 26 × 8 = 208 bits。",
-     "t": 2891
+     "t": 2889
     },
     {
      "text": "從 208 bits 降到 73 bits，達成 compression（壓縮）；週五會再講一次 Huffman。",
-     "t": 2935
+     "t": 2931
     }
    ],
-   "trap": "投影片寫 73 bits；但依「Eerie eyes seen near lake.」的頻率表（e 8、空白 4、r/s/n/a 各 2、其餘 6 個字元各 1）建 Huffman tree，最佳總長是 84 bits（低於 73 會比 entropy 下界約 82 bits 還小，不可能）。考試若給頻率表，請自己算 Σ freq × code length。"
+   "trap": "投影片寫 73 bits；但依「Eerie eyes seen near lake.」的頻率表（e 8、空白 4、r/s/n/a 各 2、其餘 6 個字元各 1）建 Huffman tree，最佳總長是 84 bits（低於 73 會比 entropy 下界約 82 bits 還小，不可能）。考試若給頻率表，請自己算 Σ freq × code length。",
+   "cues": [
+    2796.8,
+    2819.8,
+    2831.8,
+    2849.8,
+    2858.8,
+    2888.8,
+    2898.8,
+    2908.8,
+    2930.8
+   ],
+   "explain": [
+    "根據剛剛的次數，最後建出來的 Huffman tree 長這樣（怎麼建，下一堂課會講）。葉子是字元，下面標的是出現次數；中間的 node 是下面次數的加總。",
+    "從 root 走到每個葉子，往左記 0、往右記 1，走過的路就是那個字元的 code。全部整理起來叫 code table（碼書）。出現 8 次的 e 只要 2 bits。",
+    "編碼：照 code table，把原本那一行的每個字換成它的 bits，接起來就是編碼結果。",
+    "解碼：反過來，給你一串看不懂的 bits，要靠 code table 還原成原來的句子。",
+    "例如讀到 1、0：從 root 往右再往左，走到葉子 e，就解出一個 e；然後回到 root 繼續讀下一個。",
+    "這一行總共 26 個字元。投影片說用 Huffman 編碼只要 73 bits。",
+    "如果用 ASCII，每個字母都要 8 bits。",
+    "26 × 8 = 208 bits。",
+    "從 208 降到 73，同樣一句話用更少的 bit 存，這就是 compression（壓縮）。（照這張頻率表自己算，最佳其實是 84 bits，但一樣遠小於 208。）"
+   ]
   }
  ],
  "quiz": [

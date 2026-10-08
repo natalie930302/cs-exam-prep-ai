@@ -5,7 +5,7 @@
  "sections": [
   {
    "title": "Huffman coding 概念與字元頻率統計",
-   "scene": "p16-huff-freq",
+   "scene": "treec-p16freq",
    "points": [
     {
      "text": "Huffman coding 是 binary tree 與 priority queue 的應用；看到 priority queue 基本上就對應到 heap。",
@@ -23,15 +23,37 @@
      "text": "作業 phase 1：開檔、scan 所有字元、統計各字元 frequency。",
      "t": 112
     }
+   ],
+   "cues": [
+    1,
+    39.8,
+    46.8,
+    53.8,
+    61.8,
+    68.8,
+    74.8,
+    97.8,
+    113.8
+   ],
+   "explain": [
+    "Huffman coding 是一個應用題，會用到兩個學過的東西：binary tree 和 priority queue。看到 priority queue，基本上就想到 heap。",
+    "假設有一個句子（動畫用課本例句 \"Eerie eyes seen near lake.\"，共 26 個字元）。",
+    "第一步：對句子裡的每個字母做統計，每個字元出現幾次，就疊幾塊。",
+    "統計的目的：知道哪些字母出現得最頻繁，等等就給它們比較短的編碼。",
+    "統計結果：小寫 e 出現了 8 次，是最多的。",
+    "大寫 E 只出現 1 次。大寫和小寫在電腦裡是不同的字元，要分開算。",
+    "空白（space）、句點、冒號、引號這些控制字元和標點也都要統計，因為把句子存起來時，它們一樣要存。",
+    "每個字母和標點都要有自己的 frequency（出現次數），這張表就是後面建樹的材料。",
+    "作業的 phase 1：打開檔案、scan 所有字元，把每個字元出現的次數統計出來。"
    ]
   },
   {
    "title": "Huffman tree 建構原則：min heap、bottom-up",
-   "scene": "p16-huff-node",
+   "scene": "treec-p16node",
    "points": [
     {
      "text": "Phase 2：依統計結果建立 Huffman tree，它是一棵 binary tree，建構時仰賴 priority queue。",
-     "t": 130
+     "t": 124
     },
     {
      "text": "使用的是 minimum heap，目的在每次快速找出目前 frequency 最小者。",
@@ -57,15 +79,43 @@
      "text": "程式裡的 priority queue（MyQueue）就是一個 heap。",
      "t": 271
     }
+   ],
+   "cues": [
+    123.8,
+    129.8,
+    145.8,
+    161.8,
+    179.8,
+    188.8,
+    196.7,
+    211.8,
+    233.8,
+    241.8,
+    255.8,
+    268.8
+   ],
+   "explain": [
+    "統計完之後，進入第二個 phase：建 Huffman tree。",
+    "Huffman tree 本身就是一棵 binary tree（每個 node 最多兩個小孩）。",
+    "建這棵樹要靠一個 priority queue：先把統計結果放進去。",
+    "用的是 minimum heap（root 永遠最小的 heap），因為建樹時每次都要找出 frequency 最小的。",
+    "每次把出現頻率最少的兩個抓出來 merge（合併）成一個新 node，例如 E1 和 i1 合成 2。",
+    "合併好的新 node 再丟回 priority queue，跟別人一起排隊，繼續被合併。",
+    "所以 Huffman tree 是 bottom-up（從下往上）長出來的，不是從 root 開始往下建。",
+    "為什麼最小的先合併？frequency 最小的字元本來就該在樹的最下面（code 最長），先抓出來，它就被壓在最底層。",
+    "程式裡的 Huffman node 有幾個欄位。第一個：這個 node 代表的字元。",
+    "第二個：frequency，也就是出現次數。",
+    "還有兩個 pointer：left 和 right，分別指向左小孩、右小孩，這樣才能把 node 串成一棵樹。",
+    "程式裡的 priority queue 叫 MyQueue，它其實就是一個 heap（也可以畫成一棵樹）。"
    ]
   },
   {
    "title": "把頻率表建成 min heap",
-   "scene": "p16-huff-heap",
+   "scene": "treec-p16heap",
    "points": [
     {
      "text": "一開始只有單一字元（字母、控制字元、標點）及其 frequency，把它們 insert 進 heap。",
-     "t": 316
+     "t": 297
     },
     {
      "text": "priority queue 用 array 實作，是 min priority queue，第一個位置是 frequency 最小者。",
@@ -88,11 +138,31 @@
      "t": 403
     }
    ],
-   "trap": "補充：投影片上初始 heap 的確切排列未口述，動畫依字元出現順序逐一 insert（示意）；同 frequency 不交換。"
+   "trap": "補充：投影片上初始 heap 的確切排列未口述，動畫依字元出現順序逐一 insert（示意）；同 frequency 不交換。",
+   "cues": [
+    296.8,
+    315.8,
+    329.8,
+    361.8,
+    379.8,
+    390.9,
+    397.8,
+    410.1
+   ],
+   "explain": [
+    "一開始手上只有一個個單一的字元（字母、控制字元、標點），每個都帶著自己的 frequency。",
+    "把它們 insert 進 priority queue。投影片上紅色那排就是用 array 實作的 priority queue。",
+    "它是 minimum priority queue：第一個位置 [1] 永遠放 frequency 最小的。",
+    "phase 1 統計出來的表，要拿來建出一個 min heap。",
+    "例如先 insert E（次數 1），再 insert e（次數 8）。8 比 1 大，所以 e8 留在下面。",
+    "每次 insert 完都要調整（bottom-up 跟 parent 比）。例如 i1 放進來時比 parent e8 小，就往上換。",
+    "調整完一定要符合 min heap 的特質：root 永遠最小。所以 heap 的 insert、delete 都要會自己寫。",
+    "全部 insert 完，heap 大概長這個樣子。（同 frequency 不交換；投影片上確切的排列老師沒唸，這裡是示意。）"
+   ]
   },
   {
    "title": "Huffman 演算法主迴圈",
-   "scene": "p16-huff-algo",
+   "scene": "treec-p16algo",
    "points": [
     {
      "text": "while 條件：heap 裡有兩個或以上的 element。",
@@ -126,15 +196,39 @@
      "text": "重複直到 while 條件不成立，Huffman tree 就建好了。",
      "t": 535
     }
+   ],
+   "cues": [
+    422.8,
+    432.2,
+    456.8,
+    467.6,
+    480.5,
+    485.8,
+    504.8,
+    511.8,
+    526.8,
+    535.8
+   ],
+   "explain": [
+    "主迴圈的 while 條件：heap 裡還有兩個（或以上）的 element，就繼續做。",
+    "第一步：產生一個新的 Huffman node，叫它 z。",
+    "接著從 min heap 把最小的兩個 element delete 出來，也就是 delete 兩次。",
+    "第一次 delete 拿到最小的，這裡是 E1。",
+    "第一次 delete 完 heap 會調整，原本第二小的 i1 就變成最小，第二次 delete 就拿到它。",
+    "第一個拿出來的，放在 z 的 left child。",
+    "第二個拿出來的，放在 z 的 right child。",
+    "z 的 frequency = left child 的 frequency + right child 的 frequency，1 + 1 = 2。",
+    "最後把 z insert 回 priority queue。z 現在代表一棵小 subtree，以後也可能再被合併。",
+    "一直重複，直到 while 條件不成立（heap 只剩一個），那一個就是整棵 Huffman tree 的 root。"
    ]
   },
   {
    "title": "Huffman tree 建構實例（Eerie eyes seen near lake.）",
-   "scene": "p16-huff-build",
+   "scene": "treec-p16build",
    "points": [
     {
      "text": "一開始 heap 裡最小的兩個是 E 與 i，先被取出。",
-     "t": 550
+     "t": 544
     },
     {
      "text": "delete 之後 min heap 要做調整以維持 heap 性質。",
@@ -165,11 +259,43 @@
      "t": 762
     }
    ],
-   "trap": "步驟 4–10 的取出順序（同 frequency 時取誰）依經典範例重建，老師只口述前三次合併與最後 10、16 → 26。"
+   "trap": "步驟 4–10 的取出順序（同 frequency 時取誰）依經典範例重建，老師只口述前三次合併與最後 10、16 → 26。",
+   "cues": [
+    543.8,
+    551.1,
+    559.8,
+    580.8,
+    588.8,
+    598.8,
+    604.8,
+    657.3,
+    684.5,
+    708.8,
+    727.3,
+    737.8,
+    762.9,
+    769.2
+   ],
+   "explain": [
+    "實際做一次。一開始 queue 裡有這 12 個字元，依 frequency 由小到大排（字母後面的數字是次數）。",
+    "最小的兩個是 E 和 i（都是 1），把它們從 min heap 裡 delete 出來。",
+    "delete 之後 min heap 要調整，讓剩下的裡面最小的又跑到最前面。老師說這個調整要自己實作。",
+    "第一個拿出來的是 E，第二個是 i。",
+    "它們分別當新 node 的 left child 和 right child：E 在左、i 在右。",
+    "新 node 的 frequency = 1 + 1 = 2。",
+    "新 node insert 回 queue。insert 時要看它該排在哪裡，heap 一樣要調整。",
+    "queue 裡還有很多 element，再抓最小的兩個：y 和 l，合併成 2，放回去。",
+    "接著抓 k 和句點，合併後 frequency 是 2，再丟回去。",
+    "依此類推，一輪一輪做（iteration）：r 和 s、n 和 a……每次都是最小的兩個合併。",
+    "一直做到 heap 裡只剩兩個 element。",
+    "這兩個各自是一棵 subtree，frequency 是 10 和 16，就是各自底下所有字元次數的總和。",
+    "最後一輪把這兩個合併，root 的 frequency = 26，正好是句子的字元總數。",
+    "這就是最後的 Huffman tree。越常出現的字元（像 e）越靠近 root。"
+   ]
   },
   {
    "title": "Huffman 編碼：左 0 右 1",
-   "scene": "p16-huff-encode",
+   "scene": "treec-p16enc",
    "points": [
     {
      "text": "建好 Huffman tree 後的下一步是編碼。",
@@ -192,15 +318,33 @@
      "t": 878
     }
    ],
-   "trap": "老師口頭說 E 是 000、i 是 001，但他自己從 26→10→4→2→E 走了四步，依經典範例 E=0000、i=0001。補充：Huffman code 是 prefix-free code（所有字元都在 leaf，不會有一個碼是另一個碼的前綴），所以解碼不需分隔符號。"
+   "trap": "老師口頭說 E 是 000、i 是 001，但他自己從 26→10→4→2→E 走了四步，依經典範例 E=0000、i=0001。補充：Huffman code 是 prefix-free code（所有字元都在 leaf，不會有一個碼是另一個碼的前綴），所以解碼不需分隔符號。",
+   "cues": [
+    808.8,
+    818.3,
+    835.8,
+    847.8,
+    857.8,
+    864.8,
+    875.7
+   ],
+   "explain": [
+    "樹建好之後，下一步就是編碼。規則很簡單：往左走記 0，往右走記 1。",
+    "例如要編大寫 E，從 root 26 出發。",
+    "26 往左到 10 是 0，10 往左到 4 是 0，4 往左到 2 也是 0。",
+    "2 往左到 E 還是 0，所以 E 的 code 是 0000。每個字母都在 leaf（樹的最底端）。",
+    "每個字元的 Huffman code，就是從 root 走到它那個 leaf 的路徑。",
+    "每個 leaf 都這樣走一次，就得到整張 code table。最常出現的 e 只要 2 bits（10）。",
+    "E 是 0000、i 是 0001，只差最後一個 bit。（老師口頭說 000、001，少算了一層；他自己走了四步。）"
+   ]
   },
   {
    "title": "Huffman tree 是否唯一？",
-   "scene": "p16-huff-tie",
+   "scene": "treec-p16tie",
    "points": [
     {
      "text": "提問：Huffman tree 是唯一的嗎？Huffman code 是唯一的嗎？",
-     "t": 897
+     "t": 893
     },
     {
      "text": "Input 是各字元的 frequency，output 是一棵 Huffman tree；問的是這棵樹會不會只有一種樣子。",
@@ -215,7 +359,25 @@
      "t": 955
     }
    ],
-   "trap": "補充：雖然樹與碼不唯一，但所有 Huffman tree 的總加權路徑長（總編碼 bit 數）都相同且最小。"
+   "trap": "補充：雖然樹與碼不唯一，但所有 Huffman tree 的總加權路徑長（總編碼 bit 數）都相同且最小。",
+   "cues": [
+    892.8,
+    903.8,
+    919.8,
+    926.4,
+    943.9,
+    951.6,
+    957.8
+   ],
+   "explain": [
+    "老師問：Huffman tree 是唯一的嗎？",
+    "Huffman code 是唯一的嗎？「唯一」意思是：同樣的輸入，只能得到一種答案。",
+    "先想清楚：input 是每個字元的 frequency。",
+    "output 是一棵 Huffman tree。問題是：這棵樹是不是只會長成一種樣子？",
+    "frequency 是 1 的字元有好多個，為什麼一定是大寫 E 排在前面？l 或 k 排前面也可以。",
+    "只要不違反 heap 的特質（小的在前）就好，次數一樣的，誰先誰後都合法。",
+    "順序一換，第一次合併的就可能變成 l 和 k，樹就長得不一樣，code 也跟著變。所以不唯一；但每種 Huffman tree 的總 bit 數都一樣少。"
+   ]
   },
   {
    "title": "作業說明：header 存樹、以 byte 寫檔",
@@ -237,11 +399,11 @@
   },
   {
    "title": "壓縮效益與 overhead",
-   "scene": "p16-huff-ratio",
+   "scene": "treec-p16ratio",
    "points": [
     {
      "text": "範例句子含句點與空白共 26 個字元。",
-     "t": 1095
+     "t": 1084
     },
     {
      "text": "ASCII 每字元 8 bit，共 8 × 26 = 208 bits。",
@@ -260,15 +422,33 @@
      "t": 1159
     }
    ],
-   "trap": "「每個 code 都是 4 bits」只是老師的簡化假設；依此樹實際的總長度是 Σ freq × codeLength = 84 bits（高頻的 e 只用 2 bits）。"
+   "trap": "「每個 code 都是 4 bits」只是老師的簡化假設；依此樹實際的總長度是 Σ freq × codeLength = 84 bits（高頻的 e 只用 2 bits）。",
+   "cues": [
+    1083.8,
+    1094.8,
+    1105.8,
+    1114.8,
+    1126.8,
+    1149,
+    1158.9
+   ],
+   "explain": [
+    "來算一算省了多少。先看用 ASCII 存剛才那個句子要多少空間。",
+    "句子總共 26 個字元，包含句點和空白。",
+    "ASCII 每個字母用 8 個 bit，8 × 26 = 208 bits。",
+    "老師簡化假設 Huffman code 每個都是 4 bits，那只要 4 × 26 = 104 bits。（實際上依這棵樹算是 84 bits。）",
+    "本來 208 bits，現在只要 104 bits，省下不少空間。",
+    "但有 overhead（額外成本）：要把 Huffman tree 也存起來放在檔案前面（header），不然收到的人沒辦法解碼。",
+    "所以實際檔案大小是 104 + X，X 是存那棵樹的空間。"
+   ]
   },
   {
    "title": "Huffman 解碼",
-   "scene": "p16-huff-decode",
+   "scene": "treec-p16dec",
    "points": [
     {
      "text": "收到用 Huffman 編碼的文字後要解碼，還原每個字元。",
-     "t": 1192
+     "t": 1182
     },
     {
      "text": "解碼從頭 scan 檔案的 bit。",
@@ -295,7 +475,29 @@
      "t": 1280
     }
    ],
-   "trap": "補充：老師只示範「10 → e」；動畫後段 0010 10 1101 → y e s 為示意。Huffman code 是 prefix-free，解碼不需分隔符號。"
+   "trap": "補充：老師只示範「10 → e」；動畫後段 0010 10 1101 → y e s 為示意。Huffman code 是 prefix-free，解碼不需分隔符號。",
+   "cues": [
+    1181.8,
+    1199.8,
+    1207.8,
+    1217.8,
+    1225.8,
+    1233.8,
+    1244.7,
+    1255.8,
+    1275.8
+   ],
+   "explain": [
+    "收到一個用 Huffman 編碼過的檔案，裡面是一串 0 和 1，要把它解碼回文字。",
+    "解碼其實很簡單，只要手上有那棵 Huffman tree。",
+    "從頭開始一個 bit 一個 bit 讀，每讀一個 bit，就在樹上走一步。",
+    "讀到 0 往左走，讀到 1 往右走。",
+    "一直走一定會走到某個 leaf，leaf 上的字元就是解出來的字。",
+    "例如第一個 bit 是 1：從 root 往右走，到了 16。",
+    "下一個 bit 是 0：往左走，到了小寫 e。這是 leaf，所以 10 解出 e。",
+    "走到 leaf、不能再往下走時，就輸出那個字母（明文），然後回到 root，繼續讀下一個 bit。因為字元都在 leaf，所以不需要分隔符號。",
+    "作業要同時做編碼和解碼。助教會給你編碼後的文字，要你解出原來的明文。"
+   ]
   },
   {
    "title": "另一種實作（recursive）與 heap 練習",
@@ -313,11 +515,11 @@
   },
   {
    "title": "Binary Search Tree 定義與判斷",
-   "scene": "p16-bst-check",
+   "scene": "treec-p16bstchk",
    "points": [
     {
      "text": "BST 條件：left subtree 的 node 都小於 root（parent），right subtree 的 node 都大於 root。",
-     "t": 1363
+     "t": 1347
     },
     {
      "text": "right subtree 的 node 都會大於該 root，符合此特性的 binary tree 就是 BST。",
@@ -336,11 +538,31 @@
      "t": 1407
     }
    ],
-   "trap": "補充：左樹除了老師指出的「22 在 25 右邊」外，其餘數字為示意。BST 的條件是整棵 left subtree 都小於 root、整棵 right subtree 都大於 root，不只是和直接 parent 比；洪逸／Horowitz 預設 key 互不相同。"
+   "trap": "補充：左樹除了老師指出的「22 在 25 右邊」外，其餘數字為示意。BST 的條件是整棵 left subtree 都小於 root、整棵 right subtree 都大於 root，不只是和直接 parent 比；洪逸／Horowitz 預設 key 互不相同。",
+   "cues": [
+    1346.8,
+    1354.8,
+    1362.7,
+    1371.8,
+    1387.7,
+    1399.2,
+    1404.8,
+    1420.8
+   ],
+   "explain": [
+    "接下來是 binary search tree（BST，二元搜尋樹）：一種有大小規則的 binary tree。",
+    "規則一：left subtree（左邊整棵子樹）的每個 node 都比 root 小。例如 5、2 都比 30 小。",
+    "規則二：right subtree 的每個 node 都比 root（parent）大。40 比 30 大。符合的 binary tree 就是 BST。",
+    "常考題：給你兩棵樹，判斷哪一棵是 BST。",
+    "左邊這棵不是 BST。為什麼？",
+    "看 25 和它右下的 22：22 比 25 小，卻放在 25 的右邊，違反「右邊都比較大」。",
+    "右邊這棵每個 node 都符合規則，它是 BST。",
+    "再整理一次：左子樹全部 < root < 右子樹全部，而且每個 node 都要成立；不是只跟自己的 parent 比。"
+   ]
   },
   {
    "title": "BST search：recursive 與 iterative",
-   "scene": "p16-bst-search",
+   "scene": "treec-p16bstsrch",
    "points": [
     {
      "text": "search：給一個數字 x，問它是否存在於 BST 中。",
@@ -375,15 +597,45 @@
      "t": 1690
     }
    ],
-   "trap": "補充：老師未給搜尋數值，動畫用下一段的 BST 搜尋 32（找到）與 35（找不到）示意。search 時間為 O(h)，平衡時約 O(log n)，歪斜時退化為 O(n)。"
+   "trap": "補充：老師未給搜尋數值，動畫用下一段的 BST 搜尋 32（找到）與 35（找不到）示意。search 時間為 O(h)，平衡時約 O(log n)，歪斜時退化為 O(n)。",
+   "cues": [
+    1438.8,
+    1460.8,
+    1472.7,
+    1481.8,
+    1499.2,
+    1515.8,
+    1548.8,
+    1573.8,
+    1589.8,
+    1611.6,
+    1625.8,
+    1646.9,
+    1689.8
+   ],
+   "explain": [
+    "search 的意思：給你一個數字 x，問它在不在這棵 BST 裡。老師沒給數字，動畫用 32 示範。",
+    "先跟 root 比，看 x 比 root 小還是大。32 跟 30 比。",
+    "比 root 小就往左走，比 root 大就往右走。32 比 30 大，往右走到 40。",
+    "到了下一層，再做一模一樣的比較：32 比 40 小，往左，找到 32！",
+    "因為每一層做的事都一樣，所以 search 很適合寫成 recursive function（遞迴：函式自己呼叫自己）。",
+    "BST 這個 class 有一個 member function 叫 Search，參數是要找的 x，從 root 開始呼叫。",
+    "第一個 if：如果 pointer 是空的（樹是空的，或已經走到 null），就 return 0，表示找不到。例如找 35：30 → 40 → 32 → 再往右就是 null。",
+    "第二個 if：如果 x 剛好等於這個 node 的 data，就把這個 tree node return 回去。",
+    "第三個 if：如果 x 比較小，就往 left child 繼續 Search。",
+    "剩下的情況就是 x 比較大，往 right child 繼續 Search。",
+    "不想用 recursive 也可以，改用 for 迴圈一直往下走，叫 iterative 版本。",
+    "迴圈裡：相等就回傳 t；比較小往左；否則往右。直到 pointer 變成 null 就停（找不到）。",
+    "兩種寫法老師都要大家回去看。search 走的步數最多是樹的高度。"
+   ]
   },
   {
    "title": "找第 k 小：naive 作法與 leftSize 欄位",
-   "scene": "p16-bst-kth",
+   "scene": "treec-p16kth",
    "points": [
     {
      "text": "除了找某個數字，也可以問 BST 中「第 k 個」數字，類似排序後取第 k 位（search by rank）。",
-     "t": 1711
+     "t": 1710
     },
     {
      "text": "這類問題稱為 kth largest / search by rank。",
@@ -406,18 +658,39 @@
      "t": 1855
     }
    ],
-   "trap": "老師說「heap 裡 array[2] 的位置就是第二大」只在此例成立；一般要 DeleteMax k 次。補充：其實不用 heap，對 BST 做 inorder traversal 就能得到由小到大的序列（O(n)）；加上 leftSize 可降到 O(h)。"
+   "trap": "老師說「heap 裡 array[2] 的位置就是第二大」只在此例成立；一般要 DeleteMax k 次。補充：其實不用 heap，對 BST 做 inorder traversal 就能得到由小到大的序列（O(n)）；加上 leftSize 可降到 O(h)。",
+   "cues": [
+    1710,
+    1726.8,
+    1740.8,
+    1748.8,
+    1759.7,
+    1777.2,
+    1801.8,
+    1825.8,
+    1849.8,
+    1862.5
+   ],
+   "explain": [
+    "除了找某個數字，也可以問：這棵 BST 裡「第 5 大」的是誰？有點像把數字排序後看名次。",
+    "排序後的老大、老二、老三……第 k 名，英文叫 kth largest。",
+    "這類「依名次找」的問題叫 search by rank。",
+    "例子：一棵 BST 裡有 60、70、65、80。",
+    "問：第二大的數字是誰？",
+    "最笨的方法：traverse 整棵樹，看到一個數字就丟進 max heap。",
+    "這個例子裡，heap 的 array[2] 剛好是 70，就是第二大。（只有這例剛好成立；一般要 deleteMax k 次。）",
+    "課本的作法：在 BST 的 node 裡多加一個欄位，叫 leftSize。",
+    "leftSize 記錄這個 node 的 left subtree 裡有幾個 element。",
+    "再加 1，也就是把自己也算進去：leftSize = 左子樹的個數 + 1。"
+   ]
   },
   {
    "title": "leftSize 計算實例",
-   "scene": "p16-bst-rank",
-   "params": {
-    "phase": "size"
-   },
+   "scene": "treec-p16lsize",
    "points": [
     {
      "text": "node 上方的數字就是它的 leftSize。",
-     "t": 1876
+     "t": 1871
     },
     {
      "text": "5 的 left subtree 只有一個 node，所以 leftSize 為 1+1 = 2。",
@@ -439,14 +712,29 @@
      "text": "要以該 node 自己為 root 看它的 left subtree，不要把祖先的左邊算進來。",
      "t": 1939
     }
+   ],
+   "cues": [
+    1871.4,
+    1879.7,
+    1896.5,
+    1903.5,
+    1915.8,
+    1927.4,
+    1946
+   ],
+   "explain": [
+    "這棵 BST 每個 node 上方的數字就是它的 leftSize，一個一個算。",
+    "5 的 left subtree 只有一個 node（2），所以 leftSize = 1 + 1 = 2。",
+    "2 沒有 left subtree，個數是 0，leftSize = 0 + 1 = 1。",
+    "root 30 的 left subtree 有 5 和 2 兩個 node，leftSize = 2 + 1 = 3。",
+    "40 的 left subtree 只有 32，leftSize = 1 + 1 = 2。",
+    "注意：要以 40「自己」當 root，只看它底下的左邊。不要以為 40 在 30 右邊，就把 30 左邊的也算進來。",
+    "沒有左小孩的 32、45，leftSize 都是 1。全部設好了。這裡 leftSize 剛好就是「它在自己子樹裡的名次」。"
    ]
   },
   {
    "title": "用 leftSize 找第 k 小（k=5）",
-   "scene": "p16-bst-rank",
-   "params": {
-    "phase": "rank"
-   },
+   "scene": "treec-p16rank",
    "points": [
     {
      "text": "老師先把它說成 kth largest（k=1 最大、k=2 第二大）。",
@@ -481,14 +769,39 @@
      "t": 2251
     }
    ],
-   "trap": "老師一開始說成「第 k 大（由大到小）」，34:09 自己更正為由小到大的第 k 個；Horowitz 的 Rank(k) 是第 k 小。往右走才要 k -= leftSize，往左走不用減。"
+   "trap": "老師一開始說成「第 k 大（由大到小）」，34:09 自己更正為由小到大的第 k 個；Horowitz 的 Rank(k) 是第 k 小。往右走才要 k -= leftSize，往左走不用減。",
+   "cues": [
+    2002.7,
+    2038.5,
+    2049.8,
+    2086.8,
+    2141.8,
+    2155.1,
+    2171.8,
+    2185.8,
+    2212.8,
+    2232.8,
+    2250.8,
+    2267
+   ],
+   "explain": [
+    "老師一開始說成「第 k 大」：k = 1 是最大、k = 2 是第二大。等一下他會更正。",
+    "例子：要找 k = 5。",
+    "老師更正：應該是把數字「由小到大」排序後的第 k 個，也就是第 k 小。",
+    "由小到大排：2、5、30、32、40、45。第 5 個是 40。現在看怎麼用 leftSize 直接找到它。",
+    "從 root 30 開始，它的 leftSize = 3：從最小數到 30 為止，只有 3 個數字。",
+    "要找的是第 5 個，3 個裡面不可能有，所以答案絕對不在左邊（也不是 30）。",
+    "k = 5 比 root 的 leftSize 3 大，所以往右走。",
+    "重點：往右走的時候，k 要做減法。",
+    "為什麼要減？右邊的 node 只記得自己左邊有幾個，不知道 30 那一邊的 3 個。所以要把那 3 個先扣掉：k = 5 − 3 = 2。",
+    "問題變成：在以 40 為 root 的這棵子樹裡，找第 2 個。",
+    "40 的 leftSize 剛好等於 2，所以答案就是 40。",
+    "記住規則：只要往右走，k 就要減掉 leftSize；往左走不用減。"
+   ]
   },
   {
    "title": "Rank 搜尋程式碼與 leftSize 思考題",
-   "scene": "p16-bst-rank",
-   "params": {
-    "phase": "code"
-   },
+   "scene": "treec-p16rcode",
    "points": [
     {
      "text": "輸入 k，表示要找由小到大第 k 個；從 root 開始。",
@@ -523,15 +836,37 @@
      "t": 2392
     }
    ],
-   "trap": "補充：insert 時沿路徑往左走經過的每個 node，leftSize 都要 +1；delete 則對應地 −1；也可用 postorder 計算各子樹大小後設定 leftSize = size(left)+1。"
+   "trap": "補充：insert 時沿路徑往左走經過的每個 node，leftSize 都要 +1；delete 則對應地 −1；也可用 postorder 計算各子樹大小後設定 leftSize = size(left)+1。",
+   "cues": [
+    2281.8,
+    2291.9,
+    2301.8,
+    2315.8,
+    2322.8,
+    2339.8,
+    2347.8,
+    2363.2,
+    2390
+   ],
+   "explain": [
+    "程式的輸入是 k：要找由小到大的第 k 個。",
+    "一開始 t 指向 root。",
+    "如果 k 剛好等於 t 的 leftSize，就 return t。例如找第 3 個，root 30 的 leftSize 是 3，它就是答案。",
+    "如果 k 比 leftSize 小，就往 left subtree 走。例如找第 1 個，從 30 往左到 5。",
+    "往左走的時候，k 不用做減法：左邊的名次本來就是從最小開始算的。",
+    "否則（k 比較大），先 k -= t->leftSize。例如找第 5 個，5 − 3 = 2。",
+    "然後 t = t->rightChild，往右繼續找。準則：往右走就要做減法。",
+    "思考題：每個 node 的 leftSize 要怎麼決定？定義是「左子樹個數 + 1」，但程式要怎麼算出來、怎麼維護？",
+    "期末考可能會要你寫出決定 leftSize 的程式碼，回去想想看。（提示：insert 時沿路往左走經過的 node，leftSize 都要 +1。）"
+   ]
   },
   {
    "title": "BST insert",
-   "scene": "p16-bst-insert",
+   "scene": "treec-p16bins",
    "points": [
     {
      "text": "接著講 BST 如何 insert 一個 node。",
-     "t": 2424
+     "t": 2420
     },
     {
      "text": "insert 與 delete 都必須維持 BST 特性：左邊小於 parent、右邊大於 parent。",
@@ -558,11 +893,31 @@
      "t": 2514
     }
    ],
-   "trap": "老師在 41:15 口誤說「往左邊走」，實際 80 > 30 應往右走到 40。補充：若找到相同 key，Horowitz 版本不插入（key 不重複）。"
+   "trap": "老師在 41:15 口誤說「往左邊走」，實際 80 > 30 應往右走到 40。補充：若找到相同 key，Horowitz 版本不插入（key 不重複）。",
+   "cues": [
+    2419.8,
+    2431.8,
+    2445.8,
+    2465.8,
+    2478.8,
+    2486.1,
+    2495.8,
+    2507.7
+   ],
+   "explain": [
+    "接著講 BST 怎麼 insert（插入）一個 node。",
+    "不管 insert 還是 delete，都要維持 BST 的特質：左邊比 parent 小、右邊比 parent 大。",
+    "例：insert 80。第一件事是找出 80 應該待在哪個位置，又不破壞規則，方法就是比大小。",
+    "80 跟 root 30 比，比較大，所以要放在 30 的右半邊。（老師口誤說「往左」。）",
+    "到了 40：80 比 40 大，往右走，剛好是空的，就把 80 放在這裡。",
+    "再 insert 35：35 跟 30 比，比較大，往右走到 40。",
+    "35 跟 40 比，比較小，往左走，是空的，放到 40 的 left child。",
+    "你會發現：insert 就是先 search，走到 null（空的地方）就把新 node 放進去。會 search 就會 insert。"
+   ]
   },
   {
    "title": "BST delete：單子樹與雙子樹",
-   "scene": "p16-bst-delete",
+   "scene": "treec-p16bdel",
    "points": [
     {
      "text": "delete 的最高準則：不要破壞 BST 特性。",
@@ -597,11 +952,37 @@
      "t": 2671
     }
    ],
-   "trap": "補充：課本完整分三種情況——刪 leaf 直接移除；只有一個 child 讓 child 接上；有兩個 child 用 left subtree 最大（inorder predecessor）或 right subtree 最小（inorder successor）取代，取代者最多只有一個 child，再遞迴刪除它。"
+   "trap": "補充：課本完整分三種情況——刪 leaf 直接移除；只有一個 child 讓 child 接上；有兩個 child 用 left subtree 最大（inorder predecessor）或 right subtree 最小（inorder successor）取代，取代者最多只有一個 child，再遞迴刪除它。",
+   "cues": [
+    2524.5,
+    2528.8,
+    2542.8,
+    2554.8,
+    2564.5,
+    2585.8,
+    2605.8,
+    2623.8,
+    2636.8,
+    2648.7,
+    2670.8
+   ],
+   "explain": [
+    "delete 的最高準則：刪完之後，還要是一棵 BST，不能破壞它的特質。",
+    "情況一：node2 是 node1 的右小孩，node2 只有 right subtree T2（T2 代表下面一整串 node）。",
+    "要把 node2 delete 掉。",
+    "最直接的做法：把 node2 下面那整棵 subtree T2 直接接上來，補 node2 的位置。",
+    "為什麼還是 BST？T2 本來就在 node1 的右邊，所以 T2 的每個 node 一定比 node1 大，規則沒被破壞。",
+    "剛剛的 node2 只有 right subtree。如果它左右兩邊都有 subtree 呢？不能兩棵都接上來。",
+    "例：delete 60。60 底下有兩棵 subtree：一棵以 50 為 root，另一棵只有 70。",
+    "調整準則：去 left subtree 找最大的。從 50 一路往右走到底，是 55。",
+    "把 55 拉上來，取代 60。55 是左邊最大的，所以它比左邊全部都大、又比右邊的 70 小，放這裡剛剛好。",
+    "55 被拉走後，它原本的小孩 52 遞補 55 的位置。調整完還是 BST。",
+    "一般化：可以取左子樹 T2 裡最大的，或右子樹 T3 裡最小的，兩種都可以。這個例子取的是 T2 的最大。"
+   ]
   },
   {
    "title": "插入順序造成 skewed tree 與 AVL tree",
-   "scene": "p16-bst-skewed",
+   "scene": "treec-p16skew",
    "points": [
     {
      "text": "BST 一開始是 empty，數字依序 insert 進來。",
@@ -636,18 +1017,41 @@
      "t": 2879
     }
    ],
-   "trap": "補充：動畫後段以 5,3,8,2,4,7,9,1,6,10 的順序插入作對照（非老師所給）。skewed BST 高度為 n，search 退化為 O(n)；AVL tree 保證高度 O(log n)。"
+   "trap": "補充：動畫後段以 5,3,8,2,4,7,9,1,6,10 的順序插入作對照（非老師所給）。skewed BST 高度為 n，search 退化為 O(n)；AVL tree 保證高度 O(log n)。",
+   "cues": [
+    2717.8,
+    2727.2,
+    2745.7,
+    2759.8,
+    2799,
+    2806.1,
+    2816.3,
+    2822.8,
+    2829.8,
+    2848.8,
+    2854.1
+   ],
+   "explain": [
+    "BST 一開始是空的（empty），然後把一堆數字一個一個 insert 進來。",
+    "insert 的順序，會影響 BST 長出來的樣子。",
+    "例子：有十個數字，先由小排到大：1、2、3……10。",
+    "如果就照這個由小到大的順序 insert，樹會長什麼樣？",
+    "一開始樹是空的，1 就當 root。",
+    "insert 2：2 比 1 大，放在 1 的右邊。",
+    "insert 3：3 比 1、2 都大，又放在右邊……之後每一個都更大，一直往右接。",
+    "結果長出一棵往右歪的 skewed（歪斜）binary tree，高度是 10。",
+    "在 skewed tree 上做 search，要一個一個往下走，跟 linked list 沒什麼差別，變成 O(n)。",
+    "BST 要能降低 search 的成本，樹最好比較 balanced（平衡）。例如同樣 10 個數字換個順序插入，高度只有 4（動畫示意的順序不是老師給的）。",
+    "第 8、9 章會教 AVL tree：每 insert 一個數字就調整，讓每個 node 左右子樹的高度最多差 1，樹就一直保持平衡。"
+   ]
   },
   {
    "title": "Selection tree：winner tree 概念",
-   "scene": "p16-winner",
-   "params": {
-    "phase": "build"
-   },
+   "scene": "treec-p16win",
    "points": [
     {
      "text": "selection tree 有兩種：winner tree 與 loser tree。",
-     "t": 2917
+     "t": 2905
     },
     {
      "text": "有 8 個 run（Run1…Run8），可想成 8 個隊伍。",
@@ -674,14 +1078,37 @@
      "t": 3001
     }
    ],
-   "trap": "補充：老師只口述 leaf 與比賽結果，各 run 其餘數字依 Horowitz Fig 5.32 補齊。"
+   "trap": "補充：老師只口述 leaf 與比賽結果，各 run 其餘數字依 Horowitz Fig 5.32 補齊。",
+   "cues": [
+    2904.8,
+    2913.8,
+    2921.1,
+    2929.8,
+    2937.8,
+    2947.4,
+    2958.8,
+    2964.8,
+    2971.8,
+    2981.8,
+    2999.3
+   ],
+   "explain": [
+    "接下來是一種很好玩的 tree：selection tree（選擇樹）。",
+    "它有兩種：winner tree 和 loser tree。先看 winner tree。",
+    "現在有 8 個 queue，叫 run1、run2……run8。每個 leaf 放那個 run 的第一個數。",
+    "可以把這 8 個 run 想成 8 個隊伍。",
+    "每個隊伍（run）裡的數字都已經由小排到大，下面灰色的是還在排隊、等著上場的。",
+    "上面的結構就像比賽的賽程表：兩兩比較，比較小的勝出、往上走。10 對 9 是 9 贏，20 對 6 是 6 贏……",
+    "這個賽程表是一棵 complete binary tree。",
+    "勝者再跟其他勝者比：9 對 6 是 6 贏，8 對 17 是 8 贏。",
+    "最後的 root 是 6，也就是所有 run 裡面最小的數字。",
+    "這裡的規則是比大小，數字比較小的就是勝利者，可以一路往 root 前進。",
+    "每個 leaf node 對應一個 queue（run），queue 裡放著一堆排好的數字。"
+   ]
   },
   {
    "title": "Winner tree 重新比賽與複雜度",
-   "scene": "p16-winner",
-   "params": {
-    "phase": "replay"
-   },
+   "scene": "treec-p16win2",
    "points": [
     {
      "text": "透過 winner tree 可以很容易做排序。",
@@ -715,11 +1142,37 @@
      "text": "共 n 筆 record，merge 所有 run 的時間為 O(n log k)。",
      "t": 3194
     }
+   ],
+   "cues": [
+    3009.8,
+    3015.7,
+    3023.1,
+    3069.8,
+    3076.7,
+    3087.8,
+    3095.8,
+    3113.8,
+    3140.8,
+    3154.8,
+    3182.8
+   ],
+   "explain": [
+    "透過 winner tree，可以很容易地排序：一直把 root 拿出來就好。",
+    "6 是所有數字裡最小的，先被 output（輸出）。",
+    "6 出去之後，它那個 queue（run4）的下一個數字 15 上來，補到 leaf。",
+    "15 跟旁邊那個 queue 的 20 比。",
+    "15 比較小，往上走到 node5；接著跟 node4 的 9 比。",
+    "9 比較小，9 勝出，走到 node2。",
+    "9 再跟 8 比，8 比較小，8 成為新的 winner，就是下一個要輸出的數字。",
+    "k 代表下面有幾個隊伍（run），這裡 k = 8。",
+    "n 是全部 record（數字）的個數。一開始把整個賽程表建好（setup）要 O(k)。",
+    "之後每輸出一個數字，只要沿著一條路從 leaf 重賽到 root，樹高是 log k，所以每次 O(log k)。",
+    "n 筆 record 每筆都要輸出一次，所以把所有 run merge 完要 O(n log k)。"
    ]
   },
   {
    "title": "Loser tree",
-   "scene": "p16-loser",
+   "scene": "treec-p16lose",
    "points": [
     {
      "text": "loser tree 是 winner tree 的小修改。",
@@ -750,11 +1203,29 @@
      "t": 3279
     }
    ],
-   "trap": "補充：loser tree 的數值依 Horowitz Fig 5.34 補齊（老師只口述概念）；好處是重賽時只需和路徑上的 parent 比，winner tree 重賽要讀兄弟節點。"
+   "trap": "補充：loser tree 的數值依 Horowitz Fig 5.34 補齊（老師只口述概念）；好處是重賽時只需和路徑上的 parent 比，winner tree 重賽要讀兄弟節點。",
+   "cues": [
+    3201.8,
+    3211.1,
+    3219.8,
+    3230.8,
+    3248.8,
+    3265,
+    3274.2
+   ],
+   "explain": [
+    "loser tree 是 winner tree 的一個小修改。",
+    "原本 winner tree 的每個 node 放的是 winner，也就是比較小的數字。",
+    "loser tree 的 node 放的是比賽的 loser（輸家）；最上面另外多一個 node 0 放總冠軍。",
+    "這裡輸的人就是數字大的人，它就留在那場比賽的 parent node 上。例如 10 對 9，10 輸了，node4 放 10。",
+    "好處在重賽：6 輸出後 15 上來，一路只要跟 parent 存的 loser 比：先跟 20 比（15 贏）、再跟 9 比（9 贏）、再跟 8 比（8 贏），不用回頭去找兄弟節點。",
+    "最上面的 node 0 存的是整體的 winner，現在是 8。",
+    "總之，loser tree 是 winner tree 的變形，看看就好。"
+   ]
   },
   {
    "title": "為什麼需要 winner tree：external sort",
-   "scene": "p16-external",
+   "scene": "treec-p16ext",
    "points": [
     {
      "text": "思考：為什麼要 winner tree？",
@@ -789,7 +1260,31 @@
      "t": 3487
     }
    ],
-   "trap": "補充：動畫為示意（8 個 partition 與輸出序列無具體數值）。"
+   "trap": "補充：動畫為示意（8 個 partition 與輸出序列無具體數值）。",
+   "cues": [
+    3284.8,
+    3308.8,
+    3318.1,
+    3383.8,
+    3410.6,
+    3423.8,
+    3431.6,
+    3446.8,
+    3474.5,
+    3488.2
+   ],
+   "explain": [
+    "老師問：為什麼需要 winner tree？",
+    "把數字從小排到大，直接 sort 不就好了？",
+    "上面那些 run 加起來頂多十幾個數字，全部放進 memory（記憶體）排一排就好，好像不需要 winner tree。",
+    "關鍵：如果數字多到 memory 放不下呢？",
+    "那就把資料切成 8 個 partition（分塊），怎麼切不重要。",
+    "每個 partition 自己 sort。每一塊都夠小，保證放得進 memory。",
+    "再建一棵 winner tree 來合併。這棵樹很小，用不到多少 memory。",
+    "每塊一次只要拿最前面的數字來比，partition 加上 winner tree，就能排序大規模的數字。",
+    "這對應到 external sort。sorting 分成 internal sort（資料全部放得進 memory）和 external sort。",
+    "memory 放不下全部資料時，就用 external sort；也可以讓很多台電腦（node）各算一點再合起來。"
+   ]
   },
   {
    "title": "題外話：大數據與雲端運算",
@@ -811,11 +1306,11 @@
   },
   {
    "title": "Forest、轉 binary tree 與 forest traversal",
-   "scene": "p16-forest",
+   "scene": "treec-p16forest",
    "points": [
     {
      "text": "forest 顧名思義是很多樹的集合：a set of disjoint trees。",
-     "t": 3709
+     "t": 3689
     },
     {
      "text": "這個 forest 有三棵 tree，它們都可以表示成一棵 binary tree。",
@@ -846,11 +1341,37 @@
      "t": 3850
     }
    ],
-   "trap": "補充：依 Horowitz 定義，forest preorder／inorder 分別等於轉換後 binary tree 的 preorder／inorder；但 forest postorder 與 binary tree 的 postorder 沒有自然對應。forest 的 inorder 是「先 inorder 第一棵樹 root 的子樹森林、再訪 root、再其餘樹」，不是一般 binary tree 的左-根-右。"
+   "trap": "補充：依 Horowitz 定義，forest preorder／inorder 分別等於轉換後 binary tree 的 preorder／inorder；但 forest postorder 與 binary tree 的 postorder 沒有自然對應。forest 的 inorder 是「先 inorder 第一棵樹 root 的子樹森林、再訪 root、再其餘樹」，不是一般 binary tree 的左-根-右。",
+   "cues": [
+    3688.8,
+    3708.8,
+    3718.8,
+    3736.8,
+    3744.8,
+    3751.8,
+    3760.3,
+    3777.8,
+    3807.9,
+    3840.2,
+    3849.8
+   ],
+   "explain": [
+    "tree 是一棵樹；forest（森林）顧名思義就是很多樹的集合。",
+    "正式定義：forest 是 a set of disjoint trees（彼此不相連的樹）。這個 forest 有三棵 tree。",
+    "這三棵 tree 都可以表示成一棵 binary tree。",
+    "方法跟前面學過的 left child–right sibling 一樣：左邊連「第一個小孩」，右邊連「下一個兄弟」。",
+    "以第一棵為例：A 是 root，left child 連到它的第一個小孩 B。",
+    "B 的兄弟 C、D，用 right 一個接一個串起來：B → C → D。",
+    "E、F 和 G 也照同樣的方法做；三棵樹的 root A、E、G 也當成兄弟串起來，整個 forest 就變成一棵 binary tree。",
+    "為什麼要轉？這樣就不用為 forest 另外發展一套理論，直接用 binary tree 的技巧就好。",
+    "轉換不是這堂課的重點，老師跳過。接著看 forest traversal（走訪）。",
+    "forest 的 preorder，就是每棵樹的 preorder 依序接起來：A B C D、E F、G H I。",
+    "inorder 也一樣，是各棵樹 inorder 的組合：B C D A、F E、H I G。"
+   ]
   },
   {
    "title": "用 tree 表示 disjoint sets",
-   "scene": "p16-dsets",
+   "scene": "treec-p16dsets",
    "points": [
     {
      "text": "進入重點：假設有三個 set，每個 set 是一堆數字。",
@@ -880,15 +1401,35 @@
      "text": "這些 set 是 disjoint：任兩個 Si、Sj 交集為空集合。",
      "t": 3954
     }
+   ],
+   "cues": [
+    3868.8,
+    3887.8,
+    3894.6,
+    3905.8,
+    3919.8,
+    3926.8,
+    3937.8,
+    3955.2
+   ],
+   "explain": [
+    "進入重點：假設有三個 set（集合），每個 set 是一堆數字。程式裡要怎麼表示一個 set？",
+    "可以每個 set 用一個 linked list 串起來，這是可行的方法。",
+    "也可以用三個 array，也行。",
+    "這裡介紹另一種方法：用一棵 tree 表示一個 set。例如 S1 = {0, 6, 7, 8}。",
+    "root 是 0，6、7、8 都「指到」root 0。注意箭頭是往上指的（child 指向 parent），而且它不一定是 binary tree：0 有 3 個小孩。",
+    "S2 = {1, 4, 9}，用 4 當 root。",
+    "S3 = {2, 3, 5} 也用同樣的方式表示。",
+    "這些 set 是 disjoint（互斥）的：任兩個 set 的交集都是空集合，一個數字只會在一個 set 裡。"
    ]
   },
   {
    "title": "Union / Find 與 set name 指標",
-   "scene": "p16-dfind",
+   "scene": "treec-p16dfind",
    "points": [
     {
      "text": "常用的兩種運算：第一種是把兩個 set union 起來，形成更大的 set。",
-     "t": 3974
+     "t": 3968
     },
     {
      "text": "第二種是 find：給一個數字，問它屬於哪個 set。",
@@ -911,15 +1452,35 @@
      "t": 4092
     }
    ],
-   "trap": "老師在 66:48 說 8 屬於 S2，但 S1 = {0,6,7,8}，8 屬於 S1。"
+   "trap": "老師在 66:48 說 8 屬於 S2，但 S1 = {0,6,7,8}，8 屬於 S1。",
+   "cues": [
+    3967.8,
+    3983.8,
+    4000.1,
+    4005.8,
+    4043.8,
+    4051.6,
+    4084.1,
+    4105.9
+   ],
+   "explain": [
+    "set 常用的兩種運算。第一種是 union（聯集）：把兩個 set 合成一個更大的 set，等一下講怎麼做。",
+    "第二種是 find：給你一個數字，問它屬於哪一個 set。",
+    "例：3 屬於第三個 set S3。",
+    "那 8 呢？8 屬於 S1。（老師口誤說 S2，但 S1 = {0, 6, 7, 8}。）",
+    "因為每個 set 都有名字，所以另外有一個 set name 欄位：S1、S2、S3。",
+    "set name 旁邊有一個 pointer 指到該 set 的 root，root 也指回 set name，是雙向連結。",
+    "find(3) 怎麼做：先找到 3，再一路往上走到它的 root，這裡是 2。",
+    "再透過 root 的 pointer 對應到 set name，就知道 find(3) = S3。"
+   ]
   },
   {
    "title": "Union 的兩種接法與 find 成本",
-   "scene": "p16-dunion",
+   "scene": "treec-p16dunion",
    "points": [
     {
      "text": "union：把 S1 與 S2 合起來。",
-     "t": 4140
+     "t": 4129
     },
     {
      "text": "第一種表示：S2 成為 S1 的一個 child（4 接到 0 底下）。",
@@ -946,15 +1507,35 @@
      "t": 4285
     }
    ],
-   "trap": "補充：課本後續使用 weighting rule（union by size/height）：把 node 數較少的樹接到較多的樹下，S1 有 4 個 node、S2 有 3 個，應採第一種（S2 接到 S1 下）；再搭配 collapsing rule 讓 find 越做越快。"
+   "trap": "補充：課本後續使用 weighting rule（union by size/height）：把 node 數較少的樹接到較多的樹下，S1 有 4 個 node、S2 有 3 個，應採第一種（S2 接到 S1 下）；再搭配 collapsing rule 讓 find 越做越快。",
+   "cues": [
+    4128.8,
+    4140.4,
+    4160.5,
+    4169.8,
+    4201.8,
+    4233.3,
+    4268.8,
+    4279
+   ],
+   "explain": [
+    "union：要把 S1 和 S2 合起來。用 tree 表示時，有兩種接法。",
+    "第一種：S2 變成 S1 的一個 child，也就是 S2 的 root 4 接到 S1 的 root 0 底下。",
+    "第二種：反過來，S1 變成 S2 的 child，0 接到 4 底下。",
+    "這兩種，哪一種比較好？",
+    "到目前為止兩種都可以。好壞要看之後做什麼 operation，不外乎 find 或 union。",
+    "如果使用者常常 find(1)、find(9)：第一種要從 1 先到 4、再到 0，走兩個 hop（兩步）才找到 root，比較差。",
+    "第二種只要一個 hop 就到 root 4，馬上查到 set name。",
+    "所以沒有絕對誰好誰壞，要看每個元素被 find 的頻率。（課本之後會教 weighting rule：node 少的接到 node 多的底下。）"
+   ]
   },
   {
    "title": "Disjoint set 的 array（parent）表示法",
-   "scene": "p16-darray",
+   "scene": "treec-p16darr",
    "points": [
     {
      "text": "剛才畫成 tree 的 set，可以用 array 來表示。",
-     "t": 4311
+     "t": 4295
     },
     {
      "text": "array 的 index 就是元素的數字。",
@@ -981,7 +1562,27 @@
      "t": 4401
     }
    ],
-   "trap": "補充：Horowitz 後續的 WeightedUnion 會把 root 的 parent 存成 −(該樹 node 數)，而不只是 −1。"
+   "trap": "補充：Horowitz 後續的 WeightedUnion 會把 root 的 parent 存成 −(該樹 node 數)，而不只是 −1。",
+   "cues": [
+    4294.8,
+    4310.8,
+    4319.8,
+    4328.8,
+    4349.5,
+    4355.8,
+    4382.8,
+    4396.8
+   ],
+   "explain": [
+    "剛剛畫成 tree 的 set，其實可以用一個 array 來表示。",
+    "array 的 index（格子編號）就是元素的數字 0～9。",
+    "array 裡存的欄位叫 parent：記錄這個數字的 parent 是誰。",
+    "例：9 的 parent 是 4，所以在 index 9 那格放 4，parent[9] = 4。",
+    "那 4 的 parent 是誰？4 已經是 root 了，沒有 parent。",
+    "root 的 parent 就記成 -1，parent[4] = -1。",
+    "每一格都這樣填：index 代表數字，內容代表它的 parent。整排是 [-1, 4, -1, 2, -1, 2, 0, 0, 0, 4]。",
+    "三個 root（0、4、2）的 parent 都是 -1。看起來像 tree，但實作上一個 array 就夠了。"
+   ]
   }
  ],
  "quiz": [
