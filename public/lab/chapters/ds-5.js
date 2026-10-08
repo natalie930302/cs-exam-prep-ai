@@ -830,12 +830,20 @@ export default function (ctx) {
   // ═══ heapb.js ═══
   {
 // ─── B7hVxCmfPtM：MIT 6.006 L4「Heaps and Heap Sort」（priority queue、max-heapify、build-max-heap Θ(n)、heap sort） ───
-// 舊場景（heap-as-array、max-heapify、build-max-heap、build-heap-cost）沿用；這裡補其餘段落。陣列 1-based。
-const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, code, line, ghostBox, GOLD, GREEN, RED, GRAY } = K;
+// Cued scenes: every `await step(tok)` waits for the sentence it shows; beats are motion only.
+// 內建的 heap-as-array／max-heapify／build-max-heap／build-heap-cost 在這裡有逐句版（heapb-as-array、heapb-heapify-2、heapb-build、heapb-build-cost）。陣列 1-based。
+const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, line, arrow, code, ghostBox, travel, buddy, step, GOLD, GREEN, RED, GRAY } = K;
 const say = ctx.say, beat = ctx.beat, colorFor = ctx.colorFor;
-const BLUE = '#1f3a6e';
+const BLUE = '#1f3a6e', SORTED = '#2fc092';
 const QLY = [6.2, 4.7, 3.2, 1.7];
 const QCAM = [0, 6, 15.5], QLOOK = [0, 3.3, 1];
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const bubble = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+const pkt = (t, x, y, z = 0) => tag(t, 'pkt', x, y, z);
+// 小幫手：站在左下角，用表情陪你看每一步
+const guide = (x = -6.3, z = 1.8) => buddy('', '', '#ffc56b', x, 0, z, 0.72);
 // 一棵 heap：上面是樹、下面是陣列格（同一份資料兩種畫法）
 function qTree(vals, o = {}) {
   const W = o.w || 11, X0 = o.x0 || 0, cap = o.cap || vals.length, arr = o.arr !== false;
@@ -843,7 +851,7 @@ function qTree(vals, o = {}) {
   const better = (x, y) => (min ? x < y : x > y);
   const GT = min ? '<' : '>', GE = min ? '≤' : '≥', BIG = min ? '小' : '大';
   const col = (v) => (o.color ? o.color(v) : colorFor(v));
-  const S = { a: [null], nd: [null], cl: [null], ed: [null], size: 0, cap };
+  const S = { a: [null], nd: [null], cl: [null], ed: [null], size: 0, cap, better };
   S.p = (i) => { const d = Math.floor(Math.log2(i)), c = 1 << d; return V3(X0 + ((i - c + 0.5) / c - 0.5) * W, QLY[d], 0); };
   S.c = (i) => V3(X0 + (i - (cap + 1) / 2) * dx, 0.3, cz);
   if (arr) for (let i = 1; i <= cap; i++) { const c = S.c(i); ctx.tile(V3(c.x, 0.02, c.z), dx * 0.92, 0.9); tag('[' + i + ']', 'idx', c.x, 0.05, c.z + 0.75); }
@@ -854,6 +862,7 @@ function qTree(vals, o = {}) {
   };
   S.cell = (i, v, drop = 0) => { S.a[i] = v; if (!arr) return; const c = S.c(i); S.cl[i] = cube(v, col(v), [dx * 0.72, 0.42, 0.7], c.x, c.y, c.z, drop ? 2 : 0); };
   S.put = (i, v, drop = 0) => { S.node(i, v, drop); S.cell(i, v, drop); S.size = Math.max(S.size, i); };
+  S.drop = (i) => { if (S.nd[i]) { kill(S.nd[i]); S.nd[i] = null; } if (S.cl[i]) { kill(S.cl[i]); S.cl[i] = null; } if (S.ed[i]) { kill(S.ed[i]); S.ed[i] = null; } S.a[i] = null; };
   vals.forEach((v, k) => { if (v === null || v === undefined) return; if (o.cellsOnly) S.cell(k + 1, v); else S.put(k + 1, v); });
   if (o.cellsOnly) S.size = 0;
   const szl = o.sizeTag && arr ? tag('', 'ptr', 0, 1.15, cz) : null;
@@ -877,315 +886,708 @@ function qTree(vals, o = {}) {
     if (S.ed[i]) { kill(S.ed[i]); S.ed[i] = null; }
     if (j > 1 && !S.ed[j]) { const q = S.p(j >> 1); S.ed[j] = line(q.x, q.y, p.x, p.y); }
   };
-  // insert 的調整：由葉子往根（向上）
-  S.up = async (tok, i, ms = 900) => {
+  // insert 的調整：由葉子往根（向上），整段在同一步裡快速播完
+  S.up = async (tok, i, ms = 600) => {
     while (i > 1) {
       const p = i >> 1; S.off(); S.hl([i], GOLD); S.hl([p], BLUE);
-      if (!better(S.a[i], S.a[p])) { say(S.a[i] + ' ' + (min ? '≥' : '≤') + ' parent ' + S.a[p] + '：停', 'parent = ⌊' + i + '/2⌋ = ' + p); await beat(tok, ms); break; }
-      say(S.a[i] + ' ' + GT + ' parent ' + S.a[p] + '：往上換', 'parent = ⌊' + i + '/2⌋ = ' + p);
-      await beat(tok, ms * 0.6);
+      if (!better(S.a[i], S.a[p])) { await beat(tok, ms * 0.5); break; }
       await S.sw(tok, i, p, ms); i = p;
     }
     S.off(); return i;
   };
-  // delete／heapify 的調整：由根往葉子（向下），和較大（min-heap 是較小）的孩子換
-  S.down = async (tok, i, size, ms = 900) => {
+  // delete／heapify 的調整：由 i 往葉子（向下），和較大（min-heap 是較小）的孩子換
+  S.down = async (tok, i, size, ms = 600) => {
     while (2 * i <= size) {
       const l = 2 * i, r = l + 1; let c = l; if (r <= size && better(S.a[r], S.a[l])) c = r;
       S.off(); S.hl([i], GOLD); S.hl(r <= size ? [l, r] : [l], BLUE);
-      say('孩子 ' + (r <= size ? S.a[l] + '、' + S.a[r] : S.a[l]) + '：較' + BIG + '的是 ' + S.a[c], 'left = 2·' + i + ' = ' + l + (r <= size ? '，right = ' + r : ''));
-      await beat(tok, ms);
-      if (!better(S.a[c], S.a[i])) { say(S.a[i] + ' ' + GE + ' ' + S.a[c] + '：不用換', '停在 [' + i + ']'); await beat(tok, ms); break; }
-      say(S.a[c] + ' ' + GT + ' ' + S.a[i] + '：交換', 'A[' + i + '] ↔ A[' + c + ']');
+      await beat(tok, ms * 0.5);
+      if (!better(S.a[c], S.a[i])) break;
       await S.sw(tok, i, c, ms); i = c;
     }
     S.off(); return i;
   };
-  // 刪除根：最後一個補到根，再往下調；keep = 把刪掉的值放進空出來的格子
-  S.pop = async (tok, ms = 900, keep = true) => {
+  // 刪根：根飛走、最後一個補到根（不往下調）。mode：'keep' 放進 [n]、'park' 先停在 [n] 上方、'fly' 丟掉
+  S.popStart = async (tok, mode = 'fly', ms = 700) => {
     const n = S.size, top = S.a[1];
-    S.off(); S.hl([1], RED);
-    say('刪除根 ' + top, '只能刪 root（A[1]）');
-    await beat(tok, ms);
+    S.off();
     fly(S.nd[1]); S.nd[1] = null;
-    const topCell = S.cl[1]; S.cl[1] = null;
-    if (n > 1) { S.mv(n, 1); if (S.ed[n]) { kill(S.ed[n]); S.ed[n] = null; } }
-    if (topCell) {
-      if (keep) { const cn = S.c(n); glow(topCell, null); move(topCell, cn.x, cn.y, cn.z); tint(topCell, GRAY); S.cl[n] = topCell; }
-      else fly(topCell, V3(0, 6, 5));
+    const cell = S.cl[1]; S.cl[1] = null;
+    if (n > 1) S.mv(n, 1);
+    if (S.ed[n]) { kill(S.ed[n]); S.ed[n] = null; }
+    if (cell) {
+      glow(cell, null); tint(cell, GRAY);
+      const cn = S.c(n);
+      if (mode === 'keep') { move(cell, cn.x, cn.y, cn.z); S.cl[n] = cell; }
+      else if (mode === 'park') { move(cell, cn.x, 1.3, cn.z + 0.2); S.parked = cell; }
+      else fly(cell, V3(0, 6, 5));
     }
-    S.a[n] = keep ? top : null;
+    S.a[n] = mode === 'fly' ? null : top;
     S.setSize(n - 1);
-    if (n > 1) say('最後一個 ' + S.a[1] + ' 補到根', keep ? top + ' 放進空出來的 [' + n + ']' : 'heap size = ' + (n - 1));
     await beat(tok, ms);
-    await S.down(tok, 1, n - 1, ms);
     return top;
   };
+  // 停在上方的值放進 [i]
+  S.store = (i) => { if (!S.parked) return; const c = S.c(i); move(S.parked, c.x, c.y, c.z); S.cl[i] = S.parked; S.parked = null; };
+  S.pop = async (tok, mode = 'keep', ms = 500) => { const n = S.size, top = await S.popStart(tok, mode, ms); await S.down(tok, 1, n - 1, ms); return top; };
+  S.gaps = (list) => list.map((i) => { const c = S.c(i); return tag('空', 'ptr', c.x, 0.95, c.z); });
+  S.lvTags = (k) => { const out = []; for (let d = 0; d < k; d++) out.push(tag('h = ' + d, 'idx', X0 - W / 2 - 0.9, QLY[d], 0)); return out; };
   return S;
 }
-const qGap = (S, list) => list.map((i) => { const c = S.c(i); return tag('空', 'ptr', c.x, 0.95, c.z); });
-
 const HB_HEAP = [16, 14, 10, 8, 7, 9, 3, 2, 4, 1];       // 板書上的 max-heap
 const HB_HEAPIFY = [16, 4, 10, 14, 7, 9, 3, 2, 8, 1];    // max-heapify(A, 2) 的例子
+const HB_BUILD = [4, 1, 3, 2, 16, 9, 10, 14, 8, 7];      // build-max-heap 的例子（講義 notes）
+// 把一組節點框起來（子樹 = 已經是 max-heap 的一塊）
+function hbBox(S, list, color = '#2fc092') {
+  const ps = list.map(S.p), xs = ps.map((p) => p.x), ys = ps.map((p) => p.y);
+  const g = ghostBox(color, Math.max(...xs) - Math.min(...xs) + 1.4, Math.max(...ys) - Math.min(...ys) + 1.4, 1.4);
+  g.position.set((Math.max(...xs) + Math.min(...xs)) / 2, (Math.max(...ys) + Math.min(...ys)) / 2, 0); return g;
+}
 
-// 01:06 priority queue 的操作
+// 00:22 priority queue 的操作（12 步）
 FRAG.push(['heapb-pq-ops', 'Priority Queue 的四個操作', async (tok) => {
   fresh([0, 6, 13], [0, 2.8, 0]);
-  const C = code(['insert(S, x)', 'max(S)', 'extract_max(S)', 'increase_key(S, x, k)'], 0, 6.6, 0.6);
+  const pal = guide(-6.2, 1.6);
   const xs = (i) => (i - 2.5) * 1.6;
   const keys = [7, 14, 10, 16, 8];
-  const bs = keys.map((v, i) => cube(v, colorFor(v), [1.1, 0.8, 1.1], xs(i), 0.4, 1.2));
-  say('集合 S：每個元素有一個 key', '要能很快拿到 key 最大的');
-  await beat(tok, 2600);
-  C.hl(0); const nx = cube(9, colorFor(9), [1.1, 0.8, 1.1], xs(5), 0.4, 1.2, 5);
-  say('insert：把 x 放進 S', 'insert(S, 9)');
-  await beat(tok, 2400);
+  let bs = [], kt = [], C, nx, head;
+  await step(tok);                                   // 0:22 heap：可愛的資料結構
+  head = bubble('今天的主角：heap', 0, 6.4, 0);
+  pal.mood('happy');
+  say('今天的主角：heap', '用它來實作 priority queue');
+  await step(tok);                                   // 0:35 也拿來做 heap sort
+  bubble('也能做成 heap sort（和 insertion、merge sort 不一樣）', 0, 5.7, 0);
+  say('也會用 heap 做出一個排序法：heap sort', '和 insertion sort、merge sort 很不一樣');
+  await step(tok);                                   // 1:11 集合 S
+  kill(head);
+  zoneS();
+  bs = keys.map((v, i) => cube('', '#c9bfae', [1.1, 0.8, 1.1], xs(i), 0.4, 1.2, 3));
+  pal.mood('calm');
+  say('priority queue：裝著一個集合 S', '裡面有好幾個元素');
+  await step(tok);                                   // 1:28 每個元素有 key
+  bs.forEach((b, i) => { kill(b); bs[i] = cube(keys[i], colorFor(keys[i]), [1.1, 0.8, 1.1], xs(i), 0.4, 1.2); });
+  kt = keys.map((v, i) => tag('key', 'idx', xs(i), 0.05, 2.0));
+  say('每個元素都帶一個 key', 'key = 它的 priority（優先程度）');
+  await step(tok);                                   // 1:55 要拿最大、刪除、插入、改
+  glow(bs[3], GOLD);
+  say('想要：拿出 priority 最高的、刪除、插入、改 priority', '');
+  await step(tok);                                   // 2:17 都要快
+  glow(bs[3], null);
+  bubble('快 = O(n)？O(log n)？', 0, 4.2, 0);
+  say('這些操作都要快', '用漸近複雜度來衡量：O(n)、O(log n)…');
+  await step(tok);                                   // 3:17 操作清單
+  C = code(['insert(S, x)', 'max(S)', 'extract_max(S)', 'increase_key(S, x, k)'], 4.4, 6.6, 0.55);
+  say('priority queue 要提供的操作', '用 heap 來實作');
+  await step(tok);                                   // 3:31 insert
+  C.hl(0); nx = cube(9, colorFor(9), [1.1, 0.8, 1.1], xs(5), 0.4, 1.2, 5);
+  say('insert(S, x)：把 x 放進 S', 'insert(S, 9)');
+  await step(tok);                                   // 3:46 max
   C.hl(1); glow(bs[3], GOLD);
-  say('max：回傳 key 最大的元素', 'max(S) = 16，S 不變');
-  await beat(tok, 2600);
-  C.hl(2); fly(bs[3]);
-  say('extract_max：回傳並從 S 移除', 'extract_max(S) = 16');
-  await beat(tok, 2600);
+  pal.mood('wow');
+  say('max(S)：回傳 key 最大的元素', 'max(S) = 16，S 不變');
+  await step(tok);                                   // 4:06 extract_max
+  C.hl(2); fly(bs[3]); kill(kt[3]);
   [bs[4], nx].forEach((b, k) => move(b, xs(3 + k), 0.4, 1.2));
+  say('extract_max(S)：回傳最大的，並且從 S 拿掉', 'extract_max(S) = 16');
+  await step(tok);                                   // 4:56 increase_key
   C.hl(3); glow(bs[0], BLUE);
-  say('increase_key：把 x 的 key 改成 k', 'increase_key(S, x, 15)：7 → 15');
-  await beat(tok, 1800);
+  await beat(tok, 500);
   relabel(bs[0], 15); tint(bs[0], colorFor(15));
-  await beat(tok, 2200);
+  pal.mood('calm');
+  say('increase_key(S, x, k)：把 x 的 key 改成 k', '7 → 15（也可以有 decrease_key）');
+  await step(tok);                                   // 5:46 維持 rep invariant
   C.hl(-1); glow(bs[0], null);
-  say('今天的 ADT：用 heap 實作', '目標：每個操作 O(log n) 以內');
-  await beat(tok, 2800);
+  pal.mood('happy'); await pal.hop(tok);
+  say('重點：怎麼維持 heap 的 rep invariant', '讓這些操作都有效率');
+  function zoneS() { const t = ctx.tile(V3(0.8, 0.0, 1.2), 10.4, 2.2); tag('集合 S', 'ptr', -4.6, 0.1, 0.0); return t; }
 }]);
 
-// 10:23 max-heap property
+// 06:11 heap：把陣列看成樹（11 步，內建 heap-as-array 的逐句版）
+FRAG.push(['heapb-as-array', 'Heap：把陣列看成 nearly complete binary tree', async (tok) => {
+  fresh(QCAM, QLOOK);
+  const pal = guide(-6.4, 2.2);
+  let S, ghosts = [];
+  await step(tok);                                   // 6:11 heap 就是一個陣列
+  S = qTree([], { cap: 10 });
+  say('Heap 是 priority queue 的一種實作', '本質上就是一個陣列');
+  await step(tok);                                   // 6:30 看成 nearly complete binary tree
+  bubble('把陣列「看成」一棵樹', 0, 7.2, 0);
+  say('把這個陣列「看成」nearly complete binary tree', '資料沒變，只是換個方式看');
+  await step(tok);                                   // 6:47 10 格
+  for (let i = 1; i <= 10; i++) { const c = S.c(i); note(String(i), c.x, 1.0, c.z); }
+  say('例子：10 格，index 1 到 10', '[0] 不用');
+  await step(tok);                                   // 7:04 元素 16, 14, 10, …
+  for (let i = 1; i <= 10; i++) { S.cell(i, HB_HEAP[i - 1], 1); await beat(tok, 120); }
+  S.size = 10;
+  say('元素：16, 14, 10, 8, 7, 9, 3, 2, 4, 1', '');
+  await step(tok);                                   // 7:32 不是 full：要 15 個
+  ghosts = [11, 12, 13, 14, 15].map((i) => { const p = S.p(i); return tag('（空）', 'idx', p.x, p.y, 0); });
+  say('10 個不夠排滿 4 層（要 15 個）', '所以叫 nearly complete');
+  await step(tok);                                   // 7:53 index 1 是根
+  ghosts.forEach(kill);
+  S.node(1, 16, 2); S.hl([1], GOLD);
+  say('index 1 是樹根：16', '');
+  await step(tok);                                   // 8:04 2、3 是孩子
+  S.off(); S.node(2, 14, 2); S.node(3, 10, 2); S.hl([2, 3], GOLD);
+  say('index 2、3 是根的孩子', '');
+  await step(tok);                                   // 8:15 4–7
+  S.off(); [4, 5, 6, 7].forEach((i) => S.node(i, HB_HEAP[i - 1], 2)); S.hl([4, 5, 6, 7], GOLD);
+  say('4、5、6、7 是 2 和 3 的孩子', '');
+  await step(tok);                                   // 8:26 8、9、10
+  S.off(); [8, 9, 10].forEach((i) => S.node(i, HB_HEAP[i - 1], 2)); S.hl([8, 9, 10], GOLD);
+  pal.mood('happy');
+  say('8、9、10 是 4 和 5 的孩子', '這就是這堂課要記住的畫面');
+  await step(tok);                                   // 9:40 parent(i) = ⌊i/2⌋
+  S.off(); S.hl([5], GOLD); S.hl([2], GREEN);
+  pal.mood('calm');
+  say('parent(i) = ⌊i/2⌋', '例：parent(5) = 2');
+  await step(tok);                                   // 9:52 left 2i、right 2i+1
+  S.off(); S.hl([2], GOLD); S.hl([4, 5], GREEN);
+  say('left(i) = 2i，right(i) = 2i + 1', '例：i = 2 → 孩子 4、5');
+}]);
+
+// 10:15 max-heap property（9 步）
 FRAG.push(['heapb-maxheap-check', 'max-heap property：逐一檢查 1–5', async (tok) => {
   fresh(QCAM, QLOOK);
-  const S = qTree(HB_HEAP, { cap: 10 });
-  say('max-heap：節點的 key ≥ 孩子的 key', '每個節點都要成立');
-  await beat(tok, 2600);
-  for (let i = 1; i <= 5; i++) {
-    const kids = [2 * i, 2 * i + 1].filter((c) => c <= 10);
-    S.off(); S.hl([i], GOLD); S.hl(kids, BLUE);
-    say('i = ' + i + '：' + S.a[i] + ' ≥ ' + kids.map((c) => S.a[c]).join('、'), kids.length === 1 ? '[5] 只有一個孩子 [10]' : 'children = ' + kids.join('、'));
-    await beat(tok, 1700);
-  }
-  S.off(); S.hl([6, 7, 8, 9, 10], GREEN);
-  say('6–10 是葉子：不用檢查', '所以這是 max-heap');
-  await beat(tok, 2600);
+  const pal = guide(-6.4, 2.2);
+  let S;
+  await step(tok);                                   // 10:15 max-heap、min-heap
+  S = qTree(HB_HEAP, { cap: 10 });
+  say('在 heap 結構上再加條件', '就得到 max-heap 或 min-heap');
+  await step(tok);                                   // 10:41 key(node) ≥ key(children)
+  bubble('max-heap property：key(父) ≥ key(子)', 0, 7.4, 0);
+  S.hl([2], GOLD); S.hl([4, 5], BLUE);
+  say('max-heap property：節點的 key ≥ 孩子的 key', '例：14 ≥ 8、7');
+  await step(tok);                                   // 11:06 每個節點都要成立
   S.off();
-  say('min-heap：把 ≥ 換成 ≤', 'key(父) ≤ key(子)');
-  await beat(tok, 2600);
+  say('每個節點都要成立（遞迴的）', '');
+  await step(tok);                                   // 11:19 葉子自動成立
+  S.hl([6, 7, 8, 9, 10], GREEN);
+  say('葉子沒有孩子：自動成立', '');
+  await step(tok);                                   // 11:51 檢查這個例子
+  S.off();
+  pal.mood('wow');
+  say('這個例子是 max-heap 嗎？', '只要看有孩子的節點');
+  await step(tok);                                   // 12:01 看 1–4
+  pal.mood('calm');
+  for (let i = 1; i <= 4; i++) { S.off(); S.hl([i], GOLD); S.hl([2 * i, 2 * i + 1], BLUE); await beat(tok, 550); }
+  say('看 index 1、2、3、4：父 ≥ 兩個孩子', '6、7 以後都沒有孩子，不用看');
+  await step(tok);                                   // 12:14 5 只有一個孩子
+  S.off(); S.hl([5], GOLD); S.hl([10], BLUE);
+  say('index 5 只有一個孩子 [10]', '7 ≥ 1 ✓');
+  await step(tok);                                   // 12:30 有 max-heap property
+  S.off(); S.hl([1], GREEN);
+  pal.mood('happy'); await pal.hop(tok);
+  say('全部成立：這是 max-heap', '');
+  await step(tok);                                   // 12:36 min-heap：≥ 換成 ≤
+  S.off();
+  say('min-heap property：把 ≥ 換成 ≤', 'key(父) ≤ key(子)');
 }]);
 
-// 12:48 max 與 extract_max
+// 13:03 max 與 extract_max（8 步）
 FRAG.push(['heapb-max-vs-extract', 'max 很簡單，extract_max 要維持 max-heap', async (tok) => {
   fresh(QCAM, QLOOK);
+  const pal = guide(-6.4, 2.2);
   const S = qTree(HB_HEAP, { cap: 10, sizeTag: true });
-  S.hl([1], GOLD);
-  say('max(S)：直接看根 A[1]', '16，heap 不變 → O(1)');
-  await beat(tok, 2800);
-  S.off(); S.hl([1], RED);
-  say('extract_max：拿走 16 之後呢？', 'rep invariant：改完仍要是 max-heap');
-  await beat(tok, 2800);
-  S.off();
   const out = [];
-  for (let k = 0; k < 4; k++) {
-    const v = await S.pop(tok, k ? 380 : 750, false);
-    out.push(cube(v, colorFor(v), [0.7, 0.5, 0.7], -5.6 + k * 0.95, 0.3, 5.4, 2));
-    say('拿出 ' + v, '輸出：' + out.length + ' 個');
-    await beat(tok, k ? 500 : 1000);
-  }
-  say('一直 extract_max：16, 14, 10, 9', '由大到小 → 可以拿來排序');
-  await beat(tok, 3000);
+  const take = async (ms) => { const v = await S.pop(tok, 'fly', ms); out.push(cube(v, colorFor(v), [0.6, 0.45, 0.6], -5.6 + out.length * 0.8, 0.3, 5.2, 2)); };
+  await step(tok);                                   // 13:03 哪個操作最簡單？max
+  S.hl([1], GOLD);
+  say('max-heap 上哪個操作最簡單？', 'max：直接看根 A[1] = 16');
+  await step(tok);                                   // 13:10 extract_max 呢？不簡單
+  S.off(); S.hl([1], RED);
+  pal.mood('wow');
+  say('extract_max 也簡單嗎？不', '拿掉根之後，樹要怎麼辦？');
+  await step(tok);                                   // 13:28 max 不改 heap
+  S.off(); S.hl([1], GOLD);
+  pal.mood('calm');
+  say('max 只是回傳，heap 完全不改', '所以仍是 max-heap → O(1)');
+  await step(tok);                                   // 13:49 rep invariant
+  S.off();
+  bubble('rep invariant = max-heap property', 0, 7.4, 0);
+  say('rep invariant：資料結構一定要保持的性質', '這裡就是 max-heap property，改前改後都要成立');
+  await step(tok);                                   // 14:15 一直 extract_max
+  await take(450);
+  say('一直做 extract_max：先拿出 16', '拿完要修回 max-heap');
+  await step(tok);                                   // 14:21 再拿下一個
+  await take(260); await take(260);
+  say('再拿下一個最大的：14、10……', '');
+  await step(tok);                                   // 14:32 由大到小
+  pal.mood('wow');
+  say('拿出來的順序：由大到小', '16, 14, 10 → 這就是排序！');
+  await step(tok);                                   // 14:51 若 extract_max 很快
+  pal.mood('happy'); await pal.hop(tok);
+  say('只要 extract_max 夠快', '就得到一個很棒的排序法');
 }]);
 
-// 14:59 為什麼需要 build-max-heap 與 max-heapify
+// 15:04 從亂序陣列到 max-heap（8 步）
 FRAG.push(['heapb-build-goal', '亂序陣列 → max-heap：需要哪些操作', async (tok) => {
   fresh([0, 6, 13], [0, 3.6, 0.5]);
-  const S = qTree([2, 4, 1], { cap: 3, w: 7 });
-  say('一般陣列看成 heap，不一定是 max-heap', 'A = 2, 4, 1');
-  await beat(tok, 2600);
+  const pal = guide(-5.6, 2.0);
+  let S, C;
+  await step(tok);                                   // 15:04 怎麼維持 max-heap property
+  bubble('修改 heap 時，怎麼維持 max-heap？', 0, 7.6, 0);
+  say('大問題：修改 heap 時怎麼維持 max-heap property', '');
+  await step(tok);                                   // 15:41 一個不是 max-heap 的例子
+  S = qTree([2, 4, 1], { cap: 3, w: 7 });
+  say('隨便一個陣列看成 heap', 'A = 2, 4, 1');
+  await step(tok);                                   // 15:46 不是 max 也不是 min
   S.hl([1, 2], RED);
-  say('2 < 4：不是 max-heap', '1 < 2：也不是 min-heap');
-  await beat(tok, 2600);
+  pal.mood('sad');
+  say('2 < 4：不是 max-heap；1 < 2：也不是 min-heap', '只是「看成 heap」而已');
+  await step(tok);                                   // 16:10 要能從亂序陣列建 max-heap
   S.off();
-  say('build-max-heap：要把它變成 4, 2, 1', '靠 max-heapify 修正違規');
-  await beat(tok, 1600);
-  await S.sw(tok, 1, 2, 900);
-  S.hl([1], GREEN);
-  say('現在是 max-heap', 'A = 4, 2, 1');
-  await beat(tok, 2200);
-  S.off();
-  const C = code(['build_max_heap(A)', 'max_heapify(A, i)', 'insert / extract_max', 'heap_sort(A)'], 0, 8.4, 0.55);
+  pal.mood('calm');
+  say('所以還需要：把亂序陣列建成 max-heap', '');
+  await step(tok);                                   // 16:50 每個操作都要維持 invariant
+  C = code(['build_max_heap(A)', 'max_heapify(A, i)', 'insert / extract_max', 'heap_sort(A)'], 4.2, 7.0, 0.5);
+  say('接下來每個 heap 操作', '都必須維持 max-heap 這個 invariant');
+  await step(tok);                                   // 17:08 build_max_heap
   C.hl(0);
-  say('今天要做的 heap 操作', '每個都要維持 max-heap property');
-  await beat(tok, 2400);
-  C.hl(1);
-  say('最基本的是 max-heapify', '其他操作都靠它');
-  await beat(tok, 3200);
+  say('build_max_heap：任意陣列 → max-heap', '例如把它變成 4, 2, 1');
+  await step(tok);                                   // 17:24 變成 4, 2, 1
+  S.hl([1, 2], GOLD);
+  await S.sw(tok, 1, 2, 800);
+  S.off(); S.hl([1], GREEN);
+  pal.mood('happy');
+  say('A = 4, 2, 1：現在是 max-heap', '順序改了（不一定完全排好）');
+  await step(tok);                                   // 17:59 先要有 max_heapify
+  S.off(); C.hl(1);
+  say('要做 build_max_heap，先要有 max_heapify', '最基本的操作');
 }]);
 
-// 18:05 max-heapify 的前提
+// 18:13 max-heapify 的前提（7 步）
 FRAG.push(['heapb-heapify-contract', 'max-heapify 的前提：左右子樹已是 max-heap', async (tok) => {
   fresh(QCAM, QLOOK);
-  const S = qTree(HB_HEAPIFY, { cap: 10 });
-  say('max_heapify(A, i)', '只修「一個」違規');
-  await beat(tok, 2200);
-  const box = (i, kids) => {
-    const ps = [i, ...kids].map(S.p), xs = ps.map((p) => p.x), ys = ps.map((p) => p.y);
-    const w = Math.max(...xs) - Math.min(...xs) + 1.4, h = Math.max(...ys) - Math.min(...ys) + 1.4;
-    const g = ghostBox('#2fc092', w, h, 1.4); g.position.set((Math.max(...xs) + Math.min(...xs)) / 2, (Math.max(...ys) + Math.min(...ys)) / 2, 0); return g;
-  };
-  box(4, [8, 9]); box(5, [10]);
-  S.hl([4, 8, 9, 5, 10], GREEN);
-  say('前提：left(i)、right(i) 的子樹是 max-heap', 'i = 2：子樹 [4] 與 [5]');
-  await beat(tok, 3000);
-  S.off(); S.hl([2], RED);
-  say('只有根 A[2] = 4 可能違規', '4 < 14');
-  await beat(tok, 2600);
-  say('前提不成立：不保證結果', '前提成立：回傳修好的 max-heap');
-  await beat(tok, 2800);
-  S.off(); S.hl([6, 7, 8, 9, 10], GREEN);
-  say('葉子本來就是 max-heap', '由下往上：小 heap 合成大 heap');
-  await beat(tok, 2800);
+  const pal = guide(-6.4, 2.2);
+  let S;
+  await step(tok);                                   // 18:13 修子樹根上的一個違規
+  S = qTree(HB_HEAPIFY, { cap: 10 });
+  S.hl([2], RED);
+  say('max_heapify：修正「子樹的根」上的一個違規', '');
+  await step(tok);                                   // 18:48 最基本、一直會用
   S.off();
-  say('heap size = 10', '排序時 heap size 會變小');
-  await beat(tok, 2400);
+  bubble('最基本的操作：會一直用到', 0, 7.4, 0);
+  say('max_heapify 是最基本的操作', '後面會一用再用');
+  await step(tok);                                   // 19:20 不能隨便的輸入：只能有一個違規
+  S.hl([2], RED);
+  pal.mood('wow');
+  say('輸入不能是任意陣列', '只能有「一個」違規');
+  await step(tok);                                   // 20:06 前提：左右子樹已是 max-heap
+  hbBox(S, [4, 8, 9]); hbBox(S, [5, 10]);
+  S.hl([4, 8, 9, 5, 10], GREEN);
+  pal.mood('calm');
+  say('前提：left(i)、right(i) 底下的子樹都已是 max-heap', 'i = 2：子樹 [4] 和 [5]');
+  await step(tok);                                   // 20:35 max_heapify(A, i)
+  code(['max_heapify(A, i)', 'A：陣列　i：index'], 4.6, 7.4, 0.5);
+  say('呼叫方式：max_heapify(A, i)', 'A 是陣列，i 是要修的位置');
+  await step(tok);                                   // 20:47 前提不成立：可以亂來
+  bad('前提不成立 → 不保證任何結果', -2.8, 7.4, 0);
+  pal.mood('sad');
+  say('前提不成立時，它可以什麼都不保證', '');
+  await step(tok);                                   // 20:57 前提成立：交回 max-heap
+  good('前提成立 → 交回修好的 max-heap', -2.8, 6.7, 0);
+  pal.mood('happy'); await pal.hop(tok);
+  say('前提成立，就要交回修好的 max-heap', '這就是它的「合約」（contract）');
 }]);
 
-// 25:44 max-heapify 是 O(log n)
+// 21:33 max-heapify(A, 2) 的例子（15 步，內建 max-heapify 的逐句版）
+FRAG.push(['heapb-heapify-2', 'max-heapify(A, 2)：修正單一個違規', async (tok) => {
+  fresh(QCAM, QLOOK);
+  const pal = guide(-6.4, 2.2);
+  let S, pi;
+  await step(tok);                                   // 21:33 例子 16, 4, 10, …
+  S = qTree(HB_HEAPIFY, { cap: 10 });
+  say('例子：A = 16, 4, 10, 14, 7, 9, 3, 2, 8, 1', '');
+  await step(tok);                                   // 22:13 是 max-heap 嗎？不是
+  pal.mood('wow');
+  say('這是 max-heap 嗎？不是', '有一個地方出問題');
+  await step(tok);                                   // 22:21 4 < 14
+  S.hl([2], RED); S.hl([4], BLUE);
+  say('4 < 14：在 index 2 違規', '');
+  await step(tok);                                   // 22:27 呼叫 max_heapify(A, 2)
+  S.off(); S.hl([2], GOLD);
+  pi = tag('i = 2', 'pkt', S.p(2).x - 1.1, S.p(2).y + 0.6, 0);
+  pal.mood('calm');
+  say('呼叫 max_heapify(A, 2)', '只要看 index 2 這棵子樹');
+  await step(tok);                                   // 22:47 前提成立
+  hbBox(S, [4, 8, 9]); hbBox(S, [5, 10]);
+  S.hl([4, 8, 9, 5, 10], GREEN);
+  say('前提：[4]、[5] 底下的子樹都是 max-heap', '成立 ✓');
+  await step(tok);                                   // 23:02 由下往上；葉子本來就是
+  S.off(); S.hl([6, 7, 8, 9, 10], GREEN);
+  say('通常是由下往上做：葉子本來就是 max-heap', '不用檢查');
+  await step(tok);                                   // 23:15 小 heap 合成大 heap
+  S.off();
+  bubble('兩個小 max-heap ＋ 一個根 → max_heapify → 大 max-heap', 0, 7.5, 0);
+  say('兩個小 heap 接上一個根，用 max_heapify 合成大的', '');
+  await step(tok);                                   // 23:45 heap size = 10
+  tag('heap size = 10', 'ptr', S.c(10).x, 1.15, S.c(10).z);
+  say('記住 heap size：這裡是 10', '排序時 heap size 會變');
+  await step(tok);                                   // 23:55 做的事就是交換
+  say('max_heapify 做的事：就是交換元素', '');
+  await step(tok);                                   // 24:06 看兩個孩子，和較大的換
+  S.hl([2], GOLD); S.hl([4, 5], BLUE);
+  say('看 4 的兩個孩子 14、7', '和「較大的孩子」交換');
+  await step(tok);                                   // 24:16 A[2] ↔ A[4]
+  await S.sw(tok, 2, 4, 800); S.off();
+  move(pi, S.p(4).x - 1.1, S.p(4).y + 0.6, 0);
+  say('交換 A[2] ↔ A[4]：14 上去、4 下來', '第一步完成');
+  await step(tok);                                   // 24:43 遞迴 max_heapify(A, 4)
+  S.hl([4], RED);
+  txt(pi, 'i = 4');
+  say('4 到了下一層，又違規了', '遞迴呼叫 max_heapify(A, 4)');
+  await step(tok);                                   // 25:12 看兩個孩子
+  S.off(); S.hl([4], GOLD); S.hl([8, 9], BLUE);
+  say('看 4 的孩子：A[8] = 2、A[9] = 8', '較大的是 A[9] = 8');
+  await step(tok);                                   // 25:21 交換
+  await S.sw(tok, 4, 9, 800); S.off();
+  move(pi, S.p(9).x - 0.9, S.p(9).y + 0.6, 0);
+  note('老師說 A[8]，其實是 A[9]', S.p(9).x + 0.2, S.p(9).y - 0.9, 0);
+  say('交換：8 上去、4 下來', 'A[4] ↔ A[9]');
+  await step(tok);                                   // 25:36 結束
+  S.hl([2, 4, 9], GREEN);
+  pal.mood('happy'); await pal.hop(tok);
+  say('4 到了葉子：沒有更多呼叫，完成', 'A = 16, 14, 10, 8, 7, 9, 3, 2, 4, 1');
+}]);
+
+// 25:51 max-heapify 為什麼是 O(log n)（12 步）
 FRAG.push(['heapb-heapify-logn', 'max-heapify 為什麼是 O(log n)', async (tok) => {
   fresh(QCAM, QLOOK);
-  const S = qTree([1, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2], { cap: 15, arr: false, sz: 0.8 });
-  for (let d = 0; d < 4; d++) tag('level ' + d, 'idx', -6.4, QLY[d], 0);
-  say('heap 是 nearly complete binary tree', 'n = 15 時正好是 perfect binary tree');
-  await beat(tok, 2600);
-  say('高度 ≤ log n', 'h = ⌊log₂ 15⌋ = 3');
-  await beat(tok, 2200);
+  const pal = guide(-6.4, 2.2);
+  let S, q, a1, a2;
+  await step(tok);                                   // 25:51 可能要一路換到葉子
+  S = qTree([1, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2], { cap: 15, arr: false, sz: 0.8 });
   S.hl([1], RED);
-  say('最壞：根要一路沉到葉子', '左右子樹都已是 max-heap');
-  await beat(tok, 2200);
-  await S.down(tok, 1, 15, 800);
-  say('每層最多換一次：3 次', '<span class="ok">O(log n)</span>');
-  await beat(tok, 2800);
-  say('靠「只有一個違規」這個前提', '沒有前提，就不是只走一條路');
-  await beat(tok, 2600);
+  say('最壞情況：要一路換到葉子', 'heap 很大時，步數會很多嗎？');
+  await step(tok);                                   // 26:04 複雜度是？
+  q = bubble('max_heapify 的複雜度？', 4.6, 7.4, 0);
+  pal.mood('wow');
+  say('max_heapify 的時間複雜度是多少？', '');
+  await step(tok);                                   // 26:16 有人答 O(n)
+  a1 = note('學生 A：O(n)？每個點都可能換', -3.0, 7.4, 0);
+  say('有人答 O(n)：可能每個節點都要換', '');
+  await step(tok);                                   // 26:29 有人答 log n
+  a2 = note('學生 B：O(log n)', -3.0, 6.8, 0);
+  say('有人答 O(log n)：為什麼？', '');
+  await step(tok);                                   // 27:31 對：log n
+  kill(a1); txt(a2, '答案：O(log n) ✓');
+  pal.mood('happy');
+  say('答案是 log n', '接著看理由');
+  await step(tok);                                   // 28:01 理由一：nearly complete
+  kill(q); kill(a2); S.off();
+  pal.mood('calm');
+  say('理由一：heap 是 nearly complete binary tree', '不是歪一邊的樹');
+  await step(tok);                                   // 28:18 15 個是 perfect；高度 ≤ log n
+  S.lvTags(4);
+  bubble('15 個 = perfect binary tree，h = 3', 4.6, 7.4, 0);
+  say('15 個元素剛好排滿：高度 ≤ log n', 'h = ⌊log₂ 15⌋ = 3');
+  await step(tok);                                   // 28:35 一層一層走
+  await S.down(tok, 1, 15, 600);
+  say('演算法一層一層往下走', '每層最多換一次 → 3 次');
+  await step(tok);                                   // 28:44 理由二：只有一個違規
+  S.hl([1, 2, 3], GREEN);
+  say('理由二：前提保證只有一個違規', '左右子樹本來就是 max-heap');
+  await step(tok);                                   // 28:52 沒有前提就可能 O(n)
+  S.off();
+  bad('沒有這個前提，O(n) 才可能是對的', 0, 7.4, 0);
+  say('如果沒有這個前提，O(n) 才可能是對的', '');
+  await step(tok);                                   // 29:25 只要往下走層數那麼多步
+  say('有前提：只要沿一條路往下', '步數 = 層數 = O(log n)');
+  await step(tok);                                   // 29:40 O(log n)，基本積木
+  good('max_heapify：O(log n)', 4.6, 6.7, 0);
+  pal.mood('happy'); await pal.hop(tok);
+  say('max_heapify 是 O(log n)', '後面所有演算法的基本積木');
 }]);
 
-// 34:42 build-max-heap 粗估 O(n log n)
+// 30:00 build-max-heap（13 步，內建 build-max-heap 的逐句版）
+FRAG.push(['heapb-build', 'build-max-heap：從 n/2 做回 1', async (tok) => {
+  fresh(QCAM, QLOOK);
+  const pal = guide(-6.4, 2.2);
+  let S, C, pi;
+  const at = (i) => { if (!pi) pi = tag('', 'pkt', 0, 0, 0); txt(pi, 'i = ' + i); const p = S.p(i); pi.position.set(p.x - 1.0, p.y + 0.6, 0); };
+  await step(tok);                                   // 30:00 用 max_heapify 做 build-max-heap
+  bubble('用 max_heapify → build_max_heap', 0, 7.4, 0);
+  say('用 max_heapify 來做 build_max_heap', '');
+  await step(tok);                                   // 30:21 亂序陣列變 max-heap
+  S = qTree(HB_BUILD, { cap: 10 });
+  say('排序第一步：把亂序陣列變成 max-heap', 'A = 4, 1, 3, 2, 16, 9, 10, 14, 8, 7');
+  await step(tok);                                   // 30:37 A[1..n]
+  say('把 A[1..n] 轉成 max-heap', '');
+  await step(tok);                                   // 30:52 重點是 max
+  S.hl([2], RED); S.hl([5], BLUE);
+  say('任何陣列都「看得成」heap，重點是「max」-heap', '這裡 1 < 16：還不是 max-heap');
+  await step(tok);                                   // 31:31 兩行虛擬碼
+  S.off();
+  C = code(['for i = ⌊n/2⌋ downto 1:', '    max_heapify(A, i)'], 4.2, 7.4, 0.5);
+  say('只有兩行：i 從 ⌊n/2⌋ 倒著做到 1', '每次呼叫 max_heapify(A, i)');
+  await step(tok);                                   // 32:05 A[n/2+1..n] 都是葉子
+  S.hl([6, 7, 8, 9, 10], GREEN);
+  pal.mood('wow');
+  say('A[⌊n/2⌋+1 .. n] 全是葉子', 'n = 10：A[6..10]');
+  await step(tok);                                   // 32:33 葉子自動是 max-heap
+  pal.mood('calm');
+  say('葉子自動滿足 max-heap property', '不管 n 是多少都對');
+  await step(tok);                                   // 33:04 每次呼叫前提都成立
+  S.off();
+  say('倒著做：每次呼叫時，前提都成立', '孩子底下已經是 max-heap');
+  await step(tok);                                   // 33:23 從 n/2 = 5 開始
+  C.hl(0); at(5);
+  S.hl([5], GOLD); S.hl([10], BLUE);
+  say('從 i = 5 開始：A[5] 只有一個孩子', '那個孩子是葉子 → 是 max-heap');
+  await step(tok);                                   // 33:49 接上葉子，可能要換
+  C.hl(1);
+  say('16 ≥ 7：不用換', '有時要換一次，換完就是小小的 max-heap');
+  await step(tok);                                   // 34:04 level 1 的節點
+  S.off();
+  for (const i of [4, 3]) { at(i); await S.down(tok, i, 10, 500); }
+  say('i = 4、3：孩子都是葉子', '2 和 14 換；3 和 10 換');
+  await step(tok);                                   // 34:25 level 2
+  at(2); await S.down(tok, 2, 10, 500);
+  say('i = 2：再上一層', '1 一路往下：和 16 換、再和 7 換');
+  await step(tok);                                   // 34:31 一路往上
+  at(1); await S.down(tok, 1, 10, 450);
+  S.hl([1], GREEN);
+  pal.mood('happy');
+  say('i = 1：左右孩子都已是 max-heap', 'A = 16, 14, 10, 8, 7, 9, 3, 2, 4, 1');
+}]);
+
+// 34:48 build-max-heap 粗估 O(n log n)（12 步）
 FRAG.push(['heapb-build-naive', 'build-max-heap：粗估 O(n log n)', async (tok) => {
   fresh(QCAM, QLOOK);
-  const S = qTree([4, 1, 3, 2, 16, 9, 10, 14, 8, 7], { cap: 10 });
-  code(['for i = n/2 downto 1:', '    max_heapify(A, i)'], 0, 8.2, 0.55);
-  say('呼叫 n/2 = 5 次 max-heapify', '每次最多 O(log n)');
+  const pal = guide(-6.4, 2.2);
+  let S, ans;
+  await step(tok);                                   // 34:48 直接分析
+  S = qTree(HB_BUILD, { cap: 10 });
+  code(['for i = ⌊n/2⌋ downto 1:', '    max_heapify(A, i)'], 4.2, 7.4, 0.5);
+  say('直接分析：build_max_heap 要多久？', '');
+  await step(tok);                                   // 34:54 n log n
   S.hl([1, 2, 3, 4, 5], GOLD);
-  await beat(tok, 2800);
-  say('n/2 · O(log n) = O(n log n)', '是對的上界，但不夠緊');
-  await beat(tok, 2800);
+  ans = note('n/2 次 × O(log n) = O(n log n)', -3.0, 7.4, 0);
+  say('n/2 次呼叫，每次 O(log n)', 'O(n log n)');
+  await step(tok);                                   // 35:05 能更好嗎？
   S.off();
-  S.hl([3, 4, 5], BLUE);
+  pal.mood('wow');
+  say('這是簡單的分析：能不能分析得更好？', '');
+  await step(tok);                                   // 35:29 不改演算法，只改分析
+  say('演算法不改，只改「分析」', '');
+  await step(tok);                                   // 35:50 big O：上界
+  say('O(n log n) 是對的上界', 'big O 只說「不會超過」');
+  await step(tok);                                   // 37:04 其實是 O(n)
+  txt(ans, '仔細分析：O(n)！');
+  pal.mood('happy');
+  say('正確答案：仔細算是 O(n)', '');
+  await step(tok);                                   // 37:24 葉子不做事
+  S.hl([6, 7, 8, 9, 10], GRAY);
+  pal.mood('calm');
+  say('直覺：葉子完全不用做事', '迴圈本來就從 n/2 開始');
+  await step(tok);                                   // 37:38 葉子上一層：約 1 步
+  S.off(); S.hl([3, 4, 5], BLUE);
   [3, 4, 5].forEach((i) => { const p = S.p(i); tag('1 步', 'ptr', p.x, p.y + 0.85, 0); });
   say('葉子上一層：各約 1 步', '這種節點最多');
-  await beat(tok, 2400);
+  await step(tok);                                   // 37:53 再上一層：2 步
   S.hl([2], GOLD); { const p = S.p(2); tag('2 步', 'ptr alt', p.x, p.y + 0.85, 0); }
-  say('再上一層：最多 2 步', '節點變少');
-  await beat(tok, 2200);
-  S.hl([1], RED); { const p = S.p(1); tag('3 步', 'ptr alt', p.x - 1.2, p.y, 0); }
-  say('根：log n 步，但只有 1 個', '越高越貴，但越少');
-  await beat(tok, 2600);
+  say('再上一層：最多 2 步', '');
+  await step(tok);                                   // 38:02 越高越少
+  say('越往上，步數越多', '但節點越來越少');
+  await step(tok);                                   // 38:13 根：log n 步，只有 1 個
+  S.hl([1], RED); { const p = S.p(1); tag('log n 步', 'ptr alt', p.x - 1.4, p.y, 0); }
+  say('根要 log n 步，但只有 1 個', '');
+  await step(tok);                                   // 38:43 仔細數
   S.off();
-  say('仔細數就會得到 Θ(n)', '同一個演算法，更好的分析');
-  await beat(tok, 2800);
+  say('分析就是「數數」', '只要數得仔細一點');
 }]);
 
-// 42:37 級數收斂
+// 39:06 逐層計數（8 步，內建 build-heap-cost 的逐句版）
+FRAG.push(['heapb-build-cost', '為什麼 build-max-heap 是 Θ(n)：逐層計數', async (tok) => {
+  fresh(QCAM, QLOOK);
+  const pal = guide(-6.4, 2.2);
+  const S = qTree([16, 14, 10, 8, 7, 9, 3, 2, 4, 1, 5, 6, 11, 12, 13], { cap: 15, arr: false, sz: 0.8 });
+  const H1 = [4, 5, 6, 7], H2 = [2, 3];
+  const F = tag('', 'ptr alt', 0, 0.7, 2.5);
+  await step(tok);                                   // 39:06 葉子上一層：常數時間
+  S.hl(H1, BLUE);
+  say('觀察一：葉子上一層的節點', 'max_heapify 只要常數時間 c');
+  await step(tok);                                   // 39:34 上方 L 層：O(L)
+  S.hl(H2, GOLD); S.hl([1], RED);
+  [['L = 1', QLY[2]], ['L = 2', QLY[1]], ['L = 3', QLY[0]]].forEach(([t, y]) => tag(t, 'idx', -6.4, y, 0));
+  say('一般來說：在葉子上方 L 層的節點', '要 O(L) 時間');
+  await step(tok);                                   // 40:05 n/4 個在 level 1
+  S.off(); S.hl(H1, BLUE);
+  txt(F, 'level 1：約 n/4 個');
+  say('觀察二：level 1 大約有 n/4 個節點', '（差一兩個不要緊）');
+  await step(tok);                                   // 40:27 n/8 個在 level 2
+  S.hl(H2, GOLD);
+  txt(F, 'level 1：n/4 個，level 2：n/8 個');
+  say('level 2 大約 n/8 個', '');
+  await step(tok);                                   // 40:36 根：1 個
+  S.hl([1], RED);
+  txt(F, 'n/4、n/8、…、根只有 1 個（level log n）');
+  say('一路往上，最頂的根只有 1 個', '在 level log n');
+  await step(tok);                                   // 40:45 工作變多、節點變少
+  pal.mood('wow');
+  say('每個節點的工作變多時，節點數在變少', '這就是要仔細數的地方');
+  await step(tok);                                   // 41:20 總工作 n/4·1c
+  S.off(); S.hl(H1, BLUE);
+  pal.mood('calm');
+  txt(F, '總工作 = n/4 · 1c + …');
+  say('把每層加起來：先是 n/4 個 × 1c', '');
+  await step(tok);                                   // 42:03 + n/8·2c + …
+  S.hl(H2, GOLD); S.hl([1], RED);
+  txt(F, 'n/4·1c + n/8·2c + n/16·3c + … + 1·c·log n');
+  say('再加 n/8 × 2c、n/16 × 3c……最後 1 × c log n', '');
+}]);
+
+// 42:37 級數收斂（9 步）
 FRAG.push(['heapb-series', 'Σ (i+1)/2ⁱ 收斂到常數 → Θ(n)', async (tok) => {
   fresh([0, 5.5, 14], [0, 2.6, 0]);
-  say('令 n/4 = 2ᵏ', 'c·2ᵏ·(1/2⁰ + 2/2¹ + 3/2² + … + (k+1)/2ᵏ)');
-  await beat(tok, 3000);
-  const SC = 1.2, base = 0.05, sx = 5.2;
-  line(sx - 0.9, base + 4 * SC, sx + 0.9, base + 4 * SC, 0, '#6a4a00');
-  tag('4', 'ptr alt', sx + 1.3, base + 4 * SC, 0);
-  const fr = ['1/1', '2/2', '3/4', '4/8', '5/16', '6/32', '7/64'];
-  let sum = 0;
-  for (let i = 0; i < 7; i++) {
-    const t = (i + 1) / Math.pow(2, i), h = Math.max(0.06, t * SC * 1.6), x = -5.4 + i * 1.25;
+  const pal = guide(-6.3, 2.4);
+  const SC = 1.2, sx = 5.2, fr = ['1/1', '2/2', '3/4', '4/8', '5/16', '6/32', '7/64'];
+  let sum = 0, F, cap;
+  const bar = (i) => {
+    const t = (i + 1) / Math.pow(2, i), h = Math.max(0.06, t * SC * 1.6), x = -4.6 + i * 1.2;
     cube(fr[i], colorFor(i + 1), [0.9, h, 0.9], x, h / 2, 0, 3);
     tag('i=' + i, 'idx', x, 0.05, 0.9);
-    cube(null, colorFor(i + 1), [1.1, Math.max(0.03, t * SC), 1.1], sx, base + (sum + t / 2) * SC, 0, 3);
+    cube(null, colorFor(i + 1), [1.1, Math.max(0.03, t * SC), 1.1], sx, 0.05 + (sum + t / 2) * SC, 0, 3);
     sum += t;
-    say('第 ' + i + ' 項：(i+1)/2ⁱ = ' + fr[i], '部分和 = ' + (Math.round(sum * 1000) / 1000));
-    await beat(tok, 1400);
-  }
-  say('項越來越小：級數收斂', 'Σ (i+1)/2ⁱ ≤ 4（課堂說「約 2、小於 3」）');
-  await beat(tok, 3200);
-  say('有界常數 × c × 2ᵏ', 'c·(n/4)·4 = c·n → <span class="ok">Θ(n)</span>');
-  await beat(tok, 3200);
+  };
+  await step(tok);                                   // 42:37 令 n/4 = 2ᵏ
+  F = tag('令 n/4 = 2ᵏ', 'ptr alt', 0, 6.4, 0);
+  say('為了好算：令 n/4 = 2ᵏ', '');
+  await step(tok);                                   // 42:50 整理成 c·2ᵏ·(…)
+  txt(F, 'c · 2ᵏ · (1/2⁰ + 2/2¹ + 3/2² + … + (k+1)/2ᵏ)');
+  for (let i = 0; i < 3; i++) { bar(i); await beat(tok, 350); }
+  say('提出 c·2ᵏ，括號裡是 (i+1)/2ⁱ 一項一項加', '前 3 項：1、1、0.75');
+  await step(tok);                                   // 43:42 括號裡是多少？
+  for (let i = 3; i < 7; i++) { bar(i); await beat(tok, 350); }
+  pal.mood('wow');
+  say('括號裡的總和是多少？', '部分和 = ' + Math.round(sum * 100) / 100 + '，越加越慢');
+  await step(tok);                                   // 44:30 學生：趨近 2
+  note('學生：會收斂到 2？', -3.0, 5.6, 0);
+  say('有學生說：會收斂到 2', '老師：差不多，反正是常數');
+  await step(tok);                                   // 44:49 有界常數
+  line(sx - 0.9, 0.05 + 4 * SC, sx + 0.9, 0.05 + 4 * SC, 0, '#6a4a00');
+  cap = tag('上限 4', 'ptr alt', sx + 1.3, 0.05 + 4 * SC, 0);
+  pal.mood('happy');
+  say('收斂級數：不管 k 多大，都被一個常數框住', '精確值：Σ (i+1)/2ⁱ = 4（課堂說「小於 3」）');
+  await step(tok);                                   // 45:17 剩下 c·2ᵏ → Θ(n)
+  txt(F, 'c · 2ᵏ · (常數) = c · (n/4) · 常數 = Θ(n)');
+  say('剩下 c 和 2ᵏ；2ᵏ = n/4', '所以是 <span class="ok">Θ(n)</span>');
+  await step(tok);                                   // 46:22 再解釋一次代換
+  pal.mood('calm');
+  txt(F, 'n/4 · 1c = c · 2ᵏ · 1/2⁰');
+  say('再看一次：n/4 換成 2ᵏ，1 寫成 1/2⁰', '每一項都這樣代換');
+  await step(tok);                                   // 46:55 Σ 寫法
+  txt(F, 'Σᵢ₌₀ᵏ (i+1)/2ⁱ ≤ 常數');
+  say('寫成符號：Σ(i = 0..k) (i+1)/2ⁱ', '它有上界');
+  await step(tok);                                   // 47:21 同一個演算法更快
+  txt(F, 'build_max_heap：O(n)');
+  pal.mood('happy'); await pal.hop(tok);
+  say('同一個演算法，分析仔細就得到更緊的界', 'build_max_heap 是 <span class="ok">O(n)</span>');
 }]);
 
-// 47:50 heap sort 虛擬碼
+// 47:53 heap sort 虛擬碼（9 步）
 FRAG.push(['heapb-heapsort-code', 'Heap Sort：A[1] ↔ A[n]、heap size − 1、max-heapify', async (tok) => {
   fresh(QCAM, QLOOK);
+  const pal = guide(-6.4, 2.2);
   const S = qTree(HB_HEAP, { cap: 10, sizeTag: true });
-  const C = code(['1 build_max_heap(A)', '2 swap A[1] ↔ A[n]', '3 heap_size − 1', '4 max_heapify(A, 1)', '5 回到第 2 行'], -4.5, 8.6, 0.5);
+  let C;
+  await step(tok);                                   // 47:53 幾乎就是 heap sort 了
+  C = code(['1 build_max_heap(A)', '2 最大值在 A[1]', '3 swap A[1] ↔ A[n]', '4 heap_size − 1', '5 max_heapify(A, 1)', '  回到第 2 行'], -4.0, 7.6, 0.45);
+  say('有了 build_max_heap，heap sort 幾乎完成', '');
+  await step(tok);                                   // 48:20 build
   C.hl(0);
-  say('先 build-max-heap', 'O(n)：已經是 16, 14, 10, …');
-  await beat(tok, 2600);
-  C.hl(1); S.hl([1, 10], GOLD);
-  say('最大值 A[1] 和 A[n] 交換', '16 跑到陣列最後面');
-  await beat(tok, 1400);
-  await S.sw(tok, 1, 10, 900);
-  S.off();
-  C.hl(2); tint(S.nd[10], GRAY); tint(S.cl[10], GRAY); S.setSize(9);
-  say('heap size − 1：丟掉 node 10', '16 已排好');
-  await beat(tok, 2400);
-  C.hl(3); S.hl([1], RED);
-  say('新的根可能違規，孩子仍是 max-heap', 'max_heapify(A, 1)');
-  await beat(tok, 2000);
-  await S.down(tok, 1, 9, 750);
-  C.hl(4);
-  say('根又是最大值 14', '回到第 2 行，重複 n 次');
-  await beat(tok, 2800);
+  say('第 1 步：把亂序陣列 build 成 max-heap', 'O(n)：得到 16, 14, 10, …');
+  await step(tok);                                   // 48:33 max 在 A[1]
+  C.hl(1); S.hl([1], GOLD);
+  say('第 2 步：最大值就在 A[1]', '16');
+  await step(tok);                                   // 48:49 swap
+  C.hl(2); S.hl([10], GOLD);
+  await S.sw(tok, 1, 10, 900); S.off();
+  pal.mood('wow');
+  say('第 3 步：A[1] 和 A[n] 交換', '最大的 16 跑到陣列最後');
+  await step(tok);                                   // 49:16 heap size − 1
+  C.hl(3); tint(S.nd[10], GRAY); tint(S.cl[10], GRAY); S.setSize(9);
+  pal.mood('calm');
+  say('第 4 步：heap size 減 1', '把 node 10 丟出 heap：16 已排好');
+  await step(tok);                                   // 49:34 新根可能違規
+  C.hl(4); S.hl([1], RED);
+  say('新的根 1 可能違規', '但它的孩子都還是 max-heap');
+  await step(tok);                                   // 50:01 max_heapify 修好
+  await S.down(tok, 1, 9, 550);
+  say('剛好符合前提：max_heapify(A, 1) 修好', '1 一路往下沉');
+  await step(tok);                                   // 50:10 回到第 2 步
+  C.hl(5); S.hl([1], GREEN);
+  pal.mood('happy');
+  say('根又是最大值 14', '回到第 2 行，重複');
+  await step(tok);                                   // 50:28 不用 extract_max，用交換再丟掉
+  S.off(); C.hl(-1);
+  say('也可以用 extract_max', '這裡用「交換到最後再丟掉」');
 }]);
 
-// 50:42 小例子 4, 2, 1
+// 50:44 小例子 4, 2, 1（10 步）
 FRAG.push(['heapb-heapsort-421', 'Heap Sort 小例子：4, 2, 1', async (tok) => {
   fresh([0, 6, 13], [0, 3.6, 0.5]);
-  const S = qTree([4, 2, 1], { cap: 3, w: 7, sizeTag: true });
-  say('4, 2, 1 是 max-heap', 'heap size = 3');
-  await beat(tok, 2400);
+  const pal = guide(-5.6, 2.0);
+  let S, out;
+  const gone = (i) => { tint(S.nd[i], GRAY); tint(S.cl[i], GRAY); };
+  await step(tok);                                   // 50:44 4, 2, 1 是 max-heap
+  S = qTree([4, 2, 1], { cap: 3, w: 7, sizeTag: true });
+  say('小例子：4, 2, 1 是 max-heap', 'heap size = 3');
+  await step(tok);                                   // 50:55 4 和 1 交換
   S.hl([1, 3], GOLD);
+  await S.sw(tok, 1, 3, 900); S.off();
   say('4 和 1 交換', 'A = 1, 2, 4');
-  await beat(tok, 1000);
-  await S.sw(tok, 1, 3, 900);
-  S.off(); tint(S.nd[3], GRAY); tint(S.cl[3], GRAY); S.setSize(2);
-  say('丟掉 4：排序結果的第一個', 'heap size = 2');
-  await beat(tok, 2400);
+  await step(tok);                                   // 51:07 把 4 丟出 heap
+  gone(3); S.setSize(2);
+  say('4 是最大的：把它從 heap 刪掉', 'heap size = 2');
+  await step(tok);                                   // 51:21 4 是排序結果的第一個
+  out = good('排好：4', 4.2, 6.6, 0);
+  say('4 是排序結果的第一個（從後面放起）', '');
+  await step(tok);                                   // 51:24 1, 2 不是 max-heap
   S.hl([1], RED);
-  say('1, 2 不是 max-heap', '孩子是 max-heap → max_heapify(A, 1)');
-  await beat(tok, 1800);
-  await S.down(tok, 1, 2, 850);
+  pal.mood('wow');
+  say('剩下 1, 2：不是 max-heap', '1 < 2');
+  await step(tok);                                   // 51:29 max_heapify → 2, 1
+  S.hl([2], BLUE);
+  await S.sw(tok, 1, 2, 800); S.off();
+  pal.mood('calm');
+  say('孩子是 max-heap → 可以用 max_heapify', '變成 2, 1');
+  await step(tok);                                   // 51:38 取出 2
   S.hl([1, 2], GOLD);
-  say('根 2 是最大：和 A[2] 交換', '丟掉 2，剩 1 個就完成');
-  await beat(tok, 1000);
-  await S.sw(tok, 1, 2, 900);
-  S.off(); tint(S.nd[2], GRAY); tint(S.cl[2], GRAY); S.setSize(1);
-  say('排序完成：1, 2, 4', 'build O(n) + n 次 max_heapify O(log n)');
-  await beat(tok, 2600);
-  say('整體 O(n log n)', '交換、取 max 都是 O(1)');
-  await beat(tok, 2600);
+  await S.sw(tok, 1, 2, 800); S.off();
+  gone(2); gone(1); S.setSize(1);
+  txt(out, '排好：1, 2, 4');
+  pal.mood('happy'); await pal.hop(tok);
+  say('根 2 是最大：拿出來，剩 1 個就完成', 'A = 1, 2, 4');
+  await step(tok);                                   // 51:47 總共 O(n log n)
+  bubble('heap sort：O(n log n)', 4.2, 5.9, 0);
+  say('整個 heap sort：O(n log n)', '');
+  await step(tok);                                   // 51:53 build O(n)、取 max、交換 O(1)
+  bubble('build O(n)；取 max、交換 O(1)', 4.2, 5.2, 0);
+  say('build_max_heap O(n)', '取 max、交換都是常數時間');
+  await step(tok);                                   // 52:02 max_heapify log n × n 次
+  bubble('max_heapify O(log n) × n 次', 4.2, 4.5, 0);
+  say('但 max_heapify 每次 O(log n)，要做 n 次', 'n log n');
 }]);
   }
 
   // ═══ heaphq.js ═══
   {
 // ─── HqPJF2L5h9U：Abdul Bari「Heap」（陣列表示、complete binary tree、insert／delete、heap sort、heapify、priority queue） ───
-// 只用 K 與 ctx（這個片段也會裝進 ds-8）。陣列一律 1-based。
-const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, line, GOLD, GREEN, RED, GRAY } = K;
+// Cued scenes: every `await step(tok)` waits for the sentence it shows; beats are motion only.
+// 只用 K 與 ctx。陣列一律 1-based。左下角的小幫手會跟著反應（違規時驚訝、修好時開心）。
+const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, line, arrow, code, travel, buddy, icon, step, GOLD, GREEN, RED, GRAY } = K;
 const say = ctx.say, beat = ctx.beat, colorFor = ctx.colorFor;
-const BLUE = '#1f3a6e';
+const BLUE = '#1f3a6e', SORTED = '#2fc092';
 const QLY = [6.2, 4.7, 3.2, 1.7];
 const QCAM = [0, 6, 15.5], QLOOK = [0, 3.3, 1];
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const bubble = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+const pkt = (t, x, y, z = 0) => tag(t, 'pkt', x, y, z);
+// 小幫手：站在左下角，用表情陪你看每一步
+const guide = (x = -6.3, z = 1.8) => buddy('', '', '#ffc56b', x, 0, z, 0.72);
 // 一棵 heap：上面是樹、下面是陣列格（同一份資料兩種畫法）
 function qTree(vals, o = {}) {
   const W = o.w || 11, X0 = o.x0 || 0, cap = o.cap || vals.length, arr = o.arr !== false;
@@ -1193,7 +1595,7 @@ function qTree(vals, o = {}) {
   const better = (x, y) => (min ? x < y : x > y);
   const GT = min ? '<' : '>', GE = min ? '≤' : '≥', BIG = min ? '小' : '大';
   const col = (v) => (o.color ? o.color(v) : colorFor(v));
-  const S = { a: [null], nd: [null], cl: [null], ed: [null], size: 0, cap };
+  const S = { a: [null], nd: [null], cl: [null], ed: [null], size: 0, cap, better };
   S.p = (i) => { const d = Math.floor(Math.log2(i)), c = 1 << d; return V3(X0 + ((i - c + 0.5) / c - 0.5) * W, QLY[d], 0); };
   S.c = (i) => V3(X0 + (i - (cap + 1) / 2) * dx, 0.3, cz);
   if (arr) for (let i = 1; i <= cap; i++) { const c = S.c(i); ctx.tile(V3(c.x, 0.02, c.z), dx * 0.92, 0.9); tag('[' + i + ']', 'idx', c.x, 0.05, c.z + 0.75); }
@@ -1204,6 +1606,7 @@ function qTree(vals, o = {}) {
   };
   S.cell = (i, v, drop = 0) => { S.a[i] = v; if (!arr) return; const c = S.c(i); S.cl[i] = cube(v, col(v), [dx * 0.72, 0.42, 0.7], c.x, c.y, c.z, drop ? 2 : 0); };
   S.put = (i, v, drop = 0) => { S.node(i, v, drop); S.cell(i, v, drop); S.size = Math.max(S.size, i); };
+  S.drop = (i) => { if (S.nd[i]) { kill(S.nd[i]); S.nd[i] = null; } if (S.cl[i]) { kill(S.cl[i]); S.cl[i] = null; } if (S.ed[i]) { kill(S.ed[i]); S.ed[i] = null; } S.a[i] = null; };
   vals.forEach((v, k) => { if (v === null || v === undefined) return; if (o.cellsOnly) S.cell(k + 1, v); else S.put(k + 1, v); });
   if (o.cellsOnly) S.size = 0;
   const szl = o.sizeTag && arr ? tag('', 'ptr', 0, 1.15, cz) : null;
@@ -1227,377 +1630,770 @@ function qTree(vals, o = {}) {
     if (S.ed[i]) { kill(S.ed[i]); S.ed[i] = null; }
     if (j > 1 && !S.ed[j]) { const q = S.p(j >> 1); S.ed[j] = line(q.x, q.y, p.x, p.y); }
   };
-  // insert 的調整：由葉子往根（向上）
-  S.up = async (tok, i, ms = 900) => {
+  // insert 的調整：由葉子往根（向上），整段在同一步裡快速播完
+  S.up = async (tok, i, ms = 600) => {
     while (i > 1) {
       const p = i >> 1; S.off(); S.hl([i], GOLD); S.hl([p], BLUE);
-      if (!better(S.a[i], S.a[p])) { say(S.a[i] + ' ' + (min ? '≥' : '≤') + ' parent ' + S.a[p] + '：停', 'parent = ⌊' + i + '/2⌋ = ' + p); await beat(tok, ms); break; }
-      say(S.a[i] + ' ' + GT + ' parent ' + S.a[p] + '：往上換', 'parent = ⌊' + i + '/2⌋ = ' + p);
-      await beat(tok, ms * 0.6);
+      if (!better(S.a[i], S.a[p])) { await beat(tok, ms * 0.5); break; }
       await S.sw(tok, i, p, ms); i = p;
     }
     S.off(); return i;
   };
-  // delete／heapify 的調整：由根往葉子（向下），和較大（min-heap 是較小）的孩子換
-  S.down = async (tok, i, size, ms = 900) => {
+  // delete／heapify 的調整：由 i 往葉子（向下），和較大（min-heap 是較小）的孩子換
+  S.down = async (tok, i, size, ms = 600) => {
     while (2 * i <= size) {
       const l = 2 * i, r = l + 1; let c = l; if (r <= size && better(S.a[r], S.a[l])) c = r;
       S.off(); S.hl([i], GOLD); S.hl(r <= size ? [l, r] : [l], BLUE);
-      say('孩子 ' + (r <= size ? S.a[l] + '、' + S.a[r] : S.a[l]) + '：較' + BIG + '的是 ' + S.a[c], 'left = 2·' + i + ' = ' + l + (r <= size ? '，right = ' + r : ''));
-      await beat(tok, ms);
-      if (!better(S.a[c], S.a[i])) { say(S.a[i] + ' ' + GE + ' ' + S.a[c] + '：不用換', '停在 [' + i + ']'); await beat(tok, ms); break; }
-      say(S.a[c] + ' ' + GT + ' ' + S.a[i] + '：交換', 'A[' + i + '] ↔ A[' + c + ']');
+      await beat(tok, ms * 0.5);
+      if (!better(S.a[c], S.a[i])) break;
       await S.sw(tok, i, c, ms); i = c;
     }
     S.off(); return i;
   };
-  // 刪除根：最後一個補到根，再往下調；keep = 把刪掉的值放進空出來的格子
-  S.pop = async (tok, ms = 900, keep = true) => {
+  // 刪根：根飛走、最後一個補到根（不往下調）。mode：'keep' 放進 [n]、'park' 先停在 [n] 上方、'fly' 丟掉
+  S.popStart = async (tok, mode = 'fly', ms = 700) => {
     const n = S.size, top = S.a[1];
-    S.off(); S.hl([1], RED);
-    say('刪除根 ' + top, '只能刪 root（A[1]）');
-    await beat(tok, ms);
+    S.off();
     fly(S.nd[1]); S.nd[1] = null;
-    const topCell = S.cl[1]; S.cl[1] = null;
-    if (n > 1) { S.mv(n, 1); if (S.ed[n]) { kill(S.ed[n]); S.ed[n] = null; } }
-    if (topCell) {
-      if (keep) { const cn = S.c(n); glow(topCell, null); move(topCell, cn.x, cn.y, cn.z); tint(topCell, GRAY); S.cl[n] = topCell; }
-      else fly(topCell, V3(0, 6, 5));
+    const cell = S.cl[1]; S.cl[1] = null;
+    if (n > 1) S.mv(n, 1);
+    if (S.ed[n]) { kill(S.ed[n]); S.ed[n] = null; }
+    if (cell) {
+      glow(cell, null); tint(cell, GRAY);
+      const cn = S.c(n);
+      if (mode === 'keep') { move(cell, cn.x, cn.y, cn.z); S.cl[n] = cell; }
+      else if (mode === 'park') { move(cell, cn.x, 1.3, cn.z + 0.2); S.parked = cell; }
+      else fly(cell, V3(0, 6, 5));
     }
-    S.a[n] = keep ? top : null;
+    S.a[n] = mode === 'fly' ? null : top;
     S.setSize(n - 1);
-    if (n > 1) say('最後一個 ' + S.a[1] + ' 補到根', keep ? top + ' 放進空出來的 [' + n + ']' : 'heap size = ' + (n - 1));
     await beat(tok, ms);
-    await S.down(tok, 1, n - 1, ms);
     return top;
   };
+  // 停在上方的值放進 [i]
+  S.store = (i) => { if (!S.parked) return; const c = S.c(i); move(S.parked, c.x, c.y, c.z); S.cl[i] = S.parked; S.parked = null; };
+  S.pop = async (tok, mode = 'keep', ms = 500) => { const n = S.size, top = await S.popStart(tok, mode, ms); await S.down(tok, 1, n - 1, ms); return top; };
+  S.gaps = (list) => list.map((i) => { const c = S.c(i); return tag('空', 'ptr', c.x, 0.95, c.z); });
+  S.lvTags = (k) => { const out = []; for (let d = 0; d < k; d++) out.push(tag('h = ' + d, 'idx', X0 - W / 2 - 0.9, QLY[d], 0)); return out; };
   return S;
 }
-const qGap = (S, list) => list.map((i) => { const c = S.c(i); return tag('空', 'ptr', c.x, 0.95, c.z); });
 const HQ_MAX = [50, 30, 20, 15, 10, 8, 16];
+const ABC = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+const LETTER = () => '#4b9ee2';
 
-// 02:29 陣列表示
+// 02:29 陣列表示（11 步）
 FRAG.push(['heaphq-array-rep', '用陣列存 Binary Tree：A–G 與三個公式', async (tok) => {
   fresh(QCAM, QLOOK);
-  const S = qTree([], { cap: 7, color: () => '#4b9ee2' });
-  say('用陣列存樹：元素和父子關係都要存', 'index 從 1 開始（課堂慣例）');
-  await beat(tok, 2400);
-  for (const [k, v] of ['A', 'B', 'C', 'D', 'E', 'F', 'G'].entries()) { S.put(k + 1, v, 3); say('一層一層、由左到右填：' + v, 'A[' + (k + 1) + '] = ' + v); await beat(tok, 650); }
-  S.hl([2], GOLD); S.hl([4], GREEN);
-  say('B 在 i = 2：左孩子在 2i', 'left = 2·2 = 4 → D');
-  await beat(tok, 2200);
-  S.off(); S.hl([2], GOLD); S.hl([5], GREEN);
-  say('右孩子在 2i + 1', 'right = 2·2 + 1 = 5 → E');
-  await beat(tok, 2200);
+  const pal = guide();
+  await step(tok);                                   // 2:32 這是一棵 binary tree，要存進陣列
+  const S = qTree([], { cap: 7, color: LETTER });
+  ABC.forEach((v, k) => S.node(k + 1, v, 2));
+  say('一棵 binary tree，要把它存進陣列', '節點用字母 A–G，比較好讀');
+  await beat(tok, 900);
+  await step(tok);                                   // 2:50 程式從 0 開始，這裡從 1 開始
+  const n1 = note('從 [1] 開始', S.c(1).x, 1.25, S.c(1).z);
+  say('寫程式陣列從 [0] 開始；課本習慣從 [1] 開始', '[0] 不用，第一個元素放在 [1]');
+  await step(tok);                                   // 3:18 要存兩件事
+  kill(n1);
+  const b1 = bubble('① 所有元素', 5.0, 6.7, 0), b2 = bubble('② 誰是 parent／child', 5.0, 6.0, 0);
+  pal.mood('wow');
+  say('要存兩件事：元素本身，和彼此的關係', '誰是 parent、誰是 left child、right child');
+  await step(tok);                                   // 3:36 一層一層填
+  pal.mood('calm');
+  for (const [k, v] of ABC.entries()) { S.cell(k + 1, v, 1); S.hl([k + 1], GOLD); await beat(tok, 260); S.off(); }
+  S.size = 7;
+  say('一層一層、由左到右放進陣列', 'A B C D E F G');
+  await step(tok);                                   // 3:51 關係靠公式
+  kill(b1); kill(b2);
+  const F = code(['left(i)   = 2i    ', 'right(i)  = 2i + 1', 'parent(i) = ⌊i/2⌋ '], 4.9, 6.9, 0.5);
+  say('關係靠三個公式維持', '節點在 index i 時：');
+  await step(tok);                                   // 4:10 B 在 2，左孩子 D 在 4
+  F.hl(0); S.hl([2], GOLD); S.hl([4], GREEN);
+  say('B 在 i = 2：左孩子在 2i = 4', 'A[4] = D ✓');
+  await step(tok);                                   // 4:24 右孩子 2i+1 = 5
+  F.hl(1); S.off(); S.hl([2], GOLD); S.hl([5], GREEN);
+  say('右孩子在 2i + 1 = 5', 'A[5] = E ✓');
+  await step(tok);                                   // 4:30 C 在 3，孩子 6、7
   S.off(); S.hl([3], GOLD); S.hl([6, 7], GREEN);
-  say('C 在 i = 3：孩子在 6、7', 'left = 6 → F，right = 7 → G');
-  await beat(tok, 2400);
-  S.off(); S.hl([6], GOLD); S.hl([3], GREEN);
-  say('F 在 6：parent = 6/2 = 3', 'parent = ⌊i/2⌋ → C');
-  await beat(tok, 2200);
+  say('C 在 i = 3：孩子在 6 和 7', 'A[6] = F、A[7] = G ✓');
+  await step(tok);                                   // 4:49 F 的 parent
+  F.hl(2); S.off(); S.hl([6], GOLD); S.hl([3], GREEN);
+  say('F 在 6：parent = 6 / 2 = 3', 'A[3] = C ✓');
+  await step(tok);                                   // 4:58 G 的 parent：7/2 = 3.5 取 floor
   S.off(); S.hl([7], GOLD); S.hl([3], GREEN);
-  say('G 在 7：7/2 = 3.5，取 floor', '⌊7/2⌋ = 3 → C');
-  await beat(tok, 2400);
-  S.off();
-  say('照層序填，公式自動成立', 'left = 2i、right = 2i + 1、parent = ⌊i/2⌋');
-  await beat(tok, 2800);
+  const fl = note('7 / 2 = 3.5 → ⌊3.5⌋ = 3', S.p(7).x, S.p(7).y + 1.0, 0);
+  say('G 在 7：7 / 2 = 3.5，取 floor 得 3', 'A[3] = C ✓');
+  await step(tok);                                   // 5:18 照層序填，公式自動成立
+  kill(fl); S.off(); F.hl(-1);
+  pal.mood('happy'); await pal.hop(tok);
+  say('不用每次套公式：照層序填就自動成立', 'left = 2i、right = 2i + 1、parent = ⌊i/2⌋');
 }]);
 
-// 05:38 缺節點要留空格
+// 05:38 缺節點要留空格（8 步）
 FRAG.push(['heaphq-array-gaps', '缺少的節點要在陣列留空格', async (tok) => {
   fresh(QCAM, QLOOK);
-  let S = qTree([], { cap: 7, color: () => '#4b9ee2' });
-  for (const [k, v] of ['A', 'B', 'C', 'D', 'E'].entries()) { S.put(k + 1, v, 3); say('A B C D E 一樣層序填', 'A[' + (k + 1) + '] = ' + v); await beat(tok, 550); }
-  say('最後一層不滿也沒關係', '公式照樣成立');
-  await beat(tok, 2200);
+  const pal = guide();
+  await step(tok);                                   // 5:39 另一棵：A B C D E
+  let S = qTree([], { cap: 7, color: LETTER });
+  for (const [k, v] of ['A', 'B', 'C', 'D', 'E'].entries()) { S.put(k + 1, v, 2); await beat(tok, 220); }
+  say('少了幾個節點：A B C D E 一樣層序填', '陣列：A B C D E');
+  await step(tok);                                   // 5:48 公式照樣成立
+  const ok1 = good('公式照樣成立 ✓', 5.0, 6.6, 0);
+  S.hl([2], GOLD); S.hl([4, 5], GREEN);
+  say('檢查 B：孩子在 4、5，正確', '最後一層不滿沒關係');
+  await step(tok);                                   // 5:57 這棵：A B C，D 是 C 的孩子
   fresh(QCAM, QLOOK);
-  S = qTree([], { cap: 7, color: () => '#4b9ee2' });
+  const pal2 = guide();
+  S = qTree([], { cap: 7, color: LETTER });
   for (const [k, v] of ['A', 'B', 'C'].entries()) S.put(k + 1, v);
+  S.node(6, 'D', 2);
   say('這棵：D 是 C 的左孩子', 'B 沒有孩子');
-  await beat(tok, 2200);
-  S.put(4, 'D', 3); S.hl([4], RED);
-  say('直接接著放 D 到 [4]？', '<span class="no">[4] = 2·2：D 變成 B 的左孩子</span>');
-  await beat(tok, 2600);
-  S.off(); S.mv(4, 6);
-  say('D 要放在 [6] = 2·3', 'C 的左孩子');
-  await beat(tok, 1800);
-  qGap(S, [4, 5]);
-  say('B 的兩個孩子位置要留空', 'A B C _ _ D');
-  await beat(tok, 2400);
+  await step(tok);                                   // 6:12 有缺就要留空格
+  const ghosts = [4, 5].map((i) => { const p = S.p(i); return tag('（沒有）', 'idx', p.x, p.y, 0); });
+  pal2.mood('wow');
+  say('層序填時，缺的節點也要佔一格', 'B 的兩個孩子位置：空的');
+  await step(tok);                                   // 6:22 A B C _ _ D
+  const g = S.gaps([4, 5]);
+  S.cell(6, 'D', 1); S.size = 6;
+  say('陣列：A B C _ _ D', 'D 放在 [6]');
+  await step(tok);                                   // 6:36 D 的 parent：6/2 = 3
   S.hl([6], GOLD); S.hl([3], GREEN);
-  say('D 的 parent：⌊6/2⌋ = 3 → C', '有缺的節點就留空格，公式才對');
-  await beat(tok, 2800);
+  pal2.mood('happy');
+  say('D 的 parent：⌊6/2⌋ = 3 → C', '關係正確 ✓');
+  await step(tok);                                   // 6:45 如果把 D 放在 [4]
+  S.off();
+  const wrong = cube('D', '#e8a0a0', [0.65, 0.42, 0.7], S.c(4).x, 1.6, S.c(4).z);
+  await travel(tok, wrong, V3(S.c(6).x, 1.6, S.c(4).z), V3(S.c(4).x, 0.3, S.c(4).z), 700);
+  const ar = arrow(V3(S.p(2).x, S.p(2).y - 0.5, 0), V3(S.p(4).x, S.p(4).y + 0.4, 0), 0xa01010);
+  const nb = bad('[4] = 2·2 → 變成 B 的左孩子 ✗', S.p(4).x + 0.4, S.p(4).y - 0.2, 0);
+  pal2.mood('sad');
+  say('若 D 直接接在 [4]：它就變成 B 的孩子', '<span class="no">關係錯了</span>');
+  await step(tok);                                   // 7:01 結論：有缺就留空
+  fly(wrong); kill(ar); kill(nb); ghosts.forEach(kill);
+  pal2.mood('happy'); await pal2.hop(tok);
+  say('不用公式時：缺的節點留空格，公式才會對', '公式管關係，元素照原樣存');
 }]);
 
-// 07:22 full vs complete
+// 07:22 full vs complete（13 步）
 FRAG.push(['heaphq-full-complete', 'Full Binary Tree 與 Complete Binary Tree', async (tok) => {
   fresh(QCAM, QLOOK);
-  const S = qTree(['A', 'B', 'C', 'D', 'E', 'F', 'G'], { cap: 9, color: () => '#4b9ee2' });
-  for (let d = 0; d < 3; d++) tag('h ' + d, 'idx', -6.3, QLY[d], 0);
-  say('高度 2：節點數已是最多', 'full：2^(h+1) − 1 = 2³ − 1 = 7');
-  await beat(tok, 2800);
-  say('再加一個節點，高度就會變 3', 'full binary tree：沒有空位');
-  await beat(tok, 2200);
-  tag('h 3', 'idx', -6.3, QLY[3], 0);
-  S.put(8, 'H', 3); S.put(9, 'I', 3);
-  say('Complete：陣列中間沒有空格', 'A … I 連續，後面的空位不算');
-  await beat(tok, 2800);
-  S.hl([8], RED);
-  await beat(tok, 600);
-  fly(S.nd[8]); fly(S.cl[8]); kill(S.ed[8]); S.nd[8] = S.cl[8] = S.ed[8] = null;
-  const g = qGap(S, [8]);
-  say('拿掉 H：[8] 變空格', '<span class="no">中間有空 → 不是 complete</span>');
-  await beat(tok, 2800);
-  kill(g[0]); S.mv(9, 8); S.hl([8], GREEN);
+  const pal = guide();
+  let S, lv, gp = [], ex = [];
+  await step(tok);                                   // 7:32 這棵是 full binary tree
+  S = qTree([], { cap: 9, color: LETTER });
+  ABC.forEach((v, k) => S.node(k + 1, v, 2));
+  say('先看 full binary tree', '就是之前那棵 A–G');
+  await step(tok);                                   // 7:42 高度 2，節點數最多
+  lv = S.lvTags(3);
+  say('高度 h = 2：這個高度能放的節點全放滿了', '0、1、2 三層：1 + 2 + 4 = 7 個');
+  await step(tok);                                   // 7:53 再加就會長高
+  const gh = S.p(8), ghost = cube('?', '#e4dccb', [0.8, 0.8, 0.8], gh.x, gh.y, 0, 2);
+  const gn = note('再加一個 → 高度變 3', gh.x + 0.4, gh.y - 0.9, 0);
+  pal.mood('wow');
+  say('想再加一個節點，只能放到新的一層', '高度就會增加 → 沒有空位了');
+  await step(tok);                                   // 8:13 2^(h+1) − 1
+  fly(ghost); kill(gn); pal.mood('calm');
+  const fm = bubble('full：2^(h+1) − 1 = 2³ − 1 = 7', 4.6, 6.8, 0);
+  say('高度 h 的 full tree：2^(h+1) − 1 個節點', 'h = 2 → 7 個');
+  await step(tok);                                   // 8:28 complete：陣列中間沒空格
+  kill(fm);
+  ABC.forEach((v, k) => S.cell(k + 1, v, 1)); S.size = 7;
+  say('complete binary tree：用陣列表示', '第一個到最後一個元素之間，沒有空格');
+  await step(tok);                                   // 8:49 有缺的就不是
+  S.hl([5], RED);
+  await beat(tok, 300);
+  S.drop(5); gp = S.gaps([5]);
+  pal.mood('sad');
+  say('拿掉 E：[5] 變成空格', '<span class="no">中間有空 → 不是 complete</span>');
+  await step(tok);                                   // 9:05 定義：中間不能有空
+  gp.forEach(kill); S.put(5, 'E', 2);
+  pal.mood('happy');
+  say('我的定義：陣列從頭到尾中間不能有空格', '<span class="ok">A B C D E F G：complete</span>');
+  await step(tok);                                   // 9:22 最後一個之後有空沒關係
+  ex = [8, 9].map((i) => good('空 OK', S.c(i).x, 0.95, S.c(i).z));
+  say('最後一個元素「之後」有空位沒關係', '重點是「中間」不能有');
+  await step(tok);                                   // 9:41 full 也是 complete
+  ex.forEach(kill);
+  const fc = good('full ⇒ complete', 4.6, 6.8, 0);
+  say('這棵既是 full 也是 complete', '每個 full binary tree 都是 complete');
+  await step(tok);                                   // 9:46 再加兩個：還是 complete
+  kill(fc);
+  lv.push(tag('h = 3', 'idx', -6.4, QLY[3], 0));
+  S.put(8, 'H', 2); S.put(9, 'I', 2);
+  say('最後一層從左邊開始放 H、I', '<span class="ok">一層層看沒有缺：complete</span>');
+  await step(tok);                                   // 9:59 拿掉一個就不是
+  S.hl([8], RED); await beat(tok, 300);
+  S.drop(8); gp = S.gaps([8]);
+  pal.mood('sad');
+  say('拿掉 H：左邊缺了一個', '<span class="no">中間有空 → 不是 complete</span>');
+  await step(tok);                                   // 10:31 課本定義
+  gp.forEach(kill); S.put(8, 'H', 2);
+  S.hl([1, 2, 3, 4, 5, 6, 7], GREEN); S.hl([8, 9], GOLD);
+  pal.mood('happy');
   say('課本定義：h − 1 層以上是 full', '最後一層由左往右填');
-  await beat(tok, 2800);
+  await step(tok);                                   // 11:19 almost complete
   S.off();
-  say('Full 一定也是 Complete', '（有人把 complete 叫 almost complete）');
-  await beat(tok, 2600);
+  bubble('有人叫它 almost complete', 4.6, 6.8, 0);
+  say('有些作者叫它 almost complete binary tree', '多數課本叫 complete（這裡也是）');
 }]);
 
-// 11:33 判斷 complete 的例子
+// 11:42 判斷 complete 的例子（11 步）
 FRAG.push(['heaphq-complete-check', '判斷是不是 Complete：看陣列有沒有空格', async (tok) => {
   const col = () => '#9b7ef4';
-  fresh(QCAM, QLOOK);
-  let S = qTree([1, 2, 3, 4, 5], { cap: 10, color: col });
-  say('一層一層檢查：有沒有缺的', '從左邊開始，不能跳過');
-  await beat(tok, 2200);
-  say('1、2 個，最後一層從左邊開始', '<span class="ok">complete</span>');
-  await beat(tok, 2800);
-  fresh(QCAM, QLOOK);
-  S = qTree([1, 2, 3, null, null, null, 4], { cap: 10, color: col });
-  say('最後一層只有最右邊一個', '陣列：1 2 3 _ _ _ 4');
-  await beat(tok, 1800);
-  qGap(S, [4, 5, 6]);
-  say('中間空了 3 格', '<span class="no">不是 complete</span>');
-  await beat(tok, 2800);
-  fresh(QCAM, QLOOK);
-  S = qTree([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], { cap: 10, color: col });
-  say('上面三層滿，最後一層靠左', '<span class="ok">complete</span>（之後沒節點不要緊）');
-  await beat(tok, 2800);
-  for (let d = 0; d < 4; d++) tag('h ' + d, 'idx', -6.3, QLY[d], 0);
-  say('一層沒填滿不會往下長', '高度最小：h = ⌊log₂ n⌋ = ⌊log₂ 10⌋ = 3');
-  await beat(tok, 3000);
+  let S, pal, verdict;
+  const show = (vals, cap = 10) => { fresh(QCAM, QLOOK); pal = guide(); S = qTree(vals, { cap, color: col }); };
+  const yes = (t = 'complete') => { pal.mood('happy'); return good(t + ' ✓', 4.6, 6.8, 0); };
+  const no = (t = '不是 complete') => { pal.mood('sad'); return bad(t + ' ✗', 4.6, 6.8, 0); };
+  await step(tok);                                   // 11:42 一層一層檢查
+  show([1, 2, 3, 4, 5]);
+  say('一層一層看：1 個、2 個，最後一層從左邊開始', '陣列：1 2 3 4 5');
+  await step(tok);                                   // 11:56 沒缺 → complete
+  verdict = yes();
+  say('左邊沒有缺：是 complete', '陣列中間沒有空格');
+  await step(tok);                                   // 12:02 再一棵
+  show([1, 2, 3, 4, 5, 6]);
+  verdict = yes();
+  say('最後一層靠左連續：還是 complete', '陣列：1 2 3 4 5 6');
+  await step(tok);                                   // 12:10 缺了左邊兩個
+  show([1, 2, 3, null, null, 6]);
+  S.gaps([4, 5]); verdict = no();
+  say('最後一層：前兩個位置沒有，卻有第三個', '應該先有左邊的才能有右邊的');
+  await step(tok);                                   // 12:27 缺三個
+  show([1, 2, 3, null, null, null, 4]);
+  verdict = no();
+  say('只有最右邊一個：前面缺了三個', '節點要由左到右排');
+  await step(tok);                                   // 12:45 陣列：1 2 3 _ _ _ 4
+  S.gaps([4, 5, 6]);
+  say('寫成陣列：1 2 3 _ _ _ 4', '<span class="no">中間 3 個空格</span>');
+  await step(tok);                                   // 13:00 第三層沒滿就往下長
+  show([1, 2, 3, 4, 5, 6, null, 8]);
+  S.gaps([7]); verdict = no();
+  say('第三層還沒滿，就長到第四層', '[7] 空著 → 不是 complete');
+  await step(tok);                                   // 13:12 第二層就缺
+  show([1, 2, null, 4, 5]);
+  S.gaps([3]); verdict = no();
+  say('第二層就缺了右邊那個', '[3] 空著 → 不是 complete');
+  await step(tok);                                   // 13:17 前面全滿、最後一層靠左
+  show([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  verdict = yes();
+  say('上面三層全滿，最後一層從左邊連續', '之後沒有節點不要緊');
+  await step(tok);                                   // 13:37 高度最小 log n
+  S.lvTags(4);
+  bubble('h = ⌊log₂ 10⌋ = 3', 4.6, 6.0, 0);
+  say('complete binary tree 的高度一定最小', 'h ≈ log n');
+  await step(tok);                                   // 13:54 沒填滿不會往下一層
+  S.hl([8, 9, 10], GOLD);
+  await pal.hop(tok);
+  say('上一層沒填滿，就不會往下一層長', '所以不會多長出無謂的高度');
 }]);
 
-// 14:11 max heap／min heap
+// 14:35 max heap／min heap（9 步）
 FRAG.push(['heaphq-max-min', 'Max Heap 與 Min Heap', async (tok) => {
   fresh(QCAM, QLOOK);
-  const A = qTree(HQ_MAX, { arr: false, w: 6, x0: -3.4, sz: 0.75 });
-  tag('Max Heap', 'ptr alt', -3.4, 7.4, 0);
-  say('Heap 先要是 complete binary tree', 'A = 50, 30, 20, 15, 10, 8, 16');
-  await beat(tok, 2400);
-  A.hl([2], GOLD); A.hl([4, 5], BLUE);
-  say('30 ≥ 15、10', '每個節點 ≥ 所有子孫');
-  await beat(tok, 1800);
-  A.off(); A.hl([3], GOLD); A.hl([6, 7], BLUE);
-  say('20 ≥ 8、16', '可以等於：允許重複');
-  await beat(tok, 1800);
+  const pal = guide(-6.4, 2.6);
+  let A, B;
+  await step(tok);                                   // 14:34 heap 先是 complete binary tree
+  A = qTree(HQ_MAX, { arr: false, w: 6, x0: -3.4, sz: 0.75 });
+  say('Heap 首先必須是 complete binary tree', '50；30、20；15、10、8、16');
+  await step(tok);                                   // 14:39 30、20 比 50 小
+  A.hl([1], GOLD); A.hl([2, 3], BLUE);
+  say('30 和 20 都比 50 小', '');
+  await step(tok);                                   // 14:47 15、10 < 30；8、16 < 20
+  A.off(); A.hl([2, 3], GOLD); A.hl([4, 5, 6, 7], BLUE);
+  say('15、10 比 30 小；8、16 比 20 小', '');
+  await step(tok);                                   // 14:53 每個節點大於所有子孫
   A.off(); A.hl([1], GREEN);
-  say('根是最大值 50', 'max heap');
-  await beat(tok, 2200);
-  const B = qTree([10, 30, 20, 35, 40, 32, 25], { arr: false, w: 6, x0: 3.4, sz: 0.75 });
-  tag('Min Heap', 'ptr', 3.4, 7.4, 0);
+  pal.mood('wow');
+  say('每個節點都比它所有子孫大', '所以根 50 是最大值');
+  await step(tok);                                   // 15:01 這叫 max heap
+  tag('Max Heap', 'ptr alt', -3.4, 7.4, 0);
+  pal.mood('happy');
+  say('這樣排的 heap 叫 max heap', '根 = 最大值');
+  await step(tok);                                   // 15:17 大於或等於：可重複
+  A.off();
+  note('≥：可以相等', -3.4, 1.0, 0);
+  say('條件是「大於或等於」', '所以允許重複的值');
+  await step(tok);                                   // 15:25 另一棵：10；30、20；…
+  B = qTree([10, 30, 20, 35, 40, 32, 25], { arr: false, w: 6, x0: 3.4, sz: 0.75 });
   B.hl([2], GOLD); B.hl([4, 5], BLUE);
-  say('35、40 ≥ 30，也 ≥ 10', '每個節點 ≤ 所有子孫');
-  await beat(tok, 2200);
+  pal.mood('calm');
+  say('另一棵：35、40 比 30 大，也比 10 大', '32、25 比 20 大');
+  await step(tok);                                   // 15:40 根最小 → min heap
   B.off(); B.hl([1], GREEN);
-  say('根是最小值 10', 'min heap');
-  await beat(tok, 2600);
-  say('之後都用 max heap 講', 'min heap 做法相同，方向相反');
-  await beat(tok, 2400);
+  tag('Min Heap', 'ptr', 3.4, 7.4, 0);
+  say('每個節點 ≤ 所有子孫：根是最小值', '這叫 min heap');
+  await step(tok);                                   // 16:05 之後用 max heap 講
+  B.off(); A.hl([1], GOLD);
+  pal.mood('happy'); await pal.hop(tok);
+  say('之後都用 max heap 講', 'min heap 做法一樣，只是方向相反');
 }]);
 
-// 16:18 錯誤的 insert：塞進根
+// 16:21 錯誤的 insert：塞進根（7 步）
 FRAG.push(['heaphq-insert-wrong', '常見錯誤：把 60 直接塞到根', async (tok) => {
   fresh(QCAM, QLOOK);
-  const S = qTree(HQ_MAX, { cap: 15, dx: 0.74 });
-  say('insert 60：60 最大，最後要在根', 'A = 50, 30, 20, 15, 10, 8, 16');
-  await beat(tok, 3000);
-  const p1 = S.p(1), n60 = cube(60, colorFor(60), [0.9, 0.9, 0.9], p1.x + 1.6, 7.6, 0);
-  glow(n60, RED);
-  say('錯誤想法：60 塞進根，其他往下推', '50 → 20 那邊 → 16 再往下');
-  await beat(tok, 2200);
-  S.mv(7, 15); say('16 被擠到 20 底下', '20 再往下推'); await beat(tok, 1200);
-  S.mv(3, 7); say('20 被擠下去', '50 也往右下推'); await beat(tok, 1200);
-  S.mv(1, 3); say('50 讓出根', '60 坐上根'); await beat(tok, 1200);
-  move(n60, p1.x, p1.y, 0); S.nd[1] = n60; S.a[1] = 60; S.cell(1, 60, 1);
-  say('樹往右下長出一條', '16 跑到 [15]');
-  await beat(tok, 2800);
-  qGap(S, [8, 9, 10, 11, 12, 13, 14]);
-  say('陣列 [8]～[14] 全空', '<span class="no">不是 complete，不能這樣插</span>');
-  await beat(tok, 3600);
+  const pal = guide(-6.4, 2.2);
+  let S, n60;
+  await step(tok);                                   // 16:21 在 max heap 裡 insert
+  S = qTree(HQ_MAX, { cap: 15, dx: 0.74 });
+  say('在 max heap 裡 insert 一個新元素', 'A = 50, 30, 20, 15, 10, 8, 16');
+  await step(tok);                                   // 16:32 樹和陣列是同一份資料
+  S.hl([1, 2, 3, 4, 5, 6, 7], GOLD);
+  await beat(tok, 700); S.off();
+  say('上面是樹的畫法，下面是陣列', '中間沒有空格：complete');
+  await step(tok);                                   // 16:54 要插入 60
+  n60 = pkt('60', 4.6, 7.0, 0);
+  pal.mood('wow');
+  say('要插入 60', '');
+  await step(tok);                                   // 17:07 60 最大，最後在根
+  await travel(tok, n60, V3(4.6, 7.0, 0), V3(1.3, 7.0, 0), 800);
+  say('60 比誰都大，最後一定在根', '根放最大值');
+  await step(tok);                                   // 17:19 錯誤想法：塞進根，其他往下推
+  S.mv(7, 15); await beat(tok, 350);
+  S.mv(3, 7); await beat(tok, 350);
+  S.mv(1, 3); await beat(tok, 350);
+  kill(n60);
+  const p1 = S.p(1); S.node(1, 60, 1.5); S.cell(1, 60, 1); S.hl([1], RED);
+  say('錯誤想法：60 塞進根，其他一路往下推', '50 → 20 的位置 → 16 被擠到最底');
+  await step(tok);                                   // 17:40 還是 complete 嗎？
+  S.gaps([8, 9, 10, 11, 12, 13, 14]);
+  pal.mood('sad');
+  say('樹往右下長出一條：[8]～[14] 全空', '<span class="no">不是 complete binary tree</span>');
+  await step(tok);                                   // 17:51 不要從根插入
+  bad('✗ 不能從根插入', 4.6, 6.9, 0);
+  say('所以不能從根插入', '接下來看正確做法');
 }]);
 
-// 18:02 正確的 insert
+// 18:06 正確的 insert（12 步）
 FRAG.push(['heaphq-insert-60', 'insert 60：放最後一格，再往上比', async (tok) => {
   fresh(QCAM, QLOOK);
+  const pal = guide(-6.4, 2.2);
   const S = qTree(HQ_MAX, { cap: 8 });
-  say('正確：放在陣列下一個空位', '[8]：2·4 = 8 → 15 的左孩子');
-  S.put(8, 60, 3);
-  await beat(tok, 2600);
-  S.hl([8], RED);
-  say('還是 complete，但 60 > 15', '<span class="no">違反 max heap</span>');
-  await beat(tok, 2200);
-  await S.up(tok, 8, 950);
-  S.hl([1], GREEN);
-  say('60 到根：比較、交換 3 次', 'A = ' + S.a.slice(1).join(', '));
-  await beat(tok, 2800);
-  say('交換次數 ≤ 高度 = log n', '插入 6 就 0 次：O(1) ～ O(log n)');
-  await beat(tok, 2800);
-  S.off();
-  say('insert：由葉子往根調整', '方向：向上');
-  await beat(tok, 2400);
+  const swaps = tag('交換 0 次', 'ptr', 4.8, 7.2, 0);
+  let k = 0, dir;
+  const swapOnce = async (i, p) => { await S.sw(tok, i, p, 750); k++; txt(swaps, '交換 ' + k + ' 次'); };
+  await step(tok);                                   // 18:06 放在陣列下一個空位
+  const n60 = pkt('60', 4.2, 1.4, S.c(8).z);
+  await travel(tok, n60, V3(4.2, 1.4, S.c(8).z), V3(S.c(8).x, 0.95, S.c(8).z), 700);
+  kill(n60); S.cell(8, 60, 1); S.size = 8;
+  say('正確：60 放在陣列下一個空位 [8]', 'heap 原本到 [7] 為止');
+  await step(tok);                                   // 18:18 在樹上是 15 的左孩子
+  S.node(8, 60, 2);
+  S.hl([4], BLUE); S.hl([8], GOLD);
+  say('[8] 在樹上是誰的孩子？8 = 2·4', '→ 15 的左孩子');
+  await step(tok);                                   // 18:44 違反 max heap
+  S.off(); S.hl([8], RED);
+  pal.mood('wow');
+  say('還是 complete，但 60 是 15 的孩子', '<span class="no">違反 max heap：parent 要 ≥ 孩子</span>');
+  await step(tok);                                   // 19:01 和 parent 比：60 > 15
+  S.off(); S.hl([4], BLUE);
+  await swapOnce(8, 4);
+  say('和 parent 比：60 > 15，往上換', 'parent = ⌊8/2⌋ = 4');
+  await step(tok);                                   // 19:10 60 > 30
+  S.off(); S.hl([2], BLUE);
+  await swapOnce(4, 2);
+  say('再和 parent 比：60 > 30，再換', 'parent = ⌊4/2⌋ = 2');
+  await step(tok);                                   // 19:12 60 > 50
+  S.off(); S.hl([1], BLUE);
+  await swapOnce(2, 1);
+  say('60 > 50，換到根', 'parent = ⌊2/2⌋ = 1');
+  await step(tok);                                   // 19:20 陣列裡的路徑 8 → 4 → 2 → 1
+  S.off(); S.hl([1, 2, 4, 8], GOLD);
+  const path = [8, 4, 2, 1].map((i) => note(String(i), S.c(i).x, 1.05, S.c(i).z));
+  say('在陣列裡看：位置 8 → 4 → 2 → 1', '每次除以 2，就是 parent');
+  await step(tok);                                   // 20:05 到根了
+  path.forEach(kill); S.off(); S.hl([1], GREEN);
+  pal.mood('happy'); await pal.hop(tok);
+  say('60 是最大的，一路爬到根', 'A = 60, 50, 20, 30, 10, 8, 16, 15');
+  await step(tok);                                   // 20:39 時間 = 交換次數
+  S.off(); glow(S.nd[1], null);
+  say('花多少時間？就看交換幾次：3 次', '');
+  await step(tok);                                   // 20:50 取決於高度 log n
+  S.lvTags(4);
+  say('最多換到根：次數 ≤ 樹高 = log n', '<span class="ok">insert：O(log n)</span>');
+  await step(tok);                                   // 21:12 若插入 6 就不用換
+  const n6 = note('若插入的是 6：6 ≤ 15，0 次', S.p(8).x + 1.5, S.p(8).y - 0.9, 0);
+  say('如果插入的是 6：比 parent 小，不用換', '最少 O(1)、最多 O(log n)');
+  await step(tok);                                   // 21:51 方向：由葉子往根
+  kill(n6);
+  dir = arrow(V3(5.6, 1.9, 0), V3(5.6, 6.4, 0), 0x0f5a3a);
+  tag('insert：向上調整', 'good', 5.6, 7.0, 0);
+  say('insert：新元素先當葉子，再往根調整', '方向：向上（leaf → root）');
 }]);
 
-// 22:15 delete：只能刪根
+// 22:22 delete：只能刪根（14 步）
 FRAG.push(['heaphq-delete-50', 'Delete：刪根、最後一個補上、往下調', async (tok) => {
   fresh(QCAM, QLOOK);
-  const S = qTree(HQ_MAX, { cap: 7, sizeTag: true });
+  const pal = guide(-6.4, 2.2);
+  let S, apples = [];
+  await step(tok);                                   // 22:22 7 個元素的 max heap
+  S = qTree(HQ_MAX, { cap: 7, sizeTag: true });
+  say('max heap，7 個元素', 'A = 50, 30, 20, 15, 10, 8, 16');
+  await step(tok);                                   // 22:35 只能刪根
   S.hl([1], GOLD);
-  say('只能刪根：最大的 50', '像蘋果堆，只拿最上面那顆');
-  await beat(tok, 2600);
-  S.off(); S.hl([2, 4], RED);
-  say('錯誤：30 補上去、15 再補上去', '<span class="no">[4] 空掉 → 不是 complete</span>');
-  await beat(tok, 2800);
+  say('只能刪根，不能刪其他元素', '不給選擇：一定刪 A[1]');
+  await step(tok);                                   // 22:55 水果攤的蘋果堆
+  [[0, 0], [-0.55, -0.9], [0.55, -0.9], [-1.1, -1.8], [0, -1.8], [1.1, -1.8]].forEach(([dx, dy], k) => apples.push(icon('🍎', k ? '' : '最好的', 5.4 + dx, 6.6 + dy, 0, 'sm')));
+  pal.mood('happy');
+  say('像水果攤堆成金字塔的蘋果', '最上面的那顆是最好的');
+  await step(tok);                                   // 23:32 只拿最上面那顆
+  await travel(tok, apples[0], V3(5.4, 6.6, 0), V3(6.4, 7.4, 0), 700);
+  say('要拿就拿最上面那顆', 'max heap 的「最好」= 最大值 50');
+  await step(tok);                                   // 24:00 50 刪掉
+  apples.forEach(kill);
+  fly(S.nd[1]); S.nd[1] = null; fly(S.cl[1], V3(0, 6, 5)); S.cl[1] = null; S.a[1] = null;
+  pal.mood('wow');
+  say('刪掉根 50', '根空出來了，誰來補？');
+  await step(tok);                                   // 24:07 錯誤：30 上去、15 上去
+  S.mv(2, 1); await beat(tok, 450);
+  S.mv(4, 2); await beat(tok, 450);
+  S.hl([1, 2], RED);
+  say('常見錯誤：較大的 30 補上，15 再補上 30 的位置', '');
+  await step(tok);                                   // 24:17 不是 complete
+  const g = S.gaps([4]);
+  pal.mood('sad');
+  say('[4] 空掉了', '<span class="no">中間有空 → 不是 complete</span>');
+  await step(tok);                                   // 24:25 正確：最後一個 16 補到根
+  g.forEach(kill); S.off();
+  S.mv(2, 4); S.mv(1, 2); await beat(tok, 500);
+  S.mv(7, 1); S.setSize(6);
+  pal.mood('calm');
+  say('正確：陣列最後一個 16 補到根', '[7] 空出來，仍是 complete');
+  await step(tok);                                   // 25:08 complete 但不是 max heap
+  S.hl([1], RED);
+  say('是 complete，但不是 max heap', '要調整：由根往葉子');
+  await step(tok);                                   // 25:33 比較孩子 30、20，30 上來
+  S.off(); S.hl([1], GOLD); S.hl([2, 3], BLUE);
+  await beat(tok, 500);
+  await S.sw(tok, 1, 2, 750);
+  say('16 的孩子 30、20：較大的 30 上來', 'children = 2·1、2·1 + 1 = 2、3');
+  await step(tok);                                   // 26:26 15、10 都比 16 小
+  S.off(); S.hl([2], GOLD); S.hl([4, 5], BLUE);
+  say('16 的孩子 15、10：較大的 15 也比 16 小', '不用換：停');
+  await step(tok);                                   // 26:56 delete 的步驟
+  S.off(); S.hl([1], GREEN);
+  pal.mood('happy'); await pal.hop(tok);
+  say('刪根 → 最後一個補上 → 往下調', 'A = 30, 16, 20, 15, 10, 8');
+  await step(tok);                                   // 27:17 insert 向上、delete 向下
   S.off();
-  await S.pop(tok, 1000, false);
-  S.hl([1], GREEN);
-  say('又是 max heap：30 在根', 'A = ' + S.a.slice(1, S.size + 1).join(', '));
-  await beat(tok, 2600);
-  S.off();
-  say('delete：由根往葉子調整', '方向：向下，最多 log n 次 → O(log n)');
-  await beat(tok, 2600);
+  arrow(V3(5.6, 6.4, 0), V3(5.6, 1.9, 0), 0x7a1010);
+  tag('delete：向下調整', 'bad', 5.6, 7.0, 0);
+  say('insert 往上調；delete 往下調', '都要調整，只是方向不同');
+  await step(tok);                                   // 27:37 時間取決於高度
+  say('最多從根走到葉子：樹高 log n', '<span class="ok">delete：O(log n)</span>');
 }]);
 
-// 27:51 刪掉的值放進空格
+// 27:56 刪掉的值放進空格（12 步）
 FRAG.push(['heaphq-delete-store', '刪除的值放進空出來的格子 → 排好序', async (tok) => {
   fresh(QCAM, QLOOK);
-  const S = qTree([30, 16, 20, 15, 10, 8], { cap: 7, sizeTag: true });
-  S.cell(7, 50); tint(S.cl[7], GRAY); S.a[7] = 50;
-  say('heap size = 6，[7] 已不屬於 heap', '把刪掉的 50 存在 [7]');
-  await beat(tok, 2800);
-  await S.pop(tok, 900, true);
-  say('8 在 [3]：size = 5，沒有孩子', '2·3 = 6 > 5 → 停');
-  await beat(tok, 2600);
-  say('一直刪：每次拿到剩下最大的', '刪掉的值依序放到尾端');
-  await beat(tok, 1800);
-  for (let k = 0; k < 4; k++) await S.pop(tok, 420, true);
-  for (let i = 1; i <= 7; i++) if (S.cl[i]) tint(S.cl[i], '#2fc092');
-  say('從左讀：由小到大排好了', 'A = ' + S.a.slice(1, 8).join(', ') + '：heap sort 的想法');
-  await beat(tok, 3200);
+  const pal = guide(-6.4, 2.2);
+  let S, n50;
+  await step(tok);                                   // 27:56 每刪一次都拿到最大
+  S = qTree([30, 16, 20, 15, 10, 8], { cap: 7, sizeTag: true });
+  n50 = pkt('50', 5.6, 6.6, 0);
+  say('剛才刪掉的 50：當時最大的', '從 max heap 每刪一次，就拿到剩下最大的');
+  await step(tok);                                   // 28:07 下一個是 30、再來 20
+  S.hl([1], GOLD); S.hl([3], BLUE);
+  say('再刪會拿到 30，接著是 20……', 'max heap：由大到小一個個出來');
+  await step(tok);                                   // 28:46 heap size = 6
+  S.off();
+  pal.mood('wow');
+  say('陣列大小是 7，但 heap 只剩 6 個', 'heap size = 6');
+  await step(tok);                                   // 28:52 [7] 空著，不屬於 heap
+  const nn = note('[7] 空著，不屬於 heap', S.c(7).x - 0.6, 1.2, S.c(7).z);
+  say('[7] 已經不是 heap 的一部分', '空著也沒關係');
+  await step(tok);                                   // 29:06 把 50 放進 [7]
+  kill(nn);
+  await travel(tok, n50, V3(5.6, 6.6, 0), V3(S.c(7).x, 0.9, S.c(7).z), 800);
+  kill(n50); S.cell(7, 50); tint(S.cl[7], GRAY);
+  pal.mood('happy');
+  say('剛刪的 50 就放進空出來的 [7]', '它在 heap 外面，只是借放');
+  await step(tok);                                   // 29:32 再刪：30 刪掉、8 補上
+  pal.mood('calm');
+  await S.popStart(tok, 'park', 700);
+  S.hl([1], RED);
+  say('從 6 個裡再刪：30 出去，最後的 8 補到根', 'heap size = 5');
+  await step(tok);                                   // 29:41 20 上來、8 下去
+  S.off(); S.hl([1], GOLD); S.hl([2, 3], BLUE);
+  await beat(tok, 400);
+  await S.sw(tok, 1, 3, 750);
+  say('孩子 16、20：較大的 20 上來，8 下去', '');
+  await step(tok);                                   // 29:48 8 在 [3] 沒有孩子
+  S.off(); S.hl([3], GOLD);
+  note('2·3 = 6 > 5：沒有孩子', S.p(3).x, S.p(3).y - 1.0, 0);
+  say('8 在 [3]：2·3 = 6 > heap size 5，沒有孩子', '停（影片說和 10 換，其實不用）');
+  await step(tok);                                   // 29:56 30 放進 [6]
+  S.off(); S.store(6);
+  say('30 放進下一個空位 [6]', 'A = 20, 16, 8, 15, 10 ｜ 30, 50');
+  await step(tok);                                   // 30:08 一直刪下去
+  for (let r = 0; r < 4; r++) { const n = S.size; await S.popStart(tok, 'keep', 180); await S.down(tok, 1, n - 1, 170); }
+  say('一直刪：20、16、15、10 依序放到尾端', '每次都放進剛空出來的格子');
+  await step(tok);                                   // 30:28 從左讀就排好
+  for (let i = 1; i <= 7; i++) if (S.cl[i]) { tint(S.cl[i], SORTED); glow(S.cl[i], null); }
+  pal.mood('wow');
+  say('從左邊讀：由小到大排好了', 'A = 8, 10, 15, 16, 20, 30, 50');
+  await step(tok);                                   // 30:37 這就是 heap sort 的想法
+  pal.mood('happy'); await pal.hop(tok);
+  say('這就是 heap sort 的想法', '建 heap，再一直刪、放到尾端');
 }]);
 
-// 30:55 heap sort 第一步：逐一 insert
+// 31:08 heap sort 第一步：逐一 insert（14 步）
 FRAG.push(['heaphq-sort-build', 'Heap Sort 第一步：10 20 15 30 40 逐一 insert', async (tok) => {
   fresh(QCAM, QLOOK);
-  const vals = [10, 20, 15, 30, 40];
-  const S = qTree(vals, { cap: 5, cellsOnly: true, sizeTag: true });
-  say('要排序：10, 20, 15, 30, 40', '第一步：建 heap；第二步：全部 delete');
-  await beat(tok, 2600);
-  for (let k = 1; k <= 5; k++) {
-    S.node(k, S.a[k], 3); S.setSize(k); S.hl([k], GOLD);
-    say(k === 1 ? '10 自己就是 heap' : 'insert ' + S.a[k] + '：放在 [' + k + ']', 'heap size = ' + k);
-    await beat(tok, k === 1 ? 1800 : 1000);
-    await S.up(tok, k, 700);
-  }
+  const pal = guide(-6.4, 2.2);
+  const C = code(['① 建 heap：一個一個 insert', '② 全部 delete'], 4.4, 7.2, 0.5);
+  let S;
+  const add = (k) => { S.node(k, S.a[k], 2); S.setSize(k); S.off(); S.hl([k], GOLD); };
+  await step(tok);                                   // 31:08 兩步驟
+  C.hl(0);
+  say('Heap sort 有兩步', '第一步：把元素一個一個 insert，建成 heap');
+  await step(tok);                                   // 31:15 再全部 delete
+  C.hl(1);
+  say('第二步：把 heap 裡的元素一個一個刪掉', '刪完就排好了');
+  await step(tok);                                   // 31:32 要排的陣列
+  C.hl(0);
+  S = qTree([10, 20, 15, 30, 40], { cap: 5, cellsOnly: true, sizeTag: true });
+  say('要排序的陣列：10, 20, 15, 30, 40', '還沒排好');
+  await step(tok);                                   // 32:00 第一個自己就是 heap
+  add(1);
+  say('第一個元素 10：自己就是 heap', '只有一個，算 max 也算 min');
+  await step(tok);                                   // 32:14 insert 20
+  add(2);
+  say('insert 20：放在下一個空位 [2]', 'heap size = 2');
+  await step(tok);                                   // 32:37 20 > 10，往上換
+  S.hl([1], BLUE); await S.sw(tok, 2, 1, 750); S.off();
+  say('和 parent 比：20 > 10，往上換', 'parent = ⌊2/2⌋ = 1');
+  await step(tok);                                   // 33:09 insert 15
+  add(3);
+  say('insert 15：放在 [3]', 'heap size = 3');
+  await step(tok);                                   // 33:30 15 < 20 不用動
+  S.hl([1], BLUE);
+  say('parent = ⌊3/2⌋ = 1：15 < 20', '不用動');
+  await step(tok);                                   // 33:41 insert 30
+  add(4);
+  say('insert 30：放在 [4]', 'heap size = 4');
+  await step(tok);                                   // 34:01 30 > 10、30 > 20
+  await S.up(tok, 4, 650);
+  pal.mood('wow');
+  say('30 > 10、再 > 20：一路換到根', '4 → 2 → 1');
+  await step(tok);                                   // 34:30 insert 40
+  pal.mood('calm');
+  add(5);
+  say('最後 insert 40：放在 [5]', 'heap size = 5');
+  await step(tok);                                   // 34:52 40 > 20、40 > 30
+  await S.up(tok, 5, 650);
+  say('40 > 20、再 > 30：換到根', '5 → 2 → 1');
+  await step(tok);                                   // 35:20 max heap 完成
   S.hl([1], GREEN);
-  say('max heap 建好了', 'A = ' + S.a.slice(1, 6).join(', '));
-  await beat(tok, 2600);
+  pal.mood('happy'); await pal.hop(tok);
+  say('max heap 建好了', 'A = 40, 30, 15, 10, 20');
+  await step(tok);                                   // 35:39 n log n
   S.off();
-  say('n 個元素，每個最多爬 log n', '建 heap：O(n log n)');
-  await beat(tok, 2600);
+  say('n 個元素，每個最多爬 log n', '建 heap：<span class="ok">O(n log n)</span>');
 }]);
 
-// 36:07 heap sort 第二步：全部 delete
+// 36:23 heap sort 第二步：全部 delete（16 步）
 FRAG.push(['heaphq-sort-delete', 'Heap Sort 第二步：一直 delete，放到空出的位置', async (tok) => {
   fresh(QCAM, QLOOK);
-  const S = qTree([40, 30, 15, 10, 20], { cap: 5, sizeTag: true });
-  say('從剛建好的 max heap 開始', 'A = 40, 30, 15, 10, 20');
-  await beat(tok, 2200);
-  for (let k = 0; k < 4; k++) await S.pop(tok, 650, true);
-  for (let i = 1; i <= 5; i++) if (S.cl[i]) tint(S.cl[i], '#2fc092');
-  say('排好了：10, 15, 20, 30, 40', '每次 delete O(log n)，共 n 次');
-  await beat(tok, 2800);
-  say('n log n（建）+ n log n（刪）', '2n log n = <span class="ok">O(n log n)</span>');
-  await beat(tok, 2800);
+  const pal = guide(-6.4, 2.2);
+  let S;
+  const done = () => { for (let i = 1; i <= 5; i++) if (S.cl[i] && i > S.size) tint(S.cl[i], SORTED); };
+  await step(tok);                                   // 36:23 從剛建好的 heap
+  S = qTree([40, 30, 15, 10, 20], { cap: 5, sizeTag: true });
+  say('第二步：從剛建好的 max heap 開始刪', 'A = 40, 30, 15, 10, 20');
+  await step(tok);                                   // 36:32 刪 40、20 補到根
+  await S.popStart(tok, 'park', 700); S.hl([1], RED);
+  say('刪 40：最後的 20 補到根', 'heap size = 4');
+  await step(tok);                                   // 36:57 30 較大，換上去
+  S.off(); S.hl([1], GOLD); S.hl([2, 3], BLUE); await beat(tok, 400);
+  await S.sw(tok, 1, 2, 750);
+  say('往下調：孩子 30、15，較大的 30 上來', '');
+  await step(tok);                                   // 37:15 和 10 比：不用換
+  S.off(); S.hl([2], GOLD); S.hl([4], BLUE);
+  say('20 再和孩子 10 比：20 較大', '不用換：又是 max heap');
+  await step(tok);                                   // 37:35 40 放到空格
+  S.off(); S.store(5); done();
+  say('40 放進空出來的最後一格 [5]', 'heap：30, 20, 15, 10');
+  await step(tok);                                   // 37:47 刪 30、10 補到根
+  await S.popStart(tok, 'park', 700); S.hl([1], RED);
+  say('刪 30：最後的 10 補到根', 'heap size = 3');
+  await step(tok);                                   // 38:03 20 上來
+  S.off(); S.hl([1], GOLD); S.hl([2, 3], BLUE); await beat(tok, 400);
+  await S.sw(tok, 1, 2, 750); S.off();
+  say('孩子 20、15：20 較大，20 上來', '10 下去');
+  await step(tok);                                   // 38:26 30 放進 [4]
+  S.store(4); done();
+  say('30 放進空出來的 [4]', 'heap：20, 10, 15');
+  await step(tok);                                   // 38:46 刪 20、15 補上
+  await S.popStart(tok, 'park', 700); S.hl([1], RED);
+  say('刪 20：最後的 15 補到根', 'heap size = 2');
+  await step(tok);                                   // 39:04 15 已最大
+  S.off(); S.hl([1], GOLD); S.hl([2], BLUE);
+  say('15 和孩子 10 比：15 較大', '不用換');
+  await step(tok);                                   // 39:25 20 放進 [3]
+  S.off(); S.store(3); done();
+  say('20 放進 [3]', '已經有 40、30、20 在後面');
+  await step(tok);                                   // 39:44 刪 15、10 補上
+  await S.popStart(tok, 'park', 700);
+  say('刪 15：10 補到根', '只剩一個：不用調');
+  await step(tok);                                   // 40:04 15 放進 [2]，排好了
+  S.store(2); S.setSize(1); tint(S.cl[1], SORTED); done();
+  pal.mood('happy'); await pal.hop(tok);
+  say('15 放進 [2]：排好了！', 'A = 10, 15, 20, 30, 40');
+  await step(tok);                                   // 40:53 建 heap n log n
+  bubble('建 heap：n log n', 4.6, 7.0, 0);
+  say('分析：建 heap 是 n log n', 'n 次 insert，每次 log n');
+  await step(tok);                                   // 41:03 刪除 n log n
+  bubble('全部刪除：n log n', 4.6, 6.3, 0);
+  say('刪除也是：n 次，每次 log n', 'n log n');
+  await step(tok);                                   // 41:12 總共 2n log n
+  good('2n log n = O(n log n)', 4.6, 5.6, 0);
+  say('加起來 2n log n', 'heap sort：<span class="ok">O(n log n)</span>');
 }]);
 
-// 41:35 heapify
+// 41:43 heapify（16 步）
 FRAG.push(['heaphq-heapify', 'Heapify：由右往左掃，往下調整', async (tok) => {
   fresh(QCAM, QLOOK);
-  const S = qTree([10, 20, 15, 12, 40, 25, 18], { cap: 7 });
-  say('complete，但不是 max heap', 'A = 10, 20, 15, 12, 40, 25, 18');
-  await beat(tok, 2400);
-  say('從最後一個往前掃（由右往左）', '每個元素往下調整（像 delete 那樣）');
-  await beat(tok, 2200);
-  for (let i = 7; i >= 4; i--) { S.hl([i], GREEN); say(S.a[i] + ' 沒有孩子：自己就是 heap', 'i = ' + i); await beat(tok, 700); }
-  S.off();
-  for (let i = 3; i >= 1; i--) {
-    S.hl([i], GOLD);
-    say('i = ' + i + '：' + S.a[i] + ' 往下看', '它底下的子樹都已是 heap');
-    await beat(tok, 1200);
-    await S.down(tok, i, 7, 800);
-  }
+  const pal = guide(-6.4, 2.2);
+  let S, hint, ar;
+  const sc = (i) => S.c(i);
+  await step(tok);                                   // 41:43 heapify 也是建 heap
+  hint = bubble('Heapify：另一種建 heap 的方法', 0, 7.2, 0);
+  say('Heapify：也是建 heap 的方法', '和剛才哪裡不同？');
+  await step(tok);                                   // 41:50 剛才：葉子往根
+  ar = arrow(V3(5.6, 1.9, 0), V3(5.6, 6.4, 0), 0x0f5a3a);
+  const up = tag('剛才：insert 往上調', 'good', 5.6, 7.0, 0);
+  say('剛才建 heap：每次插在葉子，往根調整', '方向：向上');
+  await step(tok);                                   // 42:34 這個陣列
+  kill(hint); kill(ar); kill(up);
+  S = qTree([10, 20, 15, 12, 40, 25, 18], { cap: 7 });
+  pal.mood('wow');
+  say('這個陣列：是 complete，但不是 max heap', 'A = 10, 20, 15, 12, 40, 25, 18');
+  await step(tok);                                   // 42:50 剛才是由左往右 insert
+  pal.mood('calm');
+  ar = arrow(V3(sc(1).x, 1.2, sc(1).z), V3(sc(7).x, 1.2, sc(7).z), 0x5c4a33);
+  say('剛才的做法：由左往右，一個一個 insert', '');
+  await step(tok);                                   // 43:16 改成由右往左
+  kill(ar);
+  ar = arrow(V3(sc(7).x, 1.2, sc(7).z), V3(sc(1).x, 1.2, sc(1).z), 0xa8730f);
+  say('換個方向：由右往左掃', '');
+  await step(tok);                                   // 43:25 往下調（像 delete）
+  const dn = tag('每個元素往下調（像 delete）', 'bad', 0, 7.2, 0);
+  say('每個元素往「下」調整', '用的是 delete 時的方法');
+  await step(tok);                                   // 43:40 18：沒有孩子
+  kill(ar); kill(dn);
+  S.hl([7], GREEN);
+  say('從最後一個 18 開始：往下看，沒有孩子', '自己就是 heap');
+  await step(tok);                                   // 43:55 25、40：也是
+  S.hl([6, 5], GREEN);
+  say('25、40：也沒有孩子', '都是 heap');
+  await step(tok);                                   // 44:09 12
+  S.hl([4], GREEN);
+  say('12：沒有孩子', '葉子都不用動');
+  await step(tok);                                   // 44:17 15：25 較大，25 上去
+  S.off(); S.hl([3], GOLD); S.hl([6, 7], BLUE); await beat(tok, 400);
+  await S.sw(tok, 3, 6, 750); S.off();
+  say('15：孩子 25、18，較大的 25 上去，15 下來', '這一小塊 25, 15, 18 是 heap');
+  await step(tok);                                   // 44:53 20：40 較大
+  S.hl([2], GOLD); S.hl([4, 5], BLUE); await beat(tok, 400);
+  await S.sw(tok, 2, 5, 750); S.off();
+  say('20：孩子 12、40，較大的 40 上去', '20 下來');
+  await step(tok);                                   // 45:18 10：和 40 換
+  S.hl([1], GOLD); S.hl([2, 3], BLUE); await beat(tok, 400);
+  await S.sw(tok, 1, 2, 750); S.off();
+  say('最後是 10：孩子 40、25，40 上去', '10 到了 [2]');
+  await step(tok);                                   // 45:29 再和 20 換
+  S.hl([2], GOLD); S.hl([4, 5], BLUE); await beat(tok, 400);
+  await S.sw(tok, 2, 5, 750); S.off();
+  say('10 再看孩子 12、20：20 上去', '10 到了 [5]');
+  await step(tok);                                   // 45:44 完成
   S.hl([1], GREEN);
-  say('max heap 完成', 'A = ' + S.a.slice(1, 8).join(', '));
-  await beat(tok, 2600);
+  pal.mood('happy'); await pal.hop(tok);
+  say('完成：由右往左、每個往下調', 'A = 40, 20, 25, 12, 10, 15, 18');
+  await step(tok);                                   // 46:11 heapify O(n)
   S.off();
-  say('heapify：O(n)', '逐一 insert 建 heap：O(n log n) → heapify 較快');
-  await beat(tok, 2800);
+  good('heapify：O(n)', 4.6, 7.0, 0);
+  say('heapify 的時間：O(n)', '');
+  await step(tok);                                   // 46:28 比 n log n 快
+  bubble('逐一 insert：O(n log n)', 4.6, 6.3, 0);
+  say('逐一 insert 建 heap 要 O(n log n)', 'heapify 比較快');
 }]);
 
-// 46:51 priority queue
+// 47:02 priority queue（8 步）
 const HQ_PQ = [8, 6, 3, 10, 9];
 const pqX = (i) => (i - 2) * 1.9;
 FRAG.push(['heaphq-pq-priority', 'Priority Queue：數字本身就是 priority', async (tok) => {
   fresh([0, 6, 12], [0, 0.8, 0]);
-  const bs = HQ_PQ.map((v, i) => cube(v, colorFor(v), [1.2, 0.9, 1.2], pqX(i), 0.45, 0, 4));
-  say('Queue 是 FIFO；priority queue 不是', '刪除時拿 priority 最高的');
-  await beat(tok, 2600);
-  say('這裡數字本身就是 priority', '8 的 priority 是 8，3 的是 3');
-  await beat(tok, 2400);
+  let bs = [], tags = [];
+  await step(tok);                                   // 47:02 queue 是 FIFO
+  bs = HQ_PQ.map((v, i) => buddy('', v, colorFor(v), pqX(i), 0, 0, 0.9));
+  const door = tag('出口 →', 'ptr', 5.6, 0.6, 0);
+  say('一般 queue：先來先出（FIFO）', '排隊：排在最前面的先出去');
+  await step(tok);                                   // 47:07 priority queue 不是
+  kill(door);
+  bs.forEach((b) => b.mood('wow'));
+  say('priority queue 不照先來後到', '依 priority 插入、刪除');
+  await step(tok);                                   // 47:19 刪 priority 最高的
+  bs.forEach((b) => b.mood('calm'));
+  say('刪除時，一定拿 priority 最高的', '');
+  await step(tok);                                   // 47:36 數字本身就是 priority
+  tags = HQ_PQ.map((v, i) => tag('priority ' + v, 'idx', pqX(i), 1.6, 0));
+  say('這裡：數字本身就是 priority', '8 的 priority 是 8，3 的是 3');
+  await step(tok);                                   // 47:47 和 OS 的不同
+  const os = note('（和作業系統的 priority queue 不同）', 0, 3.0, 0);
+  say('作業系統也有 priority queue，但概念不同', '這裡的用在演算法');
+  await step(tok);                                   // 48:09 小的優先
+  kill(os); tags.forEach(kill); tags = [];
   const ord = [...HQ_PQ.keys()].sort((a, b) => HQ_PQ[a] - HQ_PQ[b]);
-  const tags = [];
+  ord.slice(0, 3).forEach((i, k) => tags.push(tag('#' + (k + 1), 'pkt', pqX(i), 1.9, 0)));
+  bs[ord[0]].mood('happy'); await bs[ord[0]].hop(tok);
   say('規則一：數字越小，priority 越高', '先刪 3，再 6，再 8');
-  for (let k = 0; k < 3; k++) { glow(bs[ord[k]], GOLD); tags.push(tag('#' + (k + 1), 'ptr', pqX(ord[k]), 1.6, 0)); await beat(tok, 900); }
-  await beat(tok, 1400);
-  tags.forEach(kill); bs.forEach((b) => glow(b, null)); tags.length = 0;
+  await step(tok);                                   // 48:28 大的優先
+  tags.forEach(kill); tags = []; bs[ord[0]].mood('calm');
+  ord.slice(2).reverse().forEach((i, k) => tags.push(tag('#' + (k + 1), 'pkt', pqX(i), 1.9, 0)));
+  bs[ord[4]].mood('happy'); await bs[ord[4]].hop(tok);
   say('規則二：數字越大，priority 越高', '先刪 10，再 9，再 8');
-  for (let k = 0; k < 3; k++) { const i = ord[4 - k]; glow(bs[i], BLUE); tags.push(tag('#' + (k + 1), 'ptr alt', pqX(i), 1.6, 0)); await beat(tok, 900); }
-  await beat(tok, 1400);
-  say('兩種規則都可以，事先說好', '小的優先 → min heap；大的優先 → max heap');
-  await beat(tok, 3000);
+  await step(tok);                                   // 48:42 兩種都可以
+  tags.forEach(kill);
+  bubble('小的優先 或 大的優先：先說好', 0, 3.0, 0);
+  say('兩種給 priority 的方法', '小的優先、或大的優先');
 }]);
 
+// 48:56 用陣列 vs heap（8 步）
 FRAG.push(['heaphq-pq-array-vs-heap', 'Priority Queue：用陣列 vs 用 Heap', async (tok) => {
   fresh([0, 6, 12], [0, 0.8, 0]);
   const xs = (i) => (i - 2.5) * 1.7;
-  const bs = HQ_PQ.map((v, i) => cube(v, colorFor(v), [1.2, 0.9, 1.2], xs(i), 0.45, 0));
-  say('用一般陣列：小的優先', 'A = 8, 6, 3, 10, 9');
-  await beat(tok, 2200);
-  const nx = cube('x', '#d8cfc0', [1.2, 0.9, 1.2], xs(5), 0.45, 0, 4);
-  say('insert：直接放尾端', '<span class="ok">O(1)</span>');
-  await beat(tok, 2200);
+  let bs, nx, S;
+  await step(tok);                                   // 48:56 陣列 insert 放尾端
+  bs = HQ_PQ.map((v, i) => cube(v, colorFor(v), [1.2, 0.9, 1.2], xs(i), 0.45, 0));
+  nx = cube(7, colorFor(7), [1.2, 0.9, 1.2], xs(5), 0.45, 0, 4);
+  say('用一般陣列：insert 直接放尾端', '<span class="ok">很快</span>');
+  await step(tok);                                   // 49:01 要刪 3
   glow(bs[2], RED);
-  say('delete：要先找到 3', '最高 priority 可能在任何位置');
-  await beat(tok, 1800);
+  say('delete（小的優先）：要拿 3', '先找到它');
+  await step(tok);                                   // 49:11 後面都要往前移
   fly(bs[2]);
   [bs[3], bs[4], nx].forEach((b, k) => move(b, xs(2 + k), 0.45, 0));
-  say('刪掉後後面全部往前移', '<span class="no">O(n)</span>');
-  await beat(tok, 2600);
-  say('改成保持排序？換 insert 要 O(n)', '總有一個操作是 O(n)');
-  await beat(tok, 2600);
-  fresh(QCAM, QLOOK);
-  const S = qTree([3, 6, 8, 10, 9], { cap: 5, min: true, sizeTag: true });
-  say('改用 min heap（同一組數字）', 'A = 3, 6, 8, 10, 9');
-  await beat(tok, 2400);
-  await S.pop(tok, 750, false);
-  say('insert、delete 都只走一條路徑', '<span class="ok">O(log n)</span>');
-  await beat(tok, 2600);
-  say('heap 最適合實作 priority queue', '小的優先用 min heap，大的優先用 max heap');
-  await beat(tok, 2800);
+  await beat(tok, 600);
+  say('刪掉 3 之後，後面全部往前移', '<span class="no">O(n)</span>');
+  await step(tok);                                   // 49:29 保持排序也一樣
+  bad('保持排序？insert 就要 O(n)', 0, 2.6, 0);
+  say('改成一直保持排序？換 insert 要 O(n)', '總有一個操作是 O(n)');
+  await step(tok);                                   // 49:41 用 heap：log n
+  fresh([0, 6, 15.5], [0, 3.3, 1]);
+  S = qTree([3, 6, 8, 10, 9], { cap: 6, min: true, sizeTag: true });
+  say('更好的方法：heap', 'insert、delete 都是 <span class="ok">O(log n)</span>');
+  await step(tok);                                   // 49:52 小的優先用 min heap
+  tag('Min Heap', 'ptr', 0, 7.2, 0);
+  S.hl([1], GREEN);
+  say('小的優先 → min heap；大的優先 → max heap', '同一組數字建成 min heap');
+  await step(tok);                                   // 50:07 insert／delete 都 log n
+  S.off();
+  await S.pop(tok, 'fly', 450);
+  say('刪 3：只沿一條路往下調', 'insert 也只走一條路：O(log n)');
+  await step(tok);                                   // 50:30 heap 最適合
+  S.hl([1], GREEN);
+  good('heap：實作 priority queue 最好的資料結構', 0, 7.2, 1.2);
+  say('陣列總有一個操作 O(n)；heap 兩個都 log n', '最適合實作 priority queue');
 }]);
   }
 

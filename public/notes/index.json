@@ -537,7 +537,7 @@
   "label": "MIT 6.006 L4：Heaps and Heap Sort",
   "points": 85,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "BaM7OCEm3G0": {
   "label": "3Blue1Brown：Cross products as linear transformations",
@@ -807,7 +807,7 @@
   "label": "Abdul Bari：Heap Sort",
   "points": 107,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "HtSuA80QTyo": {
   "label": "MIT 6.006 L1：Algorithmic Thinking, Peak Finding",
