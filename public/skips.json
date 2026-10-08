@@ -1,0 +1,6 @@
+{
+  "_note": "Segments that are certainly not lesson content (admin, livestream countdown, chit-chat), checked against the transcript by hand. The study room offers a skip button here; it never skips by itself. [from_sec, to_sec, reason]",
+  "d-PDYIqg_Kc": [[0, 77, "課程公告：改成錄影、提問管道"], [2140, 2166, "錄影收尾"]],
+  "G3H-L-K9kM4": [[0, 491, "選課說明與課程警告"], [700, 2243, "課程行政：聯絡方式、助教、評分、抄襲規定、遲交、課本"]],
+  "8IOv2fnc01E": [[0, 923, "直播倒數與測試聲音"], [2544, 2584, "暫停收問題"], [5060, 5130, "閒聊"], [6075, 6317, "課後問答：課程安排、投影片"]]
+}

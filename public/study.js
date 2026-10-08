@@ -325,6 +325,7 @@
     if (!playerReady || !current || typeof player.getCurrentTime !== 'function') return;
     const t = player.getCurrentTime();
     showSub(t);
+    showSkip(t);
     if (stageReady) $('stage').contentWindow.postMessage({type: 'time', t: t}, location.origin);
   }, 200);
   function seek(t){
@@ -370,6 +371,23 @@
     if (k >= 0) el.innerHTML = subs[k][3]
       ? '<span class="st-sub-zh">' + esc(subs[k][3]) + '</span><span class="st-sub-en">' + esc(subs[k][2]) + '</span>'
       : '<span class="st-sub-zh">' + esc(subs[k][2]) + '</span>';
+  }
+
+  // ── Skip offer: segments checked by hand to be admin / chit-chat only
+  // (public/skips.json). A button appears; it never skips by itself. ──
+  let skips = {};
+  fetch('/skips.json').then(function(r){ return r.ok ? r.json() : {}; }).then(function(j){ skips = j || {}; }).catch(function(){});
+  function showSkip(t){
+    const b = $('skipBtn');
+    const r = current && (skips[current.id] || []).find(function(x){ return t >= x[0] && t < x[1] - 3; });
+    if (!r) { if (!b.hidden) b.hidden = true; return; }
+    const key = current.id + r[0];
+    if (b.dataset.k !== key) {
+      b.dataset.k = key;
+      b.innerHTML = '<span>這段是「' + esc(r[2]) + '」，跟考試內容無關</span><b>跳到 ' + fmt(r[1]) + ' ›</b>';
+      b.onclick = function(){ seek(r[1]); b.hidden = true; };
+    }
+    b.hidden = false;
   }
 
   // ── 講解: the animation step being shown, explained from the basics ──

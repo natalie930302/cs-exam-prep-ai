@@ -344,3 +344,12 @@ a { color: inherit; }
 .st-goal-auto { display: flex; align-items: center; gap: 10px; padding: 7px 8px; font-size: 14px; }
 .st-goal-auto.done { color: var(--mt); }
 .st-goal-auto.done .st-box { background: var(--grn); border-color: var(--grn); color: #fff; }
+/* skip offer over the video: only for hand-checked admin / chat segments */
+.st-skip { position: absolute; right: 12px; bottom: 56px; z-index: 3; display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
+  border: 0; border-radius: 12px; padding: 8px 14px; background: rgba(255,253,248,.95); color: var(--tx); font: inherit; cursor: pointer;
+  box-shadow: 0 10px 24px -12px rgba(0,0,0,.5); text-align: right; animation: skip-in .35s var(--ease); }
+.st-skip[hidden] { display: none; }
+.st-skip span { font-size: 12px; color: var(--mt2); }
+.st-skip b { font-size: 14.5px; color: color-mix(in srgb, var(--subj) 80%, var(--tx)); }
+.st-skip:hover b { text-decoration: underline; }
+@keyframes skip-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
