@@ -1,7 +1,7 @@
 {
  "video": "HlFsexTpM4Q",
  "label": "Dijkstra Algorithm",
- "timing": "estimated",
+ "timing": "exact",
  "sections": [
   {
    "title": "問題：s 到每個頂點的最短路徑",

@@ -1,7 +1,7 @@
 {
  "video": "7h1s2SojIRw",
  "label": "Abdul Bari：Quick Sort",
- "timing": "estimated",
+ "timing": "exact",
  "sections": [
   {
    "title": "Quick sort 的想法：學生自己找位置",

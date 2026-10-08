@@ -1,7 +1,7 @@
 {
  "video": "4ZlRH0eK-qQ",
  "label": "Abdul Bari：Prims and Kruskals Algorithms",
- "timing": "estimated",
+ "timing": "exact",
  "sections": [
   {
    "title": "Spanning tree 的定義",

@@ -1,7 +1,7 @@
 {
  "video": "9bkvws_vqLU",
  "label": "MIT 6.006 Rec7：Comparison/Counting/Radix Sort",
- "timing": "estimated",
+ "timing": "exact",
  "sections": [
   {
    "title": "開場（OCW 授權說明）",
