@@ -2260,6 +2260,488 @@ FRAG.push(['heaplin-pq-tradeoff', 'Priority Queue 的 trade-off：heap vs linked
   await beat(tok, 3000);
 }]);
   }
+
+  // ═══ heapur.js ═══
+  {
+// ─── 4tSdhWBVv6A：Priority Queue, Binary Heap（Lec 24a，Urdu/Hindi） ───
+// 只用 K 與 ctx。陣列 1-based（講者：root 放 index 1，不放 0）。
+// 第一棵（非 complete）heap 的形狀依講者唸到的數字 3、7、12、9、15、33、19、32、58、99、88、31、36 重建；
+// complete heap 的例子（12、15、17、32、36）同樣依可辨識的數字重建，其他數值為示意。
+const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, line, GOLD, GREEN, RED, GRAY } = K;
+const say = ctx.say, beat = ctx.beat, colorFor = ctx.colorFor;
+const BLUE = '#1f3a6e';
+const UY = [7.0, 5.6, 4.2, 2.8, 1.4];
+const UCAM = [0, 5.2, 16], ULOOK = [0, 3.6, 1];
+const ulv = (i) => Math.floor(Math.log2(i));
+const pLess = (a, b) => (a[0] !== b[0] ? a[0] < b[0] : a[1] < b[1]);
+const pShow = (p) => '(' + p[0] + ',' + p[1] + ')';
+const PCOL = ['#c94a3a', '#2fc092', '#4b9ee2', '#e0a030', '#8a63c9', '#3fb6b0', '#d0688f'];
+
+function uHeap(vals, o = {}) {
+  const W = o.w || 12, min = o.min !== false, arr = !!o.arr, cap = o.cap || vals.length;
+  const less = o.less || ((a, b) => a < b);
+  const better = (a, b) => (min ? less(a, b) : less(b, a));
+  const show = o.show || ((v) => String(v));
+  const col = (v) => (o.color ? o.color(v) : colorFor(v));
+  const sz = o.sz || 0.8, dx = o.dx || 1.05, cz = 3.4;
+  const S = { a: [null], nd: [null], cl: [null], ed: [null], size: 0, better, show, min };
+  S.p = (i) => { const d = ulv(i), c = 1 << d; return V3(((i - c + 0.5) / c - 0.5) * W, UY[d], 0); };
+  S.c = (i) => V3((i - (cap + 1) / 2) * dx, 0.3, cz);
+  if (arr) for (let i = 1; i <= cap; i++) { const c = S.c(i); ctx.tile(V3(c.x, 0.02, c.z), dx * 0.92, 0.9); tag('[' + i + ']', 'idx', c.x, 0.05, c.z + 0.75); }
+  S.node = (i, v, drop = 0) => {
+    S.a[i] = v; const p = S.p(i);
+    if (i > 1 && !S.ed[i]) { const q = S.p(i >> 1); S.ed[i] = line(q.x, q.y, p.x, p.y); }
+    S.nd[i] = cube(show(v), col(v), [sz, sz, sz], p.x, p.y, 0, drop);
+  };
+  S.cell = (i, v, drop = 0) => { if (!arr) return; const c = S.c(i); S.cl[i] = cube(show(v), col(v), [dx * 0.8, 0.42, 0.7], c.x, c.y, c.z, drop ? 2 : 0); };
+  S.put = (i, v, drop = 0) => { S.node(i, v, drop); S.cell(i, v, drop); S.size = Math.max(S.size, i); };
+  vals.forEach((v, k) => { if (v !== null && v !== undefined) S.put(k + 1, v); });
+  S.has = (i) => i < S.a.length && S.a[i] !== null && S.a[i] !== undefined;
+  S.hl = (list, c) => list.forEach((i) => { if (S.nd[i]) glow(S.nd[i], c); if (S.cl[i]) glow(S.cl[i], c); });
+  S.off = () => { for (let i = 1; i < S.nd.length; i++) { if (S.nd[i]) glow(S.nd[i], null); if (S.cl[i]) glow(S.cl[i], null); } };
+  S.sw = async (tok, i, j, ms = 800) => {
+    const pi = S.p(i), pj = S.p(j);
+    if (S.nd[i]) move(S.nd[i], pj.x, pj.y, 0); if (S.nd[j]) move(S.nd[j], pi.x, pi.y, 0);
+    if (S.cl[i] && S.cl[j]) { const ci = S.c(i), cj = S.c(j); move(S.cl[i], cj.x, cj.y, cj.z); move(S.cl[j], ci.x, ci.y, ci.z); }
+    [S.nd[i], S.nd[j]] = [S.nd[j], S.nd[i]]; [S.cl[i], S.cl[j]] = [S.cl[j], S.cl[i]]; [S.a[i], S.a[j]] = [S.a[j], S.a[i]];
+    await beat(tok, ms);
+  };
+  // 位置 i 的元素搬到空位 j
+  S.mv = (i, j) => {
+    const p = S.p(j);
+    if (S.nd[i]) move(S.nd[i], p.x, p.y, 0);
+    if (S.cl[i]) { const c = S.c(j); move(S.cl[i], c.x, c.y, c.z); }
+    S.nd[j] = S.nd[i]; S.cl[j] = S.cl[i]; S.a[j] = S.a[i]; S.nd[i] = null; S.cl[i] = null; S.a[i] = null;
+    if (S.ed[i]) { kill(S.ed[i]); S.ed[i] = null; }
+    if (j > 1 && !S.ed[j]) { const q = S.p(j >> 1); S.ed[j] = line(q.x, q.y, p.x, p.y); }
+  };
+  const LT = min ? '<' : '>', GE = min ? '≥' : '≤', BIG = min ? '小' : '大';
+  S.up = async (tok, i, ms = 900) => {
+    let n = 0;
+    while (i > 1) {
+      const p = i >> 1; S.off(); S.hl([i], GOLD); S.hl([p], BLUE);
+      if (!better(S.a[i], S.a[p])) { say(show(S.a[i]) + ' ' + GE + ' ' + show(S.a[p]) + '：停住', 'parent = ⌊' + i + '/2⌋ = ' + p); await beat(tok, ms); break; }
+      say(show(S.a[i]) + ' ' + LT + ' ' + show(S.a[p]) + '：往上換', 'parent = ⌊' + i + '/2⌋ = ' + p);
+      await beat(tok, ms * 0.6);
+      await S.sw(tok, i, p, ms); i = p; n++;
+    }
+    S.off(); return n;
+  };
+  S.down = async (tok, i, ms = 900) => {
+    let n = 0;
+    while (S.has(2 * i)) {
+      const l = 2 * i, r = l + 1, two = S.has(r); let c = l; if (two && better(S.a[r], S.a[l])) c = r;
+      S.off(); S.hl([i], GOLD); S.hl(two ? [l, r] : [l], BLUE);
+      say('孩子' + (two ? '中較' + BIG + '的' : '') + '是 ' + show(S.a[c]), 'left = 2·' + i + ' = ' + l + (two ? '，right = ' + r : ''));
+      await beat(tok, ms);
+      if (!better(S.a[c], S.a[i])) { say(show(S.a[i]) + ' 已經比孩子' + BIG + '：停', '停在 [' + i + ']'); await beat(tok, ms); break; }
+      say(show(S.a[c]) + ' 往上、' + show(S.a[i]) + ' 往下', 'A[' + i + '] ↔ A[' + c + ']');
+      await S.sw(tok, i, c, ms); i = c; n++;
+    }
+    S.off(); return n;
+  };
+  // 非 complete 的舊做法：拿走 root，較小的孩子一路補上來（洞留在底部）
+  S.promote = async (tok, ms = 900) => {
+    S.off(); S.hl([1], RED);
+    say('pop：拿走 root ' + show(S.a[1]), 'top 只看、pop 要移除');
+    await beat(tok, ms);
+    fly(S.nd[1]); S.nd[1] = null; S.a[1] = null;
+    let i = 1;
+    while (S.has(2 * i) || S.has(2 * i + 1)) {
+      const l = 2 * i, r = l + 1; let c;
+      if (S.has(l) && S.has(r)) c = better(S.a[r], S.a[l]) ? r : l; else c = S.has(l) ? l : r;
+      S.off(); S.hl([l, r].filter(S.has), BLUE); S.hl([c], GOLD);
+      say((S.has(l) && S.has(r) ? '兩個孩子較小的 ' : '只剩一個孩子 ') + show(S.a[c]), show(S.a[c]) + ' 往上補空位');
+      await beat(tok, ms * 0.8);
+      S.mv(c, i); await beat(tok, ms); i = c;
+    }
+    S.off(); return i;
+  };
+  // complete heap 的 pop：最後一個搬到 root，再往下沉
+  S.cpop = async (tok, ms = 900) => {
+    const n = S.size, top = S.a[1];
+    S.off(); S.hl([1], RED);
+    say('pop：移除 root ' + show(top), 'A[1]');
+    await beat(tok, ms);
+    fly(S.nd[1]); S.nd[1] = null; if (S.cl[1]) { fly(S.cl[1], V3(0, 6, 5)); S.cl[1] = null; } S.a[1] = null;
+    if (n > 1) {
+      S.hl([n], GOLD);
+      say('最後一個 ' + show(S.a[n]) + ' 搬到 root', 'A[1] ← A[' + n + ']，size = ' + (n - 1));
+      await beat(tok, ms * 0.6);
+      S.mv(n, 1); if (S.ed[n]) { kill(S.ed[n]); S.ed[n] = null; }
+      await beat(tok, ms);
+    }
+    S.size = n - 1;
+    await S.down(tok, 1, ms);
+    return top;
+  };
+  return S;
+}
+
+// 第一棵 heap（非 complete）：index → 值
+const UR_T1 = [];
+[[1, 3], [2, 7], [3, 12], [4, 9], [5, 99], [6, 15], [7, 31], [8, 33], [9, 19], [12, 32], [13, 58], [14, 88], [18, 36]].forEach(([i, v]) => { UR_T1[i - 1] = v; });
+const UR_C0 = [12, 17, 32, 36, 33, 52, 58];          // complete heap（push 15 之前）
+const UR_C1 = [12, 15, 32, 17, 33, 52, 58, 36];      // push 15 之後
+const UR_P0 = [[2, 0], [2, 1], [2, 3], [2, 4], [2, 2], [2, 5], [2, 6]];
+const urSet = (S) => S.a.filter((v) => v !== null && v !== undefined);
+
+// 00:47 回顧：明確順序 → 加限制 → search tree
+FRAG.push(['heapur-recap', '回顧：array/list → stack/queue → search tree', async (tok) => {
+  fresh([0, 4, 14], [0, 2.4, 0]);
+  const vals = [10, 20, 30, 40, 50];
+  const cs = vals.map((v, k) => cube(v, colorFor(v), [0.9, 0.9, 0.9], -5 + k * 1.1, 0.45, 0, 3));
+  tag('array / list', 'ptr', -2.8, 1.6, 0);
+  say('array、list：明確的線性順序', 'explicit linear ordering');
+  await beat(tok, 2800);
+  cs.forEach((c, k) => move(c, -5, 0.45 + k * 0.95, 0));
+  tag('top', 'ptr alt', -3.6, 4.4, 0);
+  say('stack：只能從 top push／pop', '加上限制，實作還是 array/list');
+  await beat(tok, 3000);
+  const bst = [[30, 2.5, 5.0], [20, 1.2, 3.4], [40, 3.8, 3.4], [10, 0.4, 1.8], [50, 4.6, 1.8]];
+  const ns = [];
+  bst.forEach(([v, x, y], k) => { ns.push(cube(v, colorFor(v), [0.8, 0.8, 0.8], x, y, 0, 2)); });
+  line(2.5, 5.0, 1.2, 3.4); line(2.5, 5.0, 3.8, 3.4); line(1.2, 3.4, 0.4, 1.8); line(3.8, 3.4, 4.6, 1.8);
+  say('tree：順序是隱含的（看走訪）', 'implicit ordering');
+  await beat(tok, 2800);
+  [0, 1, 3].forEach((k) => glow(ns[k], GOLD));
+  say('search tree：操作 O(log n)', 'find-min 要往左走到底');
+  await beat(tok, 3000);
+  [0, 1, 3].forEach((k) => glow(ns[k], null)); glow(ns[3], GREEN);
+  say('想要：拿最高 priority 只要 O(1)', '→ priority queue');
+  await beat(tok, 3000);
+}]);
+
+// 03:20 priority queue：不是先來先服務
+FRAG.push(['heapur-pq-line', 'Priority Queue：數字越小越優先', async (tok) => {
+  fresh([0, 3.5, 12], [0, 1.2, 0]);
+  const q = [];
+  const pr = [2, 3, 1, 3];
+  for (let k = 0; k < pr.length; k++) { q.push({ p: pr[k], m: cube('P' + pr[k], colorFor(pr[k]), [0.9, 0.9, 0.9], -3 + k * 1.2, 0.45, 0, 3) }); await beat(tok, 450); }
+  tag('front', 'ptr', -3, 1.6, 0);
+  say('一般 queue：先來先服務', 'FIFO');
+  await beat(tok, 2600);
+  say('慣例：0 最高，數字越大越低', 'higher number → lower priority');
+  await beat(tok, 2800);
+  const amb = cube('P0', RED, [0.9, 0.9, 0.9], 4.5, 0.45, 0, 3);
+  say('救護車 P0 來了', 'push(P0)');
+  await beat(tok, 2000);
+  q.sort((a, b) => a.p - b.p);
+  q.unshift({ p: 0, m: amb });
+  q.forEach((e, k) => move(e.m, -3 + k * 1.2, 0.45, 0));
+  say('照 priority 插入，不是排到最後', '依 priority 排：P0 P1 P2 P3 P3');
+  await beat(tok, 3000);
+  glow(amb, GOLD);
+  say('top／pop：priority 最高的先出', 'pop → P0');
+  await beat(tok, 1600);
+  fly(amb); q.shift();
+  q.forEach((e, k) => move(e.m, -3 + k * 1.2, 0.45, 0));
+  await beat(tok, 1600);
+  say('下一個是 P1', 'top = P1');
+  glow(q[0].m, GOLD);
+  await beat(tok, 2600);
+}]);
+
+// 06:39 ordered pair：先比第一個，相同再比第二個
+FRAG.push(['heapur-pairs', '多層 priority：(5,19) (13,1) (13,24) (15,0)', async (tok) => {
+  fresh([0, 3.5, 12], [0, 1.2, 0]);
+  const P = [[5, 19], [13, 1], [13, 24], [15, 0]];
+  const ms = P.map((p, k) => cube(pShow(p), PCOL[k], [1.6, 0.9, 0.9], -4.2 + k * 2.8, 0.45, 0, 3));
+  say('每個元素是一對數字', '(第一層, 第二層)');
+  await beat(tok, 2600);
+  const cmp = async (i, j, cap, f) => { ms.forEach((m) => glow(m, null)); glow(ms[i], GOLD); glow(ms[j], BLUE); say(cap, f); await beat(tok, 3000); };
+  await cmp(0, 1, '先比第一個：5 < 13', '(5,19) 優先，19 不用看');
+  await cmp(1, 2, '第一個相同：13 = 13', '再比第二個：1 < 24');
+  await cmp(2, 3, '13 < 15 就決定了', '(13,24) 比 (15,0) 優先');
+  ms.forEach((m) => glow(m, null));
+  ms.forEach((m, k) => { tag('#' + (k + 1), 'idx', -4.2 + k * 2.8, 1.3, 0); });
+  say('小的數字＝高 priority', '可以一直加更多層');
+  await beat(tok, 3000);
+}]);
+
+// 08:38 OS：系統工作 vs 使用者工作，單核 time slicing
+FRAG.push(['heapur-cpu-sched', '單核 CPU：高 priority 的工作先做', async (tok) => {
+  fresh([0, 4, 13], [0, 1.6, 0]);
+  const cpu = cube('CPU', '#6e5f49', [1.8, 1.4, 1.4], 4, 0.7, 0);
+  tag('single core', 'idx', 4, 1.8, 0);
+  const mouse = cube('mouse', '#4b9ee2', [1.5, 0.8, 0.9], -2, 0.4, 0, 3);
+  tag('P2', 'idx', -2, 1.1, 0);
+  say('滑鼠點擊：使用者工作', 'priority 2');
+  await beat(tok, 2400);
+  const clock = cube('clock', RED, [1.5, 0.8, 0.9], -4.5, 0.4, 0, 3);
+  tag('P0', 'idx', -4.5, 1.1, 0);
+  say('系統時鐘要更新：priority 較高', 'priority 0');
+  await beat(tok, 2600);
+  glow(clock, GOLD);
+  move(clock, 4, 1.9, 0);
+  say('CPU 先處理 clock', '你的工作被往後推');
+  await beat(tok, 2800);
+  fly(clock); glow(clock, null);
+  move(mouse, 4, 1.9, 0);
+  say('一次只能做一件：time slicing', '切得很快，看起來像同時');
+  await beat(tok, 2800);
+  glow(cpu, GREEN);
+  say('誰先做 → priority queue', 'scheduling');
+  await beat(tok, 2600);
+}]);
+
+// 11:04 多個 queue：每個 priority 一條
+FRAG.push(['heapur-mqueues', 'M 個 priority → M 條 queue', async (tok) => {
+  fresh([0, 4.5, 13], [0, 2, 0]);
+  const names = ['< 10', '10–20', '20–30', '> 30'];
+  const ys = [4.2, 3.0, 1.8, 0.6];
+  const qs = [[], [], [], []];
+  names.forEach((nm, k) => { cube('[' + k + ']', GRAY, [0.8, 0.8, 0.8], -5, ys[k], 0); tag(nm, 'idx', -6.2, ys[k], 0); });
+  say('array of pointers：一個 priority 一條 queue', 'M = 4');
+  await beat(tok, 2800);
+  const push = async (k, v, cap) => { const x = -3.5 + qs[k].length * 1.1; const m = cube(v, colorFor(qs[k].length + k), [0.8, 0.8, 0.8], x, ys[k], 0, 3); qs[k].push(m); say(cap, 'push 到第 ' + k + ' 條的尾端：Θ(1)'); await beat(tok, 1500); };
+  await push(1, 'A', '10–20 歲的人依序來');
+  await push(1, 'B', '10–20 歲的人依序來');
+  await push(1, 'C', '10–20 歲的人依序來');
+  await push(2, 'D', '20–30 歲的進第 2 條');
+  await push(0, 'E', '後來一個 10 歲以下的');
+  say('pop：從最高的 queue 開始找', '第 0 條非空 → 先出 E');
+  glow(qs[0][0], GOLD);
+  await beat(tok, 2600);
+  fly(qs[0].shift());
+  await beat(tok, 1200);
+  say('第 0 條空了 → 換下一條', '最差要看 M 條：O(M)');
+  glow(qs[1][0], GOLD);
+  await beat(tok, 2600);
+  fly(qs[1].shift()); qs[1].forEach((m, i) => move(m, -3.5 + i * 1.1, ys[1], 0));
+  await beat(tok, 1200);
+  say('記憶體 Θ(M + n)', 'priority 的範圍要事先固定');
+  await beat(tok, 3000);
+}]);
+
+// 14:37 binary min-heap 的定義
+FRAG.push(['heapur-minheap-def', 'Binary min-heap：root 比左右子樹都小', async (tok) => {
+  fresh(UCAM, ULOOK);
+  const S = uHeap([], { sz: 0.7 });
+  for (let d = 0; d < 5; d++) { UR_T1.forEach((v, k) => { if (v !== undefined && ulv(k + 1) === d) S.put(k + 1, v, 2); }); await beat(tok, 500); }
+  say('min-heap：root ≤ 左右子樹的每個 key', '左右子樹本身也是 min-heap');
+  await beat(tok, 3000);
+  const chk = [[1, [2, 3]], [2, [4, 5]], [3, [6, 7]], [4, [8, 9]], [6, [12, 13]]];
+  for (const [p, cs] of chk) {
+    S.off(); S.hl([p], GOLD); S.hl(cs, GREEN);
+    say(S.a[p] + ' 比 ' + cs.map((c) => S.a[c]).join('、') + ' 都小', 'parent < children');
+    await beat(tok, 1500);
+  }
+  S.off(); S.hl([8, 9, 12, 13], BLUE);
+  say('同一層 33、19、32、58：沒有關係', '只有跨層（上下）才有大小');
+  await beat(tok, 3200);
+  S.off(); S.hl([4, 5], BLUE);
+  say('左右也沒有順序：9 在左、99 在右', '不是 search tree');
+  await beat(tok, 2800);
+  S.off(); S.hl([1], GREEN);
+  say('最小的 3 永遠在 root', '最高 priority 在最上面');
+  await beat(tok, 3000);
+}]);
+
+// 24:55 top 與 pop（舊做法：孩子一路補上來）
+FRAG.push(['heapur-pop-hole', 'top O(1)；pop：較小的孩子一層層補上', async (tok) => {
+  fresh(UCAM, ULOOK);
+  const S = uHeap(UR_T1, { sz: 0.7 });
+  S.hl([1], GOLD);
+  say('top：root 就是最小，直接看', 'O(1)，跟 size 無關');
+  await beat(tok, 3000);
+  await S.promote(tok, 1100);
+  S.off();
+  say('一層一層：誰小誰上去', '路徑 7 → 9 → 19 → 36');
+  await beat(tok, 2600);
+  say('空出來的位置在最底下', '樹的形狀不受控制');
+  await beat(tok, 2800);
+}]);
+
+// 29:28 push 17：放在葉子，往上浮
+FRAG.push(['heapur-push-17', 'push 17：放在葉子，往上浮', async (tok) => {
+  fresh(UCAM, ULOOK);
+  const S = uHeap(UR_T1, { sz: 0.7 });
+  say('push：先放在一個葉子', '這裡放在 88 底下');
+  await beat(tok, 2400);
+  S.put(28, 17, 3); S.hl([28], GOLD);
+  await beat(tok, 1600);
+  await S.up(tok, 28, 1100);
+  S.hl([7], GREEN);
+  say('17 ≥ 12：停在 12 底下', '經過 88、31，停在 12');
+  await beat(tok, 2800);
+  S.off();
+  say('percolate up：輕的往上浮', '重的往下沉');
+  await beat(tok, 2600);
+}]);
+
+// 31:03 一直 pop 會讓樹變歪 → 改用 complete tree
+FRAG.push(['heapur-why-complete', '樹會變歪 → 改用 complete tree', async (tok) => {
+  fresh(UCAM, ULOOK);
+  let S = uHeap(UR_T1, { sz: 0.7 });
+  say('連續 pop：洞都留在底部', '高度不再是 log n');
+  await beat(tok, 2000);
+  await S.promote(tok, 500);
+  await S.promote(tok, 500);
+  S.off();
+  say('一邊滿、一邊空：不平衡', 'balance 被破壞');
+  await beat(tok, 3000);
+  fresh(UCAM, ULOOK);
+  S = uHeap([], { sz: 0.7 });
+  for (let i = 1; i <= 10; i++) { S.put(i, i, 2); await beat(tok, 350); }
+  say('complete tree：上到下、左到右填', '第 n 個一定在位置 n');
+  await beat(tok, 3000);
+  S.hl([11], GOLD);
+  const p = S.p(11); const g = tag('下一個', 'ptr alt', p.x, p.y, 0);
+  say('下一個位置唯一確定', '高度 = ⌊log₂ n⌋');
+  await beat(tok, 3000);
+  kill(g);
+}]);
+
+// 33:32 complete heap 的 push：最後一格 → 往上
+FRAG.push(['heapur-cpush-15', 'complete heap 的 push 15', async (tok) => {
+  fresh(UCAM, ULOOK);
+  const S = uHeap(UR_C0, { arr: true, cap: 8 });
+  say('complete min-heap，存在陣列裡', 'size = 7');
+  await beat(tok, 2600);
+  say('push 15：只能放下一格', '位置 size + 1 = 8');
+  await beat(tok, 2000);
+  S.put(8, 15, 3); S.hl([8], GOLD);
+  await beat(tok, 1600);
+  await S.up(tok, 8, 1100);
+  S.hl([2], GREEN);
+  say('15 停在 [2]，17 被換下來', '仍是 complete，沒有洞');
+  await beat(tok, 3000);
+}]);
+
+// 34:36 complete heap 的 pop：最後一個上 root，往下沉（params.a 換例子）
+FRAG.push(['heapur-cpop', 'complete heap 的 pop：最後一個搬到 root', async (tok) => {
+  const a = (ctx.params || {}).a || UR_C1;
+  fresh(UCAM, ULOOK);
+  const S = uHeap(a, { arr: true, cap: Math.max(8, a.length) });
+  say('不能讓孩子直接補：會留洞', '要保持 complete');
+  await beat(tok, 2800);
+  await S.cpop(tok, 1100);
+  say('最小 ' + S.a[1] + ' 回到 root，沒有洞', '陣列：' + urSet(S).join(', '));
+  await beat(tok, 3200);
+}]);
+
+// 39:23 同層沒有順序；跟 search tree 比 find-min
+FRAG.push(['heapur-floors-cost', '每層像樓層；find-min：heap O(1) vs BST O(log n)', async (tok) => {
+  fresh(UCAM, ULOOK);
+  const S = uHeap([15, 17, 32, 36, 33, 52, 58], { w: 9 });
+  ['頂樓（最小）', '第 2 層', '第 3 層'].forEach((t, d) => tag(t, 'idx', -6, UY[d], 0));
+  S.hl([4, 5, 6, 7], BLUE);
+  say('同一層：36 在 33 左邊也可以', '層內沒有大小順序');
+  await beat(tok, 3200);
+  S.off(); S.hl([1], GOLD); S.hl([2, 3], GREEN);
+  say('只保證：上層 ≤ 下層', '常見錯誤：以為同層有順序');
+  await beat(tok, 3000);
+  fresh(UCAM, ULOOK);
+  const B = uHeap([33, 17, 52, 15, 32, 36, 58], { w: 9 });
+  tag('BST / AVL', 'ptr', -5.5, 7.2, 0);
+  say('同樣 7 個數放進 BST/AVL', 'min 在最左邊');
+  await beat(tok, 2400);
+  for (const i of [1, 2, 4]) { B.off(); B.hl([i], GOLD); say('往左走：' + B.a[i], 'find-min = O(log n)'); await beat(tok, 1200); }
+  B.off(); B.hl([4], GREEN);
+  say('heap：min 就在 root', 'top = O(1)');
+  await beat(tok, 3000);
+}]);
+
+// 46:13 陣列表示：root 在 1，left 2i，right 2i+1
+FRAG.push(['heapur-array-index', '陣列存 heap：left 2i、right 2i+1、parent ⌊i/2⌋', async (tok) => {
+  fresh(UCAM, ULOOK);
+  const S = uHeap(UR_C0, { arr: true, cap: 7 });
+  S.hl([1], GOLD);
+  say('complete 才能直接放陣列', 'root 放 [1]，不用 [0]');
+  await beat(tok, 3000);
+  S.off(); S.hl([1], GOLD); S.hl([2], GREEN);
+  say('left child 在 2i', 'i = 1 → [2] = 17');
+  await beat(tok, 2600);
+  S.off(); S.hl([1], GOLD); S.hl([3], GREEN);
+  say('right child 在 2i + 1', 'i = 1 → [3] = 32');
+  await beat(tok, 2600);
+  S.off(); S.hl([3], GOLD); S.hl([6, 7], GREEN);
+  say('i = 3 的孩子：[6]、[7]', '52、58');
+  await beat(tok, 2600);
+  S.off(); S.hl([7], GOLD); S.hl([3], BLUE);
+  say('parent：i 是奇數也一樣', '⌊7/2⌋ = 3（整數除法）');
+  await beat(tok, 2800);
+  S.off(); S.hl([6], GOLD); S.hl([3], BLUE);
+  say('i 是偶數', '6/2 = 3');
+  await beat(tok, 2400);
+  S.off();
+  say('空格不能用 0 當記號', '0 自己也可能是一個值');
+  await beat(tok, 3000);
+}]);
+
+// 52:33 成本曲線：理想常數、log n、線性
+FRAG.push(['heapur-cost-curves', '成本：常數 vs log n vs 線性', async (tok) => {
+  fresh([0, 3.5, 13], [0, 2.8, 0]);
+  line(-5.5, 0.3, 5.5, 0.3, 0, '#6e5f49'); line(-5.5, 0.3, -5.5, 6.2, 0, '#6e5f49');
+  tag('n', 'idx', 5.8, 0.3, 0); tag('cost', 'idx', -5.5, 6.6, 0);
+  const X = (t) => -5.5 + t * 11, N = 40;
+  const draw = async (f, color, lbl, cap, form) => {
+    let px = X(0), py = f(0);
+    for (let k = 1; k <= N; k++) { const t = k / N, y = f(t); line(px, py, X(t), y, 0, color); px = X(t); py = y; if (k % 8 === 0) await beat(tok, 120); }
+    tag(lbl, 'ptr', 5.4, py + 0.3, 0); say(cap, form); await beat(tok, 2600);
+  };
+  await draw(() => 0.8, '#b8b0a0', 'Θ(1)', '理想：常數時間（top）', 'Θ(1)');
+  await draw((t) => 0.8 + Math.log2(1 + t * 63) * 0.55, '#4b9ee2', 'Θ(log n)', 'push／pop：Θ(log n)', '最多走一個高度');
+  await draw((t) => 0.8 + t * 5.2, RED, 'Θ(n)', '線性：例如沒排序的 list', 'Θ(n)');
+  say('heap：top 常數，push/pop log n', 'log n 幾乎跟常數一樣平');
+  await beat(tok, 3000);
+}]);
+
+// 52:51 max-heap：條件反過來
+FRAG.push(['heapur-maxheap', 'Max-heap：最大的在最上面', async (tok) => {
+  fresh(UCAM, ULOOK);
+  const S = uHeap([58, 36, 52, 17, 33, 32, 15], { min: false });
+  say('max-heap：parent ≥ children', '把 < 改成 >');
+  await beat(tok, 2800);
+  for (const [p, cs] of [[1, [2, 3]], [2, [4, 5]], [3, [6, 7]]]) {
+    S.off(); S.hl([p], GOLD); S.hl(cs, GREEN);
+    say(S.a[p] + ' ≥ ' + cs.map((c) => S.a[c]).join('、'), 'parent ≥ children');
+    await beat(tok, 1600);
+  }
+  S.off();
+  await S.cpop(tok, 1000);
+  say('演算法完全一樣，只是比較反過來', 'root = 最大');
+  await beat(tok, 3000);
+}]);
+
+// 54:03 第二層 priority：(2,0)…(2,6) 一個一個 pop（params.pre = 先 pop 幾個，params.n = 演幾個）
+FRAG.push(['heapur-pairs-heap', '(2,x) 的 min-heap：一個個 pop', async (tok) => {
+  const prm = ctx.params || {}, pre = prm.pre || 0, cnt = prm.n || 2;
+  const h = UR_P0.map((p) => p.slice());
+  const popPlain = () => { const last = h.pop(); if (!h.length) return; h[0] = last; let i = 0; for (;;) { const l = 2 * i + 1, r = l + 1; let c = l; if (l >= h.length) break; if (r < h.length && pLess(h[r], h[l])) c = r; if (!pLess(h[c], h[i])) break; [h[c], h[i]] = [h[i], h[c]]; i = c; } };
+  for (let k = 0; k < pre; k++) popPlain();
+  fresh(UCAM, ULOOK);
+  const S = uHeap(h, { arr: true, cap: 7, less: pLess, show: pShow, color: (p) => PCOL[p[1] % 7], sz: 1.0, dx: 1.3 });
+  say(pre ? '已經 pop 掉 ' + pre + ' 個' : '第一層都是 2：比第二層', 'root = ' + pShow(h[0]) + ' 最優先');
+  await beat(tok, 2800);
+  for (let k = 0; k < cnt && S.size > 0; k++) await S.cpop(tok, 1000);
+  say('每一步的選擇都是唯一的', 'root = ' + pShow(S.a[1]));
+  await beat(tok, 3000);
+}]);
+
+// 63:05 push 平均 O(1)、最差 O(log n)；pop 幾乎都沉到底
+FRAG.push(['heapur-push-worst', 'push 最好 O(1)、最差 O(log n)', async (tok) => {
+  fresh(UCAM, ULOOK);
+  const S = uHeap([12, 15, 32, 17, 33, 52, 58], { arr: true, cap: 9 });
+  say('push 60：比 parent 大', '比一次就停：O(1)');
+  S.put(8, 60, 3);
+  await beat(tok, 1600);
+  await S.up(tok, 8, 900);
+  say('大部分新元素都偏大', '平均 push ≈ O(1)');
+  await beat(tok, 2600);
+  say('push 5：比誰都小', '一路浮到 root');
+  S.put(9, 5, 3);
+  await beat(tok, 1600);
+  const n = await S.up(tok, 9, 900);
+  S.hl([1], GOLD);
+  say('換了 ' + n + ' 次 = 高度', '最差 O(log n)');
+  await beat(tok, 3000);
+  S.off();
+  say('pop：最後一個通常很大', '幾乎沉到底：Θ(log n)');
+  await beat(tok, 3000);
+}]);
+  }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
 

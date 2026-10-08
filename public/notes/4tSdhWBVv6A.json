@@ -1,0 +1,722 @@
+{
+ "video": "4tSdhWBVv6A",
+ "label": "Priority Queue, Binary Heap",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場：收尾上週的內容",
+   "scene": null,
+   "points": [
+    {
+     "text": "老師說上週還有一兩個部分沒講完，今天先補完再進新主題。",
+     "t": 0
+    },
+    {
+     "text": "今天的安排：複習 queue、看 priority queue 為什麼需要、幾種實作方式，最後講 heap。",
+     "t": 10
+    }
+   ]
+  },
+  {
+   "title": "回顧：明確順序 → 加限制 → search tree",
+   "scene": "heapur-recap",
+   "points": [
+    {
+     "text": "array 和 list 有明確的線性順序（explicit linear ordering）。",
+     "t": 59
+    },
+    {
+     "text": "stack／queue 底層還是 array 或 list，只是加上限制：stack 只能從 top push、pop。",
+     "t": 84
+    },
+    {
+     "text": "違反這些限制，就等於不再把它當成那個 data structure 使用。",
+     "t": 88
+    },
+    {
+     "text": "tree 的順序是隱含的（implicit），要看用哪一種 traversal 走。",
+     "t": 121
+    },
+    {
+     "text": "search tree 的操作是 O(log n)。",
+     "t": 151
+    },
+    {
+     "text": "現在想在 search tree 上再加限制：整體效能維持 log n，但某些操作（拿最高 priority）變成常數時間。",
+     "t": 166
+    }
+   ]
+  },
+  {
+   "title": "Priority Queue：不是先來先服務",
+   "scene": "heapur-pq-line",
+   "points": [
+    {
+     "text": "排隊時有人插隊、救護車要先過：現實生活裡有些東西就是要先處理。",
+     "t": 204
+    },
+    {
+     "text": "做法是幫每個元素加上一個 priority（權重）。",
+     "t": 272
+    },
+    {
+     "text": "常見慣例：用數字表示，0 最高、1 次之、2 再低……也可以反過來，看你怎麼設計。",
+     "t": 332
+    },
+    {
+     "text": "這裡採用「數字越大，priority 越低」（higher the number, lower the priority）。",
+     "t": 341
+    },
+    {
+     "text": "Priority queue 的 top 不是最早進來的，而是 priority 最高的。",
+     "t": 356
+    },
+    {
+     "text": "插入時也照 priority 放，不是排到最後面。",
+     "t": 366
+    }
+   ],
+   "trap": "補充：「數字越小越優先」只是這堂課的慣例；考題要看題目定義的是 min 還是 max priority。"
+  },
+  {
+   "title": "多層 priority：ordered pair",
+   "scene": "heapur-pairs",
+   "points": [
+    {
+     "text": "投影片例子：(5,19)、(13,1)、(13,24)、(15,0) 這種成對的 priority。",
+     "t": 399
+    },
+    {
+     "text": "可以把第一個數想成人的編號，第二個是他的 priority（例如年長者中再把生病的人調得更優先）。",
+     "t": 414
+    },
+    {
+     "text": "原則：數字越小 priority 越高；先比第一個，相同時才比第二個，可以一直加更多層。",
+     "t": 451
+    }
+   ],
+   "trap": "補充：這就是字典序（lexicographic）比較，(13,24) 排在 (15,0) 前面，因為第一個數已經分出勝負，不會再看第二個數。06:54 前後那句的例子聽不清楚，這段只留可辨識的內容。"
+  },
+  {
+   "title": "應用：作業系統的工作排程",
+   "scene": "heapur-cpu-sched",
+   "points": [
+    {
+     "text": "系統工作的 priority 比較高，例如更新系統時鐘，會優先於回應滑鼠點擊。",
+     "t": 526
+    },
+    {
+     "text": "需要 priority，是因為處理器數量有限，簡化成只有一個 single-core processor。",
+     "t": 539
+    },
+    {
+     "text": "看起來很多事同時在跑，其實是 time slicing：一段時間給一個工作，切得很快。",
+     "t": 559
+    },
+    {
+     "text": "比較重要的系統工作可以把你的工作往後推，例如開始選單會晚一點出現。",
+     "t": 589
+    }
+   ]
+  },
+  {
+   "title": "實作一：每個 priority 一條 queue",
+   "scene": "heapur-mqueues",
+   "points": [
+    {
+     "text": "如果 priority 只有固定幾級（例如 4 級），就開 4 條 queue。",
+     "t": 668
+    },
+    {
+     "text": "例子是按年齡分：小於 10、10–20、20–30、30 以上，各一條 queue。",
+     "t": 704
+    },
+    {
+     "text": "同一級裡照到達順序排隊，就像班上的同學依序進來。",
+     "t": 734
+    },
+    {
+     "text": "pop 時先從最高的那條拿；它空了才換下一級。",
+     "t": 764
+    },
+    {
+     "text": "M 個 priority 就開一個存 M 個 queue 指標的 array（array of pointers）。",
+     "t": 794
+    },
+    {
+     "text": "push 是 Θ(1)；top／pop 最差要找過 M 條 queue，是 O(M)。",
+     "t": 833
+    },
+    {
+     "text": "記憶體是 Θ(M + n)，而且 priority 的範圍必須事先固定。",
+     "t": 846
+    }
+   ],
+   "trap": "這種做法只適合 priority 種類少且固定的情況；priority 如果是任意數字，就要用 heap。"
+  },
+  {
+   "title": "Binary min-heap 的定義",
+   "scene": "heapur-minheap-def",
+   "points": [
+    {
+     "text": "另一種做法是 heap：拿出最高 priority 的元素只要常數時間。",
+     "t": 877
+    },
+    {
+     "text": "heap 有很多種，這門課只講 binary heap。",
+     "t": 892
+    },
+    {
+     "text": "定義：root 的 key 小於左右子樹裡的所有 key，而且左右子樹本身也遞迴地是 min-heap。",
+     "t": 1081
+    },
+    {
+     "text": "只有一個 node 也是 heap。",
+     "t": 1119
+    },
+    {
+     "text": "除此之外沒有任何其他關係，這是最常搞錯的地方。",
+     "t": 1127
+    },
+    {
+     "text": "例子：3 比 7、12 小；7、9 都比自己的兩個孩子小；12 比 15 小。",
+     "t": 1175
+    },
+    {
+     "text": "同一層的 33、19、32、58 之間沒有大小關係，大小關係只存在上下層之間。",
+     "t": 1198
+    },
+    {
+     "text": "min-heap 的 root 一定是最小值，也就是 priority 最高的元素。",
+     "t": 1213
+    }
+   ],
+   "trap": "heap 不是 binary search tree：左右孩子沒有規定誰大誰小。15:33–17:38 錄音很亂，這段只整理可辨識的定義。動畫中的樹形依講者唸到的數字（3、7、12、9、15、33、19、32、58、99、88、31、36）重建，不保證跟投影片完全一樣。"
+  },
+  {
+   "title": "題外話：作業系統在做什麼",
+   "scene": null,
+   "points": [
+    {
+     "text": "作業系統負責 memory management，而最主要的工作是 scheduling，也就是決定工作的優先順序。",
+     "t": 1266
+    },
+    {
+     "text": "用功能型手機和智慧型手機、智慧電視（Android、Tizen、webOS）比較：有作業系統才能自由安裝和移除 app。",
+     "t": 1396
+    },
+    {
+     "text": "老師建議有機會修作業系統和計算機結構。",
+     "t": 1480
+    }
+   ]
+  },
+  {
+   "title": "top 與 pop：孩子一層層補上",
+   "scene": "heapur-pop-hole",
+   "points": [
+    {
+     "text": "top：最小的 3 就在 root，不管 size 多大都是常數時間。",
+     "t": 1533
+    },
+    {
+     "text": "top 只是查看，pop 要把它移除。",
+     "t": 1533
+    },
+    {
+     "text": "3 被拿走後，兩個孩子中較小的 7 往上補，接著 9 補上 7 的位置。",
+     "t": 1572
+    },
+    {
+     "text": "規則很簡單：看空位底下兩個孩子，比較小的往上。",
+     "t": 1611
+    },
+    {
+     "text": "再往下，兩個孩子 33、19 中較小的是 19，所以 19 往上。",
+     "t": 1651
+    },
+    {
+     "text": "就像一層一層往上跳（老師比喻成 Mario），每次只看相鄰兩層。",
+     "t": 1678
+    }
+   ],
+   "trap": "這種做法的空位會留在樹的某個底部位置，樹的形狀會越來越歪；後面就是用 complete tree 來解決這個問題。"
+  },
+  {
+   "title": "push：放在葉子，往上浮",
+   "scene": "heapur-push-17",
+   "points": [
+    {
+     "text": "push 的方式：先放在一個葉子（leaf），再往上調整。",
+     "t": 1787
+    },
+    {
+     "text": "例子：插入 17。",
+     "t": 1790
+    },
+    {
+     "text": "17 比 parent 小就往上換，經過 31 之後，因為不比 12 小，就停在 12 底下。",
+     "t": 1817
+    },
+    {
+     "text": "這叫 percolation：輕的往上浮，重的往下沉。",
+     "t": 1849
+    }
+   ],
+   "trap": "17 一開始放在哪個葉子（動畫放在 88 底下）沒聽清楚，只能確定它經過 31，最後停在 12 底下。"
+  },
+  {
+   "title": "問題：樹會變歪 → 改用 complete tree",
+   "scene": "heapur-why-complete",
+   "points": [
+    {
+     "text": "heap 有很多種實作方式；剛才那種做法會讓 balance 變差。",
+     "t": 1863
+    },
+    {
+     "text": "結果會變成一棵子樹是 perfect，另一棵不是。",
+     "t": 1936
+    },
+    {
+     "text": "改把同一個 heap 存成 complete tree，高度就會維持在 log n。",
+     "t": 1952
+    },
+    {
+     "text": "這也符合 AVL 對高度的要求，但要記得它不是 search tree。",
+     "t": 1982
+    }
+   ],
+   "trap": "31:11–32:16 有一段錄音完全聽不清，這段只整理能聽懂的部分。"
+  },
+  {
+   "title": "complete heap 的 push",
+   "scene": "heapur-cpush-15",
+   "points": [
+    {
+     "text": "complete tree 由左到右填，所以下一個要插入的位置是唯一的。",
+     "t": 2012
+    },
+    {
+     "text": "新元素比 parent 小就往上換；遇到比它小的 parent 就停，push 完成。",
+     "t": 2044
+    }
+   ],
+   "trap": "這段的錄音和投影片數字很難對上：可確定的是 12 在 root、17 和 32 在第二層，push 前後 15、17 的位置有互換（48:02 提到）。動畫用 push 15 示範，其餘數值是示意。"
+  },
+  {
+   "title": "complete heap 的 pop：最後一個搬到 root",
+   "scene": "heapur-cpop",
+   "points": [
+    {
+     "text": "舊做法讓孩子直接往上補，會在任意位置留下洞，破壞 complete。",
+     "t": 2076
+    },
+    {
+     "text": "例子：把 root 的 12 移除。",
+     "t": 2107
+    },
+    {
+     "text": "目的是維持 complete tree，讓高度保持平衡。",
+     "t": 2141
+    },
+    {
+     "text": "最重要的還是讓 priority 最高的元素在最上面，平衡是第二順位。",
+     "t": 2215
+    },
+    {
+     "text": "技巧：把最後一個元素搬到 root。",
+     "t": 2286
+    },
+    {
+     "text": "36 搬到 root 之後，照標準演算法往下沉：比較小的孩子（15 等）往上。",
+     "t": 2316
+    },
+    {
+     "text": "結果剛好填滿，沒有產生洞。",
+     "t": 2330
+    }
+   ],
+   "trap": "同學提議「把 53 移到旁邊」：在圖上看很直覺，但程式裡沒有「旁邊」這種操作，所以要用「最後一個上 root、再往下沉」。"
+  },
+  {
+   "title": "同層無順序；heap vs search tree",
+   "scene": "heapur-floors-cost",
+   "points": [
+    {
+     "text": "同一層的元素之間沒有任何關係。",
+     "t": 2363
+    },
+    {
+     "text": "可以把每一層想成一層樓：頂樓最小，往下越來越大。",
+     "t": 2412
+    },
+    {
+     "text": "就像一年級排在二年級上面，但二年級內部誰大誰小沒有規定。",
+     "t": 2442
+    },
+    {
+     "text": "以為同層有順序，是最大的錯誤；剛才那個往下調整的動作叫 percolate down。",
+     "t": 2454
+    },
+    {
+     "text": "AVL／search tree 要找最小值得走過整個高度，是 O(log n)；heap 的最小值就在 root，O(1)。",
+     "t": 2496
+    },
+    {
+     "text": "push、pop 兩邊都是 log n，但 heap 的 find-min 變成常數時間。",
+     "t": 2503
+    }
+   ]
+  },
+  {
+   "title": "閒聊",
+   "scene": null,
+   "points": [
+    {
+     "text": "課堂上聊了一下板球和足球比賽，跟課程無關。",
+     "t": 2540
+    }
+   ]
+  },
+  {
+   "title": "再 pop 一次：移除 15",
+   "scene": "heapur-cpop",
+   "params": {
+    "a": [
+     15,
+     17,
+     32,
+     36,
+     33,
+     52,
+     58
+    ]
+   },
+   "points": [
+    {
+     "text": "接著 pop 15：root 移除後，把最後一個元素搬上去。",
+     "t": 2573
+    },
+    {
+     "text": "它照標準流程往下，跟比較小的孩子交換，直到放得下。",
+     "t": 2603
+    },
+    {
+     "text": "演算法很簡單，這些就是 pop 的例子。",
+     "t": 2633
+    }
+   ],
+   "trap": "這個例子的最後一個元素是多少沒聽清楚，動畫接著上一段的結果示意。"
+  },
+  {
+   "title": "Heap 的實作：用陣列存",
+   "scene": "heapur-array-index",
+   "points": [
+    {
+     "text": "heap 可以用 node 加指標（linked）的方式實作。",
+     "t": 2657
+    },
+    {
+     "text": "題外話：stack、heap 名字的由來，就是「一疊」、「一堆」東西。",
+     "t": 2704
+    },
+    {
+     "text": "如果知道 tree 是 complete 的，就能直接存在 array 裡，位置用算的就好。",
+     "t": 2773
+    },
+    {
+     "text": "root 放在 index 1，不放 0。",
+     "t": 2803
+    },
+    {
+     "text": "parent 在 i，left child 在 2i，right child 在 2i+1。",
+     "t": 2811
+    },
+    {
+     "text": "例子：root 在 1，left child 17 在 2，32 在 3。",
+     "t": 2837
+    },
+    {
+     "text": "空位不能用 0 當記號，因為 0 本身也可能是一個值。",
+     "t": 2850
+    },
+    {
+     "text": "parent = i/2，用整數除法；i 是奇數時小數部分直接捨去，不用另外判斷奇偶。",
+     "t": 2977
+    }
+   ],
+   "trap": "補充：如果從 index 0 開始存，公式要改成 left = 2i+1、right = 2i+2、parent = ⌊(i−1)/2⌋。考試要看題目用哪一種。"
+  },
+  {
+   "title": "在陣列上做 push／pop",
+   "scene": "heapur-cpush-15",
+   "points": [
+    {
+     "text": "push：新元素放在陣列最後（size 的位置），再跟 parent 比較。",
+     "t": 3013
+    },
+    {
+     "text": "比 parent 小就 swap，重複做到條件不成立為止，可以寫成遞迴。",
+     "t": 3043
+    },
+    {
+     "text": "這部分只是實作細節，觀念跟樹上的做法一樣。",
+     "t": 3074
+    }
+   ]
+  },
+  {
+   "title": "例子與成本曲線",
+   "scene": "heapur-cost-curves",
+   "points": [
+    {
+     "text": "接著看 pop top object 的例子。",
+     "t": 3087
+    },
+    {
+     "text": "圖上白色是理想的常數成本。",
+     "t": 3153
+    },
+    {
+     "text": "藍色是 log n 的成本。",
+     "t": 3157
+    },
+    {
+     "text": "另一條是線性成本。",
+     "t": 3159
+    }
+   ],
+   "trap": "51:27–52:30 的例子講解聽不清，只能確定是 pop top object 的投影片動畫。"
+  },
+  {
+   "title": "Max-heap",
+   "scene": "heapur-maxheap",
+   "points": [
+    {
+     "text": "上面講的是 binary min-heap，也可以做 max-heap。",
+     "t": 3172
+    },
+    {
+     "text": "max-heap 是最大的在最上面。",
+     "t": 3181
+    },
+    {
+     "text": "演算法完全一樣，只是把「小於」的條件換成「大於」。",
+     "t": 3199
+    },
+    {
+     "text": "老師指出投影片有錯：23 不應該出現在那裡，應該是 25。",
+     "t": 3211
+    }
+   ],
+   "trap": "影片中的投影片有一處錯誤（老師當場更正，應該是 25 而不是 23）；這段錄音太吵，無法還原是哪個位置。"
+  },
+  {
+   "title": "第二層 priority：(2,x) 一個一個 pop",
+   "scene": "heapur-pairs-heap",
+   "points": [
+    {
+     "text": "回到 priority queue：當初學 heap 就是為了它。",
+     "t": 3243
+    },
+    {
+     "text": "再加第二層：第一層全都是 2，就要靠第二個數來分（投影片用顏色表示）。",
+     "t": 3274
+    },
+    {
+     "text": "在 2 旁邊再加一個 index，紅色是 0，接著是綠、藍等等。",
+     "t": 3326
+    },
+    {
+     "text": "要維持 complete，就把最後一個元素搬到 top，再 percolate down。",
+     "t": 3367
+    },
+    {
+     "text": "移除 (2,0) 之後，最後一個 (2,6) 搬上去；(2,1) 比較小，它往上、(2,6) 往下。",
+     "t": 3441
+    },
+    {
+     "text": "(2,6) 再跟兩個孩子比，比較小的往上；每一步的選擇都是唯一的，不是隨便選。",
+     "t": 3460
+    },
+    {
+     "text": "考題可能會給一個 heap，要你一個一個清空，寫出每一步。",
+     "t": 3460
+    },
+    {
+     "text": "每次都是最後一個上去，再跟兩個孩子中較小的交換。",
+     "t": 3572
+    }
+   ],
+   "trap": "動畫的初始 heap 依「(2,0) 移除 → (2,6) 上 root → (2,1) 往上」以及後面「(2,4) 是兩者中較小」重建；59:13 唸出的序列和這個版本對不上，可能是錄音辨識錯誤。"
+  },
+  {
+   "title": "Q&A：為什麼不用 AVL tree？",
+   "scene": "heapur-floors-cost",
+   "points": [
+    {
+     "text": "同學問能不能用 multiway tree 或 AVL tree 做 priority queue。",
+     "t": 3587
+    },
+    {
+     "text": "可以用 AVL tree（課堂上講成 ABL），元素也會不斷插入和刪除。",
+     "t": 3660
+    },
+    {
+     "text": "但 processor 的排程要省 cycle：heap 拿最小值只要 O(1)，不用走過整棵樹。",
+     "t": 3705
+    }
+   ],
+   "trap": "60:12–60:48 錄音很亂，這段只留下可辨識的結論。"
+  },
+  {
+   "title": "再 pop：(2,3) 移除之後",
+   "scene": "heapur-pairs-heap",
+   "params": {
+    "pre": 3,
+    "n": 1
+   },
+   "points": [
+    {
+     "text": "(2,3) 移除後，最後一個搬到 top，再往下；因為 (2,4) 是兩個孩子中較小的，所以它往上。",
+     "t": 3752
+    }
+   ]
+  },
+  {
+   "title": "Runtime：push 與 pop",
+   "scene": "heapur-push-worst",
+   "points": [
+    {
+     "text": "同學說 push 是常數時間，老師反問為什麼。",
+     "t": 3785
+    },
+    {
+     "text": "新元素放在最後，但如果它很小，就要一路 percolate up。",
+     "t": 3818
+    },
+    {
+     "text": "最多會到 root，就是樹的高度。",
+     "t": 3835
+    },
+    {
+     "text": "如果它比較大，只做一次比較就停；不然就要做幾次 swap（在陣列裡就是交換）。",
+     "t": 3848
+    },
+    {
+     "text": "pop 搬上去的是最後一個元素，通常很大，幾乎都會沉到底部。",
+     "t": 3854
+    },
+    {
+     "text": "所以 push 平均是常數時間，但 worst case 是 log n；pop 是 log n。",
+     "t": 3889
+    }
+   ],
+   "trap": "補充：push 平均 O(1) 是在隨機插入順序下的結果（多數新元素停在下面幾層）；最差情況仍是 Θ(log n)。"
+  },
+  {
+   "title": "結尾",
+   "scene": null,
+   "points": [
+    {
+     "text": "priority queue 和 trees 的部分到這裡講完。",
+     "t": 3901
+    },
+    {
+     "text": "這些原本上週就該講完，下一堂開始講 graph。",
+     "t": 3913
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "依本課慣例（數字越小 priority 越高，先比第一個數），下列哪個 pair 的 priority 最高？",
+   "opts": [
+    "(13,1)",
+    "(5,19)",
+    "(15,0)",
+    "(13,24)"
+   ],
+   "ans": "(5,19)",
+   "why": "先比第一個數，5 最小，所以第二個數不用再看。"
+  },
+  {
+   "q": "用 M 條 queue（每個 priority 一條）實作 priority queue，pop 的最差時間是？",
+   "opts": [
+    "Θ(1)",
+    "O(M)",
+    "O(log n)",
+    "O(n)"
+   ],
+   "ans": "O(M)",
+   "why": "要從最高 priority 的那條開始往下找，直到遇到非空的 queue，最差要看 M 條。"
+  },
+  {
+   "q": "關於 binary min-heap，下列哪一項正確？",
+   "opts": [
+    "同一層的元素由左到右遞增",
+    "左孩子一定小於右孩子",
+    "每個 node 都小於等於它子樹中的所有 key",
+    "中序走訪會得到排序結果"
+   ],
+   "ans": "每個 node 都小於等於它子樹中的所有 key",
+   "why": "heap 只規定上下層之間的關係，同一層、左右之間都沒有順序。"
+  },
+  {
+   "q": "complete binary heap 用 1-based 陣列存，index 7 的 parent 是哪個 index？",
+   "opts": [
+    "3",
+    "3.5",
+    "4",
+    "6"
+   ],
+   "ans": "3",
+   "why": "parent = ⌊i/2⌋，用整數除法，⌊7/2⌋ = 3。"
+  },
+  {
+   "q": "complete min-heap [12, 17, 32, 36, 33, 52, 58] push 15 之後，陣列是？",
+   "opts": [
+    "[12, 15, 32, 17, 33, 52, 58, 36]",
+    "[12, 17, 32, 15, 33, 52, 58, 36]",
+    "[15, 12, 32, 17, 33, 52, 58, 36]",
+    "[12, 17, 32, 36, 33, 52, 58, 15]"
+   ],
+   "ans": "[12, 15, 32, 17, 33, 52, 58, 36]",
+   "why": "15 放在 [8]，比 36 小就換到 [4]，比 17 小再換到 [2]，因為不比 12 小，所以停住。"
+  },
+  {
+   "q": "complete heap 的 pop 為什麼要把最後一個元素搬到 root？",
+   "opts": [
+    "因為它一定是第二小",
+    "維持 complete tree，不留洞",
+    "讓 pop 變成 O(1)",
+    "因為 array 只能刪最後一格"
+   ],
+   "ans": "維持 complete tree，不留洞",
+   "why": "讓孩子直接往上補會在中間留下洞；把最後一個搬上去再 percolate down，形狀才能維持 complete。"
+  },
+  {
+   "q": "binary heap 的 push，worst case 時間是？",
+   "opts": [
+    "Θ(1)",
+    "Θ(log n)",
+    "Θ(n)",
+    "Θ(n log n)"
+   ],
+   "ans": "Θ(log n)",
+   "why": "新元素如果比所有元素都小，就要一路 percolate up 到 root，走過整個高度；平均情況才接近常數。"
+  },
+  {
+   "q": "跟 AVL tree 相比，heap 用來實作 priority queue 的主要優勢是？",
+   "opts": [
+    "可以用 O(log n) 搜尋任意 key",
+    "find-min／top 只要 O(1)",
+    "插入一定是 O(1)",
+    "同一層有排序"
+   ],
+   "ans": "find-min／top 只要 O(1)",
+   "why": "AVL 要往左走到底才能找到最小值，要 O(log n)；heap 的最小值就在 root。"
+  }
+ ]
+}
