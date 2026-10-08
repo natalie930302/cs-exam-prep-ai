@@ -1,0 +1,255 @@
+{
+ "video": "a_IRpiyBIm0",
+ "label": "How to prove NP-Completeness - The Steps",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "從設計演算法到證明困難",
+   "scene": null,
+   "points": [
+    {
+     "text": "這支影片講證明 NP-completeness 要做的步驟。",
+     "t": 0
+    },
+    {
+     "text": "NP-completeness 談的是問題有多難：證明設計不出 efficient 演算法。",
+     "t": 7
+    },
+    {
+     "text": "之前都在設計 efficient 演算法，這裡是完全不同的方向。",
+     "t": 32
+    }
+   ]
+  },
+  {
+   "title": "Decision vs optimization",
+   "scene": "np1-h-dec-path",
+   "points": [
+    {
+     "text": "第一件事：decision problem vs optimization problem；證 NPC 專注在 decision 版。",
+     "t": 71
+    },
+    {
+     "text": "Optimization 例：找圖上兩點之間的最短路徑。",
+     "t": 89
+    },
+    {
+     "text": "Decision 版：兩點之間有沒有長度 k（或 ≤ k）的路？答案 yes / no。",
+     "t": 104
+    },
+    {
+     "text": "Decision 版本是一個問題，比 optimization 簡單。",
+     "t": 120
+    },
+    {
+     "text": "證明 decision 版設計不出 efficient 演算法 → optimization 版更不可能有。",
+     "t": 197
+    },
+    {
+     "text": "Optimization 至少和 decision 一樣難；所以證 NPC 的第一步是找出 decision 版。",
+     "t": 248
+    }
+   ]
+  },
+  {
+   "title": "Reduction：借 B 的演算法解 A",
+   "scene": "np1-h-reduce-solve",
+   "points": [
+    {
+     "text": "接下來最重要的一步：reduction。",
+     "t": 278
+    },
+    {
+     "text": "想 poly time 解 decision problem A，借助已經會 poly time 解的 B。",
+     "t": 308
+    },
+    {
+     "text": "第一步：把 A 的 instance 在 poly time 內轉成 B 的 instance。",
+     "t": 371
+    },
+    {
+     "text": "圖：A 的 instance α → poly time reduction → B 的 instance → B 的 poly 演算法。",
+     "t": 411
+    },
+    {
+     "text": "兩個 polynomial 加起來還是 polynomial → A 能 poly time 解。",
+     "t": 437
+    },
+    {
+     "text": "最重要：yes 要對應到 yes、no 對應到 no，否則解不出 A。",
+     "t": 446
+    }
+   ]
+  },
+  {
+   "title": "反證：證明 B 沒有 poly 解",
+   "scene": "np1-h-contra",
+   "points": [
+    {
+     "text": "把 reduction 用來證明問題很難：焦點換到 B。",
+     "t": 490
+    },
+    {
+     "text": "要證 B 沒有 polynomial time 解。",
+     "t": 546
+    },
+    {
+     "text": "已知 A 沒有 poly time 解，而且有 A 到 B 的 poly time reduction。",
+     "t": 558
+    },
+    {
+     "text": "用反證：假設 B 有 poly time 解。",
+     "t": 602
+    },
+    {
+     "text": "A 先 poly 轉成 B、再用 B 解 → A 也有 poly 解，和已知矛盾。",
+     "t": 646
+    },
+    {
+     "text": "所以 B 不可能有 poly time 解。",
+     "t": 702
+    },
+    {
+     "text": "回顧：decision vs optimization、reduction、用反證證明 B 很難。",
+     "t": 719
+    }
+   ],
+   "trap": "補充：「已知 A 沒有 poly 解」其實沒人證過，是假設 P ≠ NP；嚴格說法是「若 B 有 poly 解，A（NPC）也有 → P = NP」。"
+  },
+  {
+   "title": "第一個 NPC：Cook–Levin",
+   "scene": "np1-h-bucket",
+   "points": [
+    {
+     "text": "這套邏輯需要一個已知不能 poly time 解的 A。",
+     "t": 758
+    },
+    {
+     "text": "所以一定要有第一個 NP-complete 問題。",
+     "t": 782
+    },
+    {
+     "text": "Cook's theorem（Cook–Levin）從 first principles 證明 Boolean satisfiability 是 NPC。",
+     "t": 795
+    },
+    {
+     "text": "他們把第一個問題放進 NPC bucket，之後大家用 reduction 一個一個加進去。",
+     "t": 822
+    },
+    {
+     "text": "證第三個時，可以從 bucket 裡任一個問題 reduce 過來。",
+     "t": 840
+    },
+    {
+     "text": "任一個 NPC 問題有 poly 解，bucket 裡全部都會被解掉。",
+     "t": 849
+    }
+   ]
+  },
+  {
+   "title": "證明步驟：L ∈ NP、L′ ≤p L",
+   "scene": "np1-h-steps",
+   "points": [
+    {
+     "text": "整理：L 是想證明是 NP-complete 的問題。",
+     "t": 887
+    },
+    {
+     "text": "L′ 是已知的 NP-complete 問題。",
+     "t": 903
+    },
+    {
+     "text": "第一步：證明 L ∈ NP。",
+     "t": 919
+    },
+    {
+     "text": "L 和 L′ 都是 decision 版本，不是 optimization 版本。",
+     "t": 929
+    },
+    {
+     "text": "第二步：把已知 NPC 的 L′ reduce 到 L，不是反過來。",
+     "t": 946
+    },
+    {
+     "text": "很多學生犯錯：把 L reduce 到 L′ 只是讓自己的解法變難，不代表沒有簡單解。",
+     "t": 966
+    },
+    {
+     "text": "L′ ≤p L：L 一旦能解，大家都知道很難的 L′ 也能解。",
+     "t": 996
+    },
+    {
+     "text": "最後提醒：L 和 L′ 都是 decision problem。",
+     "t": 1028
+    }
+   ]
+  },
+  {
+   "title": "下一支預告",
+   "scene": null,
+   "points": [
+    {
+     "text": "下一支影片會用一個具體例子套用這些規則。",
+     "t": 1038
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "要證 L 是 NP-complete，第二步的 reduction 方向是？",
+   "opts": [
+    "已知 NPC 的 L′ ≤p L",
+    "L ≤p 已知 NPC 的 L′",
+    "L ≤p L",
+    "任一 P 問題 ≤p L"
+   ],
+   "ans": "已知 NPC 的 L′ ≤p L",
+   "why": "把 L 轉成難題只說明 L 不比它難，證不出 L 很難。"
+  },
+  {
+   "q": "證 NPC 時為什麼用 decision 版？",
+   "opts": [
+    "optimization 至少和 decision 一樣難，decision 難就夠了",
+    "decision 版一定在 P",
+    "optimization 版不能寫演算法",
+    "decision 版沒有答案"
+   ],
+   "ans": "optimization 至少和 decision 一樣難，decision 難就夠了",
+   "why": "Decision 版設計不出 efficient 演算法，optimization 版只會更難。"
+  },
+  {
+   "q": "Reduction 除了 poly time 之外，還要滿足？",
+   "opts": [
+    "A 的 yes 對應 B 的 yes、no 對應 no",
+    "B 必須是 NPC",
+    "A 的 instance 比 B 小",
+    "B 的演算法要 O(n)"
+   ],
+   "ans": "A 的 yes 對應 B 的 yes、no 對應 no",
+   "why": "否則 B 的答案不能當 A 的答案。"
+  },
+  {
+   "q": "第一個 NP-complete 問題是怎麼來的？",
+   "opts": [
+    "Cook–Levin 從 first principles 證明 SAT 是 NPC",
+    "從 CLIQUE reduce 過來",
+    "從 TSP reduce 過來",
+    "它是公理，不用證"
+   ],
+   "ans": "Cook–Levin 從 first principles 證明 SAT 是 NPC",
+   "why": "之後的問題才用 reduction 一個個加入。"
+  },
+  {
+   "q": "若 A ≤p B 且 B 有 poly time 解，則？",
+   "opts": [
+    "A 也有 poly time 解",
+    "A 沒有 poly 解",
+    "B 是 NPC",
+    "什麼都推不出"
+   ],
+   "ans": "A 也有 poly time 解",
+   "why": "Poly 轉換 ＋ poly 解 B = poly。"
+  }
+ ]
+}

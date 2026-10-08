@@ -234,6 +234,11 @@
   "points": 30,
   "quiz": 7
  },
+ "6n8vyWKGsIo": {
+  "label": "交大江蕙如 Lec23 Beyond Polynomial Running Times (2/2)",
+  "points": 89,
+  "quiz": 7
+ },
  "6pV2IF0fgKY": {
   "label": "Abdul Bari：2.7.1 Two Way MergeSort - Iterative",
   "points": 51,
@@ -399,6 +404,11 @@
   "points": 30,
   "quiz": 5
  },
+ "a_IRpiyBIm0": {
+  "label": "How to prove NP-Completeness - The Steps",
+  "points": 37,
+  "quiz": 5
+ },
  "A_NNGOqui7s": {
   "label": "清大OCW 趙啟超《離散數學》第1A講 Logic and Set Theory",
   "points": 31,
@@ -518,6 +528,11 @@
   "label": "Abdul Bari：6 Introduction to Backtracking - Brute Force Approach",
   "points": 18,
   "quiz": 5
+ },
+ "e2cF8a5aAhE": {
+  "label": "Abdul Bari：8. NP-Hard and NP-Complete Problems",
+  "points": 57,
+  "quiz": 6
  },
  "E82x-cug9YE": {
   "label": "Modes of Transfer | Programmed, Interrupt-initiated I/O & DMA",
@@ -739,6 +754,11 @@
   "points": 40,
   "quiz": 7
  },
+ "moPtwq_cVH8": {
+  "label": "MIT 6.006 L23：Computational Complexity",
+  "points": 93,
+  "quiz": 8
+ },
  "mwN18xfwNhk": {
   "label": "Abdul Bari：1.10.1 Comparison of Functions #1",
   "points": 27,
@@ -814,6 +834,11 @@
   "points": 157,
   "quiz": 8
  },
+ "PqN0aJeYtuA": {
+  "label": "交大江蕙如 Lec22 Beyond Polynomial Running Times (1/2)",
+  "points": 101,
+  "quiz": 7
+ },
  "q6RicK1FCUs": {
   "label": "Abdul Bari：Tower of Hanoi Problem",
   "points": 36,
@@ -828,6 +853,11 @@
   "label": "Abdul Bari：9.2 Rabin-Karp String Matching Algorithm",
   "points": 39,
   "quiz": 7
+ },
+ "qZs767KQcvE": {
+  "label": "Abdul Bari：8.1 NP-Hard Graph Problem - Clique Decision Problem",
+  "points": 48,
+  "quiz": 6
  },
  "R0MpXbuqfZM": {
   "label": "台大林軒田 DSA Stack / Queue",
@@ -873,6 +903,16 @@
   "label": "交大江蕙如 Lec16 Divide and Conquer (2/2)",
   "points": 152,
   "quiz": 8
+ },
+ "t5Wxk96QjUk": {
+  "label": "MIT 6.006 Rec23：Computational Complexity",
+  "points": 93,
+  "quiz": 8
+ },
+ "tIE2lkJv20c": {
+  "label": "Theory of Computation：P, NP, NP-Complete and NP-Hard",
+  "points": 27,
+  "quiz": 4
  },
  "tTFolqL1TX4": {
   "label": "交大江蕙如 Lec05 Chapter 2 Algorithm Analysis (2/2)",

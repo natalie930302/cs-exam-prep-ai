@@ -1,0 +1,377 @@
+{
+ "video": "e2cF8a5aAhE",
+ "label": "Abdul Bari：8. NP-Hard and NP-Complete Problems",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "主題介紹",
+   "scene": null,
+   "points": [
+    {
+     "text": "主題是 NP-hard 和 NP-complete：最重要、也最容易混淆的主題。",
+     "t": 0
+    },
+    {
+     "text": "不要趕時間看，準備好了再看。",
+     "t": 14
+    }
+   ]
+  },
+  {
+   "title": "Polynomial vs exponential 的演算法",
+   "scene": "np1-b-poly-exp",
+   "points": [
+    {
+     "text": "這個主題和研究有關。",
+     "t": 26
+    },
+    {
+     "text": "已學過的演算法分兩類：polynomial time 和 exponential time。",
+     "t": 42
+    },
+    {
+     "text": "Searching：linear search n、binary search log n；sorting n²、merge sort n log n。",
+     "t": 54
+    },
+    {
+     "text": "0/1 knapsack、traveling salesperson 等都寫成 2ⁿ，代表指數（實際可能是 n·2ⁿ、nⁿ）。",
+     "t": 71
+    },
+    {
+     "text": "研究：想要比 binary search 更快的 O(1) 搜尋、比 merge sort 更快的 O(n) 排序。",
+     "t": 117
+    },
+    {
+     "text": "對指數時間的問題想要 polynomial time 演算法：n¹⁰ 甚至 n¹⁰⁰，n 夠大時都比 2ⁿ 小。",
+     "t": 139
+    },
+    {
+     "text": "一直研究都沒有找到 → 需要研究的框架：NP-hard 和 NP-complete。",
+     "t": 187
+    }
+   ],
+   "trap": "補充：比較型排序的下界是 Ω(n log n)，「O(n) 的比較排序」不可能；這裡只是說明研究動機。"
+  },
+  {
+   "title": "研究框架的兩點",
+   "scene": "np1-b-two-points",
+   "points": [
+    {
+     "text": "整個主題就建立在兩點上。",
+     "t": 235
+    },
+    {
+     "text": "① 解不出 poly 演算法時，至少證明問題之間相似：解一個就全部解。",
+     "t": 245
+    },
+    {
+     "text": "不要各做各的（你做 knapsack、我做 graph coloring），要集體關聯起來。",
+     "t": 268
+    },
+    {
+     "text": "② 寫不出 deterministic 的 poly 演算法，就寫 non-deterministic 的 poly 演算法。",
+     "t": 301
+    }
+   ]
+  },
+  {
+   "title": "Non-deterministic 演算法：NSearch",
+   "scene": "np1-b-nd-search",
+   "points": [
+    {
+     "text": "平常寫的是 deterministic：每個敘述怎麼運作我們都清楚。",
+     "t": 332
+    },
+    {
+     "text": "想寫 0/1 knapsack 的 poly 演算法時，有些敘述不知道怎麼做成 poly → 先留空，稱為 non-deterministic。",
+     "t": 362
+    },
+    {
+     "text": "這樣研究成果能保存，將來別人可以把那部分變成 deterministic。",
+     "t": 401
+    },
+    {
+     "text": "例：non-deterministic search；choice、success、failure 是 non-deterministic 敘述，假設都花 O(1)。",
+     "t": 429
+    },
+    {
+     "text": "整個演算法看起來是 O(1)，比 binary search 的 log n 還快。",
+     "t": 474
+    },
+    {
+     "text": "choice() 直接給出 key 所在的 index j；A[j] = key 就 write(j)、success，否則 failure（key 真的不在陣列中）。",
+     "t": 501
+    },
+    {
+     "text": "例：key = 9，choice 直接給 index 4，不用任何搜尋邏輯。",
+     "t": 566
+    },
+    {
+     "text": "不知道怎麼運作的叫 magic；知道之後就變成 technique，變成 deterministic。",
+     "t": 614
+    }
+   ]
+  },
+  {
+   "title": "Class P 與 NP",
+   "scene": "np1-b-p-in-np",
+   "points": [
+    {
+     "text": "P：deterministic、polynomial time 的演算法，例如 linear／binary search、bubble／merge sort、單源最短路徑、MST、Huffman coding。",
+     "t": 671
+    },
+    {
+     "text": "NP：non-deterministic、polynomial time 的演算法；我們想為指數時間的問題寫這種。",
+     "t": 704
+    },
+    {
+     "text": "著名的圖：P 是 NP 的子集。",
+     "t": 735
+    },
+    {
+     "text": "例：以前不知道 merge sort 時，它對我們是 non-deterministic；找到後變成 deterministic。",
+     "t": 753
+    },
+    {
+     "text": "今天 deterministic 的昨天是 non-deterministic；今天 ND 的，明天可能變成 deterministic。",
+     "t": 809
+    }
+   ],
+   "trap": "補充：Bari 的「non-deterministic = 我們還不知道怎麼做」是直覺說法；正式定義中 NP 是 nondeterministic TM poly time 可決定（等價於 poly time 可驗證）的 decision problem，和人類知不知道解法無關。"
+  },
+  {
+   "title": "Base problem：SAT 與 state space tree",
+   "scene": "np1-b-sat-tree",
+   "points": [
+    {
+     "text": "要把問題關聯起來，需要一個 base problem：satisfiability。",
+     "t": 827
+    },
+    {
+     "text": "CNF（propositional calculus）公式，使用 boolean 變數 x1、x2、x3。",
+     "t": 875
+    },
+    {
+     "text": "例：(x1 ∨ ¬x2 ∨ x3) ∧ (¬x1 ∨ x2 ∨ ¬x3)；子句 C1、C2 內用 ∨，子句之間用 ∧。",
+     "t": 899
+    },
+    {
+     "text": "Satisfiability：找出哪些 xi 的值讓公式為真。",
+     "t": 928
+    },
+    {
+     "text": "每個變數 0 或 1：3 個變數 8 種、n 個變數 2ⁿ 種 → 指數時間。",
+     "t": 958
+    },
+    {
+     "text": "可以畫成 state space tree，root 到 leaf 的一條路就是一組 (x1, x2, x3)。",
+     "t": 1007
+    }
+   ]
+  },
+  {
+   "title": "0/1 knapsack 用同一棵樹",
+   "scene": "np1-b-sat-tree",
+   "params": {
+    "knap": 1
+   },
+   "points": [
+    {
+     "text": "例：0/1 knapsack，3 個物品各有 profit 與 weight，背包容量 8。",
+     "t": 1104
+    },
+    {
+     "text": "解寫成 (x1, x2, x3)，每個是 0 或 1 → 一樣 2³ 種，n 個物品 2ⁿ 種。",
+     "t": 1129
+    },
+    {
+     "text": "和 SAT 一樣逐一嘗試：SAT 看公式是否為真，knapsack 看 profit 是否最大。",
+     "t": 1153
+    },
+    {
+     "text": "拿掉兩個題目：這棵 state space tree 屬於誰？兩個都是。",
+     "t": 1179
+    },
+    {
+     "text": "這棵樹能 poly time 解，兩個問題就都能 poly time 解 → 這樣把它們關聯起來。",
+     "t": 1202
+    }
+   ],
+   "trap": "補充：Bari 板書上的 profit／weight 數字沒有唸出來，動畫只畫出共用的樹。"
+  },
+  {
+   "title": "Reduction：SAT ∝ L",
+   "scene": "np1-b-reduce",
+   "points": [
+    {
+     "text": "把 SAT 也列進指數時間的問題；先稱 SAT 為 NP-hard，其他叫 hard problem。",
+     "t": 1227
+    },
+    {
+     "text": "關聯的方法是 reduction：satisfiability reduces to 0/1 knapsack。",
+     "t": 1271
+    },
+    {
+     "text": "拿 SAT 的一個公式（instance），轉成 0/1 knapsack 的 instance。",
+     "t": 1306
+    },
+    {
+     "text": "若 knapsack 能 poly time 解，同一個演算法也能 poly time 解 SAT。",
+     "t": 1319
+    },
+    {
+     "text": "轉換本身只能花 polynomial time，花 exponential time 就沒有用。",
+     "t": 1360
+    },
+    {
+     "text": "SAT ∝ L 被證明，L 也變成 NP-hard。",
+     "t": 1400
+    },
+    {
+     "text": "Reduction 有遞移性：SAT ∝ L1、L1 ∝ L2 → L2 也 NP-hard（例：0/1 → graph coloring → sum of subsets／Hamiltonian）。",
+     "t": 1430
+    }
+   ]
+  },
+  {
+   "title": "NP-hard ∩ NP = NP-complete",
+   "scene": "np1-b-npc-venn",
+   "points": [
+    {
+     "text": "SAT 有 non-deterministic polynomial time 演算法。",
+     "t": 1500
+    },
+    {
+     "text": "SAT 既是 NP-hard，也有 ND poly 演算法 → NP-complete。",
+     "t": 1515
+    },
+    {
+     "text": "SAT ∝ 你的問題 → NP-hard；再寫出 ND poly 演算法 → NP-complete。",
+     "t": 1533
+    },
+    {
+     "text": "研究新問題要做兩件事：① 證明它直接或間接被 SAT 歸約 ② 寫出 ND 演算法。",
+     "t": 1560
+    },
+    {
+     "text": "圖：NP-hard 集合裡有 SAT、0/1 knapsack、graph coloring…。",
+     "t": 1611
+    },
+    {
+     "text": "NP-hard 和 NP 的交集叫 NP-complete。",
+     "t": 1667
+    }
+   ],
+   "trap": "補充：Bari 用「有 non-deterministic poly 演算法」表示屬於 NP；正式條件是 L ∈ NP（有 poly time verifier）。"
+  },
+  {
+   "title": "P 會長大嗎？Cook's theorem",
+   "scene": "np1-b-cook",
+   "points": [
+    {
+     "text": "P 是今天會的 deterministic；我們相信 P 會越長越大，最後等於 NP。",
+     "t": 1695
+    },
+    {
+     "text": "如果 ND 永遠變不成 deterministic，研究就白做了 → 需要證明 P = NP。",
+     "t": 1747
+    },
+    {
+     "text": "證明 P = NP，代表解法已經存在，只是還沒被發現。",
+     "t": 1810
+    },
+    {
+     "text": "Cook's theorem：satisfiability ∈ P ⇔ P = NP。",
+     "t": 1849
+    },
+    {
+     "text": "Cook 沒有證出 SAT ∈ P，只說誰證出來，我們的工作就是對的。",
+     "t": 1883
+    }
+   ],
+   "trap": "補充：Cook–Levin 定理的正式內容是「SAT 是 NP-complete」；「SAT ∈ P ⇔ P = NP」是它的推論。"
+  },
+  {
+   "title": "結尾",
+   "scene": null,
+   "points": [
+    {
+     "text": "以上就是 NP-hard 與 NP-complete 的討論。",
+     "t": 1898
+    },
+    {
+     "text": "之後會再做 NP-hard graph problem 的影片。",
+     "t": 1905
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Bari 的 non-deterministic search 中，choice()、success()、failure() 假設花多少時間？",
+   "opts": [
+    "O(1)",
+    "O(log n)",
+    "O(n)",
+    "O(2ⁿ)"
+   ],
+   "ans": "O(1)",
+   "why": "所以整個 NSearch 是 O(1)。"
+  },
+  {
+   "q": "有 3 個 boolean 變數的 SAT 公式，暴力法要試幾組值？",
+   "opts": [
+    "8",
+    "3",
+    "6",
+    "9"
+   ],
+   "ans": "8",
+   "why": "每個變數 0 或 1：2³ = 8；n 個變數 2ⁿ。"
+  },
+  {
+   "q": "(x1 ∨ ¬x2 ∨ x3) ∧ (¬x1 ∨ x2 ∨ ¬x3) 在哪一組 (x1, x2, x3) 為假？",
+   "opts": [
+    "(0, 1, 0)",
+    "(1, 1, 1)",
+    "(0, 0, 0)",
+    "(1, 1, 0)"
+   ],
+   "ans": "(0, 1, 0)",
+   "why": "(0, 1, 0) 讓第一個子句三個 literal 全假；另一個讓公式為假的是 (1, 0, 1)。"
+  },
+  {
+   "q": "若證明了 SAT ∝ L，L 是什麼？",
+   "opts": [
+    "NP-hard",
+    "一定在 P",
+    "一定是 NP-complete",
+    "不可判定"
+   ],
+   "ans": "NP-hard",
+   "why": "還要證 L ∈ NP（有 ND poly 演算法）才是 NP-complete。"
+  },
+  {
+   "q": "SAT ∝ L1 且 L1 ∝ L2，可以推出？",
+   "opts": [
+    "L2 也是 NP-hard",
+    "L1 在 P",
+    "L2 比 L1 簡單",
+    "什麼都推不出"
+   ],
+   "ans": "L2 也是 NP-hard",
+   "why": "Reduction 有遞移性，不必每個都直接從 SAT 轉。"
+  },
+  {
+   "q": "依 Bari 的圖，NP-complete 是哪兩個集合的交集？",
+   "opts": [
+    "NP-hard 和 NP",
+    "P 和 NP",
+    "P 和 NP-hard",
+    "NP 和 exponential"
+   ],
+   "ans": "NP-hard 和 NP",
+   "why": "NP-hard 又有 non-deterministic poly 演算法。"
+  }
+ ]
+}

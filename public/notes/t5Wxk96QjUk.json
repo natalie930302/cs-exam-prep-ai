@@ -1,0 +1,562 @@
+{
+ "video": "t5Wxk96QjUk",
+ "label": "MIT 6.006 Rec23：Computational Complexity",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場",
+   "scene": null,
+   "points": [
+    {
+     "text": "MIT OpenCourseWare 授權說明。",
+     "t": 0
+    }
+   ]
+  },
+  {
+   "title": "難度軸最右端：Halting problem 與 R",
+   "scene": "np2-axis",
+   "params": {
+    "rec": 1
+   },
+   "points": [
+    {
+     "text": "計算複雜度問的是「問題有多難」；沿用 Erik 畫的難度軸，左邊簡單、右邊難。",
+     "t": 22
+    },
+    {
+     "text": "最難的不是 chess，而是 Halting problem。",
+     "t": 53
+    },
+    {
+     "text": "Halting problem 沒有解：不管多少時間、電腦、錢都解不了，叫 undecidable。",
+     "t": 78
+    },
+    {
+     "text": "定義：給一個程式（任何表示法），判斷它會不會終止。",
+     "t": 92
+    },
+    {
+     "text": "有些特例很好判斷（例如沒有迴圈的程式），但一般情況已被證明不可能。",
+     "t": 130
+    },
+    {
+     "text": "R = decidable：寫得出在有限時間內算完的演算法。",
+     "t": 190
+    },
+    {
+     "text": "R 來自 recursive（很老的用語），記住 R 就是 decidable。",
+     "t": 227
+    }
+   ]
+  },
+  {
+   "title": "EXP 與 P：輸入加倍時的差別",
+   "scene": "np2-doubling",
+   "points": [
+    {
+     "text": "比 R 好一點的是 EXP：指數時間。",
+     "t": 266
+    },
+    {
+     "text": "EXP 的時間是 2^(n^c)；已經是指數了，前面乘 n 還是 n¹⁰⁰ 都沒差。",
+     "t": 288
+    },
+    {
+     "text": "NP 是 nondeterministic polynomial，稍後解釋。",
+     "t": 339
+    },
+    {
+     "text": "這學期除了 knapsack 以外，講的都是多項式問題。",
+     "t": 366
+    },
+    {
+     "text": "P：T(n) = O(n^c)。",
+     "t": 380
+    },
+    {
+     "text": "多項式：輸入加倍，時間只乘上常數 2^c。",
+     "t": 400
+    },
+    {
+     "text": "指數：輸入加倍，時間變平方。",
+     "t": 420
+    }
+   ],
+   "trap": "老師說指數會「quadratically」增加，精確說法是時間變成平方：2^(2n) = (2ⁿ)²。"
+  },
+  {
+   "title": "NP：有多項式時間的 verifier",
+   "scene": "np2-verifier",
+   "points": [
+    {
+     "text": "NP 的實用定義：能寫出一個 verifier。",
+     "t": 466
+    },
+    {
+     "text": "verifier 吃「問題輸入 + 一個解」，判斷對不對，而且 verifier ∈ P。",
+     "t": 496
+    },
+    {
+     "text": "解答者不能只說 YES，要輸出能說服 verifier 的東西。",
+     "t": 529
+    },
+    {
+     "text": "例：3SAT 回答「可以」沒有意義，要給出變數賦值，verifier 才能多項式時間檢查。",
+     "t": 556
+    },
+    {
+     "text": "所以 verifier 的輸入不是 YES/NO 這一個 bit。",
+     "t": 586
+    },
+    {
+     "text": "解的大小必須是輸入大小的多項式，不然 verifier 讀不完。",
+     "t": 612
+    },
+    {
+     "text": "對決策問題，這個解更嚴謹地叫做 proof。",
+     "t": 650
+    }
+   ]
+  },
+  {
+   "title": "Nondeterministic：丟硬幣永遠丟對",
+   "scene": "np2-coin-proof",
+   "points": [
+    {
+     "text": "proof 是多項式長度，所以可以用丟硬幣把每個 bit 丟出來。",
+     "t": 668
+    },
+    {
+     "text": "真的運氣好才會剛好丟出正確的 proof，機率幾乎是 0。",
+     "t": 687
+    },
+    {
+     "text": "這就是 nondeterministic polynomial 的意思。",
+     "t": 693
+    },
+    {
+     "text": "魔法機器丟硬幣永遠丟對，就能在多項式時間產生 proof。",
+     "t": 697
+    }
+   ],
+   "trap": "補充：「丟硬幣」只是比喻；nondeterministic 不是隨機演算法，而是「只要存在正確的 proof 就一定猜到」。"
+  },
+  {
+   "title": "P vs NP 未解；常識論證：RSA 金鑰",
+   "scene": "np2-rsa-key",
+   "points": [
+    {
+     "text": "這個「永遠猜對」的模型可以拿來做 P ≠ NP 的常識論證。",
+     "t": 717
+    },
+    {
+     "text": "P = NP 還是 P ≠ NP 都沒有數學證明，是價值百萬美元的開放問題。",
+     "t": 746
+    },
+    {
+     "text": "想像要冒充一家銀行：銀行之間用網路轉帳。",
+     "t": 790
+    },
+    {
+     "text": "連線用 RSA 加密：每家銀行的私鑰是兩個 n-bit 大質數 p、q。",
+     "t": 850
+    },
+    {
+     "text": "公開金鑰 N = p × q，全世界都看得到，別人才能加密訊息給你。",
+     "t": 870
+    },
+    {
+     "text": "知道 p、q 就能解密，也就能冒充銀行。",
+     "t": 904
+    }
+   ],
+   "trap": "動畫中的 p = 61、q = 53、N = 3233 是補充的小數字例子；真實 RSA 的數字約 1024 bits 以上。"
+  },
+  {
+   "title": "Factoring 的 verifier 與常識論證",
+   "scene": "np2-rsa-verify",
+   "points": [
+    {
+     "text": "Verifier 做長除法：輸入 N 和猜的 p，算 N mod p。",
+     "t": 911
+    },
+    {
+     "text": "餘數為 0 就「發大財」；不是 0 就再猜。",
+     "t": 933
+    },
+    {
+     "text": "能讓 verifier 開心就拿到 p：這是 factoring（因數分解）問題。",
+     "t": 949
+    },
+    {
+     "text": "p 和 N 通常是 1024 bits，用丟硬幣猜中的機率是 1/2¹⁰²⁴。",
+     "t": 974
+    },
+    {
+     "text": "若有演算法能產生讓 verifier 開心的輸入，就能冒充銀行，金融體系會崩潰。",
+     "t": 1004
+    },
+    {
+     "text": "金融系統還在運作，所以沒人做得到。",
+     "t": 1042
+    },
+    {
+     "text": "這裡假設一般 Turing machine；夠大的量子電腦會破解 RSA。",
+     "t": 1061
+    },
+    {
+     "text": "電子商務能運作，代表沒人能在多項式時間解 NP 問題（常識論證，不是證明）。",
+     "t": 1083
+    }
+   ]
+  },
+  {
+   "title": "Factoring 不是最難的；NP-complete 互相歸約",
+   "scene": "np2-npc-hub",
+   "points": [
+    {
+     "text": "Factoring 不是最難的 NP 問題。",
+     "t": 1093
+    },
+    {
+     "text": "（口誤更正）factoring 在 NP，只是不屬於最難的那一類。",
+     "t": 1119
+    },
+    {
+     "text": "剛才是常識論證，不是數學證明。",
+     "t": 1128
+    },
+    {
+     "text": "理論學者想了 40 多年：想不出演算法，也證不出不可能。",
+     "t": 1177
+    },
+    {
+     "text": "退而求其次：找出 NP 裡最難的問題，叫做 NP-complete。",
+     "t": 1223
+    },
+    {
+     "text": "NP-complete 問題有好幾百個，很多有實際用途。",
+     "t": 1261
+    },
+    {
+     "text": "它們全部互相關聯：透過 reduction，解出一個就解出全部。",
+     "t": 1276
+    },
+    {
+     "text": "沒人解出任何一個，所以相信它們真的很難。",
+     "t": 1327
+    }
+   ],
+   "trap": "老師一度說「Factoring is not an NP problem」是口誤：factoring ∈ NP，只是一般認為它不是 NP-complete（目前未知）。"
+  },
+  {
+   "title": "Chess：指數時間，改進常數也沒用",
+   "scene": "np2-rec-chess",
+   "points": [
+    {
+     "text": "Chess 在 EXP。",
+     "t": 1368
+    },
+    {
+     "text": "Chess 問題：給一個盤面，能不能贏？有這個演算法就能每步走到能贏的盤面。",
+     "t": 1392
+    },
+    {
+     "text": "指數是對什麼而言？chess 是盤面配置的數量，多到電腦算不完。",
+     "t": 1435
+    },
+    {
+     "text": "Deep Blue 大約搜 15 層，能跟人比但不保證贏。",
+     "t": 1452
+    },
+    {
+     "text": "只有 P 以內的問題才算「解得快」：小 n 可以跑，n 一大就撞牆。",
+     "t": 1468
+    },
+    {
+     "text": "聰明的演算法只把 2^(cn) 的 c 變小，擺脫不了 2ⁿ。",
+     "t": 1506
+    },
+    {
+     "text": "Tetris 在 NP 那裡；機器學習的很多問題也很難，所以不好 scale。",
+     "t": 1555
+    }
+   ]
+  },
+  {
+   "title": "NP-complete 的實用價值：解題地圖上的地雷",
+   "scene": "np2-landmines",
+   "points": [
+    {
+     "text": "NP-complete 對我們的意義：考試或面試時，把所有問題想成一張圖。",
+     "t": 1623
+    },
+    {
+     "text": "終點（笑臉）是會解的問題：merge sort、BFS/DFS、最短路徑、DP、hashing、D&C。",
+     "t": 1648
+    },
+    {
+     "text": "看到三個可能的 reduction，挑看起來最簡單的，再往下轉。",
+     "t": 1695
+    },
+    {
+     "text": "reduction、reduction、reduction 到笑臉就能寫答案。",
+     "t": 1735
+    },
+    {
+     "text": "壞情況：一路走向離會解的問題很遠的地方，最後時間用完。",
+     "t": 1744
+    },
+    {
+     "text": "NP-complete 問題就是地雷：例如走到「多項式時間解 knapsack」就該立刻回頭。",
+     "t": 1785
+    },
+    {
+     "text": "知道哪些是地雷，搜尋範圍小很多，更容易找到好路徑。",
+     "t": 1847
+    },
+    {
+     "text": "建議讀 CLRS 的 NP-complete 章，記住問題敘述（不用管證明）。",
+     "t": 1888
+    }
+   ]
+  },
+  {
+   "title": "SAT、CNF 與 2SAT / 3SAT",
+   "scene": "np2-cnf",
+   "points": [
+    {
+     "text": "介紹一個很重要的 NP-complete 問題：SAT（satisfiability）。",
+     "t": 1938
+    },
+    {
+     "text": "SAT：給一個邏輯式，找變數值讓它為真。",
+     "t": 1956
+    },
+    {
+     "text": "例：(x1 ∨ ¬x2) ∧ (x1 ∨ x4) ∧ (¬x1 ∨ x4) ∧ (¬x3 ∨ x4) ∧ (x2 ∨ x4)。",
+     "t": 2009
+    },
+    {
+     "text": "這種形式叫 CNF：子句用 AND 串接，子句內只有 OR 與 ¬。",
+     "t": 2035
+    },
+    {
+     "text": "每個子句至少要有一個文字為真。",
+     "t": 2056
+    },
+    {
+     "text": "每個子句最多 k 個變數，這個 k 重要到放進名字：k-SAT。",
+     "t": 2091
+    },
+    {
+     "text": "2SAT 是多項式（線性時間）；3SAT 是 NP-complete。",
+     "t": 2106
+    },
+    {
+     "text": "任何 nSAT（n > 3）都能用合理的 reduction 轉成 3SAT，大小不會爆炸。",
+     "t": 2165
+    }
+   ],
+   "trap": "老師說「四個子句」但板書其實寫了五個。這個例子每個子句只有 2 個文字，所以是 2SAT（容易）；例如 x1 = x4 = T 就滿足。"
+  },
+  {
+   "title": "3SAT 是 NP-complete 的三分鐘證明",
+   "scene": "np2-verifier-circuit",
+   "points": [
+    {
+     "text": "這說明 3SAT 是 NP-complete：拿任一 NP 問題的 verifier 開始。",
+     "t": 2187
+    },
+    {
+     "text": "把 verifier 寫成電路，輸入是問題輸入和 proof 的 bits。",
+     "t": 2205
+    },
+    {
+     "text": "電路變成布林式：AND/OR 閘變成 AND/OR。",
+     "t": 2222
+    },
+    {
+     "text": "verifier 是多項式時間，所以電路大小也是多項式。",
+     "t": 2280
+    },
+    {
+     "text": "把布林式轉成 3CNF，再丟給 3SAT。",
+     "t": 2337
+    },
+    {
+     "text": "（更正）問題輸入直接寫死在電路裡，只有 proof 的 bits 是變數。",
+     "t": 2368
+    },
+    {
+     "text": "3SAT 給出的滿足賦值就是 proof 的 bits，餵回 verifier 就解了原問題。",
+     "t": 2396
+    },
+    {
+     "text": "Factoring 例子：把 mod 演算法變成電路，解出的 bits 就是 N 的因數 p。",
+     "t": 2422
+    }
+   ]
+  },
+  {
+   "title": "暴力 2ⁿ；2SAT 與 3SAT 天差地遠；SAT solver",
+   "scene": "np2-2sat-3sat",
+   "points": [
+    {
+     "text": "直接試所有賦值是 2ⁿ（n = 變數數），不是多項式。",
+     "t": 2468
+    },
+    {
+     "text": "這是好事：不然全世界白忙了這麼多年。",
+     "t": 2493
+    },
+    {
+     "text": "2SAT 是多項式。",
+     "t": 2540
+    },
+    {
+     "text": "2SAT 在 P 的很左邊，3SAT 在 NP 的最右端。",
+     "t": 2562
+    },
+    {
+     "text": "子句只差一個變數（2 或 3），難度天差地遠。",
+     "t": 2583
+    },
+    {
+     "text": "暴力法大約 20 個變數就卡住。",
+     "t": 2643
+    },
+    {
+     "text": "現代 SAT solver 用推論與聰明的搜尋，幾小時能處理 1000–10000 個變數。",
+     "t": 2653
+    },
+    {
+     "text": "但 1000-bit 的 factoring 還是沒被破解。",
+     "t": 2701
+    }
+   ]
+  },
+  {
+   "title": "Reduction 就是 graph transformation；小心大小爆炸",
+   "scene": "np2-blowup",
+   "points": [
+    {
+     "text": "解出一個 NP-complete 就解出全部，靠的是 reduction。",
+     "t": 2725
+    },
+    {
+     "text": "本課的 graph transformation 就是 reduction：建圖、跑最短路徑、再轉回原題的解。",
+     "t": 2750
+    },
+    {
+     "text": "終點不一定是最短路徑，任何會解的問題都可以。",
+     "t": 2767
+    },
+    {
+     "text": "但要小心 reduction 讓輸入大小爆炸。",
+     "t": 2792
+    },
+    {
+     "text": "例：把 3CNF 轉成有 3ⁿ 個頂點的圖再跑 Dijkstra，時間至少 3ⁿ，不是多項式。",
+     "t": 2802
+    },
+    {
+     "text": "複雜度理論：一個「為什麼解不出來」的大理由。",
+     "t": 2824
+    }
+   ],
+   "trap": "reduction 本身必須是多項式時間、產生多項式大小的輸入，否則推不出原問題能多項式時間解。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Rec23 中 R 這個類別代表什麼？",
+   "opts": [
+    "decidable：有限時間內一定能算完",
+    "所有實數",
+    "隨機演算法可解",
+    "多項式時間可解"
+   ],
+   "ans": "decidable：有限時間內一定能算完",
+   "why": "R 來自 recursive，意思是可判定；Halting problem 不在 R。"
+  },
+  {
+   "q": "多項式時間 O(n³) 的演算法，輸入加倍時間會變成？",
+   "opts": [
+    "乘以 8",
+    "平方",
+    "加 8",
+    "不變"
+   ],
+   "ans": "乘以 8",
+   "why": "(2n)³ = 2³·n³；多項式只乘常數 2^c，指數則變平方。"
+  },
+  {
+   "q": "NP 問題的 verifier 收什麼當輸入？",
+   "opts": [
+    "問題輸入和一份多項式大小的解（proof）",
+    "只有 YES/NO 一個 bit",
+    "所有可能的解",
+    "只有問題輸入"
+   ],
+   "ans": "問題輸入和一份多項式大小的解（proof）",
+   "why": "說 YES 沒有意義，要給出例如 3SAT 的變數賦值讓 verifier 檢查。"
+  },
+  {
+   "q": "Factoring 的 verifier 收到 N 和猜的 p，要檢查什麼？",
+   "opts": [
+    "N mod p 是否為 0",
+    "p 是否為質數",
+    "N 是否為質數",
+    "p 是否小於 √N"
+   ],
+   "ans": "N mod p 是否為 0",
+   "why": "長除法是多項式時間；餘數 0 就找到因數。"
+  },
+  {
+   "q": "關於 factoring，下列何者正確？",
+   "opts": [
+    "在 NP，但一般認為不是 NP-complete",
+    "是 NP-complete",
+    "不在 NP",
+    "已證明在 P"
+   ],
+   "ans": "在 NP，但一般認為不是 NP-complete",
+   "why": "助教說 factoring「不跟 cool kids 在一起」：不是最難的 NP 問題。"
+  },
+  {
+   "q": "2SAT 和 3SAT 的複雜度？",
+   "opts": [
+    "2SAT 在 P；3SAT 是 NP-complete",
+    "兩者都是 NP-complete",
+    "兩者都在 P",
+    "2SAT 是 NP-complete；3SAT 在 P"
+   ],
+   "ans": "2SAT 在 P；3SAT 是 NP-complete",
+   "why": "每子句只差一個文字，難度天差地遠。"
+  },
+  {
+   "q": "在 3SAT 是 NPC 的證明中，原問題的輸入如何處理？",
+   "opts": [
+    "寫死在電路裡；只有 proof 的 bits 是變數",
+    "也當成 3SAT 的變數讓它猜",
+    "直接丟掉",
+    "轉成 2SAT"
+   ],
+   "ans": "寫死在電路裡；只有 proof 的 bits 是變數",
+   "why": "助教更正：輸入 hard-code，3SAT 的賦值就是 proof 的 bits。"
+  },
+  {
+   "q": "把 n 個子句的 3CNF 轉成有 3ⁿ 個頂點的圖再跑 Dijkstra，問題在哪？",
+   "opts": [
+    "輸入大小爆炸，整體不是多項式",
+    "Dijkstra 不能處理這種圖",
+    "3CNF 無法轉成圖",
+    "沒有問題，這證明 P = NP"
+   ],
+   "ans": "輸入大小爆炸，整體不是多項式",
+   "why": "reduction 本身必須是多項式時間、多項式大小。"
+  }
+ ]
+}

@@ -1,0 +1,597 @@
+{
+ "video": "PqN0aJeYtuA",
+ "label": "交大江蕙如 Lec22 Beyond Polynomial Running Times (1/2)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "單元簡介：比 polynomial 更久的問題",
+   "scene": "np1-j-two-groups",
+   "points": [
+    {
+     "text": "新單元：有沒有問題需要比 polynomial running time 更久的時間才能完成？",
+     "t": 18
+    },
+    {
+     "text": "很多問題目前看起來很困難：到現在沒有人找到 polynomial time 演算法去 optimally 解它們。",
+     "t": 32
+    },
+    {
+     "text": "本單元兩個重點：polynomial time reduction 與 NP-completeness。",
+     "t": 66
+    },
+    {
+     "text": "1960 年代的共識：找得到 polynomial time algorithm 就算 efficient，這個問題也算容易解。",
+     "t": 118
+    },
+    {
+     "text": "科學家想把問題分成兩群：有 poly 演算法的簡單問題，和不存在 poly 演算法的難問題。",
+     "t": 161
+    },
+    {
+     "text": "但其實不知道：這些目前沒人解得出來的問題，是不是真的不存在 poly 解。",
+     "t": 194
+    },
+    {
+     "text": "這個問題被列為千禧年的大難題之一，解出來可以得獎、在歷史上留名。",
+     "t": 235
+    },
+    {
+     "text": "這群問題難度同等級：用 poly 演算法解掉其中一個，整個 class 都能用 poly time 解。",
+     "t": 379
+    }
+   ],
+   "trap": "補充：Clay 千禧年大獎難題共 7 題（不是「十大」），P vs NP 是其中一題，獎金 100 萬美元。"
+  },
+  {
+   "title": "Decision vs Optimization：以 MST 為例",
+   "scene": "np1-j-mst-dec",
+   "points": [
+    {
+     "text": "先講重要概念：問題可以用 decision problem 或 optimization problem 兩種形式定義。",
+     "t": 437
+    },
+    {
+     "text": "Optimization：input instance 進來，找一個 solution 讓定義好的 cost 最小或最大（greedy、DP 多是這種）。",
+     "t": 465
+    },
+    {
+     "text": "Optimization 的 formulation 包含 objective function 和 constraint。",
+     "t": 487
+    },
+    {
+     "text": "Decision problem 只問 yes / no，也常寫成 1 / 0。",
+     "t": 531
+    },
+    {
+     "text": "MST 的 optimization 版：給一張 edge 有 cost 的 graph，找 cost 總和最低的 spanning tree。",
+     "t": 570
+    },
+    {
+     "text": "Decision 版不能叫它 minimize，要多給一個 bound k。",
+     "t": 680
+    },
+    {
+     "text": "問：是否存在 cost 不超過 k 的 spanning tree？bound 給太小就回答找不到。",
+     "t": 697
+    },
+    {
+     "text": "描述 decision problem 一定要給參考的 bound 值，不然沒辦法回答 yes / no。",
+     "t": 768
+    }
+   ],
+   "trap": "補充：投影片的圖沒有給數字，動畫用自建的 5 點圖（MST cost = 9）示意。"
+  },
+  {
+   "title": "TSP 的 optimization 與 decision 形式",
+   "scene": "np1-j-tsp-dec",
+   "points": [
+    {
+     "text": "例二 traveling salesman problem：salesman 從所在城市出發，拜訪所有客戶再回到原城市。",
+     "t": 794
+    },
+    {
+     "text": "給定一些 city 和任兩個 city 之間的距離，找總長最小的 route。",
+     "t": 843
+    },
+    {
+     "text": "條件：start 和 end 在同一個 city，而且每個 city 剛好 visit 一次。",
+     "t": 882
+    },
+    {
+     "text": "Decision 版要額外給一個 input：bound B。",
+     "t": 936
+    },
+    {
+     "text": "問：是否存在起訖同城、每個 city 恰一次、總 cost 不超過 B 的 route？",
+     "t": 968
+    },
+    {
+     "text": "本單元探討的都是 decision problem 的形式，請特別注意。",
+     "t": 1007
+    }
+   ]
+  },
+  {
+   "title": "用 binary search 從 decision 回到 optimization",
+   "scene": "np1-j-bsearch",
+   "points": [
+    {
+     "text": "Decision 只說沒有超過 bound，不知道這個 bound 是不是剛好是最佳值。",
+     "t": 1036
+    },
+    {
+     "text": "手上只有 decision 版時，用 binary search 來決定 bound 該設多少。",
+     "t": 1082
+    },
+    {
+     "text": "例：問有沒有 cost 不超過 1000 的 spanning tree？答 yes 就砍一半問 500。",
+     "t": 1102
+    },
+    {
+     "text": "500 也 yes 就問 250；250 找不到，就卡中間問 375。",
+     "t": 1126
+    },
+    {
+     "text": "幾次之後會收斂：小一點就找不到、大一點一定找得到，那個 bound 就是最佳解的值。",
+     "t": 1141
+    },
+    {
+     "text": "所以 decision problem 和 optimization problem 可以互相轉換。",
+     "t": 1165
+    }
+   ],
+   "trap": "補充：二分搜需要 O(log 上界) 次判定；cost 是整數、判定是 poly time 時，最佳值也能 poly time 求出。動畫的最佳值 300 只是示意。"
+  },
+  {
+   "title": "實例：13509 個城市的 TSP",
+   "scene": "np1-j-tsp-dec",
+   "params": {
+    "opt": 1
+   },
+   "points": [
+    {
+     "text": "例子：美國地圖上 highlight 出 13509 個城市，計算 TSP 的 minimum route。",
+     "t": 1174
+    },
+    {
+     "text": "每年都有 TSP 競賽，網站上隨時有新的 instance 可以測試。",
+     "t": 1211
+    },
+    {
+     "text": "之前用 dynamic programming 解 TSP，複雜度還是很高，只是沒有高到階乘。",
+     "t": 1245
+    },
+    {
+     "text": "本單元後面要說明 TSP 確實很難，是 NP-complete 等級的問題。",
+     "t": 1279
+    }
+   ],
+   "trap": "補充：Held–Karp 的 DP 是 O(n²·2ⁿ)，比暴力 O(n!) 好，但仍是指數時間。"
+  },
+  {
+   "title": "Cook 與 Karp：NPC 的起源",
+   "scene": "np1-j-history",
+   "points": [
+    {
+     "text": "複雜度分級的故事可追溯到 1970 年代初期，Stephen Cook 和 Richard Karp 打下基礎。",
+     "t": 1304
+    },
+    {
+     "text": "Cook 證明出史上第一個 NP-complete 問題（SAT）。",
+     "t": 1338
+    },
+    {
+     "text": "接著 Karp 一次發表 21 個 NP-complete 問題 → 一開始就有 22 個。",
+     "t": 1356
+    },
+    {
+     "text": "那個年代，找到新問題並證明它是 NPC 就可以寫一篇論文。",
+     "t": 1379
+    },
+    {
+     "text": "1970 年代有一本很有名的小書，等於是 NP-complete 問題的字典。",
+     "t": 1389
+    },
+    {
+     "text": "查到手上的問題是 NPC → 不追求 efficient 的最佳解，退而找 heuristic 或 approximation algorithm。",
+     "t": 1427
+    },
+    {
+     "text": "當時大家各自研究、各自取名，所以書上常看到意思相近但名稱不同的 terminology。",
+     "t": 1496
+    }
+   ],
+   "trap": "補充：Cook 1971、Karp 1972；那本「字典」是 Garey & Johnson《Computers and Intractability》（1979）。"
+  },
+  {
+   "title": "Class P 與 Class NP",
+   "scene": "np1-j-p-np",
+   "points": [
+    {
+     "text": "這些 class 不是完全互斥的，只是分類的方法不一樣。",
+     "t": 1528
+    },
+    {
+     "text": "Class P：存在 polynomial time algorithm 去 solve 的問題。",
+     "t": 1543
+    },
+    {
+     "text": "Polynomial 一定要是 problem size 的 polynomial；pseudo-polynomial 不算。",
+     "t": 1568
+    },
+    {
+     "text": "例：subset sum、knapsack 的 DP 看起來像 poly，其實是 pseudo-polynomial，而且兩者都是 Karp 21 個 NPC 之一。",
+     "t": 1584
+    },
+    {
+     "text": "P 講的是真的「解決」、得到解。",
+     "t": 1622
+    },
+    {
+     "text": "NP = non-deterministic polynomial；N 不是 non，NP 不是「非 P」。",
+     "t": 1636
+    },
+    {
+     "text": "NP：能在 polynomial time 內「驗證」一個 solution 是否合法——只是 check，不用找出它。",
+     "t": 1677
+    },
+    {
+     "text": "大部分人認為 P 比較小、被 NP 包在裡面。",
+     "t": 1729
+    }
+   ],
+   "trap": "更正：老師說 P 和 NP「並非完全互相包含、其實還不知道」；P ⊆ NP 是已證明的（能 poly time 解就能 poly time 驗證），未知的是 P = NP 還是 P ⊊ NP。"
+  },
+  {
+   "title": "NP-complete 的定義與 ≤p 符號",
+   "scene": "np1-j-npc-def",
+   "points": [
+    {
+     "text": "本單元特別要探討 NP-complete 這個 class。",
+     "t": 1763
+    },
+    {
+     "text": "白話：NP-complete 是 NP 這個 class 裡最難的一小撮問題。",
+     "t": 1777
+    },
+    {
+     "text": "若 Y ∈ NP 且是 NPC：NP 裡任何一個問題 X 都能 reduce 到 Y，用 Y 的演算法去解。",
+     "t": 1808
+    },
+    {
+     "text": "Polynomial time reduction 的符號 X ≤p Y：≤ 暗示右邊比較難，或一樣難。",
+     "t": 1863
+    },
+    {
+     "text": "下標 p：額外做的轉換只需要 polynomial time。",
+     "t": 1889
+    },
+    {
+     "text": "要轉換是因為 X 的 input 長相和 Y 不同，要先轉成 Y 的 input 才能用 Y 的演算法。",
+     "t": 1902
+    },
+    {
+     "text": "依定義，NP 裡所有問題都能花 poly time 轉成這個 NPC 問題去解，所以它最難。",
+     "t": 1953
+    }
+   ]
+  },
+  {
+   "title": "Theorem：NPC 有 poly 解 → P = NP",
+   "scene": "np1-j-pnp-theorem",
+   "points": [
+    {
+     "text": "結論：若 Y 是 NPC，而且有人能用 polynomial time 解 Y，則 Y ∈ P。",
+     "t": 2001
+    },
+    {
+     "text": "其他 NP 問題都能轉成 Y 的 input 去解 → 也都屬於 P。",
+     "t": 2023
+    },
+    {
+     "text": "所以 P = NP 嗎？目前不知道，所以打一個問號。",
+     "t": 2064
+    },
+    {
+     "text": "從 1970 年代到現在沒人找到，大部分人傾向相信不相等。",
+     "t": 2093
+    },
+    {
+     "text": "幾年前一位 HP 的 scientist 提出 81 頁的證明（P ≠ NP），放上網讓大家 debug。",
+     "t": 2116
+    },
+    {
+     "text": "後來發現證明有瑕疵、過不去，幾個月後就撤下來了。",
+     "t": 2158
+    },
+    {
+     "text": "整理：P 是 poly time 能 solve；NP 是 poly time 能 verify。",
+     "t": 2236
+    },
+    {
+     "text": "有人能 poly time 解一個 NPC 問題 → P、NP 合而為一，所有 NP 問題都變簡單。",
+     "t": 2330
+    }
+   ],
+   "trap": "補充：那位是 Vinay Deolalikar（2010）。"
+  },
+  {
+   "title": "驗證演算法：兩個 argument",
+   "scene": "np1-j-verifier-mst",
+   "points": [
+    {
+     "text": "NP 探討的是 verify 的時間是 polynomial。",
+     "t": 2366
+    },
+    {
+     "text": "驗證要交給一個 two-argument 的 verification algorithm，它會回答 yes / no。",
+     "t": 2385
+    },
+    {
+     "text": "第一個 input：討論的 instance，例如 MST decision 版的 graph 和 bound。",
+     "t": 2396
+    },
+    {
+     "text": "第二個 input：某一個 solution——白話就是隨便一棵 tree 丟給它。",
+     "t": 2418
+    },
+    {
+     "text": "它檢查這棵 tree 是否符合 spanning tree 條件、cost 是否不超過給定的 bound。",
+     "t": 2432
+    }
+   ]
+  },
+  {
+   "title": "TSP ∈ NP：猜一個 tour 再檢查",
+   "scene": "np1-j-tsp-verify",
+   "points": [
+    {
+     "text": "TSP 的 input：n 個 city、兩兩之間的距離，還有 bound（用來判斷有沒有超過）。",
+     "t": 2476
+    },
+    {
+     "text": "要說明 TSP ∈ NP，就看能不能在 polynomial time 內 verify 一個 solution。",
+     "t": 2532
+    },
+    {
+     "text": "這個 solution 叫 certificate；第一步先隨便猜（guess）一個 tour。",
+     "t": 2560
+    },
+    {
+     "text": "檢查一：tour 的起點和終點是不是同一個城市——抓頭尾就知道。",
+     "t": 2617
+    },
+    {
+     "text": "檢查二：掃一遍，看是否 visit 每個 city 剛好一次。",
+     "t": 2639
+    },
+    {
+     "text": "檢查三：沿著 tour 走一圈把距離加起來，看是否 ≤ bound。",
+     "t": 2658
+    },
+    {
+     "text": "全部 linear time 做完 → polynomial time → TSP ∈ NP。",
+     "t": 2697
+    },
+    {
+     "text": "作業 5 第 2 題的第一步就是做這件事，第二步再證 NP-complete。",
+     "t": 2721
+    }
+   ]
+  },
+  {
+   "title": "CIRCUIT-SAT：第一個被證明的 NPC",
+   "scene": "np1-j-circuit-sat",
+   "points": [
+    {
+     "text": "史上第一個被證明是 NP-complete 的問題：不講證明，但題目一定要記。",
+     "t": 2759
+    },
+    {
+     "text": "它是 circuit satisfiability，大一邏輯設計就做過很多遍。",
+     "t": 2776
+    },
+    {
+     "text": "給一個 combinational circuit，只由 AND、OR、NOT 三種 gate 組成。",
+     "t": 2793
+    },
+    {
+     "text": "投影片符號：倒 V（∧）是 AND，正 V（∨）是 OR，勾勾（¬）是 NOT。",
+     "t": 2822
+    },
+    {
+     "text": "問：能不能適當地把 input 設成 0 或 1，使得 output 為 1？",
+     "t": 2867
+    },
+    {
+     "text": "小 case 推一推就出來，但這就是史上第一個被證明是 NPC 等級的問題。",
+     "t": 2904
+    }
+   ],
+   "trap": "補充：Cook 1971 原始證明的是 SAT（布林公式）；CLRS 先證 CIRCUIT-SAT 是 NPC 再歸約到 SAT。動畫的電路是自建的小例子。"
+  },
+  {
+   "title": "NPC 問題才是主流",
+   "scene": null,
+   "points": [
+    {
+     "text": "NP-complete 問題非常多，各個領域都有。",
+     "t": 2927
+    },
+    {
+     "text": "電機領域：VLSI layout、RTL 轉 netlist、驗證，都有很多很困難的問題。",
+     "t": 2939
+    },
+    {
+     "text": "NPC 才是主流：真的能 poly time optimally 解的問題非常少，課本寫的只是很小的 subset。",
+     "t": 2970
+    }
+   ]
+  },
+  {
+   "title": "Reduction 的老例子：matching → network flow",
+   "scene": "np1-j-bip-flow",
+   "points": [
+    {
+     "text": "接著講本單元非常重要的概念：polynomial time reduction。",
+     "t": 3065
+    },
+    {
+     "text": "遇到新問題時，常希望用現有的演算法去解，而不是發展新的。",
+     "t": 3114
+    },
+    {
+     "text": "例：之前用 network flow 解 bipartite matching。",
+     "t": 3131
+    },
+    {
+     "text": "把 bipartite matching transform 成 network flow 的 input，用 flow 的演算法解，再翻譯回 matching 的 solution。",
+     "t": 3150
+    },
+    {
+     "text": "轉換幾乎完全照抄，再多加 source、sink 兩點和邊 → linear time。",
+     "t": 3179
+    },
+    {
+     "text": "轉換一定要 polynomial time，花 exponential time 去轉就白搭了。",
+     "t": 3236
+    },
+    {
+     "text": "在這個單元，reduction 用在另一個方向：證明 NP 裡的問題都能 reduce 到很難的問題上。",
+     "t": 3264
+    }
+   ]
+  },
+  {
+   "title": "X ≤p Y 的定義：可去可回",
+   "scene": "np1-j-reduce-def",
+   "points": [
+    {
+     "text": "Reduction 是很強的武器：能 poly time 解 Y 時，想知道還有多少問題能跟著解。",
+     "t": 3291
+    },
+    {
+     "text": "≤ 隱含左邊比較簡單、右邊比較難（頂多一樣難）。",
+     "t": 3322
+    },
+    {
+     "text": "右下角的 p：把左邊的 input 轉成右邊的 input，所需時間是 polynomial。",
+     "t": 3343
+    },
+    {
+     "text": "X ≤p Y：任何 X 的 instance x 都能在 poly time 內 transform 成 Y 的 input。",
+     "t": 3385
+    },
+    {
+     "text": "要 if and only if：x 在 X 回答 yes ⇔ 轉出來的 instance 在 Y 也回答 yes。",
+     "t": 3417
+    },
+    {
+     "text": "要可以過去也可以回來，Y 的答案才能翻譯回原問題。",
+     "t": 3470
+    },
+    {
+     "text": "證明要做三件事：poly time transformation、X yes ⇒ Y yes、Y yes ⇒ X yes。",
+     "t": 3494
+    },
+    {
+     "text": "Y 的演算法當成 black box 交給別人，重點放在 transformation。",
+     "t": 3536
+    }
+   ]
+  },
+  {
+   "title": "下次預告",
+   "scene": null,
+   "points": [
+    {
+     "text": "下一頁講怎麼使用 polynomial time reduction，時間到了下次再講。",
+     "t": 3562
+    },
+    {
+     "text": "下次用 traveling salesman problem 示範怎麼證一個 polynomial time reduction。",
+     "t": 3584
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "NP 的「N」代表什麼？",
+   "opts": [
+    "Non-deterministic",
+    "Non（非 P）",
+    "Network",
+    "Normal"
+   ],
+   "ans": "Non-deterministic",
+   "why": "NP = non-deterministic polynomial；屬於 NP 不代表不屬於 P。"
+  },
+  {
+   "q": "下列哪一個是 MST 的 decision 版本？",
+   "opts": [
+    "找 cost 最小的 spanning tree",
+    "是否存在 cost ≤ k 的 spanning tree？",
+    "列出所有 spanning tree",
+    "計算 spanning tree 的個數"
+   ],
+   "ans": "是否存在 cost ≤ k 的 spanning tree？",
+   "why": "Decision 版只回答 yes / no，而且一定要給 bound k。"
+  },
+  {
+   "q": "Knapsack 的 DP 是 O(nW)，為什麼不能說 knapsack ∈ P？",
+   "opts": [
+    "O(nW) 是 pseudo-polynomial：W 只佔 lg W 個 bit",
+    "DP 不能算正確答案",
+    "O(nW) 是指數的 n",
+    "因為 knapsack 不是 decision problem"
+   ],
+   "ans": "O(nW) 是 pseudo-polynomial：W 只佔 lg W 個 bit",
+   "why": "P 要求對 input 長度是 polynomial；W 對 lg W 是指數。"
+  },
+  {
+   "q": "若某個 NP-complete 問題被找到 poly time 演算法，會推出什麼？",
+   "opts": [
+    "P = NP",
+    "P ≠ NP",
+    "只有那個問題在 P",
+    "NP-hard = NP"
+   ],
+   "ans": "P = NP",
+   "why": "所有 NP 問題都能 poly time reduce 到它，所以全部都能 poly time 解。"
+  },
+  {
+   "q": "驗證一個 TSP tour 不需要檢查哪一項？",
+   "opts": [
+    "它是不是所有 tour 中最短的",
+    "起點是否等於終點",
+    "每個 city 是否恰好一次",
+    "總長是否 ≤ B"
+   ],
+   "ans": "它是不是所有 tour 中最短的",
+   "why": "Decision 版只問 ≤ B；三項檢查都是 linear time，所以 TSP ∈ NP。"
+  },
+  {
+   "q": "X ≤p Y 代表什麼？",
+   "opts": [
+    "Y 至少和 X 一樣難",
+    "X 至少和 Y 一樣難",
+    "X 和 Y 一定一樣難",
+    "Y 一定在 P"
+   ],
+   "ans": "Y 至少和 X 一樣難",
+   "why": "能解 Y 就能經 poly 轉換解 X，所以右邊比較難或一樣難。"
+  },
+  {
+   "q": "只有 MST 的 decision 版（cost ≤ k？）時，怎麼求最小 cost？",
+   "opts": [
+    "對 k 做 binary search",
+    "把 k 設成 0",
+    "列舉所有 tree",
+    "沒辦法求"
+   ],
+   "ans": "對 k 做 binary search",
+   "why": "1000 yes → 500 yes → 250 no → 375 …，收斂到最佳值。"
+  }
+ ]
+}

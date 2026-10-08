@@ -1,0 +1,332 @@
+{
+ "video": "qZs767KQcvE",
+ "label": "Abdul Bari：8.1 NP-Hard Graph Problem - Clique Decision Problem",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "本集內容",
+   "scene": null,
+   "points": [
+    {
+     "text": "主題：clique decision problem（CDP），一個 NP-hard graph problem。",
+     "t": 0
+    },
+    {
+     "text": "依序講 clique、decision vs optimization、怎麼證 NP-hard，最後證 CDP 是 NP-hard。",
+     "t": 8
+    }
+   ]
+  },
+  {
+   "title": "Complete graph 與 clique",
+   "scene": "np1-c-complete",
+   "points": [
+    {
+     "text": "例圖：4 個頂點，每個點都和其他所有點相連 → complete graph。",
+     "t": 41
+    },
+    {
+     "text": "n 個頂點的 complete graph 有 n(n−1)/2 條邊。",
+     "t": 60
+    },
+    {
+     "text": "也有 3 個點、2 個點的 complete graph。",
+     "t": 76
+    },
+    {
+     "text": "加一個頂點 5，只連到其中兩個點 → 整張圖不再是 complete graph。",
+     "t": 90
+    },
+    {
+     "text": "但它的 subgraph 是 complete graph → 這種 subgraph 叫 clique。",
+     "t": 118
+    },
+    {
+     "text": "另一例：3 個點的 complete graph 加上 4、5 兩點後，沒有 size 4 的，但有 size 3 的 clique。",
+     "t": 145
+    },
+    {
+     "text": "Clique 可以是 2 個、3 個、4 個…n 個頂點。",
+     "t": 183
+    }
+   ]
+  },
+  {
+   "title": "在圖 G 上找 clique",
+   "scene": "np1-c-cliques",
+   "points": [
+    {
+     "text": "圖 G 有 6 個頂點，找出哪些 subgraph 是 complete graph。",
+     "t": 196
+    },
+    {
+     "text": "有 4 個頂點組成 size 4 的 clique。",
+     "t": 214
+    },
+    {
+     "text": "也有 size 3 的 clique，換另外 3 個點也是。",
+     "t": 220
+    },
+    {
+     "text": "頂點 5、6 一條邊 → size 2 的 clique。",
+     "t": 233
+    },
+    {
+     "text": "最大的 clique 是 size 4。",
+     "t": 243
+    }
+   ],
+   "trap": "補充：影片圖的確切邊沒有唸出來，動畫用一張同樣有 size 4／3／2 clique 的 6 點圖示意。"
+  },
+  {
+   "title": "Decision vs optimization：CDP",
+   "scene": "np1-c-cliques",
+   "params": {
+    "dec": 1
+   },
+   "points": [
+    {
+     "text": "用這個例子理解 decision problem 與 optimization problem。",
+     "t": 251
+    },
+    {
+     "text": "有 size 3 的 clique 嗎？yes；size 2 呢？yes → 答 yes / no 的是 decision problem。",
+     "t": 257
+    },
+    {
+     "text": "有 size 4 的 clique 嗎？答案是 yes。",
+     "t": 284
+    },
+    {
+     "text": "最大的 clique 是多大？4 以上沒有，所以是 4 → optimization problem。",
+     "t": 298
+    },
+    {
+     "text": "求最大或最小是 optimization；問有沒有 size k 的 clique 是 decision。",
+     "t": 313
+    },
+    {
+     "text": "Clique decision problem（CDP）是一個 graph problem。",
+     "t": 371
+    },
+    {
+     "text": "Decision 版是 NP-hard，optimization 版也就是 NP-hard。",
+     "t": 379
+    }
+   ]
+  },
+  {
+   "title": "證明 NP-hard 的程序",
+   "scene": "np1-b-reduce",
+   "params": {
+    "clique": 1
+   },
+   "points": [
+    {
+     "text": "證明一個 graph problem 是 NP-hard 的一般方法。",
+     "t": 395
+    },
+    {
+     "text": "要證 L2 是 NP-hard：選一個已知 NP-hard 的 L1，證明 L1 reduces to L2。",
+     "t": 417
+    },
+    {
+     "text": "從 L1 的例子造出 L2 的例子：L2 能解則 L1 也能解，而且轉換是 poly time。",
+     "t": 441
+    },
+    {
+     "text": "要證的是 CDP；已知 NP-hard 的問題是 satisfiability。",
+     "t": 470
+    },
+    {
+     "text": "要證 SAT ∝ CDP：從一個 CNF 公式造出一張有 clique 的圖。",
+     "t": 485
+    }
+   ]
+  },
+  {
+   "title": "公式 → 頂點",
+   "scene": "np1-c-sat-cdp",
+   "params": {
+    "step": "vert"
+   },
+   "points": [
+    {
+     "text": "先用例子說明：取 3 個變數 x1、x2、x3 的公式。",
+     "t": 526
+    },
+    {
+     "text": "F = (x1 ∨ x2) ∧ (¬x1 ∨ ¬x2) ∧ (x1 ∨ x3)；不是每個子句都含三個變數。",
+     "t": 534
+    },
+    {
+     "text": "三個子句 C1、C2、C3 用 ∧ 連起來；一般有 k 個子句。",
+     "t": 558
+    },
+    {
+     "text": "要造出一張圖，裡面有 size k 的 clique；這裡 k = 3。",
+     "t": 586
+    },
+    {
+     "text": "每個 literal 變成一個頂點；各子句的頂點分開放，不混在一起。",
+     "t": 593
+    },
+    {
+     "text": "頂點寫成 ⟨a, i⟩：a 是 literal，i 是它所在的子句 Ci。",
+     "t": 645
+    }
+   ]
+  },
+  {
+   "title": "連邊的兩個規則",
+   "scene": "np1-c-sat-cdp",
+   "params": {
+    "step": "edge"
+   },
+   "points": [
+    {
+     "text": "規則一：同一個子句的頂點不能相連。",
+     "t": 672
+    },
+    {
+     "text": "不同子句的頂點可以相連。",
+     "t": 684
+    },
+    {
+     "text": "規則二：不能連到自己的 negation，例如 x1 和 ¬x1 不連。",
+     "t": 700
+    },
+    {
+     "text": "x1 到 ¬x2、x2 到 ¬x1 可以；x2 到 ¬x2 不行。",
+     "t": 722
+    },
+    {
+     "text": "正式：邊 ⟨a, i⟩–⟨b, j⟩ 要滿足 i ≠ j 且 b ≠ ā。",
+     "t": 739
+    },
+    {
+     "text": "依規則把其他子句之間的邊連完（¬x1 和 x1 不連）。",
+     "t": 771
+    },
+    {
+     "text": "從這個公式得到的圖，就是 CDP 的例子。",
+     "t": 806
+    }
+   ]
+  },
+  {
+   "title": "Clique → 公式成立",
+   "scene": "np1-c-sat-cdp",
+   "params": {
+    "step": "clique"
+   },
+   "points": [
+    {
+     "text": "公式有 k = 3 個子句：圖裡有沒有 size 3 的 clique？",
+     "t": 829
+    },
+    {
+     "text": "有 size 3 的 clique；找不到 size 4 的。",
+     "t": 844
+    },
+    {
+     "text": "還有其他三角形，選其中一個就好。",
+     "t": 864
+    },
+    {
+     "text": "公式有 k 個子句，圖裡就會有 size k 的 clique。",
+     "t": 879
+    },
+    {
+     "text": "把選到的頂點設成 true：x2 = 1、¬x1 為真 → x1 = 0、x3 = 1。",
+     "t": 905
+    },
+    {
+     "text": "代入：C1 = 0 ∨ 1 = 1、C2 = 1 ∨ 0 = 1、C3 = 0 ∨ 1 = 1 → F = 1。",
+     "t": 939
+    },
+    {
+     "text": "選其他 clique 照做，公式也會成立。",
+     "t": 983
+    },
+    {
+     "text": "所以 satisfiability 是 NP-hard → CDP 也是 NP-hard（Bari 強調只證到 NP-hard）。",
+     "t": 1002
+    },
+    {
+     "text": "要證 NP-complete，還要寫出 CDP 的 non-deterministic poly 演算法；CDP 其實已知是 NPC。",
+     "t": 1013
+    }
+   ],
+   "trap": "補充：嚴格的 reduction 要證「F 可滿足 ⇔ G 有 k-clique」兩個方向；影片只示範 clique → 可滿足。反方向：每個子句挑一個為真的 literal，它們分屬不同子句、不會互相矛盾，所以兩兩有邊。CLRS 34.5.1 用 3-CNF-SAT 做同樣的歸約。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "5 個頂點的 complete graph 有幾條邊？",
+   "opts": [
+    "10",
+    "5",
+    "20",
+    "25"
+   ],
+   "ans": "10",
+   "why": "n(n−1)/2 = 5·4/2 = 10。"
+  },
+  {
+   "q": "「這張圖最大的 clique 有多大？」是哪一種問題？",
+   "opts": [
+    "Optimization problem",
+    "Decision problem",
+    "Verification problem",
+    "不是問題"
+   ],
+   "ans": "Optimization problem",
+   "why": "問最大／最小是 optimization；問「有沒有 size k」才是 decision。"
+  },
+  {
+   "q": "SAT ∝ CDP 中，同一個子句裡的兩個 literal 頂點會連邊嗎？",
+   "opts": [
+    "不會",
+    "會",
+    "只有互為 negation 時才會",
+    "看 k 的大小"
+   ],
+   "ans": "不會",
+   "why": "規則一：i ≠ j，同一子句不連。"
+  },
+  {
+   "q": "SAT ∝ CDP 中，C1 的 x1 和 C2 的 ¬x1 會連邊嗎？",
+   "opts": [
+    "不會，互為 negation",
+    "會，因為不同子句",
+    "只在 k = 2 時會",
+    "一定會"
+   ],
+   "ans": "不會，互為 negation",
+   "why": "規則二：b ≠ ā。"
+  },
+  {
+   "q": "公式有 k 個子句，要在圖中找多大的 clique？",
+   "opts": [
+    "k",
+    "k − 1",
+    "2k",
+    "變數個數"
+   ],
+   "ans": "k",
+   "why": "每個子句剛好選一個頂點。"
+  },
+  {
+   "q": "Bari 的例子選了 clique {x2, ¬x1, x3}，對應的賦值是？",
+   "opts": [
+    "x1 = 0, x2 = 1, x3 = 1",
+    "x1 = 1, x2 = 1, x3 = 1",
+    "x1 = 1, x2 = 0, x3 = 1",
+    "x1 = 0, x2 = 0, x3 = 0"
+   ],
+   "ans": "x1 = 0, x2 = 1, x3 = 1",
+   "why": "¬x1 為真代表 x1 = 0；三個子句都成立。"
+  }
+ ]
+}
