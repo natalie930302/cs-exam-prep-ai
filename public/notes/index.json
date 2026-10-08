@@ -909,7 +909,7 @@
   "label": "交大彭文志 Lec08 Lists (1/4)",
   "points": 76,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "lj3E24nnPjI": {
   "label": "Abdul Bari：1.11 Best Worst and Average Case Analysis",
@@ -1287,7 +1287,7 @@
   "label": "交大彭文志 Lec09 Lists (2/4)",
   "points": 171,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "V42FBiohc6c": {
   "label": "Time Complexity of a Computer Program",
@@ -1419,7 +1419,7 @@
   "label": "交大彭文志 Lec11 Lists (4/4)",
   "points": 67,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "yWZHGsd06dA": {
   "label": "交大江蕙如 Lec12 Greedy Algorithms (3/5)",
@@ -1443,7 +1443,7 @@
   "label": "交大彭文志 Lec10 Lists (3/4)",
   "points": 99,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "zRza99HPvkQ": {
   "label": "Abdul Bari：4.5.1 0/1 Knapsack Problem (Program)",

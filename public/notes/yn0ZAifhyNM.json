@@ -39,6 +39,33 @@
      "text": "m×n matrix 的 head node 個數是 max{m, n}：看 row 和 column 哪個多。",
      "t": 147
     }
+   ],
+   "params": {
+    "v": "review"
+   },
+   "cues": [
+    0.0,
+    33.8,
+    50.8,
+    60.8,
+    81.8,
+    97.8,
+    103.8,
+    113.8,
+    124.8,
+    140.8
+   ],
+   "explain": [
+    "複習上週：sparse matrix（大部分是 0 的[[矩陣]]）如果用 linked list 來存，大概長什麼樣子。",
+    "重點有兩個：它的表示方法，以及 class 的宣告。",
+    "node 分成兩種型別：head node（左，黃色）和 entry node（右）。",
+    "head node 的任務：當每一個 row 或每一個 column 的頭端。",
+    "head 欄位是一個 boolean 變數（true／false），告訴你這個 node 是不是 head node。",
+    "right 是一個 pointer，指向同一個 row（同一列）的 entry node。",
+    "down 指向同一個 column（同一行）的 entry node。",
+    "next 串起 head node 自己的 linked list，指向下一個 head node。",
+    "所以嚴格來說，head node 有三個 pointer：right、down 指向 entry node，next 指向下一個 head node。",
+    "m×n 的 matrix，head node 的個數是 max{m, n}：看 row 和 column 哪個比較多就選哪個，因為一個 head node 同時當 row i 和 column i 的頭。"
    ]
   },
   {
@@ -77,15 +104,44 @@
      "text": "不必為每種 node 各定義一個 class，程式更精簡。",
      "t": 401
     }
+   ],
+   "params": {
+    "v": "review"
+   },
+   "cues": [
+    175.8,
+    188.8,
+    206.8,
+    230.8,
+    246.8,
+    266.8,
+    281.8,
+    294.8,
+    349.8,
+    377.8,
+    398.8
+   ],
+   "explain": [
+    "entry node 存的是真正的資料：它在哪一個 row、哪一個 column，以及它的值。",
+    "這跟第二章 array 表示法很像，一樣記 row、col、value。",
+    "right 指向同一個 row 的下一個非 0 元素；down 指向同一個 column 的下一個非 0 元素。",
+    "中間還有一個欄位叫 head。",
+    "因為 head node 和 entry node 被宣告成同一個 class，所以需要 head 這個欄位來分辨它到底是哪一種。",
+    "兩種 node 有些欄位一樣：down、head、right 都有。",
+    "不一樣的是：entry node 有 row、col、value；head node 有 next。",
+    "要把兩種宣告成同一個 class，就用 union（聯合）來處理不一樣的部分。union 裡的東西一次只能選一個用，共用同一塊空間。",
+    "如果 head 是 true：union 選 next，這個 node 就是 head node。",
+    "如果 head 是 false：union 選 triple（row、col、value），它就是 entry node。",
+    "好處是不必為每一種 node 各定義一個 class，程式更精簡。"
    ]
   },
   {
    "title": "圖上的 H0–H3 與 head 欄位",
-   "scene": "llpeng34-sparse-lists",
+   "scene": "llpeng34-sparse-review",
    "points": [
     {
      "text": "上面黃色的 H0–H3 和左邊黃色的是同一組 node，只是 copy 一份畫，看起來像 matrix。",
-     "t": 436
+     "t": 430
     },
     {
      "text": "Entry node 裡記載 row、col 和 value。",
@@ -95,6 +151,22 @@
      "text": "head 欄位為了省空間沒畫出來：用顏色代表，黃色是 head node、黑色是 entry node。",
      "t": 473
     }
+   ],
+   "cues": [
+    429.8,
+    436.8,
+    447.8,
+    455.8,
+    472.8,
+    480.8
+   ],
+   "explain": [
+    "再看這張圖：上面黃色的 H0、H1、H2、H3。",
+    "它們和左邊看到的黃色 H0…H3 其實是同樣的 node。",
+    "只是為了表示方便，copy 一份畫出來，讓整張圖看起來像一個 matrix。",
+    "中間的 entry node（黑色）記載它的 row、col，還有 value。",
+    "head 欄位呢？其實每個 node 都要有，但為了節省畫面空間沒畫出來。",
+    "改用顏色代表：黃色是 head node（head = true），黑色是 entry node（head = false）。"
    ]
   },
   {
@@ -103,7 +175,7 @@
    "points": [
     {
      "text": "Matrix 的 operator（>>）有做 overloading，為它量身訂做。",
-     "t": 511
+     "t": 500
     },
     {
      "text": "課本的輸入：4 4 4、0 2 11、1 0 12、2 1 -4、3 3 -15。",
@@ -122,7 +194,23 @@
      "t": 585
     }
    ],
-   "trap": "補充：第一行 4 4 4 是 rows、cols、非 0 項數；後面每行是 (row, col, value)。"
+   "trap": "補充：第一行 4 4 4 是 rows、cols、非 0 項數；後面每行是 (row, col, value)。",
+   "cues": [
+    499.8,
+    510.8,
+    535.8,
+    544.8,
+    559.8,
+    584.8
+   ],
+   "explain": [
+    "也可以看一下 Matrix 的程式，例如它的 operator。",
+    "operator >>（輸入運算子）有為 Matrix 做 overloading，量身訂做：寫 cin >> m 就能讀進一個 matrix。",
+    "課本的輸入格式：第一行 4 4 4，代表 4 個 row、4 個 column、4 個非 0 項。先建出 head node。",
+    "之後每行一個 (row, col, value)：0 2 11、1 0 12、2 1 −4、3 3 −15，每讀一行就串進對應的 row 和 column list。",
+    "詳細請回去複習課本 4.8.2、4.8.3。",
+    "4.8.3 講的是在 matrix node 上做 transpose（轉置）等操作。"
+   ]
   },
   {
    "title": "Doubly linked list 的 node",
@@ -148,6 +236,28 @@
      "text": "Doubly linked list 也有頭端 first，指向第一個 node。",
      "t": 712
     }
+   ],
+   "cues": [
+    600.8,
+    620.8,
+    630.8,
+    653.8,
+    659.8,
+    668.8,
+    674.8,
+    690.8,
+    711.8
+   ],
+   "explain": [
+    "今天的重點：doubly linked list（雙向鏈結串列）。講完它，linked list 這章就結束了。",
+    "為什麼叫 double？代表它比一般的 linked list 更強。",
+    "強在 link 的數目：它比 singly linked list（只有一個 link）多。",
+    "在 doubly linked list 裡，每個 node 通常有兩個 link 欄位。",
+    "左邊的叫 llink（left link），是一個指向這個 node 左邊那個 node 的[[指標]]。",
+    "中間的 data field 存放資料。",
+    "右邊的叫 rlink（right link），指向右邊的 node。",
+    "宣告跟 singly 的 node 很像，只是 node 裡有 llink、rlink 兩個 pointer（紅線往右、藍線往左）。",
+    "doubly linked list 一樣有頭端 first，指向第一個 node。"
    ]
   },
   {
@@ -156,7 +266,7 @@
    "points": [
     {
      "text": "可以允許 doubly linked list 有 header node。",
-     "t": 724
+     "t": 720
     },
     {
      "text": "Header node 的 rlink 指向 list 的第一個 node。",
@@ -182,6 +292,26 @@
      "text": "只有一個 node 時：header 左右都指向它，它的左右也都指回 header（環狀）。",
      "t": 921
     }
+   ],
+   "cues": [
+    719.8,
+    733.8,
+    752.8,
+    790.8,
+    810.8,
+    863.8,
+    887.8,
+    917.8
+   ],
+   "explain": [
+    "doubly linked list 也可以有 header node（灰色 H，不存真正資料的頭節點），而且做成環狀。",
+    "header node 的 rlink（右邊）指向 list 的第一個 node A。",
+    "紅色線是 rlink：一路往右串起來的 linked list。",
+    "header node 的 llink（左邊）則指向最後、也就是最右邊的 node C。",
+    "藍色線是 llink：一路往左指。header 的 llink 正好是「往左那條 list」的第一個 element。",
+    "中間的 node 都很單純：雙向指標分別指向它前一個和後一個 node。",
+    "如果 list 是 empty（空的）：只剩 header node，它的 llink、rlink 都指向自己。",
+    "如果只有一個 node A：header 的左右都指向 A，A 的左右也都指回 header，一樣是環狀。"
    ]
   },
   {
@@ -190,7 +320,7 @@
    "points": [
     {
      "text": "Insert 的做法：先把圖畫出來。",
-     "t": 959
+     "t": 957
     },
     {
      "text": "目標：把 node p 插在 node x 的後面；藍色 node 是 x->rlink。",
@@ -221,7 +351,39 @@
      "t": 1210
     }
    ],
-   "trap": "補充：① ② 可以對調；但 ② ③ 都要用到「舊的」x->rlink，所以必須在 ④ 之前。若先做 ④，x->rlink 已是 p，② 會變成 p->rlink = p，③ 會變成 p->llink = p，右邊那段就斷了。"
+   "trap": "補充：① ② 可以對調；但 ② ③ 都要用到「舊的」x->rlink，所以必須在 ④ 之前。若先做 ④，x->rlink 已是 p，② 會變成 p->rlink = p，③ 會變成 p->llink = p，右邊那段就斷了。",
+   "cues": [
+    956.8,
+    967.8,
+    977.8,
+    1003.8,
+    1047.8,
+    1074.8,
+    1105.8,
+    1123.8,
+    1139.8,
+    1161.8,
+    1187.8,
+    1209.8,
+    1230.8,
+    1252.8
+   ],
+   "explain": [
+    "在 doubly linked list 裡怎麼 insert？一樣先把圖畫出來。",
+    "這是 node x，藍色是 x 右邊的 node。",
+    "要 insert 的是紅色的 node p。",
+    "投影片把 x 的 right link 標成藍色：藍色 node 就是 x->rlink（x 的 rlink 所指的 node）。",
+    "目標：把 node p 插在 node x 的後面。",
+    "先想像最後的結果（灰線）：x ⇄ p ⇄ 藍色 node，原本 x 和藍色之間直接相連的線會不見。",
+    "這牽涉到四個 link，所以要做四個 pointer assignment，投影片標了 1、2、3、4。",
+    "① p->llink = x：p 的左邊指向 x。",
+    "② p->rlink = x->rlink：p 的右邊指向 x 原本的右邊，也就是藍色 node 的位置。",
+    "③ 藍色 node 的 llink 要改指 p。藍色在哪？就是 x->rlink，所以寫成 (x->rlink)->llink = p。",
+    "④ x->rlink = p：x 自己的右邊改指向 p，完成。",
+    "結果：x ⇄ p ⇄ 原本 x 的右邊。老師問：這四行的順序可以顛倒嗎？",
+    "自己對調看看。例如先做 ④，x->rlink 已經變成 p，② 就變成 p->rlink = p，右邊那段就斷了。所以 ③ 一定要在 ④ 之前。",
+    "有趣的地方：pointer 可以串著寫，例如 x->rlink->llink，意思是「x 右邊那個 node 的左指標」。"
+   ]
   },
   {
    "title": "練習：插在 x 後面第 k 個",
@@ -244,7 +406,23 @@
      "t": 1350
     }
    ],
-   "trap": "補充（一種寫法）：先沿 rlink 走 k−1 步到 q，再用同樣四行把 p 插在 q 後面；走到 header 就表示 list 不夠長。"
+   "trap": "補充（一種寫法）：先沿 rlink 走 k−1 步到 q，再用同樣四行把 p 插在 q 後面；走到 header 就表示 list 不夠長。",
+   "cues": [
+    1273.8,
+    1293.8,
+    1303.8,
+    1315.8,
+    1327.8,
+    1349.8
+   ],
+   "explain": [
+    "第二個問題：能不能寫一個 insert，插在 x 後面的第 k 個位置？",
+    "現在的 insert 是插在 x 的下一個。如果要插在 x 的下下一個呢？",
+    "例如紅色的 p 不是插在 x 緊接的後面。",
+    "而是 x 和 p 中間還卡一個 node，p 在第二個位置。",
+    "想想 insertK 怎麼寫：提示是先從 x 沿 rlink 走 k−1 步找到前一個 node（叫它 q），再用剛才那四行把 p 插在 q 後面。",
+    "這也可能是考題之一。"
+   ]
   },
   {
    "title": "Delete：刪除 x",
@@ -252,7 +430,7 @@
    "points": [
     {
      "text": "接著看 delete：要把 node x 刪掉。",
-     "t": 1366
+     "t": 1356
     },
     {
      "text": "結果：x 左邊（紅）和右邊（綠）的 node 要互相指到對方。",
@@ -271,7 +449,29 @@
      "t": 1506
     }
    ],
-   "trap": "補充：課本的 delete 會先檢查 x 不是 header node（不能刪 header），改完兩個 pointer 後再 delete x 釋放記憶體。"
+   "trap": "補充：課本的 delete 會先檢查 x 不是 header node（不能刪 header），改完兩個 pointer 後再 delete x 釋放記憶體。",
+   "cues": [
+    1355.8,
+    1365.8,
+    1385.8,
+    1427.8,
+    1451.8,
+    1467.8,
+    1482.8,
+    1500.8,
+    1536.8
+   ],
+   "explain": [
+    "接著看 delete 怎麼做。",
+    "要把 x 刪掉，原本長這樣：紅色 ⇄ x ⇄ 綠色。",
+    "刪掉後的結果：紅色和綠色兩個 node 的 pointer 要互相指到對方（灰線）。",
+    "第一行：x 的 llink 就是紅色 node，所以「紅色的 rlink」寫成 (x->llink)->rlink，要改指 x 的右邊。",
+    "綠色 node 的位置在哪？就在 x->rlink。所以第一行是 (x->llink)->rlink = x->rlink。",
+    "第二行：綠色 node 的 llink，也就是 (x->rlink)->llink，要改指紅色。",
+    "紅色的位置記在 x->llink 裡，所以第二行是 (x->rlink)->llink = x->llink。",
+    "看兩行的最右邊：就是把 x 的 rlink、llink 所指的位置交給鄰居去指。x 沒人指了，就可以 delete。",
+    "delete 就完成了，只改兩個 pointer。和 singly 不同，不需要另外去找前一個 node。"
+   ]
   },
   {
    "title": "Doubly 的好處與搜尋",
@@ -301,6 +501,28 @@
      "text": "再依數字大小判斷從左邊或右邊找比較快。",
      "t": 1684
     }
+   ],
+   "cues": [
+    1548.8,
+    1576.8,
+    1590.8,
+    1599.8,
+    1607.8,
+    1635.8,
+    1646.8,
+    1665.8,
+    1683.8
+   ],
+   "explain": [
+    "linked list 講到這邊：靠 pointer 串起來，有頭端 first。",
+    "doubly linked list 就是多了一組 link（這裡用有 header 的環狀版）。",
+    "好處之一：如果某條 link 斷掉，例如 12 → 10 的 rlink 斷了，往右走就到不了 10、7……",
+    "還可以透過另一個方向找回來：從 header 的 llink 往左走 3 → 5 → 7 → 10。",
+    "想想看：在 doubly linked list 上要找一個 element，怎麼做？",
+    "例如要找數字 7 有沒有出現在 list 裡。",
+    "如果沒有其他條件，就跟 singly 一樣：從左或從右一個一個檢查，這裡從左邊要看 15、12、10、7 四次。",
+    "可以做得更好：insert 的時候就讓 list 排序，例如從大排到小。",
+    "再依數字大小判斷從哪一邊找比較快：7 比較接近最小的 3，就從右邊找，3 次就找到。"
    ]
   },
   {
@@ -339,6 +561,32 @@
      "text": "DS 是 DB 的基礎：item 實際上可以是字串、disk block。",
      "t": 1880
     }
+   ],
+   "cues": [
+    1696.8,
+    1717.8,
+    1727.8,
+    1749.8,
+    1765.8,
+    1794.8,
+    1816.8,
+    1834.8,
+    1839.8,
+    1846.8,
+    1869.8
+   ],
+   "explain": [
+    "doubly linked list 在 Database（DB）課也會用到，那時會講 file（檔案）的結構。",
+    "檔案是怎麼構成的？檔案存在 disk（磁碟）上。",
+    "disk 最小的組成單位叫 block（區塊）。",
+    "真的實作在檔案上時，linked list 的每個 item 存的其實是一個 disk block。",
+    "例如檔案 101.txt：文字的前段、中段、後段分別放在不同的 disk block。",
+    "開啟檔案、搜尋文字時，都會用到 doubly linked list 把這些 block 串起來。",
+    "用 singly linked list 可不可以？也可以。",
+    "但萬一停電、磁頭壞掉，弄壞了一個 pointer……",
+    "singly 只有一個方向，就找不到下一個 disk block，後面的資料全部 missing。",
+    "doubly 多一組 link，可以從 header 的 llink 往回走，還找得到，比較不會發生 missing node。",
+    "所以 DS（資料結構）是 DB 的基礎：item 不一定是數字，也可以是字串、disk block。"
    ]
   }
  ],

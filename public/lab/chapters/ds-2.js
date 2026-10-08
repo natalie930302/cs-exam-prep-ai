@@ -9303,25 +9303,25 @@ FRAG.push(['lllin-middle0', '中間項從 0 數、先寫 pseudo code', async (to
   // ═══ llpeng12.js ═══
   {
 // ─── lhXHk8IuFeQ（彭文志 Lec08 Lists 1/4）與 U_tNDdEooJU（Lec09 Lists 2/4） ───
-const BLUE = '#4b9ee2', ORANGE = '#dd8238', TEAL = '#2fc092', PURP = '#9b7ef4', DIM = '#cfc6b6', SAND = '#e9dcc4';
+// cued scenes: every `await step(tok)` waits for the sentence it shows (see the notes' cues)
+const step = ctx.step;
+const BLUE = '#4b9ee2', ORANGE = '#dd8238', TEAL = '#2fc092', PURP = '#9b7ef4', DIM = '#cfc6b6', SAND = '#e9dcc4', GHOST = 0xb3aa9a;
 function slide(tok, o, x, y, z = 0, ms = 450) {
   const s = o.position.clone();
   return anim(tok, ms, (t) => o.position.set(s.x + (x - s.x) * t, s.y + (y - s.y) * t, s.z + (z - s.z) * t));
 }
 async function dropIn(tok, o, ms = 420) { const p = o.position.clone(); o.position.y += 4; await slide(tok, o, p.x, p.y, p.z, ms); }
 function node(v, x, y = 0.5, z = 0, color = BLUE) { return lnode(v, x, y, z, color); }
-// link arrow out of node g's link field into node h (null → a NULL tag)
+// link arrow out of node g's link field into node h (null → a NULL tag); opt.color for a "dashed" preview
 function lk(g, h, opt = {}) {
   const p = g.position;
   if (!h) return opt.below ? tag(opt.text || 'NULL', 'idx', p.x + 0.73, p.y - 0.78, p.z) : tag(opt.text || 'NULL', 'idx', p.x + 1.45, p.y, p.z);
   const q = h.isVector3 ? h : h.position;
   const dy = q.y - p.y;
-  if (Math.abs(dy) > 0.5) { const s = Math.sign(dy); return arrow(V3(p.x + 0.73, p.y + s * 0.36, p.z), V3(q.x, q.y - s * 0.36, q.z)); }
-  if (q.x > p.x + 0.5) return arrow(V3(p.x + 0.96, p.y, p.z), V3(q.x - 0.52, q.y, q.z));
-  return arrow(V3(p.x + 0.73, p.y, p.z + 0.62), V3(q.x + 0.3, q.y, q.z + 0.62));
+  if (Math.abs(dy) > 0.5) { const s = Math.sign(dy); return arrow(V3(p.x + 0.73, p.y + s * 0.36, p.z), V3(q.x, q.y - s * 0.36, q.z), opt.color); }
+  if (q.x > p.x + 0.5) return arrow(V3(p.x + 0.96, p.y, p.z), V3(q.x - 0.52, q.y, q.z), opt.color);
+  return arrow(V3(p.x + 0.73, p.y, p.z + 0.62), V3(q.x + 0.3, q.y, q.z + 0.62), opt.color);
 }
-function ptrAt(name, g, dy = 1.0, cls = 'ptr') { return tag(name, cls, g.position.x, g.position.y + dy, g.position.z); }
-function mv(tok, l, g, dy = 1.0, ms = 400) { return slide(tok, l, g.position.x, g.position.y + dy, g.position.z, ms); }
 function chainOf(vals, x0, gap = 2.1, y = 0.5, z = 0, color = BLUE) {
   const ns = vals.map((v, i) => node(v, x0 + i * gap, y, z, color));
   return { ns, ls: ns.map((g, i) => lk(g, ns[i + 1] || null)) };
@@ -9333,11 +9333,13 @@ function ring(color = '#c08a1f') {
 }
 function ringAt(m, g) { m.visible = true; m.position.set(g.position.x, g.position.y - 0.38, g.position.z); }
 const D = (g) => g.userData.data;
+// change the text shown on a list node's data box
+const setData = (g, t) => { const l = D(g).children.find((c) => c.element); if (l) l.element.textContent = String(t); };
 // a polynomial term node: coef | exp | link
 function pnode(c, e, x, y = 0.5, z = 0, color = TEAL) {
   const g = new THREE.Group();
-  const a = lab.box(color, [0.8, 0.7, 1.0]); a.position.x = -0.42; a.add(lab.label(String(c), 'val'));
-  const b = lab.box('#9fd8c4', [0.8, 0.7, 1.0]); b.position.x = 0.42; b.add(lab.label(String(e), 'val'));
+  const a = lab.box(color, [0.8, 0.7, 1.0]); a.position.x = -0.42; a.userData.lbl = lab.label(String(c), 'val'); a.add(a.userData.lbl);
+  const b = lab.box('#9fd8c4', [0.8, 0.7, 1.0]); b.position.x = 0.42; b.userData.lbl = lab.label(String(e), 'val'); b.add(b.userData.lbl);
   const k = lab.box('#d8c29b', [0.4, 0.7, 1.0]); k.position.x = 1.05;
   g.add(a, b, k); g.userData.data = a; g.userData.exp = b; g.position.set(x, y, z); lab.world.add(g); return g;
 }
@@ -9345,795 +9347,1117 @@ function plk(g, h, opt = {}) {
   const p = g.position;
   if (!h) return tag(opt.text || '0', 'idx', p.x + 1.6, p.y, p.z);
   const q = h.isVector3 ? h : h.position;
-  if (Math.abs(q.y - p.y) > 0.5) { const s = Math.sign(q.y - p.y); return arrow(V3(p.x + 1.05, p.y + s * 0.36, p.z), V3(q.x - 0.42, q.y - s * 0.36, q.z)); }
-  if (q.x > p.x + 0.5) return arrow(V3(p.x + 1.26, p.y, p.z), V3(q.x - 0.84, q.y, q.z));
-  return arrow(V3(p.x + 1.05, p.y, p.z + 0.62), V3(q.x - 0.42, q.y, q.z + 0.62));
+  if (Math.abs(q.y - p.y) > 0.5) { const s = Math.sign(q.y - p.y); return arrow(V3(p.x + 1.05, p.y + s * 0.36, p.z), V3(q.x - 0.42, q.y - s * 0.36, q.z), opt.color); }
+  if (q.x > p.x + 0.5) return arrow(V3(p.x + 1.26, p.y, p.z), V3(q.x - 0.84, q.y, q.z), opt.color);
+  return arrow(V3(p.x + 1.05, p.y, p.z + 0.62), V3(q.x - 0.42, q.y, q.z + 0.62), opt.color);
 }
 const SUP = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹', '-': '⁻' };
 const sup = (n) => String(n).split('').map((c) => SUP[c] || c).join('');
 const termStr = (c, e) => (e === 0 ? String(c) : (c === 1 ? '' : String(c)) + 'x' + sup(e));
 
-// ───────── lhXHk8IuFeQ 01:11：Array 的兩個缺點 ─────────
+// ───────── lhXHk8IuFeQ 01:20：Array 的兩個缺點 ─────────
 FRAG.push(['llpeng12-array-cons', 'Array 的缺點：大小固定、要搬資料', async (tok) => {
   fresh([0, 6.5, 12], [0, 0.6, 0]);
   const N = 9, X = (i) => -5.6 + i * 1.4;
   const slots = [];
   for (let i = 0; i < N; i++) { slots.push(cube('', SAND, [1.25, 0.08, 1.25], X(i), 0.04, 0)); tag('[' + i + ']', 'idx', X(i), 0, 1.1); }
   const W = ['BAT', 'CAT', 'EAT', 'FAT', 'HAT'];
-  say('Array：一塊連續的記憶體空間', 'list[0] … list[MAX_SIZE − 1]');
+  await step(tok);                                   // 1:20 stack、queue 都用 array 實作
+  say('第二、三章的 stack、queue 都用 array 實作', '先回頭看 array 長什麼樣子');
+  await step(tok);                                   // 1:34 連續的記憶體空間
+  say('Array：一塊連續的記憶體空間', 'data item 依序放進去');
   const cs = [];
-  for (let i = 0; i < 5; i++) { cs.push(cube(W[i], BLUE, [1.1, 0.75, 1.1], X(i), 0.45, 0)); await dropIn(tok, cs[i], 300); }
-  await beat(tok, 900);
-  say('缺點一：array 到底要開多大？', '資料可能 10 筆、100 筆，也可能 10000 筆');
-  for (let i = 5; i < N; i++) tint(slots[i], '#f0b4a8');
-  await beat(tok, 2600);
-  say('開太大，沒用到的格子都浪費', 'MAX_SIZE = 9，只用了 5 格');
-  await beat(tok, 2200);
+  for (let i = 0; i < 5; i++) { cs.push(cube(W[i], BLUE, [1.1, 0.75, 1.1], X(i), 0.45, 0)); await dropIn(tok, cs[i], 260); }
+  await step(tok);                                   // 1:49 缺點：array 到底要開多大
+  const mx = tag('MAX_SIZE = 9', 'ptr', 0, 1.6, -1.2);
+  say('缺點一：array 到底要開多大？', '宣告時就得決定 MAX_SIZE');
+  await step(tok);                                   // 2:09 有時 10、有時 100 或 10000
+  for (let i = 5; i < N; i++) glow(slots[i], GOLD);
+  say('資料量會變：有時 10 筆，有時 100、10000 筆', '大小卻一開始就固定');
+  await step(tok);                                   // 2:24 浪費很多空間
+  for (let i = 5; i < N; i++) { glow(slots[i], null); tint(slots[i], '#f0b4a8'); }
+  say('開太大：沒用到的格子都浪費', '9 格只用了 5 格');
+  await step(tok);                                   // 2:44 insert／delete → data movement
   for (let i = 5; i < N; i++) tint(slots[i], SAND);
-  say('缺點二：在 FAT 後插入 GAT', 'GAT 要夾在 FAT 和 HAT 之間');
+  kill(mx);
+  say('缺點二：insert／delete 常要搬資料', '例：GAT 要插在 FAT 後面 → HAT 先往後搬');
   const g = cube('GAT', ORANGE, [1.1, 0.75, 1.1], X(4), 2.6, 0);
-  await beat(tok, 1500);
   glow(cs[4], GOLD);
-  say('HAT 先往後搬一格', 'data movement');
   await slide(tok, cs[4], X(5), 0.45, 0, 600); glow(cs[4], null);
-  await beat(tok, 600);
   await slide(tok, g, X(4), 0.45, 0, 500);
-  say('GAT 才放得進去', '插入：後面的元素全部後移，最壞 O(n)');
-  await beat(tok, 2000);
-  say('刪除 GAT：後面的又要往前搬', '');
-  fly(g); await beat(tok, 600);
-  glow(cs[4], GOLD); await slide(tok, cs[4], X(4), 0.45, 0, 600); glow(cs[4], null);
-  say('array 做 insert／delete，搬資料跑不掉', '→ 另一種 data structure：linked list');
-  await beat(tok, 3000);
+  cs.splice(4, 0, g);
+  await step(tok);                                   // 3:05 不搬資料會誤判「滿了」
+  fly(cs[0]); fly(cs[1]); cs.splice(0, 2);
+  for (let i = 6; i < N; i++) { const m = cube('新', TEAL, [1.1, 0.75, 1.1], X(i), 0.45, 0); cs.push(m); await dropIn(tok, m, 220); }
+  glow(slots[0], GREEN); glow(slots[1], GREEN);
+  const full = tag('尾巴到底 → 以為滿了？', 'ptr alt', X(7), 1.7, 0);
+  say('前面拿走、後面加入：尾巴碰到底', '前面明明有空位，不搬就會誤判「滿了」');
+  await step(tok);                                   // 3:21 資料搬移跑不掉
+  kill(full); glow(slots[0], null); glow(slots[1], null);
+  await Promise.all(cs.map((m, k) => slide(tok, m, X(k), 0.45, 0, 700)));
+  say('把資料往前搬，空位才回到後面', 'array 做 insert／delete：data movement 跑不掉');
+  await step(tok);                                   // 3:35 另一種 data structure：linked list
+  say('所以有另一種 data structure', '→ linked list');
 }]);
 
 // ───────── lhXHk8IuFeQ 03:44：Linked list 的樣子 ─────────
 FRAG.push(['llpeng12-ll-intro', 'Linked List：data、link 與 first', async (tok) => {
   fresh([0, 5.5, 12.5], [0, 0.8, 0]);
   const W = ['BAT', 'CAT', 'EAT', 'FAT', 'HAT'];
-  say('例子：依字母順序排好的單字', 'BAT → CAT → EAT → FAT → HAT');
   const ns = [];
-  for (let i = 0; i < 5; i++) { ns.push(node(W[i], -5.6 + i * 2.4)); await dropIn(tok, ns[i], 330); }
-  await beat(tok, 700);
+  await step(tok);                                   // 3:44 linked list 長這樣：課本例子
+  say('Linked list 長這樣：課本的例子', 'node 一個一個排排站');
+  for (let i = 0; i < 5; i++) { ns.push(node(W[i], -5.6 + i * 2.4)); await dropIn(tok, ns[i], 260); }
+  await step(tok);                                   // 3:48 依英文字母排序
+  ns.forEach((g) => glow(D(g), GOLD));
+  say('依照英文字母順序排好', 'BAT、CAT、EAT、FAT、HAT');
+  await step(tok);                                   // 4:05 每個 element 兩個欄位
+  ns.forEach((g) => glow(D(g), null));
   tag('data', 'idx', -5.6, -0.1, 1.0); tag('link', 'idx', -4.87, -0.1, 1.0);
-  say('每個 node 兩個欄位：data 與 link', 'data = 三個字元；link = 指向下一個 node');
-  glow(D(ns[0]), GOLD); await beat(tok, 2400); glow(D(ns[0]), null);
-  for (let i = 0; i < 5; i++) {
-    lk(ns[i], ns[i + 1] || null);
-    say(i < 4 ? W[i] + ' 的 link 指向 ' + W[i + 1] : 'HAT 是最後一個：link = NULL', i < 4 ? '' : '尾巴的 link 是 0（NULL）');
-    await beat(tok, 750);
-  }
-  await beat(tok, 900);
-  const f = tag('first', 'ptr', -5.6, 2.0, 0); arrow(V3(-5.6, 1.75, 0), V3(-5.6, 0.9, 0));
-  say('還要一個指標 first 指向頭端', 'first → BAT（第一個 element）');
-  await beat(tok, 2400);
-  const r = ring();
-  for (let i = 0; i < 5; i++) { ringAt(r, ns[i]); say('從 first 沿著 link 一個一個走', '第 ' + (i + 1) + ' 個：' + W[i]); await beat(tok, 600); }
-  r.visible = false; glow(D(ns[0]), null); showL(f, true);
-  say('Linked list：node 排排站，靠 link 串起來', 'data + link + first');
-  await beat(tok, 2800);
+  say('每一個 element（node）有兩個欄位', '左：data　右：link');
+  await step(tok);                                   // 4:11 第一個欄位：三個字元
+  glow(D(ns[0]), GOLD);
+  say('第一個欄位 data：放三個字元', 'char data[3]');
+  await step(tok);                                   // 4:20 link 指向下一個 element
+  glow(D(ns[0]), null);
+  for (let i = 0; i < 5; i++) lk(ns[i], ns[i + 1] || null);
+  say('第二個欄位 link：是 pointer，指向下一個 element', '最後一個 HAT 的 link 是 NULL');
+  await step(tok);                                   // 4:29 下一個 element 是 CAT
+  glow(D(ns[1]), GOLD);
+  say('BAT 的下一個 element 是 CAT', '照著 link 一個接一個');
+  await step(tok);                                   // 4:40 指標指向 linked list 的頭
+  glow(D(ns[1]), null);
+  tag('first', 'ptr', -5.6, 2.0, 0); arrow(V3(-5.6, 1.75, 0), V3(-5.6, 0.9, 0));
+  say('還有一個指標，指向 linked list 的頭', '叫做 first');
+  await step(tok);                                   // 4:50 first element
+  glow(D(ns[0]), GOLD);
+  say('first → BAT：第一個 element', 'data ＋ link ＋ first：linked list 的表示法');
 }]);
 
-// ───────── lhXHk8IuFeQ 05:01：把 GAT 插在 FAT 後面 ─────────
+// ───────── lhXHk8IuFeQ 04:59：把 GAT 插在 FAT 後面 ─────────
 FRAG.push(['llpeng12-insert-gat', '插入 GAT：兩個 pointer assignment', async (tok) => {
   fresh([0, 6, 13], [0, 1.2, 0]);
   const c = chainOf(['BAT', 'CAT', 'EAT', 'FAT', 'HAT'], -6);
   tag('first', 'ptr', -6, 1.6, 0);
   const cd = code(['① GAT.link = FAT.link;', '② FAT.link = &GAT;'], -2.4, 4.4);
-  say('要把 GAT 插在 FAT 後面', '結果應該是 FAT → GAT → HAT');
-  await beat(tok, 2200);
+  await step(tok);                                   // 4:59 新增 GAT
+  say('要把 GAT 加進這條 linked list', '要怎麼做？');
+  await step(tok);                                   // 5:11 create 一個新的 node
   const g = node('GAT', 1.35, 2.5, 0, ORANGE);
   await dropIn(tok, g, 450);
-  say('先 create 一個新 node 存 GAT', 'GAT 的 link 還沒設定');
-  await beat(tok, 2000);
+  say('先 create 一個新的 node 存放 GAT', 'GAT 的 link 還沒設定');
+  await step(tok);                                   // 5:25 插在 FAT 後面
+  glow(D(c.ns[3]), GOLD); glow(D(c.ns[4]), GOLD);
+  say('GAT 要插在 FAT 後面、HAT 前面', '目標：FAT → GAT → HAT');
+  await step(tok);                                   // 5:38 虛線：插入後產生的新 pointer
+  glow(D(c.ns[3]), null); glow(D(c.ns[4]), null);
+  const d1 = lk(c.ns[3], g, { color: GHOST }), d2 = lk(g, c.ns[4], { color: GHOST });
+  say('灰線（投影片上的虛線）：插入後會產生的新 link', 'FAT → GAT、GAT → HAT');
+  await step(tok);                                   // 5:59 原本的實線會不見
+  const gone = tag('✕ 這條會消失', 'ptr alt', 1.35, 0.95, 0.5);
+  say('原本 FAT → HAT 的實線，assignment 後就不見了', '');
+  await step(tok);                                   // 6:43 誰擁有「指向 HAT」的資訊？
   glow(D(c.ns[3]), GOLD);
-  say('「指向 HAT」這個資訊在誰手上？', 'FAT 的 link（實線）');
-  await beat(tok, 2200);
-  cd.hl(0);
+  say('「GAT 要指到 HAT」這個資訊在誰手上？', '在 FAT 原本的 link（實線）裡');
+  await step(tok);                                   // 6:55 第一行
+  cd.hl(0); kill(d2);
   const a1 = lk(g, c.ns[4]);
   say('① 把 FAT 的 link 抄給 GAT 的 link', 'GAT.link = FAT.link → GAT 指向 HAT');
-  await beat(tok, 2600);
-  cd.hl(1);
+  await step(tok);                                   // 7:13 第二行
+  cd.hl(1); kill(d1); kill(gone);
   kill(c.ls[3]); c.ls[3] = lk(c.ns[3], g);
-  say('② FAT 的 link 改成 GAT 的位址', 'FAT.link = GAT → 原本 FAT→HAT 的實線不見了');
-  await beat(tok, 2600);
-  glow(D(c.ns[3]), null); cd.hl(-1);
-  kill(a1);
+  say('② FAT 的 link 改成 GAT 這個 node 的位址', 'FAT.link = &GAT');
+  await step(tok);                                   // 7:57 兩個 assignment 就完成
+  glow(D(c.ns[3]), null); cd.hl(-1); kill(a1);
   await Promise.all([slide(tok, g, 2.4, 0.5, 0, 600), slide(tok, c.ns[4], 4.5, 0.5, 0, 600)]);
   c.ns.splice(4, 0, g); relinkAll(c);
-  say('看圖說故事：先畫結果，再讓 pointer 符合它', 'BAT → CAT → EAT → FAT → GAT → HAT');
-  await beat(tok, 3000);
+  say('兩個簡單的 assignment，FAT → HAT 自然就不見了', 'BAT → CAT → EAT → FAT → GAT → HAT');
+  await step(tok);                                   // 8:04 看圖說故事
+  say('考試、寫程式都一樣：先把圖畫出來，看圖說故事', '先畫結果，再寫讓 pointer 符合結果的 assignment');
 }]);
 
-// ───────── lhXHk8IuFeQ 08:36：刪除 GAT ─────────
+// ───────── lhXHk8IuFeQ 08:39：刪除 GAT ─────────
 FRAG.push(['llpeng12-delete-gat', '刪除 GAT：FAT.link = GAT.link', async (tok) => {
   fresh([0, 6, 13], [0, 1.0, 0]);
   const c = chainOf(['BAT', 'CAT', 'EAT', 'FAT', 'GAT', 'HAT'], -6.2);
-  tag('first', 'ptr', -6.2, 1.6, 0);
-  say('剛插進來的 GAT，現在要把它刪掉', '刪掉後 FAT 要直接連到 HAT');
-  await beat(tok, 2400);
+  const f = tag('first', 'ptr', -6.2, 1.6, 0);
   const g = c.ns[4];
+  await step(tok);                                   // 8:39 要把 GAT 刪除
   glow(D(g), RED);
-  say('「指向 HAT」的資訊在 GAT 的 link 裡', '');
-  await beat(tok, 1800);
-  kill(c.ls[3]); kill(c.ls[4]);
+  say('例子：把剛加進來的 GAT 刪掉', '');
+  await step(tok);                                   // 9:16 FAT 直接連到 HAT（虛線）
+  const fx = c.ns[3].position.x, hx = c.ns[5].position.x;
+  const dsh = arrow(V3(fx + 0.73, 1.05, 0.3), V3(hx - 0.3, 1.05, 0.3), GHOST);
+  say('刪掉 GAT 後：FAT 直接連到 HAT', '灰線就是要產生的新 link');
+  await step(tok);                                   // 9:25 這條 link 要指到 HAT
+  say('這條 link 要怎麼 assign？', '它要指到 HAT');
+  await step(tok);                                   // 9:33 誰指到 HAT？GAT 的 link
+  glow(D(g), GOLD);
+  say('誰指到 HAT？GAT 的 link', '「指向 HAT」的資訊在 GAT.link 裡');
+  await step(tok);                                   // 9:41 一個指令就結束
+  kill(dsh); kill(c.ls[3]); kill(c.ls[4]);
   await slide(tok, g, g.position.x, 2.4, 0, 500);
   const ga = lk(g, c.ns[5]);
   c.ls[3] = lk(c.ns[3], c.ns[5]);
   glow(D(c.ns[3]), GOLD);
-  say('一行就結束', 'FAT.link = GAT.link');
-  await beat(tok, 2800);
-  glow(D(c.ns[3]), null);
+  say('FAT.link = GAT.link', '一個指令就結束');
+  await step(tok);                                   // 9:59 排排站：GAT 拿掉
+  glow(D(c.ns[3]), null); glow(D(g), null);
   kill(ga); fly(g);
-  say('GAT 從 list 上拿掉了', '');
-  await beat(tok, 900);
   c.ns.splice(4, 1); c.ls.splice(4, 1);
   await slide(tok, c.ns[4], -6.2 + 4 * 2.1, 0.5, 0, 500);
   relinkAll(c);
-  say('Linked list：data、link，還有最重要的 first', 'BAT → CAT → EAT → FAT → HAT');
-  await beat(tok, 2800);
+  say('GAT 從 list 上拿掉了', 'BAT → CAT → EAT → FAT → HAT');
+  await step(tok);                                   // 10:07 data、link 和特別重要的 first
+  glow(D(c.ns[0]), GOLD); txt(f, 'first（特別重要）'); arrow(V3(-6.2, 1.35, 0), V3(-6.2, 0.9, 0));
+  say('Linked list：data、link，還有特別重要的指標 first', '');
 }]);
 
-// ───────── lhXHk8IuFeQ 10:25：要刪 GAT，得先找到 GAT ─────────
+// ───────── lhXHk8IuFeQ 10:15：要刪 GAT，得先找到 GAT ─────────
 FRAG.push(['llpeng12-search-gat', '刪除前先搜尋：linked list vs array', async (tok) => {
   fresh([0, 7, 12.5], [0, 0.4, 0.6]);
   const W = ['BAT', 'CAT', 'EAT', 'FAT', 'GAT', 'HAT'];
   const c = chainOf(W, -6.2, 2.1, 0.5, -1.2);
   tag('first', 'ptr', -6.2, 1.6, -1.2);
-  say('程式要刪 GAT，第一步：GAT 在哪？', '人眼一看就知道，程式只有 first');
-  await beat(tok, 2600);
   const r = ring();
-  for (let i = 0; i < 5; i++) {
-    ringAt(r, c.ns[i]); glow(D(c.ns[i]), i === 4 ? GREEN : GOLD);
-    say(i === 4 ? '找到了！' : '從 first 開始：' + W[i] + ' == GAT？', i === 4 ? 'GAT == GAT' : '不是 → 沿 link 往下走');
-    await beat(tok, 1000);
-    if (i < 4) glow(D(c.ns[i]), null);
-  }
-  say('找到後才做刪除的 pointer assignment', 'delete 前要先 search，一個一個檢查');
-  await beat(tok, 2400);
+  const visit = async (i, ms = 550) => { ringAt(r, c.ns[i]); glow(D(c.ns[i]), i === 4 ? GREEN : GOLD); await beat(tok, ms); if (i < 4) glow(D(c.ns[i]), null); };
+  await step(tok);                                   // 10:15 刪除 GAT：先找到 GAT 在哪
+  say('要刪除 GAT：首先得找到 GAT 在哪裡', '');
+  await step(tok);                                   // 10:41 示意圖用人的智慧
+  glow(D(c.ns[4]), GREEN);
+  const eye = tag('人眼一看就知道', 'ptr alt', c.ns[4].position.x, 1.6, -1.2);
+  say('示意圖上，人一眼就看到 GAT', '用的是「人的智慧」');
+  await step(tok);                                   // 10:49 程式要怎麼做？
+  glow(D(c.ns[4]), null); kill(eye);
+  say('但程式手上只有 first', '要怎麼找到 GAT？');
+  await step(tok);                                   // 11:48 從 first 開始走
+  ringAt(r, c.ns[0]);
+  say('從 first 指標開始走', '');
+  await step(tok);                                   // 11:54 檢查是不是 GAT
+  glow(D(c.ns[0]), GOLD);
+  say('檢查這個 node 的資料：BAT == GAT？', '不是');
+  await step(tok);                                   // 12:03 不等就繼續走
+  glow(D(c.ns[0]), null);
+  await visit(1); await visit(2);
+  say('不相等就沿著 link 繼續走、繼續檢查', 'CAT？EAT？都不是');
+  await step(tok);                                   // 12:11 終於找到
+  await visit(3); await visit(4);
+  say('終於找到 GAT', '');
+  await step(tok);                                   // 12:18 找到才刪除；缺點
+  say('找到後才做刪除的 pointer assignment', '缺點：delete 前要從 first 一個一個檢查');
+  await step(tok);                                   // 12:45 如果用 array 存
   r.visible = false; glow(D(c.ns[4]), null);
   const X = (i) => -5.0 + i * 1.6;
   const cs = W.map((w, i) => { tag('[' + i + ']', 'idx', X(i), 0, 3.0); return cube(w, '#7fb6e8', [1.2, 0.7, 1.0], X(i), 0.35, 2.1); });
-  say('如果用 array 存：連續的記憶體空間', '不用看 link，用 for 迴圈依索引檢查');
-  await beat(tok, 2200);
-  for (let i = 0; i < 5; i++) { glow(cs[i], i === 4 ? GREEN : GOLD); say('for (i = 0; i < n; i++) 比對 list[i]', 'list[' + i + '] = ' + W[i]); await beat(tok, 450); if (i < 4) glow(cs[i], null); }
-  say('array 不必一個個追 pointer', '補充：兩者循序搜尋都是 O(n)，array 常數較小');
-  await beat(tok, 3000);
+  say('如果用 array 存：每一格放三個字元', '');
+  await step(tok);                                   // 13:06 理論上比較快
+  say('理論上會比較快：不用一個一個追 pointer', 'array 是連續的記憶體空間');
+  await step(tok);                                   // 13:23 for 迴圈直接檢查
+  for (let i = 0; i < 5; i++) { glow(cs[i], i === 4 ? GREEN : GOLD); await beat(tok, 300); if (i < 4) glow(cs[i], null); }
+  say('一個 for 迴圈，依位置檢查每個 element', 'list[i] == GAT？');
+  await step(tok);                                   // 13:39 linked list 的缺點
+  glow(cs[4], null);
+  say('linked list 也許能省空間，但刪除前要先 search', '補充：兩者循序找都是 O(n)，array 常數較小');
 }]);
 
-// ───────── lhXHk8IuFeQ 14:00：pointer 亂指／斷掉、doubly linked list ─────────
+// ───────── lhXHk8IuFeQ 14:04：pointer 亂指／斷掉、doubly linked list ─────────
 FRAG.push(['llpeng12-ll-risk', 'Pointer 出錯的風險與 Doubly Linked List', async (tok) => {
   fresh([0, 6.5, 12.5], [0, 0.6, 0]);
   const W = ['BAT', 'CAT', 'EAT', 'FAT', 'GAT', 'HAT'];
   const c = chainOf(W, -6.2);
   tag('first', 'ptr', -6.2, 1.6, 0);
-  say('如果 assignment 時不小心把 pointer 指錯…', '');
-  await beat(tok, 2000);
+  await step(tok);                                   // 14:09 如果 pointer 亂指
+  say('6 個 node：BAT … HAT', '如果做 assignment 時 pointer 亂指？');
+  await step(tok);                                   // 14:25 EAT 指到 HAT
   kill(c.ls[2]);
   const bad = arrow(V3(-2.0 + 0.73, 1.0, 0), V3(4.0, 1.0, 0), 0xb03030);
+  say('EAT 不是指向 FAT，而是亂指到 HAT', '');
+  await step(tok);                                   // 14:34 有些東西沒檢查到
   tint(D(c.ns[3]), DIM); tint(D(c.ns[4]), DIM);
-  say('EAT 直接指到 HAT：FAT、GAT 都檢查不到', 'search 會漏掉中間的 node');
-  await beat(tok, 3000);
-  kill(bad); c.ls[2] = lk(c.ns[2], c.ns[3]); tint(D(c.ns[3]), BLUE); tint(D(c.ns[4]), BLUE);
-  await beat(tok, 700);
+  say('FAT、GAT 就檢查不到了', 'search 會漏掉中間的 node');
+  await step(tok);                                   // 14:43 某個 link 斷掉
+  kill(bad); c.ls[2] = lk(c.ns[2], c.ns[3]); tint(D(c.ns[4]), BLUE);
   kill(c.ls[2]);
   const brk = tag('✕ 斷掉', 'ptr alt', -0.95, 1.1, 0);
   for (let i = 3; i < 6; i++) tint(D(c.ns[i]), DIM);
-  say('若某個 link 斷了，後面的 node 全部 missing', '從 first 再也走不到 FAT、GAT、HAT');
-  await beat(tok, 3000);
+  say('若某個 link 斷了，link 的資訊不見', '後面的 node 全部 missing');
+  await step(tok);                                   // 14:56 Doubly linked list
   kill(brk); c.ls[2] = lk(c.ns[2], c.ns[3]); for (let i = 3; i < 6; i++) tint(D(c.ns[i]), BLUE);
-  say('Doubly linked list：再多一個往回的指標', '每個 node：prev + data + next');
   const back = [];
-  for (let i = 5; i > 0; i--) { back.push(arrow(V3(c.ns[i].position.x - 0.3, 0.5, 0.62), V3(c.ns[i - 1].position.x + 0.73, 0.5, 0.62), 0x2f7a5a)); await beat(tok, 350); }
+  for (let i = 5; i > 0; i--) back.push(arrow(V3(c.ns[i].position.x - 0.3, 0.5, 0.62), V3(c.ns[i - 1].position.x + 0.73, 0.5, 0.62), 0x2f7a5a));
+  say('Doubly linked list：雙向指標', '每個 node 多一個往回指的 link');
+  await step(tok);                                   // 15:04 要找的東西在最後面
   tag('last', 'ptr alt', c.ns[5].position.x, 1.6, 0);
-  await beat(tok, 1400);
-  say('東西在最後面？可以從前、後兩端同時找', 'first →    ← last');
-  await beat(tok, 2400);
-  kill(c.ls[2]);
-  say('一個方向斷了，另一個方向的 link 還在', '每種 data structure 都有優點也有缺點');
-  await beat(tok, 3200);
+  glow(D(c.ns[5]), GOLD);
+  say('要找的東西在 linked list 最後面？', '');
+  await step(tok);                                   // 15:12 前後同時找
+  glow(D(c.ns[0]), GOLD);
+  say('可以從前面和後面同時找', 'first →　　← last');
+  await step(tok);                                   // 15:20 斷一條還有另一條
+  glow(D(c.ns[0]), null); glow(D(c.ns[5]), null);
+  kill(c.ls[2]); tag('✕', 'ptr alt', -0.95, 1.1, 0);
+  say('一個方向的 pointer 斷了', '另一個方向的 link 還在，可以 maintain');
+  await step(tok);                                   // 15:43 有優點也有缺點
+  say('看起來很直覺，但每個 data structure', '都有它的優點，也有它的缺點');
 }]);
 
-// ───────── lhXHk8IuFeQ 15:53：兩種 class 宣告方式 ─────────
+// ───────── lhXHk8IuFeQ 16:00／17:17：兩種 class 宣告方式（params.focus = 'nested' 播第二種） ─────────
 FRAG.push(['llpeng12-class-design', 'ThreeLetterNode：外部 class vs nested class', async (tok) => {
   const P = ctx.params || {};
   fresh([0, 5.5, 13], [0, 2.2, 0]);
   if (P.focus !== 'nested') {
-    const cd = code(['class ThreeLetterList;  // forward', 'class ThreeLetterNode {', '  friend class ThreeLetterList;', 'private:', '  char data[3];', '  ThreeLetterNode *link;', '};', 'class ThreeLetterList {', 'public:  // List operations', 'private:', '  ThreeLetterNode *first;', '};'], -3.3, 6.2, 0.5);
-    say('做法一：node 和 list 是兩個 class', 'composite：ThreeLetterNode 宣告在外面');
-    await beat(tok, 2400);
-    cd.hl(4);
-    const g = node('BAT', 2.6, 0.5, 0, BLUE);
+    let cd = null;
+    await step(tok);                                 // 16:00 宣告一個 class
+    cd = code(['class ThreeLetterList;  // forward', 'class ThreeLetterNode {', '  friend class ThreeLetterList;', 'private:', '  char data[3];', '  ThreeLetterNode *link;', '};', 'class ThreeLetterList {', 'public:  // List operations', 'private:', '  ThreeLetterNode *first;', '};'], -3.3, 6.2, 0.5);
+    say('做法一：為 node 宣告一個 class', '');
+    await step(tok);                                 // 16:07 3-letter 的 node
+    cd.hl(1);
+    const g = node('BAT', 1.6, 0.5, 0, BLUE);
     await dropIn(tok, g);
-    tag('char data[3]', 'idx', 2.2, -0.15, 1.0);
-    say('node：三個字元的 data', 'char data[3]');
-    await beat(tok, 1800);
-    cd.hl(5);
-    const g2 = node('CAT', 5.0, 0.5, 0, BLUE); lk(g, g2);
-    say('加上指向下一個 node 的 link', 'ThreeLetterNode *link');
-    await beat(tok, 1800);
+    say('class ThreeLetterNode：包含 3 個字元的 node', '');
+    await step(tok);                                 // 16:16 char data[3] 與 link
+    cd.hl(4);
+    tag('char data[3]', 'idx', 1.2, -0.15, 1.0);
+    const g2 = node('CAT', 3.7, 0.5, 0, BLUE); lk(g, g2);
+    say('private：char data[3] 和 link', 'ThreeLetterNode *link');
+    await step(tok);                                 // 16:37 class ThreeLetterList
+    cd.hl(7);
+    say('整條 linked list 定義成 class ThreeLetterList', '');
+    await step(tok);                                 // 16:44 public：list operation
+    cd.hl(8);
+    say('public：做 list 的 operation', '');
+    await step(tok);                                 // 16:51 private 只要一個變數 first
     cd.hl(10);
-    tag('first', 'ptr', 2.6, 2.0, 0); arrow(V3(2.6, 1.75, 0), V3(2.6, 0.9, 0));
-    say('list 的 private 只要一個變數：first', 'ThreeLetterNode *first → 頭端');
-    await beat(tok, 2200);
-    cd.hl(2);
-    say('外面的 node class 別的 class 也能共用', '記得多寫一行 friend class');
-    await beat(tok, 2600);
-    cd.kill(); fresh([0, 5.5, 13], [0, 2.2, 0]);
+    tag('first', 'ptr', 1.6, 2.0, 0); arrow(V3(1.6, 1.75, 0), V3(1.6, 0.9, 0));
+    say('private 只要一個變數：指向頭端的 first', 'ThreeLetterNode *first');
+    await step(tok);                                 // 17:08 其餘靠 link 串起來
+    cd.hl(5);
+    const g3 = node('EAT', 5.8, 0.5, 0, BLUE); lk(g2, g3);
+    say('其餘的 node 透過 link 串結起來', 'first → BAT → CAT → EAT …');
+    return;
   }
-  const cd2 = code(['class ThreeLetterList {', 'public:  // List operations', 'private:', '  class ThreeLetterNode {  // nested', '  public:', '    char data[3];', '    ThreeLetterNode *link;', '  };', '  ThreeLetterNode *first;', '};'], -3.3, 6.0, 0.5);
-  say('做法二：nested class', '在 ThreeLetterList 裡面再定義 ThreeLetterNode');
-  await beat(tok, 2400);
+  let cd2 = null;
+  await step(tok);                                   // 17:17 nested class
+  cd2 = code(['class ThreeLetterList {', 'public:  // List operations', 'private:', '  class ThreeLetterNode {  // nested', '  public:', '    char data[3];', '    ThreeLetterNode *link;', '  };', '  ThreeLetterNode *first;', '};'], -3.3, 6.0, 0.5);
+  say('做法二：nested class', 'class 裡面有 class');
+  await step(tok);                                   // 17:34 list 裡有 private 的部分
+  cd2.hl(2);
   const box1 = ghostBox('#4b9ee2', 5.4, 2.6, 2.6); box1.position.set(3.6, 1.1, 0);
   tag('ThreeLetterList', 'ptr', 3.6, 2.9, 0);
+  say('ThreeLetterList 裡面有 private 的部分', '');
+  await step(tok);                                   // 17:43 private 裡再定義 class
   cd2.hl(3);
   const g = node('BAT', 3.0, 0.5, 0, BLUE); lk(g, null);
   await dropIn(tok, g);
-  say('node 的定義包在 list 的 private 裡', '外界看不到 ThreeLetterNode');
-  await beat(tok, 2600);
+  say('在 private 裡再定義 class ThreeLetterNode', '外界看不到它');
+  await step(tok);                                   // 17:55 外面 vs 裡面
   cd2.hl(-1);
+  say('第一種：node class 宣告在外面', '第二種：宣告在 list class 裡面');
+  await step(tok);                                   // 18:21 哪個比較好？
+  say('哪一個比較好？', '至少講得出 nested 的一個缺點');
+  await step(tok);                                   // 18:38 第二條 list
   const box2 = ghostBox('#dd8238', 3.2, 2.0, 2.0); box2.position.set(3.6, 1.0, -3.4);
-  tag('另一種 list', 'ptr alt', 3.6, 2.5, -3.4);
-  say('另一條 list 也要同樣的 node？', '得把 node 的定義再 copy 一份 embed 進去');
+  tag('第二條 3-letter list', 'ptr alt', 3.6, 2.5, -3.4);
+  say('假設要第二條 3-letter 的 linked list', '');
+  await step(tok);                                   // 18:52 private 部分 copy 一份
   const g2 = node('BAT', 3.2, 0.5, -3.4, ORANGE);
   await dropIn(tok, g2);
-  await beat(tok, 2600);
-  say('兩種寫法各有優缺點', '外部 class：可共用；nested：封裝在 list 裡');
-  await beat(tok, 3000);
+  say('private 的部分得 copy 一份 embed 進去', 'node 的定義寫兩次');
+  await step(tok);                                   // 19:02 外面的好處
+  say('外部 class 的好處：其他 class 都能共用', 'ThreeLetterNode 隨時可以再拿來用');
+  await step(tok);                                   // 19:31 friend class
+  tag('別忘了：friend class ThreeLetterList;', 'ptr', -3.3, 0.4, 0.5);
+  say('只是要多寫一行 friend class', '記得要寫');
+  await step(tok);                                   // 19:46 各有優缺點
+  say('兩種寫法各有優缺點', '回去想想看');
 }]);
 
-// ───────── lhXHk8IuFeQ 20:07：x = y 與 *x = *y ─────────
+// ───────── lhXHk8IuFeQ 20:25：x = y 與 *x = *y ─────────
 FRAG.push(['llpeng12-ptr-assign', 'Pointer assignment：x = y vs *x = *y', async (tok) => {
   fresh([0, 7, 12], [0, 0.5, 0]);
-  function setup() {
-    const xv = cube('x', PURP, [0.8, 0.6, 0.8], -5.5, 0.4, -1.6), yv = cube('y', PURP, [0.8, 0.6, 0.8], -5.5, 0.4, 1.6);
-    const a = node('a', -1.5, 0.5, -1.6, BLUE), b = node('b', -1.5, 0.5, 1.6, ORANGE);
-    const na = node('…', 2.8, 0.5, -1.6, GRAY), nb = node('…', 2.8, 0.5, 1.6, GRAY);
-    const xa = arrow(V3(-5.1, 0.4, -1.6), V3(-2.02, 0.4, -1.6)), yb = arrow(V3(-5.1, 0.4, 1.6), V3(-2.02, 0.4, 1.6));
-    const la = lk(a, na), lb = lk(b, nb);
-    return { xv, yv, a, b, na, nb, xa, yb, la, lb };
-  }
-  let s = setup();
-  say('x 指向資料 a 的 node，y 指向資料 b 的 node', 'x、y 都是 pointer 變數');
-  await beat(tok, 2600);
+  const pv = (name, z) => cube(name, PURP, [0.8, 0.6, 0.8], -5.5, 0.4, z);
+  const nodeA = () => ({ a: node('a', -1.5, 0.5, -1.6, BLUE), na: node('…', 2.8, 0.5, -1.6, GRAY) });
+  const nodeB = () => ({ b: node('b', -1.5, 0.5, 1.6, ORANGE), nb: node('…', 2.8, 0.5, 1.6, GRAY) });
+  await step(tok);                                   // 20:25 兩個 pointer x、y
+  let xv = pv('x', -1.6), yv = pv('y', 1.6);
+  say('兩個 pointer 變數：x 和 y', '');
+  await step(tok);                                   // 20:31 x 指到資料 a 的 node
+  let A = nodeA();
+  let xa = arrow(V3(-5.1, 0.4, -1.6), V3(-2.02, 0.4, -1.6));
+  let la = lk(A.a, A.na);
+  say('x 指到一個 node，資料放 a', '');
+  await step(tok);                                   // 20:40 y 指到資料 b 的 node
+  let B = nodeB();
+  arrow(V3(-5.1, 0.4, 1.6), V3(-2.02, 0.4, 1.6));
+  lk(B.b, B.nb);
+  say('y 也指到一個 node，資料放 b', '');
+  await step(tok);                                   // 20:51 x = y
   const cd = code(['x = y;'], 4.6, 3.2);
-  say('x = y：把 y 存的位址給 x', '複製的是「位址」');
-  glow(s.yv, GOLD); await beat(tok, 1400);
-  kill(s.xa); s.xa = arrow(V3(-5.1, 0.45, -1.6), V3(-2.02, 0.5, 1.4), 0xb07a10);
-  tint(D(s.a), DIM);
-  say('x 和 y 指向同一個 node（b）', 'x == y；原本的 a 沒人指了');
-  await beat(tok, 3200);
+  kill(xa); xa = arrow(V3(-5.1, 0.45, -1.6), V3(-2.02, 0.5, 1.4), 0xb07a10);
+  tint(D(A.a), DIM);
+  say('做 x = y：x、y 指到同一個 node（b）', 'x == y；原本的 a 沒人指了');
+  await step(tok);                                   // 21:13 把 y 的位址給 x
+  glow(yv, GOLD);
+  say('意思是：把 y 所指 node 的 memory address 給 x', '複製的是「位址」');
+  await step(tok);                                   // 21:34 *x = *y
   cd.kill(); fresh([0, 7, 12], [0, 0.5, 0]);
-  s = setup();
-  const cd2 = code(['*x = *y;'], 4.6, 3.2);
-  say('重來：這次做 *x = *y', '複製的是 node 的「內容」');
-  await beat(tok, 2200);
-  glow(D(s.b), GOLD);
-  say('y 所指 node 的所有欄位都 assign 給 x 所指的 node', '');
-  await beat(tok, 1800);
-  relabel(D(s.a), 'b'); tint(D(s.a), ORANGE);
-  say('data 欄位：a 變成 b', '');
-  await beat(tok, 1600);
-  kill(s.la); s.la = arrow(V3(-0.54, 0.5, -1.6), V3(2.28, 0.5, 1.35), 0xb07a10);
-  say('link 欄位也被複製：指向跟 b 的 link 同一個 node', '常被忽略：連 link 都動到了');
-  await beat(tok, 3000);
-  glow(D(s.b), null);
-  glow(s.xv, GOLD); glow(s.yv, GOLD);
-  say('但 x、y 還是指向不同的記憶體位址', 'x != y，只是兩個 node 內容一樣');
-  await beat(tok, 3000);
-  cd2.hl(-1);
+  xv = pv('x', -1.6); yv = pv('y', 1.6); A = nodeA(); B = nodeB();
+  arrow(V3(-5.1, 0.4, -1.6), V3(-2.02, 0.4, -1.6)); arrow(V3(-5.1, 0.4, 1.6), V3(-2.02, 0.4, 1.6));
+  la = lk(A.a, A.na); lk(B.b, B.nb);
+  code(['*x = *y;'], 4.6, 3.2);
+  say('重來：這次做 *x = *y', '');
+  await step(tok);                                   // 21:55 所有欄位都 assign
+  glow(D(B.b), GOLD);
+  say('y 所指 node 的所有欄位，都 assign 給 x 所指的 node', '');
+  await step(tok);                                   // 22:08 data 欄位：b 給過去
+  setData(A.a, 'b'); tint(D(A.a), ORANGE);
+  say('第一個欄位 data：b 給過去', 'a 變成 b');
+  await step(tok);                                   // 22:18 pointer 欄位也給過去
+  kill(la); la = arrow(V3(-0.54, 0.5, -1.6), V3(2.28, 0.5, 1.35), 0xb07a10);
+  say('第二個欄位 pointer 也給過去', '兩個 link 指向同一個 node');
+  await step(tok);                                   // 22:36 常被忽略的 link
+  say('所有欄位都做 assignment', '常被忽略：連 link 都動到了');
+  await step(tok);                                   // 23:10 x、y 仍指向不同位址
+  glow(D(B.b), null); glow(xv, GOLD); glow(yv, GOLD);
+  say('但 x、y 還是指向不同的 memory address', 'x != y，只是兩個 node 的內容一樣');
 }]);
 
-// ───────── lhXHk8IuFeQ 33:36：Create2 ─────────
+// ───────── lhXHk8IuFeQ 33:42：Create2 ─────────
 FRAG.push(['llpeng12-create2', 'Create2：建立含 10、20 的兩個 node', async (tok) => {
   fresh([0, 5.5, 12], [0, 1.6, 0]);
-  const cd = code(['void List::Create2() {', '  first = new ListNode(10);', '  first->link = new ListNode(20);', '}', 'ListNode(int element = 0)', '  { data = element; link = 0; }'], -3.2, 5.6, 0.5);
-  say('Create2：在 linked list 裡產生兩個 node', '目標：first → 10 → 20 → NULL');
-  await beat(tok, 2600);
+  let cd = null;
+  await step(tok);                                   // 33:42 member function Create2
+  cd = code(['void List::Create2() {', '  first = new ListNode(10);', '  first->link = new ListNode(20);', '}', 'ListNode(int element = 0)', '  { data = element; link = 0; }'], -3.2, 5.6, 0.5);
+  say('member function：Create2', '在 linked list 裡產生兩個 node');
+  await step(tok);                                   // 34:32 兩個 node 長這樣
+  const goal = tag('目標：first → 10 → 20 → NULL', 'ptr alt', 2.4, 3.0, 0);
+  say('一個放 10、一個放 20', '20 是尾巴，link 是 NULL；first 指向 10');
+  await step(tok);                                   // 34:58 看圖說故事
+  say('又回到看圖說故事：先知道結果長什麼樣', '');
+  await step(tok);                                   // 35:08 第一行
   cd.hl(1);
   const a = node(10, 0.8, 0.5, 0, BLUE);
   await dropIn(tok, a);
+  say('第一行：new ListNode(10)', '');
+  await step(tok);                                   // 35:20 constructor
+  cd.hl(4);
+  say('ListNode 的 constructor：引數 element', '沒給值的話 element = 0');
+  await step(tok);                                   // 35:35 data、link 兩個欄位
   cd.hl(5);
-  let n1 = lk(a, null);
-  say('constructor：data = 10，link = 0', 'link = 0 就當作 NULL');
-  await beat(tok, 2400);
+  tag('data', 'idx', 0.8, -0.15, 1.0); tag('link', 'idx', 1.53, -0.15, 1.0);
+  say('資料分兩個欄位：data 和 link', '');
+  await step(tok);                                   // 35:48 data = 10、link = 0
+  const n1 = lk(a, null, { text: '0' });
+  say('做完：data = 10、link = 0', '');
+  await step(tok);                                   // 35:56 link 想成 NULL
+  txt(n1, '0（NULL）');
+  say('link = 0：把它想成 NULL', '');
+  await step(tok);                                   // 36:10 first 指到 10
   cd.hl(1);
   tag('first', 'ptr', 0.8, 2.1, 0); arrow(V3(0.8, 1.85, 0), V3(0.8, 0.9, 0));
-  say('new 回傳的位址存進 first', 'first = new ListNode(10)');
-  await beat(tok, 2200);
+  say('first 指到這個 10 的空間', 'first = new ListNode(10)');
+  await step(tok);                                   // 36:28 第二行 new ListNode(20)
   cd.hl(2);
   const b = node(20, 3.7, 0.5, 0, ORANGE);
   await dropIn(tok, b);
   lk(b, null);
-  say('第二行：再 new 一個 20 的 node', 'new ListNode(20)：link 也是 0');
-  await beat(tok, 2000);
+  say('第二行：new ListNode(20)', '產生 20 的 node，link 也是 0');
+  await step(tok);                                   // 36:37 位址給 first->link
   kill(n1); lk(a, b);
-  say('它的位址 assign 給 first->link', 'first->link = new ListNode(20)');
-  await beat(tok, 2600);
-  cd.hl(-1);
-  say('兩個指令就建好兩個 node 的 list', 'first → 10 → 20 → NULL');
-  await beat(tok, 2800);
+  say('new 出來的 memory address 直接給 first->link', 'first->link = new ListNode(20)');
+  await step(tok);                                   // 37:01 兩個指令就完成
+  cd.hl(-1); kill(goal);
+  say('兩個指令就產生含 10、20 的 linked list', 'first → 10 → 20 → NULL');
 }]);
 
-// ───────── lhXHk8IuFeQ 37:23：Insert50(x) ─────────
+// ───────── lhXHk8IuFeQ 37:27：Insert50(x) ─────────
 FRAG.push(['llpeng12-insert50', 'Insert50：把 50 插在 x 後面', async (tok) => {
   fresh([0, 6, 12.5], [0, 1.8, 0]);
-  const cd = code(['void List::Insert50(ListNode *x) {', '  ListNode *t = new ListNode(50);', '  if (!first) { first = t; return; }', '  t->link = x->link;', '  x->link = t;', '}'], -2.8, 6.2, 0.5);
-  const c = chainOf([10, 20], -3.0, 4.6);
+  let cd = null, c = null, xl = null, t = null, tl = null, a1 = null;
+  await step(tok);                                   // 37:27 insert 在指定 node 後面
+  cd = code(['void List::Insert50(ListNode *x) {', '  ListNode *t = new ListNode(50);', '  if (!first) { first = t; return; }', '  t->link = x->link;', '  x->link = t;', '}'], -2.8, 6.2, 0.5);
+  say('insert 一個 node：插在我指定的 node 後面', '');
+  await step(tok);                                   // 37:41 Insert50(x)
+  cd.hl(0);
+  say('Insert50(x)：data 是 50 的 node，插在 x 後面', '');
+  await step(tok);                                   // 38:11 x 是第一個 node
+  c = chainOf([10, 20], -3.0, 4.6);
   tag('first', 'ptr', -3.0, 1.7, 0);
-  const xl = tag('x', 'ptr alt', -3.0, 2.3, 0);
-  say('Insert50(x)：50 插在指定的 node x 後面', 'x 指向第一個 node 10 → 結果 10 → 50 → 20');
-  await beat(tok, 2800);
+  xl = tag('x', 'ptr alt', -3.0, 2.3, 0);
+  say('示意圖：x 給定的是第一個 node（10）', '原本 10、20 兩個 node');
+  await step(tok);                                   // 38:34 結果 10、50、20
+  say('50 插在 10 的後面', '結果：10 → 50 → 20');
+  await step(tok);                                   // 39:05 create 50，t 指向它
   cd.hl(1);
-  const t = node(50, -0.6, 2.6, 0, ORANGE);
+  t = node(50, -0.6, 2.6, 0, ORANGE);
   await dropIn(tok, t);
-  const tl = tag('t', 'ptr', -0.6, 3.5, 0);
-  say('先 new 一個 50 的 node，pointer t 指向它', 't = new ListNode(50)');
-  await beat(tok, 2200);
+  tl = tag('t', 'ptr', -0.6, 3.5, 0);
+  say('先 create 50 的 node，pointer t 指向它', 't = new ListNode(50)');
+  await step(tok);                                   // 39:34 判斷 list 是不是空的
   cd.hl(2);
-  say('如果 list 是空的：50 就是第一個 node', '這個例子不是空的（已有 10、20）');
-  await beat(tok, 2400);
+  say('判斷 linked list 是不是空的', '空的話：50 就是第一個 node（first = t）');
+  await step(tok);                                   // 40:00 不是空的
+  say('很不幸，它不是空的', '已經有 10、20 兩個 node');
+  await step(tok);                                   // 40:23 t->link = x->link
   cd.hl(3); glow(D(c.ns[0]), GOLD);
-  const a1 = lk(t, c.ns[1]);
-  say('① 50 先接手 x 原本的 link', 't->link = x->link → 50 指向 20');
-  await beat(tok, 2800);
+  a1 = lk(t, c.ns[1]);
+  say('① t->link = x->link', 'x 的 link（指向 20）給 t 的 link → 50 指向 20');
+  await step(tok);                                   // 41:07 x->link = t
   cd.hl(4);
   kill(c.ls[0]); c.ls[0] = lk(c.ns[0], t);
-  say('② 再讓 x 指向 50', 'x->link = t');
-  await beat(tok, 2600);
+  say('② x->link = t', 'x 改指向 50');
+  await step(tok);                                   // 41:37 順序可以顛倒嗎？
   glow(D(c.ns[0]), null); cd.hl(-1);
   kill(a1); kill(xl); kill(tl);
   await Promise.all([slide(tok, t, -0.9, 0.5, 0, 600), slide(tok, c.ns[1], 1.2, 0.5, 0, 600)]);
   c.ns.splice(1, 0, t); relinkAll(c);
-  say('完成：10 → 50 → 20', '');
-  await beat(tok, 1800);
-  say('順序可以顛倒嗎？先做 x->link = t…', '那 20 的位址就沒人記得了 → lost');
+  say('完成：10 → 50 → 20', '這兩行的順序可以顛倒嗎？');
+  await step(tok);                                   // 41:59 顛倒會 lost
   tint(D(c.ns[2]), DIM);
-  await beat(tok, 3000);
+  say('一旦顛倒，就會 lost link 的資料', '先做 x->link = t，20 的位址就沒人記得了');
+  await step(tok);                                   // 42:31 把圖畫出來
   tint(D(c.ns[2]), ORANGE);
-  say('一定要先 t->link = x->link，再 x->link = t', '把圖畫出來就不會寫反');
-  await beat(tok, 2600);
+  say('做 linked list，千萬要把圖畫出來', '先 t->link = x->link，再 x->link = t');
 }]);
 
-// ───────── lhXHk8IuFeQ 42:41：刪除第一個 node ─────────
+// ───────── lhXHk8IuFeQ 43:00：刪除第一個 node ─────────
 FRAG.push(['llpeng12-delete-first', '刪除第一個 node：ptr = ptr->link', async (tok) => {
   fresh([0, 6, 12], [0, 1.2, 0]);
   const c = chainOf([10, 50, 20], -2.6, 2.6);
   const pv = cube('ptr', PURP, [1.0, 0.6, 0.8], -6.0, 0.4, 0);
   let pa = arrow(V3(-5.5, 0.4, 0), V3(-3.12, 0.45, 0));
   const cd = code(['ptr = ptr->link;'], 1.0, 3.6);
-  say('list：10、50、20，ptr（或叫 first）指向頭端', '要刪掉第一個元素 10');
-  await beat(tok, 2600);
+  let lkf = null;
+  await step(tok);                                   // 43:00 10、50、20，PTR 指向頭
+  say('10、50、20：PTR 指向頭端', '也可以叫 first、head');
+  await step(tok);                                   // 43:15 刪第一個元素
   glow(D(c.ns[0]), RED);
-  say('刪掉後，ptr 要指向第二個 node', '第二個 node 的位址在哪？');
-  await beat(tok, 2200);
+  say('把第一個元素刪掉', '');
+  await step(tok);                                   // 43:25 指標要指向第二個 node
+  say('刪完以後，記得讓指標指向第二個 node', '第二個 node 的位址在哪？');
+  await step(tok);                                   // 43:32 PTR 所指 node 的 link
+  lkf = tag('ptr->link', 'ptr alt', -1.9, 1.3, 0);
+  say('就在 PTR 所指 node 的 link 裡', 'ptr->link → 50');
+  await step(tok);                                   // 43:38 assign 給 PTR 就結束
   cd.hl(0);
-  const lkf = tag('ptr->link', 'ptr alt', -1.9, 1.3, 0);
-  say('就在第一個 node 的 link 欄位裡', 'ptr->link → 50');
-  await beat(tok, 2400);
   kill(pa); pa = arrow(V3(-5.5, 0.4, 0), V3(-0.52, 0.45, 0.25), 0xb07a10);
-  say('把它 assign 給 ptr', 'ptr = ptr->link');
-  await beat(tok, 2200);
+  say('把它 assign 給 PTR 就結束', 'ptr = ptr->link');
+  await step(tok);                                   // 43:44 結果長這樣
   kill(lkf); kill(c.ls[0]); fly(c.ns[0]); c.ns.shift(); c.ls.shift();
-  await beat(tok, 800);
-  say('怎麼可以把自己的欄位給自己？', 'ptr 是 pointer 變數，不是那個 node');
+  say('結果長這樣', 'ptr → 50 → 20');
+  await step(tok);                                   // 43:56 自己的欄位給自己？
+  say('自己的欄位怎麼可以給自己？', '老師大一時也覺得好奇怪');
+  await step(tok);                                   // 44:51 PTR 是 pointer 變數
   glow(pv, GOLD);
-  await beat(tok, 2800);
-  say('ptr->link 也是 pointer：只是指標賦值', '結果：ptr → 50 → 20');
-  await beat(tok, 3000);
+  say('PTR 是一個 pointer 變數，不是那個 node', '它只是「指向」那個 node');
+  await step(tok);                                   // 45:27 ptr->link 也是 pointer
+  say('ptr->link 也是 pointer', '所以 ptr = ptr->link 只是 pointer assignment');
 }]);
 
-// ───────── lhXHk8IuFeQ 45:48：刪除中間的 node ─────────
+// ───────── lhXHk8IuFeQ 45:43：刪除中間的 node ─────────
 FRAG.push(['llpeng12-delete-mid', '刪除中間的 node：trail->link = x->link', async (tok) => {
   fresh([0, 6, 12], [0, 1.2, 0]);
   const c = chainOf([10, 50, 20], -3.4, 2.8);
   tag('first', 'ptr', -3.4, 1.6, 0);
-  const cd = code(['trail->link = x->link;', 'delete x;   // 要不要做？'], 0.5, 4.2);
-  say('要刪的 node 不是第一個：刪中間的 50', '結果：10 直接指向 20');
-  await beat(tok, 2600);
-  const tl = tag('trail', 'ptr alt', -3.4, 2.2, 0), xl = tag('x', 'ptr alt', -0.6, 1.6, 0);
+  const cd = code(['trail->link = x->link;'], 0.5, 4.2);
+  let pre = null, xl = null, a = null;
+  await step(tok);                                   // 45:43 要刪的不是第一個
+  say('要刪除的 node 不是第一個呢？', '例子：10、50、20');
+  await step(tok);                                   // 46:02 刪中間的 node
+  tag('trail', 'ptr alt', -3.4, 2.2, 0); xl = tag('x', 'ptr alt', -0.6, 1.6, 0);
   glow(D(c.ns[1]), RED);
-  say('x 指向 50，trail 指向它前一個 node', '要改的是「前一個」的 link');
-  await beat(tok, 2600);
-  cd.hl(0);
+  say('刪中間的 50', 'x 指向 50，trail 指向它前一個 node');
+  await step(tok);                                   // 46:14 結果：10 直接指向 20
+  pre = arrow(V3(-2.67, 1.05, 0.3), V3(1.9, 1.05, 0.3), GHOST);
+  say('結果：10 的 pointer 直接指向 20', '');
+  await step(tok);                                   // 46:22 50 的 link 給前一個
+  cd.hl(0); kill(pre);
   kill(c.ls[0]); kill(c.ls[1]);
   await slide(tok, c.ns[1], -0.6, 2.4, -0.6, 500); xl.position.set(-0.6, 3.3, -0.6);
-  const a = lk(c.ns[1], c.ns[2]);
+  a = lk(c.ns[1], c.ns[2]);
   c.ls[0] = arrow(V3(-2.44, 0.5, 0), V3(1.68, 0.5, 0));
   glow(D(c.ns[0]), GOLD);
-  say('把 50 的 link（→20）抄給 10 的 link', 'trail->link = x->link');
-  await beat(tok, 3000);
-  glow(D(c.ns[0]), null); cd.hl(1);
-  say('50 已經不在 list 上了', '接著可以 delete 它，把記憶體還回去');
-  await beat(tok, 2000);
-  kill(a); kill(xl); fly(c.ns[1]);
-  await beat(tok, 900);
-  cd.hl(-1);
-  say('看圖說故事：畫出前後兩張圖', '10 → 20');
-  await beat(tok, 2600);
+  say('50 的 link（20 的位址）給前一個 node', 'trail->link = x->link');
+  await step(tok);                                   // 46:42 結果長這樣
+  glow(D(c.ns[0]), null); cd.hl(-1);
+  say('結果：10 → 20', '50 已經不在 list 上了');
 }]);
 
-// ───────── lhXHk8IuFeQ 46:46／U_tNDdEooJU 44:04、49:07：delete 還是放進 free pool ─────────
-FRAG.push(['llpeng12-free-pool', '刪掉的 node：delete 還是放進 free pool', async (tok) => {
-  const P = ctx.params || {};
+// ───────── lhXHk8IuFeQ 46:54：delete 還是放進 free list ─────────
+FRAG.push(['llpeng12-free-pool', '刪掉的 node：delete 還是放進 free list', async (tok) => {
   fresh([0, 6.5, 12.5], [0, 1.0, 0]);
-  const poly = !!P.poly;
-  const VALS = poly ? ['3,14', '2,8', '1,0', '8,14', '-3,10', '10,6'] : ['50'];
-  const sys = ghostBox('#7a6a55', 3.2, 2.2, 2.2); sys.position.set(-4.8, 1.1, -1.5);
+  let m = cube('50', ORANGE, [1.2, 0.7, 1.0], 0, 0.35, 1.2);
+  let sys = null, pool = null, pl = null;
+  await step(tok);                                   // 46:54 要不要 release memory
+  say('50 已經從 list 拿掉了', '要不要把它的 memory release？');
+  await step(tok);                                   // 47:10 要不要 delete？
+  say('要不要再做 delete 這個 node？', '覺得要做的舉手');
+  await step(tok);                                   // 47:42 沒有標準答案
+  say('沒有標準答案：可做可不做', '');
+  await step(tok);                                   // 47:55 做法一：delete
+  sys = ghostBox('#7a6a55', 3.2, 2.2, 2.2); sys.position.set(-4.8, 1.1, -1.5);
   tag('系統記憶體', 'ptr', -4.8, 2.6, -1.5);
-  const X = (i) => (poly ? -2.5 + i * 1.5 : 0);
-  const mk = () => VALS.map((v, i) => cube(v, poly ? (i < 3 ? TEAL : ORANGE) : ORANGE, [1.2, 0.7, 1.0], X(i), 0.35, 1.2));
-  let ns = mk();
-  say(poly ? 'a + b 算完，a、b 的 6 個 node 不用了' : '50 的 node 已經從 list 上拿掉', poly ? '這些空間可以 release 出來' : '要不要 delete 它？沒有標準答案');
-  await beat(tok, 2800);
-  say('做法一：delete 掉，記憶體還給系統', poly ? 'list destructor：6 個 node 一個個 delete' : 'delete x;');
-  for (const m of ns) { fly(m, V3(-4, 6, -3)); await beat(tok, 300); }
-  await beat(tok, 1600);
-  say('以後要 new 時，又得跟系統要記憶體', 'new 會呼叫 system call → overhead');
-  await beat(tok, 2600);
-  const pool = ghostBox('#2fc092', 6.0, 1.6, 2.0); pool.position.set(3.0, 0.7, -1.8);
-  tag(poly ? 'free pool（資源回收場）' : 'free list', 'ptr alt', 3.0, 2.1, -1.8);
-  ns = mk();
-  say('做法二：先不還給系統，放進另一條 free list', poly ? '用完的 6 個 node 丟進 free pool' : '刪掉的 node 串到 free list 上');
-  await beat(tok, 1400);
-  for (let i = 0; i < ns.length; i++) { await slide(tok, ns[i], 0.8 + i * (poly ? 0.9 : 1) + (poly ? 0 : 2), 0.35, -1.8, 300); tint(ns[i], '#8fcfb8'); }
-  await beat(tok, 1400);
-  say(poly ? '新的 user 要建立多項式' : '之後要 new 一個 node', '先去 free list 拿一個');
-  await beat(tok, 1600);
-  const take = ns.slice(0, poly ? 3 : 1);
-  for (let i = 0; i < take.length; i++) { await slide(tok, take[i], -1.5 + i * 1.5, 0.35, 2.2, 350); tint(take[i], PURP); relabel(take[i], poly ? ['5,9', '4,3', '7,0'][i] : '70'); }
-  say('只要改掉 data（係數、指數）就能重用', '不用再跟系統要記憶體');
-  await beat(tok, 2600);
-  say('好處：少了 create 新 node 的 overhead', '資源再利用');
-  await beat(tok, 2800);
+  fly(m, V3(-4, 6, -3));
+  say('做法一：delete 掉，記憶體還給系統', '對 memory 斤斤計較');
+  await step(tok);                                   // 48:08 做法二：另一條 linked list
+  pool = ghostBox('#2fc092', 6.0, 1.6, 2.0); pool.position.set(3.0, 0.7, -1.8);
+  m = cube('50', ORANGE, [1.2, 0.7, 1.0], 0, 0.35, 1.2);
+  await slide(tok, m, 2.8, 0.35, -1.8, 600); tint(m, '#8fcfb8');
+  say('做法二：先不還，用另一條 linked list 存放它', '');
+  await step(tok);                                   // 48:24 叫 free list
+  pl = tag('free list', 'ptr alt', 3.0, 2.1, -1.8);
+  say('這條 linked list 叫 free 的 linked list', '');
+  await step(tok);                                   // 48:31 要 new 時從 free list 拿
+  await slide(tok, m, -1.0, 0.35, 2.2, 600);
+  say('以後要 new node：直接從 free list 拿一個', '');
+  await step(tok);                                   // 48:39 再做 data assignment
+  relabel(m, '70'); tint(m, PURP);
+  say('再做 data assignment', '改成新的資料（例如 70）');
+  await step(tok);                                   // 48:48 少跟 memory 要空間
+  say('好處：不用重新跟 memory 要空間', 'new 會呼叫 system call → overhead');
+  await step(tok);                                   // 49:28 效率可能好一點
+  say('兩種做法都可以', '用 free list，效率可能好一點');
 }]);
 
-// ───────── U_tNDdEooJU 02:32：為什麼要 ListIterator ─────────
+// ───────── U_tNDdEooJU 00:00：複習上一堂 ─────────
+FRAG.push(['llpeng12-review', '複習：linked list 的基本操作', async (tok) => {
+  fresh([0, 6, 12.5], [0, 1.0, 0]);
+  let c = null, f = null;
+  await step(tok);                                   // 0:00 每個 node 有 data、link
+  c = chainOf(['BAT', 'CAT', 'EAT'], -4.4, 2.4);
+  say('linked list：每個 node 有資料和 link', '');
+  await step(tok);                                   // 0:37 first 指向頭端
+  f = tag('first', 'ptr', -4.4, 1.6, 0);
+  say('很重要的指標 first：指向第一個元素', '');
+  await step(tok);                                   // 0:48 不同的 implement 方式
+  const k = tag('不同 class／class 裡再包 class', 'ptr alt', 2.4, 2.4, 0);
+  say('不同的 implement：不同 class，或 class 包 class', '');
+  await step(tok);                                   // 1:17 產生兩個 node
+  kill(k); c.ls.forEach(kill); c.ns.forEach(kill);
+  c = chainOf([10, 20], -4.4, 4.8); txt(f, 'first');
+  say('Create2：在 linked list 裡產生兩個 node', 'first → 10 → 20');
+  await step(tok);                                   // 1:29 insert 50 在 10 後面
+  const t = node(50, -2.0, 2.4, 0, ORANGE);
+  await dropIn(tok, t, 380);
+  kill(c.ls[0]);
+  await Promise.all([slide(tok, t, -2.0, 0.5, 0, 450), slide(tok, c.ns[1], 0.4, 0.5, 0, 450)]);
+  c.ns.splice(1, 0, t); relinkAll(c);
+  say('insert：把 50 這個 node 插在 10 後面', '10 → 50 → 20');
+  await step(tok);                                   // 1:43 delete 要看位置
+  say('delete 要看位置', '刪第一個：要調整 first');
+  await step(tok);                                   // 1:52 不是 first：從 first 找
+  const r = ring();
+  ringAt(r, c.ns[0]); await beat(tok, 450); ringAt(r, c.ns[1]); glow(D(c.ns[1]), RED);
+  say('不是 first：從 first 開始找到它的位置', '找到 50');
+  await step(tok);                                   // 1:59 50 的 link 給 10
+  r.visible = false;
+  kill(c.ls[0]); kill(c.ls[1]);
+  await slide(tok, c.ns[1], -2.0, 2.4, -0.6, 450);
+  lk(c.ns[1], c.ns[2]);
+  c.ls[0] = arrow(V3(-3.44, 0.5, 0), V3(-0.12, 0.5, 0));
+  say('50 指向 20 的 pointer assign 給 10', '10 就直接指到 20');
+  await step(tok);                                   // 2:13 畫圖、看圖說故事
+  say('畫出原本的圖、後來的圖', '看圖說故事就寫得出程式');
+}]);
+
+// ───────── U_tNDdEooJU 02:29：為什麼要 ListIterator ─────────
 FRAG.push(['llpeng12-iter-why', 'ListIterator：把共用的 list 操作抽出來', async (tok) => {
   fresh([0, 6.5, 13], [0, 1.4, 0]);
   const names = ['List<A>', 'List<B>', 'List<C>'], xs = [-4.4, 0, 4.4];
   const OPS = ['NotNull', 'NextNotNull', 'First', 'Next'];
-  const boxes = [], ops = [];
+  let c = null, r = null;
+  const ops = [];
+  await step(tok);                                   // 2:29 list 還可以宣告 iterator
+  const q = tag('class ListIterator ?', 'ptr alt', 0, 3.4, 0);
+  say('List 還可以宣告一個 class：iterator', '');
+  await step(tok);                                   // 2:39 專門做 list 的運作
+  say('專門做 list 裡面的各種運作', '');
+  await step(tok);                                   // 2:46 scan、有幾個 node
+  c = chainOf([10, 50, 20], -2.6, 2.4, 0.5, 2.8);
+  r = ring();
+  for (let i = 0; i < 3; i++) { ringAt(r, c.ns[i]); await beat(tok, 380); }
+  say('例如：scan 整條 list，看有哪些元素、有幾個 node', '');
+  await step(tok);                                   // 2:57 判斷是不是 NULL
+  say('判斷目前是不是 NULL、下一個是不是 NULL', 'NotNull／NextNotNull');
+  await step(tok);                                   // 3:05 回報 first、next
+  ringAt(r, c.ns[0]); glow(D(c.ns[0]), GOLD);
+  say('回報 list 的第一個元素、下一個元素', 'First／Next');
+  await step(tok);                                   // 3:13 不管哪種 list 都常用
+  glow(D(c.ns[0]), null);
+  say('不管哪一種 list，這些 operation 都常常用到', '');
+  await step(tok);                                   // 3:21 不該綁死在 list class
+  say('課本認為：它們不應該綁死在 list 的 class 裡', '應該單獨列出來');
+  await step(tok);                                   // 3:31 List A、B、C
+  r.visible = false; c.ls.forEach(kill); c.ns.forEach(kill); kill(q);
   for (let k = 0; k < 3; k++) {
-    const b = ghostBox(['#4b9ee2', '#dd8238', '#2fc092'][k], 3.4, 2.6, 2.2); b.position.set(xs[k], 1.3, 0); boxes.push(b);
+    const b = ghostBox(['#4b9ee2', '#dd8238', '#2fc092'][k], 3.4, 2.6, 2.2); b.position.set(xs[k], 1.3, 0);
     tag(names[k], 'ptr', xs[k], 2.95, 0);
     const row = [];
-    for (let i = 0; i < 4; i++) row.push(cube(OPS[i], '#e3d6bd', [1.5, 0.45, 0.8], xs[k] + (i % 2 ? 0.8 : -0.8), 0.3 + Math.floor(i / 2) * 0.6, 0));
+    for (let i = 0; i < 4; i++) row.push(cube(OPS[i], '#e3d6bd', [1.5, 0.45, 0.8], xs[k] + (i % 2 ? 0.8 : -0.8), 0.3 + Math.floor(i / 2) * 0.6, 0, 2));
     ops.push(row);
-    say('每一種 list 都需要 scan、判斷 NULL、取 first/next', names[k] + '：又寫一次同樣的 operation');
-    for (const m of row) await dropIn(tok, m, 180);
-    await beat(tok, 900);
   }
-  say('同樣的 operation 重複寫了三次', '這些不應該綁死在 list class 裡');
-  ops.flat().forEach((m) => glow(m, RED));
-  await beat(tok, 2600);
+  say('不同型態的 list：List<A>、List<B>、List<C>', '每一種都需要這些 function');
+  await step(tok);                                   // 4:02 class A 寫一次
+  ops[0].forEach((m) => glow(m, GOLD));
+  say('不用 iterator：幫 class A 的 list 寫一次', 'NotNull、Next、First…');
+  await step(tok);                                   // 4:24 class B 又要再寫一次
+  ops[0].forEach((m) => glow(m, null)); ops[1].forEach((m) => glow(m, RED));
+  say('產生 class B 的 list，又要再做一次', '同樣的 operation 一直重寫');
+  await step(tok);                                   // 4:37 抽出來變成 ListIterator
   ops.flat().forEach((m) => fly(m, V3(0, 7, 3)));
-  await beat(tok, 900);
   const it = cube('ListIterator', PURP, [3.2, 0.8, 1.2], 0, 0.4, 3.6);
   await dropIn(tok, it, 450);
   for (const x of xs) arrow(V3(x * 0.3, 0.8, 3.0), V3(x, 0.9, 1.15), 0x6a4ec0);
-  say('抽出來成為一個 class：ListIterator', '更 high-level：任何 type 的 list 都能用');
-  await beat(tok, 3000);
   OPS.forEach((o, i) => tag(o + '()', 'idx', -2.4 + i * 1.6, 0, 4.6));
-  say('只要寫一次', 'NotNull / NextNotNull / First / Next');
-  await beat(tok, 3000);
+  say('general 的 operation 抽出來：ListIterator', '只寫一次，任何 type 的 list 都能用');
 }]);
 
 // ───────── U_tNDdEooJU 05:01：ListIterator 的宣告與運作 ─────────
 FRAG.push(['llpeng12-iter-scan', 'ListIterator：list 參考與 current 指標', async (tok) => {
-  fresh([0, 6, 12.5], [0, 1.9, 0]);
-  const cd = code(['template <class Type> class ListIterator {', 'public:', '  ListIterator(const List<Type>& l)', '    : list(l), current(l.first) {}', '  Boolean NotNull();', '  Boolean NextNotNull();', '  Type* First();', '  Type* Next();', 'private:', '  const List<Type>& list;', '  ListNode<Type>* current;', '};'], -3.0, 6.4, 0.46);
-  const c = chainOf([10, 50, 20], 0.6, 2.2, 0.5, 0);
-  tag('l.first', 'ptr', 0.6, 1.6, 0);
-  say('三個 class：ListNode、List、ListIterator', 'List 只剩 private 的 first，要宣告 friend');
-  await beat(tok, 2800);
-  cd.hl(9);
-  const lb = ghostBox('#4b9ee2', 6.8, 1.4, 1.6); lb.position.set(2.8, 0.5, 0);
-  say('private：list 參考到要處理的那條 list', '不管哪種 type 的 list 都可以丟進來');
-  await beat(tok, 2400);
-  cd.hl(3);
-  const cur = tag('current', 'ptr alt', 0.6, -0.3, 1.0);
-  const r = ring(); ringAt(r, c.ns[0]);
-  say('建構時 current = l.first', '目前處理到第一個 node');
-  await beat(tok, 2400);
-  cd.hl(6); glow(D(c.ns[0]), GOLD);
+  fresh([0, 6, 12.5], [0, 2.2, 0]);
+  const cd = code(['template <class Type> class List {', '  friend class ListIterator<Type>;', 'private:  ListNode<Type>* first;', '};', 'template <class Type> class ListIterator {', 'public:', '  ListIterator(const List<Type>& l)', '    : list(l), current(l.first) {}', '  Boolean NotNull();  Boolean NextNotNull();', '  Type* First();  Type* Next();', 'private:', '  const List<Type>& list;', '  ListNode<Type>* current;', '};'], -3.0, 6.6, 0.46);
+  const c = chainOf([10, 50, 20], 1.4, 2.2, 0.5, 0);
+  tag('l.first', 'ptr', 1.4, 1.6, 0);
+  const r = ring();
+  let cur = null;
+  await step(tok);                                   // 5:01 宣告 List 與 ListIterator
+  cd.hl(4);
+  say('宣告：template 的 List 與 ListIterator', '');
+  await step(tok);                                   // 5:18 ListNode 宣告 friend
+  say('ListIterator 要對 ListNode 做 scan、判斷', '所以 ListNode 要宣告 friend class ListIterator');
+  await step(tok);                                   // 5:43 List class 非常簡單
+  cd.hl(0);
+  say('List 的 class 變得非常簡單', 'public member function 都抽到 ListIterator');
+  await step(tok);                                   // 6:05 private 只有 first、也要 friend
+  cd.hl(1);
+  say('private 一樣只有指向第一個 node 的 first', '紅字：要把 ListIterator 宣告成 friend class');
+  await step(tok);                                   // 6:30 ListIterator 的 private
+  cd.hl(11);
+  const lb = ghostBox('#4b9ee2', 7.0, 1.4, 1.6); lb.position.set(3.8, 0.5, 0);
+  say('ListIterator 的 private：list', '不管哪種型態的 list，丟進來就好');
+  await step(tok);                                   // 6:56 current 指向目前的 node
+  cd.hl(12);
+  cur = tag('current', 'ptr alt', 1.4, -0.3, 1.0); ringAt(r, c.ns[0]);
+  say('list 指向要處理的 list；current 指向目前處理到的 node', '');
+  await step(tok);                                   // 7:11 NotNull／NextNotNull
+  cd.hl(8);
+  say('NotNull／NextNotNull：目前、下一個是不是 NULL', '');
+  await step(tok);                                   // 7:16 First
+  cd.hl(9); glow(D(c.ns[0]), GOLD);
   say('First()：回傳 list 的第一個元素', '→ 10');
-  await beat(tok, 2000); glow(D(c.ns[0]), null);
-  for (let i = 1; i < 3; i++) {
-    cd.hl(5); say('NextNotNull()：下一個不是 NULL？', 'current->link != 0 → true'); await beat(tok, 1400);
-    cd.hl(7); ringAt(r, c.ns[i]); cur.position.set(c.ns[i].position.x, -0.3, 1.0); glow(D(c.ns[i]), GOLD);
-    say('Next()：current 往下走，回傳下一個元素', '→ ' + [10, 50, 20][i]);
-    await beat(tok, 1600); glow(D(c.ns[i]), null);
-  }
-  cd.hl(5);
-  say('NextNotNull()：20 的下一個是 NULL', 'false → scan 結束');
-  await beat(tok, 2200);
+  await step(tok);                                   // 7:22 Next
+  glow(D(c.ns[0]), null);
+  ringAt(r, c.ns[1]); cur.position.set(c.ns[1].position.x, -0.3, 1.0); glow(D(c.ns[1]), GOLD);
+  say('Next()：回傳現在所指的下一個元素', '→ 50');
+  await step(tok);                                   // 7:28 初始值 current = l.first
+  glow(D(c.ns[1]), null); cd.hl(7);
+  ringAt(r, c.ns[0]); cur.position.set(c.ns[0].position.x, -0.3, 1.0);
+  say('建構時：current = l.first', '一開始處理到第一個 element');
+  await step(tok);                                   // 7:55 三個 class
   cd.hl(-1);
-  say('list 的操作都在 ListIterator，寫一次就好', 'ListNode + List + ListIterator');
-  await beat(tok, 2800);
+  say('現在有三個 class', 'ListNode、List、ListIterator');
+  await step(tok);                                   // 8:29 寫一次就好
+  say('以後不管什麼 type 的 list 都能用 ListIterator', '只要寫一次');
 }]);
 
-// ───────── U_tNDdEooJU 08:46：Attach 到尾端 ─────────
+// ───────── U_tNDdEooJU 08:49：Attach 到尾端 ─────────
 FRAG.push(['llpeng12-attach', 'Attach：把 node 接到 list 尾巴', async (tok) => {
   fresh([0, 6, 12.5], [0, 1.2, 0]);
-  const cd = code(['newnode = new ListNode(k);', 'if (first == 0) first = newnode;', 'else { 走到 link == 0 的 node;', '       接上 newnode; }'], -3.2, 4.8, 0.5);
-  say('Attach：在 list 的尾巴加一個 node', '只知道 first，尾巴在哪？');
-  await beat(tok, 2400);
-  cd.hl(1);
-  const f0 = tag('first = 0', 'ptr', 2.5, 1.6, 0);
-  say('情況一：一開始 list 是空的', 'first == 0');
-  await beat(tok, 1800);
-  const e = node('k', 2.5, 0.5, 0, ORANGE); await dropIn(tok, e); const en = lk(e, null);
-  txt(f0, 'first');
-  say('新 node 直接就是第一個', 'first = newnode（課本同時 last = newnode）');
-  await beat(tok, 2600);
-  kill(f0); kill(en); kill(e); cd.hl(-1);
-  const c = chainOf([10, 50, 20], -4.6, 2.3);
+  const cd = code(['newnode = new ListNode(k);', 'if (first == 0) first = last = newnode;', 'else { traverse 到 link == 0 的 node;', '       接上 newnode; }'], -3.2, 4.8, 0.5);
+  let c = null, r = ring(), k = null;
+  await step(tok);                                   // 8:49 Program 4.11 attach
+  say('Program 4.11：attach 一個 node 到 list 的尾巴', '');
+  await step(tok);                                   // 9:08 只知道 first
+  c = chainOf([10, 50, 20], -4.6, 2.3);
   tag('first', 'ptr', -4.6, 1.6, 0);
-  say('情況二：list 裡已經有 node', '從頭端開始 scan');
-  await beat(tok, 1800);
-  cd.hl(2);
-  const r = ring();
-  for (let i = 0; i < 3; i++) {
-    ringAt(r, c.ns[i]); glow(D(c.ns[i]), GOLD);
-    say('檢查 link 是不是 0（NULL）', i < 2 ? '不是 0 → 還有元素，往下走' : '是 0 → 到尾端了');
-    await beat(tok, 1300); glow(D(c.ns[i]), null);
-  }
+  say('list 只知道指向第一個 node 的 first', '尾巴在哪？');
+  await step(tok);                                   // 9:32 從頭端開始 scan
+  ringAt(r, c.ns[0]);
+  say('從頭端第一個 element 開始 scan', '');
+  await step(tok);                                   // 9:45 link 不是 0 就往下
+  for (let i = 1; i < 3; i++) { ringAt(r, c.ns[i]); await beat(tok, 600); }
+  say('看 link 是不是 0（NULL）', '不是 0 → 還有元素，往下走');
+  await step(tok);                                   // 9:59 遇到 0 就到尾端
+  glow(D(c.ns[2]), GOLD);
+  say('遇到 0（NULL）：到尾端了', '新 node 就加在這裡');
+  await step(tok);                                   // 10:07 先 create 新 node
+  cd.hl(0);
+  k = node('k', -4.6 + 3 * 2.3, 2.6, 0, ORANGE);
+  await dropIn(tok, k, 400);
+  say('先 create 一個新的 node，存資料 k', 'newnode = new ListNode(k)');
+  await step(tok);                                   // 10:37 一開始沒東西的情況
+  cd.hl(1); glow(D(c.ns[2]), null);
+  const e0 = tag('另一種情況：first == 0', 'ptr', 3.0, 3.6, 0);
+  say('如果 list 一開始沒有東西', 'first == 0');
+  await step(tok);                                   // 11:02 newnode 就是第一名
+  txt(e0, '空 list：first = last = newnode');
+  say('那就不叫 attach 了：丟進來就是第一個', 'first = last = newnode');
+  await step(tok);                                   // 11:19 有 node：traverse
+  kill(e0); cd.hl(2);
+  r.visible = false;
+  for (let i = 0; i < 3; i++) { ringAt(r, c.ns[i]); await beat(tok, 450); }
+  say('first 不是 0：裡面有 node', 'traverse 整條 linked list 找最後一個');
+  await step(tok);                                   // 11:39 接上
   cd.hl(3);
-  const k = node('k', -4.6 + 3 * 2.3, 0.5, 0, ORANGE); await dropIn(tok, k);
+  await slide(tok, k, -4.6 + 3 * 2.3, 0.5, 0, 450);
   kill(c.ls[2]); c.ls[2] = lk(c.ns[2], k); lk(k, null);
-  say('把新 node 接在最後一個 node 後面', 'traverse 整條 list：O(n)');
-  await beat(tok, 2800);
-  r.visible = false; cd.hl(-1);
-  tag('last', 'ptr alt', -4.6 + 3 * 2.3, 1.6, 0);
-  say('補充：多記一個 last 指標就不用走', 'last->link = newnode; last = newnode → O(1)');
-  await beat(tok, 3200);
+  say('traverse 到底端，再把 newnode 接上', 'traverse 整條 list：O(n)');
 }]);
 
-// ───────── U_tNDdEooJU 11:59：Invert（p、q、r 三個指標） ─────────
+// ───────── U_tNDdEooJU 12:04：Invert（p、q、r 三個指標） ─────────
 FRAG.push(['llpeng12-invert', 'Invert：用 p、q、r 反轉 linked list', async (tok) => {
   fresh([0, 6.5, 12.5], [0, 1.6, 0]);
   const cd = code(['p = first; q = 0;', 'while (p) {', '  r = q;  q = p;', '  p = p->link;', '  q->link = r;', '}', 'first = q;'], -4.3, 6.2, 0.5);
   const V = ['a', 'b', 'c', 'd'];
   const ns = V.map((v, i) => node(v, -1.5 + i * 2.2, 0.5, 0, BLUE));
-  let nxt = [1, 2, 3, -1];
-  let ls = ns.map((g, i) => lk(g, nxt[i] < 0 ? null : ns[nxt[i]]));
+  const nxt = [1, 2, 3, -1];
+  let ls = ns.map((g, i) => lk(g, ns[nxt[i]] || null));
   const fl = tag('first', 'ptr', -1.5, 2.3, 0);
-  say('Invert：頭變尾、尾變頭', '每個 link 都要轉 180 度');
-  await beat(tok, 2600);
+  const redraw = () => { ls.forEach(kill); ls = ns.map((g, i) => (nxt[i] === -1 ? lk(g, null) : nxt[i] === -2 ? lk(g, null, { below: true, text: '0' }) : lk(g, ns[nxt[i]]))); };
   const pos = (i) => (i < 0 ? V3(-3.4, 0.5, 0) : ns[i].position);
   const pl = tag('p', 'ptr alt', 0, 0, 0), ql = tag('q', 'ptr', 0, 0, 0), rl = tag('r', 'ptr', 0, 0, 0);
-  const put = (l, i, dz) => { const v = pos(i); l.position.set(v.x, -0.25, v.z + dz); showL(l, i !== -9); };
-  let p = 0, q = -1, r = -9;
-  const q0 = tag('0', 'idx', -3.4, 0.5, 0);
-  cd.hl(0); put(pl, p, 1.0); put(ql, q, 1.6); showL(rl, false);
-  say('p 是先鋒，q 跟著 p，r 跟著 q', 'p = first；q = 0');
-  await beat(tok, 2600);
-  let round = 0;
-  while (p >= 0) {
-    round++;
-    cd.hl(2); r = q; q = p; put(rl, r, 2.2); showL(rl, true); put(ql, q, 1.6);
-    say('第 ' + round + ' 輪：r = q；q = p', 'r 退到 q 的位置，q 追上 p');
-    await beat(tok, 1500);
-    cd.hl(3); p = nxt[p]; if (p >= 0) put(pl, p, 1.0); else { pl.position.set(ns[3].position.x + 1.6, -0.25, 1.0); txt(pl, 'p = 0'); }
-    say('p = p->link：p 往前一格', p >= 0 ? 'p → ' + V[p] : 'p 走到 0');
-    await beat(tok, 1500);
-    cd.hl(4); nxt[q] = r < 0 ? -2 : r;
-    ls.forEach(kill); ls = ns.map((g, i) => (nxt[i] === -1 ? lk(g, null) : nxt[i] === -2 ? lk(g, null, { below: true, text: '0' }) : lk(g, ns[nxt[i]])));
-    glow(D(ns[q]), GOLD);
-    say('q->link = r：q 的 node 改指向前一個', r < 0 ? V[q] + ' 的 link = 0（變成尾巴）' : V[q] + ' → ' + V[r]);
-    await beat(tok, 1900); glow(D(ns[q]), null);
+  [pl, ql, rl].forEach((l) => showL(l, false));
+  const put = (l, i, dz) => { const v = pos(i); l.position.set(v.x, -0.25, v.z + dz); showL(l, true); };
+  let p = 0, q = -1, r = -1, q0 = null, flips = [];
+  // one loop round: r = q; q = p; p = p->link; q->link = r
+  async function round(ms) {
+    cd.hl(2); r = q; q = p; put(rl, r, 2.2); put(ql, q, 1.6); await beat(tok, ms);
+    cd.hl(3); p = nxt[p]; if (p >= 0) put(pl, p, 1.0); else { pl.position.set(ns[3].position.x + 1.6, -0.25, 1.0); txt(pl, 'p = 0'); } await beat(tok, ms);
+    cd.hl(4); nxt[q] = r < 0 ? -2 : r; redraw(); glow(D(ns[q]), GOLD); await beat(tok, ms); glow(D(ns[q]), null);
   }
+  await step(tok);                                   // 12:04 從左到右的 list
+  say('一條 linked list：從左邊串到右邊', 'first → a → b → c → d');
+  await step(tok);                                   // 12:10 頭變尾、尾變頭
+  say('轉置：頭端變尾巴、尾巴變頭端', '');
+  await step(tok);                                   // 12:30 每個 link 轉 180 度
+  flips = [0, 1, 2].map((i) => tag('↺', 'idx', ns[i].position.x + 1.15, 1.0, 0));
+  say('每個 link 都要轉向：轉 180 度', '');
+  await step(tok);                                   // 12:38 這叫 Invert
+  say('這個動作叫 Invert', '');
+  await step(tok);                                   // 12:59 先畫圖
+  flips.forEach(kill);
+  const goal = tag('invert 後：d → c → b → a → 0', 'ptr alt', 2.0, 2.3, -1.2);
+  say('先畫圖：invert 完，原來的頭變成尾巴', '');
+  await step(tok);                                   // 13:15 三個 pointer
+  say('要用三個 pointer：p、q、r', '');
+  await step(tok);                                   // 13:37 p 指向第一個 node
+  put(pl, 0, 1.0);
+  say('p 先指向 linked list 的第一個 node', 'p 是先鋒');
+  await step(tok);                                   // 13:51 q 跟著 p
+  say('q 跟著 p 走', 'p 走過的 node，q 接著走');
+  await step(tok);                                   // 14:02 r 跟著 q
+  say('r 跟著 q 走', 'q 走過的 node，r 接著走');
+  await step(tok);                                   // 14:18 p = first，q = 0
+  cd.hl(0); q0 = tag('0', 'idx', -3.4, 0.5, 0); put(ql, -1, 1.6);
+  say('一開始：p = first，q = 0', '');
+  await step(tok);                                   // 14:28 q = 0 的原因
+  say('q = 0：原本的頭會變成尾巴', '尾巴要指向 0');
+  await step(tok);                                   // 14:53 while (p)
+  cd.hl(1);
+  say('while (p)：p 有值（list 不是空的）就進迴圈', '');
+  await step(tok);                                   // 15:12 r = q
+  cd.hl(2); r = q; put(rl, r, 2.2);
+  say('r = q：q 是 0，所以 r 也是 0', '');
+  await step(tok);                                   // 15:24 q = p
+  q = p; put(ql, q, 1.6);
+  say('q = p：q 追上 p，指到同一個 element', '');
+  await step(tok);                                   // 15:53 p = p->link
+  cd.hl(3); p = nxt[p]; put(pl, p, 1.0);
+  say('p = p->link：p 往前移一格', 'p 在 b、q 在 a、r 是 0');
+  await step(tok);                                   // 16:17 q->link = r
+  cd.hl(4); nxt[q] = -2; redraw(); glow(D(ns[q]), GOLD);
+  say('q->link = r：q 的 node 改指向 r（現在是 0）', 'a 變成尾巴');
+  await step(tok);                                   // 16:43 迴圈還沒結束
+  glow(D(ns[q]), null);
+  await round(380);
+  say('p 不是空的，繼續下一輪：三個各往前一格', 'b 改指向 a');
+  await step(tok);                                   // 17:13 再一個 run
+  await round(380);
+  say('再一個 run：q 的 link 指向 r', 'c 改指向 b');
+  await step(tok);                                   // 17:38 一個接一個直到 p == 0
+  await round(380);
+  say('p、q 一個接一個前進，直到 p == 0', 'd 改指向 c');
+  await step(tok);                                   // 17:48 跳出迴圈
   cd.hl(5);
-  say('p == 0 跳出迴圈：q 指著原本的最後一個 node', '它就是反轉後的頭');
-  await beat(tok, 2400);
-  cd.hl(6); await slide(tok, fl, ns[3].position.x, 2.3, 0, 600);
-  say('最後一行不能忘：first = q', 'd → c → b → a → 0');
-  await beat(tok, 3000);
+  say('p == 0：到底端，跳出迴圈', '');
+  await step(tok);                                   // 18:11 q 指向最後一個 node
+  glow(D(ns[3]), GOLD);
+  say('這時 q 指向原本的最後一個 node', '它就是反轉後的頭');
+  await step(tok);                                   // 18:30 first = q
+  cd.hl(6); kill(goal);
+  await slide(tok, fl, ns[3].position.x, 2.3, 0, 600);
+  say('最後一行不要忘：first = q', 'd → c → b → a → 0');
+  await step(tok);                                   // 19:43 考試挖空寫 code
+  glow(D(ns[3]), null); cd.hl(-1);
+  say('考試可能把 code 蓋起來叫你寫', '');
+  await step(tok);                                   // 19:56 順序可以亂寫嗎
+  cd.hl(2);
+  say('這三個指令的順序可以亂寫嗎？', '回去想一想');
+  void q0;
 }]);
 
-// ───────── U_tNDdEooJU 23:25：反轉的其他做法 ─────────
+// ───────── U_tNDdEooJU 23:29：反轉的其他做法 ─────────
 FRAG.push(['llpeng12-invert-alt', '反轉的笨方法：new 一條新 list', async (tok) => {
   fresh([0, 7, 12.5], [0, 0.6, 0.4]);
   const V = ['a', 'b', 'c', 'd'];
   const c = chainOf(V, -5.6, 2.3, 0.5, -1.8);
   tag('原本的 list', 'ptr', -5.6, 1.6, -1.8);
-  say('反轉不是唯一做法：最笨的做法？', 'new 一條新的 list');
-  await beat(tok, 2600);
-  const nf = tag('新 list：first = 0', 'ptr alt', 0, 1.7, 2.0);
-  const nn = []; let ls = [];
+  const nn = []; let ls = [], nf = null;
   const r = ring();
-  for (let i = 0; i < 4; i++) {
+  async function copyFront(i, ms) {
     ringAt(r, c.ns[i]); glow(D(c.ns[i]), GOLD);
-    say('依序讀原 list 的第 ' + (i + 1) + ' 個：' + V[i], '複製一個 node，插到新 list 的「最前面」');
-    await beat(tok, 900);
-    nn.forEach((g, k) => { g.position.x += 2.3; });
+    nn.forEach((g) => { g.position.x += 2.3; });
     const g = node(V[i], -5.6, 0.5, 2.0, ORANGE); nn.unshift(g);
-    await dropIn(tok, g, 350);
+    await dropIn(tok, g, ms);
     ls.forEach(kill); ls = nn.map((h, k) => lk(h, nn[k + 1] || null));
     txt(nf, '新 list：first → ' + V[i]);
     glow(D(c.ns[i]), null);
-    await beat(tok, 900);
   }
+  await step(tok);                                   // 23:29 唯一的做法嗎？
+  say('反轉 linked list：p、q、r 是唯一的做法嗎？', '');
+  await step(tok);                                   // 23:39 最笨的做法
+  say('最笨的做法是什麼？', '');
+  await step(tok);                                   // 24:25 new 一條新的 list
+  nf = tag('新 list：first = 0', 'ptr alt', 0, 1.7, 2.0);
+  say('最笨：new 一條新的 list', '');
+  await step(tok);                                   // 24:32 讀 first，插進新 list
+  await copyFront(0, 380);
+  say('先讀第一個 a，insert 到新 list', '每次都插在新 list 的最前面');
+  await step(tok);                                   // 24:40 再讀第二個
+  await copyFront(1, 380);
+  say('再讀第二個 b，一樣丟進新 list', 'b → a');
+  await step(tok);                                   // 24:45 一個一個丟
+  await copyFront(2, 300); await copyFront(3, 300);
   r.visible = false;
-  say('讀完：新 list 剛好是反轉的順序', 'd → c → b → a');
-  await beat(tok, 2400);
-  say('用 stack 也行：全部 push 再 pop 出來', '代價：要多用記憶體產生新的 node');
-  await beat(tok, 3200);
-  say('前面 p、q、r 的做法不產生新 node', '看不懂程式？把每一輪的圖畫出來');
-  await beat(tok, 2800);
+  say('一個一個讀完', '新 list：d → c → b → a，剛好反轉');
+  await step(tok);                                   // 24:56 同學的 stack 做法也可以
+  say('這樣可以；同學說的 stack 做法也可以', '全部 push 再 pop 出來');
+  await step(tok);                                   // 25:09 代價：多用 memory
+  nn.forEach((g) => glow(D(g), GOLD));
+  say('代價：要多用一些 memory 產生新的 node', '');
+  await step(tok);                                   // 26:05 示意圖：第一個 run…
+  nn.forEach((g) => glow(D(g), null));
+  say('示意圖：第一個 run（r = 0）、第二個 run……', 'p、q、r 做法不產生新的 node');
+  await step(tok);                                   // 26:20 把圖畫出來
+  say('看不懂程式？最好的方法就是把圖畫出來', '');
 }]);
 
-// ───────── U_tNDdEooJU 26:30：Concatenate ─────────
+// ───────── U_tNDdEooJU 26:28：Concatenate ─────────
 FRAG.push(['llpeng12-concat', 'Concatenate：A 的尾巴接到 b.first', async (tok) => {
   fresh([0, 6.5, 12.5], [0, 1.6, 0]);
   const cd = code(['if (!first) { first = b.first; return; }', 'if (b.first) {', '  for (p = first; p->link; p = p->link);', '  p->link = b.first;', '}'], -1.6, 6.0, 0.5);
   const A = chainOf(['a₁', 'a₂', 'a₃'], -6.0, 2.1, 0.5, 0, BLUE);
   const B = chainOf(['b₁', 'b₂'], 1.8, 2.1, 0.5, 0, ORANGE);
-  tag('first', 'ptr', -6.0, 1.6, 0); tag('b.first', 'ptr alt', 1.8, 1.6, 0);
-  say('把兩條 linked list A、B 串成一條', 'A 尾巴原本指向 0，改成指向 b.first');
-  await beat(tok, 2800);
-  cd.hl(2);
-  say('先找到 A 的尾巴', 'for 迴圈本體是空的，只負責移動 p');
-  const pl = tag('p', 'ptr alt', -6.0, -0.3, 1.0);
+  tag('first（A）', 'ptr', -6.0, 1.6, 0); tag('b.first', 'ptr alt', 1.8, 1.6, 0);
+  let pre = null, pl = null;
   const r = ring();
-  for (let i = 0; i < 3; i++) {
-    ringAt(r, A.ns[i]); pl.position.set(A.ns[i].position.x, -0.3, 1.0);
-    say(i < 2 ? 'p->link 不是 0 → p = p->link' : 'p->link == 0 → 跳出迴圈', i < 2 ? '' : 'p 停在最後一個 node');
-    await beat(tok, 1300);
-  }
+  const at = (i) => { ringAt(r, A.ns[i]); pl.position.set(A.ns[i].position.x, -0.3, 1.0); };
+  await step(tok);                                   // 26:28 串接兩條 list
+  say('能不能把兩條 linked list 串接起來？', '');
+  await step(tok);                                   // 26:37 A 和 B
+  say('一條叫 A、一條叫 B', '串成一條更大的 linked list');
+  await step(tok);                                   // 26:55 A 的尾巴改指 b.first
+  pre = arrow(V3(-1.07, 1.05, 0.3), V3(1.5, 1.05, 0.3), GHOST);
+  say('結果：A 尾巴原本指向 0，現在指向 b.first', '');
+  await step(tok);                                   // 27:28 要知道 A 的尾巴在哪
+  say('要做到這件事，得先知道 A 的尾巴在哪裡', '');
+  await step(tok);                                   // 27:44 一個 for 迴圈，本體空的
+  kill(pre); cd.hl(2);
+  say('用一個 for 迴圈', '迴圈本體是空的，什麼都不做');
+  await step(tok);                                   // 28:03 p 從 first 開始
+  pl = tag('p', 'ptr alt', -6.0, -0.3, 1.0); at(0);
+  say('p 從 first 開始', 'p = first');
+  await step(tok);                                   // 28:11 判斷 p->link 是不是 0
+  glow(D(A.ns[0]), GOLD);
+  say('判斷 p->link 是不是 0', '');
+  await step(tok);                                   // 28:18 不是 0 → p 移過去
+  glow(D(A.ns[0]), null); at(1);
+  say('不是 0 → p = p->link', 'p 移到下一個 node');
+  await step(tok);                                   // 28:37 再判斷、再走
+  at(2);
+  say('再判斷：還不是 0，繼續走', '');
+  await step(tok);                                   // 29:09 p->link 是 0 → 跳出
+  glow(D(A.ns[2]), GOLD);
+  say('終於 p->link 是 0：p 是最後一個元素', '跳出 for 迴圈');
+  await step(tok);                                   // 29:33 p->link = b.first
   cd.hl(3);
   kill(A.ls[2]); A.ls[2] = lk(A.ns[2], B.ns[0]);
-  glow(D(A.ns[2]), GOLD);
-  say('p->link = b.first：把線連上', 'a₁ → a₂ → a₃ → b₁ → b₂');
-  await beat(tok, 3000);
+  say('p->link = b.first：把這條線連上', '結束');
+  await step(tok);                                   // 29:41 前面的 if：防呆
   glow(D(A.ns[2]), null); r.visible = false; kill(pl);
   cd.hl(0);
+  say('前面這個 if 在做什麼？', '防呆機制');
+  await step(tok);                                   // 30:05 A 是空的
   A.ns.forEach((g) => tint(D(g), DIM));
-  say('第一行是防呆：A 是空的怎麼辦？', 'first == 0 → 直接 first = b.first');
-  await beat(tok, 3000);
-  cd.hl(-1);
-  say('A 空的就不用跑 for 迴圈', '找尾巴：O(A 的長度)');
-  await beat(tok, 2600);
+  say('A 是空的：first == 0', '直接 first = b.first，不用跑 for 迴圈');
+  await step(tok);                                   // 30:39 示意圖：連起來
+  A.ns.forEach((g) => tint(D(g), BLUE)); cd.hl(-1);
+  say('示意圖：把兩條連起來', 'a₁ → a₂ → a₃ → b₁ → b₂');
 }]);
 
-// ───────── U_tNDdEooJU 30:57：List destructor ─────────
+// ───────── U_tNDdEooJU 31:03：List destructor ─────────
 FRAG.push(['llpeng12-destructor', 'List destructor：一個一個 delete', async (tok) => {
   fresh([0, 6, 12], [0, 1.4, 0]);
   const cd = code(['List::~List() {', '  ListNode *next;', '  for (; first; first = next) {', '    next = first->link;', '    delete first;', '  }', '}'], -3.6, 5.4, 0.5);
   const c = chainOf([10, 50, 20], -0.4, 2.3);
   const fl = tag('first', 'ptr', -0.4, 1.6, 0);
   const nl = tag('next', 'ptr alt', -0.4, -0.3, 1.0); showL(nl, false);
-  say('list 不要了：destructor 把所有 node free 掉', '');
-  await beat(tok, 2400);
-  for (let i = 0; i < 3; i++) {
-    cd.hl(2); say('first 不是空的 → 進迴圈', ''); await beat(tok, 1000);
+  const V = [10, 50, 20];
+  async function one(i, ms) {
     cd.hl(3); showL(nl, true);
     if (i < 2) nl.position.set(c.ns[i + 1].position.x, -0.3, 1.0); else { nl.position.set(c.ns[i].position.x + 1.5, -0.3, 1.0); txt(nl, 'next = 0'); }
-    say('先記下一個：next = first->link', i < 2 ? 'next → ' + [10, 50, 20][i + 1] : 'next = 0');
-    await beat(tok, 1300);
-    cd.hl(4); kill(c.ls[i]); fly(c.ns[i]);
-    say('delete first：把自己刪掉', '刪掉 ' + [10, 50, 20][i]);
-    await beat(tok, 1100);
-    cd.hl(2);
-    if (i < 2) fl.position.set(c.ns[i + 1].position.x, 1.6, 0); else txt(fl, 'first = 0');
-    say('first = next：往下走一格', '');
-    await beat(tok, 1100);
+    await beat(tok, ms);
+    cd.hl(4); kill(c.ls[i]); fly(c.ns[i]); await beat(tok, ms);
+    cd.hl(2); if (i < 2) fl.position.set(c.ns[i + 1].position.x, 1.6, 0); else txt(fl, 'first = 0');
   }
+  await step(tok);                                   // 31:03 list 不要了：destructor
+  say('這條 linked list 不要了：destroy 掉', 'destructor');
+  await step(tok);                                   // 31:11 清空：全部 free
+  say('把 list 清空：裡面所有 node 都 free 掉', 'delete，把 memory address 還回去');
+  await step(tok);                                   // 31:27 for 檢查 first
+  cd.hl(2); glow(D(c.ns[0]), GOLD);
+  say('for 迴圈：檢查 first 是不是空的', '');
+  await step(tok);                                   // 31:44 next = first->link
+  glow(D(c.ns[0]), null);
+  cd.hl(3); showL(nl, true); nl.position.set(c.ns[1].position.x, -0.3, 1.0);
+  say('first 不是空的：先 next = first->link', 'next 指向下一個繼位者');
+  await step(tok);                                   // 32:00 delete first，first = next
+  cd.hl(4); kill(c.ls[0]); fly(c.ns[0]); await beat(tok, 500);
+  cd.hl(2); fl.position.set(c.ns[1].position.x, 1.6, 0);
+  say('delete first：把自己刪掉', '再 first = next，往下走一格');
+  await step(tok);                                   // 32:12 每次拿一個出來刪
+  await one(1, 380); await one(2, 380);
+  say('每一次從 linked list 拿一個 node 出來刪掉', '');
+  await step(tok);                                   // 32:22 List destructor
   cd.hl(-1);
-  say('每次拿一個 node 出來刪掉', 'first == 0 → 結束，list 清空');
-  await beat(tok, 2800);
+  say('first == 0：list 清空了', '這就叫 List destructor');
+  void V;
 }]);
 
 // ───────── U_tNDdEooJU 32:32：Circular linked list ─────────
 FRAG.push(['llpeng12-circular', 'Circular linked list：沒有 NULL，要靠 last', async (tok) => {
   fresh([0, 6, 12], [0, 0.8, 0.3]);
   const c = chainOf(['a', 'b', 'c', 'd'], -4.0, 2.4);
-  tag('first', 'ptr', -4.0, 1.6, 0);
-  say('一般 linked list：尾巴指向 NULL', '判斷尾巴：link == 0');
-  await beat(tok, 2400);
-  kill(c.ls[3]);
-  c.ls[3] = lk(c.ns[3], c.ns[0]);
-  say('環狀：最後一個 node 指回頭端', '整條變成一個圓圈');
-  await beat(tok, 2600);
   const r = ring();
-  for (let k = 0; k < 6; k++) { ringAt(r, c.ns[k % 4]); await beat(tok, 380); }
-  say('一直繞，永遠遇不到 NULL', '不能再用「是不是 NULL」找尾巴');
-  await beat(tok, 2200);
+  await step(tok);                                   // 32:32 環狀的 linked list
+  kill(c.ls[3]); c.ls[3] = lk(c.ns[3], c.ns[0]);
+  say('Linked list 也有環狀的', '最後一個 node 指回頭端');
+  await step(tok);                                   // 32:42 告訴你誰是頭
+  tag('first', 'ptr', -4.0, 1.6, 0);
+  say('一樣要告訴你誰是頭', 'first');
+  await step(tok);                                   // 32:55 最後一個 node：last
+  tag('last', 'ptr alt', c.ns[3].position.x, 1.6, 0); glow(D(c.ns[3]), GOLD);
+  say('最後一個 node 也有一個指標代表它', '叫 last');
+  await step(tok);                                   // 33:04 沒有 last 就是圓圈圈
+  glow(D(c.ns[3]), null);
+  for (let k = 0; k < 6; k++) { ringAt(r, c.ns[k % 4]); await beat(tok, 300); }
+  say('為什麼需要 last？不然它就是一個圓圈圈', '一直繞');
+  await step(tok);                                   // 33:11 以前判斷是不是 NULL
   r.visible = false;
-  tag('last', 'ptr alt', c.ns[3].position.x, 1.6, 0);
+  say('以前找尾巴：判斷 link 是不是 NULL', '');
+  await step(tok);                                   // 33:19 永遠不是 NULL
+  glow(D(c.ns[3]), RED);
+  say('環狀時尾巴指的是 first，永遠不是 NULL', '沒辦法用 NULL 判斷尾巴');
+  await step(tok);                                   // 33:26 last 在 first 之前
   glow(D(c.ns[3]), GOLD);
-  say('所以多一個指標 last 指向最後一個 node', 'last->link 就是 first');
-  await beat(tok, 3000);
-  say('走訪的停止條件改成：回到頭端', 'p->link == first');
-  await beat(tok, 2800);
+  say('last：first 之前、指到 first 的 node', 'last->link == first');
 }]);
 
-// ───────── U_tNDdEooJU 33:43：用 linked list 實作 stack 與 queue ─────────
+// ───────── U_tNDdEooJU 33:50：用 linked list 實作 stack 與 queue ─────────
 FRAG.push(['llpeng12-linked-sq', '用 linked list 實作 Stack 與 Queue', async (tok) => {
   fresh([0, 7.5, 12], [0, 0.4, 0.2]);
-  tag('Linked Stack', 'ptr', -6.0, 1.3, -2.0); tag('Linked Queue', 'ptr', -6.0, 1.3, 2.2);
+  await step(tok);                                   // 33:50 只能用 array 嗎？
+  say('Stack 和 Queue 只能用 array 來 implement 嗎？', '');
+  await step(tok);                                   // 34:04 用 linked list implement stack
+  tag('Linked Stack', 'ptr', -6.0, 1.3, -2.0);
   const S = chainOf([3, 2, 1], -2.0, 2.2, 0.5, -2.0, BLUE);
-  const tl = tag('top', 'ptr alt', -2.0, 1.5, -2.0);
-  say('Stack 不一定要用 array', 'linked stack：top 就是 first');
-  await beat(tok, 2600);
-  const n4 = node(4, -4.2, 0.5, -2.0, ORANGE); await dropIn(tok, n4);
-  S.ns.unshift(n4); relinkAll(S); tl.position.set(-4.2, 1.5, -2.0);
-  say('push：新 node 接在最前面，top 指向它', 'O(1)，沒有 isFull');
-  await beat(tok, 2400);
-  S.ls.forEach(kill); S.ls = []; fly(S.ns.shift()); relinkAll(S); tl.position.set(-2.0, 1.5, -2.0);
-  say('pop：拿掉 top 指的那個 node', 'top = top->link');
-  await beat(tok, 2400);
+  say('這裡用 linked list 來 implement stack', '');
+  await step(tok);                                   // 34:12 top 就是 first
+  tag('top', 'ptr alt', -2.0, 1.5, -2.0); glow(D(S.ns[0]), GOLD);
+  say('stack 的 top 就等同於 first', '指向第一個 element');
+  await step(tok);                                   // 34:27 queue 也一樣
+  glow(D(S.ns[0]), null);
+  tag('Linked Queue', 'ptr', -6.0, 1.3, 2.2);
   const Q = chainOf([1, 2, 3], -2.0, 2.2, 0.5, 2.2, TEAL);
-  const fq = tag('front', 'ptr', -2.0, 1.5, 2.2), rq = tag('rear', 'ptr alt', 2.4, 1.5, 2.2);
-  say('Queue 也一樣：一端是頭（front）、一端是尾（rear）', '');
-  await beat(tok, 2400);
-  const q4 = node(4, 4.6, 0.5, 2.2, ORANGE); await dropIn(tok, q4);
-  Q.ns.push(q4); relinkAll(Q); rq.position.set(4.6, 1.5, 2.2);
-  say('enqueue：接在 rear 後面', 'rear->link = 新 node；rear = 新 node');
-  await beat(tok, 2400);
-  Q.ls.forEach(kill); Q.ls = []; fly(Q.ns.shift()); relinkAll(Q); fq.position.set(0.2, 1.5, 2.2);
-  say('dequeue：從 front 拿掉', 'front = front->link');
-  await beat(tok, 2400);
-  say('Stack、Queue 是 data structure', '可以用 array，也可以用 linked list 實作');
-  await beat(tok, 3000);
+  say('queue 也一樣，就是一條 linked list', '');
+  await step(tok);                                   // 34:34 頭端、尾巴
+  tag('front（頭端）', 'ptr', -2.0, 1.5, 2.2); tag('rear（尾巴）', 'ptr alt', 2.4, 1.5, 2.2);
+  say('一端是頭端、一端是尾巴', 'front、rear');
+  await step(tok);                                   // 34:57 data structure
+  say('Stack、Queue 是 data structure', '可以用 array，也可以用 linked list implement');
+  void Q;
 }]);
 
 // ───────── U_tNDdEooJU 35:09：用 linked list 表示多項式 ─────────
 FRAG.push(['llpeng12-poly-nodes', '多項式的 linked list：coef | exp | link', async (tok) => {
   fresh([0, 7, 12.5], [0, 0.6, 0.3]);
-  tag('a = 3x¹⁴ + 2x⁸ + 1', 'ptr', -1.0, 2.0, -1.8);
   const T = [[3, 14], [2, 8], [1, 0]];
   const ns = [];
-  for (let i = 0; i < 3; i++) { ns.push(pnode(T[i][0], T[i][1], -4.0 + i * 3.2, 0.5, -1.8)); await dropIn(tok, ns[i], 350); }
-  say('每一項一個 node', 'a = 3x¹⁴ + 2x⁸ + 1：三個 node');
-  await beat(tok, 2000);
+  await step(tok);                                   // 35:09 第二章：多項式
+  say('第二章講過多項式', '用 array 表示，課本至少講了三種方法');
+  await step(tok);                                   // 35:33 linked list 很單純
+  tag('a = 3x¹⁴ + 2x⁸ + 1', 'ptr', -1.0, 2.0, -1.8);
+  say('用 linked list 表示，可以很單純', '');
+  await step(tok);                                   // 35:40 三個 node
+  for (let i = 0; i < 3; i++) { ns.push(pnode(T[i][0], T[i][1], -4.0 + i * 3.2, 0.5, -1.8)); await dropIn(tok, ns[i], 300); }
+  say('a = 3x¹⁴ + 2x⁸ + 1：三個 node', '一項一個 node');
+  await step(tok);                                   // 35:51 係數、指數、link
   tag('coef', 'idx', -4.42, -0.15, -0.8); tag('exp', 'idx', -3.58, -0.15, -0.8); tag('link', 'idx', -2.95, -0.15, -0.8);
-  glow(ns[0].userData.data, GOLD);
+  glow(ns[0].userData.data, GOLD); glow(ns[0].userData.exp, GOLD);
   say('三個欄位：係數、指數、link', '3 是係數，14 是指數');
-  await beat(tok, 2600);
-  glow(ns[0].userData.data, null);
-  for (let i = 0; i < 3; i++) { plk(ns[i], ns[i + 1] || null); await beat(tok, 500); }
-  say('1 = 1·x⁰ 是最後一項：link = 0', '指數由大排到小');
-  await beat(tok, 2400);
+  await step(tok);                                   // 36:03 link 指向下一項，1 是尾巴
+  glow(ns[0].userData.data, null); glow(ns[0].userData.exp, null);
+  for (let i = 0; i < 3; i++) plk(ns[i], ns[i + 1] || null);
+  say('link 指向下一項；1 = 1·x⁰ 是尾巴', 'link = 0');
+  await step(tok);                                   // 36:29 2x¹⁰⁰⁰ + 1
   tag('2x¹⁰⁰⁰ + 1', 'ptr alt', -1.0, 2.0, 2.2);
   const s1 = pnode(2, 1000, -2.6, 0.5, 2.2, ORANGE), s2 = pnode(1, 0, 1.0, 0.5, 2.2, ORANGE);
-  await dropIn(tok, s1, 350); await dropIn(tok, s2, 350);
   plk(s1, s2); plk(s2, null);
-  say('上次的 sparse 例子：2x¹⁰⁰⁰ + 1', '只要 2 個 node，不用開 1001 格的 array');
-  await beat(tok, 3000);
-  say('linked list 可以解決 sparse 的問題', '缺點呢？回去想想');
-  await beat(tok, 2800);
+  say('上次的 2x¹⁰⁰⁰ + 1：只要兩個 node', '');
+  await step(tok);                                   // 36:46 不用開很大的 array
+  say('不用開 1001 格的 array', 'linked list 可以解決 sparse 的問題');
+  await step(tok);                                   // 36:54 缺點在哪
+  say('那用 linked list 表示多項式，缺點在哪？', '自己想想看');
 }]);
 
-// ───────── U_tNDdEooJU 37:22：Term、Polynomial 與 operator+ ─────────
+// ───────── U_tNDdEooJU 37:33：Term、Polynomial 與 operator+ ─────────
 FRAG.push(['llpeng12-poly-class', 'Polynomial class 與 operator+ overloading', async (tok) => {
   fresh([0, 6, 12.5], [0, 2.0, 0]);
   const cd = code(['struct Term {', '  int coef;  int exp;', '};', 'class Polynomial {', '  friend Polynomial operator+(', '    const Polynomial&, const Polynomial&);', 'private:', '  List<Term> poly;', '};'], -3.0, 6.0, 0.5);
+  let t = null, e = null;
+  await step(tok);                                   // 37:33 有一個 Term
+  cd.hl(0);
+  say('要 implement：先有一個 Term', '');
+  await step(tok);                                   // 37:47 element 是 Term：係數、指數
   cd.hl(1);
-  const t = pnode(3, 14, 2.6, 0.5, 0);
+  t = pnode(3, 14, 2.6, 0.5, 0);
   await dropIn(tok, t);
-  say('List node 的 element 是一個 Term', 'Term = 係數 coef + 指數 exp');
-  await beat(tok, 2600);
+  say('list node 的 element 是一個 Term', '包含係數 coef 和指數 exp');
+  await step(tok);                                   // 38:01 Polynomial 也宣告成 class
+  cd.hl(3);
+  say('Polynomial 也宣告成一個 class', '');
+  await step(tok);                                   // 38:09 private 叫 poly
   cd.hl(7);
   const b = ghostBox('#2fc092', 7.0, 1.5, 1.6); b.position.set(4.9, 0.5, 0);
   const t2 = pnode(2, 8, 5.6, 0.5, 0); plk(t, t2); plk(t2, null);
   tag('List<Term> poly', 'ptr', 4.4, 1.6, 0);
-  say('Polynomial 的 private：一條 List<Term>', 'data type 就是 Term');
-  await beat(tok, 2600);
+  say('private 叫 poly：一條 linked list', 'data type 就是 Term');
+  await step(tok);                                   // 38:22 friend operator+ 在幹嘛
   cd.hl(4);
-  say('friend Polynomial operator+ 是在做什麼？', 'C++：operator overloading');
-  await beat(tok, 2600);
-  const e = tag('c = a + b;', 'ptr alt', 3.0, 3.6, 1.5);
-  say('宣告 Polynomial a, b 之後寫 a + b', '這個 + 已經被 redefine');
-  await beat(tok, 2400);
+  say('friend Polynomial operator+ 是在做什麼？', '');
+  await step(tok);                                   // 39:04 operator overloading
+  say('C++ 的 operator overloading', '把 + 改成我要的「多項式的加」');
+  await step(tok);                                   // 39:22 a + b
+  e = tag('Polynomial a, b;  c = a + b;', 'ptr alt', 3.0, 3.6, 1.5);
+  say('宣告兩個多項式 a、b，就可以寫 a + b', '這個 + 已經被 redefine');
+  await step(tok);                                   // 39:40 跳到自己定義的加法
   arrow(V3(3.0, 3.3, 1.5), V3(-0.5, 3.8, 0.2), 0xb07a10);
-  say('看到兩個 Polynomial 相加，就跳到自己定義的加法', '改成「多項式的加」');
-  await beat(tok, 3000);
   cd.hl(-1);
+  say('看到 Polynomial 的 +，就跳到自己定義的加法 procedure', '');
+  void e;
 }]);
 
-// ───────── U_tNDdEooJU 40:10：多項式加法 ─────────
+// ───────── U_tNDdEooJU 40:08：多項式加法 ─────────
 FRAG.push(['llpeng12-poly-add', '多項式加法：p、q 一路比指數', async (tok) => {
   fresh([0, 8, 12.5], [0, 0.4, 0.4]);
   const A = [[3, 14], [2, 8], [1, 0]], B = [[8, 14], [-3, 10], [10, 6]];
@@ -10141,169 +10465,313 @@ FRAG.push(['llpeng12-poly-add', '多項式加法：p、q 一路比指數', async
   const an = A.map(([c, e], i) => pnode(c, e, -4.6 + i * 3.4, 0.5, -3.0));
   const bn = B.map(([c, e], i) => pnode(c, e, -4.6 + i * 3.4, 0.5, -0.6, ORANGE));
   an.forEach((g, i) => plk(g, an[i + 1] || null)); bn.forEach((g, i) => plk(g, bn[i + 1] || null));
-  say('p、q 指向 a、b 的第一個 node', 'a = 3x¹⁴ + 2x⁸ + 1，b = 8x¹⁴ − 3x¹⁰ + 10x⁶');
   const pl = tag('p', 'ptr alt', 0, 0, 0), ql = tag('q', 'ptr alt', 0, 0, 0);
-  const put = (l, arr, i, z) => { if (i < arr.length) l.position.set(arr[i].position.x - 0.4, 1.3, z); else { l.position.set(5.6, 1.3, z); txt(l, l === pl ? 'p = 0' : 'q = 0'); } };
-  let i = 0, j = 0; put(pl, an, 0, -3.0); put(ql, bn, 0, -0.6);
-  await beat(tok, 3000);
+  showL(pl, false); showL(ql, false);
+  const put = (l, arr, i, z) => { showL(l, true); if (i < arr.length) l.position.set(arr[i].position.x - 0.4, 1.3, z); else { l.position.set(5.6, 1.3, z); txt(l, l === pl ? 'p = 0' : 'q = 0'); } };
   const cn = [];
-  const emit = async (c, e, why, f) => {
+  let i = 0, j = 0;
+  const emit = async (c, e) => {
     const g = pnode(c, e, -4.6 + cn.length * 2.45, 0.5, 2.6, PURP);
     await dropIn(tok, g, 380);
     if (cn.length) plk(cn[cn.length - 1], g);
     cn.push(g);
-    say(why, f);
-    await beat(tok, 2100);
   };
-  while (i < 3 || j < 3) {
-    const ea = i < 3 ? A[i][1] : -1, eb = j < 3 ? B[j][1] : -1;
-    if (i < 3) glow(an[i].userData.exp, GOLD); if (j < 3) glow(bn[j].userData.exp, GOLD);
-    say('比較指數：' + (i < 3 ? ea : '—') + ' vs ' + (j < 3 ? eb : '—'), ea === eb ? '相同 → 係數相加' : '不同 → copy 指數大的那項');
-    await beat(tok, 1500);
-    if (i < 3) glow(an[i].userData.exp, null); if (j < 3) glow(bn[j].userData.exp, null);
-    if (ea === eb) { await emit(A[i][0] + B[j][0], ea, '係數 ' + A[i][0] + ' + ' + B[j][0] + ' = ' + (A[i][0] + B[j][0]) + '，new 一個 node 放進 c', 'p、q 都往下走'); i++; j++; }
-    else if (ea > eb) { await emit(A[i][0], ea, 'copy p 那項：' + termStr(A[i][0], ea), 'p 往下走'); i++; }
-    else { await emit(B[j][0], eb, 'copy q 那項：' + termStr(B[j][0], eb), 'q 往下走'); j++; }
-    put(pl, an, i, -3.0); put(ql, bn, j, -0.6);
-  }
+  const hiExp = (on) => { if (i < 3) glow(an[i].userData.exp, on ? GOLD : null); if (j < 3) glow(bn[j].userData.exp, on ? GOLD : null); };
+  await step(tok);                                   // 40:08 跟 array 很像
+  say('多項式的加法：跟 array 版很像', 'a = 3x¹⁴ + 2x⁸ + 1，b = 8x¹⁴ − 3x¹⁰ + 10x⁶');
+  await step(tok);                                   // 40:24 指數一樣：係數相加
+  say('指數一樣：係數相加', '');
+  await step(tok);                                   // 40:32 指數不一樣：copy
+  say('指數不一樣：copy', '');
+  await step(tok);                                   // 40:51 用 linked list 更簡單
+  say('用 linked list 做多項式加法，比 array 還簡單', '');
+  await step(tok);                                   // 41:01 p、q
+  put(pl, an, 0, -3.0); put(ql, bn, 0, -0.6);
+  say('兩個 pointer p、q', '一開始分別指向兩個多項式的第一個 element');
+  await step(tok);                                   // 41:15 比較指數 14、14
+  hiExp(true);
+  say('比較 p、q 的指數：14 和 14 → 相同', '');
+  await step(tok);                                   // 41:23 3 + 8 = 11，new node 放進 c
+  hiExp(false);
+  await emit(11, 14);
+  say('係數相加 3 + 8 = 11', 'new 一個 node 放進 c：11x¹⁴');
+  await step(tok);                                   // 41:40 p、q 往下走
+  i++; j++; put(pl, an, i, -3.0); put(ql, bn, j, -0.6);
+  say('這一項看完了：p、q 都往下走', '');
+  await step(tok);                                   // 41:59 一個 8、一個 10
+  hiExp(true);
+  say('比較指數：p 是 8、q 是 10', '不一樣，不能相加');
+  await step(tok);                                   // 42:14 10 比較大 → copy q
+  hiExp(false);
+  await emit(-3, 10); j++; put(ql, bn, j, -0.6);
+  say('指數從大排到小：10 比較大 → 先 copy q 那項', '−3x¹⁰ 放進 c，q 往下走');
+  await step(tok);                                   // 42:46 8 比 6 大 → copy p
+  await emit(2, 8); i++; put(pl, an, i, -3.0);
+  say('接著 8 和 6：8 比較大 → copy p 的 2x⁸', 'p 往下走');
+  await step(tok);                                   // 43:12 準則
+  await emit(10, 6); j++; put(ql, bn, j, -0.6);
+  await emit(1, 0); i++; put(pl, an, i, -3.0);
+  say('準則：指數相同就相加；不同就先 copy 指數大的', '被 copy 的那個往下走');
+  await step(tok);                                   // 43:33 p、q 都到 0
   plk(cn[cn.length - 1], null);
-  say('p、q 都到 0：結束', 'c = 11x¹⁴ − 3x¹⁰ + 2x⁸ + 10x⁶ + 1');
-  await beat(tok, 3200);
+  say('直到 p、q 都到 0 就結束', 'c = 11x¹⁴ − 3x¹⁰ + 2x⁸ + 10x⁶ + 1');
 }]);
 
-// ───────── U_tNDdEooJU 51:22、53:26：GetNode／RetNode ─────────
+// ───────── U_tNDdEooJU 44:04：加完後 a、b 的 node 怎麼辦 ─────────
+FRAG.push(['llpeng12-poly-release', '加完後：a、b 的 6 個 node', async (tok) => {
+  fresh([0, 6.5, 12.5], [0, 1.0, 0]);
+  const A = ['3,14', '2,8', '1,0'], B = ['8,14', '-3,10', '10,6'];
+  const an = A.map((v, i) => cube(v, TEAL, [1.2, 0.7, 1.0], -4.0 + i * 1.6, 0.35, -1.6));
+  const bn = B.map((v, i) => cube(v, ORANGE, [1.2, 0.7, 1.0], 1.2 + i * 1.6, 0.35, -1.6));
+  tag('a', 'ptr', -5.4, 0.4, -1.6); tag('b', 'ptr', 0.0, 0.4, -1.6);
+  const cl = tag('c', 'ptr alt', -5.4, 0.4, 1.6);
+  const cn = [];
+  await step(tok);                                   // 44:04 過程中要隨時產生 c 的 node
+  for (let k = 0; k < 5; k++) { const m = cube(['11,14', '-3,10', '2,8', '10,6', '1,0'][k], PURP, [1.2, 0.7, 1.0], -4.0 + k * 1.6, 0.35, 1.6); cn.push(m); await dropIn(tok, m, 220); }
+  say('a + b = c 的過程中', '要隨時 new 出 c 的 node');
+  await step(tok);                                   // 44:43 a、b 都不用了
+  [...an, ...bn].forEach((m) => tint(m, DIM));
+  say('加完以後，a、b 都不用了', '');
+  await step(tok);                                   // 44:48 空間可以 release
+  say('a、b 的空間可以 release 出來', '');
+  await step(tok);                                   // 44:54 list 的 destructor
+  say('一種做法：用 list 的 destructor', '');
+  await step(tok);                                   // 45:09 6 個 node 真的 delete
+  for (const m of [...an, ...bn]) { fly(m, V3(-4, 6, -3)); await beat(tok, 200); }
+  say('把 a、b 佔用的 6 個 node 真的 delete 掉', '空間還給系統');
+  await step(tok);                                   // 45:15 另一種：service
+  say('另一種想法：這程式是專門做多項式加減的服務', 'service');
+  await step(tok);                                   // 45:42 不用急著清掉
+  say('那也許不用急著把這些 node 清掉', '');
+  void cl;
+}]);
+
+// ───────── U_tNDdEooJU 49:00：Free pool（資源回收場） ─────────
+FRAG.push(['llpeng12-poly-pool', 'Free pool：用完的 node 回收再利用', async (tok) => {
+  fresh([0, 6.5, 12.5], [0, 1.0, 0]);
+  const VALS = ['3,14', '2,8', '1,0', '8,14', '-3,10', '10,6'];
+  let ns = [], pool = null;
+  await step(tok);                                   // 49:00 多項式加減乘除的服務
+  tag('多項式服務', 'ptr', -5.0, 2.6, -1.6);
+  say('寫一個多項式加減乘除的服務', '');
+  await step(tok);                                   // 49:07 很多人進來
+  const u1 = tag('user 1：a + b', 'ptr alt', -5.0, 1.9, -1.6);
+  ns = VALS.map((v, i) => cube(v, i < 3 ? TEAL : ORANGE, [1.2, 0.7, 1.0], -2.5 + i * 1.5, 0.35, 1.2));
+  say('有人進來 create a、b，做加法', '');
+  await step(tok);                                   // 49:20 有人 create d、e
+  tag('user 2：d、e 加減乘除', 'ptr alt', -5.0, 1.3, -1.6);
+  say('有人 create d、e，做加減乘除', '');
+  await step(tok);                                   // 49:35 不急著丟回系統
+  ns.forEach((m) => tint(m, DIM));
+  say('多項式不用了：不要急著把 node 丟回系統', '');
+  await step(tok);                                   // 49:45 放進 free pool
+  pool = ghostBox('#2fc092', 6.0, 1.6, 2.0); pool.position.set(3.0, 0.7, -1.8);
+  tag('free pool（資源回收場）', 'ptr alt', 3.0, 2.1, -1.8);
+  say('把 node 放在一個 pool 裡：free pool', '資源再利用');
+  await step(tok);                                   // 49:59 6 個 node 丟進回收場
+  await Promise.all(ns.map((m, i) => slide(tok, m, 0.8 + i * 0.9, 0.35, -1.8, 600)));
+  ns.forEach((m) => tint(m, '#8fcfb8'));
+  say('a + b 用完了：6 個 node 丟到資源回收場', '');
+  await step(tok);                                   // 50:15 新 user 叫出 node
+  const take = ns.slice(0, 3);
+  await Promise.all(take.map((m, i) => slide(tok, m, -1.5 + i * 1.5, 0.35, 2.2, 600)));
+  say('新的 user 要多項式：從回收場把 node 叫出來', '');
+  await step(tok);                                   // 50:25 改掉指數和係數
+  take.forEach((m, i) => { tint(m, PURP); relabel(m, ['5,9', '4,3', '7,0'][i]); });
+  say('只要改掉係數和指數就可以用', '');
+  await step(tok);                                   // 50:33 node 不會馬上被 delete
+  say('這就是 free pool：node 不會馬上被 delete', '要用時先去回收場看看');
+  await step(tok);                                   // 50:56 不浪費資源
+  say('好處：不會浪費資源，就跟資源回收場一樣', '');
+  await step(tok);                                   // 51:06 不用花 overhead create
+  say('不用花很多 overhead 再去 create 新的 node', 'create 新 node 要跟電腦要 resource');
+  void u1;
+}]);
+
+// ───────── U_tNDdEooJU 51:22／53:35：GetNode／RetNode（params.op = 'ret' 播 RetNode） ─────────
 FRAG.push(['llpeng12-av-getret', 'GetNode／RetNode：從 av 拿、還回 av', async (tok) => {
   const P = ctx.params || {};
   fresh([0, 6.5, 12.5], [0, 1.6, 0]);
-  const av = chainOf(['', '', ''], -1.2, 2.3, 0.5, 0, '#8fcfb8');
-  const avl = tag('av', 'ptr alt', -1.2, 1.6, 0);
-  tag('free pool（available list）', 'idx', 1.1, -0.3, 1.2);
+  let av = null, avl = null;
+  const showAv = () => { av = chainOf(['', '', ''], -1.2, 2.3, 0.5, 0, '#8fcfb8'); avl = tag('av', 'ptr alt', -1.2, 1.6, 0); tag('free pool（available list）', 'idx', 1.1, -0.3, 1.2); };
   if (P.op !== 'ret') {
     const cd = code(['ListNode* GetNode() {', '  ListNode *x;', '  if (!av) x = new ListNode;', '  else { x = av; av = av->link; }', '  return x;', '}'], -3.6, 6.2, 0.5);
-    say('要一個新 node：先去 free pool 看看', 'av 指向 free pool 的第一個 node');
-    await beat(tok, 2600);
+    let xl = null, x = null;
+    await step(tok);                                 // 51:22 要取得一個 node 怎麼辦
+    say('依照 free pool 的概念：要取得一個 node 怎麼辦？', '例如要宣告一個新的多項式');
+    await step(tok);                                 // 51:39 先去回收場看看
+    say('先去資源回收場看看：有沒有 node 給我用', '');
+    await step(tok);                                 // 52:00 指標 av
+    showAv();
+    say('指標 av（available list）', '指向 free pool 的第一個 element');
+    await step(tok);                                 // 52:14 free pool 也是 linked list
+    say('free pool 也是一條 linked list', '');
+    await step(tok);                                 // 52:22 av 是空的
     cd.hl(2);
-    say('av 是空的 → 回收場沒東西', '只好跟系統 new 一個');
-    await beat(tok, 2200);
+    say('如果 av 是空的：回收場沒有資源', '只好跟系統要（new）');
+    await step(tok);                                 // 52:32 有的話：x = av
     cd.hl(3);
-    const xl = tag('x', 'ptr', -1.2, 2.2, 0);
-    say('有的話：x = av', 'x 拿到 free pool 的第一個 node');
-    await beat(tok, 2000);
-    kill(av.ls[0]); avl.position.set(1.1, 1.6, 0);
-    say('av = av->link：av 往下移一格', '');
-    await beat(tok, 1600);
-    cd.hl(4);
-    const x = av.ns.shift(); av.ls.shift();
+    xl = tag('x', 'ptr', -1.2, 2.2, 0); glow(D(av.ns[0]), GOLD);
+    say('有的話：x = av', '拿到 free pool 的第一個 node');
+    await step(tok);                                 // 52:57 av 往下移一格
+    kill(av.ls[0]);
+    await slide(tok, avl, 1.1, 1.6, 0, 450);
+    say('這個 node 已經被拿走：av 往下移一格', 'av = av->link');
+    await step(tok);                                 // 53:03 return x
+    cd.hl(4); glow(D(av.ns[0]), null);
+    x = av.ns.shift(); av.ls.shift();
     await slide(tok, x, -4.5, 0.5, 2.2, 500); xl.position.set(-4.5, 1.4, 2.2);
-    relabel(D(x), '3,14'); tint(D(x), TEAL);
-    say('return x：拿到後再填係數、指數', '不用跟系統要記憶體');
-    await beat(tok, 2800);
-    cd.kill(); kill(xl); fly(x);
-    await beat(tok, 600);
+    say('return x：得到一個空間', '');
+    await step(tok);                                 // 53:13 設定係數和指數
+    setData(x, '3,14'); tint(D(x), TEAL);
+    say('拿到空間後，再設定它的係數和指數', '不用跟系統要記憶體');
+    return;
   }
   const cd2 = code(['void RetNode(ListNode *x) {', '  x->link = av;', '  av = x;', '}'], -3.6, 6.0, 0.5);
-  const x = node('x', -4.5, 2.4, 0, ORANGE); await dropIn(tok, x);
-  const xl2 = tag('x', 'ptr', -4.5, 3.3, 0);
-  say('RetNode：這個 node 不要了', '是 return 到 free pool，不是 delete');
-  await beat(tok, 2600);
+  let x = null, xl2 = null, a = null;
+  await step(tok);                                   // 53:35 不要了：丟回回收場
+  x = node('x', -4.5, 2.4, 0, ORANGE); await dropIn(tok, x);
+  xl2 = tag('x', 'ptr', -4.5, 3.3, 0);
+  say('這個多項式不要了：node 丟回資源回收場', '');
+  await step(tok);                                   // 53:42 叫 RetNode
+  cd2.hl(0);
+  say('這個動作叫 RetNode（return node）', '');
+  await step(tok);                                   // 53:47 下面是回收場的 list
+  showAv();
+  say('下面就是資源回收場的 linked list', '指標 av 指向它');
+  await step(tok);                                   // 53:55 return，不是 delete
+  say('注意：是 return，不是 delete', '');
+  await step(tok);                                   // 54:13 insert 進 av 這條 list
+  say('就是把 x 這個 node insert 進 av 這條 linked list', '');
+  await step(tok);                                   // 54:21 x->link = av
   cd2.hl(1);
-  const a = lk(x, av.ns[0]);
-  say('把 x 插到 av list 的最前面：先接上', 'x->link = av');
-  await beat(tok, 2400);
+  a = lk(x, av.ns[0]);
+  say('把 x 的 link 串接到 av 所指的地方', 'x->link = av');
+  await step(tok);                                   // 54:40 av = x
   cd2.hl(2);
   await slide(tok, avl, -4.5, 3.9, 0, 400);
-  say('再讓 av 指向 x', 'av = x');
-  await beat(tok, 2200);
+  say('再修改 available 變數：av 指向 x', 'av = x');
+  await step(tok);                                   // 54:54 看圖說故事
   kill(a); kill(xl2);
   await slide(tok, x, av.ns[0].position.x - 2.3, 0.5, 0, 500);
   av.ns.unshift(x); relinkAll(av); avl.position.set(x.position.x, 1.6, 0);
   cd2.hl(-1);
-  say('看圖說故事：x 成了 free pool 的頭', 'O(1)');
-  await beat(tok, 2800);
+  say('看圖說故事：x 還回來了，成了 free pool 的頭', 'O(1)');
 }]);
 
-// ───────── U_tNDdEooJU 55:13、59:08：一次歸還整個多項式 ─────────
+// ───────── U_tNDdEooJU 55:17／59:12：一次歸還整個多項式（params.mode = 'chain' 播非環狀版） ─────────
 FRAG.push(['llpeng12-cerase', '一次把整個多項式還給 av', async (tok) => {
   const P = ctx.params || {};
   fresh([0, 7.5, 12.5], [0, 0.8, 0.4]);
   const T = [[3, 14], [2, 8], [1, 0]];
   const an = T.map(([c, e], i) => pnode(c, e, -4.6 + i * 3.0, 0.5, -1.8));
   const avn = [0, 1].map((i) => node('', -2.6 + i * 2.4, 0.5, 2.2, '#8fcfb8'));
-  const avls = [lk(avn[0], avn[1]), lk(avn[1], null)];
+  lk(avn[0], avn[1]); lk(avn[1], null);
   const avl = tag('av', 'ptr alt', -2.6, 1.6, 2.2);
   const fl = tag(P.mode === 'chain' ? 'a.first' : 'first', 'ptr', -4.6, 1.6, -1.8);
   if (P.mode !== 'chain') {
-    const ls = [plk(an[0], an[1]), plk(an[1], an[2]), plk(an[2], an[0])];
-    const cd = code(['if (first) {', '  second = first->link;', '  first->link = av;', '  av = second;', '  first = 0;', '}'], 3.6, 6.0, 0.5);
-    say('能不能一次把整個多項式 a 還回 free pool？', 'a 表示成環狀 list：尾巴指回頭');
-    await beat(tok, 3000);
-    cd.hl(1);
-    const sl = tag('second', 'ptr alt', an[1].position.x, 1.6, -1.8);
-    say('① second = first->link', 'second 指向 2x⁸');
-    await beat(tok, 2200);
+    const ls = [plk(an[0], an[1]), plk(an[1], an[2]), plk(an[2], null)];
+    let cd = null, sl = null;
+    await step(tok);                                 // 55:17 一次歸還整個 polynomial？
+    say('不要一次只還一個 node', '能不能一次歸還一整個 polynomial？');
+    await step(tok);                                 // 55:24 a + b 之後把 a 全部丟掉
+    an.forEach((g) => glow(g.userData.data, GOLD));
+    say('例如 a + b = c 之後', '把 a 整個丟到資源回收場');
+    await step(tok);                                 // 55:39 寫一個 destructor
+    an.forEach((g) => glow(g.userData.data, null));
+    cd = code(['if (first) {', '  second = first->link;', '  first->link = av;', '  av = second;', '  first = 0;', '}'], 3.6, 6.0, 0.5);
+    say('有可能：寫一個 circular list 的 destructor', '');
+    await step(tok);                                 // 55:46 多項式表示成環狀
+    kill(ls[2]); ls[2] = plk(an[2], an[0]);
+    say('多項式表示成環狀', '尾巴指回頭端');
+    await step(tok);                                 // 56:06 好處：不用一個一個還
+    say('環狀的好處：簡單的指定就好', '不用一個一個 node 去 return');
+    await step(tok);                                 // 56:14 3x¹⁴ → 2x⁸ → 1 → 頭
+    say('a：3x¹⁴ → 2x⁸ → 1，尾巴指回頭端', '');
+    await step(tok);                                 // 56:32 link 等於 a.first 就到尾
+    glow(an[2].userData.data, GOLD);
+    say('只要檢查 link 是不是等於 a.first', '就知道到尾巴了');
+    await step(tok);                                 // 56:52 ① second = first->link
+    glow(an[2].userData.data, null); cd.hl(1);
+    sl = tag('second', 'ptr alt', an[1].position.x, 1.6, -1.8);
+    say('① second = first->link', 'second 指向 first 的下一個（2x⁸）');
+    await step(tok);                                 // 57:28 ② first->link = av
     cd.hl(2);
     kill(ls[0]); ls[0] = arrow(V3(an[0].position.x + 1.05, 0.5, -1.2), V3(-3.1, 0.5, 1.6), 0xb07a10);
     say('② first->link = av', '3x¹⁴ 改指向原本的 av list');
-    await beat(tok, 2400);
+    await step(tok);                                 // 57:49 ③ av = second
     cd.hl(3);
     await slide(tok, avl, an[1].position.x, 2.2, -1.8, 500);
-    say('③ av = second', 'av 從 2x⁸ 開始：2x⁸ → 1 → 3x¹⁴ → 原本的 av');
-    an.forEach((g) => tint(D(g), '#8fcfb8'));
-    await beat(tok, 2800);
+    an.forEach((g) => tint(g.userData.data, '#8fcfb8'));
+    say('③ av = second', 'available list 從 2x⁸ 開始：2x⁸ → 1 → 3x¹⁴ → 原本的 av');
+    await step(tok);                                 // 57:59 ④ first = 0
     cd.hl(4); txt(fl, 'first = 0');
     say('④ first = 0', 'a 清空了');
-    await beat(tok, 2000);
+    await step(tok);                                 // 58:19 其他 link 不用改
     kill(sl); cd.hl(-1);
-    say('其他 node 之間的 link 都不用改', '四個指令，O(1) 整條還回去');
-    await beat(tok, 3000);
-  } else {
-    const ls = [plk(an[0], an[1]), plk(an[1], an[2]), plk(an[2], null)];
-    const cd = code(['走到 a 的最後一個 node p;', 'p->link = av;', 'av = a.first;'], 3.4, 6.0, 0.5);
-    say('不是環狀 list 怎麼辦？', '尾巴原本指向 0');
-    await beat(tok, 2600);
-    cd.hl(0);
-    const r = ring(); for (let i = 0; i < 3; i++) { r.visible = true; r.position.set(an[i].position.x, 0.12, -1.8); await beat(tok, 600); }
-    say('先找到尾巴', '');
-    await beat(tok, 1200);
-    cd.hl(1);
-    kill(ls[2]); ls[2] = arrow(V3(an[2].position.x + 1.05, 0.5, -1.2), V3(-3.1, 0.5, 1.6), 0xb07a10);
-    say('尾巴改指向 av', 'p->link = av');
-    await beat(tok, 2400);
-    cd.hl(2);
-    await slide(tok, avl, -4.6, 2.2, -1.8, 500);
-    an.forEach((g) => tint(D(g), '#8fcfb8'));
-    say('av = a.first', '只做兩件事，原本的 list 沒被破壞');
-    await beat(tok, 2800);
-    r.visible = false; cd.hl(-1);
-    say('最笨的做法：一個 node 一個 node 歸還', '也可以，只是比較繁瑣');
-    await beat(tok, 2800);
+    say('其他 node 之間的 link 都不用改', '充分利用環狀的關係');
+    await step(tok);                                 // 58:47 很快就做完
+    say('因為是環狀，四個 assignment 就整條還回去', 'O(1)');
+    return;
   }
+  const ls = [plk(an[0], an[1]), plk(an[1], an[2]), plk(an[2], null)];
+  const cd = code(['走到 a 的最後一個 node p;', 'p->link = av;', 'av = a.first;'], 3.4, 6.0, 0.5);
+  const r = new THREE.Mesh(new THREE.TorusGeometry(0.9, 0.06, 10, 40), new THREE.MeshBasicMaterial({ color: '#c08a1f' }));
+  r.rotation.x = Math.PI / 2; r.visible = false; lab.world.add(r);
+  await step(tok);                                   // 59:12 不是環狀怎麼辦
+  say('如果不是環狀的 linked list 呢？', '尾巴原本指向 0');
+  await step(tok);                                   // 60:10 最快的做法
+  glow(an[2].userData.data, GOLD);
+  say('最快的做法：尾巴這裡本來是 0', '把它連到 av 就結束');
+  await step(tok);                                   // 60:29 一路到最後一個
+  glow(an[2].userData.data, null); cd.hl(0);
+  for (let i = 0; i < 3; i++) { r.visible = true; r.position.set(an[i].position.x, 0.12, -1.8); await beat(tok, 500); }
+  say('A 指到 B、B 指到 C……一路走到最後一個 node', '');
+  await step(tok);                                   // 60:44 尾巴改指 av
+  cd.hl(1);
+  kill(ls[2]); ls[2] = arrow(V3(an[2].position.x + 1.05, 0.5, -1.2), V3(-3.1, 0.5, 1.6), 0xb07a10);
+  say('把本來指向 0 的尾巴改指向 av', 'p->link = av');
+  await step(tok);                                   // 60:51 av = a.first
+  cd.hl(2);
+  await slide(tok, avl, -4.6, 2.2, -1.8, 500);
+  an.forEach((g) => tint(g.userData.data, '#8fcfb8'));
+  say('av = a.first', '只做兩件事，原本的 list 沒被破壞');
+  await step(tok);                                   // 61:01 最笨：一個一個還
+  r.visible = false; cd.hl(-1);
+  say('最笨的做法：一個 node 一個 node 歸還', '比較繁瑣，但也能解決');
 }]);
 
 // ───────── U_tNDdEooJU 62:36：Header node ─────────
 FRAG.push(['llpeng12-header-node', '環狀多項式加上 header node（exp = −1）', async (tok) => {
   fresh([0, 6.5, 12.5], [0, 0.8, 0.3]);
-  const T = [['-', -1], [3, 14], [2, 8], [1, 0]];
-  const ns = T.map(([c, e], i) => pnode(c, e, -4.8 + i * 3.1, 0.5, 0, i ? TEAL : GRAY));
-  say('環狀多項式可以多加一個 header node', '');
-  await beat(tok, 2200);
-  glow(ns[0].userData.exp, GOLD);
+  const T = [[3, 14], [2, 8], [1, 0]];
+  const ns = T.map(([c, e], i) => pnode(c, e, -1.7 + i * 3.1, 0.5, 0, TEAL));
+  plk(ns[0], ns[1]); plk(ns[1], ns[2]);
+  let h = null;
+  await step(tok);                                   // 62:36 多項式是環狀的話
+  plk(ns[2], ns[0]);
+  say('多項式如果是環狀的', '3x¹⁴ + 2x⁸ + 1');
+  await step(tok);                                   // 62:47 多一個 header node
+  h = pnode('-', -1, -4.8, 0.5, 0, GRAY);
+  await dropIn(tok, h, 450);
   tag('header', 'ptr alt', -4.8, 1.6, 0);
-  say('header 的指數欄位放 −1', '看到 exp = −1 就知道是頭端');
-  await beat(tok, 2800);
-  glow(ns[0].userData.exp, null);
-  for (let i = 0; i < 3; i++) { plk(ns[i], ns[i + 1]); await beat(tok, 450); }
-  plk(ns[3], ns[0]);
-  say('3x¹⁴ + 2x⁸ + 1：最後一項指回 header', '');
-  await beat(tok, 2800);
-  const z = pnode('-', -1, -4.8, 0.5, 2.8, GRAY);
-  arrow(V3(-3.75, 0.5, 3.42), V3(-5.22, 0.5, 3.42), 0x6e5f49);
-  tag('零多項式', 'ptr', -4.8, 1.6, 2.8);
-  say('補充：零多項式只剩 header，指向自己', '不用特別處理空 list');
-  await beat(tok, 3200);
+  say('可以多用一個 node 來表示：header node', '');
+  await step(tok);                                   // 62:53 指數放 −1
+  glow(h.userData.exp, GOLD);
+  say('header 的指數部分放 −1', '看到 −1 就知道是 header');
+  await step(tok);                                   // 63:08 最後一項指回 header
+  glow(h.userData.exp, null);
+  fresh([0, 6.5, 12.5], [0, 0.8, 0.3]);
+  const all = [[-1, '-'], [14, 3], [8, 2], [0, 1]].map(([e, c], i) => pnode(c, e, -4.8 + i * 3.1, 0.5, 0, i ? TEAL : GRAY));
+  tag('header', 'ptr alt', -4.8, 1.6, 0);
+  for (let i = 0; i < 3; i++) plk(all[i], all[i + 1]);
+  plk(all[3], all[0]);
+  say('3x¹⁴ + 2x⁸ + 1：header 在最前面', '最後一項指回 header node');
+  await step(tok);                                   // 63:33 回去看程式
+  say('用 linked list 實作多項式加減法', '程式請回去看課本');
 }]);
 
-// ───────── U_tNDdEooJU 64:27 起：Equivalence relation ─────────
+// ───────── U_tNDdEooJU 64:22 起：Equivalence relation ─────────
 const EQP = [[0, 4], [3, 1], [6, 10], [8, 9], [7, 4], [6, 8], [3, 5], [2, 11], [11, 0]];
 const EQC = [[0, 2, 4, 7, 11], [1, 3, 5], [6, 8, 9, 10]];
 function seg(a, b, color = '#b07a10') { const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), new THREE.LineBasicMaterial({ color })); lab.world.add(l); return l; }
@@ -10312,62 +10780,126 @@ FRAG.push(['llpeng12-equiv-def', 'Equivalence relation：9 個 pair 分成 3 群
   const pos = (i) => { const a = Math.PI / 2 - (i / 12) * Math.PI * 2; return V3(Math.cos(a) * 4.2, 0.4, -Math.sin(a) * 4.2); };
   const cs = [];
   for (let i = 0; i < 12; i++) { const p = pos(i); cs.push(cube(i, '#e3d6bd', [0.8, 0.7, 0.8], p.x, p.y, p.z)); }
-  say('Equivalence relation 三個性質', 'reflexive x≡x；symmetric x≡y⇒y≡x；transitive x≡y, y≡z⇒x≡z');
-  await beat(tok, 3600);
   const segs = [];
-  for (const [a, b] of EQP) {
-    glow(cs[a], GOLD); glow(cs[b], GOLD);
-    segs.push(seg(pos(a), pos(b)));
-    say('input：' + a + ' ≡ ' + b, '「≡」是一種 relation，不是數值相等');
-    await beat(tok, 900);
-    glow(cs[a], null); glow(cs[b], null);
-  }
-  say('9 個 pair 讀完', '數字可以分成幾群？');
-  await beat(tok, 1600);
+  const hl = (vs, c) => vs.forEach((v) => glow(cs[v], c));
+  await step(tok);                                   // 64:22 Equivalence relationship
+  say('下一個重點：Equivalence relationship', '離散數學學過');
+  await step(tok);                                   // 64:46 三個特性
+  say('它要符合三個特性', '');
+  await step(tok);                                   // 65:06 reflexive
+  hl([0], GOLD);
+  say('Reflexive：自己跟自己有關係', 'x ≡ x');
+  await step(tok);                                   // 65:13 symmetric
+  hl([0], null);
+  say('Symmetric：x 跟 y 有關係，y 也跟 x 有關係', 'x ≡ y ⇒ y ≡ x');
+  await step(tok);                                   // 65:21 transitive
+  say('Transitive：x ≡ y、y ≡ z，則 x ≡ z', '');
+  await step(tok);                                   // 65:39 例子：0 ≡ 4
+  hl([0, 4], GOLD); segs.push(seg(pos(0), pos(4)));
+  say('例子：0 ≡ 4', '');
+  await step(tok);                                   // 65:49 0 怎麼會等於 4？
+  say('0 怎麼會等於 4？', '「≡」是一種 relation，不是數值相等');
+  await step(tok);                                   // 66:14 3≡1、6≡10、8≡9、7≡4…
+  hl([0, 4], null);
+  for (const [a, b] of EQP.slice(1)) { segs.push(seg(pos(a), pos(b))); await beat(tok, 150); }
+  say('3 ≡ 1、6 ≡ 10、8 ≡ 9、7 ≡ 4……', '把它想成某一種 relation');
+  await step(tok);                                   // 66:29 9 個 pair
+  say('一共 9 個 pair', '');
+  await step(tok);                                   // 66:40 分成三群
   segs.forEach(kill);
   const cols = [BLUE, ORANGE, TEAL], cx = [-4.2, 0.2, 4.2];
-  for (let k = 0; k < 3; k++) {
-    EQC[k].forEach((v, i) => { tint(cs[v], cols[k]); });
-    await Promise.all(EQC[k].map((v, i) => slide(tok, cs[v], cx[k] + (i % 2 ? 0.55 : -0.55), 0.4, -1.4 + Math.floor(i / 2) * 1.0, 600)));
-    say('第 ' + (k + 1) + ' 群：{' + EQC[k].join(', ') + '}', k === 1 ? '1≡3、3≡5 ⇒ 1≡5（transitive）' : k === 2 ? '6≡8、8≡9 ⇒ 6≡9' : '0≡4、7≡4、11≡0、2≡11');
-    await beat(tok, 2400);
-  }
-  say('output：三個 equivalence class', '同一群內任兩個數都有關係');
-  await beat(tok, 3000);
+  for (let k = 0; k < 3; k++) EQC[k].forEach((v) => tint(cs[v], cols[k]));
+  await Promise.all(EQC.flatMap((g, k) => g.map((v, i) => slide(tok, cs[v], cx[k] + (i % 2 ? 0.55 : -0.55), 0.4, -1.4 + Math.floor(i / 2) * 1.0, 800))));
+  say('這些數字可以分成三群', '同一群裡的數字都有關係');
+  await step(tok);                                   // 67:03 1 和 5 為什麼有關係
+  hl([1, 3, 5], GOLD);
+  say('1 和 5 為什麼有關係？', '1 ≡ 3、3 ≡ 5 ⇒ 1 ≡ 5（transitive）');
+  await step(tok);                                   // 67:33 6 和 9
+  hl([1, 3, 5], null); hl([6, 8, 9], GOLD);
+  say('6 和 9：6 ≡ 8、8 ≡ 9', '⇒ 6 ≡ 9');
+  await step(tok);                                   // 68:10 output：三個 set
+  hl([6, 8, 9], null);
+  say('input 是這些 pair，output 是三個 set', '{0,2,4,7,11}　{1,3,5}　{6,8,9,10}');
 }]);
 
 FRAG.push(['llpeng12-equiv-naive', '直覺做法：邊讀邊分群，還得合併', async (tok) => {
   fresh([0, 9, 10], [0, 0, 0.5]);
-  const groups = [];
-  const cubes = {};
+  const groups = [], cubes = {};
   const slotX = (g) => -5.4 + g * 2.7;
-  function layout() {
-    groups.forEach((gr, gi) => gr.forEach((v, k) => { const m = cubes[v]; m.position.set(slotX(gi) + (k % 2 ? 0.5 : -0.5), 0.4, -2.2 + Math.floor(k / 2) * 0.95); }));
-  }
-  for (const [a, b] of EQP) {
+  const layout = () => groups.forEach((gr, gi) => gr.forEach((v, k) => cubes[v].position.set(slotX(gi) + (k % 2 ? 0.5 : -0.5), 0.4, -2.2 + Math.floor(k / 2) * 0.95)));
+  const cnt = tag('', 'ptr alt', 0, 0.2, 3.2);
+  function read(a, b) {
     const ga = groups.findIndex((g) => g.includes(a)), gb = groups.findIndex((g) => g.includes(b));
-    for (const v of [a, b]) if (!cubes[v]) { cubes[v] = cube(v, '#e3d6bd', [0.8, 0.7, 0.8], 0, 4, 3); }
+    for (const v of [a, b]) if (!cubes[v]) cubes[v] = cube(v, '#e3d6bd', [0.8, 0.7, 0.8], 0, 4, 3);
+    Object.values(cubes).forEach((m) => glow(m, null));
     glow(cubes[a], GOLD); glow(cubes[b], GOLD);
-    let msg, f;
-    if (ga < 0 && gb < 0) { groups.push([a, b]); msg = '讀到 ' + a + '≡' + b + '：跟現有的群都無關'; f = '→ 新的一群'; }
-    else if (ga >= 0 && gb < 0) { groups[ga].push(b); msg = '讀到 ' + a + '≡' + b + '：' + a + ' 已在某一群'; f = '→ 把 ' + b + ' 加進去'; }
-    else if (ga < 0 && gb >= 0) { groups[gb].push(a); msg = '讀到 ' + a + '≡' + b + '：' + b + ' 已在某一群'; f = '→ 把 ' + a + ' 加進去'; }
-    else if (ga !== gb) { const lo = Math.min(ga, gb), hi = Math.max(ga, gb); groups[lo].push(...groups[hi]); groups.splice(hi, 1); msg = '讀到 ' + a + '≡' + b + '：兩群要合併！'; f = '一下新增、一下合併'; }
-    else { msg = a + '≡' + b; f = '已在同一群'; }
-    layout();
-    say(msg, f + '（目前 ' + groups.length + ' 群）');
-    await beat(tok, ga >= 0 && gb >= 0 ? 2600 : 1600);
-    glow(cubes[a], null); glow(cubes[b], null);
+    if (ga < 0 && gb < 0) groups.push([a, b]);
+    else if (ga >= 0 && gb < 0) groups[ga].push(b);
+    else if (ga < 0 && gb >= 0) groups[gb].push(a);
+    else if (ga !== gb) { const lo = Math.min(ga, gb), hi = Math.max(ga, gb); groups[lo].push(...groups[hi]); groups.splice(hi, 1); }
+    layout(); txt(cnt, '讀到 ' + a + ' ≡ ' + b + '：目前 ' + groups.length + ' 群');
   }
-  say('人腦做得出來，但一下新增一下合併很複雜', '讀完一個 pair 就輸出是錯的：後面可能合併');
-  await beat(tok, 3200);
+  await step(tok);                                   // 68:39 寫程式你會怎麼做
+  say('寫一個程式產生這樣的 output', '你會怎麼做？');
+  await step(tok);                                   // 68:50 0 和 4 放一起
+  read(0, 4);
+  say('讀到 0 ≡ 4：0 和 4 放在一起', '');
+  await step(tok);                                   // 69:13 3 和 1 自己一群
+  read(3, 1);
+  say('3 ≡ 1：跟 0、4 沒關係', '3 和 1 自己一群');
+  await step(tok);                                   // 69:22 6 和 10
+  read(6, 10);
+  say('6 ≡ 10：6、10 沒出現在前面的群', '獨立一群');
+  await step(tok);                                   // 69:36 8 和 9
+  read(8, 9);
+  say('8 ≡ 9：跟前面也沒關係', '現在有四群');
+  await step(tok);                                   // 69:46 7 和 4
+  read(7, 4);
+  say('7 ≡ 4：4 已經在 0 那一群', '把 7 加進去');
+  await step(tok);                                   // 69:54 後來會合併
+  read(6, 8);
+  say('讀到 6 ≡ 8：兩群要合併！', '{6,10} 和 {8,9} 合成一群');
+  await step(tok);                                   // 70:12 人腦做得出來
+  read(3, 5); await beat(tok, 300); read(2, 11); await beat(tok, 300); read(11, 0);
+  say('用人腦想其實做得出來', '數字在已有的群裡就加進去，沒有就新開一群');
+  await step(tok);                                   // 70:45 一下新增、一下合併
+  Object.values(cubes).forEach((m) => glow(m, null));
+  say('一下子新增、一下子又要合併', '很複雜，不是好的寫法');
+}]);
+
+FRAG.push(['llpeng12-equiv-phases', '演算法分兩個 phase', async (tok) => {
+  fresh([0, 6, 11], [0, 1.0, 0]);
+  const b1 = cube('Phase 1：讀完所有 pair', BLUE, [4.6, 1.0, 1.4], -3.0, 0.6, 0);
+  const b2 = cube('Phase 2：輸出 class', TEAL, [4.6, 1.0, 1.4], 3.0, 0.6, 0);
+  arrow(V3(-0.6, 0.6, 0), V3(0.6, 0.6, 0));
+  [b1, b2].forEach((m) => tint(m, DIM));
+  await step(tok);                                   // 71:05 分兩個步驟
+  say('這個演算法分兩個步驟', '');
+  await step(tok);                                   // 71:17 Phase 1
+  tint(b1, BLUE); glow(b1, GOLD);
+  say('Phase 1：把還沒處理的 pair 讀進來處理', '');
+  await step(tok);                                   // 71:35 太 pseudo code
+  say('只寫「process the pair」太 pseudo code', '看了不知道怎麼做');
+  await step(tok);                                   // 71:43 Phase 2：根據第一階段輸出
+  glow(b1, null); tint(b2, TEAL); glow(b2, GOLD);
+  tag('output array', 'ptr alt', 3.0, 1.6, 0);
+  say('Phase 2：根據第一階段的結果做輸出', '會有一個 output 的 array');
+  await step(tok);                                   // 72:19 Phase 1 讀過所有 pair
+  glow(b2, null); glow(b1, GOLD);
+  say('Phase 1：先讀過所有 pair', '了解數字之間的關係');
+  await step(tok);                                   // 72:33 剛才邊讀邊輸出是錯的
+  const no = tag('✕ 讀一個就輸出：後面可能合併', 'ptr alt', -3.0, 1.9, 0);
+  say('剛才「讀完就輸出」是不對的', '後面可能要合併');
+  await step(tok);                                   // 72:47 Phase 2 輸出
+  kill(no); glow(b1, null); glow(b2, GOLD);
+  say('讀完全部以後，Phase 2 才根據這些 pair 輸出', '');
 }]);
 
 // seq[] 的 linked lists：橫向 0..11，每條 list 往 +z 方向長
 const SX = (i) => -6.5 + i * 1.0;
 function seqBase(withOut) {
   const tiles = [];
-  for (let i = 0; i < 12; i++) { tiles.push(cube(i, '#e3d6bd', [0.85, 0.5, 0.85], SX(i), 0.25, -2.6)); }
+  for (let i = 0; i < 12; i++) tiles.push(cube(i, '#e3d6bd', [0.85, 0.5, 0.85], SX(i), 0.25, -2.6));
   tag('seq', 'ptr', -6.5, 1.0, -3.6);
   let outs = null;
   if (withOut) { outs = []; for (let i = 0; i < 12; i++) outs.push(cube('F', '#e0b4b4', [0.7, 0.3, 0.6], SX(i), 0.15, -3.8)); tag('out', 'ptr alt', -6.5, 0.9, -4.6); }
@@ -10391,78 +10923,213 @@ function seqBuildAll(S) {
   }
   for (let i = 0; i < 12; i++) seqDraw(S, i);
 }
+// Phase 1：U_tNDdEooJU 73:23（seq 的 list）；params.code 播 84:23 的程式版
 FRAG.push(['llpeng12-equiv-phase1', 'Phase 1：讀 pair，建 seq[] 的 linked lists', async (tok) => {
+  const P = ctx.params || {};
   fresh([0, 10, 7.5], [0, 0, 0.6]);
-  const S = seqBase(false);
-  const cd = code(['while (讀得到 pair (i, j)) {', '  x = new node; x->data = j;', '  x->link = seq[i]; seq[i] = x;', '  x = new node; x->data = i;', '  x->link = seq[j]; seq[j] = x;', '}', '// phase 2：根據 seq 輸出'], 2.6, 4.6, 0.5, -3.4);
-  say('兩個 phase：先讀完所有 pair，再輸出', 'seq 是 array，每一格是一條 linked list');
-  await beat(tok, 3200);
-  for (let k = 0; k < EQP.length; k++) {
-    const [a, b] = EQP[k];
-    glow(S.tiles[a], GOLD); glow(S.tiles[b], GOLD);
-    cd.hl(1); say('讀到 ' + a + ' ≡ ' + b + '：seq[' + a + '] 前面插入 ' + b, k < 3 ? 'x->link = seq[i]; seq[i] = x;' : '');
-    await seqAdd(tok, S, a, b, k < 3 ? 400 : 220);
-    await beat(tok, k < 3 ? 1100 : 350);
-    cd.hl(3); say('同時 seq[' + b + '] 插入 ' + a, k < 3 ? 'symmetric：' + b + ' ≡ ' + a : '');
-    await seqAdd(tok, S, b, a, k < 3 ? 400 : 220);
-    await beat(tok, k < 3 ? 1300 : 450);
-    glow(S.tiles[a], null); glow(S.tiles[b], null);
+  const S = seqBase(!!P.code);
+  const pair = async (a, b, ms) => { glow(S.tiles[a], GOLD); glow(S.tiles[b], GOLD); await seqAdd(tok, S, a, b, ms); await seqAdd(tok, S, b, a, ms); glow(S.tiles[a], null); glow(S.tiles[b], null); };
+  if (P.code) {
+    const cd = code(['class ListNode { int data; ListNode *link; };', 'seq[i] = 0;  out[i] = false;   // 初始化', 'while (讀進 pair (i, j)) {', '  x = new ListNode(j);', '  x->link = seq[i];  seq[i] = x;', '  y = new ListNode(i);', '  y->link = seq[j];  seq[j] = y;', '}'], 1.2, 4.8, 0.5, -3.4);
+    let xm = null;
+    await step(tok);                                 // 84:23 要有 linked list
+    say('看程式之前：需要 linked list', 'seq 的每一格都是一條 linked list');
+    await step(tok);                                 // 84:35 node：data 和 link
+    cd.hl(0);
+    say('node 很簡單：data 和 link', '');
+    await step(tok);                                 // 84:50 初始化不是重點
+    cd.hl(1);
+    say('前面在做初始化', '這段不是重點');
+    await step(tok);                                 // 85:02 seq、out 兩個 array 初始化
+    S.tiles.forEach((m) => glow(m, GOLD)); S.outs.forEach((m) => glow(m, GOLD));
+    say('對 seq array 和 out array 做初始化', 'seq[i] = 0、out[i] = false');
+    await step(tok);                                 // 85:09 Phase 1：讀進 i、j
+    S.tiles.forEach((m) => glow(m, null)); S.outs.forEach((m) => glow(m, null));
+    cd.hl(2);
+    say('Phase 1：讀進 i 和 j', '例：0 ≡ 4');
+    await step(tok);                                 // 85:32 create node x，data = j
+    cd.hl(3); glow(S.tiles[0], GOLD);
+    xm = cube(4, colorFor(4), [0.6, 0.5, 0.6], SX(0) + 1.4, 1.6, -1.4);
+    say('在 seq[i] 這裡 create 一個 node x', '把 j（4）放進 data');
+    await step(tok);                                 // 85:54 x->link = seq[i]；seq[i] = x
+    cd.hl(4); kill(xm);
+    await seqAdd(tok, S, 0, 4, 400);
+    say('x->link = seq[i]；seq[i] = x', 'x 插到 seq[i] 這條 list 的最前面');
+    await step(tok);                                 // 86:18 j 那邊也一樣
+    cd.hl(6); glow(S.tiles[0], null);
+    glow(S.tiles[4], GOLD); await seqAdd(tok, S, 4, 0, 400); glow(S.tiles[4], null);
+    say('j 那邊也一樣：i 放進 seq[j]', 'y->link = seq[j]；seq[j] = y');
+    await step(tok);                                 // 86:29 Phase 1 就是建 list
+    cd.hl(2);
+    for (const [a, b] of EQP.slice(1)) await pair(a, b, 70);
+    cd.hl(-1);
+    say('Phase 1 做的事：把對應的 linked list 建立出來', '');
+    return;
   }
-  cd.hl(-1);
+  await step(tok);                                   // 73:23 n 個數字、seq 是 array
+  say('有 n 個數字；seq 是一個 array', '這裡 n = 12：0 … 11');
+  await step(tok);                                   // 73:47 每一格是一條 linked list
+  say('seq 的每一格都是一條 linked list', '');
+  await step(tok);                                   // 73:56 seq[0]：跟 0 有關係的數字
   glow(S.tiles[0], GOLD);
-  say('讀完：seq[0] 是 11 → 4', 'seq[i] = 跟 i「直接」有關係的數字');
-  await beat(tok, 3200);
+  say('seq[0] 記錄：讀完所有 pair 後', '0 這個數字跟哪些數字有關係');
+  await step(tok);                                   // 74:12 直接看答案：4 和 11
+  say('先看答案：0 跟 4 和 11 有關係', '為什麼？');
+  await step(tok);                                   // 74:32 讀到 0 ≡ 4：4 放進 0 的 list
+  await seqAdd(tok, S, 0, 4, 450);
+  say('讀到 0 ≡ 4：把 4 放進 0 的 linked list', '一開始還沒有 11');
+  await step(tok);                                   // 74:52 4 ≡ 0：seq[4] 加 0
+  glow(S.tiles[0], null); glow(S.tiles[4], GOLD);
+  await seqAdd(tok, S, 4, 0, 450);
+  say('0 ≡ 4 也代表 4 ≡ 0', 'seq[4] 也要加一個 0');
+  await step(tok);                                   // 75:24 3 ≡ 1
+  glow(S.tiles[4], null);
+  await pair(3, 1, 300);
+  say('3 ≡ 1：seq[3] 插入 1，seq[1] 插入 3', '');
+  await step(tok);                                   // 75:44 6 ≡ 10
+  await pair(6, 10, 300);
+  say('6 ≡ 10：seq[6] 插入 10，seq[10] 插入 6', '');
+  await step(tok);                                   // 75:53 所有 pair 做完
+  for (const [a, b] of EQP.slice(3)) await pair(a, b, 70);
+  say('所有 pair 做完，最後的答案就是這樣', '新的 node 都插在 list 最前面');
+  await step(tok);                                   // 76:09 seq[0]：11、4
+  glow(S.tiles[0], GOLD); S.lists[0].forEach((m) => glow(m, GOLD));
+  say('seq[0]：11 → 4', '0 和 4、0 和 11 有關係');
+  await step(tok);                                   // 76:32 read pair：兩邊都擺
+  glow(S.tiles[0], null); S.lists[0].forEach((m) => glow(m, null));
+  say('Read pair (i, j)：i 的 list 擺上 j', 'j 的 list 擺上 i');
 }]);
 
+// Phase 2：U_tNDdEooJU 77:08（out 與直接／間接）；params.mode = 'stack' 播 86:46 的 stack 版
 FRAG.push(['llpeng12-equiv-phase2', 'Phase 2：out[] 與 stack 找出整個 class', async (tok) => {
+  const P = ctx.params || {};
   fresh([0, 10.5, 7.5], [0, 0, 0.6]);
   const S = seqBase(true);
   seqBuildAll(S);
-  tag('stack', 'ptr', 6.3, 4.0, 0.5);
   const outL = tag('output：', 'ptr alt', 0, 0.2, 3.6);
-  const out = new Array(12).fill(false);
-  const stk = [];
-  let printed = [];
-  const mark = (v) => { out[v] = true; relabel(S.outs[v], 'T'); tint(S.outs[v], '#9fd8c4'); printed.push(v); txt(outL, 'output：' + printed.join(' ')); };
-  const push = async (v) => { const m = cube(v, PURP, [0.8, 0.5, 0.8], 6.3, 0.3 + stk.length * 0.55, 0.5); stk.push([v, m]); m.position.y += 3; await slide(tok, m, 6.3, 0.3 + (stk.length - 1) * 0.55, 0.5, 260); };
-  say('out[] 是 boolean array：這個數字輸出過了沒', '一開始全部 false');
-  await beat(tok, 3000);
-  const FULL = (ctx.params || {}).classes || 3;
-  let cls = 0;
-  for (let i = 0; i < 12 && cls < FULL; i++) {
-    if (out[i]) continue;
-    cls++; const quick = cls > 1;
-    printed = []; mark(i); glow(S.tiles[i], GOLD);
-    say('for i：out[' + i + '] 是 false → 新的 class 從 ' + i + ' 開始', '輸出 ' + i + '，out[' + i + '] = true');
-    await beat(tok, quick ? 900 : 1600);
-    let cur = i;
-    for (;;) {
-      for (const m of S.lists[cur]) {
-        const v = Number(m.userData.lbl.element.textContent);
-        glow(m, GOLD);
-        if (!out[v]) { mark(v); await push(v); say('seq[' + cur + '] 上的 ' + v + '：沒輸出過 → 輸出並 push', cur === i ? '直接有關（direct）' : '透過 ' + cur + ' 找到：間接有關（indirect）'); }
-        else say('seq[' + cur + '] 上的 ' + v + '：out[' + v + '] 已是 true', '跳過，不印兩次');
-        await beat(tok, quick ? 450 : 1200);
-        glow(m, null);
-      }
-      if (!stk.length) break;
-      const [v, m] = stk.pop(); fly(m);
-      glow(S.tiles[cur], null); cur = v; glow(S.tiles[cur], GOLD);
-      say('pop 出 ' + v + '：再去掃 seq[' + v + ']', '找間接有關的數字');
-      await beat(tok, quick ? 450 : 1200);
-    }
-    glow(S.tiles[cur], null);
-    say('stack 空了：這個 class 輸出完畢', '{ ' + printed.join(', ') + ' }');
-    await beat(tok, quick ? 1600 : 2600);
+  const printed = [];
+  const mark = (v) => { relabel(S.outs[v], 'T'); tint(S.outs[v], '#9fd8c4'); printed.push(v); txt(outL, 'output：' + printed.join(' ')); };
+  const item = (i, k) => S.lists[i][k];
+  const clear = () => { S.tiles.forEach((m) => glow(m, null)); S.lists.flat().forEach((m) => glow(m, null)); S.outs.forEach((m) => glow(m, null)); };
+  if (P.mode === 'stack') {
+    tag('stack', 'ptr', 6.3, 3.8, 0.5);
+    const stk = [];
+    const push = async (v) => { const m = cube(v, PURP, [0.8, 0.5, 0.8], 6.3, 0.3 + stk.length * 0.55, 0.5); stk.push(m); m.position.y += 3; await slide(tok, m, 6.3, 0.3 + (stk.length - 1) * 0.55, 0.5, 300); };
+    const pop = () => fly(stk.pop());
+    await step(tok);                                 // 86:46 Phase 2 有一個 stack
+    say('Phase 2 比較麻煩：裡面有一個 stack', '');
+    await step(tok);                                 // 87:05 自己寫 push、pop
+    say('自己寫 push、pop', '');
+    await step(tok);                                 // 87:18 Phase 1 已經建好
+    say('假設 Phase 1 已經把 linked list 建出來', '');
+    await step(tok);                                 // 87:33 for：0 印出來
+    glow(S.tiles[0], GOLD); mark(0);
+    say('for 迴圈：0 印出來', 'out[0] = true');
+    await step(tok);                                 // 87:42 scan 0 的 list：先遇到 11
+    glow(item(0, 0), GOLD);
+    say('開始 scan 0 的 list：先遇到 11', '');
+    await step(tok);                                 // 87:51 11 印出來
+    mark(11);
+    say('11 被 output 出來', 'out[11] 設成 true');
+    await step(tok);                                 // 88:27 先不要看 11 的 list
+    glow(S.tiles[11], RED);
+    say('這時候馬上去看 11 的 list 嗎？', '先不要');
+    await step(tok);                                 // 88:43 11 push 進 stack
+    glow(S.tiles[11], null);
+    await push(11);
+    say('先把 11 push 到 stack 裡', '等一下再來檢查 11');
+    await step(tok);                                 // 89:07 4 印出並 push
+    glow(item(0, 0), null); glow(item(0, 1), GOLD);
+    mark(4); await push(4);
+    say('接著看到 4：印出來，也 push 進 stack', 'output：0 11 4');
+    await step(tok);                                 // 89:42 stack：11、4
+    glow(item(0, 1), null);
+    say('stack 長這樣：11、4', '7 和 0 這時還沒興趣看');
+    await step(tok);                                 // 90:16 pop 出 4
+    clear(); pop();
+    glow(S.tiles[4], GOLD);
+    say('從 stack 把 4 抓出來（pop）', '去 scan 4 的 list');
+    await step(tok);                                 // 90:34 看到 7：還沒印過
+    glow(item(4, 0), GOLD); glow(S.outs[7], GOLD);
+    say('看到 7：out[7] 還是 false', '還沒印過');
+    await step(tok);                                 // 90:54 印出 7、push
+    glow(S.outs[7], null); mark(7); await push(7);
+    say('印出 7，也 push 進 stack', 'stack：11、7');
+    await step(tok);                                 // 91:31 0 要 push 嗎？不用
+    glow(item(4, 0), null); glow(item(4, 1), RED);
+    say('4 的 list 還有 0：要 push 嗎？', '不用，0 已經印過了');
+    await step(tok);                                 // 92:11 pop 出 7
+    clear(); pop();
+    glow(S.tiles[7], GOLD); glow(item(7, 0), RED);
+    say('pop 出 7：7 的 list 只有 4', '4 已經印過：不印、也不 push');
+    await step(tok);                                 // 92:48 回到 11
+    clear(); pop();
+    glow(S.tiles[11], GOLD); glow(item(11, 0), RED);
+    await beat(tok, 500);
+    glow(item(11, 1), GOLD); mark(2); await push(2);
+    await beat(tok, 400);
+    pop(); glow(S.tiles[2], GOLD); glow(item(2, 0), RED);
+    say('pop 出 11：0 檢查過了，接著看 2 → 印出', '2 的 list 只有 11，也印過了');
+    await step(tok);                                 // 93:26 push／pop 的目的
+    clear();
+    say('push／pop 的目的：找出 indirect 的數字', 'output：0 11 4 7 2');
+    await step(tok);                                 // 94:12 寫得更簡單？
+    say('能不能寫得比這段 code 更簡單？', '回去想一想');
+    return;
   }
-  say('push／pop 的目的：找出 indirect 的數字', '三個 class：{0,11,4,7,2}、{1,3,5}、{6,8,10,9}');
-  await beat(tok, 3000);
+  await step(tok);                                   // 76:58 第二個 phase
+  say('第二個 phase 在做什麼？', '');
+  await step(tok);                                   // 77:06 for i = 0 … n−1
+  say('for i = 0 … n−1：如果 out[i] 是 false', '就從 i 開始輸出');
+  await step(tok);                                   // 77:14 這裡在做 output
+  say('這裡在做 output', '');
+  await step(tok);                                   // 77:24 out 是 boolean array
+  S.outs.forEach((m) => glow(m, GOLD));
+  say('out 是 boolean array：這個數字 output 過沒', '一開始全部 false');
+  await step(tok);                                   // 77:54 i = 0 開始
+  S.outs.forEach((m) => glow(m, null)); glow(S.tiles[0], GOLD);
+  say('seq 有 0 到 11：for 從 i = 0 開始', '');
+  await step(tok);                                   // 78:02 0 被 output
+  mark(0);
+  say('0 被 output 出來', 'out[0] = true');
+  await step(tok);                                   // 78:12 0 跟 11 有關 → output 11
+  glow(item(0, 0), GOLD); mark(11);
+  say('0 跟 11 有關係 → output 11', '');
+  await step(tok);                                   // 78:18 out[11] = true
+  say('out[11] 設成 true', '之後就不會再印 11');
+  await step(tok);                                   // 78:39 output 4
+  glow(item(0, 0), null); glow(item(0, 1), GOLD); mark(4);
+  say('接著 output 4', 'output：0 11 4');
+  await step(tok);                                   // 78:54 11 跟 0 有關
+  clear(); glow(S.tiles[11], GOLD); glow(item(11, 0), RED);
+  say('11 跟誰有關？跟 0 有關', '0 要再 output 嗎？');
+  await step(tok);                                   // 79:11 不會：已經 true
+  glow(S.outs[0], RED);
+  say('不會：out[0] 已經是 true', '印過了');
+  await step(tok);                                   // 79:26 output 2
+  glow(S.outs[0], null); glow(item(11, 0), null); glow(item(11, 1), GOLD); mark(2);
+  say('再看 2：out[2] 是 false → output 2', '');
+  await step(tok);                                   // 81:13 4 跟 7、0 有關
+  clear(); glow(S.tiles[4], GOLD); glow(item(4, 0), GOLD); mark(7);
+  say('4 跟 7、0 有關係 → 7 也 output', '0、11、4、7、2 是同一群');
+  await step(tok);                                   // 82:02 直接有關
+  clear(); glow(S.tiles[0], GOLD); S.lists[0].forEach((m) => glow(m, GOLD));
+  say('seq[0] 上的 11、4：直接有關', 'direct equivalence');
+  await step(tok);                                   // 82:24 間接有關
+  clear(); glow(S.tiles[11], GOLD); glow(item(11, 1), GOLD);
+  say('0 和 2：0 ≡ 11、11 ≡ 2 → 間接有關', 'indirect：要再去查別人的 list');
+  await step(tok);                                   // 84:03 out 防止印兩次
+  clear(); S.outs.forEach((m) => glow(m, GOLD));
+  say('out array：防止同一個數字印兩次', '');
 }]);
   }
 
   // ═══ llpeng34.js ═══
   {
 // ─── zLuuRC56uvI（彭文志 Lists 3/4）、yn0ZAifhyNM（Lists 4/4）：Equivalence class、Sparse matrix、Doubly linked list ───
+// cued scenes: every `await step(tok)` waits for the sentence it shows (see the notes' cues)
+const step = ctx.step;
+const GHOST = 0xb3aa9a;
 // 共用：任意折線＋最後一段箭頭
 function seg(a, b, color) {
   const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), new THREE.LineBasicMaterial({ color }));
@@ -10490,25 +11157,19 @@ const pairStr = (p) => p.map(([a, b]) => a + '≡' + b).join('  ');
 function eqSeq(pairs) { const s = Array.from({ length: EQN }, () => []); for (const [i, j] of pairs) { s[i].unshift(j); s[j].unshift(i); } return s; }
 // 課本 phase 2：印出 i，沿 seq[i] 走；沒印過的印出並 push；list 走完就 pop 一個，改走它的 list
 function eqRun(seq) {
-  const ev = [], out = new Array(EQN).fill(false), classes = [];
+  const out = new Array(EQN).fill(false), classes = [];
   for (let i = 0; i < EQN; i++) {
-    if (out[i]) { ev.push({ t: 'skipi', i }); continue; }
-    const cls = [i]; out[i] = true; ev.push({ t: 'new', i });
+    if (out[i]) continue;
+    const cls = [i]; out[i] = true;
     let list = i, k = 0; const st = [];
     for (;;) {
-      while (k < seq[list].length) {
-        const j = seq[list][k];
-        if (!out[j]) { out[j] = true; cls.push(j); st.push(j); ev.push({ t: 'print', list, k, j }); }
-        else ev.push({ t: 'seen', list, k, j });
-        k++;
-      }
+      while (k < seq[list].length) { const j = seq[list][k]; if (!out[j]) { out[j] = true; cls.push(j); st.push(j); } k++; }
       if (!st.length) break;
-      list = st.pop(); k = 0; ev.push({ t: 'pop', j: list });
+      list = st.pop(); k = 0;
     }
-    ev.push({ t: 'end', cls: [...cls] });
     classes.push(cls);
   }
-  return { ev, classes };
+  return { classes };
 }
 function eqStage(o = {}) {
   const S = { slots: [], lists: Array.from({ length: EQN }, () => []), arr: Array.from({ length: EQN }, () => []), outs: [], stack: [], lines: [] };
@@ -10539,6 +11200,7 @@ function eqInsert(S, i, m) {
   S.lists[i].forEach((n, k) => move(n, EQX(i), 0.25, eqZ(k)));
   eqArrows(S, i);
 }
+const eqIns = (S, i, v) => eqInsert(S, i, cube(v, colorFor(v), [0.7, 0.5, 0.7], EQX(i), 0.25, eqZ(0), 3));
 function eqBuild(S, pairs) {
   const seq = eqSeq(pairs);
   seq.forEach((L, i) => { L.forEach((v, k) => S.lists[i].push(eqNode(v, EQX(i), 0.25, eqZ(k)))); eqArrows(S, i); });
@@ -10546,191 +11208,199 @@ function eqBuild(S, pairs) {
 }
 function eqClear(S) { for (let i = 0; i < EQN; i++) { S.lists[i].forEach((m) => fly(m)); S.lists[i] = []; eqArrows(S, i); } }
 function eqSetOut(S, i, on = true) { const m = S.outs[i]; if (!m) return; relabel(m, on ? 'T' : 'F'); tint(m, on ? '#2fc092' : GRAY); }
-// 播放 phase 2 的事件；o = { ms, cd（程式面板，可省略）, stop（只播到第一個 class 結束） }
-async function eqPlay(tok, S, ev, o) {
-  const ring = ringAt(0.48);
-  let cls = [], line = null;
-  const stackStr = () => (S.stack.length ? S.stack.map((m) => m.userData.v).join(', ') : '空');
-  const hl = (k) => { if (o.cd) o.cd.hl(k); };
-  for (const e of ev) {
-    if (e.t === 'skipi') {
-      ring.visible = false; glow(S.outs[e.i], GOLD); hl(0);
-      say('i = ' + e.i + '：out[' + e.i + '] 已是 true → 跳過', '每個數字只屬於一個 class');
-      await beat(tok, o.ms * 0.45); glow(S.outs[e.i]); continue;
-    }
-    if (e.t === 'new') {
-      ring.visible = false; cls = [e.i]; eqSetOut(S, e.i); glow(S.slots[e.i], GOLD); hl(1);
-      line = tag('New class: ' + e.i, 'ptr alt', 0, 0.2, 3.0 + 0.62 * S.lines.length); S.lines.push(line);
-      say('i = ' + e.i + '：out[' + e.i + '] == false → 印出 ' + e.i, 'out[' + e.i + '] = true，從 seq[' + e.i + '] 開始走');
-      await beat(tok, o.ms); glow(S.slots[e.i]); continue;
-    }
-    if (e.t === 'print' || e.t === 'seen') {
-      const n = S.lists[e.list][e.k];
-      ring.visible = true; ring.position.set(EQX(e.list), 0.03, eqZ(e.k)); hl(e.t === 'print' ? 5 : 4);
-      if (e.t === 'print') {
-        glow(n, GOLD); eqSetOut(S, e.j); cls.push(e.j); txt(line, 'New class: ' + cls.join(', '));
-        const s = cube(e.j, colorFor(e.j), [0.75, 0.45, 0.75], EQ_STK_X, 0.25 + 0.5 * S.stack.length, EQ_OUT_Z, 3);
-        s.userData.v = e.j; S.stack.push(s);
-        say('seq[' + e.list + '] 裡的 ' + e.j + '：沒印過 → 印出、push', 'out[' + e.j + '] = true；stack：' + stackStr());
-      } else {
-        glow(n, RED); glow(S.outs[e.j], RED);
-        say('seq[' + e.list + '] 裡的 ' + e.j + '：已印過 → 跳過', 'out[' + e.j + '] == true');
-      }
-      await beat(tok, o.ms); glow(n); glow(S.outs[e.j]); continue;
-    }
-    if (e.t === 'pop') {
-      ring.visible = false; hl(8);
-      const s = S.stack.pop(); if (s) fly(s, V3(2, 7, 3));
-      glow(S.slots[e.j], GOLD);
-      say('list 走完 → pop ' + e.j + '，改走 seq[' + e.j + ']', 'transitive：跟 ' + e.j + ' 有關的也跟 class 有關');
-      await beat(tok, o.ms); glow(S.slots[e.j]); continue;
-    }
-    if (e.t === 'end') {
-      ring.visible = false; hl(7);
-      say('stack 空了 → 這個 class 結束', 'New class: ' + e.cls.join(', '));
-      await beat(tok, o.ms * 1.3);
-      if (o.stop) break;
-    }
-  }
-  kill(ring);
-}
+const eqUnglow = (S) => { S.slots.forEach((m) => glow(m)); S.outs.forEach((m) => glow(m)); S.lists.flat().forEach((m) => glow(m)); };
 
+// zLuuRC56uvI 00:00：三性質
 FRAG.push(['llpeng34-equiv-props', 'Equivalence relation 三性質', async (tok) => {
   fresh([0, 6, 11], [0, 1, 0]);
   const X = { 0: -3.5, 4: 0, 7: 3.5 }, c = {};
   for (const v of [0, 4, 7]) c[v] = cube(v, colorFor(v), [1.2, 0.8, 1.2], X[v], 0.4, 0, 3);
-  say('Equivalence relation ≡ 要滿足三個性質', 'reflexive、symmetric、transitive');
-  await beat(tok, 2400);
-  glow(c[0], GOLD); const self = tag('0 ≡ 0', 'ptr alt', -3.5, 1.6);
-  say('Reflexive：自己跟自己有關，pair 不必寫出', 'x ≡ x');
-  await beat(tok, 2800);
+  let self = null;
+  await step(tok);                                   // 0:00 一堆數字 pair，三個特質
+  say('複習：給你一堆數字的 pair', '若是 equivalence relation，要符合三個特質');
+  await step(tok);                                   // 0:39 reflexive
+  say('Reflexive：x ≡ x', '自己跟自己有關係');
+  await step(tok);                                   // 0:48 symmetric
+  say('Symmetric：x ≡ y ⇒ y ≡ x', '');
+  await step(tok);                                   // 0:59 transitive
+  say('Transitive：x ≡ y 且 y ≡ z ⇒ x ≡ z', '');
+  await step(tok);                                   // 1:17 0 ≡ 0 不用寫
+  glow(c[0], GOLD); self = tag('0 ≡ 0', 'ptr alt', -3.5, 1.6);
+  say('0 ≡ 0 這種自己跟自己的 pair', '太直覺了，輸入裡不用寫出來');
+  await step(tok);                                   // 1:27 0 和 4 有關係
   glow(c[0]); kill(self);
   arrow(V3(-2.8, 0.6, -0.3), V3(-0.7, 0.6, -0.3), 0x0f5a3a);
   tag('0 ≡ 4', 'idx', -1.75, 1.2, -0.3);
-  say('輸入 pair：0 ≡ 4', '');
-  await beat(tok, 1800);
+  say('0 和 4 有關係：0 ≡ 4', '');
+  await step(tok);                                   // 1:47 imply 4 ≡ 0
   arrow(V3(-0.7, 0.3, 0.4), V3(-2.8, 0.3, 0.4), 0x0f5a3a);
-  say('Symmetric：0 ≡ 4 隱含 4 ≡ 0', 'x ≡ y ⇒ y ≡ x');
-  await beat(tok, 2800);
+  say('其實還 imply 一個 pair：4 ≡ 0', 'symmetric');
+  await step(tok);                                   // 1:55 7 和 4 有關係
   arrow(V3(2.8, 0.6, -0.3), V3(0.7, 0.6, -0.3), 0x0f5a3a);
-  arrow(V3(0.7, 0.3, 0.4), V3(2.8, 0.3, 0.4), 0x0f5a3a);
   tag('7 ≡ 4', 'idx', 1.75, 1.2, -0.3);
-  say('再讀到 7 ≡ 4，所以也有 4 ≡ 7', '7 ≡ 4 ⇒ 4 ≡ 7');
-  await beat(tok, 2600);
+  say('再看 7 ≡ 4', '');
+  await step(tok);                                   // 2:06 4 ≡ 7
+  arrow(V3(0.7, 0.3, 0.4), V3(2.8, 0.3, 0.4), 0x0f5a3a);
+  say('7 ≡ 4 也 imply 4 ≡ 7', '');
+  await step(tok);                                   // 2:16 transitive：0 ≡ 7
   glow(c[0], GOLD); glow(c[7], GOLD);
   line(-3.5, 1.0, -3.5, 2.3, 0, '#6a4a00'); line(-3.5, 2.3, 3.5, 2.3, 0, '#6a4a00');
   arrow(V3(3.5, 2.3, 0), V3(3.5, 0.9, 0), 0x6a4a00);
   tag('0 ≡ 7', 'ptr alt', 0, 2.75);
-  say('Transitive：0 ≡ 4、4 ≡ 7 ⇒ 0 ≡ 7', 'x ≡ y 且 y ≡ z ⇒ x ≡ z');
-  await beat(tok, 3200);
+  say('0 ≡ 4、4 ≡ 7 ⇒ 0 ≡ 7', 'transitivity');
 }]);
 
+// zLuuRC56uvI 02:33：問題
 FRAG.push(['llpeng34-equiv-problem', 'Equivalence class 問題', async (tok) => {
   fresh([0, 8, 11], [0, 0.5, 0.4]);
-  tag('輸入：' + pairStr(EQP), 'ptr', 0, 0.2, -3.6);
   const cs = [];
   for (let i = 0; i < EQN; i++) cs.push(cube(i, colorFor(i), [0.75, 0.6, 0.75], EQX(i), 0.3, -1.6, 2));
-  say('輸入 pair，輸出 equivalence class', 'n = 12：數字 0 … 11，共 9 個 pair');
-  await beat(tok, 2600);
-  for (const [a, b] of EQP) {
-    glow(cs[a], GOLD); glow(cs[b], GOLD);
-    say('讀到 ' + a + ' ≡ ' + b, a + ' 和 ' + b + ' 有關係');
-    await beat(tok, 600);
-    glow(cs[a]); glow(cs[b]);
-  }
-  glow(cs[3], GOLD); glow(cs[1], GOLD);
-  say('看 1、3、5：先有 3 ≡ 1', '');
-  await beat(tok, 1600);
-  glow(cs[5], GOLD);
-  say('再讀到 3 ≡ 5 ⇒ 1 ≡ 5', 'transitive：{1, 3, 5} 是同一個 class');
-  await beat(tok, 2600);
-  [1, 3, 5].forEach((i) => glow(cs[i]));
   const G = [[0, 2, 4, 7, 11], [1, 3, 5], [6, 8, 9, 10]], GX = [-4.3, 0, 4.0];
+  await step(tok);                                   // 2:33 input：數字 pair
+  tag('輸入：' + pairStr(EQP), 'ptr', 0, 0.2, -3.6);
+  say('Input：這些數字的 pair', 'n = 12：0 … 11，共 9 個 pair');
+  await step(tok);                                   // 2:38 output：集合
+  say('Output：set of number', '一些數字的集合');
+  await step(tok);                                   // 2:49 同一集合裡都有關係
+  say('同一個集合裡的數字都有關係', '自己跟自己、自己跟別人，還有 transitive');
+  await step(tok);                                   // 3:07 三個 set
   G.forEach((g, gi) => {
     g.forEach((v, k) => move(cs[v], GX[gi] + (k - (g.length - 1) / 2) * 0.85, 0.3, 1.4));
     tag('{' + g.join(', ') + '}', 'ptr alt', GX[gi], 0.2, 2.6);
   });
-  say('輸出三個 set：set 內彼此都有關係', '{0,2,4,7,11}　{1,3,5}　{6,8,9,10}');
-  await beat(tok, 3200);
-  say('考題可能把 symmetric 改成 asymmetric', 'asymmetric：x ≡ y 不代表 y ≡ x');
-  await beat(tok, 2600);
+  say('這個 input 出來的是三個 set', '{0,2,4,7,11}　{1,3,5}　{6,8,9,10}');
+  await step(tok);                                   // 3:16 看 1、3、5：3 ≡ 1
+  glow(cs[3], GOLD); glow(cs[1], GOLD);
+  say('看 1、3、5：第二個 pair 是 3 ≡ 1', '');
+  await step(tok);                                   // 3:29 3 ≡ 5 ⇒ 1 ≡ 5
+  glow(cs[5], GOLD);
+  say('後來讀到 3 ≡ 5', '就 imply 1 ≡ 5');
+  await step(tok);                                   // 3:47 equivalence class
+  say('1、3、5 是一個 equivalence class', '透過 reflexive、symmetric、transitive 都找得到關係');
+  await step(tok);                                   // 4:09 symmetric
+  [1, 3, 5].forEach((i) => glow(cs[i]));
+  say('注意 symmetric：x ≡ y ⇒ y ≡ x', '');
+  await step(tok);                                   // 4:19 考試可能改 asymmetric
+  say('考試可能改成 asymmetric', 'x ≡ y 不代表 y ≡ x');
 }]);
 
+// zLuuRC56uvI 05:03：兩個 phase、兩個 array
 FRAG.push(['llpeng34-seq-out', '兩個 phase、兩個 array', async (tok) => {
   fresh([0, 8.5, 10], [0, 0, 0]);
   const S = eqStage({ out: true });
-  say('Phase 1 讀 pair 建關係；Phase 2 找 class', '資料結構：array ＋ linked list');
-  await beat(tok, 2800);
+  await step(tok);                                   // 5:03 很 rough 的演算法
+  say('很 rough 的演算法：分兩個 phase', '');
+  await step(tok);                                   // 5:08 phase 1
+  say('Phase 1：根據 pair，算出兩兩之間的關係', '');
+  await step(tok);                                   // 5:17 phase 2
+  say('Phase 2：根據 Phase 1 的 structure', '把所有 equivalence class 找出來');
+  await step(tok);                                   // 6:02 更進階但還不是程式
+  say('更進階一點的版本', '更詳細，但還不是程式');
+  await step(tok);                                   // 6:33 兩個 data structure
+  say('它提出兩個 data structure', 'array，和掛在 array 上的 linked list');
+  await step(tok);                                   // 7:11 第一個 array：seq
   S.slots.forEach((m) => glow(m, GOLD));
-  say('seq：大小 n 的 array，每格是 pointer', 'seq[i] → 跟 i 有關的數字串成的 linked list');
-  await beat(tok, 2800);
+  say('第一個 array：seq（sequence）', '');
+  await step(tok);                                   // 7:31 index 代表數字，大小 n
   S.slots.forEach((m) => glow(m));
-  eqInsert(S, 0, cube(4, colorFor(4), [0.7, 0.5, 0.7], EQX(0), 0.25, eqZ(0), 3));
-  await beat(tok, 800);
-  eqInsert(S, 0, cube(11, colorFor(11), [0.7, 0.5, 0.7], EQX(0), 0.25, eqZ(0), 3));
-  say('例：seq[0] 串著 11、4，都跟 0 有關', 'seq[0] → 11 → 4 → 0（null）');
-  await beat(tok, 3000);
-  S.outs.forEach((m) => glow(m, GOLD));
-  say('out：boolean array，記錄印過沒', '一開始 out[0 … 11] 全是 false');
-  await beat(tok, 2600);
-  S.outs.forEach((m) => glow(m));
-  eqSetOut(S, 0);
-  say('0 印出後 out[0] = true', '之後再碰到 0 就不會再印');
-  await beat(tok, 3000);
+  say('index 就代表那個數字', 'n 個數字 → array 大小就是 n');
+  await step(tok);                                   // 7:51 seq[i] 是 pointer → linked list
+  glow(S.slots[1], GOLD);
+  eqIns(S, 1, 3);
+  say('seq[i] 存一個 pointer：指向跟 i 有關的 linked list', '例：seq[1] 指向跟 1 有關的數字');
+  await step(tok);                                   // 8:11 第二個 array：out
+  glow(S.slots[1]); S.outs.forEach((m) => glow(m, GOLD));
+  say('第二個 array：out', '');
+  await step(tok);                                   // 8:29 out 記錄印過沒
+  S.outs.forEach((m) => glow(m)); eqSetOut(S, 0);
+  say('Phase 2 要把 set 印出來：out 記錄這個數字印過沒', '印過（true）就不會再輸出');
 }]);
 
+// zLuuRC56uvI 08:51：Phase 1 的 while
 FRAG.push(['llpeng34-phase1-build', 'Phase 1：建出 seq 的 list', async (tok) => {
   fresh([0, 8.5, 9.5], [0, 0, -0.6]);
   const S = eqStage();
   const pl = tag('', 'ptr', 0, 0.2, 2.2);
-  say('Phase 1：每讀一個 pair (i, j)', 'j 放進 seq[i]，i 放進 seq[j]');
-  await beat(tok, 2400);
-  for (const [i, j] of EQP) {
-    txt(pl, '讀到 ' + i + ' ≡ ' + j);
-    eqInsert(S, i, cube(j, colorFor(j), [0.7, 0.5, 0.7], EQX(i), 0.25, eqZ(0), 3));
-    eqInsert(S, j, cube(i, colorFor(i), [0.7, 0.5, 0.7], EQX(j), 0.25, eqZ(0), 3));
-    glow(S.slots[i], GOLD); glow(S.slots[j], GOLD);
-    say('讀到 ' + i + ' ≡ ' + j + '：雙向都要放', j + ' → seq[' + i + ']，' + i + ' → seq[' + j + ']（插在最前面）');
-    await beat(tok, 1500);
-    glow(S.slots[i]); glow(S.slots[j]);
-  }
+  await step(tok);                                   // 8:51 while 專門處理 seq
+  say('Phase 1：while 迴圈專門處理 seq 這個 array', '');
+  await step(tok);                                   // 9:01 j 放進 seq[i]
+  txt(pl, '讀到 0 ≡ 4'); glow(S.slots[0], GOLD);
+  eqIns(S, 0, 4);
+  say('讀到 pair (i, j)：j 放進 seq[i] 的 list', '0 ≡ 4：4 放進 seq[0]');
+  await step(tok);                                   // 9:13 i 放進 seq[j]
+  glow(S.slots[0]); glow(S.slots[4], GOLD);
+  eqIns(S, 4, 0);
+  say('同樣也把 i 放進 seq[j]', '0 放進 seq[4]');
+  await step(tok);                                   // 9:24 兩邊都要記
+  glow(S.slots[4]);
+  say('i ≡ j 代表兩個互相有關係', '兩邊的 list 都要記');
+  await step(tok);                                   // 9:58 while 做完
+  for (const [i, j] of EQP.slice(1)) { txt(pl, '讀到 ' + i + ' ≡ ' + j); eqIns(S, i, j); eqIns(S, j, i); await beat(tok, 140); }
   txt(pl, '9 個 pair 讀完');
-  say('Phase 1 結束：每個數字都有自己的 list', 'seq[0] → 11 → 4；seq[11] → 0 → 2');
-  await beat(tok, 3000);
+  say('while 做完：每個數字都有一條 linked list', '新 node 都插在 list 最前面');
+  await step(tok);                                   // 10:14 長出這樣的 structure
+  S.lists[0].forEach((m) => glow(m, GOLD));
+  say('Phase 1 做完，就長出這樣的 structure', 'seq[0] → 11 → 4；seq[11] → 0 → 2');
 }]);
 
+// zLuuRC56uvI 10:26：Phase 2 的想法
 FRAG.push(['llpeng34-phase2-idea', 'Phase 2 的想法：直接相關＋transitive', async (tok) => {
   fresh([0, 8.5, 10], [0, 0, 0]);
   const S = eqStage({ out: true });
   eqBuild(S, EQP);
   const ring = ringAt(0.48);
   const outL = tag('輸出：', 'ptr alt', 0, 0.2, 3.0);
+  const pr = [];
+  const print = (v) => { pr.push(v); txt(outL, '輸出：' + pr.join(' ')); };
   const at = (i, k) => { ring.visible = true; ring.position.set(EQX(i), 0.03, eqZ(k)); };
-  say('Phase 2：for i = 0 … n−1，檢查 out[i]', 'out 一開始全是 false');
-  await beat(tok, 2400);
-  eqSetOut(S, 0); txt(outL, '輸出：0');
-  say('i = 0：out[0] 是 false → 印出 0', 'out[0] = true');
-  await beat(tok, 2400);
-  at(0, 0); eqSetOut(S, 11); txt(outL, '輸出：0 11');
-  say('直接相關：seq[0] 的 list 裡有 11', '印出 11，out[11] = true');
-  await beat(tok, 2000);
-  at(0, 1); eqSetOut(S, 4); txt(outL, '輸出：0 11 4');
-  say('接著是 4：一樣印出', '直接跟 0 有關：11、4');
-  await beat(tok, 2400);
+  await step(tok);                                   // 10:26 phase 2：for 迴圈
+  say('Phase 2：就是下面那個 for 迴圈', '');
+  await step(tok);                                   // 10:39 i = 0 … n−1
+  say('for (i = 0; i < n; i++)', '');
+  await step(tok);                                   // 10:52 i = 0：out[0] 是 false？
+  glow(S.slots[0], GOLD);
+  say('i = 0：out[0] 是不是 false？', '');
+  await step(tok);                                   // 11:12 out 一開始全 false
+  S.outs.forEach((m) => glow(m, GOLD));
+  say('out 是 boolean array', '一開始 out[0] … out[11] 都是 false（都沒印過）');
+  await step(tok);                                   // 11:33 印出 0
+  S.outs.forEach((m) => glow(m)); print(0);
+  say('out[0] 是 false：還沒印過 → 把 0 印出來', '');
+  await step(tok);                                   // 11:56 out[0] = true
+  eqSetOut(S, 0);
+  say('印過了：out[0] 設成 true', '');
+  await step(tok);                                   // 12:04 output equivalence class
+  say('接著 output 這個 equivalence class', '包含兩件事');
+  await step(tok);                                   // 12:12 第一件：seq[0] 的 list
+  S.lists[0].forEach((m) => glow(m, GOLD));
+  say('第一件：seq[0] 的 list 都跟 0 有關', '直接相關');
+  await step(tok);                                   // 12:34 0、11、4 依序印出
+  at(0, 0); print(11); eqSetOut(S, 11); await beat(tok, 500);
+  at(0, 1); print(4); eqSetOut(S, 4);
+  say('0、11、4 依序被 output', '');
+  await step(tok);                                   // 12:52 每個數字只屬於一個 class
+  S.lists[0].forEach((m) => glow(m)); ring.visible = false;
+  say('11、4 的 out 也設成 true', '每個數字只屬於一個 class，不會重複出現');
+  await step(tok);                                   // 13:26 第二件：transitive
+  glow(S.slots[0]); glow(S.slots[11], GOLD);
+  say('第二件：透過 transitive', '0 ≡ 11，跟 11 有關的也跟 0 有關');
+  await step(tok);                                   // 13:59 看 11：先看到 0
   at(11, 0); glow(S.outs[0], RED);
-  say('Transitive：去看 seq[11]，先看到 0', 'out[0] == true → 不再印');
-  await beat(tok, 2400);
-  glow(S.outs[0]); at(11, 1); eqSetOut(S, 2); txt(outL, '輸出：0 11 4 2');
-  say('再看到 2：0 ≡ 11、11 ≡ 2 ⇒ 0 ≡ 2', '印出 2');
-  await beat(tok, 2600);
-  at(2, 0); glow(S.outs[11], RED);
-  say('seq[2] 裡只有 11：已印過，停', 'out[11] == true');
-  await beat(tok, 2400);
+  say('看 11 的 list：先看到 0', 'out[0] 已經是 true → 不再印');
+  await step(tok);                                   // 14:17 再看到 2
+  glow(S.outs[0]); at(11, 1); print(2); eqSetOut(S, 2);
+  say('再看到 2：0 ≡ 11、11 ≡ 2 ⇒ 0 ≡ 2', '把 2 印出來');
+  await step(tok);                                   // 14:46 2 的 list 只有 11
+  glow(S.slots[11]); at(2, 0); glow(S.outs[11], RED);
+  say('2 下面只有 11：已經印過', '就停住');
+  await step(tok);                                   // 15:44 for 迴圈繼續
   glow(S.outs[11]); ring.visible = false;
-  say('for 迴圈繼續 i = 1, 2, …', 'out[i] 已是 true 的就跳過；4 的 list 也要看（下一段用 stack）');
-  await beat(tok, 3200);
+  say('for 迴圈繼續：i = 1, 2, …', '先找直接相關，再透過 transitive 找間接相關');
+  await step(tok);                                   // 16:09 run 完答案就出來
+  say('整個 for 迴圈 run 完', '答案就出來了');
 }]);
 
+// zLuuRC56uvI 16:19：程式：宣告、初始化與 Phase 1
 FRAG.push(['llpeng34-phase1-code', 'Phase 1 的程式', async (tok) => {
   fresh([0, 9, 10.5], [0, 2.4, -0.5]);
   const cd = code([
@@ -10745,50 +11415,43 @@ FRAG.push(['llpeng34-phase1-code', 'Phase 1 的程式', async (tok) => {
     '}',
   ], 0, 7.6, 0.56, -2.6);
   const S = eqStage({ out: true });
+  let x = null, xl = null;
+  await step(tok);                                   // 16:19 分 phase 1、phase 2
+  say('這個程式要注意兩件事', '第一：分 Phase 1、Phase 2');
+  await step(tok);                                   // 16:30 兩個 data structure
+  say('第二：兩個 data structure', 'array（seq）和它下面的 linked list');
+  await step(tok);                                   // 16:52 ListNode
   cd.hl(0);
-  say('node：data 放數字，link 指下一個', 'class ListNode { data, link }');
-  await beat(tok, 2400);
+  say('ListNode：data 就是那個數字', 'link 是一個 pointer');
+  await step(tok);                                   // 17:29 前兩行初始化
+  cd.hl(2);
+  say('前面兩行做初始化', '從檔案讀資料前，先把 array 準備好');
+  await step(tok);                                   // 17:45 宣告 seq、out
   cd.hl(1);
-  say('宣告 seq 和 out 兩個 array', 'seq：pointer array；out：boolean array；大小 n = 12');
-  await beat(tok, 2200);
+  say('宣告 seq：ListNode pointer 的 array', 'out：boolean array，大小都是 n');
+  await step(tok);                                   // 18:07 for 初始化
   cd.hl(2);
   S.slots.forEach((m) => glow(m, GOLD)); S.outs.forEach((m) => glow(m, GOLD));
-  say('初始化：seq[i] = 0（null）、out[i] = false', '還沒有 list，也還沒印過');
-  await beat(tok, 2400);
+  say('for 迴圈初始化：seq[i] = 0（沒指出去）', 'out[i] = false（還沒印過）');
+  await step(tok);                                   // 18:28 Phase 1：讀檔
   S.slots.forEach((m) => glow(m)); S.outs.forEach((m) => glow(m));
-  for (const [i, j] of EQP.slice(0, 2)) {
-    cd.hl(3);
-    say('從檔案讀到 pair (' + i + ', ' + j + ')', 'inFile >> i >> j');
-    await beat(tok, 1400);
-    cd.hl(4);
-    const x = eqNode(j, EQX(i) + 1.2, 1.8, eqZ(0));
-    const xl = tag('x', 'ptr', EQX(i) + 1.2, 2.6, eqZ(0));
-    say('new 一個 node x，裡面放 ' + j, 'x->data = ' + j);
-    await beat(tok, 1500);
-    cd.hl(5); kill(xl); eqInsert(S, i, x);
-    say('x 接到 seq[' + i + '] 的最前面', 'x->link = seq[' + i + ']；seq[' + i + '] = x');
-    await beat(tok, 1600);
-    cd.hl(6);
-    const y = eqNode(i, EQX(j) + 1.2, 1.8, eqZ(0));
-    const yl = tag('y', 'ptr', EQX(j) + 1.2, 2.6, eqZ(0));
-    say('另一個方向：new node y 放 ' + i, 'y->data = ' + i);
-    await beat(tok, 1400);
-    cd.hl(7); kill(yl); eqInsert(S, j, y);
-    say('y 接到 seq[' + j + '] 的最前面', 'y->link = seq[' + j + ']；seq[' + j + '] = y');
-    await beat(tok, 1600);
-  }
   cd.hl(3);
-  for (const [i, j] of EQP.slice(2)) {
-    eqInsert(S, i, cube(j, colorFor(j), [0.7, 0.5, 0.7], EQX(i), 0.25, eqZ(0), 3));
-    eqInsert(S, j, cube(i, colorFor(i), [0.7, 0.5, 0.7], EQX(j), 0.25, eqZ(0), 3));
-    say('其餘 pair 一樣處理：' + i + ' ≡ ' + j, 'while 迴圈 = Phase 1');
-    await beat(tok, 500);
-  }
-  cd.hl(-1);
-  say('while 跑完，Phase 1 的結構就建好了', '每個新 node 都插在 list 最前面 → O(1)');
-  await beat(tok, 2800);
+  say('Phase 1：從檔案讀出 pair (i, j)', '例：0 ≡ 4');
+  await step(tok);                                   // 18:36 new node x 放 j
+  cd.hl(4);
+  x = eqNode(4, EQX(0) + 1.2, 1.8, eqZ(0));
+  xl = tag('x', 'ptr', EQX(0) + 1.2, 2.6, eqZ(0));
+  say('new 一個 node x，裡面放 j', 'x->data = 4');
+  await step(tok);                                   // 18:54 放在 seq[i]
+  cd.hl(5); kill(xl); eqInsert(S, 0, x);
+  say('把 x 放到 seq[i] 那條 linked list', 'x->link = seq[0]；seq[0] = x');
+  await step(tok);                                   // 19:18 i 放進 seq[j]
+  cd.hl(7);
+  eqInsert(S, 4, eqNode(0, EQX(4) + 1.2, 1.8, eqZ(0)));
+  say('y 那邊：把 i 放進 seq[j]', 'y->link = seq[4]；seq[4] = y');
 }]);
 
+// zLuuRC56uvI 19:30：Phase 2 的 stack
 const EQ_CODE2 = [
   'for (i = 0; i < n; i++) if (!out[i]) {',
   '  cout << i;  out[i] = true;',
@@ -10806,54 +11469,118 @@ FRAG.push(['llpeng34-phase2-stack', 'Phase 2：用 stack 走訪', async (tok) =>
   const cd = code(EQ_CODE2, 0, 8.2, 0.52, -2.6);
   const S = eqStage({ out: true, stack: true });
   eqBuild(S, EQP);
-  say('Phase 2 的程式：用 stack 記住「待會要看的 list」', 'Phase 1 的結構已建好');
-  await beat(tok, 2600);
-  const { ev } = eqRun(eqSeq(EQP));
-  await eqPlay(tok, S, ev, { ms: 1600, cd, stop: true });
-  cd.hl(-1);
-  say('第一個 class 的輸出順序', '0, 11, 4, 7, 2（不是 0 2 4 7 11）');
-  await beat(tok, 3000);
+  const ring = ringAt(0.48);
+  const outL = tag('New class:', 'ptr alt', 0, 0.2, 3.0);
+  const pr = [];
+  const at = (i, k) => { ring.visible = true; ring.position.set(EQX(i), 0.03, eqZ(k)); };
+  const print = (v) => { pr.push(v); eqSetOut(S, v); txt(outL, 'New class: ' + pr.join(', ')); };
+  const push = (v) => { const s = cube(v, colorFor(v), [0.75, 0.45, 0.75], EQ_STK_X, 0.25 + 0.5 * S.stack.length, EQ_OUT_Z, 3); s.userData.v = v; S.stack.push(s); };
+  const pop = () => { const s = S.stack.pop(); if (s) fly(s, V3(2, 7, 3)); };
+  await step(tok);                                   // 19:30 想法簡單、實作難
+  say('Phase 2：想法很簡單，實作出來還蠻難的', '');
+  await step(tok);                                   // 19:38 linked list 和 stack
+  say('它同時用到 linked list 和 stack', '');
+  await step(tok);                                   // 19:56 先印直接相關，不看它們的 list
+  say('先把跟 0 直接相關的數字都印出來', '暫時不去看它們自己的 list');
+  await step(tok);                                   // 20:06 0 看到 11，印 11
+  cd.hl(1); print(0); glow(S.slots[0], GOLD);
+  cd.hl(5); at(0, 0); print(11);
+  say('印出 0；看 0 的 list：看到 11 → 印出 11', '');
+  await step(tok);                                   // 20:13 看到 4，印 4
+  at(0, 1); print(4);
+  say('再看到 4 → 印出 4', '');
+  await step(tok);                                   // 20:22 再一個一個 traverse
+  ring.visible = false;
+  say('讀完 0 的 list 以後', '再對這些數字的 list 一個一個 traverse');
+  await step(tok);                                   // 20:38 做法：stack，push 11
+  push(11);
+  say('做法是 stack：11 印出來，等一下再看它的 list', '所以把 11 放進 stack');
+  await step(tok);                                   // 20:45 push 4
+  push(4);
+  say('4 印出來，也丟進 stack', 'stack：11、4');
+  await step(tok);                                   // 21:03 0 的 list 到 null
+  cd.hl(7);
+  say('看完 4：0 的 list 走到 null 了', '');
+  await step(tok);                                   // 21:33 pop 出 4
+  cd.hl(8); pop(); glow(S.slots[0]); glow(S.slots[4], GOLD);
+  say('從 stack pop 出 4', '去看 4 對應的 link list');
+  await step(tok);                                   // 21:48 7：印出、push
+  cd.hl(5); at(4, 0); print(7); push(7);
+  say('4 跟 7 有關：印出 7，push 進 stack', 'stack：11、7');
+  await step(tok);                                   // 21:56 0 已經 true
+  at(4, 1); glow(S.outs[0], RED);
+  say('再看到 0：out[0] 已經是 true', '印過了，不用管它');
+  await step(tok);                                   // 22:06 4 的 list 到 null → pop
+  glow(S.outs[0]); ring.visible = false; cd.hl(8);
+  say('4 的 list 到 null', '從 stack pop 出下一個數字，再拜訪它的 list');
+  await step(tok);                                   // 22:28 pop 7：只有 4，已印過
+  pop(); glow(S.slots[4]); glow(S.slots[7], GOLD);
+  at(7, 0); glow(S.outs[4], RED);
+  say('pop 出 7：7 的 list 只有 4', '4 已經印過 → 不用管');
+  await step(tok);                                   // 22:54 最後只剩 11
+  glow(S.outs[4]); glow(S.slots[7]); pop(); glow(S.slots[11], GOLD);
+  at(11, 0); await beat(tok, 450);
+  at(11, 1); print(2); push(2); await beat(tok, 450);
+  pop(); glow(S.slots[11]); at(2, 0);
+  cd.hl(7);
+  say('stack 只剩 11：pop 出來，看到 2 → 印出', '第一個 class：0, 11, 4, 7, 2');
 }]);
 
+// zLuuRC56uvI 23:01：輸出順序
 FRAG.push(['llpeng34-classes-out', '三個 class 的輸出順序', async (tok) => {
   fresh([0, 9, 10.5], [0, 0, 0.5]);
-  const S = eqStage({ out: true, stack: true });
+  const S = eqStage({ out: true });
   eqBuild(S, EQP);
-  say('整個 for 迴圈跑完，輸出三個 set', '順序由 list 結構和 stack 決定');
-  await beat(tok, 2200);
-  const { ev, classes } = eqRun(eqSeq(EQP));
-  await eqPlay(tok, S, ev, { ms: 420 });
-  say('三個 set，順序要自己 trace code', classes.map((c) => c.join(' ')).join('｜'));
-  await beat(tok, 3200);
+  const { classes } = eqRun(eqSeq(EQP));
+  const line = (k) => tag('第 ' + (k + 1) + ' 個 set：' + classes[k].join(', '), 'ptr alt', 0, 0.2, 2.9 + 0.62 * k);
+  await step(tok);                                   // 23:01 三個 set
+  say('程式的執行結果：三個 set', '');
+  await step(tok);                                   // 23:15 第一個 set 的順序
+  line(0); classes[0].forEach((v) => eqSetOut(S, v));
+  say('第一個 set：0、11、4，然後 7，再來 2', '');
+  await step(tok);                                   // 23:35 不要寫成 2 4 7 11
+  say('不要寫成 0 2 4 7 11', '順序錯了，就表示你沒有 trace code');
+  await step(tok);                                   // 23:47 第二個 set 從 1 開始
+  line(1); classes[1].forEach((v) => eqSetOut(S, v));
+  say('第二個 set 從 1 開始', '接下來的順序，自己 trace');
+  await step(tok);                                   // 23:55 第三個 set 從 6 開始
+  line(2); classes[2].forEach((v) => eqSetOut(S, v));
+  say('第三個 set 從 6 開始', '後面三個數字的順序也有關係');
+  await step(tok);                                   // 24:06 順序有意義
+  say('這個程式的輸出順序是有意義的', '');
 }]);
 
+// zLuuRC56uvI 24:23：輸入順序改變
 FRAG.push(['llpeng34-order-matters', '輸入順序改變，輸出順序就變', async (tok) => {
   fresh([0, 9, 10.5], [0, 0, 0.3]);
   const S = eqStage();
   eqBuild(S, EQP);
   const a = eqRun(eqSeq(EQP)).classes.map((c) => c.join(' ')).join('｜');
-  tag('原順序：' + a, 'ptr', 0, 0.2, 2.2);
-  const pl = tag('', 'ptr alt', 0, 0.2, 3.0);
-  say('原本的輸入順序：0≡4、3≡1、…、11≡0', a);
-  await beat(tok, 3000);
-  eqClear(S);
-  say('把輸入倒過來：先 11≡0、2≡11、3≡5 …', 'list 結構會不一樣');
-  await beat(tok, 1600);
   const R = EQP.slice().reverse();
-  for (const [i, j] of R) {
-    eqInsert(S, i, cube(j, colorFor(j), [0.7, 0.5, 0.7], EQX(i), 0.25, eqZ(0), 3));
-    eqInsert(S, j, cube(i, colorFor(i), [0.7, 0.5, 0.7], EQX(j), 0.25, eqZ(0), 3));
-    txt(pl, '讀到 ' + i + ' ≡ ' + j);
-    await beat(tok, 650);
-  }
-  [0, 11].forEach((i) => S.lists[i].forEach((m) => glow(m, GOLD)));
-  say('seq[0] 變成 4 → 11，seq[11] 變成 2 → 0', '原本是 11 → 4、0 → 2');
-  await beat(tok, 3000);
-  [0, 11].forEach((i) => S.lists[i].forEach((m) => glow(m)));
   const b = eqRun(eqSeq(R)).classes.map((c) => c.join(' ')).join('｜');
+  const pl = tag('', 'ptr alt', 0, 0.2, 3.0);
+  await step(tok);                                   // 24:23 input 順序調換
+  tag('原順序：' + a, 'ptr', 0, 0.2, 2.2);
+  say('把 input pair 的順序調換一下', '');
+  await step(tok);                                   // 24:32 set 一樣嗎
+  say('出來的 set 會一樣嗎？', 'set 當然還是只有三個');
+  await step(tok);                                   // 24:42 裡面的順序不一定
+  say('可是 set 裡數字的順序不一定一樣', '');
+  await step(tok);                                   // 24:54 輸入順序決定 list 結構
+  say('因為輸入順序決定了 linked list 的 structure', '');
+  await step(tok);                                   // 25:00 倒過來輸入
+  eqClear(S);
+  for (const [i, j] of R) { eqIns(S, i, j); eqIns(S, j, i); txt(pl, '讀到 ' + i + ' ≡ ' + j); await beat(tok, 140); }
+  say('倒過來：先輸入 11 ≡ 0、2 ≡ 11、3 ≡ 5 …', '');
+  await step(tok);                                   // 25:13 list 不一樣
+  [0, 11].forEach((i) => S.lists[i].forEach((m) => glow(m, GOLD)));
+  say('出來的 list 就不一樣', 'seq[0] 變成 4 → 11，seq[11] 變成 2 → 0');
+  await step(tok);                                   // 25:23 順序不同
+  [0, 11].forEach((i) => S.lists[i].forEach((m) => glow(m)));
   txt(pl, '倒過來：' + b);
-  say('還是三個 set，但 set 裡的順序不同', b);
-  await beat(tok, 3400);
+  say('Phase 2 一樣三個 set，但裡面的順序不同', b);
+  await step(tok);                                   // 25:46 唯一解嗎？
+  say('這是唯一解嗎？', '期中考的加分題：想想別的寫法');
 }]);
 
 // ═════════════ Sparse matrix 的 linked list 表示法（課本 4×4 範例） ═════════════
@@ -10897,146 +11624,237 @@ function spNext() {
 }
 function spAll(G) { const a = []; for (let r = 0; r < 4; r++) a.push(...spRowArrows(G, r)); for (let c = 0; c < 4; c++) a.push(...spColArrows(G, c)); return a; }
 const spFrame = () => fresh([0, 3.9, 13.5], [0, 3.7, 0]);
+function spFull() { const G = { ent: [] }; spHeads(G, false); SPT.forEach((t) => spEntry(G, t, false)); G.arr = spAll(G); G.nx = spNext(); return G; }
 
+// zLuuRC56uvI 28:36：從 array 到 linked list
 FRAG.push(['llpeng34-sparse-array', 'Sparse matrix：從 array 到 linked list', async (tok) => {
   fresh([0, 4, 13], [0, 3.4, 0]);
   const M = [[0, 0, 11, 0], [12, 0, 0, 0], [0, -4, 0, 0], [0, 0, 0, -15]];
   const mx = (c) => -5.2 + c * 1.15, my = (r) => 5.6 - r * 1.15;
   const cells = [];
   M.forEach((row, r) => row.forEach((v, c) => {
-    const m = cube(v, v ? colorFor(Math.abs(v)) : GRAY, v ? [1.0, 0.9, 0.5] : [0.8, 0.7, 0.3], mx(c), my(r), 0, 2);
+    const m = cube(v, v ? colorFor(Math.abs(v)) : '#e9dcc4', v ? [1.0, 0.9, 0.5] : [0.8, 0.7, 0.3], mx(c), my(r), 0);
     cells.push({ m, r, c, v });
   }));
   for (let c = 0; c < 4; c++) tag('c' + c, 'idx', mx(c), 6.5);
   for (let r = 0; r < 4; r++) tag('r' + r, 'idx', -6.3, my(r));
-  say('Sparse matrix：大部分元素是 0', '4×4，只有 4 個非 0');
-  await beat(tok, 2600);
-  say('第 2 章：用 1D array 存 (row, col, value)', '不用 2D array，只存非 0 項');
-  const hdr = tag('row col value', 'idx', 3.6, 6.3);
-  const t0 = cube('4  4  4', '#4b9ee2', [2.6, 0.6, 0.5], 3.6, 5.6, 0, 2);
-  await beat(tok, 1600);
+  await step(tok);                                   // 28:36 sparse matrix
+  say('Sparse matrix：第二章講過', '');
+  await step(tok);                                   // 28:44 很多元素是 0
+  cells.filter((e) => !e.v).forEach((e) => tint(e.m, GRAY));
+  say('Sparse：裡面很多元素是 0', '4×4，只有 4 個非 0');
+  await step(tok);                                   // 29:02 用 array 存
+  say('那時候用一個 array 存它', '');
+  await step(tok);                                   // 29:10 1D array
+  tag('row col value', 'idx', 3.6, 6.3);
+  cube('4  4  4', '#4b9ee2', [2.6, 0.6, 0.5], 3.6, 5.6, 0, 2);
+  say('不是 2D array，而是 one dimension 的 array', '');
+  await step(tok);                                   // 29:15 只存非 0：row、col、值
   let k = 1;
-  for (const e of cells.filter((e) => e.v)) {
-    glow(e.m, GOLD);
+  for (const e of cells.filter((x) => x.v)) {
     const t = cube(e.r + '  ' + e.c + '  ' + e.v, colorFor(Math.abs(e.v)), [2.6, 0.6, 0.5], mx(e.c), my(e.r), 0.6);
-    move(t, 3.6, 5.6 - k * 0.8, 0);
-    say('a[' + e.r + '][' + e.c + '] = ' + e.v + ' → 一筆 triple', '(' + e.r + ', ' + e.c + ', ' + e.v + ')');
-    await beat(tok, 1300);
-    glow(e.m); k++;
+    move(t, 3.6, 5.6 - k * 0.8, 0); k++;
   }
-  await beat(tok, 800);
-  say('也可以用 linked list 來存', '每個 row、每個 column 各一條環狀 linked list');
+  say('只存非 0 的 element：row、column 和它的值', '一筆一個 triple');
+  await step(tok);                                   // 29:34 也可以用 linked list
+  say('也可以用 linked list 來代表 sparse matrix', '');
+  await step(tok);                                   // 29:53 環狀 linked list
+  say('用環狀（circular）的 linked list 表示', '');
+  await step(tok);                                   // 30:02 每個 row、column 各一條
   cells.filter((e) => e.r === 1).forEach((e) => glow(e.m, GOLD));
-  await beat(tok, 1600);
-  cells.forEach((e) => glow(e.m));
   cells.filter((e) => e.c === 0).forEach((e) => glow(e.m, RED));
-  say('例：row 1 一條 list、column 0 一條 list', '非 0 的 12 同時在兩條 list 上');
-  await beat(tok, 3000);
-  void hdr; void t0;
+  say('每一個 row、每一個 column 都對應一條環狀 linked list', '例：row 1 一條、column 0 一條，12 同時在兩條上');
 }]);
 
+// zLuuRC56uvI 30:23：head node 與環狀 list
 FRAG.push(['llpeng34-sparse-lists', 'Sparse matrix 的 head node 與環狀 list', async (tok) => {
   spFrame();
   const G = { ent: [] };
+  let ra = [], ca = [];
+  await step(tok);                                   // 30:23 表示出來變成這樣
   spHeads(G, true);
-  say('藍色 H：整個 matrix 的 head node', '4×4 matrix');
+  say('剛才那個 matrix，用 linked list 表示出來', '');
+  await step(tok);                                   // 30:33 藍色 head node
   glow(G.H, GOLD);
-  await beat(tok, 2400);
-  glow(G.H);
-  G.top.forEach((m) => glow(m, GOLD)); G.left.forEach((m) => glow(m, GOLD));
-  say('黃色 H0 … H3：每個 row／column 的 head node', '上面一排、左邊一排畫兩次，其實是同一組 node');
-  await beat(tok, 3000);
-  G.top.forEach((m) => glow(m)); G.left.forEach((m) => glow(m));
+  say('藍色：整個 matrix 的 head node', '');
+  await step(tok);                                   // 30:40 4×4
+  say('例子是 4×4 的 matrix', '');
+  await step(tok);                                   // 30:49 黃色：每個 row／column 的 head node
+  glow(G.H); G.top.forEach((m) => glow(m, GOLD)); G.left.forEach((m) => glow(m, GOLD));
+  say('黃色：每一個 row／column 對應的 head node', 'H0、H1、H2、H3');
+  await step(tok);                                   // 31:00 畫兩次，其實一樣
+  say('上面一排、左邊一排的 H0…H3 代表同樣的 node', '為了表示方便畫兩次');
+  await step(tok);                                   // 31:11 1 藍 + 4 黃
+  G.top.forEach((m) => glow(m));
+  say('實際上只有：1 個藍色 node、4 個黃色 node', '');
+  await step(tok);                                   // 31:33 H0：第 0 row、第 0 column
+  G.left.forEach((m) => glow(m)); glow(G.top[0], GOLD); glow(G.left[0], GOLD);
+  say('H0 代表第 0 個 row，也代表第 0 個 column', 'H1 代表第 1 個 row、第 1 個 column');
+  await step(tok);                                   // 31:51 entry：1 0 12
+  glow(G.top[0]); glow(G.left[0]);
   const e12 = spEntry(G, SPT[1], true);
-  say('entry 1 0 │ 12：row 1、column 0、值 12', 'a[1][0] = 12');
-  await beat(tok, 2600);
-  glow(G.left[1], GOLD);
-  const ra = spRowArrows(G, 1);
-  say('H1 的 right：row 1 往右看，第一個非 0 就是 12', 'row 1 只有 12，最後指回 H1 → 環狀');
-  await beat(tok, 3000);
+  say('看這個 node：1 0 12', '');
+  await step(tok);                                   // 32:08 第 1 row、第 0 column、值 12
+  glow(e12.m, GOLD);
+  say('第 1 個 row、第 0 個 column，值是 12', 'a[1][0] = 12');
+  await step(tok);                                   // 32:42 H1：第一個 row 的 list
+  glow(e12.m); glow(G.left[1], GOLD);
+  say('H1 這個欄位：記載第一個 row 的 element 構成的 list', '');
+  await step(tok);                                   // 33:28 往右看到 12，0 不記
+  ra = spRowArrows(G, 1);
+  say('row 1 往右看：第一個非 0 就是 12', '其他都是 0，不用記載');
+  await step(tok);                                   // 33:49 回到頭端 → 環狀
+  say('12 後面沒有了 → link 回到頭端 H1', '所以是環狀 linked list');
+  await step(tok);                                   // 34:06 紅線：column 的 list
   glow(G.left[1]); glow(G.top[0], GOLD);
-  const ca = spColArrows(G, 0);
-  say('紅線：H0 的 down 往下指 column 0 的 list', 'column 0 也只有 12，再指回 H0');
-  await beat(tok, 3000);
-  glow(G.top[0]); killAll(ra); killAll(ca);
-  for (const t of [SPT[0], SPT[2], SPT[3]]) { spEntry(G, t, true); await beat(tok, 500); }
-  const all = spAll(G);
-  say('其他非 0 項：11、−4、−15 一樣串進去', '每個 row、每個 column 各一條環狀 list');
-  await beat(tok, 2800);
-  const nx = spNext();
-  say('head node 之間用 next 串成 header list', 'H → H0 → H1 → H2 → H3 → H');
-  await beat(tok, 3000);
-  void all; void nx; void e12;
+  ca = spColArrows(G, 0);
+  say('紅色線：column 構成的 linked list', '從 H0 往下指');
+  await step(tok);                                   // 34:49 column 0 只有 12，指回 H0
+  say('column 0 也只有 12', '它再指回 H0：一樣是環狀');
+  await step(tok);                                   // 35:22 header node 三個欄位
+  glow(G.top[0]);
+  say('黃色 header node 有三個欄位', '');
+  await step(tok);                                   // 35:36 兩個 pointer 欄位
+  glow(G.left[0], GOLD);
+  say('為了指向第 0 個 row、第 0 個 column', '要有兩個 pointer 欄位');
+  void ra; void ca;
 }]);
 
+// zLuuRC56uvI 36:10（欄位與 node 數）；params.v = 'review' 播 yn0ZAifhyNM 00:00 的複習
 FRAG.push(['llpeng34-node-fields', 'Header node 與 entry node 的欄位', async (tok) => {
+  const P = ctx.params || {};
   fresh([0, 4, 12.5], [0, 2.8, 0]);
-  function node(x, top, bottom, color, title) {
-    const cs = top.map((t, k) => cube(t, color, [1.15, 0.7, 0.5], x + (k - 1) * 1.2, 4.2, 0, 2));
-    const b = cube(bottom, color, [3.55, 0.7, 0.5], x, 3.45, 0, 2);
+  function diag(x, top, bottom, color, title) {
+    const cs = top.map((t, k) => cube(t, color, [1.15, 0.7, 0.5], x + (k - 1) * 1.2, 4.2, 0));
+    const bw = 3.55 / bottom.length;
+    const bs = bottom.map((t, k) => cube(t, color, [bw - 0.05, 0.7, 0.5], x - 1.775 + bw * (k + 0.5), 3.45, 0));
     tag(title, 'ptr', x, 5.1);
-    return { cs, b };
+    return { cs, bs };
   }
-  const h = node(-3.3, ['down', 'head=T', 'right'], 'next', '#f2c46d', 'header node');
-  say('Header node：down、right 兩個 pointer', 'down → 同一 column 的 entry；right → 同一 row 的 entry');
-  await beat(tok, 3000);
-  glow(h.b, GOLD);
-  say('第三個 pointer：next', 'next → 下一個 header node（header 的 linked list）');
-  await beat(tok, 2600);
-  glow(h.b);
-  const e = node(3.3, ['down', 'head=F', 'right'], 'row  col  value', '#b8a894', 'entry node');
-  say('Entry node：down、right 指向同行／同列', '中間 row、col 記位置，value 記值');
-  await beat(tok, 3000);
-  glow(e.b, GOLD);
-  say('例：1 0 12 → 位置 (1, 0)、值 12', 'a_ij：第 i 個 row、第 j 個 column');
-  await beat(tok, 2400);
-  glow(e.b);
-  say('r 個非 0 項要用幾個 node？', 'n×m matrix');
-  await beat(tok, 1600);
-  const cnt = [];
+  const H = () => diag(-3.3, ['down', 'head=T', 'right'], ['next'], '#f2c46d', 'header node');
+  const E = () => diag(3.3, ['down', 'head=F', 'right'], ['row', 'col', 'value'], '#b8a894', 'entry node');
+  const G = (arr, on) => arr.forEach((m) => glow(m, on ? GOLD : null));
+  if (P.v === 'review') {
+    let h = null, e = null;
+    await step(tok);                                 // 0:00 上週：sparse matrix
+    say('上週：sparse matrix 用 linked list 來存', '');
+    await step(tok);                                 // 0:34 重點：表示方法、class 宣告
+    say('重點：它的表示方法，和 class 的宣告', '');
+    await step(tok);                                 // 0:51 兩種 node
+    h = H(); e = E();
+    say('node 分成兩種型別', 'head node 和 entry node');
+    await step(tok);                                 // 1:01 head node：row／column 的頭端
+    G(h.cs, true); G(h.bs, true);
+    say('head node：每一個 row 或 column 的頭端', '');
+    await step(tok);                                 // 1:22 head 欄位
+    G(h.cs, false); G(h.bs, false); glow(h.cs[1], GOLD);
+    say('head 欄位：boolean', '告訴你它是不是 head node');
+    await step(tok);                                 // 1:38 right：同一個 row
+    glow(h.cs[1]); glow(h.cs[2], GOLD);
+    say('right：pointer，指向同一個 row', '');
+    await step(tok);                                 // 1:44 down：同一個 column
+    glow(h.cs[2]); glow(h.cs[0], GOLD);
+    say('down：指向同一個 column', '指向那個 row／column 的 entry node');
+    await step(tok);                                 // 1:54 next：head node 的 list
+    glow(h.cs[0]); glow(h.bs[0], GOLD);
+    say('next：串起 head node 的 linked list', '指向下一個 head node');
+    await step(tok);                                 // 2:05 三個 pointer
+    [h.cs[0], h.cs[2], h.bs[0]].forEach((m) => glow(m, GOLD));
+    say('嚴格來說，head node 有三個 pointer', 'right、down、next');
+    await step(tok);                                 // 2:21 max{m, n}
+    G(h.cs, false); G(h.bs, false);
+    say('m×n matrix：head node 的個數是 max{m, n}', 'row 和 column 哪個多就選哪個');
+    void e;
+    return;
+  }
+  let h = null, e = null, cnt = [];
+  await step(tok);                                   // 36:10 header node 最下面的欄位
+  h = H(); glow(h.bs[0], GOLD);
+  say('header node 最下面的欄位', '指向 header node 的 linked list');
+  await step(tok);                                   // 36:18 H0 → H1 → H2 …
+  const hs = [0, 1, 2, 3].map((k) => cube('H' + k, '#f2c46d', [0.8, 0.6, 0.6], -5.4 + k * 1.4, 1.4, 1.2));
+  for (let k = 0; k < 3; k++) arrow(V3(-5.0 + k * 1.4, 1.4, 1.2), V3(-4.4 + k * 1.4, 1.4, 1.2), 0x0f8a5a);
+  say('H0 → H1 → H2 → H3', 'header node 本身也形成一條 linked list');
+  await step(tok);                                   // 36:45 三個 pointer
+  [h.cs[0], h.cs[2], h.bs[0]].forEach((m) => glow(m, GOLD));
+  say('每個 header node 有三個 pointer', 'header list 的 next，和指向 row、column list 的兩個');
+  await step(tok);                                   // 37:01 黑色框框：本身的數字
+  G(h.cs, false); G(h.bs, false);
+  e = E();
+  say('黑色框框：entry node，放它本身的數字', '');
+  await step(tok);                                   // 37:12 五個欄位
+  say('它有五個欄位', '');
+  await step(tok);                                   // 37:20 兩個 pointer
+  glow(e.cs[0], GOLD); glow(e.cs[2], GOLD);
+  say('左上、右上：兩個 pointer', '指向它所在的 row 和 column 的 list');
+  await step(tok);                                   // 37:29 位置
+  glow(e.cs[0]); glow(e.cs[2]); glow(e.bs[0], GOLD); glow(e.bs[1], GOLD);
+  say('中間：它的位置', '第幾個 row、第幾個 column');
+  await step(tok);                                   // 37:40 值
+  glow(e.bs[0]); glow(e.bs[1]); glow(e.bs[2], GOLD);
+  say('下面：它的數值', '');
+  await step(tok);                                   // 38:03 要多少 node？
+  glow(e.bs[2]); hs.forEach(kill);
+  say('如果有 r 個非 0 項，要用多少個 node？', 'n×m matrix');
+  await step(tok);                                   // 38:13 max{n, m} + r + 1
   cnt.push(cube('H', '#4b9ee2', [0.7, 0.6, 0.7], -3.6, 0.3, 1.5, 3));
-  tag('+1', 'idx', -3.6, 0, 2.5);
-  await beat(tok, 700);
-  for (let k = 0; k < 4; k++) { cnt.push(cube('H' + k, '#f2c46d', [0.7, 0.6, 0.7], -2.0 + k * 0.85, 0.3, 1.5, 3)); await beat(tok, 300); }
+  for (let k = 0; k < 4; k++) cnt.push(cube('H' + k, '#f2c46d', [0.7, 0.6, 0.7], -2.0 + k * 0.85, 0.3, 1.5, 3));
+  for (let k = 0; k < 4; k++) cnt.push(cube(SPT[k][2], '#6b5d50', [0.7, 0.6, 0.7], 2.2 + k * 0.85, 0.3, 1.5, 3));
+  say('node 數 = max{n, m} + r + 1', '');
+  await step(tok);                                   // 38:21 看 n、m 哪個大
   tag('max{n, m} = 4', 'idx', -0.7, 0, 2.5);
-  for (let k = 0; k < 4; k++) { cnt.push(cube(SPT[k][2], '#6b5d50', [0.7, 0.6, 0.7], 2.2 + k * 0.85, 0.3, 1.5, 3)); await beat(tok, 300); }
+  say('n×m：看 n 和 m 哪個最大', '這裡黃色 head node 要 4 個');
+  await step(tok);                                   // 38:29 r 個黑色
   tag('r = 4', 'idx', 3.5, 0, 2.5);
-  say('node 數 = max{n, m} + r + 1', 'max{4, 4} + 4 + 1 = 9');
-  await beat(tok, 3200);
+  say('r：黑色的 entry node，這裡 4 個', '');
+  await step(tok);                                   // 38:38 +1：藍色
+  tag('+1', 'idx', -3.6, 0, 2.5); glow(cnt[0], GOLD);
+  say('最後 +1：藍色的 node', '4 + 4 + 1 = 9');
+  await step(tok);                                   // 38:52 header node 的欄位
+  glow(cnt[0]); G(h.cs, true); G(h.bs, true);
+  say('header node：head、right（同一列）、down（同一行）', '還有 next 指向 head node 的 list');
+  await step(tok);                                   // 39:07 entry node 的欄位
+  G(h.cs, false); G(h.bs, false); G(e.cs, true); G(e.bs, true);
+  say('entry node：down、row、col、value、right', '代表 matrix 裡的 a_ij');
 }]);
 
+// zLuuRC56uvI 40:16：H0 是同一個 node；transpose 只改 pointer
 FRAG.push(['llpeng34-sparse-transpose', '同一組 head node、transpose 只改 pointer', async (tok) => {
   spFrame();
   const G = { ent: [] };
   spHeads(G, false);
   SPT.forEach((t) => spEntry(G, t, false));
   let ar = spAll(G);
-  say('問：上面和左邊的 H0 … H3 是什麼關係？', '');
-  await beat(tok, 2000);
-  for (let k = 0; k < 4; k++) {
-    glow(G.top[k], GOLD); glow(G.left[k], GOLD);
-    say('上面的 H' + k + ' 和左邊的 H' + k + ' 是同一個 node', 'H' + k + ' 同時是 row ' + k + ' 和 column ' + k + ' 的頭');
-    await beat(tok, 1000);
-    glow(G.top[k]); glow(G.left[k]);
-  }
-  say('實際只有 1 個藍色＋4 個黃色 head node', '畫兩份只是為了看起來像 matrix');
-  await beat(tok, 2600);
-  say('Transpose：row 變 column、column 變 row', 'a[i][j] → aᵀ[j][i]');
-  await beat(tok, 2000);
+  await step(tok);                                   // 40:16 上面和左邊的 H0 一樣
+  glow(G.top[0], GOLD); glow(G.left[0], GOLD);
+  say('上面的 H0 和左邊的 H0', '代表的是同一個 head node');
+  await step(tok);                                   // 40:41 2D 只是示意
+  say('畫成 two dimension 的 matrix', '只是看起來方便');
+  await step(tok);                                   // 40:51 看起來 8 個，其實 4 個
+  G.top.forEach((m) => glow(m, GOLD)); G.left.forEach((m) => glow(m, GOLD));
+  say('黃色看起來有 8 個', '實際上只有 4 個');
+  await step(tok);                                   // 41:14 head node 三個欄位
+  G.top.forEach((m) => glow(m)); G.left.forEach((m) => glow(m));
+  say('head node 只有三個欄位', 'column 的 list、row 的 list、head node 的 list');
+  await step(tok);                                   // 41:46 有什麼好處？
+  say('問題：這種表示方法有什麼好處？', '回去想想看');
+  await step(tok);                                   // 42:16 transpose 好簡單
+  say('用它做 transpose 很簡單', 'row 變 column、column 變 row');
+  await step(tok);                                   // 42:28 head node 不用變
   killAll(ar);
-  for (const e of G.ent) {
-    [e.r, e.c] = [e.c, e.r];
-    move(e.m, SCX(e.c), SRY(e.r), 0); relabel(e.m, e.r + ' ' + e.c + ' │ ' + e.v);
-    glow(e.m, GOLD);
-  }
-  await beat(tok, 1200);
+  for (const e of G.ent) { [e.r, e.c] = [e.c, e.r]; move(e.m, SCX(e.c), SRY(e.r), 0); relabel(e.m, e.r + ' ' + e.c + ' │ ' + e.v); glow(e.m, GOLD); }
+  say('head node 要不要改？不用', '還是同一組黃色 head node');
+  await step(tok);                                   // 42:36 要改的是 pointer
   G.ent.forEach((e) => glow(e.m));
   ar = spAll(G);
-  say('head node 不用動，只要改 pointer', 'overhead：把 right／down 指到對的位置');
-  await beat(tok, 3200);
+  say('要改的是 pointer', 'right、down 全部重新指');
+  await step(tok);                                   // 42:52 overhead
+  say('overhead 只在把 pointer 指到對的位置', '');
 }]);
 
+// zLuuRC56uvI 43:14（MatrixNode）；params.v = 'review' 播 yn0ZAifhyNM 02:56 的複習
 FRAG.push(['llpeng34-matrixnode-union', 'MatrixNode：一個 class 表示兩種 node', async (tok) => {
+  const P = ctx.params || {};
   fresh([0, 4.2, 12.5], [0, 3.4, 0]);
   const cd = code([
     'struct Triple { int row, col, value; };',
@@ -11052,62 +11870,138 @@ FRAG.push(['llpeng34-matrixnode-union', 'MatrixNode：一個 class 表示兩種 
     'class Matrix { MatrixNode *headnode; };',
   ], -3.4, 6.6, 0.55);
   const X = 3.6;
-  const cs = ['down', 'head', 'right'].map((t, k) => cube(t, '#b8a894', [1.1, 0.7, 0.5], X + (k - 1) * 1.15, 4.4, 0, 2));
-  const u = cube('union', '#c9b48e', [3.4, 0.7, 0.5], X, 3.65, 0, 2);
+  const cs = ['down', 'head', 'right'].map((t, k) => cube(t, '#b8a894', [1.1, 0.7, 0.5], X + (k - 1) * 1.15, 4.4, 0));
+  const u = cube('union', '#c9b48e', [3.4, 0.7, 0.5], X, 3.65, 0);
   tag('MatrixNode', 'ptr', X, 5.3);
+  const asHead = () => { relabel(cs[1], 'head=T'); relabel(u, 'next'); tint(u, '#f2c46d'); };
+  const asEntry = () => { relabel(cs[1], 'head=F'); relabel(u, 'row col value'); tint(u, '#6b5d50'); };
+  if (P.v === 'review') {
+    await step(tok);                                 // 2:56 entry node 記位置與值
+    asEntry(); glow(u, GOLD);
+    say('entry node：記載它在哪個 row、哪個 column', '以及它的值');
+    await step(tok);                                 // 3:09 跟 array 表示法很像
+    say('跟 array 表示法很像', 'row、col、value');
+    await step(tok);                                 // 3:27 right、down
+    glow(u); glow(cs[0], GOLD); glow(cs[2], GOLD);
+    say('right：同一個 row 的下一個非 0', 'down：同一個 column 的下一個非 0');
+    await step(tok);                                 // 3:51 中間還有 head
+    glow(cs[0]); glow(cs[2]); glow(cs[1], GOLD); cd.hl(4);
+    say('中間還有一個欄位：head', '');
+    await step(tok);                                 // 4:07 宣告成同一個 class
+    cd.hl(1);
+    say('head node 和 entry node 宣告成同一個 class', '所以要有 head 來分辨');
+    await step(tok);                                 // 4:27 共同欄位
+    cs.forEach((m) => glow(m, GOLD)); cd.hl(3);
+    say('某些欄位一樣：down、head、right', '');
+    await step(tok);                                 // 4:42 不一樣的地方
+    cs.forEach((m) => glow(m)); glow(u, RED);
+    say('不一樣：entry 有 row、col、value', 'head node 有 next');
+    await step(tok);                                 // 4:55 用 union
+    glow(u); cd.hl(5); relabel(u, 'union'); tint(u, '#e07a6a'); relabel(cs[1], 'head');
+    say('要宣告成同一個 class：用 union', '紅色這個字要注意');
+    await step(tok);                                 // 5:50 head = true → next
+    cd.hl(6); asHead();
+    say('head 是 true：union 選 next', '它就是 head node');
+    await step(tok);                                 // 6:18 head = false → triple
+    cd.hl(7); asEntry();
+    say('head 是 false：選 triple', 'row、col、value');
+    await step(tok);                                 // 6:39 不必每種 node 各一個 class
+    cd.hl(-1);
+    say('不必為每一種 node 定義一個 class', '程式更精簡');
+    return;
+  }
+  await step(tok);                                   // 43:14 感覺應該是兩個 data type
+  say('head node 和 entry node', '感覺好像應該是兩個 data type');
+  await step(tok);                                   // 43:30 只用一個 class
+  say('課本只用一個 class', '代表兩種不同型態的 node');
+  await step(tok);                                   // 43:58 struct Triple
   cd.hl(0);
-  say('Triple：記 row、col、value', 'struct Triple');
-  await beat(tok, 2400);
-  cd.hl(3); [cs[0], cs[2]].forEach((m) => glow(m, GOLD));
-  say('共同部分：down、right 兩個 pointer', 'head node 和 entry node 都有');
-  await beat(tok, 2600);
-  [cs[0], cs[2]].forEach((m) => glow(m));
-  cd.hl(4); glow(cs[1], GOLD);
-  say('bool head：分辨是 head node 還是 entry node', '只用一個 class MatrixNode');
-  await beat(tok, 2600);
-  glow(cs[1]);
-  cd.hl(5); tint(u, '#e07a6a');
-  say('不同的部分放進 union：兩個欄位只選一個', 'next 或 triple，共用同一塊空間');
-  await beat(tok, 2800);
-  cd.hl(6); relabel(cs[1], 'head=T'); relabel(u, 'next'); tint(u, '#f2c46d');
-  say('head == true → 用 next', 'header node 只要串到下一個 header');
-  await beat(tok, 2600);
-  cd.hl(7); relabel(cs[1], 'head=F'); relabel(u, '1  0  12'); tint(u, '#6b5d50');
-  say('head == false → 用 triple', 'entry node 只要 row、col、value');
-  await beat(tok, 2600);
-  cd.hl(10);
-  const hb = cube('headnode 4×4', '#4b9ee2', [2.2, 0.7, 0.5], X, 1.8, 0, 2);
-  say('Matrix 只記藍色 headnode', '比宣告兩個 class 更精簡');
-  await beat(tok, 3000);
-  void hb;
+  say('紅字的部分：先定義 struct Triple', '');
+  await step(tok);                                   // 44:08 Triple 的內容
+  say('Triple：記 matrix 裡的值', '還有它的 row 和 col');
+  await step(tok);                                   // 44:16 class MatrixNode
+  cd.hl(1);
+  say('matrix 裡的 node 也是一個 class：MatrixNode', '');
+  await step(tok);                                   // 44:40 down、right 兩個 pointer
+  cd.hl(3); glow(cs[0], GOLD); glow(cs[2], GOLD);
+  say('private：兩個 pointer', 'down 和 right');
+  await step(tok);                                   // 44:48 bool head
+  glow(cs[0]); glow(cs[2]); cd.hl(4); glow(cs[1], GOLD);
+  say('bool head：判斷它是不是 head node', '');
+  await step(tok);                                   // 44:58 為什麼要判斷
+  say('因為要用同一個 class MatrixNode', '去代表 head node 和 entry node');
+  await step(tok);                                   // 45:13 union
+  glow(cs[1]); cd.hl(5); tint(u, '#e07a6a');
+  say('接下來有一個 union', '');
+  await step(tok);                                   // 45:20 union 裡兩個宣告
+  say('union 裡有兩個資料宣告', 'MatrixNode *next，和 Triple triple');
+  await step(tok);                                   // 45:38 只能選一個
+  say('union：兩個資料只能選一個', '共用同一塊空間');
+  await step(tok);                                   // 45:52 header → next
+  cd.hl(6); asHead();
+  say('如果是 header node：不用 triple', '只要 next，串到下一個 header');
+  await step(tok);                                   // 46:24 不是 header → triple
+  cd.hl(7); asEntry();
+  say('不是 header（entry node）：選 triple', '只要記 row、col、value');
+  await step(tok);                                   // 47:09 自己寫會宣告兩個 class
+  cd.hl(-1);
+  say('自己 implement 的話，可能會宣告兩個 class', 'header node 一個、entry node 一個');
+  await step(tok);                                   // 47:25 一個 class 就解決
+  cs.forEach((m) => glow(m, GOLD));
+  say('其實一個 class 就能解決', '共同部分 ＋ bool head ＋ union');
 }]);
 
+// yn0ZAifhyNM 07:10：圖上的 H0–H3 與 head 欄位
+FRAG.push(['llpeng34-sparse-review', '圖上的 H0–H3 與 head 欄位', async (tok) => {
+  spFrame();
+  const G = spFull();
+  await step(tok);                                   // 7:10 黃色 H0–H3
+  G.top.forEach((m) => glow(m, GOLD));
+  say('這張圖：上面黃色的 H0、H1、H2、H3', '');
+  await step(tok);                                   // 7:17 和左邊是同樣的 node
+  G.left.forEach((m) => glow(m, GOLD));
+  say('和左邊看到的黃色，其實是同樣的 node', '');
+  await step(tok);                                   // 7:28 copy 一份畫
+  say('只是為了表示方便，copy 一份畫出來', '看起來像一個 matrix');
+  await step(tok);                                   // 7:36 entry node：row、col、value
+  G.top.forEach((m) => glow(m)); G.left.forEach((m) => glow(m));
+  G.ent.forEach((e) => glow(e.m, GOLD));
+  say('裡面的 entry node', '記載 row、col 和 value');
+  await step(tok);                                   // 7:53 head 欄位沒畫
+  G.ent.forEach((e) => glow(e.m));
+  say('head 欄位呢？', '為了節省空間沒畫出來');
+  await step(tok);                                   // 8:01 用顏色代表
+  G.top.forEach((m) => glow(m, GOLD)); G.left.forEach((m) => glow(m, GOLD));
+  say('用顏色代表：黃色是 head node', '黑色是 entry node');
+}]);
+
+// yn0ZAifhyNM 08:20：輸入格式與 operator
 FRAG.push(['llpeng34-sparse-input', '讀檔建出 sparse matrix', async (tok) => {
   spFrame();
   const lines = ['4 4 4', '0 2 11', '1 0 12', '2 1 -4', '3 3 -15'];
-  tag('輸入：' + lines.join('  ｜  '), 'idx', 0.4, 8.6);
-  const cur = tag('', 'ptr alt', 0.4, 8.0);
   const G = { ent: [] };
-  say('課本的輸入格式：第一行 rows cols terms', '之後每行一個 (row, col, value)');
-  await beat(tok, 2600);
-  txt(cur, '讀入：4 4 4');
-  spHeads(G, true);
-  say('4 4 4：4×4 matrix、4 個非 0', 'head node 數 = max{4, 4} = 4，加 1 個藍色 H');
-  await beat(tok, 3000);
-  const nx = spNext();
+  let cur = null;
+  await step(tok);                                   // 8:20 matrix 的程式：operator
+  say('Matrix 的程式：看一下它的 operator', '');
+  await step(tok);                                   // 8:31 operator >> overloading
+  say('operator >> 有做 overloading', '為 matrix 量身訂做');
+  await step(tok);                                   // 8:56 輸入：4 4 4 …
+  tag('輸入：' + lines.join('  ｜  '), 'idx', 0.4, 8.6);
+  cur = tag('讀入：4 4 4', 'ptr alt', 0.4, 8.0);
+  spHeads(G, true); spNext();
+  say('輸入格式：第一行 4 4 4', '4×4 matrix、4 個非 0');
+  await step(tok);                                   // 9:05 每行一個 (row, col, value)
   for (const t of SPT) {
     txt(cur, '讀入：' + t.join(' '));
-    const e = spEntry(G, t, true);
-    const a = [...spRowArrows(G, t[0]), ...spColArrows(G, t[1])];
-    glow(e.m, GOLD);
-    say('(' + t.join(', ') + ')：串進 row ' + t[0] + ' 和 column ' + t[1], 'a[' + t[0] + '][' + t[1] + '] = ' + t[2]);
-    await beat(tok, 2000);
-    glow(e.m); void a;
+    spEntry(G, t, true); spRowArrows(G, t[0]); spColArrows(G, t[1]);
+    await beat(tok, 450);
   }
   txt(cur, '讀完');
-  say('operator>> 讀檔就建出整個結構', '課本 4.8.2、4.8.3：輸入、transpose 等操作');
-  await beat(tok, 3000);
-  void nx;
+  say('之後每行一個 (row, col, value)', '從檔案讀 matrix，就用這個 input 格式');
+  await step(tok);                                   // 9:20 4.8.2、4.8.3
+  say('詳細請看課本 4.8.2、4.8.3', '回去複習');
+  await step(tok);                                   // 9:45 transpose 等操作
+  say('4.8.3：在 matrix node 上做 transpose 等操作', '');
 }]);
 
 // ═════════════ Doubly linked list ═════════════
@@ -11124,8 +12018,8 @@ const rOut = (g) => V3(g.userData.x + 0.95 * g.userData.s, g.userData.y + 0.12, 
 const lIn = (g) => V3(g.userData.x - 1.0 * g.userData.s, g.userData.y + 0.12, g.userData.z);
 const lOut = (g) => V3(g.userData.x - 0.95 * g.userData.s, g.userData.y - 0.15, g.userData.z);
 const rIn = (g) => V3(g.userData.x + 1.0 * g.userData.s, g.userData.y - 0.15, g.userData.z);
-const rlinkA = (a, b) => [arrow(rOut(a), lIn(b), RLC)];
-const llinkA = (b, a) => [arrow(lOut(b), rIn(a), LLC)];
+const rlinkA = (a, b, c = RLC) => [arrow(rOut(a), lIn(b), c)];
+const llinkA = (b, a, c = LLC) => [arrow(lOut(b), rIn(a), c)];
 // 環狀：最後一個的 rlink 繞回 header，header 的 llink 繞到最後一個
 function wrapR(a, b, dz = 1.3) {
   const s = a.userData.s, y = a.userData.y + 0.12, z = a.userData.z, ax = a.userData.x, bx = b.userData.x;
@@ -11145,34 +12039,45 @@ function dllDraw(D, circ = true) {
   }
 }
 
+// yn0ZAifhyNM 10:01：node 的兩個 link
 FRAG.push(['llpeng34-dll-node', 'Doubly linked list 的 node', async (tok) => {
   fresh([0, 5, 11], [0, 1.6, 0]);
   const cd = code(['class DblListNode {', '  int data;', '  DblListNode *llink, *rlink;', '};', 'class DblList { DblListNode *first; };'], -3.6, 5.6, 0.55);
-  const n = dn('data', 2.6, 3.4, 0, '#c9b48e', 1.6);
-  const l1 = tag('llink', 'idx', 2.6 - 1.2, 2.5), l2 = tag('rlink', 'idx', 2.6 + 1.2, 2.5);
-  cd.hl(2);
-  say('Doubly：每個 node 有兩個 link 欄位', 'llink（左）｜data｜rlink（右）');
-  await beat(tok, 3000);
-  glow(n.userData.L, GOLD);
-  say('llink：指向左邊的 node', 'left link field');
-  await beat(tok, 2000);
-  glow(n.userData.L); glow(n.userData.R, GOLD);
-  say('rlink：指向右邊的 node', 'right link field');
-  await beat(tok, 2000);
-  glow(n.userData.R); kill(n); kill(l1); kill(l2);
+  let n = null, l1 = null, l2 = null;
   const D = { nodes: [], arr: [] };
-  for (const [t, x] of [['A', -3], ['B', 0], ['C', 3]]) { D.nodes.push(dn(t, x, 0.5, 0, colorFor(x + 3))); await beat(tok, 400); }
+  await step(tok);                                   // 10:01 今天的重點
+  say('今天的重點：doubly linked list', '講完，linked list 這章就結束');
+  await step(tok);                                   // 10:21 為什麼叫 double
+  say('為什麼叫 double？', '它比 linked list 還強');
+  await step(tok);                                   // 10:31 link 的數目
+  say('強在 link 的數目', '比 singly linked list 多');
+  await step(tok);                                   // 10:54 兩個 link 欄位
+  n = dn('data', 2.6, 3.4, 0, '#c9b48e', 1.6);
+  l1 = tag('llink', 'idx', 2.6 - 1.2, 2.5); l2 = tag('rlink', 'idx', 2.6 + 1.2, 2.5);
+  say('node 通常有兩個 link 的欄位', 'llink ｜ data ｜ rlink');
+  await step(tok);                                   // 11:00 llink
+  glow(n.userData.L, GOLD);
+  say('llink：left link field', '指向這個 node 的左邊');
+  await step(tok);                                   // 11:09 data
+  glow(n.userData.L); glow(n.userData.D, GOLD);
+  say('data field：存放資料', '');
+  await step(tok);                                   // 11:15 rlink
+  glow(n.userData.D); glow(n.userData.R, GOLD);
+  say('rlink：right link field', '指向它的右邊');
+  await step(tok);                                   // 11:31 宣告很像
+  glow(n.userData.R); kill(n); kill(l1); kill(l2);
+  cd.hl(2);
+  for (const [t, x] of [['A', -3], ['B', 0], ['C', 3]]) D.nodes.push(dn(t, x, 0.5, 0, colorFor(x + 3)));
   dllDraw(D, false);
+  say('宣告跟 singly 很像', '只是 node 有 llink、rlink 兩個 pointer');
+  await step(tok);                                   // 11:52 first
   cd.hl(4);
-  const f = tag('first', 'ptr', -3, 1.6);
-  say('紅線往右串、藍線往左串', '比 singly linked list 多一組 link');
-  await beat(tok, 3000);
-  say('first 指向第一個 node', 'class DblList { first }');
+  tag('first', 'ptr', -3, 1.6);
   glow(D.nodes[0].userData.D, GOLD);
-  await beat(tok, 2600);
-  void f;
+  say('一樣有頭端 first', '指向第一個 node');
 }]);
 
+// yn0ZAifhyNM 12:00：header node、empty、單一 node
 FRAG.push(['llpeng34-dll-header', 'Header node 與環狀 doubly linked list', async (tok) => {
   fresh([0, 6, 12], [0, 0.6, 0.8]);
   const D = { nodes: [], arr: [] };
@@ -11180,177 +12085,243 @@ FRAG.push(['llpeng34-dll-header', 'Header node 與環狀 doubly linked list', as
   D.nodes.push(H);
   [['A', -1.5], ['B', 1.5], ['C', 4.5]].forEach(([t, x], k) => D.nodes.push(dn(t, x, 0.5, 0, colorFor(k + 1))));
   tag('header', 'ptr', -4.5, 1.6);
+  await step(tok);                                   // 12:00 也可以有 header node
   dllDraw(D);
-  say('有 header node 的環狀 doubly linked list', '紅 = rlink（往右），藍 = llink（往左）');
-  await beat(tok, 3000);
+  say('doubly linked list 也可以有 header node', '紅 = rlink（往右），藍 = llink（往左）');
+  await step(tok);                                   // 12:14 header 的 rlink → 第一個 node
   glow(H.userData.R, GOLD); glow(D.nodes[1].userData.D, GOLD);
-  say('header 的 rlink → 第一個 node', '往右那條 list 的第一個');
-  await beat(tok, 2600);
+  say('header 的 rlink 指向 list 的第一個 node', '');
+  await step(tok);                                   // 12:33 紅色：往右串
+  say('紅色：rlink 往右串起來的 linked list', '');
+  await step(tok);                                   // 13:11 header 的 llink → 最後一個
   glow(H.userData.R); glow(D.nodes[1].userData.D);
   glow(H.userData.L, GOLD); glow(D.nodes[3].userData.D, GOLD);
-  say('header 的 llink → 最後一個（最右邊）node', '往左那條 list 的第一個');
-  await beat(tok, 2800);
+  say('header 的 llink 指向最後（最右邊）那個 node', '');
+  await step(tok);                                   // 13:31 藍色往左
+  say('藍色：llink 往左指的 linked list', 'header 的 llink 就是它的第一個 element');
+  await step(tok);                                   // 14:24 中間的 node
   glow(H.userData.L); glow(D.nodes[3].userData.D);
   glow(D.nodes[2].userData.D, GOLD);
-  say('中間的 node：左右指標指向前、後一個', 'B.llink = A，B.rlink = C');
-  await beat(tok, 2400);
+  say('中間的 node：雙向指標', '分別指向前一個和後一個');
+  await step(tok);                                   // 14:48 empty
   glow(D.nodes[2].userData.D);
   for (const g of D.nodes.splice(1)) fly(g, V3(0, 8, 3));
   dllDraw(D);
-  say('Empty list：只剩 header，指向自己', 'H.llink = H.rlink = H');
-  await beat(tok, 3000);
+  say('Empty：只有一個 header node', '自己指向自己');
+  await step(tok);                                   // 15:18 只有一個 node
   const A = dn('A', 0.5, 0.5, 0, colorFor(4)); D.nodes.push(A);
   dllDraw(D);
-  say('只有一個 node：兩邊都指向它', 'H ⇄ A，A 的左右都指回 header');
-  await beat(tok, 3200);
+  say('只有一個 node：header 左右都指向它', '它的左右也都指回 header（環狀）');
 }]);
 
+// yn0ZAifhyNM 15:57：把 p 插在 x 後面
 FRAG.push(['llpeng34-dll-insert', 'Doubly linked list：把 p 插在 x 後面', async (tok) => {
   fresh([0, 5.5, 11], [0, 2, 0]);
   const cd = code(['1  p->llink = x;', '2  p->rlink = x->rlink;', '3  (x->rlink)->llink = p;', '4  x->rlink = p;'], -4.0, 6.4, 0.6);
-  const X = dn('x', -3, 0.5, 0, '#c9a227'), R = dn('x→r', 3, 0.5, 0, '#4b9ee2'), P = dn('p', 0, 3, 0, '#d64545');
-  let xr = rlinkA(X, R), rl = llinkA(R, X);
-  say('把 node p 插在 node x 的後面', '藍色 = x->rlink 指的那個 node');
-  await beat(tok, 2800);
-  say('四個 link 要改：先想好最後的樣子', 'x ⇄ p ⇄ x->rlink');
-  await beat(tok, 2400);
-  cd.hl(0); const a1 = arrow(lOut(P), V3(-2.4, 0.95, 0), LLC);
+  let X = null, R = null, P = null, xr = [], rl = [], pre = [], xrl = null;
+  const a = [];
+  await step(tok);                                   // 15:57 先把圖畫出來
+  say('Insert：一樣先把圖畫出來', '');
+  await step(tok);                                   // 16:08 node x 與藍色 node
+  X = dn('x', -3, 0.5, 0, '#c9a227'); R = dn('x→r', 3, 0.5, 0, '#4b9ee2');
+  xr = rlinkA(X, R); rl = llinkA(R, X);
+  say('這是 node x', '藍色是 x 右邊的 node');
+  await step(tok);                                   // 16:18 要 insert 的 node p
+  P = dn('p', 0, 3, 0, '#d64545');
+  say('要 insert 的是 node p', '');
+  await step(tok);                                   // 16:44 藍色 = x->rlink
+  glow(R.userData.D, GOLD);
+  xrl = tag('x->rlink', 'ptr alt', 3, 1.5);
+  say('藍色 node 就是 x->rlink', 'x 的 right link 指的那個 node');
+  await step(tok);                                   // 17:28 插在 x 後面
+  glow(R.userData.D); kill(xrl);
+  say('要把 node p 插在 node x 的後面', '');
+  await step(tok);                                   // 17:55 最後的結果
+  pre.push(arrow(lOut(P), V3(-2.4, 0.95, 0), GHOST), arrow(rOut(P), V3(2.4, 0.95, 0), GHOST), arrow(V3(2.1, 0.7, 0), V3(0.9, 2.6, 0), GHOST), arrow(V3(-2.1, 0.9, 0), V3(-0.9, 2.9, 0), GHOST));
+  say('先想像結果：x ⇄ p ⇄ 藍色 node', '原本 x 和藍色之間的黑線會不見');
+  await step(tok);                                   // 18:26 四個 link
+  killAll(pre);
+  say('牽涉到四個 link', '要做四個 pointer assignment');
+  await step(tok);                                   // 18:44 ①
+  cd.hl(0); a.push(arrow(lOut(P), V3(-2.4, 0.95, 0), LLC));
   say('① p 的 llink 指向 x', 'p->llink = x');
-  await beat(tok, 2400);
-  cd.hl(1); const a2 = arrow(rOut(P), V3(2.4, 0.95, 0), RLC);
-  say('② p 的 rlink 指向 x 原本的右邊', 'p->rlink = x->rlink');
-  await beat(tok, 2400);
-  cd.hl(2); killAll(rl); const a3 = arrow(V3(2.1, 0.7, 0), V3(0.9, 2.6, 0), LLC);
-  say('③ 藍色 node 的 llink 改指 p', 'x->rlink->llink = p（指標可以串著寫）');
-  await beat(tok, 2600);
-  cd.hl(3); killAll(xr); const a4 = arrow(V3(-2.1, 0.9, 0), V3(-0.9, 2.9, 0), RLC);
-  say('④ x 的 rlink 改指 p，完成', 'x->rlink = p');
-  await beat(tok, 2400);
-  [a1, a2, a3, a4].forEach(kill); cd.hl(-1);
+  await step(tok);                                   // 18:60 ②
+  cd.hl(1); a.push(arrow(rOut(P), V3(2.4, 0.95, 0), RLC));
+  say('② p 的 rlink 指向 x 的 rlink', 'p->rlink = x->rlink（藍色 node 的位置）');
+  await step(tok);                                   // 19:22 ③
+  cd.hl(2); killAll(rl); a.push(arrow(V3(2.1, 0.7, 0), V3(0.9, 2.6, 0), LLC));
+  say('③ 藍色 node 的 llink 指向 p', '藍色在哪？就是 x->rlink → (x->rlink)->llink = p');
+  await step(tok);                                   // 19:48 ④
+  cd.hl(3); killAll(xr); a.push(arrow(V3(-2.1, 0.9, 0), V3(-0.9, 2.9, 0), RLC));
+  say('④ x 自己的 rlink 指向 p', 'x->rlink = p，完成');
+  await step(tok);                                   // 20:10 順序可以顛倒嗎
+  a.forEach(kill); cd.hl(-1);
   dmove(P, 0, 0.5); dmove(X, -3.2); dmove(R, 3.2);
   const D = { nodes: [X, P, R], arr: [] }; dllDraw(D, false);
-  say('結果：x ⇄ p ⇄ 原本 x 的右邊', '');
-  await beat(tok, 2400);
-  say('問：順序可以顛倒嗎？若 ④ 先做……', 'x->rlink 已經是 p');
-  cd.hl(3);
-  await beat(tok, 2400);
-  cd.hl(1); killAll(D.arr);
+  say('結果：x ⇄ p ⇄ 原本 x 的右邊', '問題：順序可以顛倒嗎？');
+  await step(tok);                                   // 20:31 自己對調看看
+  killAll(D.arr); cd.hl(3);
   dmove(P, 0, 3); dmove(X, -3); dmove(R, 3);
-  const bad = poly([rOut(P), V3(1.4, 3.1, 0), V3(1.4, 3.1, 1.0), V3(-1.4, 3.1, 1.0), V3(-1.4, 3.1, 0), V3(-1.0, 3.1, 0)], RLC);
+  poly([rOut(P), V3(1.4, 3.1, 0), V3(1.4, 3.1, 1.0), V3(-1.4, 3.1, 1.0), V3(-1.4, 3.1, 0), V3(-1.0, 3.1, 0)], RLC);
   glow(P.userData.D, RED);
-  say('② 變成 p->rlink = p：右邊那段斷掉了', '<span class="no">③ 必須在 ④ 之前</span>；① ② 對調則沒關係');
-  await beat(tok, 3400);
-  void bad;
+  say('自己對調看看結果會不會一樣', '例：④ 先做，② 就變成 p->rlink = p，右邊斷了');
+  await step(tok);                                   // 20:52 指標可以串著寫
+  glow(P.userData.D); cd.hl(2);
+  say('有趣的是：link 的指標可以串著寫', 'x->rlink->llink');
 }]);
 
+// yn0ZAifhyNM 21:14：插在 x 後面第 k 個
 FRAG.push(['llpeng34-dll-insert-k', '練習：插在 x 後面第 k 個位置', async (tok) => {
   fresh([0, 6, 11.5], [0, 1, 0]);
   const xs = [-5.2, -2.6, 0, 2.6];
   const D = { nodes: [['x', '#c9a227'], ['a', colorFor(1)], ['b', colorFor(2)], ['c', colorFor(3)]].map(([t, c], k) => dn(t, xs[k], 0.5, 0, c)), arr: [] };
   dllDraw(D, false);
-  say('練習：把 p 插在 x 後面的第 k 個位置', 'k = 2：x 和 p 中間隔一個 node');
-  await beat(tok, 3000);
-  const ring = ringAt(0.9); ring.visible = true; ring.position.set(xs[0], 0.05, 0);
-  say('從 x 出發', 'q = x');
-  await beat(tok, 1600);
-  ring.position.set(xs[1], 0.05, 0);
-  say('沿 rlink 走 k − 1 = 1 步', 'q = q->rlink');
-  await beat(tok, 2000);
+  let P = null;
+  await step(tok);                                   // 21:14 insert 在第 k 個？
+  say('第二個問題：能不能 insert 在 x 後面的第 k 個？', '');
+  await step(tok);                                   // 21:34 下下一個
+  say('現在的 insert 是插在 x 的下一個', '如果要插在 x 的下下一個呢？');
+  await step(tok);                                   // 21:44 紅色 p
+  P = dn('p', 1.3, 3, 0, '#d64545');
+  say('紅色的 p 不是插在 x 緊接的後面', '');
+  await step(tok);                                   // 21:56 中間卡一個
   dmove(D.nodes[2], 2.6); dmove(D.nodes[3], 5.2);
-  const P = dn('p', 0, 0.5, 0, '#d64545');
+  dmove(P, 0, 0.5);
   D.nodes.splice(2, 0, P);
   dllDraw(D, false);
-  say('再用同樣的 4 行，把 p 插在 q 後面', 'x → a → p：p 是 x 後面第 2 個');
-  await beat(tok, 3200);
-  ring.visible = false;
+  glow(D.nodes[1].userData.D, GOLD);
+  say('x 和 p 中間卡一個 node', 'p 在 x 後面的第 2 個位置');
+  await step(tok);                                   // 22:08 insertK 怎麼寫
+  glow(D.nodes[1].userData.D);
+  say('想想看：insertK 要怎麼寫？', '把 node p 插在 node x 後面的第 k 個');
+  await step(tok);                                   // 22:30 考題之一
+  say('這也可能是考題之一', '');
 }]);
 
+// yn0ZAifhyNM 22:36：刪除 x
 FRAG.push(['llpeng34-dll-delete', 'Doubly linked list：刪除 x', async (tok) => {
   fresh([0, 5.5, 11], [0, 1.8, 0]);
   const cd = code(['1  (x->llink)->rlink = x->rlink;', '2  (x->rlink)->llink = x->llink;', '   delete x;'], -3.4, 6.0, 0.6);
-  const L = dn('左', -3.5, 0.5, 0, '#d64545'), X = dn('x', 0, 0.5, 0, '#c9a227'), R = dn('右', 3.5, 0.5, 0, '#2fc092');
-  let D = { nodes: [L, X, R], arr: [] }; dllDraw(D, false);
-  say('刪除 node x：左（紅）、右（綠）要互相指到對方', '');
-  await beat(tok, 2800);
-  cd.hl(0);
-  const a1 = poly([rOut(L), V3(-2.4, 1.6, 0), V3(2.4, 1.6, 0), lIn(R)], RLC);
+  let L = null, X = null, R = null, D = null, pre = [], a1 = [], a2 = [];
+  await step(tok);                                   // 22:36 接著看 delete
+  say('接著看 delete', '');
+  await step(tok);                                   // 22:46 原本長這樣
+  L = dn('左', -3.5, 0.5, 0, '#d64545'); X = dn('x', 0, 0.5, 0, '#c9a227'); R = dn('右', 3.5, 0.5, 0, '#2fc092');
+  D = { nodes: [L, X, R], arr: [] }; dllDraw(D, false);
+  glow(X.userData.D, RED);
+  say('要把 x delete 掉', '原本長這樣');
+  await step(tok);                                   // 23:06 紅色、綠色互指
+  pre = [...poly([rOut(L), V3(-2.4, 1.6, 0), V3(2.4, 1.6, 0), lIn(R)], GHOST), ...poly([lOut(R), V3(2.4, 0.35, 1.2), V3(-2.4, 0.35, 1.2), rIn(L)], GHOST)];
+  say('結果：紅色和綠色 node', 'pointer 要互相指到對方');
+  await step(tok);                                   // 23:48 ①
+  killAll(pre); cd.hl(0);
+  a1 = poly([rOut(L), V3(-2.4, 1.6, 0), V3(2.4, 1.6, 0), lIn(R)], RLC);
   glow(L.userData.R, GOLD);
-  say('① x 左邊那個的 rlink 改指 x 的右邊', 'x->llink->rlink = x->rlink');
-  await beat(tok, 2800);
+  say('① x 的 llink 是紅色 node', '紅色的 rlink 改指 x 的右邊');
+  await step(tok);                                   // 24:12 綠色在 x->rlink
+  say('綠色 node 的位置在哪？', '就在 x->rlink：(x->llink)->rlink = x->rlink');
+  await step(tok);                                   // 24:28 ②
   glow(L.userData.R); cd.hl(1);
-  const a2 = poly([lOut(R), V3(2.4, 0.35, 1.2), V3(-2.4, 0.35, 1.2), rIn(L)], LLC);
+  a2 = poly([lOut(R), V3(2.4, 0.35, 1.2), V3(-2.4, 0.35, 1.2), rIn(L)], LLC);
   glow(R.userData.L, GOLD);
-  say('② x 右邊那個的 llink 改指 x 的左邊', 'x->rlink->llink = x->llink');
-  await beat(tok, 2800);
+  say('② 綠色的 llink 要指向紅色', '');
+  await step(tok);                                   // 24:43 紅色的資訊在 x->llink
+  say('紅色的位置在哪？在 x->llink', '(x->rlink)->llink = x->llink');
+  await step(tok);                                   // 25:01 兩行最右邊
   glow(R.userData.L); cd.hl(2);
   killAll(D.arr); fly(X, V3(0, 8, 4));
-  say('x 沒人指了，delete x', '只改兩個 pointer');
-  await beat(tok, 2000);
-  killAll(a1); killAll(a2);
+  say('兩行的最右邊：x 的 rlink、llink 所指的位置', '交給鄰居去指，x 就可以 delete');
+  await step(tok);                                   // 25:37 delete 完成
+  killAll(a1); killAll(a2); cd.hl(-1);
   dmove(L, -1.8); dmove(R, 1.8);
   D = { nodes: [L, R], arr: [] }; dllDraw(D, false);
-  say('兩行的右邊：x 的 rlink、llink 交給鄰居', '不必另外找前一個 node');
-  await beat(tok, 3000);
+  say('delete 就這樣完成', '只改兩個 pointer');
 }]);
 
+// yn0ZAifhyNM 25:49：好處與搜尋
 FRAG.push(['llpeng34-dll-search', 'Doubly linked list 的好處與搜尋', async (tok) => {
   fresh([0, 6.5, 12], [0, 0.4, 0.8]);
   const V = [15, 12, 10, 7, 5, 3], s = 0.7, xs = [-5.4, -3.6, -1.8, 0, 1.8, 3.6, 5.4];
   const D = { nodes: [dn('H', xs[0], 0.5, 0, '#8a8a8a', s)], arr: [], dz: 1.1 };
   V.forEach((v, k) => D.nodes.push(dn(v, xs[k + 1], 0.5, 0, colorFor(v), s)));
+  const ring = ringAt(0.6);
+  let cut = null, xm = null;
+  await step(tok);                                   // 25:49 pointer 串起來，有 first
+  tag('first', 'ptr', xs[1], 1.4);
+  say('linked list：透過 pointer 串起來', '有頭端 first');
+  await step(tok);                                   // 26:17 doubly 多一組 link
   dllDraw(D);
-  say('好處一：一條 link 斷掉，還能從另一個方向接回來', '例子數字為示意');
-  await beat(tok, 2600);
-  const cut = D.arr[2 * 2]; if (cut) cut.visible = false;
-  const xm = tag('✕', 'ptr alt', (xs[2] + xs[3]) / 2, 1.3);
-  say('12 → 10 的 rlink 斷了', '往右走不到 10、7 …');
-  await beat(tok, 2400);
-  const ring = ringAt(0.6); ring.visible = true;
-  for (const k of [0, 6, 5, 4, 3]) { ring.position.set(xs[k], 0.05, 0); await beat(tok, 500); }
-  say('從 header 的 llink 往左走，一樣到得了', 'H → 3 → 5 → 7 → 10');
-  await beat(tok, 2400);
-  if (cut) cut.visible = true; kill(xm);
-  say('好處二：排序過（大到小），找 7', '沒排序：只能一個一個檢查 O(n)');
-  await beat(tok, 2600);
-  for (const k of [1, 2, 3, 4]) { ring.position.set(xs[k], 0.05, 0); glow(D.nodes[k].userData.D, GOLD); await beat(tok, 550); glow(D.nodes[k].userData.D); }
-  say('從左邊找：15、12、10、7 → 4 次', '');
-  await beat(tok, 2000);
-  for (const k of [6, 5, 4]) { ring.position.set(xs[k], 0.05, 0); glow(D.nodes[k].userData.D, GOLD); await beat(tok, 550); glow(D.nodes[k].userData.D); }
+  say('doubly linked list：多了一組 link', '例子的數字為示意');
+  await step(tok);                                   // 26:31 好處：斷掉
+  cut = D.arr[2 * 2]; if (cut) cut.visible = false;
+  xm = tag('✕', 'ptr alt', (xs[2] + xs[3]) / 2, 1.3);
+  say('好處：如果某條 link 斷掉', '12 → 10 的 rlink 斷了');
+  await step(tok);                                   // 26:40 另一個方向還原
+  ring.visible = true;
+  for (const k of [0, 6, 5, 4, 3]) { ring.position.set(xs[k], 0.05, 0); await beat(tok, 350); }
+  say('還可以透過另一個方向找回來', 'H → 3 → 5 → 7 → 10');
+  await step(tok);                                   // 26:48 找一個 element？
+  ring.visible = false; if (cut) cut.visible = true; kill(xm);
+  say('在 doubly linked list 上找一個 element', '要怎麼做？');
+  await step(tok);                                   // 27:16 例：找 7
+  say('例如：數字 7 有沒有在裡面？', '');
+  await step(tok);                                   // 27:27 沒條件：一個一個檢查
+  ring.visible = true;
+  for (const k of [1, 2, 3, 4]) { ring.position.set(xs[k], 0.05, 0); glow(D.nodes[k].userData.D, GOLD); await beat(tok, 400); glow(D.nodes[k].userData.D); }
+  say('沒有其他條件：跟 singly 一樣', '從左或從右一個一個檢查：15、12、10、7');
+  await step(tok);                                   // 27:46 排序過（大到小）
+  ring.visible = false;
+  tag('大 → 小', 'idx', 0, 1.4);
+  say('可不可以更好？insert 時就讓 list 排序', '從大到小');
+  await step(tok);                                   // 28:04 依大小決定方向
+  ring.visible = true;
+  for (const k of [6, 5, 4]) { ring.position.set(xs[k], 0.05, 0); glow(D.nodes[k].userData.D, GOLD); await beat(tok, 400); glow(D.nodes[k].userData.D); }
   glow(D.nodes[4].userData.D, GREEN);
-  say('7 比較接近最小的 3 → 從右邊找：3 次', '看數字大小決定往左或往右');
-  await beat(tok, 3200);
+  say('看數字大小，判斷從左邊或右邊找比較快', '7 比較接近最小的 3 → 從右邊：3 次');
 }]);
 
+// yn0ZAifhyNM 28:17：檔案的 disk block
 FRAG.push(['llpeng34-dll-disk', '檔案的 disk block 用 doubly linked list', async (tok) => {
   fresh([0, 7.5, 12], [0, 0.4, 0.3]);
-  const f = cube('101.txt', '#c9b48e', [3.6, 0.8, 0.9], 0, 3.5, 0, 2);
-  say('檔案存在磁碟上：最小單位是 disk block', '101.txt 切成前、中、後三段');
-  await beat(tok, 2600);
+  const bl = ['前段', '中段', '後段'];
+  let f = null, D = null, sb = [], sa = [], ring = ringAt(0.8);
+  await step(tok);                                   // 28:17 DB 課會講 file
+  say('Doubly linked list 在 Database 課也會看到', '講到 file（檔案）');
+  await step(tok);                                   // 28:38 檔案存在 disk
+  f = cube('101.txt', '#c9b48e', [3.6, 0.8, 0.9], 0, 3.5, 0, 2);
+  say('檔案是怎麼構成的？', '檔案存在 disk（磁碟）上');
+  await step(tok);                                   // 28:48 最小單位 block
+  say('disk 最小的組成單位：block', '');
+  await step(tok);                                   // 29:10 item 是一個 disk block
+  say('真的實作在檔案上時', '每個 item 存的其實是一個 disk block');
+  await step(tok);                                   // 29:26 前段、中段、後段
   fly(f, V3(0, 6, 2));
-  // 上排：singly
-  const sx = [-3, 0, 3], bl = ['前段', '中段', '後段'];
-  tag('singly', 'ptr', -5.6, 0.6, -2.4);
-  const sb = sx.map((x, k) => cube(bl[k], colorFor(k + 7), [1.6, 0.7, 0.9], x, 0.35, -2.4, 3));
-  const sa = [arrow(V3(-2.2, 0.4, -2.4), V3(-0.8, 0.4, -2.4), RLC), arrow(V3(0.8, 0.4, -2.4), V3(2.2, 0.4, -2.4), RLC)];
-  // 下排：doubly（環狀，有 header）
-  tag('doubly', 'ptr', -5.6, 0.6, 1.0);
-  const D = { nodes: [dn('H', -4.5, 0.5, 0.6, '#8a8a8a', 0.8)], arr: [], dz: 1.0 };
+  D = { nodes: [dn('H', -4.5, 0.5, 0.6, '#8a8a8a', 0.8)], arr: [], dz: 1.0 };
   bl.forEach((t, k) => D.nodes.push(dn(t, -1.5 + 3 * k, 0.5, 0.6, colorFor(k + 7), 0.8)));
+  say('101.txt：前段、中段、後段', '分別放在不同的 disk block');
+  await step(tok);                                   // 29:55 開檔、搜尋：doubly
+  tag('doubly', 'ptr', -5.6, 0.6, 1.0);
   dllDraw(D);
-  say('每個 item 其實是一個 disk block', '一個檔案 = 串起來的 disk block');
-  await beat(tok, 3000);
-  say('停電、磁頭壞掉：前段 → 中段的 pointer 壞了', '');
-  sa[0].visible = false; const c1 = tag('✕', 'ptr alt', -1.5, 1.2, -2.4);
-  const cut = D.arr[0 + 2]; if (cut) cut.visible = false; const c2 = tag('✕', 'ptr alt', -0.0, 1.3, 0.6);
-  await beat(tok, 2400);
+  say('開檔、搜尋文字，都會用到 doubly linked list', '');
+  await step(tok);                                   // 30:17 singly 也可以
+  tag('singly', 'ptr', -5.6, 0.6, -2.4);
+  sb = [-3, 0, 3].map((x, k) => cube(bl[k], colorFor(k + 7), [1.6, 0.7, 0.9], x, 0.35, -2.4));
+  sa = [arrow(V3(-2.2, 0.4, -2.4), V3(-0.8, 0.4, -2.4), RLC), arrow(V3(0.8, 0.4, -2.4), V3(2.2, 0.4, -2.4), RLC)];
+  say('用 singly linked list 可不可以？', '也可以');
+  await step(tok);                                   // 30:35 停電、磁頭壞掉
+  sa[0].visible = false; tag('✕', 'ptr alt', -1.5, 1.2, -2.4);
+  const cut = D.arr[2]; if (cut) cut.visible = false; tag('✕', 'ptr alt', 0, 1.3, 0.6);
+  say('可是停電、磁頭壞掉', '把一個 pointer 弄壞了');
+  await step(tok);                                   // 30:40 singly 找不到
   tint(sb[1], GRAY); tint(sb[2], GRAY);
-  say('Singly：後面的 block 全部找不到', 'missing node');
-  await beat(tok, 2600);
-  const ring = ringAt(0.8); ring.visible = true;
-  for (const k of [0, 3, 2]) { ring.position.set(D.nodes[k].userData.x, 0.05, 0.6); await beat(tok, 700); }
-  say('Doubly：從 header 的 llink 往回走，還找得到', '多一組 link，比較不會遺失');
-  await beat(tok, 3200);
-  void c1; void c2;
+  say('singly：找不到下一個 disk block', '後面的 block 全部 missing');
+  await step(tok);                                   // 30:47 doubly 比較不會 missing
+  ring.visible = true;
+  for (const k of [0, 3, 2]) { ring.position.set(D.nodes[k].userData.x, 0.05, 0.6); await beat(tok, 500); }
+  say('doubly 多一些 link', '從 header 的 llink 往回走，比較不會 missing node');
+  await step(tok);                                   // 31:10 DS 是 DB 的基礎
+  ring.visible = false;
+  say('DS 是 DB 的基礎', 'item 實際上可以是字串，也可以是 disk block');
 }]);
   }
 

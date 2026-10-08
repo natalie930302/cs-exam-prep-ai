@@ -23,7 +23,7 @@
    "points": [
     {
      "text": "第二、三章的 stack、queue 都是用 array 來 implement。",
-     "t": 82
+     "t": 80
     },
     {
      "text": "Array 是一塊連續的記憶體空間，data item 依序放在裡面。",
@@ -46,7 +46,29 @@
      "t": 204
     }
    ],
-   "trap": "影片口誤：「沒搬資料會誤判已滿」講的是線性 Queue 的假溢位（rear 走到底但前面有空位），不是 Stack；Stack 只在 top 一端操作，不會有這個問題。"
+   "trap": "影片口誤：「沒搬資料會誤判已滿」講的是線性 Queue 的假溢位（rear 走到底但前面有空位），不是 Stack；Stack 只在 top 一端操作，不會有這個問題。",
+   "cues": [
+    79.8,
+    93.8,
+    108.8,
+    128.8,
+    143.8,
+    163.8,
+    184.8,
+    200.8,
+    214.8
+   ],
+   "explain": [
+    "老師先回顧：第二章的[[陣列]]（array）、第三章的 [[stack]] 和 queue，背後都是用 array 實作的。要知道為什麼需要 linked list，得先看 array 有什麼缺點。",
+    "Array 是一塊「連續」的[[記憶體]]空間：格子一格接一格排好，資料（data item）依序放進去。每格下面的 [0]、[1]… 是格子的編號（index）。",
+    "缺點一：array 宣告時就要決定大小（MAX_SIZE），之後不能隨便變大。問題是：到底要開多大才夠？",
+    "資料量常常會變：有時只有 10 筆，有時 100 筆，甚至 10000 筆。可是 array 的大小一開始就固定了。",
+    "為了怕不夠用，只好開大一點，結果沒用到的格子（變紅的）就白白浪費。資料量變化越大，浪費越多。",
+    "缺點二：在中間 insert 或 delete 資料時，要做 data movement（資料搬移）。例如 GAT 要插在 FAT 後面，就得先把 HAT 往後搬一格，GAT 才放得進去。",
+    "老師用第三章的例子說明：資料從前面被拿走、新的從後面加進來，尾巴很快碰到最後一格。這時如果不搬資料，就會誤判「滿了」，其實前面（綠色格子）還有空位。",
+    "解決辦法就是把資料往前搬，讓空位回到後面。所以 array 只要做刪減、插入，資料搬移幾乎跑不掉，資料一多就很花時間。",
+    "因為 array 有「大小固定」和「要搬資料」這兩個缺點，於是有另一種[[資料結構]]：linked list（鏈結串列）。"
+   ]
   },
   {
    "title": "Linked list 的樣子",
@@ -54,7 +76,7 @@
    "points": [
     {
      "text": "課本例子：依英文字母排序的三字母單字 BAT、CAT、EAT…串成的 linked list。",
-     "t": 226
+     "t": 224
     },
     {
      "text": "每個 element（node）有兩個欄位：data 放三個字元，link 是 pointer，指向下一個 element。",
@@ -64,6 +86,26 @@
      "text": "還有一個指標 first 指向 linked list 的頭端（第一個 element）。",
      "t": 284
     }
+   ],
+   "cues": [
+    223.8,
+    227.8,
+    244.8,
+    250.8,
+    259.8,
+    268.8,
+    279.8,
+    289.8
+   ],
+   "explain": [
+    "這是課本上的 linked list 例子。它不是一整塊連續的格子，而是一個一個獨立的小方塊，叫做 node（節點）。",
+    "這個例子裡的單字依英文字母順序排好：BAT、CAT、EAT、FAT、HAT。",
+    "每一個 element（也就是 node）有兩個欄位：左邊放資料（data），右邊放連結（link）。",
+    "第一個欄位 data 放的是三個字元，例如 B、A、T，寫成 C++ 就是 char data[3]。",
+    "第二個欄位 link 是一個[[指標]]（pointer），裡面存的是下一個 node 的[[位址]]，所以畫成箭頭指向下一個 element。最後一個 HAT 後面沒有東西，它的 link 是 NULL（空的）。",
+    "例如 BAT 的 link 指向 CAT，CAT 再指向 EAT……node 就靠 link 一個接一個串起來。",
+    "光有 node 還不夠：還需要一個指標指向整條 linked list 的頭，名字叫 first。沒有它，程式就不知道從哪裡開始。",
+    "first 指向第一個 element BAT。data、link 加上 first，就是 linked list 最基本的表示方法。"
    ]
   },
   {
@@ -72,7 +114,7 @@
    "points": [
     {
      "text": "要把 GAT 加進來：先 create 一個新的 node 存放 GAT。",
-     "t": 301
+     "t": 299
     },
     {
      "text": "GAT 要 insert 在 FAT 的後面、HAT 的前面。",
@@ -94,6 +136,30 @@
      "text": "考試或寫程式都一樣：先畫出結果圖，再看圖說故事，寫出讓 pointer 符合結果的 assignment。",
      "t": 488
     }
+   ],
+   "cues": [
+    298.8,
+    310.8,
+    324.8,
+    337.8,
+    358.8,
+    402.8,
+    414.8,
+    432.8,
+    476.8,
+    483.8
+   ],
+   "explain": [
+    "接下來看「新增」：要把 GAT 加進這條 linked list，該怎麼做？",
+    "第一步：create（建立）一個新的 node 來存放 GAT。它還沒接到 list 上，link 也還沒設定。",
+    "GAT 要插在 FAT 的後面、HAT 的前面，最後要變成 FAT → GAT → HAT。",
+    "投影片上的虛線（這裡畫成灰線）是插入之後「新產生」的兩個 link：FAT 指向 GAT、GAT 指向 HAT。",
+    "原本 FAT → HAT 的那條實線，在做完 pointer assignment（把位址指定給 pointer）之後就不見了。",
+    "關鍵問題：「GAT 要指到 HAT」這個資訊在誰手上？答案是 FAT 原本的 link，因為它現在就指著 HAT。",
+    "第一行：把 FAT 的 link 抄一份給 GAT 的 link（GAT.link = FAT.link）。這樣 GAT 就指向 HAT 了。",
+    "第二行：把 FAT 的 link 改成 GAT 這個 node 的位址（FAT.link = &GAT）。FAT 改指向 GAT，原本指向 HAT 的實線就消失了。",
+    "只靠兩個簡單的 [[賦值]]（assignment），GAT 就插進去了，而且不用搬動任何其他 node，這就是 linked list 比 array 好的地方。",
+    "老師的口訣：「看圖說故事」。先把最後的結果圖畫出來，再寫出讓 pointer 符合那張圖的 assignment。考試、寫程式都適用。"
    ]
   },
   {
@@ -117,7 +183,25 @@
      "t": 605
     }
    ],
-   "trap": "補充：C/C++ 中被拿掉的 GAT 若不再使用要 delete/free，否則 memory leak（本講最後老師再討論）。"
+   "trap": "補充：C/C++ 中被拿掉的 GAT 若不再使用要 delete/free，否則 memory leak（本講最後老師再討論）。",
+   "cues": [
+    518.8,
+    555.8,
+    564.8,
+    572.8,
+    580.8,
+    598.8,
+    606.8
+   ],
+   "explain": [
+    "現在反過來：把剛加進來的 GAT 刪掉。老師說這只是例子，用來看「刪除」要怎麼改 pointer。",
+    "刪掉 GAT 之後，FAT 要直接連到 HAT，灰線就是那條要產生的新 link。",
+    "要想的是：這條新 link 要怎麼 assign？它的目標是指到 HAT。",
+    "誰現在指著 HAT？是 GAT 的 link。所以「HAT 的位址」這個資訊就存在 GAT.link 裡。",
+    "只要一個指令：FAT.link = GAT.link，把 GAT 的 link 抄給 FAT，FAT 就直接指到 HAT，GAT 被跳過了。",
+    "GAT 不在 list 上了，其他 node 照樣排排站。整個過程只改了一個 pointer。",
+    "總結 linked list 的組成：每個 node 的 data、link，還有一個特別重要的指標 first，它是走進這條 list 的唯一入口。"
+   ]
   },
   {
    "title": "刪除前要先搜尋",
@@ -125,7 +209,7 @@
    "points": [
     {
      "text": "程式要刪除 GAT，首先得在 linked list 上找到 GAT 在哪裡。",
-     "t": 641
+     "t": 615
     },
     {
      "text": "從 first 指標開始走，檢查每個 node 的 data 是否等於 GAT，不是就沿 link 往下走。",
@@ -144,7 +228,35 @@
      "t": 822
     }
    ],
-   "trap": "補充：兩者的循序搜尋都是 O(n)；array 快在不用追 pointer、記憶體連續（常數較小）。若 array 已排序還能 binary search O(log n)。"
+   "trap": "補充：兩者的循序搜尋都是 O(n)；array 快在不用追 pointer、記憶體連續（常數較小）。若 array 已排序還能 binary search O(log n)。",
+   "cues": [
+    614.8,
+    640.8,
+    648.8,
+    707.8,
+    713.8,
+    722.8,
+    730.8,
+    737.8,
+    764.8,
+    785.8,
+    802.8,
+    818.8
+   ],
+   "explain": [
+    "老師接著問：真的要用程式刪除 GAT，第一件事要做什麼？要先找到 GAT 在哪裡。",
+    "看示意圖時，人一眼就看到 GAT，這是「人的智慧」。",
+    "但程式沒有眼睛，它手上只有 first 這個指標，只能從那裡開始一個一個看。",
+    "所以要從 first 指標開始走，金色圈圈表示「目前正在看的 node」。",
+    "每到一個 node，就檢查它的資料是不是 GAT。BAT 不是。",
+    "不相等就沿著 link 走到下一個（CAT），再檢查；還不是，就繼續往下走。",
+    "一直走到第五個，終於找到 GAT（綠色）。這種從頭一個一個找的方法叫[[線性搜尋]]。",
+    "找到之後，才做剛才那個刪除的 pointer assignment。所以缺點是：要 delete 一個 node，得先從 first 開始一個一個檢查。",
+    "如果改用 array 存呢？每一格放三個字元，格子是連續排好的。",
+    "老師說理論上會比較快，因為 array 不用照著 pointer 一個一個跳，記憶體是連續的。",
+    "用一個 for [[迴圈]]，依照位置 list[0]、list[1]… 檢查每一格是不是 GAT，就能找到。",
+    "結論：linked list 也許能節省空間，但刪除前得先 search。補充：兩者這樣一個一個找，[[時間複雜度]]其實都是 O(n)，只是 array 每一步比較省事。"
+   ]
   },
   {
    "title": "Pointer 出錯的風險與 doubly linked list",
@@ -170,6 +282,28 @@
      "text": "每個 data structure 都有它的優點，也有它的缺點。",
      "t": 946
     }
+   ],
+   "cues": [
+    848.8,
+    864.8,
+    873.8,
+    882.8,
+    895.8,
+    903.8,
+    911.8,
+    919.8,
+    942.8
+   ],
+   "explain": [
+    "再看 linked list 的風險。假設有 6 個 node，如果做 assignment 時一不小心，pointer 亂指會怎樣？",
+    "例如 EAT 的 link 本來該指向 FAT，卻亂指到 HAT（紅箭頭）。",
+    "從 first 往後走時會直接從 EAT 跳到 HAT，FAT、GAT 就再也檢查不到了。",
+    "另一種缺點：某個 link 斷掉。link 裡存的位址一不見，後面的 node 就全部 missing，再也找不到。",
+    "解法之一是 doubly linked list（雙向鏈結串列）：每個 node 除了往後指，還多一個往前指的 link（綠色箭頭）。",
+    "如果要找的東西在 list 的最後面，只從頭走會很慢。所以再多一個指標 last 指向最後一個 node。",
+    "有了雙向的 link，就可以從前面和後面同時找。",
+    "就算某一個方向的 pointer 斷了，另一個方向的 link 還在，還能找得到那些 node。doubly linked list 在這章後面會詳細講。",
+    "老師的提醒：linked list 看起來很直覺，但每個[[資料結構]]都有它的優點，也有它的缺點。"
    ]
   },
   {
@@ -192,6 +326,24 @@
      "text": "List 只維持一個指向頭端的指標，其餘透過 node 的 link 串起來。",
      "t": 1026
     }
+   ],
+   "cues": [
+    960.8,
+    967.8,
+    976.8,
+    997.8,
+    1004.8,
+    1011.8,
+    1028.8
+   ],
+   "explain": [
+    "接著看用 C++ 怎麼實作 linked list。第一種做法：為 node 宣告一個 class。",
+    "這個 class 叫 ThreeLetterNode，代表一個裝 3 個字元的 node。",
+    "它的 private 部分有兩個成員：char data[3] 放三個字元；ThreeLetterNode *link 是指向下一個同類 node 的指標。",
+    "整條 linked list 另外定義成 class ThreeLetterList。",
+    "public 的部分放 list 的各種 operation（操作），例如插入、刪除。",
+    "private 只需要一個變數：ThreeLetterNode *first，也就是指向頭端的指標。",
+    "其他 node 不用 list 自己記，透過每個 node 的 link 一個接一個串起來就好。"
    ]
   },
   {
@@ -203,7 +355,7 @@
    "points": [
     {
      "text": "Nested class：class 裡面有 class，在 ThreeLetterList 的 private 裡再定義 class ThreeLetterNode。",
-     "t": 1041
+     "t": 1037
     },
     {
      "text": "第一種把 node class 宣告在外面；第二種宣告在 list class 裡面。",
@@ -221,6 +373,30 @@
      "text": "兩種寫法各有優缺點，回去想想。",
      "t": 1196
     }
+   ],
+   "cues": [
+    1036.8,
+    1053.8,
+    1062.8,
+    1074.8,
+    1100.8,
+    1117.8,
+    1131.8,
+    1141.8,
+    1170.8,
+    1185.8
+   ],
+   "explain": [
+    "第二種做法叫 nested class，顧名思義就是「class 裡面還有 class」。",
+    "同樣有一個 ThreeLetterList，它裡面有 private 的部分（藍色框代表這個 class）。",
+    "在 private 裡面再定義 class ThreeLetterNode。這樣外面的程式看不到 node 的定義，只有這條 list 自己能用。",
+    "比較一下：第一種把 node class 宣告在外面；第二種把它宣告在 list class 的裡面。",
+    "哪一個比較好？老師說他至少能講出 nested 的一個缺點。",
+    "假設現在要第二條同樣是 3-letter 的 linked list（橘色框）。",
+    "因為 node 的定義藏在第一個 list 裡，第二條 list 只好把 private 的部分 copy 一份 embed（嵌）進去，同樣的定義寫了兩次。",
+    "把 node class 寫在外面的好處：其他 class 都可以共用 ThreeLetterNode。",
+    "不過寫在外面時要多寫一行 friend class ThreeLetterList，讓 list 可以存取 node 的 private 成員。",
+    "兩種寫法各有優缺點，老師留給大家回去想想看。"
    ]
   },
   {
@@ -229,7 +405,7 @@
    "points": [
     {
      "text": "兩個 pointer：x 指向資料為 a 的 node，y 指向資料為 b 的 node。",
-     "t": 1228
+     "t": 1225
     },
     {
      "text": "x = y：把 y 所指 node 的記憶體位址 assign 給 x，結果 x、y 指向同一個 node（b）。",
@@ -248,7 +424,33 @@
      "t": 1392
     }
    ],
-   "trap": "老師解說時有幾次唸成「*y = *x」，依投影片應為 *x = *y（y 所指的內容複製到 x 所指的 node）。易錯：*x = *y 不只複製 data，link 也會被覆蓋。"
+   "trap": "老師解說時有幾次唸成「*y = *x」，依投影片應為 *x = *y（y 所指的內容複製到 x 所指的 node）。易錯：*x = *y 不只複製 data，link 也會被覆蓋。",
+   "cues": [
+    1224.8,
+    1230.8,
+    1239.8,
+    1250.8,
+    1272.8,
+    1293.8,
+    1314.8,
+    1327.8,
+    1337.8,
+    1355.8,
+    1389.8
+   ],
+   "explain": [
+    "來看 pointer 之間的 assignment。有兩個 pointer 變數，一個叫 x，一個叫 y（紫色方塊）。",
+    "x 指到一個 node，這個 node 的資料是 a。",
+    "y 也指到一個 node，資料是 b。注意兩個 node 都還有自己的 link。",
+    "如果做 x = y：結果 x 和 y 會指到同一個 node（b），原本 a 那個 node 沒人指了。",
+    "因為 x = y 是把 y 裡存的「[[位址]]」複製給 x。複製的是地址，不是 node 的內容。",
+    "重來一次，這次做 *x = *y。前面加 *（[[取值]]）代表「指標所指的那個 node 本身」。",
+    "*x = *y 的意思是：把 y 所指 node 裡「所有欄位」的值，都 assign 給 x 所指的 node。",
+    "第一個欄位是 data，b 被複製過去，所以上面那個 node 的資料也變成 b。",
+    "第二個欄位是 link（pointer），也被複製過去，所以兩個 node 的 link 都指向同一個 node。",
+    "這是常被忽略的陷阱：*x = *y 會連 link 一起改掉，不是只有資料一樣。",
+    "但 x、y 本身還是指向不同的 memory address（兩個不同的 node），只是兩個 node 的內容完全一樣。"
+   ]
   },
   {
    "title": "閒聊：學生的出路",
@@ -274,7 +476,7 @@
    "points": [
     {
      "text": "Member function Create2：在 linked list 裡產生兩個 node。",
-     "t": 2024
+     "t": 2022
     },
     {
      "text": "結果：first → 10 → 20，20 的 link 是 0（NULL）。",
@@ -296,6 +498,34 @@
      "text": "兩個指令就產生含 10、20 的 linked list。",
      "t": 2224
     }
+   ],
+   "cues": [
+    2021.8,
+    2071.8,
+    2097.8,
+    2107.8,
+    2119.8,
+    2134.8,
+    2147.8,
+    2155.8,
+    2169.8,
+    2187.8,
+    2196.8,
+    2220.8
+   ],
+   "explain": [
+    "休息回來，看一個 member function（類別裡的[[函式]]）：Create2，功能是在 linked list 裡產生兩個 node。",
+    "先看結果圖：一個 node 放 10，一個放 20；20 是尾巴，link 是 NULL；first 指向 10。",
+    "又是看圖說故事：知道結果長什麼樣，再想要哪些指令才能做出來。",
+    "第一行 new ListNode(10)：new 會向系統要一塊[[記憶體]]，做出一個新的 node。",
+    "新 node 的初始值由 ListNode 的 constructor（建構子）決定：它有一個[[參數]] element，沒給值的話預設是 0。",
+    "node 的資料分成兩個欄位：data 和 link（pointer）。",
+    "new ListNode(10) 做完：10 被丟進 element，所以 data = 10；link 被設成 0。",
+    "link = 0 就把它想成 NULL，代表「後面沒有了」。",
+    "new 回傳的是新 node 的位址，存進 first，所以 first 指到 10 這個 node。",
+    "第二行再 new ListNode(20)，產生一個資料是 20、link 是 0 的新 node。",
+    "它的位址直接 assign 給 first->link（10 那個 node 的 link 欄位），所以 10 就指向 20。",
+    "兩個指令就產生了含 10、20 的 linked list，first 也順便設好了。"
    ]
   },
   {
@@ -304,7 +534,7 @@
    "points": [
     {
      "text": "Insert50(x)：把資料是 50 的新 node 插在指定的 node x 後面。",
-     "t": 2249
+     "t": 2247
     },
     {
      "text": "例子：x 是第一個 node 10；原本 10、20，插入後變成 10、50、20。",
@@ -335,7 +565,35 @@
      "t": 2553
     }
    ],
-   "trap": "逐字稿把第一行唸成「x 的 link 等於 t link」，依老師解說與課本應為 t->link = x->link; x->link = t;。若先做 x->link = t，原本 x 後面的 20 就找不到了（t->link 還會指向自己）。"
+   "trap": "逐字稿把第一行唸成「x 的 link 等於 t link」，依老師解說與課本應為 t->link = x->link; x->link = t;。若先做 x->link = t，原本 x 後面的 20 就找不到了（t->link 還會指向自己）。",
+   "cues": [
+    2246.8,
+    2260.8,
+    2290.8,
+    2313.8,
+    2344.8,
+    2373.8,
+    2399.8,
+    2422.8,
+    2466.8,
+    2496.8,
+    2518.8,
+    2550.8
+   ],
+   "explain": [
+    "第二個例子：insert 一個 node，而且要插在我所指定的 node 後面。",
+    "member function Insert50(x)：新 node 的 data 是 50，要插在 x 這個 node 的後面。",
+    "示意圖：原本有 10、20 兩個 node，x 是第一個 node（10）。",
+    "50 要插在 10 的後面，最後結果是 10 → 50 → 20。",
+    "先 create 一個 50 的 node，它的位址交給 pointer t，所以 t 指向 50。",
+    "接著判斷 linked list 是不是空的。如果是空的，就沒有「誰的後面」可言，50 直接當第一個 node：first = t。",
+    "這個例子不是空的（先執行過 Create2，已經有 10、20），所以往下做。",
+    "第一步 t->link = x->link：x 的 link 原本指向 20，把它抄給 t 的 link，於是 50 也指向 20。",
+    "第二步 x->link = t：讓 x（10）改指向 50。這樣就變成 10 → 50 → 20。",
+    "完成。老師問：這兩行的順序可以顛倒嗎？",
+    "不行。如果先做 x->link = t，10 原本存的「20 的位址」就被蓋掉了，再也沒人記得 20 在哪，link 的資料就 lost 了。",
+    "口訣：先接後面（t->link = x->link），再接前面（x->link = t）。做 linked list 千萬要把圖畫出來。"
+   ]
   },
   {
    "title": "刪除第一個 node",
@@ -361,6 +619,28 @@
      "text": "PTR 是 pointer 變數，不是那個 node；ptr->link 也是 pointer，所以只是 pointer assignment。",
      "t": 2694
     }
+   ],
+   "cues": [
+    2579.8,
+    2594.8,
+    2604.8,
+    2611.8,
+    2617.8,
+    2623.8,
+    2635.8,
+    2690.8,
+    2726.8
+   ],
+   "explain": [
+    "講完 insert 來講 delete。list 有 10、50、20，有一個 pointer PTR 指向頭端（也可以叫 first 或 head）。",
+    "要把第一個元素 10 刪掉。",
+    "刪完之後要記得：指標要改指向第二個 node，不然整條 list 就找不到了。",
+    "第二個 node 的位址在哪？就在 PTR 所指那個 node 的 link 欄位裡，寫成 ptr->link。",
+    "把 ptr->link 指定給 PTR：ptr = ptr->link，就結束了。",
+    "結果：PTR 指向 50，10 已經不在 list 上。",
+    "很多人一開始會覺得怪：自己的欄位怎麼可以 assign 給自己？老師說他大一時也不能接受。",
+    "關鍵：PTR 是一個 pointer 變數，它不是那個 node，只是「指向」那個 node。",
+    "ptr->link 也是一個 pointer，所以 ptr = ptr->link 只是把一個位址抄給另一個 pointer 變數，很自然成立。"
    ]
   },
   {
@@ -369,7 +649,7 @@
    "points": [
     {
      "text": "要刪除的 node 不是第一個怎麼辦？",
-     "t": 2751
+     "t": 2743
     },
     {
      "text": "10、50、20 要刪中間的 50，結果 10 的 pointer 直接指向 20。",
@@ -380,7 +660,21 @@
      "t": 2790
     }
    ],
-   "trap": "補充：要改的是「前一個 node」（trail）的 link：trail->link = x->link。Singly linked list 刪除時必須知道前一個 node，否則要從 first 走過去找。"
+   "trap": "補充：要改的是「前一個 node」（trail）的 link：trail->link = x->link。Singly linked list 刪除時必須知道前一個 node，否則要從 first 走過去找。",
+   "cues": [
+    2742.8,
+    2761.8,
+    2773.8,
+    2781.8,
+    2801.8
+   ],
+   "explain": [
+    "如果要刪除的 node 不是第一個呢？一樣用 10、50、20 的例子。",
+    "要刪中間的 50。x 指向 50；trail 指向它前一個 node（10），因為要改的是「前一個」的 link。",
+    "先看結果：10 的 pointer 直接指向 20（灰線）。",
+    "怎麼做？50 的 link 裡存著 20 的位址，把它 assign 給前一個 node 的 link：trail->link = x->link。",
+    "結果：10 → 20，50 已經不在 list 上了。"
+   ]
   },
   {
    "title": "刪掉的 node：delete 或放進 free list",
@@ -410,6 +704,30 @@
      "text": "好處：減少 new 向系統要記憶體的 system call overhead，效率可能較好。",
      "t": 2928
     }
+   ],
+   "cues": [
+    2813.8,
+    2829.8,
+    2861.8,
+    2874.8,
+    2887.8,
+    2903.8,
+    2910.8,
+    2918.8,
+    2927.8,
+    2967.8
+   ],
+   "explain": [
+    "pointer 改完了，50 已經離開 list。問題是：要不要把它佔的 memory 釋放（release）掉？",
+    "也就是：要不要再做一個 delete 這個 node 的動作？老師請覺得要做的人舉手。",
+    "答案：沒有標準答案，可做可不做。",
+    "做法一：直接 delete，把記憶體還給系統。對 memory 斤斤計較時就這樣做。",
+    "做法二：先不還給系統，而是用另一條 linked list 把刪掉的 node 存起來。",
+    "這條專門收刪掉的 node 的 list，叫做 free 的 linked list（free list）。",
+    "以後需要 new 一個 node 時，直接從 free list 拿一個出來用。",
+    "拿到後再做 data assignment，把新的資料填進去（例如 70）。",
+    "好處：不用重新跟系統要記憶體。new 會呼叫 system call，系統要去找空間給你，這是一筆額外負擔（overhead）。",
+    "兩種做法都可以，但用 free list 少了跟系統要空間的 overhead，效率可能好一點。"
    ]
   }
  ],

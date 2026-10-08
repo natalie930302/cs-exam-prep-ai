@@ -35,6 +35,30 @@
      "text": "0 ≡ 4、7 ≡ 4（⇒ 4 ≡ 7），依 transitive 得到 0 ≡ 7。",
      "t": 137
     }
+   ],
+   "cues": [
+    0.0,
+    38.8,
+    47.8,
+    58.8,
+    76.8,
+    86.8,
+    106.8,
+    114.8,
+    125.8,
+    135.8
+   ],
+   "explain": [
+    "複習上週：給你一堆數字的 pair（一對一對的數字）。如果這些 pair 代表的是 equivalence relation（等價關係），它要符合三個特質。",
+    "第一個 reflexive（自反）：x ≡ x，每個數字都跟自己有關係。",
+    "第二個 symmetric（對稱）：x ≡ y，就一定有 y ≡ x。",
+    "第三個 transitive（遞移）：x ≡ y 且 y ≡ z，就推得出 x ≡ z。",
+    "像 0 ≡ 0 這種自己跟自己的 pair，輸入裡不用寫出來，因為太直覺了，一定成立。",
+    "輸入裡有 0 ≡ 4，代表 0 和 4 有關係（綠色箭頭）。",
+    "因為 symmetric，0 ≡ 4 其實還隱含（imply）另一個 pair：4 ≡ 0，所以反方向也畫一條。",
+    "再看另一個 pair：7 ≡ 4。",
+    "同樣依 symmetric，7 ≡ 4 也代表 4 ≡ 7。",
+    "0 ≡ 4、4 ≡ 7，依 transitive 就推出 0 ≡ 7：0 和 7 雖然沒直接出現在同一個 pair，也是有關係的。"
    ]
   },
   {
@@ -43,7 +67,7 @@
    "points": [
     {
      "text": "Input 是數字的 pair；output 是一些數字的集合（set）。",
-     "t": 156
+     "t": 153
     },
     {
      "text": "同一個 set 裡的數字彼此都滿足 equivalence 關係（自己與自己、自己與他人、transitive）。",
@@ -62,7 +86,29 @@
      "t": 255
     }
    ],
-   "trap": "題目若把 symmetric 換成 asymmetric，就不再是 equivalence relation，不能用這套方法分 class。"
+   "trap": "題目若把 symmetric 換成 asymmetric，就不再是 equivalence relation，不能用這套方法分 class。",
+   "cues": [
+    152.8,
+    157.8,
+    168.8,
+    186.8,
+    195.8,
+    208.8,
+    226.8,
+    248.8,
+    258.8
+   ],
+   "explain": [
+    "問題的 input：這些數字的 pair。這個例子有 0 到 11 共 12 個數字、9 個 pair。",
+    "output：set of number，也就是一些數字的集合。",
+    "同一個集合裡的數字彼此都有 equivalence 關係：自己跟自己、自己跟別人，還有透過 transitive 推出來的關係。",
+    "這個 input 會輸出三個 set：{0,2,4,7,11}、{1,3,5}、{6,8,9,10}。",
+    "看 1、3、5 這一組：第二個 pair 是 3 ≡ 1，所以 3 和 1 有關係。",
+    "後來又讀到 3 ≡ 5，就推出 1 ≡ 5（transitive）。",
+    "所以 1、3、5 是一個 equivalence class（等價類）：組裡任兩個數都能透過這三個性質找到關係。",
+    "特別注意 symmetric：x ≡ y 就有 y ≡ x，所以讀一個 pair 要記兩個方向。",
+    "老師提醒：考試可能把它改成 asymmetric（不對稱），那時 x ≡ y 就不代表 y ≡ x，做法要跟著改。"
+   ]
   },
   {
    "title": "Rough 演算法：兩個 phase、兩個 array",
@@ -92,6 +138,30 @@
      "text": "第二個 array 是 out：記錄某個數字在 Phase 2 是否已經印過，印過就不會再輸出。",
      "t": 493
     }
+   ],
+   "cues": [
+    302.8,
+    307.8,
+    316.8,
+    361.8,
+    392.8,
+    430.8,
+    450.8,
+    470.8,
+    490.8,
+    508.8
+   ],
+   "explain": [
+    "上次講過：解法分兩個 phase，這是很 rough（粗略）的演算法。",
+    "Phase 1：根據讀進來的 pair，把數字兩兩之間的關係算出來、記下來。",
+    "Phase 2：根據 Phase 1 建好的 structure，把所有 equivalence class 找出來。",
+    "接著是更進一步的版本：比較詳細，但還不是程式。",
+    "它更仔細地告訴你要用兩個 data structure：一個 array，以及掛在 array 上的 linked list。",
+    "第一個 array 叫 seq（sequence）。",
+    "array 的 index 就代表那個數字：seq[3] 就是數字 3 的格子。有 n 個數字，array 大小就是 n。",
+    "每一格存的是一個 pointer，指向一條 linked list，裡面串著跟這個數字有關係的數字。例如 seq[1] 指向的 list 裡有 3。",
+    "第二個 array 叫 out。",
+    "Phase 2 要把 set 印出來；out 用來記錄每個數字印過沒。印過就設成 true（T），之後就不會再輸出。"
    ]
   },
   {
@@ -100,7 +170,7 @@
    "points": [
     {
      "text": "Phase 1 就是 while 迴圈，專門處理 seq 這個 array。",
-     "t": 537
+     "t": 531
     },
     {
      "text": "讀到 pair (i, j)：把 j 放進 seq[i] 的 linked list。",
@@ -119,7 +189,23 @@
      "t": 608
     }
    ],
-   "trap": "補充：課本程式把新 node 插在 list 最前面，所以 seq[0] 是 11 → 4（11 ≡ 0 比 0 ≡ 4 晚讀到）。"
+   "trap": "補充：課本程式把新 node 插在 list 最前面，所以 seq[0] 是 11 → 4（11 ≡ 0 比 0 ≡ 4 晚讀到）。",
+   "cues": [
+    530.8,
+    540.8,
+    552.8,
+    563.8,
+    597.8,
+    613.8
+   ],
+   "explain": [
+    "Phase 1 就是一個 while 迴圈，專門負責填 seq 這個 array。",
+    "每讀到一個 pair (i, j)，就把 j 放進 seq[i] 的 linked list。例如 0 ≡ 4：4 放進 seq[0]。",
+    "同樣也要把 i 放進 seq[j] 的 list：0 放進 seq[4]。",
+    "為什麼兩邊都要放？因為 i ≡ j 代表兩個互相有關係（symmetric）。",
+    "while 把 9 個 pair 都做完，每個數字都有一條自己的 linked list。新 node 都插在 list 最前面。",
+    "Phase 1 做完，就建出這樣的 structure。例如 seq[0] 是 11 → 4，seq[11] 是 0 → 2。"
+   ]
   },
   {
    "title": "Phase 2 的想法：直接相關＋transitive",
@@ -127,7 +213,7 @@
    "points": [
     {
      "text": "Phase 2 是 for 迴圈：i 從 0 到 n−1。",
-     "t": 631
+     "t": 626
     },
     {
      "text": "out 是 boolean array，一開始 out[0] … out[11] 都是 false（都沒印過）。",
@@ -158,7 +244,43 @@
      "t": 944
     }
    ],
-   "trap": "補充：這段口頭 trace 只看了 11 的 list；實際程式用 stack，4 的 list 也會走到（找到 7），完整輸出是 0 11 4 7 2。"
+   "trap": "補充：這段口頭 trace 只看了 11 的 list；實際程式用 stack，4 的 list 也會走到（找到 7），完整輸出是 0 11 4 7 2。",
+   "cues": [
+    625.8,
+    638.8,
+    651.8,
+    671.8,
+    692.8,
+    715.8,
+    723.8,
+    731.8,
+    753.8,
+    771.8,
+    805.8,
+    838.8,
+    856.8,
+    885.8,
+    943.8,
+    968.8
+   ],
+   "explain": [
+    "回到上一頁看 Phase 2：它就是下面那個 for 迴圈。",
+    "for (i = 0; i < n; i++)：i 從 0 跑到 n−1。",
+    "先看 i = 0：檢查 out[0] 是不是 false。",
+    "out 是 boolean array，一開始 out[0] 到 out[11] 全都是 false，代表都還沒印過。",
+    "out[0] 是 false，沒印過，就把 0 印出來。",
+    "印過了，所以 out[0] 設成 true。",
+    "接著 output 0 所在的 equivalence class，這包含兩件事。",
+    "第一件：seq[0] 那條 list 上的數字，都跟 0「直接」有關。",
+    "所以依序 output：0、11、4。",
+    "11 和 4 印出來時，它們的 out 也要設成 true。每個數字只屬於一個 class，不會重複出現在不同 set。",
+    "第二件：透過 transitive。0 ≡ 11，所以跟 11 有關的數字，也跟 0 有關。",
+    "去看 11 的 list：先看到 0，但 out[0] 已經是 true，不再印。",
+    "再看到 2：0 ≡ 11、11 ≡ 2，所以 0 ≡ 2，把 2 印出來。",
+    "既然 0 和 2 有關，再看 2 的 list：只有 11，已經印過，就停住。",
+    "for 迴圈繼續跑 i = 1、2……out[i] 已經是 true 的就跳過；沒印過的，就先找直接相關、再透過 transitive 找間接相關。",
+    "整個 for 迴圈 run 完，所有 class 就都印出來了。"
+   ]
   },
   {
    "title": "實作：宣告、初始化與 Phase 1 程式",
@@ -166,7 +288,7 @@
    "points": [
     {
      "text": "這個程式要注意兩件事：分 phase 1、phase 2；用到 array 和 linked list 兩種 data structure。",
-     "t": 986
+     "t": 979
     },
     {
      "text": "ListNode 的定義：data 存數字，link 是 pointer。",
@@ -192,6 +314,30 @@
      "text": "另一行把 i 放到 seq[j] 的 list。",
      "t": 1158
     }
+   ],
+   "cues": [
+    978.8,
+    989.8,
+    1011.8,
+    1048.8,
+    1064.8,
+    1086.8,
+    1107.8,
+    1115.8,
+    1133.8,
+    1157.8
+   ],
+   "explain": [
+    "看實際程式。要注意兩件事，第一：程式分成 Phase 1 和 Phase 2。",
+    "第二：用到兩種 data structure，array（seq）和掛在下面的 linked list。",
+    "ListNode 的定義：data 存數字，link 是指向下一個 node 的 pointer。",
+    "前面兩行在做初始化，對應前一頁的 pseudo code：讀檔前先把 array 準備好。",
+    "宣告 seq：一個「ListNode pointer」的 array；out：一個 boolean array。兩個大小都是 n。",
+    "for 迴圈初始化：seq[i] = 0（還沒有 list，沒指出去）、out[i] = false（還沒印過）。",
+    "Phase 1：從檔案讀出一對數字 i 和 j，例如 0 和 4。",
+    "new 一個 node x，裡面放 j（4），因為 j 跟 i 有關。",
+    "把 x 放到 seq[i] 那條 linked list：x->link = seq[0]，再 seq[0] = x，插在最前面。",
+    "另一行（y）把 i 放到 seq[j]：4 的 list 加入 0。"
    ]
   },
   {
@@ -226,6 +372,40 @@
      "text": "最後 stack 只剩 11，pop 出來繼續（找到 2）。",
      "t": 1376
     }
+   ],
+   "cues": [
+    1169.8,
+    1177.8,
+    1195.8,
+    1205.8,
+    1212.8,
+    1221.8,
+    1237.8,
+    1244.8,
+    1262.8,
+    1292.8,
+    1307.8,
+    1315.8,
+    1325.8,
+    1347.8,
+    1373.8
+   ],
+   "explain": [
+    "Phase 2：想法剛剛講過很簡單，但實作出來還蠻難的，寫了一大段。",
+    "因為它同時用到 linked list 和 [[stack]]。",
+    "做法：先把跟 0 直接相關的數字都印出來，暫時不去看它們自己的 list。",
+    "印出 0；看 0 的 list，先看到 11，把 11 印出來。",
+    "接著看到 4，把 4 印出來。",
+    "讀完 0 的 list 以後，再對這些數字的 list 一個一個 traverse（走訪）。",
+    "要記住「待會要回來看誰」，就用 stack：11 印出來後放進 stack（push）。",
+    "4 印出來，也丟進 stack。現在 stack 裡是 11、4。",
+    "看完 4，0 的 list 就走到 null（沒有了）。",
+    "從 stack 把最上面的 4 拿出來（pop），去看 4 的 list。",
+    "4 跟 7 有關：7 沒印過，印出 7，也 push 進 stack。stack 變成 11、7。",
+    "再看到 0：out[0] 已經是 true，印過了，不用管它。",
+    "4 的 list 走到 null，就從 stack 再 pop 出下一個數字，拜訪它的 list。",
+    "pop 出 7：7 的 list 只有 4，已經印過，不用管。",
+    "stack 只剩 11：pop 出來，看 11 的 list，0 印過了，2 沒印過就印出。所以第一個 class 的輸出順序是 0, 11, 4, 7, 2。"
    ]
   },
   {
@@ -234,7 +414,7 @@
    "points": [
     {
      "text": "程式執行結果是三個 set。",
-     "t": 1384
+     "t": 1381
     },
     {
      "text": "第一個 set 的輸出順序：0、11、4、7、2。",
@@ -253,7 +433,23 @@
      "t": 1448
     }
    ],
-   "trap": "補充：照課本程式 trace，三個 set 依序是 0 11 4 7 2、1 3 5、6 8 10 9。"
+   "trap": "補充：照課本程式 trace，三個 set 依序是 0 11 4 7 2、1 3 5、6 8 10 9。",
+   "cues": [
+    1380.8,
+    1394.8,
+    1414.8,
+    1426.8,
+    1434.8,
+    1445.8
+   ],
+   "explain": [
+    "這是程式的執行結果：三個 set。",
+    "第一個 set 的輸出順序：先 0、11、4，然後 7，再來 2。",
+    "老師提醒：不要寫成 0 2 4 7 11 這種排好的順序。順序錯了，就代表你沒有真的 trace（一步一步追）程式。",
+    "第二個 set 從 1 開始，後面的順序請自己 trace。（答案：1, 3, 5）",
+    "第三個 set 從 6 開始，後面三個數字的順序也有關係。（答案：6, 8, 10, 9）",
+    "這個程式的輸出順序是有意義的，由 list 的結構和 stack 決定。"
+   ]
   },
   {
    "title": "輸入順序改變，輸出順序就變",
@@ -261,7 +457,7 @@
    "points": [
     {
      "text": "把 input pair 的順序調換，出來的 set 一樣嗎？",
-     "t": 1469
+     "t": 1463
     },
     {
      "text": "set 還是三個，但 set 裡數字的順序不一定一樣。",
@@ -284,7 +480,27 @@
      "t": 1544
     }
    ],
-   "trap": "補充：9 個 pair 整個倒過來輸入，輸出變成 0 4 11 2 7｜1 3 5｜6 10 8 9。"
+   "trap": "補充：9 個 pair 整個倒過來輸入，輸出變成 0 4 11 2 7｜1 3 5｜6 10 8 9。",
+   "cues": [
+    1462.8,
+    1471.8,
+    1481.8,
+    1493.8,
+    1499.8,
+    1512.8,
+    1522.8,
+    1545.8
+   ],
+   "explain": [
+    "老師問：如果把 input pair 的順序調換一下呢？",
+    "出來的 set 會一樣嗎？set 當然還是只有那三個。",
+    "可是每個 set 裡數字的順序不一定一樣。",
+    "因為輸入順序決定了 linked list 的 structure：新 node 都插在最前面，先讀的會被擠到後面。",
+    "把輸入倒過來：先輸入 11 ≡ 0，再 2 ≡ 11，再 3 ≡ 5……建出來的 list 就不同。",
+    "例如 seq[0] 變成 4 → 11（原本是 11 → 4），seq[11] 變成 2 → 0。",
+    "list 不同，Phase 2 一樣得到三個 set，但裡面的順序就不同了。",
+    "這是唯一解嗎？期中考會有加分題：想想別的寫法。"
+   ]
   },
   {
    "title": "釋放 list 與寫程式的步驟",
@@ -314,7 +530,7 @@
    "points": [
     {
      "text": "Sparse matrix：裡面有很多元素是 0。",
-     "t": 1720
+     "t": 1716
     },
     {
      "text": "第二章用 1D array 存：只存非 0 元素的 row、column 和值。",
@@ -332,6 +548,26 @@
      "text": "每一個 row、每一個 column 都對應一條環狀 linked list。",
      "t": 1808
     }
+   ],
+   "cues": [
+    1715.8,
+    1723.8,
+    1741.8,
+    1749.8,
+    1754.8,
+    1773.8,
+    1792.8,
+    1801.8
+   ],
+   "explain": [
+    "接下來看 sparse matrix（稀疏[[矩陣]]），第二章講過。",
+    "sparse 的意思：裡面大部分的元素是 0（灰色）。這個 4×4 只有 4 個不是 0。",
+    "第二章那時用一個 array 存它。",
+    "不是用 2D array，而是用 one dimension（一維）的 array。",
+    "只存非 0 的 element：它在第幾個 row、第幾個 column，還有它的值，三個一組叫 triple。",
+    "現在要講：也可以用 linked list 來代表 sparse matrix。",
+    "用的是環狀（circular）的 linked list。",
+    "每一個 row、每一個 column 都對應一條環狀 linked list。例如 row 1（金色）一條、column 0（紅色）一條，12 同時在這兩條上。"
    ]
   },
   {
@@ -340,7 +576,7 @@
    "points": [
     {
      "text": "藍色是整個 matrix 的 head node（例子是 4×4）。",
-     "t": 1835
+     "t": 1823
     },
     {
      "text": "黃色 H0 … H3 是每個 row／column 對應的 head node。",
@@ -366,6 +602,42 @@
      "text": "紅色線代表 column 構成的 linked list，往下指；column 0 也只有 12，再指回 H0。",
      "t": 2060
     }
+   ],
+   "cues": [
+    1822.8,
+    1832.8,
+    1839.8,
+    1848.8,
+    1859.8,
+    1870.8,
+    1892.8,
+    1910.8,
+    1927.8,
+    1961.8,
+    2007.8,
+    2028.8,
+    2045.8,
+    2088.8,
+    2121.8,
+    2135.8
+   ],
+   "explain": [
+    "剛才那個 matrix，用 linked list 表示出來就是這樣。",
+    "藍色的是整個 matrix 的 head node（頭節點），它記錄這是一個幾乘幾的 matrix。",
+    "這個例子是 4×4。",
+    "黃色的是每一個 row／column 對應的 head node：H0、H1、H2、H3。",
+    "上面一排和左邊一排的 H0…H3 代表的是同樣的 node，只是為了表示方便畫了兩次。",
+    "實際上只有 1 個藍色 node 和 4 個黃色 node。",
+    "H0 同時代表第 0 個 row 和第 0 個 column；H1 代表第 1 個 row 和第 1 個 column，以此類推。",
+    "看這個黑色的 node：裡面寫 1 0 12。",
+    "意思是：第 1 個 row、第 0 個 column，值是 12，也就是 a[1][0] = 12。",
+    "H1 的這個欄位，記載第一個 row 的非 0 element 構成的 list。",
+    "從 row 1 往右看，第一個非 0 就是 12，其他都是 0，不用記。",
+    "12 後面沒有別的了，所以它的 link 回到頭端 H1。最後回到頭，所以是環狀 linked list。",
+    "紅色線代表 column 構成的 linked list：從 H0 往下指到 column 0 的非 0 元素。",
+    "column 0 也只有 12 一個數字，所以 12 的 down 再指回 H0，一樣是環狀。",
+    "所以黃色 header node 有三個欄位。",
+    "為了能指向第 0 個 row 和第 0 個 column 的 list，它需要兩個 pointer 欄位，第三個欄位等一下講。"
    ]
   },
   {
@@ -405,7 +677,41 @@
      "t": 2351
     }
    ],
-   "trap": "補充：課本例子是 4×4（輸入第一行 4 4 4），head node = max{4, 4} = 4，總 node 數 4 + 4 + 1 = 9；影片中說成「4 乘以 3」應是口誤。若真的是 4×3，head node 仍是 max{4, 3} = 4 個。"
+   "trap": "補充：課本例子是 4×4（輸入第一行 4 4 4），head node = max{4, 4} = 4，總 node 數 4 + 4 + 1 = 9；影片中說成「4 乘以 3」應是口誤。若真的是 4×3，head node 仍是 max{4, 3} = 4 個。",
+   "cues": [
+    2169.8,
+    2177.8,
+    2204.8,
+    2220.8,
+    2231.8,
+    2239.8,
+    2248.8,
+    2259.8,
+    2282.8,
+    2292.8,
+    2300.8,
+    2308.8,
+    2317.8,
+    2331.8,
+    2346.8
+   ],
+   "explain": [
+    "header node 最下面的欄位（next），指向「header node 自己串成的 linked list」。",
+    "H0 → H1 → H2 → H3：header node 本身也形成一條 linked list，叫 header list。",
+    "所以每個 header node 有三個 pointer：header list 的 next，以及指向 row list、column list 的兩個。",
+    "黑色框框是 entry node，放 matrix 裡真正的非 0 數字。",
+    "entry node 有五個欄位。",
+    "左上（down）和右上（right）是兩個 pointer，指向它所在的 column 和 row 的 list 的下一個。",
+    "中間記錄它的位置：第幾個 row（row）、第幾個 column（col）。",
+    "下面記錄它的數值（value）。",
+    "問題：如果 n×m 的 sparse matrix 有 r 個非 0 項，總共要多少個 node？",
+    "答案：max{n, m} + r + 1。",
+    "max{n, m}：看 n 和 m 哪個比較大，就要那麼多個黃色 head node（因為 row、column 共用 head node）。這裡是 4 個。",
+    "r：每個非 0 項一個黑色 entry node，這裡 r = 4。",
+    "最後 +1 是藍色那個代表整個 matrix 的 head node。4 + 4 + 1 = 9。",
+    "整理 header node 的欄位：head、right（同一列 row）、down（同一行 column），還有 next 指向 head node 的 list。",
+    "entry node：down、row、col、value、right，代表 matrix 裡的 a_ij（第 i 個 row、第 j 個 column 的值）。"
+   ]
   },
   {
    "title": "H0 是同一個 node；transpose 只改 pointer",
@@ -439,6 +745,28 @@
      "text": "Overhead 只在把 pointer 指到對的位置。",
      "t": 2570
     }
+   ],
+   "cues": [
+    2415.8,
+    2440.8,
+    2450.8,
+    2473.8,
+    2505.8,
+    2535.8,
+    2547.8,
+    2555.8,
+    2571.8
+   ],
+   "explain": [
+    "同學問到：上面的 H0 和左邊的 H0 是同一個 head node 嗎？是的。",
+    "畫成 two dimension 的 matrix 只是示意，看起來方便。",
+    "黃色看起來有 8 個，實際上只有 4 個。",
+    "head node 只有三個 pointer 欄位：指向 column 的 list、指向 row 的 list、指向 head node 的 list。",
+    "老師問：這種 linked list 表示法有什麼好處？請回去想。",
+    "例如做 transpose（轉置）很簡單：row 變 column、column 變 row，a[i][j] 變成 aᵀ[j][i]。",
+    "head node 要不要改？不用，還是同一組黃色 head node，只是每個 entry 的 row、col 對調。",
+    "要改的是 pointer：right、down 都要重新指到對的位置。",
+    "程式要重寫，但 overhead（額外工作）只在把 pointer 指到對的位置而已。"
    ]
   },
   {
@@ -477,6 +805,40 @@
      "text": "自己寫可能會宣告兩個 class；用一個 class + head + union 更精簡。",
      "t": 2845
     }
+   ],
+   "cues": [
+    2593.8,
+    2609.8,
+    2637.8,
+    2647.8,
+    2655.8,
+    2679.8,
+    2687.8,
+    2697.8,
+    2712.8,
+    2719.8,
+    2737.8,
+    2751.8,
+    2783.8,
+    2828.8,
+    2844.8
+   ],
+   "explain": [
+    "紅字是重點。head node 和 entry node 看起來應該是兩種不同的 data type。",
+    "課本卻只用一個 class，就能代表 matrix 裡這兩種不同型態的 node。",
+    "紅字部分先定義一個 data type：struct Triple。",
+    "Triple 很簡單：記 matrix 裡的值（value），還有它的 row 和 col。",
+    "matrix 裡的 node 也定義成一個 class：MatrixNode。",
+    "它的 private 部分有兩個 pointer：down 和 right。",
+    "bool head：用來判斷這個 node 是不是 head node。",
+    "為什麼要判斷？因為它想用同一個 class MatrixNode 去代表 head node 和 entry node。",
+    "接下來有一個 union（聯合）。",
+    "union 裡有兩個資料宣告：MatrixNode *next，和 Triple triple。",
+    "union 的特性：裡面的資料只能選一個用，它們共用同一塊記憶體，比較省空間。",
+    "如果這個 node 是 header node：不需要 triple，只要記下一個 header 的 next。",
+    "如果不是 header（entry node）：就選 triple，只需要 row、col、value，不用記 header list。",
+    "老師說：自己 implement 的話，可能會宣告兩個 class，一個 header node、一個 entry node。",
+    "其實更簡潔的做法只要一個 class：共同部分（down、right）＋ bool head ＋ union 放不一樣的部分。"
    ]
   },
   {
