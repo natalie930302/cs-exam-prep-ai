@@ -306,12 +306,16 @@ export function createLab(container) {
   // what makes phones hot.
   let visible = true;
   function setVisible(v) { visible = !!v; }
+  // per-frame callbacks (idle motion: blinking, breathing); clear() drops them
+  const frameFns = new Set();
+  function onFrame(fn) { frameFns.add(fn); return () => frameFns.delete(fn); }
   let last = performance.now();
   function tick(now) {
     const dt = Math.min(0.033, (now - last) / 1000);
     last = now;
     for (const b of bodies) stepBody(b, dt);
     stepPops(dt);
+    for (const fn of frameFns) { try { fn(dt, now / 1000); } catch (e) { frameFns.delete(fn); } }
     if (!visible) { requestAnimationFrame(tick); return; }
     fitTick(dt);
     controls.update();
@@ -419,6 +423,7 @@ export function createLab(container) {
     b.obj.traverse((o) => { if (o.element) o.element.style.opacity = '0'; });
   }
   function clear() {
+    frameFns.clear();
     for (const b of [...bodies]) removeBody(b);
     while (world.children.length) {
       const o = world.children.pop();
@@ -494,7 +499,7 @@ export function createLab(container) {
     renderer.render(scene, camera);
     labels.render(scene, camera);
   }
-  return { advance, scene, world, camera, controls, addBody, removeBody, dropTo, springTo, flyAway, clear, label, box, frameCamera, bodies, renderer, setVisible };
+  return { onFrame, advance, scene, world, camera, controls, addBody, removeBody, dropTo, springTo, flyAway, clear, label, box, frameCamera, bodies, renderer, setVisible };
 }
 
 // Distinct but harmonious block colours, picked by value so the same

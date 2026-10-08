@@ -11097,20 +11097,29 @@ FRAG.push(['sqpeng-multistack', 'Multiple stacks 與 Stack ≠ Array', async (to
   // ═══ ptrwhy.js ═══
   {
 // ─── OqLt2GfX6jg：Abdul Bari〈Why Pointers?〉— cued scenes: each step(tok) waits for the sentence it shows ───
+// Variables are little characters (buddy) that hold their value and react;
+// devices and places are small 3D props with a plain-language name.
 const P = kit(ctx);
-const { V3, tag, cube, kill, glow, relabel, code, anim, arrow, icon, rename, dim, zone, travel, remove, step } = P;
-const C_STACK = '#cfe3d4', C_HEAP = '#f3dcc0', C_CODE = '#dfe0ee', C_MAIN = '#4b9ee2', C_SWAP = '#dd8238';
+const { V3, tag, cube, kill, glow, code, anim, arrow, zone, travel, remove, step, buddy, prop, bob } = P;
+const C_STACK = '#cfe3d4', C_HEAP = '#f3dcc0', C_CODE = '#dfe0ee', C_MAIN = '#7cb8ee', C_SWAP = '#f4a56a', C_PTR = '#e8cf8a';
 // every step replaces both lines, so an old formula never lingers
 const say = (a, b = '') => ctx.say(a, b);
 const ok = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
 const no = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
 const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
-// a named variable: value box, name above, address below
+// a named variable: a little character holding its value; address at its feet
 function vbox(name, v, x, z, color, addr) {
-  const m = cube(v === '' ? ' ' : v, color, [1.1, 0.6, 1.0], x, 0.3, z, 2);
-  m.userData.name = tag(name, 'ptr', x, 1.15, z);
-  if (addr) m.userData.addr = tag(addr, 'idx', x, -0.05, z + 0.8);
-  return m;
+  const b = buddy(name, v, color, x, 0, z, 0.8);
+  if (addr) b.addr = tag(addr, 'note', x, -0.05, z + 0.75);
+  return b;
+}
+const relabelProp = (g, t) => { if (g.userData.label) g.userData.label.element.textContent = t; };
+// fade a prop or character group out of focus (on) or back (off)
+function fade(g, on) {
+  g.traverse((o) => {
+    if (o.material) { o.material = o.material.clone(); o.material.transparent = true; o.material.opacity = on ? 0.25 : 1; }
+    if (o.element) o.element.style.opacity = on ? '0.35' : '';
+  });
 }
 // three memory sections side by side
 function memory(withCode = true) {
@@ -11126,94 +11135,100 @@ FRAG.push(['ptrwhy-intro', '指標：存「位址」的變數', async (tok) => {
   P.fresh([0, 6, 11], [0, 0.8, 0]);
   await step(tok);                                   // 0:05 uses of pointers
   const shelf = zone('記憶體 1000 號', 3, 0, 0, 3.2, 2.6, C_HEAP);
-  const box = icon('📦', '資料本身', 3, 1.1, 0, 'lg');
+  const box = prop('parcel', 3, 0.05, 0, 1.1, '資料本身'); bob(box, 0.05);
   const addr = tag('位址 1000', 'idx', 3, 0.05, 1.0);
   say('指標有什麼用？');
   await step(tok);                                   // 0:08 pointers are called address variables
-  const p = vbox('p（指標）', '', -3, 0, '#c9b48e');
-  const n = note('1000', -3, 2.2, 0);
-  await travel(tok, n, V3(-3, 2.2, 0), V3(-3, 0.55, 0), 700);
+  const p = vbox('p（指標）', '', -3, 0, C_PTR);
+  const n = note('1000', -3, 2.4, 0);
+  await travel(tok, n, V3(-3, 2.4, 0), V3(-3, 0.25, 0.4), 700);
+  remove(n); p.set('1000'); p.mood('wow');
   say('指標 = 位址變數', 'p 裡面存的不是資料，是「地址」');
   await step(tok);                                   // 0:13 they store the address of data
-  const a = arrow(V3(-2.3, 0.4, 0), V3(2.2, 0.6, 0), 0xa8730f);
+  arrow(V3(-2.4, 0.5, 0), V3(2.2, 0.5, 0), 0xa8730f);
+  p.look(1);
   addr.element.className = 'lab-label note';
   say('存的是資料的位址', 'p → 1000 號');
   await step(tok);                                   // 0:19 indirectly accessing the data
-  const hand = icon('👉', '', -3, 1.4, 0, 'sm');
-  await travel(tok, hand, V3(-3, 1.4, 0), V3(2.2, 1.4, 0), 1400);
+  const hand = tag('照著地址走 →', 'pkt', -3, 1.6, 0);
+  await travel(tok, hand, V3(-3, 1.6, 0), V3(2.0, 1.6, 0), 1400);
+  hand.element.textContent = '找到了！';
   glow(shelf, '#5a3a00');
-  say('順著位址找到資料 → 間接存取', '');
+  p.mood('happy'); await p.hop(tok);
+  say('順著位址找到資料 → 間接存取');
 }]);
 
 // 0:27 程式怎麼在記憶體裡跑
 FRAG.push(['ptrwhy-memory', '程式在記憶體裡：code、stack、heap', async (tok) => {
   P.fresh([0, 8, 12.5], [0, 0.5, 0.5]);
   await step(tok);                                   // 0:27 how our program works
-  const prog = icon('📄', '你寫的程式', -7.2, 1, 0, 'lg');
+  const prog = prop('file', -7.0, 0, 0, 1.1, '你寫的程式'); bob(prog, 0.06);
   say('先看：程式是怎麼跑起來的');
   await step(tok);                                   // 0:40 loaded in the main memory
-  const ram = tag('🧠 主記憶體 RAM', 'say', -0.2, 3.0, -2.4);
+  tag('主記憶體（RAM）：程式執行時的工作桌', 'say', -0.2, 3.0, -2.4);
   say('要執行，先載入主記憶體');
   await step(tok);                                   // 0:45 divided into three: code, stack, heap
-  const m = memory();
+  memory();
   say('主記憶體分三區', 'code ｜ stack ｜ heap');
   await step(tok);                                   // 0:56 in the code section
-  await travel(tok, prog, V3(-7.2, 1, 0), V3(-4.2, 2.2, -1.4), 900);
-  rename(prog, '程式碼');
+  await travel(tok, prog, V3(-7.0, 0, 0), V3(-4.2, 0.1, -1.6), 900);
+  relabelProp(prog, '程式碼放這裡');
   const cd = code(['int a, b;', 'a = 10;', 'b = 20;'], -4.2, 1.2, 0.5, 1.0);
   say('程式碼放在 code 區');
   await step(tok);                                   // 1:02 start executing line by line
-  const cpu = icon('⚙️', 'CPU 逐行執行', -7.4, 0.8, 1.4);
+  prop('cpu', -7.0, 0, 1.6, 0.9, 'CPU：一行一行執行');
   cd.hl(0);
   say('一行一行執行');
   await step(tok);                                   // 1:12 declaration of variables
-  const a = vbox('a', '', -0.9, 0.4, C_MAIN), b = vbox('b', '', 0.3, 0.4, C_MAIN);
+  const a = vbox('a', '', -1.0, 0.4, C_MAIN), b = vbox('b', '', 0.2, 0.4, C_MAIN);
   say('第一行宣告變數 → 在 stack 配空間');
   await step(tok);                                   // 1:24 activation record
-  const fr = P.ghostBox(C_MAIN, 3.0, 1.5, 2.2); fr.position.set(-0.3, 0.75, 0.4);
-  const frN = tag('activation record', 'say', -0.3, 1.6, 2.0);
+  const fr = P.ghostBox(C_MAIN, 3.0, 1.6, 2.2); fr.position.set(-0.4, 0.8, 0.4);
+  tag('main 的 activation record（它的辦公桌）', 'say', -0.4, 2.0, 1.8);
   say('配給一個函式的那塊 = activation record');
   await step(tok);                                   // 1:33 directly accessible
-  const d1 = arrow(V3(-6.8, 0.6, 1.4), V3(-1.2, 0.4, 1.2), 0x0f5a3a);
-  const okS = ok('直接存取 ✓', -3.6, 0.2, 2.3);
+  arrow(V3(-6.4, 0.5, 1.6), V3(-1.5, 0.5, 0.8), 0x0f5a3a);
+  ok('直接存取 ✓', -3.6, 0.2, 2.3);
+  a.look(-1); b.look(-1);
   say('stack 裡的變數：程式可以直接存取');
   await step(tok);                                   // 1:37 address 500, 502
-  a.userData.addr = tag('500', 'idx', -0.9, -0.05, 1.2); b.userData.addr = tag('502', 'idx', 0.3, -0.05, 1.2);
+  a.addr = tag('住 500 號', 'note', -1.0, -0.05, 1.2); b.addr = tag('住 502 號', 'note', 0.2, -0.05, 1.2);
   say('假設 a 在 500、b 在 502');
   await step(tok);                                   // 1:46 A will be replaced by 500
   cd.hl(1);
   P.txt(cd.ls[1], '[500] = 10;'); P.txt(cd.ls[2], '[502] = 20;');
-  relabel(a, 10); relabel(b, 20);
+  a.set(10); b.set(20); a.mood('happy'); b.mood('happy');
   say('變數名直接換成位址：a → 500', '所以 stack 是「直接」存取');
   await step(tok);                                   // 2:04 anything other than stack: indirectly
-  const lock = icon('🔒', '', 3.8, 1.2, 0, 'lg');
+  const lock = prop('lock', 3.8, 0.1, 0, 1.4); bob(lock, 0.06);
   say('stack 以外的地方：只能間接存取');
   await step(tok);                                   // 2:23 cannot access this heap directly
-  const d2 = arrow(V3(-6.8, 1.0, 1.4), V3(2.0, 1.0, 0.6), 0x7a1010);
+  arrow(V3(-6.4, 1.0, 1.6), V3(2.0, 1.0, 0.6), 0x7a1010);
   no('直接進 heap ✗', 0.2, 1.9, 1.8);
+  a.mood('wow'); b.mood('wow');
   say('heap 不能直接拿 → 那要怎麼辦？');
 }]);
 
 // 2:31 用途一：存取 heap
 FRAG.push(['ptrwhy-heap', '用途一：透過指標存取 heap', async (tok) => {
   P.fresh([0, 7.5, 12], [0.2, 0.5, 0.5]);
-  const m = memory();
+  memory();
   const cd = code(['int *p;', 'p = malloc(10);'], -4.2, 1.1, 0.55, 1.0);
-  const cpu = icon('⚙️', 'CPU（執行程式）', -7.4, 0.8, 1.4);
+  prop('cpu', -7.0, 0, 1.6, 0.9, 'CPU（執行程式）');
   say('用途一：存取 heap');
   await step(tok);                                   // 2:31 first usage of pointer is accessing heap
-  icon('1️⃣', '', -6.8, 2.4, -1.2, 'sm');
+  tag('用途 ①', 'say', -6.4, 2.4, -1.2);
   await step(tok);                                   // 2:43 malloc
   cd.hl(1);
-  say('malloc：向 heap 要 10 bytes', '');
+  say('malloc：向 heap 借 10 bytes');
   await step(tok);                                   // 2:54 activation record is created
-  const p = vbox('p（指標）', '', -0.4, 0.4, '#c9b48e');
-  const fr = P.ghostBox(C_MAIN, 2.0, 1.5, 2.0); fr.position.set(-0.4, 0.75, 0.4);
+  const p = vbox('p（指標）', '', -0.4, 0.4, C_PTR);
+  const fr = P.ghostBox(C_MAIN, 2.0, 1.6, 2.0); fr.position.set(-0.4, 0.8, 0.4);
   say('activation record 只有一個變數：p');
   await step(tok);                                   // 3:02 executes malloc → heap block
   const cells = [];
-  for (let i = 0; i < 10; i++) cells.push(cube('', C_SWAP, [0.36, 0.36, 0.6], 2.2 + i * 0.38, 0.18, 0.2, 2 + i * 0.15));
-  const hb = tag('向 heap 借來的 10 bytes', 'idx', 3.9, -0.05, 1.0);
+  for (let i = 0; i < 10; i++) cells.push(cube('', '#f5b97a', [0.36, 0.36, 0.6], 2.2 + i * 0.38, 0.18, 0.2, 2 + i * 0.15));
+  tag('向 heap 借來的 10 bytes', 'say', 3.9, -0.05, 1.2);
   say('heap 裡配出一塊 10 bytes');
   await step(tok);                                   // 3:10 address of very first byte 1000
   const n = note('1000', 2.2, 1.0, 0.2);
@@ -11221,19 +11236,22 @@ FRAG.push(['ptrwhy-heap', '用途一：透過指標存取 heap', async (tok) => 
   say('第一個 byte 的位址：1000');
   await step(tok);                                   // 3:14 stored in the pointer
   await travel(tok, n, V3(2.2, 1.0, 0.2), V3(-0.4, 0.95, 0.4), 1000);
-  remove(n); relabel(p, 1000);
+  remove(n); p.set(1000); p.mood('happy'); await p.hop(tok);
   say('這個位址存進 p');
   await step(tok);                                   // 3:17 pointing to this heap memory
-  const a = arrow(V3(0.2, 0.5, 0.4), V3(2.0, 0.3, 0.2), 0xa8730f);
+  arrow(V3(0.2, 0.5, 0.4), V3(2.0, 0.3, 0.2), 0xa8730f);
+  p.look(1);
   say('p 指向 heap 的這塊記憶體');
   await step(tok);                                   // 3:28 take the address of heap
-  const hand = icon('👉', '', -7.0, 1.4, 1.4, 'sm');
+  const hand = tag('CPU 出發', 'pkt', -7.0, 1.4, 1.4);
   await travel(tok, hand, V3(-7.0, 1.4, 1.4), V3(-0.9, 1.4, 0.6), 1000);
+  hand.element.textContent = '讀到 1000';
   ok('① 直接讀 p', -3.8, 2.2, 1.0);
   await travel(tok, hand, V3(-0.9, 1.4, 0.6), V3(2.4, 1.0, 0.2), 1000);
   say('先直接讀 p，再照 p 裡的位址到 heap');
   await step(tok);                                   // 3:35 not directly, but indirectly accessible
   ok('② 間接存取 heap ✓', 3.9, 1.8, 0.2);
+  hand.element.textContent = '到了！';
   say('heap：不能直接，但能間接', '指標就是那張「地址條」');
 }]);
 
@@ -11242,53 +11260,55 @@ FRAG.push(['ptrwhy-swapval', '用途二（上）：call by value 換不了', asy
   P.fresh([0, 7.5, 12], [0, 0.6, 0]);
   say('用途二：call by reference');
   await step(tok);                                   // 3:44 second example
-  icon('2️⃣', '', -6.8, 2.4, -1.2, 'sm');
+  tag('用途 ②', 'say', -6.4, 2.4, -1.2);
   const cd = code(['void swap(int x, int y) {', '  int t = x; x = y; y = t;', '}', 'swap(a, b);'], -5.2, 3.6, 0.5, -1.5);
   await step(tok);                                   // 3:57 main is having two variables
-  const st = zone('stack 區・每個函式一塊', 1.6, 0, 0.6, 6.4, 4.4, C_STACK);
-  const mainN = tag('main', 'say', -2.9, 0.5, 2.0);
+  zone('stack 區・每個函式一塊', 1.6, 0, 0.6, 6.4, 4.4, C_STACK);
+  tag('main', 'say', -2.9, 0.5, 2.0);
   const a = vbox('a', 10, -1.2, 2.0, C_MAIN), b = vbox('b', 20, 0.0, 2.0, C_MAIN);
   say('main 有 a、b，想交換它們');
   await step(tok);                                   // 4:04 main function is calling swap
   cd.hl(3);
   say('main 呼叫 swap(a, b)');
   await step(tok);                                   // 4:13 this will not work
-  const warn = tag('⚠ 行不通？', 'bad', 3.2, 2.6, 2.0);
+  const warn = tag('老師：這樣行不通喔', 'bad', 3.2, 2.6, 2.0);
   say('x、y 只是普通變數 → call by value');
   await step(tok);                                   // 4:24 main function will start
   kill(warn);
   await step(tok);                                   // 4:38 main calls swap → swap's record
-  const swapN = tag('swap', 'say', 6.3, 0.5, -0.8);
+  tag('swap', 'say', 6.3, 0.5, -0.8);
   const x = vbox('x', '', 2.4, -0.8, C_SWAP), y = vbox('y', '', 3.6, -0.8, C_SWAP), t = vbox('t', '', 4.8, -0.8, C_SWAP);
   say('呼叫 swap：配出 x、y、t');
   await step(tok);                                   // 4:47 allocated for variables of swap
   await step(tok);                                   // 4:56 values of a and b are copied here
-  const ca = tag('📋 10', 'pkt', -1.2, 1.0, 2.0), cb = tag('📋 20', 'pkt', 0.0, 1.0, 2.0);
+  const ca = tag('影印 10', 'pkt', -1.2, 1.0, 2.0), cb = tag('影印 20', 'pkt', 0.0, 1.0, 2.0);
   await Promise.all([travel(tok, ca, V3(-1.2, 1.0, 2.0), V3(2.4, 0.9, -0.8), 1000), travel(tok, cb, V3(0.0, 1.0, 2.0), V3(3.6, 0.9, -0.8), 1000)]);
-  remove(ca); remove(cb); relabel(x, 10); relabel(y, 20);
+  remove(ca); remove(cb); x.set(10); y.set(20); x.mood('wow'); y.mood('wow');
   say('a、b 的值「複製」給 x、y');
   await step(tok);                                   // 4:59 swapping of these two values
   cd.hl(1);
-  relabel(t, 10); await P.anim(tok, 400, () => {});
-  relabel(x, 20); await P.anim(tok, 400, () => {});
-  relabel(y, 10);
+  t.set(10); await anim(tok, 400, () => {});
+  x.set(20); await anim(tok, 400, () => {});
+  y.set(10); x.mood('happy'); y.mood('happy');
+  await Promise.all([x.hop(tok), y.hop(tok)]);
   say('交換只發生在 x、y 身上');
   await step(tok);                                   // 5:06 cannot access the data of main
-  const wall = cube('', '#b9a88a', [0.25, 1.4, 4.2], 1.6, 0.7, 0.6);
-  icon('🧱', '', 1.6, 2.0, 0.6, 'sm');
+  cube('', '#b9a88a', [0.25, 1.4, 4.2], 1.6, 0.7, 0.6);
+  tag('牆：碰不到對方', 'bad', 1.6, 2.1, 0.6);
   say('swap 碰不到 main 的 activation record');
   await step(tok);                                   // 5:11 this record belongs to main, this to swap
-  glow(a, '#103a6a'); glow(b, '#103a6a'); glow(x, '#6a3a00'); glow(y, '#6a3a00');
+  a.look(1); b.look(1); x.look(-1); y.look(-1);
   say('各自的 record，各管各的');
   await step(tok);                                   // 5:25 not going to work
   no('main 的 a、b 沒變 ✗', -0.6, 2.5, 2.0);
+  a.mood('sad'); b.mood('sad'); a.look(0); b.look(0);
   say('結果：a 還是 10、b 還是 20');
 }]);
 
 // 5:35 用途二：傳位址
 FRAG.push(['ptrwhy-swapref', '用途二（下）：傳位址，間接交換', async (tok) => {
   P.fresh([0, 7.5, 12], [0, 0.6, 0]);
-  const st = zone('stack 區・每個函式一塊', 1.6, 0, 0.6, 6.4, 4.4, C_STACK);
+  zone('stack 區・每個函式一塊', 1.6, 0, 0.6, 6.4, 4.4, C_STACK);
   await step(tok);                                   // 5:35 modify our swap
   const cd = code(['void swap(int *x, int *y) {', '  int t = *x; *x = *y; *y = t;', '}', 'swap(&a, &b);'], -5.4, 3.6, 0.5, -1.5);
   say('改寫 swap');
@@ -11297,26 +11317,28 @@ FRAG.push(['ptrwhy-swapref', '用途二（下）：傳位址，間接交換', as
   say('參數改成指標：int *x, int *y');
   await step(tok);                                   // 5:52 memory for main
   tag('main', 'say', -2.9, 0.5, 2.0);
-  const a = vbox('a', 10, -1.2, 2.0, C_MAIN, '500'), b = vbox('b', 20, 0.0, 2.0, C_MAIN, '502');
+  const a = vbox('a', 10, -1.2, 2.0, C_MAIN, '住 500 號'), b = vbox('b', 20, 0.0, 2.0, C_MAIN, '住 502 號');
   await step(tok);                                   // 5:56 memory for x y t
   tag('swap', 'say', 6.3, 0.5, -0.8);
-  const x = vbox('x 指標', '', 2.4, -0.8, C_SWAP), y = vbox('y 指標', '', 3.6, -0.8, C_SWAP), t = vbox('t', '', 4.8, -0.8, C_SWAP);
+  const x = vbox('x（指標）', '', 2.4, -0.8, C_PTR), y = vbox('y（指標）', '', 3.6, -0.8, C_PTR), t = vbox('t', '', 4.8, -0.8, C_SWAP);
   await step(tok);                                   // 6:02 passing the addresses
   cd.hl(3);
   const na = note('500', -1.2, 1.0, 2.8), nb = note('502', 0.0, 1.0, 2.8);
   say('傳的是位址：&a = 500、&b = 502');
   await step(tok);                                   // 6:11 passed to x and y
   await Promise.all([travel(tok, na, V3(-1.2, 1.0, 2.8), V3(2.4, 0.9, -0.8), 1000), travel(tok, nb, V3(0.0, 1.0, 2.8), V3(3.6, 0.9, -0.8), 1000)]);
-  remove(na); remove(nb); relabel(x, 500); relabel(y, 502);
+  remove(na); remove(nb); x.set(500); y.set(502); x.mood('happy'); y.mood('happy');
   say('x、y 收到地址');
   await step(tok);                                   // 6:16 pointers pointing to these variables
-  const ax = arrow(V3(2.2, 0.6, -0.3), V3(-0.9, 0.6, 1.6), 0xa8730f), ay = arrow(V3(3.4, 0.6, -0.3), V3(0.3, 0.6, 1.6), 0xa8730f);
+  x.look(-1); y.look(-1);
+  arrow(V3(2.2, 0.6, -0.3), V3(-0.9, 0.6, 1.6), 0xa8730f); arrow(V3(3.4, 0.6, -0.3), V3(0.3, 0.6, 1.6), 0xa8730f);
   say('x、y 指向 main 的 a、b');
   await step(tok);                                   // 6:22 using these addresses swap can swap
   cd.hl(1);
   const pa = tag('10', 'pkt', -1.2, 1.0, 2.0), pb = tag('20', 'pkt', 0.0, 1.0, 2.0);
   await Promise.all([travel(tok, pa, V3(-1.2, 1.0, 2.0), V3(0.0, 1.0, 2.0), 900), travel(tok, pb, V3(0.0, 1.0, 2.0), V3(-1.2, 1.0, 2.0), 900)]);
-  remove(pa); remove(pb); relabel(a, 20); relabel(b, 10); glow(a, '#0f5a3a'); glow(b, '#0f5a3a');
+  remove(pa); remove(pb); a.set(20); b.set(10); a.mood('happy'); b.mood('happy');
+  await Promise.all([a.hop(tok), b.hop(tok)]);
   ok('a、b 真的交換了 ✓', -0.6, 2.6, 2.0);
   say('照地址改：main 的 a、b 換過來了');
   await step(tok);                                   // 6:32 indirectly accessing variables of main
@@ -11326,12 +11348,11 @@ FRAG.push(['ptrwhy-swapref', '用途二（下）：傳位址，間接交換', as
 // 6:47 用途三、四：檔案與周邊裝置
 FRAG.push(['ptrwhy-devices', '用途三、四：檔案與周邊裝置', async (tok) => {
   P.fresh([0, 6.5, 12], [0, 0.6, 0]);
-  const prog = icon('⚙️', '程式', 0, 0.9, 0, 'lg');
-  const lines = [];
-  const link = (x, z, label) => { const a = arrow(V3(0, 0.6, 0), V3(x * 0.82, 0.6, z * 0.82), 0xa8730f); const l = tag(label, 'ptr', x * 0.45, 1.25, z * 0.45); lines.push(a, l); return [a, l]; };
+  prop('cpu', 0, 0, 0, 1, '程式（CPU 在跑）');
+  const link = (x, z, label) => { const a = arrow(V3(0, 0.4, 0), V3(x * 0.78, 0.4, z * 0.78), 0xa8730f); const l = tag(label, 'ptr', x * 0.45, 1.0, z * 0.45); return [a, l]; };
   await step(tok);                                   // 6:47 accessing files
-  icon('3️⃣', '', -7.4, 2.4, -1.2, 'sm');
-  const disk = icon('💽', '磁碟上的檔案', -4.8, 0.9, -1.6, 'lg');
+  tag('用途 ③', 'say', -6.4, 2.6, -1.2);
+  prop('disk', -4.8, 0, -1.6, 1, '磁碟（存檔案）'); prop('file', -3.9, 0, -1.0, 0.6);
   say('用途三：存取檔案');
   await step(tok);                                   // 6:52 read or write data from disk
   say('讀、寫磁碟上的資料');
@@ -11339,32 +11360,32 @@ FRAG.push(['ptrwhy-devices', '用途三、四：檔案與周邊裝置', async (t
   const [fa] = link(-4.8, -1.6, 'FILE *fp');
   say('需要 file pointer');
   await step(tok);                                   // 7:07 open any file
-  const pk = tag('資料', 'pkt', -4.8, 0.6, -1.6);
+  const pk = tag('檔案資料', 'pkt', -4.4, 0.6, -1.4);
   await travel(tok, pk, V3(-4.4, 0.6, -1.4), V3(-0.4, 0.6, 0), 1100);
   remove(pk);
   say('fopen → 拿到 fp → 讀寫檔案');
   await step(tok);                                   // 7:12 without pointer we cannot
   fa.visible = false; const x1 = no('沒有指標 ✗', -2.4, 1.6, -0.8);
-  await P.anim(tok, 900, () => {});
+  await anim(tok, 900, () => {});
   fa.visible = true; kill(x1);
   await step(tok);                                   // 7:18 external storage
   say('指標：通往外部儲存的入口');
   await step(tok);                                   // 7:21 accessing peripherals
-  icon('4️⃣', '', -7.4, 1.6, -1.2, 'sm');
+  tag('用途 ④', 'say', -6.4, 1.6, 0.6);
   say('用途四：周邊裝置');
   await step(tok);                                   // 7:31 from keyboard
-  const kb = icon('⌨️', '鍵盤', -4.4, 0.6, 2.6, 'lg');
+  prop('keyboard', -4.4, 0, 2.6, 1, '鍵盤（輸入）');
   say('讀鍵盤輸入');
   await step(tok);                                   // 7:38 on monitor
-  const mon = icon('🖥️', '螢幕', 4.6, 0.9, -1.6, 'lg');
+  prop('monitor', 4.6, 0, -1.6, 0.9, '螢幕（輸出）');
   say('寫到螢幕');
   await step(tok);                                   // 7:42 on the printer
-  const pr = icon('🖨️', '印表機', 4.4, 0.6, 2.6, 'lg');
+  prop('printer', 4.4, 0, 2.6, 1, '印表機（輸出）');
   say('送到印表機');
   await step(tok);                                   // 7:50 a file on a disk
   say('存取磁碟上的檔案');
   await step(tok);                                   // 7:55 we require a pointer
-  const [ka, kl] = link(-4.4, 2.6, '指標'), [ma, ml] = link(4.6, -1.6, '指標'), [pa, pl] = link(4.4, 2.6, '指標');
+  const [, kl] = link(-4.4, 2.6, '指標'), [, ml] = link(4.6, -1.6, '指標'); link(4.4, 2.6, '指標');
   say('每一樣都要靠指標');
   await step(tok);                                   // 8:19 printf and scanf use pointers
   P.txt(kl, 'scanf 內部用指標'); P.txt(ml, 'printf 內部用指標');
@@ -11375,20 +11396,22 @@ FRAG.push(['ptrwhy-devices', '用途三、四：檔案與周邊裝置', async (t
 FRAG.push(['ptrwhy-summary', '總整理：stack 以外都靠指標', async (tok) => {
   P.fresh([0, 6.5, 12], [0, 0.6, 0]);
   await step(tok);                                   // 8:24 finally
-  const prog = icon('⚙️', '程式', 0, 0.9, 0, 'lg');
-  const st = zone('stack', 0, 0, -3.0, 3.0, 1.8, C_STACK);
+  prop('cpu', 0, 0, 0, 1, '程式');
+  zone('stack', 0, 0, -3.0, 3.0, 1.8, C_STACK);
+  const s1 = buddy('', '', C_MAIN, -0.6, 0, -3.0, 0.55), s2 = buddy('', '', C_MAIN, 0.6, 0, -3.0, 0.55);
   say('最後整理');
   await step(tok);                                   // 8:35 any other location apart from the stack
-  const far = [icon('🗄️', 'heap', -5.2, 0.8, -1.0), icon('🧩', '別的函式', -5.0, 0.8, 2.6), icon('💽', '檔案', 5.2, 0.8, -1.0), icon('⌨️🖥️', '周邊裝置', 5.0, 0.8, 2.6)];
-  far.forEach((f) => dim(f, true));
+  const far = [prop('warehouse', -5.2, 0, -1.0, 0.9, 'heap'), buddy('別的函式', '', C_SWAP, -5.0, 0, 2.6, 0.7).g, prop('disk', 5.2, 0, -1.0, 0.9, '檔案'), prop('monitor', 5.0, 0, 2.6, 0.7, '周邊裝置')];
+  far.forEach((f) => fade(f, true));
   say('stack 以外：heap、別的函式、檔案、裝置');
   await step(tok);                                   // 8:37 only the stack memory is directly accessible
   arrow(V3(0, 0.6, -0.5), V3(0, 0.3, -2.2), 0x0f5a3a);
   ok('直接 ✓', 0.9, 0.9, -1.4);
+  s1.mood('happy'); s2.mood('happy');
   say('只有 stack 可以直接存取');
   await step(tok);                                   // 8:44 for indirect accessing pointer is useful
   const ends = [[-5.2, -1.0], [-5.0, 2.6], [5.2, -1.0], [5.0, 2.6]];
-  for (let i = 0; i < 4; i++) { dim(far[i], false); arrow(V3(0, 0.6, 0), V3(ends[i][0] * 0.8, 0.6, ends[i][1] * 0.8), 0xa8730f); await P.anim(tok, 260, () => {}); }
+  for (let i = 0; i < 4; i++) { fade(far[i], false); arrow(V3(0, 0.6, 0), V3(ends[i][0] * 0.8, 0.6, ends[i][1] * 0.8), 0xa8730f); await anim(tok, 260, () => {}); }
   say('其他地方：都靠指標「間接」存取');
   await step(tok);                                   // 8:55 list of usages: heap
   const chips = ['① 存取 heap', '② call by reference', '③ 存取檔案', '④ 存取周邊裝置'];
@@ -11396,7 +11419,7 @@ FRAG.push(['ptrwhy-summary', '總整理：stack 以外都靠指標', async (tok)
   at(0);
   say('指標的四種用途');
   await step(tok);                                   // 9:01 call by reference, files
-  at(1); await P.anim(tok, 500, () => {}); at(2);
+  at(1); await anim(tok, 500, () => {}); at(2);
   await step(tok);                                   // 9:05 any peripheral
   at(3);
 }]);
