@@ -1,23 +1,27 @@
 {
  "video": "2Rr2tW9zvRg",
  "label": "Abdul Bari：2 Divide And Conquer（介紹）",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
    "title": "Divide and conquer 是一種解題策略",
-   "scene": null,
+   "scene": "dcbari-strategies",
    "points": [
     {
-     "text": "第一單元是演算法分析；接下來是 divide and conquer，屬於解題 strategy 之一。",
+     "text": "新單元：divide and conquer；前一單元是演算法分析（怎麼寫、怎麼分析、為什麼要分析）。",
      "t": 0
     },
     {
-     "text": "同類的策略還有 greedy、dynamic programming、backtracking、branch and bound。",
-     "t": 19
+     "text": "Divide and conquer 是解題 strategy 之一，同類還有 greedy、dynamic programming、backtracking、branch and bound。",
+     "t": 23
     },
     {
-     "text": "沒有公式告訴你哪題適用哪個策略，但有一些 guideline 可以判斷。",
-     "t": 58
+     "text": "Strategy 是解計算問題的一種設計方法；策略適合這個問題才採用。",
+     "t": 46
+    },
+    {
+     "text": "沒有公式告訴你哪個問題用哪個策略，靠練習，加上幾條 guideline 判斷。",
+     "t": 64
     }
    ]
   },
@@ -26,59 +30,83 @@
    "scene": "dc-general",
    "points": [
     {
-     "text": "規模 n 的問題 P 太大時，切成 k 個子問題 P₁、P₂、…、P_k。",
-     "t": 76
+     "text": "問題 P 的大小 n 指的是輸入大小。",
+     "t": 78
     },
     {
-     "text": "分別解出 S₁、S₂、…、S_k，再把子問題的解 combine 成原問題的解。",
-     "t": 110
+     "text": "P 太大就切成 k 個較小的子問題 P₁、P₂、…、P_k，切幾個由你決定。",
+     "t": 96
     },
     {
-     "text": "子問題如果還是太大，就對它再套用 divide and conquer。",
-     "t": 149
+     "text": "各子問題分別解出 S₁、S₂、…、S_k。",
+     "t": 126
+    },
+    {
+     "text": "把子問題的解 combine 起來，得到原問題的解。",
+     "t": 141
+    },
+    {
+     "text": "子問題還是太大，就對它再套用 divide and conquer（再切成子子問題）。",
+     "t": 173
     }
    ]
   },
   {
-   "title": "子問題必須是同一種問題",
+   "title": "子問題必須是同一種問題，而且要能合併",
    "scene": "dc-same-kind",
    "points": [
     {
-     "text": "原問題是排序，子問題也必須是排序，不能變成別的問題。",
-     "t": 167
+     "text": "重點：子問題要和原問題是同一種問題；原問題是排序，子問題也必須是排序。",
+     "t": 191
     },
     {
-     "text": "反例：籌辦研討會拆成做邀請函、海報、邀請講者——每項都是不同的工作，不是 divide and conquer。",
-     "t": 187
+     "text": "反例：辦研討會拆成做邀請函、做海報、邀講者——每項都是不同工作，不是 divide and conquer。",
+     "t": 216
     },
     {
-     "text": "因為子問題和原問題一樣，divide and conquer 天生就是遞迴的。",
-     "t": 227
+     "text": "因為子問題和原問題相同，divide and conquer 天生是遞迴的。",
+     "t": 259
     },
     {
-     "text": "還必須有合併子問題解的方法；無法 combine 就不能用這個策略。",
-     "t": 245
+     "text": "還必須有方法把子問題的解 combine 成主問題的解。",
+     "t": 280
+    },
+    {
+     "text": "沒辦法合併就不能用這個策略；這兩點就是判斷能否使用的 guideline。",
+     "t": 288
     }
    ]
   },
   {
-   "title": "一般演算法 DAC(P) 與本單元題目",
+   "title": "一般方法 DAC(P) 與本單元題目",
    "scene": "dc-general",
    "points": [
     {
-     "text": "DAC(P)：if small(P) 直接解；否則分成 P₁…P_k，對每個 DAC(Pᵢ)，再 combine(DAC(P₁), …, DAC(P_k))。",
-     "t": 301
+     "text": "DAC(P)：if small(P) 就直接解 S(P)——小問題一定要有直接解法。",
+     "t": 314
+    },
+    {
+     "text": "否則把 P 切成 P₁…P_k，對每個 Pᵢ 遞迴呼叫 DAC。",
+     "t": 332
+    },
+    {
+     "text": "return combine(DAC(P₁), DAC(P₂), …, DAC(P_k))。",
+     "t": 347
+    },
+    {
+     "text": "程序與演算法都是遞迴的。",
+     "t": 360
     },
     {
      "text": "本單元題目：binary search、找最大最小值、merge sort、quick sort、Strassen 矩陣乘法。",
-     "t": 354
+     "t": 366
     },
     {
-     "text": "因為是遞迴演算法，分析時要用 recurrence relation。",
-     "t": 376
+     "text": "遞迴演算法的時間要用 recurrence relation 分析，下一支影片開始講。",
+     "t": 391
     }
    ],
-   "trap": "補充：CLRS 的三步驟是 Divide、Conquer、Combine；時間寫成 T(n) = aT(n/b) + D(n) + C(n)。"
+   "trap": "補充：CLRS 的三步驟是 Divide、Conquer、Combine，時間寫成 T(n) = aT(n/b) + D(n) + C(n)。"
   }
  ],
  "quiz": [
@@ -125,7 +153,17 @@
    ],
    "ans": "直接求解",
    "why": "遞迴必須有可直接解決的小問題作為終止。"
+  },
+  {
+   "q": "影片提到的判斷 guideline，除了子問題要同一種之外還需要？",
+   "opts": [
+    "有方法把子問題的解合併",
+    "子問題數量剛好兩個",
+    "問題大小是 2 的次方",
+    "不能使用遞迴"
+   ],
+   "ans": "有方法把子問題的解合併",
+   "why": "無法 combine 就不能採用 divide and conquer。"
   }
- ],
- "timing": "estimated"
+ ]
 }

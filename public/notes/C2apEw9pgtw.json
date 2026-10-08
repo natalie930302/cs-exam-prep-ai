@@ -1,26 +1,34 @@
 {
  "video": "C2apEw9pgtw",
  "label": "Abdul Bari：2.6.1 Binary Search Iterative Method",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
-   "title": "Binary search 的前提與指標",
+   "title": "Binary search 的前提與 low、high",
    "scene": "bsearch-trace",
    "params": {
     "key": 42
    },
    "points": [
     {
-     "text": "兩種搜尋：linear search 與 binary search；binary search 屬於 divide and conquer。",
-     "t": 0
+     "text": "搜尋有兩種方法：linear search 與 binary search。",
+     "t": 2
     },
     {
-     "text": "前提：串列必須已排序。例：15 個元素 [3,6,8,12,14,17,25,29,31,36,42,47,53,55,62]，索引 1～15。",
-     "t": 43
+     "text": "Binary search 屬於 divide and conquer。",
+     "t": 16
     },
     {
-     "text": "用 low、high 兩個索引圍出範圍，mid = ⌊(low + high)/2⌋。",
-     "t": 82
+     "text": "例子：15 個元素 [3,6,8,12,14,17,25,29,31,36,42,47,53,55,62]，索引 1～15。",
+     "t": 35
+    },
+    {
+     "text": "前提：串列一定要先排序（prerequisite）。",
+     "t": 48
+    },
+    {
+     "text": "需要兩個索引：low 在開頭、high 在結尾。",
+     "t": 70
     }
    ]
   },
@@ -32,45 +40,94 @@
    },
    "points": [
     {
-     "text": "low = 1、high = 15 → mid = 8，A[8] = 29；42 > 29 → low = mid + 1 = 9。",
-     "t": 101
+     "text": "找 key = 42：mid = ⌊(low + high)/2⌋ = ⌊(1 + 15)/2⌋ = 8。",
+     "t": 83
     },
     {
-     "text": "low = 9、high = 15 → mid = 12，A[12] = 47；42 < 47 → high = mid − 1 = 11。",
-     "t": 172
+     "text": "A[8] = 29，42 較大，一定在右半（因為已排序）。",
+     "t": 125
     },
     {
-     "text": "low = 9、high = 11 → mid = 10，A[10] = 36；42 > 36 → low = 11。",
-     "t": 205
+     "text": "low = mid + 1 = 9，high 仍是 15。",
+     "t": 154
     },
     {
-     "text": "low = high = 11 → mid = 11，A[11] = 42 找到；共 4 次比較，linear search 要 11 次。",
+     "text": "mid = (9 + 15)/2 = 12，A[12] = 47；42 較小 → high = mid − 1 = 11。",
+     "t": 176
+    },
+    {
+     "text": "mid = (9 + 11)/2 = 10，A[10] = 36；42 較大 → low = 11。",
+     "t": 221
+    },
+    {
+     "text": "low = high = 11，mid = 11，A[11] = 42：找到。",
      "t": 256
+    },
+    {
+     "text": "共 4 次比較；linear search 要 11 次。",
+     "t": 288
     }
    ]
   },
   {
-   "title": "搜尋 12 與搜尋不存在的 30",
+   "title": "搜尋 12：2 次比較",
+   "scene": "bsearch-trace",
+   "params": {
+    "key": 12
+   },
+   "points": [
+    {
+     "text": "再找 key = 12（linear search 要 4 次）。",
+     "t": 319
+    },
+    {
+     "text": "mid = 8，A[8] = 29；12 較小 → high = mid − 1 = 7。",
+     "t": 341
+    },
+    {
+     "text": "mid = (1 + 7)/2 = 4，A[4] = 12：找到。",
+     "t": 371
+    },
+    {
+     "text": "只用 2 次比較。",
+     "t": 389
+    }
+   ]
+  },
+  {
+   "title": "搜尋不存在的 30",
    "scene": "bsearch-trace",
    "params": {
     "key": 30
    },
    "points": [
     {
-     "text": "找 12：mid = 8（29）→ high = 7；mid = 4，A[4] = 12，2 次比較找到。",
-     "t": 330
+     "text": "找不存在的 key = 30（29 之後是 31）。",
+     "t": 406
     },
     {
-     "text": "找 30：mid = 8（29）→ low = 9；mid = 12（47）→ high = 11；mid = 10（36）→ high = 9。",
-     "t": 415
+     "text": "mid = 8（29）：對 1～15 而言第一個 mid 永遠是 8。",
+     "t": 437
     },
     {
-     "text": "low = high = 9 → mid = 9，A[9] = 31；30 < 31 → high = 8。",
-     "t": 529
+     "text": "30 > 29 → low = 9；mid = 12（47）。",
+     "t": 463
     },
     {
-     "text": "low = 9 > high = 8：low 越過 high 代表找不到，結束。",
-     "t": 562
+     "text": "30 < 47 → high = 11；mid = 10（36）。",
+     "t": 492
+    },
+    {
+     "text": "30 < 36 → high = 9；low = high = 9，mid = 9（31）。",
+     "t": 518
+    },
+    {
+     "text": "30 < 31 → high = mid − 1 = 8，low = 9 > high。",
+     "t": 548
+    },
+    {
+     "text": "low 越過 high 代表找不到，結束。",
+     "t": 580
     }
    ]
   },
@@ -78,50 +135,108 @@
    "title": "迭代版演算法",
    "scene": "bsearch-trace",
    "params": {
-    "key": 12
+    "key": 42
    },
    "points": [
     {
-     "text": "int BinSearch(A, n, key)：l = 1、h = n。",
-     "t": 599
+     "text": "寫成函式 BinSearch(A, n, key)：傳入陣列、元素個數、key，回傳索引。",
+     "t": 603
     },
     {
-     "text": "while (l ≤ h)：mid = (l + h)/2；key == A[mid] → return mid。",
-     "t": 619
+     "text": "l = 1、h = n。",
+     "t": 621
     },
     {
-     "text": "key < A[mid] → h = mid − 1；否則 l = mid + 1。",
-     "t": 652
+     "text": "mid = (l + h)/2。",
+     "t": 645
     },
     {
-     "text": "迴圈結束（l > h）→ return 0 表示找不到。",
-     "t": 707
+     "text": "if (key == A[mid]) return mid。",
+     "t": 663
+    },
+    {
+     "text": "key < A[mid] → h = mid − 1。",
+     "t": 698
+    },
+    {
+     "text": "否則 l = mid + 1。",
+     "t": 721
+    },
+    {
+     "text": "放在 while (l ≤ h) 迴圈裡；迴圈結束（l > h）就 return 0 表示找不到。",
+     "t": 744
     }
    ]
   },
   {
-   "title": "用比較樹分析時間",
+   "title": "比較樹：最多 log n 次",
    "scene": "bsearch-tree",
    "points": [
     {
-     "text": "1～15 的 mid 一定是 8；左半 mid 4、右半 12；再下一層 2、6、10、14；葉子 1、3、5、…、15。",
-     "t": 778
+     "text": "把每次算出的 mid 畫成一棵 tracing tree。",
+     "t": 809
     },
     {
-     "text": "找 29 只要 1 次；找 47 要 2 次；找 55：8 → 12 → 14，3 次。",
-     "t": 860
+     "text": "根是 8；左半 1～7 的 mid 是 4，右半 9～15 的 mid 是 12。",
+     "t": 825
     },
     {
-     "text": "最多比較次數 = 樹高 = log n（16 個元素 log₂16 = 4）。",
-     "t": 926
+     "text": "下一層 2、6、10、14，葉子 1、3、5、7、9、11、13、15。",
+     "t": 844
     },
     {
-     "text": "找不到的情況（如 65 或 55 與 62 之間）停在 external node，同樣最多 4 次。",
+     "text": "找 29：在根，1 次比較。",
+     "t": 892
+    },
+    {
+     "text": "找 47：8 → 12，2 次。",
+     "t": 905
+    },
+    {
+     "text": "找 55（索引 14）：8 → 12 → 14，3 次。",
+     "t": 929
+    },
+    {
+     "text": "最多比較次數取決於樹高 = log n。",
+     "t": 953
+    },
+    {
+     "text": "15 個元素約 16 = 2⁴，log₂16 = 4 次。",
      "t": 1000
+    }
+   ]
+  },
+  {
+   "title": "找不到的情況與 best／worst／average",
+   "scene": "bsearch-tree",
+   "points": [
+    {
+     "text": "找不存在的 65：8 → 12 → 14 → 15，再往右沒有元素就停。",
+     "t": 1028
     },
     {
-     "text": "Best case O(1)（key 在中間）、worst case O(log n)、average case 也是 O(log n)。",
-     "t": 1056
+     "text": "介於 55 和 62 之間的值也停在那裡；用 external node 表示不存在的值。",
+     "t": 1051
+    },
+    {
+     "text": "unsuccessful search 最多也是 4 次比較。",
+     "t": 1070
+    },
+    {
+     "text": "最少：key 在正中間（29），1 次 → O(1)，best case。",
+     "t": 1082
+    },
+    {
+     "text": "最多：key 在葉子，log n 次 → worst case O(log n)。",
+     "t": 1094
+    },
+    {
+     "text": "Average：把每個元素的比較次數加總再除以 n。",
+     "t": 1131
+    },
+    {
+     "text": "Average 也是 O(log n)。",
+     "t": 1162
     }
    ],
    "trap": "補充：n = 15 時 average successful search 比較次數 = (1·1 + 2·2 + 3·4 + 4·8)/15 = 49/15 ≈ 3.27。"
@@ -129,71 +244,70 @@
  ],
  "quiz": [
   {
-   "q": "陣列 [3,6,8,12,14,17,25,29,31,36,42,47,53,55,62]（索引 1～15）找 42 要比較幾次？",
-   "opts": [
-    "4",
-    "3",
-    "2",
-    "11"
-   ],
-   "ans": "4",
-   "why": "mid = 8、12、10、11。"
-  },
-  {
-   "q": "同一陣列找 12，依序比較的 mid 是？",
-   "opts": [
-    "8、4",
-    "8、12",
-    "4、2",
-    "8、4、2"
-   ],
-   "ans": "8、4",
-   "why": "12 < 29 → high = 7，mid = 4 剛好是 12。"
-  },
-  {
-   "q": "Binary search 判斷「找不到」的條件是？",
-   "opts": [
-    "low > high",
-    "low == high",
-    "mid == 0",
-    "A[mid] == 0"
-   ],
-   "ans": "low > high",
-   "why": "low 越過 high 代表範圍已空。"
-  },
-  {
-   "q": "Binary search 的 worst case 時間是？",
-   "opts": [
-    "O(log n)",
-    "O(1)",
-    "O(n)",
-    "O(n log n)"
-   ],
-   "ans": "O(log n)",
-   "why": "比較次數最多等於比較樹的高度。"
-  },
-  {
-   "q": "key 小於 A[mid] 時應該怎麼更新？",
-   "opts": [
-    "high = mid − 1",
-    "low = mid + 1",
-    "high = mid",
-    "low = mid"
-   ],
-   "ans": "high = mid − 1",
-   "why": "答案在左半，且 mid 本身已經比過。"
-  },
-  {
    "q": "Binary search 的前提是？",
    "opts": [
     "串列已排序",
     "串列長度是 2 的次方",
-    "元素都是正數",
-    "串列用 linked list 儲存"
+    "元素不重複",
+    "串列用 linked list 存"
    ],
    "ans": "串列已排序",
-   "why": "排序才能由一次比較決定丟掉哪一半。"
+   "why": "要靠大小關係決定往左或往右。"
+  },
+  {
+   "q": "A = [3,6,8,12,14,17,25,29,31,36,42,47,53,55,62]（索引 1～15），找 42 依序比較的 mid 是？",
+   "opts": [
+    "8, 12, 10, 11",
+    "8, 4, 2, 1",
+    "8, 12, 14, 15",
+    "7, 11"
+   ],
+   "ans": "8, 12, 10, 11",
+   "why": "29 < 42 → 右；47 > 42 → 左；36 < 42 → 右；找到 A[11]。"
+  },
+  {
+   "q": "迭代版 binary search 的迴圈條件是？",
+   "opts": [
+    "while (l ≤ h)",
+    "while (l < h − 1)",
+    "while (mid ≠ 0)",
+    "while (key ≠ A[mid])"
+   ],
+   "ans": "while (l ≤ h)",
+   "why": "low 越過 high 才代表找不到。"
+  },
+  {
+   "q": "n = 15 時 binary search 最多比較幾次？",
+   "opts": [
+    "4",
+    "15",
+    "8",
+    "3"
+   ],
+   "ans": "4",
+   "why": "比較樹高 = ⌊log₂15⌋ + 1 = 4。"
+  },
+  {
+   "q": "Binary search 的 best case 是？",
+   "opts": [
+    "key 在正中間，O(1)",
+    "key 在葉子，O(log n)",
+    "key 不存在，O(n)",
+    "沒有 best case"
+   ],
+   "ans": "key 在正中間，O(1)",
+   "why": "第一次 mid 就命中。"
+  },
+  {
+   "q": "找 30（不存在）時，演算法如何停止？",
+   "opts": [
+    "low = 9 > high = 8，回傳 0",
+    "mid 變成 0",
+    "比完 15 個元素",
+    "high 變成負數"
+   ],
+   "ans": "low = 9 > high = 8，回傳 0",
+   "why": "low 越過 high 就代表範圍是空的。"
   }
- ],
- "timing": "estimated"
+ ]
 }

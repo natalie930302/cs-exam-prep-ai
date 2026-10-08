@@ -1,185 +1,366 @@
 {
  "video": "4iXLnF3hExw",
  "label": "MIT 6.006 Rec3：Document Distance, Insertion and Merge Sort",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
-   "title": "Document distance 回顧：各函數成本",
+   "title": "PSET 1 critique 說明",
    "scene": null,
    "points": [
     {
-     "text": "Call graph：main → word_frequencies_for_file →（get_words_from_line_list、count_frequency）；main → vector_angle → inner_product。",
-     "t": 221
+     "text": "PSET 1 交了；接下來要寫 PSET 1 的證明 critique。",
+     "t": 22
     },
     {
-     "text": "常數：W = 文件字數、L = 不重複字數（document vector 長度）、w̄ = 字長（英文 5–10 字元，視為有界）。",
-     "t": 303
+     "text": "建議今天就看解答寫一段，比拖到週二重讀自己的證明省事。",
+     "t": 30
     },
     {
-     "text": "get_words_from_line_list 是 O(W²)，元凶是 word_list = word_list + words_in_line 的 +。",
-     "t": 398
+     "text": "在新的評分網站上提交，一段就好，可用 LaTeX math mode。",
+     "t": 73
     },
     {
-     "text": "inner_product O(L₁L₂)；vector_angle 還要 L₁² + L₂²，但 L₁² + L₂² ≥ L₁L₂；總計 W₁² + W₂²（W ≥ L）。",
-     "t": 455
+     "text": "沒有 critique 的話，證明那題很可能是 0 分。",
+     "t": 124
     }
    ]
   },
   {
-   "title": "逐行分析 count_frequency",
+   "title": "Document distance 回顧：呼叫圖與成本",
+   "scene": "dcmit-docdist-recap",
+   "points": [
+    {
+     "text": "上次在理論上講了 insertion sort、merge sort；今天看程式碼並分析執行時間。",
+     "t": 156
+    },
+    {
+     "text": "Call graph：main → word_frequencies_for_file → get_words_from_line_list、count_frequency。",
+     "t": 195
+    },
+    {
+     "text": "常數：W = 文件字數、L = 不重複字數（document vector 長度）、w̄ = 字長（英文約 5–10 字元）。",
+     "t": 286
+    },
+    {
+     "text": "get_words_from_line_list 是 O(W²)。",
+     "t": 380
+    },
+    {
+     "text": "vector_angle：內積 L₁L₂，再加上兩向量自身的內積 L₁² + L₂²。",
+     "t": 498
+    },
+    {
+     "text": "L₁² + L₂² ≥ L₁L₂（正數），所以 L₁L₂ 可以去掉。",
+     "t": 518
+    },
+    {
+     "text": "word_frequencies_for_file 每份文件各呼叫一次：W₁² + W₂²。",
+     "t": 582
+    },
+    {
+     "text": "W₁ ≥ L₁，所以 L₁²、L₂² 被 W₁²、W₂² 主導，不用另外加。",
+     "t": 604
+    }
+   ]
+  },
+  {
+   "title": "count_frequency 在做什麼、迴圈跑幾次",
    "scene": "count-frequency-cost",
    "points": [
     {
+     "text": "今天補上 count_frequency 的成本。",
+     "t": 621
+    },
+    {
      "text": "方法：每行算「執行一次的成本 × 執行次數」，再加總。",
-     "t": 635
+     "t": 640
     },
     {
-     "text": "功能：把字串列 ['the','fox','is','in','the','hat'] 變成 [[the,2],[fox,1],[is,1],[in,1],[hat,1]]。",
-     "t": 711
+     "text": "輸入是字的串列，例如 the fox is in the hat。",
+     "t": 722
     },
     {
-     "text": "for new_word in word_list：W 次；內層 for entry in L：最壞每次走 L 個 → L·W 次。",
-     "t": 933
+     "text": "輸出是 [字, 次數] 的串列：the 2、fox 1、is 1、in 1、hat 1。",
+     "t": 744
     },
     {
-     "text": "if new_word == entry[0]：字串比較不是 O(1)，成本 w̄（字長），執行 L·W 次 → 這行主導，W·L·w̄。",
-     "t": 1305
+     "text": "第 3 行 for new_word in word_list 走過輸入；第 4 行在建構中的 L 裡找這個字。",
+     "t": 793
     },
     {
-     "text": "entry[1] += 1 與 break：只有重複字會執行 → W − L 次（精確）；粗略上界 W 次也可以。",
-     "t": 1456
+     "text": "word_list 有 W 個字，所以外層跑 W 次。",
+     "t": 899
     },
     {
-     "text": "else: L.append：只有新字才執行 → L 次（緊）或 W 次（鬆）；漸近分析用哪個上界都會得到正確結果。",
-     "t": 1604
-    }
-   ],
-   "trap": "補充：比較兩個長字串時要逐字元比到不同處，成本與字長成正比；只有字長有界時才能當常數。"
-  },
-  {
-   "title": "Profiler 與 + 改成 extend",
-   "scene": "plus-vs-extend",
-   "points": [
-    {
-     "text": "上千行程式不能逐行手算，用 profiler：看 total time（函數本身）而非 cumulative time（含子函數）找瓶頸。",
-     "t": 1891
+     "text": "L 最多 L 個項目，最壞第 4 行共跑 L·W 次，每步 O(1)。",
+     "t": 1129
     },
     {
-     "text": "瓶頸是 get_words_from_line_list 第 5 行的 +，它每次都複製整個串列。",
-     "t": 2009
-    },
-    {
-     "text": "+ 改成 extend：改幾個字元，執行時間改善約 30%。",
-     "t": 2029
-    },
-    {
-     "text": "Python list 是陣列（CLRS 的 array），不是 linked list：隨機存取 O(1)，但串接要複製。",
-     "t": 2239
-    },
-    {
-     "text": "extend 長度 K 的串列 = K 次 append，每次 O(1) → O(K)；共 Z 行 → K·Z = W。",
-     "t": 2335
+     "text": "英文約 25 萬字，L 有上限，可能遠小於 W，所以兩個常數分開記。",
+     "t": 1181
     }
    ]
   },
   {
-   "title": "已排序向量的內積：binary search vs 兩指標",
+   "title": "字串比較 w̄ 與緊／鬆上界",
+   "scene": "dcmit-cf-strcmp-bounds",
+   "points": [
+    {
+     "text": "第 5 行的 if 每次都會執行：L·W 次。",
+     "t": 1241
+    },
+    {
+     "text": "兩個長字串只差最後一個字元時要逐字元比到底，成本與字長成正比 → w̄。",
+     "t": 1348
+    },
+    {
+     "text": "for 後面的 else：迴圈跑完沒 break 才執行；常用在「找不到時要做什麼」。",
+     "t": 1430
+    },
+    {
+     "text": "第 6、7 行只在重複字執行：精確是 W − L 次。",
+     "t": 1487
+    },
+    {
+     "text": "沒想到的話也可以說：break 讓它每輪外層最多一次 → 最多 W 次。",
+     "t": 1593
+    },
+    {
+     "text": "else（append）只有新字才執行：L 次。",
+     "t": 1641
+    },
+    {
+     "text": "第 5 行最大：O(W · L · w̄)。",
+     "t": 1861
+    },
+    {
+     "text": "英文字長 w̄ 有界，W·L ≤ W²，所以先前「≤ W²」的假設成立。",
+     "t": 1878
+    }
+   ]
+  },
+  {
+   "title": "Profiler 與 + 改 extend",
+   "scene": "plus-vs-extend",
+   "points": [
+    {
+     "text": "上千行程式時，不可能逐行手算找瓶頸。",
+     "t": 1919
+    },
+    {
+     "text": "用 profiler：電腦會告訴你哪裡最花時間（作法在講義裡）。",
+     "t": 1942
+    },
+    {
+     "text": "total time = 函數本身；cumulative time = 連同子函數。",
+     "t": 1969
+    },
+    {
+     "text": "找瓶頸看 total time：最慢的是 get_words_from_line_list。",
+     "t": 2018
+    },
+    {
+     "text": "把 + 改成 extend，就是 docdist2。",
+     "t": 2040
+    },
+    {
+     "text": "改幾個字元，執行時間改善約 30%。",
+     "t": 2056
+    }
+   ]
+  },
+  {
+   "title": "extend 的成本：K × Z = W",
+   "scene": "dcmit-extend-kz",
+   "points": [
+    {
+     "text": "get_words_from_line_list：逐行讀取、切成字的串列，再全部接起來。",
+     "t": 2130
+    },
+    {
+     "text": "K = 每行字數、Z = 總行數（Z = W/K）。",
+     "t": 2156
+    },
+    {
+     "text": "一行要放得進螢幕或紙張，所以 K 有界。",
+     "t": 2219
+    },
+    {
+     "text": "若 Python list 是 linked list，串接可以 O(1)，但取中間第 200 個要走 200 步。",
+     "t": 2289
+    },
+    {
+     "text": "Python list 其實是 CLRS 的 array（連續存放）：複製區塊仍要搬每個元素。",
+     "t": 2319
+    },
+    {
+     "text": "長度 K 的串列 extend 是 K 次 append，每次 O(1)，共 K。",
+     "t": 2392
+    },
+    {
+     "text": "第 5 行執行 Z 次，總成本 K · Z = W。",
+     "t": 2448
+    },
+    {
+     "text": "docdist2：漸近複雜度與實際執行時間都改善了。",
+     "t": 2522
+    }
+   ]
+  },
+  {
+   "title": "已排序向量的內積：兩指標",
    "scene": "sorted-inner-product",
    "points": [
     {
-     "text": "若把字（以編號表示）排好序，內積可以更快。例：文件 1 = {3:2, 4:1, 6:1, 8:1, 9:1}、文件 2 = {2:1, 3:1, 6:1, 7:1, 8:1}。",
-     "t": 2557
+     "text": "接下來最慢的是 count_frequency 和 inner_product。",
+     "t": 2534
     },
     {
-     "text": "原做法：對 L₁ 每個字在 L₂ 找相同字 → O(L₁L₂)。",
-     "t": 2613
+     "text": "如果文件向量裡的字是排好序的，內積可以快很多（代價是 word_frequencies_for_file 變慢）。",
+     "t": 2563
     },
     {
-     "text": "第二個向量已排序 → 每次用 binary search：O(L₁ log L₂)。",
-     "t": 2666
+     "text": "文件 1：字 3、4、6、8、9，次數 2、1、1、1、1。",
+     "t": 2634
     },
     {
-     "text": "兩指標法：L₂ 的指標只往下走，找 4 時看到 6 > 4 就停在原地；總共 O(L₁ + L₂)。",
-     "t": 2741
+     "text": "文件 2：字 2、3、6、7、8，各出現一次。",
+     "t": 2657
     },
     {
-     "text": "為何不在兩指標中改用 binary search？兩串列都是 1…10,000 時，binary search 要約 N log N，兩指標只要 2N。",
-     "t": 2911
+     "text": "文件 2 已排序 → 可以用 binary search 找。",
+     "t": 2727
     },
     {
-     "text": "這個指標技巧就是 merge sort 的 merge。",
-     "t": 3215
+     "text": "這樣是 O(L₁ log L₂)，已經比 L₁L₂ 快，值得排序。",
+     "t": 2764
+    },
+    {
+     "text": "兩向量都排好了：用一個指標記住上次停在哪。",
+     "t": 2794
+    },
+    {
+     "text": "找 4：看到 6 > 4，就知道後面不會有 4，指標停在 6。",
+     "t": 2858
+    }
+   ]
+  },
+  {
+   "title": "為什麼不改用 binary search？上界 L₁ + L₂",
+   "scene": "dcmit-ptr-vs-bsearch",
+   "points": [
+    {
+     "text": "問題：左邊若是 3、4、6、9000 這種大數呢？指標一樣一格一格往下走。",
+     "t": 2920
+    },
+    {
+     "text": "因為那樣反而不是最佳；一格一格走才是最佳的執行時間。",
+     "t": 2960
+    },
+    {
+     "text": "例：兩個串列都是 1, 2, …, 10,000。",
+     "t": 2968
+    },
+    {
+     "text": "兩指標：10,000 + 10,000 步。",
+     "t": 3015
+    },
+    {
+     "text": "光前 5,000 個就各要約 log(n/2) 步：> (n/2) log(n/2)。",
+     "t": 3041
+    },
+    {
+     "text": "最壞情況（值都在長串列的尾端或不存在）要走完兩個串列：L₁ + L₂。",
+     "t": 3187
+    },
+    {
+     "text": "作業：對照課本讀 insertion sort 的程式，確認是 n²。",
+     "t": 3199
+    },
+    {
+     "text": "docdist6 的 merge 和這個內積完全一樣：這個指標技巧就是 merge。",
+     "t": 3232
     }
    ]
   }
  ],
  "quiz": [
   {
-   "q": "count_frequency 中 if new_word == entry[0] 的總成本是？",
+   "q": "count_frequency 中哪一行主導執行時間？",
    "opts": [
-    "O(W·L·w̄)",
-    "O(W)",
-    "O(L)",
-    "O(W + L)"
+    "if new_word == entry[0]：O(W·L·w̄)",
+    "for new_word in word_list：O(W)",
+    "L.append：O(L)",
+    "entry[1] += 1：O(W − L)"
    ],
-   "ans": "O(W·L·w̄)",
-   "why": "執行 L·W 次，每次字串比較花 w̄。"
+   "ans": "if new_word == entry[0]：O(W·L·w̄)",
+   "why": "它執行 L·W 次，且字串比較成本與字長 w̄ 成正比。"
   },
   {
-   "q": "count_frequency 中 entry[1] += 1 精確執行幾次？",
+   "q": "count_frequency 的 entry[1] += 1 精確執行幾次？",
    "opts": [
     "W − L",
-    "W",
     "L",
-    "W·L"
+    "W",
+    "L·W"
    ],
    "ans": "W − L",
-   "why": "只有已出現過的字（重複字）會遞增計數。"
+   "why": "只有重複出現的字才會進入這行；W 個字中有 L 個是第一次出現。"
   },
   {
-   "q": "get_words_from_line_list 原本 O(W²) 的原因？",
+   "q": "為什麼字串比較不能直接當 O(1)？",
    "opts": [
-    "word_list = word_list + words 每次都複製整個串列",
-    "for 迴圈多跑一圈",
-    "字串比較太慢",
-    "用了 dictionary"
+    "要逐字元比，成本與字長成正比",
+    "Python 的字串是 linked list",
+    "要先排序",
+    "要計算 hash"
    ],
-   "ans": "word_list = word_list + words 每次都複製整個串列",
-   "why": "改成 extend 後只搬新加入的 K 個元素。"
+   "ans": "要逐字元比，成本與字長成正比",
+   "why": "兩字串只差最後一個字元時要比到底；只有字長有界時才能當常數。"
   },
   {
-   "q": "兩個已排序、長度 L₁、L₂ 的向量做內積，兩指標法的時間是？",
+   "q": "把 word_list = word_list + words_in_line 改成 extend 後，get_words_from_line_list 變成？",
+   "opts": [
+    "O(W)",
+    "O(W²)",
+    "O(W log W)",
+    "O(K²)"
+   ],
+   "ans": "O(W)",
+   "why": "每行 K 次 append、共 Z 行，K·Z = W。"
+  },
+  {
+   "q": "兩個已排序向量做內積，兩指標法的最壞步數是？",
    "opts": [
     "O(L₁ + L₂)",
     "O(L₁ log L₂)",
-    "O(L₁L₂)",
-    "O(log L₁ + log L₂)"
+    "O(L₁ L₂)",
+    "O(min(L₁, L₂))"
    ],
    "ans": "O(L₁ + L₂)",
-   "why": "兩個指標都只往前走。"
+   "why": "指標只往前走，最壞要走完兩個串列。"
   },
   {
-   "q": "用 profiler 找瓶頸時應該看？",
+   "q": "兩個串列都是 1…N 時，對每個元素做 binary search 的總成本約是？",
    "opts": [
-    "total time（函數本身花的時間）",
-    "cumulative time",
-    "程式行數",
-    "函數被呼叫的順序"
+    "Θ(N log N)",
+    "Θ(N)",
+    "Θ(log N)",
+    "Θ(N²)"
    ],
-   "ans": "total time（函數本身花的時間）",
-   "why": "cumulative time 包含子函數，會把瓶頸算到呼叫者頭上。"
+   "ans": "Θ(N log N)",
+   "why": "每次約 log N 步，共 N 次；兩指標只要 2N。"
   },
   {
-   "q": "Python list 對應 CLRS 中的哪種結構？",
+   "q": "Profiler 找瓶頸時應看哪個欄位？",
    "opts": [
-    "array",
-    "linked list",
-    "hash table",
-    "binary search tree"
+    "total time（函數本身）",
+    "cumulative time（含子函數）",
+    "呼叫次數",
+    "行數"
    ],
-   "ans": "array",
-   "why": "連續儲存、隨機存取 O(1)，串接要複製。"
+   "ans": "total time（函數本身）",
+   "why": "cumulative time 會把子函數的慢算在父函數頭上。"
   }
- ],
- "timing": "estimated"
+ ]
 }

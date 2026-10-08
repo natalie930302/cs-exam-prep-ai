@@ -1,0 +1,353 @@
+{
+ "video": "zXhWPrMLXGo",
+ "label": "Abdul Bari：Merge Sort - Hindi",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "什麼是 merging",
+   "scene": "dcbari-hmerge",
+   "points": [
+    {
+     "text": "這支影片講 merge sort；要先懂 merging。",
+     "t": 1
+    },
+    {
+     "text": "兩個串列：A 有 m = 4 個元素、B 有 n = 4 個元素，兩者都已排序。",
+     "t": 12
+    },
+    {
+     "text": "Merging 把兩個串列合成第三個串列 C。",
+     "t": 30
+    },
+    {
+     "text": "Merging is a process of combining two sorted lists into a single sorted list.",
+     "t": 42
+    }
+   ]
+  },
+  {
+   "title": "Merging 的步驟與程式",
+   "scene": "dcbari-hmerge",
+   "points": [
+    {
+     "text": "i 指 A 的第一個、j 指 B 的第一個、k 指 C 的第一格。",
+     "t": 50
+    },
+    {
+     "text": "比 A[i] 與 B[j]：A[i] 較小就複製到 C，i 前進，k 也移到下一個空格。",
+     "t": 63
+    },
+    {
+     "text": "再比一次：這次 B[j] 較小，就把 B[j] 複製到 C，j、k 前進。",
+     "t": 81
+    },
+    {
+     "text": "程式：if (A[i] < B[j]) C[k++] = A[i++];",
+     "t": 107
+    },
+    {
+     "text": "otherwise C[k++] = B[j++];",
+     "t": 130
+    },
+    {
+     "text": "依序複製 5、7、8、10；之後 i 停在 15、j 停在 12。",
+     "t": 149
+    },
+    {
+     "text": "比 15 與 12：12 較小 → 12 進 C，j 前進到 B 的外面。",
+     "t": 175
+    }
+   ]
+  },
+  {
+   "title": "迴圈條件與剩下的元素",
+   "scene": "dcbari-hmerge",
+   "points": [
+    {
+     "text": "B 的元素用完，j 跑出串列，比較就停止：while (i < m && j < n)。",
+     "t": 188
+    },
+    {
+     "text": "一個串列用完時，另一個串列一定還有剩。",
+     "t": 219
+    },
+    {
+     "text": "例：如果 A 再多一個 17，15 複製後還會剩 17。",
+     "t": 226
+    },
+    {
+     "text": "至少會剩一個元素，可能在 A，也可能在 B。",
+     "t": 239
+    },
+    {
+     "text": "while (i < m) C[k++] = A[i++]；B 有剩也一樣全部複製到 C。",
+     "t": 250
+    },
+    {
+     "text": "這樣 A、B merge 完，結果放在 C。",
+     "t": 280
+    }
+   ],
+   "trap": "影片在 4:44 說「這就是 merge sort 的 algorithm」，其實這段是 merge（合併）程序；merge sort 會反覆呼叫它。影片的索引用 i < m（0 起算）；Bari 英文版用 i ≤ m（1 起算），兩者等價。"
+  },
+  {
+   "title": "四個串列：不只一種 merge pattern",
+   "scene": "dcbari-habcd",
+   "points": [
+    {
+     "text": "有四個串列 A、B、C、D，怎麼 merge？",
+     "t": 311
+    },
+    {
+     "text": "先 merge A、B 得到 E，再 merge C、D 得到 F。",
+     "t": 322
+    },
+    {
+     "text": "串列數 4 → 3 → 2；最後 merge E、F 得到 G，G 含有全部元素。",
+     "t": 341
+    },
+    {
+     "text": "也可以：A、B → E，E 和 C → F，F 和 D → G。",
+     "t": 375
+    },
+    {
+     "text": "兩個以上的串列可以用不同方式合併：there can be more than one merge pattern（很重要）。",
+     "t": 404
+    }
+   ]
+  },
+  {
+   "title": "8 個單一元素串列：7 次 merge",
+   "scene": "dcbari-h8lists",
+   "points": [
+    {
+     "text": "8 個串列，每個只有 1 個元素；只有一個元素的串列本來就已排序。",
+     "t": 437
+    },
+    {
+     "text": "兩兩 merge 得到 3,8、5,7、2,9、4,6。",
+     "t": 453
+    },
+    {
+     "text": "4 個串列再兩兩 merge：3,5,7,8 與 2,4,6,9。",
+     "t": 467
+    },
+    {
+     "text": "最後兩個串列 merge，結果要寫到第三個串列，得到一個已排序串列。",
+     "t": 485
+    },
+    {
+     "text": "數一數：8 個串列共做了 7 次 merge。",
+     "t": 514
+    },
+    {
+     "text": "也可以換順序：先 merge 左邊兩組、再把結果合併，再處理右邊……",
+     "t": 546
+    },
+    {
+     "text": "或一個接一個 merge；兩個以上串列的 merge pattern 不只一種。",
+     "t": 573
+    }
+   ]
+  },
+  {
+   "title": "Merge sort：把陣列看成 8 個串列",
+   "scene": "dcbari-h8lists",
+   "points": [
+    {
+     "text": "進入 merge sort：一個大小 8 的陣列要排序。",
+     "t": 589
+    },
+    {
+     "text": "不把它看成單一陣列，而是 8 個不同的串列。",
+     "t": 616
+    },
+    {
+     "text": "每個元素自己就是一個串列 → 8 個串列。",
+     "t": 651
+    }
+   ]
+  },
+  {
+   "title": "遞迴 MergeSort：divide 到單一元素",
+   "scene": "dcbari-hmsrec",
+   "points": [
+    {
+     "text": "Merge sort 會把陣列 divide；這不是實體切開，而是邏輯上的切分。",
+     "t": 677
+    },
+    {
+     "text": "左半是一個串列、右半是另一個串列；再拿左半來切：第 2 次 divide。",
+     "t": 685
+    },
+    {
+     "text": "左半的左半再切：第 3 次 divide，左右各剩一個元素。",
+     "t": 701
+    },
+    {
+     "text": "一直切到只剩單一元素為止。",
+     "t": 715
+    },
+    {
+     "text": "兩個單一元素 merge → 3 和 8。",
+     "t": 721
+    },
+    {
+     "text": "MergeSort(l, h)：l = 1、h = 8；if (l < h)（至少兩個元素）才繼續。",
+     "t": 751
+    },
+    {
+     "text": "mid = (l + h)/2，然後 divide。",
+     "t": 766
+    }
+   ]
+  },
+  {
+   "title": "MergeSort 程式：左、右、Merge",
+   "scene": "dcbari-hmsrec",
+   "points": [
+    {
+     "text": "左半再呼叫 MergeSort(l, mid)。",
+     "t": 779
+    },
+    {
+     "text": "右半也繼續 divide：第 4 次 divide，merge 後得到 5、7。",
+     "t": 787
+    },
+    {
+     "text": "右半呼叫 MergeSort(mid + 1, h)。",
+     "t": 811
+    },
+    {
+     "text": "左右兩半都排好後 Merge(l, mid, h)：把 l～mid 與 mid+1～h 合成一個串列。",
+     "t": 823
+    },
+    {
+     "text": "右半邊：第 5、6 次 divide，merge 得 2、9。",
+     "t": 846
+    },
+    {
+     "text": "第 7 次 divide 得 4、6；再 merge 成 2、4、6、9。",
+     "t": 863
+    },
+    {
+     "text": "最後兩個串列 merge，得到單一的已排序串列。",
+     "t": 881
+    }
+   ]
+  },
+  {
+   "title": "Merge 需要 auxiliary array",
+   "scene": "dcbari-haux",
+   "points": [
+    {
+     "text": "問題：兩個串列 merge 時，結果要放哪裡？",
+     "t": 896
+    },
+    {
+     "text": "需要一個額外的 auxiliary array B 存放 merge 結果。",
+     "t": 903
+    },
+    {
+     "text": "3、5、7、8 先寫到 B，再從 B 複製回 A。",
+     "t": 913
+    },
+    {
+     "text": "2、4、6、9 也一樣寫到 B 再複製回去。",
+     "t": 923
+    },
+    {
+     "text": "最後兩個串列 merge 到 B，再從 B 回到 A。",
+     "t": 929
+    },
+    {
+     "text": "所以這裡的 Merge 跟開頭的版本不同：要改成 A → B、再 B → A。",
+     "t": 943
+    }
+   ]
+  },
+  {
+   "title": "總結",
+   "scene": "dcbari-h8lists",
+   "points": [
+    {
+     "text": "Merge sort 用 merge pattern 一邊合併一邊排序。",
+     "t": 963
+    },
+    {
+     "text": "8 個元素的串列被看成 8 個各含一個元素的串列，再套用 merge pattern 排好。",
+     "t": 976
+    }
+   ],
+   "trap": "補充：merge sort 一律 Θ(n log n)，但需要 Θ(n) 的輔助陣列，不是 in-place。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Merging 的定義是？",
+   "opts": [
+    "把兩個已排序串列合成一個已排序串列",
+    "把一個串列切成兩半",
+    "把兩個未排序串列接在一起",
+    "找出串列的中位數"
+   ],
+   "ans": "把兩個已排序串列合成一個已排序串列",
+   "why": "影片原文：combining two sorted lists into a single sorted list。"
+  },
+  {
+   "q": "Merge 的主迴圈 while (i < m && j < n) 結束時，下列何者正確？",
+   "opts": [
+    "至少有一個串列已經用完",
+    "兩個串列一定同時用完",
+    "C 一定已經放滿",
+    "A 一定還有剩"
+   ],
+   "ans": "至少有一個串列已經用完",
+   "why": "條件不成立代表 i 或 j 跑出串列，另一邊剩下的要再複製過去。"
+  },
+  {
+   "q": "用 2-way merging 把 8 個串列合成 1 個，需要幾次 merge？",
+   "opts": [
+    "7",
+    "8",
+    "3",
+    "4"
+   ],
+   "ans": "7",
+   "why": "每次 merge 讓串列數少 1：8 − 1 = 7，不論 pattern。"
+  },
+  {
+   "q": "四個串列 A、B、C、D，下列何者也是合法的 merge pattern？",
+   "opts": [
+    "A+B → E，E+C → F，F+D → G",
+    "A+B+C+D 一次完成才算 2-way",
+    "只能 A+B、C+D 再合",
+    "只能 D+C → E 開始"
+   ],
+   "ans": "A+B → E，E+C → F，F+D → G",
+   "why": "兩個以上串列有不只一種 merge pattern。"
+  },
+  {
+   "q": "MergeSort(l, h) 什麼時候不再 divide？",
+   "opts": [
+    "l == h（只剩一個元素）",
+    "h − l == 2",
+    "mid 是偶數",
+    "陣列已排序"
+   ],
+   "ans": "l == h（只剩一個元素）",
+   "why": "if (l < h) 才繼續切；單一元素本身就已排序。"
+  },
+  {
+   "q": "陣列版 merge sort 為什麼需要 auxiliary array？",
+   "opts": [
+    "merge 結果不能直接寫在原陣列，要先寫到 B 再複製回 A",
+    "為了存 stack",
+    "為了存 pivot",
+    "為了計算 mid"
+   ],
+   "ans": "merge 結果不能直接寫在原陣列，要先寫到 B 再複製回 A",
+   "why": "兩個串列在同一陣列裡，合併結果必須放到另一個陣列。"
+  }
+ ]
+}

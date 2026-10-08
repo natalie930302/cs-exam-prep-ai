@@ -1,31 +1,61 @@
 {
  "video": "-qOVVRIZzao",
  "label": "Abdul Bari：2.8.2 QuickSort Analysis",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
    "title": "Best case：每次都切在中間",
    "scene": "qs-best-tree",
    "points": [
     {
-     "text": "Quicksort 是遞迴、divide and conquer，用 partition 找出 pivot 的位置把串列切開。",
+     "text": "分析 quicksort：遞迴、divide and conquer，用 partition 演算法。",
      "t": 0
     },
     {
-     "text": "1～15 共 15 個元素，假設每次都切在中間：第一次在 8，左邊 1～7、右邊 9～15。",
+     "text": "Partition 找出 pivot 的位置並把串列切開。",
+     "t": 12
+    },
+    {
+     "text": "1～15 共 15 個元素，呼叫 QuickSort(1, 15)。",
      "t": 23
     },
     {
-     "text": "再切在 4 與 12，得到 1～3、5～7、9～11、13～15；再切在 2、6、10、14。",
-     "t": 77
+     "text": "假設切在中間 8：左邊 1～7、右邊 9～15。",
+     "t": 52
     },
     {
-     "text": "partition 會比較整個串列 → 每層約 n；樹高 log n。",
-     "t": 147
+     "text": "繼續假設都切在中間：4 和 12，得到 1～3、5～7、9～11、13～15。",
+     "t": 81
     },
     {
-     "text": "總時間 n log n → best case Θ(n log n)。",
-     "t": 230
+     "text": "再切在 2、6、10、14，最後只剩單一元素。",
+     "t": 105
+    }
+   ]
+  },
+  {
+   "title": "時間：每層 n、高度 log n",
+   "scene": "qs-best-tree",
+   "points": [
+    {
+     "text": "用這棵樹分析：partition 會比較並交換元素。",
+     "t": 151
+    },
+    {
+     "text": "Partition 走過整個串列 → n；同一層左右合計也約 n。",
+     "t": 165
+    },
+    {
+     "text": "樹高：每次除以 2，n/2ᵏ = 1 → k = log₂ n。",
+     "t": 188
+    },
+    {
+     "text": "log n 層 × 每層 n → O(n log n)。",
+     "t": 234
+    },
+    {
+     "text": "這是「每次都切在中間」的 best case。",
+     "t": 254
     }
    ]
   },
@@ -37,16 +67,24 @@
    },
    "points": [
     {
-     "text": "Median：已排序串列的中間元素，例 1～7 的 median 是 4。",
-     "t": 265
+     "text": "Best case 做得到嗎？先看 median。",
+     "t": 285
     },
     {
-     "text": "要切在中間，被選為 pivot 的必須剛好是 median。",
-     "t": 282
+     "text": "1～7 已排序，正中間的元素就是 median。",
+     "t": 306
     },
     {
-     "text": "沒排序就不知道 median，所以無法保證每次都選到它，best case 只能隨機碰到。",
-     "t": 302
+     "text": "要切在中間，被選為 pivot 的元素必須是 median。",
+     "t": 322
+    },
+    {
+     "text": "沒排序就不知道 median。",
+     "t": 331
+    },
+    {
+     "text": "可能隨機碰到，但無法控制：best case 無法刻意達成。",
+     "t": 346
     }
    ]
   },
@@ -55,112 +93,154 @@
    "scene": "qs-worst-sorted",
    "points": [
     {
-     "text": "選第一個元素當 pivot，輸入已排序：i 找不到更大的、j 一路走回來，pivot 留在原位。",
-     "t": 341
+     "text": "Worst case 是什麼？輸入已經排好時。",
+     "t": 361
     },
     {
-     "text": "每次都切在開頭：1 | 2～7、2 | 3～7、3 | 4～7……；遞減排序則每次切在尾端。",
-     "t": 415
+     "text": "Partition 選第一個元素當 pivot：i 找更大的、j 找小於等於的。",
+     "t": 382
     },
     {
-     "text": "比較次數 n + (n−1) + … + 2 + 1 = n(n+1)/2 → worst case Θ(n²)。",
-     "t": 451
+     "text": "j 一路走回 pivot：partition 就在原位置。",
+     "t": 402
     },
     {
-     "text": "Merge sort 沒有好壞之分，一律 n log n；quicksort 平均 n log n，但最壞 n²。",
-     "t": 486
+     "text": "1～7：1 | 2～7、2 | 3～7、……、7 | 7，每次都切在開頭。",
+     "t": 428
     },
     {
-     "text": "實務上「對已排序資料再排序」很常見，所以這個最壞情況真的會發生。",
-     "t": 521
+     "text": "遞增排序切在開頭；遞減排序則每次切在尾端。",
+     "t": 461
+    },
+    {
+     "text": "比較次數 n + (n−1) + … + 2 + 1 = n(n+1)/2 → O(n²)。",
+     "t": 474
     }
    ]
   },
   {
-   "title": "改善：選中間元素或隨機 pivot",
+   "title": "跟 merge sort 比較",
+   "scene": "qs-worst-sorted",
+   "points": [
+    {
+     "text": "Best case n log n 做不到，worst case n² 卻會發生（已排序時）。",
+     "t": 503
+    },
+    {
+     "text": "Merge sort 沒有 best／worst 之分，一律 n log n。",
+     "t": 519
+    },
+    {
+     "text": "Quicksort 平均 n log n，最壞 n²。",
+     "t": 530
+    },
+    {
+     "text": "資料常常本來就排好、又被拿來再排一次，所以這個問題很實際。",
+     "t": 543
+    }
+   ]
+  },
+  {
+   "title": "改善：選中間或隨機 pivot",
    "scene": "qs-pivot-choice",
    "points": [
     {
-     "text": "改選中間元素當 pivot：已排序的串列會剛好切在中間，原本的 worst case 變成 best case Θ(n log n)。",
-     "t": 540
+     "text": "不要總是選第一個元素，改選中間的元素當 pivot。",
+     "t": 557
     },
     {
-     "text": "但總會有某種排列讓中間 pivot 也很差，最壞仍是 n²。",
-     "t": 598
+     "text": "已排序時中間元素正好落在中間：串列切成兩等份。",
+     "t": 578
     },
     {
-     "text": "另一個做法是隨機選 pivot：期望 n log n，最壞仍是 n²。",
-     "t": 619
+     "text": "原本的 worst case 變成 best case：n² → n log n。",
+     "t": 594
+    },
+    {
+     "text": "但某些排列下中間 pivot 仍是 n²。",
+     "t": 615
+    },
+    {
+     "text": "另一個建議：隨機選 pivot。",
+     "t": 627
+    },
+    {
+     "text": "可能 n log n，最壞還是 n²：quicksort 最壞一定是 n²。",
+     "t": 637
     }
    ]
   },
   {
-   "title": "Quicksort 的空間：stack 深度",
+   "title": "空間：stack 深度 log n ～ n",
    "scene": "qs-stack",
    "points": [
     {
-     "text": "Quicksort 是遞迴演算法，不需要額外陣列，但會用到 stack。",
-     "t": 639
+     "text": "空間：quicksort 不需要額外陣列，但遞迴要用 stack。",
+     "t": 650
     },
     {
-     "text": "Stack 最大可能到 n（worst case），最小是 log n（best case）。",
-     "t": 658
+     "text": "Worst case stack 可能到 n，best case 是 log n。",
+     "t": 663
     },
     {
-     "text": "Stack 大小取決於 tracing tree 的高度：best case 樹高 log n、worst case 樹高 n。",
-     "t": 675
+     "text": "Stack 大小 log n ～ n。",
+     "t": 670
+    },
+    {
+     "text": "取決於 tracing tree 的高度：best case 樹高 log n、worst case 樹高 n。",
+     "t": 685
     }
    ],
-   "trap": "補充：CLRS 說明 best case（每次對半）是可能發生的，只是無法保證；Randomized-Quicksort 的期望時間 Θ(n log n)。另外先遞迴較小的一半（tail recursion）可把 stack 壓到 O(log n)。"
+   "trap": "補充：CLRS 說明每次對半是可能發生的，只是無法保證；Randomized-Quicksort 的期望時間 Θ(n log n)。先遞迴較小的一半（tail recursion）可把 stack 壓到 O(log n)。"
   }
  ],
  "quiz": [
   {
-   "q": "Quicksort 每次都切在中間時的時間？",
+   "q": "Quicksort 的 best case 時間與條件是？",
    "opts": [
-    "Θ(n log n)",
-    "Θ(n²)",
-    "Θ(n)",
-    "Θ(log n)"
+    "每次 partition 切在中間，Θ(n log n)",
+    "輸入已排序，Θ(n)",
+    "pivot 選第一個，Θ(n log n)",
+    "每次切在開頭，Θ(n²)"
    ],
-   "ans": "Θ(n log n)",
-   "why": "log n 層，每層 partition 共約 n 次比較。"
+   "ans": "每次 partition 切在中間，Θ(n log n)",
+   "why": "樹高 log n、每層 n。"
   },
   {
-   "q": "選第一個元素為 pivot，輸入已排序時比較次數約為？",
+   "q": "pivot 取第一個元素時，什麼輸入會造成 worst case？",
+   "opts": [
+    "已排序（遞增或遞減）",
+    "完全隨機",
+    "所有元素不同",
+    "元素個數為奇數"
+   ],
+   "ans": "已排序（遞增或遞減）",
+   "why": "每次都切在一端，一邊是空的。"
+  },
+  {
+   "q": "Worst case 的比較次數總和是？",
    "opts": [
     "n(n+1)/2",
     "n log n",
-    "n",
-    "2n"
+    "2n",
+    "n²/4"
    ],
    "ans": "n(n+1)/2",
-   "why": "每次只切掉 pivot 一個元素：n + (n−1) + … + 1。"
+   "why": "n + (n−1) + … + 1。"
   },
   {
-   "q": "為什麼無法保證 quicksort 的 best case？",
+   "q": "改選中間元素當 pivot，下列何者正確？",
    "opts": [
-    "pivot 必須是 median，但不排序就不知道 median",
-    "partition 一定不平衡",
-    "遞迴深度固定為 n",
-    "merge 的成本太高"
+    "已排序輸入變成 best case，但最壞仍是 n²",
+    "最壞情況變成 n log n",
+    "不再需要 partition",
+    "空間變成 O(1)"
    ],
-   "ans": "pivot 必須是 median，但不排序就不知道 median",
-   "why": "（嚴格說 linear-time selection 可以找 median，但常數很大，實務不用。）"
+   "ans": "已排序輸入變成 best case，但最壞仍是 n²",
+   "why": "總有別的排列讓中間 pivot 也很差。"
   },
   {
-   "q": "改選中間元素當 pivot 後，已排序輸入的時間變成？",
-   "opts": [
-    "Θ(n log n)",
-    "Θ(n²)",
-    "Θ(n)",
-    "不變"
-   ],
-   "ans": "Θ(n log n)",
-   "why": "已排序時中間元素就是 median，每次都切在中間。"
-  },
-  {
-   "q": "Quicksort 的 stack 空間範圍？",
+   "q": "Quicksort 的 stack 空間範圍是？",
    "opts": [
     "log n ～ n",
     "1 ～ log n",
@@ -168,19 +248,18 @@
     "固定 n"
    ],
    "ans": "log n ～ n",
-   "why": "等於遞迴樹的高度。"
+   "why": "stack 深度 = tracing tree 高度。"
   },
   {
-   "q": "比較 merge sort 與 quicksort 的 worst case：",
+   "q": "為什麼 quicksort 的 best case 無法刻意達成？",
    "opts": [
-    "merge sort Θ(n log n)、quicksort Θ(n²)",
-    "兩者都是 Θ(n²)",
-    "兩者都是 Θ(n log n)",
-    "merge sort Θ(n²)、quicksort Θ(n log n)"
+    "要每次選到 median，但沒排序就不知道 median",
+    "partition 一定切在開頭",
+    "best case 只對 merge sort 存在",
+    "遞迴深度一定是 n"
    ],
-   "ans": "merge sort Θ(n log n)、quicksort Θ(n²)",
-   "why": "merge sort 永遠對半切。"
+   "ans": "要每次選到 median，但沒排序就不知道 median",
+   "why": "影片：只可能隨機碰到。"
   }
- ],
- "timing": "estimated"
+ ]
 }

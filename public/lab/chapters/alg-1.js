@@ -1,6 +1,8 @@
 // 演算法 第1章：複雜度與遞迴（frequency count、迴圈分析、O/Ω/Θ、遞迴式、Master Theorem、攤銷）。
 // Chapter module for lab-shell.js — see the contract at the top of lab-shell.js.
 // 場景依影片段落：Abdul Bari 1.x / 2.x、MIT 6.006 L8/L9/Rec10；課本補充場景以 CLRS 為準。
+import kit from './_kit.js';
+
 export default function (ctx) {
   const { THREE, lab, sleep, $, log, clearLog, setState, controls, on, say, beat } = ctx;
   let timer = null;
@@ -1373,6 +1375,13 @@ export default function (ctx) {
     'binary-counter': { title: '課本：Binary counter 的攤銷分析', play: scBinaryCounter },
   };
 
+
+  // 每段影片的場景片段（由 sync pass 加入）：每個片段把 [id, 標題, play] 放進 FRAG。
+  const K = kit(ctx);
+  const FRAG = [];
+  // @@FRAGMENTS@@
+  FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
+
   return {
     kicker: '演算法・第 1 章',
     title: '複雜度與遞迴',
@@ -1393,7 +1402,7 @@ export default function (ctx) {
       'trace-test3', 'back-sub-decreasing', 'master-decreasing', 'tree-2t-half', 'back-sub-dividing', 'master-dividing', 'substitution-induction', 'tree-uneven', 'tree-sqrt', 'change-variable',
       'coin-decision-tree', 'kth-two-lists',
       'table-doubling', 'shrink-quarter', 'binary-counter',
-    ],
+    ].concat(FRAG.map((f) => f[0])),
     stop() { stopTimer(); },
   };
 }

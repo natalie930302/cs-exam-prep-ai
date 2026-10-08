@@ -1,0 +1,862 @@
+{
+ "video": "sweW4TVFpbQ",
+ "label": "交大江蕙如 Lec16 Divide and Conquer (2/2)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "複習：MERGE-SORT 與它的 recurrence",
+   "scene": "dcjiang-ms-recurrence",
+   "points": [
+    {
+     "text": "Merge sort：divide 把 sequence 切兩半，conquer 遞迴 sort 兩半，combine 呼叫 MERGE 合成完整的已排序 array。",
+     "t": 16
+    },
+    {
+     "text": "程式是標準的 recursive code：A 是 input array，這次呼叫要排序 index p 到 r。",
+     "t": 72
+    },
+    {
+     "text": "第 1、2 行做 divide 並判斷 trivial case：只剩一個 element 本身已排好，直接結束。",
+     "t": 99
+    },
+    {
+     "text": "Recursive code 的 running time 一般寫成 recursion 的形式：設整體為 T(n)。",
+     "t": 161
+    },
+    {
+     "text": "第 1–2 行 D(n)；第 3–4 行左右各 n/2 → 2T(n/2)；第 5 行 MERGE 為 C(n)。",
+     "t": 189
+    },
+    {
+     "text": "第 1–2 行只是簡單比較與加減 → D(n) = O(1)。",
+     "t": 270
+    },
+    {
+     "text": "目標：第 5 行的 combine 在 linear time 完成，整體就能 bound 在 O(n log n)。",
+     "t": 291
+    }
+   ]
+  },
+  {
+   "title": "MERGE：AGLOR + HIMST",
+   "scene": "dcjiang-merge-aglor",
+   "points": [
+    {
+     "text": "左半 A[p..q] 與右半 A[q+1..r] 都已經由小排到大。",
+     "t": 336
+    },
+    {
+     "text": "另外宣告一個輔助 array，先把合併結果抄下來，再寫回 A。",
+     "t": 363
+    },
+    {
+     "text": "第一個要放兩邊合起來的最小值；兩邊的最小值都排在第一個 → 拿兩個開頭比較。",
+     "t": 393
+    },
+    {
+     "text": "A vs H → A 下來；G vs H → G 下來；L vs H → H 下來。",
+     "t": 410
+    },
+    {
+     "text": "兩邊各用一個 index 記錄現在處理到哪個位置。",
+     "t": 425
+    },
+    {
+     "text": "五個人下來後比 O 與 M → M 下來，依此類推直到全部下來。",
+     "t": 460
+    },
+    {
+     "text": "左 n1 個、右 n2 個：每比一次產生一個結果，最後一個不用比 → 最多 n1 + n2 − 1 次比較。",
+     "t": 507
+    },
+    {
+     "text": "MERGE 為 O(n1 + n2) = O(n)，確實是 linear time。",
+     "t": 589
+    }
+   ],
+   "trap": "補充：這個例子實際只比了 8 次——左邊先用完後，S、T 直接抄下來不必比；n1 + n2 − 1 是上限。"
+  },
+  {
+   "title": "Merge sort vs heap sort",
+   "scene": "dcjiang-heap-vs-merge",
+   "points": [
+    {
+     "text": "MERGE 是 O(n)，接著可推得 closed form：整體 bound 在 n log n。",
+     "t": 620
+    },
+    {
+     "text": "有 recursion 的形式很好，但最好還是推出 closed form 才看得出 T(n) 是什麼。",
+     "t": 650
+    },
+    {
+     "text": "Heap sort 的 running time 也是 n log n，兩者同等級。",
+     "t": 703
+    },
+    {
+     "text": "Heap 是 array 形式的資料結構，要能用 index 直接抓到單一 element。",
+     "t": 722
+    },
+    {
+     "text": "Input 若是 linked list，要找第 5 個只能從頭走 → heap sort 不見得適合。",
+     "t": 750
+    },
+    {
+     "text": "Linked list 用 merge sort 就很自然，running time 一樣好。",
+     "t": 785
+    },
+    {
+     "text": "小缺點：MERGE 要額外開輔助 array，memory 比較耗。",
+     "t": 799
+    }
+   ]
+  },
+  {
+   "title": "解 recurrence 的準備：base case、去掉 big-O",
+   "scene": "dcjiang-recurrence-setup",
+   "points": [
+    {
+     "text": "解 recurrence relation 先設定 base case（boundary condition）的起始值。",
+     "t": 844
+    },
+    {
+     "text": "n = 1 時第 1 行判斷就結束；n ≤ 2 都是 constant time → T(n) ≤ c。",
+     "t": 876
+    },
+    {
+     "text": "解的過程中先把 big-O 換掉：運算中一直用 big-O 會讓 term 不見；big-O 最後才 apply。",
+     "t": 912
+    },
+    {
+     "text": "By definition：O(1) ≤ 常數 c，O(n) ≤ cn → T(n) ≤ 2T(n/2) + cn。",
+     "t": 954
+    },
+    {
+     "text": "精確地寫，中點取 floor，左右是 T(⌊n/2⌋) 與 T(⌈n/2⌉)。",
+     "t": 1033
+    },
+    {
+     "text": "Floor、ceiling 差異很小，不影響 asymptotic analysis，可直接忽略。",
+     "t": 1067
+    },
+    {
+     "text": "外部（例如 main）呼叫 MERGE-SORT(A, 1, n) 一次，內部自己遞迴。",
+     "t": 1115
+    }
+   ]
+  },
+  {
+   "title": "兩招：Unrolling 與 Substitution",
+   "scene": "dcjiang-two-methods",
+   "points": [
+    {
+     "text": "第一招 unrolling，又叫 recursion tree：展開過程就是在畫一棵樹，最後把整棵樹加起來。",
+     "t": 1205
+    },
+    {
+     "text": "第二招 substitution：先猜一個答案（需要靈感），再用數學歸納法證明。",
+     "t": 1233
+    },
+    {
+     "text": "要證的是 ≤（upper bound）；畫 recursion tree 時先把 ≤ 換成 =。",
+     "t": 1282
+    },
+    {
+     "text": "為了好算，假設 n 是 2 的次方，避免 floor、ceiling 或除不盡的狀況。",
+     "t": 1322
+    },
+    {
+     "text": "不是 2 的次方就放大：例如 40 多個數介於 32 與 64 之間，就取 64，頂多多算一點。",
+     "t": 1356
+    }
+   ]
+  },
+  {
+   "title": "Recursion tree：每層 cn，共 log₂n 層",
+   "scene": "dcjiang-recursion-tree",
+   "points": [
+    {
+     "text": "Recursion tree 的做法：先展開幾層，找出規律，再把所有 level 加起來。",
+     "t": 1383
+    },
+    {
+     "text": "T(n) = 2T(n/2) + cn：確定的 cn 當作 root 一個 node，下面掛兩棵 T(n/2)。",
+     "t": 1445
+    },
+    {
+     "text": "T(n/2) 再展開：node 是 cn/2，下面再各掛兩棵 T(n/4)。",
+     "t": 1580
+    },
+    {
+     "text": "下一層是四個 cn/4，每個再掛兩棵，依此類推。",
+     "t": 1620
+    },
+    {
+     "text": "Level by level 加總：第一層 cn，第二層 2 · cn/2 = cn，第三層 4 · cn/4 = cn……每層都是 cn。",
+     "t": 1658
+    },
+    {
+     "text": "層數 = n 除以 2 幾次變成 1 → log₂n 層。",
+     "t": 1708
+    },
+    {
+     "text": "總和 cn · log₂n，取 big-O 去掉 c → O(n log n)。",
+     "t": 1743
+    }
+   ]
+  },
+  {
+   "title": "作業：binary search 的 recursion tree",
+   "scene": "dcjiang-bsearch-rtree",
+   "points": [
+    {
+     "text": "作業：回去畫 binary search 的 recursion tree，算它的 complexity。",
+     "t": 1761
+    },
+    {
+     "text": "它是 degenerate 的樹，不會變胖，一直都小小的。",
+     "t": 1779
+    },
+    {
+     "text": "可以自己推它的 complexity 並證明。",
+     "t": 1790
+    }
+   ],
+   "trap": "補充（作業答案）：T(n) = T(n/2) + c，每層只有一個 c、共 log₂n 層 → O(log n)。"
+  },
+  {
+   "title": "Substitution：猜 cn log₂n，再歸納證明",
+   "scene": "dcjiang-substitution",
+   "points": [
+    {
+     "text": "Substitution：有靈感就先猜答案，再用數學歸納法證明。",
+     "t": 1816
+    },
+    {
+     "text": "Recursion tree 已偷偷知道答案 → 猜 O(n log₂n)。",
+     "t": 1846
+    },
+    {
+     "text": "不直接拿 big-O 加減，寫成 T(n) ≤ … 的 exact 形式，避免係數多算或少算。",
+     "t": 1864
+    },
+    {
+     "text": "找適當的 c 使 T(n) ≤ c · n · log₂n，n ≥ 2 時成立；base case 直接帶入即可。",
+     "t": 1892
+    },
+    {
+     "text": "Inductive step 用 strong induction：所有小於 n 都成立，推 n 成立（因為每次跳兩倍）。",
+     "t": 1917
+    },
+    {
+     "text": "n/2 < n → T(n/2) ≤ c(n/2) log₂(n/2) = c(n/2)(log₂n − 1)。",
+     "t": 1945
+    },
+    {
+     "text": "代入 T(n) ≤ 2T(n/2) + cn ≤ cn(log₂n − 1) + cn，−cn 與 +cn 抵消 → 證完。",
+     "t": 1987
+    }
+   ]
+  },
+  {
+   "title": "D&C 的完整流程",
+   "scene": "dcjiang-template",
+   "points": [
+    {
+     "text": "以 merge sort 當例子，示範怎麼做 divide and conquer。",
+     "t": 2019
+    },
+    {
+     "text": "Procedure 通常是 recursive algorithm，running time 自然寫成 recurrence relation。",
+     "t": 2031
+    },
+    {
+     "text": "用 unrolling 畫 recursion tree，把所有貢獻加起來得到結果。",
+     "t": 2050
+    },
+    {
+     "text": "正確性用數學歸納法證明：D&C 的 basic idea 就是數學歸納法。",
+     "t": 2073
+    }
+   ]
+  },
+  {
+   "title": "Counting inversion：兩人的歌曲排名",
+   "scene": "dcjiang-inv-songs",
+   "points": [
+    {
+     "text": "下一個問題 counting inversion：把 merge sort template 做一點 extension。",
+     "t": 2097
+    },
+    {
+     "text": "用途：計算兩個 sequence 的相似度，例如音樂網站分析聽眾喜好有多像、多不像。",
+     "t": 2108
+    },
+    {
+     "text": "五首歌 A–E，先固定我的排名為 1 2 3 4 5。",
+     "t": 2171
+    },
+    {
+     "text": "你也依喜好對這五首歌評比：最喜歡第 1 名，最不喜歡第 5 名。",
+     "t": 2205
+    },
+    {
+     "text": "Inversion：我 1 排在 2 前面，你卻 2 在前、1 在後 → 對這兩首歌的喜好相反。",
+     "t": 2264
+    },
+    {
+     "text": "畫法：兩排寫好，相同數字連線；每一個 crossing 代表一個 inversion。",
+     "t": 2312
+    },
+    {
+     "text": "這個例子有 3 個 crossing → 3 個 inversion。",
+     "t": 2348
+    }
+   ]
+  },
+  {
+   "title": "Brute force：往後找比較小的",
+   "scene": "dcjiang-inv-brute",
+   "points": [
+    {
+     "text": "我的排名固定為 1…n，只需給你的排名 a1…an，計算兩者之間有多少 inversion。",
+     "t": 2360
+    },
+    {
+     "text": "例：你的 sequence 是 2 4 1 3 5；看每個數往後有多少比它小。",
+     "t": 2409
+    },
+    {
+     "text": "2 往後只有 1 比它小 → 1 個；4 往後有 1 和 3 → 2 個。",
+     "t": 2421
+    },
+    {
+     "text": "1、3 往後都比它們大 → 沒有 inversion，總共 3 個。",
+     "t": 2442
+    },
+    {
+     "text": "每個人都往後掃一遍：(n−1) + (n−2) + … → O(n²)。",
+     "t": 2457
+    },
+    {
+     "text": "Based on merge sort 的結果，可以只要 O(n log n)。",
+     "t": 2474
+    }
+   ]
+  },
+  {
+   "title": "D&C 想法：內部 + 跨組",
+   "scene": "dcjiang-inv-dc",
+   "points": [
+    {
+     "text": "例子有 12 首歌；我的排名就是 1 到 12 依序。",
+     "t": 2493
+    },
+    {
+     "text": "一次算這麼多人的 inversion 不會 → 先切一半。",
+     "t": 2513
+    },
+    {
+     "text": "分別算切出來兩半各自內部（intra）的 inversion。",
+     "t": 2519
+    },
+    {
+     "text": "Combine：還有一部分沒算——左半與右半之間跨組的 inversion。",
+     "t": 2540
+    },
+    {
+     "text": "Conquer：recursively 計算兩半內部的 inversion。",
+     "t": 2590
+    },
+    {
+     "text": "左內部 + 右內部 + 跨組，三個數字加起來就是全部的 inversion。",
+     "t": 2621
+    },
+    {
+     "text": "難的還是 combine；目標是 linear time 算完跨組 inversion → 整體 O(n log n)。",
+     "t": 2645
+    }
+   ]
+  },
+  {
+   "title": "後續預告",
+   "scene": null,
+   "points": [
+    {
+     "text": "Counting inversion 之後講平面上找最近兩點，第一階段結束後進入 dynamic programming。",
+     "t": 2696
+    }
+   ]
+  },
+  {
+   "title": "複習：inversion 與 crossing",
+   "scene": "dcjiang-inv-songs",
+   "points": [
+    {
+     "text": "Counting inversion 看兩個 sequence 有多像：先固定第一個 sequence 為 1 2 3 4 5。",
+     "t": 2731
+    },
+    {
+     "text": "例：我最喜歡的歌在你那裡排第三，你最喜歡的是第二首 → 這對歌產生一個 inversion。",
+     "t": 2768
+    },
+    {
+     "text": "兩個 sequence 對應數字連線，一個 crossing 就是一個 inversion；此例有 3 個。",
+     "t": 2820
+    },
+    {
+     "text": "因為已固定其中一人的排名，真正的 input 只有另一個人的順序。",
+     "t": 2842
+    },
+    {
+     "text": "兩兩比對是 O(n²)；用 D&C 只要 O(n log n)。",
+     "t": 2872
+    }
+   ]
+  },
+  {
+   "title": "12 首歌：5 + 8 + 9",
+   "scene": "dcjiang-inv-dc",
+   "points": [
+    {
+     "text": "只需給第二個 sequence，第一個預設為 1 … 12 依序排好。",
+     "t": 2898
+    },
+    {
+     "text": "Divide：一刀切成前半段與後半段。",
+     "t": 2940
+    },
+    {
+     "text": "前半段內部有 5 對 inversion，後半段內部有 8 對。",
+     "t": 2969
+    },
+    {
+     "text": "還沒算的是兩個 group 之間的 inversion。",
+     "t": 2986
+    },
+    {
+     "text": "5 + 8 + 9 就是全部的 inversion。",
+     "t": 3026
+    },
+    {
+     "text": "Combine 時除了 5 + 8，還要把跨組的 inversion 算出來加進去。",
+     "t": 3053
+    }
+   ],
+   "trap": "補充：例子 1 5 4 8 10 2 | 6 9 12 11 3 7（Kleinberg–Tardos），總共 5 + 8 + 9 = 22 個 inversion。"
+  },
+  {
+   "title": "跨組 inversion：沒排序就要一個一個比",
+   "scene": "dcjiang-inv-cross-brute",
+   "points": [
+    {
+     "text": "問題：怎麼有效率地做 combine。",
+     "t": 3063
+    },
+    {
+     "text": "跨 group 的 inversion 是最難做的部分；暴力計算是 O(n²)。",
+     "t": 3098
+    },
+    {
+     "text": "Merge sort template：combine 若 linear time 就保證 O(n log n)，以此為目標。",
+     "t": 3117
+    },
+    {
+     "text": "直接切下去，前半段的數字不整齊，就是 input 的順序。",
+     "t": 3193
+    },
+    {
+     "text": "例：拿 6，看前半有多少人比 6 大——8 和 10 → 2 個 inversion。",
+     "t": 3215
+    },
+    {
+     "text": "這樣每個人都要把前半掃一遍，complexity 會增加。",
+     "t": 3263
+    }
+   ]
+  },
+  {
+   "title": "排好序後：Merge-and-Count 一次掃過",
+   "scene": "dcjiang-merge-count",
+   "points": [
+    {
+     "text": "若算完內部 inversion 的同時順便把兩半由小排到大，跨組就好算。",
+     "t": 3276
+    },
+    {
+     "text": "算 3：從前半開頭比，1、2 比它小就跳過，遇到 4 > 3 停下。",
+     "t": 3310
+    },
+    {
+     "text": "前半共 6 個，從第 3 個起都比 3 大 → 3 貢獻 4 個跨組 inversion。",
+     "t": 3340
+    },
+    {
+     "text": "6 排在 3 後面；前面跳過的人比 3 小，當然也比 6 小，不用回頭。",
+     "t": 3364
+    },
+    {
+     "text": "從 4 開始：4、5 跳過，8 > 6 停下 → 6 貢獻 2 個。",
+     "t": 3389
+    },
+    {
+     "text": "前半的 index 只往前走，從頭到尾掃一遍，不來回 → O(n)。",
+     "t": 3427
+    },
+    {
+     "text": "往上一層前還要把兩半 merge 成由小排到大，沿用 MERGE，也是 linear time。",
+     "t": 3509
+    },
+    {
+     "text": "算跨組 inversion 與 merge 可以同時完成 → combine O(n)，整體 O(n log n)。",
+     "t": 3541
+    }
+   ],
+   "trap": "補充：完整的跨組計數是 3→4、6→2、7→2、9→1、11、12→0，共 9 個，與前面的 5 + 8 + 9 吻合。"
+  },
+  {
+   "title": "Sort-and-Count 程式",
+   "scene": "dcjiang-sort-count-code",
+   "points": [
+    {
+     "text": "Procedure 寫起來跟 merge sort 非常類似。",
+     "t": 3609
+    },
+    {
+     "text": "除了 sorting，還要 return 這個區間貢獻多少個 inversion。",
+     "t": 3625
+    },
+    {
+     "text": "只有一個元素時（p = q）不會有 inversion，直接 return。",
+     "t": 3678
+    },
+    {
+     "text": "中間切一刀（index m 取 floor，取 ceiling 也行），左半 p..m 交給 Sort-and-Count。",
+     "t": 3696
+    },
+    {
+     "text": "右半 m+1..q 也 recursive Sort-and-Count，回報右側的 inversion。",
+     "t": 3738
+    },
+    {
+     "text": "Total = 前半自己的 + 後半自己的 + Merge-and-Count 算出的跨組 inversion。",
+     "t": 3752
+    },
+    {
+     "text": "Merge-and-Count 跟 MERGE 幾乎一模一樣 → 保證 O(n log n)。",
+     "t": 3776
+    }
+   ]
+  },
+  {
+   "title": "Closest pair of points：問題與距離",
+   "scene": "dcjiang-cp-intro",
+   "points": [
+    {
+     "text": "平面上撒很多點，找最近的兩個點；1975 年提出，是幾何類的經典題。",
+     "t": 3804
+    },
+    {
+     "text": "每個點都有 (x, y) 座標。",
+     "t": 3842
+    },
+    {
+     "text": "距離採 Euclidean distance（直線距離）。",
+     "t": 3855
+    },
+    {
+     "text": "另一種是 rectilinear / Manhattan distance：x 差加 y 差，多用在 IC design 繞線。",
+     "t": 3867
+    },
+    {
+     "text": "Euclidean：√((x₁ − x₂)² + (y₁ − y₂)²)。",
+     "t": 3901
+    },
+    {
+     "text": "Brute force：所有可能的 pair 都算 → O(n²)。",
+     "t": 3954
+    },
+    {
+     "text": "目標：用 D&C 降到 O(n log n)。",
+     "t": 3971
+    }
+   ]
+  },
+  {
+   "title": "1D 版本：排序後只看相鄰",
+   "scene": "dcjiang-cp-1d",
+   "points": [
+    {
+     "text": "先看簡單版：1D，所有點都落在同一條軸上。",
+     "t": 3990
+    },
+    {
+     "text": "先由小排到大；每個點最近的點一定在它的左邊或右邊相鄰。",
+     "t": 4007
+    },
+    {
+     "text": "只要算連續兩點的距離，掃一次 O(n) 就找到。",
+     "t": 4032
+    },
+    {
+     "text": "但事先排序要 O(n log n)，排序反而比較久。",
+     "t": 4049
+    }
+   ]
+  },
+  {
+   "title": "2D：切兩半，12、21、8 取最小",
+   "scene": "dcjiang-cp-split",
+   "points": [
+    {
+     "text": "2D 不能只在一條軸上排序後看相鄰，改用 D&C。",
+     "t": 4065
+    },
+    {
+     "text": "假設所有點的 x 座標都不一樣，方便分析（之後可小修正去掉這個假設）。",
+     "t": 4112
+    },
+    {
+     "text": "Divide：一刀切成左右各 n/2 個點；偶數個時取 lower 或 upper median 都可以。",
+     "t": 4141
+    },
+    {
+     "text": "遞迴找左半最近的兩點（例如距離 12）與右半最近的兩點（21）。",
+     "t": 4212
+    },
+    {
+     "text": "中線兩側也可能產生最近的點，例如距離 8。",
+     "t": 4232
+    },
+    {
+     "text": "12、21、8 比較 → 最近的是 8 這一對。",
+     "t": 4263
+    },
+    {
+     "text": "Combine：找出接合處最近的一對，再和左右的結果比，輸出最小者。",
+     "t": 4303
+    }
+   ],
+   "trap": "補充：動畫的點座標是示意，只對齊老師說的 12、21、8 三個距離。"
+  },
+  {
+   "title": "Combine：只看中線左右 δ 的帶子",
+   "scene": "dcjiang-cp-strip",
+   "points": [
+    {
+     "text": "暴力是 n²；combine 一定要做到 linear time 才有 O(n log n)，否則不如直接暴力。",
+     "t": 4334
+    },
+    {
+     "text": "接合處的 pair 一定是一點在左、一點在右；同側的已在遞迴時算過。",
+     "t": 4381
+    },
+    {
+     "text": "中線 L：x = x*，x* 是左半中 x 座標最大那個點的 x。",
+     "t": 4432
+    },
+    {
+     "text": "δ = min(左側最近距離, 右側最近距離) = min(12, 21) = 12。",
+     "t": 4473
+    },
+    {
+     "text": "只需考慮中線左右各開 δ 的黃色帶子裡的點。",
+     "t": 4518
+    },
+    {
+     "text": "設 q 在左、r 在右：q_x ≤ x* ≤ r_x。",
+     "t": 4655
+    },
+    {
+     "text": "x* − q_x ≤ r_x − q_x ≤ d(q, r) < δ；右側同理 r_x − x* < δ。",
+     "t": 4712
+    },
+    {
+     "text": "所以帶子只要往左右各開 δ 就夠了。",
+     "t": 4802
+    }
+   ]
+  },
+  {
+   "title": "δ/2 小格子：每點只比後面 15 個",
+   "scene": "dcjiang-cp-boxes",
+   "points": [
+    {
+     "text": "帶子裡也可能有很多點，要限制比較次數。",
+     "t": 4829
+    },
+    {
+     "text": "帶子裡的點依 y 座標由上到下排序，編號 1、2、3……",
+     "t": 4860
+    },
+    {
+     "text": "每個點只要往下和 15 個點比較（loose bound），超過的不可能是答案。",
+     "t": 4883
+    },
+    {
+     "text": "把帶子切成 δ/2 × δ/2 的 square 小格子。",
+     "t": 4966
+    },
+    {
+     "text": "每格最多一個點：同格兩點必同側，距離 ≤ δ/√2 < δ，與 δ 的定義矛盾。",
+     "t": 5001
+    },
+    {
+     "text": "一個點在左上角格子時，只需要考慮之後的 15 格。",
+     "t": 5163
+    },
+    {
+     "text": "超出範圍的點，y 差至少 3·δ/2，已超過 δ。",
+     "t": 5256
+    },
+    {
+     "text": "15 是 loose bound（別本書有更少的），但仍是常數。",
+     "t": 5309
+    }
+   ],
+   "trap": "補充：CLRS 的分析只需和後面 7 個點比；15 是 Kleinberg–Tardos 的寬鬆界，兩者都是常數，結論同為 O(n)。"
+  },
+  {
+   "title": "Closest-Pair 程式與 O(n log n)",
+   "scene": "dcjiang-cp-code",
+   "points": [
+    {
+     "text": "外層：先把所有點依 x 排成 Px、依 y 排成 Py，再呼叫遞迴找出最近的 p0、p1。",
+     "t": 5358
+    },
+    {
+     "text": "第 1 行 boundary condition：3 個點以下直接兩兩比，最多比 3 次。",
+     "t": 5422
+    },
+    {
+     "text": "第 2 行起依 x* 均分成 Q、R，產生 Qx、Qy、Rx、Ry 四個 sequence，左右各遞迴。",
+     "t": 5465
+    },
+    {
+     "text": "第 6 行 δ 取左右最近距離的較小者；第 7 行把 x 落在 x* ± δ 的點收進 S。",
+     "t": 5515
+    },
+    {
+     "text": "第 8 行 S 依 y 排好；第 9–11 行每點和後面 15 個點比，找出 (s, s′)。",
+     "t": 5588
+    },
+    {
+     "text": "第 12–14 行：q 對、r 對、s 對三者比大小，輸出最近的一對。",
+     "t": 5636
+    },
+    {
+     "text": "預先排序 O(n log n)；遞迴部分 T(n) = 2T(n/2) + O(n)，因為每點只比常數 15 個。",
+     "t": 5668
+    },
+    {
+     "text": "整體 O(n log n)。",
+     "t": 5760
+    }
+   ],
+   "trap": "補充：第 8 行若每層都重新排序會變成 O(n log² n)；正確做法是從已排好的 Py 依序篩出 S，線性時間即可。"
+  },
+  {
+   "title": "結語：D&C 與 DP 都來自歸納法",
+   "scene": null,
+   "points": [
+    {
+     "text": "Divide and conquer 是演算法裡蠻經典的一種形式。",
+     "t": 5778
+    },
+    {
+     "text": "下一單元 dynamic programming 與 D&C 異曲同工，兩者都來自數學歸納法。",
+     "t": 5793
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "MERGE 兩段已排序的 subsequence（各 n1、n2 個），最多需要幾次比較？",
+   "opts": [
+    "n1 + n2 − 1",
+    "n1 + n2",
+    "n1 · n2",
+    "max(n1, n2)"
+   ],
+   "ans": "n1 + n2 − 1",
+   "why": "每比一次輸出一個元素，最後一個不必比；所以 MERGE 是 linear time。"
+  },
+  {
+   "q": "資料以 linked list 儲存時，老師建議用哪種 n log n 排序？代價是什麼？",
+   "opts": [
+    "Merge sort，代價是 MERGE 需要額外的輔助 array",
+    "Heap sort，代價是需要 index",
+    "Heap sort，沒有代價",
+    "Merge sort，代價是 worst case O(n²)"
+   ],
+   "ans": "Merge sort，代價是 MERGE 需要額外的輔助 array",
+   "why": "Heap sort 需要用 index 直接取 element，linked list 做不到；merge sort 很自然，但要多耗一些 memory。"
+  },
+  {
+   "q": "T(n) = 2T(n/2) + cn 的 recursion tree，每一層成本與層數分別是？",
+   "opts": [
+    "每層 cn，共 log₂n 層",
+    "每層 cn/2，共 n 層",
+    "每層 c，共 log₂n 層",
+    "每層 n²，共 2 層"
+   ],
+   "ans": "每層 cn，共 log₂n 層",
+   "why": "第 i 層有 2^i 個 cn/2^i，相加為 cn；n 除以 2 共 log₂n 次變 1，總和 cn log₂n。"
+  },
+  {
+   "q": "你的排名是 2 4 1 3 5（我的是 1 2 3 4 5），共有幾個 inversion？",
+   "opts": [
+    "3",
+    "2",
+    "4",
+    "5"
+   ],
+   "ans": "3",
+   "why": "逆序對為 (2,1)、(4,1)、(4,3)，也就是連線圖上的 3 個 crossing。"
+  },
+  {
+   "q": "序列 1 5 4 8 10 2 | 6 9 12 11 3 7 的 inversion 總數是？",
+   "opts": [
+    "22",
+    "13",
+    "9",
+    "17"
+   ],
+   "ans": "22",
+   "why": "前半內部 5、後半內部 8、跨組 9，5 + 8 + 9 = 22。"
+  },
+  {
+   "q": "Merge-and-Count 時前半為 1 2 4 5 8 10、後半為 3 6 7 9 11 12。當 3 被放下來時，跨組 inversion 增加多少？",
+   "opts": [
+    "4",
+    "2",
+    "6",
+    "1"
+   ],
+   "ans": "4",
+   "why": "前半的 1、2 已經下來，剩下 4、5、8、10 都比 3 大，一次加 4。"
+  },
+  {
+   "q": "Closest pair 中左右最近距離分別為 12 和 21，combine 時的帶子範圍是？",
+   "opts": [
+    "中線左右各 12",
+    "中線左右各 21",
+    "中線左右各 6",
+    "整個平面"
+   ],
+   "ans": "中線左右各 12",
+   "why": "δ = min(12, 21) = 12；跨中線且距離 < δ 的點，x 座標一定落在 x* ± δ 之內。"
+  },
+  {
+   "q": "為什麼每個 δ/2 × δ/2 的小格子裡最多只有一個點？",
+   "opts": [
+    "同格兩點必在同側，距離 ≤ δ/√2 < δ，與 δ 是同側最近距離矛盾",
+    "因為假設所有 x 座標都不同",
+    "因為帶子已經依 y 排序",
+    "因為格子裡的點會被刪掉"
+   ],
+   "ans": "同格兩點必在同側，距離 ≤ δ/√2 < δ，與 δ 是同側最近距離矛盾",
+   "why": "格子不跨中線，對角線長 δ/√2 < δ，若有兩點就比 δ 更近，矛盾。所以每點只需比後面常數個點。"
+  }
+ ]
+}

@@ -1,0 +1,308 @@
+{
+ "video": "u7YMFRUFqe0",
+ "label": "Maximum Subarray solution using Divide & Conquer | Kadane",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "問題：maximum subarray",
+   "scene": "dcbari-msub-intro",
+   "points": [
+    {
+     "text": "介紹解 maximum subarray 的幾種方法。",
+     "t": 1
+    },
+    {
+     "text": "給整數陣列 nums，找總和最大的連續 subarray（至少一個數），回傳它的和。",
+     "t": 8
+    },
+    {
+     "text": "例：[-2,1,-3,4,-1,2,1,-5,4] 的最大和是 6（[4,-1,2,1]）。",
+     "t": 25
+    },
+    {
+     "text": "第一種：naive 雙層 for 迴圈，留給你自己練習。",
+     "t": 35
+    },
+    {
+     "text": "第二種：divide and conquer。",
+     "t": 46
+    }
+   ],
+   "trap": "補充：naive 雙層迴圈（累加 i～j）是 O(n²)。"
+  },
+  {
+   "title": "分治演算法：max(左半, 右半, cross sum)",
+   "scene": "dcbari-msub-algo",
+   "points": [
+    {
+     "text": "切成子問題、解子問題，往回走時合併答案。",
+     "t": 53
+    },
+    {
+     "text": "遞迴：陣列切成兩半，回傳三者最大：左半、右半、cross sum。",
+     "t": 65
+    },
+    {
+     "text": "Left subsum：從中點開始、往左結束於某處的最大和。",
+     "t": 88
+    },
+    {
+     "text": "Right subsum：從 mid + 1 開始、往右結束於某處的最大和。",
+     "t": 108
+    },
+    {
+     "text": "Cross sum = left subsum + right subsum。",
+     "t": 115
+    }
+   ]
+  },
+  {
+   "title": "例子：一直切到單一元素",
+   "scene": "dcbari-msub-dc",
+   "params": {
+    "part": "divide"
+   },
+   "points": [
+    {
+     "text": "用例子陣列示範。",
+     "t": 125
+    },
+    {
+     "text": "用 pivot 切兩半，pivot 通常是中點。",
+     "t": 135
+    },
+    {
+     "text": "左半 = 開頭到 pivot，右半 = pivot + 1 到結尾。",
+     "t": 142
+    },
+    {
+     "text": "繼續切，直到每段只剩一個元素。",
+     "t": 154
+    }
+   ]
+  },
+  {
+   "title": "往上合併：[-2, 1] 與 [-2, 1, -3]",
+   "scene": "dcbari-msub-dc",
+   "params": {
+    "part": "small"
+   },
+   "points": [
+    {
+     "text": "先看左半，往上合併子陣列的解。",
+     "t": 166
+    },
+    {
+     "text": "[-2, 1]：pivot = -2，left sum = -2、right sum = 1。",
+     "t": 178
+    },
+    {
+     "text": "cross sum = -2 + 1 = -1；max(-2, 1, -1) = 1。",
+     "t": 196
+    },
+    {
+     "text": "[-3] 只有一個元素，最大就是 -3。",
+     "t": 222
+    },
+    {
+     "text": "[-2, 1, -3]：pivot 是 1，left subsum 從 pivot 往左：1、1 + (-2) = -1 → 取 1。",
+     "t": 231
+    },
+    {
+     "text": "right subsum = -3，cross = 1 + (-3) = -2；max = 1。",
+     "t": 261
+    },
+    {
+     "text": "右邊的子陣列同樣算法，建議自己算一次。",
+     "t": 279
+    }
+   ]
+  },
+  {
+   "title": "整個陣列的 cross sum = 6",
+   "scene": "dcbari-msub-cross",
+   "points": [
+    {
+     "text": "同樣方法解完右半；整個陣列的左半、右半答案都有了。",
+     "t": 299
+    },
+    {
+     "text": "接著算整個陣列的 cross sum（建議先暫停自己算）。",
+     "t": 312
+    },
+    {
+     "text": "Left subsum：從 pivot 往左，每個位置都算累加和。",
+     "t": 339
+    },
+    {
+     "text": "取這些累加和的最大值當 left subsum。",
+     "t": 352
+    },
+    {
+     "text": "Right subsum 同理，留給你算。",
+     "t": 360
+    },
+    {
+     "text": "最後答案是三者最大：6。",
+     "t": 364
+    }
+   ],
+   "trap": "補充（影片未講出數字）：左半 max = 4、右半 max = 4；left subsum 從 -1 往左為 -1、3、0、1、-1 → 3，right subsum 2、3、-2、2 → 3，cross = 6。"
+  },
+  {
+   "title": "Greedy：current sum 與 max sum",
+   "scene": "dcbari-msub-greedy",
+   "points": [
+    {
+     "text": "換另一種做法。",
+     "t": 372
+    },
+    {
+     "text": "current sum、max sum 都以第一個值初始化。",
+     "t": 380
+    },
+    {
+     "text": "current = 局部最大和，max = 全域最大和。",
+     "t": 389
+    },
+    {
+     "text": "每個元素：current = max(current + x, x)。",
+     "t": 397
+    },
+    {
+     "text": "max = max(max, current)，最後回傳 max。",
+     "t": 410
+    },
+    {
+     "text": "同一陣列：第一步 max(-2 + 1, 1) = 1，max 更新成 1。",
+     "t": 420
+    },
+    {
+     "text": "掃完整個陣列，max sum 就是答案。",
+     "t": 454
+    }
+   ]
+  },
+  {
+   "title": "Kadane（DP）：直接改 input array",
+   "scene": "dcbari-msub-kadane",
+   "points": [
+    {
+     "text": "更常見的做法：dynamic programming，和 greedy 很像。",
+     "t": 471
+    },
+    {
+     "text": "差別：不把 current sum 存變數，而是直接更新 input array。",
+     "t": 481
+    },
+    {
+     "text": "max sum 以第一個值初始化。",
+     "t": 492
+    },
+    {
+     "text": "從 index 1 起：前一個元素 > 0，就把它加到目前元素上。",
+     "t": 504
+    },
+    {
+     "text": "max = max(max, nums[i])。",
+     "t": 513
+    },
+    {
+     "text": "nums[0] = -2 < 0，不加；max 變成 1。",
+     "t": 525
+    },
+    {
+     "text": "照這樣更新陣列與 max，最後 max sum = 6。",
+     "t": 546
+    }
+   ]
+  },
+  {
+   "title": "複雜度比較",
+   "scene": "dcbari-msub-kadane",
+   "points": [
+    {
+     "text": "比較三種演算法的複雜度。",
+     "t": 575
+    },
+    {
+     "text": "Divide and conquer 的時間與空間（見下方補充）。",
+     "t": 580
+    },
+    {
+     "text": "Greedy 與 Kadane：時間 O(n)、空間 O(1)。",
+     "t": 588
+    }
+   ],
+   "trap": "字幕漏掉分治的複雜度：時間 O(n log n)（T(n) = 2T(n/2) + Θ(n)），空間 O(log n)（遞迴 stack）。另外影片稱為 greedy 的版本，其實就是常見的 Kadane 寫法；第三種只是把 current sum 存在 nums 裡。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "[-2,1,-3,4,-1,2,1,-5,4] 的 maximum subarray 和是？",
+   "opts": [
+    "6",
+    "7",
+    "4",
+    "5"
+   ],
+   "ans": "6",
+   "why": "[4, -1, 2, 1] = 6。"
+  },
+  {
+   "q": "分治法的答案是哪三者的最大值？",
+   "opts": [
+    "左半最大、右半最大、跨中點的 cross sum",
+    "左半最大、右半最大、整個陣列總和",
+    "第一個、最後一個、中間元素",
+    "left subsum、right subsum、pivot"
+   ],
+   "ans": "左半最大、右半最大、跨中點的 cross sum",
+   "why": "最大子陣列只可能完全在左、完全在右、或跨過中點。"
+  },
+  {
+   "q": "[-2, 1, -3] 的 cross sum（pivot = 1）是？",
+   "opts": [
+    "-2",
+    "1",
+    "-1",
+    "-4"
+   ],
+   "ans": "-2",
+   "why": "left subsum = 1（1 或 1 − 2 取大），right subsum = -3，相加 -2。"
+  },
+  {
+   "q": "Greedy 版每一步 current 的更新式是？",
+   "opts": [
+    "current = max(current + x, x)",
+    "current = current + x",
+    "current = max(current, x)",
+    "current = min(current + x, x)"
+   ],
+   "ans": "current = max(current + x, x)",
+   "why": "前面的和是負的就從 x 重新開始。"
+  },
+  {
+   "q": "Kadane（in-place 版）在什麼條件下 nums[i] += nums[i−1]？",
+   "opts": [
+    "nums[i−1] > 0",
+    "nums[i] > 0",
+    "nums[i−1] > nums[i]",
+    "總是加"
+   ],
+   "ans": "nums[i−1] > 0",
+   "why": "前綴最大和為正才值得接上。"
+  },
+  {
+   "q": "分治法解 maximum subarray 的時間複雜度是？",
+   "opts": [
+    "O(n log n)",
+    "O(n)",
+    "O(n²)",
+    "O(log n)"
+   ],
+   "ans": "O(n log n)",
+   "why": "T(n) = 2T(n/2) + Θ(n)，cross sum 要線性時間。"
+  }
+ ]
+}

@@ -26,7 +26,7 @@
  },
  "-qOVVRIZzao": {
   "label": "Abdul Bari：2.8.2 QuickSort Analysis",
-  "points": 19,
+  "points": 36,
   "quiz": 6
  },
  "052VkKhIaQ4": {
@@ -66,7 +66,7 @@
  },
  "0oJyNmEbS4w": {
   "label": "Abdul Bari：2.9 Strassens Matrix Multiplication",
-  "points": 25,
+  "points": 52,
   "quiz": 6
  },
  "0vYydtG1Xi4": {
@@ -141,12 +141,12 @@
  },
  "2Rr2tW9zvRg": {
   "label": "Abdul Bari：2 Divide And Conquer（介紹）",
-  "points": 13,
-  "quiz": 4
+  "points": 20,
+  "quiz": 5
  },
  "2YeJ-5UAke8": {
   "label": "MIT 6.006 L12：Square Roots, Newton's Method",
-  "points": 26,
+  "points": 92,
   "quiz": 7
  },
  "3PfL2WIS22o": {
@@ -171,8 +171,8 @@
  },
  "4iXLnF3hExw": {
   "label": "MIT 6.006 Rec3：Document Distance, Insertion and Merge Sort",
-  "points": 21,
-  "quiz": 6
+  "points": 58,
+  "quiz": 7
  },
  "4tSdhWBVv6A": {
   "label": "Priority Queue, Binary Heap",
@@ -219,6 +219,11 @@
   "points": 34,
   "quiz": 5
  },
+ "62uS-MOv0bY": {
+  "label": "交大江蕙如 Lec15 Divide and Conquer (1/2)",
+  "points": 105,
+  "quiz": 8
+ },
  "63Dp2MjLlUo": {
   "label": "交大彭文志 Lec25 Search Structures (2/3)",
   "points": 136,
@@ -231,7 +236,7 @@
  },
  "6pV2IF0fgKY": {
   "label": "Abdul Bari：2.7.1 Two Way MergeSort - Iterative",
-  "points": 22,
+  "points": 51,
   "quiz": 6
  },
  "6WZvVJ0Q1FA": {
@@ -349,6 +354,11 @@
   "points": 39,
   "quiz": 7
  },
+ "ak-pz7tS5DE": {
+  "label": "Abdul Bari：2.7.3 MergeSort In-Depth Analysis",
+  "points": 46,
+  "quiz": 6
+ },
  "akErwS16DUg": {
   "label": "Linked List Introduction & Concepts",
   "points": 51,
@@ -411,7 +421,7 @@
  },
  "C2apEw9pgtw": {
   "label": "Abdul Bari：2.6.1 Binary Search Iterative Method",
-  "points": 20,
+  "points": 45,
   "quiz": 6
  },
  "C42WzJATHg0": {
@@ -488,6 +498,11 @@
   "label": "Modes of Transfer | Programmed, Interrupt-initiated I/O & DMA",
   "points": 24,
   "quiz": 6
+ },
+ "eCaXlAaN2uE": {
+  "label": "MIT 6.006 L11：Integer Arithmetic, Karatsuba Multiplication",
+  "points": 78,
+  "quiz": 7
  },
  "ENyox7kNKeY": {
   "label": "MIT 6.006 L12：DP II",
@@ -614,6 +629,16 @@
   "points": 27,
   "quiz": 5
  },
+ "JRgIXyEPnbA": {
+  "label": "MIT 6.006 Rec12：Karatsuba Multiplication, Newton's Method",
+  "points": 103,
+  "quiz": 8
+ },
+ "Kg4bqzAqRBM": {
+  "label": "MIT 6.006 L3：Insertion Sort, Merge Sort",
+  "points": 87,
+  "quiz": 7
+ },
  "lhXHk8IuFeQ": {
   "label": "交大彭文志 Lec08 Lists (1/4)",
   "points": 76,
@@ -704,6 +729,16 @@
   "points": 225,
   "quiz": 8
  },
+ "sweW4TVFpbQ": {
+  "label": "交大江蕙如 Lec16 Divide and Conquer (2/2)",
+  "points": 152,
+  "quiz": 8
+ },
+ "u7YMFRUFqe0": {
+  "label": "Maximum Subarray solution using Divide & Conquer | Kadane",
+  "points": 44,
+  "quiz": 6
+ },
  "ubLbvuWFDqM": {
   "label": "交大彭文志 Lec15 Trees (4/6) / Huffman (1/2)",
   "points": 67,
@@ -713,6 +748,11 @@
   "label": "交大彭文志 Lec26 Search Structures (3/3)",
   "points": 106,
   "quiz": 8
+ },
+ "uEUXGcc2VXM": {
+  "label": "Abdul Bari：2.6.2 Binary Search Recursive Method",
+  "points": 21,
+  "quiz": 5
  },
  "uMGwjNuidZU": {
   "label": "Abdul Bari：Pointer Arithmetic",
@@ -802,6 +842,11 @@
  "zLuuRC56uvI": {
   "label": "交大彭文志 Lec10 Lists (3/4)",
   "points": 99,
+  "quiz": 6
+ },
+ "zXhWPrMLXGo": {
+  "label": "Abdul Bari：Merge Sort - Hindi",
+  "points": 54,
   "quiz": 6
  }
 }

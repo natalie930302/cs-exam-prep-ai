@@ -1,0 +1,654 @@
+{
+ "video": "62uS-MOv0bY",
+ "label": "交大江蕙如 Lec15 Divide and Conquer (1/2)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "D&C 與數學歸納法：weak vs strong",
+   "scene": "dcjiang-induction",
+   "points": [
+    {
+     "text": "本單元 Divide and Conquer；從這裡開始的一系列方法都和數學歸納法（mathematical induction）關係非常密切。",
+     "t": 16
+    },
+    {
+     "text": "數學歸納法分兩類：weak induction 與 strong induction，證明都包含 basic step 與 inductive step。",
+     "t": 62
+    },
+    {
+     "text": "Basic step：在很小的 problem size 下，直接證明 statement 成立。",
+     "t": 83
+    },
+    {
+     "text": "Weak induction：假設 n = k 時成立，推出 k + 1 也成立；每次只前進一步，所以叫 weak。",
+     "t": 127
+    },
+    {
+     "text": "Strong induction：假設所有 ≤ k 都成立，再證 k + 1；inductive step 可以一次跳一大步。",
+     "t": 184
+    },
+    {
+     "text": "常見情形：問題和 2^k 有關時，習慣從 2^k 直接推到 2^(k+1)。",
+     "t": 232
+    },
+    {
+     "text": "兩者其實等價（一樣強），要依題目性質選合適的那一種。",
+     "t": 264
+    }
+   ]
+  },
+  {
+   "title": "Defective chessboard：L 形磁磚貼得滿嗎？",
+   "scene": "dcjiang-tromino-8x8",
+   "points": [
+    {
+     "text": "數學歸納法的強處：透過它思考，想出解答的同時也得到一個演算法。",
+     "t": 277
+    },
+    {
+     "text": "8×8 的棋盤方格挖掉一格（像浴室的排水孔，位置任意）→ defective chessboard。",
+     "t": 313
+    },
+    {
+     "text": "問題：能不能用 L-shaped（佔 3 格）的磁磚把剩下的格子貼滿？",
+     "t": 361
+    },
+    {
+     "text": "隨便貼也許運氣好貼完，但需要一個不論洞在哪都成立的 general solution。",
+     "t": 404
+    },
+    {
+     "text": "扣掉洞剩 63 格，每塊佔 3 格 → 需要 21 塊磁磚。",
+     "t": 439
+    },
+    {
+     "text": "結論：任意 2^n × 2^n 的 defective chessboard 都能被 L 形磁磚貼滿。",
+     "t": 468
+    }
+   ],
+   "trap": "補充：動畫中洞的位置是示意，老師強調洞在哪裡都無所謂。"
+  },
+  {
+   "title": "數學歸納法＝推倒骨牌",
+   "scene": "dcjiang-domino",
+   "points": [
+    {
+     "text": "數學歸納法就像排好骨牌後推倒第一張的行為。",
+     "t": 517
+    },
+    {
+     "text": "第一張要倒（base），且第 k 張倒下一定推倒第 k + 1 張（inductive step）。",
+     "t": 549
+    },
+    {
+     "text": "1 倒 → 2 倒 → 3 倒……直到所有骨牌都倒下，這就是 weak induction。",
+     "t": 575
+    }
+   ]
+  },
+  {
+   "title": "歸納證明：切四塊、中央放一塊",
+   "scene": "dcjiang-tromino-split",
+   "points": [
+    {
+     "text": "Base case n = 1：2×2 挖掉一格只有 4 種情形，剩下的正好是一塊 L 形，一眼就貼得成。",
+     "t": 621
+    },
+    {
+     "text": "Inductive step（weak）：假設 2^n × 2^n 可以貼，要證 2^(n+1) × 2^(n+1) 也可以。",
+     "t": 656
+    },
+    {
+     "text": "連結大小問題：2^(n+1) 是 2^n 的兩倍 → 棋盤切成 4 塊 2^n × 2^n。",
+     "t": 706
+    },
+    {
+     "text": "洞一定落在某一塊；其他三塊在靠中間的地方各挖一格，這三格正好放一塊 L 形磁磚。",
+     "t": 732
+    },
+    {
+     "text": "四塊各自都是 2^n × 2^n 的 defective chessboard，由 hypothesis 都貼得滿。",
+     "t": 759
+    },
+    {
+     "text": "演算法：切成四塊 → 中央放一塊 → 其餘照同樣方法貼滿。",
+     "t": 795
+    },
+    {
+     "text": "歸納法一方面證明 statement 正確，一方面給出做法（algorithm）。",
+     "t": 827
+    }
+   ]
+  },
+  {
+   "title": "本單元內容預告",
+   "scene": null,
+   "points": [
+    {
+     "text": "D&C 用數學歸納法推演出演算法；下一單元 dynamic programming 也一樣使用 induction。",
+     "t": 861
+    },
+    {
+     "text": "先介紹 merge sort（和 heap sort 一樣是 n log n），再延伸到 counting inversion。",
+     "t": 904
+    },
+    {
+     "text": "最後是平面上找最接近兩點的問題，這些例子都用同一個 D&C 範本。",
+     "t": 960
+    }
+   ]
+  },
+  {
+   "title": "Searching：一一比對 O(n)",
+   "scene": "dcjiang-linear-search",
+   "points": [
+    {
+     "text": "暖身問題 searching：輸入是由小排到大、互不相同（distinct）的數字，另給一個 x。",
+     "t": 1012
+    },
+    {
+     "text": "若 x 在其中就輸出它的位置，不在就回報不存在（例如 return null）。",
+     "t": 1040
+    },
+    {
+     "text": "Naive idea：每個數字都拿出來和 x 比一下 → O(n)。",
+     "t": 1090
+    },
+    {
+     "text": "方法正確，linear time 也算快，但對這個問題還不夠快。",
+     "t": 1132
+    },
+    {
+     "text": "一一比對沒有用到「已排序」這個條件；卡住時想想是不是有條件沒用到。",
+     "t": 1170
+    }
+   ]
+  },
+  {
+   "title": "Binary search：找 55",
+   "scene": "dcjiang-bsearch-55",
+   "points": [
+    {
+     "text": "例子：在一排已排序的數字中找 x = 55。",
+     "t": 1227
+    },
+    {
+     "text": "先和排在正中央的 41 比：55 > 41，若存在一定在 41 右側 → 左半全部砍掉。",
+     "t": 1252
+    },
+    {
+     "text": "剩下的一半中間是 72：72 > 55 → 72 和它右邊的兩個都砍掉。",
+     "t": 1295
+    },
+    {
+     "text": "只剩兩個數時，中間取左邊或右邊都可以，頂多多比一次。",
+     "t": 1320
+    },
+    {
+     "text": "取左邊 → 剛好等於 55，找到；中間的 index 一直都知道，直接輸出位置。",
+     "t": 1347
+    },
+    {
+     "text": "若 55、68 都不是，所有人都考慮過仍找不到 → 回報不存在。",
+     "t": 1381
+    }
+   ],
+   "trap": "補充：投影片其他數字老師沒有念出，動畫只有 41、72、55、68 是老師說的，其餘為示意值。"
+  },
+  {
+   "title": "每比一次砍一半：最多 log n 次",
+   "scene": "dcjiang-bsearch-halving",
+   "points": [
+    {
+     "text": "Binary search 每次抓中間的人比較，依結果決定往哪一邊繼續找。",
+     "t": 1399
+    },
+    {
+     "text": "即使這次還沒找到，也有一半的人不用再考慮 → problem size 瞬間少一半。",
+     "t": 1414
+    },
+    {
+     "text": "n 個數：第一次捨去 n/2，再捨去 n/4……worst case 比到最後一個人。",
+     "t": 1435
+    },
+    {
+     "text": "最多 log n 次比較：從 O(n) 降到 O(log n)。",
+     "t": 1465
+    }
+   ]
+  },
+  {
+   "title": "D&C 三步驟：Divide、Conquer、Combine",
+   "scene": "dcjiang-dc-steps",
+   "points": [
+    {
+     "text": "Binary search 就是 D&C；D&C 分三步驟：divide、conquer、combine，三個搞定演算法就成形。",
+     "t": 1512
+    },
+    {
+     "text": "Divide：問題太大直接做不會，就切成小問題。",
+     "t": 1547
+    },
+    {
+     "text": "關鍵：切出的子問題要和原問題長相一樣，只是 problem size 較小。",
+     "t": 1565
+    },
+    {
+     "text": "Conquer：實作上通常以 recursive 的方式解子問題。",
+     "t": 1593
+    },
+    {
+     "text": "Combine：把子問題的解慢慢 compose 回原問題的解；三步驟缺一不可。",
+     "t": 1611
+    },
+    {
+     "text": "Combine 名字裡沒有，卻通常最難；特例是 binary search，它的 combine 什麼都不用做。",
+     "t": 1656
+    }
+   ]
+  },
+  {
+   "title": "用 D&C 的角度看 binary search",
+   "scene": "dcjiang-dc-steps",
+   "params": {
+    "bs": 1
+   },
+   "points": [
+    {
+     "text": "Divide：拿中間的人比較，決定往左還是往右繼續找。",
+     "t": 1698
+    },
+    {
+     "text": "因為輸入已由小排到大，確定往某一側後，另一側完全不用理。",
+     "t": 1728
+    },
+    {
+     "text": "Conquer：recursively 在剩下那一側找 x。",
+     "t": 1752
+    },
+    {
+     "text": "Combine：最後只剩 yes / no，不用做任何事；它隱含在 divide 裡就處理完了。",
+     "t": 1763
+    }
+   ]
+  },
+  {
+   "title": "Merge sort 的由來",
+   "scene": null,
+   "points": [
+    {
+     "text": "暖身結束，進入課本第一個代表性例子：merge sort。",
+     "t": 1824
+    },
+    {
+     "text": "Merge sort 在 1945 年由 John von Neumann 發明，他也提出了 von Neumann architecture。",
+     "t": 1829
+    },
+    {
+     "text": "Merge sort 是照著教科書步驟直接推演出來的經典 D&C 演算法。",
+     "t": 1903
+    }
+   ]
+  },
+  {
+   "title": "設計 D&C 的三件事：演算法、running time、正確性",
+   "scene": "dcjiang-template",
+   "points": [
+    {
+     "text": "Divide：大問題切成小塊，每塊的長相和原問題一樣，只是 problem size 較小。",
+     "t": 1945
+    },
+    {
+     "text": "Conquer：recursively 解，直到 problem size 小到可以直接處理。",
+     "t": 1965
+    },
+    {
+     "text": "Combine：把小問題的解 merge 回來，組合成原問題的答案。",
+     "t": 2001
+    },
+    {
+     "text": "實作上最自然的方式是 recursive 形式，程式長相跟 procedure 八九不離十。",
+     "t": 2037
+    },
+    {
+     "text": "Running time 可以寫成 recurrence relation，本單元也會教怎麼分析它。",
+     "t": 2078
+    },
+    {
+     "text": "正確性用數學歸納法，在發展方法時就一併照顧到。",
+     "t": 2118
+    }
+   ]
+  },
+  {
+   "title": "範本：均分兩半、linear divide / combine ⇒ n log n",
+   "scene": "dcjiang-template",
+   "points": [
+    {
+     "text": "介紹一個常用範本（不是所有 D&C 都長這樣）。",
+     "t": 2151
+    },
+    {
+     "text": "Divide：最簡單的做法是切成均勻的兩半。",
+     "t": 2182
+    },
+    {
+     "text": "兩半各自 recursively 解，再兩兩 combine 回原來的樣子。",
+     "t": 2189
+    },
+    {
+     "text": "要求 divide 與 combine 都在 linear time 內完成。",
+     "t": 2238
+    },
+    {
+     "text": "做得到的話，problem size 為 n 時 time complexity 只要 O(n log n)。",
+     "t": 2264
+    },
+    {
+     "text": "Merge sort 就是依這個 template 發展出來的，所以是 n log n。",
+     "t": 2273
+    }
+   ]
+  },
+  {
+   "title": "Sorting 與比較排序的下限",
+   "scene": "dcjiang-sort-bound",
+   "points": [
+    {
+     "text": "Sorting 問題：給 n 個數字，由小排到大輸出。",
+     "t": 2287
+    },
+    {
+     "text": "解法非常多，例如 bubble sort，有慢有快。",
+     "t": 2318
+    },
+    {
+     "text": "只用比較（comparison）來決定先後，理論下限就是 n log n，不會更快。",
+     "t": 2338
+    },
+    {
+     "text": "Linear sorting 要配合額外的 input information 才能低於 n log n。",
+     "t": 2363
+    },
+    {
+     "text": "Merge sort 理論上可以達到最佳速度 n log n。",
+     "t": 2383
+    }
+   ]
+  },
+  {
+   "title": "Merge sort 想法：ALGORITHMS",
+   "scene": "dcjiang-ms-run",
+   "params": {
+    "mode": "idea"
+   },
+   "points": [
+    {
+     "text": "例子：把 ALGORITHMS 這些字母由小排到大（A 小、Z 大）。",
+     "t": 2399
+    },
+    {
+     "text": "一次看這麼多字母不會排 → 先拆一半再說（divide）。",
+     "t": 2432
+    },
+    {
+     "text": "左右兩半各自排好（conquer）。",
+     "t": 2460
+    },
+    {
+     "text": "最後把兩塊已排序的部分重新安排，combine 成完整的結果。",
+     "t": 2480
+    }
+   ]
+  },
+  {
+   "title": "遞迴切到剩一個：base case",
+   "scene": "dcjiang-ms-run",
+   "params": {
+    "mode": "split"
+   },
+   "points": [
+    {
+     "text": "Conquer 就是 recursively 去 sort。",
+     "t": 2517
+    },
+    {
+     "text": "切出來左右各 5 個字母，還是沒辦法直接排 → 繼續切成左半與右半。",
+     "t": 2528
+    },
+    {
+     "text": "Recursive code 一定要寫 stop condition，否則會無窮遞迴停不下來。",
+     "t": 2546
+    },
+    {
+     "text": "兩個還要比一下；只剩一個時什麼都不用做。",
+     "t": 2570
+    },
+    {
+     "text": "Base case：切到只剩一個人時，它本身已排好，直接回傳答案。",
+     "t": 2621
+    }
+   ]
+  },
+  {
+   "title": "MERGE-SORT(A, p, r) 五行",
+   "scene": "dcjiang-ms-code",
+   "points": [
+    {
+     "text": "Input 放在 array A，這個 recursive procedure 要把 index p 到 r 這一段重新排序。",
+     "t": 2630
+    },
+    {
+     "text": "第 1 行 if p < r：至少兩個才繼續；p = r 只剩一個數，直接 return。",
+     "t": 2677
+    },
+    {
+     "text": "第 2 行 q = ⌊(p + r)/2⌋ 找中點；取 floor 或 ceiling 沒有太大差異。",
+     "t": 2740
+    },
+    {
+     "text": "第 3、4 行：MERGE-SORT(A, p, q) 與 MERGE-SORT(A, q+1, r) 分別排好左右半邊。",
+     "t": 2812
+    },
+    {
+     "text": "第 5 行：開一個 MERGE procedure 專門把兩段已排序的 subsequence 合併。",
+     "t": 2853
+    },
+    {
+     "text": "第 1 行判斷 base case、第 2 行 divide，3–4 行 conquer，第 5 行 combine。",
+     "t": 2875
+    }
+   ]
+  },
+  {
+   "title": "ALGORITHMS 完整跑一次",
+   "scene": "dcjiang-ms-run",
+   "params": {
+    "mode": "par"
+   },
+   "points": [
+    {
+     "text": "一開始 base case 不成立，切成左右兩半。",
+     "t": 2913
+    },
+    {
+     "text": "左邊還有兩個以上的 element → 繼續切；右邊也一樣。",
+     "t": 2929
+    },
+    {
+     "text": "切到一個一個為止，第 1 行發現已排序就直接 return。",
+     "t": 2945
+    },
+    {
+     "text": "例如 A 和 L 兩塊已分別排好 → merge；再一路往上 merge。",
+     "t": 2958
+    },
+    {
+     "text": "最後一次 merge 產生結果。",
+     "t": 2979
+    }
+   ]
+  },
+  {
+   "title": "實際執行順序：先做完左半",
+   "scene": "dcjiang-ms-run",
+   "params": {
+    "mode": "seq"
+   },
+   "points": [
+    {
+     "text": "圖上左右半邊同時做是為了好理解；只有平行計算才會這樣。",
+     "t": 2993
+    },
+    {
+     "text": "Sequential 執行時，recursive call 會先做左側，一路往左切下去。",
+     "t": 3016
+    },
+    {
+     "text": "左側全部走完，才開始往右邊做下去。",
+     "t": 3030
+    },
+    {
+     "text": "動畫中 x 軸是 index、y 軸是數值；排好後會像一條往上的階梯。",
+     "t": 3059
+    },
+    {
+     "text": "Sequential 版本從最小的部分慢慢兜出結果，左半處理完再處理右半。",
+     "t": 3110
+    }
+   ]
+  },
+  {
+   "title": "Running time：T(n) = D(n) + 2T(n/2) + C(n)",
+   "scene": "dcjiang-ms-recurrence",
+   "points": [
+    {
+     "text": "還沒回答 MERGE 怎麼做；先看整體 running time。",
+     "t": 3127
+    },
+    {
+     "text": "設計目標：MERGE 要在 linear time 完成。",
+     "t": 3161
+    },
+    {
+     "text": "設 T(n) 為 input 有 n 個數字時產生 solution 所需的時間。",
+     "t": 3193
+    },
+    {
+     "text": "第 1、2 行是 divide 的時間，記為 D(n)。",
+     "t": 3218
+    },
+    {
+     "text": "第 3、4 行左右各 n/2 個、同樣是 merge sort → 2T(n/2)。",
+     "t": 3233
+    },
+    {
+     "text": "第 5 行是 combine 的時間，記為 C(n)。",
+     "t": 3269
+    },
+    {
+     "text": "T(n) = D(n) + 2T(n/2) + C(n)：用自己定義自己，就是 recurrence relation。",
+     "t": 3322
+    },
+    {
+     "text": "第 1、2 行只是比較 p、r 與算中點 → D(n) = O(1)。",
+     "t": 3352
+    },
+    {
+     "text": "若 C(n) 能做到 O(n)，整體可 bound 在 O(n log n)；這個 template 能套到很多問題。",
+     "t": 3397
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Strong induction 的 inductive step 假設的是什麼？",
+   "opts": [
+    "只假設 n = k 成立",
+    "假設所有 ≤ k 的情形都成立",
+    "假設 n = k + 1 成立",
+    "不需要 hypothesis"
+   ],
+   "ans": "假設所有 ≤ k 的情形都成立",
+   "why": "Weak 只假設 k 成立、一次走一步；strong 假設 ≤ k 全部成立，可以一次跳一大步。兩者其實等價。"
+  },
+  {
+   "q": "8×8 的 defective chessboard（挖掉一格）要用幾塊 L 形磁磚貼滿？",
+   "opts": [
+    "21",
+    "16",
+    "22",
+    "64"
+   ],
+   "ans": "21",
+   "why": "64 − 1 = 63 格，每塊佔 3 格，63 ÷ 3 = 21。用歸納法切四塊時是 1 + 4 + 16 = 21。"
+  },
+  {
+   "q": "Defective chessboard 的 inductive step 中，切成四塊後中央那一塊 L 形磁磚的作用是什麼？",
+   "opts": [
+    "讓沒有洞的三塊也各少一格，變成同樣的 defective 子問題",
+    "填補原本的洞",
+    "讓四塊大小不同",
+    "只是裝飾，沒有必要"
+   ],
+   "ans": "讓沒有洞的三塊也各少一格，變成同樣的 defective 子問題",
+   "why": "洞只在其中一塊；另外三塊靠中央各挖一格放一塊 L，四塊就都是 2^n × 2^n 的 defective chessboard，可套 hypothesis。"
+  },
+  {
+   "q": "在 n 個已排序的數中做 binary search，worst case 比較次數的 order 是？",
+   "opts": [
+    "O(log n)",
+    "O(n)",
+    "O(n log n)",
+    "O(1)"
+   ],
+   "ans": "O(log n)",
+   "why": "每比一次中間的人就丟掉一半：n → n/2 → n/4 → … → 1，最多約 log n 次。"
+  },
+  {
+   "q": "用 D&C 的角度看 binary search，它的 combine 步驟做什麼？",
+   "opts": [
+    "什麼都不做（do nothing）",
+    "合併左右兩半的結果",
+    "重新排序",
+    "比較左右兩半的最大值"
+   ],
+   "ans": "什麼都不做（do nothing）",
+   "why": "Divide 時跟中間比較就決定只找一側，最後只剩 yes/no，combine 是 trivial 的；一般 D&C 的 combine 通常最難。"
+  },
+  {
+   "q": "MERGE-SORT(A, p, r) 第 1 行的 if p < r 不成立，代表什麼？",
+   "opts": [
+    "這一段只剩一個元素，已排序，直接 return",
+    "陣列是空的，程式出錯",
+    "要把 p、r 交換",
+    "要呼叫 MERGE"
+   ],
+   "ans": "這一段只剩一個元素，已排序，直接 return",
+   "why": "不會讓 p > r，唯一可能是 p = r，只有一個數，本身就是排好的，這就是 base case。"
+  },
+  {
+   "q": "Merge sort 的 recurrence 為 T(n) = D(n) + 2T(n/2) + C(n)，若 D(n) = O(1)、C(n) = O(n)，則 T(n) = ？",
+   "opts": [
+    "O(n log n)",
+    "O(n)",
+    "O(n²)",
+    "O(log n)"
+   ],
+   "ans": "O(n log n)",
+   "why": "均分兩半且 divide、combine 都是 linear time，就是本單元的 template：每層 O(n)、共 log n 層。"
+  },
+  {
+   "q": "只用比較（comparison）來排序，理論上最快是？",
+   "opts": [
+    "Ω(n log n)",
+    "Ω(n)",
+    "Ω(log n)",
+    "Ω(n²)"
+   ],
+   "ans": "Ω(n log n)",
+   "why": "Comparison sort 的下限是 n log n；linear sorting 需要額外的 input 資訊才能更快。"
+  }
+ ]
+}

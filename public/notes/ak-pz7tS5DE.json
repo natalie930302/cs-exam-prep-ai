@@ -1,0 +1,309 @@
+{
+ "video": "ak-pz7tS5DE",
+ "label": "Abdul Bari：2.7.3 MergeSort In-Depth Analysis",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Merge sort 的優缺點：適合超大串列",
+   "scene": "dcbari-ms-proscons",
+   "points": [
+    {
+     "text": "這支影片講 merge sort 的 pros and cons，先看優點。",
+     "t": 0
+    },
+    {
+     "text": "優點一：適合非常大的串列，上百萬個數或紀錄都能排。",
+     "t": 11
+    },
+    {
+     "text": "其他排序做不到；原因稍後說明（external sorting）。",
+     "t": 25
+    }
+   ]
+  },
+  {
+   "title": "適合 linked list：只改 link",
+   "scene": "dcbari-llmerge",
+   "points": [
+    {
+     "text": "優點二：merge sort 適合 linked list。",
+     "t": 35
+    },
+    {
+     "text": "Merge sort 用的是 merging，懂 linked list 的 merging 就懂了。",
+     "t": 46
+    },
+    {
+     "text": "兩個已排序 linked list 不用建第三個串列，改 link 就能合併。",
+     "t": 55
+    },
+    {
+     "text": "2 vs 3：2 當開頭；接著 3、8、9 依序接上。",
+     "t": 76
+    },
+    {
+     "text": "12 vs 11：11 較小先接，最後接 12。",
+     "t": 102
+    },
+    {
+     "text": "結果 2 → 3 → 8 → 9 → 11 → 12，已排序。",
+     "t": 113
+    },
+    {
+     "text": "沒有另外建串列，所以 linked list 上的 merge sort 不需額外串列。",
+     "t": 121
+    }
+   ]
+  },
+  {
+   "title": "External sorting",
+   "scene": "dcbari-external",
+   "points": [
+    {
+     "text": "優點三：merging 支援 external sorting，所以 merge sort 也支援。",
+     "t": 127
+    },
+    {
+     "text": "硬碟上有兩個檔案，各有上百萬筆資料。",
+     "t": 141
+    },
+    {
+     "text": "一個 5 GB、一個 10 GB，要把它們 merge。",
+     "t": 161
+    },
+    {
+     "text": "資料要先搬進 main memory，merge 演算法才能處理。",
+     "t": 184
+    },
+    {
+     "text": "記憶體只有 4 GB，放不下 5 GB + 10 GB。",
+     "t": 201
+    },
+    {
+     "text": "改成分段（runs / chunks）把檔案的一部分帶進來 merge，結果寫出去。",
+     "t": 225
+    },
+    {
+     "text": "例：2 和 3 比，2 寫出去；file 1 再補下一塊 10；接著 3 寫出去。",
+     "t": 248
+    },
+    {
+     "text": "只需很小的記憶體：external merging；external merge sort 用同樣方法。",
+     "t": 283
+    }
+   ],
+   "trap": "影片為了示範用單一元素，實際上一次搬進來的是一整塊（block / run）資料。"
+  },
+  {
+   "title": "Stable：重複值保持原順序",
+   "scene": "dcbari-stable",
+   "points": [
+    {
+     "text": "優點四：merge sort 是 stable。",
+     "t": 296
+    },
+    {
+     "text": "串列裡 8 出現兩次：小方塊代表第一個 8、大方塊代表第二個 8。",
+     "t": 308
+    },
+    {
+     "text": "排序後第一個 8 仍在第二個 8 前面：重複元素的順序被保留。",
+     "t": 324
+    },
+    {
+     "text": "對純數字看不出差別；換成學生紀錄：每人一個 10 分滿分的分數。",
+     "t": 359
+    },
+    {
+     "text": "資料原本已依姓名或學號排好，改依分數排序時原排列不應被打亂。",
+     "t": 379
+    },
+    {
+     "text": "Ravi 和 Sunil 都是 8 分：排序後 Ravi 仍在 Sunil 前面——這就是 stability。",
+     "t": 390
+    }
+   ]
+  },
+  {
+   "title": "缺點一：不是 in-place",
+   "scene": "dcbari-notinplace",
+   "points": [
+    {
+     "text": "接著看缺點：第一，需要額外空間，不是 in-place sorting。",
+     "t": 409
+    },
+    {
+     "text": "In-place：只在同一個陣列內重新排列元素，例 6 3 9 4。",
+     "t": 427
+    },
+    {
+     "text": "Merge sort 切成兩半再 merge；merge 的結果必須放在另一個陣列。",
+     "t": 456
+    },
+    {
+     "text": "沒辦法 in-place merging，所以也不是 in-place sorting。",
+     "t": 475
+    },
+    {
+     "text": "額外陣列只有陣列版需要；linked list 不需要。",
+     "t": 480
+    }
+   ]
+  },
+  {
+   "title": "缺點二：沒有 small problem → 搭配 insertion sort",
+   "scene": "dcbari-smallinsert",
+   "points": [
+    {
+     "text": "Merge sort 沒有定義 small problem：切到單一元素才停。",
+     "t": 496
+    },
+    {
+     "text": "它是遞迴的；串列很小時反而比其他排序慢很多。",
+     "t": 524
+    },
+    {
+     "text": "Insertion sort O(n²)、merge sort O(n log n)，大串列時 merge sort 快得多。",
+     "t": 541
+    },
+    {
+     "text": "實測：n ≤ 15 時 merge sort 較慢（遞迴浪費時間），更大時才比較快。",
+     "t": 577
+    },
+    {
+     "text": "所以小串列交給 insertion sort，merge sort 再把結果 merge。",
+     "t": 595
+    },
+    {
+     "text": "選 insertion sort 是因為它也是 stable。",
+     "t": 616
+    },
+    {
+     "text": "Bubble sort 也是 n² 且 stable，也可以替代。",
+     "t": 630
+    },
+    {
+     "text": "Insertion sort 也適合 linked list，跟 merge sort 搭配。",
+     "t": 644
+    }
+   ]
+  },
+  {
+   "title": "缺點三：遞迴用 stack，空間 n + log n",
+   "scene": "dcbari-msspace",
+   "points": [
+    {
+     "text": "遞迴演算法都要用 stack，merge sort 也一樣。",
+     "t": 677
+    },
+    {
+     "text": "Stack 最大大小取決於 merge sort tracing tree 的高度。",
+     "t": 696
+    },
+    {
+     "text": "8 個元素：呼叫 1～8、1～4、1～2、1～1……",
+     "t": 714
+    },
+    {
+     "text": "樹高 log n → stack 需要 log n 的空間。",
+     "t": 731
+    },
+    {
+     "text": "可能建立很多 activation record，但同時最多 log n 個。",
+     "t": 744
+    },
+    {
+     "text": "另外 auxiliary array 需要 n。",
+     "t": 752
+    },
+    {
+     "text": "總空間 n + log n，漸近上是 Θ(n)。",
+     "t": 762
+    }
+   ],
+   "trap": "影片 11:17 口誤說「insertion sort is recursive」，指的是 merge sort。另補充：嚴格說 8 個元素的遞迴深度是 log₂8 + 1 = 4 層呼叫，漸近仍是 Θ(log n)。"
+  },
+  {
+   "title": "結語與觀看順序",
+   "scene": null,
+   "points": [
+    {
+     "text": "以上是 merge sort 的優缺點。",
+     "t": 778
+    },
+    {
+     "text": "建議順序：先看 two-way merge sort，再看 merge sort，最後看這支分析。",
+     "t": 786
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "下列何者是 merge sort 適合 linked list 的原因？",
+   "opts": [
+    "merge 只要改 link，不必建第三個串列",
+    "linked list 可以 random access",
+    "linked list 一定已排序",
+    "merge sort 不需要比較"
+   ],
+   "ans": "merge 只要改 link，不必建第三個串列",
+   "why": "兩個已排序 linked list 只要重接指標就能合併。"
+  },
+  {
+   "q": "檔案 15 GB、記憶體 4 GB，仍能用 merge 排序，靠的是？",
+   "opts": [
+    "External merging：分段帶進記憶體",
+    "In-place merging",
+    "Quick sort 的 partition",
+    "把檔案壓縮到 4 GB"
+   ],
+   "ans": "External merging：分段帶進記憶體",
+   "why": "一次只帶一小塊資料進來比較並寫出結果。"
+  },
+  {
+   "q": "Stable sorting 指的是？",
+   "opts": [
+    "值相同的元素排序後保持原本的先後順序",
+    "排序時不使用額外空間",
+    "最壞時間等於平均時間",
+    "排序結果唯一"
+   ],
+   "ans": "值相同的元素排序後保持原本的先後順序",
+   "why": "例：兩個 8 分的學生，原本 Ravi 在前，排序後仍在前。"
+  },
+  {
+   "q": "陣列版 merge sort 的總空間（auxiliary + stack）是？",
+   "opts": [
+    "n + log n = Θ(n)",
+    "Θ(1)",
+    "Θ(log n)",
+    "Θ(n²)"
+   ],
+   "ans": "n + log n = Θ(n)",
+   "why": "auxiliary array n，加上遞迴深度 log n 的 stack。"
+  },
+  {
+   "q": "實務上小串列（約 n ≤ 15）為什麼改用 insertion sort？",
+   "opts": [
+    "merge sort 的遞迴開銷讓它在小 n 時較慢，且 insertion sort 也 stable",
+    "insertion sort 是 O(n log n)",
+    "merge sort 無法處理 15 個以下的元素",
+    "insertion sort 不需要比較"
+   ],
+   "ans": "merge sort 的遞迴開銷讓它在小 n 時較慢，且 insertion sort 也 stable",
+   "why": "混合後整體仍 stable，小串列又跑得快。"
+  },
+  {
+   "q": "下列哪一個排序也可以取代 insertion sort 處理小串列並保持 stable？",
+   "opts": [
+    "Bubble sort",
+    "Quick sort",
+    "Heap sort",
+    "Selection sort（一般陣列版）"
+   ],
+   "ans": "Bubble sort",
+   "why": "影片提到 bubble sort 也是 n² 且 stable。"
+  }
+ ]
+}
