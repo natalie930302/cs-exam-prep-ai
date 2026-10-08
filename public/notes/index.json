@@ -1281,7 +1281,7 @@
   "label": "台大林軒田 DSA Container",
   "points": 207,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "U_tNDdEooJU": {
   "label": "交大彭文志 Lec09 Lists (2/4)",
@@ -1407,7 +1407,7 @@
   "label": "交大彭文志 Lec07 Stacks & Queues (2/2)",
   "points": 111,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "ygK0YON10sQ": {
   "label": "Abdul Bari：Recursion and Stack",

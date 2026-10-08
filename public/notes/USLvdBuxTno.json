@@ -99,6 +99,24 @@
      "text": "今天要把這些容器再抽象化，抽出共同功能，用不一樣的視角看它們。",
      "t": 2053
     }
+   ],
+   "cues": [
+    1970.8,
+    1993.8,
+    2000.8,
+    2007.8,
+    2013.8,
+    2027.8,
+    2046.8
+   ],
+   "explain": [
+    "老師先下定義：所有的資料結構（data structure）都可以看成一種 container，也就是「容器」。資料結構本來就是拿來裝資料的，紫色的透明大箱子就代表這個容器。",
+    "一般說的 container 比較 general（通用）：同一個容器，可以拿來裝整數 integer，也可以裝小數 double，不會一開始就寫死只能裝哪一種。",
+    "除了內建的型別，也能裝你自己定義的 structure，例如一個「複數」：它由實部和虛部兩個數字組成。",
+    "甚至可以裝 polynomial（多項式）。重點是：容器本身和「裝什麼」可以分開來想。",
+    "我們學過的 array、linked list、stack、queue，廣義來說全都是容器，而且每一種都有自己特別的性質，例如能不能用編號拿、插入快不快。",
+    "因為需求不同，才衍生、設計出不一樣的容器。今天這堂課就是從「需求」出發，把它們串在一起看。",
+    "除了回顧有哪些容器，老師還要把它們再「抽象化」：把共同的功能抽出來，用一個新的角度看這些容器。"
    ]
   },
   {
@@ -129,6 +147,32 @@
      "text": "像把冰箱每一格都打開看一次；很多 container 都需要 sequential access。",
      "t": 2268
     }
+   ],
+   "cues": [
+    2078.62,
+    2094.8,
+    2127.8,
+    2140.8,
+    2156.8,
+    2183.8,
+    2202.8,
+    2224.8,
+    2231.8,
+    2267.8,
+    2278.8
+   ],
+   "explain": [
+    "第一個容器是大家最熟的：C／C++ 的 integer array。地上這一排格子就是 array，每一格放一個整數，[0]、[1]…是格子的編號（index）。",
+    "老師把它叫 dense array（dense 是「密集」）：每一格都排滿資料。這是相對於等一下要講的 sparse array（稀疏陣列）。",
+    "特性 ①：storage（儲存空間）。要放 n 個東西，就配 n 格，所需空間跟 n 成正比，寫成 Θ(n)。",
+    "而且除了資料本身，幾乎沒有別的額外負擔（overhead）：要放多少，就 allocate（配置）多少空間。",
+    "特性 ②：indexed access，也叫 random access：給一個編號，就能直接拿到那一格。這裡想拿 A[6]，游標直接跳過去，不必從頭走。",
+    "「取用」包括讀（read）也包括寫（write）。把 A[6] 改成 42，就是用編號直接寫進去。",
+    "為什麼這麼快？因為 index 可以直接算成記憶體位址（address）：第 6 格的位址 = 開頭位址 + 6 × 每格大小。算一次就到，所以是 O(1)，也就是固定時間。",
+    "我們用 array 時，不只用編號拿，也常用 for 迴圈從頭到尾跑一遍，就像游標一格一格往右走。",
+    "這種一個一個走過去的方式叫 iterative access，也叫 sequential access（循序存取）。走的時候可以用 pointer，也可以用 index。",
+    "老師的比喻：如果冰箱是你的 container，你想知道裡面冰了什麼，就把東西一個一個拿出來看。",
+    "有時你不知道東西放在哪一格，但想要每一格都打開看一次，這就是 sequential access。很多 container 都需要這個功能。"
    ]
   },
   {
@@ -155,6 +199,26 @@
      "text": "array 的著眼點是 fast random access；為了插入刪除搬資料又慢、又容易寫錯。",
      "t": 2408
     }
+   ],
+   "cues": [
+    2306,
+    2313.8,
+    2343.8,
+    2382.8,
+    2390.8,
+    2404.8,
+    2428.8,
+    2463.8
+   ],
+   "explain": [
+    "特性 ④：max length（最大長度）是固定的。宣告 int A[10]，就只有 10 個櫃子。",
+    "想放第 11 個？原本的 array 放不下（紅色那塊）。要變大得另外想辦法，老師說等一下（extendable array）會講。",
+    "特性 ⑤：如果要維持 dense，也就是資料在前面排得滿滿的、中間不留空，那插入或拿出東西就要動到別人。",
+    "例如裡面已經有 10 個，要把新東西插到第 0 格：10 個人都要往後推一格，計數器跑到 10，所以花的力氣跟 n 成正比，是 O(n)。",
+    "反過來，把第 1 個拿掉，後面 9 個要往前補位，也要花一堆力氣。",
+    "老師提醒：當初介紹 array，著眼點就是 fast random access（特性 ②），那才是它的強項。",
+    "可是如果每次插入、刪除都要推擠一堆資料，不但花力氣，程式也容易寫錯，這不是我們想要的。",
+    "所以下一個目標出現了：能不能讓插入（insertion）和刪除（removal）快一點？"
    ]
   },
   {
@@ -190,7 +254,35 @@
      "t": 2757
     }
    ],
-   "trap": "O(1) insertion／removal 的前提是「已經拿到那個位置的指標」；只給 index 時要先走訪，是 O(k)。"
+   "trap": "O(1) insertion／removal 的前提是「已經拿到那個位置的指標」；只給 index 時要先走訪，是 O(k)。",
+   "cues": [
+    2491.97,
+    2526.8,
+    2566.8,
+    2580.38,
+    2585.8,
+    2601.8,
+    2615.8,
+    2640.06,
+    2677.8,
+    2692.8,
+    2717.8,
+    2758.8
+   ],
+   "explain": [
+    "新需求一：如果我已經知道要放在哪裡，希望能在固定時間（constant time）把東西放進去或拿出來，而且其他東西通通不用動。",
+    "新需求二：dynamic max length，長度可以變。不想訂了 10 個就只有 10 個，只要電腦記憶體還夠，想裝多少就裝多少，像聚寶盆一樣。",
+    "把這兩個需求放進去，答案就是 doubly linked list（雙向鏈結串列）。每個方塊叫一個 node（節點），head 指著第一個。",
+    "每個 node 兩邊各有一張小紙條：prev 記「前一個是誰」，next 記「下一個是誰」。上排箭頭是 next，下排金色箭頭是 prev。",
+    "插入 5：新的 node 可以放在任何地方，只要把它和前後的 7、1 用紙條連起來。總共只改 4 張紙條，其他 node 都不用動，所以是 O(1)。前提是要知道前面是誰、後面是誰。",
+    "因為每次都是「要用的時候才配一個 node」，不必事先訂好櫃子數量，所以就得到 dynamic max length。",
+    "用剛才的 ①～⑤ 來看：① storage 還是 Θ(n)，但每個 node 都要多付兩張小紙條（指標）的代價，這就是 overhead。",
+    "② indexed access 可不可以做？硬要的話可以替每個 node 排編號，但我們很少這樣做。",
+    "因為要拿 index 100 的東西，就得從頭 1、2、3…走 100 步才找得到，很慢。游標 p 一格一格走，就是這個意思。",
+    "③ iterative access 可以，用 pointer 一步一步走：p = p->next。",
+    "而 ④ dynamic max length 和 ⑤ constant time 的插入、刪除，正是它的優點。",
+    "總結 doubly linked list 和 array 的差別：在意的優點不一樣。這裡要的是 ④⑤，array 的強項 ② 我們就不在乎、甚至不用了。"
+   ]
   },
   {
    "title": "Singly linked list：less overhead",
@@ -198,7 +290,7 @@
    "points": [
     {
      "text": "如果只在乎 insertion、不在乎 removal → singly linked list。",
-     "t": 2816
+     "t": 2782
     },
     {
      "text": "removal 比較麻煩：要更新前一個 node 的 next。",
@@ -217,7 +309,27 @@
      "t": 2876
     }
    ],
-   "trap": "補充：singly 刪除「已知節點」不是 O(1)，因為要先從 head 找到前一個節點；doubly 有 prev 才是 O(1)。"
+   "trap": "補充：singly 刪除「已知節點」不是 O(1)，因為要先從 head 找到前一個節點；doubly 有 prev 才是 O(1)。",
+   "cues": [
+    2783.07,
+    2793.8,
+    2815.8,
+    2819.12,
+    2821.8,
+    2830.8,
+    2857.8,
+    2869.8
+   ],
+   "explain": [
+    "如果再從 doubly 出發，說「我不在乎 removal 多快，只在乎 insertion」，會得到什麼？上面左邊是 doubly 的 node：prev、data、next 三格。",
+    "答案是 singly linked list（單向鏈結串列）：每個 node 只有 data 和 next，少了 prev 那張紙條。最後一個的 next 指向 NULL，代表「沒有下一個」。",
+    "插入還是很好做：要把 5 插在 p 指的 7 後面，先讓新 node 的 next 指向 1，再讓 7 的 next 指向新 node，一樣 O(1)。",
+    "可是 removal 就麻煩了。假設手上的指標指著 1（紅色），想把它刪掉……",
+    "刪掉 1 需要改「前一個 node」的 next，但 1 沒有 prev 紙條，不知道前一個是誰，只好用 q 從 head 再走一次找到前一個，才能接過去。",
+    "換來的好處是 with less overhead：每個 node 少一張紙條，比較省空間（不過 storage 還是 Θ(n)）。",
+    "所以 trade-off（取捨）大概就是這一點：插入和刪除都 O(1) 變成只有插入 O(1)，其他特性差不多。",
+    "老師說今天講的順序跟當初不同：當初一個故事一個故事講，現在像織布換一個方向織，希望大家的理解更完整。"
+   ]
   },
   {
    "title": "Slido 小問答",
@@ -249,6 +361,18 @@
      "text": "機制是 compiler 幫你把 code 複製一份、換上型別後產生。",
      "t": 3015
     }
+   ],
+   "cues": [
+    2973.34,
+    2978.66,
+    3000.8,
+    3014.8
+   ],
+   "explain": [
+    "延伸 1：container 一定要裝 integer 嗎？不用，可以是 any type（任何型別）。左邊是一份 C++ 程式碼的框架。",
+    "C++ 用 template（樣板）做到這件事：寫 data structure 時先不寫定要裝什麼，用 T 代替型別。發亮的那行 template <class T> 就是在說「T 等一下再決定」。",
+    "於是同一份 code 可以變成 Array<int>、Array<double>，或裝你自己定義的 structure 的 Array<Complex>。",
+    "它的機制是：compiler（編譯器）幫你把 code 複製一份，再把 T 換成真正的型別。你只要寫一次。"
    ]
   },
   {
@@ -257,7 +381,7 @@
    "points": [
     {
      "text": "array 能輕鬆做 index access；如果只讓你存取固定的地方，例如最尾巴。",
-     "t": 3060
+     "t": 3035
     },
     {
      "text": "只在尾巴放、尾巴拿，這種 restricted access 就得到 stack（first in last out）。",
@@ -272,7 +396,25 @@
      "t": 3120
     }
    ],
-   "trap": "老師說的 first in last out 就是 LIFO（後進先出），兩種說法同義。"
+   "trap": "老師說的 first in last out 就是 LIFO（後進先出），兩種說法同義。",
+   "cues": [
+    3035,
+    3050.8,
+    3070.13,
+    3072.8,
+    3077.8,
+    3097.8,
+    3114.8
+   ],
+   "explain": [
+    "延伸 2：array 本來可以輕鬆用任何編號存取，A[0]、A[1]、A[2] 都拿得到（全部亮起來）。",
+    "現在加一個限制：只能存取固定的地方，例如 array 的最尾巴。這種有限制的存取叫 restricted access。灰色的格子代表「不准碰」。",
+    "我們只在最尾巴放東西：push 6、push 5，每次都放到最後面，top 標記跟著往右移。",
+    "也只在最尾巴拿東西：pop 拿走的是最後放進去的 5。",
+    "這樣的限制就讓我們得到 stack。老師說的 first in last out，意思就是 LIFO（last in first out，後進先出）。",
+    "這是 stack 很常見的實作：array 明明有 index，可以自由存取，但我們只讓你用最後一個號碼。",
+    "所以可以說，array 被「退化」或「限制」成一個 stack。"
+   ]
   },
   {
    "title": "延伸 3：circular list + restricted access → queue",
@@ -298,6 +440,26 @@
      "text": "circular access 不限 linked list：array 也有 iterative access，一樣能做 circular queue。",
      "t": 3231
     }
+   ],
+   "cues": [
+    3152.86,
+    3168.8,
+    3194.8,
+    3210.8,
+    3214,
+    3218.8,
+    3226.8,
+    3239.8
+   ],
+   "explain": [
+    "延伸 3：作業裡出現過 circular list（環狀串列），它是 linked list 的變形：最後一個 node 不指向 NULL，而是接回第一個，圍成一圈。",
+    "原本 iterative access 走到尾巴就停，現在變成 circular access，像播放器的「循環播放」，一直繞一直繞。",
+    "再加上 restricted access：雖然一直繞，但只能在「游標」所在的地方動作。front（隊頭）就是 rear（隊尾）的下一個。",
+    "從游標前面拿走一個：拿走的是 front 指的 1，也就是最早進來的那個。",
+    "從游標後面放進去一個：新的 6 接在 rear 後面，rear 移到 6。",
+    "這樣就得到上次介紹的 queue（佇列）：first in first out（FIFO，先進先出）。",
+    "嚴格說，circular access 是從 iterative access 變化來的，不是只有 linked list 能用。",
+    "array 也有 iterative access，所以 array 一樣能做成 circular array，拿來實作 queue。"
    ]
   },
   {
@@ -333,7 +495,33 @@
      "t": 3515
     }
    ],
-   "trap": "nnz = number of non-zero（老師在 66:44 的 Q&A 解釋）。影片沒給具體多項式，動畫用 1 + 5x³ + 2x⁷ 示意。"
+   "trap": "nnz = number of non-zero（老師在 66:44 的 Q&A 解釋）。影片沒給具體多項式，動畫用 1 + 5x³ + 2x⁷ 示意。",
+   "cues": [
+    3284.45,
+    3287.8,
+    3304.45,
+    3359.8,
+    3389.28,
+    3401.41,
+    3416.8,
+    3429.8,
+    3454.94,
+    3503.78,
+    3509.8
+   ],
+   "explain": [
+    "延伸 4：從 dense array 拉一條線出去。這裡用多項式 1 + 5x³ + 2x⁷ 當例子：第 i 格放 xⁱ 的係數，所以很多格都是 0。（具體多項式是動畫自己舉的例子。）",
+    "有時候我們不想把所有東西都存下來，特別是那一大堆 0，這就是 sparse array（稀疏陣列）的需求。",
+    "它和 dense array 最大的不同在特性 ①：只存 non-zero（非零）的項。storage 從 Θ(n) 變成 Θ(nnz)，nnz 是 number of non-zero，非零項的個數。0 都飛走了。",
+    "存的時候也不是亂放，而是按照 index 排序存，像以前的 polynomial 依次方排好。每一項存成（次方, 係數）。",
+    "把這些項放進一個 ordered array（排好序的 array）。",
+    "這樣一樣可以做 index access：給一個次方，問它的係數。",
+    "例如：有沒有 x³ 這一項？有的話係數是多少？lo、hi 標出搜尋範圍。",
+    "因為排好序，可以用 binary search（二分搜尋）：每次看中間 mid，一下就找到 (3, 5)。最多花 O(log nnz)。",
+    "iterative access 也沒問題：把所有 non-zero 項一個一個走過去。",
+    "特性 ④：底下用的是 array，所以某種程度上長度是固定的。",
+    "特性 ⑤：要插入 4x⁵，為了保持排序，(7, 2) 要往後搬，才能把 (5, 4) 放進去。插入、刪除都要 O(nnz)。"
+   ]
   },
   {
    "title": "Sparse array 用 ordered linked list 實作",
@@ -363,6 +551,26 @@
      "text": "要能自己整合：改用 ordered array 會有哪些好處和壞處。",
      "t": 3630
     }
+   ],
+   "cues": [
+    3540.4,
+    3551.8,
+    3559.8,
+    3569.8,
+    3586.02,
+    3590.63,
+    3599.8,
+    3629.8
+   ],
+   "explain": [
+    "之前課堂上用的是另一個版本：用 ordered linked list（排好序的鏈結串列）來放 sparse array，每個 node 存一項。",
+    "它一樣只存 non-zero，享有最想要的 Θ(nnz) storage。",
+    "不同的是：linked list 沒辦法很快跳到「中間」那一個，所以不能做 binary search。",
+    "只能 sequential search：p 從 head 開始一個一個往後找，找到 (3,5)。",
+    "所以找一項要花 O(nnz)，而不是 ordered array 的 O(log nnz)。",
+    "但插入、刪除就不用搬其他資料：p 已經停在 (3,5)，把 (5,4) 接上去只要改兩個指標，已知位置時是 O(1)。",
+    "這就是 implementation trade-off：要做的事（sparse array）一樣，實作不同，擅長的事情就不同。上面兩行是兩種實作的比較。",
+    "老師希望大家有能力自己整合：如果改用 ordered array，會多哪些好處、哪些壞處？"
    ]
   },
   {
@@ -371,7 +579,7 @@
    "points": [
     {
      "text": "補上次沒講完的 restricted access：把 stack 和 queue 合起來。",
-     "t": 3685
+     "t": 3654
     },
     {
      "text": "尾巴放、頭拿出來是 queue；頭放、頭拿出來是 stack。",
@@ -393,6 +601,30 @@
      "text": "這頁整合了上半學期最重要的資料結構基本功。",
      "t": 3823
     }
+   ],
+   "cues": [
+    3654,
+    3669.8,
+    3678.8,
+    3702.64,
+    3705.68,
+    3719.8,
+    3736.16,
+    3760.8,
+    3782.8,
+    3815.8
+   ],
+   "explain": [
+    "上次課程最後有一小段 restricted access 沒講到，這裡補上。底下是一條 doubly linked list：3、7、1，head 在左、tail 在右。",
+    "回顧：stack 是在某個頂端放進去（push）、拿出來（pop）。",
+    "queue 則有一個頭、一個尾，從一端放、另一端拿。",
+    "從尾巴放進去 9，再從頭拿出來 3：尾巴進、頭出，這就是 queue。",
+    "從頭放進去 5，再從頭拿出來 5：同一端進出，這就是 stack。",
+    "既然尾巴能放，那從尾巴拿也做得到：pop at tail，把 9 拿走。頭尾完全對稱。",
+    "頭、尾都能放、都能拿的東西，叫 deque（念作 deck），是 double-ended queue「雙頭佇列」的意思。",
+    "deque 也可以看成 doubly linked list 的一種 restricted access。因為天生需要「兩邊」的概念，最常拿 doubly linked list 來實作。",
+    "老師坦白說，以目前的學習來看 deque 沒那麼重要，學會 stack 和 queue 之後，這只是多認識一個名詞。",
+    "到這裡，老師把上半學期最重要的資料結構基本功整合在一頁裡；哪裡不清楚，可以回頭看之前的講義。"
    ]
   },
   {
@@ -455,11 +687,35 @@
      "text": "資料結構也一樣：要能表達出它的 essence。",
      "t": 4933
     }
+   ],
+   "cues": [
+    4727.8,
+    4755.8,
+    4790.8,
+    4833.8,
+    4853.8,
+    4886.8,
+    4892.18,
+    4922.32,
+    4925.8,
+    4943.8
+   ],
+   "explain": [
+    "下半場開始。從 array、linked list、sparse array 到 stack、queue，我們已經知道每個重視什麼、為什麼需要它，有了比較完整的 picture。",
+    "接下來要講一個新觀念：對資料結構的功能做一定程度的抽象化，英文叫 abstraction。",
+    "程式寫多了會發現：用程式表達邏輯時，重點不是最後裝的是哪種資料型態，而是資料結構「怎麼運作」。",
+    "生活裡最明顯的抽象化例子，是從非常具體的數字，一路到代數。",
+    "小孩先學數 1、2、3…10。後來數一百元鈔票，其實一樣在數，只是每個東西的單位變成 100。",
+    "問他 3 + 5 是多少，他會說 8。",
+    "後來問 300 + 500，他也比較容易知道是 800：在個位數學的加法，搬到百位數一樣能用。",
+    "再進一步：3x + 5x，你會知道是 8x。不管 x 是什麼，規則都一樣。",
+    "這就是思考在數字上的抽象化：越抽象，能用的地方就越廣。",
+    "資料結構也是一樣：要能表達出你做的東西的精神，也就是 essence，它到底在做什麼。"
    ]
   },
   {
    "title": "為什麼要抽象化 1：節省實作力氣",
-   "scene": "contlin-template",
+   "scene": "contlin-template2",
    "points": [
     {
      "text": "第一個理由：節省 implementation efforts。",
@@ -477,6 +733,22 @@
      "text": "寫一次（想一次），就能用在很多不同地方。",
      "t": 5028
     }
+   ],
+   "cues": [
+    4971.71,
+    4980.8,
+    4986.8,
+    4994.8,
+    4999.8,
+    5028.97
+   ],
+   "explain": [
+    "為什麼要在意抽象化？第一個理由：節省 implementation efforts，也就是寫程式的力氣。",
+    "想想看，寫一個 integer array、一個 double array、一個 complex number array，其實是同一件事。",
+    "它們的 essence（本質）都一樣：都是 array，都是根據 index 很快算出 address。左邊亮起的 at(i) 就是這個功能。",
+    "至於一格是 4 個 byte、8 個 byte 還是 16 個 byte，對你來說其實不太重要。",
+    "所以 template 做的事，叫 type abstraction（型別抽象化）：把資料結構能裝的型別「放寬」。",
+    "站到比較高、比較抽象的位置，目的就是：寫一次（或想一次），就能用在很多不同的地方。"
    ]
   },
   {
@@ -511,6 +783,30 @@
      "text": "這叫 functionality abstraction。",
      "t": 5269
     }
+   ],
+   "cues": [
+    5051.85,
+    5064.35,
+    5083.8,
+    5093.7,
+    5113.8,
+    5137.8,
+    5144.8,
+    5186.8,
+    5192.8,
+    5271.73
+   ],
+   "explain": [
+    "第二個理由：easy change of data structure，容易抽換資料結構。左上角列的是程式「需要的功能」：insert、search、走過每一個。",
+    "例如作業 2，你要把一些 user id 排一排、存起來。可以用很多種不同的 container 做到。",
+    "例如用 array 做，也可以用 linked list 做。右上角寫著用 array 的花費。",
+    "上一頁討論過：沒有通通都好的資料結構，一定是這邊好一點、那邊差一點，這就是 trade-off。",
+    "如果你很清楚你的問題：insertion 很多，就選 linked list；index access 很多，就選 array。",
+    "但很多時候事先不知道哪個好，只好先寫一個版本試試。這裡先用 array：插入 30 時 47 要往後搬；搜尋可以用 binary search。",
+    "再換成另一個版本 linked list 交叉測試：插入 30 只要改指標。如果外面要做的事一樣，只是裡面實作不同，每換一次就重寫一份 code，會很麻煩。",
+    "把共同能做的事抽出來看：大家都能 search，只是 array 能 binary search，linked list 只能從頭 sequential search，花的力氣不一樣。",
+    "把程式的重點放在「它們能做什麼」，而不是「它們怎麼做到」，這就是抽象化，讓你很容易換著用。",
+    "這種只看功能的抽象化，叫 functionality abstraction。"
    ]
   },
   {
@@ -546,7 +842,31 @@
      "t": 5413
     }
    ],
-   "trap": "這裡的 vector 是功能上的抽象家族（ADT），不是指 C++ STL 的 std::vector。"
+   "trap": "這裡的 vector 是功能上的抽象家族（ADT），不是指 C++ STL 的 std::vector。",
+   "cues": [
+    5281.63,
+    5294.8,
+    5328.8,
+    5340.58,
+    5351.17,
+    5372.8,
+    5385.8,
+    5403.64,
+    5406.4,
+    5412.8
+   ],
+   "explain": [
+    "具體來看我們講過的 dense array 和 sparse array：它們在 storage 上存的資訊不一樣。",
+    "但兩者都支援 indexed access（random access）。sparse array 要先做 binary search 才找到，比較迂迴，但還是做得到。",
+    "課本把「可以支援 index access 的資料結構」叫做 vector。注意，這裡只說 index access，沒說要 fast。左上角是 vector 的功能清單。",
+    "這個 vector 不是 C++ STL 裡那個 vector，它只是在描述一種功能（functionality）。",
+    "dense array 是 vector 的「快速 index access 版」，sparse array 是 vector 的「省空間（storage saving）版」。",
+    "課本寫的 at(i)，就是我們以前說的 get at index：拿出第 i 格。這裡 at(2) 拿到 2。",
+    "set 就是 put to index：把東西放進某一格。set(2, 9) 把第 2 格改成 9。",
+    "也可以用 index 做 insert：insert(1, 7) 在第 1 格插入 7，後面的往後移。",
+    "用 index 做 erase（刪除），以前我們叫 remove：erase(3) 刪掉第 3 格，後面的往前補。",
+    "只要支援這些功能，就叫 vector。有的跑得快、有的慢，有的 storage 多、有的少，都沒關係。"
+   ]
   },
   {
    "title": "C++ vector = extendable array",
@@ -572,6 +892,26 @@
      "text": "把 dense、sparse、extendable 整合成 vector 家族。",
      "t": 5572
     }
+   ],
+   "cues": [
+    5432.3,
+    5451.8,
+    5459.8,
+    5470.43,
+    5474.54,
+    5484.8,
+    5535.8,
+    5573.8
+   ],
+   "explain": [
+    "有了「vector 是一種功能」的概念，就來看看 C++ 裡真正的 vector 是怎麼做的。",
+    "答案是：C++ STL 的 vector，其實是一個 extendable array，可以長大的 array。",
+    "vector 需要的 at、set、insert、erase 它都支援，而且多了一個特性：extendable。",
+    "對比 C 原本的 dense array：它沒有可以 extend 的特性。",
+    "sparse array 的著重點也不在 extendable，而是在 storage。",
+    "很多不同的 vector 實作各有特性。只要它們有一致的介面（同樣的功能名稱），就能這個試試、那個試試，看哪個最合用。",
+    "你甚至可以硬拿 linked list 寫一個 vector，慢慢做 index access。可以，只是很慢。",
+    "這就是從具體一步一步抽象化：把 dense array、sparse array 等整合起來，看成都能提供 index access 的 vector。"
    ]
   },
   {
@@ -624,6 +964,34 @@
      "text": "allocate、assign 大致 constant；copy 有 n 個就要 n 份力氣，最花力氣。",
      "t": 5959
     }
+   ],
+   "cues": [
+    5721.8,
+    5765.27,
+    5768.8,
+    5783.81,
+    5799.8,
+    5831.8,
+    5872.63,
+    5880.9,
+    5899.55,
+    5946.8,
+    5961.63,
+    5999.35
+   ],
+   "explain": [
+    "接下來是 extendable array：我們想要 array 能隨著需求變大。老師要帶大家走一次「設計」的過程。",
+    "array 最大的麻煩：一開始只畫了 10 個位置。",
+    "10 個都塞滿以後，第 11 個（紅色）就塞不進去了。",
+    "塞滿這件事通常叫 overflow（溢位），跟之前講的 stack overflow 一樣，就是塞爆了。",
+    "概念很簡單：爆掉的時候就 grow（變大）。剩下的問題只有：怎麼變大？",
+    "第一步：allocate（配置）一個新的 array，叫它 B。像地下室櫃子滿了，就去買一批更多的新櫃子。",
+    "第二步：copy contents，把舊櫃子 A 裡的東西一個一個搬到 B。計數器顯示搬了幾個。",
+    "第三步：remove A，assign B to A。舊櫃子 A 沒用了就丟掉，以後把 B 當成 A 繼續用。這時第 11 個終於放得進去。",
+    "老師強調：pseudocode 只寫「grow the array」不夠明確，10 個人看會有 10 種寫法；寫成 allocate、copy、remove 才清楚。",
+    "每一步花多少力氣？allocate：如果 OS 沒有特別狀況，找一塊連續記憶體給你，可以想成 constant（固定）時間。",
+    "copy：裡面有 n 個就要 copy n 個。10 個櫃子是滿的就花 10 倍力氣，100 個就 100 倍，是 O(n)。",
+    "assign 用 pointer 指一下，也是 constant。所以最花力氣的是第二步 copy。"
    ]
   },
   {
@@ -646,6 +1014,24 @@
      "text": "比較兩種方法放 m 個東西的總效率，假設一開始 size 1。",
      "t": 6184
     }
+   ],
+   "cues": [
+    6048.8,
+    6086.68,
+    6088.8,
+    6126.4,
+    6134.8,
+    6162.8,
+    6184.77
+   ],
+   "explain": [
+    "要怎麼分析效率？課本的方法：把 array 當成一個 stack，一個一個 push m 個 item 進去，看 extendable array 發生什麼事。",
+    "開始分析前，先看兩種「變大」的選擇。",
+    "選擇 A：要新空間時，只比舊的多一格。size 4 滿了就變 5，要多少拿多少。",
+    "選擇 B：一次豪氣一點，直接漲兩倍。size 4 變 8。",
+    "接下來要比較：這兩種方法放 m 個東西進去，整體效率有什麼不一樣。",
+    "用 n 表示每個時間點 array 裡有幾個東西：n 從 1、2、3…一路到 m。",
+    "假設 array 一開始是 size 1（size 0 有點麻煩）。"
    ]
   },
   {
@@ -680,6 +1066,26 @@
      "text": "總共大約 m² 的力氣：O(m²)。",
      "t": 6378
     }
+   ],
+   "cues": [
+    6198,
+    6268.04,
+    6294.19,
+    6313.8,
+    6328.8,
+    6344.89,
+    6353.15,
+    6375.8
+   ],
+   "explain": [
+    "做法 A（每次多一格）。一開始 size 1，已經放了第 1 個。要放第 2 個時，滿了！要先 allocate 一個 size 2 的新 array，再 copy 1 個過去，才能放第 2 個。",
+    "size 2 再放一個：又滿了。這次原本有 2 個，要 copy 2 個到 size 3 的新 array。",
+    "再放：又滿了，copy 3 個。",
+    "老師故意一個一個丟：因為每次只多一格，所以每一輪都會滿，每一輪都要 copy。",
+    "到最後一輪，要 allocate、copy m − 1 個，才能把第 m 個塞進去。",
+    "算總帳：allocate 了 m − 1 次。",
+    "copy 的總數是 1 + 2 + 3 + … + (m − 1) = m(m − 1)/2。",
+    "所以塞 m 個東西，大概要花 m² 的力氣，寫成 O(m²)。這是做法 A 的結果。"
    ]
   },
   {
@@ -719,7 +1125,33 @@
      "t": 6611
     }
    ],
-   "trap": "補充：1 + 2 + 4 + … + 2^(k−1) = 2^k − 1（等比級數）；最後一項是 2^(k−1)，不是 2^k − 1。"
+   "trap": "補充：1 + 2 + 4 + … + 2^(k−1) = 2^k − 1（等比級數）；最後一項是 2^(k−1)，不是 2^k − 1。",
+   "cues": [
+    6413.8,
+    6427.8,
+    6442.8,
+    6451.8,
+    6481.08,
+    6490.71,
+    6515.8,
+    6533.2,
+    6557.12,
+    6586.05,
+    6609.8
+   ],
+   "explain": [
+    "做法 B（每次漲兩倍）。一樣一開始只有一格，放進第 1 個。",
+    "要塞第 2 個：滿了。allocate，copy 1 個，array 變成 size 2。",
+    "到這一步為止，和左邊做法 A 一模一樣。",
+    "塞第 3 個：又超出 size 了。allocate，copy 2 個，但這次一次漲兩倍，size 從 2 變 4。",
+    "塞第 4 個：沒有滿！開開心心直接放，不用 copy。",
+    "塞第 5 個：又滿了，copy 4 個，size 變 8。",
+    "size 是 8，所以塞 5、6、7、8 的時候通通不會滿。",
+    "一直要到塞第 9 個，才需要 copy 8 個，size 變 16。差別開始出來了。",
+    "一路走下去，看到某個 2 的 k 次方的時候會怎樣。",
+    "到 2^k 之前，只 allocate 了 k 次：進到 4 以前 2 次、進到 8 以前 3 次、進到 16 以前 4 次。",
+    "copy 的總數是 1 + 2 + 4 + 8 + … ，加到 2^(k−1)，總和是 2^k − 1。上面的算式顯示了這個例子的 1 + 2 + 4 + 8 = 15。"
+   ]
   },
   {
    "title": "比較：平均每次 O(1)",
@@ -758,7 +1190,33 @@
      "t": 6831
     }
    ],
-   "trap": "補充：這種把偶發的大花費攤到每次操作的分析叫 amortized analysis；×2 策略每次 push 攤銷 O(1)，但最壞單次仍是 O(m)。"
+   "trap": "補充：這種把偶發的大花費攤到每次操作的分析叫 amortized analysis；×2 策略每次 push 攤銷 O(1)，但最壞單次仍是 O(m)。",
+   "cues": [
+    6637,
+    6652.8,
+    6667.8,
+    6683.14,
+    6721.8,
+    6742.8,
+    6773.8,
+    6799.33,
+    6818.8,
+    6827.62,
+    6860.9
+   ],
+   "explain": [
+    "並排比較：藍色是每次 +1，橘色是每次 ×2；每根柱子的高度是第 i 次 push 花的力氣（copy 數 + 寫入 1）。先看 allocate 次數：×2 比較貪心，既然 allocate 很麻煩，就一次多要一點，所以次數少很多。",
+    "+1 則比較勤儉持家：用多一點，就再拿一點。",
+    "比較有趣的是 copy 的數量。×2 的 copy 有時 1 個、有時 2 個、4 個……總共加起來是多少？",
+    "1 + 2 + 4 + … 是等比級數，正好練習以前學的公式：加到 2^(k−1) 是 2^k − 1，跟 2^k 差不多大。",
+    "所以塞 m 個時，×2 的 copy 總共大約 m 次，allocate 大約 log m 次。",
+    "平均來說，放 m 個只花大約 m 份力氣，所以平均每放一個，只要 constant 的力氣，也就是 O(1)。",
+    "反過來看 +1：平均每放一個要花大約 m 的力氣，柱子越來越高。只看時間的話，×2 顯然比較好。",
+    "×2 的缺點：碰到要漲的那一次（紅色高柱子），要等它很久，因為力氣全集中在那個時間點，其他時候都很輕鬆。",
+    "如果想盡量節省記憶體，+1 用多少拿多少，可能會比較喜歡它。",
+    "C++ STL 的 vector 用的是 ×2 這一種的混合版：可以先指定配多少，不夠用時就乘上某個倍數往上長。",
+    "這種「平均每次操作要花多少」的分析方式，叫 amortized analysis（攤銷分析），在資料結構和演算法裡很常用。"
+   ]
   },
   {
    "title": "Q&A：把小 array 用 linked list 串起來",
@@ -785,7 +1243,27 @@
      "t": 7030
     }
    ],
-   "trap": "補充：實際的 STL deque 用一個指標陣列（map）指向固定大小的 block，所以 random access 仍是 O(1)，不是沿著 linked list 一塊一塊走。"
+   "trap": "補充：實際的 STL deque 用一個指標陣列（map）指向固定大小的 block，所以 random access 仍是 O(1)，不是沿著 linked list 一塊一塊走。",
+   "cues": [
+    6962.82,
+    6967.8,
+    6986.8,
+    6992.8,
+    7001.8,
+    7009.8,
+    7019.87,
+    7029.8
+   ],
+   "explain": [
+    "同學在 Slido 問：copy 很浪費時間，能不能把大 array 切成幾個小 array（這裡每塊 4 格），再用 linked list 連起來？",
+    "老師說這是非常好的問題，還記得剛才講的 deque（double-ended queue）嗎？",
+    "C++ STL 裡的 deque，做法 exactly 就是這樣：把一堆小 array 用 linked list 連在一起（箭頭就是串起來的紙條）。",
+    "所以它有小 array 的特性：每一塊的記憶體是集中的，cache efficiency（快取效率）比較好。",
+    "同時又有 linked list 的彈性：要變大就多接一塊，不用整個 copy。",
+    "但 index access 就不會那麼快了：要拿第 9 個，得先一塊一塊找過去。",
+    "在一塊小 array 的範圍內，random access 還是快的：9 就是第 2 塊裡的第 1 格，直接算就到。",
+    "所以它介在 array（random access 很快）和 linked list（random access 很慢）中間，是一種 trade-off。（補充：真正的 STL deque 用一個指標陣列管理這些 block，所以 random access 仍是 O(1)。）"
+   ]
   },
   {
    "title": "Q&A：random access 與 fast random access",
@@ -793,7 +1271,7 @@
    "points": [
     {
      "text": "random access 是功能需求：放、拿東西時需要一個編號，怎麼實作不管。",
-     "t": 7080
+     "t": 7057
     },
     {
      "text": "fast 版：用一塊集中的記憶體，index 與位置有固定對應，很快算出位置。",
@@ -815,6 +1293,28 @@
      "text": "漲一倍把 copy 攤平到所有操作，平均起來不花力氣。",
      "t": 7236
     }
+   ],
+   "cues": [
+    7057,
+    7069.18,
+    7087.97,
+    7111.8,
+    7148.8,
+    7164.9,
+    7200.8,
+    7225.8,
+    7241.8
+   ],
+   "explain": [
+    "同學問 fast random access 和 random access 差在哪？先從寫程式的功能出發：放、拿東西時需要一個編號，這就是 random access（index access）。第一階藍色台階。",
+    "需求可能到這裡就結束：我只要有編號可以用，至於你怎麼實作，我不管。",
+    "這個功能有一個快速的實作版本：用一塊集中的記憶體，讓位置和 index 有固定的對應，任何 index 來都能很快算出位置。第二階綠色台階。",
+    "這就是我們看到的 dense array 的做法：位址 = 開頭 + i × 每格大小。",
+    "需求是一點一點往上開的：先要能 index access，再進階一點，還要「快」。",
+    "老師的比喻：一開始是「我要吃飽」，後來是「吃飽而且要好吃」。需求一路往上加，就需要更複雜的資料結構，或要開始考慮 trade-off。",
+    "extendable 也是一個加上去的需求：原本 array 有 random access，但不能長大，現在要它能長大。第三階橘色台階。",
+    "剛才看到兩種做法：每次漲一個、每次漲一倍。分析之後，每次漲一倍比較合用。",
+    "因為漲一倍等於把 copy 的力氣攤平到所有操作上，平均起來沒那麼花力氣，所以選它。"
    ]
   },
   {
@@ -847,7 +1347,7 @@
   },
   {
    "title": "Vector 家族回顧",
-   "scene": "contlin-vector-family",
+   "scene": "contlin-vector-family2",
    "points": [
     {
      "text": "把講過和 array 有關的東西統合成一個 family。",
@@ -861,6 +1361,18 @@
      "text": "各自著重：快速版、space saving 版、dynamic 版。",
      "t": 7735
     }
+   ],
+   "cues": [
+    7685,
+    7706.75,
+    7735.8,
+    7757.79
+   ],
+   "explain": [
+    "休息回來，先回顧：把講過和 array 有關的東西，統合成一個 family（家族）。",
+    "照課本的說法：dense array、sparse array、extendable array，都是 vector 這個大家族的例子。",
+    "它們各自最著重的功能不同：dense 是快速版、sparse 是 space saving（省空間）版、extendable 是 dynamic（會長大）版。",
+    "總之，大家都是 vector，只是不同取向的 vector。"
    ]
   },
   {
@@ -899,6 +1411,32 @@
      "text": "remove 在 singly 與 doubly 的實作難度差很多。",
      "t": 7984
     }
+   ],
+   "cues": [
+    7767.8,
+    7798.8,
+    7807.8,
+    7827.8,
+    7844.8,
+    7869.38,
+    7888.8,
+    7906.8,
+    7917.15,
+    7960.8,
+    7978.8
+   ],
+   "explain": [
+    "接著對 doubly、singly linked list 做一樣的事：描述它們的 functionality（功能）。底下是一條 singly linked list。",
+    "課本把這兩種 linked list 共同的功能整合起來，叫做 list。右上角是 list 的功能清單。",
+    "list 在意的是 iterative，也就是 sequential access，也有人叫 positional access（依位置存取）。",
+    "就像 queue 像排隊一樣：你排在隊伍的哪個位置？用某一個「位置」來規範你在哪，再用這個位置放東西、拿東西。",
+    "對比剛才的 vector：vector 的重點是 indexed（random）access，用編號。",
+    "list 要支援的功能之一：把東西 insert 到某個 position。以前在 linked list 叫 insert after，表示 position 的方式是「在某個 node 後面」。這裡把 5 插在 p 後面。",
+    "透過 position p 拿到 element（元素）。在 linked list 裡，p 就是 node 的 pointer，透過它就拿到裡面的資料 7。",
+    "要一步一步走完整個 list，得先知道從哪裡開始：begin，在 linked list 就是 head。",
+    "還要知道走完了沒：end。在 singly linked list，就是看它是不是等於 NULL。",
+    "再來是「下一個」：next，在 singly linked list 就是順著 next 的小紙條走，走到 NULL 就結束。",
+    "有 insert 就有 remove。doubly 和 singly 在 remove 的實作難度差很多（singly 要先找前一個），其他地方差別沒那麼大。"
    ]
   },
   {
@@ -937,6 +1475,30 @@
      "text": "vector 說幾號櫃子，list 說排第幾個位置的人。",
      "t": 8196
     }
+   ],
+   "cues": [
+    8045.62,
+    8052.8,
+    8077.8,
+    8093.89,
+    8113.8,
+    8119.8,
+    8135.58,
+    8158.46,
+    8170.8,
+    8193.8
+   ],
+   "explain": [
+    "把 list 這個 family 再擴大一點：dense array 也能加入！格子下面的數字是記憶體位址 1000、1004…（int 佔 4 bytes）。",
+    "它只是在 insert、remove 時要推擠別人，比較慢，但功能都有。",
+    "它的 position 不是 linked list 那種小紙條，而是可以對應到 address（位址）。p = 1000 指著第一格。",
+    "array 和 linked list 的差別：array 的 address 是連續的；下面的 linked list address 不連續（0x3A0、0x120…），要靠小紙條傳來傳去。",
+    "有了 address，begin 就是 array 開頭的那個 address：1000。",
+    "end 是「array 開頭 + length」的那個 address，也就是 1020，表示結尾的地方（那一格其實不存在，是虛線）。",
+    "next 就是 address 加加：在位址空間裡往前移一個元素的大小，int 就加 4。所以 list 要的功能，dense array 全都能支援，只是有的快一點、有的慢一點。",
+    "課本把這些稱作 concrete implementation（具體實作）：真正帶你看記憶體裡怎麼擺、怎麼做事。",
+    "把具體實作裡的功能切出來：上半部屬於 vector 的功能，靠 index 決定做什麼；下半部屬於 list 的功能，靠一個一個走過的方式拜訪成員。",
+    "換句話說，vector 說的是「一號櫃子、二號櫃子、三號櫃子」，list 說的是「排第一個位置的人、第二個、第三個」。"
    ]
   },
   {
@@ -976,7 +1538,33 @@
      "t": 8514
     }
    ],
-   "trap": "老師先寫 p++ 又改成 p = p 的 next：抽象層要用 next；C++ 再用 operator overloading 讓 p++ 代表 next。"
+   "trap": "老師先寫 p++ 又改成 p = p 的 next：抽象層要用 next；C++ 再用 operator overloading 讓 p++ 代表 next。",
+   "cues": [
+    8227,
+    8240.16,
+    8249.7,
+    8283.58,
+    8297.95,
+    8342.94,
+    8388.29,
+    8430.8,
+    8469.31,
+    8487.94,
+    8507.8
+   ],
+   "explain": [
+    "終於講到 iterator：它就是在 list 裡，把 p（位置）這個觀念抽象化的方式。上面是 dense array，下面是 linked list，裝的都是 3、1、4、2。",
+    "linked list 實作 p 的方式：p 一開始是 head，然後 next、next、next，一直走到 end（NULL）。",
+    "array 實作 p 的方式：p 一開始是 array 開頭的 address，然後加加加加，一直到 end。",
+    "整合起來，一個「依序拜訪整個 list」的演算法需要四樣東西：begin、end、next，還有取得 element 的方法。上面這三行 for 迴圈就用到它們。",
+    "begin：在 dense array 是 arr[0] 的位置；在 linked list 是 head。兩邊的第一個都亮起來。",
+    "end：在 n 個元素的 array，是 arr[n] 的位置，其實已經過頭了；在 linked list，則是走到 NULL。",
+    "next：在 array 是 p 加加，int 就把 address 往前 4 格；在 linked list，是順著現在這個 position 的 next 走。程式細節不同，但意念一樣。",
+    "我們希望只寫一個程式：for (p = begin; p != end; p = next(p))，把 container 裡的東西通通加起來。兩邊同時跑，sum 都是 10。",
+    "老師更正自己：這裡不應該寫 p++，應該寫 p = p 的 next，因為在抽象的層次上，我們只知道有 next 這個動作。",
+    "寫這段程式時，我不想在乎底下用的是 singly、doubly linked list、dense array，甚至剛才那種混合的 deque。",
+    "在這樣的寫法裡，p 扮演的角色就叫做 iterator（迭代器）：array 就套用 array 的 begin、end、next，linked list 就套用 linked list 的。"
+   ]
   },
   {
    "title": "C++ STL 的 iterator",
@@ -1010,6 +1598,30 @@
      "text": "linked list 與 dense array 都有 iterator，同一份 iteration code 能跑在不同資料結構上。",
      "t": 8765
     }
+   ],
+   "cues": [
+    8556.8,
+    8562.8,
+    8574.8,
+    8585.8,
+    8602.8,
+    8630.8,
+    8644.8,
+    8657.8,
+    8709.44,
+    8764.8
+   ],
+   "explain": [
+    "C++ 怎麼做？它用 template 實作。STL 裡的 list 是 doubly linked list，list<int> 就是裝 integer 的 doubly linked list，再要一個它專屬的 iterator。",
+    "這個 iterator 幫我們拜訪過 linked list 裡所有的 element，把它們都加起來。",
+    "如果現在不想用 linked list，想用 vector？只要把型別這邊改成 vector，其他什麼都不用變。底下就換成一排連續的 array。",
+    "這樣就達到「寫一份 code（或幾乎一份），就能抽換不同 data structure」的效果。",
+    "C++ 還多做了一件事讓 code 更簡潔：operator overloading（運算子多載）。本來要寫 p = next(p)，帥氣的寫法是直接寫 p++。",
+    "這個 ++ 跟單純「address 加一」不一樣：它是一個被換掉的函式，會去呼叫對應的 next。在 linked list 就順著 next 走，在 dense array 就把 address 往前一格。",
+    "同樣地，element(p)（拿到 p 位置上的元素）比較帥氣的寫法是 *p。這裡 *p 拿到 2。",
+    "所以可以把 iterator 想成一個更安全、比較複雜一點的 pointer：從 position 解碼出你要拿的東西。",
+    "只要 container 支援 list 的功能（每個都拜訪過、一個都不漏），就會有對應的 iterator，像在幫我們指路。",
+    "我們熟悉的 linked list（singly 或 doubly）和 dense array 都支援 list 的功能，在 C++ 裡都有對應的 iterator，同一段 iteration code 就能用在不同資料結構上。"
    ]
   },
   {
@@ -1067,7 +1679,33 @@
      "t": 9227
     }
    ],
-   "trap": "補充：end() 是 past-the-end 位置，不能 dereference，只能拿來比較。"
+   "trap": "補充：end() 是 past-the-end 位置，不能 dereference，只能拿來比較。",
+   "cues": [
+    8983.8,
+    9005.8,
+    9019.8,
+    9048.9,
+    9059.8,
+    9066.8,
+    9105.57,
+    9163.8,
+    9195.8,
+    9226.69,
+    9271.84
+   ],
+   "explain": [
+    "同學問 iterator 是不是位置？老師說：沒有很強的規定 iterator 一定要用 address 實作。底下是一個 dense array，位址從 5546 開始。",
+    "在 array 裡，也可以不用 address、改用 index 來實作 iterator。technically 是可以的。",
+    "只是很多地方要跟著改：例如存取一個 element 時，不能直接 dereference（照位址去拿），而要先從 index 算出 address，再 dereference。",
+    "另一個問題：dense array 要判斷 end，是不是得多 allocate 一格（n + 1 格）？老師說這是很好、有點 tricky 的問題。",
+    "答案是：不見得要把那個位置 allocate 下來（虛線格），但還是可以用那個位置做判斷。",
+    "就像走到位置 5566，就代表已經跨出你家門口了。你沒有配置那一格，但可以用 5566 這個位置判斷「我是不是出門了」。",
+    "迴圈每一輪都呼叫 end()，會不會花時間？會，要花一些時間。不過判斷要不要出迴圈本來就要花時間，只是多或少的差別。",
+    "這是另一種 trade-off：iterator 的寫法有 programming 的彈性（flexibility），代價是執行時多一點 constant 的 overhead（額外負擔）。",
+    "而且現代 compiler 會幫忙：發現 c.end() 是很簡單的 function，就直接換成程式碼、不真的呼叫，這叫 inline function，可以減少 overhead。",
+    "同學問 iterator 是不是 reference？老師說：* 本身也是一個 function（dereference），作用在 iterator 上時被 overload 成「取那個位置上的 content」。",
+    "在 linked list 的世界，從 iterator dereference，拿到的不是整個 node，只是 node 裡的 content（9）。這跟直接用 address 取值會拿到整個 node，意思不完全一樣。"
+   ]
   },
   {
    "title": "Q&A 與下課",
