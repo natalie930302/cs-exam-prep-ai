@@ -240,7 +240,12 @@
   $('nextVid').onclick = function(){ if (current) playVideo(current.seriesIdx, current.idx + 1, true); };
 
   async function markWatched(id, value){
+    const wasDone = chapterVideosDone(subject.id, chapter, done);
     await setTask(vidTask(id), value);
+    if (value && !wasDone && chapterVideosDone(subject.id, chapter, done)) {
+      const p = subjectVideoProgress(subject, done);
+      celebrate(chapter.t + ' 完成！', subject.name + ' 已看 ' + p.done + '/' + p.total + ' 支', subject.color);
+    }
     // The week's queue task follows the per-video marks (all videos = done).
     if (chapter.wk) await syncFoundationWeekTasks(chapter.wk, Array.from(done));
     renderWatchBtn(); renderVideoList();
@@ -259,6 +264,7 @@
           if (e.data === YT.PlayerState.ENDED && current) {
             store.set('yt-pos-' + current.id, '0');
             markWatched(current.id, true);
+            endCard();
           }
         }
       }
@@ -377,6 +383,9 @@
     if (secIdx !== lastSec) {
       const a = $('timeline').querySelector('.st-seg.active');
       if (a) $('timeline').scrollTo({left: a.offsetLeft - $('timeline').clientWidth / 2 + a.offsetWidth / 2, behavior: 'smooth'});
+      // Playing on from one section into the next (not a jump): quick
+      // question on the section that just finished.
+      if (!force && lastSec >= 0 && secIdx === lastSec + 1) sectionChallenge(lastSec);
       lastSec = secIdx;
     }
     const pts = Array.from(notesEl().querySelectorAll('.st-pt'));
@@ -392,6 +401,136 @@
     }
     lastPt = active;
   }
+
+  // ── 小挑戰: a quick question after a section, and at the end of a video ──
+  // Questions come from the video's own notes quiz. Each is matched to the
+  // section whose text shares the most terms with it, so it pops up right
+  // after that part is taught; questions that match nothing well are kept
+  // for the end-of-video card.
+  function terms(text){
+    const s = String(text || '').toLowerCase(), out = new Set();
+    (s.match(/[a-z][a-z0-9+\-]{2,}/g) || []).forEach(function(w){ out.add(w); });
+    const cjk = s.replace(/[^一-鿿]/g, ' ').split(/\s+/);
+    cjk.forEach(function(run){ for (let i = 0; i + 1 < run.length; i++) out.add(run.slice(i, i + 2)); });
+    return out;
+  }
+  function quizPlan(n){
+    if (n._plan) return n._plan;
+    const secTerms = n.sections.map(function(s){
+      return terms(s.title + ' ' + s.points.map(function(p){ return p.text; }).join(' ') + ' ' + (s.trap || ''));
+    });
+    // A question goes after a section only when that section clearly wins:
+    // at least 4 shared terms and 1.3× the runner-up (else it waits for the
+    // end of the video, where order doesn't matter).
+    const bySec = {};
+    (n.quiz || []).forEach(function(q, qi){
+      const qt = terms(q.q + ' ' + q.ans + ' ' + (q.why || ''));
+      const scores = secTerms.map(function(st){ let c = 0; qt.forEach(function(w){ if (st.has(w)) c++; }); return c; });
+      const order = scores.map(function(c, si){ return [c, si]; }).sort(function(a, b){ return b[0] - a[0]; });
+      const best = order[0], second = order[1] ? order[1][0] : 0;
+      if (best && best[0] >= 4 && best[0] >= 1.3 * second && bySec[best[1]] == null) bySec[best[1]] = qi;
+    });
+    n._plan = {bySec: bySec};
+    return n._plan;
+  }
+  const askedKey = function(id){ return 'qz-asked-' + id; };
+  function asked(id){ try { return JSON.parse(store.get(askedKey(id)) || '[]'); } catch (e) { return []; } }
+  function markAsked(id, qi){ const a = asked(id); if (a.indexOf(qi) < 0) { a.push(qi); store.set(askedKey(id), JSON.stringify(a)); } }
+
+  // One question card. `onDone` runs after the answer (or skip) has shown.
+  function questionCard(host, q, onDone){
+    const card = document.createElement('div');
+    card.className = 'st-qz';
+    card.innerHTML = '<div class="st-qz-hd">小挑戰</div><div class="st-qz-q">' + esc(q.q) + '</div>'
+      + '<div class="st-qz-opts">' + q.opts.map(function(o, i){ return '<button data-i="' + i + '">' + esc(o) + '</button>'; }).join('') + '</div>'
+      + '<button class="st-qz-skip">略過</button>';
+    host.appendChild(card);
+    requestAnimationFrame(function(){ card.classList.add('in'); });
+    let answered = false;
+    function close(delay){ setTimeout(function(){ card.classList.remove('in'); setTimeout(function(){ card.remove(); if (onDone) onDone(); }, 260); }, delay); }
+    card.querySelectorAll('.st-qz-opts button').forEach(function(b){
+      b.onclick = function(){
+        if (answered) return; answered = true;
+        const ok = q.opts[Number(b.dataset.i)] === q.ans;
+        card.querySelectorAll('.st-qz-opts button').forEach(function(x){
+          if (q.opts[Number(x.dataset.i)] === q.ans) x.classList.add('ok');
+        });
+        if (!ok) b.classList.add('no');
+        card.classList.add(ok ? 'right' : 'wrong');
+        card.querySelector('.st-qz-skip').remove();
+        const why = document.createElement('div');
+        why.className = 'st-qz-why';
+        why.textContent = (ok ? '答對！' : '答案是「' + q.ans + '」。') + (q.why ? ' ' + q.why : '');
+        card.appendChild(why);
+        if (ok) burst(b);
+        close(ok ? 2600 : 6000);
+      };
+    });
+    card.querySelector('.st-qz-skip').onclick = function(){ answered = true; close(0); };
+    return card;
+  }
+  // a small spray of colour from the button that was answered right
+  function burst(el){
+    const r = el.getBoundingClientRect();
+    for (let i = 0; i < 14; i++) {
+      const p = document.createElement('i');
+      p.className = 'st-qz-bit';
+      const a = Math.random() * Math.PI * 2, d = 30 + Math.random() * 50;
+      p.style.left = (r.left + r.width / 2) + 'px'; p.style.top = (r.top + r.height / 2) + 'px';
+      p.style.setProperty('--dx', Math.cos(a) * d + 'px'); p.style.setProperty('--dy', Math.sin(a) * d - 20 + 'px');
+      p.style.background = ['#2fc092', '#e2a33b', '#4b9ee2', '#d96a8a'][i % 4];
+      document.body.appendChild(p);
+      setTimeout(function(){ p.remove(); }, 900);
+    }
+  }
+  function sectionChallenge(si){
+    if (!curNotes || !current || document.querySelector('.st-qz')) return;
+    const qi = quizPlan(curNotes).bySec[si];
+    if (qi == null || asked(current.id).indexOf(qi) >= 0) return;
+    markAsked(current.id, qi);
+    questionCard(document.body, curNotes.quiz[qi]);
+  }
+
+  // End of a video: up to two questions not asked yet, then the next video
+  // starts after a short countdown (cancel stays on this video).
+  function endCard(){
+    if (!current) return;
+    const wrap = document.querySelector('.st-player-wrap');
+    const old = wrap.querySelector('.st-end'); if (old) old.remove();
+    const end = document.createElement('div');
+    end.className = 'st-end';
+    wrap.appendChild(end);
+    const id = current.id, idx = current.idx, s = series[current.seriesIdx];
+    const left = curNotes && curNotes.quiz ? curNotes.quiz.map(function(q, qi){ return qi; }).filter(function(qi){ return asked(id).indexOf(qi) < 0; }).slice(0, 2) : [];
+    function ask(k){
+      if (k >= left.length) return next();
+      markAsked(id, left[k]);
+      questionCard(end, curNotes.quiz[left[k]], function(){ ask(k + 1); });
+    }
+    function next(){
+      const nxt = s && s.options[idx + 1];
+      if (!nxt) {
+        end.innerHTML = '<div class="st-end-box"><b>這章的影片看完了</b>'
+          + (chIndex + 1 < subject.chapters.length ? '<a class="st-btn" href="' + studyRoomUrl(subject.id, chIndex + 1) + '">下一章：' + esc(subject.chapters[chIndex + 1].t) + ' ›</a>' : '')
+          + '<button class="st-btn st-end-close">留在這裡</button></div>';
+        end.querySelector('.st-end-close').onclick = function(){ end.remove(); };
+        return;
+      }
+      let n = 8;
+      end.innerHTML = '<div class="st-end-box"><span class="st-end-sub">下一支</span><b>' + esc(nxt.label) + '</b>'
+        + '<div class="st-end-row"><button class="st-btn st-btn-watch st-end-go">現在播放（<span>' + n + '</span>）</button><button class="st-btn st-end-close">取消</button></div></div>';
+      const tick = setInterval(function(){
+        n--; const sp = end.querySelector('.st-end-go span'); if (sp) sp.textContent = n;
+        if (n <= 0) go();
+      }, 1000);
+      function go(){ clearInterval(tick); end.remove(); playVideo(current.seriesIdx, idx + 1, true); }
+      end.querySelector('.st-end-go').onclick = go;
+      end.querySelector('.st-end-close').onclick = function(){ clearInterval(tick); end.remove(); };
+    }
+    ask(0);
+  }
+  // Development aid, like the lab's __labCheck: trigger the cards by hand.
+  window.__studyCheck = {sectionChallenge: sectionChallenge, endCard: endCard, plan: function(){ return curNotes && quizPlan(curNotes); }};
 
   // ── Tabs ──
   const TABS = ['videos', 'full', 'lab', 'res', 'quiz', 'mine', 'goals'];
