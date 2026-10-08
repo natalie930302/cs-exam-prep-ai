@@ -1897,13 +1897,13 @@ async function init(){
     });
   })();
 
-  loadChatHistory();
-  loadMemories();
-  // The AI check-in banner is hidden on the simplified 日曆 page, so don't
-  // ask the server to generate it (that runs the AI CLI).
-  loadRestart();
+  // The AI chat, check-in banner and restart card are hidden on the
+  // simplified main page (日曆 + 六科 only), so their loaders aren't started:
+  // no chat history fetch, no AI check-in generation, no 60 s restart poll.
   document.body.classList.add('ui-ready');
   renderAiContextDock();
+  // Links like the study room's 「← 六科」 point at /#subjects.
+  if(location.hash === '#subjects') goSec('subjects', document.querySelector('.pill[data-sec="subjects"]'));
 }
 
 init();

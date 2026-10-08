@@ -19,23 +19,26 @@ app.use(express.json());
 // middleware right below, which relies on these query strings changing
 // whenever the underlying file does.
 const PUBLIC_DIR = path.join(__dirname, 'public');
-const INDEX_HTML_PATH = path.join(PUBLIC_DIR, 'index.html');
 function assetVersion(relPath) {
   try { return String(fs.statSync(path.join(PUBLIC_DIR, relPath)).mtimeMs | 0); }
   catch (e) { return String(Date.now()); }
 }
-function serveIndex(req, res) {
-  let html;
-  try { html = fs.readFileSync(INDEX_HTML_PATH, 'utf8'); }
-  catch (e) { return res.status(500).send('index.html missing'); }
-  html = html
-    .replace(/(href="styles\.css)\?v=[^"]*(")/, `$1?v=${assetVersion('styles.css')}$2`)
-    .replace(/(src="data\.js)\?v=[^"]*(")/, `$1?v=${assetVersion('data.js')}$2`)
-    .replace(/(src="app\.js)\?v=[^"]*(")/, `$1?v=${assetVersion('app.js')}$2`);
-  res.set('Cache-Control', 'no-cache');
-  res.type('html').send(html);
+// Every page served from here gets each local script/stylesheet's ?v=
+// replaced by that file's modification time, so a changed file is always
+// re-fetched and an unchanged one stays cached — no hand-bumped versions.
+function serveHtmlPage(file) {
+  return (req, res) => {
+    let html;
+    try { html = fs.readFileSync(path.join(PUBLIC_DIR, file), 'utf8'); }
+    catch (e) { return res.status(500).send(file + ' missing'); }
+    html = html.replace(/((?:src|href)=")([\w./-]+\.(?:js|css))\?v=[^"]*(")/g,
+      (m, pre, asset, post) => `${pre}${asset}?v=${assetVersion(asset)}${post}`);
+    res.set('Cache-Control', 'no-cache');
+    res.type('html').send(html);
+  };
 }
-app.get(['/', '/index.html'], serveIndex);
+app.get(['/', '/index.html'], serveHtmlPage('index.html'));
+app.get('/study.html', serveHtmlPage('study.html'));
 
 app.use('/vendor/katex', express.static(path.join(__dirname, 'node_modules', 'katex', 'dist'), { maxAge: '30d', etag: true }));
 app.use('/vendor/three', express.static(path.join(__dirname, 'node_modules', 'three'), { maxAge: '30d', etag: true }));
