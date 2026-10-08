@@ -135,7 +135,7 @@
   "label": "台大林軒田 DSA C++ / Array",
   "points": 180,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "2-mxYrCNX60": {
   "label": "TrevTutor：Pigeonhole Principle",
