@@ -9,7 +9,7 @@
   "label": "Binary Tree Traversals（Inorder, Preorder, Postorder）",
   "points": 22,
   "quiz": 4,
-  "cued": false
+  "cued": true
  },
  "-DwGrJ8JxDc": {
   "label": "MIT 6.006 Rec9b：DNA Sequence Matching",
@@ -1393,15 +1393,15 @@
  },
  "XkNIHYd9Ruc": {
   "label": "台大林軒田 DSA Tree",
-  "points": 215,
+  "points": 216,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "xo41NfT8218": {
   "label": "Abdul Bari：Tree Traversal",
   "points": 16,
   "quiz": 4,
-  "cued": false
+  "cued": true
  },
  "xqM9NVKUWmg": {
   "label": "交大彭文志 Lec07 Stacks & Queues (2/2)",
