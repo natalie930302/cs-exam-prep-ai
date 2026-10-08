@@ -1,0 +1,498 @@
+{
+ "video": "Ax1OL2mikJo",
+ "label": "交大彭文志 Lec19 Graph (2/4)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "複習 adjacency matrix",
+   "scene": "graphpeng-weiss-matrix",
+   "points": [
+    {
+     "text": "回顧上次講的 graph 表示方式。",
+     "t": 16
+    },
+    {
+     "text": "第一種用 matrix：n × n 的 2D matrix，n 是 vertex 個數。",
+     "t": 29
+    },
+    {
+     "text": "有連接填 1，沒有連接填 0。",
+     "t": 44
+    },
+    {
+     "text": "左邊是 directed graph，所以 matrix 不 symmetric。",
+     "t": 55
+    },
+    {
+     "text": "1 連到 2、3、4，對應的格子就是 1。",
+     "t": 63
+    },
+    {
+     "text": "如果是 undirected graph，matrix 會是 symmetric。",
+     "t": 76
+    },
+    {
+     "text": "graph 很 dense（例如 complete graph）時，用 matrix 存還算有效率。",
+     "t": 101
+    },
+    {
+     "text": "這張圖很多格是 0，屬於 sparse，於是有第二種存法。",
+     "t": 120
+    }
+   ]
+  },
+  {
+   "title": "Adjacency list：G1 與 G3",
+   "scene": "graphpeng-g1g3-lists",
+   "points": [
+    {
+     "text": "第二種存法是 adjacency list，中間那一排是 head node。",
+     "t": 127
+    },
+    {
+     "text": "adjacent node：只透過一條邊（one hop）就到得了的頂點。",
+     "t": 156
+    },
+    {
+     "text": "1 跟 2、3、4 相連；串列中的順序不重要，都是鄰居就好。",
+     "t": 174
+    },
+    {
+     "text": "space 是 O(V + E)。",
+     "t": 196
+    },
+    {
+     "text": "G1 是 complete graph，每條串列的節點數都一樣（各 3 個）。",
+     "t": 213
+    },
+    {
+     "text": "G3 是 directed：0 → 1；1 → 0、2；2 沒有指出去的邊。",
+     "t": 252
+    },
+    {
+     "text": "directed graph 的 adjacency list 只記指出去的邊。",
+     "t": 276
+    }
+   ]
+  },
+  {
+   "title": "Sequential representation：一維陣列",
+   "scene": "graphpeng-sequential",
+   "points": [
+    {
+     "text": "第三種：用一個 one-dimensional array 存 graph。",
+     "t": 282
+    },
+    {
+     "text": "例子是 G4，含兩個 component H1、H2。",
+     "t": 300
+    },
+    {
+     "text": "前段每格存該頂點的鄰居在陣列中的起始 index。",
+     "t": 315
+    },
+    {
+     "text": "index 8 不對應任何頂點，是標示結尾用的。",
+     "t": 345
+    },
+    {
+     "text": "node[0] = 9：0 的鄰居存在 index 9、10，就是 2 和 1。",
+     "t": 357
+    },
+    {
+     "text": "不用另外記終點：看下一個頂點的起點再減 1，例如 node[1] = 11。",
+     "t": 428
+    },
+    {
+     "text": "node[7] = 22：7 只跟 6 相連，存在 index 22。",
+     "t": 494
+    },
+    {
+     "text": "缺點：新增或刪除頂點時整個陣列要 shift，movement cost 高。",
+     "t": 562
+    }
+   ],
+   "trap": "影片說「總共有 7 個頂點」，其實 G4 是 0–7 共 8 個頂點；陣列大小 = n + 2e + 1 = 8 + 14 + 1 = 23（node[0..22]），node[8] = 23 是結尾哨兵。"
+  },
+  {
+   "title": "Inverse adjacency list",
+   "scene": "graphpeng-inverse-list",
+   "points": [
+    {
+     "text": "到目前三種：2D array、adjacency list、sequential 表示法。",
+     "t": 626
+    },
+    {
+     "text": "inverse adjacency list：在 directed graph 中記錄「誰指向我」。",
+     "t": 647
+    },
+    {
+     "text": "一般 adjacency list 記的是 out-degree，inverse 記的是 in-degree。",
+     "t": 658
+    },
+    {
+     "text": "G3：0 被 1 指向、1 被 0 指向、2 被 1 指向。",
+     "t": 677
+    },
+    {
+     "text": "只有 adjacency list 時，求 2 的 in-degree 最笨的方法是 scan 所有 linked list。",
+     "t": 764
+    },
+    {
+     "text": "要求所有點的 in-degree，也一樣要把串列全部掃過。",
+     "t": 819
+    },
+    {
+     "text": "有 inverse adjacency list 就很快：數該串列的節點數就是 in-degree。",
+     "t": 827
+    }
+   ],
+   "trap": "影片 13:47 口誤說「如果你有一個 adjacency list 就很快」，指的是 inverse adjacency list。"
+  },
+  {
+   "title": "Adjacency multilist：為什麼需要",
+   "scene": "graphpeng-multilist-why",
+   "points": [
+    {
+     "text": "第四種表示法：adjacency multilist（multi-linked list）。",
+     "t": 849
+    },
+    {
+     "text": "adjacency list 裡每條邊 (u, v) 被存了兩次。",
+     "t": 871
+    },
+    {
+     "text": "u 的串列有 v，v 的串列也有 u。",
+     "t": 889
+    },
+    {
+     "text": "multilist 的目標：一條邊只存一次。",
+     "t": 912
+    },
+    {
+     "text": "adjacency list 以 vertex 為出發點；multilist 以 edge 為出發點。",
+     "t": 925
+    },
+    {
+     "text": "例子：complete graph 0、1、2、3，共 6 條邊。",
+     "t": 947
+    },
+    {
+     "text": "每條邊用一個 node 表示，第二、三欄是這條邊兩端的 vertex。",
+     "t": 978
+    }
+   ]
+  },
+  {
+   "title": "Adjacency multilist：沿 pointer 追蹤",
+   "scene": "graphpeng-multilist",
+   "params": {
+    "v": [
+     0,
+     1
+    ]
+   },
+   "points": [
+    {
+     "text": "後兩欄是 pointer：一個跟第一個端點有關，一個跟第二個端點有關。",
+     "t": 1027
+    },
+    {
+     "text": "N0 = (0,1)：跟 0 有關的下一條邊在 N1 = (0,2)。",
+     "t": 1036
+    },
+    {
+     "text": "N1 再指向 N2 = (0,3)，N2 這一欄是 0，代表 null。",
+     "t": 1077
+    },
+    {
+     "text": "vertex 0 的串列 N0 → N1 → N2，內容就等於 adjacency list 裡 0 的鄰居。",
+     "t": 1140
+    },
+    {
+     "text": "N0 的另一個 pointer：跟 1 有關的下一條邊在 N3 = (1,2)。",
+     "t": 1184
+    },
+    {
+     "text": "N3 指向 N4 = (1,3)，N4 之後是 null。",
+     "t": 1216
+    },
+    {
+     "text": "每個 node 有兩個 pointer，分別串在兩個端點的串列上。",
+     "t": 1249
+    }
+   ]
+  },
+  {
+   "title": "Multilist 節點數與四種表示法總結",
+   "scene": "graphpeng-multilist",
+   "params": {
+    "v": [
+     2,
+     3
+    ]
+   },
+   "points": [
+    {
+     "text": "multilist 的 node 個數 = graph 的 edge 數。",
+     "t": 1281
+    },
+    {
+     "text": "畫法：先數有幾條邊並編號，再把每個 node 的兩個 pointer 填上。",
+     "t": 1312
+    },
+    {
+     "text": "一個 node 同時屬於兩條 linked list，所以叫 multi-linked list。",
+     "t": 1382
+    },
+    {
+     "text": "adjacency list 與 adjacency multilist 名稱只差一點，意義完全不同：一個以頂點、一個以邊為出發點。",
+     "t": 1404
+    },
+    {
+     "text": "總結：graph 有四種表示法，回去想想各自的優缺點。",
+     "t": 1440
+    }
+   ]
+  },
+  {
+   "title": "Weighted edge 與 network",
+   "scene": "graphpeng-network",
+   "points": [
+    {
+     "text": "edge 可以給 weight，不只是 0／1。",
+     "t": 1470
+    },
+    {
+     "text": "weight 可代表從一點到另一點的 cost 或距離。",
+     "t": 1494
+    },
+    {
+     "text": "有 weighted edge 的 graph 統稱 network（不是電腦網路）。",
+     "t": 1515
+    },
+    {
+     "text": "road network 也是一個 graph。",
+     "t": 1556
+    },
+    {
+     "text": "road network 的頂點是交叉路口（intersection）。",
+     "t": 1599
+    },
+    {
+     "text": "一條路被路口切成很多 road segment，每段就是一條 edge。",
+     "t": 1620
+    },
+    {
+     "text": "道路有雙向，所以 road network 是 directed graph。",
+     "t": 1663
+    },
+    {
+     "text": "路段 cost = 實際距離；找 S 到 D 距離總和最小的路段集合 → shortest path。",
+     "t": 1688
+    }
+   ]
+  },
+  {
+   "title": "DFS：追蹤課本範例",
+   "scene": "dfs-stack",
+   "points": [
+    {
+     "text": "tree 有 traversal，graph 也有兩種：DFS 與 BFS。",
+     "t": 1751
+    },
+    {
+     "text": "DFS 類似 tree 的 pre-order：一直往下走，直到走不下去。",
+     "t": 1790
+    },
+    {
+     "text": "假設用 adjacency list：串列中第一個沒拜訪過的頂點就去拜訪，recursive 進行。",
+     "t": 1826
+    },
+    {
+     "text": "從 0 出發：0 的串列第一個是 1，走到 1。",
+     "t": 1860
+    },
+    {
+     "text": "1 的串列：0 已拜訪過，跳過，拜訪 3。",
+     "t": 1896
+    },
+    {
+     "text": "3 之後拜訪 7；7 的串列中 3 已拜訪，再拜訪 4。",
+     "t": 1940
+    },
+    {
+     "text": "4 的鄰居都拜訪過 → 回到 7 拜訪 5，依此類推。",
+     "t": 1983
+    },
+    {
+     "text": "用一個 boolean array 記錄每個頂點是否 visited。",
+     "t": 2007
+    }
+   ]
+  },
+  {
+   "title": "DFS 不唯一與複雜度",
+   "scene": "graphpeng-dfs-order-cost",
+   "points": [
+    {
+     "text": "DFS 的結果不一定唯一。",
+     "t": 2084
+    },
+    {
+     "text": "adjacency list 沒規定小的在前，0 的鄰居寫成 2、1，走出來的順序就不同。",
+     "t": 2105
+    },
+    {
+     "text": "DFS 就是對 graph 做 pre-order：沒拜訪過的就輸出並 recursive。",
+     "t": 2126
+    },
+    {
+     "text": "用 adjacency list 時，DFS 的 complexity 是 O(e)。",
+     "t": 2169
+    },
+    {
+     "text": "用 adjacency matrix 時是 O(n²)，留給同學證明。",
+     "t": 2191
+    }
+   ],
+   "trap": "影片 36:55 說「一個是 order 1」是口誤或 ASR 誤聽，應為 adjacency list O(e)（嚴格說含頂點為 O(n + e)），adjacency matrix O(n²)。"
+  },
+  {
+   "title": "BFS：A B D E C",
+   "scene": "graphpeng-bfs-abcde",
+   "points": [
+    {
+     "text": "BFS 對應 tree 的 level order traversal，會用到 queue。",
+     "t": 2234
+    },
+    {
+     "text": "第一層 A，第二層 B D E，第三層 C → BFS = A B D E C。",
+     "t": 2275
+    },
+    {
+     "text": "寫程式：先輸出 A，再把 A 的鄰居 B、D、E 放進 queue。",
+     "t": 2303
+    },
+    {
+     "text": "取出 B，B 連到 C → C 進 queue，queue = D E C。",
+     "t": 2329
+    },
+    {
+     "text": "取出 D，C 已經在 queue 裡，不用再放。",
+     "t": 2364
+    },
+    {
+     "text": "取出 E，最後取出 C，完成 BFS。",
+     "t": 2387
+    }
+   ]
+  },
+  {
+   "title": "實作方式與 connected component",
+   "scene": "graphpeng-g4-components",
+   "points": [
+    {
+     "text": "總結：DFS 是 pre-order，串列中有沒拜訪過的頂點就去拜訪。",
+     "t": 2407
+    },
+    {
+     "text": "DFS 兩種寫法：recursive，或自己用 stack 實作。",
+     "t": 2436
+    },
+    {
+     "text": "BFS 用 queue 就能完成。",
+     "t": 2451
+    },
+    {
+     "text": "DFS／BFS 可用來找 graph 的 connected component（課本 Program 6.3）。",
+     "t": 2476
+    },
+    {
+     "text": "回去一定要 trace code。",
+     "t": 2491
+    }
+   ],
+   "trap": "補充：connected() 對每個尚未拜訪的頂點呼叫一次 dfs，呼叫次數就是 connected component 數。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "用一維陣列（sequential）表示 n = 8、e = 7 的 undirected graph，陣列需要幾格？",
+   "opts": [
+    "23",
+    "22",
+    "15",
+    "64"
+   ],
+   "ans": "23",
+   "why": "n + 1 格起點（含結尾哨兵）加上 2e 格鄰居：8 + 1 + 14 = 23。"
+  },
+  {
+   "q": "inverse adjacency list 主要讓哪一件事變快？",
+   "opts": [
+    "求某點的 in-degree",
+    "求某點的 out-degree",
+    "判斷 graph 是否 complete",
+    "做 BFS"
+   ],
+   "ans": "求某點的 in-degree",
+   "why": "inverse list 記「誰指向我」，串列長度就是 in-degree；只有一般 adjacency list 時得掃全部串列。"
+  },
+  {
+   "q": "K4（4 個頂點的 complete graph）用 adjacency multilist 表示，共有幾個 edge node？",
+   "opts": [
+    "6",
+    "12",
+    "4",
+    "16"
+   ],
+   "ans": "6",
+   "why": "multilist 每條邊只存一個 node，共 e = 6；adjacency list 才需要 2e = 12 個。"
+  },
+  {
+   "q": "graph 用 adjacency matrix 表示時，DFS 的時間複雜度？",
+   "opts": [
+    "O(n²)",
+    "O(e)",
+    "O(n + e)",
+    "O(log n)"
+   ],
+   "ans": "O(n²)",
+   "why": "每拜訪一個點都要掃一整列 n 格找鄰居。"
+  },
+  {
+   "q": "A 連到 B、D、E；B、D、E 都連到 C。鄰居照字母順序，從 A 開始 BFS 的順序？",
+   "opts": [
+    "A B D E C",
+    "A B C D E",
+    "A C B D E",
+    "A B D C E"
+   ],
+   "ans": "A B D E C",
+   "why": "一層一層：A｜B D E｜C。C 被 B 放進 queue 後，D、E 不會再放一次。"
+  },
+  {
+   "q": "adjacency list 與 adjacency multilist 最根本的差別是？",
+   "opts": [
+    "前者以 vertex 為主，後者以 edge 為主",
+    "前者用陣列，後者用矩陣",
+    "前者只能存 directed graph",
+    "後者每條邊存兩次"
+   ],
+   "ans": "前者以 vertex 為主，後者以 edge 為主",
+   "why": "multilist 每條邊一個 node，同時掛在兩個端點的串列上。"
+  },
+  {
+   "q": "邊上帶有 weight 的 graph 通常稱為？",
+   "opts": [
+    "network",
+    "multigraph",
+    "DAG",
+    "complete graph"
+   ],
+   "ans": "network",
+   "why": "weight 可以是 cost、距離等；road network 的 weight 就是路段實際距離。"
+  }
+ ]
+}

@@ -1,0 +1,1054 @@
+{
+ "video": "bULIs7AVDNk",
+ "label": "交大彭文志 Lec23 Hashing",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "為什麼要 hash：bucket sort 與 symbol table",
+   "scene": "hashpeng-symtab",
+   "points": [
+    {
+     "text": "Bucket sort 依數字最前面或最後面的幾個 bit 決定丟進哪個 bucket，這就是 hash 的概念。",
+     "t": 0
+    },
+    {
+     "text": "數字最前面或最後面的 bit 決定它屬於哪個 bucket。",
+     "t": 39
+    },
+    {
+     "text": "寫 assembler / compiler 時最重要的資料結構是 symbol table。",
+     "t": 120
+    },
+    {
+     "text": "Symbol table 像一個目錄：左邊是字串（symbol），右邊是它對應的 attribute，例如 machine code。",
+     "t": 152
+    },
+    {
+     "text": "查某個 key 對應的 attribute 叫 retrieve；table 很大時要能很快找到。",
+     "t": 189
+    },
+    {
+     "text": "Table 也要支援修改：insert 和 delete。",
+     "t": 213
+    },
+    {
+     "text": "通訊錄、database 也都是這種 table，都要做 insert、delete、search。",
+     "t": 246
+    }
+   ]
+  },
+  {
+   "title": "Search 的成本：O(n)、binary search、hash",
+   "scene": "hashpeng-search-cost",
+   "points": [
+    {
+     "text": "Table 上最頻繁的運算是 search。",
+     "t": 272
+    },
+    {
+     "text": "最笨的方法：worst case 要把每一筆都看過，O(n)。",
+     "t": 280
+    },
+    {
+     "text": "先排序再用 binary search 可以到 O(log n)，但還是不夠快。",
+     "t": 296
+    },
+    {
+     "text": "Hash 的兩個關鍵之一：決定要 hash 的 key（例如通訊錄用名字）。",
+     "t": 316
+    },
+    {
+     "text": "第二個關鍵：選哪個 hash function，不同的 hash function 效果不同。",
+     "t": 349
+    },
+    {
+     "text": "Hash 只要算一次 function 就知道資料在哪個 bucket，insert / delete / search 都是 constant time。",
+     "t": 376
+    }
+   ]
+  },
+  {
+   "title": "Static hashing 與 dynamic hashing",
+   "scene": "hashpeng-static-dynamic",
+   "points": [
+    {
+     "text": "Hash 分兩大類：static hash 與 dynamic hash。",
+     "t": 410
+    },
+    {
+     "text": "Static：hash function 一旦決定就一成不變，不管資料的 distribution 如何。",
+     "t": 420
+    },
+    {
+     "text": "Dynamic：依資料的 distribution 自動調整 hash function。",
+     "t": 467
+    },
+    {
+     "text": "Static 部分會介紹常用 hash function，以及 collision / overflow 的處理。",
+     "t": 499
+    },
+    {
+     "text": "Dynamic 部分會介紹 trie，以及 directoryless 的做法。",
+     "t": 509
+    },
+    {
+     "text": "Database 裡的 hash 會隨資料改變，常用 dynamic hashing。",
+     "t": 540
+    }
+   ]
+  },
+  {
+   "title": "h(x)、bucket、identifier density 與 loading density",
+   "scene": "hashpeng-density",
+   "points": [
+    {
+     "text": "Identifier 就是 key；資料 x 要放在哪個 bucket 由 h(x) 決定。",
+     "t": 546
+    },
+    {
+     "text": "資料 x 就放在 h(x) 算出來的 bucket 裡。",
+     "t": 595
+    },
+    {
+     "text": "知道怎麼放就知道怎麼找：search x 時也是算 h(x)，到那個 bucket 找。",
+     "t": 631
+    },
+    {
+     "text": "每個 bucket 最多放 s 筆 record；hash table 有 b 個 bucket，h(x) 的值落在 0 ～ b−1。",
+     "t": 660
+    },
+    {
+     "text": "Identifier density = n / T，T 是所有可能的 identifier 個數，n 是表中的個數。",
+     "t": 700
+    },
+    {
+     "text": "Loading density（loading factor）α = n / (s·b)，表示表被佔用的比例。",
+     "t": 728
+    }
+   ]
+  },
+  {
+   "title": "Collision 與 overflow",
+   "scene": "hashpeng-collide-overflow",
+   "points": [
+    {
+     "text": "兩個資料 i₁、i₂ 若 h(i₁) = h(i₂)，就要搶同一個 bucket，這叫 collision。",
+     "t": 817
+    },
+    {
+     "text": "Bucket 還有空間時，collision 不會造成問題。",
+     "t": 838
+    },
+    {
+     "text": "要放進去時 bucket 已經滿了，才叫 overflow。",
+     "t": 848
+    },
+    {
+     "text": "Collision 只要用 hash 就一定會發生；overflow 要看 bucket 滿了沒。",
+     "t": 864
+    },
+    {
+     "text": "Bucket size s = 1 時，collision 一發生就一定 overflow。",
+     "t": 885
+    }
+   ],
+   "trap": "collision ≠ overflow：前者是 hash 到同一個 bucket，後者是 bucket 已滿放不下；只有 s = 1 時兩者同時發生。"
+  },
+  {
+   "title": "例子：26 個 bucket、s = 2 的 hash table",
+   "scene": "hashpeng-letters26",
+   "points": [
+    {
+     "text": "Hash function 用英文字母順序：A 放 bucket 0，總共 26 個 bucket（0 ～ 25）。",
+     "t": 942
+    },
+    {
+     "text": "每個 bucket 最多放兩筆資料（s = 2）。",
+     "t": 968
+    },
+    {
+     "text": "依序放入 GA、D、A、G、L、A2、A1、A3、A4。",
+     "t": 977
+    },
+    {
+     "text": "GA 是第 7 個字母 → bucket 6；D → bucket 3。",
+     "t": 989
+    },
+    {
+     "text": "Bucket 0 與 bucket 6 都被塞滿了。",
+     "t": 1011
+    },
+    {
+     "text": "A1、A3、A4 都要進已滿的 bucket 0 → overflow；資料不能丟，要有處理方法。",
+     "t": 1021
+    }
+   ],
+   "trap": "字幕把「bucket 數 b = 26」聽成「bucket size 20」：這裡是 26 個 bucket、每個 bucket 放 2 筆（s = 2）。補充：課本這個例子還多一個 E，共 10 個 identifier。"
+  },
+  {
+   "title": "好的 hash function：uniform",
+   "scene": "hashpeng-uniform",
+   "points": [
+    {
+     "text": "Hash function 不要太複雜，目標是 collision 機率越小越好。",
+     "t": 1079
+    },
+    {
+     "text": "還希望資料平均分到每個 bucket，不要某些 bucket 特別多。",
+     "t": 1107
+    },
+    {
+     "text": "每筆資料平均丟到每個 bucket 的 hash function 叫 uniform hash function。",
+     "t": 1150
+    },
+    {
+     "text": "極端的壞例子：每次都丟到 bucket 0，很快 overflow，其他 bucket 閒置。",
+     "t": 1172
+    },
+    {
+     "text": "理想上丟到每個 bucket 的機率都是 1/b。",
+     "t": 1208
+    }
+   ]
+  },
+  {
+   "title": "Hash function：mid-square 與 division",
+   "scene": "hashpeng-midsq-div",
+   "points": [
+    {
+     "text": "第一種：mid-square，key 先表示成二進位。",
+     "t": 1221
+    },
+    {
+     "text": "取出中間的若干 bit 當 bucket 位址，取幾個 bit 不限定。",
+     "t": 1245
+    },
+    {
+     "text": "第二種：division，h(x) = x mod M。",
+     "t": 1271
+    },
+    {
+     "text": "若 M = 2ⁱ（例 M = 2），A1、B1、C1 最後一個 bit 都是 1，全落在同一個 bucket。",
+     "t": 1293
+    },
+    {
+     "text": "M = 2 只有兩個 bucket，很快就滿，有用 hash 跟沒用差不多。",
+     "t": 1339
+    },
+    {
+     "text": "M 不一定要是 2 的倍數，也可以用 10、15 等。",
+     "t": 1360
+    }
+   ],
+   "trap": "影片口述成「取中間的數字，再平方」；課本（Horowitz）的 mid-square 是先把 key 平方，再取中間的 bit。補充：division 的除數通常選質數（或沒有小於 20 的質因數）。"
+  },
+  {
+   "title": "Hash function：folding（shift 與 boundary）",
+   "scene": "folding",
+   "points": [
+    {
+     "text": "Folding：把 key 切成一段一段（segment），再把各段相加。",
+     "t": 1377
+    },
+    {
+     "text": "例子 x = 12320324111220，每 3 位一段，切成 123、203、241、112、20 五段。",
+     "t": 1403
+    },
+    {
+     "text": "Shift folding：五段直接相加，123 + 203 + 241 + 112 + 20 = 699。",
+     "t": 1453
+    },
+    {
+     "text": "Folding at the boundaries：像摺紙一樣對折，被翻過去的段數字會顛倒。",
+     "t": 1473
+    },
+    {
+     "text": "對折後 203 讀成 302、112 讀成 211，241 和 20 不變。",
+     "t": 1547
+    },
+    {
+     "text": "結果 123 + 302 + 241 + 211 + 20 = 897，跟 shift folding 不同。",
+     "t": 1575
+    },
+    {
+     "text": "三種裡最常用的是 division（mod）。",
+     "t": 1626
+    }
+   ],
+   "trap": "影片口述時 241／142 一度說反：蓋回去以後 241 不變，被反轉的是第 2、4 段（203→302、112→211），總和 897。"
+  },
+  {
+   "title": "Overflow 處理：open addressing 與 chaining",
+   "scene": "hashpeng-two-ways",
+   "points": [
+    {
+     "text": "資料一多一定會 overflow，處理策略有兩種。",
+     "t": 1649
+    },
+    {
+     "text": "Open addressing：開放其他 bucket 的空間給 overflow 的資料用。",
+     "t": 1658
+    },
+    {
+     "text": "Chaining：不佔用別的 bucket，用 linked list 把同一個 bucket 的資料串起來排隊。",
+     "t": 1680
+    }
+   ]
+  },
+  {
+   "title": "Linear open addressing：GA、D、A、G、L、A2、A1",
+   "scene": "hashpeng-lp-letters",
+   "points": [
+    {
+     "text": "Bucket 滿了就看附近有沒有空的 bucket，有就放進去：linear open addressing。",
+     "t": 1750
+    },
+    {
+     "text": "改用 s = 1：每個 bucket 只放一筆。",
+     "t": 1776
+    },
+    {
+     "text": "GA 放 bucket 6；G 也要放 6，但已滿，往下看 bucket 7 是空的，G 放 7。",
+     "t": 1810
+    },
+    {
+     "text": "A2 的 bucket 0 已被 A 佔，放到下一個 bucket 1。",
+     "t": 1851
+    },
+    {
+     "text": "A1：bucket 0、1 都滿，再往下到 bucket 2。",
+     "t": 1866
+    },
+    {
+     "text": "Search G：h(G) = 6，但 bucket 6 放的是 GA。",
+     "t": 1919
+    },
+    {
+     "text": "不能馬上回答「G 不在表裡」，要往下多走幾步，在 bucket 7 找到 G。",
+     "t": 1940
+    }
+   ],
+   "trap": "補充：open addressing 的搜尋要一直走到找到 key 或遇到空 bucket 才能判定不存在。"
+  },
+  {
+   "title": "Open addressing 的一般式：H_i(k) = (h(k) + f(i)) mod ts",
+   "scene": "hashpeng-probe-forms",
+   "points": [
+    {
+     "text": "Open addressing 可以寫成一般式 H_i(k) = (h(k) + f(i)) mod ts，小寫 h 是原本的 hash function。",
+     "t": 1993
+    },
+    {
+     "text": "Bucket 滿了不一定放下一格，可以多跳一個 offset f(i)。",
+     "t": 2054
+    },
+    {
+     "text": "ts 是 bucket 的個數（number of buckets）。",
+     "t": 2073
+    },
+    {
+     "text": "f 是 linear function 時叫 linear probing。",
+     "t": 2093
+    },
+    {
+     "text": "Probe 就是去問鄰居「有沒有人住」，有人住就再問下一個。",
+     "t": 2110
+    },
+    {
+     "text": "f 也可以是 quadratic（i²），一次跳遠一點，A1、A2 不必都擠在 A 旁邊。",
+     "t": 2138
+    },
+    {
+     "text": "Double hash：hash 不到時再用另一個 hash function。",
+     "t": 2165
+    }
+   ]
+  },
+  {
+   "title": "Linear probing：89、18、49、58（mod 10）",
+   "scene": "hashpeng-lp-89",
+   "points": [
+    {
+     "text": "Linear probing：f(i) = i，H_i(k) = (h(k) + i) mod 10，表有 10 個 bucket。",
+     "t": 2183
+    },
+    {
+     "text": "依序放入 89、18、49、58、69；i 從 0 開始。",
+     "t": 2210
+    },
+    {
+     "text": "89 mod 10 = 9 → bucket 9；i = 0 就是原本的 hash function。",
+     "t": 2237
+    },
+    {
+     "text": "18 → bucket 8；49 也是 9，但已滿，i = 1：(9 + 1) mod 10 = 0。",
+     "t": 2264
+    },
+    {
+     "text": "49 放在 bucket 0。",
+     "t": 2337
+    },
+    {
+     "text": "58：8 滿、9 滿、0 滿，i = 3：(8 + 3) mod 10 = 1，放在 bucket 1。",
+     "t": 2376
+    },
+    {
+     "text": "寫程式時就是一個 for 迴圈從 i = 0 開始套公式，找到空 bucket 就跳出來。",
+     "t": 2462
+    }
+   ],
+   "trap": "大寫 H_i 是第 i 次 probe 的位置，小寫 h 是原本的 hash function；i = 0 時 H₀(k) = h(k)。"
+  },
+  {
+   "title": "Primary clustering",
+   "scene": "hashpeng-primary",
+   "points": [
+    {
+     "text": "加 i 跟 i 的一次方成正比，所以叫 linear。",
+     "t": 2527
+    },
+    {
+     "text": "Linear probing 會有 primary clustering。",
+     "t": 2541
+    },
+    {
+     "text": "Hash 到同一區的資料越多，就佔用越多別人的空間，例如 8、9、0、1 連成一坨。",
+     "t": 2561
+    },
+    {
+     "text": "聚集發生後 i 會變大，要多 probe 好幾次。",
+     "t": 2590
+    },
+    {
+     "text": "解法：一次不要只找隔壁，跳遠一點找空 bucket。",
+     "t": 2611
+    }
+   ]
+  },
+  {
+   "title": "Quadratic probing：89、18、49、58、69",
+   "scene": "hashpeng-qp-89",
+   "points": [
+    {
+     "text": "Quadratic probing：f(i) = i²，i = 2 時一次跳 4 格。",
+     "t": 2622
+    },
+    {
+     "text": "i 的指數從 1 變成 2，所以叫 quadratic；前面也可乘常數，例如 3i²、4i²。",
+     "t": 2640
+    },
+    {
+     "text": "H_i(k) = (h(k) + i²) mod 10；89 → 9、18 → 8。",
+     "t": 2662
+    },
+    {
+     "text": "49：9 已滿，i = 1：(9 + 1²) mod 10 = 0。",
+     "t": 2678
+    },
+    {
+     "text": "58：8、9 都滿，i = 2：(8 + 2²) mod 10 = 2，一次跳比較多格。",
+     "t": 2705
+    },
+    {
+     "text": "69：9、0 都滿，i = 2：(9 + 4) mod 10 = 3。",
+     "t": 2750
+    }
+   ],
+   "trap": "補充：quadratic probing 不保證走遍整張表；表大小為質數且 α ≤ 1/2 時才保證找得到空位。它消除 primary clustering，但仍有 secondary clustering。"
+  },
+  {
+   "title": "Rehash：輪流用 h₁ … h_m",
+   "scene": "hashpeng-rehash-hm",
+   "points": [
+    {
+     "text": "Rehash：準備多個 hash function h₁ … h_m。",
+     "t": 2815
+    },
+    {
+     "text": "i = 1 先用 h₁；bucket 滿了就 i = 2，改用 h₂。",
+     "t": 2847
+    },
+    {
+     "text": "還是滿的話 i = 3 用 h₃，一直試到 h_m。",
+     "t": 2869
+    },
+    {
+     "text": "考試和考古題都會考。",
+     "t": 2883
+    }
+   ],
+   "trap": "這裡的 rehashing 是 Horowitz 的「一串 hash function 輪流試」，跟 Weiss「α 太大就換兩倍大的表全部重算」不同，題目要看清楚是哪一種。"
+  },
+  {
+   "title": "Chaining：12 個 identifier，平均搜尋長度 2",
+   "scene": "hashpeng-chain12",
+   "points": [
+    {
+     "text": "Chaining：用 linked list 把同一個 bucket 的資料串起來。",
+     "t": 2894
+    },
+    {
+     "text": "同樣用英文字母順序當 hash function，bucket 變成 linked list 的頭。",
+     "t": 2924
+    },
+    {
+     "text": "找 A3：A3 在 bucket 0，從串列頭開始 traverse，不會用到別的 bucket。",
+     "t": 2950
+    },
+    {
+     "text": "新資料 hash 到某 bucket 就建一個新 node 接上去。",
+     "t": 2985
+    },
+    {
+     "text": "12 筆資料的平均搜尋長度：6×1 + 3×2 + 1×3 + 1×4 + 1×5 = 24，24/12 = 2；A 要比 5 次。",
+     "t": 3022
+    },
+    {
+     "text": "Chaining 不佔用別人的 bucket，但搜尋效能會受串列長度影響。",
+     "t": 3080
+    },
+    {
+     "text": "Uniform hash 時瓶頸在 overflow 處理，最難的是決定 hash function。",
+     "t": 3127
+    },
+    {
+     "text": "Hash function 取不好，所有資料掛在同一串：worst case O(n)。",
+     "t": 3149
+    }
+   ],
+   "trap": "補充：課本此例新 node 插在串列前端，所以 bucket 0 是 A4 → A3 → A1 → A2 → A，最早進來的 A 要比 5 次。"
+  },
+  {
+   "title": "Database table 與 hash index",
+   "scene": "hashpeng-hash-index",
+   "points": [
+    {
+     "text": "Database 的 table（例如帳號、年紀、GPA）也是一種 symbol table。",
+     "t": 3191
+    },
+    {
+     "text": "資料一多，要快速找到名字叫 Chris 的那筆並取出 sid、login、age、gpa。",
+     "t": 3227
+    },
+    {
+     "text": "其中一種做法是 hash index；index 就像圖書館依書名第一個字母排書架。",
+     "t": 3268
+    },
+    {
+     "text": "書架就是 bucket：對 name 欄位用 26 個字母順序建 hash index。",
+     "t": 3318
+    },
+    {
+     "text": "找 Chris：C 開頭 → bucket 2，在串列裡找到 Chris。",
+     "t": 3363
+    },
+    {
+     "text": "找到後通常再經過 pointer 到檔案裡抓其他 attribute。",
+     "t": 3382
+    },
+    {
+     "text": "沒建 index 查詢可能要好幾分鐘，有 index 幾乎立即出結果。",
+     "t": 3404
+    },
+    {
+     "text": "Cardinality = 列數（3），degree = attribute 數（5：sid、name、login、age、gpa）。",
+     "t": 3423
+    }
+   ]
+  },
+  {
+   "title": "檔案存放方式（參考）與課程閒聊",
+   "scene": null,
+   "points": [
+    {
+     "text": "檔案在 disk 上的存放方式：fixed-length record，透過 hash 知道怎麼 access。",
+     "t": 3471
+    },
+    {
+     "text": "這部分當預告片，database 課會再教。",
+     "t": 3535
+    },
+    {
+     "text": "下學期的 database 課程安排。",
+     "t": 3542
+    }
+   ]
+  },
+  {
+   "title": "另一種索引：binary search tree",
+   "scene": "hashpeng-bst-index",
+   "points": [
+    {
+     "text": "Hash 是對資料建索引的一種方法，用來快速抓某個欄位的資料。",
+     "t": 3602
+    },
+    {
+     "text": "Hash 講完會跳到第十章：也可以對名字建 binary search tree。",
+     "t": 3615
+    },
+    {
+     "text": "依英文字母順序建 BST，這是一種 search structure。",
+     "t": 3636
+    },
+    {
+     "text": "每個 node 仍要有 pointer，指到 disk 或 memory 裡真正的其他欄位。",
+     "t": 3665
+    },
+    {
+     "text": "第十章會介紹 AVL tree，也會提到 B+ tree。",
+     "t": 3691
+    }
+   ]
+  },
+  {
+   "title": "Dynamic hashing：key 的二進位表示",
+   "scene": "hashpeng-bits",
+   "points": [
+    {
+     "text": "Dynamic hashing 在 database 更常用：要選好 static hash function 很困難。",
+     "t": 3720
+    },
+    {
+     "text": "改讓資料的分佈決定 hash，同時保留 hash 快速擷取的好處。",
+     "t": 3733
+    },
+    {
+     "text": "例子：A0、A1、B0、B1、C0、C1、C2、C3、C5。",
+     "t": 3760
+    },
+    {
+     "text": "每個 key 表示成二進位。",
+     "t": 3787
+    },
+    {
+     "text": "注意最右邊的 bit：依 least significant bit 做 hash，跟 bucket sort 很像。",
+     "t": 3832
+    }
+   ],
+   "trap": "影片口述把 A 說成 16 進位的 10；課本的表示是字母 3 bit（A = 100、B = 101、C = 110）＋ 數字 3 bit，例如 A0 = 100 000、C5 = 110 101。"
+  },
+  {
+   "title": "Trie：從最右邊的 bit 讀起",
+   "scene": "hashpeng-trie6",
+   "points": [
+    {
+     "text": "這個 hash function 是一棵 tree，特別叫做 trie。",
+     "t": 3874
+    },
+    {
+     "text": "從右往左讀 key 的 bit。",
+     "t": 3892
+    },
+    {
+     "text": "在這個例子裡，bit 0 往上走，bit 1 往下走。",
+     "t": 3898
+    },
+    {
+     "text": "Insert 6 個 identifier 後 trie 長成兩層，每個 bucket 最多放兩筆。",
+     "t": 3956
+    },
+    {
+     "text": "找 A0 = 100000：最後兩個 bit 是 00，往上、往上，到 bucket 裡找。",
+     "t": 4007
+    },
+    {
+     "text": "B0 最右兩個 bit 也是 00，所以和 A0 在同一個 bucket。",
+     "t": 4021
+    }
+   ]
+  },
+  {
+   "title": "Trie：insert C5 → overflow → split",
+   "scene": "hashpeng-trie-c5",
+   "points": [
+    {
+     "text": "接著 insert C5 = 110 101。",
+     "t": 4051
+    },
+    {
+     "text": "從 root 開始，右數第一個 bit 是 1，第二個是 0。",
+     "t": 4078
+    },
+    {
+     "text": "C5 要放進 A1、B1 那個 bucket，但已經有兩筆 → overflow。",
+     "t": 4100
+    },
+    {
+     "text": "Overflow 就從這個 bucket 再長出上下兩個分支（split）。",
+     "t": 4120
+    },
+    {
+     "text": "A1、B1、C5 依右數三個 bit 重新分配：C5 是 101，放進新 bucket。",
+     "t": 4146
+    },
+    {
+     "text": "兩個重點：overflow 就 split；split 完要依 bit 調整資料。",
+     "t": 4169
+    }
+   ]
+  },
+  {
+   "title": "Trie：insert C1，hash function 隨資料長大",
+   "scene": "hashpeng-trie-c1",
+   "points": [
+    {
+     "text": "Insert C1 = 110 001：依右數的 bit 走到 A1、B1 那個 bucket。",
+     "t": 4190
+    },
+    {
+     "text": "Bucket 滿了 → overflow → split 成兩個。",
+     "t": 4207
+    },
+    {
+     "text": "A1 和 C1 右數四個 bit 一樣，所以在一起；B1 分到另一桶。",
+     "t": 4231
+    },
+    {
+     "text": "放在一起不是因為上一回合在一起，而是右數的 bit 相同。",
+     "t": 4268
+    },
+    {
+     "text": "這棵 trie 就是 hash function，會隨 insert 的資料長大。",
+     "t": 4308
+    },
+    {
+     "text": "資料減少時也可以 merge 縮減。",
+     "t": 4336
+    },
+    {
+     "text": "缺點：access 要 traverse trie，時間跟樹高有關；資料不好時 trie 還會 skew。",
+     "t": 4363
+    }
+   ],
+   "trap": "影片說 A1、C1「從右邊讀過來是 1000」，那是從右往左念出來的順序；照一般寫法是最右 4 個 bit = 0001（A1 = 100001、C1 = 110001），B1 = 101001 的最右 4 bit 是 1001。"
+  },
+  {
+   "title": "Extendible hashing：把 trie 變成 directory",
+   "scene": "hashpeng-directory",
+   "points": [
+    {
+     "text": "改進方法 extendible hashing：不要每次 traverse trie。",
+     "t": 4415
+    },
+    {
+     "text": "做法是建一個目錄（directory）。",
+     "t": 4432
+    },
+    {
+     "text": "依 trie 的路徑編號，每個編號對應一個指到 bucket 的 pointer。",
+     "t": 4482
+    },
+    {
+     "text": "整棵樹都不要了，直接用一個 table 表示。",
+     "t": 4506
+    },
+    {
+     "text": "Trie 最多長到 4 層，所以用 4 個 bit 編號；0000 指到 A0、B0 那個 bucket。",
+     "t": 4561
+    },
+    {
+     "text": "Directory 有 global depth，bucket 有 local depth；講義例子 bucket A 的 local depth 是 2。",
+     "t": 4640
+    },
+    {
+     "text": "最基本要會把一組 key 畫成 trie，其他都是從 trie 延伸。",
+     "t": 4733
+    },
+    {
+     "text": "查 directory 就能直接拿到 pointer 找到 bucket：這就是 extendible hashing。",
+     "t": 4771
+    }
+   ],
+   "trap": "補充：local depth 小於 global depth 的 bucket 會被多個 entry 指到；課本例子 0000、0100、1000、1100 都指向 A0、B0 那一桶。後段 database 講義例子的數字字幕不清，影片自己也說聽不懂沒關係。"
+  },
+  {
+   "title": "Directoryless dynamic hashing",
+   "scene": "hashpeng-dirless",
+   "points": [
+    {
+     "text": "連 pointer 都不要、更快的做法：directoryless dynamic hashing。",
+     "t": 4811
+    },
+    {
+     "text": "對應到的不是 pointer，而是 memory address。",
+     "t": 4825
+    },
+    {
+     "text": "從右邊數過來的兩個 bit 就是它的 memory address：00、01、10……",
+     "t": 4861
+    },
+    {
+     "text": "Overflow 發生時用 linked list 串起來，也就是用 chaining 解決。",
+     "t": 4881
+    }
+   ],
+   "trap": "補充：課本的 directoryless（linear hashing）除了把 overflow 掛成 chain，還會依序 split bucket、讓位址空間逐步加倍。"
+  },
+  {
+   "title": "第八章重點回顧",
+   "scene": "hashpeng-recap",
+   "points": [
+    {
+     "text": "要有 hash table，並決定 hash function。",
+     "t": 4923
+    },
+    {
+     "text": "介紹了三種常用的 hash function。",
+     "t": 4935
+    },
+    {
+     "text": "要注意 collision 與 overflow；collision 免不了，怕的是 overflow。",
+     "t": 4941
+    },
+    {
+     "text": "Overflow 至少有 open addressing 與 chaining 兩種解法；以上都是 static hash。",
+     "t": 4960
+    },
+    {
+     "text": "Dynamic hash 用 trie，hash 到的 bucket 隨資料改變。",
+     "t": 4976
+    },
+    {
+     "text": "為避免 traverse trie 就建目錄（directory），還可以更快：directoryless。",
+     "t": 4997
+    }
+   ]
+  },
+  {
+   "title": "Q&A：collision 與 overflow 的差別",
+   "scene": "hashpeng-collide-overflow",
+   "points": [
+    {
+     "text": "可以把 collision 和 overflow 想成兩種現象。",
+     "t": 5026
+    },
+    {
+     "text": "Collision：兩個資料經 hash function 對應到同一個 bucket。",
+     "t": 5038
+    },
+    {
+     "text": "Bucket 有限、資料很多，所以一定會有 collision。",
+     "t": 5062
+    },
+    {
+     "text": "Collision 不代表 overflow：bucket 夠大就多塞幾個。",
+     "t": 5084
+    },
+    {
+     "text": "Bucket 很小、滿了還要塞，才叫 overflow。",
+     "t": 5105
+    },
+    {
+     "text": "Bucket size = 1 時，看到 collision 就等於看到 overflow。",
+     "t": 5199
+    }
+   ]
+  },
+  {
+   "title": "休息，預告第十章 search structure",
+   "scene": null,
+   "points": [
+    {
+     "text": "休息五分鐘，接著進入第十章。",
+     "t": 5227
+    },
+    {
+     "text": "下週重點是 search structure，最常用的是 AVL tree，因為它是 balanced BST。",
+     "t": 5237
+    }
+   ]
+  },
+  {
+   "title": "BST 會受輸入順序影響：JAN, FEB, MAR …",
+   "scene": "hashpeng-bst-months",
+   "params": {
+    "orders": [
+     0
+    ]
+   },
+   "points": [
+    {
+     "text": "BST 會不會 balance 要看輸入順序的運氣。",
+     "t": 5278
+    },
+    {
+     "text": "依英文字母比大小：小的放左邊、大的放右邊。",
+     "t": 5290
+    },
+    {
+     "text": "第一個輸入 JAN 成為 root；FEB 比 JAN 小放左邊；MAR 比 JAN 大放右邊。",
+     "t": 5297
+    },
+    {
+     "text": "依輸入順序，樹從空的慢慢長出來。",
+     "t": 5329
+    },
+    {
+     "text": "找 NOV：它是最深的 node，要比 6 次。",
+     "t": 5347
+    },
+    {
+     "text": "每個 node 的比較次數加起來除以 12，平均 3.5 次。",
+     "t": 5434
+    }
+   ]
+  },
+  {
+   "title": "Balanced 與 skewed：平均 3.1 與 6.5",
+   "scene": "hashpeng-bst-months",
+   "params": {
+    "orders": [
+     1,
+     2
+    ]
+   },
+   "points": [
+    {
+     "text": "換一個順序，JULY 先進來，樹也是依輸入慢慢長大。",
+     "t": 5442
+    },
+    {
+     "text": "這個順序長得蠻 balanced：最多比 4 次，平均 3.1。",
+     "t": 5458
+    },
+    {
+     "text": "輸入順序不對時整棵 skew，等於 linked list。",
+     "t": 5480
+    },
+    {
+     "text": "Skewed 時最多比 12 次，平均 6.5。",
+     "t": 5490
+    },
+    {
+     "text": "BST 的效能受 input data 順序影響。",
+     "t": 5496
+    }
+   ]
+  },
+  {
+   "title": "AVL tree 的定義與 balance factor",
+   "scene": "hashpeng-avl-def",
+   "points": [
+    {
+     "text": "BST 是搜尋用的 structure，長不好就會影響 performance。",
+     "t": 5515
+    },
+    {
+     "text": "要增進效能就讓樹 balance，輸入資料時對樹做調整。",
+     "t": 5539
+    },
+    {
+     "text": "AVL tree 是 balanced binary tree。",
+     "t": 5560
+    },
+    {
+     "text": "條件一：左右子樹 T_L、T_R 都是 height-balanced（recursive 定義）。",
+     "t": 5577
+    },
+    {
+     "text": "條件二：|h_L − h_R| ≤ 1。",
+     "t": 5594
+    },
+    {
+     "text": "Balance factor BF = 左子樹高度 − 右子樹高度。",
+     "t": 5670
+    },
+    {
+     "text": "AVL tree 每個 node 的 BF 只能是 1、0、−1；超出就不 balance。",
+     "t": 5682
+    }
+   ],
+   "trap": "補充：BF 要每個 node 都檢查。JAN 先進來的那棵樹 root 的 BF 是 −1，看似沒事，但 FEB 的 BF = 3、MAY 的 BF = −3，所以不是 AVL tree。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Bucket size s = 1 時，collision 與 overflow 的關係是？",
+   "opts": [
+    "只要發生 collision 就一定 overflow",
+    "overflow 永遠不會發生",
+    "collision 不會發生",
+    "兩者完全無關"
+   ],
+   "ans": "只要發生 collision 就一定 overflow",
+   "why": "Bucket 只能放一筆，第二筆 hash 到同一格（collision）就放不下，也就是 overflow。"
+  },
+  {
+   "q": "26 個 bucket、s = 1、h(x) = 第一個字母的順序（A = 0），用 linear open addressing 依序 insert GA, D, A, G, L, A2, A1。A1 會在哪個 bucket？",
+   "opts": [
+    "0",
+    "1",
+    "2",
+    "3"
+   ],
+   "ans": "2",
+   "why": "Bucket 0 被 A 佔、bucket 1 被 A2 佔，所以 A1 往下走到 bucket 2。"
+  },
+  {
+   "q": "表有 10 個 bucket，h(k) = k mod 10，用 linear probing 依序 insert 89, 18, 49, 58。58 會放在哪？",
+   "opts": [
+    "bucket 8",
+    "bucket 0",
+    "bucket 1",
+    "bucket 2"
+   ],
+   "ans": "bucket 1",
+   "why": "8、9、0 都被佔了，i = 3：(8 + 3) mod 10 = 1。"
+  },
+  {
+   "q": "同一張表改用 quadratic probing（f(i) = i²），依序 insert 89, 18, 49, 58, 69。69 會放在哪？",
+   "opts": [
+    "bucket 1",
+    "bucket 2",
+    "bucket 3",
+    "bucket 4"
+   ],
+   "ans": "bucket 3",
+   "why": "9 被 89 佔、(9 + 1) mod 10 = 0 被 49 佔、(9 + 4) mod 10 = 3 是空的。"
+  },
+  {
+   "q": "x = 12320324111220，每 3 位一段，folding at the boundaries 的結果是？",
+   "opts": [
+    "699",
+    "897",
+    "1094",
+    "720"
+   ],
+   "ans": "897",
+   "why": "123 | 203 | 241 | 112 | 20，邊界折疊把第 2、4 段反轉成 302、211：123 + 302 + 241 + 211 + 20 = 897；直接相加（shift folding）才是 699。"
+  },
+  {
+   "q": "用 h(x) = x mod M 時，為什麼 M = 2ⁱ 不好？",
+   "opts": [
+    "結果只取決於 key 最後 i 個 bit",
+    "會算出負數",
+    "一定沒有 collision",
+    "計算太慢"
+   ],
+   "ans": "結果只取決於 key 最後 i 個 bit",
+   "why": "除以 2ⁱ 的餘數就是最後 i 個 bit，例如 A1、B1、C1 最後一個 bit 都是 1，mod 2 全擠在同一個 bucket。"
+  },
+  {
+   "q": "Dynamic hashing 的 trie（bucket 最多 2 筆）中，insert C1 = 110001 造成 split 後，哪一個 key 會和 C1 在同一個 bucket？",
+   "opts": [
+    "A1（100001）",
+    "B1（101001）",
+    "C5（110101）",
+    "A0（100000）"
+   ],
+   "ans": "A1（100001）",
+   "why": "A1 與 C1 最右 4 個 bit 都是 0001；B1 的最右 4 bit 是 1001，所以分開。"
+  },
+  {
+   "q": "影片的 chaining 例子放了 12 個 identifier，平均搜尋長度是多少？",
+   "opts": [
+    "1",
+    "2",
+    "3.5",
+    "5"
+   ],
+   "ans": "2",
+   "why": "6×1 + 3×2 + 1×3 + 1×4 + 1×5 = 24，24 / 12 = 2。"
+  }
+ ]
+}

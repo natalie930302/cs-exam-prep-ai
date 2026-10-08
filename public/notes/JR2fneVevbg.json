@@ -1,0 +1,199 @@
+{
+ "video": "JR2fneVevbg",
+ "label": "Minimum Cost Spanning Tree | Kruskal's & Prim's",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Minimum cost spanning tree：定義與例子",
+   "scene": "galgo-8v-count",
+   "points": [
+    {
+     "text": "這支片用 greedy method 的角度整理 minimum cost spanning tree。",
+     "t": 0
+    },
+    {
+     "text": "對象是 weighted、connected、undirected graph；spanning tree 本身也沒有方向。",
+     "t": 14
+    },
+    {
+     "text": "spanning tree 的 cost = 所選邊的 cost 總和。",
+     "t": 41
+    },
+    {
+     "text": "目標：找 cost 最小的 spanning tree。",
+     "t": 60
+    },
+    {
+     "text": "例子：8 個頂點的圖（network）。",
+     "t": 75
+    },
+    {
+     "text": "這個 network 有 10 條邊。",
+     "t": 108
+    },
+    {
+     "text": "spanning tree 只有 n − 1 條邊：8 − 1 = 7 條。",
+     "t": 127
+    },
+    {
+     "text": "所以要「選 7 條」或「丟 3 條」。",
+     "t": 175
+    }
+   ],
+   "trap": "補充：影片只唸出 9 個權重（8、7、9、4、12、10、6、14、13），第 10 條聽不清楚、圖也看不到；舞台的邊位置與那條「11?」只是示意。"
+  },
+  {
+   "title": "Edge selection 1：Kruskal",
+   "scene": "galgo-8v-kruskal",
+   "points": [
+    {
+     "text": "第一類 greedy：edge selection（選邊）。",
+     "t": 198
+    },
+    {
+     "text": "方法一：Kruskal。",
+     "t": 236
+    },
+    {
+     "text": "先放 n 個頂點、0 條邊，頂點之間都不連。",
+     "t": 247
+    },
+    {
+     "text": "把邊依 cost 由小到大（ascending）考慮。",
+     "t": 280
+    },
+    {
+     "text": "只有在不會和已選的邊形成 cycle 時才選它。",
+     "t": 316
+    },
+    {
+     "text": "不管哪個演算法，spanning tree 的條件都是不能有 cycle。",
+     "t": 326
+    }
+   ]
+  },
+  {
+   "title": "Edge selection 2：Prim",
+   "scene": "galgo-8v-prim",
+   "points": [
+    {
+     "text": "方法二：Prim。",
+     "t": 353
+    },
+    {
+     "text": "Kruskal 從 n 個頂點開始，Prim 只從 1 個頂點開始。",
+     "t": 365
+    },
+    {
+     "text": "每次加入一個頂點和一條邊，長成 n 個頂點的樹。",
+     "t": 379
+    },
+    {
+     "text": "有好幾個選擇時，加 cost 最小的那條邊。",
+     "t": 414
+    },
+    {
+     "text": "差別：Kruskal 看全部的邊；Prim 只看跟目前這棵樹相連的邊。",
+     "t": 427
+    },
+    {
+     "text": "例：相連的邊有 3 和 4，就選 3。",
+     "t": 443
+    }
+   ],
+   "trap": "補充：Prim 過程中永遠是一棵樹；Kruskal 過程中可能是好幾棵（forest），最後才連成一棵。"
+  },
+  {
+   "title": "Edge rejection：丟掉 cycle 裡最貴的邊",
+   "scene": "galgo-8v-reject",
+   "points": [
+    {
+     "text": "另一類 greedy：edge rejection（丟邊）。",
+     "t": 484
+    },
+    {
+     "text": "方法一：從整張連通圖開始。",
+     "t": 526
+    },
+    {
+     "text": "重複找 cycle，把 cycle 中 cost 最高的邊刪掉。",
+     "t": 542
+    },
+    {
+     "text": "沒有 cycle 時就停。",
+     "t": 574
+    },
+    {
+     "text": "方法二：把邊依 cost 由大到小（descending）考慮。",
+     "t": 596
+    },
+    {
+     "text": "刪掉之後圖仍然連通，才刪這條邊。",
+     "t": 617
+    },
+    {
+     "text": "下一支影片再用例子示範。",
+     "t": 632
+    }
+   ],
+   "trap": "影片說 rejection 也是「用 Kruskal 和 Prim」，其實這是另外兩種方法（break-cycle、reverse-delete），結果同樣是 MST。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "8 個頂點、10 條邊的連通圖，spanning tree 要丟掉幾條邊？",
+   "opts": [
+    "3",
+    "2",
+    "7",
+    "1"
+   ],
+   "ans": "3",
+   "why": "spanning tree 有 n − 1 = 7 條邊，10 − 7 = 3。"
+  },
+  {
+   "q": "Kruskal 一開始的狀態是？",
+   "opts": [
+    "n 個頂點、0 條邊",
+    "1 個頂點、0 條邊",
+    "整張圖",
+    "任一棵 spanning tree"
+   ],
+   "ans": "n 個頂點、0 條邊",
+   "why": "Kruskal 從空的 forest 開始，依 cost 由小到大加邊。"
+  },
+  {
+   "q": "Prim 跟 Kruskal 最大的差別是？",
+   "opts": [
+    "Prim 只挑跟目前這棵樹相連的邊",
+    "Prim 依 cost 由大到小挑",
+    "Prim 允許 cycle",
+    "Prim 只能用在有向圖"
+   ],
+   "ans": "Prim 只挑跟目前這棵樹相連的邊",
+   "why": "Kruskal 挑全圖最小且不成 cycle 的邊；Prim 一直維持一棵樹。"
+  },
+  {
+   "q": "edge rejection 方法一每次刪哪條邊？",
+   "opts": [
+    "某個 cycle 裡 cost 最高的邊",
+    "整張圖 cost 最小的邊",
+    "任一條邊",
+    "度數最大的頂點的邊"
+   ],
+   "ans": "某個 cycle 裡 cost 最高的邊",
+   "why": "cycle 中最貴的邊一定不必出現在 MST（cycle property）。"
+  },
+  {
+   "q": "edge rejection 方法二（由大到小）什麼時候可以刪一條邊？",
+   "opts": [
+    "刪掉後圖仍然連通",
+    "它的 cost 比平均大",
+    "它連到葉子",
+    "它是第一條"
+   ],
+   "ans": "刪掉後圖仍然連通",
+   "why": "若刪掉會不連通（bridge），這條邊必須留下。"
+  }
+ ]
+}

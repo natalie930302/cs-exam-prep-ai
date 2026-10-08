@@ -1,0 +1,516 @@
+{
+ "video": "Yx0dJFe1VdM",
+ "label": "交大彭文志 Lec21 Graph (4/4)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "AOV network 與修課例子",
+   "scene": "galgo-aov-course",
+   "points": [
+    {
+     "text": "上次講到 AOV（Activity On Vertex）：頂點代表 activity。",
+     "t": 0
+    },
+    {
+     "text": "edge 的箭頭代表先後順序。",
+     "t": 43
+    },
+    {
+     "text": "從 AOV 可以推出 topological order。",
+     "t": 67
+    },
+    {
+     "text": "圖上任取兩點的前後關係，在 topological order 的 sequence 上都會保留。",
+     "t": 89
+    },
+    {
+     "text": "最常見的例子：大學修課系統，共 15 門課，有先修課程。",
+     "t": 120
+    },
+    {
+     "text": "例：修 C10 Programming Language 要先修 C7 演算法。",
+     "t": 136
+    },
+    {
+     "text": "C7 又要先修 C3（Data Structure）和 C6。",
+     "t": 147
+    },
+    {
+     "text": "畫成圖：頂點 = 課程（修一門課 = 一個 activity），箭頭 = 順序，沒有 weight。",
+     "t": 180
+    }
+   ]
+  },
+  {
+   "title": "Topological order 的性質",
+   "scene": "galgo-topo-order",
+   "points": [
+    {
+     "text": "給一個 AOV network，輸出 topological order：一個 sequence。",
+     "t": 207
+    },
+    {
+     "text": "例：0 3 2 5 1 4。",
+     "t": 221
+    },
+    {
+     "text": "任取 3 和 5：序列中 3 在 5 之前，原圖中 3 也在 5 之前。",
+     "t": 231
+    },
+    {
+     "text": "3 和 4 也一樣：3 在 4 之前。",
+     "t": 250
+    },
+    {
+     "text": "任意兩點的前後順序關係都被 maintain 住。",
+     "t": 255
+    }
+   ]
+  },
+  {
+   "title": "產生 topological order 的步驟",
+   "scene": "galgo-topo-steps",
+   "points": [
+    {
+     "text": "怎麼從 AOV 產生 topological order？",
+     "t": 268
+    },
+    {
+     "text": "步驟 1：in-degree 為 0（沒有人指向它）的頂點輸出。",
+     "t": 290
+    },
+    {
+     "text": "步驟 2：把它指到的頂點 in-degree 更新（−1）。",
+     "t": 312
+    },
+    {
+     "text": "步驟 3：重複步驟 1、2。",
+     "t": 330
+    },
+    {
+     "text": "例：只有 0 的 in-degree 是 0，先輸出 0。",
+     "t": 346
+    },
+    {
+     "text": "1、2、3 原本 in-degree 是 1，更新後都變成 0。",
+     "t": 371
+    },
+    {
+     "text": "有三個 in-degree 0 的點，任取一個，這裡取 3；更新 4、5。",
+     "t": 401
+    },
+    {
+     "text": "剩 1 和 2，取 2，更新 4、5；依此類推。",
+     "t": 441
+    },
+    {
+     "text": "直到所有頂點都輸出就結束。",
+     "t": 474
+    }
+   ]
+  },
+  {
+   "title": "實作：count 欄位；順序不唯一",
+   "scene": "galgo-topo-count",
+   "points": [
+    {
+     "text": "實作方式：在 adjacency list 多一個欄位 count。",
+     "t": 480
+    },
+    {
+     "text": "count 記錄 in-degree。",
+     "t": 495
+    },
+    {
+     "text": "scan count 欄位，是 0 的就輸出：第一個是 vertex 0。",
+     "t": 519
+    },
+    {
+     "text": "沿著 vertex 0 的 adjacency list（1、2、3），把它們的 count −1。",
+     "t": 538
+    },
+    {
+     "text": "1、2、3 的 count 變 0，再重複。",
+     "t": 549
+    },
+    {
+     "text": "topological order 不唯一：剛才取 3，其實也可以取 1 或 2。",
+     "t": 574
+    },
+    {
+     "text": "例：0 1 2 3… 也合法，只要保留前後關係。",
+     "t": 597
+    },
+    {
+     "text": "也可以用 inverse adjacency list（記錄誰指向我）搭配 adjacency list 來做。",
+     "t": 645
+    },
+    {
+     "text": "這裡用最簡單的方法：多一個 count 欄位。",
+     "t": 675
+    }
+   ]
+  },
+  {
+   "title": "AOE network",
+   "scene": "galgo-aoe-net",
+   "points": [
+    {
+     "text": "AOE：Activity On Edge，activity 發生在 edge 上。",
+     "t": 695
+    },
+    {
+     "text": "頂點告訴你 activity 什麼時候開始、什麼時候結束（事件）。",
+     "t": 714
+    },
+    {
+     "text": "vertex 0 代表 project 的開始，例如開發一個 web 搜尋引擎。",
+     "t": 731
+    },
+    {
+     "text": "這個例子有 11 個 activity。",
+     "t": 751
+    },
+    {
+     "text": "a1（0 → 1）要 6 個時間單位。",
+     "t": 757
+    },
+    {
+     "text": "a2 要 4、a3（0 → 3）要 5。",
+     "t": 778
+    },
+    {
+     "text": "a1、a2、a3 可以由不同人同時進行（teamwork）。",
+     "t": 794
+    },
+    {
+     "text": "a4、a5 都做完到達事件 4，才能啟動 a7、a8。",
+     "t": 822
+    },
+    {
+     "text": "到最後的頂點就是 finish。",
+     "t": 846
+    },
+    {
+     "text": "大公司用 AOE 控管 project：有人 delay，整個 project 就無法如期完成。",
+     "t": 858
+    }
+   ]
+  },
+  {
+   "title": "AOE 的 adjacency list",
+   "scene": "galgo-aoe-list",
+   "points": [
+    {
+     "text": "AOE 的表示法也是 adjacency list。",
+     "t": 965
+    },
+    {
+     "text": "每個頂點前面同樣有 count 欄位，記錄 in-degree。",
+     "t": 987
+    },
+    {
+     "text": "例：vertex 0 連出去有 1、2、3 三個 node。",
+     "t": 1000
+    },
+    {
+     "text": "list node 多一個欄位：duration。",
+     "t": 1021
+    },
+    {
+     "text": "duration = 這條 edge（activity）需要的時間：0 → 1 是 6。",
+     "t": 1038
+    },
+    {
+     "text": "0 → 2 的 duration 是 4，0 → 3 是 5。",
+     "t": 1058
+    },
+    {
+     "text": "所以 list 除了頂點，還要放 duration。",
+     "t": 1077
+    }
+   ]
+  },
+  {
+   "title": "最早完成時間 ee：topological order + stack",
+   "scene": "galgo-aoe-ee",
+   "points": [
+    {
+     "text": "計算每個 activity 最早可以完成的時間（earliest）。",
+     "t": 1093
+    },
+    {
+     "text": "從時間 0 開始：a1 要 6，最早在 6 完成；a2 最早在 4。",
+     "t": 1180
+    },
+    {
+     "text": "計算方式：看這條 edge 指到的頂點，在那個頂點記錄到達時間。",
+     "t": 1226
+    },
+    {
+     "text": "要用到 topological order。",
+     "t": 1270
+    },
+    {
+     "text": "一開始 in-degree 為 0 的只有起點 0，push 進 stack。",
+     "t": 1296
+    },
+    {
+     "text": "pop 0，對它指到的每個頂點計算到達時間。",
+     "t": 1316
+    },
+    {
+     "text": "0 + 6、0 + 4、0 + 5：頂點 1、2、3 分別是 6、4、5。",
+     "t": 1346
+    },
+    {
+     "text": "1、2、3 的 count −1，變 0 的 push 進 stack：3 2 1。",
+     "t": 1383
+    },
+    {
+     "text": "pop 3：3 → 5 的 a6 = 2，5 + 2 = 7，所以頂點 5 最早是 7。",
+     "t": 1430
+    },
+    {
+     "text": "5 的 in-degree 變 0 → push；一直做到 stack 空為止。",
+     "t": 1482
+    }
+   ],
+   "trap": "補充：影片跳過剩下的步驟。照 stack 順序（0,3,5,2,1,4,7,6,8）算完：ee = 0,6,4,5,7,7,16,14,18；有多個前驅時取最大，例如 ee(4) = max(4 + 1, 6 + 1) = 7。"
+  },
+  {
+   "title": "Critical path 是什麼",
+   "scene": "galgo-critical-path",
+   "points": [
+    {
+     "text": "換另一本教科書的例子。",
+     "t": 1524
+    },
+    {
+     "text": "目標：從這個 AOE 找出 critical path。",
+     "t": 1563
+    },
+    {
+     "text": "critical path 上的點沒有允許 delay 的空間。",
+     "t": 1590
+    },
+    {
+     "text": "一旦有 delay，整個 project 就會延誤。",
+     "t": 1609
+    },
+    {
+     "text": "找 critical path 有兩個步驟：先算最早時間，再算最晚時間。",
+     "t": 1618
+    }
+   ]
+  },
+  {
+   "title": "往右推 ee：sync 點取 max",
+   "scene": "galgo-ee-max",
+   "points": [
+    {
+     "text": "第一步：用 topological order 算每個點最早的時間。",
+     "t": 1622
+    },
+    {
+     "text": "公式：ee(w) = max{ ee(v) + dur(v, w) }，v 是指向 w 的頂點。",
+     "t": 1664
+    },
+    {
+     "text": "到頂點 2 要 3（A），到頂點 3 要 2（B）。",
+     "t": 1703
+    },
+    {
+     "text": "6′ 是 sync 點：A 和 B 都完成，才能做 D。",
+     "t": 1726
+    },
+    {
+     "text": "max(3, 2) = 3：D 至少要等 3 個時間單位才能開始。",
+     "t": 1810
+    },
+    {
+     "text": "D = 2，所以 3 + 2 = 5。",
+     "t": 1834
+    },
+    {
+     "text": "C：3 + 3 = 6；下面 E：2 + 1 = 3。",
+     "t": 1846
+    },
+    {
+     "text": "這些數字就是每個點最早的 arrival time。",
+     "t": 1914
+    },
+    {
+     "text": "7′ 也是 sync：C、D 都完成才能做 F，max(6, 5) = 6。",
+     "t": 1924
+    },
+    {
+     "text": "一路推到底：整個 project 最早 10 天完成。",
+     "t": 1971
+    }
+   ],
+   "trap": "補充：舞台的圖是依講解重建的（G = 2、5 → 8 的 dummy 為推測），只保證影片唸出的數字一致。"
+  },
+  {
+   "title": "往左推 le：分岔點取 min",
+   "scene": "galgo-le-min",
+   "points": [
+    {
+     "text": "也可以算 activity 最晚什麼時候要完成（latest）。",
+     "t": 2024
+    },
+    {
+     "text": "ee 由左往右算；le 由右往左算。",
+     "t": 2070
+    },
+    {
+     "text": "project 10 天內一定要完成：這是底線，從這裡回推。",
+     "t": 2092
+    },
+    {
+     "text": "用 reverse topological order（數 out-degree）。",
+     "t": 2118
+    },
+    {
+     "text": "10 − 1（H）= 9：10′ 最晚是 9。",
+     "t": 2187
+    },
+    {
+     "text": "9 − 0 = 9；9 − 3 = 6，7′ 最晚是 6。",
+     "t": 2206
+    },
+    {
+     "text": "抉擇點：一個是 7 − 0，一個是 9 − 4。",
+     "t": 2242
+    },
+    {
+     "text": "公式取最小：le = min(7, 5) = 5。",
+     "t": 2276
+    },
+    {
+     "text": "取 7 不行：K 要 4 天，7 + 4 = 11 天，超過 10 天。",
+     "t": 2315
+    },
+    {
+     "text": "所以 K 最晚第 5 天就要啟動，project 才能如期完成。",
+     "t": 2365
+    }
+   ],
+   "trap": "補充：le(v) = min{ le(w) − dur(v, w) }；Horowitz 另外用 e(a)、l(a) 表示 activity 的最早／最晚開始時間，l(a) − e(a) = 0 的 activity 才是 critical。"
+  },
+  {
+   "title": "Critical path：ee − le = 0",
+   "scene": "galgo-critical-path",
+   "points": [
+    {
+     "text": "紅色數字：每個點最晚要多晚完成、可以拖多久。",
+     "t": 2393
+    },
+    {
+     "text": "每個頂點都有藍（ee）和紅（le）兩個數字。",
+     "t": 2422
+    },
+    {
+     "text": "兩者相減為 0 的點連起來就是 critical path。",
+     "t": 2431
+    },
+    {
+     "text": "例：X → 2 → 4 → 7 → 10′ → 10 這條紅色的路。",
+     "t": 2446
+    },
+    {
+     "text": "這條路上的點完全不能延誤。",
+     "t": 2462
+    },
+    {
+     "text": "思考：critical path 一定存在嗎？怎麼找出所有 critical path？",
+     "t": 2470
+    },
+    {
+     "text": "今天的重點：topological order，以及 AOV、AOE 如何用它推出 critical path。",
+     "t": 2526
+    }
+   ],
+   "trap": "補充：critical path 一定存在（就是起點到終點的最長路徑），而且可能不只一條；只縮短非 critical 的 activity 不會讓 project 提早完成。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "AOV network 中頂點與邊分別代表？",
+   "opts": [
+    "頂點 = activity，邊 = 先後順序",
+    "頂點 = 事件，邊 = activity",
+    "頂點 = 時間，邊 = 成本",
+    "頂點 = 課程，邊 = 學分"
+   ],
+   "ans": "頂點 = activity，邊 = 先後順序",
+   "why": "AOV = Activity On Vertex；AOE 才是 activity 在邊上。"
+  },
+  {
+   "q": "對圖 0→1、0→2、0→3、1→4、2→4、2→5、3→4、3→5，下列何者不是 topological order？",
+   "opts": [
+    "0 1 4 2 3 5",
+    "0 3 2 5 1 4",
+    "0 1 2 3 5 4",
+    "0 2 1 3 4 5"
+   ],
+   "ans": "0 1 4 2 3 5",
+   "why": "4 需要 1、2、3 都先輸出，但 2、3 排在 4 後面。"
+  },
+  {
+   "q": "用 count 欄位做 topological sort 時，count 存的是？",
+   "opts": [
+    "in-degree",
+    "out-degree",
+    "頂點編號",
+    "duration"
+   ],
+   "ans": "in-degree",
+   "why": "count = 0 的頂點才能輸出；輸出後把它指到的頂點 count −1。"
+  },
+  {
+   "q": "AOE 中 ee(w) 怎麼算？",
+   "opts": [
+    "所有指向 w 的 v 取 max(ee(v) + dur(v, w))",
+    "取 min(ee(v) + dur(v, w))",
+    "ee(v) − dur(v, w)",
+    "所有 duration 相加"
+   ],
+   "ans": "所有指向 w 的 v 取 max(ee(v) + dur(v, w))",
+   "why": "w 要等所有前面的 activity 都完成，所以取最大。"
+  },
+  {
+   "q": "倒推 le 時，若某點有兩個選擇 7 − 0 與 9 − 4，le 應取？",
+   "opts": [
+    "5",
+    "7",
+    "6",
+    "12"
+   ],
+   "ans": "5",
+   "why": "取最小值；取 7 的話 K 要做 4 天，7 + 4 = 11 超過 10 天的底線。"
+  },
+  {
+   "q": "critical path 上的點滿足？",
+   "opts": [
+    "ee = le（slack 為 0）",
+    "ee > le",
+    "le − ee 最大",
+    "in-degree = 0"
+   ],
+   "ans": "ee = le（slack 為 0）",
+   "why": "最早與最晚時間相同，代表完全不能延誤。"
+  },
+  {
+   "q": "Horowitz AOE 例（a1 = 6、a4 = 1、a5 = 1，a2 = 4），ee(4) 是？",
+   "opts": [
+    "7",
+    "5",
+    "6",
+    "11"
+   ],
+   "ans": "7",
+   "why": "ee(4) = max(ee(1) + 1, ee(2) + 1) = max(7, 5) = 7。"
+  }
+ ]
+}

@@ -1,0 +1,264 @@
+{
+ "video": "7h1s2SojIRw",
+ "label": "Abdul Bari：Quick Sort",
+ "timing": "estimated",
+ "sections": [
+  {
+   "title": "Quick sort 的想法：學生自己找位置",
+   "scene": "sortbari-quick-students",
+   "points": [
+    {
+     "text": "先理解 quick sort 背後的想法。",
+     "t": 0
+    },
+    {
+     "text": "老師要學生依身高排隊有兩種做法：老師一個個指定位置，或讓學生自己找位置。",
+     "t": 13
+    },
+    {
+     "text": "學生自己找到排序後的位置比較快 → 這就是 quick sort 的想法。",
+     "t": 39
+    },
+    {
+     "text": "最矮的知道自己該站最前面、最高的知道該站最後面，不需要別人幫忙。",
+     "t": 61
+    },
+    {
+     "text": "其他人：請比我高的往後站、比我矮的往前站，就找到自己的位置。",
+     "t": 99
+    }
+   ]
+  },
+  {
+   "title": "什麼叫「在排序位置」",
+   "scene": "sortbari-quick-sorted-pos",
+   "points": [
+    {
+     "text": "10 80 90 60 30 20：一眼就能看出某個元素已經排好（最小的 10 在最前面）。",
+     "t": 133
+    },
+    {
+     "text": "第二個例子：最大的元素放在最後面，它也在排序位置，其他的不確定。",
+     "t": 146
+    },
+    {
+     "text": "4 6 7 10 16 12 13 14：10 前面都比它小、後面都比它大 → 10 在排序位置。",
+     "t": 177
+    },
+    {
+     "text": "Quick sort 的根據：左邊都比它小、右邊都比它大的元素就在排序位置。",
+     "t": 203
+    },
+    {
+     "text": "其他元素可能還沒排好。",
+     "t": 222
+    },
+    {
+     "text": "名字叫 quick，但它不是最快的排序法。",
+     "t": 233
+    }
+   ]
+  },
+  {
+   "title": "初始設定：l、h、∞、pivot、i、j",
+   "scene": "sortbari-quick-setup",
+   "points": [
+    {
+     "text": "Quick sort 是 divide and conquer：把問題拆成子問題再解。",
+     "t": 238
+    },
+    {
+     "text": "l = low 是串列開頭、h = high 是尾端；共 9 個元素：10 16 8 12 15 6 3 9 5。",
+     "t": 262
+    },
+    {
+     "text": "尾端多放一個 ∞（實作用最大整數）當 end-of-list 標記，像字串的 \\0。",
+     "t": 274
+    },
+    {
+     "text": "選第一個元素當 pivot：10，要找出 10 的排序位置。",
+     "t": 310
+    },
+    {
+     "text": "目標：比 10 小的都到左邊、比 10 大的都到右邊。",
+     "t": 332
+    },
+    {
+     "text": "i 從 pivot 出發找 > pivot 的元素，j 從 ∞ 出發找 ≤ pivot 的元素，找到就交換。",
+     "t": 349
+    },
+    {
+     "text": "i 最遠停在 ∞，j 最遠停在 pivot。",
+     "t": 374
+    }
+   ]
+  },
+  {
+   "title": "Partition 過程",
+   "scene": "sortbari-quick-partition",
+   "points": [
+    {
+     "text": "這個步驟叫 partitioning procedure；先手做一次，再寫演算法。",
+     "t": 390
+    },
+    {
+     "text": "i 往右：16 > 10 停；j 往左：5 ≤ 10 停 → 5 和 16 交換。",
+     "t": 397
+    },
+    {
+     "text": "i：8 不是、12 > 10 停；j：9 ≤ 10 停 → 9 和 12 交換。",
+     "t": 429
+    },
+    {
+     "text": "i 停在 15、j 停在 3 → 3 和 15 交換。",
+     "t": 457
+    },
+    {
+     "text": "繼續：i 停在 15、j 停在 6，i > j（交錯）→ 不交換。",
+     "t": 471
+    },
+    {
+     "text": "j 指的地方就是 pivot 的位置：10 和 6 交換 → 6 5 8 9 3 10 15 12 16。",
+     "t": 487
+    },
+    {
+     "text": "左邊都比 10 小、右邊都比 10 大，但兩邊都還沒排序；10 已經排好。",
+     "t": 513
+    },
+    {
+     "text": "接著對兩邊遞迴做 quick sort。",
+     "t": 545
+    }
+   ]
+  },
+  {
+   "title": "Partition 演算法",
+   "scene": "sortbari-quick-code",
+   "points": [
+    {
+     "text": "寫 partition(l, h)。",
+     "t": 557
+    },
+    {
+     "text": "pivot = A[l]；i = l、j = h。",
+     "t": 576
+    },
+    {
+     "text": "do i++ while (A[i] ≤ pivot)：i 停在第一個 > pivot 的元素。",
+     "t": 596
+    },
+    {
+     "text": "do j-- while (A[j] > pivot)：j 停在第一個 ≤ pivot 的元素。",
+     "t": 619
+    },
+    {
+     "text": "if (i < j) swap(A[i], A[j])。",
+     "t": 653
+    },
+    {
+     "text": "整段放進 while (i < j) 迴圈重複。",
+     "t": 678
+    },
+    {
+     "text": "迴圈結束後 swap(A[l], A[j])，return j（partition 的位置）。",
+     "t": 693
+    }
+   ]
+  },
+  {
+   "title": "QuickSort(l, h) 遞迴",
+   "scene": "sortbari-quick-recursive",
+   "points": [
+    {
+     "text": "QuickSort(l, h)：if (l < h)，表示還有至少兩個元素。",
+     "t": 724
+    },
+    {
+     "text": "j = partition(l, h)，j 是 pivot 歸位的位置。",
+     "t": 740
+    },
+    {
+     "text": "QuickSort(l, j) 處理左邊、QuickSort(j + 1, h) 處理右邊。",
+     "t": 756
+    },
+    {
+     "text": "為什麼左邊包含 j？右半邊尾端有 ∞，左半邊就用已排好的 pivot 當 ∞。",
+     "t": 788
+    },
+    {
+     "text": "下一支影片分析 quick sort 的時間。",
+     "t": 818
+    }
+   ],
+   "trap": "補充：這是 Bari 的寫法，h 指向哨兵（∞ 或已歸位的 pivot），不算資料，所以左邊寫 QuickSort(l, j)。課本（洪逸、CLRS）的 h 是最後一個元素，寫成 QuickSort(l, j − 1)、QuickSort(j + 1, h)，兩者其實一樣。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "依影片的 partition（pivot = 第一個，i 找 > pivot、j 找 ≤ pivot），10 16 8 12 15 6 3 9 5 做一次 partition 後是？",
+   "opts": [
+    "6 5 8 9 3 10 15 12 16",
+    "5 8 6 9 3 10 16 12 15",
+    "3 5 6 8 9 10 12 15 16",
+    "6 5 8 9 3 10 16 12 15"
+   ],
+   "ans": "6 5 8 9 3 10 15 12 16",
+   "why": "依序交換 16↔5、12↔9、15↔3；i、j 交錯後 pivot 10 和 A[j] = 6 交換。兩邊不一定排好。"
+  },
+  {
+   "q": "同一個例子，第一次 i、j 交換的是哪兩個數？",
+   "opts": [
+    "16 和 5",
+    "16 和 9",
+    "10 和 5",
+    "12 和 9"
+   ],
+   "ans": "16 和 5",
+   "why": "i 從 pivot 往右，第一個 > 10 的是 16；j 從 ∞ 往左，第一個 ≤ 10 的是 5。"
+  },
+  {
+   "q": "partition 什麼時候停下並把 pivot 換到 A[j]？",
+   "opts": [
+    "i 和 j 交錯（i > j）時",
+    "i 走到 ∞ 時",
+    "j 走到 pivot 時",
+    "第一次交換之後"
+   ],
+   "ans": "i 和 j 交錯（i > j）時",
+   "why": "while (i < j) 不成立就跳出，swap(A[l], A[j])，j 就是 pivot 的排序位置。"
+  },
+  {
+   "q": "陣列尾端放 ∞ 的用途是？",
+   "opts": [
+    "當 end-of-list 標記，讓 i 一定會停下",
+    "讓 pivot 一定選到最大值",
+    "讓 j 從尾端以外開始",
+    "讓排序變成 stable"
+   ],
+   "ans": "當 end-of-list 標記，讓 i 一定會停下",
+   "why": "i 找 > pivot 的元素，最遠停在 ∞，不會跑出陣列；像字串的 \\0。"
+  },
+  {
+   "q": "4 6 7 10 16 12 13 14 中，哪一個「不」在排序位置（左邊都較小、右邊都較大）？",
+   "opts": [
+    "16",
+    "10",
+    "7",
+    "4"
+   ],
+   "ans": "16",
+   "why": "16 右邊有 12、13、14 比它小，所以不在排序位置。4、6、7、10 左邊都較小、右邊都較大；影片拿 10 當例子。"
+  },
+  {
+   "q": "影片的 QuickSort(l, h) 中，partition 回傳 j 後，接下來的兩個遞迴呼叫是？",
+   "opts": [
+    "QuickSort(l, j) 與 QuickSort(j + 1, h)",
+    "QuickSort(l, j − 1) 與 QuickSort(j, h)",
+    "QuickSort(l, h − 1) 與 QuickSort(l + 1, h)",
+    "QuickSort(j, h) 與 QuickSort(l, j + 1)"
+   ],
+   "ans": "QuickSort(l, j) 與 QuickSort(j + 1, h)",
+   "why": "左邊包含 j，因為已歸位的 pivot 充當左半邊的 ∞；右半邊的 ∞ 原本就在。"
+  }
+ ]
+}

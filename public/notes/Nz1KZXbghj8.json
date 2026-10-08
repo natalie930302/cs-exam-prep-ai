@@ -1,0 +1,558 @@
+{
+ "video": "Nz1KZXbghj8",
+ "label": "MIT 6.006 L7：Counting Sort, Radix Sort",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場（OCW 授權說明）",
+   "scene": null,
+   "points": [
+    {
+     "text": "MIT OpenCourseWare 授權與捐款說明。",
+     "t": 0
+    },
+    {
+     "text": "排序的最後一堂課，也是最有趣的一堂。",
+     "t": 22
+    }
+   ]
+  },
+  {
+   "title": "今天的計畫：下界與線性時間",
+   "scene": "sortmit-plan",
+   "points": [
+    {
+     "text": "主題：linear time sorting 什麼時候可能、什麼時候不可能。",
+     "t": 30
+    },
+    {
+     "text": "定理：排序在最差情況至少要 n log n 時間。",
+     "t": 48
+    },
+    {
+     "text": "接著證明「有時可以線性」；兩者都對，因為 model of computation 不同。",
+     "t": 53
+    },
+    {
+     "text": "Comparison model 適合用來證 lower bound。",
+     "t": 72
+    },
+    {
+     "text": "兩個下界：searching 要 log n（binary search 最佳）、sorting 要 n log n（merge sort 最佳）。",
+     "t": 82
+    },
+    {
+     "text": "最後跳出 comparison model，到 RAM model 在特定情況做到線性。",
+     "t": 96
+    }
+   ]
+  },
+  {
+   "title": "Comparison model",
+   "scene": "sortmit-cmp-model",
+   "points": [
+    {
+     "text": "只允許比較這種操作；input item 都是黑盒子（abstract data type）。",
+     "t": 116
+    },
+    {
+     "text": "可以用 <、≤、>、≥、=，每次得到 yes / no。",
+     "t": 177
+    },
+    {
+     "text": "Merge sort、heap sort、BST 都只靠比較來處理 item → 都在這個模型裡。",
+     "t": 207
+    },
+    {
+     "text": "時間 cost 只算比較次數，其他操作不收費。",
+     "t": 239
+    },
+    {
+     "text": "即使只算比較：search 也需要 log n，sort 需要 n log n。",
+     "t": 268
+    }
+   ]
+  },
+  {
+   "title": "Decision tree：binary search（n = 3）",
+   "scene": "sortmit-bs-tree",
+   "points": [
+    {
+     "text": "引入 decision tree：把演算法所有可能的比較與結果畫成一棵樹。",
+     "t": 294
+    },
+    {
+     "text": "例子：binary search，n = 3，陣列 index 從 0 開始。",
+     "t": 436
+    },
+    {
+     "text": "第一步一定問：a1 < x ？",
+     "t": 461
+    },
+    {
+     "text": "答 no（x ≤ a1）就再問 a0 < x ？；兩次都 no → x ≤ a0，用方框表示結束。",
+     "t": 487
+    },
+    {
+     "text": "答 yes 就問 x 與 a2；四片葉子是 x 落在的四個區間。",
+     "t": 555
+    },
+    {
+     "text": "排序也能這樣寫，但樹是指數大小；只用來分析，不用來實作。",
+     "t": 604
+    }
+   ]
+  },
+  {
+   "title": "樹與演算法的對應：路徑、成本、樹高",
+   "scene": "sortmit-tree-path",
+   "points": [
+    {
+     "text": "內部節點 = 一次 binary decision（這裡是比較）。",
+     "t": 669
+    },
+    {
+     "text": "葉子 = 演算法結束、回傳答案。",
+     "t": 698
+    },
+    {
+     "text": "一次執行 = 一條 root-to-leaf path。",
+     "t": 758
+    },
+    {
+     "text": "該次執行的時間 = 路徑長度；x 在 a0 與 a1 之間時 cost = 2。",
+     "t": 783
+    },
+    {
+     "text": "最差時間 = 樹高（最長的 root-to-leaf path）。",
+     "t": 833
+    },
+    {
+     "text": "於是「最少要多少時間」變成「樹最矮能多矮」。",
+     "t": 886
+    }
+   ]
+  },
+  {
+   "title": "Searching 下界：Ω(log n)",
+   "scene": "sortmit-search-lb",
+   "points": [
+    {
+     "text": "定理：n 個已前處理的 item 中找一個 item，comparison model 最差要 Ω(log n) 次比較。",
+     "t": 935
+    },
+    {
+     "text": "前處理免費：可以先排序、建 AVL tree，都不影響這個下界。",
+     "t": 993
+    },
+    {
+     "text": "光說「是二元樹」不夠，linear search 的樹高就是 n。",
+     "t": 1061
+    },
+    {
+     "text": "關鍵：樹必須包含所有可能的答案。",
+     "t": 1076
+    },
+    {
+     "text": "決策樹是二元的，且至少 n 片葉子（每個答案至少一片，可能更多）。",
+     "t": 1116
+    },
+    {
+     "text": "至少 n 片葉子的二元樹，高度 ≥ log n → 得證。",
+     "t": 1182
+    },
+    {
+     "text": "所以 binary search 是最佳，BST 的 search／successor 也不可能更快。",
+     "t": 1231
+    }
+   ],
+   "trap": "補充：葉子數可以比答案數多（同一個答案可從不同路徑到達），但下界只需要「至少 n 片」。"
+  },
+  {
+   "title": "Sorting 下界：葉子是排列，n! 片",
+   "scene": "sortmit-sort-leaves",
+   "points": [
+    {
+     "text": "同樣策略：決策樹是二元的，問題是至少要幾片葉子。",
+     "t": 1301
+    },
+    {
+     "text": "排序的樹太大（2^{n log n} 個節點）所以不畫例子。",
+     "t": 1312
+    },
+    {
+     "text": "內部節點長這樣：ai < aj ？分 no / yes；交換不出現在樹上。",
+     "t": 1350
+    },
+    {
+     "text": "葉子寫出排好的順序，例如 a5 最小、再來 a7、a1、a0…",
+     "t": 1374
+    },
+    {
+     "text": "葉子數 ≥ 可能答案數 = n!（輸入的所有排列，元素相異時）。",
+     "t": 1449
+    },
+    {
+     "text": "所以高度 ≥ log₂ n!。",
+     "t": 1472
+    }
+   ]
+  },
+  {
+   "title": "log n! = Ω(n log n)：用總和證明",
+   "scene": "sortmit-logfact",
+   "points": [
+    {
+     "text": "可以用 Stirling 公式，或把 log n! 寫成總和。",
+     "t": 1506
+    },
+    {
+     "text": "log 乘積 = log 的總和：log n! = Σ_{i=1..n} log i。",
+     "t": 1532
+    },
+    {
+     "text": "≤ n log n 很容易，難的是證明「至少」n log n。",
+     "t": 1566
+    },
+    {
+     "text": "只看後一半：Σ_{i=n/2..n} log i，前一半丟掉。",
+     "t": 1625
+    },
+    {
+     "text": "後一半每項 ≥ log(n/2) = log n − 1。",
+     "t": 1648
+    },
+    {
+     "text": "共 n/2 項 → ≥ (n/2)(log n − 1) = Ω(n log n)。",
+     "t": 1698
+    },
+    {
+     "text": "Stirling：n! ≈ √(2πn)(n/e)ⁿ，取 log 得 n log n − O(n)，常數其實是 1。",
+     "t": 1729
+    }
+   ],
+   "trap": "補充：逐字稿的「Sterling」應為 Stirling；老師說的「Taylor series 第一項」其實是 Stirling 的漸近近似。"
+  },
+  {
+   "title": "下界回顧：前處理與「不一定緊」",
+   "scene": "sortmit-lb-recap",
+   "points": [
+    {
+     "text": "框架：比較樹是二元的 → 數至少幾片葉子 → 取 log 得到下界。",
+     "t": 1800
+    },
+    {
+     "text": "搜尋的模型：n 個 item 之間的比較免費，只對 x 與 item 的比較收費。",
+     "t": 1822
+    },
+    {
+     "text": "排序沒有前處理；若已前處理就是 0 次比較。",
+     "t": 1856
+    },
+    {
+     "text": "沒前處理的搜尋其實要 n（linear search），但這個技巧只證得到 log n：下界不一定 tight。",
+     "t": 1867
+    },
+    {
+     "text": "結論：搜尋即使前處理也要 log n；排序（未前處理）要 n log n。",
+     "t": 1899
+    }
+   ]
+  },
+  {
+   "title": "整數排序：RAM model 的假設",
+   "scene": "sortmit-integer-model",
+   "points": [
+    {
+     "text": "之後（含接下來的 hashing）都不在 comparison model 裡。",
+     "t": 1923
+    },
+    {
+     "text": "用 RAM 的能力：記憶體是陣列，O(1) 存取任一格，有時能線性排序。",
+     "t": 1952
+    },
+    {
+     "text": "這段更貼切的名稱是 integer sorting。",
+     "t": 1976
+    },
+    {
+     "text": "假設：n 個 key 都是整數，非負，範圍 0..k−1（k 是新參數）。",
+     "t": 2042
+    },
+    {
+     "text": "每個 key 放得進一個 word，所以加減乘除都是 O(1)。",
+     "t": 2067
+    },
+    {
+     "text": "k 不太大時可以線性時間排序。",
+     "t": 2143
+    },
+    {
+     "text": "仍是研究主題：目前最佳 O(n√(log log n))（高機率），猜想一律可線性。",
+     "t": 2153
+    }
+   ]
+  },
+  {
+   "title": "Counting Sort 的直覺：數一數",
+   "scene": "sortmit-count-357",
+   "points": [
+    {
+     "text": "Counting sort 完全不做比較，時間取決於 n 和 k。",
+     "t": 2211
+    },
+    {
+     "text": "例子：3 5 7 5 5 3 6 → 兩個 3、三個 5、一個 6、一個 7。",
+     "t": 2242
+    },
+    {
+     "text": "開大小 k 的計數陣列，看到 key 3 就把 index 3 的計數器加一。",
+     "t": 2291
+    },
+    {
+     "text": "輸出：依 index 順序走過計數陣列，計數是 2 就寫兩個 3。",
+     "t": 2336
+    },
+    {
+     "text": "大部分格子是 0，直接跳過。",
+     "t": 2358
+    }
+   ]
+  },
+  {
+   "title": "List 版 Counting Sort：帶著整筆資料",
+   "scene": "sortmit-count-lists",
+   "points": [
+    {
+     "text": "只存計數只能排整數本身；實際上每個 item 還帶著其他資料。",
+     "t": 2382
+    },
+    {
+     "text": "像試算表依某一欄排序：整列資料都要跟著走。",
+     "t": 2390
+    },
+    {
+     "text": "兩個 3 一個畫雲、一個畫愛心：要把它們本身放到正確位置。",
+     "t": 2412
+    },
+    {
+     "text": "把 k 個計數器換成 k 個 list。",
+     "t": 2458
+    },
+    {
+     "text": "for j in range(n): L[key(A[j])].append(A[j])，放的是整個 item。",
+     "t": 2466
+    },
+    {
+     "text": "output = []，依序 output.extend(L[i])。",
+     "t": 2503
+    },
+    {
+     "text": "課本版本用三個陣列不用 list，時間相同。",
+     "t": 2521
+    }
+   ]
+  },
+  {
+   "title": "Counting Sort 的時間：O(n + k)",
+   "scene": "sortmit-count-time",
+   "points": [
+    {
+     "text": "建立 k 個空 list：O(k)。",
+     "t": 2588
+    },
+    {
+     "text": "每次 append 是 O(1)（key 是一個 word），共 O(n)。",
+     "t": 2600
+    },
+    {
+     "text": "串接時看 L[i] 花 |L[i]| + 1（空的也要看）。",
+     "t": 2623
+    },
+    {
+     "text": "加總 = O(n + k)。",
+     "t": 2643
+    },
+    {
+     "text": "k = O(n) 才是線性；k 稍大就不行，所以只是暖身。",
+     "t": 2652
+    }
+   ]
+  },
+  {
+   "title": "Radix Sort 的想法：拆位數、從最低位排",
+   "scene": "sortmit-radix-idea",
+   "points": [
+    {
+     "text": "Radix sort 用 counting sort 當副程式，能處理大得多的 k。",
+     "t": 2685
+    },
+    {
+     "text": "k 可以是 n 的多項式，例如 key 在 0 … n¹⁰⁰ 仍是線性時間。",
+     "t": 2709
+    },
+    {
+     "text": "把每個整數拆成好幾欄（試算表的作法）。",
+     "t": 2741
+    },
+    {
+     "text": "寫成 base b 的位數：d = log_b k（+1）。",
+     "t": 2790
+    },
+    {
+     "text": "不必真的先算出 base b 表示法（那要 n log k）。",
+     "t": 2814
+    },
+    {
+     "text": "依最低位排序全部整數，再依次低位……最後依最高位：共 d 回合。",
+     "t": 2828
+    },
+    {
+     "text": "就像試算表先點最次要的欄，再依序點到最重要的欄。",
+     "t": 2861
+    }
+   ],
+   "trap": "45:17 老師口誤說 key 到 n¹⁰⁰ 可以「n log n」排好，應為線性時間（他前後都說 still linear time）。"
+  },
+  {
+   "title": "取位數與每回合成本",
+   "scene": "sortmit-radix-digit",
+   "points": [
+    {
+     "text": "每一回合用 counting sort 依那一位排序。",
+     "t": 2891
+    },
+    {
+     "text": "這裡 counting sort 是 O(n + b)，因為每位只在 0..b−1。",
+     "t": 2928
+    },
+    {
+     "text": "key 函式 = 算出這回合關心的那一位。",
+     "t": 2943
+    },
+    {
+     "text": "最低位 = x mod b；最高位 ≈ 除以 b^{d−1}。",
+     "t": 2955
+    },
+    {
+     "text": "一次除法加一次 mod：key 函式 O(1)，需要時再算即可。",
+     "t": 2975
+    },
+    {
+     "text": "總時間 = (n + b)·d。",
+     "t": 2993
+    }
+   ]
+  },
+  {
+   "title": "選 b = Θ(n)：radix 何時線性",
+   "scene": "sortmit-radix-b",
+   "points": [
+    {
+     "text": "d = log_b k → 總時間 O((n + b)·log_b k)。",
+     "t": 3003
+    },
+    {
+     "text": "b 大位數少，但 b 不該比 n 大。",
+     "t": 3026
+    },
+    {
+     "text": "取 b = n：要最小化兩項之和，通常在兩項相等時。",
+     "t": 3047
+    },
+    {
+     "text": "b = Θ(n) → O(n·log_n k)。",
+     "t": 3076
+    },
+    {
+     "text": "k ≤ nᶜ → O(c·n)：key 是 n 的多項式就能線性排序。",
+     "t": 3098
+    },
+    {
+     "text": "例子與正確性（簡單歸納）見課本與講義。",
+     "t": 3122
+    }
+   ],
+   "trap": "50:03 老師先寫成 log_b n，隨即更正為 log_b k。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "在 comparison model 中，一個演算法的最差情況比較次數對應到它的 decision tree 的什麼？",
+   "opts": [
+    "樹高（最長的 root-to-leaf path）",
+    "葉子總數",
+    "內部節點總數",
+    "根的子節點數"
+   ],
+   "ans": "樹高（最長的 root-to-leaf path）",
+   "why": "一次執行 = 一條根到葉的路徑，時間 = 路徑長；最差情況就是最長路徑 = 樹高。"
+  },
+  {
+   "q": "為什麼任何比較排序最差都要 Ω(n log n) 次比較？",
+   "opts": [
+    "決策樹至少 n! 片葉子，二元樹高度 ≥ log₂ n! = Ω(n log n)",
+    "因為每個元素至少要比較 log n 次才能確定位置",
+    "因為 merge sort 的遞迴深度是 log n",
+    "因為至少要讀完 n 個元素"
+   ],
+   "ans": "決策樹至少 n! 片葉子，二元樹高度 ≥ log₂ n! = Ω(n log n)",
+   "why": "每種排列都必須對應到至少一片葉子；讀完 n 個元素只給出 Ω(n)。"
+  },
+  {
+   "q": "在 n 個已前處理（可任意預先整理）的 item 中搜尋 x，comparison model 下最差至少要幾次比較？",
+   "opts": [
+    "Ω(log n)",
+    "Ω(1)",
+    "Ω(n)",
+    "Ω(n log n)"
+   ],
+   "ans": "Ω(log n)",
+   "why": "至少 n 種答案 → 至少 n 片葉子 → 樹高 ≥ log n；binary search 達到這個界。"
+  },
+  {
+   "q": "證明 log n! = Ω(n log n) 時，老師用的關鍵一步是？",
+   "opts": [
+    "只留後一半的項，每項 ≥ log(n/2)",
+    "每項都 ≤ log n",
+    "用積分算出精確值",
+    "把 n! 換成 nⁿ"
+   ],
+   "ans": "只留後一半的項，每項 ≥ log(n/2)",
+   "why": "Σ_{i=n/2..n} log i ≥ (n/2)(log n − 1) = Ω(n log n)；「每項 ≤ log n」只給上界。"
+  },
+  {
+   "q": "list 版 counting sort（n 個 key，範圍 0..k−1）的時間是？",
+   "opts": [
+    "O(n + k)",
+    "O(n log n)",
+    "O(nk)",
+    "O(n)，與 k 無關"
+   ],
+   "ans": "O(n + k)",
+   "why": "建 k 個 list O(k)、n 次 append O(n)、串接 Σ(|Lᵢ| + 1) = O(n + k)。"
+  },
+  {
+   "q": "Radix sort 每回合依哪一位、用什麼排序？",
+   "opts": [
+    "從最低位開始，每回合用 counting sort",
+    "從最高位開始，每回合用 counting sort",
+    "從最低位開始，每回合用 heap sort",
+    "從最高位開始，每回合用 merge sort"
+   ],
+   "ans": "從最低位開始，每回合用 counting sort",
+   "why": "先排最次要的欄，最後排最重要的欄；counting sort 每回合 O(n + b) 而且穩定。"
+  },
+  {
+   "q": "Radix sort 取 b = Θ(n)，若 key ≤ nᶜ（c 為常數），總時間是？",
+   "opts": [
+    "O(c·n)",
+    "O(n log n)",
+    "O(nᶜ)",
+    "O(n log k)"
+   ],
+   "ans": "O(c·n)",
+   "why": "O((n + b)·log_b k) = O(n·log_n k)，k ≤ nᶜ 時 log_n k ≤ c。"
+  }
+ ]
+}

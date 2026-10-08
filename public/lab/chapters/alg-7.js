@@ -11,6 +11,8 @@
 //  • Abdul Bari 4.4：7 頂點 10 條邊（0,1,3,5,0,4,3）；4 頂點倒序邊（−2,8,5）；加 (2,4)=5 形成負 cycle −2。
 //  • 「Bellman Ford Algorithm」(FrLWd1tJ_Wc，印地語自動字幕，只取能確定的部分)：cycle 2 + 3 − 6 = −1。
 // 課本（CLRS 第 24、25 章）補充：Floyd-Warshall（圖 25.4）、Johnson 重新加權（圖 25.6）、Dijkstra 正確性。
+import kit from './_kit.js';
+
 export default function (ctx) {
   const { THREE, lab, sleep, $, log, clearLog, setState, controls, on, say, beat } = ctx;
   const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -909,7 +911,7 @@ export default function (ctx) {
     const H = (x) => 0.2 + Math.log10(x) * 0.6;
     const cases = [['稀疏 V = 10⁴, E = 4·10⁴', 1e4, 4e4, -3.4], ['稠密 V = 10⁴, E = 10⁸', 1e4, 1e8, 3.4]];
     tag('高度：對數尺度', 'idx', 0, 0, 2.2);
-    say('Θ(V) insert、Θ(V) Extract-Min、Θ(E) Decrease-Key', '總時間看 priority queue 怎麼做');
+    say('總時間看 priority queue 怎麼做', 'V 次 insert、V 次 Extract-Min、E 次 Decrease-Key');
     await wait(tok, 3000);
     const kinds = [['Array', '#dd8238', (v, e) => v * v + e], ['Binary heap', '#4b9ee2', (v, e) => (v + e) * Math.log2(v)], ['Fibonacci heap', '#2fc092', (v, e) => v * Math.log2(v) + e]];
     for (const [nm2, v, e, cx] of cases) {
@@ -1131,7 +1133,7 @@ export default function (ctx) {
     }
     say('全部 ≥ 0；每條 u→v 路徑都只差 h(u) − h(v)', '最短路徑不變');
     await wait(tok, 3200);
-    say('每個起點跑一次 Dijkstra，再換回：δ = δ̂ − h(u) + h(v)', 'O(VE + V² log V)（Fibonacci heap）；稀疏圖比 Floyd 好');
+    say('每個起點跑一次 Dijkstra 再換回', 'δ = δ̂ − h(u) + h(v)；O(VE + V² log V)，稀疏圖比 Floyd 好');
     await wait(tok, 3600);
   }
 
@@ -1164,6 +1166,203 @@ export default function (ctx) {
     'johnson-reweight': { title: '課本：Johnson 重新加權', play: scJohnson },
   };
 
+
+  // 每段影片的場景片段（由 sync pass 加入）：每個片段把 [id, 標題, play] 放進 FRAG。
+  const K = kit(ctx);
+  const FRAG = [];
+  // ═══ dijk.js ═══
+  {
+const { V3, fresh, tag, cube, glow, txt, GOLD } = K;
+const say = ctx.say, beat = ctx.beat, T = ctx.THREE;
+// ─── HlFsexTpM4Q：Dijkstra Algorithm（s, a, b, c 範例；explored／unexplored、D 與 P）───
+// 只用 K 與 ctx：這個片段也會裝進演算法第 7 章。
+const DC = { node: '#cbbd9f', edge: '#a8987c', hot: '#e8b02a', tree: '#2f7fd0', exp: '#2fc092', path: '#c0392b', dim: '#e4dccb' };
+const DPOS = { s: [-4.6, 0], a: [-0.6, -2.6], b: [-0.6, 2.6], c: [4.0, 0] };
+const DEDGES = [['s', 'a', 1], ['s', 'b', 3], ['a', 'b', 1], ['a', 'c', 10], ['b', 'c', 4]];
+function dCls(l, c) { l.element.className = 'lab-label' + (c ? ' ' + c : ''); }
+function dRod(p, q, color) {
+  const d = q.clone().sub(p);
+  const m = new T.Mesh(new T.CylinderGeometry(0.06, 0.06, Math.max(0.01, d.length()), 8), new T.MeshStandardMaterial({ color, roughness: 0.6 }));
+  m.position.copy(p).add(q).multiplyScalar(0.5);
+  m.quaternion.setFromUnitVectors(V3(0, 1, 0), d.normalize());
+  ctx.lab.world.add(m); return m;
+}
+// draws the video's graph; returns nodes, edges, D/P tags, set tags
+function dGraph(drop = 3) {
+  const N = {}, TG = {}, E = [];
+  for (const k of ['s', 'a', 'b', 'c']) {
+    const [x, z] = DPOS[k];
+    N[k] = cube(k, DC.node, [0.85, 0.6, 0.85], x, 0.3, z, drop);
+    TG[k] = tag('', 'ptr', x, 1.25, z);
+  }
+  for (const [u, v, w] of DEDGES) {
+    const [x1, z1] = DPOS[u], [x2, z2] = DPOS[v];
+    const L = Math.hypot(x2 - x1, z2 - z1), ux = (x2 - x1) / L, uz = (z2 - z1) / L;
+    const rod = dRod(V3(x1 + ux * 0.5, 0.3, z1 + uz * 0.5), V3(x2 - ux * 0.5, 0.3, z2 - uz * 0.5), DC.edge);
+    const lbl = tag(String(w), '', (x1 + x2) / 2 - uz * 0.38, 0.45, (z1 + z2) / 2 + ux * 0.38);
+    E.push({ u, v, w, rod, lbl, set(c, k = 1) { rod.material.color.set(c); rod.scale.set(k, 1, k); } });
+  }
+  const ex = tag('explored：{ }', 'ptr alt', -2.6, 0.3, -4.6);
+  const un = tag('unexplored：{ s, a, b, c }', 'ptr', 2.6, 0.3, -4.6);
+  const e = (u, v) => E.find((x) => (x.u === u && x.v === v) || (x.u === v && x.v === u));
+  return { N, TG, E, e, ex, un };
+}
+const dF = (d) => (d === Infinity ? '∞' : String(d));
+function dLabel(G, k, D, P) { txt(G.TG[k], k + '：D=' + dF(D) + ' P=' + (P || '–')); }
+function dSets(G, S) {
+  const all = ['s', 'a', 'b', 'c'];
+  txt(G.ex, 'explored：{ ' + S.join(', ') + ' }');
+  txt(G.un, 'unexplored：{ ' + all.filter((k) => !S.includes(k)).join(', ') + ' }');
+}
+function dExplore(G, k) { const [x, z] = DPOS[k]; G.N[k].material.color.set(DC.exp); K.move(G.N[k], x, 0.6, z); dCls(G.TG[k], 'ptr alt'); }
+
+// 00:00 問題：s 到 b 直接 3，經過 a 只要 1 + 1 = 2
+FRAG.push(['dijk-problem', 'Dijkstra：s 到 b，直接 3 還是繞 a 只要 2', async (tok) => {
+  fresh([0, 10.5, 8.6], [0, 0, -0.2]);
+  const G = dGraph();
+  G.ex.element.style.visibility = 'hidden'; G.un.element.style.visibility = 'hidden';
+  say('給加權圖 G 與起點 s', '求 s 到每個頂點的最短路徑');
+  glow(G.N.s, GOLD);
+  await beat(tok, 3000);
+  say('想去 b：直接走 s → b', '權重 3');
+  G.e('s', 'b').set(DC.hot, 2);
+  glow(G.N.b, GOLD);
+  await beat(tok, 2600);
+  G.e('s', 'b').set(DC.dim, 0.7);
+  G.e('s', 'a').set(DC.tree, 2); G.e('a', 'b').set(DC.tree, 2);
+  say('經過 a：s → a → b', '1 + 1 = 2 < 3');
+  await beat(tok, 3000);
+  say('最短路徑走 a', 'shortest(s, b) = 2');
+  await beat(tok, 2400);
+  say('a、b、c 都要找最短路徑', 'Dijkstra 怎麼做？');
+  await beat(tok, 2600);
+}]);
+
+// 02:31 explored／unexplored 兩個集合；D 與 P；初始狀態
+FRAG.push(['dijk-init', 'Dijkstra：兩個集合與 D、P 的初始狀態', async (tok) => {
+  fresh([0, 10.5, 8.6], [0, 0, -0.2]);
+  const G = dGraph();
+  say('兩個集合：explored、unexplored', '一開始全部都在 unexplored');
+  await beat(tok, 3200);
+  say('每個頂點寫上 D 與 P', 'D = 最短距離　P = parent');
+  for (const k of ['s', 'a', 'b', 'c']) txt(G.TG[k], k + '：D=?  P=?');
+  await beat(tok, 2800);
+  say('D：只能經過 explored 頂點', '從 s 到它的最短距離');
+  await beat(tok, 2800);
+  say('P：那條路上它的前一個頂點', 'parent');
+  await beat(tok, 2400);
+  dLabel(G, 's', 0, null);
+  glow(G.N.s, GOLD);
+  say('s 到 s：同一點', 'D(s) = 0，沒有 parent');
+  await beat(tok, 2600);
+  glow(G.N.s, null);
+  for (const k of ['a', 'b', 'c']) { dLabel(G, k, Infinity, null); glow(G.N[k], GOLD); }
+  say('沒有 explored 頂點可經過', 'a、b、c 的 D = ∞，沒有 parent');
+  await beat(tok, 3000);
+  for (const k of ['a', 'b', 'c']) glow(G.N[k], null);
+  say('這就是初始狀態', 's=0　a=∞　b=∞　c=∞');
+  await beat(tok, 2600);
+}]);
+
+// 07:15 explore s，再 explore a：b 從 3 改成 2、c 變成 11
+FRAG.push(['dijk-explore-sa', 'Dijkstra：explore s 與 a，b 從 3 更新成 2', async (tok) => {
+  fresh([0, 10.5, 8.6], [0, 0, -0.2]);
+  const G = dGraph();
+  dLabel(G, 's', 0, null); for (const k of ['a', 'b', 'c']) dLabel(G, k, Infinity, null);
+  say('unexplored 裡 D 最小的是 s', '把 s 移到 explored');
+  await beat(tok, 2600);
+  dExplore(G, 's'); dSets(G, ['s']);
+  await beat(tok, 1200);
+  G.e('s', 'a').set(DC.hot, 1.8); glow(G.N.a, GOLD);
+  dLabel(G, 'a', 1, 's');
+  say('經過 s 到 a', 'D(a) = 0 + 1 = 1，P(a) = s');
+  await beat(tok, 2600);
+  glow(G.N.a, null); G.e('s', 'a').set(DC.tree, 2);
+  G.e('s', 'b').set(DC.hot, 1.8); glow(G.N.b, GOLD);
+  dLabel(G, 'b', 3, 's');
+  say('經過 s 到 b', 'D(b) = 0 + 3 = 3，P(b) = s');
+  await beat(tok, 2600);
+  glow(G.N.b, null); G.e('s', 'b').set(DC.tree, 2);
+  say('只經過 s 到不了 c', 'D(c) 還是 ∞');
+  await beat(tok, 2400);
+  say('D 最小的是 a（1）', '把 a 移到 explored');
+  dExplore(G, 'a'); dSets(G, ['s', 'a']);
+  await beat(tok, 2600);
+  G.e('a', 'b').set(DC.hot, 1.8); glow(G.N.b, GOLD);
+  say('經過 a 到 b：1 + 1 = 2', '2 < 3 → 更新');
+  await beat(tok, 2600);
+  G.e('s', 'b').set(DC.dim, 0.7); G.e('a', 'b').set(DC.tree, 2);
+  dLabel(G, 'b', 2, 'a');
+  say('b 改成 D=2、P=a', '比較大就不換：只留最小');
+  await beat(tok, 2800);
+  glow(G.N.b, null);
+  G.e('a', 'c').set(DC.hot, 1.8); glow(G.N.c, GOLD);
+  dLabel(G, 'c', 11, 'a');
+  say('經過 a 到 c：1 + 10 = 11', '11 < ∞ → D(c)=11，P(c)=a');
+  await beat(tok, 2800);
+  glow(G.N.c, null); G.e('a', 'c').set(DC.tree, 2);
+  await beat(tok, 2200);
+}]);
+
+// 10:27 explore b：c 從 11 改成 2 + 4 = 6；explore c，結束
+FRAG.push(['dijk-explore-bc', 'Dijkstra：explore b，c 從 11 更新成 6', async (tok) => {
+  fresh([0, 10.5, 8.6], [0, 0, -0.2]);
+  const G = dGraph();
+  dExplore(G, 's'); dExplore(G, 'a'); dSets(G, ['s', 'a']);
+  dLabel(G, 's', 0, null); dLabel(G, 'a', 1, 's'); dLabel(G, 'b', 2, 'a'); dLabel(G, 'c', 11, 'a');
+  G.e('s', 'a').set(DC.tree, 2); G.e('a', 'b').set(DC.tree, 2); G.e('a', 'c').set(DC.tree, 2); G.e('s', 'b').set(DC.dim, 0.7);
+  say('目前：s、a 已 explored', 'b：D=2　c：D=11');
+  await beat(tok, 2800);
+  say('unexplored 中 D 最小的是 b', '把 b 移到 explored');
+  dExplore(G, 'b'); dSets(G, ['s', 'a', 'b']);
+  await beat(tok, 2600);
+  G.e('b', 'c').set(DC.hot, 1.8); glow(G.N.c, GOLD);
+  say('b 到 c 的邊 = 4', '加上 b 已算好的 D(b) = 2');
+  await beat(tok, 2800);
+  say('2 + 4 = 6 < 11', '更新：D(c) = 6，P(c) = b');
+  G.e('a', 'c').set(DC.dim, 0.7); G.e('b', 'c').set(DC.tree, 2);
+  dLabel(G, 'c', 6, 'b');
+  await beat(tok, 3000);
+  glow(G.N.c, null);
+  say('新距離 = D(u) + 邊的權重', 'D(v) = min(D(v), D(u) + w(u, v))');
+  await beat(tok, 3000);
+  dExplore(G, 'c'); dSets(G, ['s', 'a', 'b', 'c']);
+  say('最後 explore c：全部 explored', '演算法結束');
+  await beat(tok, 2800);
+}]);
+
+// 12:22 沿 P 回推：a、b、c 的最短路徑
+FRAG.push(['dijk-path', 'Dijkstra：沿 parent 回推最短路徑', async (tok) => {
+  fresh([0, 10.5, 8.6], [0, 0, -0.2]);
+  const G = dGraph(0);
+  for (const k of ['s', 'a', 'b', 'c']) dExplore(G, k);
+  dSets(G, ['s', 'a', 'b', 'c']);
+  dLabel(G, 's', 0, null); dLabel(G, 'a', 1, 's'); dLabel(G, 'b', 2, 'a'); dLabel(G, 'c', 6, 'b');
+  for (const e of G.E) e.set(DC.dim, 0.7);
+  for (const [u, v] of [['s', 'a'], ['a', 'b'], ['b', 'c']]) G.e(u, v).set(DC.tree, 1.6);
+  say('跑完後每個頂點都有 D 和 P', 'P 連起來就是最短路徑樹');
+  await beat(tok, 2800);
+  const routes = [['a', ['s', 'a'], 1], ['b', ['s', 'a', 'b'], 2], ['c', ['s', 'a', 'b', 'c'], 6]];
+  for (const [dst, path, cost] of routes) {
+    for (const [u, v] of [['s', 'a'], ['a', 'b'], ['b', 'c']]) G.e(u, v).set(DC.tree, 1.6);
+    for (const k of ['s', 'a', 'b', 'c']) glow(G.N[k], null);
+    glow(G.N[dst], GOLD);
+    say('終點 ' + dst + '：沿 P 往回走', path.slice().reverse().join(' ← '));
+    await beat(tok, 1600);
+    for (let i = path.length - 1; i > 0; i--) {
+      G.e(path[i - 1], path[i]).set(DC.path, 2.6);
+      glow(G.N[path[i - 1]], GOLD);
+      await beat(tok, 700);
+    }
+    say('反過來就是路徑', path.join(' → ') + '，cost = ' + cost);
+    await beat(tok, 2400);
+  }
+  await beat(tok, 1000);
+}]);
+  }
+  // @@FRAGMENTS@@
+  FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
+
   return {
     kicker: '演算法・第 7 章',
     title: '最短路徑：Dijkstra、Bellman-Ford、Floyd-Warshall',
@@ -1184,7 +1383,7 @@ export default function (ctx) {
       'dij-neg-fail', 'bf-cycle-sign', 'bf-bari7', 'bf-bari4', 'bf-detect-cycle',
       'dij-early-stop', 'bidir-wrong-w', 'bidir-fix-x', 'potential-reweight',
       'floyd-warshall', 'johnson-reweight',
-    ],
+    ].concat(FRAG.map((f) => f[0])),
     stop() { clearTimeout(timer); epoch++; },
   };
 }

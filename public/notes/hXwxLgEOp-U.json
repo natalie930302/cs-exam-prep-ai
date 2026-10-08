@@ -1,0 +1,1199 @@
+{
+ "video": "hXwxLgEOp-U",
+ "label": "交大彭文志 Lec22 Sorting",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Sorting 的用途：record、key、sequential search",
+   "scene": "sortpeng-seq-search",
+   "points": [
+    {
+     "text": "今天講 sorting；作業 1、2 找 top-k popular word，都要先依 frequency 排序。",
+     "t": 0
+    },
+    {
+     "text": "Database 常用到排序：資料存成 record，例如手機電話簿的一筆聯絡人，含名字、公司、電話等多個欄位。",
+     "t": 49
+    },
+    {
+     "text": "課本把用來搜尋的欄位叫 key；電話簿以名字當 key。",
+     "t": 185
+    },
+    {
+     "text": "常見操作：getKey 取出 record 的 key、setKey 設定 key（新增聯絡人時）。",
+     "t": 240
+    },
+    {
+     "text": "最笨的搜尋：用迴圈 scan 每一筆，比較它的 key 是不是等於 k。",
+     "t": 286
+    },
+    {
+     "text": "i 從 n 開始往回 i--；找到就跳出 while，return i。",
+     "t": 335
+    },
+    {
+     "text": "這叫 sequential search：一筆一筆檢查，O(n)。",
+     "t": 368
+    }
+   ]
+  },
+  {
+   "title": "先排序，才能 Binary Search",
+   "scene": "sortpeng-binary-search",
+   "points": [
+    {
+     "text": "有沒有更快的方法？手機通訊錄依 last name／筆畫排序，可以直接跳到「彭」。",
+     "t": 381
+    },
+    {
+     "text": "Binary search 的先決條件：要搜尋的那個欄位，所有資料都已排序。",
+     "t": 429
+    },
+    {
+     "text": "Sequential search 要 O(n)；排序後每次跟中間比、對切，降到 O(log n)。",
+     "t": 455
+    },
+    {
+     "text": "先排序再搜尋會快很多，這是 sort 的一個應用。",
+     "t": 494
+    },
+    {
+     "text": "作業 3 找 PageRank 最高的 top-K node，也一定要用到 sort。",
+     "t": 527
+    },
+    {
+     "text": "每種 sort 都有優缺點，沒有一種是永遠的 winner。",
+     "t": 553
+    }
+   ]
+  },
+  {
+   "title": "Internal Sort 與 External Sort",
+   "scene": "sortpeng-int-ext",
+   "points": [
+    {
+     "text": "排序演算法大致分兩類：internal 和 external。",
+     "t": 572
+    },
+    {
+     "text": "Internal sort：要排的數字或 records 全部能放進 memory 執行。",
+     "t": 590
+    },
+    {
+     "text": "資料量超過 memory（例如 4GB memory、500GB 資料）就塞不進去，要用 external method sort。",
+     "t": 637
+    },
+    {
+     "text": "多買 memory？資料成長的速度比 memory 快太多，external sort 一定會用到。",
+     "t": 680
+    },
+    {
+     "text": "先從 internal methods 的經典演算法講起。",
+     "t": 710
+    }
+   ]
+  },
+  {
+   "title": "Insertion Sort 的想法",
+   "scene": "sortpeng-insert-idea",
+   "points": [
+    {
+     "text": "第一個：Insertion Sort（插入排序）。",
+     "t": 720
+    },
+    {
+     "text": "假設已經知道前 n−1 個怎麼排，就把第 n 個抓出來，insert 到前面 n−1 個裡。",
+     "t": 733
+    },
+    {
+     "text": "像數學歸納法：n−1 個再假設 n−2 個排好……一路 recursive 到 n = 1 只剩一個。",
+     "t": 802
+    },
+    {
+     "text": "Array 分成兩部分：已 sorted 的 a[0..p−1] 和 unsorted 的部分。",
+     "t": 830
+    },
+    {
+     "text": "每次把 unsorted 的第一個 a[p] 抓出來，insert 到 sorted 部分該放的位置。",
+     "t": 860
+    }
+   ]
+  },
+  {
+   "title": "Insertion Sort 例子：34 8 64 51 32 21",
+   "scene": "sortpeng-insert-passes",
+   "points": [
+    {
+     "text": "例子：六個數字 34 8 64 51 32 21；a0 = 34 只有一個，已排好。",
+     "t": 909
+    },
+    {
+     "text": "Pass 1：a1 = 8 跟 34 比，8 較小放到 a0 → 8 34（底線部分已排好）。",
+     "t": 936
+    },
+    {
+     "text": "Pass 2：64 比 8、34 都大，排在最後 → 8 34 64。",
+     "t": 990
+    },
+    {
+     "text": "Pass 3：51 介於 34 和 64 之間，64 往後 shift 一位 → 8 34 51 64。",
+     "t": 1015
+    },
+    {
+     "text": "Pass 4：32 先跟 64 比，64 較大 → 往後；再跟 51 比，51 往後。",
+     "t": 1089
+    },
+    {
+     "text": "32 跟 34 比再往前；跟 8 比，8 較小就停 → 8 32 34 51 64 21。",
+     "t": 1151
+    },
+    {
+     "text": "每次從 unsorted 抓第一個，跟 sorted 部分一個一個比大小，決定要放哪。",
+     "t": 1164
+    }
+   ],
+   "trap": "補充：考試要寫的是每個 pass 的中間結果，不是最後答案。"
+  },
+  {
+   "title": "Insertion Sort 的程式",
+   "scene": "sortpeng-insert-code",
+   "points": [
+    {
+     "text": "紅字是程式：外層 p 從 1 開始（a0 自己不用動）。",
+     "t": 1212
+    },
+    {
+     "text": "for (p = 1; p < n; p++)，tmp = a[p]。",
+     "t": 1236
+    },
+    {
+     "text": "內層 j = p；當 j > 0 且 a[j−1] > tmp，就 a[j] = a[j−1]，然後 j−−。",
+     "t": 1248
+    },
+    {
+     "text": "程式一定要回去自己 trace，真正寫才知道細節。",
+     "t": 1339
+    },
+    {
+     "text": "寫法不唯一；考試可能把紅字改掉，再問每一步的結果。",
+     "t": 1369
+    }
+   ],
+   "trap": "更正：老師把 a[j] = a[j−1] 叫成 swap；嚴格說是 shift（大的往右複製一格），迴圈結束才把 tmp 放進 a[j]。"
+  },
+  {
+   "title": "Selection Sort 的想法",
+   "scene": "sortpeng-select-passes",
+   "points": [
+    {
+     "text": "Selection Sort：顧名思義就是「選擇」。",
+     "t": 1387
+    },
+    {
+     "text": "從 n 個數字選最小的放第一個位置。",
+     "t": 1415
+    },
+    {
+     "text": "再從剩下 n−1 個選最小的放第二個位置，依此類推。",
+     "t": 1429
+    },
+    {
+     "text": "示意圖跟 insertion 很像，但箭頭不同：每次從 unsorted 選最小的換進來。",
+     "t": 1457
+    },
+    {
+     "text": "p = 0、1、2…每一 run 都做一次「選最小」。",
+     "t": 1483
+    }
+   ]
+  },
+  {
+   "title": "Selection Sort 例子與程式",
+   "scene": "sortpeng-select-passes",
+   "points": [
+    {
+     "text": "同一組 34 8 64 51 32 21：最小是 8（在 A1），跟 A0 的 34 對調。",
+     "t": 1506
+    },
+    {
+     "text": "剩下 34 64 51 32 21 最小是 21，跟 A1 的 34 swap，其他位置不動。",
+     "t": 1566
+    },
+    {
+     "text": "考試不會問最後結果，會要你寫出中間過程。",
+     "t": 1613
+    },
+    {
+     "text": "跟 insertion 不同：selection 只把最小值跟位置 p 交換，中間 A2、A3、A4 都不會動。",
+     "t": 1669
+    },
+    {
+     "text": "例如剩 51 64 34：最小 34 跟 51 交換就結束。",
+     "t": 1729
+    },
+    {
+     "text": "程式：內層從 j = p+1 找最小值的 index min，再 swap a[p]、a[min]；外層 p 從 0 開始。",
+     "t": 1756
+    }
+   ],
+   "trap": "補充：比較次數一律 n(n−1)/2，但 swap 最多只有 n−1 次。"
+  },
+  {
+   "title": "Bubble Sort",
+   "scene": "sortpeng-bubble-passes",
+   "points": [
+    {
+     "text": "Insertion、Selection 講完；計概講過 Bubble Sort。",
+     "t": 1817
+    },
+    {
+     "text": "兩兩比較，像水中的氣泡一樣冒上來；sort 前面的形容詞都有意義。",
+     "t": 1838
+    },
+    {
+     "text": "Pass 0：A5 = 21 跟 A4 = 32 比，21 較小 → swap 往前。",
+     "t": 1932
+    },
+    {
+     "text": "21 再跟 51、64 比，都比較小，一路 swap 往前。",
+     "t": 1960
+    },
+    {
+     "text": "21 跟 8 比，8 較小 → 21 停，接力給 8；8 跟 34 交換，Pass 0 後 8 就定位。",
+     "t": 1978
+    },
+    {
+     "text": "Pass 1：32 跟 51、64 交換，遇到 21 停；21 再跟 34 交換 → 8 21 34 32 64 51。",
+     "t": 2017
+    },
+    {
+     "text": "做完 Pass i，A0..Ai 已由小到大排好；要做很多個 pass。",
+     "t": 2056
+    },
+    {
+     "text": "程式：外層 p；內層 j 從 n−1 往前，兩兩比較，小的就 exchange（swap）。",
+     "t": 2089
+    }
+   ],
+   "trap": "補充：這裡的 bubble 是從右往左把最小的浮到前面；很多課本是從左往右把最大的推到最後，中間過程不同，作答要看題目給的程式。"
+  },
+  {
+   "title": "Merge Sort 的概念",
+   "scene": "sortpeng-merge-idea",
+   "points": [
+    {
+     "text": "Sort 的結果都一樣，重點是 concept，就藏在名字的形容詞裡。",
+     "t": 2136
+    },
+    {
+     "text": "Merge sort：手上有兩堆已經 sort 好的 list，把它們合併起來。",
+     "t": 2171
+    },
+    {
+     "text": "像營隊兩個小隊各自依身高排好，要合成 20 人的大隊：兩兩比較排頭。",
+     "t": 2199
+    },
+    {
+     "text": "它是 recursive algorithm，採用 divide and conquer。",
+     "t": 2230
+    },
+    {
+     "text": "Divide：把大問題切成小問題；Conquer：一一征服，大問題就解了。",
+     "t": 2262
+    }
+   ]
+  },
+  {
+   "title": "題外話：Command & Conquer",
+   "scene": null,
+   "points": [
+    {
+     "text": "老師大學時（1994）流行即時戰略遊戲 Command & Conquer（紅色警戒）。",
+     "t": 2290
+    },
+    {
+     "text": "當年常打到半夜才開始寫 DS 作業。",
+     "t": 2382
+    },
+    {
+     "text": "電動別打太多；講這個是要你記得這些英文名字都有意義。",
+     "t": 2425
+    }
+   ]
+  },
+  {
+   "title": "Merge Sort 例子：一輪一輪兩兩合併",
+   "scene": "sortpeng-merge-passes",
+   "points": [
+    {
+     "text": "回到 divide and conquer：切成小問題各自解，再 combine 起來。",
+     "t": 2436
+    },
+    {
+     "text": "例子：一開始每個數字自己就是一段，兩兩比對。",
+     "t": 2452
+    },
+    {
+     "text": "11 和 8 各自只有一個數字（已排好），merge 成 8 11。",
+     "t": 2466
+    },
+    {
+     "text": "7 和 14 也 combine；接著 8 11 和 7 14 合併：7 最小，再來 8……",
+     "t": 2501
+    },
+    {
+     "text": "合併兩個 sorted list 的 procedure 叫 merge；Pass 2 再兩兩 combine。",
+     "t": 2534
+    },
+    {
+     "text": "沒辦法兩兩配對的那一個先「單飛」，之後的 pass 再加入已 merge 好的 list。",
+     "t": 2555
+    },
+    {
+     "text": "兩段長度不必一樣：merge sort 只要求合併的是兩個 sorted list。",
+     "t": 2657
+    }
+   ]
+  },
+  {
+   "title": "Merge：p、q 兩個 pointer 與額外陣列",
+   "scene": "sortpeng-merge-pq",
+   "points": [
+    {
+     "text": "Merge 怎麼做：前半 A0..A3、後半 A4..A7 各自已排好。",
+     "t": 2695
+    },
+    {
+     "text": "兩個 pointer：p 指左段第一個 A0、q 指右段第一個 A4。",
+     "t": 2706
+    },
+    {
+     "text": "A0 = 7 和 A4 = 4 比，4 較小 → copy 一份放到新陣列 b0。",
+     "t": 2744
+    },
+    {
+     "text": "結果不能放回 A（放到 A0，7 就不見了），一定要另開新 array：這是 merge sort 的 overhead。",
+     "t": 2776
+    },
+    {
+     "text": "q 變 5：A5 = 6 還是比 7 小，copy 到 b1，q 再加 1。",
+     "t": 2837
+    },
+    {
+     "text": "這跟多項式加法（比指數）很像。",
+     "t": 2870
+    },
+    {
+     "text": "重點：要有額外 array 空間；被 copy 的那邊 pointer 加 1。",
+     "t": 2905
+    }
+   ]
+  },
+  {
+   "title": "遞迴的 mergeSort(a, tmp, left, right)",
+   "scene": "sortpeng-merge-recursive",
+   "points": [
+    {
+     "text": "做法是 recursive function：mergeSort。",
+     "t": 2913
+    },
+    {
+     "text": "需要一個額外的 array tmp。",
+     "t": 2928
+    },
+    {
+     "text": "left、right 記錄這段 list 的最左和最右。",
+     "t": 2939
+    },
+    {
+     "text": "Boundary condition 在 left < right 的判斷。",
+     "t": 2952
+    },
+    {
+     "text": "成立就取 center，呼叫 mergeSort(left, center)、mergeSort(center+1, right)，再 merge。",
+     "t": 2966
+    },
+    {
+     "text": "一開始 0..7 → 切成 0..3、4..7 → 再切 a0..a1、a2..a3……",
+     "t": 3005
+    },
+    {
+     "text": "一直遞迴切到不能再切，才開始 merge；看起來像 bottom-up 兩兩合併。",
+     "t": 3087
+    },
+    {
+     "text": "寫 recursive 最重要的是 boundary condition，沒寫程式就永遠跑不完。",
+     "t": 3128
+    }
+   ],
+   "trap": "更正：老師口誤說「left < right 就必須停止」；正確是 left < right 時才繼續切，left ≥ right（剩 0 或 1 個）時停止。"
+  },
+  {
+   "title": "Merge Sort 分析：T(n) = 2T(n/2) + n",
+   "scene": "sortpeng-merge-recurrence",
+   "points": [
+    {
+     "text": "T(n)：排 n 個數字的時間。",
+     "t": 3174
+    },
+    {
+     "text": "切兩半，每半 n/2 個 → 2T(n/2)，這是 divide。",
+     "t": 3180
+    },
+    {
+     "text": "+ n 是 merge 的成本。",
+     "t": 3200
+    },
+    {
+     "text": "每個 T(n/2) 又可再細分成 T(n/4)……",
+     "t": 3222
+    },
+    {
+     "text": "解出來 complexity 是 O(n log n)。",
+     "t": 3245
+    },
+    {
+     "text": "遞迴式怎麼解：離散數學，或演算法第一章會教。",
+     "t": 3268
+    },
+    {
+     "text": "概念：切兩半 divide，再用 merge 做 conquer。",
+     "t": 3294
+    }
+   ]
+  },
+  {
+   "title": "Quick Sort：選 pivot 分兩堆",
+   "scene": "sortpeng-quick-65",
+   "points": [
+    {
+     "text": "從 merge 的概念衍生出另一種：Quick Sort。",
+     "t": 3309
+    },
+    {
+     "text": "它的名字看不出精神，只告訴你「快」。",
+     "t": 3329
+    },
+    {
+     "text": "在 comparison-based（靠比大小）的排序裡，它算是最快的。",
+     "t": 3364
+    },
+    {
+     "text": "也是 divide and conquer：先選一個 pivot（標兵），比它小的一堆、比它大的一堆。",
+     "t": 3379
+    },
+    {
+     "text": "像全班選一位同學當 pivot：比他矮的站左邊、高的站右邊，再 recursive。",
+     "t": 3409
+    },
+    {
+     "text": "例子 pivot 65：0 43 31 13 26 57 在左，75 81 92 在右。",
+     "t": 3438
+    },
+    {
+     "text": "左堆再選 pivot 31，比它小／大再分兩堆，一直 recursive 下去。",
+     "t": 3480
+    },
+    {
+     "text": "跟 merge sort 一樣切兩半，差在依 pivot 決定怎麼切；程式回去自己 trace。",
+     "t": 3526
+    }
+   ]
+  },
+  {
+   "title": "Pivot 怎麼選",
+   "scene": "sortpeng-pivot-choice",
+   "points": [
+    {
+     "text": "Quick sort 的難處：pivot 怎麼選。",
+     "t": 3589
+    },
+    {
+     "text": "剛好選到最小或最大的，有選跟沒選差不多。",
+     "t": 3599
+    },
+    {
+     "text": "可以用 random 選。",
+     "t": 3612
+    },
+    {
+     "text": "中位數當 pivot 最好，但要先找中位數等於先排好了，通常不這樣做。",
+     "t": 3621
+    },
+    {
+     "text": "Random 選三個、取三個的中位數（median of three），比較保險。",
+     "t": 3645
+    },
+    {
+     "text": "資料量大就多選：sampling，例如 100 萬個抽 1000 個排序，取中位數當 pivot。",
+     "t": 3681
+    }
+   ]
+  },
+  {
+   "title": "課本例子：每次遞迴的 left、right",
+   "scene": "sortpeng-quick-textbook",
+   "points": [
+    {
+     "text": "課本例子：10 筆 record（26 5 37 1 61 11 59 15 48 19），注意表上的 left 和 right。",
+     "t": 3727
+    },
+    {
+     "text": "Pivot 選這段的第一個：26，把資料分成兩半。",
+     "t": 3752
+    },
+    {
+     "text": "26 前面那段 left = 1、right = 5，專門處理左半邊。",
+     "t": 3779
+    },
+    {
+     "text": "左半 pivot 是 11，剛好是中位數，小的放前、大的放後。",
+     "t": 3796
+    },
+    {
+     "text": "下一輪 left、right 是 1 和 2。",
+     "t": 3809
+    },
+    {
+     "text": "這張表像 debug mode：每一 run 處理一個 partition，改變 left、right。",
+     "t": 3824
+    },
+    {
+     "text": "全部做完就排好了。",
+     "t": 3848
+    }
+   ],
+   "trap": "補充：Horowitz 版 partition 以 a[left] 為 pivot，i 往右找 ≥ pivot、j 往左找 ≤ pivot，i、j 交錯後 pivot 與 a[j] 交換。"
+  },
+  {
+   "title": "小資料用 Insertion；Quick Sort 分析",
+   "scene": "sortpeng-quick-analysis",
+   "points": [
+    {
+     "text": "數字太少時做 quick sort 沒意義；統計上小規模資料 insertion sort 比 quick sort 好。",
+     "t": 3860
+    },
+    {
+     "text": "T(n) = T(i) + T(n−i−1) + cn。",
+     "t": 3897
+    },
+    {
+     "text": "選出 pivot 後，一邊 i 個、另一邊 n−i−1 個。",
+     "t": 3908
+    },
+    {
+     "text": "cn 是 partition 的成本，像 merge sort 的 merge。",
+     "t": 3921
+    },
+    {
+     "text": "每次都選到最小或最大的 → worst case O(n²)。",
+     "t": 3940
+    },
+    {
+     "text": "每次剛好均分兩半 → best case O(n log n)。",
+     "t": 3951
+    },
+    {
+     "text": "Average 也是 O(n log n)；推導留到演算法課。",
+     "t": 3958
+    }
+   ]
+  },
+  {
+   "title": "比較排序的下界：Decision Tree",
+   "scene": "sortpeng-decision-tree",
+   "points": [
+    {
+     "text": "Insertion、Selection、Merge、Quick 都是 comparison-based：每次拿兩個數字比大小。",
+     "t": 3993
+    },
+    {
+     "text": "靠比較設計的排序最快大概 O(n log n)，用 decision tree 證明。",
+     "t": 4025
+    },
+    {
+     "text": "三個變數 a、b、c 的大小順序有 6 種排列。",
+     "t": 4098
+    },
+    {
+     "text": "a=3、b=4、c=5 屬於 a<b<c；a=5、b=4、c=3 屬於 c<b<a。",
+     "t": 4127
+    },
+    {
+     "text": "每個 internal node 依「a < b？」做 decision；左邊三種都滿足 a < b，再依 c 跟 a 比細分。",
+     "t": 4209
+    },
+    {
+     "text": "答案（排列）都存在 leaf node。",
+     "t": 4290
+    },
+    {
+     "text": "3、4、5：從 root 走 a<b → c>a → c>b，到 leaf a<b<c。",
+     "t": 4322
+    },
+    {
+     "text": "比較次數 = 走到 leaf 的路徑長；最差就是樹高。",
+     "t": 4433
+    },
+    {
+     "text": "深度 d 的 binary tree 最多 2^d 個 leaf；n 個數字有 n! 種排列 → 高度 ≥ log n! = Θ(n log n)。",
+     "t": 4448
+    },
+    {
+     "text": "說 quick sort 最快的前提是「靠比大小」；decision tree 也是 AI 裡 solution space 的概念（如 A*）。",
+     "t": 4555
+    }
+   ],
+   "trap": "更正：老師說三個數字的 leaf 有「2 的三次方」個；正確是 3! = 6 個 leaf（樹高至少 ⌈log₂6⌉ = 3）。"
+  },
+  {
+   "title": "Heap Sort（一）：Min Heap + 額外陣列",
+   "scene": "sortpeng-heap-minextra",
+   "points": [
+    {
+     "text": "之前講 tree 時的 heap 也可以拿來排序。",
+     "t": 4644
+    },
+    {
+     "text": "複習：min heap 和 max heap；min heap 的 root 永遠最小。",
+     "t": 4657
+    },
+    {
+     "text": "直覺做法：先建一個 min heap。",
+     "t": 4704
+    },
+    {
+     "text": "再 delete n 次：第一次拿到最小、第二次是剩下最小……就排好了。",
+     "t": 4721
+    },
+    {
+     "text": "缺點：每次 delete 的值都要 copy 到另一個 array 空間。",
+     "t": 4757
+    },
+    {
+     "text": "Root 刪掉後要調整 heap，O(log n)。",
+     "t": 4788
+    },
+    {
+     "text": "總共 n 次 × O(log n) = O(n log n)。",
+     "t": 4810
+    }
+   ]
+  },
+  {
+   "title": "Build Heap：一個一個 insert",
+   "scene": "sortpeng-heap-insert14",
+   "points": [
+    {
+     "text": "Step 1：給 n 個數字，怎麼 build heap？",
+     "t": 4827
+    },
+    {
+     "text": "最笨的方法：每次撈一個數字出來 insert，insert n 次就是一個 heap。",
+     "t": 4863
+    },
+    {
+     "text": "Insert 14：先放到最底下的空位（虛線圈）。",
+     "t": 4910
+    },
+    {
+     "text": "跟 parent 比；min heap 比 parent 小就取代它，parent 往下，一路 bottom-up 往上比。",
+     "t": 4929
+    },
+    {
+     "text": "Heap 最常用 array 存：index 除以 2 就知道 parent。",
+     "t": 4951
+    },
+    {
+     "text": "Delete 是 top-down；insert、delete 都 O(log n)，用 heap 排序 O(n log n)。",
+     "t": 4985
+    }
+   ]
+  },
+  {
+   "title": "Heap Sort（二）：Max Heap 原地排序",
+   "scene": "sortpeng-heap-maxinplace",
+   "points": [
+    {
+     "text": "用 min heap 從小排到大，需要額外的 array。",
+     "t": 5017
+    },
+    {
+     "text": "改用 max heap，就不需要多餘的 array 空間。",
+     "t": 5034
+    },
+    {
+     "text": "原本存 heap 的 array，做完就是排好序的結果。",
+     "t": 5047
+    },
+    {
+     "text": "例子：97 存在 1、53 在 2、59 在 3……",
+     "t": 5058
+    },
+    {
+     "text": "Delete 97：root 空出來，97 放到尾巴空出的位置，再調整 heap。",
+     "t": 5086
+    },
+    {
+     "text": "對剩下（藍色）的部分再 delete：59 被抓出來，放到它的位置。",
+     "t": 5126
+    },
+    {
+     "text": "全部 delete 完，array 已是 26 31 41 … 97，不用額外空間。",
+     "t": 5144
+    }
+   ]
+  },
+  {
+   "title": "Bottom-up Build Heap",
+   "scene": "sortpeng-heap-bottomup",
+   "points": [
+    {
+     "text": "Build heap 最笨是一個一個加。",
+     "t": 5190
+    },
+    {
+     "text": "更好的方法：top-down 或 bottom-up。",
+     "t": 5202
+    },
+    {
+     "text": "Bottom-up 例子：從下面開始，每個都是一個小 heap。",
+     "t": 5233
+    },
+    {
+     "text": "7 個數字先丟進 A1..A7，順序不管。",
+     "t": 5240
+    },
+    {
+     "text": "58、97 的 parent 是 59：97 推上去、59 降下來，這棵 subtree 就符合 max heap。",
+     "t": 5280
+    },
+    {
+     "text": "依此類推：26、53 和 41，53 往上走。",
+     "t": 5320
+    },
+    {
+     "text": "最後把 97、53 跟 root 比，最大的推上去。",
+     "t": 5340
+    },
+    {
+     "text": "先 map 到 array，再從下往上調整。",
+     "t": 5361
+    }
+   ]
+  },
+  {
+   "title": "Bucket Sort 的概念",
+   "scene": "sortpeng-bucket-idea",
+   "points": [
+    {
+     "text": "Bucket sort：bucket 就是籃子。",
+     "t": 5384
+    },
+    {
+     "text": "身分證第一個字是英文字母：準備 26 個籃子，照字母放進對應的籃子。",
+     "t": 5406
+    },
+    {
+     "text": "它沒有互相比大小，而是依資料本身的特性丟到該去的地方。",
+     "t": 5427
+    },
+    {
+     "text": "數字可以依位數多做幾次 bucket；有時很像 hash。",
+     "t": 5461
+    },
+    {
+     "text": "常用兩種：MSD（Radix exchange sort）和 LSD（Straight radix sort）。",
+     "t": 5495
+    }
+   ]
+  },
+  {
+   "title": "Radix Exchange Sort（MSD）",
+   "scene": "sortpeng-msd",
+   "points": [
+    {
+     "text": "MSD：radix exchange sort，依最重要（最左）的位數排序。",
+     "t": 5520
+    },
+    {
+     "text": "數字都表示成三位數：1 → 001、8 → 008、64 → 064。",
+     "t": 5541
+    },
+    {
+     "text": "每一位是 0~9，對應 bucket 0..9。",
+     "t": 5587
+    },
+    {
+     "text": "依百位數：064 → bucket 0、008 → bucket 0、216 → bucket 2，依此類推。",
+     "t": 5605
+    },
+    {
+     "text": "從左讀到右，就大致排好。",
+     "t": 5674
+    },
+    {
+     "text": "125 216 343 512 729 已排好；但 bucket 0 擠了好幾個，還要再排。",
+     "t": 5722
+    },
+    {
+     "text": "bucket 0 再依十位數排；還有多個就再看個位數：要 recursive 下去。",
+     "t": 5752
+    }
+   ]
+  },
+  {
+   "title": "Straight Radix Sort（LSD）",
+   "scene": "sortpeng-lsd",
+   "points": [
+    {
+     "text": "另一種：straight radix sort。",
+     "t": 5814
+    },
+    {
+     "text": "依最小的位數，從右到左做 bucket sort。",
+     "t": 5834
+    },
+    {
+     "text": "先看個位數：64 → bucket 4、8 → bucket 8。",
+     "t": 5854
+    },
+    {
+     "text": "從 bucket 0 讀到 9，output 新的 sequence：0 1 512 343 64 ……",
+     "t": 5879
+    },
+    {
+     "text": "照這個 sequence 再依十位數做一次 bucket sort。",
+     "t": 5918
+    },
+    {
+     "text": "讀出 0 1 8 512 216 125 27 729 ……；每個 bucket 從底下讀到上面。",
+     "t": 5977
+    },
+    {
+     "text": "再依百位數做一次，讀出來就是排序結果。",
+     "t": 6009
+    },
+    {
+     "text": "從最右邊的位數開始，一直做到 most significant digit。",
+     "t": 6055
+    }
+   ]
+  },
+  {
+   "title": "Radix 不比大小；bucket 是 Queue",
+   "scene": "sortpeng-radix-cost",
+   "points": [
+    {
+     "text": "Straight radix sort 有沒有比大小？沒有，只依位數丟到該去的 bucket。",
+     "t": 6096
+    },
+    {
+     "text": "會不會比 quick sort 快？n 個數字、每個 3 位數 → 做 3 次類似 hash 的動作。",
+     "t": 6134
+    },
+    {
+     "text": "它只是對每個數字檢查一次、丟進 bucket。",
+     "t": 6208
+    },
+    {
+     "text": "每個 bucket 用 Queue 而不是 Stack 實作：先進先出（first in first out）。",
+     "t": 6234
+    },
+    {
+     "text": "Bucket 跟 hash 很像，下週會講 hash。",
+     "t": 6285
+    }
+   ],
+   "trap": "補充：老師把 complexity 留作思考題。答案：d 位數、r 個 bucket，時間 O(d(n + r))；d 固定時是線性，可以比 O(n log n) 快。Bucket 必須 FIFO 才能保留上一輪的順序（stable），LSD 才會對。"
+  },
+  {
+   "title": "MSD 回顧：小 bucket 可改用別的 sort",
+   "scene": "sortpeng-msd",
+   "points": [
+    {
+     "text": "再看一次 radix exchange sort：依最左邊（最重要）的位數排序。",
+     "t": 6314
+    },
+    {
+     "text": "百位數排完後，bucket 超過一個數字就抓出來，依十位數再排。",
+     "t": 6346
+    },
+    {
+     "text": "剩一小撮數字時也可以改用之前教的 sort，例如對小資料很好的 insertion sort。",
+     "t": 6405
+    }
+   ]
+  },
+  {
+   "title": "LSD 回顧",
+   "scene": "sortpeng-lsd",
+   "points": [
+    {
+     "text": "Straight radix sort：一輪一輪，從最右邊的位數開始。",
+     "t": 6415
+    },
+    {
+     "text": "依該位數丟進對應 bucket，再讀出來產生新的 list。",
+     "t": 6440
+    },
+    {
+     "text": "從下面讀到上面：先丟進去的先讀出來，所以常用 Queue。",
+     "t": 6479
+    },
+    {
+     "text": "做到百位數，讀出來就是排序結果。",
+     "t": 6505
+    },
+    {
+     "text": "Complexity：頂多對每個數字 scan、hash 進 bucket。",
+     "t": 6517
+    }
+   ]
+  },
+  {
+   "title": "Radix 與 Merge 好平行化：MapReduce",
+   "scene": "sortpeng-mapreduce",
+   "params": {
+    "radix": 1
+   },
+   "points": [
+    {
+     "text": "Radix sort 好不好平行化（用很多台 machine 一起排）？",
+     "t": 6540
+    },
+    {
+     "text": "Hint：MapReduce，講穿了就是 divide and conquer。",
+     "t": 6565
+    },
+    {
+     "text": "Map 做 divide（切成小問題），Reduce 做 conquer，跟 merge sort 一樣。",
+     "t": 6592
+    },
+    {
+     "text": "Merge sort、radix sort 都很容易 implement 成 MapReduce。",
+     "t": 6618
+    },
+    {
+     "text": "每個 bucket 或一群 bucket 可以交給一台 machine 執行。",
+     "t": 6635
+    }
+   ]
+  },
+  {
+   "title": "Internal Sort 總結",
+   "scene": "sortpeng-summary",
+   "points": [
+    {
+     "text": "上面講的都是 internal sort：所有數字都 load 到 memory。",
+     "t": 6655
+    },
+    {
+     "text": "前面是 comparison-based；後面的 radix 不做 comparison，速度可以比較快。",
+     "t": 6681
+    },
+    {
+     "text": "各有優缺點：quick sort 不一定最 quick，要看 pivot；小規模資料 insertion sort 較好。",
+     "t": 6697
+    },
+    {
+     "text": "除了 quick sort，sort 前面的形容詞就是它的 concept。",
+     "t": 6728
+    }
+   ]
+  },
+  {
+   "title": "External Sort：6 個 run，以 block 合併",
+   "scene": "sortpeng-external-runs",
+   "points": [
+    {
+     "text": "External sort：資料量超過一台電腦的 memory。",
+     "t": 6752
+    },
+    {
+     "text": "只有一台電腦時，用 merge sort 的概念來解。",
+     "t": 6781
+    },
+    {
+     "text": "例：memory 最多放 750 筆，總共 4500 筆 → 6 倍。",
+     "t": 6798
+    },
+    {
+     "text": "把 4500 筆 partition 成 6 份（run）。",
+     "t": 6853
+    },
+    {
+     "text": "Memory 750 筆分成 3 個 block，每個 250 筆。",
+     "t": 6892
+    },
+    {
+     "text": "第三個 block 要留著做 merge：兩個 block 讀進來、一個 block 放結果。",
+     "t": 6919
+    },
+    {
+     "text": "6 個 run：1–750、751–1500……；每個 run 排好後存回 disk。",
+     "t": 6953
+    },
+    {
+     "text": "Merge run1、run2：p 指 run1 的第一個 block、q 指 run2 的第一個 block，結果放第三個 block，再存回 disk。",
+     "t": 7075
+    },
+    {
+     "text": "Internal merge 的 p、q 指數字；external merge 的 p、q 指 block（block 內再用兩個指標）。",
+     "t": 7146
+    }
+   ]
+  },
+  {
+   "title": "Merge 順序：Weighted External Path Length",
+   "scene": "sortpeng-merge-order",
+   "points": [
+    {
+     "text": "實際上每個 run 不一定均分。",
+     "t": 7230
+    },
+    {
+     "text": "例：四個 run 分別有 2、4、5、15 個 block。",
+     "t": 7258
+    },
+    {
+     "text": "Merge 的順序會影響效率。",
+     "t": 7280
+    },
+    {
+     "text": "用 weighted external path length 評估：block 數 × 被 merge 的次數。",
+     "t": 7307
+    },
+    {
+     "text": "左圖：2 要 merge 3 次 → 2×3；4×3；5×2；15×1，總共 43。",
+     "t": 7335
+    },
+    {
+     "text": "右圖：兩兩平衡地 merge。",
+     "t": 7366
+    },
+    {
+     "text": "右圖 cost 52：最多筆的 15 也要 merge 兩次，貢獻 30。",
+     "t": 7387
+    },
+    {
+     "text": "最佳 merge 順序：套用 Huffman code 的方法就能決定。",
+     "t": 7458
+    }
+   ],
+   "trap": "更正：老師說「希望 tree 比較 balance」，但這個例子平衡的是 52、偏斜的是 43；cost 越小越好。Huffman 每次合併最小的兩個（2+4 → 6、+5 → 11、+15 → 26），正好是左邊 43 那棵。"
+  },
+  {
+   "title": "External Sort 不只一種解法",
+   "scene": "sortpeng-mapreduce",
+   "points": [
+    {
+     "text": "External sort 只能用 merge sort 嗎？不是唯一解。",
+     "t": 7513
+    },
+    {
+     "text": "剛剛的限制是只用一台 computer。",
+     "t": 7547
+    },
+    {
+     "text": "MapReduce：很多台電腦，每台 memory 只有 750 筆；用 6 台各自 internal sort，再 merge 起來。",
+     "t": 7575
+    },
+    {
+     "text": "Sorting 就上到這邊。",
+     "t": 7607
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Insertion sort（課堂程式）排 34 8 64 51 32 21，做完 Pass 3（p = 3）後陣列是？",
+   "opts": [
+    "8 34 51 64 32 21",
+    "8 34 64 51 32 21",
+    "8 32 34 51 64 21",
+    "8 21 32 34 51 64"
+   ],
+   "ans": "8 34 51 64 32 21",
+   "why": "Pass 3 把 51 插進 8 34 64，64 往右 shift 一格；後面的 32 21 還沒動。"
+  },
+  {
+   "q": "Selection sort 排 34 8 64 51 32 21，做完 p = 0 和 p = 1 兩個 pass 後是？",
+   "opts": [
+    "8 21 64 51 32 34",
+    "8 34 64 51 32 21",
+    "8 21 32 51 64 34",
+    "8 21 34 64 51 32"
+   ],
+   "ans": "8 21 64 51 32 34",
+   "why": "p=0：8↔34；p=1：剩下最小 21 跟 a1 的 34 交換，中間 64 51 32 不動。"
+  },
+  {
+   "q": "課堂的 bubble sort（j 從 n−1 往前、小的往前浮）排 34 8 64 51 32 21，Pass 0 後是？",
+   "opts": [
+    "8 34 21 64 51 32",
+    "8 34 51 32 21 64",
+    "8 21 34 32 64 51",
+    "8 34 64 51 32 21"
+   ],
+   "ans": "8 34 21 64 51 32",
+   "why": "21 一路 swap 到 8 後面停下，接力給 8，8 再跟 34 交換；「8 34 51 32 21 64」是由左往右把最大值推到最後的版本。"
+  },
+  {
+   "q": "Quick sort 什麼時候會退化成 O(n²)？",
+   "opts": [
+    "每次 pivot 都剛好是最小或最大",
+    "每次 pivot 都是中位數",
+    "資料量很小時",
+    "用 median-of-three 選 pivot"
+   ],
+   "ans": "每次 pivot 都剛好是最小或最大",
+   "why": "T(n) = T(0) + T(n−1) + cn，每層只少一個，共 n 層。"
+  },
+  {
+   "q": "排 3 個不同元素的比較式 decision tree，至少有幾個 leaf？",
+   "opts": [
+    "6",
+    "8",
+    "3",
+    "9"
+   ],
+   "ans": "6",
+   "why": "3 個元素有 3! = 6 種排列，每種排列都要對應一個 leaf；8 = 2³ 是高度 3 的樹最多能有的 leaf 數。"
+  },
+  {
+   "q": "Max heap 97 53 59 26 41 58 31（array 1..7）做第一次 delete（root 換到尾巴再調整）後，array 是？",
+   "opts": [
+    "59 53 58 26 41 31 97",
+    "59 53 31 26 41 58 97",
+    "53 59 58 26 41 31 97",
+    "31 53 59 26 41 58 97"
+   ],
+   "ans": "59 53 58 26 41 31 97",
+   "why": "97 跟 a7 = 31 交換；31 在 1..6 往下調：先跟 59 換，再跟 58 換。"
+  },
+  {
+   "q": "Straight radix sort（LSD）排 64 8 216 512 27 729 0 1 343 125，第一輪（個位數）讀出來的 sequence 是？",
+   "opts": [
+    "0 1 512 343 64 125 216 27 8 729",
+    "0 1 8 27 64 125 216 343 512 729",
+    "0 1 8 512 216 125 27 729 343 64",
+    "64 8 27 0 1 125 216 343 512 729"
+   ],
+   "ans": "0 1 512 343 64 125 216 27 8 729",
+   "why": "依個位數丟進 bucket 0..9，再從 bucket 0 讀到 9；第三個選項是第二輪（十位數）的結果。"
+  },
+  {
+   "q": "External merge 時四個 run 有 2、4、5、15 個 block，最小的 weighted external path length 是？",
+   "opts": [
+    "43",
+    "52",
+    "26",
+    "56"
+   ],
+   "ans": "43",
+   "why": "用 Huffman：2+4、再 +5、再 +15 → 2×3 + 4×3 + 5×2 + 15×1 = 43；平衡合併是 52。"
+  }
+ ]
+}

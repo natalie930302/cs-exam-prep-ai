@@ -1,0 +1,1257 @@
+{
+ "video": "Wnpsh1O1OMo",
+ "label": "交大彭文志 Lec20 Graph (3/4)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "DFS／BFS 回顧",
+   "scene": "gpeng20-dfs-bfs-recap",
+   "points": [
+    {
+     "text": "graph 的 traverse 有兩種：DFS 和 BFS，程式怎麼寫一定要回去看。",
+     "t": 0
+    },
+    {
+     "text": "DFS 用一個 array（visited[]）記錄每個 vertex 是否被拜訪過。",
+     "t": 39
+    },
+    {
+     "text": "依照 adjacency list，遇到沒拜訪過的點就 visit（印出來），再沿它的鄰居繼續拜訪。",
+     "t": 51
+    },
+    {
+     "text": "所有點都拜訪過就 return；DFS 通常寫成 recursive。",
+     "t": 79
+    },
+    {
+     "text": "BFS 就是 level by level，用 queue 實作。",
+     "t": 91
+    }
+   ]
+  },
+  {
+   "title": "Connected component 與 social network",
+   "scene": "gpeng20-network-community",
+   "points": [
+    {
+     "text": "connected component 很常用：graph 裡從某點可以走到某點就叫 connected。",
+     "t": 110
+    },
+    {
+     "text": "Facebook 按讚、Line 傳訊息這類互動行為都可以變成一個 graph。",
+     "t": 155
+    },
+    {
+     "text": "graph 和 network 的差別：edge 上有 weight 就是 network，所以叫 social network。",
+     "t": 170
+    },
+    {
+     "text": "Line 的每個用戶是 vertex，打電話、傳幾次訊息就是帶 weight 的 edge。",
+     "t": 213
+    },
+    {
+     "text": "找「誰和誰是一群」就是 connected component，對應 social network 的 community。",
+     "t": 259
+    },
+    {
+     "text": "還會問 community 裡誰是 leader（很重要的人）。",
+     "t": 283
+    },
+    {
+     "text": "不同時期的 network 會演進，可以研究 community evolving。",
+     "t": 306
+    },
+    {
+     "text": "社群行銷會找有影響力的 seed，讓影響力擴散 = social influence。",
+     "t": 352
+    }
+   ]
+  },
+  {
+   "title": "PageRank：網頁也是 graph",
+   "scene": "gpeng20-pagerank-walk",
+   "points": [
+    {
+     "text": "graph 的應用很廣，很多生活中的問題都能 map 成 graph。",
+     "t": 389
+    },
+    {
+     "text": "一個網頁是一個 vertex；網頁上的 hyperlink（a href）連到下一個網頁就是 edge。",
+     "t": 417
+    },
+    {
+     "text": "Google 的想法：整個 web 是 graph structure，人瀏覽網頁就像在上面做 random walk。",
+     "t": 440
+    },
+    {
+     "text": "random walk 停留在某網頁的 probability 越高，那個網頁越重要（PageRank）。",
+     "t": 464
+    },
+    {
+     "text": "所以 connected component 對應 community，graph 的基本運算都有實際用途。",
+     "t": 497
+    }
+   ]
+  },
+  {
+   "title": "Spanning tree 的定義",
+   "scene": "gpeng20-k4-spanning",
+   "points": [
+    {
+     "text": "spanning tree 是一棵 tree，tree 也是 graph，而且是原圖的 subgraph。",
+     "t": 501
+    },
+    {
+     "text": "spanning tree 是 minimal subgraph G′：頂點集合跟原圖一樣，V(G′) = V(G)。",
+     "t": 523
+    },
+    {
+     "text": "edge 比原圖少：希望用最少的 edge 把所有 vertex 連起來。",
+     "t": 547
+    },
+    {
+     "text": "如果 edge 上 weight 的總和最小，這棵樹叫 minimum cost spanning tree。",
+     "t": 576
+    },
+    {
+     "text": "n 個 node 的 tree 要連起來需要 n − 1 條 edge。",
+     "t": 604
+    },
+    {
+     "text": "例：左上角是 complete graph，旁邊三個 subgraph 都包含 4 個頂點、只用 3 條邊，都是 spanning tree。",
+     "t": 616
+    }
+   ],
+   "trap": "補充：畫面上三棵 spanning tree 的形狀是示意，重點是 4 個頂點、3 條邊、沒有 cycle。"
+  },
+  {
+   "title": "DFS／BFS spanning tree",
+   "scene": "gpeng20-dfs-bfs-tree",
+   "points": [
+    {
+     "text": "用 DFS 或 BFS 做 graph traversal，就能長出 spanning tree。",
+     "t": 681
+    },
+    {
+     "text": "從 0 出發，第一個拜訪 1，0–1 連起來；1 再走到 3，3 再到 7。",
+     "t": 706
+    },
+    {
+     "text": "4 不能再連 1：1 已經 visit 過，連了會形成 cycle，所以 (1, 4) 拿掉。",
+     "t": 741
+    },
+    {
+     "text": "接下來往 5 走，再到 2、6，長成 DFS spanning tree。",
+     "t": 767
+    },
+    {
+     "text": "BFS spanning tree 是 level by level 長出來的，更像一棵樹。",
+     "t": 792
+    },
+    {
+     "text": "用 DFS 或 BFS、或換起點（例如從 7 出發），長出的樹都不一樣：spanning tree 不唯一。",
+     "t": 808
+    }
+   ]
+  },
+  {
+   "title": "Minimum cost spanning tree 與 Kruskal",
+   "scene": "gpeng20-kruskal",
+   "points": [
+    {
+     "text": "edge 有 weight 時，edge cost 加總最小的 spanning tree 叫 minimum cost spanning tree（MCST）。",
+     "t": 834
+    },
+    {
+     "text": "有三個 greedy 演算法：Kruskal、Prim、Sollin。",
+     "t": 888
+    },
+    {
+     "text": "Kruskal：每次選一條 edge，而且選 cost 最小的，所以先把 edge 排序。",
+     "t": 905
+    },
+    {
+     "text": "雖然最小，但選了會造成 loop 的 edge 就不選，跳過去。",
+     "t": 936
+    },
+    {
+     "text": "直到所有頂點都被選的 edge 連起來（connected）就停止。",
+     "t": 947
+    },
+    {
+     "text": "例：最小的是 10 = (0, 5)，接著 12 = (2, 3)、14、16 依此類推。",
+     "t": 996
+    },
+    {
+     "text": "記住只要不形成 cycle 就收；形成 cycle 就把這條邊去掉，檢查下一條。",
+     "t": 1044
+    },
+    {
+     "text": "每次都選最小的邊加進來，所以叫 greedy。",
+     "t": 1076
+    }
+   ],
+   "trap": "補充：本例依序收 10、12、14、16，18 (3,6) 與 24 (4,6) 會形成 cycle 被丟掉，收 22、25 後已有 n − 1 = 6 條就停，cost = 99。"
+  },
+  {
+   "title": "Prim：tree 慢慢往外長",
+   "scene": "gpeng20-prim",
+   "points": [
+    {
+     "text": "Prim 跟 Kruskal 不同：Kruskal 以邊為出發點，Prim 以頂點的角度慢慢長。",
+     "t": 1100
+    },
+    {
+     "text": "一開始先選最小的邊 10，頂點是 0 和 5。",
+     "t": 1133
+    },
+    {
+     "text": "從 0、5 往外看：0–1 是 28、5–4 是 25，最小是 25。",
+     "t": 1156
+    },
+    {
+     "text": "tree 變成 {0, 5, 4}，往外有 28、24、22，最小是 4–3 的 22。",
+     "t": 1213
+    },
+    {
+     "text": "Prim 從頭到尾都是一棵 tree，慢慢往外擴張。",
+     "t": 1259
+    },
+    {
+     "text": "每一步長出一個點，把鄰近的頂點納進來，直到所有頂點都進來。",
+     "t": 1280
+    }
+   ],
+   "trap": "補充：洪逸／Horowitz 的 Prim 是從頂點 0 開始，第一步一樣會選 (0,5) = 10；之後依序 25、22、12、16、14，cost = 99。"
+  },
+  {
+   "title": "Prim 要用 min priority queue",
+   "scene": "gpeng20-prim-pq",
+   "points": [
+    {
+     "text": "Prim 在長的過程中要用什麼 data structure？",
+     "t": 1311
+    },
+    {
+     "text": "用 priority queue：新納入頂點的周遭邊都放進去。",
+     "t": 1342
+    },
+    {
+     "text": "而且是 min priority queue；每次都重新排序 cost 會很高。",
+     "t": 1357
+    },
+    {
+     "text": "每次延伸就把 edge insert 進 queue，最小的邊被抓出來。",
+     "t": 1387
+    },
+    {
+     "text": "抓出最小邊之後還要檢查：會不會構成 loop，會就不行。",
+     "t": 1405
+    },
+    {
+     "text": "怎麼 detect loop 留給大家想。",
+     "t": 1431
+    }
+   ],
+   "trap": "補充：記錄每個頂點是否已在 tree 內即可，取出的邊兩端都已在 tree 裡就是 loop、直接丟掉。用 binary heap 時 Prim 是 O(E log V)。"
+  },
+  {
+   "title": "Sollin：每個頂點一次選最小邊",
+   "scene": "gpeng20-sollin",
+   "points": [
+    {
+     "text": "對照：Kruskal 以邊的角度出發，Prim 以頂點的角度出發。",
+     "t": 1456
+    },
+    {
+     "text": "Sollin：不必像 Kruskal 一次只選一條邊，可以一次選多條。",
+     "t": 1483
+    },
+    {
+     "text": "從每個頂點看周遭的邊：0 有 10 和 28 → 選 10，0 和 5 連起來。",
+     "t": 1520
+    },
+    {
+     "text": "1 有 14、16、28 → 選 14；2 有 16、12 → 選 12，2 和 3 連起來。",
+     "t": 1556
+    },
+    {
+     "text": "3 的最小邊也是 12 不用再看；4 有 22、24、25 → 選 22，4 和 3 連起來。",
+     "t": 1613
+    },
+    {
+     "text": "第一回合結束產生三棵 tree：{0,5}、{1,6}、{2,3,4}。",
+     "t": 1668
+    },
+    {
+     "text": "第二回合像 Prim：每棵 tree 往外看最小的 edge，把 tree 接起來。",
+     "t": 1695
+    },
+    {
+     "text": "選出 16 (1,2) 和 25 (5,4)，全部連通，就是 MCST。",
+     "t": 1724
+    }
+   ],
+   "trap": "老師口誤說成「1 和 5、1 和 6、2 3 4」，正確是 {0,5}、{1,6}、{2,3,4}。"
+  },
+  {
+   "title": "三個演算法的比較",
+   "scene": "gpeng20-mst-compare",
+   "points": [
+    {
+     "text": "這個例子裡 Kruskal、Prim、Sollin 得到的 tree 都一樣。",
+     "t": 1743
+    },
+    {
+     "text": "考試時三個結果長得不一樣不一定是你錯：可能有多條相同 weight 的 edge。",
+     "t": 1759
+    },
+    {
+     "text": "選了不一樣的邊，構成的 MCST 不見得一樣。",
+     "t": 1789
+    },
+    {
+     "text": "老師說三個都是 greedy，所以沒辦法保證是 optimal。",
+     "t": 1798
+    },
+    {
+     "text": "總結：Kruskal 用邊的角度；Prim 用頂點的角度擴張自己的領土。",
+     "t": 1817
+    },
+    {
+     "text": "Sollin 結合兩者：每個頂點選鄰近最小的邊（一次多條），再像 Prim 把 tree merge。",
+     "t": 1827
+    }
+   ],
+   "trap": "更正：Kruskal、Prim、Sollin 雖然是 greedy，但對 MST 都保證得到最小 cost（cut property）；有相同 weight 時只是「樹」可能不唯一，最小 cost 一定相同。"
+  },
+  {
+   "title": "Articulation point",
+   "scene": "gpeng20-articulation",
+   "points": [
+    {
+     "text": "接下來介紹 biconnected component。",
+     "t": 1867
+    },
+    {
+     "text": "connected component 只要我連得到你就好；biconnected 是更強的連通。",
+     "t": 1881
+    },
+    {
+     "text": "先定義 articulation point。",
+     "t": 1909
+    },
+    {
+     "text": "把這個頂點拿掉，graph 會變成至少兩個獨立的 connected component。",
+     "t": 1921
+    },
+    {
+     "text": "例：拿掉 1，0 自己一塊，2、3、5…剩下的是另一塊。",
+     "t": 1958
+    },
+    {
+     "text": "拿掉 3，左邊和右邊的 node 就沒辦法互相連接。",
+     "t": 1995
+    },
+    {
+     "text": "1、3、5、7 是重要的節點：articulation point。",
+     "t": 2009
+    },
+    {
+     "text": "像學校網路的 router／switch，這些點斷掉就會導致網路斷線。",
+     "t": 2028
+    }
+   ]
+  },
+  {
+   "title": "Biconnected graph 與 component",
+   "scene": "gpeng20-bicomponents",
+   "points": [
+    {
+     "text": "沒有任何 articulation point 的 connected graph 叫 biconnected graph。",
+     "t": 2086
+    },
+    {
+     "text": "maximal biconnected component：不被任何比它大的 biconnected subgraph 包含；跟 weight 無關。",
+     "t": 2102
+    },
+    {
+     "text": "同一個 graph 的兩個 biconnected component 最多只有一個共同頂點。",
+     "t": 2189
+    },
+    {
+     "text": "共同的頂點就是 articulation point，例：{0,1} 和 {1,2,3,4} 共用 1。",
+     "t": 2210
+    },
+    {
+     "text": "另一組 {1,2,3,4} 和 {3,5} 共用的是 3。",
+     "t": 2234
+    },
+    {
+     "text": "biconnected component 是對 edge 做 partition：沒有 edge 會出現在兩個以上的 component。",
+     "t": 2321
+    }
+   ]
+  },
+  {
+   "title": "用 DFS spanning tree：從 3 出發",
+   "scene": "gpeng20-dfn-tree",
+   "points": [
+    {
+     "text": "connected undirected graph 的 biconnected component 可以用 DFS spanning tree 找。",
+     "t": 2353
+    },
+    {
+     "text": "要注意兩種 edge：back edge 和 cross edge。",
+     "t": 2384
+    },
+    {
+     "text": "第一步：對 graph 做 DFS spanning tree，這裡以 3 為出發點。",
+     "t": 2417
+    },
+    {
+     "text": "3 是第一個；adjacency list 裡 4 排在 5 前面，所以先走 4，4 再走到 2。",
+     "t": 2472
+    },
+    {
+     "text": "節點上的數字就是 DFS 拜訪順序（dfn）。",
+     "t": 2494
+    },
+    {
+     "text": "接著把 3 像布偶一樣往上拉起來，變成一棵樹。",
+     "t": 2507
+    },
+    {
+     "text": "虛線：原 graph 有這條 edge，但加到 DFS spanning tree 上會變成 cycle。",
+     "t": 2532
+    },
+    {
+     "text": "虛線叫 back edge：從某個 node 跳回它的 parent 或祖先。",
+     "t": 2593
+    },
+    {
+     "text": "這棵 DFS spanning tree 的 root 3 有兩個 child：4 和 5。",
+     "t": 2637
+    }
+   ],
+   "trap": "老師說虛線是「1 和 3、6 和 7」；這棵樹是 5→6→7，所以 back edge 應是 (1,3) 和 (7,5)，6–7 是 tree edge。"
+  },
+  {
+   "title": "low(w) 的定義與例子",
+   "scene": "gpeng20-low-def",
+   "points": [
+    {
+     "text": "接下來定義每個頂點 w 的 low(w)。",
+     "t": 2661
+    },
+    {
+     "text": "low(w)：從 w 出發往 child 走（可再用一條 back edge），能到達的 node 中最小的 dfn。",
+     "t": 2678
+    },
+    {
+     "text": "dfn = DFS traversal 的順序，例如 dfn(3) = 1、dfn(4) = 2。",
+     "t": 2757
+    },
+    {
+     "text": "0 往下不能走，也沒有 back edge，只有自己 → low(0) = dfn(0) = 5。",
+     "t": 2789
+    },
+    {
+     "text": "1 下面只有 0（dfn 5），但 1 有 back edge 直達 3 → low(1) = dfn(3) = 1。",
+     "t": 2847
+    },
+    {
+     "text": "2 透過 child 1 的 back edge 也能到 3 → low(2) = 1。",
+     "t": 2891
+    },
+    {
+     "text": "公式三選項：自己的 dfn(w)；child x 的 low(x)；(w,x) 是 back edge 時的 dfn(x)。",
+     "t": 2975
+    },
+    {
+     "text": "每個 vertex 的 low 就從這三個來源取最小。",
+     "t": 3027
+    }
+   ]
+  },
+  {
+   "title": "寫程式找 articulation point：步驟一、二",
+   "scene": "gpeng20-dfn-tree",
+   "points": [
+    {
+     "text": "老師說 root 一定是 articulation point，因為它有兩個 child。",
+     "t": 3084
+    },
+    {
+     "text": "前面一堆定義，都是在替「怎麼決定 articulation point」鋪路。",
+     "t": 3102
+    },
+    {
+     "text": "人眼看很容易，但要能寫程式決定；AP 決定後，biconnected component 就很簡單。",
+     "t": 3126
+    },
+    {
+     "text": "步驟一：用 DFS 建 spanning tree，記下每個頂點被拜訪的順序 = dfn。",
+     "t": 3177
+    },
+    {
+     "text": "從 3 出發 dfn(3) = 1；接著拜訪 4，dfn(4) = 2。",
+     "t": 3210
+    },
+    {
+     "text": "步驟二：把樹拉起來；越靠近 root dfn 越小，例如 4→2→1→0 一路變大。",
+     "t": 3250
+    },
+    {
+     "text": "還要加上虛線：原圖存在、但 DFS tree 忽略掉的 edge，叫 back edge。",
+     "t": 3313
+    },
+    {
+     "text": "back edge 是用來決定每個頂點的 low 值。",
+     "t": 3351
+    }
+   ],
+   "trap": "更正：root 不是一定是 articulation point；DFS 樹的 root 只有在 child ≥ 2 時才是（本例 3 剛好有 4、5 兩個 child）。"
+  },
+  {
+   "title": "步驟三：low 的公式",
+   "scene": "gpeng20-low-def",
+   "points": [
+    {
+     "text": "步驟三：對每一個頂點算出 low 值。",
+     "t": 3373
+    },
+    {
+     "text": "low(w) 是三個框框中選最小的，不一定三個都存在。",
+     "t": 3402
+    },
+    {
+     "text": "第一個一定存在：w 自己的 dfn。",
+     "t": 3414
+    },
+    {
+     "text": "第二個：w 的 child x 的 low(x)。",
+     "t": 3426
+    },
+    {
+     "text": "第三個：(w, x) 是 back edge 時的 dfn(x)；往樹上跳回去，dfn 會比較小。",
+     "t": 3443
+    }
+   ]
+  },
+  {
+   "title": "low(5)、low(7)、low(6)",
+   "scene": "gpeng20-low-567",
+   "points": [
+    {
+     "text": "5 的 low 是 6，看看怎麼找出來。",
+     "t": 3508
+    },
+    {
+     "text": "5 自己 dfn 是 6，child 6；往下只會到更大的 dfn，所以取 6。",
+     "t": 3532
+    },
+    {
+     "text": "7 的 low 是 6：自己 dfn 8、child 的 low、back edge 到 5（dfn 6），三者取最小。",
+     "t": 3589
+    },
+    {
+     "text": "故意先算 7 不算 6：low 一定要從最下面一層一層算。",
+     "t": 3667
+    },
+    {
+     "text": "6：自己 dfn 7，child 7 的 low 是 6 → low(6) = 6。",
+     "t": 3681
+    },
+    {
+     "text": "所以要先算 0、8、9，再算 1、7，再算 2、6。",
+     "t": 3739
+    }
+   ],
+   "trap": "補充：嚴格來說 5 要看 child 6 的 low（= 6）而不是 dfn；7 的 child 是 9（low 9）和 8（low 10），老師口誤成「child 8 的 low 是 9」，但答案 low(7) = min(8, 9, 10, 6) = 6 不變。"
+  },
+  {
+   "title": "low 要 bottom-up 算",
+   "scene": "gpeng20-low-bottomup",
+   "points": [
+    {
+     "text": "low 的運算要注意順序。",
+     "t": 3801
+    },
+    {
+     "text": "一開始 table 的 low 欄位都是空的。",
+     "t": 3819
+    },
+    {
+     "text": "從最下面開始：先算 low(0)、low(8)、low(9)，再算 1、7，再算 2、6。",
+     "t": 3826
+    },
+    {
+     "text": "公式會看 child 的 low，所以下面的 child 一定要先算。",
+     "t": 3848
+    },
+    {
+     "text": "算 low 的順序是 bottom-up。",
+     "t": 3859
+    }
+   ]
+  },
+  {
+   "title": "步驟四：判斷 articulation point",
+   "scene": "gpeng20-ap-test",
+   "points": [
+    {
+     "text": "articulation point 的判斷有兩個條件。",
+     "t": 3875
+    },
+    {
+     "text": "u 是 root：老師說它一定有兩個 child，當然是 articulation point。",
+     "t": 3881
+    },
+    {
+     "text": "u 不是 root：u 有 child w，滿足 low(w) ≥ dfn(u)。",
+     "t": 3895
+    },
+    {
+     "text": "意思是 w 底下所有 node 最高只能跑到 w，沒辦法跨過 u 往上，一定要透過 u。",
+     "t": 3930
+    },
+    {
+     "text": "只要有這個條件存在，u 就是 articulation point。",
+     "t": 3987
+    },
+    {
+     "text": "例：1 的 dfn 是 4，child 0 的 low 是 5 ≥ 4 → 1 是 AP。",
+     "t": 4006
+    },
+    {
+     "text": "7 和 5 也是用這個判斷；3 是 root。",
+     "t": 4046
+    }
+   ],
+   "trap": "更正：root 只有在 DFS 樹中 child ≥ 2 時才是 AP。本例非 root 的檢查：low(0)=5 ≥ dfn(1)=4、low(6)=6 ≥ dfn(5)=6、low(9)=9 ≥ dfn(7)=8 成立；2、4、6 不成立。"
+  },
+  {
+   "title": "四個步驟總結",
+   "scene": "gpeng20-ap-steps",
+   "points": [
+    {
+     "text": "總結找 articulation point 的步驟。",
+     "t": 4068
+    },
+    {
+     "text": "步驟一：對 graph 做 DFS traversal，決定表裡的 dfn。",
+     "t": 4080
+    },
+    {
+     "text": "步驟二：在建好的 tree 上把 back edge（虛線）畫出來。",
+     "t": 4095
+    },
+    {
+     "text": "步驟三：根據 back edge 算每個頂點的 low，三個數值選最小。",
+     "t": 4119
+    },
+    {
+     "text": "注意順序：先算 0、8、9，再算 1、7。",
+     "t": 4165
+    },
+    {
+     "text": "步驟四：root（兩個 child）或 low(w) ≥ dfn(u) 就是 articulation point。",
+     "t": 4176
+    },
+    {
+     "text": "如果底下的點能跳過 u，low 就會比 dfn(u) 小，u 就不是。",
+     "t": 4223
+    }
+   ]
+  },
+  {
+   "title": "Open questions 與作業",
+   "scene": "gpeng20-bicomponents",
+   "points": [
+    {
+     "text": "算出 articulation point 1、3、5、7 後，怎麼決定 biconnected component？請看書。",
+     "t": 4246
+    },
+    {
+     "text": "這個圖有 6 個 biconnected component；哪些是 maximal 就看定義。",
+     "t": 4296
+    },
+    {
+     "text": "這段結束，留下兩個 open question：怎麼找 BCC、怎麼找 maximal BCC。",
+     "t": 4333
+    },
+    {
+     "text": "都要寫成程式；作業會選一題，下禮拜五公佈。",
+     "t": 4364
+    }
+   ],
+   "trap": "補充：課本做法是 DFS 時把 edge 推進 stack，遇到 low(w) ≥ dfn(u) 就 pop 到 (u, w) 為止，pop 出的 edge 就是一個 biconnected component。"
+  },
+  {
+   "title": "Single source 最短路徑問題",
+   "scene": "gpeng20-sssp-problem",
+   "points": [
+    {
+     "text": "第四個作業看考試狀況再說，接著上課。",
+     "t": 4383
+    },
+    {
+     "text": "問題：給一個 network 和起點（例如 0），找到所有 destination 的最短路徑。",
+     "t": 4397
+    },
+    {
+     "text": "0 到 3 直接走最短；繞路 0→1→3 的 cost 是 50 + 15，明顯較高。",
+     "t": 4431
+    },
+    {
+     "text": "0 到 4：最短是 0→3→4，cost 25。",
+     "t": 4465
+    },
+    {
+     "text": "條件：edge cost 都是 non-negative 時，可以用 Dijkstra。",
+     "t": 4514
+    },
+    {
+     "text": "從起點先看到鄰近點的最短路徑，再從已知的點往外擴充，有點像 Prim。",
+     "t": 4546
+    },
+    {
+     "text": "例：從新竹到台北，往頭份走偏離方向，所以會從竹北再往前。",
+     "t": 4584
+    },
+    {
+     "text": "每次選一個能確認是最短路徑的點加進來，再延伸，直到所有點都拜訪。",
+     "t": 4627
+    }
+   ]
+  },
+  {
+   "title": "Dijkstra 例：Boston 出發的初始化",
+   "scene": "gpeng20-boston-init",
+   "points": [
+    {
+     "text": "例子：美國主要城市，出發點是 Boston。",
+     "t": 4655
+    },
+    {
+     "text": "edge 是飛航距離，例如 Boston 到 NY 250、到 Chicago 1500。",
+     "t": 4683
+    },
+    {
+     "text": "network 存成 cost adjacency matrix，這是有向圖。",
+     "t": 4700
+    },
+    {
+     "text": "表格的 S 是已選頂點的集合，每回合會選一個點進來。",
+     "t": 4769
+    },
+    {
+     "text": "起點是 4（Boston）；直接到不了的 LA、SF 等 cost 都是 ∞。",
+     "t": 4806
+    },
+    {
+     "text": "Boston 到自己 0、到 NY 250、到 Chicago 1500。",
+     "t": 4858
+    },
+    {
+     "text": "除了起點的 0，最小的數值是 250。",
+     "t": 4895
+    },
+    {
+     "text": "第一回合：起點自然進 S，vertex selected = 5（NY）。",
+     "t": 4923
+    }
+   ]
+  },
+  {
+   "title": "Dijkstra 例：逐回合更新",
+   "scene": "gpeng20-boston-run",
+   "points": [
+    {
+     "text": "5 被考慮進來以後，哪些點有更短的路徑？",
+     "t": 4973
+    },
+    {
+     "text": "Chicago：250 + 1000 = 1250 < 直飛 1500 → 更新成 1250。",
+     "t": 4995
+    },
+    {
+     "text": "Miami：本來 ∞，經過 NY 是 250 + 900 = 1150。",
+     "t": 5028
+    },
+    {
+     "text": "New Orleans：250 + 1400 = 1650。",
+     "t": 5043
+    },
+    {
+     "text": "剩下的點裡 1150 最小 → 選 6（Miami）。",
+     "t": 5111
+    },
+    {
+     "text": "6 只能更新到 7，但沒有變短，不用改。",
+     "t": 5128
+    },
+    {
+     "text": "4、5、6 都選了，剩下最小的是 Chicago，選進來。",
+     "t": 5153
+    },
+    {
+     "text": "每次從剩餘頂點選 cost 最少的納入，再更新它鄰近點的 cost；全部選完，最後一列就是答案。",
+     "t": 5161
+    }
+   ],
+   "trap": "補充：後續依序選 3（Denver 變 2450）、7（LA 變 3350）、2（SF 變 3250）、1。最終：LA 3350、SF 3250、Denver 2450、Chicago 1250、NY 250、Miami 1150、N.Orleans 1650。"
+  },
+  {
+   "title": "考法、記錄路徑與 greedy",
+   "scene": "gpeng20-dijkstra-path",
+   "points": [
+    {
+     "text": "考試就是從某個點出發，把這張 table 做一做。",
+     "t": 5222
+    },
+    {
+     "text": "例：4 到 3 最短是 4→5→3。",
+     "t": 5252
+    },
+    {
+     "text": "考法可能是某一步驟挖空，要你填上去。",
+     "t": 5260
+    },
+    {
+     "text": "table 只記從哪到哪最短的 cost，不記 path。",
+     "t": 5273
+    },
+    {
+     "text": "要知道 path 就要多記資訊：是哪個點讓 cost 變小。",
+     "t": 5293
+    },
+    {
+     "text": "Dijkstra 是 greedy：每回合選最小的，一旦選進 S 就定住。",
+     "t": 5331
+    }
+   ]
+  },
+  {
+   "title": "Dijkstra 不能有負邊",
+   "scene": "gpeng20-dijkstra-neg",
+   "points": [
+    {
+     "text": "如果有負的 edge，能不能用 Dijkstra？",
+     "t": 5364
+    },
+    {
+     "text": "例：0、1、2 三個點，0→1 是 7、0→2 是 5、1→2 是 −5。",
+     "t": 5381
+    },
+    {
+     "text": "7 和 5 取最小 → 頂點 2 先被選出，以為 0 到 2 最短是 5。",
+     "t": 5410
+    },
+    {
+     "text": "實際上 0→1→2 = 7 − 5 = 2 才是最短。",
+     "t": 5437
+    },
+    {
+     "text": "頂點一旦被選取，cost 就定住，不會因為 1 被選出來而更動。",
+     "t": 5471
+    },
+    {
+     "text": "所以有 negative edge 絕對不能用 Dijkstra。",
+     "t": 5510
+    },
+    {
+     "text": "還希望沒有 cycle：負的邊多繞幾次，cost 會一直變小。",
+     "t": 5522
+    }
+   ],
+   "trap": "補充：真正不行的是「負 cycle」（最短路徑沒有定義）；一般正權重的 cycle 沒問題。"
+  },
+  {
+   "title": "Bellman-Ford：dist^k[u]",
+   "scene": "gpeng20-bf-formula",
+   "points": [
+    {
+     "text": "single source all destinations，但 weight 可以是負的。",
+     "t": 5541
+    },
+    {
+     "text": "這個演算法叫 Bellman-Ford。",
+     "t": 5553
+    },
+    {
+     "text": "它有一個變數 k：允許走一條邊、兩條邊時，最好的解是什麼。",
+     "t": 5581
+    },
+    {
+     "text": "dist^k[u]：從 source 到 u，最多經過 k 條 edge 能找到的最小值。",
+     "t": 5635
+    },
+    {
+     "text": "最小值來自兩處；第一：再多走一條邊不會更小 → 跟上一回合 dist^(k−1)[u] 一樣。",
+     "t": 5664
+    },
+    {
+     "text": "第二：找中繼站 i（i 和 u 有連接），source 到 i 走 k − 1 條邊，再加一條 i→u。",
+     "t": 5703
+    },
+    {
+     "text": "選讓總和最小的 i，兩者再取最小就是答案。",
+     "t": 5768
+    },
+    {
+     "text": "最難的是從上一回合的結果裡找出中繼點 i。",
+     "t": 5773
+    }
+   ],
+   "trap": "補充：最短路徑最多 n − 1 條邊，所以算到 dist^(n−1) 就是答案；用 adjacency matrix 是 O(n³)，adjacency list 是 O(ne)。"
+  },
+  {
+   "title": "Bellman-Ford 例：dist^k 表格",
+   "scene": "gpeng20-bf-table",
+   "points": [
+    {
+     "text": "例：有負邊 −2、−2、−1、−1，source 是 0，dist 是長度 7 的一維 array。",
+     "t": 5820
+    },
+    {
+     "text": "k = 1 只能走一條邊：0 到 1、2、3 是 6、5、5；4 至少要兩條邊 → ∞。",
+     "t": 5846
+    },
+    {
+     "text": "k = 2：0→2→1 cost 3，比上一回合的 6 小。",
+     "t": 5899
+    },
+    {
+     "text": "0 到 2：直接走 5，或 0→3→2 = 5 − 2 = 3，取 3。",
+     "t": 5961
+    },
+    {
+     "text": "k = 3：中繼點 2，0 到 2 兩條邊內最佳是 3，再加 2→1 的 −2 → 1。",
+     "t": 6052
+    },
+    {
+     "text": "k 從 1 開始 iteration，每回合更新 distance 的值。",
+     "t": 6163
+    },
+    {
+     "text": "k 的意義：允許最多走 k 條邊時能找到的最佳 cost。",
+     "t": 6188
+    }
+   ],
+   "trap": "補充：完整表格（課本）k=1：0 6 5 5 ∞ ∞ ∞；k=2：0 3 3 5 5 4 ∞；k=3：0 1 3 5 2 4 7；k=4：0 1 3 5 0 4 5；k=5、6：0 1 3 5 0 4 3。"
+  },
+  {
+   "title": "All-pairs shortest path 與 A^k",
+   "scene": "gpeng20-allpairs-def",
+   "points": [
+    {
+     "text": "shortest path with negative edge length 講完了。",
+     "t": 6213
+    },
+    {
+     "text": "all pairs shortest path：網路裡任取兩點都要找出最短路徑。",
+     "t": 6223
+    },
+    {
+     "text": "方法一：每個點都當一次 source 跑 Dijkstra 或 Bellman-Ford，cost 比較高。",
+     "t": 6254
+    },
+    {
+     "text": "另一種解法用 two-dimension matrix A^k 表示。",
+     "t": 6290
+    },
+    {
+     "text": "A^(−1)[i][j] 是初始值：i 到 j 的 length。",
+     "t": 6310
+    },
+    {
+     "text": "A^(n−1)[i][j] 是最後答案：i 到 j 的 shortest path cost。",
+     "t": 6326
+    },
+    {
+     "text": "A^k[i][j]：從 i 到 j，經過的頂點 index 最多是 k 時的最佳解。",
+     "t": 6348
+    }
+   ]
+  },
+  {
+   "title": "A^k 的遞迴式；兩個 k 不一樣",
+   "scene": "gpeng20-ak-formula",
+   "points": [
+    {
+     "text": "書上的定義：經過的頂點編號 ≤ k 時能找到的最短路徑。",
+     "t": 6398
+    },
+    {
+     "text": "A^k[i][j] 由兩種情況來。",
+     "t": 6427
+    },
+    {
+     "text": "第一：有沒有經過頂點 k 沒影響 → 等於 A^(k−1)[i][j]。",
+     "t": 6442
+    },
+    {
+     "text": "第二：經過 k：A^(k−1)[i][k] + A^(k−1)[k][j]，兩段經過的頂點編號都 ≤ k − 1。",
+     "t": 6469
+    },
+    {
+     "text": "兩個路徑選最小的就是答案。",
+     "t": 6534
+    },
+    {
+     "text": "注意：Bellman-Ford 的 k 是邊的個數；這裡的 k 是經過頂點的編號上限。",
+     "t": 6545
+    }
+   ]
+  },
+  {
+   "title": "All-pairs 例：A^(−1) 到 A²",
+   "scene": "floyd-warshall-ak",
+   "points": [
+    {
+     "text": "A^(−1) 是初始值，3 個頂點所以是 3×3：0 到 0 是 0、0 到 1 是 4。",
+     "t": 6592
+    },
+    {
+     "text": "A⁰：允許經過 0；紅色的 7 = 2→0→1 = 3 + 4。",
+     "t": 6606
+    },
+    {
+     "text": "A¹：允許經過 0 和 1；藍色的 6 = 0→1→2 = 4 + 2。",
+     "t": 6657
+    },
+    {
+     "text": "A²：可經過 0、1、2；1 到 0 最短變成 5（1→2→0）。",
+     "t": 6712
+    },
+    {
+     "text": "n 個點編號 0 到 n − 1，一路做到 A^(n−1) 就是答案。",
+     "t": 6729
+    },
+    {
+     "text": "再次提醒兩個 k 的定義不一樣。",
+     "t": 6769
+    }
+   ],
+   "trap": "補充：A²[1][0] = A¹[1][2] + A¹[2][0] = 2 + 3 = 5；三層迴圈 O(n³)，k 要放在最外層。"
+  },
+  {
+   "title": "Transitive closure",
+   "scene": "gpeng20-closure",
+   "points": [
+    {
+     "text": "transitive closure：A 可以到 B、B 可以到 C，則 A 和 C 是連通的。",
+     "t": 6794
+    },
+    {
+     "text": "原本的 adjacency matrix A：0 代表沒有連通，1 代表有。",
+     "t": 6820
+    },
+    {
+     "text": "A⁺：可以透過別的點到達就記 1。",
+     "t": 6832
+    },
+    {
+     "text": "解法：跑之前的 all-pairs 演算法，path 長度 > 0 就是 1。",
+     "t": 6846
+    },
+    {
+     "text": "A*：自己可以到自己，把對角線也設成 1。",
+     "t": 6862
+    },
+    {
+     "text": "最笨的方法就是跑 all pairs shortest path，結果有路徑的就是 1。",
+     "t": 6894
+    }
+   ],
+   "trap": "補充：畫面用課本的例子 0→1→2→3→4→2。也可以把 Floyd 的 min/+ 換成 OR/AND（Warshall），同樣 O(n³)。"
+  },
+  {
+   "title": "本堂總結",
+   "scene": "gpeng20-recap",
+   "points": [
+    {
+     "text": "本堂重點：network 上的兩個問題。",
+     "t": 6911
+    },
+    {
+     "text": "single source all destinations：Dijkstra 和 Bellman-Ford（可以有負值）。",
+     "t": 6924
+    },
+    {
+     "text": "這兩個演算法要知道怎麼 run。",
+     "t": 6942
+    },
+    {
+     "text": "all pairs shortest path：老師覺得蠻暴力，要把經過所有點的 path 都找出來。",
+     "t": 6948
+    }
+   ]
+  },
+  {
+   "title": "AOV network",
+   "scene": "gpeng20-aov",
+   "points": [
+    {
+     "text": "剩五分鐘，先簡單介紹 AOV。",
+     "t": 6979
+    },
+    {
+     "text": "AOV = Activity On Vertex，也是一種 network。",
+     "t": 6988
+    },
+    {
+     "text": "生活化的例子：擋修。",
+     "t": 7008
+    },
+    {
+     "text": "例：Data Structure 要先修 C1（Programming 1）和 C2（離散）。",
+     "t": 7033
+    },
+    {
+     "text": "系上的課程圖就是這種圖：修過前面的課才能修後面的。",
+     "t": 7073
+    },
+    {
+     "text": "每個頂點代表一個 activity（一門課）。",
+     "t": 7100
+    },
+    {
+     "text": "edge 表示先後關係：前面要先發生，後面才會發生。",
+     "t": 7125
+    }
+   ]
+  },
+  {
+   "title": "Topological order",
+   "scene": "gpeng20-topo-sort",
+   "points": [
+    {
+     "text": "根據 AOV 可以得到 topological order。",
+     "t": 7143
+    },
+    {
+     "text": "它是 vertex 的 sequence，任取兩點，先後關係在 AOV 裡都被 maintain 住。",
+     "t": 7153
+    },
+    {
+     "text": "例：0 3 2 5 1 4 是一個 topological order。",
+     "t": 7188
+    },
+    {
+     "text": "0 和 4 沒有直接的 edge，但 0 也一定排在 4 前面。",
+     "t": 7194
+    },
+    {
+     "text": "做法：從左到右，先把 0 輸出。",
+     "t": 7275
+    },
+    {
+     "text": "1、2、3 之間沒有擋修關係，隨便選；這裡先選 3，刪掉 3 指出去的 edge。",
+     "t": 7293
+    },
+    {
+     "text": "每次輸出 in-degree = 0 的頂點。",
+     "t": 7319
+    },
+    {
+     "text": "剩 1、2 → 輸出 2 並更新 4、5 的 in-degree；接著 1、5 中輸出 5。",
+     "t": 7346
+    }
+   ],
+   "trap": "補充：還有頂點沒輸出、卻找不到 in-degree 0 的點，代表 AOV 有 cycle，不存在 topological order。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "在講者的 7 頂點圖上跑 Kruskal，哪兩條邊會因為形成 cycle 被丟掉？",
+   "opts": [
+    "18 (3,6) 和 24 (4,6)",
+    "16 (1,2) 和 25 (4,5)",
+    "22 (3,4) 和 28 (0,1)",
+    "14 (1,6) 和 24 (4,6)"
+   ],
+   "ans": "18 (3,6) 和 24 (4,6)",
+   "why": "依序收 10、12、14、16；輪到 18 時 3、6 已經連通，丟掉；收 22 後 24 的 4、6 也已連通，丟掉；收 25 就滿 6 條。"
+  },
+  {
+   "q": "Prim 從邊 (0,5)=10 開始，第二條加入的邊是？",
+   "opts": [
+    "25 (5,4)",
+    "28 (0,1)",
+    "12 (2,3)",
+    "14 (1,6)"
+   ],
+   "ans": "25 (5,4)",
+   "why": "tree {0,5} 往外只有 28 和 25，取最小的 25。12、14 是全圖小的邊，但不跟目前的 tree 相連。"
+  },
+  {
+   "q": "Sollin 第一回合（每個頂點選自己最小的邊）結束後，有哪幾棵 tree？",
+   "opts": [
+    "{0,5}、{1,6}、{2,3,4}",
+    "{0,5}、{1,2,6}、{3,4}",
+    "{0,1}、{5,4}、{2,3,6}",
+    "已經是一整棵 MST"
+   ],
+   "ans": "{0,5}、{1,6}、{2,3,4}",
+   "why": "選出的邊是 10、14、12、22，形成三塊；第二回合再選 16 和 25 接起來。"
+  },
+  {
+   "q": "DFS spanning tree 從 3 出發（dfn(3)=1），頂點 1 的 dfn 是 4，有 back edge (1,3)，child 0 的 low 是 5。low(1) = ？",
+   "opts": [
+    "1",
+    "4",
+    "5",
+    "3"
+   ],
+   "ans": "1",
+   "why": "low(1) = min(dfn(1)=4, low(0)=5, back edge 那端的 dfn(3)=1) = 1。"
+  },
+  {
+   "q": "非 root 的頂點 u 何時是 articulation point？",
+   "opts": [
+    "存在 child w 使 low(w) ≥ dfn(u)",
+    "存在 child w 使 low(w) < dfn(u)",
+    "u 的 degree ≥ 2",
+    "u 有任何一條 back edge"
+   ],
+   "ans": "存在 child w 使 low(w) ≥ dfn(u)",
+   "why": "w 底下的點最高只能回到 u，跨不過 u，拿掉 u 它們就斷開了。root 則要看 DFS 樹裡是否有 ≥ 2 個 child。"
+  },
+  {
+   "q": "Boston 例的 Dijkstra：選完 5（NY）之後，下一個選進 S 的是？",
+   "opts": [
+    "6（Miami，1150）",
+    "3（Chicago，1250）",
+    "7（N.Orleans，1650）",
+    "3（Chicago，1500）"
+   ],
+   "ans": "6（Miami，1150）",
+   "why": "經 NY 更新後 Chicago 1250、Miami 1150、N.Orleans 1650，最小的是 Miami。"
+  },
+  {
+   "q": "Bellman-Ford 例（source 0）：dist^3[1] = ？",
+   "opts": [
+    "1",
+    "3",
+    "6",
+    "−1"
+   ],
+   "ans": "1",
+   "why": "dist^2[2] = 3（0→3→2），再走 2→1 的 −2：3 − 2 = 1。"
+  },
+  {
+   "q": "Floyd（all-pairs）的 A^k 和 Bellman-Ford 的 dist^k，k 的意義分別是？",
+   "opts": [
+    "A^k：中繼頂點編號 ≤ k；dist^k：最多 k 條邊",
+    "兩者都是最多 k 條邊",
+    "A^k：最多 k 條邊；dist^k：中繼頂點編號 ≤ k",
+    "兩者都是第 k 回合，意義相同"
+   ],
+   "ans": "A^k：中繼頂點編號 ≤ k；dist^k：最多 k 條邊",
+   "why": "講者特別提醒：Bellman-Ford 的 k 數的是邊的個數，Floyd 的 k 限制的是路徑中間能經過哪些編號的頂點。"
+  }
+ ]
+}

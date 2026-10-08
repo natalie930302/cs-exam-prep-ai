@@ -1,0 +1,298 @@
+{
+ "video": "mB5HXBb_HY8",
+ "label": "Abdul Bari：Merge Sort",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Merge sort：divide and conquer",
+   "scene": "sortbari-merge-dc",
+   "points": [
+    {
+     "text": "上一支影片講過 merging：two-way merging、m-way merging，以及多個串列的合併方式。",
+     "t": 0
+    },
+    {
+     "text": "Merge sort 是 recursive 的程序，採用 divide and conquer。",
+     "t": 19
+    },
+    {
+     "text": "Divide and conquer：問題大就拆成子問題；問題夠小就直接解；再把子問題的解合併成原問題的解。",
+     "t": 29
+    },
+    {
+     "text": "這裡的問題是「把這些元素排好」。",
+     "t": 47
+    },
+    {
+     "text": "什麼叫小問題？只有一個元素時不用排序。",
+     "t": 55
+    },
+    {
+     "text": "就算只有兩個元素也算大問題，要再拆。",
+     "t": 67
+    }
+   ]
+  },
+  {
+   "title": "演算法 MergeSort(l, h)",
+   "scene": "sortbari-merge-code",
+   "points": [
+    {
+     "text": "Merge sort 是遞迴演算法，先寫出演算法再追蹤。",
+     "t": 85
+    },
+    {
+     "text": "兩個參數：串列的開頭 low（l）與結尾 high（h）。",
+     "t": 106
+    },
+    {
+     "text": "if (l < h)：至少兩個元素才是大問題；l = h 表示只有一個元素。",
+     "t": 129
+    },
+    {
+     "text": "mid = (l + h) / 2，例如 (1 + 8) / 2 = 9 / 2 → 4。",
+     "t": 141
+    },
+    {
+     "text": "左半 MergeSort(l, mid)、右半 MergeSort(mid + 1, h)，各自遞迴排好。",
+     "t": 169
+    },
+    {
+     "text": "兩半都排好後 Merge(l, mid, h) 合併，傳三個參數。",
+     "t": 206
+    },
+    {
+     "text": "一個陣列裡可以同時放兩個（甚至多個）串列：[l..mid] 與 [mid+1..h]。",
+     "t": 238
+    }
+   ]
+  },
+  {
+   "title": "追蹤 MergeSort(1, 8)：遞迴樹與 7 次 merge",
+   "scene": "sortbari-merge-trace-idx",
+   "points": [
+    {
+     "text": "初始呼叫 low = 1、high = 8（資料 9 3 7 5 6 4 8 2）。",
+     "t": 259
+    },
+    {
+     "text": "算 mid 後先遞迴左半 (1,4)；右半 (5,8) 之後才做。",
+     "t": 270
+    },
+    {
+     "text": "(1,4) → (1,2)、(3,4)；(1,2) 再切成 (1,1)、(2,2)：只剩一個元素。",
+     "t": 313
+    },
+    {
+     "text": "一個元素就是排好的串列；第 1 次 merge：9、3 → 3 9。",
+     "t": 385
+    },
+    {
+     "text": "第 2 次 merge：7、5 → 5 7；第 3 次 merge：3 5 7 9，左半排好。",
+     "t": 408
+    },
+    {
+     "text": "右半 (5,8) 同樣處理：第 4 次 4 6、第 5 次 2 8、第 6 次 2 4 6 8。",
+     "t": 461
+    },
+    {
+     "text": "第 7 次 merge 得到 2 3 4 5 6 7 8 9。",
+     "t": 522
+    },
+    {
+     "text": "整個過程：先一路切到只剩一個元素，再一路 merge 回來。",
+     "t": 540
+    }
+   ]
+  },
+  {
+   "title": "和 two-way merge sort 比較",
+   "scene": "sortbari-merge-twoway",
+   "points": [
+    {
+     "text": "Two-way merge sort（迭代）：前兩個、下兩個……一輪一輪合併。",
+     "t": 565
+    },
+    {
+     "text": "Merge sort 是 divide and conquer 的遞迴版本：一直切到一個元素才開始合併。",
+     "t": 570
+    },
+    {
+     "text": "差別只在 pattern／approach，結果一樣是排好的。",
+     "t": 586
+    },
+    {
+     "text": "一樣每次合併兩個串列（也是 two-way），因為是遞迴版本，另外叫 merge sort。",
+     "t": 594
+    }
+   ]
+  },
+  {
+   "title": "時間：每層 n、共 log n 層",
+   "scene": "sortbari-merge-levels",
+   "points": [
+    {
+     "text": "用遞迴樹（追蹤圖）看 merge sort 花多少時間。",
+     "t": 606
+    },
+    {
+     "text": "merge 從這一層開始：2 個、2 個……合計 8 個元素 → 每層 merge n 個元素。",
+     "t": 624
+    },
+    {
+     "text": "8 個元素有 3 層：3 = log₂ 8（1、2、4、8 每次加倍）。",
+     "t": 653
+    },
+    {
+     "text": "遞迴是先左後右，嚴格說不是一輪一輪的 pass，但層數就是 log n。",
+     "t": 683
+    },
+    {
+     "text": "n × log n → 時間 Θ(n log n)。",
+     "t": 701
+    }
+   ]
+  },
+  {
+   "title": "用數字追蹤：merge 發生在 post-order",
+   "scene": "sortbari-merge-trace-num",
+   "points": [
+    {
+     "text": "改用數字再追一次：low = 1、high = 8。",
+     "t": 719
+    },
+    {
+     "text": "第一次遞迴呼叫左半：9 3 7 5（1～4）。",
+     "t": 738
+    },
+    {
+     "text": "再切成 9 3（1,2）→ 9 和 3 → merge 成 3 9。",
+     "t": 768
+    },
+    {
+     "text": "右邊 7 5（3,4）→ 5 7；再合併成 3 5 7 9。",
+     "t": 816
+    },
+    {
+     "text": "右半 6 4 8 2（5～8）：4 6、2 8，再合併成 2 4 6 8。",
+     "t": 860
+    },
+    {
+     "text": "最後兩半合併：2 3 4 5 6 7 8 9。",
+     "t": 986
+    },
+    {
+     "text": "每次呼叫自己兩次 → 追蹤樹像一棵 binary tree。",
+     "t": 1012
+    },
+    {
+     "text": "merge 發生在 post-order：先左、再右，最後才 merge（根）。",
+     "t": 1024
+    }
+   ]
+  },
+  {
+   "title": "遞迴式與 master theorem",
+   "scene": "sortbari-merge-recurrence",
+   "points": [
+    {
+     "text": "用 recurrence relation 求遞迴演算法的時間。",
+     "t": 1053
+    },
+    {
+     "text": "設整個演算法花 T(n)；算 mid 是常數可忽略。",
+     "t": 1065
+    },
+    {
+     "text": "兩次遞迴各處理一半：T(n/2) + T(n/2)；merge 兩個串列共 n 個元素 → n。",
+     "t": 1079
+    },
+    {
+     "text": "T(n) = 2T(n/2) + n（n > 1）；n = 1 時什麼都不做，寫常數 1。",
+     "t": 1109
+    },
+    {
+     "text": "Master theorem：a = 2、b = 2、f(n) = n。",
+     "t": 1147
+    },
+    {
+     "text": "log_b a = log₂ 2 = 1 = k → case 2：f(n) 乘上 log n。",
+     "t": 1167
+    },
+    {
+     "text": "Merge sort 的時間是 Θ(n log n)。",
+     "t": 1216
+    }
+   ],
+   "trap": "補充：merge sort 在最好、平均、最差情況都是 Θ(n log n)；代價是 merge 需要 O(n) 的額外空間（不是 in-place）。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "呼叫 MergeSort(1, 8) 時，第一次算出的 mid 是多少？",
+   "opts": [
+    "4",
+    "4.5",
+    "5",
+    "8"
+   ],
+   "ans": "4",
+   "why": "mid = (1 + 8) / 2 = 9 / 2，整數除法取 4；左半是 1～4、右半是 5～8。"
+  },
+  {
+   "q": "MergeSort 的 if (l < h) 不成立時代表什麼？",
+   "opts": [
+    "只剩一個元素，不用排序",
+    "陣列已經排好",
+    "左右兩半大小不同",
+    "需要再呼叫 Merge"
+   ],
+   "ans": "只剩一個元素，不用排序",
+   "why": "l = h 表示串列只有一個元素，就是 divide and conquer 的「小問題」，直接返回。"
+  },
+  {
+   "q": "對 9 3 7 5 6 4 8 2 做遞迴 merge sort，第 3 次 merge 的結果是？",
+   "opts": [
+    "3 5 7 9",
+    "5 7",
+    "4 6",
+    "2 4 6 8"
+   ],
+   "ans": "3 5 7 9",
+   "why": "依 post-order：第 1 次 3 9、第 2 次 5 7、第 3 次把兩者合併成 3 5 7 9，之後才處理右半。"
+  },
+  {
+   "q": "在 merge sort 的追蹤樹（binary tree）上，merge 是依哪種走訪順序發生？",
+   "opts": [
+    "post-order",
+    "pre-order",
+    "in-order",
+    "level order"
+   ],
+   "ans": "post-order",
+   "why": "要先排好左子樹、再排好右子樹，最後才在根做 merge → 左、右、根 = post-order。"
+  },
+  {
+   "q": "Merge sort 的遞迴式是？",
+   "opts": [
+    "T(n) = 2T(n/2) + n",
+    "T(n) = T(n/2) + n",
+    "T(n) = 2T(n/2) + 1",
+    "T(n) = T(n − 1) + n"
+   ],
+   "ans": "T(n) = 2T(n/2) + n",
+   "why": "兩次遞迴各處理一半（2T(n/2)），merge 兩個串列花 n。"
+  },
+  {
+   "q": "用 master theorem 解 T(n) = 2T(n/2) + n，結果是？",
+   "opts": [
+    "Θ(n log n)",
+    "Θ(n)",
+    "Θ(n²)",
+    "Θ(log n)"
+   ],
+   "ans": "Θ(n log n)",
+   "why": "a = 2、b = 2、log_b a = 1 = k，屬於 case 2：f(n) 乘上 log n → Θ(n log n)。"
+  }
+ ]
+}

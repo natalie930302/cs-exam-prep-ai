@@ -982,6 +982,1091 @@ FRAG.push(['grapha-weights', 'Weighted graph：邊上有權重', async (tok) => 
   await beat(tok, 3000);
 }]);
   }
+
+  // ═══ graphbari.js ═══
+  {
+const { V3, fresh, tag, cube, move, fly, kill, glow, tint, line, GOLD } = K;
+// ─── pcKY4hjDrxk：Abdul Bari〈Graph Traversals - BFS & DFS〉 ───
+// 老師的例子：小樹 1–{2,4,5}、2–{3,6,7}；binary tree 1..7；大圖 10 個頂點、13 條邊：
+// 1-2 1-4 2-3 2-5 2-7 2-8 3-4 3-9 3-10 5-6 5-7 5-8 7-8（由逐字稿的鄰接關係重建）。
+// 鄰居順序照老師口述（pref），其餘依編號小到大。圖畫在地板左半；右半是 queue／stack、結果列與直立的生成樹。
+const GB_SMALL = { pos: { 1: [-3.6, -2.6], 2: [-5.6, -0.1], 4: [-3.6, -0.1], 5: [-1.6, -0.1], 3: [-6.5, 2.5], 6: [-5.4, 2.5], 7: [-4.3, 2.5] },
+  edges: [[1, 2], [1, 4], [1, 5], [2, 3], [2, 6], [2, 7]] };
+const GB_BIN = { pos: { 1: [-3.6, -2.6], 2: [-5.4, 0], 3: [-1.8, 0], 4: [-6.3, 2.6], 5: [-4.5, 2.6], 6: [-2.7, 2.6], 7: [-0.9, 2.6] },
+  edges: [[1, 2], [1, 3], [2, 4], [2, 5], [3, 6], [3, 7]] };
+const GB_BIG = { pos: { 1: [-5.2, -2.6], 4: [-2.8, -2.6], 2: [-5.2, 0.2], 3: [-2.8, 0.2], 10: [-0.8, -1.2], 9: [-0.8, 1.6], 7: [-5.2, 2.6], 5: [-6.6, 3.8], 8: [-3.8, 3.8], 6: [-5.2, 4.9] },
+  edges: [[1, 2], [1, 4], [2, 3], [2, 5], [2, 7], [2, 8], [3, 4], [3, 9], [3, 10], [5, 6], [5, 7], [5, 8], [7, 8]] };
+const GB_CAM = [0, 8.5, 11], GB_LOOK = [0, 1.6, 0.6], GB_TZ = -2.4, GB_DONE = '#1d8a68';
+
+function gbGraph(spec) {
+  const vs = {}, es = {}, adj = {};
+  for (const k in spec.pos) { const [x, z] = spec.pos[k]; vs[k] = vertexMesh(k, V3(x, 0.3, z), COL.idle, [0.7, 0.6, 0.7]); adj[k] = []; }
+  for (const [u, v] of spec.edges) { es[ek(u, v)] = edgeMesh(vs[u].position, vs[v].position, { gap: 0.42 }); adj[u].push(v); adj[v].push(u); }
+  const G = { vs, es, adj, edges: spec.edges, cur: null };
+  G.reset = () => { for (const k in vs) { tint(vs[k], COL.idle); glow(vs[k], null); } for (const k in es) paintEdge(es[k], COL.edge, false); G.cur = null; };
+  return G;
+}
+// neighbour order: the lecturer's preferred ones first, the rest ascending
+function gbOrd(A, pref = {}) {
+  const O = {};
+  for (const k in A) { const p = (pref[k] || []).filter((x) => A[k].includes(x)); O[k] = p.concat(A[k].filter((x) => !p.includes(x)).sort((a, b) => a - b)); }
+  return O;
+}
+function gbBfsEv(O, s) {
+  const ev = [{ t: 'visit', v: s, p: null }], vis = { [s]: 1 }, q = [s];
+  while (q.length) {
+    const u = q.shift(); ev.push({ t: 'explore', v: u });
+    for (const w of O[u]) if (!vis[w]) { vis[w] = 1; q.push(w); ev.push({ t: 'visit', v: w, p: u }); }
+    ev.push({ t: 'done', v: u });
+  }
+  return ev;
+}
+function gbDfsEv(O, s) {
+  const ev = [], vis = {};
+  (function rec(v, p) {
+    vis[v] = 1; ev.push({ t: 'visit', v, p });
+    for (const w of O[v]) if (!vis[w]) { rec(w, v); ev.push({ t: 'back', v, from: w }); }
+    ev.push({ t: 'done', v });
+  })(s, null);
+  return ev;
+}
+// a floor row of small cubes (queue / stack / result), x = 1.0 + 0.62 i
+function gbRow(z, label) {
+  tag(label, 'idx', 2.2, 0.05, z - 0.62);
+  const R = { items: [], vals: [] };
+  const X = (i) => 1.0 + i * 0.62;
+  R.push = (v, color) => { R.items.push(cube(v, color, [0.5, 0.5, 0.5], X(R.items.length), 0.25, z, 1.6)); R.vals.push(v); };
+  R.shift = () => { fly(R.items.shift(), V3(0, 6, -3)); R.vals.shift(); R.items.forEach((m, i) => move(m, X(i), 0.25, z)); };
+  R.pop = () => { fly(R.items.pop(), V3(0, 6, -3)); R.vals.pop(); };
+  return R;
+}
+// spanning-tree layout (upright, plane z = GB_TZ): leaves get slots left to right, parents sit over their children
+function gbLayout(order, par) {
+  const kids = {}; order.forEach((v) => { kids[v] = []; });
+  order.forEach((v) => { if (par[v] !== null) kids[par[v]].push(v); });
+  const depth = {}, x = {}; let leaf = 0, maxD = 0;
+  (function walk(v, d) {
+    depth[v] = d; maxD = Math.max(maxD, d);
+    if (!kids[v].length) { x[v] = leaf++; return; }
+    kids[v].forEach((c) => walk(c, d + 1));
+    x[v] = (x[kids[v][0]] + x[kids[v][kids[v].length - 1]]) / 2;
+  })(order[0], 0);
+  const sx = Math.min(1.1, 5.4 / Math.max(1, leaf - 1)), dy = Math.min(1.3, 5.2 / Math.max(1, maxD));
+  const pos = {}; for (const v of order) pos[v] = [3.7 + (x[v] - (leaf - 1) / 2) * sx, 6.0 - depth[v] * dy];
+  return pos;
+}
+// a dashed arc between two tree nodes (non-tree edge)
+function gbArc(a, b, color = '#d64545') {
+  const T = ctx.THREE, p = V3(a[0], a[1], GB_TZ), q = V3(b[0], b[1], GB_TZ);
+  const mid = p.clone().add(q).multiplyScalar(0.5), d = q.clone().sub(p);
+  mid.add(V3(-d.y, d.x, 0).normalize().multiplyScalar(0.45));
+  const geo = new T.BufferGeometry().setFromPoints(new T.QuadraticBezierCurve3(p, mid, q).getPoints(16));
+  const l = new T.Line(geo, new T.LineDashedMaterial({ color, dashSize: 0.14, gapSize: 0.1 }));
+  l.computeLineDistances(); lab.world.add(l); return l;
+}
+// run BFS / DFS on graph G and animate it; returns { order, par, pos }
+async function gbRun(tok, G, o) {
+  const O = gbOrd(G.adj, o.pref), ev = o.kind === 'bfs' ? gbBfsEv(O, o.s) : gbDfsEv(O, o.s);
+  const ms = o.ms || 1000, bfs = o.kind === 'bfs', order = [], par = {}, all = [];
+  ev.forEach((e) => { if (e.t === 'visit') { par[e.v] = e.p; all.push(e.v); } });
+  const pos = o.tree ? gbLayout(all, par) : null;
+  const res = gbRow(o.rowZ ?? 3.4, o.rowLabel || (bfs ? 'BFS 結果' : 'DFS 結果'));
+  const box = o.contZ === null ? null : gbRow(o.contZ ?? 1.4, bfs ? 'queue（左邊是前端）' : 'stack（右邊是頂端）');
+  const cont = [];
+  const fm = () => (box ? (bfs ? 'queue：' : 'stack：') + (cont.join(' ') || '空') + '　' : '') + '結果：' + order.join(' ');
+  for (let k = 0; k < ev.length; k++) {
+    const e = ev[k], m = G.vs[e.v];
+    if (e.t === 'visit') {
+      order.push(e.v); tint(m, COL.visit);
+      if (e.p !== null) paintEdge(G.es[ek(e.p, e.v)], COL.tree, true);
+      res.push(e.v, COL.visit);
+      if (box) { cont.push(e.v); box.push(e.v, '#4b9ee2'); }
+      if (pos) {
+        const [x, y] = pos[e.v];
+        cube(e.v, COL.visit, [0.5, 0.5, 0.5], x, y, GB_TZ, 0.8);
+        if (e.p !== null) { const [px, py] = pos[e.p]; line(px, py - 0.25, x, y + 0.25, GB_TZ, '#c08a1f'); }
+      }
+      if (!bfs) { if (G.cur) glow(G.cur, null); glow(m, GOLD); G.cur = m; }
+      say(e.p === null ? '從 ' + e.v + ' 開始：拜訪 ' + e.v : bfs ? '拜訪 ' + e.v + '，放進 queue' : e.p + ' 暫停，拜訪 ' + e.v, fm());
+      await beat(tok, ms);
+    } else if (e.t === 'explore') {
+      cont.shift(); if (box) box.shift();
+      glow(m, GOLD);
+      const none = ev[k + 1].t === 'done';
+      say(none ? '探索 ' + e.v + '：沒有新的鄰居' : '取出 ' + e.v + '，開始探索', fm());
+      await beat(tok, ms * (none ? 0.7 : 0.8));
+    } else if (e.t === 'done') {
+      glow(m, null); tint(m, GB_DONE);
+      if (!bfs) {
+        cont.pop(); if (box) box.pop();
+        if (k === ev.length - 1) { G.cur = null; say(e.v + ' 探索完，全部結束', fm()); await beat(tok, ms * 0.8); }
+      }
+    } else if (e.t === 'back') {
+      glow(m, GOLD); G.cur = m;
+      say(e.from + ' 探索完 → 回到 ' + e.v, fm());
+      await beat(tok, ms * 0.75);
+    }
+  }
+  if (G.cur) glow(G.cur, null); G.cur = null;
+  return { order, par, pos };
+}
+// paint the edges that are not tree edges (cross / back edges); with a tree, draw them dashed there too
+function gbNonTree(G, r) {
+  const out = [];
+  for (const [u, v] of G.edges) {
+    if (r.par[u] === v || r.par[v] === u) continue;
+    paintEdge(G.es[ek(u, v)], '#d64545', false); out.push(u + '-' + v);
+    if (r.pos) gbArc(r.pos[u], r.pos[v]);
+  }
+  return out;
+}
+
+// 00:00 visit 與 explore
+FRAG.push(['graphbari-terms', 'visit 與 explore：走訪的兩個動作', async (tok) => {
+  fresh(GB_CAM, GB_LOOK);
+  const G = gbGraph(GB_SMALL);
+  say('BFS、DFS：兩種 graph traversal', '例子是一棵樹 —— tree 也是 graph');
+  await beat(tok, 3000);
+  tint(G.vs[1], COL.visit);
+  tag('visit', 'ptr', -3.6, 1.3, -2.6);
+  say('visit：走到一個頂點上', '拜訪 1');
+  await beat(tok, 2600);
+  glow(G.vs[1], GOLD);
+  tag('explore', 'ptr alt', 0.6, 1.0, -1.4);
+  say('explore：拜訪它所有相鄰頂點', '1 的鄰居：2、4、5');
+  await beat(tok, 1800);
+  for (const w of [2, 4, 5]) { paintEdge(G.es[ek(1, w)], COL.tree, true); tint(G.vs[w], COL.visit); await beat(tok, 900); }
+  say('1 的鄰居都拜訪過 → 1 探索完', 'visit 一個點　explore = visit 它全部鄰居');
+  await beat(tok, 3000);
+}]);
+
+// 00:59 小例子 BFS：1 → 2 4 5 → 7 3 6
+FRAG.push(['graphbari-small-bfs', '小例子 BFS：1 2 4 5 7 3 6', async (tok) => {
+  fresh(GB_CAM, GB_LOOK);
+  const G = gbGraph(GB_SMALL);
+  say('BFS：起點任選，這裡選 1', '探索完一個點，才換下一個點');
+  await beat(tok, 2400);
+  const r = await gbRun(tok, G, { kind: 'bfs', s: 1, pref: { 1: [2, 4, 5], 2: [7, 3, 6] }, ms: 1100 });
+  say('BFS = ' + r.order.join(' '), '鄰居的順序可以任意（這裡 7 3 6）');
+  await beat(tok, 3000);
+}]);
+
+// 02:06 小例子 DFS：1 2 3 6 7 4 5
+FRAG.push(['graphbari-small-dfs', '小例子 DFS：1 2 3 6 7 4 5', async (tok) => {
+  fresh(GB_CAM, GB_LOOK);
+  const G = gbGraph(GB_SMALL);
+  say('DFS：拜訪到新點，就先探索新點', '4、5 先不管，等一下再回來');
+  await beat(tok, 2400);
+  const r = await gbRun(tok, G, { kind: 'dfs', s: 1, pref: { 1: [2, 4, 5], 2: [3, 6, 7] }, ms: 1000 });
+  say('DFS = ' + r.order.join(' '), 'BFS = 1 2 4 5 7 3 6　→ 結果不同');
+  await beat(tok, 3200);
+}]);
+
+// 04:06 binary tree：BFS = level order，DFS = pre-order
+FRAG.push(['graphbari-tree-level-pre', 'Binary tree：BFS 像 level order，DFS 像 pre-order', async (tok) => {
+  fresh(GB_CAM, GB_LOOK);
+  const G = gbGraph(GB_BIN);
+  say('binary tree 也是 graph', '從 1 開始做 BFS 與 DFS');
+  await beat(tok, 2200);
+  await gbRun(tok, G, { kind: 'bfs', s: 1, contZ: null, rowZ: 1.4, rowLabel: 'BFS = level order', ms: 600 });
+  say('BFS = 1 2 3 4 5 6 7', '<span class="ok">一層一層 = level order</span>');
+  await beat(tok, 2600);
+  G.reset();
+  await gbRun(tok, G, { kind: 'dfs', s: 1, contZ: null, rowZ: 3.4, rowLabel: 'DFS = pre-order', ms: 600 });
+  say('DFS = 1 2 4 5 3 6 7', '<span class="ok">根 → 左 → 右 = pre-order</span>');
+  await beat(tok, 3000);
+}]);
+
+// 05:17 大例子 BFS（queue）：1 4 2 3 5 8 7 10 9 6
+FRAG.push(['graphbari-bfs-queue', 'BFS 用 queue：1 4 2 3 5 8 7 10 9 6', async (tok) => {
+  fresh(GB_CAM, GB_LOOK);
+  const G = gbGraph(GB_BIG);
+  say('BFS 用 queue', '初始：選起點 1，寫進結果、放進 queue');
+  await beat(tok, 2400);
+  const r = await gbRun(tok, G, { kind: 'bfs', s: 1, pref: { 1: [4, 2], 2: [3, 5, 8, 7], 3: [10, 9], 5: [8, 7, 6] }, tree: true, ms: 950 });
+  gbNonTree(G, r);
+  say('已拜訪過的邊畫虛線', 'BFS = ' + r.order.join(' '));
+  await beat(tok, 3200);
+}]);
+
+// 09:06 BFS spanning tree、cross edge、兩個規則
+FRAG.push(['graphbari-bfs-rules', 'BFS spanning tree、cross edge 與規則', async (tok) => {
+  fresh(GB_CAM, GB_LOOK);
+  const G = gbGraph(GB_BIG);
+  const r = await gbRun(tok, G, { kind: 'bfs', s: 1, pref: { 1: [4, 2], 2: [3, 5, 8, 7], 3: [10, 9], 5: [8, 7, 6] }, tree: true, contZ: null, ms: 90 });
+  tag('BFS spanning tree', 'ptr alt', 3.7, 7.0, GB_TZ);
+  say('得到的樹：BFS spanning tree', '樹邊 = V − 1 = 9 條');
+  await beat(tok, 3000);
+  const ne = gbNonTree(G, r);
+  tag('cross edge', 'ptr', 6.2, 3.6, GB_TZ);
+  say('虛線的邊叫 cross edge', ne.join('、'));
+  await beat(tok, 3200);
+  say('自由：起點任選、鄰居順序任選', '');
+  await beat(tok, 2800);
+  glow(G.vs[1], GOLD); glow(G.vs[4], GOLD); glow(G.vs[2], GOLD);
+  say('規則 1：鄰居全拜訪完才換點', '探索 1：4 和 2 都要先拜訪，才能探索 4');
+  await beat(tok, 3600);
+  for (const k of [1, 4, 2]) glow(G.vs[k], null);
+  say('規則 2：下一個探索點從 queue 取', 'queue 先進先出 → 一層一層');
+  await beat(tok, 3400);
+}]);
+
+// 10:31 其他合法的 BFS
+FRAG.push(['graphbari-bfs-more', '同一張圖，很多種合法的 BFS', async (tok) => {
+  fresh(GB_CAM, GB_LOOK);
+  const G = gbGraph(GB_BIG);
+  say('答案不唯一：換個鄰居順序', '從 1 出發，先 2 再 4');
+  await beat(tok, 2400);
+  const a = await gbRun(tok, G, { kind: 'bfs', s: 1, pref: { 1: [2, 4], 2: [8, 5, 7, 3], 3: [10, 9] }, contZ: null, rowZ: 1.4, rowLabel: '從 1 出發', ms: 430 });
+  say('也是合法的 BFS', a.order.join(' '));
+  await beat(tok, 2600);
+  G.reset();
+  say('換起點：從 5 出發', '5 的鄰居 2、8、7、6');
+  await beat(tok, 2000);
+  const b = await gbRun(tok, G, { kind: 'bfs', s: 5, pref: { 5: [2, 8, 7, 6], 2: [3, 1], 3: [9, 10, 4] }, contZ: null, rowZ: 3.4, rowLabel: '從 5 出發', ms: 430 });
+  say('起點、順序都能變 → 答案很多', b.order.join(' '));
+  await beat(tok, 3000);
+}]);
+
+// 12:08 大例子 DFS（stack）：1 4 3 10 9 2 8 7 5 6
+FRAG.push(['graphbari-dfs-stack', 'DFS 用 stack：1 4 3 10 9 2 8 7 5 6', async (tok) => {
+  fresh(GB_CAM, GB_LOOK);
+  const G = gbGraph(GB_BIG);
+  say('DFS 用 stack', '拜訪到新點：目前的點暫停（留在 stack）');
+  await beat(tok, 2600);
+  const r = await gbRun(tok, G, { kind: 'dfs', s: 1, pref: { 1: [4, 2], 3: [10, 9, 2], 2: [8], 8: [7], 7: [5], 5: [6] }, ms: 850 });
+  say('DFS = ' + r.order.join(' '), '一路往深處走，走不下去就從 stack 退回');
+  await beat(tok, 3200);
+}]);
+
+// 15:44 DFS spanning tree、back edge、pre-order
+FRAG.push(['graphbari-dfs-tree', 'DFS spanning tree、back edge 與 pre-order', async (tok) => {
+  fresh(GB_CAM, GB_LOOK);
+  const G = gbGraph(GB_BIG);
+  const r = await gbRun(tok, G, { kind: 'dfs', s: 1, pref: { 1: [4, 2], 3: [10, 9, 2], 2: [8], 8: [7], 7: [5], 5: [6] }, tree: true, contZ: null, ms: 90 });
+  tag('DFS spanning tree', 'ptr alt', 3.7, 7.0, GB_TZ);
+  say('走過的邊：DFS spanning tree', '樹又深又窄');
+  await beat(tok, 3000);
+  const ne = gbNonTree(G, r);
+  tag('back edge', 'ptr', 6.2, 4.4, GB_TZ);
+  say('虛線的邊叫 back edge', ne.join('、') + '（都連回祖先）');
+  await beat(tok, 3400);
+  const cur = tag('▼', 'ptr alt', 0, 0, GB_TZ);
+  const seen = [];
+  for (const v of r.order) {
+    const [x, y] = r.pos[v]; cur.position.set(x, y + 0.6, GB_TZ); seen.push(v);
+    say('對這棵樹做 pre-order', seen.join(' '));
+    await beat(tok, 650);
+  }
+  say('pre-order = DFS 的結果', '<span class="ok">' + r.order.join(' ') + '</span>');
+  await beat(tok, 3000);
+}]);
+
+// 16:24 其他合法的 DFS
+FRAG.push(['graphbari-dfs-more', '同一張圖，很多種合法的 DFS', async (tok) => {
+  fresh(GB_CAM, GB_LOOK);
+  const G = gbGraph(GB_BIG);
+  say('從 1 出發，這次先走 2', '2 → 8 → 7 → 5 → 6');
+  await beat(tok, 2200);
+  const a = await gbRun(tok, G, { kind: 'dfs', s: 1, pref: { 1: [2, 4], 2: [8, 3], 8: [7], 7: [5], 5: [6], 3: [9, 10] }, contZ: null, rowZ: 1.4, rowLabel: '從 1 出發', ms: 380 });
+  say('也是合法的 DFS', a.order.join(' '));
+  await beat(tok, 2600);
+  G.reset();
+  say('換起點：從 3 出發', '3 → 4 → 1 → 2 → 5 → 6');
+  await beat(tok, 2000);
+  const b = await gbRun(tok, G, { kind: 'dfs', s: 3, pref: { 3: [4, 10, 9], 4: [1], 1: [2], 2: [5], 5: [6, 7], 7: [8] }, contZ: null, rowZ: 3.4, rowLabel: '從 3 出發', ms: 380 });
+  say('唯一規則：遇到新點就先探索它', b.order.join(' '));
+  await beat(tok, 3000);
+}]);
+
+// 18:16 時間複雜度
+FRAG.push(['graphbari-complexity', 'BFS、DFS 的時間複雜度', async (tok) => {
+  fresh(GB_CAM, GB_LOOK);
+  const G = gbGraph(GB_BIG);
+  say('每個頂點只拜訪一次', '');
+  await beat(tok, 1600);
+  await gbRun(tok, G, { kind: 'bfs', s: 1, pref: { 1: [4, 2], 2: [3, 5, 8, 7], 3: [10, 9], 5: [8, 7, 6] }, contZ: null, ms: 260 });
+  say('影片：時間 O(n)，n = 頂點數', '只數「拜訪頂點」的次數');
+  await beat(tok, 3200);
+  for (const k in G.es) paintEdge(G.es[k], GOLD, true);
+  say('補充：每條邊也要檢查', '<span class="ok">Adjacency List：O(V + E)</span>　Matrix：O(V²)');
+  await beat(tok, 3800);
+}]);
+  }
+
+  // ═══ graphpeng.js ═══
+  {
+const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, code, ghostBox, GOLD, RED } = K;
+// ─── 交大彭文志 Lec18／Lec19 Graph (1/4)(2/4)：課本（Horowitz）G1–G4、Weiss 7 點有向圖、ABCDE 的 BFS ───
+const gpT = ctx.THREE;
+const GPC = { v: '#4b9ee2', e: '#9c8b70', hot: '#c08a1f', red: '#d64545', ok: '#2fc092', zero: '#efe5d3', one: '#4b9ee2', head: '#e2d6c2', pink: '#e55a9b', start: '#e8a0a0' };
+// a vertex block; its resting position is kept in userData.p so edges can be drawn while it is still falling
+function gpV(name, x, z, color, dropH = 3, size = [0.8, 0.6, 0.8]) {
+  const m = cube(name, color || GPC.v, size, x, 0.3, z, dropH);
+  m.userData.p = V3(x, 0.3, z);
+  return m;
+}
+const gpP = (m) => (m.userData && m.userData.p) || m.position;
+// edge between two vertex blocks (x–z plane); o.off shifts it sideways (multi-edges), o.dir draws an arrow
+function gpE(a, b, o = {}) {
+  const p = gpP(a), q = gpP(b);
+  const d = q.clone().sub(p).normalize();
+  const side = V3(-d.z, 0, d.x).multiplyScalar(o.off || 0);
+  const gap = o.gap ?? 0.5;
+  const s = p.clone().addScaledVector(d, gap).add(side), e = q.clone().addScaledVector(d, -gap).add(side);
+  if (o.dir) {
+    const len = Math.max(0.1, s.distanceTo(e));
+    const h = new gpT.ArrowHelper(d.clone(), s, len, o.color || GPC.e, Math.min(0.32, len * 0.4), 0.2);
+    ctx.lab.world.add(h); return h;
+  }
+  const l = new gpT.Line(new gpT.BufferGeometry().setFromPoints([s, e]), new gpT.LineBasicMaterial({ color: o.color || GPC.e }));
+  ctx.lab.world.add(l); return l;
+}
+const gpPaint = (e, c) => { if (!e) return; if (e.setColor) e.setColor(new gpT.Color(c)); else e.material.color.set(c); };
+const gpMid = (a, b, off = 0) => { const p = gpP(a), q = gpP(b); const d = q.clone().sub(p).normalize(); return p.clone().add(q).multiplyScalar(0.5).add(V3(-d.z, 0, d.x).multiplyScalar(off)); };
+// a flat ring next to a vertex = self loop
+function gpLoop(a, dx, dz) {
+  const m = new gpT.Mesh(new gpT.TorusGeometry(0.36, 0.04, 8, 28), new gpT.MeshStandardMaterial({ color: GPC.red }));
+  const p = gpP(a); m.position.set(p.x + dx, 0.3, p.z + dz); m.rotation.x = Math.PI / 2;
+  ctx.lab.world.add(m); return m;
+}
+// draw a whole graph: pos = {name: [x, z]}, edges = [[u, v, opt?]]; returns { V: {name: mesh}, E: {'u-v': edge} }
+function gpGraph(pos, edges, o = {}) {
+  const V = {}, E = {};
+  for (const n of Object.keys(pos)) V[n] = gpV(n, pos[n][0], pos[n][1], o.color, o.dropH ?? 0, o.size);
+  for (const [u, v, eo] of edges) E[u + '-' + v + (eo && eo.key ? eo.key : '')] = gpE(V[u], V[v], Object.assign({ dir: o.dir, gap: o.gap }, eo || {}));
+  return { V, E };
+}
+// a horizontal linked list row: head at (x0, z), nodes after it; returns { head, nodes, arrows }
+async function gpRow(tok, label, items, x0, z, step = 1.1, color = GPC.v, ms = 300, size = [0.7, 0.5, 0.7]) {
+  const head = cube(label, GPC.head, size, x0, 0.25, z, 0);
+  const nodes = [], arrows = [];
+  for (let k = 0; k < items.length; k++) {
+    const x = x0 + (k + 1) * step;
+    arrows.push(gpArrow(V3(x - step + size[0] / 2 + 0.02, 0.3, z), V3(x - size[0] / 2 - 0.02, 0.3, z)));
+    nodes.push(cube(items[k], color, size, x, 0.25, z, 3));
+    if (ms) await beat(tok, ms);
+  }
+  return { head, nodes, arrows };
+}
+function gpArrow(a, b, color = 0x6e5f49) {
+  const d = b.clone().sub(a); const len = Math.max(0.08, d.length());
+  const h = new gpT.ArrowHelper(d.normalize(), a, len, color, Math.min(0.25, len * 0.4), 0.16);
+  ctx.lab.world.add(h); return h;
+}
+const gpK4 = (cx, cz, r) => ({ 0: [cx, cz - r], 1: [cx - r, cz], 2: [cx + r, cz], 3: [cx, cz + r] });
+const GP_K4E = [[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]];
+
+// ═════════════ Lec18 (0fVJsIC1QXs) ═════════════
+
+// 00:00 Königsberg 七橋：A 是島（degree 5），B、C、D degree 3 → 沒有 Euler circuit
+FRAG.push(['graphpeng-konigsberg', '七橋問題：degree 全是奇數', async (tok) => {
+  fresh([0, 9, 8.5], [0, 0, 0.3]);
+  const P = { C: [-0.8, -2.8], A: [-2.2, 0], B: [-0.8, 2.8], D: [2.6, 0] };
+  const V = {};
+  for (const n of Object.keys(P)) V[n] = gpV(n, P[n][0], P[n][1], '#c9a46a', 3, [1.0, 0.6, 1.0]);
+  say('七橋問題：陸地 = 點，橋 = 邊', '4 塊陸地 A、B、C、D；7 座橋');
+  await beat(tok, 2600);
+  const br = [['a', 'A', 'C', 0.35], ['b', 'A', 'C', -0.35], ['c', 'A', 'B', 0.35], ['d', 'A', 'B', -0.35], ['e', 'A', 'D', 0], ['f', 'C', 'D', 0], ['g', 'B', 'D', 0]];
+  for (const [nm, u, v, off] of br) {
+    gpE(V[u], V[v], { off, gap: 0.6 });
+    const m = gpMid(V[u], V[v], off * 1.9); tag(nm, 'idx', m.x, 0.5, m.z);
+    say('橋 ' + nm + '：連接 ' + u + ' 與 ' + v, 'edge = 橋');
+    await beat(tok, 550);
+  }
+  say('每座橋恰走一次，再回到起點？', '這就是 Euler circuit 問題');
+  await beat(tok, 2800);
+  const deg = { A: 5, B: 3, C: 3, D: 3 };
+  for (const n of ['A', 'B', 'C', 'D']) {
+    glow(V[n], GOLD);
+    const p = P[n]; tag('deg ' + deg[n], 'ptr alt', p[0] + (n === 'D' ? 1.3 : n === 'A' ? -1.4 : 1.2), 0.5, p[1]);
+    say('degree(' + n + ') = ' + deg[n], 'degree = 連在這個點上的邊數');
+    await beat(tok, 1300);
+    glow(V[n], null);
+  }
+  say('Euler：每點 degree 都要是偶數', '才可能有這種路徑');
+  await beat(tok, 2800);
+  for (const n of ['A', 'B', 'C', 'D']) tint(V[n], GPC.red);
+  say('這裡 degree 全是奇數 → 不存在', 'A:5　B:3　C:3　D:3');
+  await beat(tok, 3200);
+}]);
+
+// 05:35 G = (V, E)；shortest path：空間最短 vs 時間最短（數字為示意）
+FRAG.push(['graphpeng-shortest-space-time', 'Shortest path：距離最短 vs 時間最短', async (tok) => {
+  fresh([0, 9, 8.5], [0, 0, 0.3]);
+  const G = gpGraph({ S: [-5, 0], X: [-1, -2.4], Y: [-1, 2.4], D: [3.4, 0] }, [['S', 'X'], ['X', 'D'], ['S', 'Y'], ['Y', 'D']], { dropH: 3 });
+  say('地圖 = graph：G = (V, E)', '點 = 地點，邊 = 道路');
+  await beat(tok, 2600);
+  const lb = { 'S-X': ['3 km', -0.5], 'X-D': ['4 km', -0.5], 'S-Y': ['5 km', 0.5], 'Y-D': ['5 km', 0.5] };
+  const L = {};
+  for (const k of Object.keys(lb)) { const [u, v] = k.split('-'); const m = gpMid(G.V[u], G.V[v], lb[k][1]); L[k] = tag(lb[k][0], 'ptr alt', m.x, 0.5, m.z); }
+  tag('source', 'idx', -5, 0.4, 0.9); tag('destination', 'idx', 3.4, 0.4, 0.9);
+  say('給 source、destination 找路徑', '例：Google Map 導航（數字為示意）');
+  await beat(tok, 2800);
+  gpPaint(G.E['S-X'], GPC.hot); gpPaint(G.E['X-D'], GPC.hot); glow(G.V.X, GOLD);
+  say('空間上最短：S → X → D', '3 + 4 = 7 km　vs　5 + 5 = 10 km');
+  await beat(tok, 3000);
+  glow(G.V.X, null);
+  txt(L['S-X'], '5 分'); txt(L['X-D'], '25 分（塞車）'); txt(L['S-Y'], '7 分'); txt(L['Y-D'], '8 分');
+  gpPaint(G.E['X-D'], GPC.red);
+  say('改看 travel time：X → D 常塞車', 'S→X→D = 30 分　S→Y→D = 15 分');
+  await beat(tok, 3200);
+  gpPaint(G.E['S-X'], GPC.e); gpPaint(G.E['S-Y'], GPC.ok); gpPaint(G.E['Y-D'], GPC.ok); glow(G.V.Y, GOLD);
+  say('時間上最短：S → Y → D', '空間近，不一定時間短');
+  await beat(tok, 3200);
+}]);
+
+// 14:55 project planning、Facebook 共同朋友
+FRAG.push(['graphpeng-social', 'Graph 應用：專案流程與共同朋友', async (tok) => {
+  fresh([0, 9, 8.5], [0, 0, 0.3]);
+  const T = gpGraph({ '設計': [-5.6, -2.0], '實作': [-3.6, 0], '測試': [-5.6, 2.0] }, [['設計', '實作'], ['實作', '測試']], { dir: true, color: '#dd8238', dropH: 3, size: [1.2, 0.6, 0.8], gap: 0.75 });
+  say('Project planning：工作的先後', '前一個 component 完成，下一個才開始');
+  await beat(tok, 3000);
+  glow(T.V['設計'], GOLD); await beat(tok, 600); glow(T.V['實作'], GOLD); await beat(tok, 600); glow(T.V['測試'], GOLD);
+  say('開發流程畫成 graph 來控管', 'edge 有方向：先 → 後');
+  await beat(tok, 2400);
+  const S = gpGraph({ '你': [0.4, 0], '小明': [2.8, -2.2], '小華': [2.8, 2.2], '阿強': [5.4, 0] }, [['你', '小明'], ['你', '小華'], ['小明', '阿強'], ['小華', '阿強']], { dropH: 3, size: [1.1, 0.6, 0.8], gap: 0.7 });
+  say('社群網路：V = user，E = 朋友', 'Facebook 的好友關係');
+  await beat(tok, 2800);
+  glow(S.V['你'], GOLD); glow(S.V['小明'], GOLD); glow(S.V['小華'], GOLD);
+  gpPaint(S.E['你-小明'], GPC.hot); gpPaint(S.E['你-小華'], GPC.hot);
+  say('先找你的鄰居', '小明、小華');
+  await beat(tok, 2400);
+  gpPaint(S.E['小明-阿強'], GPC.ok); gpPaint(S.E['小華-阿強'], GPC.ok);
+  tint(S.V['阿強'], GPC.ok);
+  tag('推薦加好友', 'ptr alt', 5.4, 0.6, 1.0);
+  say('再找鄰居的鄰居 → 阿強', '你和阿強有 2 位共同朋友');
+  await beat(tok, 3400);
+}]);
+
+// 17:00 G = (V, E)；G1 complete、G2 tree、G3 directed
+FRAG.push(['graphpeng-g1g2g3', 'Graph 定義：G1、G2、G3', async (tok) => {
+  fresh([0, 9.5, 9], [0, 0, 0.4]);
+  say('G = (V, E)：頂點集合＋邊集合', 'V(G)、E(G)');
+  await beat(tok, 2600);
+  const G1 = gpGraph(gpK4(-4.6, 0, 1.8), [], { dropH: 3, size: [0.7, 0.5, 0.7] });
+  tag('G1', 'ptr', -4.6, 0.3, 2.9);
+  for (const [u, v] of GP_K4E) { gpE(G1.V[u], G1.V[v]); await beat(tok, 300); }
+  say('G1：每兩點都相連 → complete', 'V = {0,1,2,3}，E 有 6 條');
+  await beat(tok, 2600);
+  say('無向：(0,1) = (1,0)', 'undirected：邊沒有方向');
+  await beat(tok, 2400);
+  const tp = { 0: [0, -1.9], 1: [-1.1, -0.4], 2: [1.1, -0.4], 3: [-1.7, 1.1], 4: [-0.5, 1.1], 5: [0.5, 1.1], 6: [1.7, 1.1] };
+  const G2 = gpGraph(tp, [[0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [2, 6]], { dropH: 3, size: [0.5, 0.45, 0.5], gap: 0.35 });
+  tag('G2：tree', 'ptr', 0, 0.3, 2.9);
+  say('G2：tree 也是一種 graph', 'V = {0..6}，E 有 6 條');
+  await beat(tok, 2800);
+  const G3 = gpGraph({ 0: [4.6, -2.0], 1: [4.6, 0], 2: [4.6, 2.0] }, [], { dropH: 3, size: [0.7, 0.5, 0.7] });
+  tag('G3', 'ptr', 4.6, 0.3, 2.9);
+  gpE(G3.V[0], G3.V[1], { dir: true, off: 0.22 }); gpE(G3.V[1], G3.V[0], { dir: true, off: 0.22 }); gpE(G3.V[1], G3.V[2], { dir: true });
+  say('G3：directed，⟨0,1⟩ ≠ ⟨1,0⟩', 'E = {⟨0,1⟩, ⟨1,0⟩, ⟨1,2⟩}');
+  await beat(tok, 3000);
+  glow(G3.V[0], GOLD); glow(G3.V[1], GOLD);
+  say('有方向：兩個方向是不同的邊', '⟨u,v⟩：u 指向 v');
+  await beat(tok, 3000);
+}]);
+
+// 21:11 self loop（FSM）與 multigraph（例圖依影片口述重畫）
+FRAG.push(['graphpeng-selfloop-multi', 'Self loop 與 multigraph', async (tok) => {
+  fresh([0, 9, 8.5], [0, 0, 0.3]);
+  const A = gpGraph({ 0: [-4.4, -1.6], 1: [-5.8, 1.2], 2: [-3.0, 1.2] }, [[0, 1], [1, 2]], { dropH: 3 });
+  tag('(a)', 'ptr', -4.4, 0.3, 2.8);
+  say('graph 通常不會自己連到自己', '否則形成 self loop');
+  await beat(tok, 2600);
+  gpLoop(A.V[0], 0, -0.75); glow(A.V[0], GOLD);
+  tag('(0,0)', 'ptr alt', -3.3, 0.5, -2.4);
+  say('self edge：(0,0)', 'FSM、compiler 檢查語法時會出現');
+  await beat(tok, 3200);
+  const B = gpGraph({ 0: [3.4, -2.2], 1: [1.8, 0], 2: [5.0, 0], 3: [3.4, 2.2] }, [[0, 1], [0, 2]], { dropH: 3 });
+  tag('(b)', 'ptr', 3.4, 0.3, 3.2);
+  say('通常也沒有 multiple edges', '同兩點之間只有一條');
+  await beat(tok, 2400);
+  for (const off of [0.2, -0.2]) { gpE(B.V[1], B.V[3], { off, color: GPC.red }); await beat(tok, 450); }
+  for (const off of [0.2, -0.2]) { gpE(B.V[3], B.V[2], { off, color: GPC.red }); await beat(tok, 450); }
+  say('有重複邊 → multigraph', '1–3、3–2 各有兩條');
+  await beat(tok, 2800);
+  say('例：每次 PO 文、回文各留一條邊', '保留每次互動的時間');
+  await beat(tok, 2800);
+  say('課本的 graph：沒有這兩種', '無 self loop、無 multiple edges');
+  await beat(tok, 2800);
+}]);
+
+// 26:35 adjacent、path、length、simple path、cycle、DAG
+FRAG.push(['graphpeng-path', 'Path、simple path、cycle、DAG', async (tok) => {
+  fresh([0, 9, 8.5], [0, 0, 0.3]);
+  const G = gpGraph(gpK4(-2.2, 0, 2.4), GP_K4E, { dropH: 3 });
+  say('G1：看 path 相關名詞', 'V = {0,1,2,3}');
+  await beat(tok, 2200);
+  glow(G.V[0], GOLD); glow(G.V[1], GOLD); gpPaint(G.E['0-1'], GPC.hot);
+  say('adjacent：(0,1) ∈ E → 0、1 相鄰', '有邊直接連就叫相鄰');
+  await beat(tok, 2600);
+  glow(G.V[0], null); glow(G.V[1], null); gpPaint(G.E['0-1'], GPC.e);
+  const cur = tag('▼', 'ptr alt', -2.2, 1.0, -2.4);
+  const path = [0, 1, 3, 2];
+  tint(G.V[0], GPC.ok);
+  for (let k = 1; k < path.length; k++) {
+    const u = path[k - 1], v = path[k];
+    gpPaint(G.E[Math.min(u, v) + '-' + Math.max(u, v)], GPC.ok);
+    const p = gpP(G.V[v]); cur.position.set(p.x, 1.0, p.z); tint(G.V[v], GPC.ok);
+    say('path：' + path.slice(0, k + 1).join(' → '), 'length = ' + k + ' 條邊');
+    await beat(tok, 1100);
+  }
+  say('length = path 上的邊數 = 3', '0 → 1 → 3 → 2');
+  await beat(tok, 2400);
+  say('simple path：中間的點都不重複', '0, 1, 3, 2 是 simple path');
+  await beat(tok, 2600);
+  for (const k of Object.keys(G.E)) gpPaint(G.E[k], GPC.e);
+  for (const n of [0, 1, 2, 3]) tint(G.V[n], GPC.v);
+  for (const k of ['0-1', '1-2', '0-2']) gpPaint(G.E[k], GPC.red);
+  for (const n of [0, 1, 2]) tint(G.V[n], GPC.red);
+  say('cycle：起點 = 終點的 simple path', '0 → 1 → 2 → 0');
+  await beat(tok, 3000);
+  const D = gpGraph({ a: [3.6, -1.8], b: [5.6, 0], c: [3.6, 1.8] }, [['a', 'b'], ['b', 'c'], ['a', 'c']], { dir: true, dropH: 3, color: '#dd8238' });
+  tag('DAG', 'ptr', 4.4, 0.3, 3.0);
+  say('directed 且沒有 cycle → DAG', 'directed acyclic graph');
+  await beat(tok, 3200);
+}]);
+
+// 29:32 connected／strongly connected；complete graph 邊數 n(n−1)/2、n(n−1)
+FRAG.push(['graphpeng-complete-count', 'Complete graph 有幾條邊', async (tok) => {
+  fresh([0, 9, 8.5], [0, 0, 0.3]);
+  const U = gpGraph(gpK4(-3.8, 0, 2.2), [], { dropH: 3 });
+  say('connected：兩點之間有 path', 'strongly connected：有向圖雙向都要有');
+  await beat(tok, 3000);
+  say('complete：每點都跟其他點相連', 'n = 4');
+  await beat(tok, 2000);
+  let c = 0;
+  const cnt = tag('0 條', 'ptr alt', -3.8, 0.4, 3.2);
+  for (const [u, v] of GP_K4E) {
+    gpE(U.V[u], U.V[v], { color: GPC.hot }); c++; txt(cnt, c + ' 條');
+    say('undirected：第 ' + c + ' 條 (' + u + ',' + v + ')', 'C(n,2) = n(n−1)/2');
+    await beat(tok, 600);
+  }
+  say('undirected：C(4,2) = 6 條', 'n(n−1)/2 = 4·3/2 = 6');
+  await beat(tok, 2800);
+  const D = gpGraph(gpK4(3.8, 0, 2.2), [], { dropH: 3 });
+  const cnt2 = tag('0 條', 'ptr alt', 3.8, 0.4, 3.2);
+  c = 0;
+  for (const [u, v] of GP_K4E) {
+    gpE(D.V[u], D.V[v], { dir: true, off: 0.16, color: GPC.hot });
+    gpE(D.V[v], D.V[u], { dir: true, off: 0.16, color: GPC.hot });
+    c += 2; txt(cnt2, c + ' 條');
+    say('directed：⟨' + u + ',' + v + '⟩ 與 ⟨' + v + ',' + u + '⟩', '每一對有兩個方向');
+    await beat(tok, 650);
+  }
+  say('directed：n(n−1) = 12 條', '4·3 = 12，是 undirected 的 2 倍');
+  await beat(tok, 3200);
+}]);
+
+// 31:27 subgraph：(i)–(iv) 都是 G1 的 subgraph（子圖依影片口述重畫）
+FRAG.push(['graphpeng-subgraph', 'Subgraph：G1 的子圖', async (tok) => {
+  fresh([0, 9.5, 9], [0, 0, 0.3]);
+  const G = gpGraph(gpK4(-4.6, 0, 2.0), GP_K4E, { dropH: 3 });
+  tag('G1', 'ptr', -4.6, 0.3, 3.0);
+  say('subgraph G′：點、邊都取自 G', 'V(G′) ⊆ V(G)，E(G′) ⊆ E(G)');
+  await beat(tok, 3000);
+  const S = [
+    ['(i)', 0.6, -1.8, [0], []],
+    ['(ii)', 4.6, -1.8, [0, 1, 2], [[0, 1], [0, 2]]],
+    ['(iii)', 0.6, 2.0, [0, 1, 2], [[0, 1], [0, 2], [1, 2]]],
+    ['(iv)', 4.6, 2.0, [0, 1, 2, 3], [[0, 1], [1, 3], [3, 2]]],
+  ];
+  const cap = ['(i)：只有頂點 0，邊是空的', '(ii)：三個點，只留兩條邊', '(iii)：三個點與三條邊', '(iv)：四個點，留三條邊'];
+  const frm = ['V = {0}，E = ∅ 也是 graph', '6 條邊只保留 2 條', 'E(G′) ⊆ E(G)', 'V 全取，E 取一部分'];
+  for (let k = 0; k < S.length; k++) {
+    const [nm, cx, cz, vs, es] = S[k];
+    const pos = gpK4(cx, cz, 1.05); const sub = {};
+    for (const v of vs) sub[v] = pos[v];
+    const H = gpGraph(sub, es, { dropH: 3, size: [0.5, 0.4, 0.5], gap: 0.35, color: GPC.ok });
+    tag(nm, 'ptr', cx - 1.7, 0.3, cz - 1.0);
+    for (const v of vs) glow(G.V[v], GOLD);
+    for (const [u, v] of es) gpPaint(G.E[Math.min(u, v) + '-' + Math.max(u, v)], GPC.hot);
+    say(cap[k], frm[k]);
+    await beat(tok, 2600);
+    for (const v of vs) glow(G.V[v], null);
+    for (const kk of Object.keys(G.E)) gpPaint(G.E[kk], GPC.e);
+  }
+  say('四個都是 G1 的 subgraph', '取點的子集、邊的子集');
+  await beat(tok, 3000);
+}]);
+
+// 33:08 G4 的兩個 connected component H1、H2；connected() 呼叫 dfs 的次數 = component 數
+FRAG.push(['graphpeng-g4-components', 'G4：兩個 connected component', async (tok) => {
+  fresh([0, 9.5, 9], [0, 0, 0.6]);
+  const pos = { 0: [-4.6, -2.4], 1: [-5.9, -0.9], 2: [-3.3, -0.9], 3: [-4.6, 0.6], 4: [-1.6, -0.9], 5: [0.2, -0.9], 6: [2.0, -0.9], 7: [3.8, -0.9] };
+  const ed = [[0, 1], [0, 2], [1, 3], [2, 3], [4, 5], [5, 6], [6, 7]];
+  const G = gpGraph(pos, ed, { dropH: 3 });
+  const adj = { 0: [1, 2], 1: [0, 3], 2: [0, 3], 3: [1, 2], 4: [5], 5: [4, 6], 6: [5, 7], 7: [6] };
+  tag('H1', 'ptr', -6.4, 0.3, -2.6); tag('H2', 'ptr', 1.1, 0.3, -2.2);
+  say('G4：8 個點，分成兩塊', 'H1 = {0,1,2,3}　H2 = {4,5,6,7}');
+  await beat(tok, 2800);
+  say('component 內任兩點都有 path', '例：4 → 5 → 6 → 7');
+  for (const k of ['4-5', '5-6', '6-7']) { gpPaint(G.E[k], GPC.hot); await beat(tok, 600); }
+  await beat(tok, 1400);
+  for (const k of ['4-5', '5-6', '6-7']) gpPaint(G.E[k], GPC.e);
+  const vis = [];
+  for (let i = 0; i < 8; i++) { vis.push(cube(0, GPC.zero, [0.7, 0.4, 0.7], -3.5 + i * 1.0, 0.2, 2.8, 0)); tag(String(i), 'idx', -3.5 + i * 1.0, 0, 3.5); }
+  tag('visited', 'idx', -5.2, 0.2, 2.8);
+  const iptr = tag('i', 'ptr alt', -3.5, 0.9, 2.8);
+  say('connected()：for i = 0..7', '沒拜訪過就 dfs(i)');
+  await beat(tok, 2400);
+  const COLS = [GPC.v, GPC.pink];
+  let count = 0;
+  for (let i = 0; i < 8; i++) {
+    iptr.position.set(-3.5 + i * 1.0, 0.9, 2.8);
+    if (vis[i].userData.done) { say('i = ' + i + '：已拜訪，跳過', 'count = ' + count); await beat(tok, 650); continue; }
+    count++;
+    const order = [], st = [i];
+    const seen = new Set();
+    const dfs = (u) => { seen.add(u); order.push(u); for (const w of adj[u]) if (!seen.has(w)) dfs(w); };
+    dfs(i);
+    say('i = ' + i + '：沒拜訪 → dfs(' + i + ')', 'count = ' + count);
+    await beat(tok, 1000);
+    for (const u of order) {
+      tint(G.V[u], COLS[count - 1]); glow(G.V[u], GOLD);
+      vis[u].userData.done = true; relabel(vis[u], 1); tint(vis[u], COLS[count - 1]);
+      say('dfs 拜訪 ' + u, '順序：' + order.slice(0, order.indexOf(u) + 1).join(' '));
+      await beat(tok, 650);
+      glow(G.V[u], null);
+    }
+  }
+  say('呼叫 dfs 2 次 → 2 個 component', '每個 component 是極大的連通子圖');
+  await beat(tok, 3200);
+}]);
+
+// 34:34 G3 的 strongly connected component：{0,1} 與 {2}
+FRAG.push(['graphpeng-scc-g3', 'G3 的 strongly connected component', async (tok) => {
+  fresh([0, 8.5, 8], [0, 0, 0.3]);
+  const U = gpGraph({ 0: [-5.2, -1.6], 1: [-5.2, 1.6] }, [[0, 1]], { dropH: 3, color: '#9b7ef4' });
+  tag('undirected', 'ptr', -5.2, 0.3, 3.0);
+  say('undirected：一條邊兩邊都能走', '有 path 就 connected');
+  await beat(tok, 2800);
+  const G = gpGraph({ 0: [-1.6, 0], 1: [1.6, 0], 2: [4.8, 0] }, [], { dropH: 3 });
+  const e01 = gpE(G.V[0], G.V[1], { dir: true, off: 0.25 });
+  const e10 = gpE(G.V[1], G.V[0], { dir: true, off: 0.25 });
+  const e12 = gpE(G.V[1], G.V[2], { dir: true });
+  tag('G3', 'ptr', 1.6, 0.3, 2.2);
+  say('directed：條件更嚴', 'u → v 而且 v → u 都要有 path');
+  await beat(tok, 2800);
+  gpPaint(e01, GPC.hot); glow(G.V[1], GOLD);
+  say('0 → 1：有', '⟨0,1⟩ ∈ E');
+  await beat(tok, 1600);
+  gpPaint(e10, GPC.hot); glow(G.V[0], GOLD);
+  say('1 → 0：也有 → 0、1 互通', '⟨1,0⟩ ∈ E');
+  await beat(tok, 2200);
+  const b1 = ghostBox('#c08a1f', 4.6, 1.2, 2.0); b1.position.set(0, 0.3, 0);
+  say('{0,1} 是一個 SCC', 'strongly connected component：雙向都到得了');
+  await beat(tok, 2800);
+  gpPaint(e12, GPC.red); glow(G.V[2], RED);
+  say('1 → 2 有，但 2 回不到 1', '2 不能併進 {0,1}');
+  await beat(tok, 2800);
+  const b2 = ghostBox('#d64545', 1.6, 1.2, 2.0); b2.position.set(4.8, 0.3, 0);
+  say('2 自己一點也是一個 SCC', '只有自己 → isolated');
+  await beat(tok, 2800);
+  say('G3 共 2 個 SCC', '{0,1}　{2}');
+  await beat(tok, 3000);
+}]);
+
+// 37:00 degree、in/out-degree、e = Σd / 2；Graph ADT
+FRAG.push(['graphpeng-degree', 'Degree 與 e = Σd / 2', async (tok) => {
+  fresh([0, 9, 8.5], [0, 0, 0.3]);
+  const G = gpGraph(gpK4(-4.4, 0, 1.8), GP_K4E, { dropH: 3 });
+  tag('G1', 'ptr', -4.4, 0.3, 2.9);
+  say('degree：連在點上的邊數', 'G1（undirected）');
+  await beat(tok, 2400);
+  const dl = [];
+  for (const n of [0, 1, 2, 3]) {
+    glow(G.V[n], GOLD);
+    for (const [u, v] of GP_K4E) if (u === n || v === n) gpPaint(G.E[u + '-' + v], GPC.hot);
+    const p = gpP(G.V[n]); dl.push(tag('d=3', 'ptr alt', p.x + (n === 1 ? -0.9 : n === 2 ? 0.9 : 0.8), 0.5, p.z + (n === 0 ? -0.5 : n === 3 ? 0.5 : -0.5)));
+    say('degree(' + n + ') = 3', 'd' + n + ' = 3');
+    await beat(tok, 900);
+    glow(G.V[n], null);
+    for (const k of Object.keys(G.E)) gpPaint(G.E[k], GPC.e);
+  }
+  say('e = (Σ dᵢ) / 2', '(3 + 3 + 3 + 3) / 2 = 6');
+  await beat(tok, 2800);
+  say('除以 2：每條邊被兩端各算一次', 'undirected');
+  await beat(tok, 2400);
+  const D = gpGraph({ 0: [-0.8, -2.0], 1: [-0.8, 0], 2: [-0.8, 2.0] }, [], { dropH: 3 });
+  tag('G3', 'ptr', -0.8, 0.3, 3.0);
+  const a = gpE(D.V[0], D.V[1], { dir: true, off: 0.22 }), b = gpE(D.V[1], D.V[0], { dir: true, off: 0.22 }), c = gpE(D.V[1], D.V[2], { dir: true });
+  glow(D.V[1], GOLD);
+  gpPaint(a, GPC.ok);
+  say('in-degree(1)：指向 1 的邊', '⟨0,1⟩ → in = 1');
+  await beat(tok, 2400);
+  gpPaint(a, GPC.e); gpPaint(b, GPC.hot); gpPaint(c, GPC.hot);
+  say('out-degree(1)：從 1 指出的邊', '⟨1,0⟩、⟨1,2⟩ → out = 2');
+  await beat(tok, 2600);
+  const adt = code(['class Graph (ADT)', '  InsertVertex(v)', '  InsertEdge(u, v)', '  DeleteVertex(v)', '  DeleteEdge(u, v)', '  IsEmpty()'], 3.6, 0.3, 0.5, -1.4);
+  say('Graph ADT：加點、加邊、刪點、刪邊', 'IsEmpty() 判斷是否為空');
+  for (let i = 1; i < 6; i++) { adt.hl(i); await beat(tok, 600); }
+  await beat(tok, 2200);
+}]);
+
+// Weiss 的 7 點有向圖（影片：1 → 2、3、4；2 → 4、5）
+const GPW = { pos: { 1: [-5.4, -2.2], 2: [-2.6, -2.2], 3: [-6.4, 0], 4: [-4.0, 0], 5: [-1.6, 0], 6: [-5.4, 2.2], 7: [-2.6, 2.2] },
+  adj: { 1: [2, 3, 4], 2: [4, 5], 3: [6], 4: [3, 6, 7], 5: [4, 7], 6: [], 7: [6] } };
+function gpWeiss() {
+  const ed = [];
+  for (const u of Object.keys(GPW.adj)) for (const v of GPW.adj[u]) ed.push([Number(u), v]);
+  return gpGraph(GPW.pos, ed, { dir: true, dropH: 3, size: [0.7, 0.5, 0.7], gap: 0.45 });
+}
+
+// 38:49 adjacency matrix（7 × 7，directed → 不對稱，space O(V²)）
+FRAG.push(['graphpeng-weiss-matrix', 'Adjacency matrix：7 × 7', async (tok) => {
+  fresh([0, 9.5, 8.5], [0, 0, 0.3]);
+  const G = gpWeiss();
+  say('7 個點的 directed graph', '要用程式表示它');
+  await beat(tok, 2400);
+  const x0 = 0.6, z0 = -2.6, d = 0.8, M = [];
+  for (let i = 1; i <= 7; i++) { tag(String(i), 'idx', x0 + (i - 1) * d, 0, z0 - 0.7); tag(String(i), 'idx', x0 - 0.7, 0, z0 + (i - 1) * d); }
+  for (let i = 1; i <= 7; i++) { M[i] = []; for (let j = 1; j <= 7; j++) M[i][j] = cube(0, GPC.zero, [0.66, 0.2, 0.66], x0 + (j - 1) * d, 0.1, z0 + (i - 1) * d, 0); }
+  say('7 個點 → 7 × 7 的 2D matrix', '有邊 = 1，沒邊 = 0');
+  await beat(tok, 2600);
+  const set1 = (i, j) => { relabel(M[i][j], 1); tint(M[i][j], GPC.one); M[i][j].scale.y = 2.2; };
+  glow(G.V[1], GOLD);
+  for (const j of GPW.adj[1]) { set1(1, j); glow(M[1][j], GOLD); glow(G.V[j], GOLD); await beat(tok, 700); }
+  say('1 → 2、3、4：第 1 列三個 1', 'M[1][2] = M[1][3] = M[1][4] = 1');
+  await beat(tok, 2600);
+  for (let j = 1; j <= 7; j++) { glow(M[1][j], null); glow(G.V[j], null); }
+  for (let i = 2; i <= 7; i++) {
+    for (const j of GPW.adj[i]) set1(i, j);
+    say('第 ' + i + ' 列：' + i + ' → ' + (GPW.adj[i].join('、') || '無'), '共 12 條邊 → 12 個 1');
+    await beat(tok, 750);
+  }
+  glow(M[1][2], GOLD); glow(M[2][1], RED);
+  say('directed：matrix 不對稱', 'M[1][2] = 1，M[2][1] = 0');
+  await beat(tok, 2800);
+  glow(M[1][2], null); glow(M[2][1], null);
+  say('space：O(V²)，大多是 0', '7 × 7 = 49 格，只有 12 個 1');
+  await beat(tok, 2800);
+  say('undirected 時 matrix 會對稱', 'M[u][v] = M[v][u]');
+  await beat(tok, 3000);
+}]);
+
+// 40:30 adjacency list（同一張圖；space O(V + E)）
+FRAG.push(['graphpeng-weiss-list', 'Adjacency list：7 點有向圖', async (tok) => {
+  fresh([0, 9.5, 8.5], [0, 0, 0.3]);
+  const G = gpWeiss();
+  say('matrix 太佔空間 → 改用串列', 'linked list：每個頂點一個 head');
+  await beat(tok, 2600);
+  let total = 0;
+  for (let i = 1; i <= 7; i++) {
+    glow(G.V[i], GOLD);
+    const ms = i <= 2 ? 450 : 150;
+    await gpRow(tok, i, GPW.adj[i], 0.2, -2.7 + (i - 1) * 0.9, 1.1, GPC.v, ms, [0.6, 0.45, 0.6]);
+    total += GPW.adj[i].length;
+    say(i + ' → ' + (GPW.adj[i].join(' → ') || '空串列'), i === 1 ? '串列存的是 adjacent 的點' : '目前 ' + total + ' 個節點');
+    await beat(tok, i <= 2 ? 2200 : 800);
+    glow(G.V[i], null);
+  }
+  say('6 沒有指出去的邊 → 空串列', '共 12 個節點 = E');
+  await beat(tok, 2600);
+  say('space：O(V + E)', '7 個 head + 12 個節點');
+  await beat(tok, 3000);
+}]);
+
+// ═════════════ Lec19 (Ax1OL2mikJo) ═════════════
+
+// 02:07 adjacency list：G1（complete）與 G3（directed）
+FRAG.push(['graphpeng-g1g3-lists', 'Adjacency list：G1 與 G3', async (tok) => {
+  fresh([0, 9.5, 8.5], [0, 0, 0.3]);
+  const G1 = gpGraph(gpK4(-5.4, 0, 1.3), GP_K4E, { dropH: 3, size: [0.55, 0.45, 0.55], gap: 0.35 });
+  tag('G1', 'ptr', -5.4, 0.3, 2.2);
+  say('adjacent node：一條邊就到得了', 'list 裡的順序沒有規定');
+  await beat(tok, 2600);
+  const L1 = { 0: [1, 2, 3], 1: [0, 2, 3], 2: [0, 1, 3], 3: [0, 1, 2] };
+  for (let i = 0; i < 4; i++) {
+    glow(G1.V[i], GOLD);
+    await gpRow(tok, i, L1[i], -3.3, -2.1 + i * 1.3, 0.95, GPC.v, 220, [0.55, 0.42, 0.55]);
+    say(i + ' → ' + L1[i].join(' → '), 'G1 complete：每條都 3 個');
+    await beat(tok, 900);
+    glow(G1.V[i], null);
+  }
+  say('complete graph：每條串列一樣長', '無向：每條邊存兩次，共 2e = 12');
+  await beat(tok, 2600);
+  const G3 = gpGraph({ 0: [1.8, -2.0], 1: [1.8, 0], 2: [1.8, 2.0] }, [], { dropH: 3, size: [0.55, 0.45, 0.55] });
+  gpE(G3.V[0], G3.V[1], { dir: true, off: 0.2, gap: 0.4 }); gpE(G3.V[1], G3.V[0], { dir: true, off: 0.2, gap: 0.4 }); gpE(G3.V[1], G3.V[2], { dir: true, gap: 0.4 });
+  tag('G3', 'ptr', 1.8, 0.3, 3.0);
+  const L3 = { 0: [1], 1: [0, 2], 2: [] };
+  for (let i = 0; i < 3; i++) {
+    glow(G3.V[i], GOLD);
+    await gpRow(tok, i, L3[i], 3.6, -2.0 + i * 2.0, 0.95, GPC.pink, 250, [0.55, 0.42, 0.55]);
+    say(i + ' → ' + (L3[i].join(' → ') || '空'), 'directed：只記指出去的邊');
+    await beat(tok, 1300);
+    glow(G3.V[i], null);
+  }
+  say('directed：串列長度 = out-degree', '節點總數 = e = 3');
+  await beat(tok, 3000);
+}]);
+
+// 04:42 sequential representation：G4 存進一維陣列 node[0..22]
+FRAG.push(['graphpeng-sequential', '一維陣列表示：node[]', async (tok) => {
+  fresh([0, 10, 8], [0, 0, 0]);
+  const pos = { 0: [-5.0, -3.4], 1: [-6.0, -2.4], 2: [-4.0, -2.4], 3: [-5.0, -1.4], 4: [-1.6, -2.4], 5: [0.0, -2.4], 6: [1.6, -2.4], 7: [3.2, -2.4] };
+  const G = gpGraph(pos, [[0, 1], [0, 2], [1, 3], [2, 3], [4, 5], [5, 6], [6, 7]], { dropH: 3, size: [0.55, 0.45, 0.55], gap: 0.35 });
+  tag('H1', 'ptr', -6.6, 0.3, -3.4); tag('H2', 'ptr', 4.4, 0.3, -2.4);
+  say('第三種：一維陣列存 G4', 'n = 8 個點（0–7），e = 7');
+  await beat(tok, 2600);
+  const node = [9, 11, 13, 15, 17, 18, 20, 22, 23, 2, 1, 3, 0, 0, 3, 1, 2, 5, 6, 4, 5, 7, 6];
+  const own = [];
+  for (let v = 0; v < 8; v++) for (let k = node[v]; k < node[v + 1]; k++) own[k] = v;
+  const X = (i) => -6.16 + i * 0.56, Z = 1.0;
+  const C = [];
+  for (let i = 0; i < 23; i++) {
+    const col = i <= 8 ? GPC.start : (own[i] % 2 ? GPC.ok : GPC.v);
+    C.push(cube(node[i], col, [0.5, 0.4, 0.5], X(i), 0.2, Z, 3));
+    tag(String(i), 'idx', X(i), 0, Z + 0.6);
+    if (i === 8 || i === 22) await beat(tok, 300);
+  }
+  tag('起點區', 'ptr', X(4), 0.3, Z + 1.4); tag('鄰居區', 'ptr', X(15), 0.3, Z + 1.4);
+  say('前 n + 1 格放「起點 index」', '後面 2e 格依序放鄰居');
+  await beat(tok, 2800);
+  glow(C[0], GOLD); glow(G.V[0], GOLD);
+  const ar = gpArrow(V3(X(0), 0.7, Z - 0.3), V3(X(9), 0.7, Z - 0.3), 0x8a6400);
+  say('node[0] = 9：0 的鄰居從 9 開始', '0 的鄰居區：node[9..10]');
+  await beat(tok, 2600);
+  for (const k of [9, 10]) { glow(C[k], GOLD); glow(G.V[node[k]], GOLD); await beat(tok, 700); }
+  say('node[9], node[10] = 2, 1', '0 跟 2、1 相連');
+  await beat(tok, 2200);
+  glow(C[1], RED);
+  say('終點 = 下一個起點 − 1', 'node[1] = 11 → 0 的鄰居到 10 為止');
+  await beat(tok, 2800);
+  kill(ar); [0, 1, 9, 10].forEach((k) => glow(C[k], null)); for (let v = 0; v < 8; v++) glow(G.V[v], null);
+  glow(C[7], GOLD); glow(C[22], GOLD); glow(G.V[7], GOLD); glow(G.V[6], GOLD);
+  const ar2 = gpArrow(V3(X(7), 0.7, Z - 0.3), V3(X(22), 0.7, Z - 0.3), 0x8a6400);
+  say('node[7] = 22：7 只連到 6', 'node[22] = 6');
+  await beat(tok, 2600);
+  glow(C[8], RED);
+  say('node[8] = 23：結尾哨兵，不是頂點', '大小 n + 2e + 1 = 8 + 14 + 1 = 23');
+  await beat(tok, 3000);
+  kill(ar2); [7, 8, 22].forEach((k) => glow(C[k], null)); glow(G.V[7], null); glow(G.V[6], null);
+  say('新增頂點 8：起點區要多一格', 'index 9 以後全部往右 shift');
+  for (let i = 9; i < 23; i++) move(C[i], X(i) + 0.56, 0.2, Z);
+  await beat(tok, 1200);
+  const nw = cube('new', GPC.hot, [0.5, 0.4, 0.5], X(9), 0.2, Z, 3);
+  await beat(tok, 1000);
+  say('插入／刪除頂點：整段搬移', 'movement cost 很高');
+  await beat(tok, 3000);
+}]);
+
+// 10:42 inverse adjacency list（G3）：記 in-degree
+FRAG.push(['graphpeng-inverse-list', 'Inverse adjacency list：誰指向我', async (tok) => {
+  fresh([0, 9, 8.5], [0, 0, 0.3]);
+  const G = gpGraph({ 0: [-5.6, -2.2], 1: [-5.6, 0], 2: [-5.6, 2.2] }, [], { dropH: 3 });
+  gpE(G.V[0], G.V[1], { dir: true, off: 0.22 }); gpE(G.V[1], G.V[0], { dir: true, off: 0.22 }); gpE(G.V[1], G.V[2], { dir: true });
+  tag('G3', 'ptr', -5.6, 0.3, 3.3);
+  tag('adjacency list', 'ptr', -2.0, 0.3, -3.3);
+  const OUT = { 0: [1], 1: [0, 2], 2: [] }, IN = { 0: [1], 1: [0], 2: [1] };
+  const rows = [];
+  for (let i = 0; i < 3; i++) rows.push(await gpRow(tok, i, OUT[i], -3.4, -2.2 + i * 2.2, 1.2, GPC.v, 250));
+  say('adjacency list 記「我指向誰」', '串列長度 = out-degree');
+  await beat(tok, 2800);
+  glow(G.V[2], GOLD);
+  say('問 2 的 in-degree？', '只有這份 list → 每條都要 scan');
+  await beat(tok, 2200);
+  let cnt = 0;
+  for (let i = 0; i < 3; i++) {
+    glow(rows[i].head, GOLD);
+    for (const nd of rows[i].nodes) { glow(nd, '#3a2a10'); await beat(tok, 500); if (nd.userData.lbl.element.textContent === '2') { glow(nd, GOLD); cnt++; } }
+    say('掃 list[' + i + ']：' + (i === 1 ? '有 2 → +1' : '沒有 2'), 'in-degree(2) 目前 = ' + cnt);
+    await beat(tok, 1300);
+    glow(rows[i].head, null);
+  }
+  for (const r of rows) for (const nd of r.nodes) glow(nd, null);
+  tag('inverse adjacency list', 'ptr', 4.2, 0.3, -3.3);
+  for (let i = 0; i < 3; i++) await gpRow(tok, i, IN[i], 2.8, -2.2 + i * 2.2, 1.2, GPC.pink, 350);
+  say('inverse：記「誰指向我」', '0 ← 1　1 ← 0　2 ← 1');
+  await beat(tok, 2800);
+  say('in-degree = inverse 串列長度', 'in-degree(2) = 1，不用全部掃');
+  await beat(tok, 3000);
+}]);
+
+// 14:05 adjacency multilist 的動機：adjacency list 每條邊存兩次
+FRAG.push(['graphpeng-multilist-why', 'Multilist：每條邊只存一次', async (tok) => {
+  fresh([0, 9, 8.5], [0, 0, 0.3]);
+  const G = gpGraph(gpK4(-5.0, 0, 1.6), GP_K4E, { dropH: 3, size: [0.6, 0.45, 0.6], gap: 0.38 });
+  tag('K4（G1）', 'ptr', -5.0, 0.3, 2.6);
+  const L = { 0: [1, 2, 3], 1: [0, 2, 3], 2: [0, 1, 3], 3: [0, 1, 2] };
+  const rows = [];
+  for (let i = 0; i < 4; i++) rows.push(await gpRow(tok, i, L[i], -2.4, -2.4 + i * 1.3, 1.0, GPC.v, 120, [0.6, 0.45, 0.6]));
+  say('adjacency list：以 vertex 為主', '4 個點、6 條邊');
+  await beat(tok, 2400);
+  gpPaint(G.E['0-1'], GPC.red);
+  glow(rows[0].nodes[0], RED); glow(rows[1].nodes[0], RED);
+  say('邊 (0,1) 被存了兩次', 'list[0] 有 1，list[1] 有 0');
+  await beat(tok, 2800);
+  say('6 條邊 → 12 個串列節點', '每條邊都存兩次（2e）');
+  await beat(tok, 2600);
+  fly(rows[0].nodes[0]); fly(rows[1].nodes[0]);
+  const n0 = code(['N0: | m | 0 | 1 | link1 | link2 |'], 3.3, 2.4, 0.5, 0);
+  say('multilist：每條邊一個 node', '(0,1) 只存成 N0');
+  await beat(tok, 2800);
+  n0.hl(0);
+  tag('vertex1, vertex2 = 兩個端點', 'idx', 3.3, 0.3, 3.1);
+  tag('link1／link2 = 兩個 pointer', 'idx', 3.3, 0.3, 3.6);
+  say('欄位：兩個端點＋兩個 pointer', 'link1 接 vertex1 的下一條邊');
+  await beat(tok, 3200);
+  say('以 edge 為主，不以 vertex 為主', 'node 數 = e = 6');
+  await beat(tok, 3000);
+}]);
+
+// 17:00／21:15 adjacency multilist（K4）：沿 pointer 走出每個頂點的串列；params.v = 要追蹤的頂點
+FRAG.push(['graphpeng-multilist', 'Multilist：沿 pointer 走', async (tok) => {
+  fresh([0, 9.5, 8.5], [0, 0, 0.3]);
+  const P = ctx.params || {};
+  const trace = Array.isArray(P.v) ? P.v : [0, 1];
+  const N = [[0, 1, 1, 3], [0, 2, 2, 3], [0, 3, -1, 4], [1, 2, 4, 5], [1, 3, -1, 5], [2, 3, -1, -1]];
+  const z = (k) => -2.6 + k * 1.05, cx = [-1.4, -0.6, 0.5, 1.5];
+  const R = [];
+  for (let k = 0; k < 6; k++) {
+    const [a, b, l1, l2] = N[k];
+    tag('N' + k, 'ptr', -2.6, 0.3, z(k));
+    R.push([cube(a, '#c9d9f0', [0.75, 0.4, 0.75], cx[0], 0.2, z(k), 3), cube(b, '#c9d9f0', [0.75, 0.4, 0.75], cx[1], 0.2, z(k), 3),
+      cube(l1 < 0 ? 0 : 'N' + l1, '#f2d9a0', [0.95, 0.4, 0.75], cx[2], 0.2, z(k), 3), cube(l2 < 0 ? 0 : 'N' + l2, '#f2d9a0', [0.95, 0.4, 0.75], cx[3], 0.2, z(k), 3)]);
+    await beat(tok, 250);
+  }
+  tag('v1', 'idx', cx[0], 0, z(0) - 0.7); tag('v2', 'idx', cx[1], 0, z(0) - 0.7); tag('link1', 'idx', cx[2], 0, z(0) - 0.7); tag('link2', 'idx', cx[3], 0, z(0) - 0.7);
+  const G = gpGraph(gpK4(4.8, -0.6, 1.4), GP_K4E, { dropH: 3, size: [0.55, 0.45, 0.55], gap: 0.35 });
+  const H = [];
+  for (let v = 0; v < 4; v++) H.push(cube(v, GPC.head, [0.6, 0.45, 0.6], -5.4, 0.25, -1.8 + v * 1.2, 0));
+  tag('head', 'idx', -5.4, 0, -2.6);
+  say('K4 有 6 條邊 → 6 個 node', 'N0=(0,1) … N5=(2,3)');
+  await beat(tok, 2600);
+  for (const v of trace) {
+    glow(H[v], GOLD); glow(G.V[v], GOLD);
+    let k = [0, 1, 2, 3, 4, 5].find((q) => N[q][0] === v || N[q][1] === v);
+    let prev = V3(-5.0, 0.4, -1.8 + v * 1.2);
+    const arrows = [], chain = [];
+    while (k >= 0) {
+      const [a, b, l1, l2] = N[k];
+      const side = a === v ? 0 : 1;
+      arrows.push(gpArrow(prev, V3(cx[0] - 0.45, 0.4, z(k)), 0x8a6400));
+      chain.push('N' + k);
+      glow(R[k][side], GOLD); glow(R[k][2 + side], GOLD);
+      gpPaint(G.E[a + '-' + b], GPC.hot);
+      const nx = side === 0 ? l1 : l2;
+      say('vertex ' + v + '：' + chain.join(' → '), 'N' + k + ' = (' + a + ',' + b + ')，' + (side ? 'link2' : 'link1') + ' = ' + (nx < 0 ? '0（null）' : 'N' + nx));
+      await beat(tok, 1300);
+      prev = V3(cx[2 + side], 0.4, z(k) + 0.25);
+      k = nx;
+    }
+    say('vertex ' + v + ' 的串列：' + chain.join(' → '), '就是 ' + v + ' 的 3 條邊');
+    await beat(tok, 2000);
+    arrows.forEach(kill); glow(H[v], null); glow(G.V[v], null);
+    for (const r of R) r.forEach((c) => glow(c, null));
+    for (const kk of Object.keys(G.E)) gpPaint(G.E[kk], GPC.e);
+  }
+  say('一個 node 同時屬於兩條串列', 'node 數 = e = 6（list 要 2e = 12）');
+  await beat(tok, 3000);
+}]);
+
+// 24:30 weighted edge → network；road network：路口 = vertex，路段 = edge（數字為示意）
+FRAG.push(['graphpeng-network', 'Network：有權重的 graph', async (tok) => {
+  fresh([0, 9, 8.5], [0, 0, 0.3]);
+  const pos = { S: [-5.4, 0], A: [-2.2, -2.2], B: [-2.2, 2.2], C: [1.4, 0], D: [4.8, 0] };
+  const W = [['S', 'A', 4], ['S', 'B', 2], ['B', 'A', 1], ['A', 'C', 3], ['B', 'C', 6], ['C', 'D', 2]];
+  const V = {};
+  for (const n of Object.keys(pos)) V[n] = gpV(n, pos[n][0], pos[n][1], '#c9a46a', 3);
+  say('road network：路口 = vertex', '交叉路口（intersection）');
+  await beat(tok, 2600);
+  const E = {};
+  for (const [u, v] of W) { E[u + v] = gpE(V[u], V[v]); await beat(tok, 300); }
+  say('路口之間的路段 = edge', '一條路被路口切成很多 segment');
+  await beat(tok, 2600);
+  kill(E.SA);
+  const e1 = gpE(V.S, V.A, { dir: true, off: 0.18 }), e2 = gpE(V.A, V.S, { dir: true, off: 0.18 });
+  gpPaint(e1, GPC.hot); gpPaint(e2, GPC.hot);
+  say('雙向道 → 兩條有向邊', 'road network 是 directed graph');
+  await beat(tok, 2800);
+  for (const [u, v, w] of W) { const m = gpMid(V[u], V[v], 0.45); tag(String(w), 'ptr alt', m.x, 0.5, m.z); }
+  say('edge 加上 weight → network', 'weight = 路段實際距離（示意）');
+  await beat(tok, 3000);
+  const best = ['S', 'B', 'A', 'C', 'D'];
+  for (let k = 0; k < best.length; k++) {
+    tint(V[best[k]], GPC.ok);
+    if (k) { const key = best[k - 1] + best[k]; gpPaint(E[key], GPC.ok); }
+    say('最短路徑：' + best.slice(0, k + 1).join('→'), k === best.length - 1 ? '2 + 1 + 3 + 2 = 8' : '從 S 到 D 距離總和最小');
+    await beat(tok, 900);
+  }
+  say('其他路線都比較長', 'S→A→C→D = 9　S→B→C→D = 10　最短 = 8');
+  await beat(tok, 3200);
+}]);
+
+// 34:44 DFS 不唯一（list[0] = 1,2 vs 2,1）＋ complexity：list O(e)、matrix O(n²)
+FRAG.push(['graphpeng-dfs-order-cost', 'DFS 不唯一與複雜度', async (tok) => {
+  fresh([0, 9.5, 8.5], [0, 0, 0.3]);
+  const BX = [[0, -2.9], [-1.9, -1.4], [1.9, -1.4], [-2.9, 0.4], [-0.95, 0.4], [0.95, 0.4], [2.9, 0.4], [0, 2.2]];
+  const ED = [[0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [2, 6], [3, 7], [4, 7], [5, 7], [6, 7]];
+  const mk = (cx) => { const p = {}; BX.forEach(([x, z], i) => { p[i] = [cx + x * 0.62, z * 0.75]; }); return gpGraph(p, ED, { dropH: 3, size: [0.55, 0.45, 0.55], gap: 0.35 }); };
+  const L = mk(-3.6), Rg = mk(3.6);
+  const adjOf = (first) => { const A = {}; for (let i = 0; i < 8; i++) A[i] = []; for (const [u, v] of ED) { A[u].push(v); A[v].push(u); } for (const k in A) A[k].sort((a, b) => a - b); A[0] = first; return A; };
+  const dfsOrder = (A) => { const seen = new Set(), ord = [], tree = []; const go = (u) => { seen.add(u); ord.push(u); for (const w of A[u]) if (!seen.has(w)) { tree.push([u, w]); go(w); } }; go(0); return [ord, tree]; };
+  const [o1, t1] = dfsOrder(adjOf([1, 2])), [o2, t2] = dfsOrder(adjOf([2, 1]));
+  tag('list[0] = 1 → 2', 'ptr', -3.6, 0.3, 3.0); tag('list[0] = 2 → 1', 'ptr', 3.6, 0.3, 3.0);
+  say('DFS 不唯一：看 list 的順序', 'adjacency list 沒規定小的在前');
+  await beat(tok, 3000);
+  const seq = [tag('', 'ptr alt', -3.6, 0.5, -3.3), tag('', 'ptr alt', 3.6, 0.5, -3.3)];
+  for (let k = 0; k < 8; k++) {
+    for (const [G, o, t, s] of [[L, o1, t1, seq[0]], [Rg, o2, t2, seq[1]]]) {
+      const v = o[k]; tint(G.V[v], GPC.ok); glow(G.V[v], GOLD);
+      if (k) { const [a, b] = t[k - 1]; gpPaint(G.E[Math.min(a, b) + '-' + Math.max(a, b)], GPC.hot); }
+      txt(s, o.slice(0, k + 1).join(' '));
+    }
+    say('第 ' + (k + 1) + ' 個拜訪：' + o1[k] + '　vs　' + o2[k], '左：' + o1.slice(0, k + 1).join(' ') + '　右：' + o2.slice(0, k + 1).join(' '));
+    await beat(tok, 1000);
+    glow(L.V[o1[k]], null); glow(Rg.V[o2[k]], null);
+  }
+  say('兩種順序都是正確的 DFS', o1.join(' ') + '　／　' + o2.join(' '));
+  await beat(tok, 3000);
+  say('Adjacency list：每條邊看常數次', 'DFS = O(e)（含頂點 O(n + e)）');
+  await beat(tok, 2800);
+  say('Adjacency matrix：每點掃一整列', 'n 個點 × n 格 = O(n²)');
+  await beat(tok, 3000);
+}]);
+
+// 37:14 BFS：A 的鄰居 B、D、E；B、D、E 都連到 C → A B D E C
+FRAG.push(['graphpeng-bfs-abcde', 'BFS：A B D E C', async (tok) => {
+  fresh([0, 9, 8.5], [0, 0, 0.3]);
+  const pos = { A: [-4.0, -2.4], B: [-5.8, -0.2], D: [-4.0, -0.2], E: [-2.2, -0.2], C: [-4.0, 2.2] };
+  const G = gpGraph(pos, [['A', 'B'], ['A', 'D'], ['A', 'E'], ['B', 'C'], ['D', 'C'], ['E', 'C']], { dropH: 3 });
+  const adj = { A: ['B', 'D', 'E'], B: ['A', 'C'], D: ['A', 'C'], E: ['A', 'C'], C: ['B', 'D', 'E'] };
+  tag('queue', 'ptr', 0.0, 0.3, -1.0); tag('輸出', 'ptr', 0.0, 0.3, 2.4);
+  const QX = (k) => 1.3 + k * 1.1, OX = (k) => 1.3 + k * 1.1;
+  say('BFS ≈ tree 的 level order', '要用 queue');
+  await beat(tok, 2600);
+  const Q = [], seen = new Set(['A']); let out = 0;
+  const outCube = (n) => { cube(n, GPC.ok, [0.7, 0.5, 0.7], OX(out), 0.25, 2.4, 3); out++; };
+  tint(G.V.A, GPC.ok); outCube('A');
+  say('輸出 A', '從 A 開始');
+  await beat(tok, 1600);
+  const qShow = () => Q.forEach((q, k) => move(q.m, QX(k), 0.25, -1.0));
+  for (const w of adj.A) { seen.add(w); Q.push({ n: w, m: cube(w, GPC.v, [0.7, 0.5, 0.7], QX(Q.length), 0.25, -1.0, 3) }); glow(G.V[w], GOLD); gpPaint(G.E['A-' + w], GPC.hot); await beat(tok, 500); }
+  say('A 的鄰居 B、D、E 進 queue', 'queue：B D E');
+  await beat(tok, 2400);
+  while (Q.length) {
+    const { n, m } = Q.shift(); fly(m); qShow();
+    tint(G.V[n], GPC.ok); glow(G.V[n], null); outCube(n);
+    const added = [], skipped = [];
+    for (const w of adj[n]) {
+      if (w === 'A') continue;
+      const key = pos[n] && G.E[n + '-' + w] ? n + '-' + w : w + '-' + n;
+      if (seen.has(w)) { if (n !== 'C') { skipped.push(w); gpPaint(G.E[key], GPC.red); } continue; }
+      seen.add(w); added.push(w); gpPaint(G.E[key], GPC.hot); glow(G.V[w], GOLD);
+      Q.push({ n: w, m: cube(w, GPC.v, [0.7, 0.5, 0.7], QX(Q.length), 0.25, -1.0, 3) });
+    }
+    const qs = Q.map((q) => q.n).join(' ') || '空';
+    let cap = '取出 ' + n;
+    if (added.length) cap += '：' + added.join('、') + ' 進 queue';
+    else if (skipped.length && n !== 'C') cap += '：' + skipped.join('、') + ' 已在 queue';
+    say(cap, 'queue：' + qs);
+    await beat(tok, 2200);
+  }
+  say('BFS：A B D E C', '一層一層：A｜B D E｜C');
+  await beat(tok, 3200);
+}]);
+  }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
 

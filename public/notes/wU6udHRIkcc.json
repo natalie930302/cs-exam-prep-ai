@@ -1,0 +1,340 @@
+{
+ "video": "wU6udHRIkcc",
+ "label": "Abdul Bari：Disjoint Sets Data Structure（Kruskal的前置知識：Union-Find）",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "本片內容",
+   "scene": null,
+   "points": [
+    {
+     "text": "主題：disjoint sets 與它的操作。",
+     "t": 0
+    },
+    {
+     "text": "用途：偵測無向圖裡的 cycle；接著看圖形表示、陣列表示。",
+     "t": 13
+    },
+    {
+     "text": "最後是有效率的操作：weighted union 與 collapsing find。",
+     "t": 35
+    },
+    {
+     "text": "最有名的應用：Kruskal 用它判斷 cycle。",
+     "t": 57
+    }
+   ]
+  },
+  {
+   "title": "Disjoint sets：沒有共同元素",
+   "scene": "galgo-ds-sets",
+   "points": [
+    {
+     "text": "一張不連通、無向的圖，有兩個 component。",
+     "t": 72
+    },
+    {
+     "text": "每個 component 當成一個集合：S1 = {1, 2, 3, 4}。",
+     "t": 84
+    },
+    {
+     "text": "S2 = {5, 6, 7, 8}。",
+     "t": 93
+    },
+    {
+     "text": "兩個集合沒有共同的頂點。",
+     "t": 106
+    },
+    {
+     "text": "S1 ∩ S2 = ∅，這就是 disjoint。",
+     "t": 115
+    }
+   ]
+  },
+  {
+   "title": "find 與 union；同一集合 = cycle",
+   "scene": "galgo-ds-find-union",
+   "points": [
+    {
+     "text": "只做兩種操作：find 與 union。",
+     "t": 127
+    },
+    {
+     "text": "find(5)：5 屬於哪個集合 → S2。",
+     "t": 134
+    },
+    {
+     "text": "find 就是集合的 membership 查詢；find(7) = S2、find(3) = S1。",
+     "t": 152
+    },
+    {
+     "text": "加一條邊 (4, 8)：要做 union。",
+     "t": 185
+    },
+    {
+     "text": "find(4) = S1、find(8) = S2，不同集合 → S1 ∪ S2 = {1..8}。",
+     "t": 215
+    },
+    {
+     "text": "union 的目的：邊 (u, v) 的兩端 find 結果不同，就把兩個集合合併。",
+     "t": 242
+    },
+    {
+     "text": "再加一條邊 (1, 5)。",
+     "t": 266
+    },
+    {
+     "text": "find(1)、find(5) 都在同一個集合。",
+     "t": 282
+    },
+    {
+     "text": "兩端在同一個集合 → 圖中有 cycle。",
+     "t": 293
+    }
+   ]
+  },
+  {
+   "title": "從頭偵測 cycle：9 條邊依序加入",
+   "scene": "galgo-ds-cycle-sets",
+   "points": [
+    {
+     "text": "用一張圖從頭示範：邊依編號一條條加入。",
+     "t": 325
+    },
+    {
+     "text": "8 個頂點，一開始每個都在 universal set。",
+     "t": 371
+    },
+    {
+     "text": "邊 1 (1, 2)：兩端都在 universal set → 形成 S1 = {1, 2}。",
+     "t": 393
+    },
+    {
+     "text": "邊 2 (3, 4) → S2；邊 3 (5, 6) → S3；邊 4 (7, 8) → S4。",
+     "t": 422
+    },
+    {
+     "text": "邊 5 (2, 4)：2 在 S1、4 在 S2 → union 成 S5 = {1, 2, 3, 4}。",
+     "t": 467
+    },
+    {
+     "text": "邊 6 (2, 5)：S5 與 S3 → union 成 S6 = {1..6}。",
+     "t": 500
+    },
+    {
+     "text": "邊 7 (1, 3)：兩端都在 S6 → 有 cycle，不加。",
+     "t": 543
+    },
+    {
+     "text": "邊 8 (6, 8)：S6 與 S4 → S7 = {1..8}。",
+     "t": 593
+    },
+    {
+     "text": "邊 9 (5, 7)：兩端都在 S7 → cycle。",
+     "t": 626
+    },
+    {
+     "text": "Kruskal 就是這樣判斷最小邊要不要選。",
+     "t": 649
+    }
+   ]
+  },
+  {
+   "title": "圖形表示：樹與 weighted union",
+   "scene": "galgo-ds-trees",
+   "points": [
+    {
+     "text": "用圖形（樹）表示集合。",
+     "t": 669
+    },
+    {
+     "text": "不需要集合名稱，只要一個代表：root（parent）。",
+     "t": 722
+    },
+    {
+     "text": "(1, 2)：1 當 parent、2 當 child；(3, 4)、(5, 6)、(7, 8) 同理。",
+     "t": 731
+    },
+    {
+     "text": "(2, 4)：2 的 parent 是 1、4 的 parent 是 3 → 不同集合。",
+     "t": 762
+    },
+    {
+     "text": "union：把一棵的 root 掛到另一棵的 root 底下。",
+     "t": 787
+    },
+    {
+     "text": "兩棵一樣大時，誰當 parent 都可以。",
+     "t": 803
+    },
+    {
+     "text": "(2, 5)：{1, 2, 3, 4} 有 4 個點、{5, 6} 只有 2 個。",
+     "t": 822
+    },
+    {
+     "text": "點多的（weight 大）當 parent：5 掛到 1。",
+     "t": 850
+    },
+    {
+     "text": "(1, 3)：parent 都是 1 → 同一集合 → cycle。",
+     "t": 887
+    }
+   ]
+  },
+  {
+   "title": "陣列表示：parent[ ]",
+   "scene": "galgo-ds-array",
+   "points": [
+    {
+     "text": "用陣列實作，不用真的做集合運算。",
+     "t": 918
+    },
+    {
+     "text": "一個陣列 parent，index = 頂點，初值 −1：每個頂點自成一個集合。",
+     "t": 946
+    },
+    {
+     "text": "(1, 2)：find(1)、find(2) 都是 −1，常數時間。",
+     "t": 976
+    },
+    {
+     "text": "union：parent[2] = 1。",
+     "t": 1010
+    },
+    {
+     "text": "root 存負數：parent[1] = −2，負號 = root，2 = 點數。",
+     "t": 1035
+    },
+    {
+     "text": "(3, 4)、(5, 6)、(7, 8) 一樣處理。",
+     "t": 1048
+    },
+    {
+     "text": "(2, 4)：2 → 1、4 → 3，root 不同。",
+     "t": 1095
+    },
+    {
+     "text": "parent[3] = 1，parent[1] = −4。",
+     "t": 1123
+    },
+    {
+     "text": "(2, 5)：−4 vs −2，rank（點數）大的當 parent → parent[5] = 1，parent[1] = −6。",
+     "t": 1188
+    },
+    {
+     "text": "(1, 3)：root 相同 → cycle。",
+     "t": 1237
+    },
+    {
+     "text": "(6, 8)：6 → 5 → 1，8 → 7；parent[7] = 1，parent[1] = −8。",
+     "t": 1296
+    },
+    {
+     "text": "(5, 7)：root 都是 1 → cycle。",
+     "t": 1347
+    }
+   ],
+   "trap": "影片在 (6, 8) 說「−8 比較大」：其實比的是 −6 與 −2 的絕對值（點數），合併之後 parent[1] 才變成 −8。"
+  },
+  {
+   "title": "Collapsing find",
+   "scene": "galgo-ds-collapse",
+   "points": [
+    {
+     "text": "剛才依 weight 合併，叫 weighted union。",
+     "t": 1380
+    },
+    {
+     "text": "另一個技巧：collapsing find。",
+     "t": 1394
+    },
+    {
+     "text": "find(2)、find(3)：兩步就到 root。",
+     "t": 1408
+    },
+    {
+     "text": "find(4)：4 → 3 → 1，要走比較多步。",
+     "t": 1417
+    },
+    {
+     "text": "find(6)：6 的 parent 是 5，5 的 parent 是 1。",
+     "t": 1436
+    },
+    {
+     "text": "找到 root 之後，直接把 6 掛到 1 底下：parent[6] = 1。",
+     "t": 1452
+    },
+    {
+     "text": "第一次花一點時間，之後 find(6) 是常數時間。",
+     "t": 1478
+    },
+    {
+     "text": "find(8) 也一樣：8 → 7 → 1，之後 parent[8] = 1。",
+     "t": 1508
+    },
+    {
+     "text": "也可以用 linked list 實作：node 存值與指向 parent 的指標。",
+     "t": 1538
+    }
+   ],
+   "trap": "補充：weighted union 讓樹高 ≤ ⌊log n⌋ + 1；再加 collapsing find（path compression），m 次操作接近 O(m·α(n))。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "對邊 (u, v) 做 find(u)、find(v) 結果相同，代表？",
+   "opts": [
+    "加入這條邊會形成 cycle",
+    "要做 union",
+    "u、v 不連通",
+    "圖是有向圖"
+   ],
+   "ans": "加入這條邊會形成 cycle",
+   "why": "u、v 已經在同一個集合（已連通），再加邊就形成 cycle。"
+  },
+  {
+   "q": "Bari 的例子依序加入 (1,2)(3,4)(5,6)(7,8)(2,4)(2,5)(1,3)(6,8)(5,7)，哪些邊會形成 cycle？",
+   "opts": [
+    "(1,3) 和 (5,7)",
+    "(2,4) 和 (6,8)",
+    "(2,5) 和 (5,7)",
+    "只有 (1,3)"
+   ],
+   "ans": "(1,3) 和 (5,7)",
+   "why": "加 (1,3) 時 1、3 都在 {1..6}；加 (5,7) 時全部已在同一集合。"
+  },
+  {
+   "q": "parent 陣列中 parent[1] = −6 代表？",
+   "opts": [
+    "1 是 root，集合裡有 6 個點",
+    "1 的 parent 是 6",
+    "1 在第 6 層",
+    "集合 1 被刪除 6 次"
+   ],
+   "ans": "1 是 root，集合裡有 6 個點",
+   "why": "負號表示 root，絕對值是點數（weight／rank）。"
+  },
+  {
+   "q": "weighted union 時，兩棵樹點數為 4 和 2，誰當 parent？",
+   "opts": [
+    "4 個點那棵的 root",
+    "2 個點那棵的 root",
+    "編號小的",
+    "任意"
+   ],
+   "ans": "4 個點那棵的 root",
+   "why": "小樹掛到大樹底下，樹高才不會一直增加。"
+  },
+  {
+   "q": "collapsing find 做了什麼？",
+   "opts": [
+    "find 時把路徑上的點直接掛到 root",
+    "把兩棵樹合併成一棵",
+    "刪除 cycle 上的邊",
+    "把 root 改成負數"
+   ],
+   "ans": "find 時把路徑上的點直接掛到 root",
+   "why": "例：find(6) 走 6 → 5 → 1 後設 parent[6] = 1，之後一步就到。"
+  }
+ ]
+}

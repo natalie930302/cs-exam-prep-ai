@@ -34,6 +34,11 @@
   "points": 25,
   "quiz": 6
  },
+ "0fVJsIC1QXs": {
+  "label": "交大彭文志 Lec18 Graph (1/4)",
+  "points": 76,
+  "quiz": 7
+ },
  "0IAPZzGSbME": {
   "label": "Abdul Bari：1. Introduction to Algorithms",
   "points": 14,
@@ -179,6 +184,11 @@
   "points": 12,
   "quiz": 5
  },
+ "4ZlRH0eK-qQ": {
+  "label": "Abdul Bari：Prims and Kruskals Algorithms",
+  "points": 69,
+  "quiz": 6
+ },
  "5dRGRueKU3M": {
   "label": "Abdul Bari：4 Principle of Optimality",
   "points": 20,
@@ -239,6 +249,11 @@
   "points": 29,
   "quiz": 7
  },
+ "7h1s2SojIRw": {
+  "label": "Abdul Bari：Quick Sort",
+  "points": 38,
+  "quiz": 6
+ },
  "7z3hoaide-4": {
   "label": "清大周志遠 第4B講 Computer-System Organization(續)",
   "points": 18,
@@ -278,6 +293,11 @@
   "label": "清大周志遠 第16A講 Multithreaded Programming",
   "points": 42,
   "quiz": 6
+ },
+ "9bkvws_vqLU": {
+  "label": "MIT 6.006 Rec7：Comparison/Counting/Radix Sort",
+  "points": 86,
+  "quiz": 8
  },
  "9iE9Mj4m8jk": {
   "label": "Abdul Bari：4.1 MultiStage Graph",
@@ -339,6 +359,11 @@
   "points": 16,
   "quiz": 5
  },
+ "Ax1OL2mikJo": {
+  "label": "交大彭文志 Lec19 Graph (2/4)",
+  "points": 81,
+  "quiz": 7
+ },
  "aZjYr87r1b8": {
   "label": "Abdul Bari：B Trees and B+ Trees",
   "points": 100,
@@ -378,6 +403,11 @@
   "label": "清大周志遠 第4A講 Computer-System Organization(續)",
   "points": 47,
   "quiz": 6
+ },
+ "bULIs7AVDNk": {
+  "label": "交大彭文志 Lec23 Hashing",
+  "points": 185,
+  "quiz": 8
  },
  "C2apEw9pgtw": {
   "label": "Abdul Bari：2.6.1 Binary Search Iterative Method",
@@ -541,8 +571,8 @@
  },
  "HlFsexTpM4Q": {
   "label": "Dijkstra Algorithm",
-  "points": 14,
-  "quiz": 4
+  "points": 35,
+  "quiz": 5
  },
  "hPIBv0kO-Zc": {
   "label": "交大彭文志 Lec03 Arrays (1/4)",
@@ -559,6 +589,11 @@
   "points": 21,
   "quiz": 5
  },
+ "hXwxLgEOp-U": {
+  "label": "交大彭文志 Lec22 Sorting",
+  "points": 220,
+  "quiz": 8
+ },
  "IilVRpUsAiQ": {
   "label": "B-Tree Insertion",
   "points": 27,
@@ -574,6 +609,11 @@
   "points": 114,
   "quiz": 7
  },
+ "JR2fneVevbg": {
+  "label": "Minimum Cost Spanning Tree | Kruskal's & Prim's",
+  "points": 27,
+  "quiz": 5
+ },
  "lhXHk8IuFeQ": {
   "label": "交大彭文志 Lec08 Lists (1/4)",
   "points": 76,
@@ -583,6 +623,11 @@
   "label": "台大林軒田 DSA Skip List / BST / AVL Tree",
   "points": 192,
   "quiz": 8
+ },
+ "mB5HXBb_HY8": {
+  "label": "Abdul Bari：Merge Sort",
+  "points": 45,
+  "quiz": 6
  },
  "MfhjkfocRR0": {
   "label": "What is a HashTable Data Structure",
@@ -604,6 +649,11 @@
   "points": 97,
   "quiz": 6
  },
+ "Nz1KZXbghj8": {
+  "label": "MIT 6.006 L7：Counting Sort, Radix Sort",
+  "points": 93,
+  "quiz": 7
+ },
  "OqLt2GfX6jg": {
   "label": "Abdul Bari：Why Pointers?",
   "points": 24,
@@ -613,6 +663,11 @@
   "label": "台大林軒田 DSA Linked List",
   "points": 133,
   "quiz": 8
+ },
+ "pcKY4hjDrxk": {
+  "label": "Abdul Bari：BFS",
+  "points": 49,
+  "quiz": 7
  },
  "PdvGEI-P3-M": {
   "label": "Abdul Bari：Stack vs Heap",
@@ -694,6 +749,16 @@
   "points": 179,
   "quiz": 8
  },
+ "Wnpsh1O1OMo": {
+  "label": "交大彭文志 Lec20 Graph (3/4)",
+  "points": 233,
+  "quiz": 8
+ },
+ "wU6udHRIkcc": {
+  "label": "Abdul Bari：Disjoint Sets Data Structure（Kruskal的前置知識：Union-Find）",
+  "points": 58,
+  "quiz": 5
+ },
  "WX-z52QweUs": {
   "label": "台大林軒田 DSA Hash Table",
   "points": 333,
@@ -727,6 +792,11 @@
  "yn0ZAifhyNM": {
   "label": "交大彭文志 Lec11 Lists (4/4)",
   "points": 67,
+  "quiz": 7
+ },
+ "Yx0dJFe1VdM": {
+  "label": "交大彭文志 Lec21 Graph (4/4)",
+  "points": 90,
   "quiz": 7
  },
  "zLuuRC56uvI": {

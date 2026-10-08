@@ -1,104 +1,184 @@
 {
  "video": "HlFsexTpM4Q",
  "label": "Dijkstra Algorithm",
- "source": "whisper",
+ "timing": "estimated",
  "sections": [
   {
-   "title": "問題：從 s 到每個頂點的最短路徑",
-   "scene": "dij-video-sets",
+   "title": "問題：s 到每個頂點的最短路徑",
+   "scene": "dijk-problem",
    "points": [
     {
-     "text": "給加權圖 G 與起點 s，Dijkstra 回傳 s 到每個其他頂點的最短（權重最小）路徑。",
-     "t": 0
+     "text": "Dijkstra 解單一起點最短路徑：給加權圖 G 與起點（source）s。",
+     "t": 1
     },
     {
-     "text": "例：s 到 b 直接走權重 3；經過 a 是 1 + 1 = 2，所以最短路徑走 a。",
-     "t": 40
+     "text": "回傳 s 到其他每個頂點的最短（權重和最小）路徑。",
+     "t": 21
     },
     {
-     "text": "把頂點分成兩個集合：explored 與 unexplored，一開始全部都是 unexplored。",
-     "t": 100
+     "text": "例：s 到 b 有兩條路，直接走 s → b 權重 3。",
+     "t": 116
+    },
+    {
+     "text": "經過 a：s → a → b 只要 1 + 1 = 2。",
+     "t": 124
+    },
+    {
+     "text": "所以 s 到 b 的最短路徑是經過 a 的那條。",
+     "t": 130
+    },
+    {
+     "text": "除了起點以外，每個頂點都要找到一條最小權重的路徑。",
+     "t": 138
     }
-   ],
-   "sceneBy": {
-    "ds-10": "dijkstra-explored-sets"
-   }
+   ]
   },
   {
-   "title": "每個頂點標 D 與 P",
-   "scene": "dij-video-sets",
+   "title": "explored／unexplored 與 D、P",
+   "scene": "dijk-init",
    "points": [
     {
-     "text": "D：從 s 到該頂點、只經過 explored 頂點的路徑中最短的距離。",
-     "t": 150
+     "text": "把頂點分成兩個集合：explored 與 unexplored。",
+     "t": 156
     },
     {
-     "text": "P：那條路徑上該頂點的 parent。",
+     "text": "一開始全部（s、a、b、c）都在 unexplored。",
+     "t": 171
+    },
+    {
+     "text": "每個頂點旁邊寫上 D 與 P。",
+     "t": 201
+    },
+    {
+     "text": "D：從 s 到該頂點的最短距離，而且路徑只能經過 explored 頂點。",
      "t": 220
     },
     {
-     "text": "初始：s 的 D = 0、沒有 parent；a、b、c 沒有路可走，D = ∞。",
-     "t": 260
+     "text": "P：那條最短路徑上該頂點的 parent（前一個頂點）。",
+     "t": 288
+    },
+    {
+     "text": "初始：s 到 s 是同一點，D = 0，沒有 parent。",
+     "t": 323
+    },
+    {
+     "text": "還沒有 explored 頂點可經過，a、b、c 都沒有路：D = ∞、沒有 parent。",
+     "t": 354
+    },
+    {
+     "text": "這就是初始狀態。",
+     "t": 426
     }
    ],
-   "sceneBy": {
-    "ds-10": "dijkstra-explored-sets"
-   }
+   "trap": "影片好幾次把 explored vertices 說成 explored edges；D 的定義是「只經過 explored 頂點」的路徑。"
   },
   {
-   "title": "逐步執行：每次 explore D 最小的頂點",
-   "scene": "dij-video-sets",
+   "title": "explore s，再 explore a",
+   "scene": "dijk-explore-sa",
    "points": [
     {
-     "text": "explore s：a 的 D = 1（P = s）、b 的 D = 3（P = s），c 還是 ∞。",
-     "t": 400
+     "text": "下一步：把 unexplored 中 D 最小的頂點移到 explored。",
+     "t": 435
     },
     {
-     "text": "explore a：經過 a 到 b 是 2 < 3，把 b 更新成 D = 2、P = a；到 c 是 1 + 10 = 11 < ∞，c 設成 11、P = a。",
-     "t": 488
+     "text": "D 最小的是 s，先 explore s。",
+     "t": 447
     },
     {
-     "text": "只在新距離「更小」時才更新；比較大的路徑不換。",
-     "t": 540
+     "text": "經過 s 可到 a：D(a) = 1、P(a) = s。",
+     "t": 474
     },
     {
-     "text": "explore b：b → c 的 4 加上 b 已算好的 2 = 6 < 11，c 更新成 D = 6、P = b。",
-     "t": 605
+     "text": "經過 s 可到 b：D(b) = 3、P(b) = s；只經過 s 到不了 c，D(c) 還是 ∞。",
+     "t": 493
     },
     {
-     "text": "更新距離 = 已 explored 頂點的 D + 連到未 explored 頂點的那條邊；最後 explore c，全部 explored 就停。",
-     "t": 667
+     "text": "再取 D 最小的 a 移到 explored。",
+     "t": 525
+    },
+    {
+     "text": "經過 s、a 到 b 只要 2，2 < 3，所以 b 改成 D = 2、P = a。",
+     "t": 544
+    },
+    {
+     "text": "只有找到更短的路才更新；較長的路出現時不改 D。",
+     "t": 582
+    },
+    {
+     "text": "經過 a 到 c：1 + 10 = 11 < ∞，D(c) = 11、P(c) = a。",
+     "t": 608
+    }
+   ]
+  },
+  {
+   "title": "explore b：c 改成 6，然後結束",
+   "scene": "dijk-explore-bc",
+   "points": [
+    {
+     "text": "再取 unexplored 中 D 最小的 b 來 explore。",
+     "t": 627
+    },
+    {
+     "text": "b 到 c 的邊是 4。",
+     "t": 652
+    },
+    {
+     "text": "s 到 c 的距離 = 4 + D(b) = 4 + 2 = 6 < 11，更新成 6。",
+     "t": 669
+    },
+    {
+     "text": "c 的 parent 改成 b。",
+     "t": 682
+    },
+    {
+     "text": "更新規則：連到 unexplored 頂點的那條邊，加上 explored 頂點已算好的 D。",
+     "t": 690
+    },
+    {
+     "text": "最後把 c 也移到 explored。",
+     "t": 717
+    },
+    {
+     "text": "全部 explored 之後演算法結束。",
+     "t": 724
     }
    ],
-   "sceneBy": {
-    "ds-10": "dijkstra-explored-sets"
-   }
+   "trap": "補充：Dijkstra 要求邊的權重不能是負的；有負邊時，已 explored 的頂點可能其實還能更短，答案會錯（改用 Bellman-Ford）。"
   },
   {
    "title": "沿 P 回推最短路徑",
-   "scene": "dij-video-path",
+   "scene": "dijk-path",
    "points": [
     {
+     "text": "跑完後，要找出 s 到 a、b、c 的實際路徑。",
+     "t": 742
+    },
+    {
      "text": "到 a：P(a) = s，路徑 s → a，cost 1。",
-     "t": 730
+     "t": 758
     },
     {
-     "text": "到 b：P(b) = a、P(a) = s，路徑 s → a → b，cost 2。",
-     "t": 760
+     "text": "到 b：P(b) = a，再到 a，P(a) = s。",
+     "t": 770
     },
     {
-     "text": "到 c：P(c) = b → a → s，路徑 s → a → b → c，cost 6。",
-     "t": 793
+     "text": "所以 s → a → b，cost 2；cost 就是該頂點的 D。",
+     "t": 775
+    },
+    {
+     "text": "到 c：P(c) = b → P(b) = a → P(a) = s。",
+     "t": 799
+    },
+    {
+     "text": "路徑 s → a → b → c，cost 6。",
+     "t": 810
     }
-   ],
-   "sceneBy": {
-    "ds-10": "dijkstra-path-trace"
-   }
+   ]
   }
  ],
  "quiz": [
   {
-   "q": "影片的圖（s–a 1、s–b 3、a–b 1、a–c 10、b–c 4），explore s 和 a 之後 c 的 D 是？",
+   "q": "影片的圖（s–a 1、s–b 3、a–b 1、a–c 10、b–c 4），explore s 與 a 之後 c 的 D 是？",
    "opts": [
     "11",
     "6",
@@ -106,10 +186,10 @@
     "∞"
    ],
    "ans": "11",
-   "why": "只經過 explored 的 s、a：1 + 10 = 11；經過 b 的 6 要等 b 被 explore 之後才出現。"
+   "why": "只能經過 explored 的 s、a：1 + 10 = 11；經過 b 的 6 要等 b 被 explore 之後才會出現。"
   },
   {
-   "q": "同一張圖，最後 s 到 c 的最短路徑是？",
+   "q": "同一張圖，s 到 c 的最短路徑是？",
    "opts": [
     "s → a → b → c，cost 6",
     "s → a → c，cost 11",
@@ -117,10 +197,10 @@
     "s → c，cost 10"
    ],
    "ans": "s → a → b → c，cost 6",
-   "why": "1 + 1 + 4 = 6，沿 P(c) = b、P(b) = a、P(a) = s 回推。"
+   "why": "1 + 1 + 4 = 6；沿 P(c) = b、P(b) = a、P(a) = s 回推。"
   },
   {
-   "q": "Dijkstra 每一步選哪個頂點 explore？",
+   "q": "Dijkstra 每一步把哪個頂點移到 explored？",
    "opts": [
     "unexplored 中 D 最小的",
     "unexplored 中編號最小的",
@@ -128,19 +208,29 @@
     "explored 中 D 最大的"
    ],
    "ans": "unexplored 中 D 最小的",
-   "why": "greedy：D 最小的那個，它的距離已經不可能再被改小（在非負權重下）。"
+   "why": "Greedy：非負權重下，D 最小的那個不可能再被別的路改短。"
   },
   {
-   "q": "P（parent）用來做什麼？",
+   "q": "explore a 時發現經過 a 到 b 是 2，原本 D(b) = 3，要怎麼做？",
+   "opts": [
+    "D(b) 改成 2、P(b) 改成 a",
+    "保持 3，因為 b 先被 s 找到",
+    "D(b) 改成 5（2 + 3）",
+    "把 b 直接移到 explored"
+   ],
+   "ans": "D(b) 改成 2、P(b) 改成 a",
+   "why": "找到更短的路才更新，並同時更新 parent。"
+  },
+  {
+   "q": "P（parent）的用途是？",
    "opts": [
     "回推出實際的最短路徑",
-    "計算時間複雜度",
-    "判斷有沒有負 cycle",
+    "算時間複雜度",
+    "偵測負 cycle",
     "決定下一個 explore 誰"
    ],
    "ans": "回推出實際的最短路徑",
-   "why": "從目的地沿 P 一路往回走到 s，反過來就是路徑。"
+   "why": "從終點沿 P 一路往回走到 s，反過來就是路徑。"
   }
- ],
- "timing": "estimated"
+ ]
 }

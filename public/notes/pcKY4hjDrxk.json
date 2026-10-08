@@ -1,0 +1,352 @@
+{
+ "video": "pcKY4hjDrxk",
+ "label": "Abdul Bari：BFS",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "兩個術語：visit 與 explore",
+   "scene": "graphbari-terms",
+   "points": [
+    {
+     "text": "BFS（breadth first search）與 DFS（depth first search）都是 graph traversal 方法；先用小例子看差別，再用大例子細講。",
+     "t": 0
+    },
+    {
+     "text": "小例子其實是一棵樹，但 tree 也是一種 graph。",
+     "t": 27
+    },
+    {
+     "text": "visit（拜訪）：走到某一個頂點上。",
+     "t": 41
+    },
+    {
+     "text": "explore（探索）：站在某頂點上，把它所有相鄰頂點都拜訪一遍。",
+     "t": 47
+    }
+   ]
+  },
+  {
+   "title": "小例子：BFS",
+   "scene": "graphbari-small-bfs",
+   "points": [
+    {
+     "text": "選 1 當起點（BFS 的起點可以任選），先拜訪 1。",
+     "t": 65
+    },
+    {
+     "text": "探索 1：拜訪相鄰的 2、4、5，順序可以任意。",
+     "t": 79
+    },
+    {
+     "text": "接著挑下一個要探索的點 2：拜訪 7、3、6（順序同樣任意）。",
+     "t": 101
+    },
+    {
+     "text": "所有頂點都拜訪過、沒有點可再探索 → BFS = 1 2 4 5 7 3 6。",
+     "t": 119
+    }
+   ]
+  },
+  {
+   "title": "小例子：DFS",
+   "scene": "graphbari-small-dfs",
+   "points": [
+    {
+     "text": "DFS 也從 1 開始：從 1 走到 2。",
+     "t": 126
+    },
+    {
+     "text": "4、5 先不要拜訪：到了新的頂點 2，就改成探索 2。",
+     "t": 144
+    },
+    {
+     "text": "從 2 走到 3；3 沒有其他鄰居 → 3 探索完，回到 2。",
+     "t": 159
+    },
+    {
+     "text": "回到 2 繼續探索 6、7，再回到 1 拜訪 4、5 → DFS = 1 2 3 6 7 4 5。",
+     "t": 179
+    },
+    {
+     "text": "差別：BFS 把一個點探索完才換下一個點；DFS 一拜訪到新點，就暫停（suspend）目前的點，先探索新點。",
+     "t": 214
+    }
+   ]
+  },
+  {
+   "title": "Binary tree：BFS 像 level order、DFS 像 pre-order",
+   "scene": "graphbari-tree-level-pre",
+   "points": [
+    {
+     "text": "第二個例子是 binary tree（1；2、3；4、5、6、7），一樣可以做 BFS／DFS。",
+     "t": 251
+    },
+    {
+     "text": "BFS = 1 2 3 4 5 6 7，就是 binary tree 的 level order。",
+     "t": 264
+    },
+    {
+     "text": "DFS：1 → 2 → 4，4 沒有東西就退回走 5，再回 1 走 3 → 6 → 7。",
+     "t": 284
+    },
+    {
+     "text": "DFS = 1 2 4 5 3 6 7，就像 pre-order traversal。",
+     "t": 308
+    }
+   ]
+  },
+  {
+   "title": "大例子：BFS 用 queue",
+   "scene": "graphbari-bfs-queue",
+   "points": [
+    {
+     "text": "換一張較大的圖（10 個頂點）詳細講 BFS。",
+     "t": 317
+    },
+    {
+     "text": "BFS 要用一個資料結構：queue。",
+     "t": 337
+    },
+    {
+     "text": "初始步驟：選起點 1，寫進結果，也放進 queue。",
+     "t": 354
+    },
+    {
+     "text": "重複步驟：從 queue 取出一點來探索。取出 1：依序拜訪 4、2，寫進結果並 enqueue。",
+     "t": 377
+    },
+    {
+     "text": "取出 4 探索：拜訪 3。",
+     "t": 410
+    },
+    {
+     "text": "取出 2：3 已拜訪，依序拜訪 5、8、7。",
+     "t": 432
+    },
+    {
+     "text": "取出 3：拜訪 10、9；取出 5：8、7 已拜訪，拜訪 6。",
+     "t": 467
+    },
+    {
+     "text": "8、7、10、9、6 都沒有新鄰居；連到已拜訪頂點的邊畫成虛線。BFS = 1 4 2 3 5 8 7 10 9 6。",
+     "t": 513
+    }
+   ]
+  },
+  {
+   "title": "BFS spanning tree、cross edge 與兩條規則",
+   "scene": "graphbari-bfs-rules",
+   "points": [
+    {
+     "text": "BFS 過程畫出的樹叫 BFS spanning tree。",
+     "t": 546
+    },
+    {
+     "text": "虛線的邊（非樹邊）叫 cross edge。",
+     "t": 557
+    },
+    {
+     "text": "自由的地方：起點任選；探索時鄰居的拜訪順序任選。",
+     "t": 568
+    },
+    {
+     "text": "規則一：選一個點來探索時，必須拜訪完它所有鄰居，才能換下一個點（探索 1 時 4、2 都要先拜訪）。",
+     "t": 590
+    },
+    {
+     "text": "規則二：下一個要探索的點只能從 queue 取。",
+     "t": 614
+    }
+   ],
+   "trap": "補充：無向圖的 BFS 中，非樹邊連接的兩點層數最多差 1，都是 cross edge，不會出現 back edge。"
+  },
+  {
+   "title": "其他合法的 BFS",
+   "scene": "graphbari-bfs-more",
+   "points": [
+    {
+     "text": "照這兩條規則，同一張圖可以寫出很多合法 BFS。",
+     "t": 626
+    },
+    {
+     "text": "從 1 出發、先拜訪 2 再 4：1 2 4 8 5 7 3 6 10 9 也合法。",
+     "t": 639
+    },
+    {
+     "text": "從 5 出發：5 2 8 7 6 3 1 9 10 4 也合法。",
+     "t": 684
+    },
+    {
+     "text": "起點、鄰居順序都能改，所以 BFS 答案不唯一。",
+     "t": 723
+    }
+   ],
+   "trap": "補充：「從 5 出發」那段逐字稿只聽得到「8、7、6」再「explore 2」，依規則 2 必須先被拜訪，所以採 5 2 8 7 6 …。考試題目通常會規定「鄰居依編號由小到大」，答案才會唯一。"
+  },
+  {
+   "title": "大例子：DFS 用 stack",
+   "scene": "graphbari-dfs-stack",
+   "points": [
+    {
+     "text": "DFS 用的資料結構是 stack。",
+     "t": 731
+    },
+    {
+     "text": "初始：從 1 開始，拜訪 1；探索 1 → 拜訪 4。",
+     "t": 750
+    },
+    {
+     "text": "DFS 規則：一拜訪到新點，就把目前的點暫停、放進 stack，先探索新點。",
+     "t": 778
+    },
+    {
+     "text": "4 → 3 → 10；10 沒有鄰居，靠 stack 知道要回到 3。",
+     "t": 797
+    },
+    {
+     "text": "3 → 9，退回 3 → 2 → 8 → 7 → 5 → 6。",
+     "t": 832
+    },
+    {
+     "text": "6 沒鄰居回到 5；5 的 2、8 都已拜訪 → 5 探索完，依 stack 一路退回 7、8、2、1、4、3。",
+     "t": 889
+    },
+    {
+     "text": "DFS 是一路往深處走：幾乎所有頂點都先被拜訪，之後才陸續被探索完。",
+     "t": 904
+    }
+   ]
+  },
+  {
+   "title": "DFS spanning tree、back edge 與 pre-order",
+   "scene": "graphbari-dfs-tree",
+   "points": [
+    {
+     "text": "DFS 結果：1 4 3 10 9 2 8 7 5 6；走過的邊形成 DFS spanning tree。",
+     "t": 944
+    },
+    {
+     "text": "虛線的非樹邊叫 back edge。",
+     "t": 957
+    },
+    {
+     "text": "把這棵 DFS tree 做 pre-order，得到的正是同樣的順序。",
+     "t": 969
+    }
+   ],
+   "trap": "補充：無向圖的 DFS 只會有 tree edge 和 back edge（非樹邊一定連回祖先）；BFS 的非樹邊才叫 cross edge。"
+  },
+  {
+   "title": "其他合法的 DFS",
+   "scene": "graphbari-dfs-more",
+   "points": [
+    {
+     "text": "直接看圖寫出更多合法的 DFS。",
+     "t": 984
+    },
+    {
+     "text": "從 1 出發先走 2：1 2 8 7 5 6 3 9 10 4。",
+     "t": 992
+    },
+    {
+     "text": "從 3 出發：3 4 1 2 5 6 7 8 10 9。",
+     "t": 1042
+    },
+    {
+     "text": "起點、鄰居都能任選；唯一規則：拜訪到新點就暫停目前的點，先探索新點。",
+     "t": 1087
+    }
+   ]
+  },
+  {
+   "title": "時間複雜度",
+   "scene": "graphbari-complexity",
+   "points": [
+    {
+     "text": "影片說 BFS、DFS 的時間都是 O(n)，n = 頂點數。",
+     "t": 1102
+    }
+   ],
+   "trap": "補充：O(n) 只算了「每個頂點拜訪一次」。探索時還要檢查每條邊：用 adjacency list 是 O(V + E)，用 adjacency matrix 是 O(V²)，考試以此為準。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "小例子：1 鄰接 2、4、5；2 鄰接 3、6、7。從 1 出發、鄰居依編號由小到大，BFS 順序是？",
+   "opts": [
+    "1 2 4 5 3 6 7",
+    "1 2 3 6 7 4 5",
+    "1 2 3 4 5 6 7",
+    "1 2 6 3 7 4 5"
+   ],
+   "ans": "1 2 4 5 3 6 7",
+   "why": "BFS 先把 1 的鄰居 2、4、5 全部拜訪完，才去探索 2（得到 3、6、7）。1 2 3 6 7 4 5 是 DFS。"
+  },
+  {
+   "q": "在 binary tree 上，BFS 的順序相當於哪一種走訪？",
+   "opts": [
+    "level order",
+    "pre-order",
+    "in-order",
+    "post-order"
+   ],
+   "ans": "level order",
+   "why": "BFS 一層一層往外擴，就是 level order；DFS 才像 pre-order。"
+  },
+  {
+   "q": "在 binary tree 1；2、3；4、5、6、7 上從 1 做 DFS（先左後右），結果是？",
+   "opts": [
+    "1 2 4 5 3 6 7",
+    "1 2 3 4 5 6 7",
+    "4 2 5 1 6 3 7",
+    "4 5 2 6 7 3 1"
+   ],
+   "ans": "1 2 4 5 3 6 7",
+   "why": "DFS 先一路往左深入、再退回，等同 pre-order（根 → 左 → 右）。"
+  },
+  {
+   "q": "BFS 從哪裡取得「下一個要探索的頂點」？",
+   "opts": [
+    "queue（先進先出）",
+    "stack（後進先出）",
+    "編號最小的未拜訪頂點",
+    "任意一個已拜訪頂點"
+   ],
+   "ans": "queue（先進先出）",
+   "why": "BFS 的規則：下一個探索點只能從 queue 取；DFS 才是靠 stack 記住被暫停的點。"
+  },
+  {
+   "q": "影片的大圖（邊：1-2 1-4 2-3 2-5 2-7 2-8 3-4 3-9 3-10 5-6 5-7 5-8 7-8）從 1 出發，哪一個「不是」合法的 BFS？",
+   "opts": [
+    "1 4 3 2 5 8 7 10 9 6",
+    "1 4 2 3 5 8 7 10 9 6",
+    "1 2 4 8 5 7 3 6 10 9",
+    "1 2 4 3 5 7 8 9 10 6"
+   ],
+   "ans": "1 4 3 2 5 8 7 10 9 6",
+   "why": "探索 1 時必須先拜訪完 1 的所有鄰居（4 和 2），才能拜訪 4 的鄰居 3；3 出現在 2 前面違反規則。"
+  },
+  {
+   "q": "DFS spanning tree 之外、連回祖先的虛線邊叫什麼？",
+   "opts": [
+    "back edge",
+    "cross edge",
+    "tree edge",
+    "forward edge"
+   ],
+   "ans": "back edge",
+   "why": "DFS 的非樹邊叫 back edge；BFS spanning tree 的非樹邊叫 cross edge。"
+  },
+  {
+   "q": "用 adjacency list 表示圖時，BFS 或 DFS 的時間複雜度是？",
+   "opts": [
+    "O(V + E)",
+    "O(V)",
+    "O(V²)",
+    "O(E log V)"
+   ],
+   "ans": "O(V + E)",
+   "why": "每個頂點拜訪一次、每條邊在鄰接串列中被檢查常數次；影片說的 O(n) 只算了頂點。用 adjacency matrix 則是 O(V²)。"
+  }
+ ]
+}

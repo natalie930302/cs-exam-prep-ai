@@ -1,0 +1,535 @@
+{
+ "video": "9bkvws_vqLU",
+ "label": "MIT 6.006 Rec7：Comparison/Counting/Radix Sort",
+ "timing": "estimated",
+ "sections": [
+  {
+   "title": "開場（OCW 授權說明）",
+   "scene": null,
+   "points": [
+    {
+     "text": "MIT OpenCourseWare 授權與捐款說明。",
+     "t": 0
+    },
+    {
+     "text": "助教先問大家想深入複習哪種排序。",
+     "t": 21
+    }
+   ]
+  },
+  {
+   "title": "學過的五種排序：時間與 in place",
+   "scene": "sortmit-rec-roster",
+   "points": [
+    {
+     "text": "從最簡單的開始：insertion、merge、heap、counting、radix。",
+     "t": 44
+    },
+    {
+     "text": "線性是最好的可能：輸出就要寫 n 個元素，所以排序至少 Θ(n)。",
+     "t": 112
+    },
+    {
+     "text": "Heap 的操作是 O(h) = O(log n)；n 次 insert 再 n 次 extract → O(n log n)。",
+     "t": 146
+    },
+    {
+     "text": "Merge sort 不是 in place；in-place merge sort 存在但太難，課程不教。",
+     "t": 204
+    },
+    {
+     "text": "Heap sort 是 in place；insertion sort 太慢所以不太在意。",
+     "t": 232
+    }
+   ],
+   "trap": "補充：insertion sort 的時間（最差 O(n²)）影片中沒有念出來。"
+  },
+  {
+   "title": "Comparison model 與 n log n 下界",
+   "scene": "sortmit-cmp-model",
+   "points": [
+    {
+     "text": "前三種的共同點：不需要整數，只要 key 能互相比較。",
+     "t": 260
+    },
+    {
+     "text": "這就是 comparison model：key 是 blob，只知道兩個誰大。",
+     "t": 285
+    },
+    {
+     "text": "問題：只靠比較的排序有下界 n log n。",
+     "t": 316
+    },
+    {
+     "text": "因此在這個模型裡 merge sort 與 heap sort 已是最佳。",
+     "t": 333
+    }
+   ]
+  },
+  {
+   "title": "Python：讓自訂物件支援比較",
+   "scene": "sortmit-rec-python-cmp",
+   "points": [
+    {
+     "text": "想把自己的物件丟進 merge sort：要讓它回應比較運算子。",
+     "t": 345
+    },
+    {
+     "text": "舊寫法（只在 Python 2）：__cmp__(self, other) 回傳 <0、0、>0。",
+     "t": 412
+    },
+    {
+     "text": "舊程式裡會看到，新程式不要用。",
+     "t": 424
+    },
+    {
+     "text": "新寫法：__lt__、__le__、__gt__、__ge__，回傳 True / False。",
+     "t": 433
+    },
+    {
+     "text": "也記得定義 __eq__ 和 __ne__。",
+     "t": 469
+    },
+    {
+     "text": "這樣任何物件都能當 key：insertion、merge、heap、BST、AVL 全都能用。",
+     "t": 503
+    },
+    {
+     "text": "缺點是 n log n 下界；要更快就得打開盒子看內容。",
+     "t": 515
+    }
+   ]
+  },
+  {
+   "title": "Counting Sort：4 1 3 2 3",
+   "scene": "sortmit-rec-count-basic",
+   "points": [
+    {
+     "text": "例子：陣列 4 1 3 2 3。",
+     "t": 558
+    },
+    {
+     "text": "假設：值是 0..k−1 的整數（或能對應到這些整數）。",
+     "t": 589
+    },
+    {
+     "text": "開一個 index 0..5 的陣列，初值都是 0。",
+     "t": 615
+    },
+    {
+     "text": "走過輸入，把對應的格子加一；第二個 3 讓 count[3] 變 2。",
+     "t": 632
+    },
+    {
+     "text": "依序輸出：一個 1、一個 2、兩個 3、一個 4。",
+     "t": 680
+    }
+   ]
+  },
+  {
+   "title": "穩定性：每格改成 linked list",
+   "scene": "sortmit-rec-count-lists",
+   "points": [
+    {
+     "text": "我們在意 stability。",
+     "t": 704
+    },
+    {
+     "text": "穩定：兩個相等的 key，輸入中先出現的，輸出也要在前面。",
+     "t": 714
+    },
+    {
+     "text": "兩個 3 標成 3a、3b；只存計數就分不出誰是誰。",
+     "t": 736
+    },
+    {
+     "text": "改法：每格存一條 linked list，放對應到該值的 key。",
+     "t": 759
+    },
+    {
+     "text": "得到 1 | 2 | 3a → 3b | 4，依序輸出即可。",
+     "t": 768
+    }
+   ]
+  },
+  {
+   "title": "不用 linked list：pos[v] = 比 v 小的個數",
+   "scene": "sortmit-rec-pos-meaning",
+   "points": [
+    {
+     "text": "在 C 這種低階語言沒有現成 linked list，要換個方法。",
+     "t": 787
+    },
+    {
+     "text": "開一個 5 格的輸出陣列，希望看到 key 就知道它該放哪格。",
+     "t": 845
+    },
+    {
+     "text": "3a 應該放在「比 3 小的 key 有幾個」那一格（= 2）。",
+     "t": 912
+    },
+    {
+     "text": "4：有四個 key 比它小 → 放在 position 4。",
+     "t": 933
+    },
+    {
+     "text": "另開一個大小 k 的陣列存這個資訊。",
+     "t": 985
+    },
+    {
+     "text": "pos[v] = 比 v 小的元素個數：0 0 1 2 4 5。",
+     "t": 1071
+    },
+    {
+     "text": "相鄰兩格的差就是 count：例如 pos[4] − pos[3] = 3 的個數。",
+     "t": 1094
+    }
+   ],
+   "trap": "15:04 助教把第二個 3 改名為 3c，後面會說 3a、3c；指的就是本筆記的 3b。"
+  },
+  {
+   "title": "原地算 pos：running sum ＋ temp",
+   "scene": "sortmit-rec-pos-forward",
+   "points": [
+    {
+     "text": "目標：把 count 陣列原地轉成 pos 陣列。",
+     "t": 1185
+    },
+    {
+     "text": "對每個新元素都回頭數會變 O(n²)，改用 running sum。",
+     "t": 1242
+    },
+    {
+     "text": "sum 從 0 開始，i 從 0 到 k−1（Python 的 0-based）。",
+     "t": 1260
+    },
+    {
+     "text": "需要 temp：temp = pos[i]，pos[i] = 加之前的 sum，sum += temp。",
+     "t": 1351
+    },
+    {
+     "text": "原地覆寫很容易寫錯，大家開始搞混。",
+     "t": 1404
+    }
+   ]
+  },
+  {
+   "title": "技巧：尾端放 n，由右往左減",
+   "scene": "sortmit-rec-pos-backward",
+   "points": [
+    {
+     "text": "在陣列後面放元素總數 5。",
+     "t": 1467
+    },
+    {
+     "text": "改從尾端開始：最後一個值的位置 = n − 它的個數。",
+     "t": 1505
+    },
+    {
+     "text": "i 由最後一格往 0 走。",
+     "t": 1530
+    },
+    {
+     "text": "所有 count 加起來 = key 的總數 = n。",
+     "t": 1592
+    },
+    {
+     "text": "sum = n；每步 sum = sum − pos[i]，再 pos[i] = sum。",
+     "t": 1718
+    },
+    {
+     "text": "除了 sum 不需要 temp。",
+     "t": 1753
+    },
+    {
+     "text": "迴圈前的 pos 是 count，迴圈後是位置，但其實是同一個陣列。",
+     "t": 1779
+    }
+   ],
+   "trap": "25:30 板書寫「for i from n−1 down to 0」，但 pos 只有 k 格，應為 i = k−1 down to 0（迴圈跑的是值域，不是元素個數）。"
+  },
+  {
+   "title": "放進 out：out[pos[A[i]]] = A[i]，pos++",
+   "scene": "sortmit-rec-place",
+   "points": [
+    {
+     "text": "算出 pos 是最難的一步，接著產生輸出陣列。",
+     "t": 1800
+    },
+    {
+     "text": "先開一個 n 個 nil 的 out 陣列。",
+     "t": 1828
+    },
+    {
+     "text": "i 從 0 到 n−1 走過 A：out[pos[A[i]]] = A[i]，然後 pos[A[i]] += 1。",
+     "t": 1894
+    },
+    {
+     "text": "4：pos[4] = 4 → 寫到 out[4]，pos[4] 變 5。",
+     "t": 1921
+    },
+    {
+     "text": "1 → out[0]；3a → out[2]；2 → out[1]。",
+     "t": 1953
+    },
+    {
+     "text": "下一個 3：pos[3] 已是 3，不會蓋掉 3a。",
+     "t": 1999
+    },
+    {
+     "text": "pos 一開始指向每種 key 的第一格，寫入後加一。",
+     "t": 2030
+    }
+   ]
+  },
+  {
+   "title": "Radix 的 key：d 位數、每位 base k",
+   "scene": "sortmit-rec-radix-keys",
+   "points": [
+    {
+     "text": "大家投票改講 radix sort；例子 2341、1432、2413、1243、2143、1234。",
+     "t": 2130
+    },
+    {
+     "text": "Counting sort 的 key 是 0..k−1 的整數。",
+     "t": 2158
+    },
+    {
+     "text": "Radix sort 的 key 是 d 位數的序列，每位是 base k（0..k−1）。",
+     "t": 2170
+    },
+    {
+     "text": "可表示 kᵈ 種 key；例：base 2、8 bits → 2⁸。",
+     "t": 2216
+    },
+    {
+     "text": "每多一位，可表示的 key 數 ×k。",
+     "t": 2231
+    }
+   ]
+  },
+  {
+   "title": "LSD：從最低位開始，每回合穩定",
+   "scene": "sortmit-rec-radix-lsd",
+   "points": [
+    {
+     "text": "d 回合，每回合依其中一位把所有 key 排序。",
+     "t": 2271
+    },
+    {
+     "text": "先排哪一位？直覺是最高位，考試時要反著來。",
+     "t": 2326
+    },
+    {
+     "text": "Radix sort 從最低位開始，往上做。",
+     "t": 2332
+    },
+    {
+     "text": "先依最後一位排序。",
+     "t": 2366
+    },
+    {
+     "text": "依倒數第二位排時，排序法必須 stable。",
+     "t": 2390
+    },
+    {
+     "text": "穩定排序後：2413、1432、1234、2341、1243、2143。",
+     "t": 2405
+    },
+    {
+     "text": "十位同為 4 的三個仍依個位有序 → 已依最後兩位排好。",
+     "t": 2453
+    },
+    {
+     "text": "一路往前：最後一位、最後兩位、三位……到全部；所以要穩定且從尾端開始。",
+     "t": 2481
+    },
+    {
+     "text": "剛學的穩定排序：counting sort。",
+     "t": 2509
+    }
+   ]
+  },
+  {
+   "title": "時間：何時是 O(n)",
+   "scene": "sortmit-rec-radix-time",
+   "points": [
+    {
+     "text": "Radix = d 回合 counting sort，每回合 O(n + k)。",
+     "t": 2525
+    },
+    {
+     "text": "想說 radix 是最佳的 O(n)。",
+     "t": 2563
+    },
+    {
+     "text": "d·n 要是 O(n) → d = O(1)。",
+     "t": 2596
+    },
+    {
+     "text": "k 比 n 小時一回合仍是 O(n)，所以乾脆取 k = O(n)。",
+     "t": 2630
+    },
+    {
+     "text": "電腦裡可用 base 10000 之類的位數；位數越少跑得越快。",
+     "t": 2702
+    },
+    {
+     "text": "兩個條件合起來：key 可到 n^O(1)，也就是任意常數 c 的 nᶜ。",
+     "t": 2750
+    }
+   ]
+  },
+  {
+   "title": "換成 merge sort？與總結",
+   "scene": "sortmit-rec-radix-merge",
+   "points": [
+    {
+     "text": "如果每回合改用穩定的 merge sort 呢？",
+     "t": 2772
+    },
+    {
+     "text": "d 次 merge sort = d·n log n，d 再小也不是線性。",
+     "t": 2806
+    },
+    {
+     "text": "所以 merge sort 不適合搭配 radix sort。",
+     "t": 2815
+    },
+    {
+     "text": "總結：從 n log n 做到 O(n)，碰到 Ω(n) 的極限。",
+     "t": 2830
+    }
+   ]
+  },
+  {
+   "title": "穩定性 Q&A：為什麼需要、哪些穩定",
+   "scene": "sortmit-rec-stable-why",
+   "points": [
+    {
+     "text": "學生問：stability 的條件是什麼、哪些排序穩定？",
+     "t": 2846
+    },
+    {
+     "text": "定義：相等的 key，輸入中先出現的在輸出也先出現。",
+     "t": 2863
+    },
+    {
+     "text": "key 可能是複雜物件，排序只看到它對應的整數。",
+     "t": 2891
+    },
+    {
+     "text": "第二回合 counting sort 只看到十位：三個數看起來都是 4。",
+     "t": 2927
+    },
+    {
+     "text": "若把 2341 放到最後，就不再依最後兩位有序 → 依賴穩定性的演算法壞掉。",
+     "t": 2952
+    },
+    {
+     "text": "Insertion sort 穩定：遇到相等的不會交換。",
+     "t": 3014
+    },
+    {
+     "text": "Merge sort：DocDist 版不穩定，但改一個字元就穩定（見講義）。",
+     "t": 3018
+    },
+    {
+     "text": "Heap sort 不穩定（有很小的反例）；counting、radix 穩定。",
+     "t": 3031
+    }
+   ],
+   "trap": "補充：merge 時「相等取左邊」（用 ≤ 而不是 <）就是那一個字元的差別。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Insertion、Merge、Heap 三者中，哪一個同時是 O(n log n) 且 in place？",
+   "opts": [
+    "Heap sort",
+    "Merge sort",
+    "Insertion sort",
+    "三者都是"
+   ],
+   "ans": "Heap sort",
+   "why": "Merge sort 需要額外陣列；insertion sort 是 in place 但 O(n²)。"
+  },
+  {
+   "q": "A = 4 1 3 2 3（k = 6），pos[v] =「比 v 小的元素個數」，pos[4] 是多少？",
+   "opts": [
+    "4",
+    "3",
+    "1",
+    "5"
+   ],
+   "ans": "4",
+   "why": "比 4 小的有 1、3、2、3 共四個，所以 4 寫到 out[4]。"
+  },
+  {
+   "q": "用「尾端放 n、由右往左」原地把 count 轉成 pos 時，sum 的初值是？",
+   "opts": [
+    "n（元素總數）",
+    "0",
+    "k",
+    "count[k−1]"
+   ],
+   "ans": "n（元素總數）",
+   "why": "所有 count 加起來 = n；每步 sum −= pos[i]、pos[i] = sum。"
+  },
+  {
+   "q": "放進 out 時，為什麼每寫一個就要 pos[A[i]] += 1？",
+   "opts": [
+    "下一個相同的 key 要放在下一格，不會蓋掉前一個",
+    "為了讓演算法變成 in place",
+    "為了讓 pos 變回 count",
+    "為了跳過值為 0 的 key"
+   ],
+   "ans": "下一個相同的 key 要放在下一格，不會蓋掉前一個",
+   "why": "3a 寫進 out[2] 後 pos[3] 變 3，所以 3b 寫進 out[3]，也因此穩定。"
+  },
+  {
+   "q": "對 2341 1432 2413 1243 2143 1234 做 LSD radix sort，第 2 回合（十位）後的順序是？",
+   "opts": [
+    "2413 1432 1234 2341 1243 2143",
+    "2413 1432 1234 1243 2143 2341",
+    "1234 1243 1432 2143 2341 2413",
+    "2341 1432 2413 1243 2143 1234"
+   ],
+   "ans": "2413 1432 1234 2341 1243 2143",
+   "why": "依十位穩定排序：1 → 2413；3 → 1432、1234；4 → 2341、1243、2143（保持上一回合順序）。"
+  },
+  {
+   "q": "要讓 radix sort 是 O(n)，需要哪兩個條件？",
+   "opts": [
+    "d = O(1) 且 k = O(n)",
+    "d = O(log n) 且 k = O(1)",
+    "d = O(n) 且 k = O(1)",
+    "只要 k = O(n) 就好"
+   ],
+   "ans": "d = O(1) 且 k = O(n)",
+   "why": "總時間 O(d(n + k))；d 是常數、k 不超過 O(n) 才是 O(n)，也就是 key 可到 n^O(1)。"
+  },
+  {
+   "q": "如果 radix sort 每回合改用穩定的 merge sort，時間會變成？",
+   "opts": [
+    "O(d·n log n)，不再線性",
+    "O(d·(n + k))，一樣",
+    "O(n)",
+    "O(n²)"
+   ],
+   "ans": "O(d·n log n)，不再線性",
+   "why": "每回合都要 n log n，d 再小也逃不掉。"
+  },
+  {
+   "q": "以下哪一個排序不穩定？",
+   "opts": [
+    "Heap sort",
+    "Insertion sort",
+    "Counting sort",
+    "Radix sort"
+   ],
+   "ans": "Heap sort",
+   "why": "Heap sort 有小反例會把相等元素弄反；merge sort 也只要相等取左邊就穩定。"
+  }
+ ]
+}

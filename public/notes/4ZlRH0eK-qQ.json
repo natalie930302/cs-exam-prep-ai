@@ -1,0 +1,418 @@
+{
+ "video": "4ZlRH0eK-qQ",
+ "label": "Abdul Bari：Prims and Kruskals Algorithms",
+ "timing": "estimated",
+ "sections": [
+  {
+   "title": "Spanning tree 的定義",
+   "scene": "galgo-bari-st6",
+   "points": [
+    {
+     "text": "先了解什麼是 spanning tree。",
+     "t": 4
+    },
+    {
+     "text": "圖 G = (V, E)：V = {1..6}，E 是邊的集合。",
+     "t": 11
+    },
+    {
+     "text": "spanning tree 是 G 的 subgraph。",
+     "t": 41
+    },
+    {
+     "text": "頂點全部要拿，邊只拿一部分。",
+     "t": 63
+    },
+    {
+     "text": "n = 6 個頂點 → 只拿 n − 1 = 5 條邊。",
+     "t": 80
+    },
+    {
+     "text": "tree 不能有 cycle。",
+     "t": 107
+    },
+    {
+     "text": "換一條邊不拿，也會是 spanning tree：選哪幾條是 choice。",
+     "t": 124
+    },
+    {
+     "text": "形式定義：S ⊆ G，V(S) = V(G)，|E(S)| = |V| − 1。",
+     "t": 143
+    }
+   ]
+  },
+  {
+   "title": "可能的 spanning tree 有幾棵",
+   "scene": "galgo-bari-count",
+   "points": [
+    {
+     "text": "一張圖可以有幾棵不同的 spanning tree？",
+     "t": 171
+    },
+    {
+     "text": "6 條邊選 5 條：6C5 = 6 種。",
+     "t": 186
+    },
+    {
+     "text": "再多一條邊：7 條選 5 條，可能更多。",
+     "t": 233
+    },
+    {
+     "text": "是 7C5，但這條新邊會形成 cycle。",
+     "t": 252
+    },
+    {
+     "text": "它形成了兩個（頂點少於 6 的）cycle。",
+     "t": 261
+    },
+    {
+     "text": "Bari 的算法：7C5 − 2。",
+     "t": 276
+    },
+    {
+     "text": "一般式：C(|E|, |V| − 1) − cycle 數。",
+     "t": 295
+    }
+   ],
+   "trap": "補充（更正）：「減掉 cycle 個數」不對。要扣掉的是「含 cycle 的 5 邊組合」個數：若新邊是對角線 2–5，兩個 4-cycle 各配 1 條其他邊，共 3 + 3 = 6 組，答案是 21 − 6 = 15，不是 19。一般圖要用 Kirchhoff 的 matrix-tree theorem 算。"
+  },
+  {
+   "title": "Weighted graph：cost 不同，要找最小",
+   "scene": "galgo-bari-costs",
+   "points": [
+    {
+     "text": "邊有權重的 weighted graph。",
+     "t": 302
+    },
+    {
+     "text": "4 個頂點 → 每棵 spanning tree 3 條邊。",
+     "t": 321
+    },
+    {
+     "text": "第一棵：5 + 3 + 6 = 14。",
+     "t": 339
+    },
+    {
+     "text": "第二棵：4 + 6 + 3 = 13。",
+     "t": 356
+    },
+    {
+     "text": "第三棵：4 + 2 + 3 = 9。",
+     "t": 372
+    },
+    {
+     "text": "不同的 spanning tree cost 會不同。",
+     "t": 393
+    },
+    {
+     "text": "問題：找 cost 最小的 minimum cost spanning tree。",
+     "t": 409
+    },
+    {
+     "text": "全部試一遍可以，但太花時間；有 greedy 方法：Prim 和 Kruskal。",
+     "t": 416
+    }
+   ],
+   "trap": "補充：舞台的 4 頂點圖是依三棵樹的權重（5,3,6／4,6,3／4,2,3）重建的。"
+  },
+  {
+   "title": "Prim 的作法（cost 99）",
+   "scene": "prim-connected-min",
+   "points": [
+    {
+     "text": "用 Prim 找 MST。",
+     "t": 462
+    },
+    {
+     "text": "先選整張圖最小的邊：(1, 6) = 10。",
+     "t": 481
+    },
+    {
+     "text": "之後每次選最小的邊，但它必須連到已選的頂點。",
+     "t": 499
+    },
+    {
+     "text": "下一小的是 (3, 4) = 12，但它沒有連到 1 或 6，不能選。",
+     "t": 507
+    },
+    {
+     "text": "目的：一直維持一棵樹。",
+     "t": 521
+    },
+    {
+     "text": "跟 1、6 相連的有 25、28，選 25；接著選 22、12、16、14。",
+     "t": 542
+    },
+    {
+     "text": "6 條邊選完，cost = 99。",
+     "t": 617
+    },
+    {
+     "text": "Prim：先選最小邊，之後一直選「相連的」最小邊。",
+     "t": 626
+    }
+   ],
+   "trap": "補充：課本的 Prim 從任一頂點開始；從頂點 1 開始的第一步剛好也是 (1, 6) = 10，過程相同。"
+  },
+  {
+   "title": "Prim 遇到不連通的圖",
+   "scene": "galgo-prim-disconn",
+   "points": [
+    {
+     "text": "7 個頂點、分成兩塊的不連通圖。",
+     "t": 645
+    },
+    {
+     "text": "沒有任何演算法能找出它的 spanning tree。",
+     "t": 667
+    },
+    {
+     "text": "spanning tree 一定要連通。",
+     "t": 678
+    },
+    {
+     "text": "如果從頂點 1 跑 Prim，只會得到 1 所在那一塊的 spanning tree。",
+     "t": 684
+    }
+   ]
+  },
+  {
+   "title": "Kruskal 的作法（同樣 99）",
+   "scene": "kruskal-reject-cycle",
+   "points": [
+    {
+     "text": "Kruskal 也是 greedy：不用試所有 spanning tree。",
+     "t": 693
+    },
+    {
+     "text": "永遠選 cost 最小的邊。",
+     "t": 707
+    },
+    {
+     "text": "依序：(1, 6) 10、(3, 4) 12、(2, 7) 14、(2, 3) 16。",
+     "t": 721
+    },
+    {
+     "text": "下一條 (4, 7) 18 會形成 cycle，丟掉。",
+     "t": 753
+    },
+    {
+     "text": "(4, 5) 22 選；(5, 7) 24 會形成 cycle，丟掉。",
+     "t": 775
+    },
+    {
+     "text": "(5, 6) 25 選。",
+     "t": 795
+    },
+    {
+     "text": "cost 一樣是 99，和 Prim 結果相同。",
+     "t": 805
+    }
+   ]
+  },
+  {
+   "title": "Kruskal 的時間與 min heap",
+   "scene": "galgo-kruskal-heap",
+   "points": [
+    {
+     "text": "Kruskal 要花多少時間？",
+     "t": 811
+    },
+    {
+     "text": "每次從 E 條邊裡找最小的。",
+     "t": 825
+    },
+    {
+     "text": "要選 V − 1 次。",
+     "t": 836
+    },
+    {
+     "text": "總共 Θ(V · E)；兩者都當成 n 就是 Θ(n²)。",
+     "t": 848
+    },
+    {
+     "text": "改進：用 min heap，delete 一次就拿到最小值。",
+     "t": 883
+    },
+    {
+     "text": "把所有邊放進 min heap，不用每次搜尋。",
+     "t": 903
+    },
+    {
+     "text": "每次 delete 花 log n，做 n 次 → O(n log n)。",
+     "t": 915
+    }
+   ],
+   "trap": "補充：課本的寫法是 O(E log E)（= O(E log V)）：建 heap O(E)，最多 E 次 delete-min，加上 Union-Find 判斷 cycle。Bari 的 n log n 是把 V、E 都當 n。"
+  },
+  {
+   "title": "Kruskal 跑在不連通的圖上",
+   "scene": "galgo-kruskal-forest",
+   "points": [
+    {
+     "text": "不連通的圖：一塊 4 個頂點、一塊 5 個頂點。",
+     "t": 938
+    },
+    {
+     "text": "不連通就沒有 spanning tree。",
+     "t": 947
+    },
+    {
+     "text": "Kruskal 會想選 9 − 1 = 8 條邊。",
+     "t": 953
+    },
+    {
+     "text": "它從兩塊裡輪流選到最小的邊。",
+     "t": 964
+    },
+    {
+     "text": "結果是每一塊各自的 spanning tree，而不是整張圖的。",
+     "t": 993
+    }
+   ],
+   "trap": "補充：Kruskal 在不連通的圖上得到 spanning forest，邊數 = n − (component 數) = 9 − 2 = 7。"
+  },
+  {
+   "title": "考題：缺少的權重最小是多少",
+   "scene": "galgo-missing-w",
+   "points": [
+    {
+     "text": "考題：有兩條邊沒標權重，其他有權重的邊剛好形成 MST。",
+     "t": 1002
+    },
+    {
+     "text": "問：這兩條邊的權重最小可能是多少？",
+     "t": 1029
+    },
+    {
+     "text": "它沒被選，是因為加進去會形成 cycle。",
+     "t": 1040
+    },
+    {
+     "text": "它排在 2、3 之後才輪到 → 最小是 4。",
+     "t": 1053
+    },
+    {
+     "text": "如果比 4 小，它就會比較早被選進去。",
+     "t": 1065
+    },
+    {
+     "text": "另一條要等 4、4、5 都選完才輪到 → 最小是 6。",
+     "t": 1076
+    },
+    {
+     "text": "這種題型考試常見：懂 Kruskal 就能反推缺的權重。",
+     "t": 1089
+    }
+   ],
+   "trap": "Bari 假設沒被選的邊一定比 cycle 上的邊都大（整數）。嚴格說只要 ?₁ ≥ 3、?₂ ≥ 5；權重相等時看 tie-breaking，也可能得到同一棵 MST。補充：舞台的圖依講解重建。"
+  },
+  {
+   "title": "MST 不一定唯一，但 cost 唯一",
+   "scene": "galgo-two-msts",
+   "points": [
+    {
+     "text": "再用 Kruskal 找一張圖的 MST。",
+     "t": 1100
+    },
+    {
+     "text": "先選最小的 2；接著兩條 3，選哪條先都可以。",
+     "t": 1106
+    },
+    {
+     "text": "兩條 4 也是任選一條，都不會形成 cycle。",
+     "t": 1131
+    },
+    {
+     "text": "5 個頂點選了 4 條邊，得到 spanning tree。",
+     "t": 1143
+    },
+    {
+     "text": "cost = 2 + 3 + 3 + 4 = 12。",
+     "t": 1150
+    },
+    {
+     "text": "把另一條 4 換進來，也是 spanning tree。",
+     "t": 1169
+    },
+    {
+     "text": "最佳化問題的最佳值只有一個：cost 12。",
+     "t": 1192
+    },
+    {
+     "text": "但 MST 可以有 2 棵。",
+     "t": 1204
+    }
+   ],
+   "trap": "影片中途說「只會有一棵 spanning tree」是口誤，隨後自己更正：MST 的 cost 唯一，但樹本身可能不只一棵；邊權重全部相異時 MST 才唯一。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "6 個頂點、6 條邊形成一個環，有幾棵 spanning tree？",
+   "opts": [
+    "6",
+    "5",
+    "1",
+    "15"
+   ],
+   "ans": "6",
+   "why": "6 條選 5 條、每種都沒有 cycle：6C5 = 6。"
+  },
+  {
+   "q": "在 6-cycle 上加一條對角線（形成兩個 4-cycle），spanning tree 有幾棵？",
+   "opts": [
+    "15",
+    "19",
+    "21",
+    "6"
+   ],
+   "ans": "15",
+   "why": "7C5 = 21，扣掉含 4-cycle 的組合 3 + 3 = 6；只扣 cycle 個數 2 得到 19 是錯的。"
+  },
+  {
+   "q": "Abdul Bari 的 7 頂點圖用 Prim 或 Kruskal，MST cost 是？",
+   "opts": [
+    "99",
+    "105",
+    "81",
+    "101"
+   ],
+   "ans": "99",
+   "why": "10 + 12 + 14 + 16 + 22 + 25 = 99，兩個演算法結果相同。"
+  },
+  {
+   "q": "同一張圖用 Kruskal，哪兩條邊因為形成 cycle 被丟掉？",
+   "opts": [
+    "18 和 24",
+    "22 和 25",
+    "16 和 28",
+    "12 和 14"
+   ],
+   "ans": "18 和 24",
+   "why": "(4, 7) 18 時 4、7 已經連通；(5, 7) 24 時 5、7 已經連通。"
+  },
+  {
+   "q": "Prim 從頂點 1 開始跑在兩塊不連通的圖上，結果是？",
+   "opts": [
+    "只得到頂點 1 那一塊的 spanning tree",
+    "得到整張圖的 spanning tree",
+    "每一塊各一棵",
+    "演算法會報錯"
+   ],
+   "ans": "只得到頂點 1 那一塊的 spanning tree",
+   "why": "Prim 只加跟目前這棵樹相連的邊，碰不到另一塊。"
+  },
+  {
+   "q": "MST 的 cost 與樹本身，哪個一定唯一？",
+   "opts": [
+    "cost 唯一，樹不一定",
+    "樹唯一，cost 不一定",
+    "兩者都唯一",
+    "兩者都不一定"
+   ],
+   "ans": "cost 唯一，樹不一定",
+   "why": "有相同權重的邊時可能有多棵 cost 相同的 MST。"
+  }
+ ]
+}
