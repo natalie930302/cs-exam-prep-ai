@@ -61,8 +61,7 @@ const SUBJECT_PLAYLISTS = {
   ],
   la:[
     {name:'MIT OCW 18.06《Linear Algebra》Gilbert Strang',url:'https://www.youtube.com/playlist?list=PL49CF3715CB9EF31D'},
-    {name:'3Blue1Brown《Essence of Linear Algebra》',url:'https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab'},
-    {name:'3Blue1Brown《Essence of Calculus》',url:'https://www.youtube.com/playlist?list=PLZHQObOWTQDMsr9K-rj53DwVRMYO3t5Yr'}
+    {name:'3Blue1Brown《Essence of Linear Algebra》',url:'https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab'}
   ],
   dm:[
     {name:'交大OCW 易志偉《離散數學》',url:'https://www.youtube.com/playlist?list=PLj6E8qlqmkFu0DqDkiub6adY9HBkEsNNG'},
