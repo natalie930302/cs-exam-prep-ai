@@ -159,6 +159,9 @@
   // ── Goals & tasks: concrete, countable, with what is left ──
   function secsLeft(list){ return list.reduce(function(a, m){ return a + durToSec(m.dur); }, 0); }
   function hm(sec){ const h = Math.floor(sec / 3600), m = Math.round(sec % 3600 / 60); return (h ? h + ' 小時 ' : '') + m + ' 分'; }
+  // where each key point is taught: public/keymap.json (chapter → point → video parts)
+  let keymap = null;
+  fetch('/keymap.json').then(function(r){ return r.ok ? r.json() : null; }).then(function(j){ keymap = j && j[subject.id + '-' + chIndex]; renderGoals(); }).catch(function(){});
   function renderGoals(){
     const vids = chapterDisplayMaterials(chapter);
     const left = vids.filter(function(m){ return !done.has(chapterMaterialTaskId(subject.id, chapter, m)); });
@@ -181,11 +184,25 @@
       + '<li class="st-goal-auto' + (left.length ? '' : ' done') + '"><span class="st-box">' + (left.length ? '' : '✓') + '</span>① 照順序看完這章的影片（看完一支按「標記看完」）</li>'
       + check('kq-' + chKey, '② 做「小測驗」，答對 8 成以上')
       + check('kt-' + chKey, '③ 不看畫面，能用自己的話說出這章每張名詞小卡在講什麼')
-      + '<li class="st-goal-h">看完要會</li>'
-      + items.map(function(t){ return check('kp-' + chKey + '-' + stableTaskKey(t), esc(t)); }).join('')
+      + '<li class="st-goal-h">看完要會（點時間跳到影片講這個的地方）</li>'
+      + items.map(function(t){
+        const k = (keymap && keymap.points || []).find(function(p){ return p.point === t; });
+        const where = k && k.where.length
+          ? '<span class="st-where">' + k.where.map(function(w){ return '<button type="button" class="st-where-b" data-v="' + w.video + '" data-t="' + w.t + '">' + esc(w.who) + ' ' + fmt(w.t) + '・' + esc(w.sec) + '</button>'; }).join('') + '</span>'
+          : '<span class="st-where none">這章的影片沒有找到專門講這一點的段落</span>';
+        return check('kp-' + chKey + '-' + stableTaskKey(t), esc(t)) .replace('</li>', where + '</li>');
+      }).join('')
       + '<li class="st-src">任務 ② ③ 和「看完要會」：自己覺得做到了再打勾。</li>';
     $('goals').querySelectorAll('.st-check').forEach(function(b){
       b.onclick = async function(){ await setTask(b.dataset.task, !done.has(b.dataset.task)); renderGoals(); };
+    });
+    $('goals').querySelectorAll('.st-where-b').forEach(function(b){
+      b.onclick = function(){
+        const vi = series[0] ? series[0].options.findIndex(function(o){ return youtubeId(o.url) === b.dataset.v; }) : -1;
+        if (vi < 0) return;
+        if (current && current.id === b.dataset.v) seek(Number(b.dataset.t)); else playVideo(0, vi, true, Number(b.dataset.t));
+        window.scrollTo({top: 0, behavior: 'smooth'});
+      };
     });
   }
   function renderTasks(){
@@ -217,6 +234,14 @@
     if (!p.length || p.some(isNaN)) return 0;
     return p.reduce(function(a, x){ return a * 60 + x; }, 0);
   }
+  // How far this video's animation is: following the lecturer sentence by
+  // sentence, the older section-by-section version, or not made yet.
+  function syncState(id){ const n = notesIndex[id]; return !n ? 'none' : n.cued ? 'cued' : 'old'; }
+  function syncBadge(id){
+    const st = syncState(id);
+    return st === 'cued' ? '<span class="st-badge ok">動畫逐句對齊</span>'
+      : st === 'old' ? '<span class="st-badge old">動畫未逐句</span>' : '<span class="st-badge none">動畫製作中</span>';
+  }
   function renderVideoList(){
     renderProgress();
     const s = series[activeSeries];
@@ -231,7 +256,7 @@
       return '<li><button class="st-v' + (isCur ? ' current' : '') + (w ? ' watched' : '') + '" data-i="' + i + '">'
         + '<span class="st-v-n">' + (w ? '✓' : String(i + 1).padStart(2, '0')) + '</span>'
         + '<span class="st-v-title">' + esc(o.label) + (o.teacher ? '<small class="st-v-teacher">' + esc(o.teacher) + '</small>' : '') + '</span>'
-        + '<span class="st-v-meta">' + esc(o.dur || '') + (notesIndex[id] ? '<span class="st-badge">有重點</span>' : '') + '</span>'
+        + '<span class="st-v-meta">' + esc(o.dur || '') + syncBadge(id) + '</span>'
         + (pct ? '<span class="st-progress"><span style="width:' + pct + '%"></span></span>' : '')
         + '</button>'
         + (videoPlaylistUrl(id) ? '<a class="st-v-pl" href="' + videoPlaylistUrl(id) + '" target="_blank" rel="noopener" title="在原本的 YouTube 播放清單中開啟">播放清單</a>' : '')
@@ -247,6 +272,10 @@
     const s = series[si]; if (!s || !s.options[i]) return;
     const opt = s.options[i]; const id = youtubeId(opt.url);
     current = {seriesIdx: si, idx: i, opt: opt, id: id};
+    const st = syncState(id);
+    $('syncNote').innerHTML = st === 'cued' ? '' : st === 'old'
+      ? '<span class="st-badge old">動畫未逐句</span> 這支影片的動畫還是舊版：一段一段播，不會跟著老師每一句話動（正在改）'
+      : '<span class="st-badge none">動畫製作中</span> 這支影片還沒有動畫，可以先看影片和字幕';
     activeSeries = si;
     store.set('study-last-' + chKey, id);
     history.replaceState(null, '', videoRoomUrl(subject.id, chIndex, id));
@@ -735,14 +764,6 @@
     if (!start && series[si]) {
       const firstUnwatched = series[si].options.findIndex(function(o){ return !done.has(vidTask(youtubeId(o.url))); });
       start = [si, Math.max(0, firstUnwatched)];
-    }
-    // chapters with a concept course: the course is the way in; this page
-    // is the full video list for looking things up
-    if (typeof hasCourse === 'function' && hasCourse(subject.id, chIndex)) {
-      const bn = document.createElement('a');
-      bn.className = 'st-course-banner'; bn.href = studyRoomUrl(subject.id, chIndex);
-      bn.innerHTML = '<b>這章有從零開始的概念課程</b><span>先上課：動畫講解＋只看講最清楚的片段＋小檢查。這裡是完整影片，查資料用。</span><i>去上課 ›</i>';
-      document.querySelector('.st-main').before(bn);
     }
     renderGoals();
     renderTasks();

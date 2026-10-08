@@ -39,7 +39,6 @@ function serveHtmlPage(file) {
 }
 app.get(['/', '/index.html'], serveHtmlPage('index.html'));
 app.get('/study.html', serveHtmlPage('study.html'));
-app.get('/course.html', serveHtmlPage('course.html'));
 
 app.use('/vendor/katex', express.static(path.join(__dirname, 'node_modules', 'katex', 'dist'), { maxAge: '30d', etag: true }));
 app.use('/vendor/three', express.static(path.join(__dirname, 'node_modules', 'three'), { maxAge: '30d', etag: true }));
@@ -47,7 +46,6 @@ app.use('/vendor/three', express.static(path.join(__dirname, 'node_modules', 'th
 app.use('/lab', express.static(path.join(PUBLIC_DIR, 'lab'), { maxAge: 0, etag: true }));
 app.use('/notes', express.static(path.join(PUBLIC_DIR, 'notes'), { maxAge: 0, etag: true }));
 app.use('/transcripts', express.static(path.join(PUBLIC_DIR, 'transcripts'), { maxAge: 0, etag: true }));
-app.use('/course', express.static(path.join(PUBLIC_DIR, 'course'), { maxAge: 0, etag: true }));
 // Assets are versioned with ?v= and cached long; HTML pages must always
 // revalidate so a new ?v= reference is picked up immediately.
 app.use(express.static(PUBLIC_DIR, {

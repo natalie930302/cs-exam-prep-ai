@@ -1761,8 +1761,9 @@ async function init(){
         +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">'
         +'<span class="pri '+priClass+'">'+priLabel+'</span><span class="ch-hrs">'+chapterVideoHours(displayMats)+' · <b class="ch-progress-count">'+chapterDoneCount+'/'+chapterTaskIds.length+'</b></span></div></div>'
         +'<div class="ch-body"><div>'
-        +'<div class="ch-section"><div class="ch-section-lbl">核心考點</div><div class="ch-key">'+c.key+'</div>'+chapterStudyHtml(s.id,idx)+'</div>'
-        +(c.peerNote ? '<div class="ch-section ch-peernote-section"><div class="ch-section-lbl">同儕筆記提醒</div><div class="ch-peernote">'+c.peerNote+'</div></div>' : '')
+        // key points and peer notes live inside the chapter (study room), next
+        // to the video parts that teach them; the card stays a plain list
+        +'<div class="ch-section">'+chapterStudyHtml(s.id,idx)+'</div>'
         +'<div class="ch-section"><div class="ch-section-lbl">本章影片 · 全部 '+displayMats.length+' 支，依序看完</div><div class="ch-mats">'+(matsHtml||'<div class="ch-video-empty">這章沒有指定影片</div>')+'</div></div>'
         +'</div></div>'
         +'</div></div>';

@@ -1,0 +1,2074 @@
+{
+ "ds-0": {
+  "points": [
+   {
+    "point": "Master Theorem三種情況",
+    "where": []
+   },
+   {
+    "point": "遞迴樹畫法",
+    "where": []
+   },
+   {
+    "point": "常見函數成長率比較（log n < n < n log n < n² < 2ⁿ）",
+    "where": []
+   }
+  ],
+  "peer": ""
+ },
+ "ds-1": {
+  "points": [
+   {
+    "point": "各結構insert/delete時間複雜度比較",
+    "where": []
+   },
+   {
+    "point": "Circular Queue環狀操作",
+    "where": [
+     {
+      "video": "USLvdBuxTno",
+      "t": 3150,
+      "sec": "延伸 3：circular list + restricted access → queue",
+      "who": "台大 林軒田 DSA"
+     },
+     {
+      "video": "xqM9NVKUWmg",
+      "t": 232,
+      "sec": "線性 Queue 的「假滿」問題",
+      "who": "交大OCW 彭文志"
+     },
+     {
+      "video": "xqM9NVKUWmg",
+      "t": 531,
+      "sec": "Circular Queue：front/rear 規則與 full/empty",
+      "who": "交大OCW 彭文志"
+     }
+    ]
+   },
+   {
+    "point": "Stack用陣列vs鏈結實作差異",
+    "where": [
+     {
+      "video": "5HBMYNYYGZU",
+      "t": 797,
+      "sec": "用陣列實作 Stack",
+      "who": "交大OCW 彭文志"
+     }
+    ]
+   }
+  ],
+  "peer": "同儕筆記校正：有份筆記的行主序（row-major）範例最後一項誤植為i（應為l），Protected存取層級也只寫「部分人能拿取」，實際上是子類別可存取，讀到這段時以課本為準。"
+ },
+ "ds-2": {
+  "points": [
+   {
+    "point": "Inorder/Preorder/Postorder三種走訪用途與程式碼",
+    "where": []
+   },
+   {
+    "point": "BFS（Level-order）用Queue實作",
+    "where": [
+     {
+      "video": "VwQeypxlevE",
+      "t": 4993,
+      "sec": "Level order：用 queue",
+      "who": "交大OCW 彭文志"
+     },
+     {
+      "video": "pPMMUa8guTE",
+      "t": 3632,
+      "sec": "Priority queue 實作方式比較",
+      "who": "交大OCW 彭文志"
+     },
+     {
+      "video": "ubLbvuWFDqM",
+      "t": 0,
+      "sec": "Priority queue 各種實作比較",
+      "who": "交大OCW 彭文志"
+     }
+    ]
+   },
+   {
+    "point": "完全vs完滿二元樹定義",
+    "where": [
+     {
+      "video": "XkNIHYd9Ruc",
+      "t": 8724,
+      "sec": "用 vector 存 full binary tree：不需要指標",
+      "who": "台大 林軒田 DSA"
+     },
+     {
+      "video": "XkNIHYd9Ruc",
+      "t": 9225,
+      "sec": "Q&A：五層的樹高度是 5 還是 4？",
+      "who": "台大 林軒田 DSA"
+     }
+    ]
+   }
+  ],
+  "peer": ""
+ },
+ "ds-3": {
+  "points": [
+   {
+    "point": "BST插入/刪除/搜尋",
+    "where": [
+     {
+      "video": "nfDvFjXU2VI",
+      "t": 0,
+      "sec": "Skewed BST：找 SEPT 要比 12 次",
+      "who": "交大OCW 彭文志"
+     },
+     {
+      "video": "jDM6_TnYIqE",
+      "t": 208,
+      "sec": "同一組 key、不同順序：高度 log n 或 n",
+      "who": "Abdul Bari"
+     },
+     {
+      "video": "jDM6_TnYIqE",
+      "t": 496,
+      "sec": "3 個 key 的 3! = 6 種插入順序",
+      "who": "Abdul Bari"
+     }
+    ]
+   },
+   {
+    "point": "AVL四種旋轉（LL/RR/LR/RL）",
+    "where": [
+     {
+      "video": "jDM6_TnYIqE",
+      "t": 716,
+      "sec": "用旋轉把高的 BST 變矮：AVL 的想法",
+      "who": "Abdul Bari"
+     }
+    ]
+   },
+   {
+    "point": "平衡因子計算",
+    "where": []
+   },
+   {
+    "point": "紅黑樹性質（不要求手推旋轉，要知道特性）",
+    "where": []
+   }
+  ],
+  "peer": "同儕筆記地雷：BST不平衡會退化成linked list、O(log N)優勢消失；紅黑樹插入/刪除後務必把root塗黑，是常被漏掉的細節。讀過的資料結構同儕筆記完全沒提到AVL/Red-Black Tree的實作，這塊要靠課本/影片，不能只找同儕筆記。"
+ },
+ "ds-4": {
+  "points": [
+   {
+    "point": "建堆複雜度O(n)為何（bottom-up heapify）",
+    "where": []
+   },
+   {
+    "point": "Heap Sort複雜度O(n log n)",
+    "where": [
+     {
+      "video": "B7hVxCmfPtM",
+      "t": 22,
+      "sec": "Priority Queue 的動機與四個操作",
+      "who": "MIT OCW 6.006"
+     }
+    ]
+   },
+   {
+    "point": "Priority Queue用途（Dijkstra等）",
+    "where": [
+     {
+      "video": "HqPJF2L5h9U",
+      "t": 2818,
+      "sec": "Priority queue",
+      "who": "Abdul Bari"
+     },
+     {
+      "video": "HqPJF2L5h9U",
+      "t": 2936,
+      "sec": "用陣列 vs 用 heap 實作 priority queue",
+      "who": "Abdul Bari"
+     },
+     {
+      "video": "4tSdhWBVv6A",
+      "t": 204,
+      "sec": "Priority Queue：不是先來先服務",
+      "who": "Priority Queue, Bina"
+     }
+    ]
+   }
+  ],
+  "peer": ""
+ },
+ "ds-5": {
+  "points": [
+   {
+    "point": "Chaining vs Open Addressing（Linear/Quadratic Probing",
+    "where": []
+   },
+   {
+    "point": "Double Hashing）",
+    "where": [
+     {
+      "video": "CwM-Cxilk4g",
+      "t": 365,
+      "sec": "正式定義：probe sequence",
+      "who": "Hashing - Collision "
+     },
+     {
+      "video": "WX-z52QweUs",
+      "t": 5868,
+      "sec": "Double hashing",
+      "who": "台大 林軒田 DSA"
+     },
+     {
+      "video": "WX-z52QweUs",
+      "t": 5965,
+      "sec": "哪個好？從簡單到複雜",
+      "who": "台大 林軒田 DSA"
+     }
+    ]
+   },
+   {
+    "point": "Load Factor對效率的影響",
+    "where": [
+     {
+      "video": "CwM-Cxilk4g",
+      "t": 0,
+      "sec": "Open addressing 與 chaining 對照",
+      "who": "Hashing - Collision "
+     },
+     {
+      "video": "WX-z52QweUs",
+      "t": 7626,
+      "sec": "Load factor：n/k 與 non-uniform",
+      "who": "台大 林軒田 DSA"
+     },
+     {
+      "video": "WX-z52QweUs",
+      "t": 7983,
+      "sec": "Table 要長大：k 變兩倍",
+      "who": "台大 林軒田 DSA"
+     }
+    ]
+   },
+   {
+    "point": "各方法worst case",
+    "where": [
+     {
+      "video": "SBQLkYIDAZI",
+      "t": 496,
+      "sec": "Q&A：heap 和 max tree 差在哪",
+      "who": "台大 林軒田 DSA"
+     },
+     {
+      "video": "bULIs7AVDNk",
+      "t": 272,
+      "sec": "Search 的成本：O(n)、binary search、hash",
+      "who": "交大OCW 彭文志"
+     },
+     {
+      "video": "bULIs7AVDNk",
+      "t": 2894,
+      "sec": "Chaining：12 個 identifier，平均搜尋長度 2",
+      "who": "交大OCW 彭文志"
+     }
+    ]
+   }
+  ],
+  "peer": "同儕筆記地雷：linear probing在load factor過高時效率會劇烈下降；讀過的同儕筆記也沒提到hash table動態resize，這塊需另外靠課本補。"
+ },
+ "ds-6": {
+  "points": [
+   {
+    "point": "Adjacency Matrix vs List的空間/時間複雜度",
+    "where": [
+     {
+      "video": "pcKY4hjDrxk",
+      "t": 1102,
+      "sec": "時間複雜度",
+      "who": "Abdul Bari"
+     }
+    ]
+   },
+   {
+    "point": "DFS/BFS的時間複雜度（O(V+E)）",
+    "where": []
+   },
+   {
+    "point": "有向圖vs無向圖的矩陣對稱性",
+    "where": []
+   }
+  ],
+  "peer": ""
+ },
+ "ds-7": {
+  "points": [
+   {
+    "point": "所有排序的最佳/平均/最差複雜度表",
+    "where": [
+     {
+      "video": "cxbabnqtWsk",
+      "t": 6587,
+      "sec": "模擬：6 先分兩堆，越分越細",
+      "who": "台大 林軒田 DSA"
+     }
+    ]
+   },
+   {
+    "point": "穩定性比較（Merge/Insertion穩定",
+    "where": [
+     {
+      "video": "9bkvws_vqLU",
+      "t": 704,
+      "sec": "穩定性：每格改成 linked list",
+      "who": "MIT OCW 6.006"
+     },
+     {
+      "video": "9bkvws_vqLU",
+      "t": 2271,
+      "sec": "LSD：從最低位開始，每回合穩定",
+      "who": "MIT OCW 6.006"
+     },
+     {
+      "video": "9bkvws_vqLU",
+      "t": 2772,
+      "sec": "換成 merge sort？與總結",
+      "who": "MIT OCW 6.006"
+     }
+    ]
+   },
+   {
+    "point": "Quick/Heap不穩定）",
+    "where": [
+     {
+      "video": "9bkvws_vqLU",
+      "t": 2846,
+      "sec": "穩定性 Q&A：為什麼需要、哪些穩定",
+      "who": "MIT OCW 6.006"
+     }
+    ]
+   },
+   {
+    "point": "Quick Sort的pivot選擇",
+    "where": [
+     {
+      "video": "7h1s2SojIRw",
+      "t": 238,
+      "sec": "初始設定：l、h、∞、pivot、i、j",
+      "who": "Abdul Bari"
+     },
+     {
+      "video": "7h1s2SojIRw",
+      "t": 390,
+      "sec": "Partition 過程",
+      "who": "Abdul Bari"
+     },
+     {
+      "video": "7h1s2SojIRw",
+      "t": 724,
+      "sec": "QuickSort(l, h) 遞迴",
+      "who": "Abdul Bari"
+     }
+    ]
+   }
+  ],
+  "peer": "同儕筆記缺口：讀過的三份資料結構同儕筆記沒有一份完整涵蓋排序演算法比較，這章不能靠同儕筆記補，建議直接練課本習題與考古題。"
+ },
+ "ds-8": {
+  "points": [
+   {
+    "point": "B+Tree vs B-Tree差異（所有資料在葉節點）",
+    "where": [
+     {
+      "video": "aZjYr87r1b8",
+      "t": 2228,
+      "sec": "B+ tree",
+      "who": "Abdul Bari"
+     }
+    ]
+   },
+   {
+    "point": "B-Tree分裂/合併操作",
+    "where": [
+     {
+      "video": "IilVRpUsAiQ",
+      "t": 5,
+      "sec": "order 4 的 B-tree 規則",
+      "who": "B-Tree Insertion"
+     },
+     {
+      "video": "IilVRpUsAiQ",
+      "t": 320,
+      "sec": "插入 4：連續 split，5 成為新 root",
+      "who": "B-Tree Insertion"
+     },
+     {
+      "video": "aZjYr87r1b8",
+      "t": 950,
+      "sec": "把多層 index 轉過來：就是一棵樹",
+      "who": "Abdul Bari"
+     }
+    ]
+   },
+   {
+    "point": "Trie用途（字典",
+    "where": []
+   },
+   {
+    "point": "前綴搜尋）",
+    "where": []
+   }
+  ],
+  "peer": ""
+ },
+ "ds-9": {
+  "points": [
+   {
+    "point": "Dijkstra限制（無負邊）vs Bellman-Ford（可處理負邊）",
+    "where": [
+     {
+      "video": "HlFsexTpM4Q",
+      "t": 1,
+      "sec": "問題：s 到每個頂點的最短路徑",
+      "who": "Dijkstra Algorithm（圖"
+     },
+     {
+      "video": "Wnpsh1O1OMo",
+      "t": 4383,
+      "sec": "Single source 最短路徑問題",
+      "who": "交大OCW 彭文志"
+     },
+     {
+      "video": "Wnpsh1O1OMo",
+      "t": 4655,
+      "sec": "Dijkstra 例：Boston 出發的初始化",
+      "who": "交大OCW 彭文志"
+     }
+    ]
+   },
+   {
+    "point": "MST兩種演算法複雜度比較",
+    "where": [
+     {
+      "video": "4ZlRH0eK-qQ",
+      "t": 462,
+      "sec": "Prim 的作法（cost 99）",
+      "who": "Abdul Bari"
+     },
+     {
+      "video": "4ZlRH0eK-qQ",
+      "t": 1002,
+      "sec": "考題：缺少的權重最小是多少",
+      "who": "Abdul Bari"
+     },
+     {
+      "video": "4ZlRH0eK-qQ",
+      "t": 1100,
+      "sec": "MST 不一定唯一，但 cost 唯一",
+      "who": "Abdul Bari"
+     }
+    ]
+   },
+   {
+    "point": "Greedy正確性",
+    "where": [
+     {
+      "video": "JR2fneVevbg",
+      "t": 0,
+      "sec": "Minimum cost spanning tree：定義與例子",
+      "who": "Minimum Cost Spannin"
+     },
+     {
+      "video": "JR2fneVevbg",
+      "t": 198,
+      "sec": "Edge selection 1：Kruskal",
+      "who": "Minimum Cost Spannin"
+     },
+     {
+      "video": "JR2fneVevbg",
+      "t": 484,
+      "sec": "Edge rejection：丟掉 cycle 裡最貴的邊",
+      "who": "Minimum Cost Spannin"
+     }
+    ]
+   }
+  ],
+  "peer": "同儕筆記缺口：讀過的三份資料結構同儕筆記沒有一份完整涵蓋圖論最短路徑，這章不能靠同儕筆記補，建議直接練課本習題與考古題。Kruskal／Prim／MST本質是同一組安全邊（safe edge）與cut-and-paste正確性證明，不是三種互斥知識。"
+ },
+ "ds-10": {
+  "points": [
+   {
+    "point": "KMP的Failure Function建構步驟",
+    "where": [
+     {
+      "video": "V5-7GzOfADQ",
+      "t": 0,
+      "sec": "問題定義＋暴力法例一：abcdefgh 找 def",
+      "who": "Knuth-Morris-Pratt（K"
+     },
+     {
+      "video": "V5-7GzOfADQ",
+      "t": 117,
+      "sec": "暴力法例二：abcdabcabcdf 找 abcdf，i 會倒退",
+      "who": "Knuth-Morris-Pratt（K"
+     },
+     {
+      "video": "V5-7GzOfADQ",
+      "t": 452,
+      "sec": "Prefix 與 suffix；π 表（LPS）",
+      "who": "Knuth-Morris-Pratt（K"
+     }
+    ]
+   },
+   {
+    "point": "KMP為何O(n+m)",
+    "where": [
+     {
+      "video": "V5-7GzOfADQ",
+      "t": 0,
+      "sec": "問題定義＋暴力法例一：abcdefgh 找 def",
+      "who": "Knuth-Morris-Pratt（K"
+     },
+     {
+      "video": "V5-7GzOfADQ",
+      "t": 117,
+      "sec": "暴力法例二：abcdabcabcdf 找 abcdf，i 會倒退",
+      "who": "Knuth-Morris-Pratt（K"
+     },
+     {
+      "video": "V5-7GzOfADQ",
+      "t": 452,
+      "sec": "Prefix 與 suffix；π 表（LPS）",
+      "who": "Knuth-Morris-Pratt（K"
+     }
+    ]
+   },
+   {
+    "point": "Boyer-Moore的Bad Character規則",
+    "where": [
+     {
+      "video": "qQ8vS2btsxI",
+      "t": 896,
+      "sec": "Rolling hash：331 → 313 → 133 → 331 → 311 … → 421",
+      "who": "Abdul Bari"
+     }
+    ]
+   }
+  ],
+  "peer": "同儕筆記提醒：KMP演算法通常需要額外花時間才能真正搞懂，不要輕估這章，多演練Failure Function手算題。"
+ },
+ "alg-0": {
+  "points": [
+   {
+    "point": "Master Theorem三種情況的判斷",
+    "where": [
+     {
+      "video": "CyknhZbfMqc",
+      "t": 1,
+      "sec": "從已解過的遞減遞迴觀察規律",
+      "who": "Abdul Bari"
+     },
+     {
+      "video": "8gt0D0IqU5w",
+      "t": 330,
+      "sec": "Back substitution",
+      "who": "Abdul Bari"
+     },
+     {
+      "video": "9rVuyjxzwgM",
+      "t": 138,
+      "sec": "設 n = 2ᵐ → log log n",
+      "who": "Abdul Bari"
+     }
+    ]
+   },
+   {
+    "point": "遞迴樹展開法",
+    "where": []
+   },
+   {
+    "point": "Substitution Method基本操作",
+    "where": [
+     {
+      "video": "Zc54gFhdpLA",
+      "t": 1341,
+      "sec": "L.append 與 L1 + L2",
+      "who": "MIT OCW 6.006"
+     }
+    ]
+   }
+  ],
+  "peer": "同儕筆記提醒：依考古頻率統計，Time Complexity在清大／交大／台大都被列五星必考範圍；Master定理與遞迴樹法要能手算，不能只會套公式。"
+ },
+ "alg-1": {
+  "points": [
+   {
+    "point": "分治法三步驟（Divide/Conquer/Combine）",
+    "where": []
+   },
+   {
+    "point": "Merge Sort複雜度推導",
+    "where": [
+     {
+      "video": "2Rr2tW9zvRg",
+      "t": 314,
+      "sec": "一般方法 DAC(P) 與本單元題目",
+      "who": "Abdul Bari"
+     },
+     {
+      "video": "6pV2IF0fgKY",
+      "t": 0,
+      "sec": "Merging：兩個已排序串列合成一個",
+      "who": "Abdul Bari"
+     },
+     {
+      "video": "6pV2IF0fgKY",
+      "t": 745,
+      "sec": "Two-way merge sort（迭代版）",
+      "who": "Abdul Bari"
+     }
+    ]
+   },
+   {
+    "point": "Matrix Multiplication（Strassen）",
+    "where": []
+   }
+  ],
+  "peer": ""
+ },
+ "alg-2": {
+  "points": [
+   {
+    "point": "DP兩要素：最優子結構＋重疊子問題",
+    "where": [
+     {
+      "video": "9iE9Mj4m8jk",
+      "t": 250,
+      "sec": "stage 3 與重疊子問題",
+      "who": "Abdul Bari"
+     },
+     {
+      "video": "sSno9rV8Rhg",
+      "t": 509,
+      "sec": "遞迴樹與重疊子問題",
+      "who": "Abdul Bari"
+     }
+    ]
+   },
+   {
+    "point": "LCS的狀態轉移表手推",
+    "where": [
+     {
+      "video": "sSno9rV8Rhg",
+      "t": 509,
+      "sec": "遞迴樹與重疊子問題",
+      "who": "Abdul Bari"
+     },
+     {
+      "video": "sSno9rV8Rhg",
+      "t": 898,
+      "sec": "DP 填表：bd vs abcd",
+      "who": "Abdul Bari"
+     },
+     {
+      "video": "sSno9rV8Rhg",
+      "t": 1324,
+      "sec": "回溯：ONE",
+      "who": "Abdul Bari"
+     }
+    ]
+   },
+   {
+    "point": "0/1 Knapsack的dp[i][w]定義",
+    "where": [
+     {
+      "video": "dkmxHij2pfU",
+      "t": 2926,
+      "sec": "Knapsack 的 recurrence：wᵢ 改成 vᵢ",
+      "who": "交大OCW 江蕙如"
+     }
+    ]
+   },
+   {
+    "point": "LIS的O(n²)和O(n log n)解法",
+    "where": [
+     {
+      "video": "jZbkToeNK2g",
+      "t": 2239,
+      "sec": "LIS：問題與子問題",
+      "who": "MIT OCW 6.006"
+     },
+     {
+      "video": "jZbkToeNK2g",
+      "t": 2458,
+      "sec": "LIS 的 pseudocode",
+      "who": "MIT OCW 6.006"
+     },
+     {
+      "video": "jZbkToeNK2g",
+      "t": 2741,
+      "sec": "LIS 實跑：8 3 5 2 4 9 7 11",
+      "who": "MIT OCW 6.006"
+     }
+    ]
+   }
+  ],
+  "peer": "同儕筆記提醒：DP章節多數只是把遞迴關係式化簡，真正需要額外花時間搞懂的是字串處理科（見資料結構主題11）的KMP演算法。DP程式碼最好背到能上機驗證，不是只會紙上寫轉移式。"
+ },
+ "alg-3": {
+  "points": [
+   {
+    "point": "Matrix Chain Multiplication的狀態轉移m[i][j]定義",
+    "where": [
+     {
+      "video": "prx1psByp7U",
+      "t": 0,
+      "sec": "矩陣相乘成本：5×4 乘 4×3",
+      "who": "Abdul Bari"
+     },
+     {
+      "video": "_WncuhSJZyA",
+      "t": 536,
+      "sec": "A1(A2A3) 只要 36：matrix chain 問題",
+      "who": "Abdul Bari"
+     },
+     {
+      "video": "tp4_UXaVyx8",
+      "t": 42,
+      "sec": "DP 五步驟複習",
+      "who": "MIT OCW 6.006"
+     }
+    ]
+   },
+   {
+    "point": "Optimal BST期望搜尋次數計算",
+    "where": [
+     {
+      "video": "wAy6nDMPYAE",
+      "t": 1365,
+      "sec": "Optimal BST：暴力法不可行",
+      "who": "Abdul Bari"
+     },
+     {
+      "video": "vLS-zRCHo-Y",
+      "t": 0,
+      "sec": "BST 與搜尋",
+      "who": "Abdul Bari"
+     },
+     {
+      "video": "vLS-zRCHo-Y",
+      "t": 331,
+      "sec": "加上搜尋頻率：成本 17 的樹最好",
+      "who": "Abdul Bari"
+     }
+    ]
+   }
+  ],
+  "peer": ""
+ },
+ "alg-4": {
+  "points": [
+   {
+    "point": "Greedy vs DP的選擇判斷",
+    "where": []
+   },
+   {
+    "point": "Activity Selection的正確性證明思路",
+    "where": []
+   },
+   {
+    "point": "Huffman Tree建構步驟",
+    "where": []
+   }
+  ],
+  "peer": ""
+ },
+ "alg-5": {
+  "points": [
+   {
+    "point": "Topological Sort兩種方法（DFS後序逆序 vs Kahn's BFS）",
+    "where": [
+     {
+      "video": "AfSk24UTFS8",
+      "t": 2547,
+      "sec": "Topological sort：job scheduling",
+      "who": "MIT OCW 6.006"
+     },
+     {
+      "video": "C5SPsY72_CM",
+      "t": 2282,
+      "sec": "Topological sort：修課順序",
+      "who": "MIT OCW 6.006"
+     },
+     {
+      "video": "C5SPsY72_CM",
+      "t": 3105,
+      "sec": "Back edge 會破壞 topological sort",
+      "who": "MIT OCW 6.006"
+     }
+    ]
+   },
+   {
+    "point": "Strongly Connected Component（Kosaraju/Tarjan算法概念）",
+    "where": []
+   }
+  ],
+  "peer": "同儕筆記提醒：Graph Algorithm整體在清大／交大／台大都被列五星必考範圍。Kruskal／Prim／MST（見資料結構主題10）本質是同一組安全邊（safe edge）與cut-and-paste正確性證明，交叉看能一次理解三種寫法。"
+ },
+ "alg-6": {
+  "points": [
+   {
+    "point": "三種演算法的適用場景（無負邊/有負邊/All-Pairs）",
+    "where": []
+   },
+   {
+    "point": "複雜度比較",
+    "where": []
+   },
+   {
+    "point": "Negative Cycle偵測",
+    "where": [
+     {
+      "video": "FrLWd1tJ_Wc",
+      "t": 0,
+      "sec": "Dijkstra 與 Bellman-Ford 比較",
+      "who": "Bellman Ford Algorit"
+     },
+     {
+      "video": "FrLWd1tJ_Wc",
+      "t": 903,
+      "sec": "偵測負 cycle",
+      "who": "Bellman Ford Algorit"
+     },
+     {
+      "video": "Aa2sqUhIn-E",
+      "t": 1921,
+      "sec": "負權重 cycle",
+      "who": "MIT OCW 6.006"
+     }
+    ]
+   }
+  ],
+  "peer": "同儕筆記提醒：最短路徑屬於Graph Algorithm大類，在清大／交大／台大都被列五星必考範圍，優先度不能放低。"
+ },
+ "alg-7": {
+  "points": [
+   {
+    "point": "Min-Cut Max-Flow定理（概念）",
+    "where": [
+     {
+      "video": "lY1SKWSR3pk",
+      "t": 4042,
+      "sec": "Ford-Fulkerson 步驟總結",
+      "who": "交大OCW 江蕙如"
+     },
+     {
+      "video": "NOYNTuhXDGU",
+      "t": 2984,
+      "sec": "定理重述（重新錄影）",
+      "who": "交大OCW 江蕙如"
+     },
+     {
+      "video": "NOYNTuhXDGU",
+      "t": 4547,
+      "sec": "總結",
+      "who": "交大OCW 江蕙如"
+     }
+    ]
+   },
+   {
+    "point": "Residual Graph",
+    "where": [
+     {
+      "video": "Iwc3Uj4aaF4",
+      "t": 198,
+      "sec": "Residual capacity 與 bottleneck",
+      "who": "Ford Fulkerson Algor"
+     },
+     {
+      "video": "lY1SKWSR3pk",
+      "t": 2041,
+      "sec": "Ford-Fulkerson 的想法",
+      "who": "交大OCW 江蕙如"
+     },
+     {
+      "video": "lY1SKWSR3pk",
+      "t": 2228,
+      "sec": "建 residual graph G_f",
+      "who": "交大OCW 江蕙如"
+     }
+    ]
+   },
+   {
+    "point": "Augmenting Path",
+    "where": [
+     {
+      "video": "Iwc3Uj4aaF4",
+      "t": 198,
+      "sec": "Residual capacity 與 bottleneck",
+      "who": "Ford Fulkerson Algor"
+     },
+     {
+      "video": "Iwc3Uj4aaF4",
+      "t": 360,
+      "sec": "第二條路徑與 augmenting path 的兩種邊",
+      "who": "Ford Fulkerson Algor"
+     },
+     {
+      "video": "Iwc3Uj4aaF4",
+      "t": 444,
+      "sec": "Ford-Fulkerson 三步驟",
+      "who": "Ford Fulkerson Algor"
+     }
+    ]
+   },
+   {
+    "point": "二分圖匹配與最大流的關係",
+    "where": []
+   }
+  ],
+  "peer": "同儕筆記提醒：讀過的「演算法期末考筆記」對最大流／二分圖匹配整理得完整（對應CLRS Ch12–26整體架構），可交叉參考核對手算流程。"
+ },
+ "alg-8": {
+  "points": [
+   {
+    "point": "P⊆NP",
+    "where": []
+   },
+   {
+    "point": "Cook-Levin定理（概念）",
+    "where": [
+     {
+      "video": "moPtwq_cVH8",
+      "t": 1846,
+      "sec": "P ⊆ NP；P = NP？",
+      "who": "MIT OCW 6.006"
+     }
+    ]
+   },
+   {
+    "point": "常見NP-Complete問題清單（SAT/3-SAT",
+    "where": [
+     {
+      "video": "tIE2lkJv20c",
+      "t": 152,
+      "sec": "NP-complete",
+      "who": "Theory of Computatio"
+     },
+     {
+      "video": "a_IRpiyBIm0",
+      "t": 758,
+      "sec": "第一個 NPC：Cook–Levin",
+      "who": "How to prove NP-Comp"
+     },
+     {
+      "video": "a_IRpiyBIm0",
+      "t": 887,
+      "sec": "證明步驟：L ∈ NP、L′ ≤p L",
+      "who": "How to prove NP-Comp"
+     }
+    ]
+   },
+   {
+    "point": "Vertex Cover",
+    "where": []
+   },
+   {
+    "point": "Clique",
+    "where": [
+     {
+      "video": "qZs767KQcvE",
+      "t": 41,
+      "sec": "Complete graph 與 clique",
+      "who": "Abdul Bari"
+     },
+     {
+      "video": "qZs767KQcvE",
+      "t": 196,
+      "sec": "在圖 G 上找 clique",
+      "who": "Abdul Bari"
+     },
+     {
+      "video": "qZs767KQcvE",
+      "t": 251,
+      "sec": "Decision vs optimization：CDP",
+      "who": "Abdul Bari"
+     }
+    ]
+   },
+   {
+    "point": "TSP",
+    "where": [
+     {
+      "video": "PqN0aJeYtuA",
+      "t": 794,
+      "sec": "TSP 的 optimization 與 decision 形式",
+      "who": "交大OCW 江蕙如"
+     },
+     {
+      "video": "PqN0aJeYtuA",
+      "t": 1174,
+      "sec": "實例：13509 個城市的 TSP",
+      "who": "交大OCW 江蕙如"
+     },
+     {
+      "video": "PqN0aJeYtuA",
+      "t": 2476,
+      "sec": "TSP ∈ NP：猜一個 tour 再檢查",
+      "who": "交大OCW 江蕙如"
+     }
+    ]
+   },
+   {
+    "point": "Subset Sum）",
+    "where": [
+     {
+      "video": "PqN0aJeYtuA",
+      "t": 1528,
+      "sec": "Class P 與 Class NP",
+      "who": "交大OCW 江蕙如"
+     }
+    ]
+   },
+   {
+    "point": "Reduction方向——有讀書筆記提到不同學校深淺不一：清大偏好要求寫出完整的Reduction證明過程，交大則常考Hamiltonian Cycle等具體問題的應用題，兩種都要練習，不能只準備其中一種",
+    "where": [
+     {
+      "video": "6n8vyWKGsIo",
+      "t": 1169,
+      "sec": "Hamiltonian cycle 問題",
+      "who": "交大OCW 江蕙如"
+     },
+     {
+      "video": "PqN0aJeYtuA",
+      "t": 3065,
+      "sec": "Reduction 的老例子：matching → network flow",
+      "who": "交大OCW 江蕙如"
+     },
+     {
+      "video": "6n8vyWKGsIo",
+      "t": 260,
+      "sec": "Case 1：用已知演算法解新問題",
+      "who": "交大OCW 江蕙如"
+     }
+    ]
+   }
+  ],
+  "peer": "同儕筆記提醒：NP-Complete在清大／交大／台大都被列五星必考範圍，跟本章key欄位提到的校系差異一起準備；同一份筆記把Computational Geometry列為三校幾乎不考，這也是六科規劃沒有另闢章節教它的原因，不用另外找教材。"
+ },
+ "alg-9": {
+  "points": [
+   {
+    "point": "近似比定義",
+    "where": []
+   },
+   {
+    "point": "Vertex Cover 2-approximation",
+    "where": []
+   },
+   {
+    "point": "Las Vegas vs Monte Carlo區別",
+    "where": []
+   }
+  ],
+  "peer": ""
+ },
+ "os-0": {
+  "points": [
+   {
+    "point": "Monolithic vs Microkernel vs Layered結構比較",
+    "where": []
+   },
+   {
+    "point": "System Call的執行流程（user mode → kernel mode）",
+    "where": [
+     {
+      "video": "BtHlptO34wM",
+      "t": 990,
+      "sec": "Hardware vs Software interrupt",
+      "who": "清大OCW 周志遠"
+     },
+     {
+      "video": "BtHlptO34wM",
+      "t": 1722,
+      "sec": "Software interrupt（trap）的處理流程",
+      "who": "清大OCW 周志遠"
+     },
+     {
+      "video": "9vrPlp_f5A0",
+      "t": 91,
+      "sec": "Nachos 是一個 virtual machine",
+      "who": "清大OCW 周志遠"
+     }
+    ]
+   },
+   {
+    "point": "OS提供的服務類型",
+    "where": []
+   }
+  ],
+  "peer": ""
+ },
+ "os-1": {
+  "points": [
+   {
+    "point": "五狀態圖（New/Ready/Running/Waiting/Terminated）默寫",
+    "where": []
+   },
+   {
+    "point": "Context Switch的代價與內容",
+    "where": []
+   },
+   {
+    "point": "fork()後parent/child的關係",
+    "where": [
+     {
+      "video": "ETPHC9DffdU",
+      "t": 604,
+      "sec": "Linux / UNIX 的 fork()",
+      "who": "清大OCW 周志遠"
+     },
+     {
+      "video": "ETPHC9DffdU",
+      "t": 853,
+      "sec": "execlp",
+      "who": "清大OCW 周志遠"
+     },
+     {
+      "video": "ETPHC9DffdU",
+      "t": 968,
+      "sec": "wait",
+      "who": "清大OCW 周志遠"
+     }
+    ]
+   }
+  ],
+  "peer": ""
+ },
+ "os-2": {
+  "points": [
+   {
+    "point": "Thread vs Process的共享資源差異",
+    "where": []
+   },
+   {
+    "point": "三種模型（Many-to-One/One-to-One/Many-to-Many）",
+    "where": []
+   },
+   {
+    "point": "多執行緒的優缺點",
+    "where": []
+   }
+  ],
+  "peer": ""
+ },
+ "os-3": {
+  "points": [
+   {
+    "point": "每個排程演算法的Gantt Chart手畫",
+    "where": [
+     {
+      "video": "EpZgvKBf5eo",
+      "t": 770,
+      "sec": "Non-preemptive vs preemptive",
+      "who": "清大OCW 周志遠"
+     },
+     {
+      "video": "8RlCb74uFp0",
+      "t": 167,
+      "sec": "SJF（non-preemptive）",
+      "who": "清大OCW 周志遠"
+     }
+    ]
+   },
+   {
+    "point": "計算Waiting Time/Turnaround Time/Response Time",
+    "where": []
+   },
+   {
+    "point": "Preemptive vs Non-preemptive差異",
+    "where": []
+   },
+   {
+    "point": "Aging解決Starvation",
+    "where": [
+     {
+      "video": "8RlCb74uFp0",
+      "t": 463,
+      "sec": "Priority scheduling 與 aging",
+      "who": "清大OCW 周志遠"
+     },
+     {
+      "video": "8RlCb74uFp0",
+      "t": 1134,
+      "sec": "Multilevel feedback queue",
+      "who": "清大OCW 周志遠"
+     }
+    ]
+   }
+  ],
+  "peer": "同儕筆記重點（三份完整筆記說法一致）：FCFS有Convoy effect（短工被長工卡住）、Priority Scheduling會Starvation要靠Aging解、Round Robin的time quantum太小會讓context switch overhead吃掉效能。"
+ },
+ "os-4": {
+  "points": [
+   {
+    "point": "Critical Section的三個條件（Mutual Exclusion/Progress/Bounded Waiting）",
+    "where": [
+     {
+      "video": "CNO_I8jhX3I",
+      "t": 858,
+      "sec": "Race condition 的定義與解法方向",
+      "who": "清大OCW 周志遠"
+     },
+     {
+      "video": "CNO_I8jhX3I",
+      "t": 999,
+      "sec": "Critical section 的架構",
+      "who": "清大OCW 周志遠"
+     },
+     {
+      "video": "CNO_I8jhX3I",
+      "t": 1232,
+      "sec": "三個條件（上廁所比喻）",
+      "who": "清大OCW 周志遠"
+     }
+    ]
+   },
+   {
+    "point": "Binary vs Counting Semaphore差異",
+    "where": []
+   },
+   {
+    "point": "用Semaphore解Producer-Consumer/Readers-Writers/Dining Philosophers",
+    "where": [
+     {
+      "video": "48K3qS2531o",
+      "t": 615,
+      "sec": "First readers-writers 的 semaphore 解法",
+      "who": "清大OCW 周志遠"
+     },
+     {
+      "video": "48K3qS2531o",
+      "t": 1139,
+      "sec": "Monitor 的概念",
+      "who": "清大OCW 周志遠"
+     },
+     {
+      "video": "HUA_cVBdLw0",
+      "t": 0,
+      "sec": "Semaphore：wait 與 signal",
+      "who": "Semaphores in Operat"
+     }
+    ]
+   }
+  ],
+  "peer": "同儕筆記地雷：Priority Inversion與Priority Inheritance常被搞混——低優先權任務占用資源導致高優先權任務被中優先權任務插隊延遲，解法是暫時把低優先權任務的優先權拉高，不能只背名詞。"
+ },
+ "os-5": {
+  "points": [
+   {
+    "point": "死鎖四必要條件（Mutual Exclusion/Hold and Wait/No Preemption/Circular Wait）",
+    "where": []
+   },
+   {
+    "point": "RAG看有無死鎖",
+    "where": []
+   },
+   {
+    "point": "Banker Algorithm安全狀態判斷（手算）",
+    "where": []
+   }
+  ],
+  "peer": "同儕筆記提醒：四條件必須同時成立才算死鎖，缺一不可；Banker's Algorithm的safety algorithm手算題是各校常考題型，務必練到熟。"
+ },
+ "os-6": {
+  "points": [
+   {
+    "point": "Paging的位址轉換（logical→physical：page number用來查Page Table取frame number，加offset）",
+    "where": []
+   },
+   {
+    "point": "TLB命中率計算",
+    "where": [
+     {
+      "video": "8RyRHYruy-8",
+      "t": 179,
+      "sec": "一次讀取變兩次 memory access",
+      "who": "清大OCW 周志遠"
+     },
+     {
+      "video": "8RyRHYruy-8",
+      "t": 290,
+      "sec": "TLB：associative memory",
+      "who": "清大OCW 周志遠"
+     },
+     {
+      "video": "8RyRHYruy-8",
+      "t": 468,
+      "sec": "TLB 與 page table 一起用：hit / miss 流程",
+      "who": "清大OCW 周志遠"
+     }
+    ]
+   },
+   {
+    "point": "Page Table大小計算",
+    "where": [
+     {
+      "video": "8RyRHYruy-8",
+      "t": 23,
+      "sec": "Page table 放在 memory：PTBR",
+      "who": "清大OCW 周志遠"
+     },
+     {
+      "video": "8RyRHYruy-8",
+      "t": 179,
+      "sec": "一次讀取變兩次 memory access",
+      "who": "清大OCW 周志遠"
+     },
+     {
+      "video": "8RyRHYruy-8",
+      "t": 290,
+      "sec": "TLB：associative memory",
+      "who": "清大OCW 周志遠"
+     }
+    ]
+   },
+   {
+    "point": "Internal vs External Fragmentation",
+    "where": []
+   }
+  ],
+  "peer": ""
+ },
+ "os-7": {
+  "points": [
+   {
+    "point": "Page Fault的處理流程（trap→swap in→restart）",
+    "where": []
+   },
+   {
+    "point": "三種置換演算法比較（FIFO/LRU/Optimal）",
+    "where": []
+   },
+   {
+    "point": "Thrashing的成因與解決",
+    "where": []
+   },
+   {
+    "point": "Working Set模型",
+    "where": []
+   }
+  ],
+  "peer": "同儕筆記地雷：FIFO有Belady's Anomaly（frame數變多、page fault反而變多），LRU和Optimal屬於stack algorithm、不會有此異常；同儕筆記附的EMAT、TLB命中率計算範例可以直接拿來對答案。"
+ },
+ "os-8": {
+  "points": [
+   {
+    "point": "三種分配方式（Contiguous/Linked/Indexed）的比較",
+    "where": []
+   },
+   {
+    "point": "inode的direct/indirect block存取次數計算",
+    "where": [
+     {
+      "video": "C42WzJATHg0",
+      "t": 742,
+      "sec": "UNIX inode：combined scheme",
+      "who": "清大OCW 周志遠"
+     },
+     {
+      "video": "C42WzJATHg0",
+      "t": 1610,
+      "sec": "考試重點：計算 I/O 次數與總結",
+      "who": "清大OCW 周志遠"
+     }
+    ]
+   },
+   {
+    "point": "FAT結構",
+    "where": [
+     {
+      "video": "C42WzJATHg0",
+      "t": 70,
+      "sec": "FAT：把 pointer 集中起來",
+      "who": "清大OCW 周志遠"
+     }
+    ]
+   }
+  ],
+  "peer": "同儕筆記缺口：四份讀過的作業系統同儕筆記裡，有兩份到同步機制或更早就沒繼續寫，只有一份真正涵蓋File System，這章不能只靠同儕筆記，優先回歸課本與影片。"
+ },
+ "os-9": {
+  "points": [
+   {
+    "point": "Polling vs Interrupt vs DMA比較",
+    "where": [
+     {
+      "video": "1Hl-S_eFbhE",
+      "t": 373,
+      "sec": "Sector slipping",
+      "who": "清大OCW 周志遠"
+     },
+     {
+      "video": "1Hl-S_eFbhE",
+      "t": 412,
+      "sec": "Swap space 放在哪裡",
+      "who": "清大OCW 周志遠"
+     }
+    ]
+   },
+   {
+    "point": "三種磁頭排程（SSTF/SCAN/C-SCAN）的磁頭移動距離計算",
+    "where": []
+   }
+  ],
+  "peer": "同儕筆記重點：磁碟排程與RAID只有一份筆記寫得完整，附了FCFS/SSTF/SCAN/C-SCAN/C-Look磁頭移動量的實際計算例題與RAID 0–6效能比較，這塊優先靠這份加課本補，其他筆記幾乎空白。"
+ },
+ "os-10": {
+  "points": [
+   {
+    "point": "Type 1（Bare-metal）vs Type 2（Hosted）Hypervisor",
+    "where": []
+   },
+   {
+    "point": "OS安全機制概念",
+    "where": []
+   }
+  ],
+  "peer": ""
+ },
+ "la-0": {
+  "points": [
+   {
+    "point": "高斯消去法手算",
+    "where": []
+   },
+   {
+    "point": "REF/RREF的定義",
+    "where": []
+   },
+   {
+    "point": "解的三種情況（unique/no/infinite）",
+    "where": []
+   },
+   {
+    "point": "自由變數的判斷",
+    "where": []
+   }
+  ],
+  "peer": ""
+ },
+ "la-1": {
+  "points": [
+   {
+    "point": "矩陣乘法的條件與複雜度",
+    "where": []
+   },
+   {
+    "point": "逆矩陣存在⟺det≠0",
+    "where": []
+   },
+   {
+    "point": "逆矩陣求法（augmented matrix method）",
+    "where": []
+   }
+  ],
+  "peer": "同儕筆記地雷：AB=AC且A≠O不能消去成B=C、AB=O不代表A或B有一個是零矩陣、A²=A不代表A=I或A=O——這些是選擇題常見誤答點。也要分清「古典伴隨矩陣」（adjugate，求逆矩陣用）跟內積空間的「伴隨算子」（主題7會遇到，概念不同）。"
+ },
+ "la-2": {
+  "points": [
+   {
+    "point": "Cofactor Expansion沿任一行/列展開",
+    "where": [
+     {
+      "video": "23LLB9mNJvc",
+      "t": 2891,
+      "sec": "|Aₙ| = |Aₙ₋₁| − |Aₙ₋₂|",
+      "who": "MIT OCW 18.06"
+     }
+    ]
+   },
+   {
+    "point": "行列式的性質（row swap改符號",
+    "where": []
+   },
+   {
+    "point": "row multiply乘常數）",
+    "where": []
+   },
+   {
+    "point": "Cramer's Rule",
+    "where": []
+   }
+  ],
+  "peer": ""
+ },
+ "la-3": {
+  "points": [
+   {
+    "point": "四個基本子空間（Column Space/Null Space/Row Space/Left Null Space）",
+    "where": []
+   },
+   {
+    "point": "Rank-Nullity Theorem（rank+nullity=n）",
+    "where": []
+   },
+   {
+    "point": "線性獨立的判斷",
+    "where": []
+   }
+  ],
+  "peer": "同儕筆記地雷：求行空間（column space）要用行運算、求列空間（row space）要用列運算，兩者搞混會直接算錯。"
+ },
+ "la-4": {
+  "points": [
+   {
+    "point": "線性變換的定義（加法和純量乘法保持）",
+    "where": []
+   },
+   {
+    "point": "核（Kernel）和像（Image）的維度關係（等於Nullity和Rank）",
+    "where": []
+   }
+  ],
+  "peer": ""
+ },
+ "la-5": {
+  "points": [
+   {
+    "point": "特徵多項式det(A-λI)=0",
+    "where": [
+     {
+      "video": "13r9QY6cmjc",
+      "t": 1280,
+      "sec": "缺特徵向量：[2 1; 0 2]",
+      "who": "MIT OCW 18.06"
+     },
+     {
+      "video": "13r9QY6cmjc",
+      "t": 1975,
+      "sec": "Fibonacci：化成一階系統",
+      "who": "MIT OCW 18.06"
+     },
+     {
+      "video": "8MF3pz-oYHo",
+      "t": 958,
+      "sec": "A 與 Aᵀ 的特徵值相同",
+      "who": "MIT OCW 18.06"
+     }
+    ]
+   },
+   {
+    "point": "幾何重數與代數重數",
+    "where": []
+   },
+   {
+    "point": "對角化條件",
+    "where": []
+   },
+   {
+    "point": "複數特徵值的處理",
+    "where": []
+   },
+   {
+    "point": "Jordan Form掌握定義與基本求法，深入題型列為選讀",
+    "where": []
+   }
+  ],
+  "peer": "同儕筆記地雷：不可先把矩陣列運算成上三角再算特徵值，列運算會改變特徵值，是常見誤區。唯一附完整推導的同儕筆記把Cayley-Hamilton定理跟Jordan Form的證明過程都寫出來，可交叉核對，但另兩份筆記只條列公式，不能單獨依賴。"
+ },
+ "la-6": {
+  "points": [
+   {
+    "point": "正交投影公式（proj_v u = (u·v/v·v)v）",
+    "where": []
+   },
+   {
+    "point": "Gram-Schmidt步驟",
+    "where": [
+     {
+      "video": "0MtwqhIwdrI",
+      "t": 0,
+      "sec": "Orthonormal 向量：q₁…qₙ",
+      "who": "MIT OCW 18.06"
+     },
+     {
+      "video": "0MtwqhIwdrI",
+      "t": 481,
+      "sec": "Orthogonal matrix 的例子",
+      "who": "MIT OCW 18.06"
+     },
+     {
+      "video": "0MtwqhIwdrI",
+      "t": 1587,
+      "sec": "Gram-Schmidt：兩個向量 a、b",
+      "who": "MIT OCW 18.06"
+     }
+    ]
+   },
+   {
+    "point": "QR分解的用途",
+    "where": []
+   }
+  ],
+  "peer": "同儕筆記重點：QR分解在其中一份筆記有完整步驟推導可交叉核對；內積空間的「伴隨算子」（adjoint operator）跟主題2提過的古典伴隨矩陣是不同概念，合看時容易搞混，要用課本定義釐清。"
+ },
+ "la-7": {
+  "points": [
+   {
+    "point": "對稱矩陣一定可以正交對角化（Spectral Theorem）",
+    "where": []
+   },
+   {
+    "point": "正定矩陣的判斷方法（所有特徵值>0 / 所有Leading Principal Minor>0）",
+    "where": []
+   }
+  ],
+  "peer": "同儕筆記重點：「用正交矩陣P使D=PᵀAP」（對稱矩陣正交對角化）是同儕觀察中出現機率最高的單一題型（十題有八題），這章優先確保這個流程能一次做對。正規矩陣不等於對稱矩陣（對稱矩陣一定正規，但正規不一定對稱），筆記對這條界線交代模糊，以課本為準。"
+ },
+ "la-8": {
+  "points": [
+   {
+    "point": "SVD分解步驟（求AᵀA的特徵值→σᵢ→求uᵢ）",
+    "where": [
+     {
+      "video": "Go2aLo7ZOlU",
+      "t": 1971,
+      "sec": "Σ 的 pseudo-inverse",
+      "who": "MIT OCW 18.06"
+     },
+     {
+      "video": "Go2aLo7ZOlU",
+      "t": 2300,
+      "sec": "A⁺ = VΣ⁺Uᵀ",
+      "who": "MIT OCW 18.06"
+     }
+    ]
+   },
+   {
+    "point": "低秩近似的意義",
+    "where": []
+   },
+   {
+    "point": "Moore-Penrose Pseudo-inverse",
+    "where": []
+   }
+  ],
+  "peer": ""
+ },
+ "dm-0": {
+  "points": [
+   {
+    "point": "真值表",
+    "where": []
+   },
+   {
+    "point": "邏輯等價（De Morgan定律背熟）",
+    "where": []
+   },
+   {
+    "point": "量詞∀和∃的否定",
+    "where": []
+   },
+   {
+    "point": "謂詞邏輯的推導",
+    "where": []
+   }
+  ],
+  "peer": ""
+ },
+ "dm-1": {
+  "points": [
+   {
+    "point": "三種證明方法的結構",
+    "where": []
+   },
+   {
+    "point": "強歸納法（Strong Induction）",
+    "where": []
+   },
+   {
+    "point": "Well-Ordering Principle",
+    "where": []
+   }
+  ],
+  "peer": ""
+ },
+ "dm-2": {
+  "points": [
+   {
+    "point": "集合運算（聯集/交集/差集/補集）的性質",
+    "where": []
+   },
+   {
+    "point": "函數的單射/滿射/雙射定義",
+    "where": []
+   },
+   {
+    "point": "Cantor對角線論證（可數vs不可數）",
+    "where": []
+   }
+  ],
+  "peer": ""
+ },
+ "dm-3": {
+  "points": [
+   {
+    "point": "線性遞推關係的特徵方程解法（homogeneous和particular solution）",
+    "where": []
+   },
+   {
+    "point": "Fibonacci通項公式推導——生成函數這塊有讀書筆記提醒最常見的算錯原因是一開始沒把初始項（initial term）定義清楚，導致後面級數展開整組錯，練習時養成先把初始條件寫下來的習慣",
+    "where": []
+   }
+  ],
+  "peer": ""
+ },
+ "dm-4": {
+  "points": [
+   {
+    "point": "加法/乘法原理",
+    "where": []
+   },
+   {
+    "point": "排列P(n,r)和組合C(n,r)公式與應用",
+    "where": [
+     {
+      "video": "DBugSTeX1zw",
+      "t": 72,
+      "sec": "TALES 的排列：5!",
+      "who": "PERMUTATIONS and COM"
+     },
+     {
+      "video": "DBugSTeX1zw",
+      "t": 131,
+      "sec": "BARBARIC：有重複字母的排列",
+      "who": "PERMUTATIONS and COM"
+     },
+     {
+      "video": "DBugSTeX1zw",
+      "t": 268,
+      "sec": "格子路徑：(0,0) 到 (4,4)",
+      "who": "PERMUTATIONS and COM"
+     }
+    ]
+   },
+   {
+    "point": "鴿巢原理的應用（generalized pigeonhole）",
+    "where": []
+   }
+  ],
+  "peer": ""
+ },
+ "dm-5": {
+  "points": [
+   {
+    "point": "容斥原理公式與應用",
+    "where": []
+   },
+   {
+    "point": "常用生成函數",
+    "where": []
+   },
+   {
+    "point": "Burnside引理與玻里亞計數",
+    "where": []
+   },
+   {
+    "point": "掌握基礎公式，深入題型列為選讀",
+    "where": []
+   }
+  ],
+  "peer": "同儕筆記地雷：H_r^n（相同物放相異箱）、S(m,n)（相異物到相同箱）、onto(m,n)（相異物放相異箱不允許空）三種計數公式最常被搞混，要先分清題型再套公式；第二類史特林數的求和上界公式在某份筆記裡疑似不夠精確，跟課本對不上時以課本為準。"
+ },
+ "dm-6": {
+  "points": [
+   {
+    "point": "握手定理（Σdeg=2|E|）",
+    "where": []
+   },
+   {
+    "point": "Euler路徑/迴路的條件（奇數度節點數）",
+    "where": []
+   },
+   {
+    "point": "Hamilton路徑（無簡單判斷條件，考概念）",
+    "where": []
+   }
+  ],
+  "peer": ""
+ },
+ "dm-7": {
+  "points": [
+   {
+    "point": "Euler公式（v-e+f=2，平面圖）",
+    "where": []
+   },
+   {
+    "point": "四色定理（概念，不需證明）",
+    "where": []
+   },
+   {
+    "point": "Chromatic Number定義",
+    "where": [
+     {
+      "video": "Erea1QASjXY",
+      "t": 263,
+      "sec": "Chromatic number 與完全圖",
+      "who": "Discrete Math II - 1"
+     },
+     {
+      "video": "Erea1QASjXY",
+      "t": 390,
+      "sec": "Cycle graph 的 chromatic number",
+      "who": "Discrete Math II - 1"
+     },
+     {
+      "video": "6WZvVJ0Q1FA",
+      "t": 10,
+      "sec": "Spanning tree 的定義",
+      "who": "Spanning Tree：Discre"
+     }
+    ]
+   },
+   {
+    "point": "生成樹計數",
+    "where": []
+   }
+  ],
+  "peer": ""
+ },
+ "dm-8": {
+  "points": [
+   {
+    "point": "等價關係三性質（Reflexive/Symmetric/Transitive）判斷",
+    "where": []
+   },
+   {
+    "point": "等價類與集合分割的對應",
+    "where": []
+   },
+   {
+    "point": "偏序集（Poset）與Hasse圖繪製",
+    "where": []
+   },
+   {
+    "point": "全序vs偏序——台大近年考古題常單題出到10分，不要輕忽",
+    "where": []
+   }
+  ],
+  "peer": ""
+ },
+ "dm-9": {
+  "points": [
+   {
+    "point": "群的四條性質（封閉性/結合律/單位元/反元素）",
+    "where": []
+   },
+   {
+    "point": "布林代數的化簡規則",
+    "where": []
+   }
+  ],
+  "peer": "同儕筆記提醒：這章被同儕筆記作者評為「CP值很低，全部章節中最難，又很少考」，時間不夠時可以放到最後讀，符合這章pri標為lo（補充）的定位。"
+ },
+ "ca-0": {
+  "points": [
+   {
+    "point": "二進位/十六進位互轉",
+    "where": []
+   },
+   {
+    "point": "2's Complement加減法",
+    "where": []
+   },
+   {
+    "point": "IEEE 754 single precision格式（1+8+23位元）",
+    "where": []
+   },
+   {
+    "point": "denormalized number",
+    "where": []
+   }
+  ],
+  "peer": "同儕筆記地雷：浮點數加法不具結合律（(A+B)+C ≠ A+(B+C)），這是常見考題陷阱，同儕筆記中只有一份特別獨立列出這個警語，容易被忽略。"
+ },
+ "ca-1": {
+  "points": [
+   {
+    "point": "六種定址模式（Immediate/Register/Direct/Indirect/Base/PC-relative）比較",
+    "where": []
+   },
+   {
+    "point": "RISC vs CISC核心差異",
+    "where": []
+   },
+   {
+    "point": "MIPS R-type/I-type/J-type格式",
+    "where": []
+   }
+  ],
+  "peer": "同儕筆記提醒：讀過的同儕筆記（含標題掛RISC-V的資料統整篇）內文其實幾乎全用MIPS舉例，真正的RISC-V教材只在連結清單當外部資源列出，沒有一份自己整理過RISC-V內容，如果目標校系考RISC-V，這塊得另外找教材。"
+ },
+ "ca-2": {
+  "points": [
+   {
+    "point": "單週期CPU的datapath設計",
+    "where": []
+   },
+   {
+    "point": "各指令（lw/sw/beq/add）的控制訊號設定",
+    "where": []
+   },
+   {
+    "point": "多週期CPU的優缺點",
+    "where": []
+   }
+  ],
+  "peer": ""
+ },
+ "ca-3": {
+  "points": [
+   {
+    "point": "三種Hazard（Data/Control/Structural）的成因",
+    "where": []
+   },
+   {
+    "point": "Data Forwarding如何減少stall",
+    "where": []
+   },
+   {
+    "point": "計算Pipeline的CPI（CPI=1+stalls per instruction）",
+    "where": []
+   },
+   {
+    "point": "Branch Prediction的效益計算——有考生心得提到台大考過直接給一段組合語言（如含lw",
+    "where": []
+   },
+   {
+    "point": "branch的指令序列）要求手算實際stall週期數，不是只考公式代入，練習時要準備看得懂組合語言指令再算Hazard的題型",
+    "where": []
+   }
+  ],
+  "peer": "同儕筆記地雷：sw接著lw雖然是資料相依，其實可以直接forward不必stall；真正一定要stall的是load-use（前一條是lw時），這是常被混淆的地方，同儕筆記中只有一份特別點出來。"
+ },
+ "ca-4": {
+  "points": [
+   {
+    "point": "三種Cache映射（Direct-mapped/Set-Associative/Fully-Associative）的比較",
+    "where": []
+   },
+   {
+    "point": "AMAT公式（AMAT=Hit time+Miss rate×Miss penalty）",
+    "where": []
+   },
+   {
+    "point": "寫策略（Write-back vs Write-through）",
+    "where": []
+   },
+   {
+    "point": "替換演算法（LRU/FIFO）",
+    "where": []
+   }
+  ],
+  "peer": "同儕筆記重點：AMAT、Cache miss三分類、write policy在同儕筆記中整理得最完整，但其中一份有Spatial Locality的筆誤，讀到時對照課本確認，不要照單全收。"
+ },
+ "ca-5": {
+  "points": [
+   {
+    "point": "DRAM存取流程（RAS/CAS）",
+    "where": []
+   },
+   {
+    "point": "Memory Interleaving如何降低存取延遲",
+    "where": []
+   },
+   {
+    "point": "記憶體頻寬計算",
+    "where": []
+   }
+  ],
+  "peer": ""
+ },
+ "ca-6": {
+  "points": [
+   {
+    "point": "三種I/O方式比較（Polling耗CPU/Interrupt效率高/DMA最高效）",
+    "where": [
+     {
+      "video": "E82x-cug9YE",
+      "t": 20,
+      "sec": "資料傳輸：記憶體是來源與目標",
+      "who": "Modes of Transfer | "
+     },
+     {
+      "video": "E82x-cug9YE",
+      "t": 435,
+      "sec": "前兩種方式共同的缺點",
+      "who": "Modes of Transfer | "
+     }
+    ]
+   },
+   {
+    "point": "Interrupt的處理流程",
+    "where": [
+     {
+      "video": "E82x-cug9YE",
+      "t": 20,
+      "sec": "資料傳輸：記憶體是來源與目標",
+      "who": "Modes of Transfer | "
+     },
+     {
+      "video": "E82x-cug9YE",
+      "t": 270,
+      "sec": "Interrupt-initiated I/O",
+      "who": "Modes of Transfer | "
+     },
+     {
+      "video": "E82x-cug9YE",
+      "t": 435,
+      "sec": "前兩種方式共同的缺點",
+      "who": "Modes of Transfer | "
+     }
+    ]
+   },
+   {
+    "point": "Bus仲裁方式",
+    "where": [
+     {
+      "video": "E82x-cug9YE",
+      "t": 116,
+      "sec": "Programmed I/O",
+      "who": "Modes of Transfer | "
+     },
+     {
+      "video": "E82x-cug9YE",
+      "t": 475,
+      "sec": "Direct Memory Access（DMA）",
+      "who": "Modes of Transfer | "
+     }
+    ]
+   }
+  ],
+  "peer": "同儕筆記地雷：有筆記把Exception（軟體觸發）跟Interrupt（硬體觸發）處理流程混著講、沒有分開列，讀這段時自己對照課本把兩種異常處理流程拆開記，不要照單全收。"
+ },
+ "ca-7": {
+  "points": [
+   {
+    "point": "MESI協定的四個狀態（Modified/Exclusive/Shared/Invalid）",
+    "where": []
+   },
+   {
+    "point": "Amdahl's Law計算最大加速比",
+    "where": [
+     {
+      "video": "2dYV_lADfFI",
+      "t": 5,
+      "sec": "Amdahl's law 在問什麼",
+      "who": "Amdahl's Law in COA:"
+     }
+    ]
+   }
+  ],
+  "peer": "同儕筆記提醒：只有一份筆記（大碩張凡）真正系統講到多處理器（SMP/MPP、cache coherence、Flynn分類、GPU），其他同儕筆記都在Cache／虛擬記憶體就結束，這章要靠這份加課本補。"
+ }
+}

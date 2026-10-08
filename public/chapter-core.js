@@ -144,13 +144,7 @@ const CHAPTER_LABS = {
 function chapterLabUrl(subjectId, idx){
   return (CHAPTER_LABS[subjectId]||[]).indexOf(idx+1) !== -1 ? '/lab/lab.html?ch='+subjectId+'-'+(idx+1) : '';
 }
-// Chapters taught as a concept course (public/course/<subject>-<n>.json):
-// every link into the chapter opens the course; the plain video room stays
-// reachable through videoRoomUrl (the course page links to it).
-const COURSES = { ds: [1] };
-function hasCourse(subjectId, idx){ return (COURSES[subjectId]||[]).indexOf(idx+1) !== -1; }
 function studyRoomUrl(subjectId, idx, videoId){
-  if(hasCourse(subjectId, idx)) return '/course.html?s='+encodeURIComponent(subjectId)+'&c='+idx;
   return videoRoomUrl(subjectId, idx, videoId);
 }
 function videoRoomUrl(subjectId, idx, videoId){
