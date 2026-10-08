@@ -5,10 +5,7 @@
  "sections": [
   {
    "title": "中序走訪回顧：運算式樹逐步追蹤",
-   "scene": "inorder",
-   "params": {
-    "tree": "expr"
-   },
+   "scene": "treeb2-inrev",
    "points": [
     {
      "text": "三個動作 L（往左）、V（visit 印出）、R（往右）的排列，固定先左後右時只剩三種：inorder、preorder、postorder。",
@@ -39,11 +36,43 @@
      "t": 247
     }
    ],
-   "trap": "補充：ASR 把順序念成 lnvr／nvr 等亂碼，正確為 inorder LVR、preorder VLR、postorder LRV。此樹 inorder 為 A/B*C*D+E，preorder 為 +**/ABCDE，postorder 為 AB/C*D*E+。"
+   "trap": "補充：ASR 把順序念成 lnvr／nvr 等亂碼，正確為 inorder LVR、preorder VLR、postorder LRV。此樹 inorder 為 A/B*C*D+E，preorder 為 +**/ABCDE，postorder 為 AB/C*D*E+。",
+   "cues": [
+    38.8,
+    60.8,
+    68.8,
+    80.8,
+    90.8,
+    105.5,
+    121.5,
+    161.8,
+    170.6,
+    185.8,
+    201.8,
+    224.8,
+    235.8,
+    246.8
+   ],
+   "explain": [
+    "複習：L（往左走）、V（印出）、R（往右走）三個動作，固定先左後右，對應 inorder、preorder、postorder 三種走訪。",
+    "inorder 是 L V R。給你一個 root（這裡是「+」），從它開始。",
+    "L：一直往左走，走到不能再走為止：+ → * → * → / → A。",
+    "到了 A，它的左邊是 null（藍色的空指標），走不下去了。",
+    "接著做 V：把 A 的資料印出來。",
+    "第三個動作 R：往右走。A 的右邊也是 null，一樣走不下去。",
+    "A 已經處理完了，就 return 回上一層——回到呼叫它的 /。",
+    "/ 的左邊已經拜訪完，所以做 V：把 / 印出來。",
+    "/ 接著做 R 往右走，看到 B。B 不會馬上印，也是先往左走。",
+    "B 的左邊是空的，回來後把 B 印出來。",
+    "B 的右邊也是 null。回到 / 時，代表 / 的左右子樹都拜訪過了。",
+    "/ 做完了，return 給呼叫它的「*」。這就是 recursive（遞迴）的概念：一層一層回去。",
+    "接著把 * 印出來，依此類推，最後得到 A / B * C * D + E。",
+    "preorder 是 VLR（+ * * / A B C D E），postorder 是 LRV（A B / C * D * E +），level order 則一層一層往下。"
+   ]
   },
   {
    "title": "三種走訪的遞迴程式碼",
-   "scene": "p13-trav-code",
+   "scene": "treeb2-code",
    "points": [
     {
      "text": "實作非常簡單：一段 recursive code 就搞定，inorder 是 Tree 的 member function 之一。",
@@ -65,15 +94,35 @@
      "text": "Postorder 也是一樣，只是 cout 放在最後；逐步執行的細節請自行對照投影片追蹤。",
      "t": 379
     }
+   ],
+   "cues": [
+    263.8,
+    278.8,
+    289.8,
+    305.9,
+    320.8,
+    330.8,
+    340.5,
+    374.8
+   ],
+   "explain": [
+    "實作很簡單，一段 recursive code 就搞定。inorder 是 Tree 這個 class 的 member function（成員函式）之一。",
+    "注意：class Tree 裡面只有一個 pointer，就是 root。",
+    "Inorder 自己呼叫自己。丟進來的 node 叫 current node，接下來照著三行指令的順序做。",
+    "如果 current node 有值，就呼叫 Inorder 去拜訪它的左子樹，這就是 L，會一路遞迴往左。",
+    "呼叫到不能再呼叫，就把自己的值印出來（V），再往右（R）。結果：A / B * C * D + E。",
+    "從 inorder 改成 preorder 很簡單：名字改掉，三行順序換一下，cout 變成第一行。",
+    "preorder：先印出自己，再看左子樹、右子樹。結果：+ * * / A B C D E。",
+    "postorder 也一樣，只是 cout 放在最後。結果：A B / C * D * E +。"
    ]
   },
   {
    "title": "非遞迴 inorder：用 stack",
-   "scene": "p13-iter-inorder",
+   "scene": "treeb2-iter",
    "points": [
     {
      "text": "不用 recursive code 的話，就要自己用一個 stack 來存放節點。",
-     "t": 393
+     "t": 389
     },
     {
      "text": "一直往左走，看到左邊還有 node 時先不印，而是 push 進 stack。",
@@ -88,11 +137,25 @@
      "t": 425
     }
    ],
-   "trap": "補充：老師只口頭描述「往左 push、走不下去 pop 印出、再往右」，逐步 stack 內容為依課本演算法推導。結果與遞迴版相同：A / B * C * D + E。"
+   "trap": "補充：老師只口頭描述「往左 push、走不下去 pop 印出、再往右」，逐步 stack 內容為依課本演算法推導。結果與遞迴版相同：A / B * C * D + E。",
+   "cues": [
+    389,
+    392.8,
+    410.8,
+    417.8,
+    426.8
+   ],
+   "explain": [
+    "如果不想用 recursive code 呢？",
+    "那就要自己用一個 [[stack]]（堆疊）來存放 node。",
+    "一直往左走：看到左邊還有 node，不會馬上印出來，而是先把自己 push（放）進 stack。",
+    "走不下去時，就從 stack pop（拿）出最上面的 node，把資料印出來——第一個是 A。",
+    "印完往右走，再重複同樣的動作。最後輸出 A / B * C * D + E，和遞迴版一樣。"
+   ]
   },
   {
    "title": "Level order：用 queue",
-   "scene": "p13-level-queue",
+   "scene": "treeb2-levelq",
    "points": [
     {
      "text": "Level order 用 queue 的架構，程式只要幾行。",
@@ -123,7 +186,41 @@
      "t": 601
     }
    ],
-   "trap": "補充：ASR 在 09:56 把 queue 第三個元素聽成 B，應為 D。整棵樹的 level order 為 + * E * D / C A B。"
+   "trap": "補充：ASR 在 09:56 把 queue 第三個元素聽成 B，應為 D。整棵樹的 level order 為 + * E * D / C A B。",
+   "cues": [
+    438,
+    452.8,
+    457.8,
+    469.8,
+    493.8,
+    507.5,
+    520.8,
+    546.8,
+    561.8,
+    570.8,
+    578.1,
+    585.8,
+    600.8,
+    616.8,
+    623.1
+   ],
+   "explain": [
+    "level order 用 queue（佇列，先進先出）的架構，程式只要幾行。",
+    "一開始，current node 就是 root「+」。",
+    "current node 不是空的，就把它的值印出來（cout）。",
+    "印完後，如果它的 left child 有值，就把 left child 加進 queue。",
+    "再看 right child，有的話也放進 queue。順序是先左再右，因為 level order 是由左到右。",
+    "問題：這兩個 if 的順序可不可以顛倒？",
+    "不行！queue 是先進先出，如果先放右邊，level order 每一層就會變成由右到左。",
+    "左右孩子都放進 queue 之後，把 queue 的第一個 node 抓出來，當作下一個 current node。",
+    "用例子看：第一個 current node 是 +，印完後 queue 裡有 * 和 E。",
+    "queue 的第一個元素是 *，把它丟出來並印出。",
+    "這個 * 下面的 * 和 D，被放進 queue。",
+    "現在 queue 的順序：第一個是 E，第二個是 *，第三個是 D（字幕把 D 聽成 B）。",
+    "接著取出第一個 E 印出。E 剛好沒有 left、right child，所以 queue 只剩 *、D 兩個。",
+    "再把 * 丟出來印出，看到它下面的 / 和 C，放進 queue。",
+    "就這樣一直推下去，直到 queue 空了。結果：+ * E * D / C A B。"
+   ]
   },
   {
    "title": "閒聊：寫程式與做研究",
@@ -131,7 +228,7 @@
    "points": [
     {
      "text": "老師已三四年沒教 DS，但每次看這些 code 都覺得有趣。",
-     "t": 638
+     "t": 636
     },
     {
      "text": "做研究重點在邏輯與前因後果（Q&A 探索），再寫 paper 陳述出來；寫 code 則能直接看到程式跑起來。",
@@ -141,11 +238,11 @@
   },
   {
    "title": "為何要知道走訪順序：相等與相似",
-   "scene": "p13-similar",
+   "scene": "treeb2-similar",
    "points": [
     {
      "text": "知道走訪順序是為了掌握 tree 的 structure。",
-     "t": 744
+     "t": 730
     },
     {
      "text": "常見問題：給兩棵 tree，判斷是否相等（equal）——這個很簡單，稍後看。",
@@ -168,15 +265,37 @@
      "t": 877
     }
    ],
-   "trap": "補充：課本（Horowitz）對 similar 的定義是「兩棵 binary tree 結構相同（左右也要對應），資料可不同」；equivalent 則結構與資料都相同。A(B,C) 與 A(C,B) 依此定義結構相同，屬 similar 但不 equivalent。"
+   "trap": "補充：課本（Horowitz）對 similar 的定義是「兩棵 binary tree 結構相同（左右也要對應），資料可不同」；equivalent 則結構與資料都相同。A(B,C) 與 A(C,B) 依此定義結構相同，屬 similar 但不 equivalent。",
+   "cues": [
+    729.9,
+    741.8,
+    756.8,
+    771.8,
+    780.3,
+    813.8,
+    825.8,
+    856.6,
+    874.8
+   ],
+   "explain": [
+    "看完 in／post／pre order，你可能會問：為什麼要知道 traversal 的順序？",
+    "因為要掌握 tree 的 structure（結構）。",
+    "以後可能會遇到的問題：給你兩棵 tree，比較它們是否相等（equal）。這個很簡單，等一下看。",
+    "也可以問：兩棵 tree 是否相似（similar）？",
+    "例如一棵 A 下面是 B、C，另一棵 A 下面是 C、B：root 一樣，孩子順序不同。相似嗎？",
+    "這很主觀，要看定義。只看結構：root 下面都接兩個 child，很相似。",
+    "如果定義更嚴格，左右都要一樣，那就不相似。",
+    "快速的判斷方法：透過 traverse 把 tree 轉成 string（字串），再做字串比較：ABC vs ACB。",
+    "還可以用 Longest Common Subsequence（LCS，最長共同子序列）比較共同出現的字和順序：ABC 和 ACB 的 LCS 是 AB。"
+   ]
   },
   {
    "title": "複製一棵 tree（Copy）",
-   "scene": "p13-copy",
+   "scene": "treeb2-copy",
    "points": [
     {
      "text": "有了走訪就能輕易做出 tree 的 copy；Copy 傳入原 tree 的 root。",
-     "t": 921
+     "t": 913
     },
     {
      "text": "先判斷 root 是否為 empty（binary tree 可以是空的，root 為 null），是空的就直接 return。",
@@ -203,15 +322,45 @@
      "t": 1176
     }
    ],
-   "trap": "影片更正：老師說此程式「透過 in order」，但程式順序是 V、L、R，看起來像 preorder；Horowitz 課本則稱 Copy 為 modified postorder（因為 C++ 版先遞迴複製左右子樹再建立節點）。其實任何一種走訪都能完成複製，關鍵是左右子樹都要遞迴複製而非指標指派。 補充：老師沒有給具體的樹，動畫用示意樹 A(B(D,E),C)。"
+   "trap": "影片更正：老師說此程式「透過 in order」，但程式順序是 V、L、R，看起來像 preorder；Horowitz 課本則稱 Copy 為 modified postorder（因為 C++ 版先遞迴複製左右子樹再建立節點）。其實任何一種走訪都能完成複製，關鍵是左右子樹都要遞迴複製而非指標指派。 補充：老師沒有給具體的樹，動畫用示意樹 A(B(D,E),C)。",
+   "cues": [
+    912.8,
+    918.8,
+    934.9,
+    959.8,
+    1019.8,
+    1031,
+    1045.4,
+    1079.8,
+    1119.7,
+    1134,
+    1144.8,
+    1168.5,
+    1185.8
+   ],
+   "explain": [
+    "接著講 tree 的兩個基本 operation。這是一棵示意的原 tree。",
+    "第一個：copy（複製）。有了走訪，就能很容易複製一棵 tree，procedure 叫 Copy。",
+    "把原 tree 的 root 丟給 Copy，一開始 orig 就是 root A。",
+    "先判斷 root 是不是 empty。binary tree 可以是空的；如果是空的，就直接 return，什麼都不用做。",
+    "不是空的，就向系統 new 一個 TreeNode 的空間，叫它 temp。",
+    "把原 node 的 data 複製一份，放進 temp 的 data。",
+    "接著呼叫 Copy 去複製左邊的 child，把結果設給 temp 的 leftChild。",
+    "這會 recursive 下去：左子樹的 node 也是有值就 create 新 node、複製 data，再往它的子孫繼續 copy，右邊也一樣。",
+    "你可能想：直接寫 temp->leftChild = orig->leftChild 就好了吧？這只是 pointer assignment（指標指派）。",
+    "那樣只 copy 到 root，下面的子樹其實是跟原 tree 共用的，沒有真的複製。改原 tree，copy 也會跟著變。",
+    "所以 left、right 都要用 recursive procedure 呼叫 Copy，才能把左右 subtree 完整複製一份。",
+    "這段程式的順序是 V（複製 data）、L、R。老師說它跟 inorder 很像，其實 VLR 比較像 preorder。",
+    "回去想：可不可以用 preorder 或 postorder 來 copy？補充：可以，關鍵是左右都要遞迴 Copy。"
+   ]
   },
   {
    "title": "判斷兩棵 tree 相等（operator==）",
-   "scene": "p13-equal",
+   "scene": "treeb2-equal",
    "points": [
     {
      "text": "用 operator overloading 定義 ==：兩棵 tree 比較時，把兩個 root 傳給 procedure Equal。",
-     "t": 1213
+     "t": 1206
     },
     {
      "text": "Equal(a, b) 的兩個參數都是 TreeNode pointer。",
@@ -234,15 +383,41 @@
      "t": 1372
     }
    ],
-   "trap": "補充：老師沒有給具體的兩棵樹，動畫用示意樹 A(B(D,),C)，再把最深的 D 換成 E 示範必須遞迴比到底；&& 會短路，一遇到 false 後面就不比了。"
+   "trap": "補充：老師沒有給具體的兩棵樹，動畫用示意樹 A(B(D,),C)，最後再把最深的 D 換成 E 示範必須遞迴比到底；&& 會短路，一遇到 false 後面就不比了。",
+   "cues": [
+    1205.7,
+    1212.8,
+    1230.8,
+    1247.6,
+    1268.8,
+    1289.8,
+    1313.8,
+    1335,
+    1372.2,
+    1393.3,
+    1417.1
+   ],
+   "explain": [
+    "接下來看兩棵 tree 是否相等。",
+    "這裡用 operator overloading（運算子多載）定義 ==：寫 s == t 時，就會執行這段程式。",
+    "它把兩棵 tree 的 root 傳進一個 procedure 叫 Equal。",
+    "Equal(a, b) 的兩個參數 a、b 都是 TreeNode 的 pointer，一開始分別指著兩個 root。",
+    "如果 a 和 b 都是 empty binary tree，兩個都空當然相等，直接回傳 true，不用再走訪。",
+    "不是空的話，進入 if：一連串的 and。首先 a 和 b 都要有值。",
+    "and：a 的 data 要等於 b 的 data。兩個 root 都是 A ✓。",
+    "再 and：Equal(a 的 leftChild, b 的 leftChild)。這是 recursive，會一路比完整棵左子樹，不只比一層。",
+    "最後 and：Equal(右子樹)，檢查右邊的 child。",
+    "a、b 有值、data 相同、左子樹相同、右子樹相同，四個條件都成立，才回傳 true。",
+    "equal 竟然這麼簡單，一個 if 就搞定。補充示範：把 t 最底下的 D 換成 E，遞迴比到底就會發現不同，回傳 false。"
+   ]
   },
   {
    "title": "相似性與「單一走訪能否決定唯一 tree」預告",
-   "scene": "p13-same-inorder",
+   "scene": "treeb2-sameino",
    "points": [
     {
      "text": "Equal 很簡單，similar 難得多；一種做法是把輸出轉成 string 來比較。",
-     "t": 1444
+     "t": 1442
     },
     {
      "text": "可產生 inorder、preorder、postorder 三種 string。",
@@ -261,15 +436,31 @@
      "t": 1544
     }
    ],
-   "trap": "補充：inorder＋preorder 或 inorder＋postorder 可決定唯一 binary tree；preorder＋postorder 一般不行（只有在每個節點都是 0 或 2 個孩子時才可）。"
+   "trap": "補充：inorder＋preorder 或 inorder＋postorder 可決定唯一 binary tree；preorder＋postorder 一般不行（只有在每個節點都是 0 或 2 個孩子時才可）。",
+   "cues": [
+    1442.3,
+    1453.8,
+    1476.8,
+    1487.6,
+    1515.8,
+    1538.9
+   ],
+   "explain": [
+    "equal 很簡單；判斷兩棵 tree 是否 similar（相似）就難多了。",
+    "一種做法是：把走訪的 output 變成一個 string 來比較。",
+    "一棵 tree 可以產生 inorder、preorder、postorder 三種 string。",
+    "預告一個問題：如果只給你一個 inorder string，能不能決定唯一的一棵 tree？",
+    "想想看：有沒有結構不一樣、但 inorder 一樣的 tree？有！這三棵的 inorder 全是 A B C。",
+    "所以要決定唯一的 tree，不能只靠三種裡的單獨一種。補充：再加上 preorder（BAC、ABC、CBA）就分得開。"
+   ]
   },
   {
    "title": "Satisfiability 問題與窮舉 2^n 組合",
-   "scene": "p13-sat-tree",
+   "scene": "treeb2-sat",
    "points": [
     {
      "text": "Propositional calculus expression 的運算子有 not（¬）、and（∧）、or（∨）。",
-     "t": 1576
+     "t": 1564
     },
     {
      "text": "變數 x1、x2、x3 只能是 true 或 false（1 或 0）。",
@@ -292,15 +483,35 @@
      "t": 1734
     }
    ],
-   "trap": "補充：老師投影片上的式子沒有念出來，動畫採用 Horowitz 課本例 (x1 ∧ ¬x2) ∨ (¬x1 ∧ x3) ∨ ¬x3；此式 8 組中只有 TTT 為 false。"
+   "trap": "補充：老師投影片上的式子沒有念出來，動畫採用 Horowitz 課本例 (x1 ∧ ¬x2) ∨ (¬x1 ∧ x3) ∨ ¬x3；此式 8 組中只有 TTT 為 false。",
+   "cues": [
+    1563.8,
+    1569.8,
+    1589.8,
+    1609.8,
+    1633.8,
+    1687.8,
+    1729.8,
+    1746.1
+   ],
+   "explain": [
+    "另一個重點：propositional calculus expression（命題邏輯運算式），用來做邏輯判斷。這是課本的例子。",
+    "它有三種運算子：not（¬，反過來）、and（∧，兩個都真才真）、or（∨，有一個真就真）。",
+    "變數 x1、x2、x3 只能是 true 或 false，也就是 1 或 0。",
+    "Satisfiability（可滿足性）問題：有沒有任何一組 x1、x2、x3 的設定，能讓整個式子為 true？",
+    "例如設計開燈電路：式子算出 1，燈才會亮。如果布林式寫得不好，燈可能永遠不會亮，所以要檢查。",
+    "這個式子可以用 tree 表示。從式子怎麼變成 tree，請回去讀課本。",
+    "三個變數，每個都可能是 T 或 F，所以一共 2³ = 8 種組合。",
+    "用 for 迴圈把每一種組合（例如 TTT）代進式子，看結果是不是 true。這個例子 8 組裡只有 TTT 不成立。"
+   ]
   },
   {
    "title": "如何讓電腦算布林式：兩階段 stack vs. postorder 一次完成",
-   "scene": "p13-eval-compare",
+   "scene": "treeb2-evalcmp",
    "points": [
     {
      "text": "問題：把 TTT 等參數輸入後，怎麼讓電腦自動判斷式子的值是 true 還是 false？",
-     "t": 1793
+     "t": 1772
     },
     {
      "text": "提示：之前 stack 章節做過 expression evaluation（如 2+3*4），概念很像。",
@@ -327,15 +538,39 @@
      "t": 1997
     }
    ],
-   "trap": "補充：ASR 說「第二章」的 stack 單元，在 Horowitz 課本是 Chapter 3（Stacks and Queues）的 expression evaluation。 2+3*4 的 tree 為 +(2,*(3,4))，postorder 走訪即 2 3 4 * +。"
+   "trap": "補充：ASR 說「第二章」的 stack 單元，在 Horowitz 課本是 Chapter 3（Stacks and Queues）的 expression evaluation。 2+3*4 的 tree 為 +(2,*(3,4))，postorder 走訪即 2 3 4 * +。",
+   "cues": [
+    1772,
+    1811.3,
+    1839.1,
+    1849.9,
+    1883.8,
+    1913.8,
+    1926.7,
+    1968.8,
+    1982.8,
+    1996.5
+   ],
+   "explain": [
+    "問題來了：輸入 TTT 這組參數後，怎麼讓電腦自動判斷式子的值是 true 還是 false？",
+    "提示：stack 章節做過 expression evaluation（運算式求值），例如 2 + 3 * 4。",
+    "布林式求值跟它一不一樣？很像！",
+    "差別只是運算子從加減乘除換成 not、and、or，變數的值只能是 0 和 1。",
+    "用 stack 的做法，要做兩個 phase（階段）。",
+    "Phase 1：把 infix（平常的寫法）轉成 postfix（後序式）：2 3 4 * +。",
+    "Phase 2：照 postfix 求值。看到數字就 push 進 stack；看到 operator 就 pop 出最上面兩個，算完再 push 回去。答案 14。",
+    "更快的方法：把式子變成一棵 tree，直接對這棵 tree 做 postorder。",
+    "在 postorder 走訪的過程中順便 evaluate（求值）：孩子的值先算好，再算自己。走完，答案就在 root。",
+    "這樣只有一個 phase。代價是：還是得先建一棵 tree，這一步避不掉。"
+   ]
   },
   {
    "title": "節點設計（四個欄位）與窮舉演算法",
-   "scene": "p13-sat-node",
+   "scene": "treeb2-satnode",
    "points": [
     {
      "text": "要用 postorder 求值，tree 要特別設計：每個 node 有四個欄位。",
-     "t": 2032
+     "t": 2021
     },
     {
      "text": "leftChild 指向左孩子，data 是自己本身（operator，或變數被設定的 true/false）。",
@@ -358,15 +593,39 @@
      "t": 2107
     }
    ],
-   "trap": "補充：每次求值需走訪整棵樹 O(g)（g 為式子大小），總時間 O(g·2^n)，為指數時間。"
+   "trap": "補充：每次求值需走訪整棵樹 O(g)（g 為式子大小），總時間 O(g·2^n)，為指數時間。",
+   "cues": [
+    2020.8,
+    2026.8,
+    2036.8,
+    2046.7,
+    2060.8,
+    2067.3,
+    2081.9,
+    2097.8,
+    2103.8,
+    2111.8
+   ],
+   "explain": [
+    "另一種解法：透過 tree traversal，用 postorder 來求值。",
+    "為了做到這件事，這棵 tree 要特別設計：每個 node 有四個欄位。",
+    "leftChild 指向左邊的孩子；data 是它自己本身，例如 x1 被設成 true，data 就是 true（也可能是 operator）。",
+    "value：對它的左右子樹做完 operation 之後，結果就放在 value。",
+    "rightChild 指向右邊的子樹。總共四個欄位。",
+    "原本的 tree node 只有三個欄位（left、data、right），這裡多了一個 value 用來放運算結果。",
+    "演算法：有 n 個變數，就產生 2ⁿ 種組合。",
+    "對每一種組合，都去 traverse 那棵 tree，看最後的結果。例如 TTT 算出 false，就換下一組。",
+    "如果結果是 true，就把這組組合 output 出來。例如 TTF 成立。",
+    "像剛才 8 種組合，就是一個 for loop。補充：每組都要走訪整棵樹，總時間是指數級的 O(g · 2ⁿ)。"
+   ]
   },
   {
    "title": "PostOrderEval 程式與求值範例",
-   "scene": "p13-postorder-eval",
+   "scene": "treeb2-poeval",
    "points": [
     {
      "text": "PostOrderEval 傳入 root；先判斷 x 是否為空，空的就不用做。",
-     "t": 2173
+     "t": 2138
     },
     {
      "text": "依 postorder（LRV）先遞迴走左子樹、再走右子樹，最後才處理自己。",
@@ -397,7 +656,41 @@
      "t": 2445
     }
    ],
-   "trap": "影片口誤：40:00 先說「x2 是 false」，隨即以 x2 = true、¬x2 = false 計算；以後者為準。補充：¬ 節點的運算元放在 rightChild，leftChild 為空。 動畫用課本例式子，TTT 得 false、下一組 TTF 得 true。"
+   "trap": "影片口誤：40:00 先說「x2 是 false」，隨即以 x2 = true、¬x2 = false 計算；以後者為準。補充：¬ 節點的運算元放在 rightChild，leftChild 為空。 動畫用課本例式子，TTT 得 false、下一組 TTF 得 true。",
+   "cues": [
+    2138.4,
+    2153.8,
+    2172.8,
+    2188.8,
+    2221.8,
+    2253.8,
+    2275.8,
+    2305.2,
+    2326.9,
+    2363.8,
+    2401.8,
+    2420.8,
+    2431,
+    2444.8,
+    2465
+   ],
+   "explain": [
+    "寫法就這麼簡單，比 stack 那章用了老半天的方法簡單多了。",
+    "這是一個 procedure，叫 PostOrderEval（後序求值），傳進去的引數是 root。",
+    "先判斷 x 是不是空的。空的就跳出來，連做都不用做。",
+    "照 postorder（L R V）：有左邊先拜訪左邊，再拜訪右邊，最後才處理自己。",
+    "一路走到最下面的 node，看它的 data。data 有幾種 case。",
+    "如果 data 是變數：被設成 true，它的 value 就是 true；設成 false，value 就是 false。",
+    "如果是 not：把 right child 的 value 取 not，放進自己的 value。（¬ 只有右邊的孩子）",
+    "如果是 and：把 left child 的 value 和 right child 的 value 做 and，結果放進自己的 value。",
+    "如果是 or：把左右子樹的 value 做 or。",
+    "最後結果在哪裡？postorder 最後才處理 root，所以答案放在 root 的 value。",
+    "例子（TTT）：一路走到最下面，x1 是 true，它的 value = T。",
+    "x2 是 true，所以 ¬x2 是 false。",
+    "true and false 結果是 false。照這個規則遞迴往上算，這組最後 root = F。",
+    "如果 root 的 value 是 true，就把 x1、x2、x3 的組合印出來。例如下一組 TTF 就是 true。",
+    "回去想想：這個程式可以應用到之前的算術 expression evaluation，要怎麼改？"
+   ]
   }
  ],
  "quiz": [

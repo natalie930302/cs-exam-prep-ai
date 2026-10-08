@@ -1089,7 +1089,7 @@
   "label": "交大彭文志 Lec14 Trees (3/6)",
   "points": 157,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "PptQgy89cN8": {
   "label": "MIT 6.006 Rec22：DP: Dance Dance Revolution（進階DP範例，補充）",
@@ -1281,7 +1281,7 @@
   "label": "交大彭文志 Lec13 Trees (2/6)",
   "points": 76,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "USLvdBuxTno": {
   "label": "台大林軒田 DSA Container",
@@ -1317,7 +1317,7 @@
   "label": "交大彭文志 Lec12 Trees (1/6)",
   "points": 179,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "w6nuXg0BISo": {
   "label": "MIT 6.006 Rec9：Rolling Hashes, Amortized Analysis",

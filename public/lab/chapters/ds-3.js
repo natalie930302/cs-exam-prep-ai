@@ -8651,6 +8651,3265 @@ FRAG.push(['treea-lin-paren', 'Subtree = 括號：從 expression tree 寫回算�
   void toks;
 }]);
   }
+
+  // ═══ treeb.js ═══
+  {
+// ─── 交大彭文志 Lec12–14 Trees（VwQeypxlevE、UO0B1SQOAgk、pPMMUa8guTE）— cued scenes ───
+// 每個 await step(tok) 等影片講到那一句才動；step 之間只放短動作（≤ 2.5 s），講完就停住。
+// 小幫手「小樹」（buddy）在角落跟著反應；樹的節點沿用本章的方塊與連線。
+const P = kit(ctx);
+const { step, buddy, remove } = P;
+const anim = P.anim;
+const BLU = '#4b9ee2', ORG = '#dd8238', PUR = '#9b7ef4', GRN = '#2fc092', SAND = '#c9b48e', DIM = '#d8cfc0', TEAL = '#31aab0', GRAYB = '#8a7a62';
+const HT = 'A(B(E(K,L),F),C(G),D(H,I,J))';          // 課本 Fig 5.2 的一般樹
+const HT_BIN = 'A(B(E(K(,L),F),C(G,D(H(,I(,J))))))'; // 它的 LCRS → binary tree
+const CT = 'A(B(D(H,I),E),C(F,G))';                  // 講師的 complete binary tree
+const go = (tok, ms = 200) => beat(tok, ms);
+const topP = (p, h = 0.3) => V(p.x, p.y + h, p.z + 0.02), botP = (p, h = 0.3) => V(p.x, p.y - h, p.z + 0.02);
+const hide = (l, on) => { l.element.style.visibility = on ? '' : 'hidden'; };
+const flyB = (b) => b && lab.flyAway(b, V((Math.random() - 0.5) * 6, 8, 4));
+const hiEdge = (a, b, color = '#c08a1f') => seg(botP(a.pos), topP(b.pos), color);
+const padL = (lines) => { const w = Math.max(...lines.map((s) => s.length)); return lines.map((s) => s.padEnd(w, ' ')); };
+const OUT_SZ = [0.5, 0.42, 0.5];
+function emit(n, pos, size = OUT_SZ) {
+  const b = lab.addBody(block(n.label, size, depthColor(n.depth || 0)));
+  b.obj.position.copy(n.pos); lab.springTo(b, pos.clone()); return b;
+}
+const allOff = (root) => levelorder(root).forEach((n) => glow(n, OFF));
+// 小幫手：一個會呼吸、眨眼的小方塊，旁邊冒出對話泡泡
+function pal(x = 6.2, z = 2.6, color = '#f6c35b', s = 0.55) { const b = buddy('小樹', '', color, x, 0, z, s); b.x = x; b.z = z; b.s = s; return b; }
+function talk(b, text, mood) { if (!b) return; if (b.bub) remove(b.bub); b.bub = text ? tag(text, 'say', b.x, b.s + 1.25, b.z) : null; if (mood) b.mood(mood); }
+function stage(pos, look, at) { fresh(); lab.frameCamera(pos, look); return at === false ? null : pal(...(at || [])); }
+// 一般樹一個一個掉下來（ms × 節點數要小）
+async function dropG(tok, src, o, ms = 120, opt = {}) {
+  const root = typeof src === 'string' ? parseG(src) : src;
+  layoutG(root, o);
+  const size = opt.size || ((n) => [W(n.label), 0.6, 0.8]);
+  edgeLines(() => { const out = []; for (const n of gAll(root)) for (const k of n.kids) if (n.body && k.body) out.push([n.body.obj.position, k.body.obj.position]); return out; });
+  const q = [root];
+  while (q.length) {
+    const n = q.shift();
+    const b = lab.addBody(block(n.label, size(n), opt.color ? opt.color(n) : depthColor(n.depth)));
+    b.obj.position.copy(n.pos).add(V(0, 3, 0)); lab.dropTo(b, n.pos.clone()); n.body = b;
+    q.push(...n.kids);
+    if (ms) await beat(tok, ms);
+  }
+  return root;
+}
+const HP = (i) => heapPos(i, 6.6, 1.5, 11.6);
+function slots(n, posFn = HP, withIdx = false) {
+  const out = [];
+  for (let i = 1; i <= n; i++) {
+    const g = new THREE.Mesh(new THREE.BoxGeometry(...NODE), new THREE.MeshBasicMaterial({ color: SAND, wireframe: true, transparent: true, opacity: 0.35 }));
+    g.position.copy(posFn(i)); lab.world.add(g); out.push(g);
+    if (withIdx) { const p = posFn(i); tag(String(i), 'idx', p.x, p.y - 0.55); }
+  }
+  return out;
+}
+function idxCube(v, i, color, pos) {
+  const b = lab.addBody(block(v, NODE, color));
+  b.obj.position.copy(pos); b.target.copy(pos);
+  const il = lab.label(String(i), 'idx'); il.position.set(0.6, -0.32, 0); b.obj.add(il);
+  return b;
+}
+function rowOf(labels, cx, z, y = 0.3) {
+  return labels.map((c, k) => cube(c, SAND, SMALL, cx - (labels.length - 1) * 0.4 + k * 0.8, y, z, 2));
+}
+
+// ═════════════════ VwQeypxlevE：Lec12 Trees (1/6) ═════════════════
+
+// 1:06 Tree 的遞迴定義
+FRAG.push(['treeb-def', 'Tree 的遞迴定義：root + T1…Tk', async (tok) => {
+  let g = stage([0, 5, 13.5], [0, 3.6, 0]);
+  await step(tok);                                   // 65.8 tree 的架構：不同的人種
+  const fam = await dropG(tok, '祖先(拉丁人(義大利人,法國人),日耳曼人(德國人,荷蘭人),斯拉夫人)', { width: 10.4, topY: 6.4, step: 1.9 }, 140);
+  say('Tree 長得像族譜（課本的示意圖）', '同一個祖先，往下分出不同民族');
+  talk(g, '像家族樹耶！', 'wow');
+  await step(tok);                                   // 88.7 祖先，下面有 child
+  gLit(fam, GOLD); fam.kids.forEach((k) => gLit(k, GREEN));
+  say('上面是祖先，下面是它的 child', 'child 還會再往下長');
+  talk(g, '上面祖先、下面孩子', 'happy');
+  await step(tok);                                   // 95.8 最下面是 leaf node
+  gAll(fam).forEach((n) => gLit(n));
+  gAll(fam).filter((n) => !n.kids.length).forEach((n) => gLit(n, GOLD));
+  say('最底下沒有 child 的叫 leaf node', 'leaf（葉子）：不再往下長');
+  talk(g, '最底下＝葉子 🍃');
+  await step(tok);                                   // 111.7 a collection of nodes
+  gAll(fam).forEach((n) => flyB(n.body));
+  await go(tok, 600);
+  g = stage([0, 5, 13.5], [0, 3.6, 0]);
+  const dots = [[-3, 5.6], [-1.2, 6.4], [0.8, 5.2], [2.6, 6.2], [-2.2, 3.8], [0.2, 3.4], [2.4, 4.0], [4.0, 4.9]].map(([x, y]) => cube('', BLU, [0.6, 0.5, 0.6], x, y, 0, 2));
+  say('正式定義：a collection of nodes', 'tree = 一群 node 的集合');
+  talk(g, '一堆 node');
+  await step(tok);                                   // 115.8 特殊的 node 叫 root
+  dots.forEach((b) => flyB(b));
+  const r = cube('root', GRN, [1.2, 0.6, 0.8], 0, 6.4, 0, 3);
+  say('其中有一個特殊的 node：root', 'tree 一定要有 root（最原始的祖先）');
+  talk(g, '最上面的老祖宗', 'happy');
+  await step(tok);                                   // 128.8 root 下面有很多 subtree：T1…Tk
+  const subs = [['T1', -4.4, 2], ['T2', 0, 1], ['Tk', 4.4, 3]].map(([nm, cx, k], j) => {
+    ghost([BLU, PUR, ORG][j], cx, 3.3, 3.4, 2.9);
+    tag(nm, 'ptr', cx, 5.0);
+    const sr = cube('r' + (j === 2 ? 'k' : j + 1), BLU, [0.8, 0.5, 0.7], cx, 4.15, 0, 2);
+    const kids = [];
+    for (let i = 0; i < k; i++) {
+      const x = cx + (i - (k - 1) / 2) * 1.05;
+      kids.push(cube('', PUR, [0.6, 0.45, 0.6], x, 2.55, 0, 2));
+      seg(V(cx, 3.9, 0), V(x, 2.78, 0), '#7a6a52');
+    }
+    arrow(V(0, 6.1, 0), V(cx, 4.45, 0));
+    return { sr, kids };
+  });
+  tag('…', 'ptr', 2.2, 3.3);
+  say('root 底下接著 subtree：T1、T2 … Tk', '每一塊都是一棵小 tree');
+  await step(tok);                                   // 141.8 每棵 subtree 也有自己的祖先 → recursive
+  subs.forEach((s) => lit(s.sr, GOLD));
+  say('每棵 subtree 也有自己的 root（祖先）', '定義裡又用到 tree → recursive（遞迴）');
+  talk(g, '樹裡面還有樹！', 'wow');
+  await g.hop(tok);
+  await step(tok);                                   // 149.0 分枝數可以自己定義
+  subs.forEach((s) => { lit(s.sr); s.kids.forEach((b) => lit(b, GOLD)); });
+  lit(r, GOLD);
+  tag('分枝數 k：可以自己定（k = 2 → binary tree）', 'ptr alt', 0, 1.4, 0.4);
+  say('一個 node 可以 link 出去幾個 child？', '可以依需求定義');
+  talk(g, '要分幾枝自己決定', 'happy');
+}]);
+
+// 2:48 Level、高度與 degree
+FRAG.push(['treeb-levels', 'Level、高度與 node 的 degree', async (tok) => {
+  const g = stage([0, 5, 13.5], [0, 3.8, 0]);
+  await step(tok);                                   // 167.6 另一個 tree 的例子
+  const root = await dropG(tok, HT, { width: 10, topY: 6.6, step: 1.6 }, 110);
+  const N = (l) => gFind(root, l), all = gAll(root);
+  say('換一棵課本的例子樹', 'A(B(E(K,L),F), C(G), D(H,I,J))');
+  talk(g, '換一棵來看');
+  await step(tok);                                   // 181.8 level 1、2、3、4
+  for (let d = 0; d < 4; d++) {
+    tag('level ' + (d + 1), 'idx', -6.4, 6.6 - d * 1.6);
+    all.filter((n) => n.depth === d).forEach((n) => gLit(n, d % 2 ? GOLD : GREEN));
+    await go(tok, 380);
+  }
+  say('最上面 root 是 level 1', '往下依序 level 2、3、4');
+  await step(tok);                                   // 191.8 高度 = 最大 level
+  all.forEach((n) => gLit(n));
+  tag('height = 4', 'ptr alt', -5.4, 7.6);
+  say('tree 的高度（深度）= 最大的 level', '這棵樹高度 = 4');
+  talk(g, '高度 4！', 'happy');
+  await step(tok);                                   // 215.5 degree
+  say('還有一個定義：degree', 'degree = node 的 pointer 個數');
+  talk(g, 'degree 是什麼？', 'wow');
+  await step(tok);                                   // 227.2 以 A 為例
+  const A = N('A'), C = N('C');
+  gLit(A, GOLD);
+  say('先看第一個 node：A', '數它往下指出去幾條');
+  await step(tok);                                   // 234.8 1、2、3 → degree(A) = 3
+  const tmp = [];
+  for (let k = 0; k < A.kids.length; k++) {
+    const c = A.kids[k];
+    tmp.push(hiEdge(A, c), tag(String(k + 1), 'ptr alt', (A.pos.x + c.pos.x) / 2, (A.pos.y + c.pos.y) / 2 + 0.25, 0.3));
+    await go(tok, 320);
+  }
+  tmp.push(tag('degree(A) = 3', 'ptr alt', A.pos.x + 2.2, A.pos.y + 0.3));
+  say('A 指出去 1、2、3 條', 'degree(A) = 3');
+  talk(g, 'A 有 3 個孩子', 'happy');
+  await step(tok);                                   // 244.8 C 的 degree？
+  tmp.forEach(kill); gLit(A); gLit(C, GOLD);
+  say('那 C 的 degree 是多少？', 'C 身上連著兩條邊');
+  talk(g, '兩條邊…是 2 嗎？', 'wow');
+  await step(tok);                                   // 256.8 別人指到他的不算
+  hiEdge(A, C, '#d04040');
+  tag('✗ 別人指進來，不算', 'bad', (A.pos.x + C.pos.x) / 2 + 1.2, (A.pos.y + C.pos.y) / 2);
+  say('別人指到它的那條不算', '只算 point out（指出去）的');
+  await step(tok);                                   // 266.8 只往下指到 G → 1
+  hiEdge(C, N('G'));
+  tag('degree(C) = 1', 'ptr alt', C.pos.x + 1.6, C.pos.y - 0.6);
+  say('C 只往下指到 G', 'degree(C) = 1');
+  talk(g, '原來是 1！', 'happy');
+  await step(tok);                                   // 274.8 第六章 graph：in / out degree
+  tag('graph：in-degree ／ out-degree（第 6 章）', 'note', 0.6, 0.6, 1.2);
+  say('第 6 章的 graph 也有 degree', '分成 in-degree、out-degree');
+  await step(tok);                                   // 290.8 tree 是特殊的 graph
+  tag('tree = 特殊的 graph', 'good', 0.6, 1.4, 1.2);
+  say('tree 其實是一種特殊的 graph', 'tree 裡的 degree 只算指出去的');
+  talk(g, '記住：只算往下', 'happy');
+}]);
+
+// 5:07 parent 與 child
+FRAG.push(['treeb-parent', 'Parent 與 child', async (tok) => {
+  const g = stage([0, 5, 13.5], [0, 3.8, 0]);
+  const root = await dropG(tok, HT, { width: 10, topY: 6.6, step: 1.6 }, 0);
+  const N = (l) => gFind(root, l);
+  await step(tok);                                   // 306.8 A 是最原始的祖先
+  const A = N('A'), B = N('B');
+  gLit(A, GOLD);
+  tag('root：最原始的祖先', 'ptr alt', A.pos.x, A.pos.y + 0.8);
+  say('A 是整棵 tree 最原始的祖先', 'root = A');
+  talk(g, 'A 是老祖宗');
+  await step(tok);                                   // 318.8 subtree 拉出來，祖先是 B → parent
+  gLit(A);
+  const sub = ['B', 'E', 'F', 'K', 'L'].map(N);
+  sub.forEach((n) => lab.springTo(n.body, n.pos.clone().setZ(1.6)));
+  const xs = sub.map((n) => n.pos.x);
+  ghost(BLU, (Math.min(...xs) + Math.max(...xs)) / 2, 3.4, Math.max(...xs) - Math.min(...xs) + 1.4, 4.0, 1.6);
+  tag('B 的 subtree', 'ptr', Math.min(...xs) - 0.2, 5.8, 1.6);
+  gLit(B, GOLD);
+  say('把 B 這棵 subtree 拉出來看', '它的祖先是 B → B 是 parent');
+  talk(g, '拉出來看', 'wow');
+  await step(tok);                                   // 326.8 下面連出去的是 child
+  ['E', 'F'].forEach((l) => { gLit(N(l), GREEN); tag('child', 'ptr', N(l).pos.x, N(l).pos.y - 0.6, 1.6); });
+  say('B 直接 link 出去的是它的 child', 'child(B) = E、F');
+  await step(tok);                                   // 331.8 老師：E F K L 都是 child（更正）
+  ['K', 'L'].forEach((l) => gLit(N(l), RED));
+  tag('K、L 是 E 的 child（B 的孫輩）', 'note', N('E').pos.x, N('K').pos.y - 0.75, 1.6);
+  say('老師說 K、L 也是 child → 更正', 'K、L 是 E 的 child，對 B 是 descendant');
+  talk(g, '小心：孫子不是孩子', 'wow');
+}]);
+
+// 12:04 sibling、path、ancestors
+FRAG.push(['treeb-sibling', 'Sibling 與 ancestors', async (tok) => {
+  const g = stage([0, 5, 13.5], [0, 3.8, 0]);
+  const root = await dropG(tok, HT, { width: 10, topY: 6.6, step: 1.6 }, 0);
+  const N = (l) => gFind(root, l);
+  await step(tok);                                   // 723.8 同一個 level
+  const sibs = ['B', 'C', 'D'].map(N);
+  sibs.forEach((n) => gLit(n, GOLD));
+  say('先看同一個 level 的 B、C、D', '它們的 parent 都是 A');
+  await step(tok);                                   // 730.8 相同父母 → sibling
+  sibs.forEach((n) => gLit(n, GREEN));
+  tag('sibling', 'ptr alt', 6.0, sibs[0].pos.y);
+  ['K', 'L'].forEach((l) => gLit(N(l), GREEN));
+  tag('sibling', 'ptr alt', N('L').pos.x + 1.0, N('L').pos.y);
+  say('同一個 parent 的 node 互為 sibling', '兄弟姊妹：B、C、D；K、L 也是');
+  talk(g, '同一對爸媽', 'happy');
+  await step(tok);                                   // 737.8 某一個 node 的祖先們
+  [...sibs, N('K'), N('L')].forEach((n) => gLit(n));
+  gLit(N('K'), GOLD);
+  say('那 K 的祖先們是誰？', '');
+  talk(g, 'K 的祖先？', 'wow');
+  await step(tok);                                   // 741.8 從 root 往那個 node traverse → path
+  const cur = makeCursor();
+  const path = ['A', 'B', 'E', 'K'].map(N);
+  for (let i = 0; i < path.length; i++) { cursorTo(cur, path[i].pos); if (i) hiEdge(path[i - 1], path[i]); await go(tok, 450); }
+  say('從 root 往 K 走：形成一條 path', 'A → B → E → K');
+  await step(tok);                                   // 755.8 經過的 node 都是祖先
+  path.slice(0, 3).forEach((n) => { gLit(n, GOLD); tag('ancestor', 'ptr alt', n.pos.x + 1.25, n.pos.y + 0.1); });
+  say('path 上經過的 node 都是 K 的 ancestors', 'ancestors(K) = A、B、E');
+  talk(g, '祖先一路排上去', 'happy');
+}]);
+
+// 12:45 list 表示法
+FRAG.push(['treeb-list', 'Tree 的 list 表示法', async (tok) => {
+  let g = stage([0, 5, 13.5], [0, 3.8, 0.4]);
+  let root, N, str;
+  const gs = [];
+  const box = (ls, color, pad = 0.55) => {
+    const ns = ls.map(N), xs = ns.map((n) => n.pos.x), ys = ns.map((n) => n.pos.y);
+    return ghost(color, (Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2, Math.max(...xs) - Math.min(...xs) + 2 * pad + 0.4, Math.max(...ys) - Math.min(...ys) + 1.0);
+  };
+  await step(tok);                                   // 764.8 這棵 tree 怎麼表示？
+  root = await dropG(tok, HT, { width: 10, topY: 6.8, step: 1.4 }, 100);
+  N = (l) => gFind(root, l);
+  say('有這棵 tree，要怎麼表示它？', '方法不只一種');
+  talk(g, '怎麼存起來？', 'wow');
+  await step(tok);                                   // 784.8 可以用 linked list
+  str = tag('( … )', '', 0, 0.9, 1.2); Object.assign(str.element.style, MONO, { fontSize: '14px' });
+  say('可以用 linked list 來表示', '括號代表從屬關係');
+  await step(tok);                                   // 805.8 K、L 括在一起
+  gs.push(box(['K', 'L'], BLU));
+  str.element.textContent = 'E(K,L)';
+  say('K、L 括在一起：共同的 parent 是 E', '(K,L) 前面接 E');
+  await step(tok);                                   // 829.8 E、F 括在一起：祖先是 B
+  gs.push(box(['E', 'F', 'K', 'L'], PUR));
+  str.element.textContent = 'B(E(K,L),F)';
+  say('E、F 括在一起：parent 是 B', '(E(K,L),F) 前面接 B');
+  await step(tok);                                   // 843.6 依此類推
+  gs.push(box(['G'], ORG), box(['H', 'I', 'J'], ORG));
+  str.element.textContent = '(A(B(E(K,L),F),C(G),D(H,I,J)))';
+  gLit(N('A'), GOLD);
+  say('依此類推：C(G)、D(H,I,J)', '整棵 tree 寫成一個 list');
+  talk(g, '一串括號就是一棵樹', 'happy');
+  await step(tok);                                   // 852.8 長成這樣：A 下面有一個 B
+  gAll(root).forEach((n) => flyB(n.body)); gs.forEach(kill);
+  await go(tok, 500);
+  g = stage([0, 5, 13.5], [0, 3.8, 0.4]);
+  const s2 = tag('(A(B(E(K,L),F),C(G),D(H,I,J)))', '', 0, 7.5); Object.assign(s2.element.style, MONO, { fontSize: '13px' });
+  const L = {};
+  const cell = (k, v, x, y, color) => { L[k] = cube(v, color, [0.8, 0.6, 0.8], x, y, 0, 2.5); return L[k]; };
+  const nxt = (a, b) => arrow(V(L[a].target.x + 0.42, L[a].target.y, 0), V(L[b].target.x - 0.42, L[b].target.y, 0));
+  const dn = (a, b) => arrow(V(L[a].target.x, L[a].target.y - 0.3, 0), V(L[b].target.x, L[b].target.y + 0.32, 0), BLU);
+  const rows = [
+    [[['A', 'A', -5.5, 6.2, GRN], ['a1', '•', -4.0, 6.2, SAND], ['a2', '•', -2.5, 6.2, SAND], ['a3', '•', -1.0, 6.2, SAND]], [['A', 'a1'], ['a1', 'a2'], ['a2', 'a3']], []],
+    [[['B', 'B', -4.0, 4.5, BLU], ['b1', '•', -2.5, 4.5, SAND], ['F', 'F', -1.0, 4.5, PUR]], [['B', 'b1'], ['b1', 'F']], [['a1', 'B']]],
+    [[['E', 'E', -2.5, 2.8, PUR], ['K', 'K', -1.0, 2.8, '#e55a9b'], ['L', 'L', 0.5, 2.8, '#e55a9b']], [['E', 'K'], ['K', 'L']], [['b1', 'E']]],
+    [[['C', 'C', 1.5, 4.5, BLU], ['G', 'G', 3.0, 4.5, PUR], ['D', 'D', 1.9, 2.8, BLU], ['H', 'H', 3.3, 2.8, PUR], ['I', 'I', 4.7, 2.8, PUR], ['J', 'J', 6.1, 2.8, PUR]], [['C', 'G'], ['D', 'H'], ['H', 'I'], ['I', 'J']], [['a2', 'C'], ['a3', 'D']]],
+  ];
+  const doRow = async ([cs, ns, ds]) => { for (const [k, v, x, y, c] of cs) { cell(k, v, x, y, c); await go(tok, 160); } ns.forEach(([a, b]) => nxt(a, b)); ds.forEach(([a, b]) => dn(a, b)); };
+  await doRow(rows[0]);
+  say('A 的 list：A 後面接三個分支', '每個 • 指向一條子 list');
+  await step(tok);                                   // 862.8 B 的分支：E、F
+  await doRow(rows[1]);
+  say('B 有兩個分支：一個指向 E，一個是 F', 'B → •(E…) → F');
+  await step(tok);                                   // 872.8 E 下面又有 K、L
+  await doRow(rows[2]);
+  say('E 下面又有它的子孫 K、L', 'E → K → L');
+  talk(g, '一層一層往下串', 'happy');
+  await step(tok);                                   // 879.8 A 三個分支：每個都是一條 linked list
+  await doRow(rows[3]);
+  say('A 有三個分支，每條都是 linked list', 'C(G)、D(H,I,J)');
+  await step(tok);                                   // 901.6 tree 也可以用 linked list 表示
+  tag('tree 不只一種長相：linked list 也能表示', 'note', 1.0, 1.2, 1.2);
+  say('不要以為 tree 只能長成樹的樣子', '學過的 linked list 也能表示 tree');
+  talk(g, '換個存法而已', 'wow');
+  await step(tok);                                   // 917.8 看你怎麼 implement
+  tag('tree = 高層次的 data structure', 'good', 1.0, 0.4, 1.2);
+  say('tree 是較高層次的 data structure', '看你怎麼去 implement 它');
+  talk(g, '概念 vs. 實作', 'happy');
+}]);
+
+// 15:26 k-ary tree 的 null pointer
+FRAG.push(['treeb-kary', 'k-ary tree：固定 k 個 pointer 很浪費', async (tok) => {
+  let g = stage([0, 5, 13.5], [0, 3.6, 0]);
+  await step(tok);                                   // 925.6 k-ary tree
+  tag('k-ary tree', 'ptr alt', 0, 7.2);
+  const nd = cube('node', GRN, [1.2, 0.7, 0.9], 0, 6.0, 0, 2.5);
+  say('假設有一棵 k-ary tree', '什麼叫 k-ary？');
+  talk(g, 'k-ary 是什麼？', 'wow');
+  await step(tok);                                   // 935.8 每個 node 可以指到 k 個 node
+  const kids = [];
+  for (let j = 0; j < 5; j++) { const x = -3 + j * 1.5; kids.push(cube(j === 3 ? '…' : '', BLU, [0.6, 0.5, 0.6], x, 4.2, 0, 2)); arrow(V(0, 5.65, 0), V(x, 4.5, 0)); await go(tok, 150); }
+  say('每個 node 最多可以指到 k 個 node', '也就是 degree ≤ k');
+  await step(tok);                                   // 945.8 n 個 node，用幾個 pointer？
+  tag('n 個 node → 共用多少 pointer？', 'note', 0, 2.8);
+  say('整棵 tree 有 n 個 node', '問：一共會用多少個 pointer？');
+  await step(tok);                                   // 960.1 每個 node：data + k 個 pointer
+  flyB(nd); kids.forEach(flyB);
+  await go(tok, 400);
+  g = stage([0, 5, 13.5], [0, 3.6, 0]);
+  const labs = ['data', '1', '2', '3', '4', '5', '…', 'k'];
+  let x = -4.4;
+  const cs = labs.map((v, i) => { const w = i ? 0.8 : 1.6; const b = cube(v, i ? BLU : GRN, [w, 0.8, 0.9], x + w / 2, 4.2, 0, 2.5); x += w + 0.08; return b; });
+  tag('k-ary tree 的 node', 'ptr', 0, 5.4);
+  cs.slice(1).forEach((b) => lit(b, GOLD));
+  say('每個 node：data + k 個 pointer', '不管真的有幾個 child，欄位數固定');
+  await step(tok);                                   // 979.8 總共 n × k 個 pointer
+  cs.forEach(flyB);
+  await go(tok, 400);
+  g = stage([0, 5, 13.5], [0, 3.6, 0]);
+  const root = await dropG(tok, HT, { width: 10, topY: 6.6, step: 1.6 }, 60);
+  const sl = new Map();
+  for (const n of gAll(root)) sl.set(n, [0, 1, 2].map((j) => cube('', DIM, [0.22, 0.16, 0.3], n.pos.x + (j - 1) * 0.27, n.pos.y - 0.48, 0)));
+  const cnt = tag('pointer 共 n·k = 12 × 3 = 36', 'ptr alt', 4.6, 7.5);
+  say('以課本樹示意：n = 12、k = 3', '總 pointer 數 = n·k = 36');
+  await step(tok);                                   // 990.8 除了 root 沒人指到它
+  gLit(root, GOLD);
+  tag('沒人指到 root', 'note', root.pos.x + 1.8, root.pos.y + 0.4);
+  say('除了 root 以外……', 'root 沒有人指到它');
+  await step(tok);                                   // 1000.9 其他 node 恰被一個指到 → n − 1
+  let used = 0;
+  for (const n of gAll(root)) n.kids.forEach((c, j) => { sl.get(n)[j].obj.material.color.set(GRN); lit(sl.get(n)[j], GREEN); used++; });
+  setTag(cnt, '用到 n − 1 = ' + used);
+  say('其他每個 node 恰好被一個 pointer 指到', '用到的 pointer = n − 1 = 11');
+  talk(g, '只用了 11 個', 'wow');
+  await step(tok);                                   // 1020.8 浪費 nk − (n − 1)
+  for (const n of gAll(root)) sl.get(n).forEach((b, j) => { if (j >= n.kids.length) b.obj.material.color.set('#e06666'); });
+  setTag(cnt, 'null = 36 − 11 = 25');
+  say('紅色都是沒用到的 null（浪費）', 'nk − (n − 1) = 36 − 11 = 25');
+  talk(g, '浪費 25 個！', 'sad');
+  await step(tok);                                   // 1033.2 k 越大浪費越多
+  tag('null = n(k − 1) + 1：k 越大越浪費', 'note', 0, 1.0, 1.0);
+  say('k 越大，浪費越多', '一般式：n(k − 1) + 1 個 null');
+  await step(tok);                                   // 1052.8 B-tree、B+ tree 也是 k-ary
+  tag('B-tree、B+ tree 也是 k-ary tree', 'ptr', 0, 0.3, 1.6);
+  say('進階 DS 的 B-tree、B+ tree', '也都是 k-ary tree');
+  talk(g, '那它們也浪費？');
+  await step(tok);                                   // 1065.6 看資料型態
+  say('實務上看資料型態決定', 'k 不會大到太誇張；這只是示意');
+  talk(g, '看情況用', 'happy');
+}]);
+
+// 18:11 Left Child–Right Sibling
+FRAG.push(['treeb-lcrs', 'Left Child–Right Sibling 表示法', async (tok) => {
+  const g = stage([0, 5, 13.5], [0, 3.8, 0], [6.3, 2.8]);
+  const gl = layoutG(parseG(HT), { width: 10, topY: 6.6, step: 1.6 });
+  const B = {}, Pp = {};
+  for (const n of gAll(gl)) { B[n.label] = cube(n.label, depthColor(n.depth), NODE, n.pos.x, n.pos.y, 0); Pp[n.label] = n.pos; }
+  for (const n of gAll(gl)) for (const k of n.kids) seg(botP(n.pos), topP(k.pos), DIM);
+  const draw = (a, b, k) => {
+    if (!b) return tag('sibling = null', 'idx', Pp[a].x + 1.5, Pp[a].y + 0.1);
+    return k === 'L' ? arrow(botP(Pp[a]), topP(Pp[b], 0.32), BLU) : arrow(V(Pp[a].x + 0.42, Pp[a].y, 0.02), V(Pp[b].x - 0.42, Pp[b].y, 0.02), ORG);
+  };
+  await step(tok);                                   // 1090.8 Left Child Right Sibling
+  tag('Left Child – Right Sibling（LCRS）', 'ptr alt', 0, 7.6);
+  say('另一種表示法：Left Child–Right Sibling', '同一棵樹，換一種接法');
+  talk(g, '新方法！', 'wow');
+  await step(tok);                                   // 1097.8 每個 node 只有兩個 pointer
+  const f = [['data', GRN], ['left child', BLU], ['right sibling', ORG]].map(([t, c], i) => cube(t, c, [1.7, 0.55, 0.7], -5.6 + i * 1.8, 0.4, 2.0, 2));
+  say('每個 node 只有兩個 pointer', '[ data | left child | right sibling ]');
+  await step(tok);                                   // 1103.8 一個指向最左邊的 child
+  lit(f[1], GOLD);
+  say('一個 pointer 指向最左邊的 child', '藍色箭頭 = left child');
+  await step(tok);                                   // 1112.8 另一個指向 sibling
+  lit(f[1]); lit(f[2], GOLD);
+  say('另一個指向它的 sibling（兄弟）', '橘色箭頭 = right sibling');
+  await step(tok);                                   // 1120.8 A 的 left child → B
+  lit(f[2]); lit(B.A, GOLD);
+  draw('A', 'B', 'L');
+  say('A.leftChild = B', 'A 最左邊的 child 是 B');
+  await step(tok);                                   // 1129.8 A 是 root，沒有 sibling
+  draw('A', null, 'S');
+  say('A 是 root：沒有 sibling', 'A.rightSibling = null');
+  await step(tok);                                   // 1136.8 B 的 left child → E
+  lit(B.A); lit(B.B, GOLD);
+  draw('B', 'E', 'L');
+  say('B 也有兩個指標：left child → E', 'B.leftChild = E');
+  await step(tok);                                   // 1154.5 right sibling → C、D 串起來
+  draw('B', 'C', 'S'); await go(tok, 300); draw('C', 'D', 'S');
+  say('B 的 right sibling → C → D', '同一層的兄弟串成一串');
+  talk(g, '兄弟手牽手', 'happy');
+  await step(tok);                                   // 1176.8 C 只有一個 child → G
+  lit(B.B); lit(B.C, GOLD);
+  draw('C', 'G', 'L');
+  say('C 只有一個 child：left child → G', 'C.leftChild = G');
+  await step(tok);                                   // 1184.8 其他依此類推
+  lit(B.C);
+  for (const [a, b, k] of [['E', 'K', 'L'], ['E', 'F', 'S'], ['K', 'L', 'S'], ['D', 'H', 'L'], ['H', 'I', 'S'], ['I', 'J', 'S']]) { draw(a, b, k); await go(tok, 220); }
+  say('其他 node 都照同樣規則接', '一樣能表示整棵 tree');
+  await step(tok);                                   // 1206.8 只有三個欄位，避免浪費
+  f.forEach((b) => lit(b, GOLD));
+  say('實作只要三個欄位', 'data、left child、right sibling → 不浪費 pointer');
+  talk(g, '省空間！', 'happy');
+  await g.hop(tok);
+}]);
+
+// 20:25 Degree-two tree、binary tree、表示法小結
+FRAG.push(['treeb-lcrs-bin', 'LCRS → degree 2 → binary tree', async (tok) => {
+  const g = stage([0, 5, 13.5], [0, 3.8, 0], [6.3, 2.8]);
+  const gl = layoutG(parseG(HT), { width: 10, topY: 6.6, step: 1.6 });
+  const B = {}, Pp = {};
+  for (const n of gAll(gl)) { B[n.label] = cube(n.label, depthColor(n.depth), NODE, n.pos.x, n.pos.y, 0); Pp[n.label] = n.pos; }
+  const orig = [];
+  for (const n of gAll(gl)) for (const k of n.kids) orig.push(seg(botP(n.pos), topP(k.pos), DIM));
+  const arrs = [];
+  for (const [a, b, k] of [['A', 'B', 'L'], ['B', 'E', 'L'], ['B', 'C', 'S'], ['C', 'D', 'S'], ['C', 'G', 'L'], ['E', 'K', 'L'], ['E', 'F', 'S'], ['K', 'L', 'S'], ['D', 'H', 'L'], ['H', 'I', 'S'], ['I', 'J', 'S']]) {
+    arrs.push(k === 'L' ? arrow(botP(Pp[a]), topP(Pp[b], 0.32), BLU) : arrow(V(Pp[a].x + 0.42, Pp[a].y, 0.02), V(Pp[b].x - 0.42, Pp[b].y, 0.02), ORG));
+  }
+  await step(tok);                                   // 1225.1 有了這種表示法 → 衍生出來
+  say('有了 LCRS，就衍生出另一種想法', '每個 node 剛好兩個 pointer');
+  talk(g, '兩個 pointer…', 'wow');
+  await step(tok);                                   // 1233.8 只有兩個 pointer → degree 2
+  arrs.forEach(kill); orig.forEach(kill);
+  const br = parseTree(HT_BIN);
+  layoutTree(br, Object.assign({}, TREE_O, { topY: 6.8, minY: 1.4 }));
+  for (const n of levelorder(br)) { n.body = B[n.label]; lab.springTo(n.body, n.pos.clone()); }
+  edgeLines(() => treePairs(br));
+  say('把兩個 pointer 看成兩個分支', '（補充：right sibling 改當 right child，轉 45°）');
+  await step(tok);                                   // 1247.5 binary tree
+  lit(B.A, GOLD);
+  tag('right = 空', 'ptr alt', levelorder(br)[0].pos.x + 1.3, levelorder(br)[0].pos.y - 0.6);
+  say('指出去最多兩個 → binary tree', 'root 沒有 sibling，所以 right 一定空');
+  talk(g, '變成二元樹了！', 'happy');
+  await g.hop(tok);
+  await step(tok);                                   // 1267.8 總結：tree 像家族表
+  lit(B.A);
+  say('小結：tree 看起來就像家族表', '但表示的方法有很多種');
+  await step(tok);                                   // 1274.8 linked list、LCRS
+  tag('list（括號）', 'ptr', -3.4, 0.4, 1.4); tag('LCRS', 'ptr', 0, 0.4, 1.4);
+  say('可以用 linked list 表示', '也可以用 left child–right sibling');
+  await step(tok);                                   // 1284.8 最直覺的方法：k 個 child 欄位
+  tag('k 個 child 欄位（最直覺）', 'ptr', 3.8, 0.4, 1.4);
+  say('還有最直覺的方法', '看 degree 多少，就開多少個 child 欄位');
+  await step(tok);                                   // 1303.8 k = 2 → binary tree
+  tag('k-ary tree 的 k = 2 → binary tree', 'good', 0, 1.2, 1.4);
+  say('k-ary tree 的 k = 2', '就是 binary tree');
+  talk(g, 'k = 2 ✓', 'happy');
+}]);
+
+// 21:57 Binary tree 定義 vs tree
+FRAG.push(['treeb-btdef', 'Binary tree 定義：與一般 tree 的比較', async (tok) => {
+  const g = stage([0, 5, 13.5], [0, 4, 0], [6.3, 2.8]);
+  await step(tok);                                   // 1317.1 binary tree vs binary search tree
+  tag('Binary Tree', 'ptr alt', -2.2, 6.6); tag('≠', 'ptr', 0, 6.6); tag('Binary Search Tree', 'ptr', 2.6, 6.6);
+  say('先記一個作業：BT 和 BST 差在哪？', '只差一個字 search，後面會講');
+  talk(g, '回家查！');
+  await step(tok);                                   // 1350.5 a finite set of nodes
+  const e = ghost(SAND, 0, 4.6, 3.6, 2.0);
+  const nodes = [[-0.9, 4.9], [0.5, 5.1], [-0.3, 4.2], [0.9, 4.1]].map(([x, y]) => cube('', BLU, [0.45, 0.4, 0.45], x, y, 0, 2));
+  tag('finite set of nodes', 'ptr', 0, 3.3);
+  say('Binary tree：a finite set of nodes', '由 node 構成的有限集合');
+  await step(tok);                                   // 1365.8 empty 算不算？算
+  nodes.forEach(flyB);
+  const et = tag('∅  empty binary tree', 'ptr alt', 0, 4.6);
+  say('既然是 set，可以是 empty 嗎？', '可以！empty binary tree 是合法的');
+  talk(g, '空的也算！', 'wow');
+  await step(tok);                                   // 1401.8 非空：root + left / right subtree
+  kill(e); kill(et);
+  const r = cube('root', GRN, [1.2, 0.6, 0.8], 0, 5.6, 0, 3);
+  const parts = [ghost(BLU, -2.4, 3.4, 3.0, 2.0), ghost(PUR, 2.4, 3.4, 3.0, 2.0), tag('left subtree', 'ptr', -2.4, 3.4), tag('right subtree', 'ptr', 2.4, 3.4), arrow(V(-0.3, 5.3, 0), V(-2.0, 4.45, 0)), arrow(V(0.3, 5.3, 0), V(2.0, 4.45, 0))];
+  say('不是空的話：一個 root', '再分出 left subtree、right subtree');
+  await step(tok);                                   // 1416.8 一般 tree 不允許 0 個 node
+  parts.forEach(kill); flyB(r);
+  await go(tok, 300);
+  tag('Binary tree', 'ptr alt', 0.6, 7.2); tag('Tree', 'ptr', 4.4, 7.2);
+  const rows = [
+    ['允許 0 個 node', '✓ 可以', '✗ 不行', '一般 tree 不允許 0 個 node', 'tree 是 a collection of nodes，至少要有 root'],
+    ['左右順序', '有區分', '不區分', 'binary tree 的左、右子樹有差別', 'tree 不管 child 的順序'],
+    ['degree', '≤ 2', 'no limit', '比較表：degree', 'binary ≤ 2，tree 沒有限制'],
+  ];
+  const row = (k) => {
+    const [nm, a, b, cap, fm] = rows[k], y = 5.8 - k * 1.5;
+    tag(nm, 'ptr', -4.4, y);
+    cube(a, k === 0 ? GRN : BLU, [2.6, 0.7, 0.8], 0.6, y, 0, 2.5);
+    cube(b, k === 0 ? '#e06666' : SAND, [2.6, 0.7, 0.8], 4.4, y, 0, 2.5);
+    say(cap, fm);
+  };
+  row(0);
+  talk(g, '一般 tree 不能空', 'sad');
+  await step(tok);                                   // 1456.8 左右有差別
+  row(1);
+  talk(g, '左右不能亂換', 'wow');
+  await step(tok);                                   // 1465.0 degree ≤ 2 vs no limit
+  row(2);
+  talk(g);
+  await step(tok);                                   // 1480.8 整理比較表
+  tag('補充：A 只有左 child ≠ A 只有右 child（binary tree 中）', 'note', 0.6, 0.9, 1.0);
+  say('比較表整理完：順序、0 個 node、degree', '左右有別，是 binary tree 的關鍵');
+  talk(g, '三個差別記住了', 'happy');
+}]);
+
+// 25:13 Binary tree 範例
+FRAG.push(['treeb-btex', 'Binary tree 範例：左右有別、skewed、complete', async (tok) => {
+  let g = stage([0, 5, 13.5], [0, 4, 0], [6.4, 2.8]);
+  await step(tok);                                   // 1513.3 AB、ABC 都是 tree
+  await dropG(tok, 'A(B)', { cx: -5.4, topY: 6.2, step: 1.6 }, 150);
+  await dropG(tok, 'A(B,C)', { cx: -2.3, width: 1.8, topY: 6.2, step: 1.6 }, 150);
+  tag('tree：AB', 'ptr', -5.4, 7.2); tag('tree：ABC', 'ptr', -2.3, 7.2);
+  say('AB 是一棵 tree，ABC 也是', '先看它們真正的長相');
+  await step(tok);                                   // 1521.8 用 LCRS implement
+  cube('A', GRN, NODE, 1.6, 6.2, 0, 2); cube('B', BLU, NODE, 1.6, 4.6, 0, 2);
+  arrow(V(1.6, 5.9, 0), V(1.6, 4.92, 0), BLU);
+  cube('A', GRN, NODE, 4.4, 6.2, 0, 2); cube('B', BLU, NODE, 4.4, 4.6, 0, 2);
+  const c = cube('C', BLU, NODE, 6.0, 4.6, 0, 2);
+  arrow(V(4.4, 5.9, 0), V(4.4, 4.92, 0), BLU); arrow(V(4.82, 4.6, 0), V(5.58, 4.6, 0), ORG);
+  tag('LCRS 實作的長相', 'ptr alt', 3.8, 7.2);
+  say('用 LCRS 去 implement，會長成右邊這樣', '藍 = left child，橘 = right sibling');
+  await step(tok);                                   // 1535.8 程式裡長這樣，但實際的 tree 還是那樣
+  lit(c, GOLD);
+  say('程式裡的長相 ≠ 實際 tree 的長相', 'C 在實作裡是 B 的 sibling');
+  talk(g, '要分清楚！', 'wow');
+  await step(tok);                                   // 1584.8 AB 與 AB 有差別
+  g = stage([0, 5, 13.5], [0, 4, 0], [6.4, 2.8]);
+  const t1 = await dropTree(tok, 'A(B)', { cx: -3, width: 2, topY: 6.0, minY: 4.4 }, 150);
+  const t2 = await dropTree(tok, 'A(,B)', { cx: 3, width: 2, topY: 6.0, minY: 4.4 }, 150);
+  glow(t1.left, GOLD);
+  tag('A 的 left child = B', 'ptr', -3, 3.4);
+  say('binary tree：A 的 left child 是 B', '和下一棵比比看');
+  await step(tok);                                   // 1592.8 A 的 right child 是 B
+  glow(t1.left, OFF); glow(t2.right, GOLD);
+  tag('A 的 right child = B', 'ptr', 3, 3.4); tag('≠', 'ptr alt', 0, 5.2);
+  say('這棵：A 的 right child 是 B', '兩棵是不同的 binary tree');
+  talk(g, '左右不一樣喔', 'wow');
+  await step(tok);                                   // 1599.8 skewed
+  g = stage([0, 5, 13.5], [0, 4, 0], [6.4, 2.8]);
+  tag('skewed binary tree', 'ptr', -3.6, 7.4);
+  await dropTree(tok, 'A(B(C(D(E))))', { cx: -3.8, width: 4.4, topY: 6.6, minY: 1.8 }, 150);
+  say('全部歪向同一邊：skewed binary tree', '一路往左斜下去');
+  await step(tok);                                   // 1609.8 就像 linked list
+  tag('就像 linked list', 'note', -1.2, 1.6, 0.4);
+  say('skewed binary tree 就像 linked list', '每個 node 只用一個 pointer');
+  talk(g, '歪成一條線', 'sad');
+  await step(tok);                                   // 1617.8 complete binary tree
+  tag('complete binary tree', 'ptr alt', 3.4, 7.4);
+  await dropTree(tok, CT, { cx: 3.4, width: 6.0, topY: 6.6, minY: 2.4 }, 120);
+  say('排得很整齊的：complete binary tree', '補充：要剛好佔滿層序編號 1..n');
+  talk(g, '整整齊齊', 'happy');
+}]);
+
+// 27:18 Lemma 5.2：每層最多 2^(i−1)
+FRAG.push(['treeb-lemma', 'Lemma 5.2：每層與整棵樹的最大 node 數', async (tok) => {
+  const g = stage([0, 4.8, 13.5], [0, 4.1, 0], [6.6, 2.8]);
+  await step(tok);                                   // 1637.8 推導特質：level i 最多幾個 node？
+  slots(15);
+  for (let d = 0; d < 4; d++) tag('level ' + (d + 1), 'idx', -6.7, 6.6 - d * 1.5);
+  say('Binary tree 第 i 層最多幾個 node？', 'root 在 level 1');
+  talk(g, '每層最多幾個？', 'wow');
+  const lv = async (d) => {
+    const c = 1 << d;
+    for (let i = c; i < 2 * c; i++) { cube('', depthColor(d), NODE, HP(i).x, HP(i).y, 0, 2.5); await go(tok, 90); }
+    tag('2^' + d + ' = ' + c, 'ptr alt', 6.6, 6.6 - d * 1.5);
+  };
+  await step(tok);                                   // 1657.8 第 1 層只有 root：2^(1−1) = 1
+  await lv(0);
+  say('level 1 就是 root：只有 1 個', '2^(1−1) = 1');
+  await step(tok);                                   // 1669.8 第 2 層兩個
+  await lv(1);
+  say('level 2：最多 2 個', '2^(2−1) = 2');
+  await step(tok);                                   // 1686.6 第 3 層 4 個
+  await lv(2);
+  say('level 3：最多 4 個', '每往下一層 ×2');
+  talk(g, '一直翻倍', 'happy');
+  await step(tok);                                   // 1697.0 深度 k 最多幾個？
+  await lv(3);
+  say('第 i 層最多 2^(i−1) 個', '那深度 k 的 tree 最多幾個 node？');
+  await step(tok);                                   // 1714.3 2^k − 1
+  tag('max nodes = 2^k − 1', 'good', 0, 0.6, 1.0);
+  say('答案：2^k − 1', '');
+  await step(tok);                                   // 1726.8 summation
+  tag('Σ_{i=1..k} 2^(i−1)', 'note', 0, 1.4, 1.0);
+  say('就是每層的最大值加起來', 'Σ_{i=1..k} 2^(i−1)');
+  await step(tok);                                   // 1748.7 加起來 = 2^k − 1
+  tag('k = 4：1 + 2 + 4 + 8 = 15 = 2⁴ − 1', 'ptr alt', 0, 2.2, 1.0);
+  say('加起來就是 2^k − 1', 'k = 4：1 + 2 + 4 + 8 = 15');
+  talk(g, '等比級數！', 'happy');
+  await g.hop(tok);
+}]);
+
+// 31:48 Lemma 5.3 的敘述：n0 = n2 + 1
+const N02 = 'A(B(D,E),C(,F))';
+const deg2 = (n) => (n.left ? 1 : 0) + (n.right ? 1 : 0);
+FRAG.push(['treeb-n0n2', 'Lemma 5.3：n0 = n2 + 1 的敘述', async (tok) => {
+  const g = stage([0, 5, 13.5], [0, 3.8, 0], [6.2, 2.8]);
+  const COL = [GREEN, RED, GOLD];
+  let root, all;
+  await step(tok);                                   // 1907.8 Lemma 5-3
+  root = await dropTree(tok, N02, { width: 7, topY: 6.4, minY: 3.0 }, 150);
+  all = allNodes(root);
+  tag('Lemma 5.3', 'ptr alt', -5.2, 7.4);
+  say('Lemma 5.3：binary tree 的另一個特質', '示意樹：A(B(D,E), C(, F))');
+  await step(tok);                                   // 1924.8 non-empty binary tree T
+  tag('T：非空的 binary tree', 'ptr', -5.2, 6.7);
+  say('任一棵非空的 binary tree T', '');
+  await step(tok);                                   // 1930.8 n0 = degree 0（leaf）的個數
+  all.filter((n) => deg2(n) === 0).forEach((n) => { glow(n, COL[0]); tag('deg 0', 'idx', n.pos.x + 0.75, n.pos.y - 0.3); });
+  tag('n0 = 3', 'ptr alt', 4.6, 6.6);
+  say('n0 = degree 0 的 node 數（leaf）', 'D、E、F → n0 = 3');
+  await step(tok);                                   // 1941.8 n2 = degree 2 的個數
+  all.filter((n) => deg2(n) === 2).forEach((n) => { glow(n, COL[2]); tag('deg 2', 'idx', n.pos.x + 0.75, n.pos.y - 0.3); });
+  tag('n2 = 2', 'ptr alt', 4.6, 5.9);
+  say('n2 = degree 2 的 node 數', 'A、B → n2 = 2');
+  await step(tok);                                   // 1949.8 n1 = degree 1
+  all.filter((n) => deg2(n) === 1).forEach((n) => { glow(n, COL[1]); tag('deg 1', 'idx', n.pos.x + 0.75, n.pos.y - 0.3); });
+  tag('n1 = 1', 'ptr alt', 4.6, 5.2);
+  say('n1 = degree 1 的 node 數', 'C → n1 = 1（證明時才用到）');
+  await step(tok);                                   // 1958.8 n0 = n2 + 1
+  tag('n0 = n2 + 1', 'good', 0, 1.6, 1.0);
+  say('性質：n0 = n2 + 1', '3 = 2 + 1，跟 n1 無關');
+  talk(g, '好神奇！', 'wow');
+  await g.hop(tok);
+  await step(tok);                                   // 1980.8 degree 0 在最下面
+  all.filter((n) => deg2(n) === 0).forEach((n) => glow(n, GOLD));
+  say('degree 0 的 node 在最下面', '因為它沒有再指出去 → 就是 leaf');
+  await step(tok);                                   // 2005.8 證明：只是符號置換
+  all.forEach((n) => glow(n, OFF));
+  tag('證明：只做符號代換，不用微積分', 'note', 0, 0.8, 1.0);
+  say('證明很簡單：只是把式子做代換', '不會用到微積分');
+  talk(g, '不怕不怕', 'happy');
+  await step(tok);                                   // 2024.8 n = total number of nodes
+  all.forEach((n) => glow(n, '#10304a'));
+  tag('n = 6', 'ptr alt', -5.2, 5.6);
+  say('n = total number of nodes', '這棵 n = 6');
+  await step(tok);                                   // 2028.6 B = branch = pointer
+  all.forEach((n) => glow(n, OFF));
+  all.forEach((n) => [n.left, n.right].forEach((c) => c && hiEdge(n, c)));
+  tag('B = 5', 'ptr alt', -5.2, 4.9);
+  say('B = branch，也就是 pointer 的個數', '金色的邊共 5 條');
+}]);
+
+// 34:27 證明 n0 = n2 + 1
+FRAG.push(['treeb-proof', '證明 n0 = n2 + 1', async (tok) => {
+  const g = stage([0, 5, 13.5], [0, 3.8, 0], [-6.2, 2.8]);
+  const root = await dropTree(tok, N02, { cx: -3.8, width: 4.6, topY: 6.4, minY: 3.0 }, 0);
+  const all = allNodes(root);
+  const COL = [GREEN, RED, GOLD];
+  const cd = code(['(1) n = n0 + n1 + n2', '(2) B = n − 1   → n = B + 1', '(3) B = n1 + 2·n2', '(4) n = n1 + 2·n2 + 1', '(5) n0+n1+n2 = n1+2·n2+1', '(6) n0 = n2 + 1'], 3.4, 6.6, 0.8);
+  cd.ls.forEach((l) => hide(l, false));
+  const show = (i) => { hide(cd.ls[i], true); cd.hl(i); };
+  await step(tok);                                   // 2061.6 n = n0 + n1 + n2
+  show(0); all.forEach((n) => glow(n, COL[deg2(n)]));
+  say('總 node 數 = 三種 degree 的個數相加', 'n = 3 + 1 + 2 = 6');
+  talk(g, '全部加起來');
+  await step(tok);                                   // 2102.6 B + 1 = n，為什麼？
+  all.forEach((n) => glow(n, OFF));
+  show(1);
+  say('第二個式子：B + 1 = n', '為什麼？看 pointer 怎麼數');
+  talk(g, '為什麼？', 'wow');
+  await step(tok);                                   // 2112.6 除了 root，每個 node 被一個指到
+  let b = 0;
+  for (const n of all) for (const c of [n.left, n.right]) if (c) { hiEdge(n, c); glow(c, GREEN); b++; await go(tok, 300); }
+  say('除了 root，每個 node 剛好被一個 pointer 指到', 'B = n − 1 = 5 → n = B + 1');
+  await step(tok);                                   // 2157.1 從 degree 1 的角度數
+  all.forEach((n) => glow(n, OFF));
+  show(2);
+  all.filter((n) => deg2(n) === 1).forEach((n) => { glow(n, COL[1]); tag('×1', 'ptr alt', n.pos.x + 0.75, n.pos.y); });
+  say('換個角度：從「指出去」來數', 'degree 1 的 node 各貢獻 1 條：1·n1');
+  await step(tok);                                   // 2177.1 degree 2 → 2·n2
+  all.filter((n) => deg2(n) === 2).forEach((n) => { glow(n, COL[2]); tag('×2', 'ptr alt', n.pos.x + 0.75, n.pos.y); });
+  say('degree 2 的 node 各貢獻 2 條：2·n2', 'B = n1 + 2·n2 = 1 + 4 = 5');
+  talk(g, '兩種數法一樣多', 'happy');
+  await step(tok);                                   // 2229.2 把 B 代入：n1 + 2n2 + 1 = n
+  show(3);
+  say('把 (3) 的 B 代進 B + 1 = n', 'n = n1 + 2·n2 + 1');
+  await step(tok);                                   // 2254.8 n 又等於 n0 + n1 + n2
+  show(4);
+  say('再用 (1) 把 n 換掉', 'n0 + n1 + n2 = n1 + 2·n2 + 1');
+  await step(tok);                                   // 2267.9 左右消去 → n0 = n2 + 1
+  show(5);
+  say('兩邊消去 n1 和一個 n2', 'n0 = n2 + 1 ✓');
+  talk(g, '證完了！', 'happy');
+  await g.hop(tok);
+}]);
+
+// 41:20 Full binary tree
+FRAG.push(['treeb-full', 'Full binary tree', async (tok) => {
+  const g = stage([0, 4.8, 13.5], [0, 4.1, 0], [6.6, 2.8]);
+  slots(15);
+  for (let d = 0; d < 4; d++) tag('level ' + (d + 1), 'idx', -6.7, 6.6 - d * 1.5);
+  const bs = [];
+  await step(tok);                                   // 2479.4 什麼是 full binary tree
+  tag('full binary tree？', 'ptr alt', 0, 7.6);
+  say('第三個定義：full binary tree', '');
+  talk(g, 'full 是滿的意思？', 'wow');
+  await step(tok);                                   // 2485.1 full 和 complete 不一樣
+  tag('full ≠ complete', 'note', 4.6, 7.6);
+  say('注意：full 和 complete 不一樣', '');
+  await step(tok);                                   // 2496.8 深度 k 有 2^k − 1 個 node
+  for (let i = 1; i <= 15; i++) { bs.push(cube(String(i), depthColor(hdepth(i)), NODE, HP(i).x, HP(i).y, 0, 2.5)); await go(tok, 120); }
+  say('深度 k 的 full binary tree', '擁有 2^k − 1 個 node');
+  await step(tok);                                   // 2507.8 最大數量的 node（Lemma 5.2）
+  bs.forEach((b) => lit(b, GOLD));
+  say('在深度允許的範圍內，node 數最多', '就是 Lemma 5.2 的最大值');
+  await step(tok);                                   // 2556.8 高度 4 的例子
+  bs.forEach((b) => lit(b));
+  tag('height = 4', 'ptr alt', -5.6, 7.6);
+  say('這就是一棵 full binary tree', 'level 1、2、3、4：高度 4');
+  await step(tok);                                   // 2568.0 2^4 − 1 = 15 個全滿
+  tag('2⁴ − 1 = 15 個，全滿', 'good', 0, 0.6, 1.0);
+  say('2⁴ − 1 = 15 個 node', '每個位置都滿了');
+  talk(g, '一格都不缺', 'happy');
+  await g.hop(tok);
+}]);
+
+// 43:01 Complete binary tree 與層序編號
+FRAG.push(['treeb-complete', 'Complete binary tree 與層序編號', async (tok) => {
+  const g = stage([0, 4.8, 13.5], [0, 4.1, 0], [6.6, 2.8]);
+  const gs = slots(15, HP, true);
+  for (let d = 0; d < 4; d++) tag('level ' + (d + 1), 'idx', -6.7, 6.6 - d * 1.5);
+  const bs = {}; const hole = [];
+  await step(tok);                                   // 2580.8 這棵沒有到全滿
+  'ABCDEFGHI'.split('').forEach((c, k) => { bs[c] = cube(c, depthColor(hdepth(k + 1)), NODE, HP(k + 1).x, HP(k + 1).y, 0, 2.5); });
+  say('這棵樹沒有到全滿', '只有 9 個 node');
+  await step(tok);                                   // 2589.8 後面這一串是空的
+  for (let i = 10; i <= 15; i++) hole.push(ghost(SAND, HP(i).x, HP(i).y, 0.9, 0.7, 0, 0.9));
+  say('後面這一串位置是空的', '10 ～ 15 號');
+  await step(tok);                                   // 2600.8 其他都跟 full 一樣 → complete
+  tag('complete binary tree', 'ptr alt', 0, 7.6);
+  say('除了後面空掉，其他都跟 full 一樣', '這叫 complete binary tree');
+  talk(g, '前面都排滿', 'happy');
+  await step(tok);                                   // 2608.8 complete 和 full 不一樣
+  tag('full：每個位置都佔滿', 'note', -4.4, 0.4, 1.0); tag('complete：後面可以空', 'note', 3.4, 0.4, 1.0);
+  say('full 是全部裝滿', 'complete 是後面還剩一些空位');
+  await step(tok);                                   // 2623.8 通常給它編號
+  for (let k = 0; k < 9; k++) { const c = 'ABCDEFGHI'[k]; lit(bs[c], GOLD); await go(tok, 200); lit(bs[c]); }
+  say('通常會給 node 編號', '一層一層、從上到下、從左到右：A=1…I=9');
+  await step(tok);                                   // 2637.8 為什麼要編號：等一下用 array
+  tag('編號 = 等一下 array 的位置', 'good', 0, 1.2, 1.0);
+  say('為什麼要編號？', '等一下用 array 表示時，位置馬上算得出來');
+  talk(g, '編號有用！', 'wow');
+  await step(tok);                                   // 2698.8 H、I 移到 G 底下還是 complete 嗎？
+  hole.forEach(kill);
+  lab.springTo(bs.H, HP(14)); lab.springTo(bs.I, HP(15));
+  say('思考題：H、I 移到 G 底下呢？', '還是 complete 嗎？考試可能考');
+  talk(g, '嗯……？', 'wow');
+  await step(tok);                                   // 2712.7 回去想想看
+  for (let i = 8; i <= 13; i++) hole.push(ghost('#e06666', HP(i).x, HP(i).y, 0.9, 0.7, 0, 0.9));
+  gs.forEach((m, i) => { if (i + 1 >= 8 && i + 1 <= 13) m.material.color.set('#e06666'); });
+  say('補充答案：H、I 佔 14、15，8～13 空著', '中間有洞 → 不是 complete');
+  talk(g, '中間不能有洞', 'sad');
+}]);
+
+// 45:35 Array 表示法：2i、2i+1、⌊i/2⌋
+FRAG.push(['treeb-array', 'Array 表示法：2i、2i+1、⌊i/2⌋', async (tok) => {
+  const g = stage([0, 5.2, 13.5], [0, 3.5, 1], [6.4, 1.2]);
+  const TP = (i) => heapPos(i, 7.0, 1.3, 9);
+  const XP = (i) => -4.6 + i * 1.0;
+  const L = 'ABCDEFGHI';
+  const nb = [], cells = [], tmp = [];
+  const clr = () => { tmp.splice(0).forEach(kill); cells.forEach((c) => c && lit(c)); nb.forEach((b) => b && lit(b)); };
+  const mark = (i, t, col) => { lit(cells[i], col); lit(nb[i], col); tmp.push(tag(t, col === GOLD ? 'ptr alt' : 'ptr', XP(i), 1.15, 2.8)); };
+  await step(tok);                                   // 2744.8 array 可以表示 tree
+  for (let i = 0; i <= 9; i++) {
+    const t = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.08, 0.9), new THREE.MeshStandardMaterial({ color: i ? '#e9dcc4' : '#cbbd9f' }));
+    t.position.set(XP(i), 0.04, 2.8); lab.world.add(t);
+    tag(i ? '[' + i + ']' : '[0] 不用', 'idx', XP(i), 0, 3.6);
+  }
+  for (let i = 1; i <= 9; i++) nb[i] = idxCube(L[i - 1], i, depthColor(hdepth(i)), TP(i));
+  edgeLines(() => { const out = []; for (let i = 1; i <= 9; i++) for (const c of [2 * i, 2 * i + 1]) if (c <= 9) out.push([nb[i].obj.position, nb[c].obj.position]); return out; });
+  say('Array 也能表示 binary tree', '底下這排格子就是 array');
+  talk(g, 'array 也行？', 'wow');
+  await step(tok);                                   // 2751.7 規則可循：固定該放的位置
+  say('因為每個 node 有固定該放的位置', '有規則可循');
+  await step(tok);                                   // 2788.8 A 放在位置 1
+  const put = (i) => { const c = lab.addBody(block(L[i - 1], [0.6, 0.45, 0.6], depthColor(hdepth(i)))); c.obj.position.copy(TP(i)); lab.springTo(c, V(XP(i), 0.32, 2.8)); cells[i] = c; };
+  put(1);
+  say('A 放在 array 的位置 1', '編號 1 → index 1');
+  await step(tok);                                   // 2811.9 從上到下、從左到右 → index
+  for (let i = 2; i <= 9; i++) { put(i); await go(tok, 200); }
+  say('依編號直接 map 到 array 的 index', '從上到下、從左到右');
+  await step(tok);                                   // 2845.8 A 的 left、right child 在哪？
+  mark(1, 'i=1', GOLD); mark(2, 'left', GREEN); mark(3, 'right', GREEN);
+  say('A 在 1：left child B 在 2，right child C 在 3', '');
+  await step(tok);                                   // 2871.3 left child = 2i
+  tag('left child = 2i', 'good', -1.8, 1.9, 2.8);
+  say('位置 i 的 left child 在 2i', '');
+  await step(tok);                                   // 2895.8 right child = 2i + 1
+  tag('right child = 2i + 1', 'good', 1.6, 1.9, 2.8);
+  say('right child 在 2i + 1', '');
+  talk(g, '乘 2 就到孩子', 'happy');
+  await step(tok);                                   // 2904.3 B 在 2：left child D 在 4
+  clr(); mark(2, 'i=2', GOLD); mark(4, 'left', GREEN);
+  say('B 在 2：left child 是 2×2 = 4', '位置 4 正好是 D');
+  await step(tok);                                   // 2928.0 right child：2×2+1 = 5
+  mark(5, 'right', GREEN);
+  say('B 的 right child：2×2 + 1 = 5', '位置 5 是 E');
+  await step(tok);                                   // 2976.0 child 在 i → parent 在 i/2
+  clr(); mark(4, 'i=4', GOLD); mark(2, 'parent', GREEN);
+  tmp.push(arrow(V(XP(4), 1.5, 2.8), V(XP(2) + 0.2, 1.5, 2.8), '#c08a1f'));
+  say('反過來：child 在 i，parent 在 i / 2', 'D 在 4：4 / 2 = 2 → B');
+  await step(tok);                                   // 2995.8 5 / 2 = 2.5 → 無條件捨去
+  clr(); mark(5, 'i=5', GOLD); mark(2, 'parent', GREEN);
+  tmp.push(arrow(V(XP(5), 1.5, 2.8), V(XP(2) + 0.2, 1.5, 2.8), '#c08a1f'));
+  say('E 在 5：5 / 2 = 2.5，無條件捨去', 'parent = ⌊5/2⌋ = 2 → B');
+  talk(g, '捨去小數', 'happy');
+  await step(tok);                                   // 3027.0 i = 1 是 root，沒有 parent
+  clr(); mark(1, 'root', GOLD);
+  say('i = 1 是 root，沒有 parent', '公式：parent ⌊i/2⌋，left 2i，right 2i+1');
+}]);
+
+// 51:08 Skewed tree 的空間浪費
+FRAG.push(['treeb-skew', 'Array 表示 skewed tree 的空間浪費', async (tok) => {
+  const g = stage([0, 5.2, 13.5], [0, 3.5, 1], [6.4, 1.0]);
+  const XP = (i) => -6.6 + i * 0.42;
+  const tiles = [];
+  for (let i = 1; i <= 31; i++) {
+    const t = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.08, 0.8), new THREE.MeshStandardMaterial({ color: '#e9dcc4' }));
+    t.position.set(XP(i), 0.04, 2.8); lab.world.add(t); tiles.push(t);
+    if ([1, 2, 4, 8, 16, 31].includes(i)) tag(String(i), 'idx', XP(i), 0, 3.5);
+  }
+  const idx = [1, 2, 4, 8, 16];
+  const TP = (d) => V(-0.6 - d * 1.1, 7.0 - d * 1.2, 0);
+  const nb = 'ABCDE'.split('').map((c, d) => idxCube(c, idx[d], depthColor(d), TP(d)));
+  edgeLines(() => nb.slice(1).map((b, d) => [nb[d].obj.position, b.obj.position]));
+  const put = (d) => { const c = lab.addBody(block('ABCDE'[d], [0.36, 0.4, 0.5], depthColor(d))); c.obj.position.copy(TP(d)); lab.springTo(c, V(XP(idx[d]), 0.3, 2.8)); nb.forEach((b) => lit(b)); lit(nb[d], GOLD); };
+  await step(tok);                                   // 3067.6 skewed tree A B C D E
+  say('一棵 skewed tree：A、B、C、D、E', '用 array 表示會怎樣？');
+  talk(g, '歪的也放得進去？', 'wow');
+  await step(tok);                                   // 3075.8 A 在 1，B 在 2
+  put(0); await go(tok, 300); put(1);
+  say('A 還是在位置 1，B 在位置 2', 'B 是 A 的 left child：2×1 = 2');
+  await step(tok);                                   // 3088.7 C：2×2 = 4
+  put(2);
+  say('C 是 B 的 left child', '2 × 2 = 4');
+  await step(tok);                                   // 3099.8 D：2×4 = 8
+  put(3);
+  say('D 是 C 的 left child', '2 × 4 = 8');
+  await step(tok);                                   // 3104.0 E：2×8 = 16
+  put(4);
+  say('E 是 D 的 left child', '2 × 8 = 16');
+  await step(tok);                                   // 3117.8 很多空間空著沒用
+  tiles.forEach((t, k) => { if (!idx.includes(k + 1)) t.material.color.set('#f4b8a8'); });
+  say('很多空間空在那邊沒用到', '補充：深度 5 要 31 格，只用 5 格');
+  talk(g, '好浪費…', 'sad');
+  await step(tok);                                   // 3129.8 好處：找 parent / child 一步到
+  tag('優點：⌊i/2⌋、2i、2i+1 一步到位', 'good', 0, 1.3, 2.8);
+  say('好處：找 parent 和 child 很容易', '做一下加減乘除，一步就到');
+  talk(g, '算一下就到', 'happy');
+  await step(tok);                                   // 3139.6 壞處：不夠 complete 就浪費
+  tag('缺點：不夠 complete 就浪費空間', 'bad', 0, 2.0, 2.8);
+  say('壞處：tree 不夠 complete 時', '很多空間被浪費掉');
+}]);
+
+// 52:40 Linked 表示：找 child 易、找 parent 難
+FRAG.push(['treeb-linked', 'Linked 表示：找 child 容易、找 parent 困難', async (tok) => {
+  let g = stage([0, 5, 13.5], [0, 3.6, 0.5], [6.4, 2.8]);
+  let root, N;
+  await step(tok);                                   // 3159.6 不浪費空間：宣告 node，三個欄位
+  const f = [['left', BLU], ['data', GRN], ['right', BLU]].map(([t, c], i) => cube(t, c, [1.3, 0.6, 0.8], -1.4 + i * 1.4, 6.6, 0, 2.5));
+  arrow(V(-1.6, 6.25, 0), V(-2.6, 5.4, 0), BLU); arrow(V(1.6, 6.25, 0), V(2.6, 5.4, 0), BLU);
+  say('不想浪費空間：宣告一個 node', '三個欄位：data + 左右兩個 pointer');
+  talk(g, '用多少開多少', 'happy');
+  await step(tok);                                   // 3200.9 array 或 left/right child 宣告
+  f.forEach(flyB);
+  await go(tok, 300);
+  g = stage([0, 5, 13.5], [0, 3.6, 0.5], [6.4, 2.8]);
+  root = await dropTree(tok, CT, { topY: 6.4, minY: 2.2, width: 9 }, 100);
+  N = (l) => find(root, l);
+  tag('node = [ leftChild | data | rightChild ]', 'ptr', 0, 7.6);
+  say('binary tree：可以用 array，也可以用 node', '兩種的優缺點要知道');
+  await step(tok);                                   // 3230.6 D 的 parent 是誰？
+  glow(N('D'), GOLD);
+  say('問：用 node 表示時，D 的 parent 是誰？', 'node 裡只有往下的 pointer');
+  talk(g, '往上沒有箭頭！', 'wow');
+  await step(tok);                                   // 3241.1 先從 root 往下找到 D
+  glow(N('D'), OFF);
+  const cur = makeCursor(), prev = makeCursor();
+  prev.obj.material = new THREE.MeshBasicMaterial({ color: BLU }); prev.obj.scale.set(1.25, 1.25, 1.25);
+  const tc = tag('cur', 'ptr alt', 0, 0), tp = tag('prev', 'ptr', 0, 0);
+  hide(tp, false);
+  const path = ['A', 'B', 'D'].map(N);
+  for (let i = 0; i < 3; i++) { cursorTo(cur, path[i].pos); tc.position.copy(path[i].pos).add(V(-1.0, 0.1, 0)); await go(tok, 500); }
+  say('得先從 root 開始往下，找到 D', 'A → B → D');
+  await step(tok);                                   // 3251.1 兩個 pointer：一個往下，一個跟在上一層
+  hide(tp, true);
+  cursorTo(prev, N('B').pos); tp.position.copy(N('B').pos).add(V(1.1, 0.1, 0));
+  glow(N('B'), GOLD);
+  say('用兩個 pointer：cur 往下，prev 跟在上一層', '找到 D 時 prev = B → parent(D) = B');
+  talk(g, '跟屁蟲 pointer', 'happy');
+  await step(tok);                                   // 3284.5 找 child 很簡單
+  const D = N('D');
+  ['H', 'I'].forEach((l) => { glow(N(l), GREEN); hiEdge(D, N(l)); });
+  say('問 child 很簡單：找到 D 直接看左右', 'D.leftChild = H，D.rightChild = I');
+  await step(tok);                                   // 3292.0 找 parent 比較難
+  tag('linked：找 parent 難、找 child 易', 'note', 0, 1.2, 1.0);
+  say('在 linked binary tree 中', '找 parent 比找 child 難');
+  await step(tok);                                   // 3300.0 同樣這顆 full binary tree
+  g = stage([0, 5, 13.5], [0, 3.6, 0.5], [6.4, 2.8]);
+  tag('full binary tree', 'ptr', -3.4, 7.4); tag('skewed binary tree', 'ptr', 3.4, 7.4);
+  await dropTree(tok, 'A(B(D,E),C(F,G))', { cx: -3.4, width: 5, topY: 6.4, minY: 3.4 }, 100);
+  say('左邊是一棵 full binary tree', '用 node 表示，pointer 都用得到');
+  await step(tok);                                   // 3316.8 skewed 就像 linked list
+  await dropTree(tok, 'A(,B(,C(,D)))', { cx: 3.4, width: 4, topY: 6.4, minY: 2.4 }, 150);
+  say('skewed tree 用 node 表示', '看起來就像 linked list');
+  talk(g, '一條鏈子', 'wow');
+}]);
+
+// 56:33 TreeNode 類別與 array vs linked 比較
+FRAG.push(['treeb-class', 'TreeNode 類別；array vs linked 比較', async (tok) => {
+  let g = stage([0, 5, 13.5], [0, 4, 0], [6.4, 2.8]);
+  let fs = [], tr = null, kids = [];
+  await step(tok);                                   // 3400.8 node 宣告成 TreeNode：三個欄位
+  fs = [['leftChild', -0.2], ['data', 1.6], ['rightChild', 3.4]].map(([t, x]) => cube(t, t === 'data' ? GRN : BLU, [1.75, 0.7, 0.9], x, 6.2, 0, 2.5));
+  tag('TreeNode', 'ptr alt', 1.6, 7.0);
+  say('linked 表示：node 宣告成 TreeNode', 'leftChild、data、rightChild 三個欄位');
+  await step(tok);                                   // 3416.8 Tree 只有一個 pointer：root
+  tr = cube('Tree：root', GRN, [2.4, 0.7, 0.9], -4.4, 6.2, 0, 2.5);
+  tag('class Tree { TreeNode *root; }', 'ptr', -3.6, 7.4);
+  arrow(V(-3.2, 6.2, 0), V(-1.1, 6.2, 0), '#c08a1f');
+  say('Tree 這個 class 很簡單', '只有一個 pointer：root');
+  talk(g, '只要記住 root', 'happy');
+  await step(tok);                                   // 3430.8 透過 root 去 traverse
+  kids = [cube('TreeNode', BLU, [1.6, 0.6, 0.8], -1.4, 4.2, 0, 2), cube('TreeNode', BLU, [1.6, 0.6, 0.8], 4.6, 4.2, 0, 2)];
+  arrow(V(-0.2, 5.85, 0), V(-1.2, 4.55, 0), BLU); arrow(V(3.4, 5.85, 0), V(4.4, 4.55, 0), BLU);
+  say('有了 root，就能從它開始 traverse', '每個 node 再指向左右 child');
+  await step(tok);                                   // 3443.5 決定 parent：array 簡單
+  [tr, ...fs, ...kids].forEach(flyB);
+  await go(tok, 400);
+  g = stage([0, 5, 13.5], [0, 4, 0], [6.4, 0.6]);
+  tag('Array', 'ptr alt', 0.4, 7.3); tag('Linked', 'ptr alt', 4.2, 7.3);
+  const rows = [
+    ['決定 parent', ['算 ⌊i/2⌋：易', GRN], ['parent 難', '#e06666'], '找 parent：array 簡單，link 不簡單', 'array 算一下；link 要從 root 找'],
+    ['space overhead', ['整個先宣告', '#e06666'], ['用多少開多少', GRN], 'Space：array 要先宣告整個空間', 'link：用多少 node 就 create 多少'],
+    ['insert／delete', ['要搬資料：難', '#e06666'], ['改 pointer：易', GRN], 'insert／delete：array 很 difficult', '因為牽涉到資料移動'],
+  ];
+  const cellsL = [];
+  const row = (k) => { const [nm, a, b, cap, fm] = rows[k], y = 6.0 - k * 1.3; tag(nm, 'ptr', -4.4, y); cube(a[0], a[1], [3.2, 0.7, 0.8], 0.4, y, 0, 2.5); cellsL.push(cube(b[0], b[1], [3.2, 0.7, 0.8], 4.2, y, 0, 2.5)); say(cap, fm); };
+  row(0);
+  await step(tok);                                   // 3466.4 space overhead
+  row(1);
+  await step(tok);                                   // 3486.0 insert 和 delete
+  row(2);
+  talk(g, 'array 要搬家', 'sad');
+  await step(tok);                                   // 3503.8 例：在 C 的位置 insert
+  const xs = (i) => -2.4 + i * 0.95;
+  const arr = 'ABCDE'.split('').map((c, i) => cube(c, SAND, [0.8, 0.5, 0.8], xs(i), 0.3, 2.2));
+  tag('array（示意）', 'idx', -4.2, 0.3, 2.2);
+  for (let i = 4; i >= 2; i--) { lab.springTo(arr[i], V(xs(i + 1), 0.3, 2.2)); await go(tok, 260); }
+  cube('X', '#f2c46d', [0.8, 0.5, 0.8], xs(2), 0.3, 2.2, 2.5);
+  say('在 C 的位置插一個 node 進來（示意）', '後面整串資料都要 move');
+  await step(tok);                                   // 3532.8 link：pointer assignment 就好
+  lit(cellsL[2], GOLD);
+  say('link 的 insert／delete 比較簡單', '只要 pointer assignment 就完成');
+  talk(g, '改箭頭就好', 'happy');
+  await step(tok);                                   // 3552.9 誰比較好？沒有絕對
+  say('有沒有說誰比較好？', '三個層面各有好壞，沒有絕對標準');
+  talk(g, '看需求', 'wow');
+  await step(tok);                                   // 3580.3 建好不改用 array；常改用 linked
+  tag('建好不再改 → array；常 insert／delete → linked', 'good', 0.6, 1.3, 2.2);
+  say('建好後不再 insert／delete → 用 array', '常常 insert／delete → 不要用 array');
+}]);
+
+// 1:00:14 為什麼需要 traversal
+FRAG.push(['treeb-why', '為什麼需要 tree traversal', async (tok) => {
+  const g = stage([0, 5, 13.5], [0, 3.6, 0.8], [6.4, 2.8]);
+  const O1 = { cx: -3.4, width: 4, topY: 6.4, minY: 3.4 }, O2 = { cx: 3.4, width: 4, topY: 6.4, minY: 3.4 };
+  let t1, t2;
+  const c1 = makeCursor(), c2 = makeCursor();
+  await step(tok);                                   // 3613.7 binary tree traversal
+  tag('Binary Tree Traversal', 'ptr alt', 0, 7.6);
+  t1 = await dropTree(tok, 'A(B(D),C)', O1, 120);
+  tag('T1', 'ptr alt', -6.0, 6.4);
+  say('接下來：binary tree traversal', '');
+  talk(g, 'traversal？', 'wow');
+  await step(tok);                                   // 3627.6 拜訪每個 node，順便印出
+  for (const n of preorder(t1)) { cursorTo(c1, n.pos); glow(n, GOLD); await go(tok, 380); }
+  c1.obj.visible = false;
+  say('就是去拜訪 tree 的每個 node', '順便把它印出來');
+  await step(tok);                                   // 3654.1 兩棵 tree 一不一樣？
+  allOff(t1);
+  t2 = await dropTree(tok, 'A(B(,D),C)', O2, 120);
+  tag('T2', 'ptr alt', 0.8, 6.4); tag('一樣嗎？', 'ptr', 0, 4.6);
+  say('給你兩棵 binary tree：T1、T2', '問：這兩棵一不一樣？（示意）');
+  await step(tok);                                   // 3673.8 人眼一看就知道；電腦呢？
+  say('人眼一看就知道', '可是要怎麼讓很笨的電腦也能判斷？');
+  talk(g, '電腦只會一步步比', 'wow');
+  await step(tok);                                   // 3683.0 兩個 pointer 逐一往下檢查
+  for (const l of ['A', 'B']) { cursorTo(c1, find(t1, l).pos); cursorTo(c2, find(t2, l).pos); glow(find(t1, l), GREEN); glow(find(t2, l), GREEN); await go(tok, 500); }
+  const B1 = find(t1, 'B'), B2 = find(t2, 'B');
+  cursorTo(c1, B1.left.pos); cursorTo(c2, B2.pos.clone().add(V(-0.6, -1.2, 0)));
+  glow(B1.left, RED); ghost('#e06666', B2.pos.x - 0.6, B2.pos.y - 1.2, 0.7, 0.6, 0, 0.7);
+  say('方法一：兩個 pointer 從第一個 node 一起往下比', 'A=A、B=B，B 的 left：D vs 空 → 不同');
+  await step(tok);                                   // 3701.9 方法二：traversal → string
+  c1.obj.visible = false; c2.obj.visible = false;
+  rowLabel('pre', 2.0);
+  rowOf(['A', 'B', 'D', 'C'], -3.4, 2.0); rowOf(['A', 'B', 'D', 'C'], 3.4, 2.0);
+  say('方法二：traversal 把 tree 變成 string', 'preorder 都是 ABDC');
+  await step(tok);                                   // 3709.8 string 比對
+  rowLabel('in', 3.2);
+  const i1 = rowOf(['D', 'B', 'A', 'C'], -3.4, 3.2), i2 = rowOf(['B', 'D', 'A', 'C'], 3.4, 3.2);
+  [0, 1].forEach((k) => { lit(i1[k], RED); lit(i2[k], RED); });
+  say('比對 string 就能判斷一不一樣', '補充：只比一種不夠，inorder DBAC ≠ BDAC');
+  talk(g, '多比一種才保險', 'happy');
+  await step(tok);                                   // 3731.8 目的：快速掌握 structure
+  tag('traversal 的目的：快速掌握 tree 的 structure', 'good', 0, 1.2, 1.0);
+  say('traversal 不是為了考試', '是為了快速掌握 tree 長什麼樣子');
+}]);
+
+// 1:02:27 L、V、R
+FRAG.push(['treeb-lvr', 'L、V、R 三種動作與三種 traversal', async (tok) => {
+  const g = stage([0, 5, 13.5], [0, 3.8, 0.6], [6.4, 2.8]);
+  let l, d, r, rows;
+  await step(tok);                                   // 3746.8 node 只有 data、left、right
+  l = cube('left', BLU, [1.5, 0.8, 0.9], -1.7, 6.4, 0, 2.5); d = cube('data', GRN, [1.5, 0.8, 0.9], 0, 6.4, 0, 2.5); r = cube('right', PUR, [1.5, 0.8, 0.9], 1.7, 6.4, 0, 2.5);
+  say('node 只有三個欄位：left、data、right', '所以走訪也有三個動作');
+  await step(tok);                                   // 3767.8 L：先不印，往左走
+  lit(l, GOLD); arrow(V(-2.2, 6.0, 0), V(-3.8, 4.9, 0), BLU); tag('L：先往左走', 'ptr', -4.6, 4.6);
+  say('L：看到 node 先不印，往左邊走', '');
+  talk(g, '左轉！');
+  await step(tok);                                   // 3784.7 V：印出來
+  lit(l); lit(d, GOLD); tag('V：印出 data', 'ptr alt', 0, 7.3);
+  say('V（visit）：看到 node 就把資料印出來', '');
+  talk(g, '印！', 'happy');
+  await step(tok);                                   // 3796.9 R：往右走
+  lit(d); lit(r, GOLD); arrow(V(2.2, 6.0, 0), V(3.8, 4.9, 0), PUR); tag('R：往右走', 'ptr', 4.6, 4.6);
+  say('R：不往左、也不印，先往右邊走', '');
+  talk(g, '右轉！');
+  await step(tok);                                   // 3825.8 三個動作有幾種組合？六種
+  lit(r);
+  const perms = ['LVR', 'LRV', 'VLR', 'VRL', 'RVL', 'RLV'];
+  const C = { L: BLU, V: GRN, R: PUR };
+  rows = [];
+  for (let k = 0; k < 6; k++) {
+    const p = perms[k], cx = k < 3 ? -2.8 : 2.8, y = 3.4 - (k % 3) * 1.0;
+    rows.push(p.split('').map((ch, j) => cube(ch, C[ch], [0.6, 0.5, 0.6], cx - 0.7 + j * 0.7, y, 1.2, 2.5)));
+    await go(tok, 180);
+  }
+  say('三個動作排列：3! = 6 種', 'LVR LRV VLR VRL RVL RLV');
+  talk(g, '六種？', 'wow');
+  await step(tok);                                   // 3846.8 有幾種是倒過來 → 歸成三種
+  rows.slice(3).forEach((row) => row.forEach((b) => lit(b, RED)));
+  await go(tok, 500);
+  rows.slice(3).forEach((row) => row.forEach(flyB));
+  say('右邊三種只是左右對調', '實際上歸類成三種（都先左後右）');
+  await step(tok);                                   // 3911.8 LVR → inorder
+  rows[0].forEach((b) => lit(b, GOLD));
+  tag('inorder', 'ptr alt', 0.6, 3.4, 1.2);
+  say('LVR 對應到 inorder', '');
+  await step(tok);                                   // 3923.8 LRV → postorder，VLR → preorder
+  rows[0].forEach((b) => lit(b));
+  rows[1].forEach((b) => lit(b, GOLD)); tag('postorder', 'ptr alt', 0.6, 2.4, 1.2);
+  rows[2].forEach((b) => lit(b, GOLD)); tag('preorder', 'ptr alt', 0.6, 1.4, 1.2);
+  say('LRV → postorder，VLR → preorder', 'V 的位置決定 pre／in／post');
+  talk(g, 'V 在哪就叫什麼', 'happy');
+}]);
+
+// 1:05:38 運算式樹四種輸出
+FRAG.push(['treeb-expr4', '運算式樹 A/B*C*D+E：四種 traversal', async (tok) => {
+  const g = stage([0, 5.4, 13.5], [0, 3.2, 1.2], [6.4, 0.8]);
+  let root;
+  const cur = makeCursor();
+  const runRow = async (k, nm, seq, tg) => {
+    const z = 1.2 + k * 0.85;
+    rowLabel(nm, z);
+    for (let i = 0; i < seq.length; i++) {
+      const n = seq[i];
+      cursorTo(cur, n.pos);
+      const b = lab.addBody(block(n.label, SMALL, depthColor(n.depth)));
+      b.obj.position.copy(n.pos); lab.springTo(b, rowPos(i, z));
+      await go(tok, 200);
+    }
+    tag(tg, 'ptr alt', 2.0, 0.35, z);
+  };
+  await step(tok);                                   // 3946.4 以 A/B*C*D+E 為例
+  tag('A / B * C * D + E', 'ptr alt', 0, 7.8);
+  say('以 A/B*C*D+E 為例', 'stack 那章做過 infix 轉換和 evaluate');
+  talk(g, '老朋友！', 'happy');
+  await step(tok);                                   // 3979.8 用 tree 表示
+  root = await dropTree(tok, 'expr', { topY: 6.8, minY: 3.4 }, 100);
+  say('這個 expression 可以用 tree 表示', 'operator 在上，operand 在 leaf');
+  await step(tok);                                   // 3989.8 藍色的是 null 指標
+  for (const n of allNodes(root)) if (!n.left && !n.right) [-0.38, 0.38].forEach((dx) => cube('', BLU, [0.22, 0.22, 0.22], n.pos.x + dx, n.pos.y - 0.6, 0));
+  say('leaf 底下藍色的小方塊', '代表指不下去的 null 指標');
+  await step(tok);                                   // 4009.8 inorder → infix
+  await runRow(0, 'in', inorder(root), 'infix');
+  say('Inorder（LVR）→ infix', 'A / B * C * D + E');
+  await step(tok);                                   // 4017.2 preorder → prefix
+  await runRow(1, 'pre', preorder(root), 'prefix');
+  say('Preorder（VLR）→ prefix', '+ * * / A B C D E');
+  await step(tok);                                   // 4025.6 postorder → postfix
+  await runRow(2, 'post', postorder(root), 'postfix');
+  say('Postorder（LRV）→ postfix', 'A B / C * D * E +');
+  talk(g, '就是 postfix！', 'wow');
+  await step(tok);                                   // 4034.7 level order：從上面一層一層
+  await runRow(3, 'level', levelorder(root), 'level');
+  cur.obj.visible = false;
+  say('Level order：從最上面一層一層輸出', '+ * E * D / C A B');
+  talk(g, '同一棵樹，四種輸出', 'happy');
+}]);
+
+// 遞迴走訪程式：三行 L／V／R
+const RLINE = (nm) => ({ L: '    ' + nm + '(cur->leftChild);   // L', V: '    cout << cur->data;      // V', R: '    ' + nm + '(cur->rightChild);  // R' });
+const RORD = { in: ['L', 'V', 'R'], pre: ['V', 'L', 'R'], post: ['L', 'R', 'V'] };
+const RNAME = { in: 'Inorder', pre: 'Preorder', post: 'Postorder' };
+function recLines(kind, nm = RNAME[kind]) { const T = RLINE(nm); return padL(['void Tree::' + nm + '() { ' + nm + '(root); }', 'void Tree::' + nm + '(TreeNode *cur) {', '  if (cur) {', ...RORD[kind].map((a) => T[a]), '  }', '}'].map((s) => s + '  ')); }
+function recSetup(kind) {
+  const cd = code(recLines(kind), -3.4, 7.2, 0.5);
+  const root = showTree('expr', { cx: 3.6, width: 6.2, topY: 6.6, minY: 2.8, maxSp: 0.85 });
+  rowLabel('輸出', 2.6);
+  return { cd, root, cur: makeCursor(), out: [] };
+}
+function recRename(cd, kind, nm) { recLines(kind, nm).forEach((s, i) => setTag(cd.ls[i], s)); }
+async function recRun(tok, S, order, ms = 200) {
+  for (const n of order) {
+    cursorTo(S.cur, n.pos); glow(n, GOLD);
+    const b = lab.addBody(block(n.label, SMALL, depthColor(n.depth)));
+    b.obj.position.copy(n.pos); lab.springTo(b, rowPos(S.out.length, 2.6)); S.out.push(n.label);
+    await go(tok, ms);
+  }
+}
+
+// 1:07:55 遞迴 Inorder 程式
+FRAG.push(['treeb-recin', '遞迴 Inorder 程式：L、V、R 三行', async (tok) => {
+  const g = stage([0, 5.2, 13.5], [0, 3.6, 1], [6.6, 2.6]);
+  let S;
+  await step(tok);                                   // 4074.5 程式怎麼寫
+  S = recSetup('in');
+  say('怎麼對 tree 做 inorder？程式長這樣', '');
+  await step(tok);                                   // 4090.8 procedure Inorder(root)
+  S.cd.hl(0);
+  say('寫一個 procedure 叫 Inorder', '把 Tree 的 private member root 傳進去');
+  await step(tok);                                   // 4130.8 它是 recursive
+  S.cd.hl(1);
+  tag('自己呼叫自己 → recursive', 'note', -3.4, 3.6);
+  say('Inorder 裡面又呼叫 Inorder', '是一個 recursive function');
+  talk(g, '自己叫自己', 'wow');
+  await step(tok);                                   // 4152.4 一定要會停止
+  tag('一定要會停：不能無限迴圈', 'bad', -3.4, 3.0);
+  say('recursive function 一定要會停止', '不能一直跑下去');
+  await step(tok);                                   // 4173.8 current node 不是 null 才做
+  S.cd.hl(2);
+  say('if (cur)：cur 不是 null 才往下做', '是 null 就直接 return → 這就是停止條件');
+  talk(g, '空的就停', 'happy');
+  await step(tok);                                   // 4195.6 三行 = L V R
+  [3, 4, 5].forEach((i, k) => tag(['L', 'V', 'R'][k], 'ptr alt', 0.2, 7.2 - i * 0.5));
+  say('這三行分別是 L、V、R', '往左、印出、往右');
+  await step(tok);                                   // 4212.9 左邊有 child 就一直往左
+  S.cd.hl(3);
+  for (const n of [S.root, S.root.left, S.root.left.left, S.root.left.left.left, S.root.left.left.left.left]) { cursorTo(S.cur, n.pos); await go(tok, 380); }
+  say('左邊有 child 就一直往左走', '+ → * → * → / → A');
+  talk(g, '一路往左', 'wow');
+  await step(tok);                                   // 4258.6 走到 null → 跳回來印出（V）
+  const A = S.root.left.left.left.left;
+  const gh = ghost('#e06666', A.pos.x - 0.4, A.pos.y - 0.8, 0.4, 0.35, 0, 0.4);
+  await go(tok, 500); kill(gh);
+  S.cd.hl(4);
+  await recRun(tok, S, [A]);
+  say('A 的左邊是 null → 跳回來', 'V：印出 A');
+  await step(tok);                                   // 4286.2 再往右邊走（R）
+  S.cd.hl(5);
+  const gh2 = ghost('#e06666', A.pos.x + 0.4, A.pos.y - 0.8, 0.4, 0.35, 0, 0.4);
+  await go(tok, 500); kill(gh2);
+  say('印完往右走（R）：右邊也是 null', '右邊如果有 node，也一樣先往它的左邊走');
+  await step(tok);                                   // 4314.7 所有 node 拜訪完才停止
+  await recRun(tok, S, inorder(S.root).slice(1), 220);
+  S.cd.hl(-1); S.cur.obj.visible = false;
+  say('所有 node 都拜訪過就停止', 'inorder：A / B * C * D + E');
+  talk(g, 'LVR 記住了', 'happy');
+}]);
+
+// 1:12:37 追蹤 inorder 的遞迴呼叫
+FRAG.push(['treeb-trace', '追蹤 Inorder 的遞迴呼叫', async (tok) => {
+  const g = stage([0, 5, 13.5], [0, 3.4, 0.8], [6.4, 2.8]);
+  const root = showTree('expr', { topY: 6.6, minY: 2.8 });
+  rowLabel('輸出', 2.4);
+  const cur = makeCursor();
+  const stackT = tag('', 'ptr', 0, 7.7); Object.assign(stackT.element.style, MONO);
+  const calls = [];
+  const out = [];
+  const showCalls = () => setTag(stackT, '呼叫中：' + (calls.join(' → ') || '—'));
+  let k = 0;
+  const call = async (n, label) => { k++; calls.push(label || n.label); showCalls(); if (n) { cursorTo(cur, n.pos); glow(n, GOLD); } const t = tag('#' + k, 'ptr alt', n ? n.pos.x - 0.75 : 0, n ? n.pos.y + 0.55 : 0, 0.3); if (!n) hide(t, false); await go(tok, 300); };
+  const print = (n) => { const b = lab.addBody(block(n.label, SMALL, depthColor(n.depth))); b.obj.position.copy(n.pos); lab.springTo(b, rowPos(out.length, 2.4)); out.push(n.label); glow(n, GREEN); };
+  const [m1, m2, d, A] = [root.left, root.left.left, root.left.left.left, root.left.left.left.left];
+  showCalls();
+  await step(tok);                                   // 4356.8 trace 給你看
+  say('一步一步 trace 遞迴呼叫', '#k = 第 k 次呼叫 Inorder');
+  talk(g, '跟著走！', 'wow');
+  await step(tok);                                   // 4392.4 第一個 call：+
+  await call(root);
+  say('第 1 次呼叫：root「+」', '+ 不是 null → 先往左（L）');
+  await step(tok);                                   // 4430.6 left child 是 * → 第 2 次
+  await call(m1);
+  say('+ 的 left child 是 *，不是空的', '第 2 次呼叫');
+  await step(tok);                                   // 4459.8 第 3 次：下層的 *
+  await call(m2);
+  say('* 的 left child 還是 *', '第 3 次呼叫');
+  await step(tok);                                   // 4472.2 / → 第 4 次
+  await call(d);
+  say('再往左是 /', '第 4 次呼叫');
+  await step(tok);                                   // 4487.8 A → 第 5 次
+  await call(A);
+  say('/ 的 left child 是 A', '第 5 次呼叫');
+  await step(tok);                                   // 4497.0 第 6 次：null
+  const nl = ghost('#e06666', A.pos.x - 0.4, A.pos.y - 0.8, 0.4, 0.35, 0, 0.4);
+  await call(null, 'null');
+  say('A 的 left 是 null：第 6 次呼叫', '發現是空的 → return');
+  talk(g, '空的！回頭', 'sad');
+  await step(tok);                                   // 4507.8 return 回來 cout A
+  kill(nl); calls.pop(); showCalls();
+  print(A);
+  say('return 回到 A：cout 印出 A', '輸出：A');
+  talk(g, '印出 A', 'happy');
+  await step(tok);                                   // 4522.6 往右邊走：又是 null
+  const nr = ghost('#e06666', A.pos.x + 0.4, A.pos.y - 0.8, 0.4, 0.35, 0, 0.4);
+  await call(null, 'null');
+  await go(tok, 300);
+  kill(nr); calls.pop(); calls.pop(); showCalls(); cursorTo(cur, d.pos);
+  say('A 往右走：第 7 次呼叫，也是 null', 'back 回去，A 這次呼叫結束');
+  await step(tok);                                   // 4541.8 回到 /，印出 /
+  print(d);
+  say('回到 /：它的左子樹做完了', '印出 /（第 4 次呼叫的 V）');
+  await step(tok);                                   // 4569.1 盡量往左，走不下去就印，再往右
+  for (const n of inorder(root).slice(2)) { cursorTo(cur, n.pos); print(n); await go(tok, 260); }
+  calls.length = 0; showCalls();
+  say('盡量往左；走不下去就印，再檢查右邊', '依此遞迴下去');
+  await step(tok);                                   // 4598.2 一定要會
+  cur.obj.visible = false;
+  say('inorder 一定要會', '輸出：A / B * C * D + E');
+  talk(g, '我會了！', 'happy');
+  await g.hop(tok);
+}]);
+
+// 1:16:49 Preorder 程式
+FRAG.push(['treeb-pre', 'Preorder 程式（VLR）', async (tok) => {
+  const g = stage([0, 5.2, 13.5], [0, 3.6, 1], [6.6, 2.6]);
+  const S = recSetup('in');
+  await step(tok);                                   // 4608.8 會寫 inorder，preorder 只要 copy
+  say('會寫 inorder，preorder 就簡單了', '程式 copy 一份，改一下');
+  talk(g, 'copy paste！', 'happy');
+  await step(tok);                                   // 4626.8 改名 Preorder
+  recRename(S.cd, 'in', 'Preorder');
+  S.cd.hl(1);
+  say('procedure 改名叫 Preorder', '');
+  await step(tok);                                   // 4630.8 最重要的是這三行
+  S.cd.hl(4);
+  [3, 4, 5].forEach((i) => tag('←', 'ptr alt', 0.6, 7.2 - i * 0.5));
+  say('最重要的是這三行的順序', '');
+  await step(tok);                                   // 4636.3 先印、再左、再右 → VLR
+  recRename(S.cd, 'pre');
+  S.cd.hl(3);
+  say('preorder：先把值印出來，再往左、再往右', 'V L R');
+  talk(g, 'V 搬到最前面', 'wow');
+  await step(tok);                                   // 4647.8 三行：V、L、R
+  await recRun(tok, S, preorder(S.root), 220);
+  S.cd.hl(-1); S.cur.obj.visible = false;
+  say('照 V L R 跑一次', 'preorder：+ * * / A B C D E');
+}]);
+
+// 1:17:46 Postorder 程式
+FRAG.push(['treeb-post', 'Postorder 程式（LRV）', async (tok) => {
+  const g = stage([0, 5.2, 13.5], [0, 3.6, 1], [6.6, 2.6]);
+  const S = recSetup('pre');
+  await step(tok);                                   // 4666.5 copy paste，改成 Postorder
+  recRename(S.cd, 'pre', 'Postorder');
+  S.cd.hl(1);
+  say('postorder 也一樣：copy 一下改名', 'Preorder → Postorder');
+  await step(tok);                                   // 4674.5 post = 最後才印
+  recRename(S.cd, 'post');
+  S.cd.hl(5);
+  say('post 就是「最後」才印出來', 'cout 搬到最後一行');
+  talk(g, 'V 搬到最後', 'wow');
+  await step(tok);                                   // 4685.8 三行：L、R、V
+  await recRun(tok, S, postorder(S.root), 220);
+  S.cd.hl(-1); S.cur.obj.visible = false;
+  say('三行依序是 L、R、V', 'postorder：A B / C * D * E +');
+  await step(tok);                                   // 4720.0 都是 recursive function，很簡單
+  tag('三種 traversal = 同一個 recursive 程式，只換 cout 的位置', 'good', 0, 1.4, 1.2);
+  say('三種 traversal 都用 recursive function', '程式寫起來很簡單');
+  talk(g, '送分題！', 'happy');
+}]);
+
+// 1:18:45 非遞迴 Inorder：stack
+FRAG.push(['treeb-iter', '非遞迴 Inorder：用 stack', async (tok) => {
+  const g = stage([0, 5.2, 13.5], [0, 3.6, 1], [6.6, 3.4]);
+  let cd, root, c;
+  const st = [], out = [];
+  const push = (n) => { const b = lab.addBody(block(n.label, SMALL, depthColor(n.depth))); b.obj.position.copy(n.pos); lab.springTo(b, rowPos(st.length, 2.2)); st.push({ n, b }); cursorTo(c, n.pos); };
+  const pop = () => { const { n, b } = st.pop(); cursorTo(c, n.pos); lab.springTo(b, rowPos(out.length, 3.4)); out.push(n.label); glow(n, GOLD); return n; };
+  await step(tok);                                   // 4724.8 不用遞迴：用 stack
+  cd = code(['void Tree::NonrecInorder() {', '  Stack<TreeNode*> s; cur = root;', '  while (1) {', '    while (cur) { s.Push(cur);', '      cur = cur->leftChild; }', '    if (s.IsEmpty()) return;', '    cur = s.Top(); s.Pop();', '    cout << cur->data;', '    cur = cur->rightChild;', '  }', '}'], -3.5, 7.4, 0.45);
+  root = showTree('expr', { cx: 3.6, width: 6.2, topY: 6.6, minY: 2.8, maxSp: 0.85 });
+  rowLabel('stack', 2.2); rowLabel('輸出', 3.4);
+  tag('底 → 頂', 'idx', -5.6, 0.95, 2.2);
+  c = makeCursor();
+  say('不想用 recursive？改用 stack', '');
+  await step(tok);                                   // 4742.8 stack：last in first out
+  tag('stack：last in, first out', 'note', -1.8, 1.3, 2.2);
+  say('stack 的特性：last in first out', '最後放進去的最先拿出來');
+  await step(tok);                                   // 4753.8 左邊有東西 → 自己先放進 stack
+  cd.hl(3);
+  say('inorder：左邊還有東西就先往左', '所以自己這個 node 要先放進 stack 記著');
+  talk(g, '先記下來', 'happy');
+  await step(tok);                                   // 4781.8 一開始 cur = root
+  cd.hl(1); cursorTo(c, root.pos);
+  say('一開始 cur = root', '');
+  await step(tok);                                   // 4803.8 cur 不是空的 → push
+  cd.hl(3); push(root);
+  say('cur 不是空的：把它 push 進 stack', 'stack：+');
+  await step(tok);                                   // 4815.8 往左走，直到走不下去
+  cd.hl(4);
+  for (let n = root.left; n; n = n.left) { push(n); await go(tok, 380); }
+  say('cur = cur->leftChild：一路往左、一路 push', 'stack：+ * * / A');
+  talk(g, '疊起來了', 'wow');
+  await step(tok);                                   // 4842.8 跳出內層 while，檢查 stack 空嗎
+  cd.hl(5);
+  say('A 的左邊是 null：跳出內層 while', '檢查 stack 是不是空的 → 不是');
+  await step(tok);                                   // 4853.2 pop 出最後放進去的 → 印出
+  cd.hl(6); const a = pop(); cd.hl(7);
+  say('pop 出最後放進去的 ' + a.label + '，印出來', '輸出：A');
+  talk(g, '印出 A', 'happy');
+  await step(tok);                                   // 4875.8 cur 改成 rightChild
+  cd.hl(8);
+  say('cur = A 的 rightChild', '= null，回到外層迴圈');
+  await step(tok);                                   // 4899.8 往右邊走：右邊也從 left 一路往下
+  let cur = null;
+  for (;;) {
+    while (cur) { cd.hl(3); push(cur); await go(tok, 160); cur = cur.left; }
+    if (!st.length) break;
+    cd.hl(7); const n = pop(); await go(tok, 160);
+    cur = n.right;
+  }
+  cd.hl(5); c.obj.visible = false;
+  say('之後一樣：右邊的 child 再一路往左', '輸出：A / B * C * D + E（和遞迴版相同）');
+  await step(tok);                                   // 4939.2 preorder、postorder 不用遞迴？
+  cd.hl(-1);
+  tag('作業思考：非遞迴的 preorder、postorder？', 'note', 0, 0.6, 1.0);
+  say('那 preorder、postorder 不用遞迴怎麼寫？', '請回去想一想');
+  talk(g, '想想看…', 'wow');
+}]);
+
+// 1:22:51 Level order：用 queue
+FRAG.push(['treeb-level', 'Level order：用 queue', async (tok) => {
+  const g = stage([0, 5.2, 13.5], [0, 3.1, 1], [6.6, 2.8]);
+  const QZ = 3.8, OZ = 2.3;
+  let root, cur;
+  const q = [], outs = [];
+  const enq = (n) => { const b = lab.addBody(block(n.label, SMALL, depthColor(n.depth))); b.obj.position.copy(n.pos); lab.springTo(b, rowPos(q.length, QZ)); q.push({ n, b }); };
+  const out = (e) => { lab.springTo(e.b, rowPos(outs.length, OZ)); outs.push(e.n); cursorTo(cur, e.n.pos); glow(e.n, GOLD); q.forEach((x, k) => lab.springTo(x.b, rowPos(k, QZ))); };
+  const deq = () => { const e = q.shift(); out(e); return e.n; };
+  await step(tok);                                   // 4970.8 level order
+  root = showTree('expr', { topY: 6.6, minY: 2.8 });
+  cur = makeCursor();
+  rowLabel('Queue', QZ); rowLabel('輸出', OZ);
+  say('Level order：從上到下、由左到右', '剛才 pre／post 非遞迴用 stack');
+  await step(tok);                                   // 4993.4 level order 用 queue
+  tag('level order → 用 Queue', 'ptr alt', -2.2, 1.2, QZ);
+  say('level order 要 implement 的話', '直接用 Queue');
+  talk(g, '排隊！', 'happy');
+  await step(tok);                                   // 5009.9 一開始看到 + 就印出
+  const rb = lab.addBody(block(root.label, SMALL, depthColor(0))); rb.obj.position.copy(root.pos);
+  out({ n: root, b: rb });
+  say('一開始看到 +，就把它印出來', '輸出：+');
+  await step(tok);                                   // 5017.2 * 和 E 放進 queue
+  enq(root.left); await go(tok, 300); enq(root.right);
+  say('+ 下面兩個 child：* 和 E', '放進 Queue');
+  await step(tok);                                   // 5023.8 queue：first in first out
+  tag('front', 'idx', ROW_X0, 0.95, QZ);
+  say('Queue 的特性：first in, first out', '先進去的 * 會先出來');
+  await step(tok);                                   // 5033.8 * 抓出來，它的 * 和 D 放進 queue
+  const m = deq(); await go(tok, 300);
+  enq(m.left); await go(tok, 250); enq(m.right);
+  say('* 被抓出來印出', '它下面的 * 和 D 丟進 Queue → E * D');
+  await step(tok);                                   // 5049.8 E 出來，沒東西放進去
+  deq();
+  say('接著 E 出來印出', 'E 下面沒有 child，不用放東西');
+  talk(g, 'E 沒孩子', 'happy');
+  await step(tok);                                   // 5068.8 有 child 就丟進 queue……
+  while (q.length) { const n = deq(); await go(tok, 220); for (const k of [n.left, n.right]) if (k) { enq(k); await go(tok, 150); } }
+  say('反正就是：有 child 就丟進 Queue', '再從 Queue 抓出來印出');
+  await step(tok);                                   // 5093.8 queue 空了就結束
+  cur.obj.visible = false;
+  say('直到 Queue 是空的就結束', 'level order：+ * E * D / C A B');
+  talk(g, '一層一層 ✓', 'happy');
+}]);
+
+// 1:25:17 traversal 的應用：比較、複製（下次續講）
+FRAG.push(['treeb-apps', 'Traversal 的應用：判斷相同與複製', async (tok) => {
+  const g = stage([0, 5, 13.5], [0, 3.6, 0.8], [6.4, 2.8]);
+  const O1 = { cx: -3.4, width: 4, topY: 6.4, minY: 3.4 }, O2 = { cx: 3.4, width: 4, topY: 6.4, minY: 3.4 };
+  const src = 'A(B(D,E),C(,F))';
+  let t1, t2;
+  await step(tok);                                   // 5124.6 有了 in／pre／post order
+  t1 = await dropTree(tok, src, O1, 100);
+  tag('T1', 'ptr alt', -6.0, 6.4);
+  say('有了 inorder、preorder、postorder', '可以拿來做什麼？（示意樹）');
+  await step(tok);                                   // 5130.8 比較兩棵 tree 是不是一模一樣
+  t2 = await dropTree(tok, src, O2, 80);
+  tag('T2', 'ptr alt', 0.8, 6.4);
+  const c1 = makeCursor(), c2 = makeCursor();
+  const p1 = preorder(t1), p2 = preorder(t2);
+  for (let k = 0; k < p1.length; k++) { cursorTo(c1, p1[k].pos); cursorTo(c2, p2[k].pos); glow(p1[k], GREEN); glow(p2[k], GREEN); await go(tok, 200); }
+  say('同時 traverse 兩棵，逐一比較', '全部相同 → 一模一樣');
+  talk(g, '一模一樣 ✓', 'happy');
+  await step(tok);                                   // 5136.8 copy：給 T1 複製出 T2
+  c2.obj.visible = false;
+  allNodes(t2).forEach((n) => flyB(n.body));
+  await go(tok, 300);
+  const t3 = makeTree(src); layoutTree(t3, Object.assign({}, TREE_O, O2));
+  edgeLines(() => treePairs(t3));
+  const p3 = preorder(t3);
+  for (let k = 0; k < p1.length; k++) { cursorTo(c1, p1[k].pos); const b = nodeBody(p3[k]); b.obj.position.copy(p3[k].pos).add(V(0, 3, 0)); lab.dropTo(b, p3[k].pos.clone()); await go(tok, 220); }
+  c1.obj.visible = false;
+  say('也可以 copy：走訪 T1，邊走邊建出 T2', '');
+  talk(g, '複製一棵！', 'wow');
+  await step(tok);                                   // 5153.1 下次再講
+  tag('Equal、Copy：下一講細講', 'note', 0, 1.4, 1.0);
+  say('比較（Equal）和複製（Copy）', '這部分下次再講');
+}]);
+
+// ═════════════════ UO0B1SQOAgk：Lec13 Trees (2/6) ═════════════════
+
+// 0:39 回顧 inorder：運算式樹逐步追蹤
+FRAG.push(['treeb2-inrev', '中序走訪回顧：運算式樹逐步追蹤', async (tok) => {
+  const g = stage([0, 5, 13.5], [0, 3.4, 0.8], [6.4, 2.8]);
+  const root = showTree('expr', { topY: 6.6, minY: 2.8 });
+  rowLabel('輸出', 2.4);
+  const cur = makeCursor();
+  const out = [];
+  const print = (n) => { const b = lab.addBody(block(n.label, SMALL, depthColor(n.depth))); b.obj.position.copy(n.pos); lab.springTo(b, rowPos(out.length, 2.4)); out.push(n.label); glow(n, GREEN); };
+  const nul = async (n, side) => { const gh = ghost('#e06666', n.pos.x + side * 0.4, n.pos.y - 0.8, 0.4, 0.35, 0, 0.4); await go(tok, 600); kill(gh); };
+  const [m1, m2, d] = [root.left, root.left.left, root.left.left.left];
+  const A = d.left, B = d.right;
+  await step(tok);                                   // 38.8 三種：in、post、pre
+  tag('LVR = inorder｜VLR = preorder｜LRV = postorder', 'ptr', 0, 7.6);
+  say('三個動作 L、V、R → 三種走訪', '先左後右：inorder、preorder、postorder');
+  talk(g, '複習一下', 'happy');
+  await step(tok);                                   // 60.8 inorder = LVR，給一個 root
+  cursorTo(cur, root.pos);
+  say('inorder 是 L V R', '給你一個 root「+」');
+  await step(tok);                                   // 68.8 往左走，走到不能走
+  for (const n of [m1, m2, d, A]) { cursorTo(cur, n.pos); await go(tok, 380); }
+  say('L：一直往左走，走到不能再走為止', '+ → * → * → / → A');
+  await step(tok);                                   // 80.8 遇到 null 走不下去
+  await nul(A, -1);
+  say('A 的左邊是 null（藍色的空指標）', '走不下去了');
+  talk(g, '撞牆了', 'wow');
+  await step(tok);                                   // 90.8 做 V：印出 A
+  print(A);
+  say('接著做 V：把 A 印出來', '輸出：A');
+  await step(tok);                                   // 105.5 第三個動作：往右走
+  await nul(A, 1);
+  say('再做 R：往右走', '右邊也是 null，走不下去');
+  await step(tok);                                   // 121.5 return 到上一層（/）
+  cursorTo(cur, d.pos);
+  say('A 做完了 → return 到上一層', '是誰呼叫 A 的？是 /');
+  await step(tok);                                   // 161.8 V：印出 /
+  print(d);
+  say('/ 的左子樹拜訪完了 → 印出 /', '輸出：A /');
+  await step(tok);                                   // 170.6 R：往右走到 B
+  cursorTo(cur, B.pos);
+  say('/ 往右走：看到 B', 'B 也先往左走');
+  await step(tok);                                   // 185.8 左邊空 → 回來印出 B
+  await nul(B, -1);
+  print(B);
+  say('B 的左邊是空的 → 回來印出 B', '輸出：A / B');
+  await step(tok);                                   // 201.8 / 的左右子樹都拜訪完
+  await nul(B, 1);
+  cursorTo(cur, d.pos);
+  ghost('#2fc092', d.pos.x, d.pos.y - 0.7, 2.0, 2.0, 0, 0.6);
+  say('B 的右邊也是 null → 回到 /', '/ 的左、右子樹都拜訪完了');
+  await step(tok);                                   // 224.8 return 給呼叫它的 *
+  cursorTo(cur, m2.pos);
+  say('/ return 給呼叫它的「*」', '這就是 recursive 的概念');
+  talk(g, '一層層回去', 'happy');
+  await step(tok);                                   // 235.8 印出 *，依此類推
+  for (const n of inorder(root).slice(3)) { cursorTo(cur, n.pos); print(n); await go(tok, 280); }
+  cur.obj.visible = false;
+  say('印出 *，再依此類推', 'inorder：A / B * C * D + E');
+  await step(tok);                                   // 246.8 preorder VLR、postorder LRV、level order
+  tag('preorder：+ * * / A B C D E', 'ptr alt', -2.6, 1.3, 1.2);
+  tag('postorder：A B / C * D * E +', 'ptr alt', 2.8, 1.3, 1.2);
+  say('preorder 是 VLR，postorder 是 LRV', 'level order：一層一層往下');
+}]);
+
+// 4:24 三種走訪的遞迴程式碼
+const TCODE = {
+  in: ['void Inorder(TreeNode* cur) {', '  if (cur) {', '    Inorder(cur->leftChild);   // L', '    cout << cur->data;         // V', '    Inorder(cur->rightChild);  // R', '  }', '}'],
+  pre: ['void Preorder(TreeNode* cur) {', '  if (cur) {', '    cout << cur->data;         // V', '    Preorder(cur->leftChild);  // L', '    Preorder(cur->rightChild); // R', '  }', '}'],
+  post: ['void Postorder(TreeNode* cur) {', '  if (cur) {', '    Postorder(cur->leftChild);  // L', '    Postorder(cur->rightChild); // R', '    cout << cur->data;          // V', '  }', '}'],
+};
+FRAG.push(['treeb2-code', '三種走訪的遞迴程式碼', async (tok) => {
+  const g = stage([0, 4.8, 13.5], [0, 3.9, 0], [6.6, 2.6]);
+  const w = Math.max(...Object.values(TCODE).flat().map((s) => s.length));
+  let cls, cd, root, cur;
+  let outs = [];
+  const run = async (k) => {
+    outs.forEach((b) => lab.flyAway(b, V(0, 8, 4))); outs = []; allOff(root);
+    const order = { in: inorder, pre: preorder, post: postorder }[k](root);
+    for (let i = 0; i < order.length; i++) { const n = order[i]; cursorTo(cur, n.pos); glow(n, GOLD); outs.push(emit(n, V(1.2 + i * 0.6, 0.35, 2.2))); await go(tok, 220); }
+  };
+  await step(tok);                                   // 263.8 inorder 是 tree 的 member function
+  cls = code(['class Tree {', '  TreeNode* root;', '};'], -3.8, 7.6, 0.45);
+  root = showTree('expr', { cx: 3.7, width: 5.6, topY: 6.6, minY: 2.6, maxSp: 0.7 });
+  tag('輸出', 'ptr', 0.5, 0.35, 2.2);
+  cur = makeCursor();
+  say('實作很簡單：一段 recursive code', 'inorder 是 Tree 的 member function');
+  await step(tok);                                   // 278.8 class Tree 只有一個 pointer：root
+  cls.hl(1);
+  say('class Tree 裡面只有一個 pointer', '就是 root');
+  talk(g, '只有 root', 'happy');
+  await step(tok);                                   // 289.8 自己呼叫自己；三行指令
+  cls.hl(-1);
+  cd = code(TCODE.in.map((s) => s.padEnd(w, ' ')), -3.8, 5.8, 0.5);
+  cd.hl(1);
+  say('丟進來的 node 叫 current node', '照著三行指令的順序做');
+  await step(tok);                                   // 305.9 有值就呼叫 Inorder 拜訪左子樹（L）
+  cd.hl(2);
+  for (const n of [root, root.left, root.left.left, root.left.left.left, root.left.left.left.left]) { cursorTo(cur, n.pos); await go(tok, 300); }
+  say('cur 有值：呼叫 Inorder 拜訪左子樹', '這就是 L');
+  await step(tok);                                   // 320.8 印出自己，再 R
+  cd.hl(3);
+  await run('in');
+  say('呼叫到不能呼叫，就印出自己的值，再做 R', 'inorder：A / B * C * D + E');
+  await step(tok);                                   // 330.8 改 preorder：三行順序置換
+  TCODE.pre.forEach((s, i) => setTag(cd.ls[i], s.padEnd(w, ' ')));
+  cd.hl(2);
+  say('改成 preorder：只要把三行順序換一下', 'cout 變成第一行');
+  talk(g, '換位置就好', 'wow');
+  await step(tok);                                   // 340.5 先印，再左、右子樹
+  await run('pre');
+  say('preorder：先印出來，再左、再右', '+ * * / A B C D E');
+  await step(tok);                                   // 374.8 postorder 也一樣
+  TCODE.post.forEach((s, i) => setTag(cd.ls[i], s.padEnd(w, ' ')));
+  cd.hl(4);
+  await run('post');
+  cur.obj.visible = false;
+  say('postorder 也一樣：cout 放最後', 'A B / C * D * E +');
+  talk(g, '真的很簡單', 'happy');
+}]);
+
+// 6:29 非遞迴 inorder：stack
+FRAG.push(['treeb2-iter', '非遞迴 Inorder：用 stack', async (tok) => {
+  const g = stage([0, 4.8, 13.5], [0, 3.6, 0.6], [6.6, 3.0]);
+  const root = showTree('expr', { cx: -1.6, width: 7.4, topY: 6.8, minY: 2.6, maxSp: 0.92 });
+  const base = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.08, 1.0), new THREE.MeshStandardMaterial({ color: '#7a6a52' }));
+  base.position.set(5.0, 0.04, 0); lab.world.add(base);
+  tag('輸出', 'ptr', -6.3, 0.35, 2.4);
+  const cur = makeCursor();
+  const stack = [], out = [];
+  const push = (n) => { cursorTo(cur, n.pos); stack.push({ n, b: emit(n, V(5.0, 0.35 + stack.length * 0.5, 0), SMALL) }); };
+  const pop = () => { const { n, b } = stack.pop(); cursorTo(cur, n.pos); glow(n, GOLD); lab.springTo(b, V(-5.4 + out.length * 0.7, 0.35, 2.4)); out.push(n.label); return n; };
+  await step(tok);                                   // 389.0 不要 recursive code 的話
+  say('如果不要用 recursive code 呢？', '');
+  talk(g, '那怎麼辦？', 'wow');
+  await step(tok);                                   // 392.8 用一個 stack 存放
+  tag('Stack', 'ptr alt', 5.0, 4.2);
+  say('就要自己用一個 stack 來存放 node', '');
+  await step(tok);                                   // 410.8 左邊還有 node → push
+  for (let n = root; n; n = n.left) { push(n); await go(tok, 380); }
+  say('往左走：看到左邊還有 node，先不印', '把自己 push 進 stack');
+  talk(g, '先疊著', 'happy');
+  await step(tok);                                   // 417.8 走不下去 → pop 出來印出
+  pop();
+  say('走不下去了：pop 出來，把資料印出來', '輸出：A');
+  await step(tok);                                   // 426.8 印完往右邊走
+  let c = null;
+  for (;;) {
+    while (c) { push(c); await go(tok, 160); c = c.left; }
+    if (!stack.length) break;
+    const n = pop(); await go(tok, 170); c = n.right;
+  }
+  cur.obj.visible = false;
+  say('印完往右走，重複同樣的動作', 'A / B * C * D + E（和遞迴版相同）');
+}]);
+
+// 7:18 Level order：queue
+const LCODE = ['void LevelOrder() {', '  Queue<TreeNode*> q;', '  TreeNode* cur = root;', '  while (cur) {', '    cout << cur->data;', '    if (cur->leftChild)', '      q.Push(cur->leftChild);', '    if (cur->rightChild)', '      q.Push(cur->rightChild);', '    if (q.IsEmpty()) return;', '    cur = q.Front(); q.Pop();', '  }', '}'];
+FRAG.push(['treeb2-levelq', 'Level order：用 Queue', async (tok) => {
+  const g = stage([0, 4.8, 13.5], [0, 3.6, 0.8], [6.6, 3.4]);
+  const w = Math.max(...LCODE.map((s) => s.length)) + 2;
+  let cd, root, cur;
+  const q = [], out = [];
+  const qPos = (i) => V(1.3 + i * 0.62, 0.35, 2.0), oPos = (i) => V(1.3 + i * 0.62, 0.35, 3.3);
+  const restack = () => q.forEach((e, i) => lab.springTo(e.b, qPos(i)));
+  const enq = (n) => q.push({ n, b: emit(n, qPos(q.length)) });
+  const visit = (e) => { cursorTo(cur, e.n.pos); glow(e.n, GOLD); lab.springTo(e.b, oPos(out.length)); out.push(e.n); };
+  const deq = () => { const e = q.shift(); restack(); visit(e); return e.n; };
+  await step(tok);                                   // 438.0 level order 用 queue 的架構
+  cd = code(LCODE.map((s) => s.padEnd(w, ' ')), -4.0, 7.6, 0.47);
+  root = showTree('expr', { cx: 3.4, width: 5.8, topY: 7.0, minY: 3.4, maxSp: 0.72 });
+  tag('queue', 'ptr', 0.2, 0.35, 2.0); tag('輸出', 'ptr', 0.2, 0.35, 3.3);
+  cur = makeCursor();
+  say('Level order 用 queue 的架構', '程式只要幾行');
+  await step(tok);                                   // 452.8 一開始 cur = root
+  cd.hl(2); cursorTo(cur, root.pos);
+  say('一開始 current node 就是 root', 'cur = +');
+  await step(tok);                                   // 457.8 不是空的 → cout
+  cd.hl(4);
+  visit({ n: root, b: emit(root, oPos(0)) });
+  say('cur 不是空的：把值印出來（cout）', '輸出：+');
+  await step(tok);                                   // 469.8 left child 有值 → 放進 queue
+  cd.hl(6); enq(root.left);
+  say('它的 left child 有值 → 加到 queue', 'queue：*');
+  await step(tok);                                   // 493.8 再看 right child
+  cd.hl(8); enq(root.right);
+  say('先看左邊、再看右邊', 'queue：* E');
+  talk(g, '先左後右', 'happy');
+  await step(tok);                                   // 507.5 可不可以顛倒？
+  tag('先放右邊可以嗎？', 'note', 3.4, 2.4);
+  say('這兩個 if 可以顛倒嗎？', '');
+  talk(g, '可以嗎？', 'wow');
+  await step(tok);                                   // 520.8 不行：queue 是 FIFO → 變成由右到左
+  tag('✗ 會變成 + E * D * C / B A（由右到左）', 'bad', 3.4, 1.7);
+  say('不行！queue 是 first in first out', '先放右邊 → level order 變成由右到左');
+  talk(g, '順序會反', 'sad');
+  await step(tok);                                   // 546.8 取出 queue 第一個當下一個 cur
+  cd.hl(10);
+  say('左右都放進 queue 後', '把 queue 的第一個抓出來當下一個 cur');
+  await step(tok);                                   // 561.8 例子：cur 是 +，queue 有 * 和 E
+  glow(q[0].n, GREEN); glow(q[1].n, GREEN);
+  say('例子：第一個 cur 是 +', 'queue 裡有 * 和 E');
+  await step(tok);                                   // 570.8 * 丟出來
+  glow(root.right, OFF);
+  cd.hl(4); const m = deq();
+  say('queue 第一個元素是 *：丟出來印出', '輸出：+ *');
+  await step(tok);                                   // 578.1 * 下面的 * 和 D 放進 queue
+  cd.hl(6); enq(m.left); await go(tok, 250); cd.hl(8); enq(m.right);
+  say('* 下面的 * 和 D 放進 queue', '');
+  await step(tok);                                   // 585.8 queue 順序：E、*、D
+  tag('front', 'idx', qPos(0).x, 0.95, 2.0);
+  say('queue 的順序：E、*、D', '（字幕把 D 聽成 B）');
+  await step(tok);                                   // 600.8 E 出來，沒有 child
+  cd.hl(4); deq();
+  say('取出 E 印出', 'E 沒有 left、right child → queue 剩 *、D');
+  await step(tok);                                   // 616.8 * 丟出來，看到 / 和 C
+  const m2 = deq(); await go(tok, 250);
+  enq(m2.left); await go(tok, 200); enq(m2.right);
+  say('* 丟出來，放進它的 / 和 C', 'queue：D / C');
+  await step(tok);                                   // 623.1 一直推下去
+  while (q.length) { const n = deq(); await go(tok, 200); for (const k of [n.left, n.right]) if (k) { enq(k); await go(tok, 140); } }
+  cd.hl(9); cur.obj.visible = false;
+  say('就這樣一直推下去，queue 空了就結束', '+ * E * D / C A B');
+  talk(g, '有不有趣？', 'happy');
+}]);
+
+// 12:10 走訪順序的用途：相等與相似
+FRAG.push(['treeb2-similar', '為何要知道走訪順序：相等與相似', async (tok) => {
+  const g = stage([0, 4.6, 13], [0, 3.6, 0.6], [6.2, 3.0]);
+  let t1, t2;
+  await step(tok);                                   // 729.9 為什麼要知道 traversal 順序？
+  say('看完 in／post／pre order', '為什麼要知道走訪順序？');
+  talk(g, '為什麼？', 'wow');
+  await step(tok);                                   // 741.8 為了知道 tree 的 structure
+  tag('掌握 tree 的 structure（結構）', 'ptr alt', 0, 7.6);
+  say('因為要知道 tree 的 structure', '');
+  await step(tok);                                   // 756.8 兩棵 tree 是否相等
+  t1 = showTree('A(B,C)', { cx: -3.6, width: 2.6, topY: 6.4, minY: 4.8, maxSp: 1.3 });
+  t2 = showTree('A(C,B)', { cx: 3.6, width: 2.6, topY: 6.4, minY: 4.8, maxSp: 1.3 });
+  tag('T1', 'ptr', -3.6, 7.0); tag('T2', 'ptr', 3.6, 7.0);
+  say('常見問題：兩棵 tree 是否相等（equal）', '這個很簡單，等一下看');
+  await step(tok);                                   // 771.8 是否相似 similar
+  tag('similar？', 'ptr alt', 0, 5.6);
+  say('也可以問：兩棵 tree 是否相似（similar）', '');
+  await step(tok);                                   // 780.3 A(B,C) vs A(C,B)
+  glow(t1, GOLD); glow(t2, GOLD);
+  say('A 下面 B、C；另一棵 A 下面 C、B', 'root 一樣，child 順序不同');
+  talk(g, '算相似嗎？', 'wow');
+  await step(tok);                                   // 813.8 只看結構：很相似
+  glow(t1, OFF); glow(t2, OFF);
+  const gg = [ghost('#2fc092', -3.6, 5.6, 3.6, 2.4), ghost('#2fc092', 3.6, 5.6, 3.6, 2.4)];
+  say('從結構看：root 下面兩個 child', '很相似');
+  await step(tok);                                   // 825.8 更嚴格：左右也要一樣 → 不相似
+  gg.forEach(kill);
+  glow(t1.left, RED); glow(t2.left, RED); glow(t1.right, RED); glow(t2.right, RED);
+  say('更嚴格：左右都要一樣', '那就不相似 → 要看定義');
+  talk(g, '看定義！', 'happy');
+  await step(tok);                                   // 856.6 traversal 轉成 string 比較
+  allOff(t1); allOff(t2);
+  tag('preorder', 'idx', 0, 0.35, 2.0);
+  const rows = [];
+  for (const [t, x0] of [[t1, -4.6], [t2, 2.6]]) { const seq = preorder(t); rows.push(seq.map((n, i) => emit(n, V(x0 + i * 0.75, 0.35, 2.0), SMALL))); await go(tok, 300); }
+  say('快速方法：traverse 把 tree 轉成 string', 'ABC vs ACB → 做 string comparison');
+  await step(tok);                                   // 874.8 LCS
+  [rows[0][0], rows[0][1], rows[1][0], rows[1][2]].forEach((b) => lit(b, GOLD));
+  say('還可以用 Longest Common Subsequence', 'LCS(ABC, ACB) = AB：共同的字和順序');
+  talk(g, 'LCS 也能用', 'wow');
+}]);
+
+// 15:13 複製一棵 tree（Copy）
+const CCODE = ['TreeNode* Copy(TreeNode* orig) {', '  if (!orig) return 0;', '  TreeNode* temp = new TreeNode;', '  temp->data = orig->data;      // V', '  temp->leftChild =', '    Copy(orig->leftChild);      // L', '  temp->rightChild =', '    Copy(orig->rightChild);     // R', '  return temp;', '}'];
+FRAG.push(['treeb2-copy', '複製一棵 tree（Copy）', async (tok) => {
+  const g = stage([0, 4.6, 13.5], [0, 4.0, 0], [6.6, 3.0]);
+  const w = Math.max(...CCODE.map((s) => s.length)) + 6;
+  const SRC = 'A(B(D,E),C)';
+  let cd, src, dst, cur;
+  const mk = (s, d) => { const b = lab.addBody(block(s.label, NODE, depthColor(d.depth))); b.obj.position.copy(s.pos); lab.springTo(b, d.pos.clone()); d.body = b; };
+  await step(tok);                                   // 912.8 兩個基本 operation
+  src = showTree(SRC, { cx: 3.4, width: 3.6, topY: 7.2, minY: 5.0, maxSp: 0.95 });
+  tag('原 tree（示意）', 'ptr', 0.6, 7.2);
+  say('tree 的兩個基本 operation', '第一個：copy');
+  await step(tok);                                   // 918.8 procedure Copy
+  cd = code(CCODE.map((s) => s.padEnd(w, ' ')), -3.9, 7.4, 0.48);
+  dst = parseTree(SRC);
+  layoutTree(dst, Object.assign({}, TREE_O, { cx: 3.4, width: 3.6, topY: 3.6, minY: 1.4, maxSp: 0.95 }));
+  edgeLines(() => treePairs(dst));
+  tag('copy', 'ptr alt', 0.6, 3.6);
+  cd.hl(0);
+  say('有了走訪，很容易做出 tree 的 copy', 'procedure 叫 Copy');
+  await step(tok);                                   // 934.9 傳進 tree 的 root
+  cur = makeCursor(); cursorTo(cur, src.pos);
+  say('把原 tree 的 root 丟給 Copy', 'orig = A');
+  await step(tok);                                   // 959.8 root 是不是 empty？
+  cd.hl(1);
+  say('先判斷 root 是不是 empty', 'binary tree 可以是空的 → 空就直接 return');
+  talk(g, '空的就不用抄', 'happy');
+  await step(tok);                                   // 1019.8 new 一個 TreeNode 給 temp
+  cd.hl(2);
+  const tmpT = tag('temp：新 node', 'ptr alt', dst.pos.x + 1.4, dst.pos.y + 0.5);
+  ghost('#c08a1f', dst.pos.x, dst.pos.y, 0.9, 0.7, 0, 0.9);
+  say('不是空的：向系統 new 一個 TreeNode', '給 temp');
+  await step(tok);                                   // 1031.0 data 複製一份
+  cd.hl(3); mk(src, dst);
+  say('把原 node 的 data 複製到 temp->data', 'V：temp->data = orig->data');
+  await step(tok);                                   // 1045.4 Copy 左子樹 → temp 的 leftChild
+  cd.hl(5); kill(tmpT);
+  cursorTo(cur, src.left.pos);
+  say('呼叫 Copy 複製左邊的 child', '結果設給 temp->leftChild');
+  await step(tok);                                   // 1079.8 一路 recursive 往下複製
+  for (const [s, d] of [[src.left, dst.left], [src.left.left, dst.left.left], [src.left.right, dst.left.right], [src.right, dst.right]]) { cursorTo(cur, s.pos); mk(s, d); await go(tok, 420); }
+  cur.obj.visible = false;
+  say('recursive 下去：有值就 new node、copy data', '再往它的子孫繼續 copy');
+  talk(g, '一路抄到底', 'wow');
+  await step(tok);                                   // 1119.7 不是 pointer assignment
+  for (const n of [dst.left.left, dst.left.right, dst.left, dst.right]) { lab.flyAway(n.body, V(0, 8, 4)); n.body = null; }
+  setTag(cd.ls[4], '  temp->leftChild = orig->leftChild;'.padEnd(w, ' '));
+  setTag(cd.ls[5], '    // ✗ 沒有呼叫 Copy'.padEnd(w, ' '));
+  setTag(cd.ls[6], '  temp->rightChild = orig->rightChild;'.padEnd(w, ' '));
+  setTag(cd.ls[7], '    // ✗ 沒有呼叫 Copy'.padEnd(w, ' '));
+  cd.hl(4);
+  say('如果直接寫 pointer assignment 呢？', 'temp->leftChild = orig->leftChild');
+  await step(tok);                                   // 1134.0 只能 copy 到 root
+  const r = dst.pos;
+  arrow(V(r.x - 0.2, r.y + 0.3, 0.3), V(src.left.pos.x, src.left.pos.y - 0.32, 0.3), '#c0392b', true);
+  arrow(V(r.x + 0.2, r.y + 0.3, 0.3), V(src.right.pos.x, src.right.pos.y - 0.32, 0.3), '#c0392b', true);
+  [src.left, src.right, src.left.left, src.left.right].forEach((n) => glow(n, RED));
+  say('那只 copy 到 root', '下面的子樹跟原 tree 共用，沒有真的複製');
+  talk(g, '偷用別人的！', 'sad');
+  await step(tok);                                   // 1144.8 要 recursive 才能左右都複製
+  CCODE.slice(4, 8).forEach((s, i) => setTag(cd.ls[4 + i], s.padEnd(w, ' ')));
+  cd.hl(5); allOff(src);
+  tag('左右都要呼叫 Copy（recursive）', 'good', -3.9, 2.4);
+  say('left、right 都要用 recursive procedure', '才能把左右 subtree 完整複製一份');
+  await step(tok);                                   // 1168.5 跟 in order 很像：V、L、R
+  [3, 5, 7].forEach((i, k) => tag(['V', 'L', 'R'][k], 'ptr alt', 0.8, 7.4 - i * 0.48));
+  say('這段程式：V、L、R', '老師說像 inorder；順序其實是 VLR');
+  await step(tok);                                   // 1185.8 能用 pre／post order 嗎？
+  tag('思考：用 preorder／postorder 也能 copy 嗎？', 'note', -3.9, 1.6);
+  say('回去想：能不能用 preorder 或 postorder 做 copy？', '補充：可以，關鍵是左右都遞迴 Copy');
+  talk(g, '都可以！', 'happy');
+}]);
+
+// 20:06 判斷兩棵 tree 相等
+const ECODE = ['bool operator==(s, t)', '  { return Equal(s.root, t.root); }', 'bool Equal(TreeNode* a, TreeNode* b) {', '  if (!a && !b) return true;', '  return (a && b', '    && a->data == b->data', '    && Equal(a->leftChild, b->leftChild)', '    && Equal(a->rightChild, b->rightChild));', '}'];
+FRAG.push(['treeb2-equal', '判斷兩棵 tree 相等（operator==）', async (tok) => {
+  const g = stage([0, 4.4, 13.5], [0, 3.8, 0], [6.6, 3.4]);
+  const cd = code(padL(ECODE), 0, 7.7, 0.48);
+  const s = showTree('A(B(D,),C)', { cx: -3.4, width: 2.8, topY: 3.3, minY: 1.1, maxSp: 0.95 });
+  const t = showTree('A(B(D,),C)', { cx: 3.4, width: 2.8, topY: 3.3, minY: 1.1, maxSp: 0.95 });
+  tag('s（示意）', 'ptr', -5.9, 3.3); tag('t', 'ptr', 5.9, 3.3);
+  const ca = makeCursor(), cb = makeCursor();
+  const pair = (a, b, col = GOLD) => { cursorTo(ca, a.pos); cursorTo(cb, b.pos); glow(a, col); glow(b, col); };
+  await step(tok);                                   // 1205.7 接下來看相等
+  say('接下來：兩棵 tree 相不相等', '');
+  await step(tok);                                   // 1212.8 operator overloading
+  cd.hl(0);
+  say('用 operator overloading 定義 ==', '看到 s == t 就執行這段');
+  await step(tok);                                   // 1230.8 把兩個 root 丟給 Equal
+  cd.hl(1);
+  say('把兩棵 tree 的 root 傳給 Equal', '');
+  await step(tok);                                   // 1247.6 a、b 都是 TreeNode pointer
+  cd.hl(2); pair(s, t);
+  say('Equal(a, b)：兩個 TreeNode pointer', 'a = s 的 root，b = t 的 root');
+  await step(tok);                                   // 1268.8 兩個都是 empty → true
+  cd.hl(3);
+  say('a、b 都是 empty binary tree', '直接 return true，不用再 traverse');
+  talk(g, '兩個都空 = 相等', 'happy');
+  await step(tok);                                   // 1289.8 if：a 和 b 都要有值
+  cd.hl(4);
+  say('否則：一連串 and', '先要 a 和 b 都有值');
+  await step(tok);                                   // 1313.8 a 的 data 等於 b 的 data
+  cd.hl(5); pair(s, t, GREEN);
+  say('and：a 的 data 要等於 b 的 data', 'A = A ✓');
+  await step(tok);                                   // 1335.0 再 and Equal(左子樹) → recursive
+  cd.hl(6);
+  pair(s.left, t.left, GREEN); await go(tok, 600); pair(s.left.left, t.left.left, GREEN);
+  say('再 and Equal(a 的 left, b 的 left)', '是 recursive：整棵左子樹一路比到底');
+  talk(g, '不只比一層', 'wow');
+  await step(tok);                                   // 1372.2 再檢查右子樹
+  cd.hl(7); pair(s.right, t.right, GREEN);
+  say('最後 and Equal(右子樹)', 'C = C ✓');
+  await step(tok);                                   // 1393.3 全部成立 → true
+  cd.hl(-1);
+  tag('s == t → true', 'good', 0, 0.4, 1.0);
+  say('四個條件都成立，才回傳 true', '');
+  talk(g, '相等！', 'happy');
+  await step(tok);                                   // 1417.1 equal 就這麼簡單（補充：深層不同）
+  allOff(s); allOff(t);
+  const D = t.left.left;
+  lab.flyAway(D.body, V(3, 8, 3));
+  const E = T('E'); E.depth = D.depth; E.pos = D.pos.clone(); t.left.left = E;
+  const eb = nodeBody(E); eb.obj.position.copy(E.pos).add(V(0, 4, 0)); lab.dropTo(eb, E.pos.clone());
+  await go(tok, 500);
+  pair(s, t, GREEN); await go(tok, 300); pair(s.left, t.left, GREEN); await go(tok, 300); pair(s.left.left, E, RED);
+  say('一個 if 就搞定（補充：把最底下 D 換成 E）', 'D ≠ E → false，&& 短路，後面不用比');
+}]);
+
+// 24:02 單一走訪 string 決定不了唯一的 tree
+FRAG.push(['treeb2-sameino', '單一走訪能否決定唯一 tree', async (tok) => {
+  const g = stage([0, 4.4, 13.5], [0, 3.6, 0.8], [6.6, 3.8]);
+  const xs = [-4.4, 0, 4.4];
+  let trees;
+  await step(tok);                                   // 1442.3 similar 難多了
+  say('equal 很簡單；similar 難得多', '');
+  talk(g, 'similar 好難', 'sad');
+  await step(tok);                                   // 1453.8 把 output 變成一個 string
+  say('一種做法：把走訪的 output 變成 string', '');
+  await step(tok);                                   // 1476.8 inorder／preorder／postorder 的 string
+  tag('inorder string ｜ preorder string ｜ postorder string', 'ptr', 0, 7.6);
+  say('可得到 in、pre、postorder 三種 string', '');
+  await step(tok);                                   // 1487.6 只給 inorder，能決定唯一的 tree 嗎？
+  trees = ['B(A,C)', 'A(,B(,C))', 'C(B(A,),)'].map((src, j) => showTree(src, { cx: xs[j], width: 2.4, topY: 6.6, minY: 3.6, maxSp: 1.1 }));
+  say('預告：只給一個 inorder string', '能不能決定唯一的 tree？');
+  talk(g, '能嗎？', 'wow');
+  await step(tok);                                   // 1515.8 結構不同、inorder 相同？
+  tag('inorder', 'idx', -6.6, 0.35, 2.0);
+  for (let j = 0; j < 3; j++) { const seq = inorder(trees[j]); for (let i = 0; i < 3; i++) emit(seq[i], V(xs[j] - 0.75 + i * 0.75, 0.35, 2.0), SMALL); await go(tok, 500); }
+  say('這三棵結構都不一樣', 'inorder 卻全是 A B C！');
+  await step(tok);                                   // 1538.9 不能只靠一種
+  tag('preorder', 'idx', -6.6, 0.35, 3.3);
+  for (let j = 0; j < 3; j++) { const seq = preorder(trees[j]); for (let i = 0; i < 3; i++) emit(seq[i], V(xs[j] - 0.75 + i * 0.75, 0.35, 3.3), SMALL); await go(tok, 400); }
+  say('要決定唯一的 tree，不能只靠一種', '補充：inorder + preorder → BAC／ABC／CBA 分得開');
+  talk(g, '要兩種才夠', 'happy');
+}]);
+
+// 26:03 Satisfiability 與 2^n 組合
+const SAT_SRC = '∨(∨(∧(x1,¬(,x2)),∧(¬(,x1),x3)),¬(,x3))';
+const SAT_F = '(x1 ∧ ¬x2) ∨ (¬x1 ∧ x3) ∨ ¬x3';
+const COMBOS = ['TTT', 'TTF', 'TFT', 'TFF', 'FTT', 'FTF', 'FFT', 'FFF'];
+function satValT(n, asg) {
+  if (n.label === '¬') return !satValT(n.right, asg);
+  if (n.label === '∧') return satValT(n.left, asg) && satValT(n.right, asg);
+  if (n.label === '∨') return satValT(n.left, asg) || satValT(n.right, asg);
+  return asg[Number(n.label.slice(1)) - 1] === 'T';
+}
+FRAG.push(['treeb2-sat', 'Satisfiability 問題與窮舉 2^n 組合', async (tok) => {
+  const g = stage([0, 4.6, 13.5], [0, 4.0, 0], [6.6, 3.4]);
+  let root, lamp, rows;
+  await step(tok);                                   // 1563.8 calculus 的 expression
+  tag(SAT_F, 'ptr', -2.0, 7.6);
+  say('propositional calculus expression', '做一些邏輯判斷（課本例）');
+  await step(tok);                                   // 1569.8 not、and、or
+  tag('¬ not　∧ and　∨ or', 'ptr alt', -2.0, 7.0);
+  say('運算子有三個：not、and、or', '');
+  await step(tok);                                   // 1589.8 x1、x2、x3 只能 true／false
+  tag('x1, x2, x3 ∈ {T, F}', 'note', 4.6, 7.4);
+  say('x1、x2、x3 只能是 true 或 false', '也就是 1 或 0');
+  await step(tok);                                   // 1609.8 有沒有 assignment 使式子為 true？
+  say('問題：有沒有一組 assignment', '能讓整個式子為 true？');
+  talk(g, '有沒有解？', 'wow');
+  await step(tok);                                   // 1633.8 開燈電路
+  lamp = new THREE.Mesh(new THREE.SphereGeometry(0.45, 24, 16), new THREE.MeshStandardMaterial({ color: '#d8cfc0', emissive: '#000' }));
+  lamp.position.set(5.6, 0.7, 1.6); lab.world.add(lamp);
+  tag('燈', 'idx', 5.6, 0.1, 2.4);
+  say('像設計開燈電路：式子是 1 燈才會亮', '寫不好的話，燈可能永遠不亮');
+  await step(tok);                                   // 1687.8 左半邊：tree 的表示方法
+  root = await dropTree(tok, SAT_SRC, { cx: -2.0, width: 8.4, topY: 6.4, minY: 2.2, maxSp: 0.78 }, 120);
+  say('這個式子可以用 tree 表示', '從式子變成 tree：請自己讀課本');
+  await step(tok);                                   // 1729.8 每個變數 T／F → 2^3 = 8 種
+  tag('x1 x2 x3 → 值', 'idx', 4.6, 6.6);
+  rows = COMBOS.map((c, k) => tag(c.split('').join('  ') + '  → ?', '', 4.6, 6.0 - k * 0.55));
+  say('3 個變數，每個 T 或 F', '2³ = 8 種組合');
+  await step(tok);                                   // 1746.1 每一種組合代進去試
+  for (let k = 0; k < 8; k++) {
+    const v = satValT(root, COMBOS[k]);
+    setTag(rows[k], COMBOS[k].split('').join('  ') + '  → ' + (v ? 'T' : 'F'));
+    rows[k].element.className = 'lab-label ' + (v ? 'ptr alt' : 'idx');
+    lamp.material.emissive.set(v ? '#e0a800' : '#000');
+    await go(tok, 280);
+  }
+  say('用迴圈把每一組（例如 TTT）代進去', '8 組中只有 TTT 不成立');
+  talk(g, '燈亮了！', 'happy');
+}]);
+
+// 29:32 怎麼讓電腦算：兩階段 stack vs. postorder
+FRAG.push(['treeb2-evalcmp', '求值：兩階段 stack vs. 一次 postorder', async (tok) => {
+  const g = stage([0, 4.6, 13.5], [0, 3.9, 0], [6.6, 3.2]);
+  let inB, k = 0;
+  const ops = [], st = [];
+  await step(tok);                                   // 1772.0 怎麼讓電腦自動判斷？
+  say('輸入 TTT，電腦怎麼自動算出式子的值？', '');
+  talk(g, '電腦怎麼算？', 'wow');
+  await step(tok);                                   // 1811.3 提示：2 + 3 * 4
+  tag('Stack 法：兩個 phase', 'ptr', -3.6, 7.6);
+  const tok2 = ['2', '+', '3', '*', '4'];
+  inB = tok2.map((s, i) => cube(s, BLU, SMALL, -5.6 + i * 0.75, 6.7));
+  tag('infix', 'idx', -6.6, 6.7);
+  say('提示：stack 章節的 2 + 3 * 4', 'expression evaluation');
+  await step(tok);                                   // 1839.1 一不一樣？很像
+  say('布林式求值跟它一不一樣？', '很像！');
+  await step(tok);                                   // 1849.9 運算子換成 not／and／or，值只有 0、1
+  tag('+ − × ÷ → ¬ ∧ ∨；值只有 0、1', 'note', -3.0, 5.9);
+  say('差別只是 operator 換成 not、and、or', '變數的值只有 0 和 1');
+  await step(tok);                                   // 1883.8 stack：兩個 phase
+  tag('postfix', 'idx', -6.6, 5.2); tag('op stack', 'idx', -1.0, 3.7);
+  say('用 stack 的話，要兩個 phase', '');
+  await step(tok);                                   // 1913.8 phase 1：infix → postfix
+  const toOut = (s, from) => { const b = cube(s, GRN, SMALL, from.x, from.y); lab.springTo(b, V(-5.6 + k * 0.75, 5.2, 0)); k++; };
+  for (let i = 0; i < 5; i++) {
+    const p = inB[i].obj.position;
+    if ('+*'.includes(tok2[i])) { const b = cube(tok2[i], ORG, SMALL, p.x, p.y); lab.springTo(b, V(-1.0, 4.3 + ops.length * 0.55, 0)); ops.push(b); }
+    else toOut(tok2[i], p);
+    await go(tok, 300);
+  }
+  while (ops.length) { const b = ops.pop(); lab.springTo(b, V(-5.6 + k * 0.75, 5.2, 0)); k++; await go(tok, 300); }
+  say('Phase 1：infix 轉成 postfix', '2 3 4 * +');
+  await step(tok);                                   // 1926.7 phase 2：依 postfix 求值
+  tag('eval stack', 'idx', -4.0, 3.0);
+  const pushV = (v) => { const b = cube(String(v), PUR, SMALL, -4.0, 0.4 + st.length * 0.55, 0, 2.5); st.push({ v, b }); };
+  for (const s of ['2', '3', '4', '*', '+']) {
+    if (s === '*' || s === '+') { const y = st.pop(), x = st.pop(); lab.flyAway(y.b, V(2, 7, 3)); lab.flyAway(x.b, V(-2, 7, 3)); pushV(s === '*' ? x.v * y.v : x.v + y.v); }
+    else pushV(Number(s));
+    await go(tok, 350);
+  }
+  say('Phase 2：數字 push；operator pop 兩個算完再 push', '2 + 3 * 4 = 14');
+  await step(tok);                                   // 1968.8 更快：建成 tree 做 postorder
+  tag('Tree 法：一次 postorder', 'ptr alt', 3.6, 7.6);
+  const root = showTree('+(2,*(3,4))', { cx: 3.6, width: 3.0, topY: 6.4, minY: 3.4, maxSp: 1.0 });
+  say('更快的方法：把式子變成一棵 tree', '直接對 tree 做 postorder');
+  talk(g, '更快？', 'wow');
+  await step(tok);                                   // 1982.8 postorder 過程中順便 evaluate
+  const val = (n) => (n.label === '+' ? val(n.left) + val(n.right) : n.label === '*' ? val(n.left) * val(n.right) : Number(n.label));
+  const cur = makeCursor();
+  for (const n of postorder(root)) { cursorTo(cur, n.pos); glow(n, GOLD); tag('= ' + val(n), 'ptr alt', n.pos.x + 0.85, n.pos.y); await go(tok, 400); }
+  cur.obj.visible = false;
+  say('在 postorder 的過程中順便 evaluate', '走訪完，答案 14 就在 root');
+  await step(tok);                                   // 1996.5 只有一個 phase；代價：要先建 tree
+  tag('只要 1 個 phase；代價：先建好 tree', 'good', 3.6, 2.4);
+  say('只有一個 phase 而已', '代價：還是要先建一棵 tree，避不掉');
+  talk(g, '各有代價', 'happy');
+}]);
+
+// 33:41 SAT 的 node 設計與窮舉演算法
+const ACODE = ['for (each of the 2^n combinations) {', '  generate the next combination;', '  replace variables by their values;', '  PostOrderEval(formula);   // 走訪 tree', '  if (formula.value) {', '    cout << combination; return; }', '}', 'cout << "No satisfiable combination";'];
+FRAG.push(['treeb2-satnode', 'SAT 的 node 設計（四個欄位）與窮舉演算法', async (tok) => {
+  const g = stage([0, 4.4, 13.5], [0, 4.0, 0], [6.6, 3.2]);
+  let three, four = [], cd, cnt;
+  three = ['leftChild', 'data', 'rightChild'].map((s, i) => cube(s, SAND, [1.9, 0.55, 0.7], -3.0 + i * 1.95, 6.8));
+  tag('一般 TreeNode：3 個欄位', 'ptr', -1.0, 7.6);
+  await step(tok);                                   // 2020.8 用 postorder 解
+  say('另一種解法：透過 tree traversal', '用 postorder');
+  await step(tok);                                   // 2026.8 tree 要設計：四個欄位
+  tag('SAT 用的 node：4 個欄位', 'ptr alt', 0, 5.9);
+  for (const [i, s, c] of [[0, 'leftChild', BLU], [1, 'data', GRN], [2, 'value', ORG], [3, 'rightChild', PUR]]) { four.push(cube(s, c, [1.9, 0.55, 0.7], -2.92 + i * 1.95, 5.1, 0, 2.5)); await go(tok, 300); }
+  say('這棵 tree 要特別設計', '每個 node 有四個欄位');
+  await step(tok);                                   // 2036.8 leftChild；data 是自己
+  lit(four[0], GOLD); lit(four[1], GOLD);
+  tag('operator，或變數設的 T／F', 'idx', -0.97, 4.45);
+  say('leftChild 指向左邊；data 是自己本身', '例：x1 = true，data 就是 true');
+  await step(tok);                                   // 2046.7 value：運算結果
+  lit(four[0]); lit(four[1]); lit(four[2], GOLD);
+  tag('左右子樹做完運算的結果', 'idx', 1.9, 4.45);
+  say('value：對左右子樹做完 operation', '結果放在 value');
+  talk(g, 'value 放答案', 'happy');
+  await step(tok);                                   // 2060.8 rightChild
+  lit(four[2]); lit(four[3], GOLD);
+  say('rightChild 指向右邊的子樹', '總共四個欄位');
+  await step(tok);                                   // 2067.3 原本只有三個欄位
+  lit(four[3]); three.forEach((b) => lit(b, GOLD));
+  say('原本的 tree node 只有三個欄位', '這裡多了一個 value');
+  await step(tok);                                   // 2081.9 演算法：2^n 種組合
+  three.forEach((b) => lit(b));
+  cd = code(padL(ACODE), -1.0, 3.7, 0.44);
+  cnt = tag('', 'ptr alt', 5.6, 2.2);
+  cd.hl(0);
+  say('演算法：n 個參數 → 產生 2^n 種組合', '');
+  await step(tok);                                   // 2097.8 每一種組合去 traverse 那棵 tree
+  setTag(cnt, '第 1 組：TTT');
+  for (const i of [1, 2, 3]) { cd.hl(i); await go(tok, 450); }
+  say('對每一種組合，traverse 那棵 tree', 'TTT → value = false → 下一組');
+  await step(tok);                                   // 2103.8 結果為真 → output 這組
+  setTag(cnt, '第 2 組：TTF');
+  for (const i of [1, 2, 3, 4]) { cd.hl(i); await go(tok, 300); }
+  cd.hl(5); setTag(cnt, '輸出 TTF');
+  say('如果結果是 true', '就把這組組合 output 出來');
+  talk(g, '找到了！', 'happy');
+  await step(tok);                                   // 2111.8 八種組合：一個 for loop
+  cd.hl(-1);
+  tag('最多 2^n 組 × 每組走訪整棵樹 → O(g·2^n)', 'note', -1.0, 0.2, 1.0);
+  say('像剛才 8 種組合：一個 for loop', '補充：時間 O(g · 2^n)，指數時間');
+}]);
+
+// 35:38 PostOrderEval 程式與求值範例
+const PCODE = ['void PostOrderEval(TreeNode* x) {', '  if (!x) return;', '  PostOrderEval(x->leftChild);', '  PostOrderEval(x->rightChild);', '  switch (x->data) {', '  case NOT: v = !R.value;', '  case AND: v = L.value && R.value;', '  case OR:  v = L.value || R.value;', '  case TRUE:  v = true;', '  case FALSE: v = false;', '  }  // v = x->value', '}'];
+FRAG.push(['treeb2-poeval', 'PostOrderEval 程式與求值範例', async (tok) => {
+  const g = stage([0, 4.6, 13.5], [0, 4.0, 0], [-6.6, 3.0]);
+  let cd, root, cur, asgTag;
+  const vt = new Map();
+  const evalN = (n, asg) => {
+    const v = satValT(n, asg) ? 'T' : 'F';
+    cursorTo(cur, n.pos);
+    cd.hl(n.label === '¬' ? 5 : n.label === '∧' ? 6 : n.label === '∨' ? 7 : v === 'T' ? 8 : 9);
+    if (!vt.has(n)) vt.set(n, tag('', 'ptr alt', n.pos.x, n.pos.y - 0.55, 0.3));
+    setTag(vt.get(n), v); glow(n, v === 'T' ? GREEN : RED);
+  };
+  await step(tok);                                   // 2138.4 到底怎麼寫？
+  cd = code(padL(PCODE), -3.9, 7.5, 0.46);
+  root = showTree(SAT_SRC, { cx: 3.3, width: 6.6, topY: 7.0, minY: 2.8, maxSp: 0.62 });
+  asgTag = tag('', 'ptr alt', 3.3, 1.7, 1.2);
+  cur = makeCursor();
+  say('寫法就這麼簡單', '比 stack 那章簡單多了');
+  await step(tok);                                   // 2153.8 PostOrderEval，傳入 root
+  cd.hl(0);
+  say('procedure 叫 PostOrderEval', '傳進去的引數是 root');
+  await step(tok);                                   // 2172.8 x 是空的就不用做
+  cd.hl(1);
+  say('先判斷 x 是不是空的', '空的就跳出來，連做都不用做');
+  await step(tok);                                   // 2188.8 postorder：LRV
+  cd.hl(2); await go(tok, 500); cd.hl(3);
+  say('依照 postorder（L R V）', '先走左邊、再走右邊');
+  talk(g, '先左再右', 'happy');
+  await step(tok);                                   // 2221.8 看 data：幾種 case
+  cd.hl(4);
+  say('走到最下面，看這個 node 的 data', '分成幾種 case');
+  await step(tok);                                   // 2253.8 引數：true／false
+  cd.hl(8);
+  say('如果是變數：設成 true，value 就是 true', '設成 false，value 就是 false');
+  await step(tok);                                   // 2275.8 not：right child 的 value 取 not
+  cd.hl(5);
+  say('not：把 right child 的 value 取 not', '¬ 只有右邊的孩子');
+  await step(tok);                                   // 2305.2 and：左右 value 做 and
+  cd.hl(6);
+  say('and：left 和 right child 的 value', '做 and，結果放進自己的 value');
+  await step(tok);                                   // 2326.9 or
+  cd.hl(7);
+  say('or：左右子樹的 value 做 or', '');
+  await step(tok);                                   // 2363.8 最後結果在 root 的 value
+  cd.hl(-1); glow(root, GOLD);
+  tag('答案在這裡', 'ptr alt', root.pos.x + 1.4, root.pos.y + 0.3);
+  say('最後的結果放在哪裡？', 'postorder 最後才處理 root → 在 root 的 value');
+  talk(g, '答案在 root', 'wow');
+  await step(tok);                                   // 2401.8 例：x1 是 true
+  glow(root, OFF);
+  setTag(asgTag, '(x1, x2, x3) = (T, T, T)');
+  const order = postorder(root);
+  evalN(order[0], 'TTT');
+  say('例子：走到最下面，x1 是 true', 'value = T');
+  await step(tok);                                   // 2420.8 x2 true → ¬x2 false
+  evalN(order[1], 'TTT'); await go(tok, 600); evalN(order[2], 'TTT');
+  say('x2 是 true，所以 ¬x2 是 false', '');
+  await step(tok);                                   // 2431.0 true and false → false，遞迴往上
+  evalN(order[3], 'TTT'); await go(tok, 500);
+  for (const n of order.slice(4)) { evalN(n, 'TTT'); await go(tok, 200); }
+  say('true and false = false', '依此遞迴往上求值 → root = F');
+  await step(tok);                                   // 2444.8 root value 為 true 就印出組合
+  setTag(asgTag, '(x1, x2, x3) = (T, T, F)');
+  for (const n of order) { evalN(n, 'TTF'); await go(tok, 140); }
+  cd.hl(-1); cur.obj.visible = false;
+  say('root 的 value 是 true，就印出這組', '例：TTF → true');
+  talk(g, '印出 TTF', 'happy');
+  await step(tok);                                   // 2465.0 改成第二章的 expression evaluation？
+  tag('思考：改成算術式的 expression evaluation？', 'note', -3.9, 1.4);
+  say('回去想：這程式怎麼改成算術式求值？', '');
+}]);
+
+// ═════════════════ pPMMUa8guTE：Lec14 Trees (3/6) ═════════════════
+const setV = (b, t) => { const c = b.obj.children.find((o) => o.element); if (c) c.element.textContent = String(t); };
+const under = (n, text, cls = 'ptr alt') => tag(text, cls, n.pos.x, n.pos.y - 0.66, 0.35);
+function disc(text, color, x, y, z = 0, drop = 0) {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.6, 28), new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.05 }));
+  m.castShadow = true; m.receiveShadow = true;
+  m.add(lab.label(String(text), 'val'));
+  const b = lab.addBody(m);
+  m.position.set(x, y + drop, z);
+  if (drop) lab.dropTo(b, V(x, y, z)); else b.target.set(x, y, z);
+  return b;
+}
+function arc(a, b, color = '#c08a1f', lift = V(0, -0.3, 1.2)) {
+  const mid = a.clone().add(b).multiplyScalar(0.5).add(lift);
+  const pts = new THREE.QuadraticBezierCurve3(a, mid, b).getPoints(28);
+  const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineDashedMaterial({ color, dashSize: 0.16, gapSize: 0.1 }));
+  ln.computeLineDistances();
+  const dir = pts[28].clone().sub(pts[25]).normalize();
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.24, 10), new THREE.MeshBasicMaterial({ color }));
+  cone.position.copy(b).addScaledVector(dir, -0.12);
+  cone.quaternion.setFromUnitVectors(V(0, 1, 0), dir);
+  ln.add(cone);
+  lab.world.add(ln);
+  return ln;
+}
+const TH_L = '#4b9ee2', TH_R = '#c08a1f';
+function threadTo(from, side, target) {
+  const tp = target.pos || target;
+  return arc(from.clone().add(V(side * 0.32, -0.3, 0.2)), tp.clone().add(V(0, -0.32, 0.3)), side < 0 ? TH_L : TH_R);
+}
+function floorTile(x, z, w = 0.78, d = 0.9) {
+  const t = new THREE.Mesh(new THREE.BoxGeometry(w, 0.08, d), new THREE.MeshStandardMaterial({ color: '#e9dcc4', roughness: 1 }));
+  t.position.set(x, 0.04, z); t.receiveShadow = true; lab.world.add(t); return t;
+}
+const bitTag = (p, c, bit) => tag(bit, 'ptr alt', (p.pos.x + c.pos.x) / 2 + (bit === '0' ? -0.28 : 0.28), (p.pos.y + c.pos.y) / 2 + 0.12, 0.3);
+const SAT_EXPR = '(x1 ∧ ¬x2) ∨ (¬x1 ∧ x3) ∨ ¬x3';
+const satVal3 = (a, b, c) => (a && !b) || (!a && c) || !c;
+
+// 0:00 複習 Satisfiability
+FRAG.push(['treeb3-sat', '複習：Satisfiability 問題與運算式樹', async (tok) => {
+  const g = stage([0, 5, 14], [0, 3.8, 0], [6.6, 3.0]);
+  let root, rows = [];
+  await step(tok);                                   // 0.5 複習：只含 and、or、not、true／false
+  tag(SAT_EXPR, 'ptr', -2.8, 7.6);
+  say('複習：calculus 的 expression', '只有 true／false 變數和 and、or、not（課本例）');
+  talk(g, '複習一下', 'happy');
+  await step(tok);                                   // 37.8 優先序 not > and > or
+  tag('優先序：¬ > ∧ > ∨', 'ptr alt', -2.8, 7.0);
+  say('它有優先序：not 比 and 高，and 比 or 高', '');
+  await step(tok);                                   // 58.8 x1、x2、x3 設成什麼時式子為 true？
+  tag('x1、x2、x3 = ? → 整個式子為 true', 'note', 4.4, 7.6);
+  say('問題：x1、x2、x3 設成什麼值', '會讓整個 expression 為 true？');
+  talk(g, '怎麼設？', 'wow');
+  await step(tok);                                   // 85.8 一長串，有括號
+  root = await dropTree(tok, SAT_SRC, { cx: -2.8, width: 7.2, topY: 6.4, minY: 2.2 }, 120);
+  say('這是一長串的大 expression，裡面有括號', '畫成 tree 比較好看');
+  await step(tok);                                   // 91.8 小括號：x1 and not x2
+  const andL = root.left.left, notX2 = andL.right;
+  ghost('#c08a1f', andL.pos.x, andL.pos.y - 1.0, 2.2, 2.4, 0, 0.6);
+  say('看這個小括號：x1 ∧ ¬x2', '');
+  await step(tok);                                   // 97.8 先做 not x2，再和 x1 做 and
+  glow(notX2, GOLD); await go(tok, 700); glow(andL, GOLD);
+  say('先做 ¬x2，再跟 x1 做 and', 'not 的優先序比較高');
+  await step(tok);                                   // 114.8 3 個變數：8 種組合
+  glow(notX2, OFF); glow(andL, OFF);
+  tag('x1 x2 x3 → 值', 'ptr', 4.4, 6.9);
+  for (let k = 0; k < 8; k++) {
+    const a = !!(k & 4), b = !!(k & 2), c = !!(k & 1), v = satVal3(a, b, c);
+    rows.push([tag([a, b, c].map((t) => (t ? 'T' : 'F')).join('  ') + '  →  ' + (v ? 'T' : 'F'), 'idx', 4.4, 6.3 - k * 0.55), v]);
+    await go(tok, 220);
+  }
+  say('三個變數 → 8 種組合', '第一個值代表 x1、第二個 x2、第三個 x3');
+  await step(tok);                                   // 134.8 不一定只有一組 true → 都要印
+  rows.forEach(([l, v]) => { if (v) l.element.className = 'lab-label ptr alt'; });
+  say('不一定只有一組是 true', '每一組 true 都要印出來（這裡 7 組）');
+  talk(g, '全部印出來', 'happy');
+  await step(tok);                                   // 225.8 expression 可以表示成 tree
+  glow(root, GREEN);
+  say('這個 expression 可以表示成這棵 tree', '怎麼建樹：請自己看課本');
+  await step(tok);                                   // 253.8 postorder 中順便 evaluate
+  const cur = makeCursor();
+  for (const n of postorder(root)) { cursorTo(cur, n.pos); await go(tok, 160); }
+  cur.obj.visible = false;
+  say('有了 tree：做 postorder traversal', '走訪的過程中順便 evaluate');
+}]);
+
+// 4:36 PostOrderEval：節點結構與 switch
+FRAG.push(['treeb3-eval', 'PostOrderEval：節點四個欄位與 switch', async (tok) => {
+  const g = stage([0, 5, 14], [0, 3.6, 0.6], [6.6, 3.0]);
+  const root = showTree(SAT_SRC, { cx: -3.7, width: 5.8, topY: 6.6, minY: 2.6 });
+  let fb, cd;
+  await step(tok);                                   // 276.3 程式的部分
+  say('看程式的部分', '');
+  await step(tok);                                   // 283.8 四個欄位
+  const FN = [['leftChild', 'L'], ['data', '∧'], ['value', '?'], ['rightChild', 'R']];
+  fb = FN.map(([nm, v], k) => { const x = -5.6 + k * 1.2; tag(nm, 'idx', x, 1.25, 2.5); return cube(v, k === 1 ? PUR : k === 2 ? ORG : SAND, [1.05, 0.5, 0.7], x, 0.3, 2.5, 3); });
+  say('node 有四個欄位', 'leftChild、rightChild、data、value');
+  await step(tok);                                   // 289.8 value：左右運算的結果
+  lit(fb[2], GOLD);
+  say('value：用左右子樹的值運算後的結果', '');
+  await step(tok);                                   // 298.8 data：變數（設的真假）或 operator
+  lit(fb[2]); lit(fb[1], GOLD);
+  say('data：這個 node 是變數還是 operator', '例：x2 設成 true，data 就是 true');
+  talk(g, 'data ≠ value', 'wow');
+  await step(tok);                                   // 326.8 n 個變數的所有組合，每種 traverse 一次
+  lit(fb[1]);
+  tag('2ⁿ 種組合 × 每種走訪一次', 'note', -3.7, 7.6);
+  say('解法：列出 n 個變數所有組合', '每一種都 traverse 一次這棵 tree');
+  await step(tok);                                   // 352.8 post-order：recursive function
+  cd = code(['PostOrderEval(Node *s) {', ' if (s) {', '  PostOrderEval(s->leftChild);', '  PostOrderEval(s->rightChild);', '  switch (s->data) {', '   Not: v = !R->value;', '   And: v = L->value && R->value;', '   Or:  v = L->value || R->value;', '   True:  v = true;', '   False: v = false;', ' } } }'], 3.9, 7.0, 0.48);
+  cd.hl(0);
+  say('架構跟 postorder 很像', '寫成 recursive function：PostOrderEval');
+  await step(tok);                                   // 378.8 先往左、再往右（LRV）
+  cd.hl(2); await go(tok, 500); cd.hl(3);
+  say('postorder 的代號：L R V', '有左邊先往左，走不下去再往右');
+  await step(tok);                                   // 402.8 V：依 operator 做運算
+  cd.hl(4);
+  say('V 原本是印出來', '現在改成：根據左右的資料做 operation');
+  talk(g, 'V 換工作了', 'happy');
+  await step(tok);                                   // 429.1 依 data 屬性分 case：not
+  cd.hl(5);
+  say('依 data 的屬性分 case', '第一個 case：not');
+  await step(tok);                                   // 456.8 not：右子的 value，不是 data
+  tag('對子節點的 value 運算，不是 data！', 'bad', 3.9, 1.6);
+  say('not：取 right child 的 value 做 not', '注意：是 value，不是 data');
+  talk(g, '是 value！', 'wow');
+  await step(tok);                                   // 505.8 and／or：左右 value
+  cd.hl(6); await go(tok, 500); cd.hl(7);
+  say('and：left 的 value 和 right 的 value 做 and', 'or 同理');
+  await step(tok);                                   // 519.8 變數 x2 設成 true → value = true
+  cd.hl(8);
+  say('data 是變數：x2 設成 true', '這個 node 的 value 就設成 true；false 同理');
+  await step(tok);                                   // 549.6 postorder + switch 就算出來
+  const asg = { x1: true, x2: false, x3: true };
+  const cur = makeCursor(); const val = new Map(); const TF = (b) => (b ? 'T' : 'F');
+  tag('示意：x1 = T, x2 = F, x3 = T', 'ptr', -3.7, 7.0);
+  for (const n of postorder(root)) {
+    cursorTo(cur, n.pos);
+    let v;
+    if (n.label === '¬') { v = !val.get(n.right); cd.hl(5); }
+    else if (n.label === '∧') { v = val.get(n.left) && val.get(n.right); cd.hl(6); }
+    else if (n.label === '∨') { v = val.get(n.left) || val.get(n.right); cd.hl(7); }
+    else { v = asg[n.label]; cd.hl(v ? 8 : 9); }
+    val.set(n, v); glow(n, v ? GOLD : RED); under(n, TF(v), v ? 'ptr alt' : 'ptr');
+    setV(fb[1], n.label); setV(fb[2], TF(v));
+    await go(tok, 190);
+  }
+  cur.obj.visible = false; cd.hl(-1);
+  say('postorder 加上一個 switch', '就算出整個 expression 的 value（root = T）');
+  await step(tok);                                   // 566.8 node 分成 data 和 value
+  lit(fb[1], GOLD); lit(fb[2], GOLD);
+  say('重點：node 分成 data 和 value 兩部分', 'data 存自己是誰，value 存算出來的結果');
+  talk(g, '懂了！', 'happy');
+}]);
+
+// 9:42 延伸：用樹算算術式
+FRAG.push(['treeb3-arith', '延伸思考：用樹計算算術運算式', async (tok) => {
+  const g = stage([0, 5, 14], [0, 3.6, 0.5], [6.6, 3.2]);
+  let r, r2;
+  await step(tok);                                   // 588.0 之前的 expression 要怎麼改？
+  say('回去想：如果是之前的算術 expression', 'PostOrderEval 要怎麼改？');
+  talk(g, '想想看', 'wow');
+  await step(tok);                                   // 609.8 2 + 3 * 4：2、3、4 對應 x1、x2、x3
+  tag('x1 = 2, x2 = 3, x3 = 4', 'idx', -4.3, 7.5);
+  r = await dropTree(tok, '+(2,*(3,4))', { cx: -4.3, width: 3.4, topY: 6.6, minY: 4.0 }, 200);
+  say('例：2 + 3 * 4', '把 2、3、4 當成 x1、x2、x3 的值');
+  await step(tok);                                   // 635.8 一樣算得出來
+  const cur = makeCursor(); const val = new Map();
+  for (const n of postorder(r)) {
+    cursorTo(cur, n.pos);
+    const v = !n.left ? Number(n.label) : (n.label === '+' ? val.get(n.left) + val.get(n.right) : val.get(n.left) * val.get(n.right));
+    val.set(n, v); glow(n, GOLD); under(n, String(v));
+    await go(tok, 400);
+  }
+  cur.obj.visible = false;
+  say('一樣做 postorder 就算出來', '2 + 3 * 4 = 14');
+  await step(tok);                                   // 642.8 考題：不用 stack，用 tree
+  tag('考題：不用 stack，改用 tree 寫 evaluation', 'note', 2.6, 7.6);
+  say('可能出的題目：不要用 stack', '改用 tree 把程式寫出來');
+  talk(g, '要考！', 'wow');
+  await step(tok);                                   // 660.8 stack：兩支程式
+  tag('stack：infix → postfix → EVAL（兩支程式）', 'ptr', 2.6, 6.9);
+  say('stack 作法很麻煩：要寫兩支程式', '先轉 postfix，再交給 EVAL');
+  await step(tok);                                   // 679.8 tree：traverse 就好
+  tag('tree：建樹 → postorder（只要 traverse）', 'ptr alt', 2.6, 6.2);
+  say('tree 作法：對 tree 做 traverse 就可以了', '程式更簡單');
+  await step(tok);                                   // 688.3 前提：要先變成 tree
+  tag('前提：infix 要先變成一棵 tree', 'bad', 2.6, 5.5);
+  say('但有一個前提條件', '2 + 3 * 4 總是要先變成 tree');
+  await step(tok);                                   // 707.8 A/B−C+D*E−A*C
+  r2 = await dropTree(tok, '-(+(-(/(A,B),C),*(D,E)),*(A,C))', { cx: 2.5, width: 7, topY: 4.8, minY: 0.9 }, 100);
+  say('例：A / B − C + D * E − A * C', '先建成對應的 tree');
+  await step(tok);                                   // 724.3 給變數值，用 traversal 算答案
+  const cur2 = makeCursor();
+  for (const n of postorder(r2)) { cursorTo(cur2, n.pos); glow(n, GOLD); await go(tok, 200); }
+  cur2.obj.visible = false;
+  say('設好 A、B、C、D、E 的值', '透過 tree traversal 就把答案算出來');
+  await step(tok);                                   // 747.7 下週考試可能出
+  say('怎麼設計？請回去想', '下週考試可能就出來了');
+  talk(g, '回家練習', 'happy');
+}]);
+
+// 12:55 Threaded tree 動機：n + 1 個空 link
+const F520 = 'A(B(D(H,I),E),C(F,G))';
+FRAG.push(['treeb3-null', 'Threaded binary tree 動機：n+1 個空 link', async (tok) => {
+  const g = stage([0, 5, 13.5], [0, 3.6, 0.5], [6.6, 3.0]);
+  let r;
+  await step(tok);                                   // 774.8 threaded binary tree
+  tag('Threaded Binary Tree', 'ptr alt', 0, 7.6);
+  say('新 topic：threaded binary tree', '');
+  await step(tok);                                   // 783.8 把沒用到的 link 充分利用
+  r = await dropTree(tok, F520, { topY: 6.6, minY: 2.5 }, 120);
+  say('用意：binary tree 裡沒用到的 link', '把它們充分利用（Fig 5.20 的樹）');
+  talk(g, '廢物利用？', 'wow');
+  await step(tok);                                   // 800.8 n 個 node 有多少 link？
+  tag('n = 9 個 node × 2 = 18 個 link', 'ptr', -4.6, 7.0);
+  say('n 個 node，每個有 2 個 pointer', '共 2n 個 link（這裡 18 個）');
+  await step(tok);                                   // 822.8 除了 root，沒人指向它
+  let k = 0;
+  for (const n of levelorder(r)) for (const c of [n.left, n.right]) if (c) { k++; glow(c, GREEN); tag(String(k), 'ptr', (n.pos.x + c.pos.x) / 2 + (c === n.left ? -0.3 : 0.3), (n.pos.y + c.pos.y) / 2 + 0.1, 0.2); await go(tok, 220); }
+  say('除了 root，每個 node 被一條 link 指到', '實際用到 n − 1 = 8 條（老師口誤說 node）');
+  await step(tok);                                   // 838.0 空的有 2n − (n − 1) 個
+  for (const n of inorder(r)) for (const side of [-1, 1]) {
+    if (side < 0 ? n.left : n.right) continue;
+    const a = V(n.pos.x + side * 0.3, n.pos.y - 0.3, 0), b = V(n.pos.x + side * 0.62, n.pos.y - 0.9, 0);
+    seg(a, b, '#b04040'); tag('null', 'idx', b.x, b.y - 0.22, 0.2);
+    await go(tok, 180);
+  }
+  say('空的 null 有幾個？', '2n − (n − 1)');
+  await step(tok);                                   // 853.0 = n + 1
+  tag('2n − (n − 1) = n + 1 = 10', 'good', 0, 1.0, 1.0);
+  say('= n + 1 個', '這棵樹 10 個空 link');
+  talk(g, '空了 10 個！', 'sad');
+  await step(tok);                                   // 870.8 thread 的概念
+  say('反正 node 都產生了，link 也在', '不如充分利用：thread 的概念');
+  await step(tok);                                   // 897.6 指向 inorder 的前一個或後一個
+  rowLabel('inorder', 1.9);
+  for (const n of inorder(r)) { cube(n.label, depthColor(n.depth), SMALL, n.pos.x, 0.3, 1.9, 2); await go(tok, 150); }
+  say('讓空的 link 指向 inorder 的前一個或後一個', 'inorder：H D I B E A F C G');
+  await step(tok);                                   // 918.8 leftChild 空 → predecessor
+  tag('leftChild 空 → 指向 inorder 前一個（predecessor）', 'ptr alt', 0, 7.0);
+  say('ptr->leftChild 是空的', '改指向 ptr 在 inorder 的前一個');
+  await step(tok);                                   // 934.8 rightChild 空 → successor
+  tag('rightChild 空 → 指向 inorder 後一個（successor）', 'ptr alt', 0, 0.9, 2.6);
+  say('ptr->rightChild 是空的', '改指向 inorder 的後一個（後繼者）');
+  talk(g, '前後鄰居', 'happy');
+}]);
+
+// 16:04 Fig 5.20：虛線 thread
+FRAG.push(['treeb3-fig', 'Thread 範例：Fig 5.20 的虛線', async (tok) => {
+  const g = stage([0, 5, 14], [0, 3.4, 1], [6.6, 3.2]);
+  const r = showTree(F520, { topY: 6.6, minY: 2.8 });
+  const N = (l) => find(r, l);
+  const ib = new Map();
+  await step(tok);                                   // 963.8 曲線（虛線）= thread，實線 = 原本的 link
+  tag('實線 = 原本的 link；虛線 = thread', 'ptr', 0, 7.6);
+  say('實線是原本 tree 的 link', '曲線（虛線）是 thread');
+  await step(tok);                                   // 980.4 inorder：H D I B E A F C G
+  rowLabel('inorder', 1.9);
+  for (const n of inorder(r)) { ib.set(n.label, cube(n.label, depthColor(n.depth), SMALL, n.pos.x, 0.3, 1.9, 2)); await go(tok, 180); }
+  say('這棵樹的 inorder：H D I B E A F C G', '');
+  await step(tok);                                   // 1003.7 E 是 leaf，兩個 pointer 都空
+  glow(N('E'), GOLD);
+  say('先看 E：它是 leaf node', '兩個 pointer 本來都指向 null');
+  talk(g, 'E 有兩個空位', 'wow');
+  await step(tok);                                   // 1019.5 E.left → B
+  threadTo(N('E').pos, -1, N('B')); lit(ib.get('B'), GOLD);
+  say('E 的 left 指向 inorder 前一個：B', '');
+  await step(tok);                                   // 1029.8 E.right → A
+  threadTo(N('E').pos, 1, N('A')); lit(ib.get('B')); lit(ib.get('A'), GOLD);
+  say('E 的 right 指向 inorder 後一個：A', '');
+  talk(g, '左前右後', 'happy');
+  await step(tok);                                   // 1040.1 I 的前一個是 D
+  lit(ib.get('A')); glow(N('E'), OFF); glow(N('I'), GOLD);
+  threadTo(N('I').pos, -1, N('D'));
+  say('I：inorder 前一個是 D', 'I 的 left thread → D');
+  await step(tok);                                   // 1057.3 I 的後一個是 B
+  threadTo(N('I').pos, 1, N('B'));
+  say('I 的後一個是 B', 'I 的 right thread → B');
+  await step(tok);                                   // 1067.6 H 沒有前一個、G 沒有後一個
+  glow(N('I'), OFF); glow(N('H'), RED); glow(N('G'), RED);
+  const hp = N('H').pos, gp = N('G').pos;
+  arc(hp.clone().add(V(-0.32, -0.3, 0.2)), hp.clone().add(V(-0.9, 0.7, 0.3)), TH_L, V(-0.3, 0, 0.6));
+  arc(gp.clone().add(V(0.32, -0.3, 0.2)), gp.clone().add(V(0.9, 0.7, 0.3)), TH_R, V(0.3, 0, 0.6));
+  tag('?', 'ptr', hp.x - 0.95, hp.y + 0.95, 0.3); tag('?', 'ptr', gp.x + 0.95, gp.y + 0.95, 0.3);
+  say('H 沒有前一個，G 也沒有後一個', '這兩條會懸空');
+  talk(g, '指去哪？', 'wow');
+  await step(tok);                                   // 1075.8 可以指到 root
+  glow(N('H'), OFF); glow(N('G'), OFF);
+  for (const [l, side, t] of [['H', 1, 'D'], ['F', -1, 'A'], ['F', 1, 'C'], ['G', -1, 'C']]) { threadTo(N(l).pos, side, N(t)); await go(tok, 300); }
+  say('老師：可以讓它們指到 root', '補充：課本是指向 head node');
+}]);
+
+// 18:29 leftThread / rightThread 與 head node
+function buildThreaded(o) {
+  const r = showTree(F520, o);
+  const A = find(r, 'A');
+  const head = { label: 'head', pos: V(A.pos.x - 1.5, o.topY + 1.25, 0) };
+  return { r, A, head };
+}
+function threadInfo(root, head) {
+  const ino = inorder(root), info = new Map();
+  info.set(head, { lc: root, rc: head, lt: false, rt: false });
+  ino.forEach((n, k) => info.set(n, { lc: n.left || ino[k - 1] || head, lt: !n.left, rc: n.right || ino[k + 1] || head, rt: !n.right }));
+  return info;
+}
+function drawThreads(root, head, skipHead) {
+  const info = threadInfo(root, head);
+  for (const n of inorder(root)) {
+    const f = info.get(n);
+    if (f.lt && !(skipHead && f.lc === head)) threadTo(n.pos, -1, f.lc === head ? head.pos.clone().add(V(-0.2, 0, 0)) : f.lc);
+    if (f.rt && !(skipHead && f.rc === head)) threadTo(n.pos, 1, f.rc === head ? head.pos.clone().add(V(0.2, 0, 0)) : f.rc);
+  }
+  return info;
+}
+function showHead(head, A, drop) {
+  head.body = cube('head', GRAYB, [1.1, 0.6, 0.8], head.pos.x, head.pos.y, 0, drop ? 3 : 0);
+  const a = arrow(head.pos.clone().add(V(0.25, -0.3, 0)), A.pos.clone().add(V(-0.2, 0.32, 0)), '#7a6a52');
+  const h = head.pos;
+  arc(h.clone().add(V(0.55, 0, 0)), h.clone().add(V(0.25, 0.32, 0)), TH_R, V(0.75, 0.55, 0.4));
+  return a;
+}
+FRAG.push(['treeb3-fields', 'LeftThread／RightThread 欄位與 head node', async (tok) => {
+  const g = stage([0, 5.2, 14], [0, 3.4, 0.8], [6.6, 3.4]);
+  const { r, A, head } = buildThreaded({ topY: 5.0, minY: 1.8, width: 10.4 });
+  drawThreads(r, head, true);
+  let fb;
+  const I = find(r, 'I'), B = find(r, 'B');
+  await step(tok);                                   // 1108.8 每條 link 都指到某個 node
+  say('現在每條 link 都會指到一個 node', 'tree 要做什麼修改？');
+  await step(tok);                                   // 1126.8 判別：真的 tree node 還是 thread？
+  tag('真的 child？還是 thread？', 'note', 0, 6.9);
+  say('要能判別：這條 link 指的是', '真正的 tree node，還是 thread？');
+  talk(g, '分得出來嗎？', 'wow');
+  await step(tok);                                   // 1144.8 I 的 left、right 都是虛線 → 都是 thread
+  glow(I, GOLD);
+  say('例：I 的 left、right 出去都是虛線', '兩條都是 thread');
+  await step(tok);                                   // 1173.8 多兩個 Boolean 欄位
+  const NM = ['leftThread', 'leftChild', 'data', 'rightChild', 'rightThread'];
+  fb = NM.map((nm, k) => { const x = -3 + k * 1.5; tag(nm, 'idx', x, k % 2 ? 1.35 : 0.95, 2.9); return cube('', k === 2 ? PUR : k % 4 === 0 ? ORG : SAND, [1.2, 0.5, 0.7], x, 0.3, 2.9, 3); });
+  say('所以 node 多兩個 Boolean 欄位', 'leftThread、rightThread');
+  await step(tok);                                   // 1189.8 leftThread = true → leftChild 是 thread
+  ['t', '→D', 'I', '→B', 't'].forEach((v, k) => setV(fb[k], v));
+  lit(fb[0], GOLD); lit(fb[4], GOLD);
+  say('leftThread = true', '代表 leftChild 是 thread（I 的兩邊都是 t）');
+  await step(tok);                                   // 1203.4 false → 一般 pointer
+  glow(I, OFF); lit(fb[0]); lit(fb[4]); glow(B, GOLD);
+  ['f', '→D', 'B', '→E', 'f'].forEach((v, k) => setV(fb[k], v));
+  say('leftThread = false', 'leftChild 就是普通的 pointer（例：B）');
+  talk(g, 't／f 一看就懂', 'happy');
+  await step(tok);                                   // 1263.8 head node：自己指到自己
+  glow(B, OFF);
+  showHead(head, A, true);
+  say('還會有一個 head node', '可以想成它自己指到自己（右邊那條）');
+  await step(tok);                                   // 1288.8 避免 dangling：H、G 指向 head
+  threadTo(find(r, 'H').pos, -1, head.pos.clone().add(V(-0.2, 0, 0)));
+  threadTo(find(r, 'G').pos, 1, head.pos.clone().add(V(0.2, 0, 0)));
+  say('Fig 5.20：為了避免 dangling', 'H、G 那兩條改指向 head node');
+  await step(tok);                                   // 1319.8 head 指到的才是真正的 root
+  glow(A, GOLD);
+  ['f', '→A', '—', '→head', 'f'].forEach((v, k) => setV(fb[k], v));
+  say('像 linked list 的 head node', 'head 指到的 A 才是真正的 root');
+  talk(g, 'head 帶路', 'happy');
+  await step(tok);                                   // 1333.5 看 true／false 就知道指向誰
+  glow(A, OFF);
+  const info = threadInfo(r, head);
+  for (const n of inorder(r)) { const f = info.get(n); under(n, (f.lt ? 't' : 'f') + ' ' + (f.rt ? 't' : 'f'), f.lt ? 'ptr alt' : 'ptr'); }
+  say('看 thread 欄位的 true／false', '就知道 link 是不是指向真正的子節點');
+}]);
+
+// 22:58 Thread 的用途與代價
+FRAG.push(['treeb3-succ', 'Thread 的用途與代價', async (tok) => {
+  const g = stage([0, 5.2, 14], [0, 3.6, 0.8], [6.6, 1.4]);
+  const { r, A, head } = buildThreaded({ cx: -1.8, width: 8, topY: 5.0, minY: 1.6 });
+  showHead(head, A, false);
+  const info = drawThreads(r, head, false);
+  const cd = code(['T* InorderSucc(x) {', ' temp = x->rightChild;', ' if (!x->rightThread)', '  while (!temp->leftThread)', '   temp = temp->leftChild;', ' return temp; }'], 4.9, 7.4, 0.45);
+  rowLabel('inorder', 2.6);
+  const cur = makeCursor();
+  await step(tok);                                   // 1378.2 有了 thread 能幫你什麼？
+  say('有了 thread，可以幫你做什麼？', '');
+  talk(g, '有什麼用？', 'wow');
+  await step(tok);                                   // 1389.0 很快找到 inorder 下一個／上一個
+  const E = find(r, 'E');
+  cursorTo(cur, E.pos); await go(tok, 600); cd.hl(5); cursorTo(cur, A.pos); glow(A, GOLD);
+  say('很快找到某 node 在 inorder 的下一個', '例：E 的 right thread 直接到 A（上一個也行）');
+  await step(tok);                                   // 1411.8 依 thread 狀態做 inorder traversal
+  glow(A, OFF);
+  let x = head, k = 0;
+  for (let guard = 0; guard < 12; guard++) {
+    const fx = info.get(x); let t = fx.rc;
+    if (!fx.rt) { cd.hl(3); while (!info.get(t).lt) t = info.get(t).lc; }
+    else cd.hl(5);
+    if (t === head) break;
+    cursorTo(cur, t.pos); glow(t, GOLD);
+    const ob = cube(t.label, depthColor(t.depth), SMALL, t.pos.x, t.pos.y, 0);
+    lab.springTo(ob, rowPos(k++, 2.6));
+    x = t;
+    await go(tok, 230);
+  }
+  cur.obj.visible = false;
+  say('依 thread 是 true／false', '就能輕鬆做完 inorder traversal（不用 stack）');
+  await step(tok);                                   // 1428.0 程式跳過
+  cd.hl(-1);
+  say('這段程式老師跳過', '因為蠻簡單的（畫面是課本版）');
+  await step(tok);                                   // 1453.8 threaded tree 真的有用嗎？
+  say('老師：threaded tree 真的有用嗎？', '自己寫程式還沒用過');
+  talk(g, '真的有用嗎？', 'wow');
+  await step(tok);                                   // 1465.6 演進的過程
+  tag('研究演進：為了不浪費空間而出現', 'note', -1.8, 7.4);
+  say('它是 binary tree 研究演進的過程', '有人想不浪費空間，就被納入課本');
+  await step(tok);                                   // 1532.8 代價一：多兩個欄位
+  tag('代價 ①：多 2 個 Boolean 欄位', 'bad', -1.8, 6.8);
+  say('代價一：多了兩個欄位', 'leftThread、rightThread（Boolean）');
+  await step(tok);                                   // 1547.9 代價二：insert／delete 要改更多 pointer
+  tag('代價 ②：insert／delete 要多改 thread', 'bad', -1.8, 6.2);
+  say('代價二：insert、delete 時', '還要調整 thread link，做更多 pointer assignment');
+  talk(g, '比較麻煩', 'sad');
+}]);
+
+// 26:15 在 threaded tree 插入 R 為 X 的右子
+const ICODE = ['r->rightChild = s->rightChild;', 'r->rightThread = s->rightThread;', 'r->leftChild = s;', 'r->leftThread = true;', 's->rightChild = r;', 's->rightThread = false;', 'if (!r->rightThread)', '  InorderSucc(r)->leftChild = r;'];
+function insSetup() {
+  fresh();
+  lab.frameCamera([0, 5, 14], [0, 3.8, 0.5]);
+  const cd = code(ICODE, -3.7, 6.6, 0.5);
+  tag('s = X，r = R（課本 InsertRight）', 'idx', -3.7, 7.4);
+  const E = [];
+  edgeLines(() => E.map(([a, b]) => [a.body.obj.position, b.body.obj.position]));
+  const mk = (l, x, y, color, drop = 0) => { const n = { label: l, pos: V(x, y, 0) }; n.body = cube(l, color, NODE, x, y, 0, drop); return n; };
+  const mv = (n, x, y) => { n.pos = V(x, y, 0); lab.springTo(n.body, n.pos.clone()); };
+  return { cd, E, mk, mv, g: pal(6.6, 3.0) };
+}
+FRAG.push(['treeb3-insert', 'Threaded tree：把 R 插成 X 的右子', async (tok) => {
+  let S = insSetup();
+  const A = S.mk('A', 4.4, 6.4, GRN), X = S.mk('X', 2.4, 5.0, BLU);
+  S.E.push([A, X]);
+  const xr = threadTo(X.pos, 1, A);
+  let R;
+  await step(tok);                                   // 1582.8 insert R 到 X 的右邊
+  R = S.mk('R', 3.4, 3.6, ORG, 3);
+  say('要把 R 這個 node 插到 X 的右邊', '有 thread 的話怎麼做？');
+  talk(S.g, '插進去！', 'wow');
+  await step(tok);                                   // 1604.8 X 本來是 thread，指向上面
+  lit(X.body, GOLD);
+  say('Case 1：X 的 right 本來是 thread', '指向上面的 inorder successor A');
+  await step(tok);                                   // 1615.7 X 的 right link 改指 R
+  S.cd.hl(4); kill(xr); S.E.push([X, R]);
+  say('X 的 right link 改指向 R', 'X.rightChild = R');
+  await step(tok);                                   // 1622.8 X 的 thread 欄位（口誤 true → 應為 false）
+  S.cd.hl(5); lit(X.body);
+  tag('X.rightThread = false', 'ptr alt', 2.4, 5.9);
+  say('X 的 rightThread 欄位也要改', '應設成 false（老師口誤說 true）');
+  await step(tok);                                   // 1629.8 R 的 left、right 兩個 link 與欄位
+  S.cd.hl(0); threadTo(R.pos, 1, A); await go(tok, 500);
+  S.cd.hl(2); threadTo(R.pos, -1, X);
+  say('R 的 left、right 和兩個欄位都要設定', 'R.right → A、R.left → X（都是 thread）');
+  await step(tok);                                   // 1679.8 X 本來沒有右子樹：很簡單
+  S.cd.hl(-1);
+  tag('Case 1 完成：inorder X R A', 'good', 3.4, 2.2);
+  say('這個 case 很簡單', '因為 X 本來沒有 right child');
+  talk(S.g, '簡單！', 'happy');
+  await step(tok);                                   // 1692.7 Case 2：X 已有右子樹
+  S = insSetup();
+  const A2 = S.mk('A', 5.6, 6.6, GRN), X2 = S.mk('X', 1.4, 5.4, BLU), Y = S.mk('Y', 4.4, 4.2, PUR), Wn = S.mk('W', 3.4, 3.0, PUR);
+  S.E.push([A2, X2], [X2, Y], [Y, Wn]);
+  let wl = threadTo(Wn.pos, -1, X2), yr = threadTo(Y.pos, 1, A2), wr = threadTo(Wn.pos, 1, Y);
+  say('Case 2：X 已經有右子樹（Y、W）', 'inorder：X W Y A');
+  await step(tok);                                   // 1703.8 整個右子樹往下移一層
+  kill(wl); kill(yr); kill(wr);
+  S.mv(Y, 4.4, 3.0); S.mv(Wn, 3.4, 1.8);
+  const R2 = S.mk('R', 2.4, 4.2, ORG, 3);
+  S.E.splice(1, 1, [R2, Y]);
+  S.cd.hl(0);
+  await go(tok, 800);
+  yr = threadTo(V(4.4, 3.0, 0), 1, A2); wr = threadTo(V(3.4, 1.8, 0), 1, Y); wl = threadTo(V(3.4, 1.8, 0), -1, X2);
+  say('R 插進來：整個右子樹往下移一層', '變成 R 的右子樹，很多 link 要調整');
+  talk(S.g, '整串下移', 'wow');
+  await step(tok);                                   // 1722.8 X 的 right child 指向 R
+  S.cd.hl(4); S.E.push([X2, R2]);
+  threadTo(R2.pos, -1, X2);
+  say('X 的 rightChild 指向 R', 'R 的 left thread 指回 X');
+  await step(tok);                                   // 1744.0 本來指向 X 的那條改指 R
+  S.cd.hl(7); lit(Wn.body, GOLD);
+  kill(wl); threadTo(V(3.4, 1.8, 0), -1, R2);
+  say('W 本來的 left thread 指向 X', '現在要改指向 R');
+  await step(tok);                                   // 1753.8 inorder 中它的前一個變成 R
+  lit(Wn.body);
+  tag('inorder：X R W Y A', 'good', 3.4, 0.6, 1.0);
+  say('因為 inorder 裡 W 的前一個變成 R', '它的後一個還是 Y、A');
+  await step(tok);                                   // 1787.8 插在左邊也是兩個 case
+  S.cd.hl(-1);
+  say('插到 X 的左邊也一樣', '分「沒有左子樹」和「有左子樹」兩個 case');
+  talk(S.g, '對稱的', 'happy');
+}]);
+
+// 31:40 Huffman code 概念
+FRAG.push(['treeb3-huffc', 'Huffman code 概念：依頻率編碼', async (tok) => {
+  const g = stage([0, 5, 14], [0, 3.2, 0.6], [6.6, 3.2]);
+  const WORDS = ['the', 'I', 'you', 'data'], CNT = [0, 0, 0, 0];
+  const SEQ = [0, 1, 0, 2, 0, 1, 0, 3, 1, 0, 2, 1, 0];
+  let art;
+  await step(tok);                                   // 1908.3 Huffman code：一種編碼
+  tag('Huffman code', 'ptr alt', 0, 7.8);
+  say('Huffman code 是一種編碼', '把東西換成一串 0 和 1');
+  talk(g, '作業二！', 'wow');
+  await step(tok);                                   // 1923.2 依使用頻率決定碼
+  WORDS.forEach((w, j) => tag(w, 'ptr', -5.4 + j * 1.3, 0, 1.0));
+  art = tag('', 'idx', -3.4, 7.2);
+  const txt = [];
+  for (const j of SEQ) { txt.push(WORDS[j]); setTag(art, '文章：' + txt.join(' ')); cube('', [ORG, BLU, PUR, TEAL][j], [0.8, 0.4, 0.8], -5.4 + j * 1.3, 0.2 + CNT[j]++ * 0.42, 0, 3); await go(tok, 150); }
+  CNT.forEach((c, j) => tag(c + ' 次', 'idx', -5.4 + j * 1.3, 0.4 + c * 0.42 + 0.3, 0.2));
+  say('依 message 的使用頻率', '決定它用怎樣的碼（示意資料）');
+  await step(tok);                                   // 1940.8 M1～Mn 想成 word
+  say('M1 ～ Mn 這些 message', '可以想成文章裡的 word（字）');
+  await step(tok);                                   // 1969.0 每個 word 有代號：codebook
+  tag('codebook（示意）', 'ptr', 3.8, 6.6);
+  const CODEB = ['0', '10', '110', '111'];
+  for (let j = 0; j < 4; j++) { tag(WORDS[j] + ' → ' + CODEB[j], j === 0 ? 'ptr alt' : 'ptr', 3.8, 5.8 - j * 0.7); await go(tok, 300); }
+  say('每個 word 都有一個代號', 'codebook = 碼和明文的對照表');
+  await step(tok);                                   // 2011.8 最頻繁的字用最少的單位
+  tag('出現最多 → 碼最短', 'good', 3.8, 2.8);
+  say('出現最頻繁的字（top 1 frequency）', '用最少的 bit 來表示');
+  talk(g, 'the 最短！', 'happy');
+  await step(tok);                                   // 2051.8 對方用 codebook 解碼
+  tag('傳送端', 'ptr', 0.6, 1.2, 2.6); tag('接收端', 'ptr', 5.6, 1.2, 2.6);
+  arrow(V(1.6, 0.9, 2.6), V(4.6, 0.9, 2.6), '#c08a1f');
+  const pk = tag('0 10 0', 'pkt', 1.6, 1.6, 2.6);
+  await P.travel(tok, pk, V(1.6, 1.6, 2.6), V(4.6, 1.6, 2.6), 1200);
+  say('文章傳給對方，對方也有一份 codebook', '照著碼解回原文');
+  await step(tok);                                   // 2068.8 碼越長，解碼越花時間
+  say('code size 越長', '解碼就要花越多時間');
+  await step(tok);                                   // 2077.8 頻繁的 word 碼短一點
+  tag('目標：整份編碼後的總長度最小', 'note', 0, 0.3, 3.4);
+  say('所以讓頻繁出現的 word', 'code size 小一點');
+  talk(g, '常用的短', 'happy');
+}]);
+
+// 35:00 Codebook 樹：M1～M4
+function huffTree(src, opts) {
+  const root = showTree(src, opts);
+  for (const n of allNodes(root)) {
+    if (n.left || n.right) { kill(n.body); n.body = disc(n.label, SAND, n.pos.x, n.pos.y); }
+    else n.body.obj.material.color.set(ORG);
+  }
+  return root;
+}
+function allBits(root) { for (const n of allNodes(root)) { if (n.left) bitTag(n, n.left, '0'); if (n.right) bitTag(n, n.right, '1'); } }
+async function readPath(tok, root, leaf, cur, ms) {
+  const path = []; (function f(n, acc) { if (!n) return false; if (n === leaf) { path.push(...acc, n); return true; } return f(n.left, [...acc, n]) || f(n.right, [...acc, n]); })(root, []);
+  let bits = '';
+  cursorTo(cur, root.pos);
+  for (let k = 1; k < path.length; k++) { bits += path[k] === path[k - 1].left ? '0' : '1'; cursorTo(cur, path[k].pos); glow(path[k], GOLD); await go(tok, ms); }
+  return bits;
+}
+FRAG.push(['treeb3-codebook', 'Codebook 樹：M1～M4 的碼與目標函數', async (tok) => {
+  const g = stage([0, 5, 13.5], [0, 3.8, 0.4], [6.6, 3.0]);
+  const root = huffTree('•(•(•(M1,M2),M3),M4)', { cx: -1.6, width: 6.4, topY: 6.6, minY: 2.4 });
+  const cur = makeCursor();
+  let k = 0;
+  const read = async (l, ms) => { const leaf = find(root, l); const bits = await readPath(tok, root, leaf, cur, ms); under(leaf, bits); tag(l + ' = ' + bits, 'ptr alt', 4.8, 5.9 - k++ * 0.65); allNodes(root).forEach((n) => glow(n, OFF)); return bits; };
+  await step(tok);                                   // 2099.8 這就是一份 codebook
+  tag('codebook', 'ptr', 4.8, 6.6);
+  say('這就是一份 codebook', '四個 message：M1、M2、M3、M4（想成四個 word）');
+  await step(tok);                                   // 2112.2 M1 = 000：從 root 走到 leaf
+  allBits(root);
+  await read('M1', 400);
+  say('M1 的 Huffman code 是 000', '從 root 往下走到 leaf 的路徑（左 0 右 1）');
+  talk(g, '路徑就是碼', 'wow');
+  await step(tok);                                   // 2144.8 M2 = 001、M3 = 01、M4 = 1
+  await read('M2', 200); await read('M3', 200); await read('M4', 200);
+  cur.obj.visible = false;
+  say('001 是 M2、01 是 M3', '只有一個 1 就是 M4');
+  await step(tok);                                   // 2156.8 codebook 長成一棵 tree
+  glow(root, GOLD);
+  say('這份 codebook 就長成一棵 tree', '');
+  await step(tok);                                   // 2175.8 不同長法：M4 也可以在左邊
+  glow(root, OFF);
+  tag('也可以把 M4 放左邊…', 'note', -1.6, 1.4, 0.6);
+  say('樹可以有不同的長法', '例如 M4 放在左邊也可以');
+  await step(tok);                                   // 2190.8 objective function：頻率
+  tag('minimize Σ 頻率 × 碼長', 'good', 4.8, 2.4);
+  say('但要符合一個 objective function', '每個 message 有它的 frequency');
+  await step(tok);                                   // 2216.8 整份編碼的 code size 最小
+  say('頻率越高 → 碼越短', '讓整份編碼後檔案的 code size 最小');
+  talk(g, '越常用越短', 'happy');
+}]);
+
+// 38:05 Huffman 建樹：2, 3, 5, 7, 9, 13
+function forest(ws, o) {
+  const O = Object.assign({ cx: 0, topY: 6.4, step: 1.15, spc: 1.0, gap: 0.6, tie: 'first' }, o);
+  const F = { trees: ws.map((w) => ({ w, leaf: true, left: null, right: null })) };
+  F.all = [...F.trees];
+  F.q = () => F.trees.map((t) => t.w).join(', ');
+  F.layout = () => {
+    let x = 0;
+    for (const t of F.trees) { (function w(n, d) { if (!n) return; w(n.left, d + 1); n.depth = d; n.lx = x; x += O.spc; w(n.right, d + 1); })(t, 0); x += O.gap; }
+    const span = x - O.gap - O.spc;
+    for (const n of F.all) n.pos = V(O.cx + n.lx - span / 2, O.topY - n.depth * O.step, 0);
+  };
+  F.spawn = () => {
+    F.layout();
+    for (const n of F.all) n.body = n.leaf ? cube(n.w, ORG, NODE, n.pos.x, n.pos.y, 0) : disc(n.w, SAND, n.pos.x, n.pos.y);
+    edgeLines(() => { const out = []; for (const n of F.all) for (const c of [n.left, n.right]) if (c && n.body && c.body) out.push([n.body.obj.position, c.body.obj.position]); return out; });
+  };
+  F.merge = () => {
+    const a = F.trees.shift(), b = F.trees.shift();
+    const t = { w: a.w + b.w, leaf: false, left: a, right: b };
+    let k = F.trees.findIndex((u) => (O.tie === 'first' ? u.w >= t.w : u.w > t.w));
+    if (k < 0) k = F.trees.length;
+    F.trees.splice(k, 0, t); F.all.push(t);
+    t.body = disc(t.w, SAND, (a.pos.x + b.pos.x) / 2, O.topY, 0, 1.2);
+    F.layout();
+    for (const n of F.all) lab.springTo(n.body, n.pos.clone());
+    return t;
+  };
+  return F;
+}
+FRAG.push(['treeb3-build', 'Huffman 建樹：每次合併最小的兩個', async (tok) => {
+  const g = stage([0, 4.8, 14], [0, 3.8, 0], [6.6, 3.0]);
+  let F, t;
+  const qt = tag('', 'ptr', 0, 7.7);
+  const showQ = () => setTag(qt, 'queue：' + F.q());
+  await step(tok);                                   // 2284.8 先看例子
+  F = forest([2, 3, 5, 7, 9, 13], { topY: 6.4 }); F.spawn(); showQ();
+  say('先不看程式，看例子怎麼 run', '');
+  await step(tok);                                   // 2296.8 方塊 = message（leaf）
+  F.trees.forEach((u) => lit(u.body, GOLD));
+  say('方塊是 leaf node，代表 message', '方塊裡的數字 = 它的 frequency');
+  await step(tok);                                   // 2312.8 六個 message
+  F.trees.forEach((u) => lit(u.body));
+  say('這個例子有六個 message', '頻率分別是 2、3、5、7、9、13');
+  await step(tok);                                   // 2349.8 選兩個 frequency 最小的 merge
+  lit(F.trees[0].body, GOLD); lit(F.trees[1].body, GOLD);
+  say('每次選兩個 frequency 最小的', '把它們 merge');
+  talk(g, '最小的兩個', 'wow');
+  await step(tok);                                   // 2367.8 2 和 3 最小 → merge 成 subtree
+  lit(F.trees[0].body); lit(F.trees[1].body);
+  t = F.merge(); showQ();
+  say('2 和 3 最小 → merge 成一棵 subtree', '');
+  await step(tok);                                   // 2400.8 這棵 tree = 更大的 message，頻率 5
+  lit(t.body, GOLD);
+  say('這棵 subtree 變成一個更大的 message', '出現次數 = 2 + 3 = 5');
+  talk(g, '合體！', 'happy');
+  await step(tok);                                   // 2423.8 剩五個：5 5 7 9 13
+  lit(t.body);
+  say('現在剩五個 message', '5、5、7、9、13');
+  await step(tok);                                   // 2448.8 5 和 5 → 10
+  lit(F.trees[0].body, GOLD); lit(F.trees[1].body, GOLD);
+  await go(tok, 500);
+  lit(F.trees[0].body); lit(F.trees[1].body);
+  t = F.merge(); showQ();
+  say('再取最小的 5 和 5 merge', '長出 frequency 10 的更大 tree');
+  await step(tok);                                   // 2469.6 整棵 tree 視為一個 message 丟回 queue
+  lit(t.body, GOLD);
+  say('整棵 tree 視為一個 message', '再丟回 queue 裡');
+  await step(tok);                                   // 2491.4 7 和 9 → 16
+  lit(t.body);
+  t = F.merge(); showQ();
+  say('接著 7 和 9 被挑出來', '合成 16');
+  await step(tok);                                   // 2502.0 依此類推：最後兩個 merge
+  F.merge(); showQ(); await go(tok, 1100);
+  t = F.merge(); showQ();
+  say('依此類推：10 + 13 = 23', '最後兩個 16 + 23 = 39 → 一棵 tree');
+  await step(tok);                                   // 2527.0 演算法很簡單
+  lit(t.body, GOLD);
+  say('queue 剩一棵：Huffman tree 完成', '6 個 message → merge 5 次（n − 1）');
+  talk(g, '蠻簡單的！', 'happy');
+}]);
+
+// 42:30 Huffman 程式
+FRAG.push(['treeb3-hcode', 'Huffman 程式：BinaryTree merge 與主迴圈', async (tok) => {
+  const g = stage([0, 5, 14], [0, 3.8, 0.6], [6.8, 3.6]);
+  const cd = code(['BinaryTree(bt1, bt2) {', '  root->leftChild = bt1.root;', '  root->rightChild = bt2.root;', '  root->weight = bt1.root->weight', '               + bt2.root->weight; }', 'Huffman(List<BinaryTree> l, n) {', '  for (i = 0; i < n-1; i++) {', '    first = l.DeleteMinWeight();', '    second = l.DeleteMinWeight();', '    bt = new BinaryTree(first, second);', '    l.Insert(*bt); } }'], -3.5, 7.3, 0.46);
+  tag('queue l', 'ptr', 1.0, 1.25, 2.4);
+  tag('first', 'idx', 2.5, 4.4); tag('second', 'idx', 5.3, 4.4);
+  const iTag = tag('', 'ptr alt', 3.9, 7.5);
+  const qx = (k) => V(1.0 + k * 1.05, 0.35, 2.4);
+  const q = [2, 3, 5, 7, 9, 13].map((w, k) => ({ w, body: cube(w, ORG, NODE, qx(k).x, 0.35, 2.4, 2) }));
+  const restack = () => q.forEach((e, k) => lab.springTo(e.body, qx(k)));
+  let a, b, t, s1, s2;
+  const take = (to) => { const e = q.shift(); restack(); lab.springTo(e.body, V(to, 5.0, 0)); lit(e.body, GOLD); return e; };
+  const mergeAB = () => { t = { w: a.w + b.w, body: disc(a.w + b.w, SAND, 3.9, 6.2, 0, 1.2) }; s1 = seg(V(3.9, 5.9, 0), V(2.5, 5.3, 0), '#7a6a52'); s2 = seg(V(3.9, 5.9, 0), V(5.3, 5.3, 0), '#7a6a52'); };
+  const insertT = () => { kill(s1); kill(s2); kill(a.body); kill(b.body); let k = q.findIndex((u) => u.w >= t.w); if (k < 0) k = q.length; q.splice(k, 0, t); restack(); };
+  await step(tok);                                   // 2549.8 BinaryTree 宣告
+  say('先看 BinaryTree 的宣告', '');
+  await step(tok);                                   // 2557.8 private 部分有 root
+  cd.hl(0);
+  say('BinaryTree 的 private 部分有個 root', '');
+  await step(tok);                                   // 2563.8 merge：bt1、bt2
+  cd.hl(1); await go(tok, 500); cd.hl(2);
+  say('這個建構子在做 merge', 'bt1、bt2 變成新 root 的左右子樹');
+  await step(tok);                                   // 2586.8 weight = 兩邊加總
+  cd.hl(3);
+  say('每個 node 都有 weight（頻率）', '新 root 的 weight = bt1 + bt2 的 weight');
+  talk(g, '頻率相加', 'happy');
+  await step(tok);                                   // 2617.5 Huffman 函式
+  cd.hl(5);
+  say('接著看 Huffman 這個 function', '');
+  await step(tok);                                   // 2631.8 n 個 message 丟進 queue
+  q.forEach((e) => lit(e.body, GOLD)); await go(tok, 600); q.forEach((e) => lit(e.body));
+  say('n 個 node = n 個要 encode 的 message', '全部丟進 queue');
+  await step(tok);                                   // 2650.8 做 n − 1 次 merge
+  cd.hl(6); setTag(iTag, 'i = 0（共 n − 1 = 5 次）');
+  say('做 n − 1 次 merge', 'for loop');
+  await step(tok);                                   // 2660.8 抓最小的兩個：first、second
+  cd.hl(7); a = take(2.5); await go(tok, 500);
+  cd.hl(8); b = take(5.3);
+  say('從 queue 抓最小的兩個', 'first = 2，second = 3');
+  await step(tok);                                   // 2678.8 new BinaryTree(first, second)
+  cd.hl(9); mergeAB();
+  say('new BinaryTree(first, second)', '一開始只是兩個 node → merge 成 5');
+  talk(g, '2 + 3 = 5', 'wow');
+  await step(tok);                                   // 2707.8 丟回 queue
+  cd.hl(10); insertT();
+  say('merge 出來的 tree 丟回 queue', 'l.Insert(*bt)');
+  await step(tok);                                   // 2718.2 loop n − 1 次
+  for (let i = 1; i < 5; i++) {
+    setTag(iTag, 'i = ' + i);
+    cd.hl(7); a = take(2.5); cd.hl(8); b = take(5.3); await go(tok, 220);
+    cd.hl(9); mergeAB(); await go(tok, 220);
+    cd.hl(10); insertT(); await go(tok, 120);
+  }
+  say('for loop 跑 n − 1 次', 'queue 最後只剩一棵：weight 39');
+  await step(tok);                                   // 2724.0 或檢查 queue 是否只剩一棵
+  cd.hl(-1);
+  say('也可以不數 n − 1 次', '改成檢查 queue 只剩一棵就停');
+  talk(g, '兩種都行', 'happy');
+}]);
+
+// 48:18 Huffman tree 讀碼
+const HUFF6 = '39(16(7,9),23(10(5(2,3),5),13))';
+FRAG.push(['treeb3-read', 'Huffman tree 讀碼：左 0 右 1', async (tok) => {
+  const g = stage([0, 5, 13.5], [0, 3.8, 0.4], [6.6, 3.0]);
+  const root = huffTree(HUFF6, { topY: 6.6, minY: 2.2 });
+  const leaves = allNodes(root).filter((n) => !n.left);
+  const L = (w) => leaves.find((n) => n.label === String(w));
+  const cur = makeCursor();
+  await step(tok);                                   // 2909.8 最後的 Huffman tree
+  say('最後得到的就是 Huffman tree', '');
+  await step(tok);                                   // 2916.4 leaf：方形 = message
+  leaves.forEach((n) => glow(n, GOLD));
+  say('leaf node（方形）就是 message', '共 6 個');
+  await step(tok);                                   // 2931.8 message 想成 word：I、the、you
+  leaves.forEach((n) => glow(n, OFF));
+  [['the', 13], ['I', 9], ['you', 7]].forEach(([w, f]) => tag(w, 'note', L(f).pos.x, L(f).pos.y + 0.75, 0.3));
+  say('message 就想成 word', '例如 I、the、you（示意）');
+  await step(tok);                                   // 2947.8 頻率才重要
+  say('字是什麼不重要', '方框裡的數字（頻率）才重要');
+  talk(g, '只看次數', 'happy');
+  await step(tok);                                   // 2983.8 頻率高 → 靠近 root
+  glow(L(13), GOLD);
+  say('出現頻率很高的字', '讓它越靠近 root 越好');
+  await step(tok);                                   // 2993.8 很少出現 → 離 root 遠
+  glow(L(2), RED); glow(L(3), RED);
+  say('很少出現的 2、3', '離 root 越遠越好，用比較長的碼');
+  await step(tok);                                   // 3030.8 左 0 右 1
+  allNodes(root).forEach((n) => glow(n, OFF));
+  allBits(root);
+  say('碼怎麼讀：往左記 0，往右記 1', '');
+  talk(g, '左 0 右 1', 'wow');
+  await step(tok);                                   // 3039.6 2 的碼 1000
+  const b2 = await readPath(tok, root, L(2), cur, 380);
+  under(L(2), b2);
+  say('頻率 2 的字：右、左、左、左', '碼 = 1000');
+  await step(tok);                                   // 3053.9 3 的碼 1001
+  allNodes(root).forEach((n) => glow(n, OFF));
+  const b3 = await readPath(tok, root, L(3), cur, 380);
+  under(L(3), b3);
+  cur.obj.visible = false;
+  say('頻率 3 的字', '碼 = 1001');
+  talk(g, '長一點沒關係', 'happy');
+}]);
+
+// 51:25 Bottom-up 合併與虛擬字
+FRAG.push(['treeb3-bottom', 'Bottom-up 合併與虛擬的字', async (tok) => {
+  const g = stage([0, 4.8, 14], [0, 3.8, 0], [6.6, 3.0]);
+  const F = forest([2, 3, 5, 7, 9, 13], { topY: 6.4 });
+  F.spawn();
+  let t5, t10;
+  await step(tok);                                   // 3085.2 關鍵字：bottom-up
+  tag('bottom-up', 'ptr alt', 0, 7.7);
+  say('建 Huffman tree 的關鍵字：bottom-up', '由下往上蓋');
+  talk(g, '從下面蓋', 'wow');
+  await step(tok);                                   // 3093.8 頻率少的先 merge
+  say('頻率比較少的字', '先 merge 成一棵 subtree');
+  await step(tok);                                   // 3106.8 2、3 出現最少
+  lit(F.trees[0].body, GOLD); lit(F.trees[1].body, GOLD);
+  say('六個字 2、3、5、7、9、13', '出現次數最少的是 2 和 3');
+  await step(tok);                                   // 3122.8 merge 起來
+  lit(F.trees[0].body); lit(F.trees[1].body);
+  t5 = F.merge();
+  say('把 2 和 3 merge 起來', '');
+  await step(tok);                                   // 3134.6 圓圈 5：虛擬的合併字
+  lit(t5.body, GOLD);
+  tag('虛擬的字（virtual）', 'note', t5.pos.x, t5.pos.y + 0.9, 0.3);
+  say('圓圈 5：一個虛擬的、合起來的字', '它的頻率是 5');
+  await step(tok);                                   // 3166.8 到這個 subtree 也有碼 100
+  tag('到這裡的碼 100，2、3 共用', 'pkt', t5.pos.x, t5.pos.y - 1.8, 0.4);
+  say('整棵蓋好後，到圓圈 5 的碼是 100', '2、3 共用 100，下一層才分支（老師說成 0100）');
+  await step(tok);                                   // 3226.8 內部節點 = subtree 頻率總和
+  lit(t5.body);
+  say('過渡時期產生的 tree node', '上面的數字 = subtree 頻率的總和');
+  await step(tok);                                   // 3248.8 五個 message：5 5 7 9 13
+  tag('queue：5, 5, 7, 9, 13', 'ptr', 0, 0.6, 1.0);
+  say('本來六個字，2、3 合成一個', '現在五個：5、5、7、9、13');
+  await step(tok);                                   // 3263.8 5 和 5 → 10
+  t10 = F.merge();
+  lit(t10.body, GOLD);
+  say('最小的 5 和 5 抓出來合併', '變成 10：整棵 subtree 當一個虛擬的字');
+  talk(g, '再合體', 'happy');
+  await step(tok);                                   // 3307.8 每次從 queue 抓最小兩個
+  lit(t10.body);
+  F.merge(); await go(tok, 600); F.merge(); await go(tok, 600);
+  const r = F.merge(); await go(tok, 400);
+  const n23 = r.right, n10 = n23.left, n5 = n10.left;
+  bitTag(r, n23, '1'); bitTag(n23, n10, '0'); bitTag(n10, n5, '0'); bitTag(n5, n5.left, '0'); bitTag(n5, n5.right, '1');
+  say('每次都從 queue 抓頻率最小的兩個合併', '最後得到 Huffman tree（2 = 1000、3 = 1001）');
+}]);
+
+// 55:37 Huffman tree 是否唯一 → priority queue
+FRAG.push(['treeb3-tie', 'Huffman tree 是否唯一；引出 priority queue', async (tok) => {
+  const g = stage([0, 5, 14], [0, 3.6, 0.6], [6.6, 3.2]);
+  const FA = forest([1, 1, 2, 2], { cx: -3.4, topY: 6.4, step: 1.2, spc: 0.75, gap: 0.45, tie: 'first' });
+  const FB = forest([1, 1, 2, 2], { cx: 3.4, topY: 6.4, step: 1.2, spc: 0.75, gap: 0.45, tie: 'last' });
+  let qb;
+  await step(tok);                                   // 3337.8 Huffman tree 唯一嗎？
+  FA.spawn(); FB.spawn();
+  tag('樹 A', 'ptr', -3.4, 7.6); tag('樹 B', 'ptr', 3.4, 7.6);
+  say('問題：Huffman tree 是唯一的嗎？', '示意：頻率 1, 1, 2, 2');
+  talk(g, '唯一嗎？', 'wow');
+  await step(tok);                                   // 3361.8 同分的時候怎麼辦？
+  FA.merge(); FB.merge();
+  await go(tok, 600);
+  [FA.trees[0], FA.trees[1]].forEach((u) => lit(u.body, GOLD));
+  [FB.trees[0], FB.trees[1]].forEach((u) => lit(u.body, GOLD));
+  say('不一定！看同分的時候怎麼選', '1 + 1 = 2 之後有三個 2：A、B 選的不同');
+  await step(tok);                                   // 3370.5 不見得是唯一的
+  FA.all.forEach((n) => lit(n.body)); FB.all.forEach((n) => lit(n.body));
+  FA.merge(); FB.merge(); await go(tok, 600); FA.merge(); FB.merge();
+  tag('Σ = 12', 'ptr alt', -3.4, 2.4, 0.4); tag('Σ = 12', 'ptr alt', 3.4, 2.4, 0.4);
+  say('得到兩棵形狀不同的 Huffman tree', '不唯一，但總長 Σ 頻率 × 碼長 一樣（補充）');
+  await step(tok);                                   // 3391.8 DeleteMinWeight
+  tag('queue', 'ptr', -5.4, 0.5, 3.0);
+  qb = [5, 2, 9, 3].map((v, k) => cube(v, BLU, SMALL, -3.8 + k * 1.0, 0.3, 3.0, 2));
+  tag('front', 'idx', -3.8, 0.95, 3.0);
+  say('Huffman function 裡有個動作', 'DeleteMinWeight（queue 示意：5, 2, 9, 3）');
+  await step(tok);                                   // 3399.8 選第一小、再選第二小
+  lit(qb[1], GOLD); await go(tok, 500); lab.flyAway(qb[1], V(0, 8, 3));
+  await go(tok, 600);
+  lit(qb[3], GOLD); await go(tok, 500); lab.flyAway(qb[3], V(0, 8, 3));
+  say('delete 一次選出 first（最小 2）', '再 delete 一次選 second（第二小 3）');
+  await step(tok);                                   // 3417.7 不是 FIFO → priority queue
+  tag('不是 first in first out，而是看 priority → priority queue', 'good', 0, 1.6, 3.0);
+  say('這種 delete 不遵守 first in first out', '而是依 priority → priority queue');
+  talk(g, '插隊佇列！', 'happy');
+}]);
+
+// 57:36 Priority queue：max / min
+FRAG.push(['treeb3-pq', 'Priority Queue：max／min 與 heap', async (tok) => {
+  const g = stage([0, 5, 14], [0, 2.8, 0.6], [6.6, 3.6]);
+  const BX = [-3.3, 3.3];
+  const boxes = [new Map(), new Map()], outs = [[], []];
+  const del = async (j, v) => { const b = boxes[j].get(v); lit(b, GOLD); await go(tok, 500); lab.springTo(b, V(BX[j] - 0.9 + outs[j].length * 1.0, 4.4, 0)); outs[j].push(v); };
+  await step(tok);                                   // 3456.3 Priority Queue 是什麼
+  BX.forEach((x, j) => { ghost(j ? TEAL : PUR, x, 1.1, 3.4, 2.2, 0, 2.2); });
+  say('Priority queue：顧名思義也是 queue', '');
+  await step(tok);                                   // 3466.6 add：放進去
+  const IN = [100, 1, 37, 8];
+  for (let k = 0; k < IN.length; k++) { BX.forEach((x, j) => boxes[j].set(IN[k], cube(IN[k], j ? TEAL : PUR, NODE, x - 1.05 + k * 0.7, 0.3 + (k % 2) * 0.7, (k % 2) * 0.5 - 0.3, 3))); await go(tok, 300); }
+  say('Add：把 element 放進 queue', '看不出裡面在搞什麼（示意：100, 1, 37, 8）');
+  await step(tok);                                   // 3487.8 delete 時動手腳：priority
+  say('重點在 delete', '每個元素都有自己的 priority');
+  talk(g, '看誰優先', 'wow');
+  await step(tok);                                   // 3501.8 兩種：max、min
+  tag('max priority queue', 'ptr', BX[0], 2.7); tag('min priority queue', 'ptr', BX[1], 2.7);
+  say('分兩種', 'max priority queue、min priority queue');
+  await step(tok);                                   // 3519.8 max：delete 回傳最大
+  await del(0, 100);
+  say('max priority queue', '每次 delete 回傳目前最大的：100');
+  await step(tok);                                   // 3539.8 min：回傳最小
+  await del(1, 1);
+  say('min priority queue', 'delete 回傳最小的：1');
+  await step(tok);                                   // 3557.8 Huffman 用 priority queue
+  tag('Huffman：每次取最小 → min PQ', 'idx', 0, 0.2, 3.2);
+  say('剛才的 Huffman 就用了 priority queue', '');
+  await step(tok);                                   // 3564.8 machine service
+  tag('machine service：最短的 job 先做 → min PQ', 'idx', 0, 0.2, 3.9);
+  say('machine service：每個 job 要花的時間', '最短的先做 → min priority queue');
+  await step(tok);                                   // 3593.8 heap ＝ priority queue
+  tag('heap', 'good', 0, 5.6);
+  say('priority queue 還有個常聽到的名字：heap', '補充：嚴格說 heap 是實作 PQ 的資料結構');
+  talk(g, 'heap！', 'happy');
+}]);
+
+// 1:00:28 Priority queue 實作方式比較
+FRAG.push(['treeb3-pqimpl', 'Priority queue 實作方式比較', async (tok) => {
+  const g = stage([0, 5, 14.5], [0, 3.6, 0.4], [6.8, 3.6]);
+  const NX = [-1.4, 0.6];
+  await step(tok);                                   // 3628.8 unordered linked list
+  [['unordered linked list', 6.6], ['unordered array', 5.2], ['sorted linked list', 3.8], ['sorted array', 2.4]].forEach(([nm, y]) => tag(nm, 'ptr', -4.6, y));
+  say('一堆數字，可以怎麼存？', '第一種：unordered linked list');
+  await step(tok);                                   // 3643.8 100 塞進去，再塞 1
+  let y = 6.6;
+  cube(100, PUR, [0.9, 0.5, 0.6], NX[0], y, 0, 2); await go(tok, 500);
+  cube(1, PUR, [0.9, 0.5, 0.6], NX[1], y, 0, 2); arrow(V(NX[0] + 0.5, y, 0), V(NX[1] - 0.5, y, 0));
+  say('沒有順序：給我 100 就塞進去，再給 1 也塞', 'list：100 → 1');
+  await step(tok);                                   // 3664.6 unordered array
+  y = 5.2;
+  NX.forEach((x, k) => tag('a[' + k + ']', 'idx', x, y - 0.55, 0.4));
+  cube(100, BLU, [0.9, 0.5, 0.6], NX[0], y, 0, 2); await go(tok, 500);
+  cube(1, BLU, [0.9, 0.5, 0.6], NX[1], y, 0, 2);
+  say('unordered array 也一樣', '100 放 a[0]，1 放 a[1]');
+  await step(tok);                                   // 3690.8 sorted linked list：1、100
+  y = 3.8;
+  const s100 = cube(100, TEAL, [0.9, 0.5, 0.6], NX[0], y, 0, 2); await go(tok, 500);
+  lab.springTo(s100, V(NX[1], y, 0)); cube(1, TEAL, [0.9, 0.5, 0.6], NX[0], y, 0, 2); arrow(V(NX[0] + 0.5, y, 0), V(NX[1] - 0.5, y, 0), '#c08a1f');
+  say('sorted linked list：每次 insert 都排序', '先放 1，再放 100');
+  await step(tok);                                   // 3728.0 sorted array
+  y = 2.4;
+  NX.forEach((x, k) => tag('a[' + k + ']', 'idx', x, y - 0.55, 0.4));
+  const big = cube(100, ORG, [0.9, 0.5, 0.6], NX[0], y, 0, 2); await go(tok, 500);
+  lab.springTo(big, V(NX[1], y, 0)); await go(tok, 500);
+  cube(1, ORG, [0.9, 0.5, 0.6], NX[0], y, 0, 2);
+  say('sorted array 也一樣排序', '100 往後搬，1 放 a[0]');
+  await step(tok);                                   // 3742.8 list：pointer assignment；array：data movement
+  tag('pointer assignment', 'idx', 2.2, 3.8); tag('data movement', 'idx', 2.2, 2.4);
+  say('差別：list 排序靠 pointer assignment', 'array 排序要 data movement（搬資料）');
+  await step(tok);                                   // 3801.8 unordered：insert 快、delete 要 scan
+  tag('Insert Θ(1)｜Delete Θ(n)', 'ptr alt', 4.6, 6.6); tag('Insert Θ(1)｜Delete Θ(n)', 'ptr alt', 4.6, 5.2);
+  say('unordered：insert 直接丟進來，很快', 'delete 最大／最小要 scan 全部 → 先甘後苦');
+  talk(g, '先甘後苦', 'wow');
+  await step(tok);                                   // 3839.0 sorted：insert 慢、delete 快
+  tag('Insert O(n)｜Delete Θ(1)', 'ptr alt', 4.6, 3.8); tag('Insert O(n)｜Delete Θ(1)', 'ptr alt', 4.6, 2.4);
+  say('sorted 剛好相反：insert 要比較 O(n)', '但 delete 很快 → 先苦後甘');
+  await step(tok);                                   // 3879.5 max heap：都是 log n
+  tag('max heap', 'ptr', -4.6, 1.0);
+  cube(100, GRN, [0.8, 0.5, 0.6], -0.4, 1.3, 0, 2); cube(1, GRN, [0.8, 0.5, 0.6], -1.2, 0.35, 0, 2);
+  seg(V(-0.5, 1.05, 0), V(-1.1, 0.6, 0), '#7a6a52');
+  tag('Insert O(log n)｜Delete O(log n)', 'good', 4.6, 1.0);
+  say('max heap：不管 insert 或 delete', '都是 O(log n)');
+  talk(g, '兩邊都快', 'happy');
+  await step(tok);                                   // 3920.8 log n：heap 用 tree 表示，看高度
+  say('log n 隱含什麼？', 'heap 用 tree 表示，操作只沿著樹的高度走');
+}]);
+
+// 1:05:57 Max／Min heap 定義與陣列表示
+function heapSet(vals, o) {
+  const O = Object.assign({ cx: 0, topY: 6.4, step: 1.4, width: 7, ax: -2.2, adx: 0.9, cells: 6, color: BLU, drop: 0, ms: 0 }, o);
+  const pos = (i) => heapPos(i, O.topY, O.step, O.width).add(V(O.cx, 0, 0));
+  const cellP = (i) => V(O.ax + (i - 1) * O.adx, 0.35, 2.4);
+  const H = [null], A = [null];
+  for (let i = 1; i <= O.cells; i++) { floorTile(cellP(i).x, 2.4); tag('[' + i + ']', 'idx', cellP(i).x, 0, 3.05); const p = pos(i); tag(String(i), 'idx', p.x + 0.58, p.y - 0.32, 0.3); }
+  edgeLines(() => { const out = []; for (let i = 2; i < H.length; i++) if (H[i] && H[i >> 1]) out.push([H[i >> 1].obj.position, H[i].obj.position]); return out; });
+  const S = { O, pos, cellP, H, A,
+    put(i, v, color, drop) { const p = pos(i), c = cellP(i); H[i] = cube(v, color || O.color, NODE, p.x, p.y, 0, drop || 0); H[i].v = v; A[i] = cube(v, color || O.color, SMALL, c.x, 0.35, 2.4, drop || 0); A[i].v = v; },
+    async fill(tok) { for (let k = 0; k < vals.length; k++) { S.put(k + 1, vals[k], null, O.drop); if (O.ms) await beat(tok, O.ms); } },
+    swap(i, j) { [H[i], H[j]] = [H[j], H[i]]; [A[i], A[j]] = [A[j], A[i]]; lab.springTo(H[i], pos(i)); lab.springTo(H[j], pos(j)); lab.springTo(A[i], cellP(i)); lab.springTo(A[j], cellP(j)); },
+  };
+  return S;
+}
+FRAG.push(['treeb3-heapdef', 'Max／Min heap 定義與陣列表示', async (tok) => {
+  const g = stage([0, 5, 14], [0, 3.6, 0.8], [6.8, 3.6]);
+  tag('max heap', 'ptr', -3.4, 7.4);
+  let MX, MN;
+  await step(tok);                                   // 3956.8 heap 是一棵 tree，root 很重要
+  MX = heapSet([14, 12, 7, 10, 8, 6], { cx: -3.4, width: 5.4, topY: 6.4, step: 1.35, ax: -5.6, adx: 0.8, color: BLU, drop: 3, ms: 200 });
+  await MX.fill(tok);
+  say('heap 是一棵 tree', '這棵 tree 的 root 很重要');
+  await step(tok);                                   // 3975.6 max heap：root 永遠最大
+  lit(MX.H[1], GOLD);
+  say('max heap：root 永遠是最大的', '所有數字裡最大的 14 放在 root');
+  talk(g, '老大在上', 'happy');
+  await step(tok);                                   // 3984.8 下面沒有人比它大
+  lit(MX.H[1]);
+  for (const [p, cs] of [[1, [2, 3]], [2, [4, 5]], [3, [6]]]) { [p, ...cs].forEach((i) => lit(MX.H[i], GREEN)); await go(tok, 500); [p, ...cs].forEach((i) => lit(MX.H[i])); }
+  say('下面的 subtree 沒有一個比它大', '補充：每個 subtree 自己也是 max heap');
+  await step(tok);                                   // 3991.8 min heap：最小的在 root
+  tag('min heap', 'ptr', 3.4, 7.4);
+  MN = heapSet([2, 7, 4, 10, 8, 6], { cx: 3.4, width: 5.4, topY: 6.4, step: 1.35, ax: 1.4, adx: 0.8, color: TEAL, drop: 3, ms: 200 });
+  await MN.fill(tok);
+  say('min heap：最小的放在 root', '下面沒有比它更小的');
+  await step(tok);                                   // 3999.3 一定是 complete binary tree
+  tag('一定是 complete binary tree', 'good', 0, 7.9);
+  say('不管 max 或 min heap', '都一定是 complete binary tree');
+  await step(tok);                                   // 4014.7 左右沒有大小規定
+  lit(MX.H[2], GOLD); lit(MX.H[3], GOLD); lit(MN.H[2], GOLD); lit(MN.H[3], GOLD);
+  say('有沒有規定左邊一定比右邊大？', '沒有！max：12 > 7；min：7 > 4，都合法');
+  talk(g, '左右不管', 'wow');
+  await step(tok);                                   // 4049.8 旁邊的編號 1～6
+  [2, 3].forEach((i) => { lit(MX.H[i]); lit(MN.H[i]); });
+  say('例：max heap 14、12、7、10、8、6', '節點旁邊的編號 1～6 是什麼？');
+  await step(tok);                                   // 4069.8 用 array 表示：1 放 14、2 放 12…
+  for (let i = 1; i <= 4; i++) { lit(MX.A[i], GOLD); lit(MX.H[i], GOLD); await go(tok, 350); }
+  say('這棵 tree 用 array 表示', '1 放 14、2 放 12、3 放 7、4 放 10');
+  await step(tok);                                   // 4148.8 跟 BST 區分
+  for (let i = 1; i <= 4; i++) { lit(MX.A[i]); lit(MX.H[i]); }
+  tag('BST：左小右大 ≠ heap', 'bad', 0, 1.4, 2.4);
+  say('要特別強調：等一下的 Binary Search Tree', '才有「左邊小、右邊大」；heap 只管 root');
+  await step(tok);                                   // 4179.8 min heap 示意圖
+  lit(MN.H[1], GOLD); lit(MN.A[1], GOLD);
+  say('min heap 示意圖：最小的放在 root', 'array：2 放 [1]、7 放 [2]……');
+  talk(g, '小的在上', 'happy');
+}]);
+
+// 1:10:16 Max heap insert：1、5、21
+FRAG.push(['treeb3-hins', 'Max heap insert 範例：1、5、21', async (tok) => {
+  const BASE = [20, 15, 2, 14, 10];
+  let S, g, tg;
+  const base = (v) => {
+    g = stage([0, 5, 13.5], [0, 3.6, 0.8], [6.6, 3.6]);
+    S = heapSet(BASE, { cx: 0, width: 7, topY: 6.4, step: 1.45, ax: -2.2, adx: 0.9 });
+    BASE.forEach((x, k) => S.put(k + 1, x));
+    if (v) tg = tag('insert ' + v, 'ptr alt', 4.6, 7.2);
+  };
+  const cmp = (i, p) => { lit(S.H[i], GOLD); lit(S.H[p], GOLD); };
+  const off = (i, p) => { lit(S.H[i]); lit(S.H[p]); };
+  base();
+  await step(tok);                                   // 4215.8 insert 會發生什麼事？
+  say('max heap：[20, 15, 2, 14, 10]', 'insert 會發生什麼事？');
+  talk(g, 'insert！', 'wow');
+  await step(tok);                                   // 4237.8 可能要調整：比 root 還大
+  tag('比老大還大 → 要調整', 'note', 4.6, 6.4);
+  say('insert 進來可能要調整', '例如新值比 root 還大');
+  await step(tok);                                   // 4255.5 insert 1
+  tg = tag('insert 1', 'ptr alt', 4.6, 7.2);
+  S.put(6, 1, ORG, 3);
+  say('insert 1：放在 2 的下面', '位置 6（2 的左子）');
+  await step(tok);                                   // 4276.8 1 沒有比 parent 大 → 結束
+  cmp(6, 3);
+  say('1 跟 parent 2 比：沒有比較大', '乖乖待在原地，insert 結束（老師說成和 20 比）');
+  await step(tok);                                   // 4286.0 可以放右邊子樹嗎？
+  off(6, 3);
+  const gh = ghost('#e06666', S.pos(7).x, S.pos(7).y, 0.9, 0.7, 0, 0.9);
+  tag('✗', 'bad', S.pos(7).x, S.pos(7).y + 0.6);
+  say('可不可以放在右邊的位置？', '不行！');
+  talk(g, '搖頭', 'sad');
+  await step(tok);                                   // 4302.8 heap 是 complete binary tree
+  kill(gh);
+  tag('complete：先填滿左邊再填右邊', 'good', 0, 1.4, 2.4);
+  say('因為 heap 是 complete binary tree', '要依序填位置，只能放在 6');
+  await step(tok);                                   // 4319.0 insert 5
+  base(5);
+  S.put(6, 5, ORG, 3);
+  say('同一個原 heap：insert 5', '5 先放在下面的位置 6');
+  await step(tok);                                   // 4374.8 兩步驟 ①：放在最末端
+  tag('① 放在最後一個位置', 'ptr', -4.6, 6.4);
+  say('其實只要做兩件事', '① 新元素先放在 heap 最末端，維持 complete');
+  await step(tok);                                   // 4410.8 ② 跟 parent 比，大就往上
+  tag('② 跟 parent 比，大就往上爬', 'ptr', -4.6, 5.7);
+  say('② 跟你的 parent 比', '比 parent 大就上去，一直檢查到不能爬為止');
+  talk(g, '往上爬！', 'happy');
+  await step(tok);                                   // 4442.0 5 和 2 比：2 掉下來
+  cmp(6, 3); await go(tok, 600); off(6, 3); S.swap(6, 3);
+  say('5 和 2 比：2 比較小', '2 掉下來，5 上去');
+  await step(tok);                                   // 4462.0 5 和 20 比：停
+  cmp(3, 1);
+  say('5 再和 20 比：5 比較小', 'stop，insert 結束 → [20, 15, 5, 14, 10, 2]');
+  await step(tok);                                   // 4485.0 insert 21
+  base(21);
+  S.put(6, 21, ORG, 3);
+  say('insert 21：遵照同樣原則', '先放在 2 的下面');
+  await step(tok);                                   // 4498.0 21 比 2 大 → 往上
+  cmp(6, 3); await go(tok, 500); off(6, 3); S.swap(6, 3);
+  say('21 跟 parent 2 比：21 比較大', '21 往上爬，2 往下掉');
+  await step(tok);                                   // 4505.0 21 比 20 大 → swap 到 root
+  cmp(3, 1); await go(tok, 500); off(3, 1); S.swap(3, 1);
+  say('21 再跟 20 比：還是比較大', 'swap → 21 成為新的 root');
+  talk(g, '新老大！', 'wow');
+  await g.hop(tok);
+}]);
+
+// 1:15:57 Max heap insert 程式（陣列）
+FRAG.push(['treeb3-hcode2', 'Max heap insert 程式（陣列實作）', async (tok) => {
+  const g = stage([0, 5, 14], [0, 3.6, 0.8], [-6.6, 3.0]);
+  const cd = code(['insert_max_heap(item, *n) {', '  if (HEAP_FULL(*n)) exit(1);', '  i = ++(*n);', '  while (i != 1 &&', '     item.key > heap[i/2].key) {', '    heap[i] = heap[i/2];', '    i /= 2;', '  }', '  heap[i] = item;', '}'], -3.9, 7.2, 0.48);
+  const S = heapSet([20, 15, 2, 14, 10], { cx: 3.4, width: 5.2, topY: 6.4, step: 1.4, ax: 0.6, adx: 0.85 });
+  [20, 15, 2, 14, 10].forEach((x, k) => S.put(k + 1, x));
+  const nT = tag('', 'ptr', 6.3, 2.0, 2.4);
+  const iT = tag('', 'ptr alt', 0, 1.2, 2.4);
+  const showI = (i) => { const c = S.cellP(i); iT.position.set(c.x, 1.2, 2.4); setTag(iT, 'i = ' + i); };
+  let item, gh;
+  const moveDown = (i, p) => { S.H[i] = S.H[p]; S.A[i] = S.A[p]; S.H[p] = null; S.A[p] = null; lab.springTo(S.H[i], S.pos(i)); lab.springTo(S.A[i], S.cellP(i)); };
+  await step(tok);                                   // 4556.8 heap 用 array 實作
+  say('heap 用 array 來 implement', '');
+  await step(tok);                                   // 4574.8 array 大小 MaxSize
+  cd.hl(0);
+  tag('array 大小 = MAX_SIZE', 'idx', 3.4, 0.6, 3.4);
+  say('array 配置的空間大小是 MaxSize', '');
+  await step(tok);                                   // 4583.0 n == MaxSize → 滿了
+  cd.hl(1);
+  say('如果 n 剛好等於 MaxSize', '代表 heap 滿了，放不下');
+  await step(tok);                                   // 4603.0 n 記錄最後一個元素的 index
+  setTag(nT, 'n = ?');
+  say('n 記錄 heap 最後一個元素', '在 array 裡的 index');
+  await step(tok);                                   // 4644.0 n = 5（老師先說 6 後更正）
+  setTag(nT, 'n = 5');
+  say('這裡放在 1～5，所以 n = 5', '老師先說 6，後來更正');
+  talk(g, 'n = 5', 'happy');
+  await step(tok);                                   // 4677.8 n++ → 6，21 放到位置 6
+  cd.hl(2); setTag(nT, 'n = 6'); showI(6);
+  gh = ghost('#c08a1f', S.pos(6).x, S.pos(6).y, 0.9, 0.7, 0, 0.9);
+  item = cube(21, ORG, NODE, 6.4, 7.4, 0, 2); tag('item', 'idx', 6.4, 8.0);
+  say('沒超過 MaxSize：n++，5 變成 6', '新的 21 從位置 6 開始');
+  await step(tok);                                   // 4699.5 parent 在 n / 2
+  lit(S.H[3], GOLD);
+  say('位置 n 的 parent 在 n / 2', '6 / 2 = 3 → heap[3] = 2');
+  await step(tok);                                   // 4753.9 i 從 n 開始，到 1 就停
+  lit(S.H[3]); cd.hl(3);
+  say('迴圈：i 一開始 = n', 'i 到 1（root）就停止');
+  await step(tok);                                   // 4775.8 比 parent 大 → parent 往下搬
+  cd.hl(4); lit(item, GOLD); lit(S.H[3], GOLD); await go(tok, 500); lit(S.H[3]); lit(item);
+  cd.hl(5); kill(gh); moveDown(6, 3);
+  say('21 > parent 2 → 把 parent 往下搬', 'heap[6] = heap[3]（老師口說 swap）');
+  await step(tok);                                   // 4791.6 i 每次除以 2
+  cd.hl(6); showI(3); await go(tok, 600);
+  cd.hl(4); lit(S.H[1], GOLD); await go(tok, 500); lit(S.H[1]);
+  cd.hl(5); moveDown(3, 1); await go(tok, 300); cd.hl(6); showI(1);
+  say('i /= 2 → i = 3，21 > 20 再搬一次', 'i /= 2 → i = 1');
+  await step(tok);                                   // 4809.8 到 root 就跳出
+  cd.hl(8);
+  S.H[1] = item; item.v = 21; lab.springTo(item, S.pos(1));
+  S.A[1] = cube(21, ORG, SMALL, S.cellP(1).x, 0.35, 2.4, 2);
+  say('i == 1 到達 root → 跳出迴圈', 'heap[1] = item → [21, 15, 20, 14, 10, 2]');
+  talk(g, '只搬 parent', 'happy');
+}]);
+
+// 1:20:37 Max heap delete：直覺作法（未完待續）
+FRAG.push(['treeb3-hdel', 'Max heap delete：直覺作法', async (tok) => {
+  const g = stage([0, 5, 13.5], [0, 3.6, 0.8], [6.6, 3.6]);
+  const S = heapSet([20, 15, 2, 14, 10], { cx: 0, width: 7, topY: 6.4, step: 1.45, ax: -2.2, adx: 0.9, cells: 5 });
+  [20, 15, 2, 14, 10].forEach((x, k) => S.put(k + 1, x));
+  const mv = (from, to) => { S.H[to] = S.H[from]; S.A[to] = S.A[from]; S.H[from] = S.A[from] = null; lab.springTo(S.H[to], S.pos(to)); lab.springTo(S.A[to], S.cellP(to)); };
+  await step(tok);                                   // 4837.1 delete 怎麼做？先看例子
+  tag('老師的直覺作法', 'ptr', 0, 7.6);
+  say('delete 更複雜', '先看例子，不看程式');
+  talk(g, 'delete 呢？', 'wow');
+  await step(tok);                                   // 4847.4 20 被拿掉，空了
+  lab.flyAway(S.H[1], V(0, 8, 4)); lab.flyAway(S.A[1], V(0, 8, 4)); S.H[1] = S.A[1] = null;
+  say('delete：root 的 20 就空掉了', '');
+  await step(tok);                                   // 4863.0 從剩下的找最大
+  [2, 3, 4, 5].forEach((i) => lit(S.H[i], GOLD));
+  say('要從剩下的數字裡找最大的補上', '15、2、14、10');
+  await step(tok);                                   // 4882.8 15 最大 → 移上來
+  [2, 3, 4, 5].forEach((i) => lit(S.H[i]));
+  mv(2, 1);
+  say('笨方法：檢查一遍，15 最大', '把 15 移上來');
+  await step(tok);                                   // 4892.8 15 的位置空了 → 放 14
+  lit(S.H[4], GOLD); lit(S.H[5], GOLD); await go(tok, 500); lit(S.H[4]); lit(S.H[5]);
+  mv(4, 2);
+  say('15 原來的位置又空了：放 14 還是 2？', '當然放 14，它跳上來');
+  await step(tok);                                   // 4923.6 最笨的方法：一路補洞
+  ghost('#d64545', S.pos(4).x, S.pos(4).y, 0.9, 0.7, 0, 0.9);
+  ghost('#d64545', S.cellP(4).x, 0.35, 0.8, 0.5, 2.4, 0.8);
+  say('最笨的方法：挑最大的補洞，再往下補', '補充：這樣中間會有洞，不再是 complete');
+  talk(g, '有洞了…', 'sad');
+  await step(tok);                                   // 4943.6 不是最後的 solution，下次講
+  tag('正解（下次講）：最後一個移到 root，再往下換', 'good', 0, 1.4, 2.4);
+  say('這顯然不是最後的 solution', '下次再講（補充：課本 O(log n) 作法）');
+}]);
+  }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
 
