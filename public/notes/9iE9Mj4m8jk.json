@@ -1,98 +1,194 @@
 {
  "video": "9iE9Mj4m8jk",
  "label": "Abdul Bari：4.1 MultiStage Graph",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
-   "title": "Multistage graph 問題",
+   "title": "Multistage graph 與 principle of optimality",
    "scene": "msg-graph",
    "points": [
     {
-     "text": "Multistage graph 是有向、有權重的圖，頂點分成若干 stage，邊只會從一個 stage 連到下一個 stage。",
-     "t": 31
+     "text": "本片：多段圖問題是什麼、為什麼能用 DP、用 forward method 求解。",
+     "t": 0
+    },
+    {
+     "text": "Multistage graph 是有向加權圖，頂點分成若干 stage，邊只會從一個 stage 連到下一個 stage。",
+     "t": 27
     },
     {
      "text": "第一個與最後一個 stage 各只有一個頂點：source（起點）與 sink（終點）。",
-     "t": 50
+     "t": 42
     },
     {
      "text": "常用來表示資源配置；目標是找 source 到 sink 成本最小的路徑，是最佳化（最小化）問題。",
-     "t": 68
-    }
-   ]
-  },
-  {
-   "title": "為什麼可以用 DP：principle of optimality",
-   "scene": "msg-graph",
-   "points": [
+     "t": 47
+    },
     {
      "text": "DP 依 principle of optimality：問題必須能用一連串決策來解。",
-     "t": 96
+     "t": 76
     },
     {
-     "text": "從 stage 2 選一個頂點（例如 5），再從 5 決定走 7 或 8……每個 stage 都要做一次決策。",
-     "t": 118
+     "text": "例：在 stage 2 選一個頂點（例如 5），再從 5 決定走 7 或 8……",
+     "t": 86
     },
     {
-     "text": "每個 stage 都能做決策，principle of optimality 成立，所以用 tabulation 把資料填進表。",
-     "t": 150
+     "text": "每個 stage 都能做決策，principle of optimality 成立，可以用 DP。",
+     "t": 110
     }
    ]
   },
   {
-   "title": "由 sink 往回填 cost 表",
-   "scene": "msg-cost-table",
+   "title": "由 sink 開始：stage 5、4",
+   "scene": "dpbari3-msg-s4",
    "points": [
     {
-     "text": "從最後面算起：sink 到自己的成本 cost(5, 12) = 0。",
-     "t": 205
+     "text": "用 tabulation 把每個頂點的 cost 填進表：從 sink 那一側開始算，因為邊都往那邊走。",
+     "t": 122
     },
     {
-     "text": "stage 4：cost(4,9) = 4、cost(4,10) = 2、cost(4,11) = 5，下一步（d）都是 12。",
-     "t": 245
+     "text": "sink 自己的成本是 0。",
+     "t": 148
     },
     {
-     "text": "cost(3,6) = min(c(6,9)+cost(4,9), c(6,10)+cost(4,10)) = min(6+4, 5+2) = 7，d = 10。",
-     "t": 340
+     "text": "記法：cost(5, 12) = 0，前面是 stage 編號，後面是頂點編號。",
+     "t": 164
     },
     {
-     "text": "cost(3,7) = min(4+4, 3+2) = 5，d = 10；cost(4,9) 這種已算好的值被 6、7 重複使用，這就是 overlapping subproblems。",
-     "t": 440
+     "text": "stage 4：cost(4,9) = 4，只有一條邊到 sink。",
+     "t": 193
     },
     {
-     "text": "cost(3,8) = min(5+2, 6+5) = 7，d = 10。",
-     "t": 515
+     "text": "cost(4,10) = 2、cost(4,11) = 5。",
+     "t": 210
     },
     {
-     "text": "stage 2：cost(2,2) = min(4+7, 2+5, 1+7) = 7（d = 7）；cost(2,4) = 11+7 = 18（d = 8）；cost(2,5) = min(11+5, 8+7) = 15（d = 8）；表上 cost(2,3) = 9（d = 6，口頭沒有逐項計算）。",
-     "t": 640
-    },
-    {
-     "text": "cost(1,1) = min(9+7, 7+9, 3+18, 2+15) = 16，經頂點 2 或 3 都是 16，所以 d 寫 2 或 3。",
-     "t": 760
+     "text": "這三個頂點下一步都到 12，所以 d 欄都寫 12；d 的意思稍後說明。",
+     "t": 234
     }
-   ],
-   "trap": "d 欄記的是「給出最小值的下一個頂點」，不是成本；cost(2,3) 由 2+cost(6)=9 與 7+cost(7)=12 取 9。"
+   ]
   },
   {
-   "title": "遞迴公式與 forward method",
+   "title": "stage 3 與重疊子問題",
+   "scene": "dpbari3-msg-s3",
+   "points": [
+    {
+     "text": "stage 3 的頂點 6、7、8，每個都有兩條邊往 stage 4。",
+     "t": 250
+    },
+    {
+     "text": "cost(3,6) = min{c(6,9) + cost(4,9), c(6,10) + cost(4,10)}。",
+     "t": 278
+    },
+    {
+     "text": "小寫 c 是邊的權重，cost 是頂點到 sink 的成本。",
+     "t": 322
+    },
+    {
+     "text": "= min(6 + 4, 5 + 2) = 7，由頂點 10 給出最小值，所以 d = 10。",
+     "t": 345
+    },
+    {
+     "text": "cost(3,7) = min{c(7,9) + cost(4,9), c(7,10) + cost(4,10)}。",
+     "t": 379
+    },
+    {
+     "text": "cost(4,9) 之前算好，6 用過、7 又用：這就是 DP 的 overlapping subproblems。",
+     "t": 430
+    },
+    {
+     "text": "cost(3,7) = min(4 + 4, 3 + 2) = 5，d = 10。",
+     "t": 458
+    },
+    {
+     "text": "cost(3,8) = min(5 + 2, 6 + 5) = 7，d = 10。",
+     "t": 503
+    }
+   ]
+  },
+  {
+   "title": "stage 2",
+   "scene": "dpbari3-msg-s2",
+   "points": [
+    {
+     "text": "cost(2,2)：頂點 2 有三條邊，分別到 6、7、8。",
+     "t": 544
+    },
+    {
+     "text": "= min(4 + 7, 2 + 5, 1 + 7) = min(11, 7, 8) = 7，d = 7。",
+     "t": 590
+    },
+    {
+     "text": "cost(2,4)：只有一條邊到 8，= 11 + 7 = 18，d = 8。",
+     "t": 643
+    },
+    {
+     "text": "cost(2,5) = min(11 + 5, 8 + 7) = min(16, 15) = 15，d = 8。",
+     "t": 674
+    },
+    {
+     "text": "表幾乎填滿，只剩 source。",
+     "t": 735
+    }
+   ],
+   "trap": "影片沒有逐項算 cost(2,3)，表上直接是 9（d = 6）：min(c(3,6) + 7, c(3,7) + 5) = min(2 + 7, 7 + 5) = 9。"
+  },
+  {
+   "title": "source：cost(1,1) = 16",
+   "scene": "dpbari3-msg-s1",
+   "points": [
+    {
+     "text": "最後算起點：cost(1,1) 就是 source 到 sink 的最小成本。",
+     "t": 744
+    },
+    {
+     "text": "頂點 1 有四條邊到 2、3、4、5，它們的 cost 都已經在表上。",
+     "t": 759
+    },
+    {
+     "text": "cost(1,1) = min(9 + 7, 7 + 9, 3 + 18, 2 + 15)。",
+     "t": 793
+    },
+    {
+     "text": "= min(16, 16, 21, 17) = 16，經頂點 2 或 3 都是 16，d 寫「2 或 3」。",
+     "t": 826
+    },
+    {
+     "text": "先填小的值，再得到大的值；從多段圖的最後面往回算。",
+     "t": 858
+    },
+    {
+     "text": "雖然是從最後一個 stage 往回算，仍然叫 forward method，原因下一段說明。",
+     "t": 863
+    }
+   ]
+  },
+  {
+   "title": "遞迴公式",
    "scene": "msg-formula",
    "points": [
     {
-     "text": "雖然是從最後一個 stage 往回算，仍然叫 forward method，原因在於做決策的方向。",
-     "t": 843
+     "text": "把剛才的步驟寫成公式。",
+     "t": 877
     },
     {
-     "text": "公式：cost(i, j) = min{ c(j, l) + cost(i+1, l) }，i 是 stage 編號、j 是頂點編號。",
-     "t": 870
+     "text": "cost(i, j)：i 是 stage 編號、j 是頂點編號。",
+     "t": 881
     },
     {
-     "text": "例：cost(2, 2) 就是 j = 2、l 分別取 6、7、8 三項再取最小。",
-     "t": 915
+     "text": "cost(i, j) = min{ c(j, l) + cost(i+1, l) }。",
+     "t": 903
     },
     {
-     "text": "條件：(j, l) 是圖上的邊，且 l 屬於下一個 stage（i+1）。",
-     "t": 960
+     "text": "例：j = 2、l = 6 時，就是 c(2,6) + cost(3,6)。",
+     "t": 916
+    },
+    {
+     "text": "頂點 2 有三條邊，所以同樣的式子寫三次再取最小。",
+     "t": 933
+    },
+    {
+     "text": "條件：(j, l) 是圖上的邊，而且 l 屬於下一個 stage（i+1）。",
+     "t": 987
     }
    ]
   },
@@ -101,24 +197,36 @@
    "scene": "msg-path",
    "points": [
     {
-     "text": "填表時順便記下 d：讓 cost 最小的那個下一個頂點。表填完後才真正「做一連串決策」。",
-     "t": 1005
+     "text": "到這裡才真正開始 DP 的「一連串決策」：表格資料已經準備好。",
+     "t": 1009
     },
     {
-     "text": "從 vertex 1 往 sink 方向依 d 決定下一步，決策方向是往前，所以叫 forward method。",
-     "t": 1045
+     "text": "填表時記下的 d：讓 cost 最小的那個下一個頂點。",
+     "t": 1028
     },
     {
-     "text": "d(1,1) = 2 → d(2,2) = 7 → d(3,7) = 10 → d(4,10) = 12：路徑 1→2→7→10→12。",
-     "t": 1110
+     "text": "從 vertex 1 往 sink 方向做決策，方向是往前，所以叫 forward method。",
+     "t": 1051
     },
     {
-     "text": "若在 vertex 1 改選 3：d(2,3) = 6 → d(3,6) = 10 → 12，得到 1→3→6→10→12，成本同樣是 16。",
-     "t": 1210
+     "text": "d(1,1) = 2 → d(2,2) = 7 → d(3,7) = 10 → d(4,10) = 12。",
+     "t": 1080
+    },
+    {
+     "text": "得到最短路徑 1 → 2 → 7 → 10 → 12。",
+     "t": 1150
+    },
+    {
+     "text": "若在 vertex 1 改選 3：d(2,3) = 6 → d(3,6) = 10 → 12。",
+     "t": 1170
+    },
+    {
+     "text": "另一條路徑 1 → 3 → 6 → 10 → 12，成本同樣是 16。",
+     "t": 1232
     },
     {
      "text": "最佳成本只有一個，但這個例子剛好有兩條路徑達到它。",
-     "t": 1260
+     "t": 1243
     }
    ],
    "trap": "補充：課本另有 backward method，以 bcost(i, j) 從 source 往後算；兩種得到的最短成本相同。"
@@ -191,6 +299,5 @@
    "ans": "cost(i,j) = min{c(j,l) + cost(i+1,l)}",
    "why": "l 在下一個 stage 且 (j,l) 是邊；取最小值。"
   }
- ],
- "timing": "estimated"
+ ]
 }

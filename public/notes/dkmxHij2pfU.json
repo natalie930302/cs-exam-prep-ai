@@ -1,0 +1,857 @@
+{
+ "video": "dkmxHij2pfU",
+ "label": "交大江蕙如 Lec18 Dynamic Programming (2/3)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場：今天的兩大主題",
+   "scene": null,
+   "points": [
+    {
+     "text": "前半段介紹兩個很有名、其實很困難的問題：Subset Sum 與 Knapsack，DP 能得到不錯的結果。",
+     "t": 16
+    },
+    {
+     "text": "後半段回到 shortest path：edge weight 為負時怎麼處理，用另一個 DP 方法（Bellman-Ford）。",
+     "t": 55
+    },
+    {
+     "text": "今天的重要技巧：多加一個 variable——看哪些問題一個變數不夠、要考慮好幾個。",
+     "t": 84
+    }
+   ]
+  },
+  {
+   "title": "Subset Sum 問題定義",
+   "scene": "dpjiang2-subset-def",
+   "points": [
+    {
+     "text": "Subset Sum 被 Richard Karp 列為 21 個 NP-complete 問題之一，難度明顯高於前面學過的問題。",
+     "t": 106
+    },
+    {
+     "text": "但在合理情況下，DP 對這個困難問題能得到品質很好的答案。",
+     "t": 145
+    },
+    {
+     "text": "Input：n 個 item、一個限重 W 的包包；每個 item i 有重量 wᵢ。",
+     "t": 166
+    },
+    {
+     "text": "例子：包包限重 W = 15 kg，超過就破掉。",
+     "t": 183
+    },
+    {
+     "text": "目標：塞得越滿越好，maximize 放進去的總重量，但不能超過 W。",
+     "t": 241
+    },
+    {
+     "text": "旁邊的 item 是 12、1、2、1、4 公斤；眼睛看就知道 12 + 2 + 1 = 15 剛好塞滿。",
+     "t": 263
+    }
+   ]
+  },
+  {
+   "title": "Greedy 反例：W = 11，重量 1 2 5 6 7",
+   "scene": "dpjiang2-subset-greedy",
+   "points": [
+    {
+     "text": "Subset Sum 用 greedy algorithm 得不到最佳解，舉反例：W = 11，五個 item 重 1、2、5、6、7。",
+     "t": 302
+    },
+    {
+     "text": "大的先塞：先放 7，只剩 4 kg，只能再塞 2 和 1，得到 7 + 2 + 1 = 10。",
+     "t": 351
+    },
+    {
+     "text": "最佳解是 5 + 6 = 11，剛好塞滿。",
+     "t": 392
+    },
+    {
+     "text": "倒過來小的先塞：1 + 2 + 5 = 8 之後就塞不下了，也不是最佳解。",
+     "t": 415
+    },
+    {
+     "text": "所以 greedy 在這個問題上求不到最佳解，必須想別的方法。",
+     "t": 431
+    }
+   ]
+  },
+  {
+   "title": "最佳化問題的 formulation",
+   "scene": "dpjiang2-opt-form",
+   "points": [
+    {
+     "text": "Dynamic Programming 的 programming 指 mathematical programming，也就是針對最佳化問題設計演算法。",
+     "t": 446
+    },
+    {
+     "text": "Optimization problem 由兩部分組成：objective function 與 constraints。",
+     "t": 480
+    },
+    {
+     "text": "Objective 分兩大類：maximize（例如 gain）或 minimize（例如 cost）某個函數值。",
+     "t": 519
+    },
+    {
+     "text": "Subset Sum 的 objective：maximize Σ_{i∈S} wᵢ，S 是選出來的 item。",
+     "t": 541
+    },
+    {
+     "text": "Constraints 圍出 solution space；合理解一定落在裡面，再從中選 objective 最好的。",
+     "t": 564
+    },
+    {
+     "text": "Subset Sum 的 constraint：Σ_{i∈S} wᵢ ≤ W（加上等號，因為可以剛好達到容量）。",
+     "t": 621
+    },
+    {
+     "text": "式子都是一次式以下 → Linear Programming；二次 → Quadratic Programming；更高 → Non-linear Programming。",
+     "t": 656
+    }
+   ],
+   "trap": "constraint 要寫 ≤ W 而不是 < W，因為剛好塞滿也合法（老師在投影片上補了等號）。"
+  },
+  {
+   "title": "第一版 recurrence：OPT(i) 只看 item",
+   "scene": "dpjiang2-subset-cases",
+   "points": [
+    {
+     "text": "DP 的基本想法是數學歸納法。",
+     "t": 712
+    },
+    {
+     "text": "定義 subproblem OPT(i)：item 隨意編號 1…n（不必按重量排序），OPT(i) 是前 i 個 item 能放進包包的最佳解。",
+     "t": 760
+    },
+    {
+     "text": "最終目標是 OPT(n)：所有 item 都考慮。",
+     "t": 851
+    },
+    {
+     "text": "看最後一個 item n，跟 weighted interval scheduling 的分析方式很像。",
+     "t": 896
+    },
+    {
+     "text": "最佳解 O 只有兩種 case：item n 不在 O，或 item n 在 O。",
+     "t": 938
+    },
+    {
+     "text": "Case 1：n 不選 → 直接承接 OPT(n−1)。",
+     "t": 1013
+    },
+    {
+     "text": "Case 2：n 選進去 → 初步寫成 wₙ + OPT(n−1)。",
+     "t": 1060
+    }
+   ]
+  },
+  {
+   "title": "問題出在容量：擴充成 OPT(i, w)",
+   "scene": "dpjiang2-subset-2var",
+   "points": [
+    {
+     "text": "第一版的問題：第 n 個 item 放進去會吃掉容量，但 OPT(n−1) 仍假設容量是 W。",
+     "t": 1105
+    },
+    {
+     "text": "例：15 kg 的包包放進 12 kg 的 item 後，剩下的人只能塞 3 kg，而不是 15 kg。",
+     "t": 1157
+    },
+    {
+     "text": "放入 wₙ 後 available capacity 變成 W − wₙ。",
+     "t": 1192
+    },
+    {
+     "text": "OPT(i) 的定義太窄：capacity 也是影響最佳解的變數，要放進定義。",
+     "t": 1210
+    },
+    {
+     "text": "新定義 OPT(i, w)：考慮前 i 個 item、容量 w 時，max Σ wⱼ 且 Σ wⱼ ≤ w。",
+     "t": 1267
+    },
+    {
+     "text": "第一版的 recurrence 只對一半，照做會產生錯誤的解；這個小修正就能得到正解。",
+     "t": 1313
+    }
+   ],
+   "trap": "Subset Sum／Knapsack 的子問題一定要帶容量 w 這個第二維；只用 OPT(i) 會在 case 2 錯用整個 W。"
+  },
+  {
+   "title": "完整的 recurrence relation",
+   "scene": "dpjiang2-subset-recur",
+   "points": [
+    {
+     "text": "Case 1（不放 n）不必修正：容量沒被佔用，就是 OPT(n−1, w)。",
+     "t": 1457
+    },
+    {
+     "text": "Case 2（放 n）：wₙ + OPT(n−1, w − wₙ)，前 n−1 個人只能兜剩下的容量。",
+     "t": 1510
+    },
+    {
+     "text": "不只最後一個 item，任何第 i 個 item 的 OPT(i, w) 都能這樣展開。",
+     "t": 1534
+    },
+    {
+     "text": "Boundary：w = 0（包包沒空間）或 i = 0（沒有 item）時 OPT(i, w) = 0。",
+     "t": 1560
+    },
+    {
+     "text": "若 wᵢ > w：item 塞不進去，直接 skip，OPT(i, w) = OPT(i−1, w)。",
+     "t": 1622
+    },
+    {
+     "text": "General case：OPT(i, w) = max(OPT(i−1, w), wᵢ + OPT(i−1, w − wᵢ))，兩個 case 取 quality 較好的。",
+     "t": 1644
+    }
+   ]
+  },
+  {
+   "title": "旁支：max、opt 等函數名稱用正體",
+   "scene": null,
+   "points": [
+    {
+     "text": "max 是取最大值的 function，數學上正式寫法要用正體（roman），不用斜體。",
+     "t": 1720
+    },
+    {
+     "text": "函數名稱超過一個字母（max、min、opt）用正體；單一字母的函數名稱才用斜體。",
+     "t": 1752
+    },
+    {
+     "text": "用 LaTeX 打 \\max 會自動給正確的正體表示。",
+     "t": 1793
+    }
+   ]
+  },
+  {
+   "title": "Bottom-up 實作：填表 M[i][w]",
+   "scene": "dpjiang2-subset-code",
+   "points": [
+    {
+     "text": "最後一步是 implementation：目標是算出 OPT(n, W)。",
+     "t": 1843
+    },
+    {
+     "text": "Bottom-up 形式從小的 subproblem 慢慢兜出大的；只需要 for loop，就是填表格。",
+     "t": 1892
+    },
+    {
+     "text": "開一個 table M：一維是 w = 0…W，另一維是 item 0…n（前 i 個 item）。",
+     "t": 1947
+    },
+    {
+     "text": "第 1–2 行填 i = 0 那一列，第 3–4 行填 w = 0 那一欄，都是 0。",
+     "t": 2023
+    },
+    {
+     "text": "第 5–10 行填其餘格子：先檢查 wᵢ > w 就承接上一列（7–8 行），否則取 max（第 10 行）。",
+     "t": 2045
+    },
+    {
+     "text": "Bottom-up 要保證查的值已經 ready；從小到大填，每格查的格子在填表那一刻都查得到。",
+     "t": 2144
+    }
+   ]
+  },
+  {
+   "title": "例子：W = 11、重量 1 2 5 6 7 的填表",
+   "scene": "dpjiang2-subset-table",
+   "points": [
+    {
+     "text": "回到 W = 11、item 重 1 2 5 6 7 的例子，答案應是 5 + 6 = 11。",
+     "t": 2176
+    },
+    {
+     "text": "Table 有 W + 1 = 12 個欄位，item 從 0 個考慮到全部 5 個。",
+     "t": 2198
+    },
+    {
+     "text": "先填邊界，再依序填剩下的格子，最後要 report 的是 M[5][11] = 11。",
+     "t": 2253
+    },
+    {
+     "text": "最後一格考慮第 5 個 item（重 7）：不放就往上查 M[4][11] = 11。",
+     "t": 2325
+    },
+    {
+     "text": "放 7 則剩 11 − 7 = 4，查 M[4][4] = 3，得 7 + 3 = 10；max(11, 10) = 11。",
+     "t": 2362
+    },
+    {
+     "text": "繼續往回倒推，就會找到最佳解來自第 3、4 個 item：5 + 6。",
+     "t": 2414
+    }
+   ]
+  },
+  {
+   "title": "時間複雜度：O(nW) 是 pseudo-polynomial",
+   "scene": "dpjiang2-pseudo",
+   "points": [
+    {
+     "text": "每格的操作（assign 0、照抄、比大小）都是 constant time，重點是填了多少格。",
+     "t": 2433
+    },
+    {
+     "text": "共 (n+1)(W+1) 格，running time 是 O(nW)。",
+     "t": 2460
+    },
+    {
+     "text": "看起來像多項式，但不是 polynomial time，否則這問題就不算難了。",
+     "t": 2494
+    },
+    {
+     "text": "這叫 pseudo-polynomial time：W 是 input 的參數，不是 input size；input size 是 n。",
+     "t": 2522
+    },
+    {
+     "text": "例：只有 10 個 item 但 W = 1000 萬，table 要開 10⁷ + 1 個 column，而且要填到最後一格才有答案。",
+     "t": 2590
+    },
+    {
+     "text": "Subset Sum 一般推薦用 DP 求解，但 W 很大時 DP 的效果並不好。",
+     "t": 2644
+    }
+   ],
+   "trap": "補充：嚴格說 input size 是 n 加上寫下所有數字所需的 bit 數（約 n log W）；O(nW) 對 log W 而言是指數，所以是 pseudo-polynomial。"
+  },
+  {
+   "title": "Knapsack：加上價值 vᵢ，greedy 反例",
+   "scene": "dpjiang2-knap-greedy",
+   "points": [
+    {
+     "text": "Knapsack（背包問題）：小偷背一個限重 W 的包包去商店偷 n 個 item。",
+     "t": 2657
+    },
+    {
+     "text": "每個 item 除了重量 wᵢ，還有價值 vᵢ。",
+     "t": 2696
+    },
+    {
+     "text": "Constraint 跟 Subset Sum 一樣（包包不能破），objective 從 max Σ wᵢ 變成 max Σ vᵢ。",
+     "t": 2747
+    },
+    {
+     "text": "Greedy 同樣不保證最佳解：沿用重量 1 2 5 6 7、W = 11，價值 1 6 18 22 28。",
+     "t": 2811
+    },
+    {
+     "text": "先偷最值錢的 28（重 7），剩 4 kg，只能再塞價值 6 和 1，總價值 35。",
+     "t": 2856
+    },
+    {
+     "text": "最佳解是 18 + 22 = 40（重 5 + 6 = 11）。",
+     "t": 2895
+    }
+   ]
+  },
+  {
+   "title": "Knapsack 的 recurrence：wᵢ 改成 vᵢ",
+   "scene": "dpjiang2-knap-recur",
+   "points": [
+    {
+     "text": "Knapsack 本質上跟 Subset Sum 很像，只有 objective function 不同。",
+     "t": 2926
+    },
+    {
+     "text": "回顧 Subset Sum 的 recurrence：boundary、wᵢ 太大就跳過、一般 case 取 max。",
+     "t": 2933
+    },
+    {
+     "text": "兩個 boundary condition 不用改：沒東西可偷或沒帶包包，最佳解就是 0。",
+     "t": 3003
+    },
+    {
+     "text": "OPT(i, w) 仍定義為前 i 個 item、容量 w 之下，只是改成價值最高的解。",
+     "t": 3071
+    },
+    {
+     "text": "只要改一個地方：放進去那一項的 wᵢ 改成 vᵢ，即 max(OPT(i−1, w), vᵢ + OPT(i−1, w − wᵢ))。",
+     "t": 3175
+    }
+   ],
+   "trap": "只把「貢獻」從 wᵢ 改成 vᵢ；容量仍是扣 w − wᵢ（扣重量不是扣價值），wᵢ > w 的判斷也還是用重量。"
+  },
+  {
+   "title": "0/1 Knapsack vs Fractional Knapsack",
+   "scene": "dpjiang2-knap-frac",
+   "points": [
+    {
+     "text": "這個版本叫 0/1 knapsack：每個 item 只能選或不選，只有 0 和 1 兩種可能。",
+     "t": 3201
+    },
+    {
+     "text": "另一種是可以拿一部分：麵包剝一半、米不用整包、金塊分開拿一些。",
+     "t": 3229
+    },
+    {
+     "text": "可以拿比例的版本叫 fractional knapsack。",
+     "t": 3256
+    },
+    {
+     "text": "0/1 knapsack 用 DP 求最佳解；fractional knapsack 用學過的方法就能求最佳解（留給同學想）。",
+     "t": 3275
+    },
+    {
+     "text": "實作照抄 Subset Sum 的 procedure，把 wᵢ 改成 vᵢ 即可。",
+     "t": 3309
+    },
+    {
+     "text": "Complexity 同樣是 O(nW)，pseudo-polynomial；包包很大時 DP 效果不好。",
+     "t": 3329
+    }
+   ],
+   "trap": "補充：fractional knapsack 用 greedy——依單位價值 vᵢ/wᵢ 由大到小拿，最後一個拿一部分即為最佳解；0/1 knapsack 用 greedy 則不保證最佳。"
+  },
+  {
+   "title": "延伸：Bin packing",
+   "scene": "dpjiang2-binpack",
+   "points": [
+    {
+     "text": "Subset Sum／Knapsack 稍加變化可以延伸出別的困難問題，例如 bin packing。",
+     "t": 3365
+    },
+    {
+     "text": "像物流公司：有 n 個包裹要安排卡車運送，每個 item 體積不同，每輛卡車容量固定。",
+     "t": 3386
+    },
+    {
+     "text": "目標：把物品 assign 給卡車，使用的卡車數越少越好。",
+     "t": 3405
+    },
+    {
+     "text": "Bin packing 也是 NP-complete。",
+     "t": 3435
+    }
+   ]
+  },
+  {
+   "title": "Bellman-Ford 由來；Dijkstra 遇到負邊會錯",
+   "scene": "dpjiang2-dijkstra-neg",
+   "points": [
+    {
+     "text": "第二階段重點：Bellman-Ford shortest path algorithm；Richard Bellman 就是 DP 的發明人。",
+     "t": 3451
+    },
+    {
+     "text": "Ford 下一單元 network flow 會再出現（Ford-Fulkerson）。",
+     "t": 3495
+    },
+    {
+     "text": "Shortest path：給 directed graph、source s、destination t，每條 edge 有 cost c_uv；找 s 到 t 的最短路徑。",
+     "t": 3520
+    },
+    {
+     "text": "Path 長度 = 路徑上所有 edge cost 的總和 Σ c_uv。",
+     "t": 3569
+    },
+    {
+     "text": "Dijkstra 最大的限制：edge weight 必須 non-negative（≥ 0），有負的就會錯。",
+     "t": 3599
+    },
+    {
+     "text": "例：s→t 1、s→a 2、a→b 3、b→t −6；正確答案 s-a-b-t = −1。",
+     "t": 3643
+    },
+    {
+     "text": "Dijkstra 從 s 出發，t 距離 1 比 a 的 2 小，直接定案 d(t) = 1，結果錯誤。",
+     "t": 3668
+    },
+    {
+     "text": "原因：Dijkstra 是 greedy，點一旦定案就不再 revisit，看不到前面走得長、後面大幅變小的路徑。",
+     "t": 3735
+    }
+   ]
+  },
+  {
+   "title": "Naive reweighting 為什麼失敗",
+   "scene": "dpjiang2-reweight",
+   "points": [
+    {
+     "text": "想法：把 edge weight 修成非負再用 Dijkstra。",
+     "t": 3800
+    },
+    {
+     "text": "最負的是 −6，所有 edge 都 +6，就全部 ≥ 0。",
+     "t": 3834
+    },
+    {
+     "text": "Shift 後跑 Dijkstra，還是選 s→t 這條 edge 當最短路徑，答案仍然錯。",
+     "t": 3862
+    },
+    {
+     "text": "原因：每條 path 經過的 edge 數不同，邊多的 path 被加得多、邊少的加得少，不是整條 path 一起 shift 同一個值。",
+     "t": 3893
+    },
+    {
+     "text": "文獻上有聰明的 reweighting：Johnson's algorithm（本課不介紹）。",
+     "t": 3947
+    },
+    {
+     "text": "改用 DP；induction 可以做在 node 或 edge 上，Bellman-Ford 是 induction 在 edge 數上。",
+     "t": 4015
+    }
+   ],
+   "trap": "補充：例子中 s→t 只有 1 條 edge（+6 → 7），s→a→b→t 有 3 條（+18 → 17），所以 shift 後大小關係反轉。"
+  },
+  {
+   "title": "Negative cycle 與 simple path：最多 n−1 條 edge",
+   "scene": "dpjiang2-simple-path",
+   "points": [
+    {
+     "text": "若 graph 含 negative cycle，就不討論 shortest path。",
+     "t": 4062
+    },
+    {
+     "text": "因為走進 cost < 0 的 cycle 每繞一圈 cost 就降，會想一直繞下去，沒有最短。",
+     "t": 4106
+    },
+    {
+     "text": "沒有 negative cycle 時，s 到 t 一定能找到一條 simple path 是最短的。",
+     "t": 4159
+    },
+    {
+     "text": "Simple path：路徑上不重複經過同一個點。",
+     "t": 4170
+    },
+    {
+     "text": "反證：若最短路徑 P 重複經過 v，中間形成 cycle；沒有 negative cycle 所以 cycle 總和 ≥ 0。",
+     "t": 4263
+    },
+    {
+     "text": "把 cycle 砍掉得到 Q，Q 不會比 P 長 → 與假設矛盾。",
+     "t": 4303
+    },
+    {
+     "text": "結論：n 個點的 graph 中，任兩點的最短路徑最多經過 n−1 條 edge。",
+     "t": 4395
+    }
+   ],
+   "trap": "補充：cycle 總和可能剛好 = 0，此時砍掉後 Q 一樣長而不是更短；嚴謹的結論是「存在一條 simple 的最短路徑」，而非每條最短路徑都 simple。"
+  },
+  {
+   "title": "Bellman-Ford 的子問題 OPT(i, v)",
+   "scene": "dpjiang2-bf-def",
+   "points": [
+    {
+     "text": "Bellman-Ford 利用 n−1 的結論，induction 在 edge 數上。",
+     "t": 4430
+    },
+    {
+     "text": "依序看 1 條 edge、2 條 edge……直到 n−1 條 edge 能到達的最短路徑，然後結束。",
+     "t": 4456
+    },
+    {
+     "text": "理解 DP 演算法前，要先知道它數學歸納法的對象是什麼。",
+     "t": 4481
+    },
+    {
+     "text": "課本版本固定終點 t；其他書固定起點 s，兩者對稱、沒有差別。",
+     "t": 4523
+    },
+    {
+     "text": "定義 OPT(i, v)：從 v 到 t、最多經過 i 條 edge 的最短距離。",
+     "t": 4592
+    },
+    {
+     "text": "最終目標：OPT(n−1, s)。",
+     "t": 4615
+    }
+   ],
+   "trap": "補充：CLRS 版 Bellman-Ford 固定起點 s、對每條 edge 做 relax；考試兩種寫法都可能出現，意義相同。"
+  },
+  {
+   "title": "Bellman-Ford 的 recurrence",
+   "scene": "dpjiang2-bf-recur",
+   "points": [
+    {
+     "text": "要用 edge 數較少的解兜出最多 i 條 edge 的解，一樣分兩個 case。",
+     "t": 4685
+    },
+    {
+     "text": "Case 1：最多 i−1 條 edge 就夠（也沒超過 i）。Case 2：剛好用到 i 條 edge。",
+     "t": 4706
+    },
+    {
+     "text": "對照 Subset Sum：那邊 induction 在 item 數，看最後一個 item 放不放；這邊看 edge 用不用滿。",
+     "t": 4723
+    },
+    {
+     "text": "Case 1：OPT(i, v) = OPT(i−1, v)。",
+     "t": 4787
+    },
+    {
+     "text": "Case 2：先走第一條 edge (v, w)，剩下 w 到 t 最多 i−1 條：c_vw + OPT(i−1, w)。",
+     "t": 4833
+    },
+    {
+     "text": "Shortest path 要越小越好，兩個 case 取 min。",
+     "t": 4915
+    },
+    {
+     "text": "Boundary：v = t 時距離 0；i = 0 且 v ≠ t 時走不到，為 ∞。",
+     "t": 4932
+    },
+    {
+     "text": "v 可能連到很多 w，每個都要算並取最小：OPT(i, v) = min(OPT(i−1, v), min_w(c_vw + OPT(i−1, w)))。",
+     "t": 5043
+    }
+   ]
+  },
+  {
+   "title": "Bellman-Ford 的實作",
+   "scene": "dpjiang2-bf-code",
+   "points": [
+    {
+     "text": "Implementation 一樣用 iteration，開一個 table M（memoization 的小抄）。",
+     "t": 5092
+    },
+    {
+     "text": "一個 dimension 是所有 vertex v（每個點到 t 的最短路徑），另一個是經過的 edge 數 0…n−1。",
+     "t": 5141
+    },
+    {
+     "text": "第 1–3 行是 boundary：M[0, t] = 0，其他點 M[0, v] = ∞。",
+     "t": 5166
+    },
+    {
+     "text": "第 4–6 行照抄 general case：min(M[i−1, v], min_w(c_vw + M[i−1, w]))。",
+     "t": 5201
+    },
+    {
+     "text": "Bellman-Ford 很重要：適用時機比 Dijkstra 廣很多，實務上使用機會很大。",
+     "t": 5300
+    }
+   ]
+  },
+  {
+   "title": "課本例子：逐欄填表",
+   "scene": "dpjiang2-bf-table",
+   "points": [
+    {
+     "text": "課本例子：directed graph 有負的 edge weight，不能用 Dijkstra；destination 是 t。",
+     "t": 5333
+    },
+    {
+     "text": "每個點一列；6 個點所以最多經過 5 條 edge，加上 0 條共 6 欄。",
+     "t": 5378
+    },
+    {
+     "text": "左上角 M[0, t] = 0，第一欄其他人都是 ∞。",
+     "t": 5398
+    },
+    {
+     "text": "接著 column by column 填。",
+     "t": 5430
+    },
+    {
+     "text": "t 最多 1 條 edge：t 沒有出邊、沒有 case 2，照抄 0。",
+     "t": 5451
+    },
+    {
+     "text": "a 最多 1 條 edge：case 1 是 ∞，a→t 直接有 edge −3，取 −3。",
+     "t": 5532
+    },
+    {
+     "text": "第 1 欄就是直接相連的 edge weight；b 跟 t 沒有 edge，所以保留 ∞。",
+     "t": 5568
+    },
+    {
+     "text": "依此類推填到最多 5 條 edge 的欄位。",
+     "t": 5586
+    }
+   ]
+  },
+  {
+   "title": "每欄只參考左邊一欄：空間可以縮小",
+   "scene": "dpjiang2-bf-space",
+   "points": [
+    {
+     "text": "不論承接舊解或重新計算，參考的都是左邊那一欄（再配合某條 edge），不會往前兩欄以上。",
+     "t": 5598
+    },
+    {
+     "text": "如果只要最短距離的值，不需要開 n × n 的 table。",
+     "t": 5652
+    },
+    {
+     "text": "只要 single column（怕被蓋掉就兩個 column）就夠。",
+     "t": 5663
+    },
+    {
+     "text": "但若要 retrieve 整條 path 的長相，還是需要整張大表。",
+     "t": 5702
+    },
+    {
+     "text": "例：算 D2（d 最多 2 條 edge）只參考 D1 與 A1。",
+     "t": 5726
+    }
+   ]
+  },
+  {
+   "title": "倒推還原最短路徑",
+   "scene": "dpjiang2-bf-trace",
+   "points": [
+    {
+     "text": "每個點到 t 的最短距離都記錄在最後一欄；要找 a 到 t 的路徑：總長 −6。",
+     "t": 5777
+    },
+    {
+     "text": "取 min 時順便記錄來自前一項還是後一項，retrieve 就很容易。",
+     "t": 5795
+    },
+    {
+     "text": "−6 是照抄左邊：即 a 最多 4 條 edge 的解。",
+     "t": 5805
+    },
+    {
+     "text": "a 最多 4 條：照抄左邊是 −4，但有更小的解。",
+     "t": 5823
+    },
+    {
+     "text": "b 最多 3 條 edge 是 −2，配合 a→b 的 −4，得到 −6：找到 edge ab。",
+     "t": 5864
+    },
+    {
+     "text": "繼續倒推得到 ab、be、ec、ct，整條 path 是 a→b→e→c→t。",
+     "t": 5888
+    },
+    {
+     "text": "實作上通常在每個格子多記一個欄位，記錄這個值來自誰，之後倒走回去就能推出 path。",
+     "t": 5921
+    }
+   ]
+  },
+  {
+   "title": "Bellman-Ford 的時間與空間",
+   "scene": "dpjiang2-bf-time",
+   "points": [
+    {
+     "text": "Space：table 是 n × n，O(n²)。",
+     "t": 5956
+    },
+    {
+     "text": "Naive 分析：n² 個格子，每格可能要看 n−1 個鄰居 → O(n³)。",
+     "t": 5988
+    },
+    {
+     "text": "實際上每個點只看自己的出邊，每次 iteration 只會 visit 每條 edge 一次。",
+     "t": 6007
+    },
+    {
+     "text": "n 次 iteration × O(m) → total O(nm)。",
+     "t": 6015
+    }
+   ]
+  },
+  {
+   "title": "下次預告",
+   "scene": null,
+   "points": [
+    {
+     "text": "下次介紹 Bellman-Ford 更細的分析。",
+     "t": 6047
+    },
+    {
+     "text": "Bellman-Ford 的有名應用：detect graph 裡是否存在 negative cycle。",
+     "t": 6062
+    },
+    {
+     "text": "也會介紹一些不適合用 DP、會給出不好解的情況。",
+     "t": 6088
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Subset Sum：W = 11，item 重 1、2、5、6、7。「大的先塞」的 greedy 會得到多少？",
+   "opts": [
+    "10",
+    "11",
+    "8",
+    "9"
+   ],
+   "ans": "10",
+   "why": "先放 7 剩 4 kg，6、5 放不下，再放 2 和 1，共 10；最佳解是 5 + 6 = 11。"
+  },
+  {
+   "q": "為什麼 Subset Sum 的子問題要定義成 OPT(i, w) 而不是 OPT(i)？",
+   "opts": [
+    "放入第 i 個 item 會用掉容量，剩下的子問題容量變成 w − wᵢ",
+    "為了讓 item 能按重量排序",
+    "為了避免 negative cycle",
+    "因為 OPT(i) 無法處理 i = 0 的情況"
+   ],
+   "ans": "放入第 i 個 item 會用掉容量，剩下的子問題容量變成 w − wᵢ",
+   "why": "例如 15 kg 的包包放進 12 kg 後只剩 3 kg；只用 OPT(i−1) 會誤以為還有 15 kg。"
+  },
+  {
+   "q": "在 W = 11、重量 1 2 5 6 7 的表中，M[4][11] = 11、M[4][4] = 3。M[5][11] 是多少、怎麼來的？",
+   "opts": [
+    "11，來自 max(M[4][11], 7 + M[4][4]) = max(11, 10)",
+    "10，來自 7 + M[4][4]",
+    "14，來自 7 + M[4][11] − 4",
+    "18，來自 M[4][11] + 7"
+   ],
+   "ans": "11，來自 max(M[4][11], 7 + M[4][4]) = max(11, 10)",
+   "why": "第 5 個 item 重 7：不放查正上方 11；放則剩 4 kg 查 M[4][4] = 3，得 10，取大的 11。"
+  },
+  {
+   "q": "Subset Sum／0/1 Knapsack 的 DP 時間 O(nW) 為什麼叫 pseudo-polynomial？",
+   "opts": [
+    "W 是 input 的數值參數而非 input size，W 很大時表格會非常大",
+    "因為它其實是 O(n²)",
+    "因為 DP 只能求近似解",
+    "因為 n 可能是 0"
+   ],
+   "ans": "W 是 input 的數值參數而非 input size，W 很大時表格會非常大",
+   "why": "例如 n = 10、W = 10⁷ 就要開 10⁷ + 1 個 column；時間跟 W 的數值成正比，不是跟 input size 成多項式。"
+  },
+  {
+   "q": "把 Subset Sum 的 recurrence 改成 0/1 Knapsack，一般 case 應該變成什麼？",
+   "opts": [
+    "max(OPT(i−1, w), vᵢ + OPT(i−1, w − wᵢ))",
+    "max(OPT(i−1, w), vᵢ + OPT(i−1, w − vᵢ))",
+    "max(OPT(i−1, w), wᵢ + OPT(i−1, w − vᵢ))",
+    "min(OPT(i−1, w), vᵢ + OPT(i−1, w − wᵢ))"
+   ],
+   "ans": "max(OPT(i−1, w), vᵢ + OPT(i−1, w − wᵢ))",
+   "why": "只把貢獻 wᵢ 改成價值 vᵢ；容量仍扣重量 wᵢ，目標仍是 max。"
+  },
+  {
+   "q": "圖中 s→t = 1、s→a = 2、a→b = 3、b→t = −6。所有 edge 都 +6 後跑 Dijkstra，會得到什麼？",
+   "opts": [
+    "仍回報 s→t（7 < 17），答案錯誤",
+    "正確找到 s→a→b→t",
+    "演算法偵測到 negative cycle",
+    "s→a→b→t 長度變成 −1 + 6 = 5，被選中"
+   ],
+   "ans": "仍回報 s→t（7 < 17），答案錯誤",
+   "why": "s→t 只有 1 條 edge 加 6，s→a→b→t 有 3 條加 18；不同 path 加的量不同，naive reweighting 失效。"
+  },
+  {
+   "q": "Bellman-Ford（課本版）中 OPT(i, v) 的意義與 recurrence 是？",
+   "opts": [
+    "v 到 t 最多 i 條 edge 的最短距離；min(OPT(i−1, v), min_w(c_vw + OPT(i−1, w)))",
+    "s 到 v 剛好 i 條 edge 的最短距離；OPT(i−1, v) + c_vw",
+    "v 到 t 的第 i 短路徑；max(OPT(i−1, v), c_vw)",
+    "前 i 個點的最短路徑；OPT(i−1, v) + 1"
+   ],
+   "ans": "v 到 t 最多 i 條 edge 的最短距離；min(OPT(i−1, v), min_w(c_vw + OPT(i−1, w)))",
+   "why": "Case 1 最多 i−1 條就夠；case 2 先走 (v, w) 再接 w 到 t 最多 i−1 條，取最小。"
+  },
+  {
+   "q": "Bellman-Ford 仔細分析的 running time 是多少？（n 個點、m 條 edge）",
+   "opts": [
+    "O(nm)",
+    "O(n³) 且無法改善",
+    "O(m log n)",
+    "O(n + m)"
+   ],
+   "ans": "O(nm)",
+   "why": "naive 估 n² 格 × n−1 個鄰居 = O(n³)；實際每次 iteration 每條 edge 只看一次，n 次 iteration 共 O(nm)。"
+  }
+ ]
+}

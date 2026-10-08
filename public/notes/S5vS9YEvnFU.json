@@ -1,0 +1,482 @@
+{
+ "video": "S5vS9YEvnFU",
+ "label": "交大江蕙如 Lec19 Dynamic Programming (3/3)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Bellman-Ford 填表回顧",
+   "scene": "dpjiang1-bf-cell",
+   "points": [
+    {
+     "text": "上次的 Bellman-Ford 是 iteration（bottom-up）版本，目標是建出一張 table。",
+     "t": 15
+    },
+    {
+     "text": "建完後最後一個 column 就是每個點到 destination t 的最短距離。",
+     "t": 47
+    },
+    {
+     "text": "每個 iteration 填一個新 column，而且只參考前一個 column。",
+     "t": 72
+    },
+    {
+     "text": "最多 i 條 edge 有兩個 option：沒用到第 i 條（承接前一欄），或剛好 i 條 = 一條 outgoing edge + i − 1 條的解。",
+     "t": 131
+    },
+    {
+     "text": "例：b 到 t、最多 5 條 edge；option 1 參考 OPT(4, b)。",
+     "t": 201
+    },
+    {
+     "text": "b 可以走到 d 與 e：−1 + OPT(4, d) = −1 + 2 = 1；−2 + OPT(4, e) = −2 + 0 = −2。",
+     "t": 235
+    },
+    {
+     "text": "取 minimum，OPT(5, b) 仍是 −2。",
+     "t": 293
+    }
+   ]
+  },
+  {
+   "title": "Bellman-Ford 的時間與空間",
+   "scene": "dpjiang1-bf-cost",
+   "points": [
+    {
+     "text": "複雜度主要來自第 4–6 行；外層一個一個 column 填，最多 n − 1 個。",
+     "t": 300
+    },
+    {
+     "text": "第二個 option 要看幾格，取決於該點的 out-degree。",
+     "t": 337
+    },
+    {
+     "text": "所有點的 outgoing edge 加起來就是 edge 總數 m，所以每個 iteration 是 O(m)。",
+     "t": 384
+    },
+    {
+     "text": "兩層合起來 O(nm)。",
+     "t": 456
+    },
+    {
+     "text": "粗略地以為每格要看整欄，會得到 O(n³)，算太多了。",
+     "t": 470
+    },
+    {
+     "text": "每格只參考前一個 column，只求最短距離值時 table 不必建這麼大。",
+     "t": 518
+    },
+    {
+     "text": "若要 retrieve 每個點到 t 的完整路徑，每格要記下當時參考了誰，整張表要留著。",
+     "t": 562
+    },
+    {
+     "text": "這是 DP 的最後一步：看題目需不需要 detail solution。",
+     "t": 600
+    }
+   ]
+  },
+  {
+   "title": "Negative cycle",
+   "scene": "dpjiang1-negcycle",
+   "points": [
+    {
+     "text": "圖裡有 negative cycle 時，任兩點最短距離沒有意義，我們不探討。",
+     "t": 629
+    },
+    {
+     "text": "路徑經過 negative cycle 時，Bellman-Ford（以及其他 shortest path 演算法）都給不出正確解。",
+     "t": 663
+    },
+    {
+     "text": "若 s 到 t 經過 v，而 v 在總和 < 0 的 cycle C 上，就會一直繞圈。",
+     "t": 701
+    },
+    {
+     "text": "每繞一圈總長再降低，繞 10 圈賺 10 次，出不來。",
+     "t": 731
+    },
+    {
+     "text": "所以算最短路徑前要先確認有沒有 negative cycle：negative cycle detection。",
+     "t": 760
+    }
+   ]
+  },
+  {
+   "title": "應用：匯率套利",
+   "scene": "dpjiang1-arbitrage",
+   "points": [
+    {
+     "text": "Negative cycle detection 的有名應用：貨幣之間的 exchange rate。",
+     "t": 798
+    },
+    {
+     "text": "例：1 單位金可以換 327.25 美元；兩兩幣值之間有匯率。",
+     "t": 893
+    },
+    {
+     "text": "換過去再直接換回來，匯率相乘一定 < 1，避免櫃台前無限換錢。",
+     "t": 920
+    },
+    {
+     "text": "但匯率每天波動，可能存在繞一大圈回來 total rate > 1 的 cycle，就能賺錢。",
+     "t": 980
+    },
+    {
+     "text": "例：$1 → 1.3941 法郎 → 0.9308 歐元 → $1.00084（× 1.3941 × 0.6677 × 1.0752）。",
+     "t": 1071
+    },
+    {
+     "text": "看起來不多，但丟一大筆錢一直繞，是無本生意。",
+     "t": 1103
+    },
+    {
+     "text": "問題：在 edge weight 為 exchange rate 的圖上，找乘積 > 1 的 cycle。",
+     "t": 1140
+    }
+   ],
+   "trap": "影片口述「1.39 塊法郎」，投影片原值是 1.3941；用 1.39 乘出來會 < 1，要用 1.3941 才得到 1.00084。"
+  },
+  {
+   "title": "取 −log：乘積 > 1 變成 negative cycle",
+   "scene": "dpjiang1-neglog",
+   "points": [
+    {
+     "text": "Shortest path 算的是 edge weight 的總和，這題要的是乘積：要轉換。",
+     "t": 1188
+    },
+    {
+     "text": "另一個差異：這題要越大越好（> 1），shortest path 要越小越好。",
+     "t": 1207
+    },
+    {
+     "text": "cycle v₁ → v₂ → … → vₙ → v₁ 的乘積 r(v₁,v₂) · r(v₂,v₃) · … · r(vₙ,v₁) > 1 才會賺。",
+     "t": 1234
+    },
+    {
+     "text": "取 log 把乘法換成加法：log 乘積 = 各 log r 的和。",
+     "t": 1319
+    },
+    {
+     "text": "再取負號：c = −log r；乘積 > 1 ⇔ 這個 cycle 的 c 總和 < 0。",
+     "t": 1344
+    },
+    {
+     "text": "問題轉成：在新的圖上找 negative cycle。",
+     "t": 1373
+    }
+   ]
+  },
+  {
+   "title": "偵測 negative cycle：多跑一個 iteration",
+   "scene": "dpjiang1-bf-extra",
+   "points": [
+    {
+     "text": "Bellman-Ford 很重要的 property：可以偵測圖裡是否有 negative cycle。",
+     "t": 1457
+    },
+    {
+     "text": "Bellman-Ford 是 induction on edge 數，正常停在最多 n − 1 條 edge。",
+     "t": 1521
+    },
+    {
+     "text": "再多跑一個 iteration（最多 n 條 edge），就有機會繞回自己形成 cycle。",
+     "t": 1541
+    },
+    {
+     "text": "多跑一輪後值降低 → 有 negative cycle，report infeasible。",
+     "t": 1601
+    },
+    {
+     "text": "值維持不變 → 沒有 negative cycle，剛剛算的答案就是正確解。",
+     "t": 1617
+    },
+    {
+     "text": "正的 cycle 不會讓 shortest path 變短；negative cycle 會讓值降低。",
+     "t": 1661
+    }
+   ],
+   "trap": "補充：動畫左邊用上次的表（n = 6），第 6 欄與第 5 欄相同；右邊 v⇄w 的 cycle −3 + 1 = −2，第 n 輪 OPT(v) 從 2 降到 0。"
+  },
+  {
+   "title": "證明：值變小一定有 negative cycle",
+   "scene": "dpjiang1-bf-proof",
+   "points": [
+    {
+     "text": "用反證法：已知多跑一輪後某點 v 的值變小。",
+     "t": 1709
+    },
+    {
+     "text": "值變小代表新解剛好用了 n 條 edge，最多 n − 1 條的那些解 cost 都比較高。",
+     "t": 1735
+    },
+    {
+     "text": "鴿籠原理：圖只有 n 個點，剛好 n 條 edge 的 v → t 路徑一定重複 visit 某個點。",
+     "t": 1825
+    },
+    {
+     "text": "重複 visit 的那一段形成一個 cycle。",
+     "t": 1887
+    },
+    {
+     "text": "若這個 cycle 不是 negative，把它砍掉，edge 更少、cost 不會更高。",
+     "t": 1905
+    },
+    {
+     "text": "與「剛好 n 條 edge 比較好」矛盾，所以一定有 negative cycle。",
+     "t": 1958
+    },
+    {
+     "text": "結論：多跑一輪值有變就 report error；沒變就輸出答案。",
+     "t": 1987
+    }
+   ],
+   "trap": "ASR 的「哥隆原理」是鴿籠原理（pigeonhole principle）。"
+  },
+  {
+   "title": "找出所有 negative cycle：加一個新點 t",
+   "scene": "dpjiang1-aug-t",
+   "points": [
+    {
+     "text": "不只要知道有沒有，還想把 negative cycle 抓出來。",
+     "t": 2045
+    },
+    {
+     "text": "隨便選一個點當 destination 不保險：不是每條最短路都經過那個 negative cycle。",
+     "t": 2113
+    },
+    {
+     "text": "加一個新點 t，把原圖每個點都連到 t，edge weight 都設 0。",
+     "t": 2134
+    },
+    {
+     "text": "對新圖跑 Bellman-Ford，算每個點到 t 的最短路徑。",
+     "t": 2165
+    },
+    {
+     "text": "不管 negative cycle 在哪，都 reach 得到 t，所以一定抓得到。",
+     "t": 2211
+    },
+    {
+     "text": "G′ 有 n + 1 個點；同樣多跑一輪，看最後一輪有沒有 update。",
+     "t": 2271
+    },
+    {
+     "text": "這個方法對正負 edge weight 都適用，Bellman-Ford 使用率很高。",
+     "t": 2365
+    }
+   ]
+  },
+  {
+   "title": "Traveling salesman problem",
+   "scene": "dpjiang1-tsp-intro",
+   "points": [
+    {
+     "text": "TSP 是經典的 NP-complete 問題：沒人能證明有 polynomial time 的最佳解方法。",
+     "t": 2389
+    },
+    {
+     "text": "Richard Bellman 在 1962 年示範用 DP 求解 TSP。",
+     "t": 2422
+    },
+    {
+     "text": "銷售員從 base city 出發，每個客戶城市拜訪一次，最後回到原點。",
+     "t": 2461
+    },
+    {
+     "text": "目標是總距離最短；距離也可代表機票錢、油錢。",
+     "t": 2506
+    },
+    {
+     "text": "Georgia Tech 維護 TSP 的網頁與 benchmark（含 VLSI 繞線的例子）。",
+     "t": 2541
+    },
+    {
+     "text": "n 個城市的排列有 n! 種，暴力法複雜度非常高。",
+     "t": 2631
+    }
+   ]
+  },
+  {
+   "title": "TSP 的 DP：OPT(S, u, v)",
+   "scene": "dpjiang1-tsp-dp",
+   "points": [
+    {
+     "text": "定義 OPT(S, u, v)：從 u 到 v、經過 subset S 裡所有點的最短 route。",
+     "t": 2659
+    },
+    {
+     "text": "最後要的是 S 涵蓋所有城市、u 是 base city 的答案。",
+     "t": 2699
+    },
+    {
+     "text": "Boundary：S 只有 u、v 兩點時直接飛，OPT = c(u, v)。",
+     "t": 2737
+    },
+    {
+     "text": "S 有三點以上：u 先到某個點 w，再從 w 走到 v，經過 S − {u}。",
+     "t": 2801
+    },
+    {
+     "text": "對所有 w 取 minimum：OPT(S, u, v) = min_w { c(u, w) + OPT(S − {u}, w, v) }。",
+     "t": 2843
+    },
+    {
+     "text": "空間 2ⁿ·n²，時間 2ⁿ·n³。",
+     "t": 2870
+    },
+    {
+     "text": "比 brute force 的 n! 小，但仍不是 polynomial time。",
+     "t": 2891
+    }
+   ],
+   "trap": "補充：課本常見的 Held–Karp 版本固定起點，用 g(S, k)，時間 O(n²·2ⁿ)、空間 O(n·2ⁿ)；本講義多記一個頭點 u，所以多一個 n。"
+  },
+  {
+   "title": "DP 的本質",
+   "scene": "dpjiang1-dp-essence",
+   "points": [
+    {
+     "text": "DP 就是 recursion，而且是聰明的 recursion：不重複計算。",
+     "t": 2945
+    },
+    {
+     "text": "本單元很多實作是 iteration（建 table、bottom-up）。",
+     "t": 2966
+    },
+    {
+     "text": "填表是為了防止重複計算，源頭仍是 recurrence relation；memoization 也不必從小填到大。",
+     "t": 2977
+    },
+    {
+     "text": "填 table 絕對不是 DP 的本質；本質是避免重複計算的 recursion。",
+     "t": 3023
+    },
+    {
+     "text": "要 focus 在 recurrence 怎麼寫：recurrence 錯了，怎麼填都錯。",
+     "t": 3053
+    },
+    {
+     "text": "objects 有一個不再改變的 linear order，就適合用 DP。",
+     "t": 3084
+    },
+    {
+     "text": "TSP 的城市沒有 linear order、可以任意打亂，子問題數不是 polynomial，所以不適合。",
+     "t": 3113
+    }
+   ]
+  },
+  {
+   "title": "四種 paradigm 總結",
+   "scene": "dpjiang1-paradigms",
+   "points": [
+    {
+     "text": "Brute force：沒有 idea，每種可能都算一次，挑最好的。",
+     "t": 3188
+    },
+    {
+     "text": "Greedy：每步選當下最好的；能達到最佳解時，選的東西一定在 final solution 裡，不必反悔。",
+     "t": 3197
+    },
+    {
+     "text": "問題能用 greedy 得最佳解時，通常是最快的，比 DP 更快。",
+     "t": 3237
+    },
+    {
+     "text": "D&C：拆成同性質小問題，recursively 解，重點在 combine。",
+     "t": 3264
+    },
+    {
+     "text": "DP：子問題 overlapping；iteration 形式從小問題建表 build up。",
+     "t": 3287
+    },
+    {
+     "text": "兩者都從 induction 出發：子問題不重複用 D&C，會重複就試 DP。",
+     "t": 3353
+    },
+    {
+     "text": "下一個單元進入 network flow。",
+     "t": 3371
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Bellman-Ford 表中 OPT(4, b) = −2、OPT(4, d) = 2、OPT(4, e) = 0，b→d = −1、b→e = −2，OPT(5, b) = ?",
+   "opts": [
+    "1",
+    "−2",
+    "−3",
+    "0"
+   ],
+   "ans": "−2",
+   "why": "min(OPT(4, b), −1 + 2, −2 + 0) = min(−2, 1, −2) = −2。"
+  },
+  {
+   "q": "Bellman-Ford 詳細分析的時間複雜度是？（n 個點、m 條 edge）",
+   "opts": [
+    "O(n³)",
+    "O(nm)",
+    "O(m log n)",
+    "O(n + m)"
+   ],
+   "ans": "O(nm)",
+   "why": "n − 1 個 iteration，每個 iteration 每點看 out-degree 格，加總為 O(m)。粗算每格看整欄才會得到 O(n³)。"
+  },
+  {
+   "q": "要把「找匯率乘積 > 1 的 cycle」轉成 shortest path 問題，edge weight 該設為？",
+   "opts": [
+    "r",
+    "log r",
+    "−log r",
+    "1 / r"
+   ],
+   "ans": "−log r",
+   "why": "log 把乘法變加法，負號把「越大越好」變成「越小越好」；乘積 > 1 ⇔ −log 總和 < 0。"
+  },
+  {
+   "q": "如何用 Bellman-Ford 偵測 negative cycle？",
+   "opts": [
+    "少跑一個 iteration",
+    "多跑一個 iteration，看值有沒有變小",
+    "把所有 edge weight 取絕對值",
+    "改用 Dijkstra 比較結果"
+   ],
+   "ans": "多跑一個 iteration，看值有沒有變小",
+   "why": "第 n 輪值還變小，表示剛好 n 條 edge 的路徑更好；鴿籠原理說它含 cycle，且必須是負的。"
+  },
+  {
+   "q": "要抓出圖中所有 negative cycle，老師的做法是？",
+   "opts": [
+    "對每個點各跑一次 Dijkstra",
+    "加一個新點 t，每個點都連一條 weight 0 的 edge 到 t，再跑 Bellman-Ford",
+    "刪掉所有負邊",
+    "隨便選一個點當 destination"
+   ],
+   "ans": "加一個新點 t，每個點都連一條 weight 0 的 edge 到 t，再跑 Bellman-Ford",
+   "why": "任何 negative cycle 都能 reach 到 t，所以算各點到 t 的最短路徑一定抓得到。"
+  },
+  {
+   "q": "本講義 TSP 的 DP 遞迴式是？",
+   "opts": [
+    "OPT(S, u, v) = min_w { c(u, w) + OPT(S − {u}, w, v) }",
+    "OPT(S, u, v) = max_w { c(u, w) + OPT(S, w, v) }",
+    "OPT(i) = OPT(i − 1) + c(i − 1, i)",
+    "OPT(S, u, v) = c(u, v) + OPT(S − {v}, u, v)"
+   ],
+   "ans": "OPT(S, u, v) = min_w { c(u, w) + OPT(S − {u}, w, v) }",
+   "why": "u 先到某個 w，u 已走過所以從 S 拿掉；對所有 w 取最小。boundary 是 S = {u, v} 時為 c(u, v)。"
+  },
+  {
+   "q": "為什麼 TSP 不適合用 DP（效果不好）？",
+   "opts": [
+    "它沒有 optimal substructure",
+    "城市沒有固定的 linear order，子問題數是 exponential",
+    "它只能用 greedy 求最佳解",
+    "它的 edge weight 可能是負的"
+   ],
+   "ans": "城市沒有固定的 linear order，子問題數是 exponential",
+   "why": "子問題要記所有 subset S，數量 2ⁿ·n²；雖比 n! 好，仍不是 polynomial time。"
+  }
+ ]
+}

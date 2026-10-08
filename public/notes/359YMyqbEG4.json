@@ -1,0 +1,732 @@
+{
+ "video": "359YMyqbEG4",
+ "label": "交大江蕙如 Lec17 Dynamic Programming (1/3)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "課程導覽",
+   "scene": null,
+   "points": [
+    {
+     "text": "修完演算法卻不會 dynamic programming（DP）等於沒修過，可見它的重要性。",
+     "t": 15
+    },
+    {
+     "text": "先用 weighted interval scheduling 示範怎麼設計 DP，再介紹兩種實作：memoization 與 iteration。",
+     "t": 48
+    },
+    {
+     "text": "之後的經典題：subset sum、knapsack，以及允許負邊的 shortest path（Bellman 的方法，Bellman 也是 DP 的發明人）。",
+     "t": 114
+    },
+    {
+     "text": "最後會看一個 DP 效果很差的例子，說明什麼時候適合、什麼時候不適合用 DP。",
+     "t": 180
+    }
+   ]
+  },
+  {
+   "title": "Divide & Conquer 回顧",
+   "scene": "dpjiang1-dc-review",
+   "points": [
+    {
+     "text": "D&C 與 DP 像雙胞胎：很像，但本質不同。",
+     "t": 215
+    },
+    {
+     "text": "Divide：把大問題拆成小問題；拆出來的小問題必須跟原問題具備相同特性，只是 problem size 變小。",
+     "t": 245
+    },
+    {
+     "text": "Conquer：recursively 解每個小問題，直到 simple enough 可以直接得到答案。",
+     "t": 277
+    },
+    {
+     "text": "Combine：把小問題的答案兜回大問題；幾乎所有 D&C 最難的都是 combine 這一步。",
+     "t": 297
+    },
+    {
+     "text": "D&C 的設計跟數學歸納法結合，正確性也用數學歸納法證明。",
+     "t": 329
+    },
+    {
+     "text": "實作多半是 recursive call，用 recurrence relation 分析時間：展開法、recursion tree，或猜答案再用數學歸納法證明。",
+     "t": 362
+    }
+   ]
+  },
+  {
+   "title": "為什麼叫 Dynamic Programming",
+   "scene": "dpjiang1-dp-idea",
+   "points": [
+    {
+     "text": "Programming 不是寫程式，而是 mathematical programming（最佳化），如 linear／quadratic programming。",
+     "t": 418
+    },
+    {
+     "text": "DP 典型用來解最佳化問題：有 objective，要 minimization 或 maximization。",
+     "t": 466
+    },
+    {
+     "text": "Richard Bellman 在 1953 年正式發表；據他說，在軍方單位工作時故意取個不像數學的名字以爭取經費。",
+     "t": 513
+    },
+    {
+     "text": "D&C 把所有子問題用 recursive call 完全展開；DP 雖也保證檢查所有可能，但是 implicitly 地做。",
+     "t": 629
+    },
+    {
+     "text": "DP 由小 solution 兜出大 solution，而計算子問題的順序（ordering）是 key idea。",
+     "t": 725
+    },
+    {
+     "text": "要培養看到題目就「聞到」適合用 DP 的 sense。",
+     "t": 780
+    }
+   ]
+  },
+  {
+   "title": "Weighted interval scheduling 與 greedy 的失敗",
+   "scene": "dpjiang1-wis-greedy",
+   "points": [
+    {
+     "text": "第一個例子：weighted interval scheduling，要用 DP 求解；DP 的數學基礎是 induction。",
+     "t": 799
+    },
+    {
+     "text": "每個 request 有 start／finish time，做完得到一個 value；single core 一次只能做一個。",
+     "t": 878
+    },
+    {
+     "text": "以個數算最佳是做 3 個（value 12、13、16，共 41），但以 value 算，只選兩個 26 + 16 = 42 更大。",
+     "t": 926
+    },
+    {
+     "text": "之前是 unit weight（每個 value 相同），現在 weight 不一定相同，不是越多越好。",
+     "t": 1005
+    },
+    {
+     "text": "原本的 greedy：照 finish time 排序，每次挑最早結束的，刪掉 incompatible 的。",
+     "t": 1037
+    },
+    {
+     "text": "反例：weight 1、3、1，greedy 選兩個 1 得 2，最佳解只選 3。",
+     "t": 1067
+    }
+   ],
+   "trap": "有 weight 時「最早結束」的 greedy 不保證最佳；unweighted 版本才可以用 greedy。"
+  },
+  {
+   "title": "第一個企圖：induction on time",
+   "scene": "dpjiang1-wis-time",
+   "points": [
+    {
+     "text": "例題：一組 request，做完分別得到 2、4…等 value。",
+     "t": 1092
+    },
+    {
+     "text": "做 induction 最難的是一開始決定要 induction 在什麼東西上。",
+     "t": 1128
+    },
+    {
+     "text": "第一個想法：在時間軸上做 induction；同樣先依 finish time 排序。",
+     "t": 1151
+    },
+    {
+     "text": "時間 t 的最佳值 = 較小時間 t′ 的最佳值 + Δ 這一小段的貢獻。",
+     "t": 1206
+    },
+    {
+     "text": "問題是 Δ 要取多大？刻度大小很難控制，寫不出好算的 recursion。",
+     "t": 1320
+    },
+    {
+     "text": "t 其實落在最後一筆 request 結束時：考慮它算或不算；算的話前面只能到它的 start time 之前。",
+     "t": 1366
+    },
+    {
+     "text": "不算就是倒數第二筆以前的答案；兩種情況的 step 都不固定，所以時間軸不好用。",
+     "t": 1443
+    }
+   ]
+  },
+  {
+   "title": "改成 induction on index；定義 p(j)",
+   "scene": "dpjiang1-wis-p",
+   "points": [
+    {
+     "text": "第二個企圖：每次多考慮一個 request（前 1 個、前 2 個…），先依 finish time 由小到大排。",
+     "t": 1476
+    },
+    {
+     "text": "induction 的對象是 interval 的 index，要找前 n 個與前 n − 1 個最佳解的關係。",
+     "t": 1537
+    },
+    {
+     "text": "決定 induction 在什麼對象上是發展 DP 最難的事，找到就完成八、九成。",
+     "t": 1577
+    },
+    {
+     "text": "依 finish time 排序也是這題的 DP trick 之一。",
+     "t": 1607
+    },
+    {
+     "text": "p(j)：把自己劃掉往前看，最後一個跟 j 完全不 overlap 的 request 編號。",
+     "t": 1630
+    },
+    {
+     "text": "例：p(6) = 3；p(2) = 0（前一筆就重疊，往前沒有人）。",
+     "t": 1680
+    },
+    {
+     "text": "每個 request 都能算出 p 值（本例 p = 0, 0, 1, 0, 3, 3），只是讓式子好寫。",
+     "t": 1717
+    }
+   ]
+  },
+  {
+   "title": "Recurrence：OPT(j) = max(vⱼ + OPT(p(j)), OPT(j−1))",
+   "scene": "dpjiang1-wis-recur",
+   "points": [
+    {
+     "text": "定義 Oⱼ：前 j 個 request 的最佳解由誰組成；OPT(j)：對應的最大 value。",
+     "t": 1770
+    },
+    {
+     "text": "看 O6 只有兩種 case：第 6 筆要算，或不要算。",
+     "t": 1838
+    },
+    {
+     "text": "要算：O6 = {6} ∪ O3，3 就是 p(6)，前面跟 6 完全不 overlap 的部分。",
+     "t": 1864
+    },
+    {
+     "text": "不算：O6 = O5。",
+     "t": 1913
+    },
+    {
+     "text": "OPT(6) 取兩種組成中 value 較大的。",
+     "t": 1933
+    },
+    {
+     "text": "一般式：OPT(j) = max(vⱼ + OPT(p(j)), OPT(j − 1))，OPT(0) = 0。",
+     "t": 1961
+    },
+    {
+     "text": "寫出這個 recursion，DP 的目標就完成了。",
+     "t": 2010
+    }
+   ]
+  },
+  {
+   "title": "直接寫成 recursive code：遞迴樹大量重複",
+   "scene": "dpjiang1-wis-tree",
+   "points": [
+    {
+     "text": "Implementation 決定這是「真 DP」還是「假 DP」。",
+     "t": 2016
+    },
+    {
+     "text": "preprocessing：依 finish time 排序（f₁ ≤ f₂ ≤ …），並先算好每個 p(j)。",
+     "t": 2051
+    },
+    {
+     "text": "Compute-Opt(j)：j = 0 就 return 0，否則照 recursion 取兩種 case 的 max。",
+     "t": 2091
+    },
+    {
+     "text": "畫出 recursive call 產生的 tree：O6 呼叫 O5 與 O3，O5 再呼叫 O4 與 O3…",
+     "t": 2145
+    },
+    {
+     "text": "樹裡很多地方是重複的，代表多算了；這些子問題其實只要算一次。",
+     "t": 2215
+    }
+   ]
+  },
+  {
+   "title": "Memoization（top-down）",
+   "scene": "dpjiang1-wis-memo",
+   "points": [
+    {
+     "text": "把算好的 subproblem 解記起來，之後遇到就查表，不再 recursive call：memoization（做小抄）。",
+     "t": 2249
+    },
+    {
+     "text": "開一個 table M；recursive call 前先看 M[j] 有沒有值。",
+     "t": 2299
+    },
+    {
+     "text": "有值就直接 return M[j]；沒有才真的 recursive call，算完存進 M[j] 再 return。",
+     "t": 2354
+    },
+    {
+     "text": "跟一般 recursive code 相似度九成以上，只多了做小抄，是 top-down 形式。",
+     "t": 2421
+    },
+    {
+     "text": "龐大的 tree 簡化成只算 6 個 recursive call，變成 linear time。",
+     "t": 2449
+    },
+    {
+     "text": "procedure 只記了 value；若要 retrieve 組成 Oⱼ，運算時也要把它存起來。",
+     "t": 2503
+    }
+   ]
+  },
+  {
+   "title": "Iteration（bottom-up）：M[0..6]",
+   "scene": "dpjiang1-wis-iter",
+   "points": [
+    {
+     "text": "Bottom-up 比較流行，因為一定是 for loop 形式，implementation 很簡單。",
+     "t": 2542
+    },
+    {
+     "text": "反過來做：從 O1、O2、O3… 長到 On，也就是由小到大填表。",
+     "t": 2596
+    },
+    {
+     "text": "M[0] = 0，接著 for j = 1 到 n，用同一個 recursion 算 M[j]。",
+     "t": 2626
+    },
+    {
+     "text": "DP 不等於填表格；填表只是一種 implementation，重點是 recursion 怎麼寫。",
+     "t": 2682
+    },
+    {
+     "text": "例子 n = 6，M[0..6]；M[1] = max(2 + M[0], M[0]) = 2。",
+     "t": 2736
+    },
+    {
+     "text": "每格只往前看兩個已填好的格子（M[j−1] 與 M[p(j)]）。",
+     "t": 2773
+    },
+    {
+     "text": "順序必須保證查到的格子都已有值，否則 DP 就做錯了。",
+     "t": 2811
+    }
+   ],
+   "trap": "補充：本例 M = 0, 2, 4, 6, 7, 8, 8；從 j = 6 回溯（v₆ + M[3] = 7 < 8 不選 6；選 5；選 3；選 1）得 {1, 3, 5}，2 + 4 + 2 = 8。"
+  },
+  {
+   "title": "兩種實作的比較",
+   "scene": "dpjiang1-memo-vs-iter",
+   "points": [
+    {
+     "text": "DP 有兩種實作，都正確：memoization（top-down）與 iteration（bottom-up）。",
+     "t": 2846
+    },
+    {
+     "text": "memoization 是 recursive call 加上查小抄；有答案就不 recursive call。",
+     "t": 2861
+    },
+    {
+     "text": "iteration 由小 problem 長到大 problem，每次參考已算好的更小子問題。",
+     "t": 2895
+    },
+    {
+     "text": "（新一堂課）回顧：top-down 先查 lookup table，bottom-up 是簡單的 for loop。",
+     "t": 2971
+    },
+    {
+     "text": "iteration 不管子問題之後有沒有人用都會算出來（但不重複算）。",
+     "t": 3107
+    },
+    {
+     "text": "memoization 只在上面需要時才算，所以實際算的子問題有時少一點。",
+     "t": 3135
+    },
+    {
+     "text": "DP 和 D&C 都源自 induction，常先用 D&C 的方式思考，再轉成 DP。",
+     "t": 3167
+    }
+   ]
+  },
+  {
+   "title": "什麼時候用 DP",
+   "scene": "dpjiang1-when-dp",
+   "points": [
+    {
+     "text": "DP 背後配合一個記錄子問題解的 table，runtime 跟 table size 關係很大。",
+     "t": 3199
+    },
+    {
+     "text": "DP 把龐大的 recursion tree 變成細長一條 degenerated tree，大幅省時間。",
+     "t": 3230
+    },
+    {
+     "text": "特性一：子問題總數是 polynomial；若是 exponential，table 也是 exponential，效果不明顯。",
+     "t": 3319
+    },
+    {
+     "text": "特性二：原問題的解是由子問題的解兜出來的。",
+     "t": 3364
+    },
+    {
+     "text": "特性三（最重要）：子問題有自然的順序，從最小算到最大。",
+     "t": 3395
+    },
+    {
+     "text": "發現有一個不會改變的 ordering，大概九成有機會用 DP，並配合一個好算的 recurrence。",
+     "t": 3445
+    }
+   ]
+  },
+  {
+   "title": "CLRS：optimal substructure 與 overlapping subproblems",
+   "scene": "dpjiang1-clrs",
+   "points": [
+    {
+     "text": "Introduction to Algorithms 認為 DP 問題要有兩大特性：optimal substructure、overlapping subproblems。",
+     "t": 3479
+    },
+    {
+     "text": "Overlapping subproblems：子問題會重複出現（如 weighted interval scheduling），記在 table 只算一次。",
+     "t": 3503
+    },
+    {
+     "text": "Optimal substructure：整體最佳解一定由子問題的最佳解兜出來。",
+     "t": 3543
+    },
+    {
+     "text": "Optimal substructure 需要透過簡單的證明來確認。",
+     "t": 3577
+    },
+    {
+     "text": "最重要的 hint：問題裡的 objects 天生有一個不能改變的 linear order，就照這個順序算。",
+     "t": 3594
+    },
+    {
+     "text": "DP 天生最適合最佳化問題。",
+     "t": 3648
+    }
+   ]
+  },
+  {
+   "title": "發展 DP 的步驟",
+   "scene": "dpjiang1-steps",
+   "points": [
+    {
+     "text": "確認 linear order、optimal substructure、overlapping subproblems 後，就可以照步驟發展 DP。",
+     "t": 3667
+    },
+    {
+     "text": "步驟一：寫出 recurrence relation，即大問題最佳解與小問題最佳解的關係。",
+     "t": 3715
+    },
+    {
+     "text": "可以先用 D&C 的方式來思考這個問題。",
+     "t": 3763
+    },
+    {
+     "text": "步驟二：確認子問題總數 bound 在 polynomial；它決定 lookup table 的大小。",
+     "t": 3774
+    },
+    {
+     "text": "步驟三：決定子問題的計算順序，這是讓 DP 正常運作最重要的地方。",
+     "t": 3832
+    }
+   ]
+  },
+  {
+   "title": "演算法 paradigm 回顧",
+   "scene": "dpjiang1-paradigms",
+   "points": [
+    {
+     "text": "暴力法（exhaustive search）：把所有可能都試過，常當 baseline 對照。",
+     "t": 3878
+    },
+    {
+     "text": "Greedy：step by step 兜出解，每步選當下最好的，做了決定不反悔。",
+     "t": 3923
+    },
+    {
+     "text": "沒有證明的 greedy 只是 heuristic；建議依問題特性設計演算法，greedy 不要當唯一嘗試。",
+     "t": 3992
+    },
+    {
+     "text": "D&C：拆成同性質小問題、recursively 解、combine；merge sort 的 linear merge 帶來 O(n log n)。",
+     "t": 4058
+    },
+    {
+     "text": "D&C 的變形：binary search 只產生一個子問題（log n）；quick sort 不一定均分。",
+     "t": 4206
+    },
+    {
+     "text": "DP 與 D&C 都源自 mathematical induction，都從 recurrence relation 出發。",
+     "t": 4289
+    },
+    {
+     "text": "DP 特別要求子問題有 overlapping；子問題都只出現一次就不適合 DP。",
+     "t": 4339
+    },
+    {
+     "text": "子問題天生有 natural ordering，照這個順序算出 final solution。",
+     "t": 4395
+    }
+   ],
+   "trap": "影片口誤更正：72:55 說「直接用 dynamic programming 就可以了」，應是子問題不重疊時直接用 divide and conquer 就好。"
+  },
+  {
+   "title": "Fibonacci sequence",
+   "scene": "dpjiang1-fib-spiral",
+   "points": [
+    {
+     "text": "Fibonacci 常被當作 DP 的第一個練習，但它不是最佳化問題，只是計算。",
+     "t": 4429
+    },
+    {
+     "text": "Fₙ = Fₙ₋₁ + Fₙ₋₂；F₀ = 0、F₁ = 1，所以 F₂ = 1，依此類推。",
+     "t": 4461
+    },
+    {
+     "text": "數列和自然界的現象結合，例如螺旋形貝殼。",
+     "t": 4493
+    },
+    {
+     "text": "用邊長 1、1、2、3、5、8 的正方形一個個接上，再把角連起來就是螺旋。",
+     "t": 4523
+    }
+   ],
+   "trap": "影片說數列是達文西發現的；更正：Fibonacci 數列以 Leonardo of Pisa（Fibonacci）命名，不是達文西。"
+  },
+  {
+   "title": "Direct implementation：F5 的遞迴樹",
+   "scene": "dpjiang1-fib-tree",
+   "points": [
+    {
+     "text": "目標：用 recurrence relation 算 F100。",
+     "t": 4630
+    },
+    {
+     "text": "Direct implementation：直接翻成 recursive code，n ≤ 1 就直接 return。",
+     "t": 4654
+    },
+    {
+     "text": "呼叫 F5：F5 呼叫 F4、F3；F4 再呼叫 F3、F2；F3 呼叫 F2、F1…",
+     "t": 4710
+    },
+    {
+     "text": "畫成 tree 可以看到 recursive call 的重疊量非常高。",
+     "t": 4761
+    },
+    {
+     "text": "重複的部分不必每次都算：算好記下來，需要時查表，這就是 DP 的概念。",
+     "t": 4812
+    },
+    {
+     "text": "抽出 dependency 只有 F5…F1 五個 call；從沒有 dependency 的 F1 算到 F5，五次就結束。",
+     "t": 4819
+    }
+   ]
+  },
+  {
+   "title": "Fibonacci 的 memoization",
+   "scene": "dpjiang1-fib-memo",
+   "points": [
+    {
+     "text": "要避免重複計算，就需要一個 lookup table 暫存子問題的解：top-down 的 memoization。",
+     "t": 4867
+    },
+    {
+     "text": "把中間的值存在 array F；為了分辨算過沒，先用特殊值初始化。",
+     "t": 4936
+    },
+    {
+     "text": "Fibonacci 的數都 ≥ 0，所以先全部填 −1，再填 F[0] = 0、F[1] = 1。",
+     "t": 4947
+    },
+    {
+     "text": "呼叫時先看 F[n] 是不是 −1：是就老實 recursive call 算出來。",
+     "t": 4996
+    },
+    {
+     "text": "不是 −1 就直接 return 已存好的值。",
+     "t": 5016
+    },
+    {
+     "text": "算 F5 時真正展開的只有那五個 call，其他都是查表。",
+     "t": 5039
+    }
+   ]
+  },
+  {
+   "title": "Fibonacci 的 bottom-up iteration",
+   "scene": "fib-table",
+   "points": [
+    {
+     "text": "Bottom-up：不是 recursive call，老老實實從小問題算到大問題。",
+     "t": 5054
+    },
+    {
+     "text": "子問題的 natural ordering：F1、F2、F3、F4、F5…",
+     "t": 5071
+    },
+    {
+     "text": "只要一層 for loop：F[0] = 0、F[1] = 1 是 boundary condition。",
+     "t": 5100
+    },
+    {
+     "text": "從 i = 2 起，F[i] = 前兩項的和，存進 F[i]。",
+     "t": 5127
+    },
+    {
+     "text": "i 由小到大，保證 F[i−1]、F[i−2] 已經有值，loop 不會出錯。",
+     "t": 5147
+    },
+    {
+     "text": "Fibonacci 可以當 DP 的例子，但沒有最佳化概念，是比較特別的例子。",
+     "t": 5201
+    }
+   ]
+  },
+  {
+   "title": "Maze routing（wave propagation）",
+   "scene": "dpjiang1-maze",
+   "points": [
+    {
+     "text": "最佳化的例子：maze routing，可以想成老鼠走迷宮。",
+     "t": 5213
+    },
+    {
+     "text": "格狀圖上有灰色障礙物；老鼠和起司可以放在任意兩點。",
+     "t": 5236
+    },
+    {
+     "text": "就像 VLSI 繞線：把 source 和 target 的訊號連起來，而且要走最短距離。",
+     "t": 5295
+    },
+    {
+     "text": "只能上下左右走，不能走斜的（也可延伸到斜走）。",
+     "t": 5343
+    },
+    {
+     "text": "先標出一步可以到的點，再兩步、三步…直到碰到 target。",
+     "t": 5367
+    },
+    {
+     "text": "運算像 wave propagation；碰到 target 時保證找到最短路徑。",
+     "t": 5403
+    },
+    {
+     "text": "倒過來數 12、11、…、1 的任一條連續路徑就是解。",
+     "t": 5428
+    },
+    {
+     "text": "lookup table 大小與格子數相關：m × n 格，running time 為 O(mn)。",
+     "t": 5468
+    }
+   ],
+   "trap": "補充：這就是 Lee's algorithm（在格子上做 BFS）。動畫的迷宮是示意，障礙物位置不是投影片原圖。"
+  },
+  {
+   "title": "收尾與預告",
+   "scene": null,
+   "points": [
+    {
+     "text": "看懂這些例子，就已經可以開始做 DP 的題目了。",
+     "t": 5506
+    },
+    {
+     "text": "Programming Assignment 1 的 recurrence 已給定，只要想清楚子問題的計算順序。",
+     "t": 5526
+    },
+    {
+     "text": "下次介紹 subset sum、knapsack，有時間再講 TSP（聖誕老公公送禮物）。",
+     "t": 5563
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Dynamic Programming 名稱中的「Programming」指的是什麼？",
+   "opts": [
+    "寫程式（coding）",
+    "Mathematical programming，也就是最佳化",
+    "排程（scheduling）",
+    "遞迴程式設計"
+   ],
+   "ans": "Mathematical programming，也就是最佳化",
+   "why": "如 linear programming，programming 指最佳化的機制，所以 DP 典型用來解最佳化問題。"
+  },
+  {
+   "q": "Weighted interval scheduling 中 v = 2, 4, 4, 7, 2, 1、p = 0, 0, 1, 0, 3, 3，M[6] 是多少？",
+   "opts": [
+    "7",
+    "8",
+    "9",
+    "10"
+   ],
+   "ans": "8",
+   "why": "M = 0, 2, 4, 6, 7, 8, 8；M[6] = max(1 + M[3], M[5]) = max(7, 8) = 8。"
+  },
+  {
+   "q": "OPT(j) 的 recurrence 正確的是哪一個？",
+   "opts": [
+    "OPT(j) = vⱼ + OPT(j − 1)",
+    "OPT(j) = max(vⱼ + OPT(p(j)), OPT(j − 1))",
+    "OPT(j) = max(vⱼ, OPT(p(j)))",
+    "OPT(j) = min(vⱼ + OPT(p(j)), OPT(j − 1))"
+   ],
+   "ans": "OPT(j) = max(vⱼ + OPT(p(j)), OPT(j − 1))",
+   "why": "第 j 筆要算就接上 p(j) 之前的最佳解，不算就是前 j − 1 筆的最佳解，取較大者。"
+  },
+  {
+   "q": "為什麼「每次挑最早結束」的 greedy 不適用於 weighted interval scheduling？",
+   "opts": [
+    "它會選到重疊的 interval",
+    "它最大化的是個數，不是總 value",
+    "它的時間複雜度太高",
+    "它需要先算 p(j)"
+   ],
+   "ans": "它最大化的是個數，不是總 value",
+   "why": "例如 weight 1、3、1，greedy 選兩個 1 得 2，最佳是只選 3。"
+  },
+  {
+   "q": "Memoization 與 iteration（bottom-up）的差別，下列何者正確？",
+   "opts": [
+    "只有 iteration 是 DP",
+    "memoization 一定比 iteration 算更多子問題",
+    "iteration 會算出所有子問題；memoization 只在需要時才算",
+    "memoization 不需要 table"
+   ],
+   "ans": "iteration 會算出所有子問題；memoization 只在需要時才算",
+   "why": "兩者都是正確的 DP；top-down 只展開被用到的子問題，所以有時算得少一點。"
+  },
+  {
+   "q": "老師認為判斷一個問題適不適合 DP，最重要的特性是什麼？",
+   "opts": [
+    "輸入一定是陣列",
+    "子問題有天生不會改變的 natural（linear）order",
+    "問題一定要有負數",
+    "可以用 greedy 證明"
+   ],
+   "ans": "子問題有天生不會改變的 natural（linear）order",
+   "why": "有固定順序就能由小到大計算；再配合 polynomial 個子問題與好算的 recurrence。"
+  },
+  {
+   "q": "用 memoization 算 Fibonacci 時，陣列 F 為什麼先初始化成 −1？",
+   "opts": [
+    "因為 F₀ = −1",
+    "Fibonacci 的數都 ≥ 0，−1 可以代表「還沒算過」",
+    "為了讓加法更快",
+    "避免 overflow"
+   ],
+   "ans": "Fibonacci 的數都 ≥ 0，−1 可以代表「還沒算過」",
+   "why": "查表時看到 −1 就知道要真的 recursive call，否則直接 return 存好的值。"
+  },
+  {
+   "q": "Maze routing 在 m × n 的格子上做 wave propagation，running time 是？",
+   "opts": [
+    "O(m + n)",
+    "O(mn)",
+    "O(2^(mn))",
+    "O((mn)²)"
+   ],
+   "ans": "O(mn)",
+   "why": "DP 的 runtime bound 在 table size 上；table 就是 m × n 個格子。"
+  }
+ ]
+}

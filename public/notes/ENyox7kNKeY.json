@@ -1,45 +1,59 @@
 {
  "video": "ENyox7kNKeY",
  "label": "MIT 6.006 L12：DP II",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
-   "title": "DP = 小心執行的暴力搜尋",
-   "scene": "dp-recipe",
+   "title": "開場（OCW 授權說明）",
+   "scene": null,
    "points": [
     {
-     "text": "DP 是設計演算法、特別是解最佳化（max／min）問題的強大技巧；Fibonacci 與 Bellman-Ford 其實都是 DP。",
-     "t": 40
-    },
-    {
-     "text": "DP 可以想成「小心執行的暴力搜尋」：嘗試所有可能，但用聰明的方式避開指數多的情況，把搜尋空間降成多項式。",
-     "t": 117
-    },
-    {
-     "text": "三個主要技巧：guessing（不知道就把每種選擇都試，取最好的）、recursion（用子問題表示答案）、memoization（算過就存表，再用時直接查）。",
-     "t": 175
-    },
-    {
-     "text": "單純遞迴通常是指數時間（像 Fibonacci）；memoization 讓遞迴變成多項式時間，guessing 則是暴力搜尋的部分。",
-     "t": 225
+     "text": "MIT OpenCourseWare 的 Creative Commons 授權與捐款說明。",
+     "t": 0
     }
    ]
   },
   {
-   "title": "DP = 在 DAG 上找最短路徑",
+   "title": "複習：DP = 小心執行的暴力搜尋",
+   "scene": "dp-recipe",
+   "points": [
+    {
+     "text": "繼續 DP：設計演算法的強大技巧，特別適合要 maximize／minimize 的最佳化問題。",
+     "t": 22
+    },
+    {
+     "text": "上次看到 Fibonacci 與 Bellman-Ford 其實都是 DP；今天用「五個步驟」解兩個新問題：text justification 與 blackjack。",
+     "t": 44
+    },
+    {
+     "text": "DP 可以想成 carefully executed brute force search：試遍所有可能，卻把指數的搜尋空間降成多項式。",
+     "t": 102
+    },
+    {
+     "text": "三個主要技巧：guessing（挑出解的某個特徵，不知道就全部試、取最好）、recursion（用子問題表示答案）、memoization（算過就存表）。",
+     "t": 130
+    },
+    {
+     "text": "單純遞迴通常是指數時間；memoization 讓遞迴變多項式，guessing 則是暴力搜尋的部分。",
+     "t": 206
+    }
+   ]
+  },
+  {
+   "title": "另一個角度：DP = DAG 上的最短路徑",
    "scene": "dp-dag",
    "points": [
     {
-     "text": "另一個角度：DP 在某種意義上永遠是在 DAG（有向無環圖）上算最短路徑。",
-     "t": 260
+     "text": "另一個（正交的）角度：DP 在某種意義上永遠是在算 DAG 上的最短路徑。",
+     "t": 218
     },
     {
-     "text": "把問題表示成 DAG（例如把文字切成好看的段落），再用線性時間求 DAG 的最短路徑。",
-     "t": 285
+     "text": "把問題（例如把文字排成段落）表示成有向無環圖，再用線性時間求 DAG 最短路徑。",
+     "t": 248
     },
     {
-     "text": "DP 的關鍵是怎麼巧妙地建立這個 DAG；建好後演算法本身很簡單。",
-     "t": 308
+     "text": "DP 的巧思在於怎麼設定這個 DAG；設定好之後演算法本身很簡單。",
+     "t": 270
     }
    ]
   },
@@ -48,60 +62,94 @@
    "scene": "dp-recipe",
    "points": [
     {
-     "text": "把原問題推廣成很多子問題：Fibonacci 只想要 Fₙ，但過程中會算出 F₁ … Fₙ。",
-     "t": 335
+     "text": "把真正要解的問題推廣成很多子問題：只想要 Fₙ，但過程中會算出 F₁ … Fₙ。",
+     "t": 287
     },
     {
-     "text": "總時間 = 子問題個數 × 每個子問題的時間，這個公式一般都成立。",
-     "t": 358
+     "text": "每個子問題的時間 × 子問題數 = 總時間，這是普遍成立的事實。",
+     "t": 306
     },
     {
-     "text": "遞迴呼叫可以當作 O(1)：只有第一次要付錢，之後已經 memo 好；這類似 table doubling 的 amortization。",
-     "t": 380
+     "text": "遞迴呼叫可當成 O(1)：只有第一次要付，之後已經 memo；這就像 table doubling 的 amortization。",
+     "t": 320
     }
    ]
   },
   {
-   "title": "五個步驟（以 Fibonacci、最短路徑對照）",
+   "title": "DP 的五個步驟",
    "scene": "dp-five-steps",
    "points": [
     {
-     "text": "五步驟：定義子問題、猜、用遞迴式連結子問題、建演算法（memo 遞迴或 bottom-up 建表）、解原問題；步驟彼此相關，不一定照順序。",
-     "t": 440
+     "text": "五個「簡單」步驟；它們不一定照順序，彼此有點相互依賴，是解釋（也是發明）一個 DP 的方式。",
+     "t": 373
     },
     {
-     "text": "子問題：Fibonacci 是 F₁ … Fₙ 共 n 個；最短路徑 δₖ(s,v)（最多用 k 條邊）共 V² 個。",
-     "t": 545
+     "text": "1. 定義子問題；2. 猜（guess）某件事；3. 用 recurrence 把子問題的解關聯起來。",
+     "t": 402
     },
     {
-     "text": "猜：Fibonacci 不用猜（1 種選擇）；最短路徑猜最後一條邊 (u, v)，共 indegree(v) + 1 種。",
-     "t": 610
+     "text": "4. 建出演算法：recursion + memoization，或 bottom-up 建表（一堆 for 迴圈）；worst case 時間相同。",
+     "t": 428
     },
     {
-     "text": "遞迴式通常是 min 或 max：δₖ(s,v) = min{ δₖ₋₁(s,u) + w(u,v) }；每題時間 = 猜測數 × 每次的常數工作。",
-     "t": 715
+     "text": "5. 解出原本的問題。",
+     "t": 487
+    },
+    {
+     "text": "老師用上次的 Fibonacci 與 shortest paths 做成一張對照表。",
+     "t": 502
     }
    ]
   },
   {
-   "title": "拓樸順序、總時間與原問題",
+   "title": "對照表：子問題、猜、遞迴式",
+   "scene": "dp-five-steps",
+   "points": [
+    {
+     "text": "子問題：Fibonacci 是 F₁ … Fₙ，共 n 個；分析時第 1 步要數子問題個數。",
+     "t": 520
+    },
+    {
+     "text": "最短路徑：δₖ(s,v) = 最多用 k 條邊的最短路徑，k = 0 … V−1 → V² 個子問題。",
+     "t": 557
+    },
+    {
+     "text": "猜：Fibonacci 不用猜（只有 1 種選擇）；最短路徑猜最後一條邊 (u,v)，有 indegree(v) + 1 種。",
+     "t": 592
+    },
+    {
+     "text": "遞迴式：Fibonacci 就是定義；最短路徑 δₖ(s,v) = min{δₖ₋₁(s,u) + w(u,v)}——通常是 min 或 max。",
+     "t": 665
+    },
+    {
+     "text": "每題時間：Fibonacci O(1)；最短路徑 O(indegree(v))，每個猜測 O(1)；猜測數與每題時間常常一樣。",
+     "t": 760
+    }
+   ]
+  },
+  {
+   "title": "拓樸順序、總時間、原問題",
    "scene": "dp-dag",
    "points": [
     {
-     "text": "建演算法時要確認子問題的遞迴關係無環，也就是有拓樸順序。",
-     "t": 838
+     "text": "第 4 步要確認子問題的 recurrence 是 acyclic，也就是有拓樸順序。",
+     "t": 829
     },
     {
-     "text": "Fibonacci：從最小的算到最大的；反過來算 Fₙ 時會缺 Fₙ₋₁、Fₙ₋₂。",
-     "t": 870
+     "text": "Fibonacci：從最小的算到最大的；反過來的話，算 Fₙ 時還沒有 Fₙ₋₁、Fₙ₋₂。",
+     "t": 856
     },
     {
-     "text": "拓樸順序就是 bottom-up DP 的 for 迴圈；最短路徑要 k 在外層、v 在內層，反過來不行。",
-     "t": 905
+     "text": "DAG 的拓樸順序就是 bottom-up 的 for 迴圈；最短路徑要 k 在外層、v 在內層，反過來不行。",
+     "t": 891
     },
     {
-     "text": "總時間 Fibonacci Θ(n)、最短路徑 Θ(VE)；最後確認原問題（Fₙ、δ_{V−1}(s,v)）在子問題中被解出。",
-     "t": 980
+     "text": "第 5 步：Fibonacci 的答案是 Fₙ；最短路徑是每個 v 的 δ_{V−1}(s,v)（無負環時）。",
+     "t": 937
+    },
+    {
+     "text": "總時間：Fibonacci Θ(n)、最短路徑 Θ(VE)。",
+     "t": 995
     }
    ]
   },
@@ -110,223 +158,331 @@
    "scene": "textjust-badness",
    "points": [
     {
-     "text": "問題：把一串字分成好幾行，只能在字與字之間斷行，希望右邊對齊、避免大空隙。",
-     "t": 1030
+     "text": "第一個新問題 text justification：把一串字（words）切成好看的行。",
+     "t": 1027
     },
     {
-     "text": "舊版 Microsoft Word 用 greedy：每行塞越多字越好，再換下一行；這不是最佳的。LaTeX 用 DP。",
-     "t": 1080
+     "text": "只能在字與字之間斷行；文字要右邊對齊，想避免很大的空隙。",
+     "t": 1072
     },
     {
-     "text": "badness(i, j)：words[i:j] 放成一行；放不下就是 ∞，否則是 (page width − total width)³。",
-     "t": 1160
+     "text": "（舊版）Microsoft Word 用 greedy：第一行塞越多字越好，再換下一行——不是最佳的；LaTeX 用 DP。",
+     "t": 1095
     },
     {
-     "text": "目標是所有行的 badness 總和最小；有時前一行少放幾個字，下一行會好很多。",
-     "t": 1260
+     "text": "定義 badness(i, j)：把 words[i:j]（Python 記法，到 j−1）放成一行有多糟。",
+     "t": 1141
     },
     {
-     "text": "暴力法：每個字決定是否開新行，共 2ⁿ 種斷法。",
-     "t": 1335
+     "text": "放不下（字長加最小空白超過頁寬）→ badness = ∞（LaTeX sloppy mode）。",
+     "t": 1197
+    },
+    {
+     "text": "放得下 → (page width − total width)³；空隙越大罰越重。",
+     "t": 1234
+    },
+    {
+     "text": "目標：所有行 badness 的總和最小；有時前一行少放幾個字，下一行會好很多。",
+     "t": 1311
     }
    ],
-   "trap": "補充：本實驗室用 W = 10、the cat is happy 示範：greedy 得 0 + 125 = 125，DP 得 27 + 8 = 35（例子為自編）。"
+   "trap": "補充：動畫用 W = 10、the cat is happy 示範（老師沒有舉具體的字）：greedy 得 0 + 125 = 125，DP 得 27 + 8 = 35。"
   },
   {
-   "title": "Text justification 的 DP",
+   "title": "Text justification：子問題 = suffix",
    "scene": "textjust-dp",
    "points": [
     {
-     "text": "猜：第一行從 word i 開始，第二行從哪個字開始？之後剩下的字是 suffix words[i:]。",
-     "t": 1450
+     "text": "第一步定義子問題是最難的；先想暴力法怎麼試所有可能。",
+     "t": 1330
     },
     {
-     "text": "子問題 = suffix words[i:]：只記得還剩哪些字、忘掉過去，所以只有 n 個，不是 2ⁿ 個。",
-     "t": 1530
+     "text": "暴力法：每個字決定「是否開新行」→ n 個字有 2ⁿ 種切法。",
+     "t": 1364
     },
     {
-     "text": "DP(i) = min over j ∈ {i+1, …, n} of ( badness(i, j) + DP(j) )；j = n 代表沒有第二行。",
-     "t": 1720
+     "text": "猜：第一個字一定開頭，那第二行從哪個字開始？全部試，塞太多就放棄。",
+     "t": 1416
     },
     {
-     "text": "每題試 O(n) 個 j，每個 O(1) → 每題 O(n)；j 永遠大於 i，所以從 n−1 倒著算回 0，base case DP(n) = 0。",
-     "t": 1860
+     "text": "子問題要設計成：猜完一次後，剩下的還是同一類問題。",
+     "t": 1466
     },
     {
-     "text": "總時間 n × O(n) = Θ(n²)；原問題是 DP(0)。",
-     "t": 1935
+     "text": "猜完第一行後剩下的字 = suffix words[i:]，這就是子問題。",
+     "t": 1502
+    },
+    {
+     "text": "子問題只有 n 個（不是 2ⁿ）：只記得還剩哪些字、忘掉過去——這讓 DP 有效率。",
+     "t": 1567
     }
    ]
   },
   {
-   "title": "Parent pointers：還原實際解",
+   "title": "DP(i) 遞迴式、順序與時間",
+   "scene": "textjust-dp",
+   "points": [
+    {
+     "text": "猜第二行從哪個字開始：選擇最多 n − i 種，視為 O(n)。",
+     "t": 1620
+    },
+    {
+     "text": "DP(i) = min over j ∈ range(i+1, n+1) of badness(i, j) + DP(j)；j = n 代表沒有第二行。",
+     "t": 1689
+    },
+    {
+     "text": "badness 是什麼函數 DP 不在乎，只要能由 i、j 在 O(1) 算出；換別的定義一樣能解。",
+     "t": 1824
+    },
+    {
+     "text": "每題時間：for 迴圈 O(n) 個 j，每個 O(1) → O(n)。",
+     "t": 1888
+    },
+    {
+     "text": "拓樸順序：j 永遠比 i 大，所以從右往左 i = n−1 … 0；base case DP(n) = 0（沒有字，不花錢）。",
+     "t": 1919
+    },
+    {
+     "text": "總時間 n × O(n) = O(n²)，worst case 確實是 Θ(n²)（實務上行不會太長，會更快）。",
+     "t": 1988
+    },
+    {
+     "text": "原問題是 DP(0)：從第 0 個字開始的所有字。",
+     "t": 2013
+    }
+   ]
+  },
+  {
+   "title": "Parent pointers：還原實際的斷行",
    "scene": "textjust-parent",
    "points": [
     {
-     "text": "DP(j) 回傳的是成本（badness 總和），並沒有告訴你怎麼排。",
-     "t": 1990
+     "text": "學生問 DP(j) 回傳什麼：回傳的是成本（badness 總和），不是怎麼排；就像最短路徑先算權重。",
+     "t": 2049
     },
     {
-     "text": "parent pointer：計算 min 時記下 arg min，也就是讓 DP(i) 最小的那個 j。",
-     "t": 2100
+     "text": "parent pointers：記住哪個猜測最好。",
+     "t": 2128
     },
     {
-     "text": "從 0 開始，一直跟著 parent 走，就得到每一行開頭的字，線性時間還原。",
-     "t": 2160
+     "text": "parent[i] = arg min 的那個 j；跟 min 一起算，只多常數倍工作。",
+     "t": 2163
     },
     {
-     "text": "這招跟 memoization、bottom-up 一樣可以套在任何 DP 上，完全機械化；難的是決定要猜什麼、子問題是什麼。",
-     "t": 2265
+     "text": "從 0 開始，依序走 parent[0]、parent[parent[0]] …，線性時間就還原每一行的起點。",
+     "t": 2216
+    },
+    {
+     "text": "跟 memoization、bottom-up 一樣完全自動；真正難的是決定要猜什麼、子問題是什麼。",
+     "t": 2271
     }
    ]
   },
   {
-   "title": "Blackjack 規則",
+   "title": "Blackjack 規則示範",
    "scene": "blackjack-rules",
    "points": [
     {
-     "text": "一位莊家、一位玩家；發牌順序是玩家、莊家、玩家、莊家，莊家有一張牌先蓋著。",
-     "t": 2345
+     "text": "第二個問題 blackjack：請 Victor 上台示範規則，一位莊家、一位玩家。",
+     "t": 2332
     },
     {
-     "text": "牌的總和超過 21 就輸；A 可以算 1 或 11。",
-     "t": 2375
+     "text": "發牌順序：玩家、莊家、玩家、莊家；莊家有一張牌先蓋著。",
+     "t": 2386
     },
     {
-     "text": "示範：玩家 A + 7 = 18 選擇 stand，莊家 17 → 玩家贏；第二局玩家 18、莊家 20 → 莊家贏。",
-     "t": 2420
+     "text": "點數總和超過 21 就輸（爆牌）。",
+     "t": 2402
     },
     {
-     "text": "莊家策略是固定的：點數 < 17 就再拿牌，≥ 17 就停。",
+     "text": "Victor 拿 A + 7：A 可算 1 或 11 → 8 或 18；標準策略是 stand。",
+     "t": 2416
+    },
+    {
+     "text": "莊家拿到 17：莊家規則 ≥ 17 就 stand、< 17 一定再拿 → Victor 18 贏。",
      "t": 2450
+    },
+    {
+     "text": "第二局 Victor 又是 18、stand；莊家 20 → 莊家贏。",
+     "t": 2471
+    },
+    {
+     "text": "每局賭 $1：一勝一負打平；這套規則莊家大約有 1% 優勢。",
+     "t": 2497
+    }
+   ],
+   "trap": "老師示範時一度把自己的牌算成 18 並多拿一張，後來更正：莊家拿到 17 就必須 stand。"
+  },
+  {
+   "title": "Perfect-information blackjack：猜與子問題",
+   "scene": "blackjack-dp",
+   "points": [
+    {
+     "text": "接下來教「怎麼作弊」：perfect information——事先知道整副牌的順序。",
+     "t": 2516
+    },
+    {
+     "text": "每次都想知道該 hit 還是 stand；跟 text justification 同一招（每個字要不要開新行）。",
+     "t": 2565
+    },
+    {
+     "text": "牌堆是 c₀, c₁, …, cₙ₋₁；一位玩家對莊家，每手賭 $1，不能 double、不能 split。",
+     "t": 2588
+    },
+    {
+     "text": "猜：第一手要 hit 幾次（一次猜一整手比較好想），全部試。",
+     "t": 2645
+    },
+    {
+     "text": "子問題：牌的 suffix cᵢ:——已玩掉的永遠是 prefix，所以只有 n 個子問題，不是指數多個子集合。",
+     "t": 2706
+    },
+    {
+     "text": "子問題的值：從這些牌開始，最多能贏多少錢。",
+     "t": 2728
+    },
+    {
+     "text": "從 cᵢ 開始：前四張固定，猜 hit 數，最多約 n − i − 4 種，記作 O(n)。",
+     "t": 2791
+    }
+   ],
+   "trap": "補充：動畫的牌堆是自編例子；跑 DP 後第一手應該 hit 一次。"
+  },
+  {
+   "title": "BJ(i) 的遞迴式",
+   "scene": "blackjack-dp",
+   "points": [
+    {
+     "text": "BJ(i) = max over 合法的 hit 數 of（這一手的結果 + BJ(j)）。",
+     "t": 2828
+    },
+    {
+     "text": "這一手的結果只有 −1、0（平手退回賭注）、+1 三種。",
+     "t": 2860
+    },
+    {
+     "text": "給定 hit 數，照牌模擬就能算出結果：莊家策略固定，線性時間內決定。",
+     "t": 2881
+    },
+    {
+     "text": "要加一個 if：已經爆牌就不能再 hit（也可以用 break）。",
+     "t": 2947
+    },
+    {
+     "text": "hit 數從 0 到 n；j = i + 4 + 玩家 hit 數 + 莊家 hit 數，要實際跑一次才知道。",
+     "t": 2985
     }
    ]
   },
   {
-   "title": "Perfect-information blackjack 的 DP",
-   "scene": "blackjack-dp",
+   "title": "Blackjack 的 DAG 與執行時間",
+   "scene": "dpmit1-bj-dag",
    "points": [
     {
-     "text": "假設事先知道整副牌的順序 c₀ … cₙ₋₁；只有一位玩家，不能 double、不能 split。",
-     "t": 2590
+     "text": "DAG 角度：從 BJ(i) 連到 i+4、i+5、i+6 …，取決於這一手玩家與莊家拿了幾張。",
+     "t": 3023
     },
     {
-     "text": "猜：這一手要 hit 幾次（全部試過）。",
-     "t": 2650
+     "text": "每條邊的權重是 +1、0、−1（贏、平、輸）；節點就是「剩幾張牌」。",
+     "t": 3046
     },
     {
-     "text": "子問題：牌堆的 suffix cᵢ:；已玩掉的永遠是 prefix，所以只有 n 個子問題。",
-     "t": 2730
+     "text": "求這個 DAG 的最長路徑（longest path）就得到同樣的答案。",
+     "t": 3075
     },
     {
-     "text": "每手下注 $1，這一手的結果只有 −1、0（平手退回賭注）、+1 三種，給定 hit 次數就能線性時間模擬出來。",
-     "t": 2840
+     "text": "順序跟 text justification 一樣；n 個子問題 × n 種猜法 × 每次跑莊家策略 → 最壞 O(n³)。",
+     "t": 3093
     },
     {
-     "text": "BJ(i) = max over 合法的 hit 次數 of ( 這手的結果 −1/0/+1 + BJ(j) )，j = i + 4 + 玩家 hit 數 + 莊家 hit 數；爆牌後不能再 hit。",
-     "t": 2930
+     "text": "若 21 是常數，一手只要 O(1) 就模擬完 → O(n²)。",
+     "t": 3114
     },
     {
-     "text": "也可以看成 DAG：節點是剩下幾張牌，邊權 +1、0、−1，求最長路徑。",
-     "t": 3020
-    },
-    {
-     "text": "n 個子問題 × n 種猜法 × 跑一次莊家策略 → 最壞 O(n³)；把 21 當常數則是 O(n²)。",
-     "t": 3100
+     "text": "下兩講會看到 DP 更強大的例子。",
+     "t": 3124
     }
    ],
-   "trap": "補充：本實驗室的牌堆為自編例子；跑 DP 後第一局應該 hit 一次，總共淨贏 2，而每局都 stand 只得 −2。"
+   "trap": "老師口誤說「shortest path in this DAG」，但贏錢要取 max，正確是 longest path（或把權重取負再做 shortest path）；DAG 上兩者都能線性時間做。補充：動畫中的邊與 +1/0/−1 為示意。"
   }
  ],
  "quiz": [
   {
-   "q": "MIT 講者對 DP 的一句話總結是？",
+   "q": "DP 的五個步驟中，第 2 步是什麼？",
    "opts": [
-    "小心執行的暴力搜尋（careful brute force）",
-    "貪婪地每步選最好",
-    "把問題切一半遞迴",
-    "隨機抽樣近似"
+    "猜（guess）解的某個特徵，數有幾種選擇",
+    "建 DP 表",
+    "定義子問題",
+    "解原問題"
    ],
-   "ans": "小心執行的暴力搜尋（careful brute force）",
-   "why": "DP 試遍所有可能（guessing），但靠 memoization 讓不同子問題只算一次，降成多項式時間。"
+   "ans": "猜（guess）解的某個特徵，數有幾種選擇",
+   "why": "順序：子問題、猜、遞迴式、建演算法（memo / bottom-up）、解原問題。"
   },
   {
-   "q": "DP 的總執行時間怎麼算？",
+   "q": "Bellman-Ford 寫成 DP 時，bottom-up 的迴圈順序？",
    "opts": [
-    "子問題數 × 每個子問題的時間",
-    "子問題數 + 猜測數",
-    "遞迴樹節點數",
-    "子問題數的平方"
+    "k 在外層、v 在內層",
+    "v 在外層、k 在內層",
+    "兩種都可以",
+    "按邊權重排序"
    ],
-   "ans": "子問題數 × 每個子問題的時間",
-   "why": "遞迴呼叫在 memo 後只付一次，所以每題只算自己的工作。"
+   "ans": "k 在外層、v 在內層",
+   "why": "δₖ 只依賴 δₖ₋₁，要先把整個 k−1 層算完；反過來不是拓樸順序。"
   },
   {
-   "q": "Bellman-Ford 當成 DP 時，子問題 δₖ(s,v) 有幾個？",
+   "q": "Text justification 中 badness(i, j) 在放得下時是？",
    "opts": [
-    "V²",
-    "V",
-    "E",
-    "VE"
+    "(page width − total width)³",
+    "(page width − total width)²",
+    "∞",
+    "總字數"
    ],
-   "ans": "V²",
-   "why": "k = 0 … V−1、v 有 V 個 → V × V 個子問題。"
+   "ans": "(page width − total width)³",
+   "why": "LaTeX 的規則：放不下是 ∞，否則把剩餘空間取三次方，大空隙會被重罰。"
   },
   {
    "q": "Text justification 的子問題為什麼只有 n 個？",
    "opts": [
-    "只記得剩下的 suffix words[i:]",
-    "只看前綴",
+    "只記得剩下的 suffix words[i:]，忘掉過去",
     "每行最多 n 個字",
+    "只看 prefix",
     "用 greedy 剪枝"
    ],
-   "ans": "只記得剩下的 suffix words[i:]",
-   "why": "猜完第一行後剩下的是 suffix，忘掉過去；suffix 只有 n 種，子集合才會有 2ⁿ 種。"
+   "ans": "只記得剩下的 suffix words[i:]，忘掉過去",
+   "why": "猜完第一行後剩下的是 suffix；suffix 只有 n 種，2ⁿ 是每個字要不要開新行的組合數。"
   },
   {
-   "q": "Text justification 中，若 words[i:j] 放不下一行，badness(i, j) = ?",
+   "q": "DP(i) = min_j badness(i, j) + DP(j) 要按什麼順序算？",
    "opts": [
-    "∞",
-    "0",
-    "(W − total)³",
-    "−1"
+    "i 從 n−1 往下到 0（DP(n) = 0）",
+    "i 從 0 往上到 n",
+    "任意順序",
+    "依 badness 大小"
    ],
-   "ans": "∞",
-   "why": "LaTeX sloppy mode 的規則：放不下就是無限大，否則 (page width − total width)³。"
+   "ans": "i 從 n−1 往下到 0（DP(n) = 0）",
+   "why": "j 永遠大於 i，所以要先有右邊的值。"
   },
   {
-   "q": "Text justification 的 DP 總時間？",
+   "q": "Perfect-information blackjack 的子問題與猜測分別是？",
    "opts": [
-    "Θ(n²)",
-    "Θ(n)",
-    "Θ(n³)",
-    "Θ(2ⁿ)"
+    "牌的 suffix cᵢ:；猜這一手要 hit 幾次",
+    "牌的子集合；猜下一張牌",
+    "玩家點數；猜莊家的蓋牌",
+    "牌的 prefix；猜要不要加注"
    ],
-   "ans": "Θ(n²)",
-   "why": "n 個子問題，每個試 O(n) 個 j。"
+   "ans": "牌的 suffix cᵢ:；猜這一手要 hit 幾次",
+   "why": "已玩掉的永遠是 prefix，所以只有 n 個子問題；莊家策略固定，只需猜玩家 hit 數。"
   },
   {
-   "q": "Parent pointer 存的是什麼？",
+   "q": "Blackjack DP 最壞時間（21 視為一般參數時）？",
    "opts": [
-    "讓 min 成立的那個選擇（arg min）",
-    "DP 值本身",
-    "上一個子問題的 badness",
-    "遞迴深度"
+    "O(n³)",
+    "O(n²)",
+    "O(n)",
+    "O(2ⁿ)"
    ],
-   "ans": "讓 min 成立的那個選擇（arg min）",
-   "why": "從原問題沿 parent 走，就能還原實際的解（每行從哪個字開始）。"
-  },
-  {
-   "q": "Perfect-information blackjack 的 DP 中「猜」的是什麼？",
-   "opts": [
-    "這一手玩家要 hit 幾次",
-    "莊家要 hit 幾次",
-    "下一張是什麼牌",
-    "要不要加注"
-   ],
-   "ans": "這一手玩家要 hit 幾次",
-   "why": "莊家策略固定（< 17 就拿），所以只需猜玩家 hit 幾次；子問題是牌堆的 suffix。"
+   "ans": "O(n³)",
+   "why": "n 個子問題 × n 種 hit 數 × 每次模擬莊家 O(n)；21 是常數時降為 O(n²)。"
   }
- ],
- "timing": "estimated"
+ ]
 }
