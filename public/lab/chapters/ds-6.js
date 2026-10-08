@@ -1355,12 +1355,18 @@ FRAG.push(['hasha-cluster', 'Clustering：撞進群聚就要走到底', async (t
 
   // ═══ hashlin1.js ═══
   {
-const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, code, anim, line, arrow, ghostBox, lnode, tnode, GOLD, GREEN, RED, GRAY } = K;
+const { V3, fresh, tag, cube, move, fly, kill, glow, txt, code, anim, line, arrow, ghostBox, lnode, tnode, step, buddy, prop, bob, travel, GOLD, GREEN, RED, GRAY } = K;
 // ─── SBQLkYIDAZI（台大林軒田 DSA：binomial heap → map → hash function 入門） ───
+// Cued scenes: every `await step(tok)` waits for the sentence it shows (// @c = cue seconds).
 const HL = ['#4b9ee2', '#9b7ef4', '#dd8238', '#31aab0', '#e55a9b', '#2fc092', '#c08a1f'];
 const hlOrd = (k) => HL[k % HL.length];
 const hlSub = (i) => String(i).split('').map((d) => '₀₁₂₃₄₅₆₇₈₉'[+d]).join('');
 const hlBin = (n) => n.toString(2);
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const pkt = (t, x, y, z = 0) => tag(t, 'pkt', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
 // binomial-tree nodes: { v, kids }; order of a root = kids.length
 const BN = (v, ...kids) => ({ v, kids });
 const bnW = (n) => (n.kids.length ? n.kids.reduce((a, c) => a + bnW(c), 0) : 1);
@@ -1394,160 +1400,193 @@ function bnForest(ts, o = {}) {
   }
   return { objs, yTop, kill() { objs.forEach(kill); } };
 }
-// forest as array F[k] = tree of order k or null; drawn highest order on the left like binary digits
-const fSum = (F) => F.reduce((a, t, k) => a + (t ? 1 << k : 0), 0);
-function fList(F) { const r = []; for (let k = F.length - 1; k >= 0; k--) if (F[k]) r.push(F[k]); return r; }
-function fShow(st, F, carry, o, drop) {
-  if (st.v) st.v.kill();
-  const ts = fList(F); if (carry) ts.push(carry);
-  st.v = bnForest(ts, Object.assign({}, o, { drop, tagOf: (t) => (t === carry ? '新 ' : '') + 'B' + hlSub(t.kids.length) }));
-}
-// binomial-heap insert = binary +1: a new B0, then carries (root fights) while that order is taken
-async function bnInsert(tok, F, v, st, o = {}) {
-  const ms = o.ms || 1500, n0 = fSum(F);
-  let c = BN(v), k = 0;
-  fShow(st, F, c, o, new Set([c]));
-  say('insert ' + v + '：自己是一棵 B₀', hlBin(n0) + '₂ + 1 = ' + hlBin(n0 + 1) + '₂');
-  await beat(tok, ms);
-  while (F[k]) {
-    const a = F[k];
-    glow(a.m, GOLD); glow(c.m, GOLD);
-    say('兩棵 B' + hlSub(k) + '：' + a.v + ' 和 ' + c.v + ' 打一架', '只比兩個 root（老大）');
-    await beat(tok, ms);
-    const { w, l } = bnLink(a, c);
-    F[k] = null; k++; c = w;
-    fShow(st, F, c, o, new Set(bnAll(l)));
-    say(w.v + ' 贏放上面，' + l.v + ' 掛下面', '進位：變成一棵 B' + hlSub(k));
-    await beat(tok, ms);
-  }
-  F[k] = c; fShow(st, F, null, o);
-  return k;
-}
 // array-heap slot i → (x, y) in a complete binary tree layout
 function hpPos(i, cx, top, W, dy) { const d = Math.floor(Math.log2(i + 1)), p = i + 1 - (1 << d); return [cx + (p + 0.5) * W / (1 << d) - W / 2, top - d * dy]; }
 
 // ════════ SBQLkYIDAZI（林軒田 DSA） ════════
-// 08:07 heap 與 max tree 的差別：complete 保證高度
+// 08:16 heap 與 max tree 的差別：complete 保證高度
 FRAG.push(['hashlin1-maxtree-vs-heap', 'Max tree 與 heap：差在 complete', async (tok) => {
   fresh([0, 5.2, 12.5], [0, 2.4, 0]);
   const vals = [9, 7, 5, 3, 1];
+  await step(tok); // @c 499.8 max tree：root 最大、subtree root 也最大
   tag('只滿足 max tree', 'ptr', -4.6, 6.0);
-  say('max tree：root 最大、subtree root 也最大', '其他什麼都不保證');
   let par = null; const L = [];
-  for (let i = 0; i < 5; i++) { par = tnode(vals[i], -5.6 + i * 0.55, 4.9 - i * 1.1, 0, par); L.push(par); await beat(tok, 380); }
-  await beat(tok, 1000);
-  say('可能退化成一條 linked list', '高度沒保證：worst case O(n)');
-  const cur = tag('走到 leaf', 'ptr alt', 0, 0, 0);
-  for (const m of L) { cur.position.set(m.position.x + 1.3, m.position.y, 0); glow(m, GOLD); await beat(tok, 420); glow(m, null); }
-  await beat(tok, 900);
+  for (let i = 0; i < 5; i++) { par = tnode(vals[i], -5.6 + i * 0.55, 4.9 - i * 1.1, 0, par); L.push(par); await beat(tok, 260); }
+  say('max tree：root 最大、subtree 的 root 也最大', '其他什麼都不保證');
+  await step(tok); // @c 514.8 樹高沒保證
+  bad('樹會多高？沒保證', -1.4, 3.6);
+  say('樹會長多高？沒有保證', '');
+  await step(tok); // @c 533.8 worst case root 掃到 leaf
+  const cur = pkt('一路走到 leaf', 0, 0);
+  for (const m of L) { cur.position.set(m.position.x + 1.5, m.position.y, 0); glow(m, GOLD); await beat(tok, 380); glow(m, null); }
+  say('worst case：從 root 一路走到 leaf', '時間跟 node 數成正比 → O(n)');
+  await step(tok); // @c 548.8 像 linked list
+  kill(cur);
+  note('其實像一條 linked list', -3.4, 0.6);
+  say('退化的樹：看起來像一條 linked list', '');
+  await step(tok); // @c 560.8 heap 只用 complete binary tree
   tag('heap = complete + max tree', 'ptr', 3.0, 6.0);
   const H = [];
-  for (let i = 0; i < 5; i++) { const [x, y] = hpPos(i, 3.0, 4.9, 5.2, 1.6); H.push(tnode(vals[i], x, y, 0, i ? H[(i - 1) >> 1] : null)); await beat(tok, 380); }
-  say('complete binary tree：高度最小', 'n 個 node → 高度 ⌊log₂n⌋');
-  await beat(tok, 2600);
-  for (const i of [0, 1, 3]) { cur.position.set(H[i].position.x + 1.3, H[i].position.y, 0); glow(H[i], GOLD); await beat(tok, 420); glow(H[i], null); }
-  say('heap 的操作都跟樹高有關', 'insert / remove 都只要 O(log n)');
-  await beat(tok, 3400);
+  for (let i = 0; i < 5; i++) { const [x, y] = hpPos(i, 3.0, 4.9, 5.2, 1.6); H.push(tnode(vals[i], x, y, 0, i ? H[(i - 1) >> 1] : null)); await beat(tok, 260); }
+  say('heap 加了嚴格限制：只用 complete binary tree', '');
+  await step(tok); // @c 579.8 最小高度
+  good('n 個 node 最矮的樹：高度 ⌊log₂n⌋', 3.0, 0.5);
+  say('complete binary tree：高度已經最小', 'n 個 node → 高度 ⌊log₂n⌋');
+  await step(tok); // @c 587.8 operation 都跟樹高有關
+  const c2 = pkt('沿著樹高走', 0, 0);
+  for (const i of [0, 1, 3]) { c2.position.set(H[i].position.x + 1.4, H[i].position.y, 0); glow(H[i], GOLD); await beat(tok, 450); glow(H[i], null); }
+  say('放進去、拿出來，都只沿著樹高走', '');
+  await step(tok); // @c 605.8 insert / remove 都有效率
+  kill(c2);
+  say('所以 insert / remove 都有效率', 'O(log n)');
 }]);
 
-// 27:17 回顧：priority queue 與 max heap 的 insert / removeMax
+// 27:37 回顧：priority queue 與 max heap 的 insert / removeMax
 FRAG.push(['hashlin1-heap-recap', '回顧 max heap：insert 往上打、remove 往下沉', async (tok) => {
   fresh([0, 5, 11.5], [0, 2.2, 0]);
   const pos = (i) => hpPos(i, 0, 4.4, 7.2, 1.45);
   const V = [9, 7, 5, 3, 1], M = [];
-  for (let i = 0; i < 5; i++) { const [x, y] = pos(i); if (i) { const [px, py] = pos((i - 1) >> 1); line(px, py, x, y); } M.push(cube(V[i], colorFor(V[i]), [0.8, 0.8, 0.8], x, y, 0)); }
-  say('priority queue：最緊急的先做', 'max heap = complete binary tree + max tree');
-  await beat(tok, 2600);
   const swap = async (i, j) => {
     const [xi, yi] = pos(i), [xj, yj] = pos(j);
     move(M[i], xj, yj); move(M[j], xi, yi);
     [M[i], M[j]] = [M[j], M[i]]; [V[i], V[j]] = [V[j], V[i]];
     await beat(tok, 900);
   };
+  await step(tok); // @c 1657.0 heap 用來做 priority queue
+  for (let i = 0; i < 5; i++) { const [x, y] = pos(i); if (i) { const [px, py] = pos((i - 1) >> 1); line(px, py, x, y); } M.push(cube(V[i], colorFor(V[i]), [0.8, 0.8, 0.8], x, y, 0)); }
+  say('heap 是用來做 priority queue', 'max heap = complete binary tree + max tree');
+  await step(tok); // @c 1675.8 最緊急先做
+  const todo = bub('作業 3 要 due 了 → 先做它！', 0, 5.5);
+  glow(M[0], GOLD);
+  say('priority queue：最緊急的先做', '不是先進先出');
+  await step(tok); // @c 1717.8 放進去要整理
+  glow(M[0], null); kill(todo);
   const [x5, y5] = pos(5), [x2, y2] = pos(2);
   const e5 = line(x2, y2, x5, y5);
   M.push(cube(8, colorFor(8), [0.8, 0.8, 0.8], x5, y5, 0, 3)); V.push(8);
-  say('insert 8：先放在最後面', 'heap[5] = 8，維持 complete');
-  await beat(tok, 1800);
+  say('insert 8：先放在最後面', '整理後兩個性質都要成立');
+  await step(tok); // @c 1745.8 跟附近 parent 打架往上浮
   glow(M[5], GOLD); glow(M[2], GOLD);
-  say('跟 parent 5 打一架：8 > 5', '往上浮（sift up）');
-  await beat(tok, 1300);
+  await beat(tok, 600);
   await swap(5, 2); glow(M[5], null);
+  say('跟 parent 5 打一架：8 > 5，往上浮', 'sift up');
+  await step(tok); // @c 1761.8 最多 log n 層
   glow(M[0], GOLD);
-  say('再跟 9 打：8 < 9，停', '最多爬 ⌊log₂n⌋ 層 → O(log n)');
-  await beat(tok, 2200);
+  say('再跟 9 比：8 < 9，停', '最多打 ⌊log₂n⌋ 層 → O(log n)');
+  await step(tok); // @c 1772.0 remove 最大
   glow(M[0], null); glow(M[2], null);
   fly(M[0]);
-  say('removeMax：拿走 root 9', '群龍無首，最後一個先上來補位');
-  await beat(tok, 1500);
+  say('removeMax：拿走 root 9', '群龍無首');
+  await step(tok); // @c 1782.8 小嘍囉上來補位
   const [x0, y0] = pos(0);
   move(M[5], x0, y0); M[0] = M[5]; V[0] = V[5]; M.pop(); V.pop(); kill(e5);
-  await beat(tok, 1200);
+  say('最後一個（5）先上來補位', '');
+  await step(tok); // @c 1790.8 不得人心 → 往下沉
   glow(M[0], GOLD); glow(M[1], GOLD); glow(M[2], GOLD);
-  say('5 跟小孩比：較大的 8 上來', '往下沉（sift down）');
-  await beat(tok, 1500);
+  await beat(tok, 600);
   glow(M[1], null);
   await swap(0, 2);
   glow(M[0], null); glow(M[2], null);
-  say('remove 也是 O(log n)', 'heap = [8, 7, 5, 3, 1]');
-  await beat(tok, 2800);
+  say('5 跟小孩比：較大的 8 上來', '5 往下沉（sift down）');
+  await step(tok); // @c 1802.8 remove 也是 log n
+  say('remove 也只花 O(log n)', 'heap = [8, 7, 5, 3, 1]');
 }]);
 
-// 30:07 能不能 insert 只花 constant？亂放很快，但找 max 變慢
+// 30:31 能不能 insert 只花 constant？
 FRAG.push(['hashlin1-o1-insert', 'Insert 只花 constant？', async (tok) => {
   fresh([0, 6, 11], [0, 0.8, 0]);
   const vals = [4, 9, 2, 7, 5, 8, 1, 6], M = [];
-  say('目標：insert 只花 constant', '跟資料量 n 無關');
-  await beat(tok, 2200);
+  await step(tok); // @c 1830.8 constant 的力氣
+  const me = buddy('你', '', '#f4a56a', -5.8, 0, 2.4, 0.8);
+  say('目標：insert 只花 constant 的力氣', '跟資料量 n 無關');
+  await step(tok); // @c 1837.8 放進去不能花太多力氣
   for (let i = 0; i < vals.length; i++) {
-    M.push(cube(vals[i], colorFor(vals[i]), [0.8, 0.8, 0.8], -4.6 + i * 1.3, 0.4, ((i * 5) % 3 - 1) * 1.5, 3));
-    say('insert ' + vals[i] + '：隨手一放', '每次 1 步');
-    await beat(tok, 550);
+    M.push(cube(vals[i], colorFor(vals[i]), [0.8, 0.8, 0.8], -4.2 + i * 1.2, 0.4, ((i * 5) % 3 - 1) * 1.4, 3));
+    await beat(tok, 260);
   }
-  await beat(tok, 700);
-  const cur = tag('看', 'ptr alt', 0, 0, 0);
+  me.mood('happy');
+  say('放進去：隨手一丟，每次 1 步', '完全不整理');
+  await step(tok); // @c 1845.8 拿出來還要很快找到最大
+  const cur = pkt('找最大', 0, 0);
   let best = 0;
+  for (let i = 0; i < M.length; i++) { cur.position.set(M[i].position.x, 1.5, M[i].position.z); glow(M[i], GOLD); if (vals[i] > vals[best]) best = i; await beat(tok, 280); glow(M[i], null); }
+  glow(M[best], GREEN); kill(cur); me.mood('sad');
   say('可是 getMax 要整堆找一遍', '完全不整理 → O(n)');
-  for (let i = 0; i < M.length; i++) { cur.position.set(M[i].position.x, 1.5, M[i].position.z); glow(M[i], GOLD); if (vals[i] > vals[best]) best = i; await beat(tok, 380); glow(M[i], null); }
-  glow(M[best], GREEN); kill(cur);
-  await beat(tok, 1200);
-  say('想找得快，放進去時就要整理', '每次只准 10 步？像亂房間整理不完');
-  await beat(tok, 3000);
-  say('退一步：amortized constant', '有時多花、有時少花，平均固定');
-  await beat(tok, 3000);
+  await step(tok); // @c 1886.8 結論：很難
+  bad('每次都只花 constant？很難', 0, 3.6, -1.5);
+  say('先說結論：很難（沒說 impossible）', '');
+  await step(tok); // @c 1904.8 要找得快就要整理
+  say('想找得快，放進去時就要整理', '整理就要花力氣');
+  await step(tok); // @c 1925.9 亂房間
+  const msg = bub('房間弄亂的速度 > 整理的速度…', -4.6, 2.6, 2.4);
+  me.mood('wow');
+  for (let i = 0; i < 3; i++) { M.push(cube('', '#c9b48a', [0.7, 0.5, 0.7], -3 + i * 2.6, 0.3, 2.2, 3)); await beat(tok, 300); }
+  say('每次只准整理一點點，就像亂房間', '永遠整理不完');
+  await step(tok); // @c 1962.8 只准十步
+  kill(msg);
+  note('每次只准 10 步', 3.6, 3.0, -1.5);
+  say('不管有多少資料，每次只准花 10 步', '那還能很快找到東西嗎？');
+  await step(tok); // @c 1985.8 amortized constant
+  me.mood('happy'); await me.hop(tok);
+  say('可行的方向：amortized constant', '');
+  await step(tok); // @c 2000.6 有時多有時少
+  M.forEach(kill);
+  const cost = [1, 1, 1, 6, 1, 1, 1, 1];
+  for (let i = 0; i < cost.length; i++) { cube(cost[i], cost[i] > 1 ? '#e55a9b' : '#2fc092', [0.7, cost[i] * 0.45, 0.7], -3.5 + i * 1.0, cost[i] * 0.225, 0); await beat(tok, 150); }
+  good('平均：每次差不多 2 步', 0, 3.4, 0);
+  say('有時花多、有時花少', '平均起來是固定的力氣');
 }]);
 
-// 33:20 amortized：extendable array 一次長兩倍
+// 33:37 amortized：extendable array 一次長兩倍
 FRAG.push(['hashlin1-doubling', 'Amortized：extendable array 長兩倍', async (tok) => {
   fresh([0, 6.5, 11], [0, 0.4, 0]);
   const dx = 0.95, x0 = -3.3;
-  let cap = 1, rowZ = -1.3, row = [], items = [], cost = 0;
   const mkRow = (c, z) => Array.from({ length: c }, (_, i) => cube('', GRAY, [0.85, 0.1, 0.9], x0 + i * dx, 0.05, z));
-  row = mkRow(cap, rowZ);
-  const cnt = tag('總共 0 步', 'ptr alt', 0, 3.6, -2.5);
-  say('Extendable array：滿了才變大', '一次長成兩倍');
-  await beat(tok, 2000);
-  for (let v = 1; v <= 8; v++) {
-    if (items.length === cap) {
-      cap *= 2; const nz = -rowZ, nr = mkRow(cap, nz);
-      say('滿了！開 ' + cap + ' 格、全部搬家', '搬 ' + items.length + ' 個 = ' + items.length + ' 步');
-      items.forEach((m, i) => move(m, x0 + i * dx, 0.45, nz));
-      cost += items.length; txt(cnt, '總共 ' + cost + ' 步');
-      await beat(tok, 1400);
-      row.forEach(kill); row = nr; rowZ = nz;
-    }
-    items.push(cube(v, colorFor(v), [0.7, 0.7, 0.7], x0 + (items.length) * dx, 0.45, rowZ, 2.5));
-    cost += 1; txt(cnt, '總共 ' + cost + ' 步');
-    say('insert ' + v + '：有空位，1 步', 'capacity = ' + cap);
-    await beat(tok, 800);
-  }
-  say('搬家很貴，但很少發生', '8 次 insert：8 + (1 + 2 + 4) = 15 步');
-  await beat(tok, 3000);
-  say('均攤下來每次不到 2 步', 'amortized O(1)');
-  await beat(tok, 2800);
+  const it = (v, i, z) => cube(v, colorFor(v), [0.7, 0.7, 0.7], x0 + i * dx, 0.45, z, 2.5);
+  let put = 2, mv = 1, rowZ = -1.3, row = [], items = [];
+  const cnt = tag('', 'ptr alt', 0, 3.6, -2.5);
+  const tally = () => txt(cnt, '放 ' + put + ' 步 ＋ 搬家 ' + mv + ' 步 = ' + (put + mv));
+  const grow = async (cap) => {
+    const nz = -rowZ, nr = mkRow(cap, nz);
+    items.forEach((m, i) => move(m, x0 + i * dx, 0.45, nz));
+    mv += items.length; tally();
+    await beat(tok, 900);
+    row.forEach(kill); row = nr; rowZ = nz;
+  };
+  txt(cnt, ' ');
+  await step(tok); // @c 2016.8 amortize = 均攤
+  const nt = note('均攤：把偶爾的大花費，平均分給每一次', 0, 2.6, -2.5);
+  say('Amortized = 均攤', '有時多花、有時少花，平均固定');
+  await step(tok); // @c 2037.8 extendable array
+  kill(nt);
+  row = mkRow(2, rowZ); items = [it(1, 0, rowZ), it(2, 1, rowZ)];
+  tally();
+  say('以前學過：extendable array', '現在 2 格，已經滿了');
+  await step(tok); // @c 2052.8 滿了要增加大小
+  const n3 = it(3, 2, rowZ); glow(n3, RED);
+  say('3 要進來：滿了！', '要把 array 變大');
+  await step(tok); // @c 2059.8 一次兩倍
+  await grow(4);
+  move(n3, x0 + 2 * dx, 0.45, rowZ); glow(n3, null); items.push(n3); put++; tally();
+  say('不要只加一格：一次長成兩倍', '開 4 格，舊的 2 個搬過去');
+  await step(tok); // @c 2066.8 大部分時候不用增加大小
+  items.push(it(4, 3, rowZ)); put++; tally();
+  say('insert 4：有空位，1 步就好', '大部分時候都這麼便宜');
+  await step(tok); // @c 2082.8 變大時要搬家
+  await grow(8);
+  items.push(it(5, 4, rowZ)); put++; tally();
+  say('insert 5：又滿了 → 開 8 格、全部搬家', '搬 4 個 = 4 步，很貴');
+  await step(tok); // @c 2090.8 搬家偶爾發生
+  for (const v of [6, 7, 8]) { items.push(it(v, items.length, rowZ)); put++; tally(); await beat(tok, 400); }
+  say('搬家很貴，但很少發生', '6、7、8 都只要 1 步');
+  await step(tok); // @c 2116.8 分攤到每一輪
+  good('15 步 ÷ 8 次 < 2 步', 0, 2.3, -2.5);
+  say('8 次 insert：放 8 ＋ 搬 1+2+4 = 15 步', '平均每次不到 2 步 → amortized O(1)');
+  await step(tok); // @c 2134.8 用在 priority queue
+  say('現在把「均攤」用在設計 priority queue', '');
 }]);
 
-// 36:45 cheap insertion 常常做：插進小樹；很多棵樹 = forest
+// 36:01 cheap insertion 常常做：插進小樹；很多棵樹 = forest
 FRAG.push(['hashlin1-small-trees', '小樹插入便宜：改用很多棵樹', async (tok) => {
   fresh([0, 5.4, 12], [0, 2.1, 0]);
   const draw = (n, cx, W, top, dy, col) => {
@@ -1555,664 +1594,1103 @@ FRAG.push(['hashlin1-small-trees', '小樹插入便宜：改用很多棵樹', as
     for (let i = 0; i < n; i++) { const [x, y] = hpPos(i, cx, top, W, dy); if (i) { const [px, py] = hpPos((i - 1) >> 1, cx, top, W, dy); line(px, py, x, y); } ms.push(cube('', col, [0.55, 0.55, 0.55], x, y, 0)); }
     return ms;
   };
-  const big = draw(14, -2.6, 7, 4.2, 1.15, '#4b9ee2');
-  const small = draw(5, 4.6, 3.2, 2.6, 1.0, '#2fc092');
-  tag('大樹', 'ptr', -2.6, 5.2); tag('小樹', 'ptr', 4.6, 3.6);
-  say('cheap insertion 常常做', 'expensive 偶爾做，平均起來便宜');
-  await beat(tok, 2600);
   const climb = async (cx, W, top, dy, from, steps, ms) => {
     const [x, y] = hpPos(from, cx, top, W, dy); const [px, py] = hpPos((from - 1) >> 1, cx, top, W, dy);
     line(px, py, x, y);
     const nw = cube('新', '#dd8238', [0.6, 0.6, 0.6], x, y, 0, 2.5);
-    await beat(tok, 900);
+    await beat(tok, 600);
     let i = from;
     for (let s = 0; s < steps; s++) { const p = (i - 1) >> 1; const [qx, qy] = hpPos(p, cx, top, W, dy); move(nw, qx, qy + 0.6); i = p; await beat(tok, ms); }
     return nw;
   };
-  say('大樹：264 個 node 放第 265 個', '最多往上打 ⌊log₂265⌋ = 8 層');
-  await climb(-2.6, 7, 4.2, 1.15, 14, 3, 800);
-  await beat(tok, 900);
-  say('小樹：只有 5 個 node', '最多打 2 層就到頂');
-  await climb(4.6, 3.2, 2.6, 1.0, 5, 2, 800);
-  await beat(tok, 900);
-  say('把大樹拆成很多棵小樹', '通常插進小樹，小樹滿了才插大樹');
-  await beat(tok, 3000);
-  say('很多棵樹的資料結構 = forest', '森林：有小樹也有大樹');
-  await beat(tok, 2800);
+  await step(tok); // @c 2160.8 cheap insertion 常常做
+  good('cheap insertion：每一輪都做', -3.2, 6.6);
+  say('cheap insertion：常常做、每輪都做', '花的力氣越少越好');
+  await step(tok); // @c 2183.3 expensive 偶爾做
+  bad('expensive insertion：偶爾才做', 3.4, 6.6);
+  say('expensive insertion：偶爾才做', '平均起來每一輪都便宜');
+  await step(tok); // @c 2222.2 大樹 264 個 node
+  draw(14, -2.6, 7, 4.2, 1.15, '#4b9ee2');
+  tag('大樹（想像有 264 個 node）', 'ptr', -2.6, 5.4);
+  say('heap 很大：已經有 264 個 node', '');
+  await step(tok); // @c 2228.8 放第 265 個
+  await climb(-2.6, 7, 4.2, 1.15, 14, 3, 600);
+  say('放第 265 個：要往上打好幾層', '最多 ⌊log₂265⌋ = 8 層');
+  await step(tok); // @c 2236.8 小 heap 只有 5 個
+  draw(5, 4.6, 3.2, 2.6, 1.0, '#2fc092');
+  tag('小樹（5 個 node）', 'ptr', 4.6, 3.7);
+  await climb(4.6, 3.2, 2.6, 1.0, 5, 2, 600);
+  say('heap 只有 5 個 node：一下就到頂', '最多打 2 層');
+  await step(tok); // @c 2252.8 insertion to small tree usually
+  note('insertion to small tree usually', 4.4, 0.0, 1.2);
+  say('想法：通常插進小樹', '');
+  await step(tok); // @c 2288.8 拆成小樹與大樹
+  say('把一棵大樹拆開：有小樹、也有大樹', '');
+  await step(tok); // @c 2293.8 通常放小樹，滿了才插大樹
+  const pk = pkt('新資料', 0, 0);
+  await travel(tok, pk, V3(1.2, 5.6, 0), V3(4.6, 3.1, 0), 1000);
+  say('通常放進小樹；小樹都滿了', '才插進大一點的樹');
+  await step(tok); // @c 2347.8 很多樹 = 森林
+  kill(pk);
+  good('很多棵樹 = 森林（forest）', 1.0, -0.2, 2.0);
+  say('一個資料結構裡有很多棵樹', '就叫森林（forest）');
 }]);
 
-// 39:46 binomial tree B0..B3、|B_k| = 2^k、B_k = 兩棵 B_{k-1}
+// 40:22 binomial tree B0..B3、|B_k| = 2^k、B_k = 兩棵 B_{k-1}
 FRAG.push(['hashlin1-binomial-trees', 'Binomial tree：B₀、B₁、B₂、B₃', async (tok) => {
   fresh([0, 4.6, 11.5], [0, 1.6, 0]);
   const sp = 0.85, gap = 1.3, ts = [0, 1, 2, 3].map(bnMake);
   const W = ts.reduce((a, t) => a + bnW(t) * sp, 0) + gap * 3;
   let x = -W / 2; const cxs = ts.map((t) => { const c = x + bnW(t) * sp / 2; x += bnW(t) * sp + gap; return c; });
-  const msgs = [['B₀：只有一個 node', '|B₀| = 1'], ['B₁：root 下面接一棵 B₀', '|B₁| = 2'], ['B₂：root 下面接 B₀ 和 B₁', '|B₂| = 4'], ['B₃：root 下面接 B₀、B₁、B₂', '|B₃| = 8']];
+  const draw = (k) => bnForest([ts[k]], { cx: cxs[k], sp, dy: 1.0, col: () => hlOrd(k) });
+  const msgs = [['B₀：只有一個 node', 'single node tree'], ['B₁：root 下面接一棵 B₀', ''], ['B₂：root 下面接 B₀ 和 B₁', ''], ['B₃：root 下面接 B₀、B₁、B₂', '']];
+  await step(tok); // @c 2421.8 binomial = 二項式 / 二進位
+  tag('binomial：二項式、二進位', 'ptr', 0, 5.4);
+  say('介紹一種特別的樹：binomial tree', '');
   for (let k = 0; k < 4; k++) {
-    bnForest([ts[k]], { cx: cxs[k], sp, dy: 1.0, col: () => hlOrd(k) });
-    tag((1 << k) + ' 個 node', 'idx', cxs[k], 0, 1.1);
+    await step(tok); // @c 2445.8 B0 | 2465.8 B1 | 2505.8 B2 | 2601.8 B3
+    draw(k);
     say(msgs[k][0], msgs[k][1]);
-    await beat(tok, 2600);
   }
-  say('B_k 有 2ᵏ 個 node', '1、2、4、8 …');
-  await beat(tok, 2400);
-  const t3 = ts[3], half = bnAll(t3.kids[2]);
-  bnAll(t3).forEach((n) => glow(n.m, half.includes(n) ? GOLD : GREEN));
-  say('B₃ = 兩棵 B₂ 接起來', '小樹 + 小樹 → 大樹');
-  await beat(tok, 2800);
-  const t2 = ts[2], h2 = bnAll(t2.kids[1]);
-  bnAll(t2).forEach((n) => glow(n.m, h2.includes(n) ? GOLD : GREEN));
-  say('B₂ = 兩棵 B₁、B₁ = 兩棵 B₀', 'B_k = 兩棵 B_{k−1}');
-  await beat(tok, 2600);
-  say('用它造森林、每棵放 max tree', '→ 有小 heap 也有大 heap');
-  await beat(tok, 3000);
+  await step(tok); // @c 2663.8 不是 binary tree
+  glow(ts[3].m, GREEN); ts[3].kids.forEach((c) => glow(c.m, GOLD));
+  const nb = note('root 有 3 個小孩：不是 binary tree', cxs[3], 4.6);
+  say('B₃ 的 root 有 3 個小孩', '不是 binary tree');
+  await step(tok); // @c 2734.7 1、2、4、8 個 node
+  kill(nb); glow(ts[3].m, null); ts[3].kids.forEach((c) => glow(c.m, null));
+  for (let k = 0; k < 4; k++) { tag((1 << k) + ' 個 node', 'idx', cxs[k], 0, 1.1); await beat(tok, 300); }
+  say('B₀ 有 1 個、B₁ 有 2 個、B₂ 有 4 個、B₃ 有 8 個', '');
+  await step(tok); // @c 2751.8 B_k 有 2^k 個
+  say('order 是 k 的 B_k 有 2ᵏ 個 node', '1、2、4、8 …');
+  await step(tok); // @c 2788.7 B1 = 兩棵 B0、B2 = 兩棵 B1
+  for (const k of [1, 2]) { const h = bnAll(ts[k].kids[k - 1]); bnAll(ts[k]).forEach((n) => glow(n.m, h.includes(n) ? GOLD : GREEN)); }
+  say('B₁ = 兩棵 B₀，B₂ = 兩棵 B₁', '');
+  await step(tok); // @c 2801.8 B3 = 兩棵 B2
+  const half = bnAll(ts[3].kids[2]);
+  bnAll(ts[3]).forEach((n) => glow(n.m, half.includes(n) ? GOLD : GREEN));
+  say('B₃ = 兩棵 B₂ 接起來', '兩棵小樹合起來 → 一棵大樹');
+  await step(tok); // @c 2846.8 用它造森林、放 max tree
+  good('binomial tree 造森林 ＋ 每棵放 max tree', 0, 5.4, -1.5);
+  say('用 binomial tree 造森林，每棵放 max tree', '→ 有小 heap，也有大 heap');
+  await step(tok); // @c 2885.8 小 heap 滿了才組大 heap
+  const pk = pkt('新資料', 0, 0);
+  await travel(tok, pk, V3(cxs[1], 5.0, 0), V3(cxs[0], 1.2, 0), 900);
+  say('通常塞進小 heap，小 heap 滿了才組大 heap', '平均起來不花太多時間');
 }]);
 
-// 62:28 B3 的正確長相（multi-way）與 left-child right-sibling
+// 63:08 B3 的正確長相（multi-way）與 left-child right-sibling
 FRAG.push(['hashlin1-lcrs', 'B₃ 是 general tree：left child, right sibling', async (tok) => {
   fresh([0, 4.6, 10.5], [0, 2.2, 0]);
   const t = bnMake(3); let c = 0;
   bnAll(t).forEach((n) => { n.v = 'abcdefgh'[c++]; });
+  const all = bnAll(t), off = () => all.forEach((n) => glow(n.m, null));
+  await step(tok); // @c 3787.8 Wikipedia 的圖
   bnForest([t], { sp: 1.3, dy: 1.3, col: () => '#9b7ef4' });
-  say('B₃：root 下面串 B₀、B₁、B₂', '也可看成兩棵 B₂ 合起來');
-  await beat(tok, 2800);
-  say('root 有 3 個小孩', '是 general tree，不是 binary tree');
-  glow(t.m, GOLD); t.kids.forEach((k) => glow(k.m, GOLD));
-  await beat(tok, 2600);
-  bnAll(t).forEach((n) => { glow(n.m, null); if (n.edge) kill(n.edge); });
-  for (const n of bnAll(t)) if (n.kids.length) { const f = n.kids[0]; arrow(V3(n.x, n.y - 0.32, 0), V3(f.x, f.y + 0.32, 0), 0x0f5a3a); glow(n.m, GREEN); await beat(tok, 450); glow(n.m, null); }
-  say('left child：往左下走到第一個小孩', '一張小紙條指第一個小孩');
-  await beat(tok, 2400);
-  for (const n of bnAll(t)) for (let i = 0; i + 1 < n.kids.length; i++) { const a = n.kids[i], b = n.kids[i + 1]; arrow(V3(a.x + 0.32, a.y, 0), V3(b.x - 0.32, b.y, 0), 0xc08a1f); glow(a.m, GOLD); await beat(tok, 450); glow(a.m, null); }
-  say('right sibling：往右串下一個兄弟', '另一張小紙條指兄弟');
-  await beat(tok, 2400);
-  say('每個 node 兩張小紙條', '就能用 binary tree 實作 general tree');
-  await beat(tok, 3000);
+  say('binomial tree 真正的長相（B₃）', '');
+  await step(tok); // @c 3813.8 下面串 B0、B1、B2
+  t.kids.forEach((k, i) => bnAll(k).forEach((n) => glow(n.m, [GREEN, GOLD, '#16306a'][i])));
+  say('order 3：root 下面串了 B₀、B₁、B₂', '');
+  await step(tok); // @c 3821.8 兩棵 B2 合併
+  const half = bnAll(t.kids[2]);
+  all.forEach((n) => glow(n.m, half.includes(n) ? GOLD : GREEN));
+  say('也可以看成兩棵 B₂ 合起來', '');
+  await step(tok); // @c 3830.8 general tree
+  off(); glow(t.m, GREEN); t.kids.forEach((k) => glow(k.m, GOLD));
+  say('root 有 3 個小孩：是 general tree', '不是 binary tree');
+  await step(tok); // @c 3842.8 用 binary tree 表現
+  off(); all.forEach((n) => { if (n.edge) kill(n.edge); });
+  say('general tree 也能用 binary tree 表現', 'left child, right sibling');
+  await step(tok); // @c 3851.8 往左走到小孩
+  for (const n of all) if (n.kids.length) { const f = n.kids[0]; arrow(V3(n.x, n.y - 0.32, 0), V3(f.x, f.y + 0.32, 0), 0x0f5a3a); await beat(tok, 300); }
+  say('往左走：到第一個小孩', '一張小紙條指第一個小孩');
+  await step(tok); // @c 3858.8 往右走到 sibling
+  for (const n of all) for (let i = 0; i + 1 < n.kids.length; i++) { const a = n.kids[i], b = n.kids[i + 1]; arrow(V3(a.x + 0.32, a.y, 0), V3(b.x - 0.32, b.y, 0), 0xc08a1f); await beat(tok, 300); }
+  say('往右走：到一連串的 sibling', '另一張小紙條指下一個兄弟');
+  await step(tok); // @c 3867.8 所有小孩用 linked list
+  note('所有小孩 = 一條 linked list', 1.2, 0.0, 1.2);
+  say('所有小孩用 linked list 串起來', '');
+  await step(tok); // @c 3881.8 例：左走看到小孩、右走找 sibling
+  const hand = pkt('👆', t.x, t.y + 0.7);
+  const path = [t, ...t.kids];
+  for (let i = 1; i < path.length; i++) await travel(tok, hand, V3(path[i - 1].x, path[i - 1].y + 0.7, 0), V3(path[i].x, path[i].y + 0.7, 0), 550);
+  glow(t.kids[0].m, GREEN);
+  say('左走看到第一個小孩，右走找到其他 sibling', '');
+  await step(tok); // @c 3933.8 實作要注意細節
+  say('示意圖好解釋；真正實作要注意細節', '');
 }]);
 
-// 65:53 node 數不是 2^k？用 forest：9 = 8 + 1
+// 65:56 node 數不是 2^k？用 forest：9 = 8 + 1
 FRAG.push(['hashlin1-forest-9', '任意 n 個 node：9 = 8 + 1', async (tok) => {
   fresh([0, 4.6, 11], [0, 1.8, 0]);
-  say('full binary tree 只能 1、3、7、15 個', '所以 heap 改用 complete tree');
-  await beat(tok, 2800);
-  say('binomial tree 也只有 1、2、4、8 個', '任意 n 怎麼辦？用 forest');
-  await beat(tok, 2800);
+  await step(tok); // @c 3955.8 不是 2^k 個？
+  const q = buddy('同學', '?', '#7cb8ee', -5.4, 0, 1.6, 0.8); q.mood('wow');
+  say('資料不是 2ᵏ 個，還能用 binomial tree 嗎？', '');
+  await step(tok); // @c 3971.8 full binary tree 只能 1、3、7、15
+  const n1 = note('full binary tree：只能 1、3、7、15 個 …', 0, 5.4, -1.5);
+  say('以前：full binary tree 只能有 1、3、7、15 個', '');
+  await step(tok); // @c 3997.8 binomial 1、2、4、8、16
+  const n2 = note('binomial tree：只能 1、2、4、8、16 個 …', 0, 4.7, -1.5);
+  say('binomial tree 也只有 1、2、4、8、16 個', '碰到一樣的問題');
+  await step(tok); // @c 4019.8 complete
+  const n3 = good('當年的解法：不要 full，只要 complete', 0, 4.0, -1.5);
+  say('當年的解法：不要 full，只要 complete', '');
+  await step(tok); // @c 4036.8 用 forest
+  say('這次的解法：用 forest', '把 1、2、4、8 湊成任意數字');
+  await step(tok); // @c 4054.8 十進位轉二進位
+  [n1, n2, n3].forEach(kill);
   const place = [8, 4, 2, 1], bits = [1, 0, 0, 1];
   const bl = place.map((p, i) => { tag(String(p), 'idx', -2.4 + i * 1.6, 5.6, -1.5); return tag('·', 'ptr', -2.4 + i * 1.6, 5.0, -1.5); });
-  for (let i = 0; i < 4; i++) { txt(bl[i], String(bits[i])); await beat(tok, 450); }
-  say('9 = 8 + 1 = 1001₂', '十進位轉二進位');
-  await beat(tok, 2400);
-  const ts = [bnMake(3), bnMake(0)];
-  bnForest(ts, { sp: 0.9, gap: 2.2, col: (n, t) => hlOrd(t.kids.length) });
-  say('一棵 B₃（8 個）＋一棵 B₀（1 個）', 'size 1 的樹是 B₀（不是 B₁）');
-  await beat(tok, 3000);
-  say('1 的位置 ↔ 要哪一棵 B_k', '1001₂ → B₃ + B₀');
-  await beat(tok, 2600);
+  say('其實就是十進位轉二進位', '');
+  await step(tok); // @c 4061.8 9 = 8 + 1
+  for (let i = 0; i < 4; i++) { txt(bl[i], String(bits[i])); await beat(tok, 300); }
+  say('例：9 = 8 + 1 = 1001₂', '');
+  await step(tok); // @c 4069.8 size 8 + size 1
+  bnForest([bnMake(3), bnMake(0)], { sp: 0.9, gap: 2.2, col: (n, t) => hlOrd(t.kids.length) });
+  q.set('!'); q.mood('happy');
+  say('一棵 size 8 的樹 ＋ 一棵 size 1 的樹', '');
+  await step(tok); // @c 4077.8 口誤：B3 + B0
+  note('size 1 的樹是 B₀（影片口誤說 B₁）', 2.2, 4.6, -1.5);
+  say('對應：一棵 B₃ ＋ 一棵 B₀', '1001₂ → B₃ + B₀');
 }]);
 
-// 69:25 binomial tree 加上 max (multi-way) tree 性質
+// 69:50 binomial tree 加上 max (multi-way) tree 性質
 FRAG.push(['hashlin1-max-binomial', 'Max binomial tree：root 比整棵子樹大', async (tok) => {
   fresh([0, 4.6, 10.5], [0, 2.0, 0]);
+  const o = { sp: 1.3, dy: 1.25 };
   const t = BN(30, BN(12), BN(20, BN(8)), BN(25, BN(10), BN(18, BN(3))));
-  bnForest([t], { sp: 1.3, dy: 1.25 });
-  say('B₃ 是 multi-way tree', 'root 有 3 棵 subtree');
-  await beat(tok, 2400);
-  say('變成 heap：加上 max tree 性質', '要 min heap 就加 min tree 性質');
-  await beat(tok, 2600);
-  glow(t.m, GREEN);
-  for (const c of t.kids) {
-    bnAll(c).forEach((n) => glow(n.m, GOLD));
-    say('root 30 比這棵 subtree 都大', '30 > ' + bnAll(c).map((n) => n.v).join('、'));
-    await beat(tok, 1500);
-    bnAll(c).forEach((n) => glow(n.m, null));
-  }
-  for (const s of [t.kids[1], t.kids[2], t.kids[2].kids[1]]) {
-    glow(s.m, GREEN); s.kids.forEach((k) => glow(k.m, GOLD));
-    say('subtree 裡 subroot ' + s.v + ' 也最大', s.v + ' > ' + s.kids.map((k) => k.v).join('、'));
-    await beat(tok, 1400);
-    glow(s.m, null); s.kids.forEach((k) => glow(k.m, null));
+  await step(tok); // @c 4190.1 multi-way tree，root 多長一隻腳
+  const s = bnMake(3);
+  let v = bnForest([s], { ...o, col: () => '#9b7ef4' });
+  glow(s.kids[2].m, GOLD);
+  const leg = note('從 root 多長一隻腳', s.kids[2].x + 0.6, s.kids[2].y + 0.9);
+  say('B₃ 是 multi-way tree', 'root 直接接 3 棵 subtree');
+  await step(tok); // @c 4220.8 加上 max tree 性質
+  v.kill(); kill(leg);
+  v = bnForest([t], o);
+  say('變成 heap：加上 max tree 的性質', '每個 node 放一個數字');
+  await step(tok); // @c 4228.5 min heap 加 min tree
+  note('要 min heap → 改加 min tree 性質', -3.0, 4.9);
+  say('要 min heap 的話，就加 min tree 性質', '');
+  await step(tok); // @c 4236.8 max 的 multi-way tree
+  say('這裡用的是 max 的 multi-way tree', '不是 binary tree');
+  await step(tok); // @c 4256.8 root 有 3 棵 subtree
+  for (let i = 0; i < 3; i++) { const c = t.kids[i]; bnAll(c).forEach((n) => glow(n.m, GOLD)); tag('subtree ' + (i + 1), 'idx', c.x, c.y + 0.6, 0.6); await beat(tok, 600); bnAll(c).forEach((n) => glow(n.m, null)); }
+  say('root 下面有 3 棵 subtree', '');
+  await step(tok); // @c 4263.8 root 比所有人大
+  glow(t.m, GREEN); bnAll(t).slice(1).forEach((n) => glow(n.m, GOLD));
+  say('root 30 比 3 棵 subtree 裡所有人都大', '30 > 12、20、8、25、10、18、3');
+  await step(tok); // @c 4271.8 各 subtree 的 subroot 也最大
+  bnAll(t).forEach((n) => glow(n.m, null));
+  for (const r of [t.kids[1], t.kids[2], t.kids[2].kids[1]]) {
+    glow(r.m, GREEN); r.kids.forEach((k) => glow(k.m, GOLD));
+    say('subtree 裡，subroot ' + r.v + ' 也最大', r.v + ' > ' + r.kids.map((k) => k.v).join('、'));
+    await beat(tok, 700);
+    glow(r.m, null); r.kids.forEach((k) => glow(k.m, null));
   }
   say('每一層都滿足 max tree', '= 一棵 max binomial tree');
-  await beat(tok, 2800);
 }]);
 
-// 71:37 binomial forest：每種 B_k 最多一棵；10 = 8 + 2、17 = 16 + 1
+// 72:01 binomial forest：每種 B_k 最多一棵；10 = 8 + 2、17 = 16 + 1
 FRAG.push(['hashlin1-forest-10-17', 'Binomial forest：10 與 17 個 node', async (tok) => {
-  fresh([0, 5, 12], [0, 2.0, 0]);
+  fresh([0, 5, 12], [0, 2.2, 0]);
   const o = { sp: 0.72, dy: 0.95, gap: 1.6, col: (n, t) => hlOrd(t.kids.length) };
+  const place = [16, 8, 4, 2, 1], bl = [];
+  const setBits = (n) => place.forEach((p, i) => txt(bl[i], (n & p) ? '1' : '0'));
+  let v = null;
+  await step(tok); // @c 4322.8 整數 ↔ 二進位一對一
+  place.forEach((p, i) => { tag(String(p), 'idx', -3.2 + i * 1.6, 6.4, -3); bl.push(tag('0', 'ptr', -3.2 + i * 1.6, 5.8, -3)); });
+  say('任意整數 ↔ 二進位：一對一', '');
+  await step(tok); // @c 4343.8 每種 B_k 最多一棵
   say('binomial forest：每種 B_k 最多一棵', '0 棵或 1 棵 ↔ 二進位的 0 / 1');
-  await beat(tok, 2800);
-  let v = bnForest([bnMake(3), bnMake(1)], o);
-  say('10 = 8 + 2 = 1010₂', '一棵 B₃ ＋ 一棵 B₁');
-  await beat(tok, 3000);
-  v.kill();
+  await step(tok); // @c 4375.8 可以表示任何 n
+  say('這樣的 forest 可以表示任何 n 個 node', '');
+  await step(tok); // @c 4388.9 10 = 8 + 2
+  setBits(10);
+  say('10 = 8 + 2 = 1010₂', '');
+  await step(tok); // @c 4398.9 B3 + B1
+  v = bnForest([bnMake(3), bnMake(1)], o);
+  say('一棵 B₃ ＋ 一棵 B₁', '剛好 10 個 node');
+  await step(tok); // @c 4423.8 17 = 16 + 1
+  v.kill(); setBits(17);
+  say('17 = 16 + 1 = 10001₂', '不能 8 + 9：每種樹最多一棵');
+  await step(tok); // @c 4436.4 B4 + B0
   v = bnForest([bnMake(4), bnMake(0)], o);
-  say('17 = 16 + 1 = 10001₂', '一棵 B₄ ＋ 一棵 B₀');
-  await beat(tok, 3000);
-  say('n 決定有哪些樹，是固定的', '樹裡的內容才會變');
-  await beat(tok, 2600);
+  say('一棵 B₄ ＋ 一棵 B₀', '');
+  await step(tok); // @c 4456.8 哪些樹是固定的
+  say('n 決定有哪些樹（固定的）', '樹裡放的內容才會變');
+  await step(tok); // @c 4491.8 = binomial heap
+  good('binomial forest ＋ 一堆 max tree = binomial heap', 0, 7.0, -3);
   say('binomial forest ＋ 一堆 max tree', '= binomial heap');
-  await beat(tok, 3600);
 }]);
 
-// 75:10 從空的 binomial heap 依序 insert 5, 7, 3, 2（params.from = 2：只演 3 與 2 的進位）
+// 75:30 從空的 binomial heap 依序 insert 5, 7, 3, 2
 FRAG.push(['hashlin1-insert-5732', 'Binomial heap：依序 insert 5, 7, 3, 2', async (tok) => {
-  const P = ctx.params || {};
   fresh([0, 4.6, 11], [0, 1.6, 0]);
-  const F = new Array(6).fill(null), st = {}, o = { sp: 1.0, dy: 1.1, gap: 1.4 };
-  let seq = [5, 7, 3, 2];
-  if (P.from === 2) { F[1] = BN(7, BN(5)); seq = [3, 2]; fShow(st, F, null, o); say('已有 7、5 組成的 B₁', 'n = 2 = 10₂'); await beat(tok, 2200); }
-  else { say('max binomial heap，一開始是空的', 'n = 0'); await beat(tok, 1800); }
-  for (const v of seq) {
-    const m = await bnInsert(tok, F, v, st, o);
-    say(m ? '合併了 ' + m + ' 次' : '沒有進位，自己當 B₀', 'n = ' + fSum(F) + ' = ' + hlBin(fSum(F)) + '₂');
-    await beat(tok, 1800);
-  }
-  say('最後一棵 B₂：root 7 最大', '3、2 掛在 7 下面，仍是 max tree');
-  await beat(tok, 2800);
+  const o = { sp: 1.0, dy: 1.1, gap: 1.4, D: 2 };
+  let ts = [], v = null;
+  const show = (drop, newT) => { if (v) v.kill(); v = bnForest(ts, { ...o, drop, tagOf: (t) => (t === newT ? '新 ' : '') + 'B' + hlSub(t.kids.length) }); };
+  const nt = tag('n = 0', 'ptr', 0, 4.9, -1.5);
+  await step(tok); // @c 4530.0 從空的開始
+  say('從空的 max binomial heap 開始', '一棵樹都沒有');
+  await step(tok); // @c 4549.8 insert 5
+  const a5 = BN(5); ts = [a5]; show(new Set([a5]), a5);
+  say('insert 5', '');
+  await step(tok); // @c 4565.8 只有一棵 B0
+  show(); txt(nt, 'n = 1 = 1₂');
+  say('得到只有一棵 B₀ 的 binomial heap', '這棵 B₀ 就是 5');
+  await step(tok); // @c 4613.8 insert 7，大的在上面
+  const a7 = BN(7); ts = [a5, a7]; show(new Set([a7]), a7);
+  say('insert 7：priority 高的要在上面', '要滿足 max tree');
+  await step(tok); // @c 4631.8 只能是一棵 B1
+  txt(nt, 'n = 2 = 10₂');
+  say('2 個 node → 只能是一棵 B₁', 'binomial forest 沒有別的選擇');
+  await step(tok); // @c 4652.8 7 在上 5 在下
+  glow(a5.m, GOLD); glow(a7.m, GOLD);
+  say('目標長相：7 在上、5 在下', '');
+  await step(tok); // @c 4717.3 7 也是一個小 forest
+  const b7 = bub('我自己就是一個小 forest', a7.x + 0.4, a7.y + 1.6);
+  say('換個看法：新來的 7 也是一個小 forest', '插入 = 兩個 forest 合併');
+  await step(tok); // @c 4744.8 B0 跟 B0 打一架
+  kill(b7);
+  bnLink(a5, a7); ts = [a7]; show(new Set([a5]));
+  say('B₀ 跟 B₀ 打一架：7 贏放上面', '5 掛下面 → 一棵 B₁（merge）');
+  await step(tok); // @c 4781.8 insert 3
+  const a3 = BN(3); ts = [a7, a3]; show(new Set([a3]), a3);
+  say('insert 3', '');
+  await step(tok); // @c 4803.8 一棵 B1 ＋ 一棵 B0
+  show(); txt(nt, 'n = 3 = 11₂');
+  say('forest = 一棵 B₁ ＋ 一棵 B₀', '3 自己當 B₀，7、5 留在原地');
+  await step(tok); // @c 4822.8 insert 2
+  const a2 = BN(2); ts = [a7, a3, a2]; show(new Set([a2]), a2); txt(nt, 'n = 4 = 100₂');
+  say('insert 2', '');
+  await step(tok); // @c 4851.8 兩棵 B0？
+  glow(a3.m, GOLD); glow(a2.m, GOLD);
+  say('會有兩棵 B₀ 嗎？不會', '');
+  await step(tok); // @c 4859.8 B0+B0 → B1，B1+B1 → B2
+  say('兩棵 B₀ 變 B₁，又碰到原本的 B₁', '兩棵 B₁ 再變 B₂ → 連續進位');
+  await step(tok); // @c 4867.5 3 和 2 先組成 B1
+  bnLink(a3, a2); ts = [a7, a3]; show(new Set([a2]));
+  say('先把 3 和 2 組成一棵新 B₁', '3 > 2，3 在上面');
+  await step(tok); // @c 4896.8 老大 7 和 3 單挑
+  glow(a7.m, GOLD); glow(a3.m, GOLD);
+  say('兩棵 B₁：老大 7 和 3 出來單挑', '小嘍囉不用出手');
+  await step(tok); // @c 4917.8 3、2 掉到 7 下面
+  bnLink(a7, a3); ts = [a7]; show(new Set(bnAll(a3)));
+  say('7 贏放上面；3、2 掛在 7 下面', '變成一棵 B₂');
+  await step(tok); // @c 4943.8 仍是 max tree
+  bnAll(a7).forEach((n) => glow(n.m, GREEN));
+  say('仍然是 max tree → 一棵 B₂ 的 binomial heap', '');
 }]);
 
-// 83:00 n 次 insert：merge 次數 n/2 + n/4 + … → amortized O(1)
+// 97:10 Q&A：insert 3 為何不合併（二進位 2 + 1 沒有進位）
+FRAG.push(['hashlin1-insert3-why', 'Insert 3 為何不合併：2 + 1 沒有進位', async (tok) => {
+  fresh([0, 4.6, 11], [0, 1.6, 0]);
+  const o = { sp: 1.0, dy: 1.1, gap: 1.6, D: 2 };
+  const a7 = BN(7, BN(5)), a3 = BN(3);
+  let v = null;
+  await step(tok); // @c 5829.7 已有 7、5 的 B1
+  v = bnForest([a7], o);
+  say('insert 3 之前：7、5 已經是一棵 B₁', 'n = 2 = 10₂');
+  await step(tok); // @c 5838.8 3 是獨立的 B0
+  v.kill(); v = bnForest([a7, a3], { ...o, drop: new Set([a3]) });
+  say('3 放進來：自己是一棵獨立的 B₀', 'B₁ ＋ B₀');
+  await step(tok); // @c 5846.8 2 + 1 沒進位
+  good('10₂ + 1₂ = 11₂：沒有進位', 0, 4.9, -1.5);
+  say('就是二進位 2 + 1', '沒有進位 → 不用合併');
+  await step(tok); // @c 5853.8 3 + 1 才要進位
+  note('11₂ + 1₂ = 100₂：這次才進位', 0, 4.2, -1.5);
+  say('3 + 1 才要進位', '所以再 insert 2 時才合併');
+}]);
+
+// 83:02 n 次 insert：merge 次數 n/2 + n/4 + … → amortized O(1)
 FRAG.push(['hashlin1-amortized-counter', 'Insert 的 amortized O(1)：二進位 +1', async (tok) => {
   fresh([0, 5.2, 11.5], [0, 1.2, 0]);
   const X = (k) => 5 - k * 2.0, S = (k) => 0.55 + 0.16 * k;
-  const B = new Array(7).fill(null), bits = [];
-  for (let k = 0; k < 6; k++) { cube('', GRAY, [1.6, 0.1, 1.6], X(k), 0.05, 0); tag('B' + hlSub(k), 'idx', X(k), 0, 1.2); bits.push(tag('0', 'ptr', X(k), 3.0, 0)); }
-  const cnt = tag('insert 0 次、merge 0 次', 'ptr alt', 0, 4.4, -1.5);
+  const B = new Array(7).fill(null), bits = [], objs = [];
+  for (let k = 0; k < 6; k++) { objs.push(cube('', GRAY, [1.6, 0.1, 1.6], X(k), 0.05, 0), tag('B' + hlSub(k), 'idx', X(k), 0, 1.2)); bits.push(tag('0', 'ptr', X(k), 3.0, 0)); }
+  objs.push(...bits);
+  const cnt = tag('insert 0 次、merge 0 次', 'ptr alt', 0, 4.4, -1.5); objs.push(cnt);
   let ins = 0, mg = 0;
   const mk = (k, z, drop) => cube('B' + hlSub(k), hlOrd(k), [S(k), S(k), S(k)], X(k), S(k) / 2, z, drop);
-  async function inc(ms, talk) {
-    const n0 = B.reduce((a, b, k) => a + (b ? 1 << k : 0), 0); ins++;
+  const tally = () => txt(cnt, 'insert ' + ins + ' 次、merge ' + mg + ' 次');
+  async function inc(ms) {
+    ins++;
     let c = mk(0, 2.2, 2.5), k = 0;
-    if (talk) say('insert：放進一棵 B₀', hlBin(n0) + '₂ + 1 = ' + hlBin(n0 + 1) + '₂');
     await beat(tok, ms);
     while (B[k]) {
       glow(B[k], GOLD); glow(c, GOLD);
       move(B[k], X(k), S(k) / 2, 2.2); await beat(tok, ms * 0.5);
       kill(B[k]); kill(c); B[k] = null; txt(bits[k], '0'); k++; mg++;
-      c = mk(k, 2.2, 0);
-      if (talk) say('兩棵 B' + hlSub(k - 1) + ' 合成 B' + hlSub(k), '進位一次 = merge 一次');
-      txt(cnt, 'insert ' + ins + ' 次、merge ' + mg + ' 次');
+      c = mk(k, 2.2, 0); tally();
       await beat(tok, ms * 0.6);
     }
-    move(c, X(k), S(k) / 2, 0); B[k] = c; txt(bits[k], '1');
-    txt(cnt, 'insert ' + ins + ' 次、merge ' + mg + ' 次');
+    move(c, X(k), S(k) / 2, 0); B[k] = c; txt(bits[k], '1'); tally();
     await beat(tok, ms * 0.5);
   }
-  say('每次 insert 都塞一棵 B₀', '像二進位計數器 +1');
-  await beat(tok, 1800);
-  for (let i = 0; i < 8; i++) await inc(700, i < 4);
-  say('每 2 次合 B₀、每 4 次合 B₁、每 8 次合 B₂', 'merge 共 n/2 + n/4 + n/8 + … < n');
-  await beat(tok, 3000);
+  await step(tok); // @c 4981.8 每輪塞一棵 B0
+  await inc(400);
+  say('每一輪：塞進一棵小 B₀', '0₂ + 1 = 1₂');
+  await step(tok); // @c 4998.8 已有 B0 → merge
+  await inc(400);
+  say('原本就有 B₀ → 要合起來（merge）', '1₂ + 1 = 10₂');
+  await step(tok); // @c 5014.8 有時合兩次
+  await inc(250); await inc(250);
+  say('有時要連續合兩次', '11₂ + 1 = 100₂');
+  await step(tok); // @c 5045.2 放 B0 共 N
+  const t1 = note('放 B₀：每輪 1 次 → n 輪共 n', -3.2, 5.6, -1.5); objs.push(t1);
+  say('N 輪：放 B₀ 共花 N 的力氣', '');
+  await step(tok); // @c 5055.0 每兩輪 merge B0
+  await inc(250); await inc(250);
+  say('每 2 輪就要 merge 一次 B₀ ＋ B₀', '奇數輪不用、偶數輪要');
+  await step(tok); // @c 5075.6 每四輪 B1、每八輪 B2
+  await inc(250); await inc(250);
+  say('每 4 輪合一次 B₁、每 8 輪合一次 B₂', '第 8 輪：連續 3 次 merge');
+  await step(tok); // @c 5115.8 insert 力氣 O(n)
+  say('insert 的力氣：O(n)', '');
+  await step(tok); // @c 5141.8 n/2 + n/4 + n/8
+  const t2 = note('merge：n/2 + n/4 + n/8 + … < n', 3.2, 5.6, -1.5); objs.push(t2);
+  say('若每次 merge 只花 constant', '總 merge 力氣還是 O(n)');
+  await step(tok); // @c 5164.9 amortized O(1)
+  const t3 = good('n 次 insert 共 O(n) → 平均每次 O(1)', 0, 5.0, -1.5); objs.push(t3);
+  say('N 個 insert 共 O(N)', 'amortized：每次 O(1)');
+  await step(tok); // @c 5178.8 B0～B4 都有
   for (let k = 0; k < 6; k++) { if (B[k]) kill(B[k]); B[k] = k < 5 ? mk(k, 0, 0) : null; txt(bits[k], k < 5 ? '1' : '0'); }
-  say('偶爾很貴：B₀～B₄ 全都有', '11111₂ + 1：連續進位 5 次');
-  await beat(tok, 1800);
-  await inc(650, false);
-  say('平均起來：insert amortized O(1)', 'O(n) insert + O(n) merge');
-  await beat(tok, 2600);
-  say('merge 只要兩個老大比一次', '輸的插到小孩串列的 head：O(1)');
-  await beat(tok, 2800);
+  say('假設 B₀～B₄ 通通都有', '11111₂');
+  await step(tok); // @c 5188.7 一路連鎖合併
+  await inc(220);
+  say('再放一棵 B₀：一路進位 5 次', '11111₂ + 1 = 100000₂');
+  await step(tok); // @c 5205.8 大多時候不花力氣
+  say('大多時候不花力氣，偶爾花很多', '平均起來還是便宜');
+  await step(tok); // @c 5229.8 兩個老大打一架
+  objs.forEach(kill); B.forEach((b) => b && kill(b));
+  const w = buddy('老大', 9, '#4b9ee2', -2.4, 0, 0.6, 0.9), l = buddy('老大', 7, '#9b7ef4', 2.4, 0, 0.6, 0.9);
+  w.glow(GOLD); l.glow(GOLD);
+  say('兩棵 max binomial tree 合併', '只要兩個老大出來打一架');
+  await w.hop(tok); await l.hop(tok);
+  await step(tok); // @c 5240.8 輸的掛在下面，其他不變
+  w.glow(null); l.glow(null); w.mood('happy'); l.mood('sad');
+  if (l.name) l.name.element.textContent = '二老大';
+  await travel(tok, w.g, V3(-2.4, 0, 0.6), V3(0, 1.8, 0.6), 700);
+  await travel(tok, l.g, V3(2.4, 0, 0.6), V3(-1.8, 0, 0.6), 700);
+  line(0, 1.9, -1.8, 1.0, 0.6);
+  say('輸的乖乖掛在下面', '其他結構完全不變');
+  await step(tok); // @c 5276.8 order 最高的小孩放最左
+  const k1 = cube('B₁', hlOrd(1), [0.8, 0.7, 0.8], 0.0, 0.35, 0.6), k0 = cube('B₀', hlOrd(0), [0.7, 0.6, 0.7], 1.5, 0.3, 0.6);
+  line(0, 1.9, 0.0, 0.7, 0.6); line(0, 1.9, 1.5, 0.6, 0.6);
+  note('小孩照 order 由高到低，最高的放最左', 0, -0.6, 2.2);
+  say('把 order 最高的小孩畫在最左邊', '');
+  await step(tok); // @c 5291.8 像 linked list insert head
+  arrow(V3(-1.2, 0.4, 0.6), V3(-0.45, 0.4, 0.6), 0xc08a1f); arrow(V3(0.45, 0.4, 0.6), V3(1.1, 0.4, 0.6), 0xc08a1f);
+  glow(k1, null); glow(k0, null);
+  good('輸的插在最前面 = insert at head：O(1)', 0, 3.6, 0);
+  say('輸的插在小孩串列最前面', '像 linked list insert at head → O(1)');
+  await step(tok); // @c 5328.8 平均 constant time
+  w.mood('happy'); l.mood('happy');
+  say('merge O(1) → insert 平均只要 constant time', 'amortized O(1)');
 }]);
 
-// 89:00 兩個 binomial heap 合併 = 兩個二進位數相加
+// 89:09 兩個 binomial heap 合併 = 兩個二進位數相加
 FRAG.push(['hashlin1-meld-binary', '合併兩個 binomial heap = 二進位加法', async (tok) => {
-  fresh([0, 4.8, 11.5], [0, 1.6, 0]);
+  fresh([0, 4.8, 11.5], [0, 1.8, 0]);
   const o = { sp: 0.75, dy: 1.0, gap: 0.8, D: 3 };
   let A = [BN(9, BN(6, BN(2)), BN(4)), BN(8)], Bq = [BN(7, BN(5)), BN(1)], C = [];
   const vs = {};
-  const show = (drop) => { for (const k in vs) vs[k].kill(); vs.a = bnForest(A, { ...o, cx: -4.3, drop }); vs.b = bnForest(Bq, { ...o, cx: 4.3, drop }); vs.c = bnForest(C, { ...o, cx: 0, drop, tagOf: (t) => '結果 B' + hlSub(t.kids.length) }); };
-  show();
-  tag('學校 to-do：n = 101₂', 'ptr', -4.3, 5.3); tag('約會 to-do：n = 011₂', 'ptr', 4.3, 5.3);
-  say('兩個 priority queue 要合併', '各是一個 binomial heap');
-  await beat(tok, 2600);
-  say('合併 = 101₂ + 011₂', '從最低位 B₀ 開始加');
-  await beat(tok, 2200);
-  const steps = [
-    () => [A[1], Bq[1], 'B₀：8 和 1 打一架', '8 贏 → 進位成 B₁'],
-    () => [C[0], Bq[0], 'B₁：進位的 8 和 7 打一架', '8 贏 → 再進位成 B₂'],
-    () => [A[0], C[0], 'B₂：9 和 8 打一架', '9 贏 → 一棵 B₃'],
-  ];
-  for (let s = 0; s < 3; s++) {
-    const [a, b, cap, fm] = steps[s]();
+  const show = (drop, withB = true) => { for (const k in vs) vs[k].kill(); vs.a = bnForest(A, { ...o, cx: -4.3, drop }); if (withB) vs.b = bnForest(Bq, { ...o, cx: 4.3, drop }); vs.c = bnForest(C, { ...o, cx: 0, drop, tagOf: (t) => '結果 B' + hlSub(t.kids.length) }); };
+  await step(tok); // @c 5352.8 node 總數 ↔ 二進位
+  show(null, false);
+  tag('n = 5 = 101₂', 'ptr', -4.3, 5.3);
+  say('node 總數 ↔ 二進位：5 = 101₂', 'B₂ ＋ B₀');
+  await step(tok); // @c 5370.8 merge ≈ 二進位加法
+  note('像加法器：+1、+1、+1 …', 0, 5.9, -1.5);
+  say('heap 上的 merge，道理上就是二進位加法', '');
+  await step(tok); // @c 5391.8 兩個 heap 相加
+  show(new Set(bnAll(Bq[0]).concat(bnAll(Bq[1]))));
+  tag('n = 3 = 011₂', 'ptr', 4.3, 5.3);
+  say('兩個 binomial heap 合起來', '= 兩個二進位數相加：101₂ + 011₂');
+  await step(tok); // @c 5411.9 學校 / 約會 to-do
+  bub('學校 to-do list', -4.3, -0.4, 1.2); bub('約會 to-do list', 4.3, -0.4, 1.2);
+  say('例：學校 to-do ＋ 約會 to-do', '兩個 priority queue 要合併');
+  await step(tok); // @c 5427.8 合起來
+  const fights = [() => [A[1], Bq[1]], () => [C[0], Bq[0]], () => [A[0], C[0]]];
+  for (const f of fights) {
+    const [a, b] = f();
     glow(a.m, GOLD); glow(b.m, GOLD);
-    say(cap, fm);
-    await beat(tok, 2000);
+    await beat(tok, 350);
     const { w, l } = bnLink(a, b);
     A = A.filter((t) => t !== a && t !== b); Bq = Bq.filter((t) => t !== a && t !== b); C = [w];
     show(new Set(bnAll(l)));
-    await beat(tok, 1600);
+    await beat(tok, 550);
   }
-  say('101₂ + 011₂ = 1000₂', '8 個 node，只剩一棵 B₃');
-  await beat(tok, 3000);
+  say('從最低位加：8 贏 1、8 贏 7、9 贏 8', '101₂ + 011₂ = 1000₂：一棵 B₃');
+  await step(tok); // @c 5441.8 比 complete tree heap 更好
+  good('merge：比 complete tree 做的 heap 方便', 0, 5.2, -1.5);
+  say('在 merge 上，binomial heap 性質更好', '');
+  await step(tok); // @c 5448.8 最大的怎麼拿？
+  say('那最大的要怎麼拿出來？', '每棵都是 max tree…');
 }]);
 
-// 90:48 getMax：問每棵樹的老大；removeMax：拆出小樹再 merge
+// 91:13 getMax：問每棵樹的老大；removeMax：拆出小樹再 merge
 FRAG.push(['hashlin1-getmax-remove', 'getMax 只看 root；removeMax 拆樹再合併', async (tok) => {
   fresh([0, 4.6, 11], [0, 1.6, 0]);
   const o = { sp: 0.95, dy: 1.05, gap: 1.4 };
   const t2 = BN(8, BN(5, BN(1)), BN(3)), t1 = BN(9, BN(2)), t0 = BN(6);
-  let v = bnForest([t2, t1, t0], o);
-  say('7 個 node = 111₂：三棵 max tree', '每棵都有自己的老大（root）');
-  await beat(tok, 2600);
-  const cur = tag('問老大', 'ptr alt', 0, 0, 0); let best = null;
-  for (const t of [t2, t1, t0]) {
-    cur.position.set(t.x, t.y + 1.5, 0); glow(t.m, GOLD); if (!best || t.v > best.v) best = t;
-    say('老大 ' + t.v + '，目前最大 ' + best.v, 'sequential search，只看 root');
-    await beat(tok, 1300); glow(t.m, null);
-  }
-  kill(cur); glow(t1.m, GREEN);
-  say('getMax = 9：只問了 3 個老大', '樹最多 ⌊log₂n⌋ + 1 棵 → O(log n)');
-  await beat(tok, 2800);
+  let v = null, w2 = null;
+  await step(tok); // @c 5473.8 每棵都有自己的老大
+  v = bnForest([t2, t1, t0], o);
+  [t2, t1, t0].forEach((t) => glow(t.m, GOLD));
+  say('每棵都是 max tree，各有自己的老大', '例：7 個 node = 111₂');
+  await step(tok); // @c 5498.8 sequential search
+  [t2, t1, t0].forEach((t) => glow(t.m, null));
+  const cur = pkt('老大你多大？', 0, 0); let best = null;
+  for (const t of [t2, t1, t0]) { cur.position.set(t.x, t.y + 1.4, 0); glow(t.m, GOLD); if (!best || t.v > best.v) best = t; await beat(tok, 600); glow(t.m, null); }
+  kill(cur); glow(best.m, GREEN);
+  say('sequential search：每個老大都問一次', '只看 root');
+  await step(tok); // @c 5514.0 樹最多 log n 棵
+  say('要問幾個老大？樹最多 log n 棵', '');
+  await step(tok); // @c 5520.8 255 → 8 bit
+  note('255 = 11111111₂：只要 8 個 bit', 0, 5.0, -1.5);
+  say('就像 255 的二進位只要 8 位', '數字 n 只要 log n 位');
+  await step(tok); // @c 5569.8 getMax O(log n)
+  say('getMax = 9：O(log n)', '');
+  await step(tok); // @c 5582.4 removeMax 拿掉
   fly(t1.m);
-  say('removeMax：拿走 9，這棵樹拆開', '剩下的小孩 2 自成一棵 B₀');
-  await beat(tok, 1800);
+  say('removeMax：找到 9，把它拿掉', '');
+  await step(tok); // @c 5592.7 那棵樹拆開
   v.kill();
   const c = t1.kids[0];
   v = bnForest([t2, t0], { ...o, cx: -1.4 });
-  let w2 = bnForest([c], { ...o, cx: 4.4, tagOf: () => '拆出來的 B₀' });
-  say('拆出來的是新 forest，跟原 forest merge', '111₂ − 010₂ = 101₂，再 + 001₂');
-  await beat(tok, 2600);
+  w2 = bnForest([c], { ...o, cx: 4.4, tagOf: () => '拆出來的 B₀' });
+  say('那棵樹分崩離析 → 變成小 binomial tree', '9 的小孩 2 自成一棵 B₀');
+  await step(tok); // @c 5609.8 新的 forest
+  bub('我們是一個新 forest', 4.4, 2.6);
+  say('拆出來的小樹 = 一個新的 forest', '');
+  await step(tok); // @c 5616.8 跟原 forest merge
   glow(t0.m, GOLD); glow(c.m, GOLD);
-  say('B₀：6 和 2 打一架', '6 贏 → B₁');
-  await beat(tok, 1800);
+  await beat(tok, 600);
   const { w, l } = bnLink(t0, c);
   v.kill(); w2.kill();
   v = bnForest([t2, w], { ...o, drop: new Set([l]) });
-  say('剩 B₂ + B₁ = 6 個 node', '101₂ + 001₂ = 110₂，O(log n)');
-  await beat(tok, 3000);
+  say('跟原 forest merge：6 和 2 打一架', '101₂ + 001₂ = 110₂，O(log n)');
+  await step(tok); // @c 5636.8 二進位加減 + max tree
+  say('binomial heap = 二進位的加法、減法', '＋ 用 max tree 管誰是老大');
 }]);
 
-// 98:35 為什麼最多 log n 棵：n = 15、14、8
+// 99:19 為什麼最多 log n 棵：n = 15、14、8
 FRAG.push(['hashlin1-tree-count', '樹的棵數 = 二進位裡 1 的個數', async (tok) => {
-  fresh([0, 4.6, 11], [0, 1.6, 0]);
+  fresh([0, 4.6, 11], [0, 1.8, 0]);
   const o = { sp: 0.8, dy: 1.0, gap: 1.1, col: (n, t) => hlOrd(t.kids.length) };
   let v = null;
-  for (const n of [15, 14, 8]) {
+  const nt = tag(' ', 'ptr', 0, 5.3, -1.5);
+  const showN = (n) => {
     if (v) v.kill();
     const ts = []; for (let k = 3; k >= 0; k--) if ((n >> k) & 1) ts.push(bnMake(k));
     v = bnForest(ts, o);
-    say('n = ' + n + ' = ' + hlBin(n).padStart(4, '0') + '₂', ts.length + ' 棵：' + ts.map((t) => 'B' + hlSub(t.kids.length)).join(' + '));
-    await beat(tok, 2000);
-    for (let i = 0; i < ts.length; i++) { glow(ts[i].m, GOLD); say('問第 ' + (i + 1) + ' 個老大', '1 的個數 = 要問幾個老大'); await beat(tok, 650); }
-    await beat(tok, 900);
-  }
-  say('n = 15 到 8，最大一棵都是 B₃', '最大一棵 = B⌊log₂n⌋');
-  await beat(tok, 2600);
-  say('最糟像 7、15、63：每棵都有', '最多 ⌊log₂n⌋ + 1 棵 → O(log n)');
-  await beat(tok, 2800);
+    txt(nt, 'n = ' + n + ' = ' + hlBin(n).padStart(4, '0') + '₂ → ' + ts.length + ' 棵');
+    return ts;
+  };
+  const ask = async (ts, ms) => { for (const t of ts) { glow(t.m, GOLD); await beat(tok, ms); } };
+  await step(tok); // @c 5958.8 15 = 1111
+  let ts = showN(15);
+  say('n = 15 = 1111₂', '最多 4 棵：B₃、B₂、B₁、B₀');
+  await step(tok); // @c 5978.3 4 個老大問完
+  await ask(ts, 500);
+  say('4 個老大都問完，就知道最大在哪', '');
+  await step(tok); // @c 5986.7 14 = 1110
+  ts = showN(14);
+  say('n = 14 = 1110₂', '3 棵：B₃、B₂、B₁');
+  await step(tok); // @c 6012.7 15 到 8 最大都是 B3
+  ts = showN(8); glow(ts[0].m, GOLD);
+  say('n 從 15 一路到 8：最大一棵都是 B₃', '有時問 4 棵、有時 3 棵、2 棵…');
+  await step(tok); // @c 6043.8 log2 n
+  note('log₂15 ≈ 3.9、log₂8 = 3', -4.6, 6.2, -2);
+  say('棵數跟 log₂n 有關', '');
+  await step(tok); // @c 6066.8 floor
+  note('⌊log₂n⌋ = 3 → 最大一棵是 B₃', 0, 6.2, -2);
+  say('取 floor（去掉小數）：最大一棵是 B⌊log₂n⌋', '');
+  await step(tok); // @c 6085.8 + 1
+  good('最多 ⌊log₂n⌋ + 1 棵', 4.6, 6.2, -2);
+  say('再加 1：forest 裡最多的棵數', '還沒進到下一級的樹');
+  await step(tok); // @c 6115.3 老大中的老大
+  ts = showN(15);
+  const hand = pkt('老大你多大？', 0, 0);
+  for (let i = 0; i < ts.length; i++) { const a = ts[Math.max(0, i - 1)]; await travel(tok, hand, V3(a.x, a.y + 1.3, 0), V3(ts[i].x, ts[i].y + 1.3, 0), 450); glow(ts[i].m, GOLD); }
+  kill(hand);
+  say('getMax：找出老大中的老大', '');
+  await step(tok); // @c 6124.4 運氣好：8 只問一個
+  ts = showN(8); glow(ts[0].m, GREEN);
+  say('運氣好：8 個 node 只要問 1 個老大', '');
+  await step(tok); // @c 6131.8 最糟：15、7、63
+  ts = showN(7); await ask(ts, 400);
+  say('最糟：像 7、15、63，每一棵都有', '每個小老大都要問');
+  await step(tok); // @c 6153.8 O(log n)
+  say('用最糟情況估：getMax 是 O(log n)', '');
 }]);
 
-// 103:00 removeMax 例子：14 個 node（1110₂），max 在 B2 的 root
+// 103:57 removeMax 例子：14 個 node（1110₂），max 在 B2 的 root
 FRAG.push(['hashlin1-removemax-14', 'removeMax：14 個 node 拿掉 B₂ 的老大', async (tok) => {
   fresh([0, 4.8, 11.5], [0, 1.6, 0]);
   const o = { sp: 0.75, dy: 1.0, gap: 1.0 };
   const t3 = BN(45, BN(42, BN(38, BN(11)), BN(36)), BN(33, BN(22)), BN(15));
   const t2 = BN(50, BN(40, BN(30)), BN(35));
   const t1 = BN(25, BN(5));
-  let v = bnForest([t3, t2, t1], { ...o, cx: -1 });
-  say('14 個 node = 1110₂', 'B₃ + B₂ + B₁');
-  await beat(tok, 2400);
-  const cur = tag('問老大', 'ptr alt', 0, 0, 0);
-  for (const t of [t3, t2, t1]) { cur.position.set(t.x, t.y + 1.5, 0); glow(t.m, GOLD); say('老大 ' + t.v, '找老大中的老大'); await beat(tok, 1000); glow(t.m, null); }
+  let v = null, w2 = null;
+  await step(tok); // @c 6236.8 14 個 node
+  v = bnForest([t3, t2, t1], { ...o, cx: -1 });
+  say('binomial heap 有 14 個 node', '14 = 1110₂ → B₃ + B₂ + B₁');
+  await step(tok); // @c 6243.8 找到 max
+  const cur = pkt('老大你多大？', 0, 0);
+  for (const t of [t3, t2, t1]) { cur.position.set(t.x, t.y + 1.4, 0); glow(t.m, GOLD); await beat(tok, 550); glow(t.m, null); }
   kill(cur); glow(t2.m, GREEN);
-  say('max = 50，在 B₂ 的 root', '先把整棵 B₂ 拿掉：1110₂ − 0100₂ = 1010₂');
-  await beat(tok, 2600);
+  say('找到老大中的老大：max = 50', '在 B₂ 的 root');
+  await step(tok); // @c 6255.8 只看這一棵
+  bnAll(t2).slice(1).forEach((n) => glow(n.m, GOLD));
+  say('只看這一棵：拿掉老大很容易', '');
+  await step(tok); // @c 6263.8 派系都分好了
+  bnAll(t2.kids[0]).forEach((n) => glow(n.m, '#16306a'));
+  glow(t2.kids[1].m, GOLD);
+  say('老大下面的派系早就分好了', 'B₂ = 老大 ＋ 一棵 B₁ ＋ 一棵 B₀');
+  await step(tok); // @c 6287.8 變成一幫小嘍囉
   fly(t2.m);
-  await beat(tok, 1000);
+  await beat(tok, 700);
   v.kill();
   const [p1, p0] = t2.kids;
+  bnAll(t2).forEach((n) => glow(n.m, null));
   v = bnForest([t3, t1], { ...o, cx: -2.2 });
-  let w2 = bnForest([p1, p0], { ...o, cx: 4.6, gap: 0.9 });
-  say('老大走了，留下 B₁、B₀ 一幫小嘍囉', '2² − 1 = 3 個 = 0011₂');
-  await beat(tok, 2800);
+  w2 = bnForest([p1, p0], { ...o, cx: 4.6, gap: 0.9 });
+  say('老大拿掉後：剩一幫小嘍囉', '一棵 B₁、一棵 B₀');
+  await step(tok); // @c 6309.8 1 變 0，冒出小嘍囉
+  note('1110₂ − 0100₂ = 1010₂', -2.2, 5.0, -1.5); note('小嘍囉：0011₂', 4.6, 5.0, -1.5);
+  say('B₂ 那一位從 1 變 0', '再把小嘍囉加回來');
+  await step(tok); // @c 6336.1 從低位加：B0
   glow(p0.m, GOLD);
-  say('從低位加：B₀ 只有 35，直接放', '1010₂ + 0011₂');
-  await beat(tok, 2000);
+  say('二進位加法，從低位加：B₀ 只有 35', '直接放');
+  await step(tok); // @c 6344.8 B1 + B1 → B2
   glow(p0.m, null); glow(t1.m, GOLD); glow(p1.m, GOLD);
-  say('B₁：25 和 40 打一架', '40 贏 → 進位成 B₂');
-  await beat(tok, 2200);
+  await beat(tok, 500);
   const { w, l } = bnLink(t1, p1);
   v.kill(); w2.kill();
   v = bnForest([t3, w, p0], { ...o, drop: new Set(bnAll(l)) });
-  say('B₂ 原本空了，放進來；B₃ 不動', '1010₂ + 0011₂ = 1101₂ = 13');
-  await beat(tok, 2800);
-  say('removeMax：減掉 2ᵏ、再加回 2ᵏ − 1', '都是二進位加減法，O(log n)');
-  await beat(tok, 2800);
+  say('B₁ ＋ B₁：40 贏 25', '原本空著的地方變出一棵 B₂');
+  await step(tok); // @c 6354.8 B3 不動
+  bnAll(t3).forEach((n) => glow(n.m, GREEN));
+  say('B₃ 保持不動', '1010₂ + 0011₂ = 1101₂ = 13');
+  await step(tok); // @c 6366.8 n − 2^k + (2^k − 1)
+  bnAll(t3).forEach((n) => glow(n.m, null));
+  say('removeMax = 減掉 2ᵏ，再加回 2ᵏ − 1', '都是二進位加減法，O(log n)');
 }]);
 
-// 118:17 兩個老大一樣大時怎麼合併
+// 118:45 兩個老大一樣大時怎麼合併
 FRAG.push(['hashlin1-tie', '老大一樣大：誰在上面都可以', async (tok) => {
   fresh([0, 4.2, 10], [0, 1.4, 0]);
   const a = BN(7, BN(3)), b = BN(7, BN(5));
-  const va = bnForest([a], { cx: -2.6, sp: 1, dy: 1.2, tagOf: () => '原本的 B₁' });
-  const vb = bnForest([b], { cx: 2.6, sp: 1, dy: 1.2, tagOf: () => '併進來的 B₁' });
-  say('兩棵 B₁ 要合併', '兩個老大都是 7');
-  await beat(tok, 2600);
+  let va = null, vb = null;
+  await step(tok); // @c 7125.0 兩個老大一樣大
+  va = bnForest([a], { cx: -2.6, sp: 1, dy: 1.2, tagOf: () => '原本的 B₁' });
+  vb = bnForest([b], { cx: 2.6, sp: 1, dy: 1.2, tagOf: () => '併進來的 B₁' });
+  say('兩個要合併的老大一樣大，怎麼辦？', '兩個老大都是 7');
+  await step(tok); // @c 7128.8 誰在上面都可以
   glow(a.m, GOLD); glow(b.m, GOLD);
-  say('只要 max tree：誰在上面都對', '7 ≥ 7，兩種都合法');
-  await beat(tok, 3000);
-  say('約定一種：併進來的放下面', '實作上決定一種方式就好');
-  await beat(tok, 2400);
+  const ok = good('7 ≥ 7：兩種都合法', 0, 4.2);
+  say('只要 max tree 性質：誰在上面都可以', '');
+  await step(tok); // @c 7148.8 併進來的放下面
+  kill(ok); glow(a.m, null);
   const { l } = bnLink(a, b);
   va.kill(); vb.kill();
-  bnForest([a], { sp: 1, dy: 1.2, drop: new Set(bnAll(l)) });
-  await beat(tok, 2200);
-  say('再比小弟？多花成本、edge case 更多', '兩棵也可能長得一模一樣');
-  await beat(tok, 3000);
-  say('一般 priority queue 不需要', '選最簡單的 solution');
-  await beat(tok, 2800);
+  va = bnForest([a], { sp: 1, dy: 1.2, drop: new Set(bnAll(l)) });
+  say('實作上決定一種：併進來的放下面', '');
+  await step(tok); // @c 7187.8 再比小弟？
+  glow(b.m, GOLD); glow(a.kids[1].m, GOLD);
+  bub('老大一樣 → 再比小弟？', 0, 4.4);
+  say('能不能更細緻：老大一樣就比小弟？', '技術上可以');
+  await step(tok); // @c 7202.8 多花成本、edge case
+  bad('多花成本、edge case 更多', -3.4, 3.4);
+  say('但要多花成本，edge case 也更多', '');
+  await step(tok); // @c 7217.8 一路比下去
+  note('小弟也一樣 → 再比小小弟 …', 3.4, 3.4);
+  say('一路比下去很累', '還可能碰到兩棵長得一模一樣');
+  await step(tok); // @c 7241.8 simplest solution
+  glow(b.m, null); glow(a.kids[1].m, null);
+  good('選最簡單的 solution', 0, -0.4, 1.2);
+  say('一般的 priority queue 不需要', '選最簡單的 solution');
+  await step(tok); // @c 7257.6 不浪費空間
+  note('兩筆 entry 本來就要存兩筆', 3.6, 0.6, 1.2);
+  say('同 priority 合併也不浪費空間', '兩筆資料本來就要存');
 }]);
 
-// 121:55 性質（ADT）與 implementation 分開
+// 122:21 性質（ADT）與 implementation 分開
 FRAG.push(['hashlin1-adt-impl', '性質 vs implementation', async (tok) => {
   fresh([0, 5.5, 11.5], [0, 2.0, 0]);
   tag('性質：要做到什麼', 'idx', -3.8, 5.3); tag('implementation：怎麼做', 'idx', 3.4, 5.3);
-  const pq = cube('Priority Queue', '#9b7ef4', [3.2, 0.8, 1.1], -3.8, 4.3, 0);
-  say('priority queue 是一種性質', 'container A 要支援的操作');
-  await beat(tok, 2400);
-  const cd = code(['insert(key, data)：要快', 'retrieve / remove max：要快'], -3.8, 3.2, 0.5, 0);
+  const imp = (i) => { cube(['heap', 'binomial heap', 'ordered array'][i], hlOrd(i + 2), [2.6, 0.7, 1.0], 3.4, 4.5 - i * 1.25, 0, 2.5); arrow(V3(-2.1, 4.3, 0), V3(2.0, 4.5 - i * 1.25, 0)); };
+  let cd = null;
+  await step(tok); // @c 7340.8 priority queue 是一種性質
+  cube('Priority Queue', '#9b7ef4', [3.2, 0.8, 1.1], -3.8, 4.3, 0);
+  say('priority queue 是一種「性質」', '');
+  await step(tok); // @c 7351.8 container A
+  cd = code(['container A 要能：', 'remove / retrieve max：要快', 'insert(key, data)：要快'], -3.8, 3.2, 0.5, 0);
+  say('有一個 container，叫它 A', '');
+  await step(tok); // @c 7360.8 remove / retrieve max fast
   cd.hl(1);
-  say('remove / retrieve max 要快', '拿出最大的那個');
-  await beat(tok, 2200);
-  cd.hl(0);
-  say('insert 也要快', 'key 和對應的 data 塞進去');
-  await beat(tok, 2200);
-  const imps = ['heap', 'binomial heap', 'ordered array'];
-  for (let i = 0; i < 3; i++) {
-    cube(imps[i], hlOrd(i + 2), [2.6, 0.7, 1.0], 3.4, 4.5 - i * 1.25, 0, 2.5);
-    arrow(V3(-2.1, 4.3, 0), V3(2.0, 4.5 - i * 1.25, 0));
-    say('實作方式之一：' + imps[i], '快不快各有差別');
-    await beat(tok, 1500);
-  }
-  glow(pq, null);
-  const st = cube('Stack', '#4b9ee2', [2.2, 0.7, 1.0], -3.8, 0.35, 1.8);
+  say('remove 或 retrieve 最大的 key：要快', '');
+  await step(tok); // @c 7381.8 insert fast
+  cd.hl(2);
+  say('insert：把 key 和 data 塞進去也要快', '');
+  await step(tok); // @c 7396.8 heap、binomial heap
+  cd.hl(-1);
+  imp(0); await beat(tok, 500); imp(1);
+  say('implementation：heap、binomial heap …', '');
+  await step(tok); // @c 7405.8 ordered array
+  imp(2);
+  say('也可以用 ordered array', '快不快各有差別');
+  await step(tok); // @c 7420.8 stack、queue 也是性質
+  cube('Stack', '#4b9ee2', [2.2, 0.7, 1.0], -3.8, 0.35, 1.8, 2.5);
+  cube('Queue', '#31aab0', [2.2, 0.7, 1.0], -3.8, 0.35, 3.4, 2.5);
+  say('stack 和 queue 也是「性質」', '');
+  await step(tok); // @c 7425.8 stack 用 array
   cube('array', '#c08a1f', [2.2, 0.7, 1.0], 3.4, 0.35, 1.8, 2.5); arrow(V3(-2.6, 0.35, 1.8), V3(2.2, 0.35, 1.8));
-  say('Stack 是性質，可用 array 實作', '');
-  await beat(tok, 2000);
-  cube('Queue', '#31aab0', [2.2, 0.7, 1.0], -3.8, 0.35, 3.4);
+  say('stack 可以用 array 實作', '');
+  await step(tok); // @c 7428.2 queue 用 circular array
   cube('circular array', '#e55a9b', [2.6, 0.7, 1.0], 3.4, 0.35, 3.4, 2.5); arrow(V3(-2.6, 0.35, 3.4), V3(2.0, 0.35, 3.4));
-  say('Queue 可用 circular array 實作', '性質 ≠ implementation');
-  glow(st, null);
-  await beat(tok, 3000);
+  say('queue 可以用 circular array 實作', '性質 ≠ implementation');
 }]);
 
-// 124:00 Map：依 key 拿東西；Dictionary：一個 key 多個 value
+// 124:12 Map：依 key 拿東西；Dictionary：一個 key 多個 value
 FRAG.push(['hashlin1-map-dict', 'Map 與 Dictionary', async (tok) => {
   fresh([0, 6.2, 11], [0, 1.0, 0]);
-  tag('Map：一對一', 'ptr', -3.8, 2.6, -3.2); tag('Dictionary：一對多', 'ptr', 3.0, 2.6, -3.2);
-  say('不再只拿最大的', '依照 key 去 get / remove');
-  await beat(tok, 2600);
-  const zs = [-1.8, 0, 1.8];
-  for (let i = 0; i < 3; i++) {
-    const k = cube('key' + hlSub(i + 1), '#4b9ee2', [1.3, 0.7, 1.0], -5.4, 0.35, zs[i], 2.5);
-    await beat(tok, 500);
+  const zs = [-1.8, 0, 1.8], ks = [], vs = [];
+  const pair = (i) => {
+    ks.push(cube('key' + hlSub(i + 1), '#4b9ee2', [1.3, 0.7, 1.0], -5.4, 0.35, zs[i], 2.5));
     arrow(V3(-4.6, 0.4, zs[i]), V3(-3.2, 0.4, zs[i]));
-    cube('value' + hlSub(i + 1), '#2fc092', [1.5, 0.7, 1.0], -2.3, 0.35, zs[i], 2.5);
-    say('key' + hlSub(i + 1) + ' → value' + hlSub(i + 1), '這樣的結構叫 map');
-    await beat(tok, 1100);
-    glow(k, null);
-  }
-  say('像看地圖：用地名找到東西', '一個 key 查到一個結果');
-  await beat(tok, 2400);
-  const k1 = cube('key₁', '#4b9ee2', [1.2, 0.7, 1.0], 0.3, 0.35, 0, 2.5);
-  await beat(tok, 700);
+    vs.push(cube('value' + hlSub(i + 1), '#2fc092', [1.5, 0.7, 1.0], -2.3, 0.35, zs[i], 2.5));
+  };
+  const chain = [];
+  await step(tok); // @c 7452.2 資料帶 key 放進去
+  pair(0);
+  say('跟 priority queue 一樣：資料帶著 key 放進去', '');
+  await step(tok); // @c 7473.8 依 key 拿
+  const hand = pkt('get(key₁)', 0, 0);
+  await travel(tok, hand, V3(-5.4, 1.5, zs[0]), V3(-2.3, 1.5, zs[0]), 900);
+  glow(vs[0], GREEN);
+  say('但拿的時候不再拿最大的', '而是根據 key 去 get / remove');
+  await step(tok); // @c 7547.8 叫 map
+  kill(hand); glow(vs[0], null);
+  tag('Map：一對一', 'ptr', -3.8, 2.6, -3.2);
+  say('這樣的資料結構叫做 map', '');
+  await step(tok); // @c 7555.7 像地圖
+  bub('像看地圖：用地名找到東西', -3.8, 3.4, -3.2);
+  say('像看地圖：key 是地圖上的標記', '用它找到要的東西');
+  await step(tok); // @c 7578.8 存 key 和 value
+  say('map 存的是 key 和 value 的關係', 'data 通常叫 value');
+  await step(tok); // @c 7591.1 key1 → value1、key2 → value2
+  pair(1); await beat(tok, 500); pair(2);
+  say('key₁ → value₁、key₂ → value₂ …', '');
+  await step(tok); // @c 7612.3 一個 key 多個 value
+  cube('key₁', '#4b9ee2', [1.2, 0.7, 1.0], 0.3, 0.35, 0, 2.5);
   arrow(V3(1.0, 0.4, 0), V3(1.6, 0.4, 0));
-  const vs = ['v₁₁', 'v₁₂', 'v₁₃'];
   for (let i = 0; i < 3; i++) {
-    lnode(vs[i], 2.2 + i * 1.75, 0.35, 0, '#2fc092');
+    chain.push(lnode(['v₁₁', 'v₁₂', 'v₁₃'][i], 2.2 + i * 1.75, 0.35, 0, '#2fc092'));
     if (i) arrow(V3(2.2 + (i - 1) * 1.75 + 0.95, 0.4, 0), V3(2.2 + i * 1.75 - 0.52, 0.4, 0));
-    say('key₁ 對到 ' + vs.slice(0, i + 1).join('、'), 'dictionary：一個 key 多個 value');
-    await beat(tok, 1100);
+    await beat(tok, 450);
   }
-  glow(k1, GOLD);
-  say('像英文字典：一個字很多解釋', 'value 換成一個 set（例如 linked list）');
-  await beat(tok, 3000);
+  say('變形：一個 key 對到好幾個 value', 'key₁ → v₁₁、v₁₂、v₁₃');
+  await step(tok); // @c 7641.8 dictionary
+  tag('Dictionary：一對多', 'ptr', 3.0, 2.6, -3.2);
+  bub('像英文字典：一個字很多解釋', 3.0, 3.4, -3.2);
+  say('這叫 dictionary', '就像一個單字有很多個解釋');
+  await step(tok); // @c 7662.8 map 一對一
+  ks.forEach((k) => glow(k, GOLD));
+  say('map：一個 key 只查到一個結果', '');
+  await step(tok); // @c 7693.8 value 換成 linked list
+  ks.forEach((k) => glow(k, null));
+  chain.forEach((g) => glow(g.userData.data, GOLD));
+  note('value 換成一個 set（例如 linked list）', 3.9, 1.6, 1.4);
+  say('dictionary 也能用 map 做', '把 value 換成一條 linked list');
+  await step(tok); // @c 7711.8 這裡談 map
+  chain.forEach((g) => glow(g.userData.data, null));
+  ks.forEach((k) => glow(k, GREEN));
+  say('接下來的重點：map 要怎麼做得快', '');
 }]);
 
-// 128:35 ordered map vs unordered map
+// 129:01 ordered map vs unordered map
 FRAG.push(['hashlin1-ordered-keys', 'Ordered 與 unordered 的 key', async (tok) => {
   fresh([0, 6, 11], [0, 1.0, 0]);
-  tag('ordered：key 可以比大小', 'ptr', -3.4, 2.4, -3.2); tag('unordered：只要是 key', 'ptr', 3.8, 2.4, -3.2);
+  await step(tok); // @c 7741.8 key 之間有大小關係
+  tag('ordered：key 可以比大小', 'ptr', -3.4, 2.4, -3.2);
+  say('有一種 key：彼此有大小關係', '可以排出順序 → ordered');
+  await step(tok); // @c 7751.8 integer
   const ints = [3, 12, 27, 41];
-  for (let i = 0; i < 4; i++) { cube(ints[i], colorFor(ints[i]), [0.8, 0.7, 0.8], -5.8 + i * 1.6, 0.35, -1.2, 2.5); if (i) tag('<', 'idx', -6.6 + i * 1.6, 0.5, -1.2); await beat(tok, 400); }
-  say('integer key：有大小關係', '3 < 12 < 27 < 41');
-  await beat(tok, 2200);
+  for (let i = 0; i < 4; i++) { cube(ints[i], colorFor(ints[i]), [0.8, 0.7, 0.8], -5.8 + i * 1.6, 0.35, -1.2, 2.5); if (i) tag('<', 'idx', -6.6 + i * 1.6, 0.5, -1.2); await beat(tok, 300); }
+  say('integer key：明顯有大小', '3 < 12 < 27 < 41');
+  await step(tok); // @c 7765.8 string 字典順序
   const strs = ['apple', 'melon', 'zebra'];
-  for (let i = 0; i < 3; i++) { cube(strs[i], hlOrd(i), [1.3, 0.7, 0.9], -5.6 + i * 2.1, 0.35, 1.4, 2.5); if (i) tag('<', 'idx', -6.65 + i * 2.1, 0.5, 1.4); await beat(tok, 400); }
+  for (let i = 0; i < 3; i++) { cube(strs[i], hlOrd(i), [1.3, 0.7, 0.9], -5.6 + i * 2.1, 0.35, 1.4, 2.5); if (i) tag('<', 'idx', -6.65 + i * 2.1, 0.5, 1.4); await beat(tok, 300); }
   say('string key：字典順序', 'A 開頭排前面、Z 開頭排後面');
-  await beat(tok, 2400);
-  say('ordered map：用順序幫忙找得快', '對 key 是比較強的假設');
-  await beat(tok, 2600);
+  await step(tok); // @c 7788.8 用順序幫忙
+  say('有些 map 會用「順序」來幫忙', '更快 insert、remove、找東西');
+  await step(tok); // @c 7817.7 unordered
+  tag('unordered：只要是 key', 'ptr', 3.8, 2.4, -3.2);
+  say('另一種：unordered', '');
+  await step(tok); // @c 7830.8 key 只要是 key 就可以
   const un = [['Paul', 2.0, -1.4], ['#A7', 5.0, -0.6], ['(2,5)', 3.0, 1.2], ['img01', 5.6, 1.9]];
-  for (const [s, x, z] of un) { cube(s, '#9b7ef4', [1.2, 0.7, 0.9], x, 0.35, z, 2.5); await beat(tok, 400); }
-  say('unordered：不假設 key 能比較', '只要是 key 就能放進去');
-  await beat(tok, 2600);
-  say('弱假設下，還有哪些招能做得快？', '→ 接下來的 hash');
-  await beat(tok, 2800);
+  for (const [s, x, z] of un) { cube(s, '#9b7ef4', [1.2, 0.7, 0.9], x, 0.35, z, 2.5); await beat(tok, 300); }
+  say('不考慮能不能排：只要是 key 就能放', '');
+  await step(tok); // @c 7837.8 比較有沒有意義
+  bub('Paul 和 (2,5) 誰大？有意義嗎？', 3.8, 3.4, -1.0);
+  say('硬要排也行，但比較有沒有意義？', '');
+  await step(tok); // @c 7871.8 ordered = 強假設
+  good('ordered：比較強的假設 → 有機會更快', -3.4, 3.4, -3.2);
+  say('ordered：對 key 是比較強的假設', '希望藉此做得更快');
+  await step(tok); // @c 7885.8 弱假設下還有哪些招
+  say('unordered：比較弱的假設', '這樣還有哪些招能讓 map 很快？');
 }]);
 
-// 131:46 用 linked list / array 實作 map 的代價
+// 132:07 用 linked list / array 實作 map 的代價
 FRAG.push(['hashlin1-list-array-map', '用 list / array 實作 map', async (tok) => {
   fresh([0, 6.6, 12], [0, 2.0, 0]);
   const cd = code(['                insert   get', 'unsorted list   O(1)     O(n)', 'sorted list     O(n)     O(n)', 'unsorted array  O(1)     O(n)', 'sorted array    O(n)     O(log n)'], 0, 6.2, 0.5, -3.4);
-  say('已經會的：把 (key, value) 打包放進去', '先試 linked list 和 array');
-  await beat(tok, 2400);
+  let objs = [];
+  const mkList = (keys, x0) => { const ns = []; keys.forEach((k, i) => { ns.push(lnode(k, x0 + i * 2.0, 0.35, 1.2)); objs.push(ns[i]); if (i) objs.push(arrow(V3(x0 + (i - 1) * 2.0 + 0.95, 0.4, 1.2), V3(x0 + i * 2.0 - 0.52, 0.4, 1.2))); }); return ns; };
+  const ax = (i) => -4.9 + i * 1.4;
+  const mkArr = (A, n) => { const M = []; for (let i = 0; i < n; i++) { objs.push(cube('', GRAY, [1.25, 0.1, 1.2], ax(i), 0.05, 1.2), tag(String(i), 'idx', ax(i), 0, 2.2)); } A.forEach((v, i) => { M.push(cube(v, colorFor(v), [0.9, 0.7, 0.9], ax(i), 0.45, 1.2)); objs.push(M[i]); }); return M; };
+  const cur = pkt('', 0, 0, 0);
+  const hide = () => { cur.element.style.visibility = 'hidden'; };
+  const at = (x, t) => { cur.element.style.visibility = ''; cur.position.set(x, 1.6, 1.2); txt(cur, t); };
+  hide();
+  await step(tok); // @c 7934.7 key、value 打包放進 linked list
+  let nodes = mkList([12, 5, 30, 8], -3.6);
+  say('把 (key, value) 打包當 data', '塞進 linked list');
+  await step(tok); // @c 7963.8 亂放 insert head
   cd.hl(1);
-  const objs = [], nodes = [], keys = [12, 5, 30, 8];
-  for (let i = 0; i < 4; i++) { nodes.push(lnode(keys[i], -3.6 + i * 2.0, 0.35, 1.2)); objs.push(nodes[i]); if (i) objs.push(arrow(V3(-3.6 + (i - 1) * 2.0 + 0.95, 0.4, 1.2), V3(-3.6 + i * 2.0 - 0.52, 0.4, 1.2))); }
   const g = lnode(20, -5.6, 3.0, 1.2, '#dd8238'); objs.push(g);
-  await anim(tok, 700, (t) => { g.position.y = 3.0 - 2.65 * t; });
+  await anim(tok, 600, (t) => { g.position.y = 3.0 - 2.65 * t; });
   objs.push(arrow(V3(-5.6 + 0.95, 0.4, 1.2), V3(-3.6 - 0.52, 0.4, 1.2)));
-  say('unsorted list：insert 在 head', '不花力氣，O(1)');
-  await beat(tok, 2000);
-  const cur = tag('get 8', 'ptr alt', 0, 0, 0); objs.push(cur);
+  say('東西亂放：每筆都 insert 在 head', '不用假設 key 有順序');
+  await step(tok); // @c 7983.1 不花力氣
+  say('insert：完全不花力氣', 'O(1)');
+  await step(tok); // @c 8002.8 get 整串掃
   const all = [g].concat(nodes);
-  for (let i = 0; i < all.length; i++) { cur.position.set(all[i].position.x, 1.5, 1.2); glow(all[i].userData.data, i === all.length - 1 ? GREEN : GOLD); await beat(tok, 450); }
-  say('get：整串掃過', 'O(n)');
-  await beat(tok, 1600);
+  for (let i = 0; i < all.length; i++) { at(all[i].position.x, 'get 8'); glow(all[i].userData.data, i === all.length - 1 ? GREEN : GOLD); await beat(tok, 400); }
+  say('get：整串掃過才找到', 'O(n)，n = 資料筆數');
+  await step(tok); // @c 8018.1 照 key 排序
+  objs.forEach(kill); objs = []; hide();
   cd.hl(2);
-  say('排好序的 list 也沒有 binary search', 'insert、get 都 O(n)');
-  await beat(tok, 2400);
-  objs.forEach(kill);
-  cd.hl(4);
-  const A = [2, 5, 8, 12, 16, 23, 38], ax = (i) => -4.2 + i * 1.4, M = [];
-  for (let i = 0; i < 7; i++) { cube('', GRAY, [1.25, 0.1, 1.2], ax(i), 0.05, 1.2); tag(String(i), 'idx', ax(i), 0, 2.2); M.push(cube(A[i], colorFor(A[i]), [0.9, 0.7, 0.9], ax(i), 0.45, 1.2)); }
-  const c2 = tag('mid', 'ptr alt', 0, 0, 0);
-  for (const [mi, ok] of [[3, false], [5, true]]) { c2.position.set(ax(mi), 1.6, 1.2); glow(M[mi], ok ? GREEN : GOLD); say(ok ? 'get 23：第 2 次就找到' : 'get 23：mid = 12 < 23，往右', 'sorted array 可以 binary search'); await beat(tok, 1500); glow(M[mi], null); }
-  kill(c2);
-  say('sorted array：get O(log n)', '');
-  await beat(tok, 1400);
-  for (let i = 6; i >= 3; i--) { move(M[i], ax(i + 1), 0.45, 1.2); await beat(tok, 300); }
-  cube(10, colorFor(10), [0.9, 0.7, 0.9], ax(3), 0.45, 1.2, 2.5);
-  say('insert 10：後面全部往後擠', 'O(n)；remove 也要補位');
-  await beat(tok, 2200);
+  nodes = mkList([5, 8, 12, 20, 30], -4.6);
+  say('改成照 key 排好序的 linked list', 'key 必須能比較');
+  await step(tok); // @c 8041.8 insert 找適合位置
+  for (let i = 0; i < nodes.length; i++) { at(nodes[i].position.x, 'insert 35'); await beat(tok, 350); }
+  const n35 = lnode(35, -4.6 + 5 * 2.0, 3.0, 1.2, '#dd8238'); objs.push(n35);
+  await anim(tok, 500, (t) => { n35.position.y = 3.0 - 2.65 * t; });
+  say('insert：要先走到適合的位置', '剛好在最後面 → O(n)');
+  await step(tok); // @c 8057.8 沒有 binary search
+  hide();
+  objs.push(bad('linked list 沒有 binary search', 0, 2.4, 1.2));
+  say('get：linked list 沒有 binary search 可用', '還是 O(n)');
+  await step(tok); // @c 8079.9 改用 array
+  objs.forEach(kill); objs = [];
   cd.hl(3);
-  say('n 是慢的，log n 勉強算快', '256 筆只要 8 步');
-  await beat(tok, 2800);
+  let M = mkArr([12, 5, 30, 8], 8);
+  say('換成 array：data 放進 array 的格子', '');
+  await step(tok); // @c 8095.8 塞在最後
+  const n20 = cube(20, colorFor(20), [0.9, 0.7, 0.9], ax(4), 0.45, 1.2, 2.5); objs.push(n20); M.push(n20);
+  say('unordered key：塞在最後面', 'insert 不花力氣');
+  await step(tok); // @c 8103.6 sequential search
+  for (let i = 0; i < M.length; i++) { at(ax(i), 'get 20'); glow(M[i], i === 4 ? GREEN : GOLD); await beat(tok, 350); }
+  say('get：只能 sequential search', 'O(n)');
+  await step(tok); // @c 8111.5 ordered：擠到中間
+  objs.forEach(kill); objs = []; hide();
+  cd.hl(4);
+  M = mkArr([2, 5, 8, 12, 16, 23, 38], 8);
+  for (let i = 6; i >= 3; i--) { move(M[i], ax(i + 1), 0.45, 1.2); await beat(tok, 250); }
+  const n10 = cube(10, colorFor(10), [0.9, 0.7, 0.9], ax(3), 0.45, 1.2, 2.5); objs.push(n10);
+  M.splice(3, 0, n10);
+  say('ordered key：insert 要擠進中間', '後面全部往後挪 → O(n)');
+  await step(tok); // @c 8125.8 binary search
+  for (const [mi, ok] of [[3, false], [5, false], [6, true]]) { at(ax(mi), 'mid'); glow(M[mi], ok ? GREEN : GOLD); await beat(tok, 600); if (!ok) glow(M[mi], null); }
+  say('key 能比較 → binary search 找 23', 'get：O(log n)');
+  await step(tok); // @c 8132.8 remove 補位
+  hide();
+  objs.push(note('remove：後面的人要補位 → 額外力氣', 0, 2.6, 1.2));
+  say('remove 還要讓後面的人補位', '要花額外的力氣');
+  await step(tok); // @c 8165.7 n 是慢的
+  say('n 對我們來說是慢的', 'n²、n³ 更慢');
+  await step(tok); // @c 8186.9 log n 勉強快
+  say('log n 勉強算快', '256 筆只要 8 步');
 }]);
 
-// 136:40 integer key 直接當 array index
+// 136:59 integer key 直接當 array index
 FRAG.push(['hashlin1-direct-address', 'Key 是小整數：直接當 index', async (tok) => {
   fresh([0, 6, 11], [0, 0.8, 0]);
   const sx = (i) => -5.4 + i * 1.2, slots = [];
-  for (let i = 0; i < 10; i++) { slots.push(cube('', GRAY, [1.05, 0.1, 1.2], sx(i), 0.05, 0.6)); tag(String(i), 'idx', sx(i), 0, 1.6); }
-  tag('array A（櫃子號碼 = key）', 'ptr', 0, 2.4, -1.2);
-  say('key 是 small integer', '直接把 key 當櫃子號碼');
-  await beat(tok, 2400);
-  const cur = tag('', 'ptr alt', 0, 0, 0);
+  const cur = pkt(' ', 0, 1.8, 0.6);
+  const vis = (on) => { cur.element.style.visibility = on ? '' : 'hidden'; };
+  vis(false);
   const vals = {};
-  for (const k of [3, 7]) {
-    cur.position.set(sx(k), 1.8, 0.6); txt(cur, 'A[' + k + ']');
-    vals[k] = cube('v' + hlSub(k), '#2fc092', [0.9, 0.7, 0.9], sx(k), 0.45, 0.6, 2.5);
-    say('insert(' + k + ', v' + hlSub(k) + ')：A[' + k + '] = v' + hlSub(k), '一次 assignment，O(1)');
-    await beat(tok, 1900);
-  }
+  await step(tok); // @c 8226.8 key 當 array index
+  for (let i = 0; i < 10; i++) { slots.push(cube('', GRAY, [1.05, 0.1, 1.2], sx(i), 0.05, 0.6)); tag(String(i), 'idx', sx(i), 0, 1.6); }
+  say('key 本來就是 integer', '乾脆把 key 當 array index');
+  await step(tok); // @c 8239.8 櫃子號碼
+  tag('array A（櫃子號碼 = key）', 'ptr', 0, 2.4, -1.2);
+  say('key 就是櫃子的號碼', '');
+  await step(tok); // @c 8246.8 small integer
+  note('small integer：範圍有限（這裡 0～9）', 0, 3.2, -1.2);
+  say('先假設 key 是 small integer', '範圍有限、不太大');
+  await step(tok); // @c 8260.8 只放 value
+  say('不用把 key 一起塞進去', '櫃子裡只放 value');
+  await step(tok); // @c 8279.8 insert = assignment
+  vis(true);
+  for (const k of [3, 7]) { cur.position.set(sx(k), 1.8, 0.6); txt(cur, 'A[' + k + ']'); vals[k] = cube('v' + hlSub(k), '#2fc092', [0.9, 0.7, 0.9], sx(k), 0.45, 0.6, 2.5); await beat(tok, 700); }
+  say('insert：A[key] = value', '一次 assignment → O(1)');
+  await step(tok); // @c 8284.8 get
   cur.position.set(sx(7), 1.8, 0.6); txt(cur, 'get 7');
   glow(vals[7], GREEN);
-  say('get(7)：直接打開 7 號櫃子', 'v = A[7]，O(1)');
-  await beat(tok, 2400);
+  say('get(7)：打開 7 號櫃子拿出來', 'v = A[7] → O(1)');
+  await step(tok); // @c 8299.8 咚！跳過去
   glow(vals[7], null);
+  txt(cur, '咚！');
+  await travel(tok, cur, V3(sx(0), 1.8, 0.6), V3(sx(3), 1.8, 0.6), 500);
+  glow(vals[3], GREEN);
+  say('array 的特性：馬上算出櫃子在哪', '咚！跳過去打開就拿到');
+  await step(tok); // @c 8318.9 super big array
+  glow(vals[3], null); vis(false);
   const gb = ghostBox('#9b7ef4', 13, 0.4, 1.0); gb.position.set(0, 0.25, -2.6);
   tag('key 到 10000 → 要 10001 格', 'ptr', 0, 1.2, -2.6);
-  say('key 不小：需要 super big array', '大部分格子都空著');
-  await beat(tok, 2800);
+  say('key 不小：需要 super big array', '');
+  await step(tok); // @c 8333.7 很多地方是空的
+  slots.forEach((s, i) => { if (!vals[i]) glow(s, RED); });
+  say('大部分格子都空著', '浪費空間');
+  await step(tok); // @c 8358.8 空間換時間
+  slots.forEach((s) => glow(s, null));
   say('用空間換時間', 'space-time trade-off');
-  await beat(tok, 3600);
+  await step(tok); // @c 8375.8 縮小空間
+  say('不想要那麼大的空間？', '→ 把 key 壓縮到小一點的範圍');
 }]);
 
-// 139:30 不要超大 array：convert（→ integer）＋ compress（→ small integer）
+// 139:56 不要超大 array：convert（→ integer）＋ compress（→ small integer）
 FRAG.push(['hashlin1-convert-compress', 'Convert 再 compress', async (tok) => {
   fresh([0, 5.6, 11], [0, 1.4, 0]);
   const X = [-5.2, -1.8, 1.6, 5.0];
-  tag('key', 'idx', X[0], 2.0, -1.2); tag('integer', 'idx', X[1], 2.0, -1.2); tag('small integer', 'idx', X[2], 2.0, -1.2); tag('A[0..99]', 'idx', X[3], 2.0, -1.2);
-  const arr = []; for (let i = 0; i < 5; i++) arr.push(cube(i === 4 ? '…' : '', GRAY, [0.4, 0.1, 1.0], X[3] - 1.0 + i * 0.5, 0.05, 0));
-  say('不想要超大 array → 縮小', '只有 100 格，key 範圍卻有 1 萬');
-  await beat(tok, 2800);
-  const k1 = cube(4567, '#4b9ee2', [1.2, 0.7, 0.9], X[1], 0.35, 0, 2.5);
-  await beat(tok, 900);
+  let k1 = null, s1 = null, k0 = null, s2 = null;
+  await step(tok); // @c 8395.6 只有 100 格、key 範圍 1 萬
+  tag('A[0..99]', 'idx', X[3], 2.0, -1.2);
+  for (let i = 0; i < 5; i++) cube(i === 4 ? '…' : '', GRAY, [0.4, 0.1, 1.0], X[3] - 1.0 + i * 0.5, 0.05, 0);
+  note('key 範圍：0～10000', X[1], 2.6, -1.2);
+  say('array 只有 100 格，key 範圍卻有 1 萬', '要把 key 壓進這 100 格');
+  await step(tok); // @c 8412.7 事情一：壓縮
+  tag('integer', 'idx', X[1], 2.0, -1.2); tag('small integer', 'idx', X[2], 2.0, -1.2);
+  k1 = cube(4567, '#4b9ee2', [1.2, 0.7, 0.9], X[1], 0.35, 0, 2.5);
   arrow(V3(X[1] + 0.7, 0.4, 0), V3(X[2] - 0.7, 0.4, 0)); tag('compress', 'ptr alt', (X[1] + X[2]) / 2, 1.2, 0);
-  const s1 = cube(67, '#2fc092', [1.0, 0.7, 0.9], X[2], 0.35, 0, 2.5);
+  s1 = cube(67, '#2fc092', [1.0, 0.7, 0.9], X[2], 0.35, 0, 2.5);
   say('事情一：大整數壓縮成小整數', '例：4567 mod 100 = 67');
-  await beat(tok, 2600);
+  await step(tok); // @c 8423.4 事情二：不是 integer
   kill(k1); kill(s1);
-  const k0 = cube('apple', '#e55a9b', [1.3, 0.7, 0.9], X[0], 0.35, 0, 2.5);
+  tag('key', 'idx', X[0], 2.0, -1.2);
+  k0 = cube('apple', '#e55a9b', [1.3, 0.7, 0.9], X[0], 0.35, 0, 2.5);
   say('事情二：key 根本不是 integer？', '例如 string "apple"');
-  await beat(tok, 2200);
+  await step(tok); // @c 8438.8 convert
   arrow(V3(X[0] + 0.75, 0.4, 0), V3(X[1] - 0.7, 0.4, 0)); tag('convert', 'ptr alt', (X[0] + X[1]) / 2, 1.2, 0);
   cube(530, '#4b9ee2', [1.2, 0.7, 0.9], X[1], 0.35, 0, 2.5);
   say('先 convert 成 integer', '示意：字元碼加總 = 530');
-  await beat(tok, 2400);
-  const s2 = cube(30, '#2fc092', [1.0, 0.7, 0.9], X[2], 0.35, 0, 2.5);
-  say('再 compress 成 small integer', '530 mod 100 = 30');
-  await beat(tok, 2200);
+  await step(tok); // @c 8447.8 再 compress
+  s2 = cube(30, '#2fc092', [1.0, 0.7, 0.9], X[2], 0.35, 0, 2.5);
+  say('再 compress 到 array 的範圍', '530 mod 100 = 30');
+  await step(tok); // @c 8466.8 三件事都快
   arrow(V3(X[2] + 0.6, 0.4, 0), V3(X[3] - 1.3, 0.4, 0));
+  const p = pkt('A[30]', X[2], 1.6, 0);
+  await travel(tok, p, V3(X[2], 1.6, 0), V3(X[3] - 0.5, 1.0, 0), 800);
   glow(k0, GOLD); glow(s2, GREEN);
-  say('convert、compress、array 都快', '→ 快速的 map');
-  await beat(tok, 3000);
+  say('convert 快、compress 快、array 也快', '→ 快速的 map（如意算盤）');
+  await step(tok); // @c 8498.8 突破「小」和「integer」
+  note('突破「小」→ compress；突破「integer」→ convert', 0, 3.3, -1.2);
+  say('array 只適合小的 integer key', '兩件事都做到，就能突破限制');
+  await step(tok); // @c 8531.8 key → small integer
+  good('任何 key → small integer', 0, 4.1, -1.2);
+  say('出發點：把任何 key 轉成 small integer', '');
 }]);
 
-// 146:05 h = hash code + compress；A[h(key)]；bucket array
+// 146:16 h = hash code + compress；A[h(key)]；bucket array
 FRAG.push(['hashlin1-h-pipeline', 'h(key)：hash code ＋ compress，放進 bucket array', async (tok) => {
   fresh([0, 6.4, 11.5], [0, 1.6, 0]);
-  const cd = code(['h(key) = compress( hashcode(key) )', 'insert:  A[h(key)] = value', 'get:     v = A[h(key)]'], 0, 5.6, 0.55, -3.0);
+  const cd = code(['h(key) = compress( hashcode(key) )', 'insert:  A[h(key)] = value', 'get:     v = A[h(key)]'], 0, 6.6, 0.55, -3.4);
+  const showLine = (i) => { cd.ls[i].element.style.visibility = ''; };
+  cd.ls.forEach((l) => { l.element.style.visibility = 'hidden'; });
   const sx = (i) => -5.4 + i * 1.2;
   for (let i = 0; i < 10; i++) { cube('', GRAY, [1.05, 0.1, 1.2], sx(i), 0.05, 0.8); tag(String(i), 'idx', sx(i), 0, 1.8); }
-  tag('bucket array A（示意 10 格）', 'ptr', 0, 0, 2.8);
-  cd.hl(0);
-  say('key → integer：hash code', 'integer → small integer：compress');
-  await beat(tok, 2800);
-  say('合起來叫 hash function h', '示意：字元碼加總 mod 10');
-  await beat(tok, 2400);
-  cd.hl(1);
-  const cur = tag('', 'ptr alt', 0, 0, 0);
-  cur.position.set(sx(0), 2.0, 0.8); txt(cur, 'h = 0');
-  const ap = cube('apple', '#e55a9b', [1.0, 0.6, 0.9], sx(0), 0.4, 0.8, 2.5);
-  say('insert apple：h = 530 mod 10 = 0', 'A[0] = apple 的 value');
-  await beat(tok, 2400);
-  cd.hl(2);
+  const PX = [-4.6, 0, 4.6], PY = 3.4, PZ = -1.6;
+  const cur = pkt(' ', 0, 2.0, 0.8);
+  cur.element.style.visibility = 'hidden';
+  let ap = null;
+  await step(tok); // @c 8785.8 一個函式：key → small integer
+  tag('key', 'idx', PX[0], PY, PZ); tag('small integer', 'idx', PX[2], PY, PZ);
+  const a0 = arrow(V3(PX[0] + 0.8, PY, PZ), V3(PX[2] - 1.2, PY, PZ));
+  say('用一個函式：從 key 算出 small integer', '');
+  await step(tok); // @c 8803.9 其實兩步
+  kill(a0);
+  tag('integer', 'idx', PX[1], PY, PZ);
+  arrow(V3(PX[0] + 0.8, PY, PZ), V3(PX[1] - 0.9, PY, PZ)); arrow(V3(PX[1] + 0.9, PY, PZ), V3(PX[2] - 1.2, PY, PZ));
+  say('中間其實有兩步', 'key → integer → small integer');
+  await step(tok); // @c 8814.4 叫 h
+  showLine(0); cd.hl(0);
+  say('這個函式通常叫 h', '');
+  await step(tok); // @c 8824.8 hash code
+  tag('hash code', 'ptr alt', (PX[0] + PX[1]) / 2, PY + 0.6, PZ);
+  say('第一步 key → integer：叫 hash code', '依 key 的內容算出一個數字');
+  await step(tok); // @c 8852.8 compress
+  tag('compress', 'ptr alt', (PX[1] + PX[2]) / 2, PY + 0.6, PZ);
+  say('第二步 integer → small integer：compress', '');
+  await step(tok); // @c 8875.8 insert A[h(key)] = value
+  showLine(1); cd.hl(1);
+  cur.element.style.visibility = ''; cur.position.set(sx(0), 2.0, 0.8); txt(cur, 'h = 0');
+  ap = cube('apple', '#e55a9b', [1.0, 0.6, 0.9], sx(0), 0.4, 0.8, 2.5);
+  say('insert：算出 h(key)，把 value 放進 A[h(key)]', 'apple：530 mod 10 = 0');
+  await step(tok); // @c 8901.5 get
+  showLine(2); cd.hl(2);
   glow(ap, GREEN);
-  say('get apple：再算一次 h，直接拿', 'v = A[h(apple)]');
-  await beat(tok, 2200);
+  say('get：v = A[h(key)]', '再算一次 h，直接打開櫃子');
+  await step(tok); // @c 8936.8 bucket array
   glow(ap, null);
+  tag('bucket array A（示意 10 格）', 'ptr', 0, 0, 2.8);
+  say('放東西的櫃子 A 叫 bucket array', 'bucket = 一桶一桶');
+  await step(tok); // @c 8959.8 很多 value 共用一櫃
   cd.hl(1);
-  cur.position.set(sx(2), 2.0, 0.8); txt(cur, 'h = 2');
+  cur.position.set(sx(2), 2.6, 0.8); txt(cur, 'h = 2');
   cube('act', '#4b9ee2', [1.0, 0.6, 0.9], sx(2), 0.4, 0.8, 2.5);
-  say('act：312 mod 10 = 2', '放進 A[2]');
-  await beat(tok, 1800);
+  await beat(tok, 500);
   const ct = cube('cat', '#9b7ef4', [1.0, 0.6, 0.9], sx(2), 1.05, 0.8, 2.5);
   glow(ct, RED);
-  say('cat 也是 312 → 也要放 A[2]', '一個櫃子可能要放好幾筆');
-  await beat(tok, 2400);
-  say('所以叫 bucket（一桶一桶）', 'h 決定 key 用哪個櫃子');
-  await beat(tok, 2800);
+  say('好幾個 value 可能塞進同一個櫃子', 'act、cat 加總都是 312 → 都到 A[2]');
+  await step(tok); // @c 8967.8 h = hash function
+  say('h 決定這個 key 用哪個櫃子', 'h 就叫 hash function');
 }]);
 
-// 149:45 perfect hashing、鴿籠原理、collision
+// 150:02 perfect hashing、鴿籠原理、collision
 FRAG.push(['hashlin1-pigeonhole', 'Perfect hashing 與鴿籠原理', async (tok) => {
   fresh([0, 6, 11], [0, 1.2, 0]);
-  const top = [];
+  const cx = (i) => -2.4 + i * 2.4;
+  const pig = [];
+  await step(tok); // @c 9002.9 100 key 一對一 100 格
   for (let i = 0; i < 5; i++) { cube('', GRAY, [1.05, 0.1, 1.1], -3.2 + i * 1.6, 0.05, -2.2); tag(String(i), 'idx', -3.2 + i * 1.6, 0, -1.3); }
-  for (let i = 0; i < 5; i++) { top.push(cube('k' + hlSub(i), hlOrd(i), [0.8, 0.6, 0.8], -3.2 + ((i * 3) % 5) * 1.6, 0.4, -2.2, 2.5)); await beat(tok, 350); }
-  say('最完美：100 個 key 剛好對 100 格', 'perfect hashing（示意 5 ↔ 5）');
-  await beat(tok, 2600);
-  say('大部分時候 key 比格子多', 'key 範圍 0～1 萬，只有 100 格');
-  await beat(tok, 2600);
-  const cx = (i) => -2.4 + i * 2.4, cnt = [0, 0, 0];
-  for (let i = 0; i < 3; i++) { cube('', '#c9b48a', [1.6, 0.1, 1.4], cx(i), 0.05, 2.0); tag('籠 ' + (i + 1), 'idx', cx(i), 0, 3.0); }
-  say('鴿籠原理：3 個籠子、5 隻鴿子', '');
-  await beat(tok, 1600);
-  for (let i = 0; i < 5; i++) {
-    const c = i % 3, m = cube('鴿' + (i + 1), '#e5e0d5', [0.7, 0.6, 0.7], cx(c), 0.35 + cnt[c] * 0.65, 2.0, 2.5); cnt[c]++;
-    if (cnt[c] > 1) { glow(m, RED); say('鴿' + (i + 1) + ' 只能擠進籠 ' + (c + 1), '至少兩隻擠同一籠'); }
-    await beat(tok, 900);
-  }
-  say('只有 4 隻也一樣會擠', '');
-  await beat(tok, 2000);
-  say('兩個 key 的 h 值一樣 = collision', 'h(k₁) = h(k₂)，k₁ ≠ k₂');
-  await beat(tok, 2600);
-  say('兩個難題：好的 h、處理 collision', '任何 h 都可能撞');
-  await beat(tok, 2800);
+  for (let i = 0; i < 5; i++) { cube('k' + hlSub(i), hlOrd(i), [0.8, 0.6, 0.8], -3.2 + ((i * 3) % 5) * 1.6, 0.4, -2.2, 2.5); await beat(tok, 300); }
+  say('最完美：100 個 key 一對一對到 100 格', '示意：5 個 key ↔ 5 格');
+  await step(tok); // @c 9061.8 perfect hashing
+  good('perfect hashing', 0, 2.2, -2.2);
+  say('這叫 perfect hashing', '');
+  await step(tok); // @c 9068.8 不會有空櫃子
+  say('沒有空櫃子沒人用', '不必開 200 格只用 50 格');
+  await step(tok); // @c 9088.8 key 比 K 多
+  for (let i = 5; i < 7; i++) { const m = cube('k' + hlSub(i), hlOrd(i), [0.8, 0.6, 0.8], 5.0 + (i - 5) * 1.0, 0.4, -2.2, 2.5); glow(m, RED); await beat(tok, 300); }
+  say('大部分時候：key 比櫃子數 K 多', '多出來的放哪？');
+  await step(tok); // @c 9118.7 0～1 萬 vs 100 格
+  note('key：0～10000，櫃子：只有 100 個', 0, 3.0, -2.2);
+  say('例：key 範圍 0～1 萬，只有 100 個櫃子', '做不到 perfect hashing');
+  await step(tok); // @c 9144.3 某兩個 key h 值一樣
+  say('不管用哪個 h', '一定有兩個 key 算出一樣的 h 值');
+  await step(tok); // @c 9155.4 鴿籠原理
+  for (let i = 0; i < 3; i++) { cube('', '#c9b48a', [2.0, 0.1, 1.4], cx(i), 0.05, 2.0); tag('籠 ' + (i + 1), 'idx', cx(i), 0, 3.0); }
+  const cnt = [0, 0, 0];
+  for (let i = 0; i < 5; i++) { const c = i % 3; pig.push(buddy('鴿' + (i + 1), '', '#e5e0d5', cx(c) + (cnt[c] ? 0.5 : -0.5), 0.05, 2.0, 0.55)); cnt[c]++; await beat(tok, 300); }
+  pig[3].mood('wow'); pig[0].mood('wow'); pig[4].mood('wow'); pig[1].mood('wow');
+  say('鴿籠原理：3 個籠子、5 隻鴿子', '至少兩隻擠同一籠');
+  await step(tok); // @c 9171.8 4 隻也一樣
+  kill(pig[4].g); pig[1].mood('calm');
+  say('只有 4 隻也一樣', '至少兩隻擠在同一籠');
+  await step(tok); // @c 9202.8 collision
+  bad('collision：h(k₁) = h(k₂)，但 k₁ ≠ k₂', 0, 1.7, 3.6);
+  say('兩個 key 擠到同一個櫃子', '= collision（撞在一起）');
+  await step(tok); // @c 9235.8 兩個難題
+  note('難題一：找好的 hash function', -3.2, 3.8, -2.2); note('難題二：處理 collision', 3.2, 3.8, -2.2);
+  say('hash 的難點：好的 hash function', '＋ 處理 collision');
+  await step(tok); // @c 9247.8 任何 h 都可能撞
+  say('就算 h 很好，還是可能 collision', 'key 一多，數學上躲不掉');
 }]);
 
-// 154:41 string 的 hash code：第一個字母 vs 全部加總、mod 100
+// 154:59 string 的 hash code：第一個字母 vs 全部加總、mod 100
 FRAG.push(['hashlin1-string-hash', 'String 的 hash code：apple 與 act', async (tok) => {
   fresh([0, 6, 11], [0, 1.0, 0]);
   const sx = (i) => -6 + i * 0.48;
+  let act = null;
+  await step(tok); // @c 9304.8 string → 數字
+  say('key 是 string：怎麼變成一個數字？', '先不管比大小');
+  await step(tok); // @c 9338.8 apple
+  const w = tag('apple', 'pkt', -2.0, 3.4, -1.0);
+  say('例如 string "apple"', '');
+  await step(tok); // @c 9349.5 看第一個 character
+  bub('只看第一個字：string[0] = a', 0.8, 3.4, -1.0);
+  say('只看第一個 character', 'string[0]');
+  await step(tok); // @c 9364.8 26 個字母 → 0～25
   for (let i = 0; i < 26; i++) { cube('', GRAY, [0.42, 0.1, 1.1], sx(i), 0.05, 0); tag('abcdefghijklmnopqrstuvwxyz'[i], 'idx', sx(i), 0, 0.9); }
   tag('26 格 array', 'ptr', 0, 0, 2.0);
-  say('key 是 string，例如 apple', 'hashcode = 第一個字母 → 0～25');
-  await beat(tok, 2600);
+  say('只有 26 個英文字母', 'hashcode = 0～25');
+  await step(tok); // @c 9398.8 apple → [0]
+  await travel(tok, w, V3(-2.0, 3.4, -1.0), V3(sx(0) + 0.9, 0.6, -1.2), 700);
   cube('apple', '#e55a9b', [0.45, 0.55, 0.9], sx(0), 0.35, 0, 2.5);
-  tag('apple', 'ptr alt', sx(0) + 0.9, 0.6, -1.2);
-  say('apple → a → [0]', 'hashcode(apple) = 0');
-  await beat(tok, 2000);
-  const act = cube('act', '#4b9ee2', [0.45, 0.55, 0.9], sx(0), 0.95, 0, 2.5);
-  tag('act', 'ptr alt', sx(0) + 0.9, 1.3, -1.2);
+  say('apple → a → 放進 [0]', '');
+  await step(tok); // @c 9410.2 act 也到 [0]
+  act = cube('act', '#4b9ee2', [0.45, 0.55, 0.9], sx(0), 0.95, 0, 2.5);
+  tag('act', 'pkt', sx(0) + 0.9, 1.3, -1.2);
   glow(act, RED);
-  say('act 也是 a 開頭 → 也到 [0]', 'collision：要共用同一格');
-  await beat(tok, 2600);
-  say('改成每個字通通加起來', 'apple：97+112+112+108+101 = 530');
-  await beat(tok, 2800);
-  say('act 加起來', '97+99+116 = 312');
-  await beat(tok, 2200);
-  say('加總可能超級大 → 要 compress', '只有 100 格：mod 100');
-  await beat(tok, 2400);
-  tag('apple → 530 mod 100 = 30', 'ptr', -2.6, 3.0, -2.2); tag('act → 312 mod 100 = 12', 'ptr', 2.8, 3.0, -2.2);
+  say('act 也是 a 開頭 → 也到 [0]', '');
+  await step(tok); // @c 9424.8 collision
+  bad('collision：apple、act 共用 [0]', -3.0, 2.2, 0);
+  say('很多 key 擠少數格子 → 總會共用一格', '這就是 collision');
+  await step(tok); // @c 9458.8 用上所有字？
   glow(act, null);
-  say('得到 0～99 之間的數字', '不一定要這樣算，只是示範');
-  await beat(tok, 3000);
+  say('只用一個字：簡單但太粗糙', '能不能把每個字都用上？');
+  await step(tok); // @c 9476.8 每個字加起來
+  note('apple：97+112+112+108+101 = 530', -2.6, 4.6, -2.2); note('act：97+99+116 = 312', 2.8, 4.6, -2.2);
+  say('把每個字的字元碼通通加起來', '');
+  await step(tok); // @c 9506.8 範圍太大
+  say('加起來可能超級大', '範圍太大 → 要 compress');
+  await step(tok); // @c 9532.8 mod 100
+  good('530 mod 100 = 30', -2.6, 3.8, -2.2); good('312 mod 100 = 12', 2.8, 3.8, -2.2);
+  say('只有 100 格：mod 100', '得到 0～99 之間的數字');
+  await step(tok); // @c 9552.8 不一定要這樣算
+  say('不一定要這樣算、這樣 compress', '只是示範 hash code ＋ compress');
 }]);
 
-// 159:20 壞的 hash function：永遠回傳 0；好的要分散用滿 k 格
+// 160:12 壞的 hash function：永遠回傳 0；好的要分散用滿 k 格
 FRAG.push(['hashlin1-bad-hash', '壞 hash：什麼都回傳 0', async (tok) => {
   fresh([0, 6.2, 11.5], [0, 1.8, 0]);
   const sx = (i) => -4.9 + i * 1.4, slots = [];
   for (let i = 0; i < 8; i++) { slots.push(cube('', GRAY, [1.2, 0.1, 1.2], sx(i), 0.05, 0)); tag(String(i), 'idx', sx(i), 0, 1.0); }
-  say('壞例子：不管什麼 key 都回傳 0', 'h(key) = 0');
-  await beat(tok, 2400);
   const L = 'ABCDEFGH', ms = [];
-  for (let i = 0; i < 8; i++) { ms.push(cube(L[i], hlOrd(i), [0.8, 0.62, 0.8], sx(0), 0.36 + i * 0.66, 0, 2.5)); await beat(tok, 380); }
-  say('全部擠在 [0]，其他格沒人用', '一直在處理 collision');
+  let h = null, quote = null;
+  await step(tok); // @c 9611.8 最難的是 collision
+  say('hash 最困難的問題：collision', '撞在一起');
+  await step(tok); // @c 9622.8 兩部分
+  say('兩件事：撞了怎麼解決？', '能不能一開始就少撞一點？');
+  await step(tok); // @c 9628.8 永遠回傳 0
+  h = buddy('h', '0', '#f4a56a', 5.8, 0, 2.6, 0.8);
+  say('壞例子：不管什麼 key 都回傳 0', 'h(key) = 0');
+  await step(tok); // @c 9641.8 記者問什麼都同一句
+  quote = bub('不管問什麼：都回答「0」', 5.4, 2.2, 2.6);
+  h.mood('happy');
+  say('就像不管問什麼，都只回同一句', '');
+  await step(tok); // @c 9652.8 通通串在 0
+  kill(quote);
+  for (let i = 0; i < 8; i++) { ms.push(cube(L[i], hlOrd(i), [0.8, 0.62, 0.8], sx(0), 0.36 + i * 0.66, 0, 2.5)); await beat(tok, 250); }
+  say('資料通通擠在 [0]', '');
+  await step(tok); // @c 9661.8 其他格沒人用
   for (let i = 1; i < 8; i++) glow(slots[i], RED);
-  await beat(tok, 2800);
+  h.mood('sad');
+  say('其他格都沒人用', '一直在 [0] 處理 collision');
+  await step(tok); // @c 9675.8 分散一點
   slots.forEach((s) => glow(s, null));
   const to = [3, 0, 6, 1, 7, 4, 2, 5];
-  for (let i = 0; i < 8; i++) { move(ms[i], sx(to[i]), 0.36, 0); await beat(tok, 300); }
-  say('好的 h：分散、把 k 格都用到', '少撞，空間用得最平均');
-  await beat(tok, 3000);
-  say('下一步：設計好 h、處理 collision', '→ hash table');
-  await beat(tok, 2800);
+  for (let i = 0; i < 8; i++) { move(ms[i], sx(to[i]), 0.36, 0); await beat(tok, 250); }
+  h.set('分散'); h.mood('happy');
+  say('希望 h 分散一點：k 格都用到', '撞在一起的機會變少');
+  await step(tok); // @c 9693.8 空間最平均
+  good('空間用得最平均', 0, 2.0, 0);
+  say('空間也用得最平均', '');
+  await step(tok); // @c 9728.8 hash table 要處理 collision
+  say('hash table：設計好 h ＋ 處理 collision', '下一次的重點');
 }]);
 
-// 164:39 array of pointers：櫃子放小紙條指向 linked list
+// 164:40 array of pointers：櫃子放小紙條指向 linked list
 FRAG.push(['hashlin1-chain-preview', '櫃子放小紙條：linked list 接住 collision', async (tok) => {
   fresh([0, 6.4, 11], [0, 0.6, 0]);
   const sx = (i) => -4.4 + i * 2.2, sz = -2.8;
   for (let i = 0; i < 5; i++) { cube('', GRAY, [1.8, 0.1, 1.2], sx(i), 0.05, sz); tag(String(i), 'idx', sx(i), 0, sz - 1.0); }
-  say('array 的櫃子大小固定', '撞了就放不下第二筆');
-  await beat(tok, 2400);
-  say('改放一張小紙條（pointer）', '指到一條 linked list');
-  await beat(tok, 2200);
   const len = [0, 0, 0, 0, 0];
   const add = async (w, b) => {
     const z = -1.3 + len[b] * 1.6;
@@ -2220,14 +2698,37 @@ FRAG.push(['hashlin1-chain-preview', '櫃子放小紙條：linked list 接住 co
     arrow(V3(sx(b), 0.4, prevZ + 0.6), V3(sx(b), 0.4, z - 0.55));
     const g = lnode(w, sx(b), 3.0, z, hlOrd(len[b] + b)); len[b]++;
     await anim(tok, 500, (t) => { g.position.y = 3.0 - 2.65 * t; });
-    say(w + ' → bucket ' + b, len[b] > 1 ? 'collision：接在串列後面' : '紙條指向第一個 node');
-    await beat(tok, 1300);
   };
-  await add('apple', 0); await add('act', 0); await add('bat', 1); await add('cat', 2); await add('fig', 0);
-  say('linked list 可以自由變長', '一格放得下任意多筆');
-  await beat(tok, 2600);
-  say('collision handling 一定要有', '丟掉、linked list、vector 長大…');
-  await beat(tok, 2800);
+  let ap = null, ac = null, paper = null;
+  await step(tok); // @c 9879.8 同學：array of pointers
+  bub('同學：用 array of pointers 處理 collision？', 0, 2.8, sz);
+  say('同學提議：array of pointers', '能不能處理 collision？');
+  await step(tok); // @c 9896.8 不放 key，放小紙條
+  paper = prop('note', sx(0), 0.12, sz, 1.4); bob(paper, 0.04);
+  say('array 裡不放 key，放一張小紙條', '');
+  await step(tok); // @c 9903.8 兩筆要放同一格
+  ap = cube('apple', '#e55a9b', [1.3, 0.6, 0.9], sx(0) - 0.7, 1.6, sz, 2.5);
+  ac = cube('act', '#4b9ee2', [1.3, 0.6, 0.9], sx(0) + 0.7, 1.6, sz, 2.5); glow(ac, RED);
+  say('兩筆不同的資料要放同一格', '櫃子得放得下兩張紙條');
+  await step(tok); // @c 9919.8 櫃子固定大小
+  bad('array 的櫃子：大小固定', 3.0, 1.6, sz);
+  say('可是 array 的櫃子大小是固定的', '');
+  await step(tok); // @c 9952.8 要變動大小
+  say('collision 時，櫃子好像得能變大小', '');
+  await step(tok); // @c 9959.8 放 pointer
+  kill(ap); kill(ac);
+  say('櫃子裡放一個 pointer（一張小紙條）', '');
+  await step(tok); // @c 9964.8 指到 linked list
+  await add('apple', 0); await add('act', 0); await add('bat', 1);
+  say('小紙條指到一條 linked list', 'linked list 很容易變長');
+  await step(tok); // @c 9984.8 丟掉也是一種
+  note('撞了就丟掉：也算一種處理（不一定好）', -1.2, 3.4, sz);
+  say('就算決定把東西丟掉', '也是一種 collision handling');
+  await step(tok); // @c 10008.8 vector 長大
+  note('或像 vector：array 動態長大', 2.4, 4.1, sz);
+  say('或像 vector 一樣讓 array 動態長大', '');
+  await step(tok); // @c 10029.8 下次講
+  say('好的 hash function 也會 collision', 'collision handling 一定要有 → 下次講');
 }]);
   }
 

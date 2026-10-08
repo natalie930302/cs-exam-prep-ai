@@ -1185,7 +1185,7 @@
   "label": "台大林軒田 DSA Heap / Hash Table",
   "points": 225,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "SLsHKh_OUEM": {
   "label": "Master's Theorem Explained",
