@@ -1,0 +1,831 @@
+{
+ "video": "tTFolqL1TX4",
+ "label": "交大江蕙如 Lec05 Chapter 2 Algorithm Analysis (2/2)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場與 O、Ω、Θ 回顧",
+   "scene": "algbari1-abuse-eq",
+   "points": [
+    {
+     "text": "今天收尾 asymptotic analysis，再用它來看 stable matching 的實作要選什麼 data structure。",
+     "t": 15
+    },
+    {
+     "text": "回顧三個 notation：upper bound Big-O、lower bound Big-Ω、tight bound Θ。",
+     "t": 63
+    },
+    {
+     "text": "證明時要 by definition：找出適當的 c 和 n₀ 讓不等式成立。",
+     "t": 93
+    },
+    {
+     "text": "習慣寫 T(n) = O(f(n))，這個等號其實是 abuse。",
+     "t": 144
+    },
+    {
+     "text": "真正意思比較像「屬於」：T(n) ∈ O(f(n))。",
+     "t": 153
+    }
+   ]
+  },
+  {
+   "title": "性質：transitivity",
+   "scene": "algbari1-props",
+   "params": {
+    "which": "trans"
+   },
+   "points": [
+    {
+     "text": "這頁列出 O、Ω、Θ 的性質，每條都能 by definition 自己證。",
+     "t": 163
+    },
+    {
+     "text": "Transitivity（遞移性）：對 Big-O、Big-Ω、Θ 都成立。",
+     "t": 201
+    },
+    {
+     "text": "若 g 是 f 的 upper bound、h 是 g 的 upper bound……",
+     "t": 222
+    },
+    {
+     "text": "那 h 一定也是 f 的 upper bound：f = O(g)、g = O(h) ⇒ f = O(h)。",
+     "t": 234
+    },
+    {
+     "text": "lower bound 也一樣：比它小、再比它小。",
+     "t": 241
+    }
+   ]
+  },
+  {
+   "title": "Rule of sums：取 max",
+   "scene": "algbari1-rule-sums",
+   "points": [
+    {
+     "text": "Rule of sums：f + g 的 O / Ω / Θ，取兩者較大的那個來分析。",
+     "t": 251
+    },
+    {
+     "text": "f₁ + f₂ = O(max(g₁, g₂))。",
+     "t": 270
+    },
+    {
+     "text": "用途：algorithm 有很多行，每行所需步數不同。",
+     "t": 285
+    },
+    {
+     "text": "整個 algorithm 的時間 = 每一行的 running time 全部加起來。",
+     "t": 319
+    },
+    {
+     "text": "結果等同於只看最花時間的那一步。",
+     "t": 331
+    },
+    {
+     "text": "某步驟特別花時間時，bottleneck 就綁在那一步。",
+     "t": 349
+    }
+   ]
+  },
+  {
+   "title": "Rule of products：迴圈 = 圈數 × 每圈",
+   "scene": "algbari1-rule-products",
+   "points": [
+    {
+     "text": "Rule of products：f₁ 的界是 g₁、f₂ 的界是 g₂，相乘的界就是 g₁·g₂。",
+     "t": 360
+    },
+    {
+     "text": "最常用在 for loop、while loop。",
+     "t": 397
+    },
+    {
+     "text": "先看迴圈會執行多少圈 → 得到 f₁。",
+     "t": 420
+    },
+    {
+     "text": "再看每個 iteration 內部要花多少時間 → 得到 f₂。",
+     "t": 432
+    },
+    {
+     "text": "整個迴圈的時間就是 f₁ × f₂。",
+     "t": 443
+    },
+    {
+     "text": "Rule of sums 與 rule of products 是分析 algorithm 最常用的兩招。",
+     "t": 465
+    }
+   ]
+  },
+  {
+   "title": "Transpose symmetry、reflexivity、symmetry",
+   "scene": "algbari1-props",
+   "params": {
+    "which": "sym"
+   },
+   "points": [
+    {
+     "text": "Transpose symmetry：g 是 f 的 upper bound ⇔ f 是 g 的 lower bound。",
+     "t": 481
+    },
+    {
+     "text": "Reflexivity（反身性）：f 是自己的 upper、lower、tight bound。",
+     "t": 499
+    },
+    {
+     "text": "Symmetry（對稱性）只對 Θ：f = Θ(g) ⇔ g = Θ(f)。",
+     "t": 511
+    },
+    {
+     "text": "兩個函數的表現一模一樣。",
+     "t": 525
+    },
+    {
+     "text": "這些性質都很直覺，回家挑幾條用定義證明看看。",
+     "t": 541
+    }
+   ]
+  },
+  {
+   "title": "常見的複雜度名稱",
+   "scene": "algbari1-poly-ladder",
+   "points": [
+    {
+     "text": "Polynomial running time：算出來是 O(p(n))，p(n) 為 nᵈ 形式、d 是常數。",
+     "t": 577
+    },
+    {
+     "text": "最低是 n⁰ = 1，寫 O(1)：constant，跟 input size 無關。",
+     "t": 654
+    },
+    {
+     "text": "再高一點是 log：logarithmic。",
+     "t": 691
+    },
+    {
+     "text": "n^0.5 = √n：還不到 n 的一次方，叫 sublinear。",
+     "t": 711
+    },
+    {
+     "text": "n 是 linear；n log n 叫 loglinear；n²、n³、n⁴ 是 quadratic、cubic、quartic。",
+     "t": 733
+    },
+    {
+     "text": "n¹⁰⁰、n 的一千萬次方都還是 polynomial，只是實務上用不了。",
+     "t": 778
+    },
+    {
+     "text": "2ⁿ（任何常數的 n 次方）是 exponential；n! 是 factorial；還有 nⁿ 等更大的。",
+     "t": 807
+    },
+    {
+     "text": "實作上希望演算法做到 n² 以下，才能處理蠻大的 problem size。",
+     "t": 848
+    }
+   ]
+  },
+  {
+   "title": "回到 Gale-Shapley：已知的性質",
+   "scene": "algbari1-gs-review",
+   "points": [
+    {
+     "text": "回到 Gale-Shapley：要看它的 efficiency 最好能做到什麼程度。",
+     "t": 871
+    },
+    {
+     "text": "流程：一開始都 free；每圈一個 free man 向還沒求過、最喜歡的女生求婚，她依喜好 accept 或 reject。",
+     "t": 928
+    },
+    {
+     "text": "沒有 free man 時跳出，engaged 轉成 married 後輸出。",
+     "t": 961
+    },
+    {
+     "text": "已證明：while loop 最多 n² 圈一定停（n 男 n 女）。",
+     "t": 979
+    },
+    {
+     "text": "輸出是 perfect matching，而且是 stable。",
+     "t": 996
+    },
+    {
+     "text": "對男生是最佳解（best valid partner）、對女生是最差的（worst valid partner）。",
+     "t": 1015
+    },
+    {
+     "text": "不管求婚順序怎麼跑，結果都一模一樣。",
+     "t": 1037
+    },
+    {
+     "text": "今天重點放在 termination：它的 running time。",
+     "t": 1067
+    }
+   ]
+  },
+  {
+   "title": "用 rule of sums / products 算 running time",
+   "scene": "algbari1-gs-budget",
+   "points": [
+    {
+     "text": "之前只知道最多 n² 圈，還不知道 running time。",
+     "t": 1075
+    },
+    {
+     "text": "套 rule of sums：把三大段（line 1、line 2–8、line 9）的時間加起來。",
+     "t": 1105
+    },
+    {
+     "text": "line 1 把所有男女設成 free：O(n)。",
+     "t": 1145
+    },
+    {
+     "text": "line 9 輸出：記錄了每個男生配誰，O(n) 就能輸出。",
+     "t": 1168
+    },
+    {
+     "text": "line 2–8 的 while 最多 n² 圈，還要乘上每圈內部的時間。",
+     "t": 1187
+    },
+    {
+     "text": "每圈最快也只能 O(1)；若做到 O(1)，while 就是 O(n²)。",
+     "t": 1231
+    },
+    {
+     "text": "line 1、9 只是 O(n)，取 max 後整體 O(n²)。",
+     "t": 1261
+    },
+    {
+     "text": "目標：每個 iteration 都要在 O(1) 完成。",
+     "t": 1293
+    }
+   ]
+  },
+  {
+   "title": "每圈要 O(1) 完成的四件事",
+   "scene": "algbari1-gs-four-ops",
+   "points": [
+    {
+     "text": "2 到 8 行裡最難處理的是 line 2、3、4、6；5、7、8 是簡單指定。",
+     "t": 1310
+    },
+    {
+     "text": "line 2：隨時 identify 一個 free man。",
+     "t": 1366
+    },
+    {
+     "text": "從哪個 free man 開始都無所謂，結果都一樣；重點是要 O(1) 取出一個。",
+     "t": 1395
+    },
+    {
+     "text": "line 3：找到他還沒求過的女生裡排名最高的。",
+     "t": 1423
+    },
+    {
+     "text": "line 4：給定女生，判斷她是否 engaged，若是要知道 fiancé 是誰。",
+     "t": 1451
+    },
+    {
+     "text": "line 6：給一個女生和兩個男生，判斷她比較喜歡誰。",
+     "t": 1478
+    },
+    {
+     "text": "四件事都 O(1) → 整體保證 O(n²)。",
+     "t": 1513
+    }
+   ]
+  },
+  {
+   "title": "表示法：編號與 ManPref array",
+   "scene": "algbari1-gs-arrays",
+   "points": [
+    {
+     "text": "實作前先處理基本問題：男生女生要用什麼 data structure 表示。",
+     "t": 1534
+    },
+    {
+     "text": "不記名字，用數字：男生 1..n、女生 1..n。",
+     "t": 1570
+    },
+    {
+     "text": "男女的 index 不會打架，所以都用 1..n，不需要 n+1..2n。",
+     "t": 1595
+    },
+    {
+     "text": "男生、女生各開一個 n 格的 array。",
+     "t": 1620
+    },
+    {
+     "text": "最重要的 input 是每個男生的 preference list。",
+     "t": 1644
+    },
+    {
+     "text": "例：男 1 喜好 Amy、Bertha、Clare → 記成 1、2、3。",
+     "t": 1688
+    },
+    {
+     "text": "男 2 是 2、1、3；男 3 是 1、2、3。",
+     "t": 1700
+    },
+    {
+     "text": "每個男生後面串一個長度 n 的 array。",
+     "t": 1711
+    }
+   ]
+  },
+  {
+   "title": "free man 不適合 static array",
+   "scene": "algbari1-free-why",
+   "points": [
+    {
+     "text": "第一個難題是 line 2：檢查是否還有 free man。",
+     "t": 1733
+    },
+    {
+     "text": "希望 constant time 判斷並取出一個。",
+     "t": 1749
+    },
+    {
+     "text": "最簡單是用 array，但這裡不好。",
+     "t": 1761
+    },
+    {
+     "text": "執行中男生會 free → engaged、engaged → free，free 的人數動態變化。",
+     "t": 1770
+    },
+    {
+     "text": "preference list 長度固定 n，所以能用 array；free 名單不行。",
+     "t": 1798
+    },
+    {
+     "text": "不能用 static array，就用 linked list。",
+     "t": 1827
+    },
+    {
+     "text": "linked list 的 insertion、deletion 都是 O(1)。",
+     "t": 1843
+    },
+    {
+     "text": "誰先處理不是重點，只要能快速吐一個出來。",
+     "t": 1860
+    }
+   ]
+  },
+  {
+   "title": "Linked list 結構回顧",
+   "scene": "algbari1-free-list",
+   "params": {
+    "phase": "build"
+   },
+   "points": [
+    {
+     "text": "快速複習 linked list：用來儲存一串 objects。",
+     "t": 1878
+    },
+    {
+     "text": "單向 linked list 會有一個 first pointer 指向第一筆資料。",
+     "t": 1919
+    },
+    {
+     "text": "每筆資料有兩類欄位：data（這裡只存男生編號）。",
+     "t": 1936
+    },
+    {
+     "text": "另一個是 link：pointer，指向下一筆資料。",
+     "t": 1976
+    },
+    {
+     "text": "例：男 1 → 男 2 → 男 3。",
+     "t": 1990
+    },
+    {
+     "text": "最後一筆沒有下一筆，pointer 是 NULL。",
+     "t": 2012
+    },
+    {
+     "text": "一開始把 n 個男生全部串進來，大家都是 free。",
+     "t": 2026
+    }
+   ]
+  },
+  {
+   "title": "取出與放回 free man：O(1)",
+   "scene": "algbari1-free-list",
+   "params": {
+    "phase": "ops"
+   },
+   "points": [
+    {
+     "text": "line 2：要從名單抓一個 free man 出來處理。",
+     "t": 2052
+    },
+    {
+     "text": "first 指向 NULL → 名單是空的 → 沒有 free man → while 結束。",
+     "t": 2063
+    },
+    {
+     "text": "還有 free man 時隨便取，最簡單就是取第一個。",
+     "t": 2095
+    },
+    {
+     "text": "他要去 propose，所以先從 linked list delete 掉。",
+     "t": 2116
+    },
+    {
+     "text": "Deletion：first 改指向第二筆，也就是第一筆的 next。",
+     "t": 2144
+    },
+    {
+     "text": "Insertion：男生被甩、從 engaged 變回 free 時要放回名單。",
+     "t": 2182
+    },
+    {
+     "text": "例：男 1 被甩 → 新節點放最前面、next 指向原本的 first，first 再指向他。",
+     "t": 2240
+    },
+    {
+     "text": "都只是重綁一兩個 pointer，跟 n 無關 → O(1)；line 2 解決。",
+     "t": 2284
+    }
+   ]
+  },
+  {
+   "title": "line 3：Next 欄位",
+   "scene": "algbari1-gs-next",
+   "points": [
+    {
+     "text": "line 3：取出 free man 後，要 O(1) 找到他還沒求過、排名最高的女生。",
+     "t": 2341
+    },
+    {
+     "text": "每個男生多開一個欄位 Next，記錄下一個要求婚的女生名次。",
+     "t": 2373
+    },
+    {
+     "text": "可行原因：男生一定從排名最高往最低求婚。",
+     "t": 2397
+    },
+    {
+     "text": "一開始 Next 全部設為 1：n 個男生各填一次，O(n)。",
+     "t": 2440
+    },
+    {
+     "text": "這個 O(n) 不會破壞整體 O(n²)。",
+     "t": 2459
+    },
+    {
+     "text": "例：男 1 和女 1、男 2 和女 2 訂婚，下一個都會找第 2 名 → Next = 2。",
+     "t": 2525
+    },
+    {
+     "text": "男 3 一直被 reject：被第 2 名拒絕時 Next 更新成 3。",
+     "t": 2565
+    },
+    {
+     "text": "只要 propose 了就 Next++，不管 accept 或 reject。",
+     "t": 2626
+    }
+   ]
+  },
+  {
+   "title": "line 4：Current 欄位",
+   "scene": "algbari1-gs-current",
+   "points": [
+    {
+     "text": "line 4：要 O(1) 知道女生 w 是否 free，若 engaged 還要知道 fiancé。",
+     "t": 2652
+    },
+    {
+     "text": "技巧跟 Next 很像：女生多開一個欄位 Current。",
+     "t": 2696
+    },
+    {
+     "text": "Current 記錄這個女生目前的對象。",
+     "t": 2702
+    },
+    {
+     "text": "一開始女生都沒有 fiancé，初始值清成 0（只要不是 1..n 就好）。",
+     "t": 2725
+    },
+    {
+     "text": "例：女 1 跟男 1、女 2 跟男 3、女 3 是 free。",
+     "t": 2750
+    },
+    {
+     "text": "Current 就記成 1、3、0；0 號代表沒有 fiancé。",
+     "t": 2762
+    }
+   ]
+  },
+  {
+   "title": "line 6：掃 preference list 太慢",
+   "scene": "algbari1-gs-scan",
+   "points": [
+    {
+     "text": "line 6 最難：要比較求婚的男生 m 和她的 fiancé m′，她比較喜歡誰。",
+     "t": 2786
+    },
+    {
+     "text": "第一個想法：女生也存 preference list，依喜好排成 array。",
+     "t": 2837
+    },
+    {
+     "text": "例：女 1 目前和男 6 訂婚，男 6 在她的 list 排第 5 名。",
+     "t": 2868
+    },
+    {
+     "text": "男 1 來求婚，他排第 2 名，比第 5 名高 → accept。",
+     "t": 2900
+    },
+    {
+     "text": "但要知道名次得在 list 裡掃：找到 6 在第 5 格、1 在第 2 格。",
+     "t": 2930
+    },
+    {
+     "text": "若是男 2（排最後）求婚，要掃完整個 list → worst case O(n)。",
+     "t": 2952
+    },
+    {
+     "text": "每圈 O(n) × n² 圈 = O(n³)，不能接受。",
+     "t": 2974
+    }
+   ]
+  },
+  {
+   "title": "反過來存：Ranking array",
+   "scene": "algbari1-gs-ranking",
+   "points": [
+    {
+     "text": "可以更快：反過來做。",
+     "t": 2993
+    },
+    {
+     "text": "手上知道的是男生編號，不知道的是名次。",
+     "t": 3031
+    },
+    {
+     "text": "不照名次存 preference list，而是照男生 index 存他的 ranking。",
+     "t": 3065
+    },
+    {
+     "text": "女 1 的 list 是 3 1 4 5 6 2；改存「男 1 排第幾、男 2 排第幾…」。",
+     "t": 3073
+    },
+    {
+     "text": "存的意義相同，但處理比較快。",
+     "t": 3098
+    },
+    {
+     "text": "男 6 排第幾？直接 indexing 第 6 格 → 5，O(1)。",
+     "t": 3135
+    },
+    {
+     "text": "男 1 求婚：查第 1 格是 2；2 比 5 高 → accept，O(1) 結束。",
+     "t": 3168
+    }
+   ]
+  },
+  {
+   "title": "建立 Ranking 與總時間",
+   "scene": "algbari1-gs-build-rank",
+   "points": [
+    {
+     "text": "line 6 是 2、3、4、6 裡最不直覺的一行：要反過來做。",
+     "t": 3194
+    },
+    {
+     "text": "額外要做的事：先建立 Ranking array。",
+     "t": 3224
+    },
+    {
+     "text": "把它填滿即可：n 個女生 × n 格 = O(n²)。",
+     "t": 3236
+    },
+    {
+     "text": "看著 3 1 4 5 6 2 邊掃邊填：男 3 排 1 → 第 3 格寫 1；男 1 排 2 → 第 1 格寫 2。",
+     "t": 3259
+    },
+    {
+     "text": "一開始 preprocess 一次，之後不用再改。",
+     "t": 3274
+    },
+    {
+     "text": "初始化 O(n²)；line 1、line 9 各 O(n)。",
+     "t": 3302
+    },
+    {
+     "text": "while 有 n² 圈、每圈 O(1)。",
+     "t": 3313
+    },
+    {
+     "text": "整體 O(n²)，達成目標。",
+     "t": 3320
+    }
+   ]
+  },
+  {
+   "title": "Data structure 決定 running time",
+   "scene": "algbari1-gs-compare",
+   "points": [
+    {
+     "text": "好的 data structure 讓 algorithm 跑得比較快。",
+     "t": 3334
+    },
+    {
+     "text": "用 inverse 的 ranking list，每個 iteration 壓到 O(1)。",
+     "t": 3345
+    },
+    {
+     "text": "用 preference list 是 O(n)，整個 algorithm 變成 O(n³)。",
+     "t": 3360
+    },
+    {
+     "text": "同一個 procedure，不同人寫程式，running time 可能不同。",
+     "t": 3376
+    },
+    {
+     "text": "實作前要為 algorithm 量身訂做合適的 data structure。",
+     "t": 3399
+    },
+    {
+     "text": "沒有絕對最好的：linked list 不一定比 array 好，反之亦然。",
+     "t": 3407
+    },
+    {
+     "text": "要看用什麼 algorithm、做什麼 operation。",
+     "t": 3427
+    },
+    {
+     "text": "結論：Gale-Shapley 可在 O(n²) 內完成。",
+     "t": 3436
+    }
+   ]
+  },
+  {
+   "title": "本單元總結",
+   "scene": "algbari1-gs-compare",
+   "params": {
+    "summary": 1
+   },
+   "points": [
+    {
+     "text": "本章重點是 efficiency 的概念。",
+     "t": 3451
+    },
+    {
+     "text": "Efficient 代表 running time 的 upper bound 落在 polynomial time。",
+     "t": 3468
+    },
+    {
+     "text": "寫程式前先知道 algorithm 的 running time，不夠好就先別寫。",
+     "t": 3492
+    },
+    {
+     "text": "不要作業一發下來就開電腦亂打，先設計、想清楚再寫。",
+     "t": 3510
+    },
+    {
+     "text": "Data structure 很重要。",
+     "t": 3534
+    },
+    {
+     "text": "有時要先 preprocessing，把資料轉成方便處理的形式。",
+     "t": 3557
+    },
+    {
+     "text": "前提是 preprocessing 的代價承受得起。",
+     "t": 3573
+    }
+   ]
+  },
+  {
+   "title": "作業技巧：取 log 比成長率",
+   "scene": "algbari1-log-compare",
+   "points": [
+    {
+     "text": "補充一頁寫作業很好用的招數。",
+     "t": 3603
+    },
+    {
+     "text": "常見題型：給幾個 running time，依 growth rate 排大小。",
+     "t": 3648
+    },
+    {
+     "text": "例：f₁ = n^(1/3)、f₂ = lg n、f₃ = 2^√(lg n)。",
+     "t": 3682
+    },
+    {
+     "text": "lg 是 log₂ 的縮寫，用來和 log₁₀ 區分。",
+     "t": 3703
+    },
+    {
+     "text": "長得差很多時，常用招數是取 log；取 log 後大小關係不變。",
+     "t": 3742
+    },
+    {
+     "text": "令 z = lg n：lg f₁ = z/3、lg f₂ = lg z、lg f₃ = √z（因為 lg 2 = 1）。",
+     "t": 3784
+    },
+    {
+     "text": "z/3 是一次、lg z 是 log、√z 是 sublinear。",
+     "t": 3833
+    },
+    {
+     "text": "所以順序是 lg n < 2^√(lg n) < n^(1/3)。",
+     "t": 3856
+    }
+   ],
+   "trap": "補充：取 log 後若兩者只差常數倍（例如 lg f = z 與 lg g = 2z），原函數仍可能差很多（2ⁿ vs 4ⁿ），所以取 log 比較時要看「次」是否不同。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "「T(n) = O(f(n))」的等號最精確的意思是？",
+   "opts": [
+    "T(n) ∈ O(f(n))",
+    "T(n) 等於 f(n)",
+    "f(n) ∈ O(T(n))",
+    "T(n) ≥ f(n)"
+   ],
+   "ans": "T(n) ∈ O(f(n))",
+   "why": "O(f(n)) 是一個函數集合，這個等號是 abuse。"
+  },
+  {
+   "q": "Rule of sums：f₁ = O(n)、f₂ = O(n²)，則 f₁ + f₂ = ？",
+   "opts": [
+    "O(n²)",
+    "O(n³)",
+    "O(n + n²) 不能化簡",
+    "O(n)"
+   ],
+   "ans": "O(n²)",
+   "why": "相加取 max。"
+  },
+  {
+   "q": "一個迴圈跑 O(n²) 圈、每圈 O(n)，總時間？",
+   "opts": [
+    "O(n³)",
+    "O(n²)",
+    "O(n² + n)",
+    "O(n)"
+   ],
+   "ans": "O(n³)",
+   "why": "Rule of products：圈數 × 每圈時間。"
+  },
+  {
+   "q": "Gale-Shapley 中要 O(1) 判斷女生 w 比較喜歡 m 還是 m′，應該存什麼？",
+   "opts": [
+    "Ranking[w][m]：m 在 w 心中的名次",
+    "w 的 preference list，再線性搜尋",
+    "Next[m]",
+    "free man 的 linked list"
+   ],
+   "ans": "Ranking[w][m]：m 在 w 心中的名次",
+   "why": "反過來存名次，直接 indexing 就是 O(1)。"
+  },
+  {
+   "q": "free man 名單為何用 linked list 而不用 static array？",
+   "opts": [
+    "free 人數動態變化，且需要 O(1) insert / delete",
+    "linked list 一定比 array 快",
+    "array 不能存整數",
+    "要依編號排序 free man"
+   ],
+   "ans": "free 人數動態變化，且需要 O(1) insert / delete",
+   "why": "順序不重要，只需快速取出和放回。"
+  },
+  {
+   "q": "若 line 6 用掃 preference list 的方式，Gale-Shapley 的 running time 是？",
+   "opts": [
+    "O(n³)",
+    "O(n²)",
+    "O(n log n)",
+    "O(n⁴)"
+   ],
+   "ans": "O(n³)",
+   "why": "n² 圈 × 每圈 O(n)。"
+  },
+  {
+   "q": "f₁ = n^(1/3)、f₂ = lg n、f₃ = 2^√(lg n) 的成長順序（小到大）？",
+   "opts": [
+    "f₂ < f₃ < f₁",
+    "f₃ < f₂ < f₁",
+    "f₁ < f₃ < f₂",
+    "f₂ < f₁ < f₃"
+   ],
+   "ans": "f₂ < f₃ < f₁",
+   "why": "令 z = lg n：lg z < √z < z/3。"
+  },
+  {
+   "q": "下列何者不是 polynomial time？",
+   "opts": [
+    "O(2ⁿ)",
+    "O(n¹⁰⁰)",
+    "O(n log n)",
+    "O(√n)"
+   ],
+   "ans": "O(2ⁿ)",
+   "why": "n 在指數上是 exponential；n¹⁰⁰ 雖大仍是 polynomial。"
+  }
+ ]
+}

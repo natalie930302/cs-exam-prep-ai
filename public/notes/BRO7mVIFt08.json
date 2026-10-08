@@ -1,165 +1,332 @@
 {
  "video": "BRO7mVIFt08",
  "label": "MIT 6.006 L9：Table Doubling, Karp-Rabin",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
-   "title": "回顧 chaining：缺的是 m 該多大",
-   "scene": null,
+   "title": "回顧 hashing with chaining",
+   "scene": "algmit2-chaining",
+   "params": {
+    "recap": 1
+   },
    "points": [
     {
-     "text": "Hashing with chaining 的空間是 n + m，期望操作時間 O(1 + α)，α = n/m。",
-     "t": 27
+     "text": "Hashing 三部曲第三集：chaining 已能做到期望常數時間的 insert、delete、exact search。",
+     "t": 28
     },
     {
-     "text": "問題：n 會隨插入成長，我們不知道 n，要讓 m = Θ(n)：m = Ω(n) 讓 α 為常數、m = O(n) 讓空間線性。",
-     "t": 297
+     "text": "Universe 很大（甚至無限），實際存 n 個 key；例：k1、k4、k2 都撞到第 1 格，k3 自己一格。",
+     "t": 96
     },
     {
-     "text": "做法：從小的常數 m 開始，必要時讓 table 變大或變小。",
-     "t": 390
+     "text": "空間 n + m；期望 chain 長度 n/m = α；操作時間 O(1 + α)。",
+     "t": 117
+    },
+    {
+     "text": "回憶 division method（k mod m）與 multiplication method（取乘積中間）。",
+     "t": 184
     }
    ]
   },
   {
-   "title": "Grow table：重建要 Θ(n + m + m′)",
-   "scene": "table-doubling",
+   "title": "m 要多大？",
+   "scene": "algmit2-m-theta-n",
    "points": [
     {
-     "text": "從 m = 8 開始，插入第 9 個時 n > m，要擴大 table。",
-     "t": 452
+     "text": "還缺一件事：m 要多大？n 隨插入改變，事先不知道。",
+     "t": 250
     },
     {
-     "text": "擴大 = 配置大小 m′ 的新 table，並把每個 item 用新的 hash function h′ 重新 insert。",
-     "t": 526
+     "text": "m 太小 α 變大、不再是常數；m 太大又浪費空間。",
+     "t": 268
     },
     {
-     "text": "成本 Θ(n + m + m′)：走訪所有 slot、所有 list、初始化新 table；m、m′ = Θ(n) 時為 Θ(n)。",
-     "t": 589
+     "text": "要 m = Θ(n)：Ω(n) 讓 α 是常數，O(n) 讓空間線性。",
+     "t": 312
     },
     {
-     "text": "一定要換 hash function：舊的 h 只會映射到前 m 格，新格子用不到。",
-     "t": 646
+     "text": "從常數 m 開始（老師最愛 7，其實 2 的次方比較好），需要時 grow / shrink。",
+     "t": 346
+    },
+    {
+     "text": "這會帶出新概念 amortization，也順便解釋 Python list 怎麼實作。",
+     "t": 376
     }
    ]
+  },
+  {
+   "title": "Grow：配置新表並 rehash",
+   "scene": "algmit2-rehash",
+   "points": [
+    {
+     "text": "例：希望隨時 m ≥ n。從 m = 8 開始，插入 8 個後，第 9 個使 n > m。",
+     "t": 415
+    },
+    {
+     "text": "Grow：配置大小 m′ 的新 table，把舊 table 的每個 item 重新 insert 到 T′。",
+     "t": 493
+    },
+    {
+     "text": "成本 Θ(n + m + m′)：走過 m 格、n 個 list 元素、初始化 m′ 格；都是 Θ(n) 時就是 Θ(n)。",
+     "t": 587
+    },
+    {
+     "text": "必須換新的 hash function h′：舊的 h 只映到前 m 格，新格子用不到。",
+     "t": 623
+    }
+   ],
+   "trap": "補充：動畫的 key（16、9、2…、25）與 h(k) = k mod 8 是示意。"
   },
   {
    "title": "m′ = m + 1 vs m′ = 2m",
    "scene": "table-doubling",
    "points": [
     {
-     "text": "錯誤做法 m′ = m + 1：之後每次插入都要重建，成本 1 + 2 + 3 + … → n 次插入共 Θ(n²)。",
-     "t": 706
+     "text": "要放大多少？",
+     "t": 663
     },
     {
-     "text": "正確做法 table doubling：m′ = 2m，在 8、16、32、64… 時才重建。",
-     "t": 805
+     "text": "錯誤做法：m′ = m + 1，維持 m ≥ n。",
+     "t": 691
+    },
+    {
+     "text": "結果每次 insert 都要重建：1 + 2 + 3 + 4 + … 是三角數 → n 次 insert 共 Θ(n²)。",
+     "t": 752
+    },
+    {
+     "text": "正確做法 table doubling：m′ = 2m，8 → 16 → 32 → 64。",
+     "t": 770
     },
     {
      "text": "只重建 log n 次，但不是 n log n：重建成本 8、16、32… 是等比級數，總和 Θ(n)。",
-     "t": 846
+     "t": 821
     }
    ]
   },
   {
-   "title": "Amortized analysis 的定義",
-   "scene": "table-doubling",
-   "params": {
-    "focus": "amortized"
-   },
+   "title": "Amortized analysis",
+   "scene": "algmit2-amortized",
    "points": [
     {
-     "text": "單一次插入可能花 Θ(n)（最後一次重建），但昂貴的操作很少，其他都是常數。",
-     "t": 921
+     "text": "不再是每次操作常數：最後一次重建要 Θ(n)；但昂貴的只有 log n 次，其他都常數。",
+     "t": 876
     },
     {
-     "text": "Amortized 時間 T(n)：任意 k 次操作的總時間 ≤ k·T(n)，不是對單一操作的保證。",
-     "t": 1004
+     "text": "這就是 amortization（table doubling）。",
+     "t": 911
     },
     {
-     "text": "類比：每月付一次房租，可以想成每天付 1/30——把高成本平攤掉。",
-     "t": 1062
+     "text": "Amortized T(n)：任意 k 次操作的總時間 ≤ k·T(n)，不是對單一操作的保證。",
+     "t": 1027
+    },
+    {
+     "text": "類比：房租每月付一次，也可以想成每天付一點。",
+     "t": 1048
+    },
+    {
+     "text": "可以想成「平均到所有操作」，但不要跟 average case 混為一談。",
+     "t": 1096
     },
     {
      "text": "Table doubling：k 次 insert 共 Θ(k) → 每次 insert amortized Θ(1)。",
-     "t": 1147
+     "t": 1138
     },
     {
-     "text": "只看總時間時（例如用 hash 數重複字），amortized 就夠用；real-time 系統才在乎單一操作。",
-     "t": 1170
+     "text": "除非是 real-time 系統，通常只在乎總時間（例：用 hash 數 docdist 的重複字）。",
+     "t": 1191
+    },
+    {
+     "text": "Delete 不縮表只會更好：k 次 insert／delete 仍是 O(k)。",
+     "t": 1230
     }
    ]
   },
   {
-   "title": "Deletion：縮小要在 1/4 才縮",
+   "title": "Shrink：n = m/4 才縮成一半",
    "scene": "shrink-quarter",
    "points": [
     {
-     "text": "只做 delete 不縮小：n 次插入再 n 次刪除後 m 仍很大，空間不再是 O(n)。",
-     "t": 1278
+     "text": "但 n 次 insert 再 n 次 delete 後 n = 0，m 還停在最大值 → 要縮表。",
+     "t": 1292
     },
     {
-     "text": "錯誤：n = m/2 就縮成一半。8 個 item 加第 9 個擴成 16，刪掉又縮回 8，來回每次都 Θ(n)。",
-     "t": 1339
+     "text": "錯誤：n = m/2 就縮一半。8 個加第 9 個擴成 16，刪掉又縮回 8，來回每次 Θ(n)。",
+     "t": 1368
     },
     {
-     "text": "正確：n = m/4 時才縮成 m/2；縮完半滿，要再插入 m/2 個才會再擴大。",
-     "t": 1415
+     "text": "修正：n = m/4 時才縮成 m/2（任何大於 2 的比例都行，老師用 4 保持 2 的次方）。",
+     "t": 1446
     },
     {
-     "text": "維持 n ≤ m ≤ 4n，空間線性，任意 insert／delete 序列的 amortized 時間為 O(1)。",
-     "t": 1494
+     "text": "縮完半滿，要再插入 m/2 個才會再擴大。",
+     "t": 1475
+    },
+    {
+     "text": "維持 n ≤ m ≤ 4n → 線性空間；任意 insert／delete 混合的 amortized 時間都是 O(1)（證明見課本）。",
+     "t": 1509
     }
    ]
   },
   {
-   "title": "Python list = 可變長陣列",
-   "scene": "table-doubling",
+   "title": "Python list 的實作",
+   "scene": "algmit2-python-list",
    "points": [
     {
-     "text": "Python list 支援 O(1) 隨機存取、append、pop 最後一個；刪第一個是 O(n)。",
-     "t": 1542
+     "text": "Python list = resizable array：O(1) random access、append、pop 最後一個。",
+     "t": 1558
     },
     {
-     "text": "list 用 table doubling 實作：append、pop 是 constant amortized，不是最壞 O(1)。",
-     "t": 1604
+     "text": "刪第一個不是常數：要把所有元素往前複製，O(n)。",
+     "t": 1595
     },
     {
-     "text": "若要最壞 O(1)：快滿時在旁邊建兩倍大的新表，每次插入順便搬幾個過去（de-amortization）。",
-     "t": 1649
+     "text": "做法就是 table doubling；只要刪除用的比例常數比插入的小。",
+     "t": 1611
+    },
+    {
+     "text": "所以 list.append、list.pop 是 constant amortized，不是最壞常數。",
+     "t": 1626
+    },
+    {
+     "text": "想要最壞 O(1)：快滿時在旁邊先建 2 倍大的新表，每次插入順便搬幾個，滿時直接切換。",
+     "t": 1654
+    },
+    {
+     "text": "很難寫對，實務上很少做；real-time 系統才在乎。",
+     "t": 1682
     }
    ]
   },
   {
-   "title": "String matching：Karp-Rabin",
-   "scene": null,
+   "title": "String matching 與暴力法",
+   "scene": "algmit2-naive-match",
    "points": [
     {
-     "text": "問題：字串 s 是否出現在 t 中（grep、Ctrl-F、搜尋引擎）。",
-     "t": 1777
+     "text": "新問題：string matching（grep、文字編輯器的 find）。",
+     "t": 1742
     },
     {
-     "text": "暴力法比對每個長度 |s| 的子字串：O(|s|·|t|)。",
-     "t": 1899
+     "text": "給字串 s、t，問 s 是否是 t 的 substring；例：s = 6006、t = 你收過的所有信。",
+     "t": 1794
     },
     {
-     "text": "Rolling hash：r.append(c) 加到尾、r.skip(c) 刪掉頭，兩者 O(1)，r() 給出目前字串的 hash。",
-     "t": 2269
+     "text": "Google：s 是搜尋字串、t 是整個 web。",
+     "t": 1826
     },
     {
-     "text": "滑動視窗每次只換一個字元；hash 相等時才逐字比對，hash 碰撞機率 ≤ 1/|s| 時期望時間 O(|s| + |t|)。",
-     "t": 2469
+     "text": "暴力法：檢查 t 中每個長度 |s| 的 substring。",
+     "t": 1856
     },
     {
-     "text": "實作：把字串看成以字母表大小 a 為底的數，append：u → u·a + ord(c)；skip：u → u − c·a^(|u|−1)，全部 mod 隨機質數 m。",
-     "t": 2993
+     "text": "Python 寫法：any(s == t[i : i+len(s)] for i in …)，每個位置逐字比到不同為止。",
+     "t": 1933
+    },
+    {
+     "text": "時間 O(|s|·(|t| − |s|)) ≈ O(|s|·|t|)，長字串時接近 quadratic。",
+     "t": 2045
+    },
+    {
+     "text": "目標：用 hashing 降到線性。",
+     "t": 2089
+    }
+   ],
+   "trap": "補充：老師寫 range(len(t) − len(s))，會漏掉最後一個位置；正確是 range(len(t) − len(s) + 1)。動畫的 t 是示意字串。"
+  },
+  {
+   "title": "Rolling hash ADT",
+   "scene": "algmit2-rolling-window",
+   "points": [
+    {
+     "text": "想法：大小 |s| 的視窗沿著 t 滑動；比字串很貴，改比 hash 值（一個 word）。",
+     "t": 2167
+    },
+    {
+     "text": "但每個視窗重算 hash 要 O(|s|)，沒省到；要能從前一個 hash 用 O(1) 算出下一個。",
+     "t": 2280
+    },
+    {
+     "text": "相鄰兩個視窗共用 |s| − 1 個字元：刪掉第一個、加上最後一個。",
+     "t": 2306
+    },
+    {
+     "text": "Rolling hash r 維護一個字串 x：r.append(c) 加到尾端，r.skip(c) 刪掉開頭字元。",
+     "t": 2353
+    },
+    {
+     "text": "r() 回傳目前字串的 hash 值 h(x)；三個操作都要 O(1)。",
+     "t": 2415
+    }
+   ]
+  },
+  {
+   "title": "Karp-Rabin 演算法",
+   "scene": "algmit2-karp-rabin",
+   "points": [
+    {
+     "text": "Karp-Rabin string matching algorithm。",
+     "t": 2442
+    },
+    {
+     "text": "rs：把 s 每個字元 append 進去；rt：先 append t 的前 |s| 個字元。",
+     "t": 2472
+    },
+    {
+     "text": "迴圈：rt.skip(t[i − |s|])、rt.append(t[i])；rs 固定不動。",
+     "t": 2565
+    },
+    {
+     "text": "rs() == rt() 只代表「可能」相等：hash 有 collision，所以再逐字比較 s 與 t 的那一段。",
+     "t": 2600
+    },
+    {
+     "text": "真的相等時花 O(|s|) 也值得；不相等的假警報機率要 ≤ 1/|s| → 期望 O(1)。",
+     "t": 2690
+    },
+    {
+     "text": "總時間 O(|s| + |t| + #match·|s|)；只找第一個 match 就是線性。",
+     "t": 2752
+    },
+    {
+     "text": "這是 90 年代用隨機化的經典例子之一。",
+     "t": 2872
+    }
+   ],
+   "trap": "補充：動畫用十進位、mod 17 示意；第 3 個視窗「0600」的 hash 也是 5，就是一次 collision（假警報）。Karp-Rabin 是 1987 年的演算法，老師說「90 年代」不太準。"
+  },
+  {
+   "title": "Rolling hash 的實作",
+   "scene": "algmit2-rolling-math",
+   "points": [
+    {
+     "text": "實作：用 division method，m 選隨機質數且 ≥ |s|（越大越安全）。",
+     "t": 2925
+    },
+    {
+     "text": "找隨機質數：隨機挑數字檢查是否質數，約 log n 次就找到（質數定理）。",
+     "t": 2977
+    },
+    {
+     "text": "把字串 x 看成 a 進位的多位數，a = 字母表大小（ASCII 是 256）。",
+     "t": 3020
+    },
+    {
+     "text": "append(c)：u → u·a + ord(c)。",
+     "t": 3064
+    },
+    {
+     "text": "skip(c)：u → u − c·a^(|u|−1)。",
+     "t": 3089
+    },
+    {
+     "text": "全部 mod m 計算；r 存目前的 hash 值與 a^|u| mod m，每個操作一次乘法一次加法 → O(1)。",
+     "t": 3120
     }
    ]
   }
  ],
  "quiz": [
   {
-   "q": "Table 每滿就只加大 1 格（m′ = m + 1），連續插入 n 個的總成本？",
+   "q": "Table 滿了就只加大 1 格（m′ = m + 1），連續 insert n 個的總成本？",
    "opts": [
     "Θ(n²)",
     "Θ(n)",
@@ -167,10 +334,10 @@
     "Θ(log n)"
    ],
    "ans": "Θ(n²)",
-   "why": "幾乎每次插入都重建：1 + 2 + … + n。"
+   "why": "幾乎每次都重建：1 + 2 + … + n。"
   },
   {
-   "q": "Table doubling 下連續插入 n 個的總成本？",
+   "q": "Table doubling 下連續 insert n 個的總成本？",
    "opts": [
     "Θ(n)",
     "Θ(n log n)",
@@ -178,32 +345,21 @@
     "Θ(log n)"
    ],
    "ans": "Θ(n)",
-   "why": "重建成本是等比級數 1 + 2 + 4 + … + n < 2n。"
+   "why": "重建成本是等比級數，總和小於 2n。"
   },
   {
-   "q": "「amortized O(1)」的意思是？",
+   "q": "「amortized O(1)」的意思？",
    "opts": [
     "任意 k 次操作總時間是 O(k)",
     "每一次操作都保證 O(1)",
-    "平均輸入下 O(1)",
+    "隨機輸入下平均 O(1)",
     "機率上 O(1)"
    ],
    "ans": "任意 k 次操作總時間是 O(k)",
    "why": "是對一串操作總和的保證，單次仍可能很貴。"
   },
   {
-   "q": "n = m/2 就縮表為一半，會出什麼問題？",
-   "opts": [
-    "在邊界來回插入刪除時每次都 Θ(n)",
-    "空間變成 O(n²)",
-    "hash 碰撞變多",
-    "沒有問題"
-   ],
-   "ans": "在邊界來回插入刪除時每次都 Θ(n)",
-   "why": "8 ↔ 16 來回 grow／shrink（thrashing）。"
-  },
-  {
-   "q": "MIT 的做法：何時縮表、縮成多大？",
+   "q": "MIT 的縮表規則？",
    "opts": [
     "n = m/4 時縮成 m/2",
     "n = m/2 時縮成 m/2",
@@ -211,19 +367,40 @@
     "永遠不縮"
    ],
    "ans": "n = m/4 時縮成 m/2",
-   "why": "縮完半滿，離下一次擴大還有 m/2 次插入的距離。"
+   "why": "縮完半滿，離下一次擴大還有 m/2 次插入。"
   },
   {
-   "q": "Python 的 list.append 時間複雜度是？",
+   "q": "Python 的 list.pop(0) 時間？",
    "opts": [
-    "amortized O(1)",
-    "worst-case O(1)",
     "O(n)",
+    "O(1)",
+    "amortized O(1)",
     "O(log n)"
    ],
-   "ans": "amortized O(1)",
-   "why": "底層用 table doubling，偶爾要整個搬家。"
+   "ans": "O(n)",
+   "why": "要把後面全部往前搬；pop() 拿最後一個才是 amortized O(1)。"
+  },
+  {
+   "q": "Karp-Rabin 中 rs() == rt() 時要做什麼？",
+   "opts": [
+    "逐字比較 s 與 t 的那一段，確認是否真的相等",
+    "直接回報 match",
+    "換一個 hash function",
+    "跳過這個位置"
+   ],
+   "ans": "逐字比較 s 與 t 的那一段，確認是否真的相等",
+   "why": "hash 相等不代表字串相等。"
+  },
+  {
+   "q": "Rolling hash 的 skip(c) 對應的數值運算（a 為基底）？",
+   "opts": [
+    "u → u − c·a^(|u|−1)",
+    "u → u·a + c",
+    "u → u / a",
+    "u → u − c"
+   ],
+   "ans": "u → u − c·a^(|u|−1)",
+   "why": "開頭字元在最高位，要乘上 a^(|u|−1) 再減掉。"
   }
- ],
- "timing": "estimated"
+ ]
 }

@@ -1,0 +1,460 @@
+{
+ "video": "HtSuA80QTyo",
+ "label": "MIT 6.006 L1：Algorithmic Thinking, Peak Finding",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場與課程目標",
+   "scene": null,
+   "points": [
+    {
+     "text": "Srini Devadas 與 Erik Demaine 合授 6.006 Introduction to Algorithms。",
+     "t": 22
+    },
+    {
+     "text": "今天：課程概觀，接著用 peak finding（1D 與 2D）比較不同演算法的複雜度。",
+     "t": 92
+    },
+    {
+     "text": "先修 6.042 學過 asymptotic complexity，這堂會用它比較哪個演算法在大輸入下比較快。",
+     "t": 128
+    }
+   ]
+  },
+  {
+   "title": "大輸入下的效率與 scalability",
+   "scene": "algmit1-scale-n3",
+   "points": [
+    {
+     "text": "一句話總結本課：在大輸入上解問題的有效率程序（efficient procedures）。",
+     "t": 172
+    },
+    {
+     "text": "大輸入的例子：美國公路圖、約 10⁹ 個字母的人類基因體、約 5 億節點的社群網路。",
+     "t": 186
+    },
+    {
+     "text": "「large」的定義隨時代變大：從 1000、一百萬，到今天的一兆。",
+     "t": 208
+    },
+    {
+     "text": "掃 10⁹ 個元素只要幾秒，但 cubic 演算法會變成 10²⁷ 步，現在的電腦也跑不完。",
+     "t": 253
+    },
+    {
+     "text": "所以重視 scalability：要追蹤演算法在輸入越來越大時表現如何。",
+     "t": 298
+    },
+    {
+     "text": "未來 10¹⁸ 可能才是一般輸入大小。",
+     "t": 320
+    }
+   ]
+  },
+  {
+   "title": "課程內容：資料結構與八個 module",
+   "scene": null,
+   "points": [
+    {
+     "text": "會學經典資料結構：binary search tree、hash table（Python 的 dict）、balanced BST。",
+     "t": 347
+    },
+    {
+     "text": "每份 problem set 都有理論與 Python 程式兩部分。",
+     "t": 437
+    },
+    {
+     "text": "八個 module：algorithmic thinking、sorting & trees、hashing、numerics、graphs、shortest paths、dynamic programming、advanced topics。",
+     "t": 508
+    },
+    {
+     "text": "請先到課程網站讀 collaboration policy 與評分方式。",
+     "t": 901
+    }
+   ]
+  },
+  {
+   "title": "1D peak 的定義",
+   "scene": "algmit1-peak1d-def",
+   "points": [
+    {
+     "text": "從 1D peak finding 開始：一個陣列，9 個位置 a 到 i。",
+     "t": 957
+    },
+    {
+     "text": "位置 2 是 peak ⇔ b ≥ a 且 b ≥ c：看左、看右，不小於兩鄰就是 peak。",
+     "t": 1016
+    },
+    {
+     "text": "peak 是很局部（local）的性質。",
+     "t": 1040
+    },
+    {
+     "text": "邊界只看一邊：位置 9 是 peak ⇔ i ≥ h。",
+     "t": 1060
+    },
+    {
+     "text": "問題：find a peak if it exists（找到一個 peak 就好）。",
+     "t": 1080
+    }
+   ]
+  },
+  {
+   "title": "peak 一定存在嗎？",
+   "scene": "algmit1-peak-exists",
+   "points": [
+    {
+     "text": "學生問：為什麼題目寫 if it exists？",
+     "t": 1196
+    },
+    {
+     "text": "回家作業：用 ≥ 定義時，證明任何陣列都一定有 peak。",
+     "t": 1214
+    },
+    {
+     "text": "若改成嚴格 >，就不能保證 peak 存在。",
+     "t": 1224
+    },
+    {
+     "text": "algorithmic thinking：問題定義改了，演算法也要能當作出發點。",
+     "t": 1245
+    },
+    {
+     "text": "找不到時要能拿出「已經窮舉搜尋」的論證。",
+     "t": 1303
+    }
+   ],
+   "trap": "補充：≥ 定義下全域最大值一定是 peak，所以 peak 必存在；若用 >，像 [3, 3, 3, 3] 就沒有 peak。"
+  },
+  {
+   "title": "直接法：從左走到右 Θ(n)",
+   "scene": "algmit1-peak1d-linear",
+   "points": [
+    {
+     "text": "直接法：從最左邊開始往右走。",
+     "t": 1331
+    },
+    {
+     "text": "數字先增後減時，peak 在中間。",
+     "t": 1340
+    },
+    {
+     "text": "若是 1, 2, 3, …, n 一路遞增，peak 在最右邊，要看完 n 個元素。",
+     "t": 1367
+    },
+    {
+     "text": "peak 在正中間時大約看 n/2 個。",
+     "t": 1384
+    },
+    {
+     "text": "最壞情況複雜度是 Θ(n)。",
+     "t": 1398
+    },
+    {
+     "text": "Θ(n) 同時給上界和下界；Big O 只是上界。",
+     "t": 1420
+    },
+    {
+     "text": "目前只關心 asymptotic complexity：這個演算法是線性的。",
+     "t": 1458
+    }
+   ]
+  },
+  {
+   "title": "Divide & conquer 版本",
+   "scene": "algmit1-peak1d-binary",
+   "points": [
+    {
+     "text": "怎麼把 1D peak finder 的漸近複雜度降下來？",
+     "t": 1472
+    },
+    {
+     "text": "學生建議：divide and conquer，遞迴地把陣列切成更小的陣列。",
+     "t": 1510
+    },
+    {
+     "text": "不假設只有一個 peak，找到其中一個即可。",
+     "t": 1530
+    },
+    {
+     "text": "寫成遞迴演算法：先看 n/2 的位置。",
+     "t": 1697
+    },
+    {
+     "text": "若 a[n/2] < a[n/2−1]，只看左半 1 … n/2−1 找 peak。",
+     "t": 1713
+    },
+    {
+     "text": "否則若 a[n/2] < a[n/2+1]，只看右半 n/2+1 … n。",
+     "t": 1777
+    },
+    {
+     "text": "兩個條件都不成立：n/2 ≥ 兩鄰，n/2 就是 peak，直接結束。",
+     "t": 1806
+    },
+    {
+     "text": "正確性的嚴謹論證留到 problem set（2D 版本）。",
+     "t": 1844
+    }
+   ]
+  },
+  {
+   "title": "遞迴式 T(n) = T(n/2) + Θ(1) → Θ(log n)",
+   "scene": "algmit1-peak1d-recur",
+   "points": [
+    {
+     "text": "分析這個演算法的複雜度：目的就是打敗 Θ(n)。",
+     "t": 1904
+    },
+    {
+     "text": "寫出遞迴式 T(n)，T(n) 是輸入大小 n 時的工作量。",
+     "t": 1928
+    },
+    {
+     "text": "T(n) = T(n/2) + Θ(1)：Θ(1) 是看左右兩邊的兩次比較。",
+     "t": 2011
+    },
+    {
+     "text": "base case：T(1) = Θ(1)，一個元素直接回傳。",
+     "t": 2043
+    },
+    {
+     "text": "展開後是 log₂ n 個 Θ(1) 相加，得 Θ(log₂ n)。",
+     "t": 2063
+    },
+    {
+     "text": "n 約一千萬時實測：Θ(n) 版 13 秒，Θ(log n) 版 0.001 秒。",
+     "t": 2106
+    },
+    {
+     "text": "Θ(n) 與 Θ(log n) 差距極大；1D 已經沒辦法更好了。",
+     "t": 2128
+    }
+   ],
+   "trap": "補充：老師說 Θ(n) 與 Θ(log n) 差異像 2ⁿ 與 n，意思是指數級差距（n = 2ᵏ 時是 2ᵏ 對 k）。13 秒與 0.001 秒是老師的實測，換機器數字會不同。"
+  },
+  {
+   "title": "2D peak 與 greedy ascent",
+   "scene": "algmit1-greedy-ascent",
+   "points": [
+    {
+     "text": "2D 版本：n 列（rows）× m 欄（columns）的矩陣。",
+     "t": 2175
+    },
+    {
+     "text": "a 是 2D peak ⇔ a ≥ 上下左右四個鄰居 b、c、d、e；用 ≥ 所以一定存在。",
+     "t": 2201
+    },
+    {
+     "text": "直接法叫 greedy ascent：選一個方向往比較大的鄰居走。",
+     "t": 2243
+    },
+    {
+     "text": "例子矩陣含 14、13、12、15、9、11 等數字。",
+     "t": 2272
+    },
+    {
+     "text": "要先決定起點和預設走的方向，例如從中間開始先往左。",
+     "t": 2301
+    },
+    {
+     "text": "從 12 出發：12 → 13 → 14 → 15 → 16 → 17 → 19 → 20，找到 peak。",
+     "t": 2345
+    },
+    {
+     "text": "最壞情況可能碰到大部分甚至全部元素：Θ(nm)。",
+     "t": 2416
+    },
+    {
+     "text": "n = m 時就是 Θ(n²)。",
+     "t": 2434
+    }
+   ]
+  },
+  {
+   "title": "錯誤的嘗試：column 1D peak 再 row 1D peak",
+   "scene": "algmit1-2d-flawed",
+   "points": [
+    {
+     "text": "把 binary search 硬套到 2D。",
+     "t": 2532
+    },
+    {
+     "text": "選中間 column j = m/2。",
+     "t": 2564
+    },
+    {
+     "text": "在這欄用 1D 演算法找 peak，得到 (i, j)。",
+     "t": 2575
+    },
+    {
+     "text": "再以 row i 為起點，在 row i 上找 1D peak。",
+     "t": 2605
+    },
+    {
+     "text": "時間是 log n + log m，看起來很快。",
+     "t": 2649
+    },
+    {
+     "text": "但這個演算法是錯的：快但不正確；正確而慢都比錯而快好。",
+     "t": 2696
+    },
+    {
+     "text": "問題在於 2D peak 不一定在 row i 上。",
+     "t": 2732
+    },
+    {
+     "text": "例：欄中選到 12（19 更大但沒選到），row i 的 1D peak 是 14，但 14 不是 2D peak。",
+     "t": 2793
+    }
+   ],
+   "trap": "老師一開始說在 column 找 1D peak 是 Θ(n)，Eric 馬上更正：用 binary search 版是 log n。"
+  },
+  {
+   "title": "正確版：column 全域最大值",
+   "scene": "algmit1-2d-colmax",
+   "points": [
+    {
+     "text": "最後一個演算法：遞迴版，比 greedy ascent 好而且正確。",
+     "t": 2829
+    },
+    {
+     "text": "選中間 column j = m/2。",
+     "t": 2863
+    },
+    {
+     "text": "找 column j 的全域最大值（global maximum），位置 (i, j)。",
+     "t": 2874
+    },
+    {
+     "text": "比較 (i, j−1)、(i, j)、(i, j+1)。",
+     "t": 2889
+    },
+    {
+     "text": "左邊比較大就挑左半欄，右邊比較大就挑右半欄。",
+     "t": 2907
+    },
+    {
+     "text": "若 (i, j) ≥ 左右兩鄰，就是 2D peak：它本來就是整欄最大，上下也不會更大。",
+     "t": 2952
+    },
+    {
+     "text": "否則在欄數減半的新問題上遞迴。",
+     "t": 2992
+    },
+    {
+     "text": "base case：只剩一欄時找全域最大值即可。",
+     "t": 3051
+    }
+   ]
+  },
+  {
+   "title": "遞迴式 T(n, m) = T(n, m/2) + Θ(n)",
+   "scene": "algmit1-2d-recur",
+   "points": [
+    {
+     "text": "寫出這個演算法的遞迴式並求整體複雜度。",
+     "t": 3072
+    },
+    {
+     "text": "T(n, m) = T(n, m/2) + Θ(n)：n 是列數、m 是欄數。",
+     "t": 3093
+    },
+    {
+     "text": "Θ(n) 是掃一整欄找全域最大值。",
+     "t": 3114
+    },
+    {
+     "text": "base case：T(n, 1) = Θ(n)。",
+     "t": 3131
+    },
+    {
+     "text": "Θ(n) 加 log₂ m 次，得 Θ(n log m)。",
+     "t": 3140
+    }
+   ]
+  },
+  {
+   "title": "Problem set 1 預告",
+   "scene": null,
+   "points": [
+    {
+     "text": "Problem set 會給四個 Python 寫好的 peak finding 演算法。",
+     "t": 3163
+    },
+    {
+     "text": "要分析複雜度、證明其中一個正確，並替不正確的找反例。",
+     "t": 3181
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "1D peak 定義為「不小於左右鄰居（≥）」時，下列何者正確？",
+   "opts": [
+    "任何非空陣列都至少有一個 peak",
+    "只有排序過的陣列才有 peak",
+    "peak 一定唯一",
+    "陣列元素全部相等時沒有 peak"
+   ],
+   "ans": "任何非空陣列都至少有一個 peak",
+   "why": "全域最大值一定 ≥ 兩鄰，所以一定是 peak；改成嚴格 > 才可能不存在。"
+  },
+  {
+   "q": "1D peak 的 divide & conquer 版本，遞迴式與複雜度是？",
+   "opts": [
+    "T(n) = T(n/2) + Θ(1) → Θ(log n)",
+    "T(n) = 2T(n/2) + Θ(1) → Θ(n)",
+    "T(n) = T(n−1) + Θ(1) → Θ(n)",
+    "T(n) = T(n/2) + Θ(n) → Θ(n)"
+   ],
+   "ans": "T(n) = T(n/2) + Θ(1) → Θ(log n)",
+   "why": "每層只比較兩次（Θ(1)），然後只遞迴進一半，共 log₂ n 層。"
+  },
+  {
+   "q": "從 n×m 矩陣的某格出發做 greedy ascent，最壞情況複雜度是？",
+   "opts": [
+    "Θ(nm)",
+    "Θ(n + m)",
+    "Θ(log n + log m)",
+    "Θ(n log m)"
+   ],
+   "ans": "Θ(nm)",
+   "why": "精心設計的矩陣可以讓它繞過大部分甚至全部格子。"
+  },
+  {
+   "q": "「中間欄找 1D peak，再在那一列找 1D peak」為什麼是錯的？",
+   "opts": [
+    "2D peak 不一定在選到的那一列上",
+    "它的時間是 Θ(nm)",
+    "1D peak 在欄裡可能不存在",
+    "它只適用於 n = m 的方陣"
+   ],
+   "ans": "2D peak 不一定在選到的那一列上",
+   "why": "老師的例子：欄中選到 12，列上找到 14，但 14 下面的 15 比它大，14 不是 2D peak。"
+  },
+  {
+   "q": "正確版 2D 演算法（每次找中間欄的全域最大值、往較大鄰居那半欄遞迴），n 列 m 欄時複雜度是？",
+   "opts": [
+    "Θ(n log m)",
+    "Θ(m log n)",
+    "Θ(log n · log m)",
+    "Θ(nm)"
+   ],
+   "ans": "Θ(n log m)",
+   "why": "T(n, m) = T(n, m/2) + Θ(n)：每層掃一欄 n 個元素，欄數減半共 log₂ m 層。"
+  },
+  {
+   "q": "正確版為什麼要找欄的「全域最大值」而不是 1D peak？",
+   "opts": [
+    "這樣 (i, j) ≥ 左右兩鄰時，上下也一定不比它大，就是 2D peak",
+    "因為找最大值比找 1D peak 快",
+    "因為 1D peak 在欄中不存在",
+    "為了讓遞迴式變成 Θ(log n)"
+   ],
+   "ans": "這樣 (i, j) ≥ 左右兩鄰時，上下也一定不比它大，就是 2D peak",
+   "why": "全域最大值保證上下方向已經最大，再檢查左右即可判定 2D peak。"
+  }
+ ]
+}

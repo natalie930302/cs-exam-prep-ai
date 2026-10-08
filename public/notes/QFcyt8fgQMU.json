@@ -1,0 +1,478 @@
+{
+ "video": "QFcyt8fgQMU",
+ "label": "MIT 6.006 Rec2：Python Cost Model, Document Distance",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場：先學會分析現有程式",
+   "scene": null,
+   "points": [
+    {
+     "text": "這堂 recitation 搞懂了，後面的課就都跟得上。",
+     "t": 19
+    },
+    {
+     "text": "實務上多半不是發明新演算法，而是讓現有程式變快：先找出哪幾行慢。",
+     "t": 34
+    },
+    {
+     "text": "用 lecture 的 Python cost model 分析 document distance 的各個版本。",
+     "t": 53
+    }
+   ]
+  },
+  {
+   "title": "document distance 回顧：文件向量",
+   "scene": "algmit1-fox-vectors",
+   "points": [
+    {
+     "text": "兩份文件：\"The fox is in the hat.\" 與 \"The fox is outside.\"。",
+     "t": 97
+    },
+    {
+     "text": "操作 1：把每份文件（一個字串）切成 words。",
+     "t": 121
+    },
+    {
+     "text": "操作 2：建立文件向量：每個 word 與它出現的次數。",
+     "t": 138
+    },
+    {
+     "text": "D1 的向量：the 出現 2 次，其餘各 1 次。",
+     "t": 185
+    },
+    {
+     "text": "D2 的向量：the、fox、is、outside 各 1 次。",
+     "t": 221
+    },
+    {
+     "text": "\"The\" 與 \"the\" 被算在一起。",
+     "t": 227
+    },
+    {
+     "text": "標點去掉、全部轉小寫：程式裡會看到這些細節。",
+     "t": 237
+    }
+   ]
+  },
+  {
+   "title": "操作 3：內積",
+   "scene": "algmit1-fox-inner",
+   "points": [
+    {
+     "text": "三步驟：切字、算文件向量、算兩向量的角度。",
+     "t": 247
+    },
+    {
+     "text": "角度公式唯一相關的是它要算內積。",
+     "t": 257
+    },
+    {
+     "text": "vector_angle 呼叫 inner_product 三次，其餘數學當 O(1)。",
+     "t": 273
+    },
+    {
+     "text": "the 在 D1 出現 2 次、D2 出現 1 次：2 × 1。",
+     "t": 328
+    },
+    {
+     "text": "fox 兩邊各 1 次：1 × 1。",
+     "t": 339
+    },
+    {
+     "text": "不必走兩個向量：走其中一個，到另一個查；查不到的貢獻 0。",
+     "t": 361
+    },
+    {
+     "text": "docdist1 很慢，最後一版快 1000 倍。",
+     "t": 409
+    }
+   ],
+   "trap": "補充：本例內積 = 2·1（the）+ 1·1（fox）+ 1·1（is）= 4；in、hat、outside 只出現在一邊，貢獻 0。"
+  },
+  {
+   "title": "由上而下讀程式：呼叫樹",
+   "scene": "algmit1-call-tree",
+   "points": [
+    {
+     "text": "看大程式要 top-down：從 main 開始，看它呼叫誰。",
+     "t": 432
+    },
+    {
+     "text": "第 7、8 行對兩份文件呼叫 word_frequencies_for_file（步驟 1、2）。",
+     "t": 471
+    },
+    {
+     "text": "第 9 行呼叫 vector_angle（步驟 3）。",
+     "t": 484
+    },
+    {
+     "text": "word_frequencies_for_file：讀檔、切字、算文件向量。",
+     "t": 513
+    },
+    {
+     "text": "讀檔不管；它呼叫 get_words_from_line_list 與 count_frequency。",
+     "t": 545
+    },
+    {
+     "text": "main 的時間 = 子函式時間相加，一層層往下算。",
+     "t": 596
+    },
+    {
+     "text": "每個版本都做一張 scorecard，記下各函式的 running time。",
+     "t": 613
+    },
+    {
+     "text": "它對每一行呼叫 get_words_from_string 把一行切成 words。",
+     "t": 709
+    }
+   ]
+  },
+  {
+   "title": "get_words_from_string：逐行成本",
+   "scene": "algmit1-gwfs-cost",
+   "points": [
+    {
+     "text": "get_words_from_string 把一行字串變成 word list：轉小寫、略過標點和空白。",
+     "t": 738
+    },
+    {
+     "text": "方法：每一行看執行一次的 cost 與執行次數，相乘就是該行的總時間。",
+     "t": 762
+    },
+    {
+     "text": "假設這一行有 n 個字元。",
+     "t": 837
+    },
+    {
+     "text": "第 11 行 for 走過每個字元：跑 n 次。",
+     "t": 888
+    },
+    {
+     "text": "isalnum 判斷是否為英數字元：常數時間，跑 n 次。",
+     "t": 933
+    },
+    {
+     "text": "假設英文 word 長度差不多，都當成 w 個字元。",
+     "t": 962
+    },
+    {
+     "text": "word 間隔一個空白，所以約有 n/(w+1) 個 word。",
+     "t": 1007
+    },
+    {
+     "text": "append 是常數時間，因為 Python 用 table doubling。",
+     "t": 1074
+    }
+   ]
+  },
+  {
+   "title": "實際跑一次：The fox is␣␣outside",
+   "scene": "algmit1-gwfs-trace",
+   "points": [
+    {
+     "text": "用 \"The fox is outside\" 跑一遍。",
+     "t": 1122
+    },
+    {
+     "text": "一開始 word_list、character_list 都是空的。",
+     "t": 1134
+    },
+    {
+     "text": "前三個字元是英數，放進 character_list；第四個不是，執行第 15–18 行。",
+     "t": 1159
+    },
+    {
+     "text": "join 把字元 list 變成字串 \"The\"。",
+     "t": 1183
+    },
+    {
+     "text": "再轉成小寫，放進 word_list。",
+     "t": 1193
+    },
+    {
+     "text": "如果打字不小心連打兩個空白呢？",
+     "t": 1278
+    },
+    {
+     "text": "第二個空白時 character_list 是空的，會加入一個空 word。",
+     "t": 1310
+    },
+    {
+     "text": "len(character_list) > 0 的檢查就是為了擋掉空 word。",
+     "t": 1363
+    }
+   ]
+  },
+  {
+   "title": "逐行加總：O(n)",
+   "scene": "algmit1-gwfs-cost",
+   "points": [
+    {
+     "text": "現在算每行執行幾次、成本多少。",
+     "t": 1379
+    },
+    {
+     "text": "第 14 行在非英數字元（空白）時執行。",
+     "t": 1420
+    },
+    {
+     "text": "第 15 行 join 的成本是 list 長度，也就是 w。",
+     "t": 1455
+    },
+    {
+     "text": "第 15–18 行都在同一個 if 裡，各執行 n/(w+1) 次。",
+     "t": 1509
+    },
+    {
+     "text": "第 19–23 行最多執行一次。",
+     "t": 1571
+    },
+    {
+     "text": "它們處理最後一個 word：迴圈結束時 outside 還在 character_list 裡。",
+     "t": 1604
+    },
+    {
+     "text": "把 cost 欄與次數欄做「內積」就是函式總時間。",
+     "t": 1672
+    },
+    {
+     "text": "O(n + 1) = O(n)：n 是一行的長度。",
+     "t": 1734
+    }
+   ]
+  },
+  {
+   "title": "陷阱：+ 與 extend",
+   "scene": "algmit1-plus-vs-extend",
+   "points": [
+    {
+     "text": "設文件有 z 行；第 3–5 行在迴圈中跑 z 次。",
+     "t": 1872
+    },
+    {
+     "text": "這是陷阱：+ 的成本是兩個 list 的長度。",
+     "t": 1926
+    },
+    {
+     "text": "例：a = [1, 2, …, 1000]、b = [1, 2, 3]。",
+     "t": 1949
+    },
+    {
+     "text": "c = a + b 不能改 a、b，所以要建新 list，把兩邊全部 append 進去。",
+     "t": 1978
+    },
+    {
+     "text": "成本是 1000 + 3 = 1003。",
+     "t": 1987
+    },
+    {
+     "text": "一般來說是 O(l1 + l2)。",
+     "t": 1997
+    },
+    {
+     "text": "extend 把第二個 list 的元素逐一 append 到第一個 list。",
+     "t": 2002
+    },
+    {
+     "text": "extend 是 O(l2)：a 有一百萬個，接 3 個也只花 3。",
+     "t": 2036
+    }
+   ]
+  },
+  {
+   "title": "k + 2k + … + zk = O(W²)",
+   "scene": "algmit1-quadratic-concat",
+   "points": [
+    {
+     "text": "每行 k 個 word（k = n/w），get_words_from_string 回傳大小 k 的 list。",
+     "t": 2080
+    },
+    {
+     "text": "第一次 word_list 是空的，得到 k 個；第二次已有 k 個再加 k 個……",
+     "t": 2093
+    },
+    {
+     "text": "總成本 k + 2k + 3k + … + zk。",
+     "t": 2112
+    },
+    {
+     "text": "漸近上是 O(z²k)。",
+     "t": 2179
+    },
+    {
+     "text": "文件總字數 W = z·k，所以 z = W/k。",
+     "t": 2196
+    },
+    {
+     "text": "每行要塞進一頁，k 幾乎是常數。",
+     "t": 2226
+    },
+    {
+     "text": "所以 get_words_from_line_list 是 O(W²)。",
+     "t": 2235
+    },
+    {
+     "text": "把 + 改成 extend 就是 docdist2，快很多。",
+     "t": 2366
+    }
+   ]
+  },
+  {
+   "title": "inner_product：兩層迴圈",
+   "scene": "algmit1-inner-nested",
+   "points": [
+    {
+     "text": "第 3 行走過第一個文件向量：跑 L1 次。",
+     "t": 2457
+    },
+    {
+     "text": "第 4 行在內層：跑 L1 × L2 次。",
+     "t": 2478
+    },
+    {
+     "text": "兩層迴圈巢狀，第 5、6 行也跑 L1·L2 次。",
+     "t": 2493
+    },
+    {
+     "text": "字串比較要逐字元比，遇到不同就停。",
+     "t": 2551
+    },
+    {
+     "text": "\"foy\" 與 \"fox\"：前兩個相同，第三個才不同。",
+     "t": 2566
+    },
+    {
+     "text": "所以字串 == 是 Θ(w)，不是 Θ(1)；這裡因為英文 word 長度是常數才當成常數。",
+     "t": 2582
+    },
+    {
+     "text": "又是陷阱：第 6 行的 + 是數字相加，乘、加數字都是 Θ(1)。",
+     "t": 2632
+    },
+    {
+     "text": "加總得 inner_product = O(L1·L2)。",
+     "t": 2701
+    }
+   ]
+  },
+  {
+   "title": "總時間",
+   "scene": "algmit1-total-cost",
+   "points": [
+    {
+     "text": "vector_angle 呼叫 inner_product 三次。",
+     "t": 2711
+    },
+    {
+     "text": "word_frequencies_for_file 被呼叫兩次，兩份文件字數不同。",
+     "t": 2791
+    },
+    {
+     "text": "所以是 O(W1² + W2²)，不能都寫成 W²。",
+     "t": 2806
+    },
+    {
+     "text": "再加上 L1·L2；L 是不重複字數（向量長度），W 是總字數。",
+     "t": 2819
+    },
+    {
+     "text": "vector_angle 其實是 L1·L2 + L1² + L2²：分母要算自己跟自己的內積。",
+     "t": 2872
+    },
+    {
+     "text": "第一份 1000 字、第二份 1 字時，L1² 遠大於 L1·L2，不能丟。",
+     "t": 2897
+    },
+    {
+     "text": "L1 < W1、L2 < W2，所以 L1²、L2² 被吸收。",
+     "t": 2968
+    },
+    {
+     "text": "學生補充：英文字彙有限，文件很大時 L 幾乎是常數。",
+     "t": 3060
+    }
+   ],
+   "trap": "補充：助教不確定 L1·L2 能不能省略。其實可以：L1·L2 ≤ W1·W2 ≤ (W1² + W2²)/2，所以 docdist1 總時間是 O(W1² + W2²)。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "D1 = \"The fox is in the hat.\"、D2 = \"The fox is outside.\"（轉小寫、去標點），兩者文件向量的內積是？",
+   "opts": [
+    "4",
+    "3",
+    "6",
+    "2"
+   ],
+   "ans": "4",
+   "why": "the 2·1 + fox 1·1 + is 1·1 = 4；in、hat、outside 只出現在一邊。"
+  },
+  {
+   "q": "get_words_from_string 處理長度 n 的一行，若 word 長度 w 是常數，時間是？",
+   "opts": [
+    "O(n)",
+    "O(n²)",
+    "O(n·w²)",
+    "O(n log n)"
+   ],
+   "ans": "O(n)",
+   "why": "每個字元做常數工作；join、lower 每個 word 花 O(w)，共約 n/(w+1) 個 word，加起來還是 O(n)。"
+  },
+  {
+   "q": "a 有 1000 個元素、b 有 3 個，c = a + b 的成本大約是？",
+   "opts": [
+    "1003",
+    "3",
+    "1000",
+    "3000"
+   ],
+   "ans": "1003",
+   "why": "+ 要建立新 list，把 a 和 b 全部複製進去：O(|a| + |b|)。"
+  },
+  {
+   "q": "a.extend(b) 的時間是？",
+   "opts": [
+    "O(|b|)",
+    "O(|a| + |b|)",
+    "O(|a|)",
+    "O(|a|·|b|)"
+   ],
+   "ans": "O(|b|)",
+   "why": "extend 只把 b 的元素逐一 append 到 a，append 是 Θ(1)。"
+  },
+  {
+   "q": "z 行、每行 k 個 word，迴圈中做 word_list = word_list + words_in_line，總字數 W = zk、k 為常數，時間是？",
+   "opts": [
+    "O(W²)",
+    "O(W)",
+    "O(W log W)",
+    "O(z)"
+   ],
+   "ans": "O(W²)",
+   "why": "第 t 次要複製 tk 個，總和 k(1 + 2 + … + z) = O(z²k) = O(W²/k)。"
+  },
+  {
+   "q": "兩個長度 w 的字串做 ==，最壞時間是？",
+   "opts": [
+    "Θ(w)",
+    "Θ(1)",
+    "Θ(w²)",
+    "Θ(log w)"
+   ],
+   "ans": "Θ(w)",
+   "why": "要逐字元比，例如 \"fox\" 與 \"foy\" 要比到最後一個字元。"
+  },
+  {
+   "q": "get_words_from_string 裡 elif len(character_list) > 0 的作用是？",
+   "opts": [
+    "連續空白時避免把空字串當成 word",
+    "處理最後一個 word",
+    "把字元轉成小寫",
+    "讓迴圈提早結束"
+   ],
+   "ans": "連續空白時避免把空字串當成 word",
+   "why": "第二個空白時 character_list 已經清空；沒有這個檢查就會加入空 word。最後一個 word 是第 19–22 行處理的。"
+  }
+ ]
+}

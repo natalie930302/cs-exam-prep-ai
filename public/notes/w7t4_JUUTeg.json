@@ -1,0 +1,80 @@
+{
+ "video": "w7t4_JUUTeg",
+ "label": "Abdul Bari：1.6 Classes of Functions",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "時間函數的類別",
+   "scene": "algbari1-classes",
+   "points": [
+    {
+     "text": "整理目前得到的時間複雜度類型。",
+     "t": 4
+    },
+    {
+     "text": "O(1) 叫 constant：時間是 2、5 甚至 5000 都算常數。",
+     "t": 9
+    },
+    {
+     "text": "constant 的意思是跟輸入大小 n 無關，不是值等於 1。",
+     "t": 33
+    },
+    {
+     "text": "log n（底數 2、3 都一樣）叫 logarithmic。",
+     "t": 44
+    },
+    {
+     "text": "O(n) 叫 linear：2n + 3、500n + 700、n/5000 + 6 都是 O(n)。",
+     "t": 65
+    },
+    {
+     "text": "看的是多項式的次數 1，寫那一項 n，不寫次數。",
+     "t": 96
+    },
+    {
+     "text": "n² 叫 quadratic；n³ 叫 cubic（例如矩陣相乘）。",
+     "t": 113
+    },
+    {
+     "text": "2ⁿ、3ⁿ、nⁿ 叫 exponential，這些統稱 classes of functions。",
+     "t": 132
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "f(n) = 500n + 700 屬於哪一類？",
+   "opts": [
+    "linear O(n)",
+    "constant O(1)",
+    "quadratic O(n²)",
+    "logarithmic"
+   ],
+   "ans": "linear O(n)",
+   "why": "次數是 1，係數再大都還是 linear。"
+  },
+  {
+   "q": "某演算法不論輸入多大都跑 5000 步，它的時間是？",
+   "opts": [
+    "O(1)",
+    "O(5000)",
+    "O(n)",
+    "O(log n)"
+   ],
+   "ans": "O(1)",
+   "why": "跟 n 無關就是 constant。"
+  },
+  {
+   "q": "下列何者屬於 exponential 類？",
+   "opts": [
+    "3ⁿ",
+    "n³",
+    "n log n",
+    "n¹⁰⁰"
+   ],
+   "ans": "3ⁿ",
+   "why": "n 在指數上才是 exponential；n³、n¹⁰⁰ 是多項式。"
+  }
+ ]
+}

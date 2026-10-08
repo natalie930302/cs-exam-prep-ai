@@ -1,0 +1,254 @@
+{
+ "video": "Nd0XDY-jVHs",
+ "label": "Abdul Bari：1.8.2 Asymptotic Notations #2",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "2n² + 3n + 4：O、Ω、Θ 都是 n²",
+   "scene": "algbari2-bound-plot",
+   "params": {
+    "ex": "q4"
+   },
+   "points": [
+    {
+     "text": "例：f(n) = 2n² + 3n + 4。",
+     "t": 0
+    },
+    {
+     "text": "把每一項都換成 n²：2n² + 3n + 4 ≤ 2n² + 3n² + 4n² = 9n²，n ≥ 1 起成立。",
+     "t": 12
+    },
+    {
+     "text": "c = 9、g(n) = n² → f(n) = O(n²)。",
+     "t": 44
+    },
+    {
+     "text": "同一個函數：2n² + 3n + 4 ≥ 1·n² → f(n) = Ω(n²)。",
+     "t": 66
+    },
+    {
+     "text": "f(n) 夾在 1·n² 與 9n² 之間，兩邊都是 n² → f(n) = Θ(n²)。",
+     "t": 83
+    }
+   ]
+  },
+  {
+   "title": "n² log n + n 的三個界",
+   "scene": "algbari2-bound-plot",
+   "params": {
+    "ex": "nlog"
+   },
+   "points": [
+    {
+     "text": "f(n) = n² log n + n ≤ 10·n² log n（隨便寫一個更大的係數）。",
+     "t": 100
+    },
+    {
+     "text": "另一邊 f(n) ≥ 1·n² log n。",
+     "t": 121
+    },
+    {
+     "text": "兩邊都是 n² log n → O(n² log n)、Ω(n² log n)、Θ(n² log n) 三個都成立。",
+     "t": 139
+    }
+   ]
+  },
+  {
+   "title": "n² log n 自成一類",
+   "scene": "algbari2-ladder",
+   "params": {
+    "ex": "nlog"
+   },
+   "points": [
+    {
+     "text": "先前的類別表裡沒有 n² log n。",
+     "t": 155
+    },
+    {
+     "text": "n² log n 介於 n² 與 n³ 之間：比 n² 大、比 n³ 小。",
+     "t": 163
+    },
+    {
+     "text": "它是 n² 與 log n 的組合，可以在兩者之間另立一個類別。",
+     "t": 175
+    }
+   ]
+  },
+  {
+   "title": "n!：上界 nⁿ、下界 1",
+   "scene": "algbari2-factorial",
+   "points": [
+    {
+     "text": "n! = n(n−1)(n−2)…2·1，倒過來寫成 1·2·3·…·n。",
+     "t": 181
+    },
+    {
+     "text": "照慣例把每個因數都換成 n → n! ≤ nⁿ。",
+     "t": 215
+    },
+    {
+     "text": "每個因數都換成 1 → n! ≥ 1。",
+     "t": 221
+    },
+    {
+     "text": "上界 nⁿ、下界 1，兩邊不一樣 → 只能寫 O(nⁿ)、Ω(1)。",
+     "t": 262
+    }
+   ],
+   "trap": "補充：在常用的類別表裡找不到 n! 的 Θ；但 Stirling 公式給出 n! = Θ(√n·(n/e)ⁿ)，下界也能寫得更緊（例如 n! ≥ (n/2)^(n/2)）。"
+  },
+  {
+   "title": "n! 找不到固定的位置",
+   "scene": "algbari2-ladder",
+   "params": {
+    "ex": "fact"
+   },
+   "points": [
+    {
+     "text": "所以 n! 無法給出 tight bound（Θ）。",
+     "t": 280
+    },
+    {
+     "text": "n 小時 n! 接近小的類別，n 大時一路往上逼近 nⁿ。",
+     "t": 294
+    },
+    {
+     "text": "不能說 n! 永遠大於 n¹⁰ 而且小於 n¹¹，找不到它的一格。",
+     "t": 315
+    },
+    {
+     "text": "這就是上界、下界的用處：找不到 Θ 時才退而求其次用 O 或 Ω。",
+     "t": 343
+    }
+   ]
+  },
+  {
+   "title": "log n! 的上下界",
+   "scene": "algbari2-factorial",
+   "params": {
+    "log": true
+   },
+   "points": [
+    {
+     "text": "log n! = log(1·2·3·…·n)。",
+     "t": 358
+    },
+    {
+     "text": "每個因數換成 n：log n! ≤ log nⁿ = n log n。",
+     "t": 379
+    },
+    {
+     "text": "每個因數換成 1：log 1 = 0，但時間習慣寫成 1。",
+     "t": 389
+    },
+    {
+     "text": "老師的結論：上界 O(n log n)、下界 Ω(1)，沒有 tight bound。",
+     "t": 414
+    }
+   ],
+   "trap": "更正：log n! 其實有 tight bound。後半 n/2 個因數都 ≥ n/2，所以 log n! ≥ (n/2)·log(n/2)，因此 log n! = Θ(n log n)（考試常考）。"
+  },
+  {
+   "title": "盡量給最接近的界",
+   "scene": "algbari2-phone-price",
+   "points": [
+    {
+     "text": "能求出 Θ 最好：它是 tight bound。",
+     "t": 436
+    },
+    {
+     "text": "用 O 或 Ω 時也要給最接近的值；函數是 n² 就寫 n²，寫 n log n、n√n 雖對但沒有意義。",
+     "t": 459
+    },
+    {
+     "text": "買手機的例子：說「大約 20,000」是最接近的估計。",
+     "t": 470
+    },
+    {
+     "text": "最少 18、19k，最多 21、24k，都還算接近。",
+     "t": 493
+    },
+    {
+     "text": "最少 2,000、3,000 或最多 1、2 lakh：答案沒錯，但對我沒用。",
+     "t": 501
+    },
+    {
+     "text": "Θ 保證給的是精確的類別；O、Ω 可能離真正的值很遠。",
+     "t": 547
+    },
+    {
+     "text": "不確定精確值時才用 O、Ω，例如 n!、log n!；但沒有規定只能用 Θ。",
+     "t": 561
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "用「每一項都換成 n²」證明 2n² + 3n + 4 = O(n²)，得到的 c 是多少？",
+   "opts": [
+    "9",
+    "2",
+    "4",
+    "5"
+   ],
+   "ans": "9",
+   "why": "2n² + 3n² + 4n² = 9n²，n ≥ 1 起成立。"
+  },
+  {
+   "q": "f(n) = n² log n + n 的 tight bound 是？",
+   "opts": [
+    "Θ(n² log n)",
+    "Θ(n²)",
+    "Θ(n³)",
+    "沒有 tight bound"
+   ],
+   "ans": "Θ(n² log n)",
+   "why": "1·n² log n ≤ f(n) ≤ 10·n² log n，上下界同為 n² log n。"
+  },
+  {
+   "q": "n² log n 在類別表中的位置？",
+   "opts": [
+    "介於 n² 與 n³ 之間",
+    "介於 n 與 n log n 之間",
+    "等於 n³",
+    "大於 2ⁿ"
+   ],
+   "ans": "介於 n² 與 n³ 之間",
+   "why": "log n 比任何 n^ε 長得慢，所以 n² < n² log n < n³。"
+  },
+  {
+   "q": "影片用「每個因數換成 n 或 1」得到 n! 的上下界為？",
+   "opts": [
+    "O(nⁿ)、Ω(1)",
+    "O(n²)、Ω(n)",
+    "O(2ⁿ)、Ω(n²)",
+    "Θ(nⁿ)"
+   ],
+   "ans": "O(nⁿ)、Ω(1)",
+   "why": "n·n·…·n = nⁿ 是上界，1·1·…·1 = 1 是下界。"
+  },
+  {
+   "q": "log n! 的正確 tight bound 是？",
+   "opts": [
+    "Θ(n log n)",
+    "Θ(log n)",
+    "Θ(n)",
+    "不存在"
+   ],
+   "ans": "Θ(n log n)",
+   "why": "上界 log nⁿ = n log n；後半因數都 ≥ n/2 給出下界 (n/2)log(n/2)。影片說沒有 tight bound 是不精確的。"
+  },
+  {
+   "q": "買手機估價的比喻想強調什麼？",
+   "opts": [
+    "O、Ω 要給最接近的值，太遠雖對但沒用",
+    "O 一定比 Θ 精確",
+    "Ω 代表最便宜的情況",
+    "估價只能用 Θ"
+   ],
+   "ans": "O、Ω 要給最接近的值，太遠雖對但沒用",
+   "why": "說手機最少 2,000 元或最多 2 lakh 都沒錯，但沒有參考價值。"
+  }
+ ]
+}

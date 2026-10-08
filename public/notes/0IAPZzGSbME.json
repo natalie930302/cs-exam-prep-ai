@@ -1,88 +1,161 @@
 {
  "video": "0IAPZzGSbME",
  "label": "Abdul Bari：1. Introduction to Algorithms",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
    "title": "課程介紹",
    "scene": null,
    "points": [
     {
-     "text": "演算法是資工必修，也是競試、程式競賽、面試題目的主要來源。",
-     "t": 38
+     "text": "演算法是資工核心且重要的科目，理論考試、競試（如 GATE）、程式競賽和面試題目都常出自這裡。",
+     "t": 39
     },
     {
-     "text": "這門課提供解題的 strategy（設計方法），學會後才能自己發展解題邏輯。",
-     "t": 59
+     "text": "這門課提供解題的 strategy／approach，學會後才能自己發展解題邏輯。",
+     "t": 62
     },
     {
-     "text": "影片會編號，建議依編號順序觀看，因為大主題會拆成多支小影片。",
-     "t": 132
+     "text": "影片會編號，大主題會拆成小影片，建議依編號順序觀看。",
+     "t": 131
     }
    ]
   },
   {
-   "title": "演算法的定義：Design 階段 vs Implementation 階段",
-   "scene": "algo-vs-program",
+   "title": "定義與 Design vs Implementation",
+   "scene": "algjiang1-avp-row",
+   "params": {
+    "row": 0
+   },
    "points": [
     {
      "text": "Algorithm：解決一個計算問題的 step-by-step procedure。",
-     "t": 210
+     "t": 201
     },
     {
-     "text": "Program 也是解決問題的步驟，所以要比較兩者的差異才能看懂演算法的角色。",
-     "t": 228
+     "text": "Program 也是解決問題的步驟，所以比較兩者的差異才能看懂演算法的角色。",
+     "t": 215
     },
     {
-     "text": "軟體開發生命週期中，先 design、再 implementation；不能用試錯法蓋東西。",
-     "t": 260
+     "text": "軟體開發生命週期有兩個重要階段：design phase 與 implementation phase。",
+     "t": 253
     },
     {
-     "text": "設計階段用類似英文、不講究語法的敘述描述程式要怎麼運作，這就是演算法。",
-     "t": 355
+     "text": "工程上不能用試錯法蓋東西（蓋錯拆掉重來）；軟體容易刪了重寫，反而讓人感覺不到浪費。",
+     "t": 299
     },
     {
-     "text": "演算法寫於 design time，程式寫於 implementation time。",
-     "t": 385
+     "text": "設計階段用類似英文、不講究語法的敘述（紙上或記事本）描述程式怎麼運作，這就是演算法。",
+     "t": 335
+    },
+    {
+     "text": "演算法寫於 design time，程式寫於 implementation time；先設計，再把設計轉成程式。",
+     "t": 364
     }
    ]
   },
   {
-   "title": "誰來寫、用什麼語言寫",
-   "scene": "algo-vs-program",
+   "title": "誰來寫：domain knowledge",
+   "scene": "algjiang1-avp-row",
+   "params": {
+    "row": 1
+   },
    "points": [
     {
-     "text": "寫演算法的人要有 domain knowledge，例如會計軟體找會計、醫院系統找醫護行政人員；寫程式的是 programmer。",
-     "t": 410
+     "text": "設計演算法的人要有 domain knowledge：了解問題與解法的人。",
+     "t": 413
     },
     {
-     "text": "演算法可以用任何語言或數學符號，只要團隊看得懂；程式只能用 C、C++、Java、Python 等程式語言。",
+     "text": "例：會計軟體由會計師、醫院系統由醫師或醫院行政人員設計，比 programmer 更了解系統。",
+     "t": 425
+    },
+    {
+     "text": "程式由 programmer 撰寫。",
+     "t": 474
+    },
+    {
+     "text": "programmer 若也有 domain knowledge，就同時扮演 designer。",
+     "t": 475
+    }
+   ]
+  },
+  {
+   "title": "用什麼語言寫",
+   "scene": "algjiang1-avp-row",
+   "params": {
+    "row": 2
+   },
+   "points": [
+    {
+     "text": "演算法可以用任何語言寫：類英文，或更好的是數學符號。",
      "t": 487
     },
     {
-     "text": "設計者寫的演算法要讓 programmer 與整個開發團隊都看得懂。",
-     "t": 527
+     "text": "只要使用它的人看得懂即可：designer 寫的演算法要讓 programmer 與整個團隊都讀得懂。",
+     "t": 519
+    },
+    {
+     "text": "程式只能用程式語言寫，例如 C、C++、Java、Python。",
+     "t": 537
     }
    ]
   },
   {
-   "title": "平台相依性與分析 vs 測試",
-   "scene": "algo-vs-program",
+   "title": "與硬體、作業系統的關係",
+   "scene": "algjiang1-avp-row",
+   "params": {
+    "row": 3
+   },
    "points": [
     {
-     "text": "演算法與 hardware、OS 無關；程式則依賴硬體與作業系統（Linux、Windows）。",
-     "t": 562
+     "text": "演算法與 hardware、OS 無關，不在乎機器規格或用 Linux 還是 Windows。",
+     "t": 565
     },
     {
-     "text": "寫完演算法要做 analysis：在時間與空間上是否有效率；程式則是直接執行做 testing。",
-     "t": 610
+     "text": "程式依賴硬體與作業系統：開發時要選定在哪個硬體、哪個 OS 上跑。",
+     "t": 579
     },
     {
-     "text": "本課程演算法採用接近 C 語言的語法，因為大多數人都學過 C。",
-     "t": 677
+     "text": "為 Linux 或 Windows 開發，方法與環境都不同。",
+     "t": 593
+    }
+   ]
+  },
+  {
+   "title": "Analyze vs Testing",
+   "scene": "algjiang1-avp-row",
+   "params": {
+    "row": 4
+   },
+   "points": [
+    {
+     "text": "寫完演算法要 analyze：研究它是否正確達成結果，以及在時間、空間上是否有效率。",
+     "t": 604
+    },
+    {
+     "text": "程式不需要研究，直接執行檢查即可，也就是 testing。",
+     "t": 632
+    },
+    {
+     "text": "以上幾點差異可幫助理解演算法是什麼。",
+     "t": 647
+    }
+   ]
+  },
+  {
+   "title": "演算法的語法：沿用 C",
+   "scene": "algjiang1-swap-write",
+   "points": [
+    {
+     "text": "演算法可用任何語法，但寫的人與用的人多半是大學畢業生，至少都學過 C。",
+     "t": 662
+    },
+    {
+     "text": "因為大家都熟悉 C，本課程直接用 C 語言風格的語法寫演算法，避免混淆。",
+     "t": 683
     }
    ],
-   "trap": "補充：考試寫 pseudocode 時以 CLRS 風格為準（← 表示指定、陣列從 1 開始），不必拘泥 C 語法。"
+   "trap": "補充：考試寫 pseudocode 可依 CLRS 慣例（← 表示指定、陣列從 1 開始），不必拘泥 C 語法；重點是清楚、無歧義。"
   }
  ],
  "quiz": [
@@ -95,7 +168,7 @@
     "Maintenance 階段"
    ],
    "ans": "Design 階段",
-   "why": "先設計（演算法）再實作（程式）。"
+   "why": "先設計（演算法），再實作（程式）。"
   },
   {
    "q": "下列哪一項描述「程式」而非「演算法」？",
@@ -106,7 +179,7 @@
     "寫完後進行 analysis"
    ],
    "ans": "依賴硬體與作業系統",
-   "why": "演算法與平台無關，程式要選定硬體與 OS。"
+   "why": "演算法與平台無關；程式要選定硬體與 OS。"
   },
   {
    "q": "演算法寫完後要做什麼？程式呢？",
@@ -125,11 +198,21 @@
     "他們具有 domain knowledge",
     "他們比較會寫 C",
     "演算法一定要由非工程師寫",
-    "醫院系統不需要程式設計師"
+    "醫院系統不需要 programmer"
    ],
    "ans": "他們具有 domain knowledge",
    "why": "了解問題領域的人最能設計出正確的解法。"
+  },
+  {
+   "q": "影片為什麼選擇用 C 語言風格寫演算法？",
+   "opts": [
+    "大多數人都學過 C，容易看懂",
+    "演算法只能用 C 寫",
+    "C 執行速度最快",
+    "C 與硬體無關"
+   ],
+   "ans": "大多數人都學過 C，容易看懂",
+   "why": "演算法沒有固定語法，選大家都熟悉的語法最不容易混淆。"
   }
- ],
- "timing": "estimated"
+ ]
 }

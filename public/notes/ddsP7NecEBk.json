@@ -1,0 +1,360 @@
+{
+ "video": "ddsP7NecEBk",
+ "label": "Abdul Bari：Asymptotic Notations - Simplified",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "常見的時間複雜度類別",
+   "scene": "algbari2-ladder",
+   "params": {
+    "ex": "classes"
+   },
+   "points": [
+    {
+     "text": "漸近符號用來表示演算法的時間複雜度。",
+     "t": 1
+    },
+    {
+     "text": "常見類別：常數、log n、線性、n log n、n²、n³、2ⁿ。",
+     "t": 28
+    },
+    {
+     "text": "任何演算法的時間都會是其中之一，或它們的組合、倍數。",
+     "t": 49
+    },
+    {
+     "text": "先用 frequency count（每行執行次數）算幾個演算法。",
+     "t": 65
+    }
+   ]
+  },
+  {
+   "title": "常數與線性：2n + 3",
+   "scene": "freq-sum",
+   "points": [
+    {
+     "text": "只有一行敘述：f = 1，常數時間。",
+     "t": 73
+    },
+    {
+     "text": "陣列求和：1 + (n + 1) + n + 1。",
+     "t": 97
+    },
+    {
+     "text": "f(n) = 2n + 3，是多項式。",
+     "t": 119
+    },
+    {
+     "text": "最高次是 n → 線性。",
+     "t": 125
+    }
+   ]
+  },
+  {
+   "title": "矩陣相加與相乘",
+   "scene": "freq-matrix",
+   "points": [
+    {
+     "text": "兩層迴圈：f(n) = 2n² + 2n + 1。",
+     "t": 145
+    },
+    {
+     "text": "最高次 n² → 平方（quadratic）。",
+     "t": 161
+    },
+    {
+     "text": "矩陣相乘：三層迴圈。",
+     "t": 182
+    },
+    {
+     "text": "f(n) = 2n³ + 3n² + 2n + 1 → 立方（cubic）。",
+     "t": 209
+    }
+   ]
+  },
+  {
+   "title": "Binary search：3 log n + 2",
+   "scene": "algbari2-binsearch-count",
+   "points": [
+    {
+     "text": "Binary search：i = 1、j = n 各執行 1 次。",
+     "t": 236
+    },
+    {
+     "text": "每次取中間 (i + j)/2，範圍除以 2。",
+     "t": 246
+    },
+    {
+     "text": "迴圈與裡面的敘述都執行 log n 次（if/else 只走其中一個）。",
+     "t": 251
+    },
+    {
+     "text": "f(n) = 3 log n + 2 → 對數時間。",
+     "t": 270
+    }
+   ]
+  },
+  {
+   "title": "遞迴函數：T(n) = 2T(n−1) + 1",
+   "scene": "algbari2-write-rr",
+   "params": {
+    "ex": "twoT"
+   },
+   "points": [
+    {
+     "text": "遞迴函數：設它花 T(n)。",
+     "t": 280
+    },
+    {
+     "text": "一個敘述花 1，兩次呼叫自己各花 T(n−1)。",
+     "t": 301
+    },
+    {
+     "text": "T(n) = 2T(n−1) + 1，這是遞迴式（recurrence relation）。",
+     "t": 310
+    },
+    {
+     "text": "解出來是 2ⁿ（其他影片示範解法）。",
+     "t": 324
+    },
+    {
+     "text": "→ 指數時間。",
+     "t": 341
+    }
+   ]
+  },
+  {
+   "title": "上界、下界、tight bound：類別表",
+   "scene": "algbari2-ladder",
+   "params": {
+    "ex": "q2"
+   },
+   "points": [
+    {
+     "text": "時間複雜度會是表上其中一類（由小到大排好）。",
+     "t": 353
+    },
+    {
+     "text": "例：f(n) = 2n² + 3n + 2，最高次 n²。",
+     "t": 377
+    },
+    {
+     "text": "所有 ≥ n² 的類別都是 f 的上界。",
+     "t": 404
+    },
+    {
+     "text": "所有 ≤ n² 的類別都是下界，n² 本身是 tight bound。",
+     "t": 419
+    },
+    {
+     "text": "上界用 Big-O：f = O(n²)，O(n³)、O(2ⁿ) 也都對。",
+     "t": 453
+    },
+    {
+     "text": "同樣地 2n² + 3n + 1：≥ n² 的是上界、≤ n² 的是下界。",
+     "t": 496
+    },
+    {
+     "text": "下界用 Ω：f = Ω(n²)、Ω(n)、Ω(log n) 都對。",
+     "t": 582
+    },
+    {
+     "text": "O 與 Ω 都是 n² → f = Θ(n²)。",
+     "t": 644
+    }
+   ]
+  },
+  {
+   "title": "f(n) = n + 5",
+   "scene": "algbari2-ladder",
+   "params": {
+    "ex": "n5"
+   },
+   "points": [
+    {
+     "text": "再一例：f(n) = n + 5。",
+     "t": 668
+    },
+    {
+     "text": "≥ n 的類別都是上界。",
+     "t": 673
+    },
+    {
+     "text": "≤ n 的類別都是下界，n 是 tight bound。",
+     "t": 687
+    }
+   ]
+  },
+  {
+   "title": "Big-O 的正式定義",
+   "scene": "algbari2-bound-plot",
+   "params": {
+    "ex": "q1",
+    "part": "O"
+   },
+   "points": [
+    {
+     "text": "f(n) = O(g(n)) ⇔ 存在正常數 c、n₀，使所有 n ≥ n₀ 都有 f(n) ≤ c·g(n)。",
+     "t": 704
+    },
+    {
+     "text": "例：f(n) = 2n² + 3n + 1。",
+     "t": 752
+    },
+    {
+     "text": "每一項都換成 n²：≤ 2n² + 3n² + n² = 6n²。",
+     "t": 775
+    },
+    {
+     "text": "c = 6、g(n) = n² → f(n) = O(n²)。",
+     "t": 818
+    },
+    {
+     "text": "也可以把每項換成 2ⁿ：≤ 6·2ⁿ。",
+     "t": 856
+    },
+    {
+     "text": "所以 f(n) = O(2ⁿ) 也成立。",
+     "t": 905
+    },
+    {
+     "text": "開頭說的「≥ n² 的類別都是上界」就是這個意思。",
+     "t": 930
+    }
+   ]
+  },
+  {
+   "title": "Ω 的定義與 Θ",
+   "scene": "algbari2-bound-plot",
+   "params": {
+    "ex": "q1",
+    "part": "W"
+   },
+   "points": [
+    {
+     "text": "f(n) = Ω(g(n)) ⇔ 存在 c、n₀，n ≥ n₀ 時 f(n) ≥ c·g(n)。",
+     "t": 955
+    },
+    {
+     "text": "例：2n² + 3n + 1 ≥ 1·n²。",
+     "t": 996
+    },
+    {
+     "text": "c = 1、g(n) = n² → f(n) = Ω(n²)。",
+     "t": 1036
+    },
+    {
+     "text": "O 與 Ω 都是 n² → f(n) = Θ(n²)。",
+     "t": 1063
+    },
+    {
+     "text": "漸近符號就是上界、下界與 tight bound。",
+     "t": 1093
+    }
+   ]
+  },
+  {
+   "title": "n!：沒有 tight bound",
+   "scene": "algbari2-factorial",
+   "points": [
+    {
+     "text": "例：某演算法的時間是 n!。",
+     "t": 1101
+    },
+    {
+     "text": "n! 不在常見類別表上。",
+     "t": 1128
+    },
+    {
+     "text": "每個因數都換成 n → n! ≤ nⁿ → O(nⁿ)。",
+     "t": 1152
+    },
+    {
+     "text": "每個因數都換成 1 → n! ≥ 1 → Ω(1)。",
+     "t": 1190
+    },
+    {
+     "text": "上界 nⁿ 與下界 1 不同。",
+     "t": 1238
+    },
+    {
+     "text": "老師把每個因數換成 log n，得到 Ω(n log n)。",
+     "t": 1267
+    },
+    {
+     "text": "n! 只有上界、下界，沒有 tight bound；tight bound 要 O 與 Ω 相同。",
+     "t": 1320
+    }
+   ],
+   "trap": "更正：每個因數換成 log n 得到的是 (log n)ⁿ，不是 n log n；不過 n! ≥ n log n 確實成立，結論 Ω(n log n) 沒錯。另外 Stirling 公式給出 n! = Θ(√n·(n/e)ⁿ)，只是不在常用類別表上。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Binary search 用 frequency count 算出的 f(n)？",
+   "opts": [
+    "3 log n + 2",
+    "2n + 3",
+    "n log n",
+    "log n + 1"
+   ],
+   "ans": "3 log n + 2",
+   "why": "兩個初始化各 1 次，迴圈內三行各約 log n 次。"
+  },
+  {
+   "q": "f(n) = 2n² + 3n + 1，下列何者錯誤？",
+   "opts": [
+    "f(n) = Ω(n³)",
+    "f(n) = O(2ⁿ)",
+    "f(n) = Ω(log n)",
+    "f(n) = Θ(n²)"
+   ],
+   "ans": "f(n) = Ω(n³)",
+   "why": "n³ 比 n² 大，不能當下界。"
+  },
+  {
+   "q": "Big-O 定義中的 c 與 n₀ 必須？",
+   "opts": [
+    "都是正常數",
+    "c 可以是負數",
+    "n₀ 必須是 0",
+    "c 必須是 1"
+   ],
+   "ans": "都是正常數",
+   "why": "f(n) ≤ c·g(n) 對所有 n ≥ n₀ 成立，c、n₀ > 0。"
+  },
+  {
+   "q": "用「每項換成 n²」證明 2n² + 3n + 1 = O(n²)，c = ?",
+   "opts": [
+    "6",
+    "2",
+    "3",
+    "5"
+   ],
+   "ans": "6",
+   "why": "2n² + 3n² + n² = 6n²。"
+  },
+  {
+   "q": "T(n) = 2T(n−1) + 1 的時間複雜度？",
+   "opts": [
+    "O(2ⁿ)",
+    "O(n)",
+    "O(n²)",
+    "O(log n)"
+   ],
+   "ans": "O(2ⁿ)",
+   "why": "呼叫樹每層加倍，總和 2ⁿ⁺¹ − 1。"
+  },
+  {
+   "q": "f(n) = n + 5 的 tight bound？",
+   "opts": [
+    "Θ(n)",
+    "Θ(1)",
+    "Θ(n²)",
+    "Θ(log n)"
+   ],
+   "ans": "Θ(n)",
+   "why": "最高次項 n。"
+  }
+ ]
+}

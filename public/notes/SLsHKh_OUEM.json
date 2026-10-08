@@ -1,0 +1,196 @@
+{
+ "video": "SLsHKh_OUEM",
+ "label": "Master's Theorem Explained",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "適用形式與 a、b、f(n)",
+   "scene": "algbari2-mt-tree",
+   "points": [
+    {
+     "text": "Master Theorem 解 T(n) = aT(n/b) + f(n)：遞迴部分 + 非遞迴部分。",
+     "t": 0
+    },
+    {
+     "text": "條件：a ≥ 1、b > 1、f(n) 漸近為正。",
+     "t": 18
+    },
+    {
+     "text": "a：每層分成幾個子問題；b：每次呼叫規模縮小的倍數。",
+     "t": 36
+    },
+    {
+     "text": "f(n)：遞迴呼叫之外做的工作。",
+     "t": 48
+    },
+    {
+     "text": "例：a = 2、b = 2、f(n) = n²：每個問題分成 2 個，規模每層減半。",
+     "t": 54
+    },
+    {
+     "text": "漸近為正：n 夠大之後一直是正的，例如 n²、n³、指數函數。",
+     "t": 87
+    }
+   ]
+  },
+  {
+   "title": "樹的深度與葉子數",
+   "scene": "algbari2-mt-tree",
+   "points": [
+    {
+     "text": "先求樹的深度。",
+     "t": 109
+    },
+    {
+     "text": "最底層 n/bᵏ = 1 → 深度 k = log_b n。",
+     "t": 124
+    },
+    {
+     "text": "節點數 = 分支數 a 的「深度」次方。",
+     "t": 138
+    },
+    {
+     "text": "a^(log_b n) = n^(log_b a)：這就是遞迴部分的複雜度。",
+     "t": 153
+    }
+   ]
+  },
+  {
+   "title": "三種情況：誰主導",
+   "scene": "algbari2-mt-cases",
+   "points": [
+    {
+     "text": "比較遞迴部分 n^(log_b a) 與非遞迴部分 f(n) 誰主導。",
+     "t": 169
+    },
+    {
+     "text": "Case 1：f(n) 比 n^(log_b a) 小一個多項式倍 → Θ(n^(log_b a))。",
+     "t": 179
+    },
+    {
+     "text": "Case 2：兩者同階，或 f(n) 只多一個 log 因子。",
+     "t": 208
+    },
+    {
+     "text": "→ Θ(n^(log_b a) · logᵏ⁺¹ n)。",
+     "t": 241
+    },
+    {
+     "text": "Case 3：f(n) 至少大一個多項式倍。",
+     "t": 262
+    },
+    {
+     "text": "還要驗證 regularity condition。",
+     "t": 273
+    },
+    {
+     "text": "成立 → Θ(f(n))：非遞迴部分主導。",
+     "t": 290
+    }
+   ],
+   "trap": "補充：regularity condition 是 a·f(n/b) ≤ c·f(n)，c < 1。case 2 的 logᵏ 寫法是 CLRS 本文 case 2 的延伸（f = Θ(n^(log_b a)·logᵏ n)，k ≥ 0）。"
+  },
+  {
+   "title": "例題：binary search、merge sort…",
+   "scene": "algbari2-mt-sort",
+   "params": {
+    "set": "sl"
+   },
+   "points": [
+    {
+     "text": "套用到幾個遞迴式。",
+     "t": 300
+    },
+    {
+     "text": "Binary search T(n) = T(n/2) + 1：兩邊都是常數 → case 2，k = 0 → Θ(log n)。",
+     "t": 304
+    },
+    {
+     "text": "Merge sort T(n) = 2T(n/2) + n：同階 → case 2 → Θ(n log n)。",
+     "t": 339
+    },
+    {
+     "text": "多一個 log 因子（2T(n/2) + n log n）：case 2，k = 1 → Θ(n log² n)。",
+     "t": 363
+    },
+    {
+     "text": "最後一題：f(n) 比遞迴部分只大一點點，但 n 很大時仍超過它。",
+     "t": 394
+    },
+    {
+     "text": "case 3，regularity 成立 → Θ(n^0.51)。",
+     "t": 409
+    }
+   ],
+   "trap": "補充：影片沒唸出後兩題的式子，依答案推測為 2T(n/2) + n log n 與 2T(n/4) + n^0.51（n^(log₄2) = n^0.5 < n^0.51）。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Master Theorem 要求的條件？",
+   "opts": [
+    "a ≥ 1、b > 1、f 漸近為正",
+    "a > 1、b ≥ 1",
+    "a、b 都是整數",
+    "f(n) 必須是多項式"
+   ],
+   "ans": "a ≥ 1、b > 1、f 漸近為正",
+   "why": "a 是子問題數、b 是縮小倍數。"
+  },
+  {
+   "q": "遞迴樹深度為？",
+   "opts": [
+    "log_b n",
+    "log_a n",
+    "n/b",
+    "a·b"
+   ],
+   "ans": "log_b n",
+   "why": "n/bᵏ = 1 → k = log_b n。"
+  },
+  {
+   "q": "葉子數 a^(log_b n) 等於？",
+   "opts": [
+    "n^(log_b a)",
+    "n^(log_a b)",
+    "a·n",
+    "b^(log n)"
+   ],
+   "ans": "n^(log_b a)",
+   "why": "用 a^(log_c b) = b^(log_c a)。"
+  },
+  {
+   "q": "T(n) = 2T(n/2) + n log n 的解？",
+   "opts": [
+    "Θ(n log² n)",
+    "Θ(n log n)",
+    "Θ(n²)",
+    "Θ(n)"
+   ],
+   "ans": "Θ(n log² n)",
+   "why": "case 2 延伸，k = 1 → 再乘一個 log n。"
+  },
+  {
+   "q": "Case 3 除了 f 較大，還要檢查？",
+   "opts": [
+    "Regularity：a·f(n/b) ≤ c·f(n)，c < 1",
+    "a = b",
+    "f(n) 是常數",
+    "n 是 2 的次方"
+   ],
+   "ans": "Regularity：a·f(n/b) ≤ c·f(n)，c < 1",
+   "why": "確保根的工作真的主導。"
+  },
+  {
+   "q": "T(n) = 2T(n/4) + n^0.51 的解？",
+   "opts": [
+    "Θ(n^0.51)",
+    "Θ(√n)",
+    "Θ(√n log n)",
+    "Θ(n)"
+   ],
+   "ans": "Θ(n^0.51)",
+   "why": "n^(log₄2) = n^0.5，f = n^0.51 大一個多項式倍 → case 3。"
+  }
+ ]
+}

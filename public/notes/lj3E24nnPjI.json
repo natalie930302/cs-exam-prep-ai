@@ -1,0 +1,288 @@
+{
+ "video": "lj3E24nnPjI",
+ "label": "Abdul Bari：1.11 Best Worst and Average Case Analysis",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "本片內容",
+   "scene": null,
+   "points": [
+    {
+     "text": "本片：best、worst、average case 分析。",
+     "t": 0
+    },
+    {
+     "text": "用兩個例子：linear search 與 binary search tree。",
+     "t": 39
+    }
+   ]
+  },
+  {
+   "title": "Linear search：成功與失敗",
+   "scene": "algbari2-linear-search",
+   "points": [
+    {
+     "text": "Linear search：在一串元素中找某個 key。",
+     "t": 56
+    },
+    {
+     "text": "例：10 個元素 [8, 6, 12, 5, 9, 7, 4, 3, 16, 18]，搜尋 7。",
+     "t": 84
+    },
+    {
+     "text": "從左邊開始，一次檢查一個元素。",
+     "t": 103
+    },
+    {
+     "text": "比較 6 次在 index 5 找到 7。",
+     "t": 121
+    },
+    {
+     "text": "搜尋 20：一個一個比到最後都沒有。",
+     "t": 132
+    },
+    {
+     "text": "整串檢查完都沒找到 → 失敗的搜尋。",
+     "t": 155
+    },
+    {
+     "text": "搜尋可能成功（7）也可能失敗（20）。",
+     "t": 161
+    }
+   ]
+  },
+  {
+   "title": "Best case 與 worst case",
+   "scene": "algbari2-linear-search",
+   "params": {
+    "mode": "cases"
+   },
+   "points": [
+    {
+     "text": "Best case：key 剛好在第一個 index。",
+     "t": 173
+    },
+    {
+     "text": "例中第一個元素是 8，搜尋 8 只要常數時間。",
+     "t": 254
+    },
+    {
+     "text": "B(n) = 1 → O(1)。",
+     "t": 276
+    },
+    {
+     "text": "Worst case：key 在最後一個 index（例中是 18）。",
+     "t": 301
+    },
+    {
+     "text": "要把 n 個元素都比過才找到。",
+     "t": 337
+    },
+    {
+     "text": "W(n) = n → O(n)。",
+     "t": 355
+    }
+   ]
+  },
+  {
+   "title": "Average case：(n + 1)/2",
+   "scene": "algbari2-ls-average",
+   "points": [
+    {
+     "text": "平均情況 = 所有情況的時間總和 ÷ 情況數。",
+     "t": 374
+    },
+    {
+     "text": "要列出所有情況並計算時間，很困難，很多演算法做不到。",
+     "t": 400
+    },
+    {
+     "text": "平均時間通常和 worst case 相近，所以多半分析 worst case。",
+     "t": 411
+    },
+    {
+     "text": "key 在第 1 個要比 1 次、第 2 個 2 次、…、第 n 個 n 次。",
+     "t": 449
+    },
+    {
+     "text": "共 n 種情況。",
+     "t": 469
+    },
+    {
+     "text": "(1 + 2 + … + n)/n = n(n + 1)/2 ÷ n = (n + 1)/2。",
+     "t": 477
+    },
+    {
+     "text": "這裡的時間都以比較次數計算。",
+     "t": 496
+    }
+   ]
+  },
+  {
+   "title": "Case 與符號無關",
+   "scene": "algbari2-case-notation",
+   "points": [
+    {
+     "text": "符號是用來描述函數的；case 只是對演算法做的一種分析。",
+     "t": 531
+    },
+    {
+     "text": "B(n) = 1 是常數函數：O(1)、Ω(1)、Θ(1) 都能寫。",
+     "t": 552
+    },
+    {
+     "text": "W(n) = n 屬線性類：O(n)、Ω(n)、Θ(n) 都對。",
+     "t": 601
+    },
+    {
+     "text": "不要以為 O 就是 worst case、Ω 就是 best case，這是錯的。",
+     "t": 650
+    },
+    {
+     "text": "A(n) = (n + 1)/2 也屬線性類，三種符號都能用。",
+     "t": 660
+    }
+   ]
+  },
+  {
+   "title": "BST：搜尋 15、best 與 worst",
+   "scene": "algbari2-bst-cases",
+   "points": [
+    {
+     "text": "BST：每個節點左邊都比它小、右邊都比它大。",
+     "t": 712
+    },
+    {
+     "text": "搜尋 15：20 → 往左 10 → 往右 15，找到。",
+     "t": 740
+    },
+    {
+     "text": "比較 3 次，等於樹高。",
+     "t": 761
+    },
+    {
+     "text": "樹高約 log n：7 個元素、log 8 = 3。",
+     "t": 772
+    },
+    {
+     "text": "Best case：key 在 root（20），B(n) = 1。",
+     "t": 795
+    },
+    {
+     "text": "Worst case：key 在 leaf（5、15、25、40）。",
+     "t": 849
+    },
+    {
+     "text": "W(n) = 樹高 = log n。",
+     "t": 877
+    }
+   ]
+  },
+  {
+   "title": "左斜 BST：worst case 的最小與最大",
+   "scene": "algbari2-bst-cases",
+   "params": {
+    "skew": true
+   },
+   "points": [
+    {
+     "text": "同樣 7 個元素也能建成左斜樹：40、30、25、20、15、10、5。",
+     "t": 909
+    },
+    {
+     "text": "平衡樹是最小高度，左斜樹是最大高度。",
+     "t": 938
+    },
+    {
+     "text": "Best case 一樣是搜尋 root。",
+     "t": 955
+    },
+    {
+     "text": "Worst case 是唯一的 leaf 5，樹高 n。",
+     "t": 965
+    },
+    {
+     "text": "所以 minimum worst case time = log n、maximum worst case time = n。",
+     "t": 985
+    },
+    {
+     "text": "Worst case 時間取決於樹高 h：log n ≤ h ≤ n。",
+     "t": 1068
+    },
+    {
+     "text": "best、worst 都可以用 O、Ω、Θ 任一種符號表示。",
+     "t": 1091
+    }
+   ],
+   "trap": "補充：「最小 worst case」是考試常見問法；平衡 BST 的高度嚴格說是 ⌊log₂ n⌋ + 1 層，漸近上就是 log n。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Linear search 的 best case 時間？",
+   "opts": [
+    "O(1)",
+    "O(log n)",
+    "O(n)",
+    "O((n + 1)/2)"
+   ],
+   "ans": "O(1)",
+   "why": "key 在第一格，比一次就找到。"
+  },
+  {
+   "q": "Linear search 的平均比較次數？",
+   "opts": [
+    "(n + 1)/2",
+    "n/2",
+    "n",
+    "log n"
+   ],
+   "ans": "(n + 1)/2",
+   "why": "(1 + 2 + … + n)/n = (n + 1)/2。"
+  },
+  {
+   "q": "關於 case 與漸近符號，何者正確？",
+   "opts": [
+    "任何 case 都可以用 O、Ω 或 Θ 表示",
+    "worst case 只能用 O",
+    "best case 只能用 Ω",
+    "average case 只能用 Θ"
+   ],
+   "ans": "任何 case 都可以用 O、Ω 或 Θ 表示",
+   "why": "符號描述函數，case 是分析方式，兩者無關。"
+  },
+  {
+   "q": "BST 搜尋的 worst case 時間取決於？",
+   "opts": [
+    "樹高 h",
+    "節點的值",
+    "root 的值",
+    "左子樹大小"
+   ],
+   "ans": "樹高 h",
+   "why": "worst case 搜尋到最深的 leaf，比較次數等於樹高。"
+  },
+  {
+   "q": "n 個節點的 BST，maximum worst case time 是？",
+   "opts": [
+    "n",
+    "log n",
+    "1",
+    "n log n"
+   ],
+   "ans": "n",
+   "why": "左斜（skewed）樹高度為 n。"
+  },
+  {
+   "q": "在 [8, 6, 12, 5, 9, 7, 4, 3, 16, 18] 中以 linear search 找 7，比較幾次？",
+   "opts": [
+    "6",
+    "5",
+    "7",
+    "10"
+   ],
+   "ans": "6",
+   "why": "7 在 index 5（第 6 個）。"
+  }
+ ]
+}

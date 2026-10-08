@@ -16,12 +16,12 @@
  },
  "-FElVPKykgw": {
   "label": "MIT 6.006 Rec10：Quiz 1 Review",
-  "points": 26,
-  "quiz": 6
+  "points": 69,
+  "quiz": 7
  },
  "-JTq1BFBwmo": {
   "label": "Abdul Bari：1.1 Priori Analysis and Posteriori Testing",
-  "points": 4,
+  "points": 7,
   "quiz": 3
  },
  "-qOVVRIZzao": {
@@ -41,8 +41,8 @@
  },
  "0IAPZzGSbME": {
   "label": "Abdul Bari：1. Introduction to Algorithms",
-  "points": 14,
-  "quiz": 4
+  "points": 24,
+  "quiz": 5
  },
  "0J2eLvkuF8k": {
   "label": "交大彭文志 Lec02 Introduction (2/2)",
@@ -56,8 +56,8 @@
  },
  "0M_kIqhwbFo": {
   "label": "MIT 6.006 L8：Hashing with Chaining",
-  "points": 22,
-  "quiz": 5
+  "points": 57,
+  "quiz": 7
  },
  "0NRkuhnupzs": {
   "label": "清大周志遠 第18A講 Special Scheduling Issues",
@@ -96,13 +96,13 @@
  },
  "1K9ebQJosvo": {
   "label": "Abdul Bari：2.3.3 Recurrence [T(n)=2T(n/2)+n] #3",
-  "points": 13,
+  "points": 25,
   "quiz": 5
  },
  "1U3Uwct45IY": {
   "label": "Abdul Bari：1.4 Frequency Count Method",
-  "points": 16,
-  "quiz": 6
+  "points": 25,
+  "quiz": 5
  },
  "1yyu70Vy9Zc": {
   "label": "台大林軒田 DSA C++ / Array",
@@ -181,7 +181,7 @@
  },
  "4V30R3I1vLI": {
   "label": "Abdul Bari：2.1.1 Recurrence Relation #1",
-  "points": 12,
+  "points": 25,
   "quiz": 5
  },
  "4ZlRH0eK-qQ": {
@@ -211,7 +211,7 @@
  },
  "5v-tKX2uRAk": {
   "label": "Abdul Bari：1.7 Compare Class of Functions",
-  "points": 11,
+  "points": 13,
   "quiz": 4
  },
  "6-wh6yvk6uc": {
@@ -244,6 +244,11 @@
   "points": 43,
   "quiz": 7
  },
+ "7a28lIQIHJQ": {
+  "label": "交大江蕙如 Lec01 課程介紹",
+  "points": 51,
+  "quiz": 7
+ },
  "7fujbpJ0LB4": {
   "label": "WilliamFiset：DFS",
   "points": 23,
@@ -268,6 +273,11 @@
   "label": "Abdul Bari：Pointer to Array",
   "points": 32,
   "quiz": 6
+ },
+ "8gt0D0IqU5w": {
+  "label": "Abdul Bari：2.3.1 Recurrence Dividing Function #1",
+  "points": 20,
+  "quiz": 5
  },
  "8IOv2fnc01E": {
   "label": "台大林軒田 DSA Introduction to Data Structures and Algorithms",
@@ -319,15 +329,20 @@
   "points": 31,
   "quiz": 5
  },
+ "9rVuyjxzwgM": {
+  "label": "Abdul Bari：2.5 Root Function",
+  "points": 17,
+  "quiz": 5
+ },
  "9SgLBjXqwd4": {
   "label": "Abdul Bari：1.5.2 Time Complexity Example #2",
-  "points": 20,
+  "points": 36,
   "quiz": 6
  },
  "9TlHvipP5yA": {
   "label": "Abdul Bari：1.5.1 Time Complexity #1",
-  "points": 14,
-  "quiz": 5
+  "points": 19,
+  "quiz": 4
  },
  "9vrPlp_f5A0": {
   "label": "清大周志遠 第5A講 Nachos解說/OS Structure",
@@ -336,7 +351,7 @@
  },
  "A03oI0znAoc": {
   "label": "Abdul Bari：1.8.1 Asymptotic Notations #1",
-  "points": 19,
+  "points": 35,
   "quiz": 5
  },
  "A6sbcPRLkmg": {
@@ -389,6 +404,11 @@
   "points": 31,
   "quiz": 7
  },
+ "a_otxyu0mSQ": {
+  "label": "MIT 6.006 Rec11：Principles of Algorithm Design",
+  "points": 80,
+  "quiz": 7
+ },
  "B0ywTK-Lklw": {
   "label": "台大林軒田 DSA Array / Linked List",
   "points": 212,
@@ -406,8 +426,8 @@
  },
  "BRO7mVIFt08": {
   "label": "MIT 6.006 L9：Table Doubling, Karp-Rabin",
-  "points": 27,
-  "quiz": 6
+  "points": 62,
+  "quiz": 7
  },
  "BtHlptO34wM": {
   "label": "清大周志遠 第4A講 Computer-System Organization(續)",
@@ -471,8 +491,8 @@
  },
  "CyknhZbfMqc": {
   "label": "Abdul Bari：2.2 Masters Theorem Decreasing Function",
-  "points": 11,
-  "quiz": 6
+  "points": 18,
+  "quiz": 5
  },
  "d-PDYIqg_Kc": {
   "label": "台大林軒田 DSA Analysis Tools",
@@ -488,6 +508,11 @@
   "label": "PERMUTATIONS and COMBINATIONS Review",
   "points": 48,
   "quiz": 7
+ },
+ "ddsP7NecEBk": {
+  "label": "Abdul Bari：Asymptotic Notations - Simplified",
+  "points": 51,
+  "quiz": 6
  },
  "DKCbsiDBN6c": {
   "label": "Abdul Bari：6 Introduction to Backtracking - Brute Force Approach",
@@ -526,7 +551,7 @@
  },
  "FbYzBWdhMb0": {
   "label": "Abdul Bari：1.2 Characteristics of Algorithm",
-  "points": 16,
+  "points": 20,
   "quiz": 5
  },
  "FiRH2TYB1Mw": {
@@ -599,6 +624,11 @@
   "points": 107,
   "quiz": 7
  },
+ "HtSuA80QTyo": {
+  "label": "MIT 6.006 L1：Algorithmic Thinking, Peak Finding",
+  "points": 76,
+  "quiz": 6
+ },
  "HUA_cVBdLw0": {
   "label": "Semaphores in Operating Systems",
   "points": 21,
@@ -608,6 +638,11 @@
   "label": "交大彭文志 Lec22 Sorting",
   "points": 220,
   "quiz": 8
+ },
+ "IawM82BQ4II": {
+  "label": "Abdul Bari：2.1.2 Recurrence Relation #2",
+  "points": 25,
+  "quiz": 5
  },
  "IilVRpUsAiQ": {
   "label": "B-Tree Insertion",
@@ -634,15 +669,35 @@
   "points": 103,
   "quiz": 8
  },
+ "JvcqtZk2mng": {
+  "label": "Abdul Bari：2.1.4 Recurrence Relation #4",
+  "points": 30,
+  "quiz": 5
+ },
  "Kg4bqzAqRBM": {
   "label": "MIT 6.006 L3：Insertion Sort, Merge Sort",
   "points": 87,
   "quiz": 7
  },
+ "kGcO-nAm9Vc": {
+  "label": "Abdul Bari：2.4.2 Examples for Master Theorem #2",
+  "points": 17,
+  "quiz": 5
+ },
+ "kxIQ86qMtfk": {
+  "label": "交大江蕙如 Lec02 Chapter 1 Introduction (1/2)",
+  "points": 174,
+  "quiz": 8
+ },
  "lhXHk8IuFeQ": {
   "label": "交大彭文志 Lec08 Lists (1/4)",
   "points": 76,
   "quiz": 7
+ },
+ "lj3E24nnPjI": {
+  "label": "Abdul Bari：1.11 Best Worst and Average Case Analysis",
+  "points": 41,
+  "quiz": 6
  },
  "Lzr5-m7ap-8": {
   "label": "台大林軒田 DSA Skip List / BST / AVL Tree",
@@ -664,14 +719,34 @@
   "points": 48,
   "quiz": 7
  },
+ "MhT7XmxhaCE": {
+  "label": "Abdul Bari：2.1.3 Recurrence Relation #3",
+  "points": 27,
+  "quiz": 5
+ },
  "MJZd6uPi88E": {
   "label": "Abdul Bari：Row-Major and Column-Major Mapping",
   "points": 40,
   "quiz": 7
  },
+ "mwN18xfwNhk": {
+  "label": "Abdul Bari：1.10.1 Comparison of Functions #1",
+  "points": 27,
+  "quiz": 5
+ },
+ "Nd0XDY-jVHs": {
+  "label": "Abdul Bari：1.8.2 Asymptotic Notations #2",
+  "points": 30,
+  "quiz": 6
+ },
  "nfDvFjXU2VI": {
   "label": "交大彭文志 Lec24 Search Structures (1/3)",
   "points": 97,
+  "quiz": 6
+ },
+ "NI4OKSvGAgM": {
+  "label": "Abdul Bari：1.9 Properties of Asymptotic Notations",
+  "points": 30,
   "quiz": 6
  },
  "Nz1KZXbghj8": {
@@ -683,6 +758,26 @@
   "label": "Abdul Bari：Why Pointers?",
   "points": 24,
   "quiz": 6
+ },
+ "OVhJHBYJLSE": {
+  "label": "交大江蕙如 Lec03 Chapter 1 Introduction (2/2)",
+  "points": 87,
+  "quiz": 7
+ },
+ "OynWkEj0S-s": {
+  "label": "Abdul Bari：2.4.1 Masters Theorem Dividing #1",
+  "points": 33,
+  "quiz": 6
+ },
+ "p1EnSvS3urU": {
+  "label": "Abdul Bari：1.5.3 Time Complexity of While and if #3",
+  "points": 49,
+  "quiz": 6
+ },
+ "P7frcB_-g4w": {
+  "label": "MIT 6.006 Rec1：Asymptotic Complexity, Peak Finding",
+  "points": 86,
+  "quiz": 7
  },
  "pAs8Swu1Y3Y": {
   "label": "台大林軒田 DSA Linked List",
@@ -704,6 +799,16 @@
   "points": 157,
   "quiz": 8
  },
+ "q6RicK1FCUs": {
+  "label": "Abdul Bari：Tower of Hanoi Problem",
+  "points": 36,
+  "quiz": 6
+ },
+ "QFcyt8fgQMU": {
+  "label": "MIT 6.006 Rec2：Python Cost Model, Document Distance",
+  "points": 81,
+  "quiz": 7
+ },
  "qQ8vS2btsxI": {
   "label": "Abdul Bari：9.2 Rabin-Karp String Matching Algorithm",
   "points": 39,
@@ -712,6 +817,11 @@
  "R0MpXbuqfZM": {
   "label": "台大林軒田 DSA Stack / Queue",
   "points": 284,
+  "quiz": 8
+ },
+ "r5pXu1PAUkI": {
+  "label": "MIT 6.006 Rec5：Recursion Trees, Binary Search Trees",
+  "points": 80,
   "quiz": 8
  },
  "RjvhXL0WTrY": {
@@ -724,14 +834,34 @@
   "points": 191,
   "quiz": 8
  },
+ "rP2wm4bEfXo": {
+  "label": "交大江蕙如 Lec04 Chapter 2 Algorithm Analysis (1/2)",
+  "points": 118,
+  "quiz": 8
+ },
+ "rvdJDijO2Ro": {
+  "label": "MIT 6.006 L10：Open Addressing, Cryptographic Hashing",
+  "points": 61,
+  "quiz": 7
+ },
  "SBQLkYIDAZI": {
   "label": "台大林軒田 DSA Heap / Hash Table",
   "points": 225,
   "quiz": 8
  },
+ "SLsHKh_OUEM": {
+  "label": "Master's Theorem Explained",
+  "points": 23,
+  "quiz": 6
+ },
  "sweW4TVFpbQ": {
   "label": "交大江蕙如 Lec16 Divide and Conquer (2/2)",
   "points": 152,
+  "quiz": 8
+ },
+ "tTFolqL1TX4": {
+  "label": "交大江蕙如 Lec05 Chapter 2 Algorithm Analysis (2/2)",
+  "points": 148,
   "quiz": 8
  },
  "u7YMFRUFqe0": {
@@ -789,6 +919,21 @@
   "points": 179,
   "quiz": 8
  },
+ "w6nuXg0BISo": {
+  "label": "MIT 6.006 Rec9：Rolling Hashes, Amortized Analysis",
+  "points": 87,
+  "quiz": 7
+ },
+ "w7t4_JUUTeg": {
+  "label": "Abdul Bari：1.6 Classes of Functions",
+  "points": 8,
+  "quiz": 3
+ },
+ "WlBBTSL0ZRc": {
+  "label": "Abdul Bari：1.10.2 Comparison of Functions #2",
+  "points": 32,
+  "quiz": 6
+ },
  "Wnpsh1O1OMo": {
   "label": "交大彭文志 Lec20 Graph (3/4)",
   "points": 233,
@@ -808,6 +953,16 @@
   "label": "交大彭文志 Lec04 Arrays (2/4)",
   "points": 98,
   "quiz": 7
+ },
+ "XcZw01FuH18": {
+  "label": "Abdul Bari：Recurrence Relation Dividing [T(n)=T(n/2)+n]",
+  "points": 18,
+  "quiz": 5
+ },
+ "xGYsEqe9Vl0": {
+  "label": "Abdul Bari：1.3 How to Write and Analyze Algorithm",
+  "points": 30,
+  "quiz": 6
  },
  "XkNIHYd9Ruc": {
   "label": "台大林軒田 DSA Tree",
@@ -837,6 +992,11 @@
  "Yx0dJFe1VdM": {
   "label": "交大彭文志 Lec21 Graph (4/4)",
   "points": 90,
+  "quiz": 7
+ },
+ "Zc54gFhdpLA": {
+  "label": "MIT 6.006 L2：Models of Computation, Document Distance",
+  "points": 94,
   "quiz": 7
  },
  "zLuuRC56uvI": {

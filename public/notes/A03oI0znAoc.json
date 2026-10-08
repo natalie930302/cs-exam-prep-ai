@@ -1,117 +1,187 @@
 {
  "video": "A03oI0znAoc",
  "label": "Abdul Bari：1.8.1 Asymptotic Notations #1",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
    "title": "為什麼需要漸近符號",
-   "scene": "bound-ladder",
+   "scene": "algbari1-ladder",
+   "params": {
+    "mode": "intro"
+   },
    "points": [
     {
-     "text": "Asymptotic notation 來自數學，用簡單的符號表示一個函數屬於哪一類。",
-     "t": 10
+     "text": "Asymptotic notation 來自數學，用來簡單表示一個函數屬於哪一類。",
+     "t": 12
     },
     {
-     "text": "Big-O 是 upper bound、Big-Ω 是 lower bound、Θ 是 average（tight）bound。",
-     "t": 94
+     "text": "不可能每次都寫一長串函數，需要簡單的表示法。",
+     "t": 61
     },
     {
-     "text": "能寫 Θ 就寫 Θ；無法精確定出類別時，才退而用 O 或 Ω 表示上界或下界。",
-     "t": 138
+     "text": "Big-O 是 upper bound。",
+     "t": 73
+    },
+    {
+     "text": "Big-Ω 是 lower bound。",
+     "t": 92
+    },
+    {
+     "text": "Θ 是「average bound」（tight bound）。",
+     "t": 104
+    },
+    {
+     "text": "三者中 Θ 最有用。",
+     "t": 129
+    },
+    {
+     "text": "定不出確切類別時，才用 O 或 Ω 表示上界或下界。",
+     "t": 165
     }
-   ]
+   ],
+   "trap": "補充：Abdul Bari 口語說 average bound，CLRS 稱 asymptotically tight bound；它和 average case 無關。"
   },
   {
-   "title": "Big-O 定義與 2n + 3 ≤ 5n",
+   "title": "Big-O 定義：2n + 3 ≤ 10n、5n",
    "scene": "bigo-5n",
    "points": [
     {
      "text": "f(n) = O(g(n)) ⇔ 存在正常數 c、n₀，使所有 n ≥ n₀ 都有 f(n) ≤ c·g(n)。",
-     "t": 198
+     "t": 178
     },
     {
-     "text": "例 f(n) = 2n + 3：右邊要寫「單一項」乘係數，例如 10n；n = 1 時 10 ≥ 5 成立 → O(n)。",
-     "t": 216
+     "text": "例：f(n) = 2n + 3。",
+     "t": 208
+    },
+    {
+     "text": "右邊只能寫「單一項」，可以帶係數。",
+     "t": 240
+    },
+    {
+     "text": "寫 10n：n = 1 時 10 ≥ 5，n ≥ 1 都成立。",
+     "t": 250
+    },
+    {
+     "text": "c = 10、g(n) = n → f(n) = O(n)。",
+     "t": 274
     },
     {
      "text": "7n、1000n 也都可以，只要從某個 n 起比 f(n) 大。",
-     "t": 323
+     "t": 319
     },
     {
-     "text": "簡單做法：把每一項都變成 n 的倍數：2n + 3 ≤ 2n + 3n = 5n（n ≥ 1）。",
-     "t": 342
+     "text": "簡單做法：每一項都變成 n 的倍數，2n + 3 ≤ 2n + 3n = 5n。",
+     "t": 335
+    },
+    {
+     "text": "2n + 3 ≤ 5n² 也成立 → O(n²) 也對。",
+     "t": 384
     }
    ]
   },
   {
-   "title": "上界可以很多，寫最接近的",
-   "scene": "bound-ladder",
+   "title": "上界有很多：寫最接近的",
+   "scene": "algbari1-ladder",
+   "params": {
+    "mode": "O"
+   },
    "points": [
     {
-     "text": "2n + 3 ≤ 2n² + 3n² = 5n²（n ≥ 1）→ f(n) = O(n²) 也成立。",
-     "t": 396
+     "text": "O(n)、O(n²) 都對，因為 n 和 n² 都是上界。",
+     "t": 431
     },
     {
-     "text": "f 屬於 n 這一類：n 和右邊所有更大的類別（n²、2ⁿ…）都是它的上界。",
-     "t": 446
+     "text": "f 屬於 n 這一類：n 及右邊所有更大的類別都是上界。",
+     "t": 445
     },
     {
-     "text": "但 f(n) = O(log n) 是錯的，log n 在下界那一側。",
-     "t": 492
+     "text": "左邊的類別（含 n）都是下界；n 本身是 average（tight）bound。",
+     "t": 468
     },
     {
-     "text": "寫 Big-O 時要寫最接近（closest）的函數，寫太大的雖然對但沒有用。",
-     "t": 526
+     "text": "f(n) = O(2ⁿ) 也對。",
+     "t": 519
+    },
+    {
+     "text": "但 f(n) = O(log n) 錯：log n 在下界那一側。",
+     "t": 529
+    },
+    {
+     "text": "寫 Big-O 時要寫最接近的函數；更大的雖對但沒用。",
+     "t": 556
     }
    ]
   },
   {
    "title": "Big-Ω：2n + 3 ≥ 1·n",
-   "scene": "bound-ladder",
+   "scene": "algbari1-ladder",
    "params": {
-    "focus": "omega"
+    "mode": "omega"
    },
    "points": [
     {
-     "text": "f(n) = Ω(g(n)) ⇔ 存在正常數 c、n₀，使 n ≥ n₀ 時 f(n) ≥ c·g(n)；只有不等號方向不同。",
-     "t": 569
+     "text": "f(n) = Ω(g(n)) ⇔ 存在 c、n₀，n ≥ n₀ 時 f(n) ≥ c·g(n)。",
+     "t": 591
     },
     {
-     "text": "2n + 3 ≥ 1·n（n ≥ 1）→ f(n) = Ω(n)。",
-     "t": 610
+     "text": "跟 Big-O 比只換了不等號方向。",
+     "t": 616
     },
     {
-     "text": "f(n) = Ω(log n) 也成立，但 Ω(n²) 是錯的。",
-     "t": 661
+     "text": "2n + 3 ≥ 1·n，n ≥ 1（從 0 起也成立）。",
+     "t": 625
     },
     {
-     "text": "下界也要寫最接近的：Ω(n) 最有用，log log n、√n 雖對但沒價值。",
-     "t": 716
+     "text": "所以 f(n) = Ω(n)。",
+     "t": 688
+    },
+    {
+     "text": "f(n) = Ω(log n) 也對。",
+     "t": 702
+    },
+    {
+     "text": "f(n) = Ω(n²) 錯：n² 是上界不是下界。",
+     "t": 727
+    },
+    {
+     "text": "log log n、√n、log n 都對，但最接近的 Ω(n) 才有用。",
+     "t": 746
     }
    ]
   },
   {
-   "title": "Θ：上下界夾住 1·n ≤ 2n + 3 ≤ 5n",
+   "title": "Θ：1·n ≤ 2n + 3 ≤ 5n",
    "scene": "theta-sandwich",
    "points": [
     {
      "text": "f(n) = Θ(g(n)) ⇔ 存在 c₁、c₂、n₀，使 c₁·g(n) ≤ f(n) ≤ c₂·g(n)。",
-     "t": 756
+     "t": 779
     },
     {
-     "text": "2n + 3：下界 1·n、上界 5·n，兩邊的 g(n) 都是 n → f(n) = Θ(n)。",
-     "t": 774
+     "text": "同一個例子 2n + 3：下界 1·n、上界 5·n。",
+     "t": 799
     },
     {
-     "text": "Θ(n²)、Θ(log n) 都是錯的，Θ 只能寫唯一的那一類。",
-     "t": 821
+     "text": "兩邊的 g(n) 都是 n → f(n) = Θ(n)。",
+     "t": 834
     },
     {
-     "text": "不要把 O 等同 worst case、Ω 等同 best case：符號只是表示函數的界，和 case analysis 無關。",
-     "t": 880
+     "text": "Θ(n²)、Θ(log n) 都錯：兩邊只能用 n。",
+     "t": 855
+    },
+    {
+     "text": "能寫 Θ 最好；做不到才用 O 或 Ω。",
+     "t": 885
+    },
+    {
+     "text": "不要把它跟 best case / worst case 混在一起。",
+     "t": 898
+    },
+    {
+     "text": "O 不等於 worst case、Ω 不等於 best case：任何 case 都能用任何符號。",
+     "t": 920
     }
-   ],
-   "trap": "補充：Θ 不是「平均情況」——Abdul Bari 口語說 average bound，CLRS 稱 asymptotically tight bound；best/worst/average case 各自都可以用 O、Ω、Θ 描述。"
+   ]
   }
  ],
  "quiz": [
@@ -127,7 +197,7 @@
    "why": "log n 成長比 f 慢，不能當上界。"
   },
   {
-   "q": "證明 2n + 3 = O(n) 時，影片的快速做法是？",
+   "q": "證明 2n + 3 = O(n) 的快速做法？",
    "opts": [
     "2n + 3 ≤ 2n + 3n = 5n，n ≥ 1",
     "2n + 3 ≤ 2n，n ≥ 1",
@@ -135,21 +205,21 @@
     "2n + 3 ≤ 3，n ≥ 1"
    ],
    "ans": "2n + 3 ≤ 2n + 3n = 5n，n ≥ 1",
-   "why": "把常數項也放大成 n 的倍數，取 c = 5、n₀ = 1。"
+   "why": "把常數項也放大成 n 的倍數，c = 5、n₀ = 1。"
   },
   {
-   "q": "Θ 定義中需要哪些常數？",
+   "q": "Θ 的定義需要哪些常數？",
    "opts": [
     "c₁、c₂、n₀",
     "只要 c、n₀",
     "只要 n₀",
-    "c₁、c₂ 就好，不用 n₀"
+    "c₁、c₂，不需要 n₀"
    ],
    "ans": "c₁、c₂、n₀",
    "why": "c₁·g(n) ≤ f(n) ≤ c₂·g(n) 對所有 n ≥ n₀ 成立。"
   },
   {
-   "q": "f(n) = 2n + 3，下列哪個 Ω 敘述是錯的？",
+   "q": "f(n) = 2n + 3，下列哪個 Ω 敘述錯誤？",
    "opts": [
     "Ω(n²)",
     "Ω(n)",
@@ -157,19 +227,18 @@
     "Ω(1)"
    ],
    "ans": "Ω(n²)",
-   "why": "n² 長得比 f 快，不能當下界。"
+   "why": "n² 成長比 f 快，不能當下界。"
   },
   {
-   "q": "關於 O 與 worst case 的關係，何者正確？",
+   "q": "關於 O 與 worst case，何者正確？",
    "opts": [
-    "兩者無關，任何 case 都可用任何符號",
+    "兩者無關，任何 case 都能用任何符號",
     "O 只能描述 worst case",
     "Ω 只能描述 best case",
     "Θ 只能描述 average case"
    ],
-   "ans": "兩者無關，任何 case 都可用任何符號",
-   "why": "漸近符號描述函數的界；case analysis 決定要分析哪個函數。"
+   "ans": "兩者無關，任何 case 都能用任何符號",
+   "why": "漸近符號描述函數的界；case analysis 決定分析哪個函數。"
   }
- ],
- "timing": "estimated"
+ ]
 }

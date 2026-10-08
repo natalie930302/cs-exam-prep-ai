@@ -1,0 +1,268 @@
+{
+ "video": "NI4OKSvGAgM",
+ "label": "Abdul Bari：1.9 Properties of Asymptotic Notations",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "一般性質：乘上常數",
+   "scene": "algbari2-props",
+   "params": {
+    "p": "scale"
+   },
+   "points": [
+    {
+     "text": "若 f(n) = O(g(n))，則 a·f(n) = O(g(n))（a 為常數）。",
+     "t": 0
+    },
+    {
+     "text": "例：f(n) = 2n² + 5 = O(n²)；7·f(n) = 14n² + 35。",
+     "t": 40
+    },
+    {
+     "text": "14n² + 35 的次數仍是 2 → 也是 O(n²)。",
+     "t": 71
+    },
+    {
+     "text": "對 Ω、Θ 也成立：三種符號都有這個性質。",
+     "t": 116
+    }
+   ]
+  },
+  {
+   "title": "Reflexive：自己是自己的界",
+   "scene": "algbari2-props",
+   "params": {
+    "p": "reflex"
+   },
+   "points": [
+    {
+     "text": "Reflexive：f(n) = O(f(n))，例如 n² = O(n²)。",
+     "t": 128
+    },
+    {
+     "text": "上界是「≥」，含等號，所以函數本身就是自己的上界。",
+     "t": 163
+    },
+    {
+     "text": "下界「≤」也含等號，所以 f = Ω(f)，也就有 f = Θ(f)。",
+     "t": 179
+    },
+    {
+     "text": "這裡的「=」讀作 is（屬於）。",
+     "t": 208
+    }
+   ]
+  },
+  {
+   "title": "Transitive：遞移性",
+   "scene": "algbari2-props",
+   "params": {
+    "p": "trans"
+   },
+   "points": [
+    {
+     "text": "f = O(g)、g = O(h) ⇒ f = O(h)。",
+     "t": 214
+    },
+    {
+     "text": "例：f = n、g = n²、h = n³。",
+     "t": 248
+    },
+    {
+     "text": "n = O(n²)、n² = O(n³) ⇒ n = O(n³)。",
+     "t": 276
+    },
+    {
+     "text": "對 O、Ω、Θ 三種符號都成立。",
+     "t": 305
+    }
+   ]
+  },
+  {
+   "title": "Symmetric：只有 Θ",
+   "scene": "algbari2-props",
+   "params": {
+    "p": "sym"
+   },
+   "points": [
+    {
+     "text": "Symmetric：f = Θ(g) ⇒ g = Θ(f)。",
+     "t": 317
+    },
+    {
+     "text": "這個性質只對 Θ 成立。",
+     "t": 336
+    },
+    {
+     "text": "例：f = n²、g = n²，兩者互為 Θ。",
+     "t": 349
+    }
+   ],
+   "trap": "補充：O 沒有對稱性，例如 n = O(n²)，但 n² ≠ O(n)。"
+  },
+  {
+   "title": "Transpose symmetric：O 與 Ω 互換",
+   "scene": "algbari2-props",
+   "params": {
+    "p": "transpose"
+   },
+   "points": [
+    {
+     "text": "Transpose symmetric：f = O(g) ⇔ g = Ω(f)，適用於 O 與 Ω。",
+     "t": 379
+    },
+    {
+     "text": "例：f = n、g = n²。",
+     "t": 393
+    },
+    {
+     "text": "n² 是 n 的上界，同時 n 是 n² 的下界。",
+     "t": 427
+    },
+    {
+     "text": "一個是另一個的上界 ⇔ 反過來就是下界。",
+     "t": 455
+    }
+   ]
+  },
+  {
+   "title": "同一個 g 既是上界也是下界 → Θ",
+   "scene": "algbari2-props",
+   "params": {
+    "p": "both"
+   },
+   "points": [
+    {
+     "text": "若 f = O(g) 且 f = Ω(g)。",
+     "t": 459
+    },
+    {
+     "text": "同一個 g 同時是 f 的上界與下界。",
+     "t": 485
+    },
+    {
+     "text": "則 f = Θ(g)。",
+     "t": 508
+    },
+    {
+     "text": "同時「≥」又「≤」，表示屬於同一類。",
+     "t": 525
+    }
+   ]
+  },
+  {
+   "title": "相加取最大",
+   "scene": "algbari2-props",
+   "params": {
+    "p": "sum"
+   },
+   "points": [
+    {
+     "text": "f = O(g)、d = O(e)，問 f + d = ?",
+     "t": 537
+    },
+    {
+     "text": "例：f = n、d = n²；f + d = n + n² = O(n²)。",
+     "t": 584
+    },
+    {
+     "text": "把 n² 與 n 對調，答案也一樣是 n²。",
+     "t": 615
+    },
+    {
+     "text": "f + d = O(max(g, e))。",
+     "t": 635
+    }
+   ]
+  },
+  {
+   "title": "相乘",
+   "scene": "algbari2-props",
+   "params": {
+    "p": "prod"
+   },
+   "points": [
+    {
+     "text": "f = O(g)、d = O(e)，兩者相乘呢？",
+     "t": 666
+    },
+    {
+     "text": "例：n · n² = n³。",
+     "t": 694
+    },
+    {
+     "text": "f·d = O(g·e)。",
+     "t": 701
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "若 f(n) = 2n² + 5，則 7·f(n) 的 Big-O 是？",
+   "opts": [
+    "O(n²)",
+    "O(7n²)",
+    "O(n³)",
+    "O(n)"
+   ],
+   "ans": "O(n²)",
+   "why": "常數倍不改變類別：14n² + 35 仍是 O(n²)。"
+  },
+  {
+   "q": "哪一個性質「只」對 Θ 成立？",
+   "opts": [
+    "Symmetric",
+    "Transitive",
+    "Reflexive",
+    "乘上常數"
+   ],
+   "ans": "Symmetric",
+   "why": "f = Θ(g) ⇒ g = Θ(f)；O 與 Ω 沒有這個性質。"
+  },
+  {
+   "q": "若 f = O(g)，下列何者必成立？",
+   "opts": [
+    "g = Ω(f)",
+    "g = O(f)",
+    "f = Θ(g)",
+    "f = Ω(g)"
+   ],
+   "ans": "g = Ω(f)",
+   "why": "Transpose symmetric：一方是上界，反過來就是下界。"
+  },
+  {
+   "q": "f = n = O(n)、d = n² = O(n²)，f + d 是？",
+   "opts": [
+    "O(n²)",
+    "O(n)",
+    "O(n³)",
+    "O(n + 1)"
+   ],
+   "ans": "O(n²)",
+   "why": "相加取較大者：O(max(g, e))。"
+  },
+  {
+   "q": "f = O(n)、d = O(n²)，f·d 是？",
+   "opts": [
+    "O(n³)",
+    "O(n²)",
+    "O(n)",
+    "O(2n²)"
+   ],
+   "ans": "O(n³)",
+   "why": "相乘：O(g·e) = O(n·n²)。"
+  },
+  {
+   "q": "若 f = O(g) 且 f = Ω(g)，可推得？",
+   "opts": [
+    "f = Θ(g)",
+    "f = O(1)",
+    "g = O(1)",
+    "沒有結論"
+   ],
+   "ans": "f = Θ(g)",
+   "why": "同一個 g 同時是上界與下界。"
+  }
+ ]
+}

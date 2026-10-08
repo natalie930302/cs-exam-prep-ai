@@ -1,0 +1,211 @@
+{
+ "video": "mwN18xfwNhk",
+ "label": "Abdul Bari：1.10.1 Comparison of Functions #1",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "代值比較 n² 與 n³",
+   "scene": "algbari2-sample",
+   "points": [
+    {
+     "text": "比較兩個函數（時間或空間函數），找出誰是上界、誰是下界。",
+     "t": 0
+    },
+    {
+     "text": "例：n² 與 n³，雖然一看就知道，但要怎麼證明？",
+     "t": 12
+    },
+    {
+     "text": "方法一：代幾個值。n = 2：4 < 8。",
+     "t": 37
+    },
+    {
+     "text": "n = 3：9 < 27。",
+     "t": 64
+    },
+    {
+     "text": "n = 4：16 < 64。",
+     "t": 75
+    },
+    {
+     "text": "取三個值就看得出 n³ 一直比 n² 大。",
+     "t": 88
+    }
+   ]
+  },
+  {
+   "title": "方法二：兩邊取 log",
+   "scene": "algbari2-log-compare",
+   "params": {
+    "ex": "n2n3"
+   },
+   "points": [
+    {
+     "text": "方法二：兩邊取 log。",
+     "t": 101
+    },
+    {
+     "text": "log n² = 2 log n、log n³ = 3 log n。",
+     "t": 132
+    },
+    {
+     "text": "2 log n < 3 log n → n² < n³。",
+     "t": 141
+    },
+    {
+     "text": "函數很複雜時這個方法特別有用。",
+     "t": 150
+    }
+   ]
+  },
+  {
+   "title": "會用到的 log 公式",
+   "scene": "algbari2-log-rules",
+   "points": [
+    {
+     "text": "log(a·b) = log a + log b。",
+     "t": 175
+    },
+    {
+     "text": "log(a/b) = log a − log b。",
+     "t": 192
+    },
+    {
+     "text": "log aᵇ = b·log a：次方拿下來變係數。",
+     "t": 208
+    },
+    {
+     "text": "a^(log_c b) = b^(log_c a)。",
+     "t": 225
+    },
+    {
+     "text": "aᵇ = n ⇔ b = log_a n。",
+     "t": 254
+    }
+   ]
+  },
+  {
+   "title": "n² log n vs n(log n)¹⁰",
+   "scene": "algbari2-log-compare",
+   "params": {
+    "ex": "n2logn"
+   },
+   "points": [
+    {
+     "text": "f(n) = n² log n、g(n) = n·(log n)¹⁰。",
+     "t": 270
+    },
+    {
+     "text": "次方 10 會讓人以為 g 比較大，判斷不出來就取 log。",
+     "t": 286
+    },
+    {
+     "text": "用 log(a·b)：log n² + log log n vs log n + log(log n)¹⁰。",
+     "t": 317
+    },
+    {
+     "text": "再用 log aᵇ：2 log n + log log n vs log n + 10 log log n。",
+     "t": 370
+    },
+    {
+     "text": "比主要的項：2 log n > log n。",
+     "t": 386
+    },
+    {
+     "text": "log log n 很小，像零錢（paisa）對上整數元（rupee） → f(n) 較大。",
+     "t": 408
+    }
+   ]
+  },
+  {
+   "title": "3n^√n vs 2^(√n·log n)",
+   "scene": "algbari2-log-compare",
+   "params": {
+    "ex": "root3"
+   },
+   "points": [
+    {
+     "text": "f(n) = 3·n^√n、g(n) = 2^(√n·log n)。",
+     "t": 424
+    },
+    {
+     "text": "用公式 3：√n·log n = log n^√n，g(n) = 2^(log n^√n)。",
+     "t": 448
+    },
+    {
+     "text": "用公式 4 互換：= (n^√n)^(log₂2) = n^√n。",
+     "t": 477
+    },
+    {
+     "text": "這題沒有兩邊取 log，只用 log 公式化簡。",
+     "t": 509
+    },
+    {
+     "text": "剩下只差係數 3，就像 2n² 與 n²。",
+     "t": 528
+    },
+    {
+     "text": "漸近上兩者相等（Θ 相同）；只是數值上 f 較大。",
+     "t": 554
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "比較 n² 與 n³ 時取 log，得到？",
+   "opts": [
+    "2 log n 與 3 log n",
+    "log 2n 與 log 3n",
+    "n log 2 與 n log 3",
+    "2ⁿ 與 3ⁿ"
+   ],
+   "ans": "2 log n 與 3 log n",
+   "why": "log aᵇ = b log a。"
+  },
+  {
+   "q": "a^(log_c b) 等於？",
+   "opts": [
+    "b^(log_c a)",
+    "log_c(ab)",
+    "a·b",
+    "c^(log a)"
+   ],
+   "ans": "b^(log_c a)",
+   "why": "log 公式 4：底數與真數可以互換。"
+  },
+  {
+   "q": "f = n² log n、g = n(log n)¹⁰，哪個大？",
+   "opts": [
+    "f(n) 較大",
+    "g(n) 較大",
+    "兩者相等",
+    "無法比較"
+   ],
+   "ans": "f(n) 較大",
+   "why": "取 log 後 2 log n + log log n vs log n + 10 log log n，主要項 2 log n > log n。"
+  },
+  {
+   "q": "3·n^√n 與 2^(√n·log n) 的漸近關係？",
+   "opts": [
+    "漸近相等（Θ 相同）",
+    "前者大一個多項式倍",
+    "後者大一個多項式倍",
+    "後者是指數大"
+   ],
+   "ans": "漸近相等（Θ 相同）",
+   "why": "2^(√n log n) = n^√n，只差常數 3。"
+  },
+  {
+   "q": "log(a/b) = ?",
+   "opts": [
+    "log a − log b",
+    "log a / log b",
+    "b log a",
+    "log a + log b"
+   ],
+   "ans": "log a − log b",
+   "why": "除法變減法。"
+  }
+ ]
+}

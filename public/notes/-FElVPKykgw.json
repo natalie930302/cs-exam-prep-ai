@@ -1,23 +1,35 @@
 {
  "video": "-FElVPKykgw",
  "label": "MIT 6.006 Rec10：Quiz 1 Review",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
-   "title": "Q&A：搬移整張 table 的成本",
-   "scene": "table-doubling",
+   "title": "Q&A：resize 的成本",
+   "scene": "algmit3-resize-cost",
    "points": [
     {
-     "text": "Python 的 table 存的是物件的 reference（位址），搬一個元素是 O(1)，跟物件大小無關。",
-     "t": 135
+     "text": "今天的題目跟 quiz 類似但不是原題。",
+     "t": 21
     },
     {
-     "text": "空 table：m 次 index、0 次搬移 → O(m)；滿 table：m 次 index、m 次搬移 → O(2m) = O(m)。",
-     "t": 245
+     "text": "學生問：搬空 table 跟搬滿 table 的時間不一樣吧？",
+     "t": 47
     },
     {
-     "text": "所以 resize 成本不論 table 滿或空都是 Θ(m)。",
-     "t": 289
+     "text": "Python 存的是物件的 reference（記憶體位址），位址很小 → 搬一個元素 O(1)，跟物件大小無關。",
+     "t": 113
+    },
+    {
+     "text": "讀一格（index）O(1)、搬一個 O(1)。",
+     "t": 164
+    },
+    {
+     "text": "空 table：m 次 index、0 次搬移 → O(m)。",
+     "t": 194
+    },
+    {
+     "text": "滿 table：m 次 index、m 次搬移 → O(2m) = O(m)；不管滿或空都是 Θ(m)。",
+     "t": 211
     }
    ]
   },
@@ -26,127 +38,328 @@
    "scene": "tree-sqrt",
    "points": [
     {
-     "text": "提示：n^(1/log n) = 2 = Θ(1)。解遞迴兩招：substitution（展開）與 recursion tree。",
-     "t": 310
+     "text": "解遞迴式 T(n) = T(√n) + 1，提示：n^(1/log n) = 2 = Θ(1)。",
+     "t": 264
     },
     {
-     "text": "每個節點成本 1，規模 n → n^(1/2) → n^(1/4) → n^(1/8)…",
-     "t": 373
+     "text": "兩種方法：substitution（一直展開）與 recursion tree；只有一個 T 時兩種都行，這裡畫樹。",
+     "t": 295
     },
     {
-     "text": "第 h 層規模 n^(1/2ʰ)；要展開到 base case：令 n^(1/2ʰ) = n^(1/log n)（= 2，常數）。",
-     "t": 483
+     "text": "根的規模是 n、成本 1；產生一個規模 √n 的子問題。",
+     "t": 331
     },
     {
-     "text": "2ʰ = log n → h = log log n；每層成本 1 → T(n) = Θ(log log n)。",
-     "t": 798
+     "text": "含 T 的部分決定下一層規模（n → √n），其餘是節點成本。",
+     "t": 375
     },
     {
-     "text": "沒給 base case 時，自己寫：任何常數 c，T(c) = Θ(1)。",
-     "t": 858
+     "text": "一層層往下：n、n^(1/2)、n^(1/4)…，第 h 層是 n^(1/2ʰ)。",
+     "t": 457
     }
    ]
   },
   {
-   "title": "假硬幣：決策樹下界 log₃ N",
+   "title": "Base case 與樹高",
+   "scene": "tree-sqrt",
+   "points": [
+    {
+     "text": "展開到底：讓最底層的規模變成常數。",
+     "t": 542
+    },
+    {
+     "text": "沒給 base case 就自己寫：T(1) = Θ(1)，甚至任何常數 c 都有 T(c) = Θ(1)。",
+     "t": 565
+    },
+    {
+     "text": "提示的 n^(1/log n) = 2 是常數 → 讓最底層長得像它就停。",
+     "t": 630
+    },
+    {
+     "text": "遞迴樹：先每層加總，再全部加起來；這題每層只有一個節點，每層成本 1。",
+     "t": 674
+    },
+    {
+     "text": "令 n^(1/2ʰ) = n^(1/log n) → 2ʰ = log n。",
+     "t": 719
+    },
+    {
+     "text": "h = log log n → T(n) = Θ(h) = Θ(log log n)。",
+     "t": 803
+    }
+   ]
+  },
+  {
+   "title": "假硬幣：binary search 浪費了資訊",
    "scene": "coin-decision-tree",
    "points": [
     {
-     "text": "N 枚金幣中有一枚較輕的假幣，天平完全精準，最少要秤幾次？",
-     "t": 898
+     "text": "n 枚金幣有一枚是假的（比較輕），天平完全精準。",
+     "t": 884
     },
     {
-     "text": "二分法每次只用到「左重／右重」兩種結果，浪費了「平衡」這個答案，得 1 bit 而不是 1 trit（log₂3 bit）。",
-     "t": 960
+     "text": "最少要秤幾次才能找到假幣？",
+     "t": 913
     },
     {
-     "text": "Decision tree：每次秤重有 <、=、> 三種結果，h 次秤重最多 3ʰ 個葉子（答案）。",
-     "t": 1219
+     "text": "二分法只會得到「左重／右重」，永遠不會出現平衡 → 只拿到 1 bit 而不是 1 trit（log₂3 bit）。",
+     "t": 941
     },
     {
-     "text": "3 次最多分辨 27 枚，30 枚就不夠；要 3ʰ ≥ N → h ≥ log₃ N，任何演算法都逃不掉。",
-     "t": 1332
+     "text": "一枚一枚比要 n 次，更差；log 底 3 比較好。",
+     "t": 1002
     },
     {
-     "text": "下界也提示了策略：每次分三堆，比較其中兩堆。",
-     "t": 1453
+     "text": "策略：分三堆、比其中兩堆，平衡就在第三堆。",
+     "t": 1041
+    },
+    {
+     "text": "重點是 lower bound：任何演算法都不可能少於 log₃ n 次。",
+     "t": 1093
+    }
+   ]
+  },
+  {
+   "title": "Decision tree 下界",
+   "scene": "coin-decision-tree",
+   "points": [
+    {
+     "text": "比較排序的下界 Ω(n log n) 就是用 decision tree 證的。",
+     "t": 1129
+    },
+    {
+     "text": "不論什麼演算法：秤一次、依結果決定下一次秤什麼，最後給答案。",
+     "t": 1167
+    },
+    {
+     "text": "每次秤重有 <、=、> 三種結果，畫成三叉的 decision tree。",
+     "t": 1194
+    },
+    {
+     "text": "秤 3 次：3、9、27 → 最多 27 個答案（葉子）。",
+     "t": 1258
+    },
+    {
+     "text": "30 枚硬幣需要 30 個答案，27 不夠，要多秤一次。",
+     "t": 1274
+    },
+    {
+     "text": "h 次秤重 → 3ʰ 個葉子，必須 3ʰ ≥ n → h ≥ log₃ n。",
+     "t": 1304
+    },
+    {
+     "text": "下界對所有演算法都成立，而且提示策略：每次分成三份。",
+     "t": 1367
+    }
+   ]
+  },
+  {
+   "title": "Bunker hill：暴力法",
+   "scene": "algmit3-bunker-naive",
+   "points": [
+    {
+     "text": "夜間拍山丘的衛星圖：每格是亮度數字，大小 W × H。",
+     "t": 1463
+    },
+    {
+     "text": "找一個 w × h 的樣式（bunker）在圖中出現幾次；樣式是輸入，不能寫死。",
+     "t": 1525
+    },
+    {
+     "text": "暴力：每個位置逐格比對是不是 match。",
+     "t": 1573
+    },
+    {
+     "text": "位置數 (W − w + 1)(H − h + 1)。",
+     "t": 1666
+    },
+    {
+     "text": "每個位置比 w·h 格 → O(WH·wh)，比輸入大小 WH 還多。",
+     "t": 1688
+    }
+   ]
+  },
+  {
+   "title": "左上角檢查與 1D rolling hash",
+   "scene": "algmit3-bunker-1d",
+   "points": [
+    {
+     "text": "輸入大小是 WH，至少要看完整張圖 → O(WH) 就是最佳。",
+     "t": 1768
+    },
+    {
+     "text": "只比左上角：隨機資料夠用，但圖裡一堆 1、零星的 2 時會有很多 false positive。",
+     "t": 1821
+    },
+    {
+     "text": "要降低 false positive → 這看起來是 rolling hash 的問題。",
+     "t": 1861
+    },
+    {
+     "text": "對整個視窗做 rolling hash：往右移時加進一欄、拿掉一欄，每次 O(h)。",
+     "t": 1921
+    },
+    {
+     "text": "總時間 O(WH·h)，往前進了一步。",
+     "t": 1945
+    }
+   ]
+  },
+  {
+   "title": "Hash of hashes",
+   "scene": "algmit3-bunker-2d",
+   "points": [
+    {
+     "text": "能不能讓加一欄也是 O(1)？",
+     "t": 1977
+    },
+    {
+     "text": "把每一小欄先 hash 起來，再對這些欄 hash 做一般的 Karp-Rabin。",
+     "t": 2040
+    },
+    {
+     "text": "往下移一列：每個欄 hash 都是直向 rolling hash，出去一格、進來一格，O(1)。",
+     "t": 2061
+    },
+    {
+     "text": "W 個直向 rolling hash；視窗是 w 個欄 hash，每個裝 h 格 → hash of hashes（巢狀 hash）。",
+     "t": 2086
+    },
+    {
+     "text": "最簡單的寫法：W 個 rolling hash 做 1D Karp-Rabin，整排往下滾一格，再做一次。",
+     "t": 2164
+    },
+    {
+     "text": "時間 O(WH)；要存 W 個欄 hash，額外空間 O(W)。",
+     "t": 2184
+    },
+    {
+     "text": "少見的情形：1D 的方法可以直接推廣到 2D。",
+     "t": 2201
+    }
+   ]
+  },
+  {
+   "title": "兩個已排序串列：merge 到第 k 個",
+   "scene": "algmit3-kth-merge",
+   "points": [
+    {
+     "text": "兩個大小約 n 的已排序串列：13 22 43 56 72 81 86 87 與 2 3 7 9 15 24 28 32。",
+     "t": 2230
+    },
+    {
+     "text": "數字都不同；找合併後排第 n 名的數（之後改叫第 k 小）。",
+     "t": 2278
+    },
+    {
+     "text": "merge 再取 index：O(n)。",
+     "t": 2329
+    },
+    {
+     "text": "merge 到第 k 個就停：不用產生新陣列，空間 O(1)，但仍是線性。",
+     "t": 2341
+    },
+    {
+     "text": "想要對數時間：某種 modified binary search。",
+     "t": 2357
+    }
+   ]
+  },
+  {
+   "title": "比 15 與 43：丟掉兩端",
+   "scene": "algmit3-kth-15-43",
+   "points": [
+    {
+     "text": "學生想法：看兩邊中間附近的元素，用排名推論哪些可以丟。",
+     "t": 2398
+    },
+    {
+     "text": "難的情況：答案落在 15 與 43 之間。",
+     "t": 2580
+    },
+    {
+     "text": "其實應該看兩邊第 k/2 個，而不是 n/2 個。",
+     "t": 2643
+    },
+    {
+     "text": "串列比 k 長時，後面的部分不可能是答案，可以直接截掉。",
+     "t": 2656
+    },
+    {
+     "text": "比 15 與 43：15 比較小 → 15 左邊的不可能是答案；43 右邊的也不可能，都丟掉。",
+     "t": 2773
+    },
+    {
+     "text": "遞迴時要記得調整要找的 rank（丟掉多少個，就少找多少名）。",
+     "t": 2811
+    },
+    {
+     "text": "每輪 k 約減半 → O(log k)。",
+     "t": 2852
+    },
+    {
+     "text": "k ≤ N₁ + N₂，所以 O(log k) 比 O(log(N₁ + N₂)) 更緊。",
+     "t": 2931
+    },
+    {
+     "text": "講義的解法：兩個 index 和為 k，對上面的 index 做 binary search，下面的跟著調。",
+     "t": 2966
     }
    ],
-   "trap": "補充：同樣的論證給出 comparison sort 的下界：n! 個葉子、二元比較 → h ≥ log₂ n! = Ω(n log n)。"
+   "trap": "補充：課堂討論把新 rank 說成 k/4，容易混亂。正確做法：取 A 第 i 個、B 第 j 個且 i + j = k；若 B[j] < A[i]，丟掉 B[1..j] 與 A[i+1..]，新 rank = k − j。老師沒給 k，畫面用 k = 8 示意（答案 24）。"
   },
   {
-   "title": "Bunker hill：2D 樣式比對",
-   "scene": null,
-   "points": [
-    {
-     "text": "W×H 的亮度圖中找 w×h 的樣式出現次數；暴力法 O(WHwh)。",
-     "t": 1537
-    },
-    {
-     "text": "先比左上角可加速一般資料，但遇到大量相同值仍會有很多 false positive。",
-     "t": 1912
-    },
-    {
-     "text": "每一欄做垂直 rolling hash，再對 w 個欄 hash 做水平 Karp-Rabin（hash of hashes）。",
-     "t": 2145
-    },
-    {
-     "text": "往下移一列時每個欄 hash O(1) 滾動 → 總時間 O(WH)，額外空間 O(W)。",
-     "t": 2235
-    }
-   ]
-  },
-  {
-   "title": "兩個已排序陣列的第 k 小",
-   "scene": "kth-two-lists",
-   "points": [
-    {
-     "text": "兩個已排序串列 [5,13,22,43,56,62,81,86,87] 與 [2,3,7,9,15,19,24,28,32]，找合併後第 k 小。",
-     "t": 2342
-    },
-    {
-     "text": "完整 merge 再取第 k 個 O(N)；merge 到第 k 個就停，空間 O(1)。",
-     "t": 2404
-    },
-    {
-     "text": "更快：兩邊各看第 k/2 個（例 15 與 43），比較兩者大小。",
-     "t": 2700
-    },
-    {
-     "text": "較小者（15）左邊的都不可能是答案，可以丟；較大者（43）右邊的也可以丟，再在剩下的找對應的 rank。",
-     "t": 2842
-    },
-    {
-     "text": "每輪 k 減半 → O(log k)，比 O(log(N₁+N₂)) 更緊。",
-     "t": 2921
-    }
-   ]
-  },
-  {
-   "title": "依成長率排序函數",
+   "title": "函數依成長率排序",
    "scene": "order-by-log",
    "points": [
     {
-     "text": "先化簡每個函數再排序：n⁴；C(n,3) ≈ n³/6 → Θ(n³)；n + log⁴ n → Θ(n)。",
-     "t": 3047
+     "text": "把函數依漸近成長率排序：先化簡每個函數，再排（pset 1 的題型）。",
+     "t": 3008
     },
     {
-     "text": "比較 n^(log n) 與 2ⁿ：同時取 log（log 單調遞增，大小關係不變）。",
-     "t": 3156
+     "text": "C(n, 3) = n(n−1)(n−2)/6 → Θ(n³)。",
+     "t": 3051
     },
     {
-     "text": "log(n^(log n)) = log² n，log(2ⁿ) = n → n 大，所以 2ⁿ 比較大。",
-     "t": 3177
+     "text": "n + log⁴ n：log 的多項式仍被 n 主導 → Θ(n)。",
+     "t": 3079
     },
     {
-     "text": "含階乘的 C(n, n/2) 用 Stirling：n! ≈ √(2πn)(n/e)ⁿ。",
-     "t": 3217
+     "text": "再加入 n^(log n) 與 2ⁿ 一起排。",
+     "t": 3103
+    },
+    {
+     "text": "指數類的比不出來就取 log：log 單調遞增，大小關係不變。",
+     "t": 3153
+    },
+    {
+     "text": "log(n^(log n)) = log² n、log(2ⁿ) = n → 2ⁿ 比較大。",
+     "t": 3165
+    },
+    {
+     "text": "C(n, n/2) 這種含階乘的用 Stirling：n! ≈ √(2πn)(n/e)ⁿ。",
+     "t": 3210
+    },
+    {
+     "text": "C(n, n/2) = n! / ((n/2)!)²，代入 Stirling 後再取 log 找位置。",
+     "t": 3271
     }
    ],
-   "trap": "補充：取 log 比較時，log f < log g 只保證 f 最終比 g 小，但若 log f 與 log g 只差常數，f、g 仍可能差常數倍以上（例如 2ⁿ 與 4ⁿ）。"
+   "trap": "補充：取 log 比較時，log f 與 log g 只差常數不代表 f、g 同階（例如 2ⁿ 與 4ⁿ 取 log 後是 n 與 2n）。"
   }
  ],
  "quiz": [
+  {
+   "q": "用 Python 把 m 格的 table 搬到新 table，table 全空與全滿的成本？",
+   "opts": [
+    "都是 Θ(m)",
+    "空的 O(1)、滿的 Θ(m)",
+    "空的 Θ(m)、滿的 Θ(m²)",
+    "跟物件大小成正比"
+   ],
+   "ans": "都是 Θ(m)",
+   "why": "每格 index O(1)、每次搬 reference O(1)，最多 2m 次。"
+  },
   {
    "q": "T(n) = T(√n) + 1 的解？",
    "opts": [
@@ -181,7 +394,18 @@
    "why": "3³ = 27。"
   },
   {
-   "q": "兩個已排序陣列找合併後第 k 小，最佳的分治法時間是？",
+   "q": "Bunker hill 用「每欄直向 rolling hash + 欄 hash 上的 Karp-Rabin」的時間與額外空間？",
+   "opts": [
+    "O(WH) 時間、O(W) 空間",
+    "O(WH·wh) 時間、O(1) 空間",
+    "O(WH·h) 時間、O(W) 空間",
+    "O(WH) 時間、O(WH) 空間"
+   ],
+   "ans": "O(WH) 時間、O(W) 空間",
+   "why": "往下移一列時每個欄 hash O(1) 滾動，存 W 個欄 hash。"
+  },
+  {
+   "q": "兩個已排序串列找合併後第 k 小，最佳的分治法時間是？",
    "opts": [
     "O(log k)",
     "O(k)",
@@ -189,7 +413,7 @@
     "O(k log k)"
    ],
    "ans": "O(log k)",
-   "why": "每次比較兩邊第 k/2 個，丟掉約一半的候選。"
+   "why": "每次丟掉約一半的候選。"
   },
   {
    "q": "比較 n^(log n) 與 2ⁿ 的方法與結果？",
@@ -201,18 +425,6 @@
    ],
    "ans": "取 log：log² n vs n，2ⁿ 較大",
    "why": "log 是單調函數，n 遠大於 log² n。"
-  },
-  {
-   "q": "C(n, 3) 的成長率是？",
-   "opts": [
-    "Θ(n³)",
-    "Θ(n)",
-    "Θ(3ⁿ)",
-    "Θ(n!)"
-   ],
-   "ans": "Θ(n³)",
-   "why": "n(n−1)(n−2)/6。"
   }
- ],
- "timing": "estimated"
+ ]
 }

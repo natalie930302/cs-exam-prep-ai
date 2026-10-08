@@ -1,102 +1,119 @@
 {
  "video": "FbYzBWdhMb0",
  "label": "Abdul Bari：1.2 Characteristics of Algorithm",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
-   "title": "Input 與 Output",
-   "scene": "recipe-procedure",
+   "title": "Input ≥ 0、Output ≥ 1",
+   "scene": "algjiang1-io-func",
    "points": [
     {
-     "text": "演算法可以接收 0 個或多個 input；有些演算法完全不需要輸入。",
-     "t": 10
+     "text": "演算法的第一個特性：input。演算法可以接收 0 個或多個 input，有些演算法完全不需要輸入。",
+     "t": 11
     },
     {
-     "text": "演算法至少要產生 1 個 output，否則寫它沒有意義。",
-     "t": 30
+     "text": "Output：演算法至少要產生 1 個 output，否則寫它沒有意義。",
+     "t": 32
     },
     {
-     "text": "可以把演算法想成 C 的函數：可能沒有參數，但一定會做出某個結果；即使回傳型別是 void，也一定完成了某件工作。",
-     "t": 42
+     "text": "可以把演算法想成 C 的函數：函數可以沒有參數，但一定會產生某個結果。",
+     "t": 38
+    },
+    {
+     "text": "即使回傳型別是 void，函數也一定做了某件事；這就是「至少一個 output」。",
+     "t": 48
     }
    ]
   },
   {
    "title": "Definiteness：每個敘述只有一種意義",
-   "scene": "recipe-procedure",
+   "scene": "algjiang1-definite-sqrt",
    "points": [
     {
-     "text": "每一個敘述都必須清楚、不模稜兩可，只能有一種確定的意義。",
-     "t": 72
+     "text": "Definiteness：每個敘述都必須 unambiguous，只有單一、確切的意義。",
+     "t": 64
     },
     {
-     "text": "人類自己都解不出來的敘述，不能要求電腦去做。",
-     "t": 82
+     "text": "人類自己都解不出來、看不懂的敘述，不能要求電腦去做。",
+     "t": 92
     },
     {
-     "text": "例：不能把 √−1 這種虛數當成一般實數值放進演算法裡運算。",
-     "t": 98
+     "text": "例：√−1 是未知值（虛數），不能在演算法裡把它當成實數來運算。",
+     "t": 113
+    },
+    {
+     "text": "每個寫下的敘述都要給出清楚、唯一的意義。",
+     "t": 128
     }
    ]
   },
   {
    "title": "Finiteness：一定要停",
-   "scene": "recipe-procedure",
+   "scene": "algjiang1-finite-server",
    "points": [
     {
-     "text": "演算法像函數一樣，由有限個步驟組成，執行到某個點必須停下並回傳結果。",
-     "t": 120
+     "text": "Finiteness：演算法像函數，由有限的步驟組成，執行到某個點必須停下並回傳結果。",
+     "t": 134
     },
     {
-     "text": "不論 10 個還是 10,000 個敘述，都必須是有限的，執行時間也必須有限。",
-     "t": 143
+     "text": "不論是 10 個還是 10 000 個敘述，都必須是有限的，執行時間也必須有限。",
+     "t": 150
     },
     {
-     "text": "像 Oracle、SQL Server、Web server 這類一直執行到被關掉的是 service，不是演算法；演算法是 procedure，必須終止。",
-     "t": 160
+     "text": "有些程式會一直執行直到被手動停止，例如 database server。",
+     "t": 164
+    },
+    {
+     "text": "Oracle、SQL Server、Web server 一直跑下去，那是 service；演算法是 procedure，必須終止。",
+     "t": 182
     }
    ]
   },
   {
    "title": "Effectiveness：不寫多餘的敘述",
-   "scene": "recipe-procedure",
+   "scene": "algjiang1-effective-unneeded",
    "points": [
     {
-     "text": "演算法中不能寫不必要的敘述。",
-     "t": 194
+     "text": "Effectiveness：演算法裡不要寫不必要的敘述。",
+     "t": 202
     },
     {
-     "text": "寫下的每個敘述，目的都是要在演算法的程序和步驟中發揮作用。",
-     "t": 200
-    },
-    {
-     "text": "每一步都必須是已知、做得到的步驟，沒有「魔法」。",
-     "t": 275
+     "text": "寫下的每個敘述都要在演算法的步驟中發揮作用、達成某個目的。",
+     "t": 206
     }
-   ]
+   ],
+   "trap": "補充：CLRS／Knuth 的 effectiveness 通常指「每一步都夠基本、可以用紙筆在有限時間內做到」；Abdul Bari 這裡講的是「沒有多餘敘述」。考試以課本定義為準，兩種說法都可能出現。"
   },
   {
-   "title": "用日常程序類比五個特性",
-   "scene": "recipe-procedure",
+   "title": "用實驗與食譜類比五個特性",
+   "scene": "algjiang1-lab-recipe",
    "points": [
     {
-     "text": "化學實驗、物理實驗、做菜食譜都是 procedure，和演算法一樣有輸入：藥品、儀器、食材。",
+     "text": "演算法就像 procedure：化學實驗、物理實驗、做菜的食譜都是 procedure。",
      "t": 217
     },
     {
-     "text": "程序的目的是得到結果：做了菜卻沒有成品、做了實驗卻沒有溶液都不行。",
-     "t": 250
+     "text": "每個 procedure 都需要 input：化學實驗要藥品與器材、物理實驗要儀器、食譜要食材。",
+     "t": 242
     },
     {
-     "text": "Finiteness：做菜到某個時間點就完成、實驗到某個時間點就得到溶液。",
-     "t": 293
+     "text": "procedure 的目的是得到結果：煮了半天沒有菜、做了實驗沒有溶液都不行。",
+     "t": 256
     },
     {
-     "text": "Effectiveness：不會把切好卻不放進菜裡的蔬菜、煮了卻不用的化學品當成步驟。",
-     "t": 311
+     "text": "Definiteness：做的每一步都是已知的步驟，沒有任何「魔法」。",
+     "t": 274
+    },
+    {
+     "text": "Finiteness：做菜到某個時間點就完成，實驗到某個時間點就得到溶液。",
+     "t": 297
+    },
+    {
+     "text": "Effectiveness：不會煮了某個藥品卻不用，也不會切了蔬菜卻不放進菜裡。",
+     "t": 308
     }
    ],
-   "trap": "補充：CLRS 與 Knuth 的定義中，output 至少一個、input 可以為零；「可以一直跑的 server 程式」不符合 finiteness，所以不是演算法。"
+   "trap": "補充：影片在類比段把「已知步驟、沒有魔法」歸在 definiteness；多數課本把「每一步都做得到」歸在 effectiveness，「意義唯一」才是 definiteness。"
   }
  ],
  "quiz": [
@@ -112,7 +129,7 @@
    "why": "有些演算法不需要輸入，但一定要至少產生一個結果。"
   },
   {
-   "q": "「在演算法中把 √−1 當作一般實數來運算」違反哪一個特性？",
+   "q": "「在演算法中把 √−1 當成一般實數運算」違反哪一個特性？",
    "opts": [
     "Definiteness",
     "Finiteness",
@@ -120,10 +137,10 @@
     "Effectiveness"
    ],
    "ans": "Definiteness",
-   "why": "每個敘述都要有明確、唯一的意義；未定義的值不能當實數用。"
+   "why": "每個敘述都要有明確、唯一的意義；未知的虛數值不能當實數用。"
   },
   {
-   "q": "持續執行直到被手動關閉的資料庫伺服器，為什麼不算演算法？",
+   "q": "一直執行到被手動關閉的 SQL Server，為什麼不算演算法？",
    "opts": [
     "違反 Finiteness",
     "違反 Definiteness",
@@ -142,19 +159,18 @@
     "Definiteness"
    ],
    "ans": "Effectiveness",
-   "why": "Effectiveness 要求不寫沒有用途的多餘敘述。"
+   "why": "影片的 effectiveness：不寫沒有用途的多餘敘述。"
   },
   {
-   "q": "下列哪一項不是影片列出的演算法特性？",
+   "q": "影片用 C 語言的 void 函數說明哪一點？",
    "opts": [
-    "必須用 C 語言撰寫",
-    "Definiteness",
-    "Finiteness",
-    "Effectiveness"
+    "就算回傳 void，函數也一定做了某件事（有 output）",
+    "演算法一定要回傳整數",
+    "演算法不能有參數",
+    "void 函數違反 finiteness"
    ],
-   "ans": "必須用 C 語言撰寫",
-   "why": "演算法與語言無關；五個特性是 input、output、definiteness、finiteness、effectiveness。"
+   "ans": "就算回傳 void，函數也一定做了某件事（有 output）",
+   "why": "output 至少一個：沒有參數可以，但一定要產生某個結果。"
   }
- ],
- "timing": "estimated"
+ ]
 }

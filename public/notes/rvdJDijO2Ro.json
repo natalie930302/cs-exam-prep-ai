@@ -1,0 +1,401 @@
+{
+ "video": "rvdJDijO2Ro",
+ "label": "MIT 6.006 L10：Open Addressing, Cryptographic Hashing",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場：quiz 公告",
+   "scene": null,
+   "points": [
+    {
+     "text": "最後一講 hashing。",
+     "t": 22
+    },
+    {
+     "text": "下週二沒有 lecture，晚上 7:30–9:30 考 quiz，會分幾間教室。",
+     "t": 32
+    }
+   ]
+  },
+  {
+   "title": "本講概要",
+   "scene": null,
+   "points": [
+    {
+     "text": "Open addressing：最簡單的 hash table 實作，只用一個 array，不用 pointer 和 linked list。",
+     "t": 74
+    },
+    {
+     "text": "沒有免費午餐：要更小心，需要 uniform hashing assumption（不同於 simple uniform hashing）。",
+     "t": 122
+    },
+    {
+     "text": "最後介紹 cryptographic hashing：password storage、檔案損毀偵測。",
+     "t": 154
+    }
+   ]
+  },
+  {
+   "title": "Open addressing 與 probing",
+   "scene": "algmit2-oa-perm",
+   "points": [
+    {
+     "text": "另一種處理 collision 的方法，不用 chaining。",
+     "t": 210
+    },
+    {
+     "text": "Array 每格最多一個 item → 必須 m ≥ n。",
+     "t": 281
+    },
+    {
+     "text": "Probing：插入失敗就換一個 hash 值再試，直到找到空格。",
+     "t": 336
+    },
+    {
+     "text": "需要能指定「探測順序」的 hash function；insert、search、delete 都用它。",
+     "t": 387
+    },
+    {
+     "text": "h(k, i)：輸入 key 與 trial count i，輸出 0…m−1 的一格。",
+     "t": 465
+    },
+    {
+     "text": "重要性質：h(k,1), …, h(k,m) 要是 0…m−1 的 permutation。",
+     "t": 573
+    },
+    {
+     "text": "這樣整個 table 都用得到：就算只剩一格空的，probe 夠久也一定找得到。",
+     "t": 597
+    },
+    {
+     "text": "Load balancing：每一格都是機會均等的格子。",
+     "t": 655
+    }
+   ],
+   "trap": "補充：老師說 trial 是 0…m−1，例子卻從 h(k,1) 數起；兩種寫法都有，重點是 m 個 trial 要走遍 m 格。"
+  },
+  {
+   "title": "Insert 的例子",
+   "scene": "algmit2-oa-insert",
+   "points": [
+    {
+     "text": "例：7 格的 table，示範 insert。",
+     "t": 715
+    },
+    {
+     "text": "insert 586：h(586, 1) = 1，空的就直接放。",
+     "t": 747
+    },
+    {
+     "text": "接著 insert 133、204、481；table 很空，第一次 trial 都成功（h(481, 1) = 6）。",
+     "t": 767
+    },
+    {
+     "text": "insert 496：h(496, 1) = 4，被 204 佔住（不是 None）→ 失敗。",
+     "t": 804
+    },
+    {
+     "text": "h(496, 2) = 1 是 586，又失敗；h(496, 3) = 3 才是空格，放進去。",
+     "t": 870
+    },
+    {
+     "text": "問題是：要試多久？",
+     "t": 925
+    }
+   ],
+   "trap": "補充：133 放在第 2 格是依板書順序推回的。"
+  },
+  {
+   "title": "Search",
+   "scene": "algmit2-oa-search",
+   "points": [
+    {
+     "text": "Insert(k, v)：一直 probe 到空格（None）才放。",
+     "t": 1000
+    },
+    {
+     "text": "有 permutation 性質且 m ≥ n → insert 保證找得到空格。",
+     "t": 1036
+    },
+    {
+     "text": "Search(k)：沿同樣的 probe 順序，遇到被「不等於 k 的 key」佔住的格子就繼續。",
+     "t": 1062
+    },
+    {
+     "text": "遇到 k → 回傳；遇到空格 → key 不在 table 裡。",
+     "t": 1125
+    },
+    {
+     "text": "只需要 insert／search 的應用：例如數資料流中有幾個不同元素。",
+     "t": 1192
+    },
+    {
+     "text": "為什麼空格就能確定不在：insert 也用同一個確定的 probe 序列，不會跳過空格放到後面。",
+     "t": 1239
+    }
+   ],
+   "trap": "補充：動畫裡搜尋 700 是示意的 key。"
+  },
+  {
+   "title": "Delete 與 DeleteMe 旗標",
+   "scene": "algmit2-oa-delete",
+   "points": [
+    {
+     "text": "例：插完 496 後 delete 586，若直接換成 None……",
+     "t": 1341
+    },
+    {
+     "text": "search 496：probe 序列會經過 586 原本的格子，遇到 None 就停 → 誤判不存在。",
+     "t": 1375
+    },
+    {
+     "text": "這是錯誤的失敗：496 明明在 table 裡。",
+     "t": 1432
+    },
+    {
+     "text": "解法：delete 時放 DeleteMe 旗標，而不是 None。",
+     "t": 1490
+    },
+    {
+     "text": "Search 有三種情況：遇到 k 回傳、遇到 DeleteMe 繼續、遇到 None 才失敗。",
+     "t": 1586
+    },
+    {
+     "text": "Insert 把 DeleteMe 當成 None；search 把它當成有東西。",
+     "t": 1614
+    },
+    {
+     "text": "再搜尋 496：4 → 204、1 → DeleteMe 繼續、3 → 找到。",
+     "t": 1671
+    },
+    {
+     "text": "DeleteMe 的格子可以被 insert 重用（例：999）。",
+     "t": 1736
+    }
+   ],
+   "trap": "老師一開始說 496 第一個看第 1 格，後來自己更正：順序是 4（204）→ 1（586）→ 3。"
+  },
+  {
+   "title": "Linear probing 與 clustering",
+   "scene": "algmit2-linear-probing",
+   "points": [
+    {
+     "text": "下一個問題：能不能設計出有 permutation 性質的 h(k, i)？先看壞的、再看好的。",
+     "t": 1798
+    },
+    {
+     "text": "Linear probing：h(k, i) = (h′(k) + i) mod m。",
+     "t": 1821
+    },
+    {
+     "text": "mod 讓它繞一圈 → 滿足 permutation。",
+     "t": 1881
+    },
+    {
+     "text": "問題是 clustering：連續被佔的格子越長越容易被撞到，再變得更長。",
+     "t": 1914
+    },
+    {
+     "text": "100 格中有 4 格的 cluster，落入機率 4/100，是單一格的 4 倍。",
+     "t": 1983
+    },
+    {
+     "text": "例：h 落在 42，要一路試 43、44…直到 57，試了 15 次，cluster 還長了一格。",
+     "t": 2061
+    },
+    {
+     "text": "合理的機率假設下，α < 0.99 時就有 Θ(log n) 長的 cluster → 不再是期望常數時間。",
+     "t": 2101
+    }
+   ]
+  },
+  {
+   "title": "Double hashing",
+   "scene": "algmit2-double-hashing",
+   "points": [
+    {
+     "text": "修正：double hashing，h(k, i) = (h1(k) + i·h2(k)) mod m，h1、h2 都是一般的 hash function。",
+     "t": 2174
+    },
+    {
+     "text": "要 permutation：h2(k) 與 m 互質。",
+     "t": 2255
+    },
+    {
+     "text": "例如 m = 2ʳ，讓 h2(k) 永遠是奇數。",
+     "t": 2300
+    },
+    {
+     "text": "實務上 double hashing 效果很好。",
+     "t": 2335
+    }
+   ],
+   "trap": "補充：動畫的 h1 = 3、h2 = 3 / 2、m = 8 是示意。"
+  },
+  {
+   "title": "Uniform hashing 與 1/(1 − α)",
+   "scene": "algmit2-oa-cost",
+   "points": [
+    {
+     "text": "要證明 open addressing 跟 chaining 一樣好，需要 uniform hashing assumption。",
+     "t": 2354
+    },
+    {
+     "text": "Uniform hashing：每個 key 的 probe 序列以相等機率是 m! 種排列之一；不同於 simple uniform hashing。",
+     "t": 2395
+    },
+    {
+     "text": "很難做到，double hashing 很接近。",
+     "t": 2433
+    },
+    {
+     "text": "定理：α = n/m 時，insert 等操作的期望 probe 數 ≤ 1/(1 − α)。",
+     "t": 2463
+    },
+    {
+     "text": "α = 0.99 → 平均 100 次 probe：仍是常數，但很糟。",
+     "t": 2507
+    },
+    {
+     "text": "實務上 α 超過約 0.5～0.6 就要 resize；open addressing 省下 pointer 的記憶體，但要控制 α。",
+     "t": 2521
+    }
+   ]
+  },
+  {
+   "title": "Q&A：DeleteMe 的負擔與證明直覺",
+   "scene": "algmit2-oa-cost",
+   "points": [
+    {
+     "text": "Q：刪光再搜尋會怎樣？DeleteMe 不會讓負載立刻下降，也要算進 α。",
+     "t": 2597
+    },
+    {
+     "text": "Resize 時全部重新 hash，DeleteMe 就清掉變回 None。",
+     "t": 2652
+    },
+    {
+     "text": "證明直覺：第一次 trial 成功的機率 p = (m − n)/m = 1 − α。",
+     "t": 2703
+    },
+    {
+     "text": "之後每次成功機率都不低於 p → 期望 trial 數 ≤ 1/p = 1/(1 − α)。",
+     "t": 2747
+    }
+   ]
+  },
+  {
+   "title": "Cryptographic hash：password storage",
+   "scene": "algmit2-password",
+   "points": [
+    {
+     "text": "Cryptographic hash 不在 quiz 範圍，純 FYI。",
+     "t": 2771
+    },
+    {
+     "text": "例：密碼怎麼存。",
+     "t": 2818
+    },
+    {
+     "text": "笨方法：明文存在 /etc/passwd；我們希望連 sysadmin 都不知道密碼。",
+     "t": 2883
+    },
+    {
+     "text": "用 one-way 的 cryptographic hash：給 h(x) 很難找到 x。",
+     "t": 2911
+    },
+    {
+     "text": "檔案裡只存 login 與 h(password)。",
+     "t": 2954
+    },
+    {
+     "text": "登入時把輸入的 x′ 再 hash 一次，跟存的值比；相同就放行。系統不需要知道 x。",
+     "t": 2992
+    },
+    {
+     "text": "還需要 one-way、collision resistance 等性質（見 notes／Wikipedia）。",
+     "t": 3036
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Open addressing 為什麼必須 m ≥ n？",
+   "opts": [
+    "每格最多放一個 item，沒有 chain",
+    "因為要用 linked list",
+    "因為 α 要大於 1",
+    "因為 h 需要質數"
+   ],
+   "ans": "每格最多放一個 item，沒有 chain",
+   "why": "沒有 linked list 可以延伸。"
+  },
+  {
+   "q": "7 格 table 已放 586@1、133@2、204@4、481@6；h(496,1)=4、h(496,2)=1、h(496,3)=3，496 放在哪？",
+   "opts": [
+    "第 3 格",
+    "第 4 格",
+    "第 1 格",
+    "第 5 格"
+   ],
+   "ans": "第 3 格",
+   "why": "4、1 都被佔，第 3 次 trial 的第 3 格是空的。"
+  },
+  {
+   "q": "Open addressing 的 delete 為什麼不能直接設成 None？",
+   "opts": [
+    "之後 search 會在那格提早停下，誤判 key 不存在",
+    "會浪費記憶體",
+    "會讓 insert 失敗",
+    "會破壞 hash function"
+   ],
+   "ans": "之後 search 會在那格提早停下，誤判 key 不存在",
+   "why": "所以改放 DeleteMe：search 繼續、insert 可重用。"
+  },
+  {
+   "q": "Linear probing 的主要問題？",
+   "opts": [
+    "clustering：連續被佔的區段越來越長",
+    "不滿足 permutation",
+    "需要 linked list",
+    "h′ 必須是質數"
+   ],
+   "ans": "clustering：連續被佔的區段越來越長",
+   "why": "大 cluster 更容易被撞到而更大。"
+  },
+  {
+   "q": "Double hashing 要成為 permutation，h2(k) 需要？",
+   "opts": [
+    "與 m 互質",
+    "等於 1",
+    "是偶數",
+    "大於 m"
+   ],
+   "ans": "與 m 互質",
+   "why": "例如 m = 2ʳ、h2(k) 永遠是奇數。"
+  },
+  {
+   "q": "Uniform hashing 假設下，α = 0.9 時 insert 的期望 probe 數上界？",
+   "opts": [
+    "10",
+    "2",
+    "1.1",
+    "100"
+   ],
+   "ans": "10",
+   "why": "1/(1 − 0.9) = 10。"
+  },
+  {
+   "q": "Password storage 用 cryptographic hash 的關鍵性質？",
+   "opts": [
+    "one-way：給 h(x) 很難找出 x",
+    "計算要非常慢",
+    "輸出要比輸入長",
+    "可以還原出原密碼"
+   ],
+   "ans": "one-way：給 h(x) 很難找出 x",
+   "why": "系統只存 h(x)，登入時比對 h(x′)。"
+  }
+ ]
+}

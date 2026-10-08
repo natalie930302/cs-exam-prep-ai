@@ -1,0 +1,512 @@
+{
+ "video": "OVhJHBYJLSE",
+ "label": "交大江蕙如 Lec03 Chapter 1 Introduction (2/2)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "回顧 Gale-Shapley 流程",
+   "scene": "algjiang2-gs-states",
+   "points": [
+    {
+     "text": "Stable matching 過程分三個階段：free（單身）、engaged（訂婚）、married（結婚）。",
+     "t": 35
+    },
+    {
+     "text": "男生會在 free 與 engaged 之間來回切換；女生一旦被 propose 就進入 engaged，之後一直 engaged，只是對象可能換。",
+     "t": 61
+    },
+    {
+     "text": "結果穩定之後，所有人才同時切換成 married。",
+     "t": 82
+    },
+    {
+     "text": "第 2～8 行的 while loop：每個 iteration 找一個 free、而且還沒向所有女生 propose 過的男生。",
+     "t": 118
+    },
+    {
+     "text": "他從還沒求過的女生裡，挑 rank 最高的那位 propose。",
+     "t": 157
+    },
+    {
+     "text": "女生 free 就馬上 accept；已經 engaged 就比較現任 fiancé 與新的男生，決定 dump 現任或 reject 新人。",
+     "t": 166
+    },
+    {
+     "text": "第 9 行：所有人都 engaged 且穩定後，把 engaged 配對 output 成集合 S。",
+     "t": 206
+    }
+   ],
+   "trap": "補充：場景中的 2 男 2 女偏好是示意用的小例子，不是老師投影片上的例子。"
+  },
+  {
+   "title": "要證兩件事：正確性與會停",
+   "scene": "algjiang2-n2-proposals",
+   "points": [
+    {
+     "text": "分析 procedure 分兩大類：correctness（輸出是否符合 stable matching）與 termination（會不會停）。",
+     "t": 249
+    },
+    {
+     "text": "Stable matching 條件拆開看：第一要是 perfect matching，每個人都配到、而且一對一。",
+     "t": 270
+    },
+    {
+     "text": "第二要 stable：不存在任何一對男女，喜歡對方勝過自己的配偶。",
+     "t": 298
+    },
+    {
+     "text": "除了會不會停，還想知道大概要多少次 iteration 才停。",
+     "t": 318
+    },
+    {
+     "text": "Problem formulation 很乾淨：n 個男生、n 個女生，每人對所有異性都有 preference list。",
+     "t": 356
+    },
+    {
+     "text": "Termination：while loop 最多執行 n² 次 iteration 就會結束。",
+     "t": 453
+    },
+    {
+     "text": "算法：每個 iteration 一定有一次 proposal，而男生不會向同一位女生求兩次，所以反過來數可能的 proposal 只有 n² 個。",
+     "t": 477
+    },
+    {
+     "text": "Perfection（每人都配到）上次已用反證法證過。",
+     "t": 521
+    }
+   ],
+   "trap": "n² 是最差狀況的上限（upper bound），不是每次都要跑滿 n² 次。"
+  },
+  {
+   "title": "GS 是 greedy algorithm 嗎？",
+   "scene": "algjiang2-not-greedy",
+   "points": [
+    {
+     "text": "同學觀察：男生從最喜歡的女生開始求，女生也依喜好決定 accept/reject，很像 greedy。",
+     "t": 557
+    },
+    {
+     "text": "從這觀點看，大家都以自我利益優先做決定，確實有 greedy 的本質。",
+     "t": 588
+    },
+    {
+     "text": "一般 greedy algorithm：step by step 做決定，每次都依當下最好的選擇。",
+     "t": 617
+    },
+    {
+     "text": "另一大特性：決定做完就不再反悔，也不會 revisit 前面的決定。",
+     "t": 638
+    },
+    {
+     "text": "原因是能證明每一步的決定一定會在最終的 optimal solution 裡。",
+     "t": 653
+    },
+    {
+     "text": "GS 的女生 accept 之後，遇到更喜歡的男生還會換人，決定可以反悔。",
+     "t": 696
+    },
+    {
+     "text": "所以 GS 有 greedy 本質，但不把它算成 greedy algorithm；greedy 之後章節正式介紹。",
+     "t": 722
+    }
+   ]
+  },
+  {
+   "title": "反證法的步驟",
+   "scene": "algjiang2-contradiction",
+   "points": [
+    {
+     "text": "這學期幾乎每個演算法都會伴隨大量證明，但通常不超過一頁投影片，不用害怕。",
+     "t": 747
+    },
+    {
+     "text": "本章用的招數很單純：反證法，反覆一直用。",
+     "t": 781
+    },
+    {
+     "text": "第一步：先 suppose/assume 一個跟期待結果相反的設定。",
+     "t": 801
+    },
+    {
+     "text": "根據這個設定做 deduction，期待推出矛盾的結果。",
+     "t": 813
+    },
+    {
+     "text": "矛盾來自一開始的設定 → 設定一定錯，反過來就得到想要的結果，得證。",
+     "t": 829
+    },
+    {
+     "text": "這裡要證：procedure 第 9 行 output 的 S 是 stable matching。",
+     "t": 849
+    }
+   ]
+  },
+  {
+   "title": "Stability 證明：假設有 unstable pair",
+   "scene": "algjiang2-unstable-pair",
+   "points": [
+    {
+     "text": "反證：假設最後吐出的 S 不是 stable matching。",
+     "t": 872
+    },
+    {
+     "text": "那 S 裡至少找得到一對男女喜歡對方勝過自己的配偶；可能很多對，挑其中一對討論。",
+     "t": 909
+    },
+    {
+     "text": "畫圖：黑線是 S 的配對結果，m 配給 w、m′ 配給 w′。",
+     "t": 958
+    },
+    {
+     "text": "m 與 w′ 是 unstable pair（紅線）：彼此喜歡對方勝過目前的配偶。",
+     "t": 994
+    },
+    {
+     "text": "GS 裡男生從最喜歡的女生開始 propose，被 reject 就換下一個，直到停下。",
+     "t": 1049
+    },
+    {
+     "text": "所以 m 最後的配對 w 一定是他最後 propose 的對象。",
+     "t": 1081
+    },
+    {
+     "text": "問題：m 在這之前有沒有向 w′ propose 過？不確定 → 分 case 討論。",
+     "t": 1124
+    }
+   ]
+  },
+  {
+   "title": "Stability 證明：兩種 case 都矛盾",
+   "scene": "algjiang2-stable-cases",
+   "points": [
+    {
+     "text": "Case 1：m 從沒向 w′ propose 過就停在 w → 在 m 的 preference list 裡 w 排在 w′ 前面。",
+     "t": 1170
+    },
+    {
+     "text": "表示 m 喜歡 w 勝過 w′，跟一開始的假設相反 → 矛盾。",
+     "t": 1199
+    },
+    {
+     "text": "Case 2：m 曾向 w′ propose 過，但被 w′ 拒絕，最後才配到 w。",
+     "t": 1211
+    },
+    {
+     "text": "女生拒絕一定有原因：一定有另一個更喜歡的男生，叫他 m″。",
+     "t": 1250
+    },
+    {
+     "text": "若 m″ 就是 m′（w′ 最後的配偶）：w′ 當下比較喜歡 m′，跟假設相反 → 矛盾。",
+     "t": 1347
+    },
+    {
+     "text": "若 m″ 是別人：w′ 最後配到 m′，而女生只會換更喜歡的人，所以 w′ 喜歡 m′ 勝過 m″、也勝過 m。",
+     "t": 1395
+    },
+    {
+     "text": "這又跟「w′ 喜歡 m 勝過 m′」抵觸 → 矛盾。",
+     "t": 1456
+    },
+    {
+     "text": "所以 S 是 stable：就算心裡有更喜歡的人，對方也沒有更喜歡自己，所以不會改變。",
+     "t": 1541
+    }
+   ],
+   "trap": "Case 2 的關鍵是 procedure 的行為：女生只有遇到更喜歡的對象才會 reject／dump，所以她的對象只會越換越好。"
+  },
+  {
+   "title": "Valid partner、best(m) 與 male-optimal",
+   "scene": "algjiang2-valid-best",
+   "points": [
+    {
+     "text": "總結正確性：GS 最多 n² 次 iteration 一定停，輸出一定是 stable matching。",
+     "t": 1584
+    },
+    {
+     "text": "Stable matching 不是唯一解；GS 只是吐出其中一種。",
+     "t": 1608
+    },
+    {
+     "text": "GS 的結果是 male-optimal：對男生最好，相對地對女生是最悲觀的結果。",
+     "t": 1633
+    },
+    {
+     "text": "S*：每個男生都跟他 best possible 的對象配在一起。",
+     "t": 1681
+    },
+    {
+     "text": "Valid partner：只要存在某個 stable matching 能把 m、w 配在一起，w 就是 m 的 valid partner。",
+     "t": 1727
+    },
+    {
+     "text": "通常前幾名是永遠追不到的對象，只有一部分女生是 valid。",
+     "t": 1793
+    },
+    {
+     "text": "所有 valid partner 中排名最前面的叫 best valid partner，記作 best(m)。",
+     "t": 1815
+    },
+    {
+     "text": "每個男生的 best(m) 是 unique 的 → 不管誰來執行 GS，都得到相同結果，這是很好的特性。",
+     "t": 1894
+    },
+    {
+     "text": "男女互換、改由女生 propose，結果就變成對女生 optimal。",
+     "t": 2037
+    }
+   ]
+  },
+  {
+   "title": "證明演算法正確性的原則",
+   "scene": "algjiang2-contradiction",
+   "params": {
+    "principles": true
+   },
+   "points": [
+    {
+     "text": "Male-optimal 一樣用反證法，這是本章最後一個證明；之後章節會多看到數學歸納法。",
+     "t": 2054
+    },
+    {
+     "text": "證的是演算法正確性，所以所有理由都要根據 procedure 的某個 statement。",
+     "t": 2168
+    },
+    {
+     "text": "用 procedure 以外亂七八糟的理由，就不是在證這個 algorithm 的正確性。",
+     "t": 2192
+    },
+    {
+     "text": "盡量利用所有可用的條件：通常是根據定義，或 procedure 的行為推得結果。",
+     "t": 2212
+    }
+   ]
+  },
+  {
+   "title": "Male-optimal 證明（1）：第一次被 valid partner 拒絕",
+   "scene": "algjiang2-mopt-first-reject",
+   "points": [
+    {
+     "text": "反證：假設某次執行 E 中，有一個男生沒有跟他的 best valid partner 配在一起。",
+     "t": 2242
+    },
+    {
+     "text": "男生由最喜歡往下 propose，所以他沒配到 best，就一定曾被某個 valid partner 拒絕過。",
+     "t": 2354
+    },
+    {
+     "text": "可能很多次、很多個男生；只挑整個 E 中「第一次」男生被 valid partner 拒絕的那個 iteration。",
+     "t": 2387
+    },
+    {
+     "text": "那個倒楣的男生叫 m。",
+     "t": 2445
+    },
+    {
+     "text": "第一次被 valid partner 拒絕，而 best(m) 是 valid 中排最前面的 → 拒絕他的女生 w 就是 best(m)。",
+     "t": 2467
+    },
+    {
+     "text": "w 是 valid → 一定存在另一個 stable matching S′，其中 m 與 w 配在一起。",
+     "t": 2540
+    },
+    {
+     "text": "證明麻煩在於同時討論兩個結果：有問題的執行 E 的輸出，和 stable matching S′。",
+     "t": 2590
+    },
+    {
+     "text": "在 E 中 w 拒絕 m，一定是因為另一個更好的對象 m′。",
+     "t": 2716
+    },
+    {
+     "text": "第一個重要結論：w 喜歡 m′ 勝過 m。",
+     "t": 2774
+    }
+   ]
+  },
+  {
+   "title": "Male-optimal 證明（2）：S′ 出現 unstable pair",
+   "scene": "algjiang2-mopt-contra",
+   "points": [
+    {
+     "text": "切到 S′：S′ 把 m 與他的 best partner w 配在一起。",
+     "t": 2862
+    },
+    {
+     "text": "S′ 是 stable matching，所以 m′ 總要配到某個女生，叫她 w′。",
+     "t": 2901
+    },
+    {
+     "text": "因此 w′ 是 m′ 的 valid partner。",
+     "t": 2949
+    },
+    {
+     "text": "目標：再證 m′ 喜歡 w 勝過 w′，S′ 就有 unstable pair → 矛盾。",
+     "t": 2990
+    },
+    {
+     "text": "切回 E：m 被 w 拒絕是第一次 valid 拒絕，在這之前沒有人被 valid partner 拒絕過。",
+     "t": 3117
+    },
+    {
+     "text": "所以 m′ 與 w engaged 的那一刻，m′ 還沒被任何 valid partner 拒絕過。",
+     "t": 3174
+    },
+    {
+     "text": "由此推得 m′ 喜歡 w 勝過 w′；S′ 裡 m′ 與 w 互相更喜歡 → S′ unstable，與 S′ 是 stable 矛盾。",
+     "t": 3215
+    },
+    {
+     "text": "為什麼？m′ 由愛到不愛 propose，排在 w 前面的女生都拒絕過他，而那時還沒有 valid 拒絕 → 她們都是 invalid。",
+     "t": 3369
+    },
+    {
+     "text": "w′ 是 valid、又不是 w，所以只能排在 w 後面。",
+     "t": 3413
+    },
+    {
+     "text": "假設的 complement：所有男生都配到 best(m)，得證 male-optimal。",
+     "t": 3511
+    },
+    {
+     "text": "這個證明在 E 與 S′ 之間交錯切換，是課本裡最不直覺的證明，回去要仔細看。",
+     "t": 3532
+    }
+   ]
+  },
+  {
+   "title": "單元總結：effective 與 efficient",
+   "scene": "algjiang2-effective-efficient",
+   "points": [
+    {
+     "text": "第一單元花很多時間在 stable matching 的證明，之後也會一直有證明，不要害怕。",
+     "t": 3615
+    },
+    {
+     "text": "Procedure 異常乾淨簡單，結果卻非常好，還有額外的 property。",
+     "t": 3640
+    },
+    {
+     "text": "第一件事：先把問題的本質釐清，抓出重點。",
+     "t": 3677
+    },
+    {
+     "text": "演算法設計的核心：設計 effective（有效）且 efficient（有效率）的演算法。",
+     "t": 3692
+    },
+    {
+     "text": "答案只有 yes/no 時，effective 就是要證明正確性；反證法簡單、複雜的事情都能證。",
+     "t": 3711
+    },
+    {
+     "text": "後面章節會談 solution quality：不只要合理，還要證明是最佳解。",
+     "t": 3762
+    },
+    {
+     "text": "Efficient：run time 快、memory 不要爆，下一單元詳細討論。",
+     "t": 3792
+    }
+   ]
+  },
+  {
+   "title": "Knuth 的建議：拿紙筆跑一遍",
+   "scene": "algjiang2-gs-states",
+   "points": [
+    {
+     "text": "引用兩位名人的話：好的演算法能讓人對計算這件事有更深的認識。",
+     "t": 3835
+    },
+    {
+     "text": "Knuth 的建議：不要只看 procedure，要拿出紙筆找個例子實際 run 一遍。",
+     "t": 3869
+    },
+    {
+     "text": "Procedure 看起來很普通，真的寫成程式或手算才發現很多 gap、做到一半會卡住。",
+     "t": 3924
+    },
+    {
+     "text": "試做過程中能觀察到演算法一些特殊的行為，更了解它的本質。",
+     "t": 3964
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Gale-Shapley 的 while loop 最多執行幾次 iteration？",
+   "opts": [
+    "n",
+    "2n",
+    "n²",
+    "n!"
+   ],
+   "ans": "n²",
+   "why": "每個 iteration 一定有一次 proposal，男生不會向同一位女生求兩次，可能的 proposal 只有 n × n 個。"
+  },
+  {
+   "q": "老師認為 GS 不算 greedy algorithm，主要因為它不符合 greedy 的哪個特性？",
+   "opts": [
+    "每步選當下最好的選擇",
+    "決定做完就不再反悔",
+    "step by step 做決定",
+    "一定會停下來"
+   ],
+   "ans": "決定做完就不再反悔",
+   "why": "GS 的女生 accept 之後，遇到更喜歡的男生還會換人，決定會被 revisit。"
+  },
+  {
+   "q": "Stability 證明的 Case 2：m 曾向 w′ propose 但被拒絕。w′ 為什麼會拒絕他？",
+   "opts": [
+    "她那時有更喜歡的男生",
+    "她已經 married",
+    "m 不在她的 list 裡",
+    "隨機拒絕"
+   ],
+   "ans": "她那時有更喜歡的男生",
+   "why": "依 procedure，女生只有遇到更喜歡的對象才會 reject；之後也只會換更好的，所以最後 w′ 喜歡 m′ 勝過 m，矛盾。"
+  },
+  {
+   "q": "w 是 m 的 valid partner，意思是？",
+   "opts": [
+    "w 在 m 的 list 排第一",
+    "存在某個 stable matching 把 m 與 w 配在一起",
+    "GS 的輸出把 m 與 w 配在一起",
+    "w 也最喜歡 m"
+   ],
+   "ans": "存在某個 stable matching 把 m 與 w 配在一起",
+   "why": "valid 只要求「某個」stable matching 能配在一起；valid 中排名最高的才是 best(m)。"
+  },
+  {
+   "q": "男生 propose 的 GS，結果對女生而言是？",
+   "opts": [
+    "female-optimal",
+    "female-pessimal（最差的 valid partner）",
+    "隨機",
+    "不一定 stable"
+   ],
+   "ans": "female-pessimal（最差的 valid partner）",
+   "why": "男生 propose 的版本是 male-optimal，對女生則是最悲觀的結果；男女互換就反過來。"
+  },
+  {
+   "q": "Male-optimal 的反證法挑哪一個事件來討論？",
+   "opts": [
+    "最後一次 proposal",
+    "整個執行 E 中第一次有男生被 valid partner 拒絕",
+    "第一次 proposal",
+    "任意一次 rejection"
+   ],
+   "ans": "整個執行 E 中第一次有男生被 valid partner 拒絕",
+   "why": "挑第一次，才能說那時還沒有人被 valid partner 拒絕過，進而推出 m′ 喜歡 w 勝過 w′。"
+  },
+  {
+   "q": "為什麼不管誰來執行 GS（任意挑 free 男生的順序），結果都一樣？",
+   "opts": [
+    "因為 GS 是 greedy",
+    "因為每個男生都配到 best(m)，而 best(m) 唯一",
+    "因為 stable matching 只有一個",
+    "因為女生都配到最愛"
+   ],
+   "ans": "因為每個男生都配到 best(m)，而 best(m) 唯一",
+   "why": "stable matching 可能不只一個，但 male-optimal 的 S* 由 best(m) 唯一決定。"
+  }
+ ]
+}

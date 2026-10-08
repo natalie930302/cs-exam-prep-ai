@@ -1,0 +1,250 @@
+{
+ "video": "OynWkEj0S-s",
+ "label": "Abdul Bari：2.4.1 Masters Theorem Dividing #1",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "定理：比 log_b a 與 k",
+   "scene": "algbari2-mt-rules",
+   "points": [
+    {
+     "text": "一般式：T(n) = aT(n/b) + f(n)。",
+     "t": 6
+    },
+    {
+     "text": "a ≥ 1、b > 1，f(n) = Θ(nᵏ logᵖ n)。",
+     "t": 27
+    },
+    {
+     "text": "先算兩個值：log_b a 與 k（f 中 n 的次方）。",
+     "t": 51
+    },
+    {
+     "text": "Case 1：log_b a > k → Θ(n^(log_b a))。",
+     "t": 85
+    },
+    {
+     "text": "Case 2：log_b a = k，p > −1 → Θ(nᵏ logᵖ⁺¹ n)。",
+     "t": 117
+    },
+    {
+     "text": "p = −1 → Θ(nᵏ log log n)。",
+     "t": 180
+    },
+    {
+     "text": "p < −1 → Θ(nᵏ)，log 丟掉。",
+     "t": 194
+    },
+    {
+     "text": "Case 3：log_b a < k，p ≥ 0 → Θ(nᵏ logᵖ n)；p < 0 → O(nᵏ)。",
+     "t": 216
+    }
+   ]
+  },
+  {
+   "title": "Case 1 例題",
+   "scene": "algbari2-mt-sort",
+   "params": {
+    "set": "c1"
+   },
+   "points": [
+    {
+     "text": "2T(n/2) + 1：a = 2、b = 2、f = Θ(1) = n⁰log⁰n；log₂2 = 1 > 0 → Θ(n)。",
+     "t": 281
+    },
+    {
+     "text": "4T(n/2) + n：log₂4 = 2 > 1 → Θ(n²)。",
+     "t": 366
+    },
+    {
+     "text": "8T(n/2) + n：log₂8 = 3 > 1 → Θ(n³)。",
+     "t": 423
+    },
+    {
+     "text": "8T(n/2) + n²：3 > 2 → 仍是 Θ(n³)。",
+     "t": 456
+    },
+    {
+     "text": "9T(n/3) + 1：log₃9 = 2 > 0 → Θ(n²)；9T(n/3) + n 也是 Θ(n²)。",
+     "t": 483
+    },
+    {
+     "text": "9T(n/3) + n²：2 = 2，相等 → 屬於 case 2。",
+     "t": 527
+    },
+    {
+     "text": "只要 log_b a 比較大，答案就直接寫 n^(log_b a)。",
+     "t": 540
+    },
+    {
+     "text": "8T(n/2) + n log n：只看 n 的次方 1 < 3 → Θ(n³)。",
+     "t": 573
+    }
+   ]
+  },
+  {
+   "title": "Case 2：再乘一個 log n",
+   "scene": "algbari2-mt-sort",
+   "params": {
+    "set": "c2"
+   },
+   "points": [
+    {
+     "text": "2T(n/2) + n：log₂2 = 1 = k，p = 0 > −1 → Θ(n log n)。",
+     "t": 606
+    },
+    {
+     "text": "簡單說：兩者相等時，f(n) 原樣再乘 log n。",
+     "t": 658
+    },
+    {
+     "text": "4T(n/2) + n² → Θ(n² log n)。",
+     "t": 691
+    },
+    {
+     "text": "已經有 log n → 變 log² n：n² log n → Θ(n² log² n)。",
+     "t": 703
+    },
+    {
+     "text": "有 log² n 就變 log³ n，log⁵ 就變 log⁶。",
+     "t": 721
+    },
+    {
+     "text": "8T(n/2) + n³：3 = 3 → Θ(n³ log n)。",
+     "t": 745
+    }
+   ]
+  },
+  {
+   "title": "Case 2：p = −1 與 p < −1",
+   "scene": "algbari2-mt-sort",
+   "params": {
+    "set": "c2p"
+   },
+   "points": [
+    {
+     "text": "2T(n/2) + n/log n：1 = 1，但 log 在分母 → p = −1。",
+     "t": 781
+    },
+    {
+     "text": "不能直接乘 log n 讓它抵消，方法不同。",
+     "t": 808
+    },
+    {
+     "text": "p = −1 → Θ(n log log n)。",
+     "t": 823
+    },
+    {
+     "text": "分母是 log² n：p = −2 < −1。",
+     "t": 849
+    },
+    {
+     "text": "→ 連 log log n 都不要，只寫 Θ(n)。",
+     "t": 872
+    }
+   ]
+  },
+  {
+   "title": "Case 3：直接取 f(n)",
+   "scene": "algbari2-mt-sort",
+   "params": {
+    "set": "c3"
+   },
+   "points": [
+    {
+     "text": "T(n/2) + n²：log₂1 = 0 < 2 → Θ(n²)。",
+     "t": 901
+    },
+    {
+     "text": "2T(n/2) + n²：1 < 2 → 仍是 Θ(n²)。",
+     "t": 928
+    },
+    {
+     "text": "有 log n 就照抄：n² log n、n² log² n。",
+     "t": 937
+    },
+    {
+     "text": "n 的次方比 log_b a 大 → 直接取 f(n)。",
+     "t": 950
+    },
+    {
+     "text": "4T(n/2) + n³：2 < 3 → Θ(n³)。",
+     "t": 969
+    },
+    {
+     "text": "分母有 log（p < 0）時不要那個 log，只寫 n³。",
+     "t": 987
+    }
+   ],
+   "trap": "補充：p < 0 時定理只給 O(nᵏ)（不是 Θ）。另外影片的 case 3 版本省略了 regularity condition（a·f(n/b) ≤ c·f(n)），對 nᵏ logᵖ n 形式會自動成立。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "T(n) = 8T(n/2) + n² 的解？",
+   "opts": [
+    "Θ(n³)",
+    "Θ(n² log n)",
+    "Θ(n²)",
+    "Θ(n⁴)"
+   ],
+   "ans": "Θ(n³)",
+   "why": "log₂8 = 3 > 2，case 1。"
+  },
+  {
+   "q": "T(n) = 4T(n/2) + n² 的解？",
+   "opts": [
+    "Θ(n² log n)",
+    "Θ(n²)",
+    "Θ(n³)",
+    "Θ(n log n)"
+   ],
+   "ans": "Θ(n² log n)",
+   "why": "log₂4 = 2 = k，p = 0 → 乘 log n。"
+  },
+  {
+   "q": "T(n) = 2T(n/2) + n/log n 的解？",
+   "opts": [
+    "Θ(n log log n)",
+    "Θ(n)",
+    "Θ(n log n)",
+    "Θ(n/log n)"
+   ],
+   "ans": "Θ(n log log n)",
+   "why": "case 2、p = −1。"
+  },
+  {
+   "q": "T(n) = 2T(n/2) + n/log² n 的解？",
+   "opts": [
+    "Θ(n)",
+    "Θ(n log log n)",
+    "Θ(n log n)",
+    "Θ(n/log n)"
+   ],
+   "ans": "Θ(n)",
+   "why": "case 2、p = −2 < −1。"
+  },
+  {
+   "q": "T(n) = 2T(n/2) + n² log n 的解？",
+   "opts": [
+    "Θ(n² log n)",
+    "Θ(n² log² n)",
+    "Θ(n²)",
+    "Θ(n log n)"
+   ],
+   "ans": "Θ(n² log n)",
+   "why": "log₂2 = 1 < 2，case 3、p ≥ 0 → f(n)。"
+  },
+  {
+   "q": "T(n) = 9T(n/3) + n² 屬於哪個 case？",
+   "opts": [
+    "case 2",
+    "case 1",
+    "case 3",
+    "不適用"
+   ],
+   "ans": "case 2",
+   "why": "log₃9 = 2 = k。"
+  }
+ ]
+}

@@ -1,49 +1,73 @@
 {
  "video": "CyknhZbfMqc",
  "label": "Abdul Bari：2.2 Masters Theorem Decreasing Function",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
    "title": "從已解過的遞減遞迴觀察規律",
    "scene": "master-decreasing",
    "points": [
     {
-     "text": "T(n) = T(n−1) + 1 → O(n)；T(n−1) + n → O(n²)；T(n−1) + log n → O(n log n)。",
-     "t": 24
+     "text": "遞減函數的 Master Theorem：先看前面解過的例子。",
+     "t": 1
     },
     {
-     "text": "T(n) = 2T(n−1) + 1 → O(2ⁿ)；3T(n−1) + 1 → O(3ⁿ)；2T(n−1) + n → O(n·2ⁿ)。",
-     "t": 41
+     "text": "T(n−1) + 1 → O(n)。",
+     "t": 21
     },
     {
-     "text": "係數 a = 1 時：f(n) 被乘上 n。",
-     "t": 74
+     "text": "T(n−1) + n → O(n²)。",
+     "t": 34
     },
     {
-     "text": "係數 a > 1 時：f(n) 被乘上 aⁿ。",
-     "t": 90
+     "text": "T(n−1) + log n → O(n log n)。",
+     "t": 48
+    },
+    {
+     "text": "2T(n−1) + 1 → O(2ⁿ)。",
+     "t": 63
+    },
+    {
+     "text": "3T(n−1) + 1 → O(3ⁿ)。",
+     "t": 76
+    },
+    {
+     "text": "2T(n−1) + n → O(n·2ⁿ)。",
+     "t": 92
+    },
+    {
+     "text": "a = 1 時 f(n) 乘上 n；係數 2 時乘上 2ⁿ。",
+     "t": 109
     }
    ]
   },
   {
-   "title": "一般式：T(n) = aT(n−b) + f(n)",
+   "title": "一般式與三種情況",
    "scene": "master-decreasing",
    "points": [
     {
-     "text": "一般式 T(n) = aT(n − b) + f(n)，a > 0、b > 0，f(n) = O(nᵏ)，k ≥ 0。",
-     "t": 121
+     "text": "一般式：T(n) = aT(n − b) + f(n)。",
+     "t": 127
     },
     {
-     "text": "Case 2：a = 1 → O(nᵏ⁺¹)，也就是 O(n·f(n))。",
-     "t": 217
+     "text": "假設 a > 0、b > 0，f(n) = O(nᵏ)，k ≥ 0。",
+     "t": 175
     },
     {
-     "text": "Case 3：a > 1 → O(nᵏ · a^(n/b))；b = 2 時是 a^(n/2)。",
-     "t": 309
+     "text": "a = 1：f(n) 乘上 n → O(nᵏ⁺¹) = O(n·f(n))。",
+     "t": 214
     },
     {
-     "text": "Case 1：a < 1（例如 0.5）→ O(nᵏ)，也就是 O(f(n))。",
-     "t": 361
+     "text": "a > 1：O(nᵏ·aⁿ)，也就是 f(n)·aⁿ。",
+     "t": 296
+    },
+    {
+     "text": "若每次減 b（例如 n−2）：aⁿ 變成 a^(n/b)。",
+     "t": 339
+    },
+    {
+     "text": "a < 1（例如 0.5）：O(nᵏ) = O(f(n))。",
+     "t": 366
     }
    ]
   },
@@ -52,54 +76,58 @@
    "scene": "master-decreasing",
    "points": [
     {
-     "text": "這個定理是由觀察例子歸納出來的，沒有特別的推導邏輯。",
-     "t": 400
+     "text": "定理是從例子觀察整理出來的；也可以先寫定理再套例子。",
+     "t": 401
     },
     {
-     "text": "依照這個定理，任何 aT(n − b) + f(n) 形式的遞減遞迴都能直接寫出答案。",
-     "t": 437
+     "text": "a < 1 → f(n)；a = 1 → n·f(n)；a > 1 → f(n)·a^(n/b)。",
+     "t": 424
     },
     {
-     "text": "要自己動手解幾題、至少寫一遍，光看記不住。",
-     "t": 459
+     "text": "任何 aT(n − b) + f(n) 形式的遞迴都能直接寫答案。",
+     "t": 453
+    },
+    {
+     "text": "沒有特別的推導邏輯，要自己動手寫幾題才記得住。",
+     "t": 476
     }
    ],
-   "trap": "補充：這個「遞減型 Master Theorem」是 Abdul Bari 的整理，不在 CLRS 中；考試若用遞減式，最好仍以 back substitution 或遞迴樹寫出推導。"
+   "trap": "補充：a < 1 在實際程式裡很少見（呼叫次數不會是 0.5 次），主要是數學上的完整性。"
   }
  ],
  "quiz": [
-  {
-   "q": "T(n) = T(n−1) + n 的解？",
-   "opts": [
-    "O(n²)",
-    "O(n)",
-    "O(2ⁿ)",
-    "O(n log n)"
-   ],
-   "ans": "O(n²)",
-   "why": "a = 1，f(n) = n 乘上 n。"
-  },
-  {
-   "q": "T(n) = 2T(n−1) + 1 的解？",
-   "opts": [
-    "O(2ⁿ)",
-    "O(n)",
-    "O(n²)",
-    "O(n·2ⁿ)"
-   ],
-   "ans": "O(2ⁿ)",
-   "why": "a = 2 > 1，f(n) = 1 乘上 2ⁿ。"
-  },
   {
    "q": "T(n) = 2T(n−1) + n 的解？",
    "opts": [
     "O(n·2ⁿ)",
     "O(2ⁿ)",
     "O(n²)",
-    "O(n³)"
+    "O(n log n)"
    ],
    "ans": "O(n·2ⁿ)",
-   "why": "a > 1：nᵏ · aⁿ/ᵇ = n · 2ⁿ。"
+   "why": "a = 2 > 1：f(n)·aⁿ。"
+  },
+  {
+   "q": "T(n) = aT(n−b) + f(n)，a = 1、f(n) = nᵏ 時？",
+   "opts": [
+    "O(nᵏ⁺¹)",
+    "O(nᵏ)",
+    "O(aⁿ)",
+    "O(nᵏ log n)"
+   ],
+   "ans": "O(nᵏ⁺¹)",
+   "why": "f(n) 重複 n 次。"
+  },
+  {
+   "q": "T(n) = 3T(n−1) + 1 的解？",
+   "opts": [
+    "O(3ⁿ)",
+    "O(2ⁿ)",
+    "O(n³)",
+    "O(n)"
+   ],
+   "ans": "O(3ⁿ)",
+   "why": "a = 3：aⁿ·f(n) = 3ⁿ。"
   },
   {
    "q": "T(n) = 2T(n−2) + 1 的解？",
@@ -110,30 +138,18 @@
     "O(n²)"
    ],
    "ans": "O(2^(n/2))",
-   "why": "b = 2，指數是 n/b。"
+   "why": "b = 2：a^(n/b)。"
   },
   {
-   "q": "遞減型 Master Theorem 中，a = 1 時答案是？",
+   "q": "a < 1 時答案是？",
    "opts": [
-    "O(n·f(n))",
     "O(f(n))",
-    "O(aⁿ f(n))",
-    "O(log n · f(n))"
+    "O(n·f(n))",
+    "O(aⁿ)",
+    "定理不適用"
    ],
-   "ans": "O(n·f(n))",
-   "why": "每層都做 f(n) 的工作，共約 n 層。"
-  },
-  {
-   "q": "T(n) = T(n−1) + log n 的解？",
-   "opts": [
-    "O(n log n)",
-    "O(log n)",
-    "O(n)",
-    "O(log² n)"
-   ],
-   "ans": "O(n log n)",
-   "why": "a = 1，log n 乘上 n（嚴格說 Σ log i = log n! = Θ(n log n)）。"
+   "ans": "O(f(n))",
+   "why": "就是 nᵏ。"
   }
- ],
- "timing": "estimated"
+ ]
 }

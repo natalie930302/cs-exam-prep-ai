@@ -1,0 +1,172 @@
+{
+ "video": "8gt0D0IqU5w",
+ "label": "Abdul Bari：2.3.1 Recurrence Dividing Function #1",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Dividing function：T(n) = T(n/2) + 1",
+   "scene": "algbari2-write-rr",
+   "params": {
+    "ex": "half1"
+   },
+   "points": [
+    {
+     "text": "Dividing function：函數呼叫自己時傳入 n/2。",
+     "t": 0
+    },
+    {
+     "text": "參數可以用減法（n−1）、除法（n/2）或開根號（√n）縮小。",
+     "t": 19
+    },
+    {
+     "text": "設 T(n)：printf 花 1，遞迴呼叫花 T(n/2)。",
+     "t": 61
+    },
+    {
+     "text": "T(n) = T(n/2) + 1。",
+     "t": 84
+    },
+    {
+     "text": "n > 1 時成立；n = 1 時取常數 1。",
+     "t": 109
+    }
+   ]
+  },
+  {
+   "title": "遞迴樹：k = log n 層",
+   "scene": "algbari2-rtree",
+   "params": {
+    "ex": "half1"
+   },
+   "points": [
+    {
+     "text": "用遞迴樹解。",
+     "t": 130
+    },
+    {
+     "text": "1 + T(n/2) → 1 + T(n/2²) → 1 + T(n/2³)…",
+     "t": 141
+    },
+    {
+     "text": "做 k 次到 T(n/2ᵏ)。",
+     "t": 168
+    },
+    {
+     "text": "一直除到 1（除法的單位元素），T(1) = 1 已知。",
+     "t": 187
+    },
+    {
+     "text": "每層 1 步，共 k 層 → 時間是 k。",
+     "t": 213
+    },
+    {
+     "text": "n/2ᵏ = 1 → n = 2ᵏ → k = log₂ n。",
+     "t": 254
+    },
+    {
+     "text": "例：2⁵ = 32 ⇔ 5 = log₂ 32。",
+     "t": 275
+    },
+    {
+     "text": "T(n) = O(log n)。",
+     "t": 311
+    }
+   ]
+  },
+  {
+   "title": "Back substitution",
+   "scene": "algbari2-backsub",
+   "params": {
+    "ex": "half1"
+   },
+   "points": [
+    {
+     "text": "改用代入法。",
+     "t": 330
+    },
+    {
+     "text": "T(n/2) = T(n/2²) + 1，代回得 T(n/2²) + 2。",
+     "t": 355
+    },
+    {
+     "text": "再代：T(n/2³) + 3。",
+     "t": 404
+    },
+    {
+     "text": "代 k 次：T(n/2ᵏ) + k。",
+     "t": 412
+    },
+    {
+     "text": "假設 n/2ᵏ = 1 → n = 2ᵏ、k = log n。",
+     "t": 443
+    },
+    {
+     "text": "T(n) = T(1) + log n = 1 + log n → Θ(log n)。",
+     "t": 480
+    },
+    {
+     "text": "之後還會介紹 dividing function 的 Master Theorem。",
+     "t": 511
+    }
+   ],
+   "trap": "老師在 8:14 口誤說「theta or big O of n」，答案應為 Θ(log n)。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "T(n) = T(n/2) + 1 的解？",
+   "opts": [
+    "Θ(log n)",
+    "Θ(n)",
+    "Θ(1)",
+    "Θ(n log n)"
+   ],
+   "ans": "Θ(log n)",
+   "why": "每層 1，共 log n 層。"
+  },
+  {
+   "q": "除法型遞迴的邊界通常取？",
+   "opts": [
+    "T(1) = 1",
+    "T(0) = 1",
+    "T(2) = 0",
+    "T(n) = n"
+   ],
+   "ans": "T(1) = 1",
+   "why": "一直除，最後是 1。"
+  },
+  {
+   "q": "n/2ᵏ = 1 時 k = ?",
+   "opts": [
+    "log₂ n",
+    "n/2",
+    "√n",
+    "2ⁿ"
+   ],
+   "ans": "log₂ n",
+   "why": "n = 2ᵏ。"
+  },
+  {
+   "q": "代入 k 次後的式子？",
+   "opts": [
+    "T(n/2ᵏ) + k",
+    "T(n/2ᵏ) + kn",
+    "2ᵏT(n/2ᵏ)",
+    "T(n−k) + k"
+   ],
+   "ans": "T(n/2ᵏ) + k",
+   "why": "常數 1 每次累加。"
+  },
+  {
+   "q": "2⁵ = 32 等價於？",
+   "opts": [
+    "5 = log₂ 32",
+    "32 = log₂ 5",
+    "2 = log₅ 32",
+    "5 = log₃₂ 2"
+   ],
+   "ans": "5 = log₂ 32",
+   "why": "aᵇ = c ⇔ b = log_a c。"
+  }
+ ]
+}

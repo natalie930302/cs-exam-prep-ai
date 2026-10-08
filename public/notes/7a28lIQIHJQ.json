@@ -1,0 +1,353 @@
+{
+ "video": "7a28lIQIHJQ",
+ "label": "交大江蕙如 Lec01 課程介紹",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "演算法是 CS 的核心",
+   "scene": null,
+   "points": [
+    {
+     "text": "這門課的目的：學習演算法設計的基本準則與概念。",
+     "t": 0
+    },
+    {
+     "text": "演算法是所有 Computer Science 的核心，是非常基本又重要的一門課。",
+     "t": 49
+    },
+    {
+     "text": "在 MIT，超過一半的大學部學生不分領域都修過演算法。",
+     "t": 63
+    },
+    {
+     "text": "演算法已影響很多領域，不再只是寫程式或解特殊問題的人才需要。",
+     "t": 114
+    }
+   ]
+  },
+  {
+   "title": "解題思維：先萃取問題的本質",
+   "scene": "algjiang1-essence",
+   "points": [
+    {
+     "text": "最大目的：訓練思考能力與解決問題的能力。",
+     "t": 154
+    },
+    {
+     "text": "難題第一眼看起來很複雜、沒有線索，只是一團亂七八糟的現象。",
+     "t": 171
+    },
+    {
+     "text": "第一步要抽絲剝繭，理出條理。",
+     "t": 193
+    },
+    {
+     "text": "把跟問題真正相關、本質上的難題（essential）萃取出來，問題就變單純。",
+     "t": 211
+    },
+    {
+     "text": "瑣碎的事先暫時不管，直接處理問題核心；理出頭緒就成功了一半。",
+     "t": 237
+    },
+    {
+     "text": "理出核心後才去設計適當的演算法，得到的解法通常比直接下手好。",
+     "t": 257
+    },
+    {
+     "text": "核心解決後，再用 generalization 或 extension 把瑣碎的部分納進來，問題就完整解決。",
+     "t": 293
+    }
+   ]
+  },
+  {
+   "title": "誰適合修這門課",
+   "scene": null,
+   "points": [
+    {
+     "text": "對 computer science 有興趣的人。",
+     "t": 316
+    },
+    {
+     "text": "正在為某個計算問題煩惱的人。",
+     "t": 326
+    },
+    {
+     "text": "想學怎麼解決問題的人。",
+     "t": 332
+    }
+   ]
+  },
+  {
+   "title": "課程地圖（一）：簡介、分析、Graph",
+   "scene": "algjiang1-syllabus",
+   "params": {
+    "part": 0
+   },
+   "points": [
+    {
+     "text": "第一部分簡介：用一個有趣的問題 stable marriage 介紹演算法是怎麼一回事。",
+     "t": 359
+    },
+    {
+     "text": "也會舉例介紹這學期會碰到的問題類型。",
+     "t": 375
+    },
+    {
+     "text": "Background 第一部分：拿到別人設計好的演算法，要會分析它夠不夠快、是不是正確。",
+     "t": 394
+    },
+    {
+     "text": "第三件事：寫成程式後會不會很耗記憶體。",
+     "t": 428
+    },
+    {
+     "text": "先學會評斷演算法的好壞與正確性：先了解遊戲規則，再去設計。",
+     "t": 450
+    },
+    {
+     "text": "第二個主題是 Graph：很多問題都可以用 graph 表示。",
+     "t": 461
+    }
+   ]
+  },
+  {
+   "title": "課程地圖（二）：四種核心技巧",
+   "scene": "algjiang1-syllabus",
+   "params": {
+    "part": 1
+   },
+   "points": [
+    {
+     "text": "Greedy algorithm：解法看起來很簡單、很直覺，執行也很快。",
+     "t": 513
+    },
+    {
+     "text": "但不是所有問題都適用 greedy；能得到最佳解的問題必須具備特殊性質，隨便套用結果通常不好。",
+     "t": 533
+    },
+    {
+     "text": "Divide and Conquer：問題太大就拆成小問題，分工去解。",
+     "t": 600
+    },
+    {
+     "text": "D&C 最重要也最難的是：把各自解出來的解整合還原成原問題的最佳解。",
+     "t": 650
+    },
+    {
+     "text": "Dynamic Programming：這裡的 programming 指最佳化（如 linear programming），不是寫程式。",
+     "t": 668
+    },
+    {
+     "text": "DP 的背景來自 divide and conquer；修了演算法卻不會 DP，就不要說修過演算法。",
+     "t": 721
+    },
+    {
+     "text": "Network Flow：像水管網路裡流動的水、電路裡的電流。",
+     "t": 779
+    },
+    {
+     "text": "Network flow 應用很多，最常用來處理資源分配與資源競爭的問題。",
+     "t": 846
+    }
+   ]
+  },
+  {
+   "title": "課程地圖（三）：難題與對策",
+   "scene": "algjiang1-syllabus",
+   "params": {
+    "part": 2
+   },
+   "points": [
+    {
+     "text": "前面的技巧能在合理時間內求得最佳解；最後一定會介紹 NP-completeness。",
+     "t": 895
+    },
+    {
+     "text": "現實中很多問題目前沒有人能在合理時間內求得最佳解，但不知道未來是否有人能做到。",
+     "t": 940
+    },
+    {
+     "text": "比 NP-complete 更難的還有 PSPACE-complete，常出現在 AI、game playing。",
+     "t": 970
+    },
+    {
+     "text": "Approximation algorithm：不保證最佳解，但保證例如至少 90 分的答案，而且在合理時間內完成。",
+     "t": 1022
+    },
+    {
+     "text": "Local search 也是對付困難問題常用的技巧。",
+     "t": 1061
+    },
+    {
+     "text": "Randomized algorithm：執行過程中引入隨機，例如 randomly select 要處理的物件。",
+     "t": 1085
+    },
+    {
+     "text": "時間允許還會介紹不會停下來的演算法（algorithms that run forever）。",
+     "t": 1155
+    }
+   ]
+  },
+  {
+   "title": "什麼是演算法：Knuth 的說法",
+   "scene": "algjiang1-knuth-props",
+   "points": [
+    {
+     "text": "演算法到底是什麼眾說紛紜，沒有任何一本書給出精確又嚴謹的定義。",
+     "t": 1194
+    },
+    {
+     "text": "簡單說，演算法是解決問題的 procedure。",
+     "t": 1213
+    },
+    {
+     "text": "Knuth：演算法是一個 finite、definite、effective，並產生 output 的 procedure。",
+     "t": 1223
+    },
+    {
+     "text": "描述演算法先 identify：要處理的 input 是什麼、希望得到什麼 output。",
+     "t": 1265
+    },
+    {
+     "text": "少數情況可以沒有 input，但一定要有 output；本課討論的問題大多都有 input。",
+     "t": 1285
+    }
+   ]
+  },
+  {
+   "title": "Finite、Definite、Effective",
+   "scene": "algjiang1-knuth-props",
+   "points": [
+    {
+     "text": "Finite：procedure 一定要在有限步驟內停下來。",
+     "t": 1322
+    },
+    {
+     "text": "寫成程式後若會落入無窮迴圈，就不算演算法。",
+     "t": 1342
+    },
+    {
+     "text": "Definite：描述乾淨、不會讓人誤解，不能 A 同學看了做一件事、B 同學做另一件事。",
+     "t": 1356
+    },
+    {
+     "text": "Effective：每一步都必須有效，拿紙筆就能在紙上模擬做出來。",
+     "t": 1388
+    },
+    {
+     "text": "連紙上模擬都做不到的奇怪 operation 不算有效步驟。",
+     "t": 1426
+    },
+    {
+     "text": "Procedure 由很多步驟組成，要按照特定順序執行。",
+     "t": 1451
+    }
+   ]
+  },
+  {
+   "title": "CLRS 的定義與作業要求",
+   "scene": "algjiang1-clrs-def",
+   "points": [
+    {
+     "text": "CLRS（Introduction to Algorithms）：演算法是定義完整的 procedure，把給定的 input 轉換成期待的 output。",
+     "t": 1468
+    },
+    {
+     "text": "這些都不是 formal 的定義，只是基本概念。",
+     "t": 1500
+    },
+    {
+     "text": "描述演算法時要明確、做得到、乾淨。",
+     "t": 1511
+    },
+    {
+     "text": "作業：給定題目後自己想演算法，把 procedure 寫下來。",
+     "t": 1538
+    },
+    {
+     "text": "寫下來後要說明它是正確的，並分析它跑多快，給執行時間一個合理的 bound。",
+     "t": 1550
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "老師認為解決難題的第一步是什麼？",
+   "opts": [
+    "抽絲剝繭，萃取問題本質（essential）",
+    "立刻開始寫程式",
+    "先處理所有瑣碎細節",
+    "直接套用 greedy"
+   ],
+   "ans": "抽絲剝繭，萃取問題本質（essential）",
+   "why": "先理出核心，瑣碎的部分之後再用 generalization／extension 處理。"
+  },
+  {
+   "q": "Dynamic Programming 中的 programming 指的是？",
+   "opts": [
+    "最佳化（如 linear programming）",
+    "寫程式",
+    "動態配置記憶體",
+    "平行程式"
+   ],
+   "ans": "最佳化（如 linear programming）",
+   "why": "老師特別強調 DP 不是「動態地寫程式」。"
+  },
+  {
+   "q": "Divide and Conquer 中通常最困難的是哪一步？",
+   "opts": [
+    "把子問題的解整合還原成原問題的最佳解",
+    "把問題拆小",
+    "解最小的子問題",
+    "決定要不要遞迴"
+   ],
+   "ans": "把子問題的解整合還原成原問題的最佳解",
+   "why": "拆開分別解不難，合併成原問題的最佳解才是關鍵。"
+  },
+  {
+   "q": "寫成程式後會落入無窮迴圈的 procedure，違反 Knuth 的哪個條件？",
+   "opts": [
+    "Finite",
+    "Definite",
+    "Effective",
+    "Output"
+   ],
+   "ans": "Finite",
+   "why": "Finite 要求在有限步驟內一定停下來。"
+  },
+  {
+   "q": "「A 同學看了做這件事、B 同學看了做另一件事」的描述違反哪個條件？",
+   "opts": [
+    "Definite",
+    "Finite",
+    "Effective",
+    "Input"
+   ],
+   "ans": "Definite",
+   "why": "Definite：描述乾淨、不會讓人誤解。"
+  },
+  {
+   "q": "依 Knuth 的說法，下列何者可以沒有？",
+   "opts": [
+    "Input",
+    "Output",
+    "Finite",
+    "Effective"
+   ],
+   "ans": "Input",
+   "why": "少數情況可以沒有 input，但一定要有 output。"
+  },
+  {
+   "q": "Approximation algorithm 的特色是？",
+   "opts": [
+    "不保證最佳解，但保證一定品質且在合理時間內完成",
+    "一定得到最佳解",
+    "執行時間無法保證",
+    "只適用於 P 類問題"
+   ],
+   "ans": "不保證最佳解，但保證一定品質且在合理時間內完成",
+   "why": "老師的比喻：拿不到 100 分，但保證 90 分以上。"
+  }
+ ]
+}

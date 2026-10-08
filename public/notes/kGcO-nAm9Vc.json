@@ -1,0 +1,160 @@
+{
+ "video": "kGcO-nAm9Vc",
+ "label": "Abdul Bari：2.4.2 Examples for Master Theorem #2",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Case 1 例題",
+   "scene": "algbari2-mt-sort",
+   "params": {
+    "set": "k1"
+   },
+   "points": [
+    {
+     "text": "2T(n/2) + 1：log₂2 = 1 > 0 → Θ(n)。",
+     "t": 5
+    },
+    {
+     "text": "4T(n/2) + 1：2 > 0 → Θ(n²)。",
+     "t": 18
+    },
+    {
+     "text": "4T(n/2) + n：2 > 1 → Θ(n²)。",
+     "t": 29
+    },
+    {
+     "text": "8T(n/2) + n²：3 > 2 → Θ(n³)。",
+     "t": 42
+    },
+    {
+     "text": "16T(n/2) + n²：4 > 2 → Θ(n⁴)。",
+     "t": 61
+    }
+   ]
+  },
+  {
+   "title": "Case 3 例題",
+   "scene": "algbari2-mt-sort",
+   "params": {
+    "set": "k3"
+   },
+   "points": [
+    {
+     "text": "T(n/2) + n：log₂1 = 0 < 1 → Θ(n)。",
+     "t": 89
+    },
+    {
+     "text": "2T(n/2) + n²：1 < 2 → Θ(n²)。",
+     "t": 102
+    },
+    {
+     "text": "2T(n/2) + n² log n：照抄 → Θ(n² log n)。",
+     "t": 115
+    },
+    {
+     "text": "4T(n/2) + n³ log² n：2 < 3 → Θ(n³ log² n)。",
+     "t": 134
+    },
+    {
+     "text": "2T(n/2) + n²/log n：分母的 log 不要，只寫 n²。",
+     "t": 160
+    }
+   ],
+   "trap": "補充：分母有 log（p < 0）時，定理只保證 O(n²)，不是 Θ。"
+  },
+  {
+   "title": "Case 2 例題",
+   "scene": "algbari2-mt-sort",
+   "params": {
+    "set": "k2"
+   },
+   "points": [
+    {
+     "text": "T(n/2) + 1：log₂1 = 0 = k → Θ(log n)。",
+     "t": 189
+    },
+    {
+     "text": "2T(n/2) + n：1 = 1 → f(n) 乘 log n → Θ(n log n)。",
+     "t": 206
+    },
+    {
+     "text": "2T(n/2) + n log n → Θ(n log² n)。",
+     "t": 221
+    },
+    {
+     "text": "4T(n/2) + n² → Θ(n² log n)。",
+     "t": 252
+    },
+    {
+     "text": "4T(n/2) + (n log n)² = n² log² n → Θ(n² log³ n)。",
+     "t": 269
+    },
+    {
+     "text": "2T(n/2) + n/log n：分母有 log → Θ(n log log n)。",
+     "t": 300
+    },
+    {
+     "text": "2T(n/2) + n/log² n：更小 → Θ(n)。",
+     "t": 327
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "T(n) = 16T(n/2) + n² 的解？",
+   "opts": [
+    "Θ(n⁴)",
+    "Θ(n²)",
+    "Θ(n² log n)",
+    "Θ(n³)"
+   ],
+   "ans": "Θ(n⁴)",
+   "why": "log₂16 = 4 > 2。"
+  },
+  {
+   "q": "T(n) = T(n/2) + n 的解？",
+   "opts": [
+    "Θ(n)",
+    "Θ(log n)",
+    "Θ(n log n)",
+    "Θ(1)"
+   ],
+   "ans": "Θ(n)",
+   "why": "log₂1 = 0 < 1，case 3。"
+  },
+  {
+   "q": "T(n) = T(n/2) + 1 的解？",
+   "opts": [
+    "Θ(log n)",
+    "Θ(1)",
+    "Θ(n)",
+    "Θ(n log n)"
+   ],
+   "ans": "Θ(log n)",
+   "why": "case 2：0 = 0，乘 log n。"
+  },
+  {
+   "q": "T(n) = 4T(n/2) + (n log n)² 的解？",
+   "opts": [
+    "Θ(n² log³ n)",
+    "Θ(n² log² n)",
+    "Θ(n²)",
+    "Θ(n³)"
+   ],
+   "ans": "Θ(n² log³ n)",
+   "why": "(n log n)² = n² log² n，case 2 再乘 log n。"
+  },
+  {
+   "q": "T(n) = 4T(n/2) + n³ log² n 的解？",
+   "opts": [
+    "Θ(n³ log² n)",
+    "Θ(n³ log³ n)",
+    "Θ(n²)",
+    "Θ(n³)"
+   ],
+   "ans": "Θ(n³ log² n)",
+   "why": "log₂4 = 2 < 3，case 3 照抄 f(n)。"
+  }
+ ]
+}

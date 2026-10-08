@@ -1,49 +1,80 @@
 {
  "video": "1K9ebQJosvo",
  "label": "Abdul Bari：2.3.3 Recurrence [T(n)=2T(n/2)+n] #3",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
    "title": "寫出 T(n) = 2T(n/2) + n",
-   "scene": "tree-2t-half",
+   "scene": "algbari2-write-rr",
+   "params": {
+    "ex": "twohalf"
+   },
    "points": [
     {
-     "text": "test(n) 裡有一個跑 n 次的迴圈，再呼叫 test(n/2) 兩次。",
-     "t": 5
+     "text": "先寫出這個演算法的遞迴式。",
+     "t": 0
     },
     {
-     "text": "T(n) = 2T(n/2) + n（n > 1）；T(1) = 1。",
-     "t": 41
+     "text": "迴圈裡的敘述執行 n 次。",
+     "t": 17
     },
     {
-     "text": "dividing function 的最小值是 1，所以邊界取 n = 1，不取 0（遞減式才取 0）。",
-     "t": 62
+     "text": "兩次 Test(n/2)，各花 T(n/2)。",
+     "t": 24
     },
     {
-     "text": "這個遞迴式非常重要，很多演算法（如 merge sort）都是它。",
-     "t": 128
+     "text": "T(n) = 2T(n/2) + n。",
+     "t": 46
+    },
+    {
+     "text": "n > 1 時成立；n = 1 時取 1。",
+     "t": 72
+    },
+    {
+     "text": "除法型最小值取 1：除到 0 會讓所有項變 0，不好解。",
+     "t": 89
+    },
+    {
+     "text": "這個遞迴式非常重要，很多演算法都是它。",
+     "t": 121
     }
    ]
   },
   {
-   "title": "Recursion tree：每層 n，共 log n 層",
+   "title": "遞迴樹：每層都是 n",
    "scene": "tree-2t-half",
    "points": [
     {
-     "text": "畫樹時只寫每個節點的工作量：根是 n，下一層兩個 n/2。",
-     "t": 173
+     "text": "用遞迴樹解。",
+     "t": 134
     },
     {
-     "text": "再下一層四個 n/2²、八個 n/2³…一直到每塊變成 1。",
-     "t": 193
+     "text": "只寫每個節點的時間：根 n，兩個子節點各 n/2。",
+     "t": 171
     },
     {
-     "text": "每一層總和都是 n：n/2 + n/2 = n，4 × n/4 = n，8 × n/8 = n。",
-     "t": 272
+     "text": "再下一層四個 n/2²、八個 n/2³…",
+     "t": 198
     },
     {
-     "text": "共 k 層，n/2ᵏ = 1 → k = log n → 總時間 n log n → Θ(n log n)。",
-     "t": 292
+     "text": "一直到 n/2ᵏ = 1，共 k 層。",
+     "t": 236
+    },
+    {
+     "text": "每層加起來：n/2 + n/2 = n、4 × n/4 = n、8 × n/8 = n。",
+     "t": 266
+    },
+    {
+     "text": "每層 n，共 k 層 → n·k。",
+     "t": 291
+    },
+    {
+     "text": "n/2ᵏ = 1 → k = log n。",
+     "t": 304
+    },
+    {
+     "text": "T(n) = Θ(n log n)。",
+     "t": 312
     }
    ]
   },
@@ -52,74 +83,55 @@
    "scene": "back-sub-dividing",
    "points": [
     {
-     "text": "T(n/2) = 2T(n/2²) + n/2，代入得 T(n) = 2²T(n/2²) + 2n。",
-     "t": 400
+     "text": "改用代入法。",
+     "t": 369
     },
     {
-     "text": "再代 T(n/2²) = 2T(n/2³) + n/2²，得 T(n) = 2³T(n/2³) + 3n。",
-     "t": 477
+     "text": "T(n/2) = 2T(n/2²) + n/2。",
+     "t": 386
     },
     {
-     "text": "持續 k 次：T(n) = 2ᵏ T(n/2ᵏ) + kn。",
-     "t": 537
+     "text": "代回：2²T(n/2²) + 2n。",
+     "t": 433
     },
     {
-     "text": "令 n/2ᵏ = 1 → n = 2ᵏ、k = log n：T(n) = n·T(1) + n log n = n + n log n。",
-     "t": 577
+     "text": "再代：2³T(n/2³) + 3n。",
+     "t": 526
     },
     {
-     "text": "最高項 n log n → T(n) = Θ(n log n)。",
-     "t": 612
+     "text": "代 k 次：2ᵏT(n/2ᵏ) + kn。",
+     "t": 545
+    },
+    {
+     "text": "假設 n/2ᵏ = 1 → n = 2ᵏ、k = log n。",
+     "t": 571
+    },
+    {
+     "text": "T(n) = n·T(1) + n log n = n + n log n。",
+     "t": 613
+    },
+    {
+     "text": "最高項 n log n → Θ(n log n)。",
+     "t": 626
     }
-   ],
-   "trap": "補充：這就是 Master Theorem case 2（a = 2、b = 2、f(n) = n = n^(log₂2)），下一支影片會直接套公式。"
+   ]
+  },
+  {
+   "title": "下一部預告",
+   "scene": null,
+   "points": [
+    {
+     "text": "再次強調：2T(n/2) + n 的答案 n log n 一定要記住。",
+     "t": 650
+    },
+    {
+     "text": "下一部：dividing function 的 Master Theorem。",
+     "t": 658
+    }
+   ]
   }
  ],
  "quiz": [
-  {
-   "q": "T(n) = 2T(n/2) + n 的遞迴樹每一層總和是？",
-   "opts": [
-    "n",
-    "n/2",
-    "2ⁱ",
-    "n²"
-   ],
-   "ans": "n",
-   "why": "第 i 層有 2ⁱ 塊，每塊 n/2ⁱ。"
-  },
-  {
-   "q": "T(n) = 2T(n/2) + n 的遞迴樹有幾層？",
-   "opts": [
-    "log₂ n",
-    "n",
-    "n/2",
-    "√n"
-   ],
-   "ans": "log₂ n",
-   "why": "n/2ᵏ = 1 → k = log₂ n。"
-  },
-  {
-   "q": "Back substitution k 次後的式子是？",
-   "opts": [
-    "2ᵏT(n/2ᵏ) + kn",
-    "2ᵏT(n/2ᵏ) + n",
-    "T(n/2ᵏ) + kn",
-    "2ᵏT(n − k) + k"
-   ],
-   "ans": "2ᵏT(n/2ᵏ) + kn",
-   "why": "每代一次多一個 n。"
-  },
-  {
-   "q": "dividing function 的遞迴邊界為何通常取 T(1)？",
-   "opts": [
-    "不斷除以 2 最小只會到 1",
-    "T(0) 不存在",
-    "因為 n 一定是奇數",
-    "因為 T(1) = 0"
-   ],
-   "ans": "不斷除以 2 最小只會到 1",
-   "why": "取 0 會讓代入時變得難解。"
-  },
   {
    "q": "T(n) = 2T(n/2) + n 的解？",
    "opts": [
@@ -129,8 +141,51 @@
     "Θ(log n)"
    ],
    "ans": "Θ(n log n)",
-   "why": "n + n log n，最高項是 n log n。"
+   "why": "每層 n，共 log n 層。"
+  },
+  {
+   "q": "遞迴樹第 i 層的總和？",
+   "opts": [
+    "n",
+    "n/2ⁱ",
+    "2ⁱ",
+    "n·2ⁱ"
+   ],
+   "ans": "n",
+   "why": "2ⁱ 個節點 × n/2ⁱ。"
+  },
+  {
+   "q": "代入 k 次後的式子？",
+   "opts": [
+    "2ᵏT(n/2ᵏ) + kn",
+    "T(n/2ᵏ) + k",
+    "2ᵏT(n/2ᵏ) + n",
+    "T(n−k) + kn"
+   ],
+   "ans": "2ᵏT(n/2ᵏ) + kn",
+   "why": "每代一次多一個 n。"
+  },
+  {
+   "q": "除法型遞迴邊界為何取 n = 1 而不是 0？",
+   "opts": [
+    "除到最後是 1；取 0 會讓式子難解",
+    "因為 0 不能除",
+    "因為 T(0) 不存在",
+    "答案會不同"
+   ],
+   "ans": "除到最後是 1；取 0 會讓式子難解",
+   "why": "n/2ᵏ 永遠不會是 0。"
+  },
+  {
+   "q": "哪個常見演算法符合這個遞迴式？",
+   "opts": [
+    "Merge sort",
+    "Binary search",
+    "Linear search",
+    "Tower of Hanoi"
+   ],
+   "ans": "Merge sort",
+   "why": "切兩半各自排序，再線性合併。"
   }
- ],
- "timing": "estimated"
+ ]
 }

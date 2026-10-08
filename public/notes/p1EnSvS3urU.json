@@ -1,0 +1,319 @@
+{
+ "video": "p1EnSvS3urU",
+ "label": "Abdul Bari：1.5.3 Time Complexity of While and if #3",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "for、while、do-while、repeat-until",
+   "scene": "algbari1-loop-kinds",
+   "points": [
+    {
+     "text": "之前分析的是 for；這支講 while 迴圈與條件句。",
+     "t": 9
+    },
+    {
+     "text": "C 的 while 與 for 可以互換；do-while 至少執行 1 次。",
+     "t": 27
+    },
+    {
+     "text": "Pascal 的 for i := 1 to n：i 一次只加 1。",
+     "t": 49
+    },
+    {
+     "text": "要加 2 得寫 step 2：i = 1、3、5…仍是線性增加。",
+     "t": 84
+    },
+    {
+     "text": "while 只要條件成立就繼續，要研究它何時停、跑幾次。",
+     "t": 139
+    },
+    {
+     "text": "舊式 for 可以直接說 n；while 不能沒研究就說 n。",
+     "t": 186
+    },
+    {
+     "text": "repeat … until：條件 false 才繼續、true 就停，至少 1 次；跟 do-while 相反。",
+     "t": 232
+    },
+    {
+     "text": "while、do-while、repeat-until 可能是 n、log n、√n，都要分析。",
+     "t": 300
+    }
+   ]
+  },
+  {
+   "title": "while (i < n) i++：3n + 2",
+   "scene": "algbari1-while-3n2",
+   "points": [
+    {
+     "text": "i = 0 執行 1 次；i++ 每次加 1，不用追蹤就知道跑 n 次。",
+     "t": 331
+    },
+    {
+     "text": "迴圈內的敘述執行 n 次。",
+     "t": 352
+    },
+    {
+     "text": "條件執行 n + 1 次：成立 n 次、不成立 1 次。",
+     "t": 360
+    },
+    {
+     "text": "例：n = 10，i = 0～9 成立，i = 10 停。",
+     "t": 370
+    },
+    {
+     "text": "f(n) = 3n + 2 → Θ(n)，也就是 O(n)。",
+     "t": 384
+    },
+    {
+     "text": "同一段用 for 寫：細算也是 3n + 2。",
+     "t": 403
+    },
+    {
+     "text": "用 for 時習慣省略 i = 0、i++ 記成 2n + 1；只在乎次數，都是 O(n)。",
+     "t": 437
+    }
+   ]
+  },
+  {
+   "title": "while (a < b) a = a * 2",
+   "scene": "algbari1-while-double",
+   "params": {
+    "part": "double"
+   },
+   "points": [
+    {
+     "text": "a = 1；while (a < b) { stmt; a = a * 2; } 條件裡沒有 n。",
+     "t": 464
+    },
+    {
+     "text": "追蹤 a：1、2、2²、2³…",
+     "t": 489
+    },
+    {
+     "text": "假設跑 k 次，a = 2ᵏ。",
+     "t": 526
+    },
+    {
+     "text": "a ≥ b 時停止 → 2ᵏ ≥ b。",
+     "t": 545
+    },
+    {
+     "text": "令 2ᵏ = b → k = log₂ b。",
+     "t": 568
+    },
+    {
+     "text": "把 b 叫做 n → O(log n)。",
+     "t": 592
+    },
+    {
+     "text": "同樣可寫成 for (a = 1; a < b; a = a * 2)。",
+     "t": 612
+    },
+    {
+     "text": "C 的 for 三個部分想寫什麼都可以，只要迴圈會在有限步內停。",
+     "t": 656
+    }
+   ]
+  },
+  {
+   "title": "while (i > 1) i = i / 2",
+   "scene": "algbari1-while-double",
+   "params": {
+    "part": "halve"
+   },
+   "points": [
+    {
+     "text": "i 從 n 開始、每次除以 2。",
+     "t": 702
+    },
+    {
+     "text": "已經當成公式：除 2 的迴圈是 log n。",
+     "t": 710
+    },
+    {
+     "text": "也可以寫成 for (i = n; i > 1; i = i / 2)。",
+     "t": 717
+    },
+    {
+     "text": "同一件事用 for 或 while 寫，時間一樣。",
+     "t": 732
+    }
+   ]
+  },
+  {
+   "title": "k = k + i：O(√n)",
+   "scene": "algbari1-while-ksum",
+   "points": [
+    {
+     "text": "k 從 1 開始，每次加上 i，i 也每次加 1；不知道跑幾次。",
+     "t": 746
+    },
+    {
+     "text": "追蹤：一開始 i = 1、k = 1。",
+     "t": 771
+    },
+    {
+     "text": "第一次後 k = 1 + 1 = 2、i = 2。",
+     "t": 778
+    },
+    {
+     "text": "接著 k = 2 + 2、2 + 2 + 3、2 + 2 + 3 + 4…",
+     "t": 788
+    },
+    {
+     "text": "假設跑 m 次，k ≈ 1 + 2 + … + m = m(m + 1)/2。",
+     "t": 827
+    },
+    {
+     "text": "k ≥ n 時停：m(m + 1)/2 ≥ n。",
+     "t": 863
+    },
+    {
+     "text": "m² ≈ n → m ≈ √n → O(√n)。",
+     "t": 877
+    },
+    {
+     "text": "也能改寫成 for (k = 1, i = 1; k < n; i++) k = k + i;，只是較難讀。",
+     "t": 903
+    }
+   ]
+  },
+  {
+   "title": "減法 GCD：最少與最多",
+   "scene": "algbari1-gcd-sub",
+   "points": [
+    {
+     "text": "用減法求 m、n 的 GCD：不相等時大的減小的，相等就停。",
+     "t": 961
+    },
+    {
+     "text": "m = 6、n = 3：6 − 3 = 3，相等 → 只跑 1 次。",
+     "t": 986
+    },
+    {
+     "text": "m = n = 5：一開始就相等 → 0 次。",
+     "t": 1013
+    },
+    {
+     "text": "最少執行 0 或 1 次。",
+     "t": 1023
+    },
+    {
+     "text": "m = 16、n = 2：14、12、10、8、6、4、2 → 7 次，大約 16/2。",
+     "t": 1027
+    },
+    {
+     "text": "最多約 n/2 次 → O(n)；最少 → O(1)。",
+     "t": 1087
+    },
+    {
+     "text": "C 的 for 也一樣：除非明顯是 n，否則要當 while 去研究。",
+     "t": 1149
+    }
+   ]
+  },
+  {
+   "title": "if 與 best / worst case",
+   "scene": "algbari1-if-cases",
+   "points": [
+    {
+     "text": "隨手寫的 Test(n)：n < 5 就印 n；否則進 else 跑迴圈。",
+     "t": 1163
+    },
+    {
+     "text": "else 的迴圈跑 n 次；if 成立只做 1 次。",
+     "t": 1196
+    },
+    {
+     "text": "條件句會依條件決定不同的執行時間。",
+     "t": 1207
+    },
+    {
+     "text": "條件成立 → O(1)；不成立（n ≥ 5）→ O(n)。",
+     "t": 1227
+    },
+    {
+     "text": "前者是 best case，後者是 worst case。",
+     "t": 1235
+    },
+    {
+     "text": "但這不是規則：有 if 不代表一定有 best / worst case。",
+     "t": 1269
+    },
+    {
+     "text": "條件改一下，可能就只有一種情況，沒有最好最壞之分。",
+     "t": 1280
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "i = 0; while (i < n) { stmt; i++; } 逐行算的 f(n)？",
+   "opts": [
+    "3n + 2",
+    "2n + 1",
+    "n + 1",
+    "3n + 3"
+   ],
+   "ans": "3n + 2",
+   "why": "i=0 一次、條件 n+1、stmt n、i++ n。"
+  },
+  {
+   "q": "a = 1; while (a < b) { stmt; a = a * 2; } 的時間？",
+   "opts": [
+    "O(log b)",
+    "O(b)",
+    "O(√b)",
+    "O(1)"
+   ],
+   "ans": "O(log b)",
+   "why": "2ᵏ = b → k = log₂ b；把 b 叫做 n 就是 O(log n)。"
+  },
+  {
+   "q": "i = 1; k = 1; while (k < n) { stmt; k = k + i; i++; } 的時間？",
+   "opts": [
+    "O(√n)",
+    "O(n)",
+    "O(log n)",
+    "O(n²)"
+   ],
+   "ans": "O(√n)",
+   "why": "m 次後 k ≈ m(m+1)/2 ≥ n → m ≈ √n。"
+  },
+  {
+   "q": "減法 GCD：m = 16、n = 2 時迴圈跑幾次？",
+   "opts": [
+    "7",
+    "8",
+    "1",
+    "16"
+   ],
+   "ans": "7",
+   "why": "16→14→12→10→8→6→4→2，共 7 次。"
+  },
+  {
+   "q": "哪一種迴圈在條件一開始就成立（true）時也會停，但至少執行 1 次？",
+   "opts": [
+    "repeat-until",
+    "while",
+    "do-while",
+    "Pascal for"
+   ],
+   "ans": "repeat-until",
+   "why": "repeat-until 先做再檢查，條件 true 就停。do-while 是 true 繼續。"
+  },
+  {
+   "q": "關於 if 與 best / worst case，何者正確？",
+   "opts": [
+    "條件句可能造成不同情況，但不是一定",
+    "有 if 就一定有 best 與 worst case",
+    "if 一定讓時間變成 O(1)",
+    "if 不影響時間"
+   ],
+   "ans": "條件句可能造成不同情況，但不是一定",
+   "why": "影片最後把條件改掉，就只剩一種情況。"
+  }
+ ]
+}

@@ -1,0 +1,157 @@
+{
+ "video": "9rVuyjxzwgM",
+ "label": "Abdul Bari：2.5 Root Function",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Root function：T(n) = T(√n) + 1",
+   "scene": "algbari2-write-rr",
+   "params": {
+    "ex": "root"
+   },
+   "points": [
+    {
+     "text": "Root function：函數呼叫 Test(√n)。",
+     "t": 0
+    },
+    {
+     "text": "減法（n−1）、除法（n/2）之外，第三種縮小方式是開根號。",
+     "t": 21
+    },
+    {
+     "text": "邊界取 n > 2。",
+     "t": 29
+    },
+    {
+     "text": "取 1 或 0 會解不出來：開根號的最小值要 ≥ 2。",
+     "t": 41
+    },
+    {
+     "text": "T(n) = T(√n) + 1。",
+     "t": 51
+    }
+   ]
+  },
+  {
+   "title": "代入：T(n^(1/2ᵏ)) + k",
+   "scene": "algbari2-backsub",
+   "params": {
+    "ex": "root"
+   },
+   "points": [
+    {
+     "text": "T(n) = T(n^(1/2)) + 1。",
+     "t": 59
+    },
+    {
+     "text": "代入：T(n^(1/2²)) + 2。",
+     "t": 78
+    },
+    {
+     "text": "再代：T(n^(1/2³)) + 3。",
+     "t": 105
+    },
+    {
+     "text": "代 k 次：T(n^(1/2ᵏ)) + k。",
+     "t": 120
+    }
+   ]
+  },
+  {
+   "title": "設 n = 2ᵐ → log log n",
+   "scene": "algbari2-root-2m",
+   "points": [
+    {
+     "text": "最小值是 2，所以假設 n 是 2 的次方：n = 2ᵐ。",
+     "t": 138
+    },
+    {
+     "text": "改寫：T(2^(m/2ᵏ)) + k。",
+     "t": 168
+    },
+    {
+     "text": "假設 T(2^(m/2ᵏ)) 已經到 T(2)。",
+     "t": 199
+    },
+    {
+     "text": "2 的 1 次方 → m/2ᵏ = 1 → m = 2ᵏ。",
+     "t": 223
+    },
+    {
+     "text": "k = log₂ m。",
+     "t": 243
+    },
+    {
+     "text": "但要用 n 表示：n = 2ᵐ → m = log₂ n。",
+     "t": 266
+    },
+    {
+     "text": "k = log log n → T(n) = Θ(log log n)。",
+     "t": 291
+    },
+    {
+     "text": "老師說也可以直接套 dividing function 的 Master Theorem。",
+     "t": 324
+    }
+   ],
+   "trap": "更正：T(n) = T(√n) + 1 不是 aT(n/b) + f(n) 形式，不能直接套 Master Theorem；要先換變數 m = log n，令 S(m) = T(2ᵐ)，得 S(m) = S(m/2) + 1，再套 case 2 得 Θ(log m) = Θ(log log n)。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "T(n) = T(√n) + 1 的解？",
+   "opts": [
+    "Θ(log log n)",
+    "Θ(log n)",
+    "Θ(√n)",
+    "Θ(1)"
+   ],
+   "ans": "Θ(log log n)",
+   "why": "開根號 k 次到常數，k = log log n。"
+  },
+  {
+   "q": "Root function 的邊界為何取 n > 2？",
+   "opts": [
+    "開根號永遠到不了 1 或 0",
+    "因為 √2 不是整數",
+    "因為 T(2) = 0",
+    "只是習慣"
+   ],
+   "ans": "開根號永遠到不了 1 或 0",
+   "why": "n^(1/2ᵏ) 只會逼近 1，所以停在 2。"
+  },
+  {
+   "q": "代入 k 次後的式子？",
+   "opts": [
+    "T(n^(1/2ᵏ)) + k",
+    "T(n/2ᵏ) + k",
+    "T(n^(1/k)) + k",
+    "2ᵏT(√n)"
+   ],
+   "ans": "T(n^(1/2ᵏ)) + k",
+   "why": "每開一次根號，指數多除一個 2。"
+  },
+  {
+   "q": "設 n = 2ᵐ 後，停止條件 m/2ᵏ = 1 給出？",
+   "opts": [
+    "k = log m",
+    "k = m",
+    "k = √m",
+    "k = 2ᵐ"
+   ],
+   "ans": "k = log m",
+   "why": "m = 2ᵏ。"
+  },
+  {
+   "q": "要用 Master Theorem 解 T(n) = T(√n) + 1，應該？",
+   "opts": [
+    "先換變數 m = log n 得 S(m) = S(m/2) + 1",
+    "直接套 a = 1、b = 2",
+    "直接套 a = 1、b = √n",
+    "無法用任何方法"
+   ],
+   "ans": "先換變數 m = log n 得 S(m) = S(m/2) + 1",
+   "why": "原式不是 aT(n/b) + f(n) 形式。"
+  }
+ ]
+}

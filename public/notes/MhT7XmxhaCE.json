@@ -1,0 +1,206 @@
+{
+ "video": "MhT7XmxhaCE",
+ "label": "Abdul Bari：2.1.3 Recurrence Relation #3",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "寫出 T(n) = T(n−1) + log n",
+   "scene": "algbari2-write-rr",
+   "params": {
+    "ex": "logn"
+   },
+   "points": [
+    {
+     "text": "這次會快一點，跳過部分細節。",
+     "t": 0
+    },
+    {
+     "text": "迴圈 i 從 1 開始，每次 i = i × 2。",
+     "t": 33
+    },
+    {
+     "text": "所以 printf 執行 log n 次。",
+     "t": 55
+    },
+    {
+     "text": "其他敘述加上去是 2 log n + 2，最後還是取 log n。",
+     "t": 63
+    },
+    {
+     "text": "T(n) = T(n−1) + log n。",
+     "t": 103
+    },
+    {
+     "text": "n = 0 時 T = 1。",
+     "t": 132
+    }
+   ]
+  },
+  {
+   "title": "遞迴樹：log n + … + log 1 = log n!",
+   "scene": "algbari2-rtree",
+   "params": {
+    "ex": "logn"
+   },
+   "points": [
+    {
+     "text": "樹法：做 log n，再呼叫 T(n−1)。",
+     "t": 146
+    },
+    {
+     "text": "下一層 log(n−1)，再下一層 log(n−2)…",
+     "t": 165
+    },
+    {
+     "text": "一直到 T(0) 停。",
+     "t": 195
+    },
+    {
+     "text": "加總：log n + log(n−1) + … + log 2 + log 1。",
+     "t": 209
+    },
+    {
+     "text": "= log(n·(n−1)·…·1) = log n!。",
+     "t": 242
+    },
+    {
+     "text": "log n! 沒有 tight bound，但上界是 log nⁿ = n log n。",
+     "t": 273
+    },
+    {
+     "text": "T(n) = O(n log n)。",
+     "t": 298
+    }
+   ],
+   "trap": "更正：log n! 其實有 tight bound：log n! = Θ(n log n)（後半 n/2 項都 ≥ log(n/2)），所以 T(n) = Θ(n log n)。"
+  },
+  {
+   "title": "Back substitution",
+   "scene": "algbari2-backsub",
+   "params": {
+    "ex": "logn"
+   },
+   "points": [
+    {
+     "text": "改用代入法。",
+     "t": 320
+    },
+    {
+     "text": "T(n) = T(n−2) + log(n−1) + log n。",
+     "t": 341
+    },
+    {
+     "text": "再代：T(n−3) + log(n−2) + log(n−1) + log n。",
+     "t": 377
+    },
+    {
+     "text": "代 k 次，一路減到 log 1：T(n−k) + log 1 + log 2 + … + log n。",
+     "t": 426
+    },
+    {
+     "text": "假設 n − k = 0 → k = n。",
+     "t": 457
+    },
+    {
+     "text": "T(n) = T(0) + log n! = 1 + log n!。",
+     "t": 471
+    },
+    {
+     "text": "O(n log n)，和樹法相同。",
+     "t": 498
+    }
+   ]
+  },
+  {
+   "title": "直接得答案：乘上 n",
+   "scene": "algbari2-dec-shortcut",
+   "points": [
+    {
+     "text": "如何直接寫出遞減型遞迴的答案？",
+     "t": 509
+    },
+    {
+     "text": "T(n−1) + 1 → n；T(n−1) + n → n²；T(n−1) + log n → n log n。",
+     "t": 534
+    },
+    {
+     "text": "n 每次減 1，f(n) 重複 n 次 → 答案就是 f(n) × n。",
+     "t": 569
+    },
+    {
+     "text": "所以 T(n−1) + n² → n³。",
+     "t": 593
+    },
+    {
+     "text": "T(n−2) + 1：每次減 2，n/2 次 → 仍是 O(n)。",
+     "t": 620
+    },
+    {
+     "text": "T(n−100) + n：n 很大時一樣 → O(n²)。",
+     "t": 656
+    },
+    {
+     "text": "若有係數，例如 2T(n−1) + 1，就不是乘 n，下一部說明。",
+     "t": 704
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "for (i = 1; i < n; i = i * 2) 執行幾次？",
+   "opts": [
+    "log n",
+    "n",
+    "n/2",
+    "√n"
+   ],
+   "ans": "log n",
+   "why": "i 每次加倍。"
+  },
+  {
+   "q": "T(n) = T(n−1) + log n 的解？",
+   "opts": [
+    "Θ(n log n)",
+    "Θ(log n)",
+    "Θ(n)",
+    "Θ(log² n)"
+   ],
+   "ans": "Θ(n log n)",
+   "why": "總和 log n!，log n! = Θ(n log n)。"
+  },
+  {
+   "q": "T(n) = T(n−1) + n² 的解？",
+   "opts": [
+    "Θ(n³)",
+    "Θ(n²)",
+    "Θ(n² log n)",
+    "Θ(2ⁿ)"
+   ],
+   "ans": "Θ(n³)",
+   "why": "a = 1 時 f(n) 乘上 n。"
+  },
+  {
+   "q": "T(n) = T(n−100) + n 的解？",
+   "opts": [
+    "Θ(n²)",
+    "Θ(n)",
+    "Θ(n/100)",
+    "Θ(100n)"
+   ],
+   "ans": "Θ(n²)",
+   "why": "共 n/100 層，每層約 n，常數倍忽略。"
+  },
+  {
+   "q": "log n + log(n−1) + … + log 1 等於？",
+   "opts": [
+    "log n!",
+    "n log n",
+    "log n",
+    "(log n)ⁿ"
+   ],
+   "ans": "log n!",
+   "why": "log a + log b = log(ab)。"
+  }
+ ]
+}

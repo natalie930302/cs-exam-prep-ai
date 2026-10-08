@@ -1,0 +1,496 @@
+{
+ "video": "a_otxyu0mSQ",
+ "label": "MIT 6.006 Rec11：Principles of Algorithm Design",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場：quiz 後多練演算法設計",
+   "scene": null,
+   "points": [
+    {
+     "text": "quiz 結果比預期低，原因是演算法設計練得不夠。",
+     "t": 35
+    },
+    {
+     "text": "今天帶題目一起想解法；numerics 很無聊，留到下次。",
+     "t": 57
+    }
+   ]
+  },
+  {
+   "title": "Shifted array 與暴力解",
+   "scene": "algmit3-shift-array",
+   "points": [
+    {
+     "text": "已排序陣列 1 3 5 6 7 9 12：找一個數用 binary search，O(log n)。",
+     "t": 101
+    },
+    {
+     "text": "shifted array：前 k 個元素被移到右邊 → 7 9 12 1 3 5 6，要找某個數 e；不知道 k。",
+     "t": 134
+    },
+    {
+     "text": "先估計有多少時間：考試或面試先花約 1/3 的時間想。",
+     "t": 186
+    },
+    {
+     "text": "交白卷沒分：先準備一個保證正確的暴力解。",
+     "t": 219
+    },
+    {
+     "text": "忘掉 shifted 的資訊，直接 linear search：O(n)。",
+     "t": 244
+    }
+   ]
+  },
+  {
+   "title": "知道 k 的話",
+   "scene": "algmit3-shift-two-bs",
+   "points": [
+    {
+     "text": "如果知道 k：先移回去再 binary search，O(k + log n)；Python list 移動甚至要 O(n)。",
+     "t": 315
+    },
+    {
+     "text": "兩個解一樣 O(n) 時，寫比較簡單的那個：比較不會有 bug、拿最多分。",
+     "t": 367
+    },
+    {
+     "text": "另一種：binary search 時存取 mid + k，但等於重寫 binary search，難寫。",
+     "t": 436
+    },
+    {
+     "text": "更好：兩段各自已排序 → 兩次 binary search，仍是 O(log n)，兩行 pseudocode。",
+     "t": 491
+    }
+   ]
+  },
+  {
+   "title": "Binary search 找 k",
+   "scene": "algmit3-shift-findk",
+   "points": [
+    {
+     "text": "不知道 k → 先找 k；要整體 O(log n)，找 k 也只能花 O(log n)。",
+     "t": 522
+    },
+    {
+     "text": "k 就是最小值的位置。",
+     "t": 581
+    },
+    {
+     "text": "學生：k 是斷點（discontinuity）；但 binary search 只猜一個位置時看不出斷點在哪一邊。",
+     "t": 609
+    },
+    {
+     "text": "關鍵：拿猜到的值跟第一個元素比。",
+     "t": 677
+    },
+    {
+     "text": "畫成圖：兩段都上升，而且左段整段都在右段上方，可以畫一條水平線分開。",
+     "t": 717
+    },
+    {
+     "text": "猜到線下 → 猜太大；猜到線上 → 猜太小。這條線就是第一個元素。",
+     "t": 759
+    },
+    {
+     "text": "因為原本有序，右段（被移過去的）全部小於第一個元素。",
+     "t": 784
+    }
+   ]
+  },
+  {
+   "title": "重點是過程",
+   "scene": null,
+   "points": [
+    {
+     "text": "重點不只是解答，而是從什麼都沒有、到幾個部分解的過程。",
+     "t": 840
+    },
+    {
+     "text": "過程中一直累積 insight，而且時間用完時手上也有東西。",
+     "t": 851
+    }
+   ]
+  },
+  {
+   "title": "Heap 第 k 小：暴力解",
+   "scene": "algmit3-heap-pop",
+   "points": [
+    {
+     "text": "一個有 n 個元素的 min-heap，要取出第 k 小。",
+     "t": 870
+    },
+    {
+     "text": "這題給目標時間 O(k log k)，但先聽暴力解。",
+     "t": 918
+    },
+    {
+     "text": "heap 其實是陣列 2 5 7 6 9 8；整個 sort 再取第 k 個 → O(n log n)。",
+     "t": 941
+    },
+    {
+     "text": "extract-min 呼叫 k 次 → O(k log n)，就是 heap sort 做到一半停。",
+     "t": 986
+    },
+    {
+     "text": "k log n 跟 k log k 只差一個 log 因子，作業裡幾乎分不出來。",
+     "t": 1028
+    },
+    {
+     "text": "不能把陣列前 k 個直接拿走：pop 之後要維持 heap invariant。",
+     "t": 1076
+    }
+   ]
+  },
+  {
+   "title": "Max-heap 袋子：O(n log k)",
+   "scene": "algmit3-heap-bag",
+   "points": [
+    {
+     "text": "提示：陣列找最小值時記一個 best seen；從 7 開始，6 換掉，9、8 不換。",
+     "t": 1088
+    },
+    {
+     "text": "這只適用 k = 1，要推廣到任意 k。",
+     "t": 1146
+    },
+    {
+     "text": "學生想法：第 10 小一定在某一層以下？反例：heap 可以讓前 10 小擠在上面、下面全更大。",
+     "t": 1203
+    },
+    {
+     "text": "推廣：用一個袋子記住目前最小的 k 個。",
+     "t": 1276
+    },
+    {
+     "text": "k = 3、袋子裡 2 5 7，看到 6：要跟袋子裡最大的比，小就換掉。",
+     "t": 1312
+    },
+    {
+     "text": "一直在問最大值 → 袋子要用 max-heap（原本是 min-heap，這點不直觀）。",
+     "t": 1350
+    },
+    {
+     "text": "目前有 k log n 與 n log k 兩個解。",
+     "t": 1383
+    }
+   ]
+  },
+  {
+   "title": "砍成 k 層：O(k²)",
+   "scene": "algmit3-heap-trunc",
+   "points": [
+    {
+     "text": "想找第 4 小，heap 卻有 10 層，可以少看哪些？",
+     "t": 1400
+    },
+    {
+     "text": "可以砍到只剩 4 層，丟掉下面全部。",
+     "t": 1420
+    },
+    {
+     "text": "min-heap 沿任一路徑往下都遞增，第 4 層以下一定比前 4 小都大。",
+     "t": 1439
+    },
+    {
+     "text": "heap 一次操作是 O(高度)；高度從 log n 降到 k，不是 n 降到 k。",
+     "t": 1503
+    },
+    {
+     "text": "k 次 extract-min → O(k²)；k 很小時有用，也提供下一步的 insight。",
+     "t": 1538
+    }
+   ]
+  },
+  {
+   "title": "Horizon：取出一個，放進孩子",
+   "scene": "algmit3-heap-horizon",
+   "points": [
+    {
+     "text": "自己練題時給自己半小時到一小時想，這個過程本身就讓你進步。",
+     "t": 1589
+    },
+    {
+     "text": "第 1 小一定是 root。",
+     "t": 1678
+    },
+    {
+     "text": "第 2 小：只要看 5 和 7，下面的都更大。",
+     "t": 1692
+    },
+    {
+     "text": "第 3 小：7 還在競爭，再加入 5 的孩子。",
+     "t": 1718
+    },
+    {
+     "text": "取出的元素退出競爭，換它的孩子進來。",
+     "t": 1755
+    },
+    {
+     "text": "不是真的切開 heap，而是算出刀子落在前 k 個與其餘 n − k 個之間的位置。",
+     "t": 1794
+    },
+    {
+     "text": "horizon：一開始只有 root；取出一個，就放進它的孩子。",
+     "t": 1838
+    },
+    {
+     "text": "下一個要取 horizon 裡的最小值 → horizon 用 min-heap。",
+     "t": 1863
+    }
+   ]
+  },
+  {
+   "title": "Pseudocode 與 O(k log k)",
+   "scene": "algmit3-heap-horizon-code",
+   "points": [
+    {
+     "text": "H 是原本的 min-heap，Z 是 horizon（也是 min-heap）。",
+     "t": 1886
+    },
+    {
+     "text": "Z.insert(H[1])：heap 是陣列，H[1] 是 root。",
+     "t": 1908
+    },
+    {
+     "text": "for i = 1..k：ith = Z.extract_min()，做完 k 次 ith 就是第 k 小。",
+     "t": 1941
+    },
+    {
+     "text": "Z 只存 key 不夠：還要存在 H 的 index，才找得到孩子。",
+     "t": 2077
+    },
+    {
+     "text": "extract_min 回傳 key 與 index j（老師提醒變數名別取 i、ith 這種）。",
+     "t": 2134
+    },
+    {
+     "text": "取出後放進孩子：H[2j] 與 H[2j+1]。",
+     "t": 2179
+    },
+    {
+     "text": "沒有孩子就不放，要加邊界檢查。",
+     "t": 2249
+    },
+    {
+     "text": "每輪取 1 個、最多放 2 個 → Z 最多約 k 個，每次操作 O(log k) → O(k log k)。",
+     "t": 2334
+    },
+    {
+     "text": "正確性：horizon 永遠含有還沒取出的最小值。",
+     "t": 2374
+    }
+   ]
+  },
+  {
+   "title": "考試策略：先寫簡單的",
+   "scene": null,
+   "points": [
+    {
+     "text": "考試想不到 k log k 時：寫 O(k log n)，比 n log k 更快也更簡單。",
+     "t": 2419
+    },
+    {
+     "text": "兩三行 pseudocode 拿到大半分數，總比交白卷好。",
+     "t": 2453
+    },
+    {
+     "text": "面試也一樣：先快速給一個解，對方不滿意再花時間。",
+     "t": 2491
+    },
+    {
+     "text": "不要背講義的解答，要學這種從部分解一路改進的過程。",
+     "t": 2525
+    }
+   ]
+  },
+  {
+   "title": "Range minimum：兩個極端",
+   "scene": "algmit3-rmq-tradeoff",
+   "points": [
+    {
+     "text": "一個沒有順序的陣列，元素個數是 2 的冪。",
+     "t": 2582
+    },
+    {
+     "text": "查詢 min(i..j)；分 preprocessing 與 query 兩個階段。",
+     "t": 2613
+    },
+    {
+     "text": "預處理時間不限時：把所有答案都先算好。",
+     "t": 2667
+    },
+    {
+     "text": "學生想先 sort：想一下發現不合理就退回來，換方向。",
+     "t": 2723
+    },
+    {
+     "text": "用 hash 存所有區間 (i, j) 的答案：查詢 O(1)，但空間約 n²。",
+     "t": 2755
+    },
+    {
+     "text": "暴力建表 O(n³)；從 [i, i] 往右長，新 min = min(舊 min, 下一個) → O(n²)。",
+     "t": 2814
+    },
+    {
+     "text": "另一個極端：不預處理，每次查詢掃一遍，O(n)。",
+     "t": 2869
+    },
+    {
+     "text": "兩個極端之間，要找 trade-off 曲線上的其他點。",
+     "t": 2919
+    }
+   ]
+  },
+  {
+   "title": "對半切的想法",
+   "scene": "algmit3-rmq-split",
+   "points": [
+    {
+     "text": "講義的解：O(n log n) 空間，每次查詢只用到兩個 partial minima。",
+     "t": 2937
+    },
+    {
+     "text": "n 是 2 的冪，切兩半不用擔心不等分。",
+     "t": 3081
+    },
+    {
+     "text": "學生的想法：對半切、遞迴取兩邊 min，最後看 log n 個 minima，也是一個解。",
+     "t": 3128
+    }
+   ]
+  },
+  {
+   "title": "Partial minima 與 O(n log n) 空間",
+   "scene": "algmit3-rmq-split",
+   "points": [
+    {
+     "text": "例 6 7 2 5 3 8 9 4：從中間往兩邊算 partial minima。",
+     "t": 3189
+    },
+    {
+     "text": "i、j 在中間兩側 → 查兩個值就完成。",
+     "t": 3230
+    },
+    {
+     "text": "在同一半 → 對一半大小的陣列（2 5…、3 8 9 4）做同樣的事。",
+     "t": 3240
+    },
+    {
+     "text": "空間：S(n) = 2S(n/2) + n（兩個一半，不是一個）。",
+     "t": 3301
+    },
+    {
+     "text": "跟 merge sort 的遞迴式一樣 → O(n log n)，不用重畫遞迴樹。",
+     "t": 3349
+    },
+    {
+     "text": "查詢：i、j 在兩側時，兩個 partial minima 剛好蓋住整個區間。",
+     "t": 3385
+    },
+    {
+     "text": "pseudocode 越簡單越好，不要有特例。",
+     "t": 3439
+    }
+   ]
+  },
+  {
+   "title": "總結：少寫一點，少錯一點",
+   "scene": null,
+   "points": [
+    {
+     "text": "研究：每千行程式的 bug 數約為常數，寫越多錯越多 → 喜歡簡單的解。",
+     "t": 3451
+    },
+    {
+     "text": "四題做了三題，剩下一題自己看。",
+     "t": 3479
+    },
+    {
+     "text": "先想至少半小時再看解答；重點是過程與善用每個提示。",
+     "t": 3484
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Shifted array 7 9 12 1 3 5 6 用 binary search 找 k 時，mid 的值要跟誰比？",
+   "opts": [
+    "第一個元素",
+    "最後一個元素",
+    "左右鄰居",
+    "要找的 e"
+   ],
+   "ans": "第一個元素",
+   "why": "左段全部 ≥ A[0]，右段全部 < A[0]。"
+  },
+  {
+   "q": "7 9 12 1 3 5 6 中，最小值（k 的位置，從 0 起算）在哪？",
+   "opts": [
+    "3",
+    "0",
+    "2",
+    "6"
+   ],
+   "ans": "3",
+   "why": "值 1 在 index 3。"
+  },
+  {
+   "q": "知道 k 時最簡單的 O(log n) 做法？",
+   "opts": [
+    "兩段各做一次 binary search",
+    "先移回原順序",
+    "從 k 開始 linear search",
+    "sort 一次"
+   ],
+   "ans": "兩段各做一次 binary search",
+   "why": "兩段各自已排序；移回去要 O(k) 以上。"
+  },
+  {
+   "q": "用大小 k 的 max-heap 袋子掃過 n 個元素找第 k 小，時間？",
+   "opts": [
+    "O(n log k)",
+    "O(k log n)",
+    "O(n log n)",
+    "O(k²)"
+   ],
+   "ans": "O(n log k)",
+   "why": "每個元素跟袋中最大比，必要時換掉，O(log k)。"
+  },
+  {
+   "q": "Horizon 法找 min-heap 第 k 小，horizon 的大小最多約多少？",
+   "opts": [
+    "約 k",
+    "約 log n",
+    "約 n",
+    "約 2ᵏ"
+   ],
+   "ans": "約 k",
+   "why": "每輪取 1、最多放 2，淨增最多 1。"
+  },
+  {
+   "q": "Horizon 法找 min-heap 第 k 小的時間？",
+   "opts": [
+    "O(k log k)",
+    "O(k log n)",
+    "O(n log k)",
+    "O(k²)"
+   ],
+   "ans": "O(k log k)",
+   "why": "k 次操作，每次在大小 O(k) 的 heap 上。"
+  },
+  {
+   "q": "Range minimum 的 partial minima 解，空間遞迴式與結果？",
+   "opts": [
+    "S(n) = 2S(n/2) + n → O(n log n)",
+    "S(n) = S(n/2) + n → O(n)",
+    "S(n) = 2S(n/2) + 1 → O(n)",
+    "S(n) = n² → O(n²)"
+   ],
+   "ans": "S(n) = 2S(n/2) + n → O(n log n)",
+   "why": "兩個一半都要遞迴，跟 merge sort 一樣。"
+  }
+ ]
+}

@@ -1,0 +1,258 @@
+{
+ "video": "WlBBTSL0ZRc",
+ "label": "Abdul Bari：1.10.2 Comparison of Functions #2",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "n^(log n) vs 2^√n：取兩次 log",
+   "scene": "algbari2-log-compare",
+   "params": {
+    "ex": "nlogn"
+   },
+   "points": [
+    {
+     "text": "比較 n^(log n) 與 2^√n：兩邊取 log。",
+     "t": 0
+    },
+    {
+     "text": "log n · log n = log² n；√n · log 2 = √n。",
+     "t": 25
+    },
+    {
+     "text": "log² n 與 √n 還看不出來，就再取一次 log。",
+     "t": 53
+    },
+    {
+     "text": "2 log log n vs ½ log n。",
+     "t": 59
+    },
+    {
+     "text": "log log n < log n → 2^√n 較大。",
+     "t": 82
+    },
+    {
+     "text": "取 log 只是為了好比較，沒有固定規則。",
+     "t": 95
+    }
+   ]
+  },
+  {
+   "title": "2^(log n) vs n^√n",
+   "scene": "algbari2-log-compare",
+   "params": {
+    "ex": "pow2"
+   },
+   "points": [
+    {
+     "text": "取 log：log n · log 2 = log n vs √n · log n。",
+     "t": 127
+    },
+    {
+     "text": "log n 較小 → 2^(log n) 較小。",
+     "t": 139
+    },
+    {
+     "text": "其實 2^(log n) = n^(log 2) = n，當然比 n^√n 小。",
+     "t": 139
+    }
+   ]
+  },
+  {
+   "title": "2n vs 3n：係數可忽略",
+   "scene": "algbari2-log-compare",
+   "params": {
+    "ex": "coef"
+   },
+   "points": [
+    {
+     "text": "f(n) = 2n、g(n) = 3n。",
+     "t": 147
+    },
+    {
+     "text": "直接看函數時係數可忽略：兩者都是 Θ(n)，相等。",
+     "t": 156
+    },
+    {
+     "text": "O(n)、Θ(n) 寫起來都一樣，漸近上兩者相等。",
+     "t": 163
+    }
+   ]
+  },
+  {
+   "title": "2ⁿ vs 2²ⁿ：取 log 後不能刪係數",
+   "scene": "algbari2-log-compare",
+   "params": {
+    "ex": "exp2"
+   },
+   "points": [
+    {
+     "text": "f(n) = 2ⁿ、g(n) = 2²ⁿ，看起來差不多？",
+     "t": 170
+    },
+    {
+     "text": "取 log：n·log 2 = n vs 2n·log 2 = 2n。",
+     "t": 186
+    },
+    {
+     "text": "注意：取了 log 之後不能再把係數刪掉，否則答案會錯。",
+     "t": 198
+    },
+    {
+     "text": "2n > n → 2²ⁿ 較大。",
+     "t": 226
+    },
+    {
+     "text": "其實 2²ⁿ = 4ⁿ，本來就大於 2ⁿ。",
+     "t": 256
+    }
+   ]
+  },
+  {
+   "title": "分段函數：只看夠大的 n",
+   "scene": "algbari2-piecewise",
+   "points": [
+    {
+     "text": "g₁、g₂ 是分段函數。",
+     "t": 262
+    },
+    {
+     "text": "g₁：n < 100 時是 n³，之後是 n²；g₂：n ≤ 10,000 時是 n²，之後是 n³。",
+     "t": 273
+    },
+    {
+     "text": "n < 100：g₁ 較大。",
+     "t": 291
+    },
+    {
+     "text": "100 到 10,000：兩者都是 n²，相等。",
+     "t": 309
+    },
+    {
+     "text": "超過 10,000：g₂ = n³ 較大。",
+     "t": 330
+    },
+    {
+     "text": "從 10,000 到 ∞ 都是 g₂ 大 → g₂ 較大（g₁ = O(g₂)）。",
+     "t": 353
+    },
+    {
+     "text": "比較函數不看小的 n；只要從某一點起永遠較大就算較大。",
+     "t": 382
+    }
+   ]
+  },
+  {
+   "title": "是非題：漸近符號",
+   "scene": "algbari2-true-false",
+   "points": [
+    {
+     "text": "幾題考古題：判斷敘述對錯。",
+     "t": 416
+    },
+    {
+     "text": "(n + k)ᵐ 展開後最高項是 nᵐ → (n + k)ᵐ = Θ(nᵐ)，對。",
+     "t": 423
+    },
+    {
+     "text": "2ⁿ⁺¹ = 2·2ⁿ，係數可忽略 → 2ⁿ⁺¹ = O(2ⁿ)，對。",
+     "t": 463
+    },
+    {
+     "text": "2²ⁿ = 4ⁿ > 2ⁿ，2ⁿ 不能當上界 → 2²ⁿ = O(2ⁿ) 錯，應為 O(4ⁿ)。",
+     "t": 486
+    },
+    {
+     "text": "√(log n) vs log log n：取 log 得 ½ log log n > log log log n，較小者不能當上界 → 錯。",
+     "t": 516
+    },
+    {
+     "text": "兩邊取 log 得 log² n vs n，n 較大 → n^(log n) = O(2ⁿ)，對。",
+     "t": 547
+    }
+   ],
+   "trap": "老師在 7:35 口誤說成「θ of n square」，應為 Θ(nᵐ)。最後一題的式子影片沒唸出，依「取 log 得 log² n 與 n」推測為 n^(log n) = O(2ⁿ)。"
+  },
+  {
+   "title": "第一章結束",
+   "scene": null,
+   "points": [
+    {
+     "text": "這些例題取自考試，練習後就能處理各種漸近符號題。",
+     "t": 570
+    },
+    {
+     "text": "第一章（演算法分析與漸近符號）結束；下一章開始 divide and conquer、greedy。",
+     "t": 591
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "比較 n^(log n) 與 2^√n，哪個大？",
+   "opts": [
+    "2^√n",
+    "n^(log n)",
+    "相等",
+    "無法比較"
+   ],
+   "ans": "2^√n",
+   "why": "取兩次 log：2 log log n < ½ log n。"
+  },
+  {
+   "q": "比較 2ⁿ 與 2²ⁿ 時取 log 得 n 與 2n，正確結論是？",
+   "opts": [
+    "2²ⁿ 較大，取 log 後係數不能刪",
+    "兩者相等，係數可以忽略",
+    "2ⁿ 較大",
+    "無法判斷"
+   ],
+   "ans": "2²ⁿ 較大，取 log 後係數不能刪",
+   "why": "2²ⁿ = 4ⁿ；取 log 後的係數代表指數底數的差別。"
+  },
+  {
+   "q": "2n 與 3n 的漸近關係？",
+   "opts": [
+    "相等，都是 Θ(n)",
+    "3n 較大",
+    "2n 較大",
+    "3n = Ω(n²)"
+   ],
+   "ans": "相等，都是 Θ(n)",
+   "why": "直接看函數時常數係數可忽略。"
+  },
+  {
+   "q": "g₁ 在 n ≥ 100 時為 n²，g₂ 在 n > 10,000 時為 n³，結論？",
+   "opts": [
+    "g₁ = O(g₂)",
+    "g₂ = O(g₁)",
+    "g₁ = Θ(g₂)",
+    "無法比較"
+   ],
+   "ans": "g₁ = O(g₂)",
+   "why": "從 10,000 起 g₂ 永遠較大；比較只看夠大的 n。"
+  },
+  {
+   "q": "下列何者錯誤？",
+   "opts": [
+    "2²ⁿ = O(2ⁿ)",
+    "2ⁿ⁺¹ = O(2ⁿ)",
+    "(n + k)ᵐ = Θ(nᵐ)",
+    "n^(log n) = O(2ⁿ)"
+   ],
+   "ans": "2²ⁿ = O(2ⁿ)",
+   "why": "2²ⁿ = 4ⁿ，2ⁿ 不是它的上界。"
+  },
+  {
+   "q": "√(log n) = O(log log n) 對嗎？",
+   "opts": [
+    "錯，√(log n) 較大",
+    "對",
+    "兩者相等",
+    "只有 n 很小時才成立"
+   ],
+   "ans": "錯，√(log n) 較大",
+   "why": "取 log：½ log log n > log log log n。"
+  }
+ ]
+}

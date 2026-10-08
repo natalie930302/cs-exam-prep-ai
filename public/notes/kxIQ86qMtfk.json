@@ -1,0 +1,958 @@
+{
+ "video": "kxIQ86qMtfk",
+ "label": "交大江蕙如 Lec02 Chapter 1 Introduction (1/2)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "從問題到演算法的流程",
+   "scene": "algjiang1-design-flow",
+   "points": [
+    {
+     "text": "Chapter 1 用 stable matching 這個問題，示範遇到問題後如何思考、發展演算法，再分析它。",
+     "t": 16
+    },
+    {
+     "text": "我們會想發展演算法，通常是實際遇到了 practical 的問題要解決。",
+     "t": 150
+    },
+    {
+     "text": "碩士生學會 solving technique 就可以畢業；博士生要學會 define problem，定義問題反而最難。",
+     "t": 202
+    },
+    {
+     "text": "第二步要 formulate 問題：萃取本質、清掉不重要的東西，得到簡單乾淨的描述。",
+     "t": 250
+    },
+    {
+     "text": "有了問題描述才去發展演算法，演算法本身也要乾淨、不瑣碎。",
+     "t": 278
+    },
+    {
+     "text": "最後要說服別人與自己：先證明演算法正確（吐出正確結果或最佳解）。",
+     "t": 314
+    },
+    {
+     "text": "再分析寫成程式後需要多久時間才能完成。",
+     "t": 334
+    },
+    {
+     "text": "加分項：證明演算法還有其他連帶的好性質。",
+     "t": 353
+    }
+   ]
+  },
+  {
+   "title": "Stable matching：交友公司的配對",
+   "scene": "algjiang1-sm-dating",
+   "points": [
+    {
+     "text": "Stable matching 本質上是配對問題。",
+     "t": 414
+    },
+    {
+     "text": "假設你是交友公司負責人，有 100 位女生客戶、100 位男生客戶要配對。",
+     "t": 442
+    },
+    {
+     "text": "每個人都知道對面 100 人是誰，並且替對方 100 人排出完整名次。",
+     "t": 467
+    },
+    {
+     "text": "這個依喜好程度的排序叫 preference list。",
+     "t": 520
+    },
+    {
+     "text": "目標是配出 100 對 happy 的配對。",
+     "t": 549
+    },
+    {
+     "text": "第一個條件：一定要全部配完，不能有人落單。",
+     "t": 564
+    },
+    {
+     "text": "也不允許一對多，必須一對一配對。",
+     "t": 590
+    },
+    {
+     "text": "第二個條件 happy and stable：配完後不存在一對男女，彼此喜歡對方更勝於配給他們的對象。",
+     "t": 626
+    }
+   ]
+  },
+  {
+   "title": "3 男 3 女的例子：隨便配會 unstable",
+   "scene": "algjiang1-sm-unstable-xyz",
+   "points": [
+    {
+     "text": "問題描述：給定 n 個男生、n 個女生，每人對異性都有完整的 preference list。",
+     "t": 664
+    },
+    {
+     "text": "例子：三個男生 X、Y、Z，三個女生 A、B、C，各自從最喜歡排到最不喜歡。",
+     "t": 709
+    },
+    {
+     "text": "Input 其實就是這兩張表格。",
+     "t": 740
+    },
+    {
+     "text": "隨便試：先讓 Z 配他最喜歡的 A。",
+     "t": 793
+    },
+    {
+     "text": "再讓 Y 配他最喜歡的 B。",
+     "t": 804
+    },
+    {
+     "text": "X 最喜歡和第二喜歡的都被配走，只能選第三個 C。",
+     "t": 824
+    },
+    {
+     "text": "X 喜歡 B 勝過配到的 C，而 B 最喜歡 X、勝過配到的 Y。",
+     "t": 894
+    },
+    {
+     "text": "X 和 B 會「劈腿」，所以這個配對 unstable，不是 stable marriage。",
+     "t": 937
+    }
+   ],
+   "trap": "補充：這組配對還有另一個 unstable pair——X 與 A（X 的最愛是 A；A 的偏好 Y > X > Z，比起 Z 更喜歡 X）。只要存在一對就不 stable。"
+  },
+  {
+   "title": "Perfect matching 與 stability 的定義",
+   "scene": "algjiang1-sm-perfect-stable",
+   "points": [
+    {
+     "text": "剛才的做法錯在哪：X 被迫選了最不喜歡的 C。",
+     "t": 1001
+    },
+    {
+     "text": "問題出在不是按照個人意願去安排。",
+     "t": 1015
+    },
+    {
+     "text": "Perfect matching：每個人都恰好配到一個對象（一對一）。",
+     "t": 1076
+    },
+    {
+     "text": "Perfect 不是幸福的意思，只表示每個人都配完了。",
+     "t": 1088
+    },
+    {
+     "text": "Stability 是反向定義：不存在任何一對有「劈腿可能」的男女。",
+     "t": 1130
+    },
+    {
+     "text": "Unstable pair：這對男女喜歡對方，更勝於各自目前的配偶。",
+     "t": 1145
+    },
+    {
+     "text": "Stable matching = perfect matching，而且沒有 unstable pair。",
+     "t": 1171
+    },
+    {
+     "text": "問題：給定 n 男 n 女完整、沒有平手的 preference list，找出 stable matching（如果存在）。",
+     "t": 1205
+    }
+   ]
+  },
+  {
+   "title": "直覺法：隨便配再 swap 修正",
+   "scene": "algjiang1-swap-cycle",
+   "points": [
+    {
+     "text": "直覺做法第一步：隨便先 match，每個人選喜歡的，衝突就退而求其次。",
+     "t": 1279
+    },
+    {
+     "text": "有 unstable pair 就把 matching 結果交換（swap）。",
+     "t": 1324
+    },
+    {
+     "text": "反覆這樣做，直到沒有 unstable pair 為止。",
+     "t": 1336
+    },
+    {
+     "text": "問題在第二、三行：swap 可能解掉一個 unstable，卻產生新的 unstable。",
+     "t": 1416
+    },
+    {
+     "text": "甚至會形成 cycle：解開、產生、解開、產生，繞一圈又回來。",
+     "t": 1427
+    },
+    {
+     "text": "這樣迴圈不一定停得下來。",
+     "t": 1441
+    },
+    {
+     "text": "違反 procedure 的 finite 原則，所以這個方法 invalid。",
+     "t": 1460
+    }
+   ],
+   "trap": "補充：動畫用的是自建的偏好表（X: A>B>C、Y: B>A>C、Z: A>B>C；A: Y>Z>X、B: Z>Y>X、C: X>Y>Z），從 X–A、Y–B、Z–C 開始，依序 swap 4 次就回到原配對；老師課堂上沒有給具體例子。"
+  },
+  {
+   "title": "Gale–Shapley：propose 與 deferred decision",
+   "scene": "algjiang1-gs-states",
+   "points": [
+    {
+     "text": "真正要介紹的方法很簡單，原則只有一個：每個人都盡量追求自己的最大利益。",
+     "t": 1499
+    },
+    {
+     "text": "Gale 與 Shapley 在 1962 年提出這個演算法。",
+     "t": 1508
+    },
+    {
+     "text": "2012 年諾貝爾經濟學獎頒給發明人 Shapley 與把它應用到經濟問題的學者（Roth）。",
+     "t": 1519
+    },
+    {
+     "text": "機制只有兩件事：男生向女生 propose，女生決定 accept 或 reject。",
+     "t": 1616
+    },
+    {
+     "text": "設計概念是 deferred decision making：女生 accept 只是當下決定，不代表真的要嫁。",
+     "t": 1639
+    },
+    {
+     "text": "每個人都會經歷三個狀態：free → engaged → married。",
+     "t": 1672
+    },
+    {
+     "text": "Engaged 是訂婚，可以毀約；男生可能 free 與 engaged 來回好幾次。",
+     "t": 1696
+    },
+    {
+     "text": "所有人都 engaged、不再改變時程序停下，把 engaged 轉成 married。",
+     "t": 1734
+    }
+   ]
+  },
+  {
+   "title": "Gale–Shapley pseudocode 與三種 case",
+   "scene": "algjiang1-gs-code",
+   "points": [
+    {
+     "text": "第一階段 initialize：所有人都是 free。",
+     "t": 1846
+    },
+    {
+     "text": "第二到第八行是 propose、accept／reject 的過程，每個 iteration 一次 propose。",
+     "t": 1849
+    },
+    {
+     "text": "第九行把 engaged 轉成 married，output 結果。",
+     "t": 1873
+    },
+    {
+     "text": "只要有男生是 free 且還沒向所有女生 propose，就執行迴圈（隨便挑一個這樣的男生）。",
+     "t": 1893
+    },
+    {
+     "text": "他向還沒 propose 過的女生中最喜歡的那位 propose。",
+     "t": 1921
+    },
+    {
+     "text": "Case 1：女生是 free → 先 accept（反正可以反悔），兩人 engaged。",
+     "t": 1978
+    },
+    {
+     "text": "Case 2：女生已 engaged，但更喜歡現在 propose 的男生 → dump 原未婚夫，改和新男生 engaged。",
+     "t": 2025
+    },
+    {
+     "text": "Case 3：女生比較喜歡原未婚夫 → reject；這位男生維持 free，再向下一位 propose。",
+     "t": 2055
+    }
+   ]
+  },
+  {
+   "title": "程序結束與之後要證明的事",
+   "scene": "algjiang1-pref-numbers",
+   "points": [
+    {
+     "text": "迭代直到沒有男生是 free，或 free 的男生都已向所有女生 propose 過。",
+     "t": 2077
+    },
+    {
+     "text": "之後會分析：停止時每個男生一定都配到一個女生。",
+     "t": 2110
+    },
+    {
+     "text": "要證明 procedure 吐出的結果是 stable matching。",
+     "t": 2191
+    },
+    {
+     "text": "要證明 procedure 一定停得下來。",
+     "t": 2216
+    },
+    {
+     "text": "還要分析最差情況下迴圈要執行多少個 iteration。",
+     "t": 2226
+    }
+   ]
+  },
+  {
+   "title": "5 男 5 女的 demo",
+   "scene": "algjiang1-gs-demo5",
+   "points": [
+    {
+     "text": "Demo：五位男士 V、W、X、Y、Z，五位女士 A、B、C、D、E，偏好表完整列出。",
+     "t": 2249
+    },
+    {
+     "text": "不管從哪個男生開始 propose，最後結果都一模一樣（下次證明），這裡先按順序。",
+     "t": 2306
+    },
+    {
+     "text": "V 向 B（Bertha）propose，B 是 free → accept。",
+     "t": 2347
+    },
+    {
+     "text": "W 最喜歡 D，向 D propose，D 是 free → accept。",
+     "t": 2404
+    },
+    {
+     "text": "X 向 B propose：B 最喜歡 X，V 排在後面 → dump V，改和 X engaged。",
+     "t": 2453
+    },
+    {
+     "text": "V 恢復 free，向下一位 A（Amy）propose，A 是 free → accept。",
+     "t": 2490
+    },
+    {
+     "text": "Y 向 A propose，A 比較喜歡未婚夫 V → reject；Y 改向 D propose，D 更喜歡 Y → dump W。",
+     "t": 2525
+    },
+    {
+     "text": "被拒絕很多次之後，終於得到 stable 的結果。",
+     "t": 2567
+    }
+   ],
+   "trap": "補充：偏好表依 Kleinberg–Tardos 投影片的 demo（老師畫面上的表，語音只念到前幾步）；老師之後的 propose 順序沒有念出，動畫每次挑編號最小的 free man，最後得到 V–A、W–C、X–B、Y–E、Z–D——依定理，任何順序結果都相同。"
+  },
+  {
+   "title": "對男生最好、對女生最差",
+   "scene": "algjiang1-gs-directions",
+   "points": [
+    {
+     "text": "有些男生運氣好配到很喜歡的女生，有些男生歷經挫折。",
+     "t": 2583
+    },
+    {
+     "text": "男生有 propose 主動權，符合最大利益的做法是從最喜歡的開始 propose。",
+     "t": 2618
+    },
+    {
+     "text": "女生只能 accept／reject：沒有更好的就先接受，有更好的就換。",
+     "t": 2635
+    },
+    {
+     "text": "男女都依各自在這個機制下的最大利益行動。",
+     "t": 2672
+    },
+    {
+     "text": "換成女生向男生 propose 也可以，會有對稱的效果。",
+     "t": 2711
+    },
+    {
+     "text": "男生 propose 的版本對男生是 optimal：每個男生配到他可能配到的最好對象。",
+     "t": 2732
+    },
+    {
+     "text": "對女生則是悲觀的：配到所有可能對象中最差的那一個。",
+     "t": 2744
+    },
+    {
+     "text": "寓意：應該主動追求自己喜歡的對象。",
+     "t": 2771
+    }
+   ]
+  },
+  {
+   "title": "應用：大學聯考分發、醫院實習",
+   "scene": "algjiang1-gs-admission",
+   "points": [
+    {
+     "text": "這看似只是交友問題，其實非常實際。",
+     "t": 2788
+    },
+    {
+     "text": "1962 年提出時，要解決的是大學入學的問題。",
+     "t": 2817
+    },
+    {
+     "text": "差不多同時，另一批人用同樣的方法分配醫學院畢業生到醫院工作，每家醫院有 quota。",
+     "t": 2831
+    },
+    {
+     "text": "到現在大考中心的分發本質上仍使用 Gale–Shapley，只做了小改變。",
+     "t": 2866
+    },
+    {
+     "text": "考生扮演的是「男生」（主動 propose 的一方）。",
+     "t": 2898
+    },
+    {
+     "text": "所以放榜是以考生的最大利益決定，而不是以系所的利益。",
+     "t": 2901
+    }
+   ],
+   "trap": "補充：動畫中的考生、系所與名額是示意例子；有名額（quota）的版本是 many-to-one 的 deferred acceptance，系所保留名額內最喜歡的考生。"
+  },
+  {
+   "title": "第二講開場",
+   "scene": null,
+   "points": [
+    {
+     "text": "上次用 stable matching 示範解決問題的步驟。",
+     "t": 2935
+    },
+    {
+     "text": "今天先介紹這學期會遇到的經典問題形式，再回到 stable matching 證明正確性與執行時間的 bound。",
+     "t": 2971
+    }
+   ]
+  },
+  {
+   "title": "Interval scheduling",
+   "scene": "algjiang1-interval",
+   "params": {
+    "weighted": false
+   },
+   "points": [
+    {
+     "text": "第一個代表性問題 interval scheduling：一個排程問題。",
+     "t": 3002
+    },
+    {
+     "text": "每個工作有固定的開始與結束時間（一個 interval），橫軸是時間。",
+     "t": 3029
+    },
+    {
+     "text": "只有一台機器，同一時間只能處理一件工作。",
+     "t": 3052
+    },
+    {
+     "text": "目標：讓機器發揮最大能力，選越多工作越好。",
+     "t": 3092
+    },
+    {
+     "text": "條件：選出的工作 interval 不能 overlap，例如做了 A 就不能同時做 B。",
+     "t": 3105
+    },
+    {
+     "text": "這個小例子用眼睛看就能找到最佳解：選三個工作。",
+     "t": 3152
+    }
+   ],
+   "trap": "補充：動畫中的區間是示意例子（老師的圖沒有念出數值）；最佳解的「數量」才是重點。"
+  },
+  {
+   "title": "Weighted interval scheduling",
+   "scene": "algjiang1-interval",
+   "params": {
+    "weighted": true
+   },
+   "points": [
+    {
+     "text": "第二個問題 weighted interval scheduling：同樣是排程，但每個工作有 weight。",
+     "t": 3169
+    },
+    {
+     "text": "Weight 可以想成重要性，或做這個工作能賺到的錢。",
+     "t": 3212
+    },
+    {
+     "text": "目標變成選一組工作，讓 weight 總和最大。",
+     "t": 3245
+    },
+    {
+     "text": "有些工作時間短但 weight 大，直覺上效益比較好。",
+     "t": 3269
+    },
+    {
+     "text": "選出的工作彼此仍然不能 overlap。",
+     "t": 3284
+    },
+    {
+     "text": "這個例子最好的反而是只選兩個工作，跟前一題選三個不同。",
+     "t": 3300
+    },
+    {
+     "text": "問題本質不同，解法的設計也會不同。",
+     "t": 3323
+    }
+   ]
+  },
+  {
+   "title": "Bipartite matching",
+   "scene": "algjiang1-bipartite",
+   "points": [
+    {
+     "text": "第三個問題 bipartite matching：也是配對問題，但比 stable matching 單純。",
+     "t": 3328
+    },
+    {
+     "text": "一群男生、一群女生，中間有一些連線。",
+     "t": 3366
+    },
+    {
+     "text": "連線只代表這一對可以配在一起（例如 A 與 E 之間有線）。",
+     "t": 3376
+    },
+    {
+     "text": "沒有完整的 ranking，只判定彼此能不能接受。",
+     "t": 3392
+    },
+    {
+     "text": "有些男女之間不存在配對可能。",
+     "t": 3417
+    },
+    {
+     "text": "目標是配出的對數越多越好：maximum cardinality matching（cardinality = 數量、size）。",
+     "t": 3439
+    },
+    {
+     "text": "這個例子最好的情況是 perfect matching：每個人都配到。",
+     "t": 3464
+    }
+   ],
+   "trap": "補充：動畫的二分圖是示意例子（老師的圖未念出所有連線）。"
+  },
+  {
+   "title": "Independent set",
+   "scene": "algjiang1-indep-set",
+   "points": [
+    {
+     "text": "接下來是相對難的問題：independent set。",
+     "t": 3489
+    },
+    {
+     "text": "Input 是一個 graph：平面上的點代表物體或人，點之間的連線代表某種關係。",
+     "t": 3522
+    },
+    {
+     "text": "Independent 就是沒有關係：要選出彼此之間沒有連線的點，越多越好。",
+     "t": 3545
+    },
+    {
+     "text": "例如選了 1，和 1 相連的 2、3 就不能選。",
+     "t": 3567
+    },
+    {
+     "text": "4、5、6、7 跟 1 沒有關係，都可以考慮。",
+     "t": 3578
+    },
+    {
+     "text": "這個例子最多可以選 1、4、5、6 這四個點。",
+     "t": 3614
+    }
+   ],
+   "trap": "補充：動畫的連線是依老師說的條件（1 連 2、3；最佳解 {1,4,5,6}）自建的圖。"
+  },
+  {
+   "title": "Competitive facility location",
+   "scene": "algjiang1-facility",
+   "points": [
+    {
+     "text": "第五個問題 competitive facility location，建立在 game 的理論上。",
+     "t": 3628
+    },
+    {
+     "text": "一條線上有一些點，每個點有一個數字代表積分。",
+     "t": 3656
+    },
+    {
+     "text": "兩位玩家輪流選點。",
+     "t": 3664
+    },
+    {
+     "text": "限制：一個點被選走（不論誰選的），它的鄰居就不能再被選，例如 15 旁邊的 5。",
+     "t": 3689
+    },
+    {
+     "text": "輪流拿到不能再拿為止，目標是 maximize 自己的積分，多的贏。",
+     "t": 3716
+    },
+    {
+     "text": "先手有優勢；可以問：後手最多能保證拿到幾分？",
+     "t": 3742
+    },
+    {
+     "text": "分析後可知第二位玩家可以保證拿到 20 分，但不能保證更高。",
+     "t": 3764
+    }
+   ],
+   "trap": "補充：動畫的分數序列參照 Kleinberg–Tardos 的例子（10, 1, 5, 15, 5, 1, 5, 1, 15, 10），只示範其中一種下法；語音中「不能保證」的那個數字聽不清楚（課本是 25）。"
+  },
+  {
+   "title": "五個問題的難易度與對應技巧",
+   "scene": "algjiang1-five-map",
+   "points": [
+    {
+     "text": "提這五個問題，是因為它們有難易度的差異。",
+     "t": 3782
+    },
+    {
+     "text": "Interval scheduling、weighted interval scheduling、bipartite matching 屬於簡單、可以有效率解決的問題。",
+     "t": 3807
+    },
+    {
+     "text": "Independent set 屬於 NP-complete。",
+     "t": 3845
+    },
+    {
+     "text": "Competitive facility location 屬於 PSPACE-complete。",
+     "t": 3853
+    },
+    {
+     "text": "Interval scheduling 用 greedy algorithm 就能簡單得到最佳解。",
+     "t": 3887
+    },
+    {
+     "text": "Weighted interval scheduling 用 dynamic programming。",
+     "t": 3894
+    },
+    {
+     "text": "Bipartite matching 用 network flow 解。",
+     "t": 3900
+    }
+   ]
+  },
+  {
+   "title": "回顧 stable matching 與今天的目標",
+   "scene": "algjiang1-sm-perfect-stable",
+   "points": [
+    {
+     "text": "回到 stable matching：procedure 設計出來後，重點是證明正確，並給出執行時間的合理上限。",
+     "t": 3931
+    },
+    {
+     "text": "Input：n 個男生、n 個女生，各自對異性有完整的 preference ranking。",
+     "t": 3976
+    },
+    {
+     "text": "目標：每個男生恰好配到一個女生，而且結果 stable。",
+     "t": 4012
+    },
+    {
+     "text": "Stable：不存在任何一對男女，喜歡對方更勝於配給他的配偶。",
+     "t": 4043
+    },
+    {
+     "text": "Gale–Shapley 就是反覆的求婚：男生 propose，女生 accept 或 reject。",
+     "t": 4062
+    },
+    {
+     "text": "今天要證明：procedure 正確、一定會停，以及需要多久時間。",
+     "t": 4091
+    }
+   ]
+  },
+  {
+   "title": "Problem formulation 與證明路線",
+   "scene": "algjiang1-pref-numbers",
+   "points": [
+    {
+     "text": "Formulation 要精簡乾淨，但保有問題的本質。",
+     "t": 4148
+    },
+    {
+     "text": "男生、女生都編號成 1 到 n。",
+     "t": 4190
+    },
+    {
+     "text": "Preference list 就只剩 a sequence of numbers，表示上非常簡單。",
+     "t": 4204
+    },
+    {
+     "text": "目標：perfect（每人恰好配一個）且 stable。",
+     "t": 4223
+    },
+    {
+     "text": "先證最簡單的 termination：while 迴圈最多 n² 次 iteration 一定停。",
+     "t": 4309
+    },
+    {
+     "text": "再證正確性：結果是 perfect matching，而且 stable。",
+     "t": 4335
+    },
+    {
+     "text": "額外性質：對男生是 optimal、對女生是悲觀的。",
+     "t": 4366
+    },
+    {
+     "text": "另一個好性質：不論 free man 用什麼順序 propose，結果都一模一樣。",
+     "t": 4405
+    }
+   ]
+  },
+  {
+   "title": "Pseudocode 的寫法",
+   "scene": "algjiang1-pseudo-style",
+   "points": [
+    {
+     "text": "第一行替 procedure 取名字，有些會在括號裡定義 input／output 參數。",
+     "t": 4476
+    },
+    {
+     "text": "每一行都要編號，不要省略。",
+     "t": 4501
+    },
+    {
+     "text": "討論時只要說「第幾行」，就不會有任何誤解。",
+     "t": 4512
+    },
+    {
+     "text": "每一步要讓任何人照做都做出一模一樣的事。",
+     "t": 4552
+    },
+    {
+     "text": "而且一定要做得到：用紙筆可以在紙上模擬。",
+     "t": 4559
+    },
+    {
+     "text": "常用 keyword：while、for、if／else，要輸出就用 return。",
+     "t": 4599
+    },
+    {
+     "text": "Pseudocode 抽象層次較高：一行翻成 C 可能要寫很多行。",
+     "t": 4626
+    },
+    {
+     "text": "先確定 procedure 正確、夠快才寫程式；不要一開始就打開電腦打程式。",
+     "t": 4666
+    }
+   ]
+  },
+  {
+   "title": "Termination：最多 n² 次 iteration",
+   "scene": "algjiang1-n2-proposals",
+   "points": [
+    {
+     "text": "演算法課最常用的兩招證明：反證法與數學歸納法（induction）。",
+     "t": 4725
+    },
+    {
+     "text": "要證明 Gale–Shapley 最多 n² 次 iteration 一定停。",
+     "t": 4746
+    },
+    {
+     "text": "一般做法是數 while 條件會成立幾次。",
+     "t": 4793
+    },
+    {
+     "text": "但男生會在 free 與 engaged 之間來回，free 的次數不好算。",
+     "t": 4876
+    },
+    {
+     "text": "for 迴圈通常好算，例如 1 到 k 就是 k + 1 次檢查。",
+     "t": 4915
+    },
+    {
+     "text": "換個角度：每個 iteration 一定恰好有一個男生向一個女生 propose。",
+     "t": 4934
+    },
+    {
+     "text": "每個男生從最喜歡依序 propose，最多 propose n 次。",
+     "t": 4998
+    },
+    {
+     "text": "n 個男生 × n 次 = 最多 n² 次 propose，所以最多 n² 次 iteration 就結束。",
+     "t": 5013
+    }
+   ]
+  },
+  {
+   "title": "兩個觀察：方向相反",
+   "scene": "algjiang1-gs-directions",
+   "points": [
+    {
+     "text": "在證明正確性之前，先看兩個重要觀察；男生、女生扮演的角色不同。",
+     "t": 5045
+    },
+    {
+     "text": "觀察 1：男生一定從最喜歡的往最不喜歡的依序 propose。",
+     "t": 5090
+    },
+    {
+     "text": "觀察 2：女生一被 propose 就 engaged，之後再也不會回到 free。",
+     "t": 5148
+    },
+    {
+     "text": "女生只在遇到更喜歡的男生時換人，從比較不喜歡的一路 trade up。",
+     "t": 5221
+    },
+    {
+     "text": "男生 propose 的方向往下、女生 engaged 對象往上，方向相反。",
+     "t": 5250
+    },
+    {
+     "text": "最多 n² 次是可以接受、夠快的。",
+     "t": 5276
+    }
+   ]
+  },
+  {
+   "title": "證明結果是 perfect matching（反證法）",
+   "scene": "algjiang1-perfect-proof",
+   "points": [
+    {
+     "text": "反證法模式：先假設與結論相反，推出跟給定條件矛盾，就表示假設錯誤。",
+     "t": 5329
+    },
+    {
+     "text": "假設 Gale–Shapley 結束時有一個男生是 free。",
+     "t": 5426
+    },
+    {
+     "text": "證明一定要緊扣 procedure 裡做的事來推論，不能亂講。",
+     "t": 5474
+    },
+    {
+     "text": "while 迴圈結束代表條件不成立：這個 free 的男生一定已經向所有女生 propose 過。",
+     "t": 5586
+    },
+    {
+     "text": "n 男 n 女中有一個男生 free，就至少有一個女生 free。",
+     "t": 5623
+    },
+    {
+     "text": "女生一被 propose 就會 engaged；她到最後還是 free，表示從來沒人向她 propose。",
+     "t": 5681
+    },
+    {
+     "text": "這與「那個男生已向所有女生 propose」矛盾。",
+     "t": 5708
+    },
+    {
+     "text": "所以假設錯誤：結束時每個男生都配到某個女生。",
+     "t": 5742
+    }
+   ]
+  },
+  {
+   "title": "Stable matching 不唯一",
+   "scene": "algjiang1-two-stable",
+   "points": [
+    {
+     "text": "時間不夠，stability 的證明下次再講。",
+     "t": 5755
+    },
+    {
+     "text": "先觀察：stable matching 的結果是唯一的嗎？",
+     "t": 5767
+    },
+    {
+     "text": "不是：同一個 instance 可以找到好幾種不同的 stable matching。",
+     "t": 5790
+    },
+    {
+     "text": "三男三女的例子：男生 propose 的 Gale–Shapley 得到一個 stable matching（對男生最好）。",
+     "t": 5815
+    },
+    {
+     "text": "把男女互換、改成女生 propose，會得到另一個結果，也是 stable。",
+     "t": 5837
+    },
+    {
+     "text": "下次證明 stability、male optimal，以及不論誰來 run 結果都一樣。",
+     "t": 5865
+    }
+   ],
+   "trap": "補充：動畫沿用前面的 X/Y/Z、A/B/C 偏好表：男生 propose 得 X–A、Y–B、Z–C；女生 propose 得 X–B、Y–A、Z–C，兩者都 stable。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Stable matching 要求哪兩件事？",
+   "opts": [
+    "Perfect matching，且沒有 unstable pair",
+    "每個人都配到第一志願",
+    "男女人數可以不同，但要 stable",
+    "總滿意度最大"
+   ],
+   "ans": "Perfect matching，且沒有 unstable pair",
+   "why": "每人恰好配一個，而且不存在互相更喜歡對方的一對男女。"
+  },
+  {
+   "q": "「隨便配，有 unstable pair 就 swap，重複到 stable」為什麼不是有效的 procedure？",
+   "opts": [
+    "swap 可能形成 cycle，不保證停止",
+    "swap 一定會讓人落單",
+    "它的結果一定是 perfect matching",
+    "它需要 n³ 次運算"
+   ],
+   "ans": "swap 可能形成 cycle，不保證停止",
+   "why": "解掉一個 unstable 可能又產生新的，違反 finite。"
+  },
+  {
+   "q": "Gale–Shapley 中，engaged 的女生遇到她更喜歡的男生 propose 時會？",
+   "opts": [
+    "dump 原未婚夫，改與新男生 engaged",
+    "reject 新男生",
+    "兩個都保留",
+    "回到 free"
+   ],
+   "ans": "dump 原未婚夫，改與新男生 engaged",
+   "why": "女生依自己的偏好 trade up；被 dump 的男生回到 free。"
+  },
+  {
+   "q": "Gale–Shapley（n 男 n 女）最多執行幾次 iteration？",
+   "opts": [
+    "n²",
+    "n",
+    "n log n",
+    "2ⁿ"
+   ],
+   "ans": "n²",
+   "why": "每個 iteration 一次 propose；每個男生最多 propose n 次，共 n 個男生。"
+  },
+  {
+   "q": "證明 Gale–Shapley 的 termination 時，老師改數什麼，而不是數 free man？",
+   "opts": [
+    "propose 的次數",
+    "女生被 dump 的次數",
+    "engaged 的對數",
+    "preference list 的長度總和的平方"
+   ],
+   "ans": "propose 的次數",
+   "why": "男生會 free ↔ engaged 來回，不好數；但每圈恰好一次 propose，而且不會重複。"
+  },
+  {
+   "q": "男生 propose 版本的 Gale–Shapley 結果對誰最有利？",
+   "opts": [
+    "對男生最好，對女生最差",
+    "對女生最好，對男生最差",
+    "對雙方一樣好",
+    "取決於誰先 propose"
+   ],
+   "ans": "對男生最好，對女生最差",
+   "why": "提出方（男生）是 optimal；被動的一方是 pessimal。"
+  },
+  {
+   "q": "大考分發若使用 Gale–Shapley，考生扮演哪個角色？",
+   "opts": [
+    "主動 propose 的一方（男生）",
+    "accept／reject 的一方（女生）",
+    "兩者輪流",
+    "不參與配對"
+   ],
+   "ans": "主動 propose 的一方（男生）",
+   "why": "所以放榜以考生的最大利益為出發點。"
+  },
+  {
+   "q": "下列哪個問題老師歸為 NP-complete？",
+   "opts": [
+    "Independent set",
+    "Interval scheduling",
+    "Weighted interval scheduling",
+    "Bipartite matching"
+   ],
+   "ans": "Independent set",
+   "why": "前三個可以有效率解（greedy、DP、network flow）；competitive facility location 則是 PSPACE-complete。"
+  }
+ ]
+}

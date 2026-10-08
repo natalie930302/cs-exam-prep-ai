@@ -1,0 +1,499 @@
+{
+ "video": "r5pXu1PAUkI",
+ "label": "MIT 6.006 Rec5：Recursion Trees, Binary Search Trees",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場：投票決定內容",
+   "scene": null,
+   "points": [
+    {
+     "text": "助教先問大家有沒有上課沒聽懂、想再講一次的地方。",
+     "t": 21
+    },
+    {
+     "text": "兩個選項：再講一次 recursion tree（就沒時間細講 BST delete 的程式碼），或直接講 delete。",
+     "t": 61
+    },
+    {
+     "text": "投票平手，結果兩個都講。",
+     "t": 110
+    }
+   ]
+  },
+  {
+   "title": "Merge sort 的遞迴式",
+   "scene": "algmit2-ms-recurrence",
+   "points": [
+    {
+     "text": "Merge sort：把未排序陣列切成兩半，對兩半各呼叫 merge sort，再合併排好的兩半。",
+     "t": 121
+    },
+    {
+     "text": "助教的寫法：陣列只剩 1 個元素時已經排好，當 base case，程式碼更短、bug 更少。",
+     "t": 154
+    },
+    {
+     "text": "Merge 是 Θ(n)：兩根手指各指一半，比大小後依序放進結果。",
+     "t": 185
+    },
+    {
+     "text": "遞迴式 T(n) = 2T(n/2) + Θ(n)：呼叫兩次所以係數是 2，少了 2 答案就不同。",
+     "t": 230
+    },
+    {
+     "text": "切開陣列可能 O(1) 或 O(n)（看怎麼存），都不改變總時間。",
+     "t": 248
+    }
+   ]
+  },
+  {
+   "title": "遞迴樹：節點成本與層數",
+   "scene": "algmit2-ms-rtree",
+   "points": [
+    {
+     "text": "Recursion tree method：畫出 call graph，根是大小 n 的呼叫，往下是兩個 n/2、四個 n/4……",
+     "t": 256
+    },
+    {
+     "text": "一直切到 base case：大小 1，T(1) = Θ(1)。",
+     "t": 310
+    },
+    {
+     "text": "節點裡寫「這次呼叫本身的成本」，不含子呼叫。",
+     "t": 327
+    },
+    {
+     "text": "用 cn 取代 O(n)：asymptotic 記號只能加有限多項，這裡項數會無限多；寫 c 永遠不會錯。",
+     "t": 345
+    },
+    {
+     "text": "子呼叫成本 c·n/2，再下一層 c·n/4，葉子是 c。",
+     "t": 392
+    },
+    {
+     "text": "要逐層加總，得先知道有幾層。",
+     "t": 451
+    },
+    {
+     "text": "第 L 層的大小是 n/2^(L−1)；看不出規律就多展開幾層。",
+     "t": 589
+    },
+    {
+     "text": "最底層大小 = 1 → n = 2^(L−1) → L − 1 = log n，L = log n + 1，漸進上就是 log n。",
+     "t": 658
+    }
+   ],
+   "trap": "老師提醒：寫 n/2^L 而忽略 −1 也沒關係，漸進記號會吸收掉；但最好寫出真正的式子。"
+  },
+  {
+   "title": "逐層加總：Θ(n log n)",
+   "scene": "algmit2-rtree-sum",
+   "points": [
+    {
+     "text": "每層成本：根 cn；第二層 2 個 cn/2 = cn；第三層 4 個 cn/4 = cn。",
+     "t": 675
+    },
+    {
+     "text": "最底層 n 個大小 1 的呼叫，成本也是 cn。",
+     "t": 721
+    },
+    {
+     "text": "「質量守恆」：每層大小加起來都是 n，少了就代表弄丟了元素。",
+     "t": 731
+    },
+    {
+     "text": "T(n) = cn × L = cn(log n + 1) = Θ(n log n)。",
+     "t": 767
+    },
+    {
+     "text": "這棵樹很平衡、每層成本相同；課堂上也有成本集中在根或葉子的樹，照樣逐層加總就好。",
+     "t": 816
+    }
+   ]
+  },
+  {
+   "title": "Data structure：query、update 與 rep invariant",
+   "scene": "algmit2-rep-invariant",
+   "points": [
+    {
+     "text": "Data structure 是一組「存資料、取資料」的演算法：query 只問不改，update 會改資料。",
+     "t": 868
+    },
+    {
+     "text": "從空結構開始，先 update 放資料，再 query 問問題，反覆交錯。",
+     "t": 889
+    },
+    {
+     "text": "BST 最常用的 query 是 search（find）；update 是 insert 與 delete。",
+     "t": 962
+    },
+    {
+     "text": "Rep invariant（RI）：資料要照某種方式組織，結構才會正確；sorted array 的 RI 就是「排好序」。",
+     "t": 1013
+    },
+    {
+     "text": "Sorted array：min/max 看頭尾 O(1)，binary search O(log n)。",
+     "t": 1086
+    },
+    {
+     "text": "陣列沒排序時 binary search 可能說「不在」但其實在：RI 不成立，query 就會錯。",
+     "t": 1108
+    },
+    {
+     "text": "Insert 要先搬移元素騰出位置，不能偷懶直接 append 到尾端。",
+     "t": 1124
+    },
+    {
+     "text": "Update 的正確性證明：RI 在開頭成立 ⇒ 結尾也成立。",
+     "t": 1158
+    }
+   ]
+  },
+  {
+   "title": "checkRI 除錯技巧：以 heap 為例",
+   "scene": "algmit2-heap-checkri",
+   "points": [
+    {
+     "text": "情境：作業要你找出慢的地方、換成更好的資料結構；自己實作的 update 可能有 bug。",
+     "t": 1167
+    },
+    {
+     "text": "Query 往往很久之後才答錯，不知道哪次 update 壞的；所以寫 checkRI 走遍結構，RI 不成立就丟 exception。",
+     "t": 1203
+    },
+    {
+     "text": "每次 update 結束都呼叫 checkRI；確定程式正確後、交作業前再拿掉。",
+     "t": 1234
+    },
+    {
+     "text": "例：max heap 的 query 是 max，看根就好，O(1)。",
+     "t": 1260
+    },
+    {
+     "text": "Heap 是 full binary tree；RI：父節點比孩子大，用歸納法可知根是最大值。",
+     "t": 1354
+    },
+    {
+     "text": "Insert：加在最底層，比父節點大就 swap，可能一路到根 → O(height) = O(log n)。",
+     "t": 1420
+    },
+    {
+     "text": "存成 array 時 parent = index / 2，只做 swap，不必搬移整段。",
+     "t": 1490
+    },
+    {
+     "text": "Heap 的 checkRI 要看每個節點 → O(n)；每次 update 都呼叫會把 O(log n) 拖成 O(n)。",
+     "t": 1552
+    }
+   ],
+   "trap": "補充：heap 的數字是動畫自己舉的例子，助教在白板上沒有寫數字。"
+  },
+  {
+   "title": "BST 的 RI 與 find",
+   "scene": "algmit2-bst-find",
+   "points": [
+    {
+     "text": "Binary tree：每個節點最多兩個孩子；Python 物件存 left、right、parent 與 key。",
+     "t": 1578
+    },
+    {
+     "text": "白板的樹：根 23。看 23：左邊都比較小、右邊都比較大；看 8 也一樣 → 這就是 BST 的 RI。",
+     "t": 1672
+    },
+    {
+     "text": "好處是 search 很快：從根開始比，小就往左、大就往右，很像 binary search。",
+     "t": 1712
+    },
+    {
+     "text": "找 14 這種不存在的 key 會走到死路。",
+     "t": 1731
+    },
+    {
+     "text": "find 的程式碼：lines 8–9 找到就回傳，line 10 比較，左右兩段幾乎是複製貼上。",
+     "t": 1760
+    },
+    {
+     "text": "find 是 O(h) 而不是 O(log n)；下一講學會平衡之後 h = O(log n)。",
+     "t": 1832
+    }
+   ],
+   "trap": "補充：樹上的數字（23、8、42、4、16、15）是從語音推回的白板內容，位置可能與板書略有出入。"
+  },
+  {
+   "title": "退化的 BST",
+   "scene": "algmit2-bst-degenerate",
+   "points": [
+    {
+     "text": "最壞情況 search 是 O(n)：例如依序插入 5、10、15……一直變大。",
+     "t": 1860
+    },
+    {
+     "text": "樹就退化成一條 list，search 要走 O(n)。",
+     "t": 1893
+    },
+    {
+     "text": "隨機資料的樹高約 log n；為避免退化，之後會學 balanced tree。",
+     "t": 1903
+    }
+   ]
+  },
+  {
+   "title": "BST insert",
+   "scene": "algmit2-bst-insert",
+   "points": [
+    {
+     "text": "Insert：沿著 find 會走的路徑往下。",
+     "t": 1913
+    },
+    {
+     "text": "Insert 14：小於 23 往左、大於 8 往右……走到第一個空的孩子位置。",
+     "t": 1964
+    },
+    {
+     "text": "Insert 5：小、小、大 → 成為 4 的右孩子；不需要 swap 任何節點。",
+     "t": 2010
+    },
+    {
+     "text": "死路就是新節點的位置：下次 find 會走同一條路徑找到它。",
+     "t": 2026
+    },
+    {
+     "text": "重複的 key：想存多個值，就在節點上掛一個 list；課堂程式碼不處理重複。",
+     "t": 2042
+    },
+    {
+     "text": "Insert 的程式碼 = find 複製貼上，left/right 是 None 時改成建立新節點。",
+     "t": 2085
+    }
+   ]
+  },
+  {
+   "title": "next_larger（successor）與 predecessor",
+   "scene": "algmit2-bst-successor",
+   "points": [
+    {
+     "text": "暖身：find next larger（successor）＝比這個 key 大的最小 key，也就是排序後的下一個。",
+     "t": 2128
+    },
+    {
+     "text": "Case 1：有右子樹 → 往右一步，再一路往左（右子樹的 min）；8 的 successor 是 15。",
+     "t": 2159
+    },
+    {
+     "text": "min：一路往左走（這棵樹得到 4）；程式碼 lines 3–4 就是「往右再呼叫 min」。",
+     "t": 2181
+    },
+    {
+     "text": "Case 2：沒有右子樹 → 往上；4 的 successor 是父節點 8（往右上走一步就停）。",
+     "t": 2248
+    },
+    {
+     "text": "往上時，若自己是右孩子就繼續往上，直到第一次從左孩子上去；走到根都沒有 → 沒有 successor。",
+     "t": 2316
+    },
+    {
+     "text": "程式碼 lines 6–8 就是沿著 parent 鏈往上走。",
+     "t": 2382
+    },
+    {
+     "text": "Predecessor：對稱——左子樹的 max，或往上直到從右孩子上去；程式把 left/right、min/max 對調即可。",
+     "t": 2453
+    }
+   ]
+  },
+  {
+   "title": "BST delete 三種情況",
+   "scene": "algmit2-bst-delete",
+   "points": [
+    {
+     "text": "Delete 15：leaf，直接拿掉。",
+     "t": 2543
+    },
+    {
+     "text": "Delete 16：只有一個孩子 → 把 15 接上來（改父節點的 link 與孩子的 parent）。",
+     "t": 2551
+    },
+    {
+     "text": "只有一個孩子時，不論直線或 zigzag，做法都一樣。",
+     "t": 2680
+    },
+    {
+     "text": "Delete 8：左右都有子樹，不能直接拿某個子樹頂替。",
+     "t": 2689
+    },
+    {
+     "text": "做法：找 successor（右子樹的 min = 15），刪掉 successor，再把 15 放到 8 的位置。",
+     "t": 2802
+    },
+    {
+     "text": "左邊仍都比 15 小、右邊仍都比 15 大，所以 RI 保持。",
+     "t": 2825
+    },
+    {
+     "text": "Successor 不可能有左孩子 → 刪它一定是容易的 case，不會無限遞迴。",
+     "t": 2895
+    }
+   ],
+   "trap": "易錯：兩個孩子都有時，換上來的是 successor 的 key，再刪原本的 successor 節點；successor 最多只有右子樹。"
+  },
+  {
+   "title": "Delete 的程式與 O(h)",
+   "scene": "algmit2-bst-delete-cost",
+   "points": [
+    {
+     "text": "Delete 的時間：先找到 key，O(h)。",
+     "t": 2979
+    },
+    {
+     "text": "Happy case 改幾個 link，O(1)；sad case 再找 successor O(h)，加一次 happy delete。",
+     "t": 2986
+    },
+    {
+     "text": "最壞 O(h) + O(h) = O(h)；insert 也是 O(h)。",
+     "t": 3036
+    },
+    {
+     "text": "如果直接給 node，就省掉 find 那一步。",
+     "t": 3055
+    },
+    {
+     "text": "BST.delete 先 find，再呼叫 node.delete；若刪的是 root，還要更新整棵樹的 root。",
+     "t": 3121
+    },
+    {
+     "text": "node.delete：lines 4–12 是 happy case（左右孩子兩段鏡像），lines 14–16 是 sad case（找 successor、交換 key、刪 successor）。",
+     "t": 3183
+    },
+    {
+     "text": "重點：只要不是兩個孩子都有，就是改 link 的 happy case。",
+     "t": 3257
+    }
+   ]
+  },
+  {
+   "title": "Augmentation：節點存子樹 min",
+   "scene": "algmit2-bst-augment",
+   "points": [
+    {
+     "text": "BST 預設找 min 要 O(h)；讓節點「胖一點」，存子樹的 min 就能 O(1) 回答。",
+     "t": 3278
+    },
+    {
+     "text": "例：23 除了自己，再存「左子樹最小是 4」。",
+     "t": 3300
+    },
+    {
+     "text": "難的是 insert、delete 時怎麼維護。",
+     "t": 3318
+    },
+    {
+     "text": "節點的值可由兩個孩子的值算出（取 min），沒有孩子時是特例；單一節點 O(1)。",
+     "t": 3353
+    },
+    {
+     "text": "Insert 3：只有插入路徑上的子樹改變，往回走重算 3、3、3，路徑外都不用動。",
+     "t": 3411
+    },
+    {
+     "text": "比起往下時順便比較，往回重算的好處：任何能由孩子 O(1) 算出的函數都適用（作業會用到）。",
+     "t": 3462
+    },
+    {
+     "text": "Delete 也一樣，沿路徑往上重算 → O(h)。",
+     "t": 3501
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Merge sort 的遞迴式是？",
+   "opts": [
+    "T(n) = 2T(n/2) + Θ(n)",
+    "T(n) = T(n/2) + Θ(n)",
+    "T(n) = 2T(n/2) + Θ(1)",
+    "T(n) = 2T(n − 1) + Θ(n)"
+   ],
+   "ans": "T(n) = 2T(n/2) + Θ(n)",
+   "why": "呼叫兩次、每次一半大小，merge 要 Θ(n)。"
+  },
+  {
+   "q": "Merge sort 遞迴樹中，第 L 層（根是第 1 層）每個節點的問題大小是？",
+   "opts": [
+    "n / 2^(L−1)",
+    "n / 2^L",
+    "n / L",
+    "n − L"
+   ],
+   "ans": "n / 2^(L−1)",
+   "why": "第 1 層是 n/2⁰ = n，每往下一層除以 2。"
+  },
+  {
+   "q": "遞迴樹中為什麼把 Θ(n) 改寫成 cn？",
+   "opts": [
+    "項數可能無限多，asymptotic 記號只能加有限多項",
+    "因為 c 比 Θ 小",
+    "為了讓答案變成 O(n)",
+    "因為 base case 是 0"
+   ],
+   "ans": "項數可能無限多，asymptotic 記號只能加有限多項",
+   "why": "助教說寫成 cn 永遠不會出錯。"
+  },
+  {
+   "q": "未平衡 BST 的 find 最壞時間？",
+   "opts": [
+    "O(h)，最壞可達 O(n)",
+    "一定 O(log n)",
+    "O(1)",
+    "O(n log n)"
+   ],
+   "ans": "O(h)，最壞可達 O(n)",
+   "why": "依序插入遞增的 key 會退化成 list。"
+  },
+  {
+   "q": "樹 23（左 8、右 42；8 的孩子 4、16；16 的左孩子 15）中，8 的 successor 是？",
+   "opts": [
+    "15",
+    "16",
+    "23",
+    "4"
+   ],
+   "ans": "15",
+   "why": "8 有右子樹 → 右子樹的 min = 15。"
+  },
+  {
+   "q": "刪除一個左右都有子樹的節點，正確做法是？",
+   "opts": [
+    "找 successor，把它的 key 換上來，再刪掉 successor",
+    "直接把左子樹接上來",
+    "直接把右子樹接上來",
+    "把整棵樹重建"
+   ],
+   "ans": "找 successor，把它的 key 換上來，再刪掉 successor",
+   "why": "successor 沒有左孩子，刪它是容易的 case。"
+  },
+  {
+   "q": "為什麼交作業前要拿掉 checkRI？",
+   "opts": [
+    "它要走遍整個結構，會把 O(log n) 的 update 拖成 O(n)",
+    "它會改壞資料",
+    "它只能在 heap 用",
+    "Python 不允許"
+   ],
+   "ans": "它要走遍整個結構，會把 O(log n) 的 update 拖成 O(n)",
+   "why": "checkRI 是 debug 工具。"
+  },
+  {
+   "q": "節點存「子樹 min」時，insert 一個新 key 後要更新哪些節點？",
+   "opts": [
+    "只有插入路徑上的祖先",
+    "全部節點",
+    "只有根",
+    "只有新節點的兄弟"
+   ],
+   "ans": "只有插入路徑上的祖先",
+   "why": "路徑外的子樹沒變。"
+  }
+ ]
+}

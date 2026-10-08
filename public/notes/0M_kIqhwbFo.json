@@ -1,27 +1,57 @@
 {
  "video": "0M_kIqhwbFo",
  "label": "MIT 6.006 L8：Hashing with Chaining",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
    "title": "Dictionary ADT",
-   "scene": null,
+   "scene": "algmit2-dict-adt",
    "points": [
     {
-     "text": "Dictionary 存放有 key 的 items，支援 insert、delete、search(key)。",
+     "text": "開始新單元 hashing：電腦科學裡最常用的資料結構，Python 也內建。",
+     "t": 24
+    },
+    {
+     "text": "Dictionary 是一種 ADT：存一組 items，每個 item 有一個 key。",
+     "t": 61
+    },
+    {
+     "text": "操作：insert(item)、delete(item)、search(key)。",
      "t": 86
     },
     {
-     "text": "Search 是 exact search：找到該 key 的 item，或回報不存在（Python 的 KeyError）；不像 BST 能找 successor／predecessor。",
-     "t": 104
+     "text": "Search 是 exact search：找到該 key 的 item，或回報不存在（Python 的 KeyError）。",
+     "t": 143
     },
     {
-     "text": "假設 key 唯一：插入相同 key 時覆寫舊的（Python 的行為）。",
-     "t": 161
+     "text": "不像 BST 找不到時還能給 successor／predecessor。",
+     "t": 164
     },
     {
-     "text": "用 AVL tree 可做到 O(log n)；本講目標是 O(1)（with high probability）的隨機化結構。",
-     "t": 201
+     "text": "假設 key 唯一：insert 已存在的 key 就覆蓋（Python 的行為）。",
+     "t": 182
+    },
+    {
+     "text": "用 AVL tree 可以全部 O(log n)。",
+     "t": 227
+    },
+    {
+     "text": "上一講：RAM model 下整數可以排得比 n log n 快；今天要讓 search 比 log n 快，降到常數（隨機化，with high probability）。",
+     "t": 252
+    }
+   ]
+  },
+  {
+   "title": "Python 的 dict",
+   "scene": "algmit2-dict-adt",
+   "points": [
+    {
+     "text": "D[key] 是 search，D[key] = val 是 insert（覆蓋舊值），del D[key] 是 delete。",
+     "t": 305
+    },
+    {
+     "text": "Python dict 的 item 是 (key, value) pair，D.items() 會回傳這些 pairs。",
+     "t": 356
     }
    ]
   },
@@ -30,119 +60,252 @@
    "scene": null,
    "points": [
     {
-     "text": "Python dict、docdist 計算字頻與內積都靠 dictionary。",
-     "t": 356
+     "text": "docdist 用 dict 數字頻、算內積；現代語言幾乎都內建 dictionary。",
+     "t": 397
     },
     {
-     "text": "資料庫、拼字檢查、早期搜尋引擎、登入帳號查詢、編譯器的變數名稱表、路由器、網路 port 對應都在用。",
-     "t": 422
+     "text": "資料庫、查字典、拼字檢查與更正、登入帳號查詢、編譯器的變數表、路由器、網路 port 對應。",
+     "t": 446
     },
     {
-     "text": "字串搜尋（grep、Ctrl-F）、DNA 相似度、rsync／Dropbox 檔案同步、密碼學雜湊也用到 hashing 的概念。",
-     "t": 753
+     "text": "不那麼明顯的應用：字串搜尋（Ctrl-F、grep）、DNA 相似度、rsync／Dropbox 同步、cryptographic hash。",
+     "t": 675
     }
    ]
   },
   {
-   "title": "Direct access table 與 prehashing",
-   "scene": null,
+   "title": "Direct access table",
+   "scene": "algmit2-direct-access",
    "points": [
     {
-     "text": "Direct access table：用 key 當陣列索引，insert／delete／search 都是 O(1)。",
-     "t": 918
+     "text": "最簡單的做法 direct access table：一個大 array，index 就是 key。",
+     "t": 834
     },
     {
-     "text": "缺點一：key 不一定是整數；缺點二：key 範圍大時極度浪費空間（64-bit key 要 2⁶⁴ 格）。",
-     "t": 1018
+     "text": "key 2 的 item 放第 2 格、key 4 放第 4 格，其餘都是 None。",
+     "t": 892
     },
     {
-     "text": "Prehash：把任何 key 對應成非負整數；理論上任何資料都是一串位元，就是一個整數。",
-     "t": 1159
+     "text": "缺點 1：key 不一定是整數。",
+     "t": 937
     },
     {
-     "text": "Python 的 hash() 其實是 prehash；prehash 值不能隨時間改變，所以 list 這種 mutable 物件不能當 key。",
-     "t": 1263
+     "text": "時間沒問題：insert 放進去、delete 設 None、search 看是不是 None，都是 O(1)。",
+     "t": 994
+    },
+    {
+     "text": "缺點 2：記憶體怪獸——每個可能的 key 要一格，64-bit key 要 2⁶⁴ 格。",
+     "t": 1008
     }
    ]
+  },
+  {
+   "title": "Prehashing",
+   "scene": "algmit2-prehash",
+   "points": [
+    {
+     "text": "先解決問題 1：prehash 把任何 key 對應到非負整數（Python 叫 hash，其實是 prehash）。",
+     "t": 1078
+    },
+    {
+     "text": "理論上：key 是有限、離散的，任何資料都是一串 bits，也就是一個整數。",
+     "t": 1135
+    },
+    {
+     "text": "Python 的 hash()：整數就回傳自己，字串會算出某個值。",
+     "t": 1207
+    },
+    {
+     "text": "但 hash('\\0B') 和 hash('\\0\\0C') 都是 64；理想是 prehash 相等 ⇔ 物件相等，Python 沒完全做到。",
+     "t": 1241
+    },
+    {
+     "text": "自訂物件可以實作 __hash__；預設用 id，也就是記憶體位置。",
+     "t": 1310
+    },
+    {
+     "text": "Prehash 不能隨時間改變：存在 4 之後算出 5 就找不到；所以 list 這種 mutable 物件不能當 key。",
+     "t": 1352
+    }
+   ],
+   "trap": "補充：現在的 Python 字串 hash 有加隨機 salt，這兩個字串不一定還是 64；這是講課當年的版本。"
   },
   {
    "title": "Hashing：把 key space 縮到 m 格",
-   "scene": null,
+   "scene": "algmit2-hash-universe",
    "points": [
     {
-     "text": "Hash function h 把巨大的 key universe 映射到 {0, 1, …, m−1}，m 是 table 大小。",
-     "t": 1621
+     "text": "問題 2 更有趣：降低空間，這就是 hashing。",
+     "t": 1438
     },
     {
-     "text": "希望 m = Θ(n)，n 是目前存放的 key 數，空間才會是線性。",
-     "t": 1731
+     "text": "hash 的字源：把東西切碎再攪拌（hash browns 同源）。",
+     "t": 1484
     },
     {
-     "text": "鴿籠原理：key 遠多於格子，一定有 h(kᵢ) = h(kⱼ) 但 kᵢ ≠ kⱼ 的 collision。",
-     "t": 1768
+     "text": "把巨大的 key space 用 hash function h 映到 {0, …, m−1}，m 是 hash table 的大小。",
+     "t": 1500
+    },
+    {
+     "text": "實際存的 keys k1…k4：例如 h(k2) = 0 就把 item 2 放第 0 格，h(k3) = 3 放第 3 格。",
+     "t": 1632
+    },
+    {
+     "text": "希望 m ≈ n（n = 目前的 key 數），空間就是線性。",
+     "t": 1671
+    },
+    {
+     "text": "鴿籠原理：一定有 collision——h(ki) = h(kj) 但 ki ≠ kj。",
+     "t": 1743
     }
    ]
   },
   {
-   "title": "Chaining 與 simple uniform hashing",
-   "scene": null,
+   "title": "Chaining",
+   "scene": "algmit2-chaining",
    "points": [
+    {
+     "text": "處理碰撞的兩種方法：chaining（今天）與 open addressing（下週）。",
+     "t": 1805
+    },
     {
      "text": "Chaining：同一格的 items 存成 linked list。",
-     "t": 1847
+     "t": 1821
     },
     {
-     "text": "最壞情況所有 key 都撞在同一格，退化成長度 n 的 list → Θ(n)。",
-     "t": 1961
+     "text": "k1、k2 碰撞 → 第 1 格存 item1 → item2 的 list；k3 自己一格；空格存 null。",
+     "t": 1925
     },
     {
-     "text": "Simple uniform hashing 假設：每個 key 均勻且彼此獨立地落到各格（不實際但便於分析）。",
-     "t": 2021
+     "text": "最壞情況：固定 h，總有一堆 key 撞在同一格 → 長度 n 的 list，Θ(n)；任何 hashing 都一樣。",
+     "t": 1985
     },
     {
-     "text": "期望 chain 長度 = n/m = α（load factor）；操作時間 Θ(1 + α)，m = Θ(n) 時為常數。",
-     "t": 2237
+     "text": "實務上很好用，原因是隨機化：大部分 list 都只有常數長度。",
+     "t": 2016
     }
    ]
   },
   {
-   "title": "三種 hash function",
-   "scene": null,
+   "title": "Simple uniform hashing 與 load factor",
+   "scene": "algmit2-suh-alpha",
    "points": [
     {
-     "text": "Division method：h(k) = k mod m；m 取不靠近 2 或 10 次方的質數較好。",
-     "t": 2523
+     "text": "Simple uniform hashing：不實際（老師甚至說是錯的）的假設，但分析很方便。",
+     "t": 2065
     },
     {
-     "text": "Multiplication method：h(k) = [(a·k) mod 2ʷ] >> (w − r)，m = 2ʳ，取乘積中間混得最均勻的 r 位元；a 要是奇數。",
-     "t": 2616
+     "text": "Hash function 把 universe 映到 m 格，所以要依 table 大小選對應的 h。",
+     "t": 2107
     },
     {
-     "text": "Universal hashing：h(k) = [(a·k + b) mod p] mod m，p 是大於 universe 的質數，a、b 隨機。",
-     "t": 2860
+     "text": "假設包含兩件事：uniformity（每格等機率）與 independence（各 key 彼此獨立）。",
+     "t": 2195
     },
     {
-     "text": "對任意兩個不同 key，碰撞機率 ≤ 1/m（機率來自隨機選 a、b），期望 chain 長度仍是 α。",
-     "t": 2953
+     "text": "期望 chain 長度：每個 key 落到某一格的機率 1/m，n 個 key → n/m。",
+     "t": 2288
+    },
+    {
+     "text": "記作 α = n/m，load factor；α = 1、10 都是常數。",
+     "t": 2356
+    },
+    {
+     "text": "只要 m = Θ(n)，α 就是常數。",
+     "t": 2384
+    },
+    {
+     "text": "操作時間 Θ(1 + α)：1 是算 hash 與跟第一個指標，α 是走 chain。",
+     "t": 2448
+    },
+    {
+     "text": "所以 load factor 是常數 → 所有操作 O(1)；這是直覺，真正的理由要上 6.046。",
+     "t": 2488
     }
    ],
-   "trap": "補充：Θ(1 + α) 是「期望」時間，最壞仍是 Θ(n)；這與第 1 章的 best/worst/average case 分析是同一個觀念。"
+   "trap": "易錯：Θ(1 + α) 是期望時間，最壞仍是 Θ(n)。"
+  },
+  {
+   "title": "Division method",
+   "scene": "algmit2-division",
+   "points": [
+    {
+     "text": "最後主題：怎麼設計 h。兩個實務常用但理論上不好的方法，一個理論上好的。",
+     "t": 2549
+    },
+    {
+     "text": "Division method：h(k) = k mod m。",
+     "t": 2583
+    },
+    {
+     "text": "m 和 k 有公因數就糟：key 都是偶數、m 又是 2 的次方 → 只用到一半的 table。",
+     "t": 2604
+    },
+    {
+     "text": "實務上 m 取質數、不靠近 2 或 10 的次方就還不錯，但很 hackish。",
+     "t": 2624
+    }
+   ],
+   "trap": "補充：動畫裡的 key（10、22、34…）是示意，老師沒有舉具體數字。"
+  },
+  {
+   "title": "Multiplication method",
+   "scene": "algmit2-multiplication",
+   "points": [
+    {
+     "text": "Multiplication method：h(k) = [(a·k) mod 2ʷ] >> (w − r)，w 是機器的 word size。",
+     "t": 2664
+    },
+    {
+     "text": "a 可想成隨機的 w-bit 整數；二進位乘法 = a 的每個 1 都加一份左移的 k。",
+     "t": 2706
+    },
+    {
+     "text": "乘積有兩個 word；mod 2ʷ 留右邊那個 word，再 >> (w − r) 取它最左邊的 r 位，m = 2ʳ。",
+     "t": 2751
+    },
+    {
+     "text": "中間的位元由很多份 k 的進位混在一起——這就是 hashing「切碎攪拌」的意思。",
+     "t": 2814
+    },
+    {
+     "text": "a 要是奇數、不要太接近 2 的次方；理論上仍可找到壞的 key。",
+     "t": 2853
+    }
+   ],
+   "trap": "補充：動畫的 k = 181、a = 155、w = 8、r = 3 是示意數字。"
+  },
+  {
+   "title": "Universal hashing",
+   "scene": "algmit2-universal",
+   "points": [
+    {
+     "text": "Universal hashing：理論上好的方法（細節在 6.046）。",
+     "t": 2883
+    },
+    {
+     "text": "h(k) = [(a·k + b) mod p] mod m；p 是比 universe 大的質數，a、b 隨機取自 0…p−1。",
+     "t": 2913
+    },
+    {
+     "text": "對最壞的兩個不同 key，Pr[h(k1) = h(k2)] = 1/m。",
+     "t": 2975
+    },
+    {
+     "text": "機率來自隨機選 a、b（也就是隨機選 hash function），不是來自隨機的輸入。",
+     "t": 3012
+    },
+    {
+     "text": "用 linearity of expectation 可證期望 chain 長度仍是 α → 常數 load factor 下期望 O(1)。",
+     "t": 3031
+    }
+   ],
+   "trap": "補充：CLRS 的版本取 a ∈ {1, …, p−1}、b ∈ {0, …, p−1}，保證的是碰撞機率 ≤ 1/m。動畫的 p = 17、m = 4 是示意。"
   }
  ],
  "quiz": [
   {
-   "q": "Hashing with chaining 在 simple uniform hashing 下，search 的期望時間是？",
-   "opts": [
-    "Θ(1 + α)",
-    "Θ(log n)",
-    "Θ(n)",
-    "Θ(α²)"
-   ],
-   "ans": "Θ(1 + α)",
-   "why": "計算 hash 與第一個指標要常數，再走期望長度 α 的 chain。"
-  },
-  {
-   "q": "load factor α 的定義是？",
+   "q": "Load factor α 的定義？",
    "opts": [
     "n/m",
     "m/n",
@@ -153,38 +316,70 @@
    "why": "n 個 key 平均分到 m 格。"
   },
   {
-   "q": "Direct access table 的主要問題是？",
+   "q": "Simple uniform hashing 下，chaining 的 search 期望時間？",
    "opts": [
-    "key 不一定是整數，且 key 範圍大時浪費空間",
-    "search 要 O(n)",
-    "insert 要 O(log n)",
-    "無法刪除"
+    "Θ(1 + α)",
+    "Θ(log n)",
+    "Θ(n)",
+    "Θ(α²)"
    ],
-   "ans": "key 不一定是整數，且 key 範圍大時浪費空間",
-   "why": "操作都是 O(1)，但空間與 key universe 成正比。"
+   "ans": "Θ(1 + α)",
+   "why": "算 hash + 第一個指標是常數，再走期望長度 α 的 chain。"
   },
   {
-   "q": "Division method 若 m 是 2 的次方且 key 都是偶數，會發生什麼？",
+   "q": "Direct access table 的主要問題？",
+   "opts": [
+    "key 不一定是整數，而且 key 範圍大時極度浪費空間",
+    "search 要 O(n)",
+    "insert 要 O(log n)",
+    "不能刪除"
+   ],
+   "ans": "key 不一定是整數，而且 key 範圍大時極度浪費空間",
+   "why": "操作都 O(1)，但空間跟 key universe 一樣大。"
+  },
+  {
+   "q": "為什麼 Python 的 list 不能當 dict 的 key？",
+   "opts": [
+    "它是 mutable，prehash 值可能改變，之後就找不到",
+    "它太長",
+    "它沒有 __eq__",
+    "它不能被比較大小"
+   ],
+   "ans": "它是 mutable，prehash 值可能改變，之後就找不到",
+   "why": "prehash 一定要不隨時間改變。"
+  },
+  {
+   "q": "Division method 中，key 全是偶數、m 是 2 的次方，會怎樣？",
    "opts": [
     "只用到一半的 slot",
     "完全不會碰撞",
-    "hash 值都是 0",
+    "hash 值全是 0",
     "沒有影響"
    ],
    "ans": "只用到一半的 slot",
-   "why": "k mod m 和 k 有公因數 2，奇數 slot 永遠用不到。"
+   "why": "k mod m 保留了公因數 2，奇數格永遠用不到。"
   },
   {
-   "q": "Universal hashing 中「碰撞機率 ≤ 1/m」的機率來自？",
+   "q": "Universal hashing 中「碰撞機率 ≤ 1/m」的機率是對什麼取的？",
    "opts": [
-    "隨機選擇 hash function 的 a、b",
+    "隨機選的 a、b（hash function）",
     "隨機的輸入 key",
     "隨機的 table 大小",
     "隨機的插入順序"
    ],
-   "ans": "隨機選擇 hash function 的 a、b",
-   "why": "對最壞情況的 key，隨機挑選 hash function 也能保證期望表現。"
+   "ans": "隨機選的 a、b（hash function）",
+   "why": "對最壞的 key，只要 hash function 是隨機選的就成立。"
+  },
+  {
+   "q": "Hashing with chaining 的最壞情況時間？",
+   "opts": [
+    "Θ(n)",
+    "Θ(1)",
+    "Θ(log n)",
+    "Θ(α)"
+   ],
+   "ans": "Θ(n)",
+   "why": "所有 key 撞同一格就是長度 n 的 list。"
   }
- ],
- "timing": "estimated"
+ ]
 }

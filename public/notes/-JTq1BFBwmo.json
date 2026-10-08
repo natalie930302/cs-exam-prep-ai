@@ -1,30 +1,42 @@
 {
  "video": "-JTq1BFBwmo",
  "label": "Abdul Bari：1.1 Priori Analysis and Posteriori Testing",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
    "title": "Priori analysis vs Posteriori testing",
    "scene": "priori-posteriori",
    "points": [
     {
-     "text": "Priori analysis 對演算法進行：仔細研究它如何運作，得到時間與空間的結果。",
-     "t": 5
+     "text": "Priori analysis 是對演算法做的：仔細研究它怎麼運作，得到分析結果。",
+     "t": 6
     },
     {
-     "text": "Posteriori testing 對程式進行：實際執行，量到多少秒、毫秒，以及用了多少 bytes 記憶體。",
-     "t": 30
+     "text": "分析的結果是演算法所耗用的時間與空間。",
+     "t": 19
     },
     {
-     "text": "演算法與語言、硬體無關；程式則依賴硬體、程式語言、作業系統與環境。",
-     "t": 55
+     "text": "Posteriori testing 是對程式做的：實際執行程式來檢查。",
+     "t": 33
     },
     {
-     "text": "Priori analysis 的結果不是「3 分鐘、5 秒」這種牆鐘時間，而是 time function 與 space function。",
-     "t": 93
+     "text": "測試得到的是牆鐘時間（幾秒、幾毫秒）與佔用多少 bytes 記憶體。",
+     "t": 37
+    },
+    {
+     "text": "演算法不綁特定語言，也不綁特定硬體（language / hardware independent）。",
+     "t": 54
+    },
+    {
+     "text": "程式則依賴硬體、程式語言、作業系統與執行環境。",
+     "t": 74
+    },
+    {
+     "text": "Priori analysis 的結果不是「3 分鐘、5 秒」，而是 time function 與 space function。",
+     "t": 92
     }
    ],
-   "trap": "補充：考試問的「時間複雜度」都是 priori analysis 得到的函數（如 2n+3），不是實際秒數。"
+   "trap": "補充：考試要的「時間複雜度」都是 priori analysis 得到的函數（例如 2n + 3），不是實測秒數。"
   }
  ],
  "quiz": [
@@ -34,10 +46,10 @@
     "time function 與 space function",
     "實際執行的秒數",
     "記憶體用量的 bytes 實測值",
-    "編譯器輸出的機器碼長度"
+    "編譯後機器碼的長度"
    ],
    "ans": "time function 與 space function",
-   "why": "分析的對象是演算法，結果是與輸入大小相關的函數。"
+   "why": "分析對象是演算法，結果是跟輸入大小有關的函數。"
   },
   {
    "q": "Posteriori testing 的對象是？",
@@ -48,19 +60,18 @@
     "遞迴式"
    ],
    "ans": "程式",
-   "why": "要實際執行才能測試，所以對象是程式。"
+   "why": "要實際執行才能測，所以對象是程式。"
   },
   {
-   "q": "下列何者與 posteriori testing 的結果有關？",
+   "q": "下列何者會影響 posteriori testing 的結果，卻不影響 priori analysis？",
    "opts": [
     "硬體與作業系統",
-    "只有輸入大小 n",
-    "演算法的 pseudocode 寫法",
-    "Big-O 的定義"
+    "輸入大小 n",
+    "迴圈的層數",
+    "演算法的步驟"
    ],
    "ans": "硬體與作業系統",
-   "why": "實測時間與機器、語言、OS 都有關。"
+   "why": "演算法與硬體無關；程式實測則依賴硬體、語言、OS。"
   }
- ],
- "timing": "estimated"
+ ]
 }

@@ -1,0 +1,532 @@
+{
+ "video": "w6nuXg0BISo",
+ "label": "MIT 6.006 Rec9：Rolling Hashes, Amortized Analysis",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場：今天的主題",
+   "scene": null,
+   "points": [
+    {
+     "text": "今天講 rolling hash，再稍微談 amortized analysis；有時間再談好與壞的 hash function。",
+     "t": 21
+    },
+    {
+     "text": "先回想：rolling hash 要解決的是什麼問題？",
+     "t": 32
+    }
+   ]
+  },
+  {
+   "title": "字串比對與 sliding window",
+   "scene": "algmit3-window-the",
+   "points": [
+    {
+     "text": "問題：在一份大文件（長字串）裡有效率地找一個小字串，例如在 \"the fox is\" 裡找 \"the\"。",
+     "t": 64
+    },
+    {
+     "text": "暴力法：把 key 疊在每個位置逐字比，每次比對 O(k)。",
+     "t": 93
+    },
+    {
+     "text": "文件長 n、key 長 k → O(n·k)，想要更好。",
+     "t": 132
+    },
+    {
+     "text": "取前 k = 3 個字元當 sliding window，算視窗的 hash，跟 key 的 hash 比。",
+     "t": 202
+    },
+    {
+     "text": "視窗右移一格：拿掉 t、放進空白（空白也是字元）；hash 不同 → 一定不是同一個字串。",
+     "t": 224
+    },
+    {
+     "text": "若某處（例如 \"is\" 附近）視窗 hash 剛好等於 key 的 hash，還是要逐字比對：相同才是 match，不同就繼續滑。",
+     "t": 270
+    }
+   ]
+  },
+  {
+   "title": "Collision 與執行時間",
+   "scene": "algmit3-collision",
+   "points": [
+    {
+     "text": "學生問：能不能設計沒有 false positive 的 hash function？",
+     "t": 330
+    },
+    {
+     "text": "例：在 1GB 字串裡找 1MB 的 MP3，輸入是一百萬字元的字串。",
+     "t": 352
+    },
+    {
+     "text": "hash 要回傳小整數，最好放得進一個 word（32-bit／64-bit）。",
+     "t": 390
+    },
+    {
+     "text": "輸入有 256^(10⁶) 種，輸出只有 2³² ≈ 40 億種 → 一定有 collision：x₁ ≠ x₂ 但 h(x₁) = h(x₂)。",
+     "t": 470
+    },
+    {
+     "text": "只能期望 hash 表現得像隨機：false positive 約每 |O| 次一次（1/2³²）。",
+     "t": 535
+    },
+    {
+     "text": "直接算 k 個字元的 hash 是 O(k)；先假設有神奇方法讓 hash 變 O(1)。",
+     "t": 612
+    },
+    {
+     "text": "總時間 = match 數·O(k) + 不符數·O(1)；false positive 很少 → 每個字元約 O(1)，整體 O(n)。",
+     "t": 658
+    }
+   ]
+  },
+  {
+   "title": "Rolling hash 的操作",
+   "scene": "algmit3-rh-ops",
+   "points": [
+    {
+     "text": "Rolling hash 是一個資料結構：對 sliding window 裡的字串快速算 hash。",
+     "t": 703
+    },
+    {
+     "text": "兩個 update：skip（講義的名稱，老師想成 pop）拿掉最左邊、append(c) 從右邊加入。",
+     "t": 743
+    },
+    {
+     "text": "query：hash() 回傳目前視窗內容的 hash。",
+     "t": 799
+    },
+    {
+     "text": "例：裡面放 T、H、E，可以 append 一個字元、skip 一個字元。",
+     "t": 809
+    },
+    {
+     "text": "為了讓整個演算法成立，這三個操作都要 O(1)。",
+     "t": 841
+    }
+   ]
+  },
+  {
+   "title": "Base 100 的例子：mod 23",
+   "scene": "algmit3-base100",
+   "points": [
+    {
+     "text": "字串是字元序列、字元就是數字 → 改用數字來想；用 base 100 方便手算（ASCII 是 base 256）。",
+     "t": 867
+    },
+    {
+     "text": "數列 3 14 15 92 65 35 89 79 31（每個都是一個 base-100 digit），視窗大小 5。",
+     "t": 893
+    },
+    {
+     "text": "hash = k mod p，p 要取質數（之後會知道為什麼），例 p = 23。",
+     "t": 949
+    },
+    {
+     "text": "第一個視窗 314159265 mod 23 = 11；第二個視窗 1415926535 mod 23 = 6。",
+     "t": 1031
+    }
+   ]
+  },
+  {
+   "title": "slide(old, new)：推導 n 的更新",
+   "scene": "algmit3-slide-n",
+   "points": [
+    {
+     "text": "定義 slide：傳入要滑進來的 new 與要滑出去的 old（這裡 old = 3、new = 35）。",
+     "t": 1071
+    },
+    {
+     "text": "目標：內部 hash 從 11 變成 6；先不管 hash，看大數 n。",
+     "t": 1107
+    },
+    {
+     "text": "mod 大數、除法都慢；用減法：去掉 3 要減「3 後面一串 0」= 3·100⁴（base 100 一個 digit 兩位數）。",
+     "t": 1171
+    },
+    {
+     "text": "n ← n − old·base^(k−1)，k = 5 是視窗大小。",
+     "t": 1229
+    },
+    {
+     "text": "再乘 base（補兩個 0）並加上 35 → 1415926535，正確。",
+     "t": 1285
+    },
+    {
+     "text": "把 base 分配進去：n·base − old·base^k + new；把 k 改名為 size，因為之後拆成 append/skip，size 會變。",
+     "t": 1322
+    }
+   ]
+  },
+  {
+   "title": "hash 與 magic",
+   "scene": "algmit3-hash-magic",
+   "points": [
+    {
+     "text": "要從 n 得到 hash：mod p → hash = (n·base − old·base^size + new) mod p。",
+     "t": 1367
+    },
+    {
+     "text": "mod 可以分配到加減上；n mod p 就是目前的 hash。",
+     "t": 1406
+    },
+    {
+     "text": "n 和 base^size 是大數；base、old、new、p 都是小數字，大數運算不是 O(1)。",
+     "t": 1486
+    },
+    {
+     "text": "repeated squaring 算 base^size 也要 O(log size)；size 可能是輸入的一部分，不是常數。",
+     "t": 1548
+    },
+    {
+     "text": "它是常數 → 預先算好存起來，命名為 magic = base^size mod p。",
+     "t": 1586
+    },
+    {
+     "text": "hash = (hash·base − old·magic + new) mod p，常數時間。",
+     "t": 1610
+    }
+   ]
+  },
+  {
+   "title": "init 與 append",
+   "scene": "algmit3-append",
+   "points": [
+    {
+     "text": "寫 pseudocode：把 slide 拆成 append 與 skip；hash 永遠是 mod p 的小數字。",
+     "t": 1622
+    },
+    {
+     "text": "constructor（init）給 base 與 p，建立空的 rolling hash。",
+     "t": 1685
+    },
+    {
+     "text": "空的：hash = 0；size = 0 → magic = base⁰ = 1。",
+     "t": 1720
+    },
+    {
+     "text": "append(new)：hash = (hash·base + new) mod p。",
+     "t": 1791
+    },
+    {
+     "text": "千萬別漏 mod p：Python 會用大數照算、答案也對，但 hash 越長越大、程式越跑越慢。",
+     "t": 1806
+    },
+    {
+     "text": "size 加 1 → magic = magic·base mod p。",
+     "t": 1845
+    },
+    {
+     "text": "p 可以比 base 大；false positive 約 1/p，所以 p 要盡量接近 word size。",
+     "t": 1861
+    }
+   ]
+  },
+  {
+   "title": "skip：負數與 p·base",
+   "scene": "algmit3-skip-neg",
+   "points": [
+    {
+     "text": "實作 skip：hash 要減掉 old·magic。",
+     "t": 1900
+    },
+    {
+     "text": "如果 old·magic 比 hash 大，會得到負數。",
+     "t": 1943
+    },
+    {
+     "text": "數學上 −3 mod 23 = 20（mod 永遠非負）；但程式語言的 % 可能回傳 −3，結果就錯了。",
+     "t": 1959
+    },
+    {
+     "text": "加上 p 的任何倍數，mod p 結果不變（例如 −3 + 23 = 20）。",
+     "t": 1998
+    },
+    {
+     "text": "magic < p、old < base → old·magic < base·p，所以加上 p·base 一定變正。",
+     "t": 2041
+    }
+   ],
+   "trap": "補充：old 的權重是 base^(size−1)，所以 skip 時要先把 magic 乘 ibase（降一階）再算 hash − old·magic；板書把兩步的順序寫反時，要用 magic/base。另外 Python 的 % 其實回傳非負，C、Java 的 % 才會給負數。"
+  },
+  {
+   "title": "乘法反元素",
+   "scene": "algmit3-inverse",
+   "points": [
+    {
+     "text": "skip 第二部分：size 減 1，magic 要除以 base；但 magic = 5、base = 100 時除不盡，要留在整數。",
+     "t": 2108
+    },
+    {
+     "text": "mod 質數 p 時，1 到 p−1 的每個 a 都有 multiplicative inverse a⁻¹，乘 a⁻¹ 會抵銷乘 a。",
+     "t": 2163
+    },
+    {
+     "text": "例：6⁻¹ = 4，因為 6·4 = 24 ≡ 1 (mod 23)。",
+     "t": 2217
+    },
+    {
+     "text": "驗證：7·6 = 42 ≡ 19，19·4 = 76 ≡ 7，回到 7。",
+     "t": 2236
+    },
+    {
+     "text": "magic = magic·base⁻¹ mod p；Python 標準函式庫算得出反元素。",
+     "t": 2307
+    },
+    {
+     "text": "base 不變 → 反元素再慢也只要在 init 算一次：ibase = base⁻¹ mod p。",
+     "t": 2334
+    }
+   ]
+  },
+  {
+   "title": "回顧：每個操作都是 O(1)",
+   "scene": "algmit3-rh-code",
+   "points": [
+    {
+     "text": "整理：從 n 出發，靠 mod p 把大數都消掉，rolling hash 裡只剩小數字。",
+     "t": 2381
+    },
+    {
+     "text": "唯一的變化球是乘法反元素，它只在 init 算，不屬於 rolling hash 的操作。",
+     "t": 2403
+    },
+    {
+     "text": "append：都是小數字運算，O(1)。",
+     "t": 2426
+    },
+    {
+     "text": "skip：O(1)。",
+     "t": 2439
+    },
+    {
+     "text": "hash()：hash 一直都算好，直接 return，O(1)。",
+     "t": 2474
+    }
+   ]
+  },
+  {
+   "title": "Q&A：shift、magic 與 caterpillar",
+   "scene": "algmit3-caterpillar",
+   "points": [
+    {
+     "text": "問：能不能用 bit shift？等於存整個大數，hash() 時要對大數 mod p → O(size)，不行。",
+     "t": 2516
+    },
+    {
+     "text": "問：為何要 magic？base^size 可能很大，不能每次 append 都重算。",
+     "t": 2583
+    },
+    {
+     "text": "問：視窗大小不是固定嗎？若只做固定視窗可以，但這裡實作的是支援任意 append/skip 的通用版本。",
+     "t": 2636
+    },
+    {
+     "text": "比較像 caterpillar hash：append 時 size 變大、skip 時變小。",
+     "t": 2692
+    },
+    {
+     "text": "就算每次都縮了又長，仍然每個操作 O(1)；固定視窗寫起來反而更亂。",
+     "t": 2736
+    },
+    {
+     "text": "hash 與 magic 一直都在 0 到 p 之間。",
+     "t": 2811
+    }
+   ]
+  },
+  {
+   "title": "p 的取捨與質數",
+   "scene": "algmit3-p-prime",
+   "points": [
+    {
+     "text": "false positive 約 1/O，O 是 hash 可能輸出的數量，rolling hash 是 p 個 → 約 1/p。",
+     "t": 2834
+    },
+    {
+     "text": "兩股力量：p 大 → false positive 少；p 小 → 運算快。這就是 trade-off。",
+     "t": 2871
+    },
+    {
+     "text": "合理答案：p 放得進一個 word（一個 CPU 指令），取略小於 2³² 的質數。",
+     "t": 2891
+    },
+    {
+     "text": "p 要是質數，乘法反元素才保證存在。",
+     "t": 2930
+    },
+    {
+     "text": "例 mod 8：2⁻¹ 不存在；3·3 = 9 ≡ 1，3·5 = 15 ≡ 7，3·7 = 21 ≡ 5。",
+     "t": 2993
+    },
+    {
+     "text": "skip 改 magic 是為了維持 invariant：magic = base^size mod p。",
+     "t": 3070
+    }
+   ],
+   "trap": "補充：嚴格說 a 與模數互質就有唯一的反元素（mod 8 時 1、3、5、7 都有），反元素不會「不只一個」；需要的是 base 與 p 互質，取質數 p 最省事。"
+  },
+  {
+   "title": "Amortized：table doubling",
+   "scene": "algmit3-amort-chop",
+   "points": [
+    {
+     "text": "回到 amortized analysis（攤銷分析）。",
+     "t": 3142
+    },
+    {
+     "text": "長大的 table：有空位插入 O(1)；滿了要先 resize，成本是原有元素數 O(n)。",
+     "t": 3190
+    },
+    {
+     "text": "從大小 1 開始：第 1 個成本 1，第 2 個 resize 成本 2，第 3 個 resize 到 4，第 5 個 resize 到 8。",
+     "t": 3207
+    },
+    {
+     "text": "resize 到 8 之後接下來幾次都是 O(1)，再下一次變 16；便宜的很多、貴的很少。",
+     "t": 3247
+    },
+    {
+     "text": "像 dampening：把大成本切成小塊，分給前面便宜的插入。",
+     "t": 3256
+    },
+    {
+     "text": "成本每次加倍，間隔也每次加倍 → 切完每塊一樣大，每次大約是 3。",
+     "t": 3304
+    },
+    {
+     "text": "前 16 次插入的總成本是 O(n)，不是看最壞情況得到的 n²。",
+     "t": 3338
+    }
+   ]
+  },
+  {
+   "title": "BST：min + successor 的攤銷",
+   "scene": "algmit3-bst-succ",
+   "points": [
+    {
+     "text": "依序列出 BST 的 key：in-order traversal，O(n)。",
+     "t": 3374
+    },
+    {
+     "text": "另一種直覺寫法：先取 min 輸出，再一直呼叫 successor（next largest）直到 null。",
+     "t": 3387
+    },
+    {
+     "text": "successor 每次 O(log n)、共 n 次 → 上界 O(n log n)。",
+     "t": 3420
+    },
+    {
+     "text": "實際在樹上走：min 往下、successor 往上往下…最後一路回到根放棄。",
+     "t": 3441
+    },
+    {
+     "text": "每條邊剛好走兩次；n 個節點有 n − 1 條邊 → 總共 O(n)。",
+     "t": 3483
+    },
+    {
+     "text": "比 in-order traversal 更直觀的寫法，時間一樣。",
+     "t": 3521
+    },
+    {
+     "text": "pset 的 range query：find(L) 後一直 successor 到超過 H，時間 O(log n + 輸出數)。",
+     "t": 3532
+    }
+   ]
+  },
+  {
+   "title": "總結：amortized 看整串操作",
+   "scene": null,
+   "points": [
+    {
+     "text": "amortized：看全部操作而不是單一操作，快的多、慢的少。",
+     "t": 3623
+    },
+    {
+     "text": "這樣得到的平均成本，比「n × 單次最壞成本」更緊。",
+     "t": 3641
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Karp-Rabin 中，視窗的 hash 等於 key 的 hash 時該怎麼做？",
+   "opts": [
+    "逐字比對，相同才算 match",
+    "直接回報 match",
+    "換一個 hash function 重算",
+    "跳過這個位置"
+   ],
+   "ans": "逐字比對，相同才算 match",
+   "why": "collision 一定存在，hash 相同只是候選，要再 O(k) 確認。"
+  },
+  {
+   "q": "base 100、p = 23，視窗 3 14 15 92 65 的 hash 是 11，magic = 100⁵ mod 23 = 16。滑出 3、滑進 35 後的 hash？",
+   "opts": [
+    "6",
+    "11",
+    "8",
+    "20"
+   ],
+   "ans": "6",
+   "why": "(11·100 − 3·16 + 35) mod 23 = 1087 mod 23 = 6。"
+  },
+  {
+   "q": "為什麼要預先存 magic = base^size mod p？",
+   "opts": [
+    "base^size 是大數，連 repeated squaring 也要 O(log size)",
+    "因為 p 是質數",
+    "為了減少 collision",
+    "為了讓 hash 是負數"
+   ],
+   "ans": "base^size 是大數，連 repeated squaring 也要 O(log size)",
+   "why": "每次 append 只要 magic·base mod p，維持 O(1)。"
+  },
+  {
+   "q": "skip 時算 hash − old·magic 為什麼要先加上 p·base？",
+   "opts": [
+    "old·magic < base·p，加上後一定非負，mod p 結果不變",
+    "為了讓 hash 變大以減少 false positive",
+    "因為 base 是質數",
+    "為了更新 magic"
+   ],
+   "ans": "old·magic < base·p，加上後一定非負，mod p 結果不變",
+   "why": "部分語言的 % 對負數回傳負值。"
+  },
+  {
+   "q": "mod 23 下 6 的乘法反元素是？",
+   "opts": [
+    "4",
+    "6",
+    "17",
+    "19"
+   ],
+   "ans": "4",
+   "why": "6·4 = 24 ≡ 1 (mod 23)。"
+  },
+  {
+   "q": "從大小 1 的 table 開始、滿了就加倍，前 16 次插入的總成本量級是？",
+   "opts": [
+    "Θ(n)",
+    "Θ(n²)",
+    "Θ(n log n)",
+    "Θ(log n)"
+   ],
+   "ans": "Θ(n)",
+   "why": "重建成本 1、2、4、8… 等比級數，攤銷每次 O(1)。"
+  },
+  {
+   "q": "用 min 加 n 次 successor 列出 BST 全部 key，總時間？",
+   "opts": [
+    "O(n)",
+    "O(n log n)",
+    "O(n²)",
+    "O(log n)"
+   ],
+   "ans": "O(n)",
+   "why": "每條邊剛好走兩次，n − 1 條邊。"
+  }
+ ]
+}

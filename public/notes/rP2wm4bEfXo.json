@@ -1,0 +1,676 @@
+{
+ "video": "rP2wm4bEfXo",
+ "label": "交大江蕙如 Lec04 Chapter 2 Algorithm Analysis (1/2)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "單元介紹：演算法、資料結構、程式一體三面",
+   "scene": "algjiang2-trinity",
+   "points": [
+    {
+     "text": "演算法的好壞取決於怎麼分析它；學設計演算法之前，要先懂遊戲規則。",
+     "t": 15
+    },
+    {
+     "text": "本單元兩部分：怎麼分析 procedure 的 efficiency，以及 Gale-Shapley 要怎麼 implement 才會快。",
+     "t": 54
+    },
+    {
+     "text": "Algorithm、Data Structure、Programming 是一體三面的事情。",
+     "t": 90
+    },
+    {
+     "text": "先從 high level 分析問題、設計演算法，經 logical proof 確認正確、run time 合理，再進行 implementation。",
+     "t": 108
+    },
+    {
+     "text": "好的演算法要配合適的 data structure；配錯了，整體執行速度就被拖慢。",
+     "t": 132
+    },
+    {
+     "text": "寫程式時「怎麼寫、演算法、背後的 data structure」三件事同時發生，所以實作上難度最高。",
+     "t": 198
+    },
+    {
+     "text": "爛演算法受限於本身的限制，寫得再厲害也快不起來。",
+     "t": 244
+    },
+    {
+     "text": "壞演算法配上 100 分的 programmer，最多也只有 70 分。",
+     "t": 338
+    }
+   ]
+  },
+  {
+   "title": "好的演算法：正確 + 有效率",
+   "scene": "algjiang2-effective-efficient",
+   "params": {
+    "v": 2
+   },
+   "points": [
+    {
+     "text": "好演算法第一件事：先求正確，答案不對就沒有快慢之分。",
+     "t": 388
+    },
+    {
+     "text": "正確性靠 logical proof 保證，例如上一單元的反證法或直接推導。",
+     "t": 432
+    },
+    {
+     "text": "Efficient：寫成程式後跑得快，而且需要的 memory 越少越好。",
+     "t": 455
+    },
+    {
+     "text": "Efficiency 就是對 resource 的需求，分兩個 dimension：時間與空間。",
+     "t": 483
+    },
+    {
+     "text": "Run time 的分析叫 time complexity；memory requirement 的分析叫 space complexity。",
+     "t": 503
+    },
+    {
+     "text": "本課重點放在 running time，而且用 complexity 的角度看，不是用幾分幾秒。",
+     "t": 538
+    },
+    {
+     "text": "處理 5 對和 100 對男女的時間不同 → efficiency 跟 input size 有關，關心的是成長的幅度。",
+     "t": 594
+    }
+   ]
+  },
+  {
+   "title": "Babbage：轉幾圈代表 running time",
+   "scene": "algjiang2-babbage-crank",
+   "points": [
+    {
+     "text": "設計演算法時還沒寫成程式，也要能談它快還是慢。",
+     "t": 671
+    },
+    {
+     "text": "最早可追溯到 19 世紀的 Babbage，第一個提出可以分析 running time 的概念。",
+     "t": 709
+    },
+    {
+     "text": "他想做一台能做運算的機器 Analytical Engine，但經費一直找得不順。",
+     "t": 735
+    },
+    {
+     "text": "後人依他的手稿把機器做出來，真的會動。",
+     "t": 770
+    },
+    {
+     "text": "機器右邊有搖桿，每轉一圈機器就動作一次。",
+     "t": 804
+    },
+    {
+     "text": "完成一個 task 要轉幾圈：轉越多圈 running time 越長、複雜度越高。",
+     "t": 813
+    }
+   ],
+   "trap": "補充：依手稿造出來的是 Difference Engine No. 2（1991 年完成，在倫敦 Science Museum）；Analytical Engine 至今沒有完整造出來。老師說的「大英博物館」應指這台。"
+  },
+  {
+   "title": "Proposal 1：real input 上跑得快？",
+   "scene": "algjiang2-def1-flaws",
+   "points": [
+    {
+     "text": "第一個 proposal：演算法寫成程式後，在 real input instance 上跑得很快就是 efficient。",
+     "t": 885
+    },
+    {
+     "text": "「跑得很快」不精確：同一程式在高速電腦中心和三年前的 notebook 上跑，run time 差很多。",
+     "t": 924
+    },
+    {
+     "text": "再爛的演算法遇到很厲害的電腦也能跑很快 → 變成相對概念，不公平。",
+     "t": 976
+    },
+    {
+     "text": "Real input instance 也很難掌握：設計者不知道使用者會餵什麼 instance。",
+     "t": 1004
+    },
+    {
+     "text": "A、B 兩位同學的程式在 n = 100 時差不多快，到 100 萬時才分出高下 → 要看成長趨勢。",
+     "t": 1058
+    },
+    {
+     "text": "希望分析時能看出演算法對 input size 的 scalability：input 急速成長時，run time 只微幅上升。",
+     "t": 1105
+    },
+    {
+     "text": "所以 run time 的分析要跟機器完全無關。",
+     "t": 1193
+    },
+    {
+     "text": "也要跟 instance 無關，而且隨 input size 的成長趨勢可以預測。",
+     "t": 1209
+    }
+   ]
+  },
+  {
+   "title": "Stable matching 的 input size",
+   "scene": "algjiang2-input-2n2",
+   "points": [
+    {
+     "text": "Stable matching 的 input：n 個男生、n 個女生，加上各自的 preference list。",
+     "t": 1241
+    },
+    {
+     "text": "每個男生的 list 長 n，所以男生共 n × n 格；女生也是 n × n 格。",
+     "t": 1253
+    },
+    {
+     "text": "Input size 總共 2n² 格。",
+     "t": 1268
+    },
+    {
+     "text": "希望把 procedure 的 running time 寫成 function of n 的形式。",
+     "t": 1308
+    },
+    {
+     "text": "它不是一個絕對數字，會隨 input size 變動。",
+     "t": 1327
+    }
+   ]
+  },
+  {
+   "title": "Worst case vs average case",
+   "scene": "algjiang2-worst-avg",
+   "points": [
+    {
+     "text": "寫程式的人常常不知道別人會怎麼用、會遇到什麼樣的 instance。",
+     "t": 1348
+    },
+    {
+     "text": "取公平一點的做法：大家都拿 worst case 來比，不拿最好的。",
+     "t": 1376
+    },
+    {
+     "text": "Worst case 表示「最差也不過如此」；最差都能接受，使用者對平常表現會更滿意。",
+     "t": 1393
+    },
+    {
+     "text": "為什麼不用 average case？實務上確實有人用。",
+     "t": 1433
+    },
+    {
+     "text": "但理論上 average case 要先知道 input 的分布，通常不知道，就說不清楚什麼叫 average。",
+     "t": 1455
+    },
+    {
+     "text": "程式競賽：主辦單位給一組 benchmark，在這組 benchmark 上取平均比較。",
+     "t": 1496
+    },
+    {
+     "text": "理論分析不知道 instance 長相，常常某個 instance 跑很好、另一個就很差。",
+     "t": 1542
+    }
+   ]
+  },
+  {
+   "title": "跟 brute force 比",
+   "scene": "algjiang2-brute-baseline",
+   "points": [
+    {
+     "text": "常拿來比較的對象是「肉腳」：brute force。",
+     "t": 1590
+    },
+    {
+     "text": "沒有任何特殊 idea 時，只能把每個可能的答案都試一遍，再看哪個最好。",
+     "t": 1609
+    },
+    {
+     "text": "Brute force 已經試過所有可能，再怎麼設計也不會比它差，是最低標準。",
+     "t": 1633
+    },
+    {
+     "text": "可以看出經過你的設計與思考之後，比沒用大腦的結果改善多少。",
+     "t": 1650
+    },
+    {
+     "text": "常常只要稍微花一點心思，就能得到很大的 improvement。",
+     "t": 1681
+    }
+   ]
+  },
+  {
+   "title": "Proposal 2：qualitatively 更好的 worst case",
+   "scene": "algjiang2-brute-baseline",
+   "params": {
+    "v": 2
+   },
+   "points": [
+    {
+     "text": "（下一堂課）繼續 efficiency 的定義，先總結前面的討論。",
+     "t": 1703
+    },
+    {
+     "text": "Proposal 2：efficient 就是能達到 qualitatively 比較好的 worst-case performance。",
+     "t": 1733
+    },
+    {
+     "text": "要根據一個可以分析的 model；比較的對象是 brute force。",
+     "t": 1770
+    },
+    {
+     "text": "需要用量化的方式描述實際的 running time。",
+     "t": 1809
+    },
+    {
+     "text": "但這個定義還不夠：沒照顧到 scalability，也就是 input size 很大時還快不快。",
+     "t": 1849
+    },
+    {
+     "text": "希望看到 performance 與 input size 的關係，才能推論 input 成長時 run time 變慢的幅度。",
+     "t": 1881
+    }
+   ]
+  },
+  {
+   "title": "Polynomial running time",
+   "scene": "algjiang2-poly-cnd",
+   "points": [
+    {
+     "text": "先介紹常用術語：polynomial running time（多項式）。",
+     "t": 1914
+    },
+    {
+     "text": "給定 input size N，running time 的上限可以被 c·N^d bound 住，c、d 都是大於 0 的常數。",
+     "t": 1960
+    },
+    {
+     "text": "投影片上藍色的字代表大家都這樣叫的 terminology。",
+     "t": 2000
+    },
+    {
+     "text": "d 越小越好：d = 1 跟 input size 成正比，d = 2 就是二次成長。",
+     "t": 2041
+    },
+    {
+     "text": "d = 1/2（根號）成長速度更慢。",
+     "t": 2059
+    },
+    {
+     "text": "c·N^d 算的單位是 primitive computational step（運算步驟數）。",
+     "t": 2084
+    }
+   ]
+  },
+  {
+   "title": "Primitive computational step",
+   "scene": "algjiang2-primitive-step",
+   "points": [
+    {
+     "text": "Procedure 的一行 operation 可能對應很多步驟，問題是怎麼判定算一步還是 n 步。",
+     "t": 2129
+    },
+    {
+     "text": "操作型定義：一行組合語言 instruction 算一步；RISC 機器一個 instruction 約一個 cycle。",
+     "t": 2166
+    },
+    {
+     "text": "但 procedure 的描述比 C 還 high level，離 machine code 太遠，這個定義不實際。",
+     "t": 2223
+    },
+    {
+     "text": "也可以把標準程式語言的一行看成一步：一次比較（a 是否大於 b）、一次簡單 assignment（a = b + c）。",
+     "t": 2269
+    },
+    {
+     "text": "真正重點：刻度可以拉得很大（一步 = 100 個 cycle 也行），只要步驟跟 input size 無關。",
+     "t": 2315
+    },
+    {
+     "text": "例：輸入都是 32-bit 數字時，兩個 32-bit 數相加可視為單一步驟。",
+     "t": 2349
+    },
+    {
+     "text": "但把 n 個 input 加在一起，加法器一次加兩個數，要 n − 1 次加法，就是 n − 1 步。",
+     "t": 2389
+    },
+    {
+     "text": "步驟跟 input size 有關，表示切得太大，要切到跟 input size 無關才是 primitive step。",
+     "t": 2446
+    }
+   ]
+  },
+  {
+   "title": "Definition 3 與例外",
+   "scene": "algjiang2-poly-exceptions",
+   "points": [
+    {
+     "text": "Polynomial running time：要真的找得到常數 c 和 d，使 running time ≤ c·n^d。",
+     "t": 2482
+    },
+    {
+     "text": "Definition 3：演算法有 polynomial running time 就是 efficient。",
+     "t": 2521
+    },
+    {
+     "text": "討論的是 worst-case running time，不是 average case 或 best case。",
+     "t": 2546
+    },
+    {
+     "text": "經驗上大部分人設計的演算法 c、d 都比較小，所以 polynomial 就算快。",
+     "t": 2580
+    },
+    {
+     "text": "好處：不用再分析 brute force 去比較，直接看 procedure 本身是不是 polynomial。",
+     "t": 2621
+    },
+    {
+     "text": "例外：6.02×10²³ × n²⁰ 也是 polynomial，但 c、d 太大，實際上不可行。",
+     "t": 2690
+    },
+    {
+     "text": "老師建議：設計演算法最好不要超過 n²，真的不行就 n² log n。",
+     "t": 2795
+    },
+    {
+     "text": "反過來，有些演算法 worst case 是 exponential（2ⁿ、3ⁿ），但一般 input 不容易撞到 worst case，實務上很好用。",
+     "t": 2875
+    },
+    {
+     "text": "例子：Simplex method、Unix 的 grep。",
+     "t": 2930
+    },
+    {
+     "text": "理論上看 worst-case running time，跟實務使用有時有落差，要記在心裡。",
+     "t": 2975
+    }
+   ],
+   "trap": "補充：老師把 grep 描述成「比較兩個檔案的不同」，那其實是 diff；grep 是用 regular expression 搜尋文字。"
+  },
+  {
+   "title": "Running time 對照表",
+   "scene": "algjiang2-runtime-table",
+   "points": [
+    {
+     "text": "結論：有 polynomial 的 worst-case running time，就是 efficient。",
+     "t": 3013
+    },
+    {
+     "text": "表格的列是 input size n：10、30、50……一直到 100 萬。",
+     "t": 3035
+    },
+    {
+     "text": "欄是步驟數被 bound 住的形式：n、n log n、n²、n³、1.5ⁿ、2ⁿ、n!。",
+     "t": 3058
+    },
+    {
+     "text": "假設機器每秒能執行 100 萬個 high-level instruction；格子寫 very long 表示超過 10²⁵ 年。",
+     "t": 3079
+    },
+    {
+     "text": "n log n 與 n² 在這個範圍，大家大概還等得下去。",
+     "t": 3118
+    },
+    {
+     "text": "n³：input 不用太大，n = 10 萬就要 32 年。",
+     "t": 3144
+    },
+    {
+     "text": "VLSI design 實際的 input 隨便就 100 萬以上、甚至 billion 等級，所以設計有效率的演算法非常重要。",
+     "t": 3175
+    },
+    {
+     "text": "1.5ⁿ、2ⁿ、n! 在 input 非常小的時候就已經無法承受。",
+     "t": 3210
+    },
+    {
+     "text": "左邊屬於 polynomial；右邊寫不成 c·n^d，是 non-polynomial（exponential、階乘）。",
+     "t": 3226
+    },
+    {
+     "text": "也能用來分辨問題難度：有人找得到 polynomial-time 演算法的問題相對簡單，找不到的相對難。",
+     "t": 3277
+    }
+   ],
+   "trap": "補充：場景格子是依每秒 10⁶ 步自己算的（例如 n = 30 的 n! ≈ 8×10¹⁸ 年），跟課本表格的四捨五入可能略有出入。"
+  },
+  {
+   "title": "Asymptotic order of growth：只看最高次",
+   "scene": "algjiang2-drop-terms",
+   "points": [
+    {
+     "text": "Asymptotic order of growth 很重要，作業一定有、考試也一定考。",
+     "t": 3306
+    },
+    {
+     "text": "要談的是 intrinsic computational tractability：演算法本質上的 running time 表現。",
+     "t": 3321
+    },
+    {
+     "text": "重點放在三個符號：Big-O、Big-Ω、Θ；little o、little ω 不討論；之後主要用 Big-O。",
+     "t": 3352
+    },
+    {
+     "text": "一定以 worst case 來分析，不討論 best case。",
+     "t": 3402
+    },
+    {
+     "text": "給定 input size n，把需要的步驟總和寫成 function f(n)。",
+     "t": 3439
+    },
+    {
+     "text": "假設精細算出 1.62n² + 3.5n + 8 個步驟。",
+     "t": 3493
+    },
+    {
+     "text": "習慣上只取最高次方，low-order terms 不理，前面的係數也不重要，就說它是 n² 的表現。",
+     "t": 3539
+    },
+    {
+     "text": "太精細也沒意義：每個人切步驟的刻度不同，算出的係數會不同，但次方不會變。",
+     "t": 3585
+    },
+    {
+     "text": "連帶好處：都被 n² bound 住的演算法可以歸成同一個 class，方便做難度分類。",
+     "t": 3666
+    }
+   ]
+  },
+  {
+   "title": "O、Ω、Θ 的定義",
+   "scene": "algjiang2-bounds-def",
+   "points": [
+    {
+     "text": "T(n) 表示演算法在 input size n 之下的 worst-case running time。",
+     "t": 3742
+    },
+    {
+     "text": "看圖：想找另一個 function，在上面壓住或在下面接近 T(n) 這條線。",
+     "t": 3806
+    },
+    {
+     "text": "只要在 n 足夠大之後成立就好，前面一段沒有壓住沒關係。",
+     "t": 3871
+    },
+    {
+     "text": "Big-O（upper bound）：存在 n₀ 與常數 c > 0，使 n ≥ n₀ 時 T(n) ≤ c·f(n)。",
+     "t": 3911
+    },
+    {
+     "text": "Big-Ω（lower bound）：n 夠大時 c·f(n) ≤ T(n)，c > 0。",
+     "t": 3971
+    },
+    {
+     "text": "Θ（tight bound）：同時符合 upper 與 lower bound，兩邊的係數 c₁、c₂ 可以不同；兩者成長趨勢非常相似。",
+     "t": 4007
+    },
+    {
+     "text": "也可以用極限看：T(n)/f(n) 在 n → ∞ 時趨近某個常數，兩者就互為 Θ。",
+     "t": 4084
+    },
+    {
+     "text": "Asymptotic analysis 在數學上就是極限分析：看 input size 很大時 running time 的成長趨勢。",
+     "t": 4115
+    }
+   ],
+   "trap": "補充：Ω 的條件是 T(n) ≥ c·f(n)，老師講的時候先講反了一次再更正。極限法要求常數是有限的正數（> 0）才是 Θ。"
+  },
+  {
+   "title": "九題 yes/no 練習",
+   "scene": "algjiang2-nine-quiz",
+   "points": [
+    {
+     "text": "給定 T(n) = 1.62n² + 3.5n + 8，判斷九個敘述的對錯。",
+     "t": 4196
+    },
+    {
+     "text": "T(n) = O(n)：No，找不到常數 c 讓 T(n) ≤ c·n 一直成立。",
+     "t": 4212
+    },
+    {
+     "text": "T(n) = O(n²)：Yes；要找出 c 與夠大的 n₀，例如取 c = 2 再算 n₀。",
+     "t": 4250
+    },
+    {
+     "text": "作業裡要真的找出 c 和 n₀，不能只說 yes/no（除非是簡答題）。",
+     "t": 4294
+    },
+    {
+     "text": "T(n) = O(n³)：Yes，c·n³ 很容易超過 1.62n²，只是不夠 tight。",
+     "t": 4310
+    },
+    {
+     "text": "Ω(n)、Ω(n²)：Yes（係數取小一點）；Ω(n³)：No，壓不住。",
+     "t": 4361
+    },
+    {
+     "text": "Θ 要同時檢查 upper 與 lower bound（例如第 7 題看第 1、4 題），兩邊都成立才對。",
+     "t": 4390
+    },
+    {
+     "text": "雖然常寫 Big-O，分析時仍希望達到 Θ 等級：明明是 n²，說成 n³ 人家會生氣。",
+     "t": 4454
+    }
+   ],
+   "trap": "補充：c = 2 時 1.62n² + 3.5n + 8 ≤ 2n² 從 n₀ = 12 起成立（n = 11 時 242.52 > 242）。"
+  },
+  {
+   "title": "符號 abuse：= 其實是 ∈",
+   "scene": "algjiang2-set-notation",
+   "points": [
+    {
+     "text": "前面寫 T(n) = O(f(n)) 用的是等號，其實不太對。",
+     "t": 4531
+    },
+    {
+     "text": "f(n) = 5n³、g(n) = 3n²，兩者都可以寫成 O(n³)。",
+     "t": 4554
+    },
+    {
+     "text": "但並不代表 f(n) = g(n)，5n³ 當然不等於 3n²。",
+     "t": 4584
+    },
+    {
+     "text": "O(n³) 對應的是所有能被 n³ bound 住的函數，是一個集合，不是單一元素。",
+     "t": 4621
+    },
+    {
+     "text": "所以理論上應該用「屬於」∈（belong to）。",
+     "t": 4647
+    },
+    {
+     "text": "這是數學家 abuse notation；習慣上還是寫等號，但意思是屬於。",
+     "t": 4658
+    },
+    {
+     "text": "比喻：亞里斯多德是一個人，但任何一個人不一定是亞里斯多德。",
+     "t": 4692
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Stable matching（n 男 n 女，每人有完整 preference list）的 input size 是？",
+   "opts": [
+    "n",
+    "2n",
+    "n²",
+    "2n²"
+   ],
+   "ans": "2n²",
+   "why": "男生 n 個 list 各長 n（n × n 格），女生也是 n × n 格，共 2n²。"
+  },
+  {
+   "q": "理論分析 running time 為什麼通常用 worst case 而不是 average case？",
+   "opts": [
+    "worst case 比較好算",
+    "average case 要先知道 input 的分布，理論上通常不知道",
+    "average case 一定比 worst case 大",
+    "best case 才是標準"
+   ],
+   "ans": "average case 要先知道 input 的分布，理論上通常不知道",
+   "why": "worst case 表示「最差也不過如此」，比較公平；average case 需要 input 分布，實務上只能用 benchmark 平均。"
+  },
+  {
+   "q": "依 Definition 3，演算法 efficient 的意思是？",
+   "opts": [
+    "在真實 input 上跑得快",
+    "比 brute force 快",
+    "有 polynomial 的 worst-case running time",
+    "average case 是 O(n log n)"
+   ],
+   "ans": "有 polynomial 的 worst-case running time",
+   "why": "要找得到常數 c、d > 0，使 worst-case 步驟數 ≤ c·n^d。"
+  },
+  {
+   "q": "所有輸入都是 32-bit 整數時，「把 n 個數加起來」算幾個 primitive step？",
+   "opts": [
+    "1 步",
+    "32 步",
+    "n − 1 步",
+    "log n 步"
+   ],
+   "ans": "n − 1 步",
+   "why": "兩個 32-bit 數相加跟 n 無關可算一步；但 n 個數要做 n − 1 次加法，跟 n 有關就不能算一步。"
+  },
+  {
+   "q": "T(n) = 1.62n² + 3.5n + 8，下列何者錯誤？",
+   "opts": [
+    "T(n) = O(n³)",
+    "T(n) = Ω(n)",
+    "T(n) = Θ(n²)",
+    "T(n) = Ω(n³)"
+   ],
+   "ans": "T(n) = Ω(n³)",
+   "why": "c·n³ 終究會超過 T(n)，壓不到它下面；O(n³) 對但不 tight，Ω(n) 也對。"
+  },
+  {
+   "q": "每秒 10⁶ 個指令的機器，跑 n³ 步、n = 100,000，大約要多久？",
+   "opts": [
+    "3 小時",
+    "12 天",
+    "約 32 年",
+    "超過 10²⁵ 年"
+   ],
+   "ans": "約 32 年",
+   "why": "10¹⁵ 步 ÷ 10⁶ 步/秒 = 10⁹ 秒 ≈ 31.7 年。"
+  },
+  {
+   "q": "f(n) = 5n³、g(n) = 3n²，都寫成 O(n³)。下列何者正確？",
+   "opts": [
+    "f(n) = g(n)",
+    "O(n³) 是一個函數集合，f(n) ∈ O(n³)",
+    "g(n) 不能寫成 O(n³)",
+    "O(n³) 只代表 n³ 本身"
+   ],
+   "ans": "O(n³) 是一個函數集合，f(n) ∈ O(n³)",
+   "why": "等號是 abuse of notation，意思其實是屬於；兩個都屬於 O(n³) 推不出彼此相等。"
+  },
+  {
+   "q": "6.02×10²³ · n²⁰ 的 running time 屬於？",
+   "opts": [
+    "polynomial，而且實務可行",
+    "polynomial，但 c、d 太大實務上不可行",
+    "exponential",
+    "不能分析"
+   ],
+   "ans": "polynomial，但 c、d 太大實務上不可行",
+   "why": "c、d 都是正常數所以是 polynomial，但這是 Definition 3 照顧不到的例外。"
+  }
+ ]
+}
