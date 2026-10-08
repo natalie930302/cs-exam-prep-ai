@@ -851,15 +851,25 @@ export default function (ctx) {
   const FRAG = [];
   // ═══ avllin.js ═══
   {
-// ─── cH8nH0Enjhw：台大林軒田 DSA AVL Tree（RL）/ 2-3-4 Tree / Red-Black Tree ───
+// ─── cH8nH0Enjhw：台大林軒田 DSA AVL Tree（RL）/ 2-3-4 Tree / Red-Black Tree — cued: each step(tok) waits for its sentence ───
 // 例子取自影片：RR 複習 1、2、3；RL 特例 3、5、4；RL 通例 A、B、C、AL、BR、CL、CR；
 // 網路 demo 依序插入 1、2、3、15、14、13，再刪 1、2、15 與非 leaf 的 13；
 // 2-3-4 樹 5 16 / 3 | 7 11 14 | 18 21（插 2、20、13、23）；依序插入 1…10；
 // 紅黑樹對應 2 5 / 1 | 3 4 | 6 7 8（插 1.5、4.5、1.8、9）。
 // 高度以層數計，bf = hL − hR；紅黑樹：黑 = 一家的代表，紅 = 跟班。
-const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, showL, anim, line, arrow, ghostBox, GOLD, GREEN, RED } = K;
-const RBR = '#d64545', RBB = '#2b2b2b';
+// Little helpers make it lively: a 'pkt' tag walks the search path, 'say' bubbles let nodes talk,
+// buddies (同學 / AVL / 紅黑樹 / 組長…) react with moods.
+const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, showL, anim, line, arrow, ghostBox, code, step, buddy, prop, bob, travel, remove, GOLD, GREEN, RED } = K;
+const RBR = '#d64545', RBB = '#2b2b2b', RBN = '#9aa3ad';
 const NO = (s) => '<span class="no">' + s + '</span>', OK = (s) => '<span class="ok">' + s + '</span>';
+const pkt = (t, x, y, z = 0.5) => tag(t, 'pkt', x, y, z);
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const bubble = (t, x, y, z = 0.4) => tag(t, 'say', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+// walk a label through a list of points (each hop is short, so a step's motion stays ≤ ~2 s)
+async function walk(tok, l, pts, ms = 380) { l.position.copy(pts[0]); for (let i = 1; i < pts.length; i++) await travel(tok, l, pts[i - 1], pts[i], ms); }
+const asker = (x, z = 2.2, s = 0.65) => { const b = buddy('同學', '?', '#f4c27a', x, 0, z, s); b.mood('wow'); return b; };
 
 // ── BST / AVL / 紅黑樹共用：小 BST + 依 inorder 排版 ──
 const mkN = (k, c) => ({ k, l: null, r: null, c: c || 'B' });
@@ -879,17 +889,17 @@ function rotUp(t, a, dir) { // 'L'：右小孩拉上來；'R'：左小孩拉上�
   return b;
 }
 function firstBad(t, k) {
-  let x = t.root, bad = null;
-  while (x) { if (Math.abs(hgt(x.l) - hgt(x.r)) > 1) bad = x; if (k === x.k) break; x = k < x.k ? x.l : x.r; }
-  return bad;
+  let x = t.root, bd = null;
+  while (x) { if (Math.abs(hgt(x.l) - hgt(x.r)) > 1) bd = x; if (k === x.k) break; x = k < x.k ? x.l : x.r; }
+  return bd;
 }
 function anyBad(n) { if (!n) return null; return anyBad(n.l) || anyBad(n.r) || (Math.abs(hgt(n.l) - hgt(n.r)) > 1 ? n : null); }
 function delLeaf(t, k) { const n = findN(t, k), p = parOf(t, n); if (!p) t.root = null; else if (p.l === n) p.l = null; else p.r = null; }
 function TV(t, o = {}) {
   const dx = o.dx || 1.25, dy = o.dy || 1.45, top = o.top || 5.4, cx = o.cx || 0, sz = o.sz || 0.85;
-  const cubes = new Map(), labs = new Map(); let edges = [], labsOn = true;
+  const cubes = new Map(), labs = new Map(); let edges = [], labsOn = o.labs !== false;
   const v = { t, cubes, P: new Map() };
-  const colOf = (n) => (o.rb ? (n.c === 'R' ? RBR : RBB) : colorFor(n.k));
+  const colOf = (n) => (o.rb ? (n.c === 'R' ? RBR : n.c === 'B' ? RBB : RBN) : colorFor(n.k));
   v.sync = (newK) => {
     const arr = [];
     (function io(n, d) { if (!n) return; io(n.l, d + 1); arr.push([n, d]); io(n.r, d + 1); })(t.root, 0);
@@ -908,21 +918,28 @@ function TV(t, o = {}) {
         const b = hgt(n.l) - hgt(n.r);
         txt(l, o.lab(n)); l.position.set(p.x + sz * 0.95, p.y + 0.5, 0);
         l.element.className = 'lab-label ' + (Math.abs(b) > 1 ? 'ptr' : 'idx'); showL(l, labsOn);
-        glow(m, Math.abs(b) > 1 ? RED : null);
+        glow(m, labsOn && Math.abs(b) > 1 ? RED : null);
       }
     }
   };
   v.c = (k) => cubes.get(k);
+  v.at = (k, dy = 0.85) => { const p = v.P.get(k); return V3(p.x, p.y + dy, 0.5); };
   v.showLabs = (on) => { labsOn = on; labs.forEach((l) => showL(l, on)); };
   return v;
 }
 const BF = (n) => { const b = hgt(n.l) - hgt(n.r); return 'bf ' + (b > 0 ? '+' + b : b); };
 const HT = (n) => 'h ' + hgt(n);
+// BST insertion with a little packet walking down the search path first
+async function walkIns(tok, tv, t, k, c) {
+  const ks = []; let x = t.root; while (x) { ks.push(x.k); x = k < x.k ? x.l : x.r; }
+  if (ks.length) { const p = pkt(String(k), 0, 0); await walk(tok, p, ks.map((q) => tv.at(q)), 360); remove(p); }
+  bstIns(t, k, c); tv.sync(k);
+}
 // AVL：找到失衡點後修正（單旋或雙旋，雙旋中間停一下）
-async function avlFix(t, tv, bad, tok) {
-  const b = hgt(bad.l) - hgt(bad.r);
-  if (b < -1) { const B = bad.r; if (hgt(B.l) > hgt(B.r)) { rotUp(t, B, 'R'); tv.sync(); await beat(tok, 1400); } rotUp(t, bad, 'L'); }
-  else { const B = bad.l; if (hgt(B.r) > hgt(B.l)) { rotUp(t, B, 'L'); tv.sync(); await beat(tok, 1400); } rotUp(t, bad, 'R'); }
+async function avlFix(t, tv, bd, tok) {
+  const b = hgt(bd.l) - hgt(bd.r);
+  if (b < -1) { const B = bd.r; if (hgt(B.l) > hgt(B.r)) { rotUp(t, B, 'R'); tv.sync(); await beat(tok, 1100); } rotUp(t, bd, 'L'); }
+  else { const B = bd.l; if (hgt(B.r) > hgt(B.l)) { rotUp(t, B, 'L'); tv.sync(); await beat(tok, 1100); } rotUp(t, bd, 'R'); }
   tv.sync();
 }
 function rbTree(spec) { const t = { root: null }; spec.forEach(([k, c]) => bstIns(t, k, c)); return t; }
@@ -931,11 +948,12 @@ const RB_EX = [[2, 'B'], [1, 'B'], [5, 'R'], [4, 'B'], [3, 'R'], [7, 'B'], [6, '
 // ── 2-3-4 樹：node = { ks, ch }；leaf 畫出「蟑螂腳」 ──
 const N4 = (ks, ch = []) => ({ ks, ch });
 function T4(o = {}) {
-  const kw = o.kw || 0.82, gap = o.gap || 0.55, dy = o.dy || 1.5, top = o.top || 5.4, legs = o.legs !== false;
+  const kw = o.kw || 0.82, gap = o.gap || 0.55, dy = o.dy || 1.5, top = o.top || 5.4;
   const cubes = new Map(); let deco = [];
-  const v = { root: null, cubes };
+  const v = { root: null, cubes, legs: o.legs !== false, cx: o.cx || 0 };
   v.sync = (newK) => {
     deco.forEach(kill); deco = [];
+    if (!v.root) return;
     let cur = 0;
     (function lay(n, d) {
       n._d = d;
@@ -943,7 +961,7 @@ function T4(o = {}) {
       n.ch.forEach((c) => lay(c, d + 1));
       n._x = (n.ch[0]._x + n.ch[n.ch.length - 1]._x) / 2;
     })(v.root, 0);
-    const sh = -(cur - gap) / 2 + (o.cx || 0);
+    const sh = -(cur - gap) / 2 + v.cx;
     const seen = new Set();
     (function draw(n) {
       const x0 = n._x + sh, y = top - n._d * dy, w = n.ks.length * kw, L = x0 - w / 2;
@@ -952,21 +970,29 @@ function T4(o = {}) {
       n.ks.forEach((k, i) => {
         seen.add(k);
         const x = L + kw * (i + 0.5);
-        if (!cubes.has(k)) cubes.set(k, cube(k, colorFor(k), [kw - 0.08, 0.7, 0.8], x, y, 0, k === newK ? 3 : 0));
+        if (!cubes.has(k)) cubes.set(k, cube(k, colorFor(k), [kw - 0.08, 0.7, 0.8], x, y, 0, (k === newK || (Array.isArray(newK) && newK.includes(k))) ? 3 : 0));
         else move(cubes.get(k), x, y, 0);
       });
       if (n.ch.length) n.ch.forEach((c, j) => { deco.push(line(L + kw * j, y - 0.4, c._x + sh, top - c._d * dy + 0.4, 0)); draw(c); });
-      else if (legs) for (let j = 0; j <= n.ks.length; j++) {
+      else if (v.legs) for (let j = 0; j <= n.ks.length; j++) {
         const lx = L + kw * j, ex = lx + (j - n.ks.length / 2) * 0.14;
         deco.push(line(lx, y - 0.4, ex, y - 0.95, 0, '#3a3024'), cube('', '#3a3024', [0.13, 0.13, 0.13], ex, y - 0.98, 0));
       }
     })(v.root);
     for (const [k, m] of [...cubes]) if (!seen.has(k)) { kill(m); cubes.delete(k); }
   };
+  v.clear = () => { deco.forEach(kill); deco = []; cubes.forEach(kill); cubes.clear(); v.root = null; };
   v.c = (k) => cubes.get(k);
   v.node = (k) => { const f = (n) => (n.ks.includes(k) ? n : n.ch.map(f).find(Boolean)); return f(v.root); };
   v.glowN = (n, c) => n.ks.forEach((k) => glow(cubes.get(k), c));
+  v.leaves = () => { const out = []; (function f(n) { if (!n.ch.length) out.push(n); else n.ch.forEach(f); })(v.root); return out; };
   return v;
+}
+// a packet walking the multi-way search path of key k (returns the packet; caller removes it)
+async function walk4(tok, tv, k) {
+  const pts = []; let n = tv.root;
+  for (;;) { pts.push(V3(n._px, n._py + 0.95, 0.5)); if (!n.ch.length) break; let i = 0; while (i < n.ks.length && k > n.ks[i]) i++; n = n.ch[i]; }
+  const p = pkt(String(k), 0, 0); await walk(tok, p, pts, 450); return p;
 }
 // 2-3-4 insertion：滿了就把第 2 個（中間偏左）抓上去，和老師的選法一致
 async function ins4(tv, k, hooks = {}) {
@@ -992,8 +1018,8 @@ async function ins4(tv, k, hooks = {}) {
 }
 const EX234 = () => N4([5, 16], [N4([3]), N4([7, 11, 14]), N4([18, 21])]);
 
-// ═════════ 1. Q&A：為什麼 AVL 插入後的修正是 O(1) ═════════
-FRAG.push(['avllin-maint-cost', '維護的力氣：AVL O(1)、heap 上浮 O(log n)、complete BST O(n)', async (tok) => {
+// ═════════ 1. Q&A：為什麼 AVL 插入後的修正是 O(1)（8 steps）═════════
+FRAG.push(['avllin-maint-cost', '維護的力氣：AVL O(1)、heap 上浮 O(log n)、complete BST 整棵動', async (tok) => {
   fresh([0, 5, 12.5], [0, 3, 0]);
   const mini = (cx, name) => {
     const P = [[0, 5.2], [-1, 4.0], [1, 4.0], [-1.5, 2.8], [-0.5, 2.8], [0.5, 2.8], [1.5, 2.8]];
@@ -1003,86 +1029,158 @@ FRAG.push(['avllin-maint-cost', '維護的力氣：AVL O(1)、heap 上浮 O(log 
     return cs;
   };
   const avl = mini(-4.3, 'AVL'), heap = mini(0, 'heap'), cbt = mini(4.3, 'complete BST');
-  const cost = [tag('', 'ptr alt', -4.3, 1.8, 0), tag('', 'ptr alt', 0, 1.8, 0), tag('', 'ptr alt', 4.3, 1.8, 0)];
-  say('問：插入 search 就 O(log n)', '那 AVL 插入為什麼說修正 O(1)？');
-  await beat(tok, 2600);
+  const cost = [tag('', 'ptr alt', -4.3, 1.9, 0), tag('', 'ptr alt', 0, 1.9, 0), tag('', 'ptr alt', 4.3, 1.9, 0)];
+  const q = asker(-6.5, 2.4);
+  await step(tok);                                   // 8:31 插入就是先 binary search…為什麼 O(1)
+  const qb = bubble('insert 不是也要 O(log n)？', -5.6, 1.6, 2.4);
+  say('問：插入要先 search，就 O(log n) 了', '為什麼說 AVL 修正是 O(1)？');
+  await step(tok);                                   // 8:44 在原本 log n 之外還要花多少力氣
+  kill(qb);
   for (const T of [avl, heap, cbt]) for (const i of [0, 2, 5]) glow(T[i], GOLD);
-  say('先走到底：search 本來就 O(log n)', '問的是之後「維護」多花多少');
-  await beat(tok, 2800);
-  for (const T of [avl, heap, cbt]) for (const i of [0, 2, 5]) glow(T[i], null);
-  glow(avl[2], GREEN); txt(cost[0], 'O(1)');
-  say('AVL：只在一個點 rotate', '修完其他點都不用動');
-  await beat(tok, 2800);
-  for (const i of [5, 2, 0]) { glow(heap[i], GOLD); await beat(tok, 600); }
-  txt(cost[1], 'O(h) = O(log n)');
-  say('heap 上浮：可能一路浮到 root', '跟 h 有關也還好，h 被限制在 log n');
-  await beat(tok, 2600);
-  cbt.forEach((m) => glow(m, RED)); txt(cost[2], 'O(n)');
-  say('complete BST：整棵都要動', NO('這就不太好'));
-  await beat(tok, 2800);
-  say('RR 修一次就高枕無憂', 'insert = O(log n) 找 + O(1) 修');
-  await beat(tok, 3000);
+  const hand = pkt('search 往下走', -4.3, 6.0);
+  await walk(tok, hand, [V3(-4.3, 5.9, 0.5), V3(-3.3, 4.7, 0.5), V3(-3.8, 3.5, 0.5)], 500);
+  say('往下找的 O(log n) 本來就要花', '問的是：之後「調整」還要多花多少');
+  await step(tok);                                   // 9:11 RR rotation：local 修正一次
+  remove(hand); for (const T of [avl, heap, cbt]) for (const i of [0, 2, 5]) glow(T[i], null);
+  glow(avl[2], GREEN); txt(cost[0], '修正 O(1)');
+  const fx = bubble('只修我這裡', -3.0, 4.7, 0.4);
+  say('AVL 的 RR：只在那一個點 rotate', '那裡修好，其他地方也都滿足 AVL');
+  await step(tok);                                   // 9:42 heap：放最後再一路浮上來
+  kill(fx);
+  const up = pkt('上浮', 0.5, 3.4);
+  for (const i of [5, 2, 0]) glow(heap[i], GOLD);
+  await walk(tok, up, [V3(0.5, 3.4, 0.5), V3(1, 4.6, 0.5), V3(0, 5.8, 0.5)], 600);
+  txt(cost[1], '上浮 O(log n)');
+  say('heap insert：放最後，再一路浮上來', '可能浮很多層 → O(log n)');
+  await step(tok);                                   // 10:03 maintenance 的力氣
+  remove(up);
+  note('maintenance：insert 完之後的「維護」', 0, 0.9, 1.4);
+  say('這叫 maintenance 的力氣', 'AVL 額外的力氣是 constant');
+  await step(tok);                                   // 10:24 跟 h 有關也還好
+  txt(cost[1], 'O(h)，h ≤ O(log n)');
+  say('如果跟樹高 h 有關，也還好', '因為 h 被限制在 O(log n)');
+  await step(tok);                                   // 10:45 complete binary tree 整棵都動
+  cbt.forEach((m) => glow(m, RED)); txt(cost[2], '整棵都要動');
+  q.mood('sad');
+  say('用 complete BST 當 BST：', '插入後這邊動、那邊動 → ' + NO('不太好'));
+  await step(tok);                                   // 11:09 RR 一個地方修正，高枕無憂
+  q.mood('happy'); await q.hop(tok);
+  say('AVL 的 RR：一個地方修完', OK('就高枕無憂'));
 }]);
 
-// ═════════ 2. 複習 RR：1、2、3 ═════════
+// ═════════ 2. 複習 RR：1、2、3（13 steps）═════════
 FRAG.push(['avllin-rr-123', '複習 RR：插入 1、2、3，把 2 拉上來', async (tok) => {
   fresh([0, 5, 12], [0, 3, 0]);
-  const t = { root: null }; const tv = TV(t, { dx: 1.6, dy: 1.5, top: 5.6, lab: BF });
-  say('AVL：每棵 subtree 左右高度差 ≤ 1', 'bf = hL − hR ∈ {+1, 0, −1}');
-  await beat(tok, 2600);
-  bstIns(t, 1); tv.sync(1); await beat(tok, 1000);
-  bstIns(t, 2); tv.sync(2); await beat(tok, 1200);
-  bstIns(t, 3); tv.sync(3);
-  say('insert 3：塞到右邊的右邊', '追回去：1 的 bf = 0 − 2 = ' + NO('−2'));
-  await beat(tok, 2800);
-  tv.showLabs(false);
-  const sub = ghostBox('#dd8238', 1.0, 0.8, 1.0); sub.position.set(-0.8, 5.6 - 2 * 1.5, 0); sub.add(lab.label('2 的左子樹', 'idx'));
-  let orange = line(0, 5.6 - 1.5, -0.8, 5.6 - 2 * 1.5 + 0.4, 0, '#dd8238');
-  say('假如 2 有左子樹', '它比 1 大、比 2 小');
-  await beat(tok, 2600);
-  say('RR：把中間的 2 拉上來當 root', '1 只好降下來當 2 的小弟');
-  rotUp(t, t.root, 'L'); kill(orange); tv.sync();
-  await beat(tok, 1500);
-  orange = line(-1.6, 5.6 - 1.5, -0.8, 5.6 - 2 * 1.5 + 0.4, 0, '#dd8238');
-  const blue = line(0, 5.6, -1.6, 5.6 - 1.5, 0, '#2f6fd6');
-  tv.showLabs(true);
-  say('只改兩條 link：藍色 2–1、橘色子樹', '子樹改接到 1 的右邊；逆時針旋轉');
-  await beat(tok, 3200);
-  say('往回找要 O(log n)；修正只要幾行', '修一次就結束；LL 對稱');
-  await beat(tok, 3000);
+  const t = { root: null }; const tv = TV(t, { dx: 1.6, dy: 1.5, top: 5.6, lab: BF, labs: false });
+  await step(tok);                                   // 19:31 AVL tree 就是一棵 BST
+  note('AVL tree = BST + 平衡的規定', -4.4, 6.5, 0);
+  say('AVL tree：先是一棵 binary search tree', '再加一條「平衡」的規定');
+  await step(tok);                                   // 19:53 左右 subtree 高度相差在 1 以內
+  const rule = tag('|左高 − 右高| ≤ 1', 'ptr alt', 4.2, 6.5, 0);
+  say('每一棵 subtree：左高和右高', '相差要在 1 以內');
+  await step(tok);                                   // 20:07 balance factor
+  txt(rule, 'bf = 左高 − 右高 ∈ {+1, 0, −1}');
+  say('左高減右高 = balance factor（bf）', '只能是 +1、0、−1');
+  await step(tok);                                   // 20:22 先 follow BST insertion
+  bstIns(t, 1); tv.sync(1); await beat(tok, 600);
+  await walkIns(tok, tv, t, 2);
+  say('insertion：先照 BST 的規則往下塞', '塞到 leaf 之後，再檢查平衡');
+  await step(tok);                                   // 20:48 一路塞到右邊的右邊
+  await walkIns(tok, tv, t, 3);
+  say('insert 3：比 1 大往右、比 2 大再往右', '塞到「右邊的右邊」');
+  await step(tok);                                   // 21:18 追蹤回來看 bf
+  tv.showLabs(true); tv.sync();
+  const back = pkt('往回檢查 bf', 0, 0);
+  await walk(tok, back, [tv.at(3), tv.at(2), tv.at(1)], 600);
+  say('塞完沿路往回走，看每個 bf', '中間可能一串都沒問題');
+  await step(tok);                                   // 21:45 bf 變成 −2
+  remove(back);
+  const ow = bubble('我的 bf = −2！', -2.4, 6.6);
+  say('走到 1：左邊空、右邊高 2', '1 的 bf = 0 − 2 = ' + NO('−2'));
+  await step(tok);                                   // 22:58 把 2 拉上來當新的 root
+  kill(ow); rotUp(t, t.root, 'L'); tv.sync();
+  say('把中間的 2 拉上來當新 root', '1 降下來當小弟；3 還在 2 的右邊');
+  await step(tok);                                   // 23:34 只改兩個 node 的關係，逆時針
+  const blue = line(0, 5.6, -1.6, 4.1, 0, '#2f6fd6');
+  const rot = bubble('逆時針扭回來 ↺', 2.2, 6.6);
+  say('看似複雜，其實只改 1 和 2 的關係', '像把方向盤往回扭：逆時針旋轉');
+  await step(tok);                                   // 24:16 另一條 link：2 的左子樹
+  kill(rot);
+  const sub = ghostBox('#dd8238', 1.0, 0.8, 1.0); sub.position.set(-0.8, 2.6, 0); sub.add(lab.label('2 原本的左子樹', 'idx'));
+  line(-1.6, 4.1, -0.8, 3.0, 0, '#dd8238');
+  say('還有一條 link：2 原本的左子樹', '比 1 大、比 2 小 → 改接到 1 的右邊');
+  await step(tok);                                   // 25:04 放進去、找回來、修一次
   kill(blue);
+  const up = pkt('往回找：最多 O(log n)', 0, 0);
+  await walk(tok, up, [V3(1.6, 3.2, 0.5), V3(1.6, 4.9, 0.5), V3(0, 6.4, 0.5)], 600);
+  say('放進去、往回找、在某個地方修一次', '往回找最多花 O(log n)');
+  await step(tok);                                   // 25:44 修正本身只是幾行
+  remove(up);
+  good('修正本身：兩三行程式', 3.6, 5.6, 0);
+  say('找到地方以後，修正本身只有幾行', '修完就不用再往上找');
+  await step(tok);                                   // 26:09 對稱：左邊的左邊
+  note('LL（左邊的左邊）：鏡像，一樣修', 3.6, 1.6, 0);
+  say('對稱：塞很小的東西 → 左邊的左邊', 'LL 用鏡像的方式修');
 }]);
 
-// ═════════ 3. RL 特例：3、5、4 ═════════
+// ═════════ 3. RL 特例：3、5、4（15 steps）═════════
 FRAG.push(['avllin-rl-354', 'RL 特例：插入 3、5、4，兩次 rotate 讓 4 當頭', async (tok) => {
   fresh([0, 5, 12], [0, 3, 0]);
-  const t = { root: null }; const tv = TV(t, { dx: 1.6, dy: 1.5, top: 5.6, lab: BF });
-  say('今天的新情形：依序插入 3、5、4', '');
-  await beat(tok, 1800);
-  bstIns(t, 3); tv.sync(3); await beat(tok, 1100);
-  bstIns(t, 5); tv.sync(5);
-  say('5 在 3 的右邊：還是 AVL', 'bf 都合法');
-  await beat(tok, 1800);
-  bstIns(t, 4); tv.sync(4);
-  say('4：3 的右邊、5 的左邊', 'bf：4 = 0，5 = +1，3 = ' + NO('−2'));
-  await beat(tok, 3000);
+  const t = { root: null }; const tv = TV(t, { dx: 1.6, dy: 1.5, top: 5.6, lab: BF, labs: false });
+  let roles = [];
+  await step(tok);                                   // 26:54 插入 3、5、4：先放 3
+  bstIns(t, 3); tv.sync(3);
+  say('新的情形：依序插入 3、5、4', '先放 3：只有一個 node，當然平衡');
+  await step(tok);                                   // 27:18 放 5
+  await walkIns(tok, tv, t, 5);
+  say('放 5：比 3 大 → 3 的右邊', 'bf 都合法，還是 AVL');
+  await step(tok);                                   // 27:32 把 4 塞進去
+  await walkIns(tok, tv, t, 4);
+  say('麻煩的是 4：比 3 大、比 5 小', '→ 3 的右邊、5 的左邊');
+  await step(tok);                                   // 27:49 bf：4 是 0、5 是 +1、3 是 −2
+  tv.showLabs(true); tv.sync();
+  say('bf：4 是 0、5 是 +1、3 是 −2', NO('這不是合法的 AVL tree'));
+  await step(tok);                                   // 28:40 1、2、3 的理想：中間的當頭
+  const ideal = note('1、2、3 的理想：中間的 2 當頭', 4.4, 6.5, 0);
+  say('回想 1、2、3：把中間的 2 抓起來當頭', '1、3 在兩邊，就平衡了');
+  await step(tok);                                   // 29:02 3、5 都是極值
   glow(tv.c(3), GOLD); glow(tv.c(5), GOLD);
-  say('3、5 是極值，抓起來當頭都不行', '想要：4 當頭，3、5 在兩邊');
-  const goal = tag('目標：4 / 3 5', 'ptr alt', 4.2, 6.2, 0);
-  await beat(tok, 3000);
-  glow(tv.c(5), null);
+  const x3 = bad('極值 ✗', -2.6, 6.3), x5 = bad('極值 ✗', 2.6, 4.8);
+  say('3、5 都是極值', '抓起來當頭都不行');
+  await step(tok);                                   // 29:28 想要 4 當頭
+  kill(x3); kill(x5); glow(tv.c(3), null); glow(tv.c(5), null); kill(ideal);
+  const goal = tag('目標：4 當頭，3、5 在兩邊', 'ptr alt', 4.4, 6.5, 0);
+  say('想要：4 當頭、3 在左、5 在右', '只有三個點時，這幾乎是唯一的平衡方式');
+  await step(tok);                                   // 30:28 3 是爺爺、5 是爸爸、4 是小孩
+  roles = [bubble('阿公', -2.4, 6.3), bubble('爸爸', 2.6, 4.8), bubble('孫子：我想當頭', 1.4, 2.0)];
+  say('3 是阿公、5 是爸爸、4 是孫子', '孫子要當頭，離得有點遠');
+  await step(tok);                                   // 31:20 先處理跟爸爸的關係
+  txt(roles[2], '先處理跟爸爸的關係');
+  say('孫子想篡位：不能一下子挑戰阿公', '先處理他跟爸爸的關係');
+  await step(tok);                                   // 32:15 先 rotate 4 跟 5
+  roles.forEach(kill); roles = [];
   rotUp(t, findN(t, 5), 'R'); tv.sync();
-  say('孫子要篡位：先跟爸爸 rotate(4, 5)', 'bf：5 = 0，4 = −1，3 = −2');
-  await beat(tok, 3200);
+  say('第一步：rotate(4, 5)', '4 上來，5 變成 4 的右小孩；3 渾然不知');
+  await step(tok);                                   // 32:33 bf：5 是 0、4 是 −1、3 是 −2
+  say('bf：5 是 0、4 是 −1、3 還是 −2', NO('還沒處理完'));
+  await step(tok);                                   // 32:52 再 rotate 4 跟 3
   rotUp(t, t.root, 'L'); tv.sync();
-  say('再跟阿公 rotate(4, 3)', OK('4 當頭，bf 全部 0'));
-  await beat(tok, 2800);
-  kill(goal);
-  say('插入點在阿公的右邊的左邊：RL', '一次跳兩級 = 兩次各跳一級');
-  await beat(tok, 3000);
+  say('第二步：rotate(4, 3)', '4 再跟阿公交換');
+  await step(tok);                                   // 33:53 孫子登上寶座
+  kill(goal); glow(tv.c(4), GREEN);
+  bubble('我當上 root 了！', 0, 6.6);
+  say('孫子終於當上這棵 subtree 的 root', OK('bf 全部是 0，恢復平衡'));
+  await step(tok);                                   // 34:21 插入點在阿公的右邊的左邊
+  glow(tv.c(4), null);
+  tag('RL：阿公的「右邊的左邊」', 'ptr alt', -4.2, 2.2, 0);
+  say('插入點在出問題的阿公的右邊的左邊', '這叫 RL 的情形');
+  await step(tok);                                   // 34:47 連跳兩級 → 兩次跳一級
+  note('rotate 一次 = 跳一級；要跳兩級 → 兩次', 3.6, 1.4, 0);
+  say('要連跳兩級不好做', '→ 用兩次「跳一級」的 rotate');
 }]);
 
 // ═════════ 4–5. RL 通例：A、B、C、AL、BR、CL、CR ═════════
+// parts are created lazily (g.add) so the picture can grow sentence by sentence
 function RLG(state, opt = {}) {
   const Y = (d) => 6.0 - d * 0.95;
   const KS = { AL: 2, BR: 2, CL: 1, CR: 1 }, COL = { AL: '#2fc092', BR: '#31aab0', CL: '#9b7ef4', CR: '#dd8238' };
@@ -1098,27 +1196,33 @@ function RLG(state, opt = {}) {
   ];
   const NODES = ['A', 'B', 'C'], SUBS = ['AL', 'BR', 'CL', 'CR'];
   const hOf = (k) => (k - 1) * 0.95 + 0.6;
-  const g = { Y, POS, st: state, bfL: {} };
+  const g = { Y, POS, st: state, bfL: {}, has: new Set() };
   const subPos = (n, st) => { const [x, d] = POS[st][n]; return V3(x, Y(d) + 0.3 - hOf(KS[n]) / 2, 0); };
-  NODES.forEach((k) => { const [x, d] = POS[state][k]; g[k] = cube(k, k === 'A' ? '#4b9ee2' : k === 'B' ? '#2f8f6a' : '#b0457a', [0.8, 0.8, 0.8], x, Y(d), 0); });
-  SUBS.forEach((n) => { const m = ghostBox(COL[n], 1.2, hOf(KS[n]), 1.0); m.position.copy(subPos(n, state)); const l = lab.label(n, 'idx'); m.add(l); m.userData.l = l; g[n] = m; });
-  if (opt.ins !== false) { const [x, d] = POS[state].I; g.I = cube('新', '#d64545', [0.55, 0.55, 0.55], x, Y(d), 0); }
+  const mk = (n) => {
+    if (g.has.has(n)) return; g.has.add(n);
+    const st = g.st, drop = opt.drop ? 2.2 : 0;
+    if (NODES.includes(n)) { const [x, d] = POS[st][n]; g[n] = cube(n, n === 'A' ? '#4b9ee2' : n === 'B' ? '#2f8f6a' : '#b0457a', [0.8, 0.8, 0.8], x, Y(d), 0, drop); }
+    else if (n === 'I') { const [x, d] = POS[st].I; g.I = cube('新', '#d64545', [0.55, 0.55, 0.55], x, Y(d), 0, drop); }
+    else { const m = ghostBox(COL[n], 1.2, hOf(KS[n]), 1.0); m.position.copy(subPos(n, st)); const l = lab.label(n, 'idx'); m.add(l); m.userData.l = l; g[n] = m; }
+  };
   let es = [];
   const pt = (n, st) => { const [x, d] = POS[st][n]; return NODES.includes(n) ? V3(x, Y(d), 0) : V3(x, Y(d) + 0.3, 0); };
   g.edges = (st) => {
     es.forEach(kill); es = [];
-    for (const [a, b] of EDG[st]) { const p = pt(a, st), q = pt(b, st); es.push(line(p.x, p.y, q.x, q.y, 0)); }
-    if (g.I) { const [x, d] = POS[st].CR, q = POS[st].I; es.push(line(x, Y(d) - 0.3, q[0], Y(q[1]) + 0.28, 0, '#d64545')); }
+    for (const [a, b] of EDG[st]) if (g.has.has(a) && g.has.has(b)) { const p = pt(a, st), q = pt(b, st); es.push(line(p.x, p.y, q.x, q.y, 0)); }
+    if (g.has.has('I') && g.has.has('CR')) { const [x, d] = POS[st].CR, q = POS[st].I; es.push(line(x, Y(d) - 0.3, q[0], Y(q[1]) + 0.28, 0, '#d64545')); }
   };
+  g.add = (...ns) => { ns.forEach(mk); g.edges(g.st); };
   g.go = (st) => {
     es.forEach(kill); es = []; g.st = st;
-    NODES.forEach((k) => move(g[k], POS[st][k][0], Y(POS[st][k][1]), 0));
-    SUBS.forEach((n) => { const p = subPos(n, st); move(g[n], p.x, p.y, 0); });
+    NODES.forEach((k) => { if (g[k]) move(g[k], POS[st][k][0], Y(POS[st][k][1]), 0); });
+    SUBS.forEach((n) => { if (g[n]) { const p = subPos(n, st); move(g[n], p.x, p.y, 0); } });
     if (g.I) move(g.I, POS[st].I[0], Y(POS[st].I[1]), 0);
     NODES.forEach((k) => { if (g.bfL[k]) g.bfL[k].position.set(POS[st][k][0] + 0.75, Y(POS[st][k][1]) + 0.5, 0); });
   };
   g.bf = (vals) => {
     for (const k of NODES) {
+      if (!g[k]) continue;
       if (!g.bfL[k]) g.bfL[k] = tag('', 'idx', 0, 0, 0);
       const l = g.bfL[k]; l.position.set(POS[g.st][k][0] + 0.75, Y(POS[g.st][k][1]) + 0.5, 0);
       const v = vals[k]; txt(l, v === undefined ? '' : 'bf ' + v);
@@ -1126,206 +1230,326 @@ function RLG(state, opt = {}) {
       glow(g[k], /2/.test(String(v)) ? RED : null);
     }
   };
-  g.edges(state);
+  if (opt.all !== false) g.add(...NODES, ...SUBS, ...(opt.ins === false ? [] : ['I']));
   return g;
 }
+// 15 steps
 FRAG.push(['avllin-rl-general-1', 'RL 通例（一）：A、B、C 三代，先 rotate(C, B)', async (tok) => {
   fresh([0, 4.4, 13], [0, 3.6, 0]);
-  const g = RLG(0);
-  say('插入點在某棵 subtree 的最底層', 'C 帶著 CL、CR；新 node 落在 CR 下面');
-  await beat(tok, 3000);
+  const g = RLG(0, { all: false, drop: true });
+  await step(tok);                                   // 35:43 插入點在某棵 subtree 的最底層
+  g.add('CL', 'CR', 'I');
+  say('一般情形：新 node 插在最底層', '旁邊有兩棵完整的 subtree：CL、CR');
+  await step(tok);                                   // 36:32 govern 它們的 root 叫 C
+  g.add('C');
+  say('管著 CL、CR 的 root 叫 C', '注意：紅色的「新」是插入的 node，不是 C');
+  await step(tok);                                   // 37:00 C 有一點點不平衡
   g.bf({ C: '−1' });
-  say('C 有一點點不平衡', 'bf(C) = −1：右邊高一點');
-  await beat(tok, 2400);
+  say('插入後 C 有一點點不平衡', 'bf(C) = −1：右邊高一點，還合法');
+  await step(tok);                                   // 37:31 爸爸 B，另一顆 BR
+  g.add('B', 'BR');
+  say('C 的爸爸叫 B，另一邊是 BR', '原本 C 這棵和 BR 差不多高');
+  await step(tok);                                   // 38:01 bf(B) = +1
   g.bf({ C: '−1', B: '+1' });
-  say('爸爸 B：另一邊是 BR', 'C 這邊多一層 → bf(B) = +1');
-  await beat(tok, 2400);
-  g.bf({ C: '−1', B: '+1', A: '−2' });
-  say('第一個出問題的是老爺爺 A', 'AL 的底跟新 node 差兩層 → ' + NO('bf(A) = −2'));
-  await beat(tok, 3000);
-  say('對照 3、5、4：A = 3，B = 5，C = 4', '新 node 只是導火線，要調整的是 ABC');
-  await beat(tok, 3200);
-  g.bf({});
+  say('C 這邊多了一層', 'bf(B) = +1，也還合法');
+  await step(tok);                                   // 38:19 真正出問題的老爺爺 A
+  g.add('A'); g.bf({ C: '−1', B: '+1' });
+  say('再往上：真正出問題的老爺爺叫 A', '');
+  await step(tok);                                   // 38:50 AL 跟 inserted 差兩層
+  g.add('AL'); g.bf({ C: '−1', B: '+1', A: '−2' });
+  say('A 的左邊是 AL', 'AL 的底和新 node 差兩層 → ' + NO('bf(A) = −2'));
+  await step(tok);                                   // 39:30 對照 3、5、4
+  const map = [bubble('= 3', -2.2, 6.6), bubble('= 5', 2.8, 5.6), bubble('= 4（也是新 node）', -0.4, 3.0)];
+  say('對照 3、5、4：A = 3、B = 5', '4 同時是 C，也是新插入的 node');
+  await step(tok);                                   // 40:38 restructure 的是 ABC；新 node 是導火線
+  map.forEach(kill);
+  g.bf({}); ['A', 'B', 'C'].forEach((k) => glow(g[k], GOLD));
+  const fuse = bad('只是導火線', 2.6, 2.2);
+  say('要 restructure 的是 A、B、C 三代', 'RL 指 ABC 的關係；新 node 只是導火線');
+  await step(tok);                                   // 41:41 第一次：扭轉 C 跟 B
+  kill(fuse); ['A', 'B', 'C'].forEach((k) => glow(g[k], null));
   g.go(1); await beat(tok, 1200); g.edges(1);
-  say('第一次：扭轉 C 跟 B 的關係', 'C 上來，B 轉下去當 C 的小孩');
-  await beat(tok, 2800);
-  glow(g.BR, GOLD); glow(g.CL, GOLD);
-  say('BR 跟著 B 下降一層', 'CL 跟著 C 上升，跟 AL 切齊');
-  await beat(tok, 2800);
-  glow(g.BR, null); glow(g.CL, null); glow(g.CR, GOLD);
-  say('CR 改掛到 B 的左邊', 'B 在 C 原本那層，CR 高度不變');
-  await beat(tok, 2600);
+  say('第一次 rotate：扭轉 C 跟 B', 'C 上來，B 轉下去當 C 的小孩；A 看起來沒變');
+  await step(tok);                                   // 42:27 BR 往下一層
+  glow(g.BR, GOLD);
+  say('B 降一層，BR 也跟著降一層', '現在和新 node 那層切齊');
+  await step(tok);                                   // 42:49 CL 往上一層，跟 AL 切齊
+  glow(g.BR, null); glow(g.CL, GOLD);
+  say('C 升一層，CL 也跟著升一層', '和 AL 切齊');
+  await step(tok);                                   // 43:08 CR 掛到 B 的左邊
+  glow(g.CL, null); glow(g.CR, GOLD);
+  say('CR 改掛到 B 的左邊', 'B 在 C 原本那層，所以 CR 高度不變');
+  await step(tok);                                   // 43:55 B 平衡，C、A 差兩層
   glow(g.CR, null);
   g.bf({ A: '−2', C: '−2', B: '0' });
-  say('看起來更不平衡？', '只是暫時的狀態，還有第二步');
-  await beat(tok, 3000);
+  say('B 平衡了', 'C、A 卻都差兩層：看起來更不平衡？');
+  await step(tok);                                   // 44:15 只是暫時的狀態
+  note('暫時的狀態 → 還有第二步', -4.0, 1.3, 0);
+  say('沒錯，但這只是暫時的狀態', '下一步再把 C 轉上來');
 }]);
+// 13 steps
 FRAG.push(['avllin-rl-general-2', 'RL 通例（二）：再 rotate(C, A)，樹高維持 h + 2', async (tok) => {
   fresh([0, 4.4, 13], [0, 3.6, 0]);
   const g = RLG(1);
-  const hT = tag('A 這棵（插入前）高 h + 2', 'ptr alt', -3.2, 6.7, 0);
-  const hB = tag('BR 高 h', 'idx', 5.4, 2.6, 0);
   g.bf({ A: '−2', C: '−2', B: '0' });
-  say('第一次 rotate 之後', 'B 已經平衡；接著處理 A 跟 C');
-  await beat(tok, 2800);
-  g.bf({});
-  g.go(2); await beat(tok, 1200); g.edges(2); hB.position.set(4.6, 3.4, 0);
-  say('再把 C rotate 上來', 'C 成為這一群新的霸主');
-  await beat(tok, 2800);
-  glow(g.B, GOLD); glow(g.BR, GOLD); glow(g.CR, GOLD);
-  say('B 那一支跟著上一層', 'CR、新 node、BR 都上去一層');
-  await beat(tok, 2600);
-  glow(g.B, null); glow(g.BR, null); glow(g.CR, null); glow(g.AL, GOLD);
-  say('A 變成 C 的小孩，AL 降一級', '');
-  await beat(tok, 2400);
+  await step(tok);                                   // 44:36 最終：再把 C rotate 上來
+  say('第一次 rotate 之後的樣子', '最終目標：再把 C rotate 上來');
+  await step(tok);                                   // 44:57 rotate A 跟 C，C 成為新的霸主
+  g.bf({}); g.go(2); await beat(tok, 1200); g.edges(2);
+  const boss = bubble('新的霸主', 0, 7.0);
+  say('第二次：rotate A 跟 C', 'C 成為這一群新的霸主');
+  await step(tok);                                   // 45:10 B 跟著上一層，BR、CR、新 node 都上去
+  kill(boss);
+  [g.B, g.BR, g.CR, g.I].forEach((m) => glow(m, GOLD));
+  say('從 B 的角度沒變：跟著 C 上一層', 'BR、CR、新 node 也都上去一層');
+  await step(tok);                                   // 46:05 A 變成 C 的新小孩
+  [g.B, g.BR, g.CR, g.I].forEach((m) => glow(m, null)); glow(g.A, GOLD);
+  say('A 變成 C 的新左小孩', '');
+  await step(tok);                                   // 46:27 AL 跟著降一級
+  glow(g.A, null); glow(g.AL, GOLD);
+  say('A 降一級，AL 也跟著降一級', '');
+  await step(tok);                                   // 46:50 CL 上升一級，是 A 的新小孩
   glow(g.AL, null); glow(g.CL, GOLD);
-  say('CL 上升一級，變成 A 的新右小孩', '注意：不是接在 C 下面');
-  await beat(tok, 2800);
-  glow(g.CL, null);
-  g.bf({ A: '+1', B: '0', C: '0' });
-  say('B 平衡、A 差 1 平衡、C 也平衡', OK('任務達成'));
-  await beat(tok, 2600);
-  txt(hT, 'C 這棵（調整後）高 h + 2'); glow(g.C, GREEN);
-  say('以 BR = h：前後樹高都是 h + 2', '上面所有 node 的 bf 都不變');
-  await beat(tok, 3000);
-  say('RL 修一次就結束；對稱的是 LR', '');
-  await beat(tok, 2600);
+  say('C 升一級，CL 也跟著上去', '但 CL 不接在 C 下面：它是 A 的新右小孩');
+  await step(tok);                                   // 47:30 B 的 bf 是 0
+  glow(g.CL, null); g.bf({ B: '0' });
+  say('只看 A、B、C：B 的 bf 是 0', 'B 在第一次 rotate 就處理好了');
+  await step(tok);                                   // 47:49 A：AL 跟 CL 只差 1
+  g.bf({ B: '0', A: '+1' });
+  say('A：AL 和 CL 只差 1', 'A 平衡');
+  await step(tok);                                   // 47:59 C 也平衡，任務達成
+  g.bf({ B: '0', A: '+1', C: '0' });
+  say('C：左右兩邊最底端切齊', OK('C 也平衡，任務達成'));
+  await step(tok);                                   // 48:41 以 BR 為基準，原本高 h + 2
+  const hB = tag('BR 高 h', 'idx', 4.4, 3.6, 0);
+  const hT = tag('插入前：A 這棵高 h + 2', 'ptr alt', -3.6, 6.8, 0);
+  say('要不要再往上檢查？先算樹高', '以 BR 的高度 h 為基準：原本 h + 2');
+  await step(tok);                                   // 49:01 做完以後還是 h + 2
+  txt(hT, '調整後：C 這棵還是 h + 2'); glow(g.C, GREEN);
+  say('調整完再算一次', '還是 h + 2');
+  await step(tok);                                   // 49:13 高度沒變 → 上面的 bf 都不變
+  good('上面的 node：什麼都沒變', 3.6, 6.8, 0);
+  say('樹高沒變 → 上面所有 node 的 bf 都不變', '所以只要修這一次');
+  await step(tok);                                   // 49:43 RL 修正；對稱 LR
+  glow(g.C, null); kill(hB);
+  note('RL ⇄ LR：鏡像', -4.0, 1.3, 0);
+  say('這叫 RL 修正', '對稱的情形叫 LR 修正');
 }]);
 
-// ═════════ 6. 小結：兩招走天下 ═════════
+// ═════════ 6. 小結：兩招走天下（5 steps）═════════
 FRAG.push(['avllin-cases-summary', 'AVL 兩招走天下：RR/LL 一次、RL/LR 兩次 rotation', async (tok) => {
   fresh([0, 4.6, 13], [0, 3.2, 0]);
   const Y0 = 5.4, D = 1.2;
-  const mk = (cx, keys, chain, mid, name, n) => {
+  const mk = (cx, keys, chain, name, n) => {
     const P = {}; chain.forEach(([k, dx, d]) => { P[k] = [cx + dx, Y0 - d * D]; });
     const cs = {}; keys.forEach((k) => { cs[k] = cube(k, colorFor(k), [0.7, 0.7, 0.7], P[k][0], P[k][1], 0); });
     let es = [];
     const ed = (pairs, Q) => { es.forEach(kill); es = pairs.map(([a, b]) => line(Q[a][0], Q[a][1], Q[b][0], Q[b][1], 0)); };
-    const top = chain[0][0];
     ed([[chain[0][0], chain[1][0]], [chain[1][0], chain[2][0]]], P);
-    tag(name, 'ptr', cx, 0.9, 0); const nl = tag(n, 'idx', cx, 0.3, 0);
+    tag(name, 'ptr', cx, 0.9, 0); tag(n, 'idx', cx, 0.3, 0);
     return {
-      cs, top, nl,
+      cs,
       to(Q, pairs) { es.forEach(kill); es = []; for (const k of keys) move(cs[k], Q[k][0], Q[k][1], 0); return () => ed(pairs, Q); },
       Q: (spec) => { const Q = {}; spec.forEach(([k, dx, d]) => { Q[k] = [cx + dx, Y0 - d * D]; }); return Q; },
     };
   };
-  const RR = mk(-4.8, [1, 2, 3], [[1, -0.6, 0], [2, 0, 1], [3, 0.6, 2]], 2, 'RR', 'one rotation');
-  const LL = mk(-1.6, [1, 2, 3], [[3, 0.6, 0], [2, 0, 1], [1, -0.6, 2]], 2, 'LL', 'one rotation');
-  const RL = mk(1.6, [3, 4, 5], [[3, -0.6, 0], [5, 0.6, 1], [4, 0, 2]], 4, 'RL', 'two rotations');
-  const LR = mk(4.8, [3, 4, 5], [[5, 0.6, 0], [3, -0.6, 1], [4, 0, 2]], 4, 'LR', 'two rotations');
-  say('AVL insertion 只有四種情形', '兩兩對稱');
-  await beat(tok, 2600);
-  say('RR、LL：中間那個抓上來', OK('one rotation'));
+  const RR = mk(-4.8, [1, 2, 3], [[1, -0.6, 0], [2, 0, 1], [3, 0.6, 2]], 'RR', 'one rotation');
+  const LL = mk(-1.6, [1, 2, 3], [[3, 0.6, 0], [2, 0, 1], [1, -0.6, 2]], 'LL', 'one rotation');
+  const RL = mk(1.6, [3, 4, 5], [[3, -0.6, 0], [5, 0.6, 1], [4, 0, 2]], 'RL', 'two rotations');
+  const LR = mk(4.8, [3, 4, 5], [[5, 0.6, 0], [3, -0.6, 1], [4, 0, 2]], 'LR', 'two rotations');
   const bal = (o, a, m, b) => o.Q([[m, 0, 0], [a, -0.75, 1], [b, 0.75, 1]]);
+  await step(tok);                                   // 50:15 兩招走天下；RR、LL one rotation
+  say('AVL 兩招走天下', 'RR、LL：在出問題的地方 one rotation');
   let f1 = RR.to(bal(RR, 1, 2, 3), [[2, 1], [2, 3]]), f2 = LL.to(bal(LL, 1, 2, 3), [[2, 1], [2, 3]]);
-  await beat(tok, 1300); f1(); f2();
-  await beat(tok, 2200);
-  say('RL、LR：第二代藏在下層', '先跟爸爸換，再跟阿公換');
+  await beat(tok, 1100); f1(); f2();
+  await step(tok);                                   // 50:27 RL、LR：two rotations
+  say('RL、LR：two rotations', '先跟爸爸換……');
   f1 = RL.to(RL.Q([[3, -0.6, 0], [4, 0.2, 1], [5, 0.8, 2]]), [[3, 4], [4, 5]]);
   f2 = LR.to(LR.Q([[5, 0.6, 0], [4, -0.2, 1], [3, -0.8, 2]]), [[5, 4], [4, 3]]);
-  await beat(tok, 1300); f1(); f2();
-  await beat(tok, 1600);
+  await beat(tok, 1100); f1(); f2();
+  await step(tok);                                   // 50:33 第二代轉上來當新的 root
   f1 = RL.to(bal(RL, 3, 4, 5), [[4, 3], [4, 5]]); f2 = LR.to(bal(LR, 3, 4, 5), [[4, 3], [4, 5]]);
-  await beat(tok, 1300); f1(); f2();
-  say('', OK('two rotations'));
-  await beat(tok, 2000);
-  say('插入 → 往回走 → 第一個失衡點', '修正完就沒了');
-  await beat(tok, 3000);
+  await beat(tok, 1100); f1(); f2();
+  say('……再跟阿公換：第二代當新的 root', OK('那棵 subtree 平衡了'));
+  await step(tok);                                   // 50:54 所有修正都一樣
+  tag('插入 → 往回走 → 第一個問題點 → 修正 → 結束', 'pkt', 0, 6.5, 0);
+  say('所有修正都一樣', '插入、往回走、找第一個出問題的點，修完就沒了');
+  await step(tok);                                   // 51:12 網路上有很多 demo
+  const mon = prop('monitor', 6.4, 0, 2.2, 0.7, 'AVL demo'); bob(mon, 0.04);
+  say('網路上有很多 AVL demo', '等一下直接開一個來看');
 }]);
 
-// ═════════ 7. Q&A：為什麼 CL、CR 一樣高 ═════════
+// ═════════ 7. Q&A：為什麼 CL、CR 一樣高（6 steps）═════════
 FRAG.push(['avllin-rl-why-heights', 'Q&A：為什麼一開始 CL = CR？', async (tok) => {
   fresh([0, 4.4, 13], [0, 3.6, 0]);
   const g = RLG(0, { ins: false });
   const Y = g.Y;
   const setK = (m, k, d) => { const h = (k - 1) * 0.95 + 0.6; m.scale.y = h / 0.6; m.position.y = Y(d) + 0.3 - h / 2; };
   g.bf({ A: '−1', B: '0', C: '0' });
-  say('問：示意圖的高度一定要這樣嗎？', '插入前：CL = CR，A 的 bf = −1');
-  await beat(tok, 3000);
+  const q = asker(-6.3, 2.2);
+  await step(tok);                                   // 52:03 一開始只能是 CL = CR？
+  const qb = bubble('高度一定要這樣嗎？', -5.4, 1.6, 2.2);
+  say('問：示意圖一開始的高度一定要這樣？', '插入前：CL = CR，A 的 bf = −1');
+  await step(tok);                                   // 52:34 插在 CL 或 CR 都一樣
+  kill(qb);
   const ins = cube('新', '#d64545', [0.55, 0.55, 0.55], -0.6, Y(4), 0, 2.5);
-  say('插在 CL 或 CR 都一樣', '重點是 C 這棵變高了');
-  await beat(tok, 2600);
-  kill(ins);
-  setK(g.CL, 2, 3); glow(g.CL, GOLD);
-  g.bf({ A: '−2?', B: '+1', C: '+1' });
-  say('如果 CL 本來就高一層？', 'AL 跟 CL 底差 2 → A 早就壞了');
-  await beat(tok, 3200);
-  setK(g.CL, 1, 3); g.CL.visible = false; showL(g.CL.userData.l, false); glow(g.CL, null);
+  await beat(tok, 900); move(ins, 1.4, Y(4), 0);
+  say('插在 CL 或 CR 都一樣', '重點是 C 帶頭的這棵變高了');
+  await step(tok);                                   // 53:06 CL、CR 不一樣高 → C 自己出問題
+  kill(ins); g.CL.visible = false; showL(g.CL.userData.l, false);
   const ins2 = cube('新', '#d64545', [0.55, 0.55, 0.55], 1.4, Y(4), 0, 2.5);
   g.bf({ C: '−2' });
-  say('如果 CL 太矮（空的）？', '插入後 C 自己就 bf = −2，失衡點是 C');
-  await beat(tok, 3200);
+  say('如果 CL 比 CR 矮（例如空的）？', '插完 C 自己就 bf = −2 → 出問題的是 C');
+  await step(tok);                                   // 53:27 CL 本來就高一層 → A 早就違反
   kill(ins2); g.CL.visible = true; showL(g.CL.userData.l, true);
+  setK(g.CL, 2, 3); glow(g.CL, GOLD);
+  g.bf({ A: '−2?', B: '+1', C: '+1' });
+  say('如果 CL 本來就高一層？', 'AL 和 CL 差太多 → A 在插入前就壞了');
+  await step(tok);                                   // 54:04 CL 不能太高、不能太矮
+  setK(g.CL, 1, 3); glow(g.CL, null);
   g.bf({ A: '−1', B: '0', C: '0' });
-  say('A 是「第一個」失衡點', '所以 CL、CR、BR、AL 的高度被限制住');
-  await beat(tok, 3200);
+  say('CL 不能太高，也不能太矮', '');
+  await step(tok);                                   // 54:19 A 是第一個出問題的點
+  glow(g.A, GOLD); q.mood('happy'); await q.hop(tok);
+  say('因為 A 是「第一個」出問題的點', '各棵 subtree 的高度就被限制住了');
 }]);
 
-// ═════════ 8. Demo：依序插入 1, 2, 3, 15, 14, 13 ═════════
+// ═════════ 8. Demo：依序插入 1, 2, 3, 15, 14, 13（13 steps）═════════
 FRAG.push(['avllin-demo-insert', 'AVL demo：插入 1、2、3、15、14、13', async (tok) => {
   fresh([0, 5, 12.5], [0, 3, 0]);
   const t = { root: null }; const tv = TV(t, { dx: 1.35, dy: 1.45, top: 5.6, lab: HT });
-  say('網路上的 AVL demo', 'node 旁的數字 = 那棵 subtree 的高度');
-  await beat(tok, 2400);
-  const cap = {
-    3: ['insert 3：1 右 → 2 右', '往回更新高度 → 1 失衡：RR'],
-    15: ['insert 15：更新高度', OK('不需要 rotation')],
-    14: ['insert 14：2 右 → 3 右 → 15 左', '3 失衡：右邊的左邊 → RL'],
-    13: ['insert 13：2 右 → 14 左 → 3 右', '失衡的不是 14，是回到 2 才出事'],
-  };
-  for (const k of [1, 2, 3, 15, 14, 13]) {
-    bstIns(t, k); tv.sync(k);
-    const c = cap[k] || ['insert ' + k, ''];
-    say(c[0], c[1]);
-    await beat(tok, cap[k] ? 2600 : 1400);
-    const bad = firstBad(t, k);
-    if (bad) {
-      await avlFix(t, tv, bad, tok);
-      say(k === 3 ? '把中間的 2 拉上來' : k === 14 ? '14 拉上來：3 跟 15 在兩邊' : '2、14、3 重新洗牌：3 拉上去', '高度回到平衡');
-      await beat(tok, 2600);
-    }
-  }
-  say('實作通常存每棵 subtree 的高度', '要 bf 時再拿高度相減');
-  await beat(tok, 3000);
+  const mon = prop('monitor', -6.3, 0, 2.0, 0.7, '網路 demo'); bob(mon, 0.04);
+  let tmp = [];
+  const clr = () => { tmp.forEach(kill); tmp = []; };
+  await step(tok);                                   // 1:03:03 網路上找的 AVL demo
+  say('網路上隨便找的 AVL demo', '看看 AVL tree 實際怎麼運作');
+  await step(tok);                                   // 1:03:28 1、2 塞進去；旁邊的數字是高度
+  bstIns(t, 1); tv.sync(1); await beat(tok, 600);
+  await walkIns(tok, tv, t, 2);
+  say('塞 1、塞 2：node 旁邊多了數字', '那是這棵 subtree 的高度 h');
+  await step(tok);                                   // 1:03:41 實作通常存高度
+  tmp.push(note('存高度；要 bf 時再「左高 − 右高」', 3.6, 6.6, 0));
+  say('實作通常存每棵 subtree 的高度', '需要 bf 時再拿高度相減');
+  await step(tok);                                   // 1:03:58 塞 3：比 1 右、比 2 右
+  clr(); await walkIns(tok, tv, t, 3);
+  say('塞 3：比 1 大、比 2 大 → 2 的右邊', '往回更新每棵 subtree 的高度');
+  await step(tok);                                   // 1:04:15 把中間的 2 拉上來
+  await avlFix(t, tv, firstBad(t, 3), tok);
+  say('有一棵不對：把中間的 2 拉上來', '上次講的 RR rotation');
+  await step(tok);                                   // 1:04:32 塞 15：不需要 rotation
+  await walkIns(tok, tv, t, 15);
+  say('塞 15：更新上面的高度', OK('不需要任何 rotation'));
+  await step(tok);                                   // 1:04:46 RL：塞 14
+  await walkIns(tok, tv, t, 14);
+  say('塞 14：2 右、3 右、15 左', '今天講的 RL 什麼時候發生？');
+  await step(tok);                                   // 1:05:04 在 3 產生不平衡
+  tmp.push(bubble('右邊太高了！', tv.P.get(3).x - 0.4, tv.P.get(3).y + 1.0));
+  say('在 3 產生了不平衡', '3 的右邊比左邊高 2');
+  await step(tok);                                   // 1:05:25 發生問題做調整
+  clr(); await avlFix(t, tv, firstBad(t, 14), tok);
+  say('做調整：14 拉上來', '3、15 在兩邊，更平衡了');
+  await step(tok);                                   // 1:05:55 再塞 13
+  await walkIns(tok, tv, t, 13);
+  say('再塞 13：比 2 大、比 14 小、比 3 大', '塞在 3 的右邊');
+  await step(tok);                                   // 1:06:13 14 還平衡，回到 2 才不平衡
+  tmp.push(bubble('我還平衡', tv.P.get(14).x + 0.6, tv.P.get(14).y + 1.0));
+  say('出問題的不是 13，也不是 14', '回到 2 才不平衡');
+  await step(tok);                                   // 1:06:20 兩次 rotation：2、14、3 重新洗牌
+  clr(); await avlFix(t, tv, firstBad(t, 13), tok);
+  say('兩次 rotation：2、14、3 重新洗牌', '3 被拉上去');
+  await step(tok);                                   // 1:06:54 最終達成比較平衡的 tree
+  glow(tv.c(3), GREEN);
+  say('最後得到一棵比較平衡的 tree', OK('這就是 AVL 的 insertion'));
 }]);
 
-// ═════════ 9. Demo：刪除 1、2、15，與非 leaf 的 13 ═════════
+// ═════════ 9. Demo：刪除 1、2、15，與非 leaf 的 13（14 steps）═════════
 FRAG.push(['avllin-demo-delete', 'AVL removal demo：刪 1、2、15，刪 13 找人補位', async (tok) => {
   fresh([0, 5, 12.5], [0, 3, 0]);
   const t = { root: null }; [3, 2, 14, 1, 13, 15].forEach((k) => bstIns(t, k));
   const tv = TV(t, { dx: 1.35, dy: 1.45, top: 5.6, lab: HT }); tv.sync();
-  say('removal 的原理一樣', '移掉 → 找回來 → 不平衡就旋轉');
-  await beat(tok, 2600);
-  for (const k of [1, 2, 15]) {
-    glow(tv.c(k), GOLD); await beat(tok, 700);
-    delLeaf(t, k); tv.sync();
-    const bad = anyBad(t.root);
-    say('remove ' + k + '：更新高度', bad ? NO(bad.k + ' 不平衡了') : OK('沒有不平衡，繼續'));
-    await beat(tok, 2200);
-    if (bad) {
-      await avlFix(t, tv, bad, tok);
-      say(k === 2 ? '14 拉上來（一次 rotation）' : '13 拉上來（兩次 rotation）', '重新平衡');
-      await beat(tok, 2200);
-    }
-  }
-  bstIns(t, 5); tv.sync(5);
-  say('再插一個 5，比較看得出來', '');
-  await beat(tok, 1800);
+  let tmp = [];
+  const clr = () => { tmp.forEach(kill); tmp = []; };
+  const rm = async (k) => { glow(tv.c(k), GOLD); await beat(tok, 600); delLeaf(t, k); tv.sync(); };
+  await step(tok);                                   // 1:07:14 removal 原理一樣
+  say('removal 的原理一樣', '移掉 → 往回找 → 不平衡就調整');
+  await step(tok);                                   // 1:07:31 移掉 1，沒有不平衡
+  await rm(1);
+  say('remove 1：找到它、移掉', OK('往回看高度：沒有不平衡，繼續'));
+  await step(tok);                                   // 1:07:51 移掉 2，不平衡了
+  await rm(2);
+  say('remove 2：移掉以後', NO('3 不平衡了'));
+  await step(tok);                                   // 1:08:00 重新旋轉
+  await avlFix(t, tv, anyBad(t.root), tok);
+  say('旋轉一次：14 拉上來', '重新平衡');
+  await step(tok);                                   // 1:08:11 移掉 15，又不平衡
+  await rm(15);
+  say('remove 15：又不平衡了', NO('14 的左邊太高'));
+  await step(tok);                                   // 1:08:19 轉一轉，看要把哪一個拉上來
+  await avlFix(t, tv, anyBad(t.root), tok);
+  say('再轉一轉：這次兩次 rotation', '13 被拉上來');
+  await step(tok);                                   // 1:09:02 要 remove 的是 non-leaf？
   glow(tv.c(13), RED);
-  say('remove 13：它不是 leaf', '直接挖空，整個結構都要重排');
-  await beat(tok, 2600);
+  say('剛才移的都是 leaf', '如果要 remove 的不是 leaf，例如 13？');
+  await step(tok);                                   // 1:09:44 找另一個 node 來補位
+  tmp.push(bad('直接挖空 → 整棵要重排', 0, 6.7));
+  say('直接挖空，整個結構都要重新調整', '所以：找另一個 node 來補位');
+  await step(tok);                                   // 1:10:12 再插一個 node（5）
+  clr(); await walkIns(tok, tv, t, 5);
+  say('再插一個 5，比較看得出來', '');
+  await step(tok);                                   // 1:10:30 把 5 叫上來補位
+  const n13 = findN(t, 13); delLeaf(t, 5); n13.k = 5; tv.sync(); glow(tv.c(5), GOLD);
+  say('remove 13：把 5 叫上來補位', '樹的結構不用大改');
+  await step(tok);                                   // 1:10:36 像 heap：抓小弟上來頂著
+  tmp.push(note('像 heap：先抓一個小弟上來頂著', -3.8, 1.3, 0));
+  say('就像以前的 heap', '移掉的位置先抓個小弟頂著，再慢慢調整');
+  await step(tok);                                   // 1:11:13 左子樹最右邊 = 最大
+  clr();
+  tmp.push(bubble('左子樹裡最大的（最右邊）', tv.P.get(5).x, tv.P.get(5).y + 1.0));
+  say('去哪找？左子樹裡最右邊的 leaf', '= 左子樹最大的：數字上最接近 13');
+  await step(tok);                                   // 1:11:43 幾乎只是移除一個 leaf
+  clr(); glow(tv.c(5), null);
+  say('補位後，幾乎就只是移除那個 leaf', '再檢查跟它有關的 subtree 高度');
+  await step(tok);                                   // 1:12:18 不是 leaf → 抓 leaf 補位
+  good('不是 leaf → 抓一個 leaf 來補位', 0, 6.7);
+  say('BST 的 removal：移掉 leaf 最容易', '不是 leaf → 抓一個 leaf 來補位');
+}]);
+// Q&A：一定要往左邊抓嗎？（6 steps）
+FRAG.push(['avllin-pick-side', 'Q&A：補位一定要往左邊抓嗎？左子樹最大或右子樹最小', async (tok) => {
+  fresh([0, 5, 12.5], [0, 3, 0]);
+  const t = { root: null }; [13, 3, 14, 5].forEach((k) => bstIns(t, k));
+  const tv = TV(t, { dx: 1.5, dy: 1.45, top: 5.6, lab: HT }); tv.sync();
+  const q = asker(-6.0, 2.2);
+  let tmp = [];
+  const clr = () => { tmp.forEach(kill); tmp = []; };
+  await step(tok);                                   // 1:13:21 一定是往左邊抓小弟嗎
+  glow(tv.c(13), RED);
+  tmp.push(bubble('一定要往左邊抓嗎？', -5.0, 1.6, 2.2));
+  say('問：remove 13，補位一定要往左邊抓嗎？', '');
+  await step(tok);                                   // 1:13:27 可以往左也可以往右
+  clr();
+  say('往左、往右都可以', '只要抓「數字最接近」的那個');
+  await step(tok);                                   // 1:13:42 左子樹裡最大的
   glow(tv.c(5), GOLD);
-  say('找左子樹最大的 5 來補位', '數字上最接近 13 的代替品');
-  await beat(tok, 2400);
-  const n13 = findN(t, 13); delLeaf(t, 5); n13.k = 5; tv.sync(); glow(tv.c(5), null);
-  say('問題變成「移掉一個 leaf」', '再沿路檢查高度');
-  await beat(tok, 2600);
-  say('也可以抓右子樹最小的（14）', '左邊空的就往右邊抓');
-  await beat(tok, 2800);
+  const pl = pkt('往左一步，再一路往右', 0, 0);
+  await walk(tok, pl, [tv.at(13), tv.at(3), tv.at(5)], 500);
+  txt(pl, '左子樹最大：5');
+  say('可以抓左子樹裡最大的：5', '');
+  await step(tok);                                   // 1:13:47 右子樹裡最小的
+  glow(tv.c(14), GOLD);
+  const pr = pkt('往右一步，再一路往左', 0, 0);
+  await walk(tok, pr, [tv.at(13), tv.at(14)], 500);
+  txt(pr, '右子樹最小：14');
+  say('也可以抓右子樹裡最小的：14', '');
+  await step(tok);                                   // 1:13:54 先往左，左邊空才往右
+  say('常見做法：先往左邊抓', '左邊那棵是空的，才往右邊抓');
+  await step(tok);                                   // 1:14:02 抓一個上來 → remove a leaf
+  remove(pl); remove(pr); glow(tv.c(14), null); glow(tv.c(13), null);
+  const n13 = findN(t, 13); delLeaf(t, 5); n13.k = 5; tv.sync(); glow(tv.c(5), GREEN);
+  q.mood('happy'); await q.hop(tok);
+  say('抓一個上來以後', '問題就變成 remove a leaf');
 }]);
 
-// ═════════ 10. AVL vs 紅黑樹 ═════════
+// ═════════ 10. AVL vs 紅黑樹（12 steps）═════════
 const RB8 = [[5, 'B'], [2, 'R'], [1, 'B'], [4, 'B'], [3, 'R'], [7, 'B'], [6, 'R'], [8, 'R']];
 FRAG.push(['avllin-avl-vs-rb', 'AVL vs 紅黑樹：矮一點好 search，鬆一點好更新', async (tok) => {
   fresh([0, 5, 13], [0, 3, 0]);
@@ -1333,62 +1557,83 @@ FRAG.push(['avllin-avl-vs-rb', 'AVL vs 紅黑樹：矮一點好 search，鬆一�
   const va = TV(ta, { cx: -3.5, dx: 0.72, dy: 1.3, top: 5.2, sz: 0.62 }); va.sync();
   const tb = rbTree(RB8); const vb = TV(tb, { rb: true, cx: 3.3, dx: 0.72, dy: 1.3, top: 5.2, sz: 0.62 }); vb.sync();
   tag('AVL', 'ptr', -3.5, 6.3, 0); tag('紅黑樹', 'ptr', 3.3, 6.3, 0);
-  say('AVL 好教：四種 case、兩種處理', 'one rotation / two rotations');
-  await beat(tok, 2800);
+  const ba = buddy('AVL', '', '#7cb8ee', -3.5, 0, 2.4, 0.7), bb = buddy('紅黑樹', '', '#e98b8b', 3.3, 0, 2.4, 0.7);
+  await step(tok);                                   // 1:14:38 AVL 比較好教
+  ba.mood('happy');
+  say('AVL：比較好教的 balanced BST', '');
+  await step(tok);                                   // 1:14:51 四個 case 其實兩個
+  ba.set('2 招');
+  say('insertion 四個 case，其實只有兩種', 'one rotation／two rotations');
+  await step(tok);                                   // 1:15:08 缺點：多存 subtree 高度
   const hs = [];
   for (const [k, p] of va.P) hs.push(tag('h' + hgt(findN(ta, k)), 'idx', p.x + 0.42, p.y + 0.4, 0));
-  say('缺點：每個 node 多存高度', '一個 int ≈ 4 bytes（或 short）');
-  await beat(tok, 3000);
-  va.cubes.forEach((m) => glow(m, GREEN));
-  say('樹比較矮 → 適合 search', '越嚴格，維護越費力');
-  await beat(tok, 2800);
-  say('insert / remove 還是 O(log n)', '但 log n 前面的常數大一些');
-  await beat(tok, 2600);
-  va.cubes.forEach((m) => glow(m, null)); vb.cubes.forEach((m) => glow(m, GOLD));
-  say('紅黑樹：寬鬆一點，search 稍慢', 'insert / remove 比較有效率');
-  await beat(tok, 2800);
-  vb.cubes.forEach((m) => glow(m, null));
-  say('每個 node 只要記顏色', '紅或黑：1 bit，不用存高度');
-  await beat(tok, 2600);
-  say('缺點：難教，像在念咒語', '插紅色 → 看爸爸 → 看叔叔…');
-  await beat(tok, 3000);
-  hs.forEach(kill);
+  say('缺點：每個 node 要多存 subtree 高度', '');
+  await step(tok);                                   // 1:15:24 int 4 bytes 或 short
+  ba.set('+4 bytes'); ba.mood('sad');
+  say('一個 int 約 4 bytes（或用 short）', '這就是 memory overhead');
+  await step(tok);                                   // 1:15:39 樹高比較矮 → 適合 search
+  va.cubes.forEach((m) => glow(m, GREEN)); ba.mood('happy');
+  say('優點：樹高比較矮', '樹越矮越適合 search');
+  await step(tok);                                   // 1:16:03 維持矮要多花力氣
+  note('trade-off：越嚴格，維護越費力', -3.5, 1.5, 0);
+  say('為了維持矮，維護要多花一些力氣', '越嚴格的 data structure，維護越費力');
+  await step(tok);                                   // 1:16:20 還是 log n，但常數大
+  say('insertion、removal 還是 O(log n)', '只是 log n 前面的常數大一些');
+  await step(tok);                                   // 1:16:33 紅黑樹相反：寬鬆一點
+  va.cubes.forEach((m) => glow(m, null)); vb.cubes.forEach((m) => glow(m, GOLD)); bb.mood('happy');
+  say('紅黑樹剛好相反：寬鬆一點', 'search 可能多花一點點時間');
+  await step(tok);                                   // 1:16:47 動態環境比較好
+  say('但 insertion、removal 比較有效率', '在變動很多的動態環境比較好');
+  await step(tok);                                   // 1:17:07 每個 node 塗顏色，1 bit
+  vb.cubes.forEach((m) => glow(m, null)); bb.set('1 bit');
+  say('每個 node 只要記一個顏色', '紅或黑：1 bit 就夠，不用存高度');
+  await step(tok);                                   // 1:17:43 唯一缺點：難教
+  bb.mood('sad');
+  say('紅黑樹唯一的缺點：難教', '');
+  await step(tok);                                   // 1:17:59 像念咒語
+  hs.forEach(kill); bb.mood('wow');
+  bubble('插紅色 → 看爸爸 → 看叔叔…', 3.3, 1.8, 2.4);
+  say('直接教就像在念咒語', '插紅色、看爸爸是不是紅、再看叔叔……');
 }]);
 
-// ═════════ 11. 紅黑樹的規則（咒語）→ 先教 2-3-4 樹 ═════════
+// ═════════ 11. 紅黑樹的規則（咒語）→ 先教 2-3-4 樹（7 steps）═════════
 FRAG.push(['avllin-rb-rules', '紅黑樹的「咒語」：三條規則', async (tok) => {
   fresh([0, 5, 12], [0, 3, 0]);
   const t = rbTree(RB8); const tv = TV(t, { rb: true, dx: 1.1, dy: 1.4, top: 5.6 }); tv.sync();
-  say('直接背紅黑樹的規則……', '');
-  await beat(tok, 2000);
+  await step(tok);                                   // 1:18:58 root 是黑色
   glow(tv.c(5), GOLD);
-  say('規則一：root 是黑色', '');
-  await beat(tok, 2400);
+  say('紅黑樹的咒語，規則一：root 是黑色', '');
+  await step(tok);                                   // 1:19:06 紅 node 的小孩一定黑
   glow(tv.c(5), null);
   for (const k of [2, 1, 4]) glow(tv.c(k), GOLD);
-  say('規則二：紅 node 的小孩一定黑', '2 紅 → 1、4 黑');
-  await beat(tok, 2800);
+  say('規則二：紅色 node 的小孩一定是黑色', '例：2 是紅 → 1、4 都是黑');
+  await step(tok);                                   // 1:19:13 root 到每個 leaf 黑色一樣多
   for (const k of [2, 1, 4]) glow(tv.c(k), null);
-  const cnt = tag('', 'ptr alt', 5.2, 6.3, 0);
+  const cnt = tag('', 'ptr alt', 4.6, 6.6, 0);
   for (const path of [[5, 2, 1], [5, 2, 4, 3], [5, 7, 8]]) {
     path.forEach((k) => glow(tv.c(k), GREEN));
     txt(cnt, path.join('→') + '：黑 ' + path.filter((k) => findN(t, k).c === 'B').length + ' 個');
-    await beat(tok, 1500);
+    await beat(tok, 700);
     path.forEach((k) => glow(tv.c(k), null));
   }
-  say('規則三：root 到每個 leaf 黑色一樣多', '這咒語是怎麼想出來的？');
-  await beat(tok, 2800);
-  say('先教一棵好懂（但不實用）的樹', '2-3-4 樹 → 再對照紅黑樹');
-  await beat(tok, 3000);
+  say('規則三：root 到每個 leaf', '經過的黑色 node 一樣多');
+  await step(tok);                                   // 1:19:23 這咒語怎麼想出來的
+  const w = asker(-6.0, 2.2);
+  bubble('這咒語怎麼想出來的？', -5.0, 1.6, 2.2);
+  say('這咒語是怎麼想出來的？', '直接背很難懂');
+  await step(tok);                                   // 1:19:29 有一個相對應、好懂但不實用的樹
+  say('紅黑樹有一個相對應的資料結構', '非常好懂，但一點也不實用');
+  await step(tok);                                   // 1:19:52 先教那棵樹，再教紅黑樹
+  w.mood('happy');
+  say('先教那棵樹', '再對照著教紅黑樹，會好懂很多');
+  await step(tok);                                   // 1:20:36 新的樹叫做……
+  tag('2-3-4 tree', 'ptr alt', 0, 0.6, 1.5);
+  say('這棵新的樹叫做……', '2-3-4 tree');
 }]);
 
-// ═════════ 12. 2-3-4 樹的三種 node ═════════
+// ═════════ 12. 2-3-4 樹的三種 node（12 steps）═════════
 FRAG.push(['avllin-234-nodes', '2-3-4 樹：2-node、3-node、4-node', async (tok) => {
   fresh([0, 4.6, 12.5], [0, 3, 0]);
-  say('AVL：路見不平，立刻 rebalance', '像處女座，什麼都要完美');
-  await beat(tok, 2600);
-  say('2-3-4 樹：寬鬆一點，先暫存', 'node 裡可以放好幾個 key');
-  await beat(tok, 2600);
   const node = (cx, ks, kids) => {
     const w = ks.length * 0.85;
     const g = ghostBox('#a99470', w + 0.16, 0.92, 1.0); g.position.set(cx, 4.6, 0);
@@ -1399,409 +1644,750 @@ FRAG.push(['avllin-234-nodes', '2-3-4 樹：2-node、3-node、4-node', async (to
       const m = ghostBox('#2fc092', 0.95, 0.9, 0.9); m.position.set(bx, 2.5, 0); tag(s, 'idx', bx, 1.8, 0);
     });
   };
+  let av, tw, tmp = [];
+  await step(tok);                                   // 1:20:53 新的樹：2-3-4 tree
+  tag('2-3-4 tree（也寫成 2-4 tree）', 'ptr alt', 0, 6.4, 0);
+  say('新的樹：2-3-4 tree', '最後會對應到紅黑樹');
+  await step(tok);                                   // 1:21:15 AVL：路見不平，立刻 rebalance
+  av = buddy('AVL', '', '#7cb8ee', -6.3, 0, 2.4, 0.65); av.mood('wow');
+  tmp.push(bubble('不平衡？馬上修！', -5.6, 1.6, 2.4));
+  say('AVL：路見不平', '幾乎立刻 rebalance，什麼都要完美');
+  await step(tok);                                   // 1:22:09 2-3-4 樹寬鬆一點
+  tmp.forEach(kill); tmp = [];
+  tw = buddy('2-3-4', '', '#2fc092', 6.3, 0, 2.4, 0.65); tw.mood('happy');
+  say('2-3-4 樹走寬鬆一點的路', '用別的方式維持平衡');
+  await step(tok);                                   // 1:22:32 暫存：先放在這邊
+  tmp.push(bubble('先暫時放這邊吧', 5.6, 1.6, 2.4));
+  say('用「暫存」：找到位置就先放著', '有一點不平衡也沒關係');
+  await step(tok);                                   // 1:22:51 BST 每個 node 只能放一個
+  tmp.forEach(kill); tmp = [];
+  tmp.push(bubble('一個 node 只能放一個！', -5.6, 1.6, 2.4));
+  say('BST 每個 node 只能放一個東西', '');
+  await step(tok);                                   // 1:23:09 node 可以放很多東西、很多小孩
+  tmp.forEach(kill); tmp = [];
+  say('2-3-4 樹：一個 node 可以放好幾個 element', '也就有好幾個小孩');
+  await step(tok);                                   // 1:23:29 2-node
   node(-4.4, ['a'], ['< a', '> a']); tag('2-node', 'ptr', -4.4, 5.6, 0);
-  say('2-node：1 個 key、2 個小孩', '< a ｜ > a');
-  await beat(tok, 3000);
+  say('2-node：1 個 element、2 個小孩', '左邊全部 < a，右邊全部 > a');
+  await step(tok);                                   // 1:23:49 3-node
   node(-0.6, ['a', 'b'], ['< a', 'a~b', '> b']); tag('3-node', 'ptr', -0.6, 5.6, 0);
-  say('3-node：a < b，3 個小孩', '< a ｜ a~b ｜ > b');
-  await beat(tok, 3000);
+  say('3-node：a < b，3 個小孩', '< a ｜ a 到 b 之間 ｜ > b');
+  await step(tok);                                   // 1:24:14 4-node
   node(4.0, ['a', 'b', 'c'], ['< a', 'a~b', 'b~c', '> c']); tag('4-node', 'ptr', 4.0, 5.6, 0);
   say('4-node：a < b < c，4 個小孩', '');
-  await beat(tok, 3000);
-  say('insert 時：沒滿的 node 可以擠一下', '每個 node 都是暫存區');
-  await beat(tok, 2800);
-  say('也可以 2-3、2-3-4-5……', '為了紅黑樹，只講 2-3-4');
-  await beat(tok, 2800);
+  await step(tok);                                   // 1:24:55 沒滿的 node 可以再擠一下
+  const nb = pkt('b', -4.4, 6.6);
+  await travel(tok, nb, V3(-4.4, 6.6, 0.5), V3(-3.6, 4.6, 0.6), 900);
+  tw.mood('happy'); await tw.hop(tok);
+  say('彈性：沒滿的 node 可以再擠一下', '每個 node 在滿之前都是暫存區');
+  await step(tok);                                   // 1:25:42 也可以 2-3-4-5、2-3
+  remove(nb);
+  say('也可以做 2-3-4-5、2-3……', '為了紅黑樹，只講 2-3-4');
+  await step(tok);                                   // 1:26:11 好懂但不容易 implement
+  tw.mood('sad');
+  say('2-3-4 樹很好懂', '但很不容易 implement，不太實用');
 }]);
 
-// ═════════ 13. 典型的 2-3-4 樹與兩條規則 ═════════
+// ═════════ 13. 典型的 2-3-4 樹與兩條規則（9 steps）═════════
 FRAG.push(['avllin-234-rules', '2-3-4 樹：橫向寬鬆、縱向嚴格（leaf 同高）', async (tok) => {
   fresh([0, 4.6, 12.5], [0, 3.2, 0]);
-  const tv = T4({ top: 5.4, dy: 2.0 }); tv.root = EX234(); tv.sync();
-  say('一棵典型的 2-3-4 樹', 'root：5 16');
-  await beat(tok, 2400);
-  const R = tv.root;
-  for (const [i, s] of [[0, '3：2-node'], [1, '7 11 14：4-node'], [2, '18 21：3-node']]) {
-    tv.glowN(R.ch[i], GOLD); say(s, ''); await beat(tok, 1700); tv.glowN(R.ch[i], null);
-  }
-  say('規則一（橫向寬鬆）', '每個 node 是 2-、3- 或 4-node');
-  await beat(tok, 2600);
-  const lg = tag('這些空腳（蟑螂腳）都在同一高度', 'ptr alt', 0, 1.9, 0);
-  say('規則二（縱向嚴格）：leaf 都同高', 'all leaves at the same height');
-  await beat(tok, 3000);
-  kill(lg);
-  say('所以高度 = O(log n)', '全滿 ≈ log₄ n，每個只放一筆 ≈ log₂ n');
-  await beat(tok, 3000);
-  say('還是 multi-way search', '看 key 決定往哪棵 subtree 走');
-  await beat(tok, 2600);
+  const tv = T4({ top: 5.4, dy: 2.0, legs: false });
+  let tmp = [];
+  await step(tok);                                   // 1:26:44 root 可以放一筆、兩筆或三筆
+  say('一棵典型的 2-3-4 樹', 'root 可以是 2-、3- 或 4-node');
+  await step(tok);                                   // 1:26:54 root 放 5 跟 16
+  tv.root = N4([5, 16]); tv.sync([5, 16]);
+  say('例如 root 放 5 和 16', '一個 3-node');
+  await step(tok);                                   // 1:27:02 3（2-node）、7 11 14（4-node）
+  tv.root.ch = [N4([3]), N4([7, 11, 14])]; tv.sync([3, 7, 11, 14]);
+  say('小孩：3 是 2-node', '7 11 14 是 4-node');
+  await step(tok);                                   // 1:27:14 18 21（3-node）
+  tv.root.ch.push(N4([18, 21])); tv.sync([18, 21]);
+  say('18 21 是 3-node', '這就是 2-3-4 樹的長相');
+  await step(tok);                                   // 1:27:48 限制一：橫向彈性
+  tmp.push(note('橫向：一個 node 可以裝 1～3 筆', 0, 6.5, 0));
+  say('規定一：每個 node 是 2-、3- 或 4-node', '橫向很有彈性');
+  await step(tok);                                   // 1:28:08 限制二：所有 leaf 同高
+  tmp.forEach(kill); tmp = [];
+  tv.leaves().forEach((n) => tv.glowN(n, GREEN));
+  tmp.push(tag('所有 leaf 都在同一層', 'ptr alt', 0, 2.3, 1.2));
+  say('規定二：所有 leaf 在同一個高度', '縱向比 BST 更嚴格');
+  await step(tok);                                   // 1:28:58 嚴格說是空的腳要同高
+  tmp.forEach(kill); tmp = [];
+  tv.leaves().forEach((n) => tv.glowN(n, null));
+  tv.legs = true; tv.sync();
+  tmp.push(note('空腳（之後會長東西的位置）都同高', 0, 0.5, 1.2));
+  say('嚴格說：leaf 往下長出的「空腳」要同高', '這些黑黑的點都在同一層');
+  await step(tok);                                   // 1:29:29 所以高度是 log n
+  say('所以樹高是 O(log n)', '跟 balanced BST 一樣有保證');
+  await step(tok);                                   // 1:29:44 兩個極端
+  tmp.forEach(kill); tmp = [];
+  note('每個都裝 3 筆 → 最矮', -4.0, 6.6, 0); note('每個只裝 1 筆 → 像 BST', 4.0, 6.6, 0);
+  say('兩個極端：每個 node 都裝滿 3 筆', '或每個只裝 1 筆；高度都是 log n 等級');
 }]);
 
-// ═════════ 14. 有空房間就住：insert 2、20、13 ═════════
+// ═════════ 14. 有空房間就住：insert 2、20、13（11 steps）═════════
 FRAG.push(['avllin-234-easy-insert', '2-3-4 插入：有空房就住（2、20），13 碰到滿房', async (tok) => {
   fresh([0, 4.6, 12.5], [0, 3.2, 0]);
   const tv = T4({ top: 5.4, dy: 2.0 }); tv.root = EX234(); tv.sync();
-  say('insert 2：比 5 小 → 往 3 那邊', '已經到 leaf 了');
-  await beat(tok, 2200);
-  await ins4(tv, 2);
-  say('不能往下長新的一層（腳會不同高）', OK('3 還沒滿 → 2 住進去'));
-  await beat(tok, 2800);
+  let tmp = [];
+  const clr = () => { tmp.forEach(kill); tmp = []; };
+  const under = (n, t) => { const g = ghostBox('#d64545', 0.9, 0.9, 1.0); g.position.set(n._px - 0.4, n._py - 2.0, 0); tmp.push(g, bad(t, n._px - 0.4, n._py - 2.9)); };
+  await step(tok);                                   // 1:30:27 塞 2：5 的左邊、3 的左邊
+  let p = await walk4(tok, tv, 2);
+  say('insert 2：比 5 小 → 往 3 那邊', '3 是 leaf，已經到底了');
+  await step(tok);                                   // 1:30:46 不要再往下長一個
+  under(tv.node(3), '往下長一層 ✗');
+  say('不要再往下長一個新 node', '那樣它的腳就和別人不同高');
+  await step(tok);                                   // 1:30:55 3 還沒滿 → 2 放這裡
+  clr(); remove(p); await ins4(tv, 2);
+  say('3 還沒滿：2 直接住進 3 的房間', OK('leaf 上沒滿的房間都能自由塞'));
+  await step(tok);                                   // 1:31:20 塞 20：比 16 大
+  p = await walk4(tok, tv, 20);
   say('insert 20：比 16 大 → 18 21', '');
-  await beat(tok, 1500);
-  await ins4(tv, 20);
+  await step(tok);                                   // 1:31:33 還有一間空房間
+  remove(p); await ins4(tv, 20);
   say('還有一間空房間 → 18 20 21', OK('一點也不難'));
-  await beat(tok, 2600);
-  const n = tv.node(11);
-  const c13 = cube(13, '#d64545', [0.74, 0.7, 0.8], n._px, n._py + 1.3, 0, 2.5);
-  tv.glowN(n, RED);
-  say('insert 13：走到 7 11 14', NO('房間滿了！'));
-  await beat(tok, 2800);
-  say('往下塞？13 長出兩隻腳就不同層', '只能在這裡擠——擠不下怎麼辦？');
-  await beat(tok, 3000);
-  tv.glowN(n, null); kill(c13);
-  say('有空房：insert 容易', '沒空房：等一下要解決的問題');
-  await beat(tok, 2600);
+  await step(tok);                                   // 1:31:55 困難只有：塞 13
+  p = await walk4(tok, tv, 13);
+  say('困難只有一種：insert 13', '比 5 大、比 16 小 → 走到 7 11 14');
+  await step(tok);                                   // 1:32:16 房間滿了
+  const n = tv.node(11); tv.glowN(n, RED); txt(p, '13 住不下？');
+  say('糟了：房間滿了', '7 11 14 已經是 4-node');
+  await step(tok);                                   // 1:32:25 不能往下塞
+  under(n, '13 往下塞 ✗');
+  say('也不能往下塞', '13 長出的蟑螂腳會和其他人不同層');
+  await step(tok);                                   // 1:32:59 仍有 search 性質：multi-way search
+  clr(); tv.glowN(n, null); remove(p);
+  p = await walk4(tok, tv, 14); txt(p, '找 14：看 key 決定走哪棵');
+  say('2-3-4 樹仍有 search（order）性質', 'multi-way search：看 key 決定走哪棵 subtree');
+  await step(tok);                                   // 1:34:11 multi-way + 高度保證 → log n
+  remove(p);
+  say('multi-way search + 高度保證', '在 O(log n) 內找到東西');
+  await step(tok);                                   // 1:34:42 有空房間容易；沒空房間才是問題
+  say('有空房間：insert 很容易', '沒空房間：接下來要探討的問題');
 }]);
 
-// ═════════ 15. Overflow → 分家：insert 13 ═════════
+// ═════════ 15. Overflow → 分家：insert 13（11 steps）═════════
 FRAG.push(['avllin-234-split-13', 'Overflow 分家：7 11 14 插入 13，11 往上', async (tok) => {
   fresh([0, 4.6, 12.5], [0, 3.2, 0]);
   const tv = T4({ top: 5.4, dy: 2.0 }); tv.root = EX234(); tv.sync();
-  say('insert 13：一路找到 7 11 14', '');
-  await beat(tok, 2200);
+  let tmp = [];
+  const clr = () => { tmp.forEach(kill); tmp = []; };
+  await step(tok);                                   // 1:37:10 insert 13 會發生什麼
+  const p = await walk4(tok, tv, 13);
+  say('insert 13 會發生什麼事？', '一路找到 7 11 14');
+  await step(tok);                                   // 1:37:29 房間滿了 = overflow
+  remove(p);
   await ins4(tv, 13, {
-    placed: async () => { say('7 11 13 14：四個人', NO('overflow')); await beat(tok, 2400); },
+    placed: async () => { say('7 11 13 14：房間滿了', '2-3-4 樹的專有名詞：' + NO('overflow')); },
     over: async () => {
-      say('房間滿了 → 分家', '一些人留在這層，leaf 高度才不變');
-      await beat(tok, 2800);
-      glow(tv.c(7), GOLD);
-      say('抓 7 上去？一邊沒小孩', NO('那邊就沒有 leaf → 不同高'));
-      await beat(tok, 2800);
-      glow(tv.c(7), null); glow(tv.c(11), GOLD);
-      say('把中間的抓起來：11（或 13）', '跟 AVL 抓中間的概念一樣');
-      await beat(tok, 2600);
+      await step(tok);                               // 1:37:48 滿了就分家
+      say('房間滿了就分家', '家裡小孩太多，住不下');
+      await step(tok);                               // 1:38:20 一定要有人留在這一層
+      tmp.push(note('有人留在這層 → leaf 高度不變', 0, 6.8, 0));
+      say('一定要有一些人留在這一層', '這樣 leaf 的高度才不變');
+      await step(tok);                               // 1:38:47 把中間的抓起來：11 或 13
+      clr(); glow(tv.c(11), GOLD); glow(tv.c(13), GOLD);
+      say('把中間的抓起來', '11 或 13 都可以（跟 AVL 抓中間一樣）');
+      await step(tok);                               // 1:39:14 不能抓 7
+      glow(tv.c(11), null); glow(tv.c(13), null); glow(tv.c(7), GOLD);
+      tmp.push(bubble('抓我上去？', -1.6, 4.4));
+      say('為什麼不抓 7？', '7 會一邊有小孩、一邊沒有 → 那邊沒有 leaf');
+      await step(tok);                               // 1:39:40 7、13 14 留下，11 高一層
+      clr(); glow(tv.c(7), null); glow(tv.c(11), GOLD);
+      say('7 跟 13 14 留在原來那層', '11 要比他們高一層');
+      await step(tok);                               // 1:39:59 11 往上 insert，split
+      say('11 往上一層 insert', '7 和 13 14 split 成兩個 node');
     },
     split: async () => {
-      say('11 往上一層 insert：5 11 16', '7 一家、13 14 一家（split）');
-      await beat(tok, 3000);
+      await step(tok);                               // 1:41:15 11 塞到上面 → 5 11 16
+      say('11 擠進上一層：5 11 16', '上面還有空房間，住得下');
+      await step(tok);                               // 1:41:25 7 在 5、11 之間；13 14 在 11、16 之間
+      for (const k of [7, 13, 14]) glow(tv.c(k), GOLD);
+      say('7：比 11 小、比 5 大', '13 14：在 11 和 16 中間');
     },
   });
-  say('7：比 11 小、比 5 大', '13 14：在 11 跟 16 中間');
-  await beat(tok, 2600);
-  say('插到 4-node = 一次分家', '分家後往上 insert，上面沒滿就住下');
-  await beat(tok, 2800);
+  await step(tok);                                   // 1:41:52 一次插入 = 一次分家
+  for (const k of [7, 13, 14]) glow(tv.c(k), null);
+  say('插到 4-node：一次插入 = 一次分家', '分家後往上 insert，上面沒滿就住下');
 }]);
 
-// ═════════ 16. 連續分家：insert 23 ═════════
+// ═════════ 16. 連續分家：insert 23（10 steps）═════════
 FRAG.push(['avllin-234-cascade-23', '連續分家：18 20 21 插入 23，樹高才 +1', async (tok) => {
   fresh([0, 4.4, 13], [0, 3.0, 0]);
   const tv = T4({ top: 5.6, dy: 1.9 });
   tv.root = N4([5, 11, 16], [N4([3]), N4([7]), N4([13, 14]), N4([18, 20, 21])]); tv.sync();
-  say('假設 18 20 21 都在這邊', '現在 insert 23');
-  await beat(tok, 2400);
+  await step(tok);                                   // 1:42:21 假設 18 20 21 都在這邊
+  for (const k of [18, 20, 21]) glow(tv.c(k), GOLD);
+  say('假設 18 20 21 都在同一個 node', '現在要 insert 23');
+  await step(tok);                                   // 1:42:35 23 插進去：滿了
+  for (const k of [18, 20, 21]) glow(tv.c(k), null);
+  const p = await walk4(tok, tv, 23); remove(p);
   await ins4(tv, 23, {
-    placed: async () => { say('23 放進 18 20 21', NO('滿了')); await beat(tok, 2000); },
+    placed: async () => { say('23 放進去', NO('滿了')); },
     over: async (n, mid, lvl) => {
-      if (lvl === 0) say('中間抓一個上去：20（或 21）', '18 一家、21 23 一家');
-      else say('5 11 16 20：上面也滿了！', '再分家：抓 11（或 16）上去');
-      await beat(tok, 2800);
+      if (lvl === 0) {
+        await step(tok);                             // 1:42:47 中間抓起來：20 上去取暖
+        say('中間抓一個上去：20（或 21）', '20 上去取暖；18 一家、21 23 一家');
+      } else {
+        await step(tok);                             // 1:43:07 5 11 16 20 也滿了
+        say('上面變成 5 11 16 20', NO('也滿了！'));
+        await step(tok);                             // 1:43:17 11 被抓上去，分左右兩邊
+        say('再分家：抓 11（也可以抓 16）上去', '左邊一家、右邊一家');
+      }
     },
-    split: async (mid, p, lvl) => {
-      if (lvl === 0) say('20 上去取暖', '');
-      else say('11 變成新的 root', OK('這時高度才真正多一層'));
-      await beat(tok, 2600);
+    split: async (mid, par, lvl) => {
+      if (lvl === 1) {
+        await step(tok);                             // 1:43:26 高度才真正多一層
+        say('11 變成新的 root', OK('這時高度才真正多一層'));
+      }
     },
   });
-  say('整條路上每一代都滿，才會長高', '所有 leaf 依然在同一層');
-  await beat(tok, 2800);
-  say('只有兩件事：空的進去住', '滿的分家，再往上 insert');
-  await beat(tok, 2800);
+  await step(tok);                                   // 1:43:37 整條路每一代都滿才長高
+  say('整條路上每一代都塞滿了', '才會往上長出新的一層');
+  await step(tok);                                   // 1:43:52 所有 leaf 依然同一層
+  tv.leaves().forEach((n) => tv.glowN(n, GREEN));
+  say('所有 leaf 依然在同一層', '這個性質一直被維持住');
+  await step(tok);                                   // 1:44:03 有空房間就直接住
+  tv.leaves().forEach((n) => tv.glowN(n, null));
+  say('過程中只要有空房間', '就直接進去住');
+  await step(tok);                                   // 1:44:28 只有兩件事
+  note('① 空的 → 進去住　② 滿的 → 分家，往上 insert', 0, 7.0, 0);
+  say('insertion 只有兩件事', '空的進去住；滿的分家，再往上 insert');
 }]);
 
-// ═════════ 17. 依序插入 1 … 10 ═════════
+// ═════════ Q&A：為什麼從 2 開始、抓哪個、7 跟 13 14 要合起來嗎（9 steps）═════════
+FRAG.push(['avllin-234-qa', 'Q&A：為什麼是 2-3-4、中間選哪個、分家後要合起來嗎', async (tok) => {
+  fresh([0, 4.6, 13], [0, 3.2, 0]);
+  const tl = T4({ cx: -4.2, top: 5.0, dy: 1.9 });
+  const tr = T4({ cx: 2.4, top: 5.6, dy: 1.9 });
+  const q = asker(-6.3, 2.4);
+  let tmp = [];
+  const clr = () => { tmp.forEach(kill); tmp = []; };
+  await step(tok);                                   // 1:55:55 為什麼不能 3-4-5
+  tmp.push(bubble('3-4-5 不行嗎？', -5.4, 1.6, 2.4));
+  say('問：為什麼是 2-3-4？', '3-4-5 不行嗎？');
+  await step(tok);                                   // 1:56:05 要能 cover 只有一筆資料
+  clr(); tl.root = N4([1]); tl.sync(1);
+  tmp.push(note('只有 1 筆資料 → 需要 2-node', -4.2, 6.4, 0));
+  say('一定要從 2 開始', '要能 cover 只有一筆資料的 node');
+  await step(tok);                                   // 1:56:16 2-3、2-3-4、2-3-4-5；2 = binary tree
+  clr();
+  say('可以是 2-3、2-3-4、2-3-4-5……', '只有 2 的話，就是 binary tree');
+  await step(tok);                                   // 1:56:40 中間選兩個會影響嗎
+  tr.root = N4([7, 11, 13, 14]); tr.sync([7, 11, 13, 14]);
+  glow(tr.c(11), GOLD); glow(tr.c(13), GOLD);
+  say('問：中間有兩個選擇', '選哪一個會影響之後嗎？');
+  await step(tok);                                   // 1:57:03 不知道未來的話兩個一樣好
+  say('不知道未來會 insert／remove 什麼', '兩個一樣好，通常隨便拿一個');
+  await step(tok);                                   // 1:57:25 7 跟 13 14 要合起來嗎
+  glow(tr.c(11), null); glow(tr.c(13), null);
+  tr.root = N4([11], [N4([7]), N4([13, 14])]); tr.sync();
+  say('問：分家後 7 跟 13 14 要合起來嗎？', NO('不用'));
+  await step(tok);                                   // 1:57:43 它們是 11 兩邊的小孩
+  for (const k of [7, 13, 14]) glow(tr.c(k), GOLD);
+  say('它們各自是 11 兩邊的小孩', '每筆資料兩邊都有小孩，跟 BST 一樣');
+  await step(tok);                                   // 1:58:05 一家變兩家，11 當聯絡人
+  for (const k of [7, 13, 14]) glow(tr.c(k), null);
+  tmp.push(bubble('我是兩家的聯絡人', 2.4, 6.6));
+  say('一房變兩房', '11 升到上面當家族聯絡人');
+  await step(tok);                                   // 1:58:35 11 再往上也不用合
+  clr(); tl.clear(); tr.clear(); tr.cx = 0;
+  tr.root = N4([11], [N4([5], [N4([3]), N4([7])]), N4([16, 20], [N4([13, 14]), N4([18]), N4([21, 23])])]); tr.sync();
+  for (const k of [7, 13, 14]) glow(tr.c(k), GOLD);
+  q.mood('happy');
+  say('11 再往上移也不用合', '7 仍是 5 的右小孩，13 14 仍是 16 的左小孩');
+}]);
+
+// ═════════ 17. 依序插入 1 … 10（19 steps）═════════
 FRAG.push(['avllin-234-seq-1to10', '2-3-4 樹依序插入 1 … 10：從基層做起', async (tok) => {
   fresh([0, 4.4, 13], [0, 3.0, 0]);
   const tv = T4({ top: 5.6, dy: 1.9 });
+  let tmp = [];
+  const clr = () => { tmp.forEach(kill); tmp = []; };
+  const full = (k) => async () => { say(k + ' 進來', NO('房間滿了')); };
+  await step(tok);                                   // 1:59:49 先把 1 放進去
   tv.root = N4([1]); tv.sync(1);
-  say('Q：依序插入 1、2、3……會怎樣？', '先放 1；蟑螂腳要同高');
-  await beat(tok, 2400);
-  for (let k = 2; k <= 10; k++) {
-    let split = false;
-    await ins4(tv, k, {
-      placed: async () => { say('insert ' + k, ''); await beat(tok, k % 2 ? 1300 : 1100); },
-      over: async (n, mid, lvl) => { say(n.ks.join(' ') + '：滿了', '中間選 ' + mid + ' 上去'); await beat(tok, 1700); },
-      split: async (mid) => { split = true; say(mid + ' 上去當家長', ''); await beat(tok, 1500); },
-    });
-    if (k === 10) { say('2 4 6 8 滿了 → 4 上去', '樹這時才長高一層'); await beat(tok, 1600); }
-  }
-  say('大部分地方都還有空房間', '像公司：組員 → 小組長 → 大組長');
-  await beat(tok, 3000);
-  say('從基層做起：滿了才往上長', '不會長成 linked list');
-  await beat(tok, 2600);
+  say('依序插入 1、2、3……會怎樣？', '先放 1');
+  await step(tok);                                   // 1:59:55 兩隻腳（蟑螂腳）
+  tmp.push(bubble('我的兩隻蟑螂腳要同高', 0, 6.7));
+  say('1 是唯一的 node：畫出它的兩隻腳', '之後所有蟑螂腳都要在同一個高度');
+  await step(tok);                                   // 2:00:27 2 進來
+  clr(); await ins4(tv, 2);
+  say('2 進來：還有空間，直接住', '只是多一隻蟑螂腳');
+  await step(tok);                                   // 2:00:35 3 進來
+  await ins4(tv, 3);
+  say('3 進來：也還有空間', '');
+  await step(tok);                                   // 2:00:45 4 進來：滿了
+  await ins4(tv, 4, { placed: full(4), over: async () => {
+    await step(tok);                                 // 2:00:53 把 2 趕上去
+    say('分家：把 2 趕上去', '2 的左小孩 1、右小孩 3 4');
+  } });
+  await step(tok);                                   // 2:01:18 5
+  await ins4(tv, 5);
+  say('5：還有空房間', '蟑螂腳還在同一層');
+  await step(tok);                                   // 2:01:38 6：滿了
+  await ins4(tv, 6, { placed: full(6), over: async () => {
+    await step(tok);                                 // 2:01:45 選 4 上去
+    say('選 4 上去（也可以選 5）', '2 4 中間是 3，4 的右邊是 5 6');
+  } });
+  await step(tok);                                   // 2:02:24 7
+  await ins4(tv, 7);
+  say('7：多一個房間而已', '');
+  await step(tok);                                   // 2:02:31 8：滿了
+  await ins4(tv, 8, { placed: full(8), over: async () => {
+    await step(tok);                                 // 2:02:42 6 上去，上面還有房間
+    say('6 上去：上面還有房間', '4 6 中間是 5，6 的右邊是 7 8');
+  } });
+  await step(tok);                                   // 2:03:09 9、10 進來
+  await ins4(tv, 9);
+  say('9 進來：沒問題', '');
+  await beat(tok, 900);
+  await ins4(tv, 10, {
+    placed: async () => { say('10 進來', NO('又滿了：overflow')); },
+    over: async (n, mid, lvl) => {
+      if (lvl === 0) {
+        await step(tok);                             // 2:03:18 找 8 上去
+        say('找 8 上去', '6 8 中間是 7，8 的右邊是 9 10');
+      } else {
+        await step(tok);                             // 2:03:34 2 4 6 8 也滿了
+        say('8 上去後：2 4 6 8 也滿了', NO('再分家'));
+        await step(tok);                             // 2:03:44 再選 4 往上
+        say('選 4 往上', '4 的左邊 2，右邊 6 8；樹這時才長高');
+      }
+    },
+  });
+  await step(tok);                                   // 2:04:10 大部分地方還有空房間
+  tv.leaves().forEach((n) => { if (n.ks.length < 3) tv.glowN(n, GREEN); });
+  say('大部分的地方都還有空房間', '就算是很極端的依序插入');
+  await step(tok);                                   // 2:04:27 像公司的階層化管理
+  tv.leaves().forEach((n) => tv.glowN(n, null));
+  const boss = buddy('大組長', '4', '#e8cf8a', 6.0, 0, 2.2, 0.6); boss.mood('happy');
+  tmp.push(note('組員 → 小組長 → 大組長', 0, 7.0, 0));
+  say('像公司的階層化管理', '人多了才分出小組長、大組長');
+  await step(tok);                                   // 2:05:08 從基層做起
+  await boss.hop(tok);
+  say('從基層做起的演算法', '每個人都從 leaf 開始，滿了才往上長');
 }]);
 
-// ═════════ 18. 蟑螂腳：真正的定義 ═════════
+// ═════════ 18. 蟑螂腳：真正的定義（8 steps）═════════
 FRAG.push(['avllin-234-legs', '嚴格定義：蟑螂腳（空的位置）要同高', async (tok) => {
   fresh([0, 4.4, 13], [0, 3.0, 0]);
   const tv = T4({ top: 5.6, dy: 1.9 });
   const n3 = N4([3]);
   tv.root = N4([4], [N4([2], [N4([1]), n3]), N4([6, 8], [N4([5]), N4([7]), N4([9, 10])])]); tv.sync();
-  say('剛才插完 1…10 的樹', '腳在管樹高跟資料量的關係');
-  await beat(tok, 2600);
-  say('嚴格定義：所有蟑螂腳同一高度', '「leaf 同高」是好懂的說法');
-  await beat(tok, 2800);
   const two = tv.root.ch[0];
+  let tmp = [];
+  const clr = () => { tmp.forEach(kill); tmp = []; };
+  await step(tok);                                   // 2:06:08 一路往上長，不會變 linked list
+  say('一路從底下往上長', '所以不會長成歪斜的 linked list');
+  await step(tok);                                   // 2:06:16 蟑螂腳管住高度與資料量
+  tmp.push(note('蟑螂腳：管住「樹高 ↔ 資料量」', 0, 7.0, 0));
+  say('蟑螂腳管的是：樹高和資料量的關係', '它的用途就是確認高度');
+  await step(tok);                                   // 2:06:41 嚴格定義：蟑螂腳同高
+  clr();
+  say('嚴格的定義：', '所有蟑螂腳在同一個高度');
+  await step(tok);                                   // 2:07:10 把 3 這個 node 拿掉呢
   two.ch = [two.ch[0]]; tv.sync();
-  say('把 3 這個 node 拿掉呢？', '');
-  await beat(tok, 2000);
+  say('如果把 3 這個 node 拿掉呢？', '還是合法的 2-3-4 樹嗎？');
+  await step(tok);                                   // 2:07:19 剩下的 leaf 都在高度 3
   for (const k of [1, 5, 7, 9, 10]) glow(tv.c(k), GREEN);
-  say('剩下的 leaf 都還在第 3 層', '看起來合法？');
-  await beat(tok, 2600);
-  const x = two._L + 0.82, y = two._py;
-  const bad = line(x, y - 0.4, x + 0.3, y - 0.95, 0, '#d64545'), dot = cube('', '#d64545', [0.18, 0.18, 0.18], x + 0.3, y - 0.98, 0);
-  const note = tag('這隻腳在第 2 層', 'ptr', x + 0.6, y - 1.5, 0);
+  say('剩下的 leaf：1、5、7、9 10', '都還在高度 3');
+  await step(tok);                                   // 2:07:33 有一隻蟑螂腳不合群
   for (const k of [1, 5, 7, 9, 10]) glow(tv.c(k), null);
-  say('但 2 的右腳不合群', NO('不能有空的 leaf'));
-  await beat(tok, 3200);
-  kill(bad); kill(dot); kill(note);
-  two.ch.push(n3); tv.sync();
-  say('所以真正的定義：腳同高', '2-3-4 樹是往根部長的樹');
-  await beat(tok, 2800);
+  const x = two._L + 0.82, y = two._py;
+  tmp.push(line(x, y - 0.4, x + 0.3, y - 0.95, 0, '#d64545'), cube('', '#d64545', [0.18, 0.18, 0.18], x + 0.3, y - 0.98, 0));
+  tmp.push(bad('這隻腳在第 2 層', x + 0.6, y - 1.5));
+  say('但 2 的右邊這隻蟑螂腳不合群', NO('它在高度 2'));
+  await step(tok);                                   // 2:08:20 不能有空的 leaf
+  clr(); two.ch.push(n3); tv.sync();
+  say('不能有空的 leaf', '真正的定義：腳同高（leaf 同高是好懂的說法）');
+  await step(tok);                                   // 2:08:58 往根部長的樹
+  const up = pkt('往上長 ↑', 4.6, 2.0);
+  await travel(tok, up, V3(4.6, 2.0, 0.5), V3(4.6, 6.4, 0.5), 1200);
+  say('它是往根部長的樹', '從基層做起，從底層往上長');
 }]);
 
-// ═════════ 19. 2-3-4 node ↔ 紅黑樹 ═════════
+// ═════════ 19a. 為什麼要紅黑樹：2-3-4 樹難寫（6 steps）═════════
+FRAG.push(['avllin-rb-why', '2-3-4 樹難寫 → 想要好寫的 binary tree', async (tok) => {
+  fresh([0, 4.6, 12.5], [0, 3.2, 0]);
+  const box = ghostBox('#a99470', 2.62, 0.92, 1.0); box.position.set(-3.6, 5.0, 0);
+  [7, 11, 14].forEach((k, i) => cube(k, '#4b9ee2', [0.77, 0.7, 0.8], -3.6 + (i - 1) * 0.85, 5.0, 0, 2.5));
+  tag('2-3-4 node', 'ptr', -3.6, 6.0, 0);
+  const st = buddy('同學', '', '#f4c27a', -6.2, 0, 2.2, 0.65); st.mood('sad');
+  await step(tok);                                   // 2:09:38 程式很複雜很痛苦
+  bubble('寫起來好痛苦…', -5.4, 1.6, 2.2);
+  say('2-3-4 樹的程式很複雜、很痛苦', '所以沒有出成作業');
+  await step(tok);                                   // 2:09:54 想要簡單的操作方式
+  say('真正想寫的：一個簡單的操作方式', '而且它能幫助了解紅黑樹');
+  await step(tok);                                   // 2:10:57 2-3-4 樹和紅黑樹的關係
+  tag('2-3-4 樹 ⇄ 紅黑樹', 'ptr alt', 0, 6.8, 0);
+  say('2-3-4 樹和紅黑樹是什麼關係？', '');
+  await step(tok);                                   // 2:11:11 binary tree 好寫
+  const bn = buddy('binary node', 'k', '#7cb8ee', 3.6, 3.6, 0, 0.8); bn.mood('happy');
+  const nl = note('左', 2.6, 2.6, 0.6), nr = note('右', 4.6, 2.6, 0.6);
+  line(3.3, 3.6, 2.6, 2.9, 0); line(3.9, 3.6, 4.6, 2.9, 0);
+  say('想要 binary tree：超好寫', '一個 node 只要管兩張小紙條（左、右）');
+  await step(tok);                                   // 2:11:22 三個排序好的 element，if-then-else 半天
+  const cd = code(['if (k < a) …', 'else if (k < b) …', 'else if (k < c) …', 'else …'], -3.6, 3.8, 0.55, 0.4);
+  for (let i = 0; i < 4; i++) { cd.hl(i); await beat(tok, 380); }
+  say('2-3-4 的 node：三個排好序的 element', '每次都要 if-then-else 半天，很容易寫錯');
+  await step(tok);                                   // 2:11:52 每一種 node 對應到 BST
+  cd.hl(-1);
+  arrow(V3(-1.9, 5.0, 0), V3(2.4, 4.2, 0));
+  st.mood('happy');
+  say('辦法：把 2-3-4 樹的每一種 node', '都對應到 BST 裡的一小塊');
+}]);
+
+// ═════════ 19b. 2-3-4 node ↔ 紅黑樹（11 steps）═════════
 FRAG.push(['avllin-rb-mapping', '2-3-4 node 換成 binary node：黑 = 代表，紅 = 跟班', async (tok) => {
   fresh([0, 4.4, 13], [0, 3.0, 0]);
-  say('2-3-4 樹好懂，但很難寫', 'node 裡要排序、if-then-else 半天');
-  await beat(tok, 2800);
-  say('想要：binary tree（好寫）', '每種 2-3-4 node 對應一小棵 BST');
-  await beat(tok, 2600);
   const box = (cx, y, ks) => {
     const w = ks.length * 0.8; const g = ghostBox('#a99470', w + 0.16, 0.86, 1.0); g.position.set(cx, y, 0);
     ks.forEach((k, i) => cube(k, '#4b9ee2', [0.72, 0.66, 0.8], cx - w / 2 + 0.8 * (i + 0.5), y, 0));
   };
-  const rb = (k, c, x, y, d) => cube(k, c === 'R' ? RBR : RBB, [0.7, 0.7, 0.7], x, y, 0, d ? 2.5 : 0);
-  // 2-node
+  const rb = (k, c, x, y) => cube(k, c === 'R' ? RBR : c === 'B' ? RBB : RBN, [0.7, 0.7, 0.7], x, y, 0, 2.5);
+  let tmp = [];
+  await step(tok);                                   // 2:12:25 2-node → BST 的一個 node
   box(-4.4, 5.4, ['a']); arrow(V3(-3.6, 5.4, 0), V3(-2.4, 5.4, 0));
-  rb('a', 'B', -1.2, 5.4, true);
-  say('2-node → 一個黑色 node', '黑色 = 這一家的代表（像組長）');
-  await beat(tok, 3000);
-  // 4-node
+  const a2 = rb('a', 'N', -1.2, 5.4);
+  say('2-node → 換成 BST 的一個 node', '');
+  await step(tok);                                   // 2:12:46 塗成黑色：代表一個 2-3-4 node
+  tint(a2, RBB);
+  say('把它塗成黑色', '黑色 = 代表一個 2-3-4 node');
+  await step(tok);                                   // 2:13:11 像 final project 的組長
+  const cap = buddy('組長', '★', '#5b5b66', 5.8, 0, 2.0, 0.65); cap.mood('happy');
+  tmp.push(bubble('一組只能有一個代表', 5.0, 1.6, 2.0));
+  say('像 final project：1～3 人一組', '但只能有一個登記的代表（組長）');
+  await step(tok);                                   // 2:13:30 2-node 一個人住
+  tmp.forEach(kill); tmp = [];
+  say('2-node 只有一個人住', '自己就是代表 → 黑色');
+  await step(tok);                                   // 2:13:44 3-node 兩人住，等一下再說
+  say('3-node 兩人住：誰當代表？', '等一下再說，先看三個人住的');
+  await step(tok);                                   // 2:14:02 三人住：中間的抓在上面
   box(-4.4, 3.6, ['a', 'b', 'c']); arrow(V3(-3.0, 3.6, 0), V3(-2.4, 3.6, 0));
-  rb('b', 'B', -1.0, 3.9, true); await beat(tok, 800);
-  rb('a', 'R', -1.8, 2.9, true); rb('c', 'R', -0.2, 2.9, true);
+  const b4 = rb('b', 'N', -1.0, 3.9), a4 = rb('a', 'N', -1.8, 2.9), c4 = rb('c', 'N', -0.2, 2.9);
   line(-1.0, 3.9, -1.8, 2.9, 0); line(-1.0, 3.9, -0.2, 2.9, 0);
-  say('4-node：中間的 b 當代表（黑）', '左右是跟班（紅）→ 最平衡');
-  await beat(tok, 3200);
-  // 3-node
+  say('4-node 三人住：BST 越平衡越好', '中間的 b 抓到上面');
+  await step(tok);                                   // 2:14:41 不是代表的漆成紅色
+  tint(b4, RBB); tint(a4, RBR); tint(c4, RBR);
+  say('中間的 b 當代表（黑）', '不是代表的，就漆成討厭的紅色');
+  await step(tok);                                   // 2:15:09 3-node：小的當代表
   box(-4.4, 1.4, ['a', 'b']); arrow(V3(-3.4, 1.4, 0), V3(-2.4, 1.4, 0));
-  rb('a', 'B', -1.4, 1.7, true); rb('b', 'R', -0.6, 0.7, true); line(-1.4, 1.7, -0.6, 0.7, 0);
-  say('3-node：小的當代表', '大的是紅色跟班，在右下');
-  await beat(tok, 3000);
+  rb('a', 'B', -1.4, 1.7); rb('b', 'R', -0.6, 0.7); line(-1.4, 1.7, -0.6, 0.7, 0);
+  say('3-node：小的當代表', '大的當紅色跟班，在右下');
+  await step(tok);                                   // 2:15:45 也可以大的當代表
   tag('或', 'idx', 0.9, 1.3, 0);
-  rb('b', 'B', 3.0, 1.7, true); rb('a', 'R', 2.2, 0.7, true); line(3.0, 1.7, 2.2, 0.7, 0);
+  rb('b', 'B', 3.0, 1.7); rb('a', 'R', 2.2, 0.7); line(3.0, 1.7, 2.2, 0.7, 0);
   say('也可以大的當代表', '小的紅色跟班在左下：兩種都行');
-  await beat(tok, 3000);
-  say('這樣換出來的 BST 就是紅黑樹', '黑 + 相連的紅 = 一個 2-3-4 node');
-  await beat(tok, 3000);
+  await step(tok);                                   // 2:16:20 這樣的 BST 就叫紅黑樹
+  tag('紅黑樹', 'ptr alt', 2.2, 5.4, 0);
+  say('整棵 2-3-4 樹都這樣換', '得到的 BST 就叫紅黑樹');
+  await step(tok);                                   // 2:16:29 黑 + 相鄰的紅 = 一個 2-3-4 node
+  const fam = ghostBox('#e0b84a', 2.4, 2.0, 1.2); fam.position.set(-1.0, 3.4, 0);
+  say('黑色 + 相鄰的紅色', '= 2-3-4 樹裡的一個 node');
 }]);
 
-// ═════════ 20. 例子：2 5 / 1 | 3 4 | 6 7 8 → 紅黑樹 ═════════
+// ═════════ 20. 例子：2 5 / 1 | 3 4 | 6 7 8 → 紅黑樹（10 steps）═════════
 FRAG.push(['avllin-rb-example', '2-3-4 樹 2 5 / 1｜3 4｜6 7 8 換成紅黑樹', async (tok) => {
   fresh([0, 4.4, 13.5], [0, 3.2, 0]);
   const t4 = T4({ cx: -3.6, top: 5.6, dy: 1.6, kw: 0.68, gap: 0.42 });
-  t4.root = N4([2, 5], [N4([1]), N4([3, 4]), N4([6, 7, 8])]); t4.sync();
-  tag('2-3-4 樹', 'ptr', -3.6, 6.6, 0); tag('紅黑樹', 'ptr', 3.0, 6.6, 0);
-  say('2-node、3-node、4-node 都有', '2 5 / 1 ｜ 3 4 ｜ 6 7 8');
-  await beat(tok, 2800);
   const t = { root: null }; const tv = TV(t, { rb: true, cx: 3.0, dx: 0.74, dy: 1.25, top: 5.6, sz: 0.62 });
-  // 各 node 用固定的 inorder 位置，所以先全部插好再逐步顯示會亂；這裡照步驟一個個長出來
+  await step(tok);                                   // 2:17:11 2-node、3-node、4-node 都有
+  tag('2-3-4 樹', 'ptr', -3.6, 6.6, 0);
+  say('畫一棵 2-node、3-node、4-node 都有的樹', '');
+  await step(tok);                                   // 2:17:36 填數字
+  t4.root = N4([2, 5], [N4([1]), N4([3, 4]), N4([6, 7, 8])]); t4.sync([2, 5, 1, 3, 4, 6, 7, 8]);
+  say('填上數字：root 2 5', '小孩 1 ｜ 3 4 ｜ 6 7 8');
+  await step(tok);                                   // 2:17:48 對應到好幾棵紅黑樹
+  tag('紅黑樹', 'ptr', 3.0, 6.6, 0);
+  say('它可以對應到好幾棵紅黑樹', '2-node、4-node 換法固定；3-node 有兩種');
   const steps = [
-    [[[2, 'B'], [5, 'R']], [2, 5], '2 5：小的 2 當代表（黑）', '5 是紅色跟班'],
-    [[[7, 'B'], [6, 'R'], [8, 'R']], [6, 7, 8], '5 的右邊：6 7 8', '7 當代表，6、8 是紅色跟班'],
-    [[[4, 'B'], [3, 'R']], [3, 4], '2、5 中間：3 4', '這次讓 4 當代表，3 是紅'],
-    [[[1, 'B']], [1], '2 的左邊：1 自己住', '自己當代表（黑）'],
+    [[[2, 'B'], [5, 'R']], [2, 5], '2 5：小的 2 放上面當代表（黑）', '5 在下面當紅色跟班'],
+    [[[7, 'B'], [6, 'R'], [8, 'R']], [6, 7, 8], '5 的右小孩：6 7 8', '7 當代表，6、8 是紅色小跟班'],
+    [[[4, 'B'], [3, 'R']], [3, 4], '2、5 中間的 3 4 → 5 的左邊', '這次讓 4 當代表，3 是紅色'],
+    [[[1, 'B']], [1], '2 的左小孩：1 自己住', '自己當代表（黑）'],
   ];
+  let prev = null;
   for (const [ins, keys, a, b] of steps) {
+    await step(tok);                                 // 2:18:16 / 2:18:43 / 2:19:07 / 2:19:27
+    if (prev) { t4.glowN(t4.node(prev[0]), null); prev.forEach((k) => glow(tv.c(k), null)); }
     ins.forEach(([k, c]) => bstIns(t, k, c)); tv.sync(keys);
     t4.glowN(t4.node(keys[0]), GOLD); keys.forEach((k) => glow(tv.c(k), GOLD));
-    say(a, b); await beat(tok, 2600);
-    t4.glowN(t4.node(keys[0]), null); keys.forEach((k) => glow(tv.c(k), null));
+    say(a, b); prev = keys;
   }
-  say('3-node 有兩種換法', '一棵 2-3-4 樹 ↔ 好幾棵紅黑樹');
-  await beat(tok, 2600);
+  await step(tok);                                   // 2:19:47 反過來：黑色 + 附近的紅色集合
+  t4.glowN(t4.node(prev[0]), null); prev.forEach((k) => glow(tv.c(k), null));
   const fam = [[2, 5], [1], [3, 4], [6, 7, 8]], cols = ['#4b9ee2', '#2fc092', '#dd8238', '#9b7ef4'];
   fam.forEach((ks, i) => {
     const ps = ks.map((k) => tv.P.get(k)); const x0 = Math.min(...ps.map((p) => p.x)), x1 = Math.max(...ps.map((p) => p.x));
     const y0 = Math.min(...ps.map((p) => p.y)), y1 = Math.max(...ps.map((p) => p.y));
     const g = ghostBox(cols[i], x1 - x0 + 0.9, y1 - y0 + 0.9, 1.1); g.position.set((x0 + x1) / 2, (y0 + y1) / 2, 0);
   });
-  say('反過來：黑色 + 附近的紅色 = 一家', '一條線、兩條線、三條線也對得上');
-  await beat(tok, 3200);
+  say('反過來猜：找出所有黑色', '把黑色和附近的紅色集合起來 = 原本的 node');
+  await step(tok);                                   // 2:20:19 一條線、兩條線、三條線
+  note('2-3-4 的連線結構，紅黑樹裡也都有', 0, 0.5, 1.2);
+  say('2-3-4 樹裡一條線、兩條線、三條線的結構', '在紅黑樹裡也都有');
+  await step(tok);                                   // 2:20:50 用 insertion 示範
+  say('接下來用 insertion 示範', '2-3-4 樹插入時，紅黑樹會發生什麼？');
 }]);
 
-// ═════════ 21. 紅黑樹插入：1.5、4.5、1.8 ═════════
+// ═════════ 21. 紅黑樹插入：1.5、4.5、1.8（11 steps）═════════
 FRAG.push(['avllin-rb-insert-easy', '紅黑樹插入：1.5、4.5 標紅就好，1.8 紅接紅', async (tok) => {
   fresh([0, 4.6, 12.5], [0, 3.2, 0]);
   const t = rbTree(RB_EX); const tv = TV(t, { rb: true, dx: 0.88, dy: 1.25, top: 5.8, sz: 0.72 }); tv.sync();
-  say('照 BST insertion 走下去', '新 node 要塗什麼顏色？');
-  await beat(tok, 2400);
-  bstIns(t, 1.5, 'R'); tv.sync(1.5);
-  say('1.5：2 的左 → 1 的右', '1 已經當代表 → 1.5 是紅色跟班');
-  await beat(tok, 3000);
-  say('對應 2-3-4：有空房間', OK('標成紅色，什麼都不用做'));
-  await beat(tok, 2600);
-  bstIns(t, 4.5, 'R'); tv.sync(4.5);
-  say('4.5：2 右 → 5 左 → 4 右', '4 當家長，4.5 當跟班：' + OK('紅色'));
-  await beat(tok, 3000);
-  bstIns(t, 1.8, 'R'); tv.sync(1.8);
+  let tmp = [];
+  const clr = () => { tmp.forEach(kill); tmp = []; };
+  await step(tok);                                   // 2:21:44 2-3-4 樹：1.5 放在 1 跟 2 中間
+  tmp.push(note('2-3-4：1.5 住進 1 那間房 → 1 1.5', -3.6, 7.0, 0));
+  say('例子一：insert 1.5', '在 2-3-4 樹裡，1.5 放進 1 的那間房');
+  await step(tok);                                   // 2:21:54 紅黑樹：1 這邊長出 1.5
+  await walkIns(tok, tv, t, 1.5, 'N');
+  say('紅黑樹：2 的左邊 → 1 的右邊', '長出 1.5——它該塗什麼顏色？');
+  await step(tok);                                   // 2:22:13 1 已經是代表 → 1.5 紅
+  findN(t, 1.5).c = 'R'; tv.sync();
+  say('1 這一家已經有 1 當代表', '所以 1.5 是紅色跟班');
+  await step(tok);                                   // 2:22:46 對應空房間 → 標紅就好
+  clr();
+  say('對應 2-3-4 樹的空房間', OK('塞進去、標紅色，什麼都不用做'));
+  await step(tok);                                   // 2:23:09 insert 4.5
+  await walkIns(tok, tv, t, 4.5, 'N');
+  say('insert 4.5：2 右 → 5 左 → 4 右', '');
+  await step(tok);                                   // 2:23:42 4 是家長，3 是小跟班 → 4.5 紅
+  findN(t, 4.5).c = 'R'; tv.sync();
+  say('4 是家長、3 是小跟班', '4.5 也當跟班 → 紅色，一點也不難');
+  await step(tok);                                   // 2:24:28 insert 1.8
+  await walkIns(tok, tv, t, 1.8, 'R');
+  say('insert 1.8：比 2 小、比 1 大、比 1.5 大', '照規則塞進去、標紅');
+  await step(tok);                                   // 2:24:59 1、1.5、1.8 看起來怪怪的
   glow(tv.c(1.5), RED); glow(tv.c(1.8), RED);
-  say('1.8：比 1、1.5 大 → 接在 1.5 右', NO('紅色接在紅色後面'));
-  await beat(tok, 3000);
-  say('1、1.5、1.8 歪成一串', '應該是 1.5 在上：就是 AVL 的 RR');
-  await beat(tok, 3000);
+  say('1、1.5、1.8 歪成一串', '看起來怪怪的');
+  await step(tok);                                   // 2:25:15 應該是 1.5 在上
+  tmp.push(bubble('應該 1.5 在上，1、1.8 在兩邊', -3.4, 2.0));
+  say('這間房子不該長這樣', '應該 1.5 在上、1 和 1.8 在兩邊');
+  await step(tok);                                   // 2:25:33 就是 AVL 的 RR
+  tmp.push(tag('= AVL 的 RR', 'ptr alt', -3.4, 1.2, 0));
+  say('這就是 AVL 出問題的 RR 情形', '');
+  await step(tok);                                   // 2:26:01 1.8 的爸爸應該是黑色代表
+  clr();
+  tmp.push(bad('紅接紅 ✗', tv.P.get(1.8).x + 0.4, tv.P.get(1.8).y - 0.9));
+  say('1.8 的爸爸應該是黑色的代表', NO('接在紅色後面就不對'));
 }]);
 
-// ═════════ 22. 新生先為紅，紅父不能容 ═════════
+// ═════════ 22. 新生先為紅，紅父不能容（10 steps）═════════
 FRAG.push(['avllin-rb-two-problems', '新生先為紅、紅父不能容：插 9 進 6 7 8', async (tok) => {
   fresh([0, 4.6, 12.5], [0, 3.2, 0]);
   const t = rbTree(RB_EX); const tv = TV(t, { rb: true, dx: 1.0, dy: 1.3, top: 5.6, sz: 0.75 }); tv.sync();
-  const p1 = tag('新生先為紅', 'ptr alt', -4.6, 6.4, 0);
-  say('第一句：新插入的一律先塗紅', '新生先為紅');
-  await beat(tok, 2600);
-  const p2 = tag('紅父不能容', 'ptr alt', -4.6, 5.7, 0);
-  say('第二句：爸爸是紅的就不行', '紅父不能容');
-  await beat(tok, 2600);
-  say('紅色是小弟，小弟頭上要有大哥', '大哥 = 這家的黑色代表');
-  await beat(tok, 2800);
-  bstIns(t, 9, 'R'); tv.sync(9);
-  for (const k of [6, 7, 8]) glow(tv.c(k), GOLD);
-  say('insert 9 進 6 7 8 這家', '2-3-4：要分家，7 拱上去');
-  await beat(tok, 3000);
-  for (const k of [6, 7]) glow(tv.c(k), null);
-  glow(tv.c(8), RED); glow(tv.c(9), RED);
-  say('紅黑樹：9 紅、爸爸 8 也紅', NO('紅父不能容'));
-  await beat(tok, 2800);
-  say('紅父兩種原因', '這家沒拿中間當頭（1.8）／這家滿了（9）');
-  await beat(tok, 3200);
-  say('步驟：插入標紅 → 檢查爸爸', '爸爸黑 = 有空房，結束');
-  await beat(tok, 2800);
-  kill(p1); kill(p2);
+  const baby = buddy('新 node', '', '#e98b8b', -6.0, 0, 2.2, 0.65);
+  let tmp = [];
+  const clr = () => { tmp.forEach(kill); tmp = []; };
+  await step(tok);                                   // 2:26:35 新生先為紅
+  tag('① 新生先為紅', 'ptr alt', -4.6, 6.6, 0); baby.mood('happy');
+  say('第一句詩：新生先為紅', '新插入的 node，先塗成紅色');
+  await step(tok);                                   // 2:26:49 紅父不能容
+  tag('② 紅父不能容', 'ptr alt', -4.6, 5.9, 0);
+  say('第二句：紅父不能容', '如果爸爸是紅色，就有問題');
+  await step(tok);                                   // 2:27:10 小弟頭上要有大哥
+  tmp.push(bubble('小弟頭上要有大哥', -5.2, 1.6, 2.2));
+  say('紅色是小弟', '小弟頭上要有大哥：這家的黑色代表');
+  await step(tok);                                   // 2:27:36 6 7 8 塞 9
+  clr(); for (const k of [6, 7, 8]) glow(tv.c(k), GOLD);
+  say('另一個情形：6 7 8 這家', '如果再塞個 9 進去？');
+  await step(tok);                                   // 2:27:53 2-3-4：要分家，7 拱上去
+  tmp.push(note('2-3-4：要分家，把 7 拱上去', 3.4, 6.8, 0));
+  say('對應 2-3-4 樹：要分家', '把 7 拱上去');
+  await step(tok);                                   // 2:28:00 9 一開始標紅
+  for (const k of [6, 7, 8]) glow(tv.c(k), null);
+  await walkIns(tok, tv, t, 9, 'R');
+  say('紅黑樹裡：9 塞在 8 的右邊', '一開始標成紅色');
+  await step(tok);                                   // 2:28:09 紅色有紅色的爸爸
+  glow(tv.c(8), RED); glow(tv.c(9), RED); baby.mood('sad');
+  say('9 的爸爸 8 也是紅色', NO('紅父不能容'));
+  await step(tok);                                   // 2:28:28 爸爸是黑色 → 沒問題
+  clr(); glow(tv.c(8), null); glow(tv.c(9), null);
+  say('插入後檢查：爸爸是黑色嗎？', OK('是黑色 → 有空房間，沒問題'));
+  await step(tok);                                   // 2:28:46 爸爸不是黑：這家歪掉或滿了
+  tmp.push(note('紅父的原因：這家歪掉（1.8）／這家滿了（9）', 0, 0.5, 1.4));
+  say('爸爸是紅色，有兩種原因', '這家沒拿中間當頭（1.8），或已經滿了（9）');
+  await step(tok);                                   // 2:29:26 1. 標紅 2. 檢查爸爸
+  baby.mood('calm');
+  say('insertion：1. 新 node 標紅', '2. 檢查爸爸是不是黑色，不是就要調整');
 }]);
 
-// ═════════ 23. 黑叔逼爺退：rotation ═════════
-FRAG.push(['avllin-rb-black-uncle', '黑叔逼爺退：1、1.5、1.8 旋轉＋變色', async (tok) => {
-  fresh([0, 5, 12], [0, 3.2, 0]);
-  const t = rbTree([[2, 'B'], [1, 'B'], [1.5, 'R'], [1.8, 'R']]);
-  const tv = TV(t, { rb: true, dx: 1.5, dy: 1.4, top: 6.0 }); tv.sync();
-  const rest = ghostBox('#a99470', 1.6, 1.2, 1.0); rest.position.set(3.4, 4.6, 0); rest.add(lab.label('5 那邊', 'idx'));
-  line(tv.P.get(2).x, 6.0, 3.4, 5.2, 0);
-  const nilAt = () => { const p = tv.P.get(1); return [p.x - 0.8, p.y - 1.0]; };
-  let [nx, ny] = nilAt();
-  const nil = cube('', RBB, [0.3, 0.3, 0.3], nx, ny, 0), nilL = tag('nil', 'idx', nx - 0.5, ny, 0);
-  let nilE = line(tv.P.get(1).x, tv.P.get(1).y, nx, ny, 0);
-  glow(tv.c(1.5), RED); glow(tv.c(1.8), RED);
-  say('insert 1.8：爸爸 1.5 是紅', '紅父不能容 → 看叔叔');
-  await beat(tok, 2800);
-  glow(nil, GOLD);
-  say('叔叔 = 爺爺 1 的另一個小孩', '這裡是 nil（蟑螂腳）');
-  await beat(tok, 2600);
-  say('把 nil 當成黑色的空 node', 'if 只要判斷「是不是黑」');
-  await beat(tok, 2600);
+// ═════════ 23. 黑叔逼爺退：rotation（11 steps）═════════
+FRAG.push(['avllin-rb-black-uncle', '黑叔逼爺退：3-node 歪掉 → 旋轉＋變色', async (tok) => {
+  fresh([0, 5, 12.5], [0, 3.2, 0]);
+  const t1 = rbTree([[1, 'B'], [1.5, 'R'], [1.8, 'R']]);
+  const vl = TV(t1, { rb: true, cx: -3.4, dx: 1.2, dy: 1.4, top: 5.6, sz: 0.75 });
+  const t2 = rbTree([[7, 'B'], [6, 'R'], [8, 'R'], [9, 'R']]);
+  const vr = TV(t2, { rb: true, cx: 3.4, dx: 1.2, dy: 1.4, top: 5.6, sz: 0.75 });
+  let tmp = [], nil, nilE, nilL;
+  const clr = () => { tmp.forEach(kill); tmp = []; };
+  const placeNil = () => {
+    const p = vl.P.get(1), nx = p.x - 0.8, ny = p.y - 1.1;
+    if (!nil) { nil = cube('', RBB, [0.3, 0.3, 0.3], nx, ny, 0); nilL = tag('nil', 'idx', nx - 0.5, ny, 0); }
+    else { move(nil, nx, ny, 0); nilL.position.set(nx - 0.5, ny, 0); }
+    if (nilE) kill(nilE); nilE = line(p.x, p.y, nx, ny, 0);
+  };
+  await step(tok);                                   // 2:33:58 情形 1：3-node 不正確那邊又塞一個
+  vl.sync([1, 1.5, 1.8]); placeNil();
+  tag('情形 1', 'ptr', -3.4, 6.7, 0);
+  say('情形 1：原本是 3-node（1 1.5）', '在不正確的那一邊又塞了一個（1.8）');
+  await step(tok);                                   // 2:34:05 情形 2：4-node 又塞一個
+  vr.sync([6, 7, 8, 9]);
+  tag('情形 2', 'ptr', 3.4, 6.7, 0);
+  say('情形 2：原本是 4-node（6 7 8），又塞 9', '這是原本就要分家的情形');
+  await step(tok);                                   // 2:34:31 情形 1 只是弄錯了
+  say('情形 1 只是弄錯了：沒拿中間當頭', '只要一點點 restructure');
+  await step(tok);                                   // 2:34:45 怎麼區分？
+  tmp.push(bubble('叔叔？', vl.P.get(1).x - 1.4, vl.P.get(1).y - 0.4), bubble('叔叔？', vr.P.get(6).x - 0.2, vr.P.get(6).y + 0.9));
+  say('這兩種情形怎麼分辨？', '看「叔叔」：爸爸的兄弟');
+  await step(tok);                                   // 2:35:36 3-node 接黑色代表（或 nil）；4-node 接紅色
+  clr(); glow(nil, GOLD); glow(vr.c(6), GOLD);
+  tmp.push(bubble('黑叔（另一家／nil）', vl.P.get(1).x - 1.2, vl.P.get(1).y - 0.3), bubble('紅叔（還是同一家）', vr.P.get(6).x, vr.P.get(6).y + 0.9));
+  say('3-node 旁邊接的是另一家的黑色代表或 nil', '4-node 旁邊接紅色：還是同一家');
+  await step(tok);                                   // 2:36:13 像 AVL：rotate(A, B)
+  clr(); glow(nil, null); glow(vr.c(6), null);
+  rotUp(t1, findN(t1, 1), 'L'); vl.sync(); placeNil();
+  say('情形 1 就像 AVL：rotate(A, B)', 'A = 1、B = 1.5，轉一轉就解決');
+  await step(tok);                                   // 2:36:36 B 漆黑、A 漆紅、C 維持紅
+  findN(t1, 1.5).c = 'B'; findN(t1, 1).c = 'R'; vl.sync();
+  say('B（1.5）漆成黑、A（1）漆成紅', 'C（1.8）維持紅色 → 一個好好的 4-node');
+  await step(tok);                                   // 2:36:55 其他 link 都沒變
+  say('其他 link 都沒有變', '跟 AVL 的 rotation 一樣');
+  await step(tok);                                   // 2:37:05 標紅 → 爸爸紅 → 看叔叔
+  tmp.push(tag('C 標紅 → 爸爸紅？ → 看叔叔：黑 → rotation', 'pkt', 0, 0.6, 1.2));
+  say('流程：放進 C 標紅 → 爸爸是紅 → 看叔叔', '叔叔是黑色 → 走 rotation');
+  await step(tok);                                   // 2:37:32 把蟑螂腳當成黑色的空 node
+  clr(); glow(nil, GOLD); txt(nilL, 'nil = 黑色的空 node');
+  say('實作技巧：把蟑螂腳（nil）當成黑色空 node', 'if 只要問「叔叔是不是黑色」');
+  await step(tok);                                   // 2:38:48 黑叔逼爺退
   glow(nil, null);
-  say('黑叔叔 = 3-node 歪掉了', '不是滿房，只是沒選中間當頭');
-  await beat(tok, 2600);
-  glow(tv.c(1.5), null); glow(tv.c(1.8), null);
-  kill(nilE); rotUp(t, findN(t, 1), 'L'); tv.sync();
-  [nx, ny] = nilAt(); move(nil, nx, ny, 0); nilL.position.set(nx - 0.5, ny, 0);
-  say('rotate(A = 1, B = 1.5)', '跟 AVL 的 RR 一樣');
-  await beat(tok, 2200);
-  nilE = line(tv.P.get(1).x, tv.P.get(1).y, nx, ny, 0);
-  findN(t, 1.5).c = 'B'; findN(t, 1).c = 'R'; tv.sync();
-  say('1.5 漆成黑、1 漆成紅、1.8 維持紅', OK('= 4-node：1 1.5 1.8'));
-  await beat(tok, 3000);
-  const poem = tag('黑叔逼爺退', 'ptr alt', -3.8, 6.4, 0);
-  say('黑叔逼爺退', '爺爺被轉下去；其他 link 都沒變');
-  await beat(tok, 3000);
-  kill(poem);
+  tag('③ 黑叔逼爺退', 'ptr alt', -3.4, 1.0, 0);
+  bubble('我退位…', vl.P.get(1).x - 0.2, vl.P.get(1).y - 1.0);
+  say('第三句詩：黑叔逼爺退', '黑色叔叔 → 爺爺被轉下來');
 }]);
 
-// ═════════ 24. 紅叔：變色往上傳 ═════════
+// ═════════ 24. 紅叔：變色往上傳（10 steps）═════════
 FRAG.push(['avllin-rb-red-uncle', '紅叔叔 = 滿房分家：插入 9，變色一路往上', async (tok) => {
   fresh([0, 4.6, 12.5], [0, 3.2, 0]);
-  const t = rbTree(RB_EX); const tv = TV(t, { rb: true, dx: 1.0, dy: 1.3, top: 5.6, sz: 0.75 }); tv.sync();
-  bstIns(t, 9, 'R'); tv.sync(9);
-  glow(tv.c(8), RED); glow(tv.c(9), RED); glow(tv.c(6), GOLD);
-  say('insert 9：爸爸 8 紅、叔叔 6 也紅', '紅叔 = 這家已經滿了 → 分家');
-  await beat(tok, 3000);
-  glow(tv.c(8), null); glow(tv.c(9), null); glow(tv.c(6), null);
+  const t = rbTree(RB_EX); const tv = TV(t, { rb: true, dx: 1.0, dy: 1.3, top: 5.6, sz: 0.75 });
+  bstIns(t, 9, 'R'); tv.sync();
+  glow(tv.c(8), RED); glow(tv.c(9), RED);
+  let tmp = [];
+  const clr = () => { tmp.forEach(kill); tmp = []; };
+  const fam = (ks, col) => { const ps = ks.map((k) => tv.P.get(k)); const x0 = Math.min(...ps.map((p) => p.x)), x1 = Math.max(...ps.map((p) => p.x)), y0 = Math.min(...ps.map((p) => p.y)), y1 = Math.max(...ps.map((p) => p.y)); const g = ghostBox(col, x1 - x0 + 0.95, y1 - y0 + 0.95, 1.1); g.position.set((x0 + x1) / 2, (y0 + y1) / 2, 0); tmp.push(g); };
+  await step(tok);                                   // 2:39:17 4-node 要分家
+  glow(tv.c(6), GOLD);
+  say('情形 2：紅叔叔 = 4-node 又塞一個', '4-node 就是要分家');
+  await step(tok);                                   // 2:39:35 不改結構：兩個一邊的一家、一個的一家
+  glow(tv.c(6), null); glow(tv.c(8), null); glow(tv.c(9), null);
+  fam([6], '#2fc092'); fam([8, 9], '#dd8238');
+  say('不改變 binary tree 的結構來分家', '6 自己一家；8 9 一家');
+  await step(tok);                                   // 2:39:59 原本在上面的當頭
+  glow(tv.c(8), GOLD);
+  say('8 9 這家：原本在上面的 8 當頭', '6 那家只有自己，自己當頭');
+  await step(tok);                                   // 2:40:22 紅爸爸、紅叔叔改黑
+  glow(tv.c(8), null);
   findN(t, 6).c = 'B'; findN(t, 8).c = 'B'; tv.sync();
-  say('爸爸、叔叔改黑：分成兩家', '6 一家；8 9 一家（8 當頭）');
-  await beat(tok, 3000);
-  findN(t, 7).c = 'R'; tv.sync(); glow(tv.c(7), GOLD);
-  say('爺爺 7 往上 insert → 改紅', '加入新的一家，一律先紅');
-  await beat(tok, 3000);
-  glow(tv.c(5), RED); glow(tv.c(7), RED);
-  say('7 的爸爸 5 也紅 → 繼續處理', '叔叔 1 是黑 → 旋轉');
-  await beat(tok, 3000);
-  glow(tv.c(5), null); glow(tv.c(7), null);
+  say('把紅爸爸 8、紅叔叔 6 改成黑色', OK('分家完成'));
+  await step(tok);                                   // 2:40:42 爺爺往上插入 → 改紅
+  clr(); findN(t, 7).c = 'R'; tv.sync(); glow(tv.c(7), GOLD);
+  say('爺爺 7 要往上插入，加入新的一家', '新成員一律先塗紅');
+  await step(tok);                                   // 2:41:02 看爺爺上面接誰
+  const pk = pkt('看上面接誰？', 0, 0);
+  await travel(tok, pk, tv.at(7), tv.at(5), 800);
+  say('就像剛塞進一個紅 node：看 7 的爸爸', '爸爸是黑色就停');
+  await step(tok);                                   // 2:41:14 紅色 → 再選情形 1 或 2
+  remove(pk); glow(tv.c(7), RED); glow(tv.c(5), RED);
+  say('7 的爸爸 5 也是紅：又是紅紅問題', '叔叔 1 是黑色 → 套情形 1：旋轉');
+  await beat(tok, 1200);
+  glow(tv.c(7), null); glow(tv.c(5), null);
   rotUp(t, t.root, 'L'); findN(t, 5).c = 'B'; findN(t, 2).c = 'R'; tv.sync();
-  say('5 拉上來漆黑、2 漆紅', '= 2-3-4 的 root 變成 2 5 7');
-  await beat(tok, 3200);
-  const poem = tag('紅叔：變色龍，一路往上', 'ptr alt', -3.6, 6.5, 0);
-  say('紅叔叔 → 變色，可能一路傳上去', '新生先為紅、紅父不能容、黑叔逼爺退');
-  await beat(tok, 3200);
-  kill(poem);
+  await step(tok);                                   // 2:41:34 症狀：紅爸爸、紅叔叔 → 變色
+  say('紅叔叔的症狀：紅爸爸、紅叔叔', '這一家都是紅的 → 要變色');
+  await step(tok);                                   // 2:41:56 變色一路往上傳
+  tag('④ 紅叔：變色龍，一路往上', 'ptr alt', -3.6, 6.8, 0);
+  say('爸爸、叔叔、爺爺都要變色', '爺爺往上插入，可能一路傳上去');
+  await step(tok);                                   // 2:42:18 四句詩
+  note('新生先為紅、紅父不能容、黑叔逼爺退、紅叔變色龍', 0, 0.5, 1.4);
+  say('整個 insertion 就是四句詩', '一直在維持 2-3-4 樹 ↔ 紅黑樹的對應');
 }]);
 
-// ═════════ 25. 代價：旋轉 vs 變色 ═════════
+// ═════════ 25. 代價：旋轉 vs 變色（11 steps）═════════
 FRAG.push(['avllin-rb-cost', '紅黑樹的代價：旋轉偶爾、變色便宜', async (tok) => {
   fresh([0, 4.6, 12.5], [0, 3.2, 0]);
   const hdr = [tag('紅黑樹', 'ptr', -1.2, 6.4, 0), tag('2-3-4 樹', 'ptr', 2.8, 6.4, 0)];
   const r1 = [tag('黑叔：旋轉（restructure）', 'idx', -1.2, 5.6, 0), tag('3-node 擠一下：easy', 'idx', 2.8, 5.6, 0)];
   const r2 = [tag('紅叔：變色（recolor）', 'idx', -1.2, 4.9, 0), tag('split 分家：hard', 'idx', 2.8, 4.9, 0)];
-  say('旋轉要換幾張小紙條', 'restructure：一個 local rotation');
-  r1[0].element.className = 'lab-label ptr alt';
-  await beat(tok, 3000);
-  r1[0].element.className = 'lab-label idx'; r2[0].element.className = 'lab-label ptr alt'; r2[1].element.className = 'lab-label ptr';
-  say('變色可能很多步，但只改顏色', '在 2-3-4 樹裡卻是最難的 split');
-  await beat(tok, 3200);
-  say('改一堆 1-bit 的顏色', OK('簡單又快'));
-  await beat(tok, 2600);
-  r2[0].element.className = 'lab-label idx'; r2[1].element.className = 'lab-label idx';
-  const t = rbTree([[3, 'B'], [5, 'R']]); const tv = TV(t, { rb: true, dx: 1.5, dy: 1.4, top: 3.4 }); tv.sync();
-  say('3-node 插入一定要旋轉嗎？', '例：3 黑、5 紅，插入 2');
-  await beat(tok, 2600);
-  bstIns(t, 2, 'R'); tv.sync(2);
+  showL(r1[1], false); showL(r2[0], false); showL(r2[1], false);
+  const hi = (l, on) => { l.element.className = 'lab-label ' + (on ? 'ptr alt' : 'idx'); };
+  let t, tv;
+  await step(tok);                                   // 2:43:34 情形 1 要旋轉：小紙條換來換去
+  hi(r1[0], true);
+  say('情形 1（黑叔）要旋轉：restructure', '幾張小紙條要換來換去');
+  await step(tok);                                   // 2:43:42 情形 2：很多步但只改顏色
+  hi(r1[0], false); showL(r2[0], true); hi(r2[0], true);
+  say('情形 2（紅叔）可能很多步', '但只改顏色，樹的結構都沒變 → easy');
+  await step(tok);                                   // 2:44:04 2-3-4 樹裡是 split：hard
+  showL(r1[1], true); showL(r2[1], true); hi(r2[1], true);
+  say('對應到 2-3-4 樹，情形 2 是 split 分家', '要蓋新房子、做新的小紙條 → hard');
+  await step(tok);                                   // 2:44:39 改一堆 1-bit：簡單又快
+  hi(r2[0], false); hi(r2[1], false);
+  say('換成紅黑樹，只是改一堆 1-bit 的顏色', OK('簡單又快'));
+  await step(tok);                                   // 2:44:46 有時要 restructure，但不一定
+  hi(r1[0], true);
+  say('付出的小代價：有時要 restructure', '但不一定會做');
+  await step(tok);                                   // 2:44:53 例：3 黑、5 紅
+  hi(r1[0], false);
+  t = rbTree([[3, 'B'], [5, 'R']]); tv = TV(t, { rb: true, dx: 1.5, dy: 1.4, top: 3.4 }); tv.sync([3, 5]);
+  say('例：3 黑、5 紅（一個 3-node）', '插入 2');
+  await step(tok);                                   // 2:45:03 插 2：沒有 restructure
+  await walkIns(tok, tv, t, 2, 'R');
   say('2 接在黑色的 3 下面', OK('還有空房間，不用 restructure'));
-  await beat(tok, 2800);
-  say('看爸爸顏色就能當場決定', '不必像 AVL 往上找到失衡點才轉');
-  await beat(tok, 3000);
-  say('所以紅黑樹常比 AVL 有效率', '');
-  await beat(tok, 2400);
+  await step(tok);                                   // 2:45:22 就算 restructure 也只一個 local rotation
+  say('就算要 restructure', '也只是一個很 local 的 rotation');
+  await step(tok);                                   // 2:46:21 靠爸爸的顏色就能決定
+  glow(tv.c(3), GOLD);
+  bubble('看我就知道', tv.P.get(3).x + 0.8, tv.P.get(3).y + 0.9);
+  say('看爸爸的顏色就能當場決定', '要不要在這裡調整');
+  await step(tok);                                   // 2:46:28 AVL：從插入點一路往上才發現
+  glow(tv.c(3), null);
+  const up = pkt('AVL：一路往上找失衡點…', -5.0, 0.8);
+  await travel(tok, up, V3(-5.0, 0.8, 0.5), V3(-5.0, 4.2, 0.5), 1600);
+  say('AVL 可能要從插入點往上找好幾代', '紅黑樹在插入的地方看爸爸就知道');
+  await step(tok);                                   // 2:46:59 紅黑樹可能比 AVL 更有效率
+  say('所以紅黑樹在很多情況下', '可能比 AVL 更有效率');
 }]);
 
-// ═════════ 26. 紅黑樹的高度也有保證 ═════════
+// ═════════ 26. 紅黑樹的高度也有保證（5 steps）═════════
 FRAG.push(['avllin-rb-height', '紅黑樹高度 ≤ 2 倍 2-3-4 樹高度', async (tok) => {
   fresh([0, 4.4, 13.5], [0, 3.4, 0]);
   const t4 = T4({ cx: -3.6, top: 5.8, dy: 1.7, kw: 0.6, gap: 0.36 });
-  t4.root = N4([4], [N4([2], [N4([1]), N4([3])]), N4([6, 8], [N4([5]), N4([7]), N4([9, 10])])]); t4.sync();
   const t = rbTree([[4, 'B'], [2, 'B'], [1, 'B'], [3, 'B'], [6, 'B'], [5, 'B'], [8, 'R'], [7, 'B'], [9, 'B'], [10, 'R']]);
   const tv = TV(t, { rb: true, cx: 3.3, dx: 0.56, dy: 1.05, top: 6.0, sz: 0.5 }); tv.sync();
-  tag('2-3-4：高 3', 'ptr', -3.6, 6.9, 0); const hr = tag('紅黑樹', 'ptr', 3.3, 6.9, 0);
-  say('Q：紅黑樹的高度也有保證嗎？', '');
-  await beat(tok, 2400);
-  say('每棵紅黑樹都對應一棵 2-3-4 樹', '1…10 那棵（6 8、9 10 讓小的當代表）');
-  await beat(tok, 3000);
+  const hr = tag('紅黑樹', 'ptr', 3.3, 6.9, 0);
+  const q = asker(-6.4, 2.4, 0.6);
+  await step(tok);                                   // 2:50:59 紅黑樹的高度也有保證嗎
+  bubble('高度也有保證嗎？', -5.6, 1.6, 2.4);
+  say('問：紅黑樹的高度也是 bounded 的嗎？', '');
+  await step(tok);                                   // 2:51:01 每棵紅黑樹對應一棵 2-3-4 樹
+  t4.root = N4([4], [N4([2], [N4([1]), N4([3])]), N4([6, 8], [N4([5]), N4([7]), N4([9, 10])])]); t4.sync([4, 2, 1, 3, 6, 8, 5, 7, 9, 10]);
+  tag('2-3-4：高 3', 'ptr', -3.6, 6.9, 0);
+  say('每棵紅黑樹都對應一棵 2-3-4 樹', '2-3-4 樹的高度有保證，紅黑樹也是');
+  await step(tok);                                   // 2:51:16 最多是 2 倍
+  for (const k of [4, 6, 8, 9, 10]) { glow(tv.c(k), GREEN); await beat(tok, 300); }
+  txt(hr, '紅黑樹：最長 5 層 ≤ 2 × 3');
+  say('紅黑樹的高度最多是 2-3-4 樹的 2 倍', '最長路徑 4→6→8→9→10');
+  await step(tok);                                   // 2:51:27 每個 node 最多拆成兩層
+  for (const k of [4, 6, 8, 9, 10]) glow(tv.c(k), null);
   t4.glowN(t4.node(8), GOLD); for (const k of [6, 8]) glow(tv.c(k), GOLD);
-  say('每個 2-3-4 node 最多拆成兩層', '');
-  await beat(tok, 2600);
+  say('因為每個 2-3-4 node', '最多被拆成兩層（黑 + 紅）');
+  await step(tok);                                   // 2:51:34 log n 與 2 log n 只差常數
   t4.glowN(t4.node(8), null); for (const k of [6, 8]) glow(tv.c(k), null);
-  for (const k of [4, 6, 8, 9, 10]) { glow(tv.c(k), GREEN); await beat(tok, 450); }
-  txt(hr, '紅黑樹：高 5 ≤ 2 × 3');
-  say('最長路徑 4→6→8→9→10', 'h(紅黑) ≤ 2 · h(2-3-4)');
-  await beat(tok, 3000);
-  say('log n 與 2 log n 只差常數', OK('紅黑樹高度一樣有保證'));
-  await beat(tok, 3000);
+  q.mood('happy'); await q.hop(tok);
+  say('log n 和 2 log n 只差常數', OK('紅黑樹的高度一樣有保證'));
 }]);
   }
 

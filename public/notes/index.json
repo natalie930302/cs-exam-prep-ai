@@ -591,7 +591,7 @@
   "label": "台大林軒田 DSA AVL Tree / 2-3-4 Tree / Red-Black Tree",
   "points": 228,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "CHvQ3q_gJ7E": {
   "label": "MIT 6.006 L18：Speeding up Dijkstra",
