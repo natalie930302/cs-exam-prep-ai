@@ -2734,11 +2734,23 @@ FRAG.push(['hashlin1-chain-preview', '櫃子放小紙條：linked list 接住 co
 
   // ═══ hashlin2.js ═══
   {
-const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, code, arrow, ghostBox, GOLD, GREEN, RED, GRAY } = K;
+const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, code, arrow, ghostBox, GOLD, GREEN, RED, GRAY, step, buddy, prop, bob, travel, remove, zone } = K;
 // ─── WX-z52QweUs（台大林軒田 DSA：Hash Table — hash code、compress、collision handling、open addressing、extendable hash table） ───
+// Cued scenes: every `await step(tok)` waits for the sentence it shows (cues in notes/WX-z52QweUs.json);
+// the beats in between are only the motion of that step.
 const C8 = ['#4b9ee2', '#9b7ef4', '#dd8238', '#31aab0', '#e55a9b', '#2fc092', '#c08a1f', '#5c7a4a'];
 const SUB = (i) => String(i).split('').map((d) => '₀₁₂₃₄₅₆₇₈₉'[+d]).join('');
 const kc = (k) => C8[(typeof k === 'number' ? k : [...String(k)].reduce((a, c) => a + c.charCodeAt(0), 0)) % 8];
+// friendly labels: speech bubble, sticky note, travelling packet, good / bad stamp
+const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const nt = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const pk = (t, x, y, z = 0) => tag(t, 'pkt', x, y, z);
+const ok = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const no = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+// slide a label / prop / buddy group to (x, y, z)
+const go = (tok, o, x, y, z, ms = 800) => travel(tok, o, o.position.clone(), V3(x, y, z), ms);
+// a key as a little character
+const kid = (name, color, x, z, s = 0.6, v = '') => buddy(name, v, color, x, 0, z, s);
 // a row of m slots centred on x = 0 at depth z; idx tags at z + idxDz
 function hlRow(m, dx, z, labels, idxDz = 0.95) {
   const x0 = -(m - 1) * dx / 2, xs = [], slots = [], idx = [];
@@ -2754,925 +2766,1635 @@ function hlPut(T, i, v, color, drop) { const c = cube(v, color || kc(v), [Math.m
 const cpos = (T, i, j) => [T.xs[i], 0.36, T.z + 1.05 + j * 0.85];
 function hlChain(T, i, v, color, drop) { const [x, y, z] = cpos(T, i, T.ch[i].length); const c = cube(v, color || kc(v), [T.cw, 0.6, 0.65], x, y, z, drop ? 3 : 0); c.userData.v = v; T.ch[i].push(c); return c; }
 function hlRelayout(T, i) { T.ch[i].forEach((c, j) => { const [x, y, z] = cpos(T, i, j); move(c, x, y, z); }); }
-// open-addressing insert along an arbitrary probe sequence (home + f(i)) mod m
-async function hlIns(tok, T, k, home, f, ft, cur, ms = 1000) {
-  for (let i = 0; i < T.m; i++) {
-    const j = ((home + f(i)) % T.m + T.m) % T.m;
-    cur.position.set(T.xs[j], 1.8, T.z); txt(cur, 'h' + SUB(i));
-    const fm = 'h' + SUB(i) + '(' + k + ') = (' + home + ' + ' + ft(i) + ') mod ' + T.m + ' = ' + j;
-    if (T.keys[j] === null) { hlPut(T, j, k, null, true); say('insert ' + k + '：放進 [' + j + ']', fm); await beat(tok, ms); return i + 1; }
-    glow(T.keys[j], RED); say('insert ' + k + '：[' + j + '] 已有 ' + T.vals[j], fm + '　collision');
-    await beat(tok, ms); glow(T.keys[j], null);
+// move chain node c (already taken out of its old chain) to the end of bucket i of table U
+function hlMoveTo(U, i, c) { U.ch[i].push(c); const [x, y, z] = cpos(U, i, U.ch[i].length - 1); move(c, x, y, z); }
+function hlTake(T, i, v) { const j = T.ch[i].findIndex((c) => c.userData.v === v); const c = T.ch[i].splice(j, 1)[0]; hlRelayout(T, i); return c; }
+// walk the probe cursor along a sequence of slots (short hops); occupied slots flash red
+async function hlProbe(tok, T, cur, seq, ms = 420) {
+  for (let i = 0; i < seq.length; i++) {
+    const j = seq[i];
+    await go(tok, cur, T.xs[j], 1.8, T.z, ms); txt(cur, 'h' + SUB(i));
+    if (T.keys[j]) { glow(T.keys[j], RED); await beat(tok, 200); glow(T.keys[j], null); }
   }
-  say('insert ' + k + '：繞完一圈都滿', 'declare failure'); await beat(tok, ms); return -1;
 }
 // a labelled translucent "machine" box
 function hlBox(label, color, x, z, w = 2.2) { const b = ghostBox(color, w, 1.3, 1.5); b.position.set(x, 0.65, z); tag(label, 'ptr', x, 1.8, z); return b; }
 
 // ════════ WX-z52QweUs（林軒田 Hash Table） ════════
-// 20:51 回顧 map：key → value；key 不需 order、可長可短
+// 20:58 回顧 map：key → value；key 不需 order、可長可短
 FRAG.push(['hashlin2-map', 'Map：key 不需 order、可長可短', async (tok) => {
-  fresh([0, 7, 12], [0, 0.6, 0]);
-  tag('key', 'ptr', -3.5, 2.0, -3.4); tag('value', 'ptr', 3.8, 2.0, -3.4);
-  say('Map：存 key 與 value 的關係', 'map：key → value');
-  await beat(tok, 2600);
-  const W = [['a', 0.9], ['hash', 1.8], ['dictionary', 3.0]];
-  const ks = W.map(([w, len], r) => cube(w, C8[r], [len, 0.7, 0.9], -3.5, 0.35, -1.8 + r * 1.8, 3));
-  say('key 不需要 order', '不比大小，只問是不是同一個 key');
-  await beat(tok, 3000);
-  ks.forEach((k) => glow(k, GOLD));
-  say('key 可長可短：variable length', '不像 32-bit 整數有固定位數');
-  await beat(tok, 3000);
-  ks.forEach((k) => glow(k, null));
-  ['一個', '雜湊', '字典'].forEach((v, r) => cube(v, C8[r + 3], [1.6, 0.7, 0.9], 3.8, 0.35, -1.8 + r * 1.8, 3));
-  W.forEach(([, len], r) => arrow(V3(-3.4 + len / 2, 0.4, -1.8 + r * 1.8), V3(2.9, 0.4, -1.8 + r * 1.8)));
+  fresh([0, 7.5, 12], [0, 0.6, 0.2]);
+  say('回顧：上次開始講的 Map');
+  await step(tok);                                   // 21:00 用某個 key 代表未來要找的東西
+  const k = kid('key', C8[0], -4.6, -2.6, 0.75, '密碼');
+  bub('key：像置物櫃的密碼', -4.6, 2.0, -2.6);
+  say('用一個 key 代表你要找的東西');
+  await step(tok);                                   // 21:15 透過 key 找到相對應的 data
+  const v = prop('parcel', 4.6, 0, -2.6, 1.0, 'value（資料）'); bob(v, 0.05);
+  arrow(V3(-3.8, 0.5, -2.6), V3(3.9, 0.5, -2.6), 0xa8730f);
+  const p = pk('照 key 找 →', -3.6, 1.2, -2.6);
+  await go(tok, p, 3.4, 1.2, -2.6, 1400); remove(p); k.mood('happy');
+  say('透過 key 找到對應的 data（叫 value）');
+  await step(tok);                                   // 21:26 儲存 key ↔ value 關係 = map
+  tag('map：key → value', 'ptr', 0, 1.5, -2.6);
+  say('存 key 與 value 關係的結構 = map');
+  await step(tok);                                   // 22:21 key 不需要 order
+  const W = [['a', 0.9], ['hash', 1.6], ['dictionary', 2.8]];
+  const ks = W.map(([w, len], r) => cube(w, C8[r + 1], [len, 0.6, 0.8], -3.6, 0.3, 0 + r * 1.5, 3));
+  no('不比大小', -6.2, 1.0, 1.4);
+  say('key 不需要 order', '只問：是不是同一個 key');
+  await step(tok);                                   // 22:34 variable length
+  ks.forEach((c) => glow(c, GOLD));
+  nt('32 bit 整數：位數固定', 0.6, 0.4, 3.9);
+  say('key 可長可短：variable length', '不像整數有固定的位數');
+  await step(tok);                                   // 23:03 英文字典
+  ks.forEach((c) => glow(c, null));
+  ['一個', '雜湊', '字典'].forEach((s, r) => cube(s, C8[r + 4], [1.4, 0.6, 0.8], 4.0, 0.3, r * 1.5, 3));
+  W.forEach(([, len], r) => arrow(V3(-3.5 + len / 2, 0.35, r * 1.5), V3(3.2, 0.35, r * 1.5)));
   say('像英文字典：單字 → 解釋', 'key = 單字、value = 解釋');
-  await beat(tok, 3200);
-  say('Hash table 就是這種 map', '下一步：把 key 變成整數');
-  await beat(tok, 3000);
+  await step(tok);                                   // 23:17 Hash table
+  bub('Hash table 就是這種 map', 0, 2.6, 1.5);
+  k.mood('wow'); await k.hop(tok);
+  say('今天的主角：Hash table');
 }]);
 
-// 23:20 key → small integer（hash code）→ array index → value
+// 23:26 key → small integer（hash code）→ array index → value
 FRAG.push(['hashlin2-pipeline', 'Key → 小整數 → array index', async (tok) => {
-  fresh([0, 7.5, 12], [0, 0.6, -0.4]);
-  const k = cube('"hash"', C8[1], [1.6, 0.7, 0.9], -5.2, 0.35, -2.8, 3);
-  hlBox('轉成 integer', '#4b9ee2', -1.4, -2.8);
-  say('把 key 轉成 integer', 'key → integer');
-  await beat(tok, 2600);
-  move(k, -1.4, 0.5, -2.8); await beat(tok, 1000);
-  kill(k); const n = cube('1126', C8[6], [1.3, 0.7, 0.9], -1.4, 0.5, -2.8); move(n, 2.4, 0.4, -2.8);
-  say('而且要是 small integer', '太大的話 array 放不下');
-  await beat(tok, 2800);
+  fresh([0, 7.5, 12], [0, 0.6, -0.2]);
+  hlBox('轉成 integer', '#4b9ee2', -1.6, -2.8);
+  const k = kid('"hash"', C8[1], -5.4, -2.8, 0.6);
+  await step(tok);                                   // 23:27 把 key 轉成 integer
+  await go(tok, k.g, -1.6, 0, -2.8, 900); remove(k.g);
+  const n = cube('1126', C8[6], [1.2, 0.6, 0.8], -1.6, 0.4, -2.8); move(n, 2.4, 0.35, -2.8);
+  say('把 key 轉成 integer');
+  await step(tok);                                   // 23:42 用 array 做 integer → value
+  bub('array 本來就會：integer → value', 4.6, 1.4, -2.8);
+  say('有了 integer，就能用 array 做 integer → value');
+  await step(tok);                                   // 24:02 而且要 small integer
+  nt('要「小」！', 2.4, 1.3, -2.0);
+  say('而且要轉成 small integer');
+  await step(tok);                                   // 24:10 超級大的 integer：array 放不下
+  const big = cube('98237461928374…', RED, [3.6, 0.6, 0.8], 0, 0.3, -0.6, 3);
+  no('array 大到放不下', 0, 1.2, -0.6);
+  say('integer 超級大的話', 'array 會大到根本放不下');
+  await step(tok);                                   // 24:28 1 到 1 萬 → 開 10000 格
+  kill(big);
   const T = hlRow(8, 1.45, 1.4, ['0', '1', '2', '…', '1126', '…', '9998', '9999']);
-  say('範圍 0～9999 → 開 10000 格', 'array 大小 = integer 的範圍');
-  await beat(tok, 3000);
+  say('integer 在 0～9999 → 開大小 10000 的 array');
+  await step(tok);                                   // 24:40 0～5566 → 5567 格
   txt(T.idx[6], '5565'); txt(T.idx[7], '5566');
-  say('範圍 0～5566 → 開 5567 格', 'small range 就放得進 array');
-  await beat(tok, 2800);
-  move(n, T.xs[4], 0.47, T.z); glow(T.slots[4], GOLD);
-  say('這個整數叫 hash code', '拿 hash code 當 array index');
-  await beat(tok, 2600);
-  cube('value', C8[3], [1.2, 0.5, 0.8], T.xs[4], 1.1, T.z, 3);
-  say('那一格放 value', 'array[hash code] = value');
-  await beat(tok, 2400);
-  say('Hash table = array 延伸來做 map', 'key → hash code → index → value');
-  await beat(tok, 3000);
+  say('integer 在 0～5566 → 開 5567 格就好', 'small range 才放得進 array');
+  await step(tok);                                   // 24:55 integer 當 array 的 index，放 value
+  move(n, T.xs[4], 0.42, T.z); glow(T.slots[4], GOLD);
+  const v = prop('parcel', T.xs[4], 0.8, T.z, 0.6); bob(v, 0.04);
+  say('用這個 integer 當 array 的 index', '那一格放進 value');
+  await step(tok);                                   // 25:13 這個 integer 叫 hash code
+  tag('hash code', 'ptr alt', T.xs[4], 2.2, T.z);
+  say('這個 integer 叫 hash code');
+  await step(tok);                                   // 25:22 整套動作 = Hash Table
+  bub('key → hash code → index → value', 0, 2.8, -0.6);
+  say('這一整套動作叫 Hash Table');
+  await step(tok);                                   // 25:33 array 的延伸
+  say('看成 array 的延伸：拿 array 來做 map');
+  await step(tok);                                   // 26:04 第一件事：怎麼產生 hash code
+  nt('問題 1：hash code 怎麼算？', -4.2, 1.6, -1.4);
+  say('第一件事：hash code 要怎麼產生？');
+  await step(tok);                                   // 26:13 第二件事：好多東西佔同一格
+  const o = cube('另一個', C8[4], [0.9, 0.5, 0.8], T.xs[4], 2.4, T.z + 1.1, 3);
+  glow(o, RED);
+  nt('問題 2：好多東西擠同一格？', 4.4, 1.6, 3.2);
+  say('第二件事：好多東西要佔同一格怎麼辦？');
 }]);
 
-// 26:29 h 拆兩步：hash code（可以很大）＋ compress（取餘數）
+// 26:30 h 拆兩步：hash code（可以很大）＋ compress（取餘數）
 FRAG.push(['hashlin2-two-step', 'h = compress(hashcode(key))', async (tok) => {
   fresh([0, 7.5, 12], [0, 0.6, -0.4]);
-  hlBox('hash code', '#4b9ee2', -2.4, -2.6); hlBox('compress', '#dd8238', 2.4, -2.6);
-  say('h 拆成兩步', 'h(key) = compress(hashcode(key))');
-  await beat(tok, 2600);
-  const k = cube('"ABC"', C8[0], [1.3, 0.7, 0.9], -5.8, 0.35, -2.6, 3);
-  await beat(tok, 700); move(k, -2.4, 0.5, -2.6); await beat(tok, 900);
-  kill(k); const big = cube('18273', C8[6], [1.4, 0.7, 0.9], -2.4, 0.5, -2.6); move(big, 0, 0.4, -2.6);
-  say('第一步：先算出一個整數', 'hashcode("ABC") = 18273（不必小）');
-  await beat(tok, 3000);
+  hlBox('hash code', '#4b9ee2', -2.4, -2.6);
+  const k = cube('"ABC"', C8[0], [1.2, 0.6, 0.8], -5.8, 0.3, -2.6);
+  await step(tok);                                   // 26:30 key → integer 叫 hash code
+  say('從 key 算出 integer：叫 hash code');
+  await step(tok);                                   // 26:44 h 拆成兩步
+  hlBox('compress', '#dd8238', 2.4, -2.6);
+  tag('h(key) = compress(hashcode(key))', 'ptr alt', 0, 2.8, -2.6);
+  say('整個 h 通常拆成兩步');
+  await step(tok);                                   // 26:59 先算出一個整數，不必小
+  move(k, -2.4, 0.4, -2.6); await beat(tok, 700);
+  kill(k); const big = cube('18273', C8[6], [1.3, 0.6, 0.8], -2.4, 0.4, -2.6); move(big, 0, 0.35, -2.6);
+  say('第一步：先算出一個整數', '這個整數不必小');
+  await step(tok);                                   // 27:13 壓縮到夠小的範圍
+  move(big, 2.4, 0.4, -2.6);
+  say('第二步：把它壓縮到夠小的範圍');
+  await step(tok);                                   // 27:27 限制在 0～99
   const T = hlRow(8, 1.45, 1.6, ['0', '1', '2', '…', '73', '…', '98', '99']);
-  move(big, 2.4, 0.5, -2.6); await beat(tok, 900);
-  kill(big); const sm = cube('73', C8[2], [1.0, 0.7, 0.9], 2.4, 0.5, -2.6);
-  say('第二步：壓縮到 0～99', '18273 mod 100 = 73');
-  await beat(tok, 2800);
-  move(sm, T.xs[4], 0.47, T.z); glow(T.slots[4], GOLD);
-  say('最簡單：除法取餘數', 'compress(x) = x mod k ∈ [0, k−1]');
-  await beat(tok, 3000);
-  say('複雜的計算都塞進 hash code', '真正做 compress 的只有 division');
-  await beat(tok, 3000);
+  say('例如要限制在 0～99');
+  await step(tok);                                   // 27:35 除法取餘數
+  kill(big); const sm = cube('73', C8[2], [0.9, 0.6, 0.8], 2.4, 0.4, -2.6); move(sm, T.xs[4], 0.42, T.z); glow(T.slots[4], GOLD);
+  nt('18273 ÷ 100 = 182 餘 73', 4.6, 1.2, -0.6);
+  say('最簡單：除法取餘數', '18273 mod 100 = 73');
+  await step(tok);                                   // 27:45 一般：0～k−1
+  tag('compress(x) = x mod k → 0～k−1', 'ptr', 0, 1.6, 3.4);
+  say('一般寫法：x mod k，落在 0～k−1');
+  await step(tok);                                   // 28:02 複雜的計算塞進 hash code
+  bub('複雜的都放這裡', -2.4, 2.8, -2.6);
+  say('比較複雜的方法：等於把計算塞進 hash code');
+  await step(tok);                                   // 28:14 真正 compress 的只有 division
+  bub('這裡只要 division', 2.4, 2.8, -2.6);
+  say('真正做 compress 的只有 division 這一步');
 }]);
 
-// 28:39 Summation hash code：ABC 與 ACB 一樣
+// 28:45 Summation hash code：ABC 與 ACB 一樣
 FRAG.push(['hashlin2-sum', 'Summation：ABC 與 ACB 撞在一起', async (tok) => {
   fresh([0, 7, 12], [0, 0.6, 0]);
-  const rows = [['A', 'B', 'C'], ['A', 'C', 'B']];
-  const cs = rows.map((w, r) => w.map((ch, i) => { const c = cube(ch, C8[ch.charCodeAt(0) % 8], [0.9, 0.7, 0.9], -4.6 + i * 1.5, 0.35, -1.6 + r * 3.0, 3); return c; }));
-  say('Summation：每個位置加起來', 'hashcode = Σ key[i]');
-  await beat(tok, 2600);
-  rows.forEach((w, r) => w.forEach((ch, i) => tag(String(ch.charCodeAt(0)), 'idx', -4.6 + i * 1.5, 1.1, -1.6 + r * 3.0)));
-  say('每個字元用 ASCII 碼', 'A = 65、B = 66、C = 67');
-  await beat(tok, 2600);
-  const r1 = cube('198', C8[6], [1.3, 0.7, 0.9], 3.6, 0.35, -1.6, 3);
-  arrow(V3(-0.6, 0.4, -1.6), V3(2.8, 0.4, -1.6));
-  say('"ABC"：65 + 66 + 67', '= 198');
-  await beat(tok, 2600);
-  const r2 = cube('198', C8[6], [1.3, 0.7, 0.9], 3.6, 0.35, 1.4, 3);
-  arrow(V3(-0.6, 0.4, 1.4), V3(2.8, 0.4, 1.4));
-  say('"ACB"：65 + 67 + 66', '= 198，一模一樣');
-  await beat(tok, 2600);
-  glow(r1, RED); glow(r2, RED); [cs[0][1], cs[0][2], cs[1][1], cs[1][2]].forEach((c) => glow(c, GOLD));
-  say('對位置不敏感', 'sum("ABC") = sum("ACB")');
-  await beat(tok, 3000);
-  say('好處：算起來很快', '缺點：打錯位置的字常撞在一起');
-  await beat(tok, 3200);
+  const L = (w, z) => [...w].map((ch, i) => cube(ch, C8[ch.charCodeAt(0) % 8], [0.8, 0.6, 0.8], -4.6 + i * 1.3, 0.3, z, 3));
+  await step(tok);                                   // 28:45 summation
+  tag('Σ summation', 'ptr', -6.0, 1.4, -2.6);
+  say('第一種 hash code：summation（加總）');
+  await step(tok);                                   // 28:55 key 的每一個位置
+  L('ABC', -1.8);
+  say('看 key 的每一個位置');
+  await step(tok);                                   // 29:10 每個位置是字元碼
+  [65, 66, 67].forEach((n, i) => tag(String(n), 'idx', -4.6 + i * 1.3, 1.1, -1.8));
+  say('每個字元換成數字（ASCII 碼）', 'A = 65、B = 66、C = 67');
+  await step(tok);                                   // 29:18 加起來
+  const p = pk('65 + 66 + 67', -3.3, 1.5, -1.8);
+  await go(tok, p, 1.6, 1.5, -1.8, 900); remove(p);
+  const r1 = cube('198', C8[6], [1.2, 0.6, 0.8], 3.6, 0.3, -1.8, 3);
+  say('加起來：65 + 66 + 67 = 198');
+  await step(tok);                                   // 29:31 對位置變換不敏感
+  L('ACB', 1.2);
+  say('缺點：對「位置的變換」不敏感');
+  await step(tok);                                   // 29:38 ABC 與 ACB 同樣的 hash
+  const r2 = cube('198', C8[6], [1.2, 0.6, 0.8], 3.6, 0.3, 1.2, 3);
+  glow(r1, RED); glow(r2, RED); no('一樣！', 5.4, 1.0, -0.3);
+  say('ABC 跟 ACB 得到同樣的 hash', '65 + 67 + 66 = 198');
+  await step(tok);                                   // 29:54 沒有一定好或不好
+  bub('不一定好，也不一定壞', 0, 2.6, -0.3);
+  say('這沒有一定好、或一定不好');
+  await step(tok);                                   // 30:11 好處：算起來很快
+  ok('算起來很快 ✓', -4.6, 1.2, 3.2);
+  say('好處：算起來簡單又快');
+  await step(tok);                                   // 30:19 打錯的字
+  const f1 = cube('form', C8[3], [1.3, 0.6, 0.8], 1.0, 0.3, 3.4, 3), f2 = cube('from', C8[5], [1.3, 0.6, 0.8], 3.6, 0.3, 3.4, 3);
+  say('可是應用裡常有打錯的字', '手指一滑：form ↔ from，只差位置');
+  await step(tok);                                   // 30:42 這些字常常撞在一起
+  glow(f1, RED); glow(f2, RED);
+  say('用 sum 時，這些字常撞在一起', '就要一直處理撞在一起的情況');
+  await step(tok);                                   // 31:04 先用別的算法分開
+  [f1, f2].forEach((c, i) => move(c, -1.0 + i * 5.0, 0.3, 3.4));
+  say('能不能換個 hash code 算法，先把它們分開？');
 }]);
 
-// 31:16 Polynomial hash code：第 i 個位置乘 16^i；乘 16 = 左移 4 bit
+// 31:24 Polynomial hash code：第 i 個位置乘 16^i；乘 16 = 左移 4 bit
 FRAG.push(['hashlin2-poly', 'Polynomial hash code：Σ key[i]·16ⁱ', async (tok) => {
   fresh([0, 7.5, 12], [0, 0.6, -0.3]);
   const rows = [['A', 'B', 'C'], ['A', 'C', 'B']];
-  rows.forEach((w, r) => w.forEach((ch, i) => cube(ch, C8[ch.charCodeAt(0) % 8], [0.9, 0.7, 0.9], -4.8 + i * 1.6, 0.35, -2.4 + r * 2.6, 3)));
-  [0, 1, 2].forEach((i) => tag('×16' + ['⁰', '¹', '²'][i], 'ptr alt', -4.8 + i * 1.6, 1.3, -3.4));
-  say('Polynomial：第 i 個位置乘 16ⁱ', 'hashcode = Σ key[i]·16ⁱ');
-  await beat(tok, 3000);
-  arrow(V3(-0.8, 0.4, -2.4), V3(2.6, 0.4, -2.4));
-  const r1 = cube('18273', C8[6], [1.5, 0.7, 0.9], 3.6, 0.35, -2.4, 3);
-  say('"ABC" = 65 + 66·16 + 67·256', '= 65 + 1056 + 17152 = 18273');
-  await beat(tok, 3200);
-  arrow(V3(-0.8, 0.4, 0.2), V3(2.6, 0.4, 0.2));
-  const r2 = cube('18033', C8[2], [1.5, 0.7, 0.9], 3.6, 0.35, 0.2, 3);
-  say('"ACB" = 65 + 67·16 + 66·256', '= 65 + 1072 + 16896 = 18033');
-  await beat(tok, 3200);
-  glow(r1, GREEN); glow(r2, GREEN);
+  rows.forEach((w, r) => w.forEach((ch, i) => cube(ch, C8[ch.charCodeAt(0) % 8], [0.8, 0.6, 0.8], -4.8 + i * 1.6, 0.3, -2.4 + r * 2.6)));
+  let mul = [];
+  await step(tok);                                   // 31:24 乘上 16 的 i 次方
+  mul = [0, 1, 2].map((i) => tag('×16' + ['⁰', '¹', '²'][i], 'ptr alt', -4.8 + i * 1.6, 1.3, -3.4));
+  say('每個位置再乘上 16 的 i 次方');
+  await step(tok);                                   // 31:36 第 0、1、2 個位置
+  arrow(V3(-0.9, 0.4, -2.4), V3(2.6, 0.4, -2.4));
+  const r1 = cube('18273', C8[6], [1.4, 0.6, 0.8], 3.6, 0.3, -2.4, 3);
+  say('"ABC" = 65·1 + 66·16 + 67·256', '= 65 + 1056 + 17152 = 18273');
+  await step(tok);                                   // 31:47 B、C 在不同位置乘不同次方
+  arrow(V3(-0.9, 0.4, 0.2), V3(2.6, 0.4, 0.2));
+  const r2 = cube('18033', C8[2], [1.4, 0.6, 0.8], 3.6, 0.3, 0.2, 3);
+  say('"ACB" = 65·1 + 67·16 + 66·256', '= 65 + 1072 + 16896 = 18033');
+  await step(tok);                                   // 31:55 不會得到同樣的 hash code
+  glow(r1, GREEN); glow(r2, GREEN); ok('分開了 ✓', 5.6, 1.1, -1.1);
   say('B、C 換位置，hash code 就不同', '18273 ≠ 18033');
-  await beat(tok, 2800);
+  await step(tok);                                   // 31:59 compress 完搞不好還是撞
+  nt('compress 之後還是可能撞', 3.6, 1.0, 2.0);
+  say('不保證最後不撞：compress 後可能又撞', '但至少 hash code 這一步分開了');
+  await step(tok);                                   // 32:15 不一定 16，任意 a
   glow(r1, null); glow(r2, null);
-  say('16 可換成任意 a（5、9…）', 'Σ key[i]·aⁱ：把 key 當多項式係數');
-  await beat(tok, 3000);
-  const cd = code(['66      = 0000 0100 0010', '66 << 4 = 0100 0010 0000 = 1056'], 0, 0.9, 0.5, 2.8);
+  mul.forEach((l, i) => txt(l, '×a' + ['⁰', '¹', '²'][i]));
+  say('16 可以換成任意你喜歡的 a', '例如 5、9');
+  await step(tok);                                   // 32:28 統稱 Polynomial hash code
+  tag('Polynomial hash code', 'ptr', 0, 2.6, -0.9);
+  say('這類方法統稱 Polynomial hash code');
+  await step(tok);                                   // 32:41 key 當多項式係數
+  tag('key[0] + key[1]·a + key[2]·a² + …', 'ptr alt', 0, 0.6, 2.6);
+  say('把 key[i] 當多項式的係數，代 a 進去算');
+  await step(tok);                                   // 33:05 可以靠 shift
+  say('特地選 16：因為可以靠 shift 來算');
+  await step(tok);                                   // 33:17 乘 16 = 往左移 4 bit
+  const cd = code(['66      = 0000 0100 0010', '66 << 4 = 0100 0010 0000 = 1056'], 0, 1.4, 0.5, 4.0);
   cd.hl(1);
-  say('選 16 的好處：乘 16 = 左移 4 bit', 'x·16 = x << 4，用 shift 算很快');
-  await beat(tok, 3400);
+  say('乘 16 = 把 bit 往左移 4 格', 'x·16 = x << 4');
+  await step(tok);                                   // 33:23 乘 8 = 左移 3 bit
+  nt('×8 = 左移 3 bit', 5.2, 0.6, 4.0);
+  say('乘 8 就是左移 3 個 bit', 'bit 運算算得更快');
+  await step(tok);                                   // 33:52 sum、polynomial 兩個基本款
+  bub('sum、polynomial：兩個基本款', 0, 3.4, -2.4);
+  say('sum 和 polynomial：兩個非常基本的款式');
 }]);
 
-// 34:00 Cyclic shift：左移時超出的 bit 補回右邊
+// 34:12 Cyclic shift：左移時超出的 bit 補回右邊
 FRAG.push(['hashlin2-cyclic', 'Cyclic shift：移出去的 bit 補回來', async (tok) => {
   fresh([0, 7, 11], [0, 0.6, 0]);
   const B = '10110011', bx = (i) => -2.8 + i * 0.8;
   const mk = (z) => [...B].map((b, i) => cube(b, b === '1' ? C8[0] : GRAY, [0.7, 0.6, 0.7], bx(i), 0.3, z, 3));
-  tag('shift', 'ptr', -5.2, 0.9, -1.8); tag('cyclic shift', 'ptr', -5.2, 0.9, 1.8);
-  const s = mk(-1.8), c = mk(1.8);
-  say('課本第三種：cyclic shift', '這裡用 8 bit 示意（實際常是 32 bit）');
-  await beat(tok, 3000);
-  say('往左移 4 bit：左邊 4 個超出範圍', '10110011 << 4');
-  [0, 1, 2, 3].forEach((i) => { glow(s[i], GOLD); glow(c[i], GOLD); });
-  await beat(tok, 2600);
+  let s = null, c = null;
+  await step(tok);                                   // 34:12 第三個版本 cyclic shift
+  tag('cyclic shift', 'ptr', 0, 2.4, -3.4);
+  say('課本給的第三種：cyclic shift');
+  await step(tok);                                   // 34:22 shift：往左移、加上去
+  tag('shift', 'ptr', -5.4, 0.9, -1.8);
+  s = mk(-1.8);
+  say('原本的 shift：往左移、加上去、再往左移…', '這裡用 8 bit 示意（實際常是 32 bit）');
+  await step(tok);                                   // 34:30 往左移有些 bit 超出 32 bit
+  [0, 1, 2, 3].forEach((i) => glow(s[i], GOLD));
+  say('往左移時，有些 bit 會超出範圍');
+  await step(tok);                                   // 34:37 超出的補回低位
+  tag('cyclic', 'ptr alt', -5.4, 0.9, 1.8);
+  c = mk(1.8); [0, 1, 2, 3].forEach((i) => glow(c[i], GOLD));
+  say('cyclic：把超出的部分補回比較低的位數');
+  await step(tok);                                   // 34:47 例：往左移 4 個 bit
+  nt('往左移 4 bit', 4.6, 1.0, -1.8);
+  say('例子：往左移 4 個 bit');
+  await step(tok);                                   // 34:56 往左移以後
   [0, 1, 2, 3].forEach((i) => fly(s[i], V3(-6, 4, -1)));
   [4, 5, 6, 7].forEach((i) => move(s[i], bx(i - 4), 0.3, -1.8));
-  await beat(tok, 900);
+  say('shift：移出去的 4 個 bit 直接丟掉');
+  await step(tok);                                   // 35:10 後面直接補 0
   [4, 5, 6, 7].forEach((i) => cube('0', GRAY, [0.7, 0.6, 0.7], bx(i), 0.3, -1.8, 2));
-  say('shift：超出的丟掉，右邊補 0', '10110011 → 00110000');
-  await beat(tok, 3000);
+  say('右邊直接補 0，再加上新的數字', '10110011 → 00110000');
+  await step(tok);                                   // 35:19 cyclic：補回來
   [4, 5, 6, 7].forEach((i) => move(c[i], bx(i - 4), 0.3, 1.8));
   [0, 1, 2, 3].forEach((i) => move(c[i], bx(i + 4), 1.3, 1.8));
-  await beat(tok, 900);
+  await beat(tok, 800);
   [0, 1, 2, 3].forEach((i) => move(c[i], bx(i + 4), 0.3, 1.8));
   arrow(V3(bx(0), 1.4, 0.9), V3(bx(7), 1.4, 0.9), 0xc08a1f);
-  say('cyclic：超出的補回低位', '10110011 → 00111011');
-  await beat(tok, 3200);
-  say('再加上下一個字元，循環算下去', 'sum → polynomial → cyclic：越來越複雜');
-  await beat(tok, 3000);
+  say('cyclic shift：移出去的補回右邊', '10110011 → 00111011');
+  await step(tok);                                   // 35:24 迴圈計算產生 hash code
+  say('同樣的迴圈一直算下去 → 得到 hash code');
+  await step(tok);                                   // 35:33 從簡單到複雜
+  bub('sum → polynomial → cyclic：越來越複雜', 0, 2.4, 3.6);
+  say('1、2、3 的順序：從簡單到複雜');
 }]);
 
-// 35:35 越複雜越難猜誰會撞；one-way：拿到 1126 推不回 key
+// 35:43 越複雜越難猜誰會撞；one-way：拿到 1126 推不回 key
 FRAG.push(['hashlin2-oneway', '難以回推：hash code = 1126，key = ?', async (tok) => {
-  fresh([0, 7, 12], [0, 0.6, 0]);
-  const k = cube('小秘密', C8[4], [1.6, 0.7, 0.9], -4.4, 0.35, -1.2, 3);
-  hlBox('hash', '#9b7ef4', 0, -1.2, 2.0);
-  say('sum：一眼看出 ABC 撞 ACB', 'cyclic：很難猜誰會撞');
-  await beat(tok, 3000);
-  const a = arrow(V3(-3.4, 0.4, -1.2), V3(-1.1, 0.4, -1.2), 0x0f5a3a);
-  const h = cube('1126', C8[6], [1.3, 0.7, 0.9], 4.2, 0.35, -1.2, 3);
-  arrow(V3(1.1, 0.4, -1.2), V3(3.4, 0.4, -1.2), 0x0f5a3a);
-  say('key → hash code：算過去很快', 'hash(小秘密) = 1126');
-  await beat(tok, 3000);
-  const q = cube('?', RED, [1.0, 0.7, 0.9], -4.4, 0.35, 2.0, 3);
-  arrow(V3(3.4, 0.4, 2.0), V3(-3.6, 0.4, 2.0), 0x7a1010);
-  glow(h, GOLD);
-  say('拿到 1126，原本的 key 是？', '推不回來：one-way');
-  await beat(tok, 3200);
-  const q2 = cube('另一個 key?', RED, [2.0, 0.7, 0.9], 0, 0.35, 3.6, 3);
-  say('也很難找另一個 key 撞 1126', '密碼學、驗證都靠這種性質');
-  await beat(tok, 3200);
-  say('課堂應用：polynomial、cyclic 常夠用', '常撞在一起才需要換更好的');
-  await beat(tok, 3000);
+  fresh([0, 7.5, 12], [0, 0.6, 0]);
+  const lad = ['sum', 'polynomial', 'cyclic'].map((s, i) => tag(s, 'ptr', -4.4 + i * 4.4, 1.2, -3.4));
+  await step(tok);                                   // 35:43 越複雜越難看出何時一樣
+  say('越複雜，就越難看出兩個 key 何時同 hash code');
+  await step(tok);                                   // 35:51 sum：一眼看出
+  ok('ABC = ACB，一眼看出', -4.4, 0.3, -3.4);
+  say('sum：很容易說出 ABC 跟 ACB 會一樣');
+  await step(tok);                                   // 35:56 polynomial：有時也猜得到
+  nt('兩字對調、值差特定數字', 0, 0.3, -3.4);
+  say('polynomial：有時也說得出', '例如兩個字對調、值剛好差某些數字');
+  await step(tok);                                   // 36:16 cyclic：很難猜
+  no('很難猜', 4.4, 0.3, -3.4);
+  say('cyclic shift：運算很複雜，很難猜');
+  await step(tok);                                   // 36:43 密碼學、驗證
+  const lock = prop('lock', 5.6, 0, 0.4, 1.3); bob(lock, 0.05);
+  say('這種性質：在密碼學、驗證上很有幫助');
+  await step(tok);                                   // 36:52 一個小秘密
+  hlBox('hash', '#9b7ef4', 0, 0.4, 2.0);
+  const sec = kid('小秘密', C8[4], -4.6, 0.4, 0.7);
+  await go(tok, sec.g, -1.0, 0, 0.4, 900); remove(sec.g);
+  const h = cube('1126', C8[6], [1.2, 0.6, 0.8], 0, 0.4, 0.4); move(h, 3.2, 0.3, 0.4);
+  say('拿一個小秘密，經過 hash code');
+  await step(tok);                                   // 37:00 一：很難找另一個小秘密
+  const q = cube('另一個?', RED, [1.4, 0.6, 0.8], -4.6, 0.3, 2.6, 3);
+  arrow(V3(-3.8, 0.4, 2.6), V3(2.6, 0.4, 0.8), 0x7a1010);
+  say('一：別人很難找到另一個小秘密', '算出同樣的 hash code');
+  await step(tok);                                   // 37:07 二：很難回推
+  arrow(V3(2.6, 0.8, 0.4), V3(-3.6, 0.8, 0.4), 0x7a1010);
+  no('推不回來', -1.0, 1.9, 0.4);
+  say('二：很難從 hash code 回推原來的 key');
+  await step(tok);                                   // 37:33 1126 原來是什麼
+  glow(h, GOLD); nt('1126 → key = ?', 3.2, 1.3, 0.4);
+  say('我拿到 1126：請問原來的 key 是什麼？', '推不回來：one-way');
+  await step(tok);                                   // 37:56 好的 hash code 不容易
+  say('好的 hash code：難回推、又要算得快', '這是一個很深入的領域');
+  await step(tok);                                   // 38:19 polynomial、cyclic 搞不好夠好
+  glow(h, null); lad.slice(1).forEach((l) => { l.element.className = 'lab-label ptr alt'; });
+  say('你現在的應用：polynomial、cyclic 可能就夠好');
+  await step(tok);                                   // 38:29 除非常常撞
+  say('除非常有兩個 key 的 hash code 一樣', '那就會疲於奔命一直處理');
+  await step(tok);                                   // 38:44 更進階的課程
+  bub('更多性質與保證：進階課程', 0, 2.8, -1.4);
+  say('更複雜、有理論保證的：進階課程會看到');
 }]);
 
-// 39:01 hash code + compression → small range integer → bucket array
+// 39:02 hash code + compression → small range integer → bucket array
 FRAG.push(['hashlin2-bucket', 'Bucket array：一桶一桶', async (tok) => {
   fresh([0, 7.5, 12], [0, 0.6, -0.3]);
-  hlBox('hash code（sum）', '#4b9ee2', -3.4, -2.8); hlBox('mod 8', '#dd8238', 1.2, -2.8, 1.8);
-  const T = hlRow(8, 1.45, 1.4);
-  tag('bucket array', 'ptr', -6.2, 0.9, 1.4);
-  say('hash code function + compression', '這裡用 sum，再 mod 8');
-  await beat(tok, 2800);
+  hlBox('hash code（sum）', '#4b9ee2', -3.2, -2.8); const mb = hlBox('mod 8', '#dd8238', 1.4, -2.8, 1.8);
+  let T = null;
   const W = [['cat', 312, 0], ['dog', 314, 2], ['egg', 307, 3]];
   const placed = [];
-  for (const [w, hc, b] of W) {
-    const c = cube(w, kc(w), [1.0, 0.6, 0.8], -6.0, 0.35, -2.8, 3);
-    await beat(tok, 500); move(c, -3.4, 0.5, -2.8); await beat(tok, 700);
-    relabel(c, hc); move(c, 1.2, 0.5, -2.8); await beat(tok, 700);
-    relabel(c, w); move(c, T.xs[b], 0.45, T.z + 1.1 + 0 * 0.8); placed.push(c);
-    say(w + '：' + hc + ' mod 8 = ' + b, 'small range：0～7');
-    await beat(tok, 1500);
-  }
-  say('這個 array 叫 bucket array', 'index = 桶號，東西往那一桶丟');
-  await beat(tok, 2800);
-  const g = cube('god', kc('god'), [1.0, 0.6, 0.8], -6.0, 0.35, -2.8, 3);
-  await beat(tok, 600); move(g, T.xs[2], 0.45, T.z + 2.0); glow(placed[1], RED); glow(g, RED);
-  say('god 也是 314 → 也丟進 [2]', '很多東西共用同一桶怎麼辦？');
-  await beat(tok, 3200);
+  await step(tok);                                   // 39:02 設計 hash code function
+  nt('sum／polynomial／cyclic…', -3.2, 2.5, -2.8);
+  say('設計一個 hash code function');
+  await step(tok);                                   // 39:13 配合 compression
+  tint(mb, '#f0a050');
+  say('配合一個 compression（通常就是 division）');
+  await step(tok);                                   // 39:19 small range integer
+  const c0 = cube('cat', kc('cat'), [1.0, 0.6, 0.8], -6.0, 0.3, -2.8);
+  move(c0, -3.2, 0.45, -2.8); await beat(tok, 700);
+  relabel(c0, 312); move(c0, 1.4, 0.45, -2.8); await beat(tok, 700);
+  relabel(c0, 0);
+  say('cat：312 mod 8 = 0', '得到 small range 的 integer：0～7');
+  await step(tok);                                   // 39:23 當成 array 的 index
+  T = hlRow(8, 1.45, 1.4);
+  relabel(c0, 'cat'); move(c0, T.xs[0], 0.4, T.z + 1.1); placed.push(c0);
+  say('這個整數拿來當 array 的 index');
+  await step(tok);                                   // 39:28 Bucket Array
+  tag('bucket array', 'ptr', -6.2, 0.9, 1.4);
+  say('這個 array 叫 Bucket Array');
+  await step(tok);                                   // 39:38 一桶一桶，往那一桶丟
+  for (const [w, hc, b] of W.slice(1)) { const c = cube(w, kc(w), [1.0, 0.6, 0.8], T.xs[b], 0.4, T.z + 1.1, 3); placed.push(c); nt(hc + ' mod 8 = ' + b, T.xs[b], 1.4, T.z + 2.0); }
+  say('像一桶一桶：有了 index 就往那一桶丟');
+  await step(tok);                                   // 39:52 很多東西都丟同一桶？
+  const g = cube('god', kc('god'), [1.0, 0.6, 0.8], T.xs[2], 0.4, T.z + 2.0, 3);
+  glow(placed[1], RED); glow(g, RED);
+  say('god 也是 314 → 也丟進 [2]', '很多東西共用一桶怎麼辦？下一步再說');
+  await step(tok);                                   // 39:59 流程回顧
+  bub('key → hash code → compress → 有限範圍的整數', 0, 2.8, -0.8);
+  say('先確定這一段懂了', 'variable length 的 key → 整數 → 小範圍');
 }]);
 
 // 42:53 問：polynomial 會 overflow？→ 邊算邊 mod 2³²
 FRAG.push(['hashlin2-overflow', '算 hash code 時邊算邊 mod 2³²', async (tok) => {
   fresh([0, 7, 11], [0, 0.8, -0.4]);
   const cd = code(['h = 0', 'h = (h + key[i]·16ⁱ) mod 2³²', '（每一步都留在 32 bit）'], 0, 4.6, 0.55, -3.2);
-  cd.hl(1);
+  let h = null, bigT = null;
+  const feed = async (ch, v, f) => {
+    const c = cube(ch, C8[ch.charCodeAt(0) % 8], [0.7, 0.6, 0.7], -5.4, 0.3, 0.6);
+    move(c, -1.6, 0.4, 0.6); await beat(tok, 600); kill(c);
+    h.set(v); nt(f, 3.6, 1.2 + (ch.charCodeAt(0) - 65) * 0.55, 0.6);
+  };
+  await step(tok);                                   // 42:53 很容易 overflow
+  bigT = no('16¹⁰ = 1099511627776…', 0, 0.6, -1.4);
   say('問：polynomial 很容易 overflow？', '16ⁱ 長得非常快');
-  await beat(tok, 3000);
-  const h = cube('0', C8[6], [1.6, 0.8, 1.0], 0, 0.4, 0.6, 3);
-  const box = ghostBox('#9b7ef4', 5.6, 1.6, 2.0); box.position.set(0, 0.8, 0.6);
-  tag('32-bit 整數（4 byte）', 'ptr', 0, 2.0, 0.6);
-  say('一直把 h 保持在 32 bit 內', '每一步先 mod 2³²');
-  await beat(tok, 2600);
-  const steps = [['A', 65, '0 + 65·1'], ['B', 1121, '65 + 66·16'], ['C', 18273, '1121 + 67·256']];
-  for (const [ch, v, f] of steps) {
-    const c = cube(ch, C8[ch.charCodeAt(0) % 8], [0.8, 0.6, 0.8], -5.5, 0.3, 0.6, 3);
-    await beat(tok, 500); move(c, -1.4, 0.4, 0.6); await beat(tok, 700); kill(c);
-    relabel(h, v); glow(h, GOLD);
-    say('加入 ' + ch + '：h = ' + v, 'h = (' + f + ') mod 2³²');
-    await beat(tok, 1700); glow(h, null);
-  }
-  say('永遠不會 overflow', '也有人接受 256 bit 的 hash code');
-  await beat(tok, 3000);
-  say('最後再做 compress', 'index = h mod k');
-  await beat(tok, 2600);
+  await step(tok);                                   // 43:09 算的過程中先限縮範圍
+  remove(bigT);
+  h = buddy('h', '0', C8[6], 0, 0, 0.6, 0.9);
+  say('好問題：其實是邊算邊限縮範圍');
+  await step(tok);                                   // 43:18 保留在 32 bit integer
+  const box = ghostBox('#9b7ef4', 5.6, 1.8, 2.0); box.position.set(0, 0.9, 0.6);
+  tag('32-bit 整數（4 byte）', 'ptr', -2.2, 2.0, 0.6);
+  say('結果一直保留在 32 bit 的 integer 裡');
+  await step(tok);                                   // 43:29 乘 16ⁱ 時先 mod 2³²
+  cd.hl(1);
+  await feed('A', 65, '+65 → 65');
+  say('每乘一次 16ⁱ，就先 mod 2³²');
+  await step(tok);                                   // 43:39 一直是 4 byte 的整數
+  await feed('B', 1121, '+66·16 → 1121');
+  await feed('C', 18273, '+67·256 → 18273');
+  h.mood('happy');
+  say('一直是 4 byte 的整數 → 不會 overflow', '同學說得對');
+  await step(tok);                                   // 43:50 直接算：overflow 或大數
+  no('直接算到底：overflow／大數很慢', 0, 3.0, 2.6);
+  say('如果直接算破：可能 overflow', '或要存一個大數，算得不 efficient');
+  await step(tok);                                   // 44:02 限縮在有限但很大的範圍
+  cd.hl(2);
+  say('大部分實作：限縮在有限的範圍', '只是那個有限可能很大');
+  await step(tok);                                   // 44:14 256 bit 的 hash code
+  bub('也有人接受 256 bit 的 hash code', -3.6, 2.6, 2.6);
+  say('例如接受 256 bit 的 hash code', '不是一個整數，而是一長串');
+  await step(tok);                                   // 44:24 最後再 compress
+  cd.hl(-1);
+  say('最後再做相對應的 compress', 'index = h mod k');
 }]);
 
-// 44:30 division 後會重複嗎？會：鴿籠原理；目標是分散
+// 44:34 division 後會重複嗎？會：鴿籠原理；目標是分散
 FRAG.push(['hashlin2-pigeon', 'Collision 一定會發生：要的是分散', async (tok) => {
   fresh([0, 7.5, 12], [0, 0.6, 0]);
-  const T = hlRow(4, 1.8, -2.4);
-  say('問：division 之後會不會又重複？', '會');
-  await beat(tok, 2400);
-  const ks = [];
+  let T = hlRow(4, 1.8, -2.4), ks = [], U = null, bad = [];
+  await step(tok);                                   // 44:35 division 會不會產生新的重複
+  say('問：做完 division，會不會產生新的重複？', '會');
+  await step(tok);                                   // 44:46 盡量減少
+  say('希望 hash code 時不重複', 'division 時會有一些重複，但盡量少');
+  await step(tok);                                   // 45:01 鴿籠原理
   for (let i = 0; i < 5; i++) {
     const b = [0, 1, 2, 3, 1][i]; const n = ks.filter((x) => x.b === b).length;
     ks.push({ b, c: cube('k' + SUB(i + 1), C8[i], [1.0, 0.6, 0.7], T.xs[b], 0.33, T.z + 1.05 + n * 0.85, 3) });
-    await beat(tok, 500);
   }
+  nt('100 個 key、50 格', 4.8, 1.0, -2.4);
+  say('鴿籠原理：key 比格子多…', '一定有 key 要住同一格');
+  await step(tok);                                   // 45:14 100 個 key、99 格
   glow(ks[1].c, RED); glow(ks[4].c, RED);
-  say('key 比格子多 → 一定有兩個同格', '100 個 key、99 格 → 必撞（鴿籠原理）');
-  await beat(tok, 3200);
-  say('這叫 collision：一定會發生', '能做的是：盡量減少');
-  await beat(tok, 2600);
+  say('100 個 key、99 格也一樣', '一定有兩隻鴿子住同一個籠子');
+  await step(tok);                                   // 45:22 Collision
+  tag('Collision（碰撞）', 'ptr alt', T.xs[1], 2.4, T.z + 1.4);
+  say('這種重複叫碰撞：Collision');
+  await step(tok);                                   // 45:31 一定會發生，只能減少
+  say('Collision 通常一定會發生', '能做的：用好的 hash code 盡量減少');
+  await step(tok);                                   // 45:46 平均分配到每一格
   ks.forEach((x) => kill(x.c));
-  const U = hlRow(8, 1.45, 1.6);
-  const bad = [];
-  for (let i = 0; i < 4; i++) bad.push(cube('k' + SUB(i + 1), C8[i], [1.0, 0.5, 0.7], U.xs[0], 0.3 + i * 0.55, U.z, 3));
-  say('最壞的 hash：全部丟 [0]', 'h(x) = 0：碰來碰去，其他格浪費');
-  await beat(tok, 3200);
-  bad.forEach((c, i) => move(c, U.xs[i * 2 + 1], 0.3, U.z));
-  say('好的 hash：平均分散到每一格', 'hash code 要的是「分散」');
-  await beat(tok, 3200);
+  U = hlRow(8, 1.45, 1.6);
+  for (let i = 0; i < 4; i++) bad.push(cube('k' + SUB(i + 1), C8[i], [1.0, 0.5, 0.7], U.xs[i * 2 + 1], 0.3, U.z, 3));
+  say('好的 hash：把 key 平均分配到每一格');
+  await step(tok);                                   // 46:03 很壞的 hash：全放同一格
+  bad.forEach((c, i) => move(c, U.xs[0], 0.3 + i * 0.55, U.z));
+  say('很壞的 hash function：通通放到 [0]', 'h(x) = 0');
+  await step(tok);                                   // 46:19 在 0 碰來碰去，其他浪費
+  bad.forEach((c) => glow(c, RED));
+  for (let i = 1; i < 8; i++) glow(U.slots[i], GOLD);
+  no('其他格：浪費', 2.0, 1.2, U.z + 1.4);
+  say('大家擠在 0 碰來碰去', '其他空間某種角度就浪費了');
+  await step(tok);                                   // 46:33 要的是分散
+  bad.forEach((c, i) => { glow(c, null); move(c, U.xs[i * 2 + 1], 0.3, U.z); });
+  for (let i = 1; i < 8; i++) glow(U.slots[i], null);
+  say('hash code 要的不是「不撞」', '而是「盡量分散」');
 }]);
 
-// 46:57 口罩實名制：身分證尾數單雙號 = 只有兩格的 hash
+// 47:00 口罩實名制：身分證尾數單雙號 = 只有兩格的 hash
 FRAG.push(['hashlin2-mask', '口罩分流：只有兩格的 hash', async (tok) => {
-  fresh([0, 7.5, 12], [0, 0.6, 0]);
-  const T = hlRow(2, 5.0, 1.6, ['奇數 1、3、5', '偶數 2、4、6']);
-  say('口罩實名制：依身分證尾數分流', '最簡單的 hash：只有兩格');
-  await beat(tok, 3000);
-  const ids = ['…3', '…8', '…5', '…2', '…7', '…4'];
+  fresh([0, 8, 12], [0, 0.6, 0]);
+  const shop = prop('warehouse', 0, 0, -3.4, 1.0, '藥局'); bob(shop, 0.03);
+  let T = null;
+  await step(tok);                                   // 47:00 分散：口罩分流
+  say('hash code 要分散：就像口罩奇偶數分流');
+  await step(tok);                                   // 47:13 只有兩格的 hash
+  T = hlRow(2, 5.6, 1.4, ['奇數 1、3、5', '偶數 2、4、6']);
+  say('它就是最簡單、只有兩格的 hash');
+  await step(tok);                                   // 47:22 身分證最後一碼
+  const id = cube('A12345678 3', C8[0], [2.6, 0.5, 0.8], 0, 0.25, -1.0, 3);
+  glow(id, GOLD); nt('看最後一碼', 2.2, 1.0, -1.0);
+  say('政府用身分證的最後一碼來決定');
+  await step(tok);                                   // 47:30 135 那格、246 那格
+  kill(id);
+  const ppl = [['…3', 0], ['…8', 1], ['…5', 0], ['…2', 1]];
   const cnt = [0, 0];
-  for (const id of ids) {
-    const d = +id.slice(-1), b = d % 2 === 1 ? 0 : 1;
-    const c = cube(id, C8[d % 8], [1.1, 0.6, 0.8], 0, 0.35, -3.0, 3);
-    await beat(tok, 500);
-    move(c, T.xs[b] - 1.3 + (cnt[b] % 3) * 1.3, 0.45, T.z - 0.1);
-    cnt[b]++;
-    say('尾數 ' + d + ' → ' + (b === 0 ? '奇數那天' : '偶數那天'), d + ' mod 2 = ' + (d % 2));
-    await beat(tok, 900);
-  }
-  say('compress：division by 2', '尾數 mod 2 決定哪一格');
-  await beat(tok, 2600);
-  say('尾數是檢查碼：像 polynomial', '由前面的英文、數字算出來');
-  await beat(tok, 3000);
-  say('目的：分散，別把藥局塞爆', 'hash table 也是一樣的概念');
-  await beat(tok, 3000);
+  ppl.forEach(([s, b], i) => { const p = kid(s, C8[i + 2], T.xs[b] - 1.0 + cnt[b] * 2.0, T.z, 0.6); cnt[b]++; p.mood('happy'); });
+  say('你是分在 135 那格，還是 246 那格');
+  await step(tok);                                   // 47:41 最後一碼怎麼算出來的
+  nt('最後一碼 = 檢查碼', -4.6, 1.6, -1.6);
+  say('身分證最後一碼是怎麼算出來的？', '跟前面的英文、數字有關');
+  await step(tok);                                   // 47:54 幾乎就是 polynomial hash
+  bub('前面的碼 → 類似 polynomial → 最後一碼', 0, 2.8, -1.4);
+  say('它幾乎就是一個 polynomial hash');
+  await step(tok);                                   // 48:07 組合一樣、順序不同
+  say('前面的字一樣、只是順序不同', '不見得 hash 成同一個最後數字');
+  await step(tok);                                   // 48:32 不是尾數 0 禮拜天…
+  no('尾數 0 → 禮拜天、1 → 禮拜一…（沒有這樣分）', 0, 3.4, 3.4);
+  say('它不是「尾數 0 禮拜天、1 禮拜一…」');
+  await step(tok);                                   // 48:40 division by 2
+  tag('尾數 mod 2', 'ptr alt', 0, 1.4, 1.4);
+  say('而是做了 division by 2', 'compress 成兩格');
+  await step(tok);                                   // 48:53 目的：分散
+  say('目的是分散：一半的人 135 領、一半 246 領');
+  await step(tok);                                   // 49:02 別把藥局塞爆
+  ok('藥局不塞爆 ✓', 2.4, 1.6, -3.4);
+  say('盡量不要把藥局塞爆', 'Hash table 也是一樣的意思');
+  await step(tok);                                   // 49:09 更大的 array、更複雜的 key
+  say('只是我們的 array 不只兩格', 'hash code、key 也更複雜');
+  await step(tok);                                   // 49:35 生活中的電腦科學
+  bub('生活裡的電腦科學（也來自離散、應用數學）', 0, 3.6, 1.4);
+  say('一個影響我們生活的實例');
 }]);
 
-// 60:40 Collision：h(k₁) = h(k₂) 但 k₁ ≠ k₂（hash code 撞、或 compress 後撞）
+// 60:50 Collision：h(k₁) = h(k₂) 但 k₁ ≠ k₂（hash code 撞、或 compress 後撞）
 FRAG.push(['hashlin2-collision', 'Collision：h(k₁) = h(k₂)，k₁ ≠ k₂', async (tok) => {
   fresh([0, 7.5, 12], [0, 0.6, -0.3]);
   const T = hlRow(10, 1.15, 2.0);
-  say('Collision：h(k₁) = h(k₂)', '但 k₁ ≠ k₂');
-  await beat(tok, 2600);
-  const b1 = hlBox('sum', '#4b9ee2', -2.6, -2.6, 1.6);
-  const a = cube('ABC', C8[0], [1.0, 0.6, 0.8], -5.6, 0.35, -3.0, 3), b = cube('ACB', C8[1], [1.0, 0.6, 0.8], -5.6, 0.35, -1.9, 3);
-  await beat(tok, 700); move(a, -2.6, 0.5, -3.0); move(b, -2.6, 0.5, -2.0); await beat(tok, 800);
-  relabel(a, 198); relabel(b, 198); move(a, 0.6, 0.35, -3.0); move(b, 0.6, 0.35, -1.9); glow(a, RED); glow(b, RED);
-  say('情況 1：hash code 就一樣', 'sum：ABC、ACB 都是 198');
-  await beat(tok, 3000);
-  move(a, T.xs[8], 0.45, T.z); move(b, T.xs[8], 1.15, T.z);
-  say('→ 一定落在同一格', '198 mod 10 = 8');
-  await beat(tok, 2400);
-  glow(a, null); glow(b, null);
-  const c = cube('18273', C8[6], [1.3, 0.6, 0.8], 3.2, 0.35, -3.0, 3), d = cube('18033', C8[2], [1.3, 0.6, 0.8], 3.2, 0.35, -1.9, 3);
-  tag('polynomial', 'ptr', 3.2, 1.3, -3.6);
-  say('情況 2：hash code 不同', 'polynomial：18273 ≠ 18033');
-  await beat(tok, 2800);
+  await step(tok);                                   // 60:50 hash function 把 key 分散
+  const ks = [1, 4, 6, 9].map((i) => cube('', C8[i % 8], [0.8, 0.5, 0.8], T.xs[i], 0.35, T.z, 3));
+  say('Hash function：把 key 分散到 bucket array 各處');
+  await step(tok);                                   // 61:05 還是可能碰到 collision
+  say('就算努力分散了', '還是可能碰到 Collision');
+  await step(tok);                                   // 61:13 h(k1) = h(k2)
+  tag('h(k₁) = h(k₂)，但 k₁ ≠ k₂', 'ptr alt', 0, 2.4, -3.2);
+  say('Collision：兩個不同的 key，h 算出來一樣');
+  await step(tok);                                   // 61:34 hashcode 造成
+  hlBox('sum', '#4b9ee2', -2.6, -1.6, 1.6);
+  const a = cube('ABC', C8[0], [1.0, 0.6, 0.8], -5.6, 0.35, -2.0), b = cube('ACB', C8[1], [1.0, 0.6, 0.8], -5.6, 0.35, -1.0);
+  move(a, -2.6, 0.5, -2.0); move(b, -2.6, 0.5, -1.0); await beat(tok, 700);
+  relabel(a, 198); relabel(b, 198); move(a, T.xs[8], 0.45, T.z); move(b, T.xs[8], 1.15, T.z); glow(a, RED); glow(b, RED);
+  say('情況 1：hash code 就算得一樣', 'ABC、ACB 都是 198 → 198 mod 10 = 8');
+  await step(tok);                                   // 61:40 compress 後碰在一起
+  const c = cube('18273', C8[6], [1.2, 0.6, 0.8], 3.2, 0.35, -2.0, 3), d = cube('18033', C8[2], [1.2, 0.6, 0.8], 3.2, 0.35, -1.0, 3);
+  await beat(tok, 600);
   move(c, T.xs[3], 0.45, T.z); move(d, T.xs[3], 1.15, T.z); glow(c, RED); glow(d, RED);
-  say('compress 後還是撞', '18273 mod 10 = 18033 mod 10 = 3');
-  await beat(tok, 3000);
-  say('撞了怎麼辦：collision handling', '');
-  await beat(tok, 2400);
+  say('情況 2：hash code 不同，壓縮後剛好碰在一起', '18273 mod 10 = 18033 mod 10 = 3');
+  await step(tok);                                   // 61:48 碰在一起以後怎麼辦
+  bub('碰在一起以後怎麼辦？', 0, 3.0, 0.6);
+  say('那碰在一起以後怎麼辦？');
+  await step(tok);                                   // 61:55 Collision Handling
+  tag('Collision Handling', 'ptr', 0, 3.8, -1.4);
+  say('處理碰撞：Collision Handling');
 }]);
 
-// 62:21 方法 0：不理他（丟掉舊的或不插入）— tolerate some errors
+// 62:24 方法 0：不理他（丟掉舊的或不插入）— tolerate some errors
 FRAG.push(['hashlin2-dontcare', '方法 0：不理他', async (tok) => {
   fresh([0, 7, 12], [0, 0.6, 0]);
   const T = hlRow(5, 1.8, 0.4);
-  const old = cube('舊', C8[0], [1.2, 0.7, 0.9], T.xs[3], 0.47, T.z);
-  say('方法 0：不理他', '櫃子打開，裡面已經有東西');
-  await beat(tok, 2600);
-  const nw = cube('新', C8[4], [1.2, 0.7, 0.9], -5.8, 0.4, -2.6, 3);
-  await beat(tok, 600); move(nw, T.xs[3], 0.45, -1.6); glow(old, RED);
-  say('新的也 hash 到 [3]', 'collision');
-  await beat(tok, 2400);
-  fly(old, V3(4, 6, -3)); await beat(tok, 500); move(nw, T.xs[3], 0.47, T.z);
-  say('選擇 1：丟掉舊的，放新的', '只要保留最新的就好');
-  await beat(tok, 3000);
-  const nw2 = cube('新2', C8[5], [1.2, 0.7, 0.9], -5.8, 0.4, -2.6, 3);
-  await beat(tok, 600); move(nw2, T.xs[3], 0.45, -1.6); glow(nw, GOLD);
-  await beat(tok, 900); fly(nw2, V3(-5, 6, -3));
-  say('選擇 2：don\'t insert', '新的直接不放');
-  await beat(tok, 2800);
-  glow(nw, null);
-  say('不是 standard，但碰撞少時可行', '每格只放固定一樣東西');
-  await beat(tok, 2800);
-  say('思維：tolerate some errors', '錯誤 = 丟掉了不該丟的');
-  await beat(tok, 3000);
+  let old = null, nw = null;
+  await step(tok);                                   // 62:24 第零個方式：不理他
+  tag('方法 0：不理他', 'ptr', 0, 2.6, -3.0);
+  say('先補充第 0 種方式：不理他');
+  await step(tok);                                   // 62:44 Insert 時櫃子已有東西
+  old = cube('舊', C8[0], [1.2, 0.7, 0.9], T.xs[3], 0.47, T.z);
+  nw = kid('新', C8[4], -5.6, -2.4, 0.6);
+  await go(tok, nw.g, T.xs[3], 0, -1.6, 1000);
+  glow(old, RED); nw.mood('wow');
+  say('insert 時打開櫃子：裡面已經有東西了');
+  await step(tok);                                   // 62:58 丟掉原來的，或 don't insert
+  fly(old, V3(4, 6, -3)); await go(tok, nw.g, T.xs[3], 0.15, T.z, 600); nw.mood('happy');
+  nt('或者：新的不放（don\'t insert）', -4.0, 1.4, 2.4);
+  say('不理他：把原來的丟掉', '或者乾脆 don\'t insert');
+  await step(tok);                                   // 63:22 每一格最多放一樣東西
+  bub('每格最多一樣東西', T.xs[3], 2.4, T.z);
+  say('也就是：每一格最多就放一樣東西');
+  await step(tok);                                   // 63:33 留最新的
+  say('有些應用：無論如何留最新的', '舊的丟掉沒關係，新的一定要放');
+  await step(tok);                                   // 63:54 不是 standard
+  say('這不是 standard 的處理', '要看你在做的應用是什麼');
+  await step(tok);                                   // 64:27 碰撞不常發生
+  say('只要碰撞不常發生', '隨便丟掉一個也是一種可能');
+  await step(tok);                                   // 64:57 Tolerate some errors
+  tag('Tolerate Some Errors', 'ptr alt', 0, 1.6, 3.2);
+  say('思維：可以容許一些錯誤發生');
+  await step(tok);                                   // 65:09 錯誤 = 丟掉不該丟的
+  no('錯誤 = 丟掉了不該丟的東西', 4.0, 1.6, -2.4);
+  say('這裡的「錯誤」：把不該丟的東西丟掉');
 }]);
 
-// 65:32 用 hash 做 Set：bit bucket array（沒存 key，只存 0/1）
+// 65:39 用 hash 做 Set：bit bucket array（沒存 key，只存 0/1）
 FRAG.push(['hashlin2-bitset', 'Set 用 bit bucket array 表示', async (tok) => {
-  fresh([0, 7, 12], [0, 0.6, 0]);
-  const T = hlRow(10, 1.15, 0.8);
-  const bits = T.xs.map((x) => cube('0', GRAY, [0.8, 0.5, 0.8], x, 0.37, T.z));
-  say('用 hash table 做 Set', 'Set：key → true / false');
-  await beat(tok, 2800);
-  say('bit bucket array：預設全是 0', 'A[i] ∈ {0, 1}');
-  await beat(tok, 2400);
-  for (const [k, h] of [['k₁', 2], ['k₂', 5], ['k₃', 7]]) {
-    const c = cube(k, C8[h], [0.9, 0.6, 0.8], -5.8, 0.35, -2.6, 3);
-    await beat(tok, 500); move(c, T.xs[h], 0.35, -1.4);
-    relabel(bits[h], 1); tint(bits[h], C8[h]); glow(bits[h], GOLD);
-    say('放入 ' + k + '：A[h(' + k + ')] = 1', 'h(' + k + ') = ' + h);
-    await beat(tok, 1500); glow(bits[h], null); kill(c);
-  }
-  say('key 本身沒有存下來', '只在 hash 的位置存 1 bit');
-  await beat(tok, 2800);
-  say('所以 size 非常非常小', 'p 個元素 → 一個小 bit array');
-  await beat(tok, 2800);
+  fresh([0, 7.5, 12], [0, 0.6, 0]);
+  let T = null, bits = [];
+  const S = [['k₁', 2], ['k₂', 5], ['k₃', 7]];
+  const bs = [];
+  await step(tok);                                   // 65:39 HashTable-based Map 做 Set
+  tag('用 hash 做 Set', 'ptr', 0, 2.8, -3.2);
+  say('例子：拿 HashTable-based Map 來做 Set');
+  await step(tok);                                   // 65:50 Set = 集合
+  zone('集合', -2.8, 0, -2.2, 6.0, 1.8, '#e6eef8');
+  S.forEach(([k], i) => bs.push(kid(k, C8[i + 1], -4.6 + i * 1.8, -2.2, 0.55)));
+  say('Set 就是高中學的集合', '元素 k₁、k₂、…、kₚ');
+  await step(tok);                                   // 66:08 快速知道是否屬於
+  bub('某個元素在不在裡面？', 3.0, 1.4, -2.2);
+  say('想快速知道：某個元素在不在集合裡');
+  await step(tok);                                   // 66:18 key → True / False
+  say('Set 就是 key → True／False 的 map');
+  await step(tok);                                   // 66:39 只要存 key → True
+  say('其實只要存 key → True 這部分就好');
+  await step(tok);                                   // 66:47 開一個 array
+  T = hlRow(10, 1.15, 1.4);
+  say('開一個 array');
+  await step(tok);                                   // 66:55 塞到 h(k1)、h(k2)… 那格
+  for (const [i, [k, h]] of S.entries()) { const b = bs[i]; await go(tok, b.g, T.xs[h], 0, T.z - 1.2, 600); nt('h(' + k + ') = ' + h, T.xs[h], 1.6, T.z - 1.2); }
+  say('k₁ 放到 h(k₁) 那格、k₂ 放到 h(k₂)…');
+  await step(tok);                                   // 67:15 那格放 1
+  S.forEach(([, h], i) => { bits[h] = cube('1', C8[i + 1], [0.8, 0.5, 0.8], T.xs[h], 0.37, T.z, 2); });
+  say('那一格放個 1：代表 true');
+  await step(tok);                                   // 67:26 沒有的預設 0
+  T.xs.forEach((x, i) => { if (!bits[i]) bits[i] = cube('0', GRAY, [0.8, 0.5, 0.8], x, 0.37, T.z); });
+  say('沒有的格：array 預設是 0');
+  await step(tok);                                   // 67:33 bit bucket array
+  tag('bit bucket array', 'ptr alt', -6.0, 0.9, T.z);
+  say('用一個 bit 的 bucket array 描述這個 set');
+  await step(tok);                                   // 68:03 沒 collision 時存下了在不在
+  say('先想沒有 collision 的情況', '這個 array 大致存下了「key 在不在」');
+  await step(tok);                                   // 68:09 key 沒有真的存下來
+  bs.forEach((b) => remove(b.g));
+  no('key 本身沒存', -3.0, 1.0, -0.6);
+  say('注意：key 本身沒有存下來', '只在 hash 的位置存 1 或 0');
+  await step(tok);                                   // 68:23 size 非常小
+  ok('size 非常非常小', 3.0, 1.0, -0.6);
+  say('所以這個 bit bucket array 非常非常小');
 }]);
 
-// 68:45 查詢：0 → 一定不在；1 → 有 collision 時可能錯
+// 68:55 查詢：0 → 一定不在；1 → 有 collision 時可能錯
 FRAG.push(['hashlin2-query', 'Set 查詢：0 一定不在、1 可能錯', async (tok) => {
-  fresh([0, 7, 12], [0, 0.6, 0]);
-  const T = hlRow(10, 1.15, 0.8);
-  const bits = T.xs.map((x, i) => { const on = [2, 5, 7].includes(i); return cube(on ? '1' : '0', on ? C8[i] : GRAY, [0.8, 0.5, 0.8], x, 0.37, T.z); });
-  const cur = tag('h', 'ptr alt', T.xs[4], 1.6, T.z);
-  say('查詢 kᵢ：先算 h(kᵢ)', '再看 A[h(kᵢ)] 是 0 還是 1');
-  await beat(tok, 2600);
-  const q = cube('kᵢ', C8[4], [0.9, 0.6, 0.8], -5.8, 0.35, -2.6, 3);
-  await beat(tok, 500); move(q, T.xs[4], 0.35, -1.4); glow(bits[4], RED);
-  say('h(kᵢ) = 4：A[4] = 0', '一定不在 set（no error）');
-  await beat(tok, 3000);
-  glow(bits[4], null); kill(q);
-  const q2 = cube('k₂', C8[5], [0.9, 0.6, 0.8], -5.8, 0.35, -2.6, 3);
-  await beat(tok, 500); move(q2, T.xs[5], 0.35, -1.4); cur.position.set(T.xs[5], 1.6, T.z); glow(bits[5], GREEN);
-  say('A[5] = 1：沒 collision 就真的在', 'k₂ 確實放進過 set');
-  await beat(tok, 2800);
-  glow(bits[5], null); kill(q2);
-  const q3 = cube('kⱼ', C8[1], [0.9, 0.6, 0.8], -5.8, 0.35, -2.6, 3);
-  await beat(tok, 500); move(q3, T.xs[5], 0.35, -1.4); glow(bits[5], GOLD); glow(q3, RED);
-  say('kⱼ 沒放過，但 h(kⱼ) = 5', 'A[5] = 1 是 k₂ 設的');
-  await beat(tok, 3000);
-  say('說「在」可能錯：有一點錯誤可能', '說「不在」一定對');
-  await beat(tok, 3000);
+  fresh([0, 7.5, 12], [0, 0.6, 0]);
+  const T = hlRow(10, 1.15, 1.4);
+  const bits = T.xs.map((x, i) => { const on = [2, 5, 7].includes(i); return cube(on ? '1' : '0', on ? C8[i % 8] : GRAY, [0.8, 0.5, 0.8], x, 0.37, T.z); });
+  let ki = null, k2 = null, kj = null;
+  await step(tok);                                   // 68:55 新的 key ki
+  ki = kid('kᵢ', C8[4], -5.6, -2.4, 0.6);
+  say('來了一個新的 key kᵢ', '想檢查它在不在 set 裡');
+  await step(tok);                                   // 69:02 用 h 算出在哪一格
+  await go(tok, ki.g, T.xs[4], 0, T.z - 1.3, 900);
+  nt('h(kᵢ) = 4', T.xs[4], 1.7, T.z - 1.3);
+  say('先用 h 算出在哪一格', '再看那格是 1 還是 0');
+  await step(tok);                                   // 69:12 是 0：一定不在
+  glow(bits[4], RED); ki.mood('sad');
+  say('A[4] = 0：可以非常肯定 kᵢ 不在');
+  await step(tok);                                   // 69:30 放進來過就會是 1
+  say('放進 set 過的話，那格就會被設成 1', '它還是 0 → 從來沒放過');
+  await step(tok);                                   // 69:36 confirm, no error
+  ok('「不在」：no error ✓', T.xs[4], 2.6, T.z - 1.3);
+  say('「不在」是 confirm 的答案：no error');
+  await step(tok);                                   // 69:48 是 1 的時候？
+  glow(bits[4], null); remove(ki.g);
+  k2 = kid('k₂', C8[5], -5.6, -2.4, 0.6);
+  await go(tok, k2.g, T.xs[5], 0, T.z - 1.3, 900);
+  glow(bits[5], GOLD);
+  say('那是 1 的時候，能說它在嗎？', '先想沒有任何碰撞的情況');
+  await step(tok);                                   // 70:08 被某一步設成 1 → 真的在
+  glow(bits[5], GREEN); k2.mood('happy');
+  say('那格一定是被某個 key 設成 1', '沒碰撞 → 這個 key 真的在 set 裡');
+  await step(tok);                                   // 70:26 1 是對的，如果沒有 collision
+  ok('沒 collision：1 是對的', T.xs[5] + 1.6, 2.6, T.z - 1.3);
+  say('所以：沒有 collision 時，這個 1 是對的');
+  await step(tok);                                   // 70:40 有 collision
+  glow(bits[5], null); k2.g.position.x = T.xs[5] - 1.4;
+  kj = kid('kⱼ', C8[1], -5.6, -2.4, 0.6);
+  await go(tok, kj.g, T.xs[5] + 0.2, 0, T.z - 1.3, 900);
+  glow(bits[5], GOLD);
+  say('但如果有 collision：', 'kⱼ 從沒放過，h(kⱼ) 卻也是 5');
+  await step(tok);                                   // 70:47 不一樣的 key 剛好碰在一起
+  arrow(V3(T.xs[5] - 1.4, 0.9, T.z - 1.3), V3(T.xs[5], 0.7, T.z - 0.3), 0x7a1010);
+  kj.mood('wow');
+  say('那個 1 是 k₂ 設的', 'k₂ 剛好跟 kⱼ 撞在一起');
+  await step(tok);                                   // 71:02 一定機率對，一定機率錯
+  say('看到 1：有一定機率真的在', '也有一定機率是錯的');
+  await step(tok);                                   // 71:10 有一點錯誤可能性
+  no('「在」：可能錯', T.xs[5] + 0.8, 2.6, T.z + 1.3);
+  say('一個有一點點錯誤可能性的 data structure', '錯誤全來自 collision');
 }]);
 
-// 72:10 Bloom filter：多個 hash function，全部是 1 才說「在」
+// 71:32 Bloom filter：多個 hash function，全部是 1 才說「在」
 FRAG.push(['hashlin2-bloom', 'Bloom filter：多個 hash function', async (tok) => {
-  fresh([0, 7, 12], [0, 0.6, 0]);
-  const T = hlRow(10, 1.15, 0.8);
+  fresh([0, 7.5, 12], [0, 0.6, 0]);
+  const T = hlRow(10, 1.15, 1.2);
   const bits = T.xs.map((x) => cube('0', GRAY, [0.8, 0.5, 0.8], x, 0.37, T.z));
-  say('Bloom filter：用好幾個 hash function', 'h₁、h₂、h₃');
-  await beat(tok, 2800);
   const set1 = async (k, hs, col) => {
-    const c = cube(k, col, [0.9, 0.6, 0.8], -5.8, 0.35, -2.6, 3);
-    await beat(tok, 500); move(c, 0, 0.35, -2.4);
-    const ar = hs.map((h) => arrow(V3(0, 0.4, -1.9), V3(T.xs[h], 0.6, T.z - 0.5), 0xc08a1f));
+    const c = kid(k, col, -5.6, -2.4, 0.6);
+    await go(tok, c.g, 0, 0, -2.4, 700);
+    const ar = hs.map((h) => arrow(V3(0, 0.6, -1.9), V3(T.xs[h], 0.7, T.z - 0.5), 0xc08a1f));
     hs.forEach((h) => { relabel(bits[h], 1); tint(bits[h], col); });
-    say('insert ' + k + '：三格都設成 1', hs.map((h, i) => 'h' + SUB(i + 1) + '=' + h).join('、'));
-    await beat(tok, 2200); ar.forEach(kill); kill(c);
+    await beat(tok, 700); ar.forEach(kill); remove(c.g);
   };
+  await step(tok);                                   // 71:32 非常小，bit array
+  tag('bit array（沒存 key）', 'ptr', -6.0, 0.9, T.z);
+  say('好處：非常小，就是一個 bit array', '也沒有存 key');
+  await step(tok);                                   // 71:43 很多 key，小小 array
+  say('好的 hash function：非常非常多的 key', '用一個小小的 array 就表示得出來');
+  await step(tok);                                   // 71:57 缺點：會有錯誤
+  no('缺點：可能有一點錯誤', 0, 2.6, -2.4);
+  say('一點點缺點：有可能會有一些錯誤');
+  await step(tok);                                   // 72:23 Bloom Filter
+  tag('Bloom Filter', 'ptr alt', 0, 3.4, -2.4);
+  say('延伸閱讀：Bloom Filter');
+  await step(tok);                                   // 72:39 hash 延伸來做 set
+  say('剛才講的，就是 Bloom Filter 最基本的一塊', '把 hash 延伸拿來做 set');
+  await step(tok);                                   // 72:45 很多個 hash function
   await set1('x', [1, 4, 8], C8[0]);
+  say('真的 Bloom Filter 用很多個 hash function', 'insert x：h₁、h₂、h₃ 三格都設 1');
+  await step(tok);                                   // 72:53 獨立 → 錯誤率很低
   await set1('y', [2, 4, 6], C8[2]);
-  const q = cube('z', C8[4], [0.9, 0.6, 0.8], 0, 0.35, -2.4, 3);
-  [1, 6, 7].forEach((h) => glow(bits[h], h === 7 ? RED : GREEN));
-  say('查 z：h = 1、6、7', 'A[7] = 0 → z 一定不在');
-  await beat(tok, 3000);
-  [1, 6, 7].forEach((h) => glow(bits[h], null)); kill(q);
-  const w = cube('w', C8[5], [0.9, 0.6, 0.8], 0, 0.35, -2.4, 3);
-  [2, 4, 8].forEach((h) => glow(bits[h], GOLD));
-  say('查 w：2、4、8 全是 1 → 說「在」', 'w 沒放過也可能全 1：小機率錯');
-  await beat(tok, 3200);
-  say('hash 越多且獨立，錯誤率越低', '「不在」一定對，「在」大多對');
-  await beat(tok, 3000);
+  say('hash 彼此有獨立性 → 錯誤率可以降到很低', 'insert y：2、4、6');
+  await step(tok);                                   // 73:08 很快判斷在不在
+  const z = kid('z', C8[4], 0, -2.4, 0.6);
+  [1, 6, 7].forEach((h) => glow(bits[h], h === 7 ? RED : GREEN)); z.mood('sad');
+  say('很快判斷某個 key 在不在 set 裡', '查 z：1、6、7 → A[7] = 0 → 不在');
+  await step(tok);                                   // 73:21 不在：肯定；在：小機率錯
+  [1, 6, 7].forEach((h) => glow(bits[h], null)); remove(z.g);
+  const w = kid('w', C8[5], 0, -2.4, 0.6);
+  [2, 4, 8].forEach((h) => glow(bits[h], GOLD)); w.mood('wow');
+  say('「不在」是肯定的；「在」有小小機率錯', 'w 沒放過，2、4、8 卻剛好全是 1');
+  await step(tok);                                   // 73:28 大部分是對的
+  say('但大部分時候是對的', '大資料時代非常有用');
 }]);
 
-// 73:30 應用：廣告系統判斷使用者是否在 1532 人名單
+// 73:34 應用：廣告系統判斷使用者是否在 1532 人名單
 FRAG.push(['hashlin2-ads', 'Bloom filter 應用：1532 人看紅色廣告', async (tok) => {
-  fresh([0, 7, 12], [0, 0.6, 0]);
-  hlBox('Bloom filter（1532 人）', '#e55a9b', 0, -1.0, 3.0);
-  const red = cube('紅色廣告', '#c0392b', [1.8, 0.6, 1.0], 4.6, 0.3, 2.2), oth = cube('其他廣告', GRAY, [1.8, 0.6, 1.0], -4.6, 0.3, 2.2);
-  say('一群人對紅色廣告特別有反應', '名單：1532 人');
-  await beat(tok, 3000);
-  say('一個一個比對 1532 人？', '比完廣告機會都不見了');
-  await beat(tok, 2800);
-  const users = [['u₁', true], ['u₂', false], ['u₃', true]];
-  for (const [u, inSet] of users) {
-    const c = cube(u, C8[u.length + (inSet ? 1 : 4)], [0.9, 0.6, 0.8], 0, 0.35, -4.2, 3);
-    await beat(tok, 500); move(c, 0, 0.5, -1.0); await beat(tok, 800);
-    move(c, inSet ? 4.6 : -4.6, 1.0, 2.2); glow(inSet ? red : oth, GOLD);
-    say(u + '：' + (inSet ? '在 → 紅色廣告' : '不在 → 其他廣告'), '幾次 hash 就判斷完');
-    await beat(tok, 1600); glow(red, null); glow(oth, null); kill(c);
-  }
-  say('「在」偶爾錯：多秀給幾人也沒關係', '保證 1532 人都看到紅色廣告');
-  await beat(tok, 3200);
+  fresh([0, 7.5, 12], [0, 0.6, 0]);
+  let red = null, oth = null, filt = null;
+  const user = async (name, inSet, ci) => {
+    const u = kid(name, C8[ci], 0, -4.0, 0.55);
+    await go(tok, u.g, 0, 0, -1.0, 700);
+    await go(tok, u.g, inSet ? 4.6 : -4.6, 0, 2.6, 800);
+    u.mood(inSet ? 'happy' : 'calm'); glow(inSet ? red : oth, GOLD);
+    return u;
+  };
+  await step(tok);                                   // 73:37 廣告系統
+  const mon = prop('monitor', 0, 0, -3.8, 0.9, '廣告系統'); bob(mon, 0.03);
+  say('例子：線上廣告系統');
+  await step(tok);                                   // 73:46 對使用者決定廣告
+  say('決定要給哪個使用者看什麼廣告');
+  await step(tok);                                   // 74:00 紅色廣告
+  red = cube('紅色廣告', '#c0392b', [1.8, 0.6, 1.0], 4.6, 0.3, 3.6); oth = cube('其他廣告', GRAY, [1.8, 0.6, 1.0], -4.6, 0.3, 3.6);
+  say('發現一群人對紅色廣告特別有反應');
+  await step(tok);                                   // 74:06 1532 人
+  zone('名單：1532 人', 4.4, 0, -1.6, 3.6, 2.2, '#f6dede');
+  for (let i = 0; i < 4; i++) kid('', C8[i], 3.2 + (i % 2) * 1.6, -2.2 + Math.floor(i / 2) * 1.2, 0.4);
+  say('這群使用者有 1532 個人', '只給他們看紅色廣告');
+  await step(tok);                                   // 74:24 流量來了：屬於這群嗎
+  const u0 = kid('?', C8[6], 0, -1.0, 0.55); u0.mood('wow');
+  say('一個廣告流量來了', '他屬不屬於這 1532 人？');
+  await step(tok);                                   // 74:33 一個個比對
+  const cmp = pk('比對 1', -2.0, 1.4, -1.0);
+  for (let i = 2; i <= 4; i++) { await beat(tok, 350); txt(cmp, '比對 ' + i); }
+  txt(cmp, '比對 … 1532');
+  say('一個一個比對，一路比到 1532？');
+  await step(tok);                                   // 74:42 等你比完廣告機會都不見
+  remove(cmp); remove(u0.g);
+  no('比完，廣告機會都不見了', -2.0, 1.4, -1.0);
+  say('等你比完，廣告機會都不見了', '用 Bloom Filter 來算');
+  await step(tok);                                   // 74:49 1532 人建 Bloom Filter
+  filt = hlBox('Bloom Filter', '#e55a9b', 0, -1.0, 2.6);
+  say('先把這 1532 人建成一個 Bloom Filter');
+  await step(tok);                                   // 74:56 來一個人很快算
+  await user('u₁', true, 1);
+  say('有人來時：很快算出他屬不屬於', 'u₁：在 → 紅色廣告');
+  await step(tok);                                   // 75:01 不是 → 別的廣告
+  glow(red, null);
+  await user('u₂', false, 3);
+  say('不是：趕快秀給他別的廣告', '是：秀紅色廣告');
+  await step(tok);                                   // 75:07 小錯誤沒關係
+  glow(oth, null); glow(red, GOLD);
+  nt('多秀給 10 個人也沒關係', 4.6, 1.4, 1.6);
+  say('「是」有一點點小錯誤也許沒關係', '頂多多秀給十個人紅色廣告');
+  await step(tok);                                   // 75:13 1532 人都看到
+  ok('1532 人全都看到 ✓', 4.6, 1.6, 4.6);
+  say('至少確保你在意的 1532 人都看到');
 }]);
 
-// 77:09 方法 1：fixed array per bucket（一個櫃子切成小櫃子）
+// 77:11 方法 1：fixed array per bucket（一個櫃子切成小櫃子）
 FRAG.push(['hashlin2-fixed', '方法 1：每個 bucket 一個固定 array', async (tok) => {
   fresh([0, 7.5, 12], [0, 0.6, 0.3]);
   const T = hlRow(5, 2.2, -2.6, null, -0.85);
-  T.xs.forEach((x) => { for (let j = 0; j < 4; j++) cube('', '#e8dfcc', [1.6, 0.08, 0.7], x, 0.05, T.z + 1.05 + j * 0.85); });
-  say('方法 1：fixed array per bucket', '一個櫃子切成 4 個小櫃子');
-  await beat(tok, 3000);
   const ks = [];
-  for (let j = 0; j < 4; j++) {
-    const [x, y, z] = cpos(T, 3, j);
-    ks.push(cube('k' + SUB(j + 1), C8[j], [1.3, 0.6, 0.65], x, y, z, 3));
-    say('k' + SUB(j + 1) + ' → bucket 3 的第 ' + (j + 1) + ' 小格', 'h(k' + SUB(j + 1) + ') = 3');
-    await beat(tok, 1100);
-  }
-  const k5 = cube('k₅', C8[4], [1.3, 0.6, 0.65], T.xs[3], 1.4, T.z + 4.8, 3);
-  glow(k5, RED);
-  say('第 5 個也到 bucket 3：overflow', 'hash 不夠好、資料分布特別都會發生');
-  await beat(tok, 3200);
-  say('不常發生的話，這是簡單的方法', '缺點：固定大小、不夠動態');
-  await beat(tok, 3000);
+  const put = (j) => { const [x, y, z] = cpos(T, 3, j); ks.push(cube('k' + SUB(j + 1), C8[j], [1.3, 0.6, 0.65], x, y, z, 3)); };
+  await step(tok);                                   // 77:11 比較標準的處理
+  say('除了不理他：比較標準的 collision 處理');
+  await step(tok);                                   // 77:18 Fixed Array Per Bucket
+  tag('方法 1：Fixed Array Per Bucket', 'ptr', 0, 2.0, -3.6);
+  say('第一個：每個 bucket 一個固定大小的 array');
+  await step(tok);                                   // 77:29 一個櫃子切成好幾個小櫃子
+  T.xs.forEach((x) => { for (let j = 0; j < 4; j++) cube('', '#e8dfcc', [1.6, 0.08, 0.7], x, 0.05, T.z + 1.05 + j * 0.85); });
+  say('就是把一個櫃子切成好幾個小櫃子');
+  await step(tok);                                   // 77:35 兩個人共用
+  put(0); put(1);
+  say('兩個人要共用一個櫃子', 'h(k₁) = h(k₂) = 3：各放一小格');
+  await step(tok);                                   // 77:39 還是會 overflow
+  put(2); put(3);
+  say('這樣還是會 overflow');
+  await step(tok);                                   // 77:49 hash 不好、分布特別
+  say('hash function 設計得不夠好', '或 data 的分布有點特別');
+  await step(tok);                                   // 77:55 四個都滿
+  const k5 = cube('k₅', C8[4], [1.3, 0.6, 0.65], T.xs[3], 1.4, T.z + 4.6, 3); glow(k5, RED);
+  no('滿了！', T.xs[3] + 1.6, 1.6, T.z + 4.6);
+  say('切成 4 個小櫃子，4 個都滿了', '第 5 個放不下');
+  await step(tok);                                   // 78:00 發生不多就是簡單方法
+  say('如果不常發生：這是一個簡單的方法');
 }]);
 
-// 78:09 方法 2：chaining（linked list）— 希望 chain 短，時間 ∝ 那格的長度
+// 78:16 方法 2：chaining（linked list）— 希望 chain 短，時間 ∝ 那格的長度
 FRAG.push(['hashlin2-chain', '方法 2：chaining，chain 要短', async (tok) => {
-  fresh([0, 7.5, 12], [0, 0.6, 0.4]);
+  fresh([0, 7.5, 12], [0, 0.6, 0.6]);
   const T = hlRow(5, 2.2, -2.8, null, -0.85);
-  say('方法 2：linked list，叫 chaining', '要串多長就串多長');
-  await beat(tok, 2600);
-  for (const k of [10, 7, 12, 4]) { hlChain(T, k % 5, k, null, true); await beat(tok, 500); }
-  say('hash 那部分很快', 'hash code + compress → 直接到某一格');
-  await beat(tok, 2800);
-  say('insert / get 的時間 = 那格的長度', 'h(x) = x mod 5');
-  await beat(tok, 2600);
-  for (const k of [3, 8, 13, 18, 23]) { hlChain(T, 3, k, null, true); say('insert ' + k + '：' + k + ' mod 5 = 3', '[3] 的 chain 長度 ' + T.ch[3].length); await beat(tok, 800); }
-  const cur = tag('get 23', 'ptr alt', T.xs[3] + 1.4, 1.2, T.z + 1.05);
-  for (let j = 0; j < 5; j++) { const [, , z] = cpos(T, 3, j); cur.position.set(T.xs[3] + 1.5, 1.2, z); glow(T.ch[3][j], j === 4 ? GREEN : GOLD); await beat(tok, 600); glow(T.ch[3][j], null); }
-  say('大家擠同一格 = 排很長的隊', '<span class="no">get 23 要走 5 個節點</span>');
-  await beat(tok, 3000);
+  await step(tok);                                   // 78:16 linked list
+  tag('方法 2：linked list', 'ptr', 0, 2.0, -3.8);
+  say('想動態一點：用學過的 linked list');
+  await step(tok);                                   // 78:25 要串多少就串多少：chaining
+  for (const k of [10, 7, 12, 4]) hlChain(T, k % 5, k, null, true);
+  nt('h(x) = x mod 5', 4.8, 1.0, -2.8);
+  say('要串多少就串多少', '這叫 chaining');
+  await step(tok);                                   // 78:39 每一格串出去
+  say('每一格就一條一條串出去');
+  await step(tok);                                   // 78:43 希望短的 chain
+  ok('chain 短一點最好', -4.4, 1.4, 0.2);
+  say('我們希望 chain 短');
+  await step(tok);                                   // 78:59 insert、get
+  say('map 要做的事：insert（放進去）、get（拿出來）');
+  await step(tok);                                   // 79:07 hash 部分很快
+  const p = pk('h(x)', -5.6, 1.6, -2.8);
+  await go(tok, p, T.xs[2], 1.6, -2.8, 700);
+  say('hash 部分很快：算 hash code、compress', '直接就到某一格');
+  await step(tok);                                   // 79:20 時間跟那一格放多少有關
+  remove(p);
+  say('之後花的力氣，跟那一格放了多少東西有關');
+  await step(tok);                                   // 79:33 長長的 linked list
+  for (const k of [3, 8, 13, 18, 23]) hlChain(T, 3, k, null, true);
+  say('大家都擠同一格：長長的 linked list', '3、8、13、18、23 都 mod 5 = 3');
+  await step(tok);                                   // 79:38 排很長的隊
+  const cur = tag('get 23', 'ptr alt', T.xs[3] + 1.5, 1.2, T.z + 1.05);
+  for (let j = 0; j < 5; j++) { const [, , z] = cpos(T, 3, j); cur.position.set(T.xs[3] + 1.5, 1.2, z); glow(T.ch[3][j], j === 4 ? GREEN : GOLD); await beat(tok, 380); glow(T.ch[3][j], null); }
+  say('像排很長的隊：不太好', 'get 23 要走過 5 個節點');
 }]);
 
 // 79:47 方法 3：other container（secondary data structure），例如第二層再 hash
 FRAG.push(['hashlin2-secondary', '方法 3：secondary 的 container', async (tok) => {
   fresh([0, 7.5, 12], [0, 0.6, 0.2]);
-  const T = hlRow(4, 3.0, -2.8, ['1萬人', '1萬人', '1萬人', '…']);
-  T.xs.forEach((x, i) => cube(i < 3 ? '1萬' : '…', C8[i], [1.6, 0.6, 0.8], x, 0.4, T.z, 3));
-  say('100 萬人分流：每桶 1 萬人', 'hash 只是先分成小包');
-  await beat(tok, 3000);
-  say('每次在 1 萬人裡找來找去還是太多', 'array、linked list 都要掃');
-  await beat(tok, 2800);
-  const sub = hlRow(5, 1.1, 1.6, ['0', '1', '2', '3', '4']);
-  sub.xs.forEach((x, i) => { sub.slots[i].position.x = x + T.xs[0] + 2.2; sub.idx[i].position.x = x + T.xs[0] + 2.2; });
-  arrow(V3(T.xs[0], 0.4, T.z + 0.5), V3(T.xs[0] + 2.2 - 2.2, 0.3, 1.0), 0xc08a1f);
-  tag('第二層 hash', 'ptr alt', T.xs[0] + 2.2, 1.4, 1.6);
-  say('bucket 裡放任何動態 container', '例：第二層再用一個 hash');
-  await beat(tok, 3200);
-  for (let i = 0; i < 5; i++) { cube('', C8[(i + 3) % 8], [0.8, 0.5, 0.7], sub.slots[i].position.x, 0.35, 1.6, 2); }
-  await beat(tok, 1000);
-  say('這種叫 secondary data structure', '也可以是更小的 map');
-  await beat(tok, 2800);
-  say('array、linked list 是基本款', '進階款更合用，但更複雜、難 maintain');
-  await beat(tok, 3000);
+  let T = null, bk = [];
+  await step(tok);                                   // 79:47 other container
+  tag('方法 3：other container', 'ptr', 0, 2.2, -3.6);
+  say('比 array、linked list 更進階：other container');
+  await step(tok);                                   // 79:58 任何可動態塞下的
+  say('任何能動態塞下一堆碰撞 key 的東西', '都可以放在這裡');
+  await step(tok);                                   // 80:10 secondary
+  nt('secondary data structure', 4.4, 1.4, -3.0);
+  say('這種通常叫 secondary');
+  await step(tok);                                   // 80:19 hash 只是分流
+  T = hlRow(4, 3.0, -2.6, ['桶 0', '桶 1', '桶 2', '…']);
+  bk = T.xs.map((x, i) => cube(i < 3 ? '很多人' : '…', C8[i], [1.8, 0.6, 0.8], x, 0.4, T.z, 3));
+  say('原來一堆東西：hash 只是先分流');
+  await step(tok);                                   // 80:26 第二層再用 hash
+  const sub = hlRow(5, 1.1, 1.6);
+  const off = T.xs[0] + 2.0;
+  sub.xs.forEach((x, i) => { sub.slots[i].position.x = x + off; sub.idx[i].position.x = x + off; });
+  arrow(V3(T.xs[0], 0.4, T.z + 0.5), V3(off - 2.2, 0.3, 1.0), 0xc08a1f);
+  tag('第二層 hash', 'ptr alt', off, 1.4, 1.6);
+  say('分流後還是很多：第二層要做什麼？', '例如再用另一個 hash');
+  await step(tok);                                   // 80:37 100 萬 → 每桶 1 萬
+  bk.slice(0, 3).forEach((c) => relabel(c, '1 萬人'));
+  nt('100 萬人', -5.8, 1.4, -2.6);
+  say('原來 100 萬人', '分成每個 bucket 1 萬人');
+  await step(tok);                                   // 80:42 1 萬人找來找去太多
+  glow(bk[0], RED);
+  say('每次在 1 萬人裡找來找去：還是太多');
+  await step(tok);                                   // 80:47 用 hash 或更小的 map
+  glow(bk[0], null);
+  for (let i = 0; i < 5; i++) cube('', C8[(i + 3) % 8], [0.8, 0.5, 0.7], sub.slots[i].position.x, 0.35, 1.6, 2);
+  say('不用 array、不用 linked list', '再用一個 hash，或更小的 map');
+  await step(tok);                                   // 80:53 只是更複雜
+  say('通通都可以，只是更複雜');
+  await step(tok);                                   // 81:01 array、linked list 基本款
+  bub('array、linked list：基本款', -3.6, 2.6, 3.4);
+  say('array、linked list 是基本款');
+  await step(tok);                                   // 81:16 進階款難 maintain
+  bub('進階款：更合用，但更難 maintain', 3.0, 2.6, 3.4);
+  say('進階款更合你用', '缺點：更複雜、更難 maintain');
 }]);
 
-// 81:22 Open addressing：回收再利用 bucket array 裡的空格
+// 81:24 Open addressing：回收再利用 bucket array 裡的空格
 FRAG.push(['hashlin2-open-idea', 'Open addressing：用表裡的空格', async (tok) => {
   fresh([0, 7.5, 12], [0, 0.6, 0.3]);
   const T = hlRow(8, 1.45, -2.4, null, -0.85);
-  for (const k of [10, 18, 26]) hlChain(T, 2, k, null, true);
-  hlChain(T, 6, 14, null, true);
-  say('方法 1～3：塞的地方再多拉空間', '[2] 串了 10、18、26');
-  await beat(tok, 3000);
+  for (const k of [10, 18, 26]) hlChain(T, 2, k);
+  hlChain(T, 6, 14);
+  await step(tok);                                   // 81:24 回顧前面的方法
+  say('講了：不理他、array、linked list、other container');
+  await step(tok);                                   // 81:31 reuse 空格
+  tag('另一種需求：reuse 空格', 'ptr', 0, 2.0, -3.4);
+  say('教科書的另一種：reuse bucket array 的 empty space');
+  await step(tok);                                   // 81:53 1、2、3 都另外拉空間
+  T.ch[2].forEach((c) => glow(c, GOLD));
+  say('1、2、3 都是：碰到了就另外多拉空間');
+  await step(tok);                                   // 82:01 有的塞、有的空
+  say('Hash table 裡：有些地方塞，有些地方空');
+  await step(tok);                                   // 82:21 空的還是空
+  T.ch[2].forEach((c) => glow(c, null));
   [0, 1, 3, 4, 5, 7].forEach((i) => glow(T.slots[i], GREEN));
-  say('可是空的地方還是空著', '有些格很塞、有些格很空');
-  await beat(tok, 2800);
-  say('能不能回收再利用空格？', 'reuse bucket array 的 empty space');
-  await beat(tok, 2600);
+  say('塞的地方多給空間，可是空的地方還是空的');
+  await step(tok);                                   // 82:28 回收再利用
+  bub('回收再利用？', 0, 2.4, -0.4);
+  say('能不能把空的地方回收再利用？');
+  await step(tok);                                   // 82:42 不另外安排空間
+  say('盡量不另外安排空間', '只用那些比較空的地方');
+  await step(tok);                                   // 82:52 Open Addressing
+  tag('Open Addressing', 'ptr alt', 0, 3.2, -0.4);
+  say('這通常叫 Open Addressing');
+  await step(tok);                                   // 83:02 最想放的 bucket
   const [a, b, c] = T.ch[2];
-  move(a, T.xs[2], 0.45, T.z); await beat(tok, 600);
-  move(b, T.xs[3], 0.45, T.z); glow(T.slots[3], null); await beat(tok, 600);
-  move(c, T.xs[4], 0.45, T.z); glow(T.slots[4], null); move(T.ch[6][0], T.xs[6], 0.45, T.z);
-  say('最想要的格有人 → 放到附近另一格', '這叫 Open Addressing');
-  await beat(tok, 3200);
-  say('不另外安排空間', '所有 key 都住在 bucket array 裡');
-  await beat(tok, 2800);
+  move(a, T.xs[2], 0.45, T.z); move(T.ch[6][0], T.xs[6], 0.45, T.z);
+  say('你有一個最想放入的 bucket');
+  await step(tok);                                   // 83:09 已經有人
+  move(b, T.xs[2], 1.2, T.z); glow(b, RED);
+  say('如果那個 bucket 剛好已經有人');
+  await step(tok);                                   // 83:14 放到接近的另一個 bucket
+  glow(b, null); move(b, T.xs[3], 0.45, T.z); glow(T.slots[3], null);
+  await beat(tok, 500);
+  move(c, T.xs[4], 0.45, T.z); glow(T.slots[4], null);
+  say('就試著放到接近的另一個 bucket', '18 → [3]、26 → [4]');
 }]);
 
-// 83:26 第三排中間的座位：依序找第一、第二、第三志願
+// 83:32 第三排中間的座位：依序找第一、第二、第三志願
 FRAG.push(['hashlin2-seat', '找座位：第一志願被坐走就找第二志願', async (tok) => {
   fresh([0, 8.5, 10.5], [0, 0, 0]);
   tag('講台', 'ptr', 0, 0.6, -3.8);
   const sx = (c) => -2.4 + c * 1.2, sz = (r) => -2.4 + r * 1.2;
-  for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) cube('', GRAY, [0.9, 0.12, 0.9], sx(c), 0.06, sz(r));
-  const taken = [[2, 2], [2, 3], [0, 1], [4, 0], [1, 4], [3, 2]];
-  taken.forEach(([r, c], i) => cube('', C8[i], [0.6, 0.6, 0.6], sx(c), 0.42, sz(r)));
-  const pref = [[2, 2], [2, 3], [2, 1], [1, 2]];
-  pref.forEach(([r, c], i) => tag('第' + (i + 1), 'idx', sx(c), 1.0, sz(r)));
-  say('最愛的位子：第三排中間', '進可攻、退可守');
-  await beat(tok, 3000);
-  const me = cube('我', C8[4], [0.7, 0.7, 0.7], 5.4, 0.4, 3.2, 3);
-  for (let i = 0; i < pref.length; i++) {
-    const [r, c] = pref[i];
-    move(me, sx(c), 1.2, sz(r) + 0.6);
-    const occ = taken.some(([a, b]) => a === r && b === c);
-    say(occ ? '第 ' + (i + 1) + ' 志願有人坐了' : '第 ' + (i + 1) + ' 志願空著：坐下', occ ? '就像 hash 算出的 bucket 被占' : 'h' + SUB(i) + ' 是空的 → 放進去');
-    await beat(tok, 2000);
-    if (!occ) { move(me, sx(c), 0.42, sz(r)); break; }
-  }
-  await beat(tok, 800);
-  say('趕人＝不理他；擠一張椅子＝小格子', '手牽手串一串＝linked list');
-  await beat(tok, 3200);
-  say('真正會做的：依序找下一個志願', '耐心有限：找完 m 個還沒有就放棄');
-  await beat(tok, 3200);
+  const seats = [];
+  for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) seats.push(cube('', GRAY, [0.9, 0.12, 0.9], sx(c), 0.06, sz(r)));
+  const seat = (r, c) => seats[r * 5 + c];
+  [[0, 1], [4, 0], [1, 4], [3, 2], [4, 3]].forEach(([r, c], i) => cube('', C8[i], [0.6, 0.6, 0.6], sx(c), 0.42, sz(r)));
+  const me = buddy('我', '', C8[4], 5.4, 0, 3.0, 0.6);
+  const sitAt = (r, c) => go(tok, me.g, sx(c) + 0.1, 0.3, sz(r) + 0.55, 800);
+  await step(tok);                                   // 83:33 最喜歡的位置
+  say('以前進教室上課：我有一個最喜歡的位置');
+  await step(tok);                                   // 83:44 第三排中間
+  glow(seat(2, 2), GOLD); tag('第一志願', 'idx', sx(2), 1.0, sz(2));
+  say('那就是：第三排的中間');
+  await step(tok);                                   // 83:52 不是來混的
+  bub('老師：這同學不是來混的', -4.6, 1.6, 2.4);
+  say('老師會覺得：這同學不是來混的');
+  await step(tok);                                   // 84:08 第一排壓力大
+  for (let c = 0; c < 5; c++) glow(seat(0, c), RED);
+  say('坐第一排：老師和學生壓力都很大');
+  await step(tok);                                   // 84:18 進可攻退可守
+  for (let c = 0; c < 5; c++) glow(seat(0, c), null);
+  say('第三排：進可攻、退可守');
+  await step(tok);                                   // 84:27 想睡覺也像好認真
+  me.mood('calm');
+  say('真的想睡，老師還覺得你讀書讀到好累');
+  await step(tok);                                   // 84:58 想搶第三排中間
+  say('進教室就想：要搶到第三排中間');
+  await step(tok);                                   // 85:06 有人坐了
+  cube('', C8[6], [0.6, 0.6, 0.6], sx(2), 0.42, sz(2), 2); me.mood('sad');
+  say('可是來晚了：那個位置已經有人坐了');
+  await step(tok);                                   // 85:13 就像 hash 算出的 bucket 有人
+  nt('= hash 算出的 bucket 已經有人', 4.6, 1.4, -1.6);
+  say('就像：hash function 算出的 bucket 上已經有人');
+  await step(tok);                                   // 85:28 不理他 = 趕人
+  bub('不理他 = 把同學趕走？', 4.6, 2.2, 0.4);
+  say('不理他：把同學趕走說那是我的位置？');
+  await step(tok);                                   // 85:44 小格子 = 擠一張椅子
+  bub('小格子 = 擠同一張椅子？', 4.6, 2.2, 1.4);
+  say('切小格子：跟同學擠同一張椅子？');
+  await step(tok);                                   // 86:00 linked list = 手牽手
+  bub('linked list = 手牽手串一串？', 4.6, 2.2, 2.4);
+  say('linked list：手牽手串成一串？');
+  await step(tok);                                   // 86:19 都不是真正的方式
+  say('這些都不是我們真正會做的');
+  await step(tok);                                   // 86:23 去第二想要的位置
+  tag('第二', 'idx', sx(3), 1.0, sz(2)); cube('', C8[7], [0.6, 0.6, 0.6], sx(3), 0.42, sz(2));
+  await sitAt(2, 3);
+  say('最想要的被佔了 → 去第二想要的位置', '也有人了');
+  await step(tok);                                   // 86:30 第三想要
+  tag('第三', 'idx', sx(1), 1.0, sz(2)); cube('', C8[3], [0.6, 0.6, 0.6], sx(1), 0.42, sz(2));
+  await sitAt(2, 1);
+  say('再去第三想要的位置', '依序找第一、第二、第三、第四…');
+  await step(tok);                                   // 86:44 沒人就坐下
+  tag('第四', 'idx', sx(2), 1.0, sz(1));
+  await sitAt(1, 2); glow(seat(1, 2), GREEN); me.mood('happy');
+  say('沒人坐：就坐下來', '有人：就找下一個');
+  await step(tok);                                   // 86:50 耐心有限
+  say('耐心也有限度', '第一到第十想要都沒得坐的話…');
+  await step(tok);                                   // 87:01 兩手一攤
+  bub('今天不是我的上課日…', 4.6, 2.2, -0.6);
+  say('兩手一攤：今天還是不要上了');
+  await step(tok);                                   // 87:11 = Open Addressing
+  tag('這種找位方式 = Open Addressing', 'ptr alt', 0, 2.4, -3.4);
+  say('這種找位方式，就是 Open Addressing');
 }]);
 
-// 87:23 Open addressing 的 insert / get：h₀, h₁, …, h_{m−1}，全滿 declare failure
+// 87:25 Open addressing 的 insert / get：h₀, h₁, …, h_{m−1}，全滿 declare failure
 FRAG.push(['hashlin2-oa-steps', 'Open addressing：insert 與 get 的步驟', async (tok) => {
   fresh([0, 8, 12], [0, 1.2, -0.4]);
-  const cd = code(['insert(key, value):', '  for i = 0 … m−1:', '    hᵢ ← 第 i 順位的格子', '    若 A[hᵢ] 是空的：放入、結束', '  declare failure', 'get(key)：同樣順序 h₀, h₁, …', '  找到 key；全找完 → 不在'], -1.4, 6.0, 0.48, -3.4);
+  const cd = code(['insert：Array[key] = value', '  for i = 0 … m−1:', '    hᵢ ← 第 i 順位的格子', '    若 A[hᵢ] 是空的：放入、結束', '  declare failure', 'get(key)：同樣順序 h₀, h₁, …', '  找到 key；全找完 → 不在'], -1.4, 6.0, 0.48, -3.4);
   const T = hlRow(8, 1.45, 1.6);
   hlPut(T, 3, 'A'); hlPut(T, 6, 'B'); hlPut(T, 0, 'C');
+  let cur = null;
+  const at = async (i, j) => { await go(tok, cur, T.xs[j], 1.8, T.z, 500); txt(cur, 'h' + SUB(i)); };
+  await step(tok);                                   // 87:25 把步驟寫下來
+  say('把 open addressing 的步驟詳細寫下來');
+  await step(tok);                                   // 87:33 Array[key] = value
   cd.hl(0);
-  say('Open addressing 的 insert', 'h₀ = h(key)：最想要的位置');
-  await beat(tok, 2800);
-  const seq = [3, 6, 1], cur = tag('h₀', 'ptr alt', T.xs[3], 1.8, T.z);
-  for (let i = 0; i < seq.length; i++) {
-    const j = seq[i]; cur.position.set(T.xs[j], 1.8, T.z); txt(cur, 'h' + SUB(i));
-    cd.hl(T.keys[j] ? 2 : 3);
-    if (T.keys[j]) { glow(T.keys[j], RED); say('h' + SUB(i) + ' = ' + j + '：有人了', '試下一個順位 h' + SUB(i + 1)); await beat(tok, 2000); glow(T.keys[j], null); }
-    else { hlPut(T, j, 'key', C8[4], true); say('h' + SUB(i) + ' = ' + j + '：空的 → 放進去', '順序 h₀=3、h₁=6、h₂=1（示意）'); await beat(tok, 2400); }
-  }
-  cd.hl(4);
-  say('最多試 m 次：h₀ … h_{m−1}', '全部有人 → declare failure');
-  await beat(tok, 2800);
-  cd.hl(5);
-  for (let i = 0; i < seq.length; i++) {
-    const j = seq[i]; cur.position.set(T.xs[j], 1.8, T.z); txt(cur, 'h' + SUB(i));
-    glow(T.keys[j], i === 2 ? GREEN : GOLD);
-    say(i === 2 ? 'get：在 h₂ 找到' : 'get：照同樣順序找', i === 2 ? 'A[1] 就是這個 key' : 'h' + SUB(i) + ' = ' + j + '：不是');
-    await beat(tok, 1400); glow(T.keys[j], null);
-  }
-  cd.hl(6);
-  say('全部找完都沒有 → 不在', '像同學沒來上課');
-  await beat(tok, 2800);
+  say('抽象地寫：Array[key] = value');
+  await step(tok);                                   // 87:48 key 透過 hash 到 entry
+  say('實際上：key 經過 hash，才到 array 裡的某一格');
+  await step(tok);                                   // 88:12 先找最想要的位置
+  say('先算一算：最想要的位置是哪裡？');
+  await step(tok);                                   // 88:34 H0
+  cd.hl(2);
+  cur = tag('h₀', 'ptr alt', -5.6, 1.8, T.z);
+  say('用原來的 hash function 算出 h₀', 'h₀ = h(key)：最想要的位置');
+  await step(tok);                                   // 89:03 例：第 3 個位置
+  await at(0, 3);
+  say('例如算出來要放第 3 個位置');
+  await step(tok);                                   // 89:09 已經有人了
+  glow(T.keys[3], RED);
+  say('先試試看：第 3 個位置已經有人了');
+  await step(tok);                                   // 89:21 h1：第二喜歡
+  glow(T.keys[3], null); await at(1, 6); glow(T.keys[6], RED);
+  say('改試 h₁：第二喜歡的位置', 'h₁ = 6：也有人');
+  await step(tok);                                   // 89:33 h2
+  glow(T.keys[6], null); await at(2, 1); cd.hl(3);
+  const me = hlPut(T, 1, 'key', C8[4], true);
+  say('再不行就試 h₂', 'h₂ = 1：空的 → 放進去');
+  await step(tok);                                   // 89:50 耐心只有 m 次
+  cd.hl(1);
+  say('耐心只有 m 次', '第 0、1、2、…、m−1 順位');
+  await step(tok);                                   // 90:06 re-insert 到 h0 … h_{m−1}
+  say('依序試 h₀、h₁、…、h_{m−1}');
+  await step(tok);                                   // 90:32 declare failure
+  cd.hl(4); no('全部有人 → declare failure', 0, 3.4, T.z);
+  say('還是不行：雙手一攤，declare failure');
+  await step(tok);                                   // 91:29 get：同學來找我
+  cd.hl(5); glow(me, null);
+  say('get：拿東西出來，就像同學來找我', '他知道我找位置的順序');
+  await step(tok);                                   // 91:40 先看最喜歡的位置
+  await at(0, 3); glow(T.keys[3], GOLD);
+  say('先看我在不在最喜歡的位置', 'h₀ = 3：不是');
+  await step(tok);                                   // 91:48 第二喜歡
+  glow(T.keys[3], null); await at(1, 6); glow(T.keys[6], GOLD);
+  say('不在的話：看第二喜歡的位置', 'h₁ = 6：不是');
+  await step(tok);                                   // 91:58 第三喜歡
+  glow(T.keys[6], null); await at(2, 1); glow(me, GREEN);
+  say('再看第三喜歡的位置', 'h₂ = 1：找到了！');
+  await step(tok);                                   // 92:13 通通找過沒有 → 沒來
+  glow(me, null); cd.hl(6);
+  bub('全找過都沒有 → 他沒來上課', 0, 3.0, 3.6);
+  say('如果通通找過都沒有', '那就是沒來上課：key 不在');
+  await step(tok);                                   // 93:08 H0 用原來的 hash
+  cd.hl(2);
+  say('h₀ 用原來的 hash function 算：這沒問題');
+  await step(tok);                                   // 93:15 H1…H(m−1) 怎麼算
+  say('那 h₁、h₂、…、h_{m−1} 怎麼算？', '文獻裡有幾種方式');
 }]);
 
-// 93:21 Linear probing：hᵢ = h₀ + i（找隔壁）、clustering
+// 93:28 Linear probing：hᵢ = h₀ + i（找隔壁）、clustering
 FRAG.push(['hashlin2-linear', 'Linear probing 與 clustering', async (tok) => {
-  fresh([0, 7, 12], [0, 0.6, 0]);
+  fresh([0, 7.5, 12], [0, 0.6, 0]);
   const T = hlRow(10, 1.15, 0.6);
-  const cur = tag('h₀', 'ptr alt', T.xs[3], 1.8, T.z);
-  const lin = (i) => i, lt = (i) => String(i);
-  say('Linear probing：找隔壁', 'hᵢ = (h₀ + i) mod 10');
-  await beat(tok, 2600);
-  for (const k of [13, 23, 33]) await hlIns(tok, T, k, k % 10, lin, lt, cur, 750);
+  const cur = tag('h₀', 'ptr alt', T.xs[0], 1.8, T.z);
+  const ins = async (k, home, ms = 350) => {
+    const seq = []; for (let i = 0; i < T.m; i++) { const j = (home + i) % T.m; seq.push(j); if (!T.keys[j]) break; }
+    await hlProbe(tok, T, cur, seq, ms); hlPut(T, seq[seq.length - 1], k, null, true);
+  };
+  await step(tok);                                   // 93:28 Linear Probing
+  tag('Linear Probing', 'ptr', 0, 2.8, -2.6);
+  say('第一種：Linear Probing');
+  await step(tok);                                   // 93:39 前一個選擇的隔壁
+  say('下一個選擇 = 前一個選擇移一點點：隔壁');
+  await step(tok);                                   // 93:54 0 號 → 1 號 → 2 號 → 3 號
+  for (let i = 1; i <= 3; i++) { await go(tok, cur, T.xs[i], 1.8, T.z, 450); txt(cur, 'h' + SUB(i)); }
+  say('第 0 號沒有 → 隔壁 1 號 → 2 號 → 3 號');
+  await step(tok);                                   // 94:04 離原位置 i 那麼遠
+  tag('hᵢ = (h₀ + i) mod k', 'ptr alt', 0, 2.0, -2.6);
+  say('hᵢ 就在離原位置 i 那麼遠的地方');
+  await step(tok);                                   // 94:21 繞圈圈找隔壁
+  for (const i of [8, 9, 0]) { await go(tok, cur, T.xs[i], 1.8, T.z, 350); }
+  arrow(V3(T.xs[9], 1.2, T.z + 1.0), V3(T.xs[0], 1.2, T.z + 1.0), 0xc08a1f);
+  say('到底了就繞回 0：繞圈圈找隔壁');
+  await step(tok);                                   // 94:33 最多幾次
+  say('最多可以做幾次嘗試？');
+  await step(tok);                                   // 94:42 整個 array 繞過
+  say('整個 array 都繞過、全滿才停', '最多 k − 1 步');
+  await step(tok);                                   // 95:02 缺點：collision 特別嚴重
+  hlPut(T, 3, 3, null, true); txt(cur, 'h₀'); cur.position.set(T.xs[3], 1.8, T.z);
+  say('缺點：某一格的 collision 特別嚴重時');
+  await step(tok);                                   // 95:17 3 號撞了 → 4 號
+  await ins(13, 3);
+  say('3 號撞了 → 原本要放 3 號的塞到 4 號', '13 → [4]');
+  await step(tok);                                   // 95:23 3 號附近集中
+  await ins(23, 3);
+  say('再撞就 5 號：3 號附近擠成一團', '23 → [5]');
+  await step(tok);                                   // 95:32 每次都 3、4、5 往後走
+  await hlProbe(tok, T, cur, [3, 4, 5], 400);
+  say('每次碰到 3 號，都要 3、4、5 一路往後走');
+  await step(tok);                                   // 95:41 Clustering
   [3, 4, 5].forEach((i) => glow(T.keys[i], GOLD));
-  say('[3] 撞得嚴重：3、4、5 擠成一團', '這叫 clustering');
-  await beat(tok, 3000);
+  tag('Clustering', 'ptr alt', T.xs[4], 2.6, T.z);
+  say('佔用相鄰 entry 的現象：Clustering');
+  await step(tok);                                   // 95:51 塞車
+  bub('像塞車一樣', T.xs[4], 3.2, T.z + 1.4);
+  say('一堆東西擠在那裡：像塞車');
+  await step(tok);                                   // 96:08 4 號自己的放不進去
   [3, 4, 5].forEach((i) => glow(T.keys[i], null));
-  await hlIns(tok, T, 14, 4, lin, lt, cur, 750);
-  await hlIns(tok, T, 15, 5, lin, lt, cur, 750);
-  say('4、5 號自己的反而要借 6、7', '像塞車：拖慢整個 hash');
-  await beat(tok, 3000);
-  say('最多繞 m − 1 步走完整個 array', '繞圈圈找隔壁');
-  await beat(tok, 2600);
+  const k14 = cube('14', kc(14), [0.9, 0.6, 0.8], T.xs[4], 0.35, T.z - 1.6, 3); glow(k14, RED);
+  say('結果：4 號自己的反而放不進去');
+  await step(tok);                                   // 96:16 4 號借 6 號、5 號借 7 號
+  kill(k14); await ins(14, 4, 280); await ins(15, 5, 280);
+  say('4 號要去借 6 號，5 號要去借 7 號', '14 → [6]、15 → [7]');
+  await step(tok);                                   // 96:24 拖慢效率
+  [3, 4, 5, 6, 7].forEach((i) => glow(T.keys[i], RED));
+  say('擠在不該擠的地方：拖慢整個 hash 的效率');
+  await step(tok);                                   // 96:32 避免太規律
+  [3, 4, 5, 6, 7].forEach((i) => glow(T.keys[i], null));
+  say('跟 hash function 一樣：想避免太規律、太簡單');
 }]);
 
-// 96:47 Quadratic probing：隔壁、4 以外、9 以外、16 以外
+// 96:41 Quadratic probing：隔壁、4 以外、9 以外、16 以外
 FRAG.push(['hashlin2-quad', 'Quadratic probing：跳 1、4、9、16', async (tok) => {
-  fresh([0, 7, 12], [0, 0.6, 0]);
+  fresh([0, 7.5, 12], [0, 0.6, 0]);
   const T = hlRow(17, 0.74, 0.6);
   [[3, 20], [4, 21], [7, 24], [12, 29]].forEach(([i, k]) => hlPut(T, i, k));
   const cur = tag('h₀', 'ptr alt', T.xs[3], 1.8, T.z);
-  say('Quadratic：走越多次跳越遠', 'hᵢ = (h₀ + i²) mod 17');
-  await beat(tok, 3000);
-  const n = await hlIns(tok, T, 37, 37 % 17, (i) => i * i, (i) => i + '²', cur, 1200);
-  say('37：試了 ' + n + ' 次才找到 [2]', '偏移 0、1、4、9、16');
-  await beat(tok, 2800);
+  await step(tok);                                   // 96:41 Quadratic
+  say('所以大家還做了什麼？像是 Quadratic');
+  await step(tok);                                   // 96:53 Quadratic Probing
+  tag('Quadratic Probing', 'ptr', 0, 2.8, -2.6);
+  say('課本上的 Quadratic Probing');
+  await step(tok);                                   // 97:02 走越多格，往越遠找
+  say('不要每次都集中在那裡', '走越多格，就往越遠的地方找');
+  await step(tok);                                   // 97:10 i 平方
+  tag('hᵢ = (h₀ + i²) mod 17', 'ptr alt', 0, 2.0, -2.6);
+  say('用 i 平方：+1、+4、+9、+16…', '例：insert 37，h₀ = 37 mod 17 = 3');
+  await step(tok);                                   // 97:17 先看隔壁
+  await hlProbe(tok, T, cur, [3, 4], 450);
+  say('[3] 有人 → 先看隔壁（+1）', '[4] 也有人');
+  await step(tok);                                   // 97:24 4、9、16 以外
+  await hlProbe(tok, T, cur, [3, 4, 7, 12, 2], 380);
+  hlPut(T, 2, 37, null, true);
+  say('再到 +4、+9 以外，再到 +16 以外', '3+16 = 19 mod 17 = 2：空的');
+  await step(tok);                                   // 97:30 中間留空
   [5, 6, 8, 9, 10, 11].forEach((i) => glow(T.slots[i], GREEN));
-  say('中間留空給本來屬於那裡的 key', '不會大家都擠在 [3] 附近');
-  await beat(tok, 3000);
+  say('中間留一些空，給本來屬於那裡的 key', '不會大家都擠在 [3] 附近');
+  await step(tok);                                   // 97:38 簡單版
+  [5, 6, 8, 9, 10, 11].forEach((i) => glow(T.slots[i], null));
+  say('linear、quadratic：簡單版');
 }]);
 
-// 97:38 Double hashing：hᵢ = h₀ + i·another_hash(key)
+// 97:50 Double hashing：hᵢ = h₀ + i·another_hash(key)
 FRAG.push(['hashlin2-double', 'Double hashing：每個 key 步伐不同', async (tok) => {
-  fresh([0, 7, 12], [0, 0.6, 0]);
+  fresh([0, 7.5, 12], [0, 0.6, 0]);
   const T = hlRow(11, 1.1, 0.6);
   hlPut(T, 3, 3);
   const cur = tag('h₀', 'ptr alt', T.xs[3], 1.8, T.z);
-  say('hᵢ = h₀ + i·another_hash(key)', '例：h₀ = k mod 11、h₂(k) = 7 − (k mod 7)');
-  await beat(tok, 3200);
-  for (const k of [14, 25]) {
-    const st = 7 - (k % 7);
-    say(k + '：h₀ = ' + (k % 11) + '，步伐 = ' + st, 'h₂(' + k + ') = 7 − ' + (k % 7) + ' = ' + st);
-    await beat(tok, 1800);
-    await hlIns(tok, T, k, k % 11, (i) => i * st, (i) => i + '·' + st, cur, 1200);
-  }
+  const ins = async (k) => { const st = 7 - (k % 7), seq = [k % 11, (k % 11 + st) % 11]; await hlProbe(tok, T, cur, seq, 450); hlPut(T, seq[1], k, null, true); };
+  await step(tok);                                   // 97:50 h0 + another hash
+  tag('hᵢ = h₀ + i · another_hash(key)', 'ptr', 0, 2.8, -2.6);
+  say('複雜版：不希望找的位置太有規律', 'hᵢ = h₀ + i·another_hash(key)');
+  await step(tok);                                   // 98:05 拿 key 再算一個東西
+  tag('another_hash(k) = 7 − (k mod 7)', 'ptr alt', 0, 2.0, -2.6);
+  say('another hash：拿你的 key 再算一個東西');
+  await step(tok);                                   // 98:13 每個 key 不同，乘上 i
+  say('每個 key 對應不同的步伐，再乘上 i');
+  await step(tok);                                   // 98:22 步伐跟複雜函式有關
+  say('離原位多遠：跟一個比較複雜的函式有關', '不再是 i 或 i² 這麼簡單');
+  await step(tok);                                   // 98:39 再透過 hash 分散
+  await ins(14);
+  say('14：h₀ = 3 有人，步伐 = 7 − 0 = 7', '3 + 7 = 10 → 放 [10]');
+  await step(tok);                                   // 98:47 雜湊 = 切碎碎
+  await ins(25);
+  say('25：h₀ 也是 3，步伐 = 7 − 4 = 3 → [6]', 'Hash：雜湊，有「切碎碎」的意思');
+  await step(tok);                                   // 98:59 原來 hash：分散到 array
+  say('原本的 hash：把 key 分散到 array 裡');
+  await step(tok);                                   // 99:05 另一個 hash 分散下一個位置
   [10, 6].forEach((i) => glow(T.keys[i], GOLD));
-  say('同一個 h₀，下一步卻散到不同地方', '14 → [10]、25 → [6]');
-  await beat(tok, 3000);
-  say('hash = 切碎碎：把位置分散開', '這叫 double hashing');
-  await beat(tok, 2800);
+  say('還是擠在一起：再用另一個 hash', '把下一個位置分散開（同樣 h₀，去處不同）');
+  await step(tok);                                   // 99:12 Double Hashing
+  tag('Double Hashing', 'ptr alt', 0, 3.4, -2.6);
+  say('這種機制叫 Double Hashing');
 }]);
 
 // 99:20 哪一個好？從簡單到複雜的 spectrum
 FRAG.push(['hashlin2-spectrum', '從簡單到複雜：看應用選', async (tok) => {
-  fresh([0, 7, 12], [0, 0.6, 0]);
-  const R = [['hash code', ['sum', 'polynomial', 'cyclic shift']], ['collision', ['不理他', 'secondary', 'open addr.']], ['open addr.', ['linear', 'quadratic', 'double']]];
-  const cs = [];
-  for (let r = 0; r < 3; r++) {
-    tag(R[r][0], 'ptr', -5.6, 0.9, -2.4 + r * 2.4);
-    cs.push(R[r][1].map((s, i) => cube(s, C8[(r * 3 + i) % 8], [2.2, 0.6, 0.9], -2.4 + i * 3.0, 0.3, -2.4 + r * 2.4, 3)));
-    for (let i = 0; i < 2; i++) arrow(V3(-1.2 + i * 3.0, 0.4, -2.4 + r * 2.4), V3(-0.6 + i * 3.0, 0.4, -2.4 + r * 2.4));
-    await beat(tok, 700);
-  }
-  say('哪一個比較好？看應用', '老實說：不知道');
-  await beat(tok, 3000);
-  glow(cs[2][1], GREEN);
-  say('quadratic 往往已經夠好', '不一定要做更複雜的');
-  await beat(tok, 2800);
-  glow(cs[2][1], null); cs.forEach((row) => glow(row[2], GOLD));
-  say('撞得太嚴重 → 往複雜的 design 移', '簡單 → 複雜');
-  await beat(tok, 3000);
-  cs.forEach((row) => glow(row[2], null));
-  say('概念簡單，難在測試與確保效率', '性質的證明留給進階課程');
-  await beat(tok, 3000);
+  fresh([0, 7.5, 12], [0, 0.6, 0]);
+  const row = (r, name, items) => {
+    tag(name, 'ptr', -5.6, 0.9, -2.4 + r * 2.4);
+    const cs = items.map((s, i) => cube(s, C8[(r * 3 + i) % 8], [2.2, 0.6, 0.9], -2.4 + i * 3.0, 0.3, -2.4 + r * 2.4, 3));
+    for (let i = 0; i < items.length - 1; i++) arrow(V3(-1.2 + i * 3.0, 0.4, -2.4 + r * 2.4), V3(-0.6 + i * 3.0, 0.4, -2.4 + r * 2.4));
+    return cs;
+  };
+  let oa = null, col = null;
+  const thinker = buddy('哪個好？', '', C8[4], 5.8, 0, -3.4, 0.6);
+  await step(tok);                                   // 99:20 哪一個比較好？不知道
+  thinker.mood('wow');
+  say('哪一個比較好？老實說：不知道');
+  await step(tok);                                   // 99:29 看應用、看設計的 hash
+  say('看你的應用、複雜度', '甚至看你設計得出什麼樣的 hash');
+  await step(tok);                                   // 99:36 Quadratic 已經有好處
+  oa = row(2, 'open addr.', ['linear', 'quadratic', 'double']);
+  glow(oa[1], GREEN);
+  say('很多時候 Quadratic Probing 已經有一定的好處', '不見得要做更複雜的');
+  await step(tok);                                   // 99:48 碰撞太嚴重 → 往複雜移
+  glow(oa[1], null); glow(oa[2], GOLD);
+  say('實務上：發現碰撞太嚴重', '才從簡單的 design 移向複雜的');
+  await step(tok);                                   // 100:06 hash code 簡單到複雜
+  row(0, 'hash code', ['sum', 'polynomial', 'cyclic shift']);
+  say('hash code：sum → polynomial → cyclic');
+  await step(tok);                                   // 100:17 linear → quadratic → double
+  glow(oa[2], null); oa.forEach((c) => glow(c, GOLD));
+  say('open addr.：linear → quadratic → double');
+  await step(tok);                                   // 100:22 spectrum
+  oa.forEach((c) => glow(c, null));
+  bub('一整個 Spectrum 的工具', 0, 2.8, -3.6);
+  say('給大家一個 Spectrum：可以用的工具');
+  await step(tok);                                   // 100:29 測試、確保效率
+  thinker.mood('calm');
+  say('Hash 概念很簡單', '難在：怎麼測試、怎麼確保效率');
+  await step(tok);                                   // 100:48 collision：不理他 → 容錯
+  col = row(1, 'collision', ['不理他（容錯）', 'secondary', 'open addr.']);
+  glow(col[0], GOLD);
+  say('Collision 怎麼解決：不理他 → 往容錯走');
+  await step(tok);                                   // 100:55 secondary
+  glow(col[0], null); glow(col[1], GOLD);
+  say('Secondary 的 data structure／storage', '用 array、linked list 或任何東西');
+  await step(tok);                                   // 101:10 reuse：open addressing
+  glow(col[1], null); glow(col[2], GOLD);
+  say('或 reuse 空下來的空間：Open Addressing');
+  await step(tok);                                   // 101:35 證明留給進階課程
+  glow(col[2], null);
+  nt('性質的證明 → 進階課程', 5.4, 1.2, 3.6);
+  say('hash function、probing 性質的證明', '留給進階的課程');
 }]);
 
-// 120:43 有 collision 時要把 key 和 value 一起存
+// 120:40 有 collision 時要把 key 和 value 一起存
 FRAG.push(['hashlin2-store-key', 'Collision 時 key 要跟 value 一起存', async (tok) => {
   fresh([0, 7.5, 12], [0, 0.6, 0.3]);
   const T = hlRow(5, 2.2, -2.6, null, -0.85);
   T.cw = 1.9;
-  const a = hlChain(T, 3, '電話A', C8[0]);
-  say('完美世界：沒有 collision', '那格專屬你，只存 value 就好');
-  await beat(tok, 3000);
-  const b = hlChain(T, 3, '電話B', C8[2], true);
-  say('有 collision：[3] 有兩個 value', '要拿哪一個？');
-  await beat(tok, 2800);
-  const q = cube('get(Bob)', C8[5], [1.6, 0.6, 0.8], -5.4, 0.35, 1.8, 3);
-  await beat(tok, 500); move(q, T.xs[3] - 2.4, 0.35, 0.3); glow(a, GOLD); glow(b, GOLD);
-  say('h(Bob) = 3，但分不出是誰的', '可能拿到別人的東西');
-  await beat(tok, 3000);
+  let a = null, b = null, q = null;
+  await step(tok);                                   // 120:40 同一格拿哪個值？
+  say('問：collision 後用 linked list', '同一格有好幾個值，要拿哪一個？');
+  await step(tok);                                   // 121:01 完美世界
+  a = hlChain(T, 3, '電話A', C8[0], true);
+  say('如果世界很完美：沒有任何 collision');
+  await step(tok);                                   // 121:06 不用存 key
+  say('存東西時不用存 key', '只要把 value 存進去');
+  await step(tok);                                   // 121:12 位置是你專屬的
+  bub('這格專屬於你', T.xs[3], 1.6, T.z);
+  say('反正那個位置是你專屬的');
+  await step(tok);                                   // 121:21 有 collision → 對證件
+  b = hlChain(T, 3, '電話B', C8[2], true);
+  q = kid('Bob', C8[5], -5.2, 1.8, 0.6);
+  await go(tok, q.g, T.xs[3] - 2.6, 0, 0.3, 800);
+  glow(a, GOLD); glow(b, GOLD); q.mood('wow');
+  say('有 collision 時：要找 Bob 的東西', '兩個 value，像要「對證件」');
+  await step(tok);                                   // 121:38 key 跟 value 一起存
   glow(a, null); glow(b, null);
   relabel(a, 'Amy｜電話A'); relabel(b, 'Bob｜電話B');
-  say('把 key 跟 value 一起存', '像共用櫃子要貼名字');
-  await beat(tok, 2800);
-  glow(a, GOLD); await beat(tok, 900); glow(a, null); glow(b, GREEN);
-  say('對證件：key 相同才拿走', '找到 Bob 的 value');
-  await beat(tok, 3000);
+  say('所以一般會把 key 跟 value 一起存');
+  await step(tok);                                   // 121:44 不會拿到別人的
+  glow(a, RED); await beat(tok, 500); glow(a, null); glow(b, GREEN); q.mood('happy');
+  say('檢查 key：才不會拿到別人的東西', 'Amy 的不是；Bob 的才拿走');
+  await step(tok);                                   // 121:52 共用櫃子
+  say('比喻：一堆人共用一個櫃子');
+  await step(tok);                                   // 121:59 貼名字
+  nt('貼名字／學號', T.xs[3] + 1.8, 1.2, T.z);
+  say('櫃子上總要貼姓名或學號', '這就是把 key 一起存');
 }]);
 
-// 127:03 Load factor n/k：太大、或 hash non-uniform，hash 就不 work
+// 127:06 Load factor n/k：太大、或 hash non-uniform，hash 就不 work
 FRAG.push(['hashlin2-load', 'Load factor n/k 與 non-uniform', async (tok) => {
   fresh([0, 7.5, 12], [0, 1.2, 0]);
-  const T = hlRow(10, 1.15, 1.6);
-  let bars = [];
+  let T = null, bars = [];
   const show = (cnts) => { bars.forEach(kill); bars = cnts.map((n, i) => n ? cube(n, C8[i % 8], [0.8, Math.max(0.2, n * 0.08), 0.8], T.xs[i], Math.max(0.2, n * 0.08) / 2 + 0.12, T.z, 2) : null).filter(Boolean); };
-  say('k 格裡放了 n 個 key', 'load factor = n / k');
-  await beat(tok, 2600);
+  await step(tok);                                   // 127:06 講完基本 hash、collision handling
+  say('講完基本的 hash 與 collision handling');
+  await step(tok);                                   // 127:14 什麼時候做得好
+  say('回顧：Hash table 什麼時候會做得好？');
+  await step(tok);                                   // 127:24 Hash／Hashtable
+  nt('Hashtable：table 就是那個 array', -4.0, 2.8, -2.6);
+  say('有時叫 Hash，有時叫 Hashtable', 'table 對應到我們的 array');
+  await step(tok);                                   // 127:46 K 格
+  T = hlRow(10, 1.15, 1.6);
+  tag('k 格', 'ptr', -6.6, 0.9, T.z);
+  say('Hashtable 有 k 個 entry：k 格');
+  await step(tok);                                   // 127:53 放 N 個 key
   show([1, 0, 1, 0, 1, 1, 0, 0, 1, 0]);
-  say('n = 5、k = 10：每格大約 0～1 個', 'n / k = 0.5：越小越不會撞');
-  await beat(tok, 3000);
+  say('在 k 格裡放了 n 個 key', '這裡 n = 5、k = 10');
+  await step(tok);                                   // 128:02 n / k
+  tag('n / k', 'ptr alt', 0, 2.8, 0);
+  say('我們看的是 n 除以 k');
+  await step(tok);                                   // 128:11 每格放多少，越小越好
+  say('大概是每一格要放多少個 key', '希望越小越好：0.5 不太會撞');
+  await step(tok);                                   // 128:24 太大常撞
+  say('n/k 太大的話：常常撞在一起', '每種 collision 處理都變得不好做');
+  await step(tok);                                   // 128:48 Load Factor
+  tag('load factor = n / k', 'ptr', 0, 3.6, 0);
+  say('n/k 叫做 Load Factor：表塞得有多滿');
+  await step(tok);                                   // 129:01 large → won't work
   show(new Array(10).fill(10));
-  say('n = 100、k = 10：每格 10 個', 'n / k 太大 → hash won\'t work');
-  await beat(tok, 3200);
+  no('n/k = 10', 5.6, 1.4, T.z);
+  say('n/k 很大：hash won\'t work', 'n = 100、k = 10：每格 10 個');
+  await step(tok);                                   // 129:21 口罩例子
+  say('回到口罩的例子', '只有 2 格，人又非常多、擠同一天');
+  await step(tok);                                   // 129:45 non-uniform
+  say('另一種情況：hash 是 non-uniform', '沒有分散開來');
+  await step(tok);                                   // 130:10 只集中在少數格
   show([0, 34, 0, 0, 33, 0, 0, 33, 0, 0]);
+  say('n 還是那麼多，但只集中在少數幾格');
+  await step(tok);                                   // 130:19 100 筆集中 3 格
   bars.forEach((b) => glow(b, RED));
-  say('non-uniform：100 筆只集中 3 格', '每格 30 幾個，碰撞更嚴重');
-  await beat(tok, 3200);
-  say('兩種都要小心', 'n/k 太大，或 hash 不夠分散');
-  await beat(tok, 2600);
+  say('100 筆只集中在 3 格', '每格 30 幾個：碰撞很嚴重');
+  await step(tok);                                   // 130:34 另一種不 work
+  say('n/k 太大，或 hash 不 uniform', '都是要小心的地方');
 }]);
 
-// 130:45 改 hash function、增加格子；K > N：空間換時間
+// 131:00 改 hash function、增加格子；K > N：空間換時間
 FRAG.push(['hashlin2-space', '格子比 key 多：空間換時間', async (tok) => {
   fresh([0, 7.5, 12], [0, 0.6, 0.3]);
-  let T = hlRow(4, 2.2, -2.6, null, -0.85);
+  const T = hlRow(4, 2.2, -2.6, null, -0.85);
   const keys = [3, 7, 11, 2, 6, 9];
+  let U = null;
+  await step(tok);                                   // 131:00 常塞同一格？
   keys.forEach((k) => hlChain(T, k % 4, k));
-  say('常塞同一格 → 改進 hash function', '讓它更亂、更分散');
-  await beat(tok, 3000);
-  say('東西太多、格子太少', '6 個 key、4 格：chain 變長');
-  await beat(tok, 2800);
-  const U = hlRow(16, 0.78, 2.2);
+  T.ch[3].forEach((c) => glow(c, RED));
+  say('實務上要檢查：hash 是不是常塞同一個地方？');
+  await step(tok);                                   // 131:07 改進 hash function
+  T.ch[3].forEach((c) => glow(c, null));
+  say('是的話：改變或改進 hash function', '讓它更亂、更分散');
+  await step(tok);                                   // 131:18 太多、格子太少
+  say('又或者：東西太多、格子太少', '6 個 key、4 格：chain 變長');
+  await step(tok);                                   // 131:30 只能增加格子
+  U = hlRow(16, 0.78, 2.2);
   keys.forEach((k) => { const c = T.ch[k % 4].shift(); move(c, U.xs[k], 0.45, U.z); });
-  say('只能增加格子：k = 16', 'x mod 16：一人一格');
-  await beat(tok, 3000);
-  say('K 比 N 大：幾乎沒有 collision', '有的格子沒人住，就讓它空著');
-  await beat(tok, 3000);
-  say('用空間換取時間', '跟 integer array 一樣方便');
-  await beat(tok, 2800);
+  say('東西就是這麼多：只能把格子增加', 'k = 16：x mod 16');
+  await step(tok);                                   // 131:44 不可能 10 格塞 100 萬
+  nt('10 格塞不下 100 萬筆', -4.4, 1.4, -0.6);
+  say('不可能用 10 格塞下 100 萬筆資料');
+  await step(tok);                                   // 132:02 K 比 N 大
+  say('甚至希望 k 比 n 大', '浪費一點空間：有的格子沒人放');
+  await step(tok);                                   // 132:12 一人一格
+  ok('一人一間：幾乎沒有 collision', 0, 1.6, 3.4);
+  say('k 比 n 大又夠分散：真的一人一格');
+  await step(tok);                                   // 132:27 空間換時間
+  tag('用空間換取時間', 'ptr alt', 0, 2.6, 0.4);
+  say('這叫用空間換取時間');
+  await step(tok);                                   // 132:42 跟 integer array 一樣方便
+  say('map 就跟 integer array 一樣方便', '算出 index 就知道放哪、拿哪');
 }]);
 
-// 132:55 Hash table 要長大：n/k 太大 → k 變兩倍，range 改成 0～2k−1，再 rebuild
+// 132:58 Hash table 要長大：n/k 太大 → k 變兩倍，range 改成 0～2k−1，再 rebuild
 FRAG.push(['hashlin2-grow', 'Load 太大：table 長大兩倍', async (tok) => {
   fresh([0, 7.5, 12], [0, 0.6, 0.3]);
   const T = hlRow(4, 2.2, -3.0, null, -0.85);
-  const st = tag('n = 0, k = 4', 'ptr alt', 5.2, 1.4, -3.0);
-  say('資料越來越多：n/k 跟著變大', '像 vector 塞到滿了');
-  await beat(tok, 2600);
+  const st = tag('n = 0, k = 4', 'ptr alt', 5.6, 1.4, -3.0);
   const keys = [5, 9, 2, 12, 7, 14];
-  for (let i = 0; i < keys.length; i++) { hlChain(T, keys[i] % 4, keys[i], null, true); txt(st, 'n = ' + (i + 1) + ', k = 4'); await beat(tok, 600); }
+  let U = null;
+  const add = (from, to) => { for (let i = from; i < to; i++) hlChain(T, keys[i] % 4, keys[i], null, true); txt(st, 'n = ' + to + ', k = 4'); };
+  await step(tok);                                   // 132:58 實際系統建了 Hashtable
+  const sys = prop('monitor', -5.8, 0, -3.2, 0.8, '系統'); bob(sys, 0.03);
+  say('實際的系統裡建了一個 Hashtable');
+  await step(tok);                                   // 133:07 一開始還好
+  add(0, 2);
+  say('一開始資料量不多、客戶不多：還好');
+  await step(tok);                                   // 133:14 越來越多 不堪負荷
+  add(2, 6);
+  say('資料量越來越多：開始不堪負荷');
+  await step(tok);                                   // 133:24 像 vector 塞滿
+  nt('像 vector 塞到滿了', -4.6, 1.6, 1.0);
+  say('很像 vector：塞到滿了還要再塞');
+  await step(tok);                                   // 133:31 要長大
+  say('就得 request 更多記憶體：要長大');
+  await step(tok);                                   // 133:58 n/k 增加
+  say('n 增加 → n/k 跟著增加');
+  await step(tok);                                   // 134:07 load factor 太大
   glow(T.slots[1], RED); glow(T.slots[2], RED);
-  say('n/k = 1.5：太滿了', 'load factor too big → increase k');
-  await beat(tok, 3000);
-  const U = hlRow(8, 1.45, 1.4, null, -0.85);
+  say('load factor 太大', 'n/k = 6/4 = 1.5');
+  await step(tok);                                   // 134:16 increase k
+  say('那就乾脆 increase k', '更大的空間處理更多資料');
+  await step(tok);                                   // 134:35 naive 做法
+  say('先想一個 naive 的做法', '從 vector 學到的經驗');
+  await step(tok);                                   // 134:50 新 k = 舊 k × 2
+  U = hlRow(8, 1.45, 1.4, null, -0.85);
   txt(st, 'k：4 → 8');
-  say('學 vector：一次長兩倍', 'k_new = 2 · k_old');
-  await beat(tok, 2800);
-  say('h 的 range 改成 0 ～ 2k − 1', 'h(x) = x mod 8');
-  await beat(tok, 2600);
-  for (const k of keys) { const c = T.ch[k % 4].shift(); hlRelayout(T, k % 4); U.ch[k % 8].push(c); const [x, y, z] = cpos(U, k % 8, U.ch[k % 8].length - 1); move(c, x, y, z); await beat(tok, 450); }
+  say('不要一次加一點點：新的 k 設成舊 k 的兩倍');
+  await step(tok);                                   // 135:07 h 的 range 要改
+  say('要漲兩倍：h(key) 的 range 要改');
+  await step(tok);                                   // 135:18 0～2k−1
+  tag('h(x) = x mod 8 → 0～2k−1', 'ptr', 0, 2.4, 1.4);
+  say('從 0～k−1 改成 0～2k−1', 'Change Range');
+  await step(tok);                                   // 135:36 rebuild
+  say('然後要 rebuild');
+  await step(tok);                                   // 135:47 舊的塞進新表
+  for (const k of keys) { const c = T.ch[k % 4].shift(); hlRelayout(T, k % 4); hlMoveTo(U, k % 8, c); await beat(tok, 250); }
   glow(T.slots[1], null); glow(T.slots[2], null);
-  say('再 rebuild：舊的一個個塞進新表', 'n/k = 6/8 = 0.75');
-  await beat(tok, 3000);
+  say('建一個新表格，把舊表格的東西一個個塞進去', 'n/k = 6/8 = 0.75');
 }]);
 
-// 135:56 Full rebuild：n 筆 × O(1) = O(n)，使用者要 long waiting
+// 136:02 Full rebuild：n 筆 × O(1) = O(n)，使用者要 long waiting
 FRAG.push(['hashlin2-full-cost', 'Full rebuild：O(n) 與 long waiting', async (tok) => {
   fresh([0, 7.5, 12], [0, 0.6, 0.3]);
   const T = hlRow(4, 2.2, -3.0, null, -0.85), U = hlRow(8, 1.45, 1.4, null, -0.85);
   const keys = [5, 9, 2, 12, 7, 14, 3, 8];
   keys.forEach((k) => hlChain(T, k % 4, k));
-  const cnt = tag('搬了 0 筆', 'ptr alt', 5.6, 1.4, -3.0);
-  say('full rebuild：每一筆都拿出來', '用新的 hash 重新 insert');
-  await beat(tok, 2800);
+  const cnt = tag('搬了 0 筆', 'ptr alt', 5.8, 1.4, -3.0);
   let n = 0;
-  for (const k of keys) {
-    const c = T.ch[k % 4].shift(); hlRelayout(T, k % 4); U.ch[k % 8].push(c);
-    const [x, y, z] = cpos(U, k % 8, U.ch[k % 8].length - 1); move(c, x, y, z); n++;
-    txt(cnt, '搬了 ' + n + ' 筆'); say('insert ' + k + ' → [' + (k % 8) + ']', '每筆 insert ≈ O(1)');
-    await beat(tok, 700);
-  }
-  say('n 筆 × O(1) = O(n)', 'hash 夠平均：insert 跟資料量幾乎無關');
-  await beat(tok, 3000);
-  const shut = tag('整理中，請稍候', 'ptr', 0, 2.6, -0.6);
-  say('缺點：long waiting', '像店面關門整理完才開店');
-  await beat(tok, 3200);
-  kill(shut);
-  say('能不能只 rebuild 一部分？', '下一步：partial rebuild');
-  await beat(tok, 2400);
+  const mv = async (ks) => { for (const k of ks) { const c = T.ch[k % 4].shift(); hlRelayout(T, k % 4); hlMoveTo(U, k % 8, c); n++; txt(cnt, '搬了 ' + n + ' 筆'); await beat(tok, 260); } };
+  await step(tok);                                   // 136:02 每筆用新 hash 塞進去
+  await mv(keys.slice(0, 3));
+  say('rebuild：舊的東西一個個拿出來', '用新的 hash 塞塞塞塞進去');
+  await step(tok);                                   // 136:15 n 筆 × constant
+  await mv(keys.slice(3));
+  say('有 n 筆資料，每筆 insert 大約 constant', '→ 要 n 的時間');
+  await step(tok);                                   // 136:30 hash 夠平均
+  say('如果 hash function 夠平均', '每格只 handle 一點點 collision');
+  await step(tok);                                   // 136:42 只有算 hash code 的時間
+  say('幾乎沒有 collision 的話', '花的時間只有計算 hash code');
+  await step(tok);                                   // 136:50 跟 key 長度有關
+  say('那跟 key 的長度有關', '但跟資料量幾乎沒有關係');
+  await step(tok);                                   // 137:01 每個 insertion constant
+  say('每個 insertion 幾乎是 constant 時間');
+  await step(tok);                                   // 137:14 rebuild linear
+  tag('full rebuild：O(n)', 'ptr', 0, 2.8, -0.6);
+  say('整個 rebuild 就是 linear 的時間');
+  await step(tok);                                   // 137:30 load 太大 → 兩倍
+  say('通常加條件：load 大於某個地步', '太滿就變大兩倍');
+  await step(tok);                                   // 137:41 不常做還好
+  say('變兩倍要花一些力氣', '如果不太常做，可能是好的');
+  await step(tok);                                   // 137:48 缺點
+  say('不過這裡也有一個缺點');
+  await step(tok);                                   // 137:56 整個搬：linear
+  say('整個舊的 Hashtable 搬到新地方', '要花 linear 的力氣');
+  await step(tok);                                   // 138:07 Long Waiting
+  tag('Long Waiting', 'ptr alt', 0, 3.6, -0.6);
+  say('對使用者來說：Long Waiting');
+  await step(tok);                                   // 138:17 等很久，系統中斷
+  const u = buddy('使用者', '', C8[4], -5.8, 0, 3.4, 0.6); u.mood('sad');
+  say('使用者要等很久', '系統要中斷一段時間');
+  await step(tok);                                   // 138:29 店面整理
+  const shop = prop('warehouse', 5.6, 0, 3.4, 0.9, '整理中，請稍候'); bob(shop, 0.03);
+  say('像店面說：等一下，我先關門整理', '整理完才開店');
+  await step(tok);                                   // 138:43 整個表重建
+  say('因為整個表、整個 array 都重新建', '所有東西都改過');
 }]);
 
-// 138:37 Partial rebuild 的關鍵：mod k → mod 2k，只差一個 bit
+// 138:52 Partial rebuild 的關鍵：mod k → mod 2k，只差一個 bit
 FRAG.push(['hashlin2-mod2k', 'mod k 換成 mod 2k：一半不用動', async (tok) => {
   fresh([0, 7.5, 12], [0, 0.6, 0.3]);
   const T = hlRow(4, 2.0, -3.0, null, -0.85), U = hlRow(8, 1.45, 1.4, null, -0.85);
   tag('mod 4', 'ptr', -5.8, 0.9, -3.0); tag('mod 8', 'ptr', -6.4, 0.9, 1.4);
   const codes = [8, 13, 6, 3, 12, 5, 10, 15];
   codes.forEach((k) => hlChain(T, k % 4, k));
-  say('partial：只改有問題的地方', '新舊 hash function 要有關係');
-  await beat(tok, 3000);
-  say('h = hash code mod k', 'k → 2k：只差一個 bit');
-  await beat(tok, 2800);
-  for (const k of codes) {
-    const c = T.ch[k % 4].shift(); hlRelayout(T, k % 4); U.ch[k % 8].push(c);
-    const [x, y, z] = cpos(U, k % 8, U.ch[k % 8].length - 1); move(c, x, y, z);
-    const same = k % 8 === k % 4; glow(c, same ? GREEN : GOLD);
-    say(k + '：mod 4 = ' + (k % 4) + '，mod 8 = ' + (k % 8), same ? '位置不變' : '搬到 ' + (k % 4) + ' + 4');
-    await beat(tok, 1100);
-  }
-  say('結果在 0～k−1 的：位置跟原來一致', '綠色不動');
-  await beat(tok, 2800);
-  say('只有 k～2k−1 那邊會變', 'x mod 2k ∈ {x mod k, x mod k + k}');
-  await beat(tok, 3000);
+  const mv = async (ks, col) => { for (const k of ks) { const c = hlTake(T, k % 4, k); hlMoveTo(U, k % 8, c); glow(c, col); await beat(tok, 300); } };
+  await step(tok);                                   // 138:52 解決 long waiting？
+  say('能不能稍微解決 long waiting？');
+  await step(tok);                                   // 139:00 full rebuild 造成
+  say('long waiting 是 full rebuild 造成的', '整個表重建');
+  await step(tok);                                   // 139:06 Partial Rebuild
+  tag('Partial Rebuild', 'ptr alt', 0, 2.6, -1.0);
+  say('想法：Partial Rebuild', '只改一些應該改的地方');
+  await step(tok);                                   // 139:26 兩倍大小、換 hash
+  say('步驟類似：大小變兩倍、換 hash function');
+  await step(tok);                                   // 139:34 只 rebuild 有問題的
+  say('但 rebuild 時，只 rebuild 有問題的 entry', '不用整個表重建');
+  await step(tok);                                   // 139:50 新舊 hash 有關係
+  say('要做到：新、舊 hash function 一定要有關係');
+  await step(tok);                                   // 140:07 整個換 → 都得搬
+  no('整個換掉 → 什麼都得搬', 4.6, 1.4, -3.0);
+  say('如果整個換掉 hash function', '無論如何都得把東西搬來搬去');
+  await step(tok);                                   // 140:18 hash code mod k
+  say('想像：h = hash code 直接 mod k');
+  await step(tok);                                   // 140:41 k → 2k 差一個 bit
+  nt('k → 2k：只差一個 bit', 0, 3.4, -1.0);
+  say('從 k 換成 2k：基本上只差一個 bit');
+  await step(tok);                                   // 141:01 跟原來有關聯
+  say('除以 2k 的結果，跟原來除以 k 的結果有關聯', 'x mod 2k ∈ {x mod k, x mod k + k}');
+  await step(tok);                                   // 141:10 0～k−1：一致
+  await mv(codes.filter((k) => k % 8 < 4), GREEN);
+  say('結果在 0～k−1 的：跟原來的 hash value 一致', '綠色：位置不變');
+  await step(tok);                                   // 141:18 k～2k−1 才變
+  await mv(codes.filter((k) => k % 8 >= 4), GOLD);
+  say('只有落在 k～2k−1 的會有變化', '金色：搬到原位置 + 4');
 }]);
 
-// 141:25 例子：4 格 chain table，hash code = key[0] − 'a'；insert egg → [0] 太滿
+// 141:34 例子：4 格 chain table，hash code = key[0] − 'a'；insert egg → [0] 太滿
 const WD = [['at', 0], ['eat', 4], ['bird', 1], ['good', 6], ['cat', 2], ['dog', 3]];
 const wcol = (w) => C8[(w.charCodeAt(0) - 97) % 8];
 FRAG.push(['hashlin2-words', '例子：hash code = key[0] − \'a\'，mod 4', async (tok) => {
   fresh([0, 7.5, 12], [0, 0.6, 0.6]);
-  const T = hlRow(4, 2.6, -2.8, null, -0.85);
-  T.cw = 1.5;
-  say('hash table 4 格，用 chain', 'hash code = key[0] − \'a\'');
-  await beat(tok, 2800);
-  for (const [w, hc] of WD) {
-    hlChain(T, hc % 4, w, wcol(w), true);
-    say(w + '：hash code ' + hc + '，mod 4 = ' + (hc % 4), w[0] + ' 開頭');
-    await beat(tok, 1100);
-  }
-  say('[0]：a、e 開頭；[2]：c、g 開頭', 'at、eat｜bird｜good、cat｜dog');
-  await beat(tok, 3000);
-  const e = hlChain(T, 0, 'egg', wcol('egg'), true);
-  say('insert egg：e 開頭 → [0]', '4 mod 4 = 0');
-  await beat(tok, 2200);
+  let T = null, egg = null;
+  const put = (w, hc) => hlChain(T, hc % 4, w, wcol(w), true);
+  await step(tok);                                   // 141:34 4 格 hash table
+  T = hlRow(4, 2.6, -2.8, null, -0.85); T.cw = 1.5;
+  say('例子：一個 hash table 有 4 格', 'hash value 是 0、1、2、3');
+  await step(tok);                                   // 141:53 簡單的 hash code
+  say('用一個簡單一點的 hash code');
+  await step(tok);                                   // 141:58 key[0] − 'a'
+  tag('hash code = key[0] − \'a\'', 'ptr alt', 0, 2.2, -3.6);
+  say('拿 key 的第 0 個字元，減掉 \'a\'');
+  await step(tok);                                   // 142:07 看開頭字母
+  nt('a→0、b→1、c→2、d→3、e→4…', 4.6, 1.0, -1.6);
+  say('其實就是看英文字的開頭字母是第幾個');
+  await step(tok);                                   // 142:16 at、eat
+  put('at', 0); put('eat', 4);
+  say('at（a 開頭）、eat（e 開頭）', 'hash code：0 和 4');
+  await step(tok);                                   // 142:27 mod 4 → 0
+  say('mod 4 之後：都對應到 [0]', '0 mod 4 = 4 mod 4 = 0');
+  await step(tok);                                   // 142:32 bird、good、cat
+  put('bird', 1); put('good', 6); put('cat', 2);
+  say('[1]：bird；[2]：good、cat', 'good：6 mod 4 = 2');
+  await step(tok);                                   // 142:44 dog
+  put('dog', 3);
+  say('[3]：dog', '這是原來的 hash table');
+  await step(tok);                                   // 142:55 放新的覺得太滿
+  say('放了一個新東西進來', '覺得太滿了，想要 rebuild');
+  await step(tok);                                   // 143:17 egg → 0
+  egg = kid('egg', wcol('egg'), -5.6, 1.6, 0.55);
+  say('insert egg：e 開頭', '一樣要放到 [0]');
+  await step(tok);                                   // 143:25 用 linked list 畫
+  say('為了簡單：用 linked list 的方式來畫');
+  await step(tok);                                   // 143:30 egg 放進來
+  remove(egg.g); put('egg', 4);
+  say('egg 放到 [0] 這條 chain');
+  await step(tok);                                   // 143:38 已經兩個，第三個影響效率
   T.ch[0].forEach((c) => glow(c, RED));
-  say('[0] 這條 chain 長度變 3', '太滿了 → 想要 rebuild');
-  await beat(tok, 3000);
+  say('這條 chain 本來已經 2 個', '再放第 3 個可能影響效率：太滿了');
+  await step(tok);                                   // 143:46 變大兩倍
+  say('那就讓 Hashtable 變大兩倍');
 }]);
 
-// 143:46 Full rebuild 成 8 格：拜訪每個 key；eat、egg → [4]、good → [6]
+// 143:54 Full rebuild 成 8 格：拜訪每個 key；eat、egg → [4]、good → [6]
 FRAG.push(['hashlin2-full8', 'Full rebuild：mod 4 → mod 8', async (tok) => {
   fresh([0, 7.5, 12], [0, 0.6, 0.4]);
-  const T = hlRow(4, 2.0, -3.2, null, -0.85), U = hlRow(8, 1.5, 1.0, null, -0.85);
-  T.cw = 1.4; U.cw = 1.2;
-  const all = [...WD.slice(0, 2), ['egg', 4], ...WD.slice(2)];
+  const T = hlRow(4, 2.0, -3.2, null, -0.85);
+  T.cw = 1.4;
+  const all = [['at', 0], ['eat', 4], ['egg', 4], ['bird', 1], ['good', 6], ['cat', 2], ['dog', 3]];
   all.forEach(([w, hc]) => hlChain(T, hc % 4, w, wcol(w)));
-  say('表長兩倍：多了 4、5、6、7', '紅色 mod 4 → 現在 mod 8');
-  await beat(tok, 3000);
-  let n = 0;
-  for (const [w, hc] of all) {
-    const i = T.ch[hc % 4].findIndex((c) => c.userData.v === w); const c = T.ch[hc % 4].splice(i, 1)[0];
-    hlRelayout(T, hc % 4); U.ch[hc % 8].push(c); const [x, y, z] = cpos(U, hc % 8, U.ch[hc % 8].length - 1); move(c, x, y, z); n++;
-    glow(c, hc < 4 ? GREEN : GOLD);
-    say(w + '：' + hc + ' mod 8 = ' + hc % 8, hc < 4 ? '留在原來的位置' : '需要移動');
-    await beat(tok, 1000);
-  }
-  say('a、b、c、d 開頭留在原位', 'eat、egg → [4]、good → [6]');
-  await beat(tok, 3000);
-  say('但每一個都拜訪過了', 'full rebuild：O(n)');
-  await beat(tok, 2600);
+  let U = null;
+  const mv = async (ws, col) => { for (const [w, hc] of ws) { const c = hlTake(T, hc % 4, w); hlMoveTo(U, hc % 8, c); glow(c, col); await beat(tok, 300); } };
+  await step(tok);                                   // 143:54 多了 4、5、6、7
+  U = hlRow(8, 1.5, 1.0, null, -0.85); U.cw = 1.2;
+  [4, 5, 6, 7].forEach((i) => glow(U.slots[i], GOLD));
+  say('表長兩倍：多了 4、5、6、7');
+  await step(tok);                                   // 144:05 Full Rebuild
+  [4, 5, 6, 7].forEach((i) => glow(U.slots[i], null));
+  say('Full Rebuild：每一個都要重新看');
+  await step(tok);                                   // 144:13 mod 4 → mod 8
+  tag('mod 4 → mod 8', 'ptr alt', 0, 2.2, -1.2);
+  say('原來是 mod 4，現在變成 mod 8');
+  await step(tok);                                   // 144:26 a b c d 留在原位
+  await mv(all.filter(([, hc]) => hc < 4), GREEN);
+  say('a、b、c、d 開頭的：hash code 0～3', '留在原來的位置');
+  await step(tok);                                   // 144:32 eat、good 需要移動
+  T.ch.flat().forEach((c) => glow(c, GOLD));
+  say('哪些要移動？原來的 eat 和 good');
+  await step(tok);                                   // 144:46 eat、good 移動
+  await mv([['eat', 4], ['good', 6]], GOLD);
+  say('整個重算之後：eat → [4]、good → [6]');
+  await step(tok);                                   // 144:54 egg 塞進來
+  await mv([['egg', 4]], GOLD);
+  say('egg 也塞進 [4]');
+  await step(tok);                                   // 145:04 拜訪過每一個
+  say('拜訪過每一個東西', '才知道哪些要移動、哪些要重建');
+  await step(tok);                                   // 145:11 full rebuild 的複雜度
+  tag('full rebuild：O(n)', 'ptr', 0, 3.0, -1.2);
+  say('這就是 Full Rebuild 面臨的計算複雜度');
 }]);
 
-// 145:21 Partial rebuild：只拆 overflow 的 [0] → [0]、[4]；5、6、7 先指回原 chain
+// 145:16 Partial rebuild：只拆 overflow 的 [0] → [0]、[4]；5、6、7 先指回原 chain
 FRAG.push(['hashlin2-partial', 'Partial rebuild：只拆滿出來的那條', async (tok) => {
   fresh([0, 7.5, 12], [0, 0.6, 0.4]);
   const U = hlRow(8, 1.5, -2.6, null, -0.85);
   U.cw = 1.25;
   [['at', 0], ['eat', 0], ['egg', 0], ['bird', 1], ['good', 2], ['cat', 2], ['dog', 3]].forEach(([w, i]) => hlChain(U, i, w, wcol(w)));
+  let cur = null;
+  await step(tok);                                   // 145:16 Partial Rebuild
+  tag('Partial Rebuild', 'ptr alt', 0, 2.4, -3.6);
+  say('如果走的是 Partial Rebuild 呢？');
+  await step(tok);                                   // 145:27 繼續用這張圖
   [4, 5, 6, 7].forEach((i) => glow(U.slots[i], GOLD));
-  say('也長成 8 格，但先不全部搬', 'good 那條還沒滿：留在原處');
-  await beat(tok, 3000);
-  U.ch[0].forEach((c) => glow(c, RED));
-  say('滿出來的是 [0]：長度 3', '只把這條拆開');
-  await beat(tok, 2600);
-  for (const w of ['eat', 'egg']) {
-    const i = U.ch[0].findIndex((c) => c.userData.v === w); const c = U.ch[0].splice(i, 1)[0];
-    U.ch[4].push(c); const [x, y, z] = cpos(U, 4, U.ch[4].length - 1); move(c, x, y, z); glow(c, GOLD);
-    await beat(tok, 700);
-  }
-  hlRelayout(U, 0); U.ch[0].forEach((c) => glow(c, null));
-  say('[0] 拆成 [0]、[4] 兩條', 'at 留在 [0]；eat、egg → [4]');
-  await beat(tok, 3000);
+  say('一樣長成 8 格，繼續用這張圖');
+  await step(tok);                                   // 145:35 good 還沒滿，留原處
+  glow(U.ch[2][0], GREEN);
+  say('good 這條還沒滿', '先不移動：good 就留在原處');
+  await step(tok);                                   // 145:45 滿的是長度 3 的
+  glow(U.ch[2][0], null); U.ch[0].forEach((c) => glow(c, RED));
+  say('滿的是長度已經 3 的這條', '只重建這一條');
+  await step(tok);                                   // 145:52 eat、egg → [4]
+  for (const w of ['eat', 'egg']) { const c = hlTake(U, 0, w); hlMoveTo(U, 4, c); glow(c, GOLD); await beat(tok, 450); }
+  U.ch[0].forEach((c) => glow(c, null));
+  say('把 eat、egg 拿出來，放到 [4]', 'at 留在 [0]');
+  await step(tok);                                   // 146:04 good 不用動，那要怎麼找？
+  say('good 不用動', '那等一下找 good 時要從哪裡進來？');
+  await step(tok);                                   // 146:11 從 6 進來
+  cur = tag('get(good)', 'ptr alt', U.xs[6], 1.8, U.z);
+  say('good 的 hash code 是 6', '要從 [6] 這邊進來');
+  await step(tok);                                   // 146:19 小紙條連過來
   [5, 6, 7].forEach((j) => arrow(V3(U.xs[j], 0.35, U.z + 0.6), V3(U.xs[j - 4] + 0.7, 0.45, U.z + 1.0), 0xc08a1f));
-  say('5、6、7 的小紙條先指回 1、2、3', '還沒分家：共用原來的 chain');
-  await beat(tok, 3200);
-  const cur = tag('get(good)', 'ptr alt', U.xs[6], 1.8, U.z);
-  say('找 good：hash code 6 → [6]', '[6] 的紙條指到 [2] 的 chain');
-  await beat(tok, 2400);
-  cur.position.set(U.xs[2] + 0.4, 1.4, U.z + 1.05); glow(U.ch[2][0], GREEN);
-  say('在原來的 chain 找到 good', '只有 overflow 的地方才分家');
-  await beat(tok, 3000);
+  await go(tok, cur, U.xs[2] + 0.4, 1.4, U.z + 1.05, 900); glow(U.ch[2][0], GREEN);
+  say('把 [6] 的小紙條連到 [2]', '[7] 連到 [3]、[5] 連到 [1]');
+  await step(tok);                                   // 146:28 還沒分家，共用
+  glow(U.ch[2][0], null);
+  nt('1、2、3 和 5、6、7：還沒分家', 0, 1.6, 2.6);
+  say('1、2、3 和 5、6、7 還沒分家', '繼續用原來已經連好的資料');
+  await step(tok);                                   // 146:47 只有 overflow 才分家
+  ok('只有 overflow 的 [0] 分家', -3.8, 1.6, 3.4);
+  say('只有在 overflow 的地方，才把事情拆開分家');
 }]);
 
-// 147:01 成本：k + n/k vs n；extendable hash table
+// 146:56 成本：k + n/k vs n；extendable hash table
 FRAG.push(['hashlin2-cost', 'Partial rebuild：k + n/k 比 n 小', async (tok) => {
-  fresh([0, 7, 12], [0, 1.4, 0]);
-  say('partial rebuild 要花多少力氣？', '');
-  await beat(tok, 2000);
-  const p1 = cube('k', C8[0], [1.4, 0.6, 1.2], 1.2, 0.3, 0, 3); tag('連小紙條', 'idx', 1.2, 1.1, 1.2);
-  say('k：把新格子連到舊 chain', '紙條 k 張');
-  await beat(tok, 2600);
-  const p2 = cube('n/k', C8[2], [1.4, 0.6, 1.2], 1.2, 0.9, 0, 3); tag('拆 overflow 的那條', 'idx', 1.2, 1.7, 1.2);
-  say('n/k：拆開 overflow 的那一條', '一條大約 n/k 個');
-  await beat(tok, 2600);
-  const f = cube('n', C8[4], [1.4, 5.0, 1.2], -2.6, 2.5, 0, 0); tag('full rebuild', 'ptr', -2.6, 5.6, 0); tag('partial', 'ptr', 1.2, 2.2, 0);
-  say('例：n = 10000、k = 100', 'full：10000；partial：100 + 100 = 200');
-  await beat(tok, 3400);
-  say('n 不少時，k + n/k 比 n 小很多', '等待時間變短');
-  await beat(tok, 2800);
-  say('這就是 extendable hash table', '分析跟 extendable array 一樣：長兩倍');
-  await beat(tok, 3000);
-  say('代價：要多寫程式記住誰還沒分家', 'full 簡單但 slow；partial 需要巧思');
-  await beat(tok, 3000);
+  fresh([0, 7.5, 12], [0, 1.4, 0]);
+  let mini = null;
+  await step(tok);                                   // 146:56 egg 讓 0 滿出來
+  mini = hlRow(8, 0.9, -3.4); mini.cw = 0.8;
+  ['at', 'eat', 'egg'].forEach((w) => hlChain(mini, 0, w, wcol(w)));
+  mini.ch[0].forEach((c) => glow(c, RED));
+  say('egg 塞進來：發現 [0] 這條滿出來了');
+  await step(tok);                                   // 147:08 拆成 0 跟 4
+  for (const w of ['eat', 'egg']) { const c = hlTake(mini, 0, w); glow(c, null); hlMoveTo(mini, 4, c); }
+  mini.ch[0].forEach((c) => glow(c, null));
+  say('滿出來就分家：[0] 拆成 [0]、[4] 兩條');
+  await step(tok);                                   // 147:25 其他共用原來的 chain
+  say('其他的先不拆：共用原來的 chain', '用其他 data structure 也能這樣做');
+  await step(tok);                                   // 147:32 花多少時間
+  say('這樣要花多少時間？');
+  await step(tok);                                   // 147:39 k 的力氣：小紙條
+  cube('k', C8[0], [1.4, 0.6, 1.2], 2.2, 0.3, 0.6, 3); tag('接小紙條', 'idx', 2.2, 1.1, 1.8);
+  say('k 的力氣：接好那些小紙條');
+  await step(tok);                                   // 147:49 n/k：分家
+  cube('n/k', C8[2], [1.4, 0.6, 1.2], 2.2, 0.9, 0.6, 3); tag('拆 overflow 的那條', 'idx', 2.2, 1.7, 1.8);
+  say('n/k 的力氣：把 overflow 的那條分家', '一條大約 n/k 個');
+  await step(tok);                                   // 148:02 比 n 小
+  cube('n', C8[4], [1.4, 4.0, 1.2], -2.2, 2.0, 0.6, 0); tag('full rebuild', 'ptr', -2.2, 4.6, 0.6); tag('partial', 'ptr', 2.2, 2.2, 0.6);
+  nt('例：n = 10000、k = 100 → 10000 vs 200', 0, 0.3, 3.4);
+  say('k + n/k 可能比 n 小很多', 'n 不少的時候');
+  await step(tok);                                   // 148:09 Extendable Hash Table
+  tag('Extendable Hash Table', 'ptr alt', 0, 5.4, 0.6);
+  say('只用 Partial Rebuild 就做出', '可以 Extendable 的 Hash Table');
+  await step(tok);                                   // 148:23 跟 extendable array 一樣
+  say('分析上跟 extendable array 一樣', '表長兩倍');
+  await step(tok);                                   // 148:38 怎麼 rebuild
+  say('操作上更複雜的是：怎麼 rebuild', '怎麼放到新 table 該放的位置');
+  await step(tok);                                   // 148:44 full rebuild 只是 slow
+  say('full rebuild：除了 slow、long waiting', '沒什麼一定不好');
+  await step(tok);                                   // 148:58 partial 等待短
+  say('partial rebuild：等待時間短一些', '空間利用也許好一些');
+  await step(tok);                                   // 149:07 要 maintain 還沒分家的
+  say('代價：要多寫程式', 'maintain 還沒分家的在哪、要分家的搬去哪');
+  await step(tok);                                   // 149:18 一般做法
+  say('這就是 extendable hash table 一般的做法');
 }]);
 
-// 153:38 / 157:45 / 163:33 總結：藍 hash code、橘 compress、紅 collision handling、綠 open addressing、桃紅 extendable
+// 153:38 / 157:51 / 163:33 總結：藍 hash code、橘 compress、紅 collision handling、綠 open addressing、桃紅 extendable
 FRAG.push(['hashlin2-recap', 'Hash table 總整理', async (tok) => {
   const part = (ctx.params || {}).part || 0;
   fresh([0, 8, 12], [0, 0.6, 0.2]);
@@ -3682,47 +4404,106 @@ FRAG.push(['hashlin2-recap', 'Hash table 總整理', async (tok) => {
   const co = cube('Collision', '#c0392b', [2.2, 0.7, 1.0], 2.1, 0.35, -3.0, 3);
   const ex = cube('Extendable', '#e55a9b', [2.2, 0.7, 1.0], 5.2, 0.35, -3.0, 3);
   [[-5.6, -5.1], [-2.7, -2.2], [0.2, 0.9], [3.3, 4.0]].forEach(([a, b]) => arrow(V3(a, 0.4, -3.0), V3(b, 0.4, -3.0)));
-  tag('sum／poly／cyclic', 'idx', -3.9, 1.1, -3.0); tag('mod k', 'idx', -1.0, 1.1, -3.0); tag('full → partial', 'idx', 5.2, 1.1, -3.0);
   const opts = [['0 不理他', -0.2], ['1–3 secondary', 2.1], ['4 open addr.', 4.4]].map(([s, x], i) => cube(s, i === 2 ? '#2fc092' : C8[i + 5], [2.0, 0.6, 0.9], x, 0.3, -0.6, 3));
   opts.forEach((o) => arrow(V3(2.1, 0.3, -2.4), V3(o.position.x, 0.4, -1.1), 0x7a1010));
   const oa = [['linear', 2.6], ['quadratic', 4.4], ['double', 6.1]].map(([s, x]) => cube(s, '#0f8a5a', [1.6, 0.5, 0.8], x, 0.25, 1.8, 3));
-  await beat(tok, 1200);
   const H = (arr, c) => arr.forEach((m) => glow(m, c));
   const p1 = async () => {
-    H([key, hc], GOLD);
-    say('出發點：key 不是 integer、沒 order', '先轉成 hash code');
-    await beat(tok, 3000);
+    await step(tok);                                 // 153:56 summarize
+    say('最後幾分鐘：把整個 Hash table 串起來');
+    await step(tok);                                 // 154:33 像 array：index → value
+    const T = hlRow(5, 1.2, 3.4); cube('v', C8[3], [0.8, 0.5, 0.8], T.xs[2], 0.35, T.z, 2);
+    say('出發點：像 array 一樣', '用 index 把 value 放到對應的格子');
+    await step(tok);                                 // 154:56 key 不是 integer、沒 order
+    H([key], GOLD);
+    say('可是 key 不是 integer、沒有 order', '甚至是 variable length');
+    await step(tok);                                 // 155:19 HashCode
+    H([hc], GOLD);
+    say('解法：先把 key 轉成 integer', '這叫 HashCode（HC）');
+    await step(tok);                                 // 155:30 範圍很大
+    say('HashCode 範圍很大', '放不進大小合理的 array');
+    await step(tok);                                 // 155:44 Compress
     H([key], null); H([cp], GOLD);
-    say('再 compress 到 0～k−1', 'h(key) = hashcode(key) mod k');
-    await beat(tok, 3000);
-    say('hash code 的目的：分散', 'sum → polynomial → cyclic');
-    await beat(tok, 3000); H([hc, cp], null);
+    say('再限制到 k 的範圍：Compress');
+    await step(tok);                                 // 155:55 HashCode + Compress
+    say('Hash table 的 scheme：HashCode + Compress');
+    await step(tok);                                 // 156:06 目的：分散
+    H([cp], null);
+    say('HashCode 最重要的目的：分散', '用上 array 裡的每一個位置');
+    await step(tok);                                 // 156:42 sum、polynomial
+    say('variable length string：加起來（sum）', '或 polynomial：更注意字的位置');
+    await step(tok);                                 // 157:03 cyclic shift
+    say('或更複雜的 cyclic shift');
+    await step(tok);                                 // 157:11 不同 key → 不同 hashcode
+    say('目的：不同的 key 盡量對到不同的 HashCode', '一樣的話就會擠同一格');
+    await step(tok);                                 // 157:28 Mode K
+    H([hc], null); H([cp], GOLD);
+    say('Compress 只講了一種：mod k');
   };
   const p2 = async () => {
+    await step(tok);                                 // 157:42 另一個麻煩
+    say('但實際上還有另一個麻煩');
+    await step(tok);                                 // 157:47 已經有人了
+    say('要放進去時，那格已經 occupied');
+    await step(tok);                                 // 157:57 Collision
     H([co], GOLD);
-    say('insert 時格子有人：collision', '怎麼處理會影響 get / search');
-    await beat(tok, 3000);
+    say('這就是 Collision');
+    await step(tok);                                 // 158:15 影響 get／search
+    say('insert 時怎麼處理', '會影響之後 get、search 怎麼找');
+    await step(tok);                                 // 158:35 error tolerant
     H([opts[0]], GOLD);
-    say('不理他：容許一點 error', 'data structure 不一定 error free');
-    await beat(tok, 2800); H([opts[0]], null); H([opts[1]], GOLD);
-    say('secondary：array、list、container', 'hierarchical 的設計');
-    await beat(tok, 2800); H([opts[1]], null); H([opts[2], ...oa], GOLD);
-    say('open addressing：reuse 現有空間', 'linear → quadratic → double');
-    await beat(tok, 3000); H([co, opts[2], ...oa], null);
+    say('這次新講的：error tolerant（不理他）', '容許有些資料被丟掉');
+    await step(tok);                                 // 159:09 不一定 error free
+    say('Data structure 不一定要 error free', '錯誤可控制，在有些應用就有用');
+    await step(tok);                                 // 159:23 1 array、2 linked list、3 secondary
+    H([opts[0]], null); H([opts[1]], GOLD);
+    say('1 array、2 linked list、3 其他 container', '統稱 secondary data structure');
+    await step(tok);                                 // 160:06 array 變小紙條
+    say('array 變成只是指向 secondary 的小紙條');
+    await step(tok);                                 // 160:27 Hierarchical
+    say('Hashtable 先分成小包小包', 'Hierarchical 的 data structure design');
+    await step(tok);                                 // 160:47 Open Addressing
+    H([opts[1]], null); H([opts[2]], GOLD);
+    say('花最多力氣的：Open Addressing', '不 create 額外空間，reuse 現有空間');
+    await step(tok);                                 // 161:35 get routine 也改
+    say('get 也要改', '他可能坐第 0～第 5 順位，都要去找');
+    await step(tok);                                 // 162:01 linear、quadratic、double
+    H(oa, GOLD);
+    say('找下一個位置：linear、quadratic、double', '讓各順位在 array 上四散開');
+    await step(tok);                                 // 162:41 藍橘紅綠
+    H([opts[2], ...oa], null); H([hc, cp, co, opts[2]], GOLD);
+    say('藍 HashCode → 橘 Compress', '→ 紅 Collision Handling → 綠 Open Addressing');
+    await step(tok);                                 // 163:11 design 要想這幾件事
+    say('設計 hash table 要想：', 'hash code、compress、collision scheme、哪種 open addressing');
   };
   const p3 = async () => {
+    await step(tok);                                 // 163:33 Extendable Hashtables
     H([ex], GOLD);
-    say('越來越滿：讓 table 長大', '另一種 collision handling');
-    await beat(tok, 3000);
-    say('naive：full rebuild', 'partial：只 rebuild overflow 的地方');
-    await beat(tok, 3000);
-    say('複習 double the table 這招', '靜態 hash table → 動態長大');
-    await beat(tok, 3000); H([ex], null);
+    say('最後補充：Extendable 的 Hashtable');
+    await step(tok);                                 // 164:04 另一種 collision handling
+    arrow(V3(2.1, 0.8, -2.6), V3(4.6, 0.8, -2.6), 0x7a1010);
+    say('可以看成另一種 Collision Handling scheme');
+    await step(tok);                                 // 164:15 越來越滿就長大
+    say('越來越滿：乾脆把 Hash Table 長大一點', '長大以後 collision 就少一點');
+    await step(tok);                                 // 164:32 linked list 例子
+    say('例子：用 linked list 當 secondary 的 Hashtable');
+    await step(tok);                                 // 164:45 naive／partial
+    say('兩種做法：naive 和 partial');
+    await step(tok);                                 // 164:59 full rebuild vs 只 rebuild overflow
+    nt('naive：Full Rebuild｜partial：只拆 overflow', 3.6, 1.6, 1.0);
+    say('naive：Full Rebuild', 'partial：只有滿出來的地方才 rebuild');
+    await step(tok);                                 // 165:20 partial 的好處、巧思
+    say('partial 有一些好處', '但需要一些巧思：演算法設計');
+    await step(tok);                                 // 165:34 double the table
+    say('還用到了 double the table', 'extendable array 學過的 trick');
+    await step(tok);                                 // 166:15 桃紅色：延伸
+    say('桃紅色是延伸：靜態 design 上面就講完了', '實務上 table 會長大');
+    await step(tok);                                 // 166:52 bigger picture
+    H([key, hc, cp, co], GOLD);
+    say('Hash 講到的所有事情，這樣串在一起');
   };
   if (part === 1) await p1(); else if (part === 2) await p2(); else if (part === 3) await p3();
   else { await p1(); await p2(); await p3(); }
-  say('設計 hash table 要想這幾件事', 'hash code、compress、collision、策略');
-  await beat(tok, 2800);
 }]);
   }
 

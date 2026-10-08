@@ -1365,7 +1365,7 @@
   "label": "台大林軒田 DSA Hash Table",
   "points": 333,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "x72xBomc-XE": {
   "label": "交大彭文志 Lec04 Arrays (2/4)",
