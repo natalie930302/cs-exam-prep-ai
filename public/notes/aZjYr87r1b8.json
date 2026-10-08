@@ -1,0 +1,584 @@
+{
+ "video": "aZjYr87r1b8",
+ "label": "Abdul Bari：B Trees and B+ Trees",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場：要先懂的背景",
+   "scene": null,
+   "points": [
+    {
+     "text": "主題是 B-tree 與 B+ tree，它們主要用在 database。",
+     "t": 0
+    },
+    {
+     "text": "先依序講 disk structure、indexing、multi-level indexing、m-way search tree，再到 B-tree、B+ tree。",
+     "t": 49
+    }
+   ]
+  },
+  {
+   "title": "Disk 結構：track、sector、block、offset",
+   "scene": "btree-ab-disk",
+   "points": [
+    {
+     "text": "disk 是一張 platter，上面的同心圓叫 track（邏輯上的圓）。",
+     "t": 82
+    },
+    {
+     "text": "切成扇形的部分叫 sector。",
+     "t": 111
+    },
+    {
+     "text": "track 和 sector 交會的那一塊叫 block。",
+     "t": 136
+    },
+    {
+     "text": "block address 用（track 編號, sector 編號）表示。",
+     "t": 150
+    },
+    {
+     "text": "block 大小依廠商而定，學習時假設 512 bytes。",
+     "t": 155
+    },
+    {
+     "text": "讀寫 disk 一律以 block 為單位。",
+     "t": 199
+    },
+    {
+     "text": "block 內每個 byte 的位置叫 offset（0 ～ 511）；找一個 byte = track + sector + offset。",
+     "t": 212
+    },
+    {
+     "text": "轉動 platter 換 sector，移動 head 換 track。",
+     "t": 299
+    }
+   ]
+  },
+  {
+   "title": "資料要先搬進 main memory",
+   "scene": "btree-ab-ram",
+   "points": [
+    {
+     "text": "程式在 main memory（RAM）裡執行。",
+     "t": 314
+    },
+    {
+     "text": "要處理 disk 上的資料，必須先把 block 讀進 main memory。",
+     "t": 333
+    },
+    {
+     "text": "處理完的結果再寫回 disk；不能直接在 disk 上處理。",
+     "t": 343
+    },
+    {
+     "text": "在 main memory 裡怎麼組織資料讓程式直接用 = data structures。",
+     "t": 361
+    },
+    {
+     "text": "在 disk 上怎麼有效率地存放資料 = DBMS。",
+     "t": 377
+    }
+   ]
+  },
+  {
+   "title": "資料表存在 disk：100 筆要 25 個 block",
+   "scene": "btree-ab-table",
+   "points": [
+    {
+     "text": "例子：employee table，100 筆 record（row）。",
+     "t": 399
+    },
+    {
+     "text": "5 個欄位大小加總：每筆 record 128 bytes。",
+     "t": 423
+    },
+    {
+     "text": "block 512 bytes ⇒ 512 / 128 = 4 筆 record / block。",
+     "t": 479
+    },
+    {
+     "text": "100 筆 / 4 = 25 個 block 存整張表。",
+     "t": 519
+    },
+    {
+     "text": "查詢花的時間取決於要存取幾個 block。",
+     "t": 555
+    },
+    {
+     "text": "不知道 record 在哪，最壞要讀完 25 個 block。",
+     "t": 569
+    }
+   ]
+  },
+  {
+   "title": "Index：4 + 1 = 5 次 block 存取",
+   "scene": "btree-ab-index",
+   "points": [
+    {
+     "text": "幫表建 index：每個 entry 是 key（employee id）＋ record pointer。",
+     "t": 581
+    },
+    {
+     "text": "每筆 record 都有一個 entry → dense index。",
+     "t": 627
+    },
+    {
+     "text": "index 一樣存在 disk 上。",
+     "t": 635
+    },
+    {
+     "text": "entry 大小 = 10 bytes（id）＋ 6 bytes（pointer）= 16 bytes。",
+     "t": 665
+    },
+    {
+     "text": "512 / 16 = 32 個 entry / block。",
+     "t": 695
+    },
+    {
+     "text": "100 / 32 ≈ 3.x，所以 index 要 4 個 block。",
+     "t": 716
+    },
+    {
+     "text": "先在 index 找（最多 4 個 block），再用 pointer 讀那 1 個資料 block。",
+     "t": 758
+    },
+    {
+     "text": "總共 4 + 1 = 5 次 block 存取，不是 25 次。",
+     "t": 780
+    }
+   ]
+  },
+  {
+   "title": "Multi-level index：再加一層 sparse index",
+   "scene": "btree-ab-multilevel",
+   "points": [
+    {
+     "text": "record 變 1000 筆：表 250 個 block，index 變 40 個 block。",
+     "t": 808
+    },
+    {
+     "text": "index 本身太大時，可以在 index 上面再建一層 index。",
+     "t": 837
+    },
+    {
+     "text": "上層不是每個 entry 一筆，而是每個 index block 一筆（一筆管 32 個 entry）。",
+     "t": 850
+    },
+    {
+     "text": "這種不是每筆都有 entry 的叫 sparse index。",
+     "t": 868
+    },
+    {
+     "text": "40 個 entry / 32 ⇒ 上層只要 2 個 block。",
+     "t": 899
+    },
+    {
+     "text": "查詢：上層 2 個 block ＋ index 1 個 ＋ 表 1 個 = 4 次 block 存取。",
+     "t": 926
+    },
+    {
+     "text": "多加一層 index 就能減少 block 存取次數——這就是 B / B+ tree 的出發點。",
+     "t": 931
+    }
+   ],
+   "trap": "補充：老師說 40 個 block 是直接把 4 補一個 0、沒有細算；1000 個 entry / 32 ≈ 31.25，實際約 32 個 block。照影片假設的 40 算，上層是 2 個 block。"
+  },
+  {
+   "title": "把多層 index 轉過來：就是一棵樹",
+   "scene": "btree-ab-index-tree",
+   "points": [
+    {
+     "text": "畫出多層 index：每一層的 entry 指向下一層的一組 entry。",
+     "t": 950
+    },
+    {
+     "text": "把它轉個方向看，就是一棵 tree。",
+     "t": 1012
+    },
+    {
+     "text": "希望不必手動加 index：表變大時自動加一層、刪資料時自動拿掉一層。",
+     "t": 1040
+    },
+    {
+     "text": "目標：self-managed multi-level indexing。",
+     "t": 1074
+    },
+    {
+     "text": "這就是 B-tree、B+ tree 的想法來源。",
+     "t": 1081
+    },
+    {
+     "text": "B-tree、B+ tree 是從 m-way search tree 來的。",
+     "t": 1094
+    }
+   ]
+  },
+  {
+   "title": "m-way search tree",
+   "scene": "btree-ab-mway",
+   "points": [
+    {
+     "text": "回顧 BST：比較小往左、比較大往右。",
+     "t": 1105
+    },
+    {
+     "text": "BST 每個 node 1 個 key、最多 2 個 child。",
+     "t": 1146
+    },
+    {
+     "text": "例子 [20, 50]：< 20 放 10, 15；20 ～ 50 之間放 30, 35；> 50 放 60, 90。",
+     "t": 1175
+    },
+    {
+     "text": "搜尋 30：30 > 20 且 30 < 50 → 走中間 child → 找到。",
+     "t": 1211
+    },
+    {
+     "text": "每個 node 最多 3 個 child → 3-way search tree。",
+     "t": 1244
+    },
+    {
+     "text": "m-way search tree：每個 node 最多 m 個 child、m − 1 個 key。",
+     "t": 1262
+    },
+    {
+     "text": "BST 就是 degree 2 的 m-way search tree；m 也可以是 100、1000。",
+     "t": 1279
+    }
+   ]
+  },
+  {
+   "title": "m-way 節點結構與 record pointer",
+   "scene": "btree-ab-node",
+   "points": [
+    {
+     "text": "m-way search tree 的 node 結構。",
+     "t": 1306
+    },
+    {
+     "text": "4-way：4 個 child pointer、3 個 key，排法是 cp K1 cp K2 cp K3 cp。",
+     "t": 1325
+    },
+    {
+     "text": "拿 m-way search tree 來做 index 可以嗎？",
+     "t": 1386
+    },
+    {
+     "text": "當 index 用時，每個 key 旁邊還要一個 record pointer，指向 database 的 record。",
+     "t": 1442
+    },
+    {
+     "text": "這樣就能用 m-way search tree 做 multi-level index。",
+     "t": 1460
+    },
+    {
+     "text": "記住這個 node 結構：key、child pointer、record pointer。",
+     "t": 1473
+    }
+   ]
+  },
+  {
+   "title": "m-way search tree 的問題",
+   "scene": "btree-ab-skew",
+   "points": [
+    {
+     "text": "直接用 m-way search tree 會有什麼問題？",
+     "t": 1493
+    },
+    {
+     "text": "例子：10-way search tree（10 個 child、9 個 key）。",
+     "t": 1533
+    },
+    {
+     "text": "插入 10 後，20 卻另開一個 child、30 再往下開一個。",
+     "t": 1548
+    },
+    {
+     "text": "這樣不好：應該先把 node 填滿再開新 node，但 m-way search tree 沒有規定。",
+     "t": 1576
+    },
+    {
+     "text": "n 個 key 時高度可能是 n，搜尋退化成 linear search。",
+     "t": 1594
+    },
+    {
+     "text": "建立過程需要規則——這些規則就是 B-tree。",
+     "t": 1626
+    }
+   ]
+  },
+  {
+   "title": "B-tree 的規則",
+   "scene": "btree-ab-rules",
+   "points": [
+    {
+     "text": "B-tree = 加上規則的 m-way search tree。",
+     "t": 1641
+    },
+    {
+     "text": "規則一：每個 node 至少要有 ⌈m/2⌉ 個 child（取 ceiling）。",
+     "t": 1663
+    },
+    {
+     "text": "例如 degree 10，至少 5 個 child 才能開新的 node，用來控制高度。",
+     "t": 1671
+    },
+    {
+     "text": "規則二：root 不受此限，root 至少 2 個 child（可以只有 1 個 key）。",
+     "t": 1705
+    },
+    {
+     "text": "規則三：所有 leaf node 在同一層。",
+     "t": 1733
+    },
+    {
+     "text": "規則四：建立過程是 bottom-up。",
+     "t": 1757
+    }
+   ]
+  },
+  {
+   "title": "degree 4 插入 10, 20, 40, 50：40 往上",
+   "scene": "btree-ab-ins1",
+   "points": [
+    {
+     "text": "用 degree 4（4 個 child、3 個 key）示範建立 B-tree。",
+     "t": 1790
+    },
+    {
+     "text": "插入 10：建立第一個 node。",
+     "t": 1804
+    },
+    {
+     "text": "插入 20、40 → [10, 20, 40]。",
+     "t": 1816
+    },
+    {
+     "text": "插入 50：已有 3 個 key，沒有空間 → split。",
+     "t": 1830
+    },
+    {
+     "text": "10, 20 留在左邊，50 到右邊，40 送上去成為 root。",
+     "t": 1846
+    },
+    {
+     "text": "樹往上長：建立過程是 bottom-up。",
+     "t": 1876
+    },
+    {
+     "text": "上層就像自動長出來的第二層 index。",
+     "t": 1889
+    }
+   ]
+  },
+  {
+   "title": "插入 60, 70, 80 與 30, 35",
+   "scene": "btree-ab-ins2",
+   "points": [
+    {
+     "text": "插入 60、70 → [50, 60, 70]。",
+     "t": 1906
+    },
+    {
+     "text": "插入 80：沒空間 → split。",
+     "t": 1918
+    },
+    {
+     "text": "50, 60 | 70 往上 | 80，root 變 [40, 70]。",
+     "t": 1930
+    },
+    {
+     "text": "插入 30 → [10, 20, 30]。",
+     "t": 1943
+    },
+    {
+     "text": "插入 35：沒空間 → split。",
+     "t": 1949
+    },
+    {
+     "text": "10, 20 | 30 往上 | 35，root 變 [30, 40, 70]。",
+     "t": 1972
+    },
+    {
+     "text": "node 一滿就 split，把一個 key 送到 parent。",
+     "t": 1992
+    }
+   ]
+  },
+  {
+   "title": "插入 5, 15：連續 split，40 成為 root",
+   "scene": "btree-ab-ins3",
+   "points": [
+    {
+     "text": "插入 5 → [5, 10, 20]。",
+     "t": 2005
+    },
+    {
+     "text": "插入 15 → [5, 10, 15, 20]，沒空間。",
+     "t": 2013
+    },
+    {
+     "text": "split：5, 10 | 15 往上 | 20。",
+     "t": 2024
+    },
+    {
+     "text": "為什麼送第 3 個 key？自己選：left biased 或 right biased 都可以。",
+     "t": 2040
+    },
+    {
+     "text": "root 變成 [15, 30, 40, 70] 也要 split：15, 30 | 40 往上 | 70。",
+     "t": 2068
+    },
+    {
+     "text": "現在有三層：B-tree 就是這樣長出來的。",
+     "t": 2104
+    },
+    {
+     "text": "所有 leaf 在同一層，就像 multi-level index。",
+     "t": 2128
+    }
+   ],
+   "trap": "補充：Abdul Bari 的 degree 4 例子送第 3 個 key（左邊留 2 個）上去；洪逸 / Horowitz 的慣例是第 ⌈m/2⌉ = 2 個。兩種都合法，但結果的樹不同，考試要照題目規定。"
+  },
+  {
+   "title": "B-tree：每個 key 都有 record pointer",
+   "scene": "btree-ab-recptr",
+   "points": [
+    {
+     "text": "回到 database：這棵 B-tree 怎麼當 index？",
+     "t": 2143
+    },
+    {
+     "text": "每個 key 都有一個 record pointer，指向 database 裡的 record。",
+     "t": 2154
+    },
+    {
+     "text": "所以 B-tree 可以拿來實作 multi-level index。",
+     "t": 2172
+    },
+    {
+     "text": "B-tree node = key ＋ child pointer（block pointer）＋ record pointer。",
+     "t": 2181
+    },
+    {
+     "text": "deletion 這支影片沒有示範。",
+     "t": 2188
+    }
+   ]
+  },
+  {
+   "title": "B+ tree",
+   "scene": "btree-ab-bplus",
+   "points": [
+    {
+     "text": "B+ tree：只要把剛才的 B-tree 稍微改一下。",
+     "t": 2228
+    },
+    {
+     "text": "record pointer 只從 leaf node 出來，非 leaf 不放 record pointer。",
+     "t": 2235
+    },
+    {
+     "text": "非 leaf 的 key 在 leaf 也要有一份副本（15、30、40、70 都下到 leaf）。",
+     "t": 2250
+    },
+    {
+     "text": "所有 leaf 在同一層，串成 linked list → leaf 層是 dense index。",
+     "t": 2290
+    },
+    {
+     "text": "差異整理：所有 key 都在 leaf；非 leaf 只是副本；只有 leaf 有 record pointer。",
+     "t": 2305
+    },
+    {
+     "text": "上一層是 sparse index：B+ tree 比 B-tree 更像 multi-level index。",
+     "t": 2330
+    },
+    {
+     "text": "這支影片的目的，是把 B / B+ tree 和 database 連起來。",
+     "t": 2355
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "block 512 bytes、每筆 record 128 bytes，100 筆 record 需要幾個 block？",
+   "opts": [
+    "4",
+    "20",
+    "25",
+    "128"
+   ],
+   "ans": "25",
+   "why": "512 / 128 = 4 筆 / block，100 / 4 = 25 個 block。"
+  },
+  {
+   "q": "index entry = 10 bytes key + 6 bytes pointer，block 512 bytes，一個 block 能放幾個 entry？",
+   "opts": [
+    "16",
+    "32",
+    "51",
+    "64"
+   ],
+   "ans": "32",
+   "why": "entry 16 bytes，512 / 16 = 32。"
+  },
+  {
+   "q": "每筆 record 都有一個 entry 的 index 叫什麼？",
+   "opts": [
+    "sparse index",
+    "dense index",
+    "clustered index",
+    "hash index"
+   ],
+   "ans": "dense index",
+   "why": "每筆 record 都有 entry 是 dense；每個 block 才一筆的是 sparse。"
+  },
+  {
+   "q": "m-way search tree 的每個 node 最多有幾個 key？",
+   "opts": [
+    "m",
+    "m − 1",
+    "m + 1",
+    "⌈m/2⌉"
+   ],
+   "ans": "m − 1",
+   "why": "最多 m 個 child，所以最多 m − 1 個 key。"
+  },
+  {
+   "q": "下列何者不是 B-tree 的規則？",
+   "opts": [
+    "非 root node 至少 ⌈m/2⌉ 個 child",
+    "root 至少 2 個 child",
+    "所有 leaf 在同一層",
+    "每個 node 都必須剛好 m − 1 個 key"
+   ],
+   "ans": "每個 node 都必須剛好 m − 1 個 key",
+   "why": "B-tree 只要求至少半滿、root 至少 2 個 child、leaf 同層；不要求每個 node 全滿。"
+  },
+  {
+   "q": "degree 4、送第 3 個 key 上去，依序插入 10, 20, 40, 50 後 root 是？",
+   "opts": [
+    "[20]",
+    "[40]",
+    "[10, 40]",
+    "[20, 40]"
+   ],
+   "ans": "[40]",
+   "why": "[10, 20, 40, 50] overflow，第 3 個 key 40 往上，左 [10, 20]、右 [50]。"
+  },
+  {
+   "q": "B+ tree 和 B-tree 最主要的差別是？",
+   "opts": [
+    "B+ tree 不平衡",
+    "B+ tree 只有 leaf 有 record pointer，leaf 串成 linked list",
+    "B+ tree 的 node 只有一個 key",
+    "B+ tree 沒有 internal node"
+   ],
+   "ans": "B+ tree 只有 leaf 有 record pointer，leaf 串成 linked list",
+   "why": "所有 key 都會出現在 leaf，上層只是導航用的副本，leaf 串起來方便循序 / 範圍存取。"
+  }
+ ]
+}

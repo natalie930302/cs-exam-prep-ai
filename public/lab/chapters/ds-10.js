@@ -7,6 +7,8 @@
 //  • Prim / Kruskal：Abdul Bari「Prim's and Kruskal's Algorithms」的 7 個頂點範例（MST cost = 99；
 //    跟洪逸／Horowitz 課本那張圖相同，只是頂點編號從 1 開始）。
 //  • Bellman-Ford、Floyd-Warshall：洪逸／Horowitz 的慣例（Floyd 用 A^(−1) = 成本矩陣、A^k 允許經過 0..k）。
+import kit from './_kit.js';
+
 export default function (ctx) {
   const { THREE, lab, sleep, $, log, clearLog, setState, controls, on, say, beat } = ctx;
   let timer = null;
@@ -729,6 +731,13 @@ export default function (ctx) {
     } },
   };
 
+
+  // 每段影片的場景片段（由 sync pass 加入）：每個片段把 [id, 標題, play] 放進 FRAG。
+  const K = kit(ctx);
+  const FRAG = [];
+  // @@FRAGMENTS@@
+  FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
+
   return {
     kicker: '資料結構・第 10 章',
     title: '圖演算法：MST 與最短路徑',
@@ -745,7 +754,7 @@ export default function (ctx) {
       { id: 'quiz', name: '小測驗', render: renderQuiz },
     ],
     scenes,
-    sceneOrder: ['dijkstra-explored-sets', 'dijkstra-path-trace', 'dijkstra-negative-edge', 'prim-connected-min', 'kruskal-reject-cycle', 'bellman-ford-rounds', 'bellman-ford-negative-cycle', 'floyd-warshall-ak'],
+    sceneOrder: ['dijkstra-explored-sets', 'dijkstra-path-trace', 'dijkstra-negative-edge', 'prim-connected-min', 'kruskal-reject-cycle', 'bellman-ford-rounds', 'bellman-ford-negative-cycle', 'floyd-warshall-ak'].concat(FRAG.map((f) => f[0])),
     stop() { clearTimeout(timer); epoch++; },
   };
 }

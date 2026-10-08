@@ -1,0 +1,620 @@
+{
+ "video": "-DwGrJ8JxDc",
+ "label": "MIT 6.006 Rec9b：DNA Sequence Matching",
+ "timing": "estimated",
+ "sections": [
+  {
+   "title": "開場：今天的主題",
+   "scene": null,
+   "points": [
+    {
+     "text": "MIT OpenCourseWare 授權說明。",
+     "t": 0
+    },
+    {
+     "text": "可選主題：PSet 程式碼、hash function、amortization；最後決定先看 PSet 程式，最後講 amortization。",
+     "t": 19
+    },
+    {
+     "text": "但要先回答上次欠的一個 hash 問題。",
+     "t": 57
+    }
+   ]
+  },
+  {
+   "title": "模數用 2^w 可以嗎？乘法反元素",
+   "scene": "strm-mit-inverse",
+   "points": [
+    {
+     "text": "Rolling hash 的形式：h = K mod p，K 是一個很大的數；上次說 p 取質數很好。",
+     "t": 64
+    },
+    {
+     "text": "問題：若 p = 2^w（不是質數），只要 base b 和 p 互質，可以嗎？",
+     "t": 81
+    },
+    {
+     "text": "答案：可以。乘法反元素用 extended Euclid 算。",
+     "t": 103
+    },
+    {
+     "text": "extended Euclid 給出 x·b + y·p = gcd(b, p)。",
+     "t": 144
+    },
+    {
+     "text": "若 gcd = 1，mod p 來看就是 x·b ≡ 1，x 就是 b 的乘法反元素。",
+     "t": 160
+    },
+    {
+     "text": "數學上沒問題，但 2^w 還有別的毛病：它給不給得出好的 hash function？",
+     "t": 183
+    }
+   ],
+   "trap": "補充：畫面用 p = 8、b = 3 示範（3·3 = 9 ≡ 1），b = 2 時 gcd(2, 8) = 2，沒有反元素——這組數字是示範用，影片只講符號。"
+  },
+  {
+   "title": "好的 hash function：要分散",
+   "scene": "strm-mit-goodhash",
+   "points": [
+    {
+     "text": "令 h = K mod 2^w；K 由 base b 的 digits d₁ d₂ … d_L 組成，取 b = 2⁸（ASCII、顏色等剛好一個 byte）。",
+     "t": 204
+    },
+    {
+     "text": "hash 把大量可能的 input 對應到相對少的 output，collision 無論如何都會發生。",
+     "t": 265
+    },
+    {
+     "text": "例：一百萬字元的字串有 2^(8·10⁶) 種，output 只有 2³² 種，不可能沒有 collision。",
+     "t": 287
+    },
+    {
+     "text": "h(K) = 0 對所有 K 都成立：全部擠在一起，搜尋、substring matching 都很慢。",
+     "t": 317
+    },
+    {
+     "text": "理想的 hash：看起來隨機，且同一個 input 永遠給同一個 output。",
+     "t": 352
+    },
+    {
+     "text": "關鍵字是 distribute：output 要分散得均勻。",
+     "t": 369
+    },
+    {
+     "text": "L 比 w 大很多本身沒問題——那正是能快速做 substring matching 的原因。",
+     "t": 407
+    },
+    {
+     "text": "問題在於：有些很簡單、真實世界會遇到的 input，會讓這個 hash 表現很差。",
+     "t": 427
+    }
+   ]
+  },
+  {
+   "title": "digit 全是偶數 → hash 全是偶數",
+   "scene": "strm-mit-evendigits",
+   "points": [
+    {
+     "text": "如果所有 digits 都是偶數（d ≡ 0 mod 2）呢？",
+     "t": 446
+    },
+    {
+     "text": "base 2⁸ 時每個 digit 是 0–255；substring matching 時，若子字串的字元碼都是偶數。",
+     "t": 480
+    },
+    {
+     "text": "類比 base 10：10 可被 2 整除，所以末位是偶數，整個數就是偶數。",
+     "t": 524
+    },
+    {
+     "text": "base 256 也能被 2 整除：末位 digit 偶數 → K 偶數。",
+     "t": 543
+    },
+    {
+     "text": "K mod 2³² 也必然是偶數。",
+     "t": 553
+    },
+    {
+     "text": "outputs 本該用滿整個範圍，現在只會落在偶數那一半，分布不均勻。",
+     "t": 583
+    },
+    {
+     "text": "奇數那一半「gets no love」：沒有任何值會 hash 到那裡。",
+     "t": 610
+    }
+   ]
+  },
+  {
+   "title": "全奇數也一樣；DNA 編碼 0, 2, 4, 6",
+   "scene": "mod-2w-even-hash",
+   "points": [
+    {
+     "text": "同學問：digit 全是奇數呢？末位奇數 → 結果也一定是奇數。",
+     "t": 616
+    },
+    {
+     "text": "hash 永遠是奇數一樣不均勻，只是換成另一半。",
+     "t": 644
+    },
+    {
+     "text": "實例：nucleotides A、C、G、T 若編成 0、2、4、6，全是偶數。",
+     "t": 665
+    },
+    {
+     "text": "hash 永遠是偶數，最後一個 bit 被浪費。",
+     "t": 683
+    },
+    {
+     "text": "做成 hash table 時，一半的格子永遠用不到，只是在浪費記憶體。",
+     "t": 688
+    }
+   ]
+  },
+  {
+   "title": "真實資料不隨機；mod 2^w 快但差",
+   "scene": "strm-mit-lowbits",
+   "points": [
+    {
+     "text": "若 input 是隨機的，大多數 hash function 都能給出隨機的 output。",
+     "t": 704
+    },
+    {
+     "text": "問題是真實資料不隨機：例如相機的像素因為雜訊，最後幾個 bit 都一樣。",
+     "t": 709
+    },
+    {
+     "text": "Knuth 的書也指出，真實世界有很多會讓 hash 表現差的序列。",
+     "t": 729
+    },
+    {
+     "text": "input 的非隨機性質若反映在 output 上，就是不好的 hash function。",
+     "t": 745
+    },
+    {
+     "text": "mod 2^n 的好處：只要截掉高位 bit，運算很快。",
+     "t": 759
+    },
+    {
+     "text": "但換來較差的 hash；實務上（考慮 cache 等）多花時間在 mod、把 hash table 用滿，整體反而更快。",
+     "t": 775
+    }
+   ],
+   "trap": "補充：畫面的 180、100、220（低 3 bit 都是 100）與 mod 8 / mod 7 是示範數字。"
+  },
+  {
+   "title": "PSet 程式：dnaseq 與 rolling hash 的 slide",
+   "scene": "strm-mit-slide",
+   "points": [
+    {
+     "text": "這次程式分成多個 module；要自己寫的是 subsequence_hashes、interval_subsequence_hashes 等。",
+     "t": 821
+    },
+    {
+     "text": "它們都在 dnaseq.py，這也是唯一需要上傳、需要修改的檔案。",
+     "t": 845
+    },
+    {
+     "text": "rolling hash 的 API 和上次不同：上次拆成 append 和 skip。",
+     "t": 894
+    },
+    {
+     "text": "這次的 PSet 只需要 slide，一個操作完成「去掉舊的、加上新的」。",
+     "t": 927
+    },
+    {
+     "text": "slide 就是上次拆成兩個方法之前的那份程式，不再重講。",
+     "t": 931
+    }
+   ],
+   "trap": "補充：畫面沿用本章慣例 A, C, G, T = 0, 2, 4, 6、base 8、mod 13 來算 h；影片沒有給具體數字。"
+  },
+  {
+   "title": "kfasta.py：用 iterator 而不是 list",
+   "scene": "strm-mit-iterator",
+   "points": [
+    {
+     "text": "kfasta.py 的 FASTA sequence class 從檔案讀資料，重點是它不回傳 list。",
+     "t": 970
+    },
+    {
+     "text": "以前 docdist 把整個 input 讀進 list；這次寫 20 行而不是 5 行，是為了記憶體。",
+     "t": 993
+    },
+    {
+     "text": "整個 input 塞進記憶體可能放不下，程式會 crash。",
+     "t": 1012
+    },
+    {
+     "text": "改用的東西叫 iterator。",
+     "t": 1033
+    },
+    {
+     "text": "next 回傳序列中的下一個元素；到結尾時 raise StopIteration。",
+     "t": 1134
+    },
+    {
+     "text": "__iter__ 回傳一個 iterator；任何物件（例如 list [1, 2, 3, 4]）只要有 iter 就能被走訪。",
+     "t": 1184
+    },
+    {
+     "text": "for … in 背後：先對物件呼叫 iter 取得 iterator，再一直呼叫 next 直到 StopIteration。",
+     "t": 1210
+    },
+    {
+     "text": "iterator 可以像 list 一樣用，但每次 next 才算下一個元素，記憶體少很多。",
+     "t": 1231
+    }
+   ]
+  },
+  {
+   "title": "Reverse iterator：O(1) 記憶體",
+   "scene": "strm-mit-reverse",
+   "points": [
+    {
+     "text": "講義最後一頁的 iterator：給一個 list，產生它的反轉。",
+     "t": 1265
+    },
+    {
+     "text": "它不建立反轉後的新 list；每次 next 時用 index 計算下一個要回傳的元素。",
+     "t": 1276
+    },
+    {
+     "text": "新建 list 要 O(n) 記憶體，這個 iterator 只要 O(1)，執行時間漸進相同。",
+     "t": 1292
+    },
+    {
+     "text": "例：給 1, 2, 3, 4，要得到 4, 3, 2, 1，但回傳的不是 list。",
+     "t": 1323
+    },
+    {
+     "text": "Python iterator 只能往前，所以能包裝檔案或網路串流。",
+     "t": 1350
+    },
+    {
+     "text": "想重來（rewind）就再取得一個新的 iterator。",
+     "t": 1374
+    }
+   ]
+  },
+  {
+   "title": "Generator：把 list 版改成 yield",
+   "scene": "strm-mit-genlist",
+   "points": [
+    {
+     "text": "Python 魔法：generator。12 行的 iterator 類別變成 3 行，做的事完全一樣。",
+     "t": 1383
+    },
+    {
+     "text": "yield 的直覺：像讓路標誌，「暫停」。",
+     "t": 1451
+    },
+    {
+     "text": "以 subsequence_hashes 為例：最差是暴力法、不用 rolling hash。",
+     "t": 1482
+    },
+    {
+     "text": "次好：建空 list，迴圈裡用 rolling hash 算出值後 append，最後 return list。",
+     "t": 1494
+    },
+    {
+     "text": "問題：list 會非常大。",
+     "t": 1528
+    },
+    {
+     "text": "改法：拿掉 list，把 append 換成 yield e，拿掉 return。",
+     "t": 1530
+    },
+    {
+     "text": "現在它是 generator，只用常數記憶體；只要你要的是 iterator，程式行為完全相同。",
+     "t": 1546
+    }
+   ]
+  },
+  {
+   "title": "yield 怎麼運作：凍結與解凍",
+   "scene": "strm-mit-yield",
+   "points": [
+    {
+     "text": "第一個提示：含 yield 的函式會回傳一個 iterator。",
+     "t": 1571
+    },
+    {
+     "text": "呼叫端要能把結果當 list 用，最接近 list 的東西就是 iterator。",
+     "t": 1647
+    },
+    {
+     "text": "Python 把整個函式（執行狀態）凍結起來，放進一個盒子，回傳能使用這個盒子的 iterator。",
+     "t": 1720
+    },
+    {
+     "text": "呼叫 next 時拿到 yield 出的值，函式解凍、繼續執行到下一個 yield。",
+     "t": 1730
+    },
+    {
+     "text": "整個過程是同一個 iterator；所有狀態都保存下來。",
+     "t": 1764
+    },
+    {
+     "text": "函式裡不用寫 next 或 iter；可以把 yield 想成「print 到 iterator」。",
+     "t": 1861
+    },
+    {
+     "text": "迴圈結束、函式 return 後，再呼叫 next 就 raise StopIteration。",
+     "t": 1921
+    }
+   ],
+   "trap": "更正：影片的「盒子先放一個值、next 時回傳舊值並算出下一個」只是心智模型；Python generator 不會預先算下一個值——next() 才執行到下一個 yield 並回傳那個值，影片後段（37:31）也確認沒有延遲一格。"
+  },
+  {
+   "title": "Generator 問答：串接、無限序列、沒有 len",
+   "scene": "strm-mit-geninf",
+   "points": [
+    {
+     "text": "參數可以是 list 也可以是 iterator，用 for … in 走訪即可。",
+     "t": 1991
+    },
+    {
+     "text": "於是可以有巢狀 generator：generator 裡用另一個 generator，呼叫 next 會觸發一整串動作。",
+     "t": 2000
+    },
+    {
+     "text": "iterator 只要有 next 和 iter 兩個方法；generator 是讓你用更短的程式寫出 iterator 的魔法。",
+     "t": 2030
+    },
+    {
+     "text": "iterator 沒有 len：只能一直走訪才知道有幾個。",
+     "t": 2097
+    },
+    {
+     "text": "有些 iterator 永遠不會結束，例如網路串流或 Fibonacci 數列，len 根本沒有定義。",
+     "t": 2114
+    },
+    {
+     "text": "沒有 has_next；Python 直接 raise exception，for … in 會幫你接住 StopIteration。",
+     "t": 2130
+    },
+    {
+     "text": "把傳入的 iterator 的 next 再 yield 出去，不會延遲一格。",
+     "t": 2251
+    }
+   ],
+   "trap": "補充：畫面的 evens(fib()) 是示範巢狀 generator 用的例子，影片只口頭提到 Fibonacci。"
+  },
+  {
+   "title": "subsequence_hashes 與 interval 版",
+   "scene": "strm-mit-subseq",
+   "points": [
+    {
+     "text": "dnaseq 要實作 subsequence_hashes：像建 list 一樣寫，再用 yield 讓它省記憶體。",
+     "t": 2268
+    },
+    {
+     "text": "interval_subsequence_hashes：就像 range 加上 step。",
+     "t": 2303
+    },
+    {
+     "text": "一種作法是複製貼上程式碼，但這樣不 DRY（Don’t Repeat Yourself）。",
+     "t": 2338
+    },
+    {
+     "text": "複製的程式在修 bug 時容易漏改：20 份副本只修了 5 份。",
+     "t": 2352
+    },
+    {
+     "text": "比對結果是 tuple 的 list：第一條序列的 index i₁ 與第二條序列的 index i₂。",
+     "t": 2400
+    },
+    {
+     "text": "第一條序列的同一段若配到第二條的多個位置，就回傳多個 tuple。",
+     "t": 2433
+    }
+   ],
+   "trap": "補充：畫面的 GATTACA / TACAGAT、k = 3 是示範序列。"
+  },
+  {
+   "title": "比對結果畫成圖",
+   "scene": "strm-mit-dotplot",
+   "points": [
+    {
+     "text": "同學問：程式怎麼從 tuple 產生圖片？",
+     "t": 2463
+    },
+    {
+     "text": "直覺：兩條完全相同的 DNA 比較，應該看到一條對角線。",
+     "t": 2496
+    },
+    {
+     "text": "助教：完全相符會出現一條比其他地方都明顯的對角線。",
+     "t": 2510
+    },
+    {
+     "text": "比較不該相符的兩條（狗和猴子）整張圖較暗。",
+     "t": 2556
+    },
+    {
+     "text": "顏色深淺可能代表回報的子序列長度或數量；程式裡有計算像素強度的函式。",
+     "t": 2573
+    }
+   ],
+   "trap": "補充：助教當場也不確定圖片強度的算法；畫面只示範「每個 (i₁, i₂) 畫一點、共同片段形成斜線」的原理。"
+  },
+  {
+   "title": "Amortized：list 是 array，append 何時要擴充",
+   "scene": "strm-mit-append",
+   "points": [
+    {
+     "text": "上課的例子：list expansion。list 存成 array，所以第一個或第一百萬個元素都是 O(1)。",
+     "t": 2646
+    },
+    {
+     "text": "linked list 就不行：第一百萬個元素要 O(百萬)。",
+     "t": 2670
+    },
+    {
+     "text": "append 把元素放到 list 最後。",
+     "t": 2694
+    },
+    {
+     "text": "array 還有空位：直接放，O(1)。",
+     "t": 2711
+    },
+    {
+     "text": "沒空位：開一個 2 倍大的新 array，把舊元素全部複製過去。",
+     "t": 2751
+    },
+    {
+     "text": "提早擴充是否仍是常數時間，要看何時、怎麼決定（PSet 有一題）。",
+     "t": 2904
+    },
+    {
+     "text": "配置空間假設 O(1)，複製 O(n)，插入 O(1)；即使配置是 O(n) 也會被吸收。",
+     "t": 2940
+    }
+   ]
+  },
+  {
+   "title": "逐行分析 O(n²) vs amortized O(1)",
+   "scene": "strm-mit-linebyline",
+   "points": [
+    {
+     "text": "複製元素才是真正的成本，讓單次 append 最壞是 O(n)。",
+     "t": 2990
+    },
+    {
+     "text": "想算 n 次 append 的總成本：L = 空 list，迴圈 append n 次。",
+     "t": 3000
+    },
+    {
+     "text": "逐行分析：建立 list O(1)；一次 append 最壞 O(n)。",
+     "t": 3032
+    },
+    {
+     "text": "n 次 × O(n) = O(n²)：沒有錯，但不是 tight bound。",
+     "t": 3114
+    },
+    {
+     "text": "考題通常問最緊的界，選 O(n²) 會沒分。",
+     "t": 3122
+    },
+    {
+     "text": "amortized analysis：每次 append 是 O(1) amortized，n 次就是 O(n)。",
+     "t": 3156
+    },
+    {
+     "text": "amortize = 把成本平均到多次操作上。",
+     "t": 3226
+    }
+   ]
+  },
+  {
+   "title": "Aggregate analysis：加總 n 次操作",
+   "scene": "strm-mit-aggregate",
+   "points": [
+    {
+     "text": "CLRS 有三種方法，常用兩種：aggregate analysis 與 accounting（cost-based）方法。",
+     "t": 3236
+    },
+    {
+     "text": "第 k 次 append：k 是 2 的次方時成本 O(k)，否則 O(1)。",
+     "t": 3283
+    },
+    {
+     "text": "加總：n 個 O(1) 加上 2^i 的總和（i 到 log n），結果是 O(n)。",
+     "t": 3304
+    },
+    {
+     "text": "關鍵：每次擴充都是變 2 倍；大小從 1 開始：1, 2, 4, 8, 16 …",
+     "t": 3358
+    },
+    {
+     "text": "大部分操作是 O(1)，O(n) 的那幾次很少、間隔很遠。",
+     "t": 3390
+    },
+    {
+     "text": "aggregate analysis：看 n 次操作，把成本全加起來；accounting 方法請看 CLRS。",
+     "t": 3397
+    }
+   ],
+   "trap": "補充：精確地說，容量 1 → 2 → 4 … 時，是在第 k 次 append 且 k − 1 為 2 的次方時要複製 k − 1 個元素（第 2、3、5、9 次…）；影片說「k = 2^i」差一格，不影響 O(n) 的結論。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "rolling hash 若用 p = 2^w 當模數，乘法反元素存在的條件是？",
+   "opts": [
+    "base b 與 2^w 互質（b 為奇數）",
+    "w 是質數",
+    "b 是 2 的次方",
+    "永遠不存在"
+   ],
+   "ans": "base b 與 2^w 互質（b 為奇數）",
+   "why": "extended Euclid 給出 xb + yp = gcd(b, p)；gcd = 1 時 x 就是反元素。"
+  },
+  {
+   "q": "base b = 2⁸、所有 digits 都是偶數時，K mod 2³² 會怎樣？",
+   "opts": [
+    "一定是偶數，一半的 outputs 用不到",
+    "均勻分布",
+    "一定是 0",
+    "一定是奇數"
+   ],
+   "ans": "一定是偶數，一半的 outputs 用不到",
+   "why": "base 是偶數，末位 digit 偶數 → K 偶數；mod 2³² 保留最低位元，仍是偶數。"
+  },
+  {
+   "q": "MIT Rec 9b 認為「好的 hash function」最關鍵的性質是？",
+   "opts": [
+    "distribute：輸出分布均勻，input 的規律不會留在 output",
+    "永遠回傳 0",
+    "計算最快",
+    "沒有任何 collision"
+   ],
+   "ans": "distribute：輸出分布均勻，input 的規律不會留在 output",
+   "why": "inputs ≫ outputs，collision 不可避免；重點是分散。"
+  },
+  {
+   "q": "Python 的 for x in obj 背後做了什麼？",
+   "opts": [
+    "呼叫 iter(obj) 取得 iterator，再反覆呼叫 next 直到 StopIteration",
+    "先把 obj 轉成 list",
+    "呼叫 len(obj) 決定次數",
+    "呼叫 obj.has_next()"
+   ],
+   "ans": "呼叫 iter(obj) 取得 iterator，再反覆呼叫 next 直到 StopIteration",
+   "why": "for 會自動接住 StopIteration。"
+  },
+  {
+   "q": "把「建 list 再 return」改成 yield 的 generator，最主要的好處是？",
+   "opts": [
+    "記憶體從 O(n) 降到 O(1)",
+    "時間從 O(n) 降到 O(1)",
+    "可以用 len()",
+    "可以倒著走"
+   ],
+   "ans": "記憶體從 O(n) 降到 O(1)",
+   "why": "generator 每次 next 才算下一個值，不保存整個 list。"
+  },
+  {
+   "q": "動態 array 每次滿了就加倍，n 次 append 的總時間是？",
+   "opts": [
+    "O(n)",
+    "O(n²)",
+    "O(n log n)",
+    "O(log n)"
+   ],
+   "ans": "O(n)",
+   "why": "複製成本 1 + 2 + 4 + … < 2n，加上 n 次插入，仍是 O(n)；每次 amortized O(1)。"
+  },
+  {
+   "q": "用逐行分析得到 n 次 append 是 O(n²)，這個結論？",
+   "opts": [
+    "正確但不是 tight bound",
+    "錯誤",
+    "就是 tight bound",
+    "只有在 n 是 2 的次方時正確"
+   ],
+   "ans": "正確但不是 tight bound",
+   "why": "單次最壞 O(n) 乘上 n 是上界；amortized analysis 給出更緊的 O(n)。"
+  }
+ ]
+}

@@ -9,6 +9,11 @@
   "points": 22,
   "quiz": 4
  },
+ "-DwGrJ8JxDc": {
+  "label": "MIT 6.006 Rec9b：DNA Sequence Matching",
+  "points": 106,
+  "quiz": 7
+ },
  "-FElVPKykgw": {
   "label": "MIT 6.006 Rec10：Quiz 1 Review",
   "points": 26,
@@ -329,6 +334,11 @@
   "points": 16,
   "quiz": 5
  },
+ "aZjYr87r1b8": {
+  "label": "Abdul Bari：B Trees and B+ Trees",
+  "points": 100,
+  "quiz": 7
+ },
  "AztAXONxs7M": {
   "label": "清大周志遠 第8A講 Processes Concept",
   "points": 30,
@@ -384,6 +394,11 @@
   "points": 146,
   "quiz": 8
  },
+ "cH8nH0Enjhw": {
+  "label": "台大林軒田 DSA AVL Tree / 2-3-4 Tree / Red-Black Tree",
+  "points": 228,
+  "quiz": 8
+ },
  "CHvQ3q_gJ7E": {
   "label": "MIT 6.006 L18：Speeding up Dijkstra",
   "points": 22,
@@ -403,6 +418,11 @@
   "label": "Hashing - Collision Resolution with Linear Probing",
   "points": 48,
   "quiz": 6
+ },
+ "cxbabnqtWsk": {
+  "label": "台大林軒田 DSA Sorting / Summary",
+  "points": 366,
+  "quiz": 8
  },
  "CyknhZbfMqc": {
   "label": "Abdul Bari：2.2 Masters Theorem Decreasing Function",
@@ -499,6 +519,11 @@
   "points": 35,
   "quiz": 6
  },
+ "gqphGLSGyQ4": {
+  "label": "台大林軒田 DSA 2-3-4 Tree / Red-Black Tree",
+  "points": 201,
+  "quiz": 8
+ },
  "HA96JKO9znE": {
   "label": "清大周志遠 第5B講 OS Services",
   "points": 24,
@@ -528,6 +553,11 @@
   "label": "Semaphores in Operating Systems",
   "points": 21,
   "quiz": 5
+ },
+ "IilVRpUsAiQ": {
+  "label": "B-Tree Insertion",
+  "points": 27,
+  "quiz": 6
  },
  "IWzYoXKaRIc": {
   "label": "MIT 6.006 Rec6：AVL Trees",
@@ -589,9 +619,19 @@
   "points": 157,
   "quiz": 8
  },
+ "qQ8vS2btsxI": {
+  "label": "Abdul Bari：9.2 Rabin-Karp String Matching Algorithm",
+  "points": 39,
+  "quiz": 7
+ },
  "R0MpXbuqfZM": {
   "label": "台大林軒田 DSA Stack / Queue",
   "points": 284,
+  "quiz": 8
+ },
+ "RjvhXL0WTrY": {
+  "label": "台大林軒田 DSA Tree / Heap",
+  "points": 163,
   "quiz": 8
  },
  "Rk3aap_HZHU": {
@@ -599,10 +639,20 @@
   "points": 191,
   "quiz": 8
  },
+ "SBQLkYIDAZI": {
+  "label": "台大林軒田 DSA Heap / Hash Table",
+  "points": 225,
+  "quiz": 8
+ },
  "ubLbvuWFDqM": {
   "label": "交大彭文志 Lec15 Trees (4/6) / Huffman (1/2)",
   "points": 67,
   "quiz": 9
+ },
+ "ucL0BLz2OGk": {
+  "label": "交大彭文志 Lec26 Search Structures (3/3)",
+  "points": 106,
+  "quiz": 8
  },
  "uMGwjNuidZU": {
   "label": "Abdul Bari：Pointer Arithmetic",
@@ -629,9 +679,19 @@
   "points": 13,
   "quiz": 5
  },
+ "V5-7GzOfADQ": {
+  "label": "Knuth-Morris-Pratt（KMP）String Matching Algorithm",
+  "points": 47,
+  "quiz": 7
+ },
  "VwQeypxlevE": {
   "label": "交大彭文志 Lec12 Trees (1/6)",
   "points": 179,
+  "quiz": 8
+ },
+ "WX-z52QweUs": {
+  "label": "台大林軒田 DSA Hash Table",
+  "points": 333,
   "quiz": 8
  },
  "x72xBomc-XE": {

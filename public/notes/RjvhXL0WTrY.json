@@ -1,0 +1,929 @@
+{
+ "video": "RjvhXL0WTrY",
+ "label": "台大林軒田 DSA Tree / Heap",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "課前：直播狀況與 Slido 回饋",
+   "scene": null,
+   "points": [
+    {
+     "text": "本週公布 Final Project，新講義 link 放在 Slido。",
+     "t": 36
+    },
+    {
+     "text": "回應「希望給測試資料」：跟需求方來回確認規格本身也是一種學習。",
+     "t": 205
+    },
+    {
+     "text": "作業要求自己想 test case，就是軟體工程裡 QA 的思維。",
+     "t": 565
+    }
+   ]
+  },
+  {
+   "title": "複習 Tree 與 Expression Tree",
+   "scene": "heaplin-expr-tree",
+   "points": [
+    {
+     "text": "tree 是 hierarchical structure：root 加上一堆 subtree，用 recursive 的方式定義。",
+     "t": 627
+    },
+    {
+     "text": "binary tree：每個 node 最多兩個孩子，左右有序；上次講過 complete / full binary tree。",
+     "t": 652
+    },
+    {
+     "text": "Expression tree：internal node 放 operator，leaf 放數字（這裡只考慮 binary operator）。",
+     "t": 736
+    },
+    {
+     "text": "例子 3 × (5 + 7)：要先算 5 + 7，再跟 3 相乘。",
+     "t": 789
+    },
+    {
+     "text": "每個 subtree 也是一個 expression：左右都算完，才做 node 上的 operator。",
+     "t": 825
+    },
+    {
+     "text": "infix 是人類熟悉的寫法：3 × (5 + 7)。",
+     "t": 889
+    },
+    {
+     "text": "postfix 先看到數字再決定運算：3 5 7 + ×，比較適合電腦。",
+     "t": 911
+    }
+   ],
+   "trap": "補充：expression tree 不一定是 binary tree；有 unary operator 時，node 只有一個孩子。"
+  },
+  {
+   "title": "印出一棵樹：traversal 的動機",
+   "scene": "heaplin-visit-all",
+   "points": [
+    {
+     "text": "給一棵 expression tree，要印出它代表的 expression。",
+     "t": 1017
+    },
+    {
+     "text": "印出來 = 把樹的內容表現出來，要照特定順序拜訪每個 node。",
+     "t": 1117
+    },
+    {
+     "text": "比較兩棵樹一不一樣、哪棵 node 比較多，都要走過每個 node。",
+     "t": 1172
+    },
+    {
+     "text": "找樹裡最大的數字，也要像 sequential search 一樣走過每個 node。",
+     "t": 1211
+    },
+    {
+     "text": "把樹當成 container 時，iterator 得決定拜訪的順序。",
+     "t": 1236
+    },
+    {
+     "text": "怎麼拜訪每個 node 就是 traversal；先用 infix / postfix 當切入點。",
+     "t": 1282
+    }
+   ],
+   "trap": "補充：3 × (5 + 7) 這棵樹有 5 個 node（×、3、+、5、7）；影片說「六個 node」，可能是口誤或語音辨識錯誤。"
+  },
+  {
+   "title": "infix print 與 in-order traversal",
+   "scene": "heaplin-infix-print",
+   "points": [
+    {
+     "text": "目標 infix print：印出這棵樹代表的 infix expression。",
+     "t": 1286
+    },
+    {
+     "text": "先把左邊印完，再印 T 上的 operator，最後印右邊。",
+     "t": 1354
+    },
+    {
+     "text": "要考慮優先順序：印左右 subtree 時，前後各加一組括號保護。",
+     "t": 1437
+    },
+    {
+     "text": "recursion 還要 stopping：遇到 leaf 就只印數字。",
+     "t": 1508
+    },
+    {
+     "text": "實際跑會印出 (3)×((5)+(7))，括號很多，還有改進空間。",
+     "t": 1580
+    },
+    {
+     "text": "先左、再自己、再右的拜訪方式叫 in-order（中序）traversal。",
+     "t": 1655
+    }
+   ],
+   "trap": "老師提醒：如果不加括號，3 × 5 + 7 會被理解成先乘後加，意思就不一樣了。"
+  },
+  {
+   "title": "postfix print 與 post-order traversal",
+   "scene": "heaplin-postfix-print",
+   "points": [
+    {
+     "text": "postfix print：印出 post-order traversal 的結果。",
+     "t": 1751
+    },
+    {
+     "text": "直接拷貝 infix print，把括號拿掉。",
+     "t": 1801
+    },
+    {
+     "text": "順序改成先左、再右，最後才印自己的 operator。",
+     "t": 1811
+    },
+    {
+     "text": "幾乎只是對調了幾行程式碼。",
+     "t": 1840
+    },
+    {
+     "text": "post-order traversal：左 → 右 → 自己。",
+     "t": 1885
+    },
+    {
+     "text": "做 infix → postfix 轉換時，stack 其實是在一棵抽象的 expression tree 上運作。",
+     "t": 1954
+    }
+   ]
+  },
+  {
+   "title": "prefix expression 與函數呼叫",
+   "scene": "heaplin-prefix",
+   "points": [
+    {
+     "text": "prefix：operator 放在最前面。",
+     "t": 1997
+    },
+    {
+     "text": "3 × (5 + 7) 寫成 (× 3 (+ 5 7))：第一個是要做的事，後兩個是運算對象。",
+     "t": 2021
+    },
+    {
+     "text": "換個寫法 multiply(3, plus(5, 7))，就是熟悉的函數呼叫。",
+     "t": 2067
+    },
+    {
+     "text": "C++ 的 operator overloading 就是把運算符號當成函數呼叫。",
+     "t": 2113
+    },
+    {
+     "text": "prefix 像函數呼叫、infix 像四則運算、postfix 像電腦實際執行的方式。",
+     "t": 2199
+    },
+    {
+     "text": "滿是括號的 prefix 寫法，對應經典語言 Lisp。",
+     "t": 2234
+    }
+   ]
+  },
+  {
+   "title": "三種 traversal 的用途",
+   "scene": "heaplin-traversal-uses",
+   "points": [
+    {
+     "text": "expression tree 的各種 traversal 對應到很多經典演算法。",
+     "t": 2364
+    },
+    {
+     "text": "post-order traversal 就是在 evaluate expression。",
+     "t": 2377
+    },
+    {
+     "text": "比較兩棵 binary tree：先比自己再比 subtree（pre-order），一發現不同就停，不會白做。",
+     "t": 2384
+    },
+    {
+     "text": "in-order 之後會對應到排序之類的應用。",
+     "t": 2416
+    },
+    {
+     "text": "pre-order、in-order、post-order 是 binary tree 的基本功。",
+     "t": 2430
+    }
+   ]
+  },
+  {
+   "title": "Q&A 與休息",
+   "scene": null,
+   "points": [
+    {
+     "text": "Q：建樹用 prefix 比較好？常見是 prefix（先建自己再建左右）或 postfix（先建左右再接上自己）。",
+     "t": 2489
+    },
+    {
+     "text": "老師認為學習的能力比智力重要。",
+     "t": 2611
+    },
+    {
+     "text": "下一個 topic 是 heap，先休息 10 分鐘。",
+     "t": 2746
+    }
+   ]
+  },
+  {
+   "title": "休息後的 Q&A",
+   "scene": null,
+   "points": [
+    {
+     "text": "作業四給兩週還是三週，出完題再決定。",
+     "t": 3401
+    },
+    {
+     "text": "一般 tree 講到這裡；之後半學期都圍繞在特別的 tree 上。",
+     "t": 3559
+    }
+   ]
+  },
+  {
+   "title": "node 拆成 key 與 data",
+   "scene": "heaplin-key-data",
+   "points": [
+    {
+     "text": "從需求出發：原本的 node 是 data 加上左右兩張小紙條。",
+     "t": 3741
+    },
+    {
+     "text": "把 data 切出一塊，叫做 key（檢索鍵）。",
+     "t": 3792
+    },
+    {
+     "text": "key 扮演關鍵角色：在樹裡找東西、整理資料都靠它。",
+     "t": 3824
+    },
+    {
+     "text": "像筆記的頁碼、圖書館書的 ID。",
+     "t": 3851
+    },
+    {
+     "text": "很多操作只 focus 在 key；data 甚至可以只是一張指向外部的紙條。",
+     "t": 3896
+    }
+   ]
+  },
+  {
+   "title": "Priority Queue：拿 priority 最大的",
+   "scene": "heaplin-todo-pq",
+   "points": [
+    {
+     "text": "具體任務：key 表示 priority，data 表示 to-do。",
+     "t": 3950
+    },
+    {
+     "text": "例如 DSA 作業3、DSA Final Project、微積分作業，各有不同重要性。",
+     "t": 3987
+    },
+    {
+     "text": "想在 100 件待辦裡很快找到 key 最大的那件。",
+     "t": 4060
+    },
+    {
+     "text": "老師的 mailbox 其實是 stack：最後進來的信先處理。",
+     "t": 4157
+    },
+    {
+     "text": "能輕易找到最重要那件的 data structure 叫 priority queue。",
+     "t": 4185
+    },
+    {
+     "text": "以前學的 queue 是特例：先進去的 priority 最大。",
+     "t": 4200
+    },
+    {
+     "text": "拿東西不靠 index、pointer 或進入順序，而是拿 key 最大的。",
+     "t": 4255
+    }
+   ]
+  },
+  {
+   "title": "要做得快：操作需求與 OS 排程",
+   "scene": "heaplin-os-sched",
+   "points": [
+    {
+     "text": "sequential search 每次都全部找一遍，太慢。",
+     "t": 4275
+    },
+    {
+     "text": "ordered array 也行，但排序可能花太大力氣。",
+     "t": 4298
+    },
+    {
+     "text": "會多次存取：找最大、拿出來、放新的進去，而且要一直維持某種性質。",
+     "t": 4383
+    },
+    {
+     "text": "作業系統多工：核心空出來時，挑一個最需要 CPU 的 process。",
+     "t": 4429
+    },
+    {
+     "text": "時間到還沒做完就放回等待區，重新設定 priority。",
+     "t": 4480
+    },
+    {
+     "text": "等越久的 priority 要調高，才不會有 process 餓死。",
+     "t": 4548
+    },
+    {
+     "text": "接下來自己從頭設計：用 tree 的特性實現 priority queue。",
+     "t": 4591
+    }
+   ]
+  },
+  {
+   "title": "第一版：最大的放 root",
+   "scene": "heaplin-root-only",
+   "points": [
+    {
+     "text": "需求：最大的 key 要能很快找到。",
+     "t": 4626
+    },
+    {
+     "text": "在 tree 裡最先接觸到的是 root。",
+     "t": 4665
+    },
+    {
+     "text": "所以把最大的放 root，其他地方放什麼不管。",
+     "t": 4677
+    },
+    {
+     "text": "例子：root 放 14，其他位置放 6、8、12、5、9。",
+     "t": 4724
+    },
+    {
+     "text": "但 14 被拿走時，要在剩下所有 node 裡找繼承人。",
+     "t": 4872
+    },
+    {
+     "text": "得做完整的 traversal，才找到躲在下面的 12。",
+     "t": 4924
+    },
+    {
+     "text": "就像 selection sort：每一輪都要整個重新掃過，很花時間。",
+     "t": 4972
+    }
+   ],
+   "trap": "補充：6、8、12、5、9 在樹上的確切位置從音訊聽不出來，動畫採一種示意擺法；重點是除了 root 以外沒有任何規則。"
+  },
+  {
+   "title": "Binary Max Tree 的定義",
+   "scene": "heaplin-maxtree-def",
+   "points": [
+    {
+     "text": "第二個需求：root 缺位時，要很快找到繼承人。",
+     "t": 5047
+    },
+    {
+     "text": "在每棵 subtree 的 root 放該 subtree 的 sub-largest。",
+     "t": 5100
+    },
+    {
+     "text": "最大的缺位時，只要兩個 sub-largest 打一架。",
+     "t": 5163
+    },
+    {
+     "text": "這叫 Binary Max Tree。",
+     "t": 5265
+    },
+    {
+     "text": "條件一：root 的 key ≥ 其他所有 node 的 key。",
+     "t": 5280
+    },
+    {
+     "text": "條件二：每個 subtree 都是 Binary Max Tree（recursive 定義）。",
+     "t": 5319
+    },
+    {
+     "text": "遞迴停在 single leaf：它本身就是最大。",
+     "t": 5358
+    }
+   ]
+  },
+  {
+   "title": "Max Tree 的 remove largest",
+   "scene": "heaplin-maxtree-remove",
+   "points": [
+    {
+     "text": "檢查例子：14 最大；左 subtree 9（下有 4）、右 subtree 12（下有 8、5）也都是 max tree。",
+     "t": 5422
+    },
+    {
+     "text": "找最大：直接看 root。",
+     "t": 5475
+    },
+    {
+     "text": "remove 14：9 和 12 打一架，12 補上 root。",
+     "t": 5512
+    },
+    {
+     "text": "12 的位置缺了：8 和 5 打一架，8 補位；8 原本是 leaf，空了沒關係。",
+     "t": 5602
+    },
+    {
+     "text": "再 remove 12：9 和 8 打一架，9 補位；9 下面只有 4，4 直接上來。",
+     "t": 5679
+    },
+    {
+     "text": "原則：replace with larger of sub-roots, recursively。",
+     "t": 5739
+    },
+    {
+     "text": "用 Binary Max Tree 做 priority queue：找最大很快，拿走後補位也很快。",
+     "t": 5787
+    }
+   ]
+  },
+  {
+   "title": "Q&A",
+   "scene": null,
+   "points": [
+    {
+     "text": "老師學生時期都 9 點睡、清晨起來做事。",
+     "t": 5872
+    },
+    {
+     "text": "Q：待辦用 stack 會不會壓在下面過期？不重要的事壓在下面，就是讓它的 priority 自然降低。",
+     "t": 5897
+    }
+   ]
+  },
+  {
+   "title": "規則 vs 效率：只走一條路徑",
+   "scene": "heaplin-rule-path",
+   "points": [
+    {
+     "text": "heap 的重點不在資料多寡，而是依照 key 加上規則。",
+     "t": 5993
+    },
+    {
+     "text": "ordered array 是有規則的 array，binary max tree 是有規則的 tree。",
+     "t": 6056
+    },
+    {
+     "text": "規則越多越好找，但維護規則可能越花時間。",
+     "t": 6072
+    },
+    {
+     "text": "remove 的更新只順著一條 root → leaf 的路徑走。",
+     "t": 6148
+    },
+    {
+     "text": "處理速度只跟樹高有關，跟 node 數量沒那麼大關係。",
+     "t": 6173
+    },
+    {
+     "text": "Q：insert 怎麼做？",
+     "t": 6201
+    },
+    {
+     "text": "預告：先放到 leaf（基層），跟兄弟和爸爸三個打一架，贏了就往上爬。",
+     "t": 6274
+    }
+   ]
+  },
+  {
+   "title": "Q&A 與休息",
+   "scene": null,
+   "points": [
+    {
+     "text": "再休息 10 分鐘，消化 binary max tree。",
+     "t": 6385
+    },
+    {
+     "text": "休息回來，看看大家的問題。",
+     "t": 7003
+    }
+   ]
+  },
+  {
+   "title": "最糟情況：歪斜的 Max Tree",
+   "scene": "heaplin-skewed",
+   "points": [
+    {
+     "text": "目前能做到：找最大看 root；remove 沿一條 root → leaf 的路徑。",
+     "t": 7043
+    },
+    {
+     "text": "最多花樹高 h 那麼多時間。",
+     "t": 7107
+    },
+    {
+     "text": "最壞情況樹長得歪歪斜斜，跟 linked list 沒兩樣。",
+     "t": 7161
+    },
+    {
+     "text": "例如 50、49、46、44、21、17、5、3 串成一條。",
+     "t": 7204
+    },
+    {
+     "text": "remove 50：49、46、44…每個都要往上移。",
+     "t": 7227
+    },
+    {
+     "text": "就像在 ordered array 刪掉第一個，其他都要往前移：最糟 O(n)。",
+     "t": 7250
+    }
+   ]
+  },
+  {
+   "title": "h = log n：full vs complete",
+   "scene": "heaplin-full-vs-complete",
+   "points": [
+    {
+     "text": "希望 h 小，不要跟 n 成線性關係。",
+     "t": 7276
+    },
+    {
+     "text": "最好是 h = log n：15 個 node 只要 1 + 2 + 4 + 8 四層。",
+     "t": 7304
+    },
+    {
+     "text": "目前學過的矮樹：full 和 complete。",
+     "t": 7342
+    },
+    {
+     "text": "full 的 node 數只能是 1、3、7、15…，13 件待辦就沒辦法。",
+     "t": 7378
+    },
+    {
+     "text": "改用 Complete Binary Tree 來壓低樹高。",
+     "t": 7405
+    }
+   ]
+  },
+  {
+   "title": "Complete Max Tree：舊 remove 會壞掉",
+   "scene": "heaplin-complete-break",
+   "points": [
+    {
+     "text": "目標：Complete Binary Max Tree。",
+     "t": 7422
+    },
+    {
+     "text": "complete 是對樹形的要求，max tree 是對 key 的要求。",
+     "t": 7446
+    },
+    {
+     "text": "同樣的數字排成 complete：14、12、9、4、8、5。",
+     "t": 7543
+    },
+    {
+     "text": "舊演算法：12 和 9 打架，12 補位；8 和 4 打架，8 補位。",
+     "t": 7601
+    },
+    {
+     "text": "跑完後不再是 complete binary tree。",
+     "t": 7635
+    },
+    {
+     "text": "把 5 拉過來補洞？如果那個數是 8.5，8 就壓不住它。",
+     "t": 7653
+    },
+    {
+     "text": "complete 了卻丟掉 max 性質，維護變得很麻煩。",
+     "t": 7701
+    }
+   ]
+  },
+  {
+   "title": "Max Heap 的 remove：最後一個上 root",
+   "scene": "heaplin-remove-last",
+   "points": [
+    {
+     "text": "換個方式：先維持 complete 的性質。",
+     "t": 7812
+    },
+    {
+     "text": "root 離開時，最後一個 node 注定要被移掉。",
+     "t": 7843
+    },
+    {
+     "text": "讓它先上去當代理主席：8.5 放到 root。",
+     "t": 7891
+    },
+    {
+     "text": "8.5、12、9 比：12 最大，交換。",
+     "t": 7925
+    },
+    {
+     "text": "8.5 對 4 和 8 壓得住，停。",
+     "t": 7968
+    },
+    {
+     "text": "remove largest：1. 最後一個放 root；2. 往下換。",
+     "t": 8002
+    },
+    {
+     "text": "最多換樹高 h 層；complete tree 的 h 是 O(log n)。",
+     "t": 8035
+    },
+    {
+     "text": "complete ＋ max tree 就是 Heap（Max Heap）。",
+     "t": 8115
+    }
+   ]
+  },
+  {
+   "title": "Max Heap 的 insert：insert 17",
+   "scene": "heaplin-insert-17",
+   "points": [
+    {
+     "text": "insertion 一樣先顧比較難維護的 complete。",
+     "t": 8176
+    },
+    {
+     "text": "放在下一個空位，例子是 insert 17。",
+     "t": 8205
+    },
+    {
+     "text": "9 壓得住 8.5 但壓不住 17：17 上來、9 下去。",
+     "t": 8228
+    },
+    {
+     "text": "爸爸 14 也壓不住 17：17 再往上。",
+     "t": 8271
+    },
+    {
+     "text": "insert at last，再 float up。",
+     "t": 8302
+    },
+    {
+     "text": "insert、remove 都跟樹高有關，heap 是 O(log n)。",
+     "t": 8336
+    }
+   ]
+  },
+  {
+   "title": "Heap = partially ordered array",
+   "scene": "heaplin-partial-array",
+   "points": [
+    {
+     "text": "complete binary tree 和 array 有對應：node 編號就是 index。",
+     "t": 8371
+    },
+    {
+     "text": "不需要小紙條，父子關係都藏在 index 裡。",
+     "t": 8400
+    },
+    {
+     "text": "heap 得到的是一個 partially ordered array。",
+     "t": 8442
+    },
+    {
+     "text": "例子：14 12 9 4 8 8.5。",
+     "t": 8477
+    },
+    {
+     "text": "array 沒有從大排到小，但亂中有序：每個 subtree 最大的在上面。",
+     "t": 8487
+    }
+   ]
+  },
+  {
+   "title": "Selection Sort on Heap → Heap Sort",
+   "scene": "heaplin-selection-vs-heap",
+   "points": [
+    {
+     "text": "第一個學的排序是 selection sort：每次挑最大的放到後面。",
+     "t": 8528
+    },
+    {
+     "text": "n 輪，每輪找最大要 n：O(n²)。",
+     "t": 8576
+    },
+    {
+     "text": "selection sort on heap：找最大只要 O(1)。",
+     "t": 8611
+    },
+    {
+     "text": "拿走以後要維護 heap：log n。",
+     "t": 8654
+    },
+    {
+     "text": "排序部分是 n log n。",
+     "t": 8676
+    },
+    {
+     "text": "先建 heap：n 次 insertion，O(n log n)。",
+     "t": 8802
+    },
+    {
+     "text": "合起來 O(n log n)，比 n² 快：這就是 heap sort。",
+     "t": 8863
+    }
+   ]
+  },
+  {
+   "title": "Heap Sort 在同一塊記憶體完成",
+   "scene": "heaplin-inplace",
+   "points": [
+    {
+     "text": "補充一：build heap 有比 n 次 insert 更快的方法，課本上有。",
+     "t": 8905
+    },
+    {
+     "text": "heap 就是 partially ordered array，不必另外建一棵樹。",
+     "t": 8937
+    },
+    {
+     "text": "原本的 array 分成 heap 區與 array 區。",
+     "t": 8964
+    },
+    {
+     "text": "一個一個塞進 heap 區，heap 區慢慢變大。",
+     "t": 8981
+    },
+    {
+     "text": "每次從 heap 拿最大的，放到後面沒人用的位置。",
+     "t": 9020
+    },
+    {
+     "text": "全部在同一塊記憶體完成，是 improved selection sort。",
+     "t": 9050
+    }
+   ],
+   "trap": "補充：動畫裡的初始陣列 9 4 14 8.5 12 8 是示意，老師這段沒有給具體數字。"
+  },
+  {
+   "title": "Q&A：最後一個 node 在哪",
+   "scene": "heaplin-last-node",
+   "points": [
+    {
+     "text": "9 只有一個孩子也還是 complete：重點是由上到下、由左到右的順序完整。",
+     "t": 9181
+    },
+    {
+     "text": "Q：insert 時怎麼知道最後一個節點在哪？",
+     "t": 9309
+    },
+    {
+     "text": "array 實作只要記 node 數：已有 10 個就放第 11 個。",
+     "t": 9336
+    },
+    {
+     "text": "tree 實作要多維護一個指標。",
+     "t": 9357
+    },
+    {
+     "text": "爸爸、兄弟的位置都藏在 index 裡；往上、往下走只是 index 運算。",
+     "t": 9407
+    },
+    {
+     "text": "heap 是 complete，所以不會退化成 list。",
+     "t": 9447
+    },
+    {
+     "text": "也可以把 node 數轉成二進位來找路徑。",
+     "t": 9481
+    },
+    {
+     "text": "selection on heap 每輪是 O(1) ＋ O(log n)，是加不是乘。",
+     "t": 9512
+    }
+   ],
+   "trap": "老師更正：前面寫成「乘」，應該是「加」：每輪 O(1) + O(log n)。影片在約 159:00 說維護要「order n」，應為 O(log n)。"
+  },
+  {
+   "title": "Priority Queue 的 trade-off",
+   "scene": "heaplin-pq-tradeoff",
+   "points": [
+    {
+     "text": "用 heap 實現 priority queue：拿出最高 priority 的、放入任意 priority 的。",
+     "t": 9609
+    },
+    {
+     "text": "heap 的 remove largest 和 insertion 都是 log n。",
+     "t": 9659
+    },
+    {
+     "text": "沒限制高度的 max tree 則是 O(h)。",
+     "t": 9695
+    },
+    {
+     "text": "無序 linked list：insert 很容易，找最大並移掉要 O(n)。",
+     "t": 9732
+    },
+    {
+     "text": "從大到小排好：remove head 很容易，insert 最糟 O(n)。",
+     "t": 9786
+    },
+    {
+     "text": "不同實作在兩種操作上各有 trade-off。",
+     "t": 9821
+    },
+    {
+     "text": "課本用 min heap（最小的放上面），概念相對應。",
+     "t": 9885
+    },
+    {
+     "text": "STL 的 priority_queue 就是 heap on vector。",
+     "t": 9911
+    }
+   ]
+  },
+  {
+   "title": "結語",
+   "scene": null,
+   "points": [
+    {
+     "text": "heap 是老師在資料結構課最喜歡的 topic。",
+     "t": 9962
+    },
+    {
+     "text": "今天就上到這裡。",
+     "t": 9994
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "expression tree 3 × (5 + 7) 的 postfix 是？",
+   "opts": [
+    "3 5 7 + ×",
+    "3 5 + 7 ×",
+    "× 3 + 5 7",
+    "3 × 5 + 7"
+   ],
+   "ans": "3 5 7 + ×",
+   "why": "post-order：左（3）→ 右（5 7 +）→ 自己（×）。「× 3 + 5 7」是 prefix。"
+  },
+  {
+   "q": "post-order traversal 的拜訪順序是？",
+   "opts": [
+    "左 → 右 → 自己",
+    "左 → 自己 → 右",
+    "自己 → 左 → 右",
+    "右 → 左 → 自己"
+   ],
+   "ans": "左 → 右 → 自己",
+   "why": "左 → 自己 → 右是 in-order，自己 → 左 → 右是 pre-order。"
+  },
+  {
+   "q": "比較兩棵 binary tree 一不一樣，老師建議用哪種 traversal？",
+   "opts": [
+    "pre-order",
+    "in-order",
+    "post-order",
+    "隨便一種都一樣快"
+   ],
+   "ans": "pre-order",
+   "why": "先比自己，不同就馬上停；post-order 會先把 subtree 都比完才發現 root 不同，白做工。"
+  },
+  {
+   "q": "binary max tree：14 的左孩子是 9（下有 4），右孩子是 12（下有 8、5）。remove 14 後會怎樣？",
+   "opts": [
+    "12 當 root，8 補到 12 原本的位置",
+    "9 當 root，4 補到 9 原本的位置",
+    "12 當 root，5 補到 12 原本的位置",
+    "8 當 root"
+   ],
+   "ans": "12 當 root，8 補到 12 原本的位置",
+   "why": "兩個 sub-root 9 和 12 比，12 大所以上去；12 的位置再由 8、5 中較大的 8 補上。"
+  },
+  {
+   "q": "為什麼 heap 要求 complete binary tree？",
+   "opts": [
+    "讓樹高維持 O(log n)",
+    "讓陣列完全排好序",
+    "讓 insert 變成 O(1)",
+    "讓 root 不必是最大"
+   ],
+   "ans": "讓樹高維持 O(log n)",
+   "why": "insert / remove 都沿一條 root→leaf 路徑，花 O(h)；歪斜的樹 h 可能是 n，complete 保證 h = O(log n)。"
+  },
+  {
+   "q": "max heap 陣列 14 12 9 4 8 8.5 做一次 remove largest，結果是？",
+   "opts": [
+    "12 8.5 9 4 8",
+    "12 8 9 4 8.5",
+    "12 9 8.5 4 8",
+    "9 12 8.5 4 8"
+   ],
+   "ans": "12 8.5 9 4 8",
+   "why": "最後一個 8.5 先放到 root；8.5、12、9 中 12 最大，交換；8.5 壓得住 4 和 8，停。"
+  },
+  {
+   "q": "max heap 陣列 14 12 9 4 8 8.5 insert 17，結果是？",
+   "opts": [
+    "17 12 14 4 8 8.5 9",
+    "17 14 12 4 8 8.5 9",
+    "14 12 17 4 8 8.5 9",
+    "17 12 9 4 8 8.5 14"
+   ],
+   "ans": "17 12 14 4 8 8.5 9",
+   "why": "17 放在 [7]，比爸爸 9 大就交換，再比爸爸 14 大又交換，到 root 停。"
+  },
+  {
+   "q": "用排好序（由大到小）的 linked list 做 priority queue，insert 與 remove largest 各要多少？",
+   "opts": [
+    "insert O(n)、remove largest O(1)",
+    "insert O(1)、remove largest O(n)",
+    "兩者都是 O(log n)",
+    "兩者都是 O(1)"
+   ],
+   "ans": "insert O(n)、remove largest O(1)",
+   "why": "最大在 head，拿掉是 O(1)；insert 要找位置，最糟走到最後是 O(n)。無序 list 剛好相反。"
+  }
+ ]
+}

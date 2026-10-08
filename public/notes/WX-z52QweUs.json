@@ -1,0 +1,1766 @@
+{
+ "video": "WX-z52QweUs",
+ "label": "台大林軒田 DSA Hash Table",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場與麥克風測試",
+   "scene": null,
+   "points": [
+    {
+     "text": "開場，今天繼續講 Hash table。",
+     "t": 459
+    },
+    {
+     "text": "麥克風音質不佳，暫停測試。",
+     "t": 514
+    },
+    {
+     "text": "改成走耳機的麥克風路徑，聲音應該會好一些。",
+     "t": 593
+    }
+   ]
+  },
+  {
+   "title": "Q&A：作業期限與評分",
+   "scene": null,
+   "points": [
+    {
+     "text": "作業 5 能否給三週？出完題、看難度再決定期限長短。",
+     "t": 651
+    },
+    {
+     "text": "作業 2 不開放像作業 1 那樣告知錯處再 rejudge，要自己想好測試情境。",
+     "t": 701
+    },
+    {
+     "text": "最差一次作業權重約 50%、最好一次約 150%，不必為單次作業太執著。",
+     "t": 787
+    }
+   ]
+  },
+  {
+   "title": "Q&A：作業 4 的測試資料與準確率",
+   "scene": null,
+   "points": [
+    {
+     "text": "你的程式輸出一段程式碼，和助教的測試程式一起 compile 後跑測試資料。",
+     "t": 843
+    },
+    {
+     "text": "測試準確率只是 guideline；把樹的演算法寫對才是重點。",
+     "t": 948
+    },
+    {
+     "text": "輸出到 standard output，makefile 會導進檔案再組合。",
+     "t": 1154
+    }
+   ]
+  },
+  {
+   "title": "回顧 Map：key 不需 order、可長可短",
+   "scene": "hashlin2-map",
+   "points": [
+    {
+     "text": "目標是一個 map 資料結構：用 key 找到對應的 data（value）。",
+     "t": 1258
+    },
+    {
+     "text": "儲存 key 與 value 關係的資料結構就叫 map。",
+     "t": 1286
+    },
+    {
+     "text": "現在 zoom into 一種特別的 map：hash table。",
+     "t": 1318
+    },
+    {
+     "text": "這裡的 key 不需要 order（不比大小）。",
+     "t": 1346
+    },
+    {
+     "text": "key 通常是 variable length，不像 32-bit 整數有固定位數。",
+     "t": 1364
+    },
+    {
+     "text": "例：英文字典，key 是單字、value 是單字的解釋。",
+     "t": 1387
+    }
+   ]
+  },
+  {
+   "title": "Key → small integer → array index",
+   "scene": "hashlin2-pipeline",
+   "points": [
+    {
+     "text": "Hash table 把 variable length、無 order 的 key 轉成 integer。",
+     "t": 1417
+    },
+    {
+     "text": "而且要轉成 small integer。",
+     "t": 1441
+    },
+    {
+     "text": "任何字串都能當成整數，但太大的整數沒辦法開 array 放。",
+     "t": 1458
+    },
+    {
+     "text": "例：範圍 0～9999 就開大小 10000 的 array。",
+     "t": 1473
+    },
+    {
+     "text": "範圍 0～5566 就開 5567 格。",
+     "t": 1480
+    },
+    {
+     "text": "用這個 integer 當 array index，那一格放 value。",
+     "t": 1500
+    },
+    {
+     "text": "這個 integer 叫 hash code。",
+     "t": 1513
+    },
+    {
+     "text": "Hash table 可以看成「array 延伸來做 map」。",
+     "t": 1557
+    }
+   ]
+  },
+  {
+   "title": "h 拆兩步：hash code ＋ compress",
+   "scene": "hashlin2-two-step",
+   "points": [
+    {
+     "text": "為了確保 integer 夠小，h 通常拆成兩步。",
+     "t": 1610
+    },
+    {
+     "text": "第一步：用任何方法從 key 算出 hash code，這個整數不必小。",
+     "t": 1617
+    },
+    {
+     "text": "第二步：把整數壓縮（compress）到 array 放得下的範圍。",
+     "t": 1636
+    },
+    {
+     "text": "最簡單的壓縮：除法取餘數，限制在 0～k−1。",
+     "t": 1659
+    },
+    {
+     "text": "複雜的方法多半等同把計算塞進 hash code 函數。",
+     "t": 1684
+    },
+    {
+     "text": "真正做到 compress 的其實只有 division 這一步。",
+     "t": 1694
+    }
+   ],
+   "trap": "補充：場景中的 \"ABC\" → 18273 → mod 100 = 73 是為示意自行代入（18273 是下一段 polynomial hash code 的值）。"
+  },
+  {
+   "title": "Summation hash code：ABC 與 ACB 相同",
+   "scene": "hashlin2-sum",
+   "points": [
+    {
+     "text": "第一種 hash code：summation。",
+     "t": 1728
+    },
+    {
+     "text": "把 key 每個位置的值（例如字元碼）加起來，得到一個整數。",
+     "t": 1735
+    },
+    {
+     "text": "最簡單的想法：key 是字串，每個位置是 ASCII 字元碼。",
+     "t": 1753
+    },
+    {
+     "text": "缺點：對位置的變換不敏感。",
+     "t": 1764
+    },
+    {
+     "text": "\"ABC\" 與 \"ACB\" 得到同樣的 hash code。",
+     "t": 1782
+    },
+    {
+     "text": "好處：算起來簡單又快。",
+     "t": 1814
+    },
+    {
+     "text": "若應用中常有打錯位置的詞，它們就常撞在一起。",
+     "t": 1827
+    }
+   ],
+   "trap": "老師強調：對位置不敏感不是一定好或一定不好，要看應用。"
+  },
+  {
+   "title": "Polynomial hash code：乘上 16ⁱ",
+   "scene": "hashlin2-poly",
+   "points": [
+    {
+     "text": "改進：第 i 個位置乘上 16 的 i 次方再加總。",
+     "t": 1888
+    },
+    {
+     "text": "第 0 個位置乘 16⁰、第 1 個乘 16¹、第 2 個乘 16²。",
+     "t": 1896
+    },
+    {
+     "text": "B、C 出現在不同位置就乘不同次方，加起來不會得到同樣的 hash code。",
+     "t": 1916
+    },
+    {
+     "text": "hash code 不同也不代表最後不撞：compress 後仍可能撞。",
+     "t": 1921
+    },
+    {
+     "text": "16 可換成任何喜歡的數 a，例如 5 或 9。",
+     "t": 1938
+    },
+    {
+     "text": "這類方法統稱 polynomial hash code：key 當係數去 evaluate 多項式。",
+     "t": 1951
+    },
+    {
+     "text": "選 16 是因為可以用 shift 達成。",
+     "t": 1989
+    },
+    {
+     "text": "乘 16 等於左移 4 bit、乘 8 等於左移 3 bit，bit 運算更有效率。",
+     "t": 2001
+    }
+   ]
+  },
+  {
+   "title": "Cyclic shift hash code",
+   "scene": "hashlin2-cyclic",
+   "points": [
+    {
+     "text": "課本給的第三種：cyclic shift。",
+     "t": 2052
+    },
+    {
+     "text": "原本的 shift：往左移再加上去。",
+     "t": 2064
+    },
+    {
+     "text": "32-bit 整數左移時，有些 bit 會超出 32 bit。",
+     "t": 2072
+    },
+    {
+     "text": "cyclic 把超出去的部分補回低位數那邊。",
+     "t": 2078
+    },
+    {
+     "text": "例：往左移 4 個 bit。",
+     "t": 2091
+    },
+    {
+     "text": "原本的 shift：右邊直接補 0 再加新的數字。",
+     "t": 2107
+    },
+    {
+     "text": "cyclic shift：本來移出去丟掉的部分補回來，循環計算出 hash code。",
+     "t": 2113
+    },
+    {
+     "text": "sum → polynomial → cyclic，從簡單到複雜。",
+     "t": 2133
+    }
+   ],
+   "trap": "補充：場景用 8 bit（10110011）示意左移 4 bit；老師的板書是 32 bit。"
+  },
+  {
+   "title": "越複雜越難預測：one-way 的性質",
+   "scene": "hashlin2-oneway",
+   "points": [
+    {
+     "text": "越複雜的 hash code，越難看出兩個 key 何時會撞。",
+     "t": 2144
+    },
+    {
+     "text": "sum 很容易看出 ABC 和 ACB 會撞。",
+     "t": 2151
+    },
+    {
+     "text": "cyclic shift 運算複雜，很難猜哪兩個 key 會有同樣 hash code。",
+     "t": 2176
+    },
+    {
+     "text": "這種性質對密碼學上的驗證很有幫助。",
+     "t": 2205
+    },
+    {
+     "text": "好的函數讓人難以回推原本的 key。",
+     "t": 2233
+    },
+    {
+     "text": "例：拿到 hash code 1126，很難算出原本的 key 是什麼。",
+     "t": 2254
+    },
+    {
+     "text": "設計有好性質又算得快的 hash code 不容易，是很深入的領域。",
+     "t": 2289
+    },
+    {
+     "text": "課堂會碰到的應用，polynomial 或 cyclic 多半就夠好了。",
+     "t": 2307
+    }
+   ]
+  },
+  {
+   "title": "Bucket array",
+   "scene": "hashlin2-bucket",
+   "points": [
+    {
+     "text": "設計一個 hash code function（sum、polynomial、cyclic shift 或文獻上的）。",
+     "t": 2344
+    },
+    {
+     "text": "配合 compression，通常就是 division。",
+     "t": 2353
+    },
+    {
+     "text": "得到 small range 的 integer，拿來當 array index。",
+     "t": 2363
+    },
+    {
+     "text": "這個 array 叫 bucket array。",
+     "t": 2372
+    },
+    {
+     "text": "就像一桶一桶，有了 index 就把東西往那一桶丟。",
+     "t": 2384
+    },
+    {
+     "text": "很多東西都要丟同一桶怎麼辦？那是下一步。",
+     "t": 2392
+    }
+   ],
+   "trap": "補充：場景用 sum hash（ASCII 加總）mod 8：cat = 312 → 0、dog = 314 → 2、egg = 307 → 3；god 與 dog 同為 314，示範同桶。"
+  },
+  {
+   "title": "Q&A：哪些進階課程會講",
+   "scene": null,
+   "points": [
+    {
+     "text": "同學問：講到的進階課程是哪一堂？",
+     "t": 2428
+    },
+    {
+     "text": "密碼學、區塊鏈相關課程會講；演算法、計算理論也可能提到。",
+     "t": 2440
+    },
+    {
+     "text": "one-way function：算過去很快，反推要接近暴力搜尋的時間。",
+     "t": 2507
+    }
+   ]
+  },
+  {
+   "title": "Q&A：polynomial 會 overflow？邊算邊取 mod",
+   "scene": "hashlin2-overflow",
+   "points": [
+    {
+     "text": "同學問：算 polynomial 時很容易 overflow？",
+     "t": 2573
+    },
+    {
+     "text": "實際上不會真的算出完整的多項式值。",
+     "t": 2589
+    },
+    {
+     "text": "計算結果一直保留在 32 bit 的 integer 裡。",
+     "t": 2598
+    },
+    {
+     "text": "乘 16ⁱ 的過程中先 mod 2³²。",
+     "t": 2612
+    },
+    {
+     "text": "一直維持 4 byte 整數，就不會 overflow。",
+     "t": 2623
+    },
+    {
+     "text": "也可以接受很大但有限的 hash code，例如 256 bit。",
+     "t": 2654
+    },
+    {
+     "text": "最後再做相對應的 compress。",
+     "t": 2668
+    }
+   ]
+  },
+  {
+   "title": "Collision 一定會發生：hash code 要分散",
+   "scene": "hashlin2-pigeon",
+   "points": [
+    {
+     "text": "同學問：做完 division 會不會產生新的重複？",
+     "t": 2673
+    },
+    {
+     "text": "會。",
+     "t": 2678
+    },
+    {
+     "text": "鴿籠原理：100 個 key、50 格，一定有 key 住同一格。",
+     "t": 2704
+    },
+    {
+     "text": "100 個 key、99 格也一定有兩個擠同一格。",
+     "t": 2714
+    },
+    {
+     "text": "這種重複叫碰撞，collision。",
+     "t": 2724
+    },
+    {
+     "text": "好的 hash code 把 key 平均分配到每一格，碰撞最少。",
+     "t": 2746
+    },
+    {
+     "text": "最壞的 hash function：每個 key 都放到 0，其他空間浪費。",
+     "t": 2769
+    },
+    {
+     "text": "目的不是不發生，而是盡量分散；這樣發生了也能有效解決。",
+     "t": 2793
+    }
+   ]
+  },
+  {
+   "title": "口罩分流：只有兩格的 hash",
+   "scene": "hashlin2-mask",
+   "points": [
+    {
+     "text": "重要概念：hash code 要的是分散。",
+     "t": 2820
+    },
+    {
+     "text": "就像口罩實名制剛開始時的單雙號分流。",
+     "t": 2826
+    },
+    {
+     "text": "它是只有兩格的最簡單 hash。",
+     "t": 2833
+    },
+    {
+     "text": "用身分證最後一碼決定分在 1、3、5 還是 2、4、6 那格。",
+     "t": 2846
+    },
+    {
+     "text": "最後一碼是由前面的英文與數字算出的，類似 polynomial hash。",
+     "t": 2864
+    },
+    {
+     "text": "再做 division by 2：compress 成兩格。",
+     "t": 2919
+    },
+    {
+     "text": "目的就是分散，不要把藥局塞爆。",
+     "t": 2934
+    },
+    {
+     "text": "Hash table 是一樣的意思，只是 array、hash code、key 更複雜。",
+     "t": 2949
+    }
+   ],
+   "trap": "補充：身分證最後一碼是檢查碼，由英文字母（轉成兩位數）和前 8 個數字加權計算。"
+  },
+  {
+   "title": "下課休息",
+   "scene": null,
+   "points": [
+    {
+     "text": "大家沒有其他問題，休息 10 分鐘。",
+     "t": 3009
+    },
+    {
+     "text": "回來講 collision handling：撞在一起時怎麼辦。",
+     "t": 3023
+    }
+   ]
+  },
+  {
+   "title": "Collision 的定義",
+   "scene": "hashlin2-collision",
+   "points": [
+    {
+     "text": "歡迎回來，接著講 hash function 之後的事。",
+     "t": 3640
+    },
+    {
+     "text": "hash function 的目的是把 key 分散到 bucket array 各個位置。",
+     "t": 3653
+    },
+    {
+     "text": "即使努力分散，還是可能碰到 collision。",
+     "t": 3673
+    },
+    {
+     "text": "Collision：h(k₁) = h(k₂) 但 k₁ ≠ k₂。",
+     "t": 3679
+    },
+    {
+     "text": "可能是 hash code 算出來就一樣。",
+     "t": 3694
+    },
+    {
+     "text": "也可能 hash code 不同，但 compress 到有限範圍後剛好撞在一起。",
+     "t": 3700
+    },
+    {
+     "text": "撞在一起之後怎麼辦，叫 collision handling。",
+     "t": 3719
+    }
+   ],
+   "trap": "補充：場景例子：sum 讓 ABC、ACB 的 hash code 都是 198；polynomial 的 18273、18033 不同，但 mod 10 都是 3。"
+  },
+  {
+   "title": "方法 0：不理他",
+   "scene": "hashlin2-dontcare",
+   "points": [
+    {
+     "text": "先補充第 0 種方式：不理他。",
+     "t": 3747
+    },
+    {
+     "text": "insert 時櫃子打開，發現裡面已經有東西。",
+     "t": 3769
+    },
+    {
+     "text": "選擇之一：把原來的東西丟掉。",
+     "t": 3778
+    },
+    {
+     "text": "或者：don't insert，新的不放。",
+     "t": 3787
+    },
+    {
+     "text": "有些應用只想留最新的，舊的丟掉沒關係。",
+     "t": 3820
+    },
+    {
+     "text": "這不是 standard 的處理，要看應用；碰撞不常發生時可行。",
+     "t": 3834
+    },
+    {
+     "text": "這種思維是 tolerate some errors。",
+     "t": 3900
+    },
+    {
+     "text": "這裡的錯誤就是把不該丟的東西丟掉。",
+     "t": 3912
+    }
+   ]
+  },
+  {
+   "title": "用 hash 做 Set：bit bucket array",
+   "scene": "hashlin2-bitset",
+   "points": [
+    {
+     "text": "例子：拿 hash table-based map 來做 Set。",
+     "t": 3935
+    },
+    {
+     "text": "Set 就是高中學的集合。",
+     "t": 3953
+    },
+    {
+     "text": "想快速知道某元素是否屬於這個集合。",
+     "t": 3973
+    },
+    {
+     "text": "Set 可以看成 key 對應到 true / false 的 map。",
+     "t": 3980
+    },
+    {
+     "text": "開一個 array，把 k₁～k_p 塞到 h(k₁)～h(k_p) 那幾格。",
+     "t": 4010
+    },
+    {
+     "text": "有的話放 1，沒有就維持預設的 0。",
+     "t": 4044
+    },
+    {
+     "text": "所以用一個 bit 的 bucket array 就能描述這個 set。",
+     "t": 4056
+    },
+    {
+     "text": "沒有存 key，只在 hash 結果存 1 或 0，size 非常小。",
+     "t": 4095
+    }
+   ]
+  },
+  {
+   "title": "Set 查詢：0 一定不在、1 可能錯",
+   "scene": "hashlin2-query",
+   "points": [
+    {
+     "text": "來了一個新的 key kᵢ，想檢查它在不在 set 裡。",
+     "t": 4132
+    },
+    {
+     "text": "用同一個 h 算出位置，看那格是 1 還是 0。",
+     "t": 4145
+    },
+    {
+     "text": "是 0：kᵢ 從來沒被放進 set 過。",
+     "t": 4160
+    },
+    {
+     "text": "這是 confirm 的答案，no error。",
+     "t": 4180
+    },
+    {
+     "text": "是 1 時能不能說它在裡面？",
+     "t": 4188
+    },
+    {
+     "text": "沒有 collision 的話，1 是對的。",
+     "t": 4226
+    },
+    {
+     "text": "有 collision 時，1 可能是另一個撞在一起的 key 設的，不一定對。",
+     "t": 4240
+    },
+    {
+     "text": "所以這是有一點點錯誤可能性的資料結構。",
+     "t": 4275
+    }
+   ]
+  },
+  {
+   "title": "Bloom filter",
+   "scene": "hashlin2-bloom",
+   "points": [
+    {
+     "text": "好處：非常小，只是一個 bit array，也沒存 key。",
+     "t": 4292
+    },
+    {
+     "text": "延伸閱讀：Bloom filter。",
+     "t": 4340
+    },
+    {
+     "text": "剛才講的是 Bloom filter 最基本的一塊：把 hash 延伸來做 set。",
+     "t": 4358
+    },
+    {
+     "text": "真正的 Bloom filter 用很多個 hash function。",
+     "t": 4365
+    },
+    {
+     "text": "hash function 之間若有獨立性，用 10 個時錯誤率可以降很低。",
+     "t": 4381
+    },
+    {
+     "text": "它能很快判斷某個 element 在不在 set 裡。",
+     "t": 4388
+    },
+    {
+     "text": "不在：肯定的答案。",
+     "t": 4402
+    },
+    {
+     "text": "在：有小小機率會錯，但大部分是對的。",
+     "t": 4403
+    }
+   ],
+   "trap": "補充：插入時把 k 個 hash 位置都設 1；查詢時 k 格全是 1 才說「在」，有一格是 0 就一定不在。場景中的 h 值是示意。"
+  },
+  {
+   "title": "Bloom filter 應用：廣告系統",
+   "scene": "hashlin2-ads",
+   "points": [
+    {
+     "text": "在大資料時代非常有用。",
+     "t": 4414
+    },
+    {
+     "text": "例：廣告系統決定給特定使用者看什麼廣告。",
+     "t": 4426
+    },
+    {
+     "text": "有一群使用者對紅色廣告特別有反應。",
+     "t": 4440
+    },
+    {
+     "text": "這群使用者共 1532 人，要很快查詢流量是否屬於這群人。",
+     "t": 4457
+    },
+    {
+     "text": "一個一個比對 1532 人，比完廣告機會就不見了。",
+     "t": 4476
+    },
+    {
+     "text": "把 1532 人建成 Bloom filter，來一個人就快速判斷。",
+     "t": 4487
+    },
+    {
+     "text": "「是」時有小錯誤，可能多秀給十個人紅色廣告，也沒關係。",
+     "t": 4509
+    },
+    {
+     "text": "至少保證這 1532 人都看到紅色廣告。",
+     "t": 4512
+    }
+   ]
+  },
+  {
+   "title": "延伸補充說明",
+   "scene": null,
+   "points": [
+    {
+     "text": "希望大家能從 hash 延伸，之後去看容許錯誤的資料結構。",
+     "t": 4520
+    },
+    {
+     "text": "往年出成作業，今年進度較快，改成上課講。",
+     "t": 4590
+    }
+   ]
+  },
+  {
+   "title": "方法 1：fixed array per bucket",
+   "scene": "hashlin2-fixed",
+   "points": [
+    {
+     "text": "除了不理他，比較標準的 collision 處理方式。",
+     "t": 4629
+    },
+    {
+     "text": "第一種：每個 bucket 用一個 fixed array。",
+     "t": 4637
+    },
+    {
+     "text": "就像把一個櫃子切成幾個小櫃子共用。",
+     "t": 4650
+    },
+    {
+     "text": "還是會 overflow。",
+     "t": 4663
+    },
+    {
+     "text": "hash function 不夠好或資料分布特別時，四個小櫃子都滿了。",
+     "t": 4673
+    },
+    {
+     "text": "如果不常發生，這是簡單的方法。",
+     "t": 4680
+    }
+   ]
+  },
+  {
+   "title": "方法 2：chaining（linked list）",
+   "scene": "hashlin2-chain",
+   "points": [
+    {
+     "text": "想更動態一點，可以用學過的 linked list。",
+     "t": 4694
+    },
+    {
+     "text": "要串多長就串多長，有的長、有的短。",
+     "t": 4700
+    },
+    {
+     "text": "這叫 chaining：每一格串出一條鏈。",
+     "t": 4710
+    },
+    {
+     "text": "我們希望 chain 短。",
+     "t": 4730
+    },
+    {
+     "text": "insert、get 時 hash 部分很快：算 hash code、compress 就到那一格。",
+     "t": 4749
+    },
+    {
+     "text": "之後花的時間跟那一格放了多少東西有關。",
+     "t": 4757
+    },
+    {
+     "text": "大家擠同一格、linked list 很長，就像要排很長的隊。",
+     "t": 4773
+    }
+   ]
+  },
+  {
+   "title": "方法 3：other container（secondary）",
+   "scene": "hashlin2-secondary",
+   "points": [
+    {
+     "text": "比 array、linked list 更進階：用 other container。",
+     "t": 4792
+    },
+    {
+     "text": "只要能動態塞下一堆碰撞在一起的 key，都可以放。",
+     "t": 4800
+    },
+    {
+     "text": "這種通常叫 secondary（data structure）。",
+     "t": 4811
+    },
+    {
+     "text": "hash 只是先分流。",
+     "t": 4819
+    },
+    {
+     "text": "分流後還是很多，第二層可以再用另一個 hash。",
+     "t": 4831
+    },
+    {
+     "text": "例：100 萬人分成每桶 1 萬人，1 萬人找來找去還是太多。",
+     "t": 4835
+    },
+    {
+     "text": "這些都可行，只是更複雜。",
+     "t": 4856
+    },
+    {
+     "text": "array、linked list 是基本款；進階款更合用，但更難 maintain。",
+     "t": 4861
+    }
+   ]
+  },
+  {
+   "title": "Open addressing：reuse 空格",
+   "scene": "hashlin2-open-idea",
+   "points": [
+    {
+     "text": "回顧：不理他、array、linked list、other container。",
+     "t": 4882
+    },
+    {
+     "text": "教科書上的另一種：reuse bucket array 裡原本的 empty space。",
+     "t": 4901
+    },
+    {
+     "text": "Hash table 有些地方比較塞，有些地方比較空。",
+     "t": 4923
+    },
+    {
+     "text": "方法 1～3 都是幫塞的地方多 allocate 空間，空的地方還是空的。",
+     "t": 4935
+    },
+    {
+     "text": "能不能把空的地方回收再利用？",
+     "t": 4948
+    },
+    {
+     "text": "這叫 Open Addressing。",
+     "t": 4975
+    },
+    {
+     "text": "最想放的 bucket 已經有人，就放到接近的另一個 bucket。",
+     "t": 4994
+    }
+   ]
+  },
+  {
+   "title": "找座位比喻：第三排中間",
+   "scene": "hashlin2-seat",
+   "points": [
+    {
+     "text": "以前當學生進教室時，有自己最喜歡的位置。",
+     "t": 5011
+    },
+    {
+     "text": "最愛第三排中間：進可攻、退可守。",
+     "t": 5029
+    },
+    {
+     "text": "來得晚，第三排中間可能已經有人坐了。",
+     "t": 5108
+    },
+    {
+     "text": "就像 hash function 算出的 bucket 已經被占。",
+     "t": 5115
+    },
+    {
+     "text": "不理他＝把人趕走；切小格＝擠同一張椅子；linked list＝手牽手串一串，都不實際。",
+     "t": 5133
+    },
+    {
+     "text": "真正會做的：去第二想要的位置，再沒有就第三想要的，依序找。",
+     "t": 5183
+    },
+    {
+     "text": "耐心有限：找到第十志願都沒位子，就兩手一攤不上了。",
+     "t": 5212
+    },
+    {
+     "text": "這樣的找位方式就是 Open Addressing。",
+     "t": 5240
+    }
+   ]
+  },
+  {
+   "title": "Open addressing 的 insert 與 get",
+   "scene": "hashlin2-oa-steps",
+   "points": [
+    {
+     "text": "把步驟詳細寫下來：array[key] = value。",
+     "t": 5248
+    },
+    {
+     "text": "先用原本的 hash function 算出最想要的位置 h₀。",
+     "t": 5310
+    },
+    {
+     "text": "例如算出第 3 個位置，就先試第 3 格有沒有人。",
+     "t": 5348
+    },
+    {
+     "text": "有人了就改試 h₁：第二喜歡的位置。",
+     "t": 5364
+    },
+    {
+     "text": "再不行就試 h₂，依此類推。",
+     "t": 5378
+    },
+    {
+     "text": "耐心是 m 次：h₀ 到 h_{m−1}。",
+     "t": 5426
+    },
+    {
+     "text": "還是不行只好 declare failure，insert 失敗。",
+     "t": 5437
+    },
+    {
+     "text": "get 要照同樣順序找；都找過還沒有，就是不在（同學沒來上課）。",
+     "t": 5484
+    }
+   ],
+   "trap": "老師一度寫成試 m+1 次，隨即更正：h₀～h_{m−1}，共 m 次。場景中 h₀=3、h₁=6、h₂=1 的順序是示意。"
+  },
+  {
+   "title": "Linear probing 與 clustering",
+   "scene": "hashlin2-linear",
+   "points": [
+    {
+     "text": "後面的 h₁、h₂… 怎麼算？第一種：linear probing。",
+     "t": 5607
+    },
+    {
+     "text": "拿前一個選擇移一點點，就是隔壁：0 號沒有就 1 號、2 號、3 號。",
+     "t": 5624
+    },
+    {
+     "text": "等價說法：在離原來位置 i 那麼遠的地方。",
+     "t": 5653
+    },
+    {
+     "text": "繞圈圈找隔壁。",
+     "t": 5667
+    },
+    {
+     "text": "最多把整個 array 繞過，約 k−1 步。",
+     "t": 5685
+    },
+    {
+     "text": "缺點：某個 entry（例如 3 號）collision 嚴重，就占用 4 號、5 號。",
+     "t": 5708
+    },
+    {
+     "text": "碰撞後占用相鄰 entry 的現象叫 clustering，像塞車。",
+     "t": 5747
+    },
+    {
+     "text": "4 號、5 號自己的反而放不進去，要去借 6 號、7 號，拖慢整個 hash。",
+     "t": 5768
+    }
+   ],
+   "trap": "補充：課本稱 primary clustering。場景中 13、23、33、14、15（h = x mod 10）是示意數字。"
+  },
+  {
+   "title": "Quadratic probing",
+   "scene": "hashlin2-quad",
+   "points": [
+    {
+     "text": "課本上的 quadratic probing。",
+     "t": 5811
+    },
+    {
+     "text": "已經走越多格，就往越遠的地方找位置。",
+     "t": 5826
+    },
+    {
+     "text": "用 i²。",
+     "t": 5834
+    },
+    {
+     "text": "先看隔壁，再到 4 以外、9 以外、16 以外的地方。",
+     "t": 5837
+    },
+    {
+     "text": "中間留一些空，讓原本該放那裡的放得進去，不會大家擠在一起。",
+     "t": 5850
+    }
+   ],
+   "trap": "補充：quadratic probing 不保證走遍整張表；m 為質數且 load factor ≤ 0.5 時保證找得到空位。場景用 m = 17、key 37 示意。"
+  },
+  {
+   "title": "Double hashing",
+   "scene": "hashlin2-double",
+   "points": [
+    {
+     "text": "複雜版：不希望找的位置太有規律性。",
+     "t": 5868
+    },
+    {
+     "text": "h₀ 加上 another hash。",
+     "t": 5874
+    },
+    {
+     "text": "拿 key 再算一個東西，每個 key 可能對應到不同的值。",
+     "t": 5890
+    },
+    {
+     "text": "再乘上 i。",
+     "t": 5898
+    },
+    {
+     "text": "離原位置多遠的步伐，跟另一個較複雜的函數有關。",
+     "t": 5900
+    },
+    {
+     "text": "hash 有「切碎」的意思：目的是分散。",
+     "t": 5925
+    },
+    {
+     "text": "用另一個 hash 把下一個位置分散開，叫 double hashing。",
+     "t": 5955
+    }
+   ],
+   "trap": "補充：步伐不能為 0，最好與 m 互質（例：m 取質數、h₂(k) = R − (k mod R)）。場景中 m = 11、R = 7 是課本常見寫法，不是老師的例子。"
+  },
+  {
+   "title": "哪個好？從簡單到複雜",
+   "scene": "hashlin2-spectrum",
+   "points": [
+    {
+     "text": "哪一個比較好？老實說不知道，要看應用。",
+     "t": 5965
+    },
+    {
+     "text": "做 open addressing 的話，quadratic probing 往往已有一定好處。",
+     "t": 5972
+    },
+    {
+     "text": "實務上常是碰撞太嚴重，才從簡單的 design 移向複雜的。",
+     "t": 5988
+    },
+    {
+     "text": "hash code：sum → polynomial → cyclic。",
+     "t": 6011
+    },
+    {
+     "text": "open addressing：linear → quadratic → double hashing。",
+     "t": 6017
+    },
+    {
+     "text": "概念簡單，但怎麼測試、確保執行效率，是實務上困難的地方。",
+     "t": 6026
+    },
+    {
+     "text": "collision 從「不理他」的容錯，到 secondary storage，再到 open addressing。",
+     "t": 6048
+    },
+    {
+     "text": "hash function、probing 性質的證明留給進階課程。",
+     "t": 6092
+    }
+   ]
+  },
+  {
+   "title": "Q&A：猴子排序法有用嗎",
+   "scene": null,
+   "points": [
+    {
+     "text": "同學問：猴子排序法有實際應用嗎？",
+     "t": 6139
+    },
+    {
+     "text": "背後的隨機模擬想法可以用來估計某結果多容易自然產生。",
+     "t": 6226
+    },
+    {
+     "text": "其他計算模型（例如量子電腦）下，隨機模擬的想法可能有用。",
+     "t": 6330
+    }
+   ]
+  },
+  {
+   "title": "Q&A：作業、停修、monkey test",
+   "scene": null,
+   "points": [
+    {
+     "text": "第三排心理學；現在線上上課沒有第三排可坐。",
+     "t": 6455
+    },
+    {
+     "text": "最難的作業 2 已經過去，剩下作業沒有那麼難；停修單放辦公室門口。",
+     "t": 6494
+    },
+    {
+     "text": "Monkey test 是隨機測試的一種；怎麼設計隨機測試也是學問。",
+     "t": 6551
+    }
+   ]
+  },
+  {
+   "title": "Collision handling 收尾、休息",
+   "scene": null,
+   "points": [
+    {
+     "text": "Collision handling 講完：容錯、secondary data structure、open addressing。",
+     "t": 6606
+    },
+    {
+     "text": "再休息 10 分鐘。",
+     "t": 6622
+    }
+   ]
+  },
+  {
+   "title": "Q&A：collision 時 key 要一起存",
+   "scene": "hashlin2-store-key",
+   "points": [
+    {
+     "text": "歡迎回來，先回答下課時的問題。",
+     "t": 7234
+    },
+    {
+     "text": "問：collision 後用 linked list，存取同一個 key 時要拿哪個值？",
+     "t": 7245
+    },
+    {
+     "text": "完美沒有 collision 時，那格是你專屬的，只存 value 就好。",
+     "t": 7266
+    },
+    {
+     "text": "有 collision 時，找東西要「對證件」才能確定是你的 value。",
+     "t": 7281
+    },
+    {
+     "text": "所以一般會把 key 和 value 一起存起來。",
+     "t": 7300
+    },
+    {
+     "text": "就像共用櫃子要貼姓名或學號，才不會拿到別人的東西。",
+     "t": 7316
+    }
+   ]
+  },
+  {
+   "title": "Q&A：作業 4 要不要建樹",
+   "scene": null,
+   "points": [
+    {
+     "text": "問：作業 4 只輸出程式，一定要建出一棵樹嗎？",
+     "t": 7339
+    },
+    {
+     "text": "建議建出樹，因為有一題要描述你用什麼資料結構表示樹。",
+     "t": 7379
+    },
+    {
+     "text": "Bonus：sorting 之後只要 O(M) 就能找出最好的 threshold。",
+     "t": 7507
+    }
+   ]
+  },
+  {
+   "title": "Load factor：n/k 與 non-uniform",
+   "scene": "hashlin2-load",
+   "points": [
+    {
+     "text": "講完基本 hash 與 collision handling，回顧 hash 什麼時候做得好。",
+     "t": 7626
+    },
+    {
+     "text": "Hash 與 hash table 兩種叫法都有，table 指的是 array。",
+     "t": 7644
+    },
+    {
+     "text": "Hash table 有 k 格，放了 n 個 key。",
+     "t": 7668
+    },
+    {
+     "text": "希望 n/k（每格大約放多少 key）越小越好，越不會撞。",
+     "t": 7686
+    },
+    {
+     "text": "n/k 叫 load factor：table 塞得有多滿。",
+     "t": 7732
+    },
+    {
+     "text": "n/k 太大，hash won't work。",
+     "t": 7749
+    },
+    {
+     "text": "另一種情況：hash 是 non-uniform，沒有分散開。",
+     "t": 7785
+    },
+    {
+     "text": "100 筆資料只集中在 3 格，每格碰撞就很多。",
+     "t": 7828
+    }
+   ],
+   "trap": "補充：場景中 n = 5、k = 10 的分布是示意；100 筆、10 格、3 格則是老師的說法。"
+  },
+  {
+   "title": "改 hash、加格子：空間換時間",
+   "scene": "hashlin2-space",
+   "points": [
+    {
+     "text": "實務上要檢查 hash 是不是常塞在同一個地方。",
+     "t": 7861
+    },
+    {
+     "text": "常塞同一處，就改進 hash function，讓它更亂、更分散。",
+     "t": 7870
+    },
+    {
+     "text": "或者東西太多、格子太少，比例不對。",
+     "t": 7883
+    },
+    {
+     "text": "東西就是那麼多，只能盡量增加格子數量。",
+     "t": 7898
+    },
+    {
+     "text": "不可能用十格塞下 100 萬筆資料。",
+     "t": 7904
+    },
+    {
+     "text": "很多時候希望 K 比 N 大。",
+     "t": 7924
+    },
+    {
+     "text": "K > N 且 hash 夠分散：一人一格，幾乎沒有 collision。",
+     "t": 7939
+    },
+    {
+     "text": "這叫用空間換取時間，map 就像 integer array 一樣方便。",
+     "t": 7952
+    }
+   ],
+   "trap": "補充：場景的 6 個 key（3、7、11、2、6、9）與 k = 4 → 16 是示意。"
+  },
+  {
+   "title": "Table 要長大：k 變兩倍",
+   "scene": "hashlin2-grow",
+   "points": [
+    {
+     "text": "實際系統裡，資料量越來越多，hash table 開始不堪負荷。",
+     "t": 7983
+    },
+    {
+     "text": "就像 vector 塞滿了要 request 額外記憶體、要長大。",
+     "t": 8004
+    },
+    {
+     "text": "隨著 n 增加，n/k 也增加。",
+     "t": 8036
+    },
+    {
+     "text": "load factor 太大時，干脆 increase k。",
+     "t": 8056
+    },
+    {
+     "text": "Vector 的經驗：不要一次增加一點點。",
+     "t": 8081
+    },
+    {
+     "text": "新的 K 設成舊的 K 的兩倍。",
+     "t": 8101
+    },
+    {
+     "text": "h(key) 的 range 要改成 0～2k−1（change range）。",
+     "t": 8120
+    },
+    {
+     "text": "再來要 rebuild：建新表，把舊的塞進去。",
+     "t": 8143
+    }
+   ]
+  },
+  {
+   "title": "Full rebuild：O(n) 與 long waiting",
+   "scene": "hashlin2-full-cost",
+   "points": [
+    {
+     "text": "Rebuild：把舊東西一個個拿出來，用新的 hash 塞進去。",
+     "t": 8159
+    },
+    {
+     "text": "若每筆 insert roughly constant time。",
+     "t": 8175
+    },
+    {
+     "text": "n 筆資料，rebuild 就要 n 的時間。",
+     "t": 8180
+    },
+    {
+     "text": "hash 夠平均時，時間只花在算 hash code，跟資料量幾乎無關。",
+     "t": 8205
+    },
+    {
+     "text": "通常 load 大於某個地步才變大兩倍。",
+     "t": 8247
+    },
+    {
+     "text": "缺點：整個舊 hash table 要搬到新的地方，花 linear 的力氣。",
+     "t": 8271
+    },
+    {
+     "text": "使用者端會 long waiting。",
+     "t": 8291
+    },
+    {
+     "text": "就像店面先關門整理，整理完才開店。",
+     "t": 8309
+    }
+   ]
+  },
+  {
+   "title": "Partial rebuild 的關鍵：mod k → mod 2k",
+   "scene": "hashlin2-mod2k",
+   "points": [
+    {
+     "text": "能不能解決 long waiting？它是 full rebuild 造成的。",
+     "t": 8332
+    },
+    {
+     "text": "改做 partial rebuild。",
+     "t": 8348
+    },
+    {
+     "text": "只 rebuild 一些有問題的 entry，不必整個表重建。",
+     "t": 8375
+    },
+    {
+     "text": "新的 hash function 和舊的必須有一定關係。",
+     "t": 8393
+    },
+    {
+     "text": "假設 hash 是算完 hash code 後直接 mod K。",
+     "t": 8433
+    },
+    {
+     "text": "從 K 變 2K，基本上只差一個 bit。",
+     "t": 8453
+    },
+    {
+     "text": "除以 2K 的結果在 0～k−1 時，跟原本的 hash value 一致。",
+     "t": 8470
+    },
+    {
+     "text": "只有 k～2k−1 那邊的 hash value 會變化。",
+     "t": 8480
+    }
+   ],
+   "trap": "補充：精確說 x mod 2k 一定是 x mod k 或 x mod k + k。場景的 hash code 8、13、6、3、12、5、10、15 是示意。"
+  },
+  {
+   "title": "例子：hash code = key[0] − 'a'，mod 4",
+   "scene": "hashlin2-words",
+   "points": [
+    {
+     "text": "例子：一個 4 格的 hash table，hash value 為 0、1、2、3。",
+     "t": 8495
+    },
+    {
+     "text": "簡單的 hash code：key 的第 0 個字元減掉 'a'，也就是看開頭字母。",
+     "t": 8518
+    },
+    {
+     "text": "[0] 可能放 at（a 開頭）和 eat（e 開頭），mod 4 都是 0。",
+     "t": 8531
+    },
+    {
+     "text": "[1] 放 b 開頭，例如 bird。",
+     "t": 8552
+    },
+    {
+     "text": "[2] 放 good 或 cat。",
+     "t": 8556
+    },
+    {
+     "text": "[3] 放 dog。",
+     "t": 8564
+    },
+    {
+     "text": "insert egg：又是 e 開頭，放到 [0]（用 linked list 表示）。",
+     "t": 8591
+    },
+    {
+     "text": "[0] 這條 chain 已有兩個，再放第三個太滿，想要 rebuild。",
+     "t": 8616
+    }
+   ],
+   "trap": "字幕把「e 開頭」誤成「1 開頭」：eat、egg 的 hash code 是 'e' − 'a' = 4，4 mod 4 = 0。"
+  },
+  {
+   "title": "Full rebuild 成 8 格",
+   "scene": "hashlin2-full8",
+   "points": [
+    {
+     "text": "表變大兩倍，多了 4、5、6、7。",
+     "t": 8632
+    },
+    {
+     "text": "Full rebuild：全部重新看一遍。",
+     "t": 8643
+    },
+    {
+     "text": "原本 mod 4，現在 mod 8。",
+     "t": 8648
+    },
+    {
+     "text": "a、b、c、d 開頭的 hash code 是 0～3，留在原來位置。",
+     "t": 8658
+    },
+    {
+     "text": "eat 與 good 需要移動。",
+     "t": 8674
+    },
+    {
+     "text": "結果：eat、egg 到 [4]，good 到 [6]。",
+     "t": 8697
+    },
+    {
+     "text": "我們拜訪過每一個東西：這就是 full rebuild 的計算量。",
+     "t": 8707
+    }
+   ]
+  },
+  {
+   "title": "Partial rebuild：只拆 overflow 的那條",
+   "scene": "hashlin2-partial",
+   "points": [
+    {
+     "text": "走 partial rebuild 的話可以怎麼做？",
+     "t": 8723
+    },
+    {
+     "text": "good 那條還沒滿。",
+     "t": 8734
+    },
+    {
+     "text": "先不移動也 OK，good 留在原處。",
+     "t": 8742
+    },
+    {
+     "text": "滿出來的是長度 3 的 [0]：只重建這條，eat、egg 拿出來放到 [4]。",
+     "t": 8752
+    },
+    {
+     "text": "找 good 時從 6 進來，因為 good 的 hash code 是 6。",
+     "t": 8774
+    },
+    {
+     "text": "把 6、7、5 的小紙條連到原本 2、3、1 的 chain。",
+     "t": 8781
+    },
+    {
+     "text": "1、2、3 跟 5、6、7 還沒分家，繼續共用原本的資料。",
+     "t": 8797
+    },
+    {
+     "text": "只有 overflow 的地方才分家。",
+     "t": 8811
+    }
+   ]
+  },
+  {
+   "title": "成本 k + n/k 與 extendable hash table",
+   "scene": "hashlin2-cost",
+   "points": [
+    {
+     "text": "egg 塞進來讓 [0] 滿出來，就分家。",
+     "t": 8821
+    },
+    {
+     "text": "把 [0] 拆成 0 跟 4 兩條。",
+     "t": 8836
+    },
+    {
+     "text": "其他的先共用原來的 chain（用其他 data structure 也可以這樣做）。",
+     "t": 8844
+    },
+    {
+     "text": "花 k 的力氣接好那些小紙條。",
+     "t": 8859
+    },
+    {
+     "text": "再花大約 n/k 的力氣拆開 overflow 的那條。",
+     "t": 8869
+    },
+    {
+     "text": "k + n/k 在 n 不少時可能比 n 小很多。",
+     "t": 8881
+    },
+    {
+     "text": "這樣就做出 extendable hash table。",
+     "t": 8896
+    },
+    {
+     "text": "代價：要多寫程式 maintain 還沒分家的在哪裡、要分家的怎麼搬。",
+     "t": 8948
+    }
+   ],
+   "trap": "補充：場景的 n = 10000、k = 100 是自行舉例。這裡的 extendable hash table 是課堂的 partial rebuild 版本，和教科書的 extendible hashing（directory、global/local depth）精神相近但細節不同。老師也說這段講太快，下次會重講。"
+  },
+  {
+   "title": "Q&A：字幕遮住、今天比較難",
+   "scene": null,
+   "points": [
+    {
+     "text": "字幕遮住畫面，因為忘了切 presentation mode。",
+     "t": 8970
+    },
+    {
+     "text": "同學覺得今天比以往難：hash 的面向很多，講起來比較散。",
+     "t": 9046
+    },
+    {
+     "text": "Hash 概念簡單，但要講成完整的故事不容易；最後會做 summary。",
+     "t": 9076
+    }
+   ]
+  },
+  {
+   "title": "總結 1：hash code 與 compress",
+   "scene": "hashlin2-recap",
+   "params": {
+    "part": 1
+   },
+   "points": [
+    {
+     "text": "用最後 5～10 分鐘把 hash table summarize 一下。",
+     "t": 9218
+    },
+    {
+     "text": "出發點：像 array 一樣，用 index 放 value、取 value。",
+     "t": 9269
+    },
+    {
+     "text": "但 key 不是 integer、沒有 order，甚至是 variable length。",
+     "t": 9296
+    },
+    {
+     "text": "解法：先把 key 轉成 integer，叫 hash code。",
+     "t": 9316
+    },
+    {
+     "text": "範圍太大放不進 array，所以再 compress 到 k 的範圍。",
+     "t": 9352
+    },
+    {
+     "text": "Hash code 最重要的目的：分散，讓 key 用到 array 各個位置。",
+     "t": 9371
+    },
+    {
+     "text": "做法：sum、polynomial evaluation、cyclic shift。",
+     "t": 9402
+    },
+    {
+     "text": "Compress 只講了一種：mod K。",
+     "t": 9448
+    }
+   ]
+  },
+  {
+   "title": "總結 2：collision handling",
+   "scene": "hashlin2-recap",
+   "params": {
+    "part": 2
+   },
+   "points": [
+    {
+     "text": "要放進去時那格已被 occupied：collision。",
+     "t": 9471
+    },
+    {
+     "text": "insert 時怎麼處理，會影響之後 get / search 怎麼找。",
+     "t": 9501
+    },
+    {
+     "text": "第一種：error tolerant，容許一些錯誤。",
+     "t": 9519
+    },
+    {
+     "text": "1、2、3：array、linked list、其他 container，統稱 secondary data structure。",
+     "t": 9565
+    },
+    {
+     "text": "Hash table 可以做 hierarchical 的設計：分小包，小包裡再用別的招式。",
+     "t": 9627
+    },
+    {
+     "text": "Open addressing：不 create 額外空間，reuse existing space。",
+     "t": 9647
+    },
+    {
+     "text": "下一個位置怎麼找：linear、quadratic、double hashing。",
+     "t": 9721
+    },
+    {
+     "text": "設計 hash table 要想：hash code、compress、collision handling、open addressing 策略。",
+     "t": 9791
+    }
+   ]
+  },
+  {
+   "title": "總結 3：extendable hash table",
+   "scene": "hashlin2-recap",
+   "params": {
+    "part": 3
+   },
+   "points": [
+    {
+     "text": "最後趕著講的：extendable hash table。",
+     "t": 9813
+    },
+    {
+     "text": "可以看成另一種 collision handling scheme。",
+     "t": 9845
+    },
+    {
+     "text": "越來越滿時讓 hash table 長大，collision 就少一點。",
+     "t": 9861
+    },
+    {
+     "text": "兩種做法：naive 與 partial。",
+     "t": 9890
+    },
+    {
+     "text": "Naive 做的是 full rebuild。",
+     "t": 9900
+    },
+    {
+     "text": "Partial 只在 overflow 的地方 rebuild。",
+     "t": 9907
+    },
+    {
+     "text": "同時複習了 extendable array 的 double the table 這個 trick。",
+     "t": 9938
+    },
+    {
+     "text": "這部分是延伸：靜態 hash table 怎麼合理地動態長大。",
+     "t": 9979
+    }
+   ]
+  },
+  {
+   "title": "結尾：下次預告與 Q&A",
+   "scene": null,
+   "points": [
+    {
+     "text": "今天來不及講 skip list（另一種用 linked list 做 map 的方法）。",
+     "t": 10069
+    },
+    {
+     "text": "下次上課先重講一次 extendable hash table 的範例。",
+     "t": 10095
+    },
+    {
+     "text": "同學問甄試與考試入學差在哪：最大差別是找指導教授的難易度。",
+     "t": 10163
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "用 summation 當 hash code（把每個字元的 ASCII 碼加總），\"ABC\" 與 \"ACB\" 的 hash code 關係是？",
+   "opts": [
+    "相同，都是 198",
+    "不同，差 1",
+    "不同，差 16",
+    "無法比較"
+   ],
+   "ans": "相同，都是 198",
+   "why": "加法不看位置：65 + 66 + 67 = 65 + 67 + 66 = 198，所以 summation 對位置不敏感。"
+  },
+  {
+   "q": "polynomial hash code Σ key[i]·16ⁱ（第 0 個字元乘 16⁰），\"ABC\" 的值是？（A=65、B=66、C=67）",
+   "opts": [
+    "18273",
+    "18033",
+    "198",
+    "17152"
+   ],
+   "ans": "18273",
+   "why": "65·1 + 66·16 + 67·256 = 65 + 1056 + 17152 = 18273；\"ACB\" 才是 18033。"
+  },
+  {
+   "q": "用 bit bucket array 表示 Set，查詢 kᵢ 時 A[h(kᵢ)] = 0，代表？",
+   "opts": [
+    "kᵢ 一定不在 set",
+    "kᵢ 一定在 set",
+    "kᵢ 可能在 set",
+    "發生了 collision"
+   ],
+   "ans": "kᵢ 一定不在 set",
+   "why": "kᵢ 若放過，那格一定被設成 1。是 0 就確定不在（no error）；是 1 才可能因 collision 而誤判。"
+  },
+  {
+   "q": "Linear probing，h(x) = x mod 10，依序 insert 13、23、33、14，14 最後在哪一格？",
+   "opts": [
+    "[6]",
+    "[4]",
+    "[5]",
+    "[7]"
+   ],
+   "ans": "[6]",
+   "why": "13→[3]、23→[4]、33→[5]；14 的 h₀ = 4 有人、h₁ = 5 有人、h₂ = 6 空：這就是 clustering。"
+  },
+  {
+   "q": "Quadratic probing，m = 17，[3]、[4]、[7]、[12] 已有資料，insert 37（37 mod 17 = 3）會放在哪？",
+   "opts": [
+    "[2]",
+    "[5]",
+    "[8]",
+    "[13]"
+   ],
+   "ans": "[2]",
+   "why": "偏移 0、1、4、9、16：3、4、7、12 都有人，(3 + 16) mod 17 = 2 是空的。"
+  },
+  {
+   "q": "Hash table 有 k 格、放了 n 個 key，load factor 是？",
+   "opts": [
+    "n / k",
+    "k / n",
+    "n − k",
+    "n · k"
+   ],
+   "ans": "n / k",
+   "why": "load factor = n/k，代表 table 塞得多滿；越大越容易 collision，太大 hash 就不 work。"
+  },
+  {
+   "q": "h = hash code mod k，table 從 k = 4 長成 8。hash code 為 10 的 key 會怎樣？",
+   "opts": [
+    "留在 [2] 不動",
+    "搬到 [6]",
+    "搬到 [4]",
+    "搬到 [0]"
+   ],
+   "ans": "留在 [2] 不動",
+   "why": "10 mod 4 = 2、10 mod 8 = 2，結果在 0～k−1，位置不變；像 13（1 → 5）才需要搬。"
+  },
+  {
+   "q": "課堂的 partial rebuild（只拆 overflow 的那條，其他新格子用小紙條指回舊 chain）大約要花多少力氣？",
+   "opts": [
+    "k + n/k",
+    "n",
+    "n log n",
+    "k · n"
+   ],
+   "ans": "k + n/k",
+   "why": "k 用在接好新格子的小紙條，n/k 用在拆開 overflow 的那條；n 不少時比 full rebuild 的 n 小。"
+  }
+ ]
+}

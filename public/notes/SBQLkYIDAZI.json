@@ -1,0 +1,1238 @@
+{
+ "video": "SBQLkYIDAZI",
+ "label": "台大林軒田 DSA Heap / Hash Table",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場：作業、Final Project 與今日內容",
+   "scene": null,
+   "points": [
+    {
+     "text": "提醒 stack 作業（作業 3）快截止，之後還有作業 4～6。",
+     "t": 379
+    },
+    {
+     "text": "Final Project 已開放隊伍登記，詳細 spec 一兩週內公布。",
+     "t": 400
+    },
+    {
+     "text": "今天先延伸上次的 heap，快速介紹更進階的 heap（binomial heap）。",
+     "t": 441
+    },
+    {
+     "text": "接著進入下一個 data structure：hash table。",
+     "t": 476
+    }
+   ]
+  },
+  {
+   "title": "Q&A：heap 和 max tree 差在哪",
+   "scene": "hashlin1-maxtree-vs-heap",
+   "points": [
+    {
+     "text": "Heap 與單純 max tree 的差別在於有沒有 complete。",
+     "t": 496
+    },
+    {
+     "text": "Max tree 只要求 root 最大、每棵 subtree 的 subroot 也最大，其他沒有保證。",
+     "t": 500
+    },
+    {
+     "text": "樹高沒保證：worst case 會從 root 掃到 leaf，時間跟 node 數成線性。",
+     "t": 541
+    },
+    {
+     "text": "退化時 tree 看起來比較像一條 linked list。",
+     "t": 552
+    },
+    {
+     "text": "Heap 加上很嚴格的限制：只用 complete binary tree。",
+     "t": 561
+    },
+    {
+     "text": "給定 N 個 node，complete binary tree 已是最小的樹高。",
+     "t": 583
+    },
+    {
+     "text": "Heap 所有 operation 都跟樹高有關，所以 insert / remove 都有效率（O(log n)）。",
+     "t": 593
+    }
+   ]
+  },
+  {
+   "title": "Q&A：Final Project 分組、課外問題",
+   "scene": null,
+   "points": [
+    {
+     "text": "找組員請到課程 forum，附上簡單有吸引力的自我介紹，不要在公開處留聯絡方式。",
+     "t": 640
+    },
+    {
+     "text": "每組最多三人，期望 workload：實作三個 data structure 並比較它們在問題上的好壞。",
+     "t": 700
+    },
+    {
+     "text": "交 report 的組員須都是修課生；旁聽生可另組參加 competition。",
+     "t": 771
+    }
+   ]
+  },
+  {
+   "title": "作業 4 介紹：Decision Tree",
+   "scene": null,
+   "points": [
+    {
+     "text": "作業 4 的主角是機器學習裡的 Decision Tree：non-leaf node 放問題、leaf 放最後的決策。",
+     "t": 949
+    },
+    {
+     "text": "一棵 decision tree 對應一長串 if-then-else 程式。",
+     "t": 1024
+    },
+    {
+     "text": "建樹像切西瓜：找一刀把資料分兩半，左右各自遞迴建 subtree，再用 root 連起來。",
+     "t": 1141
+    },
+    {
+     "text": "遞迴一定要有 terminating condition，切不下去就回傳 leaf。",
+     "t": 1241
+    },
+    {
+     "text": "建樹是 top-down recursive；印成程式則是某一種 tree traversal。",
+     "t": 1400
+    }
+   ]
+  },
+  {
+   "title": "Q&A：機器學習先修與窮舉",
+   "scene": null,
+   "points": [
+    {
+     "text": "100 筆資料、5 個 column，窮舉切法大約 100×5 = 500 種。",
+     "t": 1546
+    },
+    {
+     "text": "修 machine learning 需要線性代數、機率與微積分（主要是微分）。",
+     "t": 1573
+    }
+   ]
+  },
+  {
+   "title": "回顧：priority queue 與 max heap",
+   "scene": "hashlin1-heap-recap",
+   "points": [
+    {
+     "text": "Heap 是用來實作 priority queue：重點是 priority，最緊急的先做，不是先進先出。",
+     "t": 1658
+    },
+    {
+     "text": "Max heap 的 insert 要整理，確保 complete binary tree 與 max tree 兩個性質都成立。",
+     "t": 1716
+    },
+    {
+     "text": "整理的代價是 O(log n)：新元素放在最後面，再跟附近的 parent 打架往上浮。",
+     "t": 1746
+    },
+    {
+     "text": "要打的架最多就是 log n 層。",
+     "t": 1762
+    },
+    {
+     "text": "Remove 最大值後，從最後面叫一個小嘍囉上來補位。",
+     "t": 1785
+    },
+    {
+     "text": "補位的元素往下沉，最多 log n 層，所以 remove 也是 O(log n)。",
+     "t": 1798
+    }
+   ],
+   "trap": "老師一度把 max heap 的刪除說成 remove min，31:07 自己更正為 maximum；max heap 拿走的是最大值。"
+  },
+  {
+   "title": "目標：insert 只花 constant？",
+   "scene": "hashlin1-o1-insert",
+   "points": [
+    {
+     "text": "想讓 insertion 只花 constant 的力氣，跟資料量無關。",
+     "t": 1831
+    },
+    {
+     "text": "同時拿出來時，還是要很快找到 maximum 並移掉。",
+     "t": 1852
+    },
+    {
+     "text": "結論：每次都只花 constant 很難（沒說 impossible）。",
+     "t": 1891
+    },
+    {
+     "text": "要找得快，放進去時就得做一些整理。",
+     "t": 1914
+    },
+    {
+     "text": "每次只准花固定力氣（例如十步），就像亂房間永遠整理不完。",
+     "t": 1963
+    },
+    {
+     "text": "可行的方向：達到 amortized constant。",
+     "t": 1989
+    }
+   ]
+  },
+  {
+   "title": "Amortized：extendable array 的例子",
+   "scene": "hashlin1-doubling",
+   "points": [
+    {
+     "text": "Amortized＝均攤：有時花多、有時花少，平均起來是固定的力氣。",
+     "t": 2017
+    },
+    {
+     "text": "以前講 extendable array 就用過這個概念。",
+     "t": 2042
+    },
+    {
+     "text": "Array 滿了不要只加一格，而是一次長成兩倍。",
+     "t": 2064
+    },
+    {
+     "text": "大部分時候不用變大，insert 只要很少時間。",
+     "t": 2069
+    },
+    {
+     "text": "變大時要開新空間、把舊的搬過去，很花時間，但偶爾才發生。",
+     "t": 2091
+    },
+    {
+     "text": "把搬家的大成本分攤到前面每一輪，每次 insert 幾乎是常數。",
+     "t": 2116
+    },
+    {
+     "text": "現在要把均攤的想法用在設計 priority queue。",
+     "t": 2132
+    }
+   ]
+  },
+  {
+   "title": "Cheap insertion：插進小樹，走向 forest",
+   "scene": "hashlin1-small-trees",
+   "points": [
+    {
+     "text": "Cheap insertion 要常常做、每輪都做；expensive insertion 只有時做。",
+     "t": 2161
+    },
+    {
+     "text": "大的 complete tree（例如 264 個 node）放第 265 個要多打好幾層。",
+     "t": 2221
+    },
+    {
+     "text": "Heap 很小（例如 5 個 node）時，insert 只花很少力氣。",
+     "t": 2235
+    },
+    {
+     "text": "想法：insertion to small tree usually。",
+     "t": 2255
+    },
+    {
+     "text": "把一棵大樹拆成小樹與大樹，通常把新東西放進小樹。",
+     "t": 2289
+    },
+    {
+     "text": "小樹都滿了，才把東西插入大一點的樹。",
+     "t": 2301
+    },
+    {
+     "text": "一個資料結構裡有很多棵樹，就叫森林（forest）。",
+     "t": 2362
+    }
+   ]
+  },
+  {
+   "title": "Binomial tree 的定義",
+   "scene": "hashlin1-binomial-trees",
+   "points": [
+    {
+     "text": "介紹一種特別的樹：binomial tree，跟二項式／二進位有關。",
+     "t": 2419
+    },
+    {
+     "text": "B₀ 只有一個 node（single node tree）。",
+     "t": 2452
+    },
+    {
+     "text": "B₁：一個 root 下面接一棵 B₀。",
+     "t": 2471
+    },
+    {
+     "text": "B₂：root 下面接 B₀ 和 B₁。",
+     "t": 2510
+    },
+    {
+     "text": "B₃：root 下面接 B₀、B₁、B₂，它不是 binary tree。",
+     "t": 2596
+    },
+    {
+     "text": "Node 數：B₀ = 1、B₁ = 2、B₂ = 4、B₃ = 8，B_k 有 2ᵏ 個 node。",
+     "t": 2731
+    },
+    {
+     "text": "B₁ 是兩棵 B₀ 組合、B₂ 是兩棵 B₁、B₃ 是兩棵 B₂：兩棵小樹合起來變大樹。",
+     "t": 2789
+    },
+    {
+     "text": "用 binomial tree 造森林、放 max tree，就有小 heap 和大 heap；小 heap 滿了才組大 heap。",
+     "t": 2881
+    }
+   ]
+  },
+  {
+   "title": "Q&A 與下課",
+   "scene": null,
+   "points": [
+    {
+     "text": "同學比喻：small tree + small tree → big tree。",
+     "t": 2992
+    },
+    {
+     "text": "跟 Huffman coding 有點關係，但 Huffman 由資料決定樹形，binomial tree 的長相是事先定義好的。",
+     "t": 3005
+    },
+    {
+     "text": "休息 10 分鐘。",
+     "t": 3129
+    }
+   ]
+  },
+  {
+   "title": "B₃ 的正確長相與 left-child right-sibling",
+   "scene": "hashlin1-lcrs",
+   "points": [
+    {
+     "text": "下課前 B₂ 接成 B₃ 的圖不清楚，改用 Wikipedia 的圖說明。",
+     "t": 3788
+    },
+    {
+     "text": "Order 3 的 root 下面串了 B₀、B₁、B₂。",
+     "t": 3810
+    },
+    {
+     "text": "也可以看成兩棵 B₂ 合併起來。",
+     "t": 3822
+    },
+    {
+     "text": "B₃ 是 general tree，不是 binary tree。",
+     "t": 3831
+    },
+    {
+     "text": "General tree 可用 binary tree 表現：left child, right sibling。",
+     "t": 3850
+    },
+    {
+     "text": "往左走到第一個小孩，往右走到一連串 sibling（所有小孩用 linked list 串起來）。",
+     "t": 3877
+    },
+    {
+     "text": "示意圖容易解釋，但實作時要注意細節。",
+     "t": 3936
+    }
+   ]
+  },
+  {
+   "title": "Node 數不是 2ᵏ：用 forest 湊（9 = 8 + 1）",
+   "scene": "hashlin1-forest-9",
+   "points": [
+    {
+     "text": "問題：要存的資料不是 2ᵏ 個，還是 binomial tree 嗎？",
+     "t": 3956
+    },
+    {
+     "text": "就像 full binary tree 只能有 1、3、7、15 個 node，所以 heap 改用 complete tree。",
+     "t": 3968
+    },
+    {
+     "text": "Binomial tree 也只有 1、2、4、8、16 個，解法是用 forest。",
+     "t": 4041
+    },
+    {
+     "text": "把 1、2、4、8 湊成任意數字，就是十進位轉二進位。",
+     "t": 4056
+    },
+    {
+     "text": "例：9 = 8 + 1，需要一棵 size 8 的樹和一棵 size 1 的樹。",
+     "t": 4065
+    }
+   ],
+   "trap": "影片 67:58 說 9 個 node 要「一棵 B₃ 和一棵 B₁」，口誤：size 1 的樹是 B₀，所以 9 = 1001₂ → B₃ + B₀。"
+  },
+  {
+   "title": "閒聊",
+   "scene": null,
+   "points": [
+    {
+     "text": "閒聊：資訊系「電神裝弱」的傳統。",
+     "t": 4097
+    },
+    {
+     "text": "提醒使用視訊軟體要注意資安與穿著。",
+     "t": 4126
+    }
+   ]
+  },
+  {
+   "title": "Max binomial tree：加上 max tree 性質",
+   "scene": "hashlin1-max-binomial",
+   "points": [
+    {
+     "text": "更正：B₃ 是 multi-way tree，從 root 多長一隻腳接到右下方。",
+     "t": 4186
+    },
+    {
+     "text": "要把 binomial tree 變成 heap，就加上 max tree 的性質（min heap 則加 min tree 性質）。",
+     "t": 4225
+    },
+    {
+     "text": "因為是 multi-way tree，這裡用的是 max 的 multi-way tree。",
+     "t": 4244
+    },
+    {
+     "text": "Root 要比它三棵 subtree 裡所有人都大。",
+     "t": 4264
+    },
+    {
+     "text": "每棵 subtree 裡，它的 subroot 也要最大。",
+     "t": 4271
+    }
+   ]
+  },
+  {
+   "title": "Binomial forest 與 binomial heap",
+   "scene": "hashlin1-forest-10-17",
+   "points": [
+    {
+     "text": "任意整數與二進位數字之間是一對一的關係。",
+     "t": 4321
+    },
+    {
+     "text": "Binomial forest：每一種 B_k 最多一棵，不是零棵就是一棵。",
+     "t": 4349
+    },
+    {
+     "text": "它可以表示任何 n 個 node。",
+     "t": 4382
+    },
+    {
+     "text": "例：10 = 8 + 2 → 一棵 B₃ ＋ 一棵 B₁。",
+     "t": 4389
+    },
+    {
+     "text": "例：17 = 16 + 1 → 一棵 B₄ ＋ 一棵 B₀。",
+     "t": 4432
+    },
+    {
+     "text": "給定 node 數，forest 裡有哪些樹是固定的；樹裡的內容可能變。",
+     "t": 4454
+    },
+    {
+     "text": "Binomial forest 加上一堆 max tree，就叫 binomial heap。",
+     "t": 4503
+    }
+   ],
+   "trap": "老師一度想說 17 = 8 + 9，馬上更正為 16 + 1：每種 B_k 最多一棵，所以只能用 B₄ + B₀。"
+  },
+  {
+   "title": "從空的 binomial heap 依序 insert 5、7、3、2",
+   "scene": "hashlin1-insert-5732",
+   "points": [
+    {
+     "text": "用 max heap 示範，從空的 binomial heap 開始放東西。",
+     "t": 4530
+    },
+    {
+     "text": "Insert 5：得到只有一棵 B₀ 的 heap。",
+     "t": 4566
+    },
+    {
+     "text": "Insert 7：兩個 node 只能是一棵 B₁，7 在上、5 在下。",
+     "t": 4636
+    },
+    {
+     "text": "也可看成新 node 7 自己是一個小 forest，跟原本的 forest 合併：兩棵 B₀ 打一架，贏的放上面。",
+     "t": 4717
+    },
+    {
+     "text": "Insert 3：已有 B₁，3 自己當 B₀，forest = B₁ + B₀。",
+     "t": 4786
+    },
+    {
+     "text": "Insert 2：兩棵 B₀ 會變 B₁，又跟原本的 B₁ 變成 B₂。",
+     "t": 4860
+    },
+    {
+     "text": "合併只要老大出來單挑：3 和 7 比，7 贏放上面。",
+     "t": 4905
+    },
+    {
+     "text": "3、2 掛在 7 和 5 下面，結果仍是 max tree，是一棵 B₂ 的 binomial heap。",
+     "t": 4961
+    }
+   ]
+  },
+  {
+   "title": "Insert 的 amortized O(1) 分析",
+   "scene": "hashlin1-amortized-counter",
+   "points": [
+    {
+     "text": "每一輪 insert 都是把一棵 B₀ 塞進 forest，原本已有同 order 的樹就要 merge。",
+     "t": 4982
+    },
+    {
+     "text": "有時要連續合併兩次以上。",
+     "t": 5021
+    },
+    {
+     "text": "N 輪 insert：放 B₀ 共花 N 的力氣。",
+     "t": 5040
+    },
+    {
+     "text": "每兩輪 merge 一次 B₀、每四輪 merge 一次 B₁、每八輪 merge 一次 B₂。",
+     "t": 5059
+    },
+    {
+     "text": "若每次 merge 是 constant，總 merge = n/2 + n/4 + n/8 + … 仍是 O(n)。",
+     "t": 5143
+    },
+    {
+     "text": "Insert N 個共 O(N)，amortized 每次 O(1)。",
+     "t": 5164
+    },
+    {
+     "text": "最貴的情況：B₀～B₄ 都有，再放一棵 B₀ 會一路連鎖合併。",
+     "t": 5180
+    },
+    {
+     "text": "兩棵 max binomial tree 合併只要老大打一架，其他結構完全不變。",
+     "t": 5230
+    },
+    {
+     "text": "把 order 最高的小孩放最左邊，輸的就像 linked list 插在 head，O(1)。",
+     "t": 5277
+    }
+   ]
+  },
+  {
+   "title": "合併兩個 binomial heap = 二進位加法",
+   "scene": "hashlin1-meld-binary",
+   "points": [
+    {
+     "text": "Binomial heap 的重點：node 總數與二進位的對應關係。",
+     "t": 5349
+    },
+    {
+     "text": "Heap 上的 merge 運算，道理上對應到二進位加法，就像加法器每次 +1。",
+     "t": 5375
+    },
+    {
+     "text": "可延伸到兩個 binomial heap 很容易合起來：就是兩個二進位數相加。",
+     "t": 5392
+    },
+    {
+     "text": "例：學校 to-do list 和約會 to-do list 兩個 priority queue 要合併。",
+     "t": 5412
+    },
+    {
+     "text": "在 merge 上，binomial heap 比 complete tree 做的 heap 有更好的性質。",
+     "t": 5438
+    }
+   ]
+  },
+  {
+   "title": "getMax 與 removeMax",
+   "scene": "hashlin1-getmax-remove",
+   "points": [
+    {
+     "text": "還沒講怎麼拿最大的：每棵都是 max tree，各有自己的老大。",
+     "t": 5473
+    },
+    {
+     "text": "用 sequential search 把每棵樹的老大都看過。",
+     "t": 5499
+    },
+    {
+     "text": "樹的數量最多是 log 那麼多，就像二進位表示的長度（255 只要 8 bit）。",
+     "t": 5518
+    },
+    {
+     "text": "所以 getMax 是 O(log n)。",
+     "t": 5578
+    },
+    {
+     "text": "removeMax：老大所在的那棵樹拆開，變成好幾棵小 binomial tree，是一個新的 forest。",
+     "t": 5586
+    },
+    {
+     "text": "把新 forest 跟原 forest merge，一樣是二進位加法的 O(log n)。",
+     "t": 5617
+    },
+    {
+     "text": "Binomial heap 就是把 heap 操作對應到二進位的加法、減法，再用 max tree 管理誰在上面。",
+     "t": 5637
+    }
+   ]
+  },
+  {
+   "title": "Q&A：像 2048、insert 3 為何不合併",
+   "scene": "hashlin1-insert-5732",
+   "params": {
+    "from": 2
+   },
+   "points": [
+    {
+     "text": "Binomial heap 可說是 heap 中的 heap。",
+     "t": 5682
+    },
+    {
+     "text": "同學說像在玩 2048：兩個一樣的合成一個大的。",
+     "t": 5722
+    },
+    {
+     "text": "這是第二次遇到 amortized analysis：有時多花，平均起來花少少。",
+     "t": 5761
+    },
+    {
+     "text": "Insert 3 時已有 7、5 的 B₁，3 是獨立的 B₀。",
+     "t": 5842
+    },
+    {
+     "text": "就是二進位 2 + 1：沒有進位，3 自己當 B₀ 就好。",
+     "t": 5847
+    },
+    {
+     "text": "3 + 1 才需要進位（再 insert 2 時才合併）。",
+     "t": 5862
+    },
+    {
+     "text": "作業 3 測試：一行一個 expression。",
+     "t": 5886
+    }
+   ]
+  },
+  {
+   "title": "為什麼 getMax 只要看 log n 棵樹",
+   "scene": "hashlin1-tree-count",
+   "points": [
+    {
+     "text": "N = 15 = 1111₂：最多 4 棵樹 B₀、B₁、B₂、B₃，問完 4 個老大就知道最大值。",
+     "t": 5959
+    },
+    {
+     "text": "N = 14 = 1110₂：三棵樹 B₁、B₂、B₃。",
+     "t": 5986
+    },
+    {
+     "text": "N 從 15 到 8，最大的一棵都是 B₃。",
+     "t": 6012
+    },
+    {
+     "text": "最大一棵是 B⌊log₂n⌋，樹的棵數最多 ⌊log₂n⌋ + 1。",
+     "t": 6065
+    },
+    {
+     "text": "getMax 本質上是找出老大中的老大。",
+     "t": 6114
+    },
+    {
+     "text": "運氣好如 8 個 node 只問一個老大；最糟像 15、7、63 每棵都有。",
+     "t": 6125
+    },
+    {
+     "text": "用最糟情況估計，所以是 O(log n)。",
+     "t": 6156
+    }
+   ]
+  },
+  {
+   "title": "removeMax 的例子：14 個 node",
+   "scene": "hashlin1-removemax-14",
+   "points": [
+    {
+     "text": "問題：怎麼把 max 拿掉？",
+     "t": 6208
+    },
+    {
+     "text": "14 個 node = 1110₂。",
+     "t": 6241
+    },
+    {
+     "text": "只看單一棵樹，拿掉老大很容易：binomial tree 有自我複製性質，老大下面的派系都分好了。",
+     "t": 6268
+    },
+    {
+     "text": "老大拿掉後變成一幫小嘍囉（較小的 binomial trees）。",
+     "t": 6295
+    },
+    {
+     "text": "例：拿掉 B₂ 的老大，剩下 B₁ 和 B₀。",
+     "t": 6309
+    },
+    {
+     "text": "再做二進位加法：從低位加，B₁ 跟 B₁ 合成 B₂，B₃ 保持不動。",
+     "t": 6345
+    },
+    {
+     "text": "Remove 就是 n − 2ᵏ（拿掉老大那棵）再加回 2ᵏ − 1 個小嘍囉。",
+     "t": 6364
+    }
+   ]
+  },
+  {
+   "title": "Heap 小結與下課",
+   "scene": null,
+   "points": [
+    {
+     "text": "Heap 有很多種，在不同地方各有用途。",
+     "t": 6417
+    },
+    {
+     "text": "今天的 binomial heap 比 complete tree heap 複雜，但 insertion 與 merge 性質更好。",
+     "t": 6442
+    },
+    {
+     "text": "休息 10 分鐘。",
+     "t": 6481
+    }
+   ]
+  },
+  {
+   "title": "Q&A：兩個老大一樣大怎麼合併",
+   "scene": "hashlin1-tie",
+   "points": [
+    {
+     "text": "問題：兩個要合併的老大完全一樣大時怎麼辦？",
+     "t": 7126
+    },
+    {
+     "text": "只需要 max tree 性質的話，誰在上面都可以。",
+     "t": 7144
+    },
+    {
+     "text": "實作上決定一種方式就好，例如併進來的放下面。",
+     "t": 7155
+    },
+    {
+     "text": "要再比小弟也可以，但會多花成本、多出 edge case。",
+     "t": 7194
+    },
+    {
+     "text": "設計 data structure 要問是否真有必要，否則選 simplest solution。",
+     "t": 7239
+    },
+    {
+     "text": "Priority 一樣的兩筆照常合併，不會特別浪費空間。",
+     "t": 7262
+    }
+   ]
+  },
+  {
+   "title": "性質 vs implementation",
+   "scene": "hashlin1-adt-impl",
+   "points": [
+    {
+     "text": "要區分 data structure 要滿足的性質，以及使用的 implementation。",
+     "t": 7334
+    },
+    {
+     "text": "Priority queue 是一種性質。",
+     "t": 7346
+    },
+    {
+     "text": "性質一：container 能很快 remove 或 retrieve maximum key。",
+     "t": 7361
+    },
+    {
+     "text": "性質二：把 key 和對應 data insert 進去也要快。",
+     "t": 7382
+    },
+    {
+     "text": "實作可用 heap、binomial heap，或 ordered array，快慢各不同。",
+     "t": 7397
+    },
+    {
+     "text": "Stack、queue 也是性質：stack 可用 array、queue 可用 circular array 實作。",
+     "t": 7421
+    }
+   ]
+  },
+  {
+   "title": "Map 與 dictionary",
+   "scene": "hashlin1-map-dict",
+   "points": [
+    {
+     "text": "新的常用性質：可看成 priority queue 的延伸。",
+     "t": 7451
+    },
+    {
+     "text": "一樣用 key 把資料放進去。",
+     "t": 7464
+    },
+    {
+     "text": "不同的是不再拿最大的，而是根據 key 去 get 或 remove，而且要快。",
+     "t": 7474
+    },
+    {
+     "text": "這樣的資料結構叫 map，像按 key（地名）查地圖。",
+     "t": 7553
+    },
+    {
+     "text": "Map 存的是 key 與 value 的一對一關係：key₁ → value₁、key₂ → value₂。",
+     "t": 7579
+    },
+    {
+     "text": "變形：一個 key 對應多個 value，叫 dictionary，像英文字典一個字有很多解釋。",
+     "t": 7642
+    },
+    {
+     "text": "Dictionary 可看成 map 的變形：value 換成一個 set，例如用 linked list 串起來。",
+     "t": 7672
+    }
+   ]
+  },
+  {
+   "title": "Ordered map 與 unordered map",
+   "scene": "hashlin1-ordered-keys",
+   "points": [
+    {
+     "text": "Map 依 key 的不同又分兩種。",
+     "t": 7736
+    },
+    {
+     "text": "Ordered：key 之間有大小關係，可以排順序。",
+     "t": 7745
+    },
+    {
+     "text": "例如 integer 有大小；string 有字典順序（A 開頭排前面、Z 開頭排後面）。",
+     "t": 7761
+    },
+    {
+     "text": "有些 map 會用順序來幫忙快速 insert / remove。",
+     "t": 7785
+    },
+    {
+     "text": "Unordered：不在乎 key 能不能比較，只要是 key 就能放進去。",
+     "t": 7838
+    },
+    {
+     "text": "Ordered 是比較強的假設；unordered 則探討弱假設下還有哪些招可以做得快。",
+     "t": 7872
+    }
+   ]
+  },
+  {
+   "title": "用 linked list / array 實作 map",
+   "scene": "hashlin1-list-array-map",
+   "points": [
+    {
+     "text": "已學過的東西就能做 map：把 key 和 value 當成 linked list node 的 data。",
+     "t": 7928
+    },
+    {
+     "text": "不排序時每筆 insert 在 head，不花力氣。",
+     "t": 7970
+    },
+    {
+     "text": "但找東西要整串掃過，O(n)。",
+     "t": 8003
+    },
+    {
+     "text": "照 key 排序的 linked list：insert 要找適合的位置；沒有 binary search，找還是 O(n)。",
+     "t": 8021
+    },
+    {
+     "text": "改用 array：unordered 塞在最後 insert 不花力氣，get 只能 sequential search，O(n)。",
+     "t": 8093
+    },
+    {
+     "text": "Ordered array：insert 要擠到中間，O(n)；get 可用 binary search，O(log n)。",
+     "t": 8112
+    },
+    {
+     "text": "移除時後面的人要補位，也要額外力氣。",
+     "t": 8133
+    },
+    {
+     "text": "n 是慢的；log n 勉強算快（256 個只要 8 步）。",
+     "t": 8172
+    }
+   ]
+  },
+  {
+   "title": "Key 是小整數：直接當 array index",
+   "scene": "hashlin1-direct-address",
+   "points": [
+    {
+     "text": "靈感：key 若是 integer，就用 array。",
+     "t": 8208
+    },
+    {
+     "text": "不把 key、value 打包，直接用 key 當 array index（櫃子號碼）。",
+     "t": 8227
+    },
+    {
+     "text": "先假設是 small integer，範圍有限。",
+     "t": 8247
+    },
+    {
+     "text": "Array 裡只放 value；insertion 就是一次 assignment，constant。",
+     "t": 8280
+    },
+    {
+     "text": "Get 也是直接算出櫃子、打開拿出來，constant。",
+     "t": 8289
+    },
+    {
+     "text": "Key 不小時需要 super big array，很多地方是空的。",
+     "t": 8329
+    },
+    {
+     "text": "這是 space 上的 trade-off：用空間換取時間。",
+     "t": 8347
+    }
+   ]
+  },
+  {
+   "title": "Convert 與 compress 的構想",
+   "scene": "hashlin1-convert-compress",
+   "points": [
+    {
+     "text": "不想要那麼大空間，就把空間縮小，但要處理怎麼把 key 壓縮進去。",
+     "t": 8386
+    },
+    {
+     "text": "例：array 只有 100 格，key 範圍是 1 萬，要很快地壓縮。",
+     "t": 8397
+    },
+    {
+     "text": "Key 根本不是 integer 時，要先 convert 成 integer。",
+     "t": 8439
+    },
+    {
+     "text": "再把 integer 壓縮到 array 的範圍。",
+     "t": 8451
+    },
+    {
+     "text": "Convert、compress、array access 三件事都快，就有快速的 map。",
+     "t": 8463
+    },
+    {
+     "text": "目標：把任意 key 轉成 small integer。",
+     "t": 8530
+    }
+   ]
+  },
+  {
+   "title": "Q&A 與閒聊",
+   "scene": null,
+   "points": [
+    {
+     "text": "紅黑樹還沒那麼快教到。",
+     "t": 8600
+    },
+    {
+     "text": "Insert 的主要成本常可看成先 get、確認沒有後再放進去。",
+     "t": 8616
+    },
+    {
+     "text": "Ordered array 的 insert 不是 log n：binary search 找到位置後，還要把後面推開。",
+     "t": 8690
+    }
+   ]
+  },
+  {
+   "title": "Hash function h：hash code ＋ compress",
+   "scene": "hashlin1-h-pipeline",
+   "points": [
+    {
+     "text": "大計畫：任意 key → integer → small integer。",
+     "t": 8769
+    },
+    {
+     "text": "這個函數通常叫 h，裡面有兩步。",
+     "t": 8821
+    },
+    {
+     "text": "第一步把 key 變 integer，叫 hash 或 hash code。",
+     "t": 8830
+    },
+    {
+     "text": "第二步 integer → small integer，叫 compress。",
+     "t": 8851
+    },
+    {
+     "text": "Insert(key, value) 對應到 A[h(key)] = value。",
+     "t": 8866
+    },
+    {
+     "text": "Get(key) 對應到 v = A[h(key)]，都用熟悉的 array 操作完成。",
+     "t": 8903
+    },
+    {
+     "text": "放東西的 array 叫 bucket array：好幾個 value 可能要塞在同一個櫃子。",
+     "t": 8940
+    },
+    {
+     "text": "h 決定 key 用哪個櫃子，叫 hash function。",
+     "t": 8974
+    }
+   ]
+  },
+  {
+   "title": "Perfect hashing、鴿籠原理與 collision",
+   "scene": "hashlin1-pigeonhole",
+   "points": [
+    {
+     "text": "最完美：100 個 key 一對一對應到 0～99。",
+     "t": 9002
+    },
+    {
+     "text": "這叫 perfect hashing，沒有空櫃子，不用多 allocate。",
+     "t": 9062
+    },
+    {
+     "text": "大部分時候 key 的數量或範圍比櫃子數 K 大。",
+     "t": 9103
+    },
+    {
+     "text": "Key 範圍 0～1 萬只有 100 格，無法 perfect hashing。",
+     "t": 9123
+    },
+    {
+     "text": "不管哪個 h，都會有兩個 key 的 h 值一樣。",
+     "t": 9137
+    },
+    {
+     "text": "鴿籠原理：3 個籠子 5 隻鴿子（甚至 4 隻），至少兩隻擠同一籠。",
+     "t": 9156
+    },
+    {
+     "text": "兩個 key 透過 h 對到同一 index，叫 collision。",
+     "t": 9209
+    },
+    {
+     "text": "Hash 的兩個困難：找好的 hash function，以及處理 collision。",
+     "t": 9236
+    }
+   ]
+  },
+  {
+   "title": "String key 的 hash code",
+   "scene": "hashlin1-string-hash",
+   "points": [
+    {
+     "text": "以 string 為例設計 hash function，先從 hash code 開始。",
+     "t": 9299
+    },
+    {
+     "text": "例如 apple：只看第一個 character。",
+     "t": 9354
+    },
+    {
+     "text": "只有 26 個英文字母時，得到 0～25 的數字，可直接放進 26 格 array。",
+     "t": 9365
+    },
+    {
+     "text": "apple 和 act 會到同一格：collision。",
+     "t": 9412
+    },
+    {
+     "text": "改成把 string 每個字都加起來，數字更複雜。",
+     "t": 9464
+    },
+    {
+     "text": "加總範圍可能太大（例如 4 byte 整數），所以要 compress。",
+     "t": 9496
+    },
+    {
+     "text": "只有 100 格就 mod 100，得到 0～99；不一定要這樣算，只是示範。",
+     "t": 9536
+    }
+   ],
+   "trap": "補充：場景用 ASCII 碼示範加總（apple = 530、act = 312），影片沒算出具體數字。"
+  },
+  {
+   "title": "壞 hash function 與分散",
+   "scene": "hashlin1-bad-hash",
+   "points": [
+    {
+     "text": "Hash 裡最困難的問題是 collision：撞了怎麼解決、能不能一開始就少撞。",
+     "t": 9612
+    },
+    {
+     "text": "壞例子：不管什麼 string 都回傳 0。",
+     "t": 9633
+    },
+    {
+     "text": "資料全串在 0，其他格沒人用，要花很多力氣處理 collision。",
+     "t": 9660
+    },
+    {
+     "text": "知道 array 有 k 格時，希望 hash function 分散、把 k 格都用到。",
+     "t": 9676
+    },
+    {
+     "text": "這樣能減少碰撞，也是空間最平均的利用。",
+     "t": 9696
+    },
+    {
+     "text": "下次講 hash function 設計與 hash table 如何處理 collision。",
+     "t": 9720
+    }
+   ]
+  },
+  {
+   "title": "閒聊：獨立思考",
+   "scene": null,
+   "points": [
+    {
+     "text": "閒聊：大學要教獨立思考，收集資訊後自己判斷對錯。",
+     "t": 9800
+    }
+   ]
+  },
+  {
+   "title": "Array of pointers：collision handling 的起頭",
+   "scene": "hashlin1-chain-preview",
+   "points": [
+    {
+     "text": "同學提到 array of pointers 可以處理 collision。",
+     "t": 9880
+    },
+    {
+     "text": "Array 裡不放 key，而是放小紙條（pointer）。",
+     "t": 9897
+    },
+    {
+     "text": "Array 的櫃子大小固定；collision 等於要求櫃子能變動大小。",
+     "t": 9923
+    },
+    {
+     "text": "櫃子放一個 pointer 指到 linked list，linked list 很容易變動大小。",
+     "t": 9961
+    },
+    {
+     "text": "Collision handling 是必要的；直接丟掉也是一種處理方式。",
+     "t": 9983
+    },
+    {
+     "text": "也可用 linked list 或像 vector 一樣動態長大的 array。",
+     "t": 10006
+    },
+    {
+     "text": "下一節課講碰到 collision 要怎麼辦。",
+     "t": 10025
+    }
+   ]
+  },
+  {
+   "title": "結尾",
+   "scene": null,
+   "points": [
+    {
+     "text": "今天上到這裡；作業 3 已交，趕快開始下一次作業。",
+     "t": 10045
+    },
+    {
+     "text": "Final Project 還沒找到隊友就上 forum 找，細節會盡快公布。",
+     "t": 10058
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Order k 的 binomial tree B_k 有幾個 node？",
+   "opts": [
+    "2ᵏ",
+    "k + 1",
+    "2ᵏ − 1",
+    "k²"
+   ],
+   "ans": "2ᵏ",
+   "why": "B₀ = 1、B₁ = 2、B₂ = 4、B₃ = 8；B_k 由兩棵 B_{k−1} 組成，所以是 2ᵏ。"
+  },
+  {
+   "q": "有 10 個 node 的 binomial heap，forest 裡有哪些樹？",
+   "opts": [
+    "B₃ 和 B₁",
+    "B₃ 和 B₂",
+    "B₂、B₁、B₀",
+    "兩棵 B₂ 和一棵 B₁"
+   ],
+   "ans": "B₃ 和 B₁",
+   "why": "10 = 1010₂ = 8 + 2，每種 B_k 最多一棵，所以是 B₃ + B₁。"
+  },
+  {
+   "q": "有 9 個 node 的 binomial heap 由哪些樹組成？",
+   "opts": [
+    "B₃ 和 B₀",
+    "B₃ 和 B₁",
+    "B₂、B₂ 和 B₀",
+    "B₄"
+   ],
+   "ans": "B₃ 和 B₀",
+   "why": "9 = 1001₂ = 8 + 1；size 1 的樹是 B₀，影片口誤說成 B₁。"
+  },
+  {
+   "q": "Binomial heap 連續 insert n 個元素，每次 insert 的 amortized cost 是？",
+   "opts": [
+    "O(1)",
+    "O(log n)",
+    "O(n)",
+    "O(n log n)"
+   ],
+   "ans": "O(1)",
+   "why": "Merge 次數 n/2 + n/4 + … < n，每次 merge 只比兩個 root，總共 O(n)，平均每次 O(1)。"
+  },
+  {
+   "q": "Binomial heap 不另外記錄最大值時，getMax 的時間是？",
+   "opts": [
+    "O(log n)",
+    "O(1)",
+    "O(n)",
+    "O(√n)"
+   ],
+   "ans": "O(log n)",
+   "why": "要問每棵樹的 root，樹最多 ⌊log₂n⌋ + 1 棵。"
+  },
+  {
+   "q": "14 個 node（B₃ + B₂ + B₁），max 在 B₂ 的 root。removeMax 後 forest 是？",
+   "opts": [
+    "B₃、B₂、B₀",
+    "B₃、B₁、B₀",
+    "B₃、B₂、B₁",
+    "B₃ 和 B₂"
+   ],
+   "ans": "B₃、B₂、B₀",
+   "why": "1110₂ − 0100₂ = 1010₂，再加回小嘍囉 0011₂：B₁ + B₁ 進位成 B₂，得 1101₂ = 13。"
+  },
+  {
+   "q": "用 ordered array 實作 map，insert 和 get 的時間各是？",
+   "opts": [
+    "insert O(n)、get O(log n)",
+    "insert O(log n)、get O(log n)",
+    "insert O(1)、get O(n)",
+    "insert O(n)、get O(n)"
+   ],
+   "ans": "insert O(n)、get O(log n)",
+   "why": "Get 可用 binary search；insert 找到位置後還要把後面元素推開，所以是 O(n)。"
+  },
+  {
+   "q": "Hash code 只取字串第一個字母（0～25），哪一組 key 會 collision？",
+   "opts": [
+    "apple 與 act",
+    "apple 與 banana",
+    "act 與 cat",
+    "cat 與 dog"
+   ],
+   "ans": "apple 與 act",
+   "why": "兩者都是 a 開頭，都對到 0；鴿籠原理保證 key 比格子多時一定會撞。"
+  }
+ ]
+}

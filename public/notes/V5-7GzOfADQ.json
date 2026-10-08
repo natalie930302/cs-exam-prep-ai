@@ -1,0 +1,334 @@
+{
+ "video": "V5-7GzOfADQ",
+ "label": "Knuth-Morris-Pratt（KMP）String Matching Algorithm",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "問題定義＋暴力法例一：abcdefgh 找 def",
+   "scene": "strm-naive-def",
+   "points": [
+    {
+     "text": "Pattern matching：給一個 string 和一個 pattern，判斷 pattern 是否出現在 string 中，若有就找出它的 index。",
+     "t": 0
+    },
+    {
+     "text": "解法很多，KMP 是其中之一；先看最基本的 naive（暴力）algorithm，了解它的缺點，再看 KMP 怎麼改進。",
+     "t": 23
+    },
+    {
+     "text": "暴力法：從 string 的第一個字母開始，拿 pattern 的第一個字母去比。",
+     "t": 51
+    },
+    {
+     "text": "不相同就把 pattern 往右移一格，再從 pattern 開頭比。",
+     "t": 65
+    },
+    {
+     "text": "相同就不用移，繼續比下一個字母；d、e、f 都相同 → 找到。",
+     "t": 83
+    },
+    {
+     "text": "def 出現在 string 的 index 4 到 6（這支影片 index 從 1 開始）。",
+     "t": 99
+    }
+   ]
+  },
+  {
+   "title": "暴力法例二：abcdabcabcdf 找 abcdf，i 會倒退",
+   "scene": "strm-naive-backtrack",
+   "points": [
+    {
+     "text": "第二個例子不畫 pattern 移動，改用兩個 index：i 指 string、j 指 pattern。",
+     "t": 117
+    },
+    {
+     "text": "相同就 i、j 一起往前；比到第 5 個字元 mismatch。",
+     "t": 135
+    },
+    {
+     "text": "mismatch 後 j 回到 pattern 開頭，i 也被拉回到這次起點的下一個（index 2）——i 已經走到 5 又被拉回去，這就是浪費。",
+     "t": 174
+    },
+    {
+     "text": "第二次部分相符（abc 後 mismatch）時，i 又要倒退 3 格，同樣的字元被重比。",
+     "t": 244
+    },
+    {
+     "text": "最後 pattern 在 index 8–12 找到。",
+     "t": 284
+    },
+    {
+     "text": "結論：暴力法會重複比較 string 的字元，原因是 mismatch 時 i 會 backtrack；KMP 要避免的就是 i 倒退。",
+     "t": 290
+    }
+   ],
+   "trap": "補充：暴力法的 i 倒退到「本次對齊起點 + 1」，不是倒退到 string 開頭。"
+  },
+  {
+   "title": "暴力法最壞情況：O(mn)",
+   "scene": "strm-naive-worst",
+   "points": [
+    {
+     "text": "最壞情況：string 幾乎全是 a，pattern 是 a…ab。",
+     "t": 307
+    },
+    {
+     "text": "每次對齊都要比到 pattern 最後的 b 才 mismatch，然後 j 回開頭、i 回到下一個起點。",
+     "t": 349
+    },
+    {
+     "text": "問題：前面那幾個 a 剛剛才比過，其實只要把 j 留在原地、檢查下一個字母是不是 b 就好。",
+     "t": 390
+    },
+    {
+     "text": "暴力法不研究 pattern 的結構，只是盲目地每次右移一格。",
+     "t": 416
+    },
+    {
+     "text": "string 長 n、pattern 長 m 時，時間是 O(mn)。",
+     "t": 430
+    }
+   ],
+   "trap": "補充：精確的最壞比較次數是 m(n − m + 1)；畫面上的 aaaaaaaaab / aaab 是依口述重建的例子，字串長度為推測。"
+  },
+  {
+   "title": "Prefix 與 suffix；π 表（LPS）",
+   "scene": "strm-prefix-suffix",
+   "points": [
+    {
+     "text": "KMP 的想法：先研究 pattern，減少比較次數。",
+     "t": 452
+    },
+    {
+     "text": "Prefix：從 pattern 開頭取任意多個字元，例如 a、ab、abc、abcd。",
+     "t": 473
+    },
+    {
+     "text": "Suffix：從 pattern 尾端往回取，例如 c、bc、abc、dabc。",
+     "t": 507
+    },
+    {
+     "text": "觀察：pattern 裡有沒有某個 prefix 同時也是 suffix？abcdabc 中 abc 就是。",
+     "t": 535
+    },
+    {
+     "text": "簡單講：pattern 開頭那一段，有沒有在 pattern 後面再出現。",
+     "t": 566
+    },
+    {
+     "text": "KMP 為 pattern 建一張 π 表，也叫 LPS（Longest Prefix that is also Suffix）。",
+     "t": 579
+    }
+   ],
+   "trap": "補充：prefix / suffix 指的是「真」前後綴（不含整個字串本身），否則每個字串都和自己相同。"
+  },
+  {
+   "title": "四個 pattern 的 π 表",
+   "scene": "strm-pi-tables",
+   "points": [
+    {
+     "text": "abcdabeabf：後面兩次出現 ab，分別配到 pattern 的第 1、2 個 → π = 0 0 0 0 1 2 0 1 2 0。index 從 1 開始。",
+     "t": 603
+    },
+    {
+     "text": "老師不追蹤建表的程式，只示範怎麼用眼睛看出來；照演算法追也會得到相同結果。",
+     "t": 637
+    },
+    {
+     "text": "abcdeabfabc：ab 配到 1、2，最後 abc 配到 1、2、3 → π = 0 0 0 0 0 1 2 0 1 2 3。",
+     "t": 650
+    },
+    {
+     "text": "aabcadaabe：第 2 個 a 自己就配到 1；後面的 a、aab 再配。",
+     "t": 674
+    },
+    {
+     "text": "aaaabaacd：a、aa、aaa 讓 π = 0 1 2 3，b 之後的 aa 再得到 1、2 → π = 0 1 2 3 0 1 2 0 0。",
+     "t": 687
+    },
+    {
+     "text": "π 表是 KMP 的基礎；表建好，比對演算法就很簡單。",
+     "t": 716
+    }
+   ],
+   "trap": "影片口述 aabcadaabe 時說「a、a 配到 2，其餘都是 0」，但 aab 也重複了：正確 π = 0 1 0 0 1 0 1 2 3 0（第 9 個 b 是 3）。另外洪逸／Horowitz 的 failure function f(j) = π − 1（從 −1 開始），考卷要先看定義。"
+  },
+  {
+   "title": "KMP 追蹤（上）：ababd，i 不倒退",
+   "scene": "strm-kmp-trace",
+   "params": {
+    "part": 1
+   },
+   "points": [
+    {
+     "text": "KMP 的關鍵：在 string 裡不 backtrack。",
+     "t": 723
+    },
+    {
+     "text": "先建 π 表：pattern ababd 的 π = 0 0 1 2 0；再多放一格 index 0 當起點。",
+     "t": 741
+    },
+    {
+     "text": "i 從 string 第 1 個開始，j 放在 0；每次比 string[i] 和 pattern[j+1]。",
+     "t": 797
+    },
+    {
+     "text": "相同就 i、j 都往前；abab 都相符，j 走到 4。",
+     "t": 812
+    },
+    {
+     "text": "string[5] = c 和 pattern[5] = d 不同：把 j 移到 π[4] = 2，i 不動——因為 ab 已經出現過兩次。",
+     "t": 864
+    },
+    {
+     "text": "仍不相同就再退 j = π[2] = 0；j 已是 0 還不相同，才把 i 往前一格。",
+     "t": 887
+    },
+    {
+     "text": "mismatch 時只有 j 在動，i 從不倒退。",
+     "t": 914
+    },
+    {
+     "text": "接著 ab 相符、c 又 mismatch：j 退回 2、再退到 0，然後 i 往前。",
+     "t": 921
+    }
+   ],
+   "trap": "補充：這支影片的寫法是「比 p[j+1]、mismatch 時 j = π[j]」（π 為 1-based 的長度）。洪逸／Horowitz 的寫法是 j = f(j−1) + 1，兩者等價，只是定義差 1。"
+  },
+  {
+   "title": "KMP 追蹤（下）：在 11–15 找到",
+   "scene": "strm-kmp-trace",
+   "params": {
+    "part": 2
+   },
+   "points": [
+    {
+     "text": "從 i = 9、j = 0 繼續：a、b、a、b 都相符，j 到 4。",
+     "t": 958
+    },
+    {
+     "text": "string[13] = a 和 pattern[5] = d 不同：j 退到 π[4] = 2。",
+     "t": 992
+    },
+    {
+     "text": "再比 pattern[3] = a 和 string[13] = a：相同。前面的 ab 已知相同，不用重比。",
+     "t": 1000
+    },
+    {
+     "text": "開頭那段 ab 出現兩次，所以第一次可以跳過，從第二次之後繼續比。",
+     "t": 1022
+    },
+    {
+     "text": "b、d 也相符，j 到達 pattern 結尾（j = 5 = m）→ 找到 pattern。",
+     "t": 1040
+    }
+   ]
+  },
+  {
+   "title": "KMP 總結與時間複雜度",
+   "scene": "strm-kmp-cost",
+   "points": [
+    {
+     "text": "核心：pattern 開頭那段若在後面又出現，就不要重複比較。",
+     "t": 1066
+    },
+    {
+     "text": "i 只往前走，從不像暴力法那樣倒退。",
+     "t": 1078
+    },
+    {
+     "text": "搜尋時 string 只掃過一次：n。",
+     "t": 1098
+    },
+    {
+     "text": "建 π 表時 pattern 掃一次：m。",
+     "t": 1112
+    },
+    {
+     "text": "總時間 O(m + n)，是很快的 pattern matching algorithm。",
+     "t": 1127
+    }
+   ],
+   "trap": "補充：「pattern 只掃一次」是攤銷意義：j 退回的總次數不超過前進的總次數，所以建表 O(m)、搜尋 O(n)。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "暴力法（naive）字串比對在最壞情況下的時間複雜度？（n = string 長、m = pattern 長）",
+   "opts": [
+    "O(mn)",
+    "O(m + n)",
+    "O(n log m)",
+    "O(n)"
+   ],
+   "ans": "O(mn)",
+   "why": "每個對齊位置最多比 m 次，共 n − m + 1 個位置。"
+  },
+  {
+   "q": "暴力法浪費時間的主要原因是？",
+   "opts": [
+    "mismatch 後 string 的 index i 會倒退",
+    "pattern 太短",
+    "要先排序 string",
+    "只比較最後一個字元"
+   ],
+   "ans": "mismatch 後 string 的 index i 會倒退",
+   "why": "i 倒退造成同一段字元被重複比較；KMP 讓 i 永不倒退。"
+  },
+  {
+   "q": "pattern abcdabc 中，同時是 prefix 也是 suffix 的最長字串是？",
+   "opts": [
+    "abc",
+    "ab",
+    "abcd",
+    "dabc"
+   ],
+   "ans": "abc",
+   "why": "prefix 有 a, ab, abc, abcd…；suffix 有 c, bc, abc, dabc…；共同最長是 abc。"
+  },
+  {
+   "q": "pattern ababd 的 π（LPS，index 從 1）是？",
+   "opts": [
+    "0 0 1 2 0",
+    "0 1 2 3 0",
+    "-1 -1 0 1 -1",
+    "0 0 1 1 0"
+   ],
+   "ans": "0 0 1 2 0",
+   "why": "第 3、4 個 a、b 分別配到開頭的 a、ab；d 沒有配到。-1 -1 0 1 -1 是 Horowitz 的 f = π − 1。"
+  },
+  {
+   "q": "pattern aaaabaacd 的 π 表是？",
+   "opts": [
+    "0 1 2 3 0 1 2 0 0",
+    "0 1 2 3 0 1 1 0 0",
+    "0 0 0 0 0 1 2 0 0",
+    "1 2 3 4 0 1 2 0 0"
+   ],
+   "ans": "0 1 2 3 0 1 2 0 0",
+   "why": "a 連續出現讓前 4 格是 0 1 2 3；b 後面的 aa 配到開頭的 aa → 1 2。"
+  },
+  {
+   "q": "在影片的 KMP 寫法中，string[i] ≠ pattern[j+1] 且 j > 0 時要做什麼？",
+   "opts": [
+    "j = π[j]，i 不動",
+    "i 退回 i − j + 1，j = 0",
+    "i++，j 不動",
+    "j = 0，i++"
+   ],
+   "ans": "j = π[j]，i 不動",
+   "why": "利用 π 表把 j 移到已知相符的前綴長度，string 的 i 永不倒退。"
+  },
+  {
+   "q": "KMP（含建表）的總時間複雜度？",
+   "opts": [
+    "O(m + n)",
+    "O(mn)",
+    "O(m log n)",
+    "O(n²)"
+   ],
+   "ans": "O(m + n)",
+   "why": "建 π 表 O(m)，搜尋時 i 只前進 O(n)。"
+  }
+ ]
+}

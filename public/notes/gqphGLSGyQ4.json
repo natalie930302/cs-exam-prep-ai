@@ -1,0 +1,1124 @@
+{
+ "video": "gqphGLSGyQ4",
+ "label": "台大林軒田 DSA 2-3-4 Tree / Red-Black Tree",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "作業 6：用別人寫好的 LibAVL",
+   "scene": null,
+   "points": [
+    {
+     "text": "開場說明作業 6：不用額外做什麼，盡量使用原本的 code（LibAVL），再多寫一點東西。",
+     "t": 704
+    },
+    {
+     "text": "目的是體驗使用別人的 library：怎麼 compile、怎麼從另一個檔案呼叫。",
+     "t": 829
+    },
+    {
+     "text": "強烈建議去讀 LibAVL 怎麼寫 AVL 的四種情形與紅黑樹，欣賞人家的寫法。",
+     "t": 941
+    }
+   ]
+  },
+  {
+   "title": "Final Survey Report 與 Final Project",
+   "scene": null,
+   "points": [
+    {
+     "text": "Survey report：把助教當老闆，說服他你推薦的 data structure 有專業價值。",
+     "t": 1026
+    },
+    {
+     "text": "data structure 像工具箱：沒有絕對好壞，依問題挑適合的工具。",
+     "t": 1091
+    },
+    {
+     "text": "有組 Final Project「破台」：去問他們怎麼做，從別人的選擇中學習。",
+     "t": 1142
+    }
+   ]
+  },
+  {
+   "title": "作業 Q&A：讀懂並修改別人的 code",
+   "scene": null,
+   "points": [
+    {
+     "text": "作業 6 第一小題 median index 的寫法不會要求得太 strict。",
+     "t": 1227
+    },
+    {
+     "text": "這個年代取代重造輪子的是讀人家的 code：讀得懂、能修改，往往比從零寫更重要。",
+     "t": 1381
+    }
+   ]
+  },
+  {
+   "title": "C4.5 decision tree 的故事（上）",
+   "scene": null,
+   "points": [
+    {
+     "text": "老師當學生時要跟 C4.5 decision tree 比較，它是當年唯一 open source 的實作。",
+     "t": 1488
+    },
+    {
+     "text": "看不懂它的 memory layout，於是改成 parse 螢幕上印出來的 tree，轉成自己的記憶體表示。",
+     "t": 1823
+    },
+    {
+     "text": "在原 code 印 tree 之前加一行特殊字串當 identifier，讓 parser 自動找到 tree。",
+     "t": 2070
+    }
+   ]
+  },
+  {
+   "title": "C4.5 的故事（下）：edge case 很重要",
+   "scene": null,
+   "points": [
+    {
+     "text": "跑一萬次實驗卻在中途停掉：debug 後發現某筆資料的 tree 只有 root。",
+     "t": 2184
+    },
+    {
+     "text": "教訓：recursion 的終止條件、測試 edge case 都很重要。",
+     "t": 2301
+    },
+    {
+     "text": "重點是能把學到的工具活用來解決問題。",
+     "t": 2416
+    }
+   ]
+  },
+  {
+   "title": "複習 2-3-4 tree",
+   "scene": "rblin-234-review",
+   "points": [
+    {
+     "text": "回到課程：先快轉複習上次的 2-3-4 tree、紅黑樹與 insertion，休息後講 removal。",
+     "t": 2507
+    },
+    {
+     "text": "2-3-4 tree 有三種 node：2-node（1 個 element、2 個小孩）、3-node（如 5 16、18 21）、4-node（7 11 14）。",
+     "t": 2551
+    },
+    {
+     "text": "multiway search 特性：node 內 element 排好序，小孩要滿足大小規則。",
+     "t": 2575
+    },
+    {
+     "text": "所有蟑螂腳（external node）在同一個高度，用來控制樹高。",
+     "t": 2621
+    },
+    {
+     "text": "所以 insertion 是從下層往上長，像地基先打好。",
+     "t": 2642
+    }
+   ]
+  },
+  {
+   "title": "2-3-4 tree 轉成紅黑樹",
+   "scene": "rblin-234-to-rb",
+   "points": [
+    {
+     "text": "紅黑樹 = 2-3-4 tree 用紅、黑兩色上色後轉成 binary tree。",
+     "t": 2661
+    },
+    {
+     "text": "每個 234 node 先選一個代表，代表塗黑；例：3 自己是代表。",
+     "t": 2677
+    },
+    {
+     "text": "4-node 7 11 14 由中間的 11 當代表（黑）。",
+     "t": 2697
+    },
+    {
+     "text": "3-node 兩人都能當代表：這裡選 5（5 16）和 21（18 21）；其他家人 16、7、14、18 塗紅。",
+     "t": 2710
+    },
+    {
+     "text": "轉成 binary tree：代表放上面，家人依大小接在代表下面。",
+     "t": 2737
+    },
+    {
+     "text": "3-node 有兩種畫法：左邊的在上（紅的往右下）或右邊的在上（紅的往左下）。",
+     "t": 2772
+    },
+    {
+     "text": "任一隻蟑螂腳往 root 數，碰到的黑色數量都一樣（這裡都是 2）。",
+     "t": 2834
+    },
+    {
+     "text": "這對應 234 tree 的蟑螂腳都在同一高度：碰到一個黑 = 碰到一家的代表。",
+     "t": 2855
+    }
+   ]
+  },
+  {
+   "title": "紅黑樹的規則從 234 而來",
+   "scene": "rblin-rb-rules",
+   "points": [
+    {
+     "text": "紅色 node 的爸爸一定是黑：紅色是跟著代表的其他家人。",
+     "t": 2881
+    },
+    {
+     "text": "例：7、14 的爸爸 11，18 的爸爸 21，16 的爸爸 5 都是黑。",
+     "t": 2900
+    },
+    {
+     "text": "代表總放上面，所以紅黑樹的 root 一定是黑。",
+     "t": 2939
+    },
+    {
+     "text": "紅色的小孩也一定是黑（含沒有小孩）：往下接就是別家了。",
+     "t": 2960
+    },
+    {
+     "text": "這些紅黑樹的定義都可以從 2-3-4 tree 的定義去理解。",
+     "t": 2983
+    }
+   ]
+  },
+  {
+   "title": "Insert 複習：新生先塗紅",
+   "scene": "rblin-ins-easy",
+   "points": [
+    {
+     "text": "口訣：新生先塗紅，照一般 BST 插入。",
+     "t": 3012
+    },
+    {
+     "text": "插入一定發生在某一隻蟑螂腳，例如 3 旁邊或 21 旁邊。",
+     "t": 3022
+    },
+    {
+     "text": "若爸爸是黑色，對應 234 tree 那家還有空房間。",
+     "t": 3043
+    },
+    {
+     "text": "有空房間就直接放，這是簡單的情形。",
+     "t": 3060
+    }
+   ]
+  },
+  {
+   "title": "Insert 15：紅叔不能容 → 分家",
+   "scene": "rblin-ins15-recolor",
+   "points": [
+    {
+     "text": "把 15 放到 14 旁邊：沒有空房間了。",
+     "t": 3074
+    },
+    {
+     "text": "口訣「紅叔不能容」：爸爸 14、叔叔 7 都是紅，那家（7 11 14）已滿。",
+     "t": 3089
+    },
+    {
+     "text": "234 要分家：把中間的 11 往上推。",
+     "t": 3111
+    },
+    {
+     "text": "7 自成一家、14 15 一家 → 把 7、14 改塗黑當代表。",
+     "t": 3140
+    },
+    {
+     "text": "11 被插入上一層，像新生一樣改成紅色。",
+     "t": 3162
+    },
+    {
+     "text": "但 11 有紅色的爸爸 16，16 容不下它，還要處理。",
+     "t": 3186
+    }
+   ],
+   "trap": "紅叔叔（爸爸、叔叔都紅）＝ 234 的 4-node 已滿 → recolor 後問題往上傳；不是旋轉。"
+  },
+  {
+   "title": "11 插錯邊 → restructure",
+   "scene": "rblin-ins15-restructure",
+   "points": [
+    {
+     "text": "5 16 是 3-node，11 插進來但不在平衡的那一邊（像 18 21 插在 18 左邊）。",
+     "t": 3204
+    },
+    {
+     "text": "要做 restructure，跟 AVL tree 的 restructure 類似。",
+     "t": 3228
+    },
+    {
+     "text": "上面這層的 5 要滑下來。",
+     "t": 3264
+    },
+    {
+     "text": "特徵：叔叔 3 是黑色，表示 5 16 這家沒滿，是 5、16、11 三人重新排。",
+     "t": 3297
+    },
+    {
+     "text": "對比 7、14 都是紅（紅叔）的情形：那家滿了，要做一連串 recolor。",
+     "t": 3311
+    },
+    {
+     "text": "以上用簡單圖示快轉複習 234 與紅黑樹插入的對應。",
+     "t": 3342
+    }
+   ],
+   "trap": "補充：restructure 後 11 成為黑色代表、5 與 16 變紅；黑叔叔才旋轉，紅叔叔只變色。"
+  },
+  {
+   "title": "休息前 Q&A",
+   "scene": null,
+   "points": [
+    {
+     "text": "作業 6 若想自己刻紅黑樹也可以，只要做法 reasonable；用 LibAVL 通常比較容易。",
+     "t": 3386
+    },
+    {
+     "text": "休息 10 分鐘，回來講 234 與紅黑樹的 removal。",
+     "t": 3445
+    }
+   ]
+  },
+  {
+   "title": "Q&A：shuffle 1–4096 可以嗎",
+   "scene": null,
+   "points": [
+    {
+     "text": "回來後回答作業 6.2.3 能否用 shuffle 1–4096 取代亂數。",
+     "t": 4071
+    },
+    {
+     "text": "老師猜結果一樣但無法百分之百保證，建議自己試試。",
+     "t": 4090
+    },
+    {
+     "text": "多花 5 分鐘兩種都寫來比較，讓自己更有信心。",
+     "t": 4168
+    }
+   ]
+  },
+  {
+   "title": "Removal 第一步：變成 remove leaf",
+   "scene": "rblin-rm16-succ",
+   "points": [
+    {
+     "text": "重畫兩棵範例樹：一棵 234、一棵紅黑樹。",
+     "t": 4193
+    },
+    {
+     "text": "蟑螂腳畫成黑色：像潛在的下一個 node，黑 = 還有空間、紅 = 這家可能已滿。",
+     "t": 4208
+    },
+    {
+     "text": "BST removal 的重要概念：讓 remove 發生在 leaf，從中間砍斷再接回很麻煩。",
+     "t": 4251
+    },
+    {
+     "text": "要 remove 16：先往右，再一路往左鑽到底，找到下一個人 18（右子樹最小）。",
+     "t": 4270
+    },
+    {
+     "text": "把 18 請上來補 16 的位置，再去 remove 18。",
+     "t": 4303
+    },
+    {
+     "text": "也可以選左子樹最大的；一邊空就找另一邊，兩邊都空表示它本身就是 leaf。",
+     "t": 4334
+    },
+    {
+     "text": "234 tree 也一樣：remove 16 就借 18 上來，改成 remove 18。",
+     "t": 4377
+    }
+   ]
+  },
+  {
+   "title": "簡單的 remove：那家還有人",
+   "scene": "rblin-rm-red-leaf",
+   "points": [
+    {
+     "text": "簡單的 remove：那家移掉後還有人在。",
+     "t": 4431
+    },
+    {
+     "text": "例：234 移 18（21 頂著）、移 14、移 11 都很簡單。",
+     "t": 4444
+    },
+    {
+     "text": "remove from 4-node、remove from 3-node：easy。",
+     "t": 4464
+    },
+    {
+     "text": "對應紅黑樹：remove red leaf，easy。",
+     "t": 4528
+    },
+    {
+     "text": "除了把蟑螂腳接好，什麼都不用做。",
+     "t": 4544
+    },
+    {
+     "text": "不是每種 234 情形都直接出現在紅黑樹：11 在紅黑樹不是 leaf。",
+     "t": 4591
+    },
+    {
+     "text": "會先走第 0 步，例如把 14 請上去當門神，再移掉 14。",
+     "t": 4613
+    }
+   ]
+  },
+  {
+   "title": "234 remove 3：transfer",
+   "scene": "rblin-234-transfer3",
+   "points": [
+    {
+     "text": "難的是 remove from 2-node，例如移掉 3。",
+     "t": 4641
+    },
+    {
+     "text": "3 走了這家沒人，直接拆掉會違反蟑螂腳同高。",
+     "t": 4655
+    },
+    {
+     "text": "向同輩（兄弟那家）借人：7 11 14 住得很擠。",
+     "t": 4700
+    },
+    {
+     "text": "離 3 最近的是爸爸 5：5 下來頂著。",
+     "t": 4740
+    },
+    {
+     "text": "從隔壁借 7 上去當新爸爸；隔壁剩兩人也沒關係。",
+     "t": 4748
+    },
+    {
+     "text": "這個操作叫 Transfer。",
+     "t": 4824
+    },
+    {
+     "text": "發生在 borrowable：旁邊的 sibling 是 3-node 或 4-node。",
+     "t": 4834
+    }
+   ]
+  },
+  {
+   "title": "234：移 7、14 後再 remove 11",
+   "scene": "rblin-234-rm11-transfer",
+   "points": [
+    {
+     "text": "接著看隔壁人丁單薄的情形，先重畫圖。",
+     "t": 4898
+    },
+    {
+     "text": "先做兩個簡單 removal：移掉 7、再移掉 14，3 和 11 都只剩一人。",
+     "t": 4962
+    },
+    {
+     "text": "remove 11：又是 remove from 2-node。",
+     "t": 4992
+    },
+    {
+     "text": "可從 18 21 借：16 下來、18 上去。",
+     "t": 5014
+    },
+    {
+     "text": "結果 16、21、18 都各自一個人住。",
+     "t": 5024
+    }
+   ]
+  },
+  {
+   "title": "234 remove 21：借無可借 → fuse",
+   "scene": "rblin-234-rm21-fuse",
+   "points": [
+    {
+     "text": "再移掉 21：想從隔壁借，但 16 一個人住，沒人可借。",
+     "t": 5047
+    },
+    {
+     "text": "18 下來、16 上去也不行：借無可借。",
+     "t": 5060
+    },
+    {
+     "text": "不如合在一起：把爸爸 18 拉下來跟兄弟 16 合成一家。",
+     "t": 5099
+    },
+    {
+     "text": "這叫 fuse：爸爸跟被移掉者的 sibling 合體，上一層少一個 key 和一條連結。",
+     "t": 5159
+    },
+    {
+     "text": "上一層若是 3-node（5 18），移掉一個就是簡單情形。",
+     "t": 5205
+    },
+    {
+     "text": "若上一層也是 2-node，就往上一層重複同樣的 remove。",
+     "t": 5217
+    },
+    {
+     "text": "所以 fuse = fuse and remove from upper level。",
+     "t": 5250
+    },
+    {
+     "text": "總結 234：insert 滿了就分家往上推；remove 有人就移，沒人就借（transfer）或合併（fuse）。",
+     "t": 5372
+    }
+   ]
+  },
+  {
+   "title": "RB remove 3：兄弟不同層的麻煩情形",
+   "scene": "rblin-rb-rm3-hard",
+   "points": [
+    {
+     "text": "來看紅黑樹的 removal：難的都是 remove 2-node。",
+     "t": 5428
+    },
+    {
+     "text": "在紅黑樹 remove 3：3 是 leaf，可以直接處理。",
+     "t": 5481
+    },
+    {
+     "text": "把 7 寫回來，讓隔壁 7 11 有人可借。",
+     "t": 5525
+    },
+    {
+     "text": "234 最後會變成 5 | 7 16 | 11（5 下、7 上）。",
+     "t": 5577
+    },
+    {
+     "text": "紅黑樹一種畫法：7 在上面、16 在下面，5 在左、11 接在下面。",
+     "t": 5642
+    },
+    {
+     "text": "另一種：16 在上面，7 在左下接 5 和 11。",
+     "t": 5677
+    },
+    {
+     "text": "兩種都牽涉 5、16、11、7 四個 node 的 restructure。",
+     "t": 5716
+    },
+    {
+     "text": "因為有兩個 3-node 疊起來、跨四層，先擱著，等一下再處理。",
+     "t": 5769
+    }
+   ]
+  },
+  {
+   "title": "RB remove 3：黑兄弟有紅小孩 → rotate",
+   "scene": "rblin-rb-rm3-rotate",
+   "points": [
+    {
+     "text": "先看簡單一點的：拿掉 16 那支，234 是 5 | 3 | 7 11。",
+     "t": 5812
+    },
+    {
+     "text": "對應紅黑樹：7 當代表（黑），11 紅。",
+     "t": 5848
+    },
+    {
+     "text": "一樣 remove 3，234 可以向兄弟 7 11 借（transfer）。",
+     "t": 5880
+    },
+    {
+     "text": "特別的是：要移的 node 跟 234 的兄弟在紅黑樹同一層。",
+     "t": 5970
+    },
+    {
+     "text": "兄弟可借 → 兄弟是黑色，且有紅色小孩（侄子／外甥）。",
+     "t": 6001
+    },
+    {
+     "text": "做 rotate：rotate 5 跟 7，跟 AVL 的 rotate 同義，爸爸轉下來、兄弟轉上去。",
+     "t": 6083
+    },
+    {
+     "text": "被借走的紅外甥 11 改塗黑，就搞定。",
+     "t": 6116
+    },
+    {
+     "text": "這對應 transfer / borrowable 中「兄弟在同一層」的那種。",
+     "t": 6150
+    }
+   ]
+  },
+  {
+   "title": "RB remove 3：沒得借 → recolor",
+   "scene": "rblin-rb-rm3-recolor",
+   "points": [
+    {
+     "text": "再看不能借的情形：234 是 5 16 | 3 | 7 | 18 21。",
+     "t": 6202
+    },
+    {
+     "text": "為了講解，讓 16 當紅黑樹的 root，5（紅）在旁邊，下面接 3、7。",
+     "t": 6245
+    },
+    {
+     "text": "移掉 3 要把 5、7 併成一家（fuse）。",
+     "t": 6286
+    },
+    {
+     "text": "紅黑樹只要重新塗顏色：Recolor。",
+     "t": 6315
+    },
+    {
+     "text": "5 原本是紅（附屬家人），樂得下來當家長塗黑；7 塗紅。",
+     "t": 6347
+    },
+    {
+     "text": "但 fuse 還要 remove from upper level。",
+     "t": 6377
+    },
+    {
+     "text": "若 5 原本是黑，就多圈一個黑 → 黑上加黑，表示還沒處理完，繼續上一層。",
+     "t": 6436
+    },
+    {
+     "text": "若 parent 原本是紅，改塗黑，fuse 就完成。",
+     "t": 6469
+    }
+   ]
+  },
+  {
+   "title": "Remove 黑色的三種情形",
+   "scene": "rblin-rm-cases",
+   "points": [
+    {
+     "text": "用比較 general 的方式整理，這是紅黑樹最困難的部分。",
+     "t": 6501
+    },
+    {
+     "text": "remove 的 leaf 是紅色 → easy。",
+     "t": 6516
+    },
+    {
+     "text": "困難都在 remove 黑色。",
+     "t": 6533
+    },
+    {
+     "text": "情形一：兄弟同層、有紅色外甥 → 可借（transfer）。",
+     "t": 6540
+    },
+    {
+     "text": "情形二：兄弟同層但只有黑外甥 → 對應 fuse；兩者都是 black sibling。",
+     "t": 6565
+    },
+    {
+     "text": "情形三：兄弟不同層 → red sibling。",
+     "t": 6611
+    },
+    {
+     "text": "這裡的兄弟指 2-3-4 tree 中的兄弟。",
+     "t": 6625
+    }
+   ]
+  },
+  {
+   "title": "Case 1 通式：restructure",
+   "scene": "rblin-case1-restructure",
+   "points": [
+    {
+     "text": "通式：上面某個 node A 是兄弟們的爸爸，顏色不一定（紅或黑），在 234 代表上一層。",
+     "t": 6667
+    },
+    {
+     "text": "兄弟同層：兩個黑 node，其中一個是要移掉的 leaf。",
+     "t": 6705
+    },
+    {
+     "text": "兄弟家有紅小孩可借 → 做 restructure（對應 234 transfer）。",
+     "t": 6747
+    },
+    {
+     "text": "爺爺 A 要跑下去，頂在原來被移掉的位置。",
+     "t": 6789
+    },
+    {
+     "text": "兄弟家的 C 上去，B 留在一邊。",
+     "t": 6830
+    },
+    {
+     "text": "下來的 A 塗黑：它是空掉那家的新主人；B 本來就是家長，仍是黑。",
+     "t": 6875
+    },
+    {
+     "text": "C 移到上層當原本爸爸的位置，所以繼承 A 原本的顏色。",
+     "t": 6910
+    },
+    {
+     "text": "restructure 接近 AVL 的 restructure：把三代關係重新組合成平衡狀態。",
+     "t": 6941
+    }
+   ],
+   "trap": "補充：C 拿的是 A 原本的顏色（不一定是黑）；A、B 都是黑。這個 restructure 做完就結束，不會再往上。"
+  },
+  {
+   "title": "Case 2 通式：recolor",
+   "scene": "rblin-case2-recolor",
+   "points": [
+    {
+     "text": "Case 2 對應 fuse：兄弟完全沒有小孩可借。",
+     "t": 6973
+    },
+    {
+     "text": "要移走的 node 的兄弟是黑，而且沒有任何紅色小孩。",
+     "t": 6996
+    },
+    {
+     "text": "在紅黑樹對應到 re-color。",
+     "t": 7043
+    },
+    {
+     "text": "兄弟要變成附屬品：塗紅。",
+     "t": 7057
+    },
+    {
+     "text": "爸爸 A 若本來是紅，被請下來當家長，塗黑就好。",
+     "t": 7085
+    },
+    {
+     "text": "A 要「加 black」：紅變黑就解決。",
+     "t": 7109
+    },
+    {
+     "text": "若 A 原本是黑，就還有未解決的黑色（double black），要對 A 再看它的兄弟與外甥。",
+     "t": 7125
+    },
+    {
+     "text": "recolor 不改結構，但可能一路往上做，像 AVL 往上更新高度。",
+     "t": 7180
+    }
+   ]
+  },
+  {
+   "title": "Case 3：紅兄弟 = 假兄弟",
+   "scene": "rblin-case3-red-sibling",
+   "points": [
+    {
+     "text": "老師你還沒講兄弟不同層的情形。",
+     "t": 7208
+    },
+    {
+     "text": "特徵：要移掉的黑 node，兄弟是紅色。",
+     "t": 7216
+    },
+    {
+     "text": "這個紅色是假兄弟：它其實是 234 tree 裡爸爸那一層的兄弟。",
+     "t": 7266
+    },
+    {
+     "text": "原因是那個 3-node 的排法不符合預期（A 在上、B 在下）。",
+     "t": 7291
+    },
+    {
+     "text": "先轉一轉：讓 B 在上、A 在下。",
+     "t": 7311
+    },
+    {
+     "text": "轉完後真兄弟一定是黑色帶頭，就能照前面兩個步驟處理。",
+     "t": 7339
+    }
+   ]
+  },
+  {
+   "title": "紅黑樹 remove 的完整步驟",
+   "scene": "rblin-rm-algo",
+   "points": [
+    {
+     "text": "概略地說紅黑樹 removal 的步驟。",
+     "t": 7364
+    },
+    {
+     "text": "第一步：try to remove leaf。",
+     "t": 7371
+    },
+    {
+     "text": "移掉的是 red → easy。",
+     "t": 7384
+    },
+    {
+     "text": "移掉的是 black：(a) red sibling，找不到真兄弟 → 先 rotate 那個 3-node。",
+     "t": 7402
+    },
+    {
+     "text": "(b) 真兄弟（一定是黑）有紅小孩 → restructure。",
+     "t": 7453
+    },
+    {
+     "text": "(c) 真兄弟只有黑小孩 → recolor，檢查上一層，沒安好就繼續。",
+     "t": 7475
+    },
+    {
+     "text": "每一步都一對一對應 234：4/3-node easy；2-node 先找真兄弟，有得借就借（restructure），沒得借就 fuse（recolor）。",
+     "t": 7513
+    },
+    {
+     "text": "recolor 還要處理再往上一層的問題。",
+     "t": 7563
+    }
+   ]
+  },
+  {
+   "title": "鼓勵：資工所考試最愛考這個",
+   "scene": null,
+   "points": [
+    {
+     "text": "承認紅黑樹 removal 很難，if-then-else 太多。",
+     "t": 7588
+    },
+    {
+     "text": "若沒直升而要考研究所入學考試，出題老師最喜歡考這些東西。",
+     "t": 7664
+    },
+    {
+     "text": "老師自己每年教之前也要重新想過幾遍。",
+     "t": 7715
+    }
+   ]
+  },
+  {
+   "title": "為什麼 remove 仍是 O(log n)",
+   "scene": "rblin-rm-logn",
+   "points": [
+    {
+     "text": "作業最後的程式題 follow BST.c 原本的 insert 即可，不要求平衡。",
+     "t": 7748
+    },
+    {
+     "text": "O(log n) 是因為高度都被 bound 在 log n：234 tree 高度 O(log n)。",
+     "t": 7787
+    },
+    {
+     "text": "一個 234 node 最多變成兩層紅黑樹 node，所以紅黑樹高度也是 O(log n)。",
+     "t": 7798
+    },
+    {
+     "text": "removal 中跟高度有關的只有 recolor：對應 234 一連串的 fuse。",
+     "t": 7817
+    },
+    {
+     "text": "其他操作幾乎一層就解決：restructure（從隔壁借）做完就沒事。",
+     "t": 7842
+    },
+    {
+     "text": "紅兄弟時爸爸跟兄弟轉一次就好，轉完就有黑兄弟。",
+     "t": 7887
+    },
+    {
+     "text": "唯一重複的步驟只有 recolor。",
+     "t": 7916
+    },
+    {
+     "text": "找 node 要樹高的時間、維護也是樹高的時間 → 仍是 O(log n)。",
+     "t": 7940
+    }
+   ]
+  },
+  {
+   "title": "Double black 怎麼往上傳",
+   "scene": "rblin-double-black",
+   "points": [
+    {
+     "text": "回答 double black 怎麼檢查上面的 node：它代表還沒解決的東西。",
+     "t": 7946
+    },
+    {
+     "text": "畫一棵多幾層、node 很少的 234 tree 與對應紅黑樹。",
+     "t": 8007
+    },
+    {
+     "text": "移掉一個黑 leaf：兄弟黑、沒有小孩可借。",
+     "t": 8072
+    },
+    {
+     "text": "做 recolor：兄弟先塗紅。",
+     "t": 8101
+    },
+    {
+     "text": "上面那個變 black black：等於要在上一層 remove 它，像迴圈跑回上一層。",
+     "t": 8116
+    },
+    {
+     "text": "上一層它有黑兄弟，而且兄弟家有人可借 → restructure。",
+     "t": 8139
+    },
+    {
+     "text": "double black 就是提醒：remove 黑色要特別小心。",
+     "t": 8200
+    },
+    {
+     "text": "restructure 是一次性的，做完就解決；沒人可借才 recolor，黑色再往上傳。",
+     "t": 8295
+    }
+   ],
+   "trap": "補充：老師在 151:22 承認這張手繪圖不太清楚、甚至有地方不正確（子樹會跑到哪），之後另錄補充影片；本動畫改用自訂的具體例子示範：x 移掉 → y 塗紅、A 變 double black → A 的黑兄弟 S 有紅小孩 C → 以 P 為軸 rotate，S 拿 P 的顏色、P 與 C 塗黑。"
+  },
+  {
+   "title": "Q&A：考試與休息",
+   "scene": null,
+   "points": [
+    {
+     "text": "recolor 向上傳遞 = fuse 時在上一層執行 removal，一模一樣的事。",
+     "t": 8325
+    },
+    {
+     "text": "入學考試不容易考寫 code，但常考這些操作的觀念。",
+     "t": 8380
+    },
+    {
+     "text": "終於過了紅黑樹 removal 的大魔王，休息 10 分鐘。",
+     "t": 8448
+    }
+   ]
+  },
+  {
+   "title": "補充錄影預告、國外研究所",
+   "scene": null,
+   "points": [
+    {
+     "text": "同學反映 double black 的圖講得不清楚甚至不太正確，老師道歉。",
+     "t": 9078
+    },
+    {
+     "text": "之後會另外錄 10–20 分鐘，用設計好的例子完整講紅黑樹與 234 removal。",
+     "t": 9130
+    },
+    {
+     "text": "申請國外碩士班成績較重要，博士班專題研究較重要。",
+     "t": 9173
+    }
+   ]
+  },
+  {
+   "title": "234 操作 ↔ 紅黑樹操作 總整理",
+   "scene": "rblin-op-table",
+   "points": [
+    {
+     "text": "234 tree 困難的是 insert 到已經滿的那家（insert 4）。",
+     "t": 9293
+    },
+    {
+     "text": "insert 4 對應紅黑樹的 recolor，甚至一系列 recolor。",
+     "t": 9322
+    },
+    {
+     "text": "insert 3 大多只是塞一個紅的；兩人相對位置不對時才 restructure。",
+     "t": 9354
+    },
+    {
+     "text": "insert 2 最簡單：加紅色就好。",
+     "t": 9399
+    },
+    {
+     "text": "remove 4、remove 3 都是剪掉紅色的 leaf。",
+     "t": 9411
+    },
+    {
+     "text": "remove 2 分 transfer 與 fuse：fuse ↔ recolor，transfer ↔ restructure（可能先 pre-restructure）。",
+     "t": 9442
+    },
+    {
+     "text": "234 最複雜的 overflow 與 fuse，在紅黑樹只是 recolor：只改顏色 bit，不改指標。",
+     "t": 9583
+    },
+    {
+     "text": "restructure 盡量少發生，不像 AVL 每次插入都完整檢查。",
+     "t": 9621
+    }
+   ]
+  },
+  {
+   "title": "紅黑樹的 official 三條規則",
+   "scene": "rblin-rb-rules",
+   "params": {
+    "official": true
+   },
+   "points": [
+    {
+     "text": "最後用書上紅黑樹的 official 三條規則做 summary。",
+     "t": 9660
+    },
+    {
+     "text": "一、紅色 node 的小孩一定是黑（即下一層的 234 node）。",
+     "t": 9676
+    },
+    {
+     "text": "二、root 是黑：234 node 的 representative。",
+     "t": 9709
+    },
+    {
+     "text": "三、所有 external node（蟑螂腳）有相同的 black depth。",
+     "t": 9734
+    },
+    {
+     "text": "black depth 其實就是 234 tree 的高度。",
+     "t": 9770
+    },
+    {
+     "text": "最神奇的 black depth 維護，來源就是從 234 tree 變化而來。",
+     "t": 9796
+    }
+   ]
+  },
+  {
+   "title": "樹的家族與 B-tree",
+   "scene": "rblin-tree-family",
+   "points": [
+    {
+     "text": "整理 BST 與 multiway search tree 的關係。",
+     "t": 9824
+    },
+    {
+     "text": "BST 做 rigorous balancing → AVL tree。",
+     "t": 9842
+    },
+    {
+     "text": "往 multiway 發展：BST → 2-3 tree → 2-3-4 tree。",
+     "t": 9853
+    },
+    {
+     "text": "2-3-4 tree 的 BST 版本是紅黑樹；2-3 tree 對應的版本叫 AA tree。",
+     "t": 9881
+    },
+    {
+     "text": "紅黑樹在需要的性質上達到較好的平衡點，比較 popular。",
+     "t": 9911
+    },
+    {
+     "text": "multiway 再發展是整個 B-tree family：一個 node 可以裝很多資料。",
+     "t": 9928
+    },
+    {
+     "text": "適合 external storage（硬碟）：一次抓一把資料，不用拿小紙條到處找。",
+     "t": 10032
+    },
+    {
+     "text": "要了解儲存媒介的特性，才能設計好的 data structure（還有 B+ tree 等變化）。",
+     "t": 10145
+    }
+   ]
+  },
+  {
+   "title": "期末 Q&A",
+   "scene": null,
+   "points": [
+    {
+     "text": "Final Project 應在老師實驗室的電腦上跑；測試請用不同數字。",
+     "t": 10245
+    },
+    {
+     "text": "為什麼叫紅黑樹：老師不確定，可能跟當時印刷技術有關。",
+     "t": 10293
+    },
+    {
+     "text": "B-tree 的 B：老師所知是承襲自 binary search tree，沒仔細查證。",
+     "t": 10321
+    }
+   ]
+  },
+  {
+   "title": "課程尾聲與閒聊",
+   "scene": null,
+   "points": [
+    {
+     "text": "下週原則上最後一次上課，把重要的 search / sorting 講完，期末考週不上課。",
+     "t": 10341
+    },
+    {
+     "text": "想約老師聊天或吃飯可以寫 email，但老師很忙，需要排時間。",
+     "t": 10499
+    },
+    {
+     "text": "除了補錄紅黑樹 removal 的例子與下週課程，這學期差不多到此。",
+     "t": 10703
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "2-3-4 tree 轉紅黑樹時，4-node 7 11 14 應怎麼上色？",
+   "opts": [
+    "11 黑，7、14 紅",
+    "7 黑，11、14 紅",
+    "三個都黑",
+    "11 紅，7、14 黑"
+   ],
+   "ans": "11 黑，7、14 紅",
+   "why": "4-node 由中間的 element 當代表（黑），其餘家人塗紅接在代表兩側。"
+  },
+  {
+   "q": "紅黑樹插入 15 時，爸爸 14 與叔叔 7 都是紅色，對應 2-3-4 tree 的什麼狀況？",
+   "opts": [
+    "4-node 已滿，要分家（recolor 後往上）",
+    "3-node 插錯邊，要 restructure",
+    "2-node 有空房間，直接放",
+    "要做 fuse"
+   ],
+   "ans": "4-node 已滿，要分家（recolor 後往上）",
+   "why": "紅叔不能容：7 11 14 這家已滿，11 往上推，7、14 塗黑、11 塗紅，問題往上一層傳。"
+  },
+  {
+   "q": "紅黑樹 remove 一個黑色 leaf，它的兄弟是黑色且有紅色小孩，應做什麼？",
+   "opts": [
+    "restructure（rotate），紅外甥塗黑後結束",
+    "只把兄弟塗紅",
+    "先 rotate 找真兄弟",
+    "直接移掉即可"
+   ],
+   "ans": "restructure（rotate），紅外甥塗黑後結束",
+   "why": "對應 234 的 transfer：兄弟家有人可借，做一次 restructure 就解決，不再往上。"
+  },
+  {
+   "q": "Case 2：被移掉的黑 node 的兄弟是黑且只有黑小孩，若爸爸 A 原本是黑，結果是？",
+   "opts": [
+    "兄弟塗紅，A 變 double black，往上一層繼續",
+    "兄弟塗紅，A 塗黑，結束",
+    "A 塗紅，結束",
+    "做一次 rotate 後結束"
+   ],
+   "ans": "兄弟塗紅，A 變 double black，往上一層繼續",
+   "why": "對應 234 的 fuse + remove from upper level；A 原本紅才能直接塗黑結束。"
+  },
+  {
+   "q": "remove 時遇到紅色兄弟（red sibling）代表什麼？",
+   "opts": [
+    "那個紅兄弟其實是爸爸那層 3-node 的家人，要先 rotate 找真兄弟",
+    "兄弟家有人可借",
+    "要直接 recolor",
+    "樹已經不平衡，要整棵重建"
+   ],
+   "ans": "那個紅兄弟其實是爸爸那層 3-node 的家人，要先 rotate 找真兄弟",
+   "why": "紅兄弟是假兄弟：把 3-node 轉個方向（rotate 一次）後，真兄弟一定是黑色，再套 Case 1 或 2。"
+  },
+  {
+   "q": "在 2-3-4 tree remove 21 時，兄弟 16 只有一人、爸爸是 5 18，應做哪個操作？",
+   "opts": [
+    "fuse：18 拉下來和 16 合一家",
+    "transfer：16 上去、18 下來",
+    "split：18 往上推",
+    "直接移掉 21 即可"
+   ],
+   "ans": "fuse：18 拉下來和 16 合一家",
+   "why": "隔壁借無可借，就把爸爸拉下來與兄弟合併；上一層 5 18 少一個 key 仍有人，所以結束。"
+  },
+  {
+   "q": "為什麼紅黑樹的 removal 仍是 O(log n)？",
+   "opts": [
+    "只有 recolor 可能一路往上，而高度是 O(log n)；rotate/restructure 只做常數次",
+    "因為每次 remove 都要旋轉 log n 次",
+    "因為紅黑樹是 complete binary tree",
+    "因為 remove 只會發生在 root"
+   ],
+   "ans": "只有 recolor 可能一路往上，而高度是 O(log n)；rotate/restructure 只做常數次",
+   "why": "一個 234 node 最多兩層紅黑 node，高度 O(log n)；找 node 與維護都只走樹高。"
+  },
+  {
+   "q": "紅黑樹規則「所有 external node 有相同 black depth」對應 2-3-4 tree 的哪個性質？",
+   "opts": [
+    "所有 leaf（蟑螂腳）在同一高度",
+    "每個 node 最多 4 個小孩",
+    "node 內的 key 排好序",
+    "root 至少有兩個小孩"
+   ],
+   "ans": "所有 leaf（蟑螂腳）在同一高度",
+   "why": "每碰到一個黑就是碰到一家的代表，所以 black depth 就是 234 tree 的高度。"
+  }
+ ]
+}

@@ -1,0 +1,624 @@
+{
+ "video": "ucL0BLz2OGk",
+ "label": "交大彭文志 Lec26 Search Structures (3/3)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "2-3 tree 是 order 3 的 B-tree",
+   "scene": "btree-p-23tree",
+   "points": [
+    {
+     "text": "回顧：2-3-4 tree 是 order 4 的 B-tree，2-3 tree 是 order 3 的 B-tree。",
+     "t": 0
+    },
+    {
+     "text": "看一個 2-3 tree 的例子；這裡的 order 指的是 B-tree 的 order。",
+     "t": 43
+    },
+    {
+     "text": "root 至少要有 2 個 pointer。",
+     "t": 53
+    },
+    {
+     "text": "非 root 的 node，child 數至少 ⌈m/2⌉ = ⌈3/2⌉ = 2。",
+     "t": 61
+    },
+    {
+     "text": "例子中 node B 有 3 個 pointer、node C 有 2 個。",
+     "t": 87
+    },
+    {
+     "text": "所以 2-3 tree 就是 B-tree；後面還會提到 B+ tree。",
+     "t": 95
+    }
+   ]
+  },
+  {
+   "title": "2-3 tree 的 search：四種情況",
+   "scene": "btree-p-search",
+   "points": [
+    {
+     "text": "search 和 binary search tree 一樣，比大小往下走。",
+     "t": 105
+    },
+    {
+     "text": "node 裡可能有兩個 key：first key 和 second key。",
+     "t": 123
+    },
+    {
+     "text": "x < first key → 走 left child。",
+     "t": 137
+    },
+    {
+     "text": "first key < x < second key → 走 middle child。",
+     "t": 145
+    },
+    {
+     "text": "x > second key → 走最右邊的 pointer。",
+     "t": 149
+    },
+    {
+     "text": "第四種：x 等於其中一個 key → 找到。",
+     "t": 154
+    }
+   ]
+  },
+  {
+   "title": "2-3 tree 的 insert：split 與連鎖反應",
+   "scene": "btree-p-insert60",
+   "points": [
+    {
+     "text": "insert 先找到要放的 node u（leaf）。",
+     "t": 167
+    },
+    {
+     "text": "情況一：u 只有 1 個 element，有空位直接放。",
+     "t": 179
+    },
+    {
+     "text": "情況二：u 已有 2 個 element → split。",
+     "t": 204
+    },
+    {
+     "text": "split 規則：新開一個 node 放三個數字中最大的。",
+     "t": 213
+    },
+    {
+     "text": "中間的那個 insert 到 u 的 parent。",
+     "t": 231
+    },
+    {
+     "text": "最小的留在原來的 node u。",
+     "t": 236
+    },
+    {
+     "text": "例子：在 A = [20, 40]、C = [70, 80] 的樹插入 60，60 落在 C。",
+     "t": 259
+    },
+    {
+     "text": "60, 70, 80 的中間是 70，70 往 parent A 送。",
+     "t": 282
+    },
+    {
+     "text": "A 變成 20, 40, 70 也要 split：40 往上成為新 root——這叫連鎖反應。",
+     "t": 304
+    }
+   ]
+  },
+  {
+   "title": "學生提問：60 存在哪裡",
+   "scene": "btree-p-insert60",
+   "points": [
+    {
+     "text": "（老師指出投影片少畫了一個 pointer）",
+     "t": 362
+    },
+    {
+     "text": "學生問 split 後 node 數為什麼多了；老師說明 60 不是只停在上層。",
+     "t": 387
+    },
+    {
+     "text": "這是 B-tree：插入的新 key 60 一定先放進 leaf node。",
+     "t": 429
+    }
+   ],
+   "trap": "影片 7:14 說 B-tree「真正的數值都存在 leaf node」，這是 B+ tree 的性質；B-tree 的內部 key 也是資料本身。正確說法：插入一律從 leaf 開始，所以 60 會在 leaf。"
+  },
+  {
+   "title": "2-3 tree 的 delete：刪 70、刪 90",
+   "scene": "btree-p-del-leaf",
+   "points": [
+    {
+     "text": "接著看 delete，同樣有很多種情況。",
+     "t": 454
+    },
+    {
+     "text": "insert 會 split，delete 則牽涉到 merge。",
+     "t": 467
+    },
+    {
+     "text": "(a) 原本的樹：A = [50, 80]，B = [10, 20]，C = [60, 70]，D = [90, 95]。",
+     "t": 480
+    },
+    {
+     "text": "(b) delete 70：70 在 node C，直接刪掉，C 剩 60。",
+     "t": 484
+    },
+    {
+     "text": "(c) 再 delete 90：D 剩 95，仍然合法，不用調整。",
+     "t": 514
+    }
+   ]
+  },
+  {
+   "title": "delete 60 要 rotate、delete 95 要 combine",
+   "scene": "btree-p-del-rotate",
+   "points": [
+    {
+     "text": "接著 delete 60（投影片寫成 50，老師更正）。",
+     "t": 543
+    },
+    {
+     "text": "60 刪掉後 node C 空了，要做調整。",
+     "t": 560
+    },
+    {
+     "text": "左邊兄弟 B 有 20 和 50 可用：做 rotate。",
+     "t": 593
+    },
+    {
+     "text": "50 往下推到 C，20 往上送到 parent。",
+     "t": 605
+    },
+    {
+     "text": "再 delete 95：node D 空了。",
+     "t": 621
+    },
+    {
+     "text": "兄弟 C 只有 1 個 key，不夠 rotate。",
+     "t": 645
+    },
+    {
+     "text": "改做 combine：parent 的 80 往下推，merge 到 C 的 50 旁邊，D 刪掉。",
+     "t": 655
+    }
+   ]
+  },
+  {
+   "title": "Rotate 的三種情況",
+   "scene": "btree-p-rotate-cases",
+   "points": [
+    {
+     "text": "rotate 有三種 case，看空掉的 node p 在 parent r 的哪個位置。",
+     "t": 677
+    },
+    {
+     "text": "case 1：p 是 r 的 left child。",
+     "t": 698
+    },
+    {
+     "text": "x 往下推到 p，y 往上提到 r。",
+     "t": 714
+    },
+    {
+     "text": "調整完，下面的 subtree（a, b, c, d）pointer 也要照順序接到新的 node。",
+     "t": 749
+    },
+    {
+     "text": "case 2：p 是 r 的 middle child。",
+     "t": 766
+    },
+    {
+     "text": "z 往下推，y 往上提。",
+     "t": 783
+    },
+    {
+     "text": "case 3：p 是 r 的 right child：z 往下推、y 往上提，x 不動。",
+     "t": 808
+    },
+    {
+     "text": "merge（combine）的細節課堂不講，請看課本。",
+     "t": 853
+    }
+   ],
+   "trap": "補充：case 2 這裡借的是右兄弟（r 的第二個 key z 下來、右兄弟最小的 y 上去）；本頁動畫的字母依這個解讀，與投影片的字母配置可能略有不同。"
+  },
+  {
+   "title": "2-3-4 tree 與 red-black tree",
+   "scene": "btree-p-234",
+   "points": [
+    {
+     "text": "2-3 tree 的 order 是 3，2-3-4 tree 的 order 是 4。",
+     "t": 863
+    },
+    {
+     "text": "2-3-4 tree 的高度介於 log₄(n+1) 和 log₂(n+1) 之間。",
+     "t": 877
+    },
+    {
+     "text": "2-3-4 tree 調整（insert / delete）時只發生一次，不像 2-3 tree 會連鎖反應。",
+     "t": 904
+    },
+    {
+     "text": "2-3-4 tree 可以表示成 binary 的 red-black tree，演算法課會再講。",
+     "t": 918
+    },
+    {
+     "text": "資料結構這段至少要懂 2-3 tree；2-3-4 tree 有空再看。",
+     "t": 944
+    },
+    {
+     "text": "看一個 2-3-4 tree 的例子：每個 node 的 pointer 變多。",
+     "t": 955
+    }
+   ],
+   "trap": "老師說這段「不會考」，但 2-3-4 tree 與 red-black tree 的對應在演算法常考。"
+  },
+  {
+   "title": "Range search 與 B+ tree 的動機",
+   "scene": "btree-p-range-naive",
+   "points": [
+    {
+     "text": "什麼是 B+ tree？到目前為止的 search 都只找一個值。",
+     "t": 1013
+    },
+    {
+     "text": "例子：把學期平均 ≥ 80 分的學生全部列出來。",
+     "t": 1040
+    },
+    {
+     "text": "這種有範圍的查詢叫 range search。",
+     "t": 1063
+    },
+    {
+     "text": "笨方法：80、81、82 … 到 100 每個值各 search 一次。",
+     "t": 1084
+    },
+    {
+     "text": "B+ tree 和 B-tree 很像，差別是 leaf node 用 linked list 串起來。",
+     "t": 1107
+    },
+    {
+     "text": "在 database 裡 B+ tree 就叫 index。",
+     "t": 1122
+    },
+    {
+     "text": "index 的每個 key K1 … Kn 都有 pointer，指到 disk page 裡的 record。",
+     "t": 1166
+    }
+   ]
+  },
+  {
+   "title": "閒談：database 課在學什麼",
+   "scene": null,
+   "points": [
+    {
+     "text": "database 教的是怎麼存、怎麼取資料，以及怎麼從 ER model 設計 relation。",
+     "t": 1196
+    },
+    {
+     "text": "不是只教裝 MySQL。",
+     "t": 1229
+    },
+    {
+     "text": "到 Oracle 這類公司，要做的是實作 index structure 這種底層的東西。",
+     "t": 1252
+    }
+   ]
+  },
+  {
+   "title": "B+ tree（order d = 1）的例子",
+   "scene": "btree-p-bp-d1",
+   "points": [
+    {
+     "text": "database 用 B+ tree 存 index；它是多個 pointer、balanced 的 tree。",
+     "t": 1274
+    },
+    {
+     "text": "B+ tree 的 order 和 B-tree 的 order 定義不太一樣。",
+     "t": 1306
+    },
+    {
+     "text": "order d = 1：每個 node 至少 1 個 entry（key）。",
+     "t": 1321
+    },
+    {
+     "text": "root 40 只有一個 entry；下面 [20, 33]、[51, 63] 最多 2 個 entry。",
+     "t": 1337
+    },
+    {
+     "text": "leaf 裡 k* 的 * 代表 pointer。",
+     "t": 1377
+    },
+    {
+     "text": "例如 63*：年紀 63 的那個人，資料在 pointer 指到的 disk record；上面的 key 只拿來比較。",
+     "t": 1410
+    },
+    {
+     "text": "leaf node 用 doubly linked list 串起來，前後都能走。",
+     "t": 1465
+    },
+    {
+     "text": "< 40 的值都在 root 左邊的 subtree，≥ 40 在右邊。",
+     "t": 1496
+    },
+    {
+     "text": "遞迴下去：20 ～ 33 之間的值在中間那個小 subtree。",
+     "t": 1532
+    }
+   ],
+   "trap": "補充：ASR 把左邊 index node 聽成「22 33 / 23 33」，依原圖（Ramakrishnan 的 order 1 例子）與老師後面說的「20 到 33」應是 [20, 33]。"
+  },
+  {
+   "title": "B+ tree 找 key 27",
+   "scene": "btree-p-bp-find27",
+   "points": [
+    {
+     "text": "找年紀 27 的資料在哪裡。",
+     "t": 1555
+    },
+    {
+     "text": "從 root 開始比較，和以前的 search 一樣。",
+     "t": 1565
+    },
+    {
+     "text": "27 < 40 → 走左半邊。",
+     "t": 1570
+    },
+    {
+     "text": "27 介於 20 和 33 之間 → 走中間的 pointer。",
+     "t": 1577
+    },
+    {
+     "text": "到 leaf，裡面有 27 → hit，回報。",
+     "t": 1588
+    },
+    {
+     "text": "所以 B+ tree 一樣可以做單一值的 search。",
+     "t": 1591
+    },
+    {
+     "text": "等一下看它為什麼能很快做 range query。",
+     "t": 1603
+    }
+   ]
+  },
+  {
+   "title": "B+ tree 節點格式與 d ≤ n ≤ 2d",
+   "scene": "btree-p-bp-format",
+   "points": [
+    {
+     "text": "每個 node 有 key K1, K2, …, Kn。",
+     "t": 1621
+    },
+    {
+     "text": "P0, P1, … 是 pointer。",
+     "t": 1632
+    },
+    {
+     "text": "跟 B-tree 一樣，key 由小到大排好序。",
+     "t": 1641
+    },
+    {
+     "text": "非 root 的 node，key 個數 n 必須滿足 d ≤ n ≤ 2d。",
+     "t": 1668
+    },
+    {
+     "text": "d 就叫做 B+ tree 的 order。",
+     "t": 1675
+    },
+    {
+     "text": "root 的 key 個數至少 1、最多 2d。",
+     "t": 1691
+    },
+    {
+     "text": "搜尋就是跟著 pointer 比大小，和 B-tree 一樣。",
+     "t": 1703
+    }
+   ]
+  },
+  {
+   "title": "order 2 的 B+ tree：找 5、找 15",
+   "scene": "btree-p-bp-d2-search",
+   "points": [
+    {
+     "text": "一棵 order d = 2 的 B+ tree。",
+     "t": 1738
+    },
+    {
+     "text": "三個查詢：年紀 5、年紀 15、年紀 ≥ 24。",
+     "t": 1746
+    },
+    {
+     "text": "找 5：從 root 和 13, 17, 24, 30 比大小。",
+     "t": 1776
+    },
+    {
+     "text": "5 < 13 → 走最左邊的 pointer。",
+     "t": 1785
+    },
+    {
+     "text": "到 leaf，這個 leaf 有 4 筆紀錄，其中一筆是 5。",
+     "t": 1802
+    },
+    {
+     "text": "找 15：15 介於 13 和 17 之間 → 走那個 pointer。",
+     "t": 1806
+    },
+    {
+     "text": "leaf 裡沒有 15 → no return。",
+     "t": 1821
+    }
+   ],
+   "trap": "補充：ASR 把那個 leaf 聽成「13 和 16」，原圖是 14*、16*（13 是 root 的分隔 key）。"
+  },
+  {
+   "title": "Range query：≥ 24、< 24、15 ～ 24",
+   "scene": "btree-p-bp-d2-range",
+   "points": [
+    {
+     "text": "找 ≥ 24 的所有資料：先 search 24。",
+     "t": 1826
+    },
+    {
+     "text": "到達 leaf 找到 24 後，它右邊 linked list 串出來的值都 ≥ 24。",
+     "t": 1860
+    },
+    {
+     "text": "沿著 link 往右走，遇到 null 就停：一次拿到全部。",
+     "t": 1882
+    },
+    {
+     "text": "< 24 也一樣：找到 24 後往左走。",
+     "t": 1893
+    },
+    {
+     "text": "15 ～ 24：大於等於 15 且小於等於 24。",
+     "t": 1914
+    },
+    {
+     "text": "做兩次 search：一次找 15 在哪、一次找 24 在哪。",
+     "t": 1925
+    },
+    {
+     "text": "夾在兩者之間的 leaf 都符合條件。",
+     "t": 1961
+    },
+    {
+     "text": "這就是 B+ tree 很容易做到的 range query。",
+     "t": 1973
+    }
+   ],
+   "trap": "影片 32:07 口誤說「先找到 5」，應是找 15。"
+  },
+  {
+   "title": "預告：R-tree 與空間查詢",
+   "scene": "btree-p-rtree",
+   "points": [
+    {
+     "text": "B+ tree 比 B-tree 多了 range search 的能力。",
+     "t": 2002
+    },
+    {
+     "text": "有興趣可以查 R-tree。",
+     "t": 2011
+    },
+    {
+     "text": "年紀是一維的資料。",
+     "t": 2033
+    },
+    {
+     "text": "二維：景點可以用經度和緯度表示。",
+     "t": 2059
+    },
+    {
+     "text": "查詢例子：以交大為中心、半徑 5 公里內的所有景點。",
+     "t": 2077
+    },
+    {
+     "text": "笨方法：經度、緯度各建一棵 B+ tree，再把結果交集。",
+     "t": 2104
+    },
+    {
+     "text": "R-tree 在 1984 年提出，專門處理空間資料的查詢。",
+     "t": 2120
+    },
+    {
+     "text": "R-tree 也可以推廣到 multidimensional space。",
+     "t": 2146
+    }
+   ],
+   "trap": "影片 35:08 說「union 起來、交集起來」，兩棵 B+ tree 的結果應取交集（intersection）。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "2-3 tree 是 order 多少的 B-tree？",
+   "opts": [
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "ans": "3",
+   "why": "2-3 tree 每個 node 有 2 或 3 個 child，是 order 3 的 B-tree；2-3-4 tree 是 order 4。"
+  },
+  {
+   "q": "2-3 tree 插入時 leaf 已有兩個 key，split 的規則是？",
+   "opts": [
+    "三個數字都往上",
+    "最大的放新 node、中間的送 parent、最小的留在原 node",
+    "最小的送 parent",
+    "直接開新的 root"
+   ],
+   "ans": "最大的放新 node、中間的送 parent、最小的留在原 node",
+   "why": "課本的 split 規則；parent 若也滿了就繼續 split（連鎖反應）。"
+  },
+  {
+   "q": "A = [20, 40]，children [10]、[30]、[70, 80]，插入 60 之後 root 是？",
+   "opts": [
+    "[40]",
+    "[20, 40]",
+    "[70]",
+    "[40, 70]"
+   ],
+   "ans": "[40]",
+   "why": "C 變 60, 70, 80 → 70 上去；A 變 20, 40, 70 → 40 上去成為新 root。"
+  },
+  {
+   "q": "A = [50, 80]，children [10, 20]、[60]、[95]，刪除 60 之後 A 是？",
+   "opts": [
+    "[50, 80]",
+    "[20, 80]",
+    "[10, 80]",
+    "[80]"
+   ],
+   "ans": "[20, 80]",
+   "why": "C 空了，左兄弟 B 有 2 個 key：rotate，50 往下、20 往上。"
+  },
+  {
+   "q": "order d 的 B+ tree，非 root node 的 key 數 n 必須滿足？",
+   "opts": [
+    "1 ≤ n ≤ d",
+    "d ≤ n ≤ 2d",
+    "⌈d/2⌉ ≤ n ≤ d",
+    "d ≤ n ≤ 2d + 1"
+   ],
+   "ans": "d ≤ n ≤ 2d",
+   "why": "Ramakrishnan 的定義：非 root 至少 d、最多 2d 個 entry；root 是 1 ～ 2d。"
+  },
+  {
+   "q": "B+ tree 能快速做 range query 的主要原因是？",
+   "opts": [
+    "internal node 有 record pointer",
+    "leaf node 用 linked list 串起來",
+    "樹高固定為 2",
+    "key 不需排序"
+   ],
+   "ans": "leaf node 用 linked list 串起來",
+   "why": "找到起點 leaf 後，只要沿 link 往右（或往左）掃描。"
+  },
+  {
+   "q": "root [13, 17, 24, 30] 的 order 2 B+ tree，找 15 會走哪個 pointer？",
+   "opts": [
+    "最左邊",
+    "13 和 17 之間",
+    "17 和 24 之間",
+    "最右邊"
+   ],
+   "ans": "13 和 17 之間",
+   "why": "13 ≤ 15 < 17，走第 2 個 pointer；那個 leaf 只有 14、16，所以找不到。"
+  },
+  {
+   "q": "2-3-4 tree 相對於 2-3 tree 的優點，課堂提到的是？",
+   "opts": [
+    "一定比較矮",
+    "insert / delete 的調整只發生一次，不會連鎖",
+    "不需要 split",
+    "所有 key 都在 leaf"
+   ],
+   "ans": "insert / delete 的調整只發生一次，不會連鎖",
+   "why": "老師提到的兩個優點：調整不會連鎖，以及可以表示成 red-black tree。"
+  }
+ ]
+}

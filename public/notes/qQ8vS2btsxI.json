@@ -1,0 +1,281 @@
+{
+ "video": "qQ8vS2btsxI",
+ "label": "Abdul Bari：9.2 Rabin-Karp String Matching Algorithm",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "基本想法：把 pattern 變成一個數（aaaaab 找 aab）",
+   "scene": "strm-rk-sum-aab",
+   "points": [
+    {
+     "text": "Rabin-Karp 是 string matching algorithm：判斷 pattern 是否出現在 text 中。",
+     "t": 0
+    },
+    {
+     "text": "流程：先講基本想法，再看它的 worst case、怎麼改進，最後是真正的演算法。",
+     "t": 29
+    },
+    {
+     "text": "與其逐字比較，不如把 pattern 的 3 個字母變成一個數值。",
+     "t": 62
+    },
+    {
+     "text": "可以用 ASCII（a = 97），為了數字小，老師自訂 code：a = 1、b = 2 … j = 10。",
+     "t": 74
+    },
+    {
+     "text": "pattern aab 的值 = 1 + 1 + 2 = 4；這個值叫 hash code，算它的程序叫 hash function。",
+     "t": 125
+    },
+    {
+     "text": "text 前 3 個 aaa = 3 ≠ 4：不用比字元，比一個數只花常數時間。",
+     "t": 214
+    },
+    {
+     "text": "往右滑到下一組再算——這種由目前值得到下一個值的作法叫 rolling hash function。",
+     "t": 247
+    },
+    {
+     "text": "aab = 4 相同時，還要逐字確認；確實在 index 4–6 找到。",
+     "t": 264
+    }
+   ]
+  },
+  {
+   "title": "Rolling：abcdabce 找 bce",
+   "scene": "strm-rk-sum-bce",
+   "points": [
+    {
+     "text": "pattern bce 的值 = 2 + 3 + 5 = 10（這裡仍只是基本想法，不是真正的演算法）。",
+     "t": 300
+    },
+    {
+     "text": "text 第一組 abc = 1 + 2 + 3 = 6，不相符。",
+     "t": 326
+    },
+    {
+     "text": "滑動時：減掉離開的字母、加上進來的字母，6 − 1 + 4 = 9，常數時間得到下一組的值。",
+     "t": 339
+    },
+    {
+     "text": "接著 9 → 8 → 7 → 6，都不等於 10。",
+     "t": 381
+    },
+    {
+     "text": "最後一組 bce = 10 相符 → 逐字確認 b、c、e 都相同，找到 pattern。",
+     "t": 421
+    }
+   ]
+  },
+  {
+   "title": "Worst case：spurious hits（ccaccaaedba 找 dba）",
+   "scene": "strm-rk-spurious",
+   "points": [
+    {
+     "text": "前兩例只掃過 text 一次、只確認一次，時間是 n − m + 1，這是平均情況。",
+     "t": 445
+    },
+    {
+     "text": "worst case 例子：text 長 11、pattern dba 長 3，hash = 4 + 2 + 1 = 7。",
+     "t": 473
+    },
+    {
+     "text": "cca = 3 + 3 + 1 = 7，hash 相同，但逐字比對第一個字就不同。",
+     "t": 497
+    },
+    {
+     "text": "cac、acc 也都是 7：hash 相同卻不是 pattern，每次都要做比對。",
+     "t": 527
+    },
+    {
+     "text": "hash 太簡單，不同子字串很容易得到相同的值（collision）。",
+     "t": 601
+    },
+    {
+     "text": "這種 hash 相同但不是 pattern 的情況叫 spurious hit。",
+     "t": 620
+    },
+    {
+     "text": "spurious hit 多時，最壞時間是 Θ(mn)；沒有 spurious hit 才是預期的 n − m + 1。",
+     "t": 638
+    }
+   ],
+   "trap": "補充：照簡單加總算，這串共有 5 次 spurious hit（cca、cac、acc、cca、aae），老師口頭只數了其中幾個。"
+  },
+  {
+   "title": "Rabin-Karp 的 hash：dba = 4·10² + 2·10 + 1 = 421",
+   "scene": "strm-rk-base10",
+   "points": [
+    {
+     "text": "要避免 spurious hit，就要用更強的 hash function。",
+     "t": 662
+    },
+    {
+     "text": "Rabin-Karp 建議：dba = 4 × 10² + 2 × 10¹ + 1 × 10⁰。",
+     "t": 706
+    },
+    {
+     "text": "m 個字母時：p₁·10^(m−1) + p₂·10^(m−2) + … + p_m·10⁰。",
+     "t": 740
+    },
+    {
+     "text": "10 是 base：因為只用 10 個字母；26 個英文字母就用 26，全部字元就用字元總數。",
+     "t": 773
+    },
+    {
+     "text": "hash(dba) = 400 + 20 + 1 = 421。",
+     "t": 821
+    },
+    {
+     "text": "同一例的 cca = 300 + 30 + 1 = 331 ≠ 421：換了 hash function，就不再是 spurious hit。",
+     "t": 868
+    }
+   ],
+   "trap": "影片說全部 ASCII 用 127；嚴格來說 7-bit ASCII 有 128 個碼（0–127），base 取 128 才剛好。"
+  },
+  {
+   "title": "Rolling hash：331 → 313 → 133 → 331 → 311 … → 421",
+   "scene": "strm-rk-rolling",
+   "points": [
+    {
+     "text": "有了次方，下一組的值怎麼算？不要重算全部的次方。",
+     "t": 896
+    },
+    {
+     "text": "從 331 減掉最前面那項 3·10²，剩 31。",
+     "t": 983
+    },
+    {
+     "text": "剩下的乘以 10（每個字母升一級次方）得 310，再加上新字母 c 的 3 → 313。",
+     "t": 1025
+    },
+    {
+     "text": "規則：減掉第一項、乘上 base、加上新的一項。",
+     "t": 1072
+    },
+    {
+     "text": "313 ≠ 421；(313 − 300)·10 + 3 = 133。",
+     "t": 1101
+    },
+    {
+     "text": "(133 − 100)·10 + 1 = 331；(331 − 300)·10 + 1 = 311，都不相符。",
+     "t": 1155
+    },
+    {
+     "text": "一直滑到 dba 得到 421，hash 相同再逐字確認。",
+     "t": 1227
+    }
+   ]
+  },
+  {
+   "title": "Rabin fingerprint、時間與 mod",
+   "scene": "strm-rk-mod",
+   "points": [
+    {
+     "text": "總結：簡單 hash 會有 spurious hits，所以改用 Rabin-Karp 的 hash；它也是 rolling hash，稱為 Rabin fingerprint。",
+     "t": 1238
+    },
+    {
+     "text": "平均時間 Θ(n − m + 1)；但仍可能有 spurious hit，worst case 還是 O(mn)，只是機率降低。",
+     "t": 1274
+    },
+    {
+     "text": "base 的次方會讓值非常大，超過資料型態（例如 4 bytes int）就會 overflow。",
+     "t": 1301
+    },
+    {
+     "text": "解法：對值取 mod，例如 32-bit 有號整數 mod 2³¹（無號用 2³²），rolling 時也取 mod。",
+     "t": 1331
+    },
+    {
+     "text": "但取 mod 後 spurious hit 又可能出現，演算法又可能走向 O(mn)。",
+     "t": 1384
+    },
+    {
+     "text": "了解資料的特性，就能自己設計 hash function；核心想法：用 hash code 避免逐字比，相同時才檢查。",
+     "t": 1418
+    }
+   ],
+   "trap": "補充：畫面上的 mod 11 只是為了示範 collision 用的小模數（311、542、421 mod 11 都是 3）。實務上模數常取大質數，可降低 spurious hit 機率；MIT 6.006 Rec 9b 也說明為什麼不建議用 2 的次方當模數。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "用老師的 code（a=1,…,j=10）與「加總」hash，pattern aab 的 hash 是？",
+   "opts": [
+    "4",
+    "3",
+    "112",
+    "6"
+   ],
+   "ans": "4",
+   "why": "1 + 1 + 2 = 4。"
+  },
+  {
+   "q": "加總 hash 下，text 視窗從 abc 滑到 bcd，新 hash 怎麼算？",
+   "opts": [
+    "6 − 1 + 4 = 9",
+    "6 + 4 = 10",
+    "(6 − 1)·10 + 4 = 54",
+    "1 + 2 + 3 + 4 = 10"
+   ],
+   "ans": "6 − 1 + 4 = 9",
+   "why": "減掉離開的 a（1），加上進來的 d（4）。"
+  },
+  {
+   "q": "什麼是 spurious hit？",
+   "opts": [
+    "hash 相同但子字串不是 pattern",
+    "hash 不同但子字串是 pattern",
+    "pattern 出現兩次",
+    "hash 值溢位"
+   ],
+   "ans": "hash 相同但子字串不是 pattern",
+   "why": "hash 相同只代表「可能」相同，必須逐字確認；假的命中就是 spurious hit。"
+  },
+  {
+   "q": "以 base 10、code d=4,b=2,a=1，Rabin-Karp hash(dba) 是？",
+   "opts": [
+    "421",
+    "7",
+    "124",
+    "4210"
+   ],
+   "ans": "421",
+   "why": "4·10² + 2·10¹ + 1·10⁰ = 421。"
+  },
+  {
+   "q": "base 10 時，視窗從 cca（331）滑到 cac，新 hash 是？",
+   "opts": [
+    "313",
+    "331",
+    "133",
+    "3131"
+   ],
+   "ans": "313",
+   "why": "(331 − 3·10²)·10 + 3 = 31·10 + 3 = 313。"
+  },
+  {
+   "q": "Rabin-Karp 的平均與最壞時間分別是？",
+   "opts": [
+    "平均 Θ(n − m + 1)，最壞 O(mn)",
+    "平均 O(mn)，最壞 O(n)",
+    "兩者都是 O(n + m)",
+    "平均 O(log n)，最壞 O(n)"
+   ],
+   "ans": "平均 Θ(n − m + 1)，最壞 O(mn)",
+   "why": "沒有 spurious hit 時只掃一次；大量 spurious hit 時每個位置都要逐字比。"
+  },
+  {
+   "q": "為什麼實作上要對 hash 取 mod？代價是？",
+   "opts": [
+    "避免 overflow；代價是 spurious hit 可能變多",
+    "讓 hash 變成質數；沒有代價",
+    "加快逐字比較；代價是要排序",
+    "避免 collision；代價是需要更多記憶體"
+   ],
+   "ans": "避免 overflow；代價是 spurious hit 可能變多",
+   "why": "base 的次方很快超過 int 範圍；取 mod 後不同字串更容易得到相同值。"
+  }
+ ]
+}

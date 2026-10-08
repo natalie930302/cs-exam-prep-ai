@@ -1600,6 +1600,666 @@ FRAG.push(['heaphq-pq-array-vs-heap', 'Priority Queue：用陣列 vs 用 Heap', 
   await beat(tok, 2800);
 }]);
   }
+
+  // ═══ heaplin.js ═══
+  {
+// ─── RjvhXL0WTrY：台大林軒田 DSA「Tree traversal / Heap」 ───
+// 例子取自影片：expression tree 3 × (5 + 7)（infix / postfix / prefix print）；node = key + data（priority + to-do）；
+// 只把最大放 root 的樹 14（6、8、12、5、9）；binary max tree 14 /(9: 4) /(12: 8, 5)，remove 14、remove 12；
+// 歪斜的 max tree 50 49 46 44 21 17 5 3；complete binary max tree 14 12 9 4 8 5（5 換成 8.5）；
+// remove largest = 最後一個（8.5）上 root 再往下換；insert 17 = 放最後再往上浮；陣列 14 12 9 4 8 8.5。
+// 陣列 1-based：left = 2i、right = 2i + 1、parent = ⌊i/2⌋。
+const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, code, line, arrow, ghostBox, lnode, GOLD, GREEN, RED, GRAY } = K;
+const say = ctx.say, beat = ctx.beat;
+const BLUE = '#1f3a6e', OPC = '#c9a25a', NODEC = '#4b9ee2';
+const col = (v) => (typeof v === 'number' ? ctx.colorFor(Math.round(v * 2)) : OPC);
+const CAM = [0, 4.6, 13.5], LOOK = [0, 3, 0.5];
+
+// 用「位置編號」擺的 binary tree：i 的孩子在 2i、2i+1（沒有的位置就空著，不一定 complete）
+function HT(o = {}) {
+  const W = o.w || 10, X0 = o.x0 || 0, sz = o.sz || 0.85, ly = o.ly || [5.8, 4.3, 2.8, 1.3];
+  const S = { v: {}, m: {}, ed: [] };
+  S.p = (i) => { const d = Math.floor(Math.log2(i)), c = 1 << d; return V3(X0 + ((i - c + 0.5) / c - 0.5) * W, ly[d], 0); };
+  S.edges = () => {
+    S.ed.forEach(kill); S.ed = [];
+    for (const k of Object.keys(S.m)) { const i = +k; if (i > 1 && S.m[i >> 1]) { const a = S.p(i >> 1), b = S.p(i); S.ed.push(line(a.x, a.y, b.x, b.y)); } }
+  };
+  S.put = (i, v, drop = 0, c) => { S.v[i] = v; const p = S.p(i); S.m[i] = cube(v, c || (o.color ? o.color(v) : col(v)), [sz, sz, sz], p.x, p.y, 0, drop); S.edges(); return S.m[i]; };
+  S.hl = (list, c) => list.forEach((i) => { if (S.m[i]) glow(S.m[i], c); });
+  S.off = () => Object.values(S.m).forEach((m) => glow(m, null));
+  S.mv = (i, j) => { const p = S.p(j); move(S.m[i], p.x, p.y, 0); S.m[j] = S.m[i]; S.v[j] = S.v[i]; delete S.m[i]; delete S.v[i]; S.edges(); };
+  S.sw = (i, j) => {
+    const pi = S.p(i), pj = S.p(j); move(S.m[i], pj.x, pj.y, 0); move(S.m[j], pi.x, pi.y, 0);
+    [S.m[i], S.m[j]] = [S.m[j], S.m[i]]; [S.v[i], S.v[j]] = [S.v[j], S.v[i]];
+  };
+  S.rm = (i) => { fly(S.m[i], V3(0, 6, 4)); delete S.m[i]; delete S.v[i]; S.edges(); };
+  (o.init || []).forEach(([i, v]) => S.put(i, v));
+  return S;
+}
+// 一排陣列格（1-based）
+function ROW(vals, o = {}) {
+  const dx = o.dx || 1.3, z = o.z === undefined ? 3 : o.z, X0 = o.x0 || 0, n = o.n || vals.length;
+  const R = { m: [null], v: [null] };
+  R.X = (i) => X0 + (i - (n + 1) / 2) * dx;
+  for (let i = 1; i <= n; i++) { ctx.tile(V3(R.X(i), 0.02, z), dx * 0.9, 0.9); tag('[' + i + ']', 'idx', R.X(i), 0.05, z + 0.75); }
+  vals.forEach((v, k) => { R.v[k + 1] = v; R.m[k + 1] = cube(v, col(v), [dx * 0.68, 0.45, 0.7], R.X(k + 1), 0.3, z); });
+  R.sw = (i, j) => { move(R.m[i], R.X(j), 0.3, z); move(R.m[j], R.X(i), 0.3, z); [R.m[i], R.m[j]] = [R.m[j], R.m[i]]; [R.v[i], R.v[j]] = [R.v[j], R.v[i]]; };
+  R.hl = (list, c) => list.forEach((i) => R.m[i] && glow(R.m[i], c));
+  R.off = () => R.m.forEach((m) => m && glow(m, null));
+  return R;
+}
+function cursorAt(c, S, i) { const p = S.p(i); c.position.set(p.x, p.y + 0.75, 0); }
+const EXPR = [[1, '×'], [2, 3], [3, '+'], [6, 5], [7, 7]];
+const MAXT = [[1, 14], [2, 9], [4, 4], [3, 12], [6, 8], [7, 5]];
+const CMAX = [[1, 14], [2, 12], [3, 9], [4, 4], [5, 8], [6, 8.5]];
+
+// 跟著遞迴一步一步印：steps = [node, 印出的字, code 行]
+async function trace(tok, S, cd, steps, outTag, sep, name) {
+  const cu = tag('▼', 'ptr alt', 0, -5, 0);
+  let out = '';
+  for (const [i, piece, ln] of steps) {
+    S.off(); S.hl([i], GOLD); cursorAt(cu, S, i); cd.hl(ln);
+    out += (out && sep ? sep : '') + piece; txt(outTag, out);
+    say(name + '(' + S.v[i] + ')：印 ' + piece, '輸出：' + out);
+    await beat(tok, 900);
+  }
+  S.off(); cd.hl(-1); kill(cu);
+  return out;
+}
+
+// 10:18 複習 tree，expression tree 3 × (5 + 7)
+FRAG.push(['heaplin-expr-tree', 'Expression Tree：3 × (5 + 7)', async (tok) => {
+  fresh(CAM, LOOK);
+  const S = HT({ ly: [5.6, 4.0, 2.4] });
+  S.put(1, '×', 3);
+  say('tree = root ＋ 一堆 subtree', 'recursive 定義');
+  await beat(tok, 2000);
+  for (const [i, v] of EXPR.slice(1)) { S.put(i, v, 3); await beat(tok, 450); }
+  say('3 × (5 + 7) 的 expression tree', 'internal node = operator，leaf = 數字');
+  await beat(tok, 2600);
+  S.hl([3, 6, 7], GOLD);
+  say('每個 subtree 也是一個 expression', 'subtree：5 + 7');
+  await beat(tok, 2200);
+  S.rm(6); S.rm(7); relabel(S.m[3], 12); S.v[3] = 12;
+  say('先算右邊：5 + 7 = 12', '左右都算完，才做上面的 operator');
+  await beat(tok, 2200);
+  S.off(); S.hl([2], GOLD);
+  say('左邊 subtree 就是 3', '');
+  await beat(tok, 1400);
+  S.off(); S.rm(2); S.rm(3); relabel(S.m[1], 36); glow(S.m[1], GREEN);
+  say('root 的 ×：3 × 12 = 36', 'binary operator → binary tree');
+  await beat(tok, 2200);
+  tag('infix：3 × (5 + 7)', 'ptr', -3, 1.2, 1);
+  tag('postfix：3 5 7 + ×', 'ptr alt', 3, 1.2, 1);
+  say('同一棵樹，兩種寫法', 'infix 給人看，postfix 給電腦算');
+  await beat(tok, 3000);
+}]);
+
+// 16:54 印出一棵樹 = 拜訪每個 node
+FRAG.push(['heaplin-visit-all', '印出一棵樹：要拜訪每個 node', async (tok) => {
+  fresh(CAM, LOOK);
+  const S = HT({ ly: [5.6, 4.0, 2.4], init: EXPR });
+  say('給你 expression tree，把它印出來', '要拜訪每個 node，而且照某個順序');
+  await beat(tok, 2600);
+  const cu = tag('▼', 'ptr alt', 0, -5, 0);
+  let k = 0;
+  for (const i of [1, 2, 3, 6, 7]) { k++; cursorAt(cu, S, i); S.hl([i], GOLD); say('拜訪 ' + S.v[i], '已拜訪 ' + k + ' 個 node'); await beat(tok, 750); }
+  kill(cu);
+  const uses = ['兩棵樹一不一樣？', '哪棵 node 比較多？', '樹裡最大的數字？', 'container 的 iterator'];
+  for (const [j, u] of uses.entries()) { tag(u, 'ptr', -4.2, 1.6 - j * 0.55, 1.5); say('也要走過每個 node：' + u, ''); await beat(tok, 1500); }
+  say('怎麼拜訪每個 node = traversal', '先用 infix / postfix 當切入點');
+  await beat(tok, 2800);
+}]);
+
+// 21:22 infix print：左、自己、右，外加括號
+FRAG.push(['heaplin-infix-print', 'infix print：先左、再自己、再右（in-order）', async (tok) => {
+  fresh([0, 4.4, 13.5], [0, 3, 0.5]);
+  const S = HT({ ly: [5.6, 4.0, 2.4], w: 6, x0: 3.4, init: EXPR });
+  const cd = code(['infix(T):', '  if T is leaf: print T.data', '  else:', '    print "("; infix(T.left); print ")"', '    print T.data', '    print "("; infix(T.right); print ")"'], -3.6, 5.6, 0.56);
+  const out = tag('', 'ptr', 0, 0.8, 1.5);
+  say('stopping：leaf 就印數字', 'recursion：左 → 自己 → 右');
+  cd.hl(1);
+  await beat(tok, 2600);
+  const r = await trace(tok, S, cd, [[1, '(', 3], [2, '3', 1], [1, ')', 3], [1, '×', 4], [1, '(', 5], [3, '(', 3], [6, '5', 1], [3, ')', 3], [3, '+', 4], [3, '(', 5], [7, '7', 1], [3, ')', 5], [1, ')', 5]], out, '', 'infix');
+  say('括號很多，但意思對了', r);
+  await beat(tok, 2400);
+  say('左 → 自己 → 右 = in-order（中序）', 'infix print 就是 in-order traversal');
+  await beat(tok, 2800);
+}]);
+
+// 29:04 postfix print：左、右、自己
+FRAG.push(['heaplin-postfix-print', 'postfix print：先左、再右、最後自己（post-order）', async (tok) => {
+  fresh([0, 4.4, 13.5], [0, 3, 0.5]);
+  const S = HT({ ly: [5.6, 4.0, 2.4], w: 6, x0: 3.4, init: EXPR });
+  const cd = code(['post(T):', '  if T is leaf: print T.data', '  else:', '    post(T.left)', '    post(T.right)', '    print T.data'], -3.4, 5.6, 0.56);
+  const out = tag('', 'ptr', 0, 0.8, 1.5);
+  say('拷貝 infix print，拿掉括號', '再把「印自己」移到最後');
+  await beat(tok, 2600);
+  const r = await trace(tok, S, cd, [[2, '3', 1], [6, '5', 1], [7, '7', 1], [3, '+', 5], [1, '×', 5]], out, ' ', 'post');
+  say('operator 放最後面', r);
+  await beat(tok, 2200);
+  say('in-order：左 → 自己 → 右', 'post-order：左 → 右 → 自己');
+  await beat(tok, 3000);
+}]);
+
+// 33:01 prefix：operator 在前面 = 函數呼叫，Lisp
+FRAG.push(['heaplin-prefix', 'prefix：operator 寫前面，像函數呼叫', async (tok) => {
+  fresh([0, 4.4, 13.5], [0, 3, 0.5]);
+  const S = HT({ ly: [5.6, 4.0, 2.4], w: 6, x0: 3.4, init: EXPR });
+  const cd = code(['pre(T):', '  print T.data', '  pre(T.left)', '  pre(T.right)'], -3.4, 5.6, 0.56);
+  const out = tag('', 'ptr', 0, 0.8, 1.5);
+  say('pre = 自己先印', '自己 → 左 → 右（pre-order）');
+  await beat(tok, 2400);
+  await trace(tok, S, cd, [[1, '×', 1], [2, '3', 1], [3, '+', 1], [6, '5', 1], [7, '7', 1]], out, ' ', 'pre');
+  const l1 = tag('(× 3 (+ 5 7))', 'ptr alt', -3.4, 2.4, 1);
+  say('加上括號：Lisp 的寫法', '第一個是動作，後面兩個是運算對象');
+  await beat(tok, 2600);
+  const l2 = tag('multiply(3, plus(5, 7))', 'ptr alt', -3.4, 1.7, 1);
+  say('就是熟悉的函數呼叫', 'C++ operator overloading 也是這樣看 +');
+  await beat(tok, 2800);
+  say('prefix 像函數、infix 像四則運算', 'postfix 像電腦實際執行的方式');
+  await beat(tok, 3000);
+  kill(l1); kill(l2);
+}]);
+
+// 39:03 三種 traversal 的用途：比較兩棵樹用 pre-order
+FRAG.push(['heaplin-traversal-uses', 'traversal 的用途：比較兩棵樹先看自己', async (tok) => {
+  fresh(CAM, LOOK);
+  const A = HT({ ly: [5.6, 4.0, 2.4], w: 5, x0: -3.3, init: EXPR });
+  const B = HT({ ly: [5.6, 4.0, 2.4], w: 5, x0: 3.3, init: [[1, '×'], [2, 3], [3, '−'], [6, 5], [7, 7]] });
+  say('post-order：evaluate expression', '先算完左右，才做自己');
+  await beat(tok, 2400);
+  say('比較兩棵樹：先比自己再比 subtree', 'pre-order（右邊這棵是示意）');
+  await beat(tok, 2400);
+  for (const i of [1, 2, 3]) {
+    A.off(); B.off(); const same = A.v[i] === B.v[i];
+    A.hl([i], same ? GREEN : RED); B.hl([i], same ? GREEN : RED);
+    say(A.v[i] + ' vs ' + B.v[i] + (same ? '：一樣，繼續' : '：不一樣，停'), same ? '' : '下面的 5、7 不用再比');
+    await beat(tok, 1500);
+  }
+  say('一發現不同就停，省掉白做的工', 'in-order 之後會對應到排序');
+  await beat(tok, 3000);
+}]);
+
+// 62:15 node 拆成 key 與 data
+FRAG.push(['heaplin-key-data', 'node = key ＋ data ＋ 左右兩張小紙條', async (tok) => {
+  fresh([0, 4, 12], [0, 2.2, 0]);
+  say('原本的 node：data ＋ 兩張紙條', '');
+  const d = cube('data', '#8fb3d9', [2.4, 0.8, 1], 0, 4, 0, 3);
+  cube('L', '#d8c29b', [1.1, 0.6, 1], -0.65, 3.3, 0); cube('R', '#d8c29b', [1.1, 0.6, 1], 0.65, 3.3, 0);
+  arrow(V3(-0.65, 3.0, 0), V3(-2.4, 1.6, 0)); arrow(V3(0.65, 3.0, 0), V3(2.4, 1.6, 0));
+  await beat(tok, 2200);
+  kill(d);
+  const k = cube('KEY', '#e2b84b', [1.0, 0.8, 1], -0.7, 4, 0, 2);
+  const dd = cube('DATA', '#8fb3d9', [1.3, 0.8, 1], 0.6, 4, 0, 2);
+  say('上半部切兩塊：key 和 data', 'key（檢索鍵）負責找、排、比');
+  await beat(tok, 2600);
+  const box = ghostBox('#7a6a50', 2.2, 1.2, 1.2); box.position.set(4.5, 4, 0);
+  const bl = tag('筆記第 12 頁的內容', 'idx', 4.5, 4.9, 0);
+  arrow(V3(1.3, 4, 0), V3(3.3, 4, 0));
+  say('key 像頁碼，data 是那頁筆記', '找的時候只看 key');
+  await beat(tok, 2600);
+  txt(bl, '圖書館的那本書');
+  say('key 像書的 ID，data 是書本身', 'data 甚至可以只是一張紙條');
+  await beat(tok, 2600);
+  relabel(k, 'priority'); relabel(dd, 'to-do');
+  txt(bl, '要做的事');
+  say('今天：key = priority，data = to-do', '');
+  await beat(tok, 3000);
+}]);
+
+// 67:17 待辦事項：找 priority 最大的；mailbox 是 stack；queue 是特例
+FRAG.push(['heaplin-todo-pq', 'Priority Queue：每次拿 priority 最大的', async (tok) => {
+  fresh([0, 4.4, 13], [0, 2.4, 0]);
+  const items = [[8, 'DSA 作業3'], [9, 'Final Project'], [6, '微積分作業']];
+  const ms = items.map(([p, t], j) => { const x = -4 + j * 4; tag(t, 'idx', x, 3.9, 0); return cube(p, col(p), [1.0, 1.0, 1.0], x, 3, 0, 3); });
+  say('每件待辦貼上 priority（數字示意）', 'key = priority，data = to-do');
+  await beat(tok, 2600);
+  ms.forEach((m) => glow(m, BLUE));
+  say('要做事時：拿最重要的那件', '不是靠 index、pointer 或進來的先後');
+  await beat(tok, 2400);
+  ms.forEach((m) => glow(m, null)); glow(ms[1], GREEN); move(ms[1], 0, 5.4, 0);
+  say('拿出 key 最大的：9', 'priority queue：要很快找到最大');
+  await beat(tok, 2400);
+  const mail = [1, 2, 3, 4].map((j) => cube('信' + j, '#c8b89a', [1.4, 0.35, 1], 4.6, 0.3 + j * 0.42, 2, 2));
+  say('老師的 mailbox 其實是 stack', '最後進來的信先處理（LIFO）');
+  await beat(tok, 2400);
+  fly(mail[3], V3(2, 6, 3));
+  say('拿最上面的，不是最重要的', '');
+  await beat(tok, 2000);
+  say('queue 也只是一種 priority queue', '先進去的 priority 最大');
+  await beat(tok, 3000);
+}]);
+
+// 71:12 為什麼要做快：作業系統排程
+FRAG.push(['heaplin-os-sched', '作業系統排程：等待區就是 priority queue', async (tok) => {
+  fresh([0, 4.4, 13], [0, 2.2, 0]);
+  say('sequential search：每次都全部看', 'ordered array：排序花太大力氣');
+  await beat(tok, 2600);
+  const P = [['P1', 5], ['P2', 9], ['P3', 2], ['P4', 7]];
+  const X = (j) => -5 + j * 1.9;
+  const ms = P.map(([n, p], j) => { tag(n, 'idx', X(j), 2.0, 0); return cube(p, col(p), [1, 1, 1], X(j), 1.2, 0, 3); });
+  const core = ghostBox('#3a6e4a', 2.2, 1.6, 1.6); core.position.set(4.6, 1.3, 0);
+  tag('CPU 核心', 'ptr', 4.6, 2.6, 0);
+  say('多工：很多 process 在等待區', '核心空出來 → 挑 priority 最大的');
+  await beat(tok, 2600);
+  ms.forEach((m) => glow(m, BLUE)); await beat(tok, 800);
+  ms.forEach((m) => glow(m, null)); glow(ms[1], GREEN); move(ms[1], 4.6, 1.3, 0);
+  say('P2（9）拿去執行一段時間', 'remove largest');
+  await beat(tok, 2400);
+  glow(ms[1], null); relabel(ms[1], 3); move(ms[1], X(1), 1.2, 0);
+  say('時間到還沒做完 → 放回去', 'insert，重新給 priority = 3（示意）');
+  await beat(tok, 2400);
+  [[0, 6], [2, 3], [3, 8]].forEach(([j, v]) => relabel(ms[j], v));
+  say('等越久的 priority 調高', '才不會有 process 餓死');
+  await beat(tok, 2400);
+  glow(ms[3], GREEN); move(ms[3], 4.6, 1.3, 0);
+  say('下一個：P4（8）', 'find max、remove、insert 一直重複');
+  await beat(tok, 3000);
+}]);
+
+// 77:00 第一個想法：最大的放 root，其他亂放
+FRAG.push(['heaplin-root-only', '只把最大放 root：拿走後要全部找一遍', async (tok) => {
+  fresh(CAM, LOOK);
+  const S = HT();
+  S.put(1, 14, 3);
+  say('tree 最快碰到的是 root', '最大的 14 就放 root');
+  await beat(tok, 2200);
+  for (const [i, v] of [[2, 6], [3, 8], [4, 12], [5, 5], [7, 9]]) { S.put(i, v, 3); await beat(tok, 350); }
+  say('其他地方放什麼不管', '找最大：看 root 就好');
+  await beat(tok, 2400);
+  S.hl([1], RED);
+  say('可是 14 被拿去做了…', 'remove largest');
+  await beat(tok, 1600);
+  S.rm(1);
+  const cu = tag('▼', 'ptr alt', 0, -5, 0); let best = 0, bi = 0, k = 0;
+  for (const i of [2, 3, 4, 5, 7]) {
+    k++; cursorAt(cu, S, i); S.off(); S.hl([i], GOLD);
+    if (S.v[i] > best) { best = S.v[i]; bi = i; }
+    say('群龍無首：一個一個找，看 ' + S.v[i], '目前最大 ' + best + '（看了 ' + k + ' 個）');
+    await beat(tok, 900);
+  }
+  kill(cu); S.off(); S.hl([bi], GREEN); S.mv(bi, 1);
+  say('躲在最下面的 12 上來當 root', '剩下 5 個全看過：像 selection sort');
+  await beat(tok, 3000);
+}]);
+
+// 84:25 再加規則：每個 subtree 的 root 也是最大 → binary max tree
+FRAG.push(['heaplin-maxtree-def', 'Binary Max Tree：subtree 的 root 也是最大', async (tok) => {
+  fresh(CAM, LOOK);
+  const S = HT();
+  S.put(1, 14, 3); await beat(tok, 600);
+  S.put(2, 9, 3); S.put(3, 12, 3);
+  say('root 之外還有兩棵 subtree', '每棵 subtree 的 root 放 sub-largest');
+  await beat(tok, 2400);
+  for (const [i, v] of [[4, 4], [6, 8], [7, 5]]) { S.put(i, v, 3); await beat(tok, 350); }
+  S.hl([2, 3], GOLD);
+  say('14 缺位：只要 9 和 12 打一架', '不用進 subtree 裡找半天');
+  await beat(tok, 2600);
+  S.off();
+  const cd = code(['Binary Max Tree:', '1. root.key ≥ 其他所有 node 的 key', '2. 每個 subtree 都是 Binary Max Tree'], -4.2, 1.3, 0.5, 1.5);
+  cd.hl(1); S.hl([1], GREEN);
+  say('條件一：root 最大', '');
+  await beat(tok, 2200);
+  cd.hl(2); S.off(); S.hl([2, 4], GOLD); S.hl([3, 6, 7], BLUE);
+  say('條件二：recursive 地套到 subtree', '');
+  await beat(tok, 2400);
+  S.off(); S.hl([4, 6, 7], GREEN);
+  say('停在 single leaf：本身就最大', 'recursion 的 stopping');
+  await beat(tok, 3000);
+}]);
+
+// 89:54 檢查 + remove 14、remove 12：較大的 sub-root 補位
+FRAG.push(['heaplin-maxtree-remove', 'Max Tree 的 remove largest：較大的 sub-root 補位', async (tok) => {
+  fresh(CAM, LOOK);
+  const S = HT({ init: MAXT });
+  S.hl([1], GREEN);
+  say('14 比其他都大；9 壓 4、12 壓 8 和 5', '整棵是 binary max tree');
+  await beat(tok, 2600);
+  S.off(); S.hl([1], RED);
+  say('remove largest：14 走了', '找最大：看 root，O(1)');
+  await beat(tok, 1600);
+  S.rm(1); S.hl([2, 3], GOLD);
+  say('9 和 12 打一架：12 贏', '');
+  await beat(tok, 1800);
+  S.off(); S.mv(3, 1);
+  say('12 補上 root', '12 壓得住 9 那邊，也壓得住 8、5');
+  await beat(tok, 2000);
+  S.hl([6, 7], GOLD);
+  say('12 的位置缺了：8 和 5 打一架', '');
+  await beat(tok, 1800);
+  S.off(); S.mv(6, 3);
+  say('8 贏，上去補位', '8 原本的位置是 leaf，空了沒關係');
+  await beat(tok, 2200);
+  S.hl([1], RED);
+  say('再 remove 12', '');
+  await beat(tok, 1400);
+  S.rm(1); S.hl([2, 3], GOLD);
+  say('9 和 8 打一架：9 贏', '');
+  await beat(tok, 1600);
+  S.off(); S.mv(2, 1);
+  await beat(tok, 1000);
+  S.hl([4], GOLD);
+  say('9 的位置：只有 4，直接上來', '');
+  await beat(tok, 1600);
+  S.off(); S.mv(4, 2);
+  say('replace with larger of sub-roots', 'recursively');
+  await beat(tok, 3000);
+}]);
+
+// 99:43 規則 vs 效率：只走一條 root→leaf 路徑；insert 預告
+FRAG.push(['heaplin-rule-path', '只走一條 root→leaf 路徑：時間跟高度有關', async (tok) => {
+  fresh(CAM, LOOK);
+  const S = HT({ init: MAXT });
+  tag('array → ordered array', 'idx', -3.6, 0.6, 1.5);
+  tag('tree → binary max tree', 'idx', 3.6, 0.6, 1.5);
+  say('有規則的 tree，像有規則的 array', '規則越多越好找，但維護越花力氣');
+  await beat(tok, 2800);
+  for (const i of [1, 3, 6]) { S.hl([i], GOLD); await beat(tok, 600); }
+  say('remove 14 的更新只沿這條路', '14 → 12 → 8：其他 node 都不用看');
+  await beat(tok, 2600);
+  say('花的時間跟樹高 h 有關', '跟 node 數量 n 沒那麼大關係');
+  await beat(tok, 2600);
+  S.off();
+  const p = S.p(5);
+  const nw = cube('新', '#e2b84b', [0.85, 0.85, 0.85], p.x, p.y, 0, 3);
+  const e = line(S.p(2).x, S.p(2).y, p.x, p.y);
+  say('insert 預告：先放到基層（leaf）', '');
+  await beat(tok, 2000);
+  S.hl([2, 4], BLUE);
+  say('跟兄弟、爸爸三個打一架', '贏了就往上爬');
+  await beat(tok, 2600);
+  S.off(); kill(e); kill(nw);
+  say('往上爬也只走一條路', 'insert 也是 O(h)');
+  await beat(tok, 2600);
+}]);
+
+// 116:43 最糟情況：歪斜的 max tree
+FRAG.push(['heaplin-skewed', '歪斜的 Max Tree：50 49 46 … 退化成 list', async (tok) => {
+  fresh([0, 3.6, 13], [0, 3, 0]);
+  const V = [50, 49, 46, 44, 21, 17, 5, 3];
+  const P = (k) => V3(-4.2 + k * 1.2, 6.0 - k * 0.72, 0);
+  let ms = V.map((v, k) => { const p = P(k); return cube(v, col(v), [0.75, 0.75, 0.75], p.x, p.y, 0); });
+  let ed = [];
+  const edges = () => { ed.forEach(kill); ed = []; for (let k = 1; k < ms.length; k++) { const a = P(k - 1), b = P(k); ed.push(line(a.x, a.y, b.x, b.y)); } };
+  edges();
+  say('也是 binary max tree', '但長得跟 linked list 一樣：h = n');
+  await beat(tok, 2800);
+  glow(ms[0], RED);
+  say('remove 50：不用打架，49 上去', '');
+  await beat(tok, 1600);
+  fly(ms[0], V3(-2, 6, 4)); ms = ms.slice(1);
+  for (let k = 0; k < ms.length; k++) { const p = P(k); glow(ms[k], GOLD); move(ms[k], p.x, p.y, 0); say(V[k + 1] + ' 往上移一格', '要移 ' + (k + 1) + ' 個'); await beat(tok, 600); glow(ms[k], null); }
+  edges();
+  say('每個都要移：像 ordered array 刪頭', '最糟 O(n)');
+  await beat(tok, 2600);
+  say('希望 h 小：最好 h = log n', '讓樹開枝散葉');
+  await beat(tok, 2800);
+}]);
+
+// 121:14 h = log n：full 的 node 數受限，改用 complete
+FRAG.push(['heaplin-full-vs-complete', '想要 h = log n：full 不實際，用 complete', async (tok) => {
+  fresh([0, 4.2, 13.5], [0, 3.2, 0]);
+  const S = HT({ w: 11, sz: 0.6, color: () => NODEC });
+  const cnt = [1, 2, 4, 8];
+  let i = 1;
+  for (let d = 0; d < 4; d++) {
+    for (let k = 0; k < cnt[d]; k++) { S.put(i, '', 2); i++; }
+    tag(String(cnt[d]), 'idx', -6.2, [5.8, 4.3, 2.8, 1.3][d], 0);
+    say('第 ' + (d + 1) + ' 層放 ' + cnt[d] + ' 個', '1 + 2 + 4 + 8 = 15');
+    await beat(tok, 900);
+  }
+  say('15 個 node，高度只要 4', 'h = log n 是最好的情況');
+  await beat(tok, 2400);
+  say('full：每一層都滿', 'node 數只能是 1、3、7、15…');
+  await beat(tok, 2400);
+  S.hl([14, 15], RED);
+  say('13 件待辦？沒有 13 個 node 的 full', '');
+  await beat(tok, 2000);
+  S.rm(15); S.rm(14);
+  say('complete：一層一層、由左到右長', '13 個也行，高度還是 log n 級');
+  await beat(tok, 3000);
+}]);
+
+// 123:53 complete binary max tree：舊的 remove 會破壞 complete
+FRAG.push(['heaplin-complete-break', 'Complete Max Tree：舊的 remove 會留下洞', async (tok) => {
+  fresh(CAM, LOOK);
+  const S = HT({ init: [[1, 14], [2, 12], [3, 9], [4, 4], [5, 8], [6, 5]] });
+  say('一樣的數字，排成 complete', 'complete binary tree ＋ max tree');
+  await beat(tok, 2600);
+  S.hl([1], RED);
+  say('用剛才的演算法 remove 14', '');
+  await beat(tok, 1400);
+  S.rm(1); S.hl([2, 3], GOLD);
+  say('12 和 9 打一架：12 補位', '');
+  await beat(tok, 1600);
+  S.off(); S.mv(2, 1); await beat(tok, 900);
+  S.hl([4, 5], GOLD);
+  say('8 和 4 打一架：8 補位', '');
+  await beat(tok, 1600);
+  S.off(); S.mv(5, 2);
+  const p5 = S.p(5); const hole = tag('空', 'ptr', p5.x, p5.y, 0);
+  say('中間空了一格：不再是 complete', '');
+  await beat(tok, 2400);
+  kill(hole); S.hl([6], GOLD); S.mv(6, 5);
+  say('把最後的 5 拉過來補？', '5 < 8，這次剛好沒事');
+  await beat(tok, 2400);
+  relabel(S.m[5], 8.5); S.v[5] = 8.5; tint(S.m[5], col(8.5)); S.off(); S.hl([5], RED); S.hl([2], BLUE);
+  say('如果它是 8.5：8 壓不住 8.5', 'complete 了，max 性質卻壞了');
+  await beat(tok, 2600);
+  say('還要再調整：維護很麻煩', '先顧 max，complete 就顧不到');
+  await beat(tok, 3000);
+}]);
+
+// 129:38 新的 remove largest：最後一個上 root 當代理主席，再往下換
+FRAG.push(['heaplin-remove-last', 'Max Heap 的 remove：最後一個上 root，再往下換', async (tok) => {
+  fresh(CAM, LOOK);
+  const S = HT({ init: CMAX });
+  say('換個想法：先顧 complete', '14 12 9 4 8 8.5');
+  await beat(tok, 2400);
+  S.hl([1], RED);
+  say('remove 14', '');
+  await beat(tok, 1200);
+  S.rm(1); S.hl([6], GOLD);
+  say('最後一個 node 注定要消失', '那就讓 8.5 先上去當代理主席');
+  await beat(tok, 2200);
+  S.off(); S.mv(6, 1);
+  await beat(tok, 1000);
+  S.hl([1], GOLD); S.hl([2, 3], BLUE);
+  say('8.5、12、9：12 最大', '壓不住 → 跟 12 換');
+  await beat(tok, 2200);
+  S.off(); S.sw(1, 2);
+  await beat(tok, 1200);
+  S.hl([2], GOLD); S.hl([4, 5], BLUE);
+  say('8.5 對 4、8：壓得住，停', '');
+  await beat(tok, 2200);
+  S.off(); S.hl([1, 2, 3, 4, 5], GREEN);
+  say('1. last → root  2. 往下換', '最多換 h 層 = O(log n)');
+  await beat(tok, 2600);
+  S.off();
+  say('complete ＋ max tree = max heap', '');
+  await beat(tok, 2600);
+}]);
+
+// 135:53 insert 17：放最後，再往上浮
+FRAG.push(['heaplin-insert-17', 'Max Heap 的 insert 17：放最後，再往上浮', async (tok) => {
+  fresh(CAM, LOOK);
+  const S = HT({ init: CMAX });
+  say('先顧 complete：放在下一個空位', '14 12 9 4 8 8.5，下一格是 [7]');
+  await beat(tok, 2400);
+  S.put(7, 17, 3);
+  say('insert 17：從基層做起', '');
+  await beat(tok, 1600);
+  S.hl([7], GOLD); S.hl([3], BLUE); S.hl([6], BLUE);
+  say('9 壓得住 8.5，壓不住 17', '17 > 9 → 往上換');
+  await beat(tok, 2200);
+  S.off(); S.sw(7, 3);
+  await beat(tok, 1200);
+  S.hl([3], GOLD); S.hl([1], BLUE);
+  say('爸爸 14 壓不住 17', '17 > 14 → 再往上');
+  await beat(tok, 2200);
+  S.off(); S.sw(3, 1);
+  await beat(tok, 1200);
+  S.hl([1], GREEN);
+  say('17 到 root：停', '');
+  await beat(tok, 1800);
+  S.off();
+  say('insert at last → float up', '最多爬 h 層 = O(log n)');
+  await beat(tok, 3000);
+}]);
+
+// 139:24 complete tree 放進 array：partially ordered array
+FRAG.push(['heaplin-partial-array', 'Heap = partially ordered array', async (tok) => {
+  fresh([0, 4.6, 14], [0, 2.8, 1]);
+  const S = HT({ init: CMAX, ly: [6.0, 4.6, 3.2] });
+  say('complete tree 可以照編號放進 array', '不用小紙條（pointer）');
+  await beat(tok, 2200);
+  const R = ROW(CMAX.map(([, v]) => v), { dx: 1.3, z: 3 });
+  await beat(tok, 1200);
+  say('array：14 12 9 4 8 8.5', '');
+  await beat(tok, 1800);
+  S.hl([2], GOLD); R.hl([2], GOLD); S.hl([4, 5], BLUE); R.hl([4, 5], BLUE);
+  say('12 在 [2]：孩子在 [4]、[5]', 'left = 2i，right = 2i + 1');
+  await beat(tok, 2400);
+  S.off(); R.off(); S.hl([6], GOLD); R.hl([6], GOLD); S.hl([3], BLUE); R.hl([3], BLUE);
+  say('8.5 在 [6]：爸爸在 [3]', 'parent = ⌊6/2⌋ = 3');
+  await beat(tok, 2400);
+  S.off(); R.off();
+  say('array 看起來沒有排好序', '不是由大到小，也不是由小到大');
+  await beat(tok, 2400);
+  say('亂中有序：partially ordered array', '每個 subtree 最大在上面');
+  await beat(tok, 3000);
+}]);
+
+// 141:54 selection sort on array vs on heap → heap sort
+FRAG.push(['heaplin-selection-vs-heap', 'Selection Sort：在 array 上 vs 在 heap 上', async (tok) => {
+  fresh([0, 4.6, 14], [0, 2.6, 1]);
+  const R = ROW([9, 4, 14, 8.5, 12, 8], { dx: 1.2, z: 2.6, x0: -3.2 });
+  const S = HT({ init: CMAX, w: 4.6, x0: 4.2, sz: 0.65, ly: [5.6, 4.4, 3.2] });
+  say('selection sort：每輪選最大放後面', '左：亂的 array（示意）');
+  await beat(tok, 2400);
+  const cu = tag('▼', 'ptr alt', 0, -5, 0);
+  for (let i = 1; i <= 6; i++) { cu.position.set(R.X(i), 1.0, 2.6); R.off(); R.hl([i], GOLD); say('每輪都要整個看過：看 ' + R.v[i], '一輪 O(n)'); await beat(tok, 500); }
+  R.off(); kill(cu);
+  say('n 輪 × 每輪 n', 'selection sort on array：O(n²)');
+  await beat(tok, 2400);
+  S.hl([1], GREEN);
+  say('右：heap 上找最大 O(1)', '');
+  await beat(tok, 1800);
+  S.hl([2, 4], GOLD);
+  say('拿走後維護：一條路 O(log n)', '每輪 O(1) ＋ O(log n)');
+  await beat(tok, 2400);
+  S.off();
+  say('先建 heap：n 次 insert', 'O(n log n)');
+  await beat(tok, 2200);
+  say('再 n 次 remove largest', 'O(n log n)');
+  await beat(tok, 2200);
+  say('合起來 = heap sort：O(n log n)', '從 n² 進步到 n log n');
+  await beat(tok, 3000);
+}]);
+
+// 148:17 同一塊記憶體：heap 區與 array 區
+FRAG.push(['heaplin-inplace', 'Heap Sort 不用另外蓋樹：同一個 array 分兩區', async (tok) => {
+  fresh([0, 3.6, 11], [0, 1, 1]);
+  const R = ROW([9, 4, 14, 8.5, 12, 8], { dx: 1.5, z: 1 });
+  const n = 6;
+  const bar = tag('┃', 'ptr', 0, 0.9, 1);
+  const hT = tag('heap 區', 'ptr alt', 0, 1.7, 1), aT = tag('array 區', 'idx', 0, 1.7, 1);
+  const setBar = (k, sorted) => {
+    const bx = R.X(k) + 0.75; bar.position.set(bx, 0.9, 1);
+    hT.position.set(k ? (R.X(1) + R.X(k)) / 2 : -6, 1.7, 1); showRange(k, sorted);
+  };
+  function showRange(k, sorted) { aT.position.set(k < n ? (R.X(k + 1) + R.X(n)) / 2 : 6, 1.7, 1); txt(aT, sorted ? '排好的 array 區' : 'array 區'); }
+  setBar(0, false);
+  say('一開始：全部是 array 區（示意資料）', 'heap 區是空的');
+  await beat(tok, 2400);
+  for (let k = 1; k <= n; k++) {
+    setBar(k, false); R.off(); R.hl([k], GOLD);
+    say('insert ' + R.v[k] + ' 進 heap 區', 'heap 區長到 ' + k + ' 格');
+    await beat(tok, 900);
+    let i = k;
+    while (i > 1 && R.v[i] > R.v[i >> 1]) { R.hl([i >> 1], BLUE); say(R.v[i] + ' > 爸爸 ' + R.v[i >> 1] + '：往上換', 'parent = ⌊' + i + '/2⌋'); await beat(tok, 700); R.sw(i, i >> 1); await beat(tok, 700); R.off(); i >>= 1; }
+  }
+  R.off();
+  say('整段都變成 heap', '再從 heap 一直拿最大');
+  await beat(tok, 2000);
+  for (let end = n; end >= 2; end--) {
+    R.hl([1], GREEN);
+    say('最大 ' + R.v[1] + ' 放到 heap 區最後面', 'A[1] ↔ A[' + end + ']');
+    await beat(tok, 700);
+    R.sw(1, end); await beat(tok, 600); glow(R.m[end], null); tint(R.m[end], GRAY);
+    setBar(end - 1, true);
+    let i = 1;
+    for (;;) {
+      const l = 2 * i, r = l + 1; let c = i;
+      if (l <= end - 1 && R.v[l] > R.v[c]) c = l;
+      if (r <= end - 1 && R.v[r] > R.v[c]) c = r;
+      if (c === i) break;
+      R.sw(i, c); await beat(tok, 500); i = c;
+    }
+  }
+  tint(R.m[1], GRAY); setBar(0, true);
+  say('同一塊記憶體排好了', 'heap 只是把 array 假裝成 complete tree');
+  await beat(tok, 3000);
+}]);
+
+// 152:28 最後一個 node 在哪：存 node 數就知道
+FRAG.push(['heaplin-last-node', '下一個插入點：第 n + 1 格', async (tok) => {
+  fresh([0, 4.2, 13.5], [0, 3.2, 0]);
+  const S = HT({ w: 11, sz: 0.65, color: () => NODEC });
+  for (let i = 1; i <= 10; i++) S.put(i, i);
+  say('heap 裡已經有 10 個 node', '只要記 node 數 n = 10');
+  await beat(tok, 2400);
+  S.put(11, 11, 3, '#e2b84b');
+  say('新資料一定放第 11 格', '位置是確定的，不會退化成 list');
+  await beat(tok, 2400);
+  S.hl([5], BLUE);
+  say('爸爸在哪？', 'parent = ⌊11/2⌋ = 5');
+  await beat(tok, 2200);
+  S.off();
+  const bin = tag('11 = 1011₂', 'ptr alt', -4.6, 6.4, 0);
+  for (const [i, s] of [[1, '開頭的 1 = root'], [2, '0 → 往左'], [5, '1 → 往右'], [11, '1 → 往右']]) { S.hl([i], GOLD); say('用樹實作：照二進位走', s); await beat(tok, 1100); }
+  say('array 實作：上下走 = index 運算', 'tree 實作：要多存指標');
+  await beat(tok, 2600);
+  S.off(); kill(bin);
+  say('selection on heap 每輪', 'O(1) ＋ O(log n)（是加，不是乘）');
+  await beat(tok, 3000);
+}]);
+
+// 159:42 Priority Queue 實作的 trade-off
+FRAG.push(['heaplin-pq-tradeoff', 'Priority Queue 的 trade-off：heap vs linked list', async (tok) => {
+  fresh([0, 4.2, 13], [0, 2.4, 0]);
+  const V = [14, 12, 9, 8.5, 8];
+  const X = (k) => -5.2 + k * 2.0;
+  let G = V.map((v, k) => lnode(v, X(k), 0.4, 0, col(v)));
+  say('排好序的 linked list：最大在 head', '');
+  await beat(tok, 2200);
+  glow(G[0].userData.data, RED);
+  say('remove largest = remove head', 'O(1)');
+  await beat(tok, 1600);
+  fly(G[0], V3(-3, 6, 3)); G = G.slice(1);
+  await beat(tok, 900);
+  const cu = tag('▼', 'ptr alt', 0, -5, 0);
+  for (let k = 0; k < G.length; k++) { cu.position.set(X(k + 1), 1.2, 0); glow(G[k].userData.data, GOLD); say('insert 4：一路找位置', '最糟走到最後'); await beat(tok, 550); glow(G[k].userData.data, null); }
+  kill(cu);
+  lnode(4, X(5), 0.4, 0, col(4));
+  say('insert 要找位置：O(n)', '');
+  await beat(tok, 2000);
+  const cd = code(['                insert     remove largest', 'heap            O(log n)   O(log n)', 'max tree        O(h)       O(h)', '無序 list       O(1)       O(n)', '有序 list       O(n)       O(1)'], 0, 5.6, 0.56);
+  cd.hl(1);
+  say('heap：兩邊都是 O(log n)', '');
+  await beat(tok, 2200);
+  cd.hl(3);
+  say('不整理：塞得快，找最大慢', '');
+  await beat(tok, 2000);
+  cd.hl(4);
+  say('整理好：拿得快，插入慢', '這就是 trade-off');
+  await beat(tok, 2400);
+  cd.hl(-1);
+  say('課本用 min heap，觀念相同', 'STL priority_queue = heap on vector');
+  await beat(tok, 3000);
+}]);
+  }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
 

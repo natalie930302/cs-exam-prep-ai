@@ -1,0 +1,1947 @@
+{
+ "video": "cxbabnqtWsk",
+ "label": "台大林軒田 DSA Sorting / Summary",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場：調整雜音",
+   "scene": null,
+   "points": [
+    {
+     "text": "最後一堂資料結構與演算法；先處理同學的問題。",
+     "t": 491
+    },
+    {
+     "text": "今天有內容要上，但時間有彈性，歡迎提問。",
+     "t": 522
+    },
+    {
+     "text": "直播有雜音，重新插拔、調整音量。",
+     "t": 558
+    }
+   ]
+  },
+  {
+   "title": "Q&A：外系生怎麼加強資訊能力",
+   "scene": null,
+   "points": [
+    {
+     "text": "外系生想加強資訊，修課以外可以做什麼？",
+     "t": 614
+    },
+    {
+     "text": "寫程式像彈鋼琴、畫畫、運動：練越多越好。",
+     "t": 631
+    },
+    {
+     "text": "在自己的學科裡找資訊工具能幫忙的地方。",
+     "t": 653
+    },
+    {
+     "text": "用得不順手時再補強：比較有動力，也知道盲點在哪。",
+     "t": 676
+    },
+    {
+     "text": "作業不一定實際；從生活中找對自己實際的問題來練。",
+     "t": 763
+    }
+   ]
+  },
+  {
+   "title": "Q&A：機器學習、Final Project、成績",
+   "scene": null,
+   "points": [
+    {
+     "text": "機器學習課：理論、方法、實作交雜，實作比例相對低。",
+     "t": 812
+    },
+    {
+     "text": "Final project 很難，但有人做得到；跟走在前面的同學學。",
+     "t": 846
+    },
+    {
+     "text": "成績標準相對 loose，盡量呈現最好的結果。",
+     "t": 982
+    }
+   ]
+  },
+  {
+   "title": "今天的主題：用 Sorting 串起資料結構",
+   "scene": "sortlin-ds-links",
+   "points": [
+    {
+     "text": "今天的課是 Sorting，刻意擺在最後。",
+     "t": 1049
+    },
+    {
+     "text": "Sorting 是 algorithm，但跟很多學過的 data structure 很有關。",
+     "t": 1064
+    },
+    {
+     "text": "幫助了解 data structure 的 behavior 和用得上的地方。",
+     "t": 1080
+    },
+    {
+     "text": "也看出這些 data structure 之間的關聯。",
+     "t": 1087
+    },
+    {
+     "text": "最後一堂課，sorting 也當作半個 summary。",
+     "t": 1094
+    }
+   ]
+  },
+  {
+   "title": "開視訊側拍",
+   "scene": null,
+   "points": [
+    {
+     "text": "準備了驚喜：今天開視訊。",
+     "t": 1108
+    },
+    {
+     "text": "老師上課其實一直在看手寫板。",
+     "t": 1134
+    },
+    {
+     "text": "今天開側拍給大家看。",
+     "t": 1167
+    }
+   ]
+  },
+  {
+   "title": "Selection Sort：叫最小的出來排隊",
+   "scene": "sortlin-selection-swap",
+   "points": [
+    {
+     "text": "用一連串 sorting algorithm 複習，順便換角度看它們。",
+     "t": 1200
+    },
+    {
+     "text": "課裡第一個教的是 selection sort。",
+     "t": 1230
+    },
+    {
+     "text": "一群人還沒排好：從小排到大，就叫最小的出來排隊。",
+     "t": 1237
+    },
+    {
+     "text": "再叫第二小、第三小……一個一個出來。",
+     "t": 1247
+    },
+    {
+     "text": "每次從 unsorted 裡找最極端的那個。",
+     "t": 1256
+    }
+   ]
+  },
+  {
+   "title": "Selection 的實作：swap、rotate、linked list",
+   "scene": "sortlin-selection-rotate",
+   "points": [
+    {
+     "text": "Array 實作：前面幾格當排好的，後面幾格是還沒排好的。",
+     "t": 1275
+    },
+    {
+     "text": "選出來的要換到 sorted 區的最後一個位置。",
+     "t": 1306
+    },
+    {
+     "text": "綠色是 destination、桃紅色是找到的最小，兩個交換。",
+     "t": 1325
+    },
+    {
+     "text": "也可以 rotate：從後面一步一步換到前面。",
+     "t": 1345
+    },
+    {
+     "text": "Rotate 多花幾步，但做的事情大致一樣。",
+     "t": 1364
+    },
+    {
+     "text": "Linked list 可以用 insertion 取代 swap。",
+     "t": 1372
+    },
+    {
+     "text": "把粉紅色插到綠色前面，等於把 unsorted 往後擠。",
+     "t": 1395
+    }
+   ]
+  },
+  {
+   "title": "Stable：同樣 key 保持原順序",
+   "scene": "sortlin-stable-twokeys",
+   "points": [
+    {
+     "text": "插隊、往後擠的方式有一個額外性質：stable。",
+     "t": 1421
+    },
+    {
+     "text": "要排序的東西裡有很多個一樣的 key。",
+     "t": 1429
+    },
+    {
+     "text": "Key 一樣時，在 array／list 裡的相對順序不要變。",
+     "t": 1445
+    },
+    {
+     "text": "例：資料有兩個 key——總成績和 final project 成績。",
+     "t": 1461
+    },
+    {
+     "text": "第一輪先用 final project 排，第二輪再用總成績排。",
+     "t": 1501
+    },
+    {
+     "text": "總成績一樣時順序不要變，才不會打亂第一輪排好的高下。",
+     "t": 1511
+    }
+   ],
+   "trap": "補充：多鍵排序要先排次要 key、再排主要 key，而且後面那一輪必須是 stable（LSD radix sort 也是同樣道理）。"
+  },
+  {
+   "title": "Swap 版 Selection 不 stable",
+   "scene": "sortlin-selection-unstable",
+   "points": [
+    {
+     "text": "如果粉紅色和綠色剛好 same valued……",
+     "t": 1535
+    },
+    {
+     "text": "交換的方式可能把它們的順序打亂。",
+     "t": 1553
+    },
+    {
+     "text": "找 minimum 時同值要取 smallest index。",
+     "t": 1575
+    },
+    {
+     "text": "而且不要交換，改用插入（接近 insertion）。",
+     "t": 1584
+    },
+    {
+     "text": "這樣就能維持 stable。",
+     "t": 1591
+    },
+    {
+     "text": "一般 swap 的 implementation 不是 stable，叫 unstable。",
+     "t": 1633
+    }
+   ]
+  },
+  {
+   "title": "Selection 的複雜度與 in-place",
+   "scene": "sortlin-selection-cost",
+   "points": [
+    {
+     "text": "時間複雜度：大家已經很熟。",
+     "t": 1648
+    },
+    {
+     "text": "雙層 for loop：內層找 minimum，外層掃過每個 element。",
+     "t": 1656
+    },
+    {
+     "text": "n 筆資料要花 n² 的時間。",
+     "t": 1664
+    },
+    {
+     "text": "空間複雜度：在資料之外不需要額外空間。",
+     "t": 1678
+    },
+    {
+     "text": "不需要額外空間的演算法叫 in-place。",
+     "t": 1696
+    },
+    {
+     "text": "今天多介紹 in-place、stable 與實作的變化。",
+     "t": 1711
+    }
+   ],
+   "trap": "補充：selection sort 不論輸入一律比較 n(n−1)/2 次，但交換最多只有 n−1 次。"
+  },
+  {
+   "title": "Heap Sort：unsorted pile 換成 heap",
+   "scene": "sortlin-heap-select",
+   "points": [
+    {
+     "text": "課裡第一次講到很快的 sorting。",
+     "t": 1744
+    },
+    {
+     "text": "Unsorted pile 雖然沒排好，但如果它是一個 heap……",
+     "t": 1774
+    },
+    {
+     "text": "每次找人出來排隊就能找得快一點。",
+     "t": 1790
+    },
+    {
+     "text": "這就是「資料結構的威力」：只加一點規則，找最大就快很多。",
+     "t": 1802
+    },
+    {
+     "text": "Heap 可以放在 array 裡：用 max heap。",
+     "t": 1856
+    },
+    {
+     "text": "把最大的一路往 array 後面塞。",
+     "t": 1869
+    },
+    {
+     "text": "前面是 heap 區（unsorted），後面是 sorted。",
+     "t": 1876
+    },
+    {
+     "text": "每次找最大變 log n，總共 n log n，比 n² 好。",
+     "t": 1912
+    }
+   ]
+  },
+  {
+   "title": "Heap Sort 的缺點：不 stable、難寫",
+   "scene": "stability",
+   "points": [
+    {
+     "text": "Heap sort 也有缺點。",
+     "t": 1930
+    },
+    {
+     "text": "上浮、下沉時很難顧到 key 相同的原本位置關係。",
+     "t": 1944
+    },
+    {
+     "text": "把原本位置當 secondary key 可以做到 stable，但要額外空間。",
+     "t": 1962
+    },
+    {
+     "text": "所以 heap sort 通常不被看成 stable 的演算法。",
+     "t": 1983
+    },
+    {
+     "text": "比 selection sort 快。",
+     "t": 2006
+    },
+    {
+     "text": "但比較難寫：白板上 5 分鐘寫出 heap sort 不容易。",
+     "t": 2016
+    },
+    {
+     "text": "有沒有 library 可用，決定它平常好不好用。",
+     "t": 2041
+    }
+   ]
+  },
+  {
+   "title": "Q&A：開視訊的反應",
+   "scene": null,
+   "points": [
+    {
+     "text": "同學說看著老師上課心情好。",
+     "t": 2068
+    },
+    {
+     "text": "遠距教學有點困難，之前覺得開視訊沒有特別好處。",
+     "t": 2096
+    },
+    {
+     "text": "切回手寫板繼續上課。",
+     "t": 2171
+    }
+   ]
+  },
+  {
+   "title": "Bubble Sort：只跟隔壁比高矮",
+   "scene": "sortlin-bubble-pass",
+   "points": [
+    {
+     "text": "Sorting 界非常有名的 bubble sort。",
+     "t": 2185
+    },
+    {
+     "text": "用迴圈一直跑過所有資料。",
+     "t": 2205
+    },
+    {
+     "text": "先看第 1、2 筆，再看第 2、3 筆，大小關係對不對。",
+     "t": 2223
+    },
+    {
+     "text": "整個掃過去叫一輪，掃 n 輪之後就排好了。",
+     "t": 2241
+    },
+    {
+     "text": "排好＝沒有 disordered pair（大的在前、小的在後）。",
+     "t": 2259
+    },
+    {
+     "text": "每次只做 local 的微調。",
+     "t": 2269
+    },
+    {
+     "text": "像小學生排隊：跟隔壁比高矮容易，抓兩個人出來比很難。",
+     "t": 2284
+    }
+   ]
+  },
+  {
+   "title": "Bubble Sort：in-place、容易 stable",
+   "scene": "sortlin-bubble-stable",
+   "points": [
+    {
+     "text": "空間：不需要額外空間，只是跟旁邊的人換位置。",
+     "t": 2321
+    },
+    {
+     "text": "時間：最多掃 n 輪。",
+     "t": 2330
+    },
+    {
+     "text": "很容易 stable：一樣高就不要換。",
+     "t": 2350
+    },
+    {
+     "text": "Neighbor 交換的方法都很容易做到 stable。",
+     "t": 2363
+    },
+    {
+     "text": "Selection 做不到 stable，是因為 swap 要跳很遠。",
+     "t": 2385
+    },
+    {
+     "text": "要 stable 就要做 neighbor 附近的檢查。",
+     "t": 2407
+    }
+   ]
+  },
+  {
+   "title": "Adaptive：差不多排好就提早停",
+   "scene": "sortlin-bubble-adaptive",
+   "points": [
+    {
+     "text": "新特性：adaptive。",
+     "t": 2425
+    },
+    {
+     "text": "整個 array 已經差不多排好時，只要花很少力氣。",
+     "t": 2429
+    },
+    {
+     "text": "Heap sort 不管原本排得好不好，都先重做一個 heap。",
+     "t": 2449
+    },
+    {
+     "text": "某一輪掃過去都沒發現違反，下一輪就不用掃。",
+     "t": 2495
+    },
+    {
+     "text": "例：只有兩組鄰居反了，第一輪修好，第三輪什麼都不用做。",
+     "t": 2513
+    },
+    {
+     "text": "這叫 early stop，也就是 adaptive。",
+     "t": 2527
+    }
+   ]
+  },
+  {
+   "title": "磁帶：鄰居交換比較便宜",
+   "scene": "sortlin-tape",
+   "points": [
+    {
+     "text": "磁帶：長得像錄音帶，存資料用。",
+     "t": 2536
+    },
+    {
+     "text": "想成卷筒衛生紙，捲到讀取頭才能讀。",
+     "t": 2550
+    },
+    {
+     "text": "跟附近的資料交換很容易，捲一點點就好。",
+     "t": 2577
+    },
+    {
+     "text": "跟 10 步以外的交換，要捲 10 步再捲回來。",
+     "t": 2594
+    },
+    {
+     "text": "這種情境下，bubble sort 這種鄰居交換比較好用。",
+     "t": 2611
+    },
+    {
+     "text": "「bubble sort 沒人在用」：在現在的架構下大多不適用。",
+     "t": 2637
+    },
+    {
+     "text": "重點是知道它的特性：neighbor swapping → adaptive。",
+     "t": 2693
+    },
+    {
+     "text": "適用情境：已經差不多排好的 linked list，或鄰居運算便宜的媒體。",
+     "t": 2720
+    }
+   ]
+  },
+  {
+   "title": "Insertion Sort：摸牌、插到對的位置",
+   "scene": "sortlin-insert-cards",
+   "points": [
+    {
+     "text": "另一個要深化了解的：insertion sort。",
+     "t": 2749
+    },
+    {
+     "text": "對應的現實情境：玩撲克牌。",
+     "t": 2755
+    },
+    {
+     "text": "大老二時要把手上的牌由小排到大。",
+     "t": 2775
+    },
+    {
+     "text": "手上已經排好，摸一張起來插到正確的地方。",
+     "t": 2799
+    },
+    {
+     "text": "手上維持 sorted pile。",
+     "t": 2810
+    },
+    {
+     "text": "從 unsorted pile 隨便選一張，不是選最小的。",
+     "t": 2814
+    },
+    {
+     "text": "再把它放到正確的位置。",
+     "t": 2828
+    }
+   ]
+  },
+  {
+   "title": "Insertion 的實作：找位置與插入",
+   "scene": "sortlin-insert-search",
+   "points": [
+    {
+     "text": "各式各樣不同的 implementation。",
+     "t": 2835
+    },
+    {
+     "text": "最簡單：在 sorted pile 做 sequential search 找插入位置。",
+     "t": 2844
+    },
+    {
+     "text": "Sorted pile 是 array 的話可以做 binary search。",
+     "t": 2858
+    },
+    {
+     "text": "也可以用 skip list，找跟插都快，但有點 overkill。",
+     "t": 2876
+    },
+    {
+     "text": "Linked list：找到位置後插入只要 constant time。",
+     "t": 2897
+    },
+    {
+     "text": "Array：插入要花 n，要把其他人往後擠。",
+     "t": 2906
+    }
+   ]
+  },
+  {
+   "title": "從前面找 vs 從後面找",
+   "scene": "sortlin-insert-forward-backward",
+   "points": [
+    {
+     "text": "一種從前面找插入位置，一種從後面找。",
+     "t": 2918
+    },
+    {
+     "text": "兩者在是不是 stable 上不一樣。",
+     "t": 2933
+    },
+    {
+     "text": "從後面找到的位置比較 stable。",
+     "t": 2941
+    },
+    {
+     "text": "從前面找，碰到同值的人可能突然跳到它前面。",
+     "t": 2947
+    }
+   ]
+  },
+  {
+   "title": "Gnome Sort：用鄰居交換做 insertion",
+   "scene": "sortlin-gnome",
+   "points": [
+    {
+     "text": "Insertion sort 也可以用鄰居交換來做。",
+     "t": 2966
+    },
+    {
+     "text": "可愛的名字：Gnome sort（小精靈排序）。",
+     "t": 2976
+    },
+    {
+     "text": "咚咚咚，把它滾到正確的位置。",
+     "t": 2987
+    },
+    {
+     "text": "不一定是最小的，但會滾到 sorted pile 裡正確的位置。",
+     "t": 2996
+    }
+   ]
+  },
+  {
+   "title": "Selection vs Insertion：力氣花在哪",
+   "scene": "sortlin-select-vs-insert",
+   "points": [
+    {
+     "text": "Insertion 跟 bubble、selection 有類似的 flavor，但做的事不同。",
+     "t": 2999
+    },
+    {
+     "text": "Insertion 的力氣都花在「選出來後放到哪裡」。",
+     "t": 3021
+    },
+    {
+     "text": "Selection 選最小的：選的時候多花時間，放哪裡很確定。",
+     "t": 3028
+    },
+    {
+     "text": "力氣要花在選最極端的，還是隨便選但幫它找位置。",
+     "t": 3039
+    },
+    {
+     "text": "跟 bubble、selection 一樣可以 reuse 原本的空間。",
+     "t": 3054
+    },
+    {
+     "text": "時間 n²：for loop 乘上找位置／往後推的 n。",
+     "t": 3060
+    }
+   ]
+  },
+  {
+   "title": "Backward Insertion：stable 又 adaptive",
+   "scene": "sortlin-insert-adaptive",
+   "points": [
+    {
+     "text": "Forward 和 backward 的 implementation 在 stable 上有差別。",
+     "t": 3081
+    },
+    {
+     "text": "從前面找，要記得跨過同 value 的才 stable。",
+     "t": 3090
+    },
+    {
+     "text": "從後面找，看到同樣或較小的就插進去，比較容易 stable。",
+     "t": 3100
+    },
+    {
+     "text": "Backward 版還是 adaptive 的。",
+     "t": 3110
+    },
+    {
+     "text": "差不多排好時，大部分只要檢查前一個人。",
+     "t": 3128
+    },
+    {
+     "text": "例：掀牌 2、3、4、5、6，每張看一眼就放後面。",
+     "t": 3140
+    },
+    {
+     "text": "Naive 從前面找：5 要看了 3、再看 4，才放後面。",
+     "t": 3168
+    },
+    {
+     "text": "Naive 版不 adaptive，backward 版才是。",
+     "t": 3180
+    }
+   ]
+  },
+  {
+   "title": "三個 O(n²) 怎麼選",
+   "scene": "sortlin-n2-compare",
+   "points": [
+    {
+     "text": "通常 insertion 比 bubble 快：位置找得精準、不耗額外力氣。",
+     "t": 3196
+    },
+    {
+     "text": "Selection 要做到 adaptive 不容易。",
+     "t": 3215
+    },
+    {
+     "text": "Insertion 要 adaptive、要 stable 都相對容易。",
+     "t": 3229
+    },
+    {
+     "text": "在 n² 裡面選，insertion 應該是比較好的選擇。",
+     "t": 3237
+    },
+    {
+     "text": "但初學者常覺得 selection 比較直覺。",
+     "t": 3245
+    },
+    {
+     "text": "真的寫出來，insertion 的效率和簡潔度常比 selection 好。",
+     "t": 3281
+    }
+   ]
+  },
+  {
+   "title": "Q&A：磁帶與資訊的進步",
+   "scene": null,
+   "points": [
+    {
+     "text": "懷念的是磁帶還是捲筒衛生紙？",
+     "t": 3317
+    },
+    {
+     "text": "資訊一直在進步，現在學的東西 5、10 年後不一定有用。",
+     "t": 3350
+    },
+    {
+     "text": "希望學到的概念變成未來的養分。",
+     "t": 3362
+    }
+   ]
+  },
+  {
+   "title": "Backward Insertion：借過、借過",
+   "scene": "sortlin-insert-shift",
+   "points": [
+    {
+     "text": "介紹細緻的 implementation：同一演算法，不同實作結果不同。",
+     "t": 3377
+    },
+    {
+     "text": "Insertion sort 直接做 backward，一點也不難。",
+     "t": 3411
+    },
+    {
+     "text": "你是被選出來的人，要排進已經排好的隊伍。",
+     "t": 3424
+    },
+    {
+     "text": "從後面開始：借過、借過，直到該到的位置。",
+     "t": 3430
+    },
+    {
+     "text": "大部分人第一直覺是從隊伍前面找，再插隊進去。",
+     "t": 3443
+    },
+    {
+     "text": "Backward 一個 for loop 搞定：找位置＋把人往後擠。",
+     "t": 3465
+    }
+   ]
+  },
+  {
+   "title": "休息",
+   "scene": null,
+   "points": [
+    {
+     "text": "上了約 50 分鐘，先停在 insertion sort。",
+     "t": 3495
+    },
+    {
+     "text": "休息 10 分鐘再講其他 sorting。",
+     "t": 3505
+    }
+   ]
+  },
+  {
+   "title": "影片：Selection 與 Insertion 的行為",
+   "scene": "sortlin-select-vs-insert",
+   "points": [
+    {
+     "text": "回來後先看 sorting algorithm 的視覺化影片。",
+     "t": 4145
+    },
+    {
+     "text": "Selection：每次選一個出來放到該放的地方。",
+     "t": 4239
+    },
+    {
+     "text": "Insertion：每次找一個東西插入 sorted 裡的正確位置。",
+     "t": 4289
+    },
+    {
+     "text": "兩者相似，但差在「找」和「插」哪個花比較多力氣。",
+     "t": 4310
+    }
+   ]
+  },
+  {
+   "title": "影片：Quick Sort",
+   "scene": "sortlin-quick-levels",
+   "points": [
+    {
+     "text": "Quick sort 比 insertion、selection 這些 n² 演算法快。",
+     "t": 4358
+    },
+    {
+     "text": "把東西堆成一小堆一小堆，大小相近。",
+     "t": 4371
+    },
+    {
+     "text": "再分頭把每一小堆擺好。",
+     "t": 4381
+    },
+    {
+     "text": "這叫 divide and conquer，等一下會再提。",
+     "t": 4384
+    }
+   ]
+  },
+  {
+   "title": "影片：Merge Sort",
+   "scene": "sortlin-merge-bottomup",
+   "points": [
+    {
+     "text": "Merge sort 的行為很容易看懂。",
+     "t": 4420
+    },
+    {
+     "text": "先把一些堆排好，再把排好的堆合併。",
+     "t": 4430
+    },
+    {
+     "text": "小堆 → 中堆 → 大堆。",
+     "t": 4438
+    }
+   ]
+  },
+  {
+   "title": "影片：Heap Sort",
+   "scene": "heap-sort",
+   "points": [
+    {
+     "text": "Heap sort：大家應該有一定熟悉度。",
+     "t": 4478
+    },
+    {
+     "text": "前面花了蠻長時間把 heap 做出來（五顏六色那段）。",
+     "t": 4488
+    },
+    {
+     "text": "之後每一步還要花力氣調整 heap。",
+     "t": 4503
+    },
+    {
+     "text": "漂亮、理想，但實務上通常沒那麼好用。",
+     "t": 4510
+    }
+   ]
+  },
+  {
+   "title": "影片：Radix Sort（LSD、MSD）",
+   "scene": "radix-lsd",
+   "points": [
+    {
+     "text": "Radix sort：今年課程不講。",
+     "t": 4539
+    },
+    {
+     "text": "排正整數：按千位、百位、十位、個位分開排序。",
+     "t": 4551
+    },
+    {
+     "text": "再配合 stable sorting，最後把東西排好。",
+     "t": 4572
+    },
+    {
+     "text": "像 hash：百位數是 0 的一堆、是 1 的一堆……也是 divide。",
+     "t": 4584
+    },
+    {
+     "text": "影片寫 LSD：從個位數先排，再十位、百位。",
+     "t": 4626
+    },
+    {
+     "text": "另一版本從高位排到低位（MSD）。",
+     "t": 4640
+    }
+   ],
+   "trap": "補充：LSD 每一回合都必須用 stable 的分配，前面幾位的排序才不會被打亂；MSD 則是先依最高位分桶，再在各桶裡遞迴。"
+  },
+  {
+   "title": "影片：標準函式庫的 sort",
+   "scene": "sortlin-hybrid",
+   "points": [
+    {
+     "text": "標準函式庫真正用的不是純 quick sort。",
+     "t": 4717
+    },
+    {
+     "text": "混合了不同的 sort，求一般情況的好結果。",
+     "t": 4722
+    },
+    {
+     "text": "範圍小的時候做附近幾個的 local 調整。",
+     "t": 4733
+    },
+    {
+     "text": "Global 用類似 divide and conquer 的想法。",
+     "t": 4738
+    },
+    {
+     "text": "Stable sort 顧名思義是 stable，核心是 merge sort。",
+     "t": 4790
+    }
+   ],
+   "trap": "補充：C++ 的 std::sort 常見實作是 introsort（quick sort ＋ heap sort 保底 ＋ 小區段 insertion sort）；std::stable_sort 以 merge sort 為主。"
+  },
+  {
+   "title": "影片：Shell Sort 預告",
+   "scene": "sortlin-shell",
+   "points": [
+    {
+     "text": "Shell sort 等一下會講。",
+     "t": 4831
+    },
+    {
+     "text": "以 insertion sort 為底，做了一些奇怪的東西。",
+     "t": 4836
+    },
+    {
+     "text": "像 bubble sort 對資料做 multiple pass。",
+     "t": 4845
+    },
+    {
+     "text": "巧妙運用 insertion 的特性，很快完成。",
+     "t": 4852
+    }
+   ]
+  },
+  {
+   "title": "影片：Bubble 與 Cocktail Shaker",
+   "scene": "sortlin-cocktail",
+   "points": [
+    {
+     "text": "Bubble sort 的行為其實有點像 selection sort。",
+     "t": 4883
+    },
+    {
+     "text": "但選極值的同時，也把很多錯誤的鄰居 pair 調整了。",
+     "t": 4901
+    },
+    {
+     "text": "Cocktail shaker：像調酒左邊搖一下、右邊搖一下。",
+     "t": 4937
+    },
+    {
+     "text": "往左右兩邊做 bubble sort，一次一個方向。",
+     "t": 4947
+    }
+   ]
+  },
+  {
+   "title": "影片：Gnome、Bitonic、Bogo",
+   "scene": "sortlin-gnome",
+   "points": [
+    {
+     "text": "這就是剛才講的小精靈（gnome sort）。",
+     "t": 4984
+    },
+    {
+     "text": "用鄰居交換、搬運的效果。",
+     "t": 4989
+    },
+    {
+     "text": "Bitonic sort：課程不講。",
+     "t": 4998
+    },
+    {
+     "text": "類似 merge sort，有時大排到小、有時小排到大再混合。",
+     "t": 5028
+    },
+    {
+     "text": "Bogo sort：亂排亂換，看哪天剛好排好。",
+     "t": 5053
+    },
+    {
+     "text": "不是 formal 的 sorting algorithm，好玩為主。",
+     "t": 5061
+    }
+   ]
+  },
+  {
+   "title": "Q&A：Insertion 的借過 vs Bubble",
+   "scene": "sortlin-bubble-vs-insert-guarantee",
+   "points": [
+    {
+     "text": "同學問：insertion 一直借過，跟 bubble sort 一樣嗎？",
+     "t": 5135
+    },
+    {
+     "text": "Neighbor 交換的都有類似的地方。",
+     "t": 5140
+    },
+    {
+     "text": "差別是一輪換完的結果、保證的東西是什麼。",
+     "t": 5148
+    },
+    {
+     "text": "Insertion 保證：那個東西已經塞到正確的地方。",
+     "t": 5155
+    },
+    {
+     "text": "Bubble 像 selection：保證某個極值已經浮到該到的地方。",
+     "t": 5159
+    },
+    {
+     "text": "其他值的相對關係就可能不同。",
+     "t": 5174
+    }
+   ]
+  },
+  {
+   "title": "Q&A：下學期的課、更多 sort",
+   "scene": null,
+   "points": [
+    {
+     "text": "下學年會開什麼課：ML、DSA、物件導向。",
+     "t": 5181
+    },
+    {
+     "text": "還有 stupid sort、miracle sort 等各種版本。",
+     "t": 5217
+    },
+    {
+     "text": "有視覺化工具就去看，能深化理解。",
+     "t": 5224
+    }
+   ]
+  },
+  {
+   "title": "Shell Sort：insertion with long jumps",
+   "scene": "sortlin-shell",
+   "points": [
+    {
+     "text": "影片裡的 Shell sort 在做什麼？",
+     "t": 5246
+    },
+    {
+     "text": "Insertion sort 是 adaptive：快排好時很快，離排好很遠時很慢。",
+     "t": 5254
+    },
+    {
+     "text": "那就把 insertion sort 用在快要排好的資料上。",
+     "t": 5269
+    },
+    {
+     "text": "設計概念有一點點像 skip list：開快車。",
+     "t": 5281
+    },
+    {
+     "text": "快車＝讓交換可以做比較遠的交換。",
+     "t": 5293
+    },
+    {
+     "text": "先每 10 個一組：看 0、10、20、30、40 號，跑 insertion sort。",
+     "t": 5311
+    },
+    {
+     "text": "再縮小成每 5 個：0、5、10…；1、6、11…",
+     "t": 5343
+    },
+    {
+     "text": "再每 2 個，最後每 1 個。",
+     "t": 5369
+    },
+    {
+     "text": "最後一次 insertion 作用在幾乎排好的資料上。",
+     "t": 5377
+    },
+    {
+     "text": "可以看成 insertion sort with long jumps。",
+     "t": 5395
+    }
+   ]
+  },
+  {
+   "title": "Shell Sort 的性質",
+   "scene": "sortlin-shell-props",
+   "points": [
+    {
+     "text": "裡面用的是 insertion sort，不需要額外空間。",
+     "t": 5409
+    },
+    {
+     "text": "因為有 long jump，所以不是 stable。",
+     "t": 5415
+    },
+    {
+     "text": "但跟 insertion 一樣還蠻 adaptive：原本排好就很輕鬆。",
+     "t": 5419
+    },
+    {
+     "text": "理論上不好分析，連最壞情形都不明朗。",
+     "t": 5439
+    },
+    {
+     "text": "但實務上比直接用 insertion sort 快。",
+     "t": 5463
+    },
+    {
+     "text": "可以想成一堆加速 insertion 的小技巧。",
+     "t": 5484
+    },
+    {
+     "text": "理論分析和實務不見得完全一樣。",
+     "t": 5512
+    },
+    {
+     "text": "好用的拼裝車：需要 adaptivity 時可以想到它。",
+     "t": 5589
+    }
+   ]
+  },
+  {
+   "title": "Merge Sort：小堆 → 中堆 → 大堆",
+   "scene": "sortlin-merge-bottomup",
+   "points": [
+    {
+     "text": "影片裡的 merge sort 行為很容易懂。",
+     "t": 5627
+    },
+    {
+     "text": "例：6 5 4 7 8 3 1 2，每一筆自己是一個小堆。",
+     "t": 5640
+    },
+    {
+     "text": "小堆兩兩合併：5、6 變成排好的中堆。",
+     "t": 5648
+    },
+    {
+     "text": "4、7 一堆，3、8 一堆，1、2 一堆。",
+     "t": 5658
+    },
+    {
+     "text": "兩個中堆再合成大堆：4 5 6 7、1 2 3 8。",
+     "t": 5674
+    },
+    {
+     "text": "最後兩個大堆合起來：1 2 3 4 5 6 7 8。",
+     "t": 5695
+    }
+   ]
+  },
+  {
+   "title": "合併 = sparse array 相加；n log n",
+   "scene": "sortlin-merge-twoptr",
+   "points": [
+    {
+     "text": "縱向：1 → 2 → 4 → 8，合到 n 要幾層？",
+     "t": 5705
+    },
+    {
+     "text": "要 log₂ n 層。",
+     "t": 5716
+    },
+    {
+     "text": "每一層裡要合併的堆 size 是 2ⁱ。",
+     "t": 5743
+    },
+    {
+     "text": "排好的 5、6 和排好的 4、7，怎麼快速合起來？",
+     "t": 5757
+    },
+    {
+     "text": "教過：把兩個 sparse array 合起來。",
+     "t": 5776
+    },
+    {
+     "text": "5、6 看成 x⁵ + x⁶，4、7 看成 x⁴ + x⁷。",
+     "t": 5788
+    },
+    {
+     "text": "兩個指標兩邊各走，走完就合起來：2ⁱ 的力氣。",
+     "t": 5816
+    },
+    {
+     "text": "Sparse array、多項式相加，是一樣的演算法。",
+     "t": 5837
+    },
+    {
+     "text": "橫向每層 n 的力氣，bottom-up 總共 n log n。",
+     "t": 5857
+    }
+   ]
+  },
+  {
+   "title": "Top-down：遞迴的 divide and conquer",
+   "scene": "sortlin-merge-topdown",
+   "points": [
+    {
+     "text": "也可以 top-down：最終要排好整段，先把兩半排好。",
+     "t": 5884
+    },
+    {
+     "text": "寫成 recursive code。",
+     "t": 5902
+    },
+    {
+     "text": "像 binary search：先從中間切一半。",
+     "t": 5909
+    },
+    {
+     "text": "不同的是 binary search 只進一半，這裡左右都要排好。",
+     "t": 5920
+    },
+    {
+     "text": "合併跟剛才的 merge 一樣，要 n 的力氣。",
+     "t": 5931
+    },
+    {
+     "text": "呼叫 log n 個 level。",
+     "t": 5942
+    },
+    {
+     "text": "這就是 divide and conquer（分而治之）：先分開，再 merge。",
+     "t": 5958
+    }
+   ]
+  },
+  {
+   "title": "Merge Sort：stable、平行、external sort",
+   "scene": "sortlin-merge-parallel",
+   "points": [
+    {
+     "text": "不管 bottom-up 還是 top-down，都是 n log n。",
+     "t": 5989
+    },
+    {
+     "text": "仔細實作的話通常是 stable。",
+     "t": 5994
+    },
+    {
+     "text": "標準函式庫的 stable sort 基本上用 merge sort。",
+     "t": 5998
+    },
+    {
+     "text": "一直作用在不同的堆上，不同的堆可以獨立做。",
+     "t": 6013
+    },
+    {
+     "text": "多核心電腦上可以丟到不同核心，做平行化。",
+     "t": 6018
+    },
+    {
+     "text": "Heap 牽一髮動全身，很不好平行化。",
+     "t": 6032
+    },
+    {
+     "text": "External sort：資料在磁碟上，不在記憶體裡。",
+     "t": 6060
+    },
+    {
+     "text": "一次抓一段上來排好，寫回去，再跟其他段 merge。",
+     "t": 6100
+    }
+   ],
+   "trap": "補充：array 版 merge sort 需要 O(n) 的暫存陣列，不是 in-place。"
+  },
+  {
+   "title": "Q&A：OOP、多重宇宙排序",
+   "scene": null,
+   "points": [
+    {
+     "text": "OOP 課很多年才開一次。",
+     "t": 6131
+    },
+    {
+     "text": "同學提到「靠多重宇宙的隨機排序」。",
+     "t": 6142
+    },
+    {
+     "text": "不建議 final project 隨機亂交答案。",
+     "t": 6167
+    }
+   ]
+  },
+  {
+   "title": "Tree Sort：BST + in-order",
+   "scene": "sortlin-treesort",
+   "points": [
+    {
+     "text": "影片裡沒有、但三秒鐘就懂的 sort。",
+     "t": 6183
+    },
+    {
+     "text": "學了 BST、AVL tree、紅黑樹……",
+     "t": 6195
+    },
+    {
+     "text": "BST 本質上是排好序的資料結構，排序存在 node 裡。",
+     "t": 6209
+    },
+    {
+     "text": "把要排序的東西通通塞進 BST。",
+     "t": 6220
+    },
+    {
+     "text": "再做 in-order traversal，排好的東西就輸出來。",
+     "t": 6236
+    },
+    {
+     "text": "缺點：要花 n 的額外空間。",
+     "t": 6242
+    },
+    {
+     "text": "樹很糟就 n²，樹還不錯大概 n log n。",
+     "t": 6271
+    },
+    {
+     "text": "不容易做成 stable。",
+     "t": 6289
+    },
+    {
+     "text": "資料來來去去時是好方法：例如歌曲推薦清單。",
+     "t": 6311
+    },
+    {
+     "text": "只是簡單排序的話有點殺雞用牛刀。",
+     "t": 6361
+    }
+   ]
+  },
+  {
+   "title": "Quick Sort 就是 Tree Sort",
+   "scene": "sortlin-quick-as-bst",
+   "points": [
+    {
+     "text": "剛才影片的 quick sort 到底在做什麼？",
+     "t": 6406
+    },
+    {
+     "text": "說穿了就是 tree sort。",
+     "t": 6416
+    },
+    {
+     "text": "用的不是 AVL 或紅黑樹，是一棵 random 的 BST。",
+     "t": 6424
+    },
+    {
+     "text": "隨便選一個當 BST 的 root。",
+     "t": 6435
+    },
+    {
+     "text": "抓 A0：比它小的放一堆，比它大的放一堆。",
+     "t": 6477
+    },
+    {
+     "text": "那一堆自己去排序 ＝ 那一堆自己去建 BST。",
+     "t": 6494
+    },
+    {
+     "text": "In-order：左邊、中間、右邊，各自做好就排好了。",
+     "t": 6519
+    },
+    {
+     "text": "不需要真的 build 一棵樹，資料就不知不覺排好了。",
+     "t": 6545
+    }
+   ]
+  },
+  {
+   "title": "模擬：6 先分兩堆，越分越細",
+   "scene": "sortlin-quick-levels",
+   "points": [
+    {
+     "text": "例：quick sort 一開始把 6 抓出來。",
+     "t": 6587
+    },
+    {
+     "text": "1、4、3、2、5 在一邊。",
+     "t": 6600
+    },
+    {
+     "text": "9、7、8、10 在另一邊。",
+     "t": 6608
+    },
+    {
+     "text": "左邊那堆可能把 1 抓出來。",
+     "t": 6630
+    },
+    {
+     "text": "沒有比 1 小的、4 個比 1 大：不幸的情形。",
+     "t": 6639
+    },
+    {
+     "text": "對應到 unbalanced 的 BST，歪向一邊。",
+     "t": 6647
+    },
+    {
+     "text": "盡量抓在中點附近，左右就平均、樹就平衡。",
+     "t": 6689
+    },
+    {
+     "text": "平衡時只需要 log n 層。",
+     "t": 6718
+    },
+    {
+     "text": "橫向把東西分兩堆、移位置要 n 的力氣。",
+     "t": 6739
+    },
+    {
+     "text": "總共 n log n。",
+     "t": 6756
+    }
+   ]
+  },
+  {
+   "title": "Pivot 選法：別總是挑第一個",
+   "scene": "sortlin-quick-sorted-input",
+   "points": [
+    {
+     "text": "如果每次都挑第一格……",
+     "t": 6790
+    },
+    {
+     "text": "遇到 1 2 3 4 5 6 7 8 9 10 這種 data。",
+     "t": 6799
+    },
+    {
+     "text": "總是挑第一個當中間人的 quick sort 會很糟，樹永遠長歪。",
+     "t": 6809
+    },
+    {
+     "text": "常做的事：randomly choose root。",
+     "t": 6819
+    },
+    {
+     "text": "BST 的 root 在 quick sort 裡叫 pivot。",
+     "t": 6835
+    },
+    {
+     "text": "10 個人裡隨機選一個，多半會選到比較中間的。",
+     "t": 6844
+    },
+    {
+     "text": "不要總是挑第一個，運氣不好樹就長歪。",
+     "t": 6863
+    }
+   ],
+   "trap": "補充：挑第一個遇到已排序資料，每次只切掉 pivot 自己，比較次數 n(n−1)/2 → O(n²)。"
+  },
+  {
+   "title": "Partition：左右兩個指標掃過來",
+   "scene": "sortlin-quick-partition",
+   "points": [
+    {
+     "text": "從左邊掃過去，留下比中間點小的。",
+     "t": 6878
+    },
+    {
+     "text": "從右邊掃回來，留下比中間點大的。",
+     "t": 6883
+    },
+    {
+     "text": "中間點 6：看到 1、4 沒問題，看到 9 比較大，不該在左邊。",
+     "t": 6893
+    },
+    {
+     "text": "右邊看到 5，比中間點小，不該在右邊。",
+     "t": 6907
+    },
+    {
+     "text": "把 9 跟 5 交換：quick sort 裡的 long jump。",
+     "t": 6913
+    },
+    {
+     "text": "再掃：7 比較大、2 比較小，交換。",
+     "t": 6927
+    },
+    {
+     "text": "10 比較大沒問題；8 太大、3 太小，交換。",
+     "t": 6936
+    },
+    {
+     "text": "1 4 5 2 3 比 6 小，8 10 7 9 比 6 大。",
+     "t": 6965
+    },
+    {
+     "text": "最後 6 跟 3 換過來：左邊都比 6 小、右邊都比 6 大。",
+     "t": 6978
+    }
+   ],
+   "trap": "補充：逐字稿沒有念出完整陣列；這裡依老師的掃描與交換順序重建為 6 1 4 9 7 8 3 10 2 5，左堆 1 4 3 2 5、右堆 9 7 8 10 與老師講的一致。"
+  },
+  {
+   "title": "Quick Sort 實務：三數取中、stack、最壞情形",
+   "scene": "quick-worst-case",
+   "points": [
+    {
+     "text": "橫向：兩個指標一左一右掃，維持 n 的力氣。",
+     "t": 7015
+    },
+    {
+     "text": "縱向：隨機選 pivot，大機率分成平衡的兩堆。",
+     "t": 7024
+    },
+    {
+     "text": "選第一個有缺點，選 random 有好處。",
+     "t": 7060
+    },
+    {
+     "text": "也有人選三個位置，取最中間的那個（median of three）。",
+     "t": 7065
+    },
+    {
+     "text": "用 recursion 實作，還要付出 stack 的空間。",
+     "t": 7083
+    },
+    {
+     "text": "最壞會長出不平衡的樹。",
+     "t": 7093
+    },
+    {
+     "text": "運氣不太差的話很好用：大資料、不需要 stability 時。",
+     "t": 7108
+    }
+   ]
+  },
+  {
+   "title": "Quick Sort 混合 Insertion Sort",
+   "scene": "sortlin-hybrid",
+   "points": [
+    {
+     "text": "小資料時 recursion 有 overhead。",
+     "t": 7115
+    },
+    {
+     "text": "比較小的資料，insertion sort 非常好用。",
+     "t": 7122
+    },
+    {
+     "text": "Quick sort 從大堆分到小堆，不一定要分到最小。",
+     "t": 7137
+    },
+    {
+     "text": "雖然 insertion 是 n²，把常數考慮進去後比較 efficient。",
+     "t": 7148
+    },
+    {
+     "text": "Quick sort 混合 insertion sort：小堆就做 insertion。",
+     "t": 7155
+    },
+    {
+     "text": "這是實務上常見的 implementation。",
+     "t": 7163
+    }
+   ]
+  },
+  {
+   "title": "Sorting 之間的脈絡",
+   "scene": "sortlin-family",
+   "points": [
+    {
+     "text": "最後一頁 best use，有興趣可以自己做做看。",
+     "t": 7172
+    },
+    {
+     "text": "Quick sort 是必講的；其他重要的是給完整的面向。",
+     "t": 7192
+    },
+    {
+     "text": "每個 sorting 都代表一種計算思維的巧思。",
+     "t": 7209
+    },
+    {
+     "text": "Bubble sort 最好用的地方其實是教學。",
+     "t": 7219
+    },
+    {
+     "text": "資訊系學生要對 sorting 有全盤的了解。",
+     "t": 7234
+    },
+    {
+     "text": "從 selection → heap sort → tree sort → quick sort。",
+     "t": 7250
+    },
+    {
+     "text": "Quick sort 的 recursion 和 merge sort 的 recursion 有什麼異同？",
+     "t": 7263
+    }
+   ]
+  },
+  {
+   "title": "休息",
+   "scene": null,
+   "points": [
+    {
+     "text": "再休息 10 分鐘。",
+     "t": 7282
+    },
+    {
+     "text": "之後給課程 summary 和給大一的結語。",
+     "t": 7289
+    }
+   ]
+  },
+  {
+   "title": "Q&A 開放時間",
+   "scene": null,
+   "points": [
+    {
+     "text": "歡迎回來，slido 上沒什麼問題。",
+     "t": 7943
+    },
+    {
+     "text": "最後不到一小時，有問題趕快提。",
+     "t": 7952
+    },
+    {
+     "text": "以後有問題也歡迎寫 email。",
+     "t": 7976
+    }
+   ]
+  },
+  {
+   "title": "課程回顧：學過的資料結構",
+   "scene": null,
+   "points": [
+    {
+     "text": "回顧這門課上了什麼（沿用舊投影片）。",
+     "t": 8022
+    },
+    {
+     "text": "最重要的兩個底層結構：array 和 linked list。",
+     "t": 8058
+    },
+    {
+     "text": "多強調 sparse、2D array 等。",
+     "t": 8073
+    },
+    {
+     "text": "Analysis tools：讓 Big O 朗朗上口。",
+     "t": 8172
+    },
+    {
+     "text": "Restricted 的結構：stack、queue、deque。",
+     "t": 8193
+    },
+    {
+     "text": "Tree：general tree、binary tree、traversal。",
+     "t": 8230
+    },
+    {
+     "text": "Heap → heap sort。",
+     "t": 8263
+    },
+    {
+     "text": "Searchable structure：hashing、skip list。",
+     "t": 8296
+    },
+    {
+     "text": "AVL tree、紅黑樹與 2-3-4 樹。",
+     "t": 8382
+    }
+   ]
+  },
+  {
+   "title": "Sorting 連回學過的資料結構",
+   "scene": "sortlin-ds-links",
+   "points": [
+    {
+     "text": "今天教 sorting。",
+     "t": 8401
+    },
+    {
+     "text": "Sorting 裡很多東西都連到教過的資料結構。",
+     "t": 8406
+    },
+    {
+     "text": "Merge 裡有 sparse array 的 merge。",
+     "t": 8414
+    },
+    {
+     "text": "Heap sort 裡當然有 heap。",
+     "t": 8427
+    },
+    {
+     "text": "Quick sort 跟 binary search tree 有關。",
+     "t": 8433
+    },
+    {
+     "text": "Linked list 跟 insertion 比較貼近。",
+     "t": 8446
+    },
+    {
+     "text": "Selection 跟 heap、跟 array 的連結。",
+     "t": 8459
+    },
+    {
+     "text": "Radix sort 只透過影片講過。",
+     "t": 8465
+    },
+    {
+     "text": "Counting sort：先數每個 element 出現幾次，再決定放哪。",
+     "t": 8474
+    },
+    {
+     "text": "Counting 和 radix 可以搭配，有興趣自己找資料。",
+     "t": 8489
+    }
+   ],
+   "trap": "補充：counting sort 先數每個值出現幾次、再算出每個值的起始位置，O(n + k) 且 stable；常拿來當 radix sort 每一位的分配方法。"
+  },
+  {
+   "title": "必修課程地圖",
+   "scene": null,
+   "points": [
+    {
+     "text": "十年前課程改革做的課程流程圖。",
+     "t": 8535
+    },
+    {
+     "text": "Programming 線：計程 → DSA → 系統程式 → 作業系統。",
+     "t": 8580
+    },
+    {
+     "text": "數學線：演算法設計與分析，更重視分析。",
+     "t": 8661
+    },
+    {
+     "text": "微積分 → 機率：quick sort、skip list 的分析要用到。",
+     "t": 8743
+    },
+    {
+     "text": "線性代數：矩陣運算，多媒體、ML 都用得到。",
+     "t": 8798
+    },
+    {
+     "text": "自動機與形式語言：電腦能做到、做不到什麼。",
+     "t": 8901
+    }
+   ]
+  },
+  {
+   "title": "系統、網路與專題研究",
+   "scene": null,
+   "points": [
+    {
+     "text": "作業系統、計算機結構：往下一層了解電腦。",
+     "t": 9007
+    },
+    {
+     "text": "計算機網路：不同電腦之間怎麼溝通。",
+     "t": 9058
+    },
+    {
+     "text": "專題研究：大二就開始收集資訊、做準備。",
+     "t": 9123
+    },
+    {
+     "text": "資訊領域的幾個面向與跨領域機會。",
+     "t": 9241
+    }
+   ]
+  },
+  {
+   "title": "怎麼成為好的 Programmer",
+   "scene": null,
+   "points": [
+    {
+     "text": "最終怎麼成為好的 programmer。",
+     "t": 9406
+    },
+    {
+     "text": "寫程式的能力：經驗越多越好。",
+     "t": 9452
+    },
+    {
+     "text": "知道程式的 behavior：n² 給兩倍資料要四倍時間。",
+     "t": 9487
+    },
+    {
+     "text": "了解語言、平台、作業系統和計算機結構。",
+     "t": 9541
+    },
+    {
+     "text": "配合問題領域的 domain knowledge。",
+     "t": 9596
+    },
+    {
+     "text": "會用 API 和 library，並做好測試。",
+     "t": 9628
+    },
+    {
+     "text": "跟人合作：大型程式都不是一個人寫的。",
+     "t": 9695
+    },
+    {
+     "text": "最重要：不要停止學習。",
+     "t": 9742
+    }
+   ]
+  },
+  {
+   "title": "業界回饋與系友訪談",
+   "scene": null,
+   "points": [
+    {
+     "text": "推薦一本出社會的學生回顧學校生活的書。",
+     "t": 9791
+    },
+    {
+     "text": "CSIE Communication：服務課學生訪問系友的部落格。",
+     "t": 9892
+    },
+    {
+     "text": "暑假有空去看訪問稿，想想自己的下一步。",
+     "t": 9964
+    }
+   ]
+  },
+  {
+   "title": "最後的 Q&A",
+   "scene": null,
+   "points": [
+    {
+     "text": "OOP 會用什麼語言教：還沒決定。",
+     "t": 10059
+    },
+    {
+     "text": "ADA 跟 DSA：ADA 更注重演算法分析。",
+     "t": 10079
+    },
+    {
+     "text": "先修課沒有真的擋修，但有箭頭表示可能有 gap。",
+     "t": 10133
+    },
+    {
+     "text": "頂石課程：大致是專題研究的地位。",
+     "t": 10263
+    },
+    {
+     "text": "金融領域：越接近底層的語言越能控制速度。",
+     "t": 10403
+    },
+    {
+     "text": "系上沒有固定開 compiler 的老師。",
+     "t": 10473
+    }
+   ]
+  },
+  {
+   "title": "結語",
+   "scene": null,
+   "points": [
+    {
+     "text": "謝謝大家一起度過遠距教學的特別學期。",
+     "t": 10658
+    },
+    {
+     "text": "希望克服直播困難的經歷能鼓勵大家面對挑戰。",
+     "t": 10696
+    },
+    {
+     "text": "課程結束不是緣分的結束。",
+     "t": 10745
+    },
+    {
+     "text": "有需要幫忙就寫 email。",
+     "t": 10756
+    },
+    {
+     "text": "這學期的課程就上到這邊。",
+     "t": 10780
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Selection sort 排 5 筆資料，「找最小」總共要比較幾次？",
+   "opts": [
+    "10",
+    "25",
+    "5",
+    "15"
+   ],
+   "ans": "10",
+   "why": "內層依序比較 4 + 3 + 2 + 1 = 10 = n(n−1)/2 次，不論輸入如何都一樣，所以是 O(n²)。"
+  },
+  {
+   "q": "下列哪一種排序通常「不」被看成 stable？",
+   "opts": [
+    "Heap sort",
+    "Bubble sort",
+    "Insertion sort（backward）",
+    "Merge sort"
+   ],
+   "ans": "Heap sort",
+   "why": "Heap 的上浮、下沉會跳很遠，很難顧到同 key 的原順序；要 stable 得額外存原位置當 secondary key。"
+  },
+  {
+   "q": "已經由小到大排好的 n 筆資料，用 backward insertion sort 共要比較幾次？",
+   "opts": [
+    "n − 1",
+    "n(n−1)/2",
+    "n log n",
+    "0"
+   ],
+   "ans": "n − 1",
+   "why": "每張新牌只看前一張就知道它最大、放在後面，所以是 adaptive，接近 O(n)。從前面找的 naive 版才會比 n(n−1)/2 次。"
+  },
+  {
+   "q": "Bubble sort 加上哪個設計就變成 adaptive？",
+   "opts": [
+    "某一輪完全沒有交換就提早停止",
+    "每次挑隨機的 pivot",
+    "改成從最高位開始排",
+    "先建一個 max heap"
+   ],
+   "ans": "某一輪完全沒有交換就提早停止",
+   "why": "沒有交換代表沒有 disordered pair，已經排好，後面的輪都不用掃（early stop）。"
+  },
+  {
+   "q": "Shell sort 為什麼不是 stable？",
+   "opts": [
+    "間隔大的 insertion 會一次跳很多格，跨過同值的元素",
+    "它需要額外的暫存陣列",
+    "它用 heap 找最大值",
+    "它最後一輪不是 insertion sort"
+   ],
+   "ans": "間隔大的 insertion 會一次跳很多格，跨過同值的元素",
+   "why": "Long jump 讓元素越過中間的同值元素；但它仍然 in-place，而且跟 insertion 一樣蠻 adaptive。"
+  },
+  {
+   "q": "合併兩個各有 2ⁱ 筆、已排好的堆，要花多少時間？",
+   "opts": [
+    "O(2ⁱ)",
+    "O(i)",
+    "O(4ⁱ)",
+    "O(2ⁱ · i)"
+   ],
+   "ans": "O(2ⁱ)",
+   "why": "兩個指標各走一遍，就像兩個 sparse array／多項式相加；每層合計 O(n)，共 log n 層 → O(n log n)。"
+  },
+  {
+   "q": "對 6 1 4 9 7 8 3 10 2 5 做 partition（pivot = 6，i 從左找 > 6、j 從右找 < 6），第一次交換的是？",
+   "opts": [
+    "9 和 5",
+    "6 和 5",
+    "1 和 5",
+    "9 和 10"
+   ],
+   "ans": "9 和 5",
+   "why": "i 跳過 1、4，停在 9；j 一開始就停在 5；兩者交換。之後是 7↔2、8↔3，最後 6↔3。"
+  },
+  {
+   "q": "用「BST」來理解 quick sort，pivot 對應到什麼？",
+   "opts": [
+    "（隨機）BST 的 root",
+    "BST 的最左葉子",
+    "Heap 的根",
+    "In-order 的最後一個節點"
+   ],
+   "ans": "（隨機）BST 的 root",
+   "why": "Quick sort 就是不真的建樹的 tree sort：pivot 當 root，比它小的一堆當左子樹、大的一堆當右子樹，各自遞迴。"
+  }
+ ]
+}
