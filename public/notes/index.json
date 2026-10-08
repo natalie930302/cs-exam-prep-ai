@@ -735,7 +735,7 @@
   "label": "MIT 6.006：AVL Trees, AVL Sort",
   "points": 104,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "FrLWd1tJ_Wc": {
   "label": "Bellman Ford Algorithm",
@@ -861,13 +861,13 @@
   "label": "MIT 6.006 Rec6：AVL Trees",
   "points": 112,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "jDM6_TnYIqE": {
   "label": "Abdul Bari：10.1 AVL Tree - Insertion and Rotations",
   "points": 114,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "JR2fneVevbg": {
   "label": "Minimum Cost Spanning Tree | Kruskal's & Prim's",
@@ -993,7 +993,7 @@
   "label": "交大彭文志 Lec24 Search Structures (1/3)",
   "points": 97,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "NI4OKSvGAgM": {
   "label": "Abdul Bari：1.9 Properties of Asymptotic Notations",

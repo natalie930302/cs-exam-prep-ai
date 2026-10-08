@@ -4869,16 +4869,18 @@ FRAG.push(['bsta-degenerate', '依序插入會退化成 list', async (tok) => {
 
   // ═══ bstb.js ═══
   {
-const { V3, fresh, tag, cube, move, kill, glow, tint, txt, relabel, code, anim, line, ghostBox, GOLD, GREEN, RED } = K;
+const { V3, fresh, tag, cube, move, kill, glow, tint, txt, relabel, code, anim, line, arrow, ghostBox, buddy, travel, remove, step, GOLD, GREEN, RED } = K;
 // ─── nfDvFjXU2VI 交大彭文志 Lec24（Horowitz 月份 AVL）、FNeL18KsWPc MIT 6.006 AVL ───
+// cued：每個 await step(tok) 等老師講到那一句才往下（notes 的 cues 一對一）
 // 小樹引擎：x 由「全部 key 的排名」固定（旋轉時 x 不動、只換層 → 正好看出 inorder 不變），y 由深度決定
 const BB_PAL = ['#2fc092', '#4b9ee2', '#9b7ef4', '#e55a9b', '#dd8238', '#31aab0', '#c08a1f', '#5c7a4a'];
 const bbCol = (k) => typeof k === 'number' ? colorFor(k) : BB_PAL[[...String(k)].reduce((s, c) => s + c.charCodeAt(0), 0) % 8];
 const BB_MON = ['MAR', 'MAY', 'NOV', 'AUG', 'APR', 'JAN', 'DEC', 'JUL', 'FEB', 'JUN', 'OCT', 'SEP'];
 const BB_MIT = [41, 20, 65, 11, 29, 50, 26];
+const PINK = '#e55a9b';
 function bbTree(keys, o = {}) {
   const ks = [...keys].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-  return { root: null, ks, gap: o.gap || 1.3, top: o.top ?? 6.4, dy: o.dy || 1.3, x0: o.x0 || 0, info: o.info || null, edges: [], warn: o.warn !== false };
+  return { root: null, ks, gap: o.gap || 1.3, top: o.top ?? 6.4, dy: o.dy || 1.3, x0: o.x0 || 0, info: o.info || null, edges: [], warn: o.warn !== false, hide: false };
 }
 function bbNode(k, lab, kind) { return { k, lab: lab ?? k, l: null, r: null, p: null, m: null, tg: null, kind: kind || 'node' }; }
 function bbPut(t, n) {
@@ -4912,10 +4914,11 @@ function bbInfo(t) {
   for (const n of bbList(t)) {
     if (n.kind !== 'node') continue;
     const b = bbBf(n);
-    const s = t.info === 'bf' ? 'bf ' + b : t.info === 'h' ? 'h=' + (bbH(n) - 1) : (BB_ARW[b] || (b > 0 ? '↙↙' : '↘↘'));
+    const s = t.info === 'bf' ? 'bf ' + (b > 0 ? '+' : b < 0 ? '−' : '') + Math.abs(b) : t.info === 'h' ? 'h=' + (bbH(n) - 1) : (BB_ARW[b] || (b > 0 ? '↙↙' : '↘↘'));
     if (!n.tg) n.tg = tag(s, 'idx', 0, 0, 0); else txt(n.tg, s);
     n.tg.element.className = 'lab-label ' + (Math.abs(b) >= 2 ? 'ptr alt' : 'idx');
-    if (t.warn) glow(n.m, Math.abs(b) >= 2 ? RED : null);
+    n.tg.element.style.visibility = t.hide ? 'hidden' : '';
+    if (t.warn && !t.hide) glow(n.m, Math.abs(b) >= 2 ? RED : null);
   }
 }
 function bbEdges(t) {
@@ -4935,216 +4938,569 @@ async function bbLay(t, tok, ms = 700, drop = 3) {
   bbInfo(t);
   if (ms > 0) await anim(tok, ms, () => bbEdges(t)); else bbEdges(t);
 }
-function bbNote(n, s, cls) { if (!n.tg) n.tg = tag(s, cls || 'idx', 0, 0, 0); else txt(n.tg, s); n.tg.element.className = 'lab-label ' + (cls || 'idx'); }
-function bbCursor(n, s) { const c = tag(s || '▼', 'ptr', n.m.position.x, n.m.position.y + 1.0, 0); return c; }
-async function bbWalk(tok, cur, n, ms = 500) { cur.position.set(n.m.position.x, n.m.position.y + 1.0, 0); glow(n.m, GOLD); await beat(tok, ms); glow(n.m, null); }
-const BB_DESC = { LL: 'B 往上提、A 往下壓到右邊', RR: 'B 往上提、A 往下壓到左邊', LR: 'C 拉到最上面、B 與 A 當它的 child', RL: 'C 拉到最上面、A 與 B 當它的 child' };
-// 一次 AVL insert：掉進去 → 算 bf → 找 A → 判型別 → 調整
-async function bbAvlStep(t, k, tok, o = {}) {
-  const n = bbPut(t, bbNode(k));
-  say('insert ' + k, o.why || '依字母順序往下比，放成 leaf');
-  await bbLay(t, tok, 800);
-  await beat(tok, o.quick ? 500 : 900);
-  const r = bbDetect(t, n);
-  if (!r) { say('更新每個 node 的 bf：沒有人違規', 'bf ∈ {−1, 0, 1}'); await beat(tok, o.quick ? 700 : 1300); return null; }
-  const bad = bbList(t).filter((x) => Math.abs(bbBf(x)) >= 2).map((x) => x.k);
-  const a = tag('A', 'ptr alt', r.A.m.position.x - 0.55, r.A.m.position.y + 0.95, 0);
-  const y = tag('Y', 'ptr', n.m.position.x - 0.55, n.m.position.y + 0.95, 0);
-  say('A = 離 Y 最近的違規 node：' + r.A.k, '違規：' + bad.join('、') + '（bf = ±2）');
-  await beat(tok, 2600);
-  say('Y 在 A 的 ' + (r.type[0] === 'L' ? 'left' : 'right') + ' subtree 的 ' + (r.type[1] === 'L' ? 'left' : 'right'), '→ ' + r.type + ' 型');
-  await beat(tok, 2200);
-  kill(a); kill(y);
-  bbFix(t, r);
-  say(r.type + '：' + BB_DESC[r.type], '仍然是 BST：inorder 順序不變');
-  await bbLay(t, tok, 900);
-  await beat(tok, 1600);
-  say('重新計算 bf：全部回到 −1..1', '');
-  await beat(tok, 1400);
-  return r;
+// 顯示 / 隱藏 bf（「插進去」和「算 bf」分成兩句時用）
+function bbShow(t, on) { t.hide = !on; bbInfo(t); bbEdges(t); }
+function bbNote(n, s, cls) { if (!n.tg) n.tg = tag(s, cls || 'idx', 0, 0, 0); else txt(n.tg, s); n.tg.element.className = 'lab-label ' + (cls || 'idx'); n.tg.element.style.visibility = ''; }
+function bbCursor(n, s) { return tag(s || '▼', 'pkt', n.m.position.x, n.m.position.y + 1.0, 0); }
+function bbAt(cur, n) { cur.position.set(n.m.position.x, n.m.position.y + 1.0, 0); }
+// 游標沿著節點走（每個節點 ms 毫秒，總長要短）
+async function bbRun(tok, cur, nodes, ms = 160, onEach) {
+  for (let i = 0; i < nodes.length; i++) { const n = nodes[i]; bbAt(cur, n); glow(n.m, GOLD); if (onEach) onEach(n, i); await beat(tok, ms); glow(n.m, null); }
 }
+// 在節點旁邊掛一個標籤（A、Y、B、C …）
+function bbPin(n, s, cls = 'ptr alt', dx = -0.62) { return tag(s, cls, n.m.position.x + dx, n.m.position.y + 0.98, 0); }
+// 把舊樹的方塊搬到新樹（同 key 共用方塊），用來示範「同一群 key 換成另一個形狀」
+async function bbMorph(oldT, newT, tok, ms = 900) {
+  const byK = new Map(bbList(oldT).map((n) => [n.k, n]));
+  oldT.edges.forEach(kill); oldT.edges = [];
+  for (const n of bbList(newT)) { const o = byK.get(n.k); if (o) { n.m = o.m; n.tg = o.tg; } }
+  await bbLay(newT, tok, ms);
+}
+// 小幫手：會呼吸眨眼的小方塊＋對話泡泡
+function pal(x = 6.1, z = 2.6, color = '#f6c35b', s = 0.55, name = '小A') { const b = buddy(name, '', color, x, 0, z, s); b.x = x; b.z = z; b.s = s; return b; }
+function talk(b, text, mood) { if (!b) return; if (b.bub) remove(b.bub); b.bub = text ? tag(text, 'say', b.x, b.s + 1.35, b.z) : null; if (mood) b.mood(mood); }
+const note = (s, x, y, z = 0) => tag(s, 'note', x, y, z);
 
 // ═══ nfDvFjXU2VI ═══
+const CAMB = [[0, 4.6, 14], [0, 3.8, 0]];
+const SEQ_TXT = 'MAR MAY NOV AUG APR JAN DEC JUL FEB JUN OCT SEP';
 // 00:00 依字母順序插入月份 → skewed BST，找 SEPT 要比 12 次
 FRAG.push(['bstb-skewed-months', '依字母順序插入：skewed BST', async (tok) => {
-  fresh([0, 4.6, 14], [0, 3.8, 0]);
+  fresh(...CAMB);
+  const g = pal();
   const ord = [...BB_MON].sort();
-  const t = bbTree(ord, { gap: 1.1, top: 7.2, dy: 0.56 });
-  say('12 個月份照字母順序插入', 'APR < AUG < DEC < … < SEPT');
-  for (const k of ord) { bbPut(t, bbNode(k)); await bbLay(t, tok, 280); }
-  say('每個新 key 都比前面大：一路往右長', 'skewed binary search tree');
-  await beat(tok, 2400);
-  const cur = bbCursor(t.root); const cnt = tag('比較 0 次', 'ptr alt', -5, 1.2, 0);
-  say('search SEPT：從 root 一路比大小', '');
-  let c = t.root, i = 0;
-  while (c) { i++; txt(cnt, '比較 ' + i + ' 次'); await bbWalk(tok, cur, c, 320); if (c.k === 'SEP') break; c = c.r; }
-  glow(c.m, GREEN);
-  say('找 SEPT 要比較 12 次（最多）', 'max comparisons = 12');
-  await beat(tok, 2400);
-  say('平均：每個 node 的比較次數取平均', '(1 + 2 + … + 12) / 12 = 78 / 12 = 6.5');
-  await beat(tok, 2800);
-  say('不 balance 就會這麼慢', '→ 想要 balanced BST：AVL tree');
-  await beat(tok, 2800);
+  const t = bbTree(ord, { gap: 1.0, top: 7.0, dy: 0.52 });
+  await step(tok);                                   // 0:00 BST 會受 input sequence 影響
+  note('input：APR → AUG → DEC → … → SEP（照字母順序）', -1.2, 0.4, 1.6);
+  say('BST 長什麼樣子，要看資料進來的順序', 'input sequence 不好，樹就會長歪');
+  talk(g, '順序會影響形狀？', 'wow');
+  await step(tok);                                   // 0:22 可能長得像這樣：skewed
+  for (const k of ord) { bbPut(t, bbNode(k)); await bbLay(t, tok, 130, 2.5); }
+  say('每個新月份都比前面大 → 一路往右下長', 'skewed binary search tree（歪斜的 BST）');
+  talk(g, '歪成一條斜線了…', 'sad');
+  await step(tok);                                   // 0:36 search SEPT
+  const sep = bbFind(t, 'SEP'); glow(sep.m, GOLD);
+  const cur = bbCursor(t.root, '找 SEPT');
+  say('在這棵樹裡找 SEPT（九月）', '從 root 開始，一個一個比大小');
+  talk(g, 'SEPT 在最下面耶');
+  await step(tok);                                   // 0:44 要比 12 次
+  const cnt = tag('比較 0 次', 'pkt', -4.2, 2.2, 0);
+  const path = []; for (let c = t.root; c; c = c.r) path.push(c);
+  await bbRun(tok, cur, path, 140, (n, i) => txt(cnt, '比較 ' + (i + 1) + ' 次'));
+  glow(sep.m, GREEN);
+  say('一路比到最底：比較 12 次', 'max comparisons = 12');
+  await step(tok);                                   // 0:52 每一次比大小就是一次 comparison
+  note('每比一次大小 = 1 次 comparison', -3.6, 3.2, 0.8);
+  say('和一個 node 比一次大小，叫做一次 comparison', '');
+  talk(g, '比一次算一次');
+  await step(tok);                                   // 0:59 average：每個 node 的比較次數
+  remove(cur);
+  bbList(t).forEach((n, i) => { bbNote(n, String(i + 1)); });
+  bbEdges(t);
+  say('平均：找每個 node 各要比幾次？', '第 1 個比 1 次、第 2 個 2 次 … 第 12 個 12 次');
+  await step(tok);                                   // 1:13 取平均 = 6.5
+  note('(1 + 2 + … + 12) ÷ 12 = 78 ÷ 12 = 6.5', 1.6, 1.2, 1.2);
+  say('把 12 個次數加起來再平均', 'average comparisons = 6.5');
+  await step(tok);                                   // 1:19 不 balance 就有這種缺點
+  talk(g, '太慢了啦…', 'sad');
+  say('BST 不 balance，搜尋就會很慢', '最差跟 linked list 一樣，一個一個找');
+  await step(tok);                                   // 1:29 希望找到比較 balanced 的 BST
+  bbList(t).forEach((n) => { kill(n.tg); n.tg = null; }); remove(cnt);
+  const b = bbTree(BB_MON, { gap: 1.0, top: 7.0, dy: 1.2 });
+  bbAvlSilent(b, BB_MON);
+  await bbMorph(t, b, tok, 1200);
+  say('同樣 12 個月份，排成比較矮胖的樣子', '最多只要比 5 次');
+  talk(g, '矮多了！', 'happy');
+  await step(tok);                                   // 1:33 典型的 balanced BST：AVL tree
+  tag('AVL tree', 'ptr alt', 0, 8.0, 0);
+  say('典型的 balanced BST：AVL tree', '接下來看它的定義和怎麼維持');
+  await g.hop(tok);
 }]);
 
-// 01:24 AVL 定義：T_L、T_R height balanced 且 |h_L − h_R| ≤ 1；bf = h_L − h_R
+// 01:38 AVL 定義：T_L、T_R height balanced 且 |h_L − h_R| ≤ 1；bf = h_L − h_R
 FRAG.push(['bstb-avl-def', 'AVL 定義與 balance factor', async (tok) => {
-  fresh([0, 4.6, 14], [0, 3.6, 0]);
-  const t = bbTree(BB_MON, { gap: 1.1, top: 7.0, dy: 1.2 });
+  fresh(...CAMB);
+  const g = pal();
+  const t = bbTree(BB_MON, { gap: 1.0, top: 7.0, dy: 1.2, info: 'bf' });
   bbAvlSilent(t, BB_MON);
-  await bbLay(t, tok, 600, 0);
-  const gl = ghostBox('#4b9ee2', 4.6, 3.4, 1.6); gl.position.set(-4.4, 4.6, 0);
-  const gr = ghostBox('#e55a9b', 7.6, 4.6, 1.6); gr.position.set(2.75, 4.0, 0);
-  const tl = tag('T_L', 'ptr', -5.6, 6.6, 0), tr = tag('T_R', 'ptr', 5.6, 6.6, 0);
-  say('條件 1：T_L、T_R 都是 height balanced', '遞迴：每個 subtree 也要符合');
-  await beat(tok, 3000);
-  say('條件 2：|h_L − h_R| ≤ 1', 'root：h_L = 3、h_R = 4');
-  await beat(tok, 3000);
-  [gl, gr, tl, tr].forEach(kill);
-  t.info = 'bf'; bbInfo(t); bbEdges(t);
-  say('每個 node 算 balance factor', 'bf = h_L − h_R（不取絕對值）');
-  await beat(tok, 2800);
-  for (const n of bbList(t)) { glow(n.m, GREEN); await beat(tok, 260); }
-  say('AVL：每個 node 的 bf 只能是 −1、0、1', '');
-  await beat(tok, 2400);
-  say('insert 時一發現 bf 超出就馬上調整', '不是全部插完才調整');
-  await beat(tok, 3000);
+  t.hide = true;
+  await step(tok);                                   // 1:38 AVL tree 有兩個條件
+  await bbLay(t, tok, 600, 2.5);
+  say('AVL tree 有兩個條件', '隨便選一個 node 來檢查（先看 root）');
+  talk(g, '兩個條件？');
+  await step(tok);                                   // 1:49 以 root 為例：left / right subtree
+  const r = t.root; glow(r.m, GOLD);
+  const xs = bbList(t).map((n) => n.m.position.x);
+  const lx = (Math.min(...xs) + r.m.position.x - 0.5) / 2, rx = (Math.max(...xs) + r.m.position.x + 0.5) / 2;
+  const gl = ghostBox('#4b9ee2', r.m.position.x - Math.min(...xs) - 0.2, 4.4, 1.4); gl.position.set(lx, 4.0, 0);
+  const gr = ghostBox(PINK, Math.max(...xs) - r.m.position.x - 0.2, 5.6, 1.4); gr.position.set(rx, 3.4, 0);
+  const tl = tag('T_L', 'ptr', lx, 6.6, 0), tr = tag('T_R', 'ptr', rx, 6.6, 0);
+  say('root 底下：左子樹 T_L、右子樹 T_R', '');
+  await step(tok);                                   // 1:56 條件一：T_L、T_R 都是 height balanced
+  const c1 = note('① T_L、T_R 都是 height balanced', -2.6, 0.5, 1.4);
+  say('條件 ①：T_L 和 T_R 本身都是 height balanced', '');
+  await step(tok);                                   // 2:02 條件二：|h_L − h_R| ≤ 1
+  const c2 = note('② |h_L − h_R| ≤ 1', 3.2, 0.5, 1.4);
+  say('條件 ②：左右子樹高度相減取絕對值，不超過 1', '');
+  await step(tok);                                   // 2:12 h_L、h_R 是左右子樹的高度
+  const hl = bbH(r.l), hr = bbH(r.r);
+  const hlT = tag('h_L = ' + hl, 'pkt', lx, 1.6, 0), hrT = tag('h_R = ' + hr, 'pkt', rx, 1.0, 0);
+  say('h_L = 左子樹的高度（層數），h_R = 右子樹的高度', '這裡 h_L = ' + hl + '、h_R = ' + hr);
+  await step(tok);                                   // 2:18 相差在 1 之內
+  txt(c2, '② |' + hl + ' − ' + hr + '| = ' + Math.abs(hl - hr) + ' ≤ 1 ✓');
+  say('高度相差在 1 之內 → root 這裡過關', '');
+  talk(g, '差 1 可以！', 'happy');
+  await step(tok);                                   // 2:36 遞迴：T_L 裡任取一個 node 也要符合
+  [gl, gr, tl, tr, hlT, hrT].forEach(kill); glow(r.m, null);
+  const q = r.l; glow(q.m, GOLD);
+  const g2 = ghostBox('#4b9ee2', 1.6, 2.4, 1.2); g2.position.set(q.l.m.position.x, q.l.m.position.y - 0.6, 0);
+  const g3 = ghostBox(PINK, 1.6, 2.4, 1.2); g3.position.set(q.r.m.position.x, q.r.m.position.y - 0.6, 0);
+  txt(c1, '① 每個 subtree 也要符合（遞迴）');
+  say('「height balanced」是遞迴的：', 'T_L 裡任取一個 node，它的左右子樹也要符合 ①②');
+  talk(g, '一層一層都要檢查');
+  await step(tok);                                   // 3:05 為了達到這個條件：一個指標
+  [g2, g3].forEach(kill); glow(q.m, null);
+  say('為了方便檢查，每個 node 放一個指標', '叫做 balance factor（BF）');
+  talk(g, '每個 node 一個數字');
+  await step(tok);                                   // 3:29 BF = h_L − h_R
+  bbShow(t, true);
+  say('BF = h_L − h_R（左子樹高度 − 右子樹高度）', '每個 node 上方的數字就是它的 BF');
+  await step(tok);                                   // 3:39 沒有取絕對值
+  const neg = bbList(t).find((n) => bbBf(n) < 0);
+  glow(neg.m, GOLD);
+  const nn = note('負的 = 右邊比較高', neg.m.position.x, neg.m.position.y - 0.9, 1.0);
+  say('BF 不取絕對值：正負號有意義', '+ = 左邊高、− = 右邊高、0 = 一樣高');
+  await step(tok);                                   // 3:45 BF 只能是 −1、0、1
+  glow(neg.m, null); kill(nn);
+  for (const n of bbList(t)) glow(n.m, GREEN);
+  txt(c2, '② 每個 node 的 BF ∈ {−1, 0, 1}');
+  say('AVL tree：每個 node 的 BF 都只能是 −1、0、1', '');
+  talk(g, '全部綠燈 ✓', 'happy');
+  await step(tok);                                   // 4:03 insert 時 BF 超出 → 調整
+  for (const n of bbList(t)) { kill(n.m); kill(n.tg); } t.edges.forEach(kill); [c1, c2].forEach(kill);
+  const s = bbTree(['MAR', 'MAY', 'NOV'], { gap: 1.6, top: 6.4, dy: 1.3, info: 'bf' });
+  bbBstSilent(s, ['MAR', 'MAY', 'NOV']); await bbLay(s, tok, 700, 3);
+  say('insert 時，如果某個 node 的 BF 變成 2 或 −2', '超出 −1、0、1 → 馬上要調整');
+  talk(g, '−2！要修了', 'wow');
+  await step(tok);                                   // 5:03 不是做完才調整：一個一個拿進來
+  const qs = ['AUG', 'APR', 'JAN', 'DEC'].map((k, i) => cube(k, bbCol(k), [0.9, 0.6, 0.8], -5.6 + i * 1.1, 0.4, 1.6));
+  note('進來一個 → 算 BF → 違規就馬上調整', 1.6, 0.5, 1.6);
+  say('每 insert 一個 node 就檢查、就調整', '不是全部插完才一次調整');
+  await travel(tok, qs[0], qs[0].position.clone(), V3(-3.2, 2.6, 0), 700);
+  await step(tok);                                   // 5:44 調整只有四種
+  ['LL', 'LR', 'RR', 'RL'].forEach((s2, i) => tag(s2, 'ptr alt', -3 + i * 2, 8.0, 0));
+  say('AVL 的調整其實很簡單：只有四種', 'LL、LR、RR、RL');
+  talk(g, '才四種！', 'happy');
 }]);
 
-// 05:51 四種調整：A = 離 Y 最近的違規點；看 Y 在 A 的哪裡
+// 05:49 四種調整：A = 離 Y 最近的違規點；看 Y 在 A 的哪裡
 FRAG.push(['bstb-four-cases', 'LL、LR、RR、RL 四種情況', async (tok) => {
-  fresh([0, 4.2, 13.5], [0, 3.2, 0]);
+  fresh([0, 4.2, 13.5], [0, 3.4, 0]);
+  const g = pal(6.2, 2.8);
   const xs = [-5.1, -1.7, 1.7, 5.1], types = ['LL', 'LR', 'RR', 'RL'];
-  say('新插入的 node 叫 Y', 'A = Y 往 root 走，第一個 bf 違規的 node');
-  await beat(tok, 2600);
-  for (let i = 0; i < 4; i++) {
+  const slots = types.map((T, i) => tag('?', 'idx', xs[i], 1.2, 0));
+  const draw = (i, withY = true) => {
     const T = types[i], x = xs[i], s1 = T[0] === 'L' ? -1 : 1, s2 = T[1] === 'L' ? -1 : 1;
-    const A = cube('A', '#dd8238', [0.9, 0.8, 0.9], x, 5.6, 0, 3);
     const bx = x + s1 * 0.85, yx = bx + s2 * 0.75;
-    cube('', '#4b9ee2', [0.8, 0.7, 0.9], bx, 4.2, 0, 3);
-    line(x, 5.2, bx, 4.6); line(bx, 3.85, yx, 3.2);
-    await beat(tok, 500);
-    const Y = cube('Y', '#e55a9b', [0.8, 0.7, 0.9], yx, 2.8, 0, 3); glow(Y, GOLD); glow(A, RED);
-    tag(T, 'ptr alt', x, 1.4, 0);
-    tag(i === 0 ? 'bf 2' : i === 1 ? 'bf 2' : 'bf −2', 'idx', x + 0.6, 6.3, 0);
-    const word = (T[0] === 'L' ? 'left' : 'right') + ' subtree 的 ' + (T[1] === 'L' ? 'left' : 'right');
-    say(T + '：Y 在 A 的 ' + word, '');
-    await beat(tok, 2200);
-  }
-  say('先找出 A，再看 Y 和 A 的空間關係', '一定落入四種 case 之一');
-  await beat(tok, 3000);
+    const A = cube('A', '#dd8238', [0.9, 0.8, 0.9], x, 5.6, 0, 2.5);
+    const B = cube('', '#4b9ee2', [0.8, 0.7, 0.9], bx, 4.2, 0, 2.5);
+    line(x, 5.2, bx, 4.6);
+    let Y = null;
+    if (withY) { line(bx, 3.85, yx, 3.2); Y = cube('Y', PINK, [0.8, 0.7, 0.9], yx, 2.8, 0, 2.5); glow(Y, GOLD); glow(A, RED); txt(slots[i], T); slots[i].element.className = 'lab-label ptr alt'; }
+    return { A, B, Y, x, bx, yx };
+  };
+  await step(tok);                                   // 5:49 四種 operation
+  say('AVL 的調整只有四種 operation', '先認識兩個角色：Y 和 A');
+  talk(g, '哪四種？');
+  await step(tok);                                   // 5:54 新 insert 進來的 node 叫 Y
+  const Y0 = cube('Y', PINK, [0.8, 0.7, 0.9], xs[0] - 1.6, 2.8, 0, 3); glow(Y0, GOLD);
+  say('新 insert 進來的 node，叫做 Y', '');
+  await step(tok);                                   // 6:13 有一個 node 叫 A，Y 在它的 left subtree 的 left
+  const A0 = cube('A', '#dd8238', [0.9, 0.8, 0.9], xs[0], 5.6, 0, 3);
+  const B0 = cube('', '#4b9ee2', [0.8, 0.7, 0.9], xs[0] - 0.85, 4.2, 0, 3);
+  line(xs[0], 5.2, xs[0] - 0.85, 4.6); line(xs[0] - 0.85, 3.85, xs[0] - 1.6, 3.2);
+  say('樹裡有一個 node 叫 A', '例如 Y 被插在 A 的 left subtree 的 left');
+  await step(tok);                                   // 6:42 A 怎麼定義：違反 BF 區間
+  glow(A0, RED); const bfT = tag('bf 2', 'ptr alt', xs[0] + 0.7, 6.3, 0);
+  say('A 是誰？插入 Y 之後，BF 跑出 −1、0、1 的那個 node', '它就是要被修的地方');
+  talk(g, '違規的就是 A', 'wow');
+  await step(tok);                                   // 7:10 判斷 Y 在 A 的哪個位置
+  const hand = tag('👉', '', xs[0], 6.4, 0);
+  await travel(tok, hand, V3(xs[0], 6.4, 0), V3(xs[0] - 1.6, 3.6, 0), 1000);
+  say('找到 A 以後：看 Y 在 A 的哪個位置', '從 A 往 Y 走：先往哪邊、再往哪邊');
+  await step(tok);                                   // 7:19 第一種：LL
+  remove(hand);
+  txt(slots[0], 'LL'); slots[0].element.className = 'lab-label ptr alt';
+  say('LL：Y 在 A 的 left subtree 的 left', '左、左');
+  await step(tok);                                   // 7:42 第二種：LR
+  draw(1);
+  say('LR：Y 在 A 的 left subtree 的 right', '先左、再右');
+  talk(g, '左 → 右');
+  await step(tok);                                   // 8:13 英文寫法很繞：記中文
+  const en = note('英文課本：in the right subtree of the left subtree of A', -1.7, 0.4, 1.6);
+  say('英文寫法繞了一大圈', '記中文就好：A 的 left subtree 的 right');
+  talk(g, '英文好繞…', 'sad');
+  await step(tok);                                   // 8:21 RR
+  kill(en);
+  draw(2);
+  say('RR：Y 在 A 的 right subtree 的 right', '右、右');
+  talk(g, '右 → 右', 'calm');
+  await step(tok);                                   // 8:29 RL：跟 LR 剛好顛倒
+  draw(3);
+  say('RL：跟 LR 剛好顛倒', 'Y 在 A 的 right subtree 的 left');
+  await step(tok);                                   // 8:46 先 detect 哪個 node 是 A
+  kill(bfT);
+  const s1 = note('① 先找出 A', -3.4, 7.3, 0);
+  say('做法第一步：detect 哪個 node 是 A', '');
+  await step(tok);                                   // 8:55 再看 Y 和 A 的空間關係
+  const s2 = note('② 看 Y 和 A 的空間關係', 1.6, 7.3, 0);
+  say('第二步：判斷 Y 和 A 在空間上的關係', '');
+  await step(tok);                                   // 9:05 一定落入四種之一
+  slots.forEach((l) => { l.element.className = 'lab-label ptr'; });
+  say('不管樹多大，一定落入這四種 case 之一', '');
+  talk(g, '一定是其中一種', 'happy');
+  await step(tok);                                   // 9:12 根據每一種 case 去調整
+  [s1, s2].forEach(kill);
+  note('③ 依照 case 做對應的調整', -1.0, 7.3, 0);
+  say('第三步：根據是哪一種 case 去做調整', '接下來用月份的例子看');
 }]);
 
-// 09:25 MAR、MAY、NOV → RR
+// 月份例共用：插入（不算 bf）→ 算 bf → 找 A → 判型別 → 調整，各自是一個 step
+function monthTree(pre, o = {}) {
+  const t = bbTree(BB_MON, Object.assign({ gap: 1.0, top: 7.0, dy: 1.2, info: 'bf' }, o));
+  bbAvlSilent(t, pre);
+  return t;
+}
+async function monthIns(t, k, tok, hide = true) { const n = bbPut(t, bbNode(k)); t.hide = hide; await bbLay(t, tok, 700, 3); glow(n.m, GOLD); return n; }
+function pathTo(t, k) { const out = []; let c = t.root; while (c) { out.push(c); if (c.k === k) break; c = k < c.k ? c.l : c.r; } return out; }
+
+// 09:33 MAR、MAY、NOV → RR
 FRAG.push(['bstb-month-rr', '月份例：MAR、MAY、NOV → RR', async (tok) => {
-  fresh([0, 4.6, 14], [0, 3.8, 0]);
-  const t = bbTree(BB_MON, { gap: 1.1, top: 7.0, dy: 1.2, info: 'bf' });
-  for (const k of ['MAR', 'MAY']) await bbAvlStep(t, k, tok, { quick: true, why: k === 'MAR' ? '空樹：MAR 當 root' : 'MAY > MAR（第三個字 Y > R）→ 右邊' });
-  say('MAR：h_L − h_R = 0 − 1', 'bf(MAR) = −1');
-  await beat(tok, 2200);
-  await bbAvlStep(t, 'NOV', tok, { why: 'NOV > MAR、NOV > MAY → MAY 的右邊' });
-  say('MAY 拉上來、MAR 壓到左邊', '三個 node 的 bf 都變 0');
-  await beat(tok, 2800);
+  fresh(...CAMB);
+  const g = pal();
+  const t = monthTree([]);
+  await step(tok);                                   // 9:33 依 input sequence 一個一個插
+  note('input：' + SEQ_TXT, -0.6, 0.4, 1.6);
+  say('照 input sequence，一個月份一個月份插進去', '樹一開始是空的');
+  talk(g, '從空樹開始');
+  await step(tok);                                   // 9:45 MAR 當 root
+  const mar = await monthIns(t, 'MAR', tok, false);
+  say('第一個 MAR：樹是空的，所以它就是 root', '');
+  await step(tok);                                   // 9:52 MAY 跟 MAR 比：第三個字 Y > R
+  glow(mar.m, null);
+  const cmp = note('MAY vs MAR：M = M、A = A、Y > R', -3.2, 2.0, 1.2);
+  say('MAY 和 MAR 照英文字母順序比', '前兩個字一樣，第三個字 Y > R → MAY 比較大');
+  await step(tok);                                   // 9:54 MAY 放在 MAR 右邊
+  kill(cmp);
+  const may = await monthIns(t, 'MAY', tok);
+  say('比較大 → 放在 MAR 的右邊', '');
+  await step(tok);                                   // 10:02 算 BF：MAR = 0 − 1 = −1
+  glow(may.m, null); bbShow(t, true); glow(mar.m, GOLD);
+  say('插完就算 BF：MAR 的左子樹高 0、右子樹高 1', 'BF(MAR) = 0 − 1 = −1');
+  await step(tok);                                   // 10:19 MAY = 0
+  glow(mar.m, null); glow(may.m, GOLD);
+  say('MAY 左右都沒有 subtree', 'BF(MAY) = 0 − 0 = 0');
+  await step(tok);                                   // 10:28 insert NOV
+  glow(may.m, null);
+  const nov = await monthIns(t, 'NOV', tok);
+  say('insert NOV：比 MAR 大、比 MAY 大', '→ 放在 MAY 的右邊');
+  await step(tok);                                   // 10:35 每個 node 重新算 BF
+  glow(nov.m, null); t.warn = false; bbShow(t, true);
+  say('又要重新計算每個 node 的 BF', 'MAR：0 − 2 = −2');
+  await step(tok);                                   // 10:46 root MAR 違反規定
+  glow(mar.m, RED);
+  say('有人違反規定了：root MAR 的 BF = −2', '');
+  talk(g, 'MAR 違規！', 'wow');
+  await step(tok);                                   // 10:56 MAR 就是 A
+  const a = bbPin(mar, 'A');
+  say('違規的 MAR 就是 A', '');
+  await step(tok);                                   // 11:05 NOV 就是 Y
+  const y = bbPin(nov, 'Y', 'ptr');
+  say('剛 insert 進來的 NOV 就是 Y', '');
+  await step(tok);                                   // 11:15 Y 在 A 的 right subtree（MAY 那棵）
+  glow(may.m, GOLD);
+  say('Y 在 A 的 right subtree 裡', 'right subtree 就是 MAY 帶頭的那一棵');
+  await step(tok);                                   // 11:34 的右邊 → RR
+  glow(nov.m, GOLD);
+  const rr = tag('RR', 'ptr alt', 0, 8.0, 0);
+  say('而且在那棵的右邊 → right subtree 的 right', '所以是 RR');
+  talk(g, '右、右 → RR');
+  await step(tok);                                   // 12:09 MAY 拉上來、MAR 壓下去
+  [a, y, rr].forEach(kill); [mar, may, nov].forEach((n) => glow(n.m, null));
+  bbFix(t, bbDetect(t, nov)); t.hide = true; await bbLay(t, tok, 1000);
+  say('調整：MAY 拉上來，MAR 壓到左邊', 'NOV 留在右邊');
+  await step(tok);                                   // 12:19 BF 都變 0
+  bbShow(t, true); [mar, may, nov].forEach((n) => glow(n.m, GREEN));
+  say('三個 node 的 BF 都變成 0', '又符合規定了');
+  talk(g, '平衡了！', 'happy');
 }]);
 
-// 12:40 AUG、APR → LL（MAR、MAY 都違規，A 取最近的 MAR）
+// 12:42 AUG、APR → LL（MAR、MAY 都違規，A 取最近的 MAR）
 FRAG.push(['bstb-month-ll', '月份例：AUG、APR → LL', async (tok) => {
-  fresh([0, 4.6, 14], [0, 3.8, 0]);
-  const t = bbTree(BB_MON, { gap: 1.1, top: 7.0, dy: 1.2, info: 'bf' });
-  bbAvlSilent(t, ['MAR', 'MAY', 'NOV']); await bbLay(t, tok, 300, 0);
-  say('接著 RR 調整完的樹', 'MAY(MAR, NOV)');
-  await beat(tok, 1600);
-  await bbAvlStep(t, 'AUG', tok, { quick: true, why: 'AUG < MAY、AUG < MAR → MAR 的左邊' });
-  await bbAvlStep(t, 'APR', tok, { why: 'APR < AUG → AUG 的左邊' });
-  say('AUG 提上來、MAR 往下壓', 'MAY：h_L = 2、h_R = 1 → bf = 1');
-  await beat(tok, 3000);
+  fresh(...CAMB);
+  const g = pal();
+  const t = monthTree(['MAR', 'MAY', 'NOV']); t.warn = false;
+  await bbLay(t, tok, 0, 0);
+  await step(tok);                                   // 12:43 insert AUG
+  const aug = await monthIns(t, 'AUG', tok);
+  say('insert AUG：比 MAY 小、比 MAR 小', '→ 放在 MAR 的左邊');
+  await step(tok);                                   // 12:52 update BF：沒有人違規
+  glow(aug.m, null); bbShow(t, true);
+  for (const n of bbList(t)) glow(n.m, GREEN);
+  say('每 insert 一個，就 update 每個 node 的 BF', '都在 −1、0、1 裡：沒有人違規');
+  talk(g, '沒事～', 'happy');
+  await step(tok);                                   // 13:00 insert APR
+  for (const n of bbList(t)) glow(n.m, null);
+  const apr = await monthIns(t, 'APR', tok);
+  say('insert APR：一路往左', '→ 放在 AUG 的左邊');
+  await step(tok);                                   // 13:08 update BF
+  glow(apr.m, null); bbShow(t, true);
+  say('insert 完再 update 一次 BF', '');
+  await step(tok);                                   // 13:20 違規的有兩個：MAY、MAR
+  const may = bbFind(t, 'MAY'), mar = bbFind(t, 'MAR');
+  glow(may.m, RED); glow(mar.m, RED);
+  say('這次違反規定的有兩個 node：MAY 和 MAR', 'BF 都是 +2');
+  talk(g, '兩個都違規？', 'wow');
+  await step(tok);                                   // 13:31 新 node 在最下面：APR
+  const y = bbPin(apr, 'Y', 'ptr');
+  say('剛 insert 進來的是最下面的 APR', '它就是 Y');
+  await step(tok);                                   // 13:43 APR 在 A 的 left subtree 的 left → LL
+  glow(aug.m, GOLD); glow(apr.m, GOLD);
+  const ll = tag('LL', 'ptr alt', 0, 8.0, 0);
+  say('APR 在 A 的 left subtree 的 left', '→ 要做 LL 的調整');
+  await step(tok);                                   // 13:56 A 是 MAR：離 APR 最近
+  glow(may.m, null);
+  const a = bbPin(mar, 'A');
+  const nt = note('MAY 也違規，但離 APR 最近的是 MAR', 2.4, 1.0, 1.2);
+  say('A 是哪一個？離 Y 最近的那個違規 node', 'A = MAR（不是 MAY）');
+  talk(g, '選最近的！');
+  await step(tok);                                   // 14:16 AUG 提上來、MAR 往下壓
+  [y, ll, a, nt].forEach(kill); [aug, apr, mar].forEach((n) => glow(n.m, null));
+  bbFix(t, bbDetect(t, apr)); t.hide = true; await bbLay(t, tok, 1000);
+  say('LL：把 AUG 提上來，MAR 往下壓', 'AUG 底下：左 APR、右 MAR');
+  await step(tok);                                   // 14:37 重新算 BF：MAY = 2 − 1 = 1
+  bbShow(t, true); glow(may.m, GOLD);
+  say('重新算 BF：MAY 的左子樹高 2、右子樹高 1', 'BF(MAY) = 2 − 1 = 1');
+  await step(tok);                                   // 14:57 全部符合規定
+  glow(may.m, null); for (const n of bbList(t)) glow(n.m, GREEN);
+  say('調整完成：每個 BF 都符合規定', '接著 insert JAN');
+  talk(g, '過關 ✓', 'happy');
 }]);
 
-// 15:00 / 34:36 JAN → LR（A = MAY、B = AUG、C = MAR），root 換人
+// 15:04 JAN → LR（A = MAY、B = AUG、C = MAR），root 換人
 FRAG.push(['bstb-month-lr', '月份例：JAN → LR，root 換成 MAR', async (tok) => {
-  fresh([0, 4.6, 14], [0, 3.8, 0]);
-  const t = bbTree(BB_MON, { gap: 1.1, top: 7.0, dy: 1.2, info: 'bf' });
-  bbAvlSilent(t, ['MAR', 'MAY', 'NOV', 'AUG', 'APR']); await bbLay(t, tok, 300, 0);
-  say('LL 調整完：MAY(AUG(APR, MAR), NOV)', '');
-  await beat(tok, 2000);
-  const r = await bbAvlStep(t, 'JAN', tok, { why: 'JAN < MAY、> AUG、< MAR → MAR 的左邊' });
-  const lab = (k, s) => { const n = bbFind(t, k); return tag(s, 'ptr', n.m.position.x - 0.6, n.m.position.y + 1.0, 0); };
-  lab('MAY', 'A'); lab('AUG', 'B'); lab('MAR', 'C');
-  say('對照通式：A = MAY、B = AUG、C = MAR', 'root 換了：MAR 被拉上來');
-  await beat(tok, 2800);
-  const sub = (k, s) => { const n = bbFind(t, k); return tag(s, 'idx', n.m.position.x, n.m.position.y - 0.75, 0); };
-  sub('APR', 'B_L'); sub('JAN', 'C_L'); sub('NOV', 'A_R');
-  say('B_L = APR、C_L = JAN、C_R 空、A_R = NOV', '順序 B_L, C_L, C_R, A_R 不變');
-  await beat(tok, 3000);
-  say('調整幅度很大，但仍符合 BST', r ? 'LR：' + BB_DESC.LR : '');
-  await beat(tok, 2600);
+  fresh(...CAMB);
+  const g = pal();
+  const t = monthTree(['MAR', 'MAY', 'NOV', 'AUG', 'APR']); t.warn = false;
+  await bbLay(t, tok, 0, 0); bbShow(t, true);
+  await step(tok);                                   // 15:04 insert JAN，又有人違規
+  const jan = await monthIns(t, 'JAN', tok, false);
+  const may = bbFind(t, 'MAY'); glow(may.m, RED);
+  say('insert JAN：< MAY、> AUG、< MAR → MAR 的左邊', '算完 BF：MAY 變成 +2，違規');
+  talk(g, '又有人違規', 'wow');
+  await step(tok);                                   // 15:21 這是 A，這是 Y
+  const a = bbPin(may, 'A'), y = bbPin(jan, 'Y', 'ptr');
+  say('違規的 MAY 是 A，新來的 JAN 是 Y', '');
+  await step(tok);                                   // 15:28 Y 在 A 的 left subtree 的 right → LR
+  const aug = bbFind(t, 'AUG'), mar = bbFind(t, 'MAR');
+  glow(aug.m, GOLD); glow(mar.m, GOLD);
+  const lr = tag('LR', 'ptr alt', 0, 8.0, 0);
+  say('JAN 在 A 的 left subtree（AUG 那棵）的 right', '→ 進行 LR 的調整');
+  await step(tok);                                   // 15:43 回顧 APR：兩個 node 的 BF 都是 2
+  glow(aug.m, null); glow(mar.m, null);
+  const flash = note('回顧 APR 那次：MAY、MAR 的 BF 都是 2', -2.6, 1.0, 1.4);
+  say('回想剛才 insert APR：有兩個 node 的 BF 都是 2', '還是要確認：哪一個才是 A？');
+  await step(tok);                                   // 16:04 A = 離新 node 最近的那一個
+  const rule = note('A = 從 Y 往 root 走，第一個違規的 node', 2.6, 2.0, 1.4);
+  say('規則：A 是離新 insert 的 node 最近的違規 node', '');
+  await step(tok);                                   // 16:12 APR 往 root 走，遇到 MAR
+  txt(flash, '回顧 APR 那次：往上走先遇到 MAR → A = MAR');
+  say('APR 往 root 走：最先遇到的違規 node 是 MAR', '所以那次 A = MAR');
+  await step(tok);                                   // 16:30 這次往 root 走：最近的是 MAY
+  kill(a);
+  const cur = bbCursor(jan, '▲');
+  await bbRun(tok, cur, pathTo(t, 'JAN').reverse(), 380);
+  remove(cur); glow(may.m, RED);
+  const a2 = bbPin(may, 'A');
+  say('這次從 JAN 往上走：MAR、AUG 都沒事，第一個違規的是 MAY', 'A = MAY');
+  await step(tok);                                   // 16:40 確認是 LR，進行 LR 調整
+  [flash, rule].forEach(kill);
+  say('A 和 Y 的關係確認是 LR', '就照 LR 的方法調整（比較複雜，後面細講）');
+  await step(tok);                                   // 17:01 四種調整都有固定步驟
+  const fx = note('LL、RR、LR、RL：都有現成的調整步驟', -2.4, 0.6, 1.6);
+  say('不管 LL、RR、LR、RL，怎麼調整前人都推導好了', '');
+  await step(tok);                                   // 17:14 依樣畫葫蘆：照圖表做
+  talk(g, '照著圖做就好', 'happy');
+  say('你只要「依樣畫葫蘆」', '對照圖表一步一步做');
+  await step(tok);                                   // 17:36 調整完的樣子
+  [a2, y, lr, fx].forEach(kill); glow(may.m, null); glow(jan.m, null);
+  bbFix(t, bbDetect(t, jan)); await bbLay(t, tok, 1100);
+  say('調整完：長成這個樣子', '');
+  await step(tok);                                   // 17:46 root 換了：MAR 拉上來
+  glow(mar.m, GOLD);
+  const nr = bbPin(mar, 'new root', 'pkt', 0);
+  say('更動很大：連 root 都換了', '本來在下面的 MAR 被拉上來當 root');
+  talk(g, 'root 換人了！', 'wow');
+  await step(tok);                                   // 18:07 左右的 structure 也改變了
+  glow(mar.m, null); kill(nr);
+  for (const k of ['AUG', 'MAY']) glow(bbFind(t, k).m, GOLD);
+  say('左右兩邊的 subtree 結構也改了', 'AUG、MAY 變成 MAR 的兩個 child');
+  await step(tok);                                   // 18:17 一定要符合 BST：左小右大
+  for (const k of ['AUG', 'MAY']) glow(bbFind(t, k).m, null);
+  const io = bbList(t).map((n, i) => tag(n.k, 'pkt', -3.0 + i * 1.2, 0.4, 1.6));
+  say('不管怎麼調整，都要符合 BST 的規則', '左子樹 < parent < 右子樹 → 從左到右排好序');
+  await step(tok);                                   // 18:31 大規模調整，仍然是 BST
+  io.forEach((l) => { l.element.className = 'lab-label ptr alt'; });
+  say('調整幅度很大，結果還是 binary search tree', 'APR < AUG < JAN < MAR < MAY < NOV');
+  talk(g, '順序沒亂 ✓', 'happy');
 }]);
 
-// 18:40 DEC、JULY、FEB → RL（A = AUG）
+// 18:45 DEC、JUL、FEB → RL（A = AUG）
 FRAG.push(['bstb-month-rl', '月份例：DEC、JUL、FEB → RL', async (tok) => {
-  fresh([0, 4.6, 14], [0, 3.8, 0]);
-  const t = bbTree(BB_MON, { gap: 1.1, top: 7.0, dy: 1.2, info: 'bf' });
-  bbAvlSilent(t, ['MAR', 'MAY', 'NOV', 'AUG', 'APR', 'JAN']); await bbLay(t, tok, 300, 0);
-  say('LR 調整完：root 是 MAR', '');
-  await beat(tok, 1600);
-  await bbAvlStep(t, 'DEC', tok, { quick: true, why: 'DEC → JAN 的左邊' });
-  await bbAvlStep(t, 'JUL', tok, { quick: true, why: 'JUL → JAN 的右邊' });
-  await bbAvlStep(t, 'FEB', tok, { why: 'FEB → DEC 的右邊' });
-  say('DEC 拉到最上面：AUG、JAN 當它的 child', '');
-  await beat(tok, 2800);
+  fresh(...CAMB);
+  const g = pal();
+  const t = monthTree(['MAR', 'MAY', 'NOV', 'AUG', 'APR', 'JAN']); t.warn = false;
+  await bbLay(t, tok, 0, 0); bbShow(t, true);
+  await step(tok);                                   // 18:45 insert DEC：沒有違規
+  const dec = await monthIns(t, 'DEC', tok, false);
+  say('insert DEC：→ JAN 的左邊', '算 BF：沒有人違規');
+  await step(tok);                                   // 18:54 insert JULY：也沒有
+  glow(dec.m, null);
+  const jul = await monthIns(t, 'JUL', tok, false);
+  say('insert JULY：→ JAN 的右邊', '也沒有違規');
+  talk(g, '目前都 OK');
+  await step(tok);                                   // 19:01 insert FEB，重算 BF
+  glow(jul.m, null);
+  const feb = await monthIns(t, 'FEB', tok, false);
+  say('insert FEB：→ DEC 的右邊', '再算每個 node 的 BF');
+  await step(tok);                                   // 19:10 有人違規（不只一個）
+  const bad = bbList(t).filter((n) => Math.abs(bbBf(n)) >= 2);
+  bad.forEach((n) => glow(n.m, RED));
+  say('違規的不只一個：' + bad.map((n) => n.k).join('、'), 'BF 都超過 1');
+  talk(g, '一次好幾個…', 'wow');
+  await step(tok);                                   // 19:21 A 是 AUG
+  const r = bbDetect(t, feb);
+  bad.forEach((n) => { if (n !== r.A) glow(n.m, null); });
+  const a = bbPin(r.A, 'A'), y = bbPin(feb, 'Y', 'ptr');
+  say('從 FEB 往上走，第一個違規的是 AUG', 'A = AUG');
+  await step(tok);                                   // 19:30 Y 在 AUG 的 right subtree
+  glow(r.B.m, GOLD);
+  say('FEB 在 AUG 的 right subtree 裡', '（JAN 帶頭的那一棵）');
+  await step(tok);                                   // 19:41 的 left → RL
+  glow(r.C.m, GOLD);
+  const rl = tag('RL', 'ptr alt', 0, 8.0, 0);
+  say('再往 JAN 的 left 走 → right subtree 的 left', '→ RL 調整');
+  await step(tok);                                   // 19:48 調整就是四種情況
+  talk(g, 'LL、LR、RR、RL 之一', 'happy');
+  say('AVL 的調整永遠就這四種情況', '這次是 RL');
+  await step(tok);                                   // 20:04 做 RL 的調整
+  [a, y, rl].forEach(kill); [r.A, r.B, r.C].forEach((n) => glow(n.m, null));
+  bbFix(t, r); await bbLay(t, tok, 1100);
+  for (const n of bbList(t)) glow(n.m, GREEN);
+  say('RL：DEC 拉上來，AUG 和 JAN 當它的 child', '全部 BF 又回到 −1..1');
 }]);
 
-// 20:20 JUNE → LR（A = MAR）；OCT、SEPT 之後的最終樹
+// 20:22 JUNE → LR（A = MAR）；OCT、SEPT 之後的最終樹
 FRAG.push(['bstb-month-final', '月份例：JUN → LR，最後的 AVL tree', async (tok) => {
-  fresh([0, 4.6, 14], [0, 3.6, 0]);
-  const t = bbTree(BB_MON, { gap: 1.1, top: 7.0, dy: 1.15, info: 'bf' });
-  bbAvlSilent(t, ['MAR', 'MAY', 'NOV', 'AUG', 'APR', 'JAN', 'DEC', 'JUL', 'FEB']); await bbLay(t, tok, 300, 0);
-  say('RL 調整完的樹', '');
-  await beat(tok, 1400);
-  await bbAvlStep(t, 'JUN', tok, { why: 'JUN → JUL 的右邊' });
-  await bbAvlStep(t, 'OCT', tok, { quick: true, why: 'OCT → NOV 的右邊' });
-  await bbAvlStep(t, 'SEP', tok, { quick: true, why: 'SEPT → OCT 的右邊' });
-  say('12 個月插完：每個 node 都符合規定', 'root = JAN，高度 5（skewed 是 12）');
-  await beat(tok, 3000);
+  fresh(...CAMB);
+  const g = pal();
+  const t = monthTree(['MAR', 'MAY', 'NOV', 'AUG', 'APR', 'JAN', 'DEC', 'JUL', 'FEB'], { dy: 1.15 }); t.warn = false;
+  await bbLay(t, tok, 0, 0); bbShow(t, true);
+  await step(tok);                                   // 20:22 insert JUNE，算 BF
+  const jun = await monthIns(t, 'JUN', tok, false);
+  const r = bbDetect(t, jun);
+  say('insert JUNE：→ JUL 的右邊', '算 BF，把 A 抓出來');
+  await step(tok);                                   // 20:32 A = MAR
+  glow(r.A.m, RED);
+  const a = bbPin(r.A, 'A'), y = bbPin(jun, 'Y', 'ptr');
+  say('從 JUNE 往上走，第一個違規的是 MAR', 'A = MAR');
+  await step(tok);                                   // 20:44 JUNE 在 MAR 的 left subtree 的 right → LR
+  glow(r.B.m, GOLD); glow(r.C.m, GOLD);
+  const lr = tag('LR', 'ptr alt', 0, 8.0, 0);
+  say('JUNE 在 MAR 的 left subtree 的 right', '→ LR');
+  talk(g, '左 → 右 = LR');
+  await step(tok);                                   // 20:55 做調整
+  [a, y, lr].forEach(kill); [r.A, r.B, r.C].forEach((n) => glow(n.m, null));
+  bbFix(t, r); await bbLay(t, tok, 1100);
+  say('照 LR 調整：JAN 拉上來當 root', '');
+  await step(tok);                                   // 21:07 繼續 insert 到完（OCT、SEPT）
+  for (const k of ['OCT', 'SEP']) { const n = bbPut(t, bbNode(k)); const rr = bbDetect(t, n); if (rr) bbFix(t, rr); await bbLay(t, tok, 600); }
+  say('再 insert OCT、SEPT（影片直接帶過）', '每插一個一樣檢查、調整');
+  await step(tok);                                   // 21:16 最後比較 balanced
+  for (const n of bbList(t)) glow(n.m, GREEN);
+  say('12 個月插完：每個 node 都符合規定', '高度 ' + bbH(t.root) + '（skewed 那棵是 12）');
+  talk(g, '矮又整齊！', 'happy');
+  await g.hop(tok);
 }]);
 
 // 21:27 實作與流程：pointer 還是 array？insert → 算 bf → 找 A → 判型別 → 調整
 FRAG.push(['bstb-avl-algo', 'AVL insert 的流程', async (tok) => {
   fresh([0, 4.4, 13.5], [0, 3.4, 0]);
-  const cd = code(['1. 照 BST 規則 insert Y', '2. 更新路徑上每個 node 的 bf', '3. Y 往 root 走：第一個違規 = A', '4. 判斷 LL / LR / RR / RL', '5. 依圖表調整（照表操課）'], -3.6, 6.4, 0.62);
-  const t = bbTree(['MAR', 'AUG', 'NOV', 'APR', 'JAN', 'DEC'], { gap: 1.05, top: 6.2, dy: 1.25, x0: 3.3, info: 'bf' });
-  bbAvlSilent(t, ['MAR', 'AUG', 'NOV', 'APR', 'JAN']); await bbLay(t, tok, 300, 0);
-  say('教科書用 pointer（link）實作', 'node：lchild | data | bf | rchild');
-  await beat(tok, 2600);
+  const g = pal(6.2, 2.8);
+  const tmp = [];
+  await step(tok);                                   // 21:28 看課本的實作
+  tmp.push(tag('課本的 AVL 實作', 'ptr', -3.4, 7.2, 0));
+  say('來看課本怎麼實作 AVL tree', '如果是你來寫，你會怎麼做？');
+  talk(g, '換我寫寫看？');
+  await step(tok);                                   // 21:44 用 array 還是 pointer？
+  tmp.push(note('用 array？', -5.0, 6.0, 0), note('用 pointer？', -1.8, 6.0, 0));
+  say('這棵 tree 要用 array 做，還是用 pointer 做？', '');
+  await step(tok);                                   // 21:55 pointer = linked 表示法
+  const parts = ['lchild', 'data', 'bf', 'rchild'].map((s, i) => cube(s, i === 2 ? '#dd8238' : '#c9b48e', [1.3, 0.6, 0.8], -5.3 + i * 1.35, 4.6, 0, 2));
+  tmp.push(...parts);
+  say('tree 可以用 linked list（pointer）表示', '每個 node：lchild | data | bf | rchild');
+  await step(tok);                                   // 22:01 或者用 array：想想 heap
+  const hp = [90, 70, 80, 30, 60].map((v, i) => cube(v, colorFor(v), [0.8, 0.6, 0.8], -5.3 + i * 0.9, 2.6, 0, 2));
+  tmp.push(...hp, tag('heap：直接用 array', 'idx', -3.5, 1.7, 0));
+  say('第二種是 array', '想想 heap：我們都用 array 做');
+  await step(tok);                                   // 22:18 heap 常常要找 parent、child
+  tmp.push(note('parent = i / 2、child = 2i、2i + 1', -3.4, 0.6, 1.2));
+  say('heap 常常要找 parent、child', '用 array 算 index 就找到，不用 pointer');
+  await step(tok);                                   // 22:36 表示法不只一種：選適合的
+  say('同一種資料結構，表示法不只一種', 'AVL 常常要旋轉、搬 subtree → 你覺得哪種好？');
+  talk(g, '要看怎麼用', 'calm');
+  await step(tok);                                   // 23:01 總結：每 insert 一個 node
+  tmp.forEach(kill);
+  const cd = code(['1. insert 一個 node（叫 Y）', '2. 算現在所有 node 的 BF', '3. Y 往 root 走：第一個違規 = A', '4. 判斷 LL / LR / RR / RL', '5. 照圖調整（依樣畫葫蘆）'], -3.6, 6.6, 0.62);
+  const t = bbTree(['MAR', 'AUG', 'NOV', 'APR', 'JAN', 'DEC'], { gap: 1.05, top: 6.2, dy: 1.25, x0: 3.0, info: 'bf' });
+  bbAvlSilent(t, ['MAR', 'AUG', 'NOV', 'APR', 'JAN']); t.warn = false; await bbLay(t, tok, 0, 0); bbShow(t, true);
   cd.hl(0);
-  const n = bbPut(t, bbNode('DEC'));
-  say('insert DEC', '');
-  await bbLay(t, tok, 800);
-  cd.hl(1);
-  say('沿路更新 bf', 'bf = h_L − h_R');
-  await beat(tok, 2000);
+  const n = await monthIns(t, 'DEC', tok);
+  say('總結：每 insert 一個 node', '例：insert DEC');
+  await step(tok);                                   // 23:09 對整棵樹算 BF
+  glow(n.m, null); cd.hl(1); bbShow(t, true);
+  say('對整棵樹現在所有的 node 算 BF', '');
+  await step(tok);                                   // 23:18 判斷是哪一種情況
+  say('然後判斷是四種情況的哪一種', '怎麼判斷？靠 Y 和 A');
+  await step(tok);                                   // 23:26 新 node 叫 Y
+  const y = bbPin(n, 'Y', 'ptr');
+  say('先認出 insert 進來的 node：Y', '');
+  await step(tok);                                   // 23:34 Y 往 root 走，找第一個違規 = A
   cd.hl(2);
-  const cur = bbCursor(n, 'Y');
-  for (let c = n; c; c = c.p) { await bbWalk(tok, cur, c, 600); if (Math.abs(bbBf(c)) >= 2) break; }
-  kill(cur);
-  say('最近的違規 node：MAR = A', 'bf(MAR) = 2');
-  await beat(tok, 2200);
+  const cur = bbCursor(n, '▲');
+  const up = []; for (let c = n.p; c; c = c.p) { up.push(c); if (Math.abs(bbBf(c)) >= 2) break; }
+  await bbRun(tok, cur, up, 400);
+  remove(cur);
+  const r = bbDetect(t, n); glow(r.A.m, RED);
+  const a = bbPin(r.A, 'A');
+  say('Y 往 root 走，第一個看到違反 BF 的：' + r.A.k, '它就是 A');
+  await step(tok);                                   // 23:46 依空間關係：LL、LR、RR、RL
   cd.hl(3);
-  say('DEC 在 MAR 的 left subtree 的 right', '→ LR');
-  await beat(tok, 2200);
-  cd.hl(4);
-  bbFix(t, bbDetect(t, n));
-  await bbLay(t, tok, 900);
-  say('LR：JAN 拉上來，AUG、MAR 當 child', '');
-  await beat(tok, 2600);
+  const ty = tag(r.type, 'ptr alt', 3.0, 7.6, 0);
+  say('看 Y 和 A 的空間關係', 'DEC 在 MAR 的 left subtree 的 right → ' + r.type);
+  await step(tok);                                   // 23:55 照圖調整
+  cd.hl(4); [y, a, ty].forEach(kill); glow(r.A.m, null);
+  bbFix(t, r); await bbLay(t, tok, 1000);
+  say('照 ' + r.type + ' 的圖調整', 'JAN 拉上來，AUG、MAR 當 child');
+  await step(tok);                                   // 24:05 調整方法早就有人提出
   cd.hl(-1);
-  say('每插一個 node 都要算一次、調一次', '');
-  await beat(tok, 2600);
+  note('AVL = Adelson-Velsky & Landis（1962 年的論文）', 0, 0.5, 1.4);
+  say('這些調整方法早就有人提出', '當年的論文，現在變成教科書的內容');
+  talk(g, '站在巨人肩膀上', 'happy');
 }]);
 
 // 一般式（子樹畫成方塊）：LL / RR
-async function bbRotGeneral(tok, mirror) {
-  fresh([0, 4.2, 13], [0, 3.6, 0]);
+function rotGenTree(mirror) {
   const specs = mirror
     ? [[1, 'A_L h', 'blk'], [2, 'A'], [3, 'B_L h', 'blk'], [4, 'B'], [5, 'B_R h', 'blk']]
     : [[1, 'B_L h', 'blk'], [2, 'B'], [3, 'B_R h', 'blk'], [4, 'A'], [5, 'A_R h', 'blk']];
@@ -5152,519 +5508,1353 @@ async function bbRotGeneral(tok, mirror) {
   const t = bbTree([...specs.map((s) => s[0]), yk], { gap: 1.9, top: 6.6, dy: 1.6 });
   const ins = mirror ? [2, 1, 4, 3, 5] : [4, 2, 5, 1, 3];
   for (const k of ins) { const s = specs.find((q) => q[0] === k); bbPut(t, bbNode(k, s[1], s[2])); }
-  await bbLay(t, tok, 500, 0);
-  const A = bbFind(t, mirror ? 2 : 4), B = bbFind(t, mirror ? 4 : 2);
-  const BL = bbFind(t, mirror ? 5 : 1);
-  bbNote(A, 'bf ' + (mirror ? '−1' : '1')); bbNote(B, 'bf 0'); bbEdges(t);
-  say('通式：A、B 兩個 node，其他畫成 subtree', mirror ? 'A_L、B_L、B_R 高度都是 h' : 'A_R 高 h；B 那邊高 h + 1，所以 B_L = B_R = h');
-  await beat(tok, 3200);
-  const y = bbPut(t, bbNode(yk, 'Y'));
-  y.col = '#e55a9b';
-  await bbLay(t, tok, 800);
-  relabel(BL.m, (mirror ? 'B_R' : 'B_L') + ' h+1');
-  say('Y 插在 ' + (mirror ? 'B_R' : 'B_L') + ' 下面：多一層', (mirror ? 'B_R' : 'B_L') + ' 變成 h + 1');
-  await beat(tok, 2600);
-  bbNote(B, 'bf ' + (mirror ? '−1' : '1')); bbNote(A, 'bf ' + (mirror ? '−2' : '2'), 'ptr alt'); glow(A.m, RED); bbEdges(t);
-  say(mirror ? 'bf(A) = h − (h + 2) = −2' : 'bf(A) = (h + 2) − h = 2', mirror ? 'Y 在 A 的 right subtree 的 right → RR' : 'Y 在 A 的 left subtree 的 left → LL');
-  await beat(tok, 3000);
-  bbRotUp(t, B);
-  say('B 往上提、A 往下壓', '');
-  await bbLay(t, tok, 1000);
-  glow(A.m, null);
-  const mid = bbFind(t, 3);
-  glow(mid.m, GOLD);
-  say((mirror ? 'B_L' : 'B_R') + ' 搬去當 A 的 ' + (mirror ? 'right' : 'left') + ' subtree', mirror ? 'A < B_L 的值 < B：仍是 BST' : 'B < B_R 的值 < A：仍是 BST');
-  await beat(tok, 3000);
-  glow(mid.m, null);
-  bbNote(A, 'bf 0'); bbNote(B, 'bf 0'); bbEdges(t);
-  say('A、B 的 bf 都回到 0', mirror ? 'RR 就是 LL 的鏡像' : '這就是 LL 調整');
-  await beat(tok, 3000);
+  return { t, yk, A: bbFind(t, mirror ? 2 : 4), B: bbFind(t, mirror ? 4 : 2), BL: bbFind(t, mirror ? 5 : 1), mid: bbFind(t, 3), far: bbFind(t, mirror ? 1 : 5) };
 }
-// 24:20 LL 通式
-FRAG.push(['bstb-ll-general', 'LL 通式：B 上提、B_R 給 A', async (tok) => { await bbRotGeneral(tok, false); }]);
-// 29:24 RR 通式
-FRAG.push(['bstb-rr-general', 'RR 通式：LL 的鏡像', async (tok) => { await bbRotGeneral(tok, true); }]);
+async function rotGenY(G, tok) { const y = bbPut(G.t, bbNode(G.yk, 'Y')); y.col = PINK; await bbLay(G.t, tok, 800); return y; }
 
-// 30:23 LR（a）三個 node、LR（b）（c）通式；mirror = RL
-FRAG.push(['bstb-lr-general', 'LR 通式：C 拉上來，四塊照順序接', async (tok) => {
-  const P = ctx.params || {};
-  const mirror = !!P.mirror;
+// 24:24 LL 通式
+FRAG.push(['bstb-ll-general', 'LL 通式：B 上提、B_R 給 A', async (tok) => {
   fresh([0, 4.2, 13], [0, 3.6, 0]);
-  // ① 只有三個 node 的 LR(a) / RL(a)
-  {
-    const ks = mirror ? [1, 2, 3] : [1, 2, 3];
-    const t = bbTree(ks, { gap: 1.6, top: 6.4, dy: 1.4, x0: -4.2 });
-    const order = mirror ? [[1, 'A'], [3, 'B'], [2, 'C']] : [[3, 'A'], [1, 'B'], [2, 'C']];
-    for (const [k, s] of order) bbPut(t, bbNode(k, s));
-    await bbLay(t, tok, 600, 0);
-    glow(bbFind(t, mirror ? 1 : 3).m, RED);
-    say((mirror ? 'RL' : 'LR') + '(a)：只有三個 node', 'C 在 A 的 ' + (mirror ? 'right subtree 的 left' : 'left subtree 的 right'));
-    await beat(tok, 2400);
-    bbRotUp(t, bbFind(t, 2)); bbRotUp(t, bbFind(t, 2));
-    glow(bbFind(t, mirror ? 1 : 3).m, null);
-    await bbLay(t, tok, 900);
-    say('C 拉上來，B、A 當它的 child', '');
-    await beat(tok, 2200);
-  }
-  // ② 通式：B_L、C_L、C_R、A_R 四塊
-  const sp = mirror
-    ? [[1, 'A_L h', 'blk'], [2, 'A'], [3, 'C_L', 'blk'], [4, 'C'], [5, 'C_R', 'blk'], [6, 'B'], [7, 'B_R h', 'blk']]
-    : [[1, 'B_L h', 'blk'], [2, 'B'], [3, 'C_L', 'blk'], [4, 'C'], [5, 'C_R', 'blk'], [6, 'A'], [7, 'A_R h', 'blk']];
-  const kase = P.kase === 'c' ? 'c' : 'b';
-  const yk = kase === 'b' ? 2.5 : 4.5;
-  const t = bbTree([1, 2, 3, 4, 5, 6, 7, yk], { gap: 1.05, top: 6.6, dy: 1.3, x0: 2.6 });
-  const ins = mirror ? [2, 1, 6, 4, 7, 3, 5] : [6, 2, 7, 1, 4, 3, 5];
-  for (const k of ins) { const s = sp.find((q) => q[0] === k); bbPut(t, bbNode(k, s[1], s[2])); }
-  await bbLay(t, tok, 600, 3);
-  const y = bbPut(t, bbNode(yk, 'Y')); y.col = '#e55a9b';
-  await bbLay(t, tok, 800);
-  const A = bbFind(t, mirror ? 2 : 6); glow(A.m, RED);
-  say('通式 ' + (mirror ? 'RL' : 'LR') + '(' + kase + ')：Y 在 ' + (kase === 'b' ? 'C_L' : 'C_R') + ' 下面', '(b)、(c) 只差 Y 在 C_L 還是 C_R 下');
-  await beat(tok, 3000);
-  const C = bbFind(t, 4);
-  bbRotUp(t, C); bbRotUp(t, C);
-  glow(A.m, null);
-  say('C 拉到 root，B、A 往下壓', '');
+  const g = pal(6.2, 2.8);
+  const G = rotGenTree(false), t = G.t;
+  await step(tok);                                   // 24:24 一般化的示意圖：A、B
+  bbList(t); // 算 depth；先只畫 A、B 兩個 node
+  for (const n of [G.A, G.B]) { const [x, y] = bbPos(t, n); n.m = cube(n.lab, bbCol(n.k), [0.95, 0.8, 0.9], x, y, 0, 3); }
+  t.edges.push(line(G.A.m.position.x, G.A.m.position.y - 0.4, G.B.m.position.x, G.B.m.position.y + 0.4));
+  say('更一般的圖：A、B 是兩個 node', '');
+  talk(g, '這次用通式');
+  await step(tok);                                   // 24:36 B_L、B_R、A_R 是 subtree
+  await bbLay(t, tok, 700, 3);
+  say('B_L、B_R、A_R 是三棵 subtree（方塊代表一整棵）', 'B_L、B_R 是 B 的左右子樹，A_R 是 A 的右子樹');
+  await step(tok);                                   // 24:51 要 insert 的 node 在 B_L 下面
+  const hint = tag('Y 會插在這裡 ↓', 'pkt', G.BL.m.position.x, G.BL.m.position.y + 1.0, 0);
+  say('現在要 insert 一個 node', '它會插在 B_L 的下面');
+  await step(tok);                                   // 25:01 A_R 的高度是 h
+  glow(G.far.m, GOLD);
+  say('每塊上面都有高度：A_R 的高度是 h', '');
+  await step(tok);                                   // 25:13 B 那邊高 h + 1
+  glow(G.far.m, null); glow(G.B.m, GOLD);
+  const hb = bbPin(G.B, 'B 這邊 h + 1', 'note', 0);
+  say('B 帶頭的那一邊，高度是 h + 1', '（原本 A 是平衡的）');
+  await step(tok);                                   // 25:20 扣掉 B 那一層：B_L、B_R 都是 h
+  glow(G.B.m, null); kill(hb);
+  glow(G.BL.m, GOLD); glow(G.mid.m, GOLD);
+  say('扣掉 B 自己那一層', 'B_L 和 B_R 的高度都是 h');
+  await step(tok);                                   // 25:42 加一個 node 進來就多一層
+  glow(G.BL.m, null); glow(G.mid.m, null); remove(hint);
+  await rotGenY(G, tok);
+  relabel(G.BL.m, 'B_L h+1');
+  say('Y 加進 B_L 底下：多了一層', 'B_L 變成 h + 1');
+  await step(tok);                                   // 25:52 再加上 B 這層：h + 2
+  glow(G.B.m, GOLD);
+  const hb2 = bbPin(G.B, 'B 這邊 h + 2', 'note', 0);
+  say('再加上 B 這個 node 那一層', 'A 的 left subtree 高 h + 2');
+  await step(tok);                                   // 26:00 h + 2 − h
+  glow(G.B.m, null);
+  say('A 的 BF：左邊減右邊', '(h + 2) − h');
+  await step(tok);                                   // 26:07 BF(A) = 2
+  kill(hb2);
+  bbNote(G.A, 'bf 2', 'ptr alt'); glow(G.A.m, RED); bbEdges(t);
+  say('BF(A) = 2 → A 違規了', '');
+  talk(g, 'A 爆掉了', 'wow');
+  await step(tok);                                   // 26:45 BF(B) = (h + 1) − h = 1
+  bbNote(G.B, 'bf 1'); bbEdges(t);
+  say('B 的 BF：B_L 是 h + 1、B_R 是 h', '(h + 1) − h = 1');
+  await step(tok);                                   // 26:55 調整：A 往下壓
+  say('Y 在 A 的 left subtree 的 left → LL 調整', '先看 A：它要往下壓');
+  await step(tok);                                   // 27:30 A 往下壓、B 往上提
+  bbRotUp(t, G.B); glow(G.A.m, null);
   await bbLay(t, tok, 1100);
-  await beat(tok, 800);
-  const blocks = bbList(t).filter((n) => n.kind === 'blk');
-  for (const b of blocks) { glow(b.m, GOLD); await beat(tok, 450); }
-  say(mirror ? '四塊 A_L, C_L, C_R, B_R 由左到右' : '四塊 B_L, C_L, C_R, A_R 由左到右', '順序不變，依序接到 ' + (mirror ? 'A、B' : 'B、A') + ' 底下');
-  await beat(tok, 3000);
-  blocks.forEach((b) => glow(b.m, null));
-  say(mirror ? 'C_L 的值都比 A 大 → 接在 A 右邊' : 'C_L 的值都比 B 大 → 接在 B 右邊', mirror ? 'C_R 都比 B 小 → 接在 B 左邊' : 'C_R 都比 A 小 → 接在 A 左邊');
-  await beat(tok, 3000);
-  say(mirror ? '會 LR 就會 RL：鏡子一樣' : 'ABC 確認 → C 上拉 → 四塊照順序接', '照表操課（依樣畫葫蘆）');
-  await beat(tok, 2800);
+  say('A 往下壓、B 往上提', 'B 變成這一塊的新 root');
+  talk(g, 'B 上去了');
+  await step(tok);                                   // 27:53 B_R 放到 A 的下面
+  glow(G.mid.m, GOLD);
+  say('還有一件事：把 B_R 接到 A 的下面', 'B_R 變成 A 的 left subtree');
+  await step(tok);                                   // 28:19 B_R 裡的值都比 B 大
+  const c1 = note('B_R 的值 > B', G.mid.m.position.x - 1.3, 2.0, 1.0);
+  say('可以這樣接嗎？B_R 裡所有的值都比 B 大', '');
+  await step(tok);                                   // 28:27 但都比 A 小
+  txt(c1, 'B < B_R 的值 < A ✓');
+  say('而且都比 A 小', '放在 A 的左邊、B 的右邊下面：仍然是 BST');
+  await step(tok);                                   // 28:49 兩邊都是 h：平衡
+  glow(G.mid.m, null);
+  bbNote(G.A, 'bf 0'); bbNote(G.B, 'bf 0'); bbEdges(t);
+  for (const n of [G.A, G.B]) glow(n.m, GREEN);
+  say('A 底下兩邊都是 h → BF(A) = 0', 'B 兩邊都是 h + 1 → BF(B) = 0');
+  talk(g, '平衡了！', 'happy');
+  await step(tok);                                   // 29:01 整理：判斷 LL → 下壓 → 搬 B_R
+  note('LL：B 上提、A 下壓、B_R 給 A', 0, 0.4, 1.4);
+  say('LL 的做法：判斷是 LL → A 壓下、B 提上 → B_R 搬給 A', '回去再對著圖看一次');
 }]);
 
-// 40:27 各種結構比較：search x、第 k 小；建 AVL 的成本
+// 29:28 RR 通式
+FRAG.push(['bstb-rr-general', 'RR 通式：LL 的鏡像', async (tok) => {
+  fresh([0, 4.2, 13], [0, 3.6, 0]);
+  const g = pal(-6.2, 2.8);
+  const G = rotGenTree(true), t = G.t;
+  await step(tok);                                   // 29:28 RR 跟 LL 顛倒：鏡像
+  await bbLay(t, tok, 700, 3);
+  bbNote(G.A, 'bf −1'); bbNote(G.B, 'bf 0'); bbEdges(t);
+  say('RR 跟 LL 剛好顛倒，像照鏡子', 'A、B 加上 A_L、B_L、B_R');
+  talk(g, '鏡子裡的 LL');
+  await step(tok);                                   // 29:38 Y 在 A 的 right subtree 的 right
+  await rotGenY(G, tok);
+  relabel(G.BL.m, 'B_R h+1');
+  bbNote(G.A, 'bf −2', 'ptr alt'); glow(G.A.m, RED); bbEdges(t);
+  say('Y 插在 A 的 right subtree 的 right', 'BF(A) = h − (h + 2) = −2');
+  await step(tok);                                   // 29:50 B 往上提、A 往左下壓
+  bbRotUp(t, G.B); glow(G.A.m, null);
+  await bbLay(t, tok, 1100);
+  say('B 往上提，A 往左下壓', '');
+  await step(tok);                                   // 29:58 B_L 丟給 A 當 right subtree
+  glow(G.mid.m, GOLD);
+  say('B_L 丟給 A 當 right subtree', 'A < B_L 的值 < B：仍是 BST');
+  await step(tok);                                   // 30:11 會 LL 就會 RR
+  glow(G.mid.m, null);
+  bbNote(G.A, 'bf 0'); bbNote(G.B, 'bf 0'); bbEdges(t);
+  say('會 LL 就會 RR', '左右對調而已');
+  talk(g, '學一送一', 'happy');
+}]);
+
+// LR / RL 通式的樹：B_L、C_L、C_R、A_R 四塊（mirror = RL）
+function lrGenTree(mirror, kase, x0) {
+  const sp = mirror
+    ? [[1, 'A_L', 'blk'], [2, 'A'], [3, 'C_L', 'blk'], [4, 'C'], [5, 'C_R', 'blk'], [6, 'B'], [7, 'B_R', 'blk']]
+    : [[1, 'B_L', 'blk'], [2, 'B'], [3, 'C_L', 'blk'], [4, 'C'], [5, 'C_R', 'blk'], [6, 'A'], [7, 'A_R', 'blk']];
+  const yk = kase === 'c' ? 4.5 : 2.5;
+  const t = bbTree([1, 2, 3, 4, 5, 6, 7, yk], { gap: 1.05, top: 6.6, dy: 1.3, x0 });
+  const ins = mirror ? [2, 1, 6, 4, 7, 3, 5] : [6, 2, 7, 1, 4, 3, 5];
+  for (const k of ins) { const s = sp.find((q) => q[0] === k); bbPut(t, bbNode(k, s[1], s[2])); }
+  return { t, yk, A: bbFind(t, mirror ? 2 : 6), B: bbFind(t, mirror ? 6 : 2), C: bbFind(t, 4), blocks: () => bbList(t).filter((n) => n.kind === 'blk') };
+}
+
+// 30:26 LR（a）三個 node、LR 通式
+FRAG.push(['bstb-lr-general', 'LR 通式：C 拉上來，四塊照順序接', async (tok) => {
+  fresh([0, 4.2, 13], [0, 3.6, 0]);
+  const g = pal(6.3, 2.9);
+  const s = bbTree([1, 2, 3], { gap: 1.4, top: 6.4, dy: 1.4, x0: -4.6 });
+  for (const [k, l] of [[3, 'A'], [1, 'B'], [2, 'C']]) bbPut(s, bbNode(k, l));
+  await step(tok);                                   // 30:28 最單純：只有三個 node
+  await bbLay(s, tok, 700, 3);
+  glow(bbFind(s, 3).m, RED);
+  tag('LR(a)', 'ptr', -4.6, 7.4, 0);
+  say('LR 有幾種情況；最單純的 (a)：只有三個 node', 'C 在 A 的 left subtree 的 right');
+  talk(g, '先看簡單的');
+  await step(tok);                                   // 30:41 把 C 調上來
+  bbRotUp(s, bbFind(s, 2)); bbRotUp(s, bbFind(s, 2));
+  glow(bbFind(s, 3).m, null);
+  await bbLay(s, tok, 1000);
+  say('把 C 調上來', '');
+  await step(tok);                                   // 30:51 A、B 放在它下面：平衡
+  for (const n of bbList(s)) { bbNote(n, 'bf 0'); glow(n.m, GREEN); } bbEdges(s);
+  say('B、A 放在 C 的下面', '三個 node 的 BF 都是 0：平衡');
+  await step(tok);                                   // 31:06 一般的圖：A、B、C
+  const G = lrGenTree(false, 'b', 2.4), t = G.t;
+  bbList(t);
+  for (const n of [G.A, G.B, G.C]) { const [x, y] = bbPos(t, n); n.m = cube(n.lab, bbCol(n.k), [0.95, 0.8, 0.9], x, y, 0, 3); }
+  t.edges.push(line(G.A.m.position.x, G.A.m.position.y - 0.4, G.B.m.position.x, G.B.m.position.y + 0.4), line(G.B.m.position.x, G.B.m.position.y - 0.4, G.C.m.position.x, G.C.m.position.y + 0.4));
+  say('再看一般的圖：三個 node A、B、C', '');
+  await step(tok);                                   // 31:18 B_L、C_L、C_R、A_R 四塊 subtree
+  await bbLay(t, tok, 700, 3);
+  say('加上四塊 subtree：B_L、C_L、C_R、A_R', '');
+  await step(tok);                                   // 31:27 insert 一個新 node，A 違規
+  const y = bbPut(t, bbNode(G.yk, 'Y')); y.col = PINK; await bbLay(t, tok, 800);
+  glow(G.A.m, RED);
+  say('insert 一個新 node 進來', '上面的 A 違反規定');
+  talk(g, 'A 又違規', 'wow');
+  await step(tok);                                   // 31:34 在 A 的 left subtree（B 那棵）
+  glow(G.B.m, GOLD);
+  say('新 node 在 A 的 left subtree 裡', '就是 B 帶頭的那一棵');
+  await step(tok);                                   // 31:43 的 right → LR
+  glow(G.C.m, GOLD);
+  const lr = tag('LR', 'ptr alt', 2.4, 7.6, 0);
+  say('在 B 的右邊 → left subtree 的 right', '符合 LR 的調整');
+  await step(tok);                                   // 31:58 調整後會長這樣
+  say('LR 調整後長什麼樣？', '只看三個點時一樣：C 會跑到最上面');
+  await step(tok);                                   // 32:07 C 拉到 root，A、B 往下壓
+  kill(lr); [G.A, G.B, G.C].forEach((n) => glow(n.m, null));
+  bbRotUp(t, G.C); bbRotUp(t, G.C);
+  await bbLay(t, tok, 1200);
+  say('C 拉到 root，A 和 B 往下壓', '');
+  talk(g, 'C 上去了');
+  await step(tok);                                   // 32:30 四個 block 分給 A、B
+  const bl = G.blocks();
+  for (const b of bl) glow(b.m, GOLD);
+  say('剩下四個 block：B_L、C_L、C_R、A_R', '要分配到 A、B 底下');
+  await step(tok);                                   // 32:52 原則：符合 BST
+  for (const b of bl) glow(b.m, null);
+  say('怎麼放？只要記住一個原則：符合 BST', '左子樹 < parent < 右子樹');
+  await step(tok);                                   // 33:23 照順序 B_L, C_L, C_R, A_R
+  const tags = bl.map((b, i) => tag(String(i + 1), 'pkt', b.m.position.x, b.m.position.y - 0.75, 0));
+  say('照順序：B_L、C_L、C_R、A_R 由左到右', '依序接到 B、A 底下（每個 node 只有 2 個 child）');
+  await step(tok);                                   // 33:36 C_L 接在 B 的右邊：C_L 都比 B 大
+  tags.forEach(remove);
+  const cl = bl[1]; glow(cl.m, GOLD);
+  say('C_L 接在 B 的右邊', 'C_L 本來就在 B 的右子樹裡：全部比 B 大 ✓');
+  await step(tok);                                   // 33:52 C_R 接在 A 的左邊：比 A 小、比 C 大
+  glow(cl.m, null); const cr = bl[2]; glow(cr.m, GOLD);
+  say('C_R 接在 A 的左邊', 'C_R 本來就比 A 小、又比 C 大 ✓');
+  await step(tok);                                   // 34:16 技巧：ABC → C 上來 → 四塊依序接
+  glow(cr.m, null);
+  note('ABC 確認 → C 拉上來 → 1 2 3 4 由左到右接', 2.4, 0.4, 1.4);
+  say('解題技巧：先確認 A、B、C', 'C 拉上來當 root，四塊由左到右接回去');
+  talk(g, '照順序接就對了', 'happy');
+}]);
+
+// 34:37 對照月份例：A = MAY、B = AUG、C = MAR
+FRAG.push(['bstb-month-lr-map', '對照月份例：A = MAY、B = AUG、C = MAR', async (tok) => {
+  fresh(...CAMB);
+  const g = pal();
+  const t = monthTree(['MAR', 'MAY', 'NOV', 'AUG', 'APR']); t.warn = false;
+  const jan = bbPut(t, bbNode('JAN'));
+  const pin = [];
+  await step(tok);                                   // 34:37 實際的情況
+  await bbLay(t, tok, 700, 2.5); bbShow(t, true);
+  say('拿實際的例子對照：insert JAN 之後', '');
+  talk(g, '對照一下');
+  await step(tok);                                   // 34:44 A = MAY、B = AUG、C = MAR
+  const A = bbFind(t, 'MAY'), B = bbFind(t, 'AUG'), C = bbFind(t, 'MAR');
+  pin.push(bbPin(A, 'A'), bbPin(B, 'B', 'ptr'), bbPin(C, 'C', 'ptr'));
+  glow(A.m, RED);
+  say('在這個例子裡：A = MAY、B = AUG、C = MAR', '');
+  await step(tok);                                   // 34:56 C 提上來，A、B 當 child
+  pin.forEach(kill); glow(A.m, null);
+  bbRotUp(t, C); bbRotUp(t, C); t.hide = true;
+  await bbLay(t, tok, 1100);
+  say('C（MAR）被提到最上面', 'B = AUG 在左、A = MAY 在右');
+  await step(tok);                                   // 35:06 B_L = APR
+  const apr = bbFind(t, 'APR'); glow(apr.m, GOLD);
+  const l1 = tag('B_L', 'pkt', apr.m.position.x, apr.m.position.y - 0.8, 0);
+  say('下面的 block：B_L 就是 APR', '');
+  await step(tok);                                   // 35:14 C_L = JAN（新加進來的）
+  glow(apr.m, null); glow(jan.m, GOLD);
+  const l2 = tag('C_L', 'pkt', jan.m.position.x, jan.m.position.y - 0.8, 0);
+  say('C_L 是我們剛加進來的 JAN', '只有一個 node');
+  await step(tok);                                   // 35:16 C 有沒有 right subtree？沒有
+  glow(jan.m, null);
+  const l3 = note('C_R：空的', 0.6, 2.2, 1.0);
+  say('C（MAR）原本有 right subtree 嗎？沒有', 'C_R 是空的');
+  await step(tok);                                   // 35:27 A_R = NOV
+  const nov = bbFind(t, 'NOV'); glow(nov.m, GOLD);
+  const l4 = tag('A_R', 'pkt', nov.m.position.x, nov.m.position.y - 0.8, 0);
+  say('A_R 就是 NOV', '');
+  await step(tok);                                   // 35:37 看圖說話
+  glow(nov.m, null);
+  bbShow(t, true); for (const n of bbList(t)) glow(n.m, GREEN);
+  say('所以叫「依樣畫葫蘆」：看圖說話', '對應好每一塊是誰，就做完了');
+  talk(g, '看圖說話 ✓', 'happy');
+  await step(tok);                                   // 35:46 ABC 確認 → C 上來 → block 從左到右
+  [l1, l2, l3, l4].forEach(remove);
+  note('ABC → C 上來 → block 由左到右接回去', 0, 0.4, 1.6);
+  say('不管怎樣：ABC 確認 → 最下面的 C 放上來', 'A、B 往下壓，四個 block 從左到右維持順序接上');
+}]);
+
+// 36:12 LR(b)、LR(c)：Y 在 C_L 或 C_R 下
+FRAG.push(['bstb-lr-bc', 'LR(b)、LR(c)：Y 在 C_L 或 C_R 下', async (tok) => {
+  fresh([0, 4.2, 13], [0, 3.6, 0]);
+  const g = pal(-6.2, 2.8);
+  const G = lrGenTree(false, 'c', 0.4), t = G.t;
+  await step(tok);                                   // 36:12 相同的情況：LR(c)
+  await bbLay(t, tok, 600, 3);
+  const y = bbPut(t, bbNode(G.yk, 'Y')); y.col = PINK; await bbLay(t, tok, 700);
+  tag('LR(c)', 'ptr', 0.4, 7.6, 0);
+  say('另一張圖，一樣是 LR', '這次 Y 插在 C_R 底下');
+  await step(tok);                                   // 36:29 Y 在 A 的 left subtree 的 right；ABC 知道了
+  glow(G.A.m, RED);
+  const pins = [bbPin(G.A, 'A'), bbPin(G.B, 'B', 'ptr'), bbPin(G.C, 'C', 'ptr')];
+  say('Y 在 A 的 left subtree 的 right', 'A、B、C 都知道了');
+  await step(tok);                                   // 36:40 C 往上拉，B、A 往下壓
+  pins.forEach(kill); glow(G.A.m, null);
+  bbRotUp(t, G.C); bbRotUp(t, G.C);
+  await bbLay(t, tok, 1200);
+  say('跟上一頁一樣：C 往上拉，B 和 A 往下壓', '');
+  talk(g, '同一招');
+  await step(tok);                                   // 36:48 B_L、C_L、C_R、A_R 照順序接
+  const bl = G.blocks();
+  const nums = bl.map((b, i) => tag(String(i + 1), 'pkt', b.m.position.x, b.m.position.y - 0.75, 0));
+  say('B_L、C_L、C_R、A_R 維持順序，從左到右', '接到 B 和 A 底下');
+  await step(tok);                                   // 37:07 順序都不會改變
+  for (const b of bl) glow(b.m, GOLD);
+  say('A、B、C 往上拉、往下壓', '四個 block 的順序從頭到尾都不會變');
+  await step(tok);                                   // 37:26 實際 run：誰對應 B_L、C_L、C_R
+  for (const b of bl) glow(b.m, null); nums.forEach(remove);
+  say('實際做題：看清楚 B_L、C_L、C_R 對應到誰', '就搞定了');
+  talk(g, '對應好就好', 'happy');
+  await step(tok);                                   // 37:48 LR 分三個 case：(a) 沒有 subtree
+  const ca = note('LR(a)：下面沒有 subtree → C 上、B A 下，結束', -2.6, 0.9, 1.4);
+  say('LR 其實分三個 case', '(a)：下面沒有任何 subtree，最簡單');
+  await step(tok);                                   // 38:08 一般的情況：LR(b)、LR(c)
+  const cb = note('LR(b)、LR(c)：四塊照順序接', -2.6, 0.2, 1.4);
+  say('一般的情況：LR(b) 或 LR(c)', '');
+  await step(tok);                                   // 38:21 差別：Y 在 C_L 下還是 C_R 下
+  txt(cb, 'LR(b)：Y 在 C_L 下｜LR(c)：Y 在 C_R 下');
+  say('(b) 和 (c) 只差在新 node 插在 C_L 下面還是 C_R 下面', '兩個都是 LR，做法一樣');
+  await step(tok);                                   // 38:35 ABC 確認 → C 上拉 → block 接上
+  void ca;
+  say('簡單吧：ABC 確認 → C 往上拉、B A 往下壓', '底下的 block 照順序決定 parent');
+}]);
+
+// 38:47 RL 與「每插一個就調整」
+FRAG.push(['bstb-rl-mirror', 'RL 與「每插一個就調整」', async (tok) => {
+  fresh([0, 4.2, 13], [0, 3.6, 0]);
+  const g = pal(-6.3, 2.9);
+  const G = lrGenTree(true, 'b', 1.2), t = G.t;
+  await step(tok);                                   // 38:50 RL：會 LR 就會 RL
+  await bbLay(t, tok, 600, 3);
+  const y = bbPut(t, bbNode(G.yk, 'Y')); y.col = PINK; await bbLay(t, tok, 700);
+  glow(G.A.m, RED);
+  tag('RL', 'ptr alt', 1.2, 7.6, 0);
+  say('RL：Y 在 A 的 right subtree 的 left', '你會 LR，就會 RL');
+  await step(tok);                                   // 38:59 像鏡子一樣
+  glow(G.A.m, null);
+  bbRotUp(t, G.C); bbRotUp(t, G.C);
+  await bbLay(t, tok, 1200);
+  say('像照鏡子：C 拉上來，A 在左、B 在右', '四塊 A_L、C_L、C_R、B_R 照順序接');
+  talk(g, '鏡子 🪞');
+  await step(tok);                                   // 39:08 AVL 其實很簡單
+  say('AVL 其實沒有那麼複雜', '厲害的是當初想出怎麼調整的人');
+  talk(g, '其實不難嘛', 'happy');
+  await step(tok);                                   // 39:18 站在別人的肩膀上
+  note('前人寫好的論文，經過歷史驗證', 1.2, 0.5, 1.4);
+  say('你是站在別人的肩膀上', '論文早就寫出來，也經過驗證了');
+  await step(tok);                                   // 39:30 每增加一個 node 就要調整
+  for (const n of bbList(t)) { kill(n.m); } t.edges.forEach(kill);
+  const qs = ['K1', 'K2', 'K3', 'K4'].map((k, i) => cube(k, BB_PAL[i], [0.8, 0.6, 0.8], -4.5 + i * 1.0, 0.4, 1.4));
+  const tr = cube('AVL', '#2fc092', [1.6, 1.0, 1.0], 2.8, 3.6, 0, 2);
+  say('每增加一個 node 進來', '就要做一次計算、一次調整');
+  await travel(tok, qs[0], qs[0].position.clone(), V3(2.8, 4.6, 0), 800);
+  await step(tok);                                   // 39:50 算完就調整
+  kill(qs[0]); glow(tr, GOLD);
+  note('進來 → 算 BF → 調整', 2.8, 5.6, 0);
+  say('一個進來 → 算 BF → 違規就調整', '下一個再來一次');
+  await step(tok);                                   // 39:58 能不能插 k 個再一次調整？
+  glow(tr, null);
+  note('能不能插 k 個，再一次調整？', -3.0, 2.2, 1.4);
+  say('有人問：每次都要算、要調，有沒有更快的方法？', '先 insert k 個，再一次調整多一點？');
+  talk(g, '可以嗎？', 'wow');
+  await step(tok);                                   // 40:14 回去想想看
+  say('回去想一想', '（提示：一次插很多個，A 可能不只一個、情況會變複雜）');
+  talk(g, '回去想想 🤔', 'calm');
+}]);
+
+// 40:32 各種結構比較：search x、第 k 小；建 AVL 的成本
 FRAG.push(['bstb-avl-cost', 'AVL vs sequential list vs linked list', async (tok) => {
   fresh([0, 4.6, 14], [0, 3.6, 0]);
+  const g = pal(6.3, 2.8);
   const sorted = [...BB_MON].sort();
-  const rows = [['sequential list', 6.6], ['linked list', 5.2]];
-  rows.forEach(([s, y]) => tag(s, 'ptr', -6.0, y + 0.6, 0));
-  const arr = sorted.map((k, i) => cube(k, bbCol(k), [0.85, 0.6, 0.8], -4.95 + i * 0.9, 6.6, 0, 2));
-  const ll = sorted.map((k, i) => cube(k, bbCol(k), [0.85, 0.6, 0.8], -4.95 + i * 0.9, 5.2, 0, 2));
-  say('search x：sequential list 已排序', 'binary search → O(log n)');
-  await beat(tok, 1400);
-  let lo = 0, hi = 11; const target = 'OCT'; const ti = sorted.indexOf(target);
-  while (lo <= hi) { const m = (lo + hi) >> 1; glow(arr[m], GOLD); await beat(tok, 600); glow(arr[m], null); if (m === ti) { glow(arr[m], GREEN); break; } if (m < ti) lo = m + 1; else hi = m - 1; }
-  say('linked list 沒排序、只能從頭找', 'search x：O(n)');
-  for (let i = 0; i <= ti; i++) { glow(ll[i], GOLD); await beat(tok, 220); glow(ll[i], null); }
-  glow(ll[ti], GREEN);
-  await beat(tok, 1000);
-  say('AVL：最多走樹高', 'search x：O(log n)');
   const t = bbTree(BB_MON, { gap: 0.9, top: 3.6, dy: 0.72 });
-  bbAvlSilent(t, BB_MON); await bbLay(t, tok, 500, 2);
+  bbAvlSilent(t, BB_MON);
+  await step(tok);                                   // 40:36 先看 operation：找 x
+  await bbLay(t, tok, 600, 2);
+  tag('AVL tree', 'ptr', -5.6, 3.8, 0);
+  say('建好的 AVL tree 效率怎麼樣？', '第一個 operation：search x（例：找 OCT）');
+  await step(tok);                                   // 40:40 AVL：最差就是樹的高度 → log n
+  const cur = bbCursor(t.root, '找 OCT');
+  await bbRun(tok, cur, pathTo(t, 'OCT'), 350);
+  glow(bbFind(t, 'OCT').m, GREEN); remove(cur);
+  say('AVL：最差就是走完樹的高度', 'search x：O(log n)');
+  await step(tok);                                   // 40:47 sequential list：排序好的
+  tag('sequential list', 'ptr', -6.0, 7.2, 0);
+  const arr = sorted.map((k, i) => cube(k, bbCol(k), [0.85, 0.6, 0.8], -4.95 + i * 0.9, 6.6, 0, 2));
+  say('sequential list：從小排到大（已排序）', '');
+  await step(tok);                                   // 41:11 binary search → log n
+  const ti = sorted.indexOf('OCT');
+  let lo = 0, hi = 11;
+  while (lo <= hi) { const m = (lo + hi) >> 1; glow(arr[m], GOLD); await beat(tok, 400); glow(arr[m], null); if (m === ti) { glow(arr[m], GREEN); break; } if (m < ti) lo = m + 1; else hi = m - 1; }
+  say('排序過 → binary search：每次比中間那個', 'search x：O(log n)');
+  await step(tok);                                   // 41:42 linked list：沒排序
+  tag('linked list', 'ptr', -6.0, 5.8, 0);
+  const ll = BB_MON.map((k, i) => cube(k, bbCol(k), [0.85, 0.6, 0.8], -4.95 + i * 0.9, 5.2, 0, 2));
+  say('linked list：沒有排序，進來就接上去', '（照 insert 的順序）');
+  await step(tok);                                   // 41:48 從頭一個一個找 → n
+  const li = BB_MON.indexOf('OCT');
+  for (let i = 0; i <= li; i++) { glow(ll[i], GOLD); await beat(tok, 130); glow(ll[i], null); }
+  glow(ll[li], GREEN);
+  say('只能從 list 的頭一個一個檢查', 'search x：O(n)');
+  talk(g, '好慢', 'sad');
+  await step(tok);                                   // 42:05 第 k 小：sequential O(1)
+  arr.forEach((m) => glow(m, null)); ll.forEach((m) => glow(m, null));
+  glow(arr[7], GOLD);
+  const kk = tag('第 8 小 = A[7]', 'pkt', arr[7].position.x, 7.4, 0);
+  say('找第 k 小的 item：sequential list 已排序', '直接看第 k 格 → O(1)');
+  await step(tok);                                   // 42:12 AVL 找第 k 小也是 log n？
+  say('AVL tree 找第 k 小，為什麼也是 O(log n)？', '想想 BST 那一章學過的欄位');
+  talk(g, '為什麼？', 'wow');
+  await step(tok);                                   // 42:42 多一個欄位：左邊有幾個 node
   const sz = (n) => (n ? 1 + sz(n.l) + sz(n.r) : 0);
   for (const n of bbList(t)) bbNote(n, String(sz(n.l)));
   bbEdges(t);
-  say('找第 k 小：每個 node 多存左子樹 node 數', 'sequential O(1)、linked O(k)');
-  await beat(tok, 2800);
-  let k = 8, c = t.root; const cur = bbCursor(c, 'k=8');
+  say('每個 node 多存一個欄位：leftSize', '左子樹有幾個 node（不含自己）');
+  await step(tok);                                   // 43:31 有 leftSize：只要走樹的高度
+  kill(kk);
+  let k = 8, c = t.root; const cur2 = bbCursor(c, 'k=8');
   while (c) {
-    const L = sz(c.l);
-    cur.position.set(c.m.position.x, c.m.position.y + 0.9, 0); txt(cur, 'k=' + k); glow(c.m, GOLD);
-    await beat(tok, 900); glow(c.m, null);
+    const L = sz(c.l); bbAt(cur2, c); txt(cur2, 'k=' + k); glow(c.m, GOLD);
+    await beat(tok, 450); glow(c.m, null);
     if (k === L + 1) break;
     if (k <= L) c = c.l; else { k -= L + 1; c = c.r; }
   }
   glow(c.m, GREEN);
-  say('第 8 小 = ' + c.k + '：只走樹高', 'AVL：O(log n)');
-  await beat(tok, 2600);
-  say('問題：建一棵 AVL tree 要多少成本？', '補充：n 次 insert × O(log n) = O(n log n)');
-  await beat(tok, 3200);
+  say('有 leftSize：每到一個 node 決定往左或往右', '第 8 小 = ' + c.k + '：只走樹高 → O(log n)');
+  talk(g, '只走一條路', 'happy');
+  await step(tok);                                   // 43:59 表：AVL 幾乎都是 log n
+  remove(cur2);
+  note('AVL：search、第 k 小、insert、delete 都 O(log n)', 0, 8.2, 0);
+  say('整理成表：AVL tree 的操作幾乎都是 log n', '效率很不錯');
+  await step(tok);                                   // 44:13 那建 AVL tree 要多少成本？
+  note('問題：建一棵 AVL tree 的成本？', -2.4, 1.2, 2.0);
+  say('反過來問：建這棵 AVL tree 要花多少？', '沒有白吃的午餐');
+  talk(g, '要多久？', 'wow');
+  await step(tok);                                   // 45:00 期末考可能考
+  say('每個 node 都要 insert、判斷、調整', '期末考可能會問（提示：n 次 × O(log n)）');
+  talk(g, '考試會考！', 'calm');
 }]);
 
 // ═══ FNeL18KsWPc ═══
+const CAMM = [[0, 4.4, 13.5], [0, 3.4, 0]];
+const mitTree = (extra = [], o = {}) => bbTree([...BB_MIT, ...extra], Object.assign({ gap: 1.5, top: 6.6, dy: 1.4 }, o));
+function ioList(t) { const out = []; (function go(n) { if (!n) return; go(n.l); out.push(n); go(n.r); })(t.root); return out; }
 // 00:22 BST 性質與 in-order traversal
 FRAG.push(['bstb-mit-inorder', 'In-order traversal：11, 20, 26 … 65', async (tok) => {
-  fresh([0, 4.4, 13.5], [0, 3.4, 0]);
-  const t = bbTree(BB_MIT, { gap: 1.5, top: 6.6, dy: 1.4 });
-  bbBstSilent(t, BB_MIT); await bbLay(t, tok, 600, 3);
-  say('BST：左子樹 ≤ x ≤ 右子樹', '不只 child，是所有子孫');
-  await beat(tok, 2800);
-  say('in-order：先左、印自己、再右', '');
-  await beat(tok, 1600);
-  const cur = bbCursor(t.root, '▼');
-  let i = 0;
-  const go = async (n) => { if (!n) return; await bbWalk(tok, cur, n, 260); await go(n.l); cur.position.set(n.m.position.x, n.m.position.y + 1.0, 0); glow(n.m, GREEN);
-    cube(n.k, bbCol(n.k), [0.9, 0.6, 0.8], -4.2 + i * 1.4, 0.3, 2.6, 3); i++; say('print ' + n.k, ''); await beat(tok, 650); await go(n.r); };
-  await go(t.root);
-  kill(cur);
-  say('印出來是排序好的', '11, 20, 26, 29, 41, 50, 65');
-  await beat(tok, 3000);
+  fresh(...CAMM);
+  const g = pal(6.2, 2.8, '#9fd3f0', 0.55, 'Erik');
+  const t = mitTree();
+  await step(tok);                                   // 0:22 BST：動態排序，元素來來去去
+  bbBstSilent(t, BB_MIT); await bbLay(t, tok, 900, 3);
+  say('BST：一種「動態」的排序', '資料隨時進進出出，還是隨時知道排好的順序');
+  talk(g, '今天繼續講 sorting');
+  await step(tok);                                   // 0:41 tree、binary、search property 三件事
+  const three = note('BST = tree + binary + search property', 0, 0.4, 1.6);
+  say('binary search tree 有三件事', '它是 tree、是 binary、有 search property');
+  await step(tok);                                   // 0:51 rooted binary tree：root、left / right child
+  glow(t.root.m, GOLD); glow(t.root.l.m, '#1a3a5a'); glow(t.root.r.m, '#1a3a5a');
+  const rl = bbPin(t.root, 'root', 'pkt', 0);
+  say('rooted binary tree：最上面有 root', '每個 node 最多一個 left child、一個 right child');
+  await step(tok);                                   // 0:56 有的 node 缺 child；每個 node 存 key
+  [t.root, t.root.l, t.root.r].forEach((n) => glow(n.m, null)); kill(rl);
+  for (const n of bbList(t)) if (!n.l || !n.r) glow(n.m, '#4a3600');
+  say('有些 node 少一個 child、有些兩個都沒有', '每個 node 都存一個 key（方塊上的數字）');
+  await step(tok);                                   // 1:05 search property：左 ≤ x ≤ 右
+  for (const n of bbList(t)) glow(n.m, null);
+  const r = t.root; glow(r.m, GOLD);
+  const gl = ghostBox('#4b9ee2', 4.2, 3.6, 1.4); gl.position.set(-2.25, 4.0, 0);
+  const gr = ghostBox(PINK, 2.6, 2.2, 1.4); gr.position.set(3.75, 4.6, 0);
+  const lt = tag('全部 ≤ 41', 'ptr', -2.25, 1.8, 0), rt = tag('全部 ≥ 41', 'ptr', 3.75, 3.1, 0);
+  say('search property：x 的左子樹全部 ≤ x', '右子樹全部 ≥ x');
+  await step(tok);                                   // 1:22 不只 child，所有子孫
+  glow(bbFind(t, 26).m, GOLD); glow(bbFind(t, 50).m, GOLD);
+  say('不只左右 child：底下每一個子孫都要符合', '例如 26 在很深的地方，也一定 ≤ 41');
+  talk(g, '子孫通通算', 'wow');
+  await step(tok);                                   // 1:30 要知道排序：in-order traversal
+  [gl, gr, lt, rt, three].forEach(kill); for (const n of bbList(t)) glow(n.m, null);
+  say('想知道排好的順序：做 in-order traversal', '');
+  await step(tok);                                   // 1:37 遞迴走左、印 root、遞迴走右
+  note('in-order(x)：走左 → 印 x → 走右', 0, 0.4, 1.6);
+  say('看一個 node：先遞迴走 left child', '再印自己，最後遞迴走 right child');
+  const io = ioList(t), cur = bbCursor(t.root, '▼');
+  const out = [];
+  const pr = (n, i) => { bbAt(cur, n); glow(n.m, GREEN); out.push(cube(n.k, bbCol(n.k), [0.9, 0.6, 0.8], -4.2 + i * 1.4, 0.3, 2.6, 2.5)); };
+  await step(tok);                                   // 1:44 left、left、print 11、print 20
+  for (let i = 0; i < 2; i++) { pr(io[i], i); await beat(tok, 450); }
+  say('往左、往左：印 11；回來印 20', '');
+  await step(tok);                                   // 1:50 26、29、41、50、65
+  for (let i = 2; i < io.length; i++) { pr(io[i], i); await beat(tok, 380); }
+  remove(cur);
+  say('往右、往左：印 26、29；往上印 41', '再往右：印 50、65');
+  talk(g, '印完了', 'happy');
+  await step(tok);                                   // 1:57 檢查：是排序好的
+  out.forEach((m) => glow(m, GREEN));
+  say('印出來 11, 20, 26, 29, 41, 50, 65', '正好是排好的順序');
+  await step(tok);                                   // 2:10 今天的主題：balance
+  for (const n of bbList(t)) glow(n.m, null);
+  say('今天的主題：balance（平衡）', '');
+  talk(g, '今天講 balance');
 }]);
 
-// 02:11 BST 操作 O(h)；balanced h = Θ(log n) vs path h = n
+// 02:16 BST 操作 O(h)；balanced h = Θ(log n) vs path h = n
 FRAG.push(['bstb-mit-balance', 'O(h)：balanced 是 log n，path 是 n', async (tok) => {
-  fresh([0, 4.4, 13.5], [0, 3.4, 0]);
-  const t = bbTree([...BB_MIT, 30], { gap: 1.4, top: 6.6, dy: 1.35 });
-  bbBstSilent(t, BB_MIT); await bbLay(t, tok, 500, 0);
-  say('insert 30：沿著樹往下找位置', '');
-  const cur = bbCursor(t.root);
-  for (const k of [41, 20, 29]) { await bbWalk(tok, cur, bbFind(t, k), 700); }
-  kill(cur);
-  bbPut(t, bbNode(30)); await bbLay(t, tok, 800);
-  say('左、右、右：30 放在 29 的右邊', 'insert、delete、succ、pred 都是 O(h)');
-  await beat(tok, 2800);
-  fresh([0, 4.4, 13.5], [0, 3.4, 0]);
-  const L = bbTree([1, 2, 3, 4, 5, 6, 7], { gap: 0.8, top: 6.4, dy: 1.3, x0: -3.6 });
-  bbBstSilent(L, [4, 2, 6, 1, 3, 5, 7]); await bbLay(L, tok, 600, 3);
-  tag('h = Θ(log n)', 'ptr alt', -3.6, 1.6, 0);
-  say('理想：perfectly balanced', 'height ≈ log n');
-  await beat(tok, 2400);
-  const R = bbTree([1, 2, 3, 4, 5, 6, 7], { gap: 0.75, top: 7.0, dy: 0.9, x0: 3.6 });
-  bbBstSilent(R, [1, 2, 3, 4, 5, 6, 7]); await bbLay(R, tok, 600, 3);
-  tag('h = n', 'ptr alt', 5.2, 1.0, 0);
-  say('最糟：一條 path', 'height = n，平均路徑 n/2');
-  await beat(tok, 2600);
-  say('balanced 的定義：h = O(log n)', 'height = 從 root 往下最長路徑');
-  await beat(tok, 3000);
+  fresh(...CAMM);
+  const g = pal(6.2, 2.8, '#9fd3f0', 0.55, 'Erik');
+  const t = mitTree([30], { gap: 1.4 });
+  bbBstSilent(t, BB_MIT);
+  await step(tok);                                   // 2:16 基本 BST insert：沿著樹往下走
+  await bbLay(t, tok, 700, 2.5);
+  say('上次學的 BST insert：沿著樹往下走', '找到新 key 該放的位置');
+  await step(tok);                                   // 2:26 insert 30：左、右、右
+  const cur = bbCursor(t.root, '30');
+  await bbRun(tok, cur, [41, 20, 29].map((k) => bbFind(t, k)), 550);
+  say('insert 30：比 41 小往左、比 20 大往右、比 29 大往右', '');
+  await step(tok);                                   // 2:29 30 放在這裡
+  remove(cur);
+  const n30 = bbPut(t, bbNode(30)); await bbLay(t, tok, 800); glow(n30.m, GOLD);
+  say('走到空位：30 就放在 29 的右邊', '');
+  await step(tok);                                   // 2:31 insert、delete、successor、predecessor
+  glow(n30.m, null);
+  const ops = ['insert', 'delete', 'successor', 'predecessor'].map((s, i) => tag(s, 'pkt', -4.5 + i * 2.6, 0.4, 1.6));
+  say('同樣做得到：insert、delete', '找下一個比較大 / 比較小的：successor / predecessor');
+  await step(tok);                                   // 2:47 都是 O(h)，h = 高度
+  ops.forEach((l) => { l.element.className = 'lab-label ptr alt'; });
+  note('全部 O(h)，h = 樹的高度', 0, 1.4, 1.6);
+  say('這些操作都是 O(h) 時間', 'h 是 BST 的高度');
+  talk(g, 'h 是多少？');
+  await step(tok);                                   // 3:08 log n？不一定 → balance 的問題
+  say('h 是 log n 嗎？如果是就太好了', '可惜不一定 → 這就是 balance 的問題');
+  talk(g, '不一定喔', 'calm');
+  await step(tok);                                   // 3:22 理想：perfectly balanced
+  fresh(...CAMM);
+  const g2 = pal(6.2, 2.8, '#9fd3f0', 0.55, 'Erik');
+  const L = bbTree([1, 2, 3, 4, 5, 6, 7], { gap: 0.8, top: 6.4, dy: 1.3, x0: -3.4 });
+  bbBstSilent(L, [4, 2, 6, 1, 3, 5, 7]); await bbLay(L, tok, 700, 3);
+  say('理想的世界：perfectly balanced BST', '每一層都排滿');
+  talk(g2, '漂亮！', 'happy');
+  await step(tok);                                   // 3:32 height ≈ log n
+  tag('h ≈ log n', 'ptr alt', -3.4, 1.6, 0);
+  say('它的高度大約是 log n', 'Θ(log n)：大約等於');
+  await step(tok);                                   // 3:48 也可能是一條 path
+  const R = bbTree([1, 2, 3, 4, 5, 6, 7], { gap: 0.75, top: 7.0, dy: 0.9, x0: 3.0 });
+  bbBstSilent(R, [1, 2, 3, 4, 5, 6, 7]); await bbLay(R, tok, 900, 3);
+  say('但上一堂最後看過：也可能非常不平衡', '整棵樹就是一條 path');
+  talk(g2, '歪掉了', 'sad');
+  await step(tok);                                   // 3:54 height = n
+  tag('h = n', 'ptr alt', 4.6, 1.0, 0);
+  say('這時高度就是 n', '');
+  await step(tok);                                   // 4:10 height = 從 root 往下最長路徑
+  const pth = []; for (let c = R.root; c; c = c.r) pth.push(c);
+  const c2 = bbCursor(R.root, '▼');
+  await bbRun(tok, c2, pth, 180);
+  remove(c2);
+  say('height 的定義：從 root 一直往下走到 leaf', '最長那條路徑的長度');
+  await step(tok);                                   // 4:40 左邊路徑都 log n；右邊有 n、平均 n/2
+  say('左邊每條路徑都只有 log n', '右邊有一條長 n，平均也有 n/2：very unbalanced');
+  await step(tok);                                   // 5:04 balanced 的正式定義：h = O(log n)
+  note('balanced ⇔ height = O(log n)', 0, 0.4, 1.6);
+  say('正式定義：高度是 O(log n) 就叫 balanced', '');
+  await step(tok);                                   // 5:26 至少 log n → Θ(log n)
+  say('n 個 key 放進 binary tree，高度至少 log n', '所以 balanced 的樹高度是 Θ(log n)');
+  await step(tok);                                   // 5:36 今天的目標：AVL tree
+  tag('今天：AVL tree（1960 年代）', 'ptr', 0, 8.0, 0);
+  say('今天的目標：永遠維持 balanced', '工具是 AVL tree：60 年代最早、也最簡單的方法');
+  talk(g2, 'AVL 登場', 'happy');
 }]);
 
-// 06:12 node 的高度：往下到 leaf 的最長路徑；h = max(h_L, h_R) + 1；null = −1
+// 06:20 node 的高度：往下到 leaf 的最長路徑；h = max(h_L, h_R) + 1；null = −1
 FRAG.push(['bstb-mit-node-height', 'Node 的高度：max(h_L, h_R) + 1', async (tok) => {
-  fresh([0, 4.4, 13.5], [0, 3.4, 0]);
-  const t = bbTree(BB_MIT, { gap: 1.5, top: 6.6, dy: 1.4 });
-  bbBstSilent(t, BB_MIT); await bbLay(t, tok, 500, 0);
-  say('depth 從上往下算；height 從下往上算', 'height = 往下到 leaf 的最長路徑');
-  await beat(tok, 2800);
-  for (const k of [11, 26, 29, 20, 50, 65, 41]) {
-    const n = bbFind(t, k), h = bbH(n) - 1;
-    glow(n.m, GOLD); bbNote(n, 'h=' + h, 'ptr alt'); bbEdges(t);
-    const hl = bbH(n.l) - 1, hr = bbH(n.r) - 1;
-    say(n.l || n.r ? 'node ' + k + '：max(' + hl + ', ' + hr + ') + 1' : 'leaf ' + k + '：height 0', 'h(' + k + ') = ' + h);
-    await beat(tok, 1300);
-    glow(n.m, null); bbNote(n, 'h=' + h);
-  }
-  bbEdges(t);
+  fresh(...CAMM);
+  const g = pal(6.2, 2.8, '#9fd3f0', 0.55, 'Erik');
+  const t = mitTree();
+  bbBstSilent(t, BB_MIT);
+  const H = (k) => bbH(bbFind(t, k)) - 1;
+  const hOn = (k, cls = 'ptr alt') => { const n = bbFind(t, k); glow(n.m, GOLD); bbNote(n, 'h=' + H(k), cls); bbEdges(t); return n; };
+  const off = (n) => { glow(n.m, null); bbNote(n, 'h=' + H(n.k)); bbEdges(t); };
+  await step(tok);                                   // 6:20 node 的 height
+  await bbLay(t, tok, 700, 2.5);
+  say('除了整棵樹的高度，每個 node 也有自己的 height', '');
+  talk(g, 'node 的高度？');
+  await step(tok);                                   // 6:51 depth：離 root 多遠（從上往下數）
+  const dep = bbList(t).map((n) => tag('d' + n.d, 'idx', n.m.position.x - 0.62, n.m.position.y - 0.1, 0.6));
+  say('離 root 多遠，那叫 depth（從上往下數）', 'root 是 0，往下 1、2、3');
+  await step(tok);                                   // 6:59 height：往下到 leaf 的最長路徑
+  dep.forEach(remove);
+  say('height 是反過來：從這個 node 往下走到 leaf', '最長路徑的長度（只能往下走）');
+  await step(tok);                                   // 7:55 leaf：height 0
+  const a = hOn(26);
+  say('26 是 leaf：從 leaf 走到 leaf 要 0 步', 'h(26) = 0');
+  await step(tok);                                   // 8:10 有一個 child：1
+  off(a); const b = hOn(29);
+  say('29 不是 leaf：往下一步就到 leaf', 'h(29) = 1');
+  await step(tok);                                   // 8:18 可以走左（1）或走右（2）→ 取 max = 2
+  off(b); const c = hOn(20);
+  bbNote(bbFind(t, 11), 'h=' + H(11)); bbEdges(t);
+  say('20 有兩條路：往左長 1、往右長 2', '取最長的：h(20) = 2');
+  await step(tok);                                   // 8:27 這個 1、root 3
+  off(c);
+  for (const k of [50, 65]) bbNote(bbFind(t, k), 'h=' + H(k));
+  const d = hOn(41);
+  say('65 的高度是 1；root 41 的高度是 3', '');
+  await step(tok);                                   // 8:43 公式：max(children) + 1
+  const f = note('h(x) = max(h(左 child), h(右 child)) + 1', 0, 0.4, 1.6);
+  say('怎麼算？取兩個 child 高度的最大值再 + 1', 'root：max(2, 1) + 1 = 3');
+  talk(g, '看 child 就好', 'happy');
+  await step(tok);                                   // 9:18 像上次的 subtree size：augmentation
+  off(d);
+  say('上次用 data structure augmentation', '在每個 node 多存 subtree 的 size');
+  await step(tok);                                   // 9:52 這次每個 node 存 height
+  t.info = 'h'; bbInfo(t); bbEdges(t);
+  for (const n of bbList(t)) glow(n.m, '#1a3a5a');
+  say('這次改存 height 欄位', '');
+  await step(tok);                                   // 10:02 只靠 children 的 local formula → O(1)
+  for (const n of bbList(t)) glow(n.m, null);
+  txt(f, '只看兩個 child → 每次更新 O(1)');
+  say('公式只用到左右 child 的高度（local）', '所以每次操作順便更新，只多花常數時間');
+  await step(tok);                                   // 10:20 AVL 要用高度：太大就修
+  say('AVL 就是靠這些 height', '存著高度，太高了就修');
+  talk(g, '太高就修', 'calm');
+  await step(tok);                                   // 10:51 null child 的高度定為 −1
   const n11 = bbFind(t, 11);
-  tag('−1', 'idx', n11.m.position.x - 0.5, n11.m.position.y - 0.9, 0); tag('−1', 'idx', n11.m.position.x + 0.5, n11.m.position.y - 0.9, 0);
-  say('空的 child 定成 −1，公式就不用特例', 'leaf：max(−1, −1) + 1 = 0');
-  await beat(tok, 2800);
-  say('只靠 children 就能算：augmentation', '每個 node 存 height，O(1) 維護');
-  await beat(tok, 3000);
+  const ns = [-1, 1].map((sx) => cube('−1', '#d8cfc0', [0.55, 0.35, 0.5], n11.m.position.x + sx * 0.55, n11.m.position.y - 1.1, 0, 2));
+  say('leaf 下面的 null pointer：高度定成 −1', '');
+  await step(tok);                                   // 11:25 leaf = max(−1, −1) + 1 = 0
+  glow(n11.m, GOLD);
+  txt(f, 'leaf：max(−1, −1) + 1 = 0');
+  say('這樣 leaf 也能直接套公式', 'max(−1, −1) + 1 = 0，不用寫特例');
+  ns.forEach((m) => glow(m, GOLD));
 }]);
 
 // 11:49 AVL 性質：每個 node |h_L − h_R| ≤ 1
 FRAG.push(['bstb-mit-avl-prop', 'AVL：每個 node |h_L − h_R| ≤ 1', async (tok) => {
-  fresh([0, 4.4, 13.5], [0, 3.4, 0]);
-  const t = bbTree(BB_MIT, { gap: 1.5, top: 6.6, dy: 1.4, info: 'h' });
-  bbBstSilent(t, BB_MIT); await bbLay(t, tok, 600, 3);
-  say('子樹畫成三角形，看兩邊的高度', '');
-  await beat(tok, 2200);
-  const r = t.root;
-  const gl = ghostBox('#4b9ee2', 5.6, 3.6, 1.4); gl.position.set(-2.25, 3.8, 0);
-  const gr = ghostBox('#e55a9b', 2.8, 2.2, 1.4); gr.position.set(3.75, 4.5, 0);
-  const hl = tag('h_L = 2', 'ptr', -2.25, 1.6, 0), hr = tag('h_R = 1', 'ptr', 3.75, 3.0, 0);
-  glow(r.m, GOLD);
-  say('AVL：每個 node 兩邊高度最多差 1', '|h_L − h_R| ≤ 1');
-  await beat(tok, 3000);
+  fresh(...CAMM);
+  const g = pal(6.2, 2.8, '#9fd3f0', 0.55, 'Erik');
+  const t = mitTree([], { info: 'h' });
+  bbBstSilent(t, BB_MIT);
+  await step(tok);                                   // 11:49 AVL trees
+  await bbLay(t, tok, 700, 3);
+  tag('AVL trees', 'ptr alt', 0, 8.0, 0);
+  say('AVL tree 的想法', '');
+  talk(g, 'AVL 怎麼想？');
+  await step(tok);                                   // 12:36 目標：height O(log n)
+  say('目標：高度維持 O(log n)', '');
+  await step(tok);                                   // 12:41 換個想法：左右兩邊差不多
+  say('直接想高度比較難', '改成：讓每個 node 的左右兩邊「差不多」');
+  await step(tok);                                   // 12:49 比的是高度（也可以比 size）
+  say('這裡比的是左右的高度', '（比 subtree size 也行，那是另一種 balanced tree）');
+  await step(tok);                                   // 13:03 左右子樹畫成三角形
+  const r = t.root; glow(r.m, GOLD);
+  const gl = ghostBox('#4b9ee2', 4.2, 3.6, 1.4); gl.position.set(-2.25, 4.0, 0);
+  const gr = ghostBox(PINK, 2.6, 2.2, 1.4); gr.position.set(3.75, 4.6, 0);
+  say('一個 node 有 left subtree 和 right subtree', '習慣畫成兩個三角形');
+  await step(tok);                                   // 13:11 高度 h_L、h_R
+  const hl = tag('h_L = ' + (bbH(r.l) - 1), 'pkt', -2.25, 1.6, 0), hr = tag('h_R = ' + (bbH(r.r) - 1), 'pkt', 3.75, 3.0, 0);
+  say('subtree 的高度 = 它的 root 的高度', '這裡 h_L = 2、h_R = 1');
+  await step(tok);                                   // 13:35 |h_L − h_R| ≤ 1
+  const rule = note('|h_L − h_R| ≤ 1', 0, 0.4, 1.6);
+  say('希望兩邊差不多：最多差 1', '|h_L − h_R| ≤ 1');
+  await step(tok);                                   // 13:48 每一個 node 都要
   [gl, gr, hl, hr].forEach(kill); glow(r.m, null);
   t.info = 'arrow'; for (const n of bbList(t)) { kill(n.tg); n.tg = null; } bbInfo(t); bbEdges(t);
-  say('標記：↙ 左重、↘ 右重、— 一樣高', '');
-  await beat(tok, 2600);
-  for (const n of bbList(t)) { glow(n.m, GREEN); await beat(tok, 300); }
-  say('每個 node 都只重 1：是 AVL tree', '');
-  await beat(tok, 2200);
-  say('要求差 0 不可能維持（n 不剛好時）', '差 1 就幾乎一樣好');
-  await beat(tok, 3000);
+  for (const n of bbList(t)) { glow(n.m, GREEN); await beat(tok, 150); }
+  txt(rule, '每個 node x：|h_L − h_R| ≤ 1');
+  say('而且是每一個 node 都要成立', '↙ 左邊高 1、↘ 右邊高 1、— 一樣高');
+  talk(g, '每個都要', 'happy');
+  await step(tok);                                   // 13:58 要求差 0：只能是完美的樹
+  for (const n of bbList(t)) glow(n.m, null);
+  say('為什麼不要求差 0（完全一樣高）？', '那等於強迫整棵是完美的樹');
+  await step(tok);                                   // 14:15 n 不剛好就做不到
+  glow(bbFind(t, 29).m, RED);
+  say('n 不剛好的時候，最後總會缺一個 child', '那裡就不可能差 0：做不到');
+  talk(g, '差 0 太嚴', 'sad');
+  await step(tok);                                   // 14:24 差 1 就幾乎一樣好
+  glow(bbFind(t, 29).m, null);
+  say('允許差 1 就幾乎一樣好', '等一下證明');
+  await step(tok);                                   // 14:24 而且 log n 時間就能維持
+  say('而且每次 insert 只要 O(log n) 時間就能維持', '');
+  talk(g, '來證明吧', 'happy');
 }]);
 
-// 14:30 最糟的 AVL：每個 node 右邊比左邊高 1；N_h = 1 + N_{h−1} + N_{h−2}
+// 14:38 最糟的 AVL：每個 node 右邊比左邊高 1；N_h = 1 + N_{h−1} + N_{h−2}
 FRAG.push(['bstb-mit-sparse', '最稀疏的 AVL：N_h = 1 + N_{h−1} + N_{h−2}', async (tok) => {
   fresh([0, 4.2, 13], [0, 3.6, 0]);
-  say('高度 h 的 AVL，最少要幾個 node？', 'N_h = 最少 node 數');
-  await beat(tok, 2600);
+  const g = pal(6.2, 2.8, '#9fd3f0', 0.55, 'Erik');
+  const claim = note('Claim：AVL tree 是 balanced', 0, 7.6, 0);
+  await step(tok);                                   // 14:38 Claim：AVL 是 balanced
+  say('第一個 claim：AVL tree 一定是 balanced', '');
+  talk(g, '要證明囉');
+  await step(tok);                                   // 14:53 height = O(log n)
+  txt(claim, 'Claim：AVL tree 的高度 = O(log n)');
+  say('balanced 就是：高度永遠是 O(log n)', '先假設 AVL 性質維持得住');
+  await step(tok);                                   // 15:16 最糟：n 個 node 疊到最高？
+  say('最糟的情況是什麼？', 'n 個 node，怎樣疊得最高？');
+  await step(tok);                                   // 15:21 反過來：固定高度，最少幾個 node
+  say('反過來想：高度固定是 h', '最少能用幾個 node 蓋出來？（最稀疏的 AVL）');
+  talk(g, '越省越歪');
+  await step(tok);                                   // 15:55 每個 node：右邊比左邊高 1
   const t = bbTree([1, 2, 3, 4, 5, 6, 7], { gap: 1.45, top: 6.8, dy: 1.45, info: 'h', warn: false });
-  const LT = { ...t, root: null, edges: [] }, RT = { ...t, root: null, edges: [] };
-  for (const k of [1, 2]) bbPut(LT, bbNode(k, ''));      // 左：N_1（2 個 node）
-  for (const k of [5, 4, 6, 7]) bbPut(RT, bbNode(k, '')); // 右：N_2（4 個 node）
-  await bbLay(LT, tok, 500, 3); await bbLay(RT, tok, 500, 3);
-  const gl = ghostBox('#4b9ee2', 2.6, 2.4, 1.4); gl.position.set(-3.6, 6.1, 0);
-  const gr = ghostBox('#e55a9b', 5.4, 3.8, 1.4); gr.position.set(2.2, 5.35, 0);
-  const t1 = tag('N_{h−2}', 'ptr', -3.6, 4.4, 0), t2 = tag('N_{h−1}', 'ptr', 2.2, 3.0, 0);
-  say('最糟：每個 node 右邊比左邊高 1', '左邊高 h − 2、右邊高 h − 1');
-  await beat(tok, 3000);
-  [gl, gr, t1, t2, ...LT.edges, ...RT.edges].forEach(kill);
-  const root = bbNode(3, ''); t.root = root; root.l = LT.root; root.r = RT.root; LT.root.p = root; RT.root.p = root;
+  for (const k of [3, 1, 5, 2, 4, 6, 7]) bbPut(t, bbNode(k, ''));
   await bbLay(t, tok, 900, 3);
-  glow(root.m, GOLD);
-  say('再加一個 root：像碎形一樣遞迴', 'N_h = 1 + N_{h−1} + N_{h−2}');
-  await beat(tok, 3000);
-  glow(root.m, null);
-  say('N_0 = 1、N_1 = 2、N_2 = 4、N_3 = 7', '這棵就是 N_3 = 1 + 4 + 2');
-  await beat(tok, 3000);
+  say('答案：每一個 node 都讓右邊比左邊高 1', '（左右對稱，反過來也一樣）');
+  await step(tok);                                   // 16:35 右子樹每個都比左子樹高 1
+  t.info = 'arrow'; for (const n of bbList(t)) { kill(n.tg); n.tg = null; } bbInfo(t); bbEdges(t);
+  say('每個 node 都是 ↘（右重）', '能少一個 node 就少一個');
+  await step(tok);                                   // 17:03 像碎形一樣遞迴
+  const gl = ghostBox('#4b9ee2', 2.6, 2.4, 1.4); gl.position.set(-3.6, 4.8, 0);
+  const gr = ghostBox(PINK, 5.4, 3.8, 1.4); gr.position.set(2.2, 4.0, 0);
+  say('它是遞迴長出來的，像碎形（fractal）', '左右兩邊各自也是「最稀疏的 AVL」');
+  talk(g, '碎形！', 'wow');
+  await step(tok);                                   // 17:56 定義 N_h
+  const nh = note('N_h = 高度 h 的 AVL tree 最少的 node 數', 0, 0.4, 1.6);
+  say('不畫了，用數學：定義 N_h', 'N_h = 高度 h 的 AVL tree，最少要幾個 node');
+  await step(tok);                                   // 18:20 跟我們要的相反，但解得出來就好
+  say('我們真正想知道：n 個 node，高度最多多少', '先算反過來的 N_h，再倒推回去');
+  await step(tok);                                   // 18:38 很不平衡：高度 n 只要 n 個 node
+  say('很不平衡的樹：高度 n 只要 n 個 node', '那就慘了（N_h = h）');
+  talk(g, '那樣很慘', 'sad');
+  await step(tok);                                   // 18:48 希望高度 h 要塞 2^h 個：指數
+  say('希望高度 h 至少要塞 2^h 個 node', '任何「常數^h」都行：倒過來就是 log');
+  await step(tok);                                   // 20:45 遞迴式
+  say('怎麼算 N_h？寫遞迴式（recurrence）', '');
+  await step(tok);                                   // 21:16 N_{h−1} + N_{h−2}
+  txt(nh, 'N_h = N_{h−1} + N_{h−2} ？');
+  say('學生：N_{h−1} + N_{h−2}', '');
+  await step(tok);                                   // 21:25 再加 1：N_h = 1 + N_{h−1} + N_{h−2}
+  txt(nh, 'N_h = 1 + N_{h−1} + N_{h−2}');
+  say('兩個學生的答案合起來', 'N_h = 1 + N_{h−1} + N_{h−2}');
+  talk(g, '合作成功', 'happy');
+  await step(tok);                                   // 21:37 為什麼：整棵高度 h
+  glow(t.root.m, GOLD);
+  say('為什麼？整棵樹高度是 h', '');
+  await step(tok);                                   // 21:52 比較高的一邊是 h − 1
+  const t2 = tag('h − 1', 'pkt', 2.2, 1.6, 0);
+  say('高度是兩邊取 max 再 + 1', '所以比較高的那邊是 h − 1 → N_{h−1} 個 node');
+  await step(tok);                                   // 22:06 另一邊少 1：h − 2
+  const t1 = tag('h − 2', 'pkt', -3.6, 3.2, 0);
+  say('另一邊再少 1：h − 2', '→ N_{h−2} 個 node');
+  await step(tok);                                   // 22:17 再加上 root 這一個 node
+  void t1; void t2;
+  say('最後加上 root 自己這 1 個', '這個 +1 很小，主要影響 base case');
+  await step(tok);                                   // 22:47 解遞迴式：希望是指數
+  [gl, gr].forEach(kill); glow(t.root.m, null);
+  say('N_0 = 1、N_1 = 2、N_2 = 4、N_3 = 7 …', '希望它是指數成長 → 高度就是 log');
+  talk(g, '會長多快？');
 }]);
 
-// 22:47 / 25:39 N_h 的下界：Fibonacci → h < 1.44 log n；或 N_h > 2N_{h−2} → h < 2 log n
-FRAG.push(['bstb-mit-nh-bound', 'N_h 指數成長 → h = O(log n)', async (tok) => {
-  const P = ctx.params || {};
-  const mode = P.mode || 'both';
+// N_h 的長條圖
+function nhBars(tok, n, color, vals, dz = 0, w = 0.5, dx = -0.3) {
+  const S = 0.11, x0 = -5.6, DX = 1.6, ms = [];
+  return (async () => {
+    for (let h = 0; h < n; h++) {
+      const v = Math.max(0.01, vals(h) * S);
+      const m = lab.box(color, [w, 1, 0.6]); m.scale.y = 0.001; m.position.set(x0 + h * DX + dx, 0, dz); lab.world.add(m); ms.push(m);
+      await anim(tok, 160, (q) => { m.scale.y = Math.max(0.001, v * q); m.position.y = v * q / 2; });
+    }
+    return ms;
+  })();
+}
+const NH = [1, 2, 4, 7, 12, 20, 33, 54], FIB = [0, 1, 1, 2, 3, 5, 8, 13];
+function nhAxis(withVals) { for (let h = 0; h < 8; h++) { tag('h=' + h, 'idx', -5.6 + h * 1.6, 0, 1.2); if (withVals) tag(String(NH[h]), 'idx', -5.6 + h * 1.6 - 0.3, NH[h] * 0.11 + 0.35, 0); } }
+
+// 23:07 N_h 的下界：Fibonacci → h < 1.44 log n
+FRAG.push(['bstb-mit-fib', 'Fibonacci 下界：h < 1.44 log n', async (tok) => {
   fresh([0, 4.0, 13.5], [0, 3.4, 0]);
-  const N = [1, 2, 4, 7, 12, 20, 33, 54], F = [0, 1, 1, 2, 3, 5, 8, 13];
-  const S = 0.11, x0 = -5.6, dx = 1.6;
-  for (let h = 0; h < 8; h++) tag('h=' + h, 'idx', x0 + h * dx, 0, 1.2);
-  say('N_h：1, 2, 4, 7, 12, 20, 33, 54', 'N_h = 1 + N_{h−1} + N_{h−2}');
-  for (let h = 0; h < 8; h++) {
-    const m = lab.box('#4b9ee2', [0.5, 1, 0.6]); m.scale.y = 0.001; m.position.set(x0 + h * dx - 0.3, 0, 0); lab.world.add(m);
-    await anim(tok, 250, (q) => { m.scale.y = Math.max(0.001, N[h] * S * q); m.position.y = N[h] * S * q / 2; });
-    tag(String(N[h]), 'idx', x0 + h * dx - 0.3, N[h] * S + 0.35, 0);
-  }
-  await beat(tok, 1600);
-  if (mode !== 'half') {
-    say('拿掉 +1 就是 Fibonacci：N_h > F_h', 'F_h = φ^h / √5 取整，φ ≈ 1.618');
-    for (let h = 0; h < 8; h++) {
-      const v = Math.max(0.01, F[h] * S);
-      const m = lab.box('#dd8238', [0.5, 1, 0.6]); m.scale.y = 0.001; m.position.set(x0 + h * dx + 0.3, 0, 0); lab.world.add(m);
-      await anim(tok, 200, (q) => { m.scale.y = Math.max(0.001, v * q); m.position.y = v * q / 2; });
-    }
-    await beat(tok, 2000);
-    say('φ^h / √5 < n → 取 log_φ', 'h < log_φ n ≈ 1.440 log₂ n');
-    await beat(tok, 3000);
-  }
-  if (mode !== 'fib') {
-    say('簡單版：N_h > 1 + 2 N_{h−2} > 2 N_{h−2}', '每兩層 node 數至少翻倍');
-    for (let h = 0; h < 8; h++) {
-      const v = Math.pow(2, h / 2) * S;
-      const m = lab.box('#2fc092', [0.3, 1, 0.3]); m.scale.y = 0.001; m.position.set(x0 + h * dx, 0, 0.6); lab.world.add(m);
-      await anim(tok, 200, (q) => { m.scale.y = Math.max(0.001, v * q); m.position.y = v * q / 2; });
-    }
-    await beat(tok, 1800);
-    say('N_h = Θ(2^{h/2}) → h < 2 log₂ n', '常數不準，但一定是 O(log n)');
-    await beat(tok, 3000);
-  }
-  say('AVL tree 一定 balanced', 'h = O(log n)（實際最糟 ≈ 1.44 log n）');
-  await beat(tok, 3000);
+  const g = pal(6.2, 2.4, '#9fd3f0', 0.5, 'Erik');
+  nhAxis(true);
+  await nhBars(tok, 8, '#4b9ee2', (h) => NH[h]);
+  const f = note('N_h = 1 + N_{h−1} + N_{h−2}', -1.6, 7.6, 0);
+  await step(tok);                                   // 23:07 像 Fibonacci
+  say('這個遞迴式長得像什麼？', '學生：Fibonacci！');
+  talk(g, 'Fibonacci！', 'wow');
+  await step(tok);                                   // 23:09 拿掉 +1 就是 Fibonacci：N_h 比較大
+  await nhBars(tok, 8, '#dd8238', (h) => FIB[h], 0, 0.5, 0.3);
+  txt(f, 'N_h > F_h（Fibonacci）');
+  say('拿掉 +1 就是 Fibonacci 數列 F_h', '藍色 N_h 每一根都比橘色 F_h 高');
+  await step(tok);                                   // 23:22 每層多加 1 → 一定更大
+  say('每一層都多加 1', '所以 N_h 一定比 Fibonacci 數大');
+  await step(tok);                                   // 23:27 Fibonacci 是指數成長
+  say('Fibonacci 是指數成長的', '有一個精確公式');
+  await step(tok);                                   // 23:45 F_h = φ^h / √5 取整
+  txt(f, 'F_h = φ^h / √5（四捨五入到整數）');
+  say('黃金比例 φ 的 h 次方，除以 √5，再四捨五入', '剛好就是第 h 個 Fibonacci 數');
+  talk(g, '神奇吧', 'happy');
+  await step(tok);                                   // 23:57 φ ≈ 1.618 > 1 → 指數
+  say('只要記得 φ > 1（φ ≈ 1.618）', '所以這是指數成長的下界');
+  await step(tok);                                   // 24:13 N_h > φ^h / √5，這就是 n
+  txt(f, 'n ≥ N_h > φ^h / √5');
+  say('高度 h 的 AVL 至少有 N_h 個 node', 'n ≥ N_h > φ^h / √5');
+  await step(tok);                                   // 24:29 反過來：φ^h / √5 < n
+  say('我們要的是 h 和 n 的關係', '把式子倒過來：φ^h / √5 < n');
+  await step(tok);                                   // 24:40 兩邊取 log_φ
+  txt(f, 'h − log_φ √5 < log_φ n');
+  say('兩邊取以 φ 為底的 log', 'h 減掉一個小常數 < log_φ n');
+  await step(tok);                                   // 25:01 ≈ 1.440 log₂ n
+  txt(f, 'h < 1.440 log₂ n（大約）');
+  say('換成電腦科學愛用的 log₂', 'h 大約 < 1.440 log₂ n');
+  talk(g, '1.44 倍而已', 'happy');
+  await step(tok);                                   // 25:19 高度永遠小於 1.44 log n
+  say('AVL 的高度永遠小於約 1.44 log n', '常數很不錯（最好是 1）');
+  await step(tok);                                   // 25:39 不背 Fibonacci：還有更簡單的方法
+  say('不熟 Fibonacci？φ^h 像變魔術', '其實有更簡單的分析方法');
+  talk(g, '換個方法', 'calm');
 }]);
 
-// 28:58 / 30:10 / 35:21 insert 23：BST insert → 29 雙重左重 → 右旋 29
-FRAG.push(['bstb-mit-insert23', 'Insert 23：29 失衡 → 右旋 29', async (tok) => {
-  const P = ctx.params || {};
-  fresh([0, 4.4, 13.5], [0, 3.4, 0]);
-  const t = bbTree([...BB_MIT, 23], { gap: 1.4, top: 6.6, dy: 1.3, info: 'arrow' });
-  bbBstSilent(t, BB_MIT); await bbLay(t, tok, 500, 0);
-  say('AVL insert：① 先做一般 BST insert', '② 再修好 AVL 性質');
-  await beat(tok, 2600);
-  const cur = bbCursor(t.root);
-  for (const [k, s] of [[41, '23 < 41'], [20, '23 > 20'], [29, '23 < 29'], [26, '23 < 26']]) { say(s, ''); await bbWalk(tok, cur, bbFind(t, k), 650); }
-  kill(cur);
-  const n = bbPut(t, bbNode(23)); await bbLay(t, tok, 800);
-  say('23 放在 26 的左邊', '沿路高度都 +1');
-  await beat(tok, 2200);
-  const x = bbFind(t, 29);
-  say('29 變成雙重左重 ↙↙：不是 AVL 了', '23、26、29 排成一條 path');
-  await beat(tok, 3000);
-  if (P.part === 'detect') { say('要怎麼修？→ rotation', ''); await beat(tok, 2600); return; }
-  say('right rotate(29)', '26 升上來，29 變成右 child');
-  bbRotUp(t, bbFind(t, 26)); await bbLay(t, tok, 1000);
-  await beat(tok, 1400);
-  void n; void x;
-  say('再檢查一次：又是 AVL tree 了', '— ↘ — ↙ … 都只差 1');
-  await beat(tok, 3000);
+// 25:53 簡單版：N_h > 2 N_{h−2} → h < 2 log n
+FRAG.push(['bstb-mit-half', '簡單版：h < 2 log n', async (tok) => {
+  fresh([0, 4.0, 13.5], [0, 3.4, 0]);
+  const g = pal(6.2, 2.4, '#9fd3f0', 0.5, 'Erik');
+  nhAxis(true);
+  await nhBars(tok, 8, '#4b9ee2', (h) => NH[h]);
+  const f = note('N_h = 1 + N_{h−1} + N_{h−2}', -1.6, 7.6, 0);
+  await step(tok);                                   // 26:09 這個遞迴式
+  say('同一個遞迴式，換個解法', '');
+  await step(tok);                                   // 26:16 電腦科學家的解法：不管常數
+  say('理論電腦科學家的解法：不在乎常數', '只要證明是「某個常數 × log n」');
+  talk(g, '不管常數');
+  await step(tok);                                   // 26:30 一個 h−1、一個 h−2：不對稱
+  say('N_{h−1} 和 N_{h−2} 不一樣，很難算', '想辦法讓它們對稱');
+  await step(tok);                                   // 26:39 都換成 h−1，還是 h−2？
+  say('兩個都換成 N_{h−1}？還是都換成 N_{h−2}？', '');
+  await step(tok);                                   // 26:47 換成 h−2 才對（要下界）
+  say('要換成 N_{h−2}', '我們要證「N_h 大於某個東西」，只能換成比較小的');
+  await step(tok);                                   // 26:57 ≥ 1 + 2 N_{h−2}
+  txt(f, 'N_h > 1 + 2 N_{h−2}');
+  say('N_{h−1} ≥ N_{h−2}，所以 N_h > 1 + 2 N_{h−2}', '');
+  await step(tok);                                   // 27:10 高度大 node 就多（歸納法）
+  say('為什麼 N_{h−1} ≥ N_{h−2}？', '高度越大，需要的 node 越多（歸納法很好證）');
+  await step(tok);                                   // 27:15 把 1 丟掉：> 2 N_{h−2}
+  txt(f, 'N_h > 2 N_{h−2}');
+  say('丟掉 +1 只會讓右邊變小', 'N_h > 2 N_{h−2}');
+  await step(tok);                                   // 27:23 像 2 的幾次方？2^{h/2}
+  await nhBars(tok, 8, '#2fc092', (h) => Math.pow(2, h / 2), 0.6, 0.3, 0);
+  txt(f, 'N_h = Θ(2^{h/2})');
+  say('看起來像 2 的某次方：2^{h/2}', '綠色細長條就是 2^{h/2}');
+  await step(tok);                                   // 27:35 每兩層翻一倍
+  say('h 每增加 2，node 數至少翻一倍', '');
+  talk(g, '兩層翻倍', 'happy');
+  await step(tok);                                   // 27:42 倒過來：h < 2 log n
+  txt(f, 'h < 2 log₂ n');
+  say('倒過來取 log', 'h < 2 log₂ n（2 來自每兩層才翻倍）');
+  await step(tok);                                   // 27:57 真正是 1.44，但 2 log n 好證
+  say('精確的最壞情況是 1.44 log n', '但 2 log n 好證得多');
+  await step(tok);                                   // 28:05 作業可以用這招
+  say('分析 AVL 的變形（像作業）時', '用這招就能得到「常數 × log n」');
+  await step(tok);                                   // 28:20 AVL 是 balanced：維持性質就好
+  say('結論：AVL tree 一定 balanced', '只要維持「左右高度差 ≤ 1」就行');
+  talk(g, '證完了', 'happy');
+  await step(tok);                                   // 28:32 那要怎麼維持？
+  say('問題來了：這個性質要怎麼維持？', '');
+  talk(g, '怎麼維持？', 'wow');
 }]);
 
-// 32:32 rotation：left rotate x ↔ right rotate y，inorder a x b y c 不變
+const ARW = '每個 node 上方：↙ 左重、↘ 右重、— 一樣高';
+// 28:58 insert 23：BST insert → 29 雙重左重
+FRAG.push(['bstb-mit-insert23', 'Insert 23：先 BST insert，29 失衡', async (tok) => {
+  fresh(...CAMM);
+  const g = pal(6.2, 2.8, '#9fd3f0', 0.55, 'Erik');
+  await step(tok);                                   // 28:58 要支援很多操作：insert、delete
+  const ops = ['insert', 'delete'].map((s, i) => tag(s, 'pkt', -3 + i * 2.2, 7.6, 0));
+  say('AVL tree 要支援很多操作，特別是 insert 和 delete', '');
+  await step(tok);                                   // 29:11 今天只講 insert；delete 幾乎一樣
+  ops[1].element.className = 'lab-label idx';
+  say('今天只講 insert', 'delete 幾乎一樣，可以看課程的程式碼');
+  await step(tok);                                   // 29:32 步驟 1：simple BST insert
+  const cd = code(['AVL insert(k):', '  1. simple BST insert', '  2. fix AVL property'], -3.6, 6.6, 0.62);
+  cd.hl(1);
+  say('步驟 1：做我們已經會的 simple BST insert', '');
+  await step(tok);                                   // 29:43 往下找位置，放成新的 leaf
+  say('往下找 key 該放的地方', '在那裡加一個新的 leaf');
+  await step(tok);                                   // 29:49 不保證 AVL → 步驟 2：修
+  cd.hl(2);
+  say('這樣不保證還是 AVL', '步驟 2：fix AVL property');
+  await step(tok);                                   // 30:03 步驟 2 才是重點
+  say('描述很簡潔', '怎麼做步驟 2 才是有趣的地方');
+  talk(g, '來看例子');
+  await step(tok);                                   // 30:22 例子：insert 23
+  cd.kill();
+  const t = mitTree([23], { gap: 1.4, info: 'arrow', dy: 1.3 });
+  bbBstSilent(t, BB_MIT); t.hide = true; await bbLay(t, tok, 800, 2.5);
+  tag('insert 23', 'ptr alt', -5, 7.6, 0);
+  say('例子：在這棵樹 insert 23', '');
+  await step(tok);                                   // 30:36 存高度，但在意的是哪邊比較高
+  say('每個 node 存了高度', '其實我們在意的只是：左邊高還是右邊高');
+  await step(tok);                                   // 30:44 只存 +1、−1、0 也行
+  say('所以只存左右差：+1、−1、0 也可以', '');
+  await step(tok);                                   // 30:50 用箭頭標記
+  bbShow(t, true);
+  note(ARW, 0, 0.4, 1.6);
+  say('畫成小箭頭：↙ 左邊比較高、↘ 右邊比較高', '— 兩邊一樣高');
+  await step(tok);                                   // 31:04 這裡左重、這裡平衡…
+  for (const n of bbList(t)) { glow(n.m, GOLD); await beat(tok, 120); glow(n.m, null); }
+  say('一個一個看：左重、平衡、左重 …', '');
+  await step(tok);                                   // 31:11 每個 node 只差 1：AVL
+  for (const n of bbList(t)) glow(n.m, GREEN);
+  say('有箭頭的地方都只重 1', '所以這是一棵 AVL tree');
+  talk(g, '是 AVL ✓', 'happy');
+  await step(tok);                                   // 31:17 insert 23：< 41、> 20、< 29、< 26
+  for (const n of bbList(t)) glow(n.m, null);
+  const cur = bbCursor(t.root, '23');
+  await bbRun(tok, cur, [41, 20, 29, 26].map((k) => bbFind(t, k)), 420);
+  remove(cur);
+  say('23 < 41、23 > 20、23 < 29、23 < 26', '一路走到 26 的左邊');
+  await step(tok);                                   // 31:24 23 放這裡：新的 node
+  const n23 = bbPut(t, bbNode(23)); t.hide = true; t.warn = false; await bbLay(t, tok, 800);
+  glow(n23.m, GOLD);
+  say('23 放在 26 的左邊：全新的 node', '');
+  await step(tok);                                   // 31:31 高度都變了：1、0、2、3、4
+  const hs = [26, 29, 20, 41].map((k) => { const n = bbFind(t, k); return tag('h=' + (bbH(n) - 1), 'pkt', n.m.position.x - 0.7, n.m.position.y + 0.95, 0); });
+  say('路徑上的高度全部變了', '26 → 1、29 → 2、20 → 3、41 → 4');
+  await step(tok);                                   // 31:45 這個平衡、這個左重…
+  hs.forEach(remove); bbShow(t, true);
+  say('先別管數字，看箭頭', '26 變左重，……');
+  await step(tok);                                   // 31:55 29 雙重左重：壞消息
+  const x = bbFind(t, 29); glow(x.m, RED);
+  say('29 變成雙重左重 ↙↙', '左邊比右邊高 2：不是 AVL 了');
+  talk(g, '壞消息', 'sad');
+  await step(tok);                                   // 32:03 往上走找壞的：23、26、29 一條 path
+  [n23, bbFind(t, 26), x].forEach((n) => glow(n.m, GOLD));
+  say('演算法從下往上走，找到第一個壞掉的', '23、26、29 排成一條 path');
+  await step(tok);                                   // 32:11 怎麼修？→ rotation
+  say('要怎麼修？', '用一個新工具：rotation（旋轉）');
+  talk(g, '旋轉！', 'wow');
+}]);
+
+// 32:31 rotation：left rotate x ↔ right rotate y，inorder a x b y c 不變
 FRAG.push(['bstb-mit-rotate', 'Rotation：O(1) 改指標、inorder 不變', async (tok) => {
   fresh([0, 4.2, 13], [0, 3.6, 0]);
+  const g = pal(6.2, 2.8, '#9fd3f0', 0.55, 'Erik');
   const sp = [[1, 'a', 'blk'], [2, 'x'], [3, 'b', 'blk'], [4, 'y'], [5, 'c', 'blk']];
   const t = bbTree([1, 2, 3, 4, 5], { gap: 1.9, top: 6.4, dy: 1.6 });
   for (const k of [2, 1, 4, 3, 5]) { const s = sp.find((q) => q[0] === k); bbPut(t, bbNode(k, s[1], s[2])); }
-  await bbLay(t, tok, 600, 3);
-  const io = ['a', 'x', 'b', 'y', 'c'].map((s, i) => tag(s, 'ptr', -2.4 + i * 1.2, 0.6, 2.4));
-  say('兩個 node x、y，三棵 subtree a、b、c', 'inorder：a x b y c');
-  await beat(tok, 3000);
-  const b = bbFind(t, 3), y = bbFind(t, 4), x = bbFind(t, 2);
-  glow(b.m, GOLD);
-  say('left rotate(x)：y 升上來、x 降下去', 'b 的 parent 從 y 換成 x');
-  bbRotUp(t, y); await bbLay(t, tok, 1100);
-  await beat(tok, 2000);
-  glow(b.m, null);
+  const X = bbFind(t, 2), Y = bbFind(t, 4), B = bbFind(t, 3), Aa = bbFind(t, 1), C = bbFind(t, 5);
+  await step(tok);                                   // 32:31 rotation
+  say('來學 rotation（旋轉）', '超酷的');
+  talk(g, '超酷', 'happy');
+  await step(tok);                                   // 32:47 它只是個工具
+  say('它只是一個工具', '修 AVL 的時候拿來用');
+  await step(tok);                                   // 33:12 x 和 y
+  bbList(t);
+  for (const n of [X, Y]) { const [px, py] = bbPos(t, n); n.m = cube(n.lab, bbCol(n.k), [0.95, 0.8, 0.9], px, py, 0, 3); }
+  t.edges.push(line(X.m.position.x, X.m.position.y - 0.4, Y.m.position.x, Y.m.position.y + 0.4));
+  say('兩個 node：x，和它的右 child y', '');
+  await step(tok);                                   // 33:21 left rotate(x)
+  const lab1 = tag('left rotate(x) →', 'ptr alt', 0, 7.6, 0);
+  say('這個動作叫 left rotate(x)', '');
+  await step(tok);                                   // 33:37 BST 只需要知道 search 和 rotation
+  say('binary search tree 你只需要會兩件事', 'search 和 rotation');
+  await step(tok);                                   // 33:46 掛著的 subtree a、b、c
+  await bbLay(t, tok, 700, 3);
+  say('x、y 底下掛著三棵 subtree：a、b、c', '有的可能是空的，一樣畫成方塊');
+  await step(tok);                                   // 33:56 換誰在上面；x 的 parent 變成 y 的 parent
+  bbRotUp(t, Y); await bbLay(t, tok, 1100);
+  say('把 x、y 誰在上面換過來', 'x 原本的 parent 變成 y 的 parent');
+  talk(g, '轉！');
+  await step(tok);                                   // 34:05 y 原本的 parent 是 x，現在 x 的 parent 是 y
+  glow(X.m, GOLD); glow(Y.m, GOLD);
+  say('原本 y 的 parent 是 x', '現在反過來：x 的 parent 是 y');
+  await step(tok);                                   // 34:10 a 不變、b 換 parent、c 不變
+  glow(X.m, null); glow(Y.m, null); glow(B.m, GOLD);
+  say('a 的 parent 還是 x、c 的 parent 還是 y', '只有 b 換了：從 y 換成 x');
+  await step(tok);                                   // 34:20 常數個指標 → O(1)
+  glow(B.m, null);
+  note('只改常數個指標 → O(1)', -2.6, 0.4, 1.6);
+  say('只要改常數個指標', 'constant time：O(1)');
+  await step(tok);                                   // 34:24 而且維持 BST 順序
+  say('更重要的是：它維持 BST 的順序', '');
+  await step(tok);                                   // 34:33 in-order：a x b y c
+  const io = ['a', 'x', 'b', 'y', 'c'].map((s, i) => tag(s, 'pkt', 0.6 + i * 1.1, 0.4, 1.6));
+  say('in-order traversal（左、自己、右）', '得到 a, x, b, y, c');
+  await step(tok);                                   // 34:42 轉之前也是 a x b y c → 一樣
   io.forEach((l) => { l.element.className = 'lab-label ptr alt'; });
-  say('inorder 還是 a x b y c：仍是 BST', '只改常數個指標 → O(1)');
-  await beat(tok, 3000);
-  io.forEach((l) => { l.element.className = 'lab-label ptr'; });
-  say('right rotate(y)：可以轉回來', 'rotation 是可逆的');
-  bbRotUp(t, x); await bbLay(t, tok, 1100);
-  await beat(tok, 2600);
+  say('轉之前做 in-order，也是 a, x, b, y, c', '一模一樣 → 還是 BST');
+  talk(g, '順序沒變', 'happy');
+  await step(tok);                                   // 34:55 b 的值都在 x、y 之間
+  glow(B.m, GOLD);
+  say('仔細看：b 裡的值都介於 x 和 y 之間', '轉完它還是夾在 x 和 y 中間');
+  await step(tok);                                   // 35:03 root 往左移 → left rotate
+  glow(B.m, null);
+  txt(lab1, 'left rotate：root 往左下移');
+  say('叫 left rotate，因為原本的 root（x）往左移', '');
+  await step(tok);                                   // 35:08 right rotate(y) 轉回來
+  bbRotUp(t, X); await bbLay(t, tok, 1100);
+  txt(lab1, 'right rotate(y)：轉回來');
+  say('反過來做 right rotate(y)', '就回到原本的樣子');
+  await step(tok);                                   // 35:17 可逆的操作
+  say('rotation 是可逆的', '可以用它把樹調來調去');
+  talk(g, '轉過去轉回來', 'happy');
 }]);
 
-// 37:07 insert 55：zigzag，一次旋轉沒用 → left rotate 50、right rotate 65
+// 35:21 right rotate 29：insert 23 修好
+FRAG.push(['bstb-mit-fix23', 'Right rotate(29)：insert 23 修好', async (tok) => {
+  fresh(...CAMM);
+  const g = pal(6.2, 2.8, '#9fd3f0', 0.55, 'Erik');
+  const t = mitTree([23], { gap: 1.4, info: 'arrow', dy: 1.3 });
+  bbBstSilent(t, [...BB_MIT, 23]); t.warn = false;
+  const x = bbFind(t, 29), y = bbFind(t, 26), a = bbFind(t, 23);
+  await step(tok);                                   // 35:21 剛才那個難過的樣子
+  await bbLay(t, tok, 700, 2.5); glow(x.m, RED);
+  say('回到剛才那棵：29 雙重左重', '');
+  talk(g, '好亂', 'sad');
+  await step(tok);                                   // 35:27 三個 node 的 path → 想變這樣
+  [a, y, x].forEach((n) => glow(n.m, GOLD));
+  note('想要：26 在上，23、29 在兩邊', -3.6, 0.4, 1.6);
+  say('23、26、29 是三個 node 的 path', '比較想要 26 在中間、兩邊各一個');
+  await step(tok);                                   // 35:34 做得到
+  say('能做這個轉換就開心了', '做得到！');
+  await step(tok);                                   // 35:39 right rotate(29)
+  glow(x.m, RED);
+  tag('right rotate(29)', 'ptr alt', 0, 8.0, 0);
+  say('做法：right rotate(29)', '');
+  await step(tok);                                   // 36:14 29 是 x、26 是 y
+  const px = bbPin(x, 'x', 'ptr'), py = bbPin(y, 'y', 'ptr');
+  say('這次 29 是上面的 x', '26 是下面的 y');
+  await step(tok);                                   // 36:20 26 升上來，29 變右 child
+  kill(px); kill(py); [a, y, x].forEach((n) => glow(n.m, null));
+  bbRotUp(t, y); await bbLay(t, tok, 1100);
+  say('轉：26 升上來', '29 變成 26 的右 child');
+  talk(g, '轉好了');
+  await step(tok);                                   // 36:27 原本的 subtree a = 23
+  glow(a.m, GOLD);
+  say('原本 y 的左邊那塊（a）跟著 y', '這裡 a 就是 23 這一個 node');
+  await step(tok);                                   // 36:39 又是 AVL tree 了
+  glow(a.m, null);
+  for (const n of bbList(t)) glow(n.m, GREEN);
+  say('又是一棵 AVL tree 了', '');
+  talk(g, '開心！', 'happy');
+  await step(tok);                                   // 36:50 檢查箭頭
+  for (const n of bbList(t)) { glow(n.m, GOLD); await beat(tok, 130); glow(n.m, GREEN); }
+  say('檢查：平衡、右重、平衡、左重 …', '每個 node 都最多重 1');
+  await step(tok);                                   // 37:01 恢復了
+  say('AVL 性質恢復了', '再做一個例子');
+}]);
+
+// 37:15 insert 55：zigzag，一次旋轉沒用 → left rotate 50、right rotate 65
 FRAG.push(['bstb-mit-insert55', 'Insert 55：zigzag 要兩次旋轉', async (tok) => {
-  fresh([0, 4.4, 13.5], [0, 3.4, 0]);
-  const t = bbTree([...BB_MIT, 23, 55], { gap: 1.3, top: 6.6, dy: 1.3, info: 'arrow' });
-  bbBstSilent(t, [41, 20, 65, 11, 26, 50, 23, 29]); await bbLay(t, tok, 500, 0);
-  say('接著 insert 23 修好的樹', '');
-  await beat(tok, 1600);
-  bbPut(t, bbNode(55)); await bbLay(t, tok, 800);
-  say('insert 55：放在 50 的右邊', '65 變成 ↙↙');
-  await beat(tok, 2800);
-  say('65、50、55 是 zigzag', '只做 right rotate(65)？');
-  bbRotUp(t, bbFind(t, 50)); await bbLay(t, tok, 1000);
-  await beat(tok, 1200);
-  say('變成 zag-zig：高度一樣，沒用', '');
-  await beat(tok, 2200);
-  bbRotUp(t, bbFind(t, 65)); await bbLay(t, tok, 800);
-  say('先 left rotate(50)', '55 升上來，變成一直線');
-  bbRotUp(t, bbFind(t, 55)); await bbLay(t, tok, 1000);
-  await beat(tok, 2200);
-  say('再 right rotate(65)', '55 當子樹的 root');
-  bbRotUp(t, bbFind(t, 55)); await bbLay(t, tok, 1000);
-  await beat(tok, 2000);
-  say('double rotation = 兩次 rotation', '50、55、65 都 —；41 仍 ↙');
-  await beat(tok, 3000);
+  fresh(...CAMM);
+  const g = pal(6.2, 2.8, '#9fd3f0', 0.55, 'Erik');
+  const t = mitTree([23, 55], { gap: 1.3, info: 'arrow', dy: 1.3 });
+  bbBstSilent(t, [41, 20, 65, 11, 26, 50, 23, 29]); t.warn = false;
+  await bbLay(t, tok, 0, 0);
+  const n65 = bbFind(t, 65), n50 = bbFind(t, 50);
+  let n55;
+  await step(tok);                                   // 37:15 insert 55
+  n55 = bbPut(t, bbNode(55)); await bbLay(t, tok, 800); glow(n55.m, GOLD);
+  say('insert 55：放在 50 的右邊', '');
+  await step(tok);                                   // 37:29 50 右重、65 雙重左重
+  glow(n55.m, null); glow(n65.m, RED);
+  say('55 平衡、50 右重、65 雙重左重 ↙↙', '超級難過');
+  talk(g, '又壞了', 'sad');
+  await step(tok);                                   // 37:47 zigzag path
+  [n65, n50, n55].forEach((n) => glow(n.m, GOLD));
+  say('65 → 50 → 55：左、右', '這是一條 zigzag path');
+  await step(tok);                                   // 37:55 只 right rotate(65)？
+  [n65, n50, n55].forEach((n) => glow(n.m, null));
+  bbRotUp(t, n50); await bbLay(t, tok, 1000);
+  say('試試 right rotate(65)：50 升上來', '55 是夾在中間的 b，跑去當 65 的左 child');
+  await step(tok);                                   // 38:06 變成 zag-zig：沒用
+  [n50, n65, n55].forEach((n) => glow(n.m, RED));
+  say('變成 zag-zig：右、左', '高度一樣，沒有比較好');
+  talk(g, '白轉了', 'sad');
+  await step(tok);                                   // 38:19 只能用 rotation，怎麼修？
+  [n50, n65, n55].forEach((n) => glow(n.m, null));
+  bbRotUp(t, n65); await bbLay(t, tok, 900);
+  say('轉回去重來', '工具只有 rotation，怎麼修這個 zigzag？');
+  await step(tok);                                   // 38:36 學生：先轉 50
+  glow(n50.m, GOLD);
+  say('學生：轉 50 看看？', '好主意');
+  await step(tok);                                   // 38:48 left rotate(50)：55 升上來
+  glow(n50.m, null);
+  bbRotUp(t, n55); await bbLay(t, tok, 1000);
+  tag('① left rotate(50)', 'pkt', -4.6, 7.8, 0);
+  say('left rotate(50)：55 升上來、50 變它的左 child', '');
+  await step(tok);                                   // 39:08 還是不 AVL，但變一直線
+  glow(n65.m, RED);
+  say('65 還是雙重左重、55 左重', '但它變成一直線了：剛才 insert 23 的情況');
+  await step(tok);                                   // 39:16 再 right rotate(65)
+  glow(n65.m, null);
+  bbRotUp(t, n55); await bbLay(t, tok, 1000);
+  tag('② right rotate(65)', 'pkt', -1.4, 7.8, 0);
+  say('再 right rotate(65)', '');
+  await step(tok);                                   // 39:27 41 → 55（50、65）
+  glow(n55.m, GOLD);
+  say('結果：41 的右邊是 55', '55 的左右是 50、65');
+  await step(tok);                                   // 39:45 平衡、平衡、平衡；41 仍左重
+  glow(n55.m, null);
+  for (const n of bbList(t)) glow(n.m, GREEN);
+  say('50、55、65 都平衡', '41 還是左重：沒問題');
+  talk(g, '修好了', 'happy');
+  await step(tok);                                   // 39:51 double rotation = 兩次 rotation
+  note('double rotation = 兩次 rotation', 0, 0.4, 1.6);
+  say('有人叫它 double rotation', '其實就是做兩次 rotation，不是新操作');
+  await step(tok);                                   // 40:07 來看一般情況
+  say('兩個例子剛好是演算法的兩種 case', '接著看一般情況，一樣簡單');
 }]);
 
-// 40:18 修 AVL：從改到的 node 往上走、更新高度，找最低的違規 x
+// 40:20 修 AVL：從改到的 node 往上走、更新高度，找最低的違規 x
 FRAG.push(['bstb-mit-walkup', '往上走更新高度，找最低的違規 node', async (tok) => {
-  fresh([0, 4.4, 13.5], [0, 3.4, 0]);
-  const t = bbTree([...BB_MIT, 23, 55], { gap: 1.3, top: 6.6, dy: 1.3, info: 'h' });
-  bbBstSilent(t, [41, 20, 65, 11, 26, 50, 23, 29]); await bbLay(t, tok, 500, 0);
-  const n = bbPut(t, bbNode(55)); t.warn = false; await bbLay(t, tok, 800);
-  say('從剛改到的 node 往上走', '每一步：h = max(h_L, h_R) + 1');
-  const cur = bbCursor(n, '▼');
-  for (let c = n; c; c = c.p) {
-    await bbWalk(tok, cur, c, 800);
-    if (Math.abs(bbBf(c)) >= 2) break;
-  }
-  const x = bbFind(t, 65); glow(x.m, RED);
-  say('65：h_L = 1、h_R = −1（不存在）', '差 2 → 最低的違規 node x');
-  await beat(tok, 3000);
-  say('AVL 看左右子樹高度，不是看層數', '');
-  await beat(tok, 2400);
-  kill(cur);
-  bbFix(t, bbDetect(t, n)); glow(x.m, null); await bbLay(t, tok, 1000);
-  say('修好 x 後繼續往上檢查', '上面可能還有違規（一般情況）');
-  await beat(tok, 3000);
+  fresh(...CAMM);
+  const g = pal(6.2, 2.8, '#9fd3f0', 0.55, 'Erik');
+  const t = mitTree([23, 55], { gap: 1.3, info: 'h', dy: 1.3 });
+  bbBstSilent(t, [41, 20, 65, 11, 26, 50, 23, 29]); t.warn = false;
+  await bbLay(t, tok, 0, 0);
+  const n = bbPut(t, bbNode(55)); t.hide = true; await bbLay(t, tok, 0, 0);
+  const x = bbFind(t, 65);
+  const cd = code(['fix AVL(from changed node up):', '  x = 最低的不 AVL node', '  修好 x，再往上'], -3.8, 7.8, 0.55);
+  await step(tok);                                   // 40:20 fix AVL property
+  cd.hl(0);
+  say('一般的 AVL insert：fix AVL property', '');
+  await step(tok);                                   // 40:34 從改到的 node 往上
+  glow(n.m, GOLD);
+  say('從剛剛改到的 node 開始，往上做', '');
+  await step(tok);                                   // 40:42 可能要轉不只兩次
+  glow(n.m, null);
+  say('例子沒呈現的是：可能要轉不只兩次', '');
+  await step(tok);                                   // 40:48 修最低的違規
+  say('剛才的做法：找到最低的違規點，修好它', '');
+  await step(tok);                                   // 40:52 上面可能還有違規（高度都變了）
+  for (let c = n; c; c = c.p) glow(c.m, '#4a3600');
+  say('加一個 node，整條路徑上的 subtree 高度都可能變', '所以上面可能還有違規');
+  await step(tok);                                   // 41:04 例子裡修一個就好，一般可能好幾個
+  for (let c = n; c; c = c.p) glow(c.m, null);
+  say('例子裡修一個就全好了', '一般情況可能一路上去有好幾個');
+  talk(g, '要繼續往上');
+  await step(tok);                                   // 41:25 x = 最低的不 AVL node
+  cd.hl(1);
+  say('令 x = 最低的、不符合 AVL 的 node', '');
+  await step(tok);                                   // 41:40 從改到的 node 開始，邊走邊更新高度
+  bbShow(t, true);
+  const cur = bbCursor(n, '▲');
+  const up = []; for (let c = n; c; c = c.p) { up.push(c); if (Math.abs(bbBf(c)) >= 2) break; }
+  await bbRun(tok, cur, up.slice(0, -1), 500);
+  say('從改到的 node 開始檢查', '往上走，每一步用 max + 1 更新高度');
+  await step(tok);                                   // 41:57 直到左右差 2
+  bbAt(cur, x); glow(x.m, RED);
+  say('一直走到某個 node：一邊比另一邊高 2', '那就是 x');
+  await step(tok);                                   // 42:10 修它
+  remove(cur);
+  cd.hl(2);
+  say('找到了就修它', '');
+  await step(tok);                                   // 42:27 AVL 看的不是層數
+  say('學生問層數的事', 'AVL 性質看的不是層數，是左右 subtree 的高度');
+  talk(g, '不是看層數', 'calm');
+  await step(tok);                                   // 42:37 65 的左子樹高 1
+  const hl = tag('左：h = 1', 'pkt', x.m.position.x - 1.6, x.m.position.y - 0.4, 0);
+  say('65 的 left subtree 高度是 1', '從 50 往下最長走 1 步');
+  await step(tok);                                   // 42:47 右子樹不存在：−1
+  const hr = tag('右：不存在 = −1', 'pkt', x.m.position.x + 1.2, x.m.position.y - 1.2, 0);
+  say('65 的 right subtree 不存在', '高度算 −1');
+  await step(tok);                                   // 42:50 1 vs −1 → 差 2 → ↙↙
+  say('1 對 −1：差 2', '所以畫雙箭頭 ↙↙');
+  await step(tok);                                   // 42:56 −1 的用處
+  void hl; void hr;
+  say('這就是為什麼要把空的定成 −1', 'AVL 性質寫起來就簡單');
+  await step(tok);                                   // 43:08 對稱：假設 x 的右邊比較重
+  kill(hl); kill(hr); cd.kill(); glow(x.m, null);
+  say('接下來假設 x 的右邊比較重', '左邊重的情況對稱，一模一樣');
+  talk(g, '左右對稱');
 }]);
 
-// 43:08 / 47:18 一般情況：x 右重 2；case 1 y 右重或平衡 → left rotate x；case 2 y 左重 → 兩次旋轉
-FRAG.push(['bstb-mit-cases', 'x 右重的兩種情況', async (tok) => {
-  const P = ctx.params || {};
+// x 右重的兩種情況：case 1（y 右重或平衡）一次旋轉；case 2（z 左重）兩次
+function caseRig(x0, top = 6.4) {
+  const sp = [[1, 'A', 'blk'], [2, 'x'], [3, 'B', 'blk'], [4, 'y'], [5, 'C', 'blk']];
+  const t = bbTree([1, 2, 3, 4, 5], { gap: 1.25, top, dy: 1.45, x0 });
+  for (const k of [2, 1, 4, 3, 5]) { const s = sp.find((q) => q[0] === k); bbPut(t, bbNode(k, s[1], s[2])); }
+  return { t, x: bbFind(t, 2), y: bbFind(t, 4), A: bbFind(t, 1), B: bbFind(t, 3), C: bbFind(t, 5) };
+}
+// 43:30 case 1
+FRAG.push(['bstb-mit-case1', 'Case 1：y 右重或平衡 → 一次旋轉', async (tok) => {
   fresh([0, 4.2, 13], [0, 3.6, 0]);
-  if (P.kase !== 2) {
-    const sp = [[1, 'A k−3', 'blk'], [2, 'x'], [3, 'B k−3', 'blk'], [4, 'y'], [5, 'C k−2', 'blk']];
-    const t = bbTree([1, 2, 3, 4, 5], { gap: 1.9, top: 6.4, dy: 1.5 });
-    for (const k of [2, 1, 4, 3, 5]) { const s = sp.find((q) => q[0] === k); bbPut(t, bbNode(k, s[1], s[2])); }
-    await bbLay(t, tok, 600, 3);
-    const x = bbFind(t, 2), y = bbFind(t, 4);
-    bbNote(x, 'h=k ↘↘', 'ptr alt'); bbNote(y, 'h=k−1 ↘'); glow(x.m, RED); bbEdges(t);
-    say('case 1：x 雙重右重，y = x.right 右重', 'x 高 k、y 高 k−1、C 高 k−2');
-    await beat(tok, 3200);
-    say('y 是 AVL：A、B 都是 k − 3', '');
-    await beat(tok, 2400);
-    bbRotUp(t, y); glow(x.m, null);
-    say('left rotate(x)', 'A、B、C 的高度不變');
-    await bbLay(t, tok, 1100);
-    bbNote(x, 'h=k−2 —'); bbNote(y, 'h=k−1 —'); bbEdges(t);
-    await beat(tok, 1400);
-    say('x：k−3 vs k−3；y：k−2 vs k−2', '兩個都平衡了');
-    await beat(tok, 3000);
-    say('y 平衡（—）時也一樣成立', '之後往 y 的 parent 繼續檢查');
-    await beat(tok, 2800);
-    if (P.kase === 1) return;
-    fresh([0, 4.2, 13], [0, 3.6, 0]);
-  }
+  const g = pal(6.3, 2.8, '#9fd3f0', 0.5, 'Erik');
+  const L = caseRig(-3.3);
+  await step(tok);                                   // 43:30 x 的右邊比較重（對稱）
+  await bbLay(L.t, tok, 700, 3);
+  bbNote(L.x, '↘↘', 'ptr alt'); glow(L.x.m, RED); bbEdges(L.t);
+  say('x 是最低的違規 node，右邊比較重', '（左邊重就照鏡子）');
+  await step(tok);                                   // 43:57 分兩種 case
+  say('分成兩種 case', '看 x 的右 child y 長什麼樣');
+  await step(tok);                                   // 44:14 右重 ↘、平衡 —
+  note('↘ = right heavy　— = balanced', -3.3, 0.4, 1.6);
+  say('用 right heavy（↘）和 balanced（—）來分', '');
+  await step(tok);                                   // 44:32 簡單的 case：x、y、a、b、c
+  bbNote(L.y, '↘'); bbEdges(L.t);
+  say('簡單的 case：y 右重或平衡', 'x、y 兩個 node，A、B、C 三棵 subtree');
+  talk(g, '先看簡單的');
+  await step(tok);                                   // 44:43 為什麼看右 child：右邊高 2
+  glow(L.y.m, GOLD);
+  say('為什麼看右 child？因為 x 右邊比較高', '右邊整塊比左邊 A 高 2');
+  await step(tok);                                   // 44:55 rotate(x) 的結果
+  glow(L.y.m, null);
+  const R = caseRig(3.3);
+  bbRotUp(R.t, R.y);
+  await bbLay(R.t, tok, 800, 3);
+  tag('left rotate(x) 之後', 'pkt', 3.3, 7.6, 0);
+  say('這種情況：rotate(x)，y 升上來', '（右邊升上來 = left rotate；老師口誤說 right）');
+  await step(tok);                                   // 45:09 要檢查它真的有效
+  say('不管哪種 case 都畫得出這張圖', '有趣的是：要檢查它真的平衡了');
+  await step(tok);                                   // 45:21 y 右重
+  say('先看 y 右重的情況', '');
+  await step(tok);                                   // 45:43 x 高 k
+  bbNote(L.x, 'h=k ↘↘', 'ptr alt'); bbEdges(L.t);
+  say('設 x 的高度是 k（任何數都行）', '');
+  await step(tok);                                   // 45:48 y 高 k − 1
+  bbNote(L.y, 'h=k−1 ↘'); bbEdges(L.t);
+  say('x 右重，所以 y 的高度是 k − 1', '');
+  await step(tok);                                   // 45:54 C 高 k − 2
+  relabel(L.C.m, 'C k−2');
+  say('y 右重，所以 C 的高度是 k − 2', '');
+  await step(tok);                                   // 46:05 y 是 AVL → A、B 是 k − 3
+  relabel(L.B.m, 'B k−3'); relabel(L.A.m, 'A k−3');
+  say('x 是最低的違規，所以 y 是 AVL', 'B 是 k − 3；x 差 2 → A 也是 k − 3');
+  await step(tok);                                   // 46:27 轉完：A、B、C 不變
+  relabel(R.A.m, 'A k−3'); relabel(R.B.m, 'B k−3'); relabel(R.C.m, 'C k−2');
+  say('轉完以後：A、B、C 的高度都不變', '它們裡面沒動過（高度只看往下）');
+  await step(tok);                                   // 46:38 x 變 k − 2、y 變 k − 1
+  bbNote(R.x, 'h=k−2 —'); bbNote(R.y, 'h=k−1 —'); bbEdges(R.t);
+  say('x 變成 k − 2、y 變成 k − 1', '');
+  await step(tok);                                   // 46:43 兩個都平衡
+  glow(R.x.m, GREEN); glow(R.y.m, GREEN);
+  say('x：k − 3 對 k − 3；y：k − 2 對 k − 2', '兩個都平衡了');
+  talk(g, '平衡 ✓', 'happy');
+  await step(tok);                                   // 46:53 y 的 parent 可能壞掉 → 繼續往上
+  const up = tag('↑ 繼續檢查 y 的 parent', 'pkt', 3.3, 8.2, 0); void up;
+  say('root 的高度變了，y 的 parent 可能壞掉', '所以接著往 y 的 parent 繼續檢查');
+  await step(tok);                                   // 47:08 y 平衡的情況也成立
+  say('y 平衡（—）的情況也一樣成立', '時間關係請看講義');
+}]);
+
+// 47:18 case 2
+FRAG.push(['bstb-mit-case2', 'Case 2：z 左重 → 兩次旋轉', async (tok) => {
+  fresh([0, 4.2, 13], [0, 3.6, 0]);
+  const g = pal(6.3, 2.8, '#9fd3f0', 0.5, 'Erik');
   const sp = [[1, 'A', 'blk'], [2, 'x'], [3, 'B', 'blk'], [4, 'y'], [5, 'C', 'blk'], [6, 'z'], [7, 'D', 'blk']];
   const t = bbTree([1, 2, 3, 4, 5, 6, 7], { gap: 1.45, top: 6.6, dy: 1.35 });
   for (const k of [2, 1, 6, 4, 7, 3, 5]) { const s = sp.find((q) => q[0] === k); bbPut(t, bbNode(k, s[1], s[2])); }
-  await bbLay(t, tok, 600, 3);
   const x = bbFind(t, 2), z = bbFind(t, 6), y = bbFind(t, 4);
-  bbNote(x, '↘↘', 'ptr alt'); bbNote(z, '↙'); glow(x.m, RED); bbEdges(t);
-  say('case 2：x 的右 child z 是左重', 'x → z → y 是 zigzag');
-  await beat(tok, 3000);
-  bbRotUp(t, y);
-  say('right rotate(z)', '');
-  await bbLay(t, tok, 1000);
-  await beat(tok, 1400);
-  bbRotUp(t, y); glow(x.m, null);
-  say('left rotate(x)', 'y 當 root，x、z 是 children');
-  await bbLay(t, tok, 1000);
+  await step(tok);                                   // 47:18 另一種 case：兩次旋轉
+  await bbLay(t, tok, 700, 3);
+  say('另一種 case：要轉兩次', '');
+  talk(g, '轉兩次');
+  await step(tok);                                   // 47:53 x 雙重右重
+  bbNote(x, '↘↘', 'ptr alt'); glow(x.m, RED); bbEdges(t);
+  say('一樣：x 雙重右重', '');
+  await step(tok);                                   // 47:58 x 的右 child z 左重
+  bbNote(z, '↙'); glow(z.m, GOLD); bbEdges(t);
+  say('剩下的情況：x 的右 child（叫 z）是左重', 'x → z → y：右、左，zigzag');
+  await step(tok);                                   // 48:07 right rotate(z)
+  glow(z.m, null);
+  bbRotUp(t, y); await bbLay(t, tok, 1000);
+  tag('① right rotate(z)', 'pkt', -3.6, 7.8, 0);
+  say('跟 insert 55 一樣：先 right rotate(z)', 'y 升上來，變一直線');
+  await step(tok);                                   // 48:11 再 left rotate(x)：x、y、z
+  bbRotUp(t, y); glow(x.m, null); await bbLay(t, tok, 1000);
+  tag('② left rotate(x)', 'pkt', -0.4, 7.8, 0);
   bbNote(x, '—'); bbNote(z, '—'); bbEdges(t);
-  await beat(tok, 1600);
-  say('兩次旋轉後恢復 AVL 性質', 'inorder：A x B y C z D 不變');
-  await beat(tok, 3000);
+  say('再 left rotate(x)', '得到漂亮的樣子：y 在上，x、z 在兩邊');
+  await step(tok);                                   // 48:18 全部平衡，AVL 恢復
+  for (const n of [x, y, z]) glow(n.m, GREEN);
+  say('檢查高度：全部平衡', 'AVL 性質恢復；in-order A x B y C z D 也沒變');
+  talk(g, '修好了', 'happy');
+  await step(tok);                                   // 48:22 細節看講義；看大局
+  say('細節請看講義', '最後幾分鐘講 AVL 在大局中的位置');
 }]);
 
-// 48:26 AVL sort：n 次 insert（各 O(log n)）+ in-order O(n)
+// 48:38 AVL sort：n 次 insert（各 O(log n)）+ in-order O(n)
 FRAG.push(['bstb-mit-avl-sort', 'AVL sort：O(n log n)', async (tok) => {
-  fresh([0, 4.4, 13.5], [0, 3.4, 0]);
-  const t = bbTree(BB_MIT, { gap: 1.5, top: 6.6, dy: 1.4 });
-  say('sort n 個數：一個一個 insert 進 AVL', '每次 O(log n) → 共 O(n log n)');
-  for (const k of BB_MIT) { const n = bbPut(t, bbNode(k)); const r = bbDetect(t, n); if (r) bbFix(t, r); await bbLay(t, tok, 450); }
-  await beat(tok, 1400);
-  say('再做 in-order traversal：O(n)', '');
-  const out = []; (function go(n) { if (!n) return; go(n.l); out.push(n); go(n.r); })(t.root);
-  for (let i = 0; i < out.length; i++) { glow(out[i].m, GREEN); cube(out[i].k, bbCol(out[i].k), [0.9, 0.6, 0.8], -4.2 + i * 1.4, 0.3, 2.6, 3); await beat(tok, 450); }
-  say('得到排序：11, 20, 26, 29, 41, 50, 65', 'AVL sort = O(n log n)');
-  await beat(tok, 3000);
+  fresh(...CAMM);
+  const g = pal(6.2, 2.8, '#9fd3f0', 0.55, 'Erik');
+  const t = mitTree();
+  await step(tok);                                   // 48:38 拿來 sort：全部 insert
+  for (const k of BB_MIT) { const n = bbPut(t, bbNode(k)); const r = bbDetect(t, n); if (r) bbFix(t, r); await bbLay(t, tok, 260); }
+  say('AVL tree 可以拿來 sort n 個數', '先把它們全部 insert 進去');
+  await step(tok);                                   // 48:48 再做 in-order traversal
+  const io = ioList(t);
+  for (let i = 0; i < io.length; i++) { glow(io[i].m, GREEN); cube(io[i].k, bbCol(io[i].k), [0.9, 0.6, 0.8], -4.2 + i * 1.4, 0.3, 2.6, 2.5); await beat(tok, 260); }
+  say('再做 in-order traversal', '印出來就排好了');
+  await step(tok);                                   // 48:58 in-order 是 linear time
+  note('in-order：O(n)', -3.6, 1.6, 1.6);
+  say('in-order traversal 花 linear time：O(n)', '');
+  await step(tok);                                   // 49:08 每次 insert O(h)
+  note('每次 insert：O(h)', 0.6, 1.6, 1.6);
+  say('每次 insert 花 O(h)', '');
+  await step(tok);                                   // 49:12 h = O(log n) → n log n
+  note('h = O(log n) → 共 O(n log n)', 0, 8.0, 0);
+  say('現在保證 h = O(log n)', 'n 次 insert：O(n log n)');
+  talk(g, 'n log n', 'happy');
+  await step(tok);                                   // 49:20 又一種 n log n 排序
+  say('又一種 n log n 的排序法', '之前看過 heap sort、merge sort');
 }]);
 
-// 49:39 ADT vs data structure：priority queue（heap / AVL）；succ/pred 要 balanced BST
+// 49:29 ADT vs data structure：priority queue（heap / AVL）；succ/pred 要 balanced BST
 FRAG.push(['bstb-mit-adt', 'ADT vs 資料結構：heap 與 AVL', async (tok) => {
-  fresh([0, 4.4, 13.5], [0, 3.4, 0]);
-  const ops = ['insert', 'delete-min', 'succ / pred'];
-  tag('ADT（介面：要支援什麼）', 'ptr', -3.6, 6.8, 0);
-  const oc = ops.map((s, i) => cube(s, '#9b7ef4', [2.2, 0.6, 0.9], -3.6, 5.6 - i * 1.0, 0, 3));
-  say('ADT：只規定要支援哪些操作', 'Java 的 interface');
-  await beat(tok, 2600);
-  tag('資料結構（怎麼做）', 'ptr', 3.4, 6.8, 0);
-  const heap = cube('heap', '#dd8238', [1.8, 0.8, 0.9], 2.2, 4.9, 0, 3);
-  const avl = cube('AVL tree', '#2fc092', [1.8, 0.8, 0.9], 4.6, 4.9, 0, 3);
-  ghostBox('#9b7ef4', 2.8, 2.2, 1.4).position.set(-3.6, 5.1, 0);
-  tag('priority queue', 'idx', -5.6, 4.0, 0);
-  say('insert + delete-min = priority queue', 'heap 或 AVL 都做得到 O(log n)');
-  glow(oc[0], GOLD); glow(oc[1], GOLD); glow(heap, GREEN); glow(avl, GREEN);
-  await beat(tok, 3000);
-  glow(heap, null); glow(oc[2], GOLD);
-  say('要 succ / pred：需要 balanced BST', 'AVL 全部 O(log n)');
-  await beat(tok, 3000);
+  fresh(...CAMM);
+  const g = pal(6.2, 2.8, '#9fd3f0', 0.55, 'Erik');
+  const oc = [];
+  const op = (i) => { const nm = ['insert', 'delete-min', 'succ / pred'][i]; oc[i] = cube(nm, '#9b7ef4', [2.2, 0.6, 0.9], -3.6, 5.6 - i * 1.0, 0, 2.5); return oc[i]; };
+  let heap, avl;
+  await step(tok);                                   // 49:29 heap：insert、delete-min
+  heap = cube('heap', '#dd8238', [1.8, 0.8, 0.9], 2.2, 4.9, 0, 2.5); op(0); op(1);
+  glow(heap, GOLD);
+  say('heap 支援兩個操作：insert、delete-min', '很多時候這樣就夠了');
+  await step(tok);                                   // 49:40 AVL：insert、delete、delete-min
+  avl = cube('AVL tree', '#2fc092', [1.8, 0.8, 0.9], 4.6, 4.9, 0, 2.5); glow(avl, GOLD);
+  say('AVL tree 也做得到：insert、delete、delete-min', '');
+  await step(tok);                                   // 49:51 新操作：successor / predecessor
+  op(2); glow(oc[2], GOLD); glow(heap, null);
+  say('AVL 多了新操作：找下一個比較大 / 比較小', 'successor / predecessor');
+  talk(g, 'heap 做不到');
+  await step(tok);                                   // 49:59 abstract data type
+  glow(oc[2], null); glow(avl, null);
+  tag('ADT（abstract data type）', 'ptr', -3.6, 6.8, 0);
+  say('可以想成 abstract data type（抽象資料型別）', '');
+  await step(tok);                                   // 50:06 規定要支援哪些操作
+  oc.forEach((m) => glow(m, '#2a1a5a'));
+  say('ADT：規定「要支援哪些操作」', '');
+  await step(tok);                                   // 50:11 Java 叫 interface
+  say('寫 Java 的人叫它 interface', '演算法版本的規格書');
+  await step(tok);                                   // 50:18 insert、delete、min、succ、pred …
   oc.forEach((m) => glow(m, null));
-  tag('in place、不用指標', 'idx', 2.2, 3.8, 0); tag('指標多、常數空間較大', 'idx', 4.6, 3.3, 0);
-  say('heap 的好處：in place，不多佔空間', '');
-  await beat(tok, 2800);
-  say('理論上 AVL 什麼都能 O(log n)', '');
-  await beat(tok, 2600);
+  say('操作有 insert、delete、find min', '還有 successor、predecessor 等等');
+  await step(tok);                                   // 50:37 insert + delete + min = priority queue
+  ghostBox('#9b7ef4', 2.8, 2.2, 1.4).position.set(-3.6, 5.1, 0);
+  tag('priority queue', 'pkt', -5.9, 4.0, 0);
+  say('任選幾個就是一個 ADT', 'insert、delete、min 叫 priority queue');
+  await step(tok);                                   // 50:52 資料結構：怎麼真正做到
+  tag('資料結構（怎麼做）', 'ptr', 3.4, 6.8, 0);
+  say('另一邊：資料結構 = 真正怎麼做到', 'ADT 是規格，資料結構像演算法');
+  await step(tok);                                   // 51:01 heap、AVL、sorted array 都行
+  glow(heap, GREEN); glow(avl, GREEN);
+  tag('（sorted array 也行，但慢）', 'idx', 3.4, 3.8, 0);
+  say('要 priority queue：可以用 heap', '也可以用 AVL tree、sorted array …');
+  await step(tok);                                   // 51:14 三個都要 → balanced BST
+  glow(heap, null); glow(oc[2], GOLD);
+  say('三種操作都要（含 succ / pred）', '基本上就需要 balanced binary search tree');
+  talk(g, '要 balanced BST');
+  await step(tok);                                   // 51:23 一打 balanced tree，全都 log n
+  say('balanced search tree 至少有一打', '全都是 log n，差在常數和實務細節');
+  await step(tok);                                   // 51:36 heap：in place
+  glow(oc[2], null); glow(avl, null); glow(heap, GOLD);
+  tag('in place、不多佔空間', 'idx', 2.2, 3.2, 0);
+  say('偏好 heap 的主要原因：in place', '不用額外空間');
+  await step(tok);                                   // 51:39 AVL：指標到處都是
+  glow(heap, null); glow(avl, GOLD);
+  tag('指標多：空間多一個常數倍', 'idx', 4.8, 2.6, 0);
+  say('AVL 到處都是指標', '空間多花一個常數倍');
+  await step(tok);                                   // 51:42 理論上 AVL 全部 log n
+  glow(avl, GREEN);
+  say('不在意常數的話，AVL 非常好', '目前學過的操作全部 O(log n)');
+  talk(g, '全部 log n', 'happy');
 }]);
   }
 
   // ═══ bstc.js ═══
   {
 // ─── IWzYoXKaRIc：MIT 6.006 Rec6 AVL Trees ／ jDM6_TnYIqE：Abdul Bari 10.1 AVL Tree ───
-const { V3, fresh, tag, cube, move, kill, txt, relabel, code, line, GOLD, GREEN, GRAY } = K;
+// cued：每個 await step(tok) 等老師講到那一句（註解裡的秒數 = notes 的 cue）
+const { V3, fresh, tag, cube, move, kill, txt, relabel, code, line, anim, ghostBox, buddy, remove, travel, step, GOLD, GREEN, GRAY } = K;
 const KG = (m, c) => K.glow(m, c);
 const CAM = [[0, 4.6, 13.5], [0, 3.7, 0]];
-const BLUE = '#4b9ee2', PURP = '#9b7ef4', TEAL = '#31aab0', ORNG = '#dd8238', BAD = '#7a1010';
-// 用本章模組的 BST / AVL 畫面（中序位置排版、bf 標籤、游標）
-function bstStage(seq, o) {
-  fresh(...CAM);
-  bst.kcheck = false; bst.showSize = false;
-  bst.t = makeView(Object.assign({ tag: 'none' }, o || {}));
-  seq.forEach((k) => attach(bst.t, mk(k)));
-  layout(bst.t, true);
-  bst.cur = makeCursor();
-  return bst.t;
-}
-function avlStage(seq) {
-  fresh(...CAM);
-  avl.t = makeView({ tag: 'bf', kind: 'avl' });
-  seq.forEach((k) => avlInsertRaw(avl.t, k));
-  layout(avl.t, true);
-  avl.cur = makeCursor();
-  return avl.t;
+const BLUE = '#4b9ee2', PURP = '#9b7ef4', TEAL = '#31aab0', ORNG = '#dd8238', BAD = '#7a1010', PINK = '#e55a9b';
+const HOT = '#4a3600', OKG = '#163a2a', REDG = '#5a1010', OFF = '#000';
+function pal(x = 6.1, z = 2.6, color = '#9fd3f0', s = 0.55, name = '助教') { const b = buddy(name, '', color, x, 0, z, s); b.x = x; b.z = z; b.s = s; return b; }
+function talk(b, text, mood) { if (!b) return; if (b.bub) remove(b.bub); b.bub = text ? tag(text, 'say', b.x, b.s + 1.35, b.z) : null; if (mood) b.mood(mood); }
+const note = (s, x, y, z = 0) => tag(s, 'note', x, y, z);
+// ── 用本章模組的 BST 畫面（中序位置排版、標籤、游標） ──
+function view(o) { return makeView(Object.assign({ tag: 'none' }, o || {})); }
+function grow(t, seq, drop = true) { const ns = seq.map((k) => attach(t, mk(k))); layout(t, !drop); if (drop) ns.forEach(dropIn); return ns; }
+function stageT(seq, o, cam) { fresh(...(cam || CAM)); const t = view(o); if (seq.length) grow(t, seq, false); return t; }
+function put(t, k) { const z = attach(t, mk(k)); layout(t); dropIn(z); return z; }
+const nodeOf = (t, k) => findKey(t, k);
+// 沿 BST 搜尋路徑移動游標；回傳走過的節點（最後一個是找到的或最後比較的）
+async function walk(tok, t, cur, k, ms = 420) {
+  const path = []; let x = t.root;
+  while (x) { path.push(x); cursorTo(cur, x.pos); glow(x, HOT); await beat(tok, ms); glow(x, OFF); if (k === x.key) break; x = k < x.key ? x.left : x.right; }
+  return path;
 }
 // MIT 的高度：leaf = 0、NULL = −1
 const hE = (n) => (n ? 1 + Math.max(hE(n.left), hE(n.right)) : -1);
 function setTag(n, s, hot) { n.tag.element.textContent = s; n.tag.element.className = 'lab-label ' + (hot ? 'ptr alt' : 'idx'); n.tag.element.style.display = s ? '' : 'none'; }
 function hTags(t, fn) { inorder(t.root).forEach((n) => setTag(n, fn ? fn(n) : 'h ' + hE(n))); }
-const nodeOf = (t, k) => findKey(t, k);
+function bfOn(t, on) { t.o.tag = on ? 'bf' : 'none'; refresh(t); }
 // 抽象節點／子樹：位置記在 userData.t，連線依目標位置重畫
 function rig() {
   const R = { m: {}, ls: [] };
   R.node = (id, text, x, y, color, size, dropH) => { const m = cube(text, color || BLUE, size || [0.8, 0.6, 0.8], x, y, 0, dropH || 0); m.userData.t = [x, y]; R.m[id] = m; return m; };
-  R.sub = (id, text, x, y) => R.node(id, text, x, y, GRAY, [1.15, 0.45, 0.7]);
+  R.sub = (id, text, x, y, dropH) => R.node(id, text, x, y, GRAY, [1.15, 0.45, 0.7], dropH);
   R.go = (id, x, y) => { const m = R.m[id]; m.userData.t = [x, y]; move(m, x, y); };
   R.place = (map) => { for (const id in map) R.go(id, map[id][0], map[id][1]); };
   R.wire = (pairs) => { R.ls.forEach(kill); R.ls = pairs.map(([p, c]) => { const a = R.m[p].userData.t, b = R.m[c].userData.t; return line(a[0], a[1], b[0], b[1], -0.05); }); };
@@ -5674,93 +6864,197 @@ function rig() {
 
 // ═══ MIT 6.006 Rec6 ═══
 FRAG.push(['bstc-search-5', 'BST 搜尋 5：遇 4 往右、遇 7 往左', async (tok) => {
-  const t = bstStage([4, 2, 7, 1, 3, 5, 9]);
-  say('BST：左邊都小、右邊都大', 'key(左子樹) < key(x) < key(右子樹)');
-  await beat(tok, 2400);
-  const n4 = t.root, n7 = n4.right, n5 = n7.left;
-  cursorTo(bst.cur, n4.pos); say('找 5：遇到 4', '5 > 4 → 往右');
-  await beat(tok, 1700);
-  cursorTo(bst.cur, n7.pos); say('遇到 7', '5 < 7 → 往左');
-  await beat(tok, 1700);
-  cursorTo(bst.cur, n5.pos); glow(n5, '#163a2a'); say('找到 5', '只走一條 root→節點 的路徑');
-  await beat(tok, 2000);
-  glow(n5, '#000');
-  cursorTo(bst.cur, minNode(t.root).pos); say('min：一直往左', 'min = 1');
-  await beat(tok, 1600);
-  cursorTo(bst.cur, maxNode(t.root).pos); say('max：一直往右', 'max = 9');
-  await beat(tok, 1600);
-  hideCursor(bst.cur);
-  say('find / insert / delete / min / max', '全部 <span class="ok">O(h)</span>，h = 樹高');
-  await beat(tok, 3000);
+  fresh(...CAM);
+  const g = pal();
+  const t = view();
+  await step(tok);                                   // 61.8 binary：每個 node 最多兩個 child
+  grow(t, [4, 2, 7, 1, 3, 5, 9]); await beat(tok, 700);
+  say('binary：每個 node 最多兩個 child', '');
+  talk(g, '先從 BST 開始');
+  await step(tok);                                   // 66.0 為什麼叫 search tree？好搜尋
+  say('為什麼叫 search tree？', '因為它很好搜尋');
+  await step(tok);                                   // 71.0 比大還是比小，往下走
+  say('看要找的數比這個 key 大還是小', '就知道往哪邊走');
+  await step(tok);                                   // 79.0 寫成正式的 rep invariant？
+  say('寫成正式的 rep invariant（一定成立的規則）', '是什麼？');
+  await step(tok);                                   // 92.0 遞迴：右邊整棵都比較大
+  const r = t.root; glow(r, HOT);
+  const gr = ghostBox(PINK, 3.0, 2.4, 1.4); gr.position.set(nodeOf(t, 7).pos.x, 4.6, 0);
+  say('對每個 node：右邊整棵都比它大', '');
+  await step(tok);                                   // 104.0 左邊整棵都比較小
+  const gl = ghostBox(BLUE, 3.0, 2.4, 1.4); gl.position.set(nodeOf(t, 2).pos.x, 4.6, 0);
+  say('左邊整棵都比它小', 'key(左子樹) < key(x) < key(右子樹)');
+  await step(tok);                                   // 112.0 所以搜尋很快：找 5
+  kill(gl); kill(gr); glow(r, OFF);
+  const cur = makeCursor();
+  const n5 = nodeOf(t, 5);
+  say('所以搜尋很快：例如找 5', '');
+  talk(g, '找 5！');
+  await step(tok);                                   // 120.0 遇到 4：往右
+  cursorTo(cur, r.pos); glow(r, HOT);
+  say('遇到 4：5 > 4 → 往右', '');
+  await step(tok);                                   // 123.0 遇到 7：往左
+  glow(r, OFF); const n7 = nodeOf(t, 7); cursorTo(cur, n7.pos); glow(n7, HOT);
+  await beat(tok, 600); glow(n7, OFF); cursorTo(cur, n5.pos); glow(n5, OKG);
+  say('遇到 7：5 < 7 → 往左', '找到 5');
+  await step(tok);                                   // 127.0 BST 會哪些操作？
+  glow(n5, OFF); hideCursor(cur);
+  say('BST 上我們會哪些操作？', '');
+  await step(tok);                                   // 137.0 min、max
+  const mn = minNode(t.root), mx = maxNode(t.root);
+  glow(mn, OKG); glow(mx, OKG);
+  const l1 = tag('min', 'pkt', mn.pos.x, mn.pos.y - 0.8), l2 = tag('max', 'pkt', mx.pos.x, mx.pos.y - 0.8);
+  say('min：一直往左；max：一直往右', 'min = 1、max = 9');
+  await step(tok);                                   // 150.0 insert、delete
+  glow(mn, OFF); glow(mx, OFF); remove(l1); remove(l2);
+  const ops = ['insert', 'delete', 'find'].map((s, i) => tag(s, 'pkt', -2.6 + i * 2.6, 0.4, 1.6));
+  ops[2].element.style.visibility = 'hidden';
+  say('更新：insert、delete', '');
+  await step(tok);                                   // 179.0 find / search
+  ops[2].element.style.visibility = '';
+  say('BST 的 S：find（或叫 search）', '');
+  await step(tok);                                   // 194.0 全部同一個時間：O(h)
+  ops.forEach((l) => { l.element.className = 'lab-label ptr alt'; });
+  say('全部都是同一個 running time', 'O(h)：好記');
+  talk(g, '都是 O(h)', 'happy');
+  await step(tok);                                   // 199.0 h 是什麼？高度
+  say('h 是什麼？樹的高度', '高度怎麼定義？');
 }]);
 
 FRAG.push(['bstc-height', '高度 h = max(h_L, h_R) + 1，NULL 算 −1', async (tok) => {
-  const t = bstStage([4, 2, 7, 1, 5, 9, 8]);
-  hTags(t, () => '');
-  say('高度：往下最長的路徑有幾條邊', 'h = max(h_L, h_R) + 1');
-  await beat(tok, 2600);
-  const nil = (n, side) => cube('−1', GRAY, [0.45, 0.3, 0.45], n.pos.x + side * 0.45, n.pos.y - 1.0, 0, 2);
-  const n1 = nodeOf(t, 1);
-  const g = [nil(n1, -1), nil(n1, 1)];
-  glow(n1, '#4a3600');
-  say('leaf：兩邊都是 NULL，算 −1', 'max(−1, −1) + 1 = 0');
-  await beat(tok, 2600);
-  for (const k of [1, 5, 8]) setTag(nodeOf(t, k), 'h 0', true);
-  glow(n1, '#000');
-  say('所有 leaf 的高度都是 0', '這就是「NULL = −1」的小技巧');
-  await beat(tok, 2200);
-  g.forEach(kill);
-  const n2 = nodeOf(t, 2), n9 = nodeOf(t, 9);
-  g.push(nil(n2, 1), nil(n9, 1));
-  setTag(n2, 'h 1', true); setTag(n9, 'h 1', true);
-  say('2、9 只有左子：右邊 NULL = −1', 'max(0, −1) + 1 = 1');
-  await beat(tok, 2800);
-  g.forEach(kill);
-  setTag(nodeOf(t, 7), 'h 2', true);
-  say('7：左 5 高 0、右 9 高 1', 'max(0, 1) + 1 = 2');
-  await beat(tok, 2400);
-  setTag(t.root, 'h 3', true);
-  say('root 4：左 1、右 2', 'max(1, 2) + 1 = 3');
-  await beat(tok, 2400);
+  fresh(...CAM);
+  const g = pal();
+  const minis = [];
+  const mini = (cx, ks) => { const t = makeView({ tag: 'none', cx, width: 2, topY: 6.4, minY: 3.8, maxStep: 1.2, maxSp: 0.9, size: [0.6, 0.45, 0.6] }); grow(t, ks); minis.push(t); return t; };
+  await step(tok);                                   // 206.0 這棵樹的高度？
+  const t1 = mini(-4.2, [5]);
+  const a1 = tag('h = 0', 'pkt', -4.2, 2.8);
+  say('這棵樹的高度是多少？', '只有一個 node：0');
+  talk(g, '考考你');
+  await step(tok);                                   // 215.0 這棵？這棵？
+  mini(0, [5, 3]); mini(4.2, [5, 3, 2]);
+  const a2 = tag('h = 1', 'pkt', 0, 2.8), a3 = tag('h = 2', 'pkt', 4.2, 2.8);
+  say('這棵？這棵？', '高度 = 往下最長有幾條邊');
+  await step(tok);                                   // 232.0 一般情況：h_L、h_R
+  for (const m of minis) { for (const n of inorder(m.root)) kill(n.body.obj); m.root = null; }
+  [a1, a2, a3].forEach(remove); void t1;
+  const t = view(); grow(t, [4, 2, 7, 1, 5, 9, 8]); hTags(t, () => '');
+  await beat(tok, 600);
+  const gl = ghostBox(BLUE, 2.2, 2.4, 1.4); gl.position.set(nodeOf(t, 2).pos.x - 0.6, 4.6, 0);
+  const gr = ghostBox(PINK, 4.4, 3.8, 1.4); gr.position.set(nodeOf(t, 7).pos.x + 0.3, 3.9, 0);
+  const tl = tag('h_L', 'pkt', nodeOf(t, 2).pos.x - 0.6, 2.9), tr = tag('h_R', 'pkt', nodeOf(t, 7).pos.x + 0.3, 1.6);
+  say('一般情況：左子樹高 h_L、右子樹高 h_R', '');
+  await step(tok);                                   // 245.0 h 是多少？
+  glow(t.root, HOT);
+  say('那整棵的 h 是多少？', '');
+  await step(tok);                                   // 256.0 max(h_L, h_R) + 1
+  const f = note('h = max(h_L, h_R) + 1', 0, 0.4, 1.6);
+  say('h = max(h_L, h_R) + 1', '比較高的那邊，再加上自己這一層');
+  await step(tok);                                   // 268.0 程式碼第 1–8 行；7、8 行就是定義
+  [gl, gr, tl, tr].forEach((o) => (o.element ? remove(o) : kill(o))); glow(t.root, OFF);
+  const cd = code(['def height(node):', '  if node is None:', '    return -1', '  return node.height', '', 'def update_height(node):', '  node.height = max(height(node.left),', '                    height(node.right)) + 1'], -6.4, 7.6, 0.42);
+  cd.hl(6);
+  say('看講義程式碼第 1–8 行', '第 7、8 行就是剛才的定義');
+  await step(tok);                                   // 279.0 每個 node 知道自己子樹的高度
   hTags(t);
-  say('每個節點存自己的 height', 'AVL 要 O(1) 讀到高度，不能每次往下算');
-  await beat(tok, 3000);
+  say('Python 實作：每個 node 記著自己這棵子樹的高度', '');
+  await step(tok);                                   // 287.0 樹改變時要更新
+  say('既然存著，樹一改變（例如 insert）', '就要更新它');
+  await step(tok);                                   // 294.0 update_height 用這個公式
+  cd.hl(5);
+  say('用 update_height 更新', '裡面就是那個公式');
+  await step(tok);                                   // 300.0 第 2–5 行有個 hack
+  cd.hl(2);
+  say('第 2–5 行有一個 hack（小技巧）', '是什麼？');
+  talk(g, '什麼技巧？');
+  await step(tok);                                   // 335.0 leaf：沒有 child
+  const n1 = nodeOf(t, 1); glow(n1, HOT);
+  say('看 leaf：沒有任何 child', '');
+  await step(tok);                                   // 341.0 h_L、h_R 是多少？
+  say('有一個 child 的 node：高度 0 的 child 可以直接用', '可是 leaf 沒有 child，h_L、h_R 是多少？');
+  await step(tok);                                   // 352.0 公式要算出 0
+  say('leaf 的高度一定要是 0', '所以 h_L、h_R 要設成讓公式算出 0 的值');
+  await step(tok);                                   // 364.0 設成 −1：max(−1, −1) + 1 = 0
+  const ns = [-1, 1].map((sx) => cube('−1', GRAY, [0.45, 0.3, 0.45], n1.pos.x + sx * 0.45, n1.pos.y - 1.0, 0, 2));
+  txt(f, 'leaf：max(−1, −1) + 1 = 0');
+  say('設成 −1', 'max(−1, −1) + 1 = 0 ✓');
+  talk(g, '−1 剛剛好', 'happy');
+  await step(tok);                                   // 377.0 AVL 要馬上知道高度
+  glow(n1, OFF); ns.forEach(kill);
+  say('AVL 需要「馬上」知道一個 node 的高度', '不能每次都往下走一遍去算');
+  await step(tok);                                   // 385.0 每個 node 存高度欄位
+  inorder(t.root).forEach((n) => setTag(n, 'h ' + hE(n), true));
+  say('所以每個 node 存一個 height 欄位', 'insert、delete 時跟著更新');
+  await step(tok);                                   // 398.0 leaf 時：不存在的樹高 −1
+  hTags(t);
+  say('更新到 leaf 時要用到：不存在的樹高度 = −1', '');
+  await step(tok);                                   // 407.0 聰明的 hack，讓程式變短
+  say('現實中沒有「不存在的樹」', '這只是讓程式碼變短的聰明 hack');
 }]);
 
 FRAG.push(['bstc-avl-invariant', 'AVL 看高度差，不看節點數', async (tok) => {
-  let t = bstStage([5, 3, 7, 2, 1]);
+  const t = stageT([5, 3, 7, 2, 1]);
+  const g = pal();
   const n3 = nodeOf(t, 3);
+  await step(tok);                                   // 436.0 這是 AVL 嗎？
   say('這棵是 AVL 嗎？', '');
-  await beat(tok, 2000);
-  glow(n3, '#4a3600');
-  const c1 = tag('2 個節點', 'ptr', n3.pos.x - 1.6, n3.pos.y - 0.2), c2 = tag('0 個', 'ptr', n3.pos.x + 1.2, n3.pos.y - 0.2);
-  say('3 的左邊 2 個節點、右邊 0 個', '差 2 是節點數 → AVL 不看這個');
-  await beat(tok, 2800);
-  txt(c1, 'h = 1'); txt(c2, 'h = −1');
-  hTags(t);
-  glow(n3, '#5a1010');
-  say('看高度：左 1、右 −1', '<span class="no">差 2 → 不是 AVL</span>');
-  await beat(tok, 2800);
-  t = bstStage([5, 3, 7, 2, 4]);
-  const r = t.root;
-  const d1 = tag('3 個節點', 'ptr', r.pos.x - 2.4, r.pos.y - 0.4), d2 = tag('1 個', 'ptr', r.pos.x + 2.2, r.pos.y - 0.4);
-  say('左邊 3 個、右邊 1 個', '節點數差 2');
-  await beat(tok, 2400);
-  txt(d1, 'h = 1'); txt(d2, 'h = 0');
-  hTags(t);
-  glow(r, '#163a2a');
-  say('高度：左 1、右 0', '<span class="ok">差 1 → 快樂的 AVL</span>');
-  await beat(tok, 2600);
-  say('每個節點 |h_L − h_R| ≤ 1', '而且本身要是 BST（AVL 繼承 BST）');
-  await beat(tok, 3000);
+  talk(g, '是嗎？');
+  await step(tok);                                   // 447.0 誰覺得不是？為什麼？
+  say('誰覺得它「不是」AVL？為什麼？', '');
+  await step(tok);                                   // 464.0 這個 node 不平衡
+  glow(n3, REDG);
+  say('這個 node（3）不平衡', '');
+  await step(tok);                                   // 480.0 學生：這邊 2、這邊 0
+  const c1 = tag('2 個節點', 'pkt', n3.pos.x - 1.6, n3.pos.y - 0.2), c2 = tag('0 個', 'pkt', n3.pos.x + 1.2, n3.pos.y - 0.2);
+  say('學生先說：這邊 2、這邊 0', '');
+  await step(tok);                                   // 491.0 高度：這邊 1、這邊 −1
+  txt(c1, 'h = 1'); txt(c2, 'h = −1'); hTags(t);
+  say('改口看高度：左 1、右 −1', '<span class="no">差 2 → 不是 AVL</span>');
+  await step(tok);                                   // 499.0 2 和 0 是節點數
+  say('一開始說的 2 和 0 是「節點數」', '');
+  await step(tok);                                   // 503.0 AVL 不看節點數，看高度
+  say('AVL 不在乎節點數', 'AVL 只在乎高度');
+  talk(g, '看高度！', 'wow');
+  await step(tok);                                   // 507.0 例如這棵
+  remove(c1); remove(c2);
+  const t2 = stageT([5, 3, 7, 2, 4]);
+  const g2 = pal();
+  const rt = t2.root;
+  say('例如這棵', '');
+  await step(tok);                                   // 516.0 快樂的 AVL：左 3 個、右 1 個
+  const d1 = tag('3 個節點', 'pkt', rt.pos.x - 2.4, rt.pos.y - 0.4), d2 = tag('1 個', 'pkt', rt.pos.x + 2.2, rt.pos.y - 0.4);
+  glow(rt, OKG);
+  say('這是一棵快樂的 AVL', '左邊 3 個節點、右邊 1 個');
+  talk(g2, '快樂 AVL', 'happy');
+  await step(tok);                                   // 519.0 節點數差 2，高度只差 1
+  txt(d1, 'h = 1'); txt(d2, 'h = 0'); hTags(t2);
+  say('節點數差 2，但高度只差 1', '');
+  await step(tok);                                   // 524.0 AVL 的 rep invariant？
+  glow(rt, OFF);
+  say('所以 AVL 的 rep invariant 是什麼？', '');
+  await step(tok);                                   // 546.0 每個 node：左右高度差 ≤ 1
+  const rule = note('每個 node：|h_L − h_R| ≤ 1', 0, 0.4, 1.6);
+  for (const n of inorder(t2.root)) glow(n, OKG);
+  say('核心：每一個 node 的左右高度最多差 1', '');
+  await step(tok);                                   // 563.0 還有：它是 BST
+  txt(rule, '每個 node：|h_L − h_R| ≤ 1　＋　它是 BST');
+  say('要完全嚴謹，還要加一句：它是 BST', '');
+  await step(tok);                                   // 574.0 AVL 繼承 BST 的程式碼
+  for (const n of inorder(t2.root)) glow(n, OFF);
+  say('AVL 是一種特別的 BST', '程式裡 AVL 繼承（inherit）BST，大量用它的方法');
+  await step(tok);                                   // 587.0 為什麼喜歡 AVL？
+  say('為什麼我們喜歡 AVL？', '');
+  talk(g2, '好在哪？');
+  await step(tok);                                   // 605.0 一般 BST 最壞：一條 list
+  say('一般的 binary search tree 最壞', '就是一條 list');
 }]);
 
 // 固定高度、最少節點的 AVL：右邊 h−1、左邊 h−2
 function minT(h) { return h < 0 ? null : { h, l: minT(h - 2), r: minT(h - 1) }; }
-function layT(T, cx, topY, sp, step) {
+function layT(T, cx, topY, sp, stp) {
   const order = [];
   (function w(n, d, p) { if (!n) return; n.d = d; n.p = p; w(n.l, d + 1, n); order.push(n); w(n.r, d + 1, n); })(T, 0, null);
-  order.forEach((n, i) => { n.x = cx + (i - (order.length - 1) / 2) * sp; n.y = topY - n.d * step; });
+  order.forEach((n, i) => { n.x = cx + (i - (order.length - 1) / 2) * sp; n.y = topY - n.d * stp; });
   return order;
 }
 function drawT(order, color, dropH, objs) {
@@ -5768,75 +7062,186 @@ function drawT(order, color, dropH, objs) {
   for (const n of order) if (n.p && n.p.m) objs.push(line(n.p.x, n.p.y, n.x, n.y, -0.05));
 }
 const NMIN = [1, 2, 4, 7, 12];
+function minShow(h, cx = 0, objs = []) { drawT(layT(minT(h), cx, 6.2, 1.1, 1.3), (n) => (n.d === 0 ? ORNG : BLUE), 3, objs); return objs; }
+
 FRAG.push(['bstc-min-avl', '高度固定、節點最少的 AVL：h = 0..3', async (tok) => {
   fresh(...CAM);
-  say('最壞的 AVL：高度大、節點少', '固定高度 h，用最少的節點蓋');
-  await beat(tok, 2400);
+  const g = pal();
   let objs = [];
-  const show = (h) => { objs.forEach(kill); objs = []; drawT(layT(minT(h), 0, 6.2, 1.15, 1.35), (n) => (n.d === 0 ? ORNG : BLUE), 3, objs); };
-  show(0); say('h = 0：只有一個節點', 'N(0) = 1（方塊上的數字 = 高度）');
-  await beat(tok, 2400);
-  show(1); say('h = 1：兩個節點就夠', 'N(1) = 2');
-  await beat(tok, 2400);
+  const chain = [];
+  for (let i = 0; i < 5; i++) { chain.push(cube('', '#c9b48e', [0.6, 0.45, 0.6], -4 + i * 0.8, 6.4 - i * 0.9, 0, 0)); if (i) chain.push(line(-4 + (i - 1) * 0.8, 6.4 - (i - 1) * 0.9, -4 + i * 0.8, 6.4 - i * 0.9, -0.05)); }
+  tag('h = O(n)', 'pkt', -2.4, 1.6);
+  await step(tok);                                   // 617.0 list：高度 O(n)；AVL 比較好
+  say('歪成 list：高度是 O(n)', 'AVL 比較好');
+  talk(g, '好在哪？');
+  await step(tok);                                   // 624.0 AVL 的高度是 O(log n)
+  say('我們在乎 AVL 的原因：高度是 O(log n)', '');
+  await step(tok);                                   // 642.0 為什麼？
+  say('上課有聽懂為什麼嗎？', '誰能說明一下？');
+  await step(tok);                                   // 670.0 我記的方法：自己蓋樹
+  chain.forEach(kill); objs.forEach(kill); objs = [];
+  say('助教的記法：自己動手蓋一棵樹', '用它說服你高度是 log n');
+  await step(tok);                                   // 680.0 固定高度，節點越少越好
+  say('規則：高度固定，用最少的節點蓋', '');
+  talk(g, '越省越好？');
+  await step(tok);                                   // 688.0 高度大、節點少 = 不平衡
+  say('高度大、節點少的樹', '寫成 n 的函數時 h 很糟：這就是不平衡');
+  await step(tok);                                   // 705.0 h = 0
+  objs = minShow(0);
+  say('h = 0：只有一個節點', 'N(0) = 1（方塊上的數字 = 高度）');
+  await step(tok);                                   // 721.0 h = 1：兩個節點
+  objs.forEach(kill); objs = minShow(1);
+  say('h = 1：兩個節點就夠', 'N(1) = 2');
+  await step(tok);                                   // 733.0 可以多加一個，但不要
+  say('可以在另一邊再加一個', '但我們要最少，所以不加');
+  await step(tok);                                   // 741.0 h = 2 最少？
+  say('h = 2 呢？用最少的節點', '');
+  await step(tok);                                   // 748.0 一條鏈可以嗎？
   objs.forEach(kill); objs = [];
-  const bad = [cube('2', BAD, [0.7, 0.55, 0.7], -1, 6.2, 0, 3), cube('1', BAD, [0.7, 0.55, 0.7], 0, 4.85, 0, 3), cube('0', BAD, [0.7, 0.55, 0.7], 1, 3.5, 0, 3)];
-  objs.push(...bad, line(-1, 6.2, 0, 4.85, -0.05), line(0, 4.85, 1, 3.5, -0.05));
-  say('h = 2 用一條鏈？', '<span class="no">root：左 −1、右 1 → 差 2，不行</span>');
-  await beat(tok, 2800);
-  show(2); say('h = 2：右邊 h1、左邊至少要 h0', 'N(2) = N(1) + N(0) + 1 = 4');
-  await beat(tok, 2800);
-  show(3); say('h = 3：右邊 h2、左邊 h1', 'N(3) = N(2) + N(1) + 1 = 7');
-  await beat(tok, 2800);
-  say('一般：右放 h−1、左放 h−2', 'N(h) = N(h−1) + N(h−2) + 1');
-  await beat(tok, 3000);
+  const bad = [cube('2', BAD, [0.7, 0.55, 0.7], -1, 6.2, 0, 3), cube('1', BAD, [0.7, 0.55, 0.7], 0, 4.9, 0, 3), cube('0', BAD, [0.7, 0.55, 0.7], 1, 3.6, 0, 3)];
+  objs.push(...bad, line(-1, 6.2, 0, 4.9, -0.05), line(0, 4.9, 1, 3.6, -0.05));
+  say('一條鏈可以嗎？', '');
+  await step(tok);                                   // 762.0 不平衡
+  say('不行：root 左邊 −1、右邊 1', '<span class="no">差 2，不平衡</span>');
+  talk(g, '不行喔', 'sad');
+  await step(tok);                                   // 765.0 左右只能差 1
+  say('左邊的高度只能是右邊 ± 1', '');
+  await step(tok);                                   // 771.0 左邊至少要高 0：用最好的 h0
+  objs.forEach(kill); objs = minShow(2);
+  say('左邊至少要一棵高度 0 的樹', '最省的 h0 就是一個節點：N(2) = 4');
+  await step(tok);                                   // 784.0 h = 3：右 h2、左 h1
+  objs.forEach(kill); objs = minShow(3);
+  say('h = 3：右邊放 h2、左邊放 h1', 'N(3) = 7');
+  await step(tok);                                   // 800.0 h = 4 一樣做法
+  say('要 h = 4 也一樣做', '');
+  await step(tok);                                   // 809.0 一般：root，右 h−1、左 h−2
+  const lab1 = note('root ＋ 右：h−1 最少的 AVL ＋ 左：h−2 最少的 AVL', 0, 0.4, 1.6);
+  say('一般：先放 root', '右邊蓋高度 h−1、左邊蓋 h−2，都用最少節點的');
+  await step(tok);                                   // 826.0 兩邊最少 → 整棵最少
+  say('兩邊都是最少節點', '整棵就是最少節點');
+  await step(tok);                                   // 832.0 不要兩邊一樣高：會多節點
+  txt(lab1, 'N(h) = N(h−1) + N(h−2) + 1');
+  say('不要讓兩邊一樣高：那樣節點更多', '這就是又高又省的蓋法');
+  talk(g, '又高又省', 'happy');
 }]);
 
 FRAG.push(['bstc-min-avl-h4', 'h = 4：h3 接右、h2 接左，N ≈ φ^h', async (tok) => {
   fresh(...CAM);
-  const T = minT(4), order = layT(T, 0, 6.4, 0.95, 1.3), objs = [];
+  const g = pal();
+  let objs = minShow(3);
+  const f = note('N(h) = ?', 0, 0.4, 1.6);
+  await step(tok);                                   // 844.0 遞迴式：節點數是高度的函數
+  say('把最少節點數寫成高度的函數', 'N(h) = ?');
+  talk(g, '你們說說看');
+  await step(tok);                                   // 861.0 N(h) 是多少？
+  say('高度 h、節點最少的樹，有幾個節點？', '');
+  await step(tok);                                   // 885.0 N(h−1) 是這棵、N(h−2) 是那棵
+  const T = minT(3); const order = layT(T, 0, 6.2, 1.1, 1.3); void order;
+  const gr = ghostBox(PINK, 4.4, 3.4, 1.4); gr.position.set(1.65, 4.3, 0);
+  const gl = ghostBox(BLUE, 2.4, 2.2, 1.4); gl.position.set(-2.75, 4.9, 0);
+  txt(f, 'N(h) = N(h−1) + N(h−2) + ?');
+  say('右邊那棵是 N(h−1)、左邊那棵是 N(h−2)', '還有一個常數？');
+  await step(tok);                                   // 896.0 常數是 1（root 這個節點）
+  txt(f, 'N(h) = N(h−1) + N(h−2) + 1');
+  say('學生說 0？數的是節點數，root 也算', '所以 + 1');
+  await step(tok);                                   // 912.0 解遞迴式
+  kill(gl); kill(gr);
+  say('解遞迴式以前學過', '直接告訴你答案的樣子');
+  await step(tok);                                   // 920.0 N(h) ≈ φ^h
+  txt(f, 'N(h) ≈ φ^h，φ ≈ 1.618');
+  say('N(h) 大約是 φ 的 h 次方', 'φ 是上課講的黃金比例');
+  talk(g, '神奇數字 φ', 'wow');
+  await step(tok);                                   // 934.0 重點：h 的指數
+  say('重點是：它是 h 的指數函數', '');
+  await step(tok);                                   // 938.0 像 Fibonacci 多了 +1 → 更大
+  const row = NMIN.map((v, h) => tag('N(' + h + ') = ' + v, 'idx', -5 + h * 2.5, 0.3, 1.2));
+  remove(f);
+  say('很像 Fibonacci，只是多了 +1', '所以比 Fibonacci 數還大');
+  await step(tok);                                   // 957.0 最少節點數是 h 的指數
+  say('高度 h 的 AVL，最少節點數是 h 的指數', '');
+  await step(tok);                                   // 965.0 倒過來：n 個節點最高 log n
+  row.forEach(remove);
+  const f2 = note('n ≥ φ^h → h ≤ log_φ n = O(log n)', 0, 0.4, 1.6);
+  say('倒過來：n 個節點的樹最高也只有 log n', '');
+  await step(tok);                                   // 982.0 只要 rep invariant 一直成立
+  say('只要 rep invariant 一直成立', '高度就一定是對數級的');
+  talk(g, '保證 log n', 'happy');
+  await step(tok);                                   // 1013.0 h = 4 最少節點怎麼蓋？
+  remove(f2); objs.forEach(kill); objs = [];
+  const T4 = minT(4), o4 = layT(T4, 0, 6.4, 0.95, 1.3);
   const inR = new Set(), inL = new Set();
-  (function w(n, s) { if (!n) return; s.add(n); w(n.l, s); w(n.r, s); })(T.r, inR);
-  (function w(n, s) { if (!n) return; s.add(n); w(n.l, s); w(n.r, s); })(T.l, inL);
-  say('要蓋 h = 4：root 下面', '一邊要 h = 3，另一邊 h = 2 或 3');
-  await beat(tok, 2600);
-  drawT(order.filter((n) => inR.has(n)), BLUE, 3, objs);
-  const tr = tag('最少的 h3：7 個', 'ptr', 2.6, 1.0);
-  say('右邊：最少節點的 h = 3', 'N(3) = 7');
-  await beat(tok, 2400);
-  drawT(order.filter((n) => inL.has(n)), TEAL, 3, objs);
-  const tl = tag('最少的 h2：4 個', 'ptr', -3.2, 2.2);
-  say('左邊選 h = 2（比 h = 3 少）', 'N(2) = 4');
-  await beat(tok, 2400);
-  drawT([T], ORNG, 3, objs);
-  objs.push(line(T.x, T.y, T.l.x, T.l.y, -0.05), line(T.x, T.y, T.r.x, T.r.y, -0.05));
-  say('接上 root：h = 4', 'N(4) = 7 + 4 + 1 = 12');
-  await beat(tok, 2600);
-  kill(tr); kill(tl);
-  const row = NMIN.map((v, h) => tag('N(' + h + ') = ' + v, 'idx', -5 + h * 2.5, 0.3));
-  say('1, 2, 4, 7, 12：比 Fibonacci 還大', 'N(h) ≈ φ^h，φ ≈ 1.618');
-  await beat(tok, 3000);
-  say('節點數是 h 的指數 → 反過來', 'n 個節點的 AVL：h = <span class="ok">O(log n)</span>');
-  await beat(tok, 3000);
+  (function w(n, s) { if (!n) return; s.add(n); w(n.l, s); w(n.r, s); })(T4.r, inR);
+  (function w(n, s) { if (!n) return; s.add(n); w(n.l, s); w(n.r, s); })(T4.l, inL);
+  say('高度 4、節點最少：怎麼蓋？', '');
+  await step(tok);                                   // 1022.0 root 至少要一個 h3 的 child
+  drawT([T4], ORNG, 3, objs);
+  say('root 要高 4，就至少要有一個高度 3 的 child', '');
+  await step(tok);                                   // 1034.0 用最省的 h3（7 個）
+  drawT(o4.filter((n) => inR.has(n)), BLUE, 3, objs);
+  objs.push(line(T4.x, T4.y, T4.r.x, T4.r.y, -0.05));
+  const tr = tag('最少的 h3：7 個', 'pkt', 2.6, 1.0);
+  say('右邊：用我們知道最省的 h = 3 那棵', 'N(3) = 7');
+  await step(tok);                                   // 1051.0 左邊放什麼？高度多少？
+  say('左邊也放一棵最省的 AVL', '但高度要多少？');
+  talk(g, '2？3？4？');
+  await step(tok);                                   // 1078.0 只能差 1：2、3、4
+  say('跟右邊（3）只能差 1', '可以是 2、3 或 4');
+  await step(tok);                                   // 1083.0 不要 4；2 或 3
+  say('4 不要（root 就不是高 4 了）', '剩下 2 或 3');
+  await step(tok);                                   // 1088.0 高度 2 節點比較少
+  drawT(o4.filter((n) => inL.has(n)), TEAL, 3, objs);
+  objs.push(line(T4.x, T4.y, T4.l.x, T4.l.y, -0.05));
+  const tl = tag('最少的 h2：4 個', 'pkt', -3.2, 2.2);
+  say('高度 2 的節點比較少', '選 h2：N(2) = 4');
+  await step(tok);                                   // 1094.0 蓋 h3、蓋 h2、接起來
+  void tr; void tl;
+  note('N(4) = 7 + 4 + 1 = 12', 0, 0.4, 1.6);
+  say('蓋一棵 h3、一棵 h2，用 root 接起來', 'N(4) = 12');
+  talk(g, '就這樣', 'happy');
 }]);
 
 FRAG.push(['bstc-insert-65', '插入 6.5：路徑上每個節點高度 +1', async (tok) => {
-  const t = bstStage([4, 2, 5, 1, 3, 6, 7]);
-  hTags(t);
-  say('每個節點存高度（leaf = 0）', 'h = max(h_L, h_R) + 1');
-  await beat(tok, 2400);
+  const t = stageT([4, 2, 5, 1, 3, 6, 7]);
+  const g = pal();
+  hTags(t, () => '');
   const path = [4, 5, 6, 7].map((k) => nodeOf(t, k));
   const old = new Map(path.map((n) => [n, hE(n)]));
-  path.forEach((n) => setTag(n, 'h ' + hE(n), true));
-  say('插入路徑 4 → 5 → 6 → 7', '高度 3, 2, 1, 0');
-  await beat(tok, 2400);
-  say('insert 6.5：> 6、< 7', '接在 7 的左邊');
-  await bstInsert(6.5, tok);
-  hTags(t, (n) => (old.has(n) ? 'h ' + old.get(n) + '→' + hE(n) : 'h ' + hE(n)));
+  const cur = makeCursor();
+  let z;
+  await step(tok);                                   // 1107.0 還記得一般 BST 怎麼 insert？
+  say('還記得一般 BST 怎麼 insert 嗎？', '');
+  await step(tok);                                   // 1118.0 insert 6.5
+  say('在這棵樹 insert 6.5', '');
+  talk(g, '6.5 放哪？');
+  await step(tok);                                   // 1146.0 比 6 大、比 7 小 → 7 的左邊
+  await walk(tok, t, cur, 6.5, 400);
+  hideCursor(cur);
+  z = put(t, 6.5); setTag(z, '');
+  say('6.5 > 4、> 5、> 6，但 < 7', '→ 放在 7 的左邊');
+  await step(tok);                                   // 1169.0 節點裡存著高度
+  path.forEach((n) => setTag(n, 'h ' + old.get(n)));
+  inorder(t.root).filter((n) => !old.has(n) && n !== z).forEach((n) => setTag(n, 'h ' + hE(n)));
+  setTag(z, 'h 0');
+  say('AVL 的每個節點都存著高度', '（先看存的舊值）');
+  await step(tok);                                   // 1180.0 路徑上原本是 0、1、2、3
+  path.forEach((n) => setTag(n, 'h ' + old.get(n), true));
+  say('路徑 7、6、5、4 原本的高度', '0、1、2、3');
+  await step(tok);                                   // 1190.0 加了這個 node：全部 +1
   path.forEach((n) => setTag(n, 'h ' + old.get(n) + '→' + hE(n), true));
-  say('路徑上每個節點高度都 +1', '0, 1, 2, 3 → 1, 2, 3, 4');
-  await beat(tok, 3000);
-  say('AVL：插入後要沿路更新高度', '只有路徑上的節點可能改變');
-  await beat(tok, 2800);
+  say('加上 6.5 以後：每一個都 +1', '');
+  talk(g, '全部 +1', 'wow');
+  await step(tok);                                   // 1198.0 沿著 insert 路徑往下、加上去
+  for (const n of path) glow(n, HOT);
+  say('我們沿著 insert 的路徑往下走', '找到位置再加上去');
+  await step(tok);                                   // 1209.0 路徑上的高度都可能變
+  say('（例子挑得剛好）一般來說', '路徑上節點的高度都可能改變');
+  await step(tok);                                   // 1214.0 AVL：insert 後要更新路徑上的高度
+  for (const n of path) glow(n, OFF);
+  say('所以 AVL insert 之後', '要把路徑上每個節點的高度更新好');
+  await step(tok);                                   // 1223.0 變成 1、2、3、4
+  path.forEach((n) => setTag(n, 'h ' + hE(n), true));
+  say('更新後是 1、2、3、4', '');
+  talk(g, '更新完成', 'happy');
 }]);
 
 const REB = [
@@ -5850,287 +7255,658 @@ const REB = [
   '    elif h(R) >= h(L)+2: left_rotate…',
   '    node = node.parent',
 ];
-FRAG.push(['bstc-rebalance-code', 'AVL insert = BST insert + rebalance 往上走', async (tok) => {
+FRAG.push(['bstc-rebalance-code', 'AVL insert = BST insert + rebalance', async (tok) => {
   fresh(...CAM);
-  const up = !!(ctx.params || {}).up;
-  const cp = code(REB, -2.4, 6.4);
+  const g = pal();
+  const cp = code(REB, -2.6, 6.6);
   const R = rig();
-  const P = [[4.6, 6.2, '3'], [5.6, 4.9, '2'], [4.8, 3.6, '1'], [5.8, 2.3, '0']];
-  P.slice(0, 3).forEach(([x, y, h], i) => R.node('n' + i, 'h' + (Number(h) - 1), x, y, BLUE));
+  const P = [[4.4, 6.2], [5.4, 4.9], [4.6, 3.6], [5.6, 2.3]];
+  P.slice(0, 3).forEach(([x, y], i) => R.node('n' + i, '', x, y, BLUE));
   R.wire([['n0', 'n1'], ['n1', 'n2']]);
-  say(up ? '插入／刪除後，高度一路往上都會變' : 'insert 很短：舊的 BST insert', up ? '所以 rebalance 要走到 root' : '再加上 rebalance');
+  await step(tok);                                   // 1233.0 先做一般的 insert / delete
   cp.hl(1);
-  await beat(tok, 2200);
-  R.node('n3', 'h0', P[3][0], P[3][1], ORNG, null, 3);
+  R.node('n3', 'new', P[3][0], P[3][1], ORNG, null, 3);
   R.wire([['n0', 'n1'], ['n1', 'n2'], ['n2', 'n3']]);
-  cp.hl(2); say('BST.insert 把新節點放到底', '然後從新節點開始 rebalance');
-  await beat(tok, 2200);
-  for (let i = 3; i >= 0; i--) {
-    const m = R.m['n' + i];
-    KG(m, '#4a3600');
-    cp.hl(5); relabel(m, 'h' + P[i][2]);
-    say('先 update_height', '高度可能剛變，舊值不能拿來判斷');
-    await beat(tok, 1500);
-    cp.hl(6); say('檢查左右高度差', '差 ≥ 2 才用 rotate 修');
-    await beat(tok, 1200);
-    cp.hl(8); KG(m, null);
-    say(i ? 'node = node.parent，往上一層' : '走過 root：結束', i ? '' : '整條路徑都檢查過');
-    await beat(tok, 1100);
-  }
-  cp.hl(-1);
-  say('所有的魔法都在 rebalance', '工具只有 left_rotate、right_rotate');
-  await beat(tok, 3000);
+  say('AVL 的寫法：先做一般的 insert、delete', '');
+  await step(tok);                                   // 1238.0 原本是 AVL，加了一個可能有點歪
+  KG(R.m.n0, HOT);
+  say('原本是 AVL，加或刪一個 node 之後', '可能有點歪 → 就不是 AVL 了');
+  await step(tok);                                   // 1246.0 所以有 rebalance
+  KG(R.m.n0, null); cp.hl(2);
+  say('所以有 rebalance 這個程序', '');
+  await step(tok);                                   // 1251.0 insert / delete 只有幾行
+  say('講義第二頁：insert、delete 只有幾行', '');
+  await step(tok);                                   // 1258.0 呼叫舊的程式再呼叫 rebalance
+  cp.hl(1);
+  say('因為它們只是呼叫舊的 BST 程式', '再呼叫 rebalance');
+  await step(tok);                                   // 1264.0 魔法都在 rebalance
+  cp.hl(3);
+  say('AVL 所有的魔法都在 rebalance', '');
+  talk(g, '魔法在這', 'wow');
+  await step(tok);                                   // 1271.0 rebalance 有一個 while 迴圈
+  cp.hl(4);
+  say('rebalance 有一個 while 迴圈', '');
+  await step(tok);                                   // 1275.0 迴圈第一件事：update height
+  cp.hl(5);
+  KG(R.m.n3, HOT);
+  say('迴圈裡第一件事：更新高度', '');
+  await step(tok);                                   // 1279.0 高度可能剛變：舊值不能用
+  say('insert 之後高度可能變了', '拿舊高度做判斷就錯了');
+  await step(tok);                                   // 1302.0 它會呼叫 rotate
+  KG(R.m.n3, null); cp.hl(6);
+  say('先別急著看懂 rebalance', '它做的事：呼叫 left / right rotate');
+  await step(tok);                                   // 1307.0 工具：left_rotate、right_rotate
+  cp.hl(7);
+  say('魔法在 rebalance', '用的工具只有 left_rotate、right_rotate');
+  talk(g, '兩個工具', 'happy');
 }]);
 
-FRAG.push(['bstc-right-rotate', 'Right rotate：B 升上來，c 換給 A', async (tok) => {
-  fresh(...CAM);
-  const L = !!(ctx.params || {}).left;
+// Right / Left rotate：圖與 pseudocode
+function rotPic(L) {
   const X = (x) => (L ? -4 - x : x);
   const R = rig();
   R.node('E', 'E', X(-4.2), 6.4, GRAY); R.node('A', 'A', X(-2), 5.1, BLUE); R.node('B', 'B', X(-3.4), 3.8, TEAL);
   R.sub('a', 'a', X(-4.4), 2.5); R.sub('c', 'c', X(-2.4), 2.5); R.sub('d', 'd', X(-0.6), 3.8);
   R.wire([['E', 'A'], ['A', 'B'], ['A', 'd'], ['B', 'a'], ['B', 'c']]);
-  const S = L ? ['left', 'right', 'L', 'R'] : ['right', 'left', 'R', 'L'];
-  const cp = code([
-    S[0] + '_rotate(A):  B = A.' + S[1],
-    'B.' + S[0] + ' = A ;  A.parent = B',
-    'A.' + S[1] + ' = c ;  c.parent = A',
-    'B.parent = E',
-    'if E.right is A: E.right = B',
-    'else:            E.left  = B',
-  ], 3.9, 6.2);
-  cp.hl(0);
-  say(L ? 'Left rotate：把 R、L 對調' : 'B 是 A 的左子；c 是 B 的右子樹', L ? '程式碼複製一份，left ↔ right' : 'A 掛在 E 底下');
-  await beat(tok, 2800);
-  const ord = tag(L ? '中序：d A c B a' : '中序：a B c A d', 'idx', -2, 0.8);
-  say('旋轉後中序順序不能變', '才能維持 BST');
-  await beat(tok, 2200);
-  cp.hl(1);
-  R.place({ B: [X(-2), 5.1], A: [X(-0.6), 3.8], a: [X(-3.4), 3.8], d: [X(0.4), 2.5] });
-  R.wire([['E', 'B'], ['B', 'a'], ['B', 'A'], ['B', 'c'], ['A', 'd']]);
-  say('B.' + S[0] + ' = A：A 降下去', 'B 升到 A 原本的位置');
-  await beat(tok, 2400);
-  cp.hl(2); KG(R.m.c, '#4a3600');
-  R.go('c', X(-1.6), 2.5);
-  R.wire([['E', 'B'], ['B', 'a'], ['B', 'A'], ['A', 'c'], ['A', 'd']]);
-  say('c 從 B 搬到 A 的' + (L ? '右' : '左') + '邊', '指標成對改：child 和 parent');
-  await beat(tok, 2600);
+  R.after = () => {
+    R.place({ B: [X(-2), 5.1], A: [X(-0.6), 3.8], a: [X(-3.4), 3.8], c: [X(-1.6), 2.5], d: [X(0.4), 2.5] });
+    R.wire([['E', 'B'], ['B', 'a'], ['B', 'A'], ['A', 'c'], ['A', 'd']]);
+  };
+  return R;
+}
+FRAG.push(['bstc-right-rotate', 'Right rotate：B 升上來，c 換給 A', async (tok) => {
+  fresh(...CAM);
+  const g = pal(6.3, 2.8);
+  const R = rotPic(false);
+  const lines = ['right_rotate(A):  B = A.left', 'B.right = A ;  A.parent = B', 'A.left = c ;  c.parent = A', 'B.parent = E', 'if E.right is A: E.right = B', 'else:            E.left  = B'];
+  let cp = null;
+  const show = (i) => { if (!cp) { cp = code(lines, 3.9, 6.2); } cp.ls.forEach((l, k) => { l.element.style.visibility = k <= i ? '' : 'hidden'; }); cp.hl(i); };
+  await step(tok);                                   // 1316.0 rotation 該做什麼
+  KG(R.m.A, HOT); KG(R.m.B, HOT);
+  say('來看 rotation 應該做什麼', 'A 和它的左 child B');
+  talk(g, '來轉轉看');
+  await step(tok);                                   // 1326.0 它們的 children：a、c、d
+  KG(R.m.A, null); KG(R.m.B, null);
+  say('它們底下的子樹：a、c、d', '（灰塊 = 一整棵 subtree）');
+  await step(tok);                                   // 1337.0 整塊掛在 E 底下
+  KG(R.m.E, HOT);
+  say('這整塊掛在某個 node E 底下', '');
+  await step(tok);                                   // 1351.0 right rotate 之後長這樣
+  KG(R.m.E, null); R.after();
+  say('right rotate 之後：B 升上來、A 降下去', '');
+  talk(g, '轉好了');
+  await step(tok);                                   // 1371.0 c 從 B 搬到 A
+  KG(R.m.c, HOT);
+  say('注意 c 從 B 搬到了 A 底下', '');
+  await step(tok);                                   // 1376.0 仍是 BST：順序一樣
   KG(R.m.c, null);
-  cp.hl(3); say('B.parent = E', 'E 原本指向 A，要改指 B');
-  await beat(tok, 2000);
-  cp.hl(4); KG(R.m.E, '#4a3600');
-  say('A 原本是 E 的左子還是右子？', '比指標（E.right is A），不比 key');
-  await beat(tok, 2600);
+  const ord = tag('中序：a B c A d（轉前轉後都一樣）', 'pkt', -2, 1.2);
+  say('搬法讓整棵仍是 BST', '由左到右的順序不變，search 照樣能用');
+  await step(tok);                                   // 1390.0 寫 pseudocode
+  say('來寫做到這件事的 pseudocode', '');
+  await step(tok);                                   // 1420.0 必須 O(1)：只能改看得到的連結
+  remove(ord);
+  say('整件事必須是 constant time', '只能改圖上這幾條連結，不能鑽進子樹裡');
+  await step(tok);                                   // 1519.0 B 的右邊變成 A
+  show(1);
+  say('B.right = A', 'A 變成 B 的右 child');
+  await step(tok);                                   // 1545.0 A 的左邊 = c；c 的 parent = A
+  show(2);
+  say('A.left = c，而且 c.parent = A', '');
+  await step(tok);                                   // 1563.0 改 child 也要改 parent：成對
+  say('改了 child 就要改 parent，兩邊對上', '');
+  await step(tok);                                   // 1579.0 一定要成對改
+  say('永遠成對改，才不會搞丟', '');
+  talk(g, '成對改');
+  await step(tok);                                   // 1588.0 B 的 parent 是 E；E 的 child？
+  show(3);
+  say('B.parent = E', 'E 的 child 要改成誰？');
+  await step(tok);                                   // 1604.0 看 A 是 E 的左還是右
+  KG(R.m.E, HOT);
+  say('圖上 A 在 E 的右邊', '但也可能在左邊：兩種情況都要處理');
+  await step(tok);                                   // 1618.0 比 key：B > E？
+  say('學生：比 key，B > E 就接右邊', '');
+  await step(tok);                                   // 1638.0 比較很貴怎麼辦？
+  say('如果比較 key 很貴呢？', '能不能只看樹的結構？');
+  await step(tok);                                   // 1663.0 A 原本是右 child → B 也是
+  show(4);
+  say('A 原本是 E 的右 child → 現在 B 是右 child', '（child 還沒改，所以還看得到）');
+  await step(tok);                                   // 1671.0 比指標，不比 key
+  show(5);
+  say('這是指標比較（E.right is A）', '不是 key 比較');
+  await step(tok);                                   // 1691.0 temp 變數、順序：講義處理好了
   KG(R.m.E, null); cp.hl(-1);
-  say('只改圖上幾個連結：O(1)', '子樹 a、c、d 裡面完全不動');
-  await beat(tok, 3000);
-  kill(ord);
+  say('temp 變數、指定的順序：講義的 Python 寫好了', '自己寫時：記住從哪張圖變到哪張圖');
+  talk(g, '記圖就好', 'happy');
+}]);
+
+FRAG.push(['bstc-left-rotate', 'Left rotate 與為什麼要 rebalance', async (tok) => {
+  fresh(...CAM);
+  const g = pal(6.3, 2.8);
+  const R = rotPic(true);
+  await step(tok);                                   // 1725.0 left rotate：R、L 對調
+  const cp = code(['left_rotate(A):  B = A.right', 'B.left = A ;  A.parent = B', 'A.right = c ;  c.parent = A', 'B.parent = E', 'if E.left is A: E.left = B', 'else:           E.right = B'], 0.6, 6.2);
+  R.after();
+  say('left rotate？把 R 和 L 對調', '複製、貼上、left ↔ right，完成');
+  talk(g, '鏡像而已');
+  await step(tok);                                   // 1733.0 為什麼要用 rotation 來 rebalance？
+  cp.kill(); for (const id in R.m) kill(R.m[id]); R.ls.forEach(kill);
+  say('為什麼需要 rotation 來 rebalance？', '');
+  await step(tok);                                   // 1745.0 不然一直變大的 key 會讓程式掛掉
+  const chain = [];
+  for (let i = 0; i < 7; i++) { chain.push(cube(i + 1, BLUE, [0.6, 0.45, 0.6], -5 + i * 1.1, 6.6 - i * 0.8, 0, 2)); if (i) line(-5 + (i - 1) * 1.1, 6.6 - (i - 1) * 0.8, -5 + i * 1.1, 6.6 - i * 0.8, -0.05); }
+  say('如果 key 一個比一個大地進來', '樹變一條長鏈，找東西時程式可能掛掉');
+  await step(tok);                                   // 1758.0 遞迴深度超過上限
+  chain.forEach((m, i) => KG(m, i > 4 ? BAD : null));
+  say('為什麼掛？遞迴深度超過上限', '一路往下走太深了');
+  talk(g, '太深了', 'sad');
+  await step(tok);                                   // 1764.0 就算不掛也很慢
+  say('就算沒有遞迴深度問題', '也會很慢');
+  await step(tok);                                   // 1770.0 不 rebalance：AVL 變慢的 BST
+  say('從漂亮的 AVL 開始，不 rebalance', '就變成慢慢慢的 BST（測試會過不了）');
 }]);
 
 FRAG.push(['bstc-carrot', '依序插入 4,5,3,6,2,7,1：root 平衡但不是 AVL', async (tok) => {
-  const t = bstStage([]);
-  say('學生的例子：依序插入', '4, 5, 3, 6, 2, 7, 1（不做 rebalance）');
-  await beat(tok, 2200);
-  for (const k of [4, 5, 3, 6, 2, 7, 1]) {
-    const z = attach(t, mk(k)); layout(t); dropIn(z);
-    say('insert ' + k, '');
-    await beat(tok, 900);
-  }
+  const t = stageT([]);
+  const g = pal();
+  await step(tok);                                   // 1787.0 學生：4、5、3、6、2 → 胡蘿蔔
+  say('學生的例子：依序 insert', '4, 5, 3, 6, 2, 7, 1（不做 rebalance）');
+  talk(g, '會長成什麼？');
+  await step(tok);                                   // 1812.0 4、5、3
+  for (const k of [4, 5, 3]) { put(t, k); await beat(tok, 450); }
+  say('先 4，再 5、再 3', '');
+  await step(tok);                                   // 1821.0 6、2、7、1
+  for (const k of [6, 2, 7, 1]) { put(t, k); await beat(tok, 420); }
+  say('接著 6、2、7、1', '長得像一根胡蘿蔔');
+  await step(tok);                                   // 1834.0 這是 AVL 嗎？
+  glow(t.root, OKG);
   hTags(t);
-  glow(t.root, '#163a2a');
-  say('像一根胡蘿蔔；root 左右都高 1', 'root 看起來平衡');
-  await beat(tok, 2800);
-  glow(t.root, '#000');
-  const n3 = nodeOf(t, 3), n5 = nodeOf(t, 5);
-  glow(n3, '#5a1010');
+  say('學生覺得要轉了；但先問：這是 AVL 嗎？', '');
+  await step(tok);                                   // 1839.0 平衡嗎？不，高度不開心
+  glow(t.root, OFF);
+  say('看起來平衡？不是：高度不開心', '');
+  talk(g, '哪裡不開心？', 'wow');
+  await step(tok);                                   // 1851.0 這裡高度 1
+  const n3 = nodeOf(t, 3);
+  glow(n3, REDG); setTag(n3, 'h_L 1', true);
+  say('看 3：左邊（2 那棵）高度 1', '');
+  await step(tok);                                   // 1856.0 這裡沒東西：−1
   setTag(n3, 'h_L 1、h_R −1', true);
-  say('但 3：左高 1、右是空的 −1', '<span class="no">差 2</span>');
-  await beat(tok, 2600);
-  glow(n5, '#5a1010'); setTag(n5, 'h_L −1、h_R 1', true);
-  say('5 也一樣：左 −1、右 1', '<span class="no">差 2</span>');
-  await beat(tok, 2600);
-  say('AVL：每個節點都要成立', '有一個不平衡，整棵就不是 AVL');
-  await beat(tok, 3000);
+  say('3 的右邊沒東西：高度 −1', '<span class="no">差 2</span>');
+  await step(tok);                                   // 1858.0 從 root 看兩邊很平衡
+  glow(t.root, OKG);
+  say('只看 root：左右都高 1，看起來平衡', '');
+  await step(tok);                                   // 1868.0 AVL：每個節點都要成立
+  glow(nodeOf(t, 5), REDG); setTag(nodeOf(t, 5), 'h_L −1、h_R 1', true);
+  say('AVL 的條件要每個節點都成立', '5 也是左 −1、右 1');
+  await step(tok);                                   // 1874.0 一個不平衡，整棵就不平衡
+  glow(t.root, OFF);
+  say('只要有一個節點不平衡', '整棵就不是 AVL');
+  talk(g, '一個都不能少', 'calm');
+  await step(tok);                                   // 1885.0 rebalance 要讓全部都平衡
+  say('所以 rebalance（AVL 的魔法）', '轉完以後要確定每個節點都平衡');
 }]);
 
 FRAG.push(['bstc-complete-avl', '13 個節點的 complete tree 一定是 AVL', async (tok) => {
   fresh(...CAM);
-  const n = 13, keyOf = {}, pos = {};
+  const g = pal();
+  const n = 13, keyOf = {}, pos = {}, ms = {};
   let r = 0;
   (function w(i) { if (i > n) return; w(2 * i); keyOf[i] = ++r; w(2 * i + 1); })(1);
   const hh = (i) => (i > n ? -1 : 1 + Math.max(hh(2 * i), hh(2 * i + 1)));
-  const ms = {};
-  say('任何 n 都能排成 AVL 嗎？例如 13', '像 heap 一樣一層一層填滿');
-  await beat(tok, 2400);
-  for (let lv = 0; lv < 4; lv++) {
-    for (let i = 1 << lv; i < Math.min(n + 1, 2 << lv); i++) {
-      pos[i] = [(keyOf[i] - 7) * 0.9, 6.4 - lv * 1.45];
-      ms[i] = cube(keyOf[i], colorFor(keyOf[i]), [0.65, 0.5, 0.65], pos[i][0], pos[i][1], 0, 3);
-      if (i > 1) line(pos[i >> 1][0], pos[i >> 1][1], pos[i][0], pos[i][1], -0.05);
-    }
-    say('第 ' + (lv + 1) + ' 層', lv < 3 ? '填滿' : '最後一層從左邊開始放');
-    await beat(tok, 1100);
-  }
-  say('值照中序排：它也是 BST', '1 … 13 從左到右');
-  await beat(tok, 2200);
+  const lvl = (lv) => { for (let i = 1 << lv; i < Math.min(n + 1, 2 << lv); i++) { pos[i] = [(keyOf[i] - 7) * 0.9, 6.4 - lv * 1.45]; ms[i] = cube(keyOf[i], colorFor(keyOf[i]), [0.65, 0.5, 0.65], pos[i][0], pos[i][1], 0, 3); if (i > 1) line(pos[i >> 1][0], pos[i >> 1][1], pos[i][0], pos[i][1], -0.05); } };
+  await step(tok);                                   // 1907.0 任何個數都能放進 AVL 嗎？
+  say('學生問：任何個數的節點都能排成 AVL 嗎？', '');
+  talk(g, '好問題');
+  await step(tok);                                   // 1918.0 1、2、3 個顯然可以，任何 n 呢？
+  say('1、2、3 個顯然可以', '那任意 n 個呢？');
+  await step(tok);                                   // 1931.0 一直呼叫 AVL insert 就得到
+  say('一個答案：一直呼叫 AVL insert', '就會得到一棵 AVL');
+  await step(tok);                                   // 1938.0 13 個？17 個？
+  say('學生想問的是：13 個能不能？17 個呢？', '有沒有排不出來的數量？');
+  await step(tok);                                   // 1954.0 完美的 BST 長什麼樣？
+  say('先想：完美的 binary search tree 長什麼樣？', '');
+  await step(tok);                                   // 1967.0 complete tree：一層一層填
+  for (let lv = 0; lv < 4; lv++) { lvl(lv); await beat(tok, 380); }
+  say('complete tree：一層一層填滿', '最後一層從左邊開始放');
+  await step(tok);                                   // 1980.0 heap 就長這樣
+  say('在哪裡看過？heap 就長這樣', '');
+  await step(tok);                                   // 1988.0 heap 的值不符合 BST
+  say('只是 heap 裡的值不符合 BST 規則', '這裡把 1…13 照中序放，它就是 BST');
+  await step(tok);                                   // 1997.0 這是 AVL 嗎？
+  say('這棵是 AVL 嗎？', '');
+  talk(g, '是嗎？', 'wow');
+  await step(tok);                                   // 2031.0 這是最好的樣子
   const tags = [];
   for (let i = 1; i <= n; i++) { const d = hh(2 * i) - hh(2 * i + 1); tags.push(tag('差 ' + Math.abs(d), 'idx', pos[i][0], pos[i][1] + 0.6)); }
-  say('只有最後一層沒滿', 'root 到底的路徑：⌊log n⌋ 或少 1');
-  await beat(tok, 2600);
-  say('每個節點左右高度差 ≤ 1', '<span class="ok">complete tree 一定是 AVL</span>');
-  await beat(tok, 3000);
+  say('這是最漂亮、最好的樣子', '它最好符合 AVL 的定義，不然 AVL 就不喜歡完美的樹了');
+  await step(tok);                                   // 2043.0 complete tree 一定是 AVL
+  for (const i in ms) KG(ms[i], OKG);
+  say('好消息：任何 complete tree 都是 AVL', '每個地方都平衡或幾乎平衡');
+  talk(g, '一定是 AVL', 'happy');
+  await step(tok);                                   // 2053.0 只有最後一層沒滿
+  for (const i in ms) KG(ms[i], null);
+  for (let i = 8; i <= n; i++) KG(ms[i], GOLD);
+  say('唯一沒填滿的是最後一層', '');
+  await step(tok);                                   // 2058.0 路徑長 log n 或 log n − 1
+  say('root 到最後一層的路徑', '長度是 ⌊log n⌋ 或少 1');
+  await step(tok);                                   // 2065.0 比高度：最多差 1
+  for (let i = 8; i <= n; i++) KG(ms[i], null);
+  say('不管在哪裡比左右高度', '最多差 1');
+  await step(tok);                                   // 2071.0 可以一直加節點
+  say('還可以一直往後加節點', '所以任何 n 都排得出 AVL');
 }]);
 
-// 一次旋轉（一直線）：k−1 | (k−1 或 k, k)
+FRAG.push(['bstc-qa-devil', 'Q&A：為什麼要「固定高度、最少節點」', async (tok) => {
+  fresh(...CAM);
+  const g = pal();
+  const objs = minShow(3, -2.6);
+  await step(tok);                                   // 2081.0 為什麼固定高度要讓節點最少？
+  say('學生問：固定高度時，為什麼要讓節點最少？', '');
+  talk(g, '好問題');
+  await step(tok);                                   // 2086.0 想蓋有效率的樹應該讓高度最小
+  const full = []; [[3.4, 6.2], [2.3, 4.9], [4.5, 4.9], [1.75, 3.6], [2.85, 3.6], [3.95, 3.6], [5.05, 3.6]].forEach(([x, y], i) => full.push(cube('', TEAL, [0.6, 0.45, 0.6], x, y, 0, 3)));
+  say('要蓋有效率的樹，不是應該讓高度最小、填滿嗎？', '');
+  await step(tok);                                   // 2101.0 你想的是怎麼蓋好樹
+  say('你想的是：怎麼蓋一棵好樹', '這沒錯');
+  await step(tok);                                   // 2104.0 我在證明最大高度
+  say('但這裡我在證明一個性質：', 'AVL 的高度「最多」多少');
+  await step(tok);                                   // 2113.0 AVL 最壞是什麼樣？
+  objs.forEach((m) => { if (m.isMesh) KG(m, HOT); });
+  say('所以要問：AVL 最壞的情況長怎樣？', '怎麼讓 AVL 看起來越糟越好');
+  talk(g, '扮黑臉', 'wow');
+  await step(tok);                                   // 2120.0 平常我們寫程式是好人
+  objs.forEach((m) => { if (m.isMesh) KG(m, null); });
+  say('平常我們是寫程式的好人', '');
+  await step(tok);                                   // 2130.0 想想怎麼把演算法弄壞
+  say('寫完以後換個角度：扮演 devil\'s advocate', '我要怎麼弄壞這個演算法？');
+  await step(tok);                                   // 2136.0 找到弱點就修；找不到就安心睡
+  say('找到弄壞的方法，你大概也知道怎麼修', '找不到，就能安心睡覺、拿滿分');
+  talk(g, '安心睡覺', 'happy');
+}]);
+
+FRAG.push(['bstc-qa-lopsided', 'Q&A：子樹也是歪的，只有兄弟要差 ≤ 1', async (tok) => {
+  fresh(...CAM);
+  const g = pal();
+  const T4 = minT(4), o4 = layT(T4, -0.6, 6.4, 0.95, 1.3), objs = [];
+  drawT(o4, (n) => (n.d === 0 ? ORNG : BLUE), 0, objs);
+  const inL = new Set(); (function w(n) { if (!n) return; inL.add(n); w(n.l); w(n.r); })(T4.l);
+  await step(tok);                                   // 2149.0 學生：h−1 和 h−2 那兩邊
+  say('學生問：板子上左右兩半，一邊 h−1、一邊 h−2', '');
+  talk(g, '又一個好問題');
+  await step(tok);                                   // 2165.0 h−2 那棵每個 leaf 都要 h−2？
+  for (const n of o4) if (inL.has(n)) KG(n.m, HOT);
+  say('h−2 那棵：每一片 leaf 都要在同一個深度嗎？', '');
+  await step(tok);                                   // 2180.0 只是它的 root 高度要是 h−2
+  for (const n of o4) if (inL.has(n)) KG(n.m, null);
+  KG(T4.l.m, HOT);
+  say('不是：只要那棵的 root 高度是 h−2', '');
+  await step(tok);                                   // 2185.0 複製過來的那棵本身也是歪的
+  for (const n of o4) if (inL.has(n)) KG(n.m, GOLD);
+  say('我們是把之前那棵複製過來', '所以它本身也是歪的');
+  await step(tok);                                   // 2190.0 不是每條路徑，只要一條
+  for (const n of o4) if (inL.has(n)) KG(n.m, null);
+  say('不是每條路徑都要到底', '只要有一條最長的就好');
+  await step(tok);                                   // 2208.0 h2 的 AVL 接在這裡還是 h2
+  KG(T4.l.m, HOT); KG(T4.r.m, HOT);
+  say('高度 2 的 AVL 接在這裡還是高度 2', '旁邊那棵是高度 3');
+  await step(tok);                                   // 2221.0 不是同一層都要一樣高，只看兄弟
+  say('不是同一層的節點都要一樣高', '只有同一個 parent 的兩個 children 要比');
+  await step(tok);                                   // 2227.0 同一層的兩個可以差 1
+  say('同一層的兩個節點，高度可以差 1', '但不能超過 1');
+  await step(tok);                                   // 2234.0 差超過 1 就可能變 linked list
+  KG(T4.l.m, null); KG(T4.r.m, null);
+  say('如果可以差超過 1', '整棵就可能退化成 linked list');
+  talk(g, '差 1 才理智', 'calm');
+  await step(tok);                                   // 2260.0 效能保證：常數 × log n
+  note('最壞仍是 常數 × log n', 0, 0.4, 1.6);
+  say('效能的保證：最壞也是「常數 × log n」', '');
+  await step(tok);                                   // 2272.0 常數比 1 大
+  say('這個常數比 1 大', '（上課證過：約 1.44）');
+  await step(tok);                                   // 2288.0 沒有演算法專門蓋出這種樹
+  say('這種樹只是畫在板子上好看', '一般的 insert / delete 不會刻意蓋出它');
+}]);
+
+// 一直線：一次旋轉
 FRAG.push(['bstc-rebal-straight', 'Rebalance 情況一：一直線，一次左旋', async (tok) => {
   fresh(...CAM);
+  const g = pal(6.3, 2.8);
   const R = rig();
   R.node('A', 'A', -1.5, 6.0, BLUE); R.node('B', 'B', 1.0, 4.6, TEAL);
-  R.sub('s1', 'k−1', -3.0, 4.6); R.sub('s2', 'k−1 或 k', -0.3, 3.2); R.sub('s3', 'k', 2.3, 3.2);
+  R.sub('s1', '?', -3.0, 4.6); R.sub('s2', '?', -0.3, 3.2); R.sub('s3', '?', 2.3, 3.2);
   R.wire([['A', 's1'], ['A', 'B'], ['B', 's2'], ['B', 's3']]);
   const hA = R.hang('A', ''), hB = R.hang('B', '');
-  say('rebalance(A)：子樹高度如圖', '灰塊上的字 = 子樹高度');
-  await beat(tok, 2600);
+  await step(tok);                                   // 2473.0 對這個 node 呼叫 rebalance
+  KG(R.m.A, HOT);
+  say('假設對 A 呼叫 rebalance', '');
+  talk(g, '一步一步看');
+  await step(tok);                                   // 2487.0 子樹高度：k−1；k−1 或 k；k
+  relabel(R.m.s1, 'k−1'); relabel(R.m.s2, 'k−1 或 k'); relabel(R.m.s3, 'k');
+  KG(R.m.A, null);
+  say('三棵子樹的高度：k−1、k−1 或 k、k', '灰塊上的字 = 子樹高度');
+  await step(tok);                                   // 2501.0 B 的高度？k+1
   txt(hB, 'h = k+1');
-  say('B 的子樹：k−1 或 k，和 k', 'h(B) = k + 1');
-  await beat(tok, 2400);
-  txt(hA, 'k−1 vs k+1'); hA.element.className = 'lab-label ptr alt'; KG(R.m.A, BAD);
-  say('A：左 k−1、右 k+1', '<span class="no">差 2 → check_RI 會失敗</span>');
-  await beat(tok, 2600);
-  for (const id of ['A', 'B', 's3']) KG(R.m[id], id === 'A' ? BAD : '#4a3600');
-  say('heavy path：右 → 右，一直線', '對 A 左旋一次');
-  await beat(tok, 2200);
+  say('先看是不是 AVL：B 的高度？', '不管中間那棵是哪個，B 都是 k + 1');
+  await step(tok);                                   // 2525.0 checkRI 會失敗
+  KG(R.m.A, BAD);
+  say('對 A 呼叫 checkRI（檢查 rep invariant）', '<span class="no">會失敗</span>');
+  await step(tok);                                   // 2532.0 k−1 vs k+1
+  txt(hA, 'k−1 vs k+1'); hA.element.className = 'lab-label ptr alt';
+  say('A 的左邊 k−1、右邊 k+1', '<span class="no">差 2，不開心</span>');
+  talk(g, '不開心', 'sad');
+  await step(tok);                                   // 2550.0 用 rotation 修
+  say('怎麼修？當然是 rotation', '花了那麼多時間學旋轉');
+  await step(tok);                                   // 2556.0 往這邊轉：標好 node
+  for (const id of ['A', 'B', 's3']) KG(R.m[id], id === 'A' ? BAD : HOT);
+  say('往這個方向轉（對 A 左旋）', '先把 node 標好');
+  await step(tok);                                   // 2565.0 轉完：A 的高度？
   R.place({ B: [0, 6.0], A: [-1.6, 4.6], s1: [-2.9, 3.2], s2: [-0.4, 3.2], s3: [1.6, 4.6] });
   R.wire([['B', 'A'], ['B', 's3'], ['A', 's1'], ['A', 's2']]);
   KG(R.m.A, null); KG(R.m.B, null); KG(R.m.s3, null);
-  txt(hA, 'h = k 或 k+1'); hA.element.className = 'lab-label idx';
-  txt(hB, 'k(+1) vs k');
-  say('B 升上來，A 降到左邊', 'A：k−1 vs k−1 或 k → h = k 或 k+1');
-  await beat(tok, 2800);
-  say('B：k 或 k+1 vs k', '<span class="ok">差 ≤ 1 → 平衡，一次旋轉搞定</span>');
-  await beat(tok, 3000);
+  txt(hA, 'h = ?'); hA.element.className = 'lab-label idx'; txt(hB, '');
+  say('轉完：B 在上、A 在左下', 'A 底下是 k−1 和（k−1 或 k）→ A 的高度？');
+  await step(tok);                                   // 2590.0 A = k 或 k+1
+  txt(hA, 'h = k 或 k+1');
+  say('A 的高度是 k 或 k + 1', '');
+  await step(tok);                                   // 2606.0 B：k vs k 或 k+1 → 快樂
+  txt(hB, 'k(+1) vs k'); KG(R.m.B, OKG); KG(R.m.A, OKG);
+  say('B：右邊 k、左邊 k 或 k+1', '<span class="ok">差 ≤ 1 → AVL，開心</span>');
+  talk(g, '開心！', 'happy');
+  await step(tok);                                   // 2617.0 簡單的：一次旋轉
+  say('這是簡單的 rebalance：轉一次就好', '');
+  await step(tok);                                   // 2624.0 「k−1 或 k」不是分數
+  KG(R.m.A, null); KG(R.m.B, null);
+  note('「k−1 / k」= k−1 或 k（不是分數）', 0, 0.4, 1.6);
+  say('學生問：k−1 / k 是分數嗎？', '不是，是「k−1 或 k」，沒有分數的高度');
 }]);
 
 FRAG.push(['bstc-rebal-zigzag', 'Rebalance 情況二：zigzag，先右旋再左旋', async (tok) => {
   fresh(...CAM);
+  const g = pal(6.3, 2.8);
   const R = rig();
-  R.node('A', 'a', -2.0, 6.2, BLUE); R.node('B', 'b', 0.8, 4.9, TEAL); R.node('C', 'c', -0.5, 3.6, PURP);
-  R.sub('sA', 'k−1', -3.6, 4.9); R.sub('sB', 'k−1', 2.1, 3.6); R.sub('c1', 'k−1', -1.5, 2.3); R.sub('c2', 'k−1', 0.5, 2.3);
-  const W1 = [['A', 'sA'], ['A', 'B'], ['B', 'C'], ['B', 'sB'], ['C', 'c1'], ['C', 'c2']];
-  R.wire(W1);
-  const hA = R.hang('A', 'k−1 vs k+1', 'ptr alt'), hB = R.hang('B', 'h = k+1'), hC = R.hang('C', 'h = k');
-  KG(R.m.A, BAD);
-  say('a：左 k−1、右 k+1', '<span class="no">不是 AVL</span>');
-  await beat(tok, 2600);
-  KG(R.m.B, '#4a3600'); KG(R.m.C, '#4a3600');
-  say('heavy path：右 → 左，是 zigzag', '直接對 a 左旋修不好');
-  await beat(tok, 2800);
+  R.node('A', 'a', -2.0, 6.2, BLUE); R.node('B', 'b', 0.8, 4.9, TEAL);
+  R.sub('sA', 'k−1', -3.6, 4.9); R.sub('sB', 'k−1', 2.1, 3.6); R.sub('C', 'k', -0.5, 3.6);
+  R.wire([['A', 'sA'], ['A', 'B'], ['B', 'C'], ['B', 'sB']]);
+  const hA = R.hang('A', ''), hB = R.hang('B', '');
+  let hC = null;
+  await step(tok);                                   // 2652.0 難的那一種
+  say('來看難的那一種', '');
+  talk(g, '難的來了');
+  await step(tok);                                   // 2687.0 高度？是不是 AVL？
+  txt(hB, 'h = k+1');
+  say('這裡的高度？b 是 k + 1', '是不是 AVL？');
+  await step(tok);                                   // 2698.0 k−1 vs k+1 → 不是
+  txt(hA, 'k−1 vs k+1'); hA.element.className = 'lab-label ptr alt'; KG(R.m.A, BAD);
+  say('a：左 k−1、右 k+1', '<span class="no">差 2，不是 AVL</span>');
+  await step(tok);                                   // 2717.0 學生：右旋，在哪？
+  say('學生：做 right rotation', '在哪裡做？把它拆開來看');
+  await step(tok);                                   // 2739.0 拆開：c 底下兩棵 k−1
+  kill(R.m.C); R.ls.forEach(kill);
+  R.node('C', 'c', -0.5, 3.6, PURP); R.sub('c1', 'k−1', -1.5, 2.3); R.sub('c2', 'k−1', 0.5, 2.3);
+  R.wire([['A', 'sA'], ['A', 'B'], ['B', 'C'], ['B', 'sB'], ['C', 'c1'], ['C', 'c2']]);
+  hC = R.hang('C', 'h = k');
+  say('高度 k 那棵拆開：node c 加兩棵 k−1', '三個 node：a、b、c');
+  await step(tok);                                   // 2747.0 在 b 右旋：c 取代 b
+  KG(R.m.B, HOT); KG(R.m.C, HOT);
   R.place({ C: [0.8, 4.9], B: [2.1, 3.6], c2: [1.3, 2.3], sB: [2.9, 2.3], c1: [-0.5, 3.6] });
   R.wire([['A', 'sA'], ['A', 'C'], ['C', 'c1'], ['C', 'B'], ['B', 'c2'], ['B', 'sB']]);
+  say('對 b 右旋：c 升到 b 的位置', 'b 的右子樹不變，左邊換成 c 的一棵 k−1');
+  await step(tok);                                   // 2779.0 b、c 的高度？AVL？
   txt(hB, 'h = k'); txt(hC, 'h = k+1');
-  say('第 1 步：對 b 右旋', 'c 升上來，b 變 k、c 變 k+1');
-  await beat(tok, 2800);
+  say('b 變 k、c 變 k + 1', 'a 還是 k−1 vs k+1：還不是 AVL');
+  await step(tok);                                   // 2799.0 沒完成，但現在可以轉了
   KG(R.m.B, null);
-  say('a 還是 k−1 vs k+1', '但 heavy path 變成一直線了');
-  await beat(tok, 2400);
+  say('還沒完成，但好消息是：', '現在變成一直線，可以轉了');
+  talk(g, '變一直線了');
+  await step(tok);                                   // 2807.0 一步修好：對 a 左旋
   R.place({ C: [-0.4, 6.2], A: [-2.0, 4.9], sA: [-3.0, 3.6], c1: [-1.0, 3.6], B: [1.2, 4.9], c2: [0.4, 3.6], sB: [2.0, 3.6] });
   R.wire([['C', 'A'], ['C', 'B'], ['A', 'sA'], ['A', 'c1'], ['B', 'c2'], ['B', 'sB']]);
-  KG(R.m.A, null); KG(R.m.C, null);
+  KG(R.m.A, null); KG(R.m.C, OKG);
   txt(hA, 'h = k'); hA.element.className = 'lab-label idx'; txt(hB, 'h = k'); txt(hC, 'h = k+1');
-  say('第 2 步：對 a 左旋', 'c 當根，左右都是 k');
-  await beat(tok, 2800);
-  say('一直線 → 1 次；zigzag → 2 次', '先看重的那邊的子，哪邊比較高');
-  await beat(tok, 3000);
+  say('就是簡單的情況：對 a 左旋，一步修好', 'c 當根，左右都是 k');
+  talk(g, '修好了', 'happy');
+  await step(tok);                                   // 2826.0 差別在 heavy path
+  KG(R.m.C, null);
+  say('兩種情況的差別：heavy path（比較重的路徑）', '比較高的那條往下走的方向');
+  await step(tok);                                   // 2839.0 一直線 → 一次旋轉
+  note('heavy path 一直線 → 轉 1 次', -2.6, 0.6, 1.6);
+  say('情況一：k+2、k+1、k 排成一直線', '轉一次就把重量平均分開');
+  await step(tok);                                   // 2852.0 zigzag → 兩次
+  note('zigzag → 轉 2 次（先拉直）', 2.6, 0.6, 1.6);
+  say('情況二：heavy path 是 zigzag', '先轉一次拉成一直線，再轉一次');
+  await step(tok);                                   // 2882.0 一般做法：先檢查高度、看重的那邊
+  say('一般步驟：在一個 node 先看是否已經平衡', '不平衡：看哪邊重，再看那個 child 哪邊重');
+  await step(tok);                                   // 2900.0 一直線或 zigzag → 1 或 2 次
+  say('看 heavy path 是一直線還是 zigzag', '決定轉 1 次還是 2 次');
 }]);
 
 FRAG.push(['bstc-rot-heights', '旋轉後更新高度：先 A 再 B', async (tok) => {
   fresh(...CAM);
+  const g = pal(6.3, 2.8);
   const R = rig();
   R.node('A', 'A', 0, 6.0, BLUE); R.node('B', 'B', -1.6, 4.6, TEAL);
   R.sub('a', 'a h1', -2.6, 3.2); R.sub('c', 'c h0', -0.6, 3.2); R.sub('d', 'd h0', 1.6, 4.6);
   R.wire([['A', 'B'], ['A', 'd'], ['B', 'a'], ['B', 'c']]);
   const hA = R.hang('A', 'h 3'), hB = R.hang('B', 'h 2');
-  say('舉例高度：A = 3、B = 2', '對 A 右旋');
-  await beat(tok, 2600);
+  await step(tok);                                   // 2911.0 高度一直在變
+  say('還有一件事：旋轉時高度一直在變', '');
+  talk(g, '高度呢？');
+  await step(tok);                                   // 2922.0 不更新高度 → 做錯決定
+  say('只轉不更新高度', '看起來像 AVL，但記的高度是錯的 → 之後會做錯決定');
+  await step(tok);                                   // 2937.0 在哪裡更新？
+  say('在哪裡更新高度？', '如果 rotate 自己會更新，就不用擔心了');
+  await step(tok);                                   // 2966.0 原本的情況：A、B 加子樹
   R.place({ B: [0, 6.0], A: [1.6, 4.6], a: [-1.6, 4.6], c: [0.6, 3.2], d: [2.6, 3.2] });
   R.wire([['B', 'a'], ['B', 'A'], ['A', 'c'], ['A', 'd']]);
-  say('旋轉後：子樹 a、c、d 內部都沒變', '只有 A、B 的高度可能變');
-  await beat(tok, 2800);
+  say('以原本的例子：對 A 右旋', '哪些高度變了？');
+  await step(tok);                                   // 2998.0 B 和可能 A
+  KG(R.m.A, HOT); KG(R.m.B, HOT);
+  say('B 的高度變了，A 也可能變', '不確定就都更新一次');
+  await step(tok);                                   // 3006.0 更新 B 再更新 A？
+  KG(R.m.A, null);
   txt(hB, 'h 4 ✗'); hB.element.className = 'lab-label ptr alt'; KG(R.m.B, BAD);
-  say('先算 B？會用到 A 的舊高度 3', '<span class="no">max(1, 3) + 1 = 4 ✗</span>');
-  await beat(tok, 2800);
+  say('先 update B、再 update A，對嗎？', '<span class="no">B = max(a 1, A 舊的 3) + 1 = 4 ✗</span>');
+  await step(tok);                                   // 3033.0 子樹 c 呢？沒變
+  KG(R.m.c, HOT);
+  say('那 c 呢？它底下的 children 沒變', '所以 c 的高度不用管');
+  await step(tok);                                   // 3061.0 但真的有問題
+  KG(R.m.c, null);
+  say('但你感覺到的問題是對的', '問題就在 B 用到了 A 的舊高度');
+  talk(g, '順序錯了', 'wow');
+  await step(tok);                                   // 3082.0 要先 A 再 B
   KG(R.m.B, null); txt(hB, 'h ?'); hB.element.className = 'lab-label idx';
-  KG(R.m.A, '#4a3600'); txt(hA, 'h 1');
-  say('先算 A（現在在下面）', 'h(A) = max(c 0, d 0) + 1 = 1');
-  await beat(tok, 2600);
-  KG(R.m.A, null); KG(R.m.B, '#4a3600'); txt(hB, 'h 2');
-  say('再算 B', 'h(B) = max(a 1, A 1) + 1 = 2');
-  await beat(tok, 2600);
+  KG(R.m.A, HOT); txt(hA, 'h 1');
+  say('先更新 A（現在在下面）', 'h(A) = max(c 0, d 0) + 1 = 1');
+  await step(tok);                                   // 3087.0 高度從底下開始算
+  KG(R.m.A, null); KG(R.m.B, HOT); txt(hB, 'h 2');
+  say('高度從底下往上算：0、上一層、再上一層', 'h(B) = max(a 1, A 1) + 1 = 2');
+  await step(tok);                                   // 3099.0 update_height 假設 children 正確
   KG(R.m.B, null);
-  say('update_height 假設子節點高度已正確', '<span class="ok">由下往上：先 A、再 B</span>');
-  await beat(tok, 3000);
+  say('update_height 假設 children 的高度已經正確', '');
+  await step(tok);                                   // 3110.0 先算 B 就是假的答案
+  say('先算 B 的話，A 可能還沒更新', '得到的答案是假的');
+  await step(tok);                                   // 3119.0 所以順序是 A 再 B
+  note('由下往上：先 A、再 B', 0, 0.4, 1.6);
+  say('所以順序一定是：先 A、再 B', '<span class="ok">由下往上</span>');
+  talk(g, '由下往上', 'happy');
+}]);
+
+FRAG.push(['bstc-rebal-up', 'rebalance 要一路往上到 root', async (tok) => {
+  fresh(...CAM);
+  const g = pal();
+  const cp = code(REB, -2.6, 6.6);
+  const R = rig();
+  const P = [[4.4, 6.2], [5.4, 4.9], [4.6, 3.6], [5.6, 2.3]];
+  P.forEach(([x, y], i) => R.node('n' + i, '', x, y, i === 3 ? ORNG : BLUE));
+  R.wire([['n0', 'n1'], ['n1', 'n2'], ['n2', 'n3']]);
+  await step(tok);                                   // 3138.0 剛才只在一個 node rebalance
+  KG(R.m.n2, OKG);
+  say('剛才講的是在「一個 node」rebalance 子樹', '');
+  await step(tok);                                   // 3143.0 少了什麼？
+  say('這張圖少了什麼？', '');
+  talk(g, '少了什麼？');
+  await step(tok);                                   // 3152.0 insert 之後高度一路往上都變
+  cp.hl(8);
+  say('從這裡往下看起來開心了', '但 insert / delete 讓高度一路往上都變了');
+  await step(tok);                                   // 3163.0 要一路往上 rebalance
+  for (let i = 1; i >= 0; i--) { KG(R.m['n' + i], HOT); await beat(tok, 450); KG(R.m['n' + i], OKG); }
+  cp.hl(4);
+  say('所以要一路往上走到 root', '每一層都可能要再 rebalance');
+  await step(tok);                                   // 3170.0 這就是 AVL
+  cp.hl(-1);
+  say('這就是 AVL', '');
+  talk(g, '懂了嗎？', 'happy');
 }]);
 
 // ═══ Abdul Bari 10.1 AVL Tree ═══
-async function walkSay(t, key, tok) {
-  let x = t.root, c = 0;
-  while (x) {
-    c++; cursorTo(bst.cur, x.pos);
-    if (key === x.key) { glow(x, '#163a2a'); say('找 ' + key + '：是 ' + x.key + ' → 找到', '比較 ' + c + ' 次'); await beat(tok, 1800); glow(x, '#000'); return c; }
-    say('找 ' + key + '：跟 ' + x.key + ' 比', key < x.key ? key + ' < ' + x.key + ' → 往左' : key + ' > ' + x.key + ' → 往右');
-    await beat(tok, 1300);
-    x = key < x.key ? x.left : x.right;
-  }
-  say('那邊是空的 → 搜尋失敗', '<span class="no">還是比較了 ' + c + ' 次</span>');
-  await beat(tok, 2000);
-  return c;
-}
+const palB = () => pal(6.2, 2.7, '#f6c35b', 0.55, 'Bari');
+// 一次 BST 搜尋的一步：游標到 x，回傳下一個 node
+function cmpMsg(k, x) { return k === x.key ? '是 ' + x.key + ' → 找到' : k < x.key ? k + ' < ' + x.key + ' → 往左' : k + ' > ' + x.key + ' → 往右'; }
 FRAG.push(['bstc-bari-search', 'BST 搜尋 30、60、32：比較次數 ≤ 高度', async (tok) => {
-  const t = bstStage([40, 20, 50, 10, 30, 60]);
-  say('BST：左子樹都小、右子樹都大', '例：20 的左邊 10、右邊 30');
-  await beat(tok, 2400);
-  await walkSay(t, 30, tok);
-  await walkSay(t, 60, tok);
-  await walkSay(t, 32, tok);
-  hideCursor(bst.cur);
-  say('成功或失敗，最多比較「高度」次', '高度（從 1 數）= 3 → 搜尋時間看 h');
-  await beat(tok, 3000);
+  fresh(...CAM);
+  const g = palB();
+  const t = view();
+  const cur = makeCursor();
+  let cnt = null;
+  const goto = (x, i) => { cursorTo(cur, x.pos); glow(x, HOT); if (!cnt) cnt = tag('', 'pkt', -5, 6.6); txt(cnt, '比較 ' + i + ' 次'); };
+  await step(tok);                                   // 28.8 左邊都比它小
+  grow(t, [40, 20, 50, 10, 30, 60]); await beat(tok, 700);
+  say('binary search tree：對任何 node', '左邊的元素都比它小');
+  talk(g, '左小右大');
+  await step(tok);                                   // 36.0 右邊都比它大：整棵子樹
+  say('右邊的元素都比它大', '左子樹全部比 key 小、右子樹全部比 key 大');
+  await step(tok);                                   // 45.0 例：30 > 20、10 < 20
+  const n20 = nodeOf(t, 20); glow(n20, HOT);
+  say('例如 20：右邊 30 比它大、左邊 10 比它小', '');
+  await step(tok);                                   // 56.1 好搜尋：找 30
+  glow(n20, OFF);
+  say('為什麼好用？拿來搜尋', '例：找 30');
+  await step(tok);                                   // 62.2 從 root 開始：不是 30，比較小 → 左
+  goto(t.root, 1);
+  say('從 root 開始：是 30 嗎？不是', '30 < 40 → 往左');
+  await step(tok);                                   // 74.0 不是 30，比較大 → 右
+  glow(t.root, OFF); goto(n20, 2);
+  say('是 30 嗎？不是', '30 > 20 → 往右');
+  await step(tok);                                   // 79.0 找到：3 次比較
+  glow(n20, OFF); const n30 = nodeOf(t, 30); goto(n30, 3); glow(n30, OKG);
+  say('是 30：找到了', '總共比較 3 次');
+  talk(g, '3 次！', 'happy');
+  await step(tok);                                   // 84.0 找 60
+  glow(n30, OFF); goto(t.root, 1);
+  say('再找 60：60 > 40 → 往右', '');
+  await step(tok);                                   // 97.0 60 > 50 → 右 → 找到
+  glow(t.root, OFF); const n50 = nodeOf(t, 50); goto(n50, 2); await beat(tok, 500); glow(n50, OFF);
+  const n60 = nodeOf(t, 60); goto(n60, 3); glow(n60, OKG);
+  say('60 > 50 → 往右：找到', '也是 3 次比較');
+  await step(tok);                                   // 108.0 找 32
+  glow(n60, OFF);
+  say('再找一個：32', '');
+  await step(tok);                                   // 116.0 40 → 左、20 → 右、30 → 右：沒東西
+  const p = await walk(tok, t, cur, 32, 450);
+  txt(cnt, '比較 ' + p.length + ' 次');
+  say('32 < 40 往左、32 > 20 往右、32 > 30 往右', '右邊什麼都沒有 → 搜尋失敗');
+  talk(g, '找不到', 'sad');
+  await step(tok);                                   // 136.5 成功或失敗
+  hideCursor(cur);
+  say('搜尋有兩種結果：找到（成功）或找不到（失敗）', '');
+  await step(tok);                                   // 148.0 失敗也比了 3 次
+  say('失敗的時候比了幾次？1、2、3', '一樣 3 次');
+  await step(tok);                                   // 154.0 最多比較次數看高度
+  say('最多要比較幾次，取決於樹的高度', '所以搜尋時間看高度');
+  await step(tok);                                   // 165.0 高度從 1 開始數：3
+  const hl = [6.6, 5.25, 3.9].map((y, i) => tag(String(i + 1), 'pkt', -6.3, y - 0.3));
+  void hl;
+  say('一般高度從 0 數，Bari 從 1 數（數層數）', '這棵高度 = 3');
+  await step(tok);                                   // 186.0 左小右大＋時間看高度
+  say('BST 的性質：小的在左、大的在右', '搜尋時間取決於高度');
+  await step(tok);                                   // 197.0 高度最小 log n、最大 n
+  note('高度：最小 log n，最大 n', 0, 0.4, 1.6);
+  say('那 binary tree 的高度是多少？', '最小 log n、最大 n：看情況');
 }]);
 
 FRAG.push(['bstc-bari-two-orders', '同一組 key：高度 3 或高度 7', async (tok) => {
   fresh([0, 4.3, 13.5], [0, 3.8, 0]);
+  const g = palB();
   const small = { size: [0.55, 0.42, 0.55], width: 5.4, maxSp: 0.9, topY: 6.5, minY: 0.6, maxStep: 1.3 };
-  const l = makeView(Object.assign({ cx: -3.5 }, small)), r = makeView(Object.assign({ cx: 3.5 }, small));
+  const l = view(Object.assign({ cx: -3.5 }, small)), r = view(Object.assign({ cx: 3.5 }, small));
   const A = [30, 40, 10, 50, 20, 5, 35], B = [50, 40, 35, 30, 20, 10, 5];
-  const ll = tag(A.join(', '), 'ptr', -3.5, 7.5), rl = tag(B.join(', '), 'ptr alt', 3.5, 7.5);
-  say('同一組 7 個 key，兩種插入順序', '每個 key 都從 root 開始比');
-  await beat(tok, 2400);
-  for (let i = 0; i < 7; i++) {
-    const a = attach(l, mk(A[i])); layout(l); dropIn(a);
-    const b = attach(r, mk(B[i])); layout(r); dropIn(b);
-    say('insert ' + A[i] + ' ／ insert ' + B[i], '左 h = ' + height(l.root) + '，右 h = ' + height(r.root));
-    await beat(tok, 1100);
-  }
-  txt(ll, '高度 3 ≈ log n'); txt(rl, '高度 7 = n');
-  say('左邊 h = 3；右邊一路往左長', '<span class="no">右邊 h = n = 7</span>');
-  await beat(tok, 2600);
+  let ll = null, rl = null;
+  const insL = (k) => put(l, k), insR = (k) => put(r, k);
+  await step(tok);                                   // 208.0 同一組 key 可以排出不同的 BST
+  say('同一組 key 可以排出不同的 BST', '高度可能長到 n，也可能縮到 log n');
+  talk(g, '看順序');
+  await step(tok);                                   // 225.0 搜尋最快 log n、最慢 n
+  say('所以搜尋時間最少 log n、最多 n', '');
+  await step(tok);                                   // 230.8 BST 的問題在哪？來建一棵
+  say('BST 的問題在哪？', '來實際建一棵');
+  await step(tok);                                   // 242.0 同一組 key、不同順序
+  ll = tag(A.join(', '), 'pkt', -3.5, 7.5); rl = tag(B.join(', '), 'pkt', 3.5, 7.5);
+  say('左右兩組是同樣的 key', '只是順序不一樣');
+  await step(tok);                                   // 256.0 一次 insert 一個：30
+  insL(30);
+  say('建 BST 的方法：一次 insert 一個', '第一個 30 當 root');
+  await step(tok);                                   // 260.0 40 > 30 → 右
+  insL(40);
+  say('insert 40：40 > 30 → 右邊', '');
+  await step(tok);                                   // 266.3 10 < 30 → 左
+  insL(10);
+  say('insert 10：10 < 30 → 左邊', '');
+  await step(tok);                                   // 278.6 50：每個都從 root 比
+  insL(50);
+  say('insert 50：每次都從 root 開始比', '> 30、> 40 → 40 的右邊');
+  await step(tok);                                   // 283.0 20
+  insL(20);
+  say('insert 20：< 30 往左、> 10 → 10 的右邊', '');
+  await step(tok);                                   // 296.0 5
+  insL(5);
+  say('insert 5：< 30、< 10 → 10 的左邊', '');
+  await step(tok);                                   // 303.3 35
+  insL(35);
+  say('insert 35：> 30、< 40 → 40 的左邊', '');
+  await step(tok);                                   // 314.0 再 insert 50：重複不放
+  const dup = tag('50 ✗ 已經有了', 'note', -1.4, 2.0, 1.0);
+  say('如果又來一個 50：一路比到 50，已經有了', 'BST 不放重複的 key');
+  await step(tok);                                   // 332.3 高度？最小：log n
+  remove(dup);
+  txt(ll, '高度 3 ≈ log n');
+  say('這棵的高度：最小的高度 log n', '');
+  await step(tok);                                   // 341.3 搜尋時間 log n
+  say('搜尋任何 key 的時間：log n', '看高度');
+  talk(g, '很快', 'happy');
+  await step(tok);                                   // 355.6 同樣的 key，換個順序
+  say('同樣的 key，順序不同', '再建一棵');
+  await step(tok);                                   // 367.0 50，40 往左
+  insR(50); await beat(tok, 350); insR(40);
+  say('先 50，40 < 50 → 左邊', '');
+  await step(tok);                                   // 373.0 35、30、20、5 全部往左
+  for (const k of [35, 30, 20, 10, 5]) { insR(k); await beat(tok, 330); }
+  say('35、30、20、10、5：每個都比前面小', '一路往左下長');
+  talk(g, '歪掉了', 'sad');
+  await step(tok);                                   // 395.3 高度 = n
+  txt(rl, '高度 7 = n');
+  say('這棵高度是 n', '');
+  await step(tok);                                   // 403.7 這就是 BST 的問題
+  say('key 的順序剛好讓樹長成高度 n', '這就是 BST 的問題');
+  await step(tok);                                   // 419.0 高度不受控制：log n 或 n
+  say('方法一樣是一次 insert 一個', '但最後高度不受控制：可能 log n，也可能 n');
+  await step(tok);                                   // 443.0 搜尋像 linear search
+  say('高度是 n 時，搜尋時間就是 n', '跟 linear search 一樣');
+  await step(tok);                                   // 453.0 找 5：比 7 次
   const cur = makeCursor();
-  let x = r.root, c = 0;
-  while (x) { c++; cursorTo(cur, x.pos); say('找 5：第 ' + c + ' 次比較', ''); await beat(tok, 500); x = x.left; }
-  say('找 5 要比 7 次', '<span class="no">跟 linear search 一樣 O(n)</span>');
-  await beat(tok, 2600);
-  say('BST 的高度不受控制', '看 key 插入的順序：log n ～ n');
-  await beat(tok, 3000);
+  await walk(tok, r, cur, 5, 260);
+  say('找 5：每次都更小、往左', '總共比 7 次');
+  await step(tok);                                   // 468.0 缺點：看 key 怎麼 insert
+  hideCursor(cur);
+  note('BST 的缺點：高度取決於 insert 順序', 0, 0.4, 1.6);
+  say('BST 的缺點：高度不受控制', '完全看 key 怎麼 insert');
 }]);
 
 FRAG.push(['bstc-bari-six-orders', '3 個 key 的 6 種插入順序', async (tok) => {
   fresh([0, 4.4, 13.5], [0, 3.8, 0]);
-  const ORD = [[30, 20, 10], [30, 10, 20], [10, 30, 20], [10, 20, 30], [20, 10, 30], [20, 30, 10]];
+  const g = palB();
   const XS = { 10: -1, 20: 0, 30: 1 };
-  say('10, 20, 30 有 3! = 6 種順序', '每一種建一棵 BST');
-  await beat(tok, 2200);
-  const hs = [];
-  for (const [i, o] of ORD.entries()) {
+  const drawn = [];
+  const draw = (o, i) => {
     const cx = (i % 3 - 1) * 4.4, top = i < 3 ? 6.2 : 2.9;
     tag(o.join(', '), 'idx', cx, top + 0.85);
     const t = { root: null }, seen = [];
@@ -6141,22 +7917,54 @@ FRAG.push(['bstc-bari-six-orders', '3 個 key 的 6 種插入順序', async (tok
       if (z.parent) line(z.parent.xy[0], z.parent.xy[1], x, y, -0.05);
       seen.push(z);
     }
-    hs.push([cx, top, height(t.root), seen]);
-    say(o.join(', '), '高度 ' + height(t.root));
-    await beat(tok, 1300);
-  }
-  for (const [cx, top, h, ns] of hs) {
-    tag('h = ' + h, h === 3 ? 'ptr alt' : 'ptr', cx + 1.7, top - 1.0);
-    if (h === 2) ns.forEach((z) => KG(z.m, '#163a2a'));
-  }
-  say('4 種長成一條：高度 3', '只有 20 先進來的 2 種：高度 2');
-  await beat(tok, 3000);
-  say('我們要的是最矮的那種', '高度小 → 搜尋快');
-  await beat(tok, 2600);
+    drawn.push([cx, top, height(t.root), seen]);
+  };
+  await step(tok);                                   // 495.5 30、20、10 → 一條
+  draw([30, 20, 10], 0);
+  say('3 個 key：照 30、20、10 的順序 insert', '20 在 30 左邊、10 在 20 左邊');
+  await step(tok);                                   // 507.0 同樣的 key 可以換順序嗎？
+  say('同樣的 key，可以換個順序 insert 嗎？', '可以，順序有很多種');
+  talk(g, '換順序');
+  await step(tok);                                   // 523.0 30、10、20
+  draw([30, 10, 20], 1);
+  say('30、10、20：10 在左，20 夾在中間', '又是另一種形狀');
+  await step(tok);                                   // 540.0 10、30、20
+  draw([10, 30, 20], 2);
+  say('10、30、20', '');
+  await step(tok);                                   // 560.4 10、20、30
+  draw([10, 20, 30], 3);
+  say('10、20、30：一路往右', '');
+  await step(tok);                                   // 569.0 3! = 6 種
+  say('3 個 key 有幾種順序？', '3! = 6 種');
+  await step(tok);                                   // 585.0 20、10、30
+  draw([20, 10, 30], 4);
+  say('20、10、30', '');
+  await step(tok);                                   // 595.4 20、30、10
+  draw([20, 30, 10], 5);
+  say('20、30、10：跟上一棵一樣', '');
+  await step(tok);                                   // 610.0 不同順序 → 不同形狀
+  say('同一組 key，順序不同', '就得到不同形狀的 BST');
+  await step(tok);                                   // 624.0 這些高度 3（最大）
+  for (const [cx, top, h] of drawn) tag('h = ' + h, h === 3 ? 'ptr alt' : 'ptr', cx + 1.7, top - 1.0);
+  say('這幾棵的高度都是 3', '3 個 key 高度 3：最大的高度');
+  await step(tok);                                   // 638.0 這棵高度 2（最小）
+  for (const [, , h, ns] of drawn) if (h === 2) ns.forEach((z) => KG(z.m, OKG));
+  say('20 先進來的兩棵：高度 2', '最小的高度');
+  talk(g, '這個最好', 'happy');
+  await step(tok);                                   // 647.1 喜歡高度最小的
+  say('同樣的 key 可以長很高、也可以很矮', '我們要的是高度最小的：搜尋才快');
+  await step(tok);                                   // 666.0 BST 的缺點
+  say('BST 的缺點：同樣的 key 會長出不同形狀', '可能最高、也可能最矮');
+  await step(tok);                                   // 685.0 能不能把它們轉成這種？
+  say('拿到高的形狀時，能不能把它變成矮的？', '「直接換掉」不行，要有一套方法');
+  await step(tok);                                   // 707.3 定義一套程序：rotation
+  say('所以定義一套程序來轉換', '叫做 rotation（旋轉）');
+  talk(g, '旋轉！', 'wow');
 }]);
 
 FRAG.push(['bstc-bari-rot-idea', '用旋轉把高的 BST 拉成平衡', async (tok) => {
   fresh([0, 4.4, 13.5], [0, 4.4, 0]);
+  const g = palB();
   const SH = [
     { o: [30, 20, 10], cx: -5.1, d: { 30: 0, 20: 1, 10: 2 }, mid: null, n: '30,20,10' },
     { o: [10, 20, 30], cx: -1.7, d: { 10: 0, 20: 1, 30: 2 }, mid: null, n: '10,20,30' },
@@ -6173,166 +7981,575 @@ FRAG.push(['bstc-bari-rot-idea', '用旋轉把高的 BST 拉成平衡', async (t
     s.ls = ks.filter((k) => dep[k] > 0).map((k) => { const p = par(k); return line(s.cx + XS[p], Y(dep[p]), s.cx + XS[k], Y(dep[k]), -0.05); });
   };
   for (const s of SH) { s.m = {}; draw(s, s.d); tag(s.n, 'idx', s.cx, 7.3); }
-  say('同樣 3 個 key，4 種高的形狀', '想把它們都變成 20 在中間');
-  await beat(tok, 2800);
-  KG(SH[0].m[30], '#4a3600');
-  say('繞著 30 把它往右拉', '20 升上來，30 往右下');
-  await beat(tok, 1600);
-  draw(SH[0], BAL);
-  KG(SH[0].m[30], null);
-  await beat(tok, 1400);
-  KG(SH[1].m[10], '#4a3600');
-  say('另一邊：繞著 10 往左拉', '像釘子上的線，一拉 20 就升上來');
-  await beat(tok, 1600);
+  await step(tok);                                   // 716.0 繞著這個 node 轉：把 30 拉過去
+  KG(SH[0].m[30], HOT);
+  const nail = tag('📌', '', SH[0].cx + 0.8, 6.9);
+  say('繞著 30 這個 node 轉', '把 30 往右邊拉');
+  talk(g, '拉線！');
+  await step(tok);                                   // 724.0 20 升上來
+  draw(SH[0], BAL); KG(SH[0].m[30], null);
+  say('20 升上來，30 移到右下', '形狀就變了');
+  await step(tok);                                   // 733.9 另一棵：繞著 10 轉
+  remove(nail);
+  KG(SH[1].m[10], HOT);
+  say('另一棵：繞著 10 轉', '');
+  await step(tok);                                   // 739.0 10 下來、20 上去
   draw(SH[1], BAL); KG(SH[1].m[10], null);
-  await beat(tok, 1600);
-  say('zigzag：一步做不到', '先繞 10 轉，再繞 30 轉');
-  await beat(tok, 2000);
-  draw(SH[2], SH[2].mid); draw(SH[3], SH[3].mid);
-  say('第 1 步：先拉成一直線', '');
-  await beat(tok, 1800);
-  draw(SH[2], BAL); draw(SH[3], BAL);
-  say('第 2 步：再轉一次', '4 種旋轉：2 種單旋、2 種雙旋');
-  await beat(tok, 2200);
-  say('不管樹多大，旋轉只動 3 個節點', '整棵樹因此變平衡');
-  await beat(tok, 3000);
+  say('10 往左下、20 升上來、30 在右邊', '');
+  await step(tok);                                   // 743.0 像釘子上的線
+  say('想像這裡釘了一根釘子，繞著它掛一條線', '一拉線，20 就升上來');
+  talk(g, '📌 拉一拉', 'happy');
+  await step(tok);                                   // 752.0 旋轉把高的變矮
+  say('用旋轉，把高的 BST 變成矮的', '');
+  await step(tok);                                   // 763.0 這就是 AVL 的想法
+  tag('AVL 的想法', 'pkt', 0, 8.1);
+  say('這就是 AVL tree 的想法', '');
+  await step(tok);                                   // 769.0 這種呢？一步不行
+  KG(SH[2].m[10], HOT);
+  say('那這種 zigzag 呢？', '一步做不到');
+  await step(tok);                                   // 774.0 先繞 10 轉：20 上來
+  draw(SH[2], SH[2].mid);
+  say('先繞著 10 轉：20 升上來', '變成一直線');
+  await step(tok);                                   // 779.0 再繞 30 轉
+  KG(SH[2].m[10], null); draw(SH[2], BAL);
+  say('再繞著 30 轉：30 去右邊、20 升上來', '10 留在左邊');
+  await step(tok);                                   // 789.0 這棵也一樣：先 30 再 10
+  draw(SH[3], SH[3].mid); await beat(tok, 700); draw(SH[3], BAL);
+  say('最後一棵也一樣：先繞 30、再繞 10', '');
+  await step(tok);                                   // 794.0 四種旋轉
+  say('一共四種旋轉', '把 BST 變成平衡的 BST');
+  await step(tok);                                   // 805.0 很多 node 怎麼辦？
+  say('你可能會問：只有三個 node 很簡單', '如果樹裡有很多 node 呢？');
+  talk(g, '很多 node？');
+  await step(tok);                                   // 818.0 旋轉永遠只動三個 node
+  note('旋轉永遠只看 3 個 node', 0, 0.4, 1.6);
+  say('記住：不管樹多大，旋轉永遠只動三個 node', '');
+  await step(tok);                                   // 832.0 整棵樹因此平衡
+  say('調整這三個 node', '整棵樹就會平衡、高度最小');
+  await step(tok);                                   // 843.0 接下來：AVL 定義、旋轉、建樹
+  say('接下來：AVL 的定義 → 旋轉 → 怎麼建 AVL tree', '');
 }]);
 
 FRAG.push(['bstc-bari-bf', 'Balance factor = h(左) − h(右)', async (tok) => {
   fresh(...CAM);
-  const T1 = { r: [-4.0, 6.0, 0], L: [-4.8, 4.7, 1], LL: [-5.6, 3.4, 0], R: [-2.4, 4.7, 1], RL: [-3.2, 3.4, 0] };
-  const T2 = { r: [3.9, 6.0, 2], X: [1.4, 4.7, -2], Y: [3.0, 3.4, 1], Z: [2.2, 2.1, 0], W: [5.4, 4.7, 0] };
-  const E1 = [['r', 'L'], ['r', 'R'], ['L', 'LL'], ['R', 'RL']], E2 = [['r', 'X'], ['r', 'W'], ['X', 'Y'], ['Y', 'Z']];
+  const g = palB();
+  // [x, y, bf, parent]
+  const T1 = { r: [-4.8, 6.0, 0], L: [-5.6, 4.7, 1, 'r'], LL: [-6.2, 3.4, 0, 'L'], R: [-4.0, 4.7, 1, 'r'], RL: [-4.6, 3.4, 0, 'R'] };
+  const T2 = { r: [0.4, 6.0, 2], X: [-0.8, 4.7, -2, 'r'], Y: [0.0, 3.4, 1, 'X'], Z: [-0.6, 2.1, 0, 'Y'], W: [1.6, 4.7, 0, 'r'] };
+  const T3 = { r: [4.2, 6.0, -2], L: [3.4, 4.7, 0, 'r'], P: [5.2, 4.7, -1, 'r'], Q: [4.6, 3.4, 0, 'P'], S: [5.8, 3.4, -1, 'P'], U: [6.3, 2.1, 0, 'S'] };
   const ms = {};
-  for (const [T, E, p] of [[T1, E1, 'a'], [T2, E2, 'b']]) {
-    for (const k in T) ms[p + k] = cube(' ', '#c9b48e', [0.7, 0.55, 0.7], T[k][0], T[k][1], 0, 3);
-    for (const [u, v] of E) line(T[u][0], T[u][1], T[v][0], T[v][1], -0.05);
-  }
-  say('bf = h(左子樹) − h(右子樹)', '平衡：bf ∈ {−1, 0, 1}，即 |bf| ≤ 1');
-  await beat(tok, 2800);
+  const draw = (T, p) => { for (const k in T) { ms[p + k] = cube(' ', '#c9b48e', [0.6, 0.48, 0.6], T[k][0], T[k][1], 0, 3); if (T[k][3]) { const q = T[T[k][3]]; line(q[0], q[1], T[k][0], T[k][1], -0.05); } } };
   const fill = (p, T, ks) => ks.forEach((k) => { const b = T[k][2], m = ms[p + k]; relabel(m, (b > 0 ? '+' : b < 0 ? '−' : '') + Math.abs(b)); K.tint(m, Math.abs(b) > 1 ? '#d64545' : '#2fc092'); });
-  fill('a', T1, ['LL', 'RL']);
-  say('leaf 的 bf 一定是 0', '');
-  await beat(tok, 1600);
-  fill('a', T1, ['L', 'R']);
-  say('只有左子：1 − 0 = 1', '');
-  await beat(tok, 1800);
+  const f = note('bf = h(左子樹) − h(右子樹)', 0, 7.7, 0);
+  await step(tok);                                   // 867.5 bf = 左高 − 右高
+  say('AVL tree：height balanced 的 BST', '每個 node 算 balance factor：bf = 左子樹高 − 右子樹高');
+  talk(g, '算 bf');
+  await step(tok);                                   // 875.0 只能 −1、0、1
+  txt(f, 'bf = h(左) − h(右) ∈ {−1, 0, 1}');
+  say('bf 只能是 −1、0 或 1', '不能大於 1、不能小於 −1');
+  await step(tok);                                   // 890.0 超出就是 imbalanced → 旋轉
+  say('三個值之一：這個 node 平衡（balanced）', '否則不平衡（imbalanced）→ 要做 rotation');
+  await step(tok);                                   // 905.1 |bf| ≤ 1
+  txt(f, '|bf| = |h(左) − h(右)| ≤ 1');
+  say('另一種寫法：|bf| ≤ 1', '取絕對值後只能是 0 或 1');
+  await step(tok);                                   // 918.0 幾棵沒有 key 的樹
+  draw(T1, 'a'); draw(T2, 'b'); draw(T3, 'c');
+  say('這裡有幾棵 binary tree', '沒寫 key，只看形狀');
+  await step(tok);                                   // 929.9 第一棵 root：左 2、右 2 → 0
   fill('a', T1, ['r']);
-  say('root：左邊最長 2、右邊 2', '2 − 2 = 0 → 這棵全部平衡');
-  await beat(tok, 2600);
-  fill('b', T2, ['Z', 'W']);
-  fill('b', T2, ['Y']);
-  say('右邊這棵：高度數「邊」不數節點', '');
-  await beat(tok, 2000);
+  say('第一棵的 root：左邊最長走 2 步、右邊也 2 步', '2 − 2 = 0');
+  await step(tok);                                   // 951.0 這個：左 1、右 0 → 1
+  fill('a', T1, ['L']);
+  say('這個 node：左邊 1、右邊沒東西 0', '1 − 0 = 1');
+  await step(tok);                                   // 956.0 另一個也是 1
+  fill('a', T1, ['R']);
+  say('這個：左 1、右 0', '也是 1');
+  await step(tok);                                   // 963.0 leaf 都是 0 → 整棵平衡
+  fill('a', T1, ['LL', 'RL']);
+  say('leaf 的 bf 一定是 0', '0、1、1、0、0 全部在範圍內：這棵平衡');
+  talk(g, '第一棵 OK', 'happy');
+  await step(tok);                                   // 981.9 第二棵 root：數邊 3 − 1 = 2
   fill('b', T2, ['r']);
-  say('root：左邊最長 3 條邊、右邊 1', '<span class="no">3 − 1 = 2 → 失衡</span>');
-  await beat(tok, 2600);
+  say('第二棵的 root：左邊最長 3 條邊、右邊 1', '數「邊」不數 node：3 − 1 = 2 → 不平衡');
+  await step(tok);                                   // 1003.0 這個：0 − 2 = −2
   fill('b', T2, ['X']);
-  say('這個節點：左 0、右 2', '<span class="no">0 − 2 = −2 → 失衡</span>');
-  await beat(tok, 2600);
-  say('有任何節點失衡，就要旋轉', '');
-  await beat(tok, 2400);
+  say('這個 node：左邊 0、右邊 2', '0 − 2 = −2 → 也不平衡');
+  await step(tok);                                   // 1011.2 其他：1、0、0
+  fill('b', T2, ['Y', 'Z', 'W']);
+  say('其他的：1 − 0 = 1，leaf 都是 0', '');
+  await step(tok);                                   // 1016.0 第三棵 root：1 − 3 = −2
+  fill('c', T3, ['r']);
+  say('第三棵的 root：左邊 1、右邊 3', '1 − 3 = −2 → 不平衡');
+  await step(tok);                                   // 1029.0 數邊；其他 0、−1、−1
+  fill('c', T3, ['L', 'Q', 'U', 'S', 'P']);
+  say('再次提醒：高度數邊，不是數 node', 'leaf 0；這個 0 − 1 = −1；這個 1 − 2 = −1');
+  await step(tok);                                   // 1043.0 後兩棵不平衡，第一棵完美
+  say('後面兩棵有 node 不是 height balanced', '第一棵完全平衡');
+  talk(g, '紅的要修', 'calm');
+  await step(tok);                                   // 1057.0 不平衡就要旋轉
+  say('只要有 node 不平衡', '就要做 rotation 把它平衡回來');
 }]);
 
-const BARI = { LL: [[30, 20], 10, 'LL：20 升上來', '30 到右邊，10 留在左邊'], LR: [[30, 10], 20, 'LR：兩步算一次旋轉', '20 當根，10 左、30 右'],
-  RR: [[10, 20], 30, 'RR：20 升上來', '10 到左邊，30 留在右邊'], RL: [[10, 30], 20, 'RL：也是兩步的雙旋', '20 當根，10 左、30 右'] };
-FRAG.push(['bstc-bari-rot', 'LL / LR / RR / RL：3 個 key 的旋轉', async (tok) => {
-  const ty = BARI[(ctx.params || {}).type] ? ctx.params.type : 'LL';
-  const [pre, k, c1, f1] = BARI[ty];
-  avlStage(pre);
-  say('先有 ' + pre.join('、') + '：都平衡', '方塊上方 = bf');
-  await beat(tok, 2400);
-  say('insert ' + k, ty === 'LL' ? '插在左的左' : ty === 'RR' ? '插在右的右' : ty === 'LR' ? '插在左的右' : '插在右的左');
-  await avlInsert(k, tok);
-  say(c1, f1);
-  await beat(tok, 2600);
-  say('失衡怎麼來，旋轉就叫什麼', ty + ' 失衡 → ' + ty + ' rotation');
-  await beat(tok, 2600);
+// ── Bari 的 3 個 key 旋轉（LL / LR / RR / RL）與建 AVL：自己控制每一步 ──
+function avlView(seq, o) { fresh(...CAM); const t = view(Object.assign({ kind: 'avl' }, o || {})); if (seq.length) grow(t, seq, false); return t; }
+function avlPut(t, k, showBf = false) { const z = attach(t, mk(k)); t.o.tag = showBf ? 'bf' : 'none'; layout(t); dropIn(z); return z; }
+const sideW = (s) => (s === 'L' ? 'left' : 'right');
+function badOf(t) { return inorder(t.root).filter((n) => Math.abs(bf(n)) > 1); }
+function firstBad(z) { for (let x = z.parent; x; x = x.parent) if (Math.abs(bf(x)) > 1) return x; return null; }
+function rotAll(t, c, stage) { applyAvl(t, c, stage); layout(t); }
+
+FRAG.push(['bstc-bari-ll', 'LL 旋轉：30、20 再插 10', async (tok) => {
+  const t = avlView([30, 20]);
+  const g = palB();
+  let z, c;
+  await step(tok);                                   // 1084.0 30、20：bf 1、0 → 平衡
+  bfOn(t, true);
+  say('一開始：30、20', 'bf 是 1 和 0 → 平衡');
+  talk(g, '目前平衡');
+  await step(tok);                                   // 1098.5 insert 10：左的左
+  z = avlPut(t, 10);
+  say('insert 10：< 30 往左、< 20 往左', '');
+  await step(tok);                                   // 1110.0 算 bf：0、1、2
+  bfOn(t, true);
+  say('算 bf：10 是 0、20 是 1、30 是 2', '');
+  await step(tok);                                   // 1123.0 30 不平衡
+  glow(t.root, REDG);
+  say('30 變成 imbalanced', '要做 rotation');
+  talk(g, '30 失衡', 'wow');
+  await step(tok);                                   // 1135.0 為什麼：插在左的左 → LL
+  c = avlCase(t.root); mark(t, c.A, 'A'); mark(t, c.B, 'B', 'ptr');
+  say('為什麼失衡？因為插在「左的左」', '叫 LL imbalance');
+  await step(tok);                                   // 1158.0 bf 2：左邊重；−2：右邊重
+  say('bf = 2：左邊重；bf = −2：右邊重', '');
+  await step(tok);                                   // 1172.0 因為是左的左 → 對這個 node 轉
+  say('重點：因為插在左的左', '所以對這個 node 做這種旋轉');
+  await step(tok);                                   // 1183.6 20 升上來、30 去右邊
+  glow(t.root, OFF); clearMarks(t);
+  rotAll(t, c);
+  say('20 升上來、30 移到右邊', '10 補到 20 原本的位置');
+  await step(tok);                                   // 1195.0 完全平衡
+  for (const n of inorder(t.root)) glow(n, OKG);
+  say('bf 全部 0：完全平衡', '');
+  talk(g, '平衡了', 'happy');
+  await step(tok);                                   // 1205.1 叫 LL rotation
+  tag('LL rotation（單旋）', 'pkt', 0, 7.6);
+  say('因為是 LL imbalance', '這個旋轉就叫 LL rotation');
+  void z;
+}]);
+
+FRAG.push(['bstc-bari-lr', 'LR 旋轉：30、10 再插 20（兩步）', async (tok) => {
+  const t = avlView([30, 10], { tag: 'bf' });
+  const g = palB();
+  let z, c;
+  await step(tok);                                   // 1236.3 insert 20：左邊、10 的右邊
+  z = avlPut(t, 20);
+  say('30、10 之後 insert 20', '< 30 往左、> 10 → 10 的右邊');
+  await step(tok);                                   // 1246.8 bf：0、−1、2
+  bfOn(t, true);
+  say('算 bf：20 是 0、10 是 −1、30 是 2', '');
+  await step(tok);                                   // 1254.5 不平衡：先左再右 → LR
+  glow(t.root, REDG);
+  c = avlCase(t.root); mark(t, c.A, 'A'); mark(t, c.B, 'B', 'ptr'); mark(t, c.C, 'C', 'ptr');
+  say('30 又失衡：這次插在「左的右」', 'LR imbalance');
+  talk(g, '左 → 右', 'wow');
+  await step(tok);                                   // 1269.3 我們要平衡的那種形狀
+  say('三個 node 不管長怎樣', '我們都想把它變成平衡的那一種');
+  await step(tok);                                   // 1281.2 這要兩步
+  say('這種要做兩步的旋轉', '');
+  await step(tok);                                   // 1293.0 第一步：繞 10 轉，20 上來
+  glow(t.root, OFF); clearMarks(t);
+  rotAll(t, c, 1);
+  say('第一步：繞著 10 轉', '20 升上來、10 往左下：變一直線');
+  await step(tok);                                   // 1312.0 第二步：20 當 root
+  rotAll(t, c, 2);
+  say('第二步：繞著 30 轉', '20 當 root，10 在左、30 在右');
+  talk(g, '兩步完成', 'happy');
+  await step(tok);                                   // 1336.0 兩步但算一個 double rotation
+  for (const n of inorder(t.root)) glow(n, OKG);
+  say('裡面有兩步', '但算成「一個」旋轉：double rotation');
+  await step(tok);                                   // 1353.0 叫 LR rotation
+  tag('LR rotation（雙旋）', 'pkt', 0, 7.6);
+  say('失衡是 LR 型', '旋轉就叫 LR rotation');
+  await step(tok);                                   // 1359.0 目前：LL 單步、LR 兩步
+  say('目前學了兩種：LL（一步）', 'LR（兩步）');
+  void z;
+}]);
+
+FRAG.push(['bstc-bari-rr', 'RR 旋轉：10、20 再插 30', async (tok) => {
+  const t = avlView([10, 20], { tag: 'bf' });
+  const g = palB();
+  let c;
+  await step(tok);                                   // 1382.0 insert 30：右的右
+  avlPut(t, 30);
+  say('一開始 10、20；insert 30', '> 10、> 20 → 20 的右邊');
+  await step(tok);                                   // 1387.0 bf：0、−1、−2
+  bfOn(t, true); glow(t.root, REDG);
+  say('bf：0、−1、−2', '10 失衡');
+  talk(g, '右邊重', 'wow');
+  await step(tok);                                   // 1397.0 右的右 → RR
+  c = avlCase(t.root); mark(t, c.A, 'A'); mark(t, c.B, 'B', 'ptr');
+  say('插在「右的右」', 'RR imbalance');
+  await step(tok);                                   // 1402.0 繞 10 轉：20 上來
+  glow(t.root, OFF); clearMarks(t);
+  rotAll(t, c);
+  say('繞著 10 轉', '20 升上來');
+  await step(tok);                                   // 1415.7 bf 0、0、0
+  for (const n of inorder(t.root)) glow(n, OKG);
+  say('bf 變成 0、0、0', '');
+  talk(g, '平衡', 'happy');
+  await step(tok);                                   // 1419.0 叫 RR rotation（單旋）
+  tag('RR rotation（單旋）', 'pkt', 0, 7.6);
+  say('RR imbalance → RR rotation', '第三種，也是單旋');
+}]);
+
+FRAG.push(['bstc-bari-rl', 'RL 旋轉：10、30 再插 20', async (tok) => {
+  const t = avlView([10, 30], { tag: 'bf' });
+  const g = palB();
+  let c;
+  await step(tok);                                   // 1441.0 insert 20：10 右邊、30 左邊
+  avlPut(t, 20);
+  say('一開始 10、30；insert 20', '> 10 往右、< 30 → 30 的左邊');
+  await step(tok);                                   // 1447.9 bf：0、1、−2
+  bfOn(t, true); glow(t.root, REDG);
+  say('bf：0、1、−2', '10 失衡');
+  await step(tok);                                   // 1454.0 插在右的左 → RL
+  c = avlCase(t.root); mark(t, c.A, 'A'); mark(t, c.B, 'B', 'ptr'); mark(t, c.C, 'C', 'ptr');
+  say('插在「右的左」', 'RL imbalance');
+  talk(g, '右 → 左', 'wow');
+  await step(tok);                                   // 1460.7 要兩步：double rotation
+  say('這個也要兩步', 'double rotation');
+  await step(tok);                                   // 1468.0 先繞 30：20 上來
+  glow(t.root, OFF); clearMarks(t);
+  rotAll(t, c, 1);
+  say('先繞著 30 轉', '20 升上來、30 往右下');
+  await step(tok);                                   // 1483.0 再繞 10：平衡
+  rotAll(t, c, 2);
+  for (const n of inorder(t.root)) glow(n, OKG);
+  say('再繞著 10 轉', '20 當 root：平衡');
+  await step(tok);                                   // 1491.1 叫 RL rotation
+  tag('RL rotation（雙旋）', 'pkt', 0, 7.6);
+  say('RL imbalance → RL rotation', '');
+  talk(g, '四種到齊', 'happy');
+  await step(tok);                                   // 1506.0 LL、RR 單旋；LR、RL 雙旋
+  note('LL、RR：單旋　LR、RL：雙旋', 0, 0.4, 1.6);
+  say('四種旋轉：LL、RR 是單旋', 'LR、RL 是雙旋');
+  await step(tok);                                   // 1523.1 接著看大樹裡的特殊情況
+  say('接下來看：樹很大的時候', '這些旋轉怎麼做');
 }]);
 
 FRAG.push(['bstc-bari-ll-general', 'LL 一般形：B 的右子樹接到 A 的左邊', async (tok) => {
   fresh(...CAM);
+  const g = palB();
   const R = rig();
   R.node('A', 'A', 0.6, 6.2, BLUE); R.node('B', 'B', -0.9, 4.9, TEAL); R.node('C', 'C', -2.2, 3.6, PURP);
-  R.sub('CL', 'C_L', -3.0, 2.3); R.sub('CR', 'C_R', -1.4, 2.3); R.sub('BR', 'B_R', 0.2, 3.6); R.sub('AR', 'A_R', 2.2, 4.9);
+  R.wire([['A', 'B'], ['B', 'C']]);
+  await step(tok);                                   // 1537.9 A、B、C，A 有右 child
+  R.sub('AR', 'A_R', 2.2, 4.9, 3);
+  R.wire([['A', 'B'], ['A', 'AR'], ['B', 'C']]);
+  say('一棵 BST 裡有 A、B、C', 'A 還有右 child（A_R）');
+  talk(g, '大一點的樹');
+  await step(tok);                                   // 1544.0 B 有右 child，C 有左右 child
+  R.sub('BR', 'B_R', 0.2, 3.6, 3); R.sub('CL', 'C_L', -3.0, 2.3, 3); R.sub('CR', 'C_R', -1.4, 2.3, 3);
   R.wire([['A', 'B'], ['A', 'AR'], ['B', 'C'], ['B', 'BR'], ['C', 'CL'], ['C', 'CR']]);
-  say('大樹裡：A 因為插在左的左而失衡', 'LL 旋轉只看 A、B、C 三個');
-  await beat(tok, 2800);
+  say('B 也有右 child，C 有左、右 child', '');
+  await step(tok);                                   // 1548.0 很大的樹，底下不知道多少 node
+  say('其實是一棵很大的樹', '灰塊 = 底下不知道多少個 node 的 subtree');
+  await step(tok);                                   // 1561.4 A 失衡：插在左的左
   KG(R.m.A, BAD);
-  say('灰塊 = 下面不知道多大的子樹', '它們跟著自己的節點走');
-  await beat(tok, 2200);
+  say('A 因為「左的左」的 insert 而失衡', '');
+  await step(tok);                                   // 1573.0 對它做 LL rotation
+  say('要對 A 做 LL rotation', '');
+  await step(tok);                                   // 1594.0 只看 A、B、C：B 上、C 左、A 右
   R.place({ B: [0.6, 6.2], C: [-0.9, 4.9], A: [2.2, 4.9], CL: [-1.7, 3.6], CR: [-0.1, 3.6], AR: [3.0, 3.6] });
   R.wire([['B', 'C'], ['B', 'A'], ['B', 'BR'], ['A', 'AR'], ['C', 'CL'], ['C', 'CR']]);
   KG(R.m.A, null);
-  say('B 升上來，C 在左、A 在右', 'C_L、C_R、A_R 位置不變');
-  await beat(tok, 2600);
-  KG(R.m.BR, '#4a3600');
-  say('B_R 呢？B 的右邊已經是 A', '只剩 A 的左邊是空的');
-  await beat(tok, 2400);
+  say('別的先不看，只看 A、B、C', 'B 升上來，C 在左、A 在右');
+  await step(tok);                                   // 1608.0 旋轉永遠只動三個 node
+  say('旋轉永遠只在三個 node 之間做', '');
+  await step(tok);                                   // 1614.0 C_L、C_R 不變
+  KG(R.m.CL, OKG); KG(R.m.CR, OKG);
+  say('其他的呢？C_L、C_R 照舊跟著 C', '');
+  await step(tok);                                   // 1620.4 A_R 也在原位
+  KG(R.m.CL, null); KG(R.m.CR, null); KG(R.m.AR, OKG);
+  say('A_R 也待在 A 的右邊', '');
+  await step(tok);                                   // 1626.0 少了誰？B 的右子樹
+  KG(R.m.AR, null); KG(R.m.BR, HOT);
+  say('少了誰？B 的右子樹 B_R', 'B 的右邊已經被 A 佔了');
+  talk(g, 'B_R 去哪？', 'wow');
+  await step(tok);                                   // 1631.0 剩下的空位：A 的左邊
   R.go('BR', 1.4, 3.6);
   R.wire([['B', 'C'], ['B', 'A'], ['A', 'BR'], ['A', 'AR'], ['C', 'CL'], ['C', 'CR']]);
-  say('B_R 接到 A 的左邊', 'B < B_R < A，中序不變');
-  await beat(tok, 2600);
+  say('剩下的空位只有 A 的左邊', 'B_R 接到 A 的左邊（B < B_R < A）');
+  await step(tok);                                   // 1644.3 當公式記
   KG(R.m.BR, null);
-  say('像繞著釘子拉線：掛著的東西換邊', 'RR 就是左右對調');
-  await beat(tok, 3000);
+  say('可以當公式記', '大樹裡只看這三個 node，其中一個失衡');
+  await step(tok);                                   // 1658.6 RR 也類似
+  say('RR rotation 也一樣', '只是從另一邊');
+  await step(tok);                                   // 1669.0 釘子和線
+  const nail = tag('📌', '', 0.6, 6.9);
+  say('想像釘子和線：線上掛著東西', '一拉線，掛著的東西就換邊');
+  talk(g, '📌 拉一下', 'happy');
+  await step(tok);                                   // 1694.0 B 的右 child 掛到 A 的左邊
+  remove(nail); KG(R.m.BR, HOT);
+  say('A、B、C 也是：B 原本掛著右 child', '拉過去以後，它變成 A 的左邊');
+  await step(tok);                                   // 1731.0 這就是 LL；RR 相同
+  KG(R.m.BR, null);
+  say('這就是 LL', 'RR 做法一樣，左右對調');
 }]);
 
 FRAG.push(['bstc-bari-lr-general', 'LR 一步到位：C 升為根，C_L、C_R 分給兩邊', async (tok) => {
   fresh(...CAM);
+  const g = palB();
+  const S = rig();
+  S.node('A', 'A', -3.4, 6.2, BLUE); S.node('B', 'B', -4.6, 4.9, TEAL); S.node('C', 'C', -3.9, 3.6, PURP);
+  S.wire([['A', 'B'], ['B', 'C']]);
+  await step(tok);                                   // 1748.0 三個 node：A 因 LR 失衡
+  KG(S.m.A, BAD);
+  say('先看只有三個 node', 'A 因為「左的右」的 insert 而失衡');
+  talk(g, 'LR 一步到位？');
+  await step(tok);                                   // 1758.0 之前用兩步
+  say('之前示範過：LR 要兩步', '');
+  await step(tok);                                   // 1767.0 第一步
+  S.place({ C: [-4.6, 4.9], B: [-5.3, 3.6] }); S.wire([['A', 'C'], ['C', 'B']]);
+  say('第一步：C 升上來、B 往下', '');
+  await step(tok);                                   // 1776.4 第二步
+  KG(S.m.A, null);
+  S.place({ C: [-3.9, 6.2], B: [-5.1, 4.9], A: [-2.7, 4.9] }); S.wire([['C', 'B'], ['C', 'A']]);
+  say('第二步：C 到最上面', 'B 在左、A 在右');
+  await step(tok);                                   // 1788.2 一步能做到嗎？
+  say('能不能一步就畫出來？', '');
+  await step(tok);                                   // 1798.0 最下面的拉上來當 root
+  KG(S.m.C, OKG);
+  say('LR：三個 node 中最下面那個（C）直接拉上來當 root', 'B 在左、A 去右邊');
+  talk(g, '一步！', 'happy');
+  await step(tok);                                   // 1812.0 只動三個；root 去右邊
+  KG(S.m.C, null);
+  say('旋轉只在三個 node 裡', '最下面的變 root，原本的 root 去右邊');
+  await step(tok);                                   // 1822.0 RL：root 去左邊
+  say('RL 則是原本的 root 去左邊', 'LR、RL 是同一招');
+  await step(tok);                                   // 1844.0 大樹：A、B、C 帶著子樹
   const R = rig();
-  R.node('A', 'A', 1.2, 6.2, BLUE); R.node('B', 'B', -1.4, 4.9, TEAL); R.node('C', 'C', -0.2, 3.6, PURP);
-  R.sub('AR', 'A_R', 2.6, 4.9); R.sub('BL', 'B_L', -2.6, 3.6); R.sub('CL', 'C_L', -1.0, 2.3); R.sub('CR', 'C_R', 0.6, 2.3);
+  R.node('A', 'A', 3.4, 6.2, BLUE); R.node('B', 'B', 1.2, 4.9, TEAL); R.node('C', 'C', 2.4, 3.6, PURP);
+  R.sub('AR', 'A_R', 4.6, 4.9, 3); R.sub('BL', 'B_L', 0.2, 3.6, 3); R.sub('CL', 'C_L', 1.6, 2.3, 3); R.sub('CR', 'C_R', 3.2, 2.3, 3);
   R.wire([['A', 'B'], ['A', 'AR'], ['B', 'BL'], ['B', 'C'], ['C', 'CL'], ['C', 'CR']]);
+  say('大一點的樹：A、B、C 各自帶著子樹', '');
+  await step(tok);                                   // 1857.0 LR 失衡
   KG(R.m.A, BAD);
-  say('A 失衡：插在左的右 → LR', '3 個節點：A、B、C');
-  await beat(tok, 2600);
-  KG(R.m.C, '#4a3600');
-  say('一步到位：最後的 C 直接升成根', 'B 留在左、A 去右邊');
-  await beat(tok, 2400);
-  R.place({ C: [0, 6.2], B: [-1.6, 4.9], A: [1.6, 4.9], BL: [-2.6, 3.6], AR: [2.6, 3.6] });
+  say('A 有右子樹、B 有左子樹、C 有左右子樹', 'A 是 LR 失衡 → 做 LR rotation');
+  await step(tok);                                   // 1872.0 C 上去、B 不動、A 去右邊
+  R.place({ C: [2.8, 6.2], B: [1.2, 4.9], A: [4.4, 4.9], BL: [0.2, 3.6], AR: [5.4, 3.6] });
   R.wire([['C', 'B'], ['C', 'A'], ['B', 'BL'], ['A', 'AR'], ['C', 'CL'], ['C', 'CR']]);
   KG(R.m.A, null);
-  say('B_L、A_R 原地不動', '剩下 C 自己的兩棵子樹');
-  await beat(tok, 2400);
-  KG(R.m.CL, '#4a3600'); R.go('CL', -0.8, 3.6);
+  say('一樣只看三個 node：C 升上去', 'B 留在左、A 去右邊');
+  await step(tok);                                   // 1884.3 B_L、A_R 不動
+  KG(R.m.BL, OKG); KG(R.m.AR, OKG);
+  say('B 的左子樹、A 的右子樹：原地不動', '');
+  await step(tok);                                   // 1897.7 C_L → B 的右邊
+  KG(R.m.BL, null); KG(R.m.AR, null);
+  KG(R.m.CL, HOT); R.go('CL', 2.0, 3.6);
   R.wire([['C', 'B'], ['C', 'A'], ['B', 'BL'], ['B', 'CL'], ['A', 'AR'], ['C', 'CR']]);
-  say('C_L 還在 C 的左邊', '變成 B 的右子樹');
-  await beat(tok, 2400);
-  KG(R.m.CL, null); KG(R.m.CR, '#4a3600'); R.go('CR', 0.8, 3.6);
+  say('C 的左子樹還在左邊', '但變成 B 的右 child');
+  await step(tok);                                   // 1908.0 C_R → A 的左邊
+  KG(R.m.CL, null); KG(R.m.CR, HOT); R.go('CR', 3.6, 3.6);
   R.wire([['C', 'B'], ['C', 'A'], ['B', 'BL'], ['B', 'CL'], ['A', 'CR'], ['A', 'AR']]);
-  say('C_R 還在 C 的右邊', '變成 A 的左子樹');
-  await beat(tok, 2400);
-  KG(R.m.CR, null); KG(R.m.C, null);
-  say('RL 對稱：C 升上，A 去左邊', '當公式記：中序 B_L B C_L C C_R A A_R');
-  await beat(tok, 3000);
+  say('C 的右子樹還在右邊', '變成 A 的左 child');
+  await step(tok);                                   // 1919.8 公式：一步完成
+  KG(R.m.CR, null);
+  note('LR：C 上、B 左、A 右；C_L → B 右、C_R → A 左', 0, 0.4, 1.6);
+  say('當公式記：LR、RL 都能一步做完', '其餘的 children 照這個規則排');
+  talk(g, '記公式', 'happy');
 }]);
 
-FRAG.push(['bstc-bari-build', '建 AVL：40, 20, 10, 25, 30, 22, 50', async (tok) => {
-  const p = ctx.params || {};
-  const pre = Array.isArray(p.pre) ? p.pre : [], ins = Array.isArray(p.ins) ? p.ins : [40, 20, 10, 25];
-  avlStage(pre);
-  say(pre.length ? '目前：依序插入過 ' + pre.join(', ') : '一個一個插入，邊插邊算 bf', '每插一個就檢查，失衡馬上轉');
-  await beat(tok, 2400);
-  for (const k of ins) {
-    say('insert ' + k, '從 root 比大小找位置');
-    await avlInsert(k, tok);
-    await beat(tok, 800);
-  }
-  say('所有節點 |bf| ≤ 1', 'root = ' + avl.t.root.key + '，中序 ' + keys(inorder(avl.t.root)));
-  await beat(tok, 3000);
+// 建 AVL：40, 20, 10, 25, 30, 22, 50
+const BUILD = [40, 20, 10, 25, 30, 22, 50];
+function buildView(pre) {
+  const t = avlView([], { tag: 'bf' });
+  pre.forEach((k) => avlInsertRaw(t, k));
+  layout(t, true); refresh(t);
+  tag('keys：' + BUILD.join(', '), 'pkt', -3.6, 7.8);
+  return t;
+}
+FRAG.push(['bstc-bari-b1', '建 AVL：40, 20, 10（LL），再插 25', async (tok) => {
+  const t = buildView([]);
+  const g = palB();
+  let c;
+  await step(tok);                                   // 1949.5 一個一個插、算 bf、失衡就轉
+  say('用這些 key 建一棵 AVL tree', '一個一個 insert、算 bf，失衡就做對應的旋轉');
+  talk(g, '開始建樹');
+  await step(tok);                                   // 1968.0 第一個 40
+  avlPut(t, 40, true);
+  say('第一個 40：只有一個 node，平衡', '');
+  await step(tok);                                   // 1974.4 20：左邊；bf 0、1
+  avlPut(t, 20, true);
+  say('insert 20：左邊', 'bf 是 0、1：都平衡');
+  await step(tok);                                   // 1981.0 10
+  avlPut(t, 10);
+  say('下一個 10：放到 20 的左邊', '');
+  await step(tok);                                   // 1989.4 bf：0、1、2
+  bfOn(t, true);
+  say('算 bf：0、1、2', '40 的左子樹高 2、右邊沒有 → 2 − 0 = 2');
+  await step(tok);                                   // 1999.0 失衡：左的左 → LL
+  glow(t.root, REDG); c = avlCase(t.root);
+  say('40 失衡；插在左的左', '→ LL rotation');
+  talk(g, 'LL！', 'wow');
+  await step(tok);                                   // 2010.7 LL：20 上、10 左、40 右
+  glow(t.root, OFF); rotAll(t, c);
+  say('對 40 做 LL rotation', '20 在上、10 在左、40 在右；bf 全 0');
+  await step(tok);                                   // 2028.8 insert 25
+  avlPut(t, 25);
+  say('insert 25：> 20、< 40', '→ 40 的左邊');
+  await step(tok);                                   // 2034.1 bf：0、1、−1 → 平衡
+  bfOn(t, true);
+  for (const n of inorder(t.root)) glow(n, OKG);
+  say('更新 bf：25 是 0、40 是 1、20 是 1 − 2 = −1', '全部平衡');
+  talk(g, '完美', 'happy');
+}]);
+
+FRAG.push(['bstc-bari-b2', '插入 30：多個節點失衡時轉最近的祖先（LR）', async (tok) => {
+  const t = buildView([40, 20, 10, 25]);
+  const g = palB();
+  let z, A, c;
+  await step(tok);                                   // 2046.5 insert 30
+  z = avlPut(t, 30);
+  say('insert 30：> 20、< 40、> 25', '→ 25 的右邊');
+  await step(tok);                                   // 2056.0 bf：0、−1、2、−2
+  bfOn(t, true);
+  say('更新 bf：30 是 0、25 是 −1', '40 是 2、20 是 −2');
+  await step(tok);                                   // 2070.4 兩個 node 失衡
+  badOf(t).forEach((n) => glow(n, REDG));
+  say('兩個 node 都失衡了：40 和 20', '');
+  talk(g, '兩個？', 'wow');
+  await step(tok);                                   // 2075.1 轉哪個？從新 node 往上第一個
+  A = firstBad(z);
+  say('多個 node 失衡時轉哪一個？', '從剛插的 node 往祖先走，第一個失衡的');
+  await step(tok);                                   // 2090.0 轉它，上面的自動平衡
+  badOf(t).forEach((n) => glow(n, n === A ? REDG : OFF));
+  c = avlCase(A); mark(t, c.A, 'A'); mark(t, c.B, 'B', 'ptr'); mark(t, c.C, 'C', 'ptr');
+  say('第一個是 40：只轉它', '上面的 20 會自動跟著平衡');
+  await step(tok);                                   // 2100.0 左、右 → LR
+  say('從 40 往下：先左（25）再右（30）', '→ LR rotation');
+  await step(tok);                                   // 2107.0 30 直接上來、40 去右邊
+  glow(A, OFF); clearMarks(t); rotAll(t, c);
+  say('LR 不用兩步：30 直接拉上來', '25 在左、40 在右');
+  await step(tok);                                   // 2130.5 更新 bf：全部平衡
+  for (const n of inorder(t.root)) glow(n, OKG);
+  say('更新 bf：每個都在 −1..1', '20 也自動平衡了');
+  talk(g, '全平衡', 'happy');
+}]);
+
+FRAG.push(['bstc-bari-b3', '插入 22：只看失衡點往下兩步（RL）', async (tok) => {
+  const t = buildView([40, 20, 10, 25, 30]);
+  const g = palB();
+  let z, A, c;
+  await step(tok);                                   // 2146.6 insert 22
+  z = avlPut(t, 22);
+  say('insert 22：> 20、< 30、< 25', '→ 25 的左邊');
+  await step(tok);                                   // 2158.0 更新 bf
+  bfOn(t, true);
+  say('更新 bf', '25 是 1、30 是 1……');
+  await step(tok);                                   // 2180.4 root 20 失衡（−2）
+  A = firstBad(z); glow(A, REDG);
+  say('root 20：左邊 1、右邊 3 → −2', '只有它失衡');
+  talk(g, '20 失衡', 'wow');
+  await step(tok);                                   // 2194.0 從 20 往下：右、左、左
+  say('從 20 往下走到 22：右、左、左', '要看幾步？');
+  await step(tok);                                   // 2211.1 只看失衡點往下兩步
+  c = avlCase(A); mark(t, c.A, 'A'); mark(t, c.B, 'B', 'ptr'); mark(t, c.C, 'C', 'ptr');
+  say('不管插在哪，只看失衡點往下「兩步」', '也就是三個 node：20、30、25');
+  await step(tok);                                   // 2228.7 插 26 也一樣是右左
+  say('就算插的是 26（右、左、右）', '前兩步一樣是右、左');
+  await step(tok);                                   // 2248.5 兩步：RL rotation
+  say('前兩步是右、左', '→ RL rotation');
+  await step(tok);                                   // 2260.1 25 上去、20 去左邊
+  glow(A, OFF); clearMarks(t); rotAll(t, c);
+  say('25 升上去當 root', '20 去左邊、30 在右邊');
+  await step(tok);                                   // 2265.0 10 還是 20 的左；30、40 照舊
+  glow(nodeOf(t, 10), OKG); glow(nodeOf(t, 40), OKG);
+  say('10 還是 20 的左 child', '右邊 30 帶著 40 照舊');
+  await step(tok);                                   // 2272.3 22 跟著到 20 的右邊
+  glow(nodeOf(t, 10), OFF); glow(nodeOf(t, 40), OFF); glow(nodeOf(t, 22), HOT);
+  say('22 原本是 25 的左子樹', '現在接到 20 的右邊（還在 25 的左邊）');
+  await step(tok);                                   // 2282.2 RL 完成
+  glow(nodeOf(t, 22), OFF);
+  for (const n of inorder(t.root)) glow(n, OKG);
+  say('RL rotation 完成', '');
+  talk(g, '搞定', 'happy');
+}]);
+
+FRAG.push(['bstc-bari-b4', '插入 50：RR，失衡就要馬上轉', async (tok) => {
+  const t = buildView([40, 20, 10, 25, 30, 22]);
+  const g = palB();
+  let z, A, c;
+  await step(tok);                                   // 2293.0 insert 50
+  z = avlPut(t, 50);
+  say('最後一個 50：40 的右邊', '');
+  await step(tok);                                   // 2298.0 bf：30 是 −2
+  bfOn(t, true); A = firstBad(z); glow(A, REDG);
+  say('檢查 bf：40 是 −1、30 是 −2', '30 失衡');
+  await step(tok);                                   // 2311.0 右的右 → RR
+  c = avlCase(A); mark(t, c.A, 'A'); mark(t, c.B, 'B', 'ptr');
+  say('對 30 轉；右的右', '→ RR rotation');
+  talk(g, 'RR！');
+  await step(tok);                                   // 2316.0 25、20、10、22 不動；40 帶 30、50
+  glow(A, OFF); clearMarks(t); rotAll(t, c);
+  say('25、20、10、22 都不動', '40 升上來，左 30、右 50');
+  await step(tok);                                   // 2324.0 完美平衡的 AVL
+  for (const n of inorder(t.root)) glow(n, OKG);
+  say('得到一棵完美平衡的 BST', '這就是 AVL tree（height balanced）');
+  talk(g, '完成！', 'happy');
+  await step(tok);                                   // 2338.9 不能讓 bf 超過 ±2
+  note('bf 最多到 ±2，不可以出現 ±3', 0, 0.4, 1.6);
+  say('要記住：不要讓任何 node 的 bf 超過 ±2', '永遠不該看到 −3 或 3');
+  await step(tok);                                   // 2350.0 不能全插完再轉
+  say('不能「先全部插完，最後再一起轉」', '那樣行不通');
+  talk(g, '不能等', 'calm');
+  await step(tok);                                   // 2362.0 一插完失衡就馬上轉
+  say('每次 insert 之後，有 node 失衡', '就馬上旋轉、把樹平衡回來');
 }]);
 
 FRAG.push(['bstc-bari-42', '大樹插入 42：RL 旋轉，45 升上來', async (tok) => {
-  avlStage([40, 20, 50, 10, 30, 45, 60, 41, 47, 70]);
-  say('一棵比較大的 AVL', '每個節點 bf 都在 −1..1');
-  await beat(tok, 2600);
-  say('insert 42：> 40、< 50、< 45、> 41', '接在 41 的右邊');
-  await avlInsert(42, tok);
-  say('路徑 R L L R：只看失衡點下兩步', 'RL：45 升上來，40 到左、50 到右');
-  await beat(tok, 3000);
-  say('AVL 高度最多約 1.44 log₂ n', '搜尋 <span class="ok">O(log n)</span>');
-  await beat(tok, 3000);
+  const t = avlView([], { tag: 'bf' });
+  const g = palB();
+  let z, A, c;
+  await step(tok);                                   // 2380.0 一棵比較大的樹
+  grow(t, [40, 20, 50, 10, 30, 45, 60, 41, 47, 70]); t.o.tag = 'none'; refresh(t);
+  await beat(tok, 700);
+  say('最後一個例子：一棵比較大的樹', '它平衡嗎？');
+  await step(tok);                                   // 2383.0 leaf 的 bf 都是 0
+  bfOn(t, true);
+  inorder(t.root).forEach((n) => { if (n.left || n.right) setTag(n, ''); });
+  say('leaf 的 bf 都是 0', '');
+  await step(tok);                                   // 2387.0 其他 node 也都平衡
+  refresh(t);
+  for (const n of inorder(t.root)) glow(n, OKG);
+  say('其他 node：0、−1、0、0、−1……', '全部平衡：這是一棵 AVL');
+  await step(tok);                                   // 2408.0 insert 42
+  for (const n of inorder(t.root)) glow(n, OFF);
+  z = avlPut(t, 42);
+  say('insert 42：> 40、< 50、< 45、> 41', '→ 41 的右邊');
+  talk(g, '42 來了');
+  await step(tok);                                   // 2422.0 更新 bf
+  bfOn(t, true);
+  say('更新 bf：41 是 −1、45 是 1、50 是 1……', '');
+  await step(tok);                                   // 2440.0 root 40：2 − 4 = −2
+  A = firstBad(z); glow(A, REDG);
+  say('root 40：左邊 2、右邊 4', '−2 → 失衡');
+  talk(g, 'root 失衡', 'wow');
+  await step(tok);                                   // 2451.1 右、左、左、右 → 只看前兩步：RL
+  c = avlCase(A); mark(t, c.A, 'A'); mark(t, c.B, 'B', 'ptr'); mark(t, c.C, 'C', 'ptr');
+  say('從 40 走到 42：右、左、左、右', '只看前兩步：右、左 → RL');
+  await step(tok);                                   // 2476.4 45 上來、40 去左
+  glow(A, OFF); clearMarks(t); rotAll(t, c);
+  say('45 升上來當 root，40 去左邊、50 在右邊', '其他 node 照公式調整');
+  await step(tok);                                   // 2487.0 AVL 一直保持平衡
+  for (const n of inorder(t.root)) glow(n, OKG);
+  say('AVL tree 永遠是 height balanced 的 BST', '');
+  talk(g, '平衡！', 'happy');
+  await step(tok);                                   // 2505.0 高度最多 1.44 log n
+  note('高度 ≤ 1.44 log n', 0, 0.4, 1.6);
+  say('高度不會像 BST 一樣長到 n', '最多大約 1.44 × log n');
+  await step(tok);                                   // 2521.0 搜尋 O(log n)
+  say('不一定剛好 log n，可能多一點', '但都是 log n 的倍數 → 搜尋 O(log n)');
 }]);
   }
 
