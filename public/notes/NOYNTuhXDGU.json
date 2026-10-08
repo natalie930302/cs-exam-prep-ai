@@ -1,0 +1,643 @@
+{
+ "video": "NOYNTuhXDGU",
+ "label": "交大江蕙如 Lec21 Network Flow (2/2)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "回顧 flow network 與 flow value",
+   "scene": "flow-l20-value",
+   "points": [
+    {
+     "text": "本單元：network flow 最重要的 max-flow min-cut theorem。",
+     "t": 16
+    },
+    {
+     "text": "先快速回顧 Ford-Fulkerson：它是 iterative algorithm。",
+     "t": 29
+    },
+    {
+     "text": "Flow network：directed graph，source 產生 flow、sink 吸收 flow，中間是 internal node。",
+     "t": 52
+    },
+    {
+     "text": "每條 edge 有 capacity：flow 不能超過它。",
+     "t": 77
+    },
+    {
+     "text": "Max flow 的值可以從 source 送出的總量量，也可以從 sink 收到的總量量。",
+     "t": 108
+    }
+   ]
+  },
+  {
+   "title": "Ford-Fulkerson 虛擬碼",
+   "scene": "flow-l21-code",
+   "points": [
+    {
+     "text": "開頭兩行是 initialization：把 flow 全部清成 0。",
+     "t": 144
+    },
+    {
+     "text": "依目前 flow 建 residual graph：forward 邊記還能灌多少、backward 邊記能退多少（上限是目前的水量）。",
+     "t": 155
+    },
+    {
+     "text": "一開始沒有水，第一個 G_f 只有 forward edge。",
+     "t": 213
+    },
+    {
+     "text": "接著是 while loop：在 G_f 找 augmenting path（s 到 t 的 path）。",
+     "t": 234
+    },
+    {
+     "text": "bottleneck b = path 上 residual capacity 的最小值。",
+     "t": 283
+    },
+    {
+     "text": "沿 path 灌回 flow network：forward edge 加 b，backward edge（原邊方向相反）減 b。",
+     "t": 323
+    },
+    {
+     "text": "更新 G_f，反覆做；s 到不了 t 時停止並輸出 flow。",
+     "t": 406
+    }
+   ],
+   "trap": "補充：舞台上的虛擬碼行號是整理過的版本，與投影片的行號不一定一一對應。"
+  },
+  {
+   "title": "回顧例子：min cut = 19",
+   "scene": "flow-l20-runcut",
+   "points": [
+    {
+     "text": "可以證明 Ford-Fulkerson 得到的是 max flow，而且 max flow = min cut。",
+     "t": 461
+    },
+    {
+     "text": "上次的例子跑完：min cut 在這裡，只加 source 側到 sink 側 forward 邊的 capacity。",
+     "t": 495
+    },
+    {
+     "text": "Backward 方向的邊不算：可以讓它不灌水，實際上也沒有水。",
+     "t": 524
+    }
+   ]
+  },
+  {
+   "title": "正確性 (1)：forward edge 不超過 capacity",
+   "scene": "flow-l21-cap-fwd",
+   "points": [
+    {
+     "text": "接下來探討 Ford-Fulkerson 的性質，首先是正確性。",
+     "t": 557
+    },
+    {
+     "text": "分兩層：吐出來的是不是合法（feasible）的 flow，再看是不是最佳解。",
+     "t": 573
+    },
+    {
+     "text": "每輪灌水前叫 f、灌完叫 f′，檢查 f′ 是否滿足兩個 constraint。",
+     "t": 619
+    },
+    {
+     "text": "只有 augmenting path P 上的邊改變；初始全 0 是合法的，所以只要檢查 P。",
+     "t": 806
+    },
+    {
+     "text": "Forward edge 的 residual capacity = c_e − f(e)。",
+     "t": 878
+    },
+    {
+     "text": "bottleneck 是最小的 residual capacity，所以 b ≤ 每條邊的 residual。",
+     "t": 930
+    },
+    {
+     "text": "f′(e) = f(e) + b ≤ f(e) + (c_e − f(e)) = c_e。",
+     "t": 969
+    },
+    {
+     "text": "而且 f′ ≥ f ≥ 0：forward edge 滿足 capacity constraint。",
+     "t": 1063
+    }
+   ]
+  },
+  {
+   "title": "正確性 (2)：backward edge 不會變負",
+   "scene": "flow-l21-cap-back",
+   "points": [
+    {
+     "text": "接著檢查 backward edge。",
+     "t": 1112
+    },
+    {
+     "text": "Backward edge 的 residual capacity 就是目前的 flow f(e)（最多退這麼多）。",
+     "t": 1125
+    },
+    {
+     "text": "Path 上的 u→v 是 backward，代表原圖中這條邊是 v→u。",
+     "t": 1145
+    },
+    {
+     "text": "灌水後 f′ = f − b 比原本小，所以 f′ ≤ f ≤ c。",
+     "t": 1201
+    },
+    {
+     "text": "b ≤ residual = f。",
+     "t": 1239
+    },
+    {
+     "text": "所以 f′ = f − b ≥ f − f = 0。",
+     "t": 1260
+    },
+    {
+     "text": "Forward 與 backward 都合法：capacity constraint 通過。",
+     "t": 1291
+    }
+   ]
+  },
+  {
+   "title": "正確性 (3)：conservation",
+   "scene": "flow-l21-conserve",
+   "points": [
+    {
+     "text": "接著檢查 conservation：只有 path 上的 internal node 會變（s、t 不檢查）。",
+     "t": 1295
+    },
+    {
+     "text": "灌水前 f 是合法的，每個 internal node 流入 = 流出。",
+     "t": 1365
+    },
+    {
+     "text": "Path 經過 v：一條 incoming edge 多了 b，一條 outgoing edge 也多了 b。",
+     "t": 1417
+    },
+    {
+     "text": "等量加法：原本 x = y，則 x + b = y + b，仍然守恆。",
+     "t": 1481
+    },
+    {
+     "text": "所以每輪結束時得到的 f′ 都是合法的 flow。",
+     "t": 1499
+    }
+   ],
+   "trap": "補充：老師只畫了「進來、出去都是 forward」的情形；若 path 在 v 用到 backward edge，例如兩條都是反向，則流入、流出各減 b，或同一側一加一減，仍然守恆。"
+  },
+  {
+   "title": "Integer capacity 的重要性質",
+   "scene": "flow-l21-integer",
+   "points": [
+    {
+     "text": "常被忽略但很重要：假設所有 capacity 都是 integer。",
+     "t": 1527
+    },
+    {
+     "text": "若有小數，實作時先除以最大公因數做 normalization，變成整數。",
+     "t": 1567
+    },
+    {
+     "text": "因為每次的 bottleneck 一定是所有 capacity 最大公因數的整數倍。",
+     "t": 1584
+    },
+    {
+     "text": "若是任意小數，可能每次只增加 0.1、0.001……無法估計 iteration 次數。",
+     "t": 1650
+    },
+    {
+     "text": "整數時每次至少 +1：知道 upper bound 是 100，就最多跑 100 輪。",
+     "t": 1682
+    },
+    {
+     "text": "Invariant：capacity 是整數，每輪的 flow 與 residual capacity 也都是整數。",
+     "t": 1740
+    }
+   ],
+   "trap": "補充：除以 gcd 只適用於有理數 capacity；capacity 為無理數時 Ford-Fulkerson 甚至可能不終止。"
+  },
+  {
+   "title": "Flow 嚴格遞增",
+   "scene": "flow-l21-increase",
+   "points": [
+    {
+     "text": "每輪找 augmenting path 灌水，flow 從 0 開始嚴格遞增。",
+     "t": 1785
+    },
+    {
+     "text": "v(f′) = v(f) + b，b > 0；若 b 為 0，演算法早就停了。",
+     "t": 1829
+    },
+    {
+     "text": "證明只要看 source：v(f) 是 s 送出的總量。",
+     "t": 1894
+    },
+    {
+     "text": "Path 是 simple，不會回到 s；而且 s 本來就沒有 incoming edge。",
+     "t": 1925
+    },
+    {
+     "text": "所以 path 的第一條邊一定是 forward edge，s 送出的量剛好多 b。",
+     "t": 1996
+    }
+   ]
+  },
+  {
+   "title": "Running time：O(mC)",
+   "scene": "flow-l21-runtime",
+   "points": [
+    {
+     "text": "多久會結束？capacity 是整數，flow 與 G_f 也都是整數。",
+     "t": 2027
+    },
+    {
+     "text": "最簡單的 upper bound：把 s 單獨切開，C = s 所有出邊 capacity 的總和。",
+     "t": 2100
+    },
+    {
+     "text": "C ≥ max flow，但不一定是 min cut。",
+     "t": 2141
+    },
+    {
+     "text": "Worst case 每輪只增加 1，最多 C 輪一定停。",
+     "t": 2176
+    },
+    {
+     "text": "每輪要建 G_f、找 path（任何找路演算法皆可，如 Dijkstra）、灌水，都是 O(m)。",
+     "t": 2218
+    },
+    {
+     "text": "總時間 O(m·C)，m 是 edge 數。",
+     "t": 2293
+    }
+   ]
+  },
+  {
+   "title": "壞例子：200 輪 vs 2 輪",
+   "scene": "flow-l21-bad",
+   "points": [
+    {
+     "text": "C 很大時，怕每次只增加一點點；這是原論文特別設計的反例。",
+     "t": 2322
+    },
+    {
+     "text": "四個點、上下對稱，中間有一條 capacity 1 的細管。",
+     "t": 2343
+    },
+    {
+     "text": "運氣不好：path 經過中間那條，bottleneck 只有 1。",
+     "t": 2370
+    },
+    {
+     "text": "上面的 Z、下面的 Z 輪流找，每次只加 1。",
+     "t": 2411
+    },
+    {
+     "text": "C = 100 + 100 = 200，worst case 要 200 個 iteration。",
+     "t": 2428
+    },
+    {
+     "text": "好的找法：上面送 100、下面送 100，兩輪就結束。",
+     "t": 2437
+    }
+   ]
+  },
+  {
+   "title": "Pseudo-polynomial time",
+   "scene": "flow-l21-pseudo",
+   "points": [
+    {
+     "text": "Running time 被 m·C bound 住。",
+     "t": 2472
+    },
+    {
+     "text": "O(mC) 是 polynomial time 嗎？不是。",
+     "t": 2525
+    },
+    {
+     "text": "m 是 input size（邊數）；C 是 capacity 的數值參數：邊可以很少、capacity 可以很大。",
+     "t": 2548
+    },
+    {
+     "text": "這種叫 pseudo-polynomial time。",
+     "t": 2597
+    },
+    {
+     "text": "之前遇過：Knapsack 與 Subset sum 的 O(nW)，W 是背包容量。",
+     "t": 2603
+    }
+   ]
+  },
+  {
+   "title": "挑好的 augmenting path",
+   "scene": "flow-l21-strategies",
+   "points": [
+    {
+     "text": "最後的議題：怎麼找好的 augmenting path；找得好兩輪就結束。",
+     "t": 2643
+    },
+    {
+     "text": "複雜度取決於每次怎麼挑 augmenting path。",
+     "t": 2688
+    },
+    {
+     "text": "策略 1：挑 bottleneck 比較大的 path，當輪可以灌比較多。",
+     "t": 2716
+    },
+    {
+     "text": "策略 2：挑 edge 數最少的 path，用 BFS 就能找到。",
+     "t": 2731
+    },
+    {
+     "text": "策略 3：Δ-scaling：先忽略 capacity 小於門檻 Δ 的邊，只用大水管灌。",
+     "t": 2757
+    },
+    {
+     "text": "灌得差不多再放寬 Δ、開放小水管，避免一開始就走細管讓 bottleneck 很小。",
+     "t": 2804
+    }
+   ],
+   "trap": "補充：策略 2 就是 Edmonds-Karp，時間 O(VE²)，與 capacity 大小無關；Δ-scaling 為 O(E² log C)。"
+  },
+  {
+   "title": "Max-flow min-cut：三個敘述",
+   "scene": "flow-l21-three",
+   "points": [
+    {
+     "text": "Max-flow min-cut theorem：max flow 的值等於 min cut 的 capacity。",
+     "t": 2883
+    },
+    {
+     "text": "證明用三個敘述：1 推 2、2 推 3、3 推回 1。",
+     "t": 2925
+    },
+    {
+     "text": "① 存在一個 cut (A, B)，使 flow 的值 = 這個 cut 的 capacity。",
+     "t": 2937
+    },
+    {
+     "text": "② f 是 maximum flow；③ 對 f 找不到 augmenting path。",
+     "t": 2952
+    }
+   ]
+  },
+  {
+   "title": "定理重述（重新錄影）",
+   "scene": "flow-l21-three",
+   "points": [
+    {
+     "text": "（重新開始錄）本節介紹 max-flow min-cut theorem。",
+     "t": 2984
+    },
+    {
+     "text": "它說明 Ford-Fulkerson 為什麼正確：最後的 max flow 等於 min cut。",
+     "t": 3007
+    },
+    {
+     "text": "Flow 的值按定義從 source 端量測。",
+     "t": 3038
+    },
+    {
+     "text": "Cut：任一個把網路分成 s ∈ A、t ∈ B 兩半的 partition。",
+     "t": 3061
+    },
+    {
+     "text": "Cut 的 capacity 只計算 A → B 的邊；B → A 的 backward 邊不計。",
+     "t": 3080
+    },
+    {
+     "text": "證明方式：三個敘述互推，全部成立就得證。",
+     "t": 3143
+    }
+   ]
+  },
+  {
+   "title": "② ⇒ ③：反證法",
+   "scene": "flow-l21-2to3",
+   "points": [
+    {
+     "text": "三個證明中最簡單的是 ② ⇒ ③，用反證法。",
+     "t": 3247
+    },
+    {
+     "text": "要證：若 f 是 max flow，就找不到 augmenting path。",
+     "t": 3263
+    },
+    {
+     "text": "假設 f 是 max flow，卻有一條 augmenting path。",
+     "t": 3301
+    },
+    {
+     "text": "沿這條 path 推 bottleneck（> 0）就能 increase 這個 flow。",
+     "t": 3330
+    },
+    {
+     "text": "flow 變大，與「f 最大」矛盾，得證。",
+     "t": 3351
+    }
+   ]
+  },
+  {
+   "title": "Weak duality 的推導",
+   "scene": "flow-l21-weak",
+   "points": [
+    {
+     "text": "接著證 ① ⇒ ②；先證比較弱的 weak duality。",
+     "t": 3382
+    },
+    {
+     "text": "Weak duality：對任何 flow f 與任何 cut (A, B)，cut 的 capacity ≥ v(f)。",
+     "t": 3416
+    },
+    {
+     "text": "從定義開始：v(f) = s 出邊上的 flow 總和。",
+     "t": 3481
+    },
+    {
+     "text": "減一個 0：s 沒有 incoming edge，所以 s 的 incoming flow 總和 = 0。",
+     "t": 3541
+    },
+    {
+     "text": "再加一堆 0：A 中除了 s 以外每個點的（out − in）= 0（守恆）。",
+     "t": 3605
+    },
+    {
+     "text": "改用 edge 的角度看：A 內部的邊一加一減互相抵消。",
+     "t": 3722
+    },
+    {
+     "text": "只剩跨過 cut 的邊：v(f) = Σ_{A→B} f(e) − Σ_{B→A} f(e)。",
+     "t": 3861
+    }
+   ]
+  },
+  {
+   "title": "得到 v(f) ≤ cap(A, B) 與 ① ⇒ ②",
+   "scene": "flow-l21-weakbound",
+   "points": [
+    {
+     "text": "每條邊上的 flow 都 ≥ 0。",
+     "t": 3876
+    },
+    {
+     "text": "減掉 B → A 的 flow（≥ 0）只會變小：v(f) ≤ Σ_{A→B} f(e)。",
+     "t": 3912
+    },
+    {
+     "text": "每條邊 f ≤ c，所以 ≤ Σ_{A→B} c(e) = cap(A, B)。",
+     "t": 3963
+    },
+    {
+     "text": "得到：任何 flow ≤ 任何 cut 的 capacity。",
+     "t": 3994
+    },
+    {
+     "text": "① ⇒ ② 是直接推論：若某個 flow 等於某個 cut 的 capacity，已達上限，一定是 max flow。",
+     "t": 4020
+    }
+   ]
+  },
+  {
+   "title": "③ ⇒ ①：s 可到達的點形成 cut",
+   "scene": "flow-l21-3to1",
+   "points": [
+    {
+     "text": "最後證 ③ ⇒ ①：沒有 augmenting path 時，存在 cut 使 v(f) = cap(A, B)。",
+     "t": 4079
+    },
+    {
+     "text": "沒有 augmenting path：G_f 中 s 走不到 t，只能 reach 到一些點就卡住。",
+     "t": 4153
+    },
+    {
+     "text": "例如上次的例子 s 只走得到 b；把 s 可以 reach 的點收進 A。",
+     "t": 4194
+    },
+    {
+     "text": "s ∈ A；s 走不到 t，所以 t ∈ B，自然分成兩半。",
+     "t": 4256
+    },
+    {
+     "text": "同 weak duality 的推導：v(f) = Σ_{A→B} f(e) − Σ_{B→A} f(e)。",
+     "t": 4344
+    },
+    {
+     "text": "B → A 的邊 flow 一定是 0：否則 G_f 有退水的邊，s 還能走出去，矛盾。",
+     "t": 4373
+    },
+    {
+     "text": "A → B 的邊都灌滿（否則 G_f 有 forward edge），所以 v(f) = cap(A, B)。",
+     "t": 4537
+    }
+   ]
+  },
+  {
+   "title": "總結",
+   "scene": "flow-l20-mfmc",
+   "points": [
+    {
+     "text": "完成 1⇒2、2⇒3、3⇒1：max-flow min-cut theorem 得證。",
+     "t": 4547
+    },
+    {
+     "text": "找到 max flow 時，同時找到 capacity 總和最小的 cut。",
+     "t": 4558
+    },
+    {
+     "text": "Min cut 只算 forward 方向（source 側到 sink 側）的 capacity。",
+     "t": 4573
+    },
+    {
+     "text": "定理漂亮、演算法又跑得乾淨，這是 network flow 受歡迎的原因。",
+     "t": 4586
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Forward edge 原 flow f、capacity c，沿 augmenting path 加 bottleneck b 後，為何 f + b ≤ c？",
+   "opts": [
+    "因為 b ≤ residual = c − f",
+    "因為 b ≤ f",
+    "因為 b = 1",
+    "因為 c 是整數"
+   ],
+   "ans": "因為 b ≤ residual = c − f",
+   "why": "bottleneck 是 path 上最小的 residual，所以 f′ = f + b ≤ f + (c − f) = c。"
+  },
+  {
+   "q": "Backward edge 減掉 b 後為何不會變負？",
+   "opts": [
+    "backward 的 residual = f，且 b ≤ f",
+    "因為 b < c",
+    "因為 flow 嚴格遞增",
+    "因為 s 沒有 incoming edge"
+   ],
+   "ans": "backward 的 residual = f，且 b ≤ f",
+   "why": "f′ = f − b ≥ f − f = 0。"
+  },
+  {
+   "q": "所有 capacity 為整數時，一般 Ford-Fulkerson 的時間上界是？（C = s 出邊容量總和，m = 邊數）",
+   "opts": [
+    "O(mC)",
+    "O(m²)",
+    "O(VE²)",
+    "O(m log C)"
+   ],
+   "ans": "O(mC)",
+   "why": "每輪至少 +1，最多 C 輪；每輪建 G_f、找路、灌水都是 O(m)。"
+  },
+  {
+   "q": "O(mC) 為什麼是 pseudo-polynomial？",
+   "opts": [
+    "C 是數值，不是 input size",
+    "m 可能很大",
+    "它有兩個變數相乘",
+    "因為用 DFS 找路"
+   ],
+   "ans": "C 是數值，不是 input size",
+   "why": "C 可以極大而邊很少，像 Knapsack 的 O(nW)。"
+  },
+  {
+   "q": "四條容量 100、中間容量 1 的例子，亂選路徑最壞要幾輪？",
+   "opts": [
+    "200",
+    "2",
+    "100",
+    "101"
+   ],
+   "ans": "200",
+   "why": "每次經過中間那條只推 1，C = 100 + 100 = 200。"
+  },
+  {
+   "q": "證明 ③ ⇒ ① 時，cut 的 A 側怎麼取？",
+   "opts": [
+    "G_f 中從 s 走得到的點",
+    "flow 為 0 的點",
+    "與 t 相鄰的點以外的點",
+    "BFS 第一層"
+   ],
+   "ans": "G_f 中從 s 走得到的點",
+   "why": "這樣 A → B 的邊都飽和、B → A 的邊 flow 為 0，所以 v(f) = cap(A, B)。"
+  },
+  {
+   "q": "Weak duality 的內容是？",
+   "opts": [
+    "任何 flow 的值 ≤ 任何 cut 的 capacity",
+    "max flow = min cut",
+    "每條邊都會飽和",
+    "任何 cut 的 capacity 都相等"
+   ],
+   "ans": "任何 flow 的值 ≤ 任何 cut 的 capacity",
+   "why": "v(f) = f_out(A) − f_in(A) ≤ f_out(A) ≤ cap(A, B)；等號成立就推得 ① ⇒ ②。"
+  },
+  {
+   "q": "下列何者不是課堂提到的挑選 augmenting path 策略？",
+   "opts": [
+    "挑 bottleneck 最小的 path",
+    "挑 bottleneck 最大的 path",
+    "挑 edge 數最少的 path（BFS）",
+    "Δ-scaling"
+   ],
+   "ans": "挑 bottleneck 最小的 path",
+   "why": "挑最小 bottleneck 正是壞例子那種慢的走法。"
+  }
+ ]
+}

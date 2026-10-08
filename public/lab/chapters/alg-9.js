@@ -6,6 +6,8 @@
 //   圖 34.14 的 3-CNF-SAT → CLIQUE 例子：φ = (x1 ∨ ¬x2 ∨ ¬x3) ∧ (¬x1 ∨ x2 ∨ x3) ∧ (x1 ∨ x2 ∨ x3)、
 //   34.5.2 CLIQUE ↔ VERTEX-COVER（補圖）、34.5.4 HAM-CYCLE → TSP。
 // 圖、電路與公式除了圖 34.14 以外都是自建的小例子（場景標題不標「CLRS 圖」）。
+import kit from './_kit.js';
+
 export default function (ctx) {
   const { THREE, lab, sleep, $, log, clearLog, setState, controls, on, say, beat } = ctx;
   const V3 = (x, y, z = 0) => new THREE.Vector3(x, y, z);
@@ -748,6 +750,13 @@ export default function (ctx) {
     'npc-proof-steps': { title: '證明 NP-complete 的四個步驟', play: scProofSteps },
   };
 
+
+  // 每段影片的場景片段（由 sync pass 加入）：每個片段把 [id, 標題, play] 放進 FRAG。
+  const K = kit(ctx);
+  const FRAG = [];
+  // @@FRAGMENTS@@
+  FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
+
   return {
     kicker: '演算法・第 9 章',
     title: 'NP 理論：P、NP、NP-complete、NP-hard',
@@ -761,7 +770,7 @@ export default function (ctx) {
     ],
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
-    sceneOrder: ['poly-vs-exp', 'decision-opt', 'sat-verify', 'certificate-verify', 'class-sets', 'reduction-idea', 'cook-levin', 'npc-tree', 'sat-3sat', '3sat-clique', 'clique-is-vc', 'ham-tsp', 'npc-proof-steps'],
+    sceneOrder: ['poly-vs-exp', 'decision-opt', 'sat-verify', 'certificate-verify', 'class-sets', 'reduction-idea', 'cook-levin', 'npc-tree', 'sat-3sat', '3sat-clique', 'clique-is-vc', 'ham-tsp', 'npc-proof-steps'].concat(FRAG.map((f) => f[0])),
     stop() { stopTimer(); epoch++; busy = false; },
   };
 }

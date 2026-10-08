@@ -649,6 +649,11 @@
   "points": 27,
   "quiz": 6
  },
+ "Iwc3Uj4aaF4": {
+  "label": "Ford Fulkerson Algorithm for Maximum Flow Problem",
+  "points": 21,
+  "quiz": 6
+ },
  "IWzYoXKaRIc": {
   "label": "MIT 6.006 Rec6：AVL Trees",
   "points": 112,
@@ -699,6 +704,11 @@
   "points": 41,
   "quiz": 6
  },
+ "lY1SKWSR3pk": {
+  "label": "交大江蕙如 Lec20 Network Flow (1/2)",
+  "points": 129,
+  "quiz": 7
+ },
  "Lzr5-m7ap-8": {
   "label": "台大林軒田 DSA Skip List / BST / AVL Tree",
   "points": 192,
@@ -748,6 +758,11 @@
   "label": "Abdul Bari：1.9 Properties of Asymptotic Notations",
   "points": 30,
   "quiz": 6
+ },
+ "NOYNTuhXDGU": {
+  "label": "交大江蕙如 Lec21 Network Flow (2/2)",
+  "points": 107,
+  "quiz": 8
  },
  "Nz1KZXbghj8": {
   "label": "MIT 6.006 L7：Counting Sort, Radix Sort",

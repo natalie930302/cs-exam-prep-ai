@@ -6,6 +6,8 @@
 // 其餘影片（交大江蕙如 Lec10–14、Abdul Bari Huffman／Knapsack／Job sequencing／Optimal merge）尚無逐字稿，依課本建立，標題標「（課本）」：
 //   CLRS 16.1 activity selection（11 個活動 → a1 a4 a8 a11）、16.2 fractional vs 0/1 knapsack（w 10/20/30、v 60/100/120、W 50 → 240；0/1 greedy 160 vs 220）、
 //   16.3 Huffman（a45 b13 c12 d16 e9 f5 → 224）；Horowitz job sequencing（p 100 10 15 27、d 2 1 2 1 → 127）；optimal merge（20 30 10 5 30 → 205）。
+import kit from './_kit.js';
+
 export default function (ctx) {
   const { THREE, lab, sleep, $, log, clearLog, setState, controls, on, say, beat } = ctx;
 
@@ -896,6 +898,13 @@ export default function (ctx) {
     'greedy-or-dp': { title: '（課本）什麼時候用 greedy、什麼時候用 DP', play: scChoice },
   };
 
+
+  // 每段影片的場景片段（由 sync pass 加入）：每個片段把 [id, 標題, play] 放進 FRAG。
+  const K = kit(ctx);
+  const FRAG = [];
+  // @@FRAGMENTS@@
+  FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
+
   return {
     kicker: '演算法・第 5 章',
     title: '貪婪演算法 Greedy',
@@ -909,7 +918,7 @@ export default function (ctx) {
     ],
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
-    sceneOrder: ['feasible-optimal', 'greedy-general', 'greedy-filter', 'activity-select', 'activity-proof', 'activity-wrong-rules', 'huffman-build', 'huffman-cost', 'frac-knapsack', 'knapsack-greedy-fail', 'job-sequencing', 'optimal-merge', 'greedy-or-dp'],
+    sceneOrder: ['feasible-optimal', 'greedy-general', 'greedy-filter', 'activity-select', 'activity-proof', 'activity-wrong-rules', 'huffman-build', 'huffman-cost', 'frac-knapsack', 'knapsack-greedy-fail', 'job-sequencing', 'optimal-merge', 'greedy-or-dp'].concat(FRAG.map((f) => f[0])),
     stop() { stopTimer(); epoch++; busy = false; },
   };
 }

@@ -1,0 +1,191 @@
+{
+ "video": "Iwc3Uj4aaF4",
+ "label": "Ford Fulkerson Algorithm for Maximum Flow Problem",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "最大流問題與兩個限制",
+   "scene": "flow-v1-problem",
+   "points": [
+    {
+     "text": "Maximum flow problem：在 flow network 上求從 source 到 sink 的最大流量。",
+     "t": 9
+    },
+    {
+     "text": "Flow network 是有向加權圖（weighted digraph），每條邊的整數權重就是 capacity，流量不能超過它。",
+     "t": 27
+    },
+    {
+     "text": "兩個特別的點：source s（flow 的起點）與 sink t（flow 的終點）。",
+     "t": 56
+    },
+    {
+     "text": "限制 1：每條邊上的 flow 不能超過該邊的 capacity。",
+     "t": 105
+    },
+    {
+     "text": "限制 2：除了 s、t 以外，每個點 inflow = outflow；source 只流出、sink 只流入。",
+     "t": 126
+    },
+    {
+     "text": "影片的例子：A 是 source、F 是 sink，每條邊都有方向。",
+     "t": 171
+    }
+   ],
+   "trap": "補充：守恆只要求中間的點；source 沒有流入、sink 沒有流出，不必（也不會）守恆。"
+  },
+  {
+   "title": "Residual capacity 與 bottleneck",
+   "scene": "flow-v1-acdf",
+   "points": [
+    {
+     "text": "Residual graph 表示還能增加多少 flow：只要 s 到 t 有一條路徑、每條邊都還有剩，就能再加流。",
+     "t": 198
+    },
+    {
+     "text": "Residual capacity = 原本的 capacity − 目前的 flow。",
+     "t": 236
+    },
+    {
+     "text": "Bottleneck capacity 決定一條 augmenting path 最多能送多少。",
+     "t": 252
+    },
+    {
+     "text": "路徑 A → C → D → F 的 capacity 是 11、9、11，最多只能送 9。",
+     "t": 276
+    },
+    {
+     "text": "送 9 之後，三條邊的 residual capacity 分別是 2、0、2。",
+     "t": 314
+    }
+   ],
+   "trap": "影片把 bottleneck 叫做 minimal cut，這是用語錯誤：min cut 是把頂點分成兩邊的切割（max-flow min-cut theorem 的那個 cut）；一條路徑上最小的剩餘容量應叫 bottleneck capacity。"
+  },
+  {
+   "title": "第二條路徑與 augmenting path 的兩種邊",
+   "scene": "flow-v1-acbef",
+   "points": [
+    {
+     "text": "再看路徑 A → C → B → E → F。",
+     "t": 360
+    },
+    {
+     "text": "沿途剩餘容量 2、10、9、2，bottleneck = 2。",
+     "t": 383
+    },
+    {
+     "text": "沿這條路再送 2：A → C 變 11（滿了），總 flow 變 11。",
+     "t": 401
+    },
+    {
+     "text": "Augmenting path 可以用兩種邊：non-full forward edges（還沒滿的順向邊）。",
+     "t": 422
+    },
+    {
+     "text": "以及 non-empty backward edges（已有 flow 的反向邊，代表把流退回去），下一支影片舉例。",
+     "t": 433
+    }
+   ]
+  },
+  {
+   "title": "Ford-Fulkerson 三步驟",
+   "scene": "flow-v1-algo",
+   "points": [
+    {
+     "text": "Ford-Fulkerson 的想法很簡單，共三步。",
+     "t": 444
+    },
+    {
+     "text": "Step 1：初始 flow = 0。",
+     "t": 457
+    },
+    {
+     "text": "Step 2：只要還有 s 到 t 的 augmenting path，就把該路徑的 flow 加進總 flow（0 → 9 → 11）。",
+     "t": 487
+    },
+    {
+     "text": "Step 3：做到沒有 augmenting path 為止，回傳的 flow 就是最大流。",
+     "t": 516
+    }
+   ]
+  },
+  {
+   "title": "下一支影片預告",
+   "scene": null,
+   "points": [
+    {
+     "text": "下一支影片用完整例子示範演算法。",
+     "t": 528
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "某條邊 capacity 11、目前 flow 9，它的 residual capacity（順向）是多少？",
+   "opts": [
+    "2",
+    "9",
+    "11",
+    "20"
+   ],
+   "ans": "2",
+   "why": "residual capacity = c − f = 11 − 9 = 2。"
+  },
+  {
+   "q": "路徑上各邊剩餘容量為 2、10、9、2，沿這條路最多能再送多少？",
+   "opts": [
+    "2",
+    "9",
+    "10",
+    "23"
+   ],
+   "ans": "2",
+   "why": "能送的量受最小的剩餘容量限制：bottleneck = min(2, 10, 9, 2) = 2。"
+  },
+  {
+   "q": "下列何者不是 flow network 對 flow 的限制？",
+   "opts": [
+    "每條邊都必須流滿",
+    "每條邊的 flow ≤ capacity",
+    "中間的點 inflow = outflow",
+    "flow 不能是負的"
+   ],
+   "ans": "每條邊都必須流滿",
+   "why": "只有 capacity constraint 與 conservation；不要求每條邊飽和。"
+  },
+  {
+   "q": "Ford-Fulkerson 什麼時候停止？",
+   "opts": [
+    "找不到 s 到 t 的 augmenting path",
+    "所有邊都飽和",
+    "flow 等於 source 出邊容量總和",
+    "做滿 |V| 次"
+   ],
+   "ans": "找不到 s 到 t 的 augmenting path",
+   "why": "每次找 augmenting path 加流，找不到時目前的 flow 就是最大流。"
+  },
+  {
+   "q": "影片稱為 minimal cut 的東西，標準名稱是？",
+   "opts": [
+    "bottleneck capacity",
+    "min cut",
+    "residual graph",
+    "augmenting path"
+   ],
+   "ans": "bottleneck capacity",
+   "why": "路徑上最小的剩餘容量叫 bottleneck；min cut 是頂點的二分切割。"
+  },
+  {
+   "q": "Augmenting path 上可以使用哪兩種邊？",
+   "opts": [
+    "沒滿的 forward edge 與有 flow 的 backward edge",
+    "只有沒滿的 forward edge",
+    "飽和的 forward edge 與空的 backward edge",
+    "任何原圖的邊"
+   ],
+   "ans": "沒滿的 forward edge 與有 flow 的 backward edge",
+   "why": "non-full forward edges 可再加流；non-empty backward edges 可把流退回去。"
+  }
+ ]
+}

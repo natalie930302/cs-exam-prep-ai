@@ -9,6 +9,8 @@
 //     五步驟（Fibonacci／Bellman-Ford 對照）、text justification（badness = (W − 總長)³）、parent pointers、perfect-information blackjack。
 // 課本補充（CLRS Ch15）：rod cutting（p = 1 5 8 9 10 17 17 20）、0/1 knapsack V[i][w]、LCS（ABCBDAB／BDCABA）、
 //   LIS 的 O(n²) 與 O(n log n)、DP 兩要素（optimal substructure + overlapping subproblems）。
+import kit from './_kit.js';
+
 export default function (ctx) {
   const { THREE, lab, sleep, $, log, clearLog, setState, controls, on, say, beat } = ctx;
 
@@ -1321,6 +1323,13 @@ export default function (ctx) {
     'lis-nlogn': { title: '（課本）LIS 的 O(n log n)：tails + 二分搜尋', play: scLisNlogn },
   };
 
+
+  // 每段影片的場景片段（由 sync pass 加入）：每個片段把 [id, 標題, play] 放進 FRAG。
+  const K = kit(ctx);
+  const FRAG = [];
+  // @@FRAGMENTS@@
+  FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
+
   return {
     kicker: '演算法・第 3 章',
     title: '動態規劃（基礎）',
@@ -1340,7 +1349,7 @@ export default function (ctx) {
       'msg-graph', 'msg-cost-table', 'msg-formula', 'msg-path',
       'dp-recipe', 'dp-dag', 'dp-five-steps', 'textjust-badness', 'textjust-dp', 'textjust-parent', 'blackjack-rules', 'blackjack-dp',
       'rod-cutting', 'knapsack-table', 'lcs-table', 'lcs-trace', 'lis-n2', 'lis-nlogn',
-    ],
+    ].concat(FRAG.map((f) => f[0])),
     stop() { stopTimer(); epoch++; busy = false; },
   };
 }

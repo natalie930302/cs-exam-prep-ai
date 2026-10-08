@@ -1,0 +1,744 @@
+{
+ "video": "lY1SKWSR3pk",
+ "label": "交大江蕙如 Lec20 Network Flow (1/2)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "單元介紹",
+   "scene": null,
+   "points": [
+    {
+     "text": "本單元主題是 network flow：先介紹問題與方法，最後介紹應用 bipartite matching。",
+     "t": 15
+    },
+    {
+     "text": "下次上課講理論：演算法為什麼正確、背後的證明。",
+     "t": 57
+    },
+    {
+     "text": "今天結束後會稍微談 project。",
+     "t": 85
+    }
+   ]
+  },
+  {
+   "title": "Flow network 的應用",
+   "scene": "flow-l20-apps",
+   "points": [
+    {
+     "text": "Network flow 的操作對象是 flow network：想像圖中有物質在流動。",
+     "t": 97
+    },
+    {
+     "text": "最直覺的是水管網路（water pipes）。",
+     "t": 131
+    },
+    {
+     "text": "也常用來解 transportation network（交通運輸）問題。",
+     "t": 161
+    },
+    {
+     "text": "Computer network：packets 在網路線上流動。",
+     "t": 195
+    },
+    {
+     "text": "Circuit network：導線裡傳的電流也可看成流動。",
+     "t": 217
+    },
+    {
+     "text": "1955 年蘇聯把工人運到東歐的鐵路網，是早期的實際問題。",
+     "t": 255
+    },
+    {
+     "text": "每段鐵路可運輸的人次就是 capacity；這裡的鐵路沒有方向性。",
+     "t": 324
+    },
+    {
+     "text": "算出整個鐵路網的最大運輸量約 163,000 人次。",
+     "t": 378
+    }
+   ]
+  },
+  {
+   "title": "Flow network 的定義",
+   "scene": "flow-l20-def",
+   "points": [
+    {
+     "text": "一般化後 flow network 是 directed graph；無向邊可看成兩條相反方向的邊。",
+     "t": 421
+    },
+    {
+     "text": "比一般有向圖多了 capacity：每條 edge 像一段水管，水太多會爆。",
+     "t": 447
+    },
+    {
+     "text": "兩個特別的點：source s 與 sink t。",
+     "t": 495
+    },
+    {
+     "text": "中間其他點叫 internal node；source 產生 flow（水龍頭），sink 只接收（水桶）。",
+     "t": 516
+    },
+    {
+     "text": "要順著 edge 的方向推水；可以雙向流就建雙向的 edge。",
+     "t": 564
+    },
+    {
+     "text": "問題：這個網路最多能通過多少水量？＝水龍頭能開多大＝水桶每單位時間收多少。",
+     "t": 593
+    }
+   ]
+  },
+  {
+   "title": "試灌：s → a → b → t 推 2",
+   "scene": "flow-l20-push2",
+   "points": [
+    {
+     "text": "一開始水龍頭關緊，管線都是空的。",
+     "t": 640
+    },
+    {
+     "text": "往上流：s→a capacity 2、a→b 3、b→t 2，這串最多推 2 單位。",
+     "t": 680
+    },
+    {
+     "text": "再多就會爆管，所以不行。",
+     "t": 704
+    },
+    {
+     "text": "目前這個 flow network 可以送 2 單位的水。",
+     "t": 723
+    }
+   ]
+  },
+  {
+   "title": "Undo flow：把水退回去",
+   "scene": "flow-l20-undo",
+   "points": [
+    {
+     "text": "還能再推嗎？同學提議 s → b → a → t。",
+     "t": 728
+    },
+    {
+     "text": "a → b 只能由 a 灌到 b；空管時不能由 b 逆流回 a。",
+     "t": 805
+    },
+    {
+     "text": "但 a → b 已有水往下流，送反方向的水會相消：undo flow（把水退回去）。",
+     "t": 896
+    },
+    {
+     "text": "往下 2、往上 1 → 實際只剩 1 單位往下流，這是合法的。",
+     "t": 919
+    },
+    {
+     "text": "前提：管內原本要有水才能退；原本沒水就不能送反向的水流。",
+     "t": 972
+    },
+    {
+     "text": "灌完後全滿，再也灌不下去：maximum flow = 3。",
+     "t": 1021
+    }
+   ]
+  },
+  {
+   "title": "f/c 標示與 flow value",
+   "scene": "flow-l20-value",
+   "points": [
+    {
+     "text": "之後都用這種表示：有向圖，每條 edge 標兩個數字。",
+     "t": 1053
+    },
+    {
+     "text": "後面是 capacity（一開始給定），前面是 flow（任一時刻管中的水量）。",
+     "t": 1075
+    },
+    {
+     "text": "v 代表 value：這種灌法 f 的 value 是 2 + 1 = 3。",
+     "t": 1119
+    },
+    {
+     "text": "s-t flow f 把每條 edge 對應到非負實數，每條 edge 都要有值。",
+     "t": 1157
+    },
+    {
+     "text": "v(f) 定義為 source 送出的 flow 總和；也等於 sink 收到的總和。",
+     "t": 1207
+    },
+    {
+     "text": "兩者不相等就代表水管爆破或無中生有，不合理。",
+     "t": 1248
+    }
+   ]
+  },
+  {
+   "title": "閒談：network flow 專書",
+   "scene": null,
+   "points": [
+    {
+     "text": "Network flow 本身就能寫成一本書。",
+     "t": 1276
+    },
+    {
+     "text": "那本名著的作者是經濟系教授；最佳化專家多在數學系與經濟系。",
+     "t": 1307
+    }
+   ]
+  },
+  {
+   "title": "兩個限制：capacity 與 conservation",
+   "scene": "flow-l20-constraints",
+   "points": [
+    {
+     "text": "目標：找最大 flow 的值，並給出每條 edge 上的 flow。",
+     "t": 1359
+    },
+    {
+     "text": "不管怎麼送，都要滿足兩個 hard constraint，否則就是 illegal。",
+     "t": 1383
+    },
+    {
+     "text": "Capacity constraint：0 ≤ f(e) ≤ c(e)。",
+     "t": 1395
+    },
+    {
+     "text": "Conservation constraint：像電路學的 KCL，internal node 流入 = 流出（s、t 不算）。",
+     "t": 1427
+    },
+    {
+     "text": "流入 > 流出代表漏水；流入 < 流出是無中生有，都不合法。",
+     "t": 1468
+    }
+   ]
+  },
+  {
+   "title": "Cut 給出的 upper bound",
+   "scene": "flow-l20-cuts",
+   "points": [
+    {
+     "text": "先退一步想：最大化問題可以先找 upper bound，而且越緊越好。",
+     "t": 1504
+    },
+    {
+     "text": "新例子：s 到 t，邊上標的是 capacity。",
+     "t": 1584
+    },
+    {
+     "text": "隨便切一刀，讓 s、t 分在兩側：所有水流都必須經過這個截面。",
+     "t": 1633
+    },
+    {
+     "text": "這刀切到 capacity 4、8、9 的三條水管 → 最多 21，21 是 upper bound。",
+     "t": 1730
+    },
+    {
+     "text": "換一刀切到 10 + 10 = 20，比 21 更緊。",
+     "t": 1796
+    },
+    {
+     "text": "每個 cut 都是 upper bound；選 capacity 總和最小的那個（min cut）最緊。",
+     "t": 1849
+    },
+    {
+     "text": "Max-flow min-cut：min cut 的值剛好等於能達到的最佳解（下次證明）。",
+     "t": 1873
+    }
+   ]
+  },
+  {
+   "title": "斜切：反向的邊不算",
+   "scene": "flow-l20-cutdiag",
+   "points": [
+    {
+     "text": "另一種切法：斜切，切到 s→a、a→b、b→d。",
+     "t": 1932
+    },
+    {
+     "text": "一般情況會切到從 sink 側倒回 source 側的反向邊。",
+     "t": 1965
+    },
+    {
+     "text": "順方向（forward）的邊希望灌滿；反方向的邊希望不要灌水。",
+     "t": 1986
+    },
+    {
+     "text": "所以這個 cut 的 upper bound = 10 + 9 = 19，capacity 2 的反向邊不算。",
+     "t": 2020
+    },
+    {
+     "text": "這個例子的最佳解就是 19。",
+     "t": 2031
+    }
+   ]
+  },
+  {
+   "title": "Ford-Fulkerson 的想法",
+   "scene": "flow-l20-ffidea",
+   "points": [
+    {
+     "text": "最有名的演算法：Ford-Fulkerson（Ford 就是 Bellman-Ford 的 Ford）。",
+     "t": 2041
+    },
+    {
+     "text": "出發點是 greedy：順著 edge 方向把水送出去。",
+     "t": 2096
+    },
+    {
+     "text": "加上退水（undo flow）機制，就能提供額外的灌水可能。",
+     "t": 2121
+    },
+    {
+     "text": "建 residual graph 記錄每條 edge 還剩多少灌水能力。",
+     "t": 2179
+    },
+    {
+     "text": "每個 iteration 在 residual graph 上灌水、再更新 flow network，兩張圖交替操作。",
+     "t": 2214
+    }
+   ]
+  },
+  {
+   "title": "建 residual graph G_f",
+   "scene": "flow-l20-residual",
+   "points": [
+    {
+     "text": "沿用小例子：目前已經有 2 單位的水。",
+     "t": 2228
+    },
+    {
+     "text": "s→a、a→b、b→t 三條有灌水（flow 2），另外兩條 flow 為 0。",
+     "t": 2298
+    },
+    {
+     "text": "Forward：還沒灌滿的水管，例如 a→b capacity 3 只灌 2，還能再灌 1。",
+     "t": 2355
+    },
+    {
+     "text": "Backward：管內有水就能退，例如 a→b 有 2，最多可退 2 單位往上。",
+     "t": 2399
+    },
+    {
+     "text": "Residual graph 記作 G_f：點不變，每條水管最多延伸出兩條 edge。",
+     "t": 2464
+    },
+    {
+     "text": "s→a 已滿，順向沒有 edge；s→b 1、a→b 1、a→t 1 是 forward edge。",
+     "t": 2505
+    },
+    {
+     "text": "Backward edge 只建在有水的三條：a→s 2、b→a 2、t→b 2。",
+     "t": 2593
+    }
+   ],
+   "trap": "補充：forward edge 容量 = c − f（等於 0 就不建）；backward edge 容量 = f（沒水就不建）。"
+  },
+  {
+   "title": "在 G_f 上找 augmenting path",
+   "scene": "flow-l20-augment",
+   "points": [
+    {
+     "text": "Residual capacity：G_f 上每條 edge 的 capacity，代表還有多少灌水能力。",
+     "t": 2677
+    },
+    {
+     "text": "在 G_f 上找一條 s 到 t 的 path：s → b → a → t。",
+     "t": 2719
+    },
+    {
+     "text": "capacity 是 1、2、1，只能灌 1：bottleneck = path 上最小的 residual capacity。",
+     "t": 2766
+    },
+    {
+     "text": "更新 flow network：s→b 多 1；b→a 是反向，所以 a→b 2 − 1 = 1；a→t 多 1。",
+     "t": 2870
+    },
+    {
+     "text": "找 path 並把水加上去的動作叫 augmenting path（增廣路徑）。",
+     "t": 2913
+    },
+    {
+     "text": "反覆做，直到 G_f 再也找不到 s 到 t 的 path，就得到 maximum flow。",
+     "t": 2960
+    },
+    {
+     "text": "Path 上的邊與原方向相同就 increase，相反就 decrease（undo flow）。",
+     "t": 2993
+    }
+   ]
+  },
+  {
+   "title": "Ford-Fulkerson 流程回顧",
+   "scene": "flow-l20-ffidea",
+   "points": [
+    {
+     "text": "一開始 flow network 全空，每條 edge 的 flow 都是 0。",
+     "t": 3036
+    },
+    {
+     "text": "每次灌水前先建 residual graph，capture 所有灌水的可能。",
+     "t": 3054
+    },
+    {
+     "text": "有水的邊另建 backward edge，容量 = 目前管內的水量。",
+     "t": 3121
+    },
+    {
+     "text": "在 G_f（不是 flow network）上找 s 到 t 的 path，灌 bottleneck 那麼多。",
+     "t": 3160
+    },
+    {
+     "text": "再用它更新 flow network：同方向加、反方向減（例如 2 − 1 = 1）。",
+     "t": 3190
+    },
+    {
+     "text": "更新後再建新的 G_f，繼續找 augmenting path。",
+     "t": 3264
+    }
+   ]
+  },
+  {
+   "title": "例子：第 1、2 條 augmenting path",
+   "scene": "flow-l20-run1",
+   "points": [
+    {
+     "text": "用同一張圖從頭到尾 demo。",
+     "t": 3279
+    },
+    {
+     "text": "一開始沒有水，G_f 跟 flow network 一模一樣（沒有 backward edge）。",
+     "t": 3320
+    },
+    {
+     "text": "Path 怎麼找都可以：過程會不同，但結果一樣好。",
+     "t": 3358
+    },
+    {
+     "text": "第一條 path 的 bottleneck 是 8：灌 8，flow = 8。",
+     "t": 3406
+    },
+    {
+     "text": "重建 G_f：只有被動到的三條邊改變；灌滿的 a→d 只剩可退 8 的 backward edge。",
+     "t": 3446
+    },
+    {
+     "text": "第二條 path 經過 4 條邊，bottleneck 6：flow = 8 + 6 = 14。",
+     "t": 3562
+    }
+   ],
+   "trap": "補充：舞台上第一條取 s→a→d→t、第二條取 s→b→d→c→t，與影片口述的 bottleneck（8、6）和邊數一致；影片畫面上的路徑是依此推定。"
+  },
+  {
+   "title": "例子：走反向邊，flow 到 19",
+   "scene": "flow-l20-run2",
+   "points": [
+    {
+     "text": "第三輪：只需更新剛動到的四條邊的 G_f。",
+     "t": 3625
+    },
+    {
+     "text": "這次的 path 比較複雜，經過 5 條邊。",
+     "t": 3679
+    },
+    {
+     "text": "bottleneck 是 3。",
+     "t": 3690
+    },
+    {
+     "text": "順向的邊 6 + 3 = 9；反向灌 3 等於退水：原本 8 的邊變 5。",
+     "t": 3730
+    },
+    {
+     "text": "flow = 14 + 3 = 17。",
+     "t": 3771
+    },
+    {
+     "text": "第四條 path 的 bottleneck 是 2：flow = 17 + 2 = 19。",
+     "t": 3797
+    }
+   ]
+  },
+  {
+   "title": "停止：找到 min cut",
+   "scene": "flow-l20-runcut",
+   "points": [
+    {
+     "text": "再建 G_f、找 path：source 只能走到 b，就走不出去了。",
+     "t": 3841
+    },
+    {
+     "text": "找不到 s 到 t 的 path，演算法停止，當下的解就是 maximum flow。",
+     "t": 3883
+    },
+    {
+     "text": "s 走不出去的地方像有一道鴻溝，自然形成一個 cut。",
+     "t": 3956
+    },
+    {
+     "text": "這個 cut 的容量 10 + 9 = 19，正好等於灌進去的 19：min cut = max flow。",
+     "t": 3991
+    },
+    {
+     "text": "找到 max flow 時順便找到 min cut：就在 s 可到達範圍的邊界。",
+     "t": 4015
+    }
+   ]
+  },
+  {
+   "title": "Ford-Fulkerson 步驟總結",
+   "scene": "flow-l20-ffidea",
+   "points": [
+    {
+     "text": "總結：從空的 flow network 開始，每條 edge 的 flow = 0。",
+     "t": 4042
+    },
+    {
+     "text": "每輪依目前的 flow 建 G_f（一開始跟 flow network 一樣）。",
+     "t": 4077
+    },
+    {
+     "text": "在 G_f 找 s-t path、算 bottleneck、灌進去，更新 flow network 與 G_f。",
+     "t": 4094
+    },
+    {
+     "text": "直到 G_f 找不到 s 到 t 的 path 就停。",
+     "t": 4179
+    },
+    {
+     "text": "max flow = min cut 是可以證明的定理，不只是觀察結果。",
+     "t": 4202
+    }
+   ],
+   "trap": "老師提醒：投影片上的 update 要更新的是原來的 flow network，不是 residual graph（residual graph 之後重建）。"
+  },
+  {
+   "title": "Primal–dual 與 max-flow min-cut",
+   "scene": "flow-l20-mfmc",
+   "points": [
+    {
+     "text": "Max flow（primal）與 min cut（dual）互為對偶：交替操作，最佳解時收斂在一起。",
+     "t": 4223
+    },
+    {
+     "text": "Max-flow min-cut theorem：最後求得的 max flow 值等於 min cut 值。",
+     "t": 4282
+    },
+    {
+     "text": "Cut 必須把 s、t 分在兩側；每個 cut 都提供 flow 的 upper bound。",
+     "t": 4321
+    },
+    {
+     "text": "只加 forward 方向邊的 capacity；反方向的邊可以讓它不灌水。",
+     "t": 4385
+    },
+    {
+     "text": "例如 10 + 8 + 9 = 27（6 不算）、4 + 8 + 9 = 21，最小的是 19。",
+     "t": 4414
+    },
+    {
+     "text": "最佳解就出現在 min cut 上。",
+     "t": 4435
+    }
+   ]
+  },
+  {
+   "title": "應用：資源分配",
+   "scene": null,
+   "points": [
+    {
+     "text": "Max flow 最常用來處理資源分配：每個資源有上限，許多人要使用。",
+     "t": 4486
+    },
+    {
+     "text": "資源分配問題幾乎總有人嘗試用 network flow 解。",
+     "t": 4545
+    },
+    {
+     "text": "應用的關鍵：能把問題 model 成 flow network，就能用 network flow 求解。",
+     "t": 4604
+    }
+   ]
+  },
+  {
+   "title": "Bipartite matching 問題",
+   "scene": "flow-l20-bip-problem",
+   "points": [
+    {
+     "text": "Bipartite matching 跟學期初的 stable matching 是兄弟問題，都在 bipartite graph 上。",
+     "t": 4615
+    },
+    {
+     "text": "這次不追求 stable（不管劈腿），只求配出越多對越好：maximum bipartite matching。",
+     "t": 4673
+    },
+    {
+     "text": "點分兩群（男／女），同群之間沒有 edge；有 edge 表示可以配對。",
+     "t": 4714
+    },
+    {
+     "text": "每個男生最多配一個女生，每個女生最多配一個男生。",
+     "t": 4765
+    },
+    {
+     "text": "Perfect matching：每個人都恰好配到一個；perfect 不一定是 stable。",
+     "t": 4791
+    },
+    {
+     "text": "例子：一個解配出 3 對（2 男 2 女落單）；最好可配 4 對，配不出 5 對。",
+     "t": 4815
+    }
+   ],
+   "trap": "補充：舞台上的 5 × 5 二分圖是自訂示意（最大 4 對），不是影片原圖。"
+  },
+  {
+   "title": "用 max flow 解 bipartite matching",
+   "scene": "flow-l20-bip-reduce",
+   "points": [
+    {
+     "text": "不設計專屬演算法，而是用手上已知的 max flow 來解。",
+     "t": 4876
+    },
+    {
+     "text": "這是資源分配問題，最難的是怎麼建出合理的 flow network。",
+     "t": 4960
+    },
+    {
+     "text": "額外加兩個點：source s 與 sink t。",
+     "t": 4978
+    },
+    {
+     "text": "原本無向的配對邊強制改成左到右。",
+     "t": 5015
+    },
+    {
+     "text": "s 連到所有男生、所有女生連到 t，方向也是左到右。",
+     "t": 5029
+    },
+    {
+     "text": "所有 capacity 都設 1：每人最多配一個（設 2 就能配兩個）。",
+     "t": 5069
+    },
+    {
+     "text": "跑 max flow：max flow = 4，代表找到 4 對。",
+     "t": 5131
+    },
+    {
+     "text": "回到原圖：有水流（1 單位）的中間邊就是配對。",
+     "t": 5156
+    }
+   ]
+  },
+  {
+   "title": "Matching 裡的 alternating augmenting path",
+   "scene": "flow-l20-bip-alt",
+   "points": [
+    {
+     "text": "一樣從空的 flow network 開始，建 G_f、灌水。",
+     "t": 5187
+    },
+    {
+     "text": "Capacity 全是 1：每條邊只有灌／沒灌兩種狀態，像 binary。",
+     "t": 5211
+    },
+    {
+     "text": "假設跑到一半已配 3 對：配到的邊在 G_f 只剩反向（虛線），沒配到的是順向。",
+     "t": 5247
+    },
+    {
+     "text": "從 s 出發，想辦法找到 t 的 path。",
+     "t": 5306
+    },
+    {
+     "text": "這種 augmenting path 一定是：s → 男生，再右、左、右、左交替，最後到 t。",
+     "t": 5346
+    },
+    {
+     "text": "Path 上實線比虛線多一條：配對數多 1。",
+     "t": 5401
+    },
+    {
+     "text": "直接解 bipartite matching 的方法找的就是這種 alternating path。",
+     "t": 5438
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "邊 a→b capacity 3、目前 flow 2。G_f 中 a→b 與 b→a 的容量各是？",
+   "opts": [
+    "1 和 2",
+    "2 和 1",
+    "3 和 0",
+    "1 和 0"
+   ],
+   "ans": "1 和 2",
+   "why": "forward = c − f = 1；backward = f = 2（最多退 2）。"
+  },
+  {
+   "q": "課堂例子中，切到 s→a(10)、a→b(2，從 sink 側指回 source 側)、b→d(9) 的 cut 容量是？",
+   "opts": [
+    "19",
+    "21",
+    "17",
+    "20"
+   ],
+   "ans": "19",
+   "why": "只算 S → T 的 forward 邊：10 + 9 = 19，反向的 2 不算。"
+  },
+  {
+   "q": "在 G_f 找到 path s → b → a → t，residual capacity 為 1、2、1，b → a 是反向邊。更新後 a → b 原本 2 的 flow 變多少？",
+   "opts": [
+    "1",
+    "3",
+    "2",
+    "0"
+   ],
+   "ans": "1",
+   "why": "bottleneck = 1；反向邊代表 undo，原邊 a→b 減 1：2 − 1 = 1。"
+  },
+  {
+   "q": "Ford-Fulkerson 停止時，min cut 的 S 側怎麼找？",
+   "opts": [
+    "G_f 中從 s 走得到的點",
+    "flow > 0 的邊的起點",
+    "與 s 相鄰的點",
+    "所有飽和邊的終點"
+   ],
+   "ans": "G_f 中從 s 走得到的點",
+   "why": "s 在 G_f 走不出去的邊界就是 min cut；課堂例子 S = {s, b}，容量 19。"
+  },
+  {
+   "q": "用 max flow 解 bipartite matching，capacity 怎麼設？",
+   "opts": [
+    "所有邊都設 1",
+    "只有中間的邊設 1",
+    "s 的出邊設 ∞",
+    "依度數設定"
+   ],
+   "ans": "所有邊都設 1",
+   "why": "s→男、男→女、女→t 全設 1，保證每人最多配一個。"
+  },
+  {
+   "q": "Matching 中找到的 augmenting path 有什麼特性？",
+   "opts": [
+    "順向、反向交替，順向邊比反向邊多一條",
+    "全部都是順向邊",
+    "反向邊比順向邊多一條",
+    "長度一定是 3"
+   ],
+   "ans": "順向、反向交替，順向邊比反向邊多一條",
+   "why": "這就是 alternating path：走完後配對數 +1。"
+  },
+  {
+   "q": "Perfect matching 與 stable matching 的關係？",
+   "opts": [
+    "perfect 不一定 stable",
+    "perfect 一定 stable",
+    "perfect matching 一定唯一",
+    "兩者是同一件事"
+   ],
+   "ans": "perfect 不一定 stable",
+   "why": "perfect 只講每人恰好配一個；stable 講不能有互相想換的組合。"
+  }
+ ]
+}

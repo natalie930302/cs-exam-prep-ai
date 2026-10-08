@@ -10,6 +10,8 @@
 //  • MIT 6.006 Rec14：A→B, A→G, B→C, C→A, C→D, C→F, D→E, D→F, G→C（依字母順序）；拿掉 C→A 做修課順序。
 // 課本（CLRS 第 22 章）補充：BFS 圖 22.3、Kahn、SCC（圖 22.9，Kosaraju 與 Tarjan）、articulation point（例子自訂）。
 // 慣例：CLRS 的白／灰／黑；d[v]/f[v] 為 discovery／finishing time，時間從 1 開始。
+import kit from './_kit.js';
+
 export default function (ctx) {
   const { THREE, lab, sleep, $, log, clearLog, setState, controls, on, say, beat } = ctx;
   const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -1191,6 +1193,13 @@ export default function (ctx) {
     'articulation-points': { title: '課本：Articulation point 與 bridge', play: scAP },
   };
 
+
+  // 每段影片的場景片段（由 sync pass 加入）：每個片段把 [id, 標題, play] 放進 FRAG。
+  const K = kit(ctx);
+  const FRAG = [];
+  // @@FRAGMENTS@@
+  FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
+
   return {
     kicker: '演算法・第 6 章',
     title: '圖論演算法：BFS、DFS、Topological sort、SCC',
@@ -1211,7 +1220,7 @@ export default function (ctx) {
       'dfs-rec14-parent', 'edge-rec14-classify', 'edge-rec14-undirected',
       'cycle-back-edge', 'topo-dressing', 'topo-proof', 'topo-rec14-courses', 'topo-back-edge-breaks', 'topo-kahn',
       'scc-kosaraju', 'scc-tarjan', 'articulation-points',
-    ],
+    ].concat(FRAG.map((f) => f[0])),
     stop() { clearTimeout(timer); epoch++; },
   };
 }
