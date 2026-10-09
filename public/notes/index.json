@@ -189,7 +189,7 @@
   "label": "MIT 6.006 L12：Square Roots, Newton's Method",
   "points": 92,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "3503j2L6qNA": {
   "label": "交大彭文志 Lec01 Introduction (1/2)",
@@ -879,7 +879,7 @@
   "label": "MIT 6.006 Rec12：Karatsuba Multiplication, Newton's Method",
   "points": 103,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "JvcqtZk2mng": {
   "label": "Abdul Bari：2.1.4 Recurrence Relation #4",

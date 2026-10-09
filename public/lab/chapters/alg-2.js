@@ -5750,558 +5750,1482 @@ FRAG.push(['dcmit-catalan-circle', 'Demo：大圓裡的 Catalan 數', async (tok
   // ═══ dcmit2.js ═══
   {
 // ─── MIT 6.006：2YeJ-5UAke8（L12 Square Roots, Newton's Method）、JRgIXyEPnbA（Rec12 Karatsuba, Newton） ───
-// 只用 K 與 ctx。老師的例子：L12 ε_n 誤差分析（ε = 0.01）、x₁x₀·y₁y₀ 的 4 次／3 次、Toom-3 九次 → 五次、2⁵⁰ 的 log*、
+// Cued scenes: every `await step(tok)` waits until the lecturer says that sentence; the motion after it is
+// short (≤ 2.5 s) and then the picture holds. The comment on each step gives its cue time (seconds).
+// 老師的例子：L12 ε_n 誤差分析（ε = 0.01）、x₁x₀·y₁y₀ 的 4 次／3 次、Toom-3 九次 → 五次、2⁵⁰ 的 log*、
 // R = 2ᵏ 的 shift、72/100 = 0.72、f(x) = 1/x − b/R、2¹⁶/5、c·1^α + … + c·d^α < 2c·d^α、√ → ÷ → × 兩層 Newton；
 // Rec12 1234 × 5678 直式、A B C D、Python list 補零／slice、x − R/b 行不通、∛(10^{3d}·a)、ε 0.1 → 0.01 → 0.0001。
-const { V3, fresh, tag, cube, move, kill, glow, tint, txt, code, anim, line, arrow, GOLD, GREEN, RED } = K;
-const say = ctx.say, beat = ctx.beat;
-const B1 = '#4b9ee2', B2 = '#7fb6e8', P1 = '#9b7ef4', P2 = '#c4b3f7', OR = '#dd8238', YE = '#c08a1f', GR = '#2fc092', RD = '#d64545', TE = '#31aab0', PAPER = '#efe3c8', MINT = '#d4e8da', BROWN = '#6e5f49';
+// 老師沒給數字的地方（∛ 的 a、函數圖形）用「示意」資料並在畫面上標明。
+const { V3, fresh, tag, cube, kill, glow, tint, txt, code, anim, line, arrow, GOLD, GREEN, RED, step, buddy, prop, bob, travel, remove } = K;
+const say = (a, b = '') => ctx.say(a, b);
+const B1 = '#4b9ee2', B2 = '#7fb6e8', P1 = '#9b7ef4', P2 = '#c4b3f7', OR = '#dd8238', YE = '#c08a1f', GR = '#2fc092', RD = '#d64545', TE = '#31aab0', PAPER = '#efe3c8', MINT = '#d4e8da', BROWN = '#6e5f49', SKY = '#a9cdf0', PEACH = '#f4a56a', BUTTER = '#f2d37a';
 const box = (t, x, y, z = 0, w = 2.6, c = PAPER, drop = 0) => cube(t, c, [w, 0.6, 0.8], x, y, z, drop);
 const dig = (t, x, y, z = 0, c = PAPER, drop = 0, s = 0.5) => cube(t, c, [s * 0.92, s * 0.92, s], x, y, z, drop);
 function bar(color, x, z, w = 0.6) { const m = cube('', color, [w, 1, w], x, 0.001, z); m.scale.y = 0.002; return m; }
 const setBar = (m, h) => { const v = Math.max(0.002, h); m.scale.y = v; m.position.y = v / 2; };
+const grow = (tok, m, h, ms = 450) => anim(tok, ms, (u) => setBar(m, h * u));
 function curve(f, x0, x1, X, Y, color = RD, n = 40) {
   for (let k = 0; k < n; k++) { const a = x0 + (x1 - x0) * k / n, b = x0 + (x1 - x0) * (k + 1) / n; line(X(a), Y(f(a)), X(b), Y(f(b)), 0, color); }
 }
+// a label spot that replaces itself, so an old line never lingers
+function board(x, y, z = 0, cls = 'say') { let l = null; return (t) => { if (l) remove(l); l = t ? tag(t, cls, x, y, z) : null; return l; }; }
+// a little packet that travels from a to b and stays there
+async function pkt(tok, t, a, b, ms = 800, cls = 'pkt') { const l = tag(t, cls, a.x, a.y, a.z); await travel(tok, l, a, b, ms); return l; }
+// a buddy walks to (x, z) along the floor it stands on
+async function walk(tok, bd, x, z, ms = 700) { const a = bd.g.position.clone(), b = V3(x, a.y, z); await anim(tok, ms, (u) => bd.g.position.lerpVectors(a, b, u)); }
+const strike = (l) => { l.element.style.textDecoration = 'line-through'; l.element.style.opacity = '0.6'; };
 
 // ═════════════ L12：2YeJ-5UAke8 ═════════════
 
-// 01:28 / 47:51 √a → 除法 → 乘法：兩層 Newton（params.q：只提出問題）
-FRAG.push(['dcmit2-nested', '開根號 → 除法 → 乘法：兩層計算', async (tok) => {
-  const q = (ctx.params || {}).q;
+// 00:28 本講目標：√ 呼叫 ÷，÷ 呼叫 × → 兩層計算，總複雜度？
+FRAG.push(['dcmit2-nested-q', '本講目標：√ → ÷ → × 兩層計算', async (tok) => {
   fresh([0, 4.4, 13], [0, 3.2, 0]);
-  const s = box('√a：Newton', -2.2, 5.8, 0, 3.4, B1, 1.2);
-  tag('log d 次', 'idx', 0.8, 5.8, 0.6);
-  say('開根號：Newton 迭代', 'x_{i+1} = (x_i + a/x_i)/2');
-  await beat(tok, 2600);
-  arrow(V3(-2.2, 5.4, 0), V3(-2.2, 4.5, 0));
-  const d = box('÷：Newton 求倒數', -2.2, 4.0, 0, 3.4, P1, 1.2);
-  tag('log d 次', 'idx', 0.8, 4.0, 0.6);
-  say('每一步都要做除法 a/x_i', q ? '除法要怎麼做？上次沒講' : 'x_{i+1} = 2x_i − b·x_i²/R');
-  await beat(tok, 2800);
-  arrow(V3(-2.2, 3.6, 0), V3(-2.2, 2.7, 0));
-  const m = box('×：Θ(n^α)', -2.2, 2.2, 0, 3.4, OR, 1.2);
-  say('除法裡面又呼叫乘法', 'naive n²、Karatsuba ≈ n^1.58');
-  await beat(tok, 2800);
-  if (q) {
-    tag('乘法被呼叫幾次？', 'ptr alt', 3.6, 4.0, 0);
-    say('兩層計算：總複雜度是多少？', '這就是今天的主題');
-    await beat(tok, 3400);
-    return;
+  await step(tok);                                   // 28.6 last time: millionth digit of √2
+  const me = buddy('你', '√2', B2, -5.2, 0, 1.6, 0.9); me.mood('wow');
+  tag('√2 = 1.41421356…  第 1,000,000 位是？', 'say', 0.4, 7.0, 0);
+  say('上次的問題：√2 的第一百萬位');
+  await step(tok);                                   // 47.2 high-precision arithmetic + Newton
+  const s = box('√a：Newton 迭代', -1.2, 5.6, 0, 3.6, B1, 1.2);
+  say('用高精度運算 + Newton 法開根號', 'x_{i+1} = (x_i + a/x_i)/2');
+  await step(tok);                                   // 61.9 we don't know division yet
+  arrow(V3(-1.2, 5.2, 0), V3(-1.2, 4.4, 0));
+  const d = box('÷：怎麼做？', -1.2, 3.9, 0, 3.6, P1, 1.2);
+  tag('還沒教！', 'bad', 1.8, 3.9, 0.5);
+  me.mood('sad');
+  say('Newton 每一步都要做除法 a/x_i', '可是除法還沒教');
+  await step(tok);                                   // 77.1 multiplication: naive n², Karatsuba n^1.58
+  arrow(V3(-1.2, 3.5, 0), V3(-1.2, 2.7, 0));
+  const m = box('×：已經會了', -1.2, 2.2, 0, 3.6, OR, 1.2);
+  tag('naive Θ(n²)', 'good', 2.4, 2.6, 0.5); tag('Karatsuba ≈ n^1.58', 'good', 2.4, 1.8, 0.5);
+  me.mood('happy');
+  say('乘法已經會兩種', 'naive n²、Karatsuba ≈ n^1.58');
+  await step(tok);                                   // 91.1 how many times is multiplication called?
+  const q = tag('乘法會被呼叫幾次？', 'say', -5.2, 2.6, 1.6);
+  me.mood('wow');
+  say('算 √ 的時候，乘法被呼叫幾次？');
+  await step(tok);                                   // 103.8 two levels of computation
+  const p = tag('呼叫', 'pkt', 0.9, 5.6, 0.8);
+  await travel(tok, p, V3(0.9, 5.6, 0.8), V3(0.9, 3.9, 0.8), 700);
+  await travel(tok, p, V3(0.9, 3.9, 0.8), V3(0.9, 2.2, 0.8), 700);
+  tag('兩層', 'ptr alt', -4, 4.7, 0);
+  say('√ 呼叫 ÷，÷ 又呼叫 ×', '兩層計算，要打開來仔細看');
+  await step(tok);                                   // 114.8 the meat of today's lecture
+  remove(q); glow(s, GOLD); glow(d, GOLD); glow(m, GOLD);
+  tag('√ 的總複雜度 = ？', 'ptr', 3.6, 5.6, 0);
+  me.mood('calm');
+  say('今天的重點：開根號的總複雜度');
+}]);
+
+// 02:18 回顧：⌊√(2·10^{2d})⌋、x₀ = 1、(x_i + a/x_i)/2、位數 1 → 2 → 4 → 8
+FRAG.push(['dcmit2-sqrt-review', '回顧：Newton 求 √2，位數翻倍', async (tok) => {
+  fresh([0, 4.8, 14], [0, 3.2, 0]);
+  const X = (x) => -5.2 + x * 3.4, Y = (v) => 2.2 + v * 0.95, f = (x) => x * x - 2;
+  await step(tok);                                   // 138.2 the millionth digit of √2
+  tag('目標：√2 的第一百萬位', 'say', -1.5, 7.2, 0);
+  say('目標：√2 的第一百萬位');
+  await step(tok);                                   // 146.1 integers: floor of √(2·10^{2d})
+  box('⌊√(2·10^{2d})⌋', -3.4, 6.2, 0, 3.4, MINT, 1);
+  tag('例 d = 3：⌊√2000000⌋ = 1414 → 1.414', 'note', 2.6, 6.2, 0);
+  say('全部用整數：算 ⌊√(2·10^{2d})⌋', 'd = 想要的精度位數');
+  await step(tok);                                   // 212.0 start with x0 = 1
+  line(X(0.3), Y(0), X(2.2), Y(0), 0, BROWN);
+  curve(f, 0.75, 2.15, X, Y);
+  tag('f(x) = x² − 2', 'ptr', X(2.0), Y(f(2.15)) + 0.3);
+  tag('√2', 'idx', X(Math.SQRT2), Y(0) - 0.45);
+  const g = buddy('x', '1', BUTTER, X(1), Y(0), 0.4, 0.45);
+  say('從 x₀ = 1 出發', 'Newton：一步一步改進猜測');
+  await step(tok);                                   // 219.2 x_{i+1} = (x_i + a/x_i)/2
+  tag('x_{i+1} = (x_i + a/x_i) / 2', 'ptr alt', 3.6, 4.6, 0);
+  say('迭代式：x_{i+1} = (x_i + a/x_i)/2');
+  await step(tok);                                   // 230.7 this requires division
+  tag('a/x_i 要做除法！', 'bad', 3.6, 3.9, 0);
+  g.mood('wow');
+  say('注意：a/x_i 需要除法', '這是外層的 Newton');
+  await step(tok);                                   // 244.8 quadratic rate of convergence
+  const xs = [1, 1.5, 17 / 12, 577 / 408];
+  for (let k = 0; k < 3; k++) {
+    const x = xs[k], nx = xs[k + 1];
+    line(X(x), Y(0), X(x), Y(f(x)), 0, '#a99470');
+    line(X(x), Y(f(x)), X(nx), Y(0), 0, '#1f3a6e');
+    await walk(tok, g, X(nx), 0.4, 600); g.set(nx.toFixed(k + 2));
   }
-  const D = [1, 2, 4, 8, 16, 32];
-  for (let k = 0; k < D.length; k++) { const b = bar(GR, 1.6 + k * 0.8, 1.2, 0.55); setBar(b, 0.15 + 3.6 * D[k] / 32); tag(String(D[k]), 'idx', 1.6 + k * 0.8, 0, 2); await beat(tok, 260); }
-  tag('每次迭代的位數', 'ptr', 3.6, 4.5, 1.2);
-  say('位數從小長到大', '√2 先猜 1.5，最後才到百萬位');
-  await beat(tok, 3000);
-  glow(s, GREEN); glow(d, GREEN); glow(m, GREEN);
-  say('工作集中在最後幾次', '√ 的複雜度 = ÷ = × = Θ(n^α)');
-  await beat(tok, 3400);
+  g.mood('happy');
+  say('quadratic convergence', 'x：1 → 1.5 → 1.417 → 1.4142');
+  await step(tok);                                   // 262.4 one digit → 2 → 4 → 8
+  const D = [1, 2, 4, 8];
+  for (let k = 0; k < 4; k++) { const b = bar(GR, 3.4 + k * 0.9, 1.8, 0.6); await grow(tok, b, 0.35 * D[k], 300); tag(D[k] + ' 位', 'idx', 3.4 + k * 0.9, 0, 2.6); }
+  say('正確位數每次翻倍', '1 → 2 → 4 → 8：等比成長');
+  await step(tok);                                   // 270.1 logarithmic number of iterations
+  tag('d 位只要 log d 次迭代', 'ptr alt', 4.8, 3.2, 1.8);
+  say('所以只要對數次迭代', 'd 位精度 → log d 次');
+  await step(tok);                                   // 285.1 an example, but no proof yet
+  tag('只舉了例子，還沒證明', 'note', -3.2, 0.4, 2);
+  g.mood('calm');
+  say('上次只舉例，還沒證明收斂速度', '→ 接下來證明');
 }]);
 
 // 05:10 誤差分析：x_n = √a(1 + ε_n) → ε_{n+1} = ε_n² / (2(1 + ε_n))
 FRAG.push(['dcmit2-eps-derive', '誤差分析：ε_{n+1} ≈ ε_n²', async (tok) => {
-  fresh([0, 4.6, 13], [0, 3.2, 0]);
-  const cd = code(['x_n = √a (1 + ε_n)', 'x_{n+1} = (x_n + a/x_n) / 2', '  = √a [(1 + ε_n) + 1/(1 + ε_n)] / 2', '  = √a [1 + ε_n² / (2(1 + ε_n))]', 'ε_{n+1} = ε_n² / (2(1 + ε_n))'], -2.2, 6.6, 0.6);
-  cd.hl(0); say('設 x_n 和 √a 差一個比例 ε_n', 'ε_n 可正可負，要證它很快趨近 0');
-  await beat(tok, 3000);
-  cd.hl(1); say('代進 Newton 迭代式', '');
-  await beat(tok, 2400);
-  cd.hl(2); say('提出 √a', '');
-  await beat(tok, 2400);
-  cd.hl(3); say('化簡後多了一項 ε_n²', '');
-  await beat(tok, 2800);
-  cd.hl(4); say('n 變大時 1 + ε_n ≈ 1', '誤差每次被平方：quadratic convergence');
-  await beat(tok, 3000);
-  const E = [['ε = 10⁻²', 2], ['ε² = 10⁻⁴', 4], ['ε⁴ = 10⁻⁸', 8]];
-  for (let k = 0; k < E.length; k++) {
-    tag(E[k][0], 'ptr alt', -5.2, 2.2 - k * 0.75, 1.5);
-    for (let j = 0; j < E[k][1]; j++) dig('0', -3.6 + j * 0.55, 2.2 - k * 0.75, 1.5, k ? MINT : PAPER, 0.8);
-    await beat(tok, 1200);
-  }
-  say('0.01 → 0.0001：小數點後的 0 翻倍', '正確位數 1 → 2 → 4 → 8');
-  await beat(tok, 3000);
-  say('d 位精度只要 log d 次迭代', '');
-  await beat(tok, 2600);
+  fresh([0, 4.6, 13], [0, 3.0, 0]);
+  const NX = (e) => e * 14;   // ε → x on the number line
+  await step(tok);                                   // 309.8 error analysis of Newton's method
+  line(-6, 0.6, 6, 0.6, 0, BROWN);
+  const tgt = cube('', GR, [0.12, 0.9, 0.12], 0, 1.05, 0.2); glow(tgt, GREEN);
+  tag('√a（正確答案）', 'good', 0, 1.9, 0.2);
+  say('對 Newton 法做誤差分析', 'error analysis');
+  await step(tok);                                   // 326.1 x_n = √a (1 + ε_n)
+  const cd = code(['x_n = √a (1 + ε_n)', 'x_{n+1} = (x_n + a/x_n) / 2', '  = √a [(1 + ε_n) + 1/(1 + ε_n)] / 2', '  = √a [1 + ε_n² / (2(1 + ε_n))]', 'ε_{n+1} = ε_n² / (2(1 + ε_n))'], -2.4, 6.8, 0.55);
+  cd.hl(0);
+  const g = buddy('x_n', '', BUTTER, NX(0.3), 0.6, 0.6, 0.55);
+  const eps = tag('ε_n', 'pkt', NX(0.15), 0.3, 1.3);
+  say('設 x_n = √a (1 + ε_n)', 'ε_n：和正確答案差的比例');
+  await step(tok);                                   // 334.1 ε may be positive or negative
+  await walk(tok, g, NX(-0.25), 0.6, 800); eps.position.x = NX(-0.12); txt(eps, 'ε_n < 0');
+  await walk(tok, g, NX(0.3), 0.6, 800); eps.position.x = NX(0.15); txt(eps, 'ε_n > 0');
+  say('ε_n 可正可負', '猜大了 ε > 0，猜小了 ε < 0');
+  await step(tok);                                   // 356.4 want ε_n → 0; how fast?
+  arrow(V3(NX(0.3) - 0.5, 1.6, 0.6), V3(0.4, 1.6, 0.6), 0x0f5a3a);
+  tag('ε_n → 0？多快？', 'say', NX(0.18), 2.6, 0.6);
+  g.mood('wow');
+  say('要證明 ε_n → 0', '而且要知道有多快');
+  await step(tok);                                   // 366.3 plug this into that
+  cd.hl(1);
+  say('把 x_n 代進迭代式');
+  await step(tok);                                   // 407.7 pull out √a
+  cd.hl(2);
+  say('提出 √a', '剩下 (1 + ε_n) 和 1/(1 + ε_n)');
+  await step(tok);                                   // 444.4 x_{n+1} = √a[1 + ε²/(2(1+ε))]
+  cd.hl(3);
+  say('化簡：多出一項 ε_n² / (2(1 + ε_n))', '（老師跳過一步代數）');
+  await step(tok);                                   // 481.8 ε_{n+1} vs ε_n
+  cd.hl(4);
+  say('ε_{n+1} = ε_n² / (2(1 + ε_n))', '新誤差 ≈ 舊誤差的平方');
+  await step(tok);                                   // 504.0 this part is essentially 1
+  tag('ε_n 很小時 1 + ε_n ≈ 1', 'note', 4.2, 4.4, 0);
+  await walk(tok, g, NX(0.08), 0.6, 900); g.mood('happy');
+  say('ε_n 越來越小，分母 ≈ 1', '誤差每一步被平方');
+  await step(tok);                                   // 519.9 0.01 → 0.0001
+  tag('ε = 0.01', 'ptr alt', 4.2, 3.5, 0);
+  await pkt(tok, '平方', V3(4.2, 3.2, 0.3), V3(4.2, 2.6, 0.3), 600);
+  tag('ε² = 0.0001', 'ptr alt', 4.2, 2.3, 0);
+  await walk(tok, g, NX(0.03), 0.6, 600);
+  say('0.01 → 0.0001', '小數點後的 0 翻倍');
+  await step(tok);                                   // 556.6 d digits → log d iterations
+  tag('d 位精度 → log d 次迭代', 'ptr', -4.2, 3.1, 0.5);
+  say('quadratic convergence', 'd 位精度只要 log d 次');
+  await step(tok);                                   // 597.8 now: complexity of division
+  box('÷ 的複雜度？', -4.2, 2.1, 0.5, 2.6, P1, 1);
+  g.mood('calm');
+  say('剩下：除法的複雜度', '知道它就知道開根號的複雜度');
 }]);
 
 // 10:36 乘法回顧：x₁x₀ × y₁y₀，4 次 → n²；Karatsuba 3 次 → n^1.58
 FRAG.push(['dcmit2-mult-recap', '乘法回顧：4 次 vs 3 次', async (tok) => {
   fresh([0, 4.4, 13.5], [0, 3.4, 0]);
-  cube('x₁', B1, [1.3, 0.55, 0.7], -0.7, 6.6, 0, 1); cube('x₀', B2, [1.3, 0.55, 0.7], 0.7, 6.6, 0, 1);
-  cube('y₁', P1, [1.3, 0.55, 0.7], -0.7, 5.9, 0, 1); cube('y₀', P2, [1.3, 0.55, 0.7], 0.7, 5.9, 0, 1);
-  tag('x₁ = 高半，各 d/2 位', 'idx', 3.6, 6.6, 0);
-  say('d 位數 x、y 各拆成兩半', 'x₁y₁、x₁y₀、x₀y₁、x₀y₀');
-  await beat(tok, 3000);
-  const tree = async (cx, k, sp, col) => {
-    const r = cube('n', col, [0.7, 0.4, 0.5], cx, 4.6, 0, 1); const L1 = [];
-    await beat(tok, 300);
-    for (let i = 0; i < k; i++) { const x = cx + (i - (k - 1) / 2) * sp * k; line(cx, 4.4, x, 3.5); L1.push(cube('n/2', col, [0.55, 0.32, 0.45], x, 3.3, 0, 0.8)); }
-    await beat(tok, 500);
-    for (let i = 0; i < k; i++) for (let j = 0; j < k; j++) { const px = cx + (i - (k - 1) / 2) * sp * k, x = px + (j - (k - 1) / 2) * sp; line(px, 3.1, x, 2.3); cube('', col, [0.28, 0.25, 0.3], x, 2.1, 0, 0.6); }
-    return r;
-  };
-  await tree(-3.6, 4, 0.36, RD);
-  tag('4T(n/2) + Θ(n)', 'ptr', -3.6, 1.3, 0.6); tag('每層 n、2n、4n…', 'idx', -3.6, 0.7, 0.6);
-  say('直接做：4 次乘法', 'T(n) = 4T(n/2) + Θ(n) = Θ(n²)');
-  await beat(tok, 3200);
-  await tree(3.6, 3, 0.6, GR);
-  tag('3T(n/2) + Θ(n)', 'ptr alt', 3.6, 1.3, 0.6); tag('多幾次加法 Θ(n)', 'idx', 3.6, 0.7, 0.6);
-  say('Karatsuba：代數技巧只要 3 次', 'T(n) = 3T(n/2) + Θ(n) = Θ(n^(log₂3)) ≈ n^1.58');
-  await beat(tok, 3400);
-  say('子問題少一個，整棵樹小很多', '');
-  await beat(tok, 2400);
+  const kids = (cx, k, sp, col) => { const o = []; for (let i = 0; i < k; i++) { const x = cx + (i - (k - 1) / 2) * sp * k; line(cx, 4.4, x, 3.5); o.push(cube('n/2', col, [0.55, 0.32, 0.45], x, 3.3, 0, 0.8)); } return o; };
+  const grand = (cx, k, sp, col) => { for (let i = 0; i < k; i++) for (let j = 0; j < k; j++) { const px = cx + (i - (k - 1) / 2) * sp * k, x = px + (j - (k - 1) / 2) * sp; line(px, 3.1, x, 2.3); cube('', col, [0.28, 0.25, 0.3], x, 2.1, 0, 0.6); } };
+  await step(tok);                                   // 636.0 revisit multiplication
+  const bx = box('x：d 位', -1.4, 6.6, 0, 2.6, B1, 1), by = box('y：d 位', 1.4, 6.6, 0, 2.6, P1, 1);
+  tag('×', 'ptr', 0, 6.6, 0.6);
+  say('回顧乘法：兩個 d 位數相乘');
+  await step(tok);                                   // 670.4 x1 x0 ; y1 y0
+  kill(bx); kill(by);
+  cube('x₁', B1, [1.3, 0.55, 0.7], -2.0, 6.6, 0, 1); cube('x₀', B2, [1.3, 0.55, 0.7], -0.7, 6.6, 0, 1);
+  cube('y₁', P1, [1.3, 0.55, 0.7], 0.9, 6.6, 0, 1); cube('y₀', P2, [1.3, 0.55, 0.7], 2.2, 6.6, 0, 1);
+  tag('x₁ = 高位那一半', 'note', -4.6, 6.6, 0);
+  say('divide and conquer：各拆兩半', 'x₁ 是 x 的高位一半');
+  await step(tok);                                   // 690.7 each has d/2 digits
+  tag('每段 d/2 位', 'idx', 4.4, 6.6, 0);
+  say('每一半有 d/2 位');
+  await step(tok);                                   // 699.8 T(n) = 4T(n/2) + Θ(n)
+  cube('n', RD, [0.7, 0.4, 0.5], -3.6, 4.6, 0, 1);
+  const L = kids(-3.6, 4, 0.36, RD);
+  tag('T(n) = 4T(n/2) + Θ(n)', 'ptr', -3.6, 1.3, 0.6);
+  say('直接做：T(n) = 4T(n/2) + Θ(n)');
+  await step(tok);                                   // 712.7 x1y1, x1y0, …
+  const P = ['x₁y₁', 'x₁y₀', 'x₀y₁', 'x₀y₀'];
+  for (let k = 0; k < 4; k++) { glow(L[k], GOLD); tag(P[k], 'pkt', L[k].position.x, 3.85, 0.4); await ctx.beat(tok, 250); }
+  say('4 次乘法', 'x₁y₁、x₁y₀、x₀y₁、x₀y₀');
+  await step(tok);                                   // 731.8 four multiplications → n²
+  grand(-3.6, 4, 0.36, RD);
+  tag('= Θ(n²)', 'bad', -3.6, 0.7, 0.6);
+  say('每層都拆成 4 個：結果還是 Θ(n²)');
+  await step(tok);                                   // 736.4 Karatsuba: three multiplications
+  cube('n', GR, [0.7, 0.4, 0.5], 3.6, 4.6, 0, 1);
+  kids(3.6, 3, 0.6, GR);
+  tag('Karatsuba：3 次', 'good', 3.6, 5.3, 0);
+  say('Karatsuba：數學技巧減為 3 次乘法');
+  await step(tok);                                   // 752.1 a few more additions, Θ(n)
+  tag('多幾次加法 Θ(n)', 'note', 5.6, 3.3, 0.6);
+  say('多做幾次加法', '加法只要 Θ(n)，很便宜');
+  await step(tok);                                   // 760.6 T(n) = 3T(n/2) + Θ(n) → n^1.58
+  grand(3.6, 3, 0.6, GR);
+  tag('T(n) = 3T(n/2) + Θ(n)', 'ptr alt', 3.6, 1.3, 0.6); tag('= Θ(n^1.58…)', 'good', 3.6, 0.7, 0.6);
+  say('T(n) = 3T(n/2) + Θ(n)', '= Θ(n^(log₂3)) ≈ n^1.58');
 }]);
 
 // 13:03 Toom-Cook 3：拆三段，直接 9 次 → 技巧後 5 次 → n^(log₃5)
 FRAG.push(['dcmit2-toom3', 'Toom-3：九次乘法減為五次', async (tok) => {
   fresh([0, 5, 13], [0, 3, 0]);
+  await step(tok);                                   // 782.8 no reason to stop at two parts
+  const k2 = box('拆 2 段：Karatsuba', -3.4, 6.6, 0, 3.4, B2, 1);
+  tag('為什麼只拆 2 段？', 'say', 2.2, 6.6, 0);
+  say('沒理由只拆成兩段');
+  await step(tok);                                   // 797.9 Toom and Cook: k parts
+  const tc = buddy('Toom & Cook', 'k 段', PEACH, 5.4, 0, 1.6, 0.8); tc.mood('happy');
+  say('Toom 和 Cook 把 Karatsuba 推廣', '拆成 k 段（k ≥ 2）');
+  await step(tok);                                   // 811.8 Toom-2 = Karatsuba, Toom 3, Toom 4…
+  txt(k2.userData.lbl, 'Toom-2 = Karatsuba');
+  tag('Toom-3、Toom-4…（不用背細節）', 'note', 2.2, 5.8, 0);
+  say('Toom-2 就是 Karatsuba', '還有 Toom-3、Toom-4…');
+  await step(tok);                                   // 834.9 Toom-3: three parts, d/3 digits each
+  kill(k2);
   const xs = [], ys = [];
-  for (let i = 0; i < 3; i++) xs.push(cube('x' + '₂₁₀'[i], [B1, B2, '#a9cdf0'][i], [1, 0.5, 0.7], -3.6 + i * 1.2, 6.3, 0, 1));
+  for (let i = 0; i < 3; i++) xs.push(cube('x' + '₂₁₀'[i], [B1, B2, SKY][i], [1, 0.5, 0.7], -3.6 + i * 1.2, 6.3, 0, 1));
   for (let j = 0; j < 3; j++) ys.push(cube('y' + '₂₁₀'[j], [P1, P2, '#ddd2fb'][j], [1, 0.5, 0.7], -5.4, 5.2 - j * 0.8, 0, 1));
-  say('Toom-Cook 3：每個數拆成三段', '每段 d/3 位；Toom-2 就是 Karatsuba');
-  await beat(tok, 3000);
-  const cnt = tag('乘法 0 次', 'ptr alt', 3.6, 6.3, 0);
+  say('Toom-3：每個數拆成三段', '每段 d/3 位');
+  await step(tok);                                   // 867.6 how many d/3 × d/3 multiplications?
+  const cnt = tag('乘法 ? 次', 'ptr alt', 3.0, 6.3, 0);
   const cells = [];
   for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++) {
-    glow(xs[i], GOLD); glow(ys[j], GOLD);
     const c = cube('x' + '₂₁₀'[i] + 'y' + '₂₁₀'[j], PAPER, [1, 0.5, 0.7], -3.6 + i * 1.2, 5.2 - j * 0.8, 0, 0.8); c.userData.s = (2 - i) + (2 - j); cells.push(c);
-    txt(cnt, '乘法 ' + cells.length + ' 次'); await beat(tok, 380); glow(xs[i], null); glow(ys[j], null);
+    await ctx.beat(tok, 160);
   }
-  say('不用技巧：d/3 × d/3 要 9 次', '');
-  await beat(tok, 2600);
+  say('不用技巧，要幾次 d/3 × d/3？');
+  await step(tok);                                   // 884.4 nine
+  txt(cnt, '乘法 9 次');
+  tc.mood('wow');
+  say('9 次', '能少於 9 次，就是更好的分治');
+  await step(tok);                                   // 893.7 Toom-3 plays arithmetic games
   const COL = [RD, OR, YE, GR, TE];
   cells.forEach((c) => tint(c, COL[c.userData.s]));
-  for (let s = 0; s < 5; s++) tag('×10^' + s + 'k', 'idx', 1.4, 3.0 + s * 0.6, 0);
-  say('結果只有 5 個係數（同色相加）', '在 5 個點求值再內插 → 5 次乘法');
-  await beat(tok, 3400);
-  txt(cnt, '乘法 5 次');
-  say('T(n) = 5T(n/3) + Θ(n)', '= Θ(n^(log₃5)) ≈ Θ(n^1.465)');
-  await beat(tok, 3000);
+  for (let s = 0; s < 5; s++) tag('第 ' + s + ' 項', 'idx', 0.4, 3.2 + s * 0.55, 0);
+  say('結果只有 5 個係數（同色相加）', '算術技巧：5 點求值再內插');
+  await step(tok);                                   // 913.3 nine → five
+  txt(cnt, '乘法 5 次'); tc.mood('happy');
+  tag('T(n) = 5T(n/3) + Θ(n)', 'ptr', 3.0, 5.6, 0);
+  say('9 次減為 5 次', 'T(n) = 5T(n/3) + Θ(n)');
+  await step(tok);                                   // 933.0 log base 3 of 5
+  tag('= Θ(n^(log₃5))', 'ptr alt', 3.0, 4.9, 0);
+  say('= Θ(n^(log₃5))', '以 3 為底的 log 5');
+  await step(tok);                                   // 942.9 n^1.465 — you won
   const R = [['naive', 2, RD], ['Karatsuba', Math.log2(3), OR], ['Toom-3', Math.log(5) / Math.log(3), GR]];
-  for (let k = 0; k < 3; k++) { const b = bar(R[k][2], 3 + k * 1.3, 1.6, 0.8); setBar(b, (R[k][1] - 1) * 3); tag(R[k][0] + ' ' + R[k][1].toFixed(3), 'idx', 3 + k * 1.3, 0, 2.5 + (k % 2) * 0.4); await beat(tok, 500); }
-  say('指數 2 → 1.585 → 1.465', '拆越多段，指數越小');
-  await beat(tok, 2800);
+  for (let k = 0; k < 3; k++) { const b = bar(R[k][2], 2.4 + k * 1.4, 1.8, 0.8); await grow(tok, b, (R[k][1] - 1) * 3, 350); tag(R[k][0] + ' ' + R[k][1].toFixed(3), 'idx', 2.4 + k * 1.4, 0, 2.6 + (k % 2) * 0.4); }
+  say('n^1.465：贏了', '指數 2 → 1.585 → 1.465');
 }]);
 
 // 16:09 常數因子：n 要很大快的才贏；Schönhage-Strassen；Python 在 n 大時才切到 Karatsuba
 FRAG.push(['dcmit2-crossover', '常數因子：n 夠大才划算', async (tok) => {
   fresh([0, 4, 13], [0, 3, 0]);
-  const X = (L) => -5.5 + L * 0.7, Y = (v) => 0.4 + v * 0.18;
+  const X = (L) => -5.5 + L * 0.62, Y = (v) => 0.4 + v * 0.17;
+  const fN = (L) => 2 * L, fK = (L) => 4 + Math.log2(3) * L, Lc = 4 / (2 - Math.log2(3));
+  await step(tok);                                   // 969.2 this is correct: n^1.46 < n^1.58 < n²
   line(X(0), Y(0), X(16.5), Y(0), 0, BROWN); line(X(0), Y(0), X(0), Y(33), 0, BROWN);
   tag('log₂ n', 'idx', X(16), Y(0) - 0.4); tag('log₂ 時間', 'idx', X(0) + 0.6, Y(33));
-  say('漸進比較快 ≠ 小 n 比較快', 'Karatsuba 多了加減法，常數比較大（示意）');
-  await beat(tok, 2800);
-  const fN = (L) => 2 * L, fK = (L) => 4 + Math.log2(3) * L;
+  tag('n^1.46 < n^1.58 < n²', 'ptr alt', 0.4, 6.8, 0);
+  say('漸進來看：n^1.46 < n^1.58 < n²', '這是對的');
+  await step(tok);                                   // 979.8 how big does n have to be?
   let pa = 0;
   await anim(tok, 1800, (t) => { const L = 16 * t; line(X(pa), Y(fN(pa)), X(L), Y(fN(L)), 0, RD); line(X(pa), Y(fK(pa)), X(L), Y(fK(L)), 0, GR); pa = L; });
-  tag('naive n²', 'ptr', X(14.2), Y(fN(16)) + 0.2); tag('Karatsuba c·n^1.58', 'ptr alt', X(12.8), Y(fK(16)) - 0.7);
-  const Lc = 4 / (2 - Math.log2(3));
+  tag('naive n²', 'ptr', X(14.2), Y(fN(16)) + 0.2); tag('Karatsuba c·n^1.58', 'ptr alt', X(12.6), Y(fK(16)) - 0.7);
   const dot = cube('', YE, [0.25, 0.25, 0.25], X(Lc), Y(fN(Lc)), 0); glow(dot, GOLD);
   tag('交叉點', 'idx', X(Lc), Y(fN(Lc)) + 0.5);
-  say('交叉點左邊 naive 反而快', '用 Python 實作，n 要非常大才贏');
-  await beat(tok, 3200);
-  box('Python：n 小用 naive，n 大切 Karatsuba', 2.2, 1.6, 1.5, 5.4, MINT, 1);
-  say('Python 長整數：n 夠大才換演算法', '自己寫也可以做 adaptive 切換');
-  await beat(tok, 3000);
-  box('Schönhage-Strassen：FFT', 2.2, 2.4, 1.5, 5.4, PAPER, 1);
+  say('n 要多大，快的演算法才會贏？', '交叉點左邊 naive 反而快（示意）');
+  await step(tok);                                   // 994.8 n must be really large in Python
+  tag('用 Python 寫：n 要非常大', 'note', X(Lc) + 1.6, Y(fN(Lc)) - 0.8, 0.5);
+  say('用 Python 實作，n 要非常非常大', '作業很難設計出看得到差別的題目');
+  await step(tok);                                   // 1021.8 people did even better
+  const bd = buddy('研究者', '', PEACH, 5.6, 0, 2.2, 0.7); bd.mood('happy');
+  tag('乘法是所有計算的基本零件', 'say', 4.2, 1.6, 2.2);
+  say('乘法太重要了，大家一直改進');
+  await step(tok);                                   // 1036.0 FFT and other techniques
+  box('FFT（快速傅立葉轉換）', 2.6, 4.4, 1.6, 4.2, MINT, 1);
+  say('用 FFT 等技巧加速乘法', 'fast Fourier transform');
+  await step(tok);                                   // 1058.3 Schönhage-Strassen: n log n log log n
+  box('Schönhage-Strassen', 2.6, 5.2, 1.6, 4.2, PAPER, 1);
+  tag('n log n log log n：幾乎線性', 'good', 2.6, 5.9, 1.6);
   say('Schönhage-Strassen 用 FFT', 'Θ(n log n log log n)，幾乎線性');
-  await beat(tok, 3000);
-  say('GMPY 套件裡都有實作', 'naive、Karatsuba、Toom-3、FFT');
-  await beat(tok, 2600);
+  await step(tok);                                   // 1079.1 play with all of these in gmpy
+  box('gmpy：naive、Karatsuba、Toom-3…', -2.4, 6.6, 1.6, 4.6, SKY, 1);
+  say('Python 的 gmpy 套件都能玩', '看 n 多大時誰贏誰');
+  await step(tok);                                   // 1109.5 Eric: Python long ints use Karatsuba
+  const er = buddy('Eric（助教）', '', B2, -6.2, 0, 2.2, 0.7); er.mood('wow');
+  tag('Python 長整數用 Karatsuba！', 'say', -4.6, 1.6, 2.2);
+  say('助教 Eric：Python 長整數用 Karatsuba');
+  await step(tok);                                   // 1124.0 small n naive, large n Karatsuba
+  tag('n 小：naive', 'pkt', X(Lc) - 1.6, Y(0) + 0.5, 0.5); tag('n 大：Karatsuba', 'pkt', X(Lc) + 2.0, Y(0) + 0.5, 0.5);
+  er.mood('happy');
+  say('Python：n 小用 naive，n 大才切換', 'Karatsuba');
+  await step(tok);                                   // 1133.0 your own adaptive scheme
+  tag('自己寫：adaptive 切換', 'note', X(Lc), Y(0) + 1.3, 0.5);
+  say('自己寫也能做 adaptive 切換', '依 n 的大小選演算法');
 }]);
 
-// 23:19 高精度除法：a/b = a·(1/b)，先算 ⌊R/b⌋，R = 2ᵏ → 除以 R 只是 shift
+// 19:17 Fürer：n log n · 2^{O(log* n)}；log*(2⁵⁰) = 5
+FRAG.push(['dcmit2-logstar', 'log* n：連續取 log 到 ≤ 1', async (tok) => {
+  fresh([0, 5, 14], [0, 2.8, 0]);
+  const S = [['2⁵⁰', 6.2], ['50', 4.4], ['5.64', 2.9], ['2.50', 1.9], ['1.32', 1.2], ['0.40', 0.5]];
+  const put = async (q) => { const m = bar(q === 5 ? GR : B1, -5 + q * 2, 0, 1.3); await grow(tok, m, S[q][1], 400); tag(S[q][0], 'ptr alt', -5 + q * 2, S[q][1] + 0.4); if (q) tag('log 第 ' + q + ' 次', 'idx', -5 + q * 2, 0, 1.3); };
+  await step(tok);                                   // 1153.8 breakthrough: Fürer
+  const fu = buddy('Fürer', '', PEACH, 6.2, 0, 2.4, 0.8); fu.mood('happy');
+  tag('理論上的突破', 'say', 6.2, 1.9, 2.4);
+  say('理論突破：Fürer 的演算法');
+  await step(tok);                                   // 1164.3 n log n · 2^{O(log* n)}
+  const fm = tag('n log n · 2^{O(log* n)}', 'ptr', 0, 7.6, 0);
+  say('時間：n log n · 2^{O(log* n)}', 'O 是上界');
+  await step(tok);                                   // 1187.0 n log n is like sorting
+  tag('n log n：跟排序一樣', 'note', -4.2, 7.0, 0);
+  say('n log n 這部分像排序');
+  await step(tok);                                   // 1198.0 log* n: iterated logarithm
+  tag('log* n = iterated logarithm', 'ptr alt', 3.6, 7.0, 0);
+  say('log* n 叫 iterated logarithm', '「重複取 log」');
+  await step(tok);                                   // 1214.0 how many times until ≤ 1
+  tag('要連續取幾次 log，才會 ≤ 1？', 'say', 0, 6.3, 1.5);
+  say('定義：連續取 log 幾次才 ≤ 1', '數的是「次數」，不是 log 的值');
+  await step(tok);                                   // 1246.1 e.g. 2^50
+  await put(0);
+  say('例：從 2⁵⁰ 開始（以 2 為底）');
+  await step(tok);                                   // 1255.8 first iteration: 50
+  await put(1);
+  say('第一次 log₂：剩 50');
+  await step(tok);                                   // 1258.8 log of 50 → "about 7"
+  await put(2);
+  tag('老師說約 7，其實 log₂50 ≈ 5.64', 'note', -1, 4.0, 1.5);
+  say('再取 log：log₂50 ≈ 5.64', '（影片說約 7）');
+  await step(tok);                                   // 1264.3 then less than 3
+  await put(3);
+  say('再取 log：2.50，小於 3');
+  await step(tok);                                   // 1271.0 four or five iterations → ≤ 1
+  await put(4); await put(5);
+  tag('log*(2⁵⁰) = 5', 'good', 5, 2.0, 1.3);
+  say('取 5 次就 ≤ 1', 'log*(2⁵⁰) = 5');
+  await step(tok);                                   // 1300.7 2 raised to a pretty small number
+  tag('2^{O(log* n)} 幾乎是常數', 'ptr alt', 0, 6.3, -1.5);
+  say('log* n 很小，2^{O(log* n)} 幾乎是常數', '2¹⁰ 也才 1000');
+  await step(tok);                                   // 1313.2 asymptotically the winner
+  fu.mood('wow'); await fu.hop(tok);
+  tag('理論冠軍', 'good', 6.2, 2.6, 2.4);
+  say('漸進複雜度來看：Fürer 最好');
+  await step(tok);                                   // 1318.1 practically: Schönhage-Strassen
+  const ss = buddy('S-S', '', B2, -6.2, 0, 2.4, 0.7); ss.mood('happy');
+  tag('實務：n 到幾十億位用它', 'say', -6.2, 1.9, 2.4);
+  say('實務上 n 很大時用 Schönhage-Strassen', 'n 到幾十億位');
+  await step(tok);                                   // 1329.3 gmpy does not have Fürer
+  tag('gmpy 目前沒有 Fürer', 'note', 6.2, 3.3, 2.4);
+  fu.mood('sad');
+  say('gmpy 套件還沒實作 Fürer', '用 gmpy 的話就停在 S-S');
+  void fm;
+}]);
+
+// 22:34 高精度除法：a/b = a·(1/b)，先算 ⌊R/b⌋，R = 2ᵏ → 除以 R 只是 shift
 FRAG.push(['dcmit2-shift-div', '除以 R = 2ᵏ：只是 shift', async (tok) => {
   fresh([0, 4, 12.5], [0, 3, 0]);
-  box('a / b = a × (1/b)', -2.6, 6, 0, 3.6, PAPER, 1);
-  box('1/b ≈ ⌊R/b⌋ / R', 2.2, 6, 0, 3.2, MINT, 1);
-  say('先求倒數，再乘 a', 'R 很大，而且很好除');
-  await beat(tok, 3000);
+  const S = 0.5, X0 = -4.2;
   const bits = '11001100110011'.split('');
-  tag('⌊2¹⁶/5⌋ = 13107 =', 'ptr alt', -2.6, 4.6, 0);
-  const cs = bits.map((b, i) => dig(b, -3.1 + (i + 2) * 0.55, 3.6, 0, b === '1' ? B2 : PAPER, 1));
-  say('R = 2ᵏ：例如 R = 2¹⁶、b = 5', '13107 寫成二進位');
-  await beat(tok, 2800);
-  const pt = tag('.', 'ptr', -3.1 + 15.75 * 0.55, 3.35, 0.3);
-  say('除以 2¹⁶ = 小數點左移 16 位', '');
-  await anim(tok, 2000, (t) => { pt.position.x = -3.1 + (15.75 - 16 * t) * 0.55; });
-  dig('0', -3.1, 3.6, 0, PAPER, 1); dig('0', -3.1 + 0.55, 3.6, 0, PAPER, 1);
-  tag('0.0011001100110011₂ ≈ 0.2 = 1/5', 'ptr alt', 0.6, 2.6, 0);
-  say('shift 就得到 1/b 的高精度表示', '不需要真的做除法');
-  await beat(tok, 3200);
-  box('72 ÷ 100 = 0.72', 0, 1.2, 1.2, 3.4, PAPER, 1);
-  say('十進位也一樣：除以 10ᵏ', '只是移動小數點');
-  await beat(tok, 2600);
-  say('剩下的問題：怎麼算 R/b？', '→ 再用一次 Newton');
-  await beat(tok, 2400);
-  void cs;
+  await step(tok);                                   // 1353.8 given multiplication, how long is division?
+  box('×：Θ(n^α) 已知', -3.4, 6.6, 0, 3.2, OR, 1); const dq = box('÷：要多久？', 1.8, 6.6, 0, 3.2, P1, 1);
+  say('假設乘法的複雜度已知', '除法要花多久？');
+  await step(tok);                                   // 1368.2 haven't said how to do division (a/x_i)
+  tag('Newton 每步都要 a/x_i', 'note', 4.8, 6.0, 0);
+  say('一講半了，還沒說除法怎麼做', 'Newton 的 a/x_i 就是除法');
+  await step(tok);                                   // 1399.1 high-precision division
+  txt(dq.userData.lbl, '高精度除法'); glow(dq, GOLD);
+  say('終於：高精度除法');
+  await step(tok);                                   // 1410.5 high-precision rep of a/b
+  box('a / b', -3.6, 5.4, 0, 1.8, PAPER, 1);
+  say('要 a/b 的高精度表示', '很多很多位');
+  await step(tok);                                   // 1422.4 first compute 1/b
+  box('= a × (1/b)', -1.2, 5.4, 0, 2.4, MINT, 1);
+  say('先算 1/b 的高精度表示', '再拿去乘 a');
+  await step(tok);                                   // 1432.2 compute ⌊R/b⌋, R really large
+  box('1/b ≈ ⌊R/b⌋ / R', 2.4, 5.4, 0, 3.2, MINT, 1);
+  tag('R 很大', 'note', 4.8, 4.8, 0);
+  say('實際算 ⌊R/b⌋，R 是很大的數');
+  await step(tok);                                   // 1467.9 easy to divide by R: R = 2^k
+  tag('例：⌊2¹⁶/5⌋ = 13107 =', 'ptr alt', -2.6, 3.9, 0);
+  bits.forEach((b, i) => dig(b, X0 + (i + 2) * S, 3.0, 0, b === '1' ? B2 : PAPER, 1));
+  say('選 R = 2ᵏ：在二進位裡好除', '例：R = 2¹⁶、b = 5');
+  await step(tok);                                   // 1474.5 divide through a shift operator
+  const pt = tag('.', 'ptr', X0 + 15.75 * S, 2.75, 0.3);
+  tag('小數點', 'idx', X0 + 15.75 * S, 2.2, 0.3);
+  say('除以 2ᵏ = shift', '把小數點往左移 k 位');
+  await step(tok);                                   // 1497.8 shift → 1 over b
+  await anim(tok, 1800, (t) => { pt.position.x = X0 + (15.75 - 16 * t) * S; });
+  dig('0', X0, 3.0, 0, PAPER, 1); dig('0', X0 + S, 3.0, 0, PAPER, 1);
+  tag('0.0011001100110011₂ ≈ 0.2 = 1/5', 'good', 1.8, 2.0, 0);
+  say('shift 完就是 1/b', '0.0011…₂ ≈ 0.2 = 1/5');
+  await step(tok);                                   // 1508.5 then multiply by a
+  await pkt(tok, '× a', V3(4.6, 2.0, 0.4), V3(4.6, 1.2, 0.4), 700);
+  say('拿 1/b 去乘 a，就得到 a/b', 'Newton 迭代就能繼續');
+  await step(tok);                                   // 1523.7 shift right: smaller number
+  tag('往右 shift：位數變少、數變小', 'note', -2.6, 1.2, 0.5);
+  say('除以 R：所有位元往右移', '數變小');
+  await step(tok);                                   // 1555.3 72 ÷ 100 = 0.72
+  const t72 = box('72 ÷ 100 = 0.72', 2.6, 0.4, 1.4, 3.4, BUTTER, 1);
+  say('十進位也一樣：72 ÷ 100 = 0.72', '只是移動小數點');
+  await step(tok);                                   // 1572.1 still: how to compute R/b?
+  tag('R/b 怎麼算？', 'say', -3.6, 0.4, 1.4);
+  say('剩下的問題：R/b 要怎麼算？');
+  await step(tok);                                   // 1589.6 use Newton's method again
+  const nw = buddy('Newton', '', B2, -6.2, 0, 2.4, 0.7); nw.mood('happy'); await nw.hop(tok);
+  say('答案：再用一次 Newton 法');
+  void t72;
 }]);
 
-// 26:59 f(x) = 1/x − b/R → x_{i+1} = 2x_i − b·x_i²/R：只要乘法
+// 26:36 f(x) = 1/x − b/R → x_{i+1} = 2x_i − b·x_i²/R：只要乘法
 FRAG.push(['dcmit2-recip-derive', 'Newton 求 R/b：只剩乘法', async (tok) => {
+  fresh([0, 4.4, 13], [0, 3.0, 0]);
+  const f = (x) => 1 / x - 0.5, X = (x) => 1.2 + x * 1.25, Y = (v) => 1.6 + v * 1.3;
+  const cd = code(['f(x) = 1/x − b/R', 'f′(x) = −1/x²', 'x_{i+1} = x_i − f(x_i)/f′(x_i)', '  = x_i − (1/x_i − b/R)/(−1/x_i²)', '  = x_i + x_i²(1/x_i − b/R)', '  = 2x_i − b·x_i²/R'], -3.0, 6.9, 0.52);
+  cd.ls.forEach((l) => { l.element.style.visibility = 'hidden'; });
+  const show = (i) => { cd.ls[i].element.style.visibility = ''; cd.hl(i); };
+  await step(tok);                                   // 1595.8 Newton again (1/x is nonlinear)
+  const nw = buddy('Newton', '', B2, -6.2, 0, 2.4, 0.7); nw.mood('happy');
+  say('再用一次 Newton 法', '要算的 R/b 跟 1/x 有關（非線性）');
+  await step(tok);                                   // 1619.1 f(x) = 1/x − b/R
+  show(0);
+  line(X(0.5), Y(0), X(4.6), Y(0), 0, BROWN);
+  curve(f, 0.62, 4.5, X, Y);
+  tag('f(x) = 1/x − b/R（示意 b/R = 1/2）', 'idx', X(3.2), Y(1.2), 0);
+  say('設 f(x) = 1/x − b/R');
+  await step(tok);                                   // 1634.3 zero at x = R/b
+  const rt = cube('', GR, [0.25, 0.25, 0.25], X(2), Y(0), 0); glow(rt, GREEN);
+  tag('根：x = R/b', 'good', X(2), Y(0) - 0.5, 0);
+  say('它的根正好在 x = R/b', '1/x = b/R  ⇔  x = R/b');
+  await step(tok);                                   // 1650.8 decent guess → R/b → shift → 1/b
+  tag('找到根 → ⌊R/b⌋ → shift → 1/b', 'note', 3.6, 5.6, 0);
+  say('從不錯的猜測出發 → 收斂到 R/b', '整數版就是 ⌊R/b⌋，再 shift 得 1/b');
+  await step(tok);                                   // 1663.6 what is the derivative?
+  const q = tag('f′(x) = ？', 'say', -6.2, 1.8, 2.4);
+  say('Newton 要用導數：f′(x) 是多少？');
+  await step(tok);                                   // 1688.3 audience: −1/x², gets a cushion
+  remove(q);
+  const st = buddy('同學', '', PEACH, -3.6, 0, 3.4, 0.6); st.mood('happy');
+  tag('−1/x²！', 'say', -3.6, 1.5, 3.4);
+  await pkt(tok, '丟坐墊', V3(-6.2, 1.2, 2.4), V3(-3.6, 0.9, 3.4), 900);
+  say('同學答：−1/x²', '老師丟坐墊當獎品');
+  await step(tok);                                   // 1724.2 derivative is −1/x²
+  show(1);
+  say('f′(x) = −1/x²');
+  await step(tok);                                   // 1742.5 tangent → x-intercept
+  const x0 = 1, fx = f(x0), sl = -1 / (x0 * x0), nx = x0 - fx / sl;
+  line(X(x0), Y(0), X(x0), Y(fx), 0, '#a99470');
+  line(X(x0 - 0.3), Y(fx - sl * 0.3), X(nx + 0.4), Y(fx + sl * (nx + 0.4 - x0)), 0, '#1f3a6e');
+  const gd = cube('', YE, [0.22, 0.22, 0.22], X(x0), Y(fx), 0); glow(gd, GOLD);
+  await anim(tok, 900, (u) => { gd.position.set(X(x0 + (nx - x0) * u), Y(fx * (1 - u)), 0); });
+  say('畫切線，交 x 軸的點 = 下一個 x', '和上一講一樣');
+  await step(tok);                                   // 1756.3 x_{i+1} = x_i − f/f′
+  show(2);
+  say('Newton：x_{i+1} = x_i − f(x_i)/f′(x_i)');
+  await step(tok);                                   // 1781.8 plug in f and f′
+  show(3);
+  say('把 f 和 f′ 代進去');
+  await step(tok);                                   // 1801.3 = x_i + x_i²(1/x_i − b/R)
+  show(4);
+  say('除以 −1/x_i² = 乘上 −x_i²', '負負得正');
+  await step(tok);                                   // 1815.8 = 2x_i − b x_i²/R — key
+  show(5);
+  tag('關鍵！', 'good', 1.6, 4.3, 0);
+  nw.mood('wow');
+  say('x_{i+1} = 2x_i − b·x_i²/R', '這一行是關鍵');
+  await step(tok);                                   // 1836.8 2 times: doesn't scare us
+  const ops = [['2x_i：乘 2', MINT], ['x_i²：乘法', OR], ['÷R：shift', MINT]];
+  const ob = [];
+  ob.push(box(ops[0][0], -5.2, 2.5, 1, 2.3, ops[0][1], 1.2));
+  say('2·x_i：乘 2，二進位裡超簡單');
+  await step(tok);                                   // 1848.8 square = multiply
+  ob.push(box(ops[1][0], -2.7, 2.5, 1, 2.3, ops[1][1], 1.2));
+  say('x_i²：平方（不是開根號）', '平方就是自己乘自己 → 乘法');
+  await step(tok);                                   // 1860.8 R chosen as an easy division
+  ob.push(box(ops[2][0], -0.2, 2.5, 1, 2.3, ops[2][1], 1.2));
+  say('÷R：R 選成好除的數 → shift');
+  await step(tok);                                   // 1866.3 all easy or a multiply
+  ob.forEach((b) => glow(b, GREEN)); nw.mood('happy'); await nw.hop(tok);
+  say('每個運算不是很簡單，就是乘法', '除法 → 只靠乘法就能做');
+}]);
+
+// shared drawing for the two-level picture: √ (outer Newton) → ÷ (inner Newton) → ×
+function nestBoxes() {
+  return {
+    s: () => box('√a：外層 Newton', -2.4, 5.8, 0, 3.6, B1, 1.2),
+    d: () => box('÷：內層 Newton 求倒數', -2.4, 4.0, 0, 3.6, P1, 1.2),
+    m: () => box('×：Θ(n^α)', -2.4, 2.2, 0, 3.6, OR, 1.2),
+  };
+}
+
+// 31:18 兩層 Newton 的結構（第一次出現）
+FRAG.push(['dcmit2-nested-mid', '兩層 Newton：√ 叫 ÷，÷ 叫 ×', async (tok) => {
   fresh([0, 4.4, 13], [0, 3.2, 0]);
-  const cd = code(['f(x) = 1/x − b/R     根在 x = R/b', 'f′(x) = −1/x²', 'x_{i+1} = x_i − f(x_i)/f′(x_i)', '  = x_i + x_i²(1/x_i − b/R)', '  = 2x_i − b·x_i²/R'], -1.8, 6.6, 0.6);
-  cd.hl(0); say('設計 f：根正好是 R/b', 'f(x) = 1/x − b/R');
-  await beat(tok, 3000);
-  cd.hl(1); say('微分：f′(x) = −1/x²', '');
-  await beat(tok, 2400);
-  cd.hl(2); say('切線和 x 軸交點 = 下一個猜測', 'x_{i+1} = x_i − f(x_i)/f′(x_i)');
-  await beat(tok, 2800);
-  cd.hl(3); say('代入化簡', '');
-  await beat(tok, 2200);
-  cd.hl(4); say('結果：2x_i − b·x_i²/R', '這行是關鍵');
-  await beat(tok, 2800);
-  const ops = [['2x_i：乘 2（shift）', MINT], ['x_i²：乘法', OR], ['b·(…)：乘法', OR], ['÷R：shift', MINT]];
-  for (let k = 0; k < ops.length; k++) { box(ops[k][0], -4.2 + k * 2.8, 1.6, 1, 2.6, ops[k][1], 1.2); await beat(tok, 700); }
-  say('每一步不是很簡單，就是乘法', '除法 = 反覆做乘法的迭代');
-  await beat(tok, 3400);
+  const N = nestBoxes();
+  await step(tok);                                   // 1880.3 the overall structure for √a
+  tag('開根號的整體結構', 'say', 0, 7.0, 0);
+  say('先看整體結構：怎麼算 √a');
+  await step(tok);                                   // 1888.7 Newton for √a, iteratively
+  const s = N.s(); tag('迭代 x_i → x_{i+1}', 'idx', 1.6, 5.8, 0);
+  say('外層：用 Newton 迭代算 √a');
+  await step(tok);                                   // 1899.7 each iteration needs a reciprocal 1/x_i
+  arrow(V3(-2.4, 5.4, 0), V3(-2.4, 4.5, 0));
+  const d = N.d();
+  await pkt(tok, '1/x_i？', V3(1.0, 5.6, 0.6), V3(1.0, 4.0, 0.6), 800);
+  say('每一次迭代都要算倒數 1/x_i');
+  await step(tok);                                   // 1911.8 Newton again for 1/x_i
+  tag('又一個 Newton', 'ptr alt', 3.6, 4.0, 0);
+  say('算 1/x_i 又是一個 Newton 迭代');
+  await step(tok);                                   // 1922.8 second level iteration = multiplication
+  arrow(V3(-2.4, 3.6, 0), V3(-2.4, 2.7, 0));
+  const m = N.m();
+  say('第二層的迭代只做乘法', '2x_i − b·x_i²/R');
+  await step(tok);                                   // 1936.6 x_{i+1}, x_{i+2}, x_{i+3}, …
+  for (const t of ['x_{i+1}', 'x_{i+2}', 'x_{i+3}']) { const p = tag(t, 'pkt', 1.0, 3.8, 0.6); await travel(tok, p, V3(1.0, 3.8, 0.6), V3(1.0, 2.3, 0.6), 500); remove(p); }
+  glow(m, GOLD);
+  say('一次又一次做乘法', 'x_{i+1}、x_{i+2}、x_{i+3}…');
+  await step(tok);                                   // 1943.8 the complete picture later
+  tag('講完除法的複雜度再回來', 'note', 3.6, 2.2, 0);
+  say('完整的圖等講完除法複雜度再看');
+  void s; void d;
+}]);
+
+// 32:37 例子：2¹⁶/5，x₀ = 16384 → 12288 → 13056 → 13107
+FRAG.push(['dcmit2-recip-example', 'Newton 求 R/b：2¹⁶/5 的迭代', async (tok) => {
+  fresh([0, 5, 14], [0, 3, 0]);
+  const tgt = 65536 / 5, H = (v) => v / 16384 * 4.6;
+  const xb = buddy('x_i', '', BUTTER, -6.2, 0, 1.6, 0.6);
+  await step(tok);                                   // 1956.8 convergence of this scheme
+  tag('x_{i+1} = 2x_i − b·x_i²/R', 'ptr alt', -1, 7.0, 0);
+  say('這個除法 Newton 收斂得多快？');
+  await step(tok);                                   // 1962.1 an example first
+  tag('先看例子，再談證明', 'note', 4.0, 7.0, 0);
+  say('先看例子');
+  await step(tok);                                   // 1980.7 R/b = 2^16 / 5
+  const wl = cube('', GR, [10, 0.05, 0.05], 0.4, H(tgt), 0);
+  tag('R/b = 2¹⁶/5 = 13107.2', 'good', 5.6, H(tgt) + 0.35);
+  say('例：R/b = 2¹⁶/5', 'R = 65536、b = 5');
+  await step(tok);                                   // 1994.4 R = 2^k for easy division
+  tag('R = 2ᵏ：好除', 'note', 4.0, 6.3, 0);
+  say('R 選 2 的次方，除以 R 很容易');
+  await step(tok);                                   // 2011.3 initial guess 2^16/4
+  tag('猜：2¹⁶/4（除以 2 的次方很簡單）', 'say', -3, 6.3, 0);
+  xb.mood('wow');
+  say('初始猜測：2¹⁶/4', '用 4 代替 5，因為 4 是 2 的次方');
+  const xs = [16384, 12288, 13056, 13107];
+  const put = async (q) => { const m = bar(q === 3 ? GR : B1, -4.2 + q * 2.4, 0, 1.4); await grow(tok, m, H(xs[q]), 500); tag(String(xs[q]), 'idx', -4.2 + q * 2.4, H(xs[q]) + 0.35); tag('x' + '₀₁₂₃'[q], 'ptr', -4.2 + q * 2.4, 0, 1.3); xb.set(xs[q]); };
+  await step(tok);                                   // 2028.7 = 2^14 = 16384 = x0
+  await put(0);
+  say('x₀ = 2¹⁴ = 16384');
+  await step(tok);                                   // 2042.8 x1 = 2·16384 − 5·16384²/65536
+  const fb = board(0, 5.6, 1.2, 'pkt');
+  fb('x₁ = 2·16384 − 5·16384² / 65536');
+  say('x₁ = 2·16384 − 5·16384²/65536', '平方一個不小的數');
+  await step(tok);                                   // 2066.6 = 12288
+  await put(1);
+  say('x₁ = 12288');
+  await step(tok);                                   // 2075.6 one digit of precision
+  tag('只有 1 位對', 'note', -1.8, H(12288) + 0.9, 0);
+  xb.mood('calm');
+  say('大概只有一位數正確');
+  await step(tok);                                   // 2078.7 x2 = 2·12288 − 5·12288²/65536
+  fb('x₂ = 2·12288 − 5·12288² / 65536');
+  say('x₂ = 2·12288 − 5·12288²/65536', '除以 65536 只是 shift');
+  await step(tok);                                   // 2094.9 = 13056
+  await put(2);
+  say('x₂ = 13056');
+  await step(tok);                                   // 2100.8 next: 13107
+  fb('');
+  await put(3);
+  xb.mood('happy');
+  say('再一次：x₃ = 13107');
+  await step(tok);                                   // 2106.8 rapid convergence
+  tag('差距 3277 → 819 → 51 → 0.2', 'ptr alt', 0, 6.3, 1.2);
+  await xb.hop(tok);
+  say('收斂得很快', '和真值差：3277 → 819 → 51 → 0.2');
+  await step(tok);                                   // 2111.2 similar ε analysis → quadratic
+  tag('一樣是平方收斂（證明見講義）', 'note', 3.4, 2.4, 1.4);
+  say('類似 ε 的分析：除法 Newton 也是平方收斂', '證明在講義裡');
+  await step(tok);                                   // 2149.4 we're in business
+  tag('可以實作了！', 'good', -6.2, 1.6, 1.6);
+  say('可以真的實作了');
+  void wl;
 }]);
 
 // 36:00 除法複雜度粗估：log d 次 × 每次 n^α → O(n^α log n)，對但不緊
 FRAG.push(['dcmit2-div-naive', '除法粗估：log n · n^α', async (tok) => {
   fresh([0, 4.2, 13], [0, 3, 0]);
-  tag('除法：quadratic convergence', 'ptr alt', -2.5, 6.6, 0);
-  say('除法也是平方收斂', '位數每步翻倍 → d 位要 log d 次');
-  await beat(tok, 2800);
-  tag('乘法 Θ(n^α)，α ≥ 1', 'ptr', 2.8, 6.6, 0);
-  say('乘法寫成 Θ(n^α)', 'Toom-3 時 α = 1.465');
-  await beat(tok, 2600);
-  for (let k = 0; k < 6; k++) { const b = bar(RD, -4.5 + k * 0.9, 0, 0.7); setBar(b, 4.2); tag('n^α', 'idx', -4.5 + k * 0.9, 4.6, 0); await beat(tok, 260); }
-  tag('log n 次迭代', 'idx', -2.25, 0, 1.2);
-  say('每次都當 n 位乘法來算', '除法 = O(log n · n^α)');
-  await beat(tok, 3000);
-  say('Big O 是對的，但不夠緊', '');
-  await beat(tok, 2400);
-  box('build max heap：n log n → Θ(n)', 3.4, 3.6, 0, 4.4, PAPER, 1);
-  say('像 build max heap：細算更緊', '當一次「bank accountant」');
-  await beat(tok, 3000);
-  box('初始猜測只有 1 位精度', 3.4, 2.4, 0, 4.4, MINT, 1);
-  say('關鍵：一開始只有 1 位精度', '前面的乘法根本不用 d 位');
-  await beat(tok, 3000);
+  const bars = [];
+  await step(tok);                                   // 2160.1 complexity — a subtlety
+  tag('除法的複雜度', 'say', 0, 7.0, 0);
+  tag('有個細節（subtlety）', 'note', 4.2, 7.0, 0);
+  say('來談除法的複雜度', '有一個 subtlety');
+  await step(tok);                                   // 2182.9 division: quadratic convergence
+  tag('除法：quadratic convergence', 'ptr alt', -3, 6.3, 0);
+  say('除法的 Newton：平方收斂');
+  await step(tok);                                   // 2194.7 digits double each step
+  for (let k = 0; k < 4; k++) { tag(String(2 ** k), 'pkt', -5 + k * 1.1, 5.6, 0); await ctx.beat(tok, 250); }
+  say('正確位數每一步翻倍', '1 → 2 → 4 → 8');
+  await step(tok);                                   // 2204.5 d digits → log d iterations
+  tag('d 位 → log d 次', 'ptr alt', -1, 5.6, 0);
+  say('d 位精度 → log d 次迭代');
+  await step(tok);                                   // 2233.2 multiplication Θ(n^α), α ≥ 1
+  tag('乘法 Θ(n^α)，α ≥ 1', 'ptr', 3.4, 6.3, 0);
+  say('把乘法寫成 Θ(n^α)，α ≥ 1', '不管用哪個乘法演算法都適用');
+  await step(tok);                                   // 2254.9 α = 1.46 for Toom-3, etc.
+  tag('Toom-3：α = 1.465', 'note', 3.4, 5.6, 0);
+  say('例：Toom-3 時 α ≈ 1.465', 'S-S、Fürer 也適用同樣論證');
+  await step(tok);                                   // 2278.0 easy question: complexity of division?
+  const st = buddy('你', '', B2, 6.0, 0, 2.2, 0.7); st.mood('wow');
+  tag('除法 = ？', 'say', 6.0, 1.6, 2.2);
+  say('簡單的問題：n 位除法要多久？');
+  await step(tok);                                   // 2297.3 how many hard multiplies? log n
+  for (let k = 0; k < 6; k++) { const b = bar(RD, -4.5 + k * 0.9, 0, 0.7); bars.push(b); await grow(tok, b, 3.6, 220); tag('n^α', 'idx', -4.5 + k * 0.9, 4.0, 0); }
+  tag('log n 次', 'idx', -2.25, 0, 1.2);
+  say('要做幾次「困難的」乘法？', 'log n 次，每次 n^α');
+  await step(tok);                                   // 2309.8 division = Θ(log n · n^α)
+  const th = tag('除法 = Θ(log n · n^α)', 'ptr', 2.8, 4.4, 0);
+  st.mood('happy');
+  say('所以除法 = Θ(log n · n^α)？');
+  await step(tok);                                   // 2344.7 big O — I'm hedging my bets
+  strike(th);
+  tag('除法 = O(log n · n^α)', 'ptr alt', 2.8, 3.7, 0);
+  st.mood('calm');
+  say('老師改口：只說 big O', 'big O 是上界，寫大一點也不算錯');
+  await step(tok);                                   // 2398.2 each iteration bounded by n^α
+  bars.forEach((b) => glow(b, RED));
+  say('每次乘法最多 n^α，共 log n 次', '上界正確');
+  await step(tok);                                   // 2416.1 can you do a better analysis?
+  tag('能分析得更緊嗎？', 'say', 2.8, 2.8, 0.5);
+  say('big O 對，但能不能更緊？');
+  await step(tok);                                   // 2429.0 like build max-heap: n log n → Θ(n)
+  box('build max-heap：n log n → Θ(n)', 2.8, 1.8, 1.2, 4.6, PAPER, 1);
+  say('像 build max-heap', '粗估 n log n，細算是 Θ(n)');
+  await step(tok);                                   // 2448.7 turn into bank accountants
+  tag('當一次「會計師」：仔細加總', 'note', 2.8, 0.6, 1.8);
+  say('再當一次會計師：一筆一筆加', '看數字的大小');
+}]);
+
+// 40:57 細算：精度 1, 2, 4, …, d → c·1^α + … + c·d^α < 2c·d^α
+FRAG.push(['dcmit2-cost-geo', '精度加倍：除法成本 = 乘法成本', async (tok) => {
+  fresh([0, 5, 14.5], [0, 3, 0]);
+  const al = Math.log2(3), D = [1, 2, 4, 8, 16, 32, 64], c = (d) => Math.pow(d, al), mx = c(64), HM = 4.6;
+  const red = [], grn = [];
+  await step(tok);                                   // 2456.8 an observation about the size of the numbers
+  tag('觀察：這些數字有多大？', 'say', 0, 7.2, 0);
+  say('有個觀察：迭代中數字的大小');
+  await step(tok);                                   // 2498.4 what do you start with?
+  const g = buddy('x₀', '', BUTTER, -6.4, 0, 2.6, 0.6); g.mood('wow');
+  say('Newton 一開始手上有什麼？');
+  await step(tok);                                   // 2515.6 one digit of precision
+  g.set('1 位'); g.mood('happy');
+  tag('只有 1 位精度', 'note', -6.4, 1.4, 2.6);
+  say('一開始只有 1 位精度', '最後才有 d 位（例如一百萬位）');
+  await step(tok);                                   // 2562.0 digits double each step
+  tag('位數每步翻倍', 'ptr alt', -3.2, 6.5, 0);
+  say('位數每一步翻倍');
+  await step(tok);                                   // 2565.5 d-digit multiplies every iteration?
+  for (let q = 0; q < D.length; q++) { const b = bar(RD, -5.4 + q * 0.85, -1.4, 0.7); red.push(b); setBar(b, 0.002); }
+  await anim(tok, 900, (u) => red.forEach((b) => setBar(b, HM * u)));
+  tag('粗估：每次都做 d 位乘法？', 'ptr', -2.8, 5.4, -1.4);
+  say('需要每一次都做 d 位乘法嗎？');
+  await step(tok);                                   // 2581.4 no: early multiplies are trivial
+  red.forEach((b) => { b.material.transparent = true; b.material.opacity = 0.3; });
+  tag('不用！前面的乘法很小', 'good', -2.8, 0.6, 1.2);
+  say('同學：不用，前面的乘法很簡單', '最後才接近 d^α');
+  await step(tok);                                   // 2628.8 precision 1, 2, 4, …, d
+  for (let q = 0; q < D.length; q++) { const b = bar(GR, 0.6 + q * 0.85, 1.4, 0.7); grn.push(b); tag(q === D.length - 1 ? 'd' : D[q] + '', 'idx', 0.6 + q * 0.85, 0, 2.2); }
+  tag('精度：1, 2, 4, …, d', 'ptr alt', 3.2, 5.4, 1.4);
+  say('精度：1, 2, 4, …, d');
+  await step(tok);                                   // 2632.5 log d iterations
+  tag('共 log d 次', 'idx', 3.2, -0.5, 2.6);
+  say('一共 log d 次迭代');
+  await step(tok);                                   // 2636.7 initial multiplies easy: constant work
+  for (let q = 0; q < 3; q++) await grow(tok, grn[q], 0.06 + HM * c(D[q]) / mx, 300);
+  say('前面的乘法很便宜', '數字很小，常數時間');
+  await step(tok);                                   // 2651.6 towards the end, a lot more work
+  for (let q = 3; q < D.length; q++) await grow(tok, grn[q], 0.06 + HM * c(D[q]) / mx, 300);
+  glow(grn[D.length - 1], GOLD);
+  say('越到後面，工作量越大');
+  await step(tok);                                   // 2672.7 use constants, not thetas
+  tag('用常數 c 來加，不要加 Θ', 'note', -2.8, 7.2, 0);
+  say('用常數 c 寫，才能放心相加');
+  const sb = board(3.2, 6.3, 1.4, 'pkt');
+  await step(tok);                                   // 2691.8 c·1^α
+  sb('c·1^α');
+  say('第一次：c·1^α');
+  await step(tok);                                   // 2697.9 c·2^α + c·4^α
+  sb('c·1^α + c·2^α + c·4^α + …');
+  say('接著 c·2^α、c·4^α…');
+  await step(tok);                                   // 2712.5 … + c(d/2)^α + c·d^α
+  sb('c·1^α + c·2^α + … + c·(d/2)^α + c·d^α');
+  say('最後 c·(d/4)^α + c·(d/2)^α + c·d^α', '總和的上界是多少？');
+  await step(tok);                                   // 2749.4 convergent geometric series
+  tag('等比級數：每項是前一項的 2^α 倍', 'note', 3.2, 6.9, 1.4);
+  say('想想收斂的等比級數');
+  await step(tok);                                   // 2766.8 < 2c·d^α
+  const tot = bar(TE, 6.6, 1.4, 0.7); await grow(tok, tot, 2 * HM, 700);
+  tag('< 2c·d^α', 'good', 6.6, 2 * HM + 0.4, 1.4);
+  say('總和 < 2c·d^α', '最後一項主導');
+  await step(tok);                                   // 2778.2 better complexity without changing code
+  g.mood('happy'); await g.hop(tok);
+  say('程式沒改，只是算得更仔細', '複雜度就變好了');
+  await step(tok);                                   // 2812.6 division = multiplication
+  tag('除法 = Θ(n^α) = 乘法', 'good', -2.8, 5.4, 1.4);
+  say('除法的複雜度 = 乘法的複雜度', 'Θ(n^α)');
+  await step(tok);                                   // 2844.7 log iterations, but the work is at the end
+  say('迭代雖然有 log 次', '大部分工作都在最後幾次');
+}]);
+
+// 47:40 開根號的複雜度：兩層 Newton，同樣論證 → Θ(n^α)
+FRAG.push(['dcmit2-nested-end', '開根號 = 除法 = 乘法：Θ(n^α)', async (tok) => {
+  fresh([0, 4.4, 13], [0, 3.2, 0]);
+  const N = nestBoxes();
+  let s, d, m;
+  await step(tok);                                   // 2859.9 complexity of computing square roots
+  tag('最後：開根號的複雜度', 'say', 0, 7.1, 0);
+  say('最後談開根號的複雜度');
+  await step(tok);                                   // 2870.8 two nested Newton, same argument
+  tag('兩層 Newton，同樣的論證', 'note', 3.8, 6.4, 0);
+  say('雖然有兩層 Newton', '可以用同樣的論證');
+  await step(tok);                                   // 2883.8 we want √a
+  s = N.s();
+  say('我們要算 √a');
+  await step(tok);                                   // 2891.8 10^{2d}·a, run Newton on it
+  tag('算 √(10^{2d}·a)', 'idx', 1.8, 5.8, 0);
+  say('實際算 √(10^{2d}·a)：外層 Newton');
+  await step(tok);                                   // 2906.4 x_{i+1} = (x_i + a/x_i)/2
+  tag('x_{i+1} = (x_i + a/x_i)/2', 'ptr alt', 1.8, 5.1, 0);
+  tag('黑板漏了 /2', 'note', 4.8, 5.1, 0);
+  say('外層迭代：x_{i+1} = (x_i + a/x_i)/2', '（黑板少寫了 /2）');
+  await step(tok);                                   // 2924.7 each iteration calls a division
+  arrow(V3(-2.4, 5.4, 0), V3(-2.4, 4.5, 0)); d = N.d();
+  for (let k = 0; k < 2; k++) { const p = tag('呼叫 ÷', 'pkt', 0.4, 5.6, 0.6); await travel(tok, p, V3(0.4, 5.6, 0.6), V3(0.4, 4.0, 0.6), 500); remove(p); }
+  say('外層每一次迭代都呼叫一次除法');
+  await step(tok);                                   // 2943.7 each division: Newton, 2x − b x²/R
+  arrow(V3(-2.4, 3.6, 0), V3(-2.4, 2.7, 0)); m = N.m();
+  tag('2x_i − b·x_i²/R：一串乘法', 'idx', 1.8, 3.1, 0);
+  say('每次除法又是 Newton：一串乘法');
+  await step(tok);                                   // 2968.3 division = multiplication (numbers grow)
+  glow(d, GREEN); glow(m, GREEN);
+  tag('÷ = ×：數字由小長大', 'good', 1.8, 2.3, 0);
+  say('剛才證過：除法 = 乘法', '因為數字從小長到大');
+  await step(tok);                                   // 2989.1 same argument for this level
+  say('外層用完全一樣的論證');
+  await step(tok);                                   // 2996.8 √2: start guessing 1.5
+  const g = buddy('x₀', '1.5', BUTTER, 4.6, 0, 2.6, 0.6); g.mood('calm');
+  say('√2 一開始猜 1.5', '只有很少的精度位數');
+  await step(tok);                                   // 3007.0 eventually a million digits
+  const DD = [1, 2, 4, 8, 16, 32];
+  for (let k = 0; k < DD.length; k++) { const b = bar(GR, 1.4 + k * 0.75, 1.4, 0.5); await grow(tok, b, 0.12 + 2.4 * DD[k] / 32, 200); }
+  g.set('百萬位'); g.mood('wow');
+  say('最後長到一百萬位');
+  await step(tok);                                   // 3014.6 √ = ÷ = ×
+  glow(s, GREEN); g.mood('happy');
+  tag('√ = ÷ = ×', 'good', -5.6, 4.0, 0);
+  say('開根號 = 除法 = 乘法的複雜度');
+  await step(tok);                                   // 3034.5 code: two nested loops
+  tag('程式：兩層巢狀迴圈', 'note', -5.6, 6.2, 0);
+  say('程式比較複雜：兩層巢狀迴圈', '× 被 ÷ 叫很多次，÷ 被 √ 叫很多次');
+  await step(tok);                                   // 3051.6 most work at millions of digits
+  say('但數字由小長大', '大部分工作在百萬位的時候');
+  await step(tok);                                   // 3058.8 Θ(n^α)
+  tag('n 位開根號 = Θ(n^α)', 'ptr', 0, 0.6, 2.4);
+  await g.hop(tok);
+  say('乘法 Θ(n^α) → 開根號 Θ(n^α)', 'n 位精度');
 }]);
 
 // ═════════════ Rec12：JRgIXyEPnbA ═════════════
 
-// 01:26 小學乘法：1234 × 5678，n 個部分積、每個 n 位 → n²
+// 01:19 小學乘法：1234 × 5678，n 個部分積、每個 n 位 → n²
 FRAG.push(['dcmit2-gradeschool', '小學直式乘法：1234 × 5678', async (tok) => {
   fresh([0, 4.2, 12], [0, 3.6, 0]);
   const S = 0.55, R0 = 3.4, put = (s, y, col, drop = 0, z = 0) => s.split('').map((c, i, a) => dig(c, R0 - (a.length - 1 - i) * S, y, 0, i >= a.length - z ? MINT : col, drop));
-  put('1234', 6.6, B2); const m = put('5678', 6.0, P2); tag('×', 'ptr', R0 - 4.5 * S, 6.0);
+  const kid = buddy('小學的你', '', PEACH, -5.2, 0, 1.8, 0.8);
+  const rows = [['9872', 0, 8], ['8638', 1, 7], ['7404', 2, 6], ['6170', 3, 5]], R = [];
+  await step(tok);                                   // 83.8 multiply two numbers the elementary-school way
+  put('1234', 6.6, B2, 1); const m = put('5678', 6.0, P2, 1); tag('×', 'ptr', R0 - 4.5 * S, 6.0);
   line(R0 - 7 * S, 5.6, R0 + 0.4, 5.6);
-  say('小學乘法：1234 × 5678', '一次拿第二個數的一位去乘');
-  await beat(tok, 2600);
-  const rows = [['9872', 0, 8], ['8638', 1, 7], ['7404', 2, 6], ['6170', 3, 5]];
+  kid.mood('happy');
+  say('假設不會 Karatsuba：小學怎麼乘？', '1234 × 5678');
+  await step(tok);                                   // 98.8 take one digit of the second number
+  glow(m[3], GOLD);
+  say('一次拿第二個數的一位', '從最右邊的 8 開始');
   for (let k = 0; k < 4; k++) {
-    const [p, z, d] = rows[k]; glow(m[3 - k], GOLD);
-    const y = 5.1 - k * 0.6; put(p + '0'.repeat(z), y, PAPER, 1, z);
-    say('1234 × ' + d + ' = ' + p + (z ? '，補 ' + z + ' 個 0' : ''), '');
-    await beat(tok, 1700); glow(m[3 - k], null);
+    await step(tok);                                 // 113.8 ×8 / 118.8 ×7 / 126.8 ×6 / 131.8 ×5
+    const [p, z, d] = rows[k]; m.forEach((c) => glow(c, null)); glow(m[3 - k], GOLD);
+    R.push(put(p + '0'.repeat(z), 5.1 - k * 0.6, PAPER, 1, z));
+    say('1234 × ' + d + ' = ' + p + (z ? '，後面補 ' + z + ' 個 0' : ''), z ? '往左移 ' + z + ' 位' : '寫在下面');
   }
+  await step(tok);                                   // 138.8 add these up
+  m.forEach((c) => glow(c, null));
   line(R0 - 7 * S, 2.6, R0 + 0.4, 2.6);
   put('7006652', 2.2, GR, 1);
-  say('部分積加起來 = 7006652', '');
-  await beat(tok, 2600);
-  tag('n 個部分積 × 每個 n 位', 'ptr alt', -4, 4.2, 0);
-  say('n 位 × n 位：n 個部分積', '加 n 個 O(n) 位的數 → Θ(n²)');
-  await beat(tok, 3400);
+  say('部分積加起來 = 7006652');
+  await step(tok);                                   // 144.8 running time? why n²?
+  tag('為什麼是 n²？', 'say', -5.2, 2.0, 1.8); kid.mood('wow');
+  say('執行時間是多少？為什麼是 n²？');
+  await step(tok);                                   // 167.8 as many partial products as digits
+  R.forEach((r) => r.forEach((c) => glow(c, GOLD)));
+  tag('n 個部分積', 'ptr alt', -2.2, 4.2, 0);
+  say('第二個數有 n 位 → n 個部分積');
+  await step(tok);                                   // 175.8 each partial product ~n digits (2n)
+  tag('每個約 n 位（最長 2n）', 'ptr alt', -2.2, 3.5, 0);
+  say('每個部分積約 n 位', '最長到 2n 位，常數不重要');
+  await step(tok);                                   // 192.8 add n numbers of O(n) → n²
+  tag('n × O(n) = Θ(n²)', 'bad', -2.2, 2.2, 0); kid.mood('calm');
+  say('加 n 個 O(n) 位的數', 'n × O(n) = Θ(n²)');
 }]);
 
-// 04:35 Karatsuba：n 位拆成兩個 n/2，3 次乘法 + 加法 → n^(log₂3)
+// 03:23 Karatsuba：n 位拆成兩個 n/2，3 次乘法 + 加法 → n^(log₂3)
 FRAG.push(['dcmit2-karat-split', 'Karatsuba：拆半、3 次乘法', async (tok) => {
   fresh([0, 4.4, 13], [0, 3.2, 0]);
-  const x = box('n 位', -3, 6.2, 0, 3.6, B1, 1), y = box('n 位', 2.2, 6.2, 0, 3.6, P1, 1);
-  say('兩個 n 位數相乘', '');
-  await beat(tok, 2200);
+  const ka = buddy('Karatsuba', '', TE, -5.6, 0, 2.0, 0.8);
+  await step(tok);                                   // 202.8 why is Karatsuba better?
+  tag('Karatsuba 為什麼比較好？', 'say', 0, 7.0, 0);
+  say('Karatsuba 為什麼比較好？');
+  await step(tok);                                   // 224.8 faster (not simpler)
+  tag('比較快 ✓', 'good', -1.6, 6.3, 0); tag('比較簡單 ✗', 'bad', 1.6, 6.3, 0);
+  ka.mood('happy');
+  say('因為比較快', '不是比較簡單');
+  await step(tok);                                   // 241.8 n^(log₂3): between 1.5 and 2
+  line(-5, 1.0, 5, 1.0, 0, BROWN);
+  for (const [v, s] of [[1, '1'], [1.5, '1.5'], [2, '2']]) tag(s, 'idx', -5 + (v - 1) * 10, 0.6);
+  const d = cube('', GR, [0.3, 0.3, 0.3], -5 + (Math.log2(3) - 1) * 10, 1.0, 0); glow(d, GREEN);
+  tag('log₂3 ≈ 1.585', 'ptr alt', -5 + (Math.log2(3) - 1) * 10, 1.6);
+  say('時間 n^(log₂3)：指數在 1.5 和 2 之間', '沒有革命性，但比 n² 好');
+  await step(tok);                                   // 252.8 how do we get this? the recurrence
+  const rb = board(3.8, 4.6, 0, 'pkt'); rb('T(n) = ？');
+  say('怎麼得到的？看遞迴式');
+  await step(tok);                                   // 274.8 two numbers with n digits
+  const x = box('n 位', -3.2, 5.4, 0, 3.6, B1, 1), y = box('n 位', 1.0, 5.4, 0, 3.6, P1, 1);
+  say('兩個 n 位數');
+  await step(tok);                                   // 287.8 split into n/2 and n/2
   kill(x); kill(y);
-  box('n/2', -3.9, 6.2, 0, 1.75, B1); box('n/2', -2.1, 6.2, 0, 1.75, B2);
-  box('n/2', 1.3, 6.2, 0, 1.75, P1); box('n/2', 3.1, 6.2, 0, 1.75, P2);
-  say('各拆成兩個 n/2 位', '');
-  await beat(tok, 2400);
-  for (let k = 0; k < 3; k++) { box('n/2 × n/2', -3.6 + k * 3.6, 4.6, 0, 2.6, OR, 1.2); await beat(tok, 600); }
-  box('+ − 幾次加減法：O(n)', 0, 3.6, 0, 4.6, MINT, 1);
-  say('只用 3 次乘法 + 一些加法', '乘法貴、加法便宜');
-  await beat(tok, 3000);
-  say('T(n) = 3T(n/2) + O(n)', '= Θ(n^(log₂3))');
-  await beat(tok, 2800);
-  line(-5, 1.6, 5, 1.6, 0, BROWN);
-  for (const [v, s] of [[1, '1'], [1.5, '1.5'], [2, '2']]) tag(s, 'idx', -5 + (v - 1) * 10, 1.2);
-  const d = cube('', GR, [0.3, 0.3, 0.3], -5 + (Math.log2(3) - 1) * 10, 1.6, 0); glow(d, GREEN);
-  tag('log₂3 ≈ 1.585', 'ptr alt', -5 + (Math.log2(3) - 1) * 10, 2.2);
-  say('log₂3 介於 1.5 和 2 之間', '不是革命性的，但比 n² 快');
-  await beat(tok, 3200);
+  box('n/2', -4.1, 5.4, 0, 1.75, B1); box('n/2', -2.3, 5.4, 0, 1.75, B2);
+  box('n/2', 0.1, 5.4, 0, 1.75, P1); box('n/2', 1.9, 5.4, 0, 1.75, P2);
+  say('各拆成兩個 n/2 位');
+  await step(tok);                                   // 298.8 only three multiplications + additions
+  for (let k = 0; k < 3; k++) box('n/2 × n/2', -3.8 + k * 2.8, 3.8, 0, 2.5, OR, 1.2);
+  rb('T(n) = 3T(n/2) + O(n)');
+  say('只用 3 次 n/2 位乘法 + 一些加法', 'T(n) = 3T(n/2) + O(n)');
+  await step(tok);                                   // 304.8 multiplications expensive, additions cheap
+  tag('乘法：貴', 'bad', -1.0, 2.9, 0.6); tag('加法：便宜 O(n)', 'good', 2.2, 2.9, 0.6);
+  say('乘法貴、加法便宜');
+  await step(tok);                                   // 334.8 details in the notes — remember for the exam
+  tag('哪 3 次乘法：看講義、考前記熟', 'note', 3.6, 2.0, 1.4); ka.mood('wow');
+  say('3 次乘法的細節在講義', '考前記得');
 }]);
 
 // 06:01 A B C D：(10^{n/2}A + B)(10^{n/2}C + D) 有 4 個乘法；乘 10ⁿ 只是補 0
 FRAG.push(['dcmit2-abcd', 'A B C D：硬算要 4 次乘法', async (tok) => {
   fresh([0, 4.4, 13], [0, 3.2, 0]);
+  await step(tok);                                   // 360.8 label the halves A, B, C, D
   const A = box('A', -4, 6.4, 0, 1.6, B1, 1), B = box('B', -2.4, 6.4, 0, 1.6, B2, 1), C = box('C', 1.2, 6.4, 0, 1.6, P1, 1), D = box('D', 2.8, 6.4, 0, 1.6, P2, 1);
   tag('×', 'ptr', -0.6, 6.4);
-  say('左半 A、右半 B；左半 C、右半 D', 'x = 10^(n/2)·A + B');
-  await beat(tok, 3000);
-  tag('xy = 10ⁿ·AC + 10^(n/2)·(AD + BC) + BD', 'ptr alt', -0.4, 5.3);
-  say('展開（以 10 為基底）', '');
-  await beat(tok, 2600);
-  const cnt = tag('乘法 0 次', 'ptr alt', 4.8, 4.4);
-  const P = [[A, C, 'AC'], [A, D, 'AD'], [B, C, 'BC'], [B, D, 'BD']];
-  for (let k = 0; k < 4; k++) {
-    const [p, q, t] = P[k]; glow(p, GOLD); glow(q, GOLD);
-    box(t, -4.5 + k * 1.9, 4.2, 0, 1.6, OR, 1); txt(cnt, '乘法 ' + (k + 1) + ' 次');
-    await beat(tok, 900); glow(p, null); glow(q, null);
-  }
-  say('4 次 n/2 位乘法', 'T_bad(n) = 4T(n/2) + O(n) = Θ(n²)');
-  await beat(tok, 3000);
-  const ds = '1234'.split('').map((c, i) => dig(c, -3 + i * 0.55, 2.4, 0.8, B2));
-  say('乘 10ⁿ 不是真的乘法', 'Python list 後面 append n 個 0');
-  await beat(tok, 2000);
-  for (let k = 0; k < 4; k++) { dig('0', -0.8 + k * 0.55, 2.4, 0.8, MINT, 1); await beat(tok, 300); }
-  tag('O(n)：算加法等級', 'idx', 1.8, 1.7, 0.8);
-  say('補 0 是 O(n)：免費', '貴的只有那 4 次乘法');
-  await beat(tok, 2800);
-  tag('Karatsuba：3 次（不是這裡的其中 3 個）', 'ptr', 0, 0.8, 1);
-  say('Karatsuba 找到只要 3 次的做法', '4 和 3 的差別很重要');
-  await beat(tok, 3000);
-  void ds;
+  const cnt = tag('乘法 0 次', 'ptr alt', 5.4, 4.6);
+  say('兩半分別叫 A、B 和 C、D');
+  await step(tok);                                   // 380.8 (10^{n/2}A + B)(10^{n/2}C + D)
+  tag('(10^{n/2}·A + B) · (10^{n/2}·C + D)', 'pkt', -0.6, 5.6);
+  say('硬算：(10^{n/2}·A + B)(10^{n/2}·C + D)', '以 10 為基底');
+  await step(tok);                                   // 400.8 = 10ⁿAC + 10^{n/2}(AD + BC) + BD
+  tag('= 10ⁿ·AC + 10^{n/2}·(AD + BC) + BD', 'ptr alt', -0.6, 4.9);
+  say('展開', '10ⁿ·AC + 10^{n/2}·(AD + BC) + BD');
+  await step(tok);                                   // 416.8 multiplication × 4
+  const P = [[A, C, 'AC'], [A, D, 'AD'], [B, C, 'BC'], [B, D, 'BD']], pb = [];
+  for (let k = 0; k < 4; k++) { const [p, q, t] = P[k]; glow(p, GOLD); glow(q, GOLD); pb.push(box(t, -4.5 + k * 1.9, 3.9, 0, 1.6, OR, 1)); txt(cnt, '乘法 ' + (k + 1) + ' 次'); await ctx.beat(tok, 450); glow(p, null); glow(q, null); }
+  say('乘法、乘法、乘法、乘法');
+  await step(tok);                                   // 427.8 four n/2 multiplications for one n
+  tag('4 次 n/2 位 → 1 次 n 位', 'note', 5.4, 3.9);
+  say('用 4 次 n/2 位乘法', '換 1 次 n 位乘法');
+  await step(tok);                                   // 433.8 T(n) = 4T(n/2) + O(n)
+  tag('T(n) = 4T(n/2) + O(n)', 'ptr', -0.6, 3.1);
+  say('遞迴式：T(n) = 4T(n/2) + O(n)');
+  await step(tok);                                   // 444.8 T_bad: recursion tree → n²
+  tag('T_bad = Θ(n²)：沒加速', 'bad', -0.6, 2.5);
+  say('這是 T_bad', 'recursion tree 算出來還是 n²');
+  await step(tok);                                   // 463.8 Karatsuba did it with three
+  const ka = buddy('Karatsuba', '3', TE, 6.0, 0, 2.2, 0.7); ka.mood('happy');
+  say('Karatsuba 想出只用 3 次的方法');
+  await step(tok);                                   // 483.8 this isn't an actual multiplication (10ⁿ)
+  tag('乘 10ⁿ 不是真的乘法', 'say', -4.2, 1.7, 1.0);
+  say('乘 10ⁿ 不是真的乘法');
+  await step(tok);                                   // 485.8 number stored in a Python list
+  '1234'.split('').forEach((c, i) => dig(c, -4.8 + i * 0.55, 0.9, 1.0, B2, 1));
+  tag('Python list', 'idx', -5.6, 0.3, 1.0);
+  say('數字存在 Python list 裡', '一格一個 digit');
+  await step(tok);                                   // 495.8 append n zeros
+  for (let k = 0; k < 4; k++) { dig('0', -2.6 + k * 0.55, 0.9, 1.0, MINT, 1); await ctx.beat(tok, 250); }
+  say('乘 10ⁿ = 在後面 append n 個 0');
+  await step(tok);                                   // 513.8 O(n): counts as an addition — free
+  tag('O(n)：算加法等級，免費', 'good', -1.4, 0.2, 1.4);
+  pb.forEach((b) => glow(b, RED));
+  say('補 0 是 O(n)：免費', '貴的是那 4 次乘法');
+  await step(tok);                                   // 558.8 10^{n/2} shifts left by n/2 digits
+  tag('10^{n/2}·A：A 往左移 n/2 位', 'note', 2.6, 1.5, 1.4);
+  say('10^{n/2}·A：把 A 往左移 n/2 位', '再加上 B');
+  await step(tok);                                   // 565.8 left half, right half — same number
+  glow(A, GOLD); glow(B, GOLD);
+  say('只是在說：A 是左半、B 是右半', '還是同一個數');
+  await step(tok);                                   // 583.8 not three of these four
+  glow(A, null); glow(B, null);
+  tag('不是這 4 個裡的其中 3 個', 'note', 6.0, 1.5, 2.2);
+  say('Karatsuba 的 3 次不是從這 4 個挑 3 個', '要再想一下（講義有）');
+  await step(tok);                                   // 608.8 the difference between 4 and 3 matters
+  txt(cnt, '4 → 3'); await ka.hop(tok);
+  say('4 和 3 的差別很重要', 'n² → n^1.58');
+  void C; void D;
 }]);
 
-// 11:18 Newton：找 f 的根；初始猜測 → 切線 → 和 x 軸交點 → 再來一次
+// 10:26 Newton：找 f 的根；初始猜測 → 切線 → 和 x 軸交點 → 再來一次
 FRAG.push(['dcmit2-tangent-walk', 'Newton：切線一路逼近根', async (tok) => {
   fresh([0, 3.6, 12.5], [0, 2.8, 0]);
-  const f = (x) => x * x / 2 - 2, df = (x) => x, X = (x) => -5.5 + x * 2.6, Y = (y) => 1.6 + y * 0.62;
-  line(X(0), Y(0), X(4.5), Y(0), 0, BROWN); tag('x', 'idx', X(4.6), Y(0));
+  const f = (x) => x * x / 2 - 2, df = (x) => x, X = (x) => -5.5 + x * 2.5, Y = (y) => 1.6 + y * 0.6;
+  let x = 4;
+  await step(tok);                                   // 626.8 Newton — the hard stuff
+  const nw = buddy('Newton', '', B2, -6.0, 0, 2.6, 0.7);
+  tag('難的部分來了', 'say', -6.0, 1.6, 2.6);
+  say('換 Newton：這才是難的部分');
+  await step(tok);                                   // 643.8 lets you compute square roots
+  box('√ 開根號', 3.2, 7.0, 0, 2.4, B1, 1);
+  say('用途一：開根號');
+  await step(tok);                                   // 658.8 division, definitely
+  box('÷ 除法', 5.8, 7.0, 0, 2.2, P1, 1);
+  say('用途二：除法', '乘法用 Newton 大概不會更快');
+  await step(tok);                                   // 677.8 a function that looks like this
+  line(X(0), Y(0), X(4.6), Y(0), 0, BROWN); tag('x', 'idx', X(4.7), Y(0));
   curve(f, 0.3, 4.3, X, Y);
-  tag('f(x)', 'ptr', X(4.2), Y(f(4.2)) + 0.4);
-  tag('根 x₀：f(x₀) = 0', 'idx', X(2), Y(0) - 0.45);
-  say('Newton：找函數的根', '先把答案設計成某個 f 的根');
-  await beat(tok, 3000);
-  let x = 4; const dot = cube('', YE, [0.25, 0.25, 0.25], X(x), Y(0), 0); glow(dot, GOLD);
-  tag('初始猜測', 'ptr alt', X(x), Y(0) - 0.45);
-  say('從初始猜測出發', '不用準，但不能差太遠');
-  await beat(tok, 2600);
-  for (let k = 0; k < 3; k++) {
-    const nx = x - f(x) / df(x);
+  tag('f(x)（示意）', 'ptr', X(4.2), Y(f(4.2)) + 0.4);
+  say('有一個函數 f');
+  await step(tok);                                   // 683.8 find a root x0: f(x0) = 0
+  const r = cube('', GR, [0.22, 0.22, 0.22], X(2), Y(0), 0); glow(r, GREEN);
+  tag('根 x₀：f(x₀) = 0', 'good', X(2), Y(0) - 0.45);
+  say('Newton 幫我們找函數的根', 'f(x₀) = 0');
+  await step(tok);                                   // 697.8 set up f so that the answer is a root
+  tag('先把「答案」設計成某個 f 的根', 'note', 1.6, 6.2, 0);
+  say('要用 Newton：先把答案設計成 f 的根');
+  await step(tok);                                   // 735.8 initial guess
+  const g = buddy('x', String(x), BUTTER, X(x), Y(0), 0.4, 0.45);
+  tag('initial guess', 'ptr alt', X(x), Y(0) - 0.45, 0.4);
+  say('從一個初始猜測出發', 'initial guess');
+  await step(tok);                                   // 743.8 too far off → may not converge
+  tag('差太遠：可能不收斂、或收斂太慢', 'bad', 1.6, 5.5, 0);
+  g.mood('wow');
+  say('猜得太遠：可能不收斂', '或收斂得不夠快');
+  await step(tok);                                   // 751.8 start somewhere pretty close
+  g.mood('calm');
+  say('假設從這裡出發：不太遠');
+  await step(tok);                                   // 767.8 best line: the tangent
+  const t0 = 2.3, t1 = 4.4;
+  line(X(t0), Y(f(x) + df(x) * (t0 - x)), X(t1), Y(f(x) + df(x) * (t1 - x)), 0, '#1f3a6e');
+  line(X(x), Y(0), X(x), Y(f(x)), 0, '#a99470');
+  say('用直線近似函數：最好的直線是切線');
+  await step(tok);                                   // 776.8 if f were linear: one step
+  tag('f 是直線的話：一步到位', 'note', 4.2, 4.8, 0.5);
+  say('如果函數本身是直線', '一步就到答案');
+  await step(tok);                                   // 795.8 root of the tangent: hits the x-axis
+  let nx = x - f(x) / df(x);
+  await walk(tok, g, X(nx), 0.4, 800); g.set(nx);
+  say('找切線的根：和 x 軸的交點', 'x = ' + nx);
+  await step(tok);                                   // 809.8 next guess; iterate
+  x = nx;
+  for (let k = 0; k < 2; k++) {
+    nx = x - f(x) / df(x);
     line(X(x), Y(0), X(x), Y(f(x)), 0, '#a99470');
-    move(dot, X(x), Y(f(x)), 0);
-    await beat(tok, 700);
-    const t0 = nx - 0.25, t1 = Math.min(4.4, x + 0.3);
-    line(X(t0), Y(f(x) + df(x) * (t0 - x)), X(t1), Y(f(x) + df(x) * (t1 - x)), 0, '#1f3a6e');
-    say(k ? '再畫切線、再找交點' : '用切線近似函數', k ? '' : '函數若是直線，一步就到');
-    await beat(tok, 1200);
-    move(dot, X(nx), Y(0), 0);
-    say('切線和 x 軸交點 = 下一個猜測', 'x = ' + nx.toFixed(4));
-    await beat(tok, 1600);
-    x = nx;
+    line(X(nx), Y(0), X(x), Y(f(x)), 0, '#1f3a6e');
+    await walk(tok, g, X(nx), 0.4, 700); g.set(nx.toFixed(3)); x = nx;
   }
-  say('一次比一次接近根', '而且接近得很快');
-  await beat(tok, 2800);
+  say('交點就是下一個猜測：再畫切線', '4 → 2.5 → 2.05 → 2.0006');
+  await step(tok);                                   // 820.8 get there pretty fast
+  g.mood('happy'); await g.hop(tok); nw.mood('happy');
+  say('很快就到根了');
 }]);
 
-// 13:56 推導：tan α = f(x)/(x − x′) = f′(x) → x′ = x − f(x)/f′(x)
+// 13:52 推導：tan α = f(x)/(x − x′) = f′(x) → x′ = x − f(x)/f′(x)
 FRAG.push(['dcmit2-triangle', '切線三角形：x′ = x − f(x)/f′(x)', async (tok) => {
   fresh([0, 3.6, 12], [0, 2.8, 0]);
   const f = (x) => x * x / 2 - 2, X = (x) => -5.5 + x * 2.6, Y = (y) => 1.2 + y * 0.72;
+  const x = 4, xp = 2.5;
+  await step(tok);                                   // 831.8 turn the drawing into an equation
   line(X(0.8), Y(0), X(4.6), Y(0), 0, BROWN);
   curve(f, 1.2, 4.4, X, Y);
-  const x = 4, xp = 2.5;
   line(X(xp), Y(0), X(x), Y(f(x)), 0, '#1f3a6e');
-  const v = cube('', RD, [0.08, Y(f(x)) - Y(0), 0.08], X(x), (Y(0) + Y(f(x))) / 2, 0);
-  const h = cube('', B1, [X(x) - X(xp), 0.08, 0.08], (X(x) + X(xp)) / 2, Y(0), 0);
-  tag('x', 'ptr alt', X(x), Y(0) - 0.45); tag("x′", 'ptr alt', X(xp), Y(0) - 0.45);
-  say('目前猜 x，下一個猜 x′', '');
-  await beat(tok, 2600);
-  glow(v, RED); tag('f(x)', 'ptr', X(x) + 0.7, (Y(0) + Y(f(x))) / 2);
-  say('直角三角形：高 = f(x)', '');
-  await beat(tok, 2200);
-  glow(h, GOLD); tag("x − x′", 'ptr', (X(x) + X(xp)) / 2, Y(0) + 0.45);
-  say("底 = x − x′", '');
-  await beat(tok, 2200);
-  tag('α', 'idx', X(xp) + 0.6, Y(0) + 0.25);
-  say('tan α = 切線斜率 = f′(x)', "tan α = f(x) / (x − x′)");
-  await beat(tok, 3000);
-  const cd = code(["f′(x) = f(x) / (x − x′)", "x′ = x − f(x) / f′(x)"], -3.2, 6.6, 0.6);
-  cd.hl(1); say('解出 x′', "x′ = x − f(x)/f′(x)");
-  await beat(tok, 3000);
-  const w = tag("✗ x′ = x + f(x)/f′(x)", 'ptr', 3.2, 6.6); w.element.style.textDecoration = 'line-through';
-  say('老師一度寫錯符號', '順著導數走會離解越來越遠');
-  await beat(tok, 3000);
+  tag('圖 → 可以寫進 Python 的式子', 'say', 2.0, 6.9, 0);
+  say('把圖變成可以寫進 Python 的式子');
+  await step(tok);                                   // 842.8 current guess x, next guess x′
+  tag('x（目前）', 'ptr alt', X(x), Y(0) - 0.45); tag("x′（下一個）", 'ptr alt', X(xp), Y(0) - 0.45);
+  say('目前的猜測叫 x，下一個叫 x′');
+  await step(tok);                                   // 847.8 this line: the base
+  const h = cube('', B1, [X(x) - X(xp), 0.08, 0.08], (X(x) + X(xp)) / 2, Y(0), 0); glow(h, GOLD);
+  tag("底 = x − x′", 'ptr', (X(x) + X(xp)) / 2, Y(0) + 0.45);
+  say("底邊：x 和 x′ 的距離");
+  await step(tok);                                   // 858.8 f(x)
+  const v = cube('', RD, [0.08, Y(f(x)) - Y(0), 0.08], X(x), (Y(0) + Y(f(x))) / 2, 0); glow(v, RED);
+  tag('高 = f(x)', 'ptr', X(x) + 0.8, (Y(0) + Y(f(x))) / 2);
+  say('高：f(x)');
+  await step(tok);                                   // 868.8 this angle
+  tag('α', 'pkt', X(xp) + 0.6, Y(0) + 0.25);
+  say('還有這個角 α', '直角三角形');
+  await step(tok);                                   // 889.8 the tangent of α?
+  const q = tag('tan α = ？', 'say', -3.6, 5.4, 0);
+  say('角 α 的 tan 是多少？');
+  await step(tok);                                   // 939.8 tangent at a point = derivative
+  tag('切線斜率 = 導數 f′(x)', 'good', -3.6, 4.7, 0);
+  say('函數在某點的切線斜率 = 導數 f′(x)');
+  await step(tok);                                   // 961.8 right triangle: f(x) / (x − x′)
+  txt(q, "tan α = f(x) / (x − x′)");
+  say("直角三角形：tan α = 高 / 底", "= f(x) / (x − x′)");
+  await step(tok);                                   // 968.8 … = f′(x)
+  const cd = code(["f′(x) = f(x) / (x − x′)", "x − x′ = f(x) / f′(x)", "x′ = x − f(x) / f′(x)"], 2.8, 6.0, 0.6);
+  cd.ls.forEach((l, i) => { if (i) l.element.style.visibility = 'hidden'; }); cd.hl(0);
+  say("兩個都是斜率：f′(x) = f(x)/(x − x′)");
+  await step(tok);                                   // 997.8 solve for x′
+  say("解出 x′：給一個猜測，算下一個", '越來越接近根');
+  await step(tok);                                   // 1023.8 writes x′ − x = f′/f (wrong)
+  const w = tag("x′ − x = f′(x)/f(x) ？", 'bad', 2.8, 4.2, 0);
+  say('老師寫成 f′/f', '分子分母放反了');
+  await step(tok);                                   // 1083.8 student: f over f′
+  strike(w);
+  tag('同學：是 f/f′！', 'say', 5.6, 3.6, 0);
+  say('同學糾正：是 f(x)/f′(x)', '不是 f′/f');
+  await step(tok);                                   // 1126.8 the guess is to the right: x − x′
+  cd.ls[1].element.style.visibility = ''; cd.hl(1);
+  say("x 在右邊，所以底是 x − x′", '另一個錯：正負號');
+  await step(tok);                                   // 1141.8 walk against the derivative
   arrow(V3(X(x), Y(0) + 0.9, 0.4), V3(X(xp) + 0.2, Y(0) + 0.9, 0.4), 0x0f5a3a);
-  say('記法：逆著導數走', '從 x 減掉一個量');
-  await beat(tok, 2800);
+  tag('逆著導數走 ✓', 'good', (X(x) + X(xp)) / 2, Y(0) + 1.35, 0.4);
+  say('記法：逆著導數走');
+  await step(tok);                                   // 1156.8 with the derivative: away from the root
+  arrow(V3(X(x), Y(0) + 0.9, 0.4), V3(X(4.5), Y(0) + 0.9, 0.4), 0x7a1010);
+  tag('順著走：越來越遠 ✗', 'bad', X(4.5) + 0.4, Y(0) + 1.35, 0.4);
+  say('順著導數走', '會離解越來越遠');
+  await step(tok);                                   // 1191.8 two ways to remember
+  tag('記法 ②：從 x 減掉一個量', 'note', -3.6, 3.9, 0);
+  say('兩種記法：逆著導數走', '或：從猜測減掉一個量');
+  await step(tok);                                   // 1214.8 this is how you iterate
+  cd.ls[2].element.style.visibility = ''; cd.hl(2);
+  say("Newton 迭代：x′ = x − f(x)/f′(x)");
+  void v; void h;
 }]);
 
-// 20:38 用 Newton 算 a/b：先改成 1/b；R = 10^d，Python list 補 0 = 乘 R、slice = 除 R
+// 20:38 用 Newton 算 a/b：需要什麼；先改成 1/b；R = 10^d，Python list 補 0 = 乘 R、slice = 除 R
 FRAG.push(['dcmit2-list-shift', 'R = 10^d：補 0 與 slice', async (tok) => {
   fresh([0, 4.2, 12.5], [0, 3.2, 0]);
-  box('需要：f(a/b) = 0', -3, 6.4, 0, 3.4, PAPER, 1); box('f/f′ 不能用到除法', 2.2, 6.4, 0, 3.4, PAPER, 1);
-  say('用 Newton 算 a/b 的兩個條件', '答案是根；f/f′ 不靠除法算得出來');
-  await beat(tok, 3200);
-  box('a/b = a × (1/b)', -0.4, 5.3, 0, 3.6, MINT, 1);
-  say('先簡化成算 1/b，再乘 a', '');
-  await beat(tok, 2400);
-  tag('1/b = 0.xxxx… 不是整數', 'ptr', -3, 4.3);
-  tag('R/b = 10^d / b：小數點右移 d 位', 'ptr alt', 2.4, 4.3);
-  say('只用整數：乘上 R = 10^d', 'a/b = (R/b) · a / R');
-  await beat(tok, 3200);
-  const ds = '1234'.split('').map((c, i) => dig(c, -4.4 + i * 0.6, 2.8, 0, B2, 1));
-  tag('Python list', 'idx', -5.4, 2.1);
-  say('數字存成一串 digit', '');
-  await beat(tok, 1800);
+  const nw = buddy('Newton', '', B2, -6.2, 0, 2.4, 0.7);
   const zs = [];
-  for (let k = 0; k < 3; k++) { zs.push(dig('0', -2 + k * 0.6, 2.8, 0, MINT, 1)); await beat(tok, 350); }
-  tag('append d 個 0 = × 10^d', 'ptr alt', -1.4, 1.9);
-  say('append d 個 0 = 乘 R', '');
-  await beat(tok, 2400);
-  for (let k = 0; k < 3; k++) { kill(zs[k]); await beat(tok, 250); }
-  for (let k = 1; k < 4; k++) { kill(ds[k]); await beat(tok, 250); }
-  tag('slice 掉最後 d 位 = ÷ 10^d', 'ptr', 3, 1.1);
-  say('slice 掉最後 d 位 = 除 R', '1234 → 1（÷ 10³）');
-  await beat(tok, 3000);
-  say('乘 R、除 R 都很便宜', '');
-  await beat(tok, 2200);
+  await step(tok);                                   // 1237.8 what do we need for Newton?
+  tag('用 Newton 需要什麼？', 'say', 0, 7.0, 0);
+  say('要用 Newton，需要什麼？');
+  await step(tok);                                   // 1247.8 evaluate f/f′ for any x, fast
+  box('能快速算出 f(x)/f′(x)', -3, 6.2, 0, 3.6, PAPER, 1);
+  tag('Newton 把它當黑盒子', 'note', -3, 5.6, 0);
+  say('對任何 x 都要能算 f(x)/f′(x)', '而且要夠快');
+  await step(tok);                                   // 1274.8 compute a/b — what do we need?
+  tag('目標：a/b', 'ptr alt', 2.6, 6.2, 0);
+  say('例：用 Newton 算 a/b，需要什麼？');
+  await step(tok);                                   // 1318.8 we need the function
+  tag('f = ？', 'say', 2.6, 5.5, 0);
+  say('要先想出函數 f');
+  await step(tok);                                   // 1346.8 f(a/b) = 0
+  box('① f(a/b) = 0', 2.6, 4.8, 0, 3.0, MINT, 1);
+  say('條件一：f(a/b) = 0', 'Newton 找到的根就是答案');
+  await step(tok);                                   // 1356.8 f/f′ without division
+  box('② f/f′ 不能用到除法', 2.6, 4.0, 0, 3.4, MINT, 1);
+  nw.mood('wow');
+  say('條件二：算 f/f′ 不能用除法', '否則用除法算除法，沒意義');
+  await step(tok);                                   // 1372.8 simplify to 1/b
+  box('先算 1/b', -3, 4.6, 0, 2.4, BUTTER, 1);
+  say('簡化：先算 1/b');
+  await step(tok);                                   // 1379.8 then multiply by a
+  tag('× a → a/b', 'pkt', -3, 3.9, 0);
+  say('有了 1/b，乘上 a 就是 a/b');
+  await step(tok);                                   // 1392.8 integers only, no floating point
+  tag('只用整數，不碰浮點數', 'note', -3, 3.3, 0);
+  say('只想用整數，不想碰浮點數');
+  await step(tok);                                   // 1411.8 1/b = 0.xxx — not an integer
+  tag('1/b = 0.xxxx… 不是整數', 'bad', 0.6, 3.0, 0.5);
+  say('1/b 長得像 0.xxx', '不是整數');
+  await step(tok);                                   // 1421.8 d digits: shift the point right by d
+  tag('要 d 位 → 小數點右移 d 位', 'ptr alt', 0.6, 2.4, 0.5);
+  say('要 d 位精度：把小數點往右移 d 位');
+  await step(tok);                                   // 1434.8 multiply by 10^d: compute R/b
+  tag('R/b，R = 10^d', 'good', 4.6, 2.4, 0.5);
+  say('乘上 10^d：改算 R/b', 'R = 10^d');
+  await step(tok);                                   // 1457.8 (R/b)·a, then everything / R
+  tag('a/b = (R/b) · a / R', 'ptr', 4.6, 3.0, 0.5);
+  say('a/b = (R/b) · a / R');
+  await step(tok);                                   // 1472.8 multiply by R: append d zeros; divide?
+  const ds = '1234'.split('').map((c, i) => dig(c, -4.4 + i * 0.6, 1.0, 1.2, B2, 1));
+  tag('Python list', 'idx', -5.4, 0.3, 1.2);
+  for (let k = 0; k < 3; k++) { zs.push(dig('0', -2 + k * 0.6, 1.0, 1.2, MINT, 1)); await ctx.beat(tok, 250); }
+  tag('append d 個 0 = × R', 'good', -0.8, 1.9, 1.2);
+  say('乘 R：後面補 d 個 0', '那除以 R 呢？');
+  await step(tok);                                   // 1486.8 Python list: slice off the last d digits
+  for (let k = 0; k < 3; k++) { kill(zs[k]); await ctx.beat(tok, 200); }
+  for (let k = 1; k < 4; k++) { kill(ds[k]); await ctx.beat(tok, 200); }
+  tag('slice 掉最後 d 位 = ÷ R', 'good', 2.6, 1.0, 1.2);
+  say('除以 R：slice 掉最後 d 位', '1234 → 1（÷ 10³）');
+  await step(tok);                                   // 1495.8 add digits = multiply, slice = divide
+  say('補 0 = 乘法，slice = 除法', '兩個都只要 O(d)');
+  await step(tok);                                   // 1507.8 easy division / easy multiplication
+  nw.mood('happy'); await nw.hop(tok);
+  say('這種除法、乘法都很簡單');
 }]);
 
-// 25:24 選函數：x − R/b 行不通；1/x − b/R → x′ = 2x − b·x²/R
+// 25:26 選函數：x − R/b 行不通；1/x − b/R → x′ = 2x − b·x²/R
 FRAG.push(['dcmit2-two-funcs', '選 f：x − R/b 不行，1/x − b/R 可以', async (tok) => {
   fresh([0, 4.4, 13], [0, 3.2, 0]);
   const c1 = code(['f(x) = x − R/b', 'f′(x) = 1', 'f/f′ = x − R/b'], -3.6, 6.4, 0.6);
-  say('先試 f(x) = x − R/b', '根確實是 R/b');
-  await beat(tok, 2800);
-  c1.hl(2); say('可是 f/f′ 要先知道 R/b', '能算它就已經有答案了');
-  await beat(tok, 3000);
-  const bad = box('✗ 不能用', -3.6, 4.2, 0, 2.6, RD, 1); glow(bad, RED);
-  await beat(tok, 1600);
   const c2 = code(['f(x) = 1/x − b/R', 'f′(x) = −1/x²', 'f/f′ = −x + b·x²/R', "x′ = x − f/f′ = 2x − b·x²/R"], 2.4, 6.4, 0.6);
-  say('改試 f(x) = 1/x − b/R', 'b/R 是好算的除法');
-  await beat(tok, 3000);
-  c2.hl(2); say('f/f′ = −x + b·x²/R', '');
-  await beat(tok, 2600);
-  c2.hl(3); say("x′ = 2x − b·x²/R", '');
-  await beat(tok, 2800);
-  const ok = box('✓ 唯一的除法是 ÷R = shift', 2.4, 3.4, 0, 4.4, GR, 1); glow(ok, GREEN);
-  say('剩下的只有乘法（Karatsuba）', '用除法解除法行不通');
-  await beat(tok, 3200);
+  const hideAll = (c) => c.ls.forEach((l) => { l.element.style.visibility = 'hidden'; });
+  const show = (c, i) => { c.ls[i].element.style.visibility = ''; c.hl(i); };
+  hideAll(c1); hideAll(c2);
+  const st = buddy('同學', '', PEACH, -6.0, 0, 2.2, 0.7);
+  await step(tok);                                   // 1525.8 can I use x − R/b?
+  show(c1, 0);
+  say('能不能用 f(x) = x − R/b？', '根確實是 R/b');
+  await step(tok);                                   // 1543.8 f′(x) = 1
+  show(c1, 1);
+  say("f′(x) = 1");
+  await step(tok);                                   // 1564.8 f/f′ = x − R/b
+  show(c1, 2);
+  say('f/f′ = x − R/b');
+  await step(tok);                                   // 1571.8 to evaluate it you need R/b already
+  tag('要先知道 R/b 才算得出來！', 'say', -3.6, 4.4, 0);
+  st.mood('wow');
+  say('要算它，就得先知道 R/b', '知道的話，答案早就有了');
+  await step(tok);                                   // 1597.8 can't use this function
+  const bad = box('✗ 不能用', -3.6, 3.5, 0, 2.6, RD, 1); glow(bad, RED);
+  say('這個簡單的函數不能用');
+  await step(tok);                                   // 1636.8 try 1/x − b/R
+  show(c2, 0);
+  say('改試 f(x) = 1/x − b/R');
+  await step(tok);                                   // 1645.8 b/R is an easy division (shift)
+  tag('b/R：除以 R = shift，好算', 'good', 2.4, 4.0, 0);
+  say('b/R 是好算的除法', '除以 R 只是 shift');
+  await step(tok);                                   // 1698.8 f/f′ = ?
+  show(c2, 1); show(c2, 2);
+  tag('影片說 x + x²b/R，正確是 −x + b·x²/R', 'note', 2.4, 3.3, 0.5);
+  say('f′ = −1/x²，f/f′ = −x + b·x²/R');
+  await step(tok);                                   // 1735.8 x′ = x − f/f′
+  show(c2, 3);
+  say("x′ = x − f/f′ = 2x − b·x²/R");
+  await step(tok);                                   // 1780.8 one division: a shift
+  const ok = box('唯一的除法：÷R = shift', 2.4, 2.4, 0.5, 4.2, GR, 1); glow(ok, GREEN);
+  say('剩下幾個除法？只有 ÷R', 'R = 10^d，就是 shift');
+  await step(tok);                                   // 1793.8 multiplication: Karatsuba
+  box('乘法：用剛學的 Karatsuba', 2.4, 1.6, 0.8, 4.2, OR, 1);
+  say('乘法用剛學的 Karatsuba');
+  await step(tok);                                   // 1797.8 solving division by division doesn't work
+  st.mood('happy');
+  tag('用除法算除法：行不通', 'bad', -3.6, 2.6, 0);
+  say('用除法去解除法，是行不通的', '所以要把除法換成乘法');
+  await step(tok);                                   // 1815.8 error formulas in the notes; remember the trick
+  tag('記住這招：讓 f/f′ 只剩會的運算', 'note', 0, 0.6, 1.6);
+  say('誤差公式在講義', '要記的是這個技巧');
 }]);
 
 // 30:27 ∛a 到 d 位：算 ∛(10^{3d}·a)；f = x³ − a → x′ = (2/3)x + (1/3)·a/x²
 FRAG.push(['dcmit2-cuberoot', '∛a：f(x) = x³ − a', async (tok) => {
   fresh([0, 4.4, 13], [0, 3.2, 0]);
-  box('∛a 到 d 位精度', -3, 6.4, 0, 3.2, PAPER, 1);
-  say('換個例子：三次方根', '∛2 會小於 2，有小數');
-  await beat(tok, 2600);
-  const t = box('10^d · ∛a = ∛(10^{3d} · a)', 2, 6.4, 0, 4.6, MINT, 1); glow(t, GOLD);
-  say('10^d 搬進根號要變 10^{3d}', '別忘了這個 3');
-  await beat(tok, 3200);
-  const cd = code(['f(x) = x³ − a', 'f′(x) = 3x²', "x′ = x − (x³ − a)/(3x²)", '   = (2x³ + a)/(3x²)', '   = (2/3)·x + (1/3)·a/x²'], -1.6, 4.8, 0.6);
-  cd.hl(0); say('把 10^{3d}·a 當新的 a（整數）', 'f(x) = x³ − a');
-  await beat(tok, 2800);
-  cd.hl(1); say("f′(x) = 3x²", '');
-  await beat(tok, 2000);
-  cd.hl(2); say('代進 Newton', '');
-  await beat(tok, 2200);
-  cd.hl(3); say('通分', '');
-  await beat(tok, 2200);
-  cd.hl(4); say('a/x² 要除法', '前面已經做好除法了，可以用');
-  await beat(tok, 3000);
-  box('整數結果右移 d 位 → d 位精度', 0, 1.0, 1, 5, PAPER, 1);
-  await beat(tok, 2600);
+  const cd = code(['f(x) = x³ − a', 'f′(x) = 3x²', "x′ = x − (x³ − a)/(3x²)", '   = (3x³ − x³ + a)/(3x²)', '   = (2x³ + a)/(3x²)', '   = (2/3)·x + (1/3)·a/x²'], -1.4, 4.9, 0.52);
+  cd.ls.forEach((l) => { l.element.style.visibility = 'hidden'; });
+  const show = (i) => { cd.ls[i].element.style.visibility = ''; cd.hl(i); };
+  const nw = buddy('Newton', '', B2, -6.2, 0, 2.4, 0.7);
+  await step(tok);                                   // 1826.8 new example: cube root
+  box('∛a', -4.4, 6.6, 0, 1.6, PAPER, 1);
+  say('新例子：用 Newton 算 ∛a', '三次方根，不是平方根');
+  await step(tok);                                   // 1867.8 first step: we need f
+  tag('第一步：找 f', 'say', -1.6, 6.6, 0);
+  say('第一步：需要一個函數 f');
+  await step(tok);                                   // 1886.8 d digits; ∛2 gives fractions
+  tag('∛2 = 1.2599…：有小數', 'note', 2.6, 6.6, 0);
+  say('要 d 位精度', '∛2 有小數，不想處理分數');
+  await step(tok);                                   // 1910.8 10^d shifts the point
+  const t = box('10^d · ∛a', -4.4, 5.8, 0, 2.6, MINT, 1);
+  say('乘上 10^d：小數點右移 d 位');
+  await step(tok);                                   // 1926.8 10^d inside the root: 10^{3d}·a
+  txt(t.userData.lbl, '10^d · ∛a = ∛(10^{3d} · a)');
+  say('把 10^d 搬進根號', '變成 ∛(10^{3d} · a)');
+  await step(tok);                                   // 1932.8 don't forget this 3
+  glow(t, GOLD); tag('別忘了這個 3！', 'bad', -1.2, 5.8, 0);
+  say('別忘了這個 3', '漏掉就算錯東西');
+  await step(tok);                                   // 1948.8 integers, then shift right by d
+  tag('整數算完 → 右移 d 位 → d 位精度', 'note', 2.6, 1.2, 1);
+  say('整數裡算完，再右移 d 位', '就有 d 位精度');
+  await step(tok);                                   // 1974.8 f(x) = x³ − a
+  show(0);
+  say('f(x) = x³ − a');
+  await step(tok);                                   // 1982.8 10^{3d}·a becomes the new a
+  tag('a ← 10^{3d}·a（整數）', 'pkt', 3.8, 4.9, 0);
+  say('把 10^{3d}·a 當成新的 a', '它是整數，不用再除 R');
+  await step(tok);                                   // 2003.8 f′(x) = 3x²
+  show(1);
+  say("f′(x) = 3x²");
+  await step(tok);                                   // 2022.8 x′ = x − f/f′
+  show(2); nw.mood('wow');
+  say("代進 x′ = x − f(x)/f′(x)");
+  await step(tok);                                   // 2038.8 (x³ − a)/(3x²)
+  say('減掉 (x³ − a)/(3x²)');
+  await step(tok);                                   // 2055.8 common denominator → (2x³ + a)/(3x²)
+  show(3); await ctx.beat(tok, 700); show(4);
+  say('通分：(3x³ − x³ + a)/(3x²)', '= (2x³ + a)/(3x²)');
+  await step(tok);                                   // 2073.8 (2/3)x + (1/3)·a/x²
+  show(5);
+  tag('影片一度寫成 1/3 − a/x²', 'note', 3.8, 2.3, 0);
+  say("x′ = (2/3)·x + (1/3)·a/x²");
+  await step(tok);                                   // 2087.8 a/x² needs division — have it ready
+  tag('a/x²：要用除法（前面做好了）', 'good', 3.8, 3.0, 0);
+  say('a/x² 需要除法', '還好前面已經會做除法了');
+  await step(tok);                                   // 2101.8 now we have the iteration
+  nw.mood('happy'); await nw.hop(tok);
+  say('迭代式完成了', '接下來需要初始猜測');
 }]);
 
-// 35:22 初始猜測：n 位的 a → 根約 n/3 位；第一位用查表或對一位做 binary search
-FRAG.push(['dcmit2-init-guess', '初始猜測：位數 + 第一位', async (tok) => {
+// 35:22 初始猜測：n 位的 a → 根約 n/3 位，先猜 1·10^{n/3}；第一位查表
+FRAG.push(['dcmit2-init-mag', '初始猜測：數量級', async (tok) => {
   fresh([0, 4.2, 13], [0, 3.2, 0]);
-  const ds = '2000000000'.split('').map((c, i) => dig(c, -4.6 + i * 0.6, 6.4, 0, i ? PAPER : B2, 1));
-  tag('a = 2·10⁹（n = 10 位，示意）', 'ptr', 2.6, 5.7);
-  say('a 有 n 位：d₁ d₂ … dₙ', '');
-  await beat(tok, 2600);
-  tag('∛a ≈ 1 · 10^{n/3}：位數約 n/3', 'ptr alt', -1.5, 4.9);
-  say('立方根的位數約 n/3', '先猜 1·10^{n/3}：數量級對了');
-  await beat(tok, 3200);
-  const cs = []; for (let d = 0; d <= 9; d++) cs.push(dig(String(d), -4.4 + d * 0.9, 3.3, 0, PAPER, 1, 0.7));
-  say('再猜第一位：小基底可以查表', '基底 2¹⁶ 就對一位做 binary search');
-  await beat(tok, 3000);
-  const ptr = tag('猜', 'ptr alt', -4.4, 4.0);
-  const T = [[5, '5000³ = 1.25·10¹¹ > a，太大'], [2, '2000³ = 8·10⁹ > a，太大'], [1, '1000³ = 10⁹ ≤ a ✓']];
-  for (const [d, s] of T) {
-    ptr.position.x = -4.4 + d * 0.9; glow(cs[d], GOLD);
-    say('猜 ' + d + '：自乘三次比大小', s);
-    await beat(tok, 2200);
-    if (d !== 1) { glow(cs[d], null); tint(cs[d], RD); for (let e = d; e <= 9; e++) if (e > d) tint(cs[e], '#bbb'); }
-    else tint(cs[d], GR);
+  const g = buddy('x₀', '?', BUTTER, -6.0, 0, 2.2, 0.7); g.mood('wow');
+  await step(tok);                                   // 2122.8 can't start without the first x
+  tag('需要初始猜測 x₀', 'say', 0, 7.0, 0);
+  say('沒有第一個 x，迭代就開始不了');
+  await step(tok);                                   // 2130.8 the better it is, the faster
+  tag('猜得越好 → 收斂越快', 'note', 4.2, 7.0, 0);
+  say('猜得越好，收斂越快', '但不想花太多力氣');
+  await step(tok);                                   // 2146.8 a is an n-digit number d1 d2 … dn
+  const ds = '2000000000'.split('').map((c, i) => dig(c, -4.6 + i * 0.6, 6.0, 0, i ? PAPER : B2, 1));
+  tag('a = d₁ d₂ … dₙ（示意 a = 2·10⁹，n = 10）', 'idx', 0.8, 5.3, 0);
+  say('a 是 n 位數：d₁ d₂ … dₙ');
+  await step(tok);                                   // 2163.8 first approximation?
+  say('最粗略的近似是什麼？');
+  await step(tok);                                   // 2171.8 a third as many digits
+  tag('∛a 的位數 ≈ n/3', 'ptr alt', -2.6, 4.4, 0);
+  say('立方根的位數約是 n/3');
+  await step(tok);                                   // 2174.8 something × 10^{n/3}
+  tag('∛a ≈ ? · 10^{n/3}', 'ptr alt', 2.6, 4.4, 0);
+  say('所以 ∛a ≈ 某數 × 10^{n/3}');
+  await step(tok);                                   // 2185.8 say that something is 1
+  g.set('1·10^{n/3}'); g.mood('happy');
+  tag('數量級對了', 'good', -6.0, 1.6, 2.2);
+  say('先猜 1 · 10^{n/3}', '數量級正確');
+  await step(tok);                                   // 2209.8 order of magnitude + maybe the first digit
+  glow(ds[0], GOLD);
+  tag('再拿到第一位更好', 'note', 0, 3.6, 0);
+  say('好的近似：數量級 + 第一位');
+  await step(tok);                                   // 2221.8 how to get the first digit?
+  tag('第一位怎麼來？', 'say', 3.8, 3.0, 0);
+  say('第一位怎麼拿到？');
+  await step(tok);                                   // 2242.8 a table
+  const tb = []; for (let d = 1; d <= 9; d++) tb.push(box(d + '³ = ' + d ** 3, -4.8 + ((d - 1) % 5) * 2.1, 2.2 - Math.floor((d - 1) / 5) * 0.75, 1.2, 1.9, MINT, 1));
+  say('同學：事先算好一張表', '只有幾個 digit，查表就好');
+  await step(tok);                                   // 2252.8 a digit is small: 10, 256, 2^16
+  tag('一位 = 0～9、0～255、0～2¹⁶…', 'note', 3.6, 0.6, 1.2);
+  say('一位數很小', '基底 10、256、2¹⁶ 或 2³²');
+  await step(tok);                                   // 2267.8 fancy algorithms: great for big, awful for small
+  tag('複雜的快演算法：大數很棒，小數慢 10～100 倍', 'bad', 0, 0.0, 2.4);
+  say('漸進快的演算法只適合大數', '對小數字反而慢 10～100 倍');
+  await step(tok);                                   // 2286.8 a tank to hammer a nail
+  tag('開坦克去釘釘子', 'say', -6.0, 1.0, 3.2);
+  say('像開坦克去釘釘子', '不是對的工具');
+  await step(tok);                                   // 2292.8 precomputed list: I like that
+  tb.forEach((b) => glow(b, GREEN)); await g.hop(tok);
+  say('事先算好的表：好方法');
+}]);
+
+// 38:38 初始猜測：基底 2¹⁶ 時對第一位做 binary search（猜³ 比大小）
+FRAG.push(['dcmit2-init-bsearch', '初始猜測：對第一位 binary search', async (tok) => {
+  fresh([0, 4.2, 13], [0, 3.2, 0]);
+  const g = buddy('x₀', '1·10^{n/3}', BUTTER, -6.0, 0, 2.2, 0.7);
+  const cs = [];
+  await step(tok);                                   // 2317.8 base 10: a table is great
+  tag('基底 10：查表就好', 'good', -2.4, 7.0, 0);
+  say('基底是 10 的話，查表很好');
+  await step(tok);                                   // 2360.8 do it the CS way
+  tag('d₁/3 之類的數學近似…', 'note', 2.8, 7.0, 0);
+  say('數學上有近似法', '來用 CS 的方法做得更好');
+  await step(tok);                                   // 2365.8 guess a digit between 0 and 2^16
+  for (let d = 0; d <= 9; d++) cs.push(dig(String(d), -4.4 + d * 0.95, 4.6, 0, PAPER, 1, 0.7));
+  tag('一位：0 ～ 2¹⁶（示意：0 ～ 9）', 'idx', 0, 3.9, 0);
+  say('基底 2¹⁶：要在 0～2¹⁶ 之間猜一位', '這裡用 0～9 示意');
+  await step(tok);                                   // 2392.8 random guessing: terrible
+  tag('亂猜？ 不要！', 'bad', 3.8, 5.6, 0);
+  say('亂猜：只有「機率上」快', '這種程式很糟');
+  await step(tok);                                   // 2424.8 CPU has no cube-root instruction
+  prop('cpu', 5.6, 0, 2.4, 0.9, '沒有開根號指令');
+  say('CPU 沒有開根號指令', '但有乘法、比較');
+  await step(tok);                                   // 2437.8 start in the middle: binary search
+  const ptr = tag('猜', 'pkt', -4.4 + 4 * 0.95, 5.4, 0);
+  glow(cs[4], GOLD);
+  say('binary search：從中間開始猜');
+  await step(tok);                                   // 2447.8 too small, too big or just right?
+  say('每次要能判斷', '太小、太大、還是剛好');
+  await step(tok);                                   // 2450.8 cube the guess, compare with a
+  const T = [[4, '4000³ = 6.4·10¹⁰ > a：太大', false], [1, '1000³ = 10⁹ ≤ a：可以', true], [2, '2000³ = 8·10⁹ > a：太大', false]];
+  tag('a = 2·10⁹（示意）', 'idx', -3, 3.2, 0);
+  for (const [d, s, ok] of T) {
+    cs.forEach((c) => glow(c, null)); glow(cs[d], GOLD);
+    await travel(tok, ptr, ptr.position.clone(), V3(-4.4 + d * 0.95, 5.4, 0), 350);
+    say('猜 ' + d + '：自乘三次，和 a 比', s);
+    if (ok) { for (let e = 0; e < d; e++) tint(cs[e], '#bbbbbb'); }
+    else { for (let e = d; e <= 9; e++) tint(cs[e], '#bbbbbb'); }
+    await ctx.beat(tok, 450);
   }
-  box('初始猜測 x = 1000', 0, 1.6, 1, 3.6, MINT, 1);
-  say('有了數量級和第一位', '交給 Newton，收斂快得多');
-  await beat(tok, 3000);
-  say('小數字別用複雜演算法', '像開坦克去釘釘子');
-  await beat(tok, 2600);
-  void ds;
+  tint(cs[1], GR);
+  await step(tok);                                   // 2471.8 first digit + order of magnitude
+  g.set('1000'); g.mood('happy');
+  say('有了第一位和數量級', 'x₀ = 1000');
+  await step(tok);                                   // 2482.8 a pretty good guess
+  tag('物理題這樣答就滿分了', 'say', -6.0, 1.6, 2.2);
+  say('很好的初始猜測');
+  await step(tok);                                   // 2520.8 feed it to Newton
+  const nw = buddy('Newton', '', B2, 1.0, 0, 2.4, 0.7);
+  await pkt(tok, 'x₀ = 1000', V3(-6.0, 1.0, 2.2), V3(1.0, 1.2, 2.4), 900);
+  nw.mood('happy');
+  say('交給 Newton', 'Newton 收斂快得多');
+  await step(tok);                                   // 2529.8 binary search on everything: slower
+  tag('整個答案都 binary search：比 Newton 慢', 'note', 3.8, 3.0, 0);
+  say('整個答案都用 binary search', '會比 Newton 慢');
+  await step(tok);                                   // 2534.8 Q: where did f come from?
+  const st = buddy('同學', '', PEACH, 5.4, 0, 0.4, 0.6); st.mood('wow');
+  tag('f 是怎麼來的？', 'say', 5.4, 1.4, 0.4);
+  say('同學問：f(x) = x³ − a 怎麼想到的？');
+  await step(tok);                                   // 2560.8 f/f′ uses only division & multiplication
+  tag('試試看：f/f′ 只用會的運算 → 合理', 'good', 0.6, 2.2, 0.5);
+  say('試一個 f，算出 f/f′', '只用到會的除法、乘法 → 可以用');
+  await step(tok);                                   // 2578.8 computing sin x: don't use sin x
+  tag('算 sin x 時，f/f′ 不能有 sin x', 'note', 0.6, 1.5, 0.8);
+  st.mood('happy');
+  say('算 sin x，f/f′ 裡就不能有 sin x', '道理和除法一樣');
+  await step(tok);                                   // 2607.8 binary search is fine for the first approx
+  say('binary search 用來拿第一個近似', '這樣沒問題');
+  await step(tok);                                   // 2617.8 just a decent guess for Newton
+  await nw.hop(tok);
+  say('只是給 Newton 一個不錯的起點', '之後全交給 Newton');
 }]);
 
 // 43:58 什麼時候停：整數迭代到 x 不再改變
 FRAG.push(['dcmit2-cube-iter', '整數迭代：x 不變就停', async (tok) => {
   fresh([0, 4, 12.5], [0, 3, 0]);
-  tag("x′ = ⌊(2x + ⌊a/x²⌋) / 3⌋", 'ptr alt', 0, 6.6);
-  tag('a = 2·10⁹（∛2，d = 3）', 'idx', 0, 6.0);
-  say('只用整數做 Newton', '多出來的位數自動被丟掉');
-  await beat(tok, 2800);
-  const xs = [1000, 1333, 1263, 1259, 1259], H = (v) => (v - 900) / 450 * 4.4;
-  for (let k = 0; k < xs.length; k++) {
-    const b = bar(k === 4 ? GR : k === 3 ? YE : B1, -4.4 + k * 2.2, 0, 1.1); setBar(b, H(xs[k]));
-    tag('x' + '₀₁₂₃₄'[k] + ' = ' + xs[k], 'idx', -4.4 + k * 2.2, H(xs[k]) + 0.35);
-    say(k ? 'x' + '₀₁₂₃₄'[k] + ' = ' + xs[k] : '初始猜測 x₀ = 1000', k === 4 ? 'x₄ = x₃：不會再變了' : '');
-    await beat(tok, 1700);
-  }
-  say('x 不再改變 → 停', '已經有 d 位精度');
-  await beat(tok, 2800);
-  box('1259 → 右移 3 位 → 1.259', 0, 5.2, 1, 4.6, MINT, 1);
-  say('∛2 ≈ 1.259', '');
-  await beat(tok, 2600);
+  const xs = [1000, 1333, 1263, 1259, 1259], H = (v) => (v - 900) / 450 * 4.2;
+  const g = buddy('x', '', BUTTER, -6.4, 0, 1.8, 0.6);
+  const put = async (k) => { const b = bar(k === 4 ? GR : k === 3 ? YE : B1, -4.2 + k * 2.1, 0, 1.0); await grow(tok, b, H(xs[k]), 350); tag('x' + '₀₁₂₃₄'[k] + ' = ' + xs[k], 'idx', -4.2 + k * 2.1, H(xs[k]) + 0.35); g.set(xs[k]); };
+  await step(tok);                                   // 2637.8 errors: start with an initial guess
+  tag("x′ = ⌊(2x + ⌊a/x²⌋) / 3⌋　a = 2·10⁹（示意）", 'ptr alt', 0, 6.6);
+  await put(0);
+  say('談誤差：從初始猜測出發');
+  await step(tok);                                   // 2649.8 better, better, better
+  await put(1); await put(2);
+  say('一次比一次好');
+  await step(tok);                                   // 2657.8 when do we stop?
+  tag('什麼時候停？', 'say', -6.4, 1.3, 1.8); g.mood('wow');
+  say('什麼時候可以停？');
+  await step(tok);                                   // 2679.8 iterate again and nothing changes
+  await put(3);
+  say('答案：再迭代一次，數字不變', '就停');
+  await step(tok);                                   // 2693.8 we compute ∛(10^{3d}·a) with integers
+  tag('算的是 ∛(10^{3d}·a)：只用整數', 'note', 3.6, 5.8, 0);
+  say('算 ∛(10^{3d}·a)，只用整數');
+  await step(tok);                                   // 2707.8 only d digits; the rest discarded
+  tag('多的位數自動丟掉', 'note', 3.6, 5.2, 0);
+  say('整數只有 d 位精度', '後面的位數自動被丟掉');
+  await step(tok);                                   // 2713.8 x6 = x5: no point running
+  await put(4);
+  tag('x₄ = x₃ → 停！', 'good', 4.2, H(1259) + 1.0);
+  g.mood('happy');
+  say('兩次的 x 一樣：再跑也不會變', '影片的例子是 x₆ = x₅');
+  await step(tok);                                   // 2724.8 done: d digits of precision
+  box('1259 → 右移 3 位 → ∛2 ≈ 1.259', 0, 4.6, 1.5, 4.8, MINT, 1);
+  await g.hop(tok);
+  say('完成：已經有 d 位精度的答案');
 }]);
 
-// 45:34 誤差：x_i = x(1 + ε_i)，ε_{i+1} ≈ ε_i²；0 的個數每步翻倍 → log d 步
+// 45:38 誤差：x_i = x(1 + ε_i)，ε_{i+1} ≈ ε_i²；0 的個數每步翻倍 → log d 步
 FRAG.push(['dcmit2-eps-zeros', 'ε 平方：0 的個數每步翻倍', async (tok) => {
   fresh([0, 4.2, 13], [0, 3.2, 0]);
-  tag('x_i = x(1 + ε_i)', 'ptr', -3.4, 6.6); tag('ε_{i+1} ≈ ε_i²', 'ptr alt', 2.6, 6.6);
-  say('x 是真正答案，ε_i 是誤差', '要讓 1 + ε_i → 1');
-  await beat(tok, 3000);
   const E = ['0.1', '0.01', '0.0001', '0.00000001'];
-  for (let k = 0; k < 4; k++) {
-    const y = 5.4 - k * 0.8, s = E[k].split('');
-    tag('step ' + k, 'idx', -6, y);
-    s.forEach((c, i) => dig(c, -4.8 + i * 0.5, y, 0, c === '1' ? OR : c === '.' ? '#fff' : MINT, 0.8));
-    say(k ? '再平方：' + E[k] : 'ε₀ = 0.1', '小數點後 ' + Math.pow(2, k) + ' 位');
-    await beat(tok, 1600);
-  }
-  say('第 i 步約有 2^i 位正確', '');
-  await beat(tok, 2600);
-  tag('x_{i+1} − x_i = x(ε_{i+1} − ε_i)', 'ptr', 2.8, 4.4);
-  say('相鄰兩次的差', '整數取 floor 變 0 就停');
-  await beat(tok, 3000);
-  const d = []; for (let k = 0; k < 8; k++) d.push(dig('d', 1.2 + k * 0.5, 2.8, 0, B2));
-  tag('x 有 d 位', 'idx', 3, 2.2);
-  say('ε 的 0 夠多就抵掉 x 的 d 位', '0 每步翻倍 → 約 log d 步');
-  for (let k = 0; k < 8; k++) { tint(d[k], '#bbb'); await beat(tok, 260); }
-  await beat(tok, 2600);
+  const row = (k) => { const y = 3.6 - k * 0.7, s = E[k].split(''); tag('step ' + k, 'idx', -6.2, y); s.forEach((c, i) => dig(c, -5.1 + i * 0.42, y, 0, c === '1' ? OR : c === '.' ? '#ffffff' : MINT, 0.8, 0.42)); };
+  await step(tok);                                   // 2737.8 x1 = x(1 + ε1)
+  tag('x₁ = x(1 + ε₁)', 'ptr', -3.6, 6.8);
+  tag('x：真正的答案', 'note', 0.6, 6.8);
+  say('x₁ = x(1 + ε₁)', 'x 是真正的答案，ε 是誤差');
+  await step(tok);                                   // 2746.8 x2 = x(1 + ε2), …
+  tag('x₂ = x(1 + ε₂)、x₃ = x(1 + ε₃)…', 'ptr', -3.6, 6.2);
+  say('每一步都寫成 x(1 + ε_i)');
+  await step(tok);                                   // 2762.8 eight lines of math in the notes
+  prop('file', 5.6, 0, 1.6, 0.9, '講義：八行推導');
+  say('推導有八行，在講義裡');
+  await step(tok);                                   // 2768.8 x_{i+1} = x(1 + c·ε_i²)
+  tag('x_{i+1} = x(1 + c·ε_i²)', 'ptr alt', 2.4, 6.2);
+  say('結果：x_{i+1} = x(1 + 常數 · ε_i²)');
+  await step(tok);                                   // 2799.8 ε_{i+1} ≈ ε_i²
+  tag('ε_{i+1} ≈ ε_i²', 'good', 2.4, 5.5);
+  say('所以 ε_{i+1} ≈ ε_i²');
+  await step(tok);                                   // 2811.8 quadratic convergence
+  say('這就是 quadratic convergence', '平方收斂');
+  await step(tok);                                   // 2838.8 want (1 + ε) → 1, ε → 0
+  tag('要 1 + ε → 1，也就是 ε → 0', 'say', -2.8, 5.4, 0);
+  say('要讓 1 + ε 變成 1', '也就是 ε → 0');
+  await step(tok);                                   // 2857.8 ε < 1 → ε² < ε
+  tag('ε < 1 時：ε² < ε', 'note', -2.8, 4.7, 0);
+  say('ε 小於 1 時，ε² 比 ε 更小');
+  await step(tok);                                   // 2869.8 start with 0.1, square → 0.01
+  row(0); row(1);
+  say('例：ε₀ = 0.1 → 平方 0.01');
+  await step(tok);                                   // 2877.8 0.0001
+  row(2);
+  say('再平方：0.0001');
+  await step(tok);                                   // 2881.8 0.00000001
+  row(3);
+  say('再平方：0.00000001', '好多 0');
+  await step(tok);                                   // 2897.8 step i: 2^i digits
+  tag('第 i 步 ≈ 2^i 位正確', 'good', -1.4, 1.0, 0.6);
+  say('第 i 步大約有 2^i 位正確', '1 → 2 → 4 → 8');
+  await step(tok);                                   // 2966.8 x_{i+1} − x_i = x(ε_{i+1} − ε_i)
+  tag('x_{i+1} − x_i = x(ε_{i+1} − ε_i)', 'ptr', 3.2, 4.4);
+  say('相鄰兩次的差', 'x_{i+1} − x_i = x(ε_{i+1} − ε_i)');
+  await step(tok);                                   // 3003.8 floor → 0: done
+  tag('整數取 floor：差變 0 就停', 'note', 3.2, 3.8);
+  say('整數取 floor 後，差變成 0 就結束');
+  await step(tok);                                   // 3022.8 x has d digits
+  const d = []; for (let k = 0; k < 8; k++) d.push(dig('d', 1.4 + k * 0.5, 2.8, 0, B2, 1));
+  tag('x 有 d 位', 'idx', 3.2, 2.2);
+  say('x 有 d 位（d 位精度）');
+  await step(tok);                                   // 3036.8 the zeros in ε cancel x's digits
+  for (let k = 0; k < 8; k++) { tint(d[k], '#bbbbbb'); await ctx.beat(tok, 180); }
+  say('ε 裡的很多 0', '會把 x 的位數抵掉');
+  await step(tok);                                   // 3057.8 zeros double each step → log d steps
+  tag('0 每步翻倍 → 約 log d 步', 'good', 3.2, 1.4, 0.6);
+  say('0 的個數每步翻倍', '約 log d 步就夠');
+  await step(tok);                                   // 3082.8 good initial guess + this factor
+  tag('初始猜測夠好 + ε² 這個因子 = 收斂快', 'say', 0, 0.2, 1.8);
+  say('要有好的初始猜測', '再證明 ε_{i+1} ≈ ε_i²');
 }]);
 
 // 51:50 問答：對整個答案 binary search 要 log(10^d) ≈ d 步；Newton 只要 log d 步
 FRAG.push(['dcmit2-bs-vs-newton', 'Binary search 整個答案 vs Newton', async (tok) => {
   fresh([0, 4, 12.5], [0, 2.8, 0]);
-  say('對整個 d 位答案做 binary search？', 'log(10^d) = Θ(d) 步');
-  await beat(tok, 3000);
+  const st = buddy('同學', '', PEACH, -6.0, 0, 2.0, 0.7); st.mood('wow');
+  await step(tok);                                   // 3109.8 binary search also takes log?
+  tag('binary search 不也是 log 步？', 'say', -6.0, 1.7, 2.0);
+  say('同學：binary search 不也是 log 步嗎？');
+  await step(tok);                                   // 3126.8 whole thing: log of the whole number = Θ(d)
+  tag('整個答案：log(整個數) = Θ(d) 步', 'ptr', 0, 6.2);
+  say('對整個答案 binary search', '是 log(整個數) ≈ Θ(d) 步');
+  await step(tok);                                   // 3155.8 log(10^d)
+  tag('d 位的數 ≈ 10^d → log₂(10^d) ≈ 3.3d', 'note', 0, 5.6);
+  say('d 位的數大約是 10^d', 'log₂(10^d) ≈ 3.3d 步');
+  await step(tok);                                   // 3167.8 d is the number of digits
   const D = [10, 100, 1000];
   for (let k = 0; k < 3; k++) {
-    const bs = D[k] * Math.log2(10), nw = Math.log2(D[k]), x = -4 + k * 3.6;
+    const bs = D[k] * Math.log2(10), nw = Math.log2(D[k]), x = -2.4 + k * 3.2;
     const b1 = bar(RD, x - 0.5, 0, 0.8), b2 = bar(GR, x + 0.5, 0, 0.8);
-    setBar(b1, Math.log10(bs) * 1.5); setBar(b2, Math.log10(nw) * 1.5 + 0.1);
-    tag(String(Math.round(bs)), 'idx', x - 0.5, Math.log10(bs) * 1.5 + 0.35); tag(nw.toFixed(1), 'idx', x + 0.5, Math.log10(nw) * 1.5 + 0.45);
+    await grow(tok, b1, Math.log10(bs) * 1.4, 250); setBar(b2, Math.log10(nw) * 1.4 + 0.1);
+    tag(String(Math.round(bs)), 'idx', x - 0.5, Math.log10(bs) * 1.4 + 0.35); tag(nw.toFixed(1), 'idx', x + 0.5, Math.log10(nw) * 1.4 + 0.45);
     tag('d = ' + D[k], 'ptr', x, 0, 1.3);
-    await beat(tok, 900);
   }
-  tag('紅：binary search ≈ 3.3d　綠：Newton ≈ log₂ d（對數刻度）', 'idx', 0, 5.6);
-  say('d 是位數，不是數字本身', '數字 N：Newton 約 log log N 步');
-  await beat(tok, 3400);
-  say('binary search 只用來猜第一位', '之後交給 Newton');
-  await beat(tok, 2800);
+  tag('紅：binary search ≈ 3.3d　綠：Newton ≈ log₂ d（對數刻度）', 'idx', 0.8, 5.0);
+  say('d 是位數，不是數字本身');
+  await step(tok);                                   // 3174.8 in terms of the number N: log log N
+  tag('以數字 N 來看：Newton ≈ log log N', 'good', 0.8, 4.4);
+  say('以數字 N 來看', 'Newton 約 log log N 步');
+  await step(tok);                                   // 3179.8 so Newton is faster
+  st.mood('happy'); await st.hop(tok);
+  say('所以 Newton 比較快');
 }]);
   }
 
