@@ -737,11 +737,11 @@ export default function (ctx) {
   const FRAG = [];
   // ═══ dijk.js ═══
   {
-const { V3, fresh, tag, cube, glow, txt, GOLD } = K;
+const { V3, fresh, tag, cube, glow, txt, GOLD, step, buddy, travel, kill, anim } = K;
 const say = ctx.say, beat = ctx.beat, T = ctx.THREE;
 // ─── HlFsexTpM4Q：Dijkstra Algorithm（s, a, b, c 範例；explored／unexplored、D 與 P）───
-// 只用 K 與 ctx：這個片段也會裝進演算法第 7 章。
-const DC = { node: '#cbbd9f', edge: '#a8987c', hot: '#e8b02a', tree: '#2f7fd0', exp: '#2fc092', path: '#c0392b', dim: '#e4dccb' };
+// cued：每個 await step(tok) 等講者說到那一句。只用 K 與 ctx：這個片段也會裝進演算法第 7 章。
+const DC = { node: '#cbbd9f', edge: '#a8987c', hot: '#e8b02a', tree: '#2f7fd0', exp: '#2fc092', path: '#c0392b', dim: '#e4dccb', guide: '#f4a56a' };
 const DPOS = { s: [-4.6, 0], a: [-0.6, -2.6], b: [-0.6, 2.6], c: [4.0, 0] };
 const DEDGES = [['s', 'a', 1], ['s', 'b', 3], ['a', 'b', 1], ['a', 'c', 10], ['b', 'c', 4]];
 function dCls(l, c) { l.element.className = 'lab-label' + (c ? ' ' + c : ''); }
@@ -780,123 +780,213 @@ function dSets(G, S) {
   txt(G.un, 'unexplored：{ ' + all.filter((k) => !S.includes(k)).join(', ') + ' }');
 }
 function dExplore(G, k) { const [x, z] = DPOS[k]; G.N[k].material.color.set(DC.exp); K.move(G.N[k], x, 0.6, z); dCls(G.TG[k], 'ptr alt'); }
+// 探路小幫手：站在頂點旁邊，跟著講者走
+const dAt = (k) => { const [x, z] = DPOS[k]; return V3(x - 1.1, 0, z + 0.9); };
+function dGuide(k = 's') { const p = dAt(k); return buddy('小探', '', DC.guide, p.x, 0, p.z, 0.55); }
+async function dGo(tok, g, k, ms = 800) { await travel(tok, g.g, g.g.position.clone(), dAt(k), ms); }
+// 一個小封包沿著一串頂點走（例如 s → a → b），帶著它算的數字
+async function dWalk(tok, text, path, ms = 650) {
+  const p = (k) => V3(DPOS[k][0], 1.0, DPOS[k][1]);
+  const pk = tag(text, 'pkt', p(path[0]).x, 1.0, p(path[0]).z);
+  for (let i = 1; i < path.length; i++) await travel(tok, pk, p(path[i - 1]), p(path[i]), ms);
+  return pk;
+}
 
 // 00:00 問題：s 到 b 直接 3，經過 a 只要 1 + 1 = 2
 FRAG.push(['dijk-problem', 'Dijkstra：s 到 b，直接 3 還是繞 a 只要 2', async (tok) => {
   fresh([0, 10.5, 8.6], [0, 0, -0.2]);
+  await step(tok);                                   // 0:01 Dijkstra：找最短路徑
+  const g = buddy('小探', '', DC.guide, -5.6, 0, 3.4, 0.7);
+  const q = tag('最短的路怎麼走？', 'say', -5.6, 1.9, 3.4);
+  say('Dijkstra algorithm', '在加權圖上找最短路徑');
+  await step(tok);                                   // 0:17 G 與起點 s
   const G = dGraph();
   G.ex.element.style.visibility = 'hidden'; G.un.element.style.visibility = 'hidden';
-  say('給加權圖 G 與起點 s', '求 s 到每個頂點的最短路徑');
-  glow(G.N.s, GOLD);
-  await beat(tok, 3000);
-  say('想去 b：直接走 s → b', '權重 3');
+  glow(G.N.s, GOLD); txt(G.TG.s, '起點 source'); kill(q);
+  say('給加權圖 G 與起點 s', '邊上的數字 = 權重（距離）');
+  await step(tok);                                   // 0:36 回傳 s 到其他每個頂點的最短路徑
+  for (const k of ['a', 'b', 'c']) txt(G.TG[k], 's → ' + k + '？');
+  g.mood('wow');
+  say('回傳：s 到其他每個頂點的最短路徑', 'a、b、c 各一條');
+  await step(tok);                                   // 1:53 想去 b
+  for (const k of ['a', 'c']) txt(G.TG[k], '');
+  glow(G.N.s, null); glow(G.N.b, GOLD);
+  await travel(tok, g.g, g.g.position.clone(), dAt('s'), 700);
+  say('例：從 s 想去 b', '有兩條路');
+  await step(tok);                                   // 2:00 直接走 s → b：權重 3
   G.e('s', 'b').set(DC.hot, 2);
-  glow(G.N.b, GOLD);
-  await beat(tok, 2600);
-  G.e('s', 'b').set(DC.dim, 0.7);
+  const p1 = await dWalk(tok, '3', ['s', 'b'], 900);
+  say('直接走 s → b', '權重 3');
+  await step(tok);                                   // 2:06 經過 a：1 + 1 = 2
+  kill(p1); G.e('s', 'b').set(DC.dim, 0.7);
   G.e('s', 'a').set(DC.tree, 2); G.e('a', 'b').set(DC.tree, 2);
-  say('經過 a：s → a → b', '1 + 1 = 2 < 3');
-  await beat(tok, 3000);
+  const p2 = await dWalk(tok, '1 + 1 = 2', ['s', 'a', 'b'], 700);
+  say('經過 a：s → a → b', '1 + 1 = 2');
+  await step(tok);                                   // 2:13 最短的是經過 a 的那條
+  txt(p2, '2 < 3 ✓'); txt(G.TG.b, 'shortest = 2'); g.mood('happy'); await g.hop(tok);
   say('最短路徑走 a', 'shortest(s, b) = 2');
-  await beat(tok, 2400);
-  say('a、b、c 都要找最短路徑', 'Dijkstra 怎麼做？');
-  await beat(tok, 2600);
+  await step(tok);                                   // 2:21 每個頂點都要找一條
+  kill(p2); glow(G.N.b, null);
+  for (const k of ['a', 'b', 'c']) { txt(G.TG[k], s2q(k)); glow(G.N[k], GOLD); }
+  g.mood('calm');
+  say('除了起點，每個頂點都要找最小權重的路', 'Dijkstra 怎麼做？');
 }]);
+function s2q(k) { return 's → ' + k + '：最短？'; }
 
 // 02:31 explored／unexplored 兩個集合；D 與 P；初始狀態
 FRAG.push(['dijk-init', 'Dijkstra：兩個集合與 D、P 的初始狀態', async (tok) => {
   fresh([0, 10.5, 8.6], [0, 0, -0.2]);
-  const G = dGraph();
-  say('兩個集合：explored、unexplored', '一開始全部都在 unexplored');
-  await beat(tok, 3200);
-  say('每個頂點寫上 D 與 P', 'D = 最短距離　P = parent');
-  for (const k of ['s', 'a', 'b', 'c']) txt(G.TG[k], k + '：D=?  P=?');
-  await beat(tok, 2800);
-  say('D：只能經過 explored 頂點', '從 s 到它的最短距離');
-  await beat(tok, 2800);
-  say('P：那條路上它的前一個頂點', 'parent');
-  await beat(tok, 2400);
-  dLabel(G, 's', 0, null);
-  glow(G.N.s, GOLD);
-  say('s 到 s：同一點', 'D(s) = 0，沒有 parent');
-  await beat(tok, 2600);
-  glow(G.N.s, null);
-  for (const k of ['a', 'b', 'c']) { dLabel(G, k, Infinity, null); glow(G.N[k], GOLD); }
-  say('沒有 explored 頂點可經過', 'a、b、c 的 D = ∞，沒有 parent');
-  await beat(tok, 3000);
-  for (const k of ['a', 'b', 'c']) glow(G.N[k], null);
+  const G = dGraph(0);
+  G.ex.element.style.visibility = 'hidden'; G.un.element.style.visibility = 'hidden';
+  const g = dGuide('s');
+  await step(tok);                                   // 2:38 兩個集合
+  G.ex.element.style.visibility = '';
+  say('第一步：把頂點分成兩個集合', '第一個叫 explored（已探索）');
+  await step(tok);                                   // 2:43 explored / unexplored
+  G.un.element.style.visibility = '';
+  say('另一個叫 unexplored（還沒探索）', '');
+  await step(tok);                                   // 3:05 一開始全部 unexplored
+  for (const k of ['s', 'a', 'b', 'c']) glow(G.N[k], GOLD);
+  say('一開始全部都在 unexplored', 's、a、b、c');
+  await step(tok);                                   // 3:15 每個頂點寫上 D 與 P
+  for (const k of ['s', 'a', 'b', 'c']) { glow(G.N[k], null); txt(G.TG[k], k + '：D=?  P=?'); }
+  say('每個頂點寫上 D 與 P', '名字旁邊的兩個小標記');
+  await step(tok);                                   // 3:41 D = 從 source 到它的最短距離
+  const nD = tag('D = 從 s 到這個頂點的最短距離', 'note', 0, 0.3, 4.4);
+  say('D：從 s 到它的最短距離', 'D = distance');
+  await step(tok);                                   // 4:08 路徑只能經過 explored 頂點
+  txt(nD, 'D 的路：只能經過 explored 的頂點');
+  g.look(1);
+  say('但有條件：路上只能經過 explored 頂點', '還沒探索的不能借道');
+  await step(tok);                                   // 4:50 P = parent
+  txt(nD, 'P = 那條路上，它的前一個頂點（parent）');
+  say('P：那條路上它的前一個頂點', 'P = parent');
+  await step(tok);                                   // 5:18 從 s 開始
+  kill(nD); glow(G.N.s, GOLD); g.look(0);
+  say('開始！先看 s', 's 到 s 的距離？');
+  await step(tok);                                   // 5:29 D(s) = 0，沒有 parent
+  dLabel(G, 's', 0, null); g.mood('happy'); await g.hop(tok);
+  say('同一個點：D(s) = 0', '沒有 parent');
+  await step(tok);                                   // 5:43 a：沒有 explored 頂點可經過
+  glow(G.N.s, null); glow(G.N.a, GOLD); g.mood('wow');
+  await dGo(tok, g, 'a');
+  const blk = tag('沒有 explored 頂點可以借道', 'bad', -0.6, 1.9, -2.6);
+  say('再看 a：要找只經過 explored 的路', '可是 explored 還是空的');
+  await step(tok);                                   // 6:08 到不了 → ∞
+  kill(blk); dLabel(G, 'a', Infinity, null); g.mood('sad');
+  say('到不了 a → D(a) = ∞', '沒有路，也就沒有 parent');
+  await step(tok);                                   // 6:21 b、c 也是 ∞
+  glow(G.N.a, null);
+  for (const k of ['b', 'c']) { dLabel(G, k, Infinity, null); glow(G.N[k], GOLD); }
+  say('b、c 一樣到不了', 'D(b) = D(c) = ∞');
+  await step(tok);                                   // 6:32 初始狀態
+  for (const k of ['b', 'c']) glow(G.N[k], null);
+  await dGo(tok, g, 's'); g.mood('calm');
   say('這就是初始狀態', 's=0　a=∞　b=∞　c=∞');
-  await beat(tok, 2600);
 }]);
 
 // 07:15 explore s，再 explore a：b 從 3 改成 2、c 變成 11
 FRAG.push(['dijk-explore-sa', 'Dijkstra：explore s 與 a，b 從 3 更新成 2', async (tok) => {
   fresh([0, 10.5, 8.6], [0, 0, -0.2]);
-  const G = dGraph();
+  const G = dGraph(0);
   dLabel(G, 's', 0, null); for (const k of ['a', 'b', 'c']) dLabel(G, k, Infinity, null);
-  say('unexplored 裡 D 最小的是 s', '把 s 移到 explored');
-  await beat(tok, 2600);
-  dExplore(G, 's'); dSets(G, ['s']);
-  await beat(tok, 1200);
+  const g = dGuide('s');
+  await step(tok);                                   // 7:17 規則：unexplored 裡 D 最小的去 explore
+  for (const k of ['s', 'a', 'b', 'c']) dCls(G.TG[k], 'ptr alt');
+  say('規則：unexplored 裡 D 最小的', '把它移到 explored');
+  await step(tok);                                   // 7:26 最小的是 s
+  for (const k of ['a', 'b', 'c']) dCls(G.TG[k], 'ptr');
+  glow(G.N.s, GOLD); g.mood('happy'); await g.hop(tok);
+  say('D 最小的是 s（0）', 'explore s');
+  await step(tok);                                   // 7:41 s 移到 explored
+  glow(G.N.s, null); dExplore(G, 's'); dSets(G, ['s']);
+  say('s 移到 explored', 'unexplored 剩 a、b、c');
+  await step(tok);                                   // 7:53 經過 s 到 a：1
   G.e('s', 'a').set(DC.hot, 1.8); glow(G.N.a, GOLD);
+  const p = await dWalk(tok, '0 + 1', ['s', 'a']); kill(p);
   dLabel(G, 'a', 1, 's');
-  say('經過 s 到 a', 'D(a) = 0 + 1 = 1，P(a) = s');
-  await beat(tok, 2600);
+  say('經過 s 可以到 a', 'D(a) = 1，P(a) = s');
+  await step(tok);                                   // 8:18 經過 s 到 b：3
   glow(G.N.a, null); G.e('s', 'a').set(DC.tree, 2);
   G.e('s', 'b').set(DC.hot, 1.8); glow(G.N.b, GOLD);
+  const p2 = await dWalk(tok, '0 + 3', ['s', 'b']); kill(p2);
   dLabel(G, 'b', 3, 's');
-  say('經過 s 到 b', 'D(b) = 0 + 3 = 3，P(b) = s');
-  await beat(tok, 2600);
-  glow(G.N.b, null); G.e('s', 'b').set(DC.tree, 2);
+  say('經過 s 可以到 b', 'D(b) = 3，P(b) = s');
+  await step(tok);                                   // 8:25 到不了 c
+  glow(G.N.b, null); G.e('s', 'b').set(DC.tree, 2); glow(G.N.c, GOLD);
+  const nc = tag('只經過 s：到不了', 'bad', 4.0, 1.9, 0);
   say('只經過 s 到不了 c', 'D(c) 還是 ∞');
-  await beat(tok, 2400);
-  say('D 最小的是 a（1）', '把 a 移到 explored');
+  await step(tok);                                   // 8:43 再取 D 最小的 a
+  kill(nc); glow(G.N.c, null);
+  await dGo(tok, g, 'a');
   dExplore(G, 'a'); dSets(G, ['s', 'a']);
-  await beat(tok, 2600);
+  say('unexplored 中 D 最小的是 a（1）', 'a 移到 explored');
+  await step(tok);                                   // 9:00 經過 a 到 b：2
   G.e('a', 'b').set(DC.hot, 1.8); glow(G.N.b, GOLD);
-  say('經過 a 到 b：1 + 1 = 2', '2 < 3 → 更新');
-  await beat(tok, 2600);
-  G.e('s', 'b').set(DC.dim, 0.7); G.e('a', 'b').set(DC.tree, 2);
-  dLabel(G, 'b', 2, 'a');
-  say('b 改成 D=2、P=a', '比較大就不換：只留最小');
-  await beat(tok, 2800);
+  const p3 = await dWalk(tok, '1 + 1 = 2', ['s', 'a', 'b']);
+  say('現在可以經過 a 到 b', '1 + 1 = 2');
+  await step(tok);                                   // 9:11 2 < 3 → 更新
+  kill(p3); G.e('s', 'b').set(DC.dim, 0.7); G.e('a', 'b').set(DC.tree, 2);
+  dLabel(G, 'b', 2, 'a'); g.mood('happy'); await g.hop(tok);
+  say('2 < 3 → 更新', 'D(b) = 2，P(b) = a');
+  await step(tok);                                   // 9:37 比較大就不換
   glow(G.N.b, null);
+  const nb = tag('新的路比較長 → 不換', 'note', -0.6, 2.0, 2.6);
+  say('只在找到更短的路時才換', '永遠留最小的');
+  await step(tok);                                   // 10:07 經過 a 到 c：11
+  kill(nb);
   G.e('a', 'c').set(DC.hot, 1.8); glow(G.N.c, GOLD);
-  dLabel(G, 'c', 11, 'a');
-  say('經過 a 到 c：1 + 10 = 11', '11 < ∞ → D(c)=11，P(c)=a');
-  await beat(tok, 2800);
-  glow(G.N.c, null); G.e('a', 'c').set(DC.tree, 2);
-  await beat(tok, 2200);
+  const p4 = await dWalk(tok, '1 + 10 = 11', ['s', 'a', 'c']); kill(p4);
+  dLabel(G, 'c', 11, 'a'); G.e('a', 'c').set(DC.tree, 2);
+  say('經過 a 到 c：1 + 10 = 11 < ∞', 'D(c) = 11，P(c) = a');
 }]);
 
 // 10:27 explore b：c 從 11 改成 2 + 4 = 6；explore c，結束
 FRAG.push(['dijk-explore-bc', 'Dijkstra：explore b，c 從 11 更新成 6', async (tok) => {
   fresh([0, 10.5, 8.6], [0, 0, -0.2]);
-  const G = dGraph();
+  const G = dGraph(0);
   dExplore(G, 's'); dExplore(G, 'a'); dSets(G, ['s', 'a']);
   dLabel(G, 's', 0, null); dLabel(G, 'a', 1, 's'); dLabel(G, 'b', 2, 'a'); dLabel(G, 'c', 11, 'a');
   G.e('s', 'a').set(DC.tree, 2); G.e('a', 'b').set(DC.tree, 2); G.e('a', 'c').set(DC.tree, 2); G.e('s', 'b').set(DC.dim, 0.7);
-  say('目前：s、a 已 explored', 'b：D=2　c：D=11');
-  await beat(tok, 2800);
-  say('unexplored 中 D 最小的是 b', '把 b 移到 explored');
+  const g = dGuide('a');
+  await step(tok);                                   // 10:27 D 最小的 b 去 explore
+  await dGo(tok, g, 'b');
   dExplore(G, 'b'); dSets(G, ['s', 'a', 'b']);
-  await beat(tok, 2600);
-  G.e('b', 'c').set(DC.hot, 1.8); glow(G.N.c, GOLD);
-  say('b 到 c 的邊 = 4', '加上 b 已算好的 D(b) = 2');
-  await beat(tok, 2800);
-  say('2 + 4 = 6 < 11', '更新：D(c) = 6，P(c) = b');
-  G.e('a', 'c').set(DC.dim, 0.7); G.e('b', 'c').set(DC.tree, 2);
-  dLabel(G, 'c', 6, 'b');
-  await beat(tok, 3000);
-  glow(G.N.c, null);
-  say('新距離 = D(u) + 邊的權重', 'D(v) = min(D(v), D(u) + w(u, v))');
-  await beat(tok, 3000);
+  say('unexplored 中 D 最小的是 b（2）', 'b 移到 explored');
+  await step(tok);                                   // 10:46 看 c
+  glow(G.N.c, GOLD); g.look(1);
+  say('b 進來了，再看 c', '經過 s、a、b 有沒有更短的路？');
+  await step(tok);                                   // 10:56 b 到 c 的邊 = 4
+  G.e('b', 'c').set(DC.hot, 1.8);
+  say('b 到 c 的邊 = 4', '');
+  await step(tok);                                   // 11:04 4 + D(b)
+  const p = await dWalk(tok, 'D(b) + 4 = 2 + 4', ['b', 'c'], 900);
+  say('加上 b 已經算好的 D(b) = 2', '2 + 4');
+  await step(tok);                                   // 11:15 = 6 < 11 → 更新
+  txt(p, '6 < 11 ✓'); G.e('a', 'c').set(DC.dim, 0.7);
+  txt(G.TG.c, 'c：D=6 P=a'); g.mood('happy'); await g.hop(tok);
+  say('2 + 4 = 6 < 11', '更新：D(c) = 6');
+  await step(tok);                                   // 11:22 parent 是 b
+  kill(p); G.e('b', 'c').set(DC.tree, 2); dLabel(G, 'c', 6, 'b');
+  say('parent 也一起換', 'P(c) = b');
+  await step(tok);                                   // 11:29 更新規則
+  glow(G.N.c, null); g.mood('calm');
+  const rule = tag('新距離 = D(explored 那端) + 邊的權重', 'note', 0, 0.3, 4.4);
+  say('更新規則', 'D(v) = min(D(v), D(u) + w(u, v))');
+  await step(tok);                                   // 11:47 我做了什麼：4 加 2
+  txt(rule, '剛才：w(b, c) + D(b) = 4 + 2 = 6');
+  say('回頭看剛才：4 加上已有的 2', '得到 6');
+  await step(tok);                                   // 11:58 最後一個 c 進 explored
+  kill(rule);
+  await dGo(tok, g, 'c');
   dExplore(G, 'c'); dSets(G, ['s', 'a', 'b', 'c']);
-  say('最後 explore c：全部 explored', '演算法結束');
-  await beat(tok, 2800);
+  say('最後把 c 移到 explored', '');
+  await step(tok);                                   // 12:15 全部 explored → 結束
+  g.mood('happy'); await g.hop(tok);
+  say('unexplored 空了', '演算法結束');
 }]);
 
-// 12:22 沿 P 回推：a、b、c 的最短路徑
+// 12:19 沿 P 回推：a、b、c 的最短路徑
 FRAG.push(['dijk-path', 'Dijkstra：沿 parent 回推最短路徑', async (tok) => {
   fresh([0, 10.5, 8.6], [0, 0, -0.2]);
   const G = dGraph(0);
@@ -904,31 +994,46 @@ FRAG.push(['dijk-path', 'Dijkstra：沿 parent 回推最短路徑', async (tok) 
   dSets(G, ['s', 'a', 'b', 'c']);
   dLabel(G, 's', 0, null); dLabel(G, 'a', 1, 's'); dLabel(G, 'b', 2, 'a'); dLabel(G, 'c', 6, 'b');
   for (const e of G.E) e.set(DC.dim, 0.7);
-  for (const [u, v] of [['s', 'a'], ['a', 'b'], ['b', 'c']]) G.e(u, v).set(DC.tree, 1.6);
-  say('跑完後每個頂點都有 D 和 P', 'P 連起來就是最短路徑樹');
-  await beat(tok, 2800);
-  const routes = [['a', ['s', 'a'], 1], ['b', ['s', 'a', 'b'], 2], ['c', ['s', 'a', 'b', 'c'], 6]];
-  for (const [dst, path, cost] of routes) {
-    for (const [u, v] of [['s', 'a'], ['a', 'b'], ['b', 'c']]) G.e(u, v).set(DC.tree, 1.6);
-    for (const k of ['s', 'a', 'b', 'c']) glow(G.N[k], null);
-    glow(G.N[dst], GOLD);
-    say('終點 ' + dst + '：沿 P 往回走', path.slice().reverse().join(' ← '));
-    await beat(tok, 1600);
-    for (let i = path.length - 1; i > 0; i--) {
-      G.e(path[i - 1], path[i]).set(DC.path, 2.6);
-      glow(G.N[path[i - 1]], GOLD);
-      await beat(tok, 700);
-    }
-    say('反過來就是路徑', path.join(' → ') + '，cost = ' + cost);
-    await beat(tok, 2400);
-  }
-  await beat(tok, 1000);
+  const g = dGuide('s');
+  const reset = () => { for (const [u, v] of [['s', 'a'], ['a', 'b'], ['b', 'c']]) G.e(u, v).set(DC.tree, 1.6); for (const k of ['s', 'a', 'b', 'c']) glow(G.N[k], null); };
+  await step(tok);                                   // 12:19 要找出 s 到 a、b、c 的路
+  reset();
+  say('跑完後每個頂點都有 D 和 P', '要找 s 到 a、b、c 的實際路徑');
+  await step(tok);                                   // 12:37 a：P(a) = s
+  glow(G.N.a, GOLD); await dGo(tok, g, 'a');
+  G.e('s', 'a').set(DC.path, 2.6); glow(G.N.s, GOLD);
+  say('終點 a：P(a) = s', '路徑 s → a，cost = 1');
+  await step(tok);                                   // 12:46 b：P(b) = a
+  reset(); glow(G.N.b, GOLD); await dGo(tok, g, 'b');
+  G.e('a', 'b').set(DC.path, 2.6); glow(G.N.a, GOLD);
+  say('終點 b：P(b) = a', '先走回 a');
+  await step(tok);                                   // 12:54 a 的 parent 是 s
+  await dGo(tok, g, 'a');
+  G.e('s', 'a').set(DC.path, 2.6); glow(G.N.s, GOLD);
+  say('a 的 parent 是 s', 's → a → b');
+  await step(tok);                                   // 13:09 cost = D
+  const nc = tag('cost = D(b) = 2', 'note', -0.6, 2.0, 2.6);
+  say('cost 不用重算', '就是那個頂點的 D：2');
+  await step(tok);                                   // 13:16 c：P(c) = b
+  kill(nc); reset(); glow(G.N.c, GOLD); await dGo(tok, g, 'c');
+  G.e('b', 'c').set(DC.path, 2.6); glow(G.N.b, GOLD);
+  await dGo(tok, g, 'b');
+  G.e('a', 'b').set(DC.path, 2.6); glow(G.N.a, GOLD);
+  say('終點 c：P(c) = b，P(b) = a', '一路往回走');
+  await step(tok);                                   // 13:26 a 的 parent 是 s，cost 6
+  await dGo(tok, g, 'a');
+  G.e('s', 'a').set(DC.path, 2.6); glow(G.N.s, GOLD);
+  say('P(a) = s：反過來就是路徑', 's → a → b → c，cost = 6');
+  await step(tok);                                   // 13:36 這就是 Dijkstra
+  await dGo(tok, g, 's'); g.mood('happy'); await g.hop(tok);
+  say('這就是 Dijkstra', '在加權圖上找出最短路徑');
 }]);
   }
 
   // ═══ galgo.js ═══
   {
-const { V3, fresh, tag, cube, move, fly, kill, glow, txt, relabel, anim, arrow, ghostBox, line, GOLD } = K;
+const { V3, fresh, tag, cube, move, fly, kill, glow, txt, relabel, anim, arrow, ghostBox, line, GOLD, step, buddy, travel } = K;
+// cued：每個 await step(tok) 等講者說到那一句；step 之間只有短短的動作。
 const T = ctx.THREE;
 // ─── 共用：地板上的圖（頂點方塊＋圓柱邊＋權重標籤） ───
 const GC = { node: '#cbbd9f', edge: '#a8987c', hot: '#e8b02a', tree: '#2f7fd0', bad: '#d64545', dim: '#e4dccb', ok: '#2fc092', crit: '#c0392b', pq: '#e6c36a' };
@@ -971,88 +1076,159 @@ function gG(nodes, edges, o = {}) {
 }
 function gTag(m, text, cls, dy = 1.1) { const [x, z] = m.userData.xz; return tag(text, cls || 'ptr', x, dy, z); }
 function gUF(keys) { const p = {}; keys.forEach((k) => { p[k] = k; }); const f = (x) => (p[x] === x ? x : (p[x] = f(p[x]))); return { f, u(a, b) { p[f(a)] = f(b); } }; }
+// 小幫手：一個會呼吸、會跳的小角色（站在地板上）
+function gBud(name, x, z, color = '#f4a56a', size = 0.6) { return buddy(name, '', color, x, 0, z, size); }
+// 一個小封包（'pkt'）從 a 走到 b（Vector3）
+async function gPkt(tok, text, a, b, ms = 800) { const p = tag(text, 'pkt', a.x, a.y, a.z); await travel(tok, p, a, b, ms); return p; }
+const gAt = (m, dy = 1.0) => { const [x, z] = m.userData.xz; return V3(x, dy, z); };
 
-// ════════ 交大彭文志 Lec21 Graph (4/4)：topological order、AOV、AOE、critical path ════════
+// ════════ Yx0dJFe1VdM：交大彭文志 Lec21 Graph (4/4)：topological order、AOV、AOE、critical path ════════
 // 洪逸／Horowitz 的 AOV 例：0→1,2,3；1→4；2→4,5；3→4,5
 const TPOS = { 0: [-5, 0], 1: [-2, -2.6], 2: [-2, 0], 3: [-2, 2.6], 4: [2.2, -1.4], 5: [2.2, 2] };
 const TEDG = [[0, 1], [0, 2], [0, 3], [1, 4], [2, 4], [2, 5], [3, 4], [3, 5]];
 const tSlot = (k) => [-3.3 + k * 1.3, -4.6];
+const TSEQ = [0, 3, 2, 5, 1, 4];
+// 依序把 sequence 的方塊放到下方的格子
+function tSeq(seq, drop = 3) { const S = {}; seq.forEach((v, k) => { const [x, z] = tSlot(k); S[v] = cube(v, '#9b7ef4', [0.9, 0.55, 0.8], x, 0.3, z, drop); }); return S; }
 
-// 00:00 AOV network：修課的先修關係
+// 00:00 AOV network：頂點 = activity，箭頭 = 順序；修課的例子
 FRAG.push(['galgo-aov-course', 'AOV network：課程的先修關係', async (tok) => {
   fresh([0, 9.6, 9.4], [0, 0, -0.4]);
-  const G = gG({ C3: [-4.6, -1.8], C6: [-4.6, 1.8], C7: [-0.6, 0], C10: [3.8, 0] }, [['C3', 'C7'], ['C6', 'C7'], ['C7', 'C10']], { dir: true });
-  tag('資料結構', 'idx', -4.6, 0.2, -0.9); tag('演算法', 'idx', -0.6, 0.2, 0.9); tag('Programming Language', 'idx', 3.8, 0.2, 0.9);
-  say('AOV：Activity On Vertex', '頂點 = activity（修一門課）');
-  await beat(tok, 3000);
-  say('edge 的箭頭 = 先後順序', '沒有權重');
-  await beat(tok, 2600);
-  glow(G.N.C10, GOLD); glow(G.N.C7, GOLD); G.e('C7', 'C10').set(GC.hot, 1.8);
-  say('修 C10 PL 要先修 C7', 'C7 = 演算法');
-  await beat(tok, 2800);
-  glow(G.N.C10, null); glow(G.N.C3, GOLD); glow(G.N.C6, GOLD);
-  G.e('C3', 'C7').set(GC.hot, 1.8); G.e('C6', 'C7').set(GC.hot, 1.8);
+  const b = gBud('小修', 5.6, 3.2, '#7cb8ee');
+  let G = null, S = null, C = null;
+  await step(tok);                                   // 0:00 AOV：頂點代表 activity
+  G = gG(TPOS, TEDG, { dir: true });
+  for (const e of G.E) e.hide(true);
+  for (const k of Object.keys(TPOS)) glow(G.N[k], GOLD);
+  say('AOV：Activity On Vertex', '頂點 = 一件要做的事（activity）');
+  await step(tok);                                   // 0:39 箭頭代表順序
+  for (const k of Object.keys(TPOS)) glow(G.N[k], null);
+  for (const e of G.E) e.hide(false);
+  say('edge 的箭頭 = 先後順序', '通常由左往右');
+  await step(tok);                                   // 1:01 推出 topological order
+  const nt = tag('由順序關係推出：topological order', 'say', 0, 0.3, -3.4);
+  say('從 AOV 可以推出', 'topological order');
+  await step(tok);                                   // 1:31 輸出是一個 sequence
+  kill(nt);
+  S = tSeq(TSEQ);
+  say('它的輸出是一個 sequence', '一條直線排好的順序（linear order）');
+  await step(tok);                                   // 1:39 任兩點的前後關係都保留
+  for (const k of [0, 4]) { glow(S[k], GOLD); glow(G.N[k], GOLD); }
+  say('圖上任取兩點的前後關係', '在 sequence 裡都會保留（maintain）');
+  await step(tok);                                   // 1:57 例子：大學修課系統
+  for (const k of [0, 4]) { glow(S[k], null); glow(G.N[k], null); }
+  fresh([0, 9.6, 9.4], [0, 0, -0.4]);
+  const b2 = gBud('小修', 5.6, 3.2, '#7cb8ee'); b2.mood('wow');
+  tag('15 門課，各有先修課程', 'note', 0, 0.3, -3.4);
+  say('最生活的例子：大學修課系統', '有些課要先修過別的課才能修');
+  await step(tok);                                   // 2:16 修 C10 PL 要先修 C7
+  C = gG({ C3: [-4.6, -1.8], C6: [-4.6, 1.8], C7: [-0.6, 0], C10: [3.8, 0] }, [['C3', 'C7'], ['C6', 'C7'], ['C7', 'C10']], { dir: true });
+  for (const e of C.E) e.hide(true);
+  tag('Programming Language', 'idx', 3.8, 0.2, 0.9); tag('演算法', 'idx', -0.6, 0.2, 0.9);
+  glow(C.N.C10, GOLD); glow(C.N.C7, GOLD); C.e('C7', 'C10').hide(false); C.e('C7', 'C10').set(GC.hot, 1.8);
+  b2.mood('calm');
+  say('要修 C10（Programming Language）', '先修課是 C7（演算法）');
+  await step(tok);                                   // 2:22 C7 要先修 C3、C6
+  glow(C.N.C10, null); glow(C.N.C3, GOLD); glow(C.N.C6, GOLD);
+  for (const [u, v] of [['C3', 'C7'], ['C6', 'C7']]) { C.e(u, v).hide(false); C.e(u, v).set(GC.hot, 1.8); }
+  tag('資料結構', 'idx', -4.6, 0.2, -0.9);
   say('C7 又要先修 C3 和 C6', 'C3 = Data Structure');
-  await beat(tok, 2800);
-  for (const k of ['C3', 'C6', 'C7']) glow(G.N[k], null);
+  await step(tok);                                   // 2:48 畫成 AOV：頂點 = 課程
+  for (const k of ['C3', 'C6', 'C7']) glow(C.N[k], null);
+  for (const e of C.E) e.set(GC.edge, 1);
+  say('畫成圖就是一個 AOV', '頂點 = 課程：修一門課 = 一個 activity');
+  await step(tok);                                   // 3:06 箭頭沒有 weight，只有方向
   const seq = ['C3', 'C6', 'C7', 'C10'];
-  for (let k = 0; k < seq.length; k++) { cube(seq[k], '#9b7ef4', [0.95, 0.55, 0.8], -2.4 + k * 1.6, 0.3, -4.4, 3); await beat(tok, 450); }
-  tag('topological order', 'ptr alt', -4.6, 0.3, -4.4);
-  say('topological order：一條線性序列', '圖上的前後關係在序列裡都保留');
-  await beat(tok, 3200);
+  await anim(tok, 1600, (u) => { const k = Math.ceil(u * 4); for (let i = 0; i < k; i++) { const m = C.N[seq[i]]; m.material.color.set('#9b7ef4'); } });
+  b2.mood('happy'); await b2.hop(tok);
+  say('箭頭上沒有 weight', '只代表順序：C3、C6 → C7 → C10');
 }]);
 
-// 02:42 topological order 的性質：0 3 2 5 1 4，任取兩點順序都保留
+// 03:27 topological order 的性質：0 3 2 5 1 4，任取兩點順序都保留
 FRAG.push(['galgo-topo-order', 'Topological order：0 3 2 5 1 4 保留前後關係', async (tok) => {
   fresh([0, 10, 9], [0, 0, -0.8]);
-  const G = gG(TPOS, TEDG, { dir: true });
-  say('AOV 的 topological order', '輸出是一個 sequence');
-  await beat(tok, 2400);
-  const seq = [0, 3, 2, 5, 1, 4], S = {};
-  for (let k = 0; k < seq.length; k++) { const [x, z] = tSlot(k); S[seq[k]] = cube(seq[k], '#9b7ef4', [0.9, 0.55, 0.8], x, 0.3, z, 3); await beat(tok, 350); }
-  say('sequence：0 3 2 5 1 4', '任取兩個數字看看');
-  await beat(tok, 2400);
-  for (const [a, b] of [[3, 5], [3, 4]]) {
-    glow(S[a], GOLD); glow(S[b], GOLD); glow(G.N[a], GOLD); glow(G.N[b], GOLD);
-    G.e(a, b).set(GC.hot, 2);
-    say('取 ' + a + ' 和 ' + b + '：序列中 ' + a + ' 在前', '圖上也有 ' + a + ' → ' + b);
-    await beat(tok, 3000);
-    for (const k of [a, b]) { glow(S[k], null); glow(G.N[k], null); }
-    G.e(a, b).set(GC.edge, 1);
-  }
-  say('前後順序關係都被 maintain', 'u → v ⇒ 序列中 u 在 v 之前');
-  await beat(tok, 3000);
+  const G = gG(TPOS, TEDG, { dir: true, drop: 0 });
+  const b = gBud('小修', 5.6, 3.2, '#7cb8ee');
+  let S = null;
+  const pair = (a, c) => { for (const k of Object.keys(S)) { glow(S[k], null); glow(G.N[k], null); } for (const e of G.E) e.set(GC.edge, 1); for (const k of [a, c]) { glow(S[k], GOLD); glow(G.N[k], GOLD); } G.e(a, c).set(GC.hot, 2); };
+  await step(tok);                                   // 3:27 給 AOV，輸出 sequence
+  say('給一個 AOV network', 'topological order 的輸出是一個 sequence');
+  await step(tok);                                   // 3:37 0 3 2 5 1 4
+  S = tSeq(TSEQ);
+  say('例如：0 3 2 5 1 4', '');
+  await step(tok);                                   // 3:48 3 和 5
+  pair(3, 5);
+  say('任取 3 和 5：序列裡 3 在 5 前面', '圖上也是 3 → 5');
+  await step(tok);                                   // 4:07 3 和 4
+  pair(3, 4);
+  say('3 和 4 也一樣', '序列裡 3 在前，圖上 3 → 4');
+  await step(tok);                                   // 4:16 任兩點都保留
+  for (const k of Object.keys(S)) { glow(S[k], null); glow(G.N[k], null); }
+  for (const e of G.E) e.set(GC.tree, 1.3);
+  b.mood('happy'); await b.hop(tok);
+  say('任意兩點的前後關係都被 maintain', 'u → v ⇒ 序列中 u 在 v 之前');
 }]);
 
-// 04:24 產生方式：in-degree 0 的輸出 → 更新 in-degree → 重複
+// 04:25 產生方式：in-degree 0 的輸出 → 更新 in-degree → 重複
 FRAG.push(['galgo-topo-steps', 'Topological sort：輸出 in-degree 0、更新、重複', async (tok) => {
   fresh([0, 10, 9], [0, 0, -0.8]);
-  const G = gG(TPOS, TEDG, { dir: true });
+  const G = gG(TPOS, TEDG, { dir: true, drop: 0 });
+  const b = gBud('小修', 5.6, 3.2, '#7cb8ee');
   const indeg = { 0: 0, 1: 1, 2: 1, 3: 1, 4: 3, 5: 2 }, IT = {};
-  for (const k of Object.keys(TPOS)) IT[k] = gTag(G.N[k], 'in=' + indeg[k], 'idx');
-  say('1. in-degree = 0 的頂點輸出', '2. 更新它指到的頂點 in-degree　3. 重複');
-  await beat(tok, 3400);
-  const order = [0, 3, 2, 5, 1, 4];
-  const why = { 0: '只有 0 的 in-degree 是 0', 3: '1、2、3 都是 0：任選一個，選 3', 2: '剩 1、2：選 2', 5: '5 變成 0', 1: '輸出 1', 4: '最後是 4' };
-  for (let k = 0; k < order.length; k++) {
-    const v = order[k];
-    glow(G.N[v], GOLD);
-    say(why[v], '輸出 ' + v);
-    await beat(tok, 2000);
-    kill(IT[v]);
-    const [x, z] = tSlot(k);
-    move(G.N[v], x, 0.3, z);
-    const outs = G.E.filter((e) => e.u === String(v));
-    for (const e of outs) { e.set(GC.dim, 0.6); indeg[e.v]--; txt(IT[e.v], 'in=' + indeg[e.v]); glow(G.N[e.v], '#3a2a00'); }
-    if (outs.length) { say('更新 ' + outs.map((e) => e.v).join('、') + ' 的 in-degree', '每個 −1'); await beat(tok, 1800); }
-    for (const e of outs) glow(G.N[e.v], null);
-    glow(G.N[v], null);
-  }
-  say('topological order：0 3 2 5 1 4', '所有頂點都輸出就結束');
-  await beat(tok, 2800);
-  tag('0 1 2 3 5 4 也合法', 'ptr alt', 2.6, 0.3, -3.2);
-  say('同時有多個 0 時任選', 'topological order 不唯一');
-  await beat(tok, 3000);
+  let k = 0;
+  const rules = tag('', 'say', 0, 0.3, 4.3);
+  const out = async (v) => { glow(G.N[v], null); kill(IT[v]); const [x, z] = tSlot(k++); move(G.N[v], x, 0.3, z); await anim(tok, 600, () => {}); };
+  const upd = (v) => { const outs = G.E.filter((e) => e.u === String(v)); for (const e of outs) { e.set(GC.dim, 0.6); indeg[e.v]--; txt(IT[e.v], 'in=' + indeg[e.v]); glow(G.N[e.v], '#3a2a00'); } return outs.map((e) => e.v); };
+  const unglow = () => { for (const v of Object.keys(TPOS)) glow(G.N[v], null); };
+  await step(tok);                                   // 4:25 怎麼產生？
+  say('怎麼從 AOV 產生 topological order？', '方法很簡單');
+  await step(tok);                                   // 4:50 步驟 1：in-degree 0 輸出
+  for (const v of Object.keys(TPOS)) IT[v] = gTag(G.N[v], 'in=' + indeg[v], 'idx');
+  txt(rules, '1. in-degree = 0 的頂點輸出');
+  say('步驟 1：in-degree = 0（沒有人指向它）', '就可以輸出');
+  await step(tok);                                   // 5:12 步驟 2：更新 in-degree
+  txt(rules, '1. in-degree 0 輸出　2. 它指到的頂點 in-degree −1');
+  say('步驟 2：它指到的那些頂點', 'in-degree 要更新（−1）');
+  await step(tok);                                   // 5:27 步驟 3：重複
+  txt(rules, '1. 輸出 in-degree 0　2. 更新 in-degree　3. 重複 1、2');
+  say('步驟 3：重複 1、2', '');
+  await step(tok);                                   // 5:43 只有 0 的 in-degree 是 0
+  glow(G.N[0], GOLD);
+  say('原圖中 in-degree 是 0 的', '只有 0');
+  await step(tok);                                   // 5:52 輸出 0
+  await out(0);
+  say('輸出 0', 'sequence 第一個是 0');
+  await step(tok);                                   // 6:05 更新 1、2、3
+  upd(0);
+  say('0 指到 1、2、3：in-degree 各 −1', '1、2、3 都變成 0');
+  await step(tok);                                   // 6:37 回到步驟 1：有三個 0
+  unglow(); for (const v of [1, 2, 3]) glow(G.N[v], GOLD);
+  say('回到步驟 1', 'in-degree 0 的有三個：1、2、3');
+  await step(tok);                                   // 6:45 任取一個：取 3
+  for (const v of [1, 2]) glow(G.N[v], null);
+  await out(3);
+  say('任取一個都可以', '這個例子取 3');
+  await step(tok);                                   // 7:02 更新 4、5
+  upd(3);
+  say('3 指到 4、5', '4、5 的 in-degree −1');
+  await step(tok);                                   // 7:19 剩 1、2：取 2
+  unglow(); for (const v of [1, 2]) glow(G.N[v], GOLD);
+  glow(G.N[1], null);
+  await out(2);
+  say('in-degree 0 的剩 1 和 2', '取 2 輸出');
+  await step(tok);                                   // 7:28 更新 4、5
+  upd(2);
+  say('2 指到 4、5', '再更新它們的 in-degree');
+  await step(tok);                                   // 7:36 依此類推
+  unglow();
+  for (const v of [5, 1]) { glow(G.N[v], GOLD); await out(v); upd(v); }
+  unglow();
+  say('依此類推：5、1 輸出', '');
+  await step(tok);                                   // 7:51 全部輸出就結束
+  await out(4);
+  b.mood('happy'); await b.hop(tok);
+  txt(rules, 'topological order：0 3 2 5 1 4');
+  say('所有頂點都輸出就結束', '0 3 2 5 1 4');
 }]);
 
 // 08:00 實作：adjacency list 多一個 count 欄位（= in-degree）
@@ -1061,149 +1237,243 @@ FRAG.push(['galgo-topo-count', 'Topological sort 實作：count 欄位', async (
   const LST = { 0: [1, 2, 3], 1: [4], 2: [4, 5], 3: [4, 5], 4: [], 5: [] };
   const cnt = { 0: 0, 1: 1, 2: 1, 3: 1, 4: 3, 5: 2 };
   const C = {}, H = {}, z0 = (v) => -3.4 + v * 1.35;
-  tag('count', 'idx', -5.8, 0.3, -4.5); tag('vertex', 'idx', -4.4, 0.3, -4.5); tag('adjacency list', 'idx', -0.6, 0.3, -4.5);
-  for (let v = 0; v <= 5; v++) {
-    C[v] = cube(cnt[v], '#e6c36a', [0.8, 0.5, 0.8], -5.8, 0.25, z0(v), 2.5);
-    H[v] = cube(v, '#cbbd9f', [0.8, 0.5, 0.8], -4.4, 0.25, z0(v), 2.5);
-    LST[v].forEach((u, k) => {
-      const x = -2.4 + k * 1.7;
-      arrow(V3(x - 1.25, 0.3, z0(v)), V3(x - 0.48, 0.3, z0(v)));
-      cube(u, '#4b9ee2', [0.8, 0.5, 0.8], x, 0.25, z0(v), 2.5);
-    });
-  }
-  say('adjacency list 多一個欄位 count', 'count = in-degree');
-  await beat(tok, 3200);
+  const b = gBud('小修', 6.0, 3.9, '#7cb8ee', 0.5);
   const out = [];
-  const emit = async (v, cap) => {
-    glow(C[v], GOLD); glow(H[v], GOLD);
-    say(cap, '輸出 ' + v);
-    out.push(cube(v, '#9b7ef4', [0.8, 0.5, 0.8], 5.6, 0.25, z0(out.length), 2.5));
-    await beat(tok, 1500);
-    for (const u of LST[v]) { cnt[u]--; relabel(C[u], cnt[u]); glow(C[u], '#3a2a00'); }
-    if (LST[v].length) { say('沿 ' + v + ' 的 list：' + LST[v].join('、') + ' 的 count −1', LST[v].map((u) => 'count[' + u + '] = ' + cnt[u]).join('　')); await beat(tok, 2200); }
-    for (const u of LST[v]) glow(C[u], null);
-    glow(C[v], null); glow(H[v], null);
-  };
+  const emit = (v) => { glow(C[v], GOLD); glow(H[v], GOLD); out.push(cube(v, '#9b7ef4', [0.8, 0.5, 0.8], 5.6, 0.25, z0(out.length), 2.5)); };
+  const dec = (v) => { for (const u of LST[v]) { cnt[u]--; relabel(C[u], cnt[u]); glow(C[u], '#3a2a00'); } };
+  const clr = () => { for (let v = 0; v <= 5; v++) { glow(C[v], null); glow(H[v], null); } };
+  await step(tok);                                   // 8:00 adjacency list 多一個欄位
+  tag('vertex', 'idx', -4.4, 0.3, -4.5); tag('adjacency list', 'idx', -0.6, 0.3, -4.5);
+  for (let v = 0; v <= 5; v++) {
+    H[v] = cube(v, '#cbbd9f', [0.8, 0.5, 0.8], -4.4, 0.25, z0(v), 2.5);
+    LST[v].forEach((u, k) => { const x = -2.4 + k * 1.7; arrow(V3(x - 1.25, 0.3, z0(v)), V3(x - 0.48, 0.3, z0(v))); cube(u, '#4b9ee2', [0.8, 0.5, 0.8], x, 0.25, z0(v), 2.5); });
+  }
+  say('實作：在 adjacency list 上', '多加一個欄位');
+  await step(tok);                                   // 8:19 count = in-degree
+  tag('count', 'idx', -5.8, 0.3, -4.5);
+  for (let v = 0; v <= 5; v++) C[v] = cube(cnt[v], '#e6c36a', [0.8, 0.5, 0.8], -5.8, 0.25, z0(v), 2.5);
+  say('這個欄位叫 count', 'count = in-degree');
+  await step(tok);                                   // 8:35 scan count：0 → 輸出
   tag('output', 'idx', 5.6, 0.3, -4.5);
-  await emit(0, 'scan count：vertex 0 是 0');
-  await emit(3, 'count 變 0 的再輸出：選 3');
-  await emit(2, '再來 2');
-  await emit(5, '5 的 count 變 0');
-  await emit(1, '輸出 1');
-  await emit(4, '最後 4');
-  say('順序不唯一：0 1 2 3… 也可以', '只要前後關係保留');
-  await beat(tok, 2600);
-  say('也可以用 inverse adjacency list', '記錄誰指向我（in-degree）');
-  await beat(tok, 2600);
+  emit(0);
+  say('scan count 欄位：是 0 的就輸出', '第一個是 vertex 0');
+  await step(tok);                                   // 8:56 沿 0 的 list：1、2、3 的 count −1
+  dec(0);
+  say('沿著 vertex 0 的 list：1、2、3', '它們的 count 各 −1');
+  await step(tok);                                   // 9:14 1、2、3 的 count 變 0
+  clr(); for (const v of [1, 2, 3]) glow(C[v], GOLD);
+  say('1、2、3 的 count 都變 0', '');
+  await step(tok);                                   // 9:20 重複
+  clr();
+  await anim(tok, 2400, (u) => { const want = Math.ceil(u * 5); while (out.length - 1 < want) { const v = [3, 2, 5, 1, 4][out.length - 1]; emit(v); dec(v); } });
+  clr();
+  say('重複同樣的步驟', '輸出 3、2、5、1、4');
+  await step(tok);                                   // 9:26 順序不唯一
+  b.mood('wow');
+  say('注意：topological order 不唯一', '');
+  await step(tok);                                   // 9:42 剛才取 3，也可以取 1 或 2
+  for (const v of [1, 2, 3]) glow(H[v], GOLD);
+  say('剛才 1、2、3 都是 0 時取了 3', '其實取 1 或 2 也可以');
+  await step(tok);                                   // 9:55 0 1 2 3… 也可以
+  for (const v of [1, 2, 3]) glow(H[v], null);
+  const alt = tag('0 1 2 3 … 也合法', 'note', 3.4, 0.3, -4.5);
+  say('例如 0 1 2 3 開頭', '還是符合前後順序');
+  await step(tok);                                   // 10:13 只要前後關係保留
+  b.mood('happy');
+  say('只要前後順序關係保留就可以', 'sequence 不是唯一的');
+  await step(tok);                                   // 10:43 inverse adjacency list
+  kill(alt); b.mood('calm');
+  const inv = tag('inverse adjacency list：記錄「誰指向我」', 'note', 1.0, 0.3, 4.4);
+  say('不用 count 也可以', 'inverse adjacency list：記 in-degree 跟誰連');
+  await step(tok);                                   // 11:15 這裡用最簡單的：count
+  txt(inv, '這裡用最簡單的方法：多一個 count 欄位');
+  say('搭配 adjacency list 也能做', '這裡用最簡單的 count 欄位');
 }]);
 
 // 洪逸／Horowitz 的 AOE 例（a1..a11）
 const APOS = { 0: [-6, 0], 1: [-3.5, -2.6], 2: [-3.5, 0], 3: [-3.5, 2.6], 4: [-0.6, -1.3], 5: [-0.6, 2.6], 6: [2.4, -2.6], 7: [2.4, 1], 8: [5.4, -0.6] };
 const AEDG = [[0, 1, 6, 'a1=6'], [0, 2, 4, 'a2=4'], [0, 3, 5, 'a3=5'], [1, 4, 1, 'a4=1'], [2, 4, 1, 'a5=1'], [3, 5, 2, 'a6=2'], [4, 6, 9, 'a7=9'], [4, 7, 7, 'a8=7'], [5, 7, 4, 'a9=4'], [6, 8, 2, 'a10=2'], [7, 8, 4, 'a11=4']];
 
-// 11:35 AOE network：activity 在 edge 上
+// 11:32 AOE network：activity 在 edge 上
 FRAG.push(['galgo-aoe-net', 'AOE network：activity 在 edge 上', async (tok) => {
   fresh([0, 10.5, 9], [0, 0, -0.3]);
-  const G = gG(APOS, AEDG, { dir: true });
-  say('AOE：Activity On Edge', 'edge = activity，權重 = 所需時間');
-  await beat(tok, 3000);
+  const b = gBud('小經理', -6.2, 3.6, '#f4a56a', 0.55);
+  let G = null;
+  await step(tok);                                   // 11:32 AOE：activity on edge
+  const q = tag('activity 改放在 edge 上', 'say', -6.2, 1.5, 3.6);
+  say('AOE：Activity On Edge', '跟 AOV 不一樣');
+  await step(tok);                                   // 11:47 頂點告訴你何時開始、結束
+  kill(q);
+  say('activity 在 edge 上', '頂點 = 事件：某些 activity 開始或結束的時間點');
+  await step(tok);                                   // 12:06 vertex 0 = project 開始
+  G = gG(APOS, AEDG, { dir: true });
+  for (const e of G.E) if (e.lbl) e.lbl.element.style.visibility = 'hidden';
   glow(G.N[0], GOLD); gTag(G.N[0], 'start');
-  say('vertex = 事件', '0 = project 開始');
-  await beat(tok, 2400);
-  for (const k of [0, 1, 2]) G.E[k].set(GC.hot, 1.8);
-  say('a1、a2、a3 可以同時進行', 'a1 = 6、a2 = 4、a3 = 5 個時間單位');
-  await beat(tok, 3000);
-  for (const k of [0, 1, 2]) G.E[k].set(GC.edge, 1);
+  say('一個 AOE network', 'vertex 0 = project 開始');
+  await step(tok);                                   // 12:16 例：做一個 web 搜尋引擎
+  tag('project：開發 web 搜尋引擎', 'note', 0, 0.3, -4.2);
+  say('例如：開發一個 web 搜尋引擎', '分成好幾個步驟');
+  await step(tok);                                   // 12:31 11 個 activity
   glow(G.N[0], null);
+  for (const e of G.E) { if (e.lbl) e.lbl.element.style.visibility = ''; e.set(GC.hot, 1.4); }
+  say('這個例子有 11 個 activity', 'a1 ～ a11');
+  await step(tok);                                   // 12:41 a1 = 6
+  for (const e of G.E) e.set(GC.edge, 1);
+  G.E[0].set(GC.hot, 1.9);
+  say('a1：0 → 1', '需要 6 個時間單位');
+  await step(tok);                                   // 12:56 a2 = 4、a3 = 5
+  G.E[1].set(GC.hot, 1.9); G.E[2].set(GC.hot, 1.9);
+  say('a2 要 4，a3（0 → 3）要 5', '');
+  await step(tok);                                   // 13:15 可以同時進行（teamwork）
+  for (const k of [0, 1, 2]) G.E[k].set(GC.ok, 1.9);
+  b.mood('happy'); await b.hop(tok);
+  say('a1、a2、a3 可以同時進行', '一個 team：有人做 a1、有人做 a2、有人做 a3');
+  await step(tok);                                   // 13:34 a4、a5 做完到達 4
+  for (const k of [0, 1, 2]) G.E[k].set(GC.edge, 1);
+  b.mood('calm');
   G.E[3].set(GC.hot, 1.8); G.E[4].set(GC.hot, 1.8); glow(G.N[4], GOLD);
-  say('a4、a5 都做完 → 到達事件 4', '事件 = 進來的 activity 全部完成');
-  await beat(tok, 3000);
+  say('下一階段：a4、a5 都做完', '才到達事件 4');
+  await step(tok);                                   // 13:58 才能啟動 a7、a8
   G.E[3].set(GC.edge, 1); G.E[4].set(GC.edge, 1);
   G.E[6].set(GC.ok, 1.8); G.E[7].set(GC.ok, 1.8);
-  say('事件 4 發生後，a7、a8 才能開始', '');
-  await beat(tok, 2800);
-  glow(G.N[4], null); glow(G.N[8], GOLD); gTag(G.N[8], 'finish');
-  say('到達 8：整個 project 完成', '用來控管 project 進度');
-  await beat(tok, 3000);
+  say('到達 4 之後', 'a7、a8 才能開始');
+  await step(tok);                                   // 14:06 到 8 = finish
+  glow(G.N[4], null); G.E[6].set(GC.edge, 1); G.E[7].set(GC.edge, 1);
+  glow(G.N[8], GOLD); gTag(G.N[8], 'finish');
+  say('一直做到 8', '整個 project 完成（finish）');
+  await step(tok);                                   // 14:14 大公司用它控管進度
+  const pm = tag('每個人負責哪段、要花多久', 'say', -6.2, 1.5, 3.6);
+  say('大公司開發軟體就用這種圖', '控管每個人的計畫與時間');
+  await step(tok);                                   // 14:36 有人 delay 就無法如期
+  txt(pm, '有人 delay → 整個 project 延誤');
+  b.mood('sad');
+  say('有一個人 delay', '整個 project 就沒辦法如期完成');
 }]);
 
-// 16:05 AOE 的 adjacency list：count + duration
+// 16:02 AOE 的 adjacency list：count + duration
 FRAG.push(['galgo-aoe-list', 'AOE 的 adjacency list：count 與 duration', async (tok) => {
   fresh([0, 11.5, 7.6], [0, 0, -0.2]);
   const L = { 0: [[1, 6], [2, 4], [3, 5]], 1: [[4, 1]], 2: [[4, 1]], 3: [[5, 2]], 4: [[6, 9], [7, 7]], 5: [[7, 4]], 6: [[8, 2]], 7: [[8, 4]], 8: [] };
   const cnt = [0, 1, 1, 1, 2, 1, 1, 2, 2], zz = (v) => -4 + v * 0.98;
-  const C = [], I = {};
-  tag('count', 'idx', -5.8, 0.3, -4.9); tag('vertex', 'idx', -4.6, 0.3, -4.9); tag('vertex | duration', 'idx', -0.2, 0.3, -4.9);
+  const C = [], I = {}, H = [];
+  await step(tok);                                   // 16:02 表示法：adjacency list
+  tag('vertex', 'idx', -4.6, 0.3, -4.9); tag('list', 'idx', -0.2, 0.3, -4.9);
   for (let v = 0; v <= 8; v++) {
-    C.push(cube(cnt[v], '#e6c36a', [0.8, 0.45, 0.75], -5.8, 0.22, zz(v), 2));
-    cube(v, '#cbbd9f', [0.8, 0.45, 0.75], -4.6, 0.22, zz(v), 2);
-    I[v] = L[v].map(([u, d], k) => {
-      const x = -2.2 + k * 2.2;
-      arrow(V3(x - 1.75, 0.3, zz(v)), V3(x - 0.75, 0.3, zz(v)));
-      return cube(u + ' | ' + d, '#4b9ee2', [1.4, 0.45, 0.75], x, 0.22, zz(v), 2);
-    });
+    H.push(cube(v, '#cbbd9f', [0.8, 0.45, 0.75], -4.6, 0.22, zz(v), 2));
+    I[v] = L[v].map(([u], k) => { const x = -2.2 + k * 2.2; arrow(V3(x - 1.75, 0.3, zz(v)), V3(x - 0.75, 0.3, zz(v))); return cube(u, '#4b9ee2', [1.4, 0.45, 0.75], x, 0.22, zz(v), 2); });
   }
-  say('AOE 也用 adjacency list', '每列前面一樣有 count');
-  await beat(tok, 3000);
+  say('AOE 的表示法：adjacency list', '');
+  await step(tok);                                   // 16:21 count 欄位 = in-degree
+  tag('count', 'idx', -5.8, 0.3, -4.9);
+  for (let v = 0; v <= 8; v++) C.push(cube(cnt[v], '#e6c36a', [0.8, 0.45, 0.75], -5.8, 0.22, zz(v), 2));
   C.forEach((c) => glow(c, GOLD));
-  say('count = in-degree', '有多少 activity 指向它');
-  await beat(tok, 2800);
+  say('每個頂點前面一樣有 count 欄位', 'count = in-degree：有幾條箭頭指向它');
+  await step(tok);                                   // 16:39 vertex 0 → 1、2、3
   C.forEach((c) => glow(c, null));
-  I[0].forEach((c) => glow(c, GOLD));
-  say('list node 多一個 duration', '0→1：6　0→2：4　0→3：5');
-  await beat(tok, 3400);
+  glow(H[0], GOLD); I[0].forEach((c) => glow(c, GOLD));
+  say('例：vertex 0 連出去', '有 1、2、3 三個 node');
+  await step(tok);                                   // 16:51 list node 多一個欄位
+  I[0].forEach((c) => glow(c, null)); glow(H[0], null);
+  tag('vertex | duration', 'idx', 1.2, 0.3, -4.9);
+  say('list 的 node 多一個欄位', 'duration（持續時間）');
+  await step(tok);                                   // 17:05 0 → 1：duration 6
+  relabel(I[0][0], '1 | 6'); glow(I[0][0], GOLD);
+  say('duration = 這條 edge（activity）要花的時間', '0 → 1：6 個時間單位');
+  await step(tok);                                   // 17:38 0 → 2：4，0 → 3：5
+  glow(I[0][0], null);
+  relabel(I[0][1], '2 | 4'); relabel(I[0][2], '3 | 5'); glow(I[0][1], GOLD); glow(I[0][2], GOLD);
+  say('0 → 2：duration 4', '0 → 3：duration 5');
+  await step(tok);                                   // 17:52 頂點＋duration 都要放
   I[0].forEach((c) => glow(c, null));
-  glow(I[4][0], GOLD);
-  say('例：4 → 6 這個 activity', 'a7 的 duration = 9');
-  await beat(tok, 2800);
+  for (let v = 1; v <= 8; v++) L[v].forEach(([u, d], k) => relabel(I[v][k], u + ' | ' + d));
+  say('所以 list 除了記頂點', '還要記 duration');
 }]);
 
-// 18:03 最早完成時間 ee：topological order + stack
+// 18:11 最早完成時間 ee：topological order + stack
 FRAG.push(['galgo-aoe-ee', 'AOE 最早時間 ee：用 stack 做 topological order', async (tok) => {
   fresh([0, 10.5, 9.2], [0, 0, -0.6]);
-  const G = gG(APOS, AEDG, { dir: true });
+  const G = gG(APOS, AEDG, { dir: true, drop: 0 });
+  const b = gBud('小經理', -6.4, 3.8, '#f4a56a', 0.5);
   const ee = [0, 0, 0, 0, 0, 0, 0, 0, 0], ET = [];
-  for (let v = 0; v <= 8; v++) ET.push(gTag(G.N[v], 'ee=0', 'ptr'));
-  tag('stack', 'idx', -6.2, 0.3, -4.6);
   const st = [];
   const push = (v) => { st.push([v, cube(v, '#9b7ef4', [0.8, 0.5, 0.8], -5 + st.length * 1.0, 0.25, -4.6, 2.5)]); };
-  const pop = () => { const [v, m] = st.pop(); fly(m, V3(0, 8, -3)); return v; };
-  say('ee = 最早完成（到達）時間', '從 0 開始，時間 = 0');
-  push(0);
-  await beat(tok, 2800);
-  const relax = async (u, cap) => {
-    glow(G.N[u], GOLD);
-    const outs = G.E.filter((e) => e.u === String(u));
-    const parts = [];
+  const pop = () => { const [v, m] = st.pop(); fly(m, V3(0, 8, -3)); glow(G.N[v], GOLD); return v; };
+  const relax = (u) => {
+    const outs = G.E.filter((e) => e.u === String(u)), parts = [];
     for (const e of outs) {
       const v = Number(e.v), nv = ee[u] + e.w;
       e.set(GC.hot, 1.8);
-      parts.push(nv > ee[v] && ee[v] > 0 ? 'ee(' + v + ')=max(' + ee[v] + ',' + nv + ')' : 'ee(' + v + ')=' + ee[u] + '+' + e.w);
+      parts.push(ee[v] > 0 && nv <= ee[v] ? 'ee(' + v + ') 維持 ' + ee[v] : 'ee(' + v + ') = ' + ee[u] + ' + ' + e.w + ' = ' + Math.max(nv, ee[v]));
       if (nv > ee[v]) ee[v] = nv;
       txt(ET[v], 'ee=' + ee[v]);
     }
-    say(cap, parts.join('　'));
-    await beat(tok, 2600);
-    for (const e of outs) e.set(GC.tree, 1.3);
-    glow(G.N[u], null);
+    return parts.join('　');
   };
-  pop(); await relax(0, 'pop 0：算它指到的頂點');
+  const settle = (u) => { for (const e of G.E) if (e.u === String(u)) e.set(GC.tree, 1.3); glow(G.N[u], null); };
+  await step(tok);                                   // 18:11 每個 activity 最早完成時間
+  for (let v = 0; v <= 8; v++) ET.push(gTag(G.N[v], v ? 'ee=?' : 'ee=0', 'ptr'));
+  say('算每個 activity 最早完成的時間', 'ee（earliest）');
+  await step(tok);                                   // 18:48 例：a1；時間從 0 開始
+  glow(G.N[0], GOLD); G.E[0].set(GC.hot, 1.8);
+  say('例：a1 最早什麼時候完成？', '時間從 0 開始');
+  await step(tok);                                   // 19:20 a1 要 6 → 6
+  const p = await gPkt(tok, '0 + 6', gAt(G.N[0]), gAt(G.N[1]), 900); kill(p);
+  ee[1] = 6; txt(ET[1], 'ee=6');
+  say('a1 要 6 天：沒有 delay', '最早第 6 天完成');
+  await step(tok);                                   // 20:03 a2 = 4
+  G.E[1].set(GC.hot, 1.8);
+  const p2 = await gPkt(tok, '0 + 4', gAt(G.N[0]), gAt(G.N[2]), 900); kill(p2);
+  ee[2] = 4; txt(ET[2], 'ee=4');
+  say('a2 要 4 天', '0 + 4 = 4');
+  await step(tok);                                   // 20:24 記在 edge 指到的頂點上
+  glow(G.N[1], GOLD);
+  say('怎麼記？寫在 edge 指到的頂點上', '頂點 1 = 6：a1 完成的時間');
+  await step(tok);                                   // 21:04 用 topological order
+  glow(G.N[0], null); glow(G.N[1], null); G.E[0].set(GC.edge, 1); G.E[1].set(GC.edge, 1);
+  ee[1] = 0; ee[2] = 0; txt(ET[1], 'ee=?'); txt(ET[2], 'ee=?');
+  tag('stack', 'idx', -6.2, 0.3, -4.6);
+  say('要有系統地算：用 topological order', '搭配一個 stack');
+  await step(tok);                                   // 21:25 in-degree 0 只有 0 → push
+  push(0); glow(G.N[0], GOLD);
+  say('一開始 in-degree 0 的只有起點 0', 'push 進 stack');
+  await step(tok);                                   // 21:52 pop 0
+  pop();
+  say('pop 出 0', '從它現在的時間 0 出發');
+  await step(tok);                                   // 22:16 0 + 6、0 + 4、0 + 5
+  say('對它指到的每個頂點算到達時間', relax(0));
+  await step(tok);                                   // 23:05 1、2、3 的 count −1
+  settle(0);
+  for (const k of [1, 2, 3]) glow(G.N[k], '#3a2a00');
+  say('0 輸出了：1、2、3 的 count −1', 'count 都變 0');
+  await step(tok);                                   // 23:26 push 3 2 1
+  for (const k of [1, 2, 3]) glow(G.N[k], null);
   push(1); push(2); push(3);
-  say('1、2、3 的 count 變 0 → push', 'stack：1 2 3（3 在頂）');
-  await beat(tok, 2600);
-  pop(); await relax(3, 'pop 3：a6 = 2');
-  push(5); say('5 的 count 變 0 → push', ''); await beat(tok, 1400);
-  pop(); await relax(5, 'pop 5：a9 = 4');
-  pop(); await relax(2, 'pop 2：a5 = 1');
-  pop(); await relax(1, 'pop 1：取較大的 → 7');
-  push(4); await beat(tok, 900);
-  pop(); await relax(4, 'pop 4：a7 = 9、a8 = 7');
-  push(6); push(7); await beat(tok, 900);
-  pop(); await relax(7, 'pop 7：a11 = 4');
-  pop(); await relax(6, 'pop 6：a10 = 2');
+  say('count 是 0 的 push 進 stack', 'stack：1 2 3（3 在最上面）');
+  await step(tok);                                   // 23:48 pop 3
+  pop();
+  say('pop 出 3', '到達 3 的時間是 5');
+  await step(tok);                                   // 24:03 5 + 2 = 7
+  say('3 → 5 的 a6 = 2', relax(3));
+  await step(tok);                                   // 24:40 5 的 count 變 0 → push
+  settle(3); push(5);
+  say('5 的 in-degree 變 0', 'push 進 stack');
+  await step(tok);                                   // 24:53 一直做到 stack 空
+  const rest = [5, 2, 1, 4, 7, 6];
+  await anim(tok, 2400, (u) => {
+    const want = Math.ceil(u * rest.length);
+    while (rest.length > 6 - want) {
+      const v = rest.shift();
+      if (st.length && st[st.length - 1][0] === v) pop(); relax(v); settle(v);
+      if (v === 1) push(4); if (v === 4) { push(6); push(7); }
+    }
+  });
+  while (st.length) pop();
   glow(G.N[8], GOLD);
-  say('stack 空了：結束', 'ee(8) = 18：project 最早 18 完成');
-  await beat(tok, 3000);
+  b.mood('happy');
+  say('一直重複到 stack 空為止', 'ee(8) = 18：project 最早第 18 天完成');
+  await step(tok);                                   // 25:02 總結：最早到達時間
+  await b.hop(tok);
+  say('ee 就是每個 edge 指到的頂點', '最早的到達時間（多條路取最大）');
 }]);
 
 // 課堂第二例（另一本課本）：依講解重建的 AOE；6′、7′、10′ 是 sync 點，細線是 0 時間的 dummy
@@ -1212,519 +1482,973 @@ const BEDG = [['X', '2', 3, 'A=3'], ['X', '3', 2, 'B=2'], ['2', "6'", 0, null, 1
   ['4', "7'", 0, null, 1], ['6', "7'", 0, null, 1], ["7'", '7', 3, 'F=3'], ['7', "10'", 0, null, 1], ['5', '8', 0, null, 1], ['8', "10'", 2, 'G=2'], ['5', "10'", 4, 'K=4'], ["10'", '10', 1, 'H=1']];
 const BEE = { X: 0, 2: 3, 3: 2, "6'": 3, 6: 5, 4: 6, 5: 3, "7'": 6, 7: 9, 8: 3, "10'": 9, 10: 10 };
 const BLE = { X: 0, 2: 3, 3: 4, "6'": 4, 6: 6, 4: 6, 5: 5, "7'": 6, 7: 9, 8: 7, "10'": 9, 10: 10 };
+const BCRIT = ['X', '2', '4', "7'", '7', "10'", '10'];
 function gAOE2(drop = 3) { return gG(BPOS, BEDG, { dir: true, drop }); }
+
+// 25:27 另一本課本的例子：critical path 是什麼
+FRAG.push(['galgo-crit-intro', 'Critical path：不能 delay 的那條路', async (tok) => {
+  fresh([0, 10.5, 9.2], [0, 0, 0.2]);
+  const b = gBud('小經理', -6.3, 4.2, '#f4a56a', 0.5);
+  let G = null;
+  await step(tok);                                   // 25:27 另一本教科書的例子
+  G = gAOE2();
+  say('換另一本教科書的例子', '一樣是 AOE：邊上的字母 = activity 與天數');
+  await step(tok);                                   // 25:58 目標：找出 critical path
+  const nt = tag('目標：找出 critical path', 'say', 0, 0.3, -4.4);
+  say('要從這個 AOE 找出', 'critical path（關鍵路徑）');
+  await step(tok);                                   // 26:14 起點到終點，某些點非常重要
+  for (let i = 0; i < BCRIT.length; i++) { glow(G.N[BCRIT[i]], '#5a1a00'); if (i) G.e(BCRIT[i - 1], BCRIT[i]).set(GC.crit, 1.8); }
+  say('從起點到終點，有一些點特別重要', '它們沒有可以 delay 的空間');
+  await step(tok);                                   // 26:31 一般的可以早一天或晚一天
+  glow(G.N['5'], GOLD);
+  const ok = tag('晚一兩天也沒關係', 'good', -2.6, 1.5, 3.4);
+  say('一般的 activity：提早或晚一天也許 OK', '');
+  await step(tok);                                   // 26:48 critical 一旦 delay 就毀了
+  kill(ok); glow(G.N['5'], null); b.mood('sad');
+  tag('晚一天 → 整個 project 晚一天', 'bad', 0.6, 1.5, -1.4);
+  say('critical path 上不能有任何 delay', '一 delay，整個 project 就延誤');
+  await step(tok);                                   // 26:54 兩個步驟
+  b.mood('calm');
+  txt(nt, '步驟 1：最早時間 ee　步驟 2：最晚時間 le');
+  say('找 critical path 有兩個步驟', '先算最早時間，再算最晚時間');
+}]);
 
 // 27:02 ee(w) = max{ee(v) + dur}：sync 點取最大
 FRAG.push(['galgo-ee-max', 'ee 往右推：sync 點取 max', async (tok) => {
   fresh([0, 10.5, 9.2], [0, 0, 0.2]);
-  const G = gAOE2(), ET = {};
-  for (const k of Object.keys(BPOS)) ET[k] = gTag(G.N[k], k === 'X' ? 'ee=0' : 'ee=?', 'ptr');
-  say('由左往右算每個點的 ee', 'ee(w) = max{ ee(v) + dur(v, w) }');
-  await beat(tok, 3200);
-  const show = async (ks, cap, f, es) => {
-    for (const [u, v] of es) G.e(u, v).set(GC.hot, 1.8);
-    for (const k of ks) { txt(ET[k], 'ee=' + BEE[k]); glow(G.N[k], GOLD); }
-    say(cap, f);
-    await beat(tok, 2800);
-    for (const [u, v] of es) G.e(u, v).set(GC.tree, 1.3);
-    for (const k of ks) glow(G.N[k], null);
-  };
-  await show(['2', '3'], 'A = 3、B = 2', 'ee(2) = 0 + 3 = 3　ee(3) = 0 + 2 = 2', [['X', '2'], ['X', '3']]);
-  await show(["6'"], '6′ 是 sync：D 要等 A、B 都完成', 'ee(6′) = max(3, 2) = 3', [['2', "6'"], ['3', "6'"]]);
-  await show(['6'], 'D = 2', 'ee(6) = 3 + 2 = 5', [["6'", '6']]);
-  await show(['4', '5'], 'C = 3、E = 1', 'ee(4) = 3 + 3 = 6　ee(5) = 2 + 1 = 3', [['2', '4'], ['3', '5']]);
-  await show(["7'"], '7′：F 要等 C、D 都完成', 'ee(7′) = max(6, 5) = 6', [['4', "7'"], ['6', "7'"]]);
-  await show(['7', '8'], 'F = 3', 'ee(7) = 6 + 3 = 9', [["7'", '7'], ['5', '8']]);
-  await show(["10'"], '再往右推：取最大', 'ee(10′) = max(9, 3 + 4, 3 + 2) = 9', [['7', "10'"], ['5', "10'"], ['8', "10'"]]);
-  await show(['10'], 'H = 1：project 最早 10 天完成', 'ee(10) = 9 + 1 = 10', [["10'", '10']]);
-  await beat(tok, 1500);
+  const G = gAOE2(0), ET = {};
+  const b = gBud('小經理', -6.3, 4.2, '#f4a56a', 0.5);
+  let hot = [];
+  const show = (ks, es) => { for (const e of hot) e.set(GC.tree, 1.3); hot = es.map(([u, v]) => G.e(u, v)); for (const k of Object.keys(BPOS)) glow(G.N[k], null); for (const [u, v] of es) G.e(u, v).set(GC.hot, 1.8); for (const k of ks) { txt(ET[k], 'ee=' + BEE[k]); glow(G.N[k], GOLD); } };
+  await step(tok);                                   // 27:02 步驟 1：算最早時間
+  for (const k of Object.keys(BPOS)) ET[k] = gTag(G.N[k], 'ee=?', 'ptr');
+  say('步驟 1：每個點最早的時間', '用 topological order 由左往右');
+  await step(tok);                                   // 27:21 起點 0；公式
+  txt(ET.X, 'ee=0'); glow(G.N.X, GOLD);
+  const f = tag('ee(w) = max{ ee(v) + dur(v, w) }', 'note', 0, 0.3, -4.4);
+  say('起點設成 0', 'ee(w) = max{ ee(v) + dur(v, w) }，v 指向 w');
+  await step(tok);                                   // 28:17 到 2：0 + 3
+  show(['2'], [['X', '2']]);
+  say('A = 3：到 2 最早是 0 + 3', 'ee(2) = 3');
+  await step(tok);                                   // 28:35 到 3：0 + 2
+  show(['3'], [['X', '3']]);
+  say('B = 2：到 3 是 0 + 2', 'ee(3) = 2');
+  await step(tok);                                   // 28:44 6′ 是什麼？
+  show([], [['2', "6'"], ['3', "6'"]]); glow(G.N["6'"], GOLD);
+  say('為什麼多一個 6′？', '2 和 3 都會指到它');
+  await step(tok);                                   // 29:23 sync：A、B 都完成才做 D
+  b.mood('wow');
+  say('6′ 是 sync（同步點）', 'A 和 B 都做完，才能開始 D');
+  await step(tok);                                   // 29:58 max(3, 2) = 3
+  txt(ET["6'"], 'ee=3'); b.mood('calm');
+  say('取最大值：max(3, 2) = 3', 'D 至少要等第 3 天才能開始');
+  await step(tok);                                   // 30:21 D = 2 → 5
+  show(['6'], [["6'", '6']]);
+  say('第 3 天開始做 D（2 天）', 'ee(6) = 3 + 2 = 5');
+  await step(tok);                                   // 30:40 C：3 + 3 = 6
+  show(['4'], [['2', '4']]);
+  say('C = 3：3 + 3', 'ee(4) = 6');
+  await step(tok);                                   // 31:33 E：2 + 1 = 3
+  show(['5', '8'], [['3', '5'], ['5', '8']]);
+  say('下面 E = 1：2 + 1', 'ee(5) = 3');
+  await step(tok);                                   // 31:45 這些就是最早 arrival time
+  show([], []);
+  say('這些數字就是每個點', '最早的到達時間（arrival time）');
+  await step(tok);                                   // 31:54 7′：C、D 都完成才做 F
+  show(["7'", '7'], [['4', "7'"], ['6', "7'"], ["7'", '7']]);
+  say('7′ 也是 sync：C、D 都完成才能做 F', 'max(6, 5) = 6，ee(7) = 6 + 3 = 9');
+  await step(tok);                                   // 32:37 一路推到底：10 天
+  show(["10'", '10'], [['7', "10'"], ['5', "10'"], ['8', "10'"], ["10'", '10']]);
+  b.mood('happy'); await b.hop(tok);
+  say('一直往右推到底', '整個 project 最早第 10 天完成');
+  await step(tok);                                   // 33:08 每個點：往前看它的 edge
+  show([], [['5', "10'"]]);
+  txt(f, '每個點 = 進來的 activity 最早完成的時間');
+  say('每個點往前看它的 edge', '例：K 最早第 3 + 4 = 7 天就能完成');
 }]);
 
-// 33:44 le(v) = min{le(w) − dur}：反向 topological order 取最小
+// 33:40 le(v) = min{le(w) − dur}：反向 topological order 取最小
 FRAG.push(['galgo-le-min', 'le 往左推：分岔點取 min', async (tok) => {
   fresh([0, 10.5, 9.2], [0, 0, 0.2]);
-  const G = gAOE2(), LT = {};
+  const G = gAOE2(0), LT = {};
+  const b = gBud('小經理', -6.3, 4.2, '#f4a56a', 0.5);
+  const show = (ks, es) => { for (const e of G.E) if (e.rod.material.color.getHexString() === 'd64545') e.set(GC.pq, 1.3); for (const k of Object.keys(BPOS)) glow(G.N[k], null); for (const [u, v] of es) G.e(u, v).set(GC.bad, 1.8); for (const k of ks) { txt(LT[k], 'le=' + BLE[k]); glow(G.N[k], GOLD); } };
+  await step(tok);                                   // 33:40 最晚什麼時候要完成
   for (const k of Object.keys(BPOS)) LT[k] = gTag(G.N[k], 'le=?', 'ptr alt');
-  say('10 天是底線：由右往左回推', 'le(v) = min{ le(w) − dur(v, w) }');
-  txt(LT['10'], 'le=10'); glow(G.N['10'], GOLD);
-  await beat(tok, 3200);
-  const show = async (ks, cap, f, es) => {
-    for (const [u, v] of es) G.e(u, v).set(GC.bad, 1.8);
-    for (const k of ks) { txt(LT[k], 'le=' + BLE[k]); glow(G.N[k], GOLD); }
-    say(cap, f);
-    await beat(tok, 2700);
-    for (const [u, v] of es) G.e(u, v).set(GC.pq, 1.3);
-    for (const k of ks) glow(G.N[k], null);
-  };
-  glow(G.N['10'], null);
-  await show(["10'"], 'H = 1', 'le(10′) = 10 − 1 = 9', [["10'", '10']]);
-  await show(['7'], 'dummy = 0', 'le(7) = 9 − 0 = 9', [['7', "10'"]]);
-  await show(["7'", '8'], 'F = 3、G = 2', 'le(7′) = 9 − 3 = 6　le(8) = 9 − 2 = 7', [["7'", '7'], ['8', "10'"]]);
-  await show(['5'], '5 有兩條路：選哪個？', 'le(5) = min(7 − 0, 9 − 4) = 5', [['5', '8'], ['5', "10'"]]);
-  glow(G.N['5'], GOLD); G.e('5', "10'").set(GC.bad, 2.2);
-  say('若取 7：第 7 天才開始 K', '7 + 4 = 11 > 10，project 就延誤');
-  await beat(tok, 3400);
-  glow(G.N['5'], null); G.e('5', "10'").set(GC.pq, 1.3);
-  await show(['4', '6', "6'"], '繼續往左推', 'le(4) = 6　le(6) = 6　le(6′) = 6 − 2 = 4', [['4', "7'"], ['6', "7'"], ["6'", '6']]);
-  await show(['3', '2', 'X'], '分岔都取最小', 'le(3) = min(4, 5 − 1) = 4　le(2) = min(6 − 3, 4) = 3', [['3', "6'"], ['3', '5'], ['2', '4'], ['2', "6'"], ['X', '2'], ['X', '3']]);
-  await beat(tok, 1500);
+  say('也可以算：每個 activity 最晚要多晚完成', 'le（latest）');
+  await step(tok);                                   // 34:25 ee 左→右，le 右→左
+  const dir = tag('ee：左 → 右　le：右 → 左', 'note', 0, 0.3, -4.4);
+  say('ee 由左往右算', 'le 由右往左算');
+  await step(tok);                                   // 34:40 10 天是底線
+  glow(G.N['10'], GOLD); txt(LT['10'], 'le=10');
+  say('project 10 天內一定要完成：這是底線', '從這裡往回推');
+  await step(tok);                                   // 35:12 reverse topological order
+  txt(dir, 'reverse topological order：改數 out-degree');
+  say('用 reverse topological order', 'count 改成算 out-degree');
+  await step(tok);                                   // 35:57 從右邊開始
+  txt(dir, 'le(v) = min{ le(w) − dur(v, w) }');
+  say('從最右邊開始：10 天內完成', '往左走，每次減掉 duration');
+  await step(tok);                                   // 36:13 10 − 1 = 9
+  show(["10'"], [["10'", '10']]);
+  say('H 要 1 天：10 − 1', 'le(10′) = 9');
+  await step(tok);                                   // 36:32 9 − 0 = 9
+  show(['7'], [['7', "10'"]]);
+  say('dummy 是 0 天：9 − 0', 'le(7) = 9');
+  await step(tok);                                   // 37:00 9 − 3 = 6
+  show(["7'", '8'], [["7'", '7'], ['8', "10'"]]);
+  say('F 要 3 天：9 − 3 = 6 → le(7′) = 6', 'G 要 2 天：le(8) = 9 − 2 = 7');
+  await step(tok);                                   // 37:23 抉擇點：7 − 0 還是 9 − 4
+  show([], [['5', '8'], ['5', "10'"]]); glow(G.N['5'], GOLD);
+  b.mood('wow');
+  say('抉擇點：5 有兩條路往右', '7 − 0 = 7，還是 9 − 4 = 5？');
+  await step(tok);                                   // 37:53 取最小：5
+  txt(LT['5'], 'le=5'); b.mood('calm');
+  say('準則：取最小值', 'le(5) = min(7, 5) = 5');
+  await step(tok);                                   // 38:15 選 7 可以嗎？
+  G.e('5', "10'").set(GC.bad, 2.4);
+  say('為什麼不能選 7？', '');
+  await step(tok);                                   // 38:44 7 + 4 = 11 > 10
+  const over = tag('7 + 4 = 11 > 10 ✗', 'bad', 1.6, 1.5, 2.6);
+  b.mood('sad');
+  say('第 7 天才開始 K（要 4 天）', '7 + 4 = 11，超過 10 天');
+  await step(tok);                                   // 39:07 K 最晚第 5 天要啟動
+  txt(over, '最晚第 5 天啟動 K：5 + 4 = 9 ✓'); gCls(over, 'good');
+  b.mood('happy');
+  say('所以 K 最晚第 5 天就要啟動', 'project 才能如期完成');
+  await step(tok);                                   // 39:45 其他一直回推
+  kill(over); b.mood('calm');
+  await anim(tok, 2000, (u) => { const ks = ['4', '6', "6'", '3', '2', 'X']; ks.slice(0, Math.ceil(u * ks.length)).forEach((k) => txt(LT[k], 'le=' + BLE[k])); });
+  show([], []);
+  say('其他點一樣往左推（影片跳過）', 'le(4) = 6　le(6′) = 4　le(3) = 4　le(2) = 3　le(X) = 0');
 }]);
 
-// 25:24 / 39:53 critical path：ee − le = 0 的點連成的路
+// 40:02 critical path：ee − le = 0 的點連成的路
 FRAG.push(['galgo-critical-path', 'Critical path：ee = le、不能 delay', async (tok) => {
   fresh([0, 10.5, 9.2], [0, 0, 0.2]);
-  const G = gAOE2(), TG = {};
-  for (const k of Object.keys(BPOS)) TG[k] = gTag(G.N[k], BEE[k] + ' / ' + BLE[k], 'ptr');
+  const G = gAOE2(0), TG = {};
+  const b = gBud('小經理', -6.3, 4.2, '#f4a56a', 0.5);
+  await step(tok);                                   // 40:02 紅色 = 最晚、可以拖多久
+  for (const k of Object.keys(BPOS)) TG[k] = gTag(G.N[k], 'le=' + BLE[k], 'ptr alt');
+  say('紅色數字 le：每個點最晚要多晚完成', '也就是可以拖多久');
+  await step(tok);                                   // 40:20 每個點都有藍、紅兩個數字
+  for (const k of Object.keys(BPOS)) { txt(TG[k], BEE[k] + ' / ' + BLE[k]); gCls(TG[k], 'ptr'); }
   tag('ee / le', 'idx', -5.6, 0.3, -4.4);
-  say('每個點：ee（藍）與 le（紅）', '最早 vs 最晚');
-  await beat(tok, 3000);
+  say('每個頂點都有兩個數字', '藍 ee（最早）／紅 le（最晚）');
+  await step(tok);                                   // 40:28 相減為 0 → critical
   const slackK = Object.keys(BPOS).filter((k) => BLE[k] > BEE[k]);
-  for (const k of slackK) { glow(G.N[k], '#2a3a00'); gCls(TG[k], 'idx'); }
-  say('le > ee：可以晚一點，有 slack', '例：5 最早 3、最晚 5');
-  await beat(tok, 3000);
-  for (const k of slackK) glow(G.N[k], null);
-  const path = ['X', '2', '4', "7'", '7', "10'", '10'];
-  for (let i = 0; i < path.length; i++) {
-    G.N[path[i]].material.color.set(GC.crit); gCls(TG[path[i]], 'ptr alt');
-    if (i) G.e(path[i - 1], path[i]).set(GC.crit, 2.4);
-    await beat(tok, 450);
-  }
-  say('ee − le = 0 的點連起來', 'critical path：X → 2 → 4 → 7 → 10′ → 10');
-  await beat(tok, 3400);
-  say('critical path 上不能有任何 delay', '延誤一天，整個 project 就延誤');
-  await beat(tok, 3000);
-  say('它的長度 = project 最短完成時間', '3 + 3 + 3 + 1 = 10');
-  await beat(tok, 3000);
+  for (const k of slackK) gCls(TG[k], 'idx');
+  for (const k of BCRIT) glow(G.N[k], GOLD);
+  say('ee − le = 0 的點', '最早 = 最晚：一點空間都沒有');
+  await step(tok);                                   // 40:46 X → 2 → 4 → 7 → 10′ → 10
+  await anim(tok, 1800, (u) => { const n = Math.ceil(u * BCRIT.length); for (let i = 0; i < n; i++) { G.N[BCRIT[i]].material.color.set(GC.crit); gCls(TG[BCRIT[i]], 'ptr alt'); if (i) G.e(BCRIT[i - 1], BCRIT[i]).set(GC.crit, 2.4); } });
+  for (const k of BCRIT) glow(G.N[k], null);
+  say('連起來：紅色的 critical path', 'X → 2 → 4 → 7 → 10′ → 10');
+  await step(tok);                                   // 40:53 不能延誤
+  b.mood('sad');
+  say('這條路上的點完全不能延誤', '最早和最晚相減是 0');
+  await step(tok);                                   // 41:10 一定存在嗎？
+  b.mood('wow');
+  const q = tag('思考：critical path 一定存在嗎？', 'say', 0, 0.3, -4.4);
+  say('想一想：critical path 一定存在嗎？', '（會：起點到終點最長的那條路）');
+  await step(tok);                                   // 41:36 怎麼找出所有 critical path？
+  txt(q, '思考：怎麼找出所有的 critical path？');
+  say('想一想：怎麼找出 critical path？', '算完 ee、le 後，挑相減為 0 的');
+  await step(tok);                                   // 42:04 今天的重點
+  txt(q, 'topological order → AOV、AOE → critical path');
+  b.mood('happy'); await b.hop(tok);
+  say('今天的重點：topological order', 'AOV、AOE 怎麼用它推出 critical path');
 }]);
-
-// ════════ Minimum Cost Spanning Tree（Kruskal & Prim 的 greedy 策略）：8 頂點、10 條邊 ════════
+// ════════ JR2fneVevbg：Minimum Cost Spanning Tree（Kruskal & Prim 的 greedy 策略）：8 頂點、10 條邊 ════════
 const LPOS = { 1: [-4.5, -1.6], 2: [-1.5, -1.6], 3: [1.5, -1.6], 4: [4.5, -1.6], 5: [-4.5, 1.8], 6: [-1.5, 1.8], 7: [1.5, 1.8], 8: [4.5, 1.8] };
 const LEDG = [[1, 2, 8], [2, 3, 7], [3, 4, 9], [1, 5, 4], [2, 6, 12], [3, 7, 10], [4, 8, 6], [5, 6, 14], [6, 7, 13], [7, 8, 11, '11?']];
-const L8 = () => gG(LPOS, LEDG);
+const L8 = (drop) => gG(LPOS, LEDG, { drop });
+const LSORT = () => [...LEDG].sort((a, b) => a[2] - b[2]);
 
 // 00:00 定義＋例子：10 條邊，只能留 n − 1 = 7 條
 FRAG.push(['galgo-8v-count', 'MST：8 個頂點、10 條邊，只留 7 條', async (tok) => {
-  fresh([0, 10, 8.6], [0, 0, 0]);
+  fresh([0, 10, 8.6], [0, 0, 0.3]);
+  await step(tok);                                   // 0:00 minimum cost spanning tree（greedy）
+  const b = gBud('小樹', -6.0, 3.6);
+  const q = tag('用 greedy 找最便宜的樹', 'say', -6.0, 1.6, 3.6);
+  say('Minimum cost spanning tree', '用 greedy method 的角度來看');
+  await step(tok);                                   // 0:14 weighted connected undirected graph
   const G = L8();
-  say('weighted、connected、undirected graph', 'cost = 選中的邊權重相加');
-  await beat(tok, 3200);
+  say('weighted、connected、undirected graph', '有權重、連通、沒有方向');
+  await step(tok);                                   // 0:41 cost = 選中的邊相加
+  kill(q);
+  for (const [u, v] of [[1, 5], [1, 2], [2, 3]]) G.e(u, v).set(GC.tree, 2);
+  const nc = tag('cost = 4 + 8 + 7 + …', 'note', 0, 0.3, -3.4);
+  say('spanning tree 的 cost', '= 選中的邊 cost 加起來');
+  await step(tok);                                   // 1:00 找 cost 最小的
+  for (const e of G.E) e.set(GC.edge, 1);
+  txt(nc, '目標：cost 最小的 spanning tree');
+  b.mood('wow');
+  say('目標：找 cost 最小的 spanning tree', '');
+  await step(tok);                                   // 1:15 例子：8 個頂點
+  kill(nc); b.mood('calm');
+  for (let k = 1; k <= 8; k++) glow(G.N[k], GOLD);
+  say('例子：8 個頂點的圖', '1、2、…、8');
+  await step(tok);                                   // 1:35 權重
+  for (let k = 1; k <= 8; k++) glow(G.N[k], null);
+  for (const e of G.E) if (e.lbl) gCls(e.lbl, 'note');
+  say('權重：8, 7, 9, 4, 12, 10, 6, 14, 13…', '這個 graph 也叫 network');
+  await step(tok);                                   // 1:48 數一數：10 條邊
+  for (const e of G.E) if (e.lbl) gCls(e.lbl, '');
   const cnt = tag('邊：0', 'ptr alt', 0, 0.3, -3.6);
-  for (let i = 0; i < G.E.length; i++) { G.E[i].set(GC.hot, 1.6); txt(cnt, '邊：' + (i + 1)); await beat(tok, 380); G.E[i].set(GC.edge, 1); }
-  say('這張 network 有 10 條邊', 'n = 8 個頂點');
-  await beat(tok, 2600);
-  say('spanning tree 只有 n − 1 條邊', '8 − 1 = 7 條');
-  await beat(tok, 2600);
+  await anim(tok, 2200, (u) => { const k = Math.min(10, Math.ceil(u * 10)); G.E.forEach((e, i) => e.set(i < k ? GC.hot : GC.edge, i < k ? 1.5 : 1)); txt(cnt, '邊：' + k); });
+  say('數一數：10 條邊', '');
+  await step(tok);                                   // 2:07 spanning tree 只有 n − 1 = 7 條
+  for (const e of G.E) e.set(GC.edge, 1);
+  txt(cnt, 'spanning tree：只能有 7 條');
+  say('spanning tree 只有 n − 1 條邊', '這裡是 7 條，但圖有 10 條');
+  await step(tok);                                   // 2:26 n = 頂點數：8 − 1
+  txt(cnt, 'n = 頂點數 = 8 → 8 − 1 = 7');
+  say('n 是頂點個數', '8 − 1 = 7');
+  await step(tok);                                   // 2:40 選 7 條或丟 3 條
   for (const [u, v] of [[5, 6], [6, 7], [7, 8]]) G.e(u, v).set(GC.bad, 1.4);
   for (const e of G.E) if (e.rod.material.color.getHexString() !== 'd64545') e.set(GC.tree, 1.8);
-  say('select 7 條，或 discard 3 條', '找 cost 最小的那棵');
-  await beat(tok, 3200);
+  txt(cnt, '選 7 條（藍）＝ 丟 3 條（紅）');
+  b.mood('happy'); await b.hop(tok);
+  say('兩種做法：select 7 條，或 discard 3 條', '');
 }]);
-
-async function gKruskal(tok, G, n, ms = 1500) {
-  const uf = gUF(Object.keys(G.N));
-  const order = [...G.E].sort((a, b) => a.w - b.w);
-  let taken = 0, cost = 0;
-  for (const e of order) {
-    if (taken === n - 1) break;
-    e.set(GC.hot, 1.8); glow(G.N[e.u], GOLD); glow(G.N[e.v], GOLD);
-    say('下一條最小：(' + e.u + ', ' + e.v + ') = ' + e.w, '已選 ' + taken + ' 條');
-    await beat(tok, ms * 0.7);
-    if (uf.f(e.u) === uf.f(e.v)) {
-      e.set(GC.bad, 1.8);
-      say('會形成 cycle → 不選', '(' + e.u + ', ' + e.v + ') 丟掉');
-      await beat(tok, ms);
-      e.set(GC.dim, 0.6);
-    } else {
-      uf.u(e.u, e.v); taken++; cost += e.w;
-      e.set(GC.tree, 2.2);
-      say('沒有 cycle → 選', 'cost = ' + cost);
-      await beat(tok, ms * 0.7);
-    }
-    glow(G.N[e.u], null); glow(G.N[e.v], null);
-  }
-  for (const e of G.E) if (e.rod.scale.x < 2) e.set(GC.dim, 0.6);
-  return cost;
-}
-async function gPrim(tok, G, start, n, ms = 1500) {
-  const inT = new Set([String(start)]);
-  G.N[start].material.color.set(GC.ok);
-  let cost = 0;
-  while (inT.size < n) {
-    const cross = G.E.filter((e) => inT.has(e.u) !== inT.has(e.v));
-    if (!cross.length) break;
-    for (const e of G.E) if (e.rod.scale.x < 2) e.set(cross.includes(e) ? GC.pq : GC.edge, cross.includes(e) ? 1.4 : 1);
-    const best = cross.reduce((a, b) => (b.w < a.w ? b : a));
-    best.set(GC.hot, 1.8);
-    say('跟樹相連的邊：' + cross.map((e) => e.w).join('、'), '選最小的 ' + best.w);
-    await beat(tok, ms);
-    const v = inT.has(best.u) ? best.v : best.u;
-    inT.add(v); cost += best.w;
-    best.set(GC.tree, 2.2); G.N[v].material.color.set(GC.ok);
-    say('加入頂點 ' + v, 'cost = ' + cost);
-    await beat(tok, ms * 0.6);
-  }
-  for (const e of G.E) if (e.rod.scale.x < 2) e.set(GC.dim, 0.6);
-  return cost;
-}
 
 // 03:18 Kruskal：n 個頂點、0 條邊；邊由小到大，不形成 cycle 才選
 FRAG.push(['galgo-8v-kruskal', 'Kruskal：邊由小到大，不成 cycle 才選', async (tok) => {
-  fresh([0, 10, 8.6], [0, 0, 0]);
-  const G = L8();
-  for (const e of G.E) e.set(GC.dim, 0.6);
-  say('Kruskal：先放 n 個頂點、0 條邊', '頂點之間先不連');
-  await beat(tok, 2800);
-  say('邊依 cost 由小到大考慮', '4, 6, 7, 8, 9, 10, 11, 12, 13, 14');
-  await beat(tok, 2800);
-  for (const e of G.E) e.set(GC.edge, 1);
-  const c = await gKruskal(tok, G, 8, 1300);
-  say('選滿 7 條：MST', 'cost = ' + c);
-  await beat(tok, 3000);
+  fresh([0, 10, 8.6], [0, 0, 0.3]);
+  const G = L8(0);
+  const b = gBud('小樹', -6.0, 3.6);
+  await step(tok);                                   // 3:18 edge selection
+  say('greedy 第一類：edge selection', '一條一條「選」邊');
+  await step(tok);                                   // 3:56 方法一：Kruskal
+  const t = tag('方法一：Kruskal', 'say', -6.0, 1.6, 3.6);
+  say('方法一：Kruskal', '');
+  await step(tok);                                   // 4:07 n 個頂點、0 條邊
+  for (const e of G.E) e.hide(true);
+  say('先放 n 個頂點、0 條邊', '頂點之間都先不連');
+  await step(tok);                                   // 4:40 由小到大
+  for (const e of G.E) { e.hide(false); e.set(GC.dim, 0.6); }
+  const row = tag('4 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14', 'note', 0, 0.3, -3.6);
+  say('邊依 cost 由小到大考慮', 'ascending order');
+  await step(tok);                                   // 5:10 不形成 cycle 就選
+  const ord = LSORT();
+  await anim(tok, 2200, (u) => { const k = Math.ceil(u * 6); ord.slice(0, k).forEach(([x, y]) => G.e(x, y).set(GC.tree, 2.2)); });
+  txt(row, '選了 4、6、7、8、9、10');
+  say('不會形成 cycle → 選', '4、6、7、8、9、10 都選');
+  await step(tok);                                   // 5:26 唯一條件：不能有 cycle
+  G.e(7, 8).set(GC.bad, 2);
+  for (const [x, y] of [[3, 4], [4, 8], [3, 7]]) G.e(x, y).set(GC.hot, 2.2);
+  txt(row, '11：3–4–8–7 會繞成一圈 → 不選');
+  b.mood('sad');
+  say('下一條 11 會跟 3–4–8 形成 cycle', '不能有 cycle → 丟掉');
+  await step(tok);                                   // 5:31 跟已選的邊一起不成 cycle → 選
+  for (const [x, y] of [[3, 4], [4, 8], [3, 7]]) G.e(x, y).set(GC.tree, 2.2);
+  G.e(7, 8).set(GC.dim, 0.5);
+  G.e(2, 6).set(GC.tree, 2.2);
+  for (const [x, y] of [[6, 7], [5, 6]]) G.e(x, y).set(GC.dim, 0.5);
+  txt(row, '12 選進來：7 條，cost = 56');
+  kill(t); b.mood('happy'); await b.hop(tok);
+  say('12 跟已選的邊不成 cycle → 選', '滿 7 條：MST');
 }]);
 
 // 05:53 Prim：從一個頂點長成 n 個頂點的樹，每次加最小的相連邊
 FRAG.push(['galgo-8v-prim', 'Prim：從一個頂點長出一棵樹', async (tok) => {
-  fresh([0, 10, 8.6], [0, 0, 0]);
-  const G = L8();
-  say('Prim：從一個頂點開始', '每次加一個頂點＋一條邊');
-  glow(G.N[1], GOLD);
-  await beat(tok, 2800);
-  glow(G.N[1], null);
-  const c = await gPrim(tok, G, 1, 8, 1400);
-  say('長成 8 個頂點的樹', 'cost = ' + c + '（和 Kruskal 一樣）');
-  await beat(tok, 3000);
+  fresh([0, 10, 8.6], [0, 0, 0.3]);
+  const G = L8(0);
+  const b = gBud('小樹', -6.0, 3.6);
+  const inT = new Set();
+  const cross = () => G.E.filter((e) => inT.has(e.u) !== inT.has(e.v));
+  const paint = () => { for (const e of G.E) if (e.rod.scale.x < 2) { const c = cross().includes(e); e.set(c ? GC.pq : GC.edge, c ? 1.5 : 1); } };
+  const add = async (u, v) => {
+    const e = G.e(u, v), w = inT.has(String(u)) ? String(v) : String(u);
+    e.set(GC.tree, 2.2); inT.add(w); G.N[w].material.color.set(GC.ok); move(G.N[w], ...[G.N[w].userData.xz[0], 0.55, G.N[w].userData.xz[1]]);
+    await travel(tok, b.g, b.g.position.clone(), V3(G.N[w].userData.xz[0] - 0.9, 0, G.N[w].userData.xz[1] + 0.9), 700);
+    paint();
+  };
+  await step(tok);                                   // 5:54 方法二：Prim
+  say('方法二：Prim', '');
+  await step(tok);                                   // 6:05 只從 1 個頂點開始
+  inT.add('1'); G.N[1].material.color.set(GC.ok);
+  await travel(tok, b.g, b.g.position.clone(), V3(-5.4, 0, -0.7), 700);
+  say('Kruskal 從 n 個頂點開始', 'Prim 只從 1 個頂點開始');
+  await step(tok);                                   // 6:19 長成 n 個頂點的樹
+  const goal = tag('目標：長成 8 個頂點的樹', 'say', 0, 0.3, -3.6);
+  say('從一個頂點慢慢長大', '長成 n 個頂點的樹');
+  await step(tok);                                   // 6:36 每次加一個頂點＋一條邊
+  paint();
+  await add(1, 5);
+  say('每次加一個頂點、一條邊', '加入 5（邊 4）');
+  await step(tok);                                   // 6:54 有選擇時加 cost 最小的
+  paint(); G.e(1, 2).set(GC.hot, 1.8);
+  say('有好幾條可選：8、14', '選 cost 最小的 8');
+  await add(1, 2);
+  await step(tok);                                   // 7:07 差別：只看跟樹相連的邊
+  txt(goal, '黃色 = 跟樹相連的邊（Prim 只看這些）');
+  say('Kruskal 看全部的邊', 'Prim 只看跟目前這棵樹相連的邊');
+  await step(tok);                                   // 7:23 例：選最小的
+  G.e(2, 3).set(GC.hot, 1.8);
+  say('相連的邊：7、12、14', '選最小的 7');
+  await add(2, 3);
+  await step(tok);                                   // 7:42 不選 4、選 3（較小的）
+  G.e(3, 4).set(GC.hot, 1.8);
+  say('相連的邊：9、10、12、14', '不選大的，選小的 9');
+  await add(3, 4);
+  await step(tok);                                   // 7:51 這就是 Prim
+  txt(goal, '一直重複：直到 8 個頂點都進來');
+  b.mood('happy'); await b.hop(tok);
+  say('Prim：過程中永遠是一棵樹', '重複到 n 個頂點為止');
 }]);
 
 // 08:04 edge rejection：找 cycle 刪最大的邊；或由大到小刪（仍連通才刪）
 FRAG.push(['galgo-8v-reject', 'Edge rejection：在 cycle 裡刪掉最貴的邊', async (tok) => {
-  fresh([0, 10, 8.6], [0, 0, 0]);
-  const G = L8();
-  say('另一種 greedy：丟邊', '從整張連通圖開始（edge rejection）');
-  await beat(tok, 3000);
-  const cyc = [[[1, 2], [2, 6], [5, 6], [1, 5], [5, 6]], [[2, 3], [3, 7], [6, 7], [2, 6], [6, 7]], [[3, 4], [4, 8], [7, 8], [3, 7], [7, 8]]];
-  for (const c of cyc) {
-    const es = c.slice(0, 4).map(([u, v]) => G.e(u, v)), worst = G.e(...c[4]);
-    for (const e of es) e.set(GC.hot, 1.8);
-    say('找到一個 cycle：' + es.map((e) => e.w).join('、'), '刪掉最大的 ' + worst.w);
-    await beat(tok, 2600);
-    for (const e of es) e.set(GC.edge, 1);
-    worst.set(GC.bad, 1.8);
-    await beat(tok, 900);
-    worst.hide(true);
-  }
-  say('沒有 cycle 了就停', '剩 7 條 = spanning tree');
-  await beat(tok, 2800);
+  fresh([0, 10, 8.6], [0, 0, 0.3]);
+  const G = L8(0);
+  for (const e of G.E) e.hide(true);
+  const b = gBud('小樹', -6.0, 3.6);
+  const cut = async (u, v) => { const e = G.e(u, v); e.set(GC.bad, 2); await K.anim(tok, 700, () => {}); e.hide(true); };
+  const cyc = async (es, worst) => { for (const e of G.E) if (e.rod.visible) e.set(GC.edge, 1); for (const [u, v] of es) G.e(u, v).set(GC.hot, 1.8); await cut(...worst); };
+  await step(tok);                                   // 8:04 edge rejection
+  const t = tag('改成「丟」邊', 'say', -6.0, 1.6, 3.6);
+  say('greedy 第二類：edge rejection', '一條一條「丟」邊');
+  await step(tok);                                   // 8:47 從連通圖開始
   for (const e of G.E) e.hide(false);
-  for (const e of G.E) e.set(GC.edge, 1);
-  say('方法二：邊由大到小看', '刪掉後仍連通才刪');
-  await beat(tok, 2600);
-  const desc = [[5, 6, 1], [6, 7, 1], [2, 6, 0], [7, 8, 1], [3, 7, 0]];
-  for (const [u, v, del] of desc) {
-    const e = G.e(u, v);
-    e.set(del ? GC.bad : GC.tree, 1.8);
-    say(e.w + (del ? '：刪掉還連通 → 刪' : '：刪了會不連通 → 留'), '(' + u + ', ' + v + ')');
-    await beat(tok, 1700);
-    if (del) e.hide(true);
-  }
-  say('結果一樣：同一棵 MST', '剩下的邊都刪不得');
-  await beat(tok, 2800);
+  say('方法一：從整張連通圖開始', '10 條邊全部都在');
+  await step(tok);                                   // 9:02 找 cycle，刪最貴的
+  say('找到 cycle：8、12、14、4', '刪掉最貴的 14');
+  await cyc([[1, 2], [2, 6], [5, 6], [1, 5]], [5, 6]);
+  await step(tok);                                   // 9:19 一直重複
+  say('再找一個 cycle：7、10、13、12', '刪掉最貴的 13');
+  await cyc([[2, 3], [3, 7], [6, 7], [2, 6]], [6, 7]);
+  await step(tok);                                   // 9:34 沒有 cycle 就停
+  say('最後一個 cycle：9、6、11、10', '刪掉 11 → 沒有 cycle，停');
+  await cyc([[3, 4], [4, 8], [7, 8], [3, 7]], [7, 8]);
+  for (const e of G.E) if (e.rod.visible) e.set(GC.tree, 2);
+  b.mood('happy');
+  await step(tok);                                   // 9:56 方法二：由大到小
+  for (const e of G.E) { e.hide(false); e.set(GC.edge, 1); }
+  txt(t, '14 → 13 → 12 → 11 → 10 → 9 …'); b.mood('calm');
+  say('方法二：邊依 cost 由大到小考慮', 'descending order');
+  await step(tok);                                   // 10:04 刪了還連通才刪
+  const desc = [[5, 6, 1], [6, 7, 1], [2, 6, 0], [7, 8, 1], [3, 7, 0], [3, 4, 0]];
+  for (const [u, v, del] of desc) { const e = G.e(u, v); e.set(del ? GC.bad : GC.tree, del ? 1.8 : 2); await K.anim(tok, 380, () => {}); if (del) e.hide(true); }
+  txt(t, '14、13、11 刪掉；12、10、9 刪了會斷 → 留');
+  say('刪掉之後還連通，才刪', '會把圖切斷的邊就留下');
+  await step(tok);                                   // 10:17 兩種技巧
+  for (const e of G.E) if (e.rod.visible) e.set(GC.tree, 2);
+  b.mood('happy'); await b.hop(tok);
+  say('兩種丟邊的方法', '剩下 7 條：同一棵 MST');
 }]);
-
-// ════════ Abdul Bari：Prim's and Kruskal's Algorithms ════════
+// ════════ 4ZlRH0eK-qQ：Abdul Bari〈Prim's and Kruskal's Algorithms〉 ════════
 const HEX = {}; for (let k = 1; k <= 6; k++) { const a = (-90 + (k - 1) * 60) * Math.PI / 180; HEX[k] = [+(3.2 * Math.cos(a)).toFixed(2), +(3.2 * Math.sin(a)).toFixed(2)]; }
 const HEDG = [[1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 1]];
 
 // 00:00 spanning tree：全部頂點 + n − 1 條邊、沒有 cycle
 FRAG.push(['galgo-bari-st6', 'Spanning tree：6 個頂點取 5 條邊', async (tok) => {
   fresh([0, 10, 8], [0, 0, 0]);
-  const G = gG(HEX, HEDG);
-  say('G = (V, E)', 'V = {1, 2, 3, 4, 5, 6}');
-  await beat(tok, 2800);
-  say('spanning tree：G 的 subgraph', '頂點全拿，只拿部分的邊');
-  await beat(tok, 2800);
+  const b = gBud('小樹', -5.6, 3.2);
+  let G = null;
+  await step(tok);                                   // 0:00 先了解 spanning tree
+  const q = tag('spanning tree 是什麼？', 'say', -5.6, 1.6, 3.2);
+  say('Minimum cost spanning tree', '先弄懂：什麼是 spanning tree');
+  await step(tok);                                   // 0:12 G = (V, E)，V = {1..6}
+  kill(q);
+  G = gG(HEX, HEDG);
+  for (const e of G.E) e.hide(true);
+  say('圖 G = (V, E)', 'V = 頂點集合 {1, 2, 3, 4, 5, 6}');
+  await step(tok);                                   // 0:32 E = 邊的集合
+  for (const e of G.E) { e.hide(false); e.set(GC.hot, 1.5); }
+  say('E = 邊的集合', '(1, 2)、(2, 3)、(3, 4)…');
+  await step(tok);                                   // 0:41 spanning tree 是 subgraph
+  for (const e of G.E) e.set(GC.edge, 1);
+  say('spanning tree 是 G 的 subgraph', '從 G 裡拿一部分出來');
+  await step(tok);                                   // 0:58 頂點全拿，邊拿一部分
+  for (let k = 1; k <= 6; k++) glow(G.N[k], GOLD);
+  say('頂點：全部都要拿', '邊：只拿一部分');
+  await step(tok);                                   // 1:12 n = 6 → 5 條邊
+  for (let k = 1; k <= 6; k++) glow(G.N[k], null);
+  const nt = tag('n = 6 → 只拿 n − 1 = 5 條邊', 'note', 0, 0.3, -4.2);
+  say('n = 6 個頂點', '邊只拿 n − 1 = 5 條');
+  await step(tok);                                   // 1:35 拿 5 條，不拿 (6, 1)
   G.e(6, 1).hide(true);
   for (const e of G.E) if (e !== G.e(6, 1)) e.set(GC.tree, 2);
-  say('n = 6 → 只拿 n − 1 = 5 條', '沒有 cycle');
-  await beat(tok, 3000);
+  b.mood('happy'); await b.hop(tok);
+  say('拿 1、2、3、4、5 號邊，不拿 (6, 1)', '這就是一棵 spanning tree');
+  await step(tok);                                   // 1:45 tree 不能有 cycle
+  txt(nt, 'tree 沒有 cycle：繞不回原點');
+  say('tree 不會有 cycle', '從一點出發繞不回自己');
+  await step(tok);                                   // 2:02 換一條不拿
   G.e(6, 1).hide(false); G.e(6, 1).set(GC.tree, 2);
-  G.e(1, 2).set(GC.edge, 1); G.e(1, 2).hide(true);
-  say('改成不拿另一條', '也是一棵 spanning tree');
-  await beat(tok, 2800);
-  G.e(1, 2).hide(false);
-  say('選哪幾條邊是一個 choice', 'S ⊆ G：V(S) = V(G)，|E(S)| = |V| − 1');
-  await beat(tok, 3000);
+  G.e(1, 2).hide(true);
+  txt(nt, '改成不拿 (1, 2)：也是 spanning tree');
+  say('拿 (6, 1)、不拿 (1, 2)', '也是一棵 spanning tree');
+  await step(tok);                                   // 2:12 選哪幾條是 choice
+  G.e(1, 2).hide(false); G.e(1, 2).set(GC.edge, 1);
+  txt(nt, '要選哪幾條邊：有好幾種選擇');
+  say('選哪幾條邊是一個 choice', '');
+  await step(tok);                                   // 2:18 形式定義
+  for (const e of G.E) e.set(GC.edge, 1);
+  txt(nt, 'S ⊆ G：V(S) = V(G)，|E(S)| = |V| − 1');
+  say('形式定義', 'S ⊆ G：V(S) = V(G)，|E(S)| = |V| − 1');
 }]);
 
-// 02:45 有幾棵 spanning tree：6C5 = 6；多一條邊後要扣掉含 cycle 的組合
+// 02:51 有幾棵 spanning tree：6C5 = 6；多一條邊後要扣掉含 cycle 的組合
 FRAG.push(['galgo-bari-count', '可能的 spanning tree 有幾棵', async (tok) => {
   fresh([0, 10, 8], [0, 0, 0]);
-  const G = gG(HEX, HEDG);
+  const G = gG(HEX, HEDG, { drop: 0 });
+  const b = gBud('小樹', -5.6, 3.2);
+  const nt = tag('', 'note', 0, 0.3, -4.2);
+  let ch = null;
+  await step(tok);                                   // 2:51 可以有幾棵？
+  b.mood('wow');
+  say('一張圖可以生出幾棵不同的 spanning tree？', '');
+  await step(tok);                                   // 3:01 6 條邊選 5 條
+  b.mood('calm');
   for (const e of G.E) e.set(GC.tree, 2);
-  say('6 條邊選 5 條', '6C5 = 6 種');
-  await beat(tok, 2400);
-  for (const e of G.E) { e.hide(true); await beat(tok, 650); e.hide(false); }
-  say('每次少一條：剛好 6 棵', '都沒有 cycle');
-  await beat(tok, 2400);
-  const ch = gE(G.N[2], G.N[5], null);
-  ch.set(GC.hot, 1.8);
-  say('多一條邊 (2, 5)：7 條選 5 條', '7C5 = 21 種組合');
-  await beat(tok, 3000);
+  txt(nt, '6 條邊選 5 條：6C5');
+  say('6 條邊，要選 5 條', '6C5');
+  await step(tok);                                   // 3:20 6C5 = 6：每次少一條
+  await anim(tok, 2400, (u) => { const k = Math.min(5, Math.floor(u * 6)); G.E.forEach((e, i) => e.hide(i === k)); });
+  G.E.forEach((e) => e.hide(false));
+  txt(nt, '6C5 = 6 棵');
+  say('每次不拿其中一條', '6C5 = 6 棵');
+  await step(tok);                                   // 3:50 多一條邊：7 條選 5 條
+  ch = gE(G.N[2], G.N[5], null); ch.set(GC.hot, 1.8);
+  txt(nt, '多一條 (2, 5)：7 條選 5 條');
+  say('再多一條邊 (2, 5)', '7 條邊選 5 條');
+  await step(tok);                                   // 3:57 可能性更多
+  for (const e of G.E) e.set(GC.dim, 0.6);
+  for (const [u, v] of [[1, 2], [3, 4], [4, 5], [5, 6]]) G.e(u, v).set(GC.tree, 2); ch.set(GC.tree, 2);
+  say('例如這樣也是一棵', '可能性變多了');
+  await step(tok);                                   // 4:12 7C5，但會有 cycle
+  for (const e of G.E) e.set(GC.tree, 2); ch.set(GC.hot, 1.8);
+  txt(nt, '7C5 = 21，但有些組合含 cycle');
+  say('7C5 = 21', '可是 (2, 5) 會造成 cycle');
+  await step(tok);                                   // 4:20 兩個 cycle
   for (const [u, v] of [[1, 2], [5, 6], [6, 1]]) G.e(u, v).set(GC.bad, 2);
   ch.set(GC.bad, 2);
-  say('但 (2, 5) 會造成 cycle', '1-2-5-6 是一個');
-  await beat(tok, 2600);
+  await anim(tok, 1200, () => {});
   for (const [u, v] of [[1, 2], [5, 6], [6, 1]]) G.e(u, v).set(GC.tree, 2);
   for (const [u, v] of [[2, 3], [3, 4], [4, 5]]) G.e(u, v).set(GC.bad, 2);
-  say('2-3-4-5 是另一個', 'Bari 的公式：7C5 − 2（cycle 數）');
-  await beat(tok, 3200);
-  for (const [u, v] of [[2, 3], [3, 4], [4, 5]]) G.e(u, v).set(GC.tree, 2);
-  ch.set(GC.hot, 1.8);
-  say('精確：扣掉「含 cycle」的組合', '每個 4-cycle ＋ 任 1 條：3 + 3 = 6');
-  await beat(tok, 3400);
-  say('所以是 21 − 6 = 15 棵', '只扣 cycle 個數（−2）會算錯');
-  await beat(tok, 3000);
+  say('1-2-5-6 是一個 cycle', '2-3-4-5 是另一個');
+  await step(tok);                                   // 4:32 Bari：7C5 − 2
+  for (const [u, v] of [[2, 3], [3, 4], [4, 5]]) G.e(u, v).set(GC.tree, 2); ch.set(GC.hot, 1.8);
+  txt(nt, 'Bari：7C5 − 2（cycle 個數）');
+  say('Bari 的算法：7C5 − 2', '');
+  await step(tok);                                   // 4:41 一般式（要更正）
+  txt(nt, '正確：21 − 6（含 cycle 的組合）= 15');
+  b.mood('wow');
+  say('一般式：C(|E|, |V| − 1) − cycle 數', '小心：要扣「含 cycle 的組合」，這裡是 6 → 15 棵');
 }]);
 
-// 05:05 weighted graph：不同 spanning tree 的 cost 不同（14、13、9）
+// 05:06 weighted graph：不同 spanning tree 的 cost 不同（14、13、9）
 FRAG.push(['galgo-bari-costs', '不同 spanning tree 的 cost：14、13、9', async (tok) => {
   fresh([0, 9.5, 7.6], [0, 0, 0]);
-  const G = gG({ 1: [-2.6, -2], 2: [2.6, -2], 3: [2.6, 2], 4: [-2.6, 2] }, [[1, 2, 5], [2, 3, 3], [3, 4, 6], [4, 1, 4], [1, 3, 2]]);
-  say('weighted graph：4 個頂點', '要選 4 − 1 = 3 條邊');
-  await beat(tok, 2800);
+  const b = gBud('小樹', -5.2, 2.8);
+  let G = null;
   const total = tag('', 'ptr alt', 0, 0.3, -3.5);
-  const trees = [[[[1, 2], [2, 3], [3, 4]], '5 + 3 + 6 = 14'], [[[4, 1], [3, 4], [2, 3]], '4 + 6 + 3 = 13'], [[[4, 1], [1, 3], [2, 3]], '4 + 2 + 3 = 9']];
-  for (const [es, s] of trees) {
-    for (const e of G.E) e.set(GC.dim, 0.6);
-    for (const [u, v] of es) G.e(u, v).set(GC.tree, 2.2);
-    txt(total, 'cost = ' + s);
-    say('一棵 spanning tree', 'cost = ' + s);
-    await beat(tok, 2800);
-  }
-  say('cost 會不一樣：要找最小的', 'minimum cost spanning tree');
-  await beat(tok, 2800);
-  say('全部試一遍太花時間', 'greedy：Prim、Kruskal');
-  await beat(tok, 2800);
+  const show = (es, s) => { for (const e of G.E) e.set(GC.dim, 0.6); for (const [u, v] of es) G.e(u, v).set(GC.tree, 2.2); txt(total, 'cost = ' + s); };
+  await step(tok);                                   // 5:06 weighted graph
+  G = gG({ 1: [-2.6, -2], 2: [2.6, -2], 3: [2.6, 2], 4: [-2.6, 2] }, [[1, 2, 5], [2, 3, 3], [3, 4, 6], [4, 1, 4], [1, 3, 2]]);
+  say('邊上有權重：weighted graph', '');
+  await step(tok);                                   // 5:22 4 個頂點 → 3 條邊
+  say('畫幾棵 spanning tree 看看', '4 個頂點 → 每棵 3 條邊');
+  await step(tok);                                   // 5:34 第一棵：14
+  show([[1, 2], [2, 3], [3, 4]], '5 + 3 + 6 = 14');
+  say('第一棵', 'cost = 5 + 3 + 6 = 14');
+  await step(tok);                                   // 5:47 第二棵：13
+  show([[4, 1], [3, 4], [2, 3]], '4 + 6 + 3 = 13');
+  say('第二棵', 'cost = 4 + 6 + 3 = 13');
+  await step(tok);                                   // 6:04 第三棵：9
+  show([[4, 1], [1, 3], [2, 3]], '4 + 2 + 3 = 9');
+  b.mood('happy'); await b.hop(tok);
+  say('第三棵', 'cost = 4 + 2 + 3 = 9');
+  await step(tok);                                   // 6:24 cost 會不一樣
+  say('觀察：不同的 spanning tree', 'cost 會不一樣');
+  await step(tok);                                   // 6:42 找最小的
+  txt(total, '找 cost 最小的：minimum cost spanning tree');
+  say('問題：cost 最小的是哪一棵？', 'minimum cost spanning tree');
+  await step(tok);                                   // 6:57 全部試一遍
+  b.mood('sad');
+  say('方法一：全部試一遍，挑最小', '可以，但太花時間');
+  await step(tok);                                   // 7:07 greedy：Prim、Kruskal
+  b.mood('happy'); await b.hop(tok);
+  txt(total, 'greedy：Prim、Kruskal');
+  say('有 greedy 方法', 'Prim 和 Kruskal');
 }]);
 
-// 10:35 Prim 遇到不連通的圖：只會長出起點那一塊
+// Bari 的 7 頂點圖（與本章互動模式同一張）
+const BARI7 = { 1: [0, -3.3], 2: [3.7, -1.7], 3: [3.3, 1.9], 4: [0, 3.3], 5: [-3.3, 1.9], 6: [-3.7, -1.7], 7: [0, 0] };
+const BARI7E = [[1, 2, 28], [1, 6, 10], [2, 3, 16], [2, 7, 14], [3, 4, 12], [4, 5, 22], [4, 7, 18], [5, 6, 25], [5, 7, 24]];
+const bari7 = (drop) => gG(BARI7, BARI7E, { drop });
+
+// 07:42 Prim（cued 版的 prim-connected-min）：先選最小邊，之後只選相連的最小邊
+FRAG.push(['galgo-bari-prim', 'Prim：每次選跟樹相連的最小邊', async (tok) => {
+  fresh([0, 11, 9.4], [0, 0, -0.2]);
+  const b = gBud('小樹', -6.2, 3.6);
+  let G = null; const inT = new Set();
+  const cost = tag('cost = 0', 'ptr alt', 5.6, 0.3, -3.8);
+  let c = 0;
+  const cross = () => G.E.filter((e) => inT.has(e.u) !== inT.has(e.v));
+  const paint = () => { for (const e of G.E) if (e.rod.scale.x < 2) { const k = cross().includes(e); e.set(k ? GC.pq : GC.edge, k ? 1.5 : 1); } };
+  const take = async (u, v) => {
+    const e = G.e(u, v); e.set(GC.tree, 2.2);
+    for (const k of [String(u), String(v)]) if (!inT.has(k)) { inT.add(k); G.N[k].material.color.set(GC.ok); }
+    c += e.w; txt(cost, 'cost = ' + c);
+    const [x, z] = G.N[v].userData.xz; await travel(tok, b.g, b.g.position.clone(), V3(x - 0.9, 0, z + 0.9), 700);
+    paint();
+  };
+  await step(tok);                                   // 7:42 用 Prim 找 MST
+  G = bari7();
+  say('兩個演算法：先看 Prim', '在這張 weighted graph 上找 MST');
+  await step(tok);                                   // 7:56 先選全圖最小的邊
+  G.e(1, 6).set(GC.hot, 2);
+  say('第一步：選整張圖最小的邊', '(1, 6) = 10');
+  await take(1, 6);
+  await step(tok);                                   // 8:09 之後要連到已選的頂點
+  say('之後：一樣選最小的邊', '但一定要連到已選的頂點（黃色）');
+  await step(tok);                                   // 8:22 (3, 4) = 12 不能選
+  G.e(3, 4).set(GC.bad, 1.8); b.mood('sad');
+  const no = tag('12 沒連到 1 或 6 → 不選', 'bad', 1.65, 1.4, 2.6);
+  say('下一小的是 (3, 4) = 12', '沒有連到 1 或 6 → 不能選');
+  await step(tok);                                   // 8:34 一直維持一棵樹
+  kill(no); paint(); b.mood('calm');
+  say('Prim 的想法：一直維持一棵樹', '選遠處的邊，最後可能接不成樹');
+  await step(tok);                                   // 8:58 相連的 25、28 → 25
+  G.e(5, 6).set(GC.hot, 2);
+  say('跟 1、6 相連的：25、28', '選 25 → 加入 5');
+  await take(6, 5);
+  await step(tok);                                   // 9:09 22、24、28 → 22
+  G.e(4, 5).set(GC.hot, 2);
+  say('相連的：28、24、22', '選 22 → 加入 4');
+  await take(5, 4);
+  await step(tok);                                   // 9:26 24、18、12 → 12
+  G.e(3, 4).set(GC.hot, 2);
+  say('相連的：28、24、18、12', '選 12 → 加入 3');
+  await take(4, 3);
+  await step(tok);                                   // 9:33 24、18、16 → 16
+  G.e(2, 3).set(GC.hot, 2);
+  say('相連的：28、24、18、16', '選 16 → 加入 2');
+  await take(3, 2);
+  await step(tok);                                   // 9:51 2 → 7：14
+  G.e(2, 7).set(GC.hot, 2);
+  say('相連的最小：(2, 7) = 14', '加入 7');
+  await take(2, 7);
+  await step(tok);                                   // 9:57 7 個頂點、6 條邊
+  for (const e of G.E) if (e.rod.scale.x < 2) e.set(GC.dim, 0.6);
+  b.mood('happy'); await b.hop(tok);
+  say('7 個頂點都進來了：6 條邊', 'minimum cost spanning tree');
+  await step(tok);                                   // 10:20 cost = 99
+  say('cost = 10 + 25 + 22 + 12 + 16 + 14', '= 99');
+  await step(tok);                                   // 10:31 Prim 的作法
+  txt(cost, 'Prim：先選最小，再一直選「相連的」最小');
+  say('Prim：先選最小的邊', '之後一直選跟樹相連的最小邊');
+}]);
+
+// 10:42 Prim 遇到不連通的圖：只會長出起點那一塊
 FRAG.push(['galgo-prim-disconn', 'Prim 遇到不連通的圖', async (tok) => {
   fresh([0, 10, 8.4], [0, 0, 0]);
-  const G = gG({ 1: [-5, -1.6], 2: [-2.4, -2.2], 3: [-2.4, 1.4], 4: [-5, 1.8], 5: [1.6, -1.8], 6: [4.8, -1.2], 7: [3.2, 2] },
+  const b = gBud('小樹', -5.4, 3.6);
+  let G = null;
+  await step(tok);                                   // 10:42 7 個頂點、兩塊
+  G = gG({ 1: [-5, -1.6], 2: [-2.4, -2.2], 3: [-2.4, 1.4], 4: [-5, 1.8], 5: [1.6, -1.8], 6: [4.8, -1.2], 7: [3.2, 2] },
     [[1, 2], [2, 3], [3, 4], [4, 1], [1, 3], [5, 6], [6, 7], [7, 5]]);
   say('7 個頂點，但分成兩塊', 'not connected');
-  await beat(tok, 2800);
-  say('不連通 → 沒有 spanning tree', 'spanning tree 一定要連通');
-  await beat(tok, 2800);
+  await step(tok);                                   // 11:03 沒有演算法找得到
+  b.mood('sad');
+  say('Prim 找得到它的 MST 嗎？', '不行，任何演算法都不行');
+  await step(tok);                                   // 11:17 spanning tree 一定要連通
+  tag('spanning tree 必須連通', 'bad', 0, 0.3, -3.6);
+  say('spanning tree 一定要連通', '不連通的圖根本沒有 spanning tree');
+  await step(tok);                                   // 11:21 從 1 跑 Prim：只得到一塊
+  b.mood('calm');
   G.N[1].material.color.set(GC.ok);
-  say('從頂點 1 跑 Prim', '只能挑跟樹相連的邊');
-  await beat(tok, 2200);
-  for (const [u, v] of [[1, 2], [2, 3], [3, 4]]) { G.e(u, v).set(GC.tree, 2.2); G.N[v].material.color.set(GC.ok); await beat(tok, 1000); }
+  await anim(tok, 1800, (u) => { const k = Math.ceil(u * 3); [[1, 2], [2, 3], [3, 4]].slice(0, k).forEach(([x, y]) => { G.e(x, y).set(GC.tree, 2.2); G.N[y].material.color.set(GC.ok); }); });
   for (const k of [5, 6, 7]) glow(G.N[k], '#3a0000');
-  say('5、6、7 永遠接不上', 'Prim 只得到 1 所在那塊的樹');
-  await beat(tok, 3200);
+  say('從頂點 1 跑 Prim', '只得到 1 那一塊的 spanning tree；5、6、7 接不上');
 }]);
 
-// 11:33／13:31 Kruskal 的時間：每次找最小 Θ(E)，做 V − 1 次；用 min heap 改成 log
-FRAG.push(['galgo-kruskal-heap', 'Kruskal 的時間：用 min heap 找最小邊', async (tok) => {
+// 11:31 Kruskal（cued 版的 kruskal-reject-cycle）：全圖最小邊，形成 cycle 就丟
+FRAG.push(['galgo-bari-kruskal', 'Kruskal：全圖最小邊，形成 cycle 就丟掉', async (tok) => {
+  fresh([0, 11, 9.4], [0, 0, -0.2]);
+  const G = bari7(0);
+  const b = gBud('小樹', -6.2, 3.6);
+  const cost = tag('cost = 0', 'ptr alt', 5.6, 0.3, -3.8);
+  const row = tag('10 → 12 → 14 → 16 → 18 → 22 → 24 → 25 → 28', 'note', 0, 0.3, -4.6);
+  let c = 0;
+  const pick = (u, v) => { const e = G.e(u, v); e.set(GC.tree, 2.2); G.N[u].material.color.set(GC.ok); G.N[v].material.color.set(GC.ok); c += e.w; txt(cost, 'cost = ' + c); };
+  const drop = (u, v) => { G.e(u, v).set(GC.bad, 2); };
+  await step(tok);                                   // 11:31 Kruskal：也是 greedy
+  say('另一個方法：Kruskal', '也是 greedy，不用試所有 spanning tree');
+  await step(tok);                                   // 11:47 永遠選最小的邊
+  say('規則：永遠選 cost 最小的邊', '從整張圖挑');
+  await step(tok);                                   // 11:59 (1, 6) = 10
+  pick(1, 6); say('最小：(1, 6) = 10', '選');
+  await step(tok);                                   // 12:05 (3, 4) = 12
+  pick(3, 4); say('下一小：(3, 4) = 12', '不用跟前面相連，照選');
+  await step(tok);                                   // 12:13 (2, 7) = 14
+  pick(2, 7); say('(2, 7) = 14', '選');
+  await step(tok);                                   // 12:23 (2, 3) = 16
+  pick(2, 3); say('(2, 3) = 16', '選'); await b.hop(tok);
+  await step(tok);                                   // 12:29 (4, 7) = 18 → cycle
+  drop(4, 7); b.mood('wow');
+  for (const [u, v] of [[3, 4], [2, 3], [2, 7]]) G.e(u, v).set(GC.hot, 2.2);
+  say('下一條 (4, 7) = 18', '4–3–2–7 已經連通 → 會形成 cycle');
+  await step(tok);                                   // 12:37 形成 cycle 就丟
+  for (const [u, v] of [[3, 4], [2, 3], [2, 7]]) G.e(u, v).set(GC.tree, 2.2);
+  G.e(4, 7).set(GC.dim, 0.5); b.mood('calm');
+  say('形成 cycle 的邊：丟掉，不放進答案', '');
+  await step(tok);                                   // 12:57 (4, 5) = 22
+  pick(4, 5); say('(4, 5) = 22', '不會成 cycle → 選');
+  await step(tok);                                   // 13:04 (5, 7) = 24 → cycle
+  drop(5, 7); await anim(tok, 900, () => {}); G.e(5, 7).set(GC.dim, 0.5);
+  say('(5, 7) = 24', '會形成 cycle → 丟掉');
+  await step(tok);                                   // 13:09 (5, 6) = 25
+  pick(5, 6); G.e(1, 2).set(GC.dim, 0.5);
+  say('(5, 6) = 25', '選滿 6 條');
+  await step(tok);                                   // 13:15 cost 99，和 Prim 一樣
+  b.mood('happy'); await b.hop(tok);
+  txt(row, 'Prim、Kruskal：同一個結果');
+  say('cost = 99', '跟 Prim 的結果一樣');
+}]);
+
+// 13:32 Kruskal 的時間：每次找最小 Θ(E)，做 V − 1 次；用 min Heap 改成 log
+FRAG.push(['galgo-kruskal-heap', 'Kruskal 的時間：用 min Heap 找最小邊', async (tok) => {
   fresh([0, 3.2, 13.5], [0, 2.4, 0]);
   const W = [28, 10, 16, 14, 12, 22, 18, 25, 24];
-  const row = W.map((w, i) => cube(w, '#efe3c8', [1.0, 0.6, 0.6], -5.6 + i * 1.4, 0.4, 0, 2.5));
-  say('每次都要找最小的邊', '一個一個掃：Θ(E)');
-  await beat(tok, 2400);
-  const cur = tag('scan', 'ptr', -5.6, 1.3, 0);
+  let row = null, cur = null;
+  await step(tok);                                   // 13:32 Kruskal 要花多少時間？
+  row = W.map((w, i) => cube(w, '#efe3c8', [1.0, 0.6, 0.6], -5.6 + i * 1.4, 0.4, 0, 2.5));
+  say('Kruskal 要花多少時間？', '9 條邊的 cost');
+  await step(tok);                                   // 13:38 每次從 E 條邊找最小
+  cur = tag('scan', 'pkt', -5.6, 1.3, 0);
   await anim(tok, 2200, (t) => { cur.position.x = -5.6 + t * 11.2; });
   glow(row[1], GOLD);
-  say('掃完才知道 10 最小', '要選 V − 1 次');
-  await beat(tok, 2400);
-  say('總共 Θ(V · E)', '都當成 n → Θ(n²)');
-  await beat(tok, 2600);
+  say('每次都要從 E 條邊裡找最小的', '一個一個掃：Θ(E)');
+  await step(tok);                                   // 13:48 要選 V − 1 次
+  const nt = tag('要選 V − 1 次（7 個頂點 → 6 條）', 'note', 0, 2.6, 0);
+  say('要選幾次？', 'V − 1 次');
+  await step(tok);                                   // 14:08 Θ(V · E)
+  txt(nt, '總時間 Θ(V · E)');
+  say('總共 Θ(V · E)', 'V = 頂點數，E = 邊數');
+  await step(tok);                                   // 14:24 都當成 n → n²
+  txt(nt, '都當成 n → Θ(n²)');
+  say('兩個都當成 n', 'Θ(n²)');
+  await step(tok);                                   // 14:37 可以改進
+  kill(nt);
+  say('可以更快嗎？', '有一種資料結構，隨時給你最小值');
+  await step(tok);                                   // 14:50 min Heap
   row.forEach((m) => kill(m)); kill(cur);
   const H = [10, 12, 14, 16, 18, 22, 24, 25, 28];
   const P = (i) => { const L = Math.floor(Math.log2(i + 1)), p = i - (2 ** L - 1); return [(p + 0.5) * (12 / 2 ** L) - 6, 5.4 - L * 1.4]; };
   const nodes = [];
   H.forEach((w, i) => { const [x, y] = P(i); const par = i ? nodes[(i - 1) >> 1] : null; nodes.push(K.tnode(w, x, y, 0, par, '#efe3c8')); });
-  say('改用 min heap 放所有邊', 'root 永遠是最小');
-  await beat(tok, 2800);
+  glow(nodes[0], GOLD);
+  say('min Heap', 'root 永遠是最小值');
+  await step(tok);                                   // 14:59 delete 就拿到下一個最小邊
   const [rx, ry] = P(0);
   const out = cube(10, '#e6c36a', [0.9, 0.9, 0.9], rx, ry, 0.6);
   fly(out, V3(4, 8, 2));
   kill(nodes[8].userData.edge); kill(nodes[8]); nodes.length = 8;
   relabel(nodes[0], 28);
   const A = [28, 12, 14, 16, 18, 22, 24, 25];
-  say('delete-min：取出 10', '最後一個 28 移到 root');
-  await beat(tok, 2400);
   let i = 0;
   for (;;) {
     const l = 2 * i + 1, r = l + 1;
     if (l >= A.length) break;
     const c = r < A.length && A[r] < A[l] ? r : l;
-    glow(nodes[i], GOLD); glow(nodes[l], GOLD); if (r < A.length) glow(nodes[r], GOLD);
     if (A[c] >= A[i]) break;
-    say('和較小的孩子 ' + A[c] + ' 交換', '往下一層');
-    await beat(tok, 1500);
     [A[i], A[c]] = [A[c], A[i]];
+    await anim(tok, 500, () => {});
     relabel(nodes[i], A[i]); relabel(nodes[c], A[c]);
-    glow(nodes[i], null); glow(nodes[l], null); if (r < A.length) glow(nodes[r], null);
     i = c;
   }
-  nodes.forEach((m) => glow(m, null));
-  say('最多走樹高：O(log n)', 'Bari：(n − 1) × log n → O(n log n)');
-  await beat(tok, 3200);
+  glow(nodes[0], GOLD);
+  say('所有邊放進 min Heap', 'delete 一次 → 拿到最小的 10，下一個 12 浮上來');
+  await step(tok);                                   // 15:10 delete 花 log n
+  for (const k of [0, 1, 3, 7]) glow(nodes[k], GOLD);   // 28 剛才往下走的那條路
+  say('每次 delete 只走一條樹高的路', 'O(log n)');
+  await step(tok);                                   // 15:21 n 次 → n log n
+  say('做 n 次（V − 1 次）', 'Kruskal：O(n log n)');
 }]);
 
-// 15:38 Kruskal 跑在不連通的圖：得到每一塊各自的 spanning tree
+// 15:32 Kruskal 跑在不連通的圖：得到每一塊各自的 spanning tree
 FRAG.push(['galgo-kruskal-forest', 'Kruskal 跑在不連通的圖上', async (tok) => {
   fresh([0, 10, 8.4], [0, 0, 0]);
   const G = gG({ 1: [-5.6, -1.6], 2: [-3, -2.2], 3: [-3, 1.6], 4: [-5.6, 2], 5: [0.4, -1.8], 6: [3.2, -2.6], 7: [5.6, -0.6], 8: [4.6, 2.4], 9: [1.2, 2] },
     [[1, 2], [2, 3], [3, 4], [4, 1], [5, 6], [6, 7], [7, 8], [8, 9], [9, 5], [6, 8]]);
-  say('兩塊：4 個頂點＋5 個頂點', '不連通 → 沒有 spanning tree');
-  await beat(tok, 3000);
-  say('Kruskal 會想選 9 − 1 = 8 條', '一樣從全圖挑最小的邊');
-  await beat(tok, 2800);
+  const b = gBud('小樹', -6.2, 3.8, '#f4a56a', 0.5);
+  await step(tok);                                   // 15:32 兩塊：4 + 5 個頂點
+  say('不連通的圖', '一塊 4 個頂點、一塊 5 個頂點');
+  await step(tok);                                   // 15:43 沒有 spanning tree
+  b.mood('sad');
+  say('不連通 → 沒有 spanning tree', '');
+  await step(tok);                                   // 15:52 Kruskal 想選 8 條
+  b.mood('calm');
+  const nt = tag('Kruskal 想選 9 − 1 = 8 條', 'note', 0, 0.3, -3.8);
+  say('跑 Kruskal 會怎樣？', '它會想選 9 − 1 = 8 條邊');
+  await step(tok);                                   // 16:08 兩塊輪流被選到
   const picks = [[1, 2], [5, 6], [2, 3], [7, 8], [9, 5], [3, 4], [6, 7]];
-  for (const [u, v] of picks) { G.e(u, v).set(GC.tree, 2.2); await beat(tok, 900); }
+  await anim(tok, 2400, (u) => { picks.slice(0, Math.ceil(u * picks.length)).forEach(([x, y]) => G.e(x, y).set(GC.tree, 2.2)); });
   for (const [u, v] of [[4, 1], [8, 9], [6, 8]]) G.e(u, v).set(GC.dim, 0.6);
-  say('兩塊輪流被選到', '剩下的邊都會形成 cycle');
-  await beat(tok, 2800);
-  say('只選得到 3 + 4 = 7 條', '得到每一塊各自的 spanning tree');
-  await beat(tok, 3200);
+  txt(nt, '只選得到 3 + 4 = 7 條');
+  say('從兩塊裡輪流選到最小的邊', '剩下的都會形成 cycle');
+  await step(tok);                                   // 16:28 每一塊各自的 spanning tree
+  b.mood('happy'); await b.hop(tok);
+  txt(nt, '每一塊各自一棵：spanning forest');
+  say('得到每一塊各自的 spanning tree', '不是整張圖的');
 }]);
 
 // 16:42 考題：缺權重的邊，最小可能是多少？
 FRAG.push(['galgo-missing-w', '考題：沒被選的邊，權重至少多少', async (tok) => {
   fresh([0, 10, 8.4], [0, 0, 0]);
-  const G = gG({ 1: [-5, -1.6], 2: [-2.2, -2.8], 3: [-2.6, 0.8], 4: [0.8, -0.8], 5: [1.4, 2.8], 6: [4.6, 0.4] },
+  const b = gBud('小樹', -5.8, 3.4);
+  let G = null;
+  await step(tok);                                   // 16:42 題目
+  G = gG({ 1: [-5, -1.6], 2: [-2.2, -2.8], 3: [-2.6, 0.8], 4: [0.8, -0.8], 5: [1.4, 2.8], 6: [4.6, 0.4] },
     [[1, 2, 2], [1, 3, 3], [2, 3, 0, '?₁'], [3, 4, 4], [4, 6, 4], [4, 5, 5], [5, 6, 0, '?₂']]);
   for (const [u, v] of [[1, 2], [1, 3], [3, 4], [4, 6], [4, 5]]) G.e(u, v).set(GC.tree, 2);
-  say('有權重的 5 條邊 = MST', '?₁、?₂ 最小可能是多少？');
-  await beat(tok, 3200);
-  G.e(1, 2).set(GC.hot, 2.2); await beat(tok, 900); G.e(1, 3).set(GC.hot, 2.2);
-  say('Kruskal 先選 2、再選 3', '');
-  await beat(tok, 2200);
+  say('考題：兩條邊沒有權重', '有權重的 5 條剛好是 MST');
+  await step(tok);                                   // 17:03 最小可能是多少？
+  b.mood('wow');
+  say('?₁、?₂ 最小可能是多少？', '');
+  await step(tok);                                   // 17:12 先選 2、再選 3
+  b.mood('calm');
+  G.e(1, 2).set(GC.hot, 2.2); await anim(tok, 600, () => {}); G.e(1, 3).set(GC.hot, 2.2);
+  say('用 Kruskal 想：2 被選、3 被選', '');
+  await step(tok);                                   // 17:21 ?₁ 會形成 cycle
   G.e(2, 3).set(GC.bad, 2);
-  say('?₁ 跟 2、3 形成 cycle → 沒選', '?₁ 比 3 小就會先被選');
-  await beat(tok, 3000);
-  say('Bari：?₁ 最小是 4', '?₁ > 3');
-  await beat(tok, 2400);
+  say('?₁ 沒被選', '因為它會跟 2、3 形成 cycle');
+  await step(tok);                                   // 17:31 排在 2、3 之後 → 4
+  const n1 = tag('?₁ = 4', 'note', -2.4, 1.2, -1.0);
+  say('它在 2、3 之後才輪到', 'Bari：?₁ 最小是 4');
+  await step(tok);                                   // 17:41 比 4 小就會先被選
+  say('如果比 4 小（例如 1）', '它會比 3 早被考慮 → 就會被選進去');
+  await step(tok);                                   // 17:50 4、4、5 被選
   G.e(1, 2).set(GC.tree, 2); G.e(1, 3).set(GC.tree, 2);
-  for (const [u, v] of [[3, 4], [4, 6], [4, 5]]) { G.e(u, v).set(GC.hot, 2.2); await beat(tok, 700); }
+  await anim(tok, 1500, (u) => { [[3, 4], [4, 6], [4, 5]].slice(0, Math.ceil(u * 3)).forEach(([x, y]) => G.e(x, y).set(GC.hot, 2.2)); });
+  say('接著 4、4、5 都被選', '');
+  await step(tok);                                   // 17:58 ?₂ 最後剩下 → 6
   G.e(5, 6).set(GC.bad, 2);
-  say('再選 4、4、5；?₂ 留到最後', '它跟 4、5 形成 cycle');
-  await beat(tok, 3000);
-  say('?₂ 比 5 大 → 最小是 6', '缺的權重：4 和 6');
-  await beat(tok, 3000);
+  tag('?₂ = 6', 'note', 3.0, 1.2, 1.6);
+  b.mood('happy'); await b.hop(tok);
+  say('?₂ 最後才被考慮、還形成 cycle', '比 5 大 → 最小是 6');
+  await step(tok);                                   // 18:07 考試常見
+  kill(n1);
+  say('考試常見：懂 Kruskal 就能反推', '缺的權重：4 和 6');
 }]);
 
-// 18:15 MST 的 cost 唯一，但 MST 不一定唯一
+// 18:16 MST 的 cost 唯一，但 MST 不一定唯一
 FRAG.push(['galgo-two-msts', 'MST cost 唯一，但樹可以不只一棵', async (tok) => {
   fresh([0, 10, 8], [0, 0, 0]);
-  const G = gG({ A: [-3.6, -1.6], B: [0, -2.6], C: [3.6, -1.6], D: [-2, 2], E: [2, 2] }, [['A', 'B', 2], ['B', 'C', 3], ['A', 'D', 3], ['D', 'E', 4], ['C', 'E', 4]]);
-  say('用 Kruskal 找 MST', '5 個頂點 → 4 條邊');
-  await beat(tok, 2600);
-  for (const [u, v, c] of [['A', 'B', '先選最小的 2'], ['B', 'C', '兩條 3：哪條先都行'], ['A', 'D', '另一條 3 也不成 cycle']]) {
-    G.e(u, v).set(GC.tree, 2.2); say(c, ''); await beat(tok, 1800);
-  }
+  const b = gBud('小樹', -5.6, 3.2);
+  let G = null;
+  const nt = tag('', 'ptr alt', 0, 0.3, -3.8);
+  await step(tok);                                   // 18:16 再找一張圖的 MST
+  G = gG({ A: [-3.6, -1.6], B: [0, -2.6], C: [3.6, -1.6], D: [-2, 2], E: [2, 2] }, [['A', 'B', 2], ['B', 'C', 3], ['A', 'D', 3], ['D', 'E', 4], ['C', 'E', 4]]);
+  say('再用 Kruskal 找一張圖的 MST', '5 個頂點 → 4 條邊');
+  await step(tok);                                   // 18:26 先選最小的 2
+  G.e('A', 'B').set(GC.tree, 2.2);
+  say('先選最小的 2', '');
+  await step(tok);                                   // 18:31 兩條 3：任選
+  G.e('B', 'C').set(GC.tree, 2.2);
+  say('接著兩條 3：哪條先都可以', '先選 B–C');
+  await step(tok);                                   // 18:37 另一條 3 也不成 cycle
+  G.e('A', 'D').set(GC.tree, 2.2);
+  say('另一條 3（A–D）', '不會形成 cycle → 也選');
+  await step(tok);                                   // 18:41 兩條 4：任選一條
   G.e('D', 'E').set(GC.tree, 2.2); G.e('C', 'E').set(GC.dim, 0.6);
-  say('兩條 4：先選 D–E', 'cost = 2 + 3 + 3 + 4 = 12');
-  await beat(tok, 3000);
+  say('兩條 4 也是任選一條', '選 D–E，不會形成 cycle');
+  await step(tok);                                   // 18:51 4 條邊、5 個頂點
+  b.mood('happy'); await b.hop(tok);
+  say('5 個頂點、4 條邊', '得到一棵 spanning tree');
+  await step(tok);                                   // 19:02 cost = 12
+  txt(nt, 'cost = 2 + 3 + 3 + 4 = 12');
+  say('cost = 2 + 3 + 3 + 4', '= 12');
+  await step(tok);                                   // 19:14 最佳解只有一個？
+  b.mood('wow');
+  say('最小化問題只有一個最佳答案', '那 MST 也只有一棵嗎？（等一下更正）');
+  await step(tok);                                   // 19:29 改選另一條 4
   G.e('D', 'E').set(GC.dim, 0.6); G.e('C', 'E').set(GC.tree, 2.2);
-  say('改選 C–E 也是 spanning tree', 'cost 一樣 = 12');
-  await beat(tok, 3000);
-  say('最小 cost 只有一個：12', '但 MST 可以有 2 棵');
-  await beat(tok, 3000);
+  say('不選 D–E，改選 C–E', '也是一棵 spanning tree');
+  await step(tok);                                   // 19:44 cost 一樣是 12
+  txt(nt, 'cost = 2 + 3 + 3 + 4 = 12（一樣）');
+  b.mood('calm');
+  say('cost 還是 12', '最佳的「值」只有一個');
+  await step(tok);                                   // 20:00 兩棵 MST
+  G.e('D', 'E').set(GC.tree, 1.6);
+  txt(nt, 'MST 有 2 棵，最小 cost 都是 12');
+  b.mood('happy'); await b.hop(tok);
+  say('MST 可以有 2 棵', '但最小 cost 只有一個：12');
 }]);
-
-// ════════ Abdul Bari：Disjoint Sets（find、union、cycle 偵測、weighted union、collapsing find） ════════
+// ════════ wU6udHRIkcc：Abdul Bari〈Disjoint Sets〉（find、union、cycle 偵測、weighted union、collapsing find） ════════
 const DPOS8 = { 1: [-5.4, -1.6], 2: [-2.8, -1.6], 3: [-5.4, 1.6], 4: [-2.8, 1.6], 5: [-0.2, -1.6], 6: [2.4, -1.6], 7: [-0.2, 1.6], 8: [2.4, 1.6] };
 const DSE = [[1, 2], [3, 4], [5, 6], [7, 8], [2, 4], [2, 5], [1, 3], [6, 8], [5, 7]];
-
-// 01:04 兩個不相交的集合
-FRAG.push(['galgo-ds-sets', 'Disjoint sets：S1 ∩ S2 = ∅', async (tok) => {
-  fresh([0, 9.5, 8.6], [-0.8, 0, 0]);
-  const G = gG(DPOS8, [[1, 2], [3, 4], [2, 4], [5, 6], [7, 8], [6, 8]]);
-  say('不連通的無向圖：兩個 component', '');
-  await beat(tok, 2600);
+// 兩個 component 的集合框
+function dsBoxes() {
   const b1 = ghostBox('#4b9ee2', 3.8, 0.9, 4.4); b1.position.set(-4.1, 0.3, 0);
   const b2 = ghostBox('#9b7ef4', 3.8, 0.9, 4.4); b2.position.set(1.1, 0.3, 0);
-  tag('S1 = {1, 2, 3, 4}', 'ptr', -4.1, 0.3, -3); tag('S2 = {5, 6, 7, 8}', 'ptr', 1.1, 0.3, -3);
-  say('每個 component 當成一個集合', 'S1、S2');
-  await beat(tok, 3000);
-  say('沒有共同的元素', 'S1 ∩ S2 = ∅ → disjoint');
-  await beat(tok, 3000);
-  say('只做兩種操作', 'find、union');
-  await beat(tok, 2600);
+  return { b1, b2 };
+}
+
+// 01:12 兩個不相交的集合
+FRAG.push(['galgo-ds-sets', 'Disjoint sets：S1 ∩ S2 = ∅', async (tok) => {
+  fresh([0, 9.5, 8.6], [-0.8, 0, 0]);
+  const bd = gBud('小集', 5.4, 2.6, '#9fd3a8');
+  await step(tok);                                   // 1:12 不連通的無向圖：兩個 component
+  const G = gG(DPOS8, [[1, 2], [3, 4], [2, 4], [5, 6], [7, 8], [6, 8]]);
+  say('不連通、無向的圖', '兩個 component（兩塊）');
+  await step(tok);                                   // 1:19 S1 = {1, 2, 3, 4}
+  const B = dsBoxes(); B.b2.visible = false;
+  tag('S1 = {1, 2, 3, 4}', 'ptr', -4.1, 0.3, -3);
+  say('每個 component 當成一個集合', 'S1 = {1, 2, 3, 4}');
+  await step(tok);                                   // 1:27 S2 = {5, 6, 7, 8}
+  B.b2.visible = true;
+  tag('S2 = {5, 6, 7, 8}', 'ptr', 1.1, 0.3, -3);
+  say('第二塊', 'S2 = {5, 6, 7, 8}');
+  await step(tok);                                   // 1:39 沒有共同的頂點
+  for (const k of [1, 2, 3, 4, 5, 6, 7, 8]) glow(G.N[k], GOLD);
+  bd.look(-1);
+  say('沒有任何頂點同時在兩邊', '');
+  await step(tok);                                   // 1:46 交集是空集合
+  for (const k of [1, 2, 3, 4, 5, 6, 7, 8]) glow(G.N[k], null);
+  tag('S1 ∩ S2 = ∅', 'note', -1.5, 1.6, 2.8);
+  bd.mood('happy'); await bd.hop(tok);
+  say('S1 ∩ S2 = ∅', '沒有共同元素 → disjoint');
 }]);
 
 // 02:00 find、union；edge (4, 8) → union；edge (1, 5) → 同集合 = cycle
 FRAG.push(['galgo-ds-find-union', 'find 與 union：同一集合就有 cycle', async (tok) => {
   fresh([0, 9.5, 8.6], [-0.8, 0, 0]);
   const G = gG(DPOS8, [[1, 2], [3, 4], [2, 4], [5, 6], [7, 8], [6, 8]], { drop: 0 });
-  const b1 = ghostBox('#4b9ee2', 3.8, 0.9, 4.4); b1.position.set(-4.1, 0.3, 0);
-  const b2 = ghostBox('#9b7ef4', 3.8, 0.9, 4.4); b2.position.set(1.1, 0.3, 0);
+  const { b1, b2 } = dsBoxes();
   const t1 = tag('S1', 'ptr', -4.1, 0.3, -3), t2 = tag('S2', 'ptr', 1.1, 0.3, -3);
-  for (const [v, s] of [[5, 'S2'], [7, 'S2'], [3, 'S1']]) {
-    glow(G.N[v], GOLD);
-    say('find(' + v + ')：' + v + ' 在哪個集合？', 'find(' + v + ') = ' + s);
-    await beat(tok, 2000);
-    glow(G.N[v], null);
-  }
+  const bd = gBud('小集', 5.4, 2.6, '#9fd3a8');
+  const ask = async (v, s) => {
+    const p = await gPkt(tok, 'find(' + v + ')', V3(5.4, 1.6, 2.6), gAt(G.N[v], 1.2), 800);
+    txt(p, 'find(' + v + ') = ' + s); glow(G.N[v], GOLD); return p;
+  };
+  await step(tok);                                   // 2:00 兩種操作：find、union
+  const op = tag('操作：find、union', 'say', 5.4, 1.7, 2.6);
+  say('只做兩種操作', 'find 和 union');
+  await step(tok);                                   // 2:15 find(5)
+  kill(op);
+  let p = await ask(5, 'S2');
+  say('find(5)：5 在哪個集合？', 'find(5) = S2');
+  await step(tok);                                   // 2:25 find = membership
+  say('find 就是查「是哪個集合的成員」', 'set membership');
+  await step(tok);                                   // 2:39 find(7)
+  kill(p); glow(G.N[5], null);
+  p = await ask(7, 'S2');
+  say('find(7)', '= S2');
+  await step(tok);                                   // 2:46 find(3)
+  kill(p); glow(G.N[7], null);
+  p = await ask(3, 'S1');
+  say('find(3)', '= S1');
+  await step(tok);                                   // 3:05 加一條邊 (4, 8)
+  kill(p); glow(G.N[3], null);
   const e48 = gE(G.N[4], G.N[8], null); e48.set(GC.hot, 1.8);
-  say('加一條邊 (4, 8)', 'find(4) = S1，find(8) = S2');
-  await beat(tok, 2800);
+  say('union：先加一條邊 (4, 8)', '');
+  await step(tok);                                   // 3:25 find(4) = S1
+  p = await ask(4, 'S1');
+  say('find(4)', '= S1');
+  await step(tok);                                   // 3:35 find(8) = S2
+  const p8 = await ask(8, 'S2');
+  say('find(8)', '= S2');
+  await step(tok);                                   // 3:44 不同集合 → union
+  kill(p); kill(p8); glow(G.N[4], null); glow(G.N[8], null);
   kill(b1); kill(b2); kill(t1); kill(t2);
   const b3 = ghostBox('#2fc092', 9, 0.9, 4.6); b3.position.set(-1.5, 0.3, 0);
   tag('S3 = S1 ∪ S2 = {1..8}', 'ptr', -1.5, 0.3, -3.1);
-  e48.set(GC.tree, 2);
-  say('不同集合 → union', '邊 (u, v)：find 不同就 union');
-  await beat(tok, 3000);
+  e48.set(GC.tree, 2); bd.mood('happy'); await bd.hop(tok);
+  say('兩個不同集合 → union', 'S1 ∪ S2 = {1, 2, …, 8}');
+  await step(tok);                                   // 4:02 union 的目的
+  const why = tag('邊 (u, v)：find(u) ≠ find(v) → union', 'note', -1.5, 1.6, 3.2);
+  bd.mood('calm');
+  say('union 的目的', '邊兩端在不同集合 → 合併');
+  await step(tok);                                   // 4:19 再加 (1, 5)
+  kill(why);
   const e15 = gE(G.N[1], G.N[5], null); e15.set(GC.hot, 1.8);
+  say('再加一條邊 (1, 5)', '');
+  await step(tok);                                   // 4:42 find(1)、find(5) 同集合
   glow(G.N[1], GOLD); glow(G.N[5], GOLD);
-  say('再加 (1, 5)：find(1) = find(5) = S3', '同一個集合');
-  await beat(tok, 2800);
-  e15.set(GC.bad, 2);
+  say('find(1) = S3，find(5) = S3', '同一個集合');
+  await step(tok);                                   // 4:53 → cycle
+  e15.set(GC.bad, 2); bd.mood('wow');
+  tag('同一集合 → 有 cycle！', 'bad', -2.8, 1.6, -1.6);
   say('兩端在同一集合 → 有 cycle', '這就是偵測 cycle 的方法');
-  await beat(tok, 3000);
 }]);
 
 // 05:25 從頭把 9 條邊依序加入：維護集合、偵測 cycle（就是 Kruskal）
 FRAG.push(['galgo-ds-cycle-sets', '用集合偵測 cycle：9 條邊依序加入', async (tok) => {
   fresh([0.6, 10, 8.4], [0.6, 0, 0]);
-  const G = gG(DPOS8, DSE.map(([u, v], i) => [u, v, i + 1, '#' + (i + 1)]));
-  for (const e of G.E) e.set(GC.dim, 0.6);
-  let sets = [], next = 1, rows = [];
-  let U = [1, 2, 3, 4, 5, 6, 7, 8];
+  const bd = gBud('小集', 5.6, 3.4, '#9fd3a8', 0.5);
+  let G = null;
+  let sets = [], next = 1, rows = [], U = [1, 2, 3, 4, 5, 6, 7, 8];
   const draw = () => {
     rows.forEach(kill);
     rows = [tag('U = {' + U.join(',') + '}', 'idx', 5.4, 0.3, -3.2)].concat(sets.map((s, r) => tag('S' + s.id + ' = {' + s.m.join(',') + '}', 'ptr', 5.4, 0.3, -2.2 + r * 1.0)));
   };
-  draw();
-  say('8 個頂點，各自在 universal set', '邊依編號 1..9 加入');
-  await beat(tok, 2800);
   const where = (v) => sets.find((s) => s.m.includes(v));
-  for (let i = 0; i < DSE.length; i++) {
-    const [u, v] = DSE[i], e = G.E[i];
-    e.set(GC.hot, 1.8); glow(G.N[u], GOLD); glow(G.N[v], GOLD);
-    const su = where(u), sv = where(v);
-    const nm = (s) => (s ? 'S' + s.id : 'U');
-    if (su && su === sv) {
-      e.set(GC.bad, 2);
-      say('邊 ' + (i + 1) + '：(' + u + ', ' + v + ') 同在 ' + nm(su), '有 cycle → 不加');
-      await beat(tok, 2600);
-      e.set(GC.dim, 0.6);
-    } else {
-      const m = [...(su ? su.m : [u]), ...(sv ? sv.m : [v])].sort((a, b) => a - b);
-      sets = sets.filter((s) => s !== su && s !== sv);
-      U = U.filter((x) => x !== u && x !== v);
-      sets.push({ id: next++, m });
-      draw();
-      e.set(GC.tree, 2);
-      say('邊 ' + (i + 1) + '：(' + u + ', ' + v + ') 在 ' + nm(su) + '、' + nm(sv), 'union → S' + (next - 1) + ' = {' + m.join(',') + '}');
-      await beat(tok, i < 4 ? 1500 : 2600);
-    }
-    glow(G.N[u], null); glow(G.N[v], null);
-  }
+  const nm = (s) => (s ? 'S' + s.id : 'U');
+  const look = (i) => { const [u, v] = DSE[i]; for (const e of G.E) if (e.rod.scale.x < 1.9) e.set(GC.dim, 0.6); G.E[i].set(GC.hot, 1.8); glow(G.N[u], GOLD); glow(G.N[v], GOLD); };
+  const unite = (i) => {
+    const [u, v] = DSE[i], su = where(u), sv = where(v);
+    const m = [...(su ? su.m : [u]), ...(sv ? sv.m : [v])].sort((a, b) => a - b);
+    sets = sets.filter((s) => s !== su && s !== sv); U = U.filter((x) => x !== u && x !== v);
+    sets.push({ id: next++, m }); draw(); G.E[i].set(GC.tree, 2); glow(G.N[u], null); glow(G.N[v], null);
+    return 'union → S' + (next - 1) + ' = {' + m.join(',') + '}';
+  };
+  await step(tok);                                   // 5:25 一張例圖，從頭開始
+  G = gG(DPOS8, DSE.map(([u, v], i) => [u, v, i + 1, '#' + (i + 1)]));
+  say('一張例圖：從頭開始偵測 cycle', '邊一條一條加進來');
+  await step(tok);                                   // 5:58 邊的編號 = 加入順序
+  for (const e of G.E) { e.set(GC.dim, 0.6); if (e.lbl) gCls(e.lbl, 'note'); }
+  say('邊上的編號 = 加入的順序', '像 Kruskal 由小到大');
+  await step(tok);                                   // 6:11 universal set
+  for (const e of G.E) if (e.lbl) gCls(e.lbl, '');
+  draw();
+  say('8 個頂點先放在 universal set', '每個元素自己算一個集合');
+  await step(tok);                                   // 6:33 邊 1：(1, 2) find
+  look(0);
+  say('邊 1：(1, 2)', 'find(1)、find(2)：都在 U');
+  await step(tok);                                   // 6:49 union → S1
+  say('從 U 拿出來，union', unite(0)); await bd.hop(tok);
+  await step(tok);                                   // 6:57 邊 2：(3, 4)
+  look(1); say('邊 2：(3, 4) 都在 U', unite(1));
+  await step(tok);                                   // 7:24 邊 3：(5, 6)
+  look(2); say('邊 3：(5, 6) 都在 U', unite(2));
+  await step(tok);                                   // 7:34 邊 4：(7, 8)
+  look(3); say('邊 4：(7, 8) 都在 U', unite(3));
+  await step(tok);                                   // 7:47 邊 5：(2, 4)
+  look(4); say('邊 5：(2, 4)', 'find(2) = ' + nm(where(2)) + '，find(4) = ' + nm(where(4)));
+  await step(tok);                                   // 8:07 不同集合 → union
+  say('不同集合 → union', unite(4)); await bd.hop(tok);
+  await step(tok);                                   // 8:28 邊 6：(2, 5)
+  look(5); say('邊 6：(2, 5)', 'find(2) = ' + nm(where(2)) + '，find(5) = ' + nm(where(5)));
+  await step(tok);                                   // 8:38 union → S6
+  say('不同集合 → union', unite(5));
+  await step(tok);                                   // 9:04 邊 7：(1, 3)
+  look(6); say('邊 7：(1, 3)', 'find(1) = ' + nm(where(1)) + '，find(3) = ?');
+  await step(tok);                                   // 9:21 同集合 → cycle
+  G.E[6].set(GC.bad, 2); bd.mood('wow');
+  say('find(3) 也是 ' + nm(where(3)), '同一個集合 → 有 cycle');
+  await step(tok);                                   // 9:34 已選的邊＋這條 = 一圈
+  for (const i of [0, 1, 4]) G.E[i].set(GC.hot, 2.2);
+  say('1–2–4–3 已經連通', '再加 (1, 3) 就繞一圈 → 不加');
+  await step(tok);                                   // 9:53 邊 8：(6, 8)
+  for (const i of [0, 1, 4]) G.E[i].set(GC.tree, 2);
+  G.E[6].set(GC.dim, 0.5); glow(G.N[1], null); glow(G.N[3], null); bd.mood('calm');
+  look(7); say('邊 8：(6, 8)', 'find(6) = ' + nm(where(6)) + '，find(8) = ' + nm(where(8)));
+  await step(tok);                                   // 10:09 union → S7
+  say('不同集合 → union', unite(7));
+  await step(tok);                                   // 10:26 邊 9：(5, 7)
+  look(8); say('邊 9：(5, 7)', 'find(5)、find(7)');
+  await step(tok);                                   // 10:37 都在 S7 → cycle
+  G.E[8].set(GC.bad, 2); bd.mood('wow');
+  say('都在 ' + nm(where(5)), '同一個集合 → cycle');
+  await step(tok);                                   // 10:43 Kruskal 就是這樣做
+  G.E[8].set(GC.dim, 0.5); glow(G.N[5], null); glow(G.N[7], null);
+  bd.mood('happy'); await bd.hop(tok);
   say('Kruskal 就是這樣判斷要不要選', '同一集合 = 會形成 cycle');
-  await beat(tok, 3000);
 }]);
 
 // 森林畫法：par[v] < 0 → root（−size），否則 par[v] = parent
@@ -1753,65 +2477,136 @@ function gForestNew(par) {
   gForestDraw(F, par);
   return F;
 }
+// find 的小手：從 v 沿 parent 一格一格往上走（不改樹）
+async function gClimb(tok, F, par, v, ms = 450) {
+  const at = (k) => V3(F.N[k].position.x, F.N[k].position.y + 0.85, 0.5);
+  const p = tag('find(' + v + ')', 'pkt', at(v).x, at(v).y, 0.5);
+  glow(F.N[v], GOLD);
+  let k = v;
+  while (par[k] > 0) { const nx = par[k]; await travel(tok, p, at(k), at(nx), ms); glow(F.N[nx], GOLD); k = nx; }
+  return { p, root: k };
+}
+const gUnglow = (F) => { for (const k of Object.keys(F.N)) glow(F.N[k], null); };
 
 // 11:09 圖形表示：每個集合是一棵樹，root 當代表；weighted union
 FRAG.push(['galgo-ds-trees', 'Disjoint set 畫成樹：root 是代表', async (tok) => {
   fresh([0, 3.6, 12.5], [0, 3.2, 0]);
   const par = { 1: -1, 2: -1, 3: -1, 4: -1, 5: -1, 6: -1, 7: -1, 8: -1 };
-  const F = gForestNew(par);
-  say('不用集合名稱，只要一個代表', '代表 = 樹的 root（parent）');
-  await beat(tok, 2800);
-  const steps = [[1, 2, '(1, 2)：1 當 parent、2 當 child'], [3, 4, '(3, 4)'], [5, 6, '(5, 6)'], [7, 8, '(7, 8)']];
-  for (const [r, c, cap] of steps) { par[c] = r; par[r] = -2; gForestDraw(F, par); say(cap, '四個集合：各 2 個點'); await beat(tok, 1400); }
-  glow(F.N[2], GOLD); glow(F.N[4], GOLD);
-  say('(2, 4)：root 分別是 1 和 3', '不同 root → union');
-  await beat(tok, 2800);
-  par[3] = 1; par[1] = -4; gForestDraw(F, par);
-  say('3 掛到 1 底下', '大小一樣：誰當 parent 都可以');
-  await beat(tok, 2800);
-  glow(F.N[2], null); glow(F.N[4], null); glow(F.N[2], GOLD); glow(F.N[5], GOLD);
-  say('(2, 5)：兩棵樹大小不同', 'root 1：4 個點　root 5：2 個點');
-  await beat(tok, 2600);
-  par[5] = 1; par[1] = -6; gForestDraw(F, par);
-  say('點多的當 parent：5 掛到 1', 'weighted union');
-  await beat(tok, 3000);
-  glow(F.N[2], null); glow(F.N[5], null); glow(F.N[1], GOLD); glow(F.N[3], GOLD);
-  say('(1, 3)：兩個的 root 都是 1', '同一集合 → cycle');
-  await beat(tok, 3000);
+  const bd = gBud('小集', -6.2, 1.6, '#9fd3a8', 0.6);
+  let F = null, p = null, q = null;
+  const link = (c, r, size) => { par[c] = r; par[r] = -size; gForestDraw(F, par); };
+  await step(tok);                                   // 11:09 用圖形表示集合
+  F = gForestNew(par);
+  say('用圖形表示集合', '8 個頂點，一開始各自一個');
+  await step(tok);                                   // 11:55 不要集合名稱，只要一個代表
+  const nt = tag('一個集合 = 一棵樹，root 當代表', 'note', 0, 6.4, 0);
+  say('不需要集合名稱', '只要一個「代表」：樹的 root');
+  await step(tok);                                   // 12:02 (1, 2)：1 當 parent
+  link(2, 1, 2);
+  say('(1, 2)：1 當 parent、2 當 child', '反過來也可以');
+  await step(tok);                                   // 12:11 (3, 4)
+  link(4, 3, 2);
+  say('(3, 4)：3 當 parent', '');
+  await step(tok);                                   // 12:26 (5, 6)、(7, 8)
+  link(6, 5, 2); await K.anim(tok, 400, () => {}); link(8, 7, 2);
+  say('(5, 6)、(7, 8) 一樣', '四個集合，各 2 個點');
+  await step(tok);                                   // 12:42 (2, 4)：parent 是 1 和 3
+  kill(nt);
+  p = await gClimb(tok, F, par, 2); q = await gClimb(tok, F, par, 4);
+  say('(2, 4)：2 的 parent 是 1，4 的 parent 是 3', '不同 root → 不同集合');
+  await step(tok);                                   // 13:07 union：3 掛到 1 底下
+  kill(p.p); kill(q.p); gUnglow(F);
+  link(3, 1, 4); bd.mood('happy'); await bd.hop(tok);
+  say('union：一棵的 root 掛到另一棵的 root 下面', '3 變成 1 的 child');
+  await step(tok);                                   // 13:23 一樣大：誰當 parent 都可以
+  bd.mood('calm');
+  say('為什麼不選 3 當 parent？', '兩棵一樣大：誰都可以');
+  await step(tok);                                   // 13:33 (2, 5)
+  p = await gClimb(tok, F, par, 2); q = await gClimb(tok, F, par, 5);
+  say('(2, 5)：root 是 1 和 5', '不同集合 → union');
+  await step(tok);                                   // 14:03 誰當 parent？比點數
+  kill(p.p); kill(q.p);
+  const w1 = tag('4 個點', 'note', F.N[1].position.x, 6.5, 0), w5 = tag('2 個點', 'note', F.N[5].position.x, 6.5, 0);
+  say('為什麼不選 5 當 parent？', 'root 1 有 4 個點，root 5 只有 2 個');
+  await step(tok);                                   // 14:17 點多的當 parent：weighted union
+  kill(w1); kill(w5); gUnglow(F);
+  link(5, 1, 6); bd.mood('happy'); await bd.hop(tok);
+  say('點多（weight 大）的當 parent', '5 掛到 1 → weighted union');
+  await step(tok);                                   // 14:47 (1, 3)：同一個 root → cycle
+  bd.mood('wow');
+  p = await gClimb(tok, F, par, 1); q = await gClimb(tok, F, par, 3);
+  tag('root 都是 1 → cycle', 'bad', 0, 6.4, 0);
+  say('(1, 3)：parent 都是 1', '同一集合 → cycle');
 }]);
 
 // 15:18 用陣列：parent[]，負數 = root 且 |值| = 點數
 FRAG.push(['galgo-ds-array', 'Disjoint set 的陣列：parent[ ]', async (tok) => {
   fresh([0, 3.4, 13.5], [0, 2.6, 0]);
   const par = { 1: -1, 2: -1, 3: -1, 4: -1, 5: -1, 6: -1, 7: -1, 8: -1 };
-  const F = gForestNew(par);
-  const cell = {};
+  let F = null; const cell = {};
+  const bd = gBud('小集', -6.5, 1.8, '#9fd3a8', 0.5);
+  const setc = (v, x) => { par[v] = x; relabel(cell[v], x); glow(cell[v], GOLD); };
+  const clr = () => { for (let k = 1; k <= 8; k++) glow(cell[k], null); gUnglow(F); };
+  // find 走一遍：樹上的小手＋陣列格子一起亮
+  const find = async (v) => { const r = await gClimb(tok, F, par, v, 380); let k = v; glow(cell[k], GOLD); while (par[k] > 0) { k = par[k]; glow(cell[k], GOLD); } return r; };
+  const pk = [];
+  const unite = (small, big) => { const size = par[small] + par[big]; setc(small, big); setc(big, size); gForestDraw(F, par); };
+  await step(tok);                                   // 15:18 圖形＋陣列一起看
+  F = gForestNew(par);
+  say('同一件事，改用陣列做', '上面是圖形，下面是陣列');
+  await step(tok);                                   // 15:46 parent 陣列，全部 −1
   for (let v = 1; v <= 8; v++) { const x = -5.25 + (v - 1) * 1.5; cell[v] = cube(-1, '#efe3c8', [1.2, 0.6, 0.6], x, 0.3, 0, 2); tag(String(v), 'idx', x, -0.35, 0.4); }
-  tag('parent', 'ptr', -6.6, 0.3, 0);
-  say('一個陣列 parent，index = 頂點', '−1：自己就是一個集合');
-  await beat(tok, 3000);
-  const find = (v) => { const p = [v]; while (par[p[p.length - 1]] > 0) p.push(par[p[p.length - 1]]); return p; };
-  const set = (v, x) => { par[v] = x; relabel(cell[v], x); glow(cell[v], GOLD); };
-  const fast = [[1, 2], [3, 4], [5, 6], [7, 8], [2, 4], [2, 5], [1, 3], [6, 8], [5, 7]];
-  for (let i = 0; i < fast.length; i++) {
-    const [u, v] = fast[i], pu = find(u), pv = find(v), ru = pu[pu.length - 1], rv = pv[pv.length - 1];
-    for (let k = 1; k <= 8; k++) glow(cell[k], null);
-    const f = 'find(' + u + '): ' + pu.join('→') + '　find(' + v + '): ' + pv.join('→');
-    if (ru === rv) {
-      glow(F.N[u], GOLD); glow(F.N[v], GOLD);
-      say('(' + u + ', ' + v + ')：root 都是 ' + ru + ' → cycle', f);
-      await beat(tok, 2800);
-      glow(F.N[u], null); glow(F.N[v], null);
-      continue;
-    }
-    const big = -par[ru] >= -par[rv] ? ru : rv, small = big === ru ? rv : ru, size = par[ru] + par[rv];
-    set(small, big); set(big, size);
-    gForestDraw(F, par);
-    say('(' + u + ', ' + v + ')：' + small + ' 掛到 ' + big, f + '　parent[' + big + '] = ' + size);
-    await beat(tok, i < 4 ? 1600 : 2800);
-  }
-  say('負號 = root，數字 = 集合點數', 'parent[1] = −8：8 個點都在一起');
-  await beat(tok, 3000);
+  tag('parent', 'ptr', -6.6, 0.9, 0);
+  say('一個陣列 parent：index = 頂點', '−1：自己就是一個集合');
+  await step(tok);                                   // 16:16 (1, 2)：find 都是 −1，常數時間
+  pk.push((await find(1)).p, (await find(2)).p);
+  say('(1, 2)：parent[1] = −1、parent[2] = −1', '各自是 root，看一格就知道：常數時間');
+  await step(tok);                                   // 16:44 union：parent[2] = 1
+  pk.splice(0).forEach(kill); clr();
+  par[2] = 1; relabel(cell[2], 1); glow(cell[2], GOLD); gForestDraw(F, par);
+  say('union：1 當 parent', 'parent[2] = 1');
+  await step(tok);                                   // 17:03 parent[1] = −2
+  setc(1, -2); bd.mood('wow');
+  say('root 不只寫 −1：寫 −(點數)', 'parent[1] = −2：負號 = root，2 = 兩個點');
+  await step(tok);                                   // 17:22 (3, 4)
+  clr(); bd.mood('calm'); unite(4, 3);
+  say('(3, 4)：parent[4] = 3', 'parent[3] = −2');
+  await step(tok);                                   // 17:47 (5, 6)
+  clr(); unite(6, 5);
+  say('(5, 6)：parent[6] = 5', 'parent[5] = −2');
+  await step(tok);                                   // 17:57 (7, 8)
+  clr(); unite(8, 7);
+  say('(7, 8)：parent[8] = 7', 'parent[7] = −2');
+  await step(tok);                                   // 18:14 (2, 4)：2 → 1、4 → 3
+  clr();
+  pk.push((await find(2)).p, (await find(4)).p);
+  say('(2, 4)：find(2) = 1，find(4) = 3', 'root 不同 → union');
+  await step(tok);                                   // 18:44 parent[3] = 1，parent[1] = −4
+  pk.splice(0).forEach(kill); clr(); unite(3, 1);
+  say('3 掛到 1：parent[3] = 1', 'parent[1] = −2 + (−2) = −4');
+  await step(tok);                                   // 19:13 (2, 5)
+  clr();
+  pk.push((await find(2)).p, (await find(5)).p);
+  say('(2, 5)：find(2) = 1（−4），find(5) = 5（−2）', '一步就到：當成常數時間');
+  await step(tok);                                   // 19:48 點數多的當 parent
+  pk.splice(0).forEach(kill); clr(); unite(5, 1);
+  bd.mood('happy'); await bd.hop(tok);
+  say('|−4| > |−2|：1 的 rank 大，當 parent', 'parent[5] = 1，parent[1] = −6');
+  await step(tok);                                   // 20:37 (1, 3) → cycle
+  clr(); bd.mood('wow');
+  pk.push((await find(1)).p, (await find(3)).p);
+  say('(1, 3)：root 都是 1', '同一集合 → cycle，不加');
+  await step(tok);                                   // 21:36 (6, 8)：6 → 5 → 1、8 → 7
+  pk.splice(0).forEach(kill); clr(); bd.mood('calm');
+  pk.push((await find(6)).p, (await find(8)).p);
+  say('(6, 8)：6 → 5 → 1，8 → 7', 'root 1 和 7');
+  await step(tok);                                   // 22:01 parent[7] = 1，parent[1] = −8
+  pk.splice(0).forEach(kill); clr(); unite(7, 1);
+  say('1 的點數多（6 > 2）：parent[7] = 1', 'parent[1] = −8：8 個點都在一起');
+  await step(tok);                                   // 22:27 (5, 7) → cycle
+  clr(); bd.mood('wow');
+  pk.push((await find(5)).p, (await find(7)).p);
+  say('(5, 7)：root 都是 1 → cycle', '一個簡單的陣列就夠用了');
 }]);
 
 // 23:00 collapsing find：找到 root 後直接把自己掛到 root
@@ -1821,34 +2616,52 @@ FRAG.push(['galgo-ds-collapse', 'Collapsing find：找到 root 就直接掛上�
   const F = gForestNew(par);
   const cell = {};
   for (let v = 1; v <= 8; v++) { const x = -5.25 + (v - 1) * 1.5; cell[v] = cube(par[v], '#efe3c8', [1.2, 0.6, 0.6], x, 0.3, 0, 2); tag(String(v), 'idx', x, -0.35, 0.4); }
-  say('weighted union 之後的 parent[ ]', '有些點離 root 比較遠');
-  await beat(tok, 2800);
-  const ptr = tag('find', 'ptr alt', 0, 6.3, 0);
-  const walk = async (path) => {
-    for (const v of path) {
-      const p = F.N[v].userData.xz; const tx = F.N[v].position.x, ty = F.N[v].position.y;
-      ptr.position.set(tx, ty + 0.9, 0); glow(F.N[v], GOLD); glow(cell[v], GOLD);
-      await beat(tok, 750);
-    }
-  };
-  say('find(4)：4 → 3 → 1', '要往上走好幾步');
-  await walk([4, 3, 1]);
-  await beat(tok, 1400);
-  for (let v = 1; v <= 8; v++) { glow(F.N[v], null); glow(cell[v], null); }
-  say('find(6)：6 → 5 → 1', 'root 是 1');
-  await walk([6, 5, 1]);
-  par[6] = 1; relabel(cell[6], 1); gForestDraw(F, par);
-  say('collapsing：parent[6] 直接改成 1', '下次 find(6) 一步就到');
-  await beat(tok, 3000);
-  for (let v = 1; v <= 8; v++) { glow(F.N[v], null); glow(cell[v], null); }
+  const bd = gBud('小集', -6.5, 1.8, '#9fd3a8', 0.5);
+  const clr = () => { for (let v = 1; v <= 8; v++) { glow(F.N[v], null); glow(cell[v], null); } };
+  let ps = [];
+  const walk = async (v) => { const r = await gClimb(tok, F, par, v, 500); let k = v; glow(cell[k], GOLD); while (par[k] > 0) { k = par[k]; glow(cell[k], GOLD); } ps.push(r.p); return r; };
+  const reset = () => { ps.forEach(kill); ps = []; clr(); };
+  await step(tok);                                   // 23:00 weighted union
+  const nt = tag('依點數（weight）合併 = weighted union', 'note', 0, 6.4, 0);
+  say('剛才 union 時比點數（rank）', '這叫 weighted union');
+  await step(tok);                                   // 23:14 collapsing find
+  txt(nt, '再來一招：collapsing find');
+  say('另一個技巧', 'collapsing find');
+  await step(tok);                                   // 23:19 find(2)、find(3)：兩步
+  kill(nt);
+  await walk(2); await walk(3);
+  say('find(2)、find(3)：一下就到 root', '只要兩步');
+  await step(tok);                                   // 23:37 find(4)：4 → 3 → 1
+  reset(); bd.mood('sad');
+  await walk(4);
+  say('find(4)：4 → 3 → 1', '要沿著 parent 一直往上走，比較久');
+  await step(tok);                                   // 23:56 find(6)：6 → 5 → 1
+  reset(); bd.mood('calm');
+  await walk(6);
+  say('find(6)：6 的 parent 是 5，5 的 parent 是 1', 'root 是 1');
+  await step(tok);                                   // 24:12 直接把 6 掛到 1
+  reset();
+  par[6] = 1; relabel(cell[6], 1); glow(cell[6], GOLD); gForestDraw(F, par);
+  bd.mood('happy'); await bd.hop(tok);
+  say('找到了就直接改：parent[6] = 1', '6 直接掛到 root 底下');
+  await step(tok);                                   // 24:30 下次 find(6) 一步到
+  clr(); await walk(6);
+  say('下次 find(6)：一步就到', '常數時間');
+  await step(tok);                                   // 24:45 這叫 collapsing find
+  reset();
+  say('直接連到 root：collapsing find', '第一次多花一點，之後都快');
+  await step(tok);                                   // 25:02 find(8)：8 → 7 → 1
+  await walk(8);
   say('find(8)：8 → 7 → 1', '');
-  await walk([8, 7, 1]);
-  par[8] = 1; relabel(cell[8], 1); gForestDraw(F, par);
-  say('parent[8] 也直接改成 1', '第一次花時間，之後都是常數');
-  await beat(tok, 3000);
-  for (let v = 1; v <= 8; v++) { glow(F.N[v], null); glow(cell[v], null); }
+  await step(tok);                                   // 25:15 parent[8] = 1
+  reset();
+  par[8] = 1; relabel(cell[8], 1); glow(cell[8], GOLD); gForestDraw(F, par);
+  await bd.hop(tok);
+  say('一樣直接掛到 1', 'parent[8] = 1');
+  await step(tok);                                   // 25:30 linked list 也可以
+  clr();
+  tag('linked list：node = 值 ＋ 指向 parent 的指標', 'note', 0, 6.4, 0);
   say('也可以用 linked list 實作', 'node 存值＋指向 parent 的指標');
-  await beat(tok, 2600);
 }]);
   }
 

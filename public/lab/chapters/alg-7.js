@@ -1172,11 +1172,11 @@ export default function (ctx) {
   const FRAG = [];
   // ═══ dijk.js ═══
   {
-const { V3, fresh, tag, cube, glow, txt, GOLD } = K;
+const { V3, fresh, tag, cube, glow, txt, GOLD, step, buddy, travel, kill, anim } = K;
 const say = ctx.say, beat = ctx.beat, T = ctx.THREE;
 // ─── HlFsexTpM4Q：Dijkstra Algorithm（s, a, b, c 範例；explored／unexplored、D 與 P）───
-// 只用 K 與 ctx：這個片段也會裝進演算法第 7 章。
-const DC = { node: '#cbbd9f', edge: '#a8987c', hot: '#e8b02a', tree: '#2f7fd0', exp: '#2fc092', path: '#c0392b', dim: '#e4dccb' };
+// cued：每個 await step(tok) 等講者說到那一句。只用 K 與 ctx：這個片段也會裝進演算法第 7 章。
+const DC = { node: '#cbbd9f', edge: '#a8987c', hot: '#e8b02a', tree: '#2f7fd0', exp: '#2fc092', path: '#c0392b', dim: '#e4dccb', guide: '#f4a56a' };
 const DPOS = { s: [-4.6, 0], a: [-0.6, -2.6], b: [-0.6, 2.6], c: [4.0, 0] };
 const DEDGES = [['s', 'a', 1], ['s', 'b', 3], ['a', 'b', 1], ['a', 'c', 10], ['b', 'c', 4]];
 function dCls(l, c) { l.element.className = 'lab-label' + (c ? ' ' + c : ''); }
@@ -1215,123 +1215,213 @@ function dSets(G, S) {
   txt(G.un, 'unexplored：{ ' + all.filter((k) => !S.includes(k)).join(', ') + ' }');
 }
 function dExplore(G, k) { const [x, z] = DPOS[k]; G.N[k].material.color.set(DC.exp); K.move(G.N[k], x, 0.6, z); dCls(G.TG[k], 'ptr alt'); }
+// 探路小幫手：站在頂點旁邊，跟著講者走
+const dAt = (k) => { const [x, z] = DPOS[k]; return V3(x - 1.1, 0, z + 0.9); };
+function dGuide(k = 's') { const p = dAt(k); return buddy('小探', '', DC.guide, p.x, 0, p.z, 0.55); }
+async function dGo(tok, g, k, ms = 800) { await travel(tok, g.g, g.g.position.clone(), dAt(k), ms); }
+// 一個小封包沿著一串頂點走（例如 s → a → b），帶著它算的數字
+async function dWalk(tok, text, path, ms = 650) {
+  const p = (k) => V3(DPOS[k][0], 1.0, DPOS[k][1]);
+  const pk = tag(text, 'pkt', p(path[0]).x, 1.0, p(path[0]).z);
+  for (let i = 1; i < path.length; i++) await travel(tok, pk, p(path[i - 1]), p(path[i]), ms);
+  return pk;
+}
 
 // 00:00 問題：s 到 b 直接 3，經過 a 只要 1 + 1 = 2
 FRAG.push(['dijk-problem', 'Dijkstra：s 到 b，直接 3 還是繞 a 只要 2', async (tok) => {
   fresh([0, 10.5, 8.6], [0, 0, -0.2]);
+  await step(tok);                                   // 0:01 Dijkstra：找最短路徑
+  const g = buddy('小探', '', DC.guide, -5.6, 0, 3.4, 0.7);
+  const q = tag('最短的路怎麼走？', 'say', -5.6, 1.9, 3.4);
+  say('Dijkstra algorithm', '在加權圖上找最短路徑');
+  await step(tok);                                   // 0:17 G 與起點 s
   const G = dGraph();
   G.ex.element.style.visibility = 'hidden'; G.un.element.style.visibility = 'hidden';
-  say('給加權圖 G 與起點 s', '求 s 到每個頂點的最短路徑');
-  glow(G.N.s, GOLD);
-  await beat(tok, 3000);
-  say('想去 b：直接走 s → b', '權重 3');
+  glow(G.N.s, GOLD); txt(G.TG.s, '起點 source'); kill(q);
+  say('給加權圖 G 與起點 s', '邊上的數字 = 權重（距離）');
+  await step(tok);                                   // 0:36 回傳 s 到其他每個頂點的最短路徑
+  for (const k of ['a', 'b', 'c']) txt(G.TG[k], 's → ' + k + '？');
+  g.mood('wow');
+  say('回傳：s 到其他每個頂點的最短路徑', 'a、b、c 各一條');
+  await step(tok);                                   // 1:53 想去 b
+  for (const k of ['a', 'c']) txt(G.TG[k], '');
+  glow(G.N.s, null); glow(G.N.b, GOLD);
+  await travel(tok, g.g, g.g.position.clone(), dAt('s'), 700);
+  say('例：從 s 想去 b', '有兩條路');
+  await step(tok);                                   // 2:00 直接走 s → b：權重 3
   G.e('s', 'b').set(DC.hot, 2);
-  glow(G.N.b, GOLD);
-  await beat(tok, 2600);
-  G.e('s', 'b').set(DC.dim, 0.7);
+  const p1 = await dWalk(tok, '3', ['s', 'b'], 900);
+  say('直接走 s → b', '權重 3');
+  await step(tok);                                   // 2:06 經過 a：1 + 1 = 2
+  kill(p1); G.e('s', 'b').set(DC.dim, 0.7);
   G.e('s', 'a').set(DC.tree, 2); G.e('a', 'b').set(DC.tree, 2);
-  say('經過 a：s → a → b', '1 + 1 = 2 < 3');
-  await beat(tok, 3000);
+  const p2 = await dWalk(tok, '1 + 1 = 2', ['s', 'a', 'b'], 700);
+  say('經過 a：s → a → b', '1 + 1 = 2');
+  await step(tok);                                   // 2:13 最短的是經過 a 的那條
+  txt(p2, '2 < 3 ✓'); txt(G.TG.b, 'shortest = 2'); g.mood('happy'); await g.hop(tok);
   say('最短路徑走 a', 'shortest(s, b) = 2');
-  await beat(tok, 2400);
-  say('a、b、c 都要找最短路徑', 'Dijkstra 怎麼做？');
-  await beat(tok, 2600);
+  await step(tok);                                   // 2:21 每個頂點都要找一條
+  kill(p2); glow(G.N.b, null);
+  for (const k of ['a', 'b', 'c']) { txt(G.TG[k], s2q(k)); glow(G.N[k], GOLD); }
+  g.mood('calm');
+  say('除了起點，每個頂點都要找最小權重的路', 'Dijkstra 怎麼做？');
 }]);
+function s2q(k) { return 's → ' + k + '：最短？'; }
 
 // 02:31 explored／unexplored 兩個集合；D 與 P；初始狀態
 FRAG.push(['dijk-init', 'Dijkstra：兩個集合與 D、P 的初始狀態', async (tok) => {
   fresh([0, 10.5, 8.6], [0, 0, -0.2]);
-  const G = dGraph();
-  say('兩個集合：explored、unexplored', '一開始全部都在 unexplored');
-  await beat(tok, 3200);
-  say('每個頂點寫上 D 與 P', 'D = 最短距離　P = parent');
-  for (const k of ['s', 'a', 'b', 'c']) txt(G.TG[k], k + '：D=?  P=?');
-  await beat(tok, 2800);
-  say('D：只能經過 explored 頂點', '從 s 到它的最短距離');
-  await beat(tok, 2800);
-  say('P：那條路上它的前一個頂點', 'parent');
-  await beat(tok, 2400);
-  dLabel(G, 's', 0, null);
-  glow(G.N.s, GOLD);
-  say('s 到 s：同一點', 'D(s) = 0，沒有 parent');
-  await beat(tok, 2600);
-  glow(G.N.s, null);
-  for (const k of ['a', 'b', 'c']) { dLabel(G, k, Infinity, null); glow(G.N[k], GOLD); }
-  say('沒有 explored 頂點可經過', 'a、b、c 的 D = ∞，沒有 parent');
-  await beat(tok, 3000);
-  for (const k of ['a', 'b', 'c']) glow(G.N[k], null);
+  const G = dGraph(0);
+  G.ex.element.style.visibility = 'hidden'; G.un.element.style.visibility = 'hidden';
+  const g = dGuide('s');
+  await step(tok);                                   // 2:38 兩個集合
+  G.ex.element.style.visibility = '';
+  say('第一步：把頂點分成兩個集合', '第一個叫 explored（已探索）');
+  await step(tok);                                   // 2:43 explored / unexplored
+  G.un.element.style.visibility = '';
+  say('另一個叫 unexplored（還沒探索）', '');
+  await step(tok);                                   // 3:05 一開始全部 unexplored
+  for (const k of ['s', 'a', 'b', 'c']) glow(G.N[k], GOLD);
+  say('一開始全部都在 unexplored', 's、a、b、c');
+  await step(tok);                                   // 3:15 每個頂點寫上 D 與 P
+  for (const k of ['s', 'a', 'b', 'c']) { glow(G.N[k], null); txt(G.TG[k], k + '：D=?  P=?'); }
+  say('每個頂點寫上 D 與 P', '名字旁邊的兩個小標記');
+  await step(tok);                                   // 3:41 D = 從 source 到它的最短距離
+  const nD = tag('D = 從 s 到這個頂點的最短距離', 'note', 0, 0.3, 4.4);
+  say('D：從 s 到它的最短距離', 'D = distance');
+  await step(tok);                                   // 4:08 路徑只能經過 explored 頂點
+  txt(nD, 'D 的路：只能經過 explored 的頂點');
+  g.look(1);
+  say('但有條件：路上只能經過 explored 頂點', '還沒探索的不能借道');
+  await step(tok);                                   // 4:50 P = parent
+  txt(nD, 'P = 那條路上，它的前一個頂點（parent）');
+  say('P：那條路上它的前一個頂點', 'P = parent');
+  await step(tok);                                   // 5:18 從 s 開始
+  kill(nD); glow(G.N.s, GOLD); g.look(0);
+  say('開始！先看 s', 's 到 s 的距離？');
+  await step(tok);                                   // 5:29 D(s) = 0，沒有 parent
+  dLabel(G, 's', 0, null); g.mood('happy'); await g.hop(tok);
+  say('同一個點：D(s) = 0', '沒有 parent');
+  await step(tok);                                   // 5:43 a：沒有 explored 頂點可經過
+  glow(G.N.s, null); glow(G.N.a, GOLD); g.mood('wow');
+  await dGo(tok, g, 'a');
+  const blk = tag('沒有 explored 頂點可以借道', 'bad', -0.6, 1.9, -2.6);
+  say('再看 a：要找只經過 explored 的路', '可是 explored 還是空的');
+  await step(tok);                                   // 6:08 到不了 → ∞
+  kill(blk); dLabel(G, 'a', Infinity, null); g.mood('sad');
+  say('到不了 a → D(a) = ∞', '沒有路，也就沒有 parent');
+  await step(tok);                                   // 6:21 b、c 也是 ∞
+  glow(G.N.a, null);
+  for (const k of ['b', 'c']) { dLabel(G, k, Infinity, null); glow(G.N[k], GOLD); }
+  say('b、c 一樣到不了', 'D(b) = D(c) = ∞');
+  await step(tok);                                   // 6:32 初始狀態
+  for (const k of ['b', 'c']) glow(G.N[k], null);
+  await dGo(tok, g, 's'); g.mood('calm');
   say('這就是初始狀態', 's=0　a=∞　b=∞　c=∞');
-  await beat(tok, 2600);
 }]);
 
 // 07:15 explore s，再 explore a：b 從 3 改成 2、c 變成 11
 FRAG.push(['dijk-explore-sa', 'Dijkstra：explore s 與 a，b 從 3 更新成 2', async (tok) => {
   fresh([0, 10.5, 8.6], [0, 0, -0.2]);
-  const G = dGraph();
+  const G = dGraph(0);
   dLabel(G, 's', 0, null); for (const k of ['a', 'b', 'c']) dLabel(G, k, Infinity, null);
-  say('unexplored 裡 D 最小的是 s', '把 s 移到 explored');
-  await beat(tok, 2600);
-  dExplore(G, 's'); dSets(G, ['s']);
-  await beat(tok, 1200);
+  const g = dGuide('s');
+  await step(tok);                                   // 7:17 規則：unexplored 裡 D 最小的去 explore
+  for (const k of ['s', 'a', 'b', 'c']) dCls(G.TG[k], 'ptr alt');
+  say('規則：unexplored 裡 D 最小的', '把它移到 explored');
+  await step(tok);                                   // 7:26 最小的是 s
+  for (const k of ['a', 'b', 'c']) dCls(G.TG[k], 'ptr');
+  glow(G.N.s, GOLD); g.mood('happy'); await g.hop(tok);
+  say('D 最小的是 s（0）', 'explore s');
+  await step(tok);                                   // 7:41 s 移到 explored
+  glow(G.N.s, null); dExplore(G, 's'); dSets(G, ['s']);
+  say('s 移到 explored', 'unexplored 剩 a、b、c');
+  await step(tok);                                   // 7:53 經過 s 到 a：1
   G.e('s', 'a').set(DC.hot, 1.8); glow(G.N.a, GOLD);
+  const p = await dWalk(tok, '0 + 1', ['s', 'a']); kill(p);
   dLabel(G, 'a', 1, 's');
-  say('經過 s 到 a', 'D(a) = 0 + 1 = 1，P(a) = s');
-  await beat(tok, 2600);
+  say('經過 s 可以到 a', 'D(a) = 1，P(a) = s');
+  await step(tok);                                   // 8:18 經過 s 到 b：3
   glow(G.N.a, null); G.e('s', 'a').set(DC.tree, 2);
   G.e('s', 'b').set(DC.hot, 1.8); glow(G.N.b, GOLD);
+  const p2 = await dWalk(tok, '0 + 3', ['s', 'b']); kill(p2);
   dLabel(G, 'b', 3, 's');
-  say('經過 s 到 b', 'D(b) = 0 + 3 = 3，P(b) = s');
-  await beat(tok, 2600);
-  glow(G.N.b, null); G.e('s', 'b').set(DC.tree, 2);
+  say('經過 s 可以到 b', 'D(b) = 3，P(b) = s');
+  await step(tok);                                   // 8:25 到不了 c
+  glow(G.N.b, null); G.e('s', 'b').set(DC.tree, 2); glow(G.N.c, GOLD);
+  const nc = tag('只經過 s：到不了', 'bad', 4.0, 1.9, 0);
   say('只經過 s 到不了 c', 'D(c) 還是 ∞');
-  await beat(tok, 2400);
-  say('D 最小的是 a（1）', '把 a 移到 explored');
+  await step(tok);                                   // 8:43 再取 D 最小的 a
+  kill(nc); glow(G.N.c, null);
+  await dGo(tok, g, 'a');
   dExplore(G, 'a'); dSets(G, ['s', 'a']);
-  await beat(tok, 2600);
+  say('unexplored 中 D 最小的是 a（1）', 'a 移到 explored');
+  await step(tok);                                   // 9:00 經過 a 到 b：2
   G.e('a', 'b').set(DC.hot, 1.8); glow(G.N.b, GOLD);
-  say('經過 a 到 b：1 + 1 = 2', '2 < 3 → 更新');
-  await beat(tok, 2600);
-  G.e('s', 'b').set(DC.dim, 0.7); G.e('a', 'b').set(DC.tree, 2);
-  dLabel(G, 'b', 2, 'a');
-  say('b 改成 D=2、P=a', '比較大就不換：只留最小');
-  await beat(tok, 2800);
+  const p3 = await dWalk(tok, '1 + 1 = 2', ['s', 'a', 'b']);
+  say('現在可以經過 a 到 b', '1 + 1 = 2');
+  await step(tok);                                   // 9:11 2 < 3 → 更新
+  kill(p3); G.e('s', 'b').set(DC.dim, 0.7); G.e('a', 'b').set(DC.tree, 2);
+  dLabel(G, 'b', 2, 'a'); g.mood('happy'); await g.hop(tok);
+  say('2 < 3 → 更新', 'D(b) = 2，P(b) = a');
+  await step(tok);                                   // 9:37 比較大就不換
   glow(G.N.b, null);
+  const nb = tag('新的路比較長 → 不換', 'note', -0.6, 2.0, 2.6);
+  say('只在找到更短的路時才換', '永遠留最小的');
+  await step(tok);                                   // 10:07 經過 a 到 c：11
+  kill(nb);
   G.e('a', 'c').set(DC.hot, 1.8); glow(G.N.c, GOLD);
-  dLabel(G, 'c', 11, 'a');
-  say('經過 a 到 c：1 + 10 = 11', '11 < ∞ → D(c)=11，P(c)=a');
-  await beat(tok, 2800);
-  glow(G.N.c, null); G.e('a', 'c').set(DC.tree, 2);
-  await beat(tok, 2200);
+  const p4 = await dWalk(tok, '1 + 10 = 11', ['s', 'a', 'c']); kill(p4);
+  dLabel(G, 'c', 11, 'a'); G.e('a', 'c').set(DC.tree, 2);
+  say('經過 a 到 c：1 + 10 = 11 < ∞', 'D(c) = 11，P(c) = a');
 }]);
 
 // 10:27 explore b：c 從 11 改成 2 + 4 = 6；explore c，結束
 FRAG.push(['dijk-explore-bc', 'Dijkstra：explore b，c 從 11 更新成 6', async (tok) => {
   fresh([0, 10.5, 8.6], [0, 0, -0.2]);
-  const G = dGraph();
+  const G = dGraph(0);
   dExplore(G, 's'); dExplore(G, 'a'); dSets(G, ['s', 'a']);
   dLabel(G, 's', 0, null); dLabel(G, 'a', 1, 's'); dLabel(G, 'b', 2, 'a'); dLabel(G, 'c', 11, 'a');
   G.e('s', 'a').set(DC.tree, 2); G.e('a', 'b').set(DC.tree, 2); G.e('a', 'c').set(DC.tree, 2); G.e('s', 'b').set(DC.dim, 0.7);
-  say('目前：s、a 已 explored', 'b：D=2　c：D=11');
-  await beat(tok, 2800);
-  say('unexplored 中 D 最小的是 b', '把 b 移到 explored');
+  const g = dGuide('a');
+  await step(tok);                                   // 10:27 D 最小的 b 去 explore
+  await dGo(tok, g, 'b');
   dExplore(G, 'b'); dSets(G, ['s', 'a', 'b']);
-  await beat(tok, 2600);
-  G.e('b', 'c').set(DC.hot, 1.8); glow(G.N.c, GOLD);
-  say('b 到 c 的邊 = 4', '加上 b 已算好的 D(b) = 2');
-  await beat(tok, 2800);
-  say('2 + 4 = 6 < 11', '更新：D(c) = 6，P(c) = b');
-  G.e('a', 'c').set(DC.dim, 0.7); G.e('b', 'c').set(DC.tree, 2);
-  dLabel(G, 'c', 6, 'b');
-  await beat(tok, 3000);
-  glow(G.N.c, null);
-  say('新距離 = D(u) + 邊的權重', 'D(v) = min(D(v), D(u) + w(u, v))');
-  await beat(tok, 3000);
+  say('unexplored 中 D 最小的是 b（2）', 'b 移到 explored');
+  await step(tok);                                   // 10:46 看 c
+  glow(G.N.c, GOLD); g.look(1);
+  say('b 進來了，再看 c', '經過 s、a、b 有沒有更短的路？');
+  await step(tok);                                   // 10:56 b 到 c 的邊 = 4
+  G.e('b', 'c').set(DC.hot, 1.8);
+  say('b 到 c 的邊 = 4', '');
+  await step(tok);                                   // 11:04 4 + D(b)
+  const p = await dWalk(tok, 'D(b) + 4 = 2 + 4', ['b', 'c'], 900);
+  say('加上 b 已經算好的 D(b) = 2', '2 + 4');
+  await step(tok);                                   // 11:15 = 6 < 11 → 更新
+  txt(p, '6 < 11 ✓'); G.e('a', 'c').set(DC.dim, 0.7);
+  txt(G.TG.c, 'c：D=6 P=a'); g.mood('happy'); await g.hop(tok);
+  say('2 + 4 = 6 < 11', '更新：D(c) = 6');
+  await step(tok);                                   // 11:22 parent 是 b
+  kill(p); G.e('b', 'c').set(DC.tree, 2); dLabel(G, 'c', 6, 'b');
+  say('parent 也一起換', 'P(c) = b');
+  await step(tok);                                   // 11:29 更新規則
+  glow(G.N.c, null); g.mood('calm');
+  const rule = tag('新距離 = D(explored 那端) + 邊的權重', 'note', 0, 0.3, 4.4);
+  say('更新規則', 'D(v) = min(D(v), D(u) + w(u, v))');
+  await step(tok);                                   // 11:47 我做了什麼：4 加 2
+  txt(rule, '剛才：w(b, c) + D(b) = 4 + 2 = 6');
+  say('回頭看剛才：4 加上已有的 2', '得到 6');
+  await step(tok);                                   // 11:58 最後一個 c 進 explored
+  kill(rule);
+  await dGo(tok, g, 'c');
   dExplore(G, 'c'); dSets(G, ['s', 'a', 'b', 'c']);
-  say('最後 explore c：全部 explored', '演算法結束');
-  await beat(tok, 2800);
+  say('最後把 c 移到 explored', '');
+  await step(tok);                                   // 12:15 全部 explored → 結束
+  g.mood('happy'); await g.hop(tok);
+  say('unexplored 空了', '演算法結束');
 }]);
 
-// 12:22 沿 P 回推：a、b、c 的最短路徑
+// 12:19 沿 P 回推：a、b、c 的最短路徑
 FRAG.push(['dijk-path', 'Dijkstra：沿 parent 回推最短路徑', async (tok) => {
   fresh([0, 10.5, 8.6], [0, 0, -0.2]);
   const G = dGraph(0);
@@ -1339,25 +1429,39 @@ FRAG.push(['dijk-path', 'Dijkstra：沿 parent 回推最短路徑', async (tok) 
   dSets(G, ['s', 'a', 'b', 'c']);
   dLabel(G, 's', 0, null); dLabel(G, 'a', 1, 's'); dLabel(G, 'b', 2, 'a'); dLabel(G, 'c', 6, 'b');
   for (const e of G.E) e.set(DC.dim, 0.7);
-  for (const [u, v] of [['s', 'a'], ['a', 'b'], ['b', 'c']]) G.e(u, v).set(DC.tree, 1.6);
-  say('跑完後每個頂點都有 D 和 P', 'P 連起來就是最短路徑樹');
-  await beat(tok, 2800);
-  const routes = [['a', ['s', 'a'], 1], ['b', ['s', 'a', 'b'], 2], ['c', ['s', 'a', 'b', 'c'], 6]];
-  for (const [dst, path, cost] of routes) {
-    for (const [u, v] of [['s', 'a'], ['a', 'b'], ['b', 'c']]) G.e(u, v).set(DC.tree, 1.6);
-    for (const k of ['s', 'a', 'b', 'c']) glow(G.N[k], null);
-    glow(G.N[dst], GOLD);
-    say('終點 ' + dst + '：沿 P 往回走', path.slice().reverse().join(' ← '));
-    await beat(tok, 1600);
-    for (let i = path.length - 1; i > 0; i--) {
-      G.e(path[i - 1], path[i]).set(DC.path, 2.6);
-      glow(G.N[path[i - 1]], GOLD);
-      await beat(tok, 700);
-    }
-    say('反過來就是路徑', path.join(' → ') + '，cost = ' + cost);
-    await beat(tok, 2400);
-  }
-  await beat(tok, 1000);
+  const g = dGuide('s');
+  const reset = () => { for (const [u, v] of [['s', 'a'], ['a', 'b'], ['b', 'c']]) G.e(u, v).set(DC.tree, 1.6); for (const k of ['s', 'a', 'b', 'c']) glow(G.N[k], null); };
+  await step(tok);                                   // 12:19 要找出 s 到 a、b、c 的路
+  reset();
+  say('跑完後每個頂點都有 D 和 P', '要找 s 到 a、b、c 的實際路徑');
+  await step(tok);                                   // 12:37 a：P(a) = s
+  glow(G.N.a, GOLD); await dGo(tok, g, 'a');
+  G.e('s', 'a').set(DC.path, 2.6); glow(G.N.s, GOLD);
+  say('終點 a：P(a) = s', '路徑 s → a，cost = 1');
+  await step(tok);                                   // 12:46 b：P(b) = a
+  reset(); glow(G.N.b, GOLD); await dGo(tok, g, 'b');
+  G.e('a', 'b').set(DC.path, 2.6); glow(G.N.a, GOLD);
+  say('終點 b：P(b) = a', '先走回 a');
+  await step(tok);                                   // 12:54 a 的 parent 是 s
+  await dGo(tok, g, 'a');
+  G.e('s', 'a').set(DC.path, 2.6); glow(G.N.s, GOLD);
+  say('a 的 parent 是 s', 's → a → b');
+  await step(tok);                                   // 13:09 cost = D
+  const nc = tag('cost = D(b) = 2', 'note', -0.6, 2.0, 2.6);
+  say('cost 不用重算', '就是那個頂點的 D：2');
+  await step(tok);                                   // 13:16 c：P(c) = b
+  kill(nc); reset(); glow(G.N.c, GOLD); await dGo(tok, g, 'c');
+  G.e('b', 'c').set(DC.path, 2.6); glow(G.N.b, GOLD);
+  await dGo(tok, g, 'b');
+  G.e('a', 'b').set(DC.path, 2.6); glow(G.N.a, GOLD);
+  say('終點 c：P(c) = b，P(b) = a', '一路往回走');
+  await step(tok);                                   // 13:26 a 的 parent 是 s，cost 6
+  await dGo(tok, g, 'a');
+  G.e('s', 'a').set(DC.path, 2.6); glow(G.N.s, GOLD);
+  say('P(a) = s：反過來就是路徑', 's → a → b → c，cost = 6');
+  await step(tok);                                   // 13:36 這就是 Dijkstra
+  await dGo(tok, g, 's'); g.mood('happy'); await g.hop(tok);
+  say('這就是 Dijkstra', '在加權圖上找出最短路徑');
 }]);
   }
 
