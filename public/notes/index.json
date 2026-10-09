@@ -1353,7 +1353,7 @@
   "label": "交大彭文志 Lec20 Graph (3/4)",
   "points": 233,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "wU6udHRIkcc": {
   "label": "Abdul Bari：Disjoint Sets Data Structure（Kruskal的前置知識：Union-Find）",

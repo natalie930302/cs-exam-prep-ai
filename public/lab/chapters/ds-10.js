@@ -2667,13 +2667,15 @@ FRAG.push(['galgo-ds-collapse', 'Collapsing find：找到 root 就直接掛上�
 
   // ═══ gpeng20.js ═══
   {
-const { V3, fresh, tag, cube, move, kill, glow, tint, txt, relabel, showL, code, arrow, GOLD, GREEN, RED, GRAY } = K;
+const { V3, fresh, tag, cube, move, kill, glow, tint, txt, relabel, showL, code, arrow, anim, travel, remove, buddy, prop, step, zone, GOLD, GRAY } = K;
 // ─── Wnpsh1O1OMo：交大彭文志 Lec20 Graph (3/4) ───
+// cued: every `await step(tok)` waits for the sentence the lecturer says (cues in notes_Wnpsh1O1OMo.json);
+// the motion after a step is short, then the picture holds until the next sentence. Nothing loops.
 // 例子都取自講者投影片（洪逸／Horowitz 第 6 章的圖）：8 頂點 DFS/BFS 圖、7 頂點 MST 圖（cost 99）、
 // 10 頂點 articulation point 圖（DFS 從 3 出發）、6 頂點 / Boston 8 城市 Dijkstra、7 頂點 Bellman-Ford、
 // 3 頂點 Floyd、AOV 0..5（topological order 0 3 2 5 1 4）。
 const T = ctx.THREE;
-const PC = { node: '#cbbd9f', edge: '#a8987c', hot: '#e8b02a', tree: '#2f7fd0', ok: '#2fc092', bad: '#d64545', dim: '#e4dccb', pq: '#efe3c8' };
+const PC = { node: '#cbbd9f', edge: '#a8987c', hot: '#e8b02a', tree: '#2f7fd0', ok: '#2fc092', bad: '#d64545', dim: '#e4dccb', pq: '#efe3c8', arw: '#9c8b70' };
 const SETC = ['#2fc092', '#4b9ee2', '#9b7ef4', '#e55a9b', '#dd8238', '#31aab0'];
 const INFT = '∞';
 function gp(spec, i) { return V3(spec.pos[i][0] + (spec.dx || 0), 0.3, spec.pos[i][1] + (spec.dz || 0)); }
@@ -2695,6 +2697,7 @@ function mkG(spec, opt = {}) {
   const E = (u, v) => edges.find((e) => (e.u === u && e.v === v) || (!spec.dir && e.u === v && e.v === u));
   return { spec, nodes, edges, E };
 }
+function dropG(g) { g.nodes.forEach(kill); g.edges.forEach((e) => { kill(e.obj); if (e.lbl) kill(e.lbl); }); }
 function ecol(e, c, th) { if (!e) return; if (e.obj.setColor) e.obj.setColor(new T.Color(c)); else { e.obj.material.color.set(c); const s = th || 1; e.obj.scale.set(s, 1, s); } }
 function evis(e, on) { e.obj.visible = on; if (e.lbl) showL(e.lbl, on); }
 function above(spec, i, text, cls, dy = 0.95) { const p = gp(spec, i); return tag(text, cls || 'ptr', p.x, dy, p.z - 0.55); }
@@ -2702,313 +2705,572 @@ function dash(pts, color = '#c0392b') {
   const l = new T.Line(new T.BufferGeometry().setFromPoints(pts), new T.LineDashedMaterial({ color, dashSize: 0.22, gapSize: 0.14 }));
   l.computeLineDistances(); ctx.lab.world.add(l); return l;
 }
+const note = (t, x, z, y = 1.2) => tag(t, 'note', x, y, z);
+const bub = (t, x, z, y = 1.5) => tag(t, 'say', x, y, z);
+// a small packet label that travels along points (a message, a person browsing, a path being followed)
+async function pkt(tok, text, pts, ms = 450, keep = false) {
+  const l = tag(text, 'pkt', pts[0].x, 1.1, pts[0].z);
+  for (let i = 1; i < pts.length; i++) await travel(tok, l, V3(pts[i - 1].x, 1.1, pts[i - 1].z), V3(pts[i].x, 1.1, pts[i].z), ms);
+  if (!keep) remove(l);
+  return l;
+}
+const vp = (spec, path) => path.map((i) => gp(spec, i));
+async function walkTo(tok, o, x, y, z, ms = 700) { const a = o.position.clone(), b = V3(x, y, z); await anim(tok, ms, (u) => o.position.lerpVectors(a, b, u)); }
+const cls = (l, c) => { l.element.className = 'lab-label' + (c ? ' ' + c : ''); };
 
 // ───────── 8 頂點圖（DFS / BFS） ─────────
 const G8 = { names: ['0', '1', '2', '3', '4', '5', '6', '7'], pos: [[0, -3], [-2.4, -1.3], [2.4, -1.3], [-3.6, 0.8], [-1.2, 0.8], [1.2, 0.8], [3.6, 0.8], [0, 3]],
   edges: [[0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [2, 6], [3, 7], [4, 7], [5, 7], [6, 7]], dx: -2.3 };
+const ADJ8 = [[1, 2], [0, 3, 4], [0, 5, 6], [1, 7], [1, 7], [2, 7], [2, 7], [3, 4, 5, 6]];
 
-// 00:00 DFS 用 visited[]＋遞迴；BFS level by level 用 queue
+// 00:00 DFS 用 visited[]＋遞迴；BFS level by level 用 queue（9 steps）
 FRAG.push(['gpeng20-dfs-bfs-recap', 'DFS：visited[]＋遞迴；BFS：queue', async (tok) => {
   fresh([0, 9.5, 9.5], [0, 0, 0.2]);
+  await step(tok);                                   // 0:00 traverse 分兩種：DFS、BFS
   const g = mkG(G8, { noW: true });
-  const vis = G8.names.map((n, i) => cube(0, GRAY, [0.5, 0.35, 0.5], 2.5 + i * 0.6, 0.2, -2.8));
+  const b1 = bub('DFS：一路往深處走', 4.4, -3.2), b2 = bub('BFS：一層一層走', 4.4, 2.2);
+  say('graph 的 traverse：DFS 和 BFS', '把每個 vertex 都拜訪一次');
+  await step(tok);                                   // 0:39 visited[] 記錄有沒有拜訪過
+  remove(b1); remove(b2);
+  const vis = G8.names.map((n, i) => cube(0, GRAY, [0.5, 0.35, 0.5], 2.5 + i * 0.6, 0.2, -2.8, 2));
   G8.names.forEach((n, i) => tag(n, 'idx', 2.5 + i * 0.6, 0.2, -3.5));
-  tag('visited[]', 'idx', 4.6, 0.3, -2.0);
+  tag('visited[]', 'ptr', 4.6, 0.3, -2.0);
+  say('DFS：一個 array visited[]', '記錄每個 vertex 有沒有被拜訪過（0 = 還沒）');
   const out = tag('DFS：', 'ptr', 4.6, 0.4, 2.6);
-  say('DFS：visited[] 記錄哪些點拜訪過', 'dfs(v)：visit v，對 adj(v) 中未拜訪的 w 遞迴 dfs(w)');
-  await beat(tok, 2800);
-  const cur = above(G8, 0, 'dfs', 'ptr alt', 1.4);
-  const order = [[0, -1], [1, 0], [3, 1], [7, 3], [4, 7], [5, 7], [2, 5], [6, 2]];
   const seq = [];
-  for (const [v, p] of order) {
-    const q = gp(G8, v); cur.position.set(q.x, 1.4, q.z - 0.55);
+  const cur = above(G8, 0, 'dfs', 'ptr alt', 1.4); showL(cur, false);
+  const visit = (v, p) => {
+    const q = gp(G8, v); cur.position.set(q.x, 1.4, q.z - 0.55); showL(cur, true);
     tint(g.nodes[v], PC.ok); relabel(vis[v], 1); tint(vis[v], PC.ok);
     if (p >= 0) ecol(g.E(p, v), PC.tree, 2);
     seq.push(v); txt(out, 'DFS：' + seq.join(' '));
-    say(p < 0 ? '從 0 出發：印出、標記' : '走到 ' + v + '：沒拜訪過 → visit', 'visited[' + v + '] = 1');
-    await beat(tok, 1100);
-  }
-  say('全部拜訪過 → 一路 return', 'DFS 順序：0 1 3 7 4 5 2 6');
-  await beat(tok, 2400);
-  kill(cur);
+  };
+  await step(tok);                                   // 0:51 照 adjacency list，沒拜訪過就 visit
+  visit(0, -1);
+  say('從 0 出發：visited[0] 還是 0 → visit 它', '照 adjacency list 的順序找下一個');
+  await step(tok);                                   // 1:03 visit = 印出來
+  await pkt(tok, '0', [gp(G8, 0), V3(4.6, 0, 2.6)], 800);
+  say('visit 的意思：把它印出來', '再把 visited[0] 設成 1');
+  await step(tok);                                   // 1:09 再沿它的 adjacency list 往下拜訪
+  for (const [v, p] of [[1, 0], [3, 1], [7, 3]]) { visit(v, p); await beat(tok, 600); }
+  say('沿著鄰居一路往深處走', '0 → 1 → 3 → 7');
+  await step(tok);                                   // 1:19 所有點都拜訪過就 return
+  for (const [v, p] of [[4, 7], [5, 7], [2, 5], [6, 2]]) { visit(v, p); await beat(tok, 500); }
+  showL(cur, false);
+  say('鄰居都拜訪過了就 return（退回上一層）', 'DFS 順序：0 1 3 7 4 5 2 6');
+  await step(tok);                                   // 1:26 DFS 寫成 recursive
+  const stk = code(['dfs(0)', ' dfs(1)', '  dfs(3)', '   dfs(7) …'], -6.2, 2.4, 0.5, 3.6);
+  say('DFS 通常寫成 recursive code', '每走深一層就多呼叫一次 dfs()');
+  await step(tok);                                   // 1:31 BFS：level by level
+  stk.kill();
   g.nodes.forEach((m) => tint(m, PC.node)); g.edges.forEach((e) => ecol(e, PC.edge, 1)); vis.forEach((c) => { relabel(c, 0); tint(c, GRAY); });
-  const out2 = tag('BFS：', 'ptr', 4.6, 0.4, 3.4);
-  say('BFS：level by level，用 queue', '取出 queue 前端，把它沒拜訪的鄰居放到尾端');
-  await beat(tok, 2400);
-  const ADJ = [[1, 2], [0, 3, 4], [0, 5, 6], [1, 7], [1, 7], [2, 7], [2, 7], [3, 4, 5, 6]];
-  let qcubes = [];
-  const lay = () => qcubes.forEach(([c], k) => move(c, 2.6 + k * 0.85, 0.3, 0.6));
-  const push = (v) => { const c = cube(v, '#efe3c8', [0.6, 0.45, 0.6], 2.6 + qcubes.length * 0.85, 0.3, 0.6, 2.5); qcubes.push([c, v]); };
+  const LV = [[0], [1, 2], [3, 4, 5, 6], [7]];
+  for (let k = 0; k < LV.length; k++) { LV[k].forEach((v) => tint(g.nodes[v], SETC[k + 1])); await beat(tok, 500); }
+  say('BFS：level by level', '第 0 層 0 → 第 1 層 1 2 → 第 2 層 3 4 5 6 → 7');
+  await step(tok);                                   // 1:36 用 queue 實作
   tag('queue', 'idx', 2.0, 0.3, 0.6);
-  const seen = new Set([0]); const bseq = [];
-  push(0); tint(g.nodes[0], PC.hot);
-  await beat(tok, 900);
-  while (qcubes.length) {
-    const [c, v] = qcubes.shift(); kill(c); lay();
-    tint(g.nodes[v], PC.ok); bseq.push(v); txt(out2, 'BFS：' + bseq.join(' '));
-    for (const w of ADJ[v]) if (!seen.has(w)) { seen.add(w); push(w); tint(g.nodes[w], PC.hot); ecol(g.E(v, w), PC.tree, 2); }
-    say('取出 ' + v + '，鄰居進 queue', 'queue：' + (qcubes.map(([, x]) => x).join(' ') || '空'));
-    await beat(tok, 1000);
+  const out2 = tag('BFS：', 'ptr', 4.6, 0.4, 3.4);
+  const qs = []; const seen = new Set([0]); const bseq = [];
+  const lay = () => qs.forEach(([c], k) => move(c, 2.6 + k * 0.7, 0.3, 0.6));
+  const push = (v) => { const c = cube(v, PC.pq, [0.55, 0.45, 0.55], 2.6 + qs.length * 0.7, 0.3, 0.6); qs.push([c, v]); };
+  push(0);
+  while (qs.length) {
+    const [c, v] = qs.shift(); kill(c); bseq.push(v); txt(out2, 'BFS：' + bseq.join(' '));
+    for (const w of ADJ8[v]) if (!seen.has(w)) { seen.add(w); push(w); }
+    lay(); await beat(tok, 280);
   }
-  say('BFS 順序：一層一層', '0 │ 1 2 │ 3 4 5 6 │ 7');
-  await beat(tok, 2800);
+  say('取出 queue 前端，把沒拜訪的鄰居放到尾端', 'BFS 順序：0 1 2 3 4 5 6 7');
 }]);
 
-// 01:45 network = edge 有 weight 的 graph；connected component ≈ community
+// 01:50 connected component ↔ community；network = edge 有 weight 的 graph（13 steps）
 FRAG.push(['gpeng20-network-community', 'Social network：connected component 就是社群', async (tok) => {
-  fresh([0, 9, 9.5], [0, 0, 0]);
-  const S = { names: ['A', 'B', 'C', 'D', 'E', 'F', 'G'], pos: [[-5, -1.6], [-2.6, -2.4], [-3.4, 0.6], [-5.4, 2.0], [2.4, -1.8], [4.8, -0.6], [3.0, 1.8]],
+  fresh([0, 9, 9.5], [0, 0, 0.3]);
+  const S = { names: ['A', 'B', 'C', 'D', 'E', 'F', 'G'], pos: [[-5, -1.6], [-2.4, -2.6], [-3.0, 0.6], [-5.4, 2.4], [2.4, -1.8], [4.8, -0.6], [3.0, 2.0]],
     edges: [[0, 1, 5], [0, 2, 12], [1, 2, 3], [2, 3, 7], [4, 5, 2], [4, 6, 9], [5, 6, 4]] };
-  say('Line 用戶 = vertex', '傳訊息 / 打電話 = edge');
-  const g = mkG(S, { noW: true });
-  await beat(tok, 2600);
-  S.edges.forEach(([u, v, w], k) => { const a = gp(S, u), b = gp(S, v); g.edges[k].lbl = tag(String(w), 'idx', (a.x + b.x) / 2, 0.55, (a.z + b.z) / 2 + 0.3); });
-  say('edge 上有 weight（傳了幾次）', 'graph ＋ edge weight = network（數字為示意）');
-  await beat(tok, 3000);
-  [0, 1, 2, 3].forEach((i) => tint(g.nodes[i], SETC[0])); g.edges.slice(0, 4).forEach((e) => ecol(e, SETC[0], 1.6));
-  [4, 5, 6].forEach((i) => tint(g.nodes[i], SETC[1])); g.edges.slice(4).forEach((e) => ecol(e, SETC[1], 1.6));
-  tag('community 1', 'ptr', -4.0, 1.3, -3.4); tag('community 2', 'ptr', 3.6, 1.3, -3.2);
-  say('彼此連得到的一群 = connected component', 'social network 裡叫 community（社群）');
-  await beat(tok, 3400);
-  glow(g.nodes[2], GOLD); above(S, 2, 'leader', 'ptr alt', 1.3);
-  say('C 連最多、最重的邊 → 這群的 leader', '找誰是 seed、誰有影響力');
-  await beat(tok, 3000);
-  for (const i of [0, 1, 3]) { glow(g.nodes[i], '#3a2a00'); await beat(tok, 600); }
-  say('從 seed 往外擴散 → social influence', '社群行銷：先找有影響力的人');
-  await beat(tok, 3000);
+  const P = (i, y = 0.35) => V3(S.pos[i][0], y, S.pos[i][1]);
+  const bcol = (b, c) => b.body.material.color.set(c);
+  await step(tok);                                   // 1:52 connected component 很常用
+  const B = S.names.map((n, i) => buddy(n, '', '#e9c98f', S.pos[i][0], 0, S.pos[i][1], 0.6));
+  say('connected component：很常用的觀念', '先看 graph 裡的點怎麼連');
+  await step(tok);                                   // 2:00 從某點可以到某點 = connected
+  const E = S.edges.map(([u, v]) => { const a = P(u), b = P(v); const d = b.clone().sub(a).normalize(); return rod(a.clone().addScaledVector(d, 0.5), b.clone().addScaledVector(d, -0.5), PC.edge, 0.05); });
+  await pkt(tok, '走', [P(0), P(1), P(2), P(3)], 500);
+  say('從 A 可以走到 D', '彼此有路連得到 = connected');
+  await step(tok);                                   // 2:22 Facebook PO 文、按讚也是 graph
+  const fb = note('PO 文 → 別人按讚：也是一條 edge', 0, 3.6);
+  await pkt(tok, '讚', [P(1), P(0)], 700);
+  say('Facebook：你 PO 文、別人按讚', '這種互動也可以畫成 graph');
+  await step(tok);                                   // 2:31 social network
+  remove(fb);
+  const sn = bub('social network', 0, -3.6);
+  say('這種 graph 叫 social network', '不叫 social graph，為什麼？');
+  await step(tok);                                   // 2:50 graph vs network：edge 上有 weight
+  const W = S.edges.map(([u, v, w]) => { const m = P(u).add(P(v)).multiplyScalar(0.5); return tag(String(w), 'idx', m.x, 0.7, m.z + 0.3); });
+  say('edge 上有 weight → 叫 network', '數字 = 互動的次數（示意）');
+  await step(tok);                                   // 3:33 Line 每個使用者 = vertex
+  remove(sn);
+  const ln = note('Line 的每個使用者 = vertex', 0, -3.6);
+  await Promise.all(B.map((b) => b.hop(tok)));
+  say('Line：每個使用者是一個 vertex', '');
+  await step(tok);                                   // 3:40 打電話、傳簡訊 = edge
+  await pkt(tok, '訊息', [P(0), P(2)], 800); txt(W[1], '13');
+  say('你傳訊息、打電話給誰 → 一條 edge', '傳得越多，weight 越大：12 → 13');
+  await step(tok);                                   // 4:10 誰和誰是一群？找 component
+  remove(ln);
+  [0, 1, 2, 3].forEach((i) => bcol(B[i], SETC[0])); [0, 1, 2, 3].forEach((k) => E[k].material.color.set(SETC[0]));
+  [4, 5, 6].forEach((i) => bcol(B[i], SETC[1])); [4, 5, 6].forEach((k) => E[k].material.color.set(SETC[1]));
+  B.forEach((b) => b.mood('happy'));
+  say('誰跟你是好朋友？', '找出彼此有聯絡的一群');
+  await step(tok);                                   // 4:23 connected component = community
+  tag('community 1', 'ptr', -4.0, 1.6, -3.4); tag('community 2', 'ptr', 3.6, 1.6, -3.2);
+  say('connected component = community', '在 social network 裡就叫社群');
+  await step(tok);                                   // 4:40 誰是 leader
+  B[2].glow('#5a3a00'); B[2].mood('wow');
+  const ld = tag('leader', 'ptr alt', S.pos[2][0], 1.9, S.pos[2][1]);
+  say('還會問：這一群裡誰是 leader？', 'C 連最多人、互動最多（示意）');
+  await step(tok);                                   // 4:59 network 會演進
+  const a = P(2), b = P(4); const d = b.clone().sub(a).normalize();
+  const ne = rod(a.clone().addScaledVector(d, 0.5), b.clone().addScaledVector(d, -0.5), PC.hot, 0.06);
+  const nx = note('下禮拜：C 和 E 開始聯絡', -0.3, 0.2, 1.0);
+  B.forEach((x) => bcol(x, SETC[2])); E.forEach((e) => e.material.color.set(SETC[2]));
+  say('每個禮拜的互動都會構成新的 network', 'community 會演進（evolving）');
+  await step(tok);                                   // 5:47 社群行銷：找 seed
+  remove(nx); remove(ld); B[2].glow(null);
+  B[2].glow('#6a4a00');
+  const sd = tag('seed', 'ptr alt', S.pos[2][0], 1.9, S.pos[2][1]);
+  say('社群行銷：先找有影響力的 seed', '例：廠商推新手機，先找誰？');
+  await step(tok);                                   // 6:05 影響力擴散 = social influence
+  for (const [x, y] of [[2, 0], [2, 1], [2, 4]]) { await pkt(tok, '推薦', [P(x), P(y)], 450); B[y].mood('wow'); }
+  say('seed 把影響力擴散出去', '= social influence');
 }]);
 
-// 06:37 PageRank：網頁 = vertex、hyperlink = edge，random walk 停留越久越重要
+// 06:37 PageRank：網頁 = vertex、hyperlink = edge，random walk 停留越久越重要（10 steps）
 FRAG.push(['gpeng20-pagerank-walk', 'PageRank：在網頁 graph 上 random walk', async (tok) => {
   fresh([0, 9, 9], [0, 0, 0]);
   const S = { names: ['P1', 'P2', 'P3', 'P4'], pos: [[-3.4, -2.2], [2.6, -2.4], [0, 1.6], [-4.4, 2.6]], edges: [[0, 1], [0, 2], [1, 2], [2, 0], [3, 2]], dir: true };
+  await step(tok);                                   // 6:37 web page
   const g = mkG(S, { noW: true, size: 0.9 });
-  say('一個網頁 = 一個 vertex', 'hyperlink <a href> = 有向 edge');
-  await beat(tok, 3000);
+  g.edges.forEach((e) => evis(e, false));
+  say('web page（網頁）有聽過吧', '大家每天在網頁之間跳來跳去');
+  await step(tok);                                   // 6:43 Google 的 PageRank
+  const pr = bub('PageRank = 網頁的重要性', 3.2, 2.8);
+  say('Google 起家靠的：PageRank', '算出每個網頁有多重要');
+  await step(tok);                                   // 6:55 一個網頁 = 一個頂點
+  remove(pr);
+  const vt = g.nodes.map((m, i) => above(S, i, 'vertex', 'idx', 1.2));
+  say('網頁串起來就是一個 graph', '一個網頁 = 一個 vertex');
+  await step(tok);                                   // 7:02 hyperlink 連到下一個網頁
+  vt.forEach(remove);
+  g.edges.forEach((e) => evis(e, true));
+  say('網頁上有 hyperlink 連到下一個網頁', 'hyperlink = 有向 edge');
+  await step(tok);                                   // 7:09 <a href>
+  await pkt(tok, '<a href>', [gp(S, 0), gp(S, 1)], 900);
+  say('HTML 裡的 <a href="…"> 就是一個 hyperlink', '點下去就從 P1 跳到 P2');
+  await step(tok);                                   // 7:23 random walk
   const cnt = [0, 0, 0, 0];
-  const tags = S.names.map((n, i) => above(S, i, '0 次', 'idx', 1.2));
-  const walker = cube('', '#e8b02a', [0.35, 0.35, 0.35], gp(S, 3).x, 1.0, gp(S, 3).z);
-  say('人瀏覽網頁 = 在 graph 上 random walk', '每一步沿一條 hyperlink 走');
-  await beat(tok, 2200);
-  const path = [3, 2, 0, 1, 2, 0, 2, 0, 1, 2];
-  for (const v of path) {
-    const p = gp(S, v); move(walker, p.x, 1.0, p.z);
-    cnt[v]++; txt(tags[v], cnt[v] + ' 次'); glow(g.nodes[v], GOLD);
-    await beat(tok, 750); glow(g.nodes[v], null);
-  }
-  glow(g.nodes[2], GOLD); tint(g.nodes[2], PC.ok);
-  say('P3 被走到最多 → 最重要', '停留機率高 = PageRank 高（走法為示意）');
-  await beat(tok, 3400);
+  const ct = S.names.map((n, i) => above(S, i, '0 次', 'idx', 1.5));
+  const me = buddy('我', '', '#f2b8c6', gp(S, 3).x, 0.6, gp(S, 3).z, 0.5);
+  const go = async (v, ms) => { const p = gp(S, v); await walkTo(tok, me.g, p.x, 0.6, p.z, ms); cnt[v]++; txt(ct[v], cnt[v] + ' 次'); };
+  cnt[3] = 1; txt(ct[3], '1 次');
+  await go(2, 800);
+  say('Google 的想法：在 graph 上做 random walk', '隨機挑一條 hyperlink 走');
+  await step(tok);                                   // 7:31 人瀏覽網頁 = 在 graph 裡走
+  for (const v of [0, 1, 2]) await go(v, 700);
+  say('人在瀏覽網頁，就像在 graph 上走來走去', 'P3 → P1 → P2 → P3');
+  await step(tok);                                   // 7:47 停留越久 → probability
+  for (const v of [0, 2, 0, 1, 2]) await go(v, 420);
+  say('一直走下去，數一數停在每頁的次數', '次數比例 = 停留的 probability');
+  await step(tok);                                   // 7:54 probability 高 = 重要
+  glow(g.nodes[2], GOLD); tint(g.nodes[2], PC.ok); me.mood('happy');
+  say('P3 最常被走到 → 最重要', 'PageRank 高（走法為示意）');
+  await step(tok);                                   // 8:15 graph 的基本運算都有用
+  note('connected component ↔ community', 0.2, 3.8, 0.8);
+  say('生活中很多問題都能 map 成 graph', '所以要學 graph 的基本運算');
 }]);
 
-// 08:17 spanning tree：V(G') = V(G)、用最少 n − 1 條邊連起來
+// 08:21 spanning tree：V(G') = V(G)、用最少 n − 1 條邊連起來（11 steps）
 FRAG.push(['gpeng20-k4-spanning', 'Spanning tree：完全圖 K4 的三棵 spanning tree', async (tok) => {
   fresh([0, 9, 9], [0, 0, 0]);
   const sq = (dx, s) => ({ names: ['0', '1', '2', '3'], pos: [[-s, -s], [s, -s], [-s, s], [s, s]], dx });
   const K4 = sq(-4.4, 1.4); K4.edges = [[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]];
-  const g = mkG(K4, { noW: true });
-  tag('G（complete graph）', 'ptr', -4.4, 0.6, -2.8);
-  say('原來的 graph G：4 個頂點兩兩相連', '|V| = 4，|E| = 6');
-  await beat(tok, 3000);
   const trees = [[[0, 1], [1, 3], [3, 2]], [[0, 1], [0, 2], [0, 3]], [[0, 2], [2, 1], [1, 3]]];
-  for (let t = 0; t < 3; t++) {
+  await step(tok);                                   // 8:21 spanning tree 是什麼
+  const g = mkG(K4, { noW: true });
+  tag('G', 'ptr', -4.4, 0.6, -2.8);
+  say('spanning tree 是什麼？', '左邊是原來的 graph G');
+  await step(tok);                                   // 8:36 tree 也是 graph，是 subgraph
+  const sb = bub('tree 也是一種 graph', -0.3, -2.6);
+  say('spanning tree 是一棵 tree', 'tree 也是 graph，而且是 G 的 subgraph');
+  await step(tok);                                   // 8:48 頂點集合跟 G 一樣
+  remove(sb);
+  const S0 = sq(-0.3, 0.9); S0.edges = trees[0];
+  const h0 = mkG(S0, { noW: true, size: 0.5 }); h0.edges.forEach((e) => evis(e, false));
+  tag('G′', 'idx', -0.3, 0.4, -1.8);
+  say('G′ 的頂點跟 G 一模一樣', 'V(G′) = V(G)');
+  await step(tok);                                   // 9:04 edge 比較少
+  h0.edges.forEach((e) => { evis(e, true); ecol(e, PC.tree, 1.6); });
+  say('但 edge 少了一些', 'E(G′) 只是 E(G) 的一部分');
+  await step(tok);                                   // 9:12 用最少的 edge 把所有 vertex 連起來
+  await pkt(tok, '連', vp(S0, [0, 1, 3, 2]), 500);
+  say('用最少的 edge，把所有 vertex 連起來', '0 → 1 → 3 → 2 都走得到');
+  await step(tok);                                   // 9:31 weight 總和最小 → MCST
+  const mc = note('edge 有 weight：總和最小的那棵 = minimum cost spanning tree', 0.6, 3.6, 0.8);
+  say('如果 edge 有 weight，總和又最小', '就叫 minimum cost spanning tree');
+  await step(tok);                                   // 10:02 n 個 node → n − 1 條邊
+  remove(mc);
+  const nn = note('n 個 node 的 tree：n − 1 條 edge', 0.6, 3.6, 0.8);
+  say('tree 有 n 個 node', '連起來需要 n − 1 條 edge');
+  await step(tok);                                   // 10:10 左上角是 complete graph
+  g.edges.forEach((e) => ecol(e, PC.hot, 1.5));
+  say('左邊的 G 是 complete graph', '4 個頂點兩兩相連：6 條邊');
+  await step(tok);                                   // 10:19 周圍三個都是 spanning tree
+  g.edges.forEach((e) => ecol(e, PC.edge, 1));
+  for (let t = 1; t < 3; t++) {
     const S = sq(-0.3 + t * 2.9, 0.9); S.edges = trees[t];
-    const h = mkG(S, { noW: true, size: 0.5 });
-    h.edges.forEach((e) => ecol(e, PC.tree, 1.6));
+    const h = mkG(S, { noW: true, size: 0.5 }); h.edges.forEach((e) => ecol(e, PC.tree, 1.6));
     tag('G′' + (t + 1), 'idx', -0.3 + t * 2.9, 0.4, -1.8);
-    say('spanning tree：頂點跟 G 一樣', 'V(G′) = V(G)，E(G′) ⊆ E(G)');
-    await beat(tok, 2200);
+    await beat(tok, 500);
   }
-  say('用最少的邊把所有頂點連起來', 'n 個頂點 → n − 1 = 3 條邊，沒有 cycle');
-  await beat(tok, 3200);
-  say('edge 有 weight：總和最小的那棵', '= minimum cost spanning tree（MCST）');
-  await beat(tok, 3000);
+  say('旁邊這三個 subgraph 都是 spanning tree', '每個都包含 4 個頂點');
+  await step(tok);                                   // 10:38 edge set 都是 G 的 subset
+  for (const [a, b] of trees[1]) ecol(g.E(a, b), PC.tree, 2.2);
+  say('它們的 edge 都是從 G 的 edge 裡挑的', '例：G′2 = (0,1) (0,2) (0,3)');
+  await step(tok);                                   // 10:50 邊的個數：3 = n − 1
+  g.edges.forEach((e) => ecol(e, PC.edge, 1)); remove(nn);
+  for (let t = 0; t < 3; t++) tag('3 條', 'ptr alt', -0.3 + t * 2.9, 0.6, 1.7);
+  say('4 個點，每棵都只用 3 條邊', '3 = n − 1，最少的邊數');
 }]);
 
-// 11:15 DFS / BFS spanning tree（從 0 出發）
+// 11:21 DFS / BFS spanning tree（從 0 出發）（11 steps）
 FRAG.push(['gpeng20-dfs-bfs-tree', 'DFS／BFS spanning tree', async (tok) => {
   fresh([0, 9.5, 9.5], [0, 0, 0.2]);
-  const g = mkG(G8, { noW: true });
-  say('DFS 從 0 出發：照拜訪順序連邊', '長出來的就是 DFS spanning tree');
-  await beat(tok, 2600);
-  tint(g.nodes[0], PC.ok);
-  const steps = [[0, 1], [1, 3], [3, 7], [7, 4], [7, 5], [5, 2], [2, 6]];
-  for (const [p, v] of steps) {
-    ecol(g.E(p, v), PC.tree, 2.2); tint(g.nodes[v], PC.ok);
-    say(p + ' → ' + v + '：連起來', 'tree edge (' + p + ', ' + v + ')');
-    await beat(tok, 1100);
-    if (v === 4) {
-      ecol(g.E(1, 4), PC.bad, 2);
-      say('4 要不要連 1？不行', '1 已拜訪過，連了會形成 cycle');
-      await beat(tok, 2200);
-      ecol(g.E(1, 4), PC.dim, 0.6);
-    }
-  }
+  let g;
+  await step(tok);                                   // 11:21 DFS 和 BFS
+  g = mkG(G8, { noW: true });
+  say('還記得 DFS 和 BFS 嗎？', '這是剛才那張 8 個頂點的 graph');
+  await step(tok);                                   // 11:30 traversal 可以長出 spanning tree
+  const sb = bub('拜訪時走過的邊 → spanning tree', 3.8, -3.2);
+  say('用 DFS 或 BFS 走一遍', '走過的邊就長成一棵 spanning tree');
+  const grow = (p, v) => { ecol(g.E(p, v), PC.tree, 2.2); tint(g.nodes[v], PC.ok); };
+  await step(tok);                                   // 11:45 從 0 出發，第一個拜訪 1
+  remove(sb); tint(g.nodes[0], PC.ok); glow(g.nodes[0], GOLD);
+  grow(0, 1);
+  say('從 0 出發，第一個拜訪的是 1', '0 和 1 連起來');
+  await step(tok);                                   // 11:50 1 再往下走到 3
+  glow(g.nodes[0], null); grow(1, 3);
+  say('從 1 往下走：3', '1 和 3 連起來');
+  await step(tok);                                   // 12:12 3 走到 7，再到 4
+  grow(3, 7); await beat(tok, 600); grow(7, 4);
+  say('3 走到 7，7 再走到 4', '');
+  await step(tok);                                   // 12:21 4 要不要連 1？
+  ecol(g.E(1, 4), PC.bad, 2); glow(g.nodes[1], '#5a1010');
+  say('4 要不要連 1 呢？', '');
+  await step(tok);                                   // 12:25 不行：會形成 cycle
+  glow(g.nodes[1], null); await beat(tok, 300); ecol(g.E(1, 4), PC.dim, 0.6);
+  say('不行：1 已經 visit 過，連了會形成 cycle', 'spanning tree 只要連通就好，(1,4) 是多餘的');
+  await step(tok);                                   // 12:45 接著往 5 走，再到 2、6
+  grow(7, 5); await beat(tok, 500); grow(5, 2); await beat(tok, 500); grow(2, 6);
   [[0, 2], [6, 7]].forEach(([a, b]) => ecol(g.E(a, b), PC.dim, 0.6));
-  say('DFS spanning tree 完成', '7 條 tree edge = n − 1');
-  await beat(tok, 2400);
+  say('接著走 5，再到 2、6', 'DFS spanning tree：7 條邊 = n − 1');
+  await step(tok);                                   // 13:08 BFS：level by level
   g.nodes.forEach((m) => tint(m, PC.node)); g.edges.forEach((e) => ecol(e, PC.edge, 1));
-  say('BFS：level by level，更像一棵樹', '');
-  await beat(tok, 1600);
   tint(g.nodes[0], PC.ok);
-  const lv = [[[0, 1], [0, 2]], [[1, 3], [1, 4], [2, 5], [2, 6]], [[3, 7]]];
-  for (const L of lv) {
-    L.forEach(([p, v]) => { ecol(g.E(p, v), PC.tree, 2.2); tint(g.nodes[v], PC.ok); });
-    say('下一層：' + L.map(([, v]) => v).join('、'), L.map(([p, v]) => '(' + p + ',' + v + ')').join(' '));
-    await beat(tok, 1500);
-  }
+  for (const L of [[[0, 1], [0, 2]], [[1, 3], [1, 4], [2, 5], [2, 6]], [[3, 7]]]) { L.forEach(([p, v]) => grow(p, v)); await beat(tok, 600); }
   [[4, 7], [5, 7], [6, 7]].forEach(([a, b]) => ecol(g.E(a, b), PC.dim, 0.6));
-  say('DFS、BFS、起點不同 → 樹不同', 'spanning tree 不是唯一的');
-  await beat(tok, 3000);
+  say('BFS 是 level by level 長出來的', '看起來更像一棵樹');
+  await step(tok);                                   // 13:26 換起點（從 7 出發）就不一樣
+  g.nodes.forEach((m) => tint(m, PC.node)); g.edges.forEach((e) => ecol(e, PC.edge, 1));
+  tint(g.nodes[7], PC.ok); glow(g.nodes[7], GOLD);
+  for (const [p, v] of [[7, 3], [3, 1], [1, 0], [0, 2], [2, 5], [2, 6], [1, 4]]) { grow(p, v); await beat(tok, 300); }
+  say('改從 7 出發做 DFS', '長出來的樹跟剛才不一樣');
+  await step(tok);                                   // 13:38 spanning tree 不是唯一的
+  glow(g.nodes[7], null);
+  note('spanning tree 不是唯一的', 3.6, 3.6, 0.9);
+  say('DFS／BFS、起點不同 → 樹不同', 'spanning tree 不是唯一的');
 }]);
 
 // ───────── 7 頂點 MST 圖（Horowitz：cost 99） ─────────
 const GM = { names: ['0', '1', '2', '3', '4', '5', '6'], pos: [[0, -3.1], [2.9, -1.6], [2.5, 1.7], [0, 3.0], [-2.5, 1.7], [-2.9, -1.6], [0, 0]],
   edges: [[0, 1, 28], [0, 5, 10], [1, 2, 16], [1, 6, 14], [2, 3, 12], [3, 4, 22], [3, 6, 18], [4, 5, 25], [4, 6, 24]], dx: -2.4 };
 
-// 13:50 Kruskal：邊排序，一次選最小，形成 cycle 就跳過
+// 13:58 Kruskal：邊排序，一次選最小，形成 cycle 就跳過（17 steps）
 FRAG.push(['gpeng20-kruskal', 'Kruskal：邊由小到大，有 cycle 就跳過', async (tok) => {
   fresh([0, 9.5, 9.5], [0.4, 0, 0.2]);
-  const g = mkG(GM);
   const sorted = [...GM.edges].sort((a, b) => a[2] - b[2]);
   const L = (e, m) => (e[2] + ' (' + e[0] + ',' + e[1] + ')' + (m || '')).padEnd(18, ' ');
-  const panel = code(['依 cost 排序', ...sorted.map((e) => L(e))], 4.2, 3.6, 0.5, -1.2);
-  say('MCST：edge cost 總和最小的 spanning tree', 'Kruskal：greedy，每次選最小的邊');
-  await beat(tok, 3000);
+  let g, panel, nt;
+  await step(tok);                                   // 13:58 edge 上有 cost
+  g = mkG(GM);
+  say('graph 的 edge 上有 cost（weight）', '');
+  await step(tok);                                   // 14:06 MCST：edge 總和最小的 spanning tree
+  nt = note('MCST：edge cost 加起來最小的 spanning tree', 3.4, -3.6, 0.9);
+  say('minimum cost spanning tree（MCST）', 'spanning tree 裡 cost 總和最小的那棵');
+  await step(tok);                                   // 14:42 三個 greedy 演算法
+  remove(nt);
+  const tg = [['Kruskal', -3.2], ['Prim', 0], ['Sollin', 3.2]].map(([s, z]) => bub(s, 4.4, z, 1.0));
+  say('有三個 greedy 演算法可以找 MCST', 'Kruskal、Prim、Sollin');
+  await step(tok);                                   // 14:59 Kruskal：每次選一條 edge
+  tg.forEach(remove);
+  nt = note('Kruskal：每次選一條 edge', 3.4, -3.6, 0.9);
+  say('第一個：Kruskal', '每一次選一條 edge 出來');
+  await step(tok);                                   // 15:17 而且選最小的
+  ecol(g.E(0, 5), PC.hot, 2); await beat(tok, 900); ecol(g.E(0, 5), PC.edge, 1);
+  say('而且選 cost 最小的 edge', '');
+  await step(tok);                                   // 15:28 先把 edge 排序
+  remove(nt);
+  panel = code(['依 cost 排序', ...sorted.map((e) => L(e))], 4.2, 3.6, 0.5, -1.2);
+  say('所以先把 edge 依 cost 排序', '再一條一條往下選');
+  await step(tok);                                   // 15:36 會形成 loop 就不選
+  nt = note('會形成 loop（cycle）→ 跳過', 3.6, 4.0, 0.6);
+  say('雖然最小，但選了會造成 loop', '就不選，跳到下一條');
+  await step(tok);                                   // 15:50 所有頂點都連起來就停
+  txt(nt, '所有頂點都連起來（n − 1 條）→ 停');
+  say('直到所有頂點都被選的 edge 連起來', 'connected 了就停止');
   const par = [0, 1, 2, 3, 4, 5, 6]; const f = (x) => (par[x] === x ? x : (par[x] = f(par[x])));
   const recolor = () => g.nodes.forEach((m, v) => tint(m, SETC[f(v) % SETC.length]));
-  recolor();
-  let n = 0, cost = 0;
-  for (let k = 0; k < sorted.length && n < 6; k++) {
-    const [u, v, w] = sorted[k], e = g.E(u, v);
-    panel.hl(k + 1); ecol(e, PC.hot, 2);
-    if (f(u) === f(v)) {
-      ecol(e, PC.bad, 2); txt(panel.ls[k + 1], L(sorted[k], ' ✗ cycle'));
-      say(w + '：' + u + '、' + v + ' 已連通 → 跳過', '加進來會形成 cycle');
-      await beat(tok, 2200); ecol(e, PC.dim, 0.6);
-    } else {
-      par[f(v)] = f(u); recolor(); ecol(e, PC.tree, 2.4); n++; cost += w;
-      txt(panel.ls[k + 1], L(sorted[k], ' ✓'));
-      say('選 ' + w + '：(' + u + ', ' + v + ')', '已選 ' + n + ' 條，cost = ' + cost);
-      await beat(tok, 1700);
-    }
-  }
+  let n = 0, cost = 0, k = 0;
+  const consider = () => {
+    const [u, v, w] = sorted[k], e = g.E(u, v); panel.hl(k + 1);
+    if (f(u) === f(v)) { ecol(e, PC.bad, 2); txt(panel.ls[k + 1], L(sorted[k], ' ✗ cycle')); k++; return false; }
+    par[f(v)] = f(u); recolor(); ecol(e, PC.tree, 2.4); n++; cost += w; txt(panel.ls[k + 1], L(sorted[k], ' ✓')); k++; return true;
+  };
+  await step(tok);                                   // 16:24 一開始還沒選任何 edge
+  remove(nt); recolor();
+  say('一開始：還沒選任何 edge', '每個頂點自己一塊（不同顏色）');
+  await step(tok);                                   // 16:34 最小的 10 = (0, 5)
+  consider();
+  say('最小的是 10：(0, 5)，選進來', 'cost = 10');
+  await step(tok);                                   // 17:02 第二小：(2, 3) = 12
+  consider();
+  say('第二小是 12：(2, 3)', 'cost = 22');
+  await step(tok);                                   // 17:10 接下來 14
+  consider();
+  say('接下來是 14：(1, 6)', 'cost = 36');
+  await step(tok);                                   // 17:16 16：1 到 2
+  consider();
+  say('16：(1, 2) 選出來', 'cost = 52');
+  await step(tok);                                   // 17:24 形成 cycle 就去掉
+  const e18 = g.E(3, 6); consider(); await beat(tok, 900); ecol(e18, PC.dim, 0.6);
+  say('18：(3, 6)，3 和 6 已經連通了', '加進來會形成 cycle → 去掉');
+  await step(tok);                                   // 17:35 直接跳下一條去檢查
+  consider(); await beat(tok, 700);
+  const e24 = g.E(4, 6); consider(); await beat(tok, 700); ecol(e24, PC.dim, 0.6);
+  consider();
   panel.hl(-1);
-  say('選滿 n − 1 = 6 條，全部連通 → 停', 'MCST cost = 10+12+14+16+22+25 = 99');
-  await beat(tok, 3200);
+  say('22 選；24 又成 cycle 跳過；25 選', '已經 6 條 = n − 1，停');
+  await step(tok);                                   // 17:44 這就是 MCST
+  note('MCST cost = 10+12+14+16+22+25 = 99', -2.4, 4.3, 0.6);
+  say('選出來的這棵就是 MCST', 'cost = 99');
+  await step(tok);                                   // 17:54 greedy：每次都選最小的
+  bub('greedy：每次只挑眼前最小的', 3.6, -3.8, 1.0);
+  say('為什麼叫 greedy？', '每一次都只挑眼前最小的邊加進來');
 }]);
 
-// 18:16 Prim：從最小邊 10 開始，tree 往外長，每次選往外最小的邊
-const PRIM_STEPS = [[[0, 5]], [[0, 1], [5, 4]], [[0, 1], [4, 6], [4, 3]], [[0, 1], [4, 6], [3, 6], [3, 2]], [[0, 1], [4, 6], [3, 6], [2, 1]], [[4, 6], [3, 6], [1, 6]]];
-const PRIM_PICK = [[0, 5], [5, 4], [4, 3], [3, 2], [2, 1], [1, 6]];
+// 18:20 Prim：從最小邊 10 開始，tree 往外長，每次選往外最小的邊（13 steps）
 FRAG.push(['gpeng20-prim', 'Prim：一棵 tree 慢慢往外長', async (tok) => {
   fresh([0, 9.5, 9.5], [-1.2, 0, 0.2]);
-  const g = mkG(GM);
-  say('Prim：以頂點的角度，一棵 tree 往外長', '先選最小的邊 10 = (0, 5)');
-  await beat(tok, 2800);
-  const inT = new Set(); let cost = 0;
-  const info = tag('', 'ptr', 2.6, 0.4, 3.6);
-  for (let s = 0; s < PRIM_PICK.length; s++) {
-    const cand = s === 0 ? [] : PRIM_STEPS[s];
-    cand.forEach(([a, b]) => ecol(g.E(a, b), PC.hot, 1.6));
-    if (cand.length) {
-      say('往外的邊：' + cand.map(([a, b]) => g.E(a, b).w).join('、'), '選最小的 ' + g.E(...PRIM_PICK[s]).w);
-      await beat(tok, 1900);
-    }
-    cand.forEach(([a, b]) => ecol(g.E(a, b), PC.edge, 1));
-    const [a, b] = PRIM_PICK[s], e = g.E(a, b);
-    ecol(e, PC.tree, 2.4); [a, b].forEach((v) => { inT.add(v); tint(g.nodes[v], PC.ok); });
-    cost += e.w;
-    txt(info, 'tree：{' + [...inT].join(',') + '}');
-    say('加入 ' + (s === 0 ? '0、5' : b) + '，cost = ' + cost, s === 0 ? 'tree = {0, 5}' : '從新的頂點再往外看');
-    await beat(tok, 1500);
-  }
+  let g, cost = 0; const inT = new Set();
+  const info = () => tag('', 'ptr', 2.6, 0.4, 3.6);
+  let it;
+  const add = (a, b) => { const e = g.E(a, b); ecol(e, PC.tree, 2.4); [a, b].forEach((v) => { inT.add(v); tint(g.nodes[v], PC.ok); }); cost += e.w; txt(it, 'tree：{' + [...inT].join(',') + '}　cost ' + cost); };
+  const hot = (pairs, on) => pairs.forEach(([a, b]) => ecol(g.E(a, b), on ? PC.hot : PC.edge, on ? 1.8 : 1));
+  await step(tok);                                   // 18:26 Kruskal 看邊，Prim 看頂點
+  g = mkG(GM); it = info();
+  bub('Kruskal：看邊　Prim：看頂點', 2.6, -3.6, 1.0);
+  say('Prim 跟 Kruskal 不一樣', 'Kruskal 以邊出發；Prim 以頂點出發');
+  await step(tok);                                   // 18:45 以頂點的角度慢慢長
+  say('Prim 以 vertex 的角度，慢慢長大', '等一下看它怎麼長');
+  await step(tok);                                   // 18:53 先選一個最小的邊
+  ecol(g.E(0, 5), PC.hot, 2);
+  say('一開始也是先選最小的邊', '最小的是 10');
+  await step(tok);                                   // 19:11 頂點 0 和 5，從它們往外看
+  add(0, 5);
+  say('10 選出來：tree 有 0 和 5 兩個頂點', '接著從這兩個頂點往外看');
+  await step(tok);                                   // 19:27 0 往外：0–1 = 28
+  hot([[0, 1]], true);
+  say('0 往外的 edge：(0, 1) = 28', '');
+  await step(tok);                                   // 19:33 5 往外：5–4 = 25
+  hot([[5, 4]], true);
+  say('5 往外只有一條：(5, 4) = 25', '');
+  await step(tok);                                   // 19:46 最小的是 25
+  hot([[0, 1], [5, 4]], false); add(5, 4);
+  say('往外的邊裡最小是 25', '4 加進來：tree = {0, 5, 4}');
+  await step(tok);                                   // 20:21 0 往外還是 28
+  hot([[0, 1]], true);
+  say('再往外看：0 往外只有 28', '25 已經選了，不管它');
+  await step(tok);                                   // 20:34 4 往外：24、22
+  hot([[4, 6], [4, 3]], true);
+  say('4 往外：(4, 6) = 24、(4, 3) = 22', '三個可以選：28、24、22');
+  await step(tok);                                   // 20:50 最小的是 4–3
+  hot([[0, 1], [4, 6], [4, 3]], false); add(4, 3);
+  say('最小的是 (4, 3) = 22', '往外擴張：3 加進來');
+  await step(tok);                                   // 21:03 Prim 從頭到尾都是一棵 tree
+  bub('一直都是一棵 tree', -2.4, -3.4, 1.4);
+  say('Prim 從頭到尾都是一棵 tree', '慢慢往外擴張（像擴張領土）');
+  await step(tok);                                   // 21:16 每一步長出一個點
+  for (const [a, b] of [[3, 2], [2, 1], [1, 6]]) { add(a, b); await beat(tok, 700); }
+  say('每一步長出一個點，把鄰近的頂點納進來', '12 → 16 → 14');
+  await step(tok);                                   // 21:33 所有頂點都拜訪過
   say('所有頂點都進來了', 'cost = 10+25+22+12+16+14 = 99，跟 Kruskal 一樣');
-  await beat(tok, 3200);
 }]);
 
-// 21:44 Prim 的 data structure：min priority queue（heap），取出後還要檢查 loop
+// 21:53 Prim 的 data structure：min priority queue（Heap），取出後還要檢查 loop（10 steps）
 FRAG.push(['gpeng20-prim-pq', 'Prim 用 min priority queue，取出還要檢查 loop', async (tok) => {
   fresh([0, 9.5, 9.5], [-0.4, 0, 0]);
-  const g = mkG(GM);
-  tag('min priority queue', 'idx', 4.4, 0.4, -3.4);
-  say('tree 長出去的邊放進哪裡？', 'min priority queue（heap），不用每次排序');
-  await beat(tok, 2800);
-  const pq = []; const inT = new Set([0, 5]);
-  [0, 5].forEach((v) => tint(g.nodes[v], PC.ok)); ecol(g.E(0, 5), PC.tree, 2.4);
+  let g; const pq = []; const inT = new Set([0, 5]);
   const lay = () => { pq.sort((a, b) => a.w - b.w); pq.forEach((it, k) => { move(it.c, 3.9, 0.25, -2.5 + k * 0.95); it.l.position.set(5.3, 0.3, -2.5 + k * 0.95); }); };
   const push = (u, v) => { const e = g.E(u, v); const it = { w: e.w, u, v, c: cube(e.w, PC.pq, [1.0, 0.45, 0.7], 3.9, 0.25, -2.5 + pq.length * 0.95, 3), l: tag('(' + u + ',' + v + ')', 'idx', 5.3, 0.3, -2.5 + pq.length * 0.95) }; pq.push(it); ecol(e, PC.hot, 1.4); };
-  const PUSH = [[[0, 1], [5, 4]], [[4, 3], [4, 6]], [[3, 2], [3, 6]], [[2, 1]], [[1, 6]], []];
-  for (let s = 0; s < PUSH.length; s++) {
-    PUSH[s].forEach(([u, v]) => push(u, v)); lay();
-    if (PUSH[s].length) { say('新頂點的邊 insert 進 queue', 'queue：' + pq.map((x) => x.w).join(', ')); await beat(tok, 1700); }
-    if (s === PUSH.length - 1) break;
-    const it = pq.shift(); kill(it.c); kill(it.l); lay();
-    const nv = inT.has(it.u) ? it.v : it.u; inT.add(nv);
-    ecol(g.E(it.u, it.v), PC.tree, 2.4); tint(g.nodes[nv], PC.ok);
-    say('delete-min：' + it.w + ' (' + it.u + ',' + it.v + ')', '加入頂點 ' + nv);
-    await beat(tok, 1500);
-  }
-  const it = pq[0]; glow(it.c, RED); ecol(g.E(it.u, it.v), PC.bad, 2);
-  say('若再取出 18 (3,6)：兩端都在 tree', '會構成 loop → 丟掉；取出後一定要檢查');
-  await beat(tok, 3400);
+  const pop = () => { const it = pq.shift(); kill(it.c); kill(it.l); lay(); return it; };
+  const take = (it) => { const nv = inT.has(it.u) ? it.v : it.u; inT.add(nv); ecol(g.E(it.u, it.v), PC.tree, 2.4); tint(g.nodes[nv], PC.ok); return nv; };
+  let me;
+  await step(tok);                                   // 21:53 長的過程用什麼 data structure？
+  g = mkG(GM);
+  [0, 5].forEach((v) => tint(g.nodes[v], PC.ok)); ecol(g.E(0, 5), PC.tree, 2.4);
+  me = buddy('', '?', '#f2b8c6', 5.6, 0, 3.4, 0.6); me.mood('wow');
+  say('Prim 在長的過程中，要用什麼 data structure？', '');
+  await step(tok);                                   // 22:18 priority queue
+  zone('min priority queue', 4.5, 0.02, 0.4, 3.2, 6.4);
+  me.set('PQ'); me.mood('happy');
+  say('答案：priority queue', '');
+  await step(tok);                                   // 22:25 0、5 周遭的邊放進去
+  push(0, 1); push(5, 4); lay();
+  say('0 和 5 進了 tree，它們周遭的邊都放進 queue', '28、25');
+  await step(tok);                                   // 22:35 而且是 min priority queue
+  glow(pq[0].c, GOLD);
+  say('而且是 min priority queue（常用 Heap 實作）', '最小的永遠在最前面');
+  await step(tok);                                   // 22:42 每次都排序 cost 很高
+  glow(pq[0].c, null);
+  const sn = note('每次都重新排序？cost 太高', 1.0, 4.2, 0.8);
+  say('每次都重新排序也可以，但 cost 會很高', 'priority queue 只要取最小就好');
+  await step(tok);                                   // 23:07 延伸時 edge insert 進 queue
+  remove(sn);
+  let it = pop(); take(it); push(4, 3); push(4, 6); lay();
+  say('取出 25 → 4 加進 tree', '4 的新邊 22、24 insert 進 queue');
+  await step(tok);                                   // 23:16 最小的邊被抓出來
+  it = pop(); take(it); push(3, 2); push(3, 6); lay();
+  say('最小的 22 被抓出來 → 3 加進 tree', '3 的新邊 12、18 insert 進 queue');
+  await step(tok);                                   // 23:26 抓出來還要做檢查
+  it = pop(); take(it); push(2, 1); lay(); await beat(tok, 700);
+  it = pop(); take(it); push(1, 6); lay(); await beat(tok, 700);
+  it = pop(); take(it); lay();
+  say('依此類推：12、16、14 抓出來', '每抓一條，還要做一個檢查');
+  await step(tok);                                   // 23:37 構成 loop 就不行
+  const bad = pq[0]; glow(bad.c, '#7a1010'); ecol(g.E(bad.u, bad.v), PC.bad, 2);
+  say('下一個最小是 18 (3,6)：3 和 6 都已經在 tree 裡', '加進來會構成 loop → 不行，丟掉');
+  await step(tok);                                   // 23:47 怎麼 detect loop 留給大家
+  pop(); ecol(g.E(bad.u, bad.v), PC.dim, 0.6);
+  note('提示：記住每個頂點在不在 tree 裡', 0.2, 4.2, 0.8);
+  me.mood('calm'); me.set('?');
+  say('怎麼 detect loop？留給大家想', '兩端都在 tree 裡的邊，就是 loop');
 }]);
 
-// 24:12 Sollin：每個頂點同時選自己最小的邊，再把各棵 tree 用最小邊接起來
+// 24:16 Sollin：每個頂點同時選自己最小的邊，再把各棵 tree 用最小邊接起來（16 steps）
 FRAG.push(['gpeng20-sollin', 'Sollin：每個頂點一次選最小邊', async (tok) => {
   fresh([0, 9.5, 9.5], [-1.2, 0, 0.2]);
-  const g = mkG(GM);
-  say('Sollin：一次可以選很多條邊', '第 1 回合：每個頂點選自己最小的邊');
-  await beat(tok, 2800);
-  const MIN = [[0, 5], [1, 6], [2, 3], [3, 2], [4, 3], [5, 0], [6, 1]];
-  for (const [v, w] of MIN) {
-    const e = g.E(v, w); glow(g.nodes[v], GOLD); ecol(e, PC.hot, 2);
-    say('頂點 ' + v + ' 最小的邊：' + e.w, '(' + v + ', ' + w + ')');
-    await beat(tok, 1100);
-    glow(g.nodes[v], null); ecol(e, PC.tree, 2.4);
-  }
-  const comps = [[0, 5], [1, 6], [2, 3, 4]];
-  comps.forEach((c, k) => c.forEach((v) => tint(g.nodes[v], SETC[k])));
-  say('第 1 回合後：三棵 tree', '{0,5}　{1,6}　{2,3,4}');
-  await beat(tok, 2600);
-  const st2 = [[[0, 5], [5, 4], 25, '28、25'], [[1, 6], [1, 2], 16, '16、18、24、28'], [[2, 3, 4], [1, 2], 16, '16、18、24、25']];
-  for (const [c, [a, b], w, list] of st2) {
-    c.forEach((v) => glow(g.nodes[v], GOLD));
-    ecol(g.E(a, b), PC.hot, 2);
-    say('{' + c.join(',') + '} 往外最小：' + w, '候選 ' + list);
-    await beat(tok, 1900);
-    c.forEach((v) => glow(g.nodes[v], null)); ecol(g.E(a, b), PC.tree, 2.4);
-  }
-  g.nodes.forEach((m) => tint(m, PC.ok));
-  say('第 2 回合選 16、25 → 全部連通', 'cost = 10+14+12+22+16+25 = 99');
-  await beat(tok, 3200);
+  let g;
+  const pick = (v, w) => { const e = g.E(v, w); ecol(e, PC.tree, 2.4); };
+  const look = (v, list) => { g.nodes.forEach((m) => glow(m, null)); glow(g.nodes[v], GOLD); list.forEach(([a, b]) => ecol(g.E(a, b), PC.hot, 1.8)); };
+  const unhot = () => g.edges.forEach((e) => { if (e.obj.material.color.getHexString() === 'e8b02a') ecol(e, PC.edge, 1); });
+  await step(tok);                                   // 24:16 對照：Kruskal 以邊出發
+  g = mkG(GM);
+  const k1 = bub('Kruskal：一次選一條邊', 2.6, -3.6, 1.0);
+  say('先對照一下：Kruskal 以邊的角度出發', '一次選一條最小的邊');
+  await step(tok);                                   // 24:30 Prim 以頂點出發
+  txt(k1, 'Prim：以頂點往外長');
+  say('Prim 以頂點的角度出發', '一棵 tree 慢慢往外長');
+  await step(tok);                                   // 24:43 Sollin：一次選多條邊
+  txt(k1, 'Sollin：一次選很多條邊！');
+  say('Sollin：可不可以一次選很多條邊？', '');
+  await step(tok);                                   // 25:20 從每個頂點開始看
+  remove(k1);
+  for (let v = 0; v < 7; v++) { glow(g.nodes[v], GOLD); await beat(tok, 200); glow(g.nodes[v], null); }
+  say('從每個頂點開始', '看它周遭的 edge');
+  await step(tok);                                   // 25:30 0 有 10 和 28
+  look(0, [[0, 5], [0, 1]]);
+  say('頂點 0：周遭有 10 和 28', '');
+  await step(tok);                                   // 25:42 選 10，0 和 5 連起來
+  unhot(); pick(0, 5);
+  say('選最小的 10', '0 和 5 連起來');
+  await step(tok);                                   // 26:00 1：14、16、28 → 14
+  look(1, [[1, 6], [1, 2], [0, 1]]); await beat(tok, 900); unhot(); pick(1, 6);
+  say('頂點 1：14、16、28，最小 14', '1 和 6 連起來');
+  await step(tok);                                   // 26:09 2：16、12 → 12
+  look(2, [[1, 2], [2, 3]]); await beat(tok, 900); unhot(); pick(2, 3);
+  say('頂點 2：16、12，最小 12', '2 和 3 連起來');
+  await step(tok);                                   // 26:35 3 不用看
+  look(3, [[2, 3], [3, 6], [3, 4]]); await beat(tok, 900); unhot(); pick(2, 3);
+  say('3：12、18、22，最小也是 12', '已經選過了，不用再看');
+  await step(tok);                                   // 26:55 4：22、24、25 → 22
+  look(4, [[3, 4], [4, 6], [4, 5]]); await beat(tok, 900); unhot(); pick(4, 3);
+  say('頂點 4：22、24、25，最小 22', '4 和 3 連起來');
+  await step(tok);                                   // 27:04 依此類推
+  look(5, [[0, 5], [4, 5]]); await beat(tok, 700); unhot();
+  look(6, [[1, 6], [3, 6], [4, 6]]); await beat(tok, 700); unhot(); g.nodes.forEach((m) => glow(m, null));
+  say('依此類推：5 選 10、6 選 14', '都是已經選過的邊');
+  await step(tok);                                   // 27:11 結合 Prim 和 Kruskal 的精神
+  const mix = bub('選最小的邊（像 Kruskal）＋從頂點出發（像 Prim）', -1.2, -4.2, 1.0);
+  say('Sollin 結合了 Prim 和 Kruskal', '從頂點出發、選最小的邊，一次很多條');
+  await step(tok);                                   // 27:57 第一回合結束：三棵 tree
+  remove(mix);
+  [[0, 5], [1, 6], [2, 3, 4]].forEach((c, k) => c.forEach((v) => tint(g.nodes[v], SETC[k])));
+  say('第一回合結束：產生三棵 tree', '{0,5}　{1,6}　{2,3,4}');
+  await step(tok);                                   // 28:17 第二回合：像 Prim 往外看
+  for (const c of [[0, 5], [1, 6], [2, 3, 4]]) { c.forEach((v) => glow(g.nodes[v], GOLD)); await beat(tok, 600); c.forEach((v) => glow(g.nodes[v], null)); }
+  say('第二回合跟 Prim 很像', '每棵 tree 往外看最小的 edge');
+  await step(tok);                                   // 28:42 16 和 25 被選出來
+  ecol(g.E(1, 2), PC.hot, 2); ecol(g.E(4, 5), PC.hot, 2); await beat(tok, 900);
+  pick(1, 2); pick(4, 5); g.nodes.forEach((m) => tint(m, PC.ok));
+  say('{1,6} 往外最小 16、{0,5} 往外最小 25', '選出 (1,2)、(5,4)，全部連通了');
+  await step(tok);                                   // 28:57 就是 MCST
+  note('cost = 10+14+12+22+16+25 = 99', -1.2, 4.3, 0.7);
+  say('這就是 MCST', 'cost 一樣是 99');
 }]);
 
-// 29:00 三個 greedy 演算法比較；相同 weight 的邊 → MCST 可能不一樣
+// 29:07 三個 greedy 演算法比較；相同 weight 的邊 → MCST 可能不一樣（9 steps）
 FRAG.push(['gpeng20-mst-compare', 'Kruskal／Prim／Sollin 比較；相同 weight 時樹可能不同', async (tok) => {
   fresh([0, 9.5, 9.5], [0.4, 0, 0.2]);
-  const g = mkG(GM);
-  [[0, 5], [2, 3], [1, 6], [1, 2], [3, 4], [4, 5]].forEach(([a, b]) => ecol(g.E(a, b), PC.tree, 2.4));
-  const p = code(['Kruskal：10 12 14 16 22 25', 'Prim   ：10 25 22 12 16 14', 'Sollin ：10 14 12 22 │ 16 25'], 3.8, 2.6, 0.6, -1.4);
-  say('三個演算法，這個例子結果一樣', 'cost 都是 99');
-  for (let i = 0; i < 3; i++) { p.hl(i); await beat(tok, 1600); }
-  p.hl(-1);
-  say('Kruskal 看邊；Prim 看頂點往外長', 'Sollin：每個頂點選邊，再把 tree 合併');
-  await beat(tok, 3000);
-  fresh([0, 9, 9], [0, 0, 0]);
-  const TRI = { names: ['a', 'b', 'c'], pos: [[0, -2.4], [-2.4, 1.6], [2.4, 1.6]], edges: [[0, 1, 10], [0, 2, 10], [1, 2, 10]], dx: -2.8 };
-  const h = mkG(TRI);
-  say('如果有好幾條相同 weight 的邊…', '三條邊 cost 都是 10（示意）');
-  await beat(tok, 2400);
-  const opts = [[[0, 1], [0, 2]], [[0, 1], [1, 2]], [[0, 2], [1, 2]]];
-  for (const o of opts) {
+  let g, p, h, cap;
+  const TREE = [[0, 5], [2, 3], [1, 6], [1, 2], [3, 4], [4, 5]];
+  const lines = ['Kruskal：10 12 14 16 22 25', 'Prim   ：10 25 22 12 16 14', 'Sollin ：10 14 12 22 │ 16 25'];
+  await step(tok);                                   // 29:07 這個例子結果都一樣
+  g = mkG(GM);
+  TREE.forEach(([a, b]) => ecol(g.E(a, b), PC.tree, 2.4));
+  p = code(lines, 3.8, 2.6, 0.6, -1.4);
+  say('這個例子裡三個演算法結果都一樣', '同一棵樹，cost 都是 99');
+  await step(tok);                                   // 29:23 考試長得不一樣不一定是你錯
+  cap = note('考試答案的樹不一樣 ≠ 一定錯', 3.8, 1.6, 0.8);
+  say('考試時三個長得不一樣，不一定是你錯', '為什麼？');
+  await step(tok);                                   // 29:42 有多條相同 weight 的 edge
+  remove(cap); p.kill(); dropG(g);
+  const TRI = { names: ['a', 'b', 'c'], pos: [[0, -2.4], [-2.4, 1.6], [2.4, 1.6]], edges: [[0, 1, 10], [0, 2, 10], [1, 2, 10]], dx: -0.4 };
+  h = mkG(TRI);
+  say('因為可能有好幾條相同 weight 的 edge', '例：三條都是 10（示意）');
+  await step(tok);                                   // 29:49 選不一樣的邊 → MCST 不一樣
+  for (const o of [[[0, 1], [0, 2]], [[0, 1], [1, 2]], [[0, 2], [1, 2]]]) {
     h.edges.forEach((e) => ecol(e, PC.dim, 0.7)); o.forEach(([a, b]) => ecol(h.E(a, b), PC.tree, 2.4));
-    say('選法不同 → 樹不同', o.map(([a, b]) => '(' + TRI.names[a] + ',' + TRI.names[b] + ')').join(' ') + '，cost = 20');
-    await beat(tok, 1700);
+    await beat(tok, 800);
   }
-  tag('MCST 不唯一，cost 一樣', 'ptr alt', 3.0, 0.6, 0);
-  say('考試答案長得不一樣不一定錯', 'MCST 可以不唯一，但最小 cost 一定相同');
-  await beat(tok, 3200);
+  say('選了不一樣的邊，樹就不一樣', '三種選法，cost 都是 20');
+  await step(tok);                                   // 29:57 greedy 沒辦法保證 optimal？
+  tag('樹可以不唯一，但最小 cost 一定一樣', 'ptr alt', 3.6, 0.8, 2.6);
+  say('老師說 greedy 不保證 optimal', '補充：這三個對 MST 都保證 cost 最小');
+  await step(tok);                                   // 30:15 總結：Kruskal 用邊的角度
+  dropG(h);
+  g = mkG(GM); p = code(lines, 3.8, 2.6, 0.6, -1.4);
+  p.hl(0);
+  for (const [a, b] of [[0, 5], [2, 3], [1, 6], [1, 2], [3, 4], [4, 5]]) { ecol(g.E(a, b), PC.tree, 2.4); await beat(tok, 300); }
+  say('Kruskal：用邊的角度出發', '全圖最小的邊先選');
+  await step(tok);                                   // 30:21 Prim 用頂點的角度擴張領土
+  g.edges.forEach((e) => ecol(e, PC.edge, 1)); p.hl(1);
+  for (const [a, b] of [[0, 5], [5, 4], [4, 3], [3, 2], [2, 1], [1, 6]]) { ecol(g.E(a, b), PC.tree, 2.4); await beat(tok, 300); }
+  say('Prim：用頂點的角度出發', '慢慢擴張自己的領土');
+  await step(tok);                                   // 30:27 Sollin 結合兩者
+  g.edges.forEach((e) => ecol(e, PC.edge, 1)); p.hl(2);
+  for (const [a, b] of [[0, 5], [1, 6], [2, 3], [3, 4]]) ecol(g.E(a, b), PC.tree, 2.4);
+  say('Sollin：每個頂點選鄰近最小的邊', '一次選很多條');
+  await step(tok);                                   // 30:45 再像 Prim 把 tree merge
+  for (const [a, b] of [[1, 2], [4, 5]]) ecol(g.E(a, b), PC.hot, 2.4);
+  say('選完後像 Prim 一樣往外看最小的邊', '把幾棵 tree merge 起來');
 }]);
 
 // ───────── 10 頂點 articulation point 圖（Horowitz） ─────────
@@ -3026,50 +3288,93 @@ function compsWithout(x) {
   }
   return id;
 }
+const BCC = [[[0, 1]], [[1, 2], [1, 3], [2, 4], [3, 4]], [[3, 5]], [[5, 6], [5, 7], [6, 7]], [[7, 8]], [[7, 9]]];
 
-// 31:00 articulation point：拿掉後圖變成 ≥ 2 個 connected component
+// 31:07 articulation point：拿掉後圖變成 ≥ 2 個 connected component（12 steps）
 FRAG.push(['gpeng20-articulation', 'Articulation point：拿掉就斷線的點', async (tok) => {
   fresh([0, 9, 9.5], [0, 0, 0]);
-  const g = mkG(GAP, { noW: true });
-  say('connected graph：任兩點都連得到', 'articulation point：拿掉它 → 至少 2 個 component');
-  await beat(tok, 3000);
-  for (const x of [1, 3]) {
-    const p = gp(GAP, x);
-    move(g.nodes[x], p.x, 2.2, p.z); tint(g.nodes[x], PC.bad);
-    g.edges.forEach((e) => { if (e.u === x || e.v === x) evis(e, false); });
-    const id = compsWithout(x);
-    id.forEach((c, v) => { if (v !== x) tint(g.nodes[v], SETC[c]); });
-    say('拿掉 ' + x + '：圖斷成兩塊', x === 1 ? '{0} 和 {2,3,…,9}' : '{0,1,2,4} 和 {5,6,7,8,9}');
-    await beat(tok, 3000);
-    move(g.nodes[x], p.x, 0.3, p.z);
-    g.edges.forEach((e) => evis(e, true)); g.nodes.forEach((m) => tint(m, PC.node));
-    await beat(tok, 900);
-  }
-  for (const x of [1, 3, 5, 7]) { tint(g.nodes[x], PC.bad); above(GAP, x, 'AP', 'ptr alt', 1.1); await beat(tok, 500); }
-  say('articulation point：1、3、5、7', '像學校網路的 router：一壞就斷線');
-  await beat(tok, 3400);
+  let g;
+  const cut = (x) => { const p = gp(GAP, x); move(g.nodes[x], p.x, 2.2, p.z); tint(g.nodes[x], PC.bad); g.edges.forEach((e) => { if (e.u === x || e.v === x) evis(e, false); }); compsWithout(x).forEach((c, v) => { if (v !== x) tint(g.nodes[v], SETC[c]); }); };
+  const back = (x) => { const p = gp(GAP, x); move(g.nodes[x], p.x, 0.3, p.z); g.edges.forEach((e) => evis(e, true)); g.nodes.forEach((m) => tint(m, PC.node)); };
+  await step(tok);                                   // 31:07 biconnected component
+  g = mkG(GAP, { noW: true });
+  say('接下來介紹 biconnected component', '先從 connected 講起');
+  await step(tok);                                   // 31:22 connected：我連得到你就好
+  await pkt(tok, '連得到', vp(GAP, [0, 1, 3, 5, 7, 9]), 380);
+  say('connected：我可以連到你就好', '0 一路走得到 9');
+  await step(tok);                                   // 31:27 biconnected 更強
+  bub('biconnected：更強的連通', 0, -3.6, 1.0);
+  say('biconnected 是更強的連通', '等一下看它到底多強');
+  await step(tok);                                   // 31:56 articulation point 的定義
+  say('先定義 articulation point', '把這個頂點拿掉會怎樣？');
+  await step(tok);                                   // 32:06 拿掉 → 至少兩個獨立的 component
+  note('拿掉它 → 至少 2 個 connected component', 0, 3.8, 0.8);
+  say('拿掉這個點，graph 變成至少兩個', '獨立的 connected component');
+  await step(tok);                                   // 32:33 紅色的就是：例如 1
+  cut(1);
+  say('例：把 1 拿掉', '它連著的 edge 也一起消失');
+  await step(tok);                                   // 32:42 0 自己一塊，其他一塊
+  above(GAP, 0, '自己一塊', 'ptr alt', 1.1);
+  say('0 自己變成一個 connected component', '2、3、5…剩下的是另一塊');
+  await step(tok);                                   // 32:59 1 可以複製成兩份
+  back(1);
+  say('為了表示方便，會把 1 複製成兩份', '{0,1} 是一塊，1 跟右邊又是一塊');
+  await step(tok);                                   // 33:18 拿掉 3：左右斷開
+  await beat(tok, 600); cut(3);
+  say('3 也一樣：拿掉以後', '左邊和右邊的 node 就沒辦法互相連');
+  await step(tok);                                   // 33:27 1、3、5、7 是重要節點
+  back(3);
+  for (const x of [1, 3, 5, 7]) { tint(g.nodes[x], PC.bad); above(GAP, x, 'AP', 'ptr alt', 1.1); await beat(tok, 300); }
+  say('1、3、5、7 都是 articulation point', '它們是很重要的節點');
+  await step(tok);                                   // 33:49 像學校網路的 router
+  const rt = note('想像：每個點是宿舍網路的 router', 0, 3.8, 0.8);
+  glow(g.nodes[3], '#7a1010');
+  const l = await pkt(tok, '封包', vp(GAP, [0, 1, 3]), 500, true);
+  txt(l, '斷線！');
+  say('如果 router 3 壞掉…', '左右兩邊的網路就斷線了');
+  await step(tok);                                   // 34:15 biconnected component：兩兩都能連
+  remove(l); remove(rt); glow(g.nodes[3], null);
+  [[5, 6], [5, 7], [6, 7]].forEach(([a, b]) => ecol(g.E(a, b), PC.ok, 2.2));
+  say('biconnected component 裡', '任兩個頂點都能互相連（例：5、6、7）');
 }]);
 
-// 34:40 biconnected graph、maximal biconnected component（共 6 個）、共用的點就是 AP
-const BCC = [[[0, 1]], [[1, 2], [1, 3], [2, 4], [3, 4]], [[3, 5]], [[5, 6], [5, 7], [6, 7]], [[7, 8]], [[7, 9]]];
+// 34:46 biconnected graph、maximal biconnected component（共 6 個）、共用的點就是 AP（9 steps）
 FRAG.push(['gpeng20-bicomponents', 'Biconnected components：6 塊，共用點是 AP', async (tok) => {
   fresh([0, 9, 9.5], [0, 0, 0]);
-  const g = mkG(GAP, { noW: true });
-  say('biconnected：沒有任何 articulation point', 'maximal：不被更大的 biconnected subgraph 包含');
-  await beat(tok, 3200);
-  for (let k = 0; k < BCC.length; k++) {
-    const vs = new Set(); BCC[k].forEach(([a, b]) => { ecol(g.E(a, b), SETC[k], 2.4); vs.add(a); vs.add(b); });
-    const c = [...vs].map((v) => gp(GAP, v)).reduce((s, p) => s.add(p), V3(0, 0, 0)).multiplyScalar(1 / vs.size);
-    tag('B' + (k + 1), 'ptr', c.x, 0.9, c.z + 0.7);
-    say('第 ' + (k + 1) + ' 個 biconnected component', '{' + [...vs].sort((a, b) => a - b).join(',') + '}');
-    await beat(tok, 1300);
-  }
-  [1, 3, 5, 7].forEach((v) => tint(g.nodes[v], PC.bad));
-  say('一共 6 個 maximal biconnected component', '每條 edge 只屬於其中一個（edge 的 partition）');
-  await beat(tok, 3000);
-  glow(g.nodes[3], GOLD);
-  say('B2、B3 共用頂點 3', '兩個 BCC 最多共用 1 個點 = articulation point');
-  await beat(tok, 3200);
+  let g;
+  const paint = (k) => { const vs = new Set(); BCC[k].forEach(([a, b]) => { ecol(g.E(a, b), SETC[k], 2.4); vs.add(a); vs.add(b); }); return vs; };
+  await step(tok);                                   // 34:49 沒有 AP 的 connected graph = biconnected
+  g = mkG(GAP, { noW: true });
+  [5, 6, 7].forEach((v) => tint(g.nodes[v], PC.ok)); [[5, 6], [5, 7], [6, 7]].forEach(([a, b]) => ecol(g.E(a, b), PC.ok, 2.2));
+  say('connected graph 裡沒有任何 articulation point', '就叫 biconnected（例：5、6、7 這塊）');
+  await step(tok);                                   // 35:02 maximal：不被更大的包含
+  [5, 6, 7].forEach((v) => tint(g.nodes[v], PC.node)); [[5, 6], [5, 7], [6, 7]].forEach(([a, b]) => ecol(g.E(a, b), PC.edge, 1));
+  ecol(g.E(5, 6), PC.hot, 2.4); await beat(tok, 900);
+  [[5, 7], [6, 7]].forEach(([a, b]) => ecol(g.E(a, b), PC.hot, 2.4));
+  say('{5,6} 也算 biconnected，但它被 {5,6,7} 包住', '不被更大的包含 → maximal');
+  await step(tok);                                   // 35:22 跟 weight 無關
+  note('跟 edge 的 weight 無關', 2.4, 3.8, 0.8);
+  say('maximal 看的是「大小」', '跟 edge 上的 cost／weight 沒關係');
+  await step(tok);                                   // 36:27 兩個 BCC 最多一個共同頂點
+  g.edges.forEach((e) => ecol(e, PC.edge, 1));
+  paint(0); paint(1);
+  say('同一個 graph 的兩個 biconnected component', '最多只有一個共同的頂點');
+  await step(tok);                                   // 36:49 共同頂點 = articulation point
+  glow(g.nodes[1], GOLD); tint(g.nodes[1], PC.bad);
+  say('{0,1} 和 {1,2,3,4} 共用 1', '共同的那個點就是 articulation point');
+  await step(tok);                                   // 37:12 {1,2,3,4} 和 {3,5} 共用 3
+  glow(g.nodes[1], null); paint(2); glow(g.nodes[3], GOLD); tint(g.nodes[3], PC.bad);
+  say('{1,2,3,4} 和 {3,5} 共用的是 3', '3 也是 articulation point');
+  await step(tok);                                   // 37:56 graph 被拆成好多個 BCC
+  glow(g.nodes[3], null);
+  for (let k = 3; k < BCC.length; k++) { paint(k); await beat(tok, 400); }
+  [5, 7].forEach((v) => tint(g.nodes[v], PC.bad));
+  say('整個 graph 被拆成 6 個 biconnected component', '共用的點：1、3、5、7');
+  await step(tok);                                   // 38:41 對 edge 做 partition
+  BCC.forEach((bc, k) => { const vs = new Set(); bc.forEach(([a, b]) => { vs.add(a); vs.add(b); }); const c = [...vs].map((v) => gp(GAP, v)).reduce((s, q) => s.add(q), V3(0, 0, 0)).multiplyScalar(1 / vs.size); tag('B' + (k + 1), 'ptr', c.x, 0.9, c.z + 0.7); });
+  say('BCC 是對 edge 做 partition', '每條 edge 只塗上一種顏色');
+  await step(tok);                                   // 38:48 沒有 edge 會出現在兩個 BCC
+  say('沒有一條 edge 出現在兩個 component', '頂點可以共用（AP），edge 不行');
 }]);
 
 // ── DFS spanning tree（從 3 出發）的 dfn / low ──
@@ -3078,12 +3383,10 @@ const DFN = [5, 4, 3, 1, 2, 6, 7, 8, 10, 9], LOW = [5, 1, 1, 1, 1, 6, 6, 6, 10, 
 const TREE_E = [[3, 4], [4, 2], [2, 1], [1, 0], [3, 5], [5, 6], [6, 7], [7, 9], [7, 8]];
 const DFS_ORDER = [[3, -1], [4, 3], [2, 4], [1, 2], [0, 1], [5, 3], [6, 5], [7, 6], [9, 7], [8, 7]];
 const tp = (v, dx) => V3(TPOS[v][0] + dx, 0.3, TPOS[v][1]);
-function treeEdges(dx) {
-  const rods = TREE_E.map(([a, b]) => { const p = tp(a, dx), q = tp(b, dx); const d = q.clone().sub(p).normalize(); return rod(p.clone().addScaledVector(d, 0.45), q.clone().addScaledVector(d, -0.45), PC.tree, 0.05); });
-  const b13 = dash([tp(1, dx), V3(-0.9 + dx, 0.3, -0.9), tp(3, dx)]);
-  const b75 = dash([tp(7, dx), V3(3.7 + dx, 0.3, -0.2), tp(5, dx)]);
-  return { rods, back: [b13, b75] };
-}
+const BK13 = (dx) => [tp(1, dx), V3(-0.9 + dx, 0.3, -0.9), tp(3, dx)];
+const BK75 = (dx) => [tp(7, dx), V3(3.7 + dx, 0.3, -0.2), tp(5, dx)];
+function treeRods(dx) { return TREE_E.map(([a, b]) => { const p = tp(a, dx), q = tp(b, dx); const d = q.clone().sub(p).normalize(); return rod(p.clone().addScaledVector(d, 0.45), q.clone().addScaledVector(d, -0.45), PC.tree, 0.05); }); }
+function backDash(dx) { return [dash(BK13(dx)), dash(BK75(dx))]; }
 // 直接在樹的位置畫出 DFS spanning tree（dfn 標在上方，low 標在右邊）
 function apTree(dx, opt = {}) {
   const nodes = [], dfn = [], low = [];
@@ -3094,188 +3397,499 @@ function apTree(dx, opt = {}) {
     low[v] = tag(opt.low ? 'low ' + LOW[v] : '', 'ptr', p.x + 0.95, 0.6, p.z + 0.1);
     if (!opt.low) showL(low[v], false);
   }
-  const ed = treeEdges(dx);
-  return { nodes, dfn, low, ed };
+  const rods = treeRods(dx), back = backDash(dx);
+  return { nodes, dfn, low, rods, back };
 }
 const setLow = (t, v, val) => { txt(t.low[v], 'low ' + val); showL(t.low[v], true); };
 const rowL = (v, low) => (' ' + v + '  ' + String(DFN[v]).padStart(3) + '  ' + (low == null ? '  -' : String(low).padStart(3)));
 function lowTable(x, known) { return code(['  v  dfn  low', ...[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((v) => rowL(v, known && known.includes(v) ? LOW[v] : null))], x, 4.2, 0.38, -1.2); }
-
-// 圖 → DFS（從 3）標 dfn → 拉起 root 變成樹＋back edge 虛線
-async function graphToTree(tok, g, dx, slow) {
-  const dt = [];
-  for (const [v, p] of DFS_ORDER) {
-    if (p >= 0) ecol(g.E(p, v), PC.tree, 2.2);
-    tint(g.nodes[v], PC.ok); dt[v] = above(g.spec, v, 'dfn ' + DFN[v], 'idx', 0.9);
-    if (slow) { say(p < 0 ? '從 3 出發：dfn(3) = 1' : (p === 3 && v === 4 ? 'adjacency list 裡 4 在 5 前面 → 先走 4' : '走到 ' + v + '：dfn(' + v + ') = ' + DFN[v]), 'dfn = DFS 拜訪順序'); await beat(tok, v === 4 ? 1900 : 1000); }
-  }
-  if (!slow) await beat(tok, 1000);
-  if (slow) { say('1–3、5–7 這兩條沒走到', '它們不是 tree edge'); await beat(tok, 2200); }
+const LOWF = ['low(w) = min {', '  dfn(w),', '  low(x)：x 是 w 的 child,', '  dfn(x)：(w,x) 是 back edge }'];
+// graph（從 3 出發的 DFS）裡的 dfn 標籤
+function dfsVisit(g, v, p, dt) { if (p >= 0) ecol(g.E(p, v), PC.tree, 2.2); tint(g.nodes[v], PC.ok); dt[v] = above(g.spec, v, 'dfn ' + DFN[v], 'idx', 0.9); }
+// 圖 → 樹：拿掉原來的邊，頂點移到樹的位置，畫上 tree edge 與 dfn
+function pullUp(g, dx, dt) {
   g.edges.forEach((e) => kill(e.obj)); dt.forEach(kill);
   for (let v = 0; v < 10; v++) { const p = tp(v, dx); move(g.nodes[v], p.x, 0.3, p.z); }
-  say('把 root 3 拎起來（像提布偶）', '越靠近 root，dfn 越小');
-  await beat(tok, 1600);
-  const ed = treeEdges(dx);
+  const rods = treeRods(dx);
   const tags = []; for (let v = 0; v < 10; v++) { const p = tp(v, dx); tags[v] = tag('dfn ' + DFN[v], 'idx', p.x, 0.9, p.z - 0.6); }
-  return { ed, tags };
+  return { rods, tags };
 }
 
-// 39:05 / 51:20 用 DFS spanning tree 找 biconnected component：dfn、拉起來、back edge
+// 39:13 用 DFS spanning tree 找 biconnected component：dfn、拉起來、back edge（12 steps）
 FRAG.push(['gpeng20-dfn-tree', 'DFS spanning tree（從 3）：dfn 與 back edge', async (tok) => {
   fresh([0, 9.5, 9.5], [0, 0, 0]);
-  const g = mkG(GAP, { noW: true });
-  say('第一步：對 graph 做 DFS，從 3 出發', '');
-  await beat(tok, 2000);
-  await graphToTree(tok, g, 0, true);
-  say('虛線 = back edge：原圖有、樹上沒有', '(1, 3)、(7, 5)：跳回祖先，加上去會成 cycle');
-  await beat(tok, 3400);
-  say('root 3 有兩個 child：4 和 5', '');
-  await beat(tok, 2600);
+  let g, bk, nt; const dt = [];
+  await step(tok);                                   // 39:13 BCC 可以用 DFS spanning tree 找
+  g = mkG(GAP, { noW: true });
+  say('connected、undirected 的 graph', '它的 biconnected component 可以用 DFS spanning tree 找');
+  await step(tok);                                   // 39:37 back edge、cross edge
+  nt = note('等一下注意兩種 edge：back edge、cross edge', 0, -3.6, 0.9);
+  say('等一下會出現兩種 edge', 'back edge 和 cross edge');
+  await step(tok);                                   // 40:15 第一步：DFS spanning tree，從 3 出發
+  remove(nt);
+  dfsVisit(g, 3, -1, dt); glow(g.nodes[3], GOLD);
+  say('第一步：對 graph 做 DFS，從 3 出發', 'dfn(3) = 1：第 1 個被拜訪');
+  await step(tok);                                   // 41:09 3 有兩種走法：4 或 5
+  ecol(g.E(3, 4), PC.hot, 2); ecol(g.E(3, 5), PC.hot, 2);
+  say('3 接下來有兩種走法：走 4 或走 5', '');
+  await step(tok);                                   // 41:18 adjacency list 裡 4 在 5 前面
+  glow(g.nodes[3], null); ecol(g.E(3, 5), PC.edge, 1); dfsVisit(g, 4, 3, dt);
+  say('adjacency list 裡 4 排在 5 前面', '所以先走 4：dfn(4) = 2');
+  await step(tok);                                   // 41:27 4 → 2（3 拜訪過了）
+  dfsVisit(g, 2, 4, dt); await beat(tok, 500);
+  for (const [v, p] of DFS_ORDER.slice(3)) { dfsVisit(g, v, p, dt); await beat(tok, 280); }
+  say('4 連到 3 和 2，3 拜訪過了 → 走 2', '一路走完：dfn 依序編號');
+  await step(tok);                                   // 41:34 數字 = DFS 拜訪順序
+  for (let k = 0; k < 10; k++) { const v = DFS_ORDER[k][0]; glow(g.nodes[v], GOLD); await beat(tok, 150); glow(g.nodes[v], null); }
+  say('頂點上的數字就是 DFS 拜訪的順序', '叫 dfn（DFS number）');
+  await step(tok);                                   // 41:44 把 3 像布偶一樣拉起來
+  pullUp(g, 0, dt);
+  say('把 root 3 像提布偶一樣往上拉', '整張圖就變成一棵樹');
+  await step(tok);                                   // 42:13 虛線：原 graph 有這條 edge
+  bk = backDash(0);
+  say('虛線：原來的 graph 裡有這條 edge', '但 DFS 沒走它：(1,3) 和 (7,5)');
+  await step(tok);                                   // 42:21 加上去會變成 cycle
+  bk[0].material.color.set('#e8b02a');
+  bub('3 → 4 → 2 → 1 → 3：繞一圈', -2.6, -1.0, 1.4);
+  say('把虛線加到樹上就會形成 cycle', '例：3 → 4 → 2 → 1，再沿虛線回到 3');
+  await step(tok);                                   // 43:11 back edge：跳回祖先
+  bk[0].material.color.set('#c0392b');
+  await pkt(tok, 'back', BK13(0), 500);
+  say('虛線叫 back edge', '從某個 node 跳回它的祖先（ancestor）');
+  await step(tok);                                   // 44:01 root 有兩個 child：4 和 5
+  glow(g.nodes[3], GOLD); glow(g.nodes[4], '#3a2a00'); glow(g.nodes[5], '#3a2a00');
+  say('這棵 DFS spanning tree 的 root 是 3', 'root 有兩個 child：4 和 5');
 }]);
 
-// 44:18 / 56:10 low(w) 的定義與 0、1、2 的例子
+// 44:20 low(w) 的定義與 0、1、2 的例子（17 steps）
 FRAG.push(['gpeng20-low-def', 'low(w)：往下走再用一條 back edge 能到的最小 dfn', async (tok) => {
   fresh([0, 9.5, 9.5], [0, 0.4, 0]);
-  const t = apTree(1.6);
-  const tb = lowTable(-5.0, []);
-  say('low(w)：從 w 往子孫走，最多用一條 back edge', 'low(w) = min{ dfn(w), low(x) x 是 child, dfn(x) (w,x) 是 back edge }');
-  await beat(tok, 4200);
-  glow(t.nodes[0], GOLD); tb.hl(1);
-  say('0：沒有 child，也沒有 back edge', 'low(0) = dfn(0) = 5');
-  setLow(t, 0, 5); txt(tb.ls[1], rowL(0, 5));
-  await beat(tok, 3000); glow(t.nodes[0], null);
-  glow(t.nodes[1], GOLD); tb.hl(2); t.ed.back[0].material.color.set('#e8b02a');
-  say('1：有 back edge (1, 3) 直達天聽', 'low(1) = min(4, low(0)=5, dfn(3)=1) = 1');
+  let t, tb, f;
+  const D = 1.6;
+  await step(tok);                                   // 44:20 定義 low(w)
+  t = apTree(D);
+  say('接下來替每個頂點 w 定義 low(w)', '');
+  await step(tok);                                   // 44:31 從 w 出發往 child 走
+  await pkt(tok, 'w', [tp(2, D), tp(1, D), tp(0, D)], 500);
+  say('從 w 出發，往它的 child 一路走下去', '');
+  await step(tok);                                   // 44:44 能到達的 node 裡最小的 dfn
+  bub('能到的點裡，dfn 最小是多少？', -3.4, 3.6, 1.0);
+  say('看能到達的 node 裡', '最小的 DFS number 是多少 → 就是 low(w)');
+  await step(tok);                                   // 45:47 DFN = 拜訪順序
+  tb = lowTable(-5.0, []);
+  say('右邊每個點上的 dfn', '= DFS traversal 時的拜訪順序');
+  await step(tok);                                   // 46:03 dfn(3) = 1、dfn(4) = 2
+  glow(t.nodes[3], GOLD); glow(t.nodes[4], GOLD); tb.hl(4);
+  say('例：3 第一個被拜訪，dfn(3) = 1', '4 第二個，dfn(4) = 2');
+  await step(tok);                                   // 46:25 0 的 low 是多少？
+  glow(t.nodes[3], null); glow(t.nodes[4], null); glow(t.nodes[0], GOLD); tb.hl(1);
+  say('先看 0：它的 low 是多少？', '');
+  await step(tok);                                   // 46:37 0 不能往下走，也沒 back edge
+  const n0 = tag('沒有 child、沒有 back edge', 'note', tp(0, D).x - 1.6, 1.1, tp(0, D).z + 0.9);
+  say('0 已經不能往下走了', '要往上只能靠 back edge，但 0 沒有');
+  await step(tok);                                   // 47:08 只有它自己：5
+  remove(n0); setLow(t, 0, 5); txt(tb.ls[1], rowL(0, 5));
+  say('能到的只有自己', 'low(0) = dfn(0) = 5');
+  await step(tok);                                   // 47:29 1：下面有 0（dfn 5）
+  glow(t.nodes[0], null); glow(t.nodes[1], GOLD); tb.hl(2);
+  say('再看 1：它下面有 0', '0 的 dfn 是 5');
+  await step(tok);                                   // 47:40 1 有 back edge 直達 3
+  t.back[0].material.color.set('#e8b02a');
+  await pkt(tok, '直達', BK13(D), 500);
+  say('但 1 有一條 back edge', '可以直達天聽，跳到 3');
+  await step(tok);                                   // 48:02 low(1) = dfn(3) = 1
   setLow(t, 1, 1); txt(tb.ls[2], rowL(1, 1));
-  await beat(tok, 3600); glow(t.nodes[1], null);
-  glow(t.nodes[2], GOLD); tb.hl(3);
-  say('2：透過 child 1 的 back edge 也能到 3', 'low(2) = min(3, low(1)=1) = 1');
+  say('所以 low(1) = dfn(3) = 1', '');
+  await step(tok);                                   // 48:13 2 呢？
+  glow(t.nodes[1], null); glow(t.nodes[2], GOLD); tb.hl(3);
+  say('再看 2：它的 child 是 1', '');
+  await step(tok);                                   // 48:28 2 透過 1 的 back edge 也到 3
+  await pkt(tok, '2', [tp(2, D), ...BK13(D)], 450);
   setLow(t, 2, 1); txt(tb.ls[3], rowL(2, 1));
-  await beat(tok, 3600); glow(t.nodes[2], null); tb.hl(-1);
-  say('三個來源取最小', '自己的 dfn、child 的 low、back edge 那端的 dfn');
-  await beat(tok, 2800);
+  say('2 可以透過 1 的 back edge 跳到 3', 'low(2) = 1');
+  await step(tok);                                   // 49:41 公式：自己的 dfn(w)
+  glow(t.nodes[2], null); tb.hl(-1); t.back[0].material.color.set('#c0392b');
+  f = code(LOWF, -4.6, 1.5, 0.45, 4.0);
+  f.hl(1);
+  say('定義寫成公式：三個來源', '第一個：w 自己的 dfn(w)');
+  await step(tok);                                   // 49:55 child x 的 low(x)
+  f.hl(2);
+  say('第二個：w 的 child x 的 low(x)', 'child 能跳到哪，w 也能跟著到');
+  await step(tok);                                   // 50:09 back edge 的 dfn(x)
+  f.hl(3);
+  say('第三個：(w, x) 是 back edge 時', '跳過去那個點的 dfn(x)');
+  await step(tok);                                   // 50:58 三個來源取最小
+  f.hl(0);
+  say('每個 vertex 的 low', '就是這三個來源裡最小的那個');
 }]);
 
-// 58:20 low(5)、low(7)、low(6) = 6
+// 51:23 寫程式找 articulation point：步驟一（dfn）、步驟二（拉起來、back edge）（13 steps）
+FRAG.push(['gpeng20-ap-step12', '步驟一 DFS 求 dfn、步驟二拉成樹畫 back edge', async (tok) => {
+  fresh([0, 9.5, 9.5], [0, 0, 0]);
+  let g, eye, nt; const dt = [];
+  await step(tok);                                   // 51:23 root 有兩個 child
+  g = mkG(GAP, { noW: true });
+  say('老師：root 有兩個 child，所以是 articulation point', '（嚴格說：root 要有 ≥ 2 個 child 才是）');
+  await step(tok);                                   // 51:39 剛才看了一堆定義
+  nt = note('剛才的定義：AP、biconnected、maximal', 0, -3.6, 0.9);
+  say('剛才看了很多定義', '都是為了等一下要做的事鋪路');
+  await step(tok);                                   // 52:04 人眼看很容易，但要寫程式
+  remove(nt);
+  eye = buddy('人眼', '', '#f2b8c6', -5.4, 0, 3.4, 0.6); eye.mood('happy'); eye.look(1);
+  say('用人眼看，很容易知道誰是 AP', '可是要能寫程式來決定');
+  await step(tok);                                   // 52:21 AP 決定後，BCC 很簡單
+  [1, 3, 5, 7].forEach((v) => tint(g.nodes[v], PC.bad));
+  say('一旦 articulation point 決定了', 'biconnected component 就很簡單了');
+  await step(tok);                                   // 52:50 步驟一：DFS spanning tree
+  g.nodes.forEach((m) => tint(m, PC.node)); eye.mood('calm');
+  nt = note('步驟一：DFS，記下 dfn', 0, -3.6, 0.9);
+  say('步驟一：建一棵 DFS spanning tree', '每個頂點被拜訪的順序要記下來 = dfn');
+  await step(tok);                                   // 53:28 從 3 出發，dfn(3) = 1
+  dfsVisit(g, 3, -1, dt);
+  say('從 3 出發：3 第一個被拜訪', 'dfn(3) = 1');
+  await step(tok);                                   // 53:47 接著拜訪 4，dfn(4) = 2
+  dfsVisit(g, 4, 3, dt); await beat(tok, 500);
+  for (const [v, p] of DFS_ORDER.slice(2)) { dfsVisit(g, v, p, dt); await beat(tok, 250); }
+  say('接著拜訪 4：dfn(4) = 2', 'DFS 走完，每個 dfn 就決定了');
+  await step(tok);                                   // 54:08 步驟二：拉起來
+  txt(nt, '步驟二：拉成樹，畫 back edge');
+  pullUp(g, 0, dt);
+  say('步驟二：把它拉起來', '方便看清楚樹的樣子');
+  await step(tok);                                   // 54:27 越靠近 root，dfn 越小
+  for (const v of [0, 1, 2, 4, 3]) { glow(g.nodes[v], GOLD); await beat(tok, 300); }
+  say('越靠近 root，dfn 越小', '左邊：0(5) → 1(4) → 2(3) → 4(2) → 3(1)');
+  await step(tok);                                   // 54:52 右邊的 subtree 也一樣
+  g.nodes.forEach((m) => glow(m, null));
+  for (const v of [8, 7, 6, 5, 3]) { glow(g.nodes[v], GOLD); await beat(tok, 300); }
+  say('右邊的 subtree 也一樣', '8(10) → 7(8) → 6(7) → 5(6) → 3(1)');
+  await step(tok);                                   // 55:10 加上虛線
+  g.nodes.forEach((m) => glow(m, null));
+  backDash(0);
+  say('還要加上虛線', '原 graph 有、但 DFS tree 忽略掉的 edge');
+  await step(tok);                                   // 55:37 叫 back edge
+  await pkt(tok, 'back edge', BK75(0), 500);
+  say('這種 edge 叫 back edge', '(1,3)、(7,5)：往回跳到祖先');
+  await step(tok);                                   // 55:45 用來決定 low
+  remove(nt);
+  for (const v of [1, 7]) tag('low ?', 'ptr', tp(v, 0).x + 0.95, 0.6, tp(v, 0).z + 0.1);
+  say('back edge 用來決定每個頂點的 low 值', '下一步就要算 low');
+}]);
+
+// 56:17 步驟三：low 的公式（8 steps）
+FRAG.push(['gpeng20-low-formula', '步驟三：low(w) 從三個來源取最小', async (tok) => {
+  fresh([0, 9.5, 9.5], [0, 0.4, 0]);
+  let t, f;
+  const D = 1.6;
+  await step(tok);                                   // 56:17 步驟三：每個頂點算 low
+  t = apTree(D);
+  for (let v = 0; v < 10; v++) { txt(t.low[v], 'low ?'); showL(t.low[v], true); }
+  say('步驟三：每一個頂點都要算出 low 值', '');
+  await step(tok);                                   // 56:30 公式，頂點叫 w
+  f = code(LOWF, -4.6, 2.4, 0.5, 0.6);
+  glow(t.nodes[2], GOLD);
+  say('看公式：假設有一個點叫 w', '例：w = 2');
+  await step(tok);                                   // 56:40 三個框框選最小
+  f.hl(0);
+  say('low(w) 就是三個框框裡選最小的', '');
+  await step(tok);                                   // 56:50 不一定三個都存在
+  bub('不一定三個都有', -4.6, -1.8, 1.0);
+  say('三個不一定都存在', '存在的才拿來比');
+  await step(tok);                                   // 56:58 第一個一定存在：dfn(w)
+  f.hl(1); txt(t.low[2], 'dfn 3');
+  say('第一個一定存在：w 自己的 dfn', 'dfn(2) = 3');
+  await step(tok);                                   // 57:07 第二個：child x 的 low(x)
+  f.hl(2); glow(t.nodes[1], '#3a2a00');
+  say('第二個：w 的 child x 的 low(x)', '2 的 child 是 1');
+  await step(tok);                                   // 57:26 第三個：back edge (w, x) 的 dfn(x)
+  f.hl(3); glow(t.nodes[2], null); glow(t.nodes[1], null); glow(t.nodes[7], GOLD);
+  t.back[1].material.color.set('#e8b02a');
+  say('第三個：w 有一條 back edge 連到 x', '例：7 有 back edge 到 5');
+  await step(tok);                                   // 57:40 往上跳 → dfn 比較小
+  await pkt(tok, '往上跳', BK75(D), 550);
+  say('沿 back edge 往上跳，回到樹上面的點', '越上面 dfn 越小 → low 就變小');
+}]);
+
+// 58:28 low(5)、low(7)、low(6) = 6（14 steps）
 FRAG.push(['gpeng20-low-567', 'low(7)、low(6)、low(5) 都是 6', async (tok) => {
   fresh([0, 9.5, 9.5], [0, 0.4, 0]);
-  const t = apTree(1.6);
-  const tb = lowTable(-5.0, [0, 1, 2, 8, 9]);
+  let t, tb;
+  const D = 1.6;
+  await step(tok);                                   // 58:28 low(5) 是多少？答案 6
+  t = apTree(D); tb = lowTable(-5.0, [0, 1, 2, 8, 9]);
   [0, 1, 2, 8, 9].forEach((v) => setLow(t, v, LOW[v]));
-  say('右半邊：5 → 6 → 7 → 8、9', '8、9 是 leaf：low = 自己的 dfn');
-  await beat(tok, 2800);
-  glow(t.nodes[7], GOLD); tb.hl(8); t.ed.back[1].material.color.set('#e8b02a');
-  say('7：dfn 8、child 9 與 8、back edge 到 5', 'low(7) = min(8, low(9)=9, low(8)=10, dfn(5)=6) = 6');
+  glow(t.nodes[5], GOLD); tb.hl(6); txt(t.low[5], 'low ?'); showL(t.low[5], true);
+  say('vertex 5 的 low 是多少？', '答案是 6，來看怎麼找');
+  await step(tok);                                   // 58:52 5 自己 dfn 6，child 6
+  say('5 自己的 dfn 是 6', '它的 child 是 6');
+  await step(tok);                                   // 59:02 child 6 的 dfn 是 7
+  glow(t.nodes[6], '#3a2a00');
+  say('child 6 的 dfn 是 7', '');
+  await step(tok);                                   // 59:22 往下只會到更大的 dfn
+  await pkt(tok, '往下', [tp(5, D), tp(6, D), tp(7, D)], 450);
+  say('往下走只會遇到更大的 dfn', '所以往下的不用多考慮');
+  await step(tok);                                   // 59:29 6、7 裡選最小 → 6
+  glow(t.nodes[6], null); setLow(t, 5, 6); txt(tb.ls[6], rowL(5, 6));
+  say('從 6、7 裡選最小', 'low(5) = 6（嚴格說看的是 child 6 的 low，也是 6）');
+  await step(tok);                                   // 59:39 再看 7
+  glow(t.nodes[5], null); glow(t.nodes[7], GOLD); tb.hl(8); txt(t.low[7], 'low ?'); showL(t.low[7], true);
+  say('再看 7：low(7) 是多少？', '答案也是 6，有三個來源');
+  await step(tok);                                   // 1:00:11 7 的 dfn 8，child 8、9
+  glow(t.nodes[8], '#3a2a00'); glow(t.nodes[9], '#3a2a00');
+  say('7 自己的 dfn 是 8', '它有 child：9 和 8');
+  await step(tok);                                   // 1:00:22 child 的 low
+  say('child 的 low：low(9) = 9、low(8) = 10', '（老師口誤說成 child 8 的 low 是 9）');
+  await step(tok);                                   // 1:00:30 back edge 到 5（dfn 6）
+  glow(t.nodes[8], null); glow(t.nodes[9], null);
+  t.back[1].material.color.set('#e8b02a');
+  await pkt(tok, 'back', BK75(D), 500);
+  say('7 還有一條 back edge', '可以跳到 5，dfn(5) = 6');
+  await step(tok);                                   // 1:00:39 min(8, 9, 6) = 6
   setLow(t, 7, 6); txt(tb.ls[8], rowL(7, 6));
-  await beat(tok, 4200); glow(t.nodes[7], null);
-  glow(t.nodes[6], GOLD); tb.hl(7);
-  say('6：dfn 7，child 7 的 low 是 6', 'low(6) = min(7, low(7)=6) = 6');
+  say('三個數字取最小：8、9（10）、6', 'low(7) = 6');
+  await step(tok);                                   // 1:01:03 為什麼先算 7 不先算 6？
+  glow(t.nodes[7], null);
+  bub('要從最下面一層一層往上算', -3.2, 3.8, 1.0);
+  say('為什麼故意先算 7，不先算 6？', 'low 一定要從最下面一層一層算');
+  await step(tok);                                   // 1:01:37 6：dfn 7，child 7
+  glow(t.nodes[6], GOLD); tb.hl(7); txt(t.low[6], 'low ?'); showL(t.low[6], true);
+  say('6 自己的 dfn 是 7', '它的 child 是 7');
+  await step(tok);                                   // 1:01:55 low(7) = 6 → low(6) = 6
+  await pkt(tok, '6', [tp(7, D), tp(6, D)], 500);
   setLow(t, 6, 6); txt(tb.ls[7], rowL(6, 6));
-  await beat(tok, 3600); glow(t.nodes[6], null);
-  glow(t.nodes[5], GOLD); tb.hl(6);
-  say('5：dfn 6，child 6 的 low 是 6', 'low(5) = min(6, low(6)=6) = 6');
-  setLow(t, 5, 6); txt(tb.ls[6], rowL(5, 6));
-  await beat(tok, 3600); glow(t.nodes[5], null); tb.hl(-1);
-  say('往下走只會遇到更大的 dfn', '要先算 child，才能算 parent');
-  await beat(tok, 2800);
+  say('查表：low(7) = 6', 'low(6) = min(7, 6) = 6');
+  await step(tok);                                   // 1:02:22 順序：0 8 9 → 1 7 → 2 6
+  glow(t.nodes[6], null); tb.hl(-1);
+  for (const L of [[0, 8, 9], [1, 7], [2, 6]]) { L.forEach((v) => glow(t.nodes[v], GOLD)); await beat(tok, 500); L.forEach((v) => glow(t.nodes[v], null)); }
+  say('所以順序是：先算 0、8、9', '再算 1、7，再算 2、6');
 }]);
 
-// 63:20 low 要 bottom-up 算：0 8 9 → 1 7 → 2 6 → 4 5 → 3
+// 1:03:28 low 要 bottom-up 算：0 8 9 → 1 7 → 2 6 → 4 5 → 3（8 steps）
 FRAG.push(['gpeng20-low-bottomup', 'low 值要由下往上（bottom-up）算', async (tok) => {
   fresh([0, 9.5, 9.5], [0, 0.4, 0]);
-  const t = apTree(1.6);
-  const tb = lowTable(-5.0, []);
-  say('一開始 low 欄位全是空的', '公式會用到 child 的 low → 先算下面');
-  await beat(tok, 3000);
-  const levels = [[0, 9, 8], [1, 7], [2, 6], [4, 5], [3]];
-  for (const L of levels) {
-    L.forEach((v) => { glow(t.nodes[v], GOLD); setLow(t, v, LOW[v]); txt(tb.ls[v + 1], rowL(v, LOW[v])); });
-    say('算 ' + L.join('、') + ' 的 low', L.map((v) => 'low(' + v + ')=' + LOW[v]).join('  '));
-    await beat(tok, 2400);
-    L.forEach((v) => glow(t.nodes[v], null));
-  }
-  say('順序：leaf 先算，一層一層往上', 'bottom-up（其實就是 DFS 的後序）');
-  await beat(tok, 3000);
+  let t, tb;
+  const D = 1.6;
+  const calc = (L) => L.forEach((v) => { glow(t.nodes[v], GOLD); setLow(t, v, LOW[v]); txt(tb.ls[v + 1], rowL(v, LOW[v])); });
+  const off = (L) => L.forEach((v) => glow(t.nodes[v], null));
+  await step(tok);                                   // 1:03:28 low 的運算要注意順序
+  t = apTree(D);
+  say('算 low 值要注意順序', '');
+  await step(tok);                                   // 1:03:39 一開始 low 欄位全是空的
+  tb = lowTable(-5.0, []);
+  say('一開始，table 的 low 欄位都是空的', '');
+  await step(tok);                                   // 1:03:48 先算 0、8、9
+  calc([0, 8, 9]);
+  say('從最下面開始：low(0)、low(8)、low(9)', '它們沒有 child，最好算');
+  await step(tok);                                   // 1:03:54 再算 1、7
+  off([0, 8, 9]); calc([1, 7]);
+  say('算完以後再算 1 和 7', '');
+  await step(tok);                                   // 1:03:58 再算 2、6
+  off([1, 7]); calc([2, 6]);
+  say('再算 2 和 6', '');
+  await step(tok);                                   // 1:04:03 不能直接 0、1、2、3 照編號算
+  off([2, 6]);
+  const w = bub('照編號 0、1、2、3… 算？不行！', -3.0, 3.8, 1.0);
+  say('不能照編號 0、1、2、3 一個一個算', '要照著 tree 的順序');
+  await step(tok);                                   // 1:04:12 公式要用 child 的 low
+  remove(w); calc([4, 5]); await beat(tok, 700); off([4, 5]); calc([3]);
+  say('公式會用到 child 的 low', '所以下面的 child 一定要先算出來');
+  await step(tok);                                   // 1:04:19 bottom-up
+  off([3]);
+  bub('bottom-up：由下往上', -3.0, 3.8, 1.0);
+  say('算 low 的順序是 bottom-up', '由下往上走（其實就是 DFS 的後序）');
 }]);
 
-// 64:28 判斷 articulation point：root 有 ≥ 2 個 child；非 root 的 u 有 child w 使 low(w) ≥ dfn(u)
+// 1:04:38 判斷 articulation point：root 有 ≥ 2 個 child；非 root 的 u 有 child w 使 low(w) ≥ dfn(u)（11 steps）
 FRAG.push(['gpeng20-ap-test', '判斷 AP：low(w) ≥ dfn(u)', async (tok) => {
   fresh([0, 9.5, 9.5], [0, 0.4, 0]);
-  const t = apTree(1.6, { low: true });
-  const tb = lowTable(-5.0, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
-  say('u 不是 root：有 child w 使 low(w) ≥ dfn(u)', 'w 底下的點都跳不過 u → u 是 articulation point');
-  await beat(tok, 3600);
-  const checks = [[1, 0, true], [4, 2, false], [2, 1, false], [5, 6, true], [6, 7, false], [7, 9, true]];
-  for (const [u, w, ok] of checks) {
-    glow(t.nodes[u], GOLD); glow(t.nodes[w], '#3a2a00');
-    say('u = ' + u + '，child w = ' + w, 'low(' + w + ') = ' + LOW[w] + (ok ? ' ≥ ' : ' < ') + 'dfn(' + u + ') = ' + DFN[u] + (ok ? ' → 是 AP' : ' → 不是'));
-    if (ok) tint(t.nodes[u], PC.bad);
-    await beat(tok, ok ? 2600 : 1900);
-    glow(t.nodes[u], null); glow(t.nodes[w], null);
-  }
-  tint(t.nodes[3], PC.bad); glow(t.nodes[3], GOLD);
-  say('root 3 有兩個 child（4、5）→ 是 AP', 'root：child ≥ 2 才是');
-  await beat(tok, 2600);
-  say('articulation point = 1、3、5、7', '');
-  await beat(tok, 2600);
+  let t, cond;
+  const D = 1.6;
+  const sub6 = [6, 7, 8, 9];
+  await step(tok);                                   // 1:04:38 u 是 root
+  t = apTree(D, { low: true });
+  glow(t.nodes[3], GOLD);
+  cond = code(['1. u 是 root：child ≥ 2', '2. u 不是 root：', '   有 child w，low(w) ≥ dfn(u)'], -4.8, 2.6, 0.55, 0.0);
+  cond.hl(0);
+  say('條件一：u 是 root', '老師：它一定有兩個 child → 是 AP（要 ≥ 2 個才算）');
+  await step(tok);                                   // 1:04:57 u 不是 root，有 child w
+  glow(t.nodes[3], null); cond.hl(1);
+  glow(t.nodes[5], GOLD); glow(t.nodes[6], '#3a2a00');
+  tag('u', 'ptr alt', tp(5, D).x - 0.9, 1.0, tp(5, D).z); tag('w', 'ptr alt', tp(6, D).x - 0.9, 1.0, tp(6, D).z);
+  say('條件二：u 不是 root', 'u 有一個 child 叫 w（例：u = 5、w = 6）');
+  await step(tok);                                   // 1:05:05 low(w) ≥ dfn(u)
+  cond.hl(2);
+  say('而且 low(w) ≥ dfn(u)', 'low(6) = 6 ≥ dfn(5) = 6');
+  await step(tok);                                   // 1:05:28 看圖：w 底下的 subtree
+  sub6.forEach((v) => tint(t.nodes[v], SETC[1]));
+  say('看圖：w 和它底下所有的 node', '');
+  await step(tok);                                   // 1:05:39 只能跑到 w，跨不過 u
+  t.back[1].material.color.set('#e8b02a');
+  await pkt(tok, '最高到這', BK75(D), 550);
+  say('它們靠 low 值最高只能跑到 u', '沒辦法跨過 u 再往上');
+  await step(tok);                                   // 1:05:50 要往上一定要透過 u
+  await pkt(tok, '經過 u', [tp(7, D), tp(6, D), tp(5, D), tp(3, D)], 450);
+  say('要往上走，一定要經過 u', '所以拿掉 u，下面就斷開了');
+  await step(tok);                                   // 1:06:33 條件成立 → u 是 AP
+  tint(t.nodes[5], PC.bad); glow(t.nodes[6], null);
+  say('只要有這個條件存在', 'u 就是 articulation point');
+  await step(tok);                                   // 1:06:45 看 1
+  glow(t.nodes[5], null); sub6.forEach((v) => tint(t.nodes[v], PC.node));
+  glow(t.nodes[1], GOLD);
+  say('再看 1：紅色標起來的', '它是 articulation point，為什麼？');
+  await step(tok);                                   // 1:06:56 dfn(1) = 4
+  say('1 的 dfn 是 4', '');
+  await step(tok);                                   // 1:07:07 child 0 的 low = 5 ≥ 4
+  glow(t.nodes[0], '#3a2a00'); tint(t.nodes[1], PC.bad);
+  say('1 的 child 是 0，low(0) = 5 ≥ 4', '0 一定要透過 1 才能往上 → 1 是 AP');
+  await step(tok);                                   // 1:07:26 7、5 也是；3 是 root
+  glow(t.nodes[1], null); glow(t.nodes[0], null);
+  tint(t.nodes[7], PC.bad); await beat(tok, 400); tint(t.nodes[3], PC.bad); await beat(tok, 400);
+  for (const v of [1, 3, 5, 7]) tag('AP', 'ptr alt', tp(v, D).x, 1.4, tp(v, D).z - 0.6);
+  say('7 和 5 也這樣判斷；3 是 root', 'articulation point = 1、3、5、7');
 }]);
 
-// 67:46 四個步驟總結
+// 1:07:52 四個步驟總結（11 steps）
 FRAG.push(['gpeng20-ap-steps', '找 articulation point 的四個步驟', async (tok) => {
   fresh([0, 9.5, 9.5], [0, 0.4, 0]);
-  const steps = code(['1. DFS → 每個點的 dfn', '2. 拉成樹，畫 back edge', '3. bottom-up 算 low', '4. root ≥2 child；', '   low(w) ≥ dfn(u)'], -5.2, 4.0, 0.5, -1.6);
-  const g = mkG(Object.assign({}, GAP, { dx: 1.3 }), { noW: true });
-  steps.hl(0); say('步驟 1：DFS traversal（從 3）', '記下 dfn');
-  await beat(tok, 1400);
+  let steps, g; const dt = [];
+  const DX = 1.3;
+  await step(tok);                                   // 1:07:52 總結
+  steps = code(['1. DFS → 每個點的 dfn', '2. 拉成樹，畫 back edge', '3. bottom-up 算 low', '4. root ≥2 child；', '   low(w) ≥ dfn(u)'], -5.2, 4.0, 0.5, -1.6);
+  g = mkG(Object.assign({}, GAP, { dx: 1.3 }), { noW: true });
+  say('總結：怎麼決定 articulation point', '四個步驟');
+  await step(tok);                                   // 1:08:00 步驟一：DFS traversal
+  steps.hl(0);
+  for (const [v, p] of DFS_ORDER) { dfsVisit(g, v, p, dt); await beat(tok, 220); }
+  say('步驟一：對 graph 做 DFS traversal', '決定表裡每個點的 dfn');
+  await step(tok);                                   // 1:08:14 步驟二：建好的 tree
   steps.hl(1);
-  const { tags } = await graphToTree(tok, g, 1.3, false);
-  say('步驟 2：拉起來，back edge 畫虛線', '(1,3)、(7,5)');
-  await beat(tok, 2400);
+  pullUp(g, DX, dt);
+  say('步驟二：traversal 完，建好 tree', '');
+  await step(tok);                                   // 1:08:20 畫出 back edge
+  backDash(DX);
+  say('把 back edge（虛線）畫出來', '原本在 graph 上，DFS 樹裡不見了的 edge');
+  await step(tok);                                   // 1:08:41 步驟三：算 low
   steps.hl(2);
-  const low = [];
-  for (const L of [[0, 9, 8], [1, 7], [2, 6], [4, 5], [3]]) { L.forEach((v) => { const p = tp(v, 1.3); low[v] = tag('low ' + LOW[v], 'ptr', p.x + 0.95, 0.6, p.z + 0.1); }); await beat(tok, 700); }
-  say('步驟 3：算每個點的 low', '先 leaf 再往上');
-  await beat(tok, 2000);
+  say('步驟三：根據 back edge', '決定每一個 vertex 的 low');
+  await step(tok);                                   // 1:08:57 三個數值選最小
+  const f = code(LOWF, -5.2, 0.9, 0.45, 3.4);
+  say('套公式：三個數值裡選最小', '');
+  await step(tok);                                   // 1:09:14 下面的要先算
+  f.kill();
+  for (const L of [[0, 9, 8], [1, 7], [2, 6], [4, 5], [3]]) { L.forEach((v) => { const p = tp(v, DX); tag('low ' + LOW[v], 'ptr', p.x + 0.95, 0.6, p.z + 0.1); }); await beat(tok, 450); }
+  say('注意順序：下面的要先算', '0、8、9 → 1、7 → …');
+  await step(tok);                                   // 1:09:32 步驟四：判斷
   steps.hl(3);
-  [3, 1, 5, 7].forEach((v) => tint(g.nodes[v], PC.bad));
-  say('步驟 4：判斷 → 1、3、5、7', 'root 3 兩個 child；其餘看 low(w) ≥ dfn(u)');
-  await beat(tok, 3200);
-  steps.hl(-1);
-  say('有了 AP 再找 biconnected component', '（留給同學看書）');
-  await beat(tok, 2600);
+  say('步驟四：判斷 articulation point', '有兩種判斷');
+  await step(tok);                                   // 1:09:47 root
+  tint(g.nodes[3], PC.bad);
+  say('root：有兩個 child 就是 AP', '3 有 4、5 兩個 child');
+  await step(tok);                                   // 1:09:53 low(w) ≥ dfn(u)
+  steps.hl(4);
+  for (const v of [1, 5, 7]) { tint(g.nodes[v], PC.bad); await beat(tok, 350); }
+  say('其他點：有沒有 child w 使 low(w) ≥ dfn(u)', '有 → 1、5、7 也是 AP');
+  await step(tok);                                   // 1:10:17 能跳過 u 的話 low 就比較小
+  glow(g.nodes[2], GOLD);
+  say('反過來：底下的點如果能跳過 u', 'low 就會比 dfn(u) 小 → u 不是（例：low(1) = 1 < dfn(2) = 3）');
+}]);
+
+// 1:10:46 open questions：怎麼找 BCC、maximal BCC（5 steps）
+FRAG.push(['gpeng20-open-q', 'Open questions：找出 biconnected component', async (tok) => {
+  fresh([0, 9, 9.5], [0, 0, 0]);
+  let g, me;
+  await step(tok);                                   // 1:10:46 AP 算出來後，怎麼決定 BCC？
+  g = mkG(GAP, { noW: true });
+  [1, 3, 5, 7].forEach((v) => { tint(g.nodes[v], PC.bad); above(GAP, v, 'AP', 'ptr alt', 1.1); });
+  me = buddy('', '?', '#f2b8c6', -5.4, 0, 3.6, 0.6); me.mood('wow');
+  say('1、3、5、7 算出來了', '接著：怎麼決定 biconnected component？');
+  await step(tok);                                   // 1:11:12 請看書
+  prop('file', -3.8, 0, 3.6, 0.8, '回去看書');
+  say('這個留給大家回去看書', '');
+  await step(tok);                                   // 1:11:23 第二個問題：maximal BCC
+  say('第二個問題：這麼多 biconnected component', '哪些是 maximal？');
+  await step(tok);                                   // 1:11:36 一共 6 個
+  for (let k = 0; k < BCC.length; k++) { BCC[k].forEach(([a, b]) => ecol(g.E(a, b), SETC[k], 2.4)); await beat(tok, 300); }
+  say('這張圖一共有 6 個 biconnected component', '要用定義判斷誰是 maximal');
+  await step(tok);                                   // 1:12:17 兩個 open question
+  me.set('2 題'); me.mood('calm');
+  note('Q1：怎麼找 BCC　Q2：怎麼找 maximal BCC', 0, -3.6, 0.9);
+  say('留下兩個 open question', '都要寫成程式');
 }]);
 
 // ───────── 最短路徑 ─────────
 const G6 = { names: ['0', '1', '2', '3', '4', '5'], pos: [[-4.6, -1.4], [0, -3.2], [4.6, -1.4], [-3.2, 2.6], [1.4, 2.6], [5, 3]],
   edges: [[0, 1, 50], [0, 2, 45], [0, 3, 10], [1, 2, 10], [1, 3, 15], [2, 4, 30], [3, 0, 20], [3, 4, 15], [4, 1, 20], [4, 2, 35], [5, 4, 3]], dir: true };
 
-// 73:03 single source all destinations；Dijkstra 的想法（像 Prim 往外長）
+// 1:13:16 single source all destinations；Dijkstra 的想法（像 Prim 往外長）（18 steps）
 FRAG.push(['gpeng20-sssp-problem', 'Single source 最短路徑：0 到每個點', async (tok) => {
   fresh([0, 9.5, 9.5], [0.2, 0, 0]);
-  const g = mkG(G6);
-  glow(g.nodes[0], GOLD);
-  say('給一個 network 和起點 0', '找 0 到每個 destination 的最短路徑');
-  await beat(tok, 3000);
+  let g;
+  const reset = () => g.edges.forEach((e) => ecol(e, PC.arw));
+  await step(tok);                                   // 1:13:16 給一個 network
+  g = mkG(G6);
+  say('問題：給你一個 network', 'edge 上的數字是 cost（例如公里數）');
+  await step(tok);                                   // 1:13:26 起點 0
+  glow(g.nodes[0], GOLD); above(G6, 0, 'start', 'ptr alt', 1.1);
+  say('還有一個出發點：0', '');
+  await step(tok);                                   // 1:13:33 到所有 destination 的最短路徑
+  for (const v of [1, 2, 3, 4, 5]) { glow(g.nodes[v], '#3a2a00'); await beat(tok, 200); }
+  say('找出 0 到所有 destination 的最短路徑', '要走多少才到得了');
+  await step(tok);                                   // 1:13:57 0 到 3：直接走最短
+  g.nodes.forEach((m, i) => { if (i) glow(m, null); });
+  ecol(g.E(0, 3), PC.tree); await pkt(tok, '10', vp(G6, [0, 3]), 700);
+  say('0 到 3：直接從 0 走到 3', 'cost = 10，最短');
+  await step(tok);                                   // 1:14:06 也可以繞路 0 → 1 → 3
   ecol(g.E(0, 1), PC.bad); ecol(g.E(1, 3), PC.bad);
-  say('0 → 1 → 3：繞路', 'cost = 50 + 15 = 65');
-  await beat(tok, 2600);
-  ecol(g.E(0, 1), '#9c8b70'); ecol(g.E(1, 3), '#9c8b70'); ecol(g.E(0, 3), PC.tree);
-  say('0 → 3 直接走', 'cost = 10，最短');
-  await beat(tok, 2400);
-  ecol(g.E(3, 4), PC.tree); glow(g.nodes[4], GOLD);
-  say('0 到 4：0 → 3 → 4', 'cost = 10 + 15 = 25');
-  await beat(tok, 2800);
-  g.edges.forEach((e) => ecol(e, '#9c8b70')); glow(g.nodes[4], null);
-  say('Dijkstra：edge cost 不能是負的', '想法像 Prim：從已確定的點往外長');
-  await beat(tok, 2800);
+  await pkt(tok, '繞路', vp(G6, [0, 1, 3]), 500);
+  say('也可以繞路：0 → 1 → 3', 'cost = 50 + 15 = 65，明顯比較高');
+  await step(tok);                                   // 1:14:16 path 的 cost = 邊加起來
+  say('一條 path 的 cost', '= 它經過的 edge cost 加起來');
+  await step(tok);                                   // 1:14:26 0 到 4
+  reset(); glow(g.nodes[4], GOLD);
+  say('再看 0 到 4', '有好幾種走法');
+  await step(tok);                                   // 1:14:36 0 → 3 → 4 = 25
+  ecol(g.E(0, 3), PC.tree); ecol(g.E(3, 4), PC.tree);
+  await pkt(tok, '25', vp(G6, [0, 3, 4]), 500);
+  say('最短的是 0 → 3 → 4', 'cost = 10 + 15 = 25');
+  await step(tok);                                   // 1:15:20 條件：cost 不是負的
+  reset(); glow(g.nodes[4], null);
+  note('條件：每條 edge 的 cost ≥ 0', 0, 4.3, 0.8);
+  say('條件：沒有負的 edge', 'cost 都是 non-negative');
+  await step(tok);                                   // 1:15:28 Dijkstra
+  bub('Dijkstra 演算法', 0.2, -4.2, 1.0);
+  say('就可以用很有名的 Dijkstra 演算法', '');
+  await step(tok);                                   // 1:15:46 先看起點到鄰近的點
   tint(g.nodes[0], PC.ok);
   [[0, 3], [0, 2], [0, 1]].forEach(([a, b]) => ecol(g.E(a, b), PC.hot));
-  say('先看起點直接到得了的點', '最近的是 3（10）→ 確定');
-  await beat(tok, 2400);
-  tint(g.nodes[3], PC.ok); ecol(g.E(0, 3), PC.tree);
+  say('從起點出發，先看鄰近的點', '10、45、50：最近的是 3');
+  await step(tok);                                   // 1:15:56 再從已知的點往外擴充
+  reset(); tint(g.nodes[3], PC.ok); ecol(g.E(0, 3), PC.tree);
   ecol(g.E(3, 4), PC.hot);
-  say('再從確定的點往外延伸', '一次確定一個點，直到全部拜訪');
-  await beat(tok, 3000);
+  say('3 的最短路徑確定了', '再從已知的點往外擴充');
+  await step(tok);                                   // 1:16:05 有點像 Prim
+  say('有點像 spanning tree 的 Prim', '從一個點開始，慢慢往外長');
+  await step(tok);                                   // 1:16:25 例：從新竹出發到台北
+  fresh([0, 9, 9], [0, 0, 0]);
+  const C = [['頭份', -5.0, 2.6], ['新竹', -3.0, 1.4], ['竹北', -1.0, 0.2], ['楊梅', 1.8, -1.2], ['台北', 4.6, -2.6]];
+  const cs = C.map(([n, x, z]) => { const m = cube('', PC.node, [0.9, 0.4, 0.9], x, 0.2, z, 2); tag(n, 'ptr', x, 0.9, z + 0.8); return m; });
+  for (let i = 0; i < 4; i++) rod(V3(C[i][1], 0.2, C[i][2]), V3(C[i + 1][1], 0.2, C[i + 1][2]), '#8a8a8a', 0.09);
+  const car = buddy('我', '', '#f2b8c6', C[1][1], 0.4, C[1][2], 0.5);
+  tint(cs[4], PC.hot);
+  say('例：從新竹出發，要到台北', '走高速公路');
+  await step(tok);                                   // 1:16:34 最近的交流道：竹北、頭份
+  glow(cs[0], GOLD); glow(cs[2], GOLD);
+  say('新竹最近的交流道：竹北，或是頭份', '');
+  await step(tok);                                   // 1:16:50 往頭份是錯的
+  glow(cs[0], null); tint(cs[0], PC.bad);
+  bub('偏離台北的方向', C[0][1], C[0][2], 1.6);
+  say('往頭份走是錯的', '它偏離了台北的方向');
+  await step(tok);                                   // 1:16:59 從竹北再往前到楊梅
+  glow(cs[2], null); tint(cs[1], PC.ok);
+  await walkTo(tok, car.g, C[2][1], 0.4, C[2][2], 900); tint(cs[2], PC.ok);
+  await walkTo(tok, car.g, C[3][1], 0.4, C[3][2], 900); tint(cs[3], PC.ok);
+  say('所以從竹北再往前走，到楊梅', '');
+  await step(tok);                                   // 1:17:12 確定最短的點納進來，再延伸
+  await walkTo(tok, car.g, C[4][1], 0.4, C[4][2], 1000); tint(cs[4], PC.ok); car.mood('happy');
+  say('每次把「確定是最短路徑」的點納進來', '再從它們往外延伸，直到所有點都拜訪過');
 }]);
 
 // Boston 8 城市（Horowitz）：4 = Boston 起點
@@ -3290,115 +3904,195 @@ function bosBoard() {
   const g = mkG(GB, { size: 0.8 });
   GB.city.forEach((c, i) => { const p = gp(GB, i); tag(c, 'idx', p.x, 0.1, p.z + 0.65); });
   const D = GB.names.map((n, i) => above(GB, i, '', 'ptr', 1.0));
+  D.forEach((l) => showL(l, false));
   const head = '     ' + ['LA', 'SF', 'DEN', 'CHI', 'BOS', 'NY', 'MIA', 'NO'].map((s) => s.padStart(5)).join('');
   const tb = code([head, ''], 0, 0.5, 0.42, 4.5);
-  const show = (lbl, d, S) => { d.forEach((x, i) => { txt(D[i], 'D=' + f8(x)); D[i].element.className = 'lab-label ' + (S && S.has(i) ? 'ptr alt' : 'ptr'); }); txt(tb.ls[1], lbl.padEnd(5) + d.map((x) => f8(x).padStart(5)).join('')); };
+  const show = (lbl, d, S) => { d.forEach((x, i) => { txt(D[i], 'D=' + f8(x)); showL(D[i], true); cls(D[i], S && S.has(i) ? 'ptr alt' : 'ptr'); }); txt(tb.ls[1], lbl.padEnd(5) + d.map((x) => f8(x).padStart(5)).join('')); };
   return { g, D, tb, show };
 }
 
-// 77:33 Boston 例：cost adjacency matrix、初始化、選 5（NY）
+// 1:17:35 Boston 例：cost adjacency matrix、初始化、選 5（NY）（17 steps）
 FRAG.push(['gpeng20-boston-init', 'Dijkstra 例：Boston 出發，初始化', async (tok) => {
   fresh([0, 10, 9.8], [0, 0, 0.4]);
-  const b = bosBoard();
-  say('8 個城市，起點 4 = Boston', 'edge cost = 航程（有向圖，存成 cost matrix）');
-  await beat(tok, 3200);
+  let b, St, sel, nt;
+  await step(tok);                                   // 1:17:38 美國主要城市
+  b = bosBoard();
+  say('例子：美國的幾個主要城市', '');
+  await step(tok);                                   // 1:17:50 出發點是 Boston
   glow(b.g.nodes[4], GOLD);
+  say('出發點是 Boston（頂點 4）', '');
+  await step(tok);                                   // 1:17:57 其他城市都是 destination，飛航路徑
+  await pkt(tok, '✈', vp(GB, [4, 5]), 900);
+  say('其他城市都是 destination', 'edge = 飛機的航線');
+  await step(tok);                                   // 1:18:06 Boston 到 NY 250、到 Chicago 1500
+  ecol(b.g.E(4, 5), PC.hot); ecol(b.g.E(4, 3), PC.hot);
+  say('Boston 飛到 NY（5）要 250', '飛到 Chicago（3）要 1500');
+  await step(tok);                                   // 1:18:26 存成 matrix
+  nt = code(['cost[4][5] = 250', 'cost[4][3] = 1500', 'cost[4][0] = ∞ …'], -4.6, 2.0, 0.5, -3.8);
+  say('這個 network 存成 cost matrix', '記載點與點之間的飛行距離');
+  await step(tok);                                   // 1:18:36 有向圖
+  say('這是一個有向圖', 'A → B 有航線，不代表 B → A 也有');
+  await step(tok);                                   // 1:19:15 table 有好幾個 run
+  nt.kill(); ecol(b.g.E(4, 5), PC.arw); ecol(b.g.E(4, 3), PC.arw);
+  say('來看下面這張 table', '它有好幾個 run（回合）');
+  await step(tok);                                   // 1:19:25 S：已選頂點的集合
+  St = tag('S = { }', 'ptr alt', -5.0, 0.6, 4.5);
+  say('S 是一個 vertex 的 set', '放「最短距離已經確定」的頂點');
+  await step(tok);                                   // 1:19:36 vertex selected：每回合選一個
+  sel = tag('vertex selected：', 'ptr', -5.0, 0.6, 3.8);
+  say('vertex selected：每一回合選一個點', '從 S 往外延伸，選一個進來');
+  await step(tok);                                   // 1:19:54 一開始 S 是空的
+  say('initial 狀態：S 是空集合', '什麼點都還沒選進來');
+  await step(tok);                                   // 1:20:11 從 4 出發，做初始化
+  showL(b.D[4], true); txt(b.D[4], 'D=0');
+  say('起點是 4，從 4 出發', '要先做初始化');
+  await step(tok);                                   // 1:20:17 到不了 LA、SF → ∞
+  for (const i of [0, 1, 2, 6, 7]) { txt(b.D[i], 'D=' + INFT); showL(b.D[i], true); await beat(tok, 150); }
+  say('4 沒辦法直接飛到 LA、SF…', '直接到不了的就是 +∞');
+  await step(tok);                                   // 1:20:52 自己 0、NY 250、Chicago 1500
   b.show('init', BOS.init, new Set());
-  say('初始化：Boston 直接到得了的才有值', 'NY 250、Chicago 1500，其他 ∞');
-  await beat(tok, 3400);
-  ecol(b.g.E(4, 5), PC.tree); ecol(b.g.E(4, 3), PC.hot);
-  say('起點 4 先放進 S', 'S = {4}');
-  tint(b.g.nodes[4], PC.ok);
-  await beat(tok, 2400);
+  say('Boston 到自己 = 0', 'NY 250、Chicago 1500：鄰近的點更新上來');
+  await step(tok);                                   // 1:21:26 除了 0，最小的是 250
   glow(b.g.nodes[5], GOLD);
-  say('S 外面最小的是 250', 'vertex selected = 5（NY）');
-  await beat(tok, 2600);
-  tint(b.g.nodes[5], PC.ok); glow(b.g.nodes[5], null);
+  say('除了起點的 0，最小的數值是？', '250（NY）');
+  await step(tok);                                   // 1:22:03 第一回合：起點自然進 S
+  tint(b.g.nodes[4], PC.ok); glow(b.g.nodes[4], null); txt(St, 'S = {4}');
+  say('第一回合：起點自然被 include 進來', 'S = {4}');
+  await step(tok);                                   // 1:22:11 vertex selected = 5
+  txt(sel, 'vertex selected：5（NY）');
+  say('vertex selected = 5', '因為上一回合它的 cost 250 最小');
+  await step(tok);                                   // 1:22:38 5 進到 S
+  tint(b.g.nodes[5], PC.ok); glow(b.g.nodes[5], null); txt(St, 'S = {4, 5}');
   b.show('init', BOS.init, new Set([4, 5]));
-  say('5 的距離 250 確定了', 'S = {4, 5}');
-  await beat(tok, 3800);
+  say('選進來的點放進 S', 'S = {4, 5}：NY 的 250 確定了');
 }]);
 
-// 82:50 每選一點就更新鄰居；依序選 5 6 3 7 2 1
+// 1:22:53 每選一點就更新鄰居；依序選 5 6 3 7 2 1（14 steps）
 FRAG.push(['gpeng20-boston-run', 'Dijkstra 例：依序選 5、6、3、7、2、1', async (tok) => {
   fresh([0, 10, 9.8], [0, 0, 0.4]);
-  const b = bosBoard();
-  const S = new Set([4]);
-  tint(b.g.nodes[4], PC.ok); b.show('init', BOS.init, S);
-  say('從 S = {4} 開始', 'init：NY 250、Chicago 1500');
-  await beat(tok, 2000);
-  const why = {
-    5: ['加入 NY：Chicago、Miami、N.Orleans 變短', '250+1000=1250 < 1500，250+900=1150，250+1400=1650'],
-    6: ['加入 Miami：只能到 N.Orleans', '1150+1000=2150 > 1650 → 不變'],
-    3: ['加入 Chicago：Denver 有值了', '1250+1200 = 2450'],
-    7: ['加入 N.Orleans：LA 有值了', '1650+1700 = 3350'],
-    2: ['加入 Denver：SF 有值了', '2450+800 = 3250（到 LA 3450 > 3350）'],
-    1: ['加入 SF：沒有變短的', '3250+300 = 3550 > 3350'],
-  };
-  const upd = { 5: [[5, 3], [5, 6], [5, 7]], 6: [], 3: [[3, 2]], 7: [[7, 0]], 2: [[2, 1]], 1: [] };
-  let k = 0;
-  for (const [v, d] of BOS.it) {
-    k++;
-    glow(b.g.nodes[v], GOLD); tint(b.g.nodes[v], PC.ok); S.add(v);
-    upd[v].forEach(([x, y]) => ecol(b.g.E(x, y), PC.tree));
-    b.show(String(k), d, S);
-    say(why[v][0], why[v][1]);
-    await beat(tok, 3000);
-    glow(b.g.nodes[v], null);
-  }
-  say('所有點都選完：最後一列就是答案', 'LA 3350　SF 3250　Denver 2450　Chicago 1250');
-  await beat(tok, 3200);
+  let b; const S = new Set([4, 5]);
+  const d = [...BOS.init];
+  const sel = (v) => { S.add(v); tint(b.g.nodes[v], PC.ok); };
+  await step(tok);                                   // 1:22:56 5 被考慮進來，哪些變短？
+  b = bosBoard(); [4, 5].forEach((v) => tint(b.g.nodes[v], PC.ok)); b.show('1', d, S);
+  glow(b.g.nodes[5], GOLD);
+  say('5（NY）被考慮進來以後', '哪些地方有更短的路徑？');
+  await step(tok);                                   // 1:23:09 Chicago 或 Miami
+  ecol(b.g.E(5, 3), PC.hot); ecol(b.g.E(5, 6), PC.hot); ecol(b.g.E(5, 7), PC.hot);
+  say('從 NY 可以飛到 Chicago、Miami、N.Orleans', '');
+  await step(tok);                                   // 1:23:21 250 + 1000 = 1250
+  await pkt(tok, '1250', vp(GB, [4, 5, 3]), 600);
+  say('Boston → NY → Chicago', '250 + 1000 = 1250');
+  await step(tok);                                   // 1:23:29 直飛 1500
+  ecol(b.g.E(4, 3), PC.bad);
+  say('Boston 直飛 Chicago 要 1500', '經過 NY 反而比較小');
+  await step(tok);                                   // 1:23:38 更新成 1250
+  ecol(b.g.E(4, 3), PC.arw); d[3] = 1250; b.show('1', d, S);
+  say('所以 Chicago 從 1500 update 成 1250', '');
+  await step(tok);                                   // 1:23:48 Miami：∞ → 1150
+  d[6] = 1150; b.show('1', d, S);
+  say('Miami 本來是 ∞（Boston 飛不到）', '加入 NY 後：250 + 900 = 1150');
+  await step(tok);                                   // 1:24:06 N.Orleans：1650
+  d[7] = 1650; b.show('1', d, S);
+  say('N.Orleans：250 + 1400 = 1650', '');
+  await step(tok);                                   // 1:24:19 變小就更新
+  note('經過新點的 cost 比原來小 → 更新', -2.4, -4.2, 0.9);
+  say('每回合有新的點考慮進來', '能讓 cost 變小的，就更新');
+  await step(tok);                                   // 1:24:48 剩下的頂點裡誰最小？
+  b.g.edges.forEach((e) => ecol(e, PC.arw)); glow(b.g.nodes[5], null);
+  for (const v of [3, 6, 7]) glow(b.g.nodes[v], '#3a2a00');
+  say('4、5 都選了，剩下的頂點裡', '誰的 cost 最小？1250、1150、1650');
+  await step(tok);                                   // 1:24:56 1150 最小 → 選 6
+  [3, 7].forEach((v) => glow(b.g.nodes[v], null)); glow(b.g.nodes[6], GOLD); sel(6); b.show('2', d, S);
+  say('1150 最小 → 下一回合選 6（Miami）', '');
+  await step(tok);                                   // 1:25:26 6 只能更新到 7，沒變短
+  ecol(b.g.E(6, 7), PC.hot);
+  say('6 只能飛到 7：1150 + 1000 = 2150', '比 1650 大 → 不用改');
+  await step(tok);                                   // 1:25:47 剩下最小：Chicago
+  ecol(b.g.E(6, 7), PC.arw); glow(b.g.nodes[6], null); glow(b.g.nodes[3], GOLD); sel(3);
+  d[2] = 2450; b.show('3', d, S); ecol(b.g.E(3, 2), PC.tree);
+  say('4、5、6 都選了，剩下最小的是 Chicago', '選進來：Denver 變成 1250 + 1200 = 2450');
+  await step(tok);                                   // 1:25:57 每次選剩下最小的、更新鄰居
+  glow(b.g.nodes[3], null);
+  sel(7); d[0] = 3350; b.show('4', d, S); ecol(b.g.E(7, 0), PC.tree); await beat(tok, 800);
+  sel(2); d[1] = 3250; b.show('5', d, S); ecol(b.g.E(2, 1), PC.tree); await beat(tok, 800);
+  sel(0); b.show('6', d, S);
+  say('每次從剩下的頂點選 cost 最小的', '7（LA 3350）→ 2（SF 3250）→ …');
+  await step(tok);                                   // 1:26:25 最後一列就是答案
+  sel(1); b.show('6', d, S);
+  say('所有點都選完：最下面那一列就是答案', 'LA 3350　SF 3250　Denver 2450　Chicago 1250');
 }]);
 
-// 86:43 要知道路徑就要多記資訊（從哪個點更新來的）；greedy：選進 S 就定住
+// 1:27:11 考法、記錄路徑、greedy（8 steps）
 FRAG.push(['gpeng20-dijkstra-path', 'Dijkstra：多記 parent 才知道路徑', async (tok) => {
   fresh([0, 10, 9.8], [0, 0, 0.4]);
-  const b = bosBoard();
-  b.show('6', BOS.it[5][1], new Set([0, 1, 2, 3, 4, 5, 6, 7]));
-  b.g.nodes.forEach((m) => tint(m, PC.ok));
-  say('表格只告訴你最短 cost', '想知道怎麼走 → 要多記資訊');
-  await beat(tok, 3000);
+  let b, pt;
   const PAR = [7, 2, 3, 5, -1, 4, 5, 5];
-  const pt = PAR.map((p, i) => { const q = gp(GB, i); return tag(p < 0 ? '' : 'from ' + p, 'idx', q.x + 1.0, 0.5, q.z); });
-  say('每次更新時記下「是誰讓它變短」', 'parent：SF←2、Denver←3、Chicago←5…');
-  await beat(tok, 3200);
-  for (const [dst, path] of [[1, [4, 5, 3, 2, 1]], [0, [4, 5, 7, 0]]]) {
-    b.g.edges.forEach((e) => ecol(e, '#9c8b70'));
-    for (let i = 1; i < path.length; i++) { ecol(b.g.E(path[i - 1], path[i]), PC.hot); await beat(tok, 500); }
-    say('到 ' + GB.city[dst] + '：沿 parent 往回推', path.map((v) => GB.city[v]).join(' → '));
-    await beat(tok, 2600);
-  }
-  pt.forEach((l) => showL(l, true));
-  say('greedy：每回合選最小，選進 S 就定住', '之後不會再改');
-  await beat(tok, 3000);
+  const trace = async (path) => { b.g.edges.forEach((e) => ecol(e, PC.arw)); for (let i = 1; i < path.length; i++) { ecol(b.g.E(path[i - 1], path[i]), PC.hot); await beat(tok, 400); } };
+  await step(tok);                                   // 1:27:12 考試：把 table 做一做
+  b = bosBoard(); b.show('6', BOS.it[5][1], new Set([0, 1, 2, 3, 4, 5, 6, 7]));
+  b.g.nodes.forEach((m) => tint(m, PC.ok));
+  say('考試：從某個點出發', '把這張 table 做一做');
+  await step(tok);                                   // 1:27:28 4 到 3：4 → 5 → 3
+  await trace([4, 5, 3]);
+  say('用人腦推：4 到 3 最短？', '4 → 5 → 3');
+  await step(tok);                                   // 1:27:40 某一步挖空要你填
+  txt(b.D[3], 'D=?'); cls(b.D[3], 'ptr alt');
+  say('後來的考法：某一步挖空', '要你把它填上去');
+  await step(tok);                                   // 1:28:00 matrix 不記 path
+  txt(b.D[3], 'D=1250'); b.g.edges.forEach((e) => ecol(e, PC.arw));
+  say('這張表只記最短的 cost', '不記載 path（怎麼走）');
+  await step(tok);                                   // 1:28:14 要多記：誰讓它變小
+  pt = PAR.map((p, i) => { const q = gp(GB, i); return tag(p < 0 ? '' : '← ' + p, 'idx', q.x + 1.0, 0.5, q.z); });
+  say('要知道 path，就要多記資訊', '是哪個點讓它的 cost 變小（parent）');
+  await step(tok);                                   // 1:28:38 這樣才知道怎麼走
+  await trace([4, 5, 3, 2, 1]);
+  say('到 SF：沿 parent 往回推', 'Boston → NY → Chicago → Denver → SF');
+  await step(tok);                                   // 1:28:45 Dijkstra 是 greedy
+  bub('greedy：每回合選最小', 0.4, -4.4, 1.0);
+  say('Dijkstra 是 greedy 演算法', '');
+  await step(tok);                                   // 1:28:58 選進 S 就定住
+  for (const v of [5, 6, 3]) { glow(b.g.nodes[v], GOLD); await beat(tok, 300); }
+  say('每回合都選最小的；一旦選進 S', '那個點的答案就定住，不再改');
 }]);
 
-// 89:19 負邊：0→1 = 7、0→2 = 5、1→2 = −5，Dijkstra 給出錯的 5
+// 1:29:24 負邊：0→1 = 7、0→2 = 5、1→2 = −5，Dijkstra 給出錯的 5（9 steps）
 FRAG.push(['gpeng20-dijkstra-neg', 'Dijkstra 遇到負邊：0 到 2 算錯', async (tok) => {
   fresh([0, 8, 8], [0, 0, 0]);
   const S3 = { names: ['0', '1', '2'], pos: [[-3.4, 0], [1.4, -2.4], [1.4, 2.4]], edges: [[0, 1, 7], [0, 2, 5], [1, 2, -5]], dir: true };
-  const g = mkG(S3, { size: 0.9 });
-  const D = [0, 1, 2].map((i) => above(S3, i, '', 'ptr', 1.1));
-  const show = (d) => d.forEach((x, i) => txt(D[i], 'D=' + x));
-  say('如果有負的 edge：1 → 2 是 −5', '還能用 Dijkstra 嗎？');
-  show(['0', '7', '5']);
-  await beat(tok, 3000);
-  tint(g.nodes[0], PC.ok);
-  glow(g.nodes[2], GOLD);
-  say('7 和 5 選最小 → 選 2', 'D(2) = 5，從此定住');
-  await beat(tok, 2600);
-  tint(g.nodes[2], PC.ok); glow(g.nodes[2], null);
-  tint(g.nodes[1], PC.ok);
-  say('再選 1：D(1) = 7', '全部選完，演算法說 0 到 2 是 5');
-  await beat(tok, 2600);
+  let g, D;
+  const show = (d) => d.forEach((x, i) => { txt(D[i], 'D=' + x); showL(D[i], true); });
+  await step(tok);                                   // 1:29:28 有負的 edge 還能用 Dijkstra 嗎？
+  g = mkG(S3, { size: 0.9 }); evis(g.E(1, 2), false);
+  D = [0, 1, 2].map((i) => above(S3, i, '', 'ptr', 1.1)); D.forEach((l) => showL(l, false));
+  say('如果有負的 edge', '還能用 Dijkstra 嗎？');
+  await step(tok);                                   // 1:29:41 1 → 2 是 −5
+  evis(g.E(1, 2), true); ecol(g.E(1, 2), PC.bad);
+  say('例：1 → 2 是 −5', '鼓勵你走這條（cost 會變小）');
+  await step(tok);                                   // 1:29:54 0 → 1 是 7、0 → 2 是 5
+  ecol(g.E(1, 2), PC.arw); show(['0', '7', '5']); tint(g.nodes[0], PC.ok);
+  say('0 → 1 是 7，0 → 2 是 5', '照剛才的步驟初始化');
+  await step(tok);                                   // 1:30:13 選 2：以為最短是 5
+  glow(g.nodes[2], GOLD); tint(g.nodes[2], PC.ok);
+  const lk = tag('定住', 'ptr alt', 2.6, 1.1, 2.4);
+  say('7 和 5 選最小 → 頂點 2 被選出來', '以為 0 到 2 最短是 5');
+  await step(tok);                                   // 1:30:23 再選 1：7，結束
+  glow(g.nodes[2], null); tint(g.nodes[1], PC.ok);
+  say('接著選 1：0 到 1 是 7', '全部選完，結束');
+  await step(tok);                                   // 1:30:37 實際上 0 → 1 → 2 = 2
   ecol(g.E(0, 1), PC.hot); ecol(g.E(1, 2), PC.hot);
-  say('其實 0 → 1 → 2 = 7 + (−5) = 2', '比 5 還短！');
-  await beat(tok, 3000);
-  tint(g.nodes[2], PC.bad); txt(D[2], 'D=5？正解 2');
-  say('2 已經被選走，cost 不會再改', '有負邊不能用 Dijkstra');
-  await beat(tok, 3000);
-  say('有負 cycle 更糟：繞一圈就更小', '最短路徑沒有定義');
-  await beat(tok, 2600);
+  await pkt(tok, '7 − 5 = 2', vp(S3, [0, 1, 2]), 700, false);
+  say('但實際上 0 → 1 → 2', '= 7 + (−5) = 2，比 5 還短！');
+  await step(tok);                                   // 1:31:13 選了以後就不能調整
+  tint(g.nodes[2], PC.bad); txt(D[2], 'D=5？正解 2'); glow(g.nodes[2], '#5a1010');
+  say('2 已經被選出來，cost 就定住了', '不會因為後來選了 1 而更動');
+  await step(tok);                                   // 1:31:49 有負邊不能用 Dijkstra
+  remove(lk);
+  note('有 negative edge → 不能用 Dijkstra', -1.0, 3.8, 0.8);
+  say('所以就掛掉了', '有 negative edge，絕對不能用 Dijkstra');
+  await step(tok);                                   // 1:32:02 也希望沒有 cycle
+  note('負 cycle：繞一圈就更小 → 最短路徑沒有定義', -1.0, -3.6, 0.8);
+  say('還希望沒有（負的）cycle', '多繞幾圈 cost 就一直變小');
 }]);
 
 // Bellman-Ford 7 頂點（Horowitz）
@@ -3407,199 +4101,408 @@ const GBF = { names: ['0', '1', '2', '3', '4', '5', '6'], pos: [[-5, 0], [-1.8, 
 const BFROWS = [[0, 6, 5, 5, Infinity, Infinity, Infinity], [0, 3, 3, 5, 5, 4, Infinity], [0, 1, 3, 5, 2, 4, 7], [0, 1, 3, 5, 0, 4, 5], [0, 1, 3, 5, 0, 4, 3], [0, 1, 3, 5, 0, 4, 3]];
 const bfRow = (k, r) => ' ' + k + ' │' + r.map((x) => f8(x).padStart(3)).join('');
 
-// 92:17 Bellman-Ford：dist^k[u] = 最多 k 條邊的最短距離
+// 1:32:28 Bellman-Ford：dist^k[u] = 最多 k 條邊的最短距離（12 steps）
 FRAG.push(['gpeng20-bf-formula', 'Bellman-Ford：dist^k[u] 最多走 k 條邊', async (tok) => {
   fresh([0, 9.5, 9.5], [0, 0, 0]);
-  const g = mkG(GBF);
-  glow(g.nodes[0], GOLD);
-  say('edge 可以是負的：Bellman-Ford', 'dist^k[u]：source 到 u 最多走 k 條邊的最短距離');
-  await beat(tok, 3600);
-  const D = GBF.names.map((n, i) => above(GBF, i, 'k=1：' + f8(BFROWS[0][i]), 'ptr', 1.0));
-  say('k = 1：只能走一條邊', '0 → 1、2、3 = 6、5、5，其他 ∞');
-  await beat(tok, 3000);
-  const p = code(['dist^k[u] = min {', '  dist^(k-1)[u],', '  min_i dist^(k-1)[i] + length[i][u] }'], 3.8, 3.4, 0.5, -1.0);
+  let g, D, p;
+  const reset = () => g.edges.forEach((e) => ecol(e, PC.arw));
+  await step(tok);                                   // 1:32:28 weight 可以是負的
+  g = mkG(GBF); glow(g.nodes[0], GOLD);
+  say('一樣是 single source all destinations', '但 edge 的 weight 可以是負的');
+  await step(tok);                                   // 1:32:33 Bellman-Ford
+  bub('Bellman-Ford', -3.0, -3.8, 1.0);
+  say('這個演算法叫 Bellman-Ford', '');
+  await step(tok);                                   // 1:32:56 變數 k
+  say('它有一個變數叫 k', 'k 是什麼意思？');
+  await step(tok);                                   // 1:33:13 k = 1：只走一條邊
+  [[0, 1], [0, 2], [0, 3]].forEach(([a, b]) => ecol(g.E(a, b), PC.hot));
+  say('k = 1：只允許走一條邊', '最好的解是什麼？');
+  await step(tok);                                   // 1:33:23 k = 2：走兩條邊
+  reset(); ecol(g.E(0, 2), PC.hot); ecol(g.E(2, 1), PC.hot);
+  await pkt(tok, '2 條邊', vp(GBF, [0, 2, 1]), 500);
+  say('k = 2：允許走兩條邊', '最好的解又是什麼？');
+  await step(tok);                                   // 1:33:51 dist^k[u] 的定義
+  reset();
+  D = GBF.names.map((n, i) => above(GBF, i, 'k=1：' + f8(BFROWS[0][i]), 'ptr', 1.0));
+  say('dist^k[u]：source 到 u', '最多經過 k 條 edge 的最小值');
+  await step(tok);                                   // 1:34:20 最小值來自兩個地方
+  p = code(['dist^k[u] = min {', '  dist^(k-1)[u],', '  min_i dist^(k-1)[i] + length[i][u] }'], 3.6, 3.4, 0.5, -1.0);
+  say('這個最小值來自兩個地方', '');
+  await step(tok);                                   // 1:34:38 第一：多走一條也沒變小
   p.hl(1); glow(g.nodes[1], GOLD);
-  say('情況一：多走一條邊也沒變小', '沿用上一回合 dist^1[1] = 6');
-  await beat(tok, 3000);
-  p.hl(2); ecol(g.E(2, 1), PC.hot); glow(g.nodes[2], '#3a2a00');
-  say('情況二：找中繼站 i，i → u 有邊', 'i = 2：dist^1[2] + (−2) = 5 − 2 = 3');
-  await beat(tok, 3400);
-  ecol(g.E(0, 1), PC.hot);
-  say('i = 0：0 + 6 = 6', '取最小 → dist^2[1] = 3');
-  txt(D[1], 'k=2：3'); tint(g.nodes[1], PC.ok);
-  await beat(tok, 3000);
-  p.hl(-1);
-  say('每回合把 k 加 1 再算一次', '最多 n − 1 = 6 回合');
-  await beat(tok, 2600);
+  say('第一：多走一條邊，cost 也不會變小', '跟上一回合 dist^(k−1)[u] 一樣');
+  await step(tok);                                   // 1:35:00 第二：找中繼站 i
+  p.hl(2); glow(g.nodes[2], '#3a2a00');
+  tag('中繼站 i', 'ptr alt', gp(GBF, 2).x - 1.2, 1.0, gp(GBF, 2).z);
+  say('第二：找一個中繼站 i', 'i 跟 u 之間有一條邊');
+  await step(tok);                                   // 1:35:46 source 到 i 走 k − 1 條，再加 i → u
+  ecol(g.E(0, 2), PC.hot); await beat(tok, 600); ecol(g.E(2, 1), PC.bad);
+  say('source 到 i：最多 k − 1 條邊（上一回合的答案）', '再加一條 i → u，總共還是 ≤ k 條');
+  await step(tok);                                   // 1:36:03 選總和最小的 i
+  say('例：u = 1、k = 2', 'i = 2：dist¹[2] + (−2) = 5 − 2 = 3');
+  await step(tok);                                   // 1:36:29 兩者取最小
+  p.hl(-1); txt(D[1], 'k=2：3'); tint(g.nodes[1], PC.ok);
+  say('跟上一回合的 6 比，取最小', 'dist²[1] = min(6, 3) = 3');
 }]);
 
-// 96:58 dist^k 表格 k = 1..6
+// 1:36:59 dist^k 表格 k = 1..6（17 steps）
 FRAG.push(['gpeng20-bf-table', 'Bellman-Ford 表格：k = 1 到 6', async (tok) => {
   fresh([0, 9.5, 9.5], [0, 0, 0]);
-  const g = mkG(GBF);
+  let g, tb;
+  const reset = () => g.edges.forEach((e) => ecol(e, PC.arw));
+  const fill = (k) => { txt(tb.ls[k], bfRow(k, BFROWS[k - 1]).padEnd(24)); tb.hl(k); };
+  await step(tok);                                   // 1:36:59 例子：有負邊
+  g = mkG(GBF);
+  say('例子：有負的邊', '−2、−2、−1、−1');
+  await step(tok);                                   // 1:37:09 dist 是一維 array，7 個 element
+  tb = code([' k │  0  1  2  3  4  5  6', ...BFROWS.map(() => ' '.repeat(24))], 4.0, 3.8, 0.46, -1.0);
+  say('dist 是一個 one-dimensional array', '總共 7 個 element');
+  await step(tok);                                   // 1:37:16 source 是 0，k = 1
   glow(g.nodes[0], GOLD);
-  const tb = code([' k │  0  1  2  3  4  5  6', ...BFROWS.map(() => ' '.repeat(24))], 4.0, 3.8, 0.46, -1.0);
-  const fill = (k) => txt(tb.ls[k], bfRow(k, BFROWS[k - 1]).padEnd(24));
-  fill(1); tb.hl(1);
-  say('k = 1：0 直接走到 1、2、3', '6、5、5，4/5/6 至少要兩條邊 → ∞');
-  await beat(tok, 3200);
-  fill(2); tb.hl(2);
+  say('source 是 0', 'k = 1：只能走一條邊');
+  await step(tok);                                   // 1:37:38 0 到 1、2、3
+  [[0, 1], [0, 2], [0, 3]].forEach(([a, b]) => ecol(g.E(a, b), PC.hot));
+  say('0 走一條邊到 1、2、3', '6、5、5');
+  await step(tok);                                   // 1:37:53 4 至少要兩條邊 → ∞
+  fill(1);
+  say('0 到 4 至少要兩條邊 → 走不到', '給它 ∞；k = 1 那一列就完成了');
+  await step(tok);                                   // 1:38:23 k = 2
+  reset();
+  say('k = 2：允許走兩條邊', '最好的解是什麼？');
+  await step(tok);                                   // 1:38:31 0 → 2 → 1 = 3
   ecol(g.E(0, 2), PC.hot); ecol(g.E(2, 1), PC.hot);
-  say('k = 2：0→2→1 = 5 − 2 = 3 < 6', 'dist^2[1] = 3');
-  await beat(tok, 3000);
-  g.edges.forEach((e) => ecol(e, '#9c8b70'));
+  await pkt(tok, '5 − 2', vp(GBF, [0, 2, 1]), 500);
+  say('0 到 1：先走到 2，再從 2 走到 1', '5 + (−2) = 3');
+  await step(tok);                                   // 1:39:03 不走 2 的話是 6
+  ecol(g.E(0, 1), PC.bad);
+  say('不走 2 的話，上一回合是 6', '多走一條邊反而更少：3');
+  await step(tok);                                   // 1:39:14 0 到 2：直接走 5
+  reset(); ecol(g.E(0, 2), PC.hot);
+  say('0 到 2：第一個選擇，直接走', 'cost 5');
+  await step(tok);                                   // 1:39:50 誰走得到 2？3 → 2
+  ecol(g.E(0, 2), PC.arw); ecol(g.E(0, 3), PC.hot); ecol(g.E(3, 2), PC.hot);
+  await pkt(tok, '5 − 2', vp(GBF, [0, 3, 2]), 500);
+  say('誰可以走到 2？3 可以', 'dist¹[3] = 5，5 − 2 = 3');
+  await step(tok);                                   // 1:40:15 兩個選最小 → 3
+  fill(2);
+  say('5 和 3 選最小 → 3', 'k = 2 那一列：0 3 3 5 5 4 ∞');
+  await step(tok);                                   // 1:40:46 k = 3
+  reset();
+  say('k = 3', '再看 0 到 1');
+  await step(tok);                                   // 1:41:16 找中繼點：2
+  glow(g.nodes[2], '#3a2a00'); ecol(g.E(2, 1), PC.hot);
+  say('誰指到 1？中繼點是 2', '');
+  await step(tok);                                   // 1:41:41 0 到 2 兩條邊內最好是 3（經過 3）
   ecol(g.E(0, 3), PC.hot); ecol(g.E(3, 2), PC.hot);
-  say('0→3→2 = 5 − 2 = 3 < 5', 'dist^2[2] = 3');
-  await beat(tok, 3000);
-  g.edges.forEach((e) => ecol(e, '#9c8b70'));
-  fill(3); tb.hl(3);
-  ecol(g.E(0, 3), PC.hot); ecol(g.E(3, 2), PC.hot); ecol(g.E(2, 1), PC.hot);
-  say('k = 3：到 2 的最佳 3，再走 2→1', 'dist^3[1] = 3 + (−2) = 1');
-  await beat(tok, 3400);
-  g.edges.forEach((e) => ecol(e, '#9c8b70'));
-  for (const k of [4, 5, 6]) { fill(k); tb.hl(k); say('k = ' + k + '：依此類推', 'dist^' + k + ' = ' + BFROWS[k - 1].map(f8).join(' ')); await beat(tok, 1800); }
+  say('上一回合：0 到 2 兩條邊內最好是 3', '它是先走到 3，再到 2');
+  await step(tok);                                   // 1:42:27 再走 2 → 1：−2 → 1
+  await pkt(tok, '3 − 2', vp(GBF, [0, 3, 2, 1]), 450);
+  fill(3); glow(g.nodes[2], null);
+  say('再加一條 2 → 1 的 −2', 'dist³[1] = 3 − 2 = 1');
+  await step(tok);                                   // 1:42:39 其他依此類推
+  reset();
+  for (const k of [4, 5, 6]) { fill(k); await beat(tok, 600); }
+  say('其他依此類推，k 一直加到 6', '最後：0 1 3 5 0 4 3');
+  await step(tok);                                   // 1:43:02 k 的意義
   tb.hl(-1);
-  say('k = 允許最多走幾條邊', '答案：0 1 3 5 0 4 3');
-  await beat(tok, 3000);
+  say('每次 iteration 都 update distance', 'k = 最多允許走幾條邊時的最佳 cost');
 }]);
 
 // Floyd 用的 3 頂點圖（Horowitz：0→1 4、0→2 11、1→0 6、1→2 2、2→0 3）
 const GF = { names: ['0', '1', '2'], pos: [[-5.4, -1.8], [-1.8, -1.8], [-3.6, 1.8]], edges: [[0, 1, 4], [0, 2, 11], [1, 0, 6], [1, 2, 2], [2, 0, 3]], dir: true };
+const FWM = [[[0, 4, 11], [6, 0, 2], [3, Infinity, 0]], [[0, 4, 11], [6, 0, 2], [3, 7, 0]], [[0, 4, 6], [6, 0, 2], [3, 7, 0]], [[0, 4, 6], [5, 0, 2], [3, 7, 0]]];
+// a 3×3 matrix of value cubes; set(m) writes matrix m, cell(i,j) returns the cube
+function mat3(x0, z0, title) {
+  const cs = [];
+  for (let i = 0; i < 3; i++) { tag(String(i), 'idx', x0 - 1.1, 0.2, z0 + i * 1.15); tag(String(i), 'idx', x0 + i * 1.3, 0.2, z0 - 0.95); }
+  for (let i = 0; i < 3; i++) { cs.push([]); for (let j = 0; j < 3; j++) cs[i].push(cube('', i === j ? '#e2d6bf' : '#f3ead9', [1.18, 0.32, 1.02], x0 + j * 1.3, 0.2, z0 + i * 1.15, 2)); }
+  const h = tag(title, 'ptr', x0 + 1.3, 0.6, z0 - 1.75);
+  return { cs, h, set(m) { m.forEach((r, i) => r.forEach((v, j) => relabel(cs[i][j], f8(v)))); }, cell: (i, j) => cs[i][j] };
+}
 
-// 103:30 all-pairs：每個點當 source 跑 n 次；或 A^k
+// 1:43:37 all-pairs：每個點當 source 跑 n 次；或 A^k（11 steps）
 FRAG.push(['gpeng20-allpairs-def', 'All-pairs shortest path：A^(−1) 到 A^(n−1)', async (tok) => {
   fresh([0, 9, 9], [0, 0, 0]);
-  const g = mkG(GF, { size: 0.9 });
-  say('all pairs：任兩點的最短路徑', '');
-  await beat(tok, 2200);
-  for (let s = 0; s < 3; s++) {
-    g.nodes.forEach((m) => glow(m, null)); glow(g.nodes[s], GOLD);
-    say('笨方法：source = ' + s + '，跑一次 single source', '每個點都當一次起點 → n 次');
-    await beat(tok, 1700);
-  }
-  g.nodes.forEach((m) => glow(m, null));
-  const M = code(['A^(-1)   0   1   2', '   0     0   4  11', '   1     6   0   2', '   2     3   ∞   0'], 2.8, 2.4, 0.55, -0.6);
-  say('另一種：A^(−1)[i][j] = length[i][j]', '初始值：只能走直接的邊');
-  await beat(tok, 3200);
-  M.hl(3);
-  say('A^k[i][j]：中間經過的頂點編號 ≤ k', '最後 A^(n−1) = 答案');
-  await beat(tok, 3400);
-  M.hl(-1);
-  say('n 個點 → A⁰、A¹ … A^(n−1)', '這裡 n = 3：算到 A²');
-  await beat(tok, 2800);
+  let g, M;
+  await step(tok);                                   // 1:43:37 負邊的最短路徑講完了
+  g = mkG(GF, { size: 0.9 });
+  say('shortest path with negative edge 講完了', '接下來一個新問題');
+  await step(tok);                                   // 1:43:44 all pairs：任取兩點
+  for (const [a, b] of [[0, 2], [1, 0], [2, 1]]) { await pkt(tok, '?', vp(GF, [a, b]), 450); }
+  say('all pairs shortest path', '網路裡任取兩點，都要找出最短路徑');
+  await step(tok);                                   // 1:44:03 笨方法：每個點都當 source
+  say('笨方法：每一個點都當一次 source', '跑 Dijkstra 或 Bellman-Ford');
+  await step(tok);                                   // 1:44:30 先讓 0 當起點
+  glow(g.nodes[0], GOLD);
+  say('先讓 0 當起始點', '找 0 到其他點的最短路徑');
+  await step(tok);                                   // 1:44:38 再讓 1、2 當起點
+  glow(g.nodes[0], null); glow(g.nodes[1], GOLD); await beat(tok, 700); glow(g.nodes[1], null); glow(g.nodes[2], GOLD); await beat(tok, 700); glow(g.nodes[2], null);
+  say('再從 1 出發、從 2 出發…', '讓所有點都跑過一次');
+  await step(tok);                                   // 1:44:46 cost 比較高
+  note('n 個起點 → 跑 n 次', -3.6, 3.6, 0.8);
+  say('這樣 cost 好像比較高', '另一種解法：all-pairs shortest path');
+  await step(tok);                                   // 1:45:03 two-dimension matrix A^(−1)
+  M = mat3(1.6, -1.2, 'A^(−1)'); M.set(FWM[0]);
+  say('用一個 two-dimension matrix 表示', '上面有個上標：A^(−1)[i][j]');
+  await step(tok);                                   // 1:45:13 A^(−1)[i][j] = i 到 j 的 length
+  glow(M.cell(0, 1), GOLD);
+  say('A^(−1)[i][j]：初始值', '就是 i 到 j 的 edge length（例：0 → 1 = 4）');
+  await step(tok);                                   // 1:45:22 A^(n−1) 是最後答案
+  glow(M.cell(0, 1), null); txt(M.h, 'A^(n−1) = 答案');
+  say('A^(n−1)[i][j] 是最後的答案', 'i 到 j 的 shortest path cost');
+  await step(tok);                                   // 1:45:38 A^k：經過的頂點 index ≤ k
+  txt(M.h, 'A^k');
+  say('A^k[i][j]：從 i 走到 j', '中間經過的頂點，編號最多是 k');
+  await step(tok);                                   // 1:46:08 跟 Bellman-Ford 的 k 不一樣
+  bub('這個 k ≠ Bellman-Ford 的 k', 1.6, 3.6, 1.0);
+  say('注意：這裡的 k', '跟剛才 Bellman-Ford 的 k 意義不一樣');
 }]);
 
-// 106:38 A^k 遞迴式；Floyd 的 k ≠ Bellman-Ford 的 k
+// 1:46:37 A^k 遞迴式；Floyd 的 k ≠ Bellman-Ford 的 k（9 steps）
 FRAG.push(['gpeng20-ak-formula', 'A^k[i][j] = min(不經過 k, 經過 k)', async (tok) => {
   fresh([0, 9, 9], [0, 0, 0]);
-  const I = cube('i', PC.node, [0.9, 0.55, 0.9], -5, 0.3, 1.6, 3), Kc = cube('k', PC.hot, [0.9, 0.55, 0.9], -2.6, 0.3, -2.0, 3), J = cube('j', PC.node, [0.9, 0.55, 0.9], -0.2, 0.3, 1.6, 3);
-  const d0 = rod(V3(-4.4, 0.3, 1.6), V3(-0.8, 0.3, 1.6), PC.edge, 0.06);
+  let I, Kc, J, f;
+  await step(tok);                                   // 1:46:37 書上的定義
+  I = cube('i', PC.node, [0.9, 0.55, 0.9], -5, 0.3, 1.6, 3); J = cube('j', PC.node, [0.9, 0.55, 0.9], -0.2, 0.3, 1.6, 3);
+  say('A^k[i][j]：從 i 走到 j', '經過的頂點編號都 ≤ k 的最短路徑');
+  await step(tok);                                   // 1:47:03 用公式算：兩種情況
+  Kc = cube('k', PC.hot, [0.9, 0.55, 0.9], -2.6, 0.3, -2.0, 3);
+  say('A^k[i][j] 怎麼算？', '分成兩種情況');
+  await step(tok);                                   // 1:47:25 一：有沒有經過 k 沒影響
+  rod(V3(-4.4, 0.3, 1.6), V3(-0.8, 0.3, 1.6), PC.edge, 0.06);
   tag('A^(k−1)[i][j]', 'idx', -2.6, 0.5, 2.3);
-  say('情況一：沒經過 k 也一樣好', '= A^(k−1)[i][j]');
-  await beat(tok, 3000);
-  rod(V3(-4.6, 0.3, 1.1), V3(-2.9, 0.3, -1.5), PC.hot, 0.06); rod(V3(-2.3, 0.3, -1.5), V3(-0.6, 0.3, 1.1), PC.hot, 0.06);
-  tag('A^(k−1)[i][k]', 'idx', -4.6, 0.5, -0.6); tag('A^(k−1)[k][j]', 'idx', -0.6, 0.5, -0.6);
-  say('情況二：i → k → j', '兩段中間都只經過編號 ≤ k−1 的點');
-  await beat(tok, 3200);
-  const f = code(['A^k[i][j] = min(', '  A^(k-1)[i][j],', '  A^(k-1)[i][k] + A^(k-1)[k][j] )'], 3.6, 2.4, 0.5, -0.8);
-  say('兩者取最小', 'k 從 0 跑到 n − 1');
-  await beat(tok, 3000);
-  f.hl(2);
-  say('例：A⁰[2][1] = min(∞, 3 + 4) = 7', '2 → 0 → 1');
-  await beat(tok, 3000);
-  f.hl(-1);
-  say('注意：兩個 k 意義不同', 'Bellman-Ford：最多 k 條邊；Floyd：中繼點編號 ≤ k');
-  await beat(tok, 3600);
+  say('第一：有沒有經過頂點 k 都沒影響', '值跟上一個 A^(k−1)[i][j] 一樣');
+  await step(tok);                                   // 1:47:46 二：允許經過 k
+  glow(Kc, GOLD);
+  say('第二：允許走頂點 k', '可能產生一條更好的路');
+  await step(tok);                                   // 1:48:05 i → k：經過的編號 ≤ k − 1
+  rod(V3(-4.6, 0.3, 1.1), V3(-2.9, 0.3, -1.5), PC.hot, 0.06); tag('A^(k−1)[i][k]', 'idx', -4.6, 0.5, -0.6);
+  await pkt(tok, 'i→k', [V3(-5, 0, 1.6), V3(-2.6, 0, -2.0)], 600);
+  say('先從 i 走到 k', '中間經過的頂點編號只有 0 到 k − 1');
+  await step(tok);                                   // 1:48:30 k → j 也一樣
+  rod(V3(-2.3, 0.3, -1.5), V3(-0.6, 0.3, 1.1), PC.hot, 0.06); tag('A^(k−1)[k][j]', 'idx', -0.6, 0.5, -0.6);
+  await pkt(tok, 'k→j', [V3(-2.6, 0, -2.0), V3(-0.2, 0, 1.6)], 600);
+  say('再從 k 走到 j', '一樣只經過編號 ≤ k − 1 的點');
+  await step(tok);                                   // 1:48:54 兩條路選最小
+  glow(Kc, null);
+  f = code(['A^k[i][j] = min(', '  A^(k-1)[i][j],', '  A^(k-1)[i][k] + A^(k-1)[k][j] )'], 3.4, 2.4, 0.5, -0.8);
+  say('兩條路徑裡選最小的', '就是答案');
+  await step(tok);                                   // 1:49:05 Bellman-Ford 的 k：邊的個數
+  f.hl(0);
+  const n1 = note('Bellman-Ford：k = 最多走幾條邊', 2.4, 2.4, 0.8);
+  say('同樣都有 k，意義不一樣', 'Bellman-Ford 的 k：走過邊的個數');
+  await step(tok);                                   // 1:49:33 Floyd 的 k：頂點編號
+  remove(n1); f.hl(-1);
+  note('這裡：k = 中間頂點編號的上限', 2.4, 2.4, 0.8);
+  say('這裡的 k：經過的頂點編號', '從 0 到 k，不能超過 k');
 }]);
 
-// 113:12 transitive closure：A⁺（長度 > 0 的路徑）、A*（含自己到自己）
+// 1:49:51 Floyd 例：A^(−1) → A⁰ → A¹ → A²（10 steps）
+FRAG.push(['gpeng20-floyd', 'Floyd：A^(−1) → A⁰ → A¹ → A²', async (tok) => {
+  fresh([0, 10, 9], [0, 0, 0]);
+  let g, M;
+  const sup = ['^(−1)', '⁰', '¹', '²'];
+  const band = (k) => { for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) tint(M.cell(i, j), i === j ? '#e2d6bf' : (k >= 0 && (i === k || j === k)) ? '#f1d78f' : '#f3ead9'); };
+  const upd = (i, j) => { tint(M.cell(i, j), PC.ok); glow(M.cell(i, j), GOLD); };
+  await step(tok);                                   // 1:49:51 A^(−1)：3 個頂點
+  g = mkG(GF, { size: 0.9 });
+  M = mat3(1.8, -1.2, 'A^(−1)'); M.set(FWM[0]);
+  say('例子：A^(−1) 是初始值', '有 3 個頂點');
+  await step(tok);                                   // 1:49:58 3×3；0→0 是 0、0→1 是 4
+  glow(M.cell(0, 0), GOLD); await beat(tok, 600); glow(M.cell(0, 0), null); glow(M.cell(0, 1), GOLD);
+  say('所以是 3×3 的 matrix', '0 → 0 是 0，0 → 1 是 4');
+  await step(tok);                                   // 1:50:12 A⁰：允許經過 0
+  glow(M.cell(0, 1), null); txt(M.h, 'A⁰'); band(0); glow(g.nodes[0], GOLD);
+  say('A⁰：路徑可以經過頂點 0', '能構成的最小 cost');
+  await step(tok);                                   // 1:50:21 紅色的 7：2 → 0 → 1
+  await pkt(tok, '3 + 4', vp(GF, [2, 0, 1]), 600);
+  M.set(FWM[1]); upd(2, 1);
+  say('2 到 1：本來到不了（∞）', '經過 0：2 → 0 → 1 = 3 + 4 = 7');
+  await step(tok);                                   // 1:50:53 A¹：允許經過 0、1
+  glow(M.cell(2, 1), null); glow(g.nodes[0], null); txt(M.h, 'A¹'); band(1); glow(g.nodes[1], GOLD);
+  say('A¹：路徑可以經過 0 和 1', '');
+  await step(tok);                                   // 1:51:07 藍色的 6：0 → 1 → 2
+  await pkt(tok, '4 + 2', vp(GF, [0, 1, 2]), 600);
+  M.set(FWM[2]); upd(0, 2);
+  say('0 到 2：本來直接走要 11', '經過 1：0 → 1 → 2 = 4 + 2 = 6');
+  await step(tok);                                   // 1:51:49 A²：可經過 0、1、2
+  glow(M.cell(0, 2), null); glow(g.nodes[1], null); txt(M.h, 'A²'); band(2); glow(g.nodes[2], GOLD);
+  say('A²：可以經過 0、1、2', '');
+  await step(tok);                                   // 1:52:00 1 到 0 變成 5
+  await pkt(tok, '2 + 3', vp(GF, [1, 2, 0]), 600);
+  M.set(FWM[3]); upd(1, 0);
+  say('1 到 0：本來 6', '經過 2：1 → 2 → 0 = 2 + 3 = 5');
+  await step(tok);                                   // 1:52:11 n 個點 → 做到 A^(n−1)
+  glow(M.cell(1, 0), null); glow(g.nodes[2], null); band(-1);
+  note('n 個點：A⁰、A¹ … 做到 A^(n−1) = 答案', 0, 3.8, 0.8);
+  say('n 個點編號 0 到 n − 1', '一路做到 A^(n−1)，就是任兩點的最短距離');
+  await step(tok);                                   // 1:52:52 兩個 k 定義不一樣
+  bub('Floyd 的 k：頂點編號　Bellman-Ford 的 k：邊數', 0, -4.0, 1.0);
+  say('再提醒一次：兩個 k 的定義不一樣', '一個管頂點編號，一個管邊的個數');
+}]);
+
+// 1:53:13 transitive closure：A⁺（長度 > 0 的路徑）、A*（含自己到自己）（9 steps）
 FRAG.push(['gpeng20-closure', 'Transitive closure：A⁺ 與 A*', async (tok) => {
   fresh([0, 9.5, 9.5], [0, 0, 0]);
   const S = { names: ['0', '1', '2', '3', '4'], pos: [[-6.2, 0], [-4.8, 0], [-3.4, 0], [-2.2, -1.8], [-2.2, 1.8]], edges: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 2]], dir: true };
-  mkG(S, { noW: true, size: 0.6 });
   const A = [[0, 1, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 1, 0], [0, 0, 0, 0, 1], [0, 0, 1, 0, 0]];
   const AP = [[0, 1, 1, 1, 1], [0, 0, 1, 1, 1], [0, 0, 1, 1, 1], [0, 0, 1, 1, 1], [0, 0, 1, 1, 1]];
   const x0 = 0.6, z0 = -2.2, d = 1.05;
+  let cells, title;
+  await step(tok);                                   // 1:53:13 transitive closure
+  mkG(S, { noW: true, size: 0.6 });
+  say('transitive closure', '既然都會找 all pairs shortest path 了…');
+  await step(tok);                                   // 1:53:20 A 到 B、B 到 C → A、C 連通
+  await pkt(tok, '0 → 1 → 2', vp(S, [0, 1, 2]), 600);
+  say('A 可以到 B、B 可以到 C', '那 A 和 C 也是連通的');
+  await step(tok);                                   // 1:53:38 原來的 matrix A
   for (let i = 0; i < 5; i++) { tag(String(i), 'idx', x0 - 0.9, 0.2, z0 + i * d); tag(String(i), 'idx', x0 + i * d, 0.2, z0 - 0.9); }
-  const cells = A.map((r, i) => r.map((v, j) => cube(v, v ? '#4b9ee2' : '#efe5d3', [0.8, 0.3, 0.8], x0 + j * d, 0.15, z0 + i * d, 2)));
-  const title = tag('A（adjacency）', 'ptr', 2.7, 0.5, 3.4);
-  say('A 可以到 B、B 可以到 C → A 到得了 C？', 'adjacency matrix：1 = 有邊');
-  await beat(tok, 3200);
-  txt(title, 'A⁺');
+  cells = A.map((r, i) => r.map((v, j) => cube(v, v ? '#4b9ee2' : '#efe5d3', [0.8, 0.3, 0.8], x0 + j * d, 0.15, z0 + i * d, 2)));
+  title = tag('A（adjacency）', 'ptr', 2.7, 0.5, 3.4);
+  say('這是原來那張 A 的 matrix', '');
+  await step(tok);                                   // 1:53:46 0 = 沒連通、1 = 有連通
+  glow(cells[0][1], GOLD); glow(cells[0][2], '#3a2a00');
+  say('1 代表有連通（有邊）', '0 代表沒有');
+  await step(tok);                                   // 1:53:55 A⁺：可以透過別人到達
+  glow(cells[0][1], null); glow(cells[0][2], null); txt(title, 'A⁺');
+  say('A⁺：可以透過別的點到達那個點', '也算連通');
+  await step(tok);                                   // 1:54:10 path 長度 > 0 → 1
   for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) if (AP[i][j] !== A[i][j]) { relabel(cells[i][j], 1); tint(cells[i][j], '#e8b02a'); }
-  say('A⁺[i][j] = 1：有長度 > 0 的路徑', '跑 all-pairs，路徑長 > 0 就填 1');
-  await beat(tok, 3600);
-  glow(cells[2][2], GOLD);
-  say('2 → 3 → 4 → 2：繞回自己', 'A⁺[2][2] = 1');
-  await beat(tok, 2800);
-  glow(cells[2][2], null);
+  say('跑之前的 all-pairs 演算法', '有長度 > 0 的 path 就記 1');
+  await step(tok);                                   // 1:54:18 A*
   txt(title, 'A*');
+  say('那 A* 呢？', '');
+  await step(tok);                                   // 1:54:27 自己到自己：對角線設 1
   for (const i of [0, 1]) { relabel(cells[i][i], 1); tint(cells[i][i], PC.ok); }
-  say('A*：再把對角線（自己到自己）設成 1', '長度 0 的路徑也算');
-  await beat(tok, 3200);
-  say('A* 和 A⁺ 只差在對角線', '都可以用 all-pairs 的結果得到');
-  await beat(tok, 3000);
+  say('自己可以到自己', '把對角線 A[i][i] 也設成 1');
+  await step(tok);                                   // 1:54:56 最笨的方法：跑 all pairs
+  note('最笨：跑 all pairs，結果 > 0（有路）就填 1', 2.7, 4.3, 0.6);
+  say('最笨的方法：跑 all pairs shortest path', '只要有路徑，就是 1');
 }]);
 
-// 115:09 本堂總結
+// 1:55:18 本堂總結（7 steps）
 FRAG.push(['gpeng20-recap', '最短路徑總結：Dijkstra、Bellman-Ford、all-pairs', async (tok) => {
   fresh([0, 8, 9], [0, 0.6, 0]);
-  const cols = [['Dijkstra', 'single source', 'cost ≥ 0', -4.2, '#2fc092'], ['Bellman-Ford', 'single source', '可以有負邊', 0, '#4b9ee2'], ['All-pairs', 'A^k，O(n³)', '暴力：經過所有點', 4.2, '#9b7ef4']];
-  for (const [name, a, b, x, c] of cols) {
-    cube('', c, [2.2, 1.6, 1.4], x, 0.8, 0, 3);
-    tag(name, 'ptr', x, 2.2, 0); tag(a, 'idx', x, 1.0, 0.9); tag(b, 'ptr alt', x, 0.4, 0.9);
-    say(name + '：' + a, b);
-    await beat(tok, 3600);
-  }
-  say('single source 兩個演算法都要會 run', '再加上 all-pairs shortest path');
-  await beat(tok, 4200);
+  const box = (name, a, b, x, c) => { cube('', c, [2.2, 1.6, 1.4], x, 0.8, 0, 3); tag(name, 'ptr', x, 2.2, 0); tag(a, 'idx', x, 1.0, 0.9); return tag(b, 'ptr alt', x, 0.4, 0.9); };
+  let nb;
+  await step(tok);                                   // 1:55:18 network 上的兩個問題
+  bub('network 上的兩個問題', 0, -3.0, 1.6);
+  say('今天的重點：network 上的兩個問題', '');
+  await step(tok);                                   // 1:55:24 single source all destinations
+  tag('single source all destinations', 'ptr', -2.1, 3.0, -1.2);
+  say('第一個：single source all destinations', '兩個演算法');
+  await step(tok);                                   // 1:55:31 Dijkstra
+  box('Dijkstra', 'single source', 'cost ≥ 0', -4.2, '#2fc092');
+  say('第一個演算法：Dijkstra', 'edge cost 不能是負的');
+  await step(tok);                                   // 1:55:35 Bellman-Ford
+  nb = box('Bellman-Ford', 'single source', '可以有負邊', 0, '#4b9ee2');
+  say('第二個：Bellman-Ford', '');
+  await step(tok);                                   // 1:55:38 有負值；要知道怎麼 run
+  bub('兩個都要會 run', 0, 3.0, 1.6);
+  say('Bellman-Ford 允許負值', '這兩個演算法都要知道怎麼 run');
+  await step(tok);                                   // 1:55:48 all pairs shortest path
+  box('All-pairs', 'A^k，O(n³)', '經過所有點', 4.2, '#9b7ef4');
+  say('再來是 all pairs shortest path', '');
+  await step(tok);                                   // 1:55:58 蠻暴力的
+  note('暴力：把經過所有點的 path 都找出來', 4.2, 3.0, 0.6);
+  say('老師覺得它蠻暴力的', '要把經過所有點的 path 都找出來');
 }]);
 
-// 116:16 AOV network：vertex = activity，edge = 先後關係（擋修）
+// 1:56:23 AOV network：vertex = activity，edge = 先後關係（擋修）（10 steps）
 FRAG.push(['gpeng20-aov', 'AOV network：擋修關係圖', async (tok) => {
   fresh([0, 8.5, 9], [0, 0, 0]);
   const S = { names: ['C1', 'C2', 'C3'], pos: [[-4.2, -1.8], [-4.2, 1.8], [0.6, 0]], edges: [[0, 2], [1, 2]], dir: true };
-  const g = mkG(S, { noW: true, size: 1.0 });
+  let g, st, ti;
+  await step(tok);                                   // 1:56:23 AOV 也是一種 network
+  ti = bub('AOV network', -1.8, -3.4, 1.2);
+  say('AOV：也是一種 network', '');
+  await step(tok);                                   // 1:56:30 Activity On Vertex
+  txt(ti, 'AOV = Activity On Vertex');
+  say('Activity On Vertex', '意義放在 vertex 上');
+  await step(tok);                                   // 1:56:40 生活化的例子：擋修
+  st = buddy('學生', '', '#f2b8c6', 4.4, 0, 2.4, 0.7); st.mood('wow');
+  say('講一個生活化的例子', '大家有沒有聽過「擋修」？');
+  await step(tok);                                   // 1:57:11 Data Structure 要先修
+  g = mkG(S, { noW: true, size: 1.0 }); g.edges.forEach((e) => evis(e, false));
   tag('程式設計（一）', 'idx', -4.2, 0.2, -0.9); tag('離散數學', 'idx', -4.2, 0.2, 2.7); tag('資料結構', 'idx', 0.6, 0.2, 0.9);
-  say('AOV：Activity On Vertex', 'vertex = activity（一門課）');
-  await beat(tok, 3000);
-  say('edge = 先後關係', '要先修 C1、C2 才能修資料結構');
-  await beat(tok, 3000);
-  tint(g.nodes[2], PC.bad);
-  say('前面的 activity 還沒完成…', '後面的不能開始');
-  await beat(tok, 2600);
-  tint(g.nodes[0], PC.ok); await beat(tok, 900);
-  tint(g.nodes[1], PC.ok); await beat(tok, 900);
-  tint(g.nodes[2], PC.ok);
-  say('C1、C2 都修完 → C3 才能修', '系上的課程地圖就是一張 AOV');
-  await beat(tok, 4800);
+  say('例：Data Structure 這門課', '你必須先修過某些課');
+  await step(tok);                                   // 1:57:21 先修 C1、C2
+  g.edges.forEach((e) => evis(e, true));
+  say('要先修 C1（Programming 1）', '還要修過 C2（離散）才能修 Data Structure');
+  await step(tok);                                   // 1:57:31 有順序關係
+  say('這就是一種順序關係', '');
+  await step(tok);                                   // 1:57:40 系上的課程圖
+  await walkTo(tok, st.g, -4.2, 0.55, -1.8, 900); tint(g.nodes[0], PC.ok);
+  await walkTo(tok, st.g, -4.2, 0.55, 1.8, 900); tint(g.nodes[1], PC.ok);
+  say('系上的課程圖就是這種圖', '大一修過這些課，才能修後面的');
+  await step(tok);                                   // 1:58:19 每個頂點 = 一個 activity
+  g.nodes.forEach((m) => tint(m, PC.node)); await walkTo(tok, st.g, 4.4, 0, 2.4, 700);
+  for (const m of g.nodes) { glow(m, GOLD); await beat(tok, 300); glow(m, null); }
+  say('每個頂點代表一個 activity', '在這個例子裡就是一門課');
+  await step(tok);                                   // 1:58:36 前面沒發生，後面不能作用
+  tint(g.nodes[2], PC.bad); st.mood('sad');
+  say('前面的 activity 還沒發生', '這個頂點就沒辦法開始（被擋修）');
+  await step(tok);                                   // 1:58:46 edge：前面先發生，後面才發生
+  tint(g.nodes[0], PC.ok); await beat(tok, 500); tint(g.nodes[1], PC.ok); await beat(tok, 500); tint(g.nodes[2], PC.ok); st.mood('happy');
+  say('edge 表示先後關係', '前面先完成，後面才會發生');
 }]);
 
-// 119:05 topological order：一直輸出 in-degree = 0 的點（0 3 2 5 1 4）
+// 1:59:09 topological order：一直輸出 in-degree = 0 的點（0 3 2 5 1 4）（15 steps）
 FRAG.push(['gpeng20-topo-sort', 'Topological order：輸出 in-degree 0 的點', async (tok) => {
   fresh([0, 9.5, 9.5], [0, 0, 0.4]);
   const S = { names: ['0', '1', '2', '3', '4', '5'], pos: [[-5.2, 0], [-1.8, -2.6], [-1.8, 0], [-1.8, 2.6], [1.8, -1.3], [1.8, 1.6]], dx: 0.6, dz: -0.6,
     edges: [[0, 1], [0, 2], [0, 3], [1, 4], [2, 4], [2, 5], [3, 4], [3, 5]], dir: true };
-  const g = mkG(S, { noW: true });
+  let g, it, seqT;
   const indeg = [0, 1, 1, 1, 3, 2];
-  const it = S.names.map((n, i) => above(S, i, 'in ' + indeg[i], 'idx', 1.0));
-  say('topological order：先後關係都保持的序列', '例：0 3 2 5 1 4（0 一定在 4 前面）');
-  await beat(tok, 3400);
-  const order = [0, 3, 2, 5, 1, 4];
-  const why = { 0: '只有 0 的 in-degree 是 0', 3: '1、2、3 都是 0，隨便挑：選 3', 2: '剩 1、2 是 0：選 2', 5: '1、5 是 0：選 5', 1: '輸出 1', 4: '最後 4' };
   const out = [];
-  for (const v of order) {
-    glow(g.nodes[v], GOLD);
-    say(why[v], 'output ' + v + '，刪掉它指出去的 edge');
-    await beat(tok, 1700);
-    g.edges.forEach((e) => { if (e.u === v && e.obj.visible) { evis(e, false); indeg[e.v]--; txt(it[e.v], 'in ' + indeg[e.v]); } });
-    kill(it[v]); glow(g.nodes[v], null); tint(g.nodes[v], PC.ok);
-    out.push(v);
-    move(g.nodes[v], -4.5 + (out.length - 1) * 1.3, 0.3, 4.2);
-    await beat(tok, 1100);
-  }
-  say('topological order：0 3 2 5 1 4', '每次輸出 in-degree = 0 的點');
-  await beat(tok, 3000);
+  const emit = (v) => { glow(g.nodes[v], null); tint(g.nodes[v], PC.ok); out.push(v); move(g.nodes[v], -4.5 + (out.length - 1) * 1.3, 0.3, 4.2); if (it) kill(it[v]); };
+  const drop = (v) => g.edges.forEach((e) => { if (e.u === v && e.obj.visible) { evis(e, false); indeg[e.v]--; txt(it[e.v], 'in ' + indeg[e.v]); } });
+  await step(tok);                                   // 1:59:09 topological order
+  g = mkG(S, { noW: true });
+  say('從 AOV 可以得到 topological order', '它是什麼？');
+  await step(tok);                                   // 1:59:15 vertex 的 sequence
+  say('它是一個 vertex 的 sequence', '一排頂點');
+  await step(tok);                                   // 1:59:24 任取兩點，先後關係被 maintain
+  say('序列裡任取兩點', '它們在 AOV 裡的先後關係都被保持住');
+  await step(tok);                                   // 1:59:44 例：0 3 2 5 1 4
+  seqT = bub('0 3 2 5 1 4', 2.6, 4.0, 0.8);
+  say('例：0 3 2 5 1 4', '就是一個 topological order');
+  await step(tok);                                   // 1:59:54 0 和 4
+  glow(g.nodes[0], GOLD); glow(g.nodes[4], GOLD);
+  say('任取兩點：0 和 4', '0 一定要修完，才可能修 4');
+  await step(tok);                                   // 2:00:14 沒有直接的 edge 也一樣
+  ecol(g.E(0, 1), PC.hot); ecol(g.E(1, 4), PC.hot);
+  await pkt(tok, '先修', vp(S, [0, 1, 4]), 500);
+  say('0 和 4 沒有直接的 edge', '但 0 是一切的基礎：0 → 1 → 4');
+  await step(tok);                                   // 2:01:11 從左到右：先把 0 輸出
+  glow(g.nodes[0], null); glow(g.nodes[4], null); g.edges.forEach((e) => ecol(e, PC.arw)); remove(seqT);
+  it = S.names.map((n, i) => above(S, i, 'in ' + indeg[i], 'idx', 1.0));
+  glow(g.nodes[0], GOLD);
+  say('做法：從左到右，第一個一定是 0', '只有 0 沒有被任何點指到');
+  await step(tok);                                   // 2:01:19 0 出來後，看鄰居 1、2、3
+  drop(0); emit(0);
+  say('0 輸出後，刪掉它指出去的 edge', '1、2、3 之間沒有擋修關係');
+  await step(tok);                                   // 2:01:38 先選 3
+  glow(g.nodes[3], GOLD);
+  say('1、2、3 隨便先修哪個都可以', '這裡先選 3');
+  await step(tok);                                   // 2:01:43 3 輸出，刪掉它指到 4、5 的 edge
+  drop(3); emit(3);
+  say('3 輸出以後', '被 3 指到的 4、5，那些 edge 要去掉');
+  await step(tok);                                   // 2:02:02 in-degree 0 就可以輸出
+  for (const v of [1, 2]) glow(g.nodes[v], '#3a2a00');
+  say('規則：沒有被任何點指到', 'in-degree = 0 的頂點就可以輸出');
+  await step(tok);                                   // 2:02:20 剩 1、2 是 0
+  say('現在 in-degree 是 0 的只有 1 和 2', '');
+  await step(tok);                                   // 2:02:28 輸出 2，更新 4、5
+  glow(g.nodes[1], null); glow(g.nodes[2], GOLD); await beat(tok, 500);
+  drop(2); emit(2);
+  say('隨便選：這裡輸出 2', '更新 4、5 的 in-degree');
+  await step(tok);                                   // 2:02:43 1 和 5 隨便選：輸出 5
+  glow(g.nodes[5], GOLD); await beat(tok, 500); drop(5); emit(5);
+  say('現在 1 和 5 的 in-degree 都是 0', '這裡輸出 5');
+  await step(tok);                                   // 2:03:00 演算法總結
+  drop(1); emit(1); await beat(tok, 600); emit(4);
+  say('從左到右，一直輸出 in-degree 0 的點', 'topological order：0 3 2 5 1 4');
 }]);
   }
   // @@FRAGMENTS@@
