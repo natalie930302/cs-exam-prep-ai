@@ -1019,6 +1019,12 @@
   "quiz": 7,
   "cued": true
  },
+ "ocZMDMZwhCY": {
+  "label": "MIT 6.006 L21",
+  "points": 70,
+  "quiz": 7,
+  "cued": true
+ },
  "oNI0rf2P9gE": {
   "label": "Abdul Bari：4.2 All Pairs Shortest Path (Floyd-Warshall)",
   "points": 35,
@@ -1093,9 +1099,9 @@
  },
  "PptQgy89cN8": {
   "label": "MIT 6.006 Rec22：DP: Dance Dance Revolution（進階DP範例，補充）",
-  "points": 73,
+  "points": 75,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "PqN0aJeYtuA": {
   "label": "交大江蕙如 Lec22 Beyond Polynomial Running Times (1/2)",
@@ -1225,9 +1231,9 @@
  },
  "tp4_UXaVyx8": {
   "label": "MIT 6.006 L22：DP IV: Guitar Fingering, Tetris, Super Mario Bros.（進階DP範例，補充）",
-  "points": 102,
+  "points": 107,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "trkaH2uLxHw": {
   "label": "交大江蕙如 Lec13 Greedy Algorithms (4/5)",
