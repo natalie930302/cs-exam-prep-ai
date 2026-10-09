@@ -499,9 +499,9 @@
  },
  "aZjYr87r1b8": {
   "label": "Abdul Bari：B Trees and B+ Trees",
-  "points": 100,
+  "points": 103,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "AztAXONxs7M": {
   "label": "清大周志遠 第8A講 Processes Concept",
@@ -849,7 +849,7 @@
   "label": "B-Tree Insertion",
   "points": 27,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "Iwc3Uj4aaF4": {
   "label": "Ford Fulkerson Algorithm for Maximum Flow Problem",
@@ -1257,7 +1257,7 @@
   "label": "交大彭文志 Lec26 Search Structures (3/3)",
   "points": 106,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "uEUXGcc2VXM": {
   "label": "Abdul Bari：2.6.2 Binary Search Recursive Method",
