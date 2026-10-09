@@ -27,7 +27,7 @@
   "label": "Abdul Bari：1.1 Priori Analysis and Posteriori Testing",
   "points": 7,
   "quiz": 3,
-  "cued": false
+  "cued": true
  },
  "-qOVVRIZzao": {
   "label": "Abdul Bari：2.8.2 QuickSort Analysis",
@@ -129,7 +129,7 @@
   "label": "Abdul Bari：1.4 Frequency Count Method",
   "points": 25,
   "quiz": 5,
-  "cued": false
+  "cued": true
  },
  "1yyu70Vy9Zc": {
   "label": "台大林軒田 DSA C++ / Array",
@@ -279,7 +279,7 @@
   "label": "Abdul Bari：1.7 Compare Class of Functions",
   "points": 13,
   "quiz": 4,
-  "cued": false
+  "cued": true
  },
  "6-wh6yvk6uc": {
   "label": "MIT OCW 18.06 L12：Graphs, Networks, Incidence Matrices",
@@ -435,13 +435,13 @@
   "label": "Abdul Bari：1.5.2 Time Complexity Example #2",
   "points": 36,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "9TlHvipP5yA": {
   "label": "Abdul Bari：1.5.1 Time Complexity #1",
   "points": 19,
   "quiz": 4,
-  "cued": false
+  "cued": true
  },
  "9vrPlp_f5A0": {
   "label": "清大周志遠 第5A講 Nachos解說/OS Structure",
@@ -453,7 +453,7 @@
   "label": "Abdul Bari：1.8.1 Asymptotic Notations #1",
   "points": 35,
   "quiz": 5,
-  "cued": false
+  "cued": true
  },
  "A6sbcPRLkmg": {
   "label": "黃婷婷教授計算機結構_第4A講 Computer Abstractions and Technology / Instruction Set Architecture",
@@ -1059,7 +1059,7 @@
   "label": "Abdul Bari：1.5.3 Time Complexity of While and if #3",
   "points": 49,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "P7frcB_-g4w": {
   "label": "MIT 6.006 Rec1：Asymptotic Complexity, Peak Finding",
@@ -1329,7 +1329,7 @@
   "label": "Abdul Bari：1.6 Classes of Functions",
   "points": 8,
   "quiz": 3,
-  "cued": false
+  "cued": true
  },
  "wAy6nDMPYAE": {
   "label": "Abdul Bari：4.6.2 Optimal BST Successful and Unsuccessful",
