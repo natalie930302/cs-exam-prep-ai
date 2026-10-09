@@ -69,7 +69,7 @@
   "label": "MIT 6.006 L8：Hashing with Chaining",
   "points": 57,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "0NRkuhnupzs": {
   "label": "清大周志遠 第18A講 Special Scheduling Issues",
@@ -549,7 +549,7 @@
   "label": "MIT 6.006 L9：Table Doubling, Karp-Rabin",
   "points": 62,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "BtHlptO34wM": {
   "label": "清大周志遠 第4A講 Computer-System Organization(續)",
@@ -1147,9 +1147,9 @@
  },
  "r5pXu1PAUkI": {
   "label": "MIT 6.006 Rec5：Recursion Trees, Binary Search Trees",
-  "points": 80,
+  "points": 81,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "RjvhXL0WTrY": {
   "label": "台大林軒田 DSA Tree / Heap",
@@ -1173,7 +1173,7 @@
   "label": "MIT 6.006 L10：Open Addressing, Cryptographic Hashing",
   "points": 61,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "S5vS9YEvnFU": {
   "label": "交大江蕙如 Lec19 Dynamic Programming (3/3)",

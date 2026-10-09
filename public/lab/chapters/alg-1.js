@@ -11654,28 +11654,41 @@ FRAG.push(['algmit1-total-cost', 'docdist1 總時間：Θ(W1² + W2²)', async (
 
   // ═══ algmit2.js ═══
   {
-const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, code, anim, line, arrow, ghostBox, lnode, GOLD, GREEN, RED, GRAY } = K;
+const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, code, anim, line, arrow, ghostBox, lnode, GOLD, GREEN, RED, GRAY, step, buddy, prop, bob, travel, remove, zone } = K;
 // ─── MIT 6.006（Fall 2011）：Rec5 Recursion Trees / BST（r5pXu1PAUkI）、L8 Hashing with Chaining（0M_kIqhwbFo）、
 //     L9 Table Doubling / Karp-Rabin（BRO7mVIFt08）、L10 Open Addressing / Cryptographic Hashing（rvdJDijO2Ro）───
+// 全部是「跟著講者走」的 cued scene：每個 await step(tok) 等講者說到那一句才動（行尾註解 = 那句話的秒數）。
 // 老師自己的例子：BST 23 / 8 / 42 / 4 / 16 / 15、insert 14 與 5、delete 15 / 16 / 8、augment 存 min 再 insert 3；
 // direct access 的 key 2、4；hash('\0B') = hash('\0\0C') = 64；m = 8 開始、第 9 個觸發 grow；s = '6006'；
 // open addressing 7 格：586→1、133、204→4、481→6、496 試 4 → 1 → 3；linear probing 42 … 57。
-// 老師沒給數字的地方（merge sort 陣列、heap、division/multiplication/universal 的 key、t 字串、mod 17）標「示意」。
+// 老師沒給數字的地方（merge sort 陣列、Heap、division/multiplication/universal 的 key、t 字串、mod 17）標「示意」。
 const M2 = { blue: '#4b9ee2', purple: '#9b7ef4', green: '#2fc092', orange: '#dd8238', red: '#d64545', teal: '#31aab0', gold: '#c08a1f', sand: '#c9b48e', pink: '#e55a9b' };
+// friendly labels: a speech bubble, a sticky note, a travelling packet, a ✓ / ✗ verdict
+const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const pkt = (t, x, y, z = 0) => tag(t, 'pkt', x, y, z);
+const okT = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const noT = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
 function m2bar(color, w, d, x, z) { const m = lab.box(color, [w, 1, d]); m.scale.y = 0.001; m.position.set(x, 0.0005, z); lab.world.add(m); return m; }
 function m2set(m, h) { const v = Math.max(0.001, h); m.scale.y = v; m.position.y = v / 2; }
 // BST：spec = [[key, x, y, parentKey]]（父節點先列）
-function m2tree(spec, color) {
+function m2tree(spec, color, blank = false) {
   const N = {};
   for (const [k, x, y, p] of spec) {
-    N[k] = cube(k, color || M2.blue, [0.9, 0.9, 0.9], x, y, 0);
+    N[k] = cube(blank ? '' : k, color || M2.blue, [0.9, 0.9, 0.9], x, y, 0);
     if (p !== null) N[k].userData.edge = line(N[p].position.x, N[p].position.y, x, y, -0.05);
   }
   return N;
 }
 const M2BST = [[23, 0, 6.2, null], [8, -3, 4.7, 23], [42, 3, 4.7, 23], [4, -4.6, 3.2, 8], [16, -1.4, 3.2, 8], [15, -2.2, 1.7, 16]];
-async function m2go(tok, cur, x, y, ms = 450) { const a = cur.position.clone(), b = V3(x, y + 0.85, 0); await anim(tok, ms, (t) => cur.position.lerpVectors(a, b, t)); }
+// a little walker buddy that stands on top of tree nodes (or a ▼ label)
+function m2walker(name, x, y, color = M2.orange) { return buddy(name, '', color, x, y + 0.45, 0, 0.45); }
+async function m2go(tok, cur, x, y, ms = 450) {
+  const o = cur.g || cur, a = o.position.clone(), b = V3(x, y + (cur.g ? 0.45 : 0.85), 0);
+  await anim(tok, ms, (t) => o.position.lerpVectors(a, b, t));
+}
 async function m2goN(tok, cur, m, ms) { await m2go(tok, cur, m.position.x, m.position.y, ms); }
+async function m2path(tok, cur, nodes, ms = 380) { for (const m of nodes) await m2go(tok, cur, m.position.x, m.position.y, ms); }
 // 一排 hash table 格子（沿 x），回傳 X(i)
 function m2row(m, x0, dx, z, w = 0.9, idx = (i) => String(i)) {
   for (let i = 0; i < m; i++) { cube('', GRAY, [w, 0.12, w], x0 + i * dx, 0.06, z); tag(idx(i), 'idx', x0 + i * dx, 0, z + w / 2 + 0.35); }
@@ -11687,41 +11700,72 @@ const m2item = (v, color, x, z, drop = 0, w = 0.9, y = 0.45) => cube(v, color, [
 FRAG.push(['algmit2-ms-recurrence', 'Merge sort 的遞迴式：2T(n/2) + Θ(n)', async (tok) => {
   fresh([0, 4.2, 13.5], [0, 3.2, 0]);
   const X = (i) => -4.2 + i * 1.2;
-  const cs = [5, 2, 4, 7, 1, 3, 2, 6].map((v, i) => cube(v, M2.sand, [1, 0.8, 0.8], X(i), 6, 0));
-  tag('大小 n', 'ptr', 5.9, 6);
-  say('Merge sort：陣列切成兩半', '示意 n = 8');
-  await beat(tok, 2200);
+  const ms = buddy('merge sort', '', M2.orange, -6.2, 0, 1.6, 0.75);
+  let cs = [];
+  await step(tok); // 121 who remembers merge sort
+  cs = [5, 2, 4, 7, 1, 3, 2, 6].map((v, i) => cube(v, M2.sand, [1, 0.8, 0.8], X(i), 6, 0, 1.5));
+  tag('大小 n（示意 n = 8）', 'idx', 0, 7.0);
+  say('Merge sort：把一個沒排好的陣列排好', '示意數字');
+  await step(tok); // 154 array size one is already sorted
+  glow(cs[0], GREEN);
+  const one = note('只有 1 個 → 已排好', -4.2, 7.3);
+  say('切到只剩 1 個元素就停', 'base case：1 個元素一定已排好');
+  await step(tok); // 161 split it into two halves
+  glow(cs[0], null); remove(one);
   cs.forEach((c, i) => move(c, X(i) + (i < 4 ? -0.6 : 0.6), 4.2));
-  tag('T(n/2)', 'ptr alt', -2.4, 3.3); tag('T(n/2)', 'ptr alt', 2.4, 3.3);
-  say('兩半各呼叫一次 merge sort', '呼叫兩次 → 係數 2 不能漏');
-  await beat(tok, 2600);
+  say('步驟 1：陣列切成兩半');
+  await beat(tok, 600);
+  await step(tok); // 165 call merge sort on each half
+  const tl = pkt('merge sort（左半）', -2.4, 3.3), tr = pkt('merge sort（右半）', 2.4, 3.3);
+  ms.mood('wow');
+  say('步驟 2：兩半各呼叫一次 merge sort', '自己呼叫自己 = 遞迴');
+  await step(tok); // 167 assume they come back sorted
   const L = [2, 4, 5, 7], R = [1, 2, 3, 6];
   for (let i = 0; i < 4; i++) { relabel(cs[i], L[i]); relabel(cs[i + 4], R[i]); tint(cs[i], M2.green); tint(cs[i + 4], M2.green); }
-  say('假設遞迴回來兩半都排好', 'base case：1 個元素已排好，T(1) = Θ(1)');
-  await beat(tok, 2600);
-  say('合併：兩根手指比大小', '每步放好一個 → merge = Θ(n)');
+  ms.mood('happy');
+  say('假設遞迴回來時，兩半都已經排好');
+  await step(tok); // 169 merge the sorted halves
+  remove(tl); remove(tr);
+  glow(cs[0], GOLD); glow(cs[4], GOLD);
+  bub('合併要花多少時間？', 0, 3.3);
+  say('步驟 3：把兩個排好的半邊合併', '兩根手指各指著一半的開頭');
+  await step(tok); // 185 the finger thing
   let i = 0, j = 0;
   for (let k = 0; k < 8; k++) {
     const takeL = j >= 4 || (i < 4 && L[i] <= R[j]);
     const c = takeL ? cs[i] : cs[4 + j];
-    glow(c, GOLD); await beat(tok, 350);
-    move(c, X(k), 1.2); glow(c, null);
+    glow(c, null); move(c, X(k), 1.4);
     if (takeL) i++; else j++;
-    await beat(tok, 450);
+    if (i < 4) glow(cs[i], GOLD); if (j < 4) glow(cs[4 + j], GOLD);
+    await beat(tok, 260);
   }
-  say('T(n) = 2T(n/2) + Θ(n)', '切開是 O(1) 或 O(n) 都不影響答案');
-  await beat(tok, 3000);
+  say('每次比兩根手指，小的放出去', '每步放好一個 → merge = Θ(n)');
+  await step(tok); // 217 the recurrence starts with T(n)
+  const f = pkt('T(n) = ?', 4.6, 7.2);
+  say('寫出遞迴式：T(n) = …', 'T(n) = 排 n 個要花的時間');
+  await step(tok); // 232 call merge sort twice → the 2
+  txt(f, 'T(n) = 2 · T(?)');
+  say('呼叫兩次 → 前面的係數 2', '少了 2，答案就不一樣');
+  await step(tok); // 242 arrays are half the size
+  txt(f, 'T(n) = 2 · T(n/2)');
+  say('每次給它的陣列只有一半大', 'T(n/2)');
+  await step(tok); // 245 merge takes order n
+  txt(f, 'T(n) = 2T(n/2) + Θ(n)');
+  ms.mood('happy');
+  say('再加上 merge 的 Θ(n)', 'T(n) = 2T(n/2) + Θ(n)');
+  await step(tok); // 248 splitting can be constant or order n
+  note('切開：Θ(1) 或 Θ(n) 都行', 4.6, 6.4);
+  say('切開要 Θ(1) 還是 Θ(n)？', '都被 merge 的 Θ(n) 蓋過，答案不變');
 }]);
 
-const M2LV = [{ y: 6.2, cnt: 1, lab: 'cn', sz: 'n/2⁰' }, { y: 4.7, cnt: 2, lab: 'cn/2', sz: 'n/2¹' }, { y: 3.2, cnt: 4, lab: 'cn/4', sz: 'n/2²' }, { y: 1.0, cnt: 8, lab: 'c', sz: '1' }];
-function m2msLevel(rows, l) {
+const M2LV = [{ y: 6.2, cnt: 1, cost: 'cn', size: 'n', sz: 'n/2⁰' }, { y: 4.7, cnt: 2, cost: 'cn/2', size: 'n/2', sz: 'n/2¹' }, { y: 3.2, cnt: 4, cost: 'cn/4', size: 'n/4', sz: 'n/2²' }, { y: 1.0, cnt: 8, cost: 'c', size: '1', sz: '1' }];
+function m2msLevel(rows, l, byCost = true) {
   const L = M2LV[l], xs = [], ms = [];
   for (let k = 0; k < L.cnt; k++) {
     const x = -4.6 + (k + 0.5) * 9.2 / L.cnt; xs.push(x);
-    ms.push(cube(L.lab, l === 3 ? M2.green : M2.blue, [l === 3 ? 0.9 : 1.3, 0.6, 0.6], x, L.y, 0));
+    ms.push(cube(byCost ? L.cost : L.size, l === 3 ? M2.green : M2.blue, [l === 3 ? 0.9 : 1.3, 0.6, 0.6], x, L.y, 0));
     if (l > 0 && l < 3) line(rows[l - 1].xs[k >> 1], M2LV[l - 1].y - 0.3, x, L.y + 0.3);
   }
-  if (l === 3) { tag('⋮', 'ptr', -2.3, 2.1); tag('⋮', 'ptr', 2.3, 2.1); }
   rows.push({ xs, ms });
   return rows[l];
 }
@@ -11729,493 +11773,1310 @@ function m2msLevel(rows, l) {
 FRAG.push(['algmit2-ms-rtree', '遞迴樹：節點成本 cn、層數 log n + 1', async (tok) => {
   fresh([0, 3.8, 14], [0, 3.4, 0]);
   const rows = [];
-  m2msLevel(rows, 0);
-  say('根：這次呼叫自己的成本', '不含子呼叫；Θ(n) 改寫成 cn');
-  await beat(tok, 2600);
-  say('為什麼寫 cn 不寫 Θ(n)？', '無限多個 Θ 不能直接相加；用 c 永遠不會錯');
-  await beat(tok, 2600);
-  m2msLevel(rows, 1);
-  say('兩個子呼叫，大小 n/2', '成本各 c·n/2');
-  await beat(tok, 2200);
-  m2msLevel(rows, 2);
-  say('再往下：c·n/4', '一直切到 base case');
-  await beat(tok, 2000);
-  m2msLevel(rows, 3);
-  say('葉子：大小 1，成本 c', 'T(1) = Θ(1)');
-  await beat(tok, 2200);
-  M2LV.forEach((L, l) => { tag(L.sz, 'idx', 6.0, L.y); tag(l === 3 ? 'L' : 'ℓ = ' + (l + 1), 'ptr', -6.2, L.y); });
-  say('第 ℓ 層大小 = n / 2^(ℓ−1)', '看出規律；兩層不夠就多展開幾層');
-  await beat(tok, 3000);
+  const f = pkt('T(n) = 2T(n/2) + Θ(n)', -4.6, 7.4);
+  await step(tok); // 256 how do we solve this recurrence
+  say('怎麼解這個遞迴式？', '用遞迴樹（recursion tree）');
+  await step(tok); // 261 draw a call graph
+  bub('畫出「誰呼叫誰」', 3.6, 7.2);
+  say('畫出呼叫圖（call graph）', '每個方塊 = 一次 merge sort 呼叫');
+  await step(tok); // 267 start with a call of size n
+  m2msLevel(rows, 0, false);
+  say('從一次大小 n 的呼叫開始');
+  await step(tok); // 275 it calls merge sort twice, size n/2
+  m2msLevel(rows, 1, false);
+  say('它呼叫兩次 merge sort', '大小各 n/2');
+  await step(tok); // 284 n/4, n/4
+  m2msLevel(rows, 2, false);
+  say('n/2 再各呼叫兩次', '大小 n/4');
+  await step(tok); // 295 goes on until the base case
+  tag('⋮', 'ptr', -2.3, 2.1); tag('⋮', 'ptr', 2.3, 2.1);
+  say('一直切下去……', '直到碰到 base case');
+  await step(tok); // 309 base case is 1
+  m2msLevel(rows, 3, false);
+  say('base case：大小 1', 'T(1) = Θ(1)');
+  await step(tok); // 325 put the cost of each call, without subcalls
+  glow(rows[0].ms[0], GOLD);
+  say('節點裡改寫成：這次呼叫「自己」的成本', '不含子呼叫（孩子）的時間');
+  await step(tok); // 334 instead of order n, write cn
+  relabel(rows[0].ms[0], 'cn'); glow(rows[0].ms[0], null);
+  say('根自己的成本是 merge 的 Θ(n)', '寫成 cn（c 是某個常數）');
+  await step(tok); // 345 why: tempted to sum infinitely many Θ's
+  const why = bub('Θ(n) + Θ(n/2) + …（很多項）', 3.6, 7.2);
+  say('為什麼不寫 Θ(n)？', '項數不固定時，Θ 不能直接相加');
+  await step(tok); // 362 this way you can never go wrong
+  remove(why); okT('寫成 cn：永遠不會錯', 3.6, 7.2);
+  say('用 c 寫，最後再換回 Θ', '這樣算永遠不會錯');
+  await step(tok); // 370 sort n = two n/2 sorts + cn merging
+  rows[1].ms.forEach((m) => glow(m, GOLD));
+  say('排 n 個 = 兩個 n/2 的子問題 + 自己 cn');
+  await step(tok); // 392 c times n over 2
+  rows[1].ms.forEach((m) => { relabel(m, 'cn/2'); glow(m, null); });
+  say('大小 n/2 的呼叫，自己成本 c·n/2');
+  await step(tok); // 399 c n over 4
+  rows[2].ms.forEach((m) => relabel(m, 'cn/4'));
+  say('大小 n/4：c·n/4');
+  await step(tok); // 438 array size 1 → cost c
+  rows[3].ms.forEach((m) => relabel(m, 'c'));
+  say('最底層大小 1：成本 c');
+  await step(tok); // 451 how many levels does the tree have
+  const lv = bub('這棵樹有幾層？', 3.6, 7.2);
+  say('下一步：這棵樹有幾層？');
+  await step(tok); // 456 T(n) = sum of all these costs
+  Object.values(rows).forEach((r) => r.ms.forEach((m) => glow(m, GOLD)));
+  say('T(n) = 樹裡所有成本加起來', '節點記下了每個子呼叫的時間');
+  await step(tok); // 482 sum up the costs at each level
+  Object.values(rows).forEach((r) => r.ms.forEach((m) => glow(m, null)));
+  M2LV.forEach((L) => { const g = ghostBox(M2.gold, 10, 0.75, 0.9); g.position.set(0, L.y, 0); });
+  say('最容易：一層一層加', '同一層的成本都一樣；但要先知道有幾層');
+  await step(tok); // 515 bottom level size has to be 1
+  remove(lv);
+  rows[3].ms.forEach((m) => glow(m, GREEN));
+  say('最底層的大小一定是 1', 'base case：1 個元素就排好、直接回傳');
+  await step(tok); // 537 n over 2 to the 0
+  rows[3].ms.forEach((m) => glow(m, null));
+  tag('大小 n/2⁰', 'idx', 6.0, M2LV[0].y);
+  say('第 1 層大小：n = n/2⁰');
+  await step(tok); // 546 n over 2 to the first
+  tag('大小 n/2¹', 'idx', 6.0, M2LV[1].y);
+  say('第 2 層：n/2 = n/2¹');
+  await step(tok); // 551 n over 2 to the second
+  tag('大小 n/2²', 'idx', 6.0, M2LV[2].y);
+  say('第 3 層：n/4 = n/2²', '兩層看不出規律就多畫幾層');
+  await step(tok); // 584 size at level ℓ is n / 2^(ℓ−1)
+  M2LV.forEach((L, l) => tag(l === 3 ? '第 L 層' : '第 ' + (l + 1) + ' 層', 'ptr', -6.2, L.y));
+  txt(f, '第 ℓ 層大小 = n / 2^(ℓ−1)');
+  say('看出規律：第 ℓ 層大小 = n / 2^(ℓ−1)');
+  await step(tok); // 609 bottom level L: size is 1
+  txt(f, 'n / 2^(L−1) = 1');
   rows[3].ms.forEach((m) => glow(m, GOLD));
-  say('最底層大小 = 1', 'n / 2^(L−1) = 1 → n = 2^(L−1)');
-  await beat(tok, 2800);
-  say('指數的反函數是 log', 'L − 1 = log n → L = log n + 1 ≈ log n');
-  await beat(tok, 3200);
+  say('最底層是第 L 層，大小 = 1', 'n / 2^(L−1) = 1');
+  await step(tok); // 628 n = 2^(L−1)
+  txt(f, 'n = 2^(L−1)');
+  say('移項：n = 2^(L−1)');
+  await step(tok); // 650 the inverse of an exponential is a log
+  txt(f, 'L − 1 = log n');
+  say('指數的反函數是 log', 'L − 1 = log n');
+  await step(tok); // 658 L = log n + 1, roughly log n
+  rows[3].ms.forEach((m) => glow(m, null));
+  txt(f, 'L = log n + 1 ≈ log n 層');
+  say('L = log n + 1', '用漸近符號時就當作 log n');
 }]);
 
 FRAG.push(['algmit2-rtree-sum', '遞迴樹逐層加總：cn × (log n + 1)', async (tok) => {
   fresh([0, 3.8, 14], [0, 3.4, 0]);
   const rows = []; for (let l = 0; l < 4; l++) m2msLevel(rows, l);
+  tag('⋮', 'ptr', -2.3, 2.1); tag('⋮', 'ptr', 2.3, 2.1);
   tag('L = log n + 1 層', 'ptr', -5.2, 7.2);
-  say('T(n) = 所有節點成本的總和', '同一層成本相同 → 逐層加最容易');
-  await beat(tok, 2600);
-  const S = ['cn', '2 · cn/2 = cn', '4 · cn/4 = cn', 'n · c = cn'];
-  const CAP = ['第 1 層：只有根', '第 2 層：2 個 cn/2', '第 3 層：4 個 cn/4', '最底層：n 個大小 1'];
-  for (let l = 0; l < 4; l++) {
-    rows[l].ms.forEach((m) => glow(m, GOLD));
-    tag(S[l], 'ptr alt', 5.3, M2LV[l].y);
-    say(CAP[l], S[l]);
-    await beat(tok, 1900);
-    rows[l].ms.forEach((m) => glow(m, null));
-  }
-  say('質量守恆：每層大小加起來都是 n', '少了 n 就是哪裡弄丟了元素');
-  await beat(tok, 2600);
-  say('T(n) = cn · L', '= cn (log n + 1) = Θ(n log n)');
-  await beat(tok, 3000);
-  say('成本不平均的樹也一樣逐層加', '可能集中在根，也可能集中在葉子');
-  await beat(tok, 2800);
+  const S = ['cn', '2 · cn/2 = cn', '4 · cn/4 = cn', 'n · c = cn'], st = [];
+  const lvl = (l, cap, f) => { rows.forEach((r) => r.ms.forEach((m) => glow(m, null))); rows[l].ms.forEach((m) => glow(m, GOLD)); st[l] = tag(S[l], 'ptr alt', 5.3, M2LV[l].y); say(cap, f); };
+  await step(tok); // 675 what's the cost at each level
+  say('每一層的成本加起來是多少？');
+  await step(tok); // 681 this level: cn
+  lvl(0, '第 1 層：只有根', 'cn');
+  await step(tok); // 692 this level: two nodes
+  rows[0].ms.forEach((m) => glow(m, null)); rows[1].ms.forEach((m) => glow(m, GOLD));
+  say('第 2 層：有兩個節點', '每個 cn/2');
+  await step(tok); // 701 each cn/2
+  lvl(1, '第 2 層：2 個 cn/2', '2 · cn/2 = cn');
+  await step(tok); // 709 four nodes, cn/4
+  lvl(2, '第 3 層：4 個 cn/4', '4 · cn/4 = cn');
+  await step(tok); // 721 bottom: n arrays of size 1
+  lvl(3, '最底層：n 個大小 1 的陣列', 'n · c = cn');
+  await step(tok); // 731 conservation of mass
+  rows.forEach((r) => r.ms.forEach((m) => glow(m, null)));
+  const mass = pkt('n → n/2 + n/2 → 4 個 n/4 → …', 0, 7.6);
+  say('質量守恆：每層大小加起來都是 n', '加起來不是 n，就是哪裡弄丟了元素');
+  await step(tok); // 750 cn, cn, cn, cn: a pattern
+  remove(mass);
+  st.forEach((t) => t && (t.element.className = 'lab-label good'));
+  say('cn、cn、cn、cn：每層都是 cn');
+  await step(tok); // 767 T(n) = cn · L
+  const ans = pkt('T(n) = cn · L', 0, 7.6);
+  say('T(n) = 每層 cn × 層數 L');
+  await step(tok); // 776 order n log n
+  txt(ans, 'T(n) = cn (log n + 1) = Θ(n log n)');
+  say('= cn (log n + 1)', '= Θ(n log n)');
+  await step(tok); // 816 nicely balanced: every level costs the same
+  say('這棵樹很平衡：每層成本一樣');
+  await step(tok); // 822 a tree where the cost is all at the top
+  fresh([0, 4, 13], [0, 2, 0]);
+  const chart = (x0, hs, color, name) => {
+    tag(name, 'say', x0 + 1.5, 5.4);
+    hs.forEach((h, l) => { const b = m2bar(color, 0.7, 0.7, x0 + l * 1.0, 0); m2set(b, h); tag('第 ' + (l + 1) + ' 層', 'idx', x0 + l * 1.0, 0, 0.8); });
+  };
+  chart(-5.8, [4, 1, 0.25, 0.08], M2.red, '成本集中在根');
+  say('另一種樹：成本幾乎都在根', '孩子的成本可以忽略');
+  await step(tok); // 830 a tree where the cost is all at the leaves
+  chart(1.8, [0.08, 0.25, 1, 4], M2.purple, '成本集中在葉子');
+  say('還有一種：成本都在葉子', '內部節點幾乎不花時間');
+  await step(tok); // 841 don't be scared: just sum them up
+  okT('不管哪一種：逐層加總就對了', 0, 6.4);
+  say('每層成本不一樣也不用怕', '照樣一層一層加起來');
 }]);
 
 FRAG.push(['algmit2-rep-invariant', 'Rep invariant：sorted array 與 binary search', async (tok) => {
   fresh([0, 4.5, 13], [0, 2.4, 0]);
-  tag('query：只問、不改', 'ptr', -3.4, 5.8); tag('update：insert / delete', 'ptr alt', 3.4, 5.8);
-  say('Data structure = queries + updates', '先 update 放資料，再 query 問問題');
-  await beat(tok, 2600);
+  const ds = prop('warehouse', -4.4, 0, -0.5, 1.3, 'data structure'); bob(ds, 0.04);
+  const me = buddy('使用者', '', M2.blue, 3.6, 0, 0.6, 0.8); me.look(-1);
+  await step(tok); // 868 a data structure stores and retrieves information
+  say('Data structure = 一組存資料、取資料的演算法');
+  await step(tok); // 875 queries and updates
+  tag('query：問問題', 'ptr', -3.4, 5.4); tag('update：改資料', 'ptr alt', 3.4, 5.4);
+  say('兩種演算法：query 和 update');
+  await step(tok); // 889 start empty, throw data at it = update
+  const d = pkt('資料', 3.6, 2.2, 0.6);
+  await travel(tok, d, V3(3.6, 2.2, 0.6), V3(-4.0, 1.6, 0), 900); remove(d);
+  say('一開始是空的，丟資料進去 = update');
+  await step(tok); // 899 ask questions = query
+  const q = pkt('有沒有 16？', 3.6, 2.2, 0.6);
+  await travel(tok, q, V3(3.6, 2.2, 0.6), V3(-4.0, 1.6, 0), 800); txt(q, '有！');
+  await travel(tok, q, V3(-4.0, 1.6, 0), V3(3.6, 2.2, 0.6), 700); me.mood('happy');
+  say('問它問題 = query', '可以一直 update、query 交替');
+  await step(tok); // 962 the most popular query: search (find)
+  remove(q);
+  bub('最常用的 query：search（find）', 0, 3.6);
+  say('BST 最常用的 query：search', '程式裡常叫 find');
+  await step(tok); // 983 queries don't change the data structure
+  note('query：只問、不改', -3.4, 4.7);
+  say('query 只問問題，資料結構不會變');
+  await step(tok); // 992 updates: insert, delete
+  note('update：insert、delete', 3.4, 4.7);
+  say('update：insert、delete');
+  await step(tok); // 1013 the representation invariant
+  fresh([0, 4.5, 13], [0, 2.4, 0]);
+  bub('Rep invariant（RI）：資料必須照某個規則擺', 0, 5.6);
+  say('資料結構都有一個 rep invariant（RI）', 'RI 成立 → 資料結構才會正常運作');
+  await step(tok); // 1047 a sorted array should be sorted
   const X = (i) => -4.5 + i * 1.5;
   const cs = [4, 8, 15, 16, 23, 42].map((v, i) => cube(v, M2.blue, [1.2, 0.8, 0.9], X(i), 2.4, 0, 2));
-  for (let i = 0; i < 7; i++) tag('[' + i + ']', 'idx', X(i), 1.6);
-  say('Rep invariant：陣列要排好序', 'a[i] < a[i+1]（示意數字）');
-  await beat(tok, 2400);
+  for (let i = 0; i < 6; i++) tag('[' + i + ']', 'idx', X(i), 1.6);
+  say('Sorted array 的 RI：要排好序', '示意數字');
+  await step(tok); // 1053 every element smaller than the next
+  const lt = []; for (let i = 0; i < 5; i++) lt.push(tag('<', 'ptr', X(i) + 0.75, 2.4, 0.6));
+  say('每個元素都比下一個小', 'a[i] < a[i+1]');
+  await step(tok); // 1058 as long as RI holds, queries are right
+  lt.forEach(remove);
+  okT('RI 成立 → query 一定答對', 0, 4.4);
+  say('只要 RI 成立，query 就會回答正確');
+  await step(tok); // 1084 min/max: constant
   glow(cs[0], GREEN); glow(cs[5], GREEN);
+  const mn = note('min', X(0), 3.4), mx = note('max', X(5), 3.4);
   say('min 看頭、max 看尾', 'O(1)');
-  await beat(tok, 2200); glow(cs[0], null); glow(cs[5], null);
-  const cur = tag('▼', 'ptr alt', X(2), 3.3);
-  for (const [m, msg] of [[2, '15 < 16 → 往右'], [4, '23 > 16 → 往左'], [3, '找到 16：O(log n)']]) {
-    cur.position.set(X(m), 3.3, 0); glow(cs[m], m === 3 ? GREEN : GOLD);
-    say('Binary search 找 16', msg);
-    await beat(tok, 1500); glow(cs[m], null);
-  }
+  await step(tok); // 1098 binary search, O(log n)
+  glow(cs[0], null); glow(cs[5], null); remove(mn); remove(mx);
+  const cur = m2walker('找 16', X(2), 2.4, M2.orange);
+  for (const m of [2, 4, 3]) { await m2go(tok, cur, X(m), 2.4 - 0.05, 380); glow(cs[m], m === 3 ? GREEN : GOLD); await beat(tok, 200); }
+  say('Binary search 找 16：15 → 23 → 16', '每次丟掉一半 → O(log n)');
+  await step(tok); // 1106 what if the array is unsorted
+  [2, 4, 3].forEach((m) => glow(cs[m], null));
   relabel(cs[2], 42); relabel(cs[5], 15); tint(cs[2], M2.red); tint(cs[5], M2.red);
-  say('RI 被破壞：陣列沒排好', '再找 15 試試');
-  await beat(tok, 2000);
-  for (const [m, msg] of [[2, '42 > 15 → 往左'], [0, '4 < 15 → 往右'], [1, '8 < 15 → 往右 → 沒了']]) {
-    cur.position.set(X(m), 3.3, 0); glow(cs[m], GOLD);
-    say('Binary search 找 15', msg);
-    await beat(tok, 1400); glow(cs[m], null);
-  }
-  glow(cs[5], RED);
-  say('回答「不存在」，但 15 明明在！', 'RI 不成立 → query 可能答錯');
-  await beat(tok, 2600);
-  glow(cs[5], null); relabel(cs[2], 15); relabel(cs[5], 42); tint(cs[2], M2.blue); tint(cs[5], M2.blue);
+  cur.mood('wow');
+  say('如果陣列沒排好呢？', 'RI 被破壞了');
+  await step(tok); // 1113 says it isn't there when it is
+  cur.name.element.textContent = '找 15';
+  for (const m of [2, 0, 1]) { await m2go(tok, cur, X(m), 2.35, 350); glow(cs[m], GOLD); await beat(tok, 150); }
+  glow(cs[5], RED); cur.mood('sad');
+  noT('回答「沒有 15」，但 15 明明在！', 0, 4.4);
+  say('Binary search 找 15：42 → 4 → 8 → 沒了', 'RI 不成立 → query 可能答錯');
+  await step(tok); // 1124 updates: insert into a sorted list
+  [0, 1, 2, 5].forEach((m) => glow(cs[m], null));
+  relabel(cs[2], 15); relabel(cs[5], 42); tint(cs[2], M2.blue); tint(cs[5], M2.blue);
+  kill(cur.g);
+  const ten = pkt('insert 10', X(2), 4.0);
+  say('update 呢？在 sorted array 裡 insert 10');
+  await step(tok); // 1136 move everything, make room
   for (let i = 5; i >= 2; i--) move(cs[i], X(i + 1), 2.4);
-  await beat(tok, 700);
-  cube(10, M2.green, [1.2, 0.8, 0.9], X(2), 2.4, 0, 2.5);
-  say('insert 10：後面全部右移騰位置', 'update 結束時 RI 必須仍成立');
-  await beat(tok, 2600);
-  say('不能偷懶直接 append 到尾端', '正確性證明：RI 開頭成立 ⇒ 結尾也成立');
-  await beat(tok, 2800);
+  await beat(tok, 500);
+  remove(ten); cube(10, M2.green, [1.2, 0.8, 0.9], X(2), 2.4, 0, 2.5);
+  say('後面全部右移、騰出位置，再放進去', '結束時陣列仍然排好');
+  await step(tok); // 1142 can't just append at the end
+  noT('偷懶直接 append 到尾端 ✗', X(6), 4.0);
+  say('不能偷懶直接加在尾端', '比較快、程式比較短，但 RI 壞了');
+  await step(tok); // 1149 an update must keep the RI
+  say('update 結束時，RI 必須仍然成立');
+  await step(tok); // 1155 correctness proof for an update
+  bub('正確性證明：開頭 RI 成立 ⇒ 結尾 RI 也成立', 0, 5.6);
+  say('update 的正確性證明', '開頭 RI 成立 ⇒ 結尾 RI 也成立');
 }]);
 
-FRAG.push(['algmit2-heap-checkri', 'Max heap 的 insert 與 checkRI 除錯', async (tok) => {
+FRAG.push(['algmit2-heap-checkri', 'Max Heap 的 insert 與 checkRI 除錯', async (tok) => {
+  fresh([0, 4.2, 13.5], [0, 3.2, 0]);
+  const me = buddy('你', '', M2.blue, -4.6, 0, 0.6, 0.85);
+  await step(tok); // 1167 a pset problem: find the slow place and speed it up
+  const slow = prop('file', -2.4, 0, 0, 1.1, '程式：這裡好慢');
+  say('作業題：找出程式慢的地方、把它加速');
+  await step(tok); // 1179 implement a more efficient data structure
+  const ds = prop('warehouse', 2.6, 0, -0.4, 1.1, '新的 data structure'); bob(ds, 0.04);
+  me.look(1); me.mood('happy');
+  say('換成一個更有效率的 data structure', '自己實作');
+  await step(tok); // 1189 you might have bugs in an update
+  const bug = noT('update 有 bug？', 2.6, 3.0);
+  say('自己寫的 update 可能有 bug');
+  await step(tok); // 1194 queries give wrong answers much later
+  me.mood('sad');
+  say('很久之後 query 才答錯', '不知道是哪一次 update 出的錯');
+  await step(tok); // 1203 implement a method called checkRI
+  remove(bug);
+  const ck = pkt('checkRI()', 2.6, 3.0);
+  say('解法：寫一個 checkRI 方法', 'check the representation invariant');
+  await step(tok); // 1212 walks the whole structure, raises an exception
+  await travel(tok, ck, V3(2.6, 3.0, 0), V3(2.6, 1.0, 0.9), 700);
+  txt(ck, 'RI 壞了 → raise exception!');
+  say('走遍整個結構，檢查 RI', '不成立就丟 exception，立刻停下來');
+  await step(tok); // 1222 call it at the end of every update
+  note('每次 update 結束 → checkRI()', -2.4, 2.8);
+  me.mood('calm');
+  say('每次 update 結束都呼叫 checkRI', '直到確定程式正確');
+  await step(tok); // 1234 after debugging, remove it and submit
+  note('除錯完 → 拿掉 → 交作業', -2.4, 2.2);
+  me.mood('happy');
+  say('除錯完，把 checkRI 拿掉再交');
+  await step(tok); // 1242 it might be painfully slow
+  say('為什麼要拿掉？', '它可能比 query、update 本身慢很多');
+  await step(tok); // 1244 for example, a heap
   fresh([0, 3.8, 13.5], [0, 3.6, 0]);
   const P = [[0, 6.2], [-3, 4.7], [3, 4.7], [-4.5, 3.2], [-1.5, 3.2], [1.5, 3.2], [4.5, 3.2], [-5.3, 1.7]];
-  const v = [50, 30, 40, 10, 20, 35, 25], ms = [];
-  for (let i = 0; i < 7; i++) { ms.push(cube(v[i], M2.purple, [0.9, 0.9, 0.9], P[i][0], P[i][1], 0)); if (i) line(P[(i - 1) >> 1][0], P[(i - 1) >> 1][1], P[i][0], P[i][1], -0.05); }
-  glow(ms[0], GOLD);
-  say('Max heap 的 RI：父 ≥ 子', 'query max：看根 → O(1)（示意數字）');
-  await beat(tok, 2600); glow(ms[0], null);
+  const v = [50, 30, 40, 10, 20, 35, 25], ns = [];
+  for (let i = 0; i < 7; i++) { ns.push(cube(v[i], M2.purple, [0.9, 0.9, 0.9], P[i][0], P[i][1], 0)); if (i) line(P[(i - 1) >> 1][0], P[(i - 1) >> 1][1], P[i][0], P[i][1], -0.05); }
+  say('例子：max Heap', '示意數字');
+  await step(tok); // 1260 query: max, constant time — look at the top
+  glow(ns[0], GOLD);
+  const top = note('max = 看最上面', 1.6, 7.0);
+  say('max Heap 的 query：max', '看最上面那個就好 → O(1)');
+  await step(tok); // 1277 updates: insert, extract max
+  glow(ns[0], null); remove(top);
+  tag('update：insert、extract max', 'ptr alt', 4.6, 7.0);
+  say('update：insert、extract max');
+  await step(tok); // 1351 conceptually a full binary tree
+  say('長相：一棵 full binary tree', '最後會存成 array');
+  await step(tok); // 1357 binary: each node has at most two children
+  note('binary：每個節點最多 2 個孩子', -4.6, 7.0);
+  say('binary tree：每個節點最多兩個孩子');
+  await step(tok); // 1361 full: every level except the last is full
+  const full = ghostBox(M2.gold, 11, 3.2, 1.0); full.position.set(0, 4.7, 0);
+  say('full：除了最後一層，每層都填滿', '最後一層從左邊開始放');
+  await step(tok); // 1389 RI for a max heap
+  kill(full);
+  glow(ns[0], GOLD); glow(ns[1], GREEN); glow(ns[2], GREEN);
+  say('max Heap 的 RI：父節點 ≥ 孩子', '50 ≥ 30、50 ≥ 40');
+  await step(tok); // 1407 by induction the root is the max
+  glow(ns[1], null); glow(ns[2], null);
+  note('一路往下都成立 → 根最大', 1.6, 7.0);
+  say('用歸納法：每一層都成立', '→ 根比所有人都大，就是 max');
+  await step(tok); // 1420 insert: add it at the bottom
+  glow(ns[0], null);
   line(P[3][0], P[3][1], P[7][0], P[7][1], -0.05);
-  ms.push(cube(45, M2.green, [0.9, 0.9, 0.9], P[7][0], P[7][1], 0, 2)); v.push(45);
-  say('insert 45：只能加在最底層', '加在 array 尾端');
-  await beat(tok, 2200);
-  let i = 7;
-  while (i > 0) {
-    const p = (i - 1) >> 1;
-    glow(ms[i], GOLD); glow(ms[p], GOLD);
-    await beat(tok, 900);
-    glow(ms[i], null); glow(ms[p], null);
-    if (v[i] <= v[p]) { say(v[i] + ' ≤ ' + v[p] + '：停', 'RI 恢復'); await beat(tok, 1600); break; }
-    [v[i], v[p]] = [v[p], v[i]]; relabel(ms[i], v[i]); relabel(ms[p], v[p]); tint(ms[p], M2.green); tint(ms[i], M2.purple);
-    say(v[p] + ' > ' + v[i] + ' → swap', 'array 裡 parent = index / 2，只 swap 不搬移');
-    await beat(tok, 1500);
-    i = p;
-  }
-  say('insert = O(height)', 'full binary tree：height = log n');
-  await beat(tok, 2400);
-  const cur = tag('▼', 'ptr alt', 0, 7);
-  say('checkRI：走遍整個結構檢查', '每個父節點都要比孩子大');
-  for (let k = 0; k < 8; k++) { cur.position.set(P[k][0], P[k][1] + 0.85, 0); glow(ms[k], GREEN); await beat(tok, 260); }
-  say('checkRI 是 O(n)', '每次 update 都呼叫 → O(log n) 變 O(n)');
-  await beat(tok, 2600);
-  say('debug 時每次 update 後呼叫', '確定正確後，交作業前拿掉');
-  await beat(tok, 2800);
+  ns.push(cube(45, M2.green, [0.9, 0.9, 0.9], P[7][0], P[7][1], 0, 2)); v.push(45);
+  say('insert 45：先加在最底層', '唯一能加的地方');
+  await beat(tok, 500);
+  const swap = async (i, p) => {
+    [v[i], v[p]] = [v[p], v[i]]; relabel(ns[i], v[i]); relabel(ns[p], v[p]);
+    tint(ns[p], M2.green); tint(ns[i], M2.purple); glow(ns[i], null); glow(ns[p], GOLD);
+    await beat(tok, 300);
+  };
+  await step(tok); // 1423 bigger than its parent → swap
+  glow(ns[7], GOLD); glow(ns[3], RED);
+  await beat(tok, 500);
+  await swap(7, 3);
+  say('45 > 10：RI 被破壞 → swap');
+  await step(tok); // 1433 another swap
+  glow(ns[1], RED); await beat(tok, 500);
+  await swap(3, 1); glow(ns[3], null);
+  say('45 > 30 → 再 swap');
+  await step(tok); // 1437 compare with the next parent
+  glow(ns[0], GREEN); await beat(tok, 400);
+  say('45 ≤ 50 → 停下來', 'RI 恢復了');
+  await step(tok); // 1440 potentially all the way up to the root
+  glow(ns[0], null); glow(ns[1], null);
+  say('最壞情況：從最底下一路換到根');
+  await step(tok); // 1446 insert = O(height)
+  tag('insert = O(高度)', 'ptr', -4.6, 7.0);
+  say('insert = O(樹高)');
+  await step(tok); // 1458 a full binary tree has height log n
+  tag('full → 高度 = log n', 'ptr alt', -4.6, 6.4);
+  say('full binary tree 的高度一定是 log n', 'n = 節點數 → insert = O(log n)');
+  await step(tok); // 1486 in an array, the parent is index / 2
+  const AX = (i) => -4.2 + i * 1.2, ac = [];
+  for (let i = 0; i < 8; i++) { ac.push(cube(v[i], M2.purple, [1.0, 0.6, 0.6], AX(i), 0.3, 2.2)); tag(String(i + 1), 'idx', AX(i), -0.2, 2.9); }
+  arrow(V3(AX(7), 0.75, 2.2), V3(AX(3), 0.75, 2.2), 0xa8730f);
+  note('parent = index / 2', AX(5), 1.4, 2.2);
+  say('存成 array：parent 的 index = index / 2', '一路 swap 就好，不用整排搬動');
+  await step(tok); // 1507 extract max: also log n
+  say('extract max：也是 O(log n)', '（老師說先相信他）');
+  await step(tok); // 1514 running time of checking the invariant?
+  const ckw = m2walker('checkRI', P[0][0], P[0][1], M2.teal);
+  for (let k = 0; k < 8; k++) { await m2go(tok, ckw, P[k][0], P[k][1], 200); glow(ns[k], GREEN); }
+  say('checkRI：每個節點都要看過一次', 'O(n)');
+  await step(tok); // 1540 each update calls checkRI → painfully slow
+  ckw.mood('sad');
+  say('如果每次 update 都呼叫 checkRI……', '會慢得很痛苦');
+  await step(tok); // 1552 order n instead of log n
+  noT('update：O(log n) → O(n)', 4.6, 7.0);
+  say('update 從 O(log n) 變成 O(n)');
+  await step(tok); // 1555 debug, then remove the calls
+  okT('除錯時用、交作業前拿掉', 4.6, 6.4);
+  say('除錯時用 checkRI', '確定正確後拿掉再交');
 }]);
 
 FRAG.push(['algmit2-bst-find', 'BST 的 RI 與 find：O(h)', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.6, 0]);
-  const N = m2tree(M2BST);
-  say('Binary tree：每個節點最多兩個孩子', '節點存 key、left、right、parent');
-  await beat(tok, 2400);
+  let N = null;
+  await step(tok); // 1578 a binary tree: every node has at most two children
+  N = m2tree(M2BST, M2.sand, true);
+  say('Binary tree：每個節點最多兩個孩子');
+  await step(tok); // 1581 a node is a Python object
+  glow(N[23], GOLD);
+  note('一個節點 = 一個 Python 物件', 3.6, 6.9);
+  say('寫程式時，節點是一個 Python 物件');
+  await step(tok); // 1589 left child, right child, parent
+  const fl = [note('left', -1.6, 5.8), note('right', 1.6, 5.8), note('parent', 0, 7.3)];
+  say('節點記住：left、right、parent', '指向左孩子、右孩子、父節點');
+  await step(tok); // 1600 a hollow tree is not very useful
+  fl.forEach(remove); glow(N[23], null);
+  say('空心的樹：還沒什麼用');
+  await step(tok); // 1609 each node has a key
+  Object.keys(N).forEach((k) => { const l = lab.label(k, 'val'); N[k].add(l); N[k].userData.lbl = l; tint(N[k], M2.blue); });
+  say('每個節點放一個 key', '老師的例子：23、8、42、4、16、15');
+  await step(tok); // 1644 it's imbalanced
+  bub('不平衡：找最底下的很花時間', 3.6, 6.9);
+  say('這棵樹不平衡（imbalanced）');
+  await step(tok); // 1670 at 23: left smaller, right bigger
   [8, 4, 16, 15].forEach((k) => tint(N[k], M2.teal)); tint(N[42], M2.orange); glow(N[23], GOLD);
-  say('看 23：左邊都較小、右邊都較大', '每個節點都成立 → BST 的 RI');
-  await beat(tok, 2800);
+  say('看根 23：左邊全部比較小、右邊全部比較大');
+  await step(tok); // 1681 at 8 too
   [8, 4, 16, 15, 42].forEach((k) => tint(N[k], M2.blue)); glow(N[23], null);
-  const cur = tag('▼', 'ptr alt', 0, 7.05);
-  const walk = async (path, goal, caps) => {
-    for (let s = 0; s < path.length; s++) {
-      await m2goN(tok, cur, N[path[s]]); glow(N[path[s]], path[s] === goal ? GREEN : GOLD);
-      say('find(' + goal + ')', caps[s]); await beat(tok, 1300);
-    }
-    path.forEach((k) => glow(N[k], null));
-  };
-  await walk([23, 8, 16], 16, ['16 < 23 → 往左', '16 > 8 → 往右', '找到 16']);
-  await walk([23, 42], 42, ['42 > 23 → 往右', '找到 42']);
-  await walk([23, 8, 16, 15], 14, ['14 < 23 → 往左', '14 > 8 → 往右', '14 < 16 → 往左', '14 < 15 → 往左']);
-  await m2go(tok, cur, -2.9, 0.2);
-  const no = tag('None：不存在', 'ptr', -2.9, 0.2);
-  say('find(14)：走到死路', '回報不存在；就像 binary search');
-  await beat(tok, 2400); kill(no);
-  say('find 只走一條路徑往下', 'O(h)，h = 樹高；還不是 O(log n)');
-  await beat(tok, 3000);
+  tint(N[4], M2.teal); tint(N[16], M2.orange); tint(N[15], M2.orange); glow(N[8], GOLD);
+  say('看 8：左邊 4 比較小、右邊 16、15 比較大');
+  await step(tok); // 1693 this RI defines the binary search tree
+  [4, 16, 15].forEach((k) => tint(N[k], M2.blue)); glow(N[8], null);
+  bub('每個節點：左子樹 < 自己 < 右子樹', 3.6, 6.3);
+  say('每個節點都成立 → 這就是 BST 的 RI');
+  await step(tok); // 1712 search is fast
+  say('為什麼要維持這麼麻煩的規則？', '因為 search 很快');
+  const cur = m2walker('find', 0, 6.2);
+  const walk = async (path, goal, done) => { for (const k of path) { await m2goN(tok, cur, N[k], 360); glow(N[k], k === goal ? GREEN : GOLD); } await beat(tok, 300); path.forEach((k) => glow(N[k], null)); if (done) await m2goN(tok, cur, N[23], 400); };
+  await step(tok); // 1717 looking for 16: go down this path
+  await walk([23, 8, 16], 16, true);
+  say('找 16：23 → 8 → 16', '沿著一條路往下走');
+  await step(tok); // 1725 compare with the root: smaller go left, bigger go right
+  await walk([23, 42], 42, true);
+  say('跟目前節點比：小就往左、大就往右', '找 42：比 23 大 → 往右 → 找到');
+  await step(tok); // 1733 or a dead end if looking for 14
+  await walk([23, 8, 16, 15], 14, false);
+  await m2go(tok, cur, -2.9, 0.2, 400); cur.mood('sad');
+  noT('死路 → 14 不存在', -2.9, -0.3);
+  say('找 14：23 → 8 → 16 → 15 → 死路', '回報不存在');
+  await step(tok); // 1737 a lot like binary search
+  say('跟 binary search 很像', '看中間、小往左、大往右');
+  await step(tok); // 1753 the BST node class and find
+  fresh([0, 3.6, 13], [0, 3.6, 0]);
+  const cd = code([
+    'class BSTNode: key, left, right, parent',
+    'def find(self, k):',
+    '  if k == self.key: return self        # 8–9',
+    '  if k < self.key:                     # 10',
+    '    左邊沒有 → None；否則 left.find(k) # 11–14',
+    '  else: 鏡像，換成 right               # 16–19',
+  ], -3.4, 6.2, 0.62);
+  cd.hl(0);
+  say('看程式：BSTNode 類別有這些欄位', '再看 find 方法');
+  await step(tok); // 1763 lines 8 and 9: found the key
+  cd.hl(2);
+  say('lines 8–9：找到 key，開心地回傳');
+  await step(tok); // 1768 line 10 compares the keys
+  cd.hl(3);
+  say('line 10：要找的 key 跟這個節點的 key 比大小');
+  await step(tok); // 1774 lines 11–19: left and right, copy-pasted
+  cd.hl(4); await beat(tok, 700); cd.hl(5);
+  say('lines 11–19：左、右兩邊幾乎一樣', '一個處理左邊、一個處理右邊');
+  await step(tok); // 1800 is find O(log n)? not quite
+  cd.hl(-1);
+  noT('O(log n)？還不是', 3.6, 2.4);
+  say('find 的時間是 O(log n) 嗎？', '還不是');
+  await step(tok); // 1827 order h
+  okT('find = O(h)，h = 樹高', 3.6, 1.6);
+  say('find = O(h)', 'h = 樹的高度：只走一條路往下');
+  await step(tok); // 1834 next lecture: balance → h = O(log n)
+  note('下一講：balanced tree → h = O(log n)', 3.6, 0.8);
+  say('下一講學 balance 之後', '保證 h = O(log n)，再把 h 換成 log n');
+  await step(tok); // 1857 worst case: searches are O(n)
+  say('但現在最壞情況，search 是 O(n)');
 }]);
 
 FRAG.push(['algmit2-bst-degenerate', '退化的 BST：一直變大的插入 → O(n)', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.6, 0]);
-  const ks = [5, 10, 15, 20, 25];
-  let prev = null;
-  say('依序插入 5, 10, 15, …', '每個都比前面大');
-  for (let i = 0; i < ks.length; i++) {
-    const x = -4 + i * 2, y = 6.2 - i * 1.3;
-    if (prev) line(prev[0], prev[1], x, y, -0.05);
-    cube(ks[i], M2.red, [0.9, 0.9, 0.9], x, y, 0, 2);
-    prev = [x, y];
-    await beat(tok, 900);
-  }
+  const ks = [5, 10, 15, 20, 25], at = (i) => [-4 + i * 2, 6.2 - i * 1.3];
+  const put = (i) => { const [x, y] = at(i); if (i) line(...at(i - 1), x, y, -0.05); cube(ks[i], M2.red, [0.9, 0.9, 0.9], x, y, 0, 2); };
+  await step(tok); // 1860 give me a BST that exposes the degenerate case
+  say('誰能給一棵「最糟」的 BST？');
+  await step(tok); // 1868 every node greater than its parent
+  bub('每個節點都比父節點大', 3.6, 7.0);
+  say('每個節點都比父節點大', '→ 完全不平衡');
+  await step(tok); // 1873 inserts: five
+  put(0);
+  say('insert 5');
+  await step(tok); // 1887 5, 10, 15 …
+  for (let i = 1; i < 5; i++) { put(i); await beat(tok, 450); }
+  say('insert 10、15、20、25', '只要一直變大就行');
+  await step(tok); // 1891 basically a list
   say('一直往右 → 變成一條 list', 'h = n');
-  await beat(tok, 2400);
-  say('最壞情況 find 是 O(n)', '所以寫 O(h)，不直接寫 O(log n)');
-  await beat(tok, 2600);
-  say('隨機資料的樹高約 log n', '之後用 balanced tree 保證 h = O(log n)');
-  await beat(tok, 3000);
+  await step(tok); // 1895 searching is O(n)
+  noT('find 最壞 O(n)', -3.6, 1.2);
+  say('search 變成 O(n)', '退化情況（degenerate case）');
+  await step(tok); // 1901 random data: height roughly log n
+  note('隨機資料：高度約 log n', -3.6, 2.2);
+  say('實務上不常發生', '隨機資料的樹高大約 log n');
+  await step(tok); // 1905 balanced trees later
+  okT('之後：balanced tree 保證 O(log n)', -3.6, 3.2);
+  say('之後學 balanced tree', '避免這種退化情況');
 }]);
 
 FRAG.push(['algmit2-bst-insert', 'BST insert：沿 find 的路徑走到死路', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.4, 0]);
   const N = m2tree(M2BST);
-  const cur = tag('▼', 'ptr alt', 0, 7.05);
-  const ins = async (key, path, caps, x, y, parent) => {
-    for (let s = 0; s < path.length; s++) {
-      await m2goN(tok, cur, N[path[s]]); glow(N[path[s]], GOLD);
-      say('insert ' + key, caps[s]); await beat(tok, 1200);
-    }
-    path.forEach((k) => glow(N[k], null));
-    await m2go(tok, cur, x, y);
-    N[key] = cube(key, M2.green, [0.9, 0.9, 0.9], x, y, 0, 2);
-    line(N[parent].position.x, N[parent].position.y, x, y, -0.05);
-  };
-  await ins(14, [23, 8, 16, 15], ['14 < 23 → 往左', '14 > 8 → 往右', '14 < 16 → 往左', '14 < 15 → 往左：空的'], -2.9, 0.4, 15);
-  say('死路就是 14 的位置', '下次 find(14) 會走同一條路找到它');
-  await beat(tok, 2400);
-  await ins(5, [23, 8, 4], ['5 < 23 → 往左', '5 < 8 → 往左', '5 > 4 → 往右：空的'], -3.8, 1.7, 4);
-  say('5：小、小、大 → 4 的右孩子', '不需要 swap 任何節點');
-  await beat(tok, 2400);
-  say('insert = find 的程式碼 + 在死路建新節點', 'O(h)');
-  await beat(tok, 2600);
-  say('重複的 key？', '要存多個值就在節點掛一個 list');
-  await beat(tok, 2600);
+  const cur = m2walker('insert', 0, 6.2, M2.green);
+  const at = async (k, c = GOLD) => { await m2goN(tok, cur, N[k], 380); glow(N[k], c); };
+  const clear = () => Object.values(N).forEach((m) => glow(m, null));
+  await step(tok); // 1915 how do you insert quickly
+  say('find 會了，那 insert 呢？');
+  await step(tok); // 1956 insert 14: which way do I go
+  const k14 = pkt('14', 0, 7.6);
+  say('insert 14：往哪走？', '先照 find 的方式走');
+  await step(tok); // 1969 less than 23 → go left
+  await at(23);
+  say('14 < 23 → 往左');
+  await step(tok); // 1973 at 8 … and so on
+  await at(8); await beat(tok, 250); await at(16);
+  say('14 > 8 → 往右；14 < 16 → 往左');
+  await step(tok); // 1984 dead end → put it there
+  await at(15); await beat(tok, 300);
+  await m2go(tok, cur, -2.9, 0.4, 400); remove(k14);
+  N[14] = cube(14, M2.green, [0.9, 0.9, 0.9], -2.9, 0.4, 0, 2.5); line(-2.2, 1.7, -2.9, 0.4, -0.05);
+  cur.mood('happy');
+  say('14 < 15 → 往左：空的！', '14 就放在這裡');
+  await step(tok); // 1992 what if we want to insert 5
+  clear(); await m2go(tok, cur, 0, 6.2, 500); cur.mood('calm');
+  const k5 = pkt('5', 0, 7.6);
+  say('那 insert 5 呢？');
+  await step(tok); // 2003 smaller, smaller …
+  await at(23); await beat(tok, 200); await at(8);
+  say('5 < 23 → 左；5 < 8 → 左');
+  await step(tok); // 2010 … greater → the right of 4
+  await at(4); await beat(tok, 300);
+  await m2go(tok, cur, -3.8, 1.7, 400); remove(k5);
+  N[5] = cube(5, M2.green, [0.9, 0.9, 0.9], -3.8, 1.7, 0, 2.5); line(-4.6, 3.2, -3.8, 1.7, -0.05);
+  cur.mood('happy');
+  say('5 > 4 → 往右：空的', '小、小、大 → 4 的右孩子');
+  await step(tok); // 2017 no need to swap nodes
+  clear();
+  okT('不用 swap 任何節點', 3.6, 1.2);
+  say('不需要 swap 任何節點');
+  await step(tok); // 2026 follow the path find would take; dead end = its place
+  say('沿著 find 會走的路徑', '走到死路，那裡就是新節點的位置');
+  await step(tok); // 2034 next time search follows that path and finds it
+  for (const k of [23, 8, 16, 15, 14]) { await m2goN(tok, cur, N[k], 220); glow(N[k], k === 14 ? GREEN : GOLD); }
+  say('下次 find(14) 走同一條路', '一定找得到它');
+  await step(tok); // 2042 duplicate keys?
+  clear();
+  bub('同一個 key 出現兩次怎麼辦？', 3.6, 7.0);
+  say('有人問：重複的 key 怎麼辦？');
+  await step(tok); // 2058 a linked list of values off the node
+  for (let j = 0; j < 3; j++) lnode('v' + (j + 1), 4.2 + j * 1.0, 3.6 - j * 0.0, 1.2 + j * 0.0, M2.sand);
+  arrow(V3(3.4, 4.5, 0), V3(3.8, 3.8, 1.2));
+  say('要存多個值：節點上掛一條 linked list', '每個 key 對到一串 value');
+  await step(tok); // 2076 we don't: the easy way out
+  note('這堂課：不處理重複', 3.6, 6.2);
+  say('這堂課走簡單路線：不處理重複');
+  await step(tok); // 2083 insert code = find code copy-pasted
+  say('insert 的程式 = find 的程式複製過來', '只改一個地方');
+  await step(tok); // 2093 instead of returning at None, create a new node
+  okT('碰到 None：建新節點，不是回傳', 3.6, 0.4);
+  say('碰到 left / right 是 None 時', '不回傳，而是建一個新節點 → O(h)');
 }]);
 
 FRAG.push(['algmit2-bst-successor', 'next_larger（successor）的兩種情況', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.4, 0]);
   const N = m2tree(M2BST);
-  const cur = tag('▼', 'ptr alt', 0, 7.05);
-  const visit = async (k, color, cap, f, ms = 1300) => { await m2goN(tok, cur, N[k]); glow(N[k], color); say(cap, f); await beat(tok, ms); };
+  const cur = m2walker('next', 0, 6.2, M2.orange);
   const clear = () => Object.values(N).forEach((m) => glow(m, null));
-  await visit(8, RED, 'next_larger(8)：8 有右子樹', 'case 1：往右一步');
-  await visit(16, GOLD, '到 16，接著一路往左', '= 右子樹的 min');
-  await visit(15, GREEN, '15 沒有左孩子 → 答案 15', 'next_larger(8) = 15', 2200);
+  const at = async (k, c) => { await m2goN(tok, cur, N[k], 400); glow(N[k], c); };
+  const IX = (i) => -3.75 + i * 1.5, ord = [4, 8, 15, 16, 23, 42], oc = {};
+  await step(tok); // 2117 warm-up: find next larger
+  say('暖身：next_larger（下一個比較大的）', 'delete 會用到它');
+  await step(tok); // 2128 also called successor; node 8
+  await at(8, RED);
+  say('也叫 successor', '例：next_larger(8)');
+  await step(tok); // 2138 strictly larger than 8, smaller than anything else
+  bub('比 8 大的 key 裡，最小的那個', 3.6, 7.0);
+  say('要找：比 8 大的 key 中最小的');
+  await step(tok); // 2146 write them in order: the one right after
+  ord.forEach((k, i) => { oc[k] = cube(k, M2.sand, [0.9, 0.6, 0.6], IX(i), 0.1, 2.2); });
+  glow(oc[8], RED); glow(oc[15], GREEN);
+  say('把所有 key 由小到大排一排', '8 的下一個就是答案（15）');
+  await step(tok); // 2159 go one to the right, then left as far as you can
+  await at(16, GOLD);
+  say('有人答：先往右一步……');
+  await step(tok); // 2171 … and go all the way left
+  await at(15, GREEN);
+  say('……再一路往左走到底', 'next_larger(8) = 15 ✓');
+  await step(tok); // 2177 that's min of the subtree
+  note('= 右子樹的 min', -1.4, 0.4);
+  say('「一路往左」= 找子樹的 min');
+  await step(tok); // 2181 min: keep going left → 4
+  clear(); glow(N[8], RED); await at(23, GOLD); await at(8, GOLD); await at(4, GREEN);
+  say('整棵樹的 min：從根一路往左', '得到 4');
+  await step(tok); // 2188 code: go right, then call min (lines 3–4)
   clear();
-  await visit(4, RED, 'next_larger(4)：沒有右子樹', 'case 2：往上走');
-  await visit(8, GREEN, '4 是 8 的左孩子 → 答案 8', '往「右上」走一步就停', 2200);
+  say('程式：有右子樹 → right.min()', 'lines 3–4 就是這樣做');
+  await step(tok); // 2203 line 1 says case 1
+  tag('case 1：有右子樹', 'ptr', -5.0, 7.0);
+  say('這是 case 1：有右子樹');
+  await step(tok); // 2237 successor for 4? no right subtree
+  await at(4, RED); glow(oc[4], RED); glow(oc[8], GREEN); glow(oc[15], null);
+  say('next_larger(4)：4 沒有右子樹', 'case 2：要往上走');
+  await step(tok); // 2248 just go up one
+  await at(8, GREEN);
+  say('往上一步就到 8 → 答案 8');
+  await step(tok); // 2253 going up-right: everything is greater
+  bub('往「右上」走：一定比較大', 3.6, 7.0);
+  say('4 是 8 的左孩子：往右上走', '8 比 4 大，而且是最接近的');
+  await step(tok); // 2278 something like this … successor for this guy
+  clear(); glow(oc[4], null); glow(oc[8], null);
+  await at(16, RED); glow(oc[16], RED);
+  say('換一個：next_larger(16)（示意）', '16 也沒有右子樹');
+  await step(tok); // 2312 trace back up
+  await at(8, GOLD);
+  say('往上走：16 是 8 的右孩子', '8 比 16 小 → 繼續往上');
+  await step(tok); // 2324 up one from the apex
+  await at(23, GREEN); glow(oc[23], GREEN);
+  say('8 是 23 的左孩子 → 停', 'next_larger(16) = 23');
+  await step(tok); // 2343 everything in that branch is less
+  note('往左上走的那段都比 16 小', -3.6, 6.8);
+  say('一路往「左上」走的節點都比 16 小', '第一次往「右上」轉，就是答案');
+  await step(tok); // 2369 if you get to the root: no successor
+  clear(); ord.forEach((k) => glow(oc[k], null));
+  await at(42, RED); glow(oc[42], RED);
+  await at(23, GOLD);
+  noT('走到根都沒轉彎 → 沒有 successor', 3.6, 7.0);
+  say('next_larger(42)：一路往上到根', '42 是最大的，沒有 successor');
+  await step(tok); // 2395 code: go up through the parent chain
   clear();
-  await visit(16, RED, 'next_larger(16)（示意）', '沒有右子樹 → 往上');
-  await visit(8, GOLD, '16 是右孩子 → 繼續往上', '一直往左上走，大家都比 16 小');
-  await visit(23, GREEN, '8 是 23 的左孩子 → 停', 'next_larger(16) = 23', 2200);
-  clear();
-  await visit(42, RED, 'next_larger(42)', '往上：42 是右孩子');
-  await visit(23, GOLD, '走到根都沒轉彎', '沒有 successor（42 是最大）', 2200);
-  clear();
-  await visit(23, RED, 'predecessor：鏡像', 'left ↔ right、min ↔ max');
-  await visit(8, GOLD, '先往左一步', '再找左子樹的 max');
-  await visit(16, GREEN, '一路往右 → 16', 'prev_smaller(23) = 16', 2600);
+  say('程式（lines 6–8）：沿著 parent 往上', '只要自己是右孩子就繼續');
+  await step(tok); // 2404 the moment I'm a left child, stop
+  say('自己是父節點的左孩子 → 停', '那個父節點就是 successor');
+  await step(tok); // 2411 what about the predecessor
+  await at(23, RED); glow(oc[23], RED);
+  say('反過來：predecessor（前一個比較小的）', '例：prev_smaller(23)');
+  await step(tok); // 2453 left subtree: call max on it
+  await at(8, GOLD); await at(16, GREEN); glow(oc[16], GREEN);
+  say('有左子樹 → 往左一步，再找 max（一路往右）', 'prev_smaller(23) = 16');
+  await step(tok); // 2456 if not, go up
+  say('沒有左子樹 → 往上走', '這次要等自己是「右孩子」才停');
+  await step(tok); // 2513 copy-paste: swap left/right, min/max
+  bub('複製程式：left ↔ right、min ↔ max', 3.6, 7.0);
+  say('寫法：把 successor 的程式複製一份', 'left 換 right、min 換 max');
 }]);
 
 FRAG.push(['algmit2-bst-delete', 'BST delete 三種情況（刪 15、16、8）', async (tok) => {
   const CAM = [[0, 3.6, 13], [0, 3.4, 0]];
   fresh(...CAM); let N = m2tree(M2BST);
+  await step(tok); // 2538 delete 15
   glow(N[15], RED);
-  say('刪 15：leaf', 'case 1：直接拿掉');
-  await beat(tok, 1800);
+  say('delete 15：怎麼做？');
+  await step(tok); // 2545 kill it
   kill(N[15].userData.edge); fly(N[15]);
-  await beat(tok, 2000);
+  okT('case 1：leaf → 直接拿掉', 3.6, 1.2);
+  say('15 是 leaf（沒有孩子）', '直接拿掉');
+  await step(tok); // 2564 delete 16: put 15 here
   fresh(...CAM); N = m2tree(M2BST);
   glow(N[16], RED);
-  say('刪 16：只有一個孩子 15', 'case 2：把孩子的子樹接上來');
-  await beat(tok, 2000);
+  await beat(tok, 500);
   kill(N[16].userData.edge); kill(N[15].userData.edge); fly(N[16]);
   move(N[15], -1.4, 3.2); line(-3, 4.7, -1.4, 3.2, -0.05);
-  say('改 8 的 right、15 的 parent', '直線或 zigzag 都一樣處理');
-  await beat(tok, 2600);
+  say('delete 16：16 只有一個孩子 15', '把 15 接到 16 原本的位置');
+  await step(tok); // 2589 a big subtree on one side, nothing on the other
+  const sub = ghostBox(M2.teal, 1.6, 1.4, 1.2); sub.position.set(-1.4, 3.2, 0);
+  say('一般情況：只有一邊有子樹', '整棵子樹往上接');
+  await step(tok); // 2597 everything there is still on the right side
+  note('子樹裡的 key 都 > 8', -1.4, 4.2);
+  say('那棵子樹裡的 key 本來就都比 8 大', '接上去之後 RI 仍成立');
+  await step(tok); // 2612 change the left/right link and the parent link
+  arrow(V3(-2.6, 4.4, 0.5), V3(-1.7, 3.6, 0.5), 0xa8730f);
+  say('改 8 的 right 指標、15 的 parent 指標', '16 就不見了');
+  await step(tok); // 2622 two cases so far
+  kill(sub);
+  tag('case 1：leaf', 'ptr', 4.6, 2.6); tag('case 2：一個孩子', 'ptr alt', 4.6, 1.9);
+  say('目前兩種情況');
+  await step(tok); // 2647 one child, but a zigzag?
+  note('8 →右 16 →左 15：zigzag', 3.6, 6.9);
+  say('一個孩子但是 zigzag 呢？', '剛剛 16 → 15 其實就是 zigzag');
+  await step(tok); // 2670 same thing
+  okT('直線或 zigzag：做法一樣', 3.6, 6.2);
+  say('一樣：改兩個指標就好');
+  await step(tok); // 2687 delete node 8?
   fresh(...CAM); N = m2tree(M2BST);
   glow(N[8], RED);
-  say('刪 8：左右都有子樹', 'case 3：不能直接拿子樹頂替');
-  await beat(tok, 2400);
-  const cur = tag('▼', 'ptr alt', -3, 5.55);
-  await m2goN(tok, cur, N[16]); glow(N[16], GOLD);
-  await m2goN(tok, cur, N[15]); glow(N[15], GREEN);
-  say('找 successor：右子樹的 min = 15', 'successor 一定沒有左孩子');
-  await beat(tok, 2600);
+  say('delete 8 呢？');
+  await step(tok); // 2694 children both on the left and on the right
+  const gl = ghostBox(M2.teal, 1.2, 1.2, 1.2), gr = ghostBox(M2.orange, 2.2, 2.8, 1.2);
+  gl.position.set(-4.6, 3.2, 0); gr.position.set(-1.8, 2.5, 0);
+  say('8 左右都有子樹', 'case 3：最麻煩');
+  await step(tok); // 2750 can't just replace it with one of the subtrees
+  noT('不能直接拿一棵子樹頂替', 3.6, 6.8);
+  say('不能直接拿某一棵子樹頂上去');
+  await step(tok); // 2761 next larger: the successor
+  kill(gl); kill(gr);
+  say('想起剛剛的 successor', '它在右子樹裡、一路往左的最底下');
+  await step(tok); // 2789 delete that node instead, take its key up here
+  bub('改刪 successor，把它的 key 搬上來', 3.6, 6.0);
+  say('改成：刪掉 successor 那個節點', '把它的 key 搬到 8 的位置');
+  await step(tok); // 2802 delete 8: find its successor
+  const cur = m2walker('succ', -3, 4.7);
+  await m2goN(tok, cur, N[16], 400); glow(N[16], GOLD);
+  await m2goN(tok, cur, N[15], 400); glow(N[15], GREEN);
+  say('delete 8：先找 successor', '右一步、一路往左 → 15');
+  await step(tok); // 2811 take the 15 and put it here
+  kill(cur.g);
   glow(N[16], null); relabel(N[8], 15); tint(N[8], M2.green); glow(N[8], null);
-  say('把 15 這個 key 搬上去', '左邊 4 < 15 < 右邊 16');
-  await beat(tok, 2200);
-  kill(N[15].userData.edge); fly(N[15]); kill(cur);
-  say('再刪原本的 15：容易的 case', 'successor 最多一個子樹 → 不會無限遞迴');
-  await beat(tok, 3000);
+  kill(N[15].userData.edge); fly(N[15]);
+  say('15 搬上去，原本的 15 刪掉');
+  await step(tok); // 2825 everything here greater, everything there smaller
+  note('4 < 15', -4.6, 2.3); note('15 < 16', -1.4, 2.3);
+  say('為什麼可以？', '左邊 4 < 15 < 右邊 16，RI 仍成立');
+  await step(tok); // 2870 how do I know this will end?
+  bub('刪 successor 會不會又要找 successor，沒完沒了？', 0, 0.2);
+  say('會不會無限遞迴下去？');
+  await step(tok); // 2895 the successor can't have anything on the left
+  say('successor 一定沒有左孩子', '不然左孩子才是更接近的 successor');
+  await step(tok); // 2920 so it's one of the easy cases
+  okT('successor 最多一個子樹 → 簡單 case', 3.6, 1.2);
+  say('successor 最多只有一個子樹', '刪它是簡單的 case 1 或 2');
+  await step(tok); // 2931 worst case: two subtrees → successor → done
+  say('最壞：兩個子樹 → 找 successor → 改幾個指標', '就結束了');
+  await step(tok); // 2939 what is the running time for delete?
+  bub('delete 要多少時間？', 0, 0.2);
+  say('delete 的時間是多少？');
 }]);
 
-FRAG.push(['algmit2-bst-delete-cost', 'delete 的程式碼與 O(h)', async (tok) => {
+FRAG.push(['algmit2-bst-delete-cost', 'delete 的程式與 O(h)', async (tok) => {
   fresh([0, 4, 13.5], [0, 3.4, 0]);
+  const B = {};
+  const bar = async (key, nm, h, x, c, t) => { const b = m2bar(c, 1, 0.9, x, 1.4); tag(nm, 'idx', x, 0, 2.3); await anim(tok, 600, (u) => m2set(b, h * u)); B[key] = tag(t, 'ptr', x, h + 0.4, 1.4); };
+  await step(tok); // 2979 first: search for the key, O(h)
+  await bar('find', '找 key', 2.6, 2.0, M2.blue, 'O(h)');
+  say('第一步：找到要刪的 key', 'O(h)');
+  await step(tok); // 2986 happy case: change some links, constant
+  await bar('link', '改指標', 0.35, 3.3, M2.green, 'O(1)');
+  say('happy case（case 1、2）：改幾個指標', 'O(1)');
+  await step(tok); // 2996 sad case: two children
+  say('sad case：有兩個孩子');
+  await step(tok); // 3006 find the successor: O(h)
+  await bar('succ', 'successor', 2.6, 4.6, M2.purple, 'O(h)');
+  say('找 successor', 'O(h)');
+  await step(tok); // 3019 call delete on it: happy case
+  say('再對 successor 呼叫 delete', '它最多一個孩子 → happy case');
+  await step(tok); // 3032 a few links get swapped, constant
+  await bar('link2', '改指標', 0.35, 5.9, M2.green, 'O(1)');
+  say('改幾個指標', 'O(1)');
+  await step(tok); // 3036 worst case O(h) + O(h) = O(h)
+  pkt('O(h) + O(h) + O(1) = O(h)', 4, 4.4);
+  say('最壞情況：O(h) + O(h) = O(h)');
+  await step(tok); // 3041 insert O(h), delete O(h)
+  say('insert O(h)、delete 也是 O(h)');
+  await step(tok); // 3048 if I give you the node, no find needed
+  note('直接給節點：省掉找 key', 2.0, 3.8);
+  say('第一個 O(h) 是找 key', '如果直接給你節點，就不用找');
+  await step(tok); // 3071 the code for delete
   const cd = code([
+    'BST.delete(k): node = find(k); node.delete()',
+    '  （刪的是根 → 更新 tree 的 root）',
     ' 1 def delete(self):',
     ' 3   if self.left is None or self.right is None:',
     ' 4     if self is self.parent.left:',
-    ' 5-7     接上唯一的孩子（改 left/parent）',
+    ' 5-7     接上唯一的孩子（改 left / parent）',
     ' 9-11  else: 鏡像，left ↔ right',
     '12     return self',
     '14   else:',
     '15     s = self.next_larger(); 交換 key',
     '16     return s.delete()',
-  ], -2.4, 6.6, 0.56);
+  ], -3.4, 7.0, 0.5);
+  say('看 delete 的程式');
+  await step(tok); // 3121 BST.delete finds the node and calls node.delete
+  cd.hl(0);
+  say('為什麼有兩個 delete？', 'BST.delete 先 find，再呼叫節點的 delete');
+  await step(tok); // 3131 if the node is the root, update the tree's root
   cd.hl(1);
-  say('lines 3–12：happy case', '少一個孩子 → 改幾個 link，O(1)');
-  await beat(tok, 2800);
-  cd.hl(7);
-  say('lines 14–16：sad case', '找 successor、換 key、刪 successor');
-  await beat(tok, 2800);
+  say('刪掉的是根 → 要更新樹的 root');
+  await step(tok); // 3146 lines 3–12: happy case or sad case?
+  cd.hl(2);
+  say('節點的 delete：lines 3–12 是哪個 case？');
+  await step(tok); // 3175 if it doesn't have a left child or a right child
+  cd.hl(3);
+  say('line 3：少了左孩子或右孩子', '→ happy case');
+  await step(tok); // 3188 lines 14–16: the sad case
+  cd.hl(8);
+  say('lines 14–16：sad case');
+  await step(tok); // 3197 find the successor, swap the keys, delete it
+  cd.hl(9); await beat(tok, 700); cd.hl(10);
+  say('找 successor → 交換 key → 刪 successor');
+  await step(tok); // 3216 line 4: am I a left child or a right child
+  cd.hl(4);
+  say('line 4：自己是左孩子還是右孩子？');
+  await step(tok); // 3221 lines 5–7 and 9–11: copy-paste, left ↔ right
+  cd.hl(5); await beat(tok, 700); cd.hl(6);
+  say('lines 5–7 與 9–11：左右鏡像', '改的就是剛剛畫的那兩個指標');
+  await step(tok); // 3257 the key: it doesn't have two children
   cd.hl(-1);
-  const B = [['find key', 2.6, 3.2, M2.blue], ['successor', 2.6, 4.5, M2.purple], ['改 link', 0.35, 5.9, M2.green]];
-  for (const [nm, h, x, c] of B) { const b = m2bar(c, 1, 0.9, x, 1.4); tag(nm, 'idx', x, 0, 2.3); await anim(tok, 700, (t) => m2set(b, h * t)); }
-  tag('O(h)', 'ptr', 3.2, 3.0, 1.4); tag('O(h)', 'ptr', 4.5, 3.0, 1.4); tag('O(1)', 'ptr', 5.9, 0.75, 1.4);
-  say('先 find：O(h)；再 successor：O(h)', '最後改 link：O(1)');
-  await beat(tok, 2800);
-  say('delete = O(h)', 'insert 也是 O(h)');
-  await beat(tok, 2400);
-  say('BST.delete 先 find 再呼叫 node.delete', '直接給 node 就省掉 find；是根要更新 root');
-  await beat(tok, 3000);
+  okT('沒有兩個孩子 → 改指標就好', 2.0, 3.0);
+  say('重點：successor 不會有兩個孩子', '所以一定是 happy case');
 }]);
 
 FRAG.push(['algmit2-bst-augment', 'Augment：每個節點存子樹 min', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.4, 0]);
   const N = m2tree([[23, 0, 6.2, null], [15, -3, 4.7, 23], [42, 3, 4.7, 23], [4, -4.6, 3.2, 15], [16, -1.4, 3.2, 15]]);
   const mt = {};
-  for (const k of [23, 15, 42, 4, 16]) mt[k] = tag('min ?', 'idx', N[k].position.x + 1.05, N[k].position.y);
-  say('Augment：節點多存一點資訊', '例：存子樹的 min → O(1) 回答');
-  await beat(tok, 2400);
-  const setMin = async (k, v, f) => { glow(N[k], GOLD); txt(mt[k], 'min ' + v); say('由孩子算自己：O(1)', f); await beat(tok, 1200); glow(N[k], null); };
-  await setMin(4, 4, 'leaf：min = 自己 4');
-  await setMin(16, 16, 'leaf：min = 16');
-  await setMin(42, 42, 'leaf：min = 42');
-  await setMin(15, 4, 'min(15, 左 4, 右 16) = 4');
-  await setMin(23, 4, 'min(23, 左 4, 右 42) = 4');
-  const cur = tag('▼', 'ptr alt', 0, 7.05);
-  for (const k of [23, 15, 4]) { await m2goN(tok, cur, N[k]); glow(N[k], GOLD); say('insert 3', '沿 find 的路徑往下'); await beat(tok, 700); }
+  const setMin = (k, v) => { if (!mt[k]) mt[k] = note('min ' + v, N[k].position.x + 1.1, N[k].position.y); else txt(mt[k], 'min ' + v); };
+  const clear = () => Object.values(N).forEach((m) => glow(m, null));
+  await step(tok); // 3278 how to augment a binary tree
+  say('Augment：讓 BST 多會一件事', '（刪完 8 之後的樹）');
+  await step(tok); // 3283 by default: min in O(h)
+  const cur = m2walker('min', 0, 6.2, M2.teal);
+  await m2goN(tok, cur, N[15], 380); await m2goN(tok, cur, N[4], 380); glow(N[4], GREEN);
+  say('原本找 min：一路往左', 'O(h)');
+  await step(tok); // 3293 make a node a little fatter: store 23 and min 4
+  clear(); kill(cur.g);
+  setMin(23, 4); glow(N[23], GOLD);
+  say('讓節點「胖一點」', '23 這格多存：我的子樹最小是 4');
+  await step(tok); // 3309 answer in constant time
+  okT('min → O(1)', 3.6, 7.0);
+  say('問 min：直接讀出來', 'O(1)');
+  await step(tok); // 3318 the hard part: keep it right under insert/delete
+  glow(N[23], null);
+  bub('難的是：insert / delete 後還要正確', -3.6, 7.0);
+  say('難的是：insert、delete 之後也要維持正確');
+  await step(tok); // 3334 two children: 15 and 42
+  glow(N[15], GOLD); glow(N[42], GOLD);
+  say('看根的兩個孩子：15 和 42');
+  await step(tok); // 3340 min in this subtree is 4, in that one 42
+  setMin(15, 4); setMin(42, 42);
+  say('假設孩子已經算好', '左子樹 min 4、右子樹 min 42');
+  await step(tok); // 3355 take the minimum of these
+  clear(); glow(N[23], GREEN);
+  say('自己的 min = min(自己, 左 min, 右 min)', 'min(23, 4, 42) = 4');
+  await step(tok); // 3359 special cases: no left child → you're the min
+  glow(N[23], null);
+  setMin(4, 4); setMin(16, 16); glow(N[4], GOLD); glow(N[16], GOLD);
+  say('特殊情況：沒有孩子', 'leaf 的 min 就是自己');
+  await step(tok); // 3380 constant time for a single node
+  clear();
+  say('孩子算好的話，一個節點只要 O(1)');
+  await step(tok); // 3411 insert 3: what changed?
+  const ins = m2walker('insert 3', 0, 6.2, M2.green);
+  for (const k of [23, 15, 4]) { await m2goN(tok, ins, N[k], 300); glow(N[k], GOLD); }
   N[3] = cube(3, M2.green, [0.9, 0.9, 0.9], -5.4, 1.7, 0, 2); line(-4.6, 3.2, -5.4, 1.7, -0.05);
-  mt[3] = tag('min 3', 'idx', -5.4, 0.95);
-  say('只有路徑上的子樹變了', '路徑外的節點都不用動');
-  await beat(tok, 2400);
-  for (const k of [4, 15, 23]) { await m2goN(tok, cur, N[k]); txt(mt[k], 'min 3'); glow(N[k], GREEN); say('往回走、重算 min', '3、3、3'); await beat(tok, 900); }
-  say('delete 也一樣：沿路往上重算', 'O(h)');
-  await beat(tok, 2600);
-  say('f 能由孩子 O(1) 算出 → 都能這樣 augment', '不只 min，作業會用到別的 f');
-  await beat(tok, 3000);
+  say('insert 3：哪些東西變了？');
+  await step(tok); // 3421 this subtree changed, this one, this one…
+  say('路徑上每個節點的子樹都變了', '4、15、23 的子樹都多了 3');
+  await step(tok); // 3433 outside the path nothing changed
+  glow(N[16], RED); glow(N[42], RED); await beat(tok, 500); glow(N[16], null); glow(N[42], null);
+  note('路徑外：不用動', 3.6, 3.4);
+  say('路徑外的節點（16、42）完全沒變', '不用更新');
+  await step(tok); // 3437 go back up and recompute: 3, 3, 3
+  setMin(3, 3);
+  for (const k of [4, 15, 23]) { await m2goN(tok, ins, N[k], 350); setMin(k, 3); glow(N[k], GREEN); }
+  say('insert 完往回走，重算 min', '3、3、3');
+  await step(tok); // 3462 the advantage: other functions too
+  clear();
+  say('這個做法的好處：不只 min', '換成別的函數 f 也行');
+  await step(tok); // 3466 as long as f of a node comes from its children in O(1)
+  bub('f(節點) 能由孩子的 f 在 O(1) 算出 → 就能 augment', 0, 0.2);
+  say('條件：節點的 f 能由孩子的 f 在 O(1) 算出');
+  await step(tok); // 3489 insert: go up the path, recompute
+  say('insert：沿路徑往上重算 f', 'O(h)');
+  await step(tok); // 3501 delete: same thing
+  say('delete：一樣沿路往上重算', 'O(h)');
+  await step(tok); // 3532 that's augmentation
+  say('這就是 augmentation', '下次作業會用到另一個 f');
 }]);
 
 // ══════════════ 0M_kIqhwbFo：L8 Hashing with Chaining ══════════════
 FRAG.push(['algmit2-dict-adt', 'Dictionary ADT：insert、delete、exact search', async (tok) => {
   fresh([0, 5, 13], [0, 1.8, 0]);
-  const g = ghostBox(M2.sand, 9.5, 2.6, 4); g.position.set(0, 1.3, 0);
-  tag('dictionary：一組 items', 'ptr', 0, 3.4, -1.8);
-  say('Dictionary：每個 item 有一個 key', 'insert(item)、delete(item)、search(key)');
-  await beat(tok, 2600);
-  const it = {};
+  let g = null; const it = {};
   const POS = { cat: [-3, -0.6], the: [0, 0.6], hash: [3, -0.6] };
-  for (const [k, v] of [['cat', 1], ['the', 3], ['hash', 2]]) {
-    it[k] = cube(k + ': ' + v, M2.blue, [2, 0.7, 1], POS[k][0], 0.35, POS[k][1], 3);
-    say("D[key] = val：insert", "D['" + k + "'] = " + v + '（示意：字數統計）'); await beat(tok, 1100);
-  }
+  const me = buddy('你', '', M2.blue, 5.6, 0, 1.6, 0.8); me.look(-1);
+  await step(tok); // 24 a brand new section: hashing
+  bub('新單元：hashing', 0, 4.4);
+  say('新單元：hashing', '老師說：hashing 很酷');
+  await step(tok); // 30 the most used data structure in computer science
+  note('電腦科學最常用的資料結構', 0, 3.6);
+  me.mood('wow');
+  say('可能是最常用、最重要的資料結構', '幾乎每個系統、每個現代程式語言都有');
+  await step(tok); // 57 it is usually called a dictionary (an ADT)
+  g = ghostBox(M2.sand, 9.5, 2.6, 4); g.position.set(0, 1.3, 0);
+  tag('dictionary', 'ptr', -3.6, 2.9, -1.8);
+  say('它通常叫 dictionary', '一種 abstract data type（ADT）');
+  await step(tok); // 77 store items; insert, delete, search
+  say('dictionary 能存 items', '可以 insert、delete、search');
+  await step(tok); // 95 a set of items, each item has a key
+  for (const [k, v] of [['cat', 1], ['the', 3], ['hash', 2]]) it[k] = cube(k + ': ' + v, M2.blue, [2, 0.7, 1], POS[k][0], 0.35, POS[k][1], 3);
+  say('一組 items，每個 item 有一個 key', '示意：key 是單字、值是出現次數');
+  await step(tok); // 108 insert an item, delete an item
+  const ins = cube('dog: 4', M2.green, [2, 0.7, 1], 0, 0.35, -1.6, 3);
+  await beat(tok, 700); fly(ins);
+  say('insert(item)、delete(item)', '放進去、拿出來');
+  await step(tok); // 116 search for a key, not an item
+  const q = pkt("search('hash')", 5.0, 2.6, 1.6);
+  await travel(tok, q, V3(5.0, 2.6, 1.6), V3(3, 1.6, -0.6), 800);
+  say('search 給的是 key，不是 item', '最有趣的就是 search');
+  await step(tok); // 143 an exact search
+  glow(it.hash, GREEN); txt(q, "→ 'hash: 2'");
+  say('這叫 exact search', '找到「那個 key」的 item');
+  await step(tok); // 145 or there isn't one: KeyError
+  glow(it.hash, null); remove(q);
+  const q2 = pkt("search('dog') → KeyError", 0, 2.8, 1.6);
+  me.mood('sad');
+  say('或者沒有這個 key', 'Python 會說 KeyError');
+  await step(tok); // 162 different from BSTs: no successor / predecessor
+  remove(q2); me.mood('calm');
+  noT('找不到時不能問「下一個比較大的」', 0, 3.6, 1.6);
+  say('跟 BST 不一樣', 'BST 找不到還能給 successor / predecessor；dictionary 不行');
+  await step(tok); // 182 unique keys: insert with an existing key overwrites
   relabel(it.cat, 'cat: 5'); glow(it.cat, GOLD);
-  say('同一個 key 再 insert → 覆蓋', "D['cat'] = 5；key 保證唯一");
-  await beat(tok, 2400); glow(it.cat, null);
-  glow(it.hash, GREEN);
-  say('search 是 exact search', "D['hash'] → 2");
-  await beat(tok, 2200); glow(it.hash, null);
-  const q = tag("D['dog'] → KeyError", 'ptr', 0, 2.2, 2.4);
-  say('找不到就回報不存在', '不像 BST 能找 successor / predecessor');
-  await beat(tok, 2600); kill(q);
+  say('假設 key 都唯一', "同一個 key 再 insert → 覆蓋舊的（Python 就是這樣）");
+  await step(tok); // 227 a balanced BST like AVL: log n
+  glow(it.cat, null);
+  tag('AVL tree：O(log n)', 'ptr alt', -5.2, 3.8);
+  say('一種解法：用 balanced BST（AVL tree）', '每個操作 O(log n)');
+  await step(tok); // 252 last class: in the RAM model we can sort faster
+  note('上一講：整數可以排得比 n log n 快', -5.2, 3.0);
+  say('上一講：比較模型下排序要 n log n', 'RAM model 下整數可以排得更快');
+  await step(tok); // 269 today: search faster than log n
+  say('今天：search 比 log n 還快');
+  await step(tok); // 273 down to constant time
+  okT('目標：O(1)', 5.2, 3.8);
+  me.mood('happy');
+  say('一路降到常數時間 O(1)');
+  await step(tok); // 283 with high probability: a randomized data structure
+  note('隨機化：with high probability', 5.2, 3.0);
+  say('靠隨機化（randomized）', '「很高的機率」下是常數時間');
+}]);
+
+FRAG.push(['algmit2-dict-python', 'Python dict：D[key]、D[key] = val、del', async (tok) => {
+  fresh([0, 5, 13], [0, 1.8, 0]);
+  const g = ghostBox(M2.sand, 9.5, 2.6, 4); g.position.set(0, 1.3, 0);
+  tag('D（Python dict）', 'ptr', -3.6, 2.9, -1.8);
+  const it = {}, POS = { cat: [-3, -0.6], the: [0, 0.6], hash: [3, -0.6] };
+  for (const [k, v] of [['cat', 1], ['the', 3], ['hash', 2]]) it[k] = cube("'" + k + "': " + v, M2.blue, [2.2, 0.7, 1], POS[k][0], 0.35, POS[k][1]);
+  await step(tok); // 303 in Python it's the dict data type
+  say('Python 裡就是 dict', '大家早就到處在用');
+  await step(tok); // 311 look up a key = search
+  const q = pkt("D['hash']", 5.0, 2.6, 1.6);
+  await travel(tok, q, V3(5.0, 2.6, 1.6), V3(3, 1.6, -0.6), 700);
+  glow(it.hash, GREEN); txt(q, "D['hash'] → 2");
+  say("D[key]：查 key", '= search');
+  await step(tok); // 317 set a key to a value = insert (overwrites)
+  glow(it.hash, null); remove(q);
+  relabel(it.cat, "'cat': 5"); glow(it.cat, GOLD);
+  pkt("D['cat'] = 5", -3, 1.8, -0.6);
+  say('D[key] = val：設定 key 的值', '= insert；原本有就覆蓋');
+  await step(tok); // 333 delete a particular key
+  glow(it.cat, null);
   fly(it.the);
-  say("del D['the']：delete", 'D.items() → (key, value) pairs');
-  await beat(tok, 2200);
-  say('AVL tree：全部 O(log n)', '今天目標：O(1)（randomized，w.h.p.）');
-  await beat(tok, 3000);
+  pkt("del D['the']", 0, 1.8, 0.6);
+  say('del D[key]', '= delete');
+  await step(tok); // 354 an item is a pair: key and value
+  bub('一個 item = (key, value)', 0, 3.8);
+  say('Python dict 的 item 是一對：key 和 value', '');
+  await step(tok); // 367 D.items() gives the pairs
+  tag("D.items() → [('cat', 5), ('hash', 2)]", 'ptr alt', 0, 3.1);
+  say('D.items() 回傳所有 (key, value)', 'key 永遠是第一個');
+}]);
+
+FRAG.push(['algmit2-dict-apps', 'Dictionary 無所不在：應用', async (tok) => {
+  fresh([0, 6.5, 12.5], [0, 0.8, 0]);
+  const spot = (x, z) => [x, z];
+  const P = [spot(-5.2, -1.6), spot(-1.8, -1.6), spot(1.6, -1.6), spot(5.0, -1.6), spot(-5.2, 1.8), spot(-1.8, 1.8), spot(1.6, 1.8), spot(5.0, 1.8)];
+  let k = 0;
+  const put = (kind, name, s = 0.9) => { const [x, z] = P[k++ % P.length]; const p = prop(kind, x, 0, z, s, name); bob(p, 0.04); return p; };
+  await step(tok); // 388 you need them in Python; used in docdist
+  put('file', 'docdist：數字頻');
+  say('動機一：Python 要用', 'docdist 用 dict 數每個字出現幾次');
+  await step(tok); // 420 built into every modern language
+  bub('Python、Perl、Ruby、JavaScript、Java、C++、C# 都內建', 0, 4.6);
+  say('幾乎每個現代程式語言都內建 dictionary', '而且都是常數時間');
+  await step(tok); // 441 every database
+  put('disk', '資料庫');
+  say('資料庫：用 hashing 或用 search tree');
+  await step(tok); // 464 look up a word in Merriam-Webster
+  put('file', '查字典');
+  say('查字典：找一個字的定義');
+  await step(tok); // 477 spell check and spelling correction
+  put('keyboard', '拼字檢查');
+  say('拼字檢查：查查看這個字在不在', '改錯：換一個字母再查，因為查得很快');
+  await step(tok); // 511 pre-Google search engines
+  put('monitor', '搜尋引擎（舊）');
+  say('早期搜尋引擎', '字 → 含這個字的所有網頁');
+  await step(tok); // 530 log in: username → user info
+  put('lock', '登入');
+  say('登入：帳號 → 這個使用者的資料');
+  await step(tok); // 547 programming languages: variable name → address
+  put('cpu', '編譯器：變數表');
+  say('程式語言：變數名稱 → 記憶體位址', '最早的應用之一');
+  await step(tok); // 623 routers: IP address → machine
+  fresh([0, 6.5, 12.5], [0, 0.8, 0]); k = 0;
+  put('warehouse', '路由器');
+  say('路由器：IP 位址 → 連在哪台機器', '每秒十億個封包，一定要快');
+  await step(tok); // 655 network stack: port → application
+  put('parcel', 'port → 程式');
+  say('網路：封包送到哪個 port', '→ 交給哪個應用程式');
+  await step(tok); // 683 searching in a string (Ctrl-F, grep)
+  put('file', '字串搜尋 Ctrl-F');
+  say('不那麼明顯的：在字串裡搜尋', '編輯器的 Ctrl-F、Unix 的 grep');
+  await step(tok); // 726 how similar are two strings (DNA)
+  put('note', 'DNA 相似度', 1.5);
+  say('兩個字串有多像？例：DNA', '下次作業 PS4 會做');
+  await step(tok); // 747 file and directory synchronization
+  put('disk', '檔案同步', 0.8);
+  say('檔案同步：rsync、Dropbox', '用 hash 判斷檔案有沒有改過');
+  await step(tok); // 777 cryptography: cryptographic hash functions
+  put('lock', '密碼學 hash');
+  say('密碼學：cryptographic hash function', '確認檔案在傳輸中沒被竄改');
+  await step(tok); // 815 a straw man first, then improve it
+  okT('從最簡單的做法開始，一步步改到 O(1)', 0, 4.6);
+  say('從一個很簡單的做法開始', '一步步改進到每個操作 O(1)');
 }]);
 
 FRAG.push(['algmit2-direct-access', 'Direct access table：key 當 index', async (tok) => {
   fresh([0, 6, 11], [0, 0.6, 0.4]);
-  const X = m2row(10, -4.5, 1, 0);
-  const nones = [];
-  for (let i = 0; i < 10; i++) if (i !== 2 && i !== 4) nones.push(tag('None', 'idx', X(i), 0.35, -0.2));
-  say('Direct access table：key 當 index', 'T[key] = item');
-  await beat(tok, 2200);
+  let X = null; const nones = [];
+  await step(tok); // 834 a direct access table
+  say('最簡單的做法：direct access table');
+  await step(tok); // 840 a big array, index = key
+  X = m2row(10, -4.5, 1, 0);
+  tag('T（一個大 array）', 'ptr', -5.6, 0.6, -1.0);
+  say('一個大 array，index 就是 key', 'T[key] = item');
+  await step(tok); // 871 Python's notation is the same as for arrays
+  note("D[key] 長得跟 array 的 A[i] 一樣", 0, 2.4, -1.0);
+  say('Python 查 dict 的寫法跟 array 一模一樣', '但 array 的 index 只能是 0…n−1 的整數');
+  await step(tok); // 892 key 2 → item 2 goes there
   const a = m2item('item2', M2.blue, X(2), 0, 3);
-  say('key 2 → 放第 2 格', '用不到的 key 都是 None');
-  await beat(tok, 1600);
+  say('key 2 的 item → 放第 2 格');
+  await step(tok); // 900 key 4 → there
   m2item('item4', M2.blue, X(4), 0, 3);
-  say('key 4 → 放第 4 格', '');
-  await beat(tok, 1800);
-  glow(a, GREEN);
-  say('insert / delete / search 都 O(1)', 'delete = 設回 None；search = 看是不是 None');
-  await beat(tok, 2600); glow(a, null);
-  const q = tag("'cat' → 第幾格？", 'ptr', 3, 2.2, 0);
-  say('問題 1：key 不一定是整數', '字串、物件怎麼辦？');
-  await beat(tok, 2600); kill(q);
-  const g = ghostBox(M2.red, 13, 0.3, 0.9); g.position.set(0.3, 0.15, 2.4);
+  say('key 4 → 放第 4 格');
+  await step(tok); // 904 everything else is None
+  for (let i = 0; i < 10; i++) if (i !== 2 && i !== 4) nones.push(tag('None', 'idx', X(i), 0.35, -0.2));
+  say('其他用不到的格子都是 None', '一大堆空格');
+  await step(tok); // 916 what's bad about this?
+  const me = buddy('學生', '', M2.orange, 5.6, 0, 2.2, 0.7); me.look(-1); me.mood('wow');
+  say('這有什麼不好？');
+  await step(tok); // 937 badness 1: keys may not be integers
+  const q = noT("問題 1：'cat' 是第幾格？", 3, 2.2, 0);
+  say('問題 1：key 不一定是整數', '字串、物件怎麼當 index？');
+  await step(tok); // 966 collisions? not here (insert overwrites)
+  note('collision：兩個 item 想放同一格', -3, 2.2, 0);
+  say('有人說 collision（碰撞）', '這裡還不會：同一個 key 會直接覆蓋');
+  await step(tok); // 992 running time is great: insert puts it there
+  m2item('item7', M2.green, X(7), 0, 2.5); remove(nones[5]);
+  me.mood('happy');
+  say('時間很棒：insert 直接放進去', 'O(1)');
+  await step(tok); // 1002 delete: set it to None
+  glow(a, RED); await beat(tok, 400); fly(a);
+  tag('None', 'idx', X(2), 0.35, -0.2);
+  say('delete：設回 None', 'O(1)');
+  await step(tok); // 1004 search: go there and check for None
+  const cur = tag('▼', 'ptr alt', X(4), 1.5);
+  say('search：直接去那格看是不是 None', 'O(1)');
+  await step(tok); // 1006 a gigantic memory hog
+  kill(cur); remove(q);
+  me.mood('sad');
+  noT('問題 2：超級吃記憶體', 3, 2.2, 0);
+  say('問題 2：超級吃記憶體（memory hog）', '每個「可能的」key 都要一格');
+  await step(tok); // 1039 64-bit keys → 2^64 slots
+  const gb = ghostBox(M2.red, 13, 0.3, 0.9); gb.position.set(0.3, 0.15, 2.4);
   tag('2⁶⁴ 格', 'ptr alt', 5.6, 0.8, 2.4);
-  say('問題 2：超級吃記憶體', '64-bit key → 2⁶⁴ 格，只為了存幾個 item');
-  await beat(tok, 3000);
+  say('key 是 64-bit 整數 → 要 2⁶⁴ 格', '只為了存幾個 item');
+  await step(tok); // 1057 fix both problems, one at a time
+  say('接下來一次解決一個問題', '先處理：key 不是整數');
 }]);
 
 FRAG.push(['algmit2-prehash', 'Prehash：任何 key → 非負整數', async (tok) => {
   fresh([0, 4.5, 12.5], [0, 2.6, 0]);
-  say('Prehash：把 key 對應到非負整數', '理論上：任何東西都是一串 bits = 整數');
-  await beat(tok, 2600);
-  const rows = [['42', '42', 5.4], ["'\\0B'", '64', 3.9], ["'\\0\\0C'", '64', 2.4]];
+  const fn = prop('cpu', 0, 4.2, 0, 1.2, 'prehash'); bob(fn, 0.05);
+  await step(tok); // 1078 a notion called prehashing
+  say('解問題 1：prehashing');
+  await step(tok); // 1085 Python calls it hash; it's really prehash
+  note('Python 叫它 hash()，其實是 prehash', 0, 6.0);
+  say('Python 把它叫 hash', '但它其實是 prehash');
+  await step(tok); // 1091 maps whatever keys to non-negative integers
+  const k = pkt("'cat'", -5, 4.4);
+  await travel(tok, k, V3(-5, 4.4, 0), V3(-0.6, 4.4, 0), 700);
+  txt(k, '9 813 …（一個整數）');
+  await travel(tok, k, V3(-0.6, 4.4, 0), V3(4.6, 4.4, 0), 700);
+  say('prehash：把任何 key 對應到非負整數');
+  await step(tok); // 1108 not worrying how big those integers are
+  note('多大都沒關係（之後再處理）', 4.6, 3.6);
+  say('先不管整數有多大', '可能很大，問題 2 之後再解決');
+  await step(tok); // 1135 in theory: keys are finite and discrete
+  fresh([0, 4.5, 12.5], [0, 2.6, 0]);
+  say('理論上：key 是有限、離散的');
+  await step(tok); // 1148 anything is a string of bits = an integer
+  const bits = [0, 1, 1, 0, 0, 0, 1, 1].map((b, i) => cube(b, M2.teal, [0.5, 0.5, 0.5], -3.5 + i * 0.6, 5.4, 0, 1.5));
+  tag("'c' 在電腦裡 = 01100011 = 99", 'ptr alt', 2.8, 5.4);
+  say('任何東西在電腦裡都是一串 bits', '一串 bits 就是一個整數 → 完成');
+  await step(tok); // 1164 we'll assume this in class
+  okT('這堂課分析時：都當作 key 是非負整數', 0, 6.4);
+  say('這堂課分析時都這樣假設');
+  await step(tok); // 1207 in Python there's a function called hash
+  bits.forEach(kill);
+  say('實際上，Python 有個函數叫 hash()', '應該叫 prehash 才對');
+  const rows = [['42', '42', 3.9], ["'\\0B'", '64', 2.4], ["'\\0\\0C'", '64', 0.9]];
   const outs = [];
-  for (const [k, v, y] of rows) {
-    cube(k, M2.sand, [2.2, 0.8, 0.8], -4, y, 0, 2);
-    arrow(V3(-2.7, y, 0), V3(0.9, y, 0));
-    outs.push(cube(v, M2.blue, [1.2, 0.8, 0.8], 1.8, y, 0));
-    say(k === '42' ? 'Python 的 hash() 其實是 prehash' : '字串也算出一個整數', k === '42' ? 'hash(42) = 42' : 'hash(' + k + ') = ' + v);
-    await beat(tok, 1700);
-  }
+  const row = (r) => { const [kk, v, y] = r; cube(kk, M2.sand, [2.2, 0.8, 0.8], -4, y, 0, 2); arrow(V3(-2.7, y, 0), V3(0.9, y, 0)); outs.push(cube(v, M2.blue, [1.2, 0.8, 0.8], 1.8, y, 0)); };
+  await step(tok); // 1228 given an integer it returns the integer
+  row(rows[0]);
+  say('給它整數：直接回傳自己', 'hash(42) = 42');
+  await step(tok); // 1236 a string: it does something
+  say('給它字串：會算出某個整數', '老師也不知道詳細怎麼算');
+  await step(tok); // 1240 hash('\0B') = hash('\0\0C') = 64
+  row(rows[1]); row(rows[2]);
   glow(outs[1], RED); glow(outs[2], RED);
-  say('理想：prehash 相等 ⇔ key 相等', "Python 沒完全做到：'\\0B' 與 '\\0\\0C' 都是 64");
-  await beat(tok, 3000);
+  say("但 hash('\\0B') = hash('\\0\\0C') = 64", '兩個不同的字串，算出一樣的數');
+  await step(tok); // 1274 ideally prehash(x) = prehash(y) only when x = y
+  bub('理想：prehash 相等 ⇔ key 相等', 3.8, 5.2);
+  say('理想：prehash(x) = prehash(y) 只在 x = y 時發生');
+  await step(tok); // 1299 sadly not quite true in Python
+  say('可惜 Python 沒完全做到', '不過大部分時候是對的');
+  await step(tok); // 1310 a custom object can implement __hash__
   glow(outs[1], null); glow(outs[2], null);
-  const X = m2row(4, 3.4, 1, 1.6, 0.8, (i) => String(i + 3));
-  m2item('key', M2.green, X(1), 1.6, 2, 0.8);
-  say('prehash = 4 → 放第 4 格', '自訂物件：__hash__；預設用 id（記憶體位置）');
-  await beat(tok, 2400);
-  const a = arrow(V3(4.9, 2.6, 1.6), V3(X(2), 0.8, 1.6), 0xb03030);
-  say('之後 prehash 變成 5 → 去第 5 格找', '空的 → 找不到！');
-  await beat(tok, 2600); kill(a);
-  say('prehash 值絕對不能隨時間改變', '所以 list 這種 mutable 物件不能當 key');
-  await beat(tok, 3000);
+  note('自訂物件：寫 __hash__', 4.6, 3.6);
+  say('自訂的物件可以寫 __hash__ 方法', '告訴 Python 怎麼算');
+  await step(tok); // 1322 default: id, the location in memory
+  note('預設：id = 記憶體位置', 4.6, 2.9);
+  say('沒寫的話預設用 id', '物件在記憶體的位置：兩個物件不會在同一個地方');
+  await step(tok); // 1352 prehash should never change
+  fresh([0, 4.5, 12.5], [0, 2.6, 0]);
+  say('另一個重點：prehash 的值不能改變');
+  await step(tok); // 1361 prehash = 4 → put it in position 4
+  const X = m2row(4, -1.5, 1.4, 1.6, 1.0, (i) => String(i + 3));
+  const it = m2item('key', M2.green, X(1), 1.6, 2, 1.0);
+  const ph = pkt('prehash = 4', X(1), 2.4, 1.6);
+  say('存的時候 prehash = 4 → 放第 4 格');
+  await step(tok); // 1368 later prehash gives 5 → look in 5 → not there
+  txt(ph, '現在 prehash = 5 ？');
+  const a = arrow(V3(X(2), 2.2, 1.6), V3(X(2), 0.8, 1.6), 0xb03030);
+  noT('第 5 格是空的 → 找不到！', X(2) + 1.6, 3.2, 1.6);
+  say('之後再算變成 5 → 去第 5 格找', '空的 → 找不到！');
+  await step(tok); // 1390 a list is mutable: can't be a key
+  kill(a);
+  note('list 可以 append → 會變 → 不能當 key', -3.6, 4.6);
+  say('所以 list 這種會變的（mutable）物件', '不能當 dict 的 key');
+  await step(tok); // 1411 assume keys are non-negative integers
+  okT('從此假設：key 是非負整數', 0, 5.6);
+  say('之後就假設 key 都是非負整數', '任何東西都能先 prehash 成整數');
 }]);
 
 FRAG.push(['algmit2-hash-universe', 'Hashing：巨大 key space → m 格的 table', async (tok) => {
   fresh([0, 4.8, 12.5], [0, 2.8, 0]);
+  const SL = (i) => 5.6 - i * 0.92, TX = 3.6;
+  let slots = [];
+  await step(tok); // 1422 the more interesting problem: reducing space
+  say('更有趣的問題 2：怎麼省空間？');
+  await step(tok); // 1438 this is hashing
+  bub('這就是 hashing', 0, 6.2);
+  say('答案就是 hashing', '今天最神奇的部分');
+  await step(tok); // 1446 hash = cut into little pieces and mix
+  const ch = buddy('廚師', '', M2.orange, 0, 0, 2.2, 0.8); ch.mood('happy');
+  const pcs = []; for (let i = 0; i < 6; i++) pcs.push(cube('', M2.sand, [0.3, 0.3, 0.3], -0.6 + (i % 3) * 0.6, 1.5 + Math.floor(i / 3) * 0.4, 2.2, 1.5));
+  say('hash 的意思：把東西切碎、攪一攪', '像做菜一樣（跟 hashish 無關）');
+  await step(tok); // 1472 hash browns: same root
+  note('hash browns（薯餅）同字源', 2.4, 2.6, 2.2);
+  say('同學說：hash browns（薯餅）', '對，同一個字源');
+  await step(tok); // 1500 take all possible keys, reduce them to a small set
+  kill(ch.g); pcs.forEach(kill);
+  say('大想法：把所有可能的 key', '縮到一小組整數');
+  await step(tok); // 1555 a giant space of all possible keys
   const g = ghostBox(M2.sand, 5.6, 5.2, 1.4); g.position.set(-3.4, 3, 0);
   tag('key space U（巨大）', 'ptr', -3.4, 6.1);
   for (let i = 0; i < 18; i++) cube('', '#b9ab90', [0.22, 0.22, 0.22], -5.8 + ((i * 7) % 18) * 0.27, 0.8 + ((i * 5) % 9) * 0.5, 0);
-  const SL = (i) => 5.6 - i * 0.92, TX = 3.6;
-  const slots = [];
+  say('所有可能的 key：key space', '像外太空一樣大');
+  await step(tok); // 1573 map it with a hash function h to a smaller set
   for (let i = 0; i < 6; i++) { slots.push(cube('', GRAY, [1.6, 0.7, 0.7], TX, SL(i), 0)); tag(String(i), 'idx', TX + 1.2, SL(i)); }
-  tag('table T（m 格）', 'ptr alt', TX, 6.5);
-  say('Hash function h：U → {0, 1, …, m−1}', 'm = hash table 的大小');
-  await beat(tok, 2600);
+  say('用 hash function h 映到一個小很多的集合', '畫成一個 array');
+  await step(tok); // 1590 0 … m−1; m = size of the hash table
+  tag('hash table T（m 格）', 'ptr alt', TX, 6.5);
+  pkt('h：U → {0, 1, …, m−1}', 0, 7.2);
+  say('值是 0 到 m−1', 'm = hash table 的大小');
+  await step(tok); // 1611 a subset of keys actually stored: k1…k4
   const K4 = [['k1', -4.6, 4.6, 5], ['k2', -2.4, 5.0, 0], ['k3', -3.6, 2.4, 3], ['k4', -1.8, 1.6, 1]];
-  for (const [nm, x, y, s] of K4) {
-    cube(nm, M2.blue, [0.75, 0.55, 0.55], x, y, 0.3);
-    arrow(V3(x + 0.4, y, 0.3), V3(TX - 0.85, SL(s), 0.2), 0x2f6fb0);
-    relabel(slots[s], 'item' + nm.slice(1)); tint(slots[s], M2.blue);
-    if (nm === 'k2') { say('目前存的 keys：k1…k4', 'h(k2) = 0 → item 2 放第 0 格'); await beat(tok, 2200); }
-    else if (nm === 'k3') { say('h(k3) = 3 → item 3 放第 3 格', '其餘兩個是示意'); await beat(tok, 2000); }
-    else await beat(tok, 700);
-  }
-  say('希望 m = Θ(n)', 'n = 目前存的 key 數 → 空間線性');
-  await beat(tok, 2600);
-  const ki = cube('ki', M2.red, [0.75, 0.55, 0.55], -5.0, 3.4, 0.3), kj = cube('kj', M2.red, [0.75, 0.55, 0.55], -1.6, 3.6, 0.3);
+  for (const [nm, x, y] of K4) cube(nm, M2.blue, [0.75, 0.55, 0.55], x, y, 0.3, 1.5);
+  say('其中只有一小部分 key 真的存在 dictionary 裡', 'k1、k2、k3、k4（會隨時間變）');
+  const send = (q) => { const [nm, x, y, s] = K4[q]; arrow(V3(x + 0.4, y, 0.3), V3(TX - 0.85, SL(s), 0.2), 0x2f6fb0); relabel(slots[s], 'item' + nm.slice(1)); tint(slots[s], M2.blue); };
+  await step(tok); // 1640 h(k2) = 0 → item 2 goes here
+  send(1);
+  say('h(k2) = 0 → item 2 放第 0 格');
+  await step(tok); // 1655 h(k3) = 3 → item 3 here
+  send(2);
+  say('h(k3) = 3 → item 3 放第 3 格', '老師說：剛好 3，有點巧');
+  await step(tok); // 1670 each item has a special position
+  send(0); send(3);
+  say('四個 item 各有自己的位置', 'k1、k4 的位置是示意');
+  await step(tok); // 1675 we'd like m to be around n
+  note('希望 m ≈ n', TX, 0.2);
+  say('希望 m 大約等於 n', 'n = 目前 dictionary 裡的 key 數');
+  await step(tok); // 1699 then the space is linear
+  okT('空間 = 線性（最好的）', TX, -0.5);
+  say('這樣空間就跟 n 成正比：線性', '用 2n、3n 都可以，但不要更多');
+  await step(tok); // 1721 how do we define h? any problem?
+  say('h 要怎麼設計？', '先想想：這樣做有什麼問題？');
+  await step(tok); // 1742 the pigeonhole principle
+  const ki = cube('ki', M2.red, [0.75, 0.55, 0.55], -5.0, 3.4, 0.3, 1.5), kj = cube('kj', M2.red, [0.75, 0.55, 0.55], -1.6, 3.6, 0.3, 1.5);
+  say('鴿籠原理：格子比可能的 key 少太多', '一定有兩個 key 掉進同一格');
+  await step(tok); // 1756 a collision: h(ki) = h(kj), ki ≠ kj
   arrow(V3(-4.6, 3.4, 0.3), V3(TX - 0.85, SL(2), 0.2), 0xb03030); arrow(V3(-1.2, 3.6, 0.3), V3(TX - 0.85, SL(2), 0.2), 0xb03030);
   glow(slots[2], RED); glow(ki, RED); glow(kj, RED);
-  say('鴿籠原理：一定有 collision', 'h(ki) = h(kj) 但 ki ≠ kj');
-  await beat(tok, 3000);
-  say('hash = 切碎再攪拌', '撞在一起還是要能找得到 → chaining');
-  await beat(tok, 2600);
+  say('這叫 collision（碰撞）', 'h(ki) = h(kj)，但 ki ≠ kj');
+  await step(tok); // 1784 guaranteed to happen, yet we can make it work: chaining
+  say('碰撞一定常常發生', '但還是有辦法：chaining');
 }]);
 
-FRAG.push(['algmit2-chaining', 'Chaining：撞同一格就串成 linked list', async (tok) => {
-  const recap = !!(ctx.params || {}).recap;
-  fresh([0, 8.5, 9.5], [0, 0, 0.8]);
+// chaining 的共用畫法：m 格 table，每格往前掛一條 linked list
+function m2chainTable() {
   const m = 6, X = (i) => -4.5 + i * 1.8, Z0 = -3;
   for (let i = 0; i < m; i++) { cube('', GRAY, [1.3, 0.2, 1.0], X(i), 0.1, Z0); tag(String(i), 'idx', X(i), 0, Z0 - 0.9); }
   tag('T', 'ptr', -6.2, 0.2, Z0);
-  const chains = recap ? [[1, ['k1', 'k4', 'k2']], [4, ['k3']]] : [[1, ['k1', 'k2']], [3, ['k3']]];
-  const addChain = async (slot, keys, color, ms) => {
-    let pz = Z0 + 0.5;
-    for (let j = 0; j < keys.length; j++) {
-      const z = Z0 + 1.5 + j * 1.4;
-      arrow(V3(X(slot), 0.35, pz), V3(X(slot), 0.35, z - 0.5));
-      lnode(keys[j], X(slot) - 0.3, 0.35, z, color);
-      pz = z + 0.5;
-      await beat(tok, ms);
-    }
+  const len = Array(m).fill(0), tail = [];
+  const add = (slot, key, color) => {
+    const z = Z0 + 1.5 + len[slot] * 1.4, pz = len[slot] ? z - 0.9 : Z0 + 0.5;
+    arrow(V3(X(slot), 0.35, pz), V3(X(slot), 0.35, z - 0.5));
+    const n = lnode(key, X(slot) - 0.3, 0.35, z, color);
+    len[slot]++; return n;
   };
-  say(recap ? '回顧：k1、k4、k2 都撞到第 1 格' : 'k1、k2 碰撞：都到第 1 格', recap ? '串成 linked list，順序不重要' : '第 1 格存一條 linked list');
-  await addChain(chains[0][0], chains[0][1], M2.blue, 700);
-  await beat(tok, 1200);
-  await addChain(chains[1][0], chains[1][1], M2.teal, 600);
-  for (let i = 0; i < m; i++) if (i !== chains[0][0] && i !== chains[1][0]) tag('null', 'idx', X(i), 0.35, Z0 + 1.0);
-  say('k3 自己一格：list 只有一個 item', '空的格子存 null');
-  await beat(tok, 2400);
-  if (recap) {
-    say('空間 = n + m', 'table m 格 + 所有 list 長度總和 n');
-    await beat(tok, 2600);
-    say('期望 chain 長度 α = n/m', '操作時間 O(1 + α)；α 常數 → O(1)');
-    await beat(tok, 3000);
-  } else {
-    say('最壞：所有 key 都撞同一格', '固定 h，總找得到一堆撞在一起的 key');
-    await addChain(5, ['k5', 'k6', 'k7', 'k8', '…'], M2.red, 350);
-    say('退化成長度 n 的 list', '最壞 Θ(n)：任何 hashing 都一樣');
-    await beat(tok, 2600);
-    say('實務上很好用：靠隨機化', '大部分 chain 都只有常數長度');
-    await beat(tok, 2800);
-  }
+  return { m, X, Z0, len, add };
+}
+FRAG.push(['algmit2-chaining', 'Chaining：撞同一格就串成 linked list', async (tok) => {
+  fresh([0, 8.5, 9.5], [0, 0, 0.8]);
+  let T = null; const nulls = [];
+  await step(tok); // 1802 a technique for dealing with collisions
+  say('怎麼處理碰撞？');
+  await step(tok); // 1807 chaining (today) and open addressing (next Tuesday)
+  tag('① chaining（今天）', 'ptr', -3, 1.6, -4.6); tag('② open addressing（下週）', 'ptr alt', 3, 1.6, -4.6);
+  say('兩種方法：chaining 與 open addressing', '先講 chaining');
+  await step(tok); // 1821 the idea of chaining is simple
+  T = m2chainTable();
+  say('Chaining 的想法很簡單');
+  await step(tok); // 1832 store them as a (linked) list
+  bub('撞到同一格的 → 串成一條 list', 0, 2.4, 2.5);
+  say('同一格的 items 存成一條 list', '畫成 linked list');
+  await step(tok); // 1918 k1 and k2 collide: both go to this slot
+  const n1 = T.add(1, 'k1', M2.blue);
+  say('假設 k1、k2 碰撞', '都要放第 1 格');
+  await step(tok); // 1926 a linked list: item 1, pointer to item 2
+  T.add(1, 'k2', M2.blue);
+  say('第 1 格存一條 linked list', 'item 1 → 指標 → item 2');
+  await step(tok); // 1941 that's the end of the list (null)
+  tag('null', 'idx', T.X(1), 0.35, T.Z0 + 1.5 + 2 * 1.4 - 0.4);
+  say('最後一個指向 null：list 結束', '有幾個 item，list 就多長');
+  await step(tok); // 1953 just one item, k3, maps to this slot
+  T.add(3, 'k3', M2.teal);
+  say('k3 自己一格', 'list 只有一個 item');
+  await step(tok); // 1970 empty slots: a null pointer
+  for (let i = 0; i < T.m; i++) if (!T.len[i]) nulls.push(tag('null', 'idx', T.X(i), 0.35, T.Z0 + 1.0));
+  say('空的格子存 null 指標', '這就是 hashing with chaining');
+  await step(tok); // 1982 why would you expect it to be any good?
+  say('為什麼它會快？');
+  await step(tok); // 1985 worst case: all keys map to the same slot
+  for (const kk of ['k4', 'k5', 'k6', 'k7']) { T.add(5, kk, M2.red); await beat(tok, 300); }
+  remove(nulls[nulls.length - 1]);
+  say('最壞情況：h 固定時，總有一堆 key 撞同一格', '偏偏你插入的就是它們');
+  await step(tok); // 2003 the worst case is Θ(n)
+  noT('一條長度 n 的 list → Θ(n)', 4.5, 2.4, 2.5);
+  say('結果只剩一條長 list', '最壞 Θ(n)');
+  await step(tok); // 2011 true for any hashing scheme
+  say('任何 hashing 方法，最壞情況都這麼糟');
+  await step(tok); // 2019 in practice it works: randomization
+  const dice = cube('🎲', M2.gold, [0.9, 0.9, 0.9], -5.6, 0.45, 2.4, 2);
+  say('但實務上超好用', '原因是隨機化');
+  await step(tok); // 2028 most lists have constant length
+  okT('大部分 list 只有常數長度', -3.6, 2.4, 2.5);
+  say('除非運氣超差，h 會把 items 平均分散', '大部分 list 都很短');
 }]);
 
 FRAG.push(['algmit2-suh-alpha', 'Simple uniform hashing：期望 chain 長度 α', async (tok) => {
   fresh([0, 5.5, 12], [0, 1.6, 0]);
   const X = (i) => -3 + i * 2;
   for (let i = 0; i < 4; i++) { cube('', GRAY, [1.3, 0.12, 1.3], X(i), 0.06, 0); tag(String(i), 'idx', X(i), 0, 1.1); }
-  say('Simple uniform hashing（假設）', '每個 key 均勻、彼此獨立地落到各格');
-  await beat(tok, 2600);
-  const seq = [2, 0, 3, 1, 1, 2, 0, 2, 3, 1, 0, 2], cnt = [0, 0, 0, 0];
-  const nt = tag('n = 0', 'ptr alt', 5.6, 0.4);
-  for (let k = 0; k < seq.length; k++) {
-    const s = seq[k];
-    cube('k' + (k + 1), M2.blue, [1.1, 0.5, 1.1], X(s), 0.37 + cnt[s] * 0.56, 0, 2.5);
-    cnt[s]++; txt(nt, 'n = ' + (k + 1));
-    await beat(tok, 320);
-  }
-  say('假設不太實際，但分析很方便', 'm = 4、n = 12（示意）');
-  await beat(tok, 2200);
+  const me = buddy('老師', '', M2.purple, -6.2, 0, 1.2, 0.8);
+  await step(tok); // 2062 an assumption: Simple Uniform Hashing
+  bub('Simple uniform hashing', -1, 4.6);
+  say('做一個假設：simple uniform hashing');
+  await step(tok); // 2071 unrealistic — I'd say false
+  me.mood('sad');
+  noT('不實際（老師：甚至是錯的）', 3.4, 4.0);
+  say('這個假設不實際', '老師甚至說它是錯的');
+  await step(tok); // 2080 but convenient for analysis
+  me.mood('happy');
+  okT('但分析起來很方便', 3.4, 3.3);
+  say('但分析很方便', '能讓人看出 chaining 為什麼好');
+  await step(tok); // 2101 (Q&A) the hash function maps U to 0 … m−1
+  pkt('h：U → {0, …, m−1}', 3.4, 2.6);
+  say('有人問：h 怎麼知道 table 多大？', 'h 的定義就是映到 0 … m−1');
+  await step(tok); // 2123 one hash function for each m
+  note('每個 m 有自己的 h', 3.4, 1.9);
+  say('所以 h 需要知道 m', '不同 table 大小用不同的 h');
+  await step(tok); // 2140 that gives low space; now low time?
+  say('h 讓空間變小了', '那時間呢？');
+  await step(tok); // 2193 two probabilistic assumptions
+  say('SUH 其實是兩個機率上的假設');
+  const drop = (k, s, cnt) => cube('k' + k, M2.blue, [1.1, 0.5, 1.1], X(s), 0.37 + cnt * 0.56, 0, 2.5);
+  await step(tok); // 2197 uniformity: each slot equally likely
+  drop(1, 2, 0);
+  tag('每格機率 1/m', 'ptr alt', 5.4, 2.2);
+  say('① uniformity：每個 key 落到每一格的機率一樣', '都是 1/m');
+  await step(tok); // 2220 independence
+  const seq = [0, 3, 1, 1, 2, 0, 2, 3, 1, 0, 2], cnt = [0, 0, 1, 0];
+  for (let k = 0; k < seq.length; k++) { drop(k + 2, seq[k], cnt[seq[k]]++); await beat(tok, 150); }
+  say('② independence：每個 key 都獨立地隨機落下', '不管前面的落在哪裡');
+  await step(tok); // 2243 if it's true we can prove constant time
+  say('真的成立的話，就能證明是常數時間', 'm = 4、n = 12（示意）');
+  await step(tok); // 2288 the expected length of a chain
   const g = ghostBox(M2.gold, 8, 0.05, 1.8); g.position.set(0, 0.1 + 3 * 0.56, 0);
-  tag('α = n/m = 3', 'ptr alt', 5.4, 1.8);
-  say('期望 chain 長度 = n · (1/m)', 'load factor α = n/m');
-  await beat(tok, 2800);
-  say('search：算 h、走 chain', 'Θ(1 + α)；1 = 算 hash + 第一個指標');
-  await beat(tok, 2800);
-  say('m = Θ(n) → α 是常數', 'α = 10 也沒關係，仍是 O(1)');
-  await beat(tok, 2800);
+  say('問：一條 chain 的期望長度是多少？', 'n 個 key、m 格');
+  await step(tok); // 2327 n over m
+  const at = tag('期望長度 = n/m', 'ptr alt', 5.4, 1.5);
+  say('答案：n/m');
+  await step(tok); // 2336 each key: 1/m, n times
+  note('1/m + 1/m + … （n 次）', 5.4, 0.8);
+  say('每個 key 落到這格的機率 1/m', '加 n 次 → n/m');
+  await step(tok); // 2353 call it α, the load factor
+  txt(at, 'α = n/m = 12/4 = 3');
+  say('這個數叫 α：load factor（裝載因子）');
+  await step(tok); // 2364 α = 1 → chain length 1
+  say('α = 1：n = m，平均每條長 1');
+  await step(tok); // 2367 α = 10 → still a constant
+  say('α = 10：平均每條長 10', '還是常數，沒關係');
+  await step(tok); // 2385 as long as m = Θ(n), α is constant
+  pkt('m = Θ(n) ⇒ α 是常數', -1, 4.6);
+  say('只要 m = Θ(n)', 'α 就是常數');
+  await step(tok); // 2404 running time of insert, delete, search
+  say('那操作要多久？', 'search 最難');
+  await step(tok); // 2420 search: map into the table, walk the linked list
+  const cur = tag('▼', 'ptr alt', X(1), 3.0);
+  for (let c = 0; c < 4; c++) { cur.position.set(X(1), 0.37 + c * 0.56 + 0.7, 0); await beat(tok, 300); }
+  say('search：算 h 找到那格，沿著 list 一個一個看', '「這不是你要找的 key」……');
+  await step(tok); // 2448 1 + the length of your chain
+  kill(cur);
+  say('時間 = 1 + chain 長度');
+  await step(tok); // 2456 Θ(1 + α)
+  pkt('Θ(1 + α)', 1, 3.6);
+  say('期望 Θ(1 + α)', '1 = 算 hash + 跟第一個指標');
+  await step(tok); // 2483 SUH + constant load factor ⇒ O(1)
+  okT('α 常數 ⇒ 所有操作 O(1)', 1, 2.9);
+  say('在 SUH 假設下、load factor 是常數', '所有操作都是常數時間');
+  await step(tok); // 2494 the intuition, not the real reason
+  note('真正的理由：6.046', -4.4, 3.4);
+  say('這是直覺，不是真正的原因', '真正的理由在之後的課（6.046）');
 }]);
 
 FRAG.push(['algmit2-division', 'Division method：h(k) = k mod m', async (tok) => {
@@ -12224,434 +13085,1318 @@ FRAG.push(['algmit2-division', 'Division method：h(k) = k mod m', async (tok) =
   const run = async (m, z, x0) => {
     const X = m2row(m, x0, 1.2, z, 0.9);
     tag('m = ' + m, 'ptr', x0 - 1.4, 0.2, z);
-    const cnt = Array(m).fill(0), used = [];
-    for (const k of keys) { const s = k % m; cube(k, m === 8 ? M2.orange : M2.green, [0.8, 0.45, 0.8], X(s), 0.35 + cnt[s] * 0.5, z, 2); cnt[s]++; used[s] = 1; await beat(tok, 280); }
-    return { X, used };
+    const cnt = Array(m).fill(0);
+    for (const k of keys) { const s = k % m; cube(k, m === 8 ? M2.orange : M2.green, [0.8, 0.45, 0.8], X(s), 0.35 + cnt[s] * 0.5, z, 2); cnt[s]++; await beat(tok, 220); }
+    return X;
   };
-  say('Division method：h(k) = k mod m', '最直接的做法');
-  await beat(tok, 2200);
+  await step(tok); // 2527 last topic: hash functions — how do I construct h?
+  say('最後一個主題：h 到底怎麼做？', '從巨大的 key space 映到 m 格');
+  await step(tok); // 2549 three hash functions
+  tag('① division', 'ptr', -4.5, 0.2, -4.2); tag('② multiplication', 'ptr', -0.5, 0.2, -4.2); tag('③ universal', 'ptr alt', 3.8, 0.2, -4.2);
+  say('三個 hash function', '前兩個實務常用；第三個理論上好');
+  await step(tok); // 2558 the first two are not good theoretically
+  say('前兩個理論上可以證明不好', '但很多時候還 OK，所以很常見');
+  await step(tok); // 2576 the division method
+  say('第一個：division method（除法）');
+  await step(tok); // 2584 k mod m
+  pkt('h(k) = k mod m', 0, 1.6, -2.8);
+  say('h(k) = k mod m', 'k 除以 m 的餘數：一定在 0 … m−1');
+  await step(tok); // 2604 bad if m has common factors with k
+  say('如果 m 和 k 有公因數，就很糟');
+  await step(tok); // 2610 k always even, m even (a power of 2)
   const A = await run(8, -1.6, -4.2);
-  for (let s = 1; s < 8; s += 2) { const g = ghostBox(M2.red, 0.9, 0.4, 0.9); g.position.set(A.X(s), 0.25, -1.6); }
-  say('key 全是偶數、m = 8 也是偶數', '只用到偶數格 → 浪費一半（示意 key）');
-  await beat(tok, 2800);
+  say('例：key 都是偶數、m = 8 也是偶數', '示意 key');
+  await step(tok); // 2617 you use only half the table
+  for (let s = 1; s < 8; s += 2) { const gb = ghostBox(M2.red, 0.9, 0.4, 0.9); gb.position.set(A(s), 0.25, -1.6); }
+  noT('奇數格全空 → 只用到一半', 4.0, 1.4, -1.6);
+  say('只會用到偶數格', '一半的 table 浪費掉');
+  await step(tok); // 2621 in practice: choose m prime
   await run(7, 1.8, -3.6);
-  say('m 取質數 7', '分散多了');
-  await beat(tok, 2200);
-  say('m 選質數、不靠近 2 或 10 的次方', '實務常用，但理論上證不了什麼');
-  await beat(tok, 3000);
+  say('實務上：m 取質數，就沒有公因數', 'm = 7：分散多了');
+  await step(tok); // 2631 not close to a power of 2 or 10
+  note('也不要靠近 2 或 10 的次方', 3.0, 1.4, 3.0);
+  say('m 也不要太靠近 2 或 10 的次方', '真實資料常出現這些數');
+  await step(tok); // 2634 very hackish: works a lot of the time, not always
+  say('很「土法煉鋼」（hackish）', '常常能用，但不保證');
 }]);
 
 FRAG.push(['algmit2-multiplication', 'Multiplication method：取乘積中間的 r 位元', async (tok) => {
   fresh([0, 4.4, 12.5], [0, 3.4, 0]);
   const w = 8, r = 3, k = 181, a = 155, P = k * a, h = (P % 256) >> (w - r);
   const BX = (b) => -3.75 + (15 - b) * 0.5;
-  const row = (val, n, y, shift, color) => { const ms = []; for (let b = 0; b < n; b++) ms[b] = cube((val >> b) & 1, color, [0.42, 0.42, 0.42], BX(b + shift), y, 0); return ms; };
-  row(k, 8, 6.4, 0, M2.blue); tag('k = 181', 'ptr', -2.3, 6.4);
-  row(a, 8, 5.8, 0, M2.purple); tag('a = 155', 'ptr', -2.3, 5.8);
-  say('Multiplication method', 'h(k) = [(a·k) mod 2ʷ] >> (w − r)；示意 w = 8、r = 3');
-  await beat(tok, 3000);
+  const row = (val, n, y, shift, color, drop = 0) => { const ms = []; for (let b = 0; b < n; b++) ms[b] = cube((val >> b) & 1, color, [0.42, 0.42, 0.42], BX(b + shift), y, 0, drop); return ms; };
+  let pm = null;
+  await step(tok); // 2642 a cooler method: multiplication
+  say('比較酷的方法：multiplication method', '理論上一樣證明不了什麼');
+  await step(tok); // 2664 multiply k by a, mod 2^w, shift right w − r
+  pkt('h(k) = [(a·k) mod 2ʷ] >> (w − r)', 0, 7.4);
+  say('k 乘上整數 a，mod 2ʷ，再右移 w − r 位');
+  await step(tok); // 2683 a w-bit machine
+  note('w = 一個 word 有幾個 bit（示意 w = 8）', -4.0, 6.8);
+  say('w 是什麼？機器的 word 大小', '假設電腦一次處理 w 個 bits');
+  await step(tok); // 2696 our key k, w bits long
+  row(k, 8, 6.4, 0, M2.blue, 1.5); tag('k = 181', 'ptr', -2.3, 6.4);
+  say('key k：w 個 bits', '示意 k = 181');
+  await step(tok); // 2703 a: a random w-bit integer
+  row(a, 8, 5.8, 0, M2.purple, 1.5); tag('a = 155', 'ptr', -2.3, 5.8);
+  say('a：隨機的 w-bit 整數', '有些 0、有些 1（示意 a = 155）');
+  await step(tok); // 2718 multiplication in binary: one copy of k per 1 in a
   let y = 5.0;
-  for (let b = 0; b < 8; b++) if ((a >> b) & 1) { row(k, 8, y, b, M2.sand); await beat(tok, 450); y -= 0.5; }
-  say('a 的每個 1 → 一份左移的 k', '相加時進位把 k 各段混在一起');
-  await beat(tok, 2600);
-  const pm = row(P, 16, 1.6, 0, M2.teal);
+  for (let b = 0; b < 8; b++) if ((a >> b) & 1) { row(k, 8, y, b, M2.sand); await beat(tok, 260); y -= 0.5; }
+  say('二進位乘法：a 的每個 1 → 一份左移的 k');
+  await step(tok); // 2740 add them up — gobbledygook
+  pm = row(P, 16, 1.6, 0, M2.teal, 1.5);
   tag('a·k = ' + P, 'ptr alt', -5.4, 2.3);
-  say('乘積最多 2w 位元', '中間的位元混得最勻');
-  await beat(tok, 2400);
+  say('全部加起來', '得到一串亂七八糟的 bits');
+  await step(tok); // 2751 two words long
+  say('乘積最多兩個 word 長', '16 bits');
+  await step(tok); // 2759 take the right word (mod 2^w)
   for (let b = 8; b < 16; b++) tint(pm[b], GRAY);
   const g = ghostBox(M2.gold, 4.1, 0.7, 0.7); g.position.set(2.0, 1.6, 0);
   say('mod 2ʷ：只留右邊那個 word', '左邊那個 word 丟掉');
-  await beat(tok, 2400);
+  await step(tok); // 2772 shift right by w − r
+  for (let b = 0; b < 5; b++) tint(pm[b], GRAY);
+  say('>> (w − r)：右移，把右邊 w − r 位丟掉');
+  await step(tok); // 2784 the leftmost r bits of the rightmost w bits
   for (let b = 5; b < 8; b++) glow(pm[b], GOLD);
   tag('h(k) = ' + h, 'ptr', 0.75, 0.6);
-  say('>> (w − r)：留下這個 word 最左的 r 位', 'h(k) = ' + h + '，m = 2ʳ = 8');
-  await beat(tok, 3000);
-  say('a 要是奇數、不要靠近 2 的次方', '實務好用，但理論上仍有壞輸入');
-  await beat(tok, 2800);
+  say('留下：右邊那個 word 最左邊的 r 位', 'h(k) = ' + h + '（示意 r = 3）');
+  await step(tok); // 2792 m = 2^r
+  note('m = 2ʳ = 8 → 0 … 7', 4.4, 0.6);
+  say('m = 2ʳ', '結果一定在 0 … m−1');
+  await step(tok); // 2812 why it works: shifted copies, carries mix things
+  say('為什麼有效？很多份移位的 k 加在一起', '進位把東西混在一起 → 這就是「切碎攪拌」');
+  await step(tok); // 2831 the last bits aren't mixed much; the middle is
+  glow(pm[0], RED);
+  note('最右邊：只來自一份 k，沒混到', 4.4, 2.6);
+  say('最右邊幾位沒什麼混到', '中間大家都撞在一起 → 混得最勻');
+  await step(tok); // 2853 a should be odd
+  glow(pm[0], null);
+  say('a 要是奇數', '不然會丟掉資訊');
+  await step(tok); // 2857 not very close to a power of 2
+  say('a 不要太靠近 2 的次方', '介於 2^(r−1) 和 2ʳ 之間');
+  await step(tok); // 2872 theoretically this can be bad
+  noT('理論上：還是找得到壞的 key', 0, 3.4);
+  say('理論上這還是可能很糟', '老師留作練習：找出壞的 key');
 }]);
 
 FRAG.push(['algmit2-universal', 'Universal hashing：((ak + b) mod p) mod m', async (tok) => {
   fresh([0, 4.4, 12.5], [0, 3.2, 0]);
   const p = 17, m = 4, k1 = 3, k2 = 7;
   const H = (aa, bb, kk) => ((aa * kk + bb) % p) % m;
-  tag('h(k) = ((a·k + b) mod p) mod m', 'ptr', 0, 6.6);
-  say('Universal hashing', 'p：比 universe 大的質數；a、b 隨機');
-  await beat(tok, 2600);
-  tag('k1 = ' + k1, 'ptr alt', 0.6, 6.0); tag('k2 = ' + k2, 'ptr alt', 2.2, 6.0);
-  say('示意：p = 17、m = 4', '兩個固定（最壞）的 key：3 與 7');
-  await beat(tok, 2200);
-  const draws = [[5, 2], [11, 9], [2, 14], [7, 0], [13, 6], [4, 11]];
-  let y = 5.3;
-  for (const [aa, bb] of draws) {
-    const h1 = H(aa, bb, k1), h2 = H(aa, bb, k2), hit = h1 === h2;
-    tag('a = ' + aa + ', b = ' + bb, 'idx', -2.6, y);
-    cube(h1, hit ? M2.red : M2.blue, [0.7, 0.5, 0.5], 0.6, y, 0, 1.5); cube(h2, hit ? M2.red : M2.blue, [0.7, 0.5, 0.5], 2.2, y, 0, 1.5);
-    tag(hit ? '撞了' : '沒撞', hit ? 'ptr' : 'idx', 4.0, y);
-    say('隨機選一組 (a, b)', 'h(3) = ' + h1 + '、h(7) = ' + h2);
-    await beat(tok, 1100); y -= 0.75;
-  }
+  let f = null;
+  await step(tok); // 2883 universal hashing
+  say('理論上好的方法：universal hashing');
+  await step(tok); // 2891 beyond the scope of 006 (6.046)
+  note('細節在 6.046', 4.6, 6.6);
+  say('細節超出這門課', '這裡只看做法和味道');
+  await step(tok); // 2913 mod m on the outside: just the division method
+  f = pkt('h(k) = ((a·k + b) mod p) mod m', 0, 6.6);
+  say('外面的 mod m：就是 division method', '讓結果落在 0 … m−1');
+  await step(tok); // 2919 a and b: random numbers between 0 and p−1
+  const dice = [cube('a', M2.gold, [0.7, 0.7, 0.7], -5.6, 5.6, 0, 1.5), cube('b', M2.gold, [0.7, 0.7, 0.7], -4.6, 5.6, 0, 1.5)];
+  say('a、b：從 0 … p−1 隨機選');
+  await step(tok); // 2932 p: a prime bigger than the universe
+  note('p：比 universe 大的質數', -4.4, 4.8);
+  say('p：比 key space 還大的質數', '找質數有現成的方法');
+  await step(tok); // 2957 done once per table: choose random a and b
+  say('建 table 時做一次：選好 p、隨機選 a、b', '這就決定了 hash function');
+  await step(tok); // 2963 this is the hash function
+  tag('示意：p = 17、m = 4', 'ptr alt', 4.6, 6.0);
+  say('h(k) = ((a·k + b) mod p) mod m');
+  await step(tok); // 2975 worst-case keys k1 ≠ k2
+  tag('k1 = ' + k1, 'ptr alt', 0.6, 5.6); tag('k2 = ' + k2, 'ptr alt', 2.2, 5.6);
+  say('取兩個「最壞」的不同 key', '示意：3 與 7');
+  await step(tok); // 2985 Pr[h(k1) = h(k2)] = 1/m
   let c = 0, t = 0;
   for (let aa = 1; aa < p; aa++) for (let bb = 0; bb < p; bb++) { t++; if (H(aa, bb, k1) === H(aa, bb, k2)) c++; }
-  tag('所有 (a, b)：' + c + '/' + t + ' ≈ ' + (c / t).toFixed(2), 'ptr alt', 1.2, 0.6);
-  say('機率來自「隨機選 hash function」', 'Pr[h(k1) = h(k2)] ≤ 1/m = 0.25');
-  await beat(tok, 3000);
-  say('最壞的 key、隨機的 h', '期望 chain 長度仍是 O(1 + α)');
-  await beat(tok, 2800);
+  pkt('Pr[h(k1) = h(k2)] ≤ 1/m', 0, 0.4);
+  say('兩個不同的 key 撞在一起的機率 = 1/m');
+  await step(tok); // 3004 what is the probability over? what's random?
+  say('這個機率是對什麼取的？', '什麼東西是隨機的？');
+  await step(tok); // 3012 a and b: the choice of the hash function
+  let y = 4.9;
+  for (const [aa, bb] of [[5, 2], [11, 9], [2, 14], [7, 0], [13, 6]]) {
+    const h1 = H(aa, bb, k1), h2 = H(aa, bb, k2), hit = h1 === h2;
+    tag('a = ' + aa + ', b = ' + bb, 'idx', -2.6, y);
+    cube(h1, hit ? M2.red : M2.blue, [0.7, 0.5, 0.5], 0.6, y, 0, 1.2); cube(h2, hit ? M2.red : M2.blue, [0.7, 0.5, 0.5], 2.2, y, 0, 1.2);
+    tag(hit ? '撞了' : '沒撞', hit ? 'ptr' : 'idx', 4.0, y);
+    await beat(tok, 300); y -= 0.75;
+  }
+  say('隨機的是 a、b', '也就是「隨機選一個 hash function」');
+  await step(tok); // 3018 worst-case inputs, random hash function
+  tag('所有 (a, b) 裡撞的比例：' + c + '/' + t + ' ≈ ' + (c / t).toFixed(2), 'ptr alt', 1.2, 1.1);
+  say('輸入是最壞的，但 hash function 是隨機的', '撞的比例 ≤ 1/m = 0.25');
+  await step(tok); // 3031 prove: expected chain length is the load factor
+  say('可以證明：期望 chain 長度還是 α', '用 linearity of expectation（期望值的線性）');
+  await step(tok); // 3051 constant for constant load factor
+  okT('α 常數 ⇒ 期望 O(1)', 4.6, 3.0);
+  say('load factor 是常數 → 期望時間 O(1)');
+  await step(tok); // 3063 that's why hashing really works in theory
+  say('這才是 hashing 理論上真正有效的原因', '下一講還有別的 hashing 方法');
 }]);
 
 // ══════════════ BRO7mVIFt08：L9 Table Doubling, Karp-Rabin ══════════════
+FRAG.push(['algmit2-chaining-recap', '回顧：hashing with chaining', async (tok) => {
+  fresh([0, 8.5, 9.5], [0, 0, 0.8]);
+  let T = null;
+  const prof = buddy('老師', '', M2.purple, -6.0, 0, 2.6, 0.8);
+  await step(tok); // 22 a trilogy on hashing
+  bub('hashing 三部曲：第三集', 0, 1.6, -4.6);
+  say('hashing 三部曲的第三集');
+  await step(tok); // 31 hashing with chaining: constant expected time
+  prof.mood('happy');
+  okT('chaining：期望常數時間', 0, 1.0, -4.0);
+  say('上一講：hashing with chaining', '已經能做到期望常數時間');
+  await step(tok); // 43 insert, delete, exact search
+  note('insert、delete、exact search', 4.0, 1.0, -4.0);
+  say('支援 insert、delete、exact search', '這個 key 在不在？在就回傳 item');
+  await step(tok); // 54 analysis with SUH (or universal hashing)
+  say('分析用的是 simple uniform hashing', '或用 universal hashing（比較不奇怪）');
+  await step(tok); // 70 a giant universe of keys, maybe infinite
+  const U = ghostBox(M2.sand, 3.0, 1.4, 3.6); U.position.set(-5.4, 0.7, 0.6);
+  tag('universe（所有可能的 key，可能無限大）', 'ptr', -4.8, 1.8, -1.6);
+  say('一個巨大的 universe', '例如所有整數，無限多個');
+  await step(tok); // 79 a finite set of n keys: k1 … k4
+  const ks = ['k1', 'k2', 'k3', 'k4'].map((k, i) => cube(k, M2.blue, [0.7, 0.5, 0.7], -6.0 + (i % 2) * 1.2, 0.3, -0.2 + Math.floor(i / 2) * 1.4, 1.5));
+  say('實際存的是有限個 key', 'k1 … k4，n = 4');
+  await step(tok); // 89 reduce to a table of size m with h
+  T = m2chainTable();
+  say('用 hash function h 縮到 m 格的 table');
+  await step(tok); // 96 a three-way collision: k1, k4, k2 → slot 1
+  for (const k of ['k1', 'k4', 'k2']) { T.add(1, k, M2.blue); await beat(tok, 300); }
+  say('k1、k4、k2 都撞到第 1 格', '存成一條 linked list，順序不重要');
+  await step(tok); // 106 k3 maps to its own slot
+  T.add(4, 'k3', M2.teal);
+  say('k3 自己一格');
+  await step(tok); // 110 the other slots are empty: null
+  for (let i = 0; i < T.m; i++) if (!T.len[i]) tag('null', 'idx', T.X(i), 0.35, T.Z0 + 1.0);
+  say('其他格子是空的：null');
+  await step(tok); // 117 total size n + m
+  pkt('空間 = m（table）+ n（所有 list）', 2.6, 2.4, 2.6);
+  say('總空間 n + m', 'table m 格 + 所有 list 長度加起來 n');
+  await step(tok); // 135 a key goes to a slot with probability 1/m
+  say('每個 key 落到某一格的機率 1/m');
+  await step(tok); // 146 expected chain length n/m
+  say('期望 chain 長度 = n/m', 'n 次獨立嘗試，每次機率 1/m');
+  await step(tok); // 155 α, the load factor
+  note('α = n/m：load factor', 2.6, 1.6, 2.6);
+  say('叫它 α：load factor');
+  await step(tok); // 162 operations take O(1 + α)
+  say('insert、delete、search：O(1 + α)', '期望時間');
+  await step(tok); // 173 α constant → constant time
+  okT('α 常數 ⇒ 常數時間', 2.6, 0.8, 2.6);
+  say('只要 α 是常數，就是常數時間');
+  await step(tok); // 186 the division method: k mod m
+  fresh([0, 5, 12], [0, 2, 0]);
+  tag('division：h(k) = k mod m', 'ptr', -2.6, 4.4);
+  say('回憶 division method：k mod m', '今天會用到它');
+  await step(tok); // 197 the multiplication method: look at the middle
+  tag('multiplication：乘隨機整數，取中間的位元', 'ptr alt', 2.4, 3.6);
+  say('multiplication method：乘上隨機整數', '取乘積中間 → 很多份 k 混在一起');
+  await step(tok); // 219 one crucial thing missing?
+  const me = buddy('學生', '', M2.orange, 0, 0, 1.2, 0.8); me.mood('wow');
+  bub('還缺什麼？', 0, 2.2, 1.2);
+  say('好像很完整了', '但少了一件關鍵的事，是什麼？');
+  await step(tok); // 247 grow the table
+  me.mood('happy');
+  okT('讓 table 長大！', 0, 2.9, 1.2);
+  say('同學答：讓 table 長大（grow）');
+}]);
+
 FRAG.push(['algmit2-m-theta-n', 'm 要多大：太小變慢、太大浪費', async (tok) => {
   fresh([0, 6, 12], [0, 1.4, 0]);
-  say('剩下的問題：m 要多大？', 'n 隨插入一直變，事先不知道');
-  await beat(tok, 2400);
   const XL = (i) => -5.4 + i * 1.05;
+  let small = [];
+  await step(tok); // 250 what should m be?
+  bub('m 要多大？', 0, 3.6);
+  say('問題：m 要多大？');
+  await step(tok); // 257 we'd like m about the same as n
+  note('希望 m ≈ n', 0, 2.9);
+  say('建一個 m 格的 table，希望 m 跟 n 差不多');
+  await step(tok); // 263 we don't know n: insertions come along
+  say('麻煩：事先不知道 n', 'insert 一直來，n 一直變');
+  await step(tok); // 266 n big relative to m → trouble
   for (let i = 0; i < 4; i++) cube('', GRAY, [0.9, 0.12, 0.9], XL(i), 0.06, 0);
   tag('m = 4', 'ptr', -3.8, 0.2, 1.4);
-  for (let k = 0; k < 16; k++) { cube('', M2.blue, [0.8, 0.4, 0.8], XL(k % 4), 0.32 + Math.floor(k / 4) * 0.45, 0, 2); await beat(tok, 150); }
-  tag('α = 16/4 = 4', 'ptr alt', -3.8, 2.6);
-  say('m 太小：α 變大 → 變慢', 'm = Ω(n) 才能讓 α 是常數');
-  await beat(tok, 2600);
+  for (let k = 0; k < 16; k++) { small.push(cube('', M2.blue, [0.8, 0.4, 0.8], XL(k % 4), 0.32 + Math.floor(k / 4) * 0.45, 0, 2)); await beat(tok, 90); }
+  tag('α = 16/4 = 4 …一直變大', 'ptr alt', -3.8, 2.6);
+  say('n 比 m 大很多：α 變大', '不再是常數時間');
+  await step(tok); // 277 m really big → wasteful
   for (let i = 0; i < 32; i++) cube('', GRAY, [0.5, 0.1, 0.5], 1.2 + (i % 8) * 0.6, 0.05, -1.2 + Math.floor(i / 8) * 0.6);
   for (const i of [3, 10, 20, 29]) cube('', M2.blue, [0.45, 0.35, 0.45], 1.2 + (i % 8) * 0.6, 0.27, -1.2 + Math.floor(i / 8) * 0.6, 2);
   tag('32 格只放 4 個', 'ptr alt', 3.3, 1.4);
-  say('m 太大：浪費空間', 'm = O(n) 才是線性空間');
-  await beat(tok, 2600);
-  say('目標：m = Θ(n)', 'm 從常數開始（老師說 7、8），需要時 grow / shrink');
-  await beat(tok, 3000);
+  say('m 設得很大：又很浪費');
+  await step(tok); // 284 the point was to avoid one slot per possible key
+  say('這個結構的重點就是不要每個 key 都佔一格', '要省空間');
+  await step(tok); // 290 big enough to be fast, small enough not to waste
+  say('m 要夠大 → 快', '又要夠小 → 不浪費');
+  await step(tok); // 312 we want m = Θ(n)
+  const goal = pkt('目標：m = Θ(n)', 0, 4.4);
+  say('目標：m = Θ(n)');
+  await step(tok); // 319 Ω(n) → α constant
+  note('m = Ω(n) → α 是常數', -3.8, 3.4);
+  say('m 至少是 n 的常數倍（Ω(n)）', '→ α 是常數');
+  await step(tok); // 321 O(n) → linear space
+  note('m = O(n) → 空間線性', 3.3, 2.2);
+  say('m 不超過 n 的常數倍（O(n)）', '→ 空間是線性');
+  await step(tok); // 336 the way: grow the table
+  say('做法：讓 table 長大');
+  await step(tok); // 346 start with m = some constant (favorite: 7)
+  txt(goal, '從 m = 常數開始（老師最愛 7）');
+  say('一開始 m 是某個常數', '老師最喜歡 7');
+  await step(tok); // 355 probably a power of two
+  say('其實 2 的次方比較好');
+  await step(tok); // 360 grow and shrink as necessary
+  txt(goal, '需要時 grow / shrink');
+  say('需要時就放大（grow）或縮小（shrink）', '想法很直覺，難的是讓它真的有效率');
+  await step(tok); // 372 a whole new concept: amortization
+  bub('新概念：amortization（攤銷）', 0, 3.6);
+  say('這會帶出新概念：amortization（攤銷）');
+  await step(tok); // 384 also how Python's list is implemented
+  prop('file', 5.6, 0, 1.6, 0.8, 'Python list');
+  say('順便解開 Python list 是怎麼實作的', '其實是同一個問題');
 }]);
 
 FRAG.push(['algmit2-rehash', 'Grow：建新 table、用 h′ 全部 rehash', async (tok) => {
   fresh([0, 7.8, 10], [0, 0, 0.3]);
-  const X = m2row(8, -3.5, 1, -2.6, 0.85);
+  let X = null, X2 = null; const keys = [16, 9, 2, 11, 20, 13, 22, 31], it = {};
+  await step(tok); // 399 for example: want m ≥ n at all times
+  bub('例：隨時保持 m ≥ n', 0, 1.6, -4.4);
+  say('例：希望隨時 m ≥ n');
+  await step(tok); // 415 start with m = 8, an empty table
+  X = m2row(8, -3.5, 1, -2.6, 0.85);
   tag('T（m = 8）', 'ptr', -5.4, 0.2, -2.6);
-  const keys = [16, 9, 2, 11, 20, 13, 22, 31], it = {};
-  for (const k of keys) it[k] = m2item(k, M2.blue, X(k % 8), -2.6, 0, 0.75);
-  say('m = 8，已經放了 8 個', 'h(k) = k mod 8（示意 key）');
-  await beat(tok, 2400);
+  say('從 m = 8、空的 table 開始');
+  await step(tok); // 424 insert eight things
+  for (const k of keys) { it[k] = m2item(k, M2.blue, X(k % 8), -2.6, 2, 0.75); await beat(tok, 150); }
+  say('insert 8 個', 'h(k) = k mod 8（示意 key）');
+  await step(tok); // 427 then go to insert the ninth
   it[25] = m2item(25, M2.orange, 5.4, -2.6, 3, 0.75);
-  say('insert 第 9 個：n > m', '要 grow 成 m′');
-  await beat(tok, 2400);
-  const X2 = m2row(16, -6, 0.8, 1.6, 0.65);
+  say('再 insert 第 9 個');
+  await step(tok); // 429 now n > m: what should I do?
+  noT('n = 9 > m = 8', 5.4, 1.4, -2.6);
+  say('n > m 了，怎麼辦？');
+  await step(tok); // 445 at the end of insert: grow the table
+  say('在 insert 演算法的最後檢查', 'n > m 就 grow table');
+  await step(tok); // 453 what does growing a table mean?
+  say('grow 一個 table 是什麼意思？');
+  await step(tok); // 464 from size m to a new size m′
+  tag("m → m′", 'ptr alt', 0, 1.4, 0);
+  say("從大小 m 變成新的大小 m′", '暖身題：要做什麼？');
+  await step(tok); // 471 works for growing or shrinking
+  note("m′ 可以比 m 大，也可以比 m 小", 0, 0.8, 0.6);
+  say('放大、縮小都適用');
+  await step(tok); // 493 allocate the memory and rehash
+  say('同學答：配置記憶體，再全部 rehash');
+  await step(tok); // 502 build an entirely new table, size m′
+  X2 = m2row(16, -6, 0.8, 1.6, 0.65);
   tag("T′（m′ = 16）", 'ptr alt', 0, 0.2, 3.0);
-  say('配置新 table T′', '初始化 m′ 格：Θ(m′)');
-  await beat(tok, 2200);
-  say("每個 item 用新的 h′ 重新 insert", "h′(k) = k mod 16");
+  say('建一個全新的 table T′', "大小 m′ = 16");
+  await step(tok); // 534 for each item in the old table, insert into T′
   const cnt = {};
-  for (const k of [...keys, 25]) {
-    const s = k % 16, c = cnt[s] || 0; cnt[s] = c + 1;
-    glow(it[k], GOLD); move(it[k], X2(s), 0.45 + c * 0.62, 1.6);
-    await beat(tok, 420); glow(it[k], null);
-  }
-  say('25 與 9 在新表撞在第 9 格', 'chaining 照樣串起來');
-  await beat(tok, 2200);
-  say('一定要換 hash function', '舊的 h 只會用到前 8 格');
-  await beat(tok, 2600);
-  say('成本 Θ(n + m + m′)', '走過每格、每條 list、建新表；= Θ(n)');
-  await beat(tok, 3000);
+  for (const k of [...keys, 25]) { const s = k % 16, c = cnt[s] || 0; cnt[s] = c + 1; glow(it[k], GOLD); move(it[k], X2(s), 0.45 + c * 0.62, 1.6); await beat(tok, 200); glow(it[k], null); }
+  say("舊 table 的每個 item，重新 insert 到 T′", "h′(k) = k mod 16：25 和 9 撞在第 9 格，照樣串起來");
+  await step(tok); // 565 how much time does this take?
+  bub('這要花多少時間？', 0, 1.6, -4.4);
+  say('重點：rehash 要花多少時間？');
+  await step(tok); // 578 order n
+  say('同學答：O(n)', 'm 和 m′ 都是 Θ(n) 時沒錯');
+  await step(tok); // 587 in general n + m + m′
+  pkt("Θ(n + m + m′)", 4.6, 1.6, -4.4);
+  say("一般來說是 Θ(n + m + m′)");
+  await step(tok); // 603 visit every slot (m), every list (n), build T′ (m′)
+  note('走過 m 格 + n 個 item + 初始化 m′ 格', 4.0, 0.8, 3.6);
+  say('要走過舊表每一格（m）、每條 list（n）', "還要把新表 m′ 格初始化成空的");
+  await step(tok); // 622 we have to build a new hash function
+  say('另一個重點：要換新的 hash function', "叫它 h′");
+  await step(tok); // 637 h maps the universe to a table of size m
+  say('hash function 就是把 universe 映到 m 格', 'm 變了，h 一定要換');
+  await step(tok); // 644 the old h would only use the beginning
+  const gb = ghostBox(M2.red, 6.4, 0.3, 0.9); gb.position.set(3.2 + 0.4, 0.15, 1.6);
+  noT('舊的 h 只會用到前 8 格', 3.6, 1.2, 3.4);
+  say('用舊的 h，只會用到前面 8 格', '新加的格子永遠用不到');
+}]);
+
+FRAG.push(['algmit2-table-doubling', 'Table doubling vs m + 1：攤銷 O(1)', async (tok) => {
+  fresh([0, 5, 14.5], [0, 2.6, 0]);
+  const N = 32, X = (i) => -6 + i * 0.37;
+  let lane = null;
+  const mkLane = (z, lbl, cls, grow) => {
+    tag(lbl, cls, -6.8, 0.2, z);
+    const tot = tag('總成本 0', cls, 5.2, 0.4, z + 0.9);
+    let m = 8, s = 0, i = 0;
+    return {
+      async run(upto, ms = 60) {
+        for (; i < upto; ) {
+          i++; let c = 1; if (i > m) { c += i - 1; m = grow(m); }
+          s += c; const b = m2bar(c > 1 ? M2.red : M2.green, 0.3, 0.6, X(i), z); m2set(b, 0.06 + c * 0.12);
+          txt(tot, '總成本 ' + s + '（m = ' + m + '）');
+          if (ms) await beat(tok, ms);
+        }
+      },
+    };
+  };
+  await step(tok); // 657 the table is too small: make it bigger
+  say('table 太擠了，要放大');
+  await step(tok); // 664 how much bigger? 2x
+  bub('放大多少？兩倍？三倍？', 0, 5.4);
+  say('放大多少？', '同學：兩倍');
+  await step(tok); // 684 m′ = 2m is the correct answer
+  okT("正確：m′ = 2m", 3.4, 4.6);
+  say("m′ = 2m 是對的", '但先看看錯的答案');
+  await step(tok); // 691 the wrong answer: just make it one bigger
+  noT("錯的：m′ = m + 1", -3.4, 4.6);
+  const A = mkLane(-1.6, 'm + 1', 'ptr', (m) => m + 1);
+  say('錯的答案：只放大一格', "m′ = m + 1");
+  await step(tok); // 699 it maintains m ≥ n
+  say('這樣也能維持 m ≥ n', '看起來很安全');
+  await step(tok); // 718 the cost of n insertions?
+  say('那 n 次 insert 總共花多少？', '紅色 = 這次要重建整個 table');
+  await step(tok); // 725 start at size 8, insert n times
+  await A.run(8, 80);
+  say('從 m = 8 開始，連續 insert', '前 8 次：每次成本 1');
+  await step(tok); // 737 after 8 insertions: rebuild, linear time
+  await A.run(9, 0);
+  say('第 9 次：table 滿了，重建', '花線性時間');
+  await step(tok); // 740 insert one more: rebuild again
+  await A.run(10, 0);
+  say('再 insert 一個：又要重建！');
+  await step(tok); // 748 1 + 2 + 3 + 4 …: a triangular number
+  await A.run(N, 50);
+  say('每次 insert 都要重建', '成本 … + 9 + 10 + 11 + …：三角形數');
+  await step(tok); // 758 quadratic: bad
+  noT('Θ(n²)', 5.2, 1.8, -1.6);
+  say('加起來是 Θ(n²)：二次方，很糟');
+  await step(tok); // 765 if we just double m, we're golden
+  const B = mkLane(1.6, '× 2', 'ptr alt', (m) => m * 2);
+  say('改成每次放大兩倍', '就沒問題了');
+  await step(tok); // 776 a technique called table doubling
+  say('這個技巧叫 table doubling');
+  await step(tok); // 782 the cost of n insertions
+  await B.run(8, 80);
+  say('一樣從 m = 8 開始連續 insert');
+  await step(tok); // 799 at 8, insert → double to 16
+  await B.run(9, 0);
+  say('第 9 個：重建，m 變 16');
+  await step(tok); // 803 insert eight more, double to 32
+  await B.run(17, 60);
+  say('再 insert 8 個 → 重建，m 變 32');
+  await step(tok); // 806 insert 16 more, double to 64
+  await B.run(N, 50);
+  say('再 insert 16 個 → m 變 64', '（再往後）');
+  await step(tok); // 816 rebuilding only about log n times
+  say('每次重建都是線性時間', '但只重建大約 log n 次');
+  await step(tok); // 824 so n log n? no
+  bub('那總共 n log n？', 0, 5.4);
+  say('所以是 n log n 嗎？', '那就跟 BST 一樣了，我們要更好');
+  await step(tok); // 837 the first rebuild costs ~8
+  note('8', X(9), 1.6, 2.6);
+  say('第一次重建成本約 8');
+  await step(tok); // 841 the next costs 16, twice that
+  note('16', X(17), 2.6, 2.6);
+  say('第二次 16：是兩倍');
+  await step(tok); // 846 they go up geometrically
+  note('32 …', X(32), 4.4, 2.6);
+  say('8、16、32、64…：等比級數（geometric）');
+  await step(tok); // 864 a geometric series is Θ(n)
+  okT('等比級數總和 = Θ(n)', 3.4, 5.4);
+  say('等比級數由最後一項主宰', 'n 次 insert 總共 Θ(n)');
 }]);
 
 FRAG.push(['algmit2-amortized', 'Amortized：把偶爾的昂貴操作攤平', async (tok) => {
   fresh([0, 4.6, 13], [0, 2.2, 0]);
   const N = 24, XB = (i) => -5.75 + i * 0.48, S = 0.2, bars = [], cost = [];
   let m = 8, tot = 0;
-  say('從 m = 8 開始連續 insert', '紅色 = 這次觸發 rebuild');
   for (let i = 1; i <= N; i++) {
     let c = 1; if (i > m) { c += i - 1; m *= 2; }
     cost.push(c); tot += c;
     const b = m2bar(c > 1 ? M2.red : M2.green, 0.36, 0.6, XB(i), 0); m2set(b, c * S); bars.push(b);
-    await beat(tok, c > 1 ? 900 : 110);
   }
   tag('9', 'idx', XB(9), 9 * S + 0.3); tag('17', 'idx', XB(17), 17 * S + 0.3);
-  say('單次 insert 可能要 Θ(n)', '但昂貴的只有 log n 次，其他都常數');
-  await beat(tok, 2600);
-  say('Amortized：k 次操作總時間 ≤ k · T(n)', '不是對單一操作的保證');
-  await beat(tok, 2800);
+  const ds = buddy('table', '', M2.blue, 4.6, 0, 1.6, 0.8);
+  await step(tok); // 870 strange to talk about Θ(n)
+  say('n 次 insert 共 Θ(n)', '但這不是應該每次常數嗎？');
+  await step(tok); // 876 not constant time per operation
+  ds.mood('sad');
+  say('它不是「每次操作」都常數時間');
+  await step(tok); // 888 the last rebuild: linear time for one operation
+  glow(bars[16], RED);
+  say('像第 17 次 insert：要重建整個 table', '這一次就花線性時間');
+  await step(tok); // 899 comforting: only log n of them are expensive
+  glow(bars[16], null); glow(bars[8], RED); glow(bars[16], RED);
+  say('好消息：昂貴的只有少數幾次', '大約 log n 次');
+  await step(tok); // 906 the rest are constant time
+  bars.forEach((b, i) => cost[i] === 1 && glow(b, GREEN));
+  ds.mood('happy');
+  say('其他都是常數時間', '直接放進 table 就好');
+  await step(tok); // 911 this idea is amortization
+  bars.forEach((b) => glow(b, null));
+  bub('amortization（攤銷）', 3.6, 4.6);
+  say('這個想法叫 amortization（攤銷）');
+  await step(tok); // 924 this is table doubling
+  note('例子：table doubling', 3.6, 3.9);
+  say('剛剛的例子就叫 table doubling');
+  await step(tok); // 938 a definition
+  say('來定義一下');
+  await step(tok); // 1011 the amortized running time is T(n)
+  const def = pkt('amortized 時間 = T(n)', -2.4, 5.4);
+  say('說一個操作的 amortized 時間是 T(n)');
+  await step(tok); // 1021 not a statement about individual operations
+  say('不是在保證「每一次」操作');
+  await step(tok); // 1027 k operations take at most k · T(n) total
+  txt(def, '任意 k 次操作：總時間 ≤ k · T(n)');
+  say('意思是：做 k 次操作', '總時間最多 k · T(n)');
+  await step(tok); // 1038 amortize in the economic sense: spread out the high costs
+  say('經濟學的「攤銷」', '把很高的成本分攤開，讓平均每次都便宜');
+  await step(tok); // 1048 like rent: monthly vs a bit every day
+  const rent = prop('warehouse', 4.6, 0, -1.4, 0.8, '房租：每月付一次'); bob(rent, 0.03);
+  say('像房租：每個月付一次', '也可以想成每天付一點點');
+  await step(tok); // 1091 like the running time on average
   const avg = tot / N;
-  await anim(tok, 1600, (t) => bars.forEach((b, i) => m2set(b, (cost[i] + (avg - cost[i]) * t) * S)));
+  await anim(tok, 1400, (t) => bars.forEach((b, i) => m2set(b, (cost[i] + (avg - cost[i]) * t) * S)));
   bars.forEach((b) => tint(b, M2.blue));
-  tag('平均 = ' + tot + ' / ' + N + ' = ' + avg, 'ptr alt', 3.6, 1.4);
-  say('像房租：月付一次 ≈ 每天付一點', '把貴的攤到每一次');
-  await beat(tok, 2800);
-  say('Table doubling：k 次 insert 共 Θ(k)', '每次 insert amortized Θ(1)');
-  await beat(tok, 2800);
-  say('只在乎總時間就夠用', 'real-time 系統才在乎單次最壞');
-  await beat(tok, 2600);
-  say('delete 不縮表：只會更划算', '但 n 次 insert 再 n 次 delete → m 仍很大');
-  await beat(tok, 3000);
+  tag('平均 = ' + tot + ' / ' + N + ' ≈ ' + avg.toFixed(1), 'ptr alt', -2.4, 1.6);
+  say('有點像「平均每次操作」的時間', '把高的削下來，填到低的');
+  await step(tok); // 1096 put that in quotes: not average case
+  noT('≠ average case（平均情況）', -2.4, 4.6);
+  say('但要加引號', '跟「平均情況」（隨機輸入）是兩回事');
+  await step(tok); // 1116 only makes sense for data structures
+  say('只對資料結構有意義', '資料結構會被連續操作很多次');
+  await step(tok); // 1130 add them up and divide by the number of operations
+  say('把所有操作時間加起來', '再除以操作次數 = amortized 時間');
+  await step(tok); // 1134 table doubling: Θ(1) amortized
+  okT('table doubling：amortized Θ(1)', 3.6, 3.2);
+  say('table doubling 的 amortized 時間是 Θ(1)');
+  await step(tok); // 1163 k inserts take Θ(k) total
+  say('k 次 insert 總共 Θ(k)', '目前只分析了 insert');
+  await step(tok); // 1173 constant amortized per insert
+  say('所以每次 insert 是 amortized 常數時間');
+  await step(tok); // 1184 usually you only care about the overall running time
+  say('簡單但很有用', '通常只在乎整個演算法的總時間');
+  await step(tok); // 1190 unless you're in a real-time system
+  note('real-time 系統：才在乎單次最壞', 3.6, 2.4);
+  say('除非是 real-time（即時）系統', '那才在乎每一次都要快');
+  await step(tok); // 1204 e.g. counting duplicate words in docdist
+  say('例：docdist 數重複的字', '只在乎數完要多久，不在乎迴圈某一步多久');
+  await step(tok); // 1224 also true with deletions
+  say('有 delete 時也成立');
+  await step(tok); // 1244 delete just removes; the table keeps its size
+  say('現在的 delete 只是拿掉 item', 'table 大小不變');
+  await step(tok); // 1254 deletions only help
+  say('delete 只會讓情況更好', 'n 變小，要更多次 insert 才會再重建');
+  await step(tok); // 1274 k inserts and deletes: still O(k)
+  txt(def, 'k 次 insert / delete：總共 O(k)');
+  say('k 次 insert、delete：還是 O(k)', '每次 amortized 常數');
+  await step(tok); // 1279 but not totally satisfying
+  ds.mood('wow');
+  say('但還不夠完美……');
+}]);
+
+FRAG.push(['algmit2-shrink-quarter', '縮表要在 n = m/4：避免來回抖動', async (tok) => {
+  fresh([0, 5, 14.5], [0, 2.4, 0]);
+  const ops = ['+', '−', '+', '−', '+', '−', '+', '−'];
+  const lane = (rule, z, lbl) => {
+    tag(lbl, rule === 'half' ? 'ptr' : 'ptr alt', -6.6, 0.2, z);
+    let n = 8, m = 8, tot = 0, i = 0;
+    const ml = tag('n = 8、m = 8', 'idx', 5.4, 0.2, z);
+    return async (upto, ms) => {
+      for (; i < upto; i++) {
+        let c = 1;
+        if (ops[i] === '+') { n++; if (n > m) { c += n - 1; m *= 2; } }
+        else { n--; if ((rule === 'half' && n <= m / 2) || (rule === 'quarter' && n <= m / 4)) { c += n; m /= 2; } }
+        tot += c;
+        const b = m2bar(c > 1 ? M2.red : M2.green, 0.7, 0.7, -5.2 + i * 1.2, z); m2set(b, 0.08 + c * 0.2);
+        tag(ops[i] === '+' ? '插入' : '刪除', 'idx', -5.2 + i * 1.2, 0, z + 0.7);
+        txt(ml, 'n = ' + n + '、m = ' + m + '、總 ' + tot);
+        await beat(tok, ms);
+      }
+    };
+  };
+  let H = null, Q = null;
+  await step(tok); // 1286 the table might get big again: m ≫ n
+  say('還有個問題：m 可能比 n 大很多');
+  await step(tok); // 1292 n inserts, then n deletes
+  bub('n 次 insert，再 n 次 delete', 0, 5.4);
+  say('例：先 insert n 次、再 delete n 次');
+  await step(tok); // 1297 n = 0 but m is still huge
+  noT('n = 0，m 還是很大', 0, 4.7);
+  say('table 空了（n = 0）', '但 m 還停在最大的時候');
+  await step(tok); // 1314 how to fix that?
+  say('要縮表（shrink）', '怎麼縮？一個對、一個錯');
+  await step(tok); // 1335 option one: n = m/2 → shrink to half
+  H = lane('half', -1.6, 'n = m/2 就縮');
+  say('想法一：n = m/2 時，縮成一半', '方向對了，但有問題嗎？');
+  await step(tok); // 1368 8 items, add a ninth → double to 16
+  await H(1, 0);
+  say('table 有 8 個（m = 8），加第 9 個', '→ 放大成 16（紅色：重建）');
+  await step(tok); // 1381 delete it, back to 8 → m = n/2 → shrink
+  await H(2, 0);
+  say('刪掉第 9 個，回到 8 個', 'n = m/2 → 縮回 8（又重建）');
+  await step(tok); // 1388 insert, delete, insert, delete … linear each
+  await H(8, 300);
+  say('insert、delete、insert、delete……', '每次操作都要線性時間！');
+  await step(tok); // 1398 bouncing between 2^k and 2^(k+1)
+  noT('在 2ᵏ 和 2ᵏ⁺¹ 之間來回抖動', 0, 4.0);
+  say('在 2ᵏ 和 2ᵏ⁺¹ 之間來回跳', '太慢了');
+  await step(tok); // 1428 shrink at n = m/3 or so
+  say('同學提議：等到 m/3 再縮');
+  await step(tok); // 1444 I'll use 4 to keep powers of 2
+  Q = lane('quarter', 1.6, 'n = m/4 才縮');
+  say('老師用 4：n = m/4 才縮', '保持 2 的次方');
+  await step(tok); // 1448 any number bigger than 2 works
+  note('任何大於 2 的比例都可以', 3.6, 4.0);
+  say('其實任何大於 2 的數都行');
+  await step(tok); // 1458 still shrink to half, but only when 3/4 empty
+  await Q(8, 250);
+  say('一樣縮成一半', '但只在 3/4 是空的（只用 1/4）時才縮');
+  await step(tok); // 1471 to grow again you must insert m/2 items
+  say('縮完是半滿', '要再 insert m/2 個才會再放大');
+  await step(tok); // 1489 amortized time becomes constant
+  okT('amortized 常數時間', 3.6, 4.7);
+  say('這樣 amortized 時間就是常數');
+  await step(tok); // 1505 any mix of k inserts and deletes
+  say('任意混合 k 次 insert、delete 都成立');
+  await step(tok); // 1512 maintain n ≤ m ≤ 4n → linear space
+  pkt('隨時 n ≤ m ≤ 4n → 空間線性', 0, 5.4);
+  say('隨時維持 n ≤ m ≤ 4n', '空間永遠是線性');
+  await step(tok); // 1531 the proof is tricky: read the textbook
+  say('證明有點難，課堂沒時間', '想知道就看課本');
 }]);
 
 FRAG.push(['algmit2-python-list', 'Python list：table doubling 的 resizable array', async (tok) => {
   fresh([0, 6.5, 11], [0, 0.4, 0.6]);
-  const X = m2row(8, -4.2, 1.2, -1.2, 1.0);
+  let X = null; const L = [];
+  await step(tok); // 1545 we can also solve Python lists
+  prop('file', -6.0, 0, 2.2, 0.8, 'Python list');
+  say('table doubling 也解開了 Python list');
+  await step(tok); // 1558 resizable arrays
+  X = m2row(8, -4.2, 1.2, -1.2, 1.0);
   tag('capacity 8', 'ptr', -6.2, 0.2, -1.2);
-  const L = ['a', 'b', 'c', 'd', 'e'].map((v, i) => m2item(v, M2.blue, X(i), -1.2, 0, 0.9));
-  say('Python list = 可變長的 array', 'L[i]：O(1) random access');
-  await beat(tok, 2400);
+  ['a', 'b', 'c', 'd', 'e'].forEach((v, i) => L.push(m2item(v, M2.blue, X(i), -1.2, 2, 0.9)));
+  say('Python list 也叫 resizable array（可變長陣列）');
+  await step(tok); // 1565 random access: L[i] in constant time
+  glow(L[2], GOLD);
+  say('random access：L[i] 直接拿第 i 個', 'O(1)');
+  await step(tok); // 1574 append: constant
+  glow(L[2], null);
   L.push(m2item('f', M2.green, X(5), -1.2, 3, 0.9));
-  say('append：放在尾端', 'O(1)');
-  await beat(tok, 1800);
+  say('list.append：加在最後面', 'O(1)');
+  await step(tok); // 1584 delete the last item: list.pop
   fly(L.pop());
-  say('pop()：拿掉最後一個', 'O(1)');
-  await beat(tok, 1800);
+  say('list.pop()：刪掉最後一個', 'O(1)');
+  await step(tok); // 1595 deleting the first item is linear
   fly(L.shift());
-  await beat(tok, 500);
+  await beat(tok, 400);
   L.forEach((c, i) => move(c, X(i), 0.45, -1.2));
-  say('pop(0)：刪第一個', '後面全部往前搬 → O(n)');
-  await beat(tok, 2400);
-  for (const v of ['p', 'q', 'r', 's']) { L.push(m2item(v, M2.blue, X(L.length), -1.2, 2.5, 0.9)); await beat(tok, 350); }
-  say('滿了再 append', 'table doubling：搬到 2 倍大的 array');
-  await beat(tok, 1800);
+  say('刪第一個不是常數時間', '後面全部往前搬 → O(n)');
+  await step(tok); // 1602 implemented by arrays, with table doubling
+  for (const v of ['p', 'q', 'r', 's']) { L.push(m2item(v, M2.blue, X(L.length), -1.2, 2.5, 0.9)); await beat(tok, 200); }
   const X2 = m2row(16, -6, 0.8, 2.2, 0.7);
-  for (let i = 0; i < L.length; i++) { move(L[i], X2(i), 0.45, 2.2); await beat(tok, 200); }
+  for (let i = 0; i < L.length; i++) move(L[i], X2(i), 0.45, 2.2);
   m2item('t', M2.green, X2(8), 2.2, 2.5, 0.7);
-  say('所以 append、pop 是 constant amortized', '不是最壞 O(1)');
-  await beat(tok, 2800);
-  say('想要最壞 O(1)？', '快滿時就在旁邊先建 2 倍大的新表');
-  await beat(tok, 2600);
-  say('每次 insert 順便搬幾個過去', '滿的那刻正好搬完 → 直接切換（很難寫）');
-  await beat(tok, 3000);
+  say('list 用 array 實作', '滿了就 table doubling：搬到兩倍大的 array');
+  await step(tok); // 1613 any constant, deletion constant smaller
+  note('縮表的門檻要比放大的寬', 0, 1.6, 3.4);
+  say('不一定是 2 倍，任何常數都行', '只要縮表的比例比放大的小');
+  await step(tok); // 1625 append and pop are constant amortized
+  okT('append、pop：constant amortized', 3.6, 2.4, -1.2);
+  say('所以 append、pop 是 constant amortized', '不是每次都保證常數');
+  await step(tok); // 1640 constant worst case is possible
+  bub('想要每次都 O(1)？', -3.6, 2.4, -1.2);
+  say('其實也能做到「每次」最壞都是常數');
+  await step(tok); // 1654 when getting full, build a 2× table on the side
+  const side = ghostBox(M2.green, 13, 0.6, 0.9); side.position.set(0, 0.3, 4.2);
+  tag('旁邊先建好 2 倍大的新表', 'ptr alt', 0, 0.9, 4.6);
+  say('快滿時，在旁邊開始建一個兩倍大的新表');
+  await step(tok); // 1665 each insert: move a few items over
+  for (let i = 0; i < 3; i++) { const c = cube(L[i].userData.lbl.element.textContent, M2.green, [0.6, 0.4, 0.6], X2(i), 0.3, 4.2, 1.5); await beat(tok, 200); }
+  say('每次 insert 順便搬幾個（例如 5 個）過去');
+  await step(tok); // 1674 by the time you're full, switch over
+  say('等舊表滿的那一刻，正好搬完', '直接切換過去');
+  await step(tok); // 1680 tricky; only real-time systems care
+  note('很難寫對；real-time 系統才需要', 3.6, 1.6, 4.6);
+  say('很難寫對，實務上很少人做', 'real-time 系統才會在意');
+  await step(tok); // 1694 move on to the next topic
+  say('table doubling 講完了', '它不在乎 hashing 本身，只要重建是線性時間');
 }]);
 
 const M2T = '160060061', M2S = '6006';
 FRAG.push(['algmit2-naive-match', 'String matching：暴力比對 O(|s|·|t|)', async (tok) => {
   fresh([0, 4.6, 12.5], [0, 2.4, 0]);
-  code(['any(s == t[i : i+len(s)]', '    for i in range(len(t) − len(s) + 1))'], 0, 6.3, 0.5);
   const X = (i) => -4 + i * 1.0;
-  const T = [...M2T].map((c, i) => cube(c, M2.sand, [0.85, 0.7, 0.7], X(i), 1.0, 0));
+  let T = null, S = null, cd = null;
+  await step(tok); // 1728 a new problem: string matching
+  bub('新問題：string matching（字串比對）', 0, 4.8);
+  say('新問題：string matching', '很多實際應用');
+  await step(tok); // 1742 who has used grep?
+  prop('monitor', -5.4, 0, -1, 0.8, 'grep');
+  say('用過 Unix 的 grep 嗎？');
+  await step(tok); // 1746 Find in a text editor
+  prop('keyboard', 5.4, 0, -1, 0.8, '編輯器的 Find');
+  say('或編輯器裡的「尋找」（Find）', '都是同一類問題');
+  await step(tok); // 1757 search for a pattern (substring) in a giant string
+  say('在一大段文字裡，找一個 pattern', 'pattern 就是一小段字串（substring）');
+  await step(tok); // 1766 given s and t: does s occur as a substring of t?
+  T = [...M2T].map((c, i) => cube(c, M2.sand, [0.85, 0.7, 0.7], X(i), 1.0, 0, 1.5));
   [...M2T].forEach((c, i) => tag(String(i), 'idx', X(i), 0.3, 0.6));
-  const S = [...M2S].map((c, j) => cube(c, M2.blue, [0.85, 0.7, 0.7], X(j), 2.6, 0));
-  tag('s', 'ptr', -5.4, 2.6); tag('t', 'ptr', -5.4, 1.0);
-  say('s 有沒有出現在 t 裡？', "s = '6006'；t 示意（例：整個信箱）");
-  await beat(tok, 2600);
-  let comps = 0;
-  for (let i = 0; i + 4 <= M2T.length; i++) {
+  tag('t', 'ptr', -5.4, 1.0);
+  say('正式說法：給兩個字串 s、t', 's 有沒有出現在 t 裡面？');
+  await step(tok); // 1794 s = '6006'
+  S = [...M2S].map((c, j) => cube(c, M2.blue, [0.85, 0.7, 0.7], X(j), 2.6, 0, 1.5));
+  tag('s', 'ptr', -5.4, 2.6);
+  say("例：s = '6006'");
+  await step(tok); // 1800 t = all the mail you've ever received
+  note('t：你收過的所有信（這裡用短字串示意）', 1.2, 0.0, 1.4);
+  say('t：例如你信箱裡所有的信', '這裡用一小段數字示意');
+  await step(tok); // 1810 t is big, s is small
+  say('通常 t 很大、s 很小', 's 是你打進搜尋框的字');
+  await step(tok); // 1826 s = what you type in Google, t = the entire web
+  say('另一個例子：s = 你在 Google 打的字', 't = 整個網路');
+  await step(tok); // 1845 what's the obvious way?
+  say('最直接的做法是什麼？');
+  await step(tok); // 1856 check each substring of the right length
+  say('同學答：檢查 t 裡每一段長度 |s| 的子字串', '只有線性多段');
+  await step(tok); // 1896 Python code for it
+  cd = code(['any(s == t[i : i+len(s)]', '    for i in range(len(t) − len(s) + 1))'], 0, 6.3, 0.5);
+  say('老師的 Python 寫法', 't[i : i+len(s)] 是切出一段子字串');
+  const at = async (i, quick) => {
     S.forEach((c, j) => move(c, X(i + j), 2.6));
-    await beat(tok, 500);
+    await beat(tok, quick ? 150 : 350);
     let ok = true, j = 0;
-    for (; j < 4; j++) {
-      comps++;
-      const same = M2T[i + j] === M2S[j];
-      glow(T[i + j], same ? GOLD : RED); glow(S[j], same ? GOLD : RED);
-      await beat(tok, 230);
-      if (!same) { ok = false; break; }
-    }
-    say('i = ' + i + (ok ? '：全部相同 → match' : '：第 ' + (j + 1) + ' 個字元不同'), '已比較 ' + comps + ' 個字元');
+    for (; j < 4; j++) { const same = M2T[i + j] === M2S[j]; glow(T[i + j], same ? GOLD : RED); glow(S[j], same ? GOLD : RED); await beat(tok, quick ? 80 : 180); if (!same) { ok = false; break; } }
     if (ok) for (let q = 0; q < 4; q++) glow(T[i + q], GREEN);
-    await beat(tok, ok ? 1500 : 900);
+    await beat(tok, quick ? 150 : 300);
     for (let q = 0; q < 4; q++) { if (!ok) glow(T[i + q], null); glow(S[q], null); }
-  }
-  say('每個位置最多比 |s| 個字元', 'O(|s| · (|t| − |s|)) ≈ O(|s| · |t|)');
-  await beat(tok, 2800);
-  say('目標：用 hashing 變成線性', 'O(|s| + |t|)');
-  await beat(tok, 2600);
+    return [ok, j];
+  };
+  await step(tok); // 1935 compare s with t at position 0
+  await at(0);
+  say("i = 0：s 跟 t 的前 4 個比", "第 1 個字元就不同（'1' ≠ '6'）");
+  await step(tok); // 1947 shift over by one, compare again
+  await at(1);
+  say('往右移一格再比', "i = 1：'6006' 全部相同 → match");
+  await step(tok); // 1974 compare first characters until a mismatch
+  await at(2);
+  say('== 的比法：從第一個字元開始比', '遇到不同就停（i = 2：第 1 個就不同）');
+  await step(tok); // 1987 roughly |t| − |s| shifts
+  for (const i of [3, 4, 5]) await at(i, true);
+  say('一共移 |t| − |s| + 1 次', '移超過尾巴就不可能 match');
+  await step(tok); // 2010 does any of them match?
+  say('有任何一個位置 match → s 在 t 裡', '要列出所有 match 也一樣時間');
+  await step(tok); // 2028 running time?
+  bub('時間是多少？', 4.6, 4.8);
+  say('執行時間是多少？', '跟 |s|、|t| 有關');
+  await step(tok); // 2045 t times s
+  pkt('O(|s| · |t|)', 4.6, 4.2);
+  say('同學答：|s| × |t|');
+  await step(tok); // 2050 technically |s| · (|t| − |s|)
+  say('精確來說是 |s| · (|t| − |s|)', '通常 s 比 t 小很多 → 就是 |s| · |t|');
+  await step(tok); // 2068 kind of slow
+  noT('s 很長時：接近平方', 4.6, 3.5);
+  say('這有點慢', '搜尋很長的字串時可能是平方時間');
+  await step(tok); // 2078 certainly you need |s| + |t|
+  say('至少要 |s| + |t|', '總得把兩個字串都看一遍');
+  await step(tok); // 2089 use hashing to get linear time
+  okT('目標：O(|s| + |t|)', 4.6, 2.8);
+  say('今天：用 hashing 做到線性時間');
 }]);
 
 FRAG.push(['algmit2-rolling-window', 'Rolling hash ADT：append、skip、r()', async (tok) => {
   fresh([0, 4.6, 12.5], [0, 2.4, 0]);
   const X = (i) => -4 + i * 1.0;
-  [...M2T].forEach((c, i) => cube(c, M2.sand, [0.85, 0.7, 0.7], X(i), 1.0, 0));
-  const win = ghostBox(M2.gold, 4.0, 1.0, 1.0); win.position.set(X(1.5), 1.0, 0);
+  const T = [...M2T].map((c, i) => cube(c, M2.sand, [0.85, 0.7, 0.7], X(i), 1.0, 0));
+  const me = buddy('學生', '', M2.orange, 5.8, 0, 1.6, 0.7); me.look(-1);
+  let win = null, xs = [];
+  await step(tok); // 2096 ideas? using hashing
+  bub('怎麼用 hashing 變快？', 3.4, 4.6);
+  say('怎麼用 hashing 做到線性？');
+  await step(tok); // 2124 split into words? not necessary
+  note('切成單字？（舊搜尋引擎這樣做，但不需要）', -1.6, 4.6);
+  say('有人說：切成單字', '可行，但不需要');
+  await step(tok); // 2144 an algorithm guaranteed (in expectation)
+  say('今天的演算法：保證線性時間', '期望值意義下（因為用了隨機）');
+  await step(tok); // 2166 a rolling window of t, always of size |s|
+  win = ghostBox(M2.gold, 4.0, 1.0, 1.0); win.position.set(X(1.5), 1.0, 0);
+  me.mood('happy');
+  say('同學的想法：看 t 上一個「滑動視窗」', '寬度永遠是 |s|');
+  await step(tok); // 2175 comparing strings is expensive
+  say('每次都問：視窗裡的字串 = s 嗎？', '直接比字串很貴');
+  await step(tok); // 2185 compare hash values instead
+  const hv = pkt('h(視窗) = h(s)？', X(1.5), 2.3);
+  say('改成比 hash 值');
+  await step(tok); // 2200 hash down to something that fits in a word
+  say('hash 成一個 word 裝得下的數', '比兩個數相等：O(1)');
+  await step(tok); // 2215 constant time per operation — how?
+  say('如果每次 O(1) 就太好了', '難的是怎麼做到');
+  await step(tok); // 2248 rolling hashes
+  remove(hv);
+  bub('新工具：rolling hash（滾動雜湊）', 3.4, 4.6);
+  say('需要一個新的資料結構：rolling hash');
+  await step(tok); // 2268 recomputing each window's hash costs |s|
+  for (let i = 0; i < 4; i++) { glow(T[i], GOLD); await beat(tok, 120); }
+  noT('每個視窗重算 hash：O(|s|) → 沒省到', 0, 3.4);
+  say('每個視窗都從頭算 hash', '每次要 O(|s|)，沒有比較快');
+  await step(tok); // 2293 compute the next window's hash in constant time
+  for (let i = 0; i < 4; i++) glow(T[i], null);
+  say('希望：有了這個視窗的 hash', '常數時間就算出下一個視窗的');
+  await step(tok); // 2305 they share |s| − 1 characters
+  const g2 = ghostBox(M2.teal, 4.0, 1.0, 1.0); g2.position.set(X(2.5), 1.0, 0.05);
+  for (let i = 1; i < 4; i++) glow(T[i], GREEN);
+  say('同學說：相鄰兩個視窗共用 |s| − 1 個字元');
+  await step(tok); // 2315 first gets deleted, last gets added
+  glow(T[0], RED); glow(T[4], GOLD);
+  say('只差兩個字元：', '開頭那個被刪掉、尾巴加一個新的');
+  await step(tok); // 2323 r: a rolling hash value
+  kill(g2); [0, 1, 2, 3, 4].forEach((i) => glow(T[i], null));
   tag('r 維護的字串 x', 'ptr', -5.0, 3.4);
-  let xs = [...M2T.slice(0, 4)].map((c, j) => cube(c, M2.blue, [0.85, 0.7, 0.7], X(j), 3.4, 0));
-  say('滑動視窗：每次換一個字元', '相鄰兩個視窗共用 |s| − 1 個字元');
-  await beat(tok, 2600);
-  for (let i = 4; i < 7; i++) {
-    glow(xs[0], RED); say('r.skip(c)：刪掉開頭字元', "c = t[i − |s|] = '" + M2T[i - 4] + "'"); await beat(tok, 1300);
+  xs = [...M2T.slice(0, 4)].map((c, j) => cube(c, M2.blue, [0.85, 0.7, 0.7], X(j), 3.4, 0, 1.5));
+  say('rolling hash 叫 r', 'r 心裡維護一個字串 x');
+  await step(tok); // 2349 r.append(c): add c to the end of x
+  note('r.append(c)：x 尾端加 c', 3.4, 5.3);
+  say('r.append(c)：在 x 的尾端加上字元 c');
+  await step(tok); // 2367 r.skip(c): delete the first character
+  note('r.skip(c)：刪掉 x 的第一個字元（就是 c）', 3.4, 4.7);
+  say('r.skip(c)：刪掉 x 的第一個字元', 'Python 叫 pop left，老師叫 skip（比較短）');
+  const slide = async (i) => {
     fly(xs.shift(), V3(-2, 6, 2));
-    await anim(tok, 500, (t) => { win.position.x = X(i - 4 + 1.5) + t; });
+    await anim(tok, 400, (t) => { win.position.x = X(i - 4 + 1.5) + t; });
     xs.forEach((c, j) => move(c, X(i - 3 + j), 3.4));
-    xs.push(cube(M2T[i], M2.green, [0.85, 0.7, 0.7], X(i), 3.4, 0, 2.5));
-    say('r.append(c)：尾端加一個字元', "c = t[i] = '" + M2T[i] + "'");
-    await beat(tok, 1500);
-  }
-  say('r()：目前字串 x 的 hash 值', '三個操作都要 O(1)');
-  await beat(tok, 2800);
-  say('這樣每換一個視窗只要 O(1)', '不必重算整段 O(|s|)');
-  await beat(tok, 2600);
+    xs.push(cube(M2T[i], M2.green, [0.85, 0.7, 0.7], X(i), 3.4, 0, 2));
+  };
+  await step(tok); // 2395 append t[len(s)] …
+  glow(T[4], GOLD);
+  say("要加的是 t[|s|]", "= '" + M2T[4] + "'");
+  await step(tok); // 2401 … and skip t[0]
+  glow(T[4], null); glow(xs[0], RED);
+  await beat(tok, 300); await slide(4);
+  say("要刪的是 t[0]", '做完就得到下一個視窗');
+  await step(tok); // 2415 r(): the hash value of the current string
+  pkt('r() = h(x)', 3.4, 4.1);
+  say('r()：回傳目前字串 x 的 hash 值', '就是 h(x)');
+  await step(tok); // 2429 each in constant time → string matching
+  okT('三個操作都 O(1) → 就能做 string matching', 0, 5.6);
+  say('如果三個操作都是常數時間', '就能做 string matching');
 }]);
 
 FRAG.push(['algmit2-karp-rabin', 'Karp-Rabin：比 hash，相等才逐字比', async (tok) => {
   fresh([0, 4.8, 13], [0, 2.8, 0]);
   const MOD = 17, hv = (str) => Number(str) % MOD;
-  const cd = code(['1 for c in s: rs.append(c)', '2 for c in t[:len(s)]: rt.append(c)', '3 for i in range(len(s), len(t)):', '4   rt.skip(t[i−len(s)]); rt.append(t[i])', '5   if rs() == rt():', '6     逐字檢查 s == t[i−len(s)+1 : i+1]'], -1.6, 6.9, 0.48);
+  const cd = code(['1 for c in s: rs.append(c)', '2 for c in t[:len(s)]: rt.append(c)', '  if rs() == rt(): …', '3 for i in range(len(s), len(t)):', '4   rt.skip(t[i−len(s)])', '5   rt.append(t[i])', '6   if rs() == rt():', '7     逐字檢查 s == t[i−len(s)+1 : i+1]'], -1.6, 7.0, 0.46);
   const X = (i) => -4 + i * 1.0;
   const T = [...M2T].map((c, i) => cube(c, M2.sand, [0.85, 0.7, 0.7], X(i), 1.0, 0));
-  tag('rs() = 6006 mod 17 = ' + hv(M2S), 'ptr alt', 4.0, 3.6);
+  let win = null, rt = null;
+  const show = (i) => { const sub = M2T.slice(i, i + 4); win.position.x = X(i + 1.5); rt.position.x = X(i + 1.5); txt(rt, 'rt() = ' + sub + ' mod 17 = ' + hv(sub)); return sub; };
+  await step(tok); // 2439 the Karp-Rabin string matching algorithm
+  say('Karp-Rabin string matching 演算法', '示意：把字串當十進位數，mod 17');
+  await step(tok); // 2472 first compute the hash of s, once
   cd.hl(0);
-  say('rs：s 的 rolling hash', '示意：十進位、mod 17');
-  await beat(tok, 2400);
-  const win = ghostBox(M2.gold, 4.0, 1.0, 1.0); win.position.set(X(1.5), 1.0, 0);
-  const rt = tag('', 'ptr', X(1.5), 2.2);
-  for (let i = 0; i + 4 <= M2T.length; i++) {
-    const sub = M2T.slice(i, i + 4), h = hv(sub);
-    win.position.x = X(i + 1.5); rt.position.x = X(i + 1.5);
-    txt(rt, 'rt() = ' + sub + ' mod 17 = ' + h);
-    cd.hl(i === 0 ? 1 : 3);
-    if (h !== hv(M2S)) { say('i = ' + i + '：hash ' + h + ' ≠ 5', '不用比字元'); await beat(tok, 1300); continue; }
-    cd.hl(5);
-    const real = sub === M2S;
-    for (let q = 0; q < 4; q++) glow(T[i + q], real ? GREEN : RED);
-    say(real ? 'hash 相等 → 逐字比：真的 match' : 'hash 相等但字串不同', real ? 'O(|s|) 花得值得' : "'0600' ≠ '6006'：collision（假警報）");
-    await beat(tok, 2200);
-    if (!real) for (let q = 0; q < 4; q++) glow(T[i + q], null);
-  }
+  say('第一步：算 s 的 hash', '只要算一次');
+  await step(tok); // 2483 for each character in s, append it → rs
+  const S = [...M2S].map((c, j) => cube(c, M2.blue, [0.6, 0.5, 0.5], 3.6 + j * 0.65, 3.6, 0, 1.5));
+  tag('rs() = 6006 mod 17 = ' + hv(M2S), 'ptr alt', 4.6, 2.9);
+  say('從空字串開始，把 s 的字元一個個 append', 'rs() 就是 s 的 hash 值');
+  await step(tok); // 2497 hash of the first |s| characters of t: rt
+  cd.hl(1);
+  win = ghostBox(M2.gold, 4.0, 1.0, 1.0); win.position.set(X(1.5), 1.0, 0);
+  rt = tag('', 'ptr', X(1.5), 2.2);
+  show(0);
+  say('再把 t 的前 |s| 個字元 append 進 rt', 'rt：t 的 rolling hash');
+  await step(tok); // 2520 rs is s's hash, rt the first window's
+  say('現在 rs = s 的 hash', 'rt = t 第一個視窗的 hash');
+  await step(tok); // 2527 check if equal; if not, shift by one
+  cd.hl(2);
+  say('先比一次：2 ≠ 5', '不相等 → 往右移一格');
+  await step(tok); // 2551 the main for loop
+  cd.hl(3);
+  say('主要的 for 迴圈：檢查其他所有位置');
+  await step(tok); // 2565 throw away the first letter, t[i − |s|]
+  cd.hl(4); glow(T[0], RED);
+  say("丟掉第一個字元：t[i − |s|] = '1'", 'rt.skip');
+  await step(tok); // 2576 add the next letter, t[i]
+  glow(T[0], null); cd.hl(5);
+  await anim(tok, 400, (u) => { win.position.x = X(1.5 + u); rt.position.x = X(1.5 + u); });
+  show(1);
+  say("加入下一個字元：t[i] = '6'", 'rt.append；rs 不用動');
+  await step(tok); // 2600 rs == rt: potentially a match
+  cd.hl(6);
+  for (let q = 1; q < 5; q++) glow(T[q], GOLD);
+  say('rs() == rt()：5 = 5', '「可能」match');
+  await step(tok); // 2621 only potentially: collisions exist
+  bub('hash 相等 ≠ 字串相等（會有碰撞）', 0, 4.4);
+  say('只是「可能」：因為有碰撞', '不同字串也可能 hash 到同一個值');
+  await step(tok); // 2638 so check character by character
+  cd.hl(7);
+  say('所以要逐字檢查', '花 O(|s|)');
+  await step(tok); // 2674 equal → found a match
+  for (let q = 1; q < 5; q++) glow(T[q], GREEN);
+  say("'6006' = '6006' → 找到 match！");
+  await step(tok); // 2682 just looking for the first match → done
+  okT('只要第一個 match：結束', 4.4, 1.4);
+  say('如果只要第一個 match，就結束了', '這次花的 O(|s|) 很值得');
+  await step(tok); // 2698 not equal: happens with probability ≤ 1/|s|
+  cd.hl(4);
+  for (const i of [2, 3]) { await anim(tok, 300, (u) => { win.position.x = X(i - 1 + 1.5 + u); rt.position.x = X(i - 1 + 1.5 + u); }); show(i); await beat(tok, 300); }
+  cd.hl(7);
+  for (let q = 3; q < 7; q++) glow(T[q], RED);
+  say("i = 3：hash 也是 5，但 '0600' ≠ '6006'", '假警報：設計成機率 ≤ 1/|s|');
+  await step(tok); // 2720 then the expected time here is constant
+  for (let q = 1; q < 7; q++) glow(T[q], null);
+  say('機率 ≤ 1/|s|、每次花 |s|', '假警報的期望成本 = 常數');
+  await step(tok); // 2733 so overall linear time
   cd.hl(-1);
-  say('假警報機率 ≤ 1/|s| → 期望 O(1)', 'm 選隨機質數 ≥ |s|');
-  await beat(tok, 2800);
-  say('總時間 O(|s| + |t| + #match · |s|)', '只找第一個 match → 線性');
-  await beat(tok, 3000);
+  say('skip、append 是 O(1)，再加上假警報期望 O(1)', '→ 整體線性時間');
+  await step(tok); // 2752 |s| + |t| + |s| per reported match
+  pkt('O(|s| + |t| + #match · |s|)', 0, 4.4);
+  say('精確地說：O(|s| + |t|)', '再加上每個要回報的 match 各 |s|');
+  await step(tok); // 2773 one match → linear
+  say('只找一個 match → 線性時間');
+  await step(tok); // 2802 (Q) what is rs? the hash of s
+  say('有人問 rs 是什麼？', 'rs 就是 s 的 hash 值 h(s)');
+  await step(tok); // 2835 two rolling hashes: rs and rt
+  note('兩個 rolling hash：rs 給 s、rt 給 t', 4.6, 4.9);
+  say('用了兩個 rolling hash', 'rs 和 rt，拿來互相比');
+  await step(tok); // 2862 a pretty big idea, fairly recent
+  say('這是很重要的想法');
+  await step(tok); // 2871 using randomization in a super cool way
+  say('最早「用隨機化解問題」的漂亮例子之一', '不只是把 hashing 當資料結構');
 }]);
 
 FRAG.push(['algmit2-rolling-math', 'Rolling hash 實作：a 進位數 mod m', async (tok) => {
   fresh([0, 4.2, 12], [0, 3.2, 0]);
   const X = (i) => -2.4 + i * 1.1;
-  say('把字串看成 a 進位的數', 'a = 字母表大小（ASCII 256；示意 a = 10）');
-  let ds = [...'1600'].map((c, i) => cube(c, M2.blue, [0.9, 0.8, 0.8], X(i), 4.6, 0));
-  const u = tag('u = 1600', 'ptr', -5.0, 4.6), r = tag('r = 1600 mod 17 = 2', 'ptr alt', 5.0, 4.6);
-  await beat(tok, 2600);
-  glow(ds[0], RED);
-  say('skip(c)：u → u − c·a^(|u|−1)', '1600 − 1·10³ = 600');
-  await beat(tok, 2400);
-  fly(ds.shift(), V3(-3, 6, 2)); txt(u, 'u = 600');
-  await beat(tok, 900);
-  txt(r, 'r = (2 − 1·14) mod 17 = 5');
-  say('全部 mod m 算', '10³ mod 17 = 14；600 mod 17 = 5 ✓');
-  await beat(tok, 2800);
-  ds.forEach((c, i) => move(c, X(i), 4.6));
-  ds.push(cube('6', M2.green, [0.9, 0.8, 0.8], X(3), 4.6, 0, 2));
+  let ds = [], u = null, r = null;
+  await step(tok); // 2884 how to build this ADT
+  say('剩下：rolling hash 這個 ADT 怎麼做？', '每個操作都要 O(1)');
+  await step(tok); // 2904 depends on which hash function you use
+  say('做法跟選哪個 hash function 有關');
+  await step(tok); // 2910 the multiplication method is a pain here
+  noT('multiplication method：這裡很麻煩', -3.6, 6.6);
+  say('multiplication method 在這裡很麻煩', '（老師說也許可以，當練習）');
+  await step(tok); // 2925 the division method
+  okT('division method：h(x) = x mod m', 3.0, 6.6);
+  say('用最簡單的 division method', '在這裡剛好行得通');
+  await step(tok); // 2936 Karp and Rabin proved the running time holds
+  say('Karp 和 Rabin 證明了：', '用簡單的 division method，時間也成立（期望值）');
+  await step(tok); // 2950 m = a random prime, at least |s|
+  note('m：隨機質數，至少 |s| 那麼大', 3.0, 6.0);
+  say('條件：m 是隨機選的質數', '至少跟 |s| 一樣大，越大越保險');
+  await step(tok); // 2974 random number of the right size, check if prime
+  const d = cube('🎲', M2.gold, [0.8, 0.8, 0.8], -5.6, 4.6, 0, 1.5);
+  say('怎麼找隨機質數？隨機挑一個差不多大的數', '檢查是不是質數，不是就重挑');
+  await step(tok); // 2984 prime number theorem: ~log n tries
+  say('質數定理：大約試 log n 次就會找到');
+  await step(tok); // 3002 how does the hash change on append?
+  kill(d);
+  say('看 append 時 hash 值怎麼變');
+  await step(tok); // 3017 treat the string as a multi-digit number
+  ds = [...'600'].map((c, i) => cube(c, M2.blue, [0.9, 0.8, 0.8], X(i), 4.6, 0, 1.5));
+  u = tag('u = 600', 'ptr', -5.0, 4.6);
+  say('把字串 x 看成一個多位數的數 u', '這就是 prehash');
+  await step(tok); // 3029 base = the size of the alphabet
+  note('進位制的底 a = 字母表大小（ASCII：256；示意 a = 10）', 0, 3.4);
+  say('底數 a = 字母表的大小', 'ASCII 是 256；這裡示意 a = 10');
+  await step(tok); // 3052 adding a character = shift by one, add a value
+  say('加一個字元：數字往左移一位，再加上新的值');
+  await step(tok); // 3062 shift over by one = multiply by a
+  ds.forEach((c, i) => move(c, X(i) - 1.1, 4.6));
+  txt(u, 'u · a = 6000');
+  say('往左移一位 = 乘以 a', '600 × 10 = 6000');
+  await step(tok); // 3077 then add the character: ord(c)
+  ds.push(cube('6', M2.green, [0.9, 0.8, 0.8], X(2), 4.6, 0, 2));
   txt(u, 'u = 6006');
-  say('append(c)：u → u·a + ord(c)', '600·10 + 6 = 6006');
-  await beat(tok, 2600);
-  txt(r, 'r = (5·10 + 6) mod 17 = 5');
-  say('mod 版本：一次乘法、一次加法', '6006 mod 17 = 5 ✓');
-  await beat(tok, 2600);
-  tag('r 存：hash 值、a^|u| mod m', 'idx', 0, 2.6);
-  say('r 只存兩個數 → 每個操作 O(1)', 'r() 直接回傳存好的 hash 值');
-  await beat(tok, 2600);
-  say('m：隨機質數，至少 |s|', 'Karp-Rabin 證明：division method 就夠');
-  await beat(tok, 3000);
+  say('再加上字元的值 ord(c)', 'append(c)：u → u · a + ord(c)');
+  await step(tok); // 3089 skip is slightly more annoying
+  say('skip 稍微麻煩一點');
+  await step(tok); // 3097 u → u − c · a^(|u|−1)
+  glow(ds[0], RED);
+  await beat(tok, 400);
+  fly(ds.shift(), V3(-3, 6, 2)); txt(u, 'u = 6006 − 6·10³ = 6');
+  say('skip(c)：u → u − c · a^(|u|−1)', '把最左邊那位「消掉」');
+  await step(tok); // 3116 everything modulo m
+  r = tag('r = u mod 17', 'ptr alt', 4.2, 4.6);
+  say('hash 值怎麼變？', '全部都 mod m 算就好');
+  await step(tok); // 3125 r · a + ord(c) mod m
+  txt(r, 'append：r → (r · a + ord(c)) mod m');
+  say('append：新的 r = (r · a + ord(c)) mod m', 'skip 也照樣 mod m');
+  await step(tok); // 3138 r stores the hash value and a^|x|
+  tag('r 存兩個數：目前的 hash 值、a^|x| mod m', 'idx', 0, 2.6);
+  say('r 只存兩個數', '目前的 hash 值，以及 a^|x| mod m');
+  await step(tok); // 3153 a constant number of operations
+  say('每次只要一次乘法、一次加法（mod m）', 'O(1)');
+  await step(tok); // 3160 append, skip, and the hash value instantly
+  okT('append、skip：O(1)；r()：直接回傳存好的值', 0, 1.8);
+  say('append、skip 都 O(1)', 'r() 直接回傳存好的 hash 值');
 }]);
 
 // ══════════════ rvdJDijO2Ro：L10 Open Addressing, Cryptographic Hashing ══════════════
 const M2OA = (z = 0) => m2row(7, -4.5, 1.5, z, 1.2);
 FRAG.push(['algmit2-oa-perm', 'Open addressing：probe 序列要是 permutation', async (tok) => {
   fresh([0, 6, 11], [0, 0.8, 0]);
-  const X = M2OA();
-  say('Open addressing：只用一個 array', '一格最多一個 item → m ≥ n');
-  await beat(tok, 2600);
-  const perm = [4, 1, 3, 0, 6, 2, 5];
-  say('h(k, i)：第 i 次 trial 試哪一格', 'h：U × {trial} → {0, …, m−1}');
-  for (let i = 0; i < 7; i++) { tag('#' + (i + 1), 'ptr alt', X(perm[i]), 1.4); await beat(tok, 450); }
-  say('h(k,1) … h(k,m) 要是 0 … m−1 的排列', '示意序列 4, 1, 3, 0, 6, 2, 5');
-  await beat(tok, 2800);
+  let X = null; const perm = [4, 1, 3, 0, 6, 2, 5];
+  const prof = buddy('老師', '', M2.purple, -6.2, 0, 2.4, 0.75);
+  await step(tok); // 210 another approach to dealing with collisions
+  say('另一種處理 collision 的方法', 'open addressing');
+  await step(tok); // 214 without collisions an array would work
+  say('如果沒有碰撞，一個 array 就夠了');
+  await step(tok); // 230 we don't want chaining: the simplest structure is an array
+  noT('不用 chaining、不用 linked list', 0, 3.2, -1.6);
+  prof.mood('happy');
+  say('不想用 chaining', '最簡單的資料結構就是 array（老師讀博士時只用 array）');
+  await step(tok); // 252 open addressing does exactly this
+  say('open addressing：只用一個 array 做 hash table');
+  await step(tok); // 258 an array of items
+  X = M2OA();
+  say('一個放 items 的 array', '示意 7 格');
+  await step(tok); // 271 at most one item per slot
+  note('每格最多 1 個 item', 0, 2.4, -1.6);
+  say('每一格最多放一個 item');
+  await step(tok); // 281 so m ≥ n
+  pkt('m ≥ n', 4.5, 2.4, -1.6);
+  say('所以 m（格數）一定要 ≥ n（item 數）');
+  await step(tok); // 284 no linked lists: a slot can't grow
+  say('沒有 linked list', '一格不能無限擴充，n 不能比 m 大');
+  await step(tok); // 336 the notion of probing
+  bub('probing（探測）', -3, 3.2, 1.6);
+  say('核心概念：probing（探測）');
+  const k = cube('k', M2.orange, [0.8, 0.5, 0.8], X(perm[0]), 2.0, 0);
+  await step(tok); // 347 try to insert into the table
+  glow(k, GOLD);
+  say('試著把 key 放進 table');
+  await step(tok); // 354 if we fail, compute a slightly different hash
+  const busy = m2item('', M2.blue, X(4), 0, 2, 1.0);
+  glow(busy, RED); move(k, X(perm[1]), 2.0);
+  say('那格有人了 → 失敗', '就換一個稍微不同的 hash 值再試');
+  await step(tok); // 363 iterate until an empty slot is found
+  glow(busy, null); move(k, X(perm[1]), 0.45); glow(k, GREEN);
+  say('一直試，直到找到空格為止', '找到就放進去');
+  await step(tok); // 387 a hash function that specifies the order of slots to probe
+  kill(k); kill(busy);
+  say('需要一種新的 hash function', '它給的不是一格，而是「試哪些格子的順序」');
+  await step(tok); // 418 used by insert, search and delete
+  note('insert、search、delete 都用它', 0, 2.4, 1.6);
+  say('insert、search、delete 三個操作都用它', '三者做法不太一樣');
+  await step(tok); // 448 h takes the key and a trial count
+  pkt('h(k, i)', -3, 3.9, 1.6);
+  say('h 有兩個參數：key k 和 trial count i', 'i = 第幾次嘗試');
+  await step(tok); // 473 lucky on the first trial, else the second …
+  say('運氣好，第 1 次就成功', '不然就希望第 2 次、第 3 次……');
+  await step(tok); // 488 trial i is an integer 0 … m−1
+  say('trial 是 0 到 m−1 的整數', '（例子裡老師從 1 開始數）');
+  await step(tok); // 499 it produces a slot 0 … m−1
+  say('輸出一格：0 到 m−1', '跟 chaining 的 hash function 一樣');
+  await step(tok); // 534 an important property
+  say('一個重要的性質');
+  const tags = [];
+  await step(tok); // 557 h(k,1), h(k,2), … for an arbitrary key k
+  for (let i = 0; i < 7; i++) { tags.push(tag('#' + (i + 1), 'ptr alt', X(perm[i]), 1.4)); await beat(tok, 250); }
+  say('對任意 key k，看 h(k,1)、h(k,2)、…', '示意序列：4, 1, 3, 0, 6, 2, 5');
+  await step(tok); // 580 must be a permutation of 0 … m−1
+  say('這串要是 0 … m−1 的一個排列（permutation）', '每一格都剛好出現一次');
+  await step(tok); // 593 so you can use the entire table
+  say('這樣整個 table 都用得到', '不會有格子永遠用不到');
+  await step(tok); // 607 n close to m: maybe just one slot left
   const its = [];
   for (let s = 0; s < 7; s++) if (s !== 5) its.push([s, m2item('', M2.blue, X(s), 0, 2, 1.0)]);
-  say('table 只剩一格（第 5 格）是空的', '');
-  await beat(tok, 1800);
+  say('table 快滿了：只剩一格空的', '第 5 格');
+  await step(tok); // 632 eventually the probes reach that slot
   for (let i = 0; i < 7; i++) {
     const s = perm[i], hit = its.find(([q]) => q === s);
-    if (hit) { glow(hit[1], RED); await beat(tok, 380); glow(hit[1], null); }
-    else { m2item('k', M2.green, X(s), 0, 2.5, 1.0); say('第 7 次 trial 試到第 5 格', 'permutation → 最後一格也一定找得到'); await beat(tok, 2600); }
+    if (hit) { glow(hit[1], RED); await beat(tok, 200); glow(hit[1], null); }
+    else m2item('k', M2.green, X(s), 0, 2.5, 1.0);
   }
-  say('每一格都是「機會均等」的格子', '只要 probe 夠久就能用到整個 table');
-  await beat(tok, 2600);
+  say('第 7 次 trial 試到第 5 格', '是 permutation → 最後一格也一定找得到');
+  await step(tok); // 651 load balancing: equal-opportunity slots
+  okT('每一格都「機會均等」', 0, 3.2, -1.6);
+  say('load balancing：每一格都是機會均等的格子', '只要 probe 夠久就到得了');
+  await step(tok); // 671 which slot a key uses depends on the insertion order
+  say('某個 key 最後放哪一格', '要看 key 插入的先後順序');
+  await step(tok); // 685 just a sequence of probes: no pointers
+  say('就是照 hash function 給的順序一格格試', '不需要任何 pointer');
 }]);
 
 FRAG.push(['algmit2-oa-insert', 'Open addressing insert：586、133、204、481、496', async (tok) => {
   fresh([0, 6, 11], [0, 0.8, 0]);
-  const X = M2OA();
-  const T = {};
-  const put = async (k, s, cap, f, ms) => { T[s] = m2item(k, M2.blue, X(s), 0, 3, 1.0); say(cap, f); await beat(tok, ms); };
-  await put(586, 1, 'insert 586：h(586, 1) = 1', '空的 → 第一次 trial 就成功', 2200);
-  await put(133, 2, 'insert 133', 'table 還很空：第一次就成功', 900);
-  await put(204, 4, 'insert 204 → 第 4 格', '', 900);
-  await put(481, 6, 'insert 481：h(481, 1) = 6', '', 1600);
-  const k = cube(496, M2.orange, [1.0, 0.6, 1.0], X(4), 2.2, 0, 1.5);
+  let X = null; const T = {};
+  const put = (k, s) => { T[s] = m2item(k, M2.blue, X(s), 0, 3, 1.0); };
+  let k = null;
+  await step(tok); // 701 let's run through an example
+  say('跑一個例子', '先專心看 insert');
+  await step(tok); // 731 seven slots
+  X = M2OA();
+  say('table 有 7 格');
+  await step(tok); // 739 insert 586
+  k = cube(586, M2.orange, [1.0, 0.6, 1.0], -5.8, 2.2, 0, 1.5);
+  say('insert 586');
+  await step(tok); // 747 h(586, 1) = 1
+  move(k, X(1), 2.2);
+  say('h(586, 1) = 1', '第一次 trial 給第 1 格');
+  await step(tok); // 757 stick 586 in there
+  kill(k); put(586, 1);
+  say('空的 → 直接放進去');
+  await step(tok); // 762 insert 133, 204
+  put(133, 2); await beat(tok, 300); put(204, 4);
+  say('再 insert 133、204');
+  await step(tok); // 770 481, and so on
+  put(481, 6);
+  say('還有 481');
+  await step(tok); // 776 the table is empty, so the first trial succeeds (h(481,1) = 6)
+  say('table 還很空：每次第一次 trial 就成功', '例如 h(481, 1) = 6');
+  await step(tok); // 795 insert 496
+  k = cube(496, M2.orange, [1.0, 0.6, 1.0], -5.8, 2.2, 0, 1.5);
+  say('insert 496');
+  await step(tok); // 804 h(496, 1) = 4
+  move(k, X(4), 2.2);
+  say('h(496, 1) = 4');
+  await step(tok); // 824 oops, this slot is occupied
   glow(T[4], RED);
-  say('insert 496：h(496, 1) = 4', '有 204 → 失敗（不是 None 就是被佔）');
-  await beat(tok, 2400); glow(T[4], null);
-  move(k, X(1), 2.2); await beat(tok, 600); glow(T[1], RED);
-  say('h(496, 2) = 1', '有 586 → 又失敗');
-  await beat(tok, 2200); glow(T[1], null);
-  move(k, X(3), 2.2); await beat(tok, 600);
-  move(k, X(3), 0.45); glow(k, GREEN);
-  say('h(496, 3) = 3：空的 → 放進去', '第 3 次 trial 成功');
-  await beat(tok, 2400);
-  say('insert：一直 probe 到空格為止', 'm ≥ n + permutation → 一定放得進去');
-  await beat(tok, 3000);
+  say('糟糕，這格有人了');
+  await step(tok); // 833 a special flag for an empty slot: None
+  tag('None = 空格', 'idx', X(0), 0.35, -0.2); tag('None', 'idx', X(3), 0.35, -0.2); tag('None', 'idx', X(5), 0.35, -0.2);
+  say('空格有一個特別的旗標：None', '不是 None 就是被佔用');
+  await step(tok); // 846 204 is not None → the first probe failed
+  say('204 不是 None → 第一次 probe 失敗', '去試 h(496, 2)');
+  await step(tok); // 870 h(496, 2) gives 586's slot
+  glow(T[4], null); move(k, X(1), 2.2); await beat(tok, 500); glow(T[1], RED);
+  say('h(496, 2) = 1', '是 586 → 又失敗');
+  await step(tok); // 896 h(496, 3) = 3
+  glow(T[1], null); move(k, X(3), 2.2);
+  say('第三次：h(496, 3) = 3');
+  await step(tok); // 905 great, insert 496
+  move(k, X(3), 0.45); glow(k, GREEN); T[3] = k;
+  say('空的 → 放進 496！');
+  await step(tok); // 918 three trials to find an empty slot
+  note('試了 3 次才找到空格', X(3), 2.4);
+  say('這次試了三次才找到空格');
+  await step(tok); // 925 how long does this process take?
+  bub('要試多久？', 3.6, 3.2);
+  say('大問題：這個過程要花多久？', '等一下再談');
 }]);
 
 function m2oaFill(X) { const T = {}; for (const [k, s] of [[586, 1], [133, 2], [496, 3], [204, 4], [481, 6]]) T[s] = m2item(k, M2.blue, X(s), 0, 0, 1.0); return T; }
 FRAG.push(['algmit2-oa-search', 'Open addressing search：遇到 k 或 None 才停', async (tok) => {
   fresh([0, 6, 11], [0, 0.8, 0]);
   const X = M2OA(), T = m2oaFill(X);
-  const cur = tag('▼', 'ptr alt', X(4), 1.6);
-  say('search：跟 insert 走同一個 probe 順序', '');
-  await beat(tok, 2000);
-  for (const [s, cap, f, c] of [[4, 'search 496：h(496,1) = 4', '204 ≠ 496 → 下一個 trial', RED], [1, 'h(496,2) = 1', '586 ≠ 496 → 下一個 trial', RED], [3, 'h(496,3) = 3', '找到 496 → 回傳', GREEN]]) {
-    cur.position.set(X(s), 1.6, 0); glow(T[s], c); say(cap, f); await beat(tok, 1800); glow(T[s], null);
-  }
-  for (const [s, cap, f] of [[2, 'search 700（示意）：h = 2', '133 ≠ 700 → 下一個 trial'], [5, 'h(700, 2) = 5：空格', '遇到 None → 700 不在 table 裡']]) {
-    cur.position.set(X(s), 1.6, 0); if (T[s]) glow(T[s], RED); say(cap, f); await beat(tok, 2000); if (T[s]) glow(T[s], null);
-  }
-  say('遇到 k → 成功；遇到 None → 失敗', '中間被佔用的格子就繼續 probe');
-  await beat(tok, 3000);
+  [0, 5].forEach((s) => tag('None', 'idx', X(s), 0.35, -0.2));
+  const st = buddy('學生', '', M2.orange, 6.0, 0, 2.4, 0.7); st.look(-1);
+  let cur = null;
+  await step(tok); // 937 now: how would search work?
+  say('insert 會了，search 怎麼做？');
+  await step(tok); // 945 can one of you explain?
+  st.mood('wow');
+  say('老師請同學來說明');
+  await step(tok); // 978 very similar to insert
+  st.mood('happy');
+  say('同學：跟 insert 很像');
+  await step(tok); // 981 None indicates an empty slot (a flag)
+  say('None 代表空格', '就是一個旗標');
+  await step(tok); // 1000 insert(k, v): keep probing …
+  const ins = pkt('insert(k, v)', -3.4, 3.4);
+  say('先寫 insert(k, v)：一直 probe');
+  await step(tok); // 1016 … until an empty slot is found
+  txt(ins, 'insert：probe 到空格（None）為止');
+  say('直到找到空格');
+  await step(tok); // 1026 then insert the item
+  say('找到就放進去');
+  await step(tok); // 1036 permutation + m ≥ n → guaranteed to find a slot
+  okT('permutation + m ≥ n → 一定找得到空格', -3.4, 2.7);
+  say('有 permutation 性質又 m ≥ n', 'insert 保證找得到空格');
+  await step(tok); // 1048 it might take a while
+  say('好消息：一定成功', '壞消息：可能要試很久（之後再談效能）');
+  await step(tok); // 1055 search is a little different: searching for k
+  const sr = pkt('search(k)', 3.4, 3.4);
+  say('search 有點不一樣：要找 key k');
+  await step(tok); // 1067 keep probing …
+  cur = tag('▼', 'ptr alt', X(4), 1.6);
+  say('一樣一直 probe（例：search 496）');
+  await step(tok); // 1084 … while the slots are occupied by keys ≠ k
+  glow(T[4], RED);
+  txt(sr, 'search：遇到「不是 k」的 key → 繼續');
+  say('h(496,1) = 4：裡面是 204 ≠ 496', '被別的 key 佔著 → 繼續');
+  await step(tok); // 1094 every probe: look inside, compare the key
+  glow(T[4], null); cur.position.set(X(1), 1.6, 0); glow(T[1], RED);
+  say('每次 probe：去那格看裡面的 key', 'h(496,2) = 1：586 ≠ 496 → 下一個 trial');
+  await step(tok); // 1114 if it is the key, return it
+  glow(T[1], null); cur.position.set(X(3), 1.6, 0); glow(T[3], GREEN);
+  say('h(496,3) = 3：是 496 → 回傳');
+  await step(tok); // 1120 keep probing until you encounter k or an empty slot
+  glow(T[3], null);
+  txt(sr, 'search：遇到 k → 回傳；遇到 None → 失敗');
+  say('一直 probe，直到遇到 k', '或遇到空格');
+  await step(tok); // 1152 an empty slot means you failed to find the key
+  cur.position.set(X(2), 1.6, 0); glow(T[2], RED); await beat(tok, 500);
+  glow(T[2], null); cur.position.set(X(5), 1.6, 0);
+  noT('None → 700 不在 table 裡', X(5), 2.6);
+  say('例：search 700（示意）：2 → 133，5 → None', '遇到空格 = 沒找到');
+  await step(tok); // 1170 delete in a minute
+  say('delete 等一下再說', '先確定大家懂 insert 和 search');
+  await step(tok); // 1191 just accumulating keys: e.g. counting distinct elements
+  say('只需要 insert 和 search 的應用', '例：數資料流裡有幾個不同的元素');
+  await step(tok); // 1225 (Q) why does an empty slot mean it's not there?
+  st.mood('wow');
+  say('同學問：為什麼遇到空格就能確定不在？');
+  await step(tok); // 1239 the same deterministic probe sequence as insert
+  st.mood('happy');
+  say('因為 insert 用的是同一個確定的 probe 序列', '它不會跳過空格放到後面');
+  await step(tok); // 1254 let's talk delete
+  say('insert、search 搞定，接下來談 delete');
 }]);
 
 FRAG.push(['algmit2-oa-delete', 'Open addressing delete：DeleteMe 旗標', async (tok) => {
   fresh([0, 6, 11], [0, 0.8, 0]);
   const X = M2OA(), T = m2oaFill(X);
-  const cur = tag('▼', 'ptr alt', X(1), 1.6);
-  glow(T[1], RED);
-  say('delete 586：直接設成 None？', '');
-  await beat(tok, 1800);
-  fly(T[1]); const none = tag('None', 'ptr', X(1), 0.4);
-  await beat(tok, 1200);
-  cur.position.set(X(4), 1.6, 0); glow(T[4], RED);
-  say('search 496：h(496,1) = 4 → 204', '下一個 trial');
-  await beat(tok, 1700); glow(T[4], null);
-  cur.position.set(X(1), 1.6, 0);
-  say('h(496,2) = 1：None → 停', '誤判不存在！496 明明在第 3 格');
-  await beat(tok, 2800);
+  [0, 5].forEach((s) => tag('None', 'idx', X(s), 0.35, -0.2));
+  let cur = null, none = null;
+  await step(tok); // 1261 how does delete work?
+  say('delete 怎麼做？');
+  await step(tok); // 1305 you pointed out the problem
+  say('同學點出了問題', '老師請另一位同學想解法');
+  await step(tok); // 1323 searching after all the inserts (496 inserted)
+  glow(T[3], GOLD);
+  say('情境：上面那些 insert 都做完了', '496 已經放好');
+  await step(tok); // 1334 delete 586
+  glow(T[3], null); glow(T[1], RED);
+  say('然後 delete 586');
+  await step(tok); // 1344 the table: 586, 133, 496, 204, 481
+  say('table：586、133、496、204、481');
+  await step(tok); // 1366 replace it with None
+  fly(T[1]); none = tag('None', 'ptr', X(1), 0.4);
+  say('如果直接換成 None 呢？');
+  await step(tok); // 1375 now search for 496
+  cur = tag('▼', 'ptr alt', X(4), 1.6); glow(T[4], RED);
+  say('現在 search 496', 'h(496,1) = 4：204，繼續');
+  await step(tok); // 1391 the next slot is 1
+  glow(T[4], null); cur.position.set(X(1), 1.6, 0);
+  say('下一個 trial：第 1 格');
+  await step(tok); // 1395 I find an empty slot
+  say('遇到空格（None）');
+  await step(tok); // 1400 → I failed in the search
+  noT('→ 回報找不到', X(1), 2.6);
+  say('search 規則：遇到空格就失敗');
+  await step(tok); // 1427 obviously wrong: I just inserted 496
+  glow(T[3], RED);
+  say('明顯錯了！496 明明在第 3 格');
+  await step(tok); // 1433 it fails incorrectly
+  say('key 真的不在時失敗沒關係', '但這是「錯誤的失敗」');
+  await step(tok); // 1451 how do I fix it?
+  glow(T[3], null);
+  say('怎麼修？');
+  await step(tok); // 1484 a flag: DeleteMe
   kill(none);
   T[1] = cube('DeleteMe', M2.purple, [1.25, 0.6, 1.0], X(1), 0.45, 0, 2);
-  say('改放 DeleteMe 旗標', '跟 None 不一樣');
-  await beat(tok, 2200);
-  for (const [s, cap, f, c] of [[4, '再 search 496：4 → 204', '下一個 trial', RED], [1, '第 1 格是 DeleteMe', 'search：當作有東西，繼續找', GOLD], [3, '第 3 格：找到 496', '正確！', GREEN]]) {
-    cur.position.set(X(s), 1.6, 0); glow(T[s], c); say(cap, f); await beat(tok, 1700); glow(T[s], null);
-  }
-  fly(T[1]); await beat(tok, 400);
+  say('用另一個旗標：DeleteMe');
+  await step(tok); // 1500 replace the deleted item with DeleteMe, not None
+  say('delete 時放 DeleteMe，不是 None', '跟 None 不一樣');
+  await step(tok); // 1524 now insert and search can treat it differently
+  say('有了不同的旗標', 'insert 和 search 就能各自處理');
+  await step(tok); // 1583 three cases now
+  const rules = pkt('search 三種情況', 3.4, 3.6);
+  say('search 現在有三種情況');
+  await step(tok); // 1589 encounter the key: return it
+  okT('① 遇到 k → 回傳', 3.4, 3.0);
+  say('① 遇到 k：回傳它的 value');
+  await step(tok); // 1592 encounter DeleteMe: keep going
+  note('② 遇到 DeleteMe → 繼續', 3.4, 2.4);
+  say('② 遇到 DeleteMe：繼續找');
+  await step(tok); // 1598 encounter None: the key isn't there
+  noT('③ 遇到 None → 失敗', 3.4, 1.8);
+  say('③ 遇到 None：失敗，key 不在 table 裡');
+  await step(tok); // 1609 insert treats DeleteMe the same as None
+  txt(rules, 'insert：DeleteMe = None（可以放）');
+  say('insert 把 DeleteMe 當成 None', '可以放東西');
+  await step(tok); // 1627 search keeps going past it
+  say('search 則把它當成「有東西」，繼續找');
+  await step(tok); // 1652 back to the example
+  say('回到例子：再 search 496');
+  await step(tok); // 1692 first trial: 204
+  cur.position.set(X(4), 1.6, 0); glow(T[4], RED);
+  say('第 1 次：第 4 格是 204 → 繼續', '（老師先說錯順序，後來更正）');
+  await step(tok); // 1702 second trial: 586's slot, DeleteMe
+  glow(T[4], null); cur.position.set(X(1), 1.6, 0); glow(T[1], GOLD);
+  say('第 2 次：第 1 格是 DeleteMe', '→ 繼續找，不停下來');
+  await step(tok); // 1705 third trial: return 496
+  glow(T[1], null); cur.position.set(X(3), 1.6, 0); glow(T[3], GREEN);
+  say('第 3 次：第 3 格是 496 → 回傳', '正確！');
+  await step(tok); // 1720 you can reuse storage
+  glow(T[3], null); kill(cur);
+  say('delete 的意義：空間可以再利用');
+  await step(tok); // 1743 the next insert overwrites DeleteMe (999)
+  fly(T[1]); await beat(tok, 300);
   m2item(999, M2.green, X(1), 0, 2.5, 1.0);
-  say('insert：DeleteMe 當作 None', '空間可以重用（例：999 放進來）');
-  await beat(tok, 3000);
+  say('之後 insert 剛好到第 1 格', 'DeleteMe 被蓋掉，放進 999');
 }]);
 
 FRAG.push(['algmit2-linear-probing', 'Linear probing 與 clustering', async (tok) => {
   fresh([0, 6.5, 10], [0, 0, 0.4]);
-  const X = m2row(20, -5.7, 0.6, 0, 0.5, (i) => ((i + 40) % 5 === 0 || i === 2 || i === 17 ? String(i + 40) : ''));
-  for (let s = 42; s <= 56; s++) cube('', M2.blue, [0.5, 0.4, 0.5], X(s - 40), 0.32, 0);
-  say('Linear probing：往下一格一格試', 'h(k,i) = (h′(k) + i) mod m → 是 permutation');
-  await beat(tok, 2800);
-  say('問題：clustering', '連續被佔的格子越來越長');
-  await beat(tok, 2200);
-  const cur = tag('▼', 'ptr alt', X(2), 1.1), cnt = tag('', 'ptr', 3.6, 1.6, -1.2);
-  for (let s = 42; s <= 57; s++) { cur.position.set(X(s - 40), 1.1, 0); txt(cnt, '第 ' + (s - 41) + ' 次 trial：' + s); await beat(tok, s === 42 ? 1200 : 230); }
+  let X = null, cur = null, cnt = null;
+  await step(tok); // 1774 how well does this work?
+  say('還沒談的：效果好不好？');
+  await step(tok); // 1781 the extra trial-count argument and the permutation property
+  pkt('h(k, i)：要是 permutation', 0, 2.4, -2.4);
+  say('hash function 多了 trial count 參數', '還要有 permutation 性質');
+  await step(tok); // 1796 can we design these? a bad one, then a better one
+  say('做得出來嗎？', '先看一個壞的，再看一個好的');
+  await step(tok); // 1805 probing strategies
+  say('probing strategy（探測策略）', '把一般的 hash function 改成 open addressing 能用的');
+  await step(tok); // 1821 linear probing: h(k, i) = (h′(k) + i) mod m
+  X = m2row(20, -5.7, 0.6, 0, 0.5, (i) => ((i + 40) % 5 === 0 || i === 2 || i === 17 ? String(i + 40) : ''));
+  bub("linear probing：h(k, i) = (h′(k) + i) mod m", 0, 2.4, -1.4);
+  say('linear probing（線性探測）', "h(k, i) = (h′(k) + i) mod m");
+  await step(tok); // 1847 h′ is an ordinary hash function
+  say("h′ 是一個普通的 hash function", '每次 trial 往下一格');
+  await step(tok); // 1861 does it satisfy the permutation property?
+  say('它有 permutation 性質嗎？');
+  await step(tok); // 1881 the mod makes it a round-robin cycle → yes
+  okT('mod m 繞一圈 → 是 permutation ✓', 0, 1.6, 1.8);
+  say('有：加到尾巴會 mod 回開頭，繞一整圈', '每格剛好一次');
+  await step(tok); // 1886 what's wrong with this?
+  say('那它哪裡不好？');
+  await step(tok); // 1914 clustering
+  say('同學答對了：clustering（群聚）');
+  await step(tok); // 1931 consecutive groups of occupied slots
+  for (let s = 42; s <= 56; s++) { cube('', M2.blue, [0.5, 0.4, 0.5], X(s - 40), 0.32, 0, 1.5); await beat(tok, 60); }
+  say('連續被佔用的一整段格子', '叫做 cluster');
+  await step(tok); // 1947 which keep growing
+  say('cluster 會越長越長');
+  await step(tok); // 1956 a big cluster is more likely to grow bigger
+  say('cluster 越大，越容易被撞到', '撞到就變得更大');
+  await step(tok); // 1965 clustering is the reverse of load balancing
+  noT('clustering = 負載平衡的相反', 0, 1.6, 1.8);
+  say('這正好跟 load balancing 相反', '一團一團擠在一起，其他地方空著');
+  await step(tok); // 1981 100 slots, cluster of 4 → 4/100
+  say('例：100 格裡有一段 4 格的 cluster', '掉進去的機率 4/100，是單一格的 4 倍');
+  await step(tok); // 1997 you go down to the bottom → a cluster of 5
+  say('掉進去就一路往下走到尾巴', 'cluster 變成 5 格');
+  await step(tok); // 2010 you lose the average constant-time lookup
+  say('可以證明：用 linear probing', '大部分 load factor 下都失去平均常數時間');
+  await step(tok); // 2031 pictorially: a cluster
+  const g = ghostBox(M2.red, 0.6 * 15, 0.6, 0.7); g.position.set((X(2) + X(16)) / 2, 0.32, 0);
+  say('畫成圖：這一整段就是 cluster');
+  await step(tok); // 2061 map to 42, try 43, 44, …
+  cur = tag('▼', 'ptr alt', X(2), 1.1); cnt = tag('', 'ptr', 3.6, 1.6, -1.2);
+  for (let s = 42; s <= 47; s++) { cur.position.set(X(s - 40), 1.1, 0); txt(cnt, '第 ' + (s - 41) + ' 次 trial：' + s); await beat(tok, 200); }
+  say("h′(k) = 42：試 42、43、44……");
+  await step(tok); // 2068 until 57
+  for (let s = 48; s <= 57; s++) { cur.position.set(X(s - 40), 1.1, 0); txt(cnt, '第 ' + (s - 41) + ' 次 trial：' + s); await beat(tok, 150); }
+  say('……一直到 57 才是空格');
+  await step(tok); // 2074 15 tries in this dumb fashion
+  txt(cnt, '笨笨地多試了 15 次');
+  say('笨笨地多試了 15 次', '才走到空格');
+  await step(tok); // 2085 and the cluster grew by 1
   cube('k', M2.orange, [0.5, 0.4, 0.5], X(17), 0.32, 0, 2);
-  say('h′(k) = 42 → 43 → … → 57', '笨笨地多試了 15 次才找到空格');
-  await beat(tok, 2600);
-  say('而且 cluster 又長了一格', '大 cluster 更容易被撞到 → 更大');
-  await beat(tok, 2600);
-  say('100 格裡有 4 格的 cluster', '掉進去機率 4/100，是一般格子的 4 倍');
-  await beat(tok, 2800);
-  say('α < 0.99 時就有 Θ(log n) 長的 cluster', '不再是期望 O(1)');
-  await beat(tok, 3000);
+  say('而且放進去之後，cluster 又長了一格');
+  await step(tok); // 2091 α < 0.99 → clusters of size Θ(log n)
+  say('在合理的機率假設下', 'α = n/m < 0.99 時就會有 Θ(log n) 長的 cluster');
+  await step(tok); // 2136 the problem is the linear probing itself, not h′
+  note("就算 h′ 很完美也一樣：問題在「線性」", 0, 2.4, 1.8);
+  say("問題不在 h′ 選得好不好", '而在「一格一格往下」這個做法');
+  await step(tok); // 2150 search and insert no longer constant time
+  say('search、insert 不再是常數時間', '即使是機率意義下也一樣');
 }]);
 
 FRAG.push(['algmit2-double-hashing', 'Double hashing：h2(k) 與 m 互質', async (tok) => {
   fresh([0, 6.8, 10], [0, 0, 0.4]);
   const m = 8;
-  say('Double hashing：跳 h2(k) 格', 'h(k,i) = (h1(k) + i·h2(k)) mod m');
-  await beat(tok, 2800);
   const run = async (h2, z, color) => {
     const X = m2row(m, -4.2, 1.2, z, 0.9);
     tag('h2 = ' + h2, 'ptr', -6.0, 0.2, z);
@@ -12660,81 +14405,234 @@ FRAG.push(['algmit2-double-hashing', 'Double hashing：h2(k) 與 m 互質', asyn
       const s = (3 + i * h2) % m, again = seen.has(s); seen.add(s);
       tag('#' + (i + 1), again ? 'idx' : 'ptr alt', X(s) + (again ? 0.3 : 0), 1.0 + (again ? 0.5 : 0), z);
       if (!again) cube('', color, [0.8, 0.3, 0.8], X(s), 0.27, z);
-      await beat(tok, 350);
+      await beat(tok, 180);
     }
     return seen.size;
   };
+  await step(tok); // 2164 how do we fix that?
+  say('怎麼修？');
+  await step(tok); // 2174 double hashing
+  say('一個效果不錯的方法：double hashing');
+  await step(tok); // 2183 you run a couple of hashes
+  say('顧名思義：用兩個 hash function');
+  await step(tok); // 2192 h(k, i) = (h1(k) + i · h2(k)) mod m
+  bub('h(k, i) = (h1(k) + i · h2(k)) mod m', 0, 2.4, -4.0);
+  say('h(k, i) = (h1(k) + i · h2(k)) mod m', '每次往後跳 h2(k) 格');
+  await step(tok); // 2207 h1 and h2 are ordinary hash functions
+  say('h1、h2 都是普通的 hash function');
+  await step(tok); // 2213 how can we guarantee a permutation?
+  say('還是要保證 permutation', '怎麼做？');
+  await step(tok); // 2235 what property of h2 and m?
+  say('懂數論的同學：h2 和 m 要有什麼性質？');
+  await step(tok); // 2255 relatively prime
+  pkt('h2(k) 與 m 互質', 0, 1.8, -4.0);
+  say('同學答：互質（relatively prime）', '最大公因數是 1');
+  await step(tok); // 2272 that implies a permutation
   const a = await run(3, -1.6, M2.green);
-  say('h1 = 3、h2 = 3（示意）', '3 和 8 互質 → 走遍 ' + a + ' 格');
-  await beat(tok, 2600);
+  say('互質 → 一定是 permutation', '示意：h1 = 3、h2 = 3、m = 8：走遍 ' + a + ' 格');
+  await step(tok); // 2290 multiplying by i, you roll around
   const b = await run(2, 1.8, M2.red);
-  say('h2 = 2：和 8 有公因數', '只走到 ' + b + ' 格 → 不是 permutation');
-  await beat(tok, 2800);
-  say('做法：m = 2ʳ、h2(k) 永遠是奇數', '實務上效果很好');
-  await beat(tok, 3000);
+  say('i 一直變大，mod m 一直繞圈', '對照：h2 = 2 和 8 不互質 → 只走到 ' + b + ' 格');
+  await step(tok); // 2300 e.g. m = 2^r and h2(k) always odd
+  note('m = 2ʳ、h2(k) 永遠是奇數', 3.0, 1.8, 3.4);
+  say('簡單做法：m 取 2 的次方', 'h2(k) 永遠取奇數 → 一定互質');
+  await step(tok); // 2311 then you're in great shape
+  say('這樣就沒問題了', 'array 大小剛好是 2 的次方，很理想');
+  await step(tok); // 2321 e.g. truncate a regular hash to make it odd
+  say('h2 可以拿一般的 hash function', '再把它改成奇數（例如最後一位設成 1）');
+  await step(tok); // 2335 double hashing works fairly well in practice
+  okT('double hashing：實務上效果很好', 0, 1.2, -4.0);
+  say('double hashing 實務上效果很好', '讓 open addressing 真的好用');
 }]);
 
 FRAG.push(['algmit2-oa-cost', 'Uniform hashing：期望 probe 數 ≤ 1/(1−α)', async (tok) => {
   fresh([0, 5.2, 12.5], [0, 2.2, 0]);
-  say('Uniform hashing assumption', '每個 key 的 probe 順序：m! 種排列等機率');
-  await beat(tok, 2800);
-  say('不同於 simple uniform hashing', '很難做到；double hashing 很接近');
-  await beat(tok, 2600);
-  const X = m2row(10, -4.5, 1, 2.2, 0.8);
-  const occ = [0, 1, 3, 4, 6, 7, 9], cs = {};
-  occ.forEach((s) => { cs[s] = m2item('', M2.blue, X(s), 2.2, 0, 0.8); });
-  say('第一次 trial 成功機率 p = (m − n)/m', '= 1 − α（示意 m = 10、n = 7 → 0.3）');
-  await beat(tok, 2800);
-  const cur = tag('▼', 'ptr alt', X(4), 1.5, 2.2);
-  for (const s of [4, 9, 0, 5]) {
-    cur.position.set(X(s), 1.5, 2.2);
-    if (cs[s]) { glow(cs[s], RED); await beat(tok, 600); glow(cs[s], null); }
-    else { m2item('k', M2.green, X(s), 2.2, 2, 0.8); await beat(tok, 800); }
-  }
-  say('每次成功機率至少 p', '期望 trial 數 ≤ 1/p = 1/(1 − α)');
-  await beat(tok, 2800);
-  const A = [[0.5, 2], [0.7, 3.3], [0.9, 10], [0.99, 100]];
-  for (let q = 0; q < A.length; q++) {
-    const [al, v] = A[q], x = -3 + q * 2, b = m2bar(q === 3 ? M2.red : M2.orange, 1.1, 0.9, x, -1.2);
-    tag('α = ' + al, 'idx', x, 0, -0.4); tag(String(v), 'ptr', x, Math.min(5.2, v * 0.45) + 0.4, -1.2);
-    await anim(tok, 600, (t) => m2set(b, Math.min(5.2, v * 0.45) * t));
-  }
-  say('α = 0.99 → 平均 100 次 probe', '仍是常數，但很糟');
-  await beat(tok, 2800);
-  say('實務：α 到 0.5～0.6 就 resize', 'DeleteMe 也算負擔；resize 時清掉');
-  await beat(tok, 3000);
+  await step(tok); // 2345 to prove OA is as good as chaining: an assumption
+  say('要證明 open addressing 跟 chaining 一樣好', '需要一個假設');
+  await step(tok); // 2357 uniform hashing
+  bub('uniform hashing assumption', 0, 6.0);
+  say('uniform hashing assumption（均勻雜湊假設）');
+  await step(tok); // 2365 no proof, but the theorem
+  say('證明在講義裡', '這裡只看定理和它的意思');
+  await step(tok); // 2380 not the same as simple uniform hashing
+  noT('≠ simple uniform hashing', -3.8, 5.2);
+  say('它跟 simple uniform hashing 不一樣', 'SUH 只管每個 key 落到哪一格');
+  await step(tok); // 2395 each key equally likely any of the m! permutations
+  const X = m2row(5, -2.4, 1.2, 1.6, 0.9);
+  const perms = [[3, 0, 4, 1, 2], [1, 4, 2, 0, 3], [0, 2, 3, 4, 1]];
+  for (let q = 0; q < 3; q++) { tag('key ' + (q + 1) + '：' + perms[q].join(' → '), 'idx', 4.4, 4.3 - q * 0.6); await beat(tok, 300); }
+  say('每個 key 的 probe 序列', '是 m! 種排列中的任一種，機率都一樣');
+  await step(tok); // 2431 very hard to get in practice; double hashing is close
+  say('實務上很難做到', 'double hashing 很接近');
+  await step(tok); // 2438 nobody has found a perfect deterministic one
+  say('還沒有人找到完美符合的', '確定性（非隨機）hash function');
+  await step(tok); // 2450 what does it imply? α = n/m
+  pkt('α = n/m', -3.8, 4.4);
+  say('假設成立的話，會得到什麼？', 'α = n/m');
+  await step(tok); // 2462 cost of insert etc. ≤ 1/(1 − α)
+  pkt('期望 probe 數 ≤ 1 / (1 − α)', 0, 6.6);
+  say('search、insert、delete 的成本', '期望 probe 數 ≤ 1/(1 − α)');
+  const A = [[0.5, 2], [0.7, 3.3], [0.9, 10], [0.99, 100]], bars = [];
+  const bar = async (q) => { const [al, v] = A[q], x = -3 + q * 2, b = m2bar(q === 3 ? M2.red : M2.orange, 1.1, 0.9, x, -1.2); tag('α = ' + al, 'idx', x, 0, -0.4); tag(String(v), 'ptr', x, Math.min(5.2, v * 0.45) + 0.4, -1.2); await anim(tok, 400, (t) => m2set(b, Math.min(5.2, v * 0.45) * t)); };
+  await step(tok); // 2489 grows as α tends to 1
+  for (let q = 0; q < 3; q++) await bar(q);
+  say('α 越接近 1，成本越大', 'table 越滿，insert 要試越多次');
+  await step(tok); // 2506 α = 0.99 → on average 100 probes
+  await bar(3);
+  say('α = 0.99：平均要 100 次 probe');
+  await step(tok); // 2514 still a constant, but a bad one
+  say('100 還是常數', '但是很糟的常數');
+  await step(tok); // 2516 resize when α gets beyond about 0.5–0.6
+  okT('α 超過 0.5～0.6 → resize', 4.4, 1.6);
+  say('所以 α 要保持小', '實務上 α 超過 0.5～0.6 就要 resize');
+  await step(tok); // 2532 this is an average case, a probabilistic assumption
+  say('這些都是平均情況', '建立在機率假設上');
+  await step(tok); // 2538 by 0.7 OA does worse than chaining
+  say('α 到 0.7 時', 'open addressing 就比同樣大小的 chaining table 差');
+  await step(tok); // 2556 easy to implement, less memory (no pointers)
+  okT('好寫、省記憶體（沒有 pointer）', 4.4, 0.9);
+  say('open addressing：好寫、省記憶體', '因為不需要 pointer');
+  await step(tok); // 2562 keep α around 0.5
+  say('但要小心讓 α 維持在 0.5 左右');
+  await step(tok); // 2568 just resize your table
+  say('做法就是 resize table', '策略跟 chaining 稍微不同');
+  await step(tok); // 2584 that's the summary of open addressing
+  say('這就是 open addressing 的總結');
+}]);
+
+FRAG.push(['algmit2-oa-qa', 'Q&A：DeleteMe 的負擔與 1/(1−α) 的直覺', async (tok) => {
+  fresh([0, 6, 11], [0, 0.8, 0]);
+  const X = M2OA();
+  const st = buddy('同學', '', M2.orange, 6.0, 0, 2.4, 0.7); st.look(-1);
+  let p = null;
+  await step(tok); // 2592 any questions about open addressing?
+  say('open addressing 有問題嗎？');
+  await step(tok); // 2596 fill the table, delete everything, then search?
+  const ds = [];
+  for (let s = 0; s < 7; s++) ds.push(cube('DeleteMe', M2.purple, [1.25, 0.6, 1.0], X(s), 0.45, 0, 1.5 + s * 0.2));
+  st.mood('wow');
+  say('同學問：把 table 塞滿再全部刪掉', '然後去 search 會怎樣？');
+  await step(tok); // 2607 delete isn't instantaneous
+  noT('全是 DeleteMe：search 要走遍整個 table', 0, 2.4);
+  say('open addressing 的缺點：delete 不是「立刻」生效');
+  await step(tok); // 2615 in chaining, the chain got smaller → lower load
+  say('chaining 刪掉一個，chain 就變短', 'load 立刻下降');
+  await step(tok); // 2626 a delay with the DeleteMe flags
+  say('但 DeleteMe 還佔著位置', 'load 不會馬上降下來');
+  await step(tok); // 2632 careful how you define α
+  say('所以 α 要怎麼算要小心', 'DeleteMe 也該算進去');
+  await step(tok); // 2643 DeleteMe flags still hurt you
+  say('這也是 α 到 0.5、0.6 就有麻煩的原因之一', 'DeleteMe 一直在拖累你');
+  await step(tok); // 2649 (Q) when you resize, do the DeleteMe flags go away?
+  say('同學又問：resize 時 DeleteMe 會清掉嗎？');
+  await step(tok); // 2652 yes: rehash everything → they become None
+  for (const d of ds) { fly(d); await beat(tok, 80); }
+  for (let s = 0; s < 7; s++) tag('None', 'idx', X(s), 0.35, -0.2);
+  st.mood('happy');
+  say('會：resize 時全部重新 hash', 'DeleteMe 都清掉、變回 None');
+  await step(tok); // 2664 (Q) where does 1/(1 − α) come from?
+  st.mood('wow');
+  bub('1/(1 − α) 怎麼來的？', 3.0, 3.2);
+  say('同學問：1/(1 − α) 是怎麼來的？');
+  await step(tok); // 2676 the intuition: a probability p
+  const occ = [0, 1, 3, 4, 6], cs = {};
+  occ.forEach((s) => { cs[s] = m2item('', M2.blue, X(s), 0, 2, 1.0); });
+  say('證明很長，但直覺是：', '先看一個機率 p');
+  await step(tok); // 2698 p = (m − n) / m
+  p = pkt('p = (m − n) / m', -3, 3.2);
+  say('p = (m − n) / m', '示意：m = 7、n = 5 → p = 2/7');
+  await step(tok); // 2712 the probability the very first trial succeeds
+  const cur = tag('▼', 'ptr alt', X(2), 1.6);
+  m2item('k', M2.green, X(2), 0, 2, 1.0);
+  say('table 裡有 n 個、空格有 m − n 個', '第一次 trial 就成功的機率 = 空格的比例');
+  await step(tok); // 2730 that is 1 − α
+  txt(p, 'p = (m − n)/m = 1 − α');
+  say('這就是 1 − α');
+  await step(tok); // 2742 every trial does no worse than p
+  say('之後每次 trial 成功的機率', '都不會比 p 差（試過的滿格不會再試）');
+  await step(tok); // 2752 expected number of trials is 1/p
+  pkt('期望 trial 數 ≤ 1/p = 1/(1 − α)', 0, 4.2);
+  st.mood('happy');
+  say('每次成功機率至少 p', '期望要試的次數 ≤ 1/p = 1/(1 − α)');
+  await step(tok); // 2760 the gory details are in the notes
+  say('完整證明在講義裡');
 }]);
 
 FRAG.push(['algmit2-password', 'Cryptographic hash：密碼只存 h(x)', async (tok) => {
   fresh([0, 4.4, 12.5], [0, 2.8, 0]);
+  const me = buddy('老師', '', M2.purple, -6.0, 0, 1.6, 0.8);
+  let row = null;
+  await step(tok); // 2765 a little time left for cryptographic hashes
+  say('最後談 cryptographic hash（密碼雜湊）');
+  await step(tok); // 2771 not on the quiz: FYI
+  note('不考，純粹 FYI', 4.4, 6.4);
+  say('不在 quiz 範圍', '純粹給大家參考');
+  await step(tok); // 2784 other kinds of hashes, for different applications
+  say('世界上還有另一種 hash', '用途跟 hash table 很不一樣');
+  await step(tok); // 2799 motivate it with an example
+  say('用一個例子說明');
+  await step(tok); // 2814 password storage
+  const lk = prop('lock', 0, 4.6, -1, 1.1, '密碼怎麼存？'); bob(lk, 0.05);
+  say('每個資安人員都關心的例子', '密碼怎麼存');
+  await step(tok); // 2817 how Unix systems work when you type your password
+  prop('keyboard', -3.6, 0, 0.6, 0.9, '輸入密碼');
+  say('例如登入 Unix 系統時輸入密碼');
+  await step(tok); // 2826 my password (a permutation of my daughter's name)
+  me.mood('happy');
+  say('老師的密碼是女兒名字的某種排列', '他當然沒說出來');
+  await step(tok); // 2853 some check must happen
+  say('系統要檢查你打的密碼對不對');
+  await step(tok); // 2860 what's a dumb way?
+  say('最笨的做法是什麼？');
+  await step(tok); // 2872 (student) hash it — better
+  say('同學直接說：hash 它', '那是比較好的做法，但老師問的是笨方法');
+  await step(tok); // 2883 plain text in /etc/passwd
   tag('/etc/passwd', 'ptr', -4.2, 6.2);
-  say('Cryptographic hash（不考，FYI）', '例：密碼怎麼存');
-  await beat(tok, 2400);
-  const row = cube('srini : 明文密碼', M2.red, [3.6, 0.7, 0.8], -4.0, 5.2, 0, 2);
-  say('笨方法：明文存在檔案裡', '連 sysadmin 都看得到');
-  await beat(tok, 2600);
+  row = cube('srini : 明文密碼', M2.red, [3.6, 0.7, 0.8], -4.0, 5.2, 0, 2);
+  say('笨方法：把密碼明文存在 /etc/passwd 檔案裡');
+  await step(tok); // 2890 make it world-readable
+  noT('大家都讀得到！', -4.0, 4.4);
+  say('還讓所有人都能讀', '真的有人這樣做');
+  await step(tok); // 2897 even the sysadmin shouldn't know your password
+  say('我們希望：連系統管理員（sysadmin）都不知道你的密碼');
+  await step(tok); // 2907 a cryptographic hash that is one-way
   relabel(row, 'srini : 9f3a…'); tint(row, M2.blue);
-  say('只存 h(x)', 'one-way：給 h(x) 很難找出 x');
-  await beat(tok, 2800);
+  say('用 one-way（單向）的 cryptographic hash');
+  await step(tok); // 2916 given h(x), very hard to find x
+  bub('給你 h(x)，很難找回 x', 3.4, 6.2);
+  say('one-way：給你 h(x)', '很難找出是哪個 x 算出來的');
+  await step(tok); // 2953 the file stores login name and h(password)
+  say('檔案裡只存：帳號 + h(密碼)', '每個使用者都一樣');
   const login = async (typed, out, ok) => {
     const x = cube(typed, M2.sand, [1.8, 0.7, 0.8], -4.0, 2.4, 0, 2);
     const hb = cube('h( )', M2.purple, [1.2, 0.9, 0.9], 0, 2.4, 0);
     arrow(V3(-3.0, 2.4, 0), V3(-0.7, 2.4, 0));
-    await beat(tok, 900);
+    await beat(tok, 500);
     const o = cube(out, ok ? M2.green : M2.red, [1.6, 0.7, 0.8], 3.6, 2.4, 0, 1.5);
     arrow(V3(0.7, 2.4, 0), V3(2.7, 2.4, 0));
-    glow(row, ok ? GREEN : RED);
     return [x, hb, o];
   };
-  let objs = await login("x′（輸入）", '9f3a…', true);
-  say('登入：把輸入的 x′ 再 hash 一次', 'h(x′) = 存的值 → 放行');
-  await beat(tok, 2800);
-  objs.forEach(kill); glow(row, null);
-  objs = await login('打錯的 x′', '41c7…', false);
-  say('打錯 → hash 不同 → 拒絕', '系統從頭到尾不需要知道 x');
-  await beat(tok, 2800);
-  say('還要 collision resistance 等性質', '也用來偵測檔案是否被竄改或損毀');
-  await beat(tok, 2800);
+  let objs = null;
+  await step(tok); // 2983 I log in and type the password
+  const tp = pkt("x′（打進來的密碼）", -4.0, 3.4);
+  say('登入時打入密碼 x′');
+  await step(tok); // 2988 the system hashes it
+  remove(tp);
+  objs = await login("x′", '9f3a…', true);
+  say('系統把它 hash 一次', '算出 h(x′)');
+  await step(tok); // 2992 x′ may or may not equal my password
+  say('x′ 不一定是真的密碼', '可能有人想闖進來，或你打錯了');
+  await step(tok); // 3013 compare with the stored value — it doesn't need x
+  glow(row, GREEN);
+  say('跟存的 h(x) 比較', '系統完全不需要知道 x');
+  await step(tok); // 3027 let me in if they match
+  me.mood('happy');
+  okT('相同 → 放行', 3.6, 3.4);
+  say('一樣就放行，不一樣就拒絕');
+  await step(tok); // 3036 properties: one-way, collision resistance
+  glow(row, null);
+  note('還需要：one-way、collision resistance……', 0, 0.8);
+  say('還需要 one-way、collision resistance 等性質', '詳見講義或 Wikipedia');
 }]);
   }
 
