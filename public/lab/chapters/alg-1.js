@@ -7768,11 +7768,18 @@ FRAG.push(['algjiang2-set-notation', 'O(n³) 是集合：「=」其實是「∈�
 
   // ═══ algmit1.js ═══
   {
-const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, code, anim, line, arrow, ghostBox, GOLD, GREEN, RED, GRAY } = K;
+const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, code, anim, line, arrow, ghostBox, GOLD, GREEN, RED, GRAY, step, buddy, prop, bob, travel, remove } = K;
 // ─── MIT 6.006 Fall 2011：L1 HtSuA80QTyo、L2 Zc54gFhdpLA、Rec1 P7frcB_-g4w、Rec2 QFcyt8fgQMU ───
-// 這段影片的動畫放慢 1.5 倍（anim 仍用 kit 的節奏）
-const beat = (tok, ms) => ctx.beat(tok, ms * 1.5);
+// 這些場景是「跟著講者走」的 cued scene：每個 await step(tok) 等講者說到那一句才動；
+// beat / anim 只是那一句的小動作（≤ 2.5 s），之後畫面就停住等下一句。
+const beat = (tok, ms) => ctx.beat(tok, ms);
 const M = { blue: '#4b9ee2', pink: '#e55a9b', green: '#2fc092', orange: '#dd8238', purple: '#9b7ef4', teal: '#31aab0', gold: '#c08a1f', red: '#d64545', sand: '#c9b48e', paper: '#efe6d2', brown: '#6e5f49' };
+// friendly labels: a speech bubble, a sticky note, a ✓ / ✗ verdict, a travelling packet
+const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const okT = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const noT = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+const pkt = (t, x, y, z = 0) => tag(t, 'pkt', x, y, z);
 const mBox = (t, c, x, y, w = 0.8, h = 0.8, d = 0.8, drop = 0, z = 0) => cube(t, c, [w, h, d], x, y, z, drop);
 const mX = (n, gap, cx = 0) => (i) => cx - (n - 1) * gap / 2 + i * gap;
 function mRow(vals, y, o = {}) {
@@ -7782,6 +7789,7 @@ function mRow(vals, y, o = {}) {
 // 長條：底部貼地 (y = 0)，高 h
 function mBar(v, h, col, x, z = 0, w = 0.7) { const H = Math.max(0.05, h); return cube(v, col, [w, H, w], x, H / 2, z); }
 function mSetH(m, h) { const H = Math.max(0.05, h); m.scale.y = H / m.geometry.parameters.height; m.position.y = H / 2; }
+async function mGrow(tok, m, h, ms = 1200) { const h0 = m.scale.y * m.geometry.parameters.height; await anim(tok, ms, (t) => mSetH(m, h0 + (h - h0) * t)); }
 function mPoly(pts, col) {
   const T = ctx.THREE; const l = new T.Line(new T.BufferGeometry().setFromPoints(pts), new T.LineBasicMaterial({ color: col }));
   lab.world.add(l); return l;
@@ -7791,6 +7799,12 @@ function mPlot(fn, X, Y, col, P = {}) {
   const ox = P.ox ?? -5, oy = P.oy ?? 0.3, W = P.W ?? 10, H = P.H ?? 5.6, N = P.N ?? 160, pts = [];
   for (let k = 0; k <= N; k++) { const x = X * k / N; const y = Math.max(0, Math.min(1.08, fn(x) / Y)); pts.push(V3(ox + W * k / N, oy + H * y, 0)); }
   return mPoly(pts, col);
+}
+// 一條曲線慢慢畫出來（≤ ms）
+async function mDraw(tok, fn, X, Y, col, P = {}, ms = 1400) {
+  let l = null;
+  await anim(tok, ms, (u) => { if (l) kill(l); l = mPlot((x) => fn(x), X * Math.max(0.02, u), Y, col, Object.assign({}, P, { W: (P.W ?? 10) * Math.max(0.02, u) })); });
+  return l;
 }
 function mAxes(xl, yl, P = {}) {
   const ox = P.ox ?? -5, oy = P.oy ?? 0.3, W = P.W ?? 10, H = P.H ?? 5.6;
@@ -7806,488 +7820,919 @@ function mGrid(G, gx = 1.3, gy = 1.1, y0 = 5.0, cx = 0) {
 }
 const mOff = (g) => g.cells.forEach((row) => row.forEach((m) => glow(m, null)));
 const isPeak1 = (A, i) => (i === 0 || A[i] >= A[i - 1]) && (i === A.length - 1 || A[i] >= A[i + 1]);
+// 一個小幫手站在格子上：走到 (x, y)
+async function mWalk(tok, b, x, y, z = 0, ms = 500) { const a = b.g.position.clone(); await anim(tok, ms, (u) => b.g.position.set(a.x + (x - a.x) * u, a.y + (y - a.y) * u, a.z + (z - a.z) * u)); }
 
 // ════════ HtSuA80QTyo（MIT 6.006 L1：Algorithmic Thinking, Peak Finding） ════════
-// 02:52 大輸入：10⁹ 線性掃描可以，cubic 變 10²⁷
+// 02:52 大輸入：10⁹ 線性掃描可以，cubic 變 10²⁷（13 steps）
 FRAG.push(['algmit1-scale-n3', '大輸入：n = 10⁹ 時 n³ = 10²⁷', async (tok) => {
-  fresh([0, 4.6, 15], [0, 3.4, 0]);
-  const s = 0.33;
-  say('「large」的定義一直在變大', '10³ → 10⁶ → 10¹² → 10¹⁸');
-  const eras = [['10³', 3, '當年'], ['10⁶', 6, 'Eric 當年'], ['10¹²', 12, '現在'], ['10¹⁸', 18, '未來']];
-  for (let i = 0; i < eras.length; i++) {
-    const x = -5.6 + i * 1.25; mBar(eras[i][0], eras[i][1] * s, M.teal, x, 0, 0.8);
-    tag(eras[i][2], 'idx', x, -0.4); await beat(tok, 700);
-  }
-  await beat(tok, 1400);
-  say('線性掃過 10⁹ 個元素：幾秒鐘', 'Θ(n)，n = 10⁹');
-  mBar('n', 9 * s, M.green, 1.6, 0, 1.0); tag('10⁹ 步', 'ptr', 1.6, 9 * s + 0.5);
-  await beat(tok, 2400);
-  say('cubic 演算法：10²⁷ 步', 'Θ(n³) = (10⁹)³ = 10²⁷');
-  const b2 = mBar('n³', 0.05, M.red, 4.2, 0, 1.0);
-  await anim(tok, 1800, (t) => mSetH(b2, 0.05 + (27 * s - 0.05) * t));
-  tag('10²⁷ 步：跑不完', 'ptr alt', 4.2, 27 * s + 0.5); glow(b2, RED);
-  await beat(tok, 2400);
-  say('輸入越大，效率越重要', 'scalability：n 變大時怎麼成長');
-  await beat(tok, 1900);
+  fresh([0, 4.4, 15], [0, 3.0, 0]);
+  const s = 0.24, BX = { 3: -2.6, 6: -1.5, 12: -0.4, 18: 0.7 };
+  const era = (e, who, col) => { const b = mBar('', 0.05, col, BX[e], 0, 0.8); tag('10' + ({ 3: '³', 6: '⁶', 12: '¹²', 18: '¹⁸' })[e], 'idx', BX[e], -0.4); tag(who, 'idx', BX[e], -0.85); return b; };
+  await step(tok);                                   // 172.2 efficient procedures for large inputs
+  const al = buddy('演算法', '', M.blue, -5.2, 0, 1.2, 0.9);
+  say('這門課一句話：在「大輸入」上解問題的有效率方法', 'efficient procedures for solving problems on large inputs');
+  await step(tok);                                   // 185.8 US highway system
+  const p1 = pkt('美國公路圖', -5.2, 4.6); await travel(tok, p1, V3(-6.0, 6.0), V3(-5.2, 4.6), 500);
+  say('大輸入的例子：全美國的公路圖', '');
+  await step(tok);                                   // 191.6 human genome
+  const p2 = pkt('人類基因體：10⁹ 個字母', -5.2, 3.9); await travel(tok, p2, V3(-6.0, 6.0), V3(-5.2, 3.9), 500);
+  say('人類基因體：大約 10 億（10⁹）個字母', '');
+  await step(tok);                                   // 199.6 social network
+  const p3 = pkt('社群網路：5 億個節點', -5.2, 3.2); await travel(tok, p3, V3(-6.0, 6.0), V3(-5.2, 3.2), 500);
+  al.mood('wow');
+  say('像 Facebook 的社群網路：大約 5 億個節點', '');
+  await step(tok);                                   // 210.8 21st century: a trillion
+  const b12 = era(12, '現在', M.teal); await mGrow(tok, b12, 12 * s, 900);
+  say('「大」的定義一直在變：今天的「大」大約是一兆（10¹²）', '');
+  await step(tok);                                   // 216.8 back when I was your age: 1000
+  const b3 = era(3, 'Srini 年輕時', M.teal); await mGrow(tok, b3, 3 * s, 600);
+  say('老師像你們這麼大時，「大」只是 1000', '');
+  await step(tok);                                   // 224.8 Eric: a million
+  const b6 = era(6, 'Erik 年輕時', M.teal); await mGrow(tok, b6, 6 * s, 700);
+  say('Erik 那時候是一百萬（10⁶）', '');
+  await step(tok);                                   // 245.4 scan a billion elements in seconds
+  const lin = mBar('', 0.05, M.green, 2.8, 0, 1.0); tag('n = 10⁹', 'idx', 2.8, -0.4);
+  await mGrow(tok, lin, 9 * s, 900); okT('掃一遍：幾秒', 2.8, 9 * s + 0.5);
+  al.mood('happy');
+  say('把 10⁹ 個元素掃一遍（線性），幾秒鐘就好', 'Θ(n)');
+  await step(tok);                                   // 253.3 cubic: 10^27
+  const cub = mBar('', 0.05, M.red, 4.8, 0, 1.0); tag('n³', 'idx', 4.8, -0.4);
+  await mGrow(tok, cub, 27 * s, 1800); pkt('10²⁷ 步', 4.8, 27 * s + 0.45);
+  al.mood('wow');
+  say('但如果演算法是 cubic（n³）：10⁹ 變成 10²⁷ 步', '(10⁹)³ = 10²⁷');
+  await step(tok);                                   // 264.9 even current computers can't handle it
+  glow(cub, RED); noT('現在的電腦也跑不完', 4.8, 27 * s - 0.6); al.mood('sad');
+  say('現在的電腦也算不完：所以效率很重要，輸入越大越重要', '');
+  await step(tok);                                   // 297.9 scalability
+  note('scalability：輸入變大時，演算法表現怎麼變？', -1.0, 5.6);
+  al.mood('calm');
+  say('我們在意 scalability（可擴展性）', '');
+  await step(tok);                                   // 319.8 10^18 in the future
+  const b18 = era(18, '未來？', M.purple); await mGrow(tok, b18, 18 * s, 1000);
+  say('等你們當教授時，10¹⁸ 可能才是「一般大小」的輸入', '');
+  await step(tok);                                   // 334.2 track algorithms as inputs grow
+  arrow(V3(BX[3], 3 * s + 0.4), V3(BX[18], 18 * s + 0.4), 0x9b7ef4);
+  al.mood('happy'); await al.hop(tok);
+  say('所以要追蹤：輸入越來越大時，演算法跑得怎麼樣', 'scalability');
 }]);
 
-// 15:57 1D peak 的定義
+// 15:57 1D peak 的定義（7 steps）
 FRAG.push(['algmit1-peak1d-def', '1D peak：b ≥ a 且 b ≥ c', async (tok) => {
   fresh([0, 3.8, 13], [0, 1.6, 0]);
   const L = 'abcdefghi'.split(''), X = mX(9, 1.15);
+  await step(tok);                                   // 957.5 1D peak finding: array of 9 positions
   const cs = L.map((v, i) => mBox(v, M.sand, X(i), 0.45, 0.85, 0.85, 0.85, 2 + i * 0.15));
-  L.forEach((_, i) => tag(String(i + 1), 'idx', X(i), -0.35));
-  say('一維 peak finding：9 個位置', '陣列 a, b, …, i');
-  await beat(tok, 2400);
-  say('位置 2 是 peak：b 不小於兩鄰', 'b ≥ a  且  b ≥ c');
+  const ix = L.map((_, i) => tag(String(i + 1), 'idx', X(i), -0.35));
+  say('一維 peak finding：一個有 9 個位置的陣列', 'a 到 i 各代表一個數字');
+  await step(tok);                                   // 1015.9 position 2 is a peak iff b ≥ a and b ≥ c
   glow(cs[1], GOLD);
-  let a1 = arrow(V3(X(1), 1.9), V3(X(0), 1.05)), a2 = arrow(V3(X(1), 1.9), V3(X(2), 1.05));
-  await beat(tok, 3000); kill(a1); kill(a2); glow(cs[1], null);
-  say('邊界只要看一邊', '位置 9 是 peak ⇔ i ≥ h');
-  glow(cs[8], GOLD); a1 = arrow(V3(X(8), 1.9), V3(X(7), 1.05));
-  await beat(tok, 3000); kill(a1); glow(cs[8], null);
-  say('代入數字看看', '[3, 5, 4, 2, 6, 7, 1, 2, 8]');
-  const A = [3, 5, 4, 2, 6, 7, 1, 2, 8];
-  for (let i = 0; i < 9; i++) { relabel(cs[i], A[i]); await beat(tok, 180); }
-  await beat(tok, 900);
-  for (let i = 0; i < 9; i++) if (isPeak1(A, i)) { glow(cs[i], GREEN); tag('peak', 'ptr', X(i), 1.5); await beat(tok, 700); }
-  say('peak 是局部性質，可能不只一個', '只要找到「一個」peak');
-  await beat(tok, 1900);
+  const a1 = arrow(V3(X(1), 1.9), V3(X(0), 1.05)), a2 = arrow(V3(X(1), 1.9), V3(X(2), 1.05));
+  say('位置 2 是 peak ⇔ b ≥ a 而且 b ≥ c', '不小於左右兩個鄰居');
+  await step(tok);                                   // 1044.7 look to your left, look to your right
+  const me = buddy('', '', M.gold, X(1), 0.9, 0, 0.55);
+  say('很「局部」的性質：看左邊、看右邊就知道', 'local property');
+  me.look(-1); await beat(tok, 700); me.look(1); await beat(tok, 700); me.look(0); me.mood('happy');
+  await step(tok);                                   // 1055.0 edges: only look to one side
+  kill(a1); kill(a2); glow(cs[1], null);
+  await mWalk(tok, me, X(8), 0.9, 0, 900);
+  glow(cs[8], GOLD); arrow(V3(X(8), 1.9), V3(X(7), 1.05));
+  me.look(-1);
+  say('邊界只要看一邊：位置 9 是 peak ⇔ i ≥ h', '最右邊只有左鄰居');
+  await step(tok);                                   // 1079.8 problem: find a peak if it exists
+  note('問題：find a peak if it exists（找到「一個」就好）', 0, 3.4);
+  me.look(0);
+  say('題目：如果有 peak，找出一個', 'find a peak if it exists');
+  await step(tok);                                   // 1111.0 straightforward: walk across the array
+  await mWalk(tok, me, X(0), 0.9, 0, 1200); me.look(1);
+  say('最直接的做法：從左邊開始，一格一格走過去', '先當作起點，之後再改進');
+  await step(tok);                                   // 1145.2 positions 1, 2, …, n/2, …, n−1, n
+  ['1', '2', '', '', 'n/2', '', '', 'n−1', 'n'].forEach((t, i) => txt(ix[i], t));
+  glow(cs[8], null);
+  say('一般化：陣列有 n 個位置，複雜度要用 n 來表示', '1, 2, …, n/2, …, n−1, n');
 }]);
 
-// 18:00 find a peak if it exists：≥ 一定有，> 不一定
+// 18:00 find a peak if it exists：≥ 一定有，> 不一定（6 steps）
 FRAG.push(['algmit1-peak-exists', '≥ 定義一定有 peak；> 可能沒有', async (tok) => {
   fresh([0, 4.2, 13], [0, 2.0, 0]);
-  const X = mX(5, 1.2);
-  say('定義用 ≥：任何陣列都有 peak', '全域最大值一定 ≥ 兩鄰');
+  const X = mX(5, 1.2), X4 = mX(4, 1.2);
+  await step(tok);                                   // 1195.7 student: why "if it exists"?
+  const st = buddy('同學', '', M.pink, -5.6, 0, 1.6, 0.7); st.look(1);
+  const q = bub('為什麼要寫 if it exists？', -4.4, 2.2, 1.6);
+  say('同學問：為什麼題目要加「如果存在」？', '');
+  await step(tok);                                   // 1203.7 with ≥: argue any array always has a peak
+  remove(q);
   const ra = mRow([2, 5, 3, 7, 4], 3.4, { gap: 1.2, col: M.sand, drop: 2 });
-  tag('≥ 定義', 'ptr', -4.6, 3.4);
-  await beat(tok, 1600); glow(ra[3], GREEN); tag('max → peak', 'idx', X(3), 4.3);
-  await beat(tok, 2600);
-  say('改用 >（嚴格大於）呢？', '[3, 3, 3, 3]');
+  tag('≥ 定義', 'ptr', -4.2, 3.4);
+  await beat(tok, 700); glow(ra[3], GREEN); okT('最大值 ≥ 兩鄰 → 一定是 peak', X(3), 4.3);
+  say('用 ≥ 定義時：任何陣列一定有 peak（回家證明）', '提示：最大的那個一定 ≥ 兩邊');
+  await step(tok);                                   // 1220.5 with > instead: can't make that argument
   const rb = mRow([3, 3, 3, 3], 0.7, { gap: 1.2, col: M.sand, drop: 2 });
-  tag('> 定義', 'ptr', -4.6, 0.7);
-  await beat(tok, 1600);
-  for (const m of rb) { glow(m, RED); await beat(tok, 350); }
-  say('全部相等：沒有 peak', '嚴格定義下 peak 可能不存在');
-  await beat(tok, 2600);
-  say('所以題目寫 if it exists', '≥ 版可省略；> 版要能回報「不存在」');
-  await beat(tok, 1900);
+  tag('> 定義', 'ptr', -4.2, 0.7);
+  await beat(tok, 700);
+  for (const m of rb) { glow(m, RED); await beat(tok, 200); }
+  noT('全部一樣：沒有 peak', X4(1) + 0.6, 1.6);
+  st.mood('wow');
+  say('如果改成嚴格「>」：像 3 3 3 3 就一個 peak 都沒有', '示意例子');
+  await step(tok);                                   // 1242.7 algorithmic thinking: general algorithms
+  note('algorithmic thinking：定義改了，演算法仍要能當出發點', 1.0, 6.0);
+  say('這就是 algorithmic thinking：演算法要夠一般', '問題定義變了，還有出發點');
+  await step(tok);                                   // 1269.4 different definition: say "doesn't exist"
+  pkt('回答：「不存在」', 4.6, 0.7);
+  say('定義不同時，演算法要能肯定地說「peak 不存在」', '或找出存在的那個');
+  await step(tok);                                   // 1298.4 "I searched exhaustively"
+  bub('我已經窮舉搜尋過了，真的沒有！', -4.2, 2.2, 1.6);
+  st.mood('happy'); await st.hop(tok);
+  say('找不到時，要拿得出「我已經完整搜尋過」的論證', '');
 }]);
 
-// 22:11 直接法：從左往右走，最壞 Θ(n)
+// 22:11 直接法：從左往右走，最壞 Θ(n)（8 steps）
 FRAG.push(['algmit1-peak1d-linear', '直接法：從左走到右，最壞 Θ(n)', async (tok) => {
   fresh([0, 4.2, 14], [0, 2.2, 0]);
   const X = mX(9, 1.1);
-  async function walk(A, col) {
-    const bs = A.map((v, i) => mBar(v, v * 0.5, col, X(i)));
-    const cur = tag('▼', 'ptr', X(0), 5.4); let steps = 0;
+  let bs = [], wk = null;
+  async function walk(A, col, ms) {
     for (let i = 0; i < A.length; i++) {
-      cur.position.set(X(i), A[i] * 0.5 + 0.6, 0); glow(bs[i], GOLD); steps++;
-      await beat(tok, 450);
-      if (isPeak1(A, i)) { glow(bs[i], GREEN); break; }
+      await mWalk(tok, wk, X(i), A[i] * 0.5, 0, ms); glow(bs[i], GOLD);
+      if (isPeak1(A, i)) { glow(bs[i], GREEN); return i + 1; }
       glow(bs[i], null);
     }
-    return { bs, cur, steps };
+    return A.length;
   }
-  say('直接法：從最左邊開始往右走', '每格看左右兩鄰');
-  await beat(tok, 1200);
-  let r = await walk([1, 3, 5, 7, 9, 6, 4, 2, 1], M.blue);
-  let t = tag('看了 ' + r.steps + ' 格 ≈ n/2', 'ptr alt', 0, 6.0);
-  say('peak 在中間：看大約 n/2 個', '≈ n/2');
-  await beat(tok, 2400);
-  r.bs.forEach(kill); kill(r.cur); kill(t);
-  say('最壞情況：1, 2, …, n 一路遞增', 'peak 在最右邊');
-  r = await walk([1, 2, 3, 4, 5, 6, 7, 8, 9], M.orange);
-  t = tag('看了 ' + r.steps + ' = n 格', 'ptr alt', 0, 6.0);
-  await beat(tok, 1600);
-  say('最壞情況 Θ(n)：線性', 'Θ = 上界 + 下界；O 只是上界');
-  await beat(tok, 1900);
+  await step(tok);                                   // 1330.7 straightforward: start from the left
+  const A1 = [1, 3, 5, 7, 9, 6, 4, 2, 1];
+  bs = A1.map((v, i) => mBar(v, v * 0.5, M.blue, X(i)));
+  wk = buddy('', '', M.gold, X(0) - 1.2, 0, 0, 0.5); wk.look(1);
+  say('直接法：從最左邊開始往右走', '每到一格就看左右兩鄰');
+  await step(tok);                                   // 1344.3 increasing, peak in the middle, then decreasing
+  let n = await walk(A1, M.blue, 220);
+  wk.mood('happy');
+  okT('peak 在中間', X(4), 5.4);
+  say('數字先變大、再變小：peak 在中間', '示意數字');
+  await step(tok);                                   // 1366.7 peak all the way on the right: 1, 2, 3, …
+  bs.forEach(kill); bs = [];
+  const A2 = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+  bs = A2.map((v, i) => mBar(v, v * 0.5, M.orange, X(i)));
+  wk.g.position.set(X(0) - 1.2, 0, 0); wk.mood('calm');
+  say('也可能 peak 在最右邊：1, 2, 3, 4, 5, 6, …', '一路遞增');
+  n = await walk(A2, M.orange, 200);
+  pkt('看了 ' + n + ' = n 個', X(7), 5.5);
+  await step(tok);                                   // 1386.8 in the middle: n/2 elements
+  tag('peak 在正中間：看 ≈ n/2 個', 'ptr alt', -2.6, 5.5);
+  say('peak 在最右邊要看 n 個；在正中間大約看 n/2 個', '');
+  await step(tok);                                   // 1398.1 worst case Θ(n)
+  const th = cube('最壞情況 Θ(n)', M.purple, [3.0, 0.6, 0.6], 0, 6.5, 0, 1.5); glow(th, GOLD);
+  wk.mood('sad');
+  say('最壞情況要看全部 n 個', 'worst case complexity = Θ(n)');
+  await step(tok);                                   // 1422.5 Θ: lower bound and upper bound
+  okT('Θ(n)：上界 + 下界', -4.4, 6.5);
+  say('Θ(n) 是「n 的等級」：同時給上界和下界', '');
+  await step(tok);                                   // 1428.8 Big O: just the upper bound
+  tag('O(n)：只有上界', 'ptr', 4.4, 6.5);
+  say('Big O(n) 只說上界（不會比 c·n 慢）', '');
+  await step(tok);                                   // 1457.8 asymptotic complexity: linear
+  relabel(th, '線性 Θ(n)'); wk.mood('calm');
+  say('現在只在乎漸近複雜度：這個演算法是線性的', 'asymptotic complexity');
 }]);
 
-// 27:20 divide & conquer：看 n/2，往比較大的那邊走
+// 24:28 怎麼做得更好？divide & conquer 的想法（3 steps）
+FRAG.push(['algmit1-dc-idea', '怎麼比 Θ(n) 更好？Divide & conquer', async (tok) => {
+  fresh([0, 4.2, 14], [0, 2.2, 0]);
+  const A = [1, 4, 2, 3, 6, 5, 7, 9, 8], X = mX(9, 1.1);
+  await step(tok);                                   // 1468.7 how can we do better?
+  const bs = A.map((v, i) => mBar(v, v * 0.5, M.blue, X(i)));
+  const me = buddy('', '?', M.gold, -5.9, 0, 1.6, 0.6);
+  bub('能不能比 Θ(n) 更快？', -4.6, 1.8, 1.6);
+  say('怎麼把 1D peak finder 的漸近複雜度降下來？', '');
+  await step(tok);                                   // 1510.6 divide & conquer: break into smaller arrays
+  for (let i = 0; i < 9; i++) if (i !== 4) move(bs[i], X(i) + (i < 4 ? -0.6 : 0.6), A[i] * 0.25);
+  glow(bs[4], GOLD);
+  me.set('!'); me.mood('happy');
+  say('同學建議 divide and conquer：把陣列遞迴地切成更小的陣列', '');
+  await step(tok);                                   // 1529.8 not assuming only one peak
+  for (const i of [1, 4, 7]) okT('peak', X(i) + (i < 4 ? -0.6 : i > 4 ? 0.6 : 0), A[i] * 0.5 + 0.5);
+  say('不假設只有一個 peak：找到其中「一個」就好', '示意數字');
+}]);
+
+// 27:20 divide & conquer：看 n/2，往比較大的那邊走（8 steps）
 FRAG.push(['algmit1-peak1d-binary', 'Divide & conquer：看 n/2，往大的那邊', async (tok) => {
   fresh([0, 4.6, 15], [0, 3.6, 0]);
   const A = [2, 3, 4, 5, 6, 8, 9, 7, 1], X = mX(9, 1.1);
+  await step(tok);                                   // 1640.0 write out Jace's algorithm (1D)
   const bs = A.map((v, i) => mBar(v, v * 0.5, M.blue, X(i)));
   A.forEach((_, i) => tag(String(i + 1), 'idx', X(i), -0.35));
   const cd = code(['if a[n/2] < a[n/2−1]: 只看左半 1 … n/2−1', 'elif a[n/2] < a[n/2+1]: 只看右半 n/2+1 … n', 'else: n/2 是 peak'], 0, 7.9, 0.55);
-  say('Divide & conquer：先看中間', 'n = 9，中間 = 位置 5');
-  await beat(tok, 1800);
-  // 第一輪：位置 5（值 6）
-  glow(bs[4], GOLD); let cur = tag('n/2', 'ptr', X(4), 3.6);
-  await beat(tok, 1200);
-  cd.hl(0); glow(bs[3], '#333333'); say('左鄰 5 不比 6 大', 'a[5] = 6 ≥ a[4] = 5');
-  await beat(tok, 2000); glow(bs[3], null);
-  cd.hl(1); glow(bs[5], RED); say('右鄰 8 > 6 → 只看右半', 'a[5] = 6 < a[6] = 8');
-  await beat(tok, 2000);
-  for (let i = 0; i <= 4; i++) { tint(bs[i], GRAY); glow(bs[i], null); await beat(tok, 150); }
-  glow(bs[5], null); kill(cur);
-  // 第二輪：位置 6–9，中間 = 位置 7（值 9）
-  say('子問題：位置 6 … 9，再看中間', '中間 = 位置 7');
-  glow(bs[6], GOLD); cur = tag('mid', 'ptr', X(6), 5.1);
-  await beat(tok, 1800);
-  cd.hl(2); glow(bs[6], GREEN); say('9 ≥ 8 且 9 ≥ 7 → 找到 peak', '兩個條件都不成立 → done');
-  await beat(tok, 2400);
-  say('每一步丟掉一半', '只看了 2 個位置就結束');
-  await beat(tok, 1900);
+  say('把同學的演算法寫出來：遞迴的 divide and conquer', '陣列數字是示意');
+  await step(tok);                                   // 1697.1 look at the n/2 position
+  glow(bs[4], GOLD);
+  const me = buddy('', '', M.gold, X(4), A[4] * 0.5, 0, 0.5);
+  say('先看中間 n/2 的位置', 'n = 9，中間 = 位置 5（值 6）');
+  await step(tok);                                   // 1705.7 look left, look right
+  me.look(-1); glow(bs[3], '#333333'); await beat(tok, 700);
+  me.look(1); glow(bs[5], '#333333'); await beat(tok, 700); me.look(0);
+  say('依序看左邊、看右邊', '');
+  await step(tok);                                   // 1713.4 if a[n/2] < a[n/2−1]: left half
+  cd.hl(0); glow(bs[5], null);
+  noT('6 < 5？不成立', X(3), 3.5);
+  say('第一條：a[n/2] < a[n/2−1] 就只看左半', '這裡 6 < 5 不成立，左邊不用去');
+  await step(tok);                                   // 1777.2 elif a[n/2] < a[n/2+1]: right half
+  cd.hl(1); glow(bs[3], null); glow(bs[5], RED);
+  okT('6 < 8 成立 → 去右半', X(6), 5.2);
+  for (let i = 0; i <= 4; i++) { tint(bs[i], GRAY); glow(bs[i], null); await beat(tok, 120); }
+  me.look(1);
+  say('第二條：a[n/2] < a[n/2+1] 就只看右半', '6 < 8 → 左半整個丟掉');
+  await step(tok);                                   // 1805.8 otherwise you're done (recurse on 6…9)
+  glow(bs[5], null); cd.hl(-1);
+  await mWalk(tok, me, X(6), A[6] * 0.5, 0, 700);
+  glow(bs[6], GOLD);
+  say('在右半（位置 6 … 9）重做一次：中間是位置 7', '兩條都不成立就結束');
+  await step(tok);                                   // 1827.0 n/2 ≥ both neighbours → peak
+  cd.hl(2); glow(bs[6], GREEN); me.mood('happy'); await me.hop(tok);
+  okT('9 ≥ 8 且 9 ≥ 7 → peak', X(6), 6.0);
+  say('9 ≥ 兩個鄰居：正好就是 peak 的定義，結束', '每一步都丟掉一半');
+  await step(tok);                                   // 1843.6 correctness argument → problem set
+  note('正確性要寫成論證：problem set 有 2D 版範本', -3.2, 6.6);
+  say('還要寫論證說明它一定正確：problem set 會示範', '');
 }]);
 
-// 32:08 遞迴式 T(n) = T(n/2) + Θ(1) → Θ(log n)；10⁷ 筆：13 s vs 0.001 s
+// 32:08 遞迴式 T(n) = T(n/2) + Θ(1) → Θ(log n)；10⁷ 筆：13 s vs 0.001 s（11 steps）
 FRAG.push(['algmit1-peak1d-recur', 'T(n) = T(n/2) + Θ(1) = Θ(log n)', async (tok) => {
   fresh([0, 4.0, 14], [0, 3.0, 0]);
-  say('每層只做兩次比較：Θ(1)', 'T(n) = T(n/2) + Θ(1)');
+  await step(tok);                                   // 1904.5 analyse: we want to beat Θ(n)
+  const goal = noT('直接法 Θ(n)：想打敗它', -4.0, 7.0);
+  say('來分析複雜度：目標是比 Θ(n) 更好', '');
+  await step(tok);                                   // 1984.8 T(n) = work on input of size n
+  const eq = cube('T(n) = ?', M.paper, [3.6, 0.7, 0.6], 2.2, 7.0, 0, 1.5);
+  say('T(n)：輸入大小是 n 時，演算法要做的工作量', 'recurrence relation');
+  await step(tok);                                   // 2005.1 T(n) = T(n/2) + Θ(1)
+  relabel(eq, 'T(n) = T(n/2) + Θ(1)'); glow(eq, GOLD);
+  say('Θ(1) 是看左右兩邊的兩次比較；剩下的是一半大小的問題', '2 是常數 → Θ(1)');
+  await step(tok);                                   // 2043.1 base case T(1) = Θ(1)
+  glow(eq, null);
+  pkt('T(1) = Θ(1)：一個元素直接回傳', 2.2, 6.2);
+  say('base case：只剩一個元素，它就是 peak', 'T(1) = Θ(1)');
+  await step(tok);                                   // 2059.4 expand all the way out
   const lv = ['n', 'n/2', 'n/4', 'n/8', '1'], ws = [6, 3, 1.5, 0.75, 0.3];
   for (let k = 0; k < lv.length; k++) {
-    const y = 6.0 - k * 1.25; cube(lv[k], M.blue, [ws[k], 0.6, 0.8], -2.6, y, 0, 1.5);
-    tag(k < 4 ? 'Θ(1)' : 'T(1) = Θ(1)', 'idx', 1.4, y); await beat(tok, 750);
+    const y = 5.0 - k * 1.05; cube(lv[k], M.blue, [ws[k], 0.6, 0.8], -2.6, y, 0, 1.2);
+    tag('Θ(1)', 'idx', 1.4, y); await beat(tok, 300);
   }
-  say('一直切半到剩 1 個', 'log₂ n 層');
-  const br = tag('log₂ n 層', 'ptr alt', -6.0, 3.5);
-  await beat(tok, 2200);
-  say('加起來：Θ(1) × log₂ n', 'T(n) = Θ(log n)');
-  await beat(tok, 2400);
-  kill(br);
-  say('n = 10⁷ 實測：Θ(n) 版 13 秒', 'Θ(log n) 版 0.001 秒');
-  const b1 = mBar('13 s', 0.05, M.orange, 3.4, 0, 1.0), b2 = mBar('', 0.05, M.green, 5.4, 0, 1.0);
-  tag('Θ(n)', 'idx', 3.4, -0.4); tag('Θ(log n)', 'idx', 5.4, -0.4);
-  await anim(tok, 1600, (t) => mSetH(b1, 0.05 + 5.15 * t));
-  tag('0.001 s', 'ptr', 5.4, 0.6);
-  await beat(tok, 2200);
-  say('n 越大差距越誇張', 'Θ(n) vs Θ(log n)：指數級差距');
-  await beat(tok, 1900);
+  say('一直展開：每一層都只花 Θ(1)', 'T(n) = Θ(1) + Θ(1) + …');
+  await step(tok);                                   // 2070.8 log₂ n times
+  tag('log₂ n 層', 'ptr alt', -6.0, 2.9);
+  say('每次砍半，砍幾次會剩 1？log₂ n 次', '');
+  await step(tok);                                   // 2079.1 Θ(log n)
+  relabel(eq, 'T(n) = Θ(log₂ n)'); glow(eq, GREEN);
+  say('加起來：Θ(1) × log₂ n = Θ(log n)', '');
+  await step(tok);                                   // 2088.1 huge, exponential difference
+  okT('Θ(log n) ≪ Θ(n)', 4.6, 4.8);
+  say('跟 Θ(n) 比差非常多：是指數級的差距', '');
+  await step(tok);                                   // 2105.9 n ≈ 10⁷: Θ(n) version 13 s
+  const b1 = mBar('13 s', 0.05, M.orange, 3.6, 0, 1.0), b2 = mBar('', 0.05, M.green, 5.6, 0, 1.0);
+  tag('Θ(n)', 'idx', 3.6, -0.4); tag('Θ(log n)', 'idx', 5.6, -0.4);
+  await mGrow(tok, b1, 4.0, 1500);
+  say('老師用 Python 實測 n ≈ 一千萬：直接法 13 秒', '');
+  await step(tok);                                   // 2117.8 this one 0.001 s
+  pkt('0.001 s', 5.6, 0.6);
+  say('divide & conquer 版：0.001 秒', '');
+  await step(tok);                                   // 2148.2 can't do better for 1D → 2D
+  remove(goal);
+  note('1D 已經沒辦法更好了 → 換 2D', -4.0, 7.0);
+  say('1D 做不到更好了；2D 版的演算法才有意思', '');
 }]);
 
-// 36:15 2D peak 定義 + greedy ascent（12 → 13 → 14 → 15 → 16 → 17 → 19 → 20）
+// 36:15 2D peak 定義 + greedy ascent（12 → 13 → 14 → 15 → 16 → 17 → 19 → 20）（11 steps）
 FRAG.push(['algmit1-greedy-ascent', 'Greedy ascent：從 12 一路爬到 20', async (tok) => {
   fresh([0, 3.4, 12], [0, 3.2, 0]);
-  const g = mGrid(PK);
-  say('2D peak：≥ 上下左右四個鄰居', 'a ≥ b, c, d, e');
+  let g = null, me = null;
+  await step(tok);                                   // 2175.6 2D: matrix, n rows × m columns
+  g = mGrid(PK);
+  tag('n 列（rows）', 'ptr', -4.4, 3.35); tag('m 欄（columns）', 'ptr', 0, 6.0);
+  say('2D 版本：一個 n 列 × m 欄的矩陣', '');
+  await step(tok);                                   // 2194.4 a peak is a hill: a with b, c, d, e
   glow(g.cells[2][2], GOLD); for (const [r, c] of [[1, 2], [3, 2], [2, 1], [2, 3]]) glow(g.cells[r][c], '#333333');
-  await beat(tok, 2600); mOff(g);
-  say('Greedy ascent：往比較大的鄰居走', '從中間的 12 出發，先往左');
-  const path = [[1, 2], [1, 1], [1, 0], [2, 0], [3, 0], [3, 1], [3, 2], [3, 3]];
-  const cur = tag('●', 'ptr alt', g.X(2), g.Y(1) + 0.75);
-  let prev = null;
+  say('2D 的 peak 像一座小山丘：中間 a，上下左右是 b、c、d、e', '');
+  await step(tok);                                   // 2210.1 a ≥ b, d, c, e
+  bub('a ≥ 上、下、左、右', 3.8, 5.6);
+  say('a 是 2D peak ⇔ a ≥ 上下左右四個鄰居', 'a ≥ b, c, d, e');
+  await step(tok);                                   // 2232.2 ≥ → a peak always exists
+  mOff(g);
+  okT('用 ≥：一定找得到 peak', 3.8, 4.8);
+  say('跟 1D 一樣用 ≥，所以任何矩陣都一定有 2D peak', '');
+  await step(tok);                                   // 2243.7 straightforward: greedy ascent
+  me = buddy('', '', M.gold, g.X(2), g.Y(1) + 0.45, 0.4, 0.42);
+  say('直接法叫 greedy ascent：選一個方向，往比較大的鄰居爬', '');
+  await step(tok);                                   // 2272.5 e.g. this matrix: 14, 13, 12, 15, 9, 11
+  for (const [r, c] of [[1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]]) glow(g.cells[r][c], GOLD);
+  say('老師板書的例子：14 13 12 / 15 9 11 …', '其餘格子是補上的示意值');
+  await step(tok);                                   // 2296.7 choose a start and default directions
+  mOff(g); glow(g.cells[1][2], GOLD); me.look(-1);
+  say('要先決定起點和預設方向：例如從中間的 12 開始，先往左', '碰到邊界就往下');
+  await step(tok);                                   // 2344.8 12 → 13 → 14 → 15 → 16 → 17 → 19 → 20
+  const path = [[1, 1], [1, 0], [2, 0], [3, 0], [3, 1], [3, 2], [3, 3]];
+  let prev = [1, 2];
   for (const [r, c] of path) {
-    cur.position.set(g.X(c), g.Y(r) + 0.75, 0); glow(g.cells[r][c], GOLD);
-    if (prev) line(g.X(prev[1]), g.Y(prev[0]), g.X(c), g.Y(r), 0.4, M.red);
-    prev = [r, c]; await beat(tok, 750);
+    line(g.X(prev[1]), g.Y(prev[0]), g.X(c), g.Y(r), 0.4, M.red);
+    await mWalk(tok, me, g.X(c), g.Y(r) + 0.45, 0.4, 260); glow(g.cells[r][c], GOLD); prev = [r, c];
   }
-  glow(g.cells[3][3], GREEN);
-  say('20 ≥ 19、20 ≥ 10：是 2D peak', '12 → 13 → 14 → 15 → 16 → 17 → 19 → 20');
-  await beat(tok, 2600);
-  say('最壞情況：幾乎每一格都走過', 'Θ(nm)；n = m 時 Θ(n²)');
-  await beat(tok, 1900);
+  glow(g.cells[3][3], GREEN); me.mood('happy');
+  say('一路往大的爬，找到 peak 20', '12 → 13 → 14 → 15 → 16 → 17 → 19 → 20');
+  await step(tok);                                   // 2363.5 worst case: touch a large fraction
+  noT('最壞：幾乎每格都走過', 3.8, 6.0);
+  me.mood('sad');
+  say('最壞情況下，不管起點和方向怎麼選，都可能走過大部分的格子', '');
+  await step(tok);                                   // 2430.1 Θ(nm)
+  const th = cube('Θ(nm)', M.purple, [1.8, 0.6, 0.6], -4.6, 6.0, 0, 1.5); glow(th, GOLD);
+  say('所以 greedy ascent 的最壞複雜度是 Θ(nm)', '');
+  await step(tok);                                   // 2433.5 n = m → Θ(n²)
+  relabel(th, 'n = m：Θ(n²)');
+  say('n = m 時就是 Θ(n²)', '');
 }]);
 
-// 42:12 錯誤的嘗試：中間 column 找 1D peak，再在那一列找 1D peak → 14 不是 2D peak
+// 42:12 錯誤的嘗試：中間 column 找 1D peak，再在那一列找 1D peak → 14 不是 2D peak（14 steps）
 FRAG.push(['algmit1-2d-flawed', '錯誤嘗試：column 1D peak 再 row 1D peak', async (tok) => {
   fresh([0, 3.4, 12], [0, 3.2, 0]);
   const g = mGrid(PK);
-  say('把 binary search 硬套到 2D', '選中間 column j = m/2，找 1D peak');
-  const col = ghostBox(0x4b9ee2, 1.15, 4.4, 0.9); col.position.set(g.X(2), 3.35, 0);
-  await beat(tok, 2200);
-  glow(g.cells[1][2], GOLD); glow(g.cells[0][2], '#333333'); glow(g.cells[2][2], '#333333');
-  say('這一欄的 1D peak：12', '12 ≥ 10、12 ≥ 11（19 更大，但沒選到）');
-  await beat(tok, 2800);
-  kill(col); glow(g.cells[0][2], null); glow(g.cells[2][2], null);
-  const row = ghostBox(0xdd8238, 5.6, 1.0, 0.9); row.position.set(0, g.Y(1), 0);
-  say('再在第 i 列找 1D peak', 'row i：14 13 12 11 → 14');
-  const cur = tag('◀', 'ptr', g.X(2), g.Y(1) + 0.75);
-  for (const c of [1, 0]) { await beat(tok, 700); cur.position.set(g.X(c), g.Y(1) + 0.75, 0); glow(g.cells[1][c], GOLD); }
-  await beat(tok, 1400);
+  let col = null, row = null, me = null;
+  await step(tok);                                   // 2535.4 jam binary search into 2D
+  say('Divide and conquer', '把 binary search 硬套到 2D');
+  await step(tok);                                   // 2557.5 middle column j = m/2
+  col = ghostBox(0x4b9ee2, 1.15, 4.4, 0.9); col.position.set(g.X(2), 3.35, 0);
+  tag('j = m/2', 'ptr', g.X(2), 6.0);
+  say('先選中間那一欄 j = m/2', '');
+  await step(tok);                                   // 2575.2 find a 1D peak on that column
+  me = buddy('', '', M.gold, g.X(2), g.Y(0) + 0.45, 0.4, 0.42);
+  for (const r of [2, 1]) { await mWalk(tok, me, g.X(2), g.Y(r) + 0.45, 0.4, 450); glow(g.cells[r][2], '#333333'); }
+  say('在這一欄用 1D 的 binary search 找 peak', '');
+  await step(tok);                                   // 2590.2 found at (i, j)
+  glow(g.cells[2][2], null); glow(g.cells[1][2], GOLD);
+  tag('(i, j)', 'ptr alt', g.X(2) + 0.9, g.Y(1) + 0.4);
+  say('找到一個 1D peak，位置叫 (i, j)', '');
+  await step(tok);                                   // 2605.4 use row i to find a 1D peak on row i
+  row = ghostBox(0xdd8238, 5.6, 1.0, 0.9); row.position.set(0, g.Y(1), 0);
+  tag('row i', 'ptr', -3.6, g.Y(1));
+  say('再以第 i 列為起點，在這一列找 1D peak', '');
+  await step(tok);                                   // 2649.1 log n for the column
+  pkt('欄：log n', 4.4, 6.2);
+  say('找欄的 1D peak 只要 log n（Erik 幫忙更正）', '');
+  await step(tok);                                   // 2665.7 log m for the row
+  pkt('列：log m', 4.4, 5.5);
+  me.mood('happy');
+  say('找列的 1D peak 要 log m：加起來超快', 'log n + log m');
+  await step(tok);                                   // 2694.1 this algorithm is incorrect
+  const bad = noT('✗ 錯的！', 4.4, 4.6); me.mood('sad');
+  say('可是這個演算法是錯的', '');
+  await step(tok);                                   // 2701.2 efficient but incorrect
+  txt(bad, '✗ 快但錯；寧可正確而慢');
+  say('有效率但不正確：正確而慢都比錯而快好', '');
+  await step(tok);                                   // 2732.0 a 2D peak may not exist on row i
+  say('問題在於：第 i 列上不一定有 2D peak', '');
+  note('2D peak 可能不在 row i 上', -2.0, 6.4);
+  await step(tok);                                   // 2757.6 example: start with this column → 12
+  kill(row); glow(g.cells[0][2], '#333333'); glow(g.cells[2][2], '#333333');
+  say('例子：這一欄 12 ≥ 上面的 10、下面的 11，所以回傳 12', '12 是這欄的 1D peak');
+  await step(tok);                                   // 2781.7 even though 19 is bigger
+  glow(g.cells[3][2], RED);
+  say('雖然 19 更大，但 12 已經算 1D peak，演算法就停了', '');
+  await step(tok);                                   // 2790.1 this row → 14
+  kill(col); glow(g.cells[0][2], null); glow(g.cells[2][2], null); glow(g.cells[3][2], null);
+  row = ghostBox(0xdd8238, 5.6, 1.0, 0.9); row.position.set(0, g.Y(1), 0);
+  me.look(-1);
+  for (const c of [1, 0]) { await mWalk(tok, me, g.X(c), g.Y(1) + 0.45, 0.4, 450); glow(g.cells[1][c], GOLD); }
+  say('再在這一列找 1D peak：14 13 12 11 → 14', '');
+  await step(tok);                                   // 2796.4 14 is not a 2D peak
   glow(g.cells[2][0], RED); glow(g.cells[1][0], RED);
-  say('但 14 下面是 15：不是 2D peak', '2D peak 不一定在 row i 上');
-  await beat(tok, 2800);
-  say('有效率（log n）但不正確', '正確但慢 > 快但錯');
-  await beat(tok, 1900);
+  noT('14 下面是 15：不是 2D peak', -2.6, 0.6);
+  say('但 14 下面是 15：14 不是 2D peak', '');
 }]);
 
-// 47:09 正確版：中間 column 找全域最大，往較大的鄰居那半邊遞迴
+// 47:09 正確版：中間 column 找全域最大，往較大的鄰居那半邊遞迴（9 steps）
 FRAG.push(['algmit1-2d-colmax', '正確版：column 全域最大 → 比左右 → 遞迴半邊', async (tok) => {
   fresh([0, 4.0, 13], [0, 3.6, 0]);
-  const g = mGrid(PK, 1.3, 1.05, 4.5);
-  const cd = code(['j = m/2，找 column j 的全域最大 (i, j)', '比較 (i, j−1)、(i, j)、(i, j+1)', '左大 → 左半；右大 → 右半（欄數減半）', '都不大 → (i, j) 是 2D peak', '只剩一欄 → 最大值就是 peak'], 0, 8.4, 0.5);
-  async function colMax(c, rows) {
-    const cur = tag('▶', 'ptr', g.X(c) - 0.8, g.Y(0)); let best = 0;
-    for (let r = 0; r < rows; r++) { cur.position.set(g.X(c) - 0.8, g.Y(r), 0); glow(g.cells[r][c], '#333333'); await beat(tok, 380); if (PK[r][c] > PK[best][c]) best = r; }
-    for (let r = 0; r < rows; r++) glow(g.cells[r][c], null);
-    kill(cur); glow(g.cells[best][c], GOLD); return best;
+  let g = null, cd = null, me = null, gb = null, r = 0;
+  async function colMax(c) {
+    let best = 0;
+    for (let k = 0; k < 4; k++) { await mWalk(tok, me, g.X(c), g.Y(k) + 0.45, 0.4, 220); glow(g.cells[k][c], '#333333'); if (PK[k][c] > PK[best][c]) best = k; }
+    for (let k = 0; k < 4; k++) glow(g.cells[k][c], null);
+    await mWalk(tok, me, g.X(c), g.Y(best) + 0.45, 0.4, 300);
+    glow(g.cells[best][c], GOLD); return best;
   }
-  say('第 2 欄（j = m/2）：掃整欄找最大', '8, 13, 9, 17 → max = 17');
-  cd.hl(0); let r = await colMax(1, 4);
-  await beat(tok, 900);
+  await step(tok);                                   // 2828.9 the last algorithm: recursive, and correct
+  g = mGrid(PK, 1.3, 1.05, 4.5);
+  cd = code(['j = m/2，找 column j 的全域最大 (i, j)', '比較 (i, j−1)、(i, j)、(i, j+1)', '左大 → 左半；右大 → 右半（欄數減半）', '都不大 → (i, j) 是 2D peak', '只剩一欄 → 最大值就是 peak'], 0, 8.4, 0.5);
+  say('最後一個演算法：遞迴版，比 greedy ascent 快，而且正確', '');
+  await step(tok);                                   // 2863.1 middle column j = m/2
+  gb = ghostBox(0x4b9ee2, 1.15, 4.3, 0.9); gb.position.set(g.X(1), 2.9, 0);
+  say('一樣先選中間那一欄 j = m/2', '');
+  await step(tok);                                   // 2873.8 global maximum on column j
+  cd.hl(0); me = buddy('', '', M.gold, g.X(1), g.Y(0) + 0.45, 0.4, 0.42);
+  r = await colMax(1);
+  say('這次不是找 1D peak，而是找整欄的「全域最大值」', '8, 13, 9, 17 → 17');
+  await step(tok);                                   // 2885.1 compare (i, j−1), (i, j), (i, j+1)
   cd.hl(1); glow(g.cells[r][0], '#333333'); glow(g.cells[r][2], RED);
-  say('左 16、右 19：右邊比較大', '19 > 17 → 往右半');
-  await beat(tok, 2000);
-  cd.hl(2); for (const c of [0, 1]) for (let k = 0; k < 4; k++) { tint(g.cells[k][c], GRAY); glow(g.cells[k][c], null); }
-  await beat(tok, 900);
-  say('剩第 3、4 欄：看第 3 欄', '10, 12, 11, 19 → max = 19');
-  cd.hl(0); r = await colMax(2, 4);
-  cd.hl(1); glow(g.cells[r][3], RED);
-  say('右鄰 20 > 19 → 往右', '欄數再減半');
-  await beat(tok, 1800);
-  cd.hl(2); for (let k = 0; k < 4; k++) { tint(g.cells[k][2], GRAY); glow(g.cells[k][2], null); }
-  say('只剩一欄：最大值就是 peak', '10, 11, 10, 20 → 20');
-  cd.hl(4); r = await colMax(3, 4); glow(g.cells[r][3], GREEN);
-  await beat(tok, 1600);
-  say('20 是整欄最大，又 ≥ 左邊 19', '→ 2D peak');
-  await beat(tok, 1900);
+  me.look(-1); await beat(tok, 500); me.look(1);
+  say('比較它和左右兩邊：16、17、19', '');
+  await step(tok);                                   // 2907.6 pick the side that is bigger
+  cd.hl(2); kill(gb);
+  for (const c of [0, 1]) for (let k = 0; k < 4; k++) { tint(g.cells[k][c], GRAY); glow(g.cells[k][c], null); }
+  okT('19 > 17 → 只看右半', g.X(3), 6.0);
+  say('哪邊比較大就挑哪半邊：右邊 19 > 17，只留右半', '');
+  await step(tok);                                   // 2929.3 neither fires → (i, j) is a 2D peak
+  cd.hl(3);
+  note('如果左右都不比它大 → (i, j) 就是 2D peak', -2.6, 6.2);
+  say('如果兩個條件都不成立：(i, j) ≥ 左右，就是 2D peak', '');
+  await step(tok);                                   // 2968.5 because it was the maximum in its column
+  bub('它本來就是整欄最大：上下不會更大', 3.4, 7.2);
+  say('理由：它是這一欄的最大值，上下一定不比它大；左右又比過了', '');
+  await step(tok);                                   // 2992.0 solve the new problem with half the columns
+  cd.hl(0); r = await colMax(2);
+  cd.hl(1); glow(g.cells[r][3], RED); me.look(1);
+  for (let k = 0; k < 4; k++) { tint(g.cells[k][2], GRAY); glow(g.cells[k][2], null); }
+  say('在欄數減半的新問題上重做：第 3 欄最大 19，右邊 20 更大 → 往右', '10, 12, 11, 19 → 19');
+  await step(tok);                                   // 3050.7 single column: find the global maximum
+  cd.hl(4); r = await colMax(3); glow(g.cells[r][3], GREEN); me.mood('happy'); await me.hop(tok);
+  say('只剩一欄時：找最大值就是答案（base case）', '10, 11, 10, 20 → 20 是 2D peak');
 }]);
 
-// 51:12 遞迴式 T(n, m) = T(n, m/2) + Θ(n) → Θ(n log m)（params.swap：Rec1 的記號，m 列 n 欄）
+// 51:12 遞迴式 T(n, m) = T(n, m/2) + Θ(n) → Θ(n log m)（6 steps）
 FRAG.push(['algmit1-2d-recur', '2D 遞迴式：每層掃一欄，log 層', async (tok) => {
-  const p = ctx.params || {};
-  const R = p.swap ? 'm' : 'n', C = p.swap ? 'n' : 'm';
-  const rec = p.swap ? 'T(n, m) = Θ(m) + T(n/2, m)' : 'T(n, m) = T(n, m/2) + Θ(n)';
-  const base = p.swap ? 'T(1, m) = Θ(m)' : 'T(n, 1) = Θ(n)';
-  const ans = p.swap ? 'Θ(m log n)' : 'Θ(n log m)';
   fresh([0, 4.0, 14], [0, 3.4, 0]);
-  say(R + ' 列 × ' + C + ' 欄：每次欄數減半', rec);
-  const cnt = [8, 4, 2, 1];
+  const cnt = [8, 4, 2, 1]; let eq = null;
+  await step(tok);                                   // 3073.8 write the recurrence
+  eq = cube('T(n, m) = ?', M.paper, [5.0, 0.7, 0.6], 0, 7.6, 0, 1.5);
+  say('寫出這個演算法的遞迴式，求整體複雜度', '');
+  await step(tok);                                   // 3092.8 T(n, m) = T(n, m/2) + Θ(n)
+  relabel(eq, 'T(n, m) = T(n, m/2) + Θ(n)'); glow(eq, GOLD);
+  say('T(n, m) = T(n, m/2) + Θ(n)', '');
+  await step(tok);                                   // 3103.4 n rows, m columns; m halves
   for (let k = 0; k < cnt.length; k++) {
-    const y = 6.4 - k * 1.7, X = mX(cnt[k], 0.55, -1.6);
-    for (let c = 0; c < cnt[k]; c++) {
-      const m = cube('', c === Math.floor((cnt[k] - 1) / 2) ? M.gold : M.sand, [0.42, 1.2, 0.42], X(c), y, 0, 1.2);
-      if (c === Math.floor((cnt[k] - 1) / 2)) glow(m, GOLD);
-    }
-    tag(cnt[k] === 1 ? C + '/' + C + ' = 1 欄' : (k === 0 ? C : C + '/' + (1 << k)) + ' 欄', 'idx', -5.6, y);
-    tag('掃一欄 Θ(' + R + ')', 'ptr', 3.4, y);
-    await beat(tok, 1300);
+    const y = 6.0 - k * 1.6, X = mX(cnt[k], 0.55, -1.6);
+    for (let c = 0; c < cnt[k]; c++) { const mid = c === Math.floor((cnt[k] - 1) / 2); const m = cube('', mid ? M.gold : M.sand, [0.42, 1.1, 0.42], X(c), y, 0, 1.0); if (mid) glow(m, GOLD); }
+    tag(cnt[k] === 1 ? '1 欄' : (k === 0 ? 'm' : 'm/' + (1 << k)) + ' 欄', 'idx', -5.6, y);
+    await beat(tok, 350);
   }
-  say('只剩一欄：找最大即可', base);
-  await beat(tok, 2400);
-  say('共 log₂ ' + C + ' 層，每層 Θ(' + R + ')', 'T = Θ(' + R + ') × log₂ ' + C);
-  await beat(tok, 2400);
-  say('比 greedy ascent 的 Θ(nm) 快', ans);
-  await beat(tok, 1900);
+  say('n 是列數、m 是欄數；每一層欄數砍半：m → m/2 → m/4 …', '');
+  await step(tok);                                   // 3114.3 Θ(n): scan the column for the max
+  for (let k = 0; k < cnt.length; k++) tag('掃一欄 Θ(n)', 'ptr', 3.4, 6.0 - k * 1.6);
+  say('每一層要掃整欄找全域最大：一欄有 n 個，Θ(n)', '');
+  await step(tok);                                   // 3131.2 base case T(n, 1) = Θ(n)
+  pkt('T(n, 1) = Θ(n)', 3.4, 0.6);
+  say('base case：只剩一欄，掃一遍找最大，T(n, 1) = Θ(n)', '');
+  await step(tok);                                   // 3140.6 Θ(n) added log₂ m times
+  tag('log₂ m 層', 'ptr alt', -6.2, 3.5);
+  relabel(eq, 'T(n, m) = Θ(n log m)'); glow(eq, GREEN);
+  say('Θ(n) 加 log₂ m 次：Θ(n log m)', '比 greedy ascent 的 Θ(nm) 快');
 }]);
 
 // ════════ Zc54gFhdpLA（MIT 6.006 L2：Models of Computation, Document Distance） ════════
-// 02:15 algorithm ↔ program、pseudocode ↔ 程式語言、model of computation ↔ computer
+// 02:15 algorithm ↔ program、pseudocode ↔ 程式語言、model of computation ↔ computer（10 steps）
 FRAG.push(['algmit1-analogy', 'Algorithm ↔ Program、Model ↔ Computer', async (tok) => {
   fresh([0, 3.8, 13], [0, 2.8, 0]);
+  let left = [], rows = 0;
+  const pair = async (a, b) => {
+    const y = 4.8 - rows * 1.5; rows++;
+    const l = cube(a, M.purple, [3.2, 0.7, 0.9], -3.2, y, 0, 2); left.push(l);
+    await beat(tok, 500);
+    cube(b, M.teal, [3.2, 0.7, 0.9], 3.2, y, 0, 2);
+    await beat(tok, 500); line(-1.55, y, 1.55, y, 0, M.brown); tag('↔', 'idx', 0, y + 0.3);
+    return l;
+  };
+  await step(tok);                                   // 135.0 what is an algorithm? model of computation
   tag('數學世界', 'ptr', -3.2, 6.1); tag('真實電腦', 'ptr', 3.2, 6.1);
-  const P = [['Algorithm', 'Computer program', '演算法 = 程式的數學版', 'input → algorithm → output'],
-    ['Pseudocode', 'Programming language', '用 pseudocode 寫演算法', 'structured English'],
-    ['Model of computation', 'Computer', '計算模型 ↔ 電腦', '規定能做哪些操作']];
-  const left = [];
-  for (let i = 0; i < 3; i++) {
-    const y = 4.8 - i * 1.5;
-    say(P[i][2], P[i][3]);
-    left.push(cube(P[i][0], M.purple, [3.2, 0.7, 0.9], -3.2, y, 0, 2));
-    await beat(tok, 700);
-    cube(P[i][1], M.teal, [3.2, 0.7, 0.9], 3.2, y, 0, 2);
-    await beat(tok, 600); line(-1.55, y, 1.55, y, 0, M.brown); tag('↔', 'idx', 0, y + 0.3);
-    await beat(tok, 1600);
-  }
-  glow(left[2], GOLD);
-  say('每種操作規定 cost', 'running time = Σ 各操作的 cost');
-  await beat(tok, 2400);
-  say('兩種模型：RAM 與 Pointer machine', '本課用 Python 的 cost model');
-  cube('RAM', M.blue, [2.2, 0.6, 0.8], -2.4, 0.3, 0, 2); await beat(tok, 500);
-  cube('Pointer machine', M.blue, [2.8, 0.6, 0.8], 2.4, 0.3, 0, 2);
-  await beat(tok, 1900);
+  const me = buddy('', '?', M.gold, -6.2, 0, 1.4, 0.6);
+  say('什麼是演算法？用 model of computation 正式規定它', '先給非正式的定義');
+  await step(tok);                                   // 188.8 input → algorithm → output
+  const io = pkt('input → 演算法 → output', -3.2, 6.8);
+  say('演算法：拿到 input，算出 output，用來解某個問題', '例如：這個數是不是質數？');
+  await step(tok);                                   // 225.0 algorithm = mathematical analog of a program
+  await pair('Algorithm', 'Computer program');
+  say('演算法是電腦程式在數學世界的「對應物」', '');
+  await step(tok);                                   // 234.6 develop in math, then convert to code
+  const pk = pkt('寫成程式碼', -1.5, 5.3);
+  await travel(tok, pk, V3(-1.5, 5.3), V3(1.6, 5.3), 1000);
+  me.set('!'); me.mood('happy');
+  say('先用數學想出演算法，再轉成程式：這門課就是教這個轉換', '');
+  await step(tok);                                   // 273.5 pseudocode ↔ programming language
+  remove(pk);
+  await pair('Pseudocode', 'Programming language');
+  say('程式用程式語言寫；演算法用 pseudocode（虛擬碼）寫', '');
+  await step(tok);                                   // 283.6 structured English
+  bub('就是「有結構的英文」', -3.2, 2.6);
+  say('pseudocode 其實就是 structured English', '讓人看得懂、能推理就好');
+  await step(tok);                                   // 334.1 computer ↔ model of computation
+  const mc = await pair('Model of computation', 'Computer');
+  prop('monitor', 5.9, 1.2, 0, 0.6);
+  say('電腦在數學世界的對應物：model of computation（計算模型）', '');
+  await step(tok);                                   // 357.2 operations and how much they cost
+  glow(mc, GOLD);
+  note('規定：能做哪些操作？每個操作花多少時間？', -1.0, 0.9);
+  say('計算模型規定：可以做哪些操作，每個操作花多少時間', '');
+  await step(tok);                                   // 412.2 add up the costs = running time
+  pkt('running time = Σ 各操作的 cost', 3.0, 0.2);
+  say('把每個操作的 cost 加起來，就是演算法的 running time', '');
+  await step(tok);                                   // 466.3 two models: RAM, pointer machine
+  remove(io);
+  cube('RAM', M.blue, [2.2, 0.6, 0.8], -2.4, 6.7, 0, 2); await beat(tok, 400);
+  cube('Pointer machine', M.blue, [2.8, 0.6, 0.8], 2.4, 6.7, 0, 2);
+  me.set('2'); me.mood('calm');
+  say('今天介紹兩種模型', 'random access machine 和 pointer machine');
 }]);
 
-// 07:51 RAM：load 常數個 word → 計算 → store，都是 Θ(1)
+// 07:51 RAM：load 常數個 word → 計算 → store，都是 Θ(1)（13 steps）
 FRAG.push(['algmit1-ram', 'Random access machine：load / compute / store', async (tok) => {
   fresh([0, 3.8, 13], [0, 2.6, 0]);
-  const V = [7, 3, 9, 1, 4, 6, 2, 0], X = mX(8, 1.1);
-  const mem = V.map((v, i) => mBox(v, M.sand, X(i), 0.5, 0.9, 0.8, 0.8, 1.5));
-  V.forEach((_, i) => tag(String(i), 'idx', X(i), -0.3));
-  tag('address', 'idx', -5.6, -0.3); tag('…', 'idx', 5.2, 0.5);
-  say('RAM：記憶體是一個大 array of words', '用 address 存取任何一格：Θ(1)');
-  await beat(tok, 2400);
-  const RX = [-2.4, 0, 2.4]; RX.forEach((x, i) => { cube('', '#e8dcc2', [1.0, 0.9, 0.9], x, 4.2, 0); tag('r' + (i + 1), 'idx', x, 5.0); });
-  say('Θ(1) 時間 load 常數個 word', 'r1 ← M[5]、r2 ← M[2]');
-  glow(mem[5], GOLD); const c1 = mBox(6, M.blue, X(5), 0.5); move(c1, RX[0], 4.2); await beat(tok, 900);
-  glow(mem[2], GOLD); const c2 = mBox(9, M.blue, X(2), 0.5); move(c2, RX[1], 4.2); await beat(tok, 1500);
+  const V = [7, 3, 9, 1, 4, 6, 2, 0], X = mX(8, 1.1), RX = [-2.4, 0, 2.4];
+  let mem = [], ix = [], c3 = null;
+  await step(tok);                                   // 470.7 random access machine (RAM)
+  const t1 = cube('RAM = Random Access Machine', M.purple, [5.4, 0.6, 0.6], 0, 6.6, 0, 1.5);
+  say('第一種模型：random access machine，簡稱 RAM', '');
+  await step(tok);                                   // 491.5 also random access memory (real computer)
+  pkt('真的電腦裡也有 RAM：random access memory（記憶體）', 0, 5.8);
+  say('RAM 也是 random access memory', '數學模型和真實記憶體幾乎一樣');
+  await step(tok);                                   // 549.4 a giant array; any cell in constant time
+  mem = V.map((v, i) => mBox(v, M.sand, X(i), 0.5, 0.9, 0.8, 0.8, 1.5 + i * 0.1));
+  tag('…', 'idx', 5.2, 0.5);
+  say('記憶體就是一個巨大的 array：0 到大約 4 GB', '中間任何一格都能在常數時間存取');
+  await step(tok);                                   // 565.4 you need to know where it is
+  const hand = tag('☝', 'ptr alt', X(0), 1.5);
+  await travel(tok, hand, V3(X(0), 1.5), V3(X(5), 1.5), 600); glow(mem[5], GOLD);
+  say('要存取一格，必須知道它在哪裡（位址）', 'random access：直接跳過去');
+  await step(tok);                                   // 577.2 organized by words; address 0, 1, 2, …
+  remove(hand); glow(mem[5], null);
+  ix = V.map((_, i) => tag(String(i), 'idx', X(i), -0.3)); tag('address', 'idx', -5.6, -0.3);
+  say('記憶體以 word（字組）為單位：address 0、1、2 …', '');
+  await step(tok);                                   // 617.8 load a constant number of words
+  const cpu = prop('cpu', 0, 3.2, -0.6, 1.4); tag('CPU', 'ptr', -1.4, 3.6);
+  RX.forEach((x, i) => { cube('', '#e8dcc2', [1.0, 0.9, 0.9], x, 4.4, 0); tag('r' + (i + 1), 'idx', x, 5.2); });
+  glow(mem[5], GOLD); const c1 = mBox(6, M.blue, X(5), 0.5); move(c1, RX[0], 4.4); await beat(tok, 600);
+  glow(mem[2], GOLD); const c2 = mBox(9, M.blue, X(2), 0.5); move(c2, RX[1], 4.4); await beat(tok, 600);
+  say('常數時間內：從記憶體 load 常數個 word 進暫存器', 'r1 ← M[5]、r2 ← M[2]');
+  await step(tok);                                   // 624.4 a constant number of computations
   glow(mem[5], null); glow(mem[2], null);
-  say('對暫存器做常數次運算', 'r3 ← r1 + r2 = 15');
-  const c3 = mBox(15, M.green, 0, 4.2, 0.8, 0.8, 0.8); move(c3, RX[2], 4.2); await beat(tok, 1800);
-  say('再 store 回記憶體', 'M[7] ← r3');
-  move(c3, X(7), 1.6); await beat(tok, 900); kill(c3); relabel(mem[7], 15); glow(mem[7], GREEN);
-  await beat(tok, 1600);
-  say('一個 word = w bits', 'w ≥ lg(記憶體大小)：裝得下 address');
-  await beat(tok, 2600);
-  say('peak 判斷 = 跟鄰居比幾個 word', '所以是 Θ(1)');
-  await beat(tok, 1900);
+  c3 = mBox(15, M.green, 1.2, 4.4, 0.8, 0.8, 0.8); move(c3, RX[2], 4.4);
+  say('對它們做常數次運算', 'r3 ← r1 + r2 = 15');
+  await step(tok);                                   // 632.9 write them out: store
+  move(c3, X(7), 1.6); await beat(tok, 700); kill(c3); relabel(mem[7], 15); glow(mem[7], GREEN);
+  say('再把結果寫回記憶體：store', 'M[7] ← r3');
+  await step(tok);                                   // 669.8 constant number of registers; assembly
+  note('常數個暫存器：就像寫 assembly', -4.6, 5.6);
+  say('暫存器只有常數個；這就是 assembly programming 的樣子', 'load、compute、store 都是 Θ(1)');
+  await step(tok);                                   // 702.7 a word is w bits
+  glow(mem[7], null);
+  bub('一個 word = w bits（例如 32 或 64）', X(3), 2.0);
+  say('一個 word 有 w 個 bits；這門課多半不管 w 是多少', '');
+  await step(tok);                                   // 718.8 peak finding: compare words → Θ(1)
+  for (const i of [2, 3, 4]) glow(mem[i], GOLD);
+  okT('判斷 1 是不是 peak：比 3 個 word → Θ(1)', X(3), -1.0);
+  say('peak finding 的數字都當成 word：跟鄰居比較是常數時間', '所以判斷一格是不是 peak 是 Θ(1)');
+  await step(tok);                                   // 751.4 w ≥ log(memory size)
+  for (const i of [2, 3, 4]) glow(mem[i], null);
+  pkt('w ≥ lg(記憶體大小)：word 要裝得下 address', 3.4, 6.0);
+  say('w 至少要是 log（記憶體大小），word 才能當作 index', '');
+  await step(tok);                                   // 777.7 unit 4: giant integers
+  void t1; void cpu; void ix;
+  note('第 4 單元：超大整數放不進一個 word', -4.6, 4.8);
+  say('之後（第 4 單元）才談放不進一個 word 的超大整數', '其他時候：一個輸入 = 一個 word');
 }]);
 
-// 13:16 Pointer machine：object、常數個 field、pointer / null
+// 13:16 Pointer machine：object、常數個 field、pointer / null（14 steps）
 FRAG.push(['algmit1-pointer-machine', 'Pointer machine：雙向 linked list', async (tok) => {
   fresh([0, 3.6, 13], [0, 2.6, 0]);
   function node(v, x, y) {
     return { p: mBox('prev', '#d8c29b', x - 1.0, y, 0.9, 0.7, 0.8, 2), d: mBox(v, M.blue, x, y, 1.0, 0.7, 0.8, 2), n: mBox('next', '#d8c29b', x + 1.0, y, 0.9, 0.7, 0.8, 2) };
   }
-  say('Pointer machine：動態 object', '每個 object 只有常數個 field');
-  const n1 = node(5, -2.6, 3); await beat(tok, 1200);
-  const n2 = node(8, 2.6, 3); await beat(tok, 1600);
-  say('field 是 word 或 pointer', 'pointer 可以是 null（Python 的 None）');
+  let n1 = null, n2 = null, x = null;
+  await step(tok);                                   // 812.8 more abstract, simpler models
+  say('RAM 很真實，但有時想要更抽象、更好思考的模型', '');
+  const me = buddy('', '', M.gold, -6.0, 0, 1.8, 0.6);
+  await step(tok);                                   // 824.1 RAM: no dynamic memory allocation
+  noT('RAM：沒有動態配置記憶體', -3.6, 6.6);
+  say('例如 RAM 沒有「動態配置記憶體」：想要模型幫我們處理好', '');
+  await step(tok);                                   // 839.7 pointer machine ≈ simple OOP
+  cube('Pointer machine ≈ 簡單的物件導向', M.purple, [5.6, 0.6, 0.6], 2.0, 6.6, 0, 1.5);
+  me.mood('happy');
+  say('Pointer machine：對應很簡化的物件導向程式設計', '');
+  await step(tok);                                   // 849.8 dynamically allocated objects
+  n1 = node('', -2.6, 3);
+  say('有可以動態配置的 object', '');
+  await step(tok);                                   // 861.5 a constant number of fields
+  for (const m of [n1.p, n1.d, n1.n]) { glow(m, GOLD); await beat(tok, 250); }
+  tag('常數個 field', 'idx', -2.6, 3.8);
+  say('每個 object 只有常數個 field（欄位）', '');
+  await step(tok);                                   // 874.4 a field is a word …
+  for (const m of [n1.p, n1.d, n1.n]) glow(m, null);
+  relabel(n1.d, 5); glow(n1.d, GOLD);
+  say('field 可以是一個 word：例如一個整數', 'value = 5');
+  await step(tok);                                   // 894.6 … or a pointer
+  glow(n1.d, null); glow(n1.n, GOLD);
+  say('或是一個 pointer（指標）：pointer machine 的名字由來', '');
+  await step(tok);                                   // 901.8 points to another object, or null (None)
+  glow(n1.n, null);
+  tag('null', 'ptr', -5.0, 3); arrow(V3(-3.7, 3.0), V3(-4.6, 3.0));
+  say('pointer 指向另一個 object，或是特殊值 null', 'Python 裡叫 None');
+  await step(tok);                                   // 945.0 linked lists
+  n2 = node(8, 2.6, 3);
+  say('你應該看過 linked list：每個 node 有幾個 field', '');
+  await step(tok);                                   // 964.2 doubly linked: prev & next pointers
   arrow(V3(-1.15, 3.2, 0), V3(1.15, 3.2, 0), 0x0f5a3a); tag('next', 'idx', 0, 3.55);
-  await beat(tok, 900);
+  await beat(tok, 500);
   arrow(V3(1.15, 2.8, 0), V3(-1.15, 2.8, 0), 0x6a4a00); tag('prev', 'idx', 0, 2.45);
-  await beat(tok, 900);
-  tag('null', 'ptr', 5.0, 3); tag('null', 'ptr', -5.0, 3);
+  say('doubly linked list', '有指向前一個（prev）和下一個（next）的指標');
+  await step(tok);                                   // 971.8 next → null at the end
+  tag('null', 'ptr', 5.0, 3); arrow(V3(3.7, 3.0), V3(4.6, 3.0));
+  say('最後一個的 next 指向 null；第一個的 prev 也是 null', '兩個 node 的雙向串列');
+  await step(tok);                                   // 980.8 a pointer to the head
   tag('head', 'ptr alt', -2.6, 5.0); arrow(V3(-2.6, 4.75, 0), V3(-2.6, 3.45, 0));
-  await beat(tok, 2200);
-  say('x = x.next：跟著 pointer 走一步', 'Θ(1)');
-  const x = tag('x', 'ptr alt', -2.6, 1.9); glow(n1.d, GOLD);
-  await beat(tok, 1200);
-  await anim(tok, 1000, (t) => x.position.set(-2.6 + 5.2 * t, 1.9, 0));
+  say('通常手上有一個指向開頭（head）的指標', '');
+  await step(tok);                                   // 1007.8 create / destroy nodes
+  const n3 = mBox('新 node', M.green, 5.2, 0.8, 1.4, 0.6, 0.6, 2);
+  await beat(tok, 800); fly(n3);
+  say('可以建立新 node、刪掉 node：這就是動態配置記憶體', '');
+  await step(tok);                                   // 1015.7 implement in RAM: pointer = index
+  pkt('用 RAM 實作：pointer = 大表格裡的 index', 2.0, 0.6);
+  say('pointer machine 可以用 RAM 實作', 'pointer 變成陣列的 index');
+  await step(tok);                                   // 1032.8 follow a pointer: constant time
+  x = tag('x', 'ptr alt', -2.6, 1.9); glow(n1.d, GOLD);
+  await anim(tok, 900, (t) => x.position.set(-2.6 + 5.2 * t, 1.9, 0));
   glow(n1.d, null); glow(n2.d, GOLD);
-  await beat(tok, 1600);
-  say('比 RAM 弱：pointer 不能做加法', 'RAM 可模擬它：pointer = array index');
-  await beat(tok, 1900);
+  say('只能做「跟著 pointer 走」：x = x.next，Θ(1)', '改一個 field 也是 Θ(1)');
+  await step(tok);                                   // 1046.3 weaker than RAM
+  me.mood('calm');
+  say('它比 RAM 弱（pointer 不能做加法），但提供另一種思考方式', '很多資料結構都這樣蓋');
 }]);
 
-// 17:42 Python 的 list 是 array：L[i] = L[j] + 5 是 Θ(1)
+// 17:42 Python 的 cost model；list 是 array：L[i] = L[j] + 5 是 Θ(1)（12 steps）
 FRAG.push(['algmit1-py-list-array', 'Python list = array：L[i] = L[j] + 5', async (tok) => {
   fresh([0, 3.6, 13], [0, 2.4, 0]);
   const V = [5, 8, 2, 9, 4, 7, 1, 3], X = mX(8, 1.1);
-  const cs = V.map((v, i) => mBox(v, M.sand, X(i), 1.2, 0.9, 0.8, 0.8, 1.5));
+  let cs = [], cd = null, me = null;
+  await step(tok);                                   // 1064.8 a reasonable model for Python
+  me = buddy('Python', '', M.blue, -5.6, 0, 1.6, 0.8);
+  say('這門課用 Python 實作：Python 的計算模型長怎樣？', '');
+  await step(tok);                                   // 1097.8 both RAM (arrays) and pointer machine (references)
+  okT('有 array → RAM', -2.0, 6.6); okT('有 reference → pointer machine', 2.6, 6.6);
+  say('Python 兩種觀點都有', 'array 像 RAM，reference 像 pointer machine');
+  await step(tok);                                   // 1117.9 lots of operations, each with a cost
+  ['sort', 'append', 'L1 + L2', 'x in L'].forEach((t, i) => pkt(t, -4.2 + i * 2.3, 5.6));
+  say('但 Python 有很多高階操作', 'sort、append、串接…每個都有 cost');
+  await step(tok);                                   // 1137.9 some are slow, even exponential
+  noT('有些很慢，甚至指數時間！', 0, 4.8); me.mood('wow');
+  say('有些操作很花時間，甚至是指數時間：要知道哪些快、哪些慢', '');
+  await step(tok);                                   // 1175.8 a Python list is an array
+  me.mood('calm');
+  cs = V.map((v, i) => mBox(v, M.sand, X(i), 1.2, 0.9, 0.8, 0.8, 1.5 + i * 0.08));
   V.forEach((_, i) => tag('L[' + i + ']', 'idx', X(i), 0.4));
-  const cd = code(['L[i] = L[j] + 5     # i = 6, j = 2'], 0, 5.6);
-  say('Python 的 list 其實是 array', '不是 linked list');
-  await beat(tok, 2200);
-  cd.hl(0);
-  say('random access：直接跳到 index', '讀 L[2] = 2：Θ(1)');
-  glow(cs[2], GOLD); await beat(tok, 1400);
-  const c = mBox(7, M.green, X(2), 2.6); tag('2 + 5', 'idx', X(2), 3.4);
-  await beat(tok, 900); move(c, X(6), 2.6); await beat(tok, 1000);
-  move(c, X(6), 1.2); await beat(tok, 500); kill(c); relabel(cs[6], 7); glow(cs[6], GREEN);
-  say('整行只做常數個基本操作', 'Θ(1)');
-  await beat(tok, 2000); glow(cs[2], null); glow(cs[6], null);
-  say('若是 linked list：要一格格走到 i', 'Θ(i)，最壞 Θ(n)');
+  say('Python 的 list 其實是 array（陣列）', '名字很容易讓人搞混');
+  await step(tok);                                   // 1198.6 not a linked list
+  bub('不是 linked list 喔！', -5.6, 2.8, 1.6);
+  say('很多人以為 Python 的 list 是 linked list：其實不是', '');
+  await step(tok);                                   // 1213.8 L[i] = L[j] + 5 is constant time
+  cd = code(['L[i] = L[j] + 5     # 例：i = 6, j = 2'], 0, 3.4); cd.hl(0);
+  glow(cs[2], GOLD); const c = mBox(7, M.green, X(2), 2.4); tag('2 + 5', 'idx', X(2), 3.0);
+  await beat(tok, 400); move(c, X(6), 2.4); await beat(tok, 600);
+  move(c, X(6), 1.2); await beat(tok, 400); kill(c); relabel(cs[6], 7); glow(cs[6], GREEN);
+  say('L[i] = L[j] + 5：直接跳到 index 讀、算、寫，Θ(1)', '示意：i = 6、j = 2');
+  await step(tok);                                   // 1223.1 a linked list would take linear time
+  glow(cs[2], null); glow(cs[6], null);
   const cur = tag('▼', 'ptr alt', X(0), 2.1);
-  for (let i = 0; i <= 6; i++) { cur.position.set(X(i), 2.1, 0); glow(cs[i], '#333333'); await beat(tok, 320); glow(cs[i], null); }
-  await beat(tok, 1200);
-  say('x = x.next 也是 Θ(1)', '常數個 attribute → pointer machine');
-  await beat(tok, 1900);
+  for (let i = 0; i <= 6; i++) { cur.position.set(X(i), 2.1, 0); glow(cs[i], '#333333'); await beat(tok, 200); glow(cs[i], null); }
+  say('如果是 linked list：要一格一格走到 i、j，就是線性時間', '');
+  await step(tok);                                   // 1248.7 pointer machine via objects
+  remove(cur);
+  const ob = cube('object：.val  .next  .prev', M.purple, [4.4, 0.6, 0.6], 2.6, 6.6, 0, 1.5);
+  say('pointer machine 的寫法：用物件導向的 object', '');
+  await step(tok);                                   // 1273.8 constant number of attributes
+  glow(ob, GOLD); okT('常數個 attribute ✓', 5.2, 5.8);
+  say('object 只有常數個 attribute（不是 n 個）', '就符合 pointer machine');
+  await step(tok);                                   // 1310.8 x = x.next is constant time
+  glow(ob, null);
+  const xs = tag('x = x.next', 'ptr alt', -2.0, 5.8);
+  await travel(tok, xs, V3(-3.0, 5.8), V3(-0.6, 5.8), 700);
+  say('x = x.next：讀一個 field，常數時間', '');
+  await step(tok);                                   // 1332.6 regardless of how big the list is
+  me.mood('happy'); await me.hop(tok);
+  say('不管 list 多長、object 有多少個，這些都是常數時間', '');
 }]);
 
-// 22:19 L.append 與 L1 + L2
+// 22:19 L.append 與 L1 + L2（8 steps）
 FRAG.push(['algmit1-py-concat', 'L.append 是 Θ(1)、L1 + L2 是 Θ(|L1| + |L2|)', async (tok) => {
   fresh([0, 3.8, 13], [0, 2.8, 0]);
-  say('L.append(x)：放進下一格', 'Θ(1)（table doubling，第 9 講）');
-  const X0 = mX(8, 1.0);
-  const tmp = [];
-  for (let i = 0; i < 8; i++) { const gb = ghostBox(0x6e5f49, 0.86, 0.86, 0.86); gb.position.set(X0(i), 4.2, 0); tmp.push(gb); }
-  for (let i = 0; i < 5; i++) tmp.push(mBox('abcde'[i], M.blue, X0(i), 4.2));
-  await beat(tok, 1000);
-  const nx = mBox('x', M.green, X0(5), 4.2, 0.8, 0.8, 0.8, 2.5); tmp.push(nx);
-  await beat(tok, 3000);
-  tmp.forEach(kill);
-  const cd = code(['L = L1 + L2   # 等價於：', 'L = []', 'for x in L1: L.append(x)', 'for x in L2: L.append(x)'], 0, 7.4, 0.5);
-  say('L1 + L2：+ 不是一個 Θ(1) 操作', '展開成 append 迴圈來算');
-  const L1 = mRow(['a', 'b', 'c'], 4.0, { cx: -3.0, col: M.blue }), L2 = mRow(['d', 'e'], 4.0, { cx: 3.0, col: M.orange });
-  tag('L1', 'ptr', -5.0, 4.0); tag('L2', 'ptr', 4.6, 4.0); tag('L', 'ptr', -3.6, 1.2);
-  cd.hl(1); await beat(tok, 1400);
-  const XL = mX(5, 1.0, 0.0), cnt = tag('copy 0 次', 'ptr alt', 4.6, 1.2);
-  const src = [...L1, ...L2];
-  for (let k = 0; k < 5; k++) {
-    cd.hl(k < 3 ? 2 : 3); glow(src[k], GOLD);
-    const c = mBox(src[k].userData.lbl.element.textContent, k < 3 ? M.blue : M.orange, src[k].position.x, 4.0);
-    move(c, XL(k), 1.2); await beat(tok, 650); glow(src[k], null); txt(cnt, 'copy ' + (k + 1) + ' 次');
-  }
-  await beat(tok, 900);
-  say('時間 ∝ 兩個 list 的長度', 'Θ(1 + |L1| + |L2|)');
-  await beat(tok, 1900);
+  const X0 = mX(8, 1.0), tmp = [];
+  let cd = null, L1 = [], L2 = [], cnt = null, k = 0;
+  const XL = mX(5, 1.0, 0.0);
+  await step(tok);                                   // 1341.2 L.append(x)
+  for (let i = 0; i < 5; i++) tmp.push(mBox('abcde'[i], M.blue, X0(i) - 1.0, 4.2));
+  const nx = mBox('x', M.green, 3.6, 6.0, 0.8, 0.8, 0.8); tmp.push(nx);
+  say('L.append(x)：把 x 加到 list 尾巴', '它是 array，想想看怎麼做');
+  await step(tok);                                   // 1380.3 naive: allocate a new array, copy all
+  const cp = [];
+  for (let i = 0; i < 5; i++) { const m = mBox('abcde'[i], M.sand, X0(i) - 1.0, 4.2); move(m, X0(i) - 1.0, 2.8); cp.push(m); await beat(tok, 200); }
+  move(nx, X0(5) - 1.0, 2.8);
+  const naive = noT('天真做法：開新 array 全部複製 → 線性', 0, 1.6);
+  say('天真的做法：配置大一格的新 array，全部複製過去：線性時間', '');
+  await step(tok);                                   // 1389.6 table doubling → constant time
+  cp.forEach(kill);
+  for (let i = 5; i < 10; i++) { const gb = ghostBox(0x6e5f49, 0.86, 0.86, 0.86); gb.position.set(X0(i) - 1.0, 4.2, 0); tmp.push(gb); }
+  move(nx, X0(5) - 1.0, 4.2);
+  remove(naive); const td = okT('table doubling：預留空位 → 基本上 Θ(1)', 0, 5.6);
+  say('Python 用 table doubling（第 9 講）', '基本上當成 Θ(1)');
+  await step(tok);                                   // 1438.8 concatenate two lists: non-destructive copy
+  tmp.forEach(kill); remove(td);
+  L1 = mRow(['a', 'b', 'c'], 4.0, { cx: -3.0, col: M.blue }); L2 = mRow(['d', 'e'], 4.0, { cx: 3.0, col: M.orange });
+  tag('L1', 'ptr', -5.0, 4.0); tag('L2', 'ptr', 4.6, 4.0);
+  say('L = L1 + L2：不會改到 L1、L2，要把兩邊複製出來接起來', 'non-destructive');
+  await step(tok);                                   // 1450.8 L = [], for x in L1: L.append(x)
+  cd = code(['L = []', 'for x in L1: L.append(x)', 'for x in L2: L.append(x)'], 0, 7.2, 0.5);
+  tag('L', 'ptr', -3.6, 1.2); cnt = tag('append 0 次', 'ptr alt', 4.6, 1.2);
+  cd.hl(1);
+  for (; k < 3; k++) { glow(L1[k], GOLD); const c = mBox(['a', 'b', 'c'][k], M.blue, L1[k].position.x, 4.0); move(c, XL(k), 1.2); await beat(tok, 450); glow(L1[k], null); txt(cnt, 'append ' + (k + 1) + ' 次'); }
+  say('把 + 改寫成簡單的 Python：L 從空的開始，逐一 append', '第一個迴圈：|L1| 次');
+  await step(tok);                                   // 1490.6 … and |L2| for the second loop
+  cd.hl(2);
+  for (; k < 5; k++) { glow(L2[k - 3], GOLD); const c = mBox(['d', 'e'][k - 3], M.orange, L2[k - 3].position.x, 4.0); move(c, XL(k), 1.2); await beat(tok, 450); glow(L2[k - 3], null); txt(cnt, 'append ' + (k + 1) + ' 次'); }
+  say('每次 append 是 Θ(1)：第一段 |L1|、第二段 |L2|', '');
+  await step(tok);                                   // 1496.4 total O(1 + |L1| + |L2|)
+  cd.hl(-1);
+  const tot = cube('O(1 + |L1| + |L2|)', M.green, [3.8, 0.6, 0.6], 0, 0.1, 1.2, 1.5); glow(tot, GREEN);
+  say('總共 O(1 + |L1| + |L2|)；1 是怕兩個都空', '');
+  await step(tok);                                   // 1522.8 + is Θ(1) only for two words
+  noT('+ 只有兩邊都是 word 才是 Θ(1)', 0, 5.6);
+  say('看到 + 別以為是常數：兩邊是整個資料結構時就不是', '');
 }]);
 
-// 25:36 x in L、len(L)、L.sort()
+// 25:36 x in L、len(L)、L.sort()（7 steps）
 FRAG.push(['algmit1-py-in-len-sort', 'x in L 是 Θ(n)、len 是 Θ(1)、sort 是 Θ(n log n)', async (tok) => {
   fresh([0, 3.6, 13], [0, 2.4, 0]);
   const V = [5, 8, 2, 9, 4, 7, 1], X = mX(7, 1.1, 0.6);
-  const cs = V.map((v, i) => mBox(v, M.sand, X(i), 1.6, 0.9, 0.8, 0.8, 1.5));
-  await beat(tok, 900);
-  say('6 in L：一個一個比', '最壞 Θ(n)：list 沒排序');
-  const q = mBox(6, M.orange, X(0), 4.0);
-  for (let i = 0; i < 7; i++) { move(q, X(i), 3.0); glow(cs[i], RED); await beat(tok, 420); glow(cs[i], null); }
-  tag('比了 7 次：不在裡面', 'ptr alt', X(3), 4.3);
-  await beat(tok, 1800); kill(q);
-  say('len(L)：list 內建長度計數', 'Θ(1)：直接讀出來');
+  let cs = [], q = null;
+  await step(tok);                                   // 1536.9 how long does x in L take?
+  cs = V.map((v, i) => mBox(v, M.sand, X(i), 1.6, 0.9, 0.8, 0.8, 1.5 + i * 0.08));
+  q = mBox(6, M.orange, X(0) - 1.4, 3.0); tag('6 in L ?', 'ptr', X(0) - 1.4, 3.9);
+  say('x in L 要花多久？', '例：6 in L');
+  await step(tok);                                   // 1554.8 linear: scan the whole list
+  for (let i = 0; i < 7; i++) { move(q, X(i), 3.0); glow(cs[i], RED); await beat(tok, 260); glow(cs[i], null); }
+  noT('比了 7 次：不在裡面', X(3), 4.3);
+  say('線性時間：list 沒排序，最壞要一個一個比完', 'Θ(n)');
+  await step(tok);                                   // 1568.9 worse if == itself is expensive
+  bub('x 很複雜時，每次 == 也要花時間', X(3), 5.2);
+  say('如果 == 本身很貴（x 很複雜），還要再乘上比較的成本', '');
+  await step(tok);                                   // 1580.8 len(L): constant, a stored counter
+  kill(q);
   const ln = mBox('len = 7', M.green, -5.0, 1.6, 1.4, 0.8, 0.8, 2); glow(ln, GOLD);
-  await beat(tok, 2400); glow(ln, null);
-  say('L.sort()：comparison sort', 'Θ(n log n)（第 3、4、7 講）');
+  say('len(L)：常數時間', 'list 內建計數器記著長度，直接讀出來');
+  await step(tok);                                   // 1618.7 sort a list: n log n
+  glow(ln, null);
   const order = V.map((v, i) => i).sort((a, b) => V[a] - V[b]);
   order.forEach((idx, pos) => move(cs[idx], X(pos), 1.6));
-  await beat(tok, 2200);
-  say('看起來一行，cost 差很多', '要知道每個操作怎麼實作');
-  await beat(tok, 1900);
+  say('L.sort()：n log n', '');
+  await step(tok);                                   // 1630.4 times the time to compare two items
+  tag('× 比較兩個元素的時間（word：Θ(1)）', 'ptr', X(3), 0.4);
+  say('精確地說是 n log n 再乘上比較兩個元素的時間', '比 word 時是常數');
+  await step(tok);                                   // 1646.8 comparison sort: lectures 3, 4, 7
+  note('comparison sort：第 3、4、7 講', -4.6, 4.8);
+  say('Python 用 comparison sort：之後第 3、4、7 講會教', '');
 }]);
 
-// 27:46 dict、long 整數、heapq
+// 27:46 dict、long 整數、heapq（10 steps）
 FRAG.push(['algmit1-py-dict-long', 'dict Θ(1) w.h.p.、long 加法與乘法', async (tok) => {
   fresh([0, 3.6, 13], [0, 2.6, 0]);
-  say('dict：D[key] = val', 'Θ(1) w.h.p.（hash table，第 8–10 講）');
   const X = mX(6, 1.0, 1.2), slots = [];
+  let xs = [], ys = [];
+  await step(tok);                                   // 1665.3 dicts: arbitrary key → value
   for (let i = 0; i < 6; i++) { slots.push(mBox('', '#e8dcc2', X(i), 4.6, 0.9, 0.7, 0.7)); tag(String(i), 'idx', X(i), 3.95); }
+  tag('dict', 'ptr', -4.0, 4.6);
+  say('dict：list 的推廣，可以用任意 key 存 value', 'D[key] = val');
+  await step(tok);                                   // 1692.8 hash table, lectures 8–10: constant time
   const keys = [['cat', 4], ['dog', 1], ['the', 3]];
-  for (const [k, s] of keys) { const c = mBox(k, M.blue, -4.8, 5.8, 0.9, 0.6, 0.6); await beat(tok, 300); move(c, X(s), 5.4); glow(slots[s], GOLD); await beat(tok, 700); }
-  await beat(tok, 1600);
-  say('long 整數：x 佔 |x| 個 word', 'x + y：Θ(|x| + |y|)');
-  const xs = mRow(Array(5).fill('w'), 2.2, { gap: 0.7, s: 0.6, cx: -2.0, col: M.teal }), ys = mRow(Array(3).fill('w'), 1.2, { gap: 0.7, s: 0.6, cx: -0.6, col: M.pink });
-  tag('x', 'ptr', -4.2, 2.2); tag('y', 'ptr', -2.0, 1.2);
-  await beat(tok, 2400);
-  say('x · y：小學乘法 Θ(|x|·|y|)', 'Python：Karatsuba Θ((|x|+|y|)^lg 3)');
-  for (const a of xs) glow(a, GOLD);
-  for (const b of ys) { glow(b, GOLD); await beat(tok, 400); }
-  tag('lg 3 ≈ 1.58 < 2', 'ptr alt', 3.4, 1.7);
-  await beat(tok, 2200);
-  say('heapq 也內建（第 4 講）', 'Python 的很多功能背後就是演算法');
-  await beat(tok, 1900);
+  for (const [k, s] of keys) { const c = mBox(k, M.blue, -4.8, 5.8, 0.9, 0.6, 0.6); move(c, X(s), 5.4); glow(slots[s], GOLD); await beat(tok, 500); }
+  say('背後是 hash table（第 8–10 講）：存、取都是常數時間', 'key 是一個 word 時');
+  await step(tok);                                   // 1721.8 key in D, del D[key]: also constant
+  pkt('key in D、del D[key]：也是 Θ(1)', 1.2, 6.8);
+  say('查 key 在不在、刪掉 key：也是常數時間', 'D.update 有很多 key 就不是');
+  await step(tok);                                   // 1749.8 with high probability
+  note('w.h.p.：隨機演算法，偶爾慢一點，但永遠正確', -1.0, 3.2);
+  say('精確地說是 with high probability（w.h.p.）的常數時間', '');
+  await step(tok);                                   // 1804.2 longs: x is |x| words, y is |y| words
+  xs = mRow(Array(5).fill('w'), 2.0, { gap: 0.7, s: 0.6, cx: -2.0, col: M.teal }); ys = mRow(Array(3).fill('w'), 1.0, { gap: 0.7, s: 0.6, cx: -0.6, col: M.pink });
+  tag('x：|x| 個 word', 'ptr', -4.6, 2.0); tag('y：|y| 個 word', 'ptr', -3.0, 1.0);
+  say('long 整數（第 11 講）', 'x 佔 |x| 個 word、y 佔 |y| 個 word');
+  await step(tok);                                   // 1843.7 addition: O(|x| + |y|)
+  for (const a of [...xs, ...ys]) { glow(a, GOLD); await beat(tok, 120); }
+  okT('x + y：O(|x| + |y|)', 3.4, 2.4);
+  say('加法：像小學直式加法，O(|x| + |y|)', '');
+  await step(tok);                                   // 1856.5 grade-school multiplication: |x|·|y|
+  for (const a of [...xs, ...ys]) glow(a, null);
+  for (const b of ys) { for (const a of xs) glow(a, GOLD); glow(b, GOLD); await beat(tok, 300); for (const a of xs) glow(a, null); }
+  noT('小學乘法：O(|x|·|y|)', 3.4, 1.6);
+  say('小學直式乘法：每一位乘每一位，O(|x|·|y|)，二次方', '');
+  await step(tok);                                   // 1865.3 Python: (|x| + |y|)^lg 3
+  okT('Python：O((|x| + |y|)^lg 3)', 3.4, 0.8);
+  say('Python 實作的是 O((|x| + |y|)^lg 3)', '');
+  await step(tok);                                   // 1876.7 lg = log₂; lg 3 ≈ 1.6
+  pkt('lg 3 ≈ 1.6 < 2', 3.4, 0.0);
+  say('lg 指 log₂；lg 3 ≈ 1.6，比二次方好一點', '');
+  await step(tok);                                   // 1911.8 heapq: lecture 4
+  note('heapq：heap，第 4 講', -4.6, 6.4);
+  say('heapq 也內建（heap，第 4 講）：Python 很多功能背後就是演算法', '');
 }]);
 
-// 32:18 Document distance 問題、用途、word 的定義
+// 32:18 Document distance 問題、用途、word 的定義（10 steps）
 FRAG.push(['algmit1-doc-words', 'Document distance：把文件切成 words', async (tok) => {
   fresh([0, 3.6, 13], [0, 2.8, 0]);
-  say('兩份文件有多像？', 'document distance d(D1, D2)');
-  const d1 = cube('D1', M.purple, [1.4, 1.8, 0.3], -1.2, 4.6, 0, 2), d2 = cube('D2', M.purple, [1.4, 1.8, 0.3], 1.2, 4.6, 0, 2);
-  await beat(tok, 2000);
-  say('用途：重複網頁、抄襲、搜尋排序', 'duplicate pages · cheating · web search');
-  const U = ['重複網頁', '作業抄襲', '搜尋：query 也是短文件'];
-  for (let i = 0; i < 3; i++) { tag(U[i], 'ptr', -4 + i * 4, 2.6); await beat(tok, 800); }
-  await beat(tok, 1400);
+  let d1 = null, d2 = null;
+  await step(tok);                                   // 1942.8 a real example: document distance
+  say('真實的例子：document distance（文件距離）', '上次是 peak finding');
+  await step(tok);                                   // 1990.8 two documents D1, D2 → distance
+  d1 = prop('file', -1.4, 3.6, 0, 1.6, 'D1'); d2 = prop('file', 1.4, 3.6, 0, 1.6, 'D2');
+  tag('d(D1, D2) = ?', 'ptr alt', 0, 6.4);
+  say('給兩份文件 D1、D2，算它們之間的「距離」', '距離是什麼意思？要先定義');
+  await step(tok);                                   // 2011.8 Google: nearly identical pages
+  pkt('Google：兩個網頁幾乎一樣？', -4.4, 2.4);
+  say('用途：Google 想知道兩個網頁是不是幾乎相同，就只存一份', '');
+  await step(tok);                                   // 2030.8 Wikipedia mirrors
+  pkt('Wikipedia 的上百萬個鏡像站', -4.4, 1.6);
+  say('Wikipedia 有上百萬個鏡像網站：可以用文件距離找出來', '');
+  await step(tok);                                   // 2049.8 detect problem-set cheating
+  pkt('作業抄襲偵測', 4.4, 2.4);
+  say('老師也用自動化工具檢查作業有沒有抄襲', '');
+  await step(tok);                                   // 2069.0 web search: query = a tiny document
+  pkt('搜尋：「introduction to algorithms」也是一份短文件', 3.4, 1.6);
+  say('網頁搜尋：query 也看成一份很短的文件，找最相近的排前面', '');
+  await step(tok);                                   // 2108.4 a document = a sequence of words
   kill(d1); kill(d2);
-  say('word = 連續的英數字元', 'a–z、0–9；空白與標點把它們切開');
   const s = cube('"Introduction, to algorithms!"', M.paper, [6.2, 0.7, 0.4], 0, 5.0, 0, 2);
-  await beat(tok, 1800);
+  say('先定義：一份文件 = 一串 words', '');
+  await step(tok);                                   // 2121.3 word = string of alphanumeric characters
+  bub('word：連續的 a–z、0–9', 0, 6.0);
+  say('一個 word = 連續的英數字元（a–z、0–9）', '');
+  await step(tok);                                   // 2134.8 delete whitespace & punctuation → words
   const W = ['Introduction', 'to', 'algorithms'], X = mX(3, 2.8);
-  for (let i = 0; i < 3; i++) { mBox(W[i], M.blue, X(i), 1.0, 2.4, 0.7, 0.7, 2.5); await beat(tok, 600); }
+  for (let i = 0; i < 3; i++) { mBox(W[i], M.blue, X(i), 3.4, 2.4, 0.7, 0.7, 2.0); await beat(tok, 400); }
   glow(s, GOLD);
-  say('文件 = 一串 words', '用「共同的 words」來定義距離');
-  await beat(tok, 1900);
+  say('把空白、標點這些雜物拿掉，中間剩下的就是 words', '');
+  await step(tok);                                   // 2151.4 similar if they share many words
+  const me = buddy('', '', M.gold, 5.6, 0, 1.0, 0.6); me.mood('happy');
+  note('共同的 words 越多 → 越相似', 0, 1.4);
+  say('想法：兩份文件共同的 words 越多，就越相似', '');
 }]);
 
-// 36:20 文件向量：the cat、the dog；內積
+// 36:20 文件向量：the cat、the dog；內積（14 steps）
 FRAG.push(['algmit1-doc-vectors', '文件向量與內積：the cat vs the dog', async (tok) => {
   fresh([4.5, 4.5, 11], [0.5, 1.8, 0.5]);
   const O = V3(-1.5, 0.3, -1), U = 3;
+  let b1 = null, b2 = null;
+  await step(tok);                                   // 2187.5 a document as a vector
+  const vec = pkt('文件 → 向量', 4.6, 5.4, -1);
+  say('把文件想成一個「向量」', '');
+  await step(tok);                                   // 2194.5 D[w] = number of occurrences of w
+  bub('D[w] = 單字 w 在文件 D 出現幾次', 4.2, 4.6, -1);
+  say('D[w]：單字 w 在文件 D 裡出現的次數', '非負整數：0、1、甚至一百萬');
+  await step(tok);                                   // 2222.8 a giant vector indexed by all words
+  const H = [3, 0, 1, 0, 2, 0, 0, 1];
+  H.forEach((h, i) => mBar('', h * 0.3, M.teal, 3.0 + i * 0.45, 2.2, 0.3)); tag('每個可能的 word 一格（大部分是 0）', 'idx', 4.6, -0.3, 2.2);
+  say('一個超大的向量：每個可能的 word 都有一格，大部分是 0', '');
+  await step(tok);                                   // 2256.3 two documents: "the cat", "the dog"
+  remove(vec);
+  pkt('D1 = "the cat"', -4.0, 5.0, -1); pkt('D2 = "the dog"', -4.0, 4.3, -1);
+  say('例子：兩份很重要的文件 "the cat" 和 "the dog"', '');
+  await step(tok);                                   // 2260.9 only three words → 3D space
   arrow(O, V3(-1.5 + 4, 0.3, -1), 0x6e5f49); arrow(O, V3(-1.5, 4.3, -1), 0x6e5f49); arrow(O, V3(-1.5, 0.3, 3), 0x6e5f49);
   tag('the', 'idx', 2.8, 0.3, -1); tag('cat', 'idx', -1.5, 4.7, -1); tag('dog', 'idx', -1.5, 0.3, 3.4);
-  say('D[w] = 單字 w 在文件中出現幾次', '每份文件 = 一個向量');
-  await beat(tok, 2200);
-  say('D1 = "the cat" = (1, 1, 0)', 'the 1、cat 1、dog 0');
-  arrow(O, V3(-1.5 + U, 0.3 + U, -1), 0x9b7ef4); tag('D1', 'ptr', -1.5 + U + 0.3, 0.3 + U + 0.3, -1);
-  await beat(tok, 2000);
-  say('D2 = "the dog" = (1, 0, 1)', 'the 1、cat 0、dog 1');
-  arrow(O, V3(-1.5 + U, 0.3, -1 + U), 0xdd8238); tag('D2', 'ptr', -1.5 + U + 0.3, 0.6, -1 + U);
-  await beat(tok, 2000);
-  say('內積 d′ = Σ D1[w]·D2[w]', '1·1 + 1·0 + 0·1 = 1');
-  await beat(tok, 2600);
-  say('問題：長文件的內積天生很大', '百萬字、一半相同 → 500,000');
-  const b1 = mBar('500,000', 0.05, M.orange, 5.0, -1, 0.9), b2 = mBar('100', 0.3, M.green, 6.4, -1, 0.9);
-  await anim(tok, 1200, (t) => mSetH(b1, 0.05 + 4.6 * t));
-  await beat(tok, 1400);
-  say('完全相同的 100 字文件才 100', '不是 scale invariant');
-  glow(b2, RED);
-  await beat(tok, 1900);
+  say('只有三個不同的 word，可以畫在三維空間：the、cat、dog 各一個軸', '');
+  await step(tok);                                   // 2287.8 the cat = (1, 1, 0)
+  arrow(O, V3(-1.5 + U, 0.3 + U, -1), 0x9b7ef4); tag('D1 = (1, 1, 0)', 'ptr', -1.5 + U + 0.3, 0.3 + U + 0.3, -1);
+  say('"the cat"：the 1 次、cat 1 次、dog 0 次', '(1, 1, 0)');
+  await step(tok);                                   // 2294.8 the dog = (1, 0, 1)
+  arrow(O, V3(-1.5 + U, 0.3, -1 + U), 0xdd8238); tag('D2 = (1, 0, 1)', 'ptr', -1.5 + U + 0.3, 0.6, -1 + U);
+  say('"the dog"：the 1、cat 0、dog 1', '(1, 0, 1)');
+  await step(tok);                                   // 2307.4 how different are two vectors? inner product
+  const me = buddy('', '?', M.gold, -4.4, 0, 1.6, 0.6);
+  say('怎麼衡量兩個向量差多少？同學建議：內積', 'inner product / dot product');
+  await step(tok);                                   // 2342.2 d′ = Σ D1[w]·D2[w]
+  const f = cube("d′ = Σ D1[w]·D2[w]", M.paper, [3.6, 0.6, 0.4], -3.6, 6.4, -1, 1.2);
+  say("d′(D1, D2) = 所有 word 的 D1[w]·D2[w] 加起來", '');
+  await step(tok);                                   // 2357.0 the × the = 1, cat & dog × 0
+  relabel(f, "d′ = 1·1 + 1·0 + 0·1 = 1"); glow(f, GOLD);
+  me.set('1');
+  say('the 對到 the 得 1 分；cat、dog 都乘到 0', '1·1 + 1·0 + 0·1 = 1');
+  await step(tok);                                   // 2370.1 a measure of commonality
+  glow(f, null);
+  okT('內積越大 → 共同點越多', -3.6, 5.6, -1);
+  say('內積衡量「共同性」：越大越相似，算是距離的反面', '');
+  await step(tok);                                   // 2410.8 million words, half in common → 500,000
+  b1 = mBar('', 0.05, M.orange, 5.0, -1, 0.9); tag('百萬字、一半相同', 'idx', 5.0, -0.4, -1);
+  await mGrow(tok, b1, 4.4, 1200); pkt('500,000', 5.0, 4.8, -1);
+  say('問題：百萬字的文件、一半的字相同，內積是 500,000', '');
+  await step(tok);                                   // 2418.3 two identical 100-word docs → 100
+  b2 = mBar('', 0.05, M.green, 6.4, -1, 0.9); tag('100 字、完全一樣', 'idx', 6.4, -0.8, -1);
+  await mGrow(tok, b2, 0.3, 500); pkt('100', 6.4, 0.8, -1);
+  say('兩份完全一樣的 100 字文件，內積卻只有 100', '');
+  await step(tok);                                   // 2426.8 not scale invariant
+  glow(b2, RED); me.set('✗'); me.mood('sad');
+  say('文件長短會影響分數：不是 scale invariant，不是好的量法', '');
 }]);
 
-// 40:31 除以長度 → cos θ；θ = arccos
+// 40:31 除以長度 → cos θ；θ = arccos（7 steps）
 FRAG.push(['algmit1-doc-angle', '除以長度：兩向量夾角 θ', async (tok) => {
   fresh([4.5, 4.5, 11], [0.5, 1.8, 0.5]);
   const O = V3(-1.5, 0.3, -1), U = 3;
@@ -8295,490 +8740,1133 @@ FRAG.push(['algmit1-doc-angle', '除以長度：兩向量夾角 θ', async (tok)
   tag('the', 'idx', 2.8, 0.3, -1); tag('cat', 'idx', -1.5, 4.7, -1); tag('dog', 'idx', -1.5, 0.3, 3.4);
   arrow(O, V3(-1.5 + U, 0.3 + U, -1), 0x9b7ef4); tag('D1', 'ptr', -1.5 + U + 0.3, 0.3 + U + 0.3, -1);
   arrow(O, V3(-1.5 + U, 0.3, -1 + U), 0xdd8238); tag('D2', 'ptr', -1.5 + U + 0.3, 0.6, -1 + U);
-  say('修正：除以兩個向量的長度', 'd″ = D1·D2 / (‖D1‖·‖D2‖)');
-  await beat(tok, 2600);
-  say('‖D1‖ = ‖D2‖ = √2', '1 / (√2 · √2) = 1/2');
-  await beat(tok, 3200);
+  let f = null;
+  await step(tok);                                   // 2437.9 divide by the lengths → d″
+  f = cube('d″ = D1·D2 / (‖D1‖·‖D2‖)', M.paper, [4.4, 0.6, 0.4], -3.6, 6.4, -1, 1.2);
+  say('修正：內積再除以兩個向量的長度，叫 d″', '');
+  await step(tok);                                   // 2457.8 the length of the vectors
+  pkt('‖D1‖ = ‖D2‖ = √(1² + 1²) = √2', -3.6, 5.6, -1);
+  relabel(f, 'd″ = 1 / (√2 · √2) = 1/2');
+  say('向量長度 ‖D‖ = √(各分量平方和)；這裡都是 √2', 'd″ = 1/2');
+  await step(tok);                                   // 2464.8 recognize it? the angle
   const a = V3(1, 1, 0).normalize(), b = V3(1, 0, 1).normalize(), pts = [];
   for (let k = 0; k <= 20; k++) { const v = a.clone().lerp(b, k / 20).normalize().multiplyScalar(1.6); pts.push(O.clone().add(v)); }
   mPoly(pts, '#c08a1f'); tag('θ', 'ptr alt', -0.3, 1.2, -0.2);
-  say('這就是夾角的 cos θ', 'θ = arccos(1/2) = 60°');
-  await beat(tok, 3200);
-  say('θ = 0°：幾乎一樣；90°：完全不同', '距離 = arccos(d″)，早在 1975 年就有');
-  await beat(tok, 1900);
+  say('這個式子很眼熟：跟兩個向量的夾角有關', '');
+  await step(tok);                                   // 2478.4 cos θ; take arccos
+  glow(f, GOLD);
+  pkt('d″ = cos θ → θ = arccos(1/2) = 60°', -3.6, 4.8, -1);
+  say('d″ 就是夾角的 cos θ；取 arccos 就得到角度', 'θ = arccos(1/2) = 60°');
+  await step(tok);                                   // 2486.8 since ~1975, information retrieval
+  note('1975 年左右的資訊檢索就在用', 4.0, 5.6, -1);
+  say('這個量法很早就有', '大約 1975 年的資訊檢索（information retrieval）');
+  await step(tok);                                   // 2499.6 0° identical, 90° very different
+  okT('θ = 0°：幾乎一樣', 4.0, 4.6, -1); noT('θ = 90°：完全不同', 4.0, 3.8, -1);
+  say('夾角 0 度：幾乎一樣；90 度：非常不同', '');
+  await step(tok);                                   // 2512.8 how do we actually compute it?
+  const me = buddy('', '?', M.gold, 5.6, 0, 1.6, 0.6);
+  say('問題來了：這個值實際上要怎麼算？', '要算文件向量、內積、再相除');
 }]);
 
-// 42:10 三個步驟 + 8 個版本的實測時間
+// 42:30 三個步驟 + 8 個版本的實測時間（10 steps）
 FRAG.push(['algmit1-docdist-times', '三步驟；8 個版本 228.1 s → 0.2 s', async (tok) => {
   fresh([0, 3.6, 14], [0, 2.8, 0]);
   const S = ['① 切成 words', '② 算 word 頻率', '③ 內積 → 角度'];
-  say('演算法三步驟', 'split → frequencies → dot product');
-  for (let i = 0; i < 3; i++) { cube(S[i], M.purple, [2.8, 0.6, 0.8], -4.7, 5.6 - i * 1.0, 0, 2); await beat(tok, 700); }
-  await beat(tok, 1200);
-  say('8 個實作版本（1 MB 文件）', '228.1 s → 0.2 s：快 1000 倍');
   const T = [228.1, 164, 123, 71, 18.3, 11.5, 1.8, 0.2], X = mX(8, 0.85, 2.3);
-  for (let i = 0; i < 8; i++) {
-    const h = (Math.log10(T[i]) + 1) * 1.4;
+  const H = (t) => (Math.log10(t) + 1) * 1.4;
+  async function bar(i) {
     const b = mBar('', 0.05, i < 4 ? M.orange : M.green, X(i), 0, 0.6);
-    await anim(tok, 350, (t) => mSetH(b, 0.05 + (h - 0.05) * t));
-    tag(String(T[i]), 'idx', X(i), h + 0.35); tag('v' + (i + 1), 'idx', X(i), -0.35);
+    tag('v' + (i + 1), 'idx', X(i), -0.35);
+    await mGrow(tok, b, H(T[i]), 300); tag(String(T[i]), 'idx', X(i), H(T[i]) + 0.35);
   }
-  tag('對數刻度', 'idx', 5.6, 5.4);
-  await beat(tok, 1400);
-  say('v1 → v8：快約 1000 倍', '228.1 / 0.2 ≈ 1140');
-  await beat(tok, 1800);
-  say('有的是常數優化，有的是 n² → n log n', '輸入變 1 GB，慢版永遠跑不完');
-  await beat(tok, 1900);
+  for (let i = 0; i < 3; i++) {
+    await step(tok);                                 // 2550.3 ① split / 2565.9 ② frequencies / 2577.0 ③ dot product
+    cube(S[i], M.purple, [2.8, 0.6, 0.8], -4.7, 5.6 - i * 1.0, 0, 2);
+    say(['步驟一：把文件切成 words', '步驟二：算每個 word 出現幾次（文件向量）', '步驟三：算內積（再除、取角度）'][i], '');
+  }
+  await step(tok);                                   // 2599.5 lecture notes: ~8 implementations
+  prop('file', -5.0, 0.0, 1.2, 0.9, '講義：8 個版本');
+  say('講義附了程式和大量文字資料：大約 8 種實作', '');
+  await step(tok);                                   // 2633.0 version 1 on ~1 MB: 228.1 s
+  tag('對數刻度（秒）', 'idx', 5.6, 5.4);
+  await bar(0);
+  say('約 1 MB 的文件：版本 1 要 228.1 秒，超慢', '');
+  await step(tok);                                   // 2648.8 164, 123, 71
+  for (let i = 1; i < 4; i++) await bar(i);
+  say('一點一點改：164 秒、123 秒、71 秒', '');
+  await step(tok);                                   // 2657.5 18.3, 11.5, 1.8, 0.2
+  for (let i = 4; i < 8; i++) await bar(i);
+  say('再來 18.3、11.5、1.8，最後 0.2 秒', '');
+  await step(tok);                                   // 2670.8 a factor of 1000
+  okT('快約 1000 倍', X(7) - 0.4, 5.6);
+  say('從 228.1 秒到 0.2 秒：快了大約 1000 倍', '228.1 / 0.2 ≈ 1140');
+  await step(tok);                                   // 2680.3 some algorithmic, some better coding
+  note('有的改演算法，有的只是寫得更好（改常數）', 0.6, 6.6);
+  say('有些改進是演算法上的，有些只是程式寫得更好', '');
+  await step(tok);                                   // 2693.8 quadratic → linear / n log n; 1 GB
+  noT('1 GB 時：慢版永遠跑不完', -4.6, 2.4);
+  say('很多是從二次方改成線性或 n log n：輸入到 GB，慢版根本跑不完', '');
 }]);
 
-// 45:17 用 dict 數頻率（線性 w.h.p.）、排序再數、掃描切字
+// 45:24 數頻率（dict，線性 w.h.p.）、排序再數、掃描切字、regex 要小心（10 steps）
 FRAG.push(['algmit1-doc-count-dict', '用 dict 數 word 頻率：線性時間', async (tok) => {
   fresh([0, 3.8, 13], [0, 2.8, 0]);
   const W = ['the', 'cat', 'and', 'the', 'dog'], X = mX(5, 1.3);
-  say('split：掃過字元，非英數就切開', 'Θ(文件長度)；re 不保證線性');
-  cube('"the cat and the dog"', M.paper, [5.2, 0.6, 0.4], 0, 6.2, 0, 2);
-  await beat(tok, 900);
-  const ws = W.map((w, i) => mBox(w, M.blue, X(i), 4.6, 1.0, 0.6, 0.6, 1.5));
-  await beat(tok, 1800);
-  say('用 dict 數每個 word', 'count[word] += 1：Θ(1) w.h.p.');
   const keys = ['the', 'cat', 'and', 'dog'], KX = mX(4, 1.8), bins = {}, cnt = {};
+  let ws = [];
+  await step(tok);                                   // 2724.0 some of the improvements
+  const me = buddy('', '?', M.gold, -5.8, 0, 2.0, 0.6);
+  say('來看幾個改進的做法', '');
+  await step(tok);                                   // 2741.3 iterate words, count[word] += 1
+  ws = W.map((w, i) => mBox(w, M.blue, X(i), 4.6, 1.0, 0.6, 0.6, 1.5));
   keys.forEach((k, i) => { bins[k] = mBox(k + ' : 0', '#e8dcc2', KX(i), 1.2, 1.5, 0.7, 0.7); cnt[k] = 0; });
+  code(['for word in words: count[word] += 1'], 0, 6.4);
+  say('數頻率：走過每個 word，放進 dict：count[word] += 1', '');
+  await step(tok);                                   // 2773.8 counts the frequency of each word
   for (let i = 0; i < 5; i++) {
-    const k = W[i]; glow(ws[i], GOLD); move(ws[i], KX(keys.indexOf(k)), 2.3); await beat(tok, 700);
-    kill(ws[i]); cnt[k]++; relabel(bins[k], k + ' : ' + cnt[k]); glow(bins[k], GOLD); await beat(tok, 300); glow(bins[k], null);
+    const k = W[i]; glow(ws[i], GOLD); move(ws[i], KX(keys.indexOf(k)), 2.3); await beat(tok, 300);
+    kill(ws[i]); cnt[k]++; relabel(bins[k], k + ' : ' + cnt[k]); glow(bins[k], GOLD); await beat(tok, 120); glow(bins[k], null);
   }
-  say('總時間 ∝ 所有 word 長度和', '= 文件長度 → 線性 w.h.p.');
-  await beat(tok, 2400);
-  say('另一法：先排序，再數連續相同', 'sort 之後相同 word 排在一起');
-  await beat(tok, 1900);
+  say('就數出了每個 word 出現幾次', 'the : 2');
+  await step(tok);                                   // 2778.0 dict operations: constant w.h.p.
+  okT('每次 count[word] += 1：Θ(1) w.h.p.', 0, 3.4);
+  say('dict 的操作是常數時間 w.h.p.', '');
+  await step(tok);                                   // 2798.5 sum of word lengths = document length → linear
+  pkt('總時間 ∝ 所有 word 長度和 = 文件長度', 0, 0.2);
+  say('word 可能很長：總時間是所有 word 長度的和，也就是文件長度', '線性時間 w.h.p.');
+  await step(tok);                                   // 2814.8 introduced in version 4
+  note('第 4 版加入：速度明顯提升', 4.4, 5.2);
+  me.mood('happy');
+  say('這個做法在第 4 版加入，速度明顯變快', '');
+  await step(tok);                                   // 2824.5 alternative: sort, then count runs
+  bub('另一法：先排序，相同的 word 會排在一起再數', 0, 5.4);
+  say('另一種做法：先把 words 排序，相同的排在一起，再數連續幾個', '速度差不多');
+  await step(tok);                                   // 2849.8 splitting: scan, non-alphanumeric → new word
+  pkt('切字：掃過字串，遇到非英數就切 → 線性', -2.6, 7.2);
+  say('步驟一切字：掃過字串，遇到非英數字元就開始新 word，線性時間', '');
+  await step(tok);                                   // 2867.8 fancy Pythonista: regular expressions
+  code(['re.findall(r"\\w+", doc)'], 2.6, 7.2);
+  say('厲害的 Python 玩家可能用 regular expression 一行搞定', '');
+  await step(tok);                                   // 2886.9 re can take exponential time
+  noT('re 一般可能要指數時間：要小心！', 2.6, 6.4); me.mood('wow');
+  say('但 re 一般可能要指數時間：不知道怎麼實作就要小心', '簡單掃描就好');
 }]);
 
 // ════════ P7frcB_-g4w（MIT 6.006 Rec1：Asymptotic Complexity, Peak Finding） ════════
-// 01:56 只留主導項：放大尺度後雜訊看不見
+// 01:56 只留主導項：放大尺度後雜訊看不見（10 steps）
 FRAG.push(['algmit1-dominant-term', '放大尺度：只剩主導項 x²', async (tok) => {
   fresh([0, 3.4, 12], [0, 3.0, 0]);
   const g = (x) => 1.1 * x * x + 8 * Math.pow(x, 1.5) * Math.sin(x), f = (x) => x * x;
-  const ax = mAxes('x', 'y');
-  say('小尺度：g(x) 抖得很厲害', 'x ∈ [0, 20]');
-  const sc = tag('0 … 20', 'idx', 0, -0.2);
-  let l1 = mPlot(g, 20, 1300, '#dd8238'), l2 = mPlot(f, 20, 1300, '#4b9ee2');
+  let fm = null, l1 = null, l2 = null, sc = null;
+  await step(tok);                                   // 116.2 the hardest, most important part
+  const me = buddy('', '', M.gold, 5.8, 0, 1.6, 0.6);
+  bub('整門課最難也最重要！', 4.4, 2.0, 1.6);
+  say('整門課最難、也最重要的部分：asymptotic complexity', '漸近複雜度');
+  await step(tok);                                   // 152.0 a long, horrible function
+  fm = cube('g(x) = 1.1x² + 8x^1.5·sin x + …', M.paper, [6.4, 0.6, 0.4], 0, 6.9, 0, 1.5);
+  me.mood('sad');
+  say('一個又長又醜的函數：要直接推理它會很痛苦', '');
+  await step(tok);                                   // 159.5 … is Θ(x²)
+  relabel(fm, 'g(x) = 1.1x² + 8x^1.5·sin x + …  = Θ(x²)'); glow(fm, GOLD);
+  me.mood('happy');
+  say('可以簡單地寫成 Θ(x²)', '');
+  await step(tok);                                   // 169.5 everything else and the constant go away
+  pkt('其他項拿掉、常數 1.1 也拿掉', 0, 6.1);
+  say('後面那些項全部拿掉，連前面的常數 1.1 也拿掉', '');
+  await step(tok);                                   // 185.8 plot on 0 … 200
+  glow(fm, null);
+  mAxes('x', 'y');
+  sc = tag('尺度 0 … 200', 'idx', 0, -0.2);
+  l1 = await mDraw(tok, g, 20, 1300, '#dd8238', {}, 1100); l2 = await mDraw(tok, f, 20, 1300, '#4b9ee2', {}, 700);
   tag('g(x)', 'ptr', -5.6, 4.6); tag('x²', 'ptr', -5.6, 3.8);
-  await beat(tok, 3200);
-  say('把尺度放大一萬倍', 'x ∈ [0, 200000]');
-  kill(l1); kill(l2); txt(sc, '0 … 200000');
-  l1 = mPlot(g, 2e5, 5.0e10, '#dd8238'); l2 = mPlot(f, 2e5, 5.0e10, '#4b9ee2');
-  await beat(tok, 3000);
-  say('雜訊（低次項）完全看不見', '低次項成長得比 x² 慢');
-  await beat(tok, 2600);
-  say('只留主導項，常數也丟掉', 'g(x) = Θ(x²)');
-  await beat(tok, 1900);
-  void ax;
+  say('畫在小尺度上：g(x) 抖來抖去，跟 x² 看起來不一樣', '');
+  await step(tok);                                   // 217.9 scale up to 200,000
+  kill(l1); kill(l2); txt(sc, '尺度 0 … 200,000');
+  l1 = await mDraw(tok, g, 2e5, 5.0e10, '#dd8238', {}, 900); l2 = mPlot(f, 2e5, 5.0e10, '#4b9ee2');
+  say('把尺度放大到 200,000：兩條線幾乎疊在一起', '');
+  await step(tok);                                   // 232.1 the noise disappears
+  okT('抖動看不見了', 0, 5.4);
+  say('尺度越大，那些「雜訊」越看不到', '');
+  await step(tok);                                   // 237.0 the noise is in the lower-order term
+  bub('雜訊都在 x^1.5 這種低次項', 0, 6.1);
+  say('雜訊都來自低次項（x^1.5 那一項）', '');
+  await step(tok);                                   // 249.4 x² grows much faster
+  pkt('x 越大：x² 成長比 x^1.5 快很多', 0, 4.6);
+  say('輸入越大，x² 成長得比低次項快很多', '');
+  await step(tok);                                   // 257.3 keep only the dominant term
+  me.mood('happy'); await me.hop(tok);
+  say('只在乎成長速度時，只留主導項就好', 'g(x) = Θ(x²)');
 }]);
 
-// 04:39 Θ：上下界只差常數倍（x² 與 1.2x²）
+// 04:39 Θ：上下界只差常數倍（x² 與 1.2x²）（12 steps）
 FRAG.push(['algmit1-theta-bounds', 'Θ：x² ≤ g ≤ 1.2x² 夾住', async (tok) => {
   fresh([0, 3.4, 12], [0, 3.0, 0]);
-  mAxes('x', 'y');
   const g = (x) => 1.1 * x * x + 0.6 * Math.pow(x, 1.5) * Math.sin(x);
-  say('一個複雜的 g(x)', '≈ 1.1x² 加上抖動的低次項');
-  mPlot(g, 100, 1.3e4, '#dd8238', { N: 220 });
-  await beat(tok, 2400);
-  say('下界：x²', 'g(x) ≥ 1·x²（x 夠大）');
-  mPlot((x) => x * x, 100, 1.3e4, '#2fc092'); tag('x²', 'ptr', 5.5, 0.3 + 5.6 * 1e4 / 1.3e4);
-  await beat(tok, 2400);
-  say('上界：1.2x²', 'g(x) ≤ 1.2·x²');
-  mPlot((x) => 1.2 * x * x, 100, 1.3e4, '#9b7ef4'); tag('1.2x²', 'ptr', 5.7, 5.5);
-  await beat(tok, 2400);
-  say('上下界只差常數倍 → Θ', 'g(x) = Θ(x²)');
-  await beat(tok, 2400);
-  say('筆記常寫 O，多半其實指 Θ', 'Ω 下界、O 上界、Θ 兩者都有');
-  await beat(tok, 1900);
+  let syms = [];
+  await step(tok);                                   // 279.1 three symbols: Θ, O, Ω
+  syms = ['Θ', 'O', 'Ω'].map((s, i) => cube(s, M.purple, [0.8, 0.8, 0.8], -1.2 + i * 1.2, 6.6, 0, 1.5));
+  say('漸近複雜度有三個符號：Θ、O、Ω', '');
+  await step(tok);                                   // 292.3 g = complicated, f = simple
+  mAxes('x', 'y');
+  await mDraw(tok, g, 100, 1.3e4, '#dd8238', { N: 220 }, 1200); tag('g(x)', 'ptr', -4.4, 2.0);
+  say('複雜的函數叫 g，簡單的函數叫 f', '');
+  await step(tok);                                   // 307.0 g = Θ(f) means two things
+  glow(syms[0], GOLD);
+  note('g(x) = Θ(f(x))：代表兩件事', 3.4, 6.6);
+  say('說 g(x) = Θ(f(x))，代表兩件事', '');
+  await step(tok);                                   // 314.8 a lower bound like x²
+  await mDraw(tok, (x) => x * x, 100, 1.3e4, '#2fc092', {}, 900); tag('下界 x²', 'ptr', 5.6, 0.3 + 5.6 * 1e4 / 1.3e4 - 0.4);
+  say('第一：有一個長得像 x² 的下界', '');
+  await step(tok);                                   // 322.8 an upper bound that also looks like x²
+  await mDraw(tok, (x) => 1.2 * x * x, 100, 1.3e4, '#9b7ef4', {}, 900); tag('上界', 'ptr', 5.6, 5.9);
+  say('第二：也有一個長得像 x² 的上界', '');
+  await step(tok);                                   // 333.9 promise: stays between the bounds
+  okT('g 一直夾在中間', -2.6, 5.4);
+  say('保證：g 永遠夾在上下界中間，而且兩個界長得差不多', '');
+  await step(tok);                                   // 350.8 not the same: differ by a constant
+  pkt('上下界不必相同：可以差一個常數倍', 0, 4.7);
+  say('上下界不可能一模一樣，但只能差一個常數倍', '');
+  await step(tok);                                   // 371.4 f′ = 1.2x²
+  tag('= 1.2x²', 'ptr', 5.6, 5.3);
+  say('例如下界 x²、上界 1.2x²', '');
+  await step(tok);                                   // 380.5 g's dominant term is 1.1x²
+  bub('g 的主導項 1.1x²：夾在 1 和 1.2 之間', -2.0, 6.2);
+  say('g 的主導項是 1.1x²，x 夠大時一定夾在 x² 和 1.2x² 中間', '');
+  await step(tok);                                   // 399.7 bounded above & below, same up to a constant → Θ
+  okT('上下都夾住、只差常數 → Θ(x²)', 0, 3.6);
+  say('上面夾得住、下面也夾得住，只差常數倍：這就是 Θ', '');
+  await step(tok);                                   // 411.8 Θ is hard to say → people write O
+  glow(syms[1], GOLD);
+  say('Θ 不好唸，所以大家常說、常寫 O', '');
+  await step(tok);                                   // 423.5 O in the notes usually means Θ
+  note('講義裡的 O 多半其實指 Θ', 3.4, 5.8);
+  say('講義裡看到 O，多半其實是指 Θ', '');
 }]);
 
-// 07:25 O：x(1 + sin x) ≤ 2x，但沒有好的下界
+// 07:25 O：x(1 + sin x) ≤ 2x，但沒有好的下界（9 steps）
 FRAG.push(['algmit1-bigo-sine', 'O：x(1 + sin x) ≤ 2x', async (tok) => {
   fresh([0, 3.4, 12], [0, 3.0, 0]);
+  let me = null;
+  await step(tok);                                   // 444.8 an example where O vs Θ matters
   mAxes('x', 'y');
-  say('g(x) = x(1 + sin x)', '無限多次碰到 0');
-  mPlot((x) => x * (1 + Math.sin(x)), 30, 64, '#dd8238', { N: 240 });
-  await beat(tok, 3000);
-  say('但永遠不超過 2x', 'g(x) ≤ 2x');
-  mPlot((x) => 2 * x, 30, 64, '#9b7ef4'); tag('2x', 'ptr', 5.5, 5.6);
-  await beat(tok, 2400);
-  say('下界只能是 0 → 只有上界', 'g(x) = O(x)，不是 Θ(x)');
-  await beat(tok, 3200);
-  say('實務最在意 worst case 保證', '例：搜尋要在 200 ms 內回應');
-  await beat(tok, 1900);
+  me = buddy('', '', M.gold, 6.0, 0, 1.6, 0.55);
+  say('什麼時候 O 和 Θ 的差別很重要？看一個例子', '');
+  await step(tok);                                   // 462.8 g(x) = x(1 + sin x)
+  await mDraw(tok, (x) => x * (1 + Math.sin(x)), 30, 64, '#dd8238', { N: 240 }, 1400);
+  tag('g(x) = x(1 + sin x)', 'ptr', -2.6, 4.6);
+  say('g(x) = x(1 + sin x)', '');
+  await step(tok);                                   // 479.9 hits 0 infinitely often → lower bound 0
+  for (const k of [1, 2, 3, 4]) tag('0', 'pkt', -5 + 10 * (k * 2 * Math.PI - Math.PI / 2) / 30, 0.6);
+  noT('下界只能是 0', -2.6, 3.8);
+  say('它會在無限多個點碰到 0：所以下界只能是 0', '');
+  await step(tok);                                   // 493.4 never bigger than 2x
+  await mDraw(tok, (x) => 2 * x, 30, 64, '#9b7ef4', {}, 900); tag('2x', 'ptr', 5.5, 5.6);
+  say('但它永遠不會超過 2x', 'sin x ≤ 1');
+  await step(tok);                                   // 514.1 only an upper bound → g = O(x)
+  okT('g(x) = O(x)', 3.4, 6.4);
+  say('只有上界、沒有好的下界：寫 g(x) = O(x)', '');
+  await step(tok);                                   // 523.6 that's what O really means
+  note('O 真正的意思：只保證上界', -2.6, 6.4);
+  say('這才是 O 真正的意思：只保證上界，不保證下界', '');
+  await step(tok);                                   // 532.6 coding: you care about the worst case
+  me.mood('wow');
+  say('寫程式時，我們最在意最壞情況：不能只看運氣好', '');
+  await step(tok);                                   // 549.1 Google: answer in 200 ms
+  const clk = pkt('⏱ 200 ms 內回應', 4.4, 2.6);
+  say('例：Google 搜尋必須在 200 毫秒內回應', '');
+  await step(tok);                                   // 553.8 at 400 ms they lose users (and money)
+  noT('慢到 400 ms：流失使用者、少賺很多錢', 3.4, 1.8); me.mood('sad');
+  say('慢到 400 毫秒就會流失使用者：上界保證非常值錢', '');
+  void clk;
 }]);
 
-// 10:41 沒有 Θ：(1 + sin x)·x^1.5 + x^1.4 介於 x^1.4 與 3x^1.5
+// 10:41 沒有 Θ：(1 + sin x)·x^1.5 + x^1.4 介於 x^1.4 與 3x^1.5（14 steps）
 FRAG.push(['algmit1-no-theta', '上下界指數不同 → 沒有 Θ', async (tok) => {
   fresh([0, 3.4, 12], [0, 3.0, 0]);
-  mAxes('x', 'y');
   const X = 60, Y = 1450;
-  say('一個抖動很大的函數', 'g(x) = (1 + sin x)·x^1.5 + x^1.4');
-  mPlot((x) => (1 + Math.sin(x)) * Math.pow(x, 1.5) + Math.pow(x, 1.4), X, Y, '#dd8238', { N: 260 });
-  await beat(tok, 2600);
-  say('下界 x^1.4（sin x = −1 時碰到）', 'g(x) ≥ x^1.4');
-  mPlot((x) => Math.pow(x, 1.4), X, Y, '#2fc092'); tag('x^1.4', 'ptr', 5.7, 0.3 + 5.6 * Math.pow(60, 1.4) / Y);
-  await beat(tok, 2400);
-  say('上界 3·x^1.5', 'g(x) ≤ 2x^1.5 + x^1.4 ≤ 3x^1.5');
-  mPlot((x) => 3 * Math.pow(x, 1.5), X, Y, '#9b7ef4'); tag('3x^1.5', 'ptr', 5.7, 5.6);
-  await beat(tok, 2400);
-  say('兩個界的指數不同：不只差常數', '寫不出 Θ(·)');
-  await beat(tok, 2400);
-  say('只能寫 Ω 與 O', 'g = Ω(x^1.4)，g = O(x^1.5)');
-  await beat(tok, 1900);
+  let cmp = [];
+  await step(tok);                                   // 641.7 another function
+  mAxes('x', 'y');
+  await mDraw(tok, (x) => (1 + Math.sin(x)) * Math.pow(x, 1.5) + Math.pow(x, 1.4), X, Y, '#dd8238', { N: 260 }, 1500);
+  tag('g(x) = (1 + sin x)·x^1.5 + x^1.4', 'ptr', -1.6, 6.4);
+  say('再畫一個函數：g(x) = (1 + sin x)·x^1.5 + x^1.4', '');
+  await step(tok);                                   // 672.9 g ≥ x^1.4
+  await mDraw(tok, (x) => Math.pow(x, 1.4), X, Y, '#2fc092', {}, 800); tag('x^1.4', 'ptr', 5.7, 0.3 + 5.6 * Math.pow(60, 1.4) / Y);
+  say('它一定 ≥ x^1.4（sin x = −1 時正好碰到）', '');
+  await step(tok);                                   // 689.1 sin x ≤ 1 → (1 + sin x) ≤ 2
+  bub('sin x ≤ 1 → 1 + sin x ≤ 2', -2.6, 5.5);
+  say('sin x 不會超過 1，所以 1 + sin x 最多是 2', '');
+  await step(tok);                                   // 699.2 upper bound 3x^1.5
+  await mDraw(tok, (x) => 3 * Math.pow(x, 1.5), X, Y, '#9b7ef4', {}, 800); tag('3x^1.5', 'ptr', 5.7, 5.6);
+  say('所以 3·x^1.5 是上界', 'g ≤ 2x^1.5 + x^1.4 ≤ 3x^1.5');
+  await step(tok);                                   // 713.3 for Θ the bounds must be alike
+  note('Θ 的條件：上下界只能差常數倍', 2.6, 4.6);
+  say('看起來像剛剛的情況，但用 Θ 時上下界必須很像', '');
+  await step(tok);                                   // 725.8 they differ in the exponent
+  noT('1.4 ≠ 1.5：差在指數，不只常數倍', 2.6, 3.8);
+  say('這裡上下界差在「指數」，不只差一個常數倍', '');
+  await step(tok);                                   // 747.7 can't write Θ of anything
+  const th = cube('g(x) = Θ( ? )', M.paper, [3.0, 0.6, 0.4], -3.4, 4.4, 0, 1.2); glow(th, RED);
+  say('所以 g(x) = Θ(任何東西) 都不對', '');
+  await step(tok);                                   // 758.9 Ω(x^1.4)
+  okT('g = Ω(x^1.4)', -3.4, 3.6);
+  say('但可以說 g = Ω(x^1.4)：Ω 只給下界', '助教口誤說成 Θ，字幕的 1/4 其實是 1.4');
+  await step(tok);                                   // 765.8 O(x^1.5)
+  okT('g = O(x^1.5)', -3.4, 2.9);
+  say('也可以說 g = O(x^1.5)：O 只給上界', '');
+  await step(tok);                                   // 785.8 use O for the rest of the course (meaning Θ)
+  pkt('之後整門課都寫 O（多半是指 Θ）', 0, 0.9);
+  say('這種怪函數只能用 O 和 Ω；之後課程大多寫 O，意思多半是 Θ', '');
+  await step(tok);                                   // 810.0 typical running times in this course
+  ['1', 'log n', 'n', 'n log n', 'n²'].forEach((t, i) => cmp.push(cube('O(' + t + ')', M.green, [1.7, 0.55, 0.5], -4.4 + i * 2.2, 7.3, 0, 1.2)));
+  say('這門課的執行時間幾乎都是：1、log n、n、n log n、n²', '');
+  await step(tok);                                   // 830.3 anything else → probably a mistake
+  bub('解出別的東西？多半是算錯了', 3.4, 6.6);
+  say('解遞迴式得到其他東西，多半表示你算錯了', '');
+  await step(tok);                                   // 861.9 why x^1.5 can't be Θ: upper yes, lower no
+  pkt('x^1.5：上界可以，下界不行', -3.4, 2.2);
+  say('為什麼不能寫 Θ(x^1.5)？當上界可以，當下界不行', '它無限多次掉到 x^1.4');
+  await step(tok);                                   // 947.8 Ω lower, O upper, Θ both
+  note('Ω 下界 ・ O 上界 ・ Θ 兩者都有', 0, 1.6);
+  say('整理：Ω 是下界、O 是上界、Θ 是上下界都有', '');
 }]);
 
-// 13:30 本課常見的五種 + 15:23 練習：10⁸⁰、(20n)⁷、log n¹⁰⁰、log₅ n
+// 16:17 化簡練習：10⁸⁰、(20n)⁷、log n¹⁰⁰、log₅ n（11 steps）
 FRAG.push(['algmit1-asym-ex1', '化簡練習：10⁸⁰、(20n)⁷、log n¹⁰⁰、log₅ n', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.0, 0]);
-  const R = [['10⁸⁰', 'Θ(1)', '10⁸⁰ ≈ 宇宙原子數，仍是常數', '跟 n 無關 → Θ(1)'],
-    ['(20n)⁷', 'Θ(n⁷)', '指數分配進去', '20⁷·n⁷，20⁷ 是常數'],
-    ['log n¹⁰⁰', 'Θ(log n)', '指數拉到 log 前面', '= 100·log n'],
-    ['log₅ n', 'Θ(log n)', '換底只差常數倍', '= log n / log 5']];
-  for (let i = 0; i < 4; i++) {
-    const y = 5.6 - i * 1.4;
-    say(R[i][2], R[i][3]);
-    cube(R[i][0], M.paper, [2.4, 0.7, 0.8], -2.8, y, 0, 2);
-    await beat(tok, 1500);
-    line(-1.5, y, 1.4, y, 0, M.brown); tag('→', 'idx', 0, y + 0.3);
-    const a = cube(R[i][1], M.green, [2.2, 0.7, 0.8], 2.8, y, 0, 2); glow(a, GREEN);
-    await beat(tok, 1900); glow(a, null);
-  }
-  say('log 裡的指數與底數 → 常數', '本課答案多半是 1、log n、n、n log n、n²');
-  await beat(tok, 1900);
+  const rowY = (i) => 5.6 - i * 1.4;
+  const lhs = (t, i) => cube(t, M.paper, [2.4, 0.7, 0.8], -2.8, rowY(i), 0, 2);
+  const rhs = (t, i) => { line(-1.5, rowY(i), 1.4, rowY(i), 0, M.brown); tag('→', 'idx', 0, rowY(i) + 0.3); const a = cube(t, M.green, [2.2, 0.7, 0.8], 2.8, rowY(i), 0, 2); glow(a, GREEN); return a; };
+  await step(tok);                                   // 977.3 exercises: f(n) = Θ(?)
+  const me = buddy('', '?', M.gold, -6.0, 0, 1.0, 0.6);
+  say('練習：給一個 f(n)，寫成 Θ(什麼)', '');
+  await step(tok);                                   // 987.3 f(n) = 10⁸⁰
+  lhs('10⁸⁰', 0);
+  say('第一題：f(n) = 10⁸⁰', '');
+  await step(tok);                                   // 1023.8 atoms in the universe → Θ(1)
+  rhs('Θ(1)', 0); tag('≈ 宇宙原子數，但仍是常數', 'idx', 5.4, rowY(0) - 0.6);
+  say('10⁸⁰ 大約是宇宙的原子數；但它跟 n 無關，就是常數 Θ(1)', '');
+  await step(tok);                                   // 1043.8 don't say everything is Θ(1) on exams
+  noT('考試別說「什麼都是 Θ(1)」', 4.6, 6.8);
+  say('真實輸入不會比它大，但考試不能說一切都是 Θ(1)', '');
+  await step(tok);                                   // 1049.9 (20n)⁷
+  lhs('(20n)⁷', 1);
+  say('第二題：(20n)⁷', '');
+  await step(tok);                                   // 1078.4 distribute: 20⁷·n⁷ → Θ(n⁷)
+  rhs('Θ(n⁷)', 1); tag('= 20⁷ · n⁷，20⁷ 是常數', 'idx', 5.4, rowY(1) - 0.6);
+  say('指數分配進去：20⁷·n⁷；20⁷ 是常數，拿掉', 'Θ(n⁷)');
+  await step(tok);                                   // 1116.3 log n¹⁰⁰
+  lhs('log n¹⁰⁰', 2);
+  say('複習 log 的規則：log n¹⁰⁰ 是多少？', '');
+  await step(tok);                                   // 1138.2 exponent comes out front: 100 log n
+  rhs('Θ(log n)', 2); tag('= 100 · log n', 'idx', 5.4, rowY(2) - 0.6);
+  say('log 裡的指數可以拉到前面變常數倍：100·log n', 'Θ(log n)');
+  await step(tok);                                   // 1150.4 log₅ n
+  lhs('log₅ n', 3);
+  say('第四題：以 5 為底的 log₅ n', '');
+  await step(tok);                                   // 1173.5 = log n / log 5 → Θ(log n)
+  rhs('Θ(log n)', 3); tag('= log n / log 5', 'idx', 5.4, rowY(3) - 0.6);
+  say('換底公式：log n / log 5，只差常數倍', 'Θ(log n)');
+  await step(tok);                                   // 1188.0 exponents and bases inside log → constants
+  me.set('!'); me.mood('happy');
+  note('log 裡的指數、底數 → 都變常數倍', 0, 7.1);
+  say('log 裡的指數和底數，都只會變成常數倍', '');
 }]);
 
-// 20:18 CS 的 log 底數是 2；log log n 的兩題
+// 20:18 CS 的 log 底數是 2；log log n 的兩題（12 steps）
 FRAG.push(['algmit1-loglog', 'log 的底數與 log log n', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.0, 0]);
-  say('CS 的「自然」底數是 2', 'log n = log₂ n；ln = 底數 e');
-  cube('lg n = log₂ n', M.teal, [3.2, 0.7, 0.8], 0, 6.0, 0, 2);
-  await beat(tok, 2400);
-  say('底數拿掉、指數拿掉', 'log(log₁₀₀ n) = log(log n / log 100)');
-  const a = cube('log(log₁₀₀ n)', M.paper, [5.6, 0.7, 0.8], 0, 4.4, 0, 2);
-  await beat(tok, 1800);
-  relabel(a, 'log log n − log log 100'); await beat(tok, 1600);
+  let a = null, b = null;
+  await step(tok);                                   // 1218.4 is there a fixed base for logs?
+  const me = buddy('', '?', M.gold, -6.0, 0, 1.0, 0.6);
+  say('log 有固定的底數嗎？「自然」的底數是多少？', '');
+  await step(tok);                                   // 1234.8 math: natural log, base e
+  pkt('數學：ln，底數 e', -3.4, 6.6);
+  say('數學的自然對數 ln：底數是 e', '');
+  await step(tok);                                   // 1238.8 CS: natural base is 2 (a bit)
+  pkt('CS：底數 2（一個 bit 有 2 種值）', 2.4, 6.6);
+  say('電腦科學的「自然」底數是 2：一個 bit 只有兩種值', '');
+  await step(tok);                                   // 1246.4 log n means log₂ n; base rarely matters
+  cube('log n = log₂ n', M.teal, [3.2, 0.7, 0.8], 0, 5.6, 0, 2);
+  say('這門課 log n 就是 log₂ n；做漸近分析時底數其實不重要', '');
+  await step(tok);                                   // 1288.7 log(log₁₀₀ n)
+  a = cube('log(log₁₀₀ n)', M.paper, [5.6, 0.7, 0.8], 0, 4.3, 0, 2);
+  say('下一題：log(log₁₀₀ n)', '');
+  await step(tok);                                   // 1305.0 one step: log log n
   relabel(a, 'Θ(log log n)'); glow(a, GREEN);
-  await beat(tok, 2000);
-  say('難一點：log₅(log n¹⁰⁰)', '底數 5 只是常數倍');
-  const b = cube('log₅(log n¹⁰⁰)', M.paper, [5.6, 0.7, 0.8], 0, 2.6, 0, 2);
-  await beat(tok, 1800);
-  say('裡面的 100 變成乘法', '≈ log(100·log n)');
-  relabel(b, '≈ log(100 · log n)'); await beat(tok, 1800);
-  say('log 把乘法變加法', '= log 100 + log log n');
-  relabel(b, 'log 100 + log log n'); await beat(tok, 1800);
-  say('常數項被 log log n 蓋過', 'Θ(log log n)');
+  say('同學一步就答出來：Θ(log log n)', '');
+  await step(tok);                                   // 1325.7 base goes out, exponent goes out
+  bub('底數拿掉、指數拿掉', 3.6, 4.9);
+  say('理由：底數拿掉、指數拿掉，剩 log log n', '');
+  await step(tok);                                   // 1351.2 harder: log₅(log n¹⁰⁰)
+  b = cube('log₅(log n¹⁰⁰)', M.paper, [5.6, 0.7, 0.8], 0, 2.6, 0, 2);
+  say('難一點：log₅(log n¹⁰⁰)', '要多做一步');
+  await step(tok);                                   // 1373.4 still log log n
+  tag('還是 log log n？', 'ptr alt', 3.8, 2.6);
+  say('答案還是 log log n，但理由不太一樣', '');
+  await step(tok);                                   // 1386.4 base out; the 100 comes out front
+  relabel(b, '≈ log(100 · log n)'); glow(b, GOLD);
+  say('底數 5 拿掉；裡面的 100 拉到前面變成乘法', '≈ log(100·log n)');
+  await step(tok);                                   // 1404.0 = log 100 + log log n
+  relabel(b, 'log 100 + log log n');
+  say('log 把乘法變成加法：log 100 + log log n', 'log(ab) = log a + log b');
+  await step(tok);                                   // 1424.8 constant vanishes → Θ(log log n)
   relabel(b, 'Θ(log log n)'); glow(b, GREEN);
-  await beat(tok, 1900);
+  me.set('!'); me.mood('happy');
+  say('log 100 是常數，n 變大時可以忽略', 'Θ(log log n)');
 }]);
 
-// 24:01 log C(n, n/2) 用 Stirling → Θ(n)
+// 24:47 log C(n, n/2) 用 Stirling → Θ(n)（10 steps）
 FRAG.push(['algmit1-log-binom', 'log C(n, n/2) = Θ(n)（Stirling）', async (tok) => {
   fresh([0, 3.8, 13.5], [0, 3.4, 0]);
-  const S = [['log C(n, n/2)', '目標：化簡這個式子', '先展開組合數'],
-    ['= log [ n! / ((n/2)!)² ]', 'C(n, k) = n! / (k!(n−k)!)', 'k = n/2'],
-    ['n! ≈ √(2πn) · (n/e)ⁿ', 'Stirling 近似', '套到 n! 和 (n/2)!'],
-    ['C(n, n/2) ≈ 2ⁿ / √(πn/2)', '(n/e)ⁿ ÷ (n/2e)ⁿ = 2ⁿ', '根號部分剩 √(πn/2)'],
-    ['log ≈ n − ½·log n + 常數', 'log 2ⁿ − log √(πn/2)', '½ log n 比 n 小很多'],
-    ['= Θ(n)', '只留主導項', '果然是常見的五種之一']];
-  for (let i = 0; i < S.length; i++) {
-    say(S[i][1], S[i][2]);
-    const c = cube(S[i][0], i === S.length - 1 ? M.green : M.paper, [5.8, 0.7, 0.8], 0, 6.6 - i * 1.15, 0, 2);
-    if (i === S.length - 1) glow(c, GREEN);
-    await beat(tok, 2600);
-  }
-  await beat(tok, 1400);
+  const Y = (i) => 6.9 - i * 0.82;
+  const row = (t, i, c) => cube(t, c || M.paper, [6.4, 0.6, 0.6], 0, Y(i), 0, 1.5);
+  await step(tok);                                   // 1487.7 log of (n choose n/2)
+  const me = buddy('', '?', M.gold, -6.0, 0, 1.0, 0.6);
+  row('log C(n, n/2)', 0);
+  say('題目：log 裡面是 n choose n/2', '組合數 C(n, n/2)');
+  await step(tok);                                   // 1531.7 = n! / ((n/2)!·(n/2)!)
+  row('= log [ n! / ((n/2)! · (n/2)!) ]', 1);
+  say('先展開組合數：n! 除以 (n/2)! 的平方', 'C(n, k) = n! / (k!(n−k)!)');
+  await step(tok);                                   // 1545.8 hint: Stirling
+  pkt("Stirling：n! ≈ √(2πn)·(n/e)ⁿ", 4.2, 0.6);
+  say('提示：Stirling 近似 n! ≈ √(2πn)·(n/e)ⁿ', '');
+  await step(tok);                                   // 1578.8 factorials grow exponentially
+  bub('階乘長得像指數！', -4.6, 2.2);
+  say('階乘成長得像指數一樣快', '');
+  await step(tok);                                   // 1602.6 plug Stirling into n! and (n/2)!
+  row('≈ log [ √(2πn)(n/e)ⁿ / (√(πn)·(n/2e)^(n/2))² ]', 2);
+  say('把 Stirling 代進 n! 和 (n/2)!', '');
+  await step(tok);                                   // 1740.5 (n/e)ⁿ ÷ (n/2e)ⁿ = 2ⁿ
+  row('(n/e)ⁿ ÷ (n/2e)ⁿ = 2ⁿ', 3);
+  say('次方都是 n，可以合併：(n/e)ⁿ ÷ (n/2e)ⁿ = 2ⁿ', '');
+  await step(tok);                                   // 1771.0 → 2ⁿ / √n (times a constant)
+  row('C(n, n/2) ≈ 2ⁿ / √(πn/2)', 4);
+  say('約掉之後：2ⁿ 除以 √n 等級的東西', 'π 是常數，隨時可以丟');
+  await step(tok);                                   // 1795.0 log 2ⁿ − log √n
+  row('log ≈ log 2ⁿ − log √n + 常數', 5);
+  say('取 log：除法變減法，log 2ⁿ − log √n', '');
+  await step(tok);                                   // 1838.8 = n − ½ log n
+  row('= n − ½ log n + 常數', 6);
+  say('log 2ⁿ = n、log √n = ½ log n', '');
+  await step(tok);                                   // 1866.8 log n ≪ n → Θ(n)
+  const z = row('= Θ(n)', 7, M.green); glow(z, GREEN);
+  me.set('!'); me.mood('happy'); await me.hop(tok);
+  say('log n 比 n 小很多，整個拿掉：Θ(n)', '果然是常見的五種之一');
 }]);
 
-// 31:37 1D peak 的 pseudocode：3 4 5 6 7 6 5 4
+// 32:00 1D peak 的 pseudocode：3 4 5 6 7 6 5 4（14 steps）
 FRAG.push(['algmit1-rec-peak1d', '1D peak：3 4 5 6 7 6 5 4', async (tok) => {
   fresh([0, 4.4, 14], [0, 3.4, 0]);
   const A = [3, 4, 5, 6, 7, 6, 5, 4], X = mX(8, 1.1);
-  const bs = A.map((v, i) => mBar(v, v * 0.6, M.blue, X(i)));
-  const cd = code(['1. 看中間元素                         Θ(1)', '2. 看兩鄰：是 local peak 就結束       Θ(1)', '3. 否則往較大的鄰居那半遞迴          T(n/2)'], 0, 7.6, 0.55);
-  say('像 binary search 一樣', '陣列 3 4 5 6 7 6 5 4');
-  await beat(tok, 1800);
-  cd.hl(0); glow(bs[3], GOLD); let cur = tag('mid', 'ptr', X(3), 4.4);
-  say('中間是 6', '看 a[4] = 6'); await beat(tok, 1500);
-  cd.hl(1); glow(bs[4], RED); say('右鄰 7 > 6：不是 peak', '兩邊都要檢查'); await beat(tok, 1900);
-  cd.hl(2); for (let i = 0; i <= 3; i++) { tint(bs[i], GRAY); glow(bs[i], null); } glow(bs[4], null); kill(cur);
-  say('往右半遞迴：7 6 5 4', '問題大小剩 n/2'); await beat(tok, 1600);
-  cd.hl(0); glow(bs[5], GOLD); cur = tag('mid', 'ptr', X(5), 4.4); await beat(tok, 1200);
-  cd.hl(1); glow(bs[4], RED); say('左鄰 7 > 6：往左', '剩一個元素：7'); await beat(tok, 1800);
-  for (let i = 5; i < 8; i++) { tint(bs[i], GRAY); glow(bs[i], null); } kill(cur);
-  glow(bs[4], GREEN); tag('peak', 'ptr alt', X(4), 5.0);
-  say('只剩一個元素 → 一定是 peak', 'base case');
-  await beat(tok, 2000);
-  say('每一步的時間加起來', 'T(n) = Θ(1) + Θ(1) + T(n/2)');
-  await beat(tok, 1900);
+  let bs = [], cd = null, me = null, eq = null;
+  await step(tok);                                   // 1920.0 back to lecture: 1D peak finding
+  say('回到 lecture 的 peak finding：先做 1D，再做 2D', '');
+  await step(tok);                                   // 1952.6 numbers 3, 4, 5, 6, 7, 6, 5, 4
+  bs = A.map((v, i) => mBar(v, v * 0.6, M.blue, X(i)));
+  A.forEach((v, i) => tag(String(v), 'idx', X(i), -0.35));
+  say('例子：3, 4, 5, 6, 7, 6, 5, 4', '');
+  await step(tok);                                   // 1968.2 a local peak: neighbours ≤ it
+  glow(bs[4], GREEN); okT('local peak', X(4), 5.0);
+  say('local peak：旁邊的數都 ≤ 它，沒有比它大的', '要盡快找到一個');
+  await step(tok);                                   // 2003.5 exactly like binary search
+  glow(bs[4], null);
+  cd = code(['1. 看中間元素', '2. 看兩鄰：是 local peak 就結束', '3. 否則往較大的鄰居那半遞迴'], 0, 7.6, 0.55);
+  say('快的演算法就像 binary search', '');
+  await step(tok);                                   // 2009.5 start in the middle
+  cd.hl(0); glow(bs[3], GOLD);
+  me = buddy('', '', M.gold, X(3), A[3] * 0.6, 0, 0.5);
+  say('從中間開始：中間是 6', '');
+  await step(tok);                                   // 2051.6 right side is 7 → not a peak
+  cd.hl(1); glow(bs[4], RED); me.look(1);
+  noT('右邊 7 > 6：不是 peak', X(5), 5.4);
+  say('右邊是 7，比 6 大：6 不是 local peak', '');
+  await step(tok);                                   // 2079.1 must check both sides
+  me.look(-1); await beat(tok, 500); me.look(0);
+  say('一般要兩邊都看：兩邊都不比它大，才是 peak', '');
+  await step(tok);                                   // 2094.7 a bigger one → go that way, cut in half
+  cd.hl(2); for (let i = 0; i <= 3; i++) { tint(bs[i], GRAY); glow(bs[i], null); }
+  glow(bs[4], null);
+  await mWalk(tok, me, X(5), A[5] * 0.6, 0, 600); glow(bs[5], GOLD);
+  say('有比較大的就往那邊走：切一半，看右半 7 6 5 4', '問題剩 n/2');
+  await step(tok);                                   // 2156.2 look at neighbours; if not a peak, recurse
+  cd.hl(1); glow(bs[4], RED); me.look(-1);
+  await beat(tok, 500);
+  for (let i = 5; i < 8; i++) { tint(bs[i], GRAY); glow(bs[i], null); }
+  await mWalk(tok, me, X(4), A[4] * 0.6, 0, 500); glow(bs[4], GREEN); me.mood('happy');
+  say('看鄰居、判斷是不是 peak；不是就遞迴：最後剩 7', '只剩一個元素 → 一定是 peak');
+  await step(tok);                                   // 2166.6 running time T(n)
+  cd.hl(-1);
+  eq = cube('T(n) = ?', M.paper, [5.6, 0.6, 0.5], 4.0, 1.2, 1.4, 1.2);
+  say('執行時間：用 T(n) 表示，把每一步的時間加起來', '');
+  await step(tok);                                   // 2186.0 look in the middle: Θ(1)
+  cd.hl(0); tag('Θ(1)', 'ptr', 4.9, 7.6);
+  say('第一步看中間：Θ(1)（不是 0，還是要看一下）', '');
+  await step(tok);                                   // 2209.3 look at neighbours: Θ(1)
+  cd.hl(1); tag('Θ(1)', 'ptr', 4.9, 7.05);
+  say('第二步看兩個鄰居：也是常數 Θ(1)', '');
+  await step(tok);                                   // 2257.1 same problem, half the size: T(n/2)
+  cd.hl(2); tag('T(n/2)', 'ptr', 4.9, 6.5);
+  say('第三步：一樣的問題，大小剩一半：T(n/2)', '');
+  await step(tok);                                   // 2287.6 T(n) = Θ(1) + Θ(1) + T(n/2)
+  relabel(eq, 'T(n) = Θ(1) + Θ(1) + T(n/2)'); glow(eq, GOLD); cd.hl(-1);
+  say('加起來：T(n) = Θ(1) + Θ(1) + T(n/2)', '= Θ(1) + T(n/2)');
 }]);
 
-// 38:30 展開遞迴式：i·c + T(n/2ⁱ)，令 n/2ⁱ = 1
+// 38:30 展開遞迴式：i·c + T(n/2ⁱ)，令 n/2ⁱ = 1（11 steps）
 FRAG.push(['algmit1-rec-unroll', '展開 T(n) = c + T(n/2) → Θ(log n)', async (tok) => {
   fresh([0, 3.8, 13.5], [0, 3.2, 0]);
-  const S = [['T(n) = c + T(n/2)', 'Θ(1) 寫成常數 c', '用定義展開'],
-    ['= 2c + T(n/4)', '再展開一次', 'T(n/2) = c + T(n/4)'],
-    ['= i·c + T(n/2ⁱ)', '看出規律', '展開 i 次'],
-    ['n/2ⁱ = 1 ⇒ i = log n', '停在 base case：T(1) = Θ(1)', '一個元素一定是 peak'],
-    ['T(n) = c·log n + Θ(1)', '代回 i = log n', '= Θ(log n)']];
-  const ws = [3.2, 1.6, 0.8, 0.4, 0.2];
-  for (let i = 0; i < S.length; i++) {
-    say(S[i][1], S[i][2]);
-    const c = cube(S[i][0], i === S.length - 1 ? M.green : M.paper, [4.8, 0.7, 0.8], -2.4, 6.4 - i * 1.25, 0, 2);
-    cube(i < 4 ? ['n', 'n/2', 'n/4', '1'][i] : '', M.blue, [ws[i], 0.5, 0.6], 3.6, 6.4 - i * 1.25, 0, 1.5);
-    if (i === S.length - 1) glow(c, GREEN);
-    await beat(tok, 2800);
-  }
-  say('log n 主導常數', 'T(n) = Θ(log n)');
-  await beat(tok, 1900);
+  const Y = (i) => 6.6 - i * 0.95;
+  const row = (t, i, c) => cube(t, c || M.paper, [4.8, 0.6, 0.6], -2.2, Y(i), 0, 1.5);
+  const sz = (t, i, w) => cube(t, M.blue, [w, 0.5, 0.5], 3.6, Y(i), 0, 1.2);
+  await step(tok);                                   // 2310.3 solve the recurrence
+  row('T(n) = Θ(1) + T(n/2)', 0);
+  say('lecture 略過的部分：解這個遞迴式', '');
+  await step(tok);                                   // 2335.9 call Θ(1) "c"
+  row('= c + T(n/2)', 1); sz('n/2', 1, 1.6);
+  say('Θ(1) 寫起來太長，改叫常數 c；用定義展開', '');
+  await step(tok);                                   // 2343.8 c + c + T(n/4)
+  row('= 2c + T(n/4)', 2); sz('n/4', 2, 0.8);
+  say('再展開一次：c + c + T(n/4)', '');
+  await step(tok);                                   // 2367.8 i·c + T(n/2ⁱ)
+  row('= i·c + T(n/2ⁱ)', 3); sz('n/2ⁱ', 3, 0.5);
+  say('展開 i 次就看出規律：i·c + T(n/2ⁱ)', '');
+  await step(tok);                                   // 2382.8 we need a base case
+  const me = buddy('', '?', M.gold, 6.0, 0, 1.2, 0.55);
+  say('要得到答案，還需要 base case', '問題小到一看就知道答案');
+  await step(tok);                                   // 2404.7 one element: a peak; T(1) constant
+  sz('1', 4, 0.3); pkt('一個元素一定是 peak：T(1) = Θ(1)', 3.0, Y(4) - 0.7);
+  say('只有一個元素的陣列一定是 peak：T(1) 是常數', '');
+  await step(tok);                                   // 2437.8 choose i with n/2ⁱ = 1
+  row('n/2ⁱ = 1', 4);
+  say('選 i 讓 T(n/2ⁱ) 變成 T(1)：也就是 n/2ⁱ = 1', '');
+  await step(tok);                                   // 2448.4 i = log n
+  row('⇒ i = log n', 5);
+  say('i 是指數的反函數：log！i = log n', '');
+  await step(tok);                                   // 2465.0 plug back in: c·log n + T(1)
+  row('T(n) = c·log n + T(1)', 6);
+  say('代回去：c·log n + T(1)，T(1) = Θ(1)', '');
+  await step(tok);                                   // 2488.6 log n dominates → Θ(log n)
+  const z = row('= Θ(log n)', 7, M.green); glow(z, GREEN);
+  me.set('!'); me.mood('happy');
+  say('log n 主導常數：T(n) = Θ(log n)', '');
+  await step(tok);                                   // 2558.8 key idea: force it to stop at the base case
+  note('一直展開，強迫它停在 base case', 3.4, 7.3);
+  say('重點：一直展開，最後強迫它停在 base case', '');
 }]);
 
-// 52:42 變形：column 改找 1D peak（binary search）→ log m 取代 m
+// 42:54 2D peak 回顧（m 列 n 欄）：greedy 慢、正確版找 column 最大（7 steps）
+FRAG.push(['algmit1-rec-2d-recap', '2D peak 回顧：greedy 慢，正確版找 column 最大', async (tok) => {
+  fresh([0, 3.4, 12], [0, 3.2, 0]);
+  let g = null, me = null;
+  await step(tok);                                   // 2574.2 2D peak finding
+  say('來做 2D peak finding', '');
+  await step(tok);                                   // 2597.1 same as 1D but a 2D matrix
+  g = mGrid(PK);
+  say('跟 1D 一樣，只是從陣列變成 2D 矩陣', '數字是示意');
+  await step(tok);                                   // 2636.7 m rows, n columns
+  tag('m 列（rows）', 'ptr', -4.4, 3.35); tag('n 欄（columns）', 'ptr', 0, 6.0);
+  say('助教的記號：m 列、n 欄（跟 lecture 的 n、m 相反）', '');
+  await step(tok);                                   // 2669.8 two attempts in lecture
+  noT('第一個嘗試：錯', 4.4, 5.6); okT('第二個：對', 4.4, 4.8);
+  say('lecture 有兩個嘗試：第一個是錯的，第二個是對的', '');
+  await step(tok);                                   // 2791.8 greedy: pick a spot, walk uphill
+  me = buddy('', '', M.gold, g.X(2), g.Y(1) + 0.45, 0.4, 0.42);
+  const path = [[1, 1], [1, 0], [2, 0], [3, 0], [3, 1], [3, 2], [3, 3]];
+  for (const [r, c] of path) { await mWalk(tok, me, g.X(c), g.Y(r) + 0.45, 0.4, 220); glow(g.cells[r][c], GOLD); }
+  say('同學說：隨便挑一格，看鄰居，一直往上坡走（greedy ascent）', '');
+  await step(tok);                                   // 2808.1 correct but slow
+  me.mood('sad');
+  noT('對，但慢：特製矩陣會走遍整個矩陣', 0, -0.2);
+  say('它會找到正確答案，但很慢：特製的矩陣能讓它走遍所有格子', '');
+  await step(tok);                                   // 2821.1 second: column maximum, not a 1D peak
+  mOff(g);
+  const gb = ghostBox(0x4b9ee2, 1.15, 4.4, 0.9); gb.position.set(g.X(1), 3.35, 0);
+  glow(g.cells[3][1], GREEN);
+  me.mood('happy');
+  say('正確的第二版：在中間欄找「最大值」，不是 1D peak', '');
+}]);
+
+// 47:18 2D 遞迴式（Rec1 的記號：m 列 n 欄）：T(n, m) = Θ(m) + T(n/2, m) → Θ(m log n)（11 steps）
+FRAG.push(['algmit1-rec-2d-recur', '2D 遞迴式：Θ(m) + T(n/2, m) = Θ(m log n)', async (tok) => {
+  fresh([0, 4.0, 14], [0, 3.4, 0]);
+  const cnt = [8, 4, 2, 1];
+  let eq = null, cd = null, lv = [];
+  await step(tok);                                   // 2838.7 running time T(n, m)
+  eq = cube('T(n, m) = ?', M.paper, [6.4, 0.7, 0.6], 0, 7.6, 0, 1.5);
+  cd = code(['1. 選中間那一欄', '2. 找這一欄的最大值（m 個數）', '3. 看左右：都比較小 → peak', '4. 否則往大的那邊遞迴'], 3.6, 6.6, 0.5);
+  say('來算執行時間：T(n, m)，n 欄、m 列', '');
+  await step(tok);                                   // 2859.4 pick the middle column: constant
+  cd.hl(0); tag('Θ(1)', 'ptr', 6.6, 6.6);
+  say('第一步選中間那一欄：常數時間', '');
+  await step(tok);                                   // 2867.5 maximum of m numbers: Θ(m)
+  cd.hl(1); tag('Θ(m)', 'ptr', 6.6, 6.1);
+  const col = mRow([3, 9, 5, 7], 3.2, { gap: 0.8, s: 0.6, cx: -3.6, col: M.sand });
+  const me = buddy('', '', M.gold, -6.0, 0, 1.4, 0.5);
+  for (const m of col) { glow(m, '#333333'); await beat(tok, 200); glow(m, null); }
+  glow(col[1], GOLD);
+  say('在 m 個數裡找最大值：Θ(m)', '');
+  await step(tok);                                   // 2883.6 look left & right; both smaller → peak
+  cd.hl(2);
+  me.look(-1); await beat(tok, 400); me.look(1);
+  say('找到最大值後看左右：都比較小就是 peak（它已經是整欄最大）', '');
+  await step(tok);                                   // 2898.7 a bigger neighbour → go that way
+  cd.hl(3); me.look(1);
+  pkt('往比較大的那邊走 →', -3.6, 4.4);
+  say('如果有比較大的鄰居，就往那個方向走', '');
+  await step(tok);                                   // 2920.7 peak → done; otherwise recurse
+  me.mood('happy');
+  say('是 peak 就結束；不是就遞迴', '');
+  await step(tok);                                   // 3000.1 new problem: same rows, n/2 columns
+  for (let k = 0; k < cnt.length; k++) {
+    const y = 1.6 - k * 0.0, X = mX(cnt[k], 0.32, -4.8 + k * 3.0);
+    for (let c = 0; c < cnt[k]; c++) lv.push(cube('', c === Math.floor((cnt[k] - 1) / 2) ? M.gold : M.sand, [0.24, 1.0, 0.24], X(c), y - 0.9, 0, 1.0));
+    tag(k === 0 ? 'n 欄' : k === 3 ? '1 欄' : 'n/' + (1 << k) + ' 欄', 'idx', -4.8 + k * 3.0, -0.2);
+    await beat(tok, 250);
+  }
+  say('新問題：列數不變（m），欄數剩 n/2', '');
+  await step(tok);                                   // 3020.1 T = Θ(1) + Θ(m) + T(n/2, m)
+  relabel(eq, 'T(n, m) = Θ(1) + Θ(m) + T(n/2, m) = Θ(m) + T(n/2, m)'); glow(eq, GOLD);
+  say('T(n, m) = Θ(1) + Θ(m) + T(n/2, m)', '= Θ(m) + T(n/2, m)');
+  await step(tok);                                   // 3077.5 base case: one column → max is a peak
+  pkt('base case：只剩一欄 → 最大值就是 peak', 0, 5.4);
+  say('base case：只剩一欄，找最大值就一定是 peak', '');
+  await step(tok);                                   // 3118.1 m never changes → like the 1D recurrence
+  note('m 不變 → 當常數 → 就像 T(n) = c + T(n/2)', -2.0, 6.6);
+  say('m 一直不變，當成常數：就跟 1D 的遞迴式一模一樣', '');
+  await step(tok);                                   // 3155.0 Θ(m log n)
+  relabel(eq, 'T(n, m) = Θ(m log n)'); glow(eq, GREEN);
+  say('所以答案是 Θ(m log n)', 'lecture 記號：Θ(n log m)');
+}]);
+
+// 52:46 變形：column 改找 1D peak（binary search）→ log m 取代 m（4 steps）
 FRAG.push(['algmit1-variation', '變形：column 改用 1D peak，Θ(m) → Θ(log m)', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.2, 0]);
   const V = [1, 3, 4, 6, 8, 9, 12, 14, 15, 13, 11, 10, 7, 5, 2, 0], dy = 0.38;
-  const colA = V.map((v, i) => mBox(v, M.sand, -3.0, 6.4 - i * dy, 0.7, 0.34, 0.5));
-  const colB = V.map((v, i) => mBox(v, M.sand, 3.0, 6.4 - i * dy, 0.7, 0.34, 0.5));
-  tag('找最大：掃 m 格', 'ptr', -3.0, 7.0); tag('1D peak：binary search', 'ptr', 3.0, 7.0);
-  say('原版：每層掃整欄找最大', 'Θ(m) per level');
-  for (const c of colA) { glow(c, GOLD); await beat(tok, 120); }
-  glow(colA[8], GREEN); await beat(tok, 1200);
-  say('變形：每層只找 column 的 1D peak', 'Θ(log m) per level');
-  for (const i of [7, 11, 9, 8]) { glow(colB[i], GOLD); await beat(tok, 700); }
-  glow(colB[8], GREEN);
+  let colA = [], colB = [];
+  await step(tok);                                   // 3165.8 what if we find a 1D peak instead of the max?
+  colA = V.map((v, i) => mBox(v, M.sand, -3.0, 6.4 - i * dy, 0.7, 0.34, 0.5));
+  colB = V.map((v, i) => mBox(v, M.sand, 3.0, 6.4 - i * dy, 0.7, 0.34, 0.5));
+  tag('原版：找最大', 'ptr', -3.0, 7.0); tag('變形：找 1D peak', 'ptr', 3.0, 7.0);
+  say('如果每一欄不找最大值，改找 1D peak 呢？', '示意：一欄 16 個數');
+  await step(tok);                                   // 3181.4 check the running time first
+  const me = buddy('', '?', M.gold, 0, 0, 1.6, 0.6);
+  bub('沒變快的話，就不用想它對不對', 0, 2.2, 1.6);
+  say('先看執行時間：如果沒有比較快，就不值得再想它對不對', '');
+  await step(tok);                                   // 3204.1 1D peak: log m → much faster
+  for (const c of colA) { glow(c, GOLD); await beat(tok, 60); }
+  glow(colA[8], GREEN);
+  for (const i of [7, 11, 9, 8]) { glow(colB[i], GOLD); await beat(tok, 250); }
+  glow(colB[8], GREEN); me.set('!'); me.mood('happy');
   tag('16 格 vs 4 格', 'ptr alt', 0, 0.2);
-  await beat(tok, 1800);
-  say('每層 Θ(m) 變 Θ(log m)', 'Θ(m log n) → Θ(log m · log n)');
-  await beat(tok, 2600);
-  say('m = 10⁶ 時快約 m / log m 倍', '≈ 10⁶ / 20 = 5×10⁴；正確性要另外證明');
-  await beat(tok, 1900);
+  say('1D peak 只要 log m：每層成本從 m 變成 log m，快很多', 'Θ(m log n) → Θ(log m · log n)');
+  await step(tok);                                   // 3214.7 m = n = 10⁶: log ≈ 20
+  pkt('m = 10⁶：log m ≈ 20', 0, -0.6);
+  say('m、n 都是一百萬時 log ≈ 20', '每層快了 m / log m ≈ 5×10⁴ 倍　助教說「50 倍」是口誤；正確性要另外證明');
 }]);
 
 // ════════ QFcyt8fgQMU（MIT 6.006 Rec2：Python Cost Model, Document Distance） ════════
 const FOX1 = ['the', 'fox', 'is', 'in', 'the', 'hat'], FOX2 = ['the', 'fox', 'is', 'outside'];
-// 01:30 D1 = The fox is in the hat.、D2 = The fox is outside. → 文件向量
+// 01:33 D1 = The fox is in the hat.、D2 = The fox is outside. → 文件向量（7 steps）
 FRAG.push(['algmit1-fox-vectors', '文件向量：The fox is in the hat.', async (tok) => {
   fresh([0, 3.8, 13.5], [0, 3.0, 0]);
-  cube('D1 = "The fox is in the hat."', M.paper, [5.6, 0.6, 0.4], 0, 6.9, 0, 2);
-  cube('D2 = "The fox is outside."', M.paper, [5.6, 0.6, 0.4], 0, 6.1, 0, 2);
-  say('兩份文件', '先切成 words');
-  await beat(tok, 1800);
   async function build(words, keys, y, yb) {
     const X = mX(words.length, 1.05), KX = mX(keys.length, 1.5), bins = {}, cnt = {};
     const ws = words.map((w, i) => mBox(w, M.blue, X(i), y, 0.95, 0.55, 0.55, 1.2));
-    await beat(tok, 900);
+    await beat(tok, 500);
     keys.forEach((k, i) => { bins[k] = mBox(k + ' 0', '#e8dcc2', KX(i), yb, 1.35, 0.6, 0.6); cnt[k] = 0; });
     for (let i = 0; i < words.length; i++) {
-      const k = words[i]; move(ws[i], KX(keys.indexOf(k)), yb + 0.8); await beat(tok, 380);
+      const k = words[i]; move(ws[i], KX(keys.indexOf(k)), yb + 0.8); await beat(tok, 260);
       kill(ws[i]); cnt[k]++; relabel(bins[k], k + ' ' + cnt[k]);
     }
     return bins;
   }
-  say('全部轉小寫、去掉標點', '"The" 和 "the" 算同一個');
-  const b1 = await build(FOX1, ['the', 'fox', 'is', 'in', 'hat'], 4.8, 3.6);
+  let w1 = [], b1 = null;
+  await step(tok);                                   // 93.2 two documents
+  prop('file', -5.8, 5.9, 0, 0.7); prop('file', -5.8, 5.1, 0, 0.7);
+  cube('D1 = "The fox is in the hat."', M.paper, [5.6, 0.6, 0.4], 0, 6.9, 0, 2);
+  cube('D2 = "The fox is outside."', M.paper, [5.6, 0.6, 0.4], 0, 6.1, 0, 2);
+  say('兩份文件', 'The fox is in the hat. 和 The fox is outside.');
+  await step(tok);                                   // 121.7 operation 1: break into words
+  w1 = FOX1.map((w, i) => mBox(w, M.blue, mX(6, 1.05)(i), 4.8, 0.95, 0.55, 0.55, 1.2));
+  say('操作一：把每份文件（一個字串）切成 words', 'word 1、word 2、word 3 …');
+  await step(tok);                                   // 137.8 operation 2: document vectors
+  w1.forEach(kill);
+  note('文件向量 = 每個 word ＋ 出現次數', 3.6, 3.6);
+  say('操作二：建立文件向量：每個 word 和它出現幾次', '');
+  await step(tok);                                   // 172.5 D1's vector: "the" twice
+  b1 = await build(FOX1, ['the', 'fox', 'is', 'in', 'hat'], 4.8, 3.6);
   glow(b1.the, GOLD); tag('D1', 'ptr', -4.6, 3.6);
-  say('D1 的向量：the 出現 2 次', 'the 2、fox 1、is 1、in 1、hat 1');
-  await beat(tok, 2200);
-  const b2 = await build(FOX2, ['the', 'fox', 'is', 'outside'], 2.0, 0.8);
+  say('D1 的向量：the 出現 2 次，其他各 1 次', 'the 2、fox 1、is 1、in 1、hat 1');
+  await step(tok);                                   // 204.5 D2's vector
+  glow(b1.the, null);
+  await build(FOX2, ['the', 'fox', 'is', 'outside'], 2.0, 0.8);
   tag('D2', 'ptr', -4.6, 0.8);
-  say('D2 的向量', 'the 1、fox 1、is 1、outside 1');
-  await beat(tok, 1900);
-  void b2;
+  say('D2 的向量：the、fox、is、outside 各 1 次', '');
+  await step(tok);                                   // 226.9 "The" and "the" bundled together
+  bub('"The" 和 "the" 算同一個', -3.6, 6.5);
+  say('注意：大寫的 The 和小寫的 the 被算在一起', '');
+  await step(tok);                                   // 232.3 punctuation dropped, lowercase
+  okT('去掉標點、全部轉小寫', 3.4, 5.4);
+  say('句號不見了：標點去掉、全部轉小寫，程式碼裡會看到這些細節', '');
 }]);
 
-// 04:48 內積：只走一個向量，到另一個去查
+// 04:07 內積：只走一個向量，到另一個去查（9 steps）
 FRAG.push(['algmit1-fox-inner', '內積：走 D1、到 D2 查，= 4', async (tok) => {
   fresh([0, 3.6, 13], [0, 2.8, 0]);
   const K1 = [['the', 2], ['fox', 1], ['is', 1], ['in', 1], ['hat', 1]], K2 = { the: 1, fox: 1, is: 1, outside: 1 };
   const X1 = [-4, -2, 0, 2, 4], X2 = { the: -4, fox: -2, is: 0, outside: 3 };
-  const r1 = K1.map(([k, c], i) => mBox(k + ' ' + c, M.blue, X1[i], 4.2, 1.5, 0.6, 0.6, 1.5));
-  const r2 = {}; for (const k in K2) r2[k] = mBox(k + ' ' + K2[k], M.orange, X2[k], 1.6, 1.5, 0.6, 0.6, 1.5);
+  let r1 = [], r2 = {}, sum = null, s = 0, hand = null;
+  const visit = async (i) => {
+    const [k, c] = K1[i]; glow(r1[i], GOLD);
+    await travel(tok, hand, V3(X1[i], 3.4), V3(K2[k] ? X2[k] : X1[i], 2.4), 400);
+    if (K2[k]) { glow(r2[k], GOLD); s += c * K2[k]; } else pkt('0', X1[i], 2.4);
+    txt(sum, 'sum = ' + s); await beat(tok, 300);
+  };
+  await step(tok);                                   // 247.6 three steps
+  ['① 切字', '② 文件向量', '③ 角度'].forEach((t, i) => cube(t, M.purple, [2.0, 0.55, 0.6], -3.6 + i * 3.6, 6.6, 0, 1.5));
+  say('三步驟：切字、算文件向量、算兩向量的角度', '');
+  await step(tok);                                   // 260.3 the angle formula needs an inner product
+  r1 = K1.map(([k, c], i) => mBox(k + ' ' + c, M.blue, X1[i], 4.2, 1.5, 0.6, 0.6, 1.5));
+  for (const k in K2) r2[k] = mBox(k + ' ' + K2[k], M.orange, X2[k], 1.6, 1.5, 0.6, 0.6, 1.5);
   tag('D1', 'ptr', -6.0, 4.2); tag('D2', 'ptr', -6.0, 1.6);
-  const sum = tag('sum = 0', 'ptr alt', 0, 6.2);
-  say('只走一個向量，到另一個查', '查不到的 word 貢獻 0');
-  await beat(tok, 2000);
-  let s = 0;
-  for (let i = 0; i < K1.length; i++) {
-    const [k, c] = K1[i]; glow(r1[i], GOLD); await beat(tok, 500);
-    if (K2[k]) { glow(r2[k], GOLD); s += c * K2[k]; say(k + '：' + c + ' × ' + K2[k], 'sum = ' + s); }
-    else say(k + '：D2 沒有', '貢獻 0');
-    txt(sum, 'sum = ' + s); await beat(tok, 1300);
-    glow(r1[i], null); if (K2[k]) glow(r2[k], null);
-  }
-  say('inner product = 4', '2·1 + 1·1 + 1·1 = 4');
-  await beat(tok, 1900);
+  say('角度公式又大又醜：唯一重要的是它要算「內積」', '');
+  await step(tok);                                   // 273.3 vector_angle calls inner_product 3 times
+  code(['vector_angle：呼叫 inner_product 3 次，其他數學 O(1)'], 0, 5.6);
+  say('vector_angle 呼叫 inner_product 三次', '其餘數學當 O(1)');
+  await step(tok);                                   // 328.0 the: 2 × 1
+  sum = tag('sum = 0', 'ptr alt', 5.6, 3.0);
+  hand = tag('☝', 'ptr alt', X1[0], 3.4);
+  await visit(0);
+  say('the 在 D1 出現 2 次、D2 出現 1 次：2 × 1', 'sum = 2');
+  await step(tok);                                   // 334.5 fox: 1 × 1
+  glow(r1[0], null); glow(r2.the, null);
+  await visit(1);
+  say('fox 兩邊各 1 次：1 × 1', 'sum = 3');
+  await step(tok);                                   // 360.4 only walk one vector; look up in the other
+  glow(r1[1], null); glow(r2.fox, null);
+  note('只走 D1，到 D2 去查', 0, 0.4);
+  say('不必兩個都走：走其中一個，到另一個去查', '');
+  await step(tok);                                   // 368.1 missing words contribute 0
+  await visit(2); glow(r1[2], null); glow(r2.is, null);
+  await visit(3); glow(r1[3], null);
+  await visit(4);
+  say('查不到的 word 貢獻 0：in、hat 都是 0', '');
+  await step(tok);                                   // 385.8 multiply and add everything: = 4
+  glow(r1[4], null); remove(hand);
+  okT('inner product = 2·1 + 1·1 + 1·1 = 4', 0, -0.4);
+  say('相乘再全部加起來：內積 = 4', '');
+  await step(tok);                                   // 408.8 docdist1 is painfully slow; last is 1000× faster
+  noT('docdist1：超慢', -4.2, 7.3); okT('最後一版：快 1000 倍', 3.6, 7.3);
+  say('docdist1 這樣做非常慢；最後一版快 1000 倍', '');
 }]);
 
-// 07:07 由上而下讀 docdist1：main 的呼叫樹
+// 07:11 由上而下讀 docdist1：main 的呼叫樹（12 steps）
 FRAG.push(['algmit1-call-tree', 'docdist1 的呼叫樹（top-down）', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.4, 0]);
   const N = (t, x, y, c) => cube(t, c || M.paper, [3.0, 0.6, 0.6], x, y, 0, 1.5);
-  say('讀大程式：從 main 開始往下看', '畫出「誰呼叫誰」');
-  const m = N('main', 0, 6.4, M.purple); await beat(tok, 1400);
-  const a = N('word_freq_for_file ×2', -3.2, 4.8); line(0, 6.1, -3.2, 5.1); await beat(tok, 900);
-  const b = N('vector_angle', 3.2, 4.8); line(0, 6.1, 3.2, 5.1); await beat(tok, 900);
-  say('第 7、8 行：兩份文件各做步驟 ①②', '第 9 行：vector_angle 做步驟 ③');
-  await beat(tok, 2200);
-  N('get_words_from_line_list', -4.4, 3.0); line(-3.2, 4.5, -4.4, 3.3); await beat(tok, 700);
-  N('count_frequency', -1.1, 3.0); line(-3.2, 4.5, -1.1, 3.3); await beat(tok, 700);
-  N('get_words_from_string', -4.4, 1.3); line(-4.4, 2.7, -4.4, 1.6); await beat(tok, 700);
+  let m = null, a = null, b = null, gl = null;
+  await step(tok);                                   // 431.7 read big code top-down: start with main
+  m = N('main', 0, 6.4, M.purple);
+  const me = buddy('', '', M.gold, 5.8, 0, 1.6, 0.6);
+  say('讀大程式要 top-down：從 main 開始', '');
+  await step(tok);                                   // 449.8 build a tree of who calls what
+  bub('畫出「誰呼叫誰」', 4.4, 2.0, 1.6);
+  say('看它呼叫誰，再進去子函式做一樣的事：畫出呼叫樹', '');
+  await step(tok);                                   // 468.8 lines 7, 8: word_frequencies_for_file
+  a = N('word_freq_for_file ×2', -3.2, 4.8); line(0, 6.1, -3.2, 5.1);
+  say('第 1–6 行處理參數（不管）', '第 7、8 行呼叫 word_frequencies_for_file');
+  await step(tok);                                   // 481.1 line 9: vector_angle
+  b = N('vector_angle', 3.2, 4.8); line(0, 6.1, 3.2, 5.1);
+  say('第 9 行呼叫 vector_angle', '');
+  await step(tok);                                   // 491.7 7, 8 do steps ①②; 9 does step ③
+  tag('步驟 ①②', 'idx', -3.2, 5.45); tag('步驟 ③', 'idx', 3.2, 5.45);
+  say('第 7、8 行讀兩份文件、做步驟一和二；第 9 行做步驟三', '');
+  await step(tok);                                   // 510.7 word_frequencies_for_file: file → document vector
+  glow(a, GOLD);
+  say('word_frequencies_for_file：讀檔，產生文件向量', '');
+  await step(tok);                                   // 544.8 it calls get_words_from_line_list, count_frequency
+  glow(a, null);
+  gl = N('get_words_from_line_list', -4.4, 3.0); line(-3.2, 4.5, -4.4, 3.3); await beat(tok, 300);
+  N('count_frequency', -1.1, 3.0); line(-3.2, 4.5, -1.1, 3.3);
+  say('讀檔不管', '它呼叫 get_words_from_line_list 和 count_frequency');
+  await step(tok);                                   // 565.8 vector_angle calls inner_product 3 times
   N('inner_product ×3', 3.2, 3.0); line(3.2, 4.5, 3.2, 3.3);
-  say('讀檔不管，只看演算法部分', 'vector_angle 呼叫 inner_product 三次');
-  await beat(tok, 2600);
-  say('父函式時間 = 子函式時間加總', '每個版本做一張 scorecard');
+  say('vector_angle 呼叫 inner_product 三次', '');
+  await step(tok);                                   // 596.1 time of a parent = sum of its children
   glow(m, GOLD); glow(a, GOLD); glow(b, GOLD);
-  await beat(tok, 1900);
+  say('main 的時間 = 子函式時間加起來，一層一層往下算', '');
+  await step(tok);                                   // 609.4 keep a scorecard per version
+  prop('file', 5.6, 3.6, 0, 0.8, 'scorecard');
+  say('每個版本都做一張 scorecard，記下各函式的執行時間', '');
+  await step(tok);                                   // 656.2 get_words_from_line_list: a list of lines
+  glow(m, null); glow(a, null); glow(b, null); glow(gl, GOLD);
+  pkt('輸入：整份文件的「行」list', -4.4, 2.3);
+  say('get_words_from_line_list：輸入是一行一行組成的 list', '');
+  await step(tok);                                   // 699.9 get_words_from_string: one line → words
+  N('get_words_from_string', -4.4, 1.3); line(-4.4, 2.7, -4.4, 1.6);
+  me.mood('happy');
+  say('它對每一行呼叫 get_words_from_string', '把一行切成 words');
 }]);
 
-// 12:18 get_words_from_string：每行 cost × 執行次數
-FRAG.push(['algmit1-gwfs-cost', 'get_words_from_string：cost × times = O(n)', async (tok) => {
-  fresh([0, 3.6, 13.5], [0, 3.8, 0]);
-  const L = [' 9 word_list = []', '10 character_list = []', '11 for c in line:', '12   if c.isalnum():', '13     character_list.append(c)',
-    '14   elif len(character_list) > 0:', '15     word = "".join(character_list)', '16     word = word.lower()', '17     word_list.append(word)',
-    '18     character_list = []', '19 if len(character_list) > 0:', '20   word = "".join(character_list)', '21   word = word.lower()',
-    '22   word_list.append(word)', '23 return word_list'];
-  const C = [['1', '1'], ['1', '1'], ['1', 'n'], ['1', 'n'], ['1', 'n·w/(w+1)'], ['1', 'n/(w+1)'], ['w', 'n/(w+1)'], ['w', 'n/(w+1)'], ['1', 'n/(w+1)'], ['1', 'n/(w+1)'],
-    ['1', '1'], ['w', '1'], ['w', '1'], ['1', '1'], ['1', '1']];
-  const dy = 0.44, y0 = 7.4, cd = code(L, -2.4, y0, dy);
+const GWFS = [' 9 word_list = []', '10 character_list = []', '11 for c in line:', '12   if c.isalnum():', '13     character_list.append(c)',
+  '14   elif len(character_list) > 0:', '15     word = "".join(character_list)', '16     word = word.lower()', '17     word_list.append(word)',
+  '18     character_list = []', '19 if len(character_list) > 0:', '20   word = "".join(character_list)', '21   word = word.lower()',
+  '22   word_list.append(word)', '23 return word_list'];
+const GW_C = [['1', '1'], ['1', '1'], ['1', 'n'], ['1', 'n'], ['1', 'n·w/(w+1)'], ['1', 'n/(w+1)'], ['w', 'n/(w+1)'], ['w', 'n/(w+1)'], ['1', 'n/(w+1)'], ['1', 'n/(w+1)'],
+  ['1', '≤ 1'], ['w', '≤ 1'], ['w', '≤ 1'], ['1', '≤ 1'], ['1', '≤ 1']];
+function gwfsSheet(dy = 0.44, y0 = 7.4) {
+  const cd = code(GWFS, -2.4, y0, dy);
   tag('cost', 'ptr', 2.6, y0 + 0.55); tag('times', 'ptr', 4.6, y0 + 0.55);
-  say('一行 n 個字元、每個 word w 個字元', '約 n/(w+1) 個 word');
-  await beat(tok, 2400);
-  const notes = { 2: ['for：每個字元一次', 'n 次'], 4: ['append：Θ(1)', 'table doubling'], 6: ['join / lower：Θ(w)', '每個 word 一次'], 10: ['19–22：收最後一個 word', '最多一次'] };
-  for (let i = 0; i < L.length; i++) {
-    cd.hl(i); if (notes[i]) say(notes[i][0], notes[i][1]);
-    tag(C[i][0], 'idx', 2.6, y0 - i * dy); tag(C[i][1], 'idx', 4.6, y0 - i * dy);
-    await beat(tok, notes[i] ? 1500 : 550);
-  }
-  cd.hl(-1);
-  say('cost × times 全部加起來', 'O(n + 1) = O(n)（w 是常數）');
-  await beat(tok, 1900);
+  const put = (i, which) => tag(GW_C[i][which], 'idx', which ? 4.6 : 2.6, y0 - i * dy);
+  return { cd, put, y: (i) => y0 - i * dy };
+}
+
+// 12:18 get_words_from_string（上）：cost × times、n 個字元、w 長的 word（12 steps）
+FRAG.push(['algmit1-gwfs-cost', 'get_words_from_string：cost × times', async (tok) => {
+  fresh([0, 3.6, 13.5], [0, 3.8, 0]);
+  let sh = null;
+  await step(tok);                                   // 739.8 one line → list of words
+  const ex = pkt('"The fox is outside." → [the, fox, is, outside]', 0, 8.2);
+  say('get_words_from_string：一行字串 → word list', '轉小寫、略過標點和空白');
+  await step(tok);                                   // 762.0 per line: cost × number of runs
+  note('每一行：跑一次的 cost × 跑幾次 = 這行的總時間', -4.0, 0.2);
+  say('方法：每一行看「跑一次的 cost」和「跑幾次」，相乘', '');
+  await step(tok);                                   // 781.1 line numbers 9 … 23
+  remove(ex); sh = gwfsSheet();
+  say('把第 9 到 23 行列出來，旁邊兩欄：cost、times', '');
+  await step(tok);                                   // 831.1 assume the line has n characters
+  pkt('一行有 n 個字元', 5.4, 8.2);
+  say('假設這一行有 n 個字元', '');
+  await step(tok);                                   // 861.0 lines 9, 10: once, cost 1
+  sh.cd.hl(0); sh.put(0, 0); sh.put(0, 1); await beat(tok, 300); sh.cd.hl(1); sh.put(1, 0); sh.put(1, 1);
+  say('第 9、10 行：建立空 list，跑一次，cost 1', '');
+  await step(tok);                                   // 885.0 line 11 iterates the characters: n times
+  sh.cd.hl(2); sh.put(2, 0); sh.put(2, 1);
+  say('第 11 行：走過每個字元，跑 n 次；每次迭代是常數', '');
+  await step(tok);                                   // 909.0 isalnum: constant, n times
+  sh.cd.hl(3); sh.put(3, 0); sh.put(3, 1);
+  say('第 12 行 isalnum', '是不是英數字元（a–z、0–9），常數時間，跑 n 次');
+  await step(tok);                                   // 948.1 line 13 only runs for alphanumeric chars
+  sh.cd.hl(4);
+  say('第 13 行只在英數字元時跑：要對文件做一點假設', '');
+  await step(tok);                                   // 962.1 English words: same length w
+  bub('英文 word 長度差不多：都當成 w', -5.0, 2.8);
+  say('英文 word 長度差不多（5 到 10 個字元），全部當成 w', '');
+  await step(tok);                                   // 1007.5 n/(w+1) words per line
+  pkt('word␣word␣word␣ → 約 n/(w+1) 個 word', -4.0, 1.6);
+  say('word 之間隔一個空白', '每個 word 佔 w + 1 個字元，約 n/(w+1) 個');
+  await step(tok);                                   // 1021.0 w is a constant → O(n) words
+  sh.put(4, 1);
+  say('w 是常數，所以 word 數其實就是 O(n)；先保留 w 比較正式', '第 13 行跑 n·w/(w+1) 次');
+  await step(tok);                                   // 1070.6 append: constant (table doubling)
+  sh.put(4, 0);
+  okT('append：Θ(1)（table doubling）', 4.4, 1.0);
+  say('append 是常數時間：Python 用 table doubling', '');
 }]);
 
-// 18:40 跑一次 "The fox is␣␣outside"：連續空白靠長度檢查、最後一個 word 靠 19–22 行
+// 18:42 跑一次 "The fox is␣␣outside"：連續空白靠長度檢查（12 steps）
 FRAG.push(['algmit1-gwfs-trace', '追蹤 "The fox is␣␣outside"', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.2, 0]);
   const S = 'The fox is  outside', X = mX(S.length, 0.36);
-  const ch = S.split('').map((c, i) => mBox(c === ' ' ? '␣' : c, c === ' ' ? GRAY : M.paper, X(i), 6.0, 0.32, 0.4, 0.32));
+  let ch = [], cur = null, buf = [], words = 0, wl = [];
+  const push = async (i) => { cur.position.set(X(i), 6.6, 0); buf.push(mBox(S[i], M.blue, -2.6 + buf.length * 0.45, 4.2, 0.4, 0.45, 0.4)); await beat(tok, 200); };
+  const joined = () => buf.map((m) => m.userData.lbl.element.textContent).join('');
+  let wd = null;
+  await step(tok);                                   // 1122.1 example "The fox is outside"
+  ch = S.split('').map((c, i) => mBox(c === ' ' ? '␣' : c, c === ' ' ? GRAY : M.paper, X(i), 6.0, 0.32, 0.4, 0.32));
+  say('用一行 "The fox is outside" 跑一遍', '');
+  await step(tok);                                   // 1133.7 both lists start empty
   tag('character_list', 'ptr', -4.6, 4.2); tag('word_list', 'ptr', -4.6, 1.6);
-  const cur = tag('▼', 'ptr alt', X(0), 6.6);
-  say('一個字元一個字元掃', '英數字元 → 放進 character_list');
-  let buf = [], words = 0;
-  async function flush(last) {
-    const w = buf.map((m) => m.userData.lbl.element.textContent).join('').toLowerCase();
-    buf.forEach(kill); buf = [];
-    const m = mBox(w, last ? M.orange : M.blue, -2.6 + words * 1.8, 1.6, 1.6, 0.6, 0.6, 1.5); glow(m, GOLD); words++;
-    await beat(tok, 500); glow(m, null);
-  }
-  for (let i = 0; i < S.length; i++) {
-    cur.position.set(X(i), 6.6, 0);
-    if (S[i] !== ' ') {
-      buf.push(mBox(S[i], M.blue, -2.6 + buf.length * 0.45, 4.2, 0.4, 0.45, 0.4)); await beat(tok, 200);
-    } else if (buf.length) {
-      if (!words) say('遇到空白：join + lower → word', '"The" → "the"');
-      glow(ch[i], GOLD); await beat(tok, 350); await flush(false); glow(ch[i], null);
-      if (!words || words === 1) await beat(tok, 900);
-    } else {
-      glow(ch[i], RED);
-      say('連續空白：character_list 是空的', 'len(character_list) > 0 擋掉空 word');
-      await beat(tok, 2400); glow(ch[i], null);
-    }
-  }
-  say('迴圈結束，outside 還留在 buffer', '19–22 行：把最後一個 word 收進來');
-  await beat(tok, 1800); await flush(true);
-  say('得到 4 個 word', 'word_list = [the, fox, is, outside]');
-  await beat(tok, 1900);
+  cur = tag('▼', 'ptr alt', X(0), 6.6);
+  say('一開始 word_list、character_list 都是空的', '');
+  await step(tok);                                   // 1148.5 first three characters are alphanumeric
+  for (let i = 0; i < 3; i++) await push(i);
+  say('前三個字元是英數字元：一個一個 append 進 character_list', 'T、h、e');
+  await step(tok);                                   // 1158.8 fourth isn't → lines 15–18
+  cur.position.set(X(3), 6.6, 0); glow(ch[3], GOLD);
+  say('第四個是空白，不是英數：執行第 15–18 行', '');
+  await step(tok);                                   // 1183.3 join → "The"
+  wd = mBox(joined(), M.blue, -2.0, 2.9, 1.4, 0.55, 0.55); buf.forEach(kill); buf = [];
+  say('join 把字元 list 接成字串 "The"', '');
+  await step(tok);                                   // 1190.6 lowercase, append to word_list
+  relabel(wd, 'the'); move(wd, -2.6 + words * 1.8, 1.6); words++; wl.push(wd); glow(ch[3], null);
+  say('轉成小寫 "the"，加進 word_list', 'character_list 清空');
+  await step(tok);                                   // 1219.0 f, o, x → a word
+  for (let i = 4; i < 7; i++) await push(i);
+  cur.position.set(X(7), 6.6, 0);
+  wd = mBox(joined().toLowerCase(), M.blue, -2.6 + words * 1.8, 1.6, 1.6, 0.6, 0.6, 1.2); buf.forEach(kill); buf = []; words++;
+  say('下一個 word：f、o、x，遇到空白就變成 "fox" 加進去', '');
+  await step(tok);                                   // 1240.5 and so on: "is"
+  for (let i = 8; i < 10; i++) await push(i);
+  cur.position.set(X(10), 6.6, 0); glow(ch[10], GOLD);
+  wd = mBox(joined().toLowerCase(), M.blue, -2.6 + words * 1.8, 1.6, 1.6, 0.6, 0.6, 1.2); buf.forEach(kill); buf = []; words++;
+  say('其他 word 也一樣：is', '');
+  await step(tok);                                   // 1256.7 why the length check?
+  glow(ch[10], null);
+  bub('為什麼要檢查 len(character_list) > 0？', 3.0, 4.2);
+  say('第 14 行為什麼要檢查 character_list 的長度？', '');
+  await step(tok);                                   // 1283.0 sloppy typing: two spaces
+  glow(ch[10], RED); glow(ch[11], RED);
+  say('如果打字不小心，連打了兩個空白呢？', '');
+  await step(tok);                                   // 1301.5 list is empty → would add an empty word
+  cur.position.set(X(11), 6.6, 0);
+  const ghost = mBox('""', M.red, -2.6 + words * 1.8, 2.6, 1.2, 0.5, 0.5); glow(ghost, RED);
+  say('第二個空白時 character_list 是空的', '沒檢查就會加入一個空 word');
+  await step(tok);                                   // 1350.0 the length check prevents it
+  kill(ghost); glow(ch[11], null); glow(ch[10], null);
+  okT('len > 0 擋掉空 word', 3.0, 3.4);
+  say('長度檢查失敗 → 什麼都不做：這就是它要防止的事', '');
 }]);
 
-// 32:06 + 與 extend：c = a + b 複製 1003 個；a.extend(b) 只花 3
+// 22:59 get_words_from_string（下）：逐行加總 → O(n)（12 steps）
+FRAG.push(['algmit1-gwfs-sum', 'get_words_from_string：逐行加總 = O(n)', async (tok) => {
+  fresh([0, 3.6, 13.5], [0, 3.8, 0]);
+  const sh = gwfsSheet();
+  for (let i = 0; i < 5; i++) { sh.put(i, 0); sh.put(i, 1); }
+  let buf = null;
+  await step(tok);                                   // 1379.3 now count runs and costs
+  say('現在算每一行跑幾次、成本多少', '前面幾行已經填好');
+  await step(tok);                                   // 1420.8 line 14: runs for the spaces
+  sh.cd.hl(5); sh.put(5, 0); sh.put(5, 1);
+  say('第 14 行在非英數字元（空白）時跑：n/(w+1) 次', '');
+  await step(tok);                                   // 1455.5 line 15 join: cost = list length = w
+  sh.cd.hl(6); sh.put(6, 0);
+  say('第 15 行 join：成本是 list 長度，也就是 w', '');
+  await step(tok);                                   // 1519.5 lines 15–18 all run n/(w+1) times
+  for (const i of [6, 7, 8, 9]) sh.put(i, 1);
+  say('第 15–18 行在同一個 if 裡：都跑 n/(w+1) 次', '');
+  await step(tok);                                   // 1528.0 line 16 lower: w
+  sh.cd.hl(7); sh.put(7, 0);
+  say('第 16 行轉小寫：每個字元都要處理，成本 w', '');
+  await step(tok);                                   // 1550.0 line 17 append, line 18 reset: constant
+  sh.cd.hl(8); sh.put(8, 0); await beat(tok, 300); sh.cd.hl(9); sh.put(9, 0);
+  say('第 17 行 append、第 18 行清空：常數', '');
+  await step(tok);                                   // 1571.6 lines 19–23 run at most once
+  sh.cd.hl(10); for (let i = 10; i < 15; i++) sh.put(i, 1);
+  say('第 19–23 行最多跑一次', '');
+  await step(tok);                                   // 1603.5 they catch the last word
+  buf = pkt('迴圈結束時 character_list 還有 outside', -2.4, 0.2);
+  say('迴圈結束時 outside 還在 character_list 裡', '19–22 行把最後一個 word 收進來');
+  await step(tok);                                   // 1631.1 costs: 1, w, w, 1, 1
+  for (let i = 10; i < 15; i++) sh.put(i, 0);
+  say('第 19 行看長度', '常數；20–22 跟 15–17 一樣：w、w、1；23 回傳：1');
+  await step(tok);                                   // 1666.2 dot product of the two columns
+  remove(buf); sh.cd.hl(-1);
+  note('cost 欄 · times 欄（內積）= 總時間', 0, 0.2);
+  say('把 cost 欄和 times 欄做「內積」：就是函式的總時間', '');
+  await step(tok);                                   // 1701.7 the important part is n
+  okT('主要的項：常數 × n', 4.4, 0.9);
+  say('重要的是 n 那一項：常數乘以 n', '');
+  await step(tok);                                   // 1734.0 O(n + 1) = O(n)
+  const z = cube('O(n + 1) = O(n)', M.green, [3.6, 0.6, 0.6], -3.4, 0.9, 0.8, 1.2); glow(z, GREEN);
+  say('加起來 O(n + 1) = O(n)：n 是一行的長度', '');
+}]);
+
+// 30:42 get_words_from_line_list 的陷阱：+ 與 extend（13 steps）
 FRAG.push(['algmit1-plus-vs-extend', 'a + b 複製全部；a.extend(b) 只花 |b|', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.0, 0]);
-  const a = cube('a = [1, 2, …, 1000]', M.blue, [6.0, 0.7, 0.8], -2.2, 5.0, 0, 2);
-  const b = mRow([1, 2, 3], 3.6, { cx: 4.0, gap: 0.8, s: 0.7, col: M.orange, drop: 2 }); tag('b', 'ptr', 2.6, 3.6);
-  say('c = a + b：a、b 都不能被改', '只好建立新 list，全部複製');
-  await beat(tok, 2000);
-  const c = cube('', M.green, [0.1, 0.7, 0.8], -5.2, 1.6, 0); tag('c', 'ptr', -5.9, 1.6);
-  const cnt = tag('複製 0', 'ptr alt', 3.6, 1.6);
+  let cd = null, a = null, b = [], c = null, cnt = null;
+  await step(tok);                                   // 1842.2 get_words_from_line_list: lines 2–6
+  cd = code(['2 word_list = []', '3 for line in L:', '4   words_in_line = get_words_from_string(line)', '5   word_list = word_list + words_in_line', '6 return word_list'], -1.0, 7.4, 0.5);
+  tag('cost', 'ptr', 4.6, 7.95); tag('times', 'ptr', 6.0, 7.95);
+  cd.hl(0); tag('1', 'idx', 4.6, 7.4); tag('1', 'idx', 6.0, 7.4);
+  say('接著分析 get_words_from_line_list：第 2–6 行', '');
+  await step(tok);                                   // 1868.8 z lines: line 3 runs z times
+  cd.hl(1); tag('1', 'idx', 4.6, 6.9); tag('z', 'idx', 6.0, 6.9);
+  say('需要一個新變數：文件有 z 行，第 3 行跑 z 次', '');
+  await step(tok);                                   // 1883.5 lines 4, 5 also z times
+  tag('z', 'idx', 6.0, 6.4); tag('z', 'idx', 6.0, 5.9);
+  say('第 4、5 行在迴圈裡，也各跑 z 次', '');
+  await step(tok);                                   // 1915.6 line 5 looks constant… it's a trap
+  cd.hl(3);
+  const me = buddy('', '?', M.gold, -5.8, 0, 1.6, 0.6);
+  bub('看起來是常數？陷阱！', -4.4, 2.2, 1.6);
+  say('第 5 行看起來是常數？這是陷阱！', '');
+  await step(tok);                                   // 1927.0 cost = length of the two lists
+  tag('?', 'idx', 4.6, 5.9);
+  say('+ 的成本是兩個 list 的長度', 'lecture 講過');
+  await step(tok);                                   // 1949.0 a = [1 … 1000], b = [1, 2, 3]
+  cd.hl(-1);
+  a = cube('a = [1, 2, …, 1000]', M.blue, [5.0, 0.6, 0.7], -2.2, 3.6, 0, 2);
+  b = mRow([1, 2, 3], 3.6, { cx: 3.4, gap: 0.8, s: 0.6, col: M.orange, drop: 2 }); tag('b', 'ptr', 2.2, 3.6);
+  say('例子：a = [1, 2, …, 1000]、b = [1, 2, 3]', '');
+  await step(tok);                                   // 1961.7 c = a + b: a, b unchanged
+  bub('a、b 不能被改', 0, 4.4);
+  say('c = a + b 之後，a 和 b 都要維持原樣，c 裝全部', '');
+  await step(tok);                                   // 1978.5 + builds a new list and appends everything
+  c = cube('', M.green, [0.1, 0.6, 0.7], -5.2, 1.6, 0); tag('c', 'ptr', -5.9, 1.6);
+  cnt = tag('複製 0', 'ptr alt', 3.6, 1.6);
   glow(a, GOLD);
-  await anim(tok, 2200, (t) => { const w = 0.1 + 7.9 * t; c.scale.x = w / 0.1; c.position.x = -5.2 + w / 2; txt(cnt, '複製 ' + Math.round(1003 * t)); });
+  await anim(tok, 2000, (t) => { const w = 0.1 + 7.9 * t; c.scale.x = w / 0.1; c.position.x = -5.2 + w / 2; txt(cnt, '複製 ' + Math.round(1003 * t)); });
   glow(a, null);
-  say('cost = 1000 + 3 = 1003', 'Θ(|a| + |b|)');
-  await beat(tok, 2400);
-  say('a.extend(b)：逐一 append', 'Θ(|b|) = 3');
-  for (let i = 0; i < 3; i++) { const m = mBox(i + 1, M.orange, b[i].position.x, 3.6); move(m, 1.3 + i * 0.8, 5.0); glow(b[i], GOLD); await beat(tok, 600); }
-  await beat(tok, 1400);
-  say('a 有一百萬個也一樣只花 3', '迴圈裡累積 list 要用 extend');
-  await beat(tok, 1900);
+  say('所以 + 要建一個新 list，把兩邊的元素全部 append 進去', '');
+  await step(tok);                                   // 1987.1 cost 1003
+  okT('1000 + 3 = 1003', 3.6, 0.8);
+  say('成本是 1000 + 3 = 1003', '');
+  await step(tok);                                   // 1992.0 O(l1 + l2)
+  pkt('一般：O(l1 + l2)', 3.6, 0.0);
+  say('一般來說，長度 l1、l2 的兩個 list 相加是 O(l1 + l2)', '');
+  await step(tok);                                   // 2002.3 extend: append each element of b to a
+  for (let i = 0; i < 3; i++) { const m = mBox(i + 1, M.orange, b[i].position.x, 3.6); move(m, 0.9 + i * 0.7, 4.4); glow(b[i], GOLD); await beat(tok, 350); }
+  say('另一個方法 extend：把 b 的元素逐一 append 到 a 後面', 'a.extend(b)');
+  await step(tok);                                   // 2036.0 O(l2)
+  okT('extend：O(l2) = 3', 3.6, 5.2);
+  me.set('!'); me.mood('happy');
+  say('extend 的成本只跟第二個 list 有關：O(l2)', '');
+  await step(tok);                                   // 2043.0 a million elements: still 3
+  pkt('a 有一百萬個也一樣只花 3', -2.2, 2.6);
+  say('a 有一千個還是一百萬個都一樣：接 3 個只花 3', '');
 }]);
 
-// 34:11 word_list = word_list + words_in_line：k + 2k + … + zk = Θ(W²)
+// 34:41 word_list = word_list + words_in_line：k + 2k + … + zk = Θ(W²)（10 steps）
 FRAG.push(['algmit1-quadratic-concat', '迴圈裡用 +：k + 2k + … + zk = Θ(W²)', async (tok) => {
   fresh([0, 3.8, 14], [0, 3.0, 0]);
-  cube('for line in L: word_list = word_list + words_in_line', M.paper, [9.2, 0.6, 0.4], 0, 7.0, 0, 2);
-  say('z 行，每行 k 個 word', '第 t 次 + 要複製 (t−1)k + k = tk 個');
   const z = 6, X = mX(z, 1.2), bs = [];
-  await beat(tok, 1800);
-  for (let t = 1; t <= z; t++) {
+  let tot = null;
+  const grow = async (t) => {
     const b = mBar('', 0.05, M.orange, X(t - 1), 0, 0.8); bs.push(b);
-    await anim(tok, 400, (u) => mSetH(b, 0.05 + (t * 0.8 - 0.05) * u));
+    await mGrow(tok, b, t * 0.8, 300);
     tag(t + 'k', 'idx', X(t - 1), t * 0.8 + 0.35); tag('line ' + t, 'idx', X(t - 1), -0.35);
-    await beat(tok, 250);
-  }
-  say('總共 k(1 + 2 + … + z)', '= Θ(z²k)');
-  await beat(tok, 2400);
-  say('W = z·k 個 word，k（每行字數）是常數', 'Θ(W² / k) = Θ(W²)');
-  await beat(tok, 2600);
-  say('改成 extend：每行只花 k', '總共 Θ(W)（docdist2）');
-  for (const b of bs) tint(b, M.green);
-  await anim(tok, 1200, (u) => bs.forEach((b, i) => mSetH(b, (i + 1) * 0.8 + (0.8 - (i + 1) * 0.8) * u)));
-  await beat(tok, 1900);
+  };
+  await step(tok);                                   // 2080.7 k words per line
+  cube('word_list = word_list + words_in_line', M.paper, [7.4, 0.6, 0.4], 0, 7.0, 0, 2);
+  pkt('每行 k 個 word（k = n/w）', -4.4, 6.2);
+  say('每行有 k 個 word', 'get_words_from_string 回傳大小 k 的 list');
+  await step(tok);                                   // 2093.2 first time: k; second: k + k …
+  await grow(1); await grow(2);
+  say('第一次 word_list 是空的，複製 k 個', '第二次已有 k 個，再加 k 個：2k');
+  await step(tok);                                   // 2109.4 k + 2k + 3k + … + zk
+  for (let t = 3; t <= z; t++) await grow(t);
+  say('總成本 k + 2k + 3k + … + zk', '最後一次：(z−1)k + k = zk');
+  await step(tok);                                   // 2177.0 O(z²k)
+  tot = cube('k(1 + 2 + … + z) = O(z²k)', M.paper, [5.2, 0.6, 0.5], 3.0, 6.2, 0, 1.2); glow(tot, GOLD);
+  say('1 + 2 + … + z 約 z²/2：漸近上是 O(z²k)', '');
+  await step(tok);                                   // 2191.0 W = z·k words in the document
+  pkt('W = z·k（文件總字數）→ z = W/k', 3.0, 5.4);
+  say('更自然的量：文件總字數 W = z·k，所以 z = W/k', '');
+  await step(tok);                                   // 2210.0 O(W²/k)
+  relabel(tot, 'O(z²k) = O(W²/k)');
+  say('代進去：O(W²/k)', '');
+  await step(tok);                                   // 2222.7 k is about constant → O(W²)
+  relabel(tot, 'O(W²)'); glow(tot, RED);
+  say('每行要塞進一頁，k 幾乎是常數', 'get_words_from_line_list 是 O(W²)');
+  await step(tok);                                   // 2344.0 the culprit is the + operator
+  for (const b of bs) glow(b, RED);
+  say('罪魁禍首就是 +：每次都要複製整個 word_list', '');
+  await step(tok);                                   // 2363.7 change + to extend → docdist2
+  for (const b of bs) { tint(b, M.green); glow(b, null); }
+  await anim(tok, 1000, (u) => bs.forEach((b, i) => mSetH(b, (i + 1) * 0.8 + (0.8 - (i + 1) * 0.8) * u)));
+  relabel(tot, '改 extend：O(W)'); glow(tot, GREEN);
+  say('把 + 改成 extend', '每行只花 k，總共 O(W)，這就是 docdist2');
+  await step(tok);                                   // 2382.1 practise this analysis on docdist 1–8
+  note('自己分析 docdist1–8，練到變成直覺', -3.0, 5.2);
+  say('回家把 docdist1 到 8 都這樣分析，練到一看就知道', '');
 }]);
 
-// 40:31 inner_product 的兩層迴圈：L1 × L2 次比較；字串 == 是 Θ(w)
+// 40:36 inner_product 的兩層迴圈：L1 × L2 次比較；字串 == 是 Θ(w)（11 steps）
 FRAG.push(['algmit1-inner-nested', 'inner_product：兩層迴圈 Θ(L1·L2)', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.2, 0]);
-  const cd = code(['def inner_product(L1, L2):', '  sum = 0.0', '  for word1, count1 in L1:', '    for word2, count2 in L2:', '      if word1 == word2:', '        sum += count1 * count2', '  return sum'], -3.4, 6.8, 0.5);
   const A = ['the', 'fox', 'is', 'in', 'hat'], B = ['the', 'fox', 'is', 'out'], gx = 0.8, gy = 0.62;
   const X = mX(4, gx, 3.6), Y = (i) => 6.0 - i * gy;
-  B.forEach((w, j) => tag(w, 'idx', X(j), 6.6)); A.forEach((w, i) => tag(w, 'idx', 1.7, Y(i)));
-  const cells = A.map((_, i) => B.map((_, j) => mBox('', '#e8dcc2', X(j), Y(i), 0.6, 0.45, 0.45)));
-  say('L1 的每個 word × L2 的每個 word', '第 4–6 行跑 L1·L2 次');
-  cd.hl(3); await beat(tok, 1400);
+  let cd = null, cells = [], f1 = [], f2 = [];
+  const cost = (i, c, t) => { tag(c, 'idx', -0.2, 6.8 - i * 0.5); tag(t, 'idx', 0.7, 6.8 - i * 0.5); };
+  await step(tok);                                   // 2435.6 the running time of inner_product
+  cd = code(['1 def inner_product(L1, L2):', '2   sum = 0.0', '3   for word1, count1 in L1:', '4     for word2, count2 in L2:', '5       if word1 == word2:', '6         sum += count1 * count2', '7   return sum'], -3.8, 6.8, 0.5);
+  say('來分析 inner_product：這個比較簡單', '');
+  await step(tok);                                   // 2444.5 line 2: cost 1, once
+  cd.hl(1); cost(1, '1', '1');
+  say('第 2 行：成本 1，跑 1 次', '');
+  await step(tok);                                   // 2460.6 line 3: L1 times
+  cd.hl(2); cost(2, '1', 'L1');
+  say('第 3 行走過第一個文件向量：跑 L1 次', '');
+  await step(tok);                                   // 2485.8 line 4: L1·L2 times
+  cd.hl(3); cost(3, '1', 'L1·L2');
+  B.forEach((w, j) => tag(w, 'idx', X(j), 6.6)); A.forEach((w, i) => tag(w, 'idx', 1.9, Y(i)));
+  cells = A.map((_, i) => B.map((_, j) => mBox('', '#e8dcc2', X(j), Y(i), 0.6, 0.45, 0.45)));
+  say('第 4 行在內層：每個 word1 都要走完 L2，跑 L1 × L2 次', '');
+  await step(tok);                                   // 2516.7 nested: lines 5, 6 also L1·L2
+  cost(4, '?', 'L1·L2'); cost(5, '?', 'L1·L2');
   for (let i = 0; i < A.length; i++) for (let j = 0; j < B.length; j++) {
     const hit = A[i] === B[j]; glow(cells[i][j], hit ? GREEN : GOLD); if (hit) tint(cells[i][j], M.green);
-    await beat(tok, 160); if (!hit) glow(cells[i][j], null);
+    await beat(tok, 70); if (!hit) glow(cells[i][j], null);
   }
-  say('5 × 4 = 20 次比較', 'Θ(L1·L2)');
-  await beat(tok, 2000);
+  say('兩層迴圈巢狀：第 5、6 行也跑 L1·L2 次（5 × 4 = 20 格）', '');
+  await step(tok);                                   // 2526.1 the if check: constant?
   cd.hl(4);
-  say('字串 == 不是 Θ(1)', '"fox" vs "foy"：比到第 3 個字元');
-  const f1 = mRow(['f', 'o', 'x'], 1.6, { cx: 1.6, gap: 0.6, s: 0.5, col: M.blue }), f2 = mRow(['f', 'o', 'y'], 0.8, { cx: 1.6, gap: 0.6, s: 0.5, col: M.blue });
-  for (let k = 0; k < 3; k++) { glow(f1[k], k < 2 ? GREEN : RED); glow(f2[k], k < 2 ? GREEN : RED); await beat(tok, 600); }
-  tag('Θ(w)', 'ptr alt', 3.6, 1.2);
-  await beat(tok, 1600);
-  cd.hl(5);
-  say('sum += 數字：Θ(1)', '這裡的 + 是數字相加，不是 list');
-  await beat(tok, 1900);
+  const me = buddy('', '?', M.gold, -5.9, 0, 1.0, 0.55);
+  say('第 5 行的 if：比較兩個字串，是常數時間嗎？', '');
+  await step(tok);                                   // 2550.8 compare char by char, stop at a difference
+  f1 = mRow(['f', 'o', 'x'], 1.6, { cx: 2.6, gap: 0.6, s: 0.5, col: M.blue }); f2 = mRow(['t', 'h', 'e'], 0.8, { cx: 2.6, gap: 0.6, s: 0.5, col: M.blue });
+  glow(f1[0], RED); glow(f2[0], RED);
+  say('字串比較：一個字元一個字元比，遇到不同就停', 'the vs fox：第一個字就不同');
+  await step(tok);                                   // 2560.4 foy vs fox: third character differs
+  f2.forEach(kill); f2 = mRow(['f', 'o', 'y'], 0.8, { cx: 2.6, gap: 0.6, s: 0.5, col: M.blue });
+  for (let k = 0; k < 3; k++) { glow(f1[k], k < 2 ? GREEN : RED); glow(f2[k], k < 2 ? GREEN : RED); await beat(tok, 350); }
+  say('"foy" 和 "fox"：前兩個一樣，第三個才不同', '');
+  await step(tok);                                   // 2582.5 string == is O(w); English → constant
+  tag('Θ(w)', 'ptr alt', 4.6, 1.2); cost(4, 'w', 'L1·L2');
+  say('所以字串 == 是 Θ(w)，不是 Θ(1)；英文 word 長度是常數才當常數', '');
+  await step(tok);                                   // 2630.7 line 6: numbers → constant
+  cd.hl(5); cost(5, '1', 'L1·L2'); me.set('!');
+  say('第 6 行又是陷阱？這裡的 + 是數字相加，乘、加數字都是 Θ(1)', '');
+  await step(tok);                                   // 2695.0 add the partial products → L1·L2
+  cd.hl(-1); cost(6, '1', '1');
+  const z = cube('inner_product = O(L1·L2)', M.green, [4.2, 0.6, 0.5], -3.0, 2.6, 0.8, 1.2); glow(z, GREEN);
+  me.mood('happy');
+  say('部分乘積 1、L1、L1·L2… 加起來：O(L1·L2)', '');
 }]);
 
-// 45:11 vector_angle 呼叫三次 → L1·L2 + L1² + L2²；main 總時間
+// 45:11 vector_angle、main 總時間：Θ(W1² + W2²)（13 steps）
 FRAG.push(['algmit1-total-cost', 'docdist1 總時間：Θ(W1² + W2²)', async (tok) => {
   fresh([0, 3.6, 13.5], [0, 3.4, 0]);
-  const S = [['inner_product(L1, L2)  →  L1·L2', 'vector_angle：分子', '第 2 行'],
-    ['inner_product(L1, L1)  →  L1²', '分母還要算兩次', '第 3 行：自己跟自己'],
-    ['inner_product(L2, L2)  →  L2²', 'L1 = 1000、L2 = 1 時', 'L1² 項不能丟掉'],
-    ['word_freq_for_file ×2  →  W1² + W2²', '兩份文件字數不同', '不能都寫成 W²'],
-    ['main = W1² + W2² + L1·L2 + L1² + L2²', '把所有部分加起來', 'L = 不重複字數 ≤ W']];
-  for (let i = 0; i < S.length; i++) {
-    say(S[i][1], S[i][2]);
-    cube(S[i][0], M.paper, [7.4, 0.65, 0.6], 0, 6.6 - i * 1.1, 0, 2);
-    await beat(tok, 2500);
-  }
-  const f = cube('= Θ(W1² + W2²)', M.green, [4.4, 0.7, 0.6], 0, 0.9, 0, 2); glow(f, GREEN);
-  say('L 項都被 W 項蓋過', 'L1² ≤ W1²，L1·L2 ≤ (W1² + W2²)/2');
-  await beat(tok, 1900);
+  const Y = (i) => 7.0 - i * 0.9;
+  const row = (t, i, c) => cube(t, c || M.paper, [7.4, 0.6, 0.6], 0, Y(i), 0, 1.5);
+  let va = null, mn = null, me = null;
+  await step(tok);                                   // 2711.0 vector_angle calls inner_product 3 times
+  va = row('vector_angle = inner_product × 3  →  L1·L2 ?', 0);
+  me = buddy('', '?', M.gold, -6.0, 0, 1.0, 0.55);
+  say('vector_angle 呼叫 inner_product 三次：它要多久？', '');
+  await step(tok);                                   // 2727.2 count_frequency: O(W²) (take my word)
+  row('count_frequency：O(W²)（先相信助教）', 1);
+  say('count_frequency 是 O(W²)（助教請大家先相信）', '');
+  await step(tok);                                   // 2750.6 main: add them up — one last trick
+  mn = row('main = ?', 2);
+  say('main 的時間：全部加起來，但還有最後一個陷阱', '');
+  await step(tok);                                   // 2791.0 word_frequencies_for_file is called twice
+  pkt('第一份 W1 個字、第二份 W2 個字', 3.6, Y(2) - 0.6);
+  say('word_frequencies_for_file 被呼叫兩次：兩份文件字數不同', '');
+  await step(tok);                                   // 2806.6 O(W1² + W2²)
+  relabel(mn, 'main = W1² + W2² + …');
+  say('所以是 O(W1² + W2²)，不能都寫成 W²', '');
+  await step(tok);                                   // 2819.6 plus L1·L2; W ≥ L
+  relabel(mn, 'main = W1² + W2² + L1·L2');
+  note('W = 總字數；L = 不重複字數（向量長度）≤ W', 0, Y(3));
+  say('再加上 L1·L2：L 是不重複的字數，W 是總字數', '');
+  await step(tok);                                   // 2872.3 line 2: inner_product(L1, L2)
+  relabel(va, 'line 2：inner_product(L1, L2) → L1·L2'); glow(va, GOLD);
+  say('看 vector_angle 第 2 行', 'inner_product(L1, L2)');
+  await step(tok);                                   // 2878.1 line 3: (L1, L1) and (L2, L2)
+  row('line 3：inner_product(L1, L1)、(L2, L2) → L1² + L2²', 4);
+  say('第 3 行還算了 (L1, L1)、(L2, L2)：自己跟自己的內積', 'vector_angle = L1·L2 + L1² + L2²');
+  await step(tok);                                   // 2897.7 1000 vs 1 word: L1² can't be dropped
+  bub('L1 = 1000、L2 = 1：L1² ≫ L1·L2', 3.2, Y(5) + 0.1);
+  say('第一份 1000 字、第二份 1 字時，L1² 遠大於 L1·L2：不能丟', '');
+  await step(tok);                                   // 2958.0 W1² + W2² + L1² + L2² + L1·L2; L < W
+  relabel(mn, 'main = W1² + W2² + L1² + L2² + L1·L2'); glow(mn, GOLD);
+  say('全部加起來；L1 ≤ W1、L2 ≤ W2，所以 L1²、L2² 被吸收', '');
+  await step(tok);                                   // 2980.7 unsure about L1·L2
+  me.set('?'); me.mood('wow');
+  pkt('L1·L2 ≤ W1·W2 ≤ (W1² + W2²)/2 → 也能丟', 0, Y(6));
+  say('助教不確定 L1·L2 能不能丟；其實可以：它 ≤ (W1² + W2²)/2', '');
+  await step(tok);                                   // 3056.4 student: bounded vocabulary → L ≈ constant
+  const f = row('= Θ(W1² + W2²)', 7, M.green); glow(f, GREEN);
+  bub('英文字彙有限：文件很大時 L 幾乎是常數', -2.6, Y(7) - 0.7);
+  me.set('!'); me.mood('happy');
+  say('同學補充：英文字彙有限，文件很大時 L 幾乎是常數', '');
+  await step(tok);                                   // 3122.5 analyse docdist 1–8, update the scorecard
+  prop('file', 5.8, 0.0, 0, 0.8, 'scorecard');
+  say('回家：分析 docdist1 到 8，更新每個版本的 scorecard', '');
 }]);
   }
 

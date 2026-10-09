@@ -811,9 +811,9 @@
  },
  "HtSuA80QTyo": {
   "label": "MIT 6.006 L1：Algorithmic Thinking, Peak Finding",
-  "points": 76,
+  "points": 78,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "HUA_cVBdLw0": {
   "label": "Semaphores in Operating Systems",
@@ -1063,9 +1063,9 @@
  },
  "P7frcB_-g4w": {
   "label": "MIT 6.006 Rec1：Asymptotic Complexity, Peak Finding",
-  "points": 86,
+  "points": 87,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "pAs8Swu1Y3Y": {
   "label": "台大林軒田 DSA Linked List",
@@ -1123,9 +1123,9 @@
  },
  "QFcyt8fgQMU": {
   "label": "MIT 6.006 Rec2：Python Cost Model, Document Distance",
-  "points": 81,
+  "points": 83,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "qQ8vS2btsxI": {
   "label": "Abdul Bari：9.2 Rabin-Karp String Matching Algorithm",
@@ -1443,7 +1443,7 @@
   "label": "MIT 6.006 L2：Models of Computation, Document Distance",
   "points": 94,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "zLuuRC56uvI": {
   "label": "交大彭文志 Lec10 Lists (3/4)",
