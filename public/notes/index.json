@@ -1267,9 +1267,9 @@
  },
  "uJOmqBwENB8": {
   "label": "Abdul Bari：4.8 Reliability Design - DP",
-  "points": 52,
+  "points": 54,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "uMGwjNuidZU": {
   "label": "Abdul Bari：Pointer Arithmetic",
@@ -1311,7 +1311,7 @@
   "label": "Abdul Bari：Optimal BST (Successful Search Only)",
   "points": 65,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "VwQeypxlevE": {
   "label": "交大彭文志 Lec12 Trees (1/6)",
@@ -1335,7 +1335,7 @@
   "label": "Abdul Bari：4.6.2 Optimal BST Successful and Unsuccessful",
   "points": 91,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "wFP5VHGHFdk": {
   "label": "MIT 6.006 Rec21：DP Knapsack Problem",

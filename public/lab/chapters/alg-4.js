@@ -2884,6 +2884,950 @@ FRAG.push(['dp4mit-ddr-dagsp', 'DDR：source、sink 與 DAG 最短路徑', async
   await beat(tok, 3200);
 }]);
   }
+  // ═══ dp4bari2.js ═══
+  {
+// ─── Abdul Bari（cued）：wAy6nDMPYAE（4.6.2 OBST 成功＋失敗：p = 3 3 1 1、q = 2 3 1 1 1（×16）→ 32/16 = 2）、
+//     vLS-zRCHo-Y（OBST 只算成功：10 20 30 40 頻率 4 2 6 3 → 26）、uJOmqBwENB8（4.8 Reliability design → 0.648、$100）
+// Every `await step(tok)` waits for the sentence that shows it (notes "cues"); motion between steps is short.
+const { V3, tag, cube, kill, glow, tint, txt, anim, line, ghostBox, tnode, travel, step, buddy, prop, bob, icon, relabel } = K;
+const say = (a, b = '') => ctx.say(a, b);
+const mono = (l) => { Object.assign(l.element.style, K.MONO); return l; };
+const cls = (l, c) => { if (l) l.element.className = 'lab-label' + (c ? ' ' + c : ''); };
+const fr = (x) => String(+(+x).toFixed(4));
+const DRED = '#7a1010', MARK = '#f3d27a', DONE = '#9fe0c4', LINEC = '#c9bfae';
+// one function per lecturer sentence: wait for its cue, then show it
+async function run(tok, acts) { for (const a of acts) { await step(tok); await a(); } }
+// a column of monospace lines (the lecturer's working on the board)
+function pad(x, y0, dy = 0.5) {
+  const P = { ls: [] };
+  P.add = (t, c = '') => { const l = mono(tag(t, c, x, y0 - P.ls.length * dy, 0.3)); P.ls.push(l); return l; };
+  P.clear = () => { P.ls.forEach(kill); P.ls = []; };
+  return P;
+}
+const goTo = (tok, l, x, y, ms = 450) => travel(tok, l, l.position.clone(), V3(x, y, l.position.z), ms);
+
+// ── BST：7 個 key 的範例樹 ──
+const B7 = { 40: [0, 6.2, null], 20: [-2.8, 4.9, 40], 60: [2.8, 4.9, 40], 10: [-4.2, 3.6, 20], 30: [-1.4, 3.6, 20], 50: [1.4, 3.6, 60], 70: [4.2, 3.6, 60] };
+const B7_ORDER = [40, 20, 60, 10, 30, 50, 70];
+const EXT7 = [-4.9, -3.5, -2.1, -0.7, 0.7, 2.1, 3.5, 4.9];
+function bst7() { const nd = {}; for (const k of B7_ORDER) { const [x, y, p] = B7[k]; nd[k] = tnode(k, x, y, 0, p ? nd[p] : null, BLUE); } return nd; }
+function ext7() { return EXT7.map((x, t) => { const px = B7[[10, 30, 50, 70][t >> 1]][0]; line(px, 3.2, x, 2.62, 0, LINEC); return cube(' ', GRAY, [0.46, 0.42, 0.42], x, 2.4, 0, 1.0); }); }
+const above = (k) => [B7[k][0], B7[k][1] + 0.85];
+
+// ── 3 個 key（10、20、30）的 5 棵 BST ──
+const T5 = [
+  [[10, -0.75, 1, null], [20, 0, 2, 10], [30, 0.75, 3, 20]],
+  [[10, -0.75, 1, null], [30, 0.75, 2, 10], [20, 0, 3, 30]],
+  [[20, 0, 1, null], [10, -0.75, 2, 20], [30, 0.75, 2, 20]],
+  [[30, 0.75, 1, null], [10, -0.75, 2, 30], [20, 0, 3, 10]],
+  [[30, 0.75, 1, null], [20, 0, 2, 30], [10, -0.75, 3, 20]],
+];
+const T5X = [-5.4, -2.7, 0, 2.7, 5.4], T5Y = [0, 6.2, 5.0, 3.8];
+function drawT5(t, all) {
+  const nd = {};
+  for (const [k, dx, lv, par] of T5[t]) { nd[k] = tnode(k, T5X[t] + dx, T5Y[lv], 0, par ? nd[par] : null, BLUE); nd[k].userData.lv = lv; all.push(nd[k]); if (nd[k].userData.edge) all.push(nd[k].userData.edge); }
+  return nd;
+}
+// a small tree of little cubes: spec = [[key, dx, depth, parentKey], …]
+function miniTree(spec, cx, yTop, dy, all, s = 0.5) {
+  const nd = {};
+  for (const [k, dx, d, par] of spec) {
+    const x = cx + dx, y = yTop - d * dy;
+    if (par) all.push(line(nd[par].position.x, nd[par].position.y, x, y, 0, LINEC));
+    nd[k] = cube(k, BLUE, [s, s, s], x, y, 0, 0.8); all.push(nd[k]);
+  }
+  return nd;
+}
+
+// ── Horowitz 形式的 OBST：c(i,j)、w(i,j)、r(i,j)，0 ≤ i ≤ j ≤ n ──
+function obSolve(p1, q) {
+  const n = p1.length, p = [0, ...p1], qq = q || new Array(n + 1).fill(0);
+  const w = [], c = [], r = [];
+  for (let i = 0; i <= n; i++) { w[i] = []; c[i] = []; r[i] = []; w[i][i] = qq[i]; c[i][i] = 0; r[i][i] = 0; }
+  for (let d = 1; d <= n; d++) for (let i = 0; i + d <= n; i++) {
+    const j = i + d; w[i][j] = w[i][j - 1] + p[j] + qq[j];
+    let best = Infinity, bk = 0;
+    for (let k = i + 1; k <= j; k++) { const v = c[i][k - 1] + c[k][j]; if (v < best) { best = v; bk = k; } }
+    c[i][j] = best + w[i][j]; r[i][j] = bk;
+  }
+  return { n, p, q: qq, w, c, r };
+}
+const HB = obSolve([3, 3, 1, 1], [2, 3, 1, 1, 1]);   // wAy6nDMPYAE（×16）
+const HV = obSolve([4, 2, 6, 3]);                     // vLS-zRCHo-Y（頻率）
+// DP 表：layout 'diag'（列 = j − i、行 = i，格內 w / c / r）或 'ij'（列 i、行 j，格內 c / r）
+function obTable(n, o) {
+  o = Object.assign({ layout: 'diag', X0: -5.5, Y0: 6.5, CW: 1.3, CH: 1.15, w: true }, o);
+  const D = o.layout === 'diag';
+  const T = { o, pl: {}, c: {}, w: {}, r: {}, arrows: [], hot: null };
+  const key = (i, j) => i + ',' + j;
+  T.pos = (i, j) => (D ? V3(o.X0 + i * o.CW, o.Y0 - (j - i) * o.CH, 0) : V3(o.X0 + j * o.CW, o.Y0 - i * o.CH, 0));
+  for (let i = 0; i <= n; i++) for (let j = i; j <= n; j++) { const p = T.pos(i, j); T.pl[key(i, j)] = plate(p.x, p.y, o.CW * 0.94, o.CH * 0.92); }
+  for (let k = 0; k <= n; k++) {
+    tag((D ? 'i=' : 'j=') + k, 'idx', o.X0 + k * o.CW, o.Y0 + o.CH * 0.75);
+    tag((D ? 'j−i=' : 'i=') + k, 'idx', o.X0 - o.CW * 0.5 - (D ? 0.55 : 0.35), o.Y0 - k * o.CH);
+  }
+  T.setW = (i, j, v, hot) => {
+    const k = key(i, j); if (T.w[k]) kill(T.w[k]);
+    const p = T.pos(i, j); T.w[k] = tag('w ' + v, 'idx', p.x, p.y + o.CH * 0.3, 0.3);
+    if (hot) T.hotW(i, j);
+    return T.w[k];
+  };
+  T.hotW = (i, j) => { if (T.hot) cls(T.hot, 'idx'); T.hot = T.w[key(i, j)]; cls(T.hot, 'ptr alt'); };
+  T.coolW = () => { if (T.hot) cls(T.hot, 'idx'); T.hot = null; };
+  T.setC = (i, j, v, drop = 1.2, color) => {
+    const k = key(i, j); if (T.c[k]) kill(T.c[k]);
+    const p = T.pos(i, j);
+    return (T.c[k] = cube(v, color || (i === j ? GRAY : TEAL), [o.CW * 0.5, o.CH * 0.36, 0.3], p.x, p.y + (o.w ? -0.02 : 0.1), 0.2, drop));
+  };
+  T.setR = (i, j, v) => { const k = key(i, j); if (T.r[k]) kill(T.r[k]); const p = T.pos(i, j); return (T.r[k] = tag('r ' + v, 'idx', p.x, p.y - o.CH * 0.33, 0.3)); };
+  T.mark = (i, j, c) => { const pl = T.pl[key(i, j)]; if (pl) pl.material.color.set(c || PAPER); };
+  T.arrow = (i1, j1, i2, j2, c) => { const a = T.pos(i1, j1), b = T.pos(i2, j2); a.z = b.z = 0.6; const h = K.arrow(a, b, c || TRY); T.arrows.push(h); return h; };
+  T.glowC = (i, j, c) => { const m = T.c[key(i, j)]; if (m) glow(m, c || GOLD); };
+  T.clear = () => { T.arrows.forEach(kill); T.arrows = []; Object.values(T.c).forEach((m) => glow(m, null)); };
+  return T;
+}
+// fill cells instantly: what = 'wcr' letters
+function put(T, H, i, j, what) {
+  if (what.includes('w')) T.setW(i, j, H.w[i][j]);
+  if (what.includes('c')) T.setC(i, j, H.c[i][j], 0);
+  if (what.includes('r')) T.setR(i, j, H.r[i][j]);
+}
+// all cells, in the lecturer's order (j − i = 0, 1, 2, …; left to right)
+function cellsOf(n) { const out = []; for (let d = 0; d <= n; d++) for (let i = 0; i + d <= n; i++) out.push([i, i + d]); return out; }
+function fillBefore(T, H, stop, wAll, what) {
+  const n = H.n, cs = cellsOf(n);
+  if (wAll) cs.forEach(([i, j]) => T.setW(i, j, H.w[i][j]));
+  for (const [i, j] of cs) { if (stop && i === stop[0] && j === stop[1]) break; put(T, H, i, j, what); }
+}
+const kText = (H, i, j, k, v) => 'k=' + k + ': c(' + i + ',' + (k - 1) + ') + c(' + k + ',' + j + ')' + (v ? ' = ' + H.c[i][k - 1] + ' + ' + H.c[k][j] + ' = ' + (H.c[i][k - 1] + H.c[k][j]) : '');
+const kArrows = (T, i, j, k) => { T.arrow(i, k - 1, i, j); T.arrow(k, j, i, j); };
+const minOf = (H, i, j) => { let b = Infinity; for (let k = i + 1; k <= j; k++) b = Math.min(b, H.c[i][k - 1] + H.c[k][j]); return b; };
+function stageB(H, stop, what) {
+  K.fresh([0, 4.4, 15], [0, 3.8, 0]);
+  const T = obTable(H.n, {});
+  mono(tag('key  10  20  30  40', 'ptr', 3.6, 7.4));
+  mono(tag('p      3   3   1   1', 'idx', 3.6, 6.95));
+  mono(tag('q    2   3   1   1   1', 'idx', 3.6, 6.5));
+  fillBefore(T, H, stop, true, what || 'cr');
+  return T;
+}
+function stageV(H, stop) {
+  K.fresh([0, 4.4, 15], [0, 3.8, 0]);
+  const T = obTable(H.n, { layout: 'ij', w: false, X0: -5.2, Y0: 6.4, CW: 1.15, CH: 1.0 });
+  mono(tag('key   10  20  30  40', 'ptr', 3.4, 7.4));
+  mono(tag('freq   4   2   6   3', 'idx', 3.4, 6.95));
+  fillBefore(T, H, stop, false, 'cr');
+  return T;
+}
+
+// ═════════════════ wAy6nDMPYAE：4.6.2 Optimal BST（成功＋失敗） ═════════════════
+FRAG.push(['dp4bari2-bst-search', 'BST 搜尋：找 30、9、47', async (tok) => {
+  K.fresh([0, 4.2, 13.5], [0, 3.6, 0]);
+  let nd, cur, cnt;
+  const unglow = () => B7_ORDER.forEach((k) => glow(nd[k], null));
+  const goto = async (k, n) => { const [x, y] = above(k); await goTo(tok, cur, x, y); glow(nd[k], GOLD); txt(cnt, '比較 ' + n + ' 次'); };
+  const start = (t) => { unglow(); if (cur) kill(cur); cur = tag('找 ' + t, 'pkt', 0, 7.05); glow(nd[40], GOLD); txt(cnt, '比較 1 次'); cls(cnt, 'ptr alt'); };
+  const nullAt = async (x, px) => { line(px, 3.2, x, 2.62, 0, LINEC); const m = cube('', RED, [0.42, 0.42, 0.42], x, 2.4, 0, 0.8); glow(m, DRED); await goTo(tok, cur, x, 3.1, 400); };
+  await run(tok, [
+    () => { nd = bst7(); cnt = tag(' ', 'ptr alt', -5.8, 7.0); say('一棵 binary search tree', '每個節點放一個 key'); },
+    () => { [10, 20, 30].forEach((k) => tint(nd[k], TEAL)); [50, 60, 70].forEach((k) => tint(nd[k], PURPLE)); tag('10、20、30 < 40', 'good', -2.8, 6.95); tag('50、60、70 > 40', 'note', 2.8, 6.95); say('40 的左邊都比較小、右邊都比較大'); },
+    () => { B7_ORDER.forEach((k) => tint(nd[k], BLUE)); glow(nd[60], GOLD); tint(nd[50], TEAL); tint(nd[70], PURPLE); say('60 也一樣', '50 < 60 在左、70 > 60 在右'); },
+    () => { tint(nd[50], BLUE); tint(nd[70], BLUE); start(30); say('找 30：從 root 開始', '40 是 30 嗎？不是'); },
+    async () => { say('30 < 40 → 一定在左邊'); await goto(20, 2); glow(nd[40], null); },
+    async () => { say('30 > 20 → 往右邊'); await goto(30, 3); glow(nd[20], null); },
+    () => { tint(nd[30], TEAL); glow(nd[30], GREEN); say('找到 30！'); },
+    () => { cls(cnt, 'ptr'); say('找 30 一共比較 3 次', '40、20、30 各比一次'); },
+    () => { tint(nd[30], BLUE); unglow(); kill(cur); cur = null; B7_ORDER.forEach((k) => { const [x, y] = B7[k]; tag((y > 6 ? 1 : y > 4 ? 2 : 3) + ' 次', 'idx', x + 0.8, y + 0.25); }); say('10 要 3 次、20 要 2 次、40 只要 1 次'); },
+    () => { [6.2, 4.9, 3.6].forEach((y, t) => tag('level ' + (t + 1), 'ptr', -6.3, y)); say('最多比較 3 次 = 樹的高度', '3 層 → 最多比 3 次'); },
+    () => { tag('找得到：successful search ✓', 'good', 3.4, 7.45); say('找得到 → successful search（成功搜尋）'); },
+    async () => { start(9); say('找 9：9 < 40、9 < 20、9 < 10', '一路往左'); await goto(20, 2); await goto(10, 3); },
+    async () => { await nullAt(-4.9, -4.2); tag('null', 'bad', -4.9, 1.8); say('10 的左邊什麼都沒有（null）', '9 不在樹裡 → unsuccessful search'); },
+    () => { cls(cnt, 'ptr'); say('失敗搜尋也比較了 3 次', '40、20、10'); },
+    async () => { start(47); say('找 47：47 > 40 → 往右'); await goto(60, 2); },
+    async () => { say('47 < 60 → 往左'); await goto(50, 3); },
+    async () => { await nullAt(0.7, 1.4); tag('null', 'bad', 0.7, 1.8); say('47 < 50 → 往左：沒有了', '失敗搜尋，比較 3 次'); },
+    () => { unglow(); tag('成功、失敗都要比較 → 比較次數 = 搜尋成本', 'say', 0, 0.9); say('比較次數 = 搜尋的成本', '成功、失敗都要算'); },
+  ]);
+}]);
+
+FRAG.push(['dp4bari2-bst-ext', '方形節點：失敗搜尋的區間', async (tok) => {
+  K.fresh([0, 4.2, 13.5], [0, 3.4, 0]);
+  const nd = bst7(); let ex = [], cur = null;
+  const RNG = ['−∞~9', '11~19', '21~29', '31~39', '41~49', '51~59', '61~69', '71~+∞'], labs = [];
+  const lab = (t) => (labs[t] = labs[t] || tag(RNG[t], 'note', EXT7[t], 1.75));
+  const path = async (v, keys, t) => {
+    if (cur) kill(cur); cur = tag('找 ' + v, 'pkt', 0, 7.05);
+    for (const k of keys) { const [x, y] = above(k); await goTo(tok, cur, x, y, 380); }
+    await goTo(tok, cur, EXT7[t], 3.1, 380); glow(ex[t], GOLD);
+  };
+  await run(tok, [
+    () => { ex = ext7(); say('圓形節點放 key；小方塊是另一種節點'); },
+    () => { ex.forEach((m) => glow(m, GOLD)); say('方塊裡沒有 key', '那它代表什麼？'); },
+    async () => { ex.forEach((m) => glow(m, null)); say('找 11：11 < 40、11 < 20、11 > 10', '停在 10 的右邊'); await path(11, [40, 20, 10], 1); },
+    async () => { glow(ex[1], null); say('找 12：12 < 40、12 < 20、12 > 10', '也停在同一個方塊'); await path(12, [40, 20, 10], 1); },
+    () => { lab(1); say('找 11 到 19 都會停在這裡', '這個方塊代表 11~19'); },
+    () => { glow(ex[1], null); lab(0); glow(ex[0], GOLD); say('最左邊的方塊：−∞~9', '比 10 小的都停在這裡'); },
+    () => { kill(cur); glow(ex[0], null); ex.forEach((m) => relabel(m, 'null')); say('方塊其實就是 null', '走到這裡就知道：找不到'); },
+    () => { for (let t = 0; t < 8; t++) lab(t); say('每個方塊都代表一段找不到的 key'); },
+    () => { glow(ex[7], GOLD); say('最右邊：71~+∞', '比 70 大的都停在這裡'); },
+    () => { glow(ex[7], null); ex.forEach((m) => glow(m, GOLD)); tag('7 個 key → 8 個方塊（dummy node）', 'say', 0, 0.9); say('失敗搜尋畫成 dummy node', '每個代表一段區間，不是一個值'); },
+  ]);
+}]);
+
+FRAG.push(['dp4bari2-bst-shape', '同樣的 key，很多棵 BST；高度越小越好', async (tok) => {
+  K.fresh([0, 4.2, 14], [0, 3.8, 0]);
+  const all = []; let trees = []; const chain = [];
+  await run(tok, [
+    () => { trees = [0, 1, 2, 3, 4].map((t) => drawT5(t, all)); say('3 個 key：10、20、30', '這 5 棵都是 BST'); },
+    () => { all.push(mono(tag('n 個 key：(2n C n) / (n + 1) 棵', 'ptr', 0, 2.0))); say('有幾棵？公式 (2n C n) / (n + 1)'); },
+    () => { all.push(mono(tag('n = 3：6C3 / 4 = 20 / 4 = 5', 'ptr alt', 0, 1.4))); say('n = 3：6C3 / 4 = 5 棵'); },
+    () => { [3, 3, 2, 3, 3].forEach((h, t) => all.push(tag('最多 ' + h + ' 次', 'idx', T5X[t], 2.75))); say('最多比較次數：3、3、2、3、3'); },
+    () => { Object.values(trees[2]).forEach((m) => glow(m, GREEN)); all.push(tag('比較好 ✓', 'good', 0, 7.0)); say('中間那棵最好', '最多只要比 2 次'); },
+    async () => {
+      all.forEach(kill);
+      say('7 個 key 也能排成一直往左的樹', '70 → 60 → 50 → … → 10');
+      [70, 60, 50, 40, 30, 20, 10].forEach((k, t) => chain.push(tnode(k, 2.4 - t * 0.8, 6.6 - t * 0.8, 0, chain[t - 1] || null, BLUE)));
+      await anim(tok, 300, () => {});
+    },
+    () => { chain.forEach((m, t) => tag('第 ' + (t + 1) + ' 層', 'idx', m.position.x + 0.95, m.position.y)); say('數一數：一共 7 層'); },
+    () => { chain.forEach((m) => glow(m, DRED)); tag('找 10 要比 7 次 ✗', 'bad', 4.0, 3.0); say('最多要比 7 次', '成本很高'); },
+    () => { chain.forEach((m) => glow(m, null)); tag('高度越小 → 比較次數越少', 'good', 4.0, 2.2); say('樹的高度要越小越好'); },
+  ]);
+}]);
+
+FRAG.push(['dp4bari2-prob', '成功機率 p 與失敗機率 q：開店的比喻', async (tok) => {
+  K.fresh([0, 4.4, 14], [0, 3.4, 0]);
+  const keys = [10, 20, 30, 40], p = [0.1, 0.2, 0.1, 0.2], q = [0.1, 0.05, 0.15, 0.05, 0.05];
+  const xs = (t) => -5.6 + t * 1.4, YL = 6.0;
+  const km = [], sq = [], shop = [];
+  let boss, cust;
+  const walkTo = async (b, x, ms = 700) => { const x0 = b.g.position.x; b.look(x > x0 ? 1 : -1); await anim(tok, ms, (u) => { b.g.position.x = x0 + (x - x0) * u; }); };
+  await run(tok, [
+    () => { keys.forEach((k, t) => km.push(cube(k, BLUE, [0.9, 0.6, 0.6], xs(2 * t + 1), YL, 0, 1.2))); tag('4 個 key → 可以畫出 14 棵 BST', 'ptr', 0, 7.35); say('4 個 key：10、20、30、40', '可以畫出 14 棵 BST'); },
+    () => { for (let t = 0; t <= 4; t++) sq.push(cube('', GRAY, [0.5, 0.45, 0.45], xs(2 * t), YL - 0.05, 0, 1.2)); say('方塊代表失敗搜尋：1、2、3、4、5 個'); },
+    () => { tag('n 個 key → n + 1 個方塊', 'ptr alt', 0, 4.95); say('n 個 key → n + 1 個方塊'); },
+    () => {
+      shop.push(cube('櫃台', SAND, [2.6, 0.7, 1.0], -3.6, 0.35, 0.8));
+      const wh = prop('warehouse', 4.0, 0, -0.3, 1.0, '倉庫'); shop.push(wh);
+      boss = buddy('老闆', '', ORANGE, -3.6, 0, -0.5, 0.75);
+      say('想像你開一家小店', '櫃台在門口，倉庫在後面');
+    },
+    () => { const a = prop('parcel', -4.4, 0.7, 0.8, 0.5), b = prop('parcel', -2.8, 0.7, 0.8, 0.5), c = prop('parcel', 2.8, 0, 0.6, 0.5); bob(a, 0.04); shop.push(a, b, c); say('有的商品放櫃台、有的放倉庫'); },
+    async () => { say('櫃台的東西伸手就拿到', '倉庫的要走過去，比較花時間'); await walkTo(boss, 2.4, 900); await walkTo(boss, -3.6, 900); },
+    () => { shop.push(tag('常賣 → 放櫃台', 'good', -3.6, 2.1), tag('少賣 → 放倉庫', 'note', 3.6, 2.8)); say('怎麼擺？看賣出的頻率', '頻率就是機率'); },
+    () => { shop.push(tag('商品 = key；找商品 = 搜尋', 'say', 0, 3.7)); km.forEach((m) => glow(m, GOLD)); say('key 就像商品，找它就是搜尋'); },
+    () => { km.forEach((m) => glow(m, null)); cust = buddy('客人', '', PINK, 0.6, 0, 1.2, 0.7); cust.look(-1); shop.push(tag('有賣 X 嗎？', 'say', 0.6, 2.0, 1.2)); boss.mood('wow'); say('客人要的東西，店裡沒有'); },
+    () => { sq.forEach((m) => glow(m, GOLD)); say('「被問但沒有」的頻率也要考慮', '= 失敗搜尋的機率'); },
+    async () => { sq.forEach((m) => glow(m, null)); say('跑去倉庫找半天才說「沒有」', '很浪費時間'); await walkTo(boss, 2.4, 900); boss.mood('sad'); await walkTo(boss, -3.6, 900); cust.mood('sad'); },
+    async () => {
+      shop.forEach(kill); kill(boss.g); kill(cust.g);
+      const ms = [];
+      for (let t = 0; t <= 8; t++) {
+        const isK = t % 2 === 1, v = isK ? p[(t - 1) / 2] : q[t / 2];
+        const m = cube('', isK ? TEAL : ORANGE, [0.5, 1, 0.5], xs(t), 0.8, 0); m.scale.y = 0.001; ms.push([m, v]);
+        tag(String(v), 'ptr alt', xs(t), 1.2 + v * 16);
+      }
+      say('成功、失敗的機率都很重要', '每個 key、每個方塊都有機率');
+      await anim(tok, 1200, (u) => ms.forEach(([m, v]) => { const h = v * 16 * u; m.scale.y = Math.max(0.001, h); m.position.y = 0.8 + h / 2; }));
+    },
+    () => { tag('全部加起來 = 1', 'good', 4.6, 4.4); say('機率用小數，全部加起來 = 1', '0.6 + 0.4 = 1'); },
+    () => { keys.forEach((k, t) => tag('p' + (t + 1), 'ptr', xs(2 * t + 1), 0.35)); say('成功機率：p1、p2、p3、p4'); },
+    () => { q.forEach((v, t) => tag('q' + t, t === 0 ? 'ptr alt' : 'ptr', xs(2 * t), 0.35)); say('失敗機率多一個：q0 … q4', '所以從 0 開始編號'); },
+    () => { glow(sq[0], GOLD); tag('−∞~9', 'note', xs(0), YL + 0.7); say('q0：要找比 10 小的值'); },
+    () => { glow(sq[0], null); glow(sq[4], GOLD); tag('41~+∞', 'note', xs(8), YL + 0.7); say('q4：要找比 40 大的值'); },
+    () => { glow(sq[4], null); ['11~19', '21~29', '31~39'].forEach((s, t) => tag(s, 'note', xs(2 * t + 2), YL + 0.7)); say('每個 q 代表一整段 key', '每個 p 只代表一個 key'); },
+  ]);
+}]);
+
+FRAG.push(['dp4bari2-cost21', '一棵 BST 的期望成本 = 2.1', async (tok) => {
+  K.fresh([0, 4.4, 14], [0, 3.6, 0]);
+  const L = { 20: [0, 6.4, null, 1, 0.2], 10: [-2.6, 5.0, 20, 2, 0.1], 30: [2.6, 5.0, 20, 2, 0.1], 40: [4.2, 3.6, 30, 3, 0.2] };
+  const E = [['E0', -3.4, 3.6, -2.6, 5.0, 3, 0.1], ['E1', -1.8, 3.6, -2.6, 5.0, 3, 0.05], ['E2', 1.8, 3.6, 2.6, 5.0, 3, 0.15], ['E3', 3.4, 2.2, 4.2, 3.6, 4, 0.05], ['E4', 5.0, 2.2, 4.2, 3.6, 4, 0.05]];
+  const nd = {}; let em = [], sumK, sumE, tot, f1, total = 0;
+  const kT = [], eT = [];
+  const off = () => { Object.values(nd).forEach((m) => glow(m, null)); em.forEach((m) => glow(m, null)); };
+  const addK = (k) => { const [x, y, , lv, pv] = L[k]; off(); glow(nd[k], GOLD); total += lv * pv; kT.push(lv + '×' + pv); txt(sumK, 'key ：' + kT.join(' + ')); txt(tot, 'cost = ' + fr(total)); tag(lv + '×' + pv, 'ptr alt', x + 0.95, y + 0.25); };
+  const addE = (t) => { const e = E[t]; glow(em[t], GOLD); total += (e[5] - 1) * e[6]; eT.push((e[5] - 1) + '×' + e[6]); txt(sumE, '方塊：' + eT.join(' + ')); txt(tot, 'cost = ' + fr(total)); tag((e[5] - 1) + '×' + e[6], 'ptr alt', e[1], e[2] - 0.95); };
+  await run(tok, [
+    () => {
+      for (const k of [20, 10, 30, 40]) { const [x, y, par] = L[k]; nd[k] = tnode(k, x, y, 0, par ? nd[par] : null, BLUE); }
+      em = E.map(([lbl, x, y, px, py]) => { line(px, py - 0.4, x, y + 0.25, 0, LINEC); return cube(lbl, GRAY, [0.55, 0.42, 0.42], x, y, 0, 1.0); });
+      say('用這棵樹算搜尋成本', '圓 = key、方塊 = 失敗搜尋');
+    },
+    () => { [1, 2, 3, 4].forEach((lv) => tag('level ' + lv, 'ptr', -6.1, [0, 6.4, 5.0, 3.6, 2.2][lv])); say('20 在 level 1；10、30 在 level 2', '40 在 level 3'); },
+    () => {
+      for (const k of [20, 10, 30, 40]) { const [x, y, , , pv] = L[k]; tag('p=' + pv, 'note', x - 0.95, y + 0.25); }
+      E.forEach(([, x, y, , , , qv]) => tag('q=' + qv, 'note', x, y - 0.45));
+      sumK = mono(tag(' ', 'ptr', -1.6, 0.85)); sumE = mono(tag(' ', 'ptr', -1.6, 0.3)); tot = tag('cost = 0', 'pkt', 4.6, 7.2);
+      say('每個 key、每個方塊都標上機率');
+    },
+    () => { addK(20); say('20：level 1 → 1 × 0.2', '比 1 次就找到'); },
+    () => { addK(10); say('10：level 2 → 2 × 0.1'); },
+    () => { addK(30); say('30：level 2 → 2 × 0.1'); },
+    () => { addK(40); say('40：level 3 → 3 × 0.2', '要比 3 次'); },
+    () => { off(); glow(em[0], GOLD); glow(nd[10], GOLD); tag('比完 10 就知道沒有', 'say', -4.6, 7.2); say('E0 在 level 3，但到那裡不用再比', '比完 10 就停了'); },
+    () => { off(); addE(0); say('方塊算 (level − 1) × q', 'E0：2 × 0.1'); },
+    () => { off(); addE(1); addE(2); say('E1：2 × 0.05、E2：2 × 0.15'); },
+    () => { off(); addE(3); addE(4); say('E3、E4：3 × 0.05、3 × 0.05'); },
+    () => { off(); glow(em[3], GOLD); glow(em[4], GOLD); glow(nd[40], GOLD); say('E3、E4 畫在 level 4', '但比較停在 level 3 的 40：算 3'); },
+    () => { off(); cls(tot, 'good'); txt(tot, 'cost = 1.2 + 0.9 = 2.1'); say('全部加起來 = 2.1', 'key 1.2 + 方塊 0.9'); },
+    () => { kill(sumK); kill(sumE); f1 = mono(tag('cost = Σ pᵢ·level(aᵢ)', 'ptr', 0, 0.8)); say('寫成公式：每個 key 是 p × level'); },
+    () => { txt(f1, 'cost = Σ pᵢ·level(aᵢ) + Σ qᵢ·level(Eᵢ)'); say('再加上每個方塊：q × level'); },
+    () => { txt(f1, 'cost = Σ pᵢ·level(aᵢ) + Σ qᵢ·(level(Eᵢ) − 1)'); say('方塊的 level 要減 1'); },
+    () => { txt(f1, 'cost = Σ(i=1..n) pᵢ·level(aᵢ) + Σ(i=0..n) qᵢ·(level(Eᵢ) − 1)'); say('p 從 1 加到 n；q 從 0 加到 n'); },
+    () => { tag('已知一棵樹 → 算出它的成本', 'say', 0, 0.2); say('這是「已知一棵樹」算成本的公式'); },
+  ]);
+}]);
+
+FRAG.push(['dp4bari2-brute', 'Optimal BST：暴力法試不完', async (tok) => {
+  K.fresh([0, 4.4, 14], [0, 3.4, 0]);
+  let all = [], mini = [], think;
+  const SP = [
+    [[20, 0, 0, null], [10, -0.7, 1, 20], [30, 0.7, 1, 20], [40, 1.2, 2, 30]],
+    [[30, 0, 0, null], [20, -0.7, 1, 30], [40, 0.7, 1, 30], [10, -1.2, 2, 20]],
+    [[40, 0, 0, null], [30, -0.6, 1, 40], [20, -1.1, 2, 30], [10, -1.6, 3, 20]],
+  ];
+  await run(tok, [
+    () => { all.push(mono(tag('key 10 20 30 40｜p .1 .2 .1 .2｜q .1 .05 .15 .05 .05', 'ptr', 0, 7.35))); say('Optimal BST：給定 key 和 p、q'); },
+    () => { all.push(tag('剛才那棵 cost = 2.1：能不能更小？', 'say', 0, 6.75)); say('要找一棵樹，讓 cost 最小'); },
+    () => { SP.forEach((s, t) => mini.push(miniTree(s, [-4.0, 0.2, 4.6][t], 5.7, 0.8, all, 0.55))); say('root 可以是 20、30、40…', '每個 key 的 level 都不一樣'); },
+    () => { [-4.0, 0.2, 4.6].forEach((x) => all.push(tag('cost = ?', 'note', x, 2.55))); say('算出來的 cost 都不一樣'); },
+    async () => {
+      all.forEach(kill); all = [];
+      for (let t = 0; t < 14; t++) all.push(cube('', BLUE, [0.7, 0.7, 0.7], -3.9 + (t % 7) * 1.3, t < 7 ? 5.4 : 4.2, 0, 1.0));
+      all.push(tag('4 個 key → 14 棵 BST', 'ptr', 0, 6.6));
+      say('4 個 key：一共 14 棵 BST');
+      await anim(tok, 300, () => {});
+    },
+    () => { all.push(tag('問題：給定 key 和機率，做出 cost 最小的 BST', 'say', 0, 2.9)); say('問題：做出 cost 最小的 BST'); },
+    async () => {
+      say('暴力法：14 棵都畫出來，各算 cost', '再挑最小的');
+      const cs = all.filter((m) => m.isMesh);
+      await anim(tok, 1800, (u) => { const k = Math.min(13, Math.floor(u * 14)); cs.forEach((m, t) => glow(m, t <= k ? GOLD : null)); });
+      cs.forEach((m) => glow(m, null)); glow(cs[9], GREEN); all.push(tag('最小', 'good', cs[9].position.x, 3.45));
+    },
+    async () => {
+      all.forEach(kill); all = [];
+      const bars = [];
+      for (let n = 1; n <= 9; n++) {
+        const v = catalan(n + 1), h = 0.3 + Math.log10(v) * 1.2, x = -5.2 + (n - 1) * 1.3;
+        const m = cube('', n === 4 ? ORANGE : BLUE, [0.9, 1, 0.9], x, 0, 0); m.scale.y = 0.001; bars.push([m, h]);
+        tag(n + ' 個 key', 'idx', x, 0.0, 0.9); tag(String(v), n === 4 ? 'ptr alt' : 'idx', x, h + 0.35);
+      }
+      say('(2n C n)/(n+1)：key 一多，數量爆炸', '高度用對數尺度');
+      await anim(tok, 1500, (u) => bars.forEach(([m, h]) => { m.scale.y = Math.max(0.001, h * u); m.position.y = h * u / 2; }));
+    },
+    () => { tag('40 個 key：約 2.6 × 10²¹ 棵 ✗', 'bad', 3.8, 6.6); say('40 個 key：根本不可能全部試'); },
+    () => { think = buddy('DP', '?', TEAL, -4.6, 4.2, 0.6, 0.8); think.mood('wow'); say('能不能不全部畫出來', '也找到最好的那棵？'); },
+    async () => { think.set('✓'); think.mood('happy'); tag('DP：間接地試過全部', 'good', -4.6, 6.6); say('DP：試過全部，但不是直接試', '是間接地試'); await think.hop(tok); },
+  ]);
+}]);
+
+FRAG.push(['dp4bari2-expand', '展開 c(0,3)：要大的，先要小的', async (tok) => {
+  K.fresh([0, 4.4, 14.5], [0, 3.8, 0]);
+  let all = [], kk, c00, c33, exX;
+  const lb = (a) => 'c(' + a[0] + ',' + a[1] + ')';
+  const node = (a, x, y, color) => { const m = cube(lb(a), color, [1.05, 0.48, 0.4], x, y, 0, 1.0); m.userData.key = lb(a); all.push(m); return m; };
+  const cxs = [-4.4, 0, 4.4];
+  const branch = (t, k, a, b) => { const cx = cxs[t]; all.push(line(0, 6.25, cx, 5.45), tag('k=' + k, 'idx', cx, 5.95)); return [node(a, cx - 0.62, 5.2, BLUE), node(b, cx + 0.62, 5.2, PURPLE)]; };
+  const row = (d) => { const r = []; for (let i = 0; i + d <= 3; i++) r.push([i, i + d]); const y = 1.0 + d * 1.25; r.forEach((a, t) => cube(lb(a), d === 3 ? TEAL : d === 0 ? GRAY : BLUE, [1.1, 0.5, 0.4], (t - (r.length - 1) / 2) * 1.5, y, 0, 1.2)); return y; };
+  await run(tok, [
+    () => { mono(tag('c(i,j) = min{ c(i,k−1) + c(k,j) } + w(i,j)，i < k ≤ j', 'ptr', 0, 7.4)); node([0, 3], 0, 6.5, TEAL); say('用公式算 3 個 key 的 c(0,3)'); },
+    () => { kk = tag('k = 1、2、3', 'ptr alt', 2.6, 6.5); all.push(kk); say('0 < k ≤ 3：k 可以是 1、2、3'); },
+    () => { c00 = branch(0, 1, [0, 0], [1, 3])[0]; exX = cxs[0] + 0.62; say('k = 1：c(0,0) + c(1,3)'); },
+    () => { branch(1, 2, [0, 1], [2, 3]); say('k = 2：c(0,1) + c(2,3)'); },
+    () => { c33 = branch(2, 3, [0, 2], [3, 3])[1]; say('k = 3：c(0,2) + c(3,3)'); },
+    () => { all.push(tag('三個取 min，再 + w(0,3)', 'ptr alt', 0, 4.4)); say('取最小的，再加 w(0,3)', 'w(0,3) = 所有 p、q 的和'); },
+    () => { [c00, c33].forEach((m) => { tint(m, GRAY); relabel(m, lb([m === c00 ? 0 : 3, m === c00 ? 0 : 3]) + '=0'); }); say('c(0,0)、c(3,3) 都是 0', '其他的還不知道'); },
+    async () => {
+      say('c(1,3) 不知道 → 再展開', 'k = 2、3');
+      [[2, [1, 1], [2, 3]], [3, [1, 2], [3, 3]]].forEach(([k, a, b], t) => {
+        const cx = exX + (t - 0.5) * 2.5;
+        all.push(line(exX, 4.95, cx, 3.75), tag('k=' + k, 'idx', cx, 4.05));
+        node(a, cx - 0.58, 3.5, BLUE); node(b, cx + 0.58, 3.5, PURPLE);
+      });
+      await anim(tok, 300, () => {});
+    },
+    () => { all.filter((m) => m.userData.key === 'c(2,3)' || m.userData.key === 'c(3,3)').forEach((m) => glow(m, GOLD)); all.push(tag('越展越多，還一再重複', 'bad', 3.6, 3.0)); say('每個都要再展開，越展越多', '同樣的子問題重複出現'); },
+    () => { all.push(tag('要知道大的，得先知道小的', 'good', 3.6, 2.3)); say('範圍越來越小：0~3 → 1~3', '先算小的，大的就能算'); },
+    () => { all.forEach(kill); all = []; const y = row(0); tag('j − i = 0', 'idx', -5.8, y); say('需要 c(0,0)、c(1,1)、c(2,2)、c(3,3)'); },
+    () => { const y = row(1); tag('j − i = 1', 'idx', -5.8, y); say('再來差 1：c(0,1)、c(1,2)、c(2,3)'); },
+    () => { const y = row(2); tag('j − i = 2', 'idx', -5.8, y); say('差 2：c(0,2)、c(1,3)'); },
+    () => { const y = row(3); tag('j − i = 3', 'idx', -5.8, y); say('最後才是 c(0,3)'); },
+    () => { tag('依 j − i = 0、1、2、3 的順序算', 'good', 3.6, 5.6); say('照 j − i = 0、1、2、3 的順序計算', 'i 一定比 j 小'); },
+  ]);
+}]);
+
+FRAG.push(['dp4bari2-wcr', '每格要記 w、c、r；w 的遞迴', async (tok) => {
+  K.fresh([0, 4.4, 14], [0, 3.6, 0]);
+  let cell, sl = [], seq = [];
+  const xs = (t) => -4.8 + t * 1.5;
+  await run(tok, [
+    () => { obTable(4, { X0: -5.4, Y0: 6.5, CW: 0.95, CH: 0.8 }); cell = plate(3.6, 5.6, 3.2, 2.2); sl.push(tag('c(i,j) = 成本', 'ptr', 3.6, 5.6, 0.2)); tag('一格', 'idx', 3.6, 6.95); say('不再展開公式：改成填表'); },
+    () => { sl.push(tag('r = 給出 min 的 k（root）', 'ptr alt', 3.6, 4.95, 0.2)); say('還要記下：哪個 k 給出最小值', '那個 k 就是 root'); },
+    () => { sl.push(tag('w = ?', 'ptr', 3.6, 6.25, 0.2)); say('公式裡還有 w，也要算'); },
+    () => {
+      ['q0', 'p1', 'q1', 'p2', 'q2', 'p3', 'q3'].forEach((s, t) => seq.push(cube(s, s[0] === 'p' ? TEAL : GRAY, [0.9, 0.55, 0.5], xs(t), 1.8, 0, 1.2)));
+      const g = ghostBox(BLUE, 1.5 * 5, 0.95, 0.9); g.position.set((xs(0) + xs(4)) / 2, 1.8, 0);
+      tag('w(0,2) = q0 + p1 + q1 + p2 + q2', 'ptr', (xs(0) + xs(4)) / 2, 2.65);
+      say('w(0,2) = q0 + p1 + q1 + p2 + q2');
+    },
+    () => { const g = ghostBox(ORANGE, 1.5 * 7 + 0.2, 1.25, 1.1); g.position.set((xs(0) + xs(6)) / 2, 1.8, 0); glow(seq[5], GOLD); glow(seq[6], GOLD); tag('w(0,3) 只多了 p3 + q3', 'ptr alt', 2.4, 3.15); say('w(0,3)：前面都一樣，只多了 p3 + q3'); },
+    () => { mono(tag('w(0,3) = w(0,2) + p3 + q3', 'ptr', 0, 0.75)); say('所以 w(0,3) = w(0,2) + p3 + q3'); },
+    () => { mono(tag('w(i,j) = w(i,j−1) + p_j + q_j', 'ptr alt', 0, 0.2)); say('一般式：w(i,j) = w(i,j−1) + p_j + q_j', '知道前一格，馬上算出下一格'); },
+    () => { cell.material.color.set(MARK); sl.forEach((l) => cls(l, 'good')); say('每一格都要算：cost、weight、root'); },
+  ]);
+}]);
+
+// ── 例題（×16）：p = 3 3 1 1、q = 2 3 1 1 1 ──
+FRAG.push(['dp4bari2-wtab', '例題：先填 w', async (tok) => {
+  K.fresh([0, 4.4, 15], [0, 3.8, 0]);
+  const H = HB, P = pad(3.6, 5.3, 0.5); let T;
+  const wStep = (i, j) => {
+    T.arrows.forEach(kill); T.arrows = [];
+    T.arrow(i, j - 1, i, j); T.setW(i, j, H.w[i][j], true);
+    P.clear(); P.add('w(' + i + ',' + j + ') = w(' + i + ',' + (j - 1) + ') + p' + j + ' + q' + j); P.add('       = ' + H.w[i][j - 1] + ' + ' + H.p[j] + ' + ' + H.q[j] + ' = ' + H.w[i][j], 'ptr alt');
+    say('w(' + i + ',' + j + ') = ' + H.w[i][j - 1] + ' + ' + H.p[j] + ' + ' + H.q[j] + ' = ' + H.w[i][j]);
+  };
+  await run(tok, [
+    () => { mono(tag('key  10  20  30  40', 'ptr', 3.6, 7.4)); say('例題：4 個 key：10、20、30、40'); },
+    () => { mono(tag('p      3   3   1   1', 'idx', 3.6, 6.95)); say('成功機率 p1 … p4'); },
+    () => { mono(tag('q    2   3   1   1   1', 'idx', 3.6, 6.5)); say('失敗機率 q0 … q4：從 0 開始'); },
+    () => { tag('都乘了 16（總和 16），避開小數', 'note', 3.6, 6.0); say('數值是機率 × 16', '全部加起來 16'); },
+    () => { T = obTable(4, {}); say('每格放 w、c、r', '第一列 j − i = 0'); },
+    () => { T.setW(0, 0, H.w[0][0], true); say('w(0,0) = q0 = 2'); },
+    () => { T.setW(1, 1, H.w[1][1], true); say('w(1,1) = q1 = 3'); },
+    () => { T.coolW(); for (let i = 2; i <= 4; i++) T.setW(i, i, H.w[i][i]); say('w(i,i) = qᵢ：2、3、1、1、1'); },
+    () => { for (let i = 0; i <= 4; i++) T.setC(i, i, 0); say('c(i,i) = 0', '沒有 k 可以選'); },
+    () => { for (let i = 0; i <= 4; i++) T.setR(i, i, 0); say('root 也都是 0'); },
+    () => { P.add('w(i,j) = w(i,j−1) + p_j + q_j', 'ptr'); say('下一列用 w(i,j) = w(i,j−1) + p_j + q_j'); },
+    ...[[0, 1], [1, 2], [2, 3], [3, 4], [0, 2], [1, 3], [2, 4], [0, 3], [1, 4], [0, 4]].map(([i, j]) => () => wStep(i, j)),
+  ]);
+}]);
+
+FRAG.push(['dp4bari2-tab1', 'j − i = 1：c 就等於 w', async (tok) => {
+  const H = HB, T = stageB(H, [0, 1]), P = pad(3.6, 5.6, 0.5);
+  await run(tok, [
+    () => { for (let i = 0; i < 4; i++) T.mark(i, i + 1, MARK); say('開始算 c：先算 j − i = 1 這一列'); },
+    () => { P.add('c(i,j) = min{c(i,k−1) + c(k,j)} + w(i,j)', 'ptr'); P.add('k：i < k ≤ j'); say('對照公式來算'); },
+    () => { P.clear(); for (let i = 1; i < 4; i++) T.mark(i, i + 1); P.add('c(0,1)：0 < k ≤ 1 → k = 1'); say('c(0,1)：k 只能是 1'); },
+    () => { P.add('= c(0,0) + c(1,1) + w(0,1)'); kArrows(T, 0, 1, 1); say('= c(0,0) + c(1,1) + w(0,1)'); },
+    () => { T.glowC(0, 0); T.glowC(1, 1); P.add('= 0 + 0 + w(0,1)'); say('c(0,0) = 0、c(1,1) = 0', '表裡已經有了'); },
+    () => { T.hotW(0, 1); P.add('= 0 + ' + H.w[0][1]); say('w(0,1) = 8'); },
+    () => { T.clear(); T.coolW(); T.setC(0, 1, H.c[0][1]); T.mark(0, 1); cls(P.ls[P.ls.length - 1], 'ptr alt'); say('c(0,1) = 0 + 8 = 8'); },
+    () => { P.add('只有一個 k → c = w', 'good'); say('只有一個 k，結果就是 w'); },
+    () => { P.clear(); P.add('c(1,2)：k = 2'); P.add('= c(1,1) + c(2,2) + w(1,2)'); kArrows(T, 1, 2, 2); say('c(1,2) = c(1,1) + c(2,2) + w(1,2)'); },
+    () => { T.clear(); P.add('= 0 + 0 + ' + H.w[1][2] + ' = ' + H.c[1][2], 'ptr alt'); T.setC(1, 2, H.c[1][2]); say('c(1,2) = 0 + 0 + 7 = 7'); },
+    () => { T.setC(2, 3, H.c[2][3]); T.setC(3, 4, H.c[3][4]); P.add('c(2,3) = 3、c(3,4) = 3'); say('c(2,3)、c(3,4) 也直接等於 w', '3、3'); },
+    () => { for (let i = 0; i < 4; i++) T.setR(i, i + 1, H.r[i][i + 1]); say('root 依序是 1、2、3、4', '只有一個 key 可以當 root'); },
+  ]);
+}]);
+
+FRAG.push(['dp4bari2-tab02', 'c(0,2) = 19', async (tok) => {
+  const H = HB, T = stageB(H, [0, 2]), P = pad(3.6, 5.6, 0.5); let l1, l2;
+  await run(tok, [
+    () => { T.mark(0, 2, MARK); P.add('c(0,2)：0 < k ≤ 2 → k = 1、2'); say('c(0,2)：k 可以是 1、2'); },
+    () => { l1 = P.add(kText(H, 0, 2, 1)); kArrows(T, 0, 2, 1); say('k = 1：c(0,0) + c(1,2)'); },
+    () => { l2 = P.add(kText(H, 0, 2, 2)); kArrows(T, 0, 2, 2); say('k = 2：c(0,1) + c(2,2)'); },
+    () => { P.add('取 min 後 + w(0,2) = ' + H.w[0][2]); T.hotW(0, 2); say('最後加上 w(0,2) = 12'); },
+    () => { T.glowC(0, 0); T.glowC(1, 2); txt(l1, kText(H, 0, 2, 1, true)); say('k = 1：0 + 7 = 7', '小的格子已經算好，直接拿來用'); },
+    () => { T.glowC(0, 1); T.glowC(2, 2); txt(l2, kText(H, 0, 2, 2, true)); say('k = 2：8 + 0 = 8'); },
+    () => { cls(l1, 'ptr alt'); say('7 和 8，最小的是 7'); },
+    () => { T.clear(); T.coolW(); T.setC(0, 2, H.c[0][2]); T.mark(0, 2); P.add('c(0,2) = 7 + 12 = ' + H.c[0][2], 'ptr alt'); say('c(0,2) = 7 + 12 = 19'); },
+    () => { T.setR(0, 2, H.r[0][2]); say('k = 1 給出最小值 → root = 1'); },
+    () => { P.add('給出 min 的 k → 當 root', 'good'); say('誰給出最小值，誰就是 root'); },
+  ]);
+}]);
+
+FRAG.push(['dp4bari2-tab13', 'c(1,3)、c(2,4)、c(0,3) = 25、c(1,4)', async (tok) => {
+  const H = HB, T = stageB(H, [1, 3]), P = pad(3.6, 5.6, 0.5); let L = [];
+  await run(tok, [
+    () => { T.setC(1, 3, H.c[1][3]); T.setR(1, 3, H.r[1][3]); P.add('c(1,3) = 12，r = 2（同樣方法）'); say('c(1,3) = 12，root 2', '照同一個公式算'); },
+    () => { T.setC(2, 4, H.c[2][4]); T.setR(2, 4, H.r[2][4]); P.add('c(2,4) = 8，r = 3'); say('c(2,4) = 8，root 3'); },
+    () => { P.clear(); T.mark(0, 3, MARK); P.add('c(0,3)：k = 1、2、3'); say('c(0,3)：k 可以是 1、2、3'); },
+    () => { L[1] = P.add(kText(H, 0, 3, 1)); kArrows(T, 0, 3, 1); say('k = 1：c(0,0) + c(1,3)'); },
+    () => { L[2] = P.add(kText(H, 0, 3, 2)); L[3] = P.add(kText(H, 0, 3, 3)); kArrows(T, 0, 3, 2); kArrows(T, 0, 3, 3); say('k = 2：c(0,1) + c(2,3)', 'k = 3：c(0,2) + c(3,3)'); },
+    () => { P.add('取 min 後 + w(0,3) = ' + H.w[0][3]); T.hotW(0, 3); say('最後加上 w(0,3)'); },
+    () => { txt(L[1], kText(H, 0, 3, 1, true)); say('k = 1：0 + 12 = 12'); },
+    () => { txt(L[2], kText(H, 0, 3, 2, true)); say('k = 2：8 + 3 = 11'); },
+    () => { txt(L[3], kText(H, 0, 3, 3, true)); say('k = 3：19 + 0 = 19'); },
+    () => { P.add('min(12, 11, 19) + 14'); cls(L[2], 'ptr alt'); say('min(12, 11, 19) + w(0,3) = 11 + 14'); },
+    () => { T.clear(); T.coolW(); T.setC(0, 3, H.c[0][3]); T.mark(0, 3); P.add('c(0,3) = 11 + 14 = ' + H.c[0][3], 'ptr alt'); say('c(0,3) = 25'); },
+    () => { T.setR(0, 3, H.r[0][3]); say('給出 25 的是 k = 2 → root 2'); },
+    () => { T.setC(1, 4, H.c[1][4]); T.setR(1, 4, H.r[1][4]); P.add('c(1,4) = 19，r = 2'); say('c(1,4) = 19，root 2'); },
+    () => { P.add('c(1,4)：k 從 2 開始試（2、3、4）', 'good'); say('c(1,4) 的 k 從 2 開始，不是從 1'); },
+  ]);
+}]);
+
+FRAG.push(['dp4bari2-tab04', 'c(0,4) = 32 → 成本 2', async (tok) => {
+  const H = HB, T = stageB(H, [0, 4]), P = pad(3.6, 5.6, 0.5); const L = [];
+  await run(tok, [
+    () => { T.mark(0, 4, MARK); P.add('c(0,4)：0 < k ≤ 4 → k = 1、2、3、4'); say('c(0,4)：k 可以是 1、2、3、4'); },
+    () => { L[1] = P.add(kText(H, 0, 4, 1)); kArrows(T, 0, 4, 1); say('k = 1：c(0,0) + c(1,4)'); },
+    () => { L[2] = P.add(kText(H, 0, 4, 2)); L[3] = P.add(kText(H, 0, 4, 3)); kArrows(T, 0, 4, 2); kArrows(T, 0, 4, 3); say('k = 2：c(0,1) + c(2,4)', 'k = 3：c(0,2) + c(3,4)'); },
+    () => { L[4] = P.add(kText(H, 0, 4, 4)); kArrows(T, 0, 4, 4); P.add('取 min 後 + w(0,4) = ' + H.w[0][4]); T.hotW(0, 4); say('k = 4：c(0,3) + c(4,4)', '最後 + w(0,4)'); },
+    () => { txt(L[1], kText(H, 0, 4, 1, true)); say('k = 1：0 + 19 = 19'); },
+    () => { txt(L[2], kText(H, 0, 4, 2, true)); say('k = 2：8 + 8 = 16'); },
+    () => { txt(L[3], kText(H, 0, 4, 3, true)); say('k = 3：19 + 3 = 22'); },
+    () => { txt(L[4], kText(H, 0, 4, 4, true)); say('k = 4：25 + 0 = 25'); },
+    () => { P.add('min(19, 16, 22, 25) + 16'); cls(L[2], 'ptr alt'); say('min(19, 16, 22, 25) + w(0,4) = 16 + 16'); },
+    () => { T.clear(); T.coolW(); T.setC(0, 4, H.c[0][4]); T.mark(0, 4, DONE); P.add('c(0,4) = 16 + 16 = ' + H.c[0][4], 'ptr alt'); say('c(0,4) = 32'); },
+    () => { T.setR(0, 4, H.r[0][4]); say('給出最小值的是 k = 2 → root 2'); },
+    async () => {
+      say('從小的算到大的', '算大的時候，小的都已經在表裡');
+      const cs = cellsOf(4);
+      await anim(tok, 1600, (u) => { const d = Math.min(4, Math.floor(u * 5)); cs.forEach(([i, j]) => T.mark(i, j, j - i === d ? MARK : j - i === 4 ? DONE : PAPER)); });
+      cs.forEach(([i, j]) => T.mark(i, j, j - i === 4 ? DONE : PAPER));
+    },
+    () => { P.add('tabular approach：由小到大填表', 'good'); say('這就是 DP 的 tabular approach'); },
+    () => { P.add('數值乘過 16 → 32 / 16 = 2', 'ptr alt'); say('機率乘了 16：真正的成本 32 / 16 = 2'); },
+    () => { P.add('每格都取 min → 間接試過所有 root', 'good'); say('每次都取最小', '等於間接試過所有的樹'); },
+  ]);
+}]);
+
+FRAG.push(['dp4bari2-tbuild', '用 r 表建出最佳 BST', async (tok) => {
+  const H = HB, T = stageB(H, null, 'cr');
+  const KY = [10, 20, 30, 40]; let lt, rt;
+  const sqAt = (x, y, px, py) => { line(px, py - 0.4, x, y + 0.2, 0, LINEC); cube('', GRAY, [0.36, 0.36, 0.36], x, y, 0, 0.8); };
+  const nd = {};
+  await run(tok, [
+    () => { Object.values(T.r).forEach((l) => cls(l, 'ptr')); say('用表裡的 r 決定樹的形狀'); },
+    () => { T.mark(0, 4, MARK); tag('整棵樹 = key 1…4 → 看 r(0,4)', 'say', 3.6, 7.4); say('整棵樹：看 r(0,4)', 'i 從 0 開始，配合 q0'); },
+    () => { nd[20] = tnode(20, 3.6, 6.3, 0, null, TEAL); tag('r(0,4) = 2 → 第 2 個 key', 'note', 5.6, 6.6); say('r(0,4) = 2 → 第 2 個 key 20 當 root'); },
+    () => { lt = tag('左：(i, k−1)', 'idx', 2.0, 5.75); rt = tag('右：(k, j)', 'idx', 5.2, 5.75); say('root 是 k：左邊 (i, k−1)、右邊 (k, j)'); },
+    () => { txt(lt, '左：(0,1)'); txt(rt, '右：(2,4)'); cls(lt, 'ptr'); cls(rt, 'ptr'); say('左邊 (0,1)，右邊 (2,4)'); },
+    () => { T.mark(0, 4); T.mark(0, 1, MARK); nd[10] = tnode(10, 2.0, 4.9, 0, nd[20], BLUE); say('r(0,1) = 1 → 10 在左邊'); },
+    () => { T.mark(0, 1); T.mark(2, 4, MARK); say('(2,4)：還有 30、40 兩個 key', '表會告訴你誰當 root'); },
+    () => { nd[30] = tnode(30, 5.2, 4.9, 0, nd[20], BLUE); say('r(2,4) = 3 → 30'); },
+    () => { T.mark(2, 4); nd[40] = tnode(40, 6.3, 3.5, 0, nd[30], BLUE); say('剩下 40 → 放在 30 的右邊'); },
+    () => { T.mark(3, 4, MARK); sqAt(1.5, 3.7, 2.0, 4.9); sqAt(2.5, 3.7, 2.0, 4.9); sqAt(4.6, 3.7, 5.2, 4.9); sqAt(5.8, 2.3, 6.3, 3.5); sqAt(6.8, 2.3, 6.3, 3.5); say('r(3,4) = 4 ✓', '其他位置是 null（方塊）'); },
+    () => { T.mark(3, 4); Object.values(nd).forEach((m) => glow(m, GREEN)); say('最佳 BST：20 當 root', '10 在左、30 在右、40 在 30 的右邊'); },
+    () => { tag('好像試過所有的樹，挑了最好的', 'good', 4.0, 1.4); say('就像試過所有 BST 再挑最好的'); },
+    () => { tag('同類問題 → 同一套 DP 策略', 'say', 4.0, 0.8); say('類似的問題，可以用同樣的 DP 策略'); },
+  ]);
+}]);
+
+// ═════════════════ vLS-zRCHo-Y：Optimal BST（只考慮成功搜尋的頻率） ═════════════════
+FRAG.push(['dp4bari2-bst2', 'BST：建樹與搜尋 50、45', async (tok) => {
+  K.fresh([0, 4.2, 13.5], [0, 3.4, 0]);
+  const row = {}, nd = {}; let cur, ex;
+  const keysIn = [40, 20, 10, 30, 60, 50, 70];
+  const place = async (ks) => {
+    await Promise.all(ks.map((k) => { const [x, y] = B7[k]; return travel(tok, row[k], row[k].position.clone(), V3(x, y, 0), 900); }));
+    ks.forEach((k) => { nd[k] = row[k]; const par = B7[k][2]; if (par) line(B7[par][0], B7[par][1], B7[k][0], B7[k][1]); });
+  };
+  const goto = async (k) => { const [x, y] = above(k); await goTo(tok, cur, x, y); glow(nd[k], GOLD); };
+  await run(tok, [
+    () => { [10, 20, 30, 40, 50, 60, 70].forEach((k, t) => (row[k] = cube(k, BLUE, [0.9, 0.9, 0.9], -4.5 + t * 1.5, 1.0, 0, 1.2))); say('給一組 key，目的是搜尋'); },
+    () => { tag('linear search、binary search… binary tree 也能用來搜尋嗎？', 'say', 0, 7.3); say('除了 linear、binary search', 'binary tree 能不能拿來搜尋？'); },
+    async () => { say('排成 binary tree：40 當 root', '20 在左邊，10 在 20 的左邊'); await place([40, 20, 10]); },
+    async () => { say('30 在 20 右邊；右邊是 60、50、70'); await place([30, 60, 50, 70]); },
+    () => { [10, 20, 30].forEach((k) => tint(nd[k], TEAL)); [50, 60, 70].forEach((k) => tint(nd[k], PURPLE)); say('任何節點：左邊都比它小、右邊都比它大'); },
+    () => { keysIn.forEach((k) => tint(nd[k], BLUE)); cur = tag('找 50', 'pkt', 0, 7.05); glow(nd[40], GOLD); say('找 50：從 root 開始', '40 是 50 嗎？不是'); },
+    async () => { say('50 > 40 → 一定在右邊'); await goto(60); glow(nd[40], null); },
+    async () => { say('50 < 60 → 往左：找到了'); await goto(50); glow(nd[60], null); tint(nd[50], TEAL); glow(nd[50], GREEN); },
+    () => { glow(nd[50], null); tint(nd[50], BLUE); [6.2, 4.9, 3.6].forEach((y, t) => tag('level ' + (t + 1), 'ptr', -6.2, y)); say('最多比較次數 = 樹的高度', '要找的在 leaf 時最久'); },
+    () => { tag('高度最小 ≈ log n', 'good', 4.6, 7.3); say('最小高度約 log n', '搜尋時間 O(log n)'); },
+    async () => { kill(cur); cur = tag('找 45', 'pkt', 0, 7.05); glow(nd[40], GOLD); say('找 45：45 > 40 → 往右'); await goto(60); glow(nd[40], null); },
+    async () => { say('45 < 60、45 < 50 → 往左', '沒有了：停在這裡'); await goto(50); glow(nd[60], null); line(1.4, 3.2, 0.7, 2.62, 0, LINEC); ex = cube('', RED, [0.42, 0.42, 0.42], 0.7, 2.4, 0, 0.8); glow(ex, DRED); await goTo(tok, cur, 0.7, 3.1, 400); },
+    () => { tag('unsuccessful search', 'bad', 0.7, 1.75); say('找不到：unsuccessful search', '搜尋可能成功，也可能失敗'); },
+  ]);
+}]);
+
+FRAG.push(['dp4bari2-bst5avg', '3 個 key 的 5 棵 BST：平均比較次數', async (tok) => {
+  K.fresh([0, 4.2, 14], [0, 3.8, 0]);
+  const all = []; const tr = [];
+  const avg = (t) => { const s = T5[t].reduce((a, x) => a + x[2], 0); tag(s + '/3' + (s === 6 ? ' = 2' : ''), s < 6 ? 'good' : 'ptr alt', T5X[t], 2.7); };
+  await run(tok, [
+    () => { [10, 20, 30].forEach((k, t) => all.push(cube(k, BLUE, [0.8, 0.8, 0.8], -1.5 + t * 1.5, 1.2, 0, 1.2))); say('3 個 key：可以建出幾種 BST？'); },
+    () => { all.forEach(kill); tr[0] = drawT5(0, all); say('10 當 root，20 在右，30 再右'); },
+    async () => { for (let t = 1; t < 5; t++) { tr[t] = drawT5(t, all); await anim(tok, 300, () => {}); } say('10、30、20；20 在中間；30 當 root…'); },
+    () => { tag('3 個 key → 5 棵 BST', 'ptr', 0, 7.3); say('3 個 key 一共 5 種 BST'); },
+    () => { mono(tag('n 個 key：(2n C n) / (n + 1)', 'ptr', 0, 1.9)); say('n 個 key：(2n C n) / (n + 1) 棵'); },
+    () => { mono(tag('n = 3：6C3 / 4 = 5', 'ptr alt', 0, 1.35)); say('n = 3：6C3 / 4 = 5'); },
+    () => { tag('成本 = 比較次數', 'say', -4.3, 7.3); say('搜尋成本看比較次數'); },
+    () => { Object.values(tr[0]).forEach((m) => tag(m.userData.lv + ' 次', 'idx', m.position.x + 0.75, m.position.y + 0.2)); say('root 比 1 次、第 2 層 2 次、第 3 層 3 次'); },
+    () => { avg(0); say('第 1 棵平均：(1 + 2 + 3) / 3 = 2'); },
+    () => { avg(1); say('第 2 棵：一樣是 6/3 = 2'); },
+    () => { avg(2); say('第 3 棵：(1 + 2 + 2) / 3 = 5/3', '比 2 小'); },
+    () => { avg(3); say('第 4 棵：6/3 = 2'); },
+    () => { avg(4); say('第 5 棵：6/3 = 2'); },
+    () => { Object.values(tr[2]).forEach((m) => glow(m, GREEN)); say('5 棵裡，這棵平均比較次數最少'); },
+    () => { tag('高度小 → balanced BST', 'good', 0, 7.3); say('因為它的高度最小：height balanced BST'); },
+  ]);
+}]);
+
+FRAG.push(['dp4bari2-bst5freq', '加上搜尋頻率：成本 17 的樹最好', async (tok) => {
+  K.fresh([0, 4.2, 14], [0, 3.8, 0]);
+  const f = [3, 2, 5], fk = (k) => f[[10, 20, 30].indexOf(k)];
+  const all = [], tr = [], bars = []; let km = [];
+  const cost = (t) => {
+    const parts = T5[t].map(([k, , lv]) => lv + '×' + fk(k)), v = T5[t].reduce((a, [k, , lv]) => a + lv * fk(k), 0);
+    Object.values(tr[t]).forEach((m) => tag(m.userData.lv + '×' + fk(+m.userData.lbl.element.textContent), 'idx', m.position.x + 0.7, m.position.y + 0.2));
+    tag(String(v), v === 17 ? 'good' : 'ptr alt', T5X[t], 2.7);
+    return parts.join(' + ') + ' = ' + v;
+  };
+  await run(tok, [
+    () => { km = [10, 20, 30].map((k, t) => cube(k, BLUE, [0.8, 0.8, 0.8], -2 + t * 2, 1.2, 0, 1.2)); say('Optimal BST：還要看每個 key 的搜尋頻率'); },
+    () => { km.forEach((m, t) => all.push(tag('頻率 ' + f[t], 'note', m.position.x, 0.45))); say('10 搜尋 3 次、20 搜尋 2 次、30 搜尋 5 次'); },
+    async () => {
+      const ms = km.map((m, t) => { const b = cube('', ORANGE, [0.5, 1, 0.5], m.position.x + 0.75, 0.8, 0); b.scale.y = 0.001; bars.push(b); return [b, f[t] * 0.4]; });
+      say('不是每個 key 都一樣常被找', '有的常用、有的很少用');
+      await anim(tok, 900, (u) => ms.forEach(([b, h]) => { b.scale.y = Math.max(0.001, h * u); b.position.y = 0.8 + h * u / 2; }));
+    },
+    () => { glow(km[2], GOLD); say('30 的頻率最高'); },
+    () => { km.concat(bars).concat(all).forEach(kill); for (let t = 0; t < 5; t++) tr[t] = drawT5(t, []); tag('成本 = Σ 層數 × 頻率', 'ptr', 0, 7.3); say('哪一種樹的安排最好？', '成本 = Σ 層數 × 頻率'); },
+    () => { const s = cost(0); tag('影片口算 18，實為 22', 'bad', T5X[0], 2.1); say('第 1 棵：' + s); },
+    () => { say('第 2 棵：' + cost(1)); },
+    () => { say('第 3 棵：' + cost(2)); },
+    () => { say('第 4 棵：' + cost(3)); },
+    () => { say('第 5 棵：' + cost(4)); },
+    () => { Object.values(tr[3]).forEach((m) => glow(m, GREEN)); tag('optimal ✓', 'good', T5X[3], 7.0); say('30 當 root 的這棵成本 17 最小', '它就是 optimal BST'); },
+    () => { tag('balanced 但 18', 'note', T5X[2], 2.1); say('它不是高度平衡的', '但依頻率算，成本最小'); },
+    () => { tag('問題：給定 key 和頻率 → 找成本最小的 BST', 'say', 0, 1.3); say('問題：給定 key 和頻率', '找成本最小的 BST'); },
+  ]);
+}]);
+
+FRAG.push(['dp4bari2-ftab', 'DP 表：先填一個 key 的格子', async (tok) => {
+  const H = HV; let T; const P = pad(3.4, 5.8, 0.5);
+  K.fresh([0, 4.4, 15], [0, 3.8, 0]);
+  await run(tok, [
+    () => { mono(tag('key   10  20  30  40', 'ptr', 3.4, 7.4)); mono(tag('freq   4   2   6   3', 'idx', 3.4, 6.95)); say('例題：key 10、20、30、40', '頻率 4、2、6、3'); },
+    () => { T = obTable(4, { layout: 'ij', w: false, X0: -5.2, Y0: 6.4, CW: 1.15, CH: 1.0 }); say('畫一張表，填好後就能建出樹'); },
+    () => { P.add('表從 0 開始；key 從 1 開始', 'note'); say('key 是 1~4，表卻從 0 開始', '這樣才配合公式'); },
+    () => { P.add('row = i、column = j'); say('列叫 i、行叫 j'); },
+    () => { for (let i = 0; i <= 4; i++) T.mark(i, i, MARK); P.add('先填 j − i = 0：c(0,0)…c(4,4)'); say('先算 j − i = 0 的格子', '0−0、1−1、2−2…'); },
+    () => { for (let i = 0; i <= 4; i++) { T.mark(i, i); T.setC(i, i, 0); } say('對角線全部填 0', '沒有 key，成本 0'); },
+    () => { for (let i = 0; i < 4; i++) T.mark(i, i + 1, MARK); P.add('再來 j − i = 1'); say('下一條對角線：j − i = 1'); },
+    () => { P.add('c(0,1)、c(1,2)、c(2,3)、c(3,4)'); say('要算 c(0,1)、c(1,2)、c(2,3)、c(3,4)'); },
+    () => { T.mark(0, 1); T.setC(0, 1, H.c[0][1]); T.setR(0, 1, 1); P.add('c(0,1)：只有 10 → 頻率 4', 'ptr alt'); say('c(0,1)：只看 key 10', '成本 = 頻率 4'); },
+    () => { T.mark(1, 2); T.setC(1, 2, H.c[1][2]); T.setR(1, 2, 2); say('c(1,2)：只有 20 → 2'); },
+    () => { T.mark(2, 3); T.setC(2, 3, H.c[2][3]); T.setR(2, 3, 3); say('c(2,3)：只有 30 → 6'); },
+    () => { T.mark(3, 4); T.setC(3, 4, H.c[3][4]); T.setR(3, 4, 4); P.add('一個 key：成本 = 它的頻率', 'good'); say('c(3,4)：只有 40 → 3', '4、2、6、3'); },
+  ]);
+}]);
+
+// two small trees for two keys a < b: left = a as root, right = b as root
+function twoTrees(ka, kb, fa, fb, all) {
+  const a1 = tnode(ka, 1.9, 5.9, 0, null, BLUE), b1 = tnode(kb, 2.8, 4.7, 0, a1, BLUE);
+  const b2 = tnode(kb, 5.4, 5.9, 0, null, BLUE), a2 = tnode(ka, 4.5, 4.7, 0, b2, BLUE);
+  all.push(a1, b1, b1.userData.edge, b2, a2, a2.userData.edge);
+  return { A: [a1, b1], B: [b2, a2], vA: fa + 2 * fb, vB: fb + 2 * fa };
+}
+FRAG.push(['dp4bari2-two02', '兩個 key：c(0,2) = 8', async (tok) => {
+  const H = HV, T = stageV(H, [0, 2]), P = pad(3.6, 3.2, 0.5), all = []; let tt, l1, l2;
+  await run(tok, [
+    () => { [[0, 2], [1, 3], [2, 4]].forEach(([i, j]) => T.mark(i, j, MARK)); say('j − i = 2：c(0,2)、c(1,3)、c(2,4)', '每次看兩個 key'); },
+    () => { T.mark(1, 3); T.mark(2, 4); say('先算 c(0,2)'); },
+    () => { all.push(tag('key 10、20；頻率 4、2', 'say', 3.6, 6.65)); say('不看 0，從 1 開始：key 10、20', '頻率 4、2'); },
+    () => { tt = twoTrees(10, 20, 4, 2, all); say('兩個 key：兩種 BST', '10 當 root，或 20 當 root'); },
+    () => { all.push(tag('1×4 + 2×2 = ' + tt.vA, 'ptr alt', 2.35, 3.9)); say('10 當 root：1×4 + 2×2 = 8'); },
+    () => { all.push(tag('1×2 + 2×4 = ' + tt.vB, 'ptr alt', 4.95, 3.9)); say('20 當 root：1×2 + 2×4 = 10'); },
+    () => { tt.A.forEach((m) => glow(m, GREEN)); T.mark(0, 2); T.setC(0, 2, H.c[0][2]); T.setR(0, 2, H.r[0][2]); say('最小是 8：c(0,2) = 8', 'root = 第 1 個 key'); },
+    () => { P.add('w(i,j) = 這段 key 的頻率和'); P.add('w(0,2) = 4 + 2 = 6'); say('用公式看看：先認識 w', 'w = 這段 key 的頻率總和'); },
+    () => { l1 = P.add('root 1：c(0,0) + c(1,2) + w(0,2)'); kArrows(T, 0, 2, 1); say('root 1：c(0,0) + c(1,2) + w(0,2)', '左子樹 + 右子樹 + w'); },
+    () => { T.glowC(0, 0); T.glowC(1, 2); txt(l1, 'root 1：0 + 2 + w(0,2)'); say('從表裡查：c(0,0) = 0、c(1,2) = 2'); },
+    () => { txt(l1, 'root 1：0 + 2 + 6 = 8 ✓'); cls(l1, 'ptr alt'); say('w(0,2) = 6 → 0 + 2 + 6 = 8', '和直接算的一樣'); },
+    () => { T.clear(); l2 = P.add('root 2：c(0,1) + c(2,2) + w(0,2)'); kArrows(T, 0, 2, 2); say('root 2：c(0,1) + c(2,2) + w(0,2)'); },
+    () => { T.glowC(0, 1); T.glowC(2, 2); txt(l2, 'root 2：4 + 0 + 6 = 10 ✓'); say('4 + 0 + 6 = 10', '也和直接算的一樣'); },
+    () => { T.clear(); P.add('取 min → 8', 'good'); say('最小的是 8，就寫進表裡'); },
+  ]);
+}]);
+
+FRAG.push(['dp4bari2-two1324', '兩個 key：c(1,3) = 10、c(2,4) = 12', async (tok) => {
+  const H = HV, T = stageV(H, [1, 3]); let all = [], tt;
+  await run(tok, [
+    () => { T.mark(1, 3, MARK); all.push(tag('c(1,3)：key 20、30', 'say', 3.6, 6.65)); say('c(1,3)：不看 1，看 key 2、3', '20、30'); },
+    () => { tt = twoTrees(20, 30, 2, 6, all); all.push(tag('頻率 2、6', 'note', 3.6, 6.2)); say('頻率 2、6：兩種樹'); },
+    () => { all.push(tag('1×2 + 2×6 = ' + tt.vA, 'ptr alt', 2.35, 3.9)); say('20 當 root：2 + 12 = 14'); },
+    () => { all.push(tag('1×6 + 2×2 = ' + tt.vB, 'ptr alt', 4.95, 3.9)); say('30 當 root：6 + 4 = 10'); },
+    () => { tt.B.forEach((m) => glow(m, GREEN)); T.mark(1, 3); T.setC(1, 3, H.c[1][3]); T.setR(1, 3, H.r[1][3]); say('c(1,3) = 10', '第 3 個 key 當 root'); },
+    () => { all.forEach(kill); all = []; T.mark(2, 4, MARK); all.push(tag('c(2,4)：key 30、40；頻率 6、3', 'say', 3.6, 6.65)); say('c(2,4)：key 30、40', '頻率 6、3'); },
+    () => { tt = twoTrees(30, 40, 6, 3, all); say('30 當 root，或 40 當 root'); },
+    () => { all.push(tag('1×6 + 2×3 = ' + tt.vA, 'ptr alt', 2.35, 3.9)); say('30 當 root：6 + 6 = 12'); },
+    () => { all.push(tag('1×3 + 2×6 = ' + tt.vB, 'ptr alt', 4.95, 3.9)); say('40 當 root：3 + 12 = 15'); },
+    () => { tt.A.forEach((m) => glow(m, GREEN)); T.mark(2, 4); T.setC(2, 4, H.c[2][4]); T.setR(2, 4, H.r[2][4]); say('c(2,4) = 12', '第 3 個 key 當 root'); },
+    () => { [[0, 2], [1, 3], [2, 4]].forEach(([i, j]) => T.mark(i, j, DONE)); say('j − i = 2 這條對角線填好了'); },
+  ]);
+}]);
+
+// Formula working for c(i,j) in the ij table: lines per root k, then values, then min
+function rootLines(T, H, P, i, j) {
+  const L = {};
+  L.add = (ks) => ks.forEach((k) => { L[k] = P.add('root ' + k + '：c(' + i + ',' + (k - 1) + ') + c(' + k + ',' + j + ')'); kArrows(T, i, j, k); });
+  L.val = (k) => { T.clear(); T.glowC(i, k - 1); T.glowC(k, j); txt(L[k], 'root ' + k + '：' + H.c[i][k - 1] + ' + ' + H.c[k][j] + ' = ' + (H.c[i][k - 1] + H.c[k][j])); };
+  return L;
+}
+FRAG.push(['dp4bari2-three03', '三個 key：c(0,3) = 20', async (tok) => {
+  const H = HV, T = stageV(H, [0, 3]), P = pad(3.6, 3.6, 0.48), all = []; let L;
+  const MT = [
+    [[10, 0, 0, null], [20, 0.4, 1, 10], [30, 0.8, 2, 20]],
+    [[10, 0, 0, null], [30, 0.4, 1, 10], [20, 0, 2, 30]],
+    [[20, 0, 0, null], [10, -0.4, 1, 20], [30, 0.4, 1, 20]],
+    [[30, 0, 0, null], [20, -0.4, 1, 30], [10, -0.8, 2, 20]],
+    [[30, 0, 0, null], [10, -0.4, 1, 30], [20, 0, 2, 10]],
+  ];
+  const tx = [1.0, 2.4, 3.8, 5.2, 6.4];
+  await run(tok, [
+    () => { T.mark(0, 3, MARK); T.mark(1, 4, MARK); say('j − i = 3：c(0,3)、c(1,4)', '每次看三個 key'); },
+    () => { T.mark(1, 4); all.push(tag('c(0,3)：key 10、20、30；頻率 4、2、6', 'say', 3.6, 6.65)); say('c(0,3)：key 10、20、30', '頻率 4、2、6'); },
+    () => { miniTree(MT[0], tx[0], 6.0, 0.6, all, 0.42); say('10 當 root：20、30 在右邊'); },
+    () => { miniTree(MT[1], tx[1], 6.0, 0.6, all, 0.42); say('10 當 root：30、20'); },
+    () => { miniTree(MT[2], tx[2], 6.0, 0.6, all, 0.42); say('20 當 root：10 在左、30 在右'); },
+    () => { miniTree(MT[3], tx[3], 6.0, 0.6, all, 0.42); miniTree(MT[4], tx[4], 6.0, 0.6, all, 0.42); say('30 當 root：兩種'); },
+    () => { all.push(tag('3 個 key → 5 棵：直接用公式', 'note', 3.6, 4.3)); say('一共 5 棵：這次直接用公式'); },
+    () => { P.add('w(0,3) = 4 + 2 + 6 = 12'); say('w(0,3) = 4 + 2 + 6 = 12'); L = rootLines(T, H, P, 0, 3); },
+    () => { L.add([1]); say('root 1：c(0,0) + c(1,3) + 12'); },
+    () => { L.add([2, 3]); say('root 2：c(0,1) + c(2,3) + 12', 'root 3：c(0,2) + c(3,3) + 12'); },
+    () => { L.val(1); txt(L[1], L[1].element.textContent + ' → +12 = 22'); say('0 + 10 + 12 = 22'); },
+    () => { L.val(2); txt(L[2], L[2].element.textContent + ' → +12 = 22'); say('4 + 6 + 12 = 22'); },
+    () => { L.val(3); txt(L[3], L[3].element.textContent + ' → +12 = 20'); cls(L[3], 'ptr alt'); say('8 + 0 + 12 = 20'); },
+    () => { T.clear(); T.mark(0, 3); T.setC(0, 3, H.c[0][3]); T.setR(0, 3, H.r[0][3]); say('c(0,3) = 20', '第 3 個 key 當 root'); },
+  ]);
+}]);
+
+FRAG.push(['dp4bari2-c14', '三個 key：c(1,4) = 16', async (tok) => {
+  const H = HV, T = stageV(H, [1, 4]), P = pad(3.6, 5.6, 0.5); let L;
+  await run(tok, [
+    () => { T.mark(1, 4, MARK); P.add('c(1,4)：key 20、30、40', 'say'); say('c(1,4)：不看 1，從第 2 個 key 開始', '20、30、40'); },
+    () => { P.add('頻率 2、6、3：直接用公式', 'note'); say('頻率 2、6、3', '不畫樹，直接用公式'); },
+    () => { P.add('w(1,4) = 2 + 6 + 3 = 11'); say('w(1,4) = 2 + 6 + 3 = 11'); L = rootLines(T, H, P, 1, 4); },
+    () => { L.add([2]); say('root 2：c(1,1) + c(2,4)'); },
+    () => { L.add([3, 4]); say('root 3：c(1,2) + c(3,4)', 'root 4：c(1,3) + c(4,4)'); },
+    () => { L.val(2); say('0 + 12 = 12'); },
+    () => { L.val(3); say('2 + 3 = 5'); },
+    () => { L.val(4); say('10 + 0 = 10'); },
+    () => { T.clear(); cls(L[3], 'ptr alt'); P.add('min 5 + 11 = 16', 'ptr alt'); say('最小 5 → 5 + 11 = 16'); },
+    () => { T.mark(1, 4); T.setC(1, 4, H.c[1][4]); T.setR(1, 4, H.r[1][4]); say('c(1,4) = 16', 'root 又是 3'); },
+  ]);
+}]);
+
+FRAG.push(['dp4bari2-c04', '四個 key：c(0,4) = 26', async (tok) => {
+  const H = HV, T = stageV(H, [0, 4]), P = pad(3.6, 5.6, 0.48); let L;
+  await run(tok, [
+    () => { T.mark(0, 4, MARK); P.add('j − i = 4：c(0,4)', 'say'); say('最後 j − i = 4：c(0,4)', '全部四個 key'); },
+    () => { P.add('key 10 20 30 40；頻率 4 2 6 3', 'note'); say('直接用公式：key 10、20、30、40'); },
+    () => { P.add('w(0,4) = 4 + 2 + 6 + 3 = 15'); L = rootLines(T, H, P, 0, 4); say('w(0,4) = 15'); },
+    () => { L.add([1]); say('root 1：c(0,0) + c(1,4)'); },
+    () => { L.add([2]); say('root 2：c(0,1) + c(2,4)'); },
+    () => { L.add([3, 4]); say('root 3：c(0,2) + c(3,4)', 'root 4：c(0,3) + c(4,4)'); },
+    () => { P.add('每個都 + 15'); say('每一個都要加上 w(0,4) = 15'); },
+    () => { L.val(1); say('0 + 16 = 16'); },
+    () => { L.val(2); say('4 + 12 = 16'); },
+    () => { L.val(3); say('8 + 3 = 11'); },
+    () => { L.val(4); say('20 + 0 = 20'); },
+    () => { T.clear(); cls(L[3], 'ptr alt'); P.add('min(16, 16, 11, 20) + 15 = 26', 'ptr alt'); say('最小 11 → 11 + 15 = 26'); },
+    () => { T.mark(0, 4, DONE); T.setC(0, 4, H.c[0][4]); T.setR(0, 4, H.r[0][4]); say('c(0,4) = 26，root = 3', '最佳 BST 的成本'); },
+  ]);
+}]);
+
+FRAG.push(['dp4bari2-build2', '用 root 建出最佳 BST', async (tok) => {
+  const H = HV, T = stageV(H, null); const nd = {}; let lt, rt;
+  const sqAt = (x, y, px, py) => { line(px, py - 0.4, x, y + 0.2, 0, LINEC); cube('', GRAY, [0.36, 0.36, 0.36], x, y, 0, 0.8); };
+  await run(tok, [
+    () => { T.mark(0, 4, MARK); Object.values(T.r).forEach((l) => cls(l, 'ptr')); say('成本 26、root 3：接著建出樹'); },
+    () => { nd[30] = tnode(30, 3.9, 6.3, 0, null, TEAL); tag('r(0,4) = 3：第 3 個 key', 'note', 3.9, 7.3); say('r(0,4) = 3 → 第 3 個 key = 30', '3 是 key 的編號'); },
+    () => { lt = tag('左 r(0,2)', 'ptr', 2.2, 5.75); rt = tag('右 r(3,4)', 'ptr', 5.6, 5.75); say('左邊看 r(0,2)、右邊看 r(3,4)'); },
+    () => { T.mark(0, 4); T.mark(0, 2, MARK); nd[10] = tnode(10, 2.2, 4.9, 0, nd[30], BLUE); sqAt(1.6, 3.6, 2.2, 4.9); say('r(0,2) = 1 → 10', '它的左邊 (0,0) 是空的'); },
+    () => { T.mark(0, 2); T.mark(1, 2, MARK); nd[20] = tnode(20, 3.0, 3.5, 0, nd[10], BLUE); say('右邊看 r(1,2) = 2 → 20'); },
+    () => { T.mark(1, 2); sqAt(2.5, 2.3, 3.0, 3.5); sqAt(3.5, 2.3, 3.0, 3.5); say('r(1,1)、r(2,2) = 0', '空的'); },
+    () => { T.mark(3, 4, MARK); nd[40] = tnode(40, 5.6, 4.9, 0, nd[30], BLUE); say('r(3,4) = 4 → 40'); },
+    () => { T.mark(3, 4); sqAt(5.0, 3.6, 5.6, 4.9); sqAt(6.2, 3.6, 5.6, 4.9); say('r(3,3)、r(4,4) = 0', '空的'); },
+    () => { kill(lt); kill(rt); Object.values(nd).forEach((m) => glow(m, GREEN)); say('30 當 root；左 10，10 的右邊 20', '右邊 40'); },
+    () => { tag('依頻率，搜尋成本最小', 'good', 3.9, 1.4); say('這就是 optimal BST', '依頻率算，搜尋成本最小'); },
+    () => { mono(tag('c(i,j) = min{ c(i,k−1) + c(k,j) } + w(i,j)', 'ptr', 3.6, 0.8)); say('填表用的公式', 'c(i,j) = min{c(i,k−1) + c(k,j)} + w(i,j)'); },
+    () => { tag('i < k ≤ j：所以表從 0 開始編', 'note', 3.6, 0.2); say('k 從 i + 1 開始', '所以 i 從 0 寫起'); },
+  ]);
+}]);
+
+// ═════════════════ uJOmqBwENB8：4.8 Reliability design ═════════════════
+const RD = { c: [30, 15, 20], r: [0.9, 0.8, 0.5], C: 105 };
+const pr = (r, c) => '(' + fr(r) + ', ' + c + ')';
+const pairBox = (r, c, x, y, drop = 1.0, color = TEAL) => cube(pr(r, c), color, [1.75, 0.45, 0.4], x, y, 0, drop);
+const badBox = (c, x, y) => { const m = cube('$' + c + ' ✗', RED, [1.75, 0.45, 0.4], x, y, 0, 0.8); glow(m, DRED); return m; };
+function setCol(title, list, x, yTop = 5.6, dy = 0.7) { tag(title, 'ptr', x, yTop + 0.65); return list.map(([r, c], t) => pairBox(r, c, x, yTop - t * dy, 0)); }
+
+FRAG.push(['dp4bari2-rel-series', '串聯系統：可靠度相乘', async (tok) => {
+  K.fresh([0, 4.4, 13], [0, 2.8, 0]);
+  const X = (k) => -4.5 + k * 3, NM = [['📋', '白板'], ['📷', '相機'], ['💡', '燈'], ['🖊️', '白板筆']];
+  const ds = []; let me, rt = [];
+  await run(tok, [
+    () => { line(-6.6, 2.6, 6.6, 2.6, 0, '#6e5f49'); tag('開始 →', 'idx', -6.2, 3.0); tag('→ 系統正常', 'idx', 6.0, 3.0); me = buddy('錄影的人', '', ORANGE, 0, 4.9, -0.8, 0.7); say('要架設一個系統'); },
+    () => { for (let k = 0; k < 4; k++) ds.push(cube('D' + (k + 1), BLUE, [1.3, 0.9, 0.9], X(k), 2.6, 0, 1.5)); say('系統由裝置 D1、D2、D3、D4 組成'); },
+    () => { NM.forEach(([g, n], k) => icon(g, n, X(k), 3.9, 0, 'sm')); say('例如錄影室：白板、相機、燈、筆…', '這些都叫裝置（device）'); },
+    () => { for (let k = 0; k < 4; k++) tag('cost c' + (k + 1), 'idx', X(k), 1.75); say('每個裝置有成本 cᵢ'); },
+    () => { [['可靠度高', 'good'], ['', ''], ['比較低', 'note'], ['更低', 'bad']].forEach(([t, c], k) => { if (t) rt.push(tag(t, c, X(k), 1.25)); }); say('reliability：正常運作的機率', '白板很可靠；燈、筆比較容易出問題'); },
+    () => { rt.forEach(kill); for (let k = 0; k < 4; k++) tag('r = 0.9', 'ptr', X(k), 1.25); say('假設每個裝置的 reliability 都是 0.9'); },
+    async () => {
+      const cur = tag('R = 1', 'pkt', -6.2, 3.45); let R = 1;
+      say('系統的 reliability = 全部相乘', '0.9 × 0.9 × 0.9 × 0.9');
+      for (let k = 0; k < 4; k++) { await goTo(tok, cur, X(k), 3.45, 450); R *= 0.9; glow(ds[k], GOLD); txt(cur, 'R = ' + fr(R)); }
+    },
+    () => { ds.forEach((m) => glow(m, null)); tag('每個 0.9，整個系統只有 0.6561', 'say', 0, 6.3); say('每個都 0.9，系統卻只有 0.65'); },
+    () => { tint(ds[2], RED); glow(ds[2], DRED); me.mood('sad'); tag('燈壞了 → 錄影中斷', 'bad', X(2), 0.6); say('約 35% 的機率系統會停', '任何一個壞掉就得停'); },
+    () => { tint(ds[2], BLUE); glow(ds[2], null); me.mood('happy'); tag('目標：讓系統 reliability 最大', 'good', -3.0, 0.6); say('目標：讓整個系統最可靠'); },
+  ]);
+}]);
+
+FRAG.push(['dp4bari2-rel-stage', '一個 stage 放多份並聯：1 − (1−r)^m', async (tok) => {
+  K.fresh([0, 4.4, 13], [0, 3.6, 0]);
+  const X = (k) => -4.5 + k * 3, main = [], cps = []; let tmp, cs = [];
+  await run(tok, [
+    () => {
+      line(-6.6, 6.0, 6.6, 6.0, 0, '#6e5f49');
+      for (let k = 0; k < 4; k++) { main.push(cube('D' + (k + 1), BLUE, [1.2, 0.7, 0.8], X(k), 6.0, 0)); cps.push([1, 2].map((c) => cube('D' + (k + 1), '#9cc8f0', [1.1, 0.6, 0.7], X(k), 6.0 - c * 1.0, 0, 1.2))); }
+      say('辦法：每種裝置多準備幾份');
+    },
+    () => { tint(main[1], RED); glow(main[1], DRED); glow(cps[1][0], GREEN); tmp = tag('相機壞了 → 備用的頂上', 'say', X(1), 3.2); say('一台相機壞了，就換另一台繼續錄'); },
+    () => {
+      kill(tmp); tint(main[1], BLUE); glow(main[1], null); glow(cps[1][0], null);
+      for (let k = 0; k < 4; k++) { line(X(k) - 0.8, 6.0, X(k) - 0.8, 4.0, 0, '#6e5f49'); line(X(k) + 0.8, 6.0, X(k) + 0.8, 4.0, 0, '#6e5f49'); }
+      tag('原本：series（串聯）→ 每種改成 parallel（並聯）', 'ptr', 0, 7.2); say('原本串聯；同一種裝置改成並聯');
+    },
+    () => { for (let k = 0; k < 4; k++) { const g = ghostBox(ORANGE, 2.0, 2.8, 1.2); g.position.set(X(k), 5.0, 0); tag('stage ' + (k + 1), 'ptr alt', X(k), 3.2); } say('每一組叫一個 stage'); },
+    () => { main.forEach((m) => glow(m, GREEN)); tag('一份在工作，其他當 backup', 'note', 0, 2.4); say('一份在工作，其他份當 backup', '它壞了，backup 接手'); },
+    () => {
+      K.fresh([0, 4.4, 13], [0, 3.6, 0]);
+      const ys = [5.6, 4.3, 3.0];
+      line(-5.5, 4.3, -2.5, 4.3, 0, '#6e5f49'); line(2.5, 4.3, 5.5, 4.3, 0, '#6e5f49'); line(-2.5, 5.6, -2.5, 3.0, 0, '#6e5f49'); line(2.5, 5.6, 2.5, 3.0, 0, '#6e5f49');
+      cs = ys.map((y, k) => { line(-2.5, y, 2.5, y, 0, '#6e5f49'); return cube('D1 #' + (k + 1), BLUE, [1.5, 0.8, 0.8], 0, y, 0, 1.4); });
+      tag('stage 1：3 份 D1 並聯', 'ptr', 0, 6.7); say('一個 stage 放 3 份 D1', '每份 reliability 0.9');
+    },
+    () => { cs.forEach((m) => tag('r = 0.9', 'idx', 1.5, m.position.y)); tag('壞掉的機率：1 − 0.9 = 0.1', 'note', 0, 7.3); say('一份正常 0.9；壞掉的機率 1 − 0.9 = 0.1'); },
+    async () => { say('3 份同時壞：0.1 × 0.1 × 0.1 = 0.001', '機率很小'); for (const m of cs) { tint(m, RED); glow(m, DRED); await anim(tok, 300, () => {}); } tag('三份全壞：0.1³ = 0.001', 'bad', 0, 2.0); },
+    () => { cs.forEach((m) => { tint(m, TEAL); glow(m, null); }); tag('stage = 1 − (1 − r)³ = 0.999', 'good', 0, 1.4); say('至少一份正常：1 − 0.001 = 0.999'); },
+    async () => {
+      const b = [[0.9, 4.6, '1 份'], [0.999, 5.8, '3 份']].map(([v, x, n]) => { const m = cube('', v > 0.95 ? TEAL : BLUE, [0.8, 1, 0.8], x, 2.4, 0); m.scale.y = 0.001; tag(n + ' ' + v, 'ptr alt', x, 2.6 + v * 3.6); return [m, v * 3.4]; });
+      say('0.9 → 0.999：可靠很多');
+      await anim(tok, 900, (u) => b.forEach(([m, h]) => { m.scale.y = Math.max(0.001, h * u); m.position.y = 2.4 + h * u / 2; }));
+    },
+    () => { icon('💰', '要多花錢買副本', -4.6, 5.6); say('副本越多越可靠', '但要多準備錢'); },
+  ]);
+}]);
+
+FRAG.push(['dp4bari2-rel-bound', '預算 105：每種裝置最多幾份 uᵢ', async (tok) => {
+  K.fresh([0, 4.4, 13.5], [0, 3.0, 0]);
+  const sc = 11 / RD.C, x0 = -5.5, DX = (k) => -1.6 + k * 3, COL = [BLUE, PURPLE, ORANGE];
+  let A, B, x = x0, rest, ut = [], extra = [];
+  const extraFor = (k) => { extra.forEach((m) => kill(m)); extra = []; const n = Math.floor(40 / RD.c[k]); for (let t = 0; t < n; t++) extra.push(cube('D' + (k + 1), COL[k], [RD.c[k] * sc - 0.08, 0.4, 0.6], x + (t + 0.5) * RD.c[k] * sc, 1.9, 0, 1.2)); glow(rest, GOLD); return n; };
+  await run(tok, [
+    () => { icon('👛', '預算 C = $105', -5.0, 5.9); const g = ghostBox(GRAY, 11, 0.6, 0.8); g.position.set(0, 3.0, 0); tag('$0', 'idx', -5.5, 2.45); tag('$105', 'idx', 5.5, 2.45); say('手上總共有 C 元'); },
+    () => { tag('每種買幾份 → 系統 reliability 最大？', 'say', 0, 4.2); say('每種裝置買幾份，才能最可靠？'); },
+    () => { for (let k = 0; k < 3; k++) { cube('D' + (k + 1), COL[k], [1.3, 0.8, 0.8], DX(k), 6.0, 0, 1.4); tag('$' + RD.c[k], 'ptr', DX(k), 5.3); } say('例題：3 種裝置，成本 $30、$15、$20'); },
+    () => { for (let k = 0; k < 3; k++) tag('r = ' + RD.r[k], 'idx', DX(k), 4.85); say('reliability 0.9、0.8、0.5'); },
+    () => { for (let k = 0; k < 3; k++) ut.push(tag('u' + (k + 1) + ' = ?', 'ptr alt', DX(k), 7.0)); say('uᵢ：每種最多能買幾份（上限）'); },
+    async () => { say('每種至少要買 1 份', '30 + 15 + 20 = 65'); for (let k = 0; k < 3; k++) { const w = RD.c[k] * sc; cube('$' + RD.c[k], COL[k], [w - 0.05, 0.6, 0.8], x + w / 2, 3.0, 0, 1.2); x += w; await anim(tok, 300, () => {}); } },
+    () => { A = mono(tag('剩下的錢 = C − Σcᵢ', 'ptr', 0, 1.0)); say('剩下的錢 = C − Σcᵢ', '可以拿來買副本'); },
+    () => { const rw = 40 * sc; rest = cube('剩 $40', GRAY, [rw - 0.05, 0.6, 0.8], x + rw / 2, 3.0, 0, 1.2); txt(A, '105 − 65 = 40'); say('105 − 65 = 剩 $40'); },
+    () => { extraFor(0); say('40 全花在 D1：40 / 30 → 只能多買 1 份'); },
+    () => { B = mono(tag('uᵢ = ⌊(C − Σcⱼ) / cᵢ⌋ + 1', 'ptr alt', 0, 0.4)); say('公式：剩下的錢 ÷ cᵢ 取 floor', '再 + 已經買的那 1 份'); },
+    () => { txt(ut[0], 'u1 = ⌊40/30⌋ + 1 = 2'); cls(ut[0], 'good'); say('u1 = ⌊40 / 30⌋ + 1 = 2'); },
+    () => { extraFor(1); txt(ut[1], 'u2 = ⌊40/15⌋ + 1 = 3'); cls(ut[1], 'good'); say('D2：40 / 15 → 多 2 份', 'u2 = 2 + 1 = 3'); },
+    () => { extraFor(2); txt(ut[2], 'u3 = ⌊40/20⌋ + 1 = 3'); cls(ut[2], 'good'); say('D3：40 / 20 → 多 2 份', 'u3 = 2 + 1 = 3'); },
+    () => { extra.forEach((m) => kill(m)); glow(rest, null); say('上限：2、3、3', '接著找出每種該買幾份'); },
+  ]);
+}]);
+
+FRAG.push(['dp4bari2-rel-s1', '集合法：S0 與 S1', async (tok) => {
+  K.fresh([0, 4.4, 13.5], [0, 3.6, 0]);
+  let s0, a, b, h1;
+  await run(tok, [
+    () => { icon('🎒', '0/1 knapsack 的集合法', -4.8, 6.2); say('解法和 0/1 knapsack 的集合法一樣'); },
+    () => { tag('有序對 (reliability, cost)', 'ptr', 0.8, 7.2); say('用有序對：(reliability, cost)'); },
+    () => { tag('S0', 'ptr', -5.0, 4.75); s0 = pairBox(1, 0, -5.0, 4.1, 1.2); say('S0 = {(1, 0)}', '還沒買任何東西'); },
+    () => { tag('r 用乘的 → 從 1 開始', 'note', -5.0, 3.3); tag('（從 0 開始，乘起來永遠是 0）', 'idx', -5.0, 2.8); say('reliability 會一直相乘', '所以從 1 開始，不從 0'); },
+    () => { tag('D1：r 0.9、$30、最多 2 份', 'say', 1.4, 6.4); say('考慮 D1：最多可以買 2 份'); },
+    async () => { tag('D1 × 1：r = 0.9、$30', 'ptr', 0.2, 5.4); const p = tag('(1, 0)', 'pkt', -5.0, 4.1); await goTo(tok, p, 2.6, 4.8, 700); kill(p); a = pairBox(0.9, 30, 2.6, 4.8); say('買 1 份：r 乘 0.9、cost 加 30', '(0.9, 30)'); },
+    () => { tag('D1 × 2：1 − (1 − 0.9)² = 0.99', 'ptr', 0.2, 3.5); say('買 2 份：1 − 0.1² = 0.99'); },
+    async () => { const p = tag('(1, 0)', 'pkt', -5.0, 4.1); await goTo(tok, p, 2.6, 2.9, 700); kill(p); b = pairBox(0.99, 60, 2.6, 2.9); say('cost 30 × 2 = 60', '(0.99, 60)'); },
+    async () => { tag('S1', 'ptr alt', 5.6, 4.75); await Promise.all([goTo(tok, a, 5.6, 4.1, 700), goTo(tok, b, 5.6, 3.4, 700)]); say('合起來：S1 = {(0.9, 30), (0.99, 60)}'); },
+  ]);
+}]);
+
+// one row of a stage: header + resulting pairs (or ✗ when the money is not enough)
+function relRow(P, y, hdr) { tag(hdr, 'ptr', 0.6, y + 0.6); return y; }
+FRAG.push(['dp4bari2-rel-d2', '第二個裝置：S2 的候選', async (tok) => {
+  K.fresh([0, 4.4, 14], [0, 3.6, 0]);
+  const S1 = setCol('S1', [[0.9, 30], [0.99, 60]], -5.4, 5.0); let x8;
+  const from = async (t, x, y) => { const p = tag(S1[t].userData.lbl.element.textContent, 'pkt', -5.4, 5.0 - t * 0.7); await goTo(tok, p, x, y, 600); kill(p); };
+  await run(tok, [
+    () => { tag('D2：r 0.8、$15、最多 3 份', 'say', 0.8, 7.35); say('考慮第二個裝置 D2'); },
+    () => { relRow(null, 5.8, 'D2 × 1：(0.8, 15)'); say('D2 買 1 份：r 0.8、cost 15'); },
+    async () => { await from(0, -0.6, 5.8); pairBox(0.72, 45, -0.6, 5.8); say('0.8 × 0.9 = 0.72；30 + 15 = 45'); },
+    async () => { await from(1, 2.8, 5.8); pairBox(0.792, 75, 2.8, 5.8); say('0.8 × 0.99 = 0.792；60 + 15 = 75'); },
+    () => { relRow(null, 3.9, 'D2 × 2：1 − 0.2² = 0.96，$30'); say('D2 買 2 份：1 − (1 − 0.8)² = 0.96', 'cost 30'); },
+    async () => { await from(0, -0.6, 3.9); pairBox(0.864, 60, -0.6, 3.9); say('0.9 × 0.96 = 0.864；30 + 30 = 60'); },
+    async () => { await from(1, 2.8, 3.9); x8 = pairBox(0.9504, 90, 2.8, 3.9); say('0.99 × 0.96 = 0.9504；60 + 30 = 90'); },
+    async () => { tint(x8, RED); glow(x8, DRED); tag('90 + D3 的 20 > 105 ✗', 'bad', 2.8, 3.2); say('花到 90，只剩 15', '買不起 D3（20）→ 不可行，刪掉'); await anim(tok, 700, () => {}); K.fly(x8); },
+    () => { tag('先算 cost：不可行就不用算 r', 'note', 0.8, 0.6); say('之後先看 cost', '不可行的就不用算 reliability'); },
+    () => { relRow(null, 2.0, 'D2 × 3：1 − 0.2³ = 0.992，$45'); say('D2 買 3 份：0.992，cost 45'); },
+    async () => { await from(0, -0.6, 2.0); pairBox(0.8928, 75, -0.6, 2.0); say('30 + 45 = 75 還買得起 D3', '0.9 × 0.992 = 0.8928'); },
+    async () => { const m = badBox(105, 2.8, 2.0); tag('60 + 45 = 105，買不起 D3', 'bad', 2.8, 1.35); say('60 + 45 = 105：買不起 D3', '不可行，連算都不用'); await anim(tok, 700, () => {}); K.fly(m); },
+  ]);
+}]);
+
+FRAG.push(['dp4bari2-rel-dom', 'Dominance rule：刪掉被支配的', async (tok) => {
+  K.fresh([0, 4.4, 13.5], [0, 3.6, 0]);
+  const L = [[0.72, 45], [0.792, 75], [0.864, 60], [0.8928, 75]]; let ms = [], t1, t2;
+  await run(tok, [
+    () => { tag('S2 的候選', 'ptr', -2.5, 6.85); ms = L.map(([r, c], t) => pairBox(r, c, -2.5, 6.2 - t * 0.9, 1.2)); say('D2 之後得到 4 個有序對'); },
+    () => { glow(ms[0], GOLD); glow(ms[1], GOLD); t1 = tag('r ↑、cost ↑ ✓', 'good', 0.6, 5.75); say('0.72 → 0.792：r 增加，cost 也增加', '合理'); },
+    () => { glow(ms[0], null); glow(ms[2], GOLD); tint(ms[1], RED); t2 = tag('r ↑ 但 cost 75 → 60 ✗', 'bad', 0.9, 4.85); say('0.792 → 0.864：r 增加，cost 卻減少', '不合理'); },
+    async () => { glow(ms[2], GREEN); tag('dominance rule：又貴又不可靠的刪掉', 'say', 2.6, 3.4); say('(0.792, 75) 比 (0.864, 60) 貴又不可靠', '依 dominance rule 刪掉'); await anim(tok, 700, () => {}); K.fly(ms[1]); },
+    () => { glow(ms[2], null); glow(ms[3], null); kill(t1); kill(t2); setCol('S2', [[0.72, 45], [0.864, 60], [0.8928, 75]], 4.4, 6.2, 0.9); say('S2 剩 3 對'); },
+  ]);
+}]);
+
+FRAG.push(['dp4bari2-rel-d3', '第三個裝置：S3 的候選', async (tok) => {
+  K.fresh([0, 4.4, 14], [0, 3.6, 0]);
+  const S2 = [[0.72, 45], [0.864, 60], [0.8928, 75]]; setCol('S2', S2, -5.4, 5.0);
+  const X = [-1.6, 0.7, 3.0];
+  const out = (t, y, rr, cc) => { const [r, c] = S2[t]; pairBox(r * rr, c + cc, X[t], y); };
+  const bad = async (t, y, cc) => { const m = badBox(S2[t][1] + cc, X[t], y); await anim(tok, 500, () => {}); K.fly(m); };
+  await run(tok, [
+    () => { tag('D3：r 0.5、$20', 'say', 0.7, 7.35); relRow(null, 5.8, 'D3 × 1：(0.5, 20)'); say('第三個裝置 D3 買 1 份', 'r 0.5、cost 20'); },
+    () => { out(0, 5.8, 0.5, 20); say('0.72 × 0.5 = 0.36；45 + 20 = 65'); },
+    () => { out(1, 5.8, 0.5, 20); say('0.864 × 0.5 = 0.432；60 + 20 = 80'); },
+    () => { out(2, 5.8, 0.5, 20); say('0.8928 × 0.5 = 0.4464；75 + 20 = 95'); },
+    () => { relRow(null, 3.9, 'D3 × 2：1 − 0.5² = 0.75，$40'); say('D3 買 2 份：1 − 0.5² = 0.75', 'cost 40'); },
+    () => { out(0, 3.9, 0.75, 40); say('0.72 × 0.75 = 0.54；45 + 40 = 85'); },
+    () => { out(1, 3.9, 0.75, 40); say('0.864 × 0.75 = 0.648；60 + 40 = 100'); },
+    async () => { say('75 + 40 = 115 > 105', '超過預算，刪掉'); await bad(2, 3.9, 40); },
+    () => { relRow(null, 2.0, 'D3 × 3：1 − 0.5³ = 0.875，$60'); say('D3 買 3 份：1 − 0.5³ = 0.875', 'cost 60'); },
+    () => { out(0, 2.0, 0.875, 60); say('0.72 × 0.875 = 0.63；45 + 60 = 105'); },
+    async () => { say('60 + 60 = 120、75 + 60 = 135', '都超過預算'); await Promise.all([bad(1, 2.0, 60), bad(2, 2.0, 60)]); },
+  ]);
+}]);
+
+FRAG.push(['dp4bari2-rel-merge', '合併 S3 並刪除被支配的', async (tok) => {
+  K.fresh([0, 4.4, 13.5], [0, 3.6, 0]);
+  const L = [[0.36, 65], [0.432, 80], [0.4464, 95], [0.54, 85], [0.63, 105], [0.648, 100]]; let ms = [];
+  await run(tok, [
+    () => { tag('S3 的候選（合併後）', 'ptr', -2.0, 7.1); ms = L.map(([r, c], t) => pairBox(r, c, -2.0, 6.4 - t * 0.8, 1.2)); say('全部合併成 S3，同時刪掉不合理的'); },
+    () => { [0, 1, 2].forEach((t) => glow(ms[t], GOLD)); tag('r ↑、cost ↑ ✓', 'good', 1.4, 5.6); say('前三個：r 增加、cost 也增加', '沒問題'); },
+    async () => { [0, 1].forEach((t) => glow(ms[t], null)); tint(ms[2], RED); glow(ms[3], GREEN); tag('(0.4464, 95) 被 (0.54, 85) 支配', 'bad', 1.9, 4.4); say('0.54 的 cost 85 比 95 還便宜', '(0.4464, 95) 刪掉'); await anim(tok, 700, () => {}); K.fly(ms[2]); },
+    async () => { glow(ms[3], null); tint(ms[4], RED); glow(ms[5], GREEN); tag('(0.63, 105) 被 (0.648, 100) 支配', 'bad', 1.9, 2.8); say('0.63 要 105，0.648 只要 100', '(0.63, 105) 刪掉'); await anim(tok, 700, () => {}); K.fly(ms[4]); },
+    () => { glow(ms[5], null); setCol('S3', [[0.36, 65], [0.432, 80], [0.54, 85], [0.648, 100]], 5.0, 6.2, 0.8); say('S3 剩 4 對'); },
+    () => { tag('最大 reliability 0.648、cost $100', 'good', 5.0, 2.6); say('最大 reliability = 0.648', 'cost $100'); },
+  ]);
+}]);
+
+FRAG.push(['dp4bari2-rel-back', '回溯：每種裝置買幾份', async (tok) => {
+  K.fresh([0, 4.4, 13.5], [0, 3.6, 0]);
+  const c1 = setCol('S1', [[0.9, 30], [0.99, 60]], -4.6, 5.6), c2 = setCol('S2', [[0.72, 45], [0.864, 60], [0.8928, 75]], 0, 5.6), c3 = setCol('S3', [[0.36, 65], [0.432, 80], [0.54, 85], [0.648, 100]], 4.6, 5.6);
+  const ar = (a, b) => K.arrow(V3(a.position.x - 0.95, a.position.y, 0.3), V3(b.position.x + 0.95, b.position.y, 0.3), 0x0f5a3a);
+  await run(tok, [
+    () => { tag('每種裝置該買幾份？', 'say', 0, 7.2); say('答案 (0.648, 100)：每種買幾份？'); },
+    () => { glow(c3[3], GREEN); tag('D3 × 2', 'ptr alt', 4.6, 2.6); say('(0.648, 100) 是 D3 買 2 份得到的'); },
+    () => { glow(c2[1], GREEN); ar(c3[3], c2[1]); say('它是 (0.864, 60) 乘出來的'); },
+    () => { tag('D2 × 2', 'ptr alt', 0, 2.6); say('(0.864, 60) 來自 D2 買 2 份'); },
+    () => { glow(c1[0], GREEN); ar(c2[1], c1[0]); tag('D1 × 1', 'ptr alt', -4.6, 2.6); say('再往前是 (0.9, 30)', 'D1 買 1 份'); },
+    () => { tag('答案：D1 × 1、D2 × 2、D3 × 2', 'good', 0, 1.7); say('D1 買 1 份、D2 買 2 份、D3 買 2 份'); },
+    () => { mono(tag('0.9 × 0.96 × 0.75 = 0.648；30 + 30 + 40 = 100', 'ptr', 0, 1.1)); say('reliability 相乘 = 0.648', 'cost 相加 = 100'); },
+    () => { tag('和 0/1 knapsack 的集合法一樣', 'note', 0, 0.5); say('多買副本，系統更可靠', '做法就是 0/1 knapsack 的集合法'); },
+  ]);
+}]);
+  }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
 
