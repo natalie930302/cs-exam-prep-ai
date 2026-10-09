@@ -49,9 +49,9 @@
  },
  "0IAPZzGSbME": {
   "label": "Abdul Bari：1. Introduction to Algorithms",
-  "points": 24,
+  "points": 26,
   "quiz": 5,
-  "cued": false
+  "cued": true
  },
  "0J2eLvkuF8k": {
   "label": "交大彭文志 Lec02 Introduction (2/2)",
@@ -325,9 +325,9 @@
  },
  "7a28lIQIHJQ": {
   "label": "交大江蕙如 Lec01 課程介紹",
-  "points": 51,
+  "points": 54,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "7fujbpJ0LB4": {
   "label": "WilliamFiset：DFS",
@@ -715,9 +715,9 @@
  },
  "FbYzBWdhMb0": {
   "label": "Abdul Bari：1.2 Characteristics of Algorithm",
-  "points": 20,
+  "points": 21,
   "quiz": 5,
-  "cued": false
+  "cued": true
  },
  "FcScLYJI42E": {
   "label": "Abdul Bari：4.1.1 MultiStage Graph (Program)",
@@ -907,9 +907,9 @@
  },
  "kxIQ86qMtfk": {
   "label": "交大江蕙如 Lec02 Chapter 1 Introduction (1/2)",
-  "points": 174,
+  "points": 180,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "lhXHk8IuFeQ": {
   "label": "交大彭文志 Lec08 Lists (1/4)",
@@ -1393,9 +1393,9 @@
  },
  "xGYsEqe9Vl0": {
   "label": "Abdul Bari：1.3 How to Write and Analyze Algorithm",
-  "points": 30,
+  "points": 32,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "XkNIHYd9Ruc": {
   "label": "台大林軒田 DSA Tree",
