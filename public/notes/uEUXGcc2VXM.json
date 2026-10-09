@@ -5,7 +5,7 @@
  "sections": [
   {
    "title": "遞迴版：先定義 small problem",
-   "scene": "dcbari-rbs-code",
+   "scene": "dcbari-rbs-small",
    "points": [
     {
      "text": "Binary search 是 divide and conquer，寫成遞迴演算法。",
@@ -31,11 +31,27 @@
      "text": "不是 key 就 return 0，表示找不到。",
      "t": 103
     }
+   ],
+   "cues": [
+    0,
+    11.8,
+    30.4,
+    56.1,
+    67.8,
+    97.8
+   ],
+   "explain": [
+    "Binary search 是 divide and conquer，所以也可以寫成遞迴（recursive）演算法：函式在裡面呼叫自己。",
+    "演算法叫 RBinSearch，參數有三個：l（low，範圍開頭）、h（high，範圍結尾）、key（要找的值）。",
+    "Divide and conquer 是「問題大就切小」；但要先定義什麼叫 small problem（小到可以直接解），才知道其他的算 large。",
+    "只剩一個元素就是 small。怎麼知道只剩一個？當 l == h，範圍的頭和尾是同一格。",
+    "只有一個元素時，檢查 A[l] 是不是 key：是的話搜尋成功，回傳它的索引 l。",
+    "如果那唯一的元素不是 key，就回傳 0，代表找不到。"
    ]
   },
   {
    "title": "Large problem：算 mid、遞迴其中一半",
-   "scene": "dcbari-rbs-code",
+   "scene": "dcbari-rbs-large",
    "points": [
     {
      "text": "else：照常 mid = (l + h)/2。",
@@ -57,6 +73,22 @@
      "text": "這就是 binary search 的遞迴（divide and conquer）演算法。",
      "t": 250
     }
+   ],
+   "cues": [
+    128.5,
+    137.3,
+    164.8,
+    175.8,
+    207.8,
+    249.8
+   ],
+   "explain": [
+    "問題是 large（不只一個元素）時，跟迭代版一樣先算 mid = (l + h) / 2。",
+    "如果 key == A[mid]，中間那個就是答案，回傳 mid。",
+    "不是的話，就看 key 比 A[mid] 小還是大。比較小就表示在左半邊。",
+    "左半邊的範圍是 l 到 mid − 1，所以 return RBinSearch(l, mid − 1, key)：用同一個函式，去搜尋比較小的範圍。",
+    "如果不相等也不比較小，那一定比較大：在右半邊找，return RBinSearch(mid + 1, h, key)。",
+    "這樣就寫完 binary search 的遞迴版：每次只留下一半，直到 small problem（只剩一個元素）為止。"
    ]
   },
   {
@@ -91,6 +123,29 @@
      "text": "只呼叫一次，不是左右都呼叫，所以只有一個 T(n/2)。",
      "t": 362
     }
+   ],
+   "params": {
+    "part": "rec"
+   },
+   "cues": [
+    258.8,
+    271.5,
+    281.8,
+    296.1,
+    311.8,
+    332.9,
+    341.8,
+    361.8
+   ],
+   "explain": [
+    "遞迴演算法的時間，要用 recurrence relation（遞迴關係式）來表示：用「比較小的自己」來描述 T(n)。",
+    "假設這個演算法處理 n 個元素要花 T(n) 的時間，分成 small 和 large 兩種情況來看。",
+    "large 時：算 mid、最多檢查兩個 if 條件。這些都是固定幾個動作，花的是常數時間。",
+    "接著只對一半（左或右）呼叫自己，規模從 n 變成 n/2，所以花 T(n/2)。",
+    "small 時（只有一個元素）：只做一次比較。",
+    "所以 n = 1 時，T(n) = 1。",
+    "n > 1 時，T(n) = T(n/2) + 1。這裡的 1 代表那幾個常數動作（常數一律寫成 1）。",
+    "注意：if 和 else 只會走其中一個，每次只呼叫自己一次，不是左右兩邊都呼叫。所以是 T(n/2)，不是 2T(n/2)。"
    ]
   },
   {
@@ -99,7 +154,7 @@
    "points": [
     {
      "text": "這個 recurrence 之前的影片解過，也可用 master theorem。",
-     "t": 375
+     "t": 370
     },
     {
      "text": "a = 1、b = 2：log₂1 = 0，f(n) = 1 = n⁰，k = 0。",
@@ -110,7 +165,22 @@
      "t": 416
     }
    ],
-   "trap": "補充：遞迴版時間同為 Θ(log n)，但遞迴深度 log n 會用到 O(log n) 的 stack；迭代版只要 O(1) 額外空間。"
+   "trap": "補充：遞迴版時間同為 Θ(log n)，但遞迴深度 log n 會用到 O(log n) 的 stack；迭代版只要 O(1) 額外空間。",
+   "params": {
+    "part": "master"
+   },
+   "cues": [
+    370.2,
+    388.8,
+    404.8,
+    416.6
+   ],
+   "explain": [
+    "這個 recurrence 之前的影片已經解過（可以去看那支影片）。",
+    "也可以用 master theorem：把式子對成 T(n) = aT(n/b) + f(n)，這裡 a = 1（呼叫 1 次）、b = 2（規模除以 2）、f(n) = 1。",
+    "算 log_b a = log₂1 = 0；f(n) = 1 = n⁰，所以 k = 0。兩個數字相等，套用公式得到 Θ(n⁰ · log n)。",
+    "n⁰ = 1，所以時間複雜度是 Θ(log n)。遞迴版和迭代版一樣快。"
+   ]
   }
  ],
  "quiz": [

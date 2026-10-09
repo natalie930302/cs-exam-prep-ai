@@ -33,7 +33,7 @@
   "label": "Abdul Bari：2.8.2 QuickSort Analysis",
   "points": 36,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "052VkKhIaQ4": {
   "label": "Abdul Bari：6.3 Graph Coloring Problem - Backtracking",
@@ -81,7 +81,7 @@
   "label": "Abdul Bari：2.9 Strassens Matrix Multiplication",
   "points": 52,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "0UGaXukC4b0": {
   "label": "交大江蕙如 Lec11 Greedy Algorithms (2/5)",
@@ -183,7 +183,7 @@
   "label": "Abdul Bari：2 Divide And Conquer（介紹）",
   "points": 20,
   "quiz": 5,
-  "cued": false
+  "cued": true
  },
  "2YeJ-5UAke8": {
   "label": "MIT 6.006 L12：Square Roots, Newton's Method",
@@ -315,7 +315,7 @@
   "label": "Abdul Bari：2.7.1 Two Way MergeSort - Iterative",
   "points": 51,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "6WZvVJ0Q1FA": {
   "label": "Spanning Tree：Discrete Mathematics",
@@ -477,7 +477,7 @@
   "label": "Abdul Bari：2.7.3 MergeSort In-Depth Analysis",
   "points": 46,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "akErwS16DUg": {
   "label": "Linked List Introduction & Concepts",
@@ -567,7 +567,7 @@
   "label": "Abdul Bari：2.6.1 Binary Search Iterative Method",
   "points": 45,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "C42WzJATHg0": {
   "label": "清大周志遠 第25A講 File System / Mass Storage System",
@@ -1245,7 +1245,7 @@
   "label": "Maximum Subarray solution using Divide & Conquer | Kadane",
   "points": 44,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "ubLbvuWFDqM": {
   "label": "交大彭文志 Lec15 Trees (4/6) / Huffman (1/2)",
@@ -1263,7 +1263,7 @@
   "label": "Abdul Bari：2.6.2 Binary Search Recursive Method",
   "points": 21,
   "quiz": 5,
-  "cued": false
+  "cued": true
  },
  "uJOmqBwENB8": {
   "label": "Abdul Bari：4.8 Reliability Design - DP",
@@ -1461,7 +1461,7 @@
   "label": "Abdul Bari：Merge Sort - Hindi",
   "points": 54,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "_WncuhSJZyA": {
   "label": "Abdul Bari：Matrix Chain Multiplication",

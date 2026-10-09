@@ -1226,584 +1226,2471 @@ export default function (ctx) {
   const FRAG = [];
   // ═══ dcbari.js ═══
   {
-// ─── Abdul Bari 分治系列（2Rr2tW9zvRg、zXhWPrMLXGo、ak-pz7tS5DE、uEUXGcc2VXM）＋ u7YMFRUFqe0 最大子陣列 ───
-const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, showL, code, line, arrow, ghostBox, lnode, GOLD, GREEN, RED, GRAY } = K;
+// ─── Abdul Bari 分治系列（2Rr2tW9zvRg、C2apEw9pgtw、uEUXGcc2VXM、6pV2IF0fgKY、ak-pz7tS5DE、zXhWPrMLXGo、-qOVVRIZzao、0oJyNmEbS4w）＋ u7YMFRUFqe0 最大子陣列 ───
+// Cued scenes: every `await step(tok)` waits for the sentence it shows; beats are motion only.
+// 左下角的小幫手跟著反應：新概念時好奇、答案出來時開心、反例時難過。
+const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, showL, code, line, arrow, ghostBox, lnode, buddy, travel, remove, anim, step, GOLD, GREEN, RED, GRAY } = K;
 const { say, beat } = ctx;
 const PC = { blue: '#4b9ee2', purple: '#9b7ef4', green: '#2fc092', orange: '#dd8238', pink: '#e55a9b', teal: '#31aab0', gold: '#c08a1f', red: '#d64545', sand: '#c9b48e', brown: '#6e5f49' };
 const srt = (a) => a.slice().sort((p, q) => p - q);
+const bubble = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const pkt = (t, x, y, z = 0) => tag(t, 'pkt', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+const guide = (x = -6.2, z = 1.6, s = 0.7) => buddy('', '', '#ffc56b', x, 0, z, s);
 
-// ─── 2Rr2tW9zvRg：解題策略 ───
+// ═════════ 2Rr2tW9zvRg：Divide and Conquer 介紹 ═════════
+// 0:00 解題策略
 FRAG.push(['dcbari-strategies', '解題策略：divide and conquer 是其中一種', async (tok) => {
   fresh([0, 5, 13.5], [0, 2.4, 0]);
-  say('演算法分析之後：解題策略', 'strategy = 解計算問題的設計方法');
-  await beat(tok, 2000);
+  const gd = guide(-6.2, 2.2);
+  await step(tok);                                   // 0:00 新單元：divide and conquer
+  note('上一單元：演算法分析', -3, 6.4);
+  bubble('新單元：Divide and Conquer', 2.6, 6.4);
+  gd.mood('wow');
+  say('新單元：divide and conquer', '上一單元：怎麼寫、怎麼分析演算法');
+  await step(tok);                                   // 0:24 它是一種策略，還有別的策略
   const S = ['Divide & Conquer', 'Greedy', 'Dynamic Programming', 'Backtracking', 'Branch & Bound'];
-  const ms = S.map((s, i) => { const m = cube(s, i === 0 ? PC.orange : PC.blue, [2.3, 0.6, 1], -4.8 + i * 2.4, 0.3, 0, 3); return m; });
-  for (let i = 1; i < 5; i++) { glow(ms[i], GOLD); say('其他策略：' + S[i], ''); await beat(tok, 900); glow(ms[i], null); }
+  const ms = S.map((s, i) => cube(s, i === 0 ? PC.orange : PC.blue, [2.3, 0.6, 1], -4.8 + i * 2.4, 0.3, 0, 3));
+  gd.mood('calm');
+  say('解題的策略不只一種', 'greedy、DP、backtracking、branch and bound');
+  await step(tok);                                   // 0:45 strategy = 解題的設計方法
   glow(ms[0], GOLD); move(ms[0], -4.8, 2.4, 0);
-  say('這個單元：divide and conquer', '');
-  await beat(tok, 2200);
+  bubble('strategy = 解題的設計方法', -4.4, 3.5);
+  say('strategy：解計算問題的一種設計方法', '');
+  await step(tok);                                   // 1:00 策略適合問題才採用
   const p = cube('問題 P', PC.purple, [1.6, 0.6, 1], 2.4, 3.6, 0, 2);
-  say('策略適不適用？沒有公式', '靠練習＋幾條 guideline 判斷');
-  await beat(tok, 2200);
-  tint(p, PC.green); glow(p, GREEN);
-  say('適合這個問題，才採用這個策略', '');
-  await beat(tok, 2800);
+  await beat(tok, 900);
+  tint(p, PC.green); glow(p, GREEN); gd.mood('happy');
+  say('策略適合這個問題，才採用它', '');
+  await step(tok);                                   // 1:09 沒有公式，靠練習＋guideline
+  note('沒有公式：靠練習＋幾條 guideline', 2.4, 5.2);
+  await gd.hop(tok);
+  say('哪個問題該用哪個策略？沒有公式', '靠練習，加上幾條 guideline');
 }]);
 
-// ─── zXhWPrMLXGo：merging（A、B 各 4 個 → C） ───
-FRAG.push(['dcbari-hmerge', 'Merging：A、B 各 4 個合成 C', async (tok) => {
-  fresh([0, 6, 14], [0, 2, 0]);
-  const A = [2, 5, 8, 15], B = [4, 7, 10, 12];
-  const ax = (i) => -5.6 + i * 1.1, cx = (k) => -1.8 + k * 0.95;
-  const ca = A.map((v, i) => cube(v, PC.blue, [0.9, 0.6, 0.9], ax(i), 0.3, -1.6));
-  const cb = B.map((v, i) => cube(v, PC.purple, [0.9, 0.6, 0.9], ax(i), 0.3, 1.6));
-  tag('A（m = 4）', 'ptr', -6.2, 1.4, -1.6); tag('B（n = 4）', 'ptr', -6.2, 1.4, 1.6); tag('C', 'ptr alt', -1.8, 2.4, 0);
-  for (let k = 0; k < 8; k++) ctx.tile(V3(cx(k), 0.04, 0), 0.85, 0.85);
-  const cd = code(['while (i < m && j < n)', '  if (A[i] < B[j]) C[k++] = A[i++];', '  else             C[k++] = B[j++];', 'while (i < m) C[k++] = A[i++];', 'while (j < n) C[k++] = B[j++];'], 2.6, 7, 0.46);
-  const ip = tag('i', 'ptr', ax(0), 1, -1.6), jp = tag('j', 'ptr', ax(0), 1, 1.6), kp = tag('k', 'ptr alt', cx(0), 1, 0);
-  say('兩個已排序串列 → 一個已排序串列', 'i、j、k 指向 A、B、C 的第一格');
-  await beat(tok, 2600);
+// 1:18 大問題 → 子問題 → 子解 → 合併
+FRAG.push(['dcbari-dc-idea', 'Divide → Conquer → Combine', async (tok) => {
+  fresh([0, 5.5, 14], [0, 3, 0]);
+  const gd = guide(-6.3, 2.2);
+  const X = [-4.2, -1.4, 1.4, 4.2], nm = ['P₁', 'P₂', 'P₃', 'P_k'];
+  await step(tok);                                   // 1:18 問題 P，大小 n
+  cube('P（大小 n）', PC.blue, [4.2, 0.7, 1.2], 0, 6, 0, 2);
+  note('n = 輸入的大小', 3.9, 6.9);
+  say('一個問題 P，大小是 n', 'n 指的是輸入的大小');
+  await step(tok);                                   // 1:32 太大 → 切成 k 個子問題
+  const subs = X.map((x, i) => cube(nm[i], PC.blue, [1.6, 0.6, 1.1], x, 4.2, 0, 1.5));
+  X.forEach((x) => line(0, 5.65, x, 4.55));
+  tag('…', 'val', 2.8, 4.2);
+  gd.mood('wow');
+  say('P 太大 → 切成 k 個較小的子問題', 'Divide：切幾個由你決定');
+  await step(tok);                                   // 2:07 各自解出 S₁…S_k
+  const sol = X.map((x, i) => { line(x, 3.9, x, 2.75); return cube(nm[i].replace('P', 'S'), PC.green, [1.6, 0.6, 1.1], x, 2.4, 0, 1.2); });
+  gd.mood('calm');
+  say('每個子問題各自解出 S₁、S₂、…、S_k', 'Conquer');
+  await step(tok);                                   // 2:24 combine 成原問題的解
+  sol.forEach((m) => move(m, 0, 0.6, 0)); await beat(tok, 800); sol.forEach(kill);
+  const S = cube('S（原問題的解）', PC.green, [4.2, 0.7, 1.2], 0, 0.6, 0); glow(S, GREEN);
+  gd.mood('happy');
+  say('把子問題的解 combine 起來 → 原問題的解', 'Combine');
+  await step(tok);                                   // 2:44 子問題還太大 → 再套用一次
+  glow(subs[2], GOLD);
+  [0.9, 1.9].forEach((x, i) => { cube('P₃' + (i + 1), PC.purple, [0.85, 0.45, 0.9], x, 3.2, 1.4, 1.2); line(1.4, 3.9, x, 3.45, 1.4); });
+  bubble('還太大？再 divide and conquer', 4.3, 3.2);
+  gd.mood('wow');
+  say('子問題還太大 → 對它再套用 divide and conquer', '切成子子問題，解完再合併');
+}]);
+
+// 3:11 子問題要同一種、要能合併
+FRAG.push(['dcbari-same-kind', '子問題必須是同一種問題，而且要能合併', async (tok) => {
+  fresh([0, 5, 14], [0, 2.6, 0]);
+  const gd = guide(-6.3, 2.4);
+  await step(tok);                                   // 3:11 排序 → 子問題也是排序
+  const L = cube('sort 8 個數', PC.blue, [3.4, 0.7, 1.2], -3.4, 5.6, 0, 2);
+  const l2 = [0, 1].map((i) => cube('sort 4 個數', PC.blue, [1.8, 0.6, 1.1], -4.4 + i * 2, 4, 0, 1.5));
+  const l3 = [0, 1, 2, 3].map((i) => cube('sort 2', PC.blue, [0.9, 0.5, 1], -4.9 + i * 1, 2.6, 0, 1.5));
+  say('子問題要和原問題是同一種問題', '原問題是排序 → 子問題也必須是排序');
+  await step(tok);                                   // 3:30 反例：辦研討會
+  cube('辦研討會', PC.orange, [3.4, 0.7, 1.2], 3.4, 5.6, 0, 2);
+  const rs = ['邀請函', '海報', '邀講者'].map((s, i) => cube(s, [PC.pink, PC.teal, PC.gold][i], [1.5, 0.6, 1.1], 1.8 + i * 1.6, 4, 0, 1.5));
+  say('例子：在大學辦一場研討會', '拆成：做邀請函、做海報、邀請講者');
+  await step(tok);                                   // 3:57 每項都是不同工作 → 不是
+  rs.forEach((m) => glow(m, RED)); bad('不是 divide and conquer', 3.4, 2.6);
+  gd.mood('sad');
+  say('每一項都是不同的工作', '不是 divide and conquer');
+  await step(tok);                                   // 4:16 同一種問題 → 天生遞迴
+  [...l2, ...l3].forEach((m) => glow(m, GOLD));
+  bubble('同一種問題 → 用同一個演算法 → 遞迴', -3.4, 1.4);
+  gd.mood('wow');
+  say('子問題跟原問題一樣 → 天生就是遞迴的', '');
+  await step(tok);                                   // 4:40 要有方法 combine
+  [...l2, ...l3].forEach((m) => glow(m, null));
+  l3.forEach((m) => tint(m, PC.green)); await beat(tok, 500);
+  l2.forEach((m) => tint(m, PC.green)); await beat(tok, 500);
+  tint(L, PC.green); glow(L, GREEN);
+  say('還要有方法把子問題的解 combine 回去', '排好的兩半 → 合併成排好的整體');
+  await step(tok);                                   // 4:45 不能合併就不能用：這就是 guideline
+  good('guideline：① 同一種問題　② 能合併', 0, 0.5, 1.6);
+  gd.mood('happy'); await gd.hop(tok);
+  say('沒辦法合併就不能用這個策略', '這兩點就是判斷能不能用的 guideline');
+}]);
+
+// 5:11 一般方法 DAC(P)
+FRAG.push(['dcbari-dac-code', 'Algorithm DAC(P)：一般方法', async (tok) => {
+  fresh([0, 5.5, 14.5], [0, 3, 0]);
+  const gd = guide(-6.3, 2.6);
+  const cd = code(['Algorithm DAC(P) {', '  if (small(P))', '    return S(P);', '  else {', '    divide P into P1, P2, …, Pk;', '    apply DAC to P1, P2, …, Pk;', '    return combine(DAC(P1), …, DAC(Pk));', '  }', '}'], -0.6, 7.3, 0.46);
+  await step(tok);                                   // 5:11 一般方法
+  cd.hl(0);
+  say('Divide and conquer 的一般寫法', 'Algorithm DAC(P)');
+  await step(tok);                                   // 5:17 小問題直接解
+  cd.hl(2);
+  const sp = cube('小的 P', PC.green, [1.4, 0.5, 1], -4.6, 0.3, 0, 1.5);
+  pkt('直接解 → S(P)', -4.6, 1.2);
+  say('if small(P)：問題夠小就直接解', '小問題一定要有直接的解法');
+  await step(tok);                                   // 5:33 大 → 切、對每個呼叫 DAC
+  cd.hl(4);
+  const bp = cube('大的 P', PC.blue, [3, 0.5, 1], 2.4, 2.2, 0, 1.5);
+  await beat(tok, 700);
+  cd.hl(5);
+  const ps = [1.2, 2.4, 3.6].map((x, i) => { line(2.4, 1.95, x, 0.55); return cube('P' + (i + 1), PC.blue, [0.9, 0.5, 0.9], x, 0.3, 0, 1.2); });
+  gd.mood('wow');
+  say('否則切成 P1…Pk，對每一個再呼叫 DAC', '這裡就是遞迴');
+  await step(tok);                                   // 5:45 combine
+  cd.hl(6);
+  ps.forEach((m) => tint(m, PC.green)); await beat(tok, 500);
+  ps.forEach((m) => move(m, 2.4, 2.2, 0)); await beat(tok, 700); ps.forEach(kill);
+  tint(bp, PC.green); relabel(bp, 'S（原問題的解）'); glow(bp, GREEN);
+  gd.mood('happy');
+  say('return combine(DAC(P1), …, DAC(Pk))', '把各個子解合起來');
+  await step(tok);                                   // 6:00 遞迴性質
+  cd.hl(5);
+  bubble('DAC 呼叫 DAC → 遞迴', 4.2, 3.3);
+  say('程序是遞迴的，演算法也是遞迴的', '');
+  await step(tok);                                   // 6:05 本單元的題目
+  kill(sp); kill(bp); cd.hl(-1);
+  const T = ['binary search', 'max & min', 'merge sort', 'quick sort', 'Strassen'];
+  T.forEach((s, i) => cube(s, PC.orange, [2.1, 0.5, 1], -4.4 + i * 2.2, 0.3, 1.6, 2));
+  gd.mood('wow');
+  say('這個單元的題目', 'binary search、找最大最小、merge sort、quick sort、Strassen 矩陣乘法');
+  await step(tok);                                   // 6:32 遞迴要用 recurrence relation 分析
+  note('遞迴演算法的時間 → recurrence relation', 0, 1.6, 1.6);
+  gd.mood('calm');
+  say('遞迴演算法的時間要用 recurrence relation 分析', '下一支影片開始講');
+}]);
+
+// ═════════ C2apEw9pgtw：Binary search（迭代版） ═════════
+const BSA = [3, 6, 8, 12, 14, 17, 25, 29, 31, 36, 42, 47, 53, 55, 62];
+const bsx = (i) => -6.3 + (i - 1) * 0.9;            // index 1..15
+function bsRow(z = 0, drop = 0) { return BSA.map((v, i) => { tag(String(i + 1), 'idx', bsx(i + 1), 0, z + 0.85); return cube(v, PC.blue, [0.8, 0.6, 0.8], bsx(i + 1), 0.3, z, drop); }); }
+
+// 0:01 前提：已排序、low 和 high
+FRAG.push(['dcbari-bs-intro', 'Binary search 的前提與 low、high', async (tok) => {
+  fresh([0, 6, 13.5], [0, 1.4, 0]);
+  const gd = guide(-6.3, 2.9);
+  await step(tok);                                   // 0:01 搜尋的兩種方法
+  bubble('linear search：從頭一個一個比', -3, 5.4);
+  const bn = bubble('binary search', 3, 5.4);
+  say('搜尋有兩種方法', 'linear search 與 binary search');
+  await step(tok);                                   // 0:14 binary search 用 divide and conquer
+  txt(bn, 'binary search：divide and conquer');
+  gd.mood('wow');
+  say('Binary search 採用 divide and conquer', '問題大就切小、解小的、再合併');
+  await step(tok);                                   // 0:33 15 個元素
+  const cs = bsRow(0, 1.5);
+  gd.mood('calm');
+  say('一串 15 個元素，索引 1～15', '');
+  await step(tok);                                   // 0:44 一定要先排序
+  await anim(tok, 1200, (u) => cs.forEach((m, i) => glow(m, i < u * 15 ? GREEN : null)));
+  good('由小到大排好了（prerequisite）', 0, 2.3);
+  say('前提：串列一定要先排好序', '沒排序就不能用 binary search');
+  await step(tok);                                   // 1:08 兩個索引 low、high
+  cs.forEach((m) => glow(m, null));
+  const lp = tag('low', 'ptr', bsx(1), 2.4, 1.6), hp = tag('high', 'ptr', bsx(15), 2.4, 1.6);
+  await Promise.all([travel(tok, lp, V3(bsx(1), 2.4, 1.6), V3(bsx(1), 0, 1.6), 700), travel(tok, hp, V3(bsx(15), 2.4, 1.6), V3(bsx(15), 0, 1.6), 700)]);
+  gd.mood('happy');
+  say('需要兩個索引：low 在開頭、high 在結尾', 'low = 1、high = 15');
+}]);
+
+// 1:23 起 追蹤：key = 42 / 12 / 30（params.key）
+//   開頭 1 步；每一輪：算 mid 1 步、比大小 1 步、移動 low/high 1 步；找到時：算 mid＋找到 2 步；
+//   low > high：1 步；最後總結 1 步。
+FRAG.push(['dcbari-bs-trace', 'Binary search 追蹤：mid、往左或往右', async (tok) => {
+  const key = (ctx.params || {}).key ?? 42;
+  fresh([0, 6, 13.5], [0, 1.4, 0]);
+  const gd = guide(-6.3, 2.9);
+  const cs = bsRow();
+  const lp = tag('low', 'ptr', bsx(1), 0, 1.6), hp = tag('high', 'ptr', bsx(15), 0, 2.2), mp = tag('mid', 'ptr alt', bsx(8), 1.3);
+  showL(mp, false);
+  const cnt = tag('比較 0 次', 'ptr alt', 4.6, 5.6);
+  await step(tok);                                   // 開頭：要找的 key
+  const kb = pkt('key = ' + key, -4.4, 6.4);
+  await travel(tok, kb, V3(-4.4, 6.4, 0), V3(-4.4, 5.6, 0), 600);
+  say('要找 key = ' + key, key === 30 ? '30 不在串列裡（29 後面就是 31）' : key === 12 ? 'linear search 要比 4 次' : '42 就在串列裡');
+  let l = 1, h = 15, c = 0;
+  while (true) {
+    if (l > h) {
+      await step(tok);                               // low 越過 high
+      cs.forEach((m) => glow(m, null));
+      bad('low = ' + l + ' > high = ' + h, bsx(l) - 0.4, 2.6);
+      gd.mood('sad');
+      say('low = ' + l + ' 跑到 high = ' + h + ' 的右邊了', 'low 越過 high');
+      break;
+    }
+    const m = (l + h) >> 1, v = BSA[m - 1]; c++;
+    await step(tok);                                 // 算 mid
+    showL(mp, true); move(mp, bsx(m), 1.3, 0); glow(cs[m - 1], GOLD);
+    txt(cnt, '比較 ' + c + ' 次'); gd.mood('calm');
+    say('mid = ⌊(' + l + ' + ' + h + ') / 2⌋ = ' + m, 'A[' + m + '] = ' + v);
+    if (v === key) {
+      await step(tok);                               // 找到
+      tint(cs[m - 1], PC.green); glow(cs[m - 1], GREEN);
+      gd.mood('happy'); await gd.hop(tok);
+      say('A[' + m + '] = ' + v + ' 就是 key：找到了！', '在索引 ' + m);
+      break;
+    }
+    const right = key > v;
+    await step(tok);                                 // 比大小：往哪一邊
+    gd.look(right ? 1 : -1); gd.mood('wow');
+    for (let i = right ? l : m; i <= (right ? m : h); i++) tint(cs[i - 1], GRAY);
+    say(key + (right ? ' > ' : ' < ') + v + '：一定在' + (right ? '右' : '左') + '半邊', '串列已排序，另一半可以整個丟掉');
+    await step(tok);                                 // 移動 low 或 high
+    glow(cs[m - 1], null);
+    if (right) { l = m + 1; move(lp, bsx(Math.min(l, 15.6)), 0, 1.6); say('low = mid + 1 = ' + l, 'high 還是 ' + h); }
+    else { h = m - 1; move(hp, bsx(Math.max(h, 0.4)), 0, 2.2); say('high = mid − 1 = ' + h, 'low 還是 ' + l); }
+  }
+  await step(tok);                                   // 總結
+  if (key === 42) { note('binary：4 次　linear：11 次', 0, 4.4); say('只比 4 次就找到索引 11', 'linear search 要比 11 次'); }
+  else if (key === 12) { note('binary：2 次　linear：4 次', 0, 4.4); say('只比 2 次就找到', '比較次數比 linear search 少'); }
+  else { note('low > high → 找不到', 0, 4.4); say('low 一越過 high，就代表 key 不在串列裡', '搜尋結束（找不到）'); }
+  gd.mood(key === 30 ? 'calm' : 'happy');
+}]);
+
+// 9:49 迭代版演算法
+FRAG.push(['dcbari-bs-code', 'BinSearch(A, n, key)：迭代版', async (tok) => {
+  fresh([0, 6, 13.5], [0, 1.6, 0]);
+  const gd = guide(-6.3, 2.9);
+  const cs = bsRow();
+  const cd = code(['int BinSearch(A, n, key) {', '  l = 1;  h = n;', '  while (l <= h) {', '    mid = (l + h) / 2;', '    if (key == A[mid])', '      return mid;', '    if (key < A[mid])', '      h = mid − 1;', '    else', '      l = mid + 1;', '  }', '  return 0;', '}'], 3.2, 7.2, 0.45);
+  const lp = tag('l', 'ptr', bsx(1), 0, 1.6), hp = tag('h', 'ptr', bsx(15), 0, 2.2), mp = tag('mid', 'ptr alt', bsx(8), 1.3);
+  [lp, hp, mp].forEach((p) => showL(p, false));
+  await step(tok);                                   // 9:49 寫成函式：參數 A、n、key
+  cd.hl(0);
+  pkt('A：陣列', -4.6, 5.6); pkt('n = 15', -2.6, 5.6); pkt('key', -1.0, 5.6);
+  say('寫成函式 BinSearch(A, n, key)', '傳入陣列、元素個數、key，回傳找到的索引');
+  await step(tok);                                   // 10:22 l = 1、h = n
+  cd.hl(1); showL(lp, true); showL(hp, true);
+  say('l = 1、h = n', 'l、h 是整數變數');
+  await step(tok);                                   // 10:42 mid
+  cd.hl(3); showL(mp, true); glow(cs[7], GOLD);
+  say('mid = (l + h) / 2', '例：(1 + 15) / 2 = 8');
+  await step(tok);                                   // 10:57 相等就回傳 mid
+  cd.hl(5); gd.mood('happy');
+  bubble('key == A[mid] → 找到，return mid', -3.4, 4.4);
+  say('if (key == A[mid]) return mid', '找到了，回傳它的索引');
+  await step(tok);                                   // 11:23 key 較小 → h = mid − 1
+  cd.hl(7); gd.mood('calm'); gd.look(-1);
+  for (let i = 8; i <= 15; i++) tint(cs[i - 1], GRAY);
+  move(hp, bsx(7), 0, 2.2);
+  say('key < A[mid]：在左半邊 → h = mid − 1', '');
+  await step(tok);                                   // 11:55 否則 l = mid + 1
+  cd.hl(9); gd.look(1);
+  for (let i = 1; i <= 15; i++) tint(cs[i - 1], i <= 8 ? GRAY : PC.blue);
+  move(hp, bsx(15), 0, 2.2); move(lp, bsx(9), 0, 1.6);
+  say('不相等也不小於 → 一定比較大', 'l = mid + 1');
+  await step(tok);                                   // 12:10 一直重複 → 放進迴圈
+  cd.hl(2); glow(cs[7], null);
+  bubble('重複：算 mid → 比較 → 移 l 或 h', -3.4, 3.6);
+  say('這個過程要一直重複，直到找到為止', '所以寫成一個迴圈');
+  await step(tok);                                   // 12:24 迴圈條件 l ≤ h
+  cd.hl(2); gd.mood('wow');
+  say('while (l <= h)', 'l 不能越過 h');
+  await step(tok);                                   // 12:48 越過就 return 0
+  cd.hl(11);
+  bad('l > h → return 0（找不到）', -3.4, 2.8);
+  say('l 變得比 h 大，迴圈停止', 'return 0：表示找不到');
+  await step(tok);                                   // 12:54 迭代版
+  cd.hl(-1); gd.mood('happy');
+  good('迭代版（iterative）：用 loop', 0, 0.5, 2.6);
+  say('這就是 binary search 的迭代版演算法', '用迴圈重複，不用遞迴');
+}]);
+
+// 13:25 比較樹（params.part = 'build' | 'fail'）
+FRAG.push(['dcbari-bs-tree', 'Binary search 的比較樹：最多 log n 次', async (tok) => {
+  const part = (ctx.params || {}).part || 'build';
+  fresh([0, 5, 14.5], [0, 3.2, 0]);
+  const gd = guide(-6.4, 2.6);
+  const nodes = {}, ms = {};
+  const place = (l, h, d, x0, x1, par) => { if (l > h) return; const m = (l + h) >> 1; nodes[m] = { d, x: (x0 + x1) / 2, y: 6.4 - d * 1.6, par }; place(l, m - 1, d + 1, x0, (x0 + x1) / 2, m); place(m + 1, h, d + 1, (x0 + x1) / 2, x1, m); };
+  place(1, 15, 0, -6.2, 5.6, 0);
+  const add = (m, drop) => { const nd = nodes[m]; ms[m] = cube(m + ':' + BSA[m - 1], nd.d === 3 ? PC.purple : PC.blue, [0.78, 0.5, 0.7], nd.x, nd.y, 0, drop); if (nd.par) line(nodes[nd.par].x, nodes[nd.par].y - 0.3, nd.x, nd.y + 0.3); };
+  const path = async (keys, col) => { for (const m of keys) { glow(ms[m], col); await beat(tok, 350); } };
+  const clear = () => Object.values(ms).forEach((m) => glow(m, null));
+  if (part === 'build') {
+    const groups = [[8], [4, 12], [2], [6], [1, 3, 5, 7], [10, 9, 11], [14, 13, 15]];
+    const caps = [['用一棵樹來追蹤 mid', '1～15 第一次的 mid 一定是 8'], ['比 8 小 → 1～7 的 mid = 4', '比 8 大 → 9～15 的 mid = 12'], ['1～3 的 mid = 2', ''], ['5～7 的 mid = 6', ''], ['2 的左右是 1、3；6 的左右是 5、7', ''], ['9～11 的 mid = 10，左右是 9、11', ''], ['13～15 的 mid = 14，左右是 13、15', '樹畫好了']];
+    for (let g = 0; g < groups.length; g++) {
+      await step(tok);                               // 13:25 8 · 13:45 4、12 · 14:01 2 · 14:07 6 · 14:13 1 3 5 7 · 14:28 10 9 11 · 14:42 14 13 15
+      groups[g].forEach((m) => add(m, 1.5));
+      if (g === 0 || g === 1 || g === 2 || g === 4) tag('第 ' + (nodes[groups[g][0]].d + 1) + ' 次比較', 'ptr alt', 6.7, 6.4 - nodes[groups[g][0]].d * 1.6);
+      say(caps[g][0], caps[g][1]);
+    }
+    await step(tok);                                 // 14:52 找 29：1 次
+    await path([8], GREEN); gd.mood('happy');
+    say('找 29：在根，1 次比較就找到', '');
+    await step(tok);                                 // 15:05 找 47：2 次
+    clear(); await path([8, 12], GOLD); gd.mood('calm');
+    say('找 47：8 → 12，2 次', '');
+    await step(tok);                                 // 15:28 找 55：3 次
+    clear(); await path([8, 12, 14], GOLD);
+    say('找 55（索引 14）：8 → 12 → 14，3 次', '');
+    await step(tok);                                 // 15:53 最多幾次？看樹高
+    clear(); await path([8, 4, 6, 7], RED); gd.mood('wow');
+    say('最多幾次？取決於樹的高度', '例：找索引 7 的 25 要 4 次');
+    await step(tok);                                 // 16:19 1 → 2 → 4 → 8
+    clear();
+    [['1 個', 0], ['2 個', 1], ['4 個', 2], ['8 個', 3]].forEach(([s, d]) => note(s, -6.9, 6.4 - d * 1.6 + 0.5));
+    say('每一層的節點數：1 → 2 → 4 → 8', '每往下一層就乘 2，共 4 層');
+    await step(tok);                                 // 16:40 15 + 1 = 16 = 2⁴
+    pkt('15 + 1 = 16 = 2⁴', 0, 0.2, 1.4);
+    say('15 個元素約 16 個 = 2⁴', 'log₂16 = 4 → 最多 4 次比較');
+    await step(tok);                                 // 16:56 時間 log n
+    good('binary search 的時間：log n', 0, 0.2, 2.6);
+    gd.mood('happy'); await gd.hop(tok);
+    say('從這棵樹分析：binary search 花 log n 的時間', '');
+    return;
+  }
+  // part 'fail'：樹已經畫好
+  Object.keys(nodes).forEach((m) => add(Number(m), 0));
+  await step(tok);                                   // 17:10 找不存在的 65
+  pkt('key = 65（不存在）', -4.6, 7.2);
+  await path([8, 12, 14, 15], GOLD);
+  say('找 65：8 → 12 → 14 → 15', '65 比 62 還大');
+  await step(tok);                                   // 17:23 再往右沒有元素 → 停
+  const ex = (x, y) => { const b = cube('', '#e9dcc4', [0.42, 0.42, 0.42], x, y, 0, 0.8); return b; };
+  const n15 = nodes[15], e1 = ex(n15.x + 0.35, n15.y - 1.2); line(n15.x, n15.y - 0.3, n15.x + 0.35, n15.y - 1.0);
+  glow(e1, RED); gd.mood('sad');
+  say('想再往右走，可是那裡沒有元素 → 停', '畫成一個方形的 external node');
+  await step(tok);                                   // 17:30 55 和 62 之間的值也停在這
+  for (const m of [1, 3, 5, 7, 9, 11, 13, 15]) {
+    const nd = nodes[m];
+    for (const dx of [-0.35, 0.35]) { if (m === 15 && dx > 0) continue; ex(nd.x + dx, nd.y - 1.2); line(nd.x, nd.y - 0.3, nd.x + dx, nd.y - 1.0); }
+  }
+  gd.mood('calm');
+  say('介於 55 和 62 之間的值，停在 15 的左邊', '每個「不存在的範圍」都是一個 external node');
+  await step(tok);                                   // 17:45 找不到也最多 4 次
+  note('unsuccessful search：最多 4 次', 0, 7.2);
+  say('不成功的搜尋：1、2、3、4 次就停', '最多也是 4 次比較');
+  await step(tok);                                   // 17:57 最少 1 次：O(1)
+  clear(); await path([8], GREEN); gd.mood('happy');
+  say('最少：key 剛好在正中間（29）', '1 次比較 → O(1)');
+  await step(tok);                                   // 18:08 最多：樹高 log n
+  clear(); await path([8, 12, 14, 13], RED); gd.mood('wow');
+  say('最多：取決於樹高 = log n', 'O(log n)');
+  await step(tok);                                   // 18:20 best / worst
+  clear();
+  good('best：在中間 → O(1)', -2.6, 0.2, 2.2); bad('worst：在葉子 → O(log n)', 2.6, 0.2, 2.2);
+  say('best case：key 在正中間，O(1)', 'worst case：key 在葉子，O(log n)');
+  await step(tok);                                   // 18:59 average：全部加起來除以 n
+  gd.mood('calm');
+  say('average：每個元素的比較次數加起來，再除以 n', '');
+  await step(tok);                                   // 19:10 1、2、2、3、3、3、3、4……
+  [['1 個 × 1 次', 0], ['2 個 × 2 次', 1], ['4 個 × 3 次', 2], ['8 個 × 4 次', 3]].forEach(([s, d]) => note(s, -6.6, 6.4 - d * 1.6 + 0.5));
+  say('第 1 層 1 次、第 2 層 2 次、第 3 層 3 次、葉子 4 次', '');
+  await step(tok);                                   // 19:21 average 也是 log n
+  pkt('best 1　worst log n　average log n', 0, 7.9, 0);
+  gd.mood('happy'); await gd.hop(tok);
+  say('average 也是 O(log n)', 'best O(1)、worst O(log n)、average O(log n)');
+}]);
+
+// ═════════ uEUXGcc2VXM：遞迴版 binary search ═════════
+const RBS_CODE = ['Algorithm RBinSearch(l, h, key) {', '  if (l == h) {', '    if (A[l] == key) return l;', '    else return 0;', '  } else {', '    mid = (l + h) / 2;', '    if (key == A[mid]) return mid;', '    if (key < A[mid])', '      return RBinSearch(l, mid−1, key);', '    else', '      return RBinSearch(mid+1, h, key);', '  }', '}'];
+const rbx = (i) => -6.4 + (i - 1) * 0.62;          // small array on the left, index 1..15
+function rbRow() { return BSA.map((v, i) => cube(v, PC.blue, [0.55, 0.45, 0.55], rbx(i + 1), 0.25, 1.4)); }
+
+// 0:00 small problem：只剩一個元素
+FRAG.push(['dcbari-rbs-small', 'RBinSearch：先定義 small problem', async (tok) => {
+  fresh([0, 6, 14], [0, 2.6, 0]);
+  const gd = guide(-6.3, 3.2);
+  const cd = code(RBS_CODE, 2.6, 7.2, 0.44);
+  const cs = rbRow();
+  await step(tok);                                   // 0:00 寫成遞迴演算法
+  bubble('binary search → 寫成遞迴', -3.4, 5.8);
+  say('Binary search 是 divide and conquer', '來寫它的遞迴版');
+  await step(tok);                                   // 0:12 參數 l、h、key
+  cd.hl(0);
+  tag('l', 'ptr', rbx(1), 0.9, 2.2); tag('h', 'ptr', rbx(15), 0.9, 2.2);
+  say('RBinSearch(l, h, key)', '參數：low、high、要找的 key');
+  await step(tok);                                   // 0:31 large 要切，但要先說什麼是 small
+  note('15 個 → large', -3.6, 4.4);
+  gd.mood('wow');
+  say('問題大就切成子問題', '但要先定義：什麼叫 small problem？');
+  await step(tok);                                   // 0:56 只剩一個元素 → small；l == h
+  cd.hl(1);
+  cs.forEach((m, i) => { if (i !== 10) tint(m, GRAY); });
+  glow(cs[10], GOLD);
+  note('只剩 1 個 → small（l == h）', -3.6, 3.4);
+  gd.mood('calm');
+  say('只剩一個元素就是 small problem', 'l == h 表示只有一個元素');
+  await step(tok);                                   // 1:08 那一個就是 key → return l
+  cd.hl(2);
+  tint(cs[10], PC.green); glow(cs[10], GREEN);
+  gd.mood('happy');
+  say('if (A[l] == key) return l', '那一個就是 key：搜尋成功，回傳索引 l');
+  await step(tok);                                   // 1:38 不是 key → return 0
+  cd.hl(3);
+  tint(cs[10], PC.red); glow(cs[10], RED);
+  gd.mood('sad');
+  say('不是 key 就 return 0', '0 表示找不到');
+}]);
+
+// 2:09 large problem：算 mid、遞迴其中一半
+FRAG.push(['dcbari-rbs-large', 'RBinSearch：算 mid、遞迴其中一半', async (tok) => {
+  fresh([0, 6, 14], [0, 2.6, 0]);
+  const gd = guide(-6.3, 3.2);
+  const cd = code(RBS_CODE, 2.6, 7.2, 0.44);
+  const cs = rbRow();
+  const lp = tag('l', 'ptr', rbx(1), 0.9, 2.2), hp = tag('h', 'ptr', rbx(15), 0.9, 2.2);
+  await step(tok);                                   // 2:09 else：照常算 mid
+  cd.hl(5);
+  const mp = tag('mid', 'ptr alt', rbx(8), 1.2, 1.4); glow(cs[7], GOLD);
+  say('large：照常算 mid = (l + h) / 2', '');
+  await step(tok);                                   // 2:17 mid 就是 key → return mid
+  cd.hl(6); gd.mood('happy');
+  bubble('A[mid] == key → return mid', -3.6, 4.6);
+  say('if (key == A[mid]) return mid', '中間那個就是 key');
+  await step(tok);                                   // 2:45 key 較小 → 左半
+  cd.hl(7); gd.mood('wow'); gd.look(-1);
+  say('否則看 key 比較小還是比較大', 'key < A[mid] → 在左半邊');
+  await step(tok);                                   // 2:56 遞迴左半：l ～ mid − 1
+  cd.hl(8);
+  for (let i = 8; i <= 15; i++) tint(cs[i - 1], GRAY);
+  move(hp, rbx(7), 0.9, 2.2);
+  const gl = ghostBox(PC.blue, 7 * 0.62, 0.7, 0.8); gl.position.set((rbx(1) + rbx(7)) / 2, 0.25, 1.4);
+  say('return RBinSearch(l, mid − 1, key)', '對左半邊遞迴做 binary search');
+  await step(tok);                                   // 3:28 否則一定比較大 → 右半
+  cd.hl(10); gd.look(1);
+  kill(gl);
+  for (let i = 1; i <= 15; i++) tint(cs[i - 1], i <= 8 ? GRAY : PC.blue);
+  move(hp, rbx(15), 0.9, 2.2); move(lp, rbx(9), 0.9, 2.2);
+  const gr = ghostBox(PC.purple, 7 * 0.62, 0.7, 0.8); gr.position.set((rbx(9) + rbx(15)) / 2, 0.25, 1.4);
+  say('不相等、也不比較小 → 一定比較大', 'return RBinSearch(mid + 1, h, key)');
+  await step(tok);                                   // 4:10 遞迴的 divide and conquer 演算法
+  cd.hl(-1); kill(mp); glow(cs[7], null);
+  good('遞迴版 binary search 完成', -3.6, 4.6);
+  gd.mood('happy'); await gd.hop(tok);
+  say('這就是 binary search 的遞迴演算法', 'divide and conquer：每次只留一半');
+}]);
+
+// 4:19 recurrence（params.part = 'rec' | 'master'）
+FRAG.push(['dcbari-rbs-rec', 'T(n) = T(n/2) + 1 → Θ(log n)', async (tok) => {
+  const part = (ctx.params || {}).part || 'rec';
+  fresh([0, 5.5, 14], [0, 3, 0]);
+  const gd = guide(-6.3, 2.6);
+  const sm = cube('small：n = 1', PC.green, [3.2, 0.6, 1], -3.4, 5.6, 0), lg = cube('large：n > 1', PC.blue, [3.2, 0.6, 1], 2.4, 5.6, 0);
+  const eq1 = tag('T(n) = 1　　　　 , n = 1', '', 0, 2.4), eq2 = tag('T(n) = T(n/2) + 1 , n > 1', '', 0, 1.6);
+  [eq1, eq2].forEach((l) => { Object.assign(l.element.style, { whiteSpace: 'pre', fontFamily: 'ui-monospace, Consolas, monospace', fontSize: '13px', fontWeight: '700' }); });
+  if (part === 'rec') {
+    [sm, lg].forEach((m) => { m.visible = false; }); showL(eq1, false); showL(eq2, false);
+    await step(tok);                                 // 4:19 時間用 recurrence relation
+    bubble('divide and conquer 的時間 → recurrence relation', 0, 7.2);
+    say('分治演算法的時間，用 recurrence relation 求', '');
+    await step(tok);                                 // 4:31 演算法花 T(n)
+    pkt('RBinSearch 花 T(n)', 0, 6.6);
+    [sm, lg].forEach((m) => { m.visible = true; });
+    say('假設這個演算法花 T(n) 的時間', '分成 small 和 large 兩種情況');
+    await step(tok);                                 // 4:42 算 mid、最多兩個條件 → 常數
+    glow(lg, GOLD);
+    note('算 mid＋最多 2 個 if → 常數，記成 1', 2.4, 4.4);
+    say('large：算 mid，最多檢查兩個條件', '都是常數時間');
+    await step(tok);                                 // 4:56 呼叫一半 → T(n/2)
+    note('左或右呼叫一次 → T(n/2)', 2.4, 3.6);
+    gd.mood('wow');
+    say('再對一半呼叫自己（左或右其中一個）', '規模減半 → T(n/2)');
+    await step(tok);                                 // 5:12 small：一次比較
+    glow(lg, null); glow(sm, GOLD);
+    note('只比 1 次', -3.4, 4.4);
+    gd.mood('calm');
+    say('small（只有一個元素）：只做一次比較', '');
+    await step(tok);                                 // 5:33 T(n) = 1, n = 1
+    showL(eq1, true); glow(sm, null);
+    say('T(n) = 1，當 n = 1', '');
+    await step(tok);                                 // 5:42 T(n) = T(n/2) + 1, n > 1
+    showL(eq2, true);
+    say('T(n) = T(n/2) + 1，當 n > 1', '常數寫成 1');
+    await step(tok);                                 // 6:02 只呼叫一次，不是兩邊都呼叫
+    const one = cube('n', PC.blue, [0.9, 0.5, 0.8], -4.6, 0.3, 2.2);
+    const half = cube('n/2', PC.green, [0.9, 0.5, 0.8], -3.2, 0.3, 2.2);
+    const other = cube('n/2', PC.red, [0.9, 0.5, 0.8], -1.8, 0.3, 2.2); glow(other, RED);
+    bad('不會兩邊都呼叫', -1.8, 1.0, 2.2);
+    gd.mood('happy');
+    say('只呼叫一次：左邊或右邊，不是兩邊都要', '所以只有一個 T(n/2)，不是 2T(n/2)');
+    return;
+  }
+  // part 'master'
+  glow(sm, null);
+  await step(tok);                                   // 6:10 之前的影片解過
+  note('之前的影片解過這個式子', 0, 4.2);
+  say('這個 recurrence 你已經看過了', '可以用之前的方法解，也可以用 master theorem');
+  await step(tok);                                   // 6:29 master theorem：a = 1、b = 2
+  pkt('a = 1', -3, 0.4, 1.6); pkt('b = 2', -1, 0.4, 1.6); pkt('f(n) = 1 = n⁰', 1.6, 0.4, 1.6);
+  gd.mood('wow');
+  say('套 master theorem：a = 1、b = 2', 'f(n) = 1');
+  await step(tok);                                   // 6:45 log₂1 = 0 = k
+  note('log₂1 = 0　k = 0　兩者相等', 0, 3.4);
+  say('log_b a = log₂1 = 0，f(n) = n⁰ → k = 0', '兩個都是 0 → Θ(n⁰ log n)');
+  await step(tok);                                   // 6:57 Θ(log n)
+  good('Θ(log n)', 4.4, 2.4);
+  gd.mood('happy'); await gd.hop(tok);
+  say('時間複雜度 = Θ(log n)', '遞迴版一樣是 log n');
+}]);
+
+// ═════════ 6pV2IF0fgKY：Merging 與 two-way merge sort ═════════
+const MG_A = [2, 8, 15, 18], MG_B = [5, 9, 12, 17];
+const mgAx = (i) => -5.2 + i * 1.1, mgCx = (k) => -1.2 + k * 0.95;
+// two sorted lists A (z −1.6), B (z 1.6) and the empty list C (z 0)
+function mgSetup() {
+  const ca = MG_A.map((v, i) => cube(v, PC.blue, [0.9, 0.6, 0.9], mgAx(i), 0.3, -1.6));
+  const cb = MG_B.map((v, i) => cube(v, PC.purple, [0.9, 0.6, 0.9], mgAx(i), 0.3, 1.6));
+  return { ca, cb };
+}
+
+// 0:00 merging：A、B → C
+FRAG.push(['dcbari-merge2', 'Merging：兩個已排序串列合成一個', async (tok) => {
+  fresh([0, 6, 14], [0, 2.2, 0]);
+  const gd = guide(-6.3, 3.4);
+  await step(tok);                                   // 0:00 要懂 merge sort，先懂 merging
+  note('merge sort 之前，先懂 merging', 0, 6.4);
+  say('主題是 merge sort', '先來看什麼是 merging');
+  await step(tok);                                   // 0:12 merging 的定義
+  bubble('merging：兩個排好的串列 → 一個排好的串列', 0, 5.4);
+  gd.mood('wow');
+  say('Merging：把兩個已排序串列合成一個已排序串列', '');
+  await step(tok);                                   // 0:19 兩個串列 A、B
+  const { ca, cb } = mgSetup();
+  tag('A', 'ptr', -6.4, 0.3, -1.6); tag('B', 'ptr', -6.4, 0.3, 1.6);
+  gd.mood('calm');
+  say('兩個串列 A、B，都已經排好序', '大小可以不一樣，這裡剛好一樣');
+  await step(tok);                                   // 0:40 準備第三個串列 C
+  for (let k = 0; k < 8; k++) ctx.tile(V3(mgCx(k), 0.04, 0), 0.85, 0.85);
+  tag('C', 'ptr alt', -1.2, 2.7, 0);
+  note('陣列或 linked list 都可以', 3.6, 3.6);
+  say('準備第三個串列 C 放結果', '串列可以是陣列，也可以是 linked list');
+  await step(tok);                                   // 1:00 指標 i、j、k
+  const ip = tag('i', 'ptr', mgAx(0), 1.1, -1.6), jp = tag('j', 'ptr', mgAx(0), 1.1, 1.6), kp = tag('k', 'ptr alt', mgCx(0), 1.1, 0);
+  say('每個串列一個索引：i、j、k', 'k 指著 C 第一個空位');
   let i = 0, j = 0, k = 0;
-  while (i < 4 && j < 4) {
-    glow(ca[i], GOLD); glow(cb[j], GOLD); cd.hl(A[i] < B[j] ? 1 : 2);
-    say('比 A[i] = ' + A[i] + ' 與 B[j] = ' + B[j], '小的複製到 C[k]，那邊的索引和 k 前進');
-    await beat(tok, k < 2 || k >= 6 ? 1500 : 800);
+  for (let s = 0; s < 7; s++) {
+    await step(tok);                                 // 1:21 2 · 1:36 5 · 1:52 8 · 2:14 9 · 2:19 12 · 2:24 15 · 2:33 17
+    glow(ca[i], GOLD); glow(cb[j], GOLD);
+    const fromA = MG_A[i] < MG_B[j], v = fromA ? MG_A[i] : MG_B[j];
+    say('比 A[i] = ' + MG_A[i] + ' 和 B[j] = ' + MG_B[j], v + ' 比較小 → 複製到 C，' + (fromA ? 'i' : 'j') + ' 和 k 往前');
+    await beat(tok, 700);
     glow(ca[i], null); glow(cb[j], null);
-    if (A[i] < B[j]) { move(ca[i], cx(k), 0.3, 0); i++; move(ip, ax(Math.min(i, 4)), 1, -1.6); }
+    if (fromA) { move(ca[i], mgCx(k), 0.3, 0); i++; move(ip, mgAx(i), 1.1, -1.6); }
+    else { move(cb[j], mgCx(k), 0.3, 0); j++; move(jp, mgAx(j), 1.1, 1.6); }
+    k++; move(kp, mgCx(k), 1.1, 0);
+    gd.look(fromA ? -1 : 1);
+  }
+  await step(tok);                                   // 2:48 B 用完：剩下的 18 直接複製
+  gd.look(0);
+  move(ca[3], mgCx(7), 0.3, 0); move(kp, mgCx(7.6), 1.1, 0);
+  say('j 跑出 B 了：B 用完', 'A 剩下的 18 直接複製過去');
+  await step(tok);                                   // 3:07 得到排好的第三個串列
+  [...ca, ...cb].forEach((m) => tint(m, PC.green));
+  good('C：2 5 8 9 12 15 17 18', 2.2, 2.4);
+  gd.mood('happy'); await gd.hop(tok);
+  say('每次比較兩邊、拿小的 → 得到排好的串列', '這個過程就是 merging');
+}]);
+
+// 3:18 性質與時間 Θ(m + n)
+FRAG.push(['dcbari-merge-time', 'Merging 的性質與時間 Θ(m + n)', async (tok) => {
+  fresh([0, 6, 14], [0, 2.2, 0]);
+  const gd = guide(-6.3, 3.4);
+  const all = srt([...MG_A, ...MG_B]);
+  MG_A.forEach((v, i) => cube(v, PC.blue, [0.9, 0.6, 0.9], mgAx(i), 0.3, -1.6));
+  MG_B.forEach((v, i) => cube(v, PC.purple, [0.9, 0.6, 0.9], mgAx(i), 0.3, 1.6));
+  tag('A', 'ptr', -6.4, 0.3, -1.6); tag('B', 'ptr', -6.4, 0.3, 1.6);
+  for (let k = 0; k < 8; k++) ctx.tile(V3(mgCx(k), 0.04, 0), 0.85, 0.85);
+  tag('C', 'ptr alt', -1.2, 2.7, 0);
+  await step(tok);                                   // 3:18 兩個都排好 → 結果也排好
+  const cc = all.map((v, k) => cube(v, PC.green, [0.85, 0.55, 0.85], mgCx(k), 0.3, 0, 1.2));
+  good('輸入排好 → 結果也排好', 2.2, 2.6);
+  gd.mood('happy');
+  say('性質：兩個串列已排序 → 結果也是排序的', '');
+  await step(tok);                                   // 3:34 A 有 m 個、B 有 n 個
+  pkt('m 個', -2.2, 0.4, -1.6); pkt('n 個', -2.2, 0.4, 1.6);
+  gd.mood('calm');
+  say('A 有 m 個元素、B 有 n 個元素', '');
+  await step(tok);                                   // 3:49 C 有 m + n 個，每個搬一次
+  await anim(tok, 1600, (u) => cc.forEach((m, k) => glow(m, k < u * 8 ? GOLD : null)));
+  pkt('m + n 個', mgCx(7) + 0.4, 1.2, 0);
+  say('C 裡有 m + n 個元素', '每個元素只被比較、複製一次');
+  await step(tok);                                   // 3:59 Θ(m + n)
+  cc.forEach((m) => glow(m, null));
+  good('merging 的時間：Θ(m + n)', 0, 5.6);
+  gd.mood('wow');
+  say('搬資料的時間 = Θ(m + n)', '');
+  await step(tok);                                   // 4:06 Θ(m + n) 幾乎成了 merging 的代號
+  note('看到 Θ(m + n) → 想到 merging', 0, 4.6);
+  gd.mood('happy');
+  say('一般時間都只用 n 表示，merging 卻寫 m + n', 'Θ(m + n) 幾乎成了 merging 的代號');
+}]);
+
+// 4:32 Algorithm Merge(A, B, m, n)
+FRAG.push(['dcbari-merge-code', 'Algorithm Merge(A, B, m, n)', async (tok) => {
+  fresh([0, 6, 14], [0, 2.4, 0]);
+  const gd = guide(-6.4, 3.4);
+  const ax = (i) => -5.6 + i * 0.85, cx = (k) => -5.6 + k * 0.78;
+  const cd = code(['Algorithm Merge(A, B, m, n) {', '  i = 1;  j = 1;  k = 1;', '  while (i <= m && j <= n) {', '    if (A[i] < B[j])', '      C[k++] = A[i++];', '    else', '      C[k++] = B[j++];', '  }', '  for (; i <= m; i++)', '    C[k++] = A[i];', '  for (; j <= n; j++)', '    C[k++] = B[j];', '}'], 3.4, 7.3, 0.44);
+  const ca = MG_A.map((v, i) => cube(v, PC.blue, [0.7, 0.5, 0.7], ax(i), 0.25, -1.8));
+  const cb = MG_B.map((v, i) => cube(v, PC.purple, [0.7, 0.5, 0.7], ax(i), 0.25, 1.8));
+  for (let k = 0; k < 8; k++) ctx.tile(V3(cx(k), 0.04, 0), 0.7, 0.7);
+  tag('A', 'ptr', -6.6, 0.3, -1.8); tag('B', 'ptr', -6.6, 0.3, 1.8); tag('C', 'ptr alt', -6.6, 0.3, 0);
+  let i = 0, j = 0, k = 0;
+  let ip, jp, kp;
+  const take = (fromA) => {
+    if (fromA) { move(ca[i], cx(k), 0.25, 0); i++; move(ip, ax(i), 1.0, -1.8); }
+    else { move(cb[j], cx(k), 0.25, 0); j++; move(jp, ax(j), 1.0, 1.8); }
+    k++; move(kp, cx(k), 1.0, 0);
+  };
+  await step(tok);                                   // 4:33 Merge(A, B, m, n)
+  cd.hl(0);
+  say('Algorithm Merge(A, B, m, n)', '兩個串列 A、B，大小 m、n');
+  await step(tok);                                   // 5:06 i、j、k 從 1 開始
+  cd.hl(1);
+  ip = tag('i', 'ptr', ax(0), 1.0, -1.8); jp = tag('j', 'ptr', ax(0), 1.0, 1.8); kp = tag('k', 'ptr alt', cx(0), 1.0, 0);
+  note('索引從 1 開始（不是 C 的 0）', -3.4, 4.6);
+  say('i、j、k 都放在開頭：i = j = k = 1', '為了簡單，索引從 1 開始');
+  await step(tok);                                   // 5:34 A[i] 較小 → 複製 A[i]
+  cd.hl(4); glow(ca[0], GOLD); glow(cb[0], GOLD);
+  await beat(tok, 500); glow(ca[0], null); glow(cb[0], null); take(true);
+  say('if (A[i] < B[j])：C[k++] = A[i++]', '複製 A[i]，i 和 k 都往前');
+  await step(tok);                                   // 6:02 否則複製 B[j]
+  cd.hl(6); glow(ca[1], GOLD); glow(cb[0], GOLD);
+  await beat(tok, 500); glow(ca[1], null); glow(cb[0], null); take(false);
+  say('else：C[k++] = B[j++]', 'B[j] 比較小，就複製 B[j]');
+  await step(tok);                                   // 6:20 一直做，條件 i ≤ m && j ≤ n
+  cd.hl(2);
+  while (i < 4 && j < 4) { take(MG_A[i] < MG_B[j]); await beat(tok, 380); }
+  say('while (i <= m && j <= n)', '兩邊都還有元素時，一直比、一直複製');
+  await step(tok);                                   // 6:45 迴圈結束：一定有一邊剩下
+  cd.hl(7); glow(ca[3], GOLD);
+  gd.mood('wow');
+  say('迴圈結束時，有一個串列還剩元素', '這個例子：A 剩下 18');
+  await step(tok);                                   // 7:06 假如 A 剩 18 19 25
+  const n1 = note('如果 A 剩：18 19 25 → 從 i 開始全抄', -3.4, 4.6);
+  say('不知道會剩在哪一邊', '假如 A 還剩 18、19、25，i 指著的地方開始全部複製');
+  await step(tok);                                   // 7:23 或 B 剩 19 25 30
+  remove(n1); note('如果 B 剩：19 25 30 → 從 j 開始全抄', -3.4, 4.6);
+  gd.mood('calm');
+  say('也可能是 B 剩下 19、25、30', '那就從 j 指著的地方開始複製');
+  await step(tok);                                   // 7:38 for：A 剩下的
+  cd.hl(9); glow(ca[3], null); take(true);
+  say('for (; i <= m; i++) C[k++] = A[i]', 'i 不重設，從原本的位置繼續抄');
+  await step(tok);                                   // 7:57 for：B 剩下的
+  cd.hl(11);
+  say('for (; j <= n; j++) C[k++] = B[j]', '這次 B 沒有剩，迴圈一次都不做');
+  await step(tok);                                   // 8:12 總結
+  cd.hl(-1);
+  [...ca, ...cb].forEach((m) => tint(m, PC.green));
+  gd.mood('happy'); await gd.hop(tok);
+  say('while：比較並複製；兩個 for：抄剩下的', '這就是 merging');
+}]);
+
+// 8:43 m-way merging
+const M4 = [[3, 4, 6], [5, 9, 12], [8, 10, 16], [2, 4, 18]];
+FRAG.push(['dcbari-merge4', 'm-way merging：一次比 4 個開頭', async (tok) => {
+  fresh([0, 6.5, 13.5], [0, 1.6, 0]);
+  const gd = guide(-6.4, 2.4);
+  const cols = [PC.blue, PC.purple, PC.teal, PC.orange], lx = (q) => -5.4 + q * 1.4;
+  const ox = (k) => 0.6 + (k % 6) * 1.05, oz = (k) => (k < 6 ? -1.2 : 0.2);
+  const head = [0, 0, 0, 0];
+  let out = 0;
+  const ms = [];
+  const takeMin = async (ms0 = 450) => {
+    let best = -1;
+    for (let q = 0; q < 4; q++) if (head[q] < 3) { glow(ms[q][head[q]], GOLD); if (best < 0 || M4[q][head[q]] < M4[best][head[best]]) best = q; }
+    await beat(tok, ms0);
+    for (let q = 0; q < 4; q++) if (head[q] < 3) glow(ms[q][head[q]], null);
+    move(ms[best][head[best]], ox(out), 0.25, oz(out)); head[best]++; out++;
+    return best;
+  };
+  await step(tok);                                   // 8:43 多於兩個串列
+  M4.forEach((L, q) => { ms.push(L.map((v, r) => cube(v, cols[q], [0.9, 0.5, 0.9], lx(q), 0.25, -2.2 + r * 1.1, 1.5))); tag('L' + (q + 1), 'ptr', lx(q), 0.3, -3.2); });
+  tag('結果', 'ptr alt', 3.2, 0.3, -2.3);
+  say('如果有兩個以上的串列呢？', '這裡有 4 個已排序串列');
+  await step(tok);                                   // 8:49 比所有開頭：2 最小
+  await takeMin();
+  say('比每個串列的第一個：3、5、8、2', '2 最小 → 放進結果');
+  await step(tok);                                   // 9:05 下一個：3
+  await takeMin();
+  say('L4 往下一個；再比：3、5、8、4', '3 最小');
+  await step(tok);                                   // 9:10 兩個 4：先拿第一個
+  await takeMin();
+  gd.mood('wow');
+  say('4、5、8、4：兩個 4 一樣小', '先拿第一個（L1 的 4）');
+  await step(tok);                                   // 9:23 6、5、8、4
+  await takeMin();
+  gd.mood('calm');
+  say('再比 6、5、8、4', '4 最小');
+  await step(tok);                                   // 9:33 一次合併好幾個串列
+  while (out < 12) { await takeMin(220); }
+  say('每次從每個串列拿一個來比，取最小的', '同時合併好幾個串列');
+  await step(tok);                                   // 9:50 4-way → m-way merging
+  good('4 個串列 → 4-way merging；m 個 → m-way merging', 0, 4.4);
+  gd.mood('happy'); await gd.hop(tok);
+  say('一次合併 4 個串列叫 4-way merging', 'm 個串列就叫 m-way merging');
+}]);
+
+// 10:18 2-way merging 與 merge pattern
+FRAG.push(['dcbari-mpatterns', '2-way merging 與不同的 merge pattern', async (tok) => {
+  fresh([0, 5.5, 14], [0, 2.8, 0]);
+  const gd = guide(-6.4, 2.4);
+  const mk = (x0, title) => { tag(title, 'ptr', x0, 7.2); return M4.map((L, q) => ({ v: L.slice(), x: x0 - 2.4 + q * 1.6, y: 0.25, m: cube(L.join(','), PC.blue, [1.4, 0.5, 0.9], x0 - 2.4 + q * 1.6, 0.25, 0, 1.5) })); };
+  const merge = (items, a, b) => {
+    const A = items[a], B = items[b], v = srt([...A.v, ...B.v]), x = (A.x + B.x) / 2, y = Math.max(A.y, B.y) + 1.6;
+    line(A.x, A.y + 0.3, x, y - 0.3); line(B.x, B.y + 0.3, x, y - 0.3);
+    items.push({ v, x, y, m: cube(v.join(' '), v.length === 12 ? PC.green : PC.purple, [Math.min(4.6, 0.3 * v.length + 0.6), 0.5, 0.9], x, y, 0, 1.2) });
+  };
+  await step(tok);                                   // 10:20 一次只合併兩個 → 2-way
+  bubble('一次只合併兩個串列 = 2-way merging', 0, 6.4);
+  say('一次只合併兩個串列：two-way merging', '最常用的就是這種');
+  const L = mk(-3.4, '兩兩配對');
+  await step(tok);                                   // 10:38 L1 + L2
+  merge(L, 0, 1);
+  say('先合併前兩個：3 4 5 6 9 12', '');
+  await step(tok);                                   // 10:52 L3 + L4
+  merge(L, 2, 3);
+  say('再合併後兩個：2 4 8 10 16 18', '');
+  await step(tok);                                   // 11:01 兩個再合併：共 3 次
+  merge(L, 4, 5);
+  gd.mood('happy');
+  say('剩兩個再合併成一個', '4 個串列 → 共 merge 3 次');
+  const R = mk(3.4, '一個接一個');
+  await step(tok);                                   // 11:26 另一種：A + B
+  merge(R, 0, 1); gd.mood('wow');
+  say('另一種做法：A、B 先合併成第一個', '');
+  await step(tok);                                   // 11:31 再跟 C
+  merge(R, 4, 2);
+  say('結果再跟 C 合併', '');
+  await step(tok);                                   // 11:36 再跟 D
+  merge(R, 5, 3);
+  say('再跟 D 合併：一樣 3 次', '');
+  await step(tok);                                   // 11:49 選擇很多：A 和 D、A 和 C 也行
+  note('也可以先 A＋D、或 A＋C……', 0, 0.2, 1.8);
+  gd.mood('calm');
+  say('還有很多種選擇', '例如先合併 A 和 D，或 A 和 C');
+  await step(tok);                                   // 12:10 多個串列可以有不同的 merge pattern
+  gd.mood('happy'); await gd.hop(tok);
+  say('多個串列可以用不同的 pattern 合併', 'more than one merge pattern');
+}]);
+
+// 12:24 two-way merge sort vs merge sort
+const TW = [9, 3, 7, 5, 6, 4, 8, 2];
+const twX = (i) => -4.9 + i * 1.4;
+FRAG.push(['dcbari-2way-intro', 'Two-way merge sort：每個元素都是一個串列', async (tok) => {
+  fresh([0, 6, 14], [0, 2.4, 0]);
+  const gd = guide(-6.4, 3.2);
+  await step(tok);                                   // 12:24 兩種：two-way merge sort 與 merge sort
+  const a = bubble('two-way merge sort', -3, 6.2), b = bubble('merge sort', 3, 6.2);
+  gd.mood('wow');
+  say('兩種排序方法：two-way merge sort 與 merge sort', '很多人會搞混');
+  await step(tok);                                   // 12:41 迭代 vs 遞迴
+  txt(a, 'two-way merge sort：迭代（loop）'); txt(b, 'merge sort：遞迴');
+  gd.mood('calm');
+  say('差別：two-way 是迭代（用迴圈）', 'merge sort 是遞迴');
+  await step(tok);                                   // 12:55 two-way：一次合併兩個
+  note('一次合併兩個串列', -3, 5.2);
+  say('Two-way：一次拿兩個串列來合併', '');
+  await step(tok);                                   // 13:14 一個 8 個元素的陣列
+  const ms = TW.map((v, i) => cube(v, PC.blue, [1.1, 0.6, 1], twX(i) + (i - 3.5) * -0.02, 0.3, 0, 1.5));
+  say('一個有 8 個元素的陣列，要用 merging 排序', '');
+  await step(tok);                                   // 13:34 merging 要兩個排好的陣列，可是只有一個
+  gd.mood('sad');
+  say('merging 需要兩個已排序的串列', '可是只有一個陣列，而且還沒排序');
+  await step(tok);                                   // 13:39 每個元素當成一個串列
+  ms.forEach((m, i) => { move(m, -5.25 + i * 1.5, 0.3, 0); });
+  await beat(tok, 700);
+  ms.forEach((m) => glow(m, GREEN));
+  gd.mood('happy');
+  say('把每個元素都當成一個串列：8 個串列', '只有一個元素 → 本來就排好了');
+  await step(tok);                                   // 14:15 不一次全合，用 two-way
+  ms.forEach((m) => glow(m, null));
+  good('兩個兩個合併 → 一個排好的串列', 0, 2.2);
+  say('不是 8 個一次合併', '用 two-way merge：兩個兩個合');
+}]);
+
+// 14:33 pass 1 與輔助陣列 B
+FRAG.push(['dcbari-2way-pass1', 'Pass 1：兩兩合併，結果放在 B', async (tok) => {
+  fresh([0, 6, 14], [0, 2.4, 0]);
+  const gd = guide(-6.4, 3.4);
+  const ms = TW.map((v, i) => cube(v, PC.blue, [1, 0.6, 1], twX(i), 0.3, -1.2));
+  tag('A', 'ptr', -6.5, 0.3, -1.2);
+  for (let i = 0; i < 8; i++) ctx.tile(V3(twX(i), 0.04, 1.6), 1, 1);
+  const pc = tag('pass 1', 'ptr alt', 0, 4.4);
+  const pairs = [[0, '3 9'], [2, '5 7'], [4, '4 6'], [6, '2 8']];
+  for (const [lo, s] of pairs) {
+    await step(tok);                                 // 14:33 9,3 · 14:47 5,7 · 15:01 4,6 · 15:09 2,8
+    const L = [lo, lo + 1].map((p) => ({ v: TW[p], m: ms[p] })).sort((p, q) => p.v - q.v);
+    glow(ms[lo], GOLD); glow(ms[lo + 1], GOLD);
+    await beat(tok, 400);
+    L.forEach((o, q) => { move(o.m, twX(lo + q), 0.3, 1.6); glow(o.m, null); tint(o.m, PC.purple); });
+    say('合併 ' + TW[lo] + ' 和 ' + TW[lo + 1] + ' → ' + s, '兩個一個元素的串列 → 一個兩個元素的串列');
+  }
+  await step(tok);                                   // 15:13 8 個 → 4 個串列：pass 1 結束
+  for (let lo = 0; lo < 8; lo += 2) { const g = ghostBox(PC.green, 2.6, 0.9, 1.3); g.position.set((twX(lo) + twX(lo + 1)) / 2, 0.45, 1.6); }
+  txt(pc, 'pass 1 完成：8 個串列 → 4 個');
+  gd.mood('happy');
+  say('8 個串列 → 4 個串列', '所有 n 個元素都走過一次 = 一個 pass');
+  await step(tok);                                   // 15:28 奇數個：多的那個直接下來
+  note('若有第 9 個：沒有配對，直接下來', 0, 5.4);
+  gd.mood('calm');
+  say('如果有 9 個元素，第 9 個沒人配對', '直接留下來，之後再合併');
+  await step(tok);                                   // 15:53 結果不放在同一個陣列：要 B
+  const bt = tag('B', 'ptr alt', -6.5, 0.3, 1.6);
+  gd.mood('wow');
+  say('合併的結果不能放回同一個陣列 A', '需要另一個陣列 B 放結果');
+  await step(tok);                                   // 16:17 從 B 複製回 A
+  ms.forEach((m) => { const p = m.position; move(m, p.x, 0.3, -1.2); });
+  say('想要結果在 A 裡：從 B 複製回 A', '所以串列又都在 A 裡了');
+}]);
+
+// 16:47 pass 2、pass 3
+FRAG.push(['dcbari-2way-pass23', 'Pass 2、Pass 3：4 個 → 2 個 → 1 個', async (tok) => {
+  fresh([0, 6, 14], [0, 2.4, 0]);
+  const gd = guide(-6.4, 3.4);
+  const P1 = [3, 9, 5, 7, 4, 6, 2, 8];
+  const ms = P1.map((v, i) => cube(v, PC.purple, [1, 0.6, 1], twX(i), 0.3, -1.2));
+  tag('A', 'ptr', -6.5, 0.3, -1.2);
+  const pc = tag('pass 2', 'ptr alt', 0, 4.4);
+  const mergeAt = async (lo, w, row) => {
+    const L = []; for (let p = lo; p < lo + 2 * w; p++) L.push({ v: row[p], m: ms[p] });
+    L.sort((p, q) => p.v - q.v);
+    for (let q = 0; q < L.length; q++) { move(L[q].m, twX(lo + q), 1.9 + (w === 4 ? 1.6 : 0), -1.2); tint(L[q].m, w === 4 ? PC.green : PC.teal); await beat(tok, 220); }
+    return L.map((o) => o.m);
+  };
+  await step(tok);                                   // 16:47 3 9 + 5 7 → 3 5 7 9
+  const l1 = await mergeAt(0, 2, P1);
+  say('pass 2：合併 3 9 和 5 7', '→ 3 5 7 9');
+  await step(tok);                                   // 17:05 4 6 + 2 8 → 2 4 6 8
+  const l2 = await mergeAt(4, 2, P1);
+  say('再合併 4 6 和 2 8', '→ 2 4 6 8');
+  await step(tok);                                   // 17:19 兩個 4 元素串列：pass 2 完成
+  l1.concat(l2).forEach((m, q) => ms[q] = m);
+  txt(pc, 'pass 2 完成：4 個串列 → 2 個');
+  gd.mood('happy');
+  say('剩兩個串列，各 4 個元素', '又走過全部元素一次：pass 2');
+  await step(tok);                                   // 17:32 合成一個：2 3 4 5 6 7 8 9
+  txt(pc, 'pass 3');
+  await mergeAt(0, 4, [3, 5, 7, 9, 2, 4, 6, 8]);
+  gd.mood('wow');
+  say('最後合併成一個：2 3 4 5 6 7 8 9', '');
+  await step(tok);                                   // 17:47 pass 3：排好了
+  txt(pc, 'pass 3 完成：排好了');
+  good('用 two-way merging 排好 8 個元素', 0, 6.2);
+  gd.mood('happy'); await gd.hop(tok);
+  say('第 3 個 pass 結束，全部排好', '結果再放回 A');
+}]);
+
+// 18:09 時間：log n 個 pass × n
+FRAG.push(['dcbari-2way-time', 'Two-way merge sort 的時間：n log n', async (tok) => {
+  fresh([0, 5.5, 14], [0, 3, 0]);
+  const gd = guide(-6.4, 2.6);
+  const rows = [TW, [3, 9, 5, 7, 4, 6, 2, 8], [3, 5, 7, 9, 2, 4, 6, 8], [2, 3, 4, 5, 6, 7, 8, 9]];
+  const cnt = ['8 個串列', '4 個串列', '2 個串列', '1 個串列'];
+  const X = (i, g) => -4.3 + i * 0.95 + Math.floor(i / g) * 0.25;
+  rows.forEach((r, d) => r.forEach((v, i) => cube(v, d === 3 ? PC.green : PC.blue, [0.8, 0.45, 0.8], X(i, Math.pow(2, d)), 0.4 + d * 1.6, 0)));
+  await step(tok);                                   // 18:09 每個 pass 都 merge n 個
+  for (let d = 1; d <= 3; d++) pkt('pass ' + d + '：n 個', 5.6, 0.4 + d * 1.6);
+  say('每個 pass 都把全部 n 個元素合併一次', '');
+  await step(tok);                                   // 18:28 n = 8，做了 3 次
+  note('n = 8，做了 3 次', -1, 7.4);
+  gd.mood('wow');
+  say('這裡 n = 8，一共做了 3 次', '');
+  await step(tok);                                   // 18:39 8 → 4 → 2 → 1
+  cnt.forEach((s, d) => tag(s, 'idx', -6.1, 0.4 + d * 1.6, 0));
+  gd.mood('calm');
+  say('串列數：8 → 4 → 2 → 1', '每個 pass 除以 2');
+  await step(tok);                                   // 19:00 8 / 2³ = 1
+  pkt('8 / 2³ = 1　→　8 = 2³', -1, 6.6);
+  say('8 除以 2 三次變成 1', '8 = 2³');
+  await step(tok);                                   // 19:20 pass 數 = log₂8 = 3 = log n
+  good('pass 數 = log₂ n', 3.2, 7.4);
+  say('pass 的數目 = log₂ 8 = 3', '一般來說：log n 個 pass');
+  await step(tok);                                   // 19:42 每 pass n、共 log n → n log n
+  say('每個 pass n、共 log n 個 pass', '總時間 = n × log n');
+  await step(tok);                                   // 20:00 Θ(n log n)
+  good('Θ(n log n)', 3.2, 6.6);
+  gd.mood('happy'); await gd.hop(tok);
+  say('Two-way merge sort 的時間 = Θ(n log n)', '');
+}]);
+
+// ═════════ ak-pz7tS5DE：merge sort 的優點與缺點 ═════════
+FRAG.push(['dcbari-ms-proscons', 'Merge sort 的優點：適合超大串列', async (tok) => {
+  fresh([0, 5, 14], [0, 3, 0]);
+  const gd = guide(-6.3, 2.4);
+  await step(tok);                                   // 0:00 優缺點，先看優點
+  tag('Pros 優點', 'ptr', -3, 7.2); tag('Cons 缺點', 'ptr alt', 3, 7.2);
+  say('Merge sort 的優點與缺點', '先看優點');
+  await step(tok);                                   // 0:11 適合非常大的串列
+  cube('適合超大串列', PC.green, [4.4, 0.6, 1], -3, 6, 0, 2);
+  const many = []; for (let i = 0; i < 12; i++) many.push(cube('', PC.blue, [0.35, 0.35, 0.35], -5.2 + (i % 6) * 0.8, 0.2 + Math.floor(i / 6) * 0.45, 1.4, 1 + i * 0.1));
+  note('幾百萬個數字、幾百萬筆紀錄', -3, 2.2);
+  gd.mood('wow');
+  say('適合非常大的串列', '幾百萬個數字或紀錄都能用 merge sort 排');
+  await step(tok);                                   // 0:25 其他排序做不到，原因等一下說
+  bubble('其他排序撐不了這麼大（原因稍後說）', 1.6, 4.4);
+  gd.mood('calm');
+  say('其他排序沒辦法處理這麼大的串列', '原因後面會講（external sorting）');
+}]);
+
+// 0:33 linked list：只改 link
+FRAG.push(['dcbari-llmerge', 'Linked list merge：只改 link，不用第三個串列', async (tok) => {
+  fresh([0, 6.5, 12.5], [0, 0.6, 0]);
+  const gd = guide(-6.4, 3.2);
+  const L1 = [[2, -5.2], [8, -1.4], [12, 4.6]], L2 = [[3, -3.3], [9, 0.6], [11, 2.6]];
+  let n1 = [], n2 = [], old = [];
+  await step(tok);                                   // 0:33 適合 linked list
+  bubble('merge sort 適合 linked list', 0, 4.6);
+  say('優點二：merge sort 適合 linked list', '');
+  await step(tok);                                   // 0:48 它靠 merging
+  note('merge sort 用的是 merging', 0, 3.7);
+  gd.mood('wow');
+  say('merge sort 是靠 merging 完成的', '懂了 linked list 的 merging，就懂了');
+  await step(tok);                                   // 0:56 兩個已排序的 linked list
+  n1 = L1.map(([v, x]) => lnode(v, x, 0.35, -1.6, PC.blue)); n2 = L2.map(([v, x]) => lnode(v, x, 0.35, 1.6, PC.purple));
+  tag('L1', 'ptr', -6.6, 0.4, -1.6); tag('L2', 'ptr', -6.6, 0.4, 1.6);
+  for (let i = 0; i < 2; i++) { old.push(line(L1[i][1] + 0.73, 0.4, L1[i + 1][1] - 0.5, 0.4, -1.6)); old.push(line(L2[i][1] + 0.73, 0.4, L2[i + 1][1] - 0.5, 0.4, 1.6)); }
+  gd.mood('calm');
+  say('兩個已排序的 linked list', 'L1：2 → 8 → 12、L2：3 → 9 → 11');
+  await step(tok);                                   // 1:01 不建第三個串列，只改 link
+  old.forEach(kill);
+  say('不用建第三個 linked list', '只要改變 link，把節點串成一條');
+  const seq = [[2, n1[0], -1.6], [3, n2[0], 1.6], [8, n1[1], -1.6], [9, n2[1], 1.6], [11, n2[2], 1.6], [12, n1[2], -1.6]];
+  const cmp = [['2 vs 3：2 比較小', '2 是第一個（head）'], ['下一個：3 比較小', '2 指向 3'], ['3 vs 8：3 比較小，接著 8 vs 9', '3 指向 8'], ['8 vs 9：8 比較小', '8 指向 9'], ['12 vs 11：11 比較小', '9 指向 11'], ['L2 用完了', '11 指向 12']];
+  for (let q = 0; q < 6; q++) {
+    await step(tok);                                 // 1:16 2 · 1:22 2→3 · 1:28 3→8 · 1:36 8→9 · 1:42 9→11 · 1:48 11→12
+    glow(seq[q][1].userData.data, GOLD);
+    if (q === 0) tag('head', 'ptr alt', -5.2, 1.4, -1.6);
+    else { const p = seq[q - 1]; arrow(V3(p[1].position.x + 0.73, 0.75, p[2]), V3(seq[q][1].position.x - 0.4, 0.75, seq[q][2]), 0xc08a1f); }
+    say(cmp[q][0], cmp[q][1]);
+    await beat(tok, 600);
+    glow(seq[q][1].userData.data, null); tint(seq[q][1].userData.data, PC.green);
+  }
+  await step(tok);                                   // 1:53 2 3 8 9 11 12
+  good('2 → 3 → 8 → 9 → 11 → 12', 0, 3.2);
+  gd.mood('happy');
+  say('從 head 走：2、3、8、9、11、12', '排好了');
+  await step(tok);                                   // 2:00 沒有建立第三個串列
+  gd.mood('happy'); await gd.hop(tok);
+  say('沒有建立第三個 linked list 就合併好了', 'linked list 也能這樣做 merge sort');
+}]);
+
+// 2:07 external sorting
+FRAG.push(['dcbari-external', 'External merging：檔案比記憶體大', async (tok) => {
+  fresh([0, 6, 14], [0, 2, 0]);
+  const gd = guide(-6.4, 3.4);
+  let f1, f2, ram, out;
+  await step(tok);                                   // 2:07 支援 external sorting
+  bubble('merge sort 支援 external sorting', 0, 5.6);
+  say('優點三：merge sort 支援 external sorting', '其實是 merging 支援');
+  await step(tok);                                   // 2:21 硬碟上兩個檔案
+  const disk = ghostBox(PC.brown, 5.4, 0.3, 6); disk.position.set(-3.6, 0.15, 0); tag('Hard disk', 'ptr', -3.6, 0.4, -3.4);
+  f1 = cube('file 1', PC.blue, [2.4, 1.2, 1.6], -4.4, 0.9, -1.4, 1.5); f2 = cube('file 2', PC.purple, [2.4, 1.8, 1.6], -4.4, 1.2, 1.4, 1.5);
+  say('硬碟上有兩個檔案', '');
+  await step(tok);                                   // 2:35 5 GB、10 GB
+  relabel(f1, 'file 1：5 GB'); relabel(f2, 'file 2：10 GB');
+  gd.mood('wow');
+  say('兩個大檔：5 GB 和 10 GB', '想像裡面有幾百萬筆紀錄');
+  await step(tok);                                   // 2:50 要 merge → 先搬進主記憶體
+  ram = ghostBox(PC.green, 4.2, 2.2, 3.4); ram.position.set(2.6, 1.1, 0); tag('RAM（main memory）', 'ptr alt', 2.6, 2.6, -1.9);
+  gd.mood('calm');
+  say('要 merge 它們，資料得先搬進 main memory', 'merge 程式在記憶體裡執行');
+  await step(tok);                                   // 3:21 RAM 只有 4 GB
+  const g1 = cube('5 GB', PC.blue, [1.4, 0.8, 1], -4.4, 0.9, -1.4), g2 = cube('10 GB', PC.purple, [1.4, 0.8, 1], -4.4, 1.2, 1.4);
+  move(g1, 1.8, 0.5, -0.8); move(g2, 3.4, 0.5, 0.8);
+  await beat(tok, 700); glow(g1, RED); glow(g2, RED); gd.mood('sad');
+  await beat(tok, 600); fly(g1); fly(g2);
+  say('可是 RAM 只有 4 GB', '15 GB 整個搬不進來');
+  await step(tok);                                   // 3:40 一次帶一部分（runs、chunks）
+  out = cube('', PC.green, [1.4, 0.2, 1.4], -0.6, 0.15, 0); tag('結果', 'idx', -0.6, 0.7, 0);
+  gd.mood('wow');
+  say('那就一次只帶一小部分進來', '分成 runs、chunks 一塊一塊搬');
+  await step(tok);                                   // 3:54 帶 2 和 3 進來
+  const b1 = cube('2', PC.blue, [0.8, 0.5, 0.8], -4.4, 1.7, -1.4), b2 = cube('3', PC.purple, [0.8, 0.5, 0.8], -4.4, 2.3, 1.4);
+  move(b1, 1.8, 0.35, -0.8); move(b2, 1.8, 0.35, 0.8);
+  gd.mood('calm');
+  say('從兩個檔案各帶一塊進來：2 和 3', '');
+  await step(tok);                                   // 4:15 比較：2 較小 → 寫出去
+  glow(b1, GOLD); glow(b2, GOLD); await beat(tok, 600);
+  glow(b1, null); glow(b2, null); move(b1, -0.6, 0.5, 0);
+  say('比 2 和 3：2 比較小 → 寫出去', '');
+  await step(tok);                                   // 4:21 file 1 補 10；比較 → 3 出去
+  const b3 = cube('10', PC.blue, [0.8, 0.5, 0.8], -4.4, 1.7, -1.4); move(b3, 1.8, 0.35, -0.8);
+  await beat(tok, 700);
+  glow(b3, GOLD); glow(b2, GOLD); await beat(tok, 500); glow(b3, null); glow(b2, null);
+  move(b2, -0.6, 1.0, 0);
+  say('file 1 補下一個：10', '比 10 和 3：3 寫出去');
+  await step(tok);                                   // 4:31 其實是一整塊一整塊
+  note('實際上搬的是一整塊紀錄（block）', 2.6, 4.2);
+  say('這裡用單一元素示範', '實際上是一群元素、一整塊 block');
+  await step(tok);                                   // 4:43 只需要很小的空間
+  good('只需要很小的記憶體', 2.6, 5.0);
+  gd.mood('happy');
+  say('只要很小的記憶體就能 merge', '不需要 15 GB 的空間');
+  await step(tok);                                   // 4:49 external merging → external merge sort
+  pkt('external merging → external merge sort', 0, 6.6);
+  await gd.hop(tok);
+  say('這就是 external merging', 'merge sort 用同樣的方法排超大的資料');
+}]);
+
+// 4:56 stable
+FRAG.push(['dcbari-stable', 'Merge sort 是 stable 的', async (tok) => {
+  fresh([0, 5.5, 13.5], [0, 1.4, 0]);
+  const gd = guide(-6.4, 2.6);
+  const a = [[6], [8, 'a'], [3], [9], [4], [8, 'b'], [5]], X = (i) => -4.5 + i * 1.5;
+  let ms = [];
+  await step(tok);                                   // 5:02 stable
+  bubble('merge sort 是 stable 的', 0, 4.6);
+  say('優點四：merge sort 是 stable', 'stable 是什麼意思？');
+  await step(tok);                                   // 5:14 8 出現兩次
+  ms = a.map(([v, t], i) => ({ v, t, m: cube(v, t === 'a' ? PC.orange : t === 'b' ? PC.pink : PC.blue, t === 'a' ? [0.8, 0.5, 0.8] : t === 'b' ? [1.2, 0.85, 1.2] : [1, 0.6, 1], X(i), 0.3, -1.2, 1.2) }));
+  tag('小 8：第一個', 'ptr', X(1), 1.4, -1.2); tag('大 8：第二個', 'ptr alt', X(5), 1.7, -1.2);
+  gd.mood('wow');
+  say('串列裡 8 出現兩次（duplicate）', '小方塊 = 第一個 8、大方塊 = 第二個 8');
+  await step(tok);                                   // 5:25 排好後：3 4 5 6 小8 大8 9
+  const s = ms.slice().sort((p, q) => p.v - q.v);
+  s.forEach((o, i) => move(o.m, X(i), 0.3, 1.4));
+  gd.mood('calm');
+  say('排序後：3 4 5 6 8 8 9', '');
+  await step(tok);                                   // 5:41 兩個 8 的先後沒變
+  glow(s[4].m, GOLD); glow(s[5].m, GOLD);
+  good('小 8 還在大 8 前面', 0, 2.4, 1.4);
+  gd.mood('happy');
+  say('兩個 8 保持原本的先後順序', '沒有變成大 8 在前');
+  await step(tok);                                   // 5:59 換成學生紀錄
+  fresh([0, 5.5, 13.5], [0, 1.4, 0]);
+  const gd2 = guide(-6.4, 2.6);
+  const r1 = cube('Ravi：8 分', PC.orange, [2.4, 0.6, 1], -2.6, 0.3, -1.2, 1.2), r2 = cube('Sunil：8 分', PC.pink, [2.4, 0.6, 1], 2.6, 0.3, -1.2, 1.2);
+  cube('…：6 分', PC.blue, [2.0, 0.6, 1], 0, 0.3, -1.2, 1.2);
+  say('換成紀錄：學生某科的分數（滿分 10）', '數字看不出差別，紀錄就看得出來');
+  await step(tok);                                   // 6:15 原本按姓名或學號排好
+  note('原本已依姓名／學號排好', 0, 2.2, -1.2);
+  gd2.mood('wow');
+  say('資料原本已經依姓名或學號排好', '現在要依分數排序，原本的順序不能被打亂');
+  await step(tok);                                   // 6:24 Ravi 在 Sunil 前面
+  move(r1, 1.2, 0.3, 1.4); move(r2, 3.8, 0.3, 1.4);
+  gd2.mood('calm');
+  say('同樣 8 分：Ravi 在前、Sunil 在後', '排完分數後還是 Ravi 先');
+  await step(tok);                                   // 6:38 這就是 stability
+  good('stable：重複的值保持原本的順序', 0, 4.2);
+  gd2.mood('happy'); await gd2.hop(tok);
+  say('這就是 stability', '已經有順序的資料再排序，重複的值保留原順序');
+}]);
+
+// 6:49 缺點一：不是 in-place
+FRAG.push(['dcbari-notinplace', '缺點一：不是 in-place，陣列要額外空間', async (tok) => {
+  fresh([0, 6, 13], [0, 1, 0]);
+  const gd = guide(-6.4, 2.8);
+  const a = [6, 3, 9, 4], X = (i) => -2.25 + i * 1.5;
+  let ms = [];
+  await step(tok);                                   // 6:49 缺點：需要額外空間
+  tag('Cons 缺點', 'ptr alt', 0, 5.2);
+  bubble('需要額外空間：不是 in-place', 0, 4.3);
+  gd.mood('sad');
+  say('缺點一：需要額外空間', '不是 in-place 的排序');
+  await step(tok);                                   // 7:07 in-place 的意思
+  ms = a.map((v, i) => cube(v, PC.blue, [1, 0.6, 1], X(i), 0.3, -1.4, 1.2));
+  tag('A', 'ptr', -4, 0.3, -1.4);
+  const sw = srt(a);
+  await beat(tok, 500);
+  ms.forEach((m, i) => move(m, X(sw.indexOf(a[i])), 0.3, -1.4));
+  gd.mood('calm');
+  say('In-place：只在同一個陣列裡重新排列', '例：6 3 9 4 在 A 裡面排好');
+  await step(tok);                                   // 7:31 merge sort 不是 in-place
+  ms.forEach((m, i) => move(m, X(i), 0.3, -1.4));
+  say('Merge sort 不是 in-place', '');
+  await step(tok);                                   // 7:37 先切兩半再 merge
+  ms.forEach((m, i) => move(m, X(i) + (i < 2 ? -0.4 : 0.4), 0.3, -1.4));
+  say('先把串列切成兩半，再 merge', '兩半：6 3 | 9 4（各自排好 → 3 6、4 9）');
+  await step(tok);                                   // 7:47 merge 的結果要放到另一個陣列
+  const B = ghostBox(PC.orange, 6.2, 0.8, 1.3); B.position.set(0, 0.4, 1.6); tag('額外陣列 B', 'ptr alt', -4.2, 0.4, 1.6);
+  for (const [i, k] of [[1, 0], [3, 1], [0, 2], [2, 3]]) { move(ms[i], X(k), 0.3, 1.6); await beat(tok, 350); }
+  gd.mood('sad');
+  say('merge 的結果不能寫在同一個陣列裡', '要另一個陣列 → 不是 in-place');
+  await step(tok);                                   // 8:00 只有陣列才需要；linked list 不用
+  note('只有陣列需要；linked list 改 link 就好', 0, 3.4);
+  gd.mood('calm');
+  say('額外空間只在陣列時需要', 'linked list 不用（只改 link）');
+}]);
+
+// 8:16 缺點二：沒有 small problem → 搭配 insertion sort
+FRAG.push(['dcbari-smallinsert', '缺點二：沒有 small problem → 小串列交給 insertion sort', async (tok) => {
+  fresh([0, 5.5, 14], [0, 2.8, 0]);
+  const gd = guide(-6.4, 2.2);
+  let top, h, q, ones = [];
+  await step(tok);                                   // 8:16 沒有定義 small problem
+  top = cube('n = 60', PC.blue, [12, 0.5, 0.9], 0, 6, 0, 1.5);
+  bubble('缺點二：沒有 small problem', 0, 7.2);
+  say('Merge sort 的演算法沒有定義 small problem', '大就切成兩半');
+  await step(tok);                                   // 8:33 一直切到一個元素，什麼都不做
+  h = [-3, 3].map((x) => cube('30', PC.blue, [5.8, 0.5, 0.9], x, 4.4, 0, 1.2));
+  await beat(tok, 500);
+  q = [-4.5, -1.5, 1.5, 4.5].map((x) => cube('15', PC.blue, [2.8, 0.5, 0.9], x, 2.8, 0, 1.2));
+  await beat(tok, 500);
+  for (let i = 0; i < 16; i++) ones.push(cube('1', PC.sand, [0.55, 0.4, 0.6], -5.6 + i * 0.75, 1.2, 0, 1));
+  say('一直切到只剩一個元素才算小', '單一元素什麼都不用做');
+  await step(tok);                                   // 8:44 遞迴 → 小串列反而比較慢
+  ones.forEach((m) => glow(m, RED));
+  gd.mood('sad');
+  say('它是遞迴的：對小串列來說反而比較慢', '');
+  await step(tok);                                   // 9:02 insertion n²、merge n log n
+  note('insertion：O(n²)　merge：O(n log n)', 3.6, 0.3, 1.6);
+  gd.mood('calm');
+  say('insertion O(n²)、merge O(n log n)', '一般來說 merge sort 快很多');
+  await step(tok);                                   // 9:20 小串列：遞迴浪費時間
+  gd.mood('wow');
+  say('但串列很小時，merge sort 花很多時間在遞迴上', '實際在電腦上跑，反而比 insertion 慢');
+  await step(tok);                                   // 9:37 ≤ 15 個時比較慢
+  q.forEach((m) => glow(m, GOLD));
+  pkt('≤ 15 個：merge sort 比較慢', -1.5, 3.6);
+  say('觀察：15 個以下的串列，merge sort 比較慢', '更大之後 merge sort 才比較快');
+  await step(tok);                                   // 9:49 小問題交給 insertion sort
+  ones.forEach(kill);
+  q.forEach((m) => { glow(m, null); tint(m, PC.orange); relabel(m, 'insertion sort'); });
+  gd.mood('happy');
+  say('小串列交給 insertion sort', 'insertion sort 變成 merge sort 的一部分');
+  await step(tok);                                   // 10:01 結果再 merge
+  q.forEach((m) => tint(m, PC.green)); await beat(tok, 500);
+  h.forEach((m) => tint(m, PC.green)); await beat(tok, 500);
+  tint(top, PC.green); glow(top, GREEN);
+  say('排好的小串列再用 merge 合起來', '');
+  await step(tok);                                   // 10:15 為什麼是 insertion：stable
+  good('insertion sort 也是 stable', -3, 0.4, 1.6);
+  say('為什麼選 insertion sort？', '因為它也是 stable');
+  await step(tok);                                   // 10:23 bubble sort 也 stable、也 n²
+  note('bubble sort：也 stable、也 n²，也可以', 3, 1.3, 1.6);
+  gd.mood('calm');
+  say('Bubble sort 也是 stable、也是 n²', '也可以拿來代替 insertion sort');
+  await step(tok);                                   // 10:44 都適合 linked list
+  good('merge sort、insertion sort 都適合 linked list', 0, 7.2);
+  gd.mood('happy');
+  say('兩者都適合 linked list', '');
+}]);
+
+// 11:17 缺點三：遞迴用 stack，空間 n + log n
+FRAG.push(['dcbari-msspace', '缺點三：遞迴用 stack，空間 n + log n', async (tok) => {
+  fresh([0, 5, 14.5], [0, 3.2, 0]);
+  const gd = guide(-6.4, 2.4);
+  const nodes = [['1-8', 0, -1.6], ['1-4', 1, -4], ['5-8', 1, 0.8], ['1-2', 2, -5.2], ['3-4', 2, -2.8], ['1-1', 3, -5.8], ['2-2', 3, -4.6]];
+  const par = { '1-4': '1-8', '5-8': '1-8', '1-2': '1-4', '3-4': '1-4', '1-1': '1-2', '2-2': '1-2' };
+  const NY = (d) => 6.4 - d * 1.6, nm = {};
+  const st = [];
+  await step(tok);                                   // 11:16 遞迴 → 用 stack
+  tag('stack', 'ptr alt', 4.6, 4.4);
+  ctx.tile(V3(4.6, 0.04, 0), 2.6, 1.4);
+  bubble('遞迴演算法都會用到 stack', 3.4, 6.6);
+  gd.mood('sad');
+  say('缺點三：遞迴演算法都會用到記憶體裡的 stack', 'merge sort 也是');
+  await step(tok);                                   // 11:36 最大 stack = tracing tree 的高度
+  say('stack 最大會多大？', '取決於 merge sort 的 tracing tree 有多高');
+  gd.mood('wow');
+  await step(tok);                                   // 11:49 8 個元素：1-8 → 1-4 → 1-2 → 1-1
+  for (const [k, d, x] of nodes) {
+    nm[k] = cube(k.replace('-', '～'), PC.blue, [1.1, 0.5, 0.8], x, NY(d), 0, 1.2);
+    if (par[k]) line(nm[par[k]].position.x, NY(d - 1) - 0.25, x, NY(d) + 0.25);
+  }
+  for (const k of ['1-8', '1-4', '1-2', '1-1']) { glow(nm[k], GOLD); st.push(cube('MS(' + k.replace('-', ', ') + ')', PC.purple, [2.2, 0.45, 1], 4.6, 0.25 + st.length * 0.5, 0, 1.5)); await beat(tok, 300); }
+  gd.mood('calm');
+  say('MS(1,8) → (1,4) → (1,2) → (1,1)', '8 個元素：每次呼叫推一個 activation record');
+  await step(tok);                                   // 12:01 高度 log n
+  pkt('樹高 = log n', -1.6, 0.4, 1.6);
+  say('tracing tree 的高度是 log n', '');
+  await step(tok);                                   // 12:11 stack 空間 log n
+  note('同時最多 log n 個 activation record', 3.4, 2.6);
+  say('stack 同時最多只有 log n 個 activation record', '呼叫很多次，但不會同時都在 stack 裡');
+  await step(tok);                                   // 12:24 還有 auxiliary array：n
+  for (let i = 3; i >= 1; i--) { fly(st[i]); glow(nm[['1-8', '1-4', '1-2', '1-1'][i]], null); await beat(tok, 250); }
+  cube('auxiliary array：n', PC.orange, [5, 0.5, 1], -1.6, 0.25, 2.6, 1.5);
+  gd.mood('wow');
+  say('另外 merge 還需要 auxiliary array', '大小 n');
+  await step(tok);                                   // 12:32 n + log n = Θ(n)
+  good('空間 = n + log n = Θ(n)', 0, 7.4);
+  gd.mood('calm');
+  say('總空間 n + log n', '漸近來看就是 Θ(n)：n 是額外陣列、log n 是 stack');
+}]);
+
+// ═════════ zXhWPrMLXGo：Merge sort（印地語，依中譯逐句） ═════════
+const HA = [2, 5, 8, 15], HB = [4, 7, 10, 12];
+// merging A、B → C（params.part = 'what' | 'steps' | 'rest'）
+FRAG.push(['dcbari-hmerge', 'Merging：A、B 各 4 個合成 C', async (tok) => {
+  const part = (ctx.params || {}).part || 'what';
+  fresh([0, 6, 14], [0, 2, 0]);
+  const gd = guide(-6.4, 3.4);
+  const ax = (i) => -5.6 + i * 1.1, cx = (k) => -1.8 + k * 0.95;
+  let ca = [], cb = [], ip, jp, kp, cd, i = 0, j = 0, k = 0;
+  const lists = (drop) => {
+    ca = HA.map((v, q) => cube(v, PC.blue, [0.9, 0.6, 0.9], ax(q), 0.3, -1.6, drop));
+    cb = HB.map((v, q) => cube(v, PC.purple, [0.9, 0.6, 0.9], ax(q), 0.3, 1.6, drop));
+    tag('A（m = 4）', 'ptr', -6.2, 1.4, -1.6); tag('B（n = 4）', 'ptr', -6.2, 1.4, 1.6);
+  };
+  const cTiles = () => { for (let q = 0; q < 8; q++) ctx.tile(V3(cx(q), 0.04, 0), 0.85, 0.85); tag('C', 'ptr alt', -1.8, 2.4, 0); };
+  const ptrs = () => { ip = tag('i', 'ptr', ax(i), 1, -1.6); jp = tag('j', 'ptr', ax(j), 1, 1.6); kp = tag('k', 'ptr alt', cx(k), 1, 0); };
+  const codeP = () => code(['while (i < m && j < n)', '  if (A[i] < B[j]) C[k++] = A[i++];', '  else             C[k++] = B[j++];', 'while (i < m) C[k++] = A[i++];', 'while (j < n) C[k++] = B[j++];'], 2.8, 7, 0.46);
+  const take = (fromA) => {
+    if (fromA) { move(ca[i], cx(k), 0.3, 0); i++; move(ip, ax(Math.min(i, 4)), 1, -1.6); }
     else { move(cb[j], cx(k), 0.3, 0); j++; move(jp, ax(Math.min(j, 4)), 1, 1.6); }
     k++; move(kp, cx(Math.min(k, 7.6)), 1, 0);
-    await beat(tok, 500);
+  };
+  if (part === 'what') {
+    await step(tok);                                 // 0:01 merge sort；先懂 merging：拿兩個 list
+    note('merge sort 之前：先懂 merging', 0, 6.2);
+    say('這部影片講 merge sort', '先理解什麼是 merging');
+    await step(tok);                                 // 0:15 A：m = 4 個
+    ca = HA.map((v, q) => cube(v, PC.blue, [0.9, 0.6, 0.9], ax(q), 0.3, -1.6, 1.5)); tag('A（m = 4）', 'ptr', -6.2, 1.4, -1.6);
+    say('list A 有 m 個元素，也就是 4 個', '');
+    await step(tok);                                 // 0:23 B：n = 4 個；都排好了
+    cb = HB.map((v, q) => cube(v, PC.purple, [0.9, 0.6, 0.9], ax(q), 0.3, 1.6, 1.5)); tag('B（n = 4）', 'ptr', -6.2, 1.4, 1.6);
+    [...ca, ...cb].forEach((m) => glow(m, GREEN));
+    gd.mood('wow');
+    say('list B 有 n = 4 個元素', 'A 和 B 裡的元素都已經排好序');
+    await step(tok);                                 // 0:30 合併成第三個 list C
+    [...ca, ...cb].forEach((m) => glow(m, null));
+    cTiles();
+    gd.mood('calm');
+    say('merging：把兩個 list 合起來，做出第三個 list C', '');
+    await step(tok);                                 // 0:42 定義
+    good('merging：兩個已排序 list → 一個已排序 list', 2.4, 5.4);
+    gd.mood('happy');
+    say('Merging：combining two sorted lists', 'into a single sorted list');
+    return;
   }
+  if (part === 'steps') {
+    lists(0); cTiles();
+    await step(tok);                                 // 0:51 i 指向 A 的第一個
+    ip = tag('i', 'ptr', ax(0), 1, -1.6);
+    say('在 A 的第一個元素放一個整數指標 i', '');
+    await step(tok);                                 // 0:55 j 指向 B 的第一個、k 指向 C
+    jp = tag('j', 'ptr', ax(0), 1, 1.6); kp = tag('k', 'ptr alt', cx(0), 1, 0);
+    glow(ca[0], GOLD); glow(cb[0], GOLD);
+    say('j 放在 B 的第一個、k 放在 C 的第一格', '接著比較 A[i] 和 B[j]');
+    await step(tok);                                 // 1:06 A[i] 小 → 放進 C，i、k 前進
+    glow(ca[0], null); glow(cb[0], null); take(true);
+    say('A[i] = 2 比 B[j] = 4 小 → 2 放進 C', 'i 往前、k 也移到下一個空位');
+    await step(tok);                                 // 1:22 這次 B[j] 小 → 複製，j、k 前進
+    glow(ca[1], GOLD); glow(cb[0], GOLD); await beat(tok, 500); glow(ca[1], null); glow(cb[0], null);
+    take(false); gd.look(1);
+    say('再比 A[i] = 5 和 B[j] = 4：B[j] 比較小', '4 複製到 C，j 和 k 往前');
+    await step(tok);                                 // 1:39 寫成程式：if A[i] < B[j]
+    cd = codeP(); cd.hl(1); gd.look(0);
+    say('把剛剛的過程寫成程式碼', 'if (A[i] < B[j]) …');
+    await step(tok);                                 // 1:56 C[k] = A[i]，k、i 前進
+    cd.hl(1);
+    bubble('C[k++] = A[i++]', 2.8, 4.4);
+    say('把 A[i] 複製到 C[k]', 'k 往前、i 也往前');
+    await step(tok);                                 // 2:09 otherwise C[k] = B[j]
+    cd.hl(2);
+    say('otherwise（A 不比較小）：C[k] 放 B[j]', '就這樣一個一個複製');
+    await step(tok);                                 // 2:29 5、7、8、10 複製
+    while (k < 6) { take(HA[i] < HB[j]); await beat(tok, 450); }
+    say('這樣 5、7、8、10 依序被複製', '');
+    await step(tok);                                 // 2:36 i 停在 15、j 停在 12
+    glow(ca[3], GOLD); glow(cb[3], GOLD);
+    gd.mood('wow');
+    say('i 停在 15、j 停在 12', 'k 在下一個空位');
+    await step(tok);                                 // 2:55 15 vs 12：12 放進 C
+    glow(ca[3], null); glow(cb[3], null); take(false);
+    gd.mood('calm');
+    say('比 15 和 12：B[j] 比較小', '12 放進 C，j 往前');
+    await step(tok);                                 // 3:03 B 用完，j 跑出去 → 停
+    cd.hl(0); bad('j 跑出 B 了', ax(3) + 1.2, 1.6, 1.6);
+    say('B 的元素全部用完，j 跑到 list 外面', '這個過程先停下來');
+    return;
+  }
+  // part 'rest'：已複製 2 4 5 7 8 10 12，A 剩 15
+  lists(0); cTiles();
+  for (const v of [2, 4, 5, 7, 8, 10, 12]) { const fromA = HA.includes(v); const m = fromA ? ca[HA.indexOf(v)] : cb[HB.indexOf(v)]; m.position.set(cx(k), 0.3, 0); k++; }
+  i = 3; j = 4; ptrs(); cd = codeP();
+  await step(tok);                                   // 3:16 重複到什麼時候？i < m 且 j < n
   cd.hl(0);
-  say('j 跑出 B：B 用完，迴圈停止', 'while (i < m && j < n) 不成立');
-  await beat(tok, 2200);
-  cd.hl(3);
-  say('A 剩下的 15 直接複製到 C', '至少有一邊會剩元素');
-  while (i < 4) { move(ca[i], cx(k), 0.3, 0); i++; k++; move(kp, cx(Math.min(k, 7.6)), 1, 0); await beat(tok, 900); }
+  say('這個過程重複執行，直到什麼時候？', '只要 i < m 而且 j < n');
+  await step(tok);                                   // 3:39 直到其中一個 list 用完
+  bad('B 用完了', ax(3) + 1.2, 1.6, 1.6);
+  say('直到其中一個 list 用完為止', '');
+  await step(tok);                                   // 3:42 另一個 list 一定剩元素
+  glow(ca[3], GOLD); gd.mood('wow');
+  say('一個 list 用完時，另一個 list 一定還有剩', '這裡 A 剩下 15');
+  await step(tok);                                   // 3:47 假如 B 多一個 17
+  const g17 = cube('17', PC.purple, [0.9, 0.6, 0.9], ax(4) + 0.2, 0.3, 1.6, 1.2); tint(g17, PC.pink);
+  note('假如 B 還有 17：15 先被複製，剩下 17', -2.6, 3.4);
+  gd.mood('calm');
+  say('假如 B 多一個 17', '15 會被複製，剩下的就是 17');
+  await step(tok);                                   // 4:03 至少剩一個，要複製剩下的
+  kill(g17);
+  say('至少會剩一個元素', '要把剩下的元素複製過去：可能在 A，也可能在 B');
+  await step(tok);                                   // 4:10 while (i < m) C[k++] = A[i++]
+  cd.hl(3); glow(ca[3], null); take(true);
+  say('while (i < m) C[k++] = A[i++]', 'A 剩下的全部複製到 C');
+  await step(tok);                                   // 4:30 B 剩下的也一樣
+  cd.hl(4);
+  say('while (j < n) C[k++] = B[j++]', 'B 剩下的也一樣複製到 C');
+  await step(tok);                                   // 4:39 這就是 merge 的演算法
   cd.hl(-1);
-  say('C 也是已排序的', '每個元素搬一次：Θ(m + n)');
-  await beat(tok, 3000);
+  [...ca, ...cb].forEach((m) => tint(m, PC.green));
+  good('A、B 合併，結果放在 C', 2.8, 4.4);
+  gd.mood('happy'); await gd.hop(tok);
+  say('這就是 merging 的演算法', '給 A、B、C 三個 list：A 和 B 合併，結果放在 C');
 }]);
 
-// ─── zXhWPrMLXGo：四個串列 A B C D 的兩種 merge pattern ───
+// 5:03 四個 list A、B、C、D：不只一種 merge pattern
 FRAG.push(['dcbari-habcd', '四個串列 A、B、C、D：不只一種 merge pattern', async (tok) => {
   fresh([0, 5, 14], [0, 2.8, 0]);
-  const run = async (x0, steps, title) => {
-    tag(title, 'ptr', x0, 7.2);
-    const pos = {}; ['A', 'B', 'C', 'D'].forEach((n, q) => { pos[n] = [x0 - 2.1 + q * 1.4, 0.3]; cube(n, PC.blue, [1, 0.55, 0.9], pos[n][0], 0.3, 0, 2); });
-    await beat(tok, 900);
-    for (const [a, b, c, y] of steps) {
-      const x = (pos[a][0] + pos[b][0]) / 2;
-      line(pos[a][0], pos[a][1] + 0.3, x, y - 0.3); line(pos[b][0], pos[b][1] + 0.3, x, y - 0.3);
-      cube(c, c === 'G' ? PC.green : PC.purple, [1, 0.55, 0.9], x, y, 0, 1.5); pos[c] = [x, y];
-      say(title + '：merge ' + a + ' 和 ' + b + ' → ' + c, '');
-      await beat(tok, 1600);
-    }
-  };
-  say('四個已排序串列 A、B、C、D', '一次 merge 兩個');
-  await beat(tok, 1800);
-  await run(-3.4, [['A', 'B', 'E', 2.1], ['C', 'D', 'F', 2.1], ['E', 'F', 'G', 3.9]], '兩兩配對');
-  say('4 個 → 3 個 → 2 個 → 1 個', 'G 含有 A、B、C、D 全部元素');
-  await beat(tok, 2200);
-  await run(3.4, [['A', 'B', 'E', 1.9], ['E', 'C', 'F', 3.5], ['F', 'D', 'G', 5.1]], '一個接一個');
-  say('串列多於兩個：合併順序可以不同', 'There can be more than one merge pattern');
-  await beat(tok, 3200);
+  const gd = guide(-6.4, 2.4);
+  const mk = (x0, title) => { tag(title, 'ptr', x0, 7.2); const pos = {}; ['A', 'B', 'C', 'D'].forEach((n, q) => { pos[n] = [x0 - 2.1 + q * 1.4, 0.3]; cube(n, PC.blue, [1, 0.55, 0.9], pos[n][0], 0.3, 0, 2); }); return pos; };
+  const mg = (pos, a, b, c, y) => { const x = (pos[a][0] + pos[b][0]) / 2; line(pos[a][0], pos[a][1] + 0.3, x, y - 0.3); line(pos[b][0], pos[b][1] + 0.3, x, y - 0.3); cube(c, c === 'G' ? PC.green : PC.purple, [1, 0.55, 0.9], x, y, 0, 1.5); pos[c] = [x, y]; };
+  let L, R;
+  await step(tok);                                   // 5:03 四個 list
+  L = mk(-3.4, '兩兩配對');
+  say('假設有四個 list：A、B、C、D', '要怎麼合併？');
+  await step(tok);                                   // 5:21 A + B → E
+  mg(L, 'A', 'B', 'E', 2.1);
+  say('先合併 A 和 B → 新 list E', '');
+  await step(tok);                                   // 5:30 C + D → F
+  mg(L, 'C', 'D', 'F', 2.1);
+  say('再合併 C 和 D → 新 list F', '');
+  await step(tok);                                   // 5:37 現在剩兩個
+  note('4 個 → 3 個 → 2 個', -3.4, 3.4);
+  gd.mood('wow');
+  say('本來 4 個，做出 E 後變 3 個（E、C、D）', '再做出 F 後只剩兩個');
+  await step(tok);                                   // 5:51 E + F → G
+  mg(L, 'E', 'F', 'G', 3.9);
+  gd.mood('happy');
+  say('合併 E 和 F → G', 'G 有 A、B、C、D 全部的元素');
+  await step(tok);                                   // 6:10 也可以這樣：A + B → E
+  R = mk(3.4, '一個接一個');
+  mg(R, 'A', 'B', 'E', 1.9);
+  gd.mood('wow');
+  say('也可以這樣合併：先合併 A 和 B → E', '');
+  await step(tok);                                   // 6:19 E + C → F
+  mg(R, 'E', 'C', 'F', 3.5);
+  say('E 再跟 C 合併 → F', '');
+  await step(tok);                                   // 6:27 F + D → G
+  mg(R, 'F', 'D', 'G', 5.1);
+  gd.mood('calm');
+  say('F 再跟 D 合併 → G', '');
+  await step(tok);                                   // 6:32 兩個以上的 list：方式不同
+  say('兩個以上的 list，可以用不同的方式合併', '');
+  await step(tok);                                   // 6:44 more than one merge pattern
+  good('There can be more than one merge pattern', 0, 6.4, 1.2);
+  gd.mood('happy');
+  say('merge pattern 可以不只一種', '');
+  await step(tok);                                   // 6:54 非常重要
+  await gd.hop(tok);
+  say('這一點非常重要', '接下來會再詳細講');
 }]);
 
-// ─── zXhWPrMLXGo：8 個單一元素串列 → 7 次 merge ───
+// 7:06 8 個單元素 list：7 次 merge
 FRAG.push(['dcbari-h8lists', '8 個單元素串列：7 次 merge', async (tok) => {
   fresh([0, 5.5, 14.5], [0, 2.8, 0]);
+  const gd = guide(-6.6, 2.4);
   const a = [8, 3, 7, 5, 9, 2, 6, 4], X = (i) => -5.25 + i * 1.5;
-  a.forEach((v, i) => cube(v, PC.blue, [1, 0.55, 0.9], X(i), 0.3, 0, 2));
-  const cnt = tag('merge 0 次', 'ptr alt', 0, 7.4);
-  say('8 個串列，每個只有 1 個元素', '只有一個元素 → 本來就已排序');
-  await beat(tok, 2600);
-  let c = 0;
-  const lv = [[0, 1], [2, 3], [4, 5], [6, 7]];
-  for (const [p, q] of lv) {
-    c++; txt(cnt, 'merge ' + c + ' 次');
-    const s = srt([a[p], a[q]]);
-    line(X(p), 0.6, (X(p) + X(q)) / 2, 1.75); line(X(q), 0.6, (X(p) + X(q)) / 2, 1.75);
-    cube(s.join(', '), PC.purple, [2.4, 0.5, 0.9], (X(p) + X(q)) / 2, 2, 0, 1.5);
-    say('merge ' + a[p] + ' 和 ' + a[q] + ' → ' + s.join(', '), '');
-    await beat(tok, 1100);
-  }
-  for (const [p, q] of [[0, 3], [4, 7]]) {
-    c++; txt(cnt, 'merge ' + c + ' 次');
-    const s = srt(a.slice(p, q + 1)), x = (X(p) + X(q)) / 2;
-    line((X(p) + X(p + 1)) / 2, 2.25, x, 3.45); line((X(q - 1) + X(q)) / 2, 2.25, x, 3.45);
-    cube(s.join(', '), PC.purple, [5.4, 0.5, 0.9], x, 3.7, 0, 1.5);
-    say('4 個串列 → 2 個：' + s.join(', '), '');
-    await beat(tok, 1500);
-  }
-  c++; txt(cnt, 'merge ' + c + ' 次');
+  let ms = [], bs = [];
+  const nums = [];
+  const pairBox = (p, q) => { const s = srt([a[p], a[q]]); line(X(p), 0.6, (X(p) + X(q)) / 2, 1.75); line(X(q), 0.6, (X(p) + X(q)) / 2, 1.75); return cube(s.join(', '), PC.purple, [2.4, 0.5, 0.9], (X(p) + X(q)) / 2, 2, 0, 1.5); };
+  const quadBox = (p, q) => { const s = srt(a.slice(p, q + 1)), x = (X(p) + X(q)) / 2; line((X(p) + X(p + 1)) / 2, 2.25, x, 3.45); line((X(q - 1) + X(q)) / 2, 2.25, x, 3.45); return cube(s.join(', '), PC.purple, [5.4, 0.5, 0.9], x, 3.7, 0, 1.5); };
+  await step(tok);                                   // 7:06 8 個 list
+  ms = a.map((v, i) => cube(v, PC.blue, [1, 0.55, 0.9], X(i), 0.3, 0, 2));
+  say('下一個例子：8 個 list', '');
+  await step(tok);                                   // 7:22 每個只有一個元素 → 已排序
+  ms.forEach((m) => glow(m, GREEN));
+  gd.mood('wow');
+  say('每個 list 只有一個元素', '只有一個元素 → 本來就排好了');
+  await step(tok);                                   // 7:31 merge 8 和 3 → 3, 8
+  ms.forEach((m) => glow(m, null));
+  bs.push(pairBox(0, 1));
+  gd.mood('calm');
+  say('合併這兩個 → 3、8', '');
+  await step(tok);                                   // 7:36 5,7；2,9；4,6
+  for (const [p, q] of [[2, 3], [4, 5], [6, 7]]) { bs.push(pairBox(p, q)); await beat(tok, 450); }
+  say('再合併：5、7，然後 2、9，然後 4、6', '');
+  await step(tok);                                   // 7:48 4 個 list → 3 5 7 8
+  bs.push(quadBox(0, 3));
+  say('現在有 4 個 list：合併前兩個 → 3、5、7、8', '');
+  await step(tok);                                   // 7:56 → 2 4 6 9；剩兩個
+  bs.push(quadBox(4, 7));
+  say('後兩個 → 2、4、6、9', '現在剩兩個 list');
+  await step(tok);                                   // 8:08 結果要寫到第三個 list
+  note('合併結果要寫到第三個 list', 3.6, 6.2);
+  gd.mood('wow');
+  say('注意：合併兩個 list 時', '結果必須寫到第三個 list');
+  await step(tok);                                   // 8:24 單一排好的 list
   line(-3, 3.95, 0, 5.15); line(3, 3.95, 0, 5.15);
-  cube(srt(a).join(', '), PC.green, [11, 0.5, 0.9], 0, 5.4, 0, 1.5);
-  say('結果放到第三個串列：一個已排序串列', '');
-  await beat(tok, 2200);
-  say('8 個串列 → 共 7 次 merge', '每次 merge 兩個，串列數少 1');
-  await beat(tok, 2600);
+  bs.push(cube(srt(a).join(', '), PC.green, [11, 0.5, 0.9], 0, 5.4, 0, 1.5));
+  gd.mood('happy');
+  say('8 個 list 合併成一個', '裡面有全部元素，而且都排好了');
+  await step(tok);                                   // 8:35 數一數：1…7
+  const lvl = [bs[0], bs[1], bs[2], bs[3], bs[4], bs[5], bs[6]];
+  for (let q = 0; q < 7; q++) { nums.push(tag('#' + (q + 1), 'ptr alt', lvl[q].position.x + (q === 6 ? 6 : 0.9), lvl[q].position.y + 0.55, 0)); await beat(tok, 250); }
+  gd.mood('calm');
+  say('一共合併了幾次？1、2、3、4、5、6、7', '');
+  await step(tok);                                   // 8:49 8 個 list → 7 次；也可以換順序
+  good('8 個 list → 7 次 merge', -4.4, 6.6);
+  say('8 個 list 需要 7 次 merge', '也可以用別的順序合併');
+  const order = [0, 1, 4, 2, 3, 5, 6];               // 依「先這兩個、再這兩個、再合結果」重新編號
+  await step(tok);                                   // 9:07 先兩個、再兩個、再合結果：1 2 3
+  for (let q = 0; q < 3; q++) txt(nums[order[q]], '#' + (q + 1));
+  gd.mood('wow');
+  say('可以先合併這兩個、再這兩個、再合併它們的結果', '第 1、2、3 次');
+  await step(tok);                                   // 9:19 4、5、6
+  for (let q = 3; q < 6; q++) txt(nums[order[q]], '#' + (q + 1));
+  say('然後第 4、第 5、第 6 次', '');
+  await step(tok);                                   // 9:24 7
+  txt(nums[order[6]], '#7');
+  say('最後兩個合起來是第 7 次', '');
+  await step(tok);                                   // 9:33 或者一個接一個
   fresh([0, 5.5, 14.5], [0, 2.8, 0]);
+  const gd2 = guide(-6.6, 2.4);
   a.forEach((v, i) => cube(v, PC.blue, [1, 0.55, 0.9], X(i), 0.3, 0));
-  const cnt2 = tag('merge 0 次', 'ptr alt', 0, 7.4);
-  say('換個 pattern：結果一個接一個往下合', '');
-  await beat(tok, 1600);
   let px = X(0), py = 0.3, cur = [a[0]];
   for (let i = 1; i < 8; i++) {
     cur = srt([...cur, a[i]]);
     const nx = (px + X(i)) / 2 + 0.2, ny = 0.3 + i * 0.85;
     line(px, py + 0.25, nx, ny - 0.25); line(X(i), 0.55, nx, ny - 0.25);
-    cube(cur.join(','), i === 7 ? PC.green : PC.purple, [Math.max(1, cur.length * 0.55), 0.45, 0.9], nx, ny, 0, 1);
-    px = nx; py = ny; txt(cnt2, 'merge ' + i + ' 次');
-    await beat(tok, 650);
+    cube(cur.join(','), i === 7 ? PC.green : PC.purple, [Math.max(1, cur.length * 0.55), 0.45, 0.9], nx, ny, 0, 0.8);
+    px = nx; py = ny;
+    await beat(tok, 280);
   }
-  say('pattern 不同，同樣 7 次 merge', '兩個以上串列：merge pattern 不只一種');
-  await beat(tok, 3000);
+  say('或者：先合併兩個，結果再跟下一個合併……', '一樣是 7 次');
+  await step(tok);                                   // 9:40 不只一種 pattern
+  good('more than one merge pattern', 2.4, 1.2);
+  gd2.mood('happy'); await gd2.hop(tok);
+  say('兩個以上的 list，合併的 pattern 不只一種', '');
 }]);
 
-// ─── zXhWPrMLXGo：遞迴 merge sort 的 divide 順序 ───
+// 9:46 merge sort：把陣列看成 8 個 list
+FRAG.push(['dcbari-h8as', 'Merge sort：把陣列看成 8 個 list', async (tok) => {
+  fresh([0, 5.5, 13.5], [0, 1.6, 0]);
+  const gd = guide(-6.4, 2.6);
+  const a = [8, 3, 7, 5, 9, 2, 6, 4];
+  let ms = [];
+  await step(tok);                                   // 9:46 一個大小 8 的陣列
+  ms = a.map((v, i) => cube(v, PC.blue, [1, 0.6, 1], -3.5 + i * 1.0, 0.3, 0, 1.5));
+  tag('大小 8 的陣列', 'ptr', 0, 1.6);
+  say('終於來看 merge sort', '一個大小 8 的陣列，有 8 個元素');
+  await step(tok);                                   // 10:09 不看成一個陣列，而是 8 個 list
+  ms.forEach((m, i) => move(m, -5.25 + i * 1.5, 0.3, 0));
+  await beat(tok, 600);
+  ms.forEach((m) => glow(m, GREEN));
+  gd.mood('wow');
+  say('不把它看成一個陣列', '而是 8 個不同的 list');
+  await step(tok);                                   // 10:44 merge sort 怎麼運作
+  ms.forEach((m) => glow(m, null));
+  bubble('給 merge sort 一個陣列…', 0, 3.4);
+  gd.mood('calm');
+  say('來看 merge sort 怎麼運作', '給它一個陣列要排序');
+  await step(tok);                                   // 11:05 每個元素都是一個 list → 8 個
+  ms.forEach((m, i) => tag('list ' + (i + 1), 'idx', -5.25 + i * 1.5, 0, 0.9));
+  gd.mood('happy');
+  say('每個元素本身就是一個 list', '8 個元素 → 8 個 list');
+}]);
+
+// 11:11 遞迴 MergeSort(l, h)（params.part = 'a' | 'b'）
 FRAG.push(['dcbari-hmsrec', 'MergeSort(l, h)：一路 divide 到單一元素再 merge', async (tok) => {
+  const part = (ctx.params || {}).part || 'a';
   fresh([0, 5, 15], [0, 3.2, 0]);
-  const a = [8, 3, 7, 5, 9, 2, 6, 4], X = (i) => -6.2 + i * 1.0;
-  const cd = code(['MergeSort(l, h) {', '  if (l < h) {', '    mid = (l + h) / 2;', '    MergeSort(l, mid);', '    MergeSort(mid+1, h);', '    Merge(l, mid, h);', '  }', '}'], 4.2, 6.6, 0.48);
-  const cnt = tag('divide 0 次', 'ptr alt', 4.2, 2.2);
-  say('l = 1、h = 8：先把陣列在邏輯上切開', '不是真的切開陣列，只是用 l、mid、h 劃範圍');
-  const segY = (d) => 6.2 - d * 1.6;
-  const segX = (l, h) => (X(l) + X(h)) / 2;
-  const segs = {};
-  segs['0-7'] = cube(a.join(' '), PC.blue, [7.8, 0.5, 0.8], segX(0, 7), segY(0), 0, 1.2);
-  await beat(tok, 2400);
+  const gd = guide(-6.6, 2.6);
+  const a = [8, 3, 7, 5, 9, 2, 6, 4], X = (i) => -6.0 + i * 0.95;
+  const cd = code(['MergeSort(l, h) {', '  if (l < h) {', '    mid = (l + h) / 2;', '    MergeSort(l, mid);', '    MergeSort(mid+1, h);', '    Merge(l, mid, h);', '  }', '}'], 4.4, 6.6, 0.48);
+  const cnt = tag('divide 0 次', 'ptr alt', 4.4, 2.2);
+  const segY = (d) => 6.2 - d * 1.6, segX = (l, h) => (X(l) + X(h)) / 2;
+  const segs = {}, depth = { '0-7': 0 };
   let dv = 0;
-  const rec = async (l, h, d) => {
-    if (l === h) return;
-    const m = (l + h) >> 1;
-    dv++; txt(cnt, 'divide ' + dv + ' 次'); cd.hl(2);
-    for (const [p, q] of [[l, m], [m + 1, h]]) {
-      segs[p + '-' + q] = cube(a.slice(p, q + 1).join(' '), PC.blue, [(q - p + 1) * 1.0 - 0.15, 0.5, 0.8], segX(p, q), segY(d + 1), 0, 1.2);
-      line(segX(l, h), segY(d) - 0.25, segX(p, q), segY(d + 1) + 0.25);
-    }
-    say('第 ' + dv + ' 次 divide：mid = ⌊(' + (l + 1) + ' + ' + (h + 1) + ')/2⌋ = ' + (m + 1), '左 ' + (l + 1) + '～' + (m + 1) + '、右 ' + (m + 2) + '～' + (h + 1));
-    await beat(tok, 1300);
-    cd.hl(3); await rec(l, m, d + 1);
-    cd.hl(4); await rec(m + 1, h, d + 1);
-    cd.hl(5);
-    const s = srt(a.slice(l, h + 1)), mm = segs[l + '-' + h];
-    relabel(mm, s.join(' ')); tint(mm, PC.green); glow(mm, GREEN);
-    say('Merge(' + (l + 1) + ', ' + (m + 1) + ', ' + (h + 1) + ') → ' + s.join(' '), '左右兩半都排好了才 merge');
-    await beat(tok, 1300); glow(mm, null);
+  const seg = (l, h, d, drop) => { segs[l + '-' + h] = cube(a.slice(l, h + 1).join(' '), PC.blue, [(h - l + 1) * 0.95 - 0.15, 0.5, 0.8], segX(l, h), segY(d), 0, drop); depth[l + '-' + h] = d; };
+  const D = (l, h, drop = 1.2) => {
+    const m = (l + h) >> 1, d = depth[l + '-' + h]; dv++; txt(cnt, 'divide ' + dv + ' 次');
+    for (const [p, q] of [[l, m], [m + 1, h]]) { seg(p, q, d + 1, drop); line(segX(l, h), segY(d) - 0.25, segX(p, q), segY(d + 1) + 0.25); }
   };
-  await rec(0, 7, 0);
+  const M = (l, h) => { const mm = segs[l + '-' + h]; relabel(mm, srt(a.slice(l, h + 1)).join(' ')); tint(mm, PC.green); };
+  if (part === 'a') {
+    await step(tok);                                 // 11:11 給 merge sort 一個陣列
+    seg(0, 7, 0, 1.2);
+    say('把陣列交給 merge sort，它會做什麼？', '8 3 7 5 9 2 6 4');
+    await step(tok);                                 // 11:17 邏輯上切開
+    bubble('不是真的切開：只用 l、mid、h 劃範圍', -1.4, 7.3);
+    gd.mood('wow');
+    say('它會把陣列切開', '不是實體切開，而是邏輯上切開');
+    await step(tok);                                 // 11:24 第一次 divide
+    D(0, 7); gd.mood('calm');
+    say('第一次切割：左邊一個 list、右邊一個 list', '');
+    await step(tok);                                 // 11:29 第二次：再切左邊
+    D(0, 3);
+    say('拿第一個 list（左邊）再切一次', '第二次切割');
+    await step(tok);                                 // 11:42 第三次
+    D(0, 1);
+    say('再把左邊的 list 切開', '第三次切割');
+    await step(tok);                                 // 11:51 左右各剩一個元素
+    glow(segs['0-0'], GOLD); glow(segs['1-1'], GOLD);
+    say('左邊剩一個元素、右邊剩一個元素', '一直切到只剩單一元素');
+    await step(tok);                                 // 12:04 合併 → 3 8
+    glow(segs['0-0'], null); glow(segs['1-1'], null); M(0, 1);
+    gd.mood('happy');
+    say('都是單一元素了 → 合併', '結果 3、8');
+    await step(tok);                                 // 12:20 l = 1、h = 8
+    cd.hl(0);
+    pkt('l = 1', X(0), 7.2); pkt('h = 8', X(7), 7.2);
+    gd.mood('calm');
+    say('來看程式怎麼做：MergeSort(l = 1, h = 8)', '');
+    await step(tok);                                 // 12:40 l < h → mid
+    cd.hl(2);
+    say('先檢查 l < h（至少兩個元素）', '是的話，算 mid = (l + h) / 2');
+    await step(tok);                                 // 12:48 切開後，左半再切
+    cd.hl(3);
+    say('切開之後，左半邊還要再切', '');
+    return;
+  }
+  // part 'b'：左邊 1～2 已合併成 3 8
+  seg(0, 7, 0, 0); D(0, 7, 0); D(0, 3, 0); D(0, 1, 0); M(0, 1);
+  await step(tok);                                   // 12:59 MergeSort(low, mid) 一直套用
+  cd.hl(3); glow(segs['0-3'], GOLD);
+  say('它會一直套用 merge sort', 'MergeSort(low, mid)');
+  await step(tok);                                   // 13:07 右邊再切：第四次
+  glow(segs['0-3'], null); D(2, 3);
+  say('同樣到右邊再切下去', '第四次切割');
+  await step(tok);                                   // 13:22 合併 → 5 7
+  M(2, 3); gd.mood('happy');
+  say('兩個都是單一元素 → 合併', '變成 5、7');
+  await step(tok);                                   // 13:31 MergeSort(mid + 1, high)
+  cd.hl(4); gd.mood('calm');
+  say('也就是在右半邊呼叫 merge sort', 'MergeSort(mid + 1, high)');
+  await step(tok);                                   // 13:40 左右合起來：Merge(l, mid, h)
+  cd.hl(5); M(0, 3);
+  say('左右兩半合起來變成一個 list', 'Merge：low～mid 與 mid+1～high → 3 5 7 8');
+  await step(tok);                                   // 14:06 右半：第五次
+  cd.hl(4); D(4, 7);
+  say('左半邊合併完了，換右半邊', '第五次切割');
+  await step(tok);                                   // 14:15 第六次，合併 → 2 9
+  D(4, 5); await beat(tok, 600); M(4, 5);
+  say('第六次切割，再合併', '得到 2、9');
+  await step(tok);                                   // 14:23 第七次，合併 → 4 6
+  D(6, 7); await beat(tok, 600); M(6, 7);
+  say('第七次切割，再合併', '得到 4、6');
+  await step(tok);                                   // 14:37 2 4 6 9，再合成一個
+  cd.hl(5); M(4, 7); await beat(tok, 700); M(0, 7); glow(segs['0-7'], GREEN);
+  gd.mood('happy'); await gd.hop(tok);
+  say('2、4、6、9，最後把兩個 list 合併', '得到一個排好的 list');
+  await step(tok);                                   // 14:46 照這個 pattern 合併
   cd.hl(-1);
-  say('7 次 divide、7 次 merge：排好了', '每次都切到 l == h（單一元素）為止');
-  await beat(tok, 3000);
+  say('Merge sort 照著這個 pattern', '把所有元素合併成一個排好的 list');
 }]);
 
-// ─── zXhWPrMLXGo：merge 的結果放在輔助陣列 B ───
+// 14:56 merge 的結果放在輔助陣列 B
 FRAG.push(['dcbari-haux', 'Merge 需要輔助陣列 B，再複製回 A', async (tok) => {
   fresh([0, 6.5, 13], [0, 0.6, 0]);
+  const gd = guide(-6.6, 3.0);
   const X = (i) => -4.9 + i * 1.4;
-  let A = [3, 8, 5, 7, 2, 9, 4, 6];
-  for (let i = 0; i < 8; i++) { ctx.tile(V3(X(i), 0.04, -1.5), 1.1, 1.1); ctx.tile(V3(X(i), 0.04, 1.5), 1.1, 1.1); }
-  tag('A', 'ptr', -6.5, 0.3, -1.5); tag('B（auxiliary）', 'ptr alt', -6.3, 1.2, 1.5);
-  let ms = A.map((v, i) => cube(v, PC.blue, [0.95, 0.6, 0.95], X(i), 0.35, -1.5));
-  say('兩個串列在同一個陣列 A 裡', 'merge 的結果要放哪裡？');
-  await beat(tok, 2400);
-  const mergeRange = async (lo, hi, label) => {
-    const items = []; for (let i = lo; i <= hi; i++) items.push({ v: A[i], m: ms[i] });
-    items.sort((p, q) => p.v - q.v);
-    say('merge 結果先寫進 B', label + ' → ' + items.map((o) => o.v).join(' '));
-    for (let q = 0; q < items.length; q++) { move(items[q].m, X(lo + q), 0.35, 1.5); await beat(tok, 260); }
-    await beat(tok, 900);
-    say('再從 B 複製回 A', '');
-    items.forEach((o, q) => { move(o.m, X(lo + q), 0.35, -1.5); A[lo + q] = o.v; ms[lo + q] = o.m; });
-    await beat(tok, 1200);
-  };
-  await mergeRange(0, 3, '3 8 + 5 7');
-  await mergeRange(4, 7, '2 9 + 4 6');
-  await mergeRange(0, 7, '3 5 7 8 + 2 4 6 9');
+  const A = [3, 8, 5, 7, 2, 9, 4, 6];
+  for (let i = 0; i < 8; i++) ctx.tile(V3(X(i), 0.04, -1.5), 1.1, 1.1);
+  tag('A', 'ptr', -6.5, 0.3, -1.5);
+  const ms = A.map((v, i) => cube(v, PC.blue, [0.95, 0.6, 0.95], X(i), 0.35, -1.5));
+  const toB = async (lo, hi) => { const it = []; for (let i = lo; i <= hi; i++) it.push(ms[i]); it.sort((p, q) => Number(p.userData.lbl.element.textContent) - Number(q.userData.lbl.element.textContent)); for (let q = 0; q < it.length; q++) { move(it[q], X(lo + q), 0.35, 1.5); await beat(tok, 180); } return it; };
+  const back = (lo, it) => it.forEach((m, q) => { move(m, X(lo + q), 0.35, -1.5); ms[lo + q] = m; });
+  await step(tok);                                   // 14:56 結果要放哪裡？
+  bubble('兩個 list 在同一個陣列裡，merge 的結果放哪？', 0, 3.6);
+  gd.mood('wow');
+  say('問題：兩個 list 合併時', '結果要放在哪裡？');
+  await step(tok);                                   // 15:01 需要額外的 auxiliary array
+  for (let i = 0; i < 8; i++) ctx.tile(V3(X(i), 0.04, 1.5), 1.1, 1.1);
+  tag('B（auxiliary）', 'ptr alt', -6.3, 1.2, 1.5);
+  gd.mood('calm');
+  say('需要一個額外的輔助陣列（auxiliary array）', '');
+  await step(tok);                                   // 15:08 3 5 7 8 放到 B
+  const r1 = await toB(0, 3);
+  say('merge 的結果放進 B', '3、5、7、8');
+  await step(tok);                                   // 15:17 再複製回 A
+  back(0, r1);
+  say('然後再從 B 複製回 A', '');
+  await step(tok);                                   // 15:23 2 4 6 9 也一樣
+  const r2 = await toB(4, 7); await beat(tok, 400); back(4, r2);
+  say('2、4、6、9 也一樣：先到 B', '再複製回 A');
+  await step(tok);                                   // 15:29 兩個 list 合併 → B → A
+  const r3 = await toB(0, 7); await beat(tok, 300); back(0, r3);
   ms.forEach((m) => tint(m, PC.green));
-  say('需要額外的 auxiliary array', 'merge 要改寫成：A → B，再 B → A');
-  await beat(tok, 3000);
+  gd.mood('happy');
+  say('這兩個 list 合併：結果先到 B', '再從 B 複製回去');
+  await step(tok);                                   // 15:43 merge 要改寫：A → B → A
+  note('Merge 要改寫：A → B，再 B → A', 0, 3.6);
+  say('所以這裡的 merge 演算法要稍微修改', '從 A 複製到 B，再轉回 A');
 }]);
 
-// ─── ak-pz7tS5DE：merge sort 優缺點總覽 ───
-FRAG.push(['dcbari-ms-proscons', 'Merge sort 的優點與缺點', async (tok) => {
-  fresh([0, 5, 14], [0, 3, 0]);
-  const pros = ['適合超大串列', '適合 linked list', '支援 external sorting', 'stable'];
-  const cons = ['需要額外空間', '沒有 small problem', '小串列較慢', '遞迴用 stack'];
-  tag('Pros', 'ptr', -3.4, 7.2); tag('Cons', 'ptr alt', 3.4, 7.2);
-  say('Merge sort 的優點', '');
-  for (let i = 0; i < 4; i++) { cube(pros[i], PC.green, [4.4, 0.6, 1], -3.4, 6 - i * 1.3, 0, 2); await beat(tok, 900); }
-  await beat(tok, 1400);
-  say('Merge sort 的缺點', '');
-  for (let i = 0; i < 4; i++) { cube(cons[i], PC.red, [4.4, 0.6, 1], 3.4, 6 - i * 1.3, 0, 2); await beat(tok, 900); }
-  say('優點：大量資料、linked list、stable', '缺點：額外空間 n + stack log n');
-  await beat(tok, 3200);
+// 16:03 總結
+FRAG.push(['dcbari-hsum', 'Merge sort：用 merge pattern 排序', async (tok) => {
+  fresh([0, 5.5, 13.5], [0, 2.2, 0]);
+  const gd = guide(-6.4, 2.6);
+  const a = [8, 3, 7, 5, 9, 2, 6, 4];
+  let ms = [];
+  await step(tok);                                   // 16:05 用 pattern 合併來排序
+  bubble('merge sort = 照 pattern 一直合併', 0, 5.4);
+  say('Merge sort 用一種 pattern', '一邊合併 list 一邊排序');
+  await step(tok);                                   // 16:12 8 個元素 → 8 個單元素 list
+  ms = a.map((v, i) => cube(v, PC.blue, [1, 0.6, 1], -5.25 + i * 1.5, 0.3, 0, 1.5));
+  gd.mood('wow');
+  say('給它 8 個元素的 list', '它看成 8 個各有一個元素的 list');
+  await step(tok);                                   // 16:18 套用 merge pattern → 排好
+  const s = srt(a);
+  ms.forEach((m, i) => { move(m, -5.25 + s.indexOf(a[i]) * 1.5, 0.3, 0); tint(m, PC.green); });
+  gd.mood('happy'); await gd.hop(tok);
+  say('套用 merge pattern 就排好了', 'merging 的結果本來就是排好的');
 }]);
 
-// ─── ak-pz7tS5DE：linked list 的 merge：只改 link ───
-FRAG.push(['dcbari-llmerge', 'Linked list merge：只改 link，不用第三個串列', async (tok) => {
-  fresh([0, 6.5, 12.5], [0, 0.6, 0]);
-  const L1 = [[2, -5.2], [8, -1.4], [12, 4.6]], L2 = [[3, -3.3], [9, 0.6], [11, 2.6]];
-  const n1 = L1.map(([v, x]) => lnode(v, x, 0.35, -1.6, PC.blue)), n2 = L2.map(([v, x]) => lnode(v, x, 0.35, 1.6, PC.purple));
-  tag('L1', 'ptr', -6.6, 0.4, -1.6); tag('L2', 'ptr', -6.6, 0.4, 1.6);
-  const old = [];
-  for (let i = 0; i < 2; i++) { old.push(line(L1[i][1] + 0.73, 0.4, L1[i + 1][1] - 0.5, 0.4, -1.6)); old.push(line(L2[i][1] + 0.73, 0.4, L2[i + 1][1] - 0.5, 0.4, 1.6)); }
-  say('兩個已排序的 linked list', 'L1：2 → 8 → 12、L2：3 → 9 → 11');
-  await beat(tok, 2600);
-  old.forEach(kill);
-  const all = [[2, n1[0], -1.6], [3, n2[0], 1.6], [8, n1[1], -1.6], [9, n2[1], 1.6], [11, n2[2], 1.6], [12, n1[2], -1.6]];
-  const cmp = ['2 vs 3：2 較小 → head', '3 vs 8：3 較小 → 2 指向 3', '8 vs 9：8 較小 → 3 指向 8', '9 vs 12：9 較小 → 8 指向 9', '12 vs 11：11 較小 → 9 指向 11', 'L2 用完：11 指向 12'];
-  tag('head', 'ptr alt', -5.2, 1.4, -1.6);
-  for (let q = 0; q < 6; q++) {
-    glow(all[q][1].userData.data, GOLD);
-    if (q > 0) { const p = all[q - 1]; arrow(V3(p[1].position.x + 0.73, 0.75, p[2]), V3(all[q][1].position.x - 0.4, 0.75, all[q][2]), 0xc08a1f); }
-    say(cmp[q], '');
-    await beat(tok, 1500);
-    glow(all[q][1].userData.data, null); tint(all[q][1].userData.data, PC.green);
-  }
-  say('2 → 3 → 8 → 9 → 11 → 12', '沒有建第三個串列，只改 link');
-  await beat(tok, 3200);
-}]);
-
-// ─── ak-pz7tS5DE：external sorting ───
-FRAG.push(['dcbari-external', 'External merging：檔案比記憶體大', async (tok) => {
-  fresh([0, 6, 14], [0, 2, 0]);
-  const disk = ghostBox(PC.brown, 5.4, 0.3, 6); disk.position.set(-4, 0.15, 0); tag('Hard disk', 'ptr', -4, 0.4, -3.4);
-  const f1 = cube('file 1：5 GB', PC.blue, [2.4, 1.2, 1.6], -4.9, 0.9, -1.4), f2 = cube('file 2：10 GB', PC.purple, [2.4, 1.8, 1.6], -4.9, 1.2, 1.4);
-  const ram = ghostBox(PC.green, 4.2, 2.2, 3.4); ram.position.set(2.4, 1.1, 0); tag('RAM 4 GB', 'ptr alt', 2.4, 2.6, -1.9);
-  say('兩個大檔要 merge', '資料要先進 main memory 才能 merge');
-  await beat(tok, 2600);
-  const g1 = cube('5 GB', PC.blue, [1.4, 0.8, 1], -4.9, 0.9, -1.4); move(g1, 1.6, 0.5, -0.8);
-  const g2 = cube('10 GB', PC.purple, [1.4, 0.8, 1], -4.9, 1.2, 1.4); move(g2, 3.2, 0.5, 0.8);
-  await beat(tok, 900); glow(g1, RED); glow(g2, RED);
-  say('15 GB 放不進 4 GB', '整個檔案搬不進記憶體');
-  await beat(tok, 2000); fly(g1); fly(g2); await beat(tok, 600);
-  const out = cube('', PC.green, [1.4, 0.2, 1.4], -2.6, 0.4, 0); tag('結果', 'idx', -2.6, 0.9, 0);
-  say('一次只帶一小塊（run / block）進來', '');
-  const b1 = cube('2', PC.blue, [0.8, 0.5, 0.8], -4.9, 1.6, -1.4); move(b1, 1.6, 0.4, -0.8);
-  const b2 = cube('3', PC.purple, [0.8, 0.5, 0.8], -4.9, 2.2, 1.4); move(b2, 1.6, 0.4, 0.8);
-  await beat(tok, 1600);
-  glow(b1, GOLD); glow(b2, GOLD); say('比 2 和 3：2 較小 → 寫出去', ''); await beat(tok, 1400);
-  glow(b1, null); glow(b2, null); move(b1, -2.6, 0.75, 0); await beat(tok, 700);
-  const b3 = cube('10', PC.blue, [0.8, 0.5, 0.8], -4.9, 1.6, -1.4); move(b3, 1.6, 0.4, -0.8);
-  say('file 1 再補下一塊：10', ''); await beat(tok, 1400);
-  glow(b3, GOLD); glow(b2, GOLD); say('比 10 和 3：3 寫出去', ''); await beat(tok, 1400);
-  glow(b3, null); glow(b2, null); move(b2, -2.6, 1.3, 0); await beat(tok, 800);
-  say('只要很小的記憶體就能 merge', 'external merging → external merge sort');
-  await beat(tok, 3000);
-}]);
-
-// ─── ak-pz7tS5DE：stable ───
-FRAG.push(['dcbari-stable', 'Merge sort 是 stable 的', async (tok) => {
-  fresh([0, 5.5, 13.5], [0, 1.4, 0]);
-  const a = [[6], [8, 'a'], [3], [9], [4], [8, 'b'], [5]], X = (i) => -4.5 + i * 1.5;
-  const ms = a.map(([v, t], i) => { const m = cube(v, t === 'a' ? PC.orange : t === 'b' ? PC.pink : PC.blue, t === 'a' ? [0.8, 0.5, 0.8] : t === 'b' ? [1.2, 0.85, 1.2] : [1, 0.6, 1], X(i), 0.3, -1.2); return { v, t, m }; });
-  tag('小 8 在前', 'ptr', X(1), 1.4, -1.2); tag('大 8 在後', 'ptr alt', X(5), 1.7, -1.2);
-  say('串列裡 8 出現兩次', '小方塊 = 第一個 8、大方塊 = 第二個 8');
-  await beat(tok, 2800);
-  const s = ms.slice().sort((p, q) => p.v - q.v);
-  s.forEach((o, i) => move(o.m, X(i), 0.3, 1.4));
-  say('排序後：3 4 5 6 8 8 9', '');
-  await beat(tok, 2000);
-  glow(s[4].m, GOLD); glow(s[5].m, GOLD);
-  say('兩個 8 保持原本的先後順序', '這就是 stable');
-  await beat(tok, 2800);
-  fresh([0, 5.5, 13.5], [0, 1.4, 0]);
-  const r1 = cube('Ravi：8 分', PC.orange, [2.4, 0.6, 1], -2.6, 0.3, -1.2), r2 = cube('Sunil：8 分', PC.pink, [2.4, 0.6, 1], 2.6, 0.3, -1.2);
-  say('學生資料已依姓名／學號排好', 'Ravi 在 Sunil 前面，分數都是 8');
-  await beat(tok, 2600);
-  move(r1, -1.4, 0.3, 1.4); move(r2, 1.4, 0.3, 1.4);
-  say('依分數排序：原本的順序不能被打亂', 'Ravi 仍在 Sunil 前面');
-  await beat(tok, 3000);
-}]);
-
-// ─── ak-pz7tS5DE：not in-place ───
-FRAG.push(['dcbari-notinplace', '不是 in-place：陣列要額外空間', async (tok) => {
-  fresh([0, 6, 13], [0, 1, 0]);
-  const a = [6, 3, 9, 4], X = (i) => -2.25 + i * 1.5;
-  let ms = a.map((v, i) => cube(v, PC.blue, [1, 0.6, 1], X(i), 0.3, -1.4));
-  tag('A', 'ptr', -4, 0.3, -1.4);
-  say('In-place：只在同一個陣列裡重新排列', '例：6 3 9 4');
-  await beat(tok, 2600);
-  say('merge sort 先切成兩半，再 merge', '');
-  move(ms[0], X(0) - 0.4, 0.3, -1.4); move(ms[1], X(1) - 0.4, 0.3, -1.4); move(ms[2], X(2) + 0.4, 0.3, -1.4); move(ms[3], X(3) + 0.4, 0.3, -1.4);
-  await beat(tok, 1600);
-  move(ms[0], X(1) - 0.4, 0.3, -1.4); move(ms[1], X(0) - 0.4, 0.3, -1.4); move(ms[2], X(3) + 0.4, 0.3, -1.4); move(ms[3], X(2) + 0.4, 0.3, -1.4);
-  say('兩半：3 6、4 9', '');
-  await beat(tok, 1600);
-  const B = ghostBox(PC.orange, 6.2, 0.8, 1.3); B.position.set(0, 0.4, 1.6); tag('額外陣列 B', 'ptr alt', -4.2, 0.4, 1.6);
-  const order = [[1, 0], [3, 1], [0, 2], [2, 3]];
-  for (const [i, k] of order) { move(ms[i], X(k), 0.3, 1.6); await beat(tok, 500); }
-  say('merge 的結果不能寫回同一個陣列', '要額外空間 → 不是 in-place');
-  await beat(tok, 2800);
-  say('只有陣列需要；linked list 改 link 即可', '');
-  await beat(tok, 2600);
-}]);
-
-// ─── ak-pz7tS5DE：小串列交給 insertion sort ───
-FRAG.push(['dcbari-smallinsert', '沒有 small problem：n ≤ 15 交給 insertion sort', async (tok) => {
-  fresh([0, 5.5, 14], [0, 2.8, 0]);
-  say('merge sort 一路切到單一元素', '沒有定義 small problem');
-  const top = cube('n = 60', PC.blue, [12, 0.5, 0.9], 0, 6, 0, 1.5);
-  await beat(tok, 2000);
-  const h = [-3, 3].map((x) => cube('30', PC.blue, [5.8, 0.5, 0.9], x, 4.4, 0, 1.2));
-  await beat(tok, 900);
-  const q = [-4.5, -1.5, 1.5, 4.5].map((x) => cube('15', PC.blue, [2.8, 0.5, 0.9], x, 2.8, 0, 1.2));
-  await beat(tok, 900);
-  say('小串列（≤ 15 個）還要遞迴：反而比較慢', 'insertion O(n²)、merge O(n log n)，但 n 很小時遞迴浪費時間');
-  await beat(tok, 3000);
-  q.forEach((m) => { tint(m, PC.orange); relabel(m, 'insertion'); });
-  say('小串列改用 insertion sort', '');
-  await beat(tok, 2400);
-  q.forEach((m) => tint(m, PC.green)); await beat(tok, 700);
-  h.forEach((m) => tint(m, PC.green)); await beat(tok, 700);
-  tint(top, PC.green); glow(top, GREEN);
-  say('排好的小串列再用 merge 合起來', '');
-  await beat(tok, 2200);
-  say('為什麼選 insertion？它也是 stable', 'bubble sort 也 stable、也是 n²，也可以');
-  await beat(tok, 3000);
-}]);
-
-// ─── ak-pz7tS5DE：空間 n + log n ───
-FRAG.push(['dcbari-msspace', 'Merge sort 空間：auxiliary n + stack log n', async (tok) => {
+// ═════════ -qOVVRIZzao：Quick sort 的分析 ═════════
+// best case：每次都切在中間（params.part = 'build' | 'time'）
+FRAG.push(['dcbari-qs-best', 'Quick sort best case：每次切在中間', async (tok) => {
+  const part = (ctx.params || {}).part || 'build';
   fresh([0, 5, 14.5], [0, 3.2, 0]);
-  const nodes = [[1, 8, 0, -1.6], [1, 4, 1, -4], [5, 8, 1, 0.8], [1, 2, 2, -5.2], [3, 4, 2, -2.8], [1, 1, 3, -5.8], [2, 2, 3, -4.6]];
-  const NY = (d) => 6.4 - d * 1.6;
-  const nm = {};
-  for (const [l, h, d, x] of nodes) {
-    nm[l + '-' + h] = cube(l + '～' + h, PC.blue, [1.1, 0.5, 0.8], x, NY(d), 0, 1.2);
-    await beat(tok, 300);
-  }
-  [['1-8', '1-4'], ['1-8', '5-8'], ['1-4', '1-2'], ['1-4', '3-4'], ['1-2', '1-1'], ['1-2', '2-2']].forEach(([p, c]) => line(nm[p].position.x, nm[p].position.y - 0.25, nm[c].position.x, nm[c].position.y + 0.25));
-  say('8 個元素的 tracing tree', '');
-  await beat(tok, 1800);
-  tag('stack', 'ptr alt', 4.6, 4.2);
-  const st = [];
-  for (const k of ['1-8', '1-4', '1-2', '1-1']) {
-    glow(nm[k], GOLD);
-    st.push(cube('MS(' + k.replace('-', ', ') + ')', PC.purple, [2.2, 0.45, 1], 4.6, 0.25 + st.length * 0.5, 0, 1.5));
-    say('呼叫 MS(' + k.replace('-', ', ') + ')：推進 stack', 'activation record');
-    await beat(tok, 1100);
-  }
-  say('stack 最深 = tracing tree 的高度', 'log n（這裡 log₂8 = 3 層呼叫 + 1）');
-  await beat(tok, 2600);
-  for (let i = 3; i >= 1; i--) { fly(st[i]); glow(nm[['1-8', '1-4', '1-2', '1-1'][i]], null); await beat(tok, 400); }
-  const aux = cube('auxiliary array：n', PC.orange, [5, 0.5, 1], -1.6, 0.25, 2.2, 1.5);
-  say('另外還要 auxiliary array：n', '');
-  await beat(tok, 2200);
-  say('總空間 n + log n = Θ(n)', '');
-  await beat(tok, 3000);
-}]);
-
-// ─── uEUXGcc2VXM：遞迴版 binary search ───
-const BS = [3, 6, 8, 12, 14, 17, 25, 29, 31, 36, 42, 47, 53, 55, 62];
-FRAG.push(['dcbari-rbs-code', 'RBinSearch(l, h, key)：遞迴版 binary search', async (tok) => {
-  fresh([0, 6, 14.5], [0, 2.8, 0]);
-  const X = (i) => -6.3 + (i - 1) * 0.9;
-  const cs = BS.map((v, i) => { tag(String(i + 1), 'idx', X(i + 1), 0, 2.4); return cube(v, PC.blue, [0.75, 0.5, 0.75], X(i + 1), 0.25, 1.6); });
-  const cd = code(['RBinSearch(l, h, key) {', '  if (l == h) {', '    if (A[l] == key) return l;', '    else return 0;', '  } else {', '    mid = (l + h) / 2;', '    if (key == A[mid]) return mid;', '    if (key < A[mid])', '      return RBinSearch(l, mid−1, key);', '    else', '      return RBinSearch(mid+1, h, key);', '  }', '}'], -2.2, 7.4, 0.42);
-  tag('呼叫', 'ptr alt', 4.6, 7.4);
-  say('先定義 small problem：只剩一個元素', 'l == h');
-  cd.hl(1); await beat(tok, 2600);
-  cd.hl(2); say('那一個是 key 就回傳 l，否則回傳 0', ''); await beat(tok, 2200);
-  cd.hl(5); say('否則照常算 mid，再遞迴其中一半', 'key = 42'); await beat(tok, 2000);
-  let l = 1, h = 15, depth = 0;
-  while (true) {
-    tag('RBS(' + l + ', ' + h + ')', 'ptr', 4.6, 6.7 - depth * 0.6);
-    for (let i = 1; i <= 15; i++) if (i < l || i > h) tint(cs[i - 1], GRAY);
-    if (l === h) {
-      cd.hl(2); glow(cs[l - 1], GREEN); tint(cs[l - 1], PC.green);
-      say('l = h = ' + l + '：small problem', 'A[' + l + '] = ' + BS[l - 1] + ' == key → return ' + l);
-      await beat(tok, 2600); break;
+  const gd = guide(-6.6, 2.4);
+  const W = 12, unit = W / 15, x0 = -5.6;
+  const seg = (l, h, d, drop) => {
+    const y = 6.4 - d * 1.6, xl = x0 + (l - 1) * unit, w = (h - l + 1) * unit;
+    if (l === h) cube(String(l), PC.purple, [unit * 0.85, 0.5, 0.8], xl + w / 2, y, 0, drop);
+    else cube(l + '～' + h, PC.blue, [w - 0.12, 0.5, 0.8], xl + w / 2, y, 0, drop);
+  };
+  const piv = (l, h, d) => { const m = (l + h) >> 1; cube(m, PC.gold, [unit * 0.8, 0.52, 0.85], x0 + (m - 0.5) * unit, 6.4 - d * 1.6, 0.1); };
+  const split = (l, h, d, drop) => { const m = (l + h) >> 1; piv(l, h, d); seg(l, m - 1, d + 1, drop); seg(m + 1, h, d + 1, drop); };
+  const leaves = [[1, 3], [5, 7], [9, 11], [13, 15]];
+  if (part === 'build') {
+    await step(tok);                                 // 0:00 分析 quicksort
+    bubble('quick sort：遞迴、divide and conquer', 0, 7.6);
+    say('來分析 quick sort 的時間', '它是遞迴的，用 divide and conquer');
+    await step(tok);                                 // 0:12 partition 找出 pivot 的位置並切開
+    note('partition：找出 pivot 的位置，把串列切開', 0, 0.3, 2.2);
+    gd.mood('wow');
+    say('用 partition 演算法', '找出 pivot 的位置，把串列切成兩邊');
+    await step(tok);                                 // 0:24 1～15，QuickSort(1, 15)
+    seg(1, 15, 0, 1.2);
+    pkt('QuickSort(1, 15)', -3.6, 7.2);
+    gd.mood('calm');
+    say('15 個元素：1～15', '呼叫 QuickSort(1, 15)');
+    await step(tok);                                 // 0:40 假設切在中間 8
+    split(1, 15, 0, 1.2);
+    say('假設 partition 剛好切在中間：位置 8', '左邊 1～7、右邊 9～15');
+    await step(tok);                                 // 1:22 左邊切在 4
+    split(1, 7, 1, 1.2);
+    say('一直假設都切在中間：左邊切在 4', '得到 1～3 和 5～7');
+    await step(tok);                                 // 1:36 右邊切在 12
+    split(9, 15, 1, 1.2);
+    say('右邊也切在中間：12', '得到 9～11 和 13～15');
+    const caps = ['切在 2：剩 1 和 3', '切在 6：剩 5 和 7', '切在 10：剩 9 和 11', '切在 14：剩 13 和 15'];
+    for (let q = 0; q < 4; q++) {
+      await step(tok);                               // 1:47 2 · 1:51 6 · 1:59 10 · 2:08 14
+      const [l, h] = leaves[q];
+      split(l, h, 2, 1.2);
+      say(caps[q], '只剩單一元素');
     }
-    const m = (l + h) >> 1;
-    cd.hl(5); glow(cs[m - 1], GOLD);
-    say('mid = ⌊(' + l + ' + ' + h + ')/2⌋ = ' + m, 'A[' + m + '] = ' + BS[m - 1]);
-    await beat(tok, 1500); glow(cs[m - 1], null);
-    if (42 < BS[m - 1]) { cd.hl(8); say('42 < ' + BS[m - 1] + '：遞迴左半', 'RBinSearch(' + l + ', ' + (m - 1) + ', key)'); h = m - 1; }
-    else { cd.hl(10); say('42 > ' + BS[m - 1] + '：遞迴右半', 'RBinSearch(' + (m + 1) + ', ' + h + ', key)'); l = m + 1; }
-    await beat(tok, 1500); depth++;
+    await step(tok);                                 // 2:19 每次都切在中間的樣子
+    good('每次都切在中間', 3.6, 0.3, 2.2);
+    gd.mood('happy'); await gd.hop(tok);
+    say('如果每次都切在中間', 'quick sort 就是這樣運作');
+    return;
   }
+  // part 'time'：樹已經畫好
+  seg(1, 15, 0, 0); split(1, 15, 0, 0); split(1, 7, 1, 0); split(9, 15, 1, 0); for (const [l, h] of leaves) split(l, h, 2, 0);
+  const nt = [];
+  await step(tok);                                   // 2:34 partition 走過整個串列 → n
+  nt.push(pkt('≈ n', 6.8, 6.4));
+  say('partition 比較、交換元素', '要走過整個串列 → 第一層花 n');
+  await step(tok);                                   // 2:49 下一層左右合計也約 n
+  nt.push(pkt('≈ n', 6.8, 4.8));
+  say('下一層：左邊加右邊也約 n', '少了一個元素，但當成 n');
+  await step(tok);                                   // 3:01 每一層都是 n
+  nt.push(pkt('≈ n', 6.8, 3.2)); nt.push(pkt('≈ n', 6.8, 1.6));
+  say('每一層都是 n', '');
+  await step(tok);                                   // 3:10 樹多高？每次除以 2
+  note('15 → 7 → 3 → 1：每次對半', -3, 0.2, 2.2);
+  gd.mood('wow');
+  say('樹有多高？每次都對半切', 'n / 2 / 2 / 2 …… 直到剩 1');
+  await step(tok);                                   // 3:35 n/2ᵏ = 1 → k = log n
+  pkt('n / 2ᵏ = 1 → n = 2ᵏ → k = log₂ n', 2.4, 0.2, 2.2);
+  say('n / 2ᵏ = 1 → n = 2ᵏ', 'k = log n：有 log n 層');
+  await step(tok);                                   // 3:54 n × log n
+  gd.mood('calm');
+  say('log n 層 × 每層 n', 'quick sort 的時間 = O(n log n)');
+  await step(tok);                                   // 4:16 這是 best case
+  good('best case：Θ(n log n)', 0, 7.6);
+  gd.mood('happy'); await gd.hop(tok);
+  say('前提是每次都切在中間', '這是 best case：n log n');
+}]);
+
+// 4:41 best case 做得到嗎？median
+FRAG.push(['dcbari-qs-median', 'Best case 需要 pivot 是 median', async (tok) => {
+  fresh([0, 5, 13], [0, 1.6, 0]);
+  const gd = guide(-6.4, 2.4);
+  const S = [1, 2, 3, 4, 5, 6, 7];
+  let ms = [];
+  await step(tok);                                   // 4:41 best case 可能嗎？
+  bubble('best case 做得到嗎？', 0, 4.6);
+  gd.mood('wow');
+  say('best case 真的做得到嗎？', '先認識 median');
+  await step(tok);                                   // 4:46 1～7，中間那個是 median
+  ms = S.map((v, i) => cube(v, PC.blue, [0.9, 0.6, 0.9], -3.6 + i * 1.2, 0.3, 0, 1.5));
+  await beat(tok, 700);
+  tint(ms[3], PC.gold); glow(ms[3], GOLD); tag('median', 'ptr alt', 0, 1.4);
+  gd.mood('calm');
+  say('1～7 已排序：正中間的 4 叫 median', 'median = 排好序的串列的中間元素');
+  await step(tok);                                   // 5:17 要切在中間 → pivot 必須是 median
+  note('切在中間 ⇔ pivot 是 median', 0, 3.6);
+  say('要每次切在中間', '被選為 pivot 的元素必須是 median');
+  await step(tok);                                   // 5:28 沒排序就不知道 median
+  [5, 2, 7, 4, 1, 6, 3].forEach((v, i) => move(ms[v - 1], -3.6 + i * 1.2, 0.3, 0));
+  gd.mood('sad');
+  say('可是沒排序，就不知道誰是 median', '');
+  await step(tok);                                   // 5:43 只能隨機碰到
+  bad('best case 無法刻意做到（只能碰運氣）', 0, 2.6);
+  say('每次都剛好選到 median？不可能控制', 'best case 只可能隨機發生');
+}]);
+
+// 5:55 worst case：已排序的串列
+FRAG.push(['dcbari-qs-worst', 'Quick sort worst case：已排序 n(n+1)/2', async (tok) => {
+  fresh([0, 5.5, 14], [0, 3, 0]);
+  const gd = guide(-6.6, 2.4);
+  const n = 7, X = (k) => -4.2 + k * 0.95;
+  let row = [];
+  await step(tok);                                   // 5:55 worst case？
+  bubble('worst case 是什麼？', 0, 7.6);
+  say('quick sort 的 worst case 是什麼？', '');
+  await step(tok);                                   // 6:15 已排序的串列
+  row = [];
+  for (let k = 0; k < n; k++) row.push(cube(k + 1, PC.blue, [0.75, 0.5, 0.7], X(k), 6.6, 0, 1.2));
+  gd.mood('wow');
+  say('如果串列已經排好序', '再做 quick sort 會怎樣？');
+  await step(tok);                                   // 6:21 pivot = 第一個；i 找大、j 找小
+  tint(row[0], PC.gold);
+  const ip = tag('i', 'ptr', X(1), 7.3), jp = tag('j', 'ptr alt', X(6), 7.3);
+  move(ip, X(1), 7.3, 0); move(jp, X(0), 7.3, 0);
+  gd.mood('calm');
+  say('partition 選第一個當 pivot', 'i 往右找更大的、j 往左找 ≤ pivot 的');
+  await step(tok);                                   // 6:40 j 一路走回來：切在原位置
+  kill(ip); kill(jp);
+  glow(row[0], GREEN);
+  say('j 一路走回 pivot：切在原來的位置', '已排序 → 每次都切在開頭');
+  await step(tok);                                   // 7:05 1～7：1 排好，右邊 2～7
+  const rows = [row];
+  const r2 = []; for (let k = 1; k < n; k++) r2.push(cube(k + 1, k === 1 ? PC.gold : PC.blue, [0.75, 0.5, 0.7], X(k), 5.65, 0, 1.0));
+  rows.push(r2); tag('比較 ≈ 7', 'ptr alt', 4.4, 6.6);
+  say('1～7：1 排好了，右邊剩 2～7', '左邊是空的');
+  await step(tok);                                   // 7:16 2～7 → 3～7 → … → 7
+  for (let d = 2; d < n; d++) {
+    for (let k = d; k < n; k++) cube(k + 1, k === d ? PC.gold : PC.blue, [0.75, 0.5, 0.7], X(k), 6.6 - d * 0.95, 0, 0.8);
+    tag('比較 ≈ ' + (n - d + 1), 'ptr alt', 4.4, 6.6 - (d - 1) * 0.95);
+    await beat(tok, 330);
+  }
+  tag('比較 ≈ 1', 'ptr alt', 4.4, 6.6 - 6 * 0.95);
+  say('2 排好 → 3～7 → 4～7 → 5～7 → 6～7 → 7', '每次都只少一個');
+  await step(tok);                                   // 7:31 都切在開頭；遞減就切在尾端
+  note('遞增：切在開頭　遞減：切在尾端', -2, 0.2, 1.8);
+  gd.mood('sad');
+  say('每次都切在串列的開頭', '如果是遞減排序，就每次切在尾端');
+  await step(tok);                                   // 7:47 n + (n−1) + … + 1
+  pkt('n + (n−1) + (n−2) + … + 2 + 1', 2.6, 7.6);
+  gd.mood('calm');
+  say('比較次數：n、n − 1、n − 2、……、1', '');
+  await step(tok);                                   // 7:59 n(n+1)/2 = O(n²)
+  bad('= n(n+1)/2 = O(n²)', 4.4, 0.2, 1.8);
+  gd.mood('wow');
+  say('總和 = n(n+1)/2', 'worst case = O(n²)');
+}]);
+
+// 8:14 跟 merge sort 比較
+FRAG.push(['dcbari-qs-cmp', 'Quick sort vs merge sort', async (tok) => {
+  fresh([0, 5, 13.5], [0, 2.4, 0]);
+  const gd = guide(-6.4, 2.4);
+  const bar = (h, col, x, label) => { const m = cube('', col, [1.4, 0.01, 1], x, 0, 0); tag(label, 'idx', x, h + 0.4); return anim(tok, 900, (u) => { m.scale.y = Math.max(1, u * h * 100); m.position.y = u * h / 2; }); };
+  await step(tok);                                   // 8:14 worst n²、best n log n
+  tag('quick sort', 'ptr', -3, 6.6);
+  await Promise.all([bar(5.2, PC.red, -3.9, 'worst：n²'), bar(2.4, PC.green, -2.1, 'best：n log n')]);
+  say('quick sort：worst n²、best n log n', 'best case 我們做不到');
+  await step(tok);                                   // 8:29 已排序時就會發生
+  note('輸入已經排好 → 就會 n²', -3, 6.0);
+  gd.mood('sad');
+  say('worst case 什麼時候發生？', '串列已經排好序的時候');
+  await step(tok);                                   // 8:35 merge sort 沒有 best／worst
+  tag('merge sort', 'ptr alt', 3, 6.6);
+  await bar(2.4, PC.blue, 3, '一律 n log n');
+  gd.mood('calm');
+  say('merge sort 沒有 best、worst 之分', '一律 n log n');
+  await step(tok);                                   // 8:44 quick sort 平均 n log n、最壞 n²
+  good('quick sort：平均 n log n，最壞 n²', 0, 7.4);
+  gd.mood('wow');
+  say('quick sort 平均是 n log n', '但 worst case 是 n²');
+  await step(tok);                                   // 8:58 排好的資料常被拿來再排一次
+  note('排好的資料常常又被拿來再排一次 → 這個問題很實際', 0, 0.3, 2.0);
+  gd.mood('sad');
+  say('串列本來就排好、又被拿來再排一次的機會很高', '這時 quick sort 就會花 n²');
+}]);
+
+// 9:15 改善：選中間或隨機 pivot
+FRAG.push(['dcbari-qs-pivot', '改善：選中間或隨機的 pivot', async (tok) => {
+  fresh([0, 5, 14.5], [0, 3, 0]);
+  const gd = guide(-6.6, 2.4);
+  const S = [1, 2, 3, 4, 5, 6, 7];
+  let ms = [];
+  await step(tok);                                   // 9:15 不要總選第一個：選中間
+  ms = S.map((v, i) => cube(v, PC.blue, [0.8, 0.55, 0.8], -2.4 + i * 0.95, 6.4, 0, 1.2));
+  tint(ms[3], PC.gold); glow(ms[3], GOLD);
+  bubble('pivot 改選中間的元素', 0, 7.5);
+  say('不要總是選第一個元素當 pivot', '改選中間的元素');
+  await step(tok);                                   // 9:28 它會落在中間
+  ms.forEach((m, i) => move(m, -2.4 + i * 0.95 + (i < 3 ? -0.5 : i > 3 ? 0.5 : 0), 6.4, 0));
+  gd.mood('wow');
+  say('已排序時，中間的 4 剛好落在中間', '串列切成兩個一樣大的一半');
+  await step(tok);                                   // 9:41 每次都對半 → n log n
+  const nodes = [[2, 1, -1.9], [6, 1, 1.9], [1, 2, -2.85], [3, 2, -0.95], [5, 2, 0.95], [7, 2, 2.85]];
+  for (const [v, d, x] of nodes) { cube(String(v), PC.green, [0.6, 0.45, 0.6], x, 6.4 - d * 1.5, 0, 1.0); await beat(tok, 200); }
+  good('worst case → best case：n² → n log n', 0, 2.4);
+  gd.mood('happy');
+  say('每次都選中間 → 每次都切在中間', '已排序的 worst case 變成 best case：n log n');
+  await step(tok);                                   // 9:59 兩個建議：① 中間當 pivot
+  note('① 選中間的元素當 pivot', -3.2, 1.4);
+  gd.mood('calm');
+  say('改善 worst case 的兩個建議', '① 永遠選中間的元素當 pivot');
+  await step(tok);                                   // 10:18 但某些排列仍是 n²
+  bad('某些排列還是 n²', -3.2, 0.6);
+  gd.mood('sad');
+  say('但總有某些排列方式', '最大時間還是 n²');
+  await step(tok);                                   // 10:24 ② 隨機選 pivot
+  note('② 隨機選一個元素當 pivot', 3.2, 1.4);
+  gd.mood('calm');
+  say('② 隨機選一個元素當 pivot', '');
+  await step(tok);                                   // 10:35 可能 n log n，最壞還是 n²
+  bad('最壞還是 n²', 3.2, 0.6);
+  gd.mood('wow');
+  say('可能 n log n，最壞還是 n²', 'quick sort 的 worst case 一定是 n²');
+}]);
+
+// 10:50 空間：stack
+FRAG.push(['dcbari-qs-stack', 'Quick sort 的 stack：log n ～ n', async (tok) => {
+  fresh([0, 5, 14], [0, 3.2, 0]);
+  const gd = guide(-6.6, 2.2);
+  await step(tok);                                   // 10:50 不用額外陣列，但用 stack
+  tag('best：切在中間', 'ptr', -3, 7.2); tag('worst：已排序', 'ptr alt', 3, 7.2);
+  bubble('不需要額外的陣列，但遞迴要用 stack', 0, 7.9);
+  say('quick sort 是遞迴的，不需要額外空間', '但會用到 stack');
+  await step(tok);                                   // 11:02 worst：n
+  for (let d = 0; d < 15; d++) { cube('', PC.red, [2.6, 0.38, 1.2], 3, 0.2 + d * 0.42, 0, 1.2); await beat(tok, 120); }
+  pkt('n = 15 層', 3, 6.6);
+  gd.mood('sad');
+  say('worst case：stack 可能到 n', '');
+  await step(tok);                                   // 11:07 best：log n
+  for (let d = 0; d < 4; d++) { cube('QS 第' + (d + 1) + '層', PC.blue, [2.6, 0.38, 1.2], -3, 0.2 + d * 0.42, 0, 1.2); await beat(tok, 250); }
+  pkt('log n = 4 層', -3, 2.3);
+  gd.mood('calm');
+  say('best case：樹高 log n', 'stack 大小 log n ～ n');
+  await step(tok);                                   // 11:15 取決於 tracing tree 的高度
+  good('stack 大小 = tracing tree 的高度', 0, 3.8);
+  gd.mood('happy');
+  say('stack 大小取決於 tracing tree 的高度', 'best：log n、worst：n');
+}]);
+
+// ═════════ 0oJyNmEbS4w：Strassen 矩陣乘法 ═════════
+// A、B 是 2×2；格子只寫名稱（影片只用符號，不代數字）
+function mmGrid(pre, cx, col, z0 = -1.7) {
+  const g = [];
+  for (let i = 0; i < 2; i++) { g.push([]); for (let j = 0; j < 2; j++) g[i].push(cube(pre + (i + 1) + (j + 1), col, [0.95, 0.5, 0.9], cx - 0.5 + j, 0.25, z0 + i)); }
+  return g;
+}
+// 0:00 一般矩陣乘法：三層迴圈
+FRAG.push(['dcbari-mm-loops', '一般矩陣乘法：三層迴圈 n³', async (tok) => {
+  fresh([0, 6, 14], [0, 2.4, 0]);
+  const gd = guide(-6.6, 2.4);
+  let am, bm, cd;
+  await step(tok);                                   // 0:00 Strassen：divide and conquer
+  bubble('Strassen 矩陣乘法：divide and conquer', 0, 6.6);
+  say('主題：Strassen 矩陣乘法', '屬於 divide and conquer');
+  await step(tok);                                   // 0:17 三件事
+  ['① 一般的矩陣乘法', '② 用 divide and conquer 做', '③ Strassen 的改進'].forEach((s, i) => note(s, -3.6 + i * 3.6, 5.6));
+  gd.mood('wow');
+  say('分三步看：一般乘法 → 用分治做 → Strassen 怎麼改進', '');
+  await step(tok);                                   // 0:35 兩個 2×2 矩陣
+  am = mmGrid('a', -4.6, PC.blue); bm = mmGrid('b', -1.6, PC.purple);
+  tag('A（2×2）', 'ptr', -4.6, 1.9, -1.2); tag('B（2×2）', 'ptr', -1.6, 1.9, -1.2);
+  tag('×', 'val', -3.1, 0.4, -1.2);
+  gd.mood('calm');
+  say('先拿兩個 2×2 的矩陣 A、B', '');
+  await step(tok);                                   // 0:52 A 的行數 = B 的列數；C 也是 2×2
+  tag('=', 'val', 0.1, 0.4, -1.2);
+  for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) ctx.tile(V3(1.2 + j, 0.04, -1.7 + i), 0.9, 0.9);
+  tag('C（2×2）', 'ptr alt', 1.7, 1.9, -1.2);
+  say('能相乘：A 的行數 = B 的列數', '結果 C 也是 2×2');
+  await step(tok);                                   // 1:18 C[i][j] = Σ A[i][k]·B[k][j]
+  pkt('C[i][j] = Σ A[i][k] · B[k][j]（k = 1…n）', 0, 4.4);
+  [0, 1].forEach((k) => { glow(am[0][k], GOLD); glow(bm[k][0], GOLD); });
+  say('C 的每一格：A 的一列 × B 的一行，加起來', 'C[i][j] = Σ A[i][k]·B[k][j]');
+  await step(tok);                                   // 2:14 程式：for i、for j
+  [0, 1].forEach((k) => { glow(am[0][k], null); glow(bm[k][0], null); });
+  cd = code(['for (i = 0; i < n; i++)', '  for (j = 0; j < n; j++) {', '    C[i][j] = 0;', '    for (k = 0; k < n; k++)', '      C[i][j] += A[i][k] * B[k][j];', '  }'], 4.6, 3.4, 0.44);
+  cd.hl(0);
+  say('寫成程式：for i、for j', '');
+  await step(tok);                                   // 2:35 C[i][j] = 0；for k …
+  cd.hl(4);
+  say('C[i][j] = 0，再用 for k 累加', 'C[i][j] += A[i][k] * B[k][j]');
+  await step(tok);                                   // 3:06 兩層走訪，一層做一列乘一行
+  cd.hl(1);
+  note('兩層：走過 C 的每一格　第三層：一列乘一行', 0, 3.3, 1.4);
+  say('兩層迴圈走過每一格', '第三層把一列和一行相乘再相加');
+  await step(tok);                                   // 3:34 三層 n 次 → n³
   cd.hl(-1);
-  say('每次只呼叫自己一次（左或右）', '這是 divide and conquer 的遞迴演算法');
-  await beat(tok, 2800);
+  good('三層迴圈 → O(n³)', -2.6, 1.6, 1.6);
+  gd.mood('happy');
+  say('最內層的敘述在三層 n 次迴圈裡', '時間 = O(n³)');
 }]);
 
-FRAG.push(['dcbari-rbs-rec', 'T(n) = T(n/2) + 1 → Θ(log n)', async (tok) => {
-  fresh([0, 5, 14], [0, 3, 0]);
-  code(['T(n) = 1            , n = 1', 'T(n) = T(n/2) + 1    , n > 1'], -2.6, 7.2, 0.5);
-  say('n = 1：一次比較 → 1', '');
-  await beat(tok, 2000);
-  say('n > 1：算 mid、比較（常數）＋ 呼叫一半', '左右只會呼叫其中一個 → T(n/2)');
-  await beat(tok, 2600);
-  const sizes = [16, 8, 4, 2, 1];
-  for (let d = 0; d < 5; d++) {
-    const w = sizes[d] * 0.7;
-    cube('n = ' + sizes[d], d === 4 ? PC.green : PC.blue, [Math.max(0.9, w), 0.5, 0.9], -6 + Math.max(0.9, w) / 2, 5.4 - d * 1.2, 0, 1.2);
-    tag('+1', 'ptr alt', 5.6, 5.4 - d * 1.2);
-    say(d < 4 ? '規模減半：' + sizes[d] + ' → ' + sizes[d + 1] : '到 1 停：共 log₂16 + 1 = 5 層', '每層成本 1');
-    await beat(tok, 1100);
+// 3:58 small problem：2×2 的四個公式
+const MMF = ['C11 = a11·b11 + a12·b21', 'C12 = a11·b12 + a12·b22', 'C21 = a21·b11 + a22·b21', 'C22 = a21·b12 + a22·b22'];
+FRAG.push(['dcbari-mm-small', 'Small problem：2×2 的四個公式', async (tok) => {
+  fresh([0, 6, 14], [0, 2.4, 0]);
+  const gd = guide(-6.6, 2.4);
+  let am, bm, cs = [];
+  await step(tok);                                   // 3:59 改用 divide and conquer
+  const bb = bubble('用 divide and conquer 做矩陣乘法', 0, 6.6);
+  say('來看 divide and conquer 怎麼用在矩陣乘法', '大就切成子問題、解、再合併');
+  await step(tok);                                   // 4:23 先定義 small problem
+  note('先定義：什麼是 small problem？', 0, 5.7);
+  gd.mood('wow');
+  say('一直切下去，總要有一個「小到直接解」的大小', '先定義 small problem');
+  await step(tok);                                   // 4:48 2×2 是 small
+  am = mmGrid('a', -4.6, PC.blue); bm = mmGrid('b', -1.6, PC.purple);
+  tag('×', 'val', -3.1, 0.4, -1.2); tag('=', 'val', 0.1, 0.4, -1.2);
+  for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) ctx.tile(V3(1.2 + j, 0.04, -1.7 + i), 0.9, 0.9);
+  good('2×2 = small：直接算', -3.1, 1.9, -1.2);
+  gd.mood('calm');
+  say('兩個 2×2 矩陣相乘 = small problem', '直接解');
+  await step(tok);                                   // 5:07 4×4、8×8 → 切
+  note('4×4、8×8…… → 切成子問題', 3.2, 4.6);
+  say('比 2×2 大（4×4、8×8……）', '就用 divide and conquer 切成子問題');
+  const cd = code(MMF, 4.2, 3.4, 0.5);
+  for (let q = 0; q < 4; q++) {
+    await step(tok);                                 // 5:32 C11 · 5:55 C12 · 6:19 C21 · 6:36 C22
+    const i = q >> 1, j = q & 1;
+    cd.hl(q);
+    [0, 1].forEach((k) => { glow(am[i][k], GOLD); glow(bm[k][j], GOLD); });
+    cs.push(cube('C' + (i + 1) + (j + 1), PC.green, [0.9, 0.5, 0.9], 1.2 + j, 0.25, -1.7 + i, 1.5));
+    say(MMF[q], '第 ' + (i + 1) + ' 列 × 第 ' + (j + 1) + ' 行');
+    await beat(tok, 900);
+    [0, 1].forEach((k) => { glow(am[i][k], null); glow(bm[k][j], null); });
   }
-  say('Master theorem：a = 1、b = 2、f(n) = 1', 'log_b a = log₂1 = 0 = k → Θ(n⁰ log n)');
-  await beat(tok, 3000);
-  say('遞迴版一樣是 Θ(log n)', '');
-  await beat(tok, 2600);
+  await step(tok);                                   // 6:54 直接用公式，不用三層迴圈
+  cd.hl(-1);
+  say('2×2 直接用這四個公式', '不用三層迴圈');
+  await step(tok);                                   // 7:10 4 個敘述／8 次乘法：常數
+  remove(bb); pkt('4 個敘述、8 次乘法 → 常數時間', 0, 6.6);
+  gd.mood('happy');
+  say('每個公式算一單位時間：共 4，常數', '數乘法也只有 8 次，一樣是常數');
 }]);
 
-// ─── u7YMFRUFqe0：maximum subarray（LeetCode 例 [-2,1,-3,4,-1,2,1,-5,4]） ───
+// 7:33 1×1 與 2 的次方
+FRAG.push(['dcbari-mm-unit', 'n ≤ 2 是 small；維度假設是 2 的次方', async (tok) => {
+  fresh([0, 6, 14], [0, 2.4, 0]);
+  const gd = guide(-6.6, 2.4);
+  await step(tok);                                   // 7:33 再小：1×1
+  cube('a11', PC.blue, [0.95, 0.5, 0.9], -4, 0.25, -1.2, 1.5); tag('×', 'val', -3, 0.4, -1.2);
+  cube('b11', PC.purple, [0.95, 0.5, 0.9], -2, 0.25, -1.2, 1.5);
+  say('如果再小一點：1×1 矩陣', '只有一個元素');
+  await step(tok);                                   // 8:06 C = a11·b11；n ≤ 2 都是 small
+  tag('=', 'val', -1, 0.4, -1.2); cube('a11·b11', PC.green, [1.4, 0.5, 0.9], 0.4, 0.25, -1.2, 1.5);
+  good('n ≤ 2 → small problem', -1.6, 1.9, -1.2);
+  gd.mood('happy');
+  say('C = a11·b11：一次乘法', '所以 n ≤ 2 都算 small problem');
+  await step(tok);                                   // 8:21 比 2×2 大就切
+  note('n > 2 → 切成子問題', 3.6, 4.6);
+  gd.mood('calm');
+  say('比 2×2 大，就要切成子問題來解', '');
+  await step(tok);                                   // 8:36 假設維度是 2 的次方
+  const sz = [2, 4, 8, 16];
+  sz.forEach((n, i) => { const s = 0.25 + i * 0.25; cube(n + '×' + n, PC.orange, [s * 2, 0.4, s * 2], -3 + i * 2.4, 0.2, 2.2, 1.5); });
+  gd.mood('wow');
+  say('假設矩陣的維度都是 2 的次方', '2×2、4×4、8×8、16×16……一直切會到 2×2 或 1×1');
+  await step(tok);                                   // 9:04 不是就補 0
+  note('不是 2 的次方 → 補 0 變成 2 的次方的方陣', 0, 5.6);
+  gd.mood('calm');
+  say('不是 2 的次方怎麼辦？', '補 0，變成 2 的次方的方陣');
+}]);
+
+// 9:18 4×4 切成 2×2 的區塊
+FRAG.push(['dcbari-mm-blocks', '4×4 切成 2×2 的區塊', async (tok) => {
+  fresh([0, 6.5, 14], [0, 2.2, 0]);
+  const gd = guide(-6.6, 2.6);
+  const cols = [PC.blue, PC.purple, PC.teal, PC.orange], nm = ['11', '12', '21', '22'];
+  let am = [], bm = [];
+  const make = (cx, pre) => { const ms = []; for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { const q = (i >> 1) * 2 + (j >> 1); ms.push({ q, m: cube('', PC.sand, [0.55, 0.35, 0.55], cx - 0.9 + j * 0.6, 0.18, -2.6 + i * 0.6, 1.2) }); } tag(pre, 'ptr', cx, 0.3, -3.6); return ms; };
+  await step(tok);                                   // 9:18 兩個 4×4
+  am = make(-4, 'A（4×4）'); bm = make(-0.4, 'B（4×4）'); tag('×', 'val', -2.2, 0.4, -1.7);
+  say('兩個 4×4 的矩陣', '');
+  await step(tok);                                   // 9:30 這是 large problem
+  gd.mood('wow');
+  say('4×4 是 large problem', '要切成子問題、解、再合併');
+  await step(tok);                                   // 9:44 列 1～4、行 1～4
+  for (let i = 0; i < 4; i++) { tag(String(i + 1), 'idx', -5.4, 0.2, -2.6 + i * 0.6); tag(String(i + 1), 'idx', -4.9 + i * 0.6, 0.2, -3.1); }
+  gd.mood('calm');
+  say('列從 1 到 4、行也從 1 到 4', '');
+  await step(tok);                                   // 9:59 對半切 → 四個 2×2
+  for (const ms of [am, bm]) ms.forEach((o) => { tint(o.m, cols[o.q]); const p = o.m.position; move(o.m, p.x + ((o.q & 1) ? 0.25 : -0.25), 0.18, p.z + ((o.q >> 1) ? 0.25 : -0.25)); });
+  say('維度除以 2：每個矩陣切成四個 2×2', '');
+  await step(tok);                                   // 10:21 把子矩陣當成一個元素：A11…
+  for (let q = 0; q < 4; q++) tag('A' + nm[q], 'pkt', -4 + ((q & 1) ? 0.85 : -0.85), 0.6, -2.6 + ((q >> 1) ? 1.75 : 0.05));
+  gd.mood('wow');
+  say('把每個 2×2 子矩陣當成一個「元素」', 'A11、A12、A21、A22');
+  await step(tok);                                   // 10:50 B11…B22
+  for (let q = 0; q < 4; q++) tag('B' + nm[q], 'pkt', -0.4 + ((q & 1) ? 0.85 : -0.85), 0.6, -2.6 + ((q >> 1) ? 1.75 : 0.05));
+  gd.mood('calm');
+  say('B 也一樣：B11、B12、B21、B22', '');
+  await step(tok);                                   // 11:02 變成 2×2 乘法：直接套公式
+  note('C11 = A11·B11 + A12·B21 ……（同樣四個公式）', 2.6, 4.4);
+  gd.mood('happy');
+  say('把子矩陣當元素，就變成 2×2 乘法', '套用同樣的四個公式');
+}]);
+
+// 11:25 Algorithm MM(A, B, n)
+FRAG.push(['dcbari-mm-algo', 'Algorithm MM(A, B, n)：8 次遞迴', async (tok) => {
+  fresh([0, 6, 14.5], [0, 2.8, 0]);
+  const gd = guide(-6.6, 2.6);
+  const cd = code(['Algorithm MM(A, B, n) {', '  if (n <= 2)', '    C = 四個公式;', '  else {', '    mid = n / 2;', '    C11 = MM(A11, B11, n/2) + MM(A12, B21, n/2);', '    C12 = MM(A11, B12, n/2) + MM(A12, B22, n/2);', '    C21 = MM(A21, B11, n/2) + MM(A22, B21, n/2);', '    C22 = MM(A21, B12, n/2) + MM(A22, B22, n/2);', '  }', '}'], -1.0, 7.3, 0.46);
+  const calls = [['11', '11'], ['12', '21'], ['11', '12'], ['12', '22'], ['21', '11'], ['22', '21'], ['21', '12'], ['22', '22']];
+  const callBox = (k) => cube('A' + calls[k][0] + '·B' + calls[k][1], k < 4 ? PC.blue : PC.purple, [1.3, 0.45, 0.8], -4.9 + (k % 4) * 1.45 + (k % 4 > 1 ? 0.3 : 0), 0.25, k < 4 ? 0.6 : 2.0, 1.2);
+  await step(tok);                                   // 11:25 MM(A, B, n)
+  cd.hl(0);
+  say('Algorithm MM(A, B, n)', '只是想法，不是能直接執行的程式');
+  await step(tok);                                   // 12:01 n ≤ 2 → 四個公式
+  cd.hl(2);
+  say('if (n <= 2)：用四個公式直接算 C', '真正的乘法在這裡發生');
+  await step(tok);                                   // 12:28 else：切開，mid = n/2
+  cd.hl(4);
+  gd.mood('wow');
+  say('large：把矩陣切開，mid = n / 2', '切開再合併');
+  await step(tok);                                   // 12:50 把區塊當元素相乘
+  note('區塊當成元素：這兩個乘、那兩個乘、再相加', 3.4, 2.2);
+  gd.mood('calm');
+  say('切成區塊後，把區塊當成元素相乘', '');
+  await step(tok);                                   // 13:07 MM(A11, B11) + MM(A12, B21)
+  cd.hl(5); callBox(0); await beat(tok, 300); callBox(1);
+  say('MM(A11, B11, n/2) + MM(A12, B21, n/2)', '遞迴呼叫');
+  await step(tok);                                   // 13:41 這就是 C11
+  pkt('= C11', -5.6, 1.0, 0.6);
+  say('C11 = A11·B11 + A12·B21', '把子矩陣當元素，用同一個公式');
+  await step(tok);                                   // 14:17 C12
+  cd.hl(6); callBox(2); await beat(tok, 300); callBox(3);
+  say('C12：第一列 × 第二行', 'MM(A11, B12, n/2) + MM(A12, B22, n/2)');
+  await step(tok);                                   // 14:53 C21、C22
+  cd.hl(7); for (let k = 4; k < 8; k++) { callBox(k); await beat(tok, 250); }
+  cd.hl(8);
+  say('剩下的 C21、C22 也一樣', '共 8 次遞迴呼叫');
+  await step(tok);                                   // 15:30 4×4 → 2×2 → 直接算
+  cd.hl(-1);
+  note('4×4 → 切成 2×2 → 用公式', 3.4, 1.2);
+  say('例如 4×4 切成 2×2 的小問題', '2×2 再用公式直接乘');
+  await step(tok);                                   // 15:57 + 是矩陣加法
+  bad('這裡的 + 是矩陣加法，不是數字加法', 3.4, 4.2);
+  gd.mood('wow');
+  say('注意：這裡的 + 是矩陣加法', '不是一般的純量加法');
+}]);
+
+// 16:27 T(n) = 8T(n/2) + n²（params.a = 8）／ 22:25 T(n) = 7T(n/2) + n²（params.a = 7）
+FRAG.push(['dcbari-mm-rec', '8T(n/2) + n² = n³ vs 7T(n/2) + n² = n^2.81', async (tok) => {
+  const a = (ctx.params || {}).a || 8;
+  fresh([0, 5.5, 14], [0, 3, 0]);
+  const gd = guide(-6.6, 2.4);
+  const eq = (t, y, cls = '') => { const l = tag(t, cls, 0, y); Object.assign(l.element.style, { whiteSpace: 'pre', fontFamily: 'ui-monospace, Consolas, monospace', fontSize: '13px', fontWeight: '700' }); return l; };
+  if (a === 8) {
+    await step(tok);                                 // 16:27 呼叫自己 8 次
+    for (let k = 0; k < 8; k++) { cube('MM', PC.blue, [0.75, 0.45, 0.7], -3.5 + k * 1.0, 0.25, 2.0, 1 + k * 0.1); }
+    pkt('呼叫自己 8 次', 0, 1.2, 2.0);
+    say('這個遞迴演算法呼叫自己幾次？', '1、2、…、8：8 次');
+    await step(tok);                                 // 16:35 recurrence：規模 n/2
+    const e1 = eq('T(n) = 8 T(n/2)', 6.2);
+    gd.mood('wow');
+    say('寫 recurrence：每次規模切成 n/2', '維度假設是 2 的次方');
+    await step(tok);                                 // 16:53 8 次 → 8T(n/2)
+    say('呼叫 8 次 → 8T(n/2)', '');
+    await step(tok);                                 // 17:02 合併：矩陣加法 n²
+    note('n×n 矩陣相加：n² 個元素逐一相加 → n²', 0, 4.6);
+    gd.mood('calm');
+    say('合併的工作是矩陣加法', 'n² 個元素逐一相加 → n²');
+    await step(tok);                                 // 17:37 完整 recurrence
+    txt(e1, 'T(n) = 8 T(n/2) + n²   , n > 2'); eq('T(n) = 1              , n ≤ 2', 5.5);
+    say('T(n) = 8T(n/2) + n²（n > 2）', 'n ≤ 2：四個公式，常數 1');
+    await step(tok);                                 // 17:59 master theorem：a = 8、b = 2、f = n²
+    pkt('a = 8', -3, 3.4); pkt('b = 2', -1, 3.4); pkt('f(n) = n²', 1.4, 3.4);
+    gd.mood('wow');
+    say('套 master theorem：a = 8、b = 2', 'f(n) = n²');
+    await step(tok);                                 // 18:17 log₂8 = 3 > k = 2
+    note('log₂8 = 3　>　k = 2 → case 1', 0, 2.6);
+    say('log_b a = log₂8 = 3，k = 2', '3 > 2 → case 1');
+    await step(tok);                                 // 18:41 Θ(n³)
+    bad('Θ(n³)', 3.6, 2.6);
+    gd.mood('sad');
+    say('時間 = Θ(n³)', '分治版也是 n³，跟三層迴圈一樣');
+    await step(tok);                                 // 19:03 遞迴用 stack：空間還比較差
+    note('遞迴要用 stack → 空間上三層迴圈比較好', 0, 0.2, 2.6);
+    gd.mood('calm');
+    say('而且遞迴要用 stack，占額外空間', '空間上反而是三層迴圈比較好');
+    return;
+  }
+  // a = 7：Strassen
+  await step(tok);                                   // 22:31 只呼叫自己 7 次
+  for (let k = 0; k < 7; k++) cube('MM', PC.green, [0.75, 0.45, 0.7], -3.0 + k * 1.0, 0.25, 2.0, 1 + k * 0.1);
+  pkt('只呼叫 7 次（不是 8 次）', 0, 1.2, 2.0);
+  gd.mood('wow');
+  say('套用分治後，只呼叫自己 7 次', '不是 8 次');
+  await step(tok);                                   // 22:45 T(n) = 7T(n/2) + n²
+  eq('T(n) = 7 T(n/2) + n²   , n > 2', 6.2);
+  gd.mood('calm');
+  say('T(n) = 7T(n/2) + n²', 'n > 2 時');
+  await step(tok);                                   // 22:57 n ≤ 2 → 1
+  eq('T(n) = 1              , n ≤ 2', 5.5);
+  say('n ≤ 2 時 T(n) = 1', '');
+  await step(tok);                                   // 23:03 log₂7 ≈ 2.81 > 2
+  note('log₂7 ≈ 2.81　>　k = 2', 0, 3.6);
+  say('log₂7 ≈ 2.81，k = 2', '2.81 比較大');
+  await step(tok);                                   // 23:15 Θ(n^2.81)
+  good('Θ(n^log₂7) ≈ Θ(n^2.81)', 0, 2.6);
+  gd.mood('happy'); await gd.hop(tok);
+  say('時間 = O(n^log₂7) = O(n^2.81)', '比 n³ 少一點：Strassen 的改進');
+}]);
+
+// 19:21 Strassen：7 次乘法
+FRAG.push(['dcbari-strassen7', 'Strassen：P、Q、R、S、T、U、V 七次乘法', async (tok) => {
+  fresh([0, 6, 14.5], [0, 2.6, 0]);
+  const gd = guide(-6.6, 2.6);
+  const F = [['P', '(A11 + A22)(B11 + B22)'], ['Q', '(A21 + A22)·B11'], ['R', 'A11·(B12 − B22)'], ['S', 'A22·(B21 − B11)'], ['T', '(A11 + A12)·B22'], ['U', '(A21 − A11)(B11 + B12)'], ['V', '(A12 − A22)(B21 + B22)']];
+  let cd, pm = {};
+  await step(tok);                                   // 19:21 n³ 太慢：能更快嗎？
+  const b0 = bubble('n³ 太慢了：能不能更快？', 0, 6.6);
+  gd.mood('wow');
+  say('n³ 比一般的 n²、n log n 慢', '能不能更快？這是個研究題目');
+  await step(tok);                                   // 19:56 四個公式、8 次乘法
+  const old = code(MMF, -3.4, 5.4, 0.5);
+  const p8 = pkt('8 次乘法', -3.4, 3.2);
+  gd.mood('calm');
+  say('一般的四個公式（遞迴版也是）', '一共 8 次乘法');
+  await step(tok);                                   // 20:15 主要的成本是乘法
+  const n1 = note('主要的工作是乘法 → 少乘一次就更快', 3.4, 4.6);
+  say('矩陣乘法主要的工作就是乘法', '減少乘法的次數，演算法就更快');
+  await step(tok);                                   // 20:29 Strassen：7 次乘法的公式
+  const n2 = good('Strassen：改用 7 次乘法的公式', 3.4, 3.6);
+  gd.mood('wow');
+  say('Strassen 給了另一組公式', '只用 7 次乘法，讓時間比 n³ 小一點');
+  await step(tok);                                   // 21:11 加減法變多，但比較便宜
+  const n3 = note('加減法變多，但加減比乘法便宜', 3.4, 2.6);
+  gd.mood('calm');
+  say('加法、減法變多了', '但加減法比乘法便宜');
+  await step(tok);                                   // 21:40 P、Q、R、S、T、U、V
+  old.kill(); [b0, p8, n1, n2, n3].forEach(remove);
+  cd = code(F.map(([k, f]) => k + ' = ' + f), -3.0, 7.2, 0.5);
+  const cnt = tag('乘法 0 次', 'ptr alt', 3.6, 7.2);
+  for (let q = 0; q < 7; q++) { cd.hl(q); txt(cnt, '乘法 ' + (q + 1) + ' 次'); pm[F[q][0]] = cube(F[q][0], PC.orange, [0.9, 0.45, 0.9], -5.4 + q * 1.8, 0.23, 1.6, 1.5); await beat(tok, 300); }
+  cd.hl(-1);
+  say('P、Q、R、S、T、U、V 七個式子', '每個只有一次乘法：共 7 次');
+  await step(tok);                                   // 22:06 再用它們組出 C
+  const G = [['C11 = P + S − T + V', ['P', 'S', 'T', 'V']], ['C12 = R + T', ['R', 'T']], ['C21 = Q + S', ['Q', 'S']], ['C22 = P + R − Q + U', ['P', 'R', 'Q', 'U']]];
+  G.forEach(([s], q) => tag(s, 'say', 3.6, 5.9 - q * 0.7));
+  for (const [, ks] of G) { ks.forEach((k) => glow(pm[k], GOLD)); await beat(tok, 450); ks.forEach((k) => glow(pm[k], null)); }
+  say('用這七個結果組出 C11、C12、C21、C22', '取代原本的四個公式');
+  await step(tok);                                   // 22:23 公式多了，乘法少了
+  good('公式、加減法變多；乘法 8 → 7', 0, 3.2);
+  say('公式和加減法都變多了', '但乘法的次數減少了');
+}]);
+
+// ═════════ u7YMFRUFqe0：maximum subarray（LeetCode 例 [-2,1,-3,4,-1,2,1,-5,4]） ═════════
 const MS = [-2, 1, -3, 4, -1, 2, 1, -5, 4];
 const MX = (i) => -5.6 + i * 1.4;
-function msRow(z = 0, y = 0.3) { return MS.map((v, i) => { tag(String(i), 'idx', MX(i), 0, z + 0.9); return cube(v, v >= 0 ? PC.blue : PC.red, [1.1, 0.6, 0.9], MX(i), y, z); }); }
+function msRow(z = 0, y = 0.3, drop = 0) { return MS.map((v, i) => { tag(String(i), 'idx', MX(i), 0, z + 0.9); return cube(v, v >= 0 ? PC.blue : PC.red, [1.1, 0.6, 0.9], MX(i), y, z, drop); }); }
+
 FRAG.push(['dcbari-msub-intro', 'Maximum subarray：連續、總和最大', async (tok) => {
   fresh([0, 5.5, 13.5], [0, 1.4, 0]);
-  const ms = msRow();
-  say('找總和最大的連續 subarray', '至少含一個數，回傳它的和');
-  await beat(tok, 2600);
-  for (let i = 3; i <= 6; i++) { glow(ms[i], GOLD); tint(ms[i], PC.green); await beat(tok, 350); }
+  const gd = guide(-6.6, 2.4);
+  let ms = [];
+  await step(tok);                                   // 0:02 maximum subarray 的幾種解法
+  bubble('maximum subarray problem', 0, 4.6);
+  say('Maximum subarray：用幾種不同的方法解', '');
+  await step(tok);                                   // 0:08 題目
+  ms = msRow(0, 0.3, 1.5);
+  note('連續的一段、至少一個數、總和最大 → 回傳總和', 0, 3.6);
+  gd.mood('wow');
+  say('給一個整數陣列 nums', '找總和最大的「連續」subarray（至少一個數），回傳它的和');
+  await step(tok);                                   // 0:26 答案 6
+  for (let i = 3; i <= 6; i++) { glow(ms[i], GOLD); tint(ms[i], PC.green); await beat(tok, 250); }
   const g = ghostBox(PC.green, 4 * 1.4, 1, 1.3); g.position.set((MX(3) + MX(6)) / 2, 0.5, 0);
-  say('4 + (−1) + 2 + 1 = 6', '[4, −1, 2, 1] 最大');
-  await beat(tok, 2600);
-  say('做法一：雙層迴圈（naive）', '補充：枚舉所有 (i, j) → O(n²)');
-  await beat(tok, 2600);
-  say('做法二：divide and conquer', '做法三、四：greedy、Kadane');
-  await beat(tok, 2800);
+  good('4 + (−1) + 2 + 1 = 6', (MX(3) + MX(6)) / 2, 1.6);
+  gd.mood('happy');
+  say('例子的答案是 6', '[4, −1, 2, 1]');
+  await step(tok);                                   // 0:35 做法一：雙層迴圈（自己試）
+  pkt('① 雙層迴圈（naive）：自己試試', -3, 5.6);
+  gd.mood('calm');
+  say('第一種：naive 解法，用雙層 for 迴圈', '留給你自己試');
+  await step(tok);                                   // 0:40 做法二：divide and conquer
+  pkt('② divide and conquer', 3, 5.6);
+  gd.mood('wow');
+  say('第二種：divide and conquer', '先從這個開始');
 }]);
 
 FRAG.push(['dcbari-msub-algo', '分治：max(左半, 右半, 跨中點)', async (tok) => {
   fresh([0, 6, 13.5], [0, 1.6, 0]);
+  const gd = guide(-6.6, 2.8);
   const ms = msRow(0.8);
   const piv = 4;
-  tag('pivot', 'ptr alt', MX(piv), 1.4, 0.8);
-  say('從中點切成兩半', '左半 0～pivot、右半 pivot+1～end');
-  await beat(tok, 2400);
+  await step(tok);                                   // 0:53 分成子問題、解、往回合併
+  bubble('切成子問題 → 解 → 往回走時合併', 0, 6.6);
+  say('把問題切成子問題、找到子問題的解', '往回走的時候把解合併');
+  await step(tok);                                   // 1:05 遞迴：切成兩半
+  tag('mid', 'ptr alt', MX(piv), 1.4, 0.8);
   const gl = ghostBox(PC.blue, 5 * 1.4, 0.9, 1.2); gl.position.set((MX(0) + MX(4)) / 2, 0.45, 0.8);
   const gr = ghostBox(PC.purple, 4 * 1.4, 0.9, 1.2); gr.position.set((MX(5) + MX(8)) / 2, 0.45, 0.8);
-  code(['max( maxSub(左半),', '     maxSub(右半),', '     crossSum )'], 0, 6.4, 0.5);
-  say('答案 = 三者取最大', '左半、右半、跨過中點');
-  await beat(tok, 2600);
-  for (let i = piv; i >= 0; i--) { glow(ms[i], GOLD); await beat(tok, 300); }
-  say('left subsum：從 pivot 往左累加的最大和', '');
-  await beat(tok, 2000);
-  for (let i = piv + 1; i < 9; i++) { glow(ms[i], GREEN); await beat(tok, 300); }
-  say('right subsum：從 pivot+1 往右的最大和', 'cross sum = left subsum + right subsum');
-  await beat(tok, 3000);
+  say('遞迴：把陣列切成兩半', '');
+  await step(tok);                                   // 1:19 回傳三者最大
+  const cd = code(['max( 左半的答案,', '     右半的答案,', '     cross sum )'], 0, 5.6, 0.5);
+  gd.mood('wow');
+  say('回傳三者的最大值', '左半、右半、cross sum（跨過中點）');
+  await step(tok);                                   // 1:28 left subsum：從 mid 往左
+  cd.hl(2);
+  for (let i = piv; i >= 0; i--) { glow(ms[i], GOLD); await beat(tok, 200); }
+  pkt('← left subsum', MX(2), 2.4, 0.8);
+  gd.mood('calm');
+  say('left subsum：從中點開始、往左延伸的最大和', '');
+  await step(tok);                                   // 1:48 right subsum：從 mid+1 往右
+  for (let i = piv + 1; i < 9; i++) { glow(ms[i], GREEN); await beat(tok, 200); }
+  pkt('right subsum →', MX(6.5), 2.4, 0.8);
+  say('right subsum：從 mid + 1 開始、往右延伸的最大和', '');
+  await step(tok);                                   // 1:55 cross = 兩者相加
+  good('cross sum = left subsum + right subsum', 0, 3.4);
+  gd.mood('happy');
+  say('cross sum = left subsum + right subsum', '');
 }]);
 
 FRAG.push(['dcbari-msub-dc', '分治例子：切到單一元素再往上合', async (tok) => {
-  const part = (ctx.params || {}).part;
+  const part = (ctx.params || {}).part || 'divide';
   fresh([0, 5, 15], [0, 3.2, 0]);
-  const Y = (d) => 6.4 - d * 1.5;
-  const SX = (l, h) => (MX(l) + MX(h)) / 2;
+  const gd = guide(-6.6, 2.4);
+  const Y = (d) => 6.4 - d * 1.5, SX = (l, h) => (MX(l) + MX(h)) / 2;
   const segs = {};
-  const mk = (l, h, d, col) => { segs[l + '-' + h] = cube(MS.slice(l, h + 1).join(', '), col || (l === h ? (MS[l] >= 0 ? PC.blue : PC.red) : PC.purple), [(h - l + 1) * 1.4 - 0.2, 0.5, 0.8], SX(l, h), Y(d), 0, part === 'small' ? 0 : 1.2); };
+  const mk = (l, h, d, drop) => { segs[l + '-' + h] = cube(MS.slice(l, h + 1).join(', '), l === h ? (MS[l] >= 0 ? PC.blue : PC.red) : PC.purple, [(h - l + 1) * 1.4 - 0.2, 0.5, 0.8], SX(l, h), Y(d), 0, drop); };
   const tree = [[0, 8, 0], [0, 4, 1], [5, 8, 1], [0, 2, 2], [3, 4, 2], [5, 6, 2], [7, 8, 2], [0, 1, 3], [2, 2, 3], [3, 3, 3], [4, 4, 3], [5, 5, 3], [6, 6, 3], [7, 7, 3], [8, 8, 3], [0, 0, 4], [1, 1, 4]];
-  const par = (l, h) => tree.find(([a, b, d]) => a <= l && h <= b && !(a === l && b === h) && tree.some(([c, e, f]) => c === l && e === h && f === d + 1));
-  if (part !== 'small') {
-    say('pivot = 中點，一直切到單一元素', '左半含 pivot：[0..4]、[5..8]');
-    for (let d = 0; d <= 4; d++) {
-      for (const [l, h, dd] of tree) if (dd === d) { mk(l, h, d); const p = par(l, h); if (p) line(SX(p[0], p[1]), Y(p[2]) - 0.25, SX(l, h), Y(d) + 0.25); }
-      await beat(tok, 1100);
-    }
-    await beat(tok, 1400);
-  } else {
-    for (const [l, h, d] of tree) { mk(l, h, d); const p = par(l, h); if (p) line(SX(p[0], p[1]), Y(p[2]) - 0.25, SX(l, h), Y(d) + 0.25); }
+  const par = (l, h, d) => tree.find(([a, b, dd]) => dd === d - 1 && a <= l && h <= b);
+  const lvl = (d, drop) => { for (const [l, h, dd] of tree) if (dd === d) { mk(l, h, d, drop); const p = par(l, h, d); if (p) line(SX(p[0], p[1]), Y(p[2]) - 0.25, SX(l, h), Y(d) + 0.25); } };
+  if (part === 'divide') {
+    await step(tok);                                 // 2:05 輸入陣列，切兩半
+    mk(0, 8, 0, 1.2);
+    say('用例子來看：輸入陣列', '要把它切成兩半');
+    await step(tok);                                 // 2:15 pivot = 中點
+    glow(segs['0-8'], GOLD); pkt('pivot = 中點（索引 4）', MX(4), 7.3);
+    gd.mood('wow');
+    say('切的位置叫 pivot', 'pivot 通常就是陣列的中點');
+    await step(tok);                                 // 2:22 左半：開頭 ～ pivot
+    glow(segs['0-8'], null);
+    mk(0, 4, 1, 1.2); line(SX(0, 8), Y(0) - 0.25, SX(0, 4), Y(1) + 0.25);
+    gd.mood('calm');
+    say('左半：從開頭到 pivot（含 pivot）', '[−2, 1, −3, 4, −1]');
+    await step(tok);                                 // 2:27 右半：pivot+1 ～ 結尾
+    mk(5, 8, 1, 1.2); line(SX(0, 8), Y(0) - 0.25, SX(5, 8), Y(1) + 0.25);
+    say('右半：從 pivot + 1 到結尾', '[2, 1, −5, 4]');
+    await step(tok);                                 // 2:34 一直切到單一元素
+    for (let d = 2; d <= 4; d++) { lvl(d, 1.0); await beat(tok, 500); }
+    gd.mood('happy');
+    say('一樣的方法繼續切', '直到每段只剩單一元素');
+    return;
   }
-  if (part === 'divide') { say('先看左半，往上合併解答', ''); await beat(tok, 2600); return; }
-  const s01 = segs['0-1'];
-  glow(s01, GOLD);
-  say('[−2, 1]：pivot = −2', 'left −2、right 1、cross −2 + 1 = −1');
-  await beat(tok, 2800);
-  tint(s01, PC.green); relabel(s01, 'max = 1');
-  say('max(−2, 1, −1) = 1', '');
-  await beat(tok, 2000); glow(s01, null);
-  glow(segs['2-2'], GOLD); say('[−3] 只有一個元素：max = −3', ''); await beat(tok, 2000); glow(segs['2-2'], null);
-  const s02 = segs['0-2']; glow(s02, GOLD);
-  say('[−2, 1, −3]：pivot = 1', 'left subsum：1、1 + (−2) = −1 → 取 1');
-  await beat(tok, 3000);
-  say('right subsum = −3', 'cross = 1 + (−3) = −2');
-  await beat(tok, 2600);
-  tint(s02, PC.green); relabel(s02, 'max = 1');
-  say('max(1, −3, −2) = 1', '其他子陣列同樣做法');
-  await beat(tok, 2600); glow(s02, null);
-  for (const [k, v] of [['3-4', 4], ['0-4', 4], ['5-6', 3], ['7-8', 4], ['5-8', 4]]) { tint(segs[k], PC.green); relabel(segs[k], 'max = ' + v); await beat(tok, 600); }
-  say('左半 max = 4、右半 max = 4', '最後算整個陣列的 cross sum');
-  await beat(tok, 2800);
+  // part 'small'：樹已經畫好，從左半往上合併
+  for (let d = 0; d <= 4; d++) lvl(d, 0);
+  const s01 = segs['0-1'], s02 = segs['0-2'];
+  await step(tok);                                   // 2:47 先看左半，往上合併
+  glow(segs['0-4'], GOLD);
+  say('先看左半邊', '從下往上走，把子陣列的解合併');
+  await step(tok);                                   // 2:54 [−2, 1]：pivot −2，left −2
+  glow(segs['0-4'], null); glow(s01, GOLD);
+  pkt('left = −2', SX(0, 1) - 1.2, Y(3) + 0.7);
+  gd.mood('wow');
+  say('從 [−2, 1] 開始：pivot 是 −2', '左邊只有一個元素 → left sum = −2');
+  await step(tok);                                   // 3:09 right 1，cross −1
+  pkt('right = 1', SX(0, 1) + 1.2, Y(3) + 0.7);
+  gd.mood('calm');
+  say('right sum = 1', 'cross sum = −2 + 1 = −1');
+  await step(tok);                                   // 3:23 max = 1
+  tint(s01, PC.green); relabel(s01, 'max = 1'); glow(s01, null);
+  gd.mood('happy');
+  say('max(−2, 1, −1) = 1', '如果輸入只有 [−2, 1]，答案就是 1');
+  await step(tok);                                   // 3:32 −3 單一元素
+  glow(segs['2-2'], GOLD);
+  gd.mood('calm');
+  say('−3 只有一個元素', '最大值就是 −3');
+  await step(tok);                                   // 3:42 往上：[−2, 1, −3]，pivot 1
+  glow(segs['2-2'], null); glow(s02, GOLD);
+  say('往上一層：[−2, 1, −3]', '左、右的答案已經算過了；pivot 是 1');
+  await step(tok);                                   // 4:07 left subsum：1、1 + (−2) → 1
+  pkt('1 → 1 + (−2) = −1 → 取 1', SX(0, 2), Y(2) + 0.75);
+  say('left subsum：從 pivot 往左', '先是 1，再加左邊的 −2 得 −1 → 取 1');
+  await step(tok);                                   // 4:21 right subsum −3
+  pkt('right subsum = −3', SX(0, 2) + 2.6, Y(2) + 0.75);
+  say('右邊只有 −3 → right subsum = −3', '');
+  await step(tok);                                   // 4:30 cross −2，max 1
+  tint(s02, PC.green); relabel(s02, 'max = 1'); glow(s02, null);
+  gd.mood('happy');
+  say('cross sum = 1 + (−3) = −2', 'max(1, −3, −2) = 1');
+  await step(tok);                                   // 4:39 右邊的子陣列也一樣
+  for (const [k, v] of [['3-4', 4], ['0-4', 4]]) { tint(segs[k], PC.green); relabel(segs[k], 'max = ' + v); await beat(tok, 400); }
+  gd.mood('calm');
+  say('其他子陣列也用同樣方法算', '');
+  await step(tok);                                   // 4:45 自己算一次反白的
+  for (const [k, v] of [['5-6', 3], ['7-8', 4], ['5-8', 4]]) { glow(segs[k], GOLD); relabel(segs[k], 'max = ?'); }
+  gd.mood('wow');
+  say('建議你自己算算看反白的那幾段', '卡住再對照解答');
 }]);
 
 FRAG.push(['dcbari-msub-cross', '整個陣列的 cross sum = 6', async (tok) => {
   fresh([0, 6, 13.5], [0, 1.4, 0]);
+  const gd = guide(-6.6, 2.6);
   const ms = msRow(0.6);
   tag('pivot', 'ptr alt', MX(4), 1.3, 0.6);
-  const lt = tag('left subsum', 'ptr', -3, 4.6), rt = tag('right subsum', 'ptr', 3, 4.6);
-  say('左半 max = 4、右半 max = 4', '還差跨中點的 cross sum');
-  await beat(tok, 2400);
-  let s = 0, best = -Infinity, bi = 4;
-  for (let i = 4; i >= 0; i--) {
-    s += MS[i]; glow(ms[i], GOLD);
-    const sm = tag(String(s), 'idx', MX(i), 1.2, -1); if (s > best) { best = s; bi = i; }
-    say('從 pivot 往左：累加到 ' + i + ' = ' + s, '目前最大 ' + best);
-    await beat(tok, 1100);
-  }
-  txt(lt, 'left subsum = ' + best + '（' + bi + '～4）');
-  for (let i = 0; i < bi; i++) glow(ms[i], null);
-  await beat(tok, 1600);
-  let s2 = 0, best2 = -Infinity, bj = 5;
-  for (let j = 5; j < 9; j++) {
-    s2 += MS[j]; glow(ms[j], GREEN);
-    tag(String(s2), 'idx', MX(j), 1.2, -1); if (s2 > best2) { best2 = s2; bj = j; }
-    say('從 pivot+1 往右：累加到 ' + j + ' = ' + s2, '目前最大 ' + best2);
-    await beat(tok, 1100);
-  }
-  txt(rt, 'right subsum = ' + best2 + '（5～' + bj + '）');
-  for (let j = bj + 1; j < 9; j++) glow(ms[j], null);
-  await beat(tok, 1600);
-  for (let i = bi; i <= bj; i++) tint(ms[i], PC.green);
-  say('cross = 3 + 3 = 6', 'max(4, 4, 6) = 6：[4, −1, 2, 1]');
-  await beat(tok, 3200);
+  const sums = [];
+  let lt, rt;
+  await step(tok);                                   // 4:59 右半也算好：有左、右的答案
+  lt = tag('左半 max = 4', 'ptr', -3, 4.6); rt = tag('右半 max = 4', 'ptr', 3, 4.6);
+  say('右半用同樣方法解完', '現在有左半的答案 4、右半的答案 4');
+  await step(tok);                                   // 5:12 接著算 cross sum
+  bubble('還差 cross sum：先自己算算看', 0, 5.6);
+  gd.mood('wow');
+  say('接下來算整個陣列的 cross sum', '可以先暫停自己算');
+  await step(tok);                                   // 5:40 從 pivot 往左，算每一格的累加
+  let s = 0;
+  for (let i = 4; i >= 0; i--) { s += MS[i]; glow(ms[i], GOLD); sums.push(tag(String(s), 'idx', MX(i), 1.2, -1)); await beat(tok, 300); }
+  gd.mood('calm');
+  say('從 pivot 開始往左', '每一格的累加：−1、3、0、1、−1');
+  await step(tok);                                   // 5:52 取最大 = left subsum 3
+  for (let i = 0; i < 3; i++) glow(ms[i], null);
+  txt(lt, 'left subsum = 3（索引 3～4）');
+  say('取這些累加的最大值', 'left subsum = 3');
+  await step(tok);                                   // 6:00 right subsum 自己算
+  let s2 = 0;
+  for (let j = 5; j < 9; j++) { s2 += MS[j]; glow(ms[j], GREEN); tag(String(s2), 'idx', MX(j), 1.2, -1); await beat(tok, 300); }
+  for (let j = 7; j < 9; j++) glow(ms[j], null);
+  txt(rt, 'right subsum = 3（索引 5～6）');
+  say('right subsum 請你自己算', '往右累加：2、3、−2、2 → 最大 3');
+  await step(tok);                                   // 6:05 答案 max(4, 4, 6) = 6
+  for (let i = 3; i <= 6; i++) tint(ms[i], PC.green);
+  good('cross = 3 + 3 = 6　→　max(4, 4, 6) = 6', 0, 3.4);
+  gd.mood('happy'); await gd.hop(tok);
+  say('cross sum = 3 + 3 = 6', '最後答案 = max(4, 4, 6) = 6');
 }]);
 
 FRAG.push(['dcbari-msub-greedy', 'Greedy：current sum 與 max sum', async (tok) => {
   fresh([0, 6, 13], [0, 1.4, 0]);
+  const gd = guide(-6.6, 2.6);
   const ms = msRow(0.6);
-  const cl = tag('current = −2', 'ptr', -2.8, 4.4), ml = tag('max = −2', 'ptr alt', 2.8, 4.4);
-  const cur = tag('▼', 'ptr alt', MX(0), 1.5, 0.6);
-  say('current、max 都從第一個值開始', 'current = 局部最大、max = 全域最大');
-  glow(ms[0], GOLD);
-  await beat(tok, 2600); glow(ms[0], null);
+  let cd, cl, ml, cur;
+  await step(tok);                                   // 6:12 換一種方法
+  bubble('第三種方法：greedy', 0, 5.6);
+  say('換另一種方法來解', '');
+  await step(tok);                                   // 6:19 current、max 都設成第一個值
+  cd = code(['current = max = nums[0]', 'for x in nums[1..]:', '  current = max(current + x, x)', '  max = max(max, current)', 'return max'], 2.4, 6.6, 0.45); cd.hl(0);
+  say('演算法：current sum、max sum', '都先設成陣列的第一個值');
+  await step(tok);                                   // 6:29 current = 局部、max = 全域
+  note('current：局部最大　max：全域最大', -3.2, 4.2);
+  gd.mood('wow');
+  say('current sum 存局部的最大和', 'max sum 存全域的最大和');
+  await step(tok);                                   // 6:38 current = max(current + x, x)
+  cd.hl(2); gd.mood('calm');
+  say('每個元素：current = max(current + x, x)', '接著前面的和，或是從自己重新開始');
+  await step(tok);                                   // 6:51 max = max(max, current)
+  cd.hl(3);
+  say('max = max(max, current)', '最後答案是 max');
+  await step(tok);                                   // 7:00 同一個陣列，初始狀態
+  cd.hl(0);
+  cl = tag('current = −2', 'ptr', -2.8, 3.0); ml = tag('max = −2', 'ptr alt', 2.8, 3.0);
+  cur = tag('▼', 'ptr alt', MX(0), 1.5, 0.6); glow(ms[0], GOLD);
+  say('同一個輸入陣列', '一開始 current = max = −2');
   let c = MS[0], b = MS[0];
-  for (let i = 1; i < 9; i++) {
-    move(cur, MX(i), 1.5, 0.6); glow(ms[i], GOLD);
-    const nc = Math.max(c + MS[i], MS[i]);
-    say('current = max(' + c + ' + ' + MS[i] + ', ' + MS[i] + ') = ' + nc, 'max = max(' + b + ', ' + nc + ') = ' + Math.max(b, nc));
-    c = nc; b = Math.max(b, c); txt(cl, 'current = ' + c); txt(ml, 'max = ' + b);
-    await beat(tok, i < 3 ? 2200 : 1300); glow(ms[i], null);
-  }
-  say('答案 = max sum = 6', '一次掃描：O(n) 時間、O(1) 空間');
-  await beat(tok, 3000);
+  await step(tok);                                   // 7:07 current = max(−2 + 1, 1) = 1
+  glow(ms[0], null); move(cur, MX(1), 1.5, 0.6); glow(ms[1], GOLD); cd.hl(2);
+  c = Math.max(c + MS[1], MS[1]); txt(cl, 'current = ' + c);
+  say('current = max(−2 + 1, 1)', '= max(−1, 1) = 1');
+  await step(tok);                                   // 7:20 max 更新成 1
+  cd.hl(3); b = Math.max(b, c); txt(ml, 'max = ' + b);
+  gd.mood('happy');
+  say('max = max(−2, 1) = 1', '');
+  await step(tok);                                   // 7:26 一路走完
+  glow(ms[1], null); gd.mood('calm');
+  for (let i = 2; i < 9; i++) { move(cur, MX(i), 1.5, 0.6); c = Math.max(c + MS[i], MS[i]); b = Math.max(b, c); txt(cl, 'current = ' + c); txt(ml, 'max = ' + b); glow(ms[i], GOLD); await beat(tok, 300); glow(ms[i], null); }
+  say('同樣走過整個陣列', '每一格更新 current 和 max');
+  await step(tok);                                   // 7:34 max 就是答案
+  cd.hl(4);
+  good('答案 = max = 6', 2.8, 4.0);
+  gd.mood('happy'); await gd.hop(tok);
+  say('最後 max 裡的值就是答案', '6');
 }]);
 
 FRAG.push(['dcbari-msub-kadane', 'Kadane：前一格 > 0 就加上去', async (tok) => {
   fresh([0, 6, 13], [0, 1.4, 0]);
+  const gd = guide(-6.6, 2.6);
   const ms = msRow(0.6), v = MS.slice();
-  const ml = tag('max = −2', 'ptr alt', 0, 4.4);
-  code(['for i = 1 .. n−1:', '  if nums[i−1] > 0: nums[i] += nums[i−1]', '  max = max(max, nums[i])'], 0, 6.6, 0.45);
-  say('直接改 input array（DP）', 'max 初值 = nums[0] = −2');
-  await beat(tok, 2600);
+  let cd, ml;
+  await step(tok);                                   // 7:50 更常見：Kadane（dynamic programming）
+  bubble('Kadane\'s algorithm（dynamic programming）', 0, 5.8);
+  say('更常見的演算法：Kadane', '用 dynamic programming，跟 greedy 很像');
+  await step(tok);                                   // 8:01 直接更新 input array
+  note('不另存 current：直接改 input array', 0, 4.9);
+  gd.mood('wow');
+  say('差別：不把 current sum 存在另一個變數', '直接更新輸入陣列');
+  await step(tok);                                   // 8:12 max 初值 = nums[0]
+  cd = code(['max = nums[0]', 'for i = 1 .. n−1:', '  if nums[i−1] > 0: nums[i] += nums[i−1]', '  max = max(max, nums[i])'], 1.4, 4.0, 0.45); cd.hl(0);
+  gd.mood('calm');
+  say('max sum 先設成第一個值', 'max 存全域的最大和');
+  await step(tok);                                   // 8:24 前一格 > 0 → 加上去
+  cd.hl(2);
+  say('從索引 1 開始：前一格 > 0', '就把前一格加到目前這一格');
+  await step(tok);                                   // 8:33 max = max(max, nums[i])
+  cd.hl(3);
+  say('max = max(max, nums[i])', '最後答案是 max');
+  await step(tok);                                   // 8:38 同一個陣列：max = −2
+  cd.hl(0);
+  ml = tag('max = −2', 'ptr alt', -4.4, 4.0);
+  say('同一個輸入陣列', 'max 初值 = −2');
   let b = v[0];
-  for (let i = 1; i < 9; i++) {
-    glow(ms[i - 1], GOLD); glow(ms[i], GOLD);
-    if (v[i - 1] > 0) { v[i] += v[i - 1]; relabel(ms[i], v[i]); tint(ms[i], v[i] >= 0 ? PC.green : PC.red); say('nums[' + (i - 1) + '] = ' + v[i - 1] + ' > 0：加上去', 'nums[' + i + '] = ' + v[i]); }
-    else say('nums[' + (i - 1) + '] = ' + v[i - 1] + ' ≤ 0：不加', 'nums[' + i + '] 維持 ' + v[i]);
-    b = Math.max(b, v[i]); txt(ml, 'max = ' + b);
-    await beat(tok, i < 3 ? 2200 : 1300);
-    glow(ms[i - 1], null); glow(ms[i], null);
+  await step(tok);                                   // 8:49 i = 1：nums[0] < 0，不更新
+  cd.hl(2); glow(ms[0], GOLD); glow(ms[1], GOLD);
+  bad('nums[0] = −2 ≤ 0：不加', MX(0), 1.6, -1);
+  say('i = 1：nums[0] = −2 < 0', '不符合條件，不更新目前這一格');
+  await step(tok);                                   // 9:02 max 更新成 1
+  cd.hl(3); b = Math.max(b, v[1]); txt(ml, 'max = ' + b);
+  glow(ms[0], null); glow(ms[1], null);
+  gd.mood('happy');
+  say('max = max(−2, 1) = 1', '');
+  await step(tok);                                   // 9:09 一路往後更新
+  gd.mood('calm');
+  for (let i = 2; i < 9; i++) {
+    if (v[i - 1] > 0) { v[i] += v[i - 1]; relabel(ms[i], v[i]); tint(ms[i], v[i] >= 0 ? PC.green : PC.red); }
+    b = Math.max(b, v[i]); txt(ml, 'max = ' + b); glow(ms[i], GOLD); await beat(tok, 300); glow(ms[i], null);
   }
-  say('max sum = 6', '');
-  await beat(tok, 2000);
-  say('分治 O(n log n)；greedy、Kadane O(n)', '空間：分治 O(log n) stack；另兩者 O(1)');
-  await beat(tok, 3200);
+  say('同樣的方法往後更新陣列和 max', '陣列變成：−2 1 −2 4 3 5 6 1 5');
+  await step(tok);                                   // 9:30 max = 6
+  good('max sum = 6', -4.4, 4.8);
+  gd.mood('happy'); await gd.hop(tok);
+  say('max 裡的值就是答案：6', '');
+}]);
+
+FRAG.push(['dcbari-msub-cplx', '複雜度比較', async (tok) => {
+  fresh([0, 5.5, 13.5], [0, 2.4, 0]);
+  const gd = guide(-6.6, 2.4);
+  await step(tok);                                   // 9:35 複雜度分析
+  tag('時間', 'ptr', 0.8, 5.4); tag('空間', 'ptr', 3.6, 5.4);
+  say('看三種演算法的複雜度', '');
+  await step(tok);                                   // 9:40 分治 O(n log n)、O(log n)
+  cube('divide and conquer', PC.purple, [3.2, 0.6, 1], -3.4, 4.0, 0, 1.5);
+  pkt('O(n log n)', 0.8, 4.0); pkt('O(log n)（stack）', 3.6, 4.0);
+  gd.mood('calm');
+  say('divide and conquer：時間 O(n log n)', '空間 O(log n)：遞迴的 stack（影片沒唸出來，這是標準答案）');
+  await step(tok);                                   // 9:48 greedy、Kadane：O(n)、O(1)
+  cube('greedy', PC.blue, [3.2, 0.6, 1], -3.4, 2.6, 0, 1.5); cube('Kadane', PC.green, [3.2, 0.6, 1], -3.4, 1.2, 0, 1.5);
+  good('O(n)', 0.8, 1.9); good('O(1)', 3.6, 1.9);
+  gd.mood('happy'); await gd.hop(tok);
+  say('greedy 和 Kadane：時間 O(n)', '空間 O(1)');
 }]);
   }
 

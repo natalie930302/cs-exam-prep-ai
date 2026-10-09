@@ -5,7 +5,7 @@
  "sections": [
   {
    "title": "Best case：每次都切在中間",
-   "scene": "qs-best-tree",
+   "scene": "dcbari-qs-best",
    "points": [
     {
      "text": "分析 quicksort：遞迴、divide and conquer，用 partition 演算法。",
@@ -31,11 +31,40 @@
      "text": "再切在 2、6、10、14，最後只剩單一元素。",
      "t": 105
     }
+   ],
+   "params": {
+    "part": "build"
+   },
+   "cues": [
+    0,
+    11.5,
+    24.1,
+    39.8,
+    82.2,
+    95.8,
+    106.8,
+    111,
+    118.5,
+    127.9,
+    139.3
+   ],
+   "explain": [
+    "來分析 quick sort 的時間複雜度。它是遞迴的，採用 divide and conquer。",
+    "它靠 partition（分割）演算法：找出 pivot（基準元素）排好後該在的位置，然後以它為界把串列切成左右兩邊。",
+    "例子：15 個元素 1～15，呼叫 QuickSort(1, 15)（第一個索引 1、最後一個索引 15）。",
+    "假設 partition 剛好切在正中間的位置 8：左邊剩 1～7、右邊剩 9～15。",
+    "一直假設都切在中間：左邊 1～7 的中間是 4，切出 1～3 和 5～7。",
+    "右邊 9～15 也切在中間 12，切出 9～11 和 13～15。",
+    "再切在中間：1～3 切在 2，剩下單一元素 1 和 3。",
+    "5～7 切在 6，剩 5 和 7。",
+    "9～11 切在 10，剩 9 和 11。",
+    "13～15 切在 14，剩 13 和 15。",
+    "如果每次 partition 都切在中間，quick sort 的運作就是這樣一棵樹，每個節點都做一次 partition。"
    ]
   },
   {
    "title": "時間：每層 n、高度 log n",
-   "scene": "qs-best-tree",
+   "scene": "dcbari-qs-best",
    "points": [
     {
      "text": "用這棵樹分析：partition 會比較並交換元素。",
@@ -57,18 +86,39 @@
      "text": "這是「每次都切在中間」的 best case。",
      "t": 254
     }
+   ],
+   "params": {
+    "part": "time"
+   },
+   "cues": [
+    153.5,
+    169.2,
+    181,
+    190,
+    214.8,
+    233.5,
+    255.8
+   ],
+   "explain": [
+    "用這棵樹分析時間。partition 會比較、交換元素，要走過整個串列，所以最上面一層花大約 n。",
+    "下一層：左邊加右邊合計也約 n（少了一個 pivot，但當成 n 就好）。",
+    "每一層都是大約 n。",
+    "樹有多高？因為每次都對半切：15 → 7 → 3 → 1，一直除以 2。",
+    "除以 2 幾次會變成 1？n / 2ᵏ = 1，也就是 n = 2ᵏ，所以 k = log₂ n：共 log n 層。",
+    "log n 層、每層 n，所以時間是 O(n log n)。",
+    "這是假設「每次都切在中間」得到的結果，所以這是 best case（最好情況）：n log n。"
    ]
   },
   {
    "title": "Best case 需要 pivot 是 median",
-   "scene": "qs-best-tree",
+   "scene": "dcbari-qs-median",
    "params": {
     "focus": "median"
    },
    "points": [
     {
      "text": "Best case 做得到嗎？先看 median。",
-     "t": 285
+     "t": 281
     },
     {
      "text": "1～7 已排序，正中間的元素就是 median。",
@@ -86,15 +136,29 @@
      "text": "可能隨機碰到，但無法控制：best case 無法刻意達成。",
      "t": 346
     }
+   ],
+   "cues": [
+    280.6,
+    286.4,
+    316.5,
+    328.2,
+    342.8
+   ],
+   "explain": [
+    "best case 真的做得到嗎？先認識一個詞：median（中位數）。",
+    "1、2、3、4、5、6、7 已經排好序，正中間的元素 4 就叫 median：排好序之後位在中間的那個元素。",
+    "quick sort 的 best case 是每次都切在中間，也就是被選為 pivot 的元素必須剛好是 median。",
+    "可是串列沒排序的話，根本不知道誰是 median。",
+    "所以「每次都選到 median」沒辦法控制，只可能隨機碰到。best case 無法刻意達成。"
    ]
   },
   {
    "title": "Worst case：已排序的串列",
-   "scene": "qs-worst-sorted",
+   "scene": "dcbari-qs-worst",
    "points": [
     {
      "text": "Worst case 是什麼？輸入已經排好時。",
-     "t": 361
+     "t": 355
     },
     {
      "text": "Partition 選第一個元素當 pivot：i 找更大的、j 找小於等於的。",
@@ -116,15 +180,37 @@
      "text": "比較次數 n + (n−1) + … + 2 + 1 = n(n+1)/2 → O(n²)。",
      "t": 474
     }
+   ],
+   "cues": [
+    355,
+    374.6,
+    380.8,
+    400.2,
+    425,
+    435.8,
+    451.7,
+    466.8,
+    478.8
+   ],
+   "explain": [
+    "那 quick sort 的 worst case（最壞情況）是什麼？",
+    "答案：串列「已經排好序」的時候，再做 quick sort。",
+    "partition 選第一個元素當 pivot；i 往右找比 pivot 大的、j 往左找小於等於 pivot 的。",
+    "已排序時，j 一路走回 pivot 本身，所以 pivot 留在原位：切在串列的最開頭，左邊是空的。",
+    "以 1～7 為例：1 排好了，右邊剩 2～7。",
+    "再來 2 排好、剩 3～7；然後 4～7、5～7、6～7、7。每次都只少一個。",
+    "每次都切在開頭（如果是遞減排序，就每次切在尾端），這就是 worst case。",
+    "比較次數：第一次 partition 約 n 次，接著 n − 1、n − 2……一直到 1。",
+    "加起來 n + (n − 1) + … + 1 = n(n + 1) / 2，所以 worst case 是 O(n²)。"
    ]
   },
   {
    "title": "跟 merge sort 比較",
-   "scene": "qs-worst-sorted",
+   "scene": "dcbari-qs-cmp",
    "points": [
     {
      "text": "Best case n log n 做不到，worst case n² 卻會發生（已排序時）。",
-     "t": 503
+     "t": 494
     },
     {
      "text": "Merge sort 沒有 best／worst 之分，一律 n log n。",
@@ -138,15 +224,29 @@
      "text": "資料常常本來就排好、又被拿來再排一次，所以這個問題很實際。",
      "t": 543
     }
+   ],
+   "cues": [
+    493.8,
+    508.8,
+    515,
+    523.8,
+    538.1
+   ],
+   "explain": [
+    "quick sort：worst case n²、best case n log n——而 best case 我們沒辦法刻意做到。",
+    "worst case 什麼時候發生？串列已經排好序的時候。",
+    "跟 merge sort 比：merge sort 沒有 best、worst 之分，一律 n log n。",
+    "quick sort 的平均時間是 n log n，但最壞是 n²。",
+    "而「排好的資料又被拿來再排一次」的機會其實很高，這時 quick sort 就要花 n²，所以這個問題很實際，要想辦法解決。"
    ]
   },
   {
    "title": "改善：選中間或隨機 pivot",
-   "scene": "qs-pivot-choice",
+   "scene": "dcbari-qs-pivot",
    "points": [
     {
      "text": "不要總是選第一個元素，改選中間的元素當 pivot。",
-     "t": 557
+     "t": 555
     },
     {
      "text": "已排序時中間元素正好落在中間：串列切成兩等份。",
@@ -168,11 +268,29 @@
      "text": "可能 n log n，最壞還是 n²：quicksort 最壞一定是 n²。",
      "t": 637
     }
+   ],
+   "cues": [
+    555.8,
+    568.8,
+    580.8,
+    598.9,
+    617.8,
+    623.8,
+    634.9
+   ],
+   "explain": [
+    "解法：不要總是選第一個元素當 pivot，改選中間的元素。",
+    "已排序時，中間的元素（例如 1～7 的 4）partition 後剛好落在中間，串列被切成兩個一樣大的一半。",
+    "每次都選中間 → 每次都切在中間，原本的 worst case（已排序）就變成 best case：n² 變成 n log n。",
+    "所以改善 worst case 的第一個建議：永遠選中間的元素當 pivot。",
+    "但總有某些排列方式會讓中間的 pivot 也很差，最大時間仍然是 n²。",
+    "第二個建議：隨機選一個元素當 pivot（randomized）。",
+    "隨機選可能得到 n log n，但最壞還是 n²。所以 quick sort 的 worst case 一定是 n²。"
    ]
   },
   {
    "title": "空間：stack 深度 log n ～ n",
-   "scene": "qs-stack",
+   "scene": "dcbari-qs-stack",
    "points": [
     {
      "text": "空間：quicksort 不需要額外陣列，但遞迴要用 stack。",
@@ -191,7 +309,19 @@
      "t": 685
     }
    ],
-   "trap": "補充：CLRS 說明每次對半是可能發生的，只是無法保證；Randomized-Quicksort 的期望時間 Θ(n log n)。先遞迴較小的一半（tail recursion）可把 stack 壓到 O(log n)。"
+   "trap": "補充：CLRS 說明每次對半是可能發生的，只是無法保證；Randomized-Quicksort 的期望時間 Θ(n log n)。先遞迴較小的一半（tail recursion）可把 stack 壓到 O(log n)。",
+   "cues": [
+    649.8,
+    662.2,
+    666.8,
+    675.3
+   ],
+   "explain": [
+    "空間複雜度：quick sort 不需要額外的陣列，但它是遞迴的，所以會用到 stack（每次呼叫存一筆紀錄）。",
+    "worst case 時 stack 可能長到 n 層。",
+    "best case 時樹高 log n，stack 只要 log n。所以 stack 大小介於 log n 到 n。",
+    "從前面的樹就看得出來：stack 大小取決於 tracing tree 的高度。best case 樹高 log n，worst case 樹高 n。"
+   ]
   }
  ],
  "quiz": [
