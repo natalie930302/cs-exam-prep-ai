@@ -255,7 +255,7 @@
   "label": "Abdul Bari：4 Principle of Optimality",
   "points": 29,
   "quiz": 5,
-  "cued": false
+  "cued": true
  },
  "5HBMYNYYGZU": {
   "label": "交大彭文志 Lec06 Arrays (4/4)",
@@ -411,7 +411,7 @@
   "label": "Abdul Bari：4.1 MultiStage Graph",
   "points": 46,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "9Jry5-82I68": {
   "label": "MIT 6.006 L5：Binary Search Trees, BST Sort",
@@ -723,7 +723,7 @@
   "label": "Abdul Bari：4.1.1 MultiStage Graph (Program)",
   "points": 34,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "FiRH2TYB1Mw": {
   "label": "清大周志遠 第6B講 Processes Concept",
@@ -1005,7 +1005,7 @@
   "label": "Abdul Bari：4.5 0/1 Knapsack - Two Methods",
   "points": 61,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "NOYNTuhXDGU": {
   "label": "交大江蕙如 Lec21 Network Flow (2/2)",
@@ -1113,7 +1113,7 @@
   "label": "Abdul Bari：4.7 [New] TSP - DP using Formula",
   "points": 46,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "q6RicK1FCUs": {
   "label": "Abdul Bari：Tower of Hanoi Problem",
@@ -1203,7 +1203,7 @@
   "label": "Abdul Bari：4.9 Longest Common Subsequence (LCS)",
   "points": 66,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "sweW4TVFpbQ": {
   "label": "交大江蕙如 Lec16 Divide and Conquer (2/2)",
@@ -1377,7 +1377,7 @@
   "label": "Abdul Bari：4.7 TSP - DP",
   "points": 44,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "XB4MIexjvY0": {
   "label": "Abdul Bari：3.6 Dijkstra Algorithm",
@@ -1455,7 +1455,7 @@
   "label": "Abdul Bari：4.5.1 0/1 Knapsack Problem (Program)",
   "points": 36,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "zXhWPrMLXGo": {
   "label": "Abdul Bari：Merge Sort - Hindi",
