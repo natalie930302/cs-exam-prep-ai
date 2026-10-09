@@ -321,10 +321,13 @@
   window.onYouTubeIframeAPIReady = function(){
     player = new YT.Player('player', {
       host: 'https://www.youtube-nocookie.com',
-      playerVars: {rel: 0, modestbranding: 1, playsinline: 1},
+      // YouTube's own captions stay off: the site shows its own (Traditional
+      // Chinese, with English under English lectures), timed to the speech
+      playerVars: {rel: 0, modestbranding: 1, playsinline: 1, cc_load_policy: 0, cc_lang_pref: 'zh-Hant', iv_load_policy: 3},
       events: {
         onReady: function(){
           playerReady = true;
+          ytCaptionsOff();
           if (current) player.cueVideoById({videoId: current.id, startSeconds: Number(store.get('yt-pos-' + current.id)) || 0});
         },
         // a video YouTube refuses to embed (owner setting, region, removed)
@@ -336,6 +339,7 @@
           showPlayerError(msg);
         },
         onStateChange: function(e){
+          if (e.data === YT.PlayerState.PLAYING || e.data === YT.PlayerState.BUFFERING) ytCaptionsOff();
           if (e.data === YT.PlayerState.ENDED && current) {
             store.set('yt-pos-' + current.id, '0');
             markWatched(current.id, true);
@@ -345,6 +349,12 @@
       }
     });
   };
+  // A viewer's YouTube setting (or the video itself) can turn captions on;
+  // unloading the captions module turns them off again on every start.
+  function ytCaptionsOff(){
+    try { player.unloadModule('captions'); } catch (e) {}
+    try { player.unloadModule('cc'); } catch (e) {}
+  }
   let lastYtError = null;
   function showPlayerError(msg){
     let el = document.getElementById('ytErr');
@@ -773,7 +783,7 @@
     ask(0);
   }
   // Development aid, like the lab's __labCheck: trigger the cards by hand.
-  window.__studyCheck = {sectionChallenge: sectionChallenge, endCard: endCard, plan: function(){ return curNotes && quizPlan(curNotes); }, seek: function(t){ if (playerReady) player.seekTo(t, true); }, yt: function(){ return player && playerReady ? {state: player.getPlayerState(), data: player.getVideoData(), err: lastYtError} : {ready: playerReady}; }};
+  window.__studyCheck = {sectionChallenge: sectionChallenge, endCard: endCard, plan: function(){ return curNotes && quizPlan(curNotes); }, seek: function(t){ if (playerReady) player.seekTo(t, true); }, yt: function(){ return player && playerReady ? {cc: (function(){ try { return player.getOption('captions', 'track'); } catch (e) { return 'n/a'; } })(), state: player.getPlayerState(), data: player.getVideoData(), err: lastYtError} : {ready: playerReady}; }};
 
   // ── Tabs ──
   const TABS = ['videos', 'full', 'lab', 'quiz', 'goals'];
