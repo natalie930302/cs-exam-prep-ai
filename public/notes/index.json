@@ -841,9 +841,9 @@
  },
  "IFrvgSvZA0I": {
   "label": "MIT 6.006 Rec19：DP Crazy Eights, Shortest Path",
-  "points": 91,
+  "points": 92,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "IilVRpUsAiQ": {
   "label": "B-Tree Insertion",
@@ -891,7 +891,7 @@
   "label": "MIT 6.006 Rec20：DP Blackjack",
   "points": 92,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "Kg4bqzAqRBM": {
   "label": "MIT 6.006 L3：Insertion Sort, Merge Sort",

@@ -5022,14 +5022,17 @@ FRAG.push(['dpmit1-dijkstra-input', '對照 Dijkstra：權重的大小不在時�
   // ═══ dpmit2.js ═══
   {
 // ─── MIT 6.006 Fall 2011：Rec19 IFrvgSvZA0I（DP：Crazy Eights、Shortest Path）、Rec20 jZbkToeNK2g（DP：Blackjack、LIS） ───
+// Cued scenes: every `await step(tok)` waits until the lecturer says that sentence; the motion after it is
+// short (≤ 2.5 s) and then the picture holds. The comment on each step gives its cue time (seconds).
 // 老師的例子：Crazy Eights（like = 同數字／同花色／有 8；假 source、權重 −1、Bellman-Ford O(n³) vs DAG O(n²)）、
 // DAG S A B C D E F G（d(S,A)=1、d(S,B)=2、d(S,C)=3、d(S,D)=4，C→G 讓 BFS 出錯）、曼哈頓格子 d(i,j)、optimal substructure、
 // 有環的 S→A→B→C→A（1, −1, 1, 1）→ 分層 d_k = Bellman-Ford；blackjack 的 round_outcome(i, h)、邊 i → i+O[0] 權重 −O[1]、
 // dp[i] = max(O[1] + dp[i+O[0]])、走人 = 0、parent pointer (值, h)；LIS 8 3 5 2 4 9 7 11。
 // 板書看不到的權重、牌面為自擬（標在 notes 的 trap）。Blackjack DP 實跑用本模組的 DECK / bjPlay。
-const { V3, fresh, tag, cube, move, kill, glow, tint, txt, relabel, code, line, arrow, ghostBox, GOLD, GREEN, RED, GRAY } = K;
-const say = ctx.say, beat = ctx.beat;
-const M = { blue: '#4b9ee2', teal: '#2fc092', purple: '#9b7ef4', orange: '#dd8238', pink: '#e55a9b', red: '#d64545', sand: '#c9b48e', paper: '#efe6d2', brown: '#6e5f49', gold: '#c08a1f', ink: '#3a3328', card: '#fbf7f0', cardR: '#f6dede', ok: '#1f9e6e', faint: '#cfc6b4' };
+const { V3, fresh, tag, cube, move, kill, glow, tint, txt, relabel, showL, code, anim, line, arrow, ghostBox, step, buddy, prop, bob, travel, remove, GOLD, GREEN, RED, GRAY } = K;
+const say = (a, b = '') => ctx.say(a, b);
+const beat = ctx.beat;
+const M = { blue: '#4b9ee2', teal: '#2fc092', purple: '#9b7ef4', orange: '#dd8238', pink: '#e55a9b', red: '#d64545', sand: '#c9b48e', paper: '#efe6d2', brown: '#6e5f49', gold: '#c08a1f', ink: '#3a3328', card: '#fbf7f0', cardR: '#f6dede', ok: '#1f9e6e', faint: '#cfc6b4', sky: '#dbe9f7', you: '#f2d37a', lilac: '#c4b3f7' };
 const mBox = (t, c, x, y, w = 0.8, h = 0.8, d = 0.5, drop = 0, z = 0) => cube(t, c, [w, h, d], x, y, z, drop);
 // a curved edge (quadratic bezier bulging by h) with an arrowhead at the end
 function mArc(x1, y1, x2, y2, h, color = M.gold, z = 0.1) {
@@ -5048,6 +5051,15 @@ function mEdge(a, b, color = M.brown, r = 0.5, z = 0) {
 }
 function mCol(e, c) { e.objs.forEach((o) => { if (o.setColor) o.setColor(c); else o.material.color.set(c); }); }
 const mArcH = (span) => 0.25 + 0.22 * span;
+// a label spot that replaces itself, so an old line never lingers
+function board(x, y, z = 0, cls = 'say') { let l = null; return (t) => { if (l) remove(l); l = t ? tag(t, cls, x, y, z) : null; return l; }; }
+// a little packet that travels from a to b and stays there
+async function pkt(tok, t, a, b, ms = 700, cls = 'pkt') { const l = tag(t, cls, a.x, a.y, a.z); await travel(tok, l, a, b, ms); return l; }
+// the learner: a little character who watches and reacts
+const me = (x, y, z = 1.0, s = 0.7, name = '你') => buddy(name, '', M.you, x, y, z, s);
+async function walk(tok, b, x, ms = 600) { const a = b.g.position.clone(), e = V3(x, a.y, a.z); await anim(tok, ms, (u) => b.g.position.lerpVectors(a, e, u)); }
+const strike = (l) => { l.element.style.textDecoration = 'line-through'; l.element.style.opacity = '0.6'; };
+const cls = (l, c) => { l.element.className = 'lab-label ' + c; };
 
 // ── 共用：DAG S…G（老師的 d(S,A)=1、d(S,B)=2、d(S,C)=3、d(S,D)=4；其餘權重自擬） ──
 const DG = { S: [0, 7.0], A: [-3, 5.2], B: [0, 5.2], C: [3, 5.2], D: [-3, 3.2], E: [0, 3.2], F: [3, 3.2], G: [0, 1.0] };
@@ -5072,55 +5084,51 @@ const CE = [['4', '♦'], ['5', '♥'], ['8', '♦'], ['7', '♥'], ['7', '♠']
 const ceLike = (a, b) => a[0] === b[0] || a[1] === b[1] || a[0] === '8' || b[0] === '8';
 const ceCol = (c) => (c[1] === '♦' || c[1] === '♥' ? M.cardR : M.card);
 
-// ── 共用：曼哈頓格子 5 × 4（權重自擬） ──
+// ── 共用：曼哈頓格子 5 × 4（權重自擬）；節點、邊、權重分開畫 ──
 const GN = 5, GM = 4;
 const gwh = (i, j) => ((i * 7 + j * 3) % 5) + 1;   // (i,j) → (i,j+1)
 const gwv = (i, j) => ((i * 3 + j * 5) % 4) + 1;   // (i,j) → (i+1,j)
 const GDIST = (() => { const d = {}; for (let i = 1; i <= GN; i++) for (let j = 1; j <= GM; j++) { if (i === 1 && j === 1) { d['1,1'] = 0; continue; } const c = []; if (i > 1) c.push(d[(i - 1) + ',' + j] + gwv(i - 1, j)); if (j > 1) c.push(d[i + ',' + (j - 1)] + gwh(i, j - 1)); d[i + ',' + j] = Math.min(...c); } return d; })();
-function mGrid(x0, y0, dx, dy) {
-  const P = (i, j) => [x0 + (j - 1) * dx, y0 - (i - 1) * dy], n = {}, eh = {}, ev = {};
-  for (let i = 1; i <= GN; i++) for (let j = 1; j <= GM; j++) { const p = P(i, j); n[i + ',' + j] = mBox('', M.sand, p[0], p[1], 0.5, 0.5, 0.3); }
-  for (let i = 1; i <= GN; i++) for (let j = 1; j <= GM; j++) {
-    const p = P(i, j);
-    if (j < GM) { eh[i + ',' + j] = mEdge(p, P(i, j + 1), M.brown, 0.32); tag(String(gwh(i, j)), 'idx', p[0] + dx / 2, p[1] + 0.22); }
-    if (i < GN) { ev[i + ',' + j] = mEdge(p, P(i + 1, j), M.brown, 0.32); tag(String(gwv(i, j)), 'idx', p[0] + 0.22, p[1] - dy / 2); }
-  }
-  return { P, n, eh, ev };
+function mGrid(x0, y0, dx, dy, drop = 0) {
+  const P = (i, j) => [x0 + (j - 1) * dx, y0 - (i - 1) * dy], n = {}, eh = {}, ev = {}, wl = [];
+  for (let i = 1; i <= GN; i++) for (let j = 1; j <= GM; j++) { const p = P(i, j); n[i + ',' + j] = mBox('', M.sand, p[0], p[1], 0.5, 0.5, 0.3, drop); }
+  return {
+    P, n, eh, ev, wl,
+    edges() { for (let i = 1; i <= GN; i++) for (let j = 1; j <= GM; j++) { const p = P(i, j); if (j < GM) eh[i + ',' + j] = mEdge(p, P(i, j + 1), M.brown, 0.32); if (i < GN) ev[i + ',' + j] = mEdge(p, P(i + 1, j), M.brown, 0.32); } },
+    weights() { for (let i = 1; i <= GN; i++) for (let j = 1; j <= GM; j++) { const p = P(i, j); if (j < GM) wl.push(tag(String(gwh(i, j)), 'idx', p[0] + dx / 2, p[1] + 0.22)); if (i < GN) wl.push(tag(String(gwv(i, j)), 'idx', p[0] + 0.22, p[1] - dy / 2)); } },
+  };
 }
 
 // ── 共用：分層圖（S→A 1、A→B −1、B→C 1、C→A 1） ──
 const LV = ['S', 'A', 'B', 'C'], LY = { S: 6.2, A: 4.7, B: 3.2, C: 1.7 }, LX = (k) => -4.5 + k * 3.0;
 const LE = [['S', 'A', 1], ['A', 'B', -1], ['B', 'C', 1], ['C', 'A', 1]];
 const LD = (() => { const d = [{ S: 0, A: Infinity, B: Infinity, C: Infinity }]; for (let k = 1; k <= 3; k++) { const r = { S: Infinity, A: Infinity, B: Infinity, C: Infinity }; for (const [u, v, w] of LE) r[v] = Math.min(r[v], d[k - 1][u] + w); d.push(r); } return d; })();
-const inf = (x) => (x === Infinity ? '∞' : String(x));
-function mLayers(withVals) {
-  const n = {}, e = [], vt = {};
-  for (let k = 0; k <= 3; k++) tag('k = ' + k, 'ptr', LX(k), 7.3);
-  for (let k = 0; k <= 3; k++) for (const v of (k === 0 ? ['S'] : LV)) {
-    const val = LD[k][v];
-    n[v + k] = mBox(v + k, val === Infinity && withVals ? M.faint : (v === 'S' ? M.orange : M.sand), LX(k), LY[v], 0.8, 0.6, 0.4);
-    if (withVals) vt[v + k] = tag(inf(val), 'idx', LX(k) + 0.75, LY[v] - 0.3);
-  }
+const inf = (x) => (x === Infinity ? '∞' : String(x).replace('-', '−'));
+const wtxt = (w) => String(w).replace('-', '−');
+function mLayers() {
+  const n = {}, e = [], wl = [], kt = [];
+  for (let k = 0; k <= 3; k++) kt.push(tag('k = ' + k, 'ptr', LX(k), 7.3));
+  for (let k = 0; k <= 3; k++) for (const v of (k === 0 ? ['S'] : LV)) n[v + k] = mBox(v + k, v === 'S' ? M.orange : M.sand, LX(k), LY[v], 0.8, 0.6, 0.4);
   for (let k = 0; k < 3; k++) for (const [u, v, w] of LE) if (n[u + k]) {
     const a = [LX(k), LY[u]], b = [LX(k + 1), LY[v]];
     const ed = mEdge(a, b, M.brown, 0.5); ed.u = u + k; ed.v = v + (k + 1);
-    tag(String(w), 'idx', a[0] + 0.3 * (b[0] - a[0]), a[1] + 0.3 * (b[1] - a[1]) + 0.2);
+    const l = tag(wtxt(w), 'idx', a[0] + 0.3 * (b[0] - a[0]), a[1] + 0.3 * (b[1] - a[1]) + 0.2); l.w = w; wl.push(l);
     e.push(ed);
   }
-  return { n, e, vt };
+  return { n, e, wl, kt };
 }
 
 // ── 共用：一排節點／格子（blackjack） ──
 const RX = (k) => -5.85 + k * 0.9;
-function mRow(y, n, lab, size = 0.6, color = M.sand) { const r = []; for (let k = 0; k < n; k++) r.push(mBox(lab ? lab(k) : String(k), color, RX(k), y, size, size, 0.4)); return r; }
+function mRow(y, n, lab, size = 0.6, color = M.sand, drop = 0) { const r = []; for (let k = 0; k < n; k++) r.push(mBox(lab ? lab(k) : String(k), color, RX(k), y, size, size, 0.4, drop)); return r; }
 
 // ── 共用：LIS 8 3 5 2 4 9 7 11 ──
 const LA = [8, 3, 5, 2, 4, 9, 7, 11];
 const LISDP = (() => { const n = LA.length, d = Array(n).fill(1); for (let i = n - 1; i >= 0; i--) for (let j = i + 1; j < n; j++) if (LA[j] > LA[i]) d[i] = Math.max(d[i], 1 + d[j]); return d; })();
 const LXp = (k) => -4.9 + k * 1.4;
-function mLisRow(y, withIdx = true) {
+function mLisRow(y, withIdx = true, drop = 0) {
   if (withIdx) LA.forEach((v, k) => tag(String(k), 'idx', LXp(k), y + 0.8));
-  return LA.map((v, k) => mBox(v, M.blue, LXp(k), y, 0.9, 0.9, 0.5));
+  return LA.map((v, k) => mBox(v, M.blue, LXp(k), y, 0.9, 0.9, 0.5, drop));
 }
 
 // ── Blackjack DP（本模組 DECK、bjPlay），walk = 是否可以走人（0） ──
@@ -5141,206 +5149,561 @@ const mn = (x) => String(x).replace('-', '−');
 
 // ════════════════ IFrvgSvZA0I（MIT 6.006 Rec19：Crazy Eights、Shortest Path） ════════════════
 
-// 00:21 圖 → DP：不建圖，直接算數字（Rec20 34:43 也用）
-FRAG.push(['dpmit2-graph-vs-dp', '從圖到 DP：狀態是節點，DP 不建圖直接算', async (tok) => {
+// 00:21 圖 → DP：不建圖，直接算數字
+FRAG.push(['dpmit2-graph-vs-dp', '從圖到 DP：不建圖，直接算數字', async (tok) => {
   fresh([0, 3.4, 13], [0, 3.2, 0]);
-  const gx = (k) => -5.6 + k * 1.0, ax = (k) => 1.6 + k * 1.0;
-  const nodes = [0, 1, 2, 3, 4].map((k) => mBox(k, M.sand, gx(k), 3.6, 0.6, 0.6, 0.4, 1.5));
-  tag('圖：節點 + 邊', 'ptr', -3.6, 6.4);
-  await beat(tok, 600);
-  for (const [a, b] of [[0, 1], [0, 2], [1, 3], [2, 3], [2, 4], [3, 4]]) mArc(gx(a), 3.95, gx(b), 3.95, mArcH(b - a) * 0.8, M.brown);
-  say('以前：狀態當節點、走法當邊', '先建圖，再跑最短／最長路徑');
-  await beat(tok, 2600);
+  const gx = (k) => -5.4 + k * 1.0, ax = (k) => 1.4 + k * 1.0;
+  const you = me(-0.2, 0.2, 1.2, 0.75);
+  const succ = { 0: [1, 2], 1: [3], 2: [3, 4], 3: [4], 4: [] };
+  await step(tok);                                   // 21.4 shortest paths; game states as nodes
+  [0, 1, 2, 3, 4].map((k) => mBox('', M.sand, gx(k), 3.6, 0.6, 0.6, 0.4, 1.5));
+  tag('遊戲的狀態 = 節點', 'say', -3.4, 6.4);
+  you.look(-1);
+  say('前幾週：把遊戲的「狀態」畫成節點', '然後跑 shortest path');
+  await step(tok);                                   // 35.0 edges = moves
+  for (const a in succ) for (const b of succ[a]) mArc(gx(+a), 3.95, gx(b), 3.95, mArcH(b - a) * 0.8, M.brown);
+  tag('一步走法 = 一條邊', 'note', -3.4, 5.6);
+  say('一步走法 = 一條邊', '先建圖，再跑演算法');
+  await step(tok);                                   // 42.0 you can do it without thinking of a graph at all
   const cells = [0, 1, 2, 3, 4].map((k) => mBox('?', M.paper, ax(k), 3.6, 0.8, 0.7, 0.4, 1.5));
   [0, 1, 2, 3, 4].forEach((k) => tag(String(k), 'idx', ax(k), 4.4));
-  tag('DP：一個陣列 dp[i]', 'ptr', 3.6, 6.4);
-  say('DP：不建圖，直接算數字', 'dp[i] = 從 i 走到 4 的最長路徑');
-  await beat(tok, 2600);
-  const succ = { 0: [1, 2], 1: [3], 2: [3, 4], 3: [4], 4: [] }, dp = {};
-  for (let i = 4; i >= 0; i--) {
-    dp[i] = succ[i].length ? Math.max(...succ[i].map((j) => dp[j])) + 1 : 0;
-    glow(nodes[i], GOLD); succ[i].forEach((j) => glow(cells[j], GOLD));
-    relabel(cells[i], dp[i]); tint(cells[i], M.teal);
-    say('dp[' + i + '] 只看它的後繼', succ[i].length ? 'dp[' + i + '] = max(' + succ[i].map((j) => 'dp[' + j + ']').join(', ') + ') + 1 = ' + dp[i] : 'dp[4] = 0（終點）');
-    await beat(tok, 1500);
-    glow(nodes[i], null); succ[i].forEach((j) => glow(cells[j], null));
-  }
-  say('程式短、跑得快', '但看不到背後的圖時，像黑魔法');
-  await beat(tok, 2800);
-  say('DP = 求 min / max 的最佳化', '難的是定義狀態（子問題）');
-  await beat(tok, 3000);
+  tag('DP：只有一排數字', 'say', 3.4, 6.4);
+  you.mood('wow'); you.look(1);
+  say('其實可以完全不畫圖', '直接用 dynamic programming');
+  await step(tok);                                   // 51.0 you can do better without building the graph
+  const dp = {};
+  for (let i = 4; i >= 0; i--) { dp[i] = succ[i].length ? Math.max(...succ[i].map((j) => dp[j])) + 1 : 0; relabel(cells[i], dp[i]); tint(cells[i], M.teal); await beat(tok, 300); }
+  say('不建圖：一格一格直接把答案算出來', 'dp[i] = 從 i 出發最多還能走幾步');
+  await step(tok);                                   // 54.0 code is smaller and runs faster
+  tag('程式短 ✓　跑得快 ✓', 'good', 3.4, 1.9);
+  you.mood('happy'); await you.hop(tok);
+  say('好處：程式比較短、跑得比較快');
+  await step(tok);                                   // 60.0 harder to understand: black magic
+  tag('看不到背後的圖 → 像黑魔法', 'bad', 3.4, 1.1);
+  you.mood('sad');
+  say('壞處：比較難懂', 'DP 的程式看起來像黑魔法');
+  await step(tok);                                   // 66.0 on the final: no partial credit for building a graph
+  prop('file', -5.6, 0.2, 1.0, 0.9, '期末考');
+  tag('要寫出正確的遞迴式', 'note', -3.6, 1.0, 1.0);
+  you.mood('wow');
+  say('期末考的 DP 題：「先建圖」拿不到部分分', '要真的懂，寫出對的式子');
+  await step(tok);                                   // 90.0 DP = catchy name for optimization problems
+  tag('DP = 「最佳化問題」的好聽名字', 'ptr alt', 0, 7.2);
+  you.mood('calm');
+  say('dynamic programming 只是個好聽的名字', '指的就是最佳化問題');
+  await step(tok);                                   // 98.0 the minimum or the maximum of something
+  tag('求某個東西的 min 或 max', 'say', 0, 6.4);
+  say('要算某個東西的最小值或最大值', '例如最短路徑、最多賺多少');
 }]);
 
-// 01:47 Crazy Eights：like 的定義
+// 01:43 Crazy Eights：like 的定義
 FRAG.push(['dpmit2-crazy-like', 'Crazy Eights：同數字、同花色或有 8 就 like', async (tok) => {
   fresh([0, 3.4, 12], [0, 3.6, 0]);
   const X = (k) => -4.2 + k * 1.4;
-  const cs = CE.map((c, k) => mBox(c[0] + c[1], ceCol(c), X(k), 3.6, 1.0, 1.4, 0.08, 2));
+  const you = me(-5.9, 0.4, 1.0, 0.7);
+  const top = board(0.6, 6.8);
+  let cs = [], marks = [];
+  const clear = () => { marks.forEach(remove); marks = []; cs.forEach((m) => glow(m, null)); };
+  const mark = (a, b) => { const ok = ceLike(CE[a], CE[b]); glow(cs[a], ok ? GREEN : RED); glow(cs[b], ok ? GREEN : RED); marks.push(tag(ok ? '✓ like' : '✗ 不 like', ok ? 'good' : 'bad', (X(a) + X(b)) / 2, 4.9)); return ok; };
+  const pair = (a, b, why) => { clear(); const ok = mark(a, b); marks.push(tag(why, 'note', (X(a) + X(b)) / 2, 1.7)); you.mood(ok ? 'happy' : 'sad'); return ok; };
+  await step(tok);                                   // 102.5 this problem is called Crazy Eights
+  const deck = []; for (let k = 0; k < 6; k++) deck.push(cube('', k === 5 ? M.cardR : M.card, [1.0, 1.4, 0.06], 0, 3.6 + k * 0.04, -k * 0.08));
+  top('今天的題目：Crazy Eights（瘋狂 8）');
+  say('從一個題目開始：Crazy Eights');
+  await step(tok);                                   // 109.0 a shuffled deck; some cards are pulled out
+  deck.forEach(kill);
+  cs = CE.map((c, k) => mBox(c[0] + c[1], ceCol(c), X(k), 3.6, 1.0, 1.4, 0.08, 2));
   CE.forEach((c, k) => tag(String(k), 'idx', X(k), 2.5));
-  say('Crazy Eights：抽出一排牌', '找最長的 crazy 子序列');
-  await beat(tok, 2600);
-  say('like：同數字、同花色、或有一張是 8', '8 跟任何牌都 like');
-  await beat(tok, 2800);
-  const pairs = [[0, 2, '8 萬用'], [2, 5, '8 萬用'], [1, 6, '數字、花色都不同'], [1, 3, '同花色 ♥'], [5, 3, '數字、花色都不同']];
-  for (const [a, b, why] of pairs) {
-    const ok = ceLike(CE[a], CE[b]);
-    glow(cs[a], ok ? GREEN : RED); glow(cs[b], ok ? GREEN : RED);
-    const mk = tag(ok ? '✓ like' : '✗', ok ? 'ptr' : 'ptr alt', (X(a) + X(b)) / 2, 5.0);
-    say(CE[a].join('') + ' 和 ' + CE[b].join('') + (ok ? '：like' : '：不 like'), why);
-    await beat(tok, 1900);
-    glow(cs[a], null); glow(cs[b], null); kill(mk);
-  }
-  say('子序列：可以跳過，但不能重排', '選中的牌，相鄰兩張要 like');
-  await beat(tok, 2800);
-  const best = [0, 2, 3, 4, 5];
-  cs.forEach((m, k) => { if (best.includes(k)) { move(m, X(k), 5.0); glow(m, GREEN); } else tint(m, GRAY); });
-  say('最長：4♦ 8♦ 7♥ 7♠ 5♠', '長度 5（相鄰兩張都 like）');
-  await beat(tok, 3200);
+  top('洗好的牌 → 抽出一排');
+  say('一副洗過的牌，抽出幾張排成一排', '（板書看不清，牌面為自擬）');
+  await step(tok);                                   // 175.2 the longest crazy subsequence
+  top('目標：最長的 crazy 子序列');
+  you.mood('wow'); you.look(1);
+  say('目標：找最長的 crazy subsequence');
+  await step(tok);                                   // 183.0 two cards are like each other
+  marks.push(tag('挑出來的牌：相鄰兩張要 like', 'note', 0.6, 5.7));
+  say('crazy：挑出來的牌，相鄰兩張要互相 like');
+  await step(tok);                                   // 189.0 same number, same suit, or one is an 8
+  clear();
+  tag('like = 同數字 ／ 同花色 ／ 其中一張是 8', 'note', 0.6, 5.9);
+  you.mood('calm');
+  say('like：數字一樣、花色一樣，或其中一張是 8');
+  await step(tok);                                   // 201.0 an 8 is like anything else
+  glow(cs[2], GOLD); marks.push(tag('8 = 萬用牌', 'good', X(2), 4.9));
+  you.mood('happy'); await you.hop(tok);
+  say('8 跟任何牌都 like', '所以叫 Crazy Eights');
+  await step(tok);                                   // 211.3 4 and 8? 8 and 5?
+  clear(); mark(0, 2); mark(2, 5);
+  marks.push(tag('有 8 → 都 like', 'note', X(2), 1.7));
+  say('4 和 8 like 嗎？8 和 5 呢？', '都 like：其中一張是 8');
+  await step(tok);                                   // 226.9 5♥ and 9♦? no
+  pair(1, 6, '數字不同、花色也不同');
+  say('5♥ 和 9♦：不 like', '數字、花色都不一樣，也沒有 8');
+  await step(tok);                                   // 233.5 5♥ and 7♥? yes
+  pair(1, 3, '同花色 ♥');
+  say('5♥ 和 7♥：like', '花色一樣');
+  await step(tok);                                   // 240.2 5♠ and 7♥? no
+  pair(5, 3, '數字不同、花色也不同');
+  say('5♠ 和 7♥：不 like');
+  await step(tok);                                   // 246.5 the longest possible subsequence
+  clear();
+  top('最長能挑出幾張？');
+  you.mood('wow');
+  say('想挑出最長的一串', '可以跳過牌，但不能重排');
 }]);
 
 // 04:28 建圖：假 source、往右的邊、權重 −1、Bellman-Ford O(n³)
 FRAG.push(['dpmit2-crazy-graph', 'Crazy Eights 建圖：權重 −1，最長變最短', async (tok) => {
   fresh([0, 3.4, 12.5], [0, 3.2, 0]);
   const X = (k) => -3.9 + k * 1.3, Y = 3.0;
-  const cs = CE.map((c, k) => mBox(c[0] + c[1], ceCol(c), X(k), Y, 0.9, 1.1, 0.08, 1.5));
-  say('每張牌是一個節點', '照原本的順序排好');
-  await beat(tok, 2200);
+  const top = board(0, 7.2);
+  const you = me(-1.2, -1.3, 1.0, 0.6);
+  let ny = 1.8; const col = (t, c = 'say') => { const l = tag(t, c, 3.6, ny, 0.4); ny -= 0.62; return l; };
+  let cs = [];
+  await step(tok);                                   // 268.4 model it as a graph: all the cards are nodes
+  cs = CE.map((c, k) => mBox(c[0] + c[1], ceCol(c), X(k), Y, 0.9, 1.1, 0.08, 1.5));
+  top('建圖：每張牌 = 一個節點');
+  say('怎麼畫成圖？', '每張牌是一個節點');
+  await step(tok);                                   // 279.0 the longest path between what and what?
+  top('要找最長路徑：從哪裡到哪裡？');
+  you.mood('wow');
+  say('要找最長的路徑', '可是起點、終點是誰？');
+  await step(tok);                                   // 296.6 add a fake source
+  mBox('s', M.orange, -5.8, 0.6, 0.7, 0.7, 0.4, 2);
+  tag('假的起點', 'note', -5.8, -0.3);
+  top('小技巧：加一個假的 source s');
+  you.mood('calm');
+  say('技巧：加一個假的起點 source', '把問題變成我們會的形式');
+  await step(tok);                                   // 302.9 it connects to everything
+  for (let k = 0; k < CE.length; k++) { mEdge([-5.8, 0.6], [X(k), Y], M.gold, 0.55); await beat(tok, 140); }
+  say('s 連到每一張牌', '從哪張牌開始都可以');
+  await step(tok);                                   // 312.1 the longest path starting from the source, anywhere
+  top('答案 = 從 s 出發、走到任何地方的最長路徑');
+  say('答案：從 s 出發的最長路徑', '終點是哪張牌都行');
+  await step(tok);                                   // 331.0 edges are directed
+  const e02 = mArc(X(0), Y + 0.6, X(2), Y + 0.6, mArcH(2), M.brown);
+  top('邊有方向：兩張牌 like 才連');
+  say('邊要有方向', '例：4♦ 和 8♦ like → 連一條邊');
+  await step(tok);                                   // 358.3 they have to match in this order: only forward
+  const back = mArc(X(3), Y + 0.6, X(1), Y + 0.6, mArcH(2), M.red), bk = tag('往回 ✗', 'bad', X(2), Y + 2.1);
+  you.mood('sad');
+  top('只能往前：不能重排');
+  say('子序列要照原本的順序', '所以邊只能往右，不能往回');
+  await step(tok);                                   // 365.0 four of diamonds, eight of diamonds, … nine of diamonds
+  back.kill(); remove(bk);
+  const e26 = mArc(X(2), Y + 0.6, X(6), Y + 0.6, mArcH(4), M.ok);
+  mCol(e02, M.ok); [0, 2, 6].forEach((k) => glow(cs[k], GREEN));
+  you.mood('happy');
+  top('例：4♦ → 8♦ → 9♦');
+  say('例：4♦、8♦、9♦', '不用全選，但要照原本的順序');
+  await step(tok);                                   // 387.0 everything points right
+  e02.kill(); e26.kill(); [0, 2, 6].forEach((k) => glow(cs[k], null));
   const arcs = [];
-  for (let a = 0; a < CE.length; a++) for (let b = a + 1; b < CE.length; b++) if (ceLike(CE[a], CE[b])) {
-    const e = mArc(X(a), Y + 0.6, X(b), Y + 0.6, mArcH(b - a), M.brown); e.a = a; e.b = b; arcs.push(e);
-    say('like 而且在後面 → 有向邊', '只往右指：不能重排');
-    await beat(tok, 260);
-  }
-  await beat(tok, 1600);
-  const s = mBox('s', M.orange, -5.8, 0.6, 0.7, 0.7, 0.4, 2);
-  const sa = CE.map((c, k) => mEdge([-5.8, 0.6], [X(k), Y], M.gold, 0.55));
-  say('加一個假的 source s', '連到每張牌：從 s 出發的最長路徑');
-  await beat(tok, 2800);
-  const wt = arcs.map((e) => tag('−1', 'idx', e.mid[0], e.mid[1] + 0.2));
-  say('我們只會求最短路徑', '每條邊權重改成 −1：最長 ⇔ 最短');
-  await beat(tok, 2800);
-  wt.forEach(kill);
-  const path = [0, 2, 3, 4, 5];
-  mCol(sa[0], M.ok);
-  for (let k = 0; k + 1 < path.length; k++) { const e = arcs.find((x) => x.a === path[k] && x.b === path[k + 1]); mCol(e, M.ok); }
-  path.forEach((k) => glow(cs[k], GREEN));
-  say('最短距離 −5 → 最長子序列 5', '沒有環 → 答案有定義');
-  await beat(tok, 2800);
-  say('Bellman-Ford：O(VE)', 'V = n+1、E = O(n²) → O(n³)');
-  await beat(tok, 3000);
+  for (let a = 0; a < CE.length; a++) for (let b = a + 1; b < CE.length; b++) if (ceLike(CE[a], CE[b])) { arcs.push(mArc(X(a), Y + 0.6, X(b), Y + 0.6, mArcH(b - a), M.brown)); await beat(tok, 90); }
+  top('所有的邊都往右指');
+  say('所有的邊都往右指', '只連「在後面、而且 like」的牌');
+  await step(tok);                                   // 441.1 we only have algorithms for shortest paths
+  top('可是我們只會算「最短」路徑…');
+  you.mood('sad');
+  say('問題：我們沒有求最長路徑的演算法', '只會求最短路徑');
+  await step(tok);                                   // 448.0 make the weights negative
+  arcs.forEach((e) => tag('−1', 'idx', e.mid[0], e.mid[1] + 0.2));
+  top('每條邊的權重：1 → −1');
+  you.mood('happy');
+  say('把權重變負的：每條邊 1 → −1', '最長的路徑 = 最短（最負）的路徑');
+  await step(tok);                                   // 461.0 no cycles: the answer is well defined
+  col('沒有環 → 答案有定義 ✓', 'good');
+  say('圖裡沒有環', '最短路徑不會無限變小，答案有定義');
+  await step(tok);                                   // 481.8 Bellman-Ford
+  col('用 Bellman-Ford', 'ptr alt');
+  you.mood('calm');
+  say('會解這題的演算法：Bellman-Ford', '可以處理負的權重');
+  await step(tok);                                   // 495.4 n cards: vertices = n + 1 = O(n)
+  col('V = n + 1 = O(n)');
+  say('n 張牌：節點 = n 張牌 + source', 'V = O(n)');
+  await step(tok);                                   // 505.3 edges, worst case: O(n²)
+  col('E = O(n²)（最壞：每對都 like）');
+  say('邊最多幾條？每一對牌都可能有邊', 'E = O(n²)');
+  await step(tok);                                   // 525.0 Bellman-Ford is V times E (not V + E)
+  const v1 = col('Bellman-Ford：O(V × E)', 'note');
+  tag('不是 V + E', 'bad', 6.3, ny + 0.62, 0.4);
+  say('Bellman-Ford 是 V × E', '黑板一度寫成 V + E，學生糾正了');
+  await step(tok);                                   // 557.0 n cubed
+  col('O(n) × O(n²) = O(n³)', 'bad');
+  glow(cs[0], null); you.mood('wow');
+  say('總共 O(n³)', '能不能更快？');
 }]);
 
 // 09:24 DAG 的距離公式
 FRAG.push(['dpmit2-dag-formulas', 'DAG 最短路徑：d(S,v) = min(入邊起點 + 權重)', async (tok) => {
   fresh([0, 4.2, 13], [0, 4.0, 0]);
-  const G = mDag();
-  const vt = {}; DORD.forEach((v) => { vt[v] = tag('?', 'ptr alt', DG[v][0] + 0.75, DG[v][1] + 0.35); });
-  say('一個 DAG：邊都往下指', '求 S 到每個點的最短距離');
-  await beat(tok, 2600);
-  txt(vt.S, '0'); glow(G.nodes.S, GREEN);
-  say('d(S,S) = 0', '');
-  await beat(tok, 1600);
-  ['A', 'B', 'C'].forEach((v) => { txt(vt[v], String(DD[v])); glow(G.nodes[v], GREEN); });
-  say('簡單的先填', 'd(S,A) = 1、d(S,B) = 2、d(S,C) = 3');
-  await beat(tok, 2400);
-  const caps = { D: 'S→D：從 A 來，或從 B 來', E: 'S→E：A、B、C 三條入邊', F: 'S→F：入邊來自 D、E、C', G: 'S→G：別漏了 C→G' };
-  for (const v of ['D', 'E', 'F', 'G']) {
-    const ins = DE.filter((e) => e[1] === v);
-    ins.forEach(([u]) => { mCol(G.edges[u + v], M.gold); glow(G.nodes[u], GOLD); });
-    glow(G.nodes[v], GOLD);
-    say(caps[v], 'd(' + v + ') = min(' + ins.map(([u, , w]) => DD[u] + '+' + w).join(', ') + ') = ' + DD[v]);
-    await beat(tok, 2600);
-    txt(vt[v], String(DD[v]));
-    mDagReset(G); DORD.forEach((x) => { if (vt[x].element.textContent !== '?') glow(G.nodes[x], GREEN); });
-    await beat(tok, 400);
+  const top = board(0, 8.2), fm = board(0.4, -0.2, 0.5, 'note'), side = board(5.0, 3.6, 0.3, 'good');
+  const you = me(-5.6, 0.0, 1.0, 0.7);
+  let G = null; const vt = {};
+  const val = (v) => { txt(vt[v], String(DD[v])); tint(G.nodes[v], M.teal); glow(G.nodes[v], null); };
+  const hl = (u, v, c = M.gold) => { mCol(G.edges[u + v], c); glow(G.nodes[u], GOLD); };
+  async function walkPath(path, ms = 550) {
+    const p = tag('走', 'pkt', DG[path[0]][0], DG[path[0]][1] + 0.6, 0.6);
+    for (let k = 1; k < path.length; k++) await travel(tok, p, p.position.clone(), V3(DG[path[k]][0], DG[path[k]][1] + 0.6, 0.6), ms);
+    return p;
   }
-  say('入邊起點的值都已知 → 直接算', '有遞迴，但不會無限遞迴');
-  await beat(tok, 3000);
+  await step(tok);                                   // 564.2 a better way: directed acyclic graph shortest paths
+  top('更好的方法：DAG 的最短路徑');
+  you.mood('wow');
+  say('有更好的解法', '利用 DAG（有向無環圖）的最短路徑演算法');
+  await step(tok);                                   // 580.2 S, A, B, C …
+  G = mDag(); DORD.forEach((v) => { vt[v] = tag('?', 'ptr alt', DG[v][0] + 0.75, DG[v][1] + 0.35); });
+  top('例子：S、A、B、C、D、E、F、G');
+  you.mood('calm');
+  say('換一個小一點的 DAG 來看', '求 S 到每個點的最短距離（權重自擬）');
+  await step(tok);                                   // 627.8 acyclic: all the edges point downwards
+  DE.forEach(([u, v]) => mCol(G.edges[u + v], M.gold)); await beat(tok, 900); mDagReset(G);
+  tag('↓ 邊都往下 → 沒有環', 'good', 5.0, 6.0, 0.3);
+  say('所有的邊都往下指', '所以沒有環：acyclic');
+  await step(tok);                                   // 641.0 distance from the source to itself
+  val('S'); fm('d(S,S) = 0');
+  say('S 到自己：距離 0');
+  await step(tok);                                   // 649.7 SA is 1, SB is 2, SC is 3
+  ['A', 'B', 'C'].forEach(val); fm('d(S,A) = 1　d(S,B) = 2　d(S,C) = 3');
+  say('簡單的先填', 'd(S,A) = 1、d(S,B) = 2、d(S,C) = 3');
+  await step(tok);                                   // 661.2 the distance from S to D: how?
+  glow(G.nodes.D, GOLD); fm('d(S,D) = ?');
+  you.mood('wow');
+  say('S 到 D 呢？要怎麼算？');
+  await step(tok);                                   // 672.4 it's four
+  txt(vt.D, '4');
+  fm('d(S,D) = 4');
+  say('答案是 4', '可是要寫成一般的公式');
+  await step(tok);                                   // 676.6 the minimum of two paths
+  hl('A', 'D'); hl('B', 'D');
+  fm('d(S,D) = min( d(S,A) + w(A,D) ,  d(S,B) + w(B,D) )');
+  you.mood('calm');
+  say('兩條路取比較短的', 'D 的入邊有兩條：從 A 來、從 B 來');
+  await step(tok);                                   // 687.0 a path from S to A, then the edge A to D
+  mCol(G.edges.SA, M.ok); mCol(G.edges.AD, M.ok); glow(G.nodes.A, GREEN);
+  const p1 = await walkPath(['S', 'A', 'D']);
+  say('第一條：先走到 A（1），再走 A→D（3）', '1 + 3 = 4');
+  await step(tok);                                   // 697.6 a path from S to B and the weight B to D
+  remove(p1);
+  mCol(G.edges.SB, M.orange); mCol(G.edges.BD, M.orange); glow(G.nodes.B, GOLD);
+  const p2 = await walkPath(['S', 'B', 'D']);
+  say('第二條：先走到 B（2），再走 B→D（3）', '2 + 3 = 5');
+  await step(tok);                                   // 703.0 SA and SB are already known: well defined
+  remove(p2);
+  side('A、B 已經算好 → 馬上能算');
+  fm('d(S,D) = min(1 + 3, 2 + 3) = 4');
+  you.mood('happy');
+  say('d(S,A)、d(S,B) 都已經知道', '所以 d(S,D) 可以直接算出來');
+  await step(tok);                                   // 716.2 recursion, but no infinite recursion
+  val('D'); mDagReset(G); ['S', 'A', 'B', 'C', 'D'].forEach((v) => tint(G.nodes[v], M.teal));
+  side('有遞迴，但不會無限遞迴');
+  say('有遞迴，但不會沒完沒了', '要的值都已經算好了');
+  await step(tok);                                   // 739.0 how about SE? the formula?
+  side(null);
+  ['A', 'B', 'C'].forEach((u) => hl(u, 'E')); glow(G.nodes.E, GOLD);
+  fm('d(S,E) = min( d(S,A) + 4 ,  d(S,B) + 1 ,  d(S,C) + 2 )');
+  say('S 到 E：E 有三條入邊', '從 A、B、C 來，各算一次取最小');
+  await step(tok);                                   // 789.5 B to E
+  mDagReset(G); mCol(G.edges.BE, M.ok); val('E');
+  fm('d(S,E) = min(1 + 4, 2 + 1, 3 + 2) = 3');
+  say('最好的是從 B 走過來', 'd(S,E) = 2 + 1 = 3');
+  await step(tok);                                   // 800.3 F: d(S,D) + w(D,F), d(S,E) + w(E,F)
+  mDagReset(G); hl('D', 'F'); hl('E', 'F'); glow(G.nodes.F, GOLD);
+  fm('d(S,F) = min( d(S,D) + 1 ,  d(S,E) + 3 ,  … )');
+  say('S 到 F：從 D 來、從 E 來…');
+  await step(tok);                                   // 812.4 and C, F
+  hl('C', 'F');
+  fm('d(S,F) = min( d(S,D) + 1 ,  d(S,E) + 3 ,  d(S,C) + 5 )');
+  say('還有 C → F 這條', 'F 一共三條入邊');
+  await step(tok);                                   // 822.1 and that is?
+  mDagReset(G); mCol(G.edges.DF, M.ok); val('F');
+  fm('d(S,F) = min(4 + 1, 3 + 3, 3 + 5) = 5');
+  say('d(S,F) = 5', '從 D 走過來最好');
+  await step(tok);                                   // 832.0 the distance from S to G
+  mDagReset(G); glow(G.nodes.G, GOLD);
+  fm('d(S,G) = min( … )');
+  say('最後一個：S 到 G', '先找出 G 的入邊');
+  await step(tok);                                   // 891.8 EG, FG
+  hl('E', 'G'); hl('F', 'G');
+  fm('d(S,G) = min( d(S,E) + 4 ,  d(S,F) + 1 ,  … )');
+  say('從 E 來、從 F 來', '這樣就完整了嗎？');
+  await step(tok);                                   // 903.4 C! I didn't see that
+  hl('C', 'G', M.red); glow(G.nodes.C, RED);
+  fm('d(S,G) = min( d(S,E) + 4 ,  d(S,F) + 1 ,  d(S,C) + 4 ) = 6');
+  txt(vt.G, '6'); tint(G.nodes.G, M.teal);
+  tag('C → G 很容易漏看！', 'bad', 4.8, 2.0, 0.3);
+  you.mood('wow');
+  say('還有 C → G！', '入邊要一條都不漏：d(S,G) = 6');
 }]);
 
 // 15:21 BFS 的陷阱與拓撲排序；O(V+E)
 FRAG.push(['dpmit2-dag-topo', '拓撲排序：BFS 會被 C→G 騙；O(V+E)', async (tok) => {
   fresh([0, 4.0, 13.5], [0, 3.8, 0]);
   const G = mDag();
-  say('如果用 BFS 的層次來算…', '第 0 層 S；第 1 層 A、B、C');
-  glow(G.nodes.S, GOLD); await beat(tok, 1400);
-  ['A', 'B', 'C'].forEach((v) => glow(G.nodes[v], GOLD)); await beat(tok, 1400);
-  ['D', 'E', 'F', 'G'].forEach((v) => glow(G.nodes[v], v === 'G' ? RED : GOLD));
-  mCol(G.edges.CG, M.red);
-  say('G 經 C→G 也在第 2 層', '可能先算 G，可是 E、F 還沒好');
-  await beat(tok, 3000);
-  DE.forEach(([u, v]) => { G.edges[u + v].kill(); kill(G.wl[u + v]); });
+  const top = board(0, 7.9), low = board(0, 0.6, 0.4, 'note');
+  const you = me(-6.0, -1.2, 1.0, 0.6);
+  const lv = [];
+  await step(tok);                                   // 921.0 the point of this guy: with BFS you get tricked
+  mCol(G.edges.CG, M.red); glow(G.nodes.C, RED); glow(G.nodes.G, RED);
+  top('C → G 這條邊的用意：BFS 會被騙');
+  say('為什麼要畫 C → G？', '用 BFS 的順序算，會出錯');
+  await step(tok);                                   // 927.9 BFS puts G on the same level as these
+  glow(G.nodes.C, null);
+  glow(G.nodes.S, GOLD); lv.push(tag('第 0 層', 'idx', -1.3, 7.0));
+  ['A', 'B', 'C'].forEach((v) => glow(G.nodes[v], GOLD)); lv.push(tag('第 1 層', 'idx', -4.3, 5.2));
+  ['D', 'E', 'F'].forEach((v) => glow(G.nodes[v], GOLD)); lv.push(tag('第 2 層', 'idx', -4.3, 3.2));
+  lv.push(tag('G 也在第 2 層！', 'bad', 1.9, 1.0));
+  you.mood('wow');
+  say('BFS：G 經 C→G 也算第 2 層', '可能先算 G，可是 E、F 還沒算好');
+  await step(tok);                                   // 938.0 what order do I need?
   DORD.forEach((v) => glow(G.nodes[v], null));
+  top('要照什麼順序算，才不會出錯？');
+  say('那要照什麼順序算？');
+  await step(tok);                                   // 947.5 topological sort
+  top('拓撲排序（topological sort）');
+  you.mood('happy');
+  say('答案：topological sort（拓撲排序）', '保證「被依賴的」一定先算');
+  await step(tok);                                   // 966.8 S, A, B, C, D, E, F, G
+  lv.forEach(remove);
+  DE.forEach(([u, v]) => { G.edges[u + v].kill(); remove(G.wl[u + v]); });
   const TX = (k) => -5.6 + k * 1.6, TY = 2.4;
   DORD.forEach((v, k) => move(G.nodes[v], TX(k), TY));
-  say('改用拓撲排序', 'S A B C D E F G');
-  await beat(tok, 2000);
-  const idx = Object.fromEntries(DORD.map((v, k) => [v, k]));
-  for (const [u, v] of DE) mArc(TX(idx[u]), TY + 0.45, TX(idx[v]), TY + 0.45, mArcH(idx[v] - idx[u]) * 0.9, M.brown);
-  say('每條邊都往前指', '沒有往回的邊');
-  await beat(tok, 2600);
-  const cur = tag('▼', 'ptr alt', TX(0), TY + 1.0);
-  for (let k = 0; k < DORD.length; k++) {
-    move(cur, TX(k), TY - 1.0); glow(G.nodes[DORD[k]], GREEN); relabel(G.nodes[DORD[k]], DORD[k] + ' ' + DD[DORD[k]]);
-    say('依序算：入邊的起點都算過了', 'd(' + DORD[k] + ') = ' + DD[DORD[k]]);
-    await beat(tok, 700);
-  }
-  say('每條邊只看一次', '時間 = O(V + E)');
-  await beat(tok, 2600);
-  say('Crazy Eights：V′ + E′ = O(n²)', '比 Bellman-Ford 的 O(n³) 快');
-  await beat(tok, 2800);
-  say('DP 的拓撲順序通常很明顯', '卡牌就照原本的順序');
-  await beat(tok, 2600);
+  top('這次用的拓撲順序：S A B C D E F G');
+  you.mood('calm');
+  say('拓撲順序有很多種，哪一種都可以', '這次用 S A B C D E F G');
+  await step(tok);                                   // 985.4 every edge here indicates a dependency
+  const idx = Object.fromEntries(DORD.map((v, k) => [v, k])), arcs = {};
+  for (const [u, v] of DE.filter((e) => e[1] === 'E')) arcs[u + v] = mArc(TX(idx[u]), TY + 0.45, TX(idx[v]), TY + 0.45, mArcH(idx[v] - idx[u]) * 0.9, M.gold);
+  glow(G.nodes.E, GOLD);
+  low('每條邊 = 一個依賴：E 要等 A、B、C 算好');
+  say('每條邊代表一個依賴', '算 d(S,E) 之前，要先有 A、B、C 的值');
+  await step(tok);                                   // 1002.8 after this ordering, all the edges point forward
+  for (const [u, v] of DE) if (!arcs[u + v]) arcs[u + v] = mArc(TX(idx[u]), TY + 0.45, TX(idx[v]), TY + 0.45, mArcH(idx[v] - idx[u]) * 0.9, M.brown);
+  Object.values(arcs).forEach((a) => mCol(a, M.brown)); glow(G.nodes.E, null);
+  low('排好之後：所有邊都往前（往右）指');
+  say('照拓撲順序排好', '所有的邊都往右指');
+  await step(tok);                                   // 1019.0 no such thing as a backward edge
+  low('沒有往回的邊 ✓');
+  say('沒有任何一條邊往回指');
+  const cur = tag('▲', 'ptr alt', TX(0), TY - 1.0);
+  const done = (k) => { const v = DORD[k]; relabel(G.nodes[v], v + ' ' + DD[v]); tint(G.nodes[v], M.teal); };
+  await step(tok);                                   // 1025.1 computing in this order: at E, a b c d are done
+  for (let k = 0; k <= 5; k++) { move(cur, TX(k), TY - 1.0); done(k); await beat(tok, 260); }
+  glow(G.nodes.E, GOLD);
+  low('算到 E 時，指向 E 的點都已經算好了');
+  say('照這個順序算', '算到 E 時，A、B、C、D 都已經好了');
+  await step(tok);                                   // 1044.0 at A, relax all the edges going out of A
+  glow(G.nodes.E, null);
+  mCol(arcs.AD, M.orange); mCol(arcs.AE, M.orange); glow(G.nodes.A, GOLD);
+  low('另一種看法：到 A 時，relax A 的「出」邊');
+  say('也可以：到了 A，就 relax 從 A 出去的邊');
+  await step(tok);                                   // 1058.0 I'm relaxing all the edges coming into a node
+  mCol(arcs.AD, M.brown); mCol(arcs.AE, M.brown); glow(G.nodes.A, null);
+  ['AE', 'BE', 'CE'].forEach((e) => mCol(arcs[e], M.ok)); glow(G.nodes.E, GREEN);
+  low('老師的做法：到 E 時，relax 進入 E 的邊');
+  say('老師的寫法：看「進入」這個點的邊', '兩種做法結果一樣');
+  await step(tok);                                   // 1078.0 in topological order, all the algorithms work
+  ['AE', 'BE', 'CE'].forEach((e) => mCol(arcs[e], M.brown)); glow(G.nodes.E, null);
+  for (let k = 6; k <= 7; k++) { move(cur, TX(k), TY - 1.0); done(k); await beat(tok, 300); }
+  low('只要照拓撲順序，依賴都滿足 → 結果都對');
+  you.mood('happy');
+  say('只要照拓撲順序處理', '依賴都滿足，算出來就對');
+  await step(tok);                                   // 1090.0 so what's the running time?
+  top('時間複雜度是多少？');
+  you.mood('wow');
+  say('這樣要花多少時間？');
+  await step(tok);                                   // 1123.0 V + E: every edge shows up exactly once
+  Object.values(arcs).forEach((a) => mCol(a, M.gold)); await beat(tok, 700); Object.values(arcs).forEach((a) => mCol(a, M.brown));
+  top('O(V + E)');
+  low('每條邊在式子裡只出現一次');
+  you.mood('calm');
+  say('每條邊只出現在一個式子裡', '所以是 O(V + E)');
+  await step(tok);                                   // 1129.0 even without edges you initialise each vertex
+  low('沒有邊的點，也要初始化一次 → 加上 V');
+  say('就算一個點沒有入邊', '也要花時間初始化它，所以有 + V');
+  await step(tok);                                   // 1146.5 use it to solve the Crazy Eights problem
+  low(null);
+  tag('用在 Crazy Eights：', 'say', -2.6, 6.9);
+  say('拿這個方法解 Crazy Eights', '時間是多少？');
+  await step(tok);                                   // 1158.0 V' + E' = n² + n² = n²
+  tag("V′ + E′ = O(n) + O(n²) = O(n²)", 'note', 1.6, 6.3);
+  say("V′ + E′ = O(n²)", 'n 張牌：點 O(n)、邊 O(n²)');
+  await step(tok);                                   // 1168.2 better than Bellman-Ford
+  const bf = tag('Bellman-Ford：O(n³)', 'bad', 1.6, 5.6); strike(bf);
+  tag('看出圖沒有環 → 更快 ✓', 'good', -3.0, 5.6);
+  you.mood('happy'); await you.hop(tok);
+  say('比 Bellman-Ford 的 O(n³) 快', '只因為注意到圖沒有環');
+  await step(tok);                                   // 1214.7 the topological sort here: the cards in their order
+  top('Crazy Eights 的拓撲順序 = 牌原本的順序');
+  say('Crazy Eights 的拓撲順序是什麼？', '就是牌在桌上的順序');
+  await step(tok);                                   // 1225.5 in DP the topological order is obvious
+  low('DP 的拓撲順序通常很明顯');
+  say('DP 題的拓撲順序通常一眼就看得出來');
+  await step(tok);                                   // 1231.5 the hard part: the state and the dependencies
+  low('難的是：狀態要怎麼定？依賴（邊）是什麼？');
+  you.mood('wow');
+  say('真正難的是定義狀態', '還有想清楚誰依賴誰（邊是什麼）');
 }]);
 
 // 22:14 曼哈頓格子：d(i,j) 的遞迴式
 FRAG.push(['dpmit2-grid-rec', '曼哈頓格子：d(i,j) = min(上 + w, 左 + w)', async (tok) => {
   fresh([0, 3.8, 12.5], [0, 3.8, 0]);
-  const g = mGrid(-2.1, 6.6, 1.4, 1.35);
-  say('格子圖：只能往右、往下', '每條邊有成本，求 s 到 t 最短');
-  await beat(tok, 2800);
+  const top = board(0, 8.0), fm = board(0, 0.2, 0.5, 'note');
+  let g = null, you = null;
+  await step(tok);                                   // 1339.6 something like Manhattan's map: a lattice
+  g = mGrid(-2.1, 6.6, 1.4, 1.35, 1.2);
+  top('像曼哈頓的街道：格子（lattice）');
+  say('新題目：像曼哈頓地圖的格子', 'lattice 就是 grid（格子）');
+  await step(tok);                                   // 1357.3 you can only go forward and down
+  g.edges();
+  top('只能往右、往下走');
+  say('只能往右或往下走');
+  await step(tok);                                   // 1363.6 all the streets are one way
+  tag('全部都是單行道', 'note', 4.3, 6.6);
+  tag('↑ ✗', 'bad', 0.7 + 0.35, 4.0); tag('← ✗', 'bad', -0.7 - 0.2, 2.9);
+  say('每條街都是單行道', '不能往上、不能往左');
+  await step(tok);                                   // 1384.2 from s to t
   const p11 = g.P(1, 1), p54 = g.P(GN, GM);
-  tag('s (1,1)', 'ptr', p11[0] - 1.2, p11[1]); tag('t (5,4)', 'ptr', p54[0] + 1.2, p54[1]);
-  say('節點編號 (i, j)', '左上 (1,1)，右下 (5,4)');
-  await beat(tok, 2400);
-  tint(g.n['1,1'], M.teal); relabel(g.n['1,1'], 0);
-  say('d(1,1) = 0', '起點');
-  await beat(tok, 2000);
-  const i = 3, j = 3;
-  glow(g.n[i + ',' + j], GOLD);
-  glow(g.n[(i - 1) + ',' + j], GREEN); glow(g.n[i + ',' + (j - 1)], GREEN);
-  mCol(g.ev[(i - 1) + ',' + j], M.ok); mCol(g.eh[i + ',' + (j - 1)], M.ok);
-  say('d(i,j) 只能從上面或左邊來', 'd(i,j) = min(d(i−1,j) + w, d(i,j−1) + w)');
-  await beat(tok, 3600);
-  say('例：(3,3)', 'd(3,3) = min(d(2,3) + ' + gwv(2, 3) + ', d(3,2) + ' + gwh(3, 2) + ')');
-  await beat(tok, 3000);
-  say('這題曾在考試考倒很多人', '它其實就是 DAG 最短路徑');
-  await beat(tok, 3000);
+  tag('s', 'ptr', p11[0] - 0.7, p11[1]); tag('t', 'ptr', p54[0] + 0.7, p54[1]);
+  glow(g.n['1,1'], GOLD); glow(g.n['5,4'], GOLD);
+  say('從左上角 s 走到右下角 t');
+  await step(tok);                                   // 1388.2 different costs on all these edges
+  g.weights();
+  say('每條邊的成本都不一樣', '（數字為自擬）');
+  await step(tok);                                   // 1394.0 an n by m matrix
+  tag('n = 5 列', 'say', -3.8, 3.9); tag('m = 4 行', 'say', 0, 7.3);
+  say('整張圖是 n × m 的格子', '這裡 n = 5、m = 4');
+  await step(tok);                                   // 1398.0 from s to t in the shortest possible way
+  you = me(p11[0] - 2.3, p11[1] - 0.5, 0.3, 0.5, '你'); you.look(1); you.mood('wow');
+  top('從 s 到 t：總成本最小的路');
+  say('要從 s 走到 t，總成本越小越好');
+  await step(tok);                                   // 1438.0 this is 1,1 and this is 5,4
+  tag('(1,1)', 'idx', p11[0], p11[1] + 0.5); tag('(5,4)', 'idx', p54[0], p54[1] - 0.5);
+  say('幫節點編號 (i, j)', '左上 (1,1)，右下 (5,4)');
+  await step(tok);                                   // 1442.6 2,1  3,1  4,1  5,1
+  for (let i = 2; i <= GN; i++) { const p = g.P(i, 1); tag('(' + i + ',1)', 'idx', p[0] - 0.75, p[1]); await beat(tok, 150); }
+  say('第一行往下：(2,1)、(3,1)、(4,1)、(5,1)', 'i = 第幾列');
+  await step(tok);                                   // 1453.1 1,2  1,3  1,4
+  for (let j = 2; j <= GM; j++) { const p = g.P(1, j); tag('(1,' + j + ')', 'idx', p[0], p[1] + 0.5); await beat(tok, 150); }
+  say('第一列往右：(1,2)、(1,3)、(1,4)', 'j = 第幾行');
+  await step(tok);                                   // 1466.8 this problem has tripped up people on exams
+  tag('看不出「DP ＝ 圖」的人，考試常栽在這題', 'bad', 0, -0.8, 0.5);
+  you.mood('sad');
+  say('這題在考試中考倒過很多人', '看不出 DP 和圖的關係就會卡住');
+  await step(tok);                                   // 1484.8 solve it with DP: recursion formulas
+  top('用 DP：寫出遞迴式');
+  you.mood('calm');
+  say('改用 dynamic programming', '寫出每個點的遞迴式');
+  await step(tok);                                   // 1490.1 shortest distance to (1,1)?
+  relabel(g.n['1,1'], 0); tint(g.n['1,1'], M.teal); glow(g.n['5,4'], null);
+  fm('d(1,1) = 0');
+  say('起點 (1,1) 的距離是 0');
+  await step(tok);                                   // 1503.7 a general node d(i,j): how?
+  glow(g.n['1,1'], null); glow(g.n['3,3'], GOLD); relabel(g.n['3,3'], '?');
+  fm('一般的點 d(i, j) = ?　（例：(3,3)）');
+  you.mood('wow');
+  say('一般的點 d(i, j) 怎麼算？', '拿 (3,3) 當例子');
+  await step(tok);                                   // 1516.8 from (i−1, j)
+  glow(g.n['2,3'], GREEN);
+  fm('從上面 (i−1, j) 來…');
+  say('它只能從上面那格 (i−1, j) 走下來…');
+  await step(tok);                                   // 1534.4 the weight from (i−1, j) to (i, j)
+  mCol(g.ev['2,3'], M.ok);
+  fm('d(i−1, j) + w((i−1,j) → (i,j))');
+  say('上面那格的距離 + 往下那條邊的成本', '例：d(2,3) + ' + gwv(2, 3));
+  await step(tok);                                   // 1544.0 or from (i, j−1) plus that weight
+  glow(g.n['3,2'], GREEN); mCol(g.eh['3,2'], M.ok);
+  fm('或  d(i, j−1) + w((i,j−1) → (i,j))');
+  say('或是從左邊那格 (i, j−1) 走過來', '例：d(3,2) + ' + gwh(3, 2));
+  await step(tok);                                   // 1557.7 these are the recursions
+  fm('d(i, j) = min( d(i−1, j) + w上 ,  d(i, j−1) + w左 )');
+  you.mood('happy');
+  say('兩條路取小的：這就是遞迴式', 'd(i,j) = min(上 + w, 左 + w)');
 }]);
 
 // 26:07 pseudocode：逐列填表
 FRAG.push(['dpmit2-grid-code', '格子 DP：for i, for j 逐列填 d[i,j]', async (tok) => {
   fresh([0, 3.8, 13], [0, 3.8, 0]);
-  const cd = code(['for i in 1..n:', '  for j in 1..m:', '    if i == 1 and j == 1:', '      d[i,j] = 0', '    else:', '      d[i,j] = min(上 + w, 左 + w)', '      # 沒有上／左就略過'], -3.5, 6.4, 0.6);
-  const g = mGrid(1.4, 6.4, 1.4, 1.3);
-  say('拓撲順序：一列一列、由左到右', '寫成兩層 for 迴圈');
-  cd.hl(0); await beat(tok, 2600);
-  for (let i = 1; i <= GN; i++) for (let j = 1; j <= GM; j++) {
-    const k = i + ',' + j, pre = [];
-    if (i > 1) pre.push([g.n[(i - 1) + ',' + j], g.ev[(i - 1) + ',' + j]]);
-    if (j > 1) pre.push([g.n[i + ',' + (j - 1)], g.eh[i + ',' + (j - 1)]]);
-    pre.forEach(([m, e]) => { glow(m, GOLD); mCol(e, M.gold); });
-    cd.hl(i === 1 && j === 1 ? 3 : 5);
-    relabel(g.n[k], GDIST[k]); tint(g.n[k], M.teal);
-    say(i === 1 && j === 1 ? 'base case：d[1,1] = 0' : (i === 1 || j === 1 ? '邊界：只有一個鄰居' : '上和左都已經算好'), 'd[' + i + ',' + j + '] = ' + GDIST[k]);
-    await beat(tok, 650);
-    pre.forEach(([m, e]) => { glow(m, null); mCol(e, M.brown); });
-  }
+  const L = ['for i in 1..n:', '  for j in 1..m:', '    if i == 1 and j == 1:', '      d[i,j] = 0', '    else:', '      d[i,j] = min(上 + w, 左 + w)', '      （第一列／第一行：少一個鄰居）'];
+  const cd = code(L, -3.6, 6.4, 0.6); cd.ls.forEach((l) => showL(l, false));
+  const show = (...ks) => ks.forEach((k) => showL(cd.ls[k], true));
+  const g = mGrid(1.4, 6.4, 1.4, 1.3); g.edges(); g.weights();
+  const top = board(-1.0, 7.7), low = board(-3.2, 1.0, 0.5, 'note');
+  const you = me(-6.0, -0.6, 1.0, 0.6);
+  const fill = (i, j) => { const k = i + ',' + j; relabel(g.n[k], GDIST[k]); tint(g.n[k], M.teal); };
+  async function sweep(rows, ms = 650) { const p = g.P(rows[0], 1); const l = tag('→', 'pkt', p[0] - 0.6, p[1] + 0.45, 0.4); for (const i of rows) { const a = g.P(i, 1), b = g.P(i, GM); l.position.set(a[0] - 0.6, a[1] + 0.45, 0.4); await travel(tok, l, V3(a[0] - 0.6, a[1] + 0.45, 0.4), V3(b[0] + 0.3, b[1] + 0.45, 0.4), ms); } return l; }
+  await step(tok);                                   // 1567.0 how would I write the full pseudocode?
+  top('把它寫成完整的 pseudocode');
+  say('怎麼寫成完整的 pseudocode？');
+  await step(tok);                                   // 1570.0 a valid topological sort?
+  top('先要一個拓撲順序：誰先算？');
+  you.mood('wow');
+  say('要先決定一個拓撲順序', '每格算之前，上面和左邊要先算好');
+  await step(tok);                                   // 1597.0 for i in 1 to n, for j in 1 to m
+  show(0, 1); cd.hl(1);
+  const sw = await sweep([1, 2], 650); remove(sw);
+  top('一列一列、由左到右：好寫又正確');
+  you.mood('calm');
+  say('for i、for j：一列一列，由左到右', '上面那列一定先算完');
+  await step(tok);                                   // 1613.1 if i is 1 and j is 1: d = 0
+  show(2, 3); cd.hl(3); fill(1, 1);
+  say('i = 1 且 j = 1：d = 0', '這是 base case（起點）');
+  await step(tok);                                   // 1622.0 otherwise d(i,j) = the big formula
+  show(4, 5); cd.hl(5);
+  say('其他格子：套用剛剛的遞迴式', 'min(上 + w, 左 + w)');
+  await step(tok);                                   // 1648.0 this is a DP solution
   cd.hl(-1);
-  say('照順序算 → 需要的值都在表裡', '知道拓撲順序就不需要 memo');
-  await beat(tok, 3000);
-  say('DP 難在定義狀態', '程式通常只有 5–10 行');
-  await beat(tok, 2600);
+  for (let i = 1; i <= GN; i++) for (let j = 1; j <= GM; j++) { if (i + j > 2) { fill(i, j); await beat(tok, 105); } }
+  top('這就是 DP 解法');
+  you.mood('happy');
+  say('照順序填完整張表：這就是 DP', '不用建圖，直接寫遞迴');
+  await step(tok);                                   // 1655.0 an implicit representation of the graph
+  low('圖沒有畫出來：藏在遞迴式裡（implicit）');
+  say('圖還在，只是「隱含」在遞迴式裡', '上、左兩個鄰居就是入邊');
+  await step(tok);                                   // 1664.0 most people are afraid of it: the hardest unit
+  top('很多人最怕的單元');
+  you.mood('wow');
+  say('很多人很怕 DP', '這是整門課最難的單元');
+  await step(tok);                                   // 1687.0 code is smaller, but looks like black magic
+  low('程式短、好讀，但看不到圖就像黑魔法');
+  you.mood('calm');
+  say('程式短很多', '但如果看不到背後的圖，就像黑魔法');
+  await step(tok);                                   // 1753.2 an array, or a dictionary keyed by the tuple (i, j)
+  tag('d 可以用陣列，或 key = (i, j) 的 dictionary', 'say', -2.4, 2.1, 0.4);
+  say('d 可以是二維陣列', '或是用 tuple (i, j) 當 key 的 dictionary');
+  await step(tok);                                   // 1775.0 boundary conditions
+  glow(g.n['1,2'], GOLD);
+  const p12 = g.P(1, 2), ghost = tag('(0,2)？不存在', 'bad', p12[0], p12[1] + 0.95);
+  say('還有邊界條件', '(1,2) 上面那格 (0,2) 根本不存在');
+  await step(tok);                                   // 1788.0 a few more ifs for boundary conditions
+  show(6); cd.hl(6);
+  say('要多加幾個 if', '第一列、第一行只有一個鄰居');
+  await step(tok);                                   // 1813.3 DP solutions are 5 to 10 lines
+  remove(ghost); glow(g.n['1,2'], null); cd.hl(-1);
+  low('DP 的解法通常只有 5～10 行');
+  say('DP 的程式通常只有 5～10 行');
+  await step(tok);                                   // 1817.0 the only hard thing: what is the state
+  top('唯一難的：狀態要定成什麼');
+  you.mood('wow');
+  say('唯一難的是：狀態要定成什麼', '狀態想通了，其他都很自然');
+  await step(tok);                                   // 1865.6 it depends on these two: in the dictionary?
+  glow(g.n['3,3'], GOLD); glow(g.n['2,3'], GREEN); glow(g.n['3,2'], GREEN);
+  top('算 (3,3) 要用上面、左邊：表裡有了嗎？');
+  say('算 (3,3) 要用 (2,3) 和 (3,2)', '它們已經在表裡了嗎？');
+  await step(tok);                                   // 1877.0 line one, then line two: already there
+  const sw2 = await sweep([1, 2, 3], 500); remove(sw2);
+  low('一列一列算 → 要用的值一定已經算好');
+  you.mood('happy');
+  say('因為是一列一列算', '用到的格子一定早就算好了');
+  await step(tok);                                   // 1891.1 no memoization if you know the topological sort
+  ['3,3', '2,3', '3,2'].forEach((k) => glow(g.n[k], null));
+  top('知道拓撲順序 → 不需要 memoization');
+  say('知道拓撲順序，就不需要 memoization', '不知道順序時才需要');
+  await step(tok);                                   // 1912.1 it would refer to zero, which doesn't exist
+  glow(g.n['2,1'], GOLD);
+  const p21 = g.P(2, 1); tag('(2,0)？✗', 'bad', p21[0] - 1.0, p21[1]);
+  low('邊界：(2,1) 的左邊 (2,0) 不存在 → 要特別處理');
+  say('邊界再看一次：(2,1) 會去找 (2,0)', '那格不存在，所以要加 if');
 }]);
 
 // 32:13 Optimal substructure
@@ -5348,194 +5711,543 @@ FRAG.push(['dpmit2-opt-sub', 'Optimal substructure：最短路徑的一段也最
   fresh([0, 4.2, 13], [0, 4.0, 0]);
   const G = mDag();
   DORD.forEach((v) => relabel(G.nodes[v], v + ' ' + DD[v]));
-  const P1 = ['SA', 'AD'], P2 = ['DF', 'FG'];
-  [...P1, ...P2].forEach((e) => mCol(G.edges[e], M.ok));
-  ['S', 'A', 'D', 'F', 'G'].forEach((v) => glow(G.nodes[v], GREEN));
-  say('設 P 是 S → G 的最短路徑', 'P = S → A → D → F → G，成本 6');
-  await beat(tok, 3000);
-  P1.forEach((e) => mCol(G.edges[e], M.gold)); glow(G.nodes.D, GOLD);
-  const l1 = tag('P1', 'ptr alt', -2.0, 6.6), l2 = tag('P2', 'ptr', 1.2, 1.9);
-  say('P 經過 D：P = P1 + P2', 'P1 = S→A→D，P2 = D→F→G');
-  await beat(tok, 2800);
-  say('P1 一定是 S → D 的最短路徑', '大問題最佳解的一部分，也是最佳');
-  await beat(tok, 3000);
-  ['SB', 'BD'].forEach((e) => mCol(G.edges[e], M.red)); glow(G.nodes.B, RED);
-  const l3 = tag('P3?', 'ptr alt', 0.6, 4.4);
-  say('反證：若有更短的 P3 到 D', '換掉 P1 → 整條更短 → 矛盾');
-  await beat(tok, 3000);
-  say('這裡 S→B→D = 5 > 4', 'P1 確實是 S → D 最短');
-  await beat(tok, 2600);
-  kill(l3);
-  say('沒有這個性質就不能用 DP', '通常是少記了狀態（例：油量）');
-  await beat(tok, 3000);
+  const top = board(0, 8.2), low = board(0, -0.4, 0.5, 'note');
+  const you = me(-5.6, 0.0, 1.0, 0.7);
+  let p3 = null, l3 = null;
+  await step(tok);                                   // 1941.0 a key property: optimal substructure
+  top('DP 的關鍵性質：optimal substructure（最佳子結構）');
+  say('DP 的關鍵性質：optimal substructure');
+  await step(tok);                                   // 1966.0 suppose I have a shortest path from S to G
+  ['SA', 'AD', 'DF', 'FG'].forEach((e) => mCol(G.edges[e], M.ok)); ['S', 'A', 'D', 'F', 'G'].forEach((v) => glow(G.nodes[v], GREEN));
+  low('P = S → A → D → F → G（成本 6）');
+  say('假設 P 是 S 到 G 的最短路徑', '這裡 P = S→A→D→F→G');
+  await step(tok);                                   // 1994.0 this path goes through D
+  glow(G.nodes.D, GOLD);
+  tag('P 經過 D', 'ptr alt', -4.4, 3.2);
+  say('假設 P 經過 D');
+  await step(tok);                                   // 2000.0 a path S to D, then another path D to G
+  mCol(G.edges.SA, M.gold); mCol(G.edges.AD, M.gold);
+  tag('P1', 'ptr alt', -2.1, 6.4); tag('P2', 'ptr', 1.2, 1.9);
+  low('P = P1（S→D）+ P2（D→G）');
+  say('P 拆成兩段', 'P1：S 到 D，P2：D 到 G');
+  await step(tok);                                   // 2016.4 P1 is guaranteed to be a shortest path S to D
+  tag('P1 一定是 S → D 的最短路徑', 'good', 4.2, 6.4);
+  you.mood('wow');
+  say('P1 一定也是 S 到 D 的最短路徑');
+  await step(tok);                                   // 2040.0 a part of the optimal solution is optimal for the part
+  low('大問題最佳解的「一部分」，也是小問題的最佳解');
+  say('大問題最佳解的一部分', '也是那個小問題（S 到 D）的最佳解');
+  await step(tok);                                   // 2072.0 if you had a better path P3 …
+  p3 = mArc(-0.6, 6.6, -2.6, 3.7, -0.9, M.red); l3 = tag('P3：假設更短', 'bad', -1.4, 4.4);
+  you.mood('calm');
+  say('反證：假設有一條更短的 P3 到 D', '把 P1 換成 P3…');
+  await step(tok);                                   // 2086.5 that would contradict that this is the best path
+  tag('整條 P 就更短 → 矛盾 ✗', 'bad', -4.6, 4.4);
+  say('整條路就更短了', '和「P 是最短」矛盾，所以 P3 不存在');
+  await step(tok);                                   // 2096.0 get to D, E or F optimally, then cross one edge
+  p3.kill(); remove(l3); mDagReset(G);
+  ['E', 'F', 'C'].forEach((u) => { mCol(G.edges[u + 'G'], M.gold); glow(G.nodes[u], GOLD); }); glow(G.nodes.G, GOLD);
+  low('S → G = 先走到 G 的前一站（這張圖是 E、F、C），再走一條邊');
+  say('所以 S 到 G 可以拆成：', '先最佳地走到前一站，再走最後一條邊');
+  await step(tok);                                   // 2106.3 the ways to get there have to be optimal
+  ['E', 'F', 'C'].forEach((u) => glow(G.nodes[u], GREEN));
+  tag('到前一站的路也要最短', 'good', 4.6, 3.2);
+  you.mood('happy');
+  say('走到前一站的那段路', '也一定要是最短的');
+  await step(tok);                                   // 2123.2 in some problems the answer is yes: not DP
+  low('有些問題沒有這個性質 → 不能用 DP');
+  you.mood('sad');
+  say('有些問題沒有這個性質', '那就不能用 dynamic programming');
+  await step(tok);                                   // 2131.0 you probably forgot part of the state
+  low('通常是狀態少記了東西');
+  say('如果遇到這種情況', '多半是狀態少記了某個東西');
+  await step(tok);                                   // 2140.2 the quiz problem with the gas stations
+  mDagReset(G);
+  const car = buddy('車', '油?', M.lilac, 5.4, 0.4, 0.8, 0.6); car.mood('wow');
+  tag('⛽ 便宜', 'pkt', 4.4, 2.0); tag('⛽ 很貴', 'pkt', 6.2, 2.0);
+  say('例：小考的加油站題', '只看路程，沒有算油量和油錢');
+  await step(tok);                                   // 2171.0 no optimal substructure: the fuel state was not counted
+  car.mood('sad');
+  tag('沒記「油量」→ 失去最佳子結構', 'bad', 5.0, 0.0, 0.6);
+  say('短的路可能經過很貴的加油站', '沒把油量放進狀態，最佳子結構就壞了');
+  await step(tok);                                   // 2187.0 all DP problems have optimal substructure
+  low('能用 DP 的問題，都有 optimal substructure');
+  you.mood('calm');
+  say('所有能用 DP 解的問題', '都有 optimal substructure');
 }]);
 
 // 37:08 有環：遞迴式互相依賴
 FRAG.push(['dpmit2-cycle-rec', '有環：d(A) 要 d(C)、d(C) 要 d(B)、d(B) 又要 d(A)', async (tok) => {
   fresh([0, 3.8, 12.5], [0, 3.8, 0]);
   const P = { S: [-5, 3], A: [-1.5, 3], B: [2.2, 5.2], C: [2.2, 0.8] };
-  const n = {}; for (const v in P) n[v] = mBox(v, v === 'S' ? M.orange : M.sand, P[v][0], P[v][1], 0.8, 0.8, 0.5, 1.5);
-  const E = {}; for (const [u, v, w] of LE) { E[u + v] = mEdge(P[u], P[v]); tag(sgn(w).replace('+', ''), 'idx', (P[u][0] + P[v][0]) / 2 + 0.3, (P[u][1] + P[v][1]) / 2 + 0.2); }
-  say('S→A→B→C，再加 C→A', '權重 1、−1、1、1');
-  await beat(tok, 2600);
-  const cd = code(['d(S) = 0', 'd(A) = min(d(S)+1, d(C)+1)', 'd(B) = d(A) − 1', 'd(C) = d(B) + 1'], -2.6, 7.6, 0.55);
-  say('照舊寫出每個點的遞迴式', '入邊有幾條，min 裡就有幾項');
-  await beat(tok, 2800);
+  const top = board(1.0, 7.9);
+  const you = me(5.4, -0.6, 1.0, 0.65);
+  const n = {}, E = {};
+  const L = ['d(S,S) = 0', 'd(S,A) = min( d(S,S) + 1 ,  d(S,C) + 1 )', 'd(S,B) = d(S,A) − 1', 'd(S,C) = d(S,B) + 1'];
+  const cd = code(L, -2.4, 7.0, 0.55); cd.ls.forEach((l) => showL(l, false));
+  const show = (k, t) => { showL(cd.ls[k], true); if (t) txt(cd.ls[k], t); cd.hl(k); };
+  await step(tok);                                   // 2228.7 let's do cycles
+  top('有環的圖怎麼辦？');
+  you.mood('wow');
+  say('接著看：圖裡有環的時候');
+  await step(tok);                                   // 2245.2 source going to A, to B, to C
+  for (const v of ['S', 'A', 'B', 'C']) n[v] = mBox(v, v === 'S' ? M.orange : M.sand, P[v][0], P[v][1], 0.8, 0.8, 0.5, 1.5);
+  for (const [u, v] of [['S', 'A'], ['A', 'B'], ['B', 'C']]) E[u + v] = mEdge(P[u], P[v]);
+  say('S → A → B → C');
+  await step(tok);                                   // 2254.4 the costs are 1, −1, 1, 1
+  E.CA = mEdge(P.C, P.A);
+  for (const [u, v, w] of LE) tag(wtxt(w), 'idx', (P[u][0] + P[v][0]) / 2 + 0.3, (P[u][1] + P[v][1]) / 2 + 0.2);
+  you.mood('calm');
+  say('再加一條 C → A', '權重：1、−1、1、1');
+  await step(tok);                                   // 2267.0 can I use that method? write the recursions
+  top('還能用 DAG 的方法嗎？先寫遞迴式');
+  say('剛剛的方法還能用嗎？', '先照舊寫出每個點的遞迴式');
+  await step(tok);                                   // 2280.1 d(S,A) = min of d(S,S) + w(S,A) …
+  show(1, 'd(S,A) = min( d(S,S) + 1 ,  … )');
+  mCol(E.SA, M.gold);
+  say('d(S,A)：從 S 來，d(S,S) + 1…');
+  await step(tok);                                   // 2309.1 one more edge to account for: d(S,C) + weight
+  show(1, L[1]); mCol(E.CA, M.gold);
+  say('還有一條入邊：C → A', 'd(S,A) = min(d(S,S) + 1, d(S,C) + 1)');
+  await step(tok);                                   // 2324.8 d(S,B) = d(S,A) + w(A,B)
+  mCol(E.SA, M.brown); mCol(E.CA, M.brown);
+  show(2); mCol(E.AB, M.gold);
+  say('d(S,B) = d(S,A) + w(A,B)', 'B 只有一條入邊');
+  await step(tok);                                   // 2333.8 d(S,C) = d(S,B) + w(B,C)
+  mCol(E.AB, M.brown);
+  show(3); mCol(E.BC, M.gold);
+  say('d(S,C) = d(S,B) + w(B,C)');
+  await step(tok);                                   // 2344.0 d(S,S) = 0
+  mCol(E.BC, M.brown);
+  show(0); glow(n.S, GREEN);
+  say('d(S,S) = 0', '起點，一開始就說好的');
+  await step(tok);                                   // 2350.4 is there an order to evaluate them? nope
+  cd.hl(-1); glow(n.S, null);
+  top('有沒有一個順序可以算？');
+  you.mood('wow');
+  say('照什麼順序算這四條？', '找不到！來看為什麼');
+  await step(tok);                                   // 2358.8 S,A depends on S,C
   cd.hl(1); glow(n.A, GOLD); glow(n.C, RED); mCol(E.CA, M.red);
-  say('算 d(A) 要先有 d(C)', '');
-  await beat(tok, 2000);
+  say('算 d(S,A) 要先有 d(S,C)', '可是 d(S,C) 還沒算');
+  await step(tok);                                   // 2365.8 S,C depends on S,B
   cd.hl(3); glow(n.B, RED); mCol(E.BC, M.red);
-  say('d(C) 要先有 d(B)', '');
-  await beat(tok, 2000);
+  say('d(S,C) 要先有 d(S,B)');
+  await step(tok);                                   // 2371.6 S,B depends on S,A
   cd.hl(2); mCol(E.AB, M.red); glow(n.A, RED);
-  say('d(B) 又要 d(A)', 'A → C → B → A：繞回來了');
-  await beat(tok, 2600);
+  say('d(S,B) 又要 d(S,A)', '繞回來了！');
+  await step(tok);                                   // 2378.6 infinite recursion: they all depend on each other
   cd.hl(-1);
-  say('依賴有環 → 無限遞迴', '找不到合法的計算順序');
-  await beat(tok, 2800);
-  say('解法：Bellman-Ford，或把環拆開', '狀態多記「用了幾條邊」');
-  await beat(tok, 3000);
+  const q = tag('等…', 'pkt', P.A[0], P.A[1] + 0.8, 0.6);
+  for (const v of ['C', 'B', 'A']) await travel(tok, q, q.position.clone(), V3(P[v][0], P[v][1] + 0.8, 0.6), 550);
+  you.mood('sad');
+  say('互相等來等去', '無限遞迴，永遠算不完');
+  await step(tok);                                   // 2384.5 there's a loop: can't use this algorithm
+  tag('依賴有環 → 不能用 DAG 的方法', 'bad', -2.8, 0.4, 0.4);
+  tag('（老師說 negative cycle；其實這圈 = −1+1+1 = 1）', 'note', -2.8, -0.3, 0.4);
+  say('依賴形成一個環', 'DAG 的方法不能用了');
+  await step(tok);                                   // 2420.0 one way to do it is Bellman-Ford
+  tag('辦法①：Bellman-Ford', 'good', 4.6, 3.0);
+  you.mood('calm');
+  say('一個辦法：Bellman-Ford');
 }]);
 
-// 40:17 拆環：d_k(S, v)，分層圖
+// 40:23 拆環：d_k(S, v)，分層圖
 FRAG.push(['dpmit2-layers-build', '拆環：d_k(S,v) 用剛好 k 條邊，建分層圖', async (tok) => {
   fresh([0, 4.2, 13], [0, 4.2, 0]);
-  for (let k = 0; k <= 3; k++) tag('k = ' + k, 'ptr', LX(k), 7.3);
-  say('新狀態：(v, k)', 'd_k(S,v) = min d_{k−1}(S,u) + w(u,v)');
-  await beat(tok, 3000);
+  const top = board(0, 8.3), fm = board(0, 5.9, 0.3, 'note'), fm2 = board(0, 5.0, 0.3, 'say');
+  const MP = { S: [-3, 1.8], A: [-1, 1.8], B: [1, 2.8], C: [1, 0.8] };
+  const mini = [], mk = [];
   const n = {};
-  n.S0 = mBox('S0', M.orange, LX(0), LY.S, 0.8, 0.6, 0.4, 1.5); tag('0', 'idx', LX(0) + 0.75, LY.S - 0.3);
-  say('k = 0：只有 S 自己', 'd₀(S,S) = 0，其他點 ∞（不能瞬移）');
-  await beat(tok, 2800);
-  const caps = { 1: ['k = 1：S0 → A1，成本 1', '其他點用 1 條邊到不了 → ∞'], 2: ['每條原本的邊都連到下一層', 'A1 → B2：1 + (−1) = 0'], 3: ['第三層：同樣的邊再接一次', 'B2 → C3：0 + 1 = 1'] };
-  for (let k = 1; k <= 3; k++) {
-    for (const v of LV) { const val = LD[k][v]; n[v + k] = mBox(v + k, val === Infinity ? M.faint : M.sand, LX(k), LY[v], 0.8, 0.6, 0.4, 1.2); }
-    await beat(tok, 500);
-    for (const [u, v, w] of LE) if (n[u + (k - 1)]) {
-      const a = [LX(k - 1), LY[u]], b = [LX(k), LY[v]], fin = LD[k - 1][u] !== Infinity;
-      mEdge(a, b, fin ? M.gold : M.brown, 0.5);
-      tag(String(w), 'idx', a[0] + 0.3 * (b[0] - a[0]), a[1] + 0.3 * (b[1] - a[1]) + 0.2);
-    }
-    for (const v of LV) { tag(inf(LD[k][v]), 'idx', LX(k) + 0.75, LY[v] - 0.3); if (LD[k][v] !== Infinity) glow(n[v + k], GREEN); }
-    say(caps[k][0], caps[k][1]);
-    await beat(tok, 3000);
-  }
-  say('k 每層減 1 → 遞迴一定會停', '新圖只往右：是 DAG');
-  await beat(tok, 3000);
+  const node = (v, k, faint = false) => { n[v + k] = mBox(v + k, faint ? M.faint : (v === 'S' ? M.orange : M.sand), LX(k), LY[v], 0.8, 0.6, 0.4, 1.0); return n[v + k]; };
+  const edge = (u, k, v, w, col = M.brown) => { const a = [LX(k), LY[u]], b = [LX(k + 1), LY[v]]; const e = mEdge(a, b, col, 0.5); const l = tag(wtxt(w), 'idx', a[0] + 0.3 * (b[0] - a[0]), a[1] + 0.3 * (b[1] - a[1]) + 0.2); return { e, l }; };
+  const all = [];
+  await step(tok);                                   // 2423.1 another way: break the cycle
+  for (const v of ['S', 'A', 'B', 'C']) mini.push(mBox(v, v === 'S' ? M.orange : M.sand, MP[v][0], MP[v][1], 0.6, 0.6, 0.4));
+  const me1 = [mEdge(MP.S, MP.A, M.brown, 0.4), mEdge(MP.A, MP.B, M.red, 0.4), mEdge(MP.B, MP.C, M.red, 0.4), mEdge(MP.C, MP.A, M.red, 0.4)];
+  top('辦法②：把環拆開');
+  say('另一個辦法：把環拆開', '上次課堂講過');
+  await step(tok);                                   // 2427.0 add the path length into the equation
+  mk.push(tag('✂', 'pkt', 0.1, 1.2, 0.5));
+  fm2('在狀態裡多記一個數：路徑用了幾條邊 k');
+  say('怎麼拆？把「路徑長度」放進式子裡', '多記一個數：用了幾條邊');
+  await step(tok);                                   // 2459.0 the old: d(S,v) = min over edges of d(S,u) + w(u,v)
+  fm('舊的：d(S,v) = min over (u,v)  d(S,u) + w(u,v)');
+  fm2(null);
+  say('舊的式子：', '到 v 的距離 = 某個入邊起點 u 的距離 + 邊的權重');
+  await step(tok);                                   // 2477.7 the distance from s to v using a path of length k
+  fm('新的：d_k(S,v) = 剛好用 k 條邊走到 v 的最短距離');
+  say('新的定義：d_k(S, v)', '剛好用 k 條邊，從 S 走到 v');
+  await step(tok);                                   // 2501.7 from s to u using k − 1, plus the weight of uv
+  fm2('d_k(S,v) = min over (u,v)  d_{k−1}(S,u) + w(u,v)');
+  say('走到 u 用了 k − 1 條邊', '再走 (u,v) 這一條，剛好 k 條');
+  await step(tok);                                   // 2521.0 this will always decrease
+  const kc = tag('k = 3', 'pkt', 4.6, 3.6, 0.4);
+  for (const k of [2, 1, 0]) { await beat(tok, 450); txt(kc, 'k = ' + k); }
+  say('每遞迴一層，k 就少 1', '3 → 2 → 1 → 0');
+  await step(tok);                                   // 2525.1 guaranteed no infinite recursion
+  mk.push(tag('k 一直變小 → 一定會停 ✓', 'good', 4.0, 2.8, 0.4));
+  say('k 一定會減到 0', '保證不會無限遞迴');
+  await step(tok);                                   // 2532.0 an equivalent way: build a graph
+  mini.forEach(kill); me1.forEach((e) => e.kill()); mk.forEach(remove); remove(kc); fm(null); fm2(null);
+  for (let k = 0; k <= 3; k++) tag('k = ' + k, 'ptr', LX(k), 7.3);
+  top('等價的看法：畫成一張「分層圖」');
+  say('也可以畫成一張等價的圖', '每一層 = 用了幾條邊');
+  await step(tok);                                   // 2549.1 k = 0: S to itself 0, any other node ∞
+  node('S', 0); tag('0', 'idx', LX(0) + 0.75, LY.S - 0.3);
+  const z0 = ['A', 'B', 'C'].map((v) => [node(v, 0, true), tag('∞', 'idx', LX(0) + 0.75, LY[v] - 0.3)]);
+  say('k = 0：S 到自己距離 0', '到其他點都是 ∞（0 條邊到不了）');
+  await step(tok);                                   // 2562.7 you can't get anywhere else in zero edges: no teleport
+  const you = me(LX(0) - 1.6, LY.S - 0.5, 0.3, 0.45); you.mood('wow');
+  const tp = await pkt(tok, '瞬移？', V3(LX(0), LY.S + 0.6, 0.5), V3(LX(0), LY.A + 0.6, 0.5), 800);
+  txt(tp, '不能瞬移 ✗'); cls(tp, 'bad'); you.mood('sad');
+  say('0 條邊，哪裡都去不了', '不能瞬間移動');
+  await step(tok);                                   // 2576.5 at the first layer you only have the source
+  remove(tp); z0.forEach(([m, l]) => { kill(m); remove(l); }); you.mood('calm');
+  top('第 0 層只有 source');
+  say('所以第 0 層只畫 S0', '其他點沒用，不用畫');
+  await step(tok);                                   // 2583.5 level one: S1, A1, B1, C1
+  for (const v of LV) { node(v, 1); await beat(tok, 150); }
+  say('第 1 層：S1、A1、B1、C1', '用 1 條邊可能走到的點');
+  await step(tok);                                   // 2589.6 from the source to A: cost of the edge
+  all.push(edge('S', 0, 'A', 1, M.gold)); glow(n.A1, GREEN);
+  say('S0 → A1：權重 1', '用 1 條邊只能到 A');
+  await step(tok);                                   // 2602.0 a second layer: S2, A2, B2, C2
+  for (const v of LV) { node(v, 2); await beat(tok, 150); }
+  say('第 2 層：S2、A2、B2、C2');
+  await step(tok);                                   // 2621.6 A1 to B2, cost −1
+  all.push(edge('A', 1, 'B', -1, M.gold)); glow(n.B2, GREEN);
+  say('原本的 A → B，變成 A1 → B2', '權重 −1');
+  await step(tok);                                   // 2649.7 B with one edge → C with two edges
+  all.push(edge('B', 1, 'C', 1));
+  say('B1 → C2：權重 1', '用 1 條邊到 B，就能用 2 條邊到 C');
+  await step(tok);                                   // 2656.5 C with one edge → A with two edges
+  all.push(edge('C', 1, 'A', 1));
+  say('C1 → A2：權重 1', '這是原本 C → A 那條邊');
+  await step(tok);                                   // 2666.0 S using one edge? there's no edge
+  tint(n.S1, M.faint); tint(n.S2, M.faint);
+  tag('沒有邊進 S', 'bad', LX(1), LY.S + 0.6);
+  say('沒有任何邊指向 S', '所以 S1、S2 用不到');
+  await step(tok);                                   // 2681.7 S to A, cost? a third level S3, A3, B3, C3
+  all.push(edge('S', 1, 'A', 1));
+  for (const v of LV) { node(v, 3, v === 'S'); await beat(tok, 150); }
+  say('S1 → A2 也是權重 1', '再建第 3 層：S3、A3、B3、C3');
+  await step(tok);                                   // 2708.5 A2 to B3 −1, B2 to C3 1, C2 to A3 1
+  all.push(edge('S', 2, 'A', 1)); all.push(edge('A', 2, 'B', -1)); all.push(edge('B', 2, 'C', 1, M.gold)); all.push(edge('C', 2, 'A', 1));
+  glow(n.C3, GREEN);
+  say('一模一樣的邊再接一次', 'A2→B3 −1、B2→C3 1、C2→A3 1');
+  await step(tok);                                   // 2719.5 every edge in the graph connects two levels
+  all.forEach(({ e }) => mCol(e, M.gold)); await beat(tok, 900); all.forEach(({ e }) => mCol(e, M.brown));
+  top('原圖的每條邊，都連接相鄰的兩層');
+  say('其實就是原本的邊', '每條邊都從第 k 層連到第 k+1 層');
 }]);
 
 // 45:44 要幾層？V′、E′ 與 Bellman-Ford
 FRAG.push(['dpmit2-layers-bf', '分層圖 = Bellman-Ford：V−1 層，O(VE)', async (tok) => {
   fresh([0, 4.2, 13], [0, 4.2, 0]);
-  const L = mLayers(false);
-  say('要幾層？', '最短路徑沒有環 → 最多 V−1 條邊');
-  await beat(tok, 3000);
-  const gb = [];
-  for (let k = 1; k <= 3; k++) { const b = ghostBox(M.blue, 1.5, 5.8, 0.8); b.position.set(LX(k), 3.95, 0); gb.push(b); say('每一層是原圖的一份拷貝', '第 ' + k + ' 份'); await beat(tok, 900); }
-  say('複製 V−1 份，再加上 S0', 'V′ = O(V²)');
-  await beat(tok, 2600);
+  const L = mLayers();
+  const top = board(0, 8.3), low = board(0, 0.6, 0.4, 'note'), low2 = board(0, -0.1, 0.4, 'say');
+  const you = me(-6.1, -0.6, 1.0, 0.6);
+  const path = ['S0', 'A1', 'B2', 'C3'];
+  await step(tok);                                   // 2744.1 how many layers do I need?
+  top('要畫幾層？');
+  you.mood('wow');
+  say('要畫幾層才夠？');
+  await step(tok);                                   // 2763.8 the longest shortest path: V − 1
+  path.forEach((v) => glow(L.n[v], GREEN));
+  L.e.forEach((e) => { if (path.indexOf(e.v) === path.indexOf(e.u) + 1 && path.includes(e.u)) mCol(e, M.ok); });
+  low('V 個點：最短路徑最多 V − 1 條邊');
+  say('V 個點的圖', '最短路徑最多用 V − 1 條邊');
+  await step(tok);                                   // 2770.6 that's why Bellman-Ford has V − 1 rounds
+  low2('所以 Bellman-Ford 跑 V − 1 輪');
+  you.mood('happy');
+  say('這也是 Bellman-Ford 跑 V − 1 輪的原因');
+  await step(tok);                                   // 2776.3 a shortest path can't have a cycle
+  low('最短路徑不會繞環（繞了就沒有答案）');
+  low2(null);
+  you.mood('calm');
+  say('最短路徑不會繞環', '如果繞環還更短，就沒有答案了');
+  await step(tok);                                   // 2783.0 V − 1 edges → V − 1 layers
+  low('就算走過所有點，也只有 V − 1 條邊 → V − 1 層');
+  say('最多 V − 1 條邊', '所以畫 V − 1 層就夠');
+  await step(tok);                                   // 2795.6 I drew three layers, so I'm done
+  L.kt.forEach((l, k) => { if (k) cls(l, 'ptr alt'); });
+  low('這張圖 V = 4 → 3 層就夠');
+  say('這裡 V = 4', '所以畫到第 3 層就停');
+  await step(tok);                                   // 2824.5 copy the graph V − 1 times, plus that one source
+  for (let k = 1; k <= 3; k++) { const b = ghostBox(M.blue, 1.5, 5.8, 0.8); b.position.set(LX(k), 3.95, 0); await beat(tok, 300); }
+  glow(L.n.S0, GOLD);
+  low("V′ = (V − 1) 份原圖 + 1 個 source");
+  say('把原圖複製 V − 1 份', '再加上一個 source');
+  await step(tok);                                   // 2832.0 order of V squared
+  low2("V′ = O(V²)");
+  say("點數 V′ = O(V²)");
+  await step(tok);                                   // 2846.8 order of V times E
   L.e.forEach((e) => mCol(e, M.gold));
-  say('相鄰兩層之間放一份所有邊', 'E′ = O(VE)');
-  await beat(tok, 2600);
-  say('新圖是 DAG：跑 DAG 演算法', 'O(V′ + E′) = O(V² + VE) = O(VE)');
-  await beat(tok, 3000);
+  low("E′ = (V − 1) 份所有的邊 = O(VE)");
+  low2("V′ = O(V²)　E′ = O(VE)");
+  say("每兩層之間放一份所有的邊", "E′ = O(VE)");
+  await step(tok);                                   // 2851.7 this graph is acyclic: all going forward
   L.e.forEach((e) => mCol(e, M.brown));
-  say('這就是 Bellman-Ford', '第 k 輪 ≈ 用到第 k 層');
-  await beat(tok, 3000);
+  top('新圖只往右 → 沒有環（DAG）');
+  you.mood('happy');
+  say('新圖的邊全都往右', '所以它是 DAG');
+  await step(tok);                                   // 2862.1 use the DAG algorithm: V′ + E′
+  low("跑 DAG 演算法：O(V′ + E′)");
+  say('DAG 的最短路徑：O(V′ + E′)');
+  await step(tok);                                   // 2879.0 V² + VE
+  low2("O(V² + VE) = O(VE)　（老師口誤說成 V）");
+  say("O(V² + VE) = O(VE)", '圖是連通的話 E ≥ V − 1');
+  await step(tok);                                   // 2888.1 this is Bellman-Ford
+  top('這就是 Bellman-Ford！');
+  you.mood('wow'); await you.hop(tok);
+  say('這就是 Bellman-Ford', '第 k 輪 ≈ 算出第 k 層');
+  await step(tok);                                   // 2919.0 the dynamic programming view of Bellman-Ford
+  low('用 DP 的眼光看 Bellman-Ford：為什麼它是對的');
+  low2(null);
+  you.mood('calm');
+  say('這是 Bellman-Ford 的 DP 觀點', '實際寫程式時，照課本的寫法比較短');
+  await step(tok);                                   // 2931.2 this is how we handle cycles
+  low2('有環 → 多記 k，拆成分層的 DAG');
+  say('也看出 DAG 演算法和 Bellman-Ford 的關係', '有環就這樣處理');
 }]);
 
-// 49:06 讀答案：每個點取各層最小
+// 49:19 讀答案：每個點取各層最小
 FRAG.push(['dpmit2-layers-read', '讀答案：δ(S,v) = 各層 d_k(S,v) 取最小', async (tok) => {
   fresh([0, 4.2, 13], [0, 4.2, 0]);
-  const L = mLayers(true);
-  say('一次算出所有層的值', '');
-  await beat(tok, 2200);
+  const L = mLayers();
+  const top = board(0, 8.3), low = board(0, 0.6, 0.4, 'note');
+  const you = me(-6.1, -0.6, 1.0, 0.6);
   const path = ['S0', 'A1', 'B2', 'C3'];
+  let bad = null;
+  await step(tok);                                   // 2959.0 if all edges were −1 here
+  L.wl.forEach((l) => { txt(l, '−1'); cls(l, 'bad'); });
+  top('學生問：如果每條邊都是 −1？');
+  you.mood('wow');
+  say('學生問：如果每條邊都改成 −1 呢？');
+  await step(tok);                                   // 3000.4 that's a negative cycle
+  bad = tag('A → B → C → A = −3：負環 → 沒有答案', 'bad', 0, 0.6, 0.4);
+  you.mood('sad');
+  say('那 A→B→C→A 就是負環', '可以一直繞、一直變小，沒有答案');
+  await step(tok);                                   // 3010.0 looking at the graph: only one actual path
+  remove(bad);
+  L.wl.forEach((l) => { txt(l, wtxt(l.w)); cls(l, 'idx'); });
+  top('回到原本的權重：其實只有一條路');
+  you.mood('calm');
+  say('回到原本的圖', '從 S 出發，其實只有一條路');
+  await step(tok);                                   // 3021.1 s, a, b, c → s0, a1, b2, c3
   path.forEach((v) => glow(L.n[v], GREEN));
-  L.e.forEach((e) => { if (path.includes(e.u) && path.includes(e.v) && path.indexOf(e.v) === path.indexOf(e.u) + 1) mCol(e, M.ok); });
-  say('唯一的路：S0 → A1 → B2 → C3', '');
-  await beat(tok, 2800);
-  for (const v of ['A', 'B', 'C']) {
-    const ks = [1, 2, 3], vals = ks.map((k) => LD[k][v]), best = Math.min(...vals);
-    ks.forEach((k) => glow(L.n[v + k], LD[k][v] === best ? GREEN : GOLD));
-    say('S 到 ' + v + '：看 ' + v + '1、' + v + '2、' + v + '3', 'δ(S,' + v + ') = min(' + vals.map(inf).join(', ') + ') = ' + best);
-    await beat(tok, 2600);
-    ks.forEach((k) => glow(L.n[v + k], path.includes(v + k) ? GREEN : null));
-  }
+  L.e.forEach((e) => { if (path.includes(e.u) && path.indexOf(e.v) === path.indexOf(e.u) + 1) mCol(e, M.ok); });
+  low('S, A, B, C  →  S0, A1, B2, C3');
+  say('S → A → B → C', '在分層圖上是 S0 → A1 → B2 → C3');
+  await step(tok);                                   // 3036.0 shortest path to B: s0 a1 b2, or s1 a2 b3?
+  top('S 到 B 的最短距離：要看哪一個 B？');
+  you.mood('wow');
+  say('那 S 到 B 的最短距離要讀哪裡？', 'B2？還是 B3？');
+  await step(tok);                                   // 3047.0 it could have length 1, 2 or 3
+  [1, 2, 3].forEach((k) => glow(L.n['B' + k], GOLD));
+  low('最短路徑可能用 1、2 或 3 條邊 → B1、B2、B3 都要看');
+  say('最短路徑可能用 1、2 或 3 條邊', '事先不知道，所以都要看');
+  await step(tok);                                   // 3066.0 it computes all the shortest paths
+  for (let k = 0; k <= 3; k++) for (const v of (k === 0 ? ['S'] : LV)) { const val = LD[k][v]; tag(inf(val), 'idx', LX(k) + 0.75, LY[v] - 0.3); if (val === Infinity && !(v === 'B' && k)) tint(L.n[v + k], M.faint); }
+  you.mood('calm');
+  say('演算法一次算出所有層的值', '到不了的點是 ∞');
+  await step(tok);                                   // 3074.0 read these and take the smallest
+  [1, 3].forEach((k) => glow(L.n['B' + k], null)); glow(L.n.B2, GREEN);
+  low('δ(S,B) = min(d₁, d₂, d₃) = min(∞, 0, ∞) = 0');
+  you.mood('happy');
+  say('把 B1、B2、B3 的值取最小', 'δ(S,B) = min(∞, 0, ∞) = 0');
+  await step(tok);                                   // 3095.0 a question: recursion with no beginning point?
+  top('學生問：遞迴一直往回找，起點在哪？');
+  you.mood('wow');
+  say('另一個問題：遞迴一直往回找', '會不會永遠沒有起點？');
+  await step(tok);                                   // 3123.0 in the DAG case this is the beginning point
+  low('DAG：拓撲順序的第一個點 = 起點');
+  say('DAG 的情況：只需要一個起點', '其他點最後都會回頭參考它');
+  await step(tok);                                   // 3137.4 the first node in that order is my source
+  low('拓撲順序一定存在，第一個就是 source');
+  you.mood('calm');
+  say('一定有拓撲順序', '排第一的就是 source');
+  await step(tok);                                   // 3146.0 with cycles the beginning conditions are here
+  const gb = ghostBox(M.orange, 1.6, 6.0, 0.8); gb.position.set(LX(0), 3.95, 0);
   glow(L.n.S0, GOLD);
-  say('起點條件只有 S0 = 0', '其他值都從它推出來');
-  await beat(tok, 3000);
+  low('有環的版本：起點條件 = k = 0 那一層');
+  say('有環的版本：起點條件就是 k = 0 那一層');
+  await step(tok);                                   // 3152.0 only drawing this vertex: the others aren't useful
+  tag('A0、B0、C0 都是 ∞，不用畫', 'note', LX(0), 0.9, 0.4);
+  low(null);
+  you.mood('happy');
+  say('所以第 0 層只畫 S0', '其他點都是 ∞，畫了也沒用');
 }]);
 
 // ════════════════ jZbkToeNK2g（MIT 6.006 Rec20：Blackjack、LIS） ════════════════
 
-// 00:21 抽象化：round_outcome(i, h)
+// 00:36 抽象化：round_outcome(i, h)
 FRAG.push(['dpmit2-bj-outcome', 'Blackjack 抽象化：round_outcome(i, h)', async (tok) => {
   fresh([0, 3.8, 13.5], [0, 3.6, 0]);
   const SX = (k) => -6.12 + k * 0.24;
-  const deck = Array.from({ length: 52 }, (_, k) => mBox('', M.card, SX(k), 6.3, 0.2, 0.8, 0.08));
-  tag('0', 'idx', SX(0), 5.6); tag('51', 'idx', SX(51), 5.6);
-  say('Perfect information：整副牌已知', '52 張，編號 0…51');
-  await beat(tok, 2800);
-  for (let k = 0; k < 5; k++) tint(deck[k], GRAY);
-  const it = tag('i = 5', 'ptr alt', SX(5), 7.2);
-  say('前面幾局已用掉 i 張', '這一局從第 i 張開始');
-  await beat(tok, 2400);
-  tag('玩家', 'ptr', -3.4, 4.9); tag('莊家', 'ptr', 2.6, 4.9);
+  const top = board(0, 8.2);
+  const you = me(-3.6, 0.3, 1.0, 0.75), dealer = buddy('莊家', '', M.lilac, 2.6, 0.3, 1.0, 0.75);
+  let deck = [];
   const P = [], D = [];
-  const deal = (k, toP) => {
-    const arr = toP ? P : D, x = (toP ? -4.4 : 1.6) + arr.length * 0.9;
+  const deal = async (k, toP) => {
+    const arr = toP ? P : D, x = (toP ? -4.6 : 1.6) + arr.length * 0.9;
     tint(deck[k], M.gold);
-    const c = mBox('c' + k, M.card, SX(k), 6.3, 0.75, 1.0, 0.08); arr.push(c); move(c, x, 3.6);
+    const c = mBox('#' + k, M.card, SX(k), 6.3, 0.75, 1.0, 0.08); arr.push(c);
+    const a = c.position.clone(), b = V3(x, 3.6, 0);
+    await anim(tok, 300, (u) => c.position.lerpVectors(a, b, u));
   };
-  say('開局：玩家 2 張、莊家 2 張', '');
-  for (const [k, toP] of [[5, true], [6, false], [7, true], [8, false]]) { deal(k, toP); await beat(tok, 550); }
-  await beat(tok, 900);
-  say('唯一的決定：要 hit 幾張（h）', '牌都知道，不必每張再決定');
-  await beat(tok, 2600);
-  deal(9, true);
-  say('h = 1：玩家再拿 1 張', '');
-  await beat(tok, 1600);
-  deal(10, false);
-  say('莊家照固定規則補牌', '< 17 就拿');
-  await beat(tok, 2000);
-  tag('round_outcome(5, 1) = (6, +1)', 'ptr alt', 0, 1.7);
-  say('回傳 (O[0], O[1])', 'O[0] = 這局用掉 6 張，O[1] = +1（贏 $1）');
-  await beat(tok, 3000);
-  say('規則全藏在這個 helper 裡', 'O[1] 只會是 +1、0、−1');
-  await beat(tok, 2600);
+  await step(tok);                                   // 36.0 abstract the rules away
+  top('Blackjack：不講細節規則，先把規則「包起來」');
+  say('不講 blackjack 的細節規則', '直接把規則抽象化');
+  await step(tok);                                   // 53.1 a game of blackjack has a deck
+  deck = Array.from({ length: 52 }, (_, k) => mBox('', M.card, SX(k), 6.3, 0.2, 0.8, 0.08));
+  tag('一副牌', 'say', SX(0) + 0.6, 7.3);
+  say('一場遊戲有一副牌');
+  await step(tok);                                   // 55.0 x-ray vision: we know what the deck looks like
+  deck.forEach((c) => tint(c, M.sky));
+  tag('X 光眼：整副牌的順序都知道', 'note', 1.8, 7.3);
+  you.mood('wow'); await you.hop(tok);
+  say('假設我們有 X 光眼', '一開始就知道整副牌的順序（perfect information）');
+  await step(tok);                                   // 68.2 from 0 to 51: zero-based indexing
+  tag('0', 'idx', SX(0), 5.6); tag('51', 'idx', SX(51), 5.6);
+  you.mood('calm');
+  say('52 張牌，編號 0 到 51', '從 0 開始編號');
+  await step(tok);                                   // 76.3 you get two cards, the dealer gets two cards
+  for (const [k, toP] of [[0, true], [1, false], [2, true], [3, false]]) await deal(k, toP);
+  say('開局：你拿 2 張、莊家拿 2 張');
+  await step(tok);                                   // 80.0 the only decision, with perfect information?
+  top('牌都知道了，你只需要決定什麼？');
+  you.mood('wow');
+  say('牌全都知道了', '你唯一要做的決定是什麼？');
+  await step(tok);                                   // 121.0 no need to decide after every card
+  tag('不用每拿一張就重新決定', 'note', -3.6, 2.0, 0.4);
+  say('不用每拿一張牌就決定要不要繼續', '因為後面的牌早就知道了');
+  await step(tok);                                   // 143.3 the only decision: h, how many cards to hit
+  tag('唯一的決定：h = 要 hit 幾張', 'good', -3.6, 1.3, 0.4);
+  you.mood('happy');
+  say('每局唯一的決定：h', 'h = 要 hit（多拿）幾張牌');
+  await step(tok);                                   // 160.4 the game eats up some cards
+  await deal(4, true); await deal(5, false);
+  say('這局吃掉一些牌', '開局 4 張 + 你 hit 1 張 + 莊家補 1 張');
+  await step(tok);                                   // 167.1 the number of cards consumed
+  tag('這局用掉 6 張', 'pkt', -0.9, 4.8);
+  say('第一個結果：這局用掉幾張牌', '這裡是 6 張');
+  await step(tok);                                   // 178.7 how much money I make: +1, 0, −1
+  tag('+$1 ／ 0 ／ −$1', 'pkt', -0.9, 2.6);
+  you.mood('happy'); dealer.mood('sad');
+  say('第二個結果：賺多少錢', '簡化的規則：贏 $1、平手 0、輸 $1');
+  await step(tok);                                   // 200.5 a helper: round_outcome
+  const fn = mBox('round_outcome(i, h)', M.paper, -0.6, 1.4, 3.6, 0.7, 0.4, 1.2);
+  say('寫成一個 helper 函式', 'round_outcome(i, h)');
+  await step(tok);                                   // 209.7 start at card i
+  const ip = tag('i', 'pkt', SX(0), 7.1);
+  say('i：這一局從第 i 張牌開始');
+  await step(tok);                                   // 221.6 a tuple: first item = number of cards played
+  const out = tag('→ (6, ?)', 'ptr alt', 2.4, 1.4, 0.4);
+  say('回傳一個 tuple', '第一項：這局用掉幾張牌');
+  await step(tok);                                   // 231.0 the second item: how much money
+  txt(out, '→ (6, +1)');
+  say('第二項：這局賺多少錢', '這局贏了：+1');
+  await step(tok);                                   // 249.0 i: cards already played in previous games
+  P.concat(D).forEach(kill);
+  for (let k = 0; k < 6; k++) tint(deck[k], GRAY);
+  await travel(tok, ip, ip.position.clone(), V3(SX(6), 7.1, 0), 600);
+  tag('前幾局已用掉 i 張', 'say', SX(3), 4.9);
+  say('i = 前面幾局已經用掉的牌數', '下一局就從第 6 張開始');
+  await step(tok);                                   // 289.2 the dealer's predefined algorithm; cards played includes it
+  tag('O[0] = 開局 4 張 + 你 hit 的 + 莊家照規則補的', 'note', 0, 3.3);
+  dealer.mood('calm');
+  say('莊家照固定規則補牌', '用掉的牌數也包含莊家補的牌');
+  await step(tok);                                   // 296.1 this little thing has all the rules encoded
+  glow(fn, GOLD);
+  tag('所有規則都藏在這裡', 'good', -0.6, 0.4, 0.4);
+  say('blackjack 的規則全都藏在這個函式裡', '我們不用管細節');
+  await step(tok);                                   // 340.1 play optimally every round, or lose one to save good cards?
+  top('每局都要贏嗎？還是故意輸一局，把好牌留到後面？');
+  you.mood('wow');
+  say('整副牌都知道了', '有時故意輸一局，把好牌留給後面反而賺更多');
+  await step(tok);                                   // 351.4 how many cards to hit each time: most money overall
+  top('目標：決定每局 hit 幾張，離桌時賺最多');
+  you.mood('calm');
+  say('要決定每一局 hit 幾張', '讓離開牌桌時總共賺最多');
+  await step(tok);                                   // 358.1 when I run out of cards I leave the table
+  deck.forEach((c) => tint(c, GRAY));
+  tag('牌用完 → 離開牌桌', 'say', 4.6, 2.0);
+  dealer.mood('happy');
+  say('牌用完了就離開牌桌');
 }]);
 
-// 06:11 建圖：節點 = 已用掉幾張；邊 i → i + O[0]，權重 −O[1]
-FRAG.push(['dpmit2-bj-graph', 'Blackjack 建圖：邊 i → i + O[0]，權重 −O[1]', async (tok) => {
+// 06:11 建圖：節點 = 已用掉幾張；邊 i → i + O[0]
+FRAG.push(['dpmit2-bj-graph', 'Blackjack 建圖：節點 i、邊 i → i + O[0]', async (tok) => {
   fresh([0, 3.4, 12.5], [0, 3.2, 0]);
-  const Y = 2.6, row = mRow(Y, 14);
+  const Y = 2.6;
+  const top = board(0, 7.4), mid = board(0, 5.9, 0.3, 'note');
+  let row = [], you = null, sample = null, ht = null;
+  await step(tok);                                   // 371.0 two ways: graph first, then DP
+  top('兩種做法：① 先畫成圖　② 再寫成 DP');
+  say('兩種做法都試試看', '先畫成圖，再寫成 DP，看兩者怎麼對應');
+  await step(tok);                                   // 422.1 what would be the nodes?
+  top('節點要代表什麼？');
+  say('畫成圖：節點要代表什麼？', '節點 = 遊戲的狀態');
+  await step(tok);                                   // 460.0 your hand as the state? too complicated
+  const bad = tag('用「手上的牌」當狀態？太複雜 ✗', 'bad', 0, 4.6);
+  say('學生提議用手上的牌當狀態', '每種牌有 4 張、位置又不同，太複雜');
+  await step(tok);                                   // 475.5 how many cards I have left in the deck
+  remove(bad);
+  row = mRow(Y, 14, null, 0.6, M.sand, 1.2);
   tag('… 52', 'idx', 6.65, Y);
-  say('節點 i：已經玩掉 i 張牌', '0, 1, 2, …, 52');
-  await beat(tok, 2600);
+  top('狀態 = 牌已經用掉幾張');
+  say('狀態：牌堆還剩幾張', '等於說：已經用掉了幾張');
+  await step(tok);                                   // 478.6 one node per card: start a new game at this card
+  mid('節點 i：從第 i 張牌開始新的一局');
+  say('每張牌一個節點', '節點 i = 從第 i 張開始新的一局');
+  await step(tok);                                   // 504.2 where do we always start? the first one
   glow(row[0], GREEN);
-  say('永遠從 0 出發', '還有 52 張');
-  await beat(tok, 2000);
-  glow(row[0], null); glow(row[5], GOLD);
-  say('一條邊 = 打一局', '從 i 出發，每個 h 一條邊');
-  await beat(tok, 2400);
-  const bad = mArc(RX(5), Y + 0.4, RX(6), Y + 0.4, mArcH(1), M.red), bl = tag('✗ 連到 O[0] = 6', 'ptr alt', RX(6), Y + 1.6);
-  say('錯：連到 O[0] = 6', '忘了前面已用掉 i 張');
-  await beat(tok, 2600);
-  bad.kill(); kill(bl);
-  const ex = [[1, 6, 1, M.ok], [0, 5, -1, M.gold], [2, 7, -1, M.gold]];
-  for (const [h, o0, o1, col] of ex) {
-    const j = 5 + o0;
-    mArc(RX(5), Y + 0.4, RX(j), Y + 0.4, mArcH(o0), col);
-    tag('h=' + h + '：' + sgn(-o1), 'idx', RX(j), Y - 0.75 - 0.45 * h);
-    glow(row[j], h === 1 ? GREEN : GOLD);
-    say('h = ' + h + '：(' + o0 + ', ' + sgn(o1) + ') → 邊 5 → ' + j, '終點 = i + O[0] = 5 + ' + o0);
-    await beat(tok, 2400);
-  }
-  say('邊權 = −O[1]', '贏 $1 → 成本 −1');
-  await beat(tok, 2600);
-  say('賺最多 = 最長路徑', '權重取負 → 變成最短路徑');
-  await beat(tok, 2800);
+  you = me(RX(0), 0.2, 1.0, 0.6);
+  say('永遠從 0 出發', '0 張用掉、還剩 52 張');
+  await step(tok);                                   // 533.5 one edge is a game
+  sample = mArc(RX(0), Y + 0.4, RX(5), Y + 0.4, mArcH(5), M.gold);
+  mid('一條邊 = 打一局');
+  say('一條邊 = 打一局', '從一個狀態走到下一個狀態');
+  await step(tok);                                   // 542.5 at node i: how do I draw the edges?
+  sample.kill(); glow(row[0], null); glow(row[5], GOLD);
+  await walk(tok, you, RX(5), 700);
+  mid('在節點 i（例 i = 5）：要畫哪些邊？');
+  say('假設在節點 i', '已經用掉 i 張牌，要怎麼畫邊？');
+  await step(tok);                                   // 580.0 h starts at 0
+  ht = tag('每個 h 一條邊：h = 0, 1, 2, …', 'say', RX(5), 4.6);
+  say('每一種 h 畫一條邊', 'h 從 0 開始（不 hit 也可以）');
+  await step(tok);                                   // 605.0 if you don't know the rules: 52 − i
+  txt(ht, '每個 h 一條邊：h = 0 … 52 − i');
+  say('h 最多到多少？', '不懂規則的話，寫 52 − i 就安全');
+  await step(tok);                                   // 636.5 O = round_outcome(i, h)
+  mid('O = round_outcome(i, h)');
+  say('把結果存起來', 'O = round_outcome(i, h)');
+  await step(tok);                                   // 678.5 i = 5: hit once, dealer hits once, 6 cards, won
+  tag('i = 5：hit 1 張、莊家補 1 張、贏了', 'note', 2.4, 0.6, 0.6);
+  you.mood('happy');
+  say('例：i = 5，hit 1 張，莊家也補 1 張', '總共用掉 6 張，而且贏了');
+  await step(tok);                                   // 699.0 the output: (6, +1)
+  mid('O = (6, +1)');
+  say('輸出 O = (6, +1)', '用掉 6 張、賺 $1');
+  await step(tok);                                   // 707.0 an edge from 5 to 11
+  mArc(RX(5), Y + 0.4, RX(11), Y + 0.4, mArcH(6), M.ok); glow(row[11], GREEN);
+  say('所以畫一條邊：5 → 11');
+  await step(tok);                                   // 718.3 11 is 5 plus O[0]
+  tag('11 = 5 + O[0]', 'good', RX(11), 0.8);
+  say('11 = 5 + O[0]', '起點 i 加上這局用掉的牌數');
+  await step(tok);                                   // 765.0 i cards before, after O[0]: i + O[0]
+  mid('終點 = i + O[0]，不是 O[0]');
+  say('O[0] 只算「這一局」用掉的牌', '加上之前用掉的 i 張，才是新的狀態');
+  await step(tok);                                   // 775.3 you'd lose a point on an exam if you forget it
+  mArc(RX(5), Y + 0.4, RX(6), Y + 0.4, mArcH(1), M.red);
+  tag('連到 O[0] = 6 ✗　考試會扣分', 'bad', RX(4), 0.8 - 0.75);
+  you.mood('sad');
+  say('小細節：連到 6 就錯了', '考試很容易因此扣分');
+  await step(tok);                                   // 782.7 write down your state and keep representing it
+  top('先寫下「狀態代表什麼」，再一直照著它做');
+  you.mood('calm');
+  say('寫下狀態代表什麼', '然後每一步都確實維持它');
 }]);
 
 // 13:20 DAG：邊都往右，拓撲排序 + relax
@@ -5543,56 +6255,172 @@ FRAG.push(['dpmit2-bj-dag', 'Blackjack 圖是 DAG：拓撲排序 + relax，O(V+E
   fresh([0, 3.4, 12.5], [0, 3.2, 0]);
   const Y = 2.4, row = mRow(Y, 14);
   tag('… 52', 'idx', 6.65, Y);
-  say('權重 −O[1]：有負的邊', '邊權只有 −1、0、+1');
-  await beat(tok, 2600);
-  const ex = [[0, [4, 5, 6]], [3, [7, 8]], [6, [10, 11, 12]], [8, [12, 13]]];
-  for (const [i, js] of ex) { for (const j of js) mArc(RX(i), Y + 0.4, RX(j), Y + 0.4, mArcH(j - i) * 0.85, M.brown); await beat(tok, 400); }
-  say('每局至少用 4 張', '邊都往右，至少跨 4 格');
-  await beat(tok, 2600);
-  say('沒有往回的邊 → 沒有環', '這是 DAG');
-  await beat(tok, 2400);
+  const top = board(0, 7.4), mid = board(0, 6.4, 0.3, 'note');
+  const you = me(-6.2, -0.8, 1.0, 0.6);
+  const ex = [[5, 11, 1], [5, 10, -1], [5, 12, -1]];
+  const arcs = ex.map(([a, b]) => mArc(RX(a), Y + 0.4, RX(b), Y + 0.4, mArcH(b - a) * 0.85, M.brown));
+  glow(row[5], GOLD);
+  await step(tok);                                   // 808.4 most money = the longest path
+  top('賺最多錢 = 走最長的路');
+  say('要賺最多錢', '就是找最長的路徑');
+  await step(tok);                                   // 814.0 to shortest path: put −O[1] on the edge
+  ex.forEach(([a, b, o], k) => tag('−O[1] = ' + sgn(-o), 'idx', RX(b), Y - 0.7 - 0.45 * k));
+  mid('邊的權重 = −O[1]：贏 $1 → −1');
+  say('換成最短路徑：權重放 −O[1]', '贏錢的邊變成負的');
+  await step(tok);                                   // 835.0 Dijkstra: add one to everything
+  tag('全部 +1 → 權重 0、1、2 都不負 → Dijkstra', 'say', 0, 5.5, 0.3);
+  say('也可以每條邊都 +1，讓權重不是負的', '然後用 Dijkstra');
+  await step(tok);                                   // 851.3 negative cycles? no, everything goes right
+  arcs.forEach((a) => mCol(a, M.gold));
+  mid('有負的邊，但沒有負環：邊全都往右');
+  say('會有負環嗎？', '不會：所有的邊都往右');
+  await step(tok);                                   // 856.2 even with no hits, at least four cards are played
+  for (const [i, js] of [[0, [4, 5, 6]], [3, [7, 8]]]) for (const j of js) { mArc(RX(i), Y + 0.4, RX(j), Y + 0.4, mArcH(j - i) * 0.85, M.brown); await beat(tok, 150); }
+  tag('每局至少用 4 張', 'say', RX(2), 0.7);
+  say('就算不 hit，一局也至少用掉 4 張', '所以邊至少往右跨 4 格');
+  await step(tok);                                   // 872.3 what's this graph? a DAG
+  top('沒有往回的邊 → 這是 DAG');
+  you.mood('happy');
+  say('邊都往同一個方向', '這是 DAG');
+  await step(tok);                                   // 900.7 topological sort + relax: O(V + E)
   const cur = tag('▲', 'ptr alt', RX(0), Y - 0.9);
-  for (let k = 0; k < 14; k++) { move(cur, RX(k), Y - 0.9); glow(row[k], GREEN); say('拓撲順序就是 0, 1, 2, …', '依序 relax 每條邊'); await beat(tok, 260); }
-  say('DAG 最短路徑：O(V + E)', '');
-  await beat(tok, 2400);
-  say('Dijkstra 要先把權重 +1 變非負', '還要 O(E + V log V)，比較慢');
-  await beat(tok, 3000);
+  for (let k = 0; k < 14; k++) { move(cur, RX(k), Y - 0.9); glow(row[k], GREEN); await beat(tok, 120); }
+  mid('拓撲排序 + relax：O(V + E)');
+  say('照拓撲順序 relax 每條邊', 'DAG 最短路徑：O(V + E)');
+  await step(tok);                                   // 910.0 better than Dijkstra, E + V log V
+  tag('Dijkstra：O(E + V log V)', 'bad', 4.0, 0.7);
+  say('比 Dijkstra 的 O(E + V log V) 還好');
+  await step(tok);                                   // 923.0 we'll do this with DP: the graph implicitly
+  top('改用 DP：圖不用真的建出來');
+  you.mood('wow');
+  say('不懂那個演算法也沒關係', '等一下用 DP 做，圖會「隱含」在式子裡');
+  await step(tok);                                   // 975.6 what does i mean? starting a new round
+  row.forEach((m) => glow(m, null)); glow(row[5], GOLD); remove(cur);
+  mid('i = 5：前幾局已經用掉 5 張，現在開新的一局');
+  you.mood('calm');
+  say('i 是什麼意思？', '開新的一局之前，已經用掉 i 張牌');
+  await step(tok);                                   // 1004.4 the first five cards are out: best strategy?
+  tag('從這裡開始，最多能賺多少？', 'pkt', RX(9), 4.6);
+  say('前 5 張已經不在牌堆裡', '從這裡開始，最好的策略能賺多少？');
+  await step(tok);                                   // 1026.4 all the edges point forward, across at least four nodes
+  arcs.forEach((a) => mCol(a, M.ok));
+  top('所有的邊都往前，至少跨 4 個節點');
+  say('重點：所有的邊都往前指', '至少跨過 4 個節點');
 }]);
 
 // 18:01 DP：dp[i] = max over h (O[1] + dp[i + O[0]])
 FRAG.push(['dpmit2-bj-dp', 'Blackjack DP：dp[i] = max(O[1] + dp[i + O[0]])', async (tok) => {
   fresh([0, 4.0, 13], [0, 4.0, 0]);
-  const cd = code(['# dp[i]：從第 i 張開局，最多淨贏多少', 'for h in 0 .. 52−i:', '  o = round_outcome(i, h)', '  choices.append(o[1] + dp[i + o[0]])', 'dp[i] = max(choices)'], -0.6, 7.6, 0.58);
-  const Y = 2.0, cells = mRow(Y, 14, () => '?', 0.75, M.paper);
+  const L = ['# dp[i]：從第 i 張開新的一局，最多淨賺多少', 'for h in 0 .. 52 − i:', '  o = round_outcome(i, h)', '  畫邊 i → i + o[0]', '  choices.append(o[1] + dp[i + o[0]])', 'dp[i] = max(choices)'];
+  const cd = code(L, -0.4, 7.2, 0.55); cd.ls.forEach((l) => showL(l, false));
+  const show = (k) => { showL(cd.ls[k], true); cd.hl(k); };
+  const top = board(0, 8.3), fm = board(-2.6, 0.5, 0.4, 'note');
+  const you = me(-6.1, -0.6, 1.0, 0.6);
+  const Y = 2.2; let cells = [];
+  let a11 = null;
+  await step(tok);                                   // 1081.2 with DP: what instead of nodes?
+  top('改用 DP：節點換成什麼？');
+  you.mood('wow');
+  say('改用 dynamic programming', '節點要換成什麼？');
+  await step(tok);                                   // 1098.0 the states are sub-problems
+  top('狀態還在：變成「子問題」');
+  you.mood('calm');
+  say('兩邊都有狀態', '在 DP 裡，狀態就是子問題');
+  await step(tok);                                   // 1114.5 numbers in a vector: no graph
+  cells = mRow(Y, 14, () => '?', 0.75, M.paper, 1.2);
   for (let k = 0; k < 14; k++) tag(String(k), 'idx', RX(k), Y - 0.7);
+  tag('dp', 'ptr', RX(0) - 0.05, Y + 0.85);
+  top('沒有圖：只有一排數字（陣列）');
+  say('沒有圖、也不用呼叫其他演算法', '直接算出一排數字');
+  await step(tok);                                   // 1134.3 how many elements? 52
   tag('… 52', 'idx', 6.65, Y);
-  cd.hl(0);
-  say('DP：不建圖，只用陣列 dp[0…52]', 'dp[i] 對應圖上的節點 i');
-  await beat(tok, 3000);
-  const known = { 10: 19, 11: 20, 12: 18 };
-  for (const k in known) { relabel(cells[k], known[k]); tint(cells[k], M.teal); }
-  tag('（假設已算好）', 'idx', RX(11), Y + 0.75);
-  say('假設後面已算好', 'dp[10] = 19、dp[11] = 20、dp[12] = 18');
-  await beat(tok, 2800);
+  say('陣列有多長？', '大約 52 格（每張牌一格）');
+  await step(tok);                                   // 1146.4 element i = 5
   glow(cells[5], GOLD);
-  const chl = tag('choices = [ ]', 'ptr', -3.6, 4.0), got = [];
-  const ex = [[0, 5, -1], [1, 6, 1], [2, 7, -1]];
-  for (const [h, o0, o1] of ex) {
-    const j = 5 + o0, v = o1 + known[j];
-    cd.hl(1); await beat(tok, 300); cd.hl(2);
-    const a = mArc(RX(5), Y + 0.35, RX(j), Y + 0.35, mArcH(o0) * 0.8, M.gold); glow(cells[j], GOLD);
-    say('h = ' + h + '：o = (' + o0 + ', ' + sgn(o1) + ')', sgn(o1) + ' + dp[' + j + '] = ' + v);
-    await beat(tok, 1800);
-    cd.hl(3); got.push(v); txt(chl, 'choices = [' + got.join(', ') + ']');
-    await beat(tok, 900);
-    a.kill(); glow(cells[j], null);
-  }
-  cd.hl(4); relabel(cells[5], 21); tint(cells[5], M.ok); glow(cells[5], GREEN);
-  say('取最大：dp[5] = 21', 'max(18, 21, 17)：這局 hit 1 張');
-  await beat(tok, 2800);
-  cd.hl(-1);
-  say('圖：邊 i → i+O[0]，權重 −O[1]', 'DP：O[1] + dp[i + O[0]] 取 max');
-  await beat(tok, 3000);
+  say('看第 i = 5 格', '它對應圖上的節點 5');
+  await step(tok);                                   // 1166.6 starting a round after the first five cards
+  fm('dp[5]：前 5 張用掉了，從第 5 張開新的一局');
+  say('前 5 張已經用掉', '從第 5 張開始新的一局');
+  await step(tok);                                   // 1202.2 max money by playing optimally from card i
+  show(0);
+  say('dp[i] = 從第 i 張開局', '照最好的玩法，最多淨賺多少');
+  await step(tok);                                   // 1236.0 people name it dp: the most useless name
+  tag('「dp」：看不出意思的爛名字', 'bad', RX(3), Y + 1.6);
+  you.mood('sad');
+  say('大家都叫這個陣列 dp', '其實是看不出意思的爛名字，但很好寫');
+  await step(tok);                                   // 1253.3 how do I compute dp[i]?
+  top('dp[i] 要怎麼算？');
+  you.mood('calm');
+  say('那 dp[i] 要怎麼算？');
+  await step(tok);                                   // 1293.5 the choices are exactly the same as before
+  show(1);
+  say('選擇跟圖一模一樣：試每一個 h', 'for h in 0 .. 52 − i');
+  await step(tok);                                   // 1365.0 impossible h → −∞, never chosen
+  tag('不可能的 h → 回傳 −∞，不會被選', 'say', 3.6, 0.5, 0.4);
+  say('h 太大、不可能時', 'helper 回傳 −∞，自然不會被選到');
+  await step(tok);                                   // 1396.3 copy the next line over
+  show(2);
+  say('下一行照抄：o = round_outcome(i, h)');
+  await step(tok);                                   // 1418.0 do I have a graph? can I draw edges?
+  show(3); strike(cd.ls[3]);
+  say('畫邊這一行要抄嗎？', '不要：DP 沒有圖可以畫邊');
+  await step(tok);                                   // 1430.5 compute my answer directly
+  top('不畫邊：直接算答案');
+  say('不畫邊，直接算出答案');
+  await step(tok);                                   // 1471.0 i = 5 and h = 2 → (6, 1)
+  fm('i = 5、h = 2 → o = (6, 1)');
+  say('同一個例子：i = 5', 'round_outcome 給出 (6, 1)');
+  await step(tok);                                   // 1476.5 I end up at 11
+  a11 = mArc(RX(5), Y + 0.45, RX(11), Y + 0.45, mArcH(6) * 0.8, M.gold); glow(cells[11], GOLD);
+  say('打完這局，會落在第 11 張', '5 + 6 = 11');
+  await step(tok);                                   // 1496.6 how much money: O[1]
+  fm('這局賺：o[1] = +1');
+  say('這局賺多少？o[1] = +1');
+  await step(tok);                                   // 1515.0 after landing, how much more if optimal?
+  fm('落在 11 之後，最好還能賺多少？→ dp[11]');
+  you.mood('wow');
+  say('落在 11 之後，繼續照最好的方式玩', '還能賺多少？就是 dp[11]');
+  await step(tok);                                   // 1543.4 dp[i + O[0]] is used to compute dp[i]
+  show(4);
+  fm('候選答案 = o[1] + dp[i + o[0]]');
+  say('這個選擇的總收益：', 'o[1] + dp[i + o[0]]');
+  await step(tok);                                   // 1569.0 the edge i → i + O[0] with cost −O[1]
+  tag('圖：邊 5 → 11，權重 −o[1]', 'say', 3.6, 0.5 - 0.7, 0.4);
+  you.mood('calm');
+  say('對照圖：邊 i → i + o[0]', '權重 −o[1]');
+  await step(tok);                                   // 1584.2 assume it's already computed (black magic)
+  glow(cells[11], GREEN);
+  tag('假設已經算好', 'idx', RX(11), Y + 0.8);
+  say('先假設 dp[11] 已經算好了', '（等一下說為什麼可以這樣假設）');
+  await step(tok);                                   // 1601.4 suppose this is $20
+  relabel(cells[11], 20); tint(cells[11], M.teal);
+  say('假設 dp[11] = 20', '從第 11 張開始，最多能賺 $20');
+  await step(tok);                                   // 1618.0 1 + 20 = 21
+  fm('這個選擇：1 + dp[11] = 1 + 20 = 21');
+  you.mood('happy');
+  say('這個選擇的總收益：1 + 20 = 21');
+  await step(tok);                                   // 1638.4 go over all possible answers
+  const others = [[10, 19, -1], [12, 18, -1]];
+  for (const [j, d, o] of others) { mArc(RX(5), Y + 0.45, RX(j), Y + 0.45, mArcH(j - 5) * 0.8, M.faint); relabel(cells[j], d); tint(cells[j], M.teal); await beat(tok, 300); }
+  tag('其他 h（數字示意）', 'idx', RX(11), Y + 1.3);
+  say('每個 h 都算一個候選答案', '例：−1 + 19 = 18、−1 + 18 = 17');
+  await step(tok);                                   // 1653.1 which answer do I want? the largest
+  top('要哪一個？最大的！');
+  say('要選哪一個？', '最大的那個');
+  await step(tok);                                   // 1659.1 a choices array: append each answer
+  const ch = tag('choices = [ ]', 'pkt', 3.4, 4.0);
+  const got = [];
+  for (const v of [18, 21, 17]) { got.push(v); txt(ch, 'choices = [' + got.join(', ') + ']'); await beat(tok, 300); }
+  say('每個候選都 append 進 choices');
+  await step(tok);                                   // 1678.0 max of choices → dp[i]
+  show(5);
+  relabel(cells[5], 21); tint(cells[5], M.ok); glow(cells[5], GREEN);
+  say('dp[5] = max(choices) = 21');
+  await step(tok);                                   // 1695.4 I just finished computing dp[i]
+  cd.hl(-1); a11.kill();
+  top('dp[i] 算完了！');
+  you.mood('happy'); await you.hop(tok);
+  say('就這樣，dp[i] 算完了');
 }]);
 
 // 28:23 依賴 → 拓撲順序：i 由大到小（用本模組的 12 張牌實跑）
@@ -5604,185 +6432,512 @@ FRAG.push(['dpmit2-bj-order', 'dp[i] 依賴右邊 → i 從 n 往 0 算', async 
   const cells = Array.from({ length: n + 1 }, (_, k) => mBox('?', M.paper, cx(k), 3.0, 0.8, 0.7, 0.4));
   for (let k = 0; k <= n; k++) tag(String(k), 'idx', cx(k), 2.3);
   tag('dp', 'ptr', cx(0) - 0.05, 4.0);
-  say('一副 12 張的牌（已知順序）', 'dp[0…12]，12 = 牌用完');
-  await beat(tok, 2600);
-  let arcs = S.tries[2].map((t) => mArc(cx(2), 3.4, cx(t.j), 3.4, mArcH(t.j - 2) * 0.55, M.gold));
+  tag('（示範：一副只有 12 張的已知牌）', 'idx', 1.5, 6.6);
+  const top = board(0, 7.6), low = board(0, 1.3, 0.4, 'note');
+  const you = me(-6.3, -0.9, 1.0, 0.55);
+  let arcs = [];
+  const fill = (i) => { relabel(cells[i], mn(S.dp[i])); tint(cells[i], S.dp[i] > 0 ? M.teal : S.dp[i] < 0 ? M.red : M.sand); };
+  await step(tok);                                   // 1703.5 to compute this I need this guy
   glow(cells[2], GOLD);
-  say('算 dp[2] 要用右邊的 dp[j]', '箭頭 = 依賴，全都往右');
-  await beat(tok, 2800);
-  arcs.forEach((a) => a.kill()); glow(cells[2], null);
-  say('依賴 → 拓撲順序', 'i 從 12 往 0 遞減');
-  await beat(tok, 2400);
-  for (let i = n; i >= 0; i--) {
-    const tr = S.tries[i];
-    if (!tr.length) { relabel(cells[i], 0); tint(cells[i], GRAY); say('剩不到 4 張：開不了局', 'dp[' + i + '] = 0'); await beat(tok, 380); continue; }
-    glow(cells[i], GOLD);
-    arcs = tr.map((t) => mArc(cx(i), 3.4, cx(t.j), 3.4, mArcH(t.j - i) * 0.55, t === S.par[i] ? M.ok : M.gold));
-    tr.forEach((t) => glow(cells[t.j], GOLD));
-    relabel(cells[i], S.dp[i]); tint(cells[i], S.dp[i] > 0 ? M.teal : S.dp[i] < 0 ? M.red : M.sand);
-    say('i = ' + i + '：試 h = 0…' + (tr.length - 1), 'max(' + tr.map((t) => sgn(t.out) + '+' + nm(S.dp[t.j])).join(', ') + ') = ' + mn(S.dp[i]));
-    await beat(tok, 1500);
-    arcs.forEach((a) => a.kill()); glow(cells[i], null); tr.forEach((t) => glow(cells[t.j], null));
-  }
-  glow(cells[0], GREEN);
-  say('dp[0] = ' + S.dp[0] + '：整副牌最多淨贏 $' + S.dp[0], '用到的值都先算好，不會出錯');
-  await beat(tok, 3000);
+  top('小問題：算這一格，要先有別格的答案');
+  say('有個小問題', '算 dp[2]，要先知道別格的答案');
+  await step(tok);                                   // 1719.0 an answer here depends on future answers
+  arcs = S.tries[2].map((t) => mArc(cx(2), 3.4, cx(t.j), 3.4, mArcH(t.j - 2) * 0.55, M.gold));
+  S.tries[2].forEach((t) => glow(cells[t.j], GOLD));
+  you.mood('wow');
+  say('這格的答案依賴「後面」的答案', '箭頭指到的格子都要先算好');
+  await step(tok);                                   // 1724.6 the arrows are the same as in the graph: moves
+  low('這些箭頭 = 遊戲裡可能的走法（跟圖上的邊一樣）');
+  you.mood('calm');
+  say('這些箭頭和圖上的邊一樣', '代表遊戲裡可能的走法');
+  await step(tok);                                   // 1731.5 the arrows represent dependencies
+  low('同時也是「依賴」：這格要等那格算好');
+  say('同時它們也代表依賴', '這格的答案要等那格');
+  await step(tok);                                   // 1741.0 dependencies → topological sort
+  arcs.forEach((a) => a.kill()); glow(cells[2], null); S.tries[2].forEach((t) => glow(cells[t.j], null));
+  top('聽到「依賴」→ 想到拓撲排序');
+  say('聽到「依賴」', '就想到 topological sort');
+  await step(tok);                                   // 1761.3 answers ready in time: the code doesn't crash
+  low('照拓撲順序算 → 要用時都已算好，程式不會出錯');
+  say('照拓撲順序算子問題', '用到的答案都已經準備好，程式不會出錯');
+  await step(tok);                                   // 1786.1 start at the easiest problem
+  fill(n); glow(cells[n], GREEN);
+  top('從最簡單的開始：牌快用完的時候');
+  say('從最簡單的問題開始', '牌快用完了：能做的事很少');
+  await step(tok);                                   // 1791.0 bigger and bigger problems
+  for (let i = n - 1; i >= 6; i--) { fill(i); await beat(tok, 330); }
+  say('再一步步往前算更大的問題', '每格用到的都在它右邊，早就算好了');
+  await step(tok);                                   // 1814.0 from the end to 0: whenever I access it, it's computed
+  for (let i = 5; i >= 0; i--) { fill(i); await beat(tok, 330); }
+  glow(cells[n], null); glow(cells[0], GREEN);
+  top('i 從大到小：…→ 0');
+  you.mood('happy');
+  say('i 從大往小算到 0', 'dp[0] = ' + mn(S.dp[0]) + '：整副牌最多淨賺 $' + mn(S.dp[0]));
+  await step(tok);                                   // 1841.7 the code is a lot smaller
+  top('好處：程式短很多');
+  say('這樣寫的好處：程式短很多');
+  await step(tok);                                   // 1845.6 graph methods, DAG shortest path code, extracting the answer
+  tag('圖的做法：建圖 ＋ DAG 最短路徑 ＋ 讀出答案', 'bad', -1.6, 0.5, 0.4);
+  low(null);
+  say('圖的做法要寫很多', '建圖、DAG 最短路徑、再把答案讀出來');
+  await step(tok);                                   // 1860.3 this is all the code: a few lines
+  tag('DP：就這幾行 ✓', 'good', 4.6, 0.5, 0.4);
+  say('DP 就這幾行而已');
+  await step(tok);                                   // 1863.0 graph, topological sort, edges: implicit
+  tag('圖、拓撲順序、邊：全都「隱含」在程式裡', 'note', 0, -0.3, 0.4);
+  say('圖、拓撲順序、邊都還在', '只是隱含在程式裡');
+  await step(tok);                                   // 1868.0 looks like magic, if you know where to look …
+  top('看起來像魔法，但知道去哪找，就看得出圖');
+  you.mood('wow'); await you.hop(tok);
+  say('看起來像魔法', '但知道去哪裡找，就能看出背後的圖');
 }]);
 
-// 31:25 走人（0）與 parent pointers
+// 31:24 走人（0）與 parent pointers
 FRAG.push(['dpmit2-bj-parent', '走人 = 0 的選項；parent pointer 存 (值, h)', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.4, 0]);
   const A = mBjSolve(false), S = mBjSolve(true), n = DECK.length;
   const cx = (k) => -6.0 + k * 1.0;
   DECK.forEach((c, k) => mBox(cardName(c), M.card, cx(k), 5.6, 0.7, 0.95, 0.08));
-  const cells = Array.from({ length: n + 1 }, (_, k) => mBox(A.dp[k], A.dp[k] < 0 ? M.red : M.paper, cx(k), 3.0, 0.8, 0.7, 0.4));
+  const cells = Array.from({ length: n + 1 }, (_, k) => mBox(mn(A.dp[k]), A.dp[k] < 0 ? M.red : M.paper, cx(k), 3.0, 0.8, 0.7, 0.4));
   for (let k = 0; k <= n; k++) tag(String(k), 'idx', cx(k), 2.3);
-  say('上一版：只比較各種 h', '有些格子是負的');
-  await beat(tok, 2600);
+  const top = board(0, 7.4), low = board(0, 0.2, 0.4, 'note');
+  const you = me(-6.3, -1.2, 1.0, 0.55);
   const neg = []; for (let i = 0; i <= n; i++) if (A.dp[i] < 0) neg.push(i);
-  const i0 = neg[0] !== undefined ? neg[0] : 6;
-  glow(cells[i0], GOLD);
-  const w = mArc(cx(i0), 3.4, cx(n), 3.4, mArcH(n - i0) * 0.5, M.ok), wl = tag('走人：0', 'ptr', (cx(i0) + cx(n)) / 2, 5.0 - 0.2);
-  say('漏了一個選擇：走人', '一條成本 0 的邊直接到終點');
-  await beat(tok, 2800);
-  relabel(cells[i0], S.dp[i0]); tint(cells[i0], M.sand);
-  say('choices 一開始就放 0', 'dp[' + i0 + '] = max(0, ' + S.tries[i0].map((t) => sgn(t.out) + '+' + nm(S.dp[t.j])).join(', ') + ') = ' + mn(S.dp[i0]));
-  await beat(tok, 2800);
-  w.kill(); kill(wl); glow(cells[i0], null);
-  const ht = [];
-  for (let i = n; i >= 0; i--) {
-    relabel(cells[i], S.dp[i]); tint(cells[i], S.dp[i] > 0 ? M.teal : M.sand);
-    ht.push(tag(S.par[i].h < 0 ? '走' : 'h' + S.par[i].h, 'idx', cx(i), 1.8));
-    await beat(tok, 140);
-  }
-  say('Parent pointer：每格存 (值, h)', 'tuple 先比值 → max 照樣能用');
-  await beat(tok, 3000);
-  let i = 0, total = 0;
-  while (i < n && S.par[i].h >= 0) {
-    const p = S.par[i];
-    glow(cells[i], GREEN);
-    mArc(cx(i), 3.4, cx(p.j), 3.4, mArcH(p.j - i) * 0.55, M.ok);
-    total += p.out;
-    say('在 ' + i + '：hit ' + p.h + ' 張 → 跳到 ' + p.j, '這局 ' + sgn(p.out) + '，累計 ' + sgn(total));
-    await beat(tok, 2400);
-    i = p.j;
-  }
+  const i0 = neg.length ? neg[neg.length - 1] : 6;
+  let w = null, wl = null; const ht = [];
+  await step(tok);                                   // 1883.8 parent pointers
+  top('還沒講：parent pointers');
+  say('學生提醒：還沒講 parent pointers');
+  await step(tok);                                   // 1903.6 one decision I missed
+  top('等等，還漏了一個選擇…');
+  you.mood('wow');
+  say('還漏了一個選擇');
+  await step(tok);                                   // 1910.0 if you know you'll lose money, what can you do?
+  glow(cells[i0], RED);
+  tag('從這裡玩下去會輸錢', 'bad', cx(i0), 4.0 + 0.6);
+  you.mood('sad');
+  say('如果知道接下來一定輸錢', '可以怎麼辦？');
+  await step(tok);                                   // 1918.0 walk away: you get 0
+  tag('走人！拿 0', 'good', cx(i0) - 2.2, 1.4);
+  you.mood('happy'); await you.hop(tok);
+  say('起身走人', '收益 0，總比輸錢好');
+  await step(tok);                                   // 1923.2 an edge all the way out, cost 0
+  w = mArc(cx(i0), 3.4, cx(n), 3.4, mArcH(n - i0) * 0.5, M.ok);
+  wl = tag('走人：0', 'ptr', (cx(i0) + cx(n)) / 2, 4.5);
+  say('在圖上：一條權重 0 的邊', '直接連到終點');
+  await step(tok);                                   // 1931.0 start with a choice of 0
+  glow(cells[i0], null);
+  for (let i = n; i >= 0; i--) { relabel(cells[i], mn(S.dp[i])); tint(cells[i], S.dp[i] > 0 ? M.teal : M.sand); await beat(tok, 80); }
+  low('choices 一開始就放 0：dp 不會是負的');
+  say('寫成程式：choices 一開始就放 0', '負的格子都變成 0 了');
+  await step(tok);                                   // 1939.2 parent pointers: the easiest way?
+  w.kill(); remove(wl);
+  top('parent pointer 怎麼記最簡單？');
+  you.mood('calm');
+  say('接著做 parent pointers', '怎麼記最簡單？');
+  await step(tok);                                   // 1957.7 keep track of the h that led to that answer
+  for (let i = n; i >= 0; i--) { ht.push(tag(S.par[i].h < 0 ? '走' : 'h' + S.par[i].h, 'idx', cx(i), 1.7)); await beat(tok, 60); }
+  low('每格多記：是哪個 h 得到這個答案');
+  say('每格記下：是哪個 h 讓它最大');
+  await step(tok);                                   // 1966.7 store the maximum and the number of hits
+  low('dp[i] 存一對 (最大值, h)');
+  say('陣列裡改存兩個數', '(最大收益, 要 hit 幾張)');
+  await step(tok);                                   // 1977.4 21 and 2: hit twice
+  tag('例：(21, 2) = 賺 21，這局 hit 2 張', 'say', 1.2, 1.0 - 0.0, 0.5);
+  say('例：(21, 2)', '收益 21，這局要 hit 2 張');
+  await step(tok);                                   // 1991.5 follow the parent pointers
+  let i = 0; const hops = [];
+  while (i < n && S.par[i].h >= 0) { hops.push([i, S.par[i].j]); i = S.par[i].j; }
+  for (const [a, b] of hops) { glow(cells[a], GREEN); mArc(cx(a), 3.4, cx(b), 3.4, mArcH(b - a) * 0.55, M.ok); await beat(tok, 400); }
   glow(cells[i], GREEN);
-  say('到 ' + i + '：不再開局（走人）', '跟著 parent 走完：總共 ' + sgn(total));
-  await beat(tok, 3000);
+  say('跟著 parent pointer 走', '就知道每一局該 hit 幾張');
+  await step(tok);                                   // 2001.0 start at 0 and play the entire game
+  const pk = tag('玩', 'pkt', cx(0), 4.3, 0.5);
+  for (const [, b] of hops) await travel(tok, pk, pk.position.clone(), V3(cx(b), 4.3, 0.5), 500);
+  txt(pk, '整場打完');
+  you.mood('happy');
+  say('從 0 出發', '一路照著走，就能把整場打完');
+  await step(tok);                                   // 2020.7 store a tuple instead of one number
+  low('改動很小：存 tuple，不是存一個數');
+  you.mood('calm');
+  say('改動很小', '把一個數換成一個 tuple');
+  await step(tok);                                   // 2026.1 tuples sort the right way: max still works
+  low('tuple 先比第一項 → max(choices) 不用改');
+  say('tuple 比大小先比第一項', '所以 max 照樣能用');
+  await step(tok);                                   // 2052.7 a separate parent dictionary: no difference in running time
+  low('另開一個 parent dictionary 也行：時間一樣');
+  say('另外開一個 parent dictionary 也可以', '執行時間完全一樣');
 }]);
 
-// 37:19 LIS：問題與子問題
+// 34:59 Memoization vs 拓撲順序；DP 與圖對照
+FRAG.push(['dpmit2-bj-memo', 'Memoization vs 拓撲順序；DP 與圖算的是同一件事', async (tok) => {
+  fresh([0, 3.6, 13], [0, 3.4, 0]);
+  const top = board(0, 7.6), low = board(0, 0.0, 0.4, 'note');
+  const gx = (k) => -6.0 + k * 1.0;
+  const nodes = [0, 1, 2, 3, 4].map((k) => mBox(k, M.sand, gx(k), 4.0, 0.6, 0.6, 0.4));
+  for (const [a, b] of [[0, 2], [0, 3], [1, 4], [2, 4]]) mArc(gx(a), 4.35, gx(b), 4.35, mArcH(b - a) * 0.6, M.brown);
+  tag('圖的做法', 'say', -4.0, 5.9);
+  const cd = code(['for i in n … 0:', '  choices = [0]', '  for h …:', '    o = round_outcome(i, h)', '    choices.append(o[1] + dp[i+o[0]])', '  dp[i] = max(choices)'], 3.2, 5.6, 0.5);
+  tag('DP 的做法', 'say', 3.2, 6.4);
+  const you = me(-0.8, 0.8, 1.0, 0.6);
+  await step(tok);                                   // 2100.1 if you have a topological sort, use that order
+  cd.hl(0);
+  const p = tag('→', 'pkt', gx(0), 3.2); await travel(tok, p, V3(gx(0), 3.2, 0), V3(gx(4), 3.2, 0), 900);
+  top('知道拓撲順序 → 照那個順序算');
+  say('知道拓撲順序的話', '就照那個順序算');
+  await step(tok);                                   // 2104.1 if you don't, use memoization
+  remove(p);
+  tag('memo = { }', 'pkt', -3.8, 2.4);
+  top('不知道順序 → 用 memoization');
+  say('不知道順序的話', '就用 memoization（算過就記起來）');
+  await step(tok);                                   // 2111.0 there has to be one, otherwise infinite loops
+  low('一定要有拓撲順序：不然會無限迴圈');
+  you.mood('wow');
+  say('但拓撲順序一定要存在', '不然會無限迴圈');
+  await step(tok);                                   // 2113.7 a loop in the dependency graph: the DP is wrong
+  const loop = mArc(gx(4), 3.6, gx(1), 3.6, -0.6, M.red);
+  tag('依賴有環 → DP 定義錯了', 'bad', -3.8, 1.6);
+  you.mood('sad');
+  say('依賴之間有環', '代表你的 DP 定義寫錯了');
+  await step(tok);                                   // 2124.1 for our problems the topological sort is obvious
+  loop.kill();
+  low('我們的題目：順序很明顯，從 0 往上，或從尾巴往回');
+  you.mood('calm');
+  say('這些題目的順序都很明顯', '從 0 往上長，或反過來從尾巴往回');
+  await step(tok);                                   // 2135.6 memoization: a proof of concept
+  low('memoization 的意義：只要有遞迴式，其餘都能自動完成');
+  say('memoization 證明了一件事', '只要有遞迴式，其他都可以自動完成');
+  await step(tok);                                   // 2161.0 this line is the magic part
+  cd.hl(4);
+  tag('← 魔法就在這一行', 'good', 3.2, 2.4);
+  say('真正的關鍵是這一行', 'choices 怎麼算、用 max 合併');
+  await step(tok);                                   // 2172.0 everything else is mechanical
+  low('其他都是照流程的機械步驟');
+  you.mood('happy');
+  say('其他部分都是機械化的', '題目做多了，照流程走就好');
+  await step(tok);                                   // 2183.1 in graph problems the hard part is the state
+  nodes.forEach((m) => glow(m, GOLD));
+  low('圖的做法也一樣：難的是決定「狀態」');
+  say('圖的做法也一樣', '難的是決定狀態，其他就是畫點、畫邊、跑演算法');
+  await step(tok);                                   // 2205.2 DP: smaller code; this is the graph approach
+  nodes.forEach((m) => glow(m, null)); cd.hl(-1);
+  tag('程式長', 'bad', -4.0, 2.6); tag('程式短', 'good', 4.6, 2.4 - 0.7);
+  say('DP：程式短', '圖：程式長');
+  await step(tok);                                   // 2210.0 they compute the same thing
+  arrow(V3(-1.4, 4.2, 0), V3(0.4, 4.2, 0), 0x0f5a3a); arrow(V3(0.4, 3.8, 0), V3(-1.4, 3.8, 0), 0x0f5a3a);
+  low('兩種做法算的是同一件事');
+  say('兩種做法其實算的是同一件事', '看懂對應關係，就更懂這題');
+  await step(tok);                                   // 2223.0 a new problem: either way
+  top('遇到新題：兩條路都可以走');
+  you.mood('wow');
+  say('遇到新題目，兩條路都可以');
+  await step(tok);                                   // 2229.0 if not: draw the graph, find the state, the edges, then the math
+  low('看得出 DP 就直接寫；看不出：畫圖 → 找狀態 → 畫邊 → 寫成數學式');
+  you.mood('happy');
+  say('看得出 DP 就直接寫', '看不出來：先畫圖、找狀態、畫邊，再寫成式子');
+}]);
+
+// 37:24 LIS：問題與子問題
 FRAG.push(['dpmit2-lis-def', 'LIS：dp[i] = 從 a[i] 開始的最長遞增子序列', async (tok) => {
   fresh([0, 3.6, 12.5], [0, 3.8, 0]);
-  const c = mLisRow(4.0);
-  c.forEach((m, k) => { m.position.y = 4.0; });
-  say('一串數字：找最長遞增子序列', 'LIS：可以跳著選，順序不能變');
-  await beat(tok, 2800);
-  [1, 2, 6].forEach((k) => glow(c[k], GREEN));
-  let mk = tag('3, 5, 7 ✓', 'ptr', 0, 6.4);
-  say('3, 5, 7：遞增 ✓', '');
-  await beat(tok, 2000);
-  [1, 2, 6].forEach((k) => glow(c[k], null)); kill(mk);
-  [0, 2, 5].forEach((k) => glow(c[k], RED));
-  mk = tag('8, 5, 9 ✗', 'ptr alt', 0, 6.4);
-  say('8, 5, 9：不是遞增 ✗', '');
-  await beat(tok, 2000);
-  [0, 2, 5].forEach((k) => glow(c[k], null)); kill(mk);
+  const top = board(0, 7.4), mid = board(0, 6.3, 0.3, 'note'), fm = board(0, 0.6, 0.4, 'note');
+  const you = me(-6.1, -0.3, 1.0, 0.6);
+  let c = [], arcs = [], marks = [];
+  const clr = () => { marks.forEach(remove); marks = []; c.forEach((m) => glow(m, null)); };
+  await step(tok);                                   // 2243.6 a problem that shows up on interviews
+  top('新題目：面試常考');
+  you.mood('wow');
+  say('換一個新題目', '面試很常考');
+  await step(tok);                                   // 2263.6 a sequence of numbers
+  c = mLisRow(4.0, false, 1.2);
+  you.mood('calm');
+  say('給你一串數字', '8 3 5 2 4 9 7 11');
+  await step(tok);                                   // 2275.6 find the (longest) increasing subsequence
+  top('找最長遞增子序列（LIS）');
+  tag('（老師口誤說成 shortest）', 'idx', 4.2, 6.9);
+  say('找最長的遞增子序列', 'LIS：longest increasing subsequence');
+  await step(tok);                                   // 2280.5 choose some numbers: they form an increasing sequence
+  mid('挑一些數，順序不變，要越來越大');
+  say('從裡面挑一些數', '照原本的順序，而且要越來越大');
+  await step(tok);                                   // 2284.0 for example, this is a sequence: increasing
+  [1, 2, 6].forEach((k) => glow(c[k], GREEN)); marks.push(tag('3, 5, 7 ✓ 遞增', 'good', 0, 5.3));
+  you.mood('happy');
+  say('例：3, 5, 7', '越來越大：合格');
+  await step(tok);                                   // 2293.6 this is also a sequence, but not increasing
+  clr(); [0, 2, 5].forEach((k) => glow(c[k], RED)); marks.push(tag('8, 5, 9 ✗ 不是遞增', 'bad', 0, 5.3));
+  you.mood('sad');
+  say('例：8, 5, 9', '8 → 5 變小了：不合格');
+  await step(tok);                                   // 2298.0 the longest subsequence that is increasing
+  clr();
+  top('要找「最長」的遞增子序列');
+  you.mood('calm');
+  say('在所有合格的子序列裡', '找最長的那一個');
+  await step(tok);                                   // 2321.0 DP or graphs?
+  top('用 DP 解？還是用圖解？');
+  you.mood('wow');
+  say('要用 DP 還是用圖？', '投票：這次用 DP');
+  await step(tok);                                   // 2353.0 sub-problems: starting somewhere
+  top('子問題：從某個位置開始');
+  you.mood('calm');
+  say('子問題是什麼？', '從某個位置開始');
+  await step(tok);                                   // 2369.7 say I start at 3
   glow(c[1], GOLD);
-  const arcs = [2, 4, 5, 6, 7].map((j) => mArc(LXp(1), 4.5, LXp(j), 4.5, mArcH(j - 1) * 0.6, j === 2 || j === 4 ? M.gold : M.faint));
-  say('從 3 出發：下一個可選 5、4、…', '比 3 大、在 3 後面的都行');
-  await beat(tok, 2800);
-  arcs.forEach((a) => a.kill());
-  mArc(LXp(1), 4.5, LXp(4), 4.5, mArcH(3) * 0.6, M.ok);
+  await walk(tok, you, LXp(1), 700);
+  say('假設從 3 開始');
+  await step(tok);                                   // 2376.0 two choices: 5, which is closer, and 4
+  arcs = [2, 4].map((j) => mArc(LXp(1), 4.5, LXp(j), 4.5, mArcH(j - 1) * 0.6, M.gold));
+  say('下一個可以選 5（比較近），或 4');
+  await step(tok);                                   // 2380.2 a few more choices further away
+  arcs.push(...[5, 6, 7].map((j) => mArc(LXp(1), 4.5, LXp(j), 4.5, mArcH(j - 1) * 0.6, M.faint)));
+  say('其實還有更遠的：9、7、11', '比 3 大、在 3 後面的都可以');
+  await step(tok);                                   // 2387.5 go from 3 to 4: then the longest starting at 4
+  arcs.forEach((a) => a.kill()); arcs = [mArc(LXp(1), 4.5, LXp(4), 4.5, mArcH(3) * 0.6, M.ok)];
   for (let k = 4; k < 8; k++) tint(c[k], M.teal);
   const gb = ghostBox(M.teal, 5.6, 1.3, 0.8); gb.position.set((LXp(4) + LXp(7)) / 2, 4.0, 0);
-  say('選了 4 → 接著要「從 4 開始」的最長', '前面怎麼選，都不影響後面');
-  await beat(tok, 3000);
-  say('子問題：從 a[i] 開始的 LIS', 'dp[i] = 長度，i = 0 … n−1（0-based）');
-  await beat(tok, 3000);
+  mid('選了 4 → 接著要「從 4 開始」的最長遞增子序列');
+  say('如果下一個選 4', '接下來就要找「從 4 開始」最長的');
+  await step(tok);                                   // 2400.6 still has to be optimal, no matter what happened before
+  fm('不管前面怎麼選，後面那段也要最長（optimal substructure）');
+  say('不管前面怎麼選', '從 4 開始的那段，也一定要最長');
+  await step(tok);                                   // 2408.3 if instead I choose 7: same thing
+  arcs.forEach((a) => a.kill()); kill(gb);
+  for (let k = 4; k < 8; k++) tint(c[k], k >= 6 ? M.teal : M.blue);
+  arcs = [mArc(LXp(1), 4.5, LXp(6), 4.5, mArcH(5) * 0.6, M.ok)];
+  say('改選 7 也一樣', '從 7 開始的那段，也要最長');
+  await step(tok);                                   // 2412.0 a sub-problem: start at number i
+  arcs.forEach((a) => a.kill()); for (let k = 0; k < 8; k++) tint(c[k], M.blue); glow(c[1], null);
+  top('子問題：從第 i 個數開始');
+  say('所以子問題就是：從第 i 個數開始');
+  await step(tok);                                   // 2421.1 zero-based indexing again
+  LA.forEach((v, k) => tag(String(k), 'idx', LXp(k), 4.8));
+  say('編號照樣從 0 開始', 'i = 0, 1, …, 7');
+  await step(tok);                                   // 2439.0 the longest increasing subsequence starting at i: its length
+  fm('dp[i] = 從 a[i] 開始的最長遞增子序列「長度」');
+  you.mood('happy');
+  say('dp[i] = 從第 i 個數開始', '最長遞增子序列的長度');
 }]);
 
-// 40:58 pseudocode：預設 1、j 從 i+1 起、a[j] > a[i] 才能接
+// 41:00 pseudocode：預設 1、j 從 i+1 起、a[j] > a[i] 才能接
 FRAG.push(['dpmit2-lis-code', 'LIS 的 pseudocode：choices = [1]，a[j] > a[i] 才加 1 + dp[j]', async (tok) => {
   fresh([0, 4.0, 13], [0, 4.2, 0]);
-  const cd = code(['for i in n−1 … 0:', '  choices = [1]        # 後面都不選', '  for j in i+1 … n−1:', '    if a[j] > a[i]:', '      choices.append(1 + dp[j])', '  dp[i] = max(choices)', 'answer = max(dp)'], -0.6, 7.8, 0.56);
-  const c = mLisRow(1.8);
-  say('原陣列叫 a，答案存在 dp', '直接看下一個落點 j，不數跳過幾個');
-  cd.hl(0); await beat(tok, 2800);
-  const i = 1; glow(c[i], GOLD);
-  const it = tag('i', 'ptr alt', LXp(i), 0.8);
-  cd.hl(1);
-  say('預設選項 1：後面都不選', '少了它會扣分');
-  await beat(tok, 2400);
-  const jt = tag('j', 'ptr', LXp(2), 0.8);
-  for (let j = i + 1; j < LA.length; j++) {
-    move(jt, LXp(j), 0.8); cd.hl(3);
-    const ok = LA[j] > LA[i];
-    glow(c[j], ok ? GREEN : RED);
-    say('a[' + j + '] = ' + LA[j] + ' > ' + LA[i] + ' ?', ok ? '✓ 加入 1 + dp[' + j + ']' : '✗ 跳過（不能從 3 接到 2）');
-    await beat(tok, 700);
-    if (ok) { cd.hl(4); await beat(tok, 500); }
-  }
-  cd.hl(5);
-  say('dp[i] = max(choices)', '');
-  await beat(tok, 2200);
-  cd.hl(6);
-  say('答案 = max(dp)', '不是 dp[0]：起點可以是任何一個數');
-  await beat(tok, 3000);
+  const L = ['dp = 陣列，n 格        # 原陣列叫 a', 'for i in n−1 … 0:', '  choices = [1]', '  for j in i+1 … n−1:', '    if a[j] > a[i]:', '      choices.append(1 + dp[j])', '  dp[i] = max(choices)'];
+  const cd = code(L, -0.4, 7.5, 0.5); cd.ls.forEach((l) => showL(l, false));
+  const show = (k, t) => { showL(cd.ls[k], true); if (t) txt(cd.ls[k], t); cd.hl(k); };
+  const top = board(0, 8.4), low = board(0, -0.6, 0.4, 'note');
+  const c = mLisRow(2.6, false);
+  const you = me(-6.2, -0.9, 1.0, 0.55);
+  let d = [], it = null, jt = null, ar = null, xk = null;
+  await step(tok);                                   // 2460.0 an array that stores the answers: dp
+  show(0);
+  d = LA.map((v, k) => mBox('?', M.paper, LXp(k), 1.3, 0.9, 0.6, 0.4, 1.0));
+  tag('dp', 'ptr', -6.0, 1.3); tag('a', 'ptr', -6.0, 2.6);
+  say('再開一個陣列存答案：dp');
+  await step(tok);                                   // 2468.1 n numbers → n elements, 0 to n − 1
+  LA.forEach((v, k) => tag(String(k), 'idx', LXp(k), 3.4));
+  say('n 個數，dp 就有 n 格', '編號 0 到 n − 1');
+  await step(tok);                                   // 2474.0 at element i; the original array is a
+  it = tag('i', 'ptr alt', LXp(1), 0.4); glow(c[1], GOLD);
+  say('假設在第 i 格（例：a[1] = 3）', '原本的陣列叫 a');
+  await step(tok);                                   // 2496.5 pseudocode: how to compute dp[i]
+  show(1);
+  say('寫 pseudocode：dp[i] 怎麼算？', 'i 從後面往前');
+  await step(tok);                                   // 2516.5 from 3 to 4: what would h be?
+  ar = mArc(LXp(1), 3.1, LXp(4), 3.1, mArcH(3) * 0.6, M.gold);
+  xk = tag('跳過幾個？要加加減減，容易錯', 'bad', LXp(3), 4.6 - 0.3);
+  you.mood('wow');
+  say('從 3 跳到 4：h 要算成「跳過幾個」嗎？', '要加加減減，容易算錯');
+  await step(tok);                                   // 2535.5 look at the index I land at, directly
+  remove(xk);
+  jt = tag('j', 'ptr', LXp(4), 0.4); glow(c[4], GREEN);
+  tag('直接看「落在哪」：j', 'good', LXp(4) + 1.6, 0.4);
+  you.mood('calm');
+  say('改成直接看落點 j', '從 i 跳到 j');
+  await step(tok);                                   // 2545.3 then h is j − i
+  low('h 就是 j − i，不用另外數');
+  say('想要 h 的話，就是 j − i');
+  await step(tok);                                   // 2569.0 j from i + 1 to n
+  show(3);
+  say('j 從 i + 1 開始，到最後一個', '同一個數不能選兩次');
+  await step(tok);                                   // 2578.0 a choices array
+  show(2, '  choices = []');
+  say('開一個 choices 陣列', '收集所有候選答案');
+  await step(tok);                                   // 2599.4 choosing j: length dp[j] + 1
+  show(5);
+  low('選 j 當下一個 → 長度 = 1 + dp[j]');
+  say('如果下一個選 j', '長度 = 1（自己）+ dp[j]');
+  await step(tok);                                   // 2614.6 can I go from 3 to 2? no
+  ar.kill(); glow(c[4], null);
+  move(jt, LXp(3), 0.4); glow(c[3], RED);
+  ar = mArc(LXp(1), 3.1, LXp(3), 3.1, mArcH(2) * 0.6, M.red);
+  you.mood('sad');
+  say('每個 j 都可以嗎？', '3 → 2 不行：變小了');
+  await step(tok);                                   // 2631.0 if a[j] > a[i]
+  show(4);
+  low('只有 a[j] > a[i] 才能接上');
+  say('所以要加條件', 'a[j] > a[i] 才能接');
+  await step(tok);                                   // 2646.0 stick it in choices; afterwards max
+  ar.kill(); glow(c[3], null);
+  show(6); cd.hl(5);
+  you.mood('calm');
+  say('合格的候選就放進 choices', '最後 dp[i] = max(choices)');
+  await step(tok);                                   // 2677.8 one more choice: the default
+  show(2, '  choices = [1]        # 後面都不選');
+  say('還漏了一個選擇：預設值');
+  await step(tok);                                   // 2691.7 choose nothing after 3: length 1
+  low('3 後面什麼都不選 → 長度 1');
+  say('後面什麼都不選', '只有自己一個數，長度 1');
+  await step(tok);                                   // 2698.7 costs you a point if you get it wrong
+  tag('漏了預設值 → 考試扣分', 'bad', 4.4, 0.4);
+  you.mood('wow');
+  say('小細節', '忘了這個預設值，考試會被扣分');
 }]);
 
-// 45:31 實跑 8 3 5 2 4 9 7 11
+// 45:39 實跑 8 3 5 2 4 9 7 11
 FRAG.push(['dpmit2-lis-run', 'LIS 實跑：dp 由右往左 = 3 4 3 4 3 2 2 1', async (tok) => {
   fresh([0, 3.6, 12.5], [0, 3.6, 0]);
-  const c = mLisRow(4.6);
-  const d = LA.map((v, k) => mBox('?', M.paper, LXp(k), 2.8, 0.9, 0.7, 0.4));
-  tag('a', 'ptr', -6.2, 4.6); tag('dp', 'ptr', -6.2, 2.8);
-  say('範例：8 3 5 2 4 9 7 11', 'for i 從 n−1 到 0');
-  await beat(tok, 2600);
-  for (let i = LA.length - 1; i >= 0; i--) {
-    glow(c[i], GOLD);
-    const js = []; for (let j = i + 1; j < LA.length; j++) if (LA[j] > LA[i]) js.push(j);
-    js.forEach((j) => glow(d[j], GOLD));
-    const ch = [1, ...js.map((j) => 1 + LISDP[j])];
-    say('i = ' + i + '（a = ' + LA[i] + '）' + (js.length ? '：可接 ' + js.map((j) => LA[j]).join('、') : '：後面沒有更大的'), 'choices = [' + ch.join(', ') + '] → dp = ' + LISDP[i]);
-    await beat(tok, 1800);
-    relabel(d[i], LISDP[i]); tint(d[i], M.teal);
-    let arc = null;
-    const pj = js.find((j) => 1 + LISDP[j] === LISDP[i]);
-    if (pj !== undefined) arc = mArc(LXp(i), 5.1, LXp(pj), 5.1, mArcH(pj - i) * 0.5, M.ok);
-    await beat(tok, 500);
-    glow(c[i], null); js.forEach((j) => glow(d[j], null)); if (arc) arc.kill();
-  }
-  say('dp = [' + LISDP.join(', ') + ']', 'parent 指向任一個 dp 少 1 的格子都行');
-  await beat(tok, 3000);
+  const top = board(0, 7.3), chb = board(0, 1.3, 0.4, 'pkt'), low = board(0, 0.4, 0.4, 'note');
+  const you = me(-6.2, -0.9, 1.0, 0.55);
+  let c = [], d = [];
+  const cand = (i) => { const js = []; for (let j = i + 1; j < LA.length; j++) if (LA[j] > LA[i]) js.push(j); return js; };
+  const focus = (i) => { c.forEach((m) => glow(m, null)); d.forEach((m) => glow(m, null)); glow(c[i], GOLD); };
+  const setd = (i) => { relabel(d[i], LISDP[i]); tint(d[i], M.teal); glow(d[i], GREEN); };
+  await step(tok);                                   // 2739.2 copy it again: 8, 3, 5, 2, 4, 9, 7, 11
+  c = mLisRow(4.6, false, 1.2);
+  tag('a', 'ptr', -6.2, 4.6);
+  top('範例：8 3 5 2 4 9 7 11');
+  say('實際跑一次：8 3 5 2 4 9 7 11');
+  await step(tok);                                   // 2746.5 this is a, dp is here; where do I start?
+  d = LA.map((v, k) => mBox('?', M.paper, LXp(k), 2.8, 0.9, 0.7, 0.4, 1.0));
+  tag('dp', 'ptr', -6.2, 2.8);
+  top('要從哪裡開始算？');
+  you.mood('wow');
+  say('上面是 a，下面是 dp', '從哪裡開始算？');
+  await step(tok);                                   // 2761.0 for i in n − 1 down to 0
+  const arr = tag('← i', 'pkt', LXp(7) + 0.6, 3.7);
+  await travel(tok, arr, arr.position.clone(), V3(LXp(0), 3.7, 0), 1000);
+  remove(arr);
+  top('i 從 n − 1 往回到 0');
+  you.mood('calm');
+  say('照程式：i 從 n − 1 往回到 0', '從最右邊開始');
+  await step(tok);                                   // 2778.1 start at 11: the default choice is 1
+  focus(7); chb('choices = [1]');
+  say('i = 7（a = 11）', '預設選項：1');
+  await step(tok);                                   // 2786.5 any other choice? no: 1
+  setd(7);
+  say('後面沒有數了，沒別的選擇', 'dp[7] = 1');
+  await step(tok);                                   // 2806.0 write the indices too: 0 … 7
+  LA.forEach((v, k) => tag(String(k), 'idx', LXp(k), 5.4));
+  say('把編號也寫上，比較不會搞混', '0 到 7');
+  await step(tok);                                   // 2816.6 at 7, i = 6: j = 7, a[j] > a[i]?
+  focus(6); chb('choices = [1]'); glow(c[7], GREEN);
+  say('i = 6（a = 7）', 'j = 7：11 > 7 嗎？是');
+  await step(tok);                                   // 2829.7 choose 11: length 2 = 1 + dp[7]
+  glow(d[7], GOLD); chb('choices = [1, 2]');
+  low('7 → 11：長度 1 + dp[7] = 2');
+  say('選 11 當下一個：1 + dp[7] = 2');
+  await step(tok);                                   // 2842.0 1 and 2 are the candidates: the max
+  setd(6); low(null);
+  say('候選 1 和 2，取最大', 'dp[6] = 2');
+  await step(tok);                                   // 2862.0 how about 9? first, there's 1
+  focus(5); chb('choices = [1]');
+  say('i = 5（a = 9）', '先放預設的 1');
+  await step(tok);                                   // 2867.3 j = 6: is the if true? nope
+  glow(c[6], RED);
+  say('j = 6：7 > 9 嗎？不是', '9 後面不能接 7');
+  await step(tok);                                   // 2877.0 j = 7: true, so append
+  glow(c[6], null); glow(c[7], GREEN); glow(d[7], GOLD);
+  chb('choices = [1, 2]');
+  say('j = 7：11 > 9，可以接', '放入 1 + dp[7] = 2');
+  await step(tok);                                   // 2902.6 starting at 9, the longest has length 2
+  setd(5);
+  say('從 9 開始，最長是 2', 'dp[5] = 2（9 → 11）');
+  await step(tok);                                   // 2959.7 a subsequence, not a substring: you can skip
+  low('是子序列（subsequence），不是子字串：可以跳著選');
+  say('學生問：一定要接下一個嗎？', '不用：子序列可以跳過中間的數');
+  await step(tok);                                   // 2983.0 4: start with 1
+  low(null); focus(4); chb('choices = [1]');
+  say('i = 4（a = 4）', '先放 1');
+  await step(tok);                                   // 2991.0 3, 3, 2
+  [5, 6, 7].forEach((j) => { glow(c[j], GREEN); glow(d[j], GOLD); });
+  chb('choices = [1, 3, 3, 2]');
+  say('9、7、11 都比 4 大', '候選：1 + 2、1 + 2、1 + 1 → 3、3、2');
+  await step(tok);                                   // 3007.0 3: the maximum
+  setd(4);
+  say('取最大：dp[4] = 3');
+  await step(tok);                                   // 3016.0 the parent pointer: either of the 2's
+  const pa = mArc(LXp(4), 5.1, LXp(5), 5.1, mArcH(1) * 0.5, M.ok), pb = mArc(LXp(4), 5.1, LXp(6), 5.1, mArcH(2) * 0.5, M.ok);
+  low('parent：指向 dp = 2 的任一格都行（9 或 7）');
+  say('parent pointer 指哪？', 'dp = 2 的格子都可以：9 或 7');
+  await step(tok);                                   // 3045.0 dp of 2: all bigger than 2
+  pa.kill(); pb.kill(); low(null);
+  focus(3); [4, 5, 6, 7].forEach((j) => { glow(c[j], GREEN); glow(d[j], GOLD); });
+  chb('choices = [1, 4, 3, 3, 2]');
+  say('i = 3（a = 2）', '後面全都比 2 大：候選 1、4、3、3、2');
+  await step(tok);                                   // 3063.0 4 is the biggest
+  setd(3);
+  say('最大是 4', 'dp[3] = 4（2 → 4 → 9 → 11）');
+  await step(tok);                                   // 3067.4 5: what are the choices?
+  focus(2); chb('choices = [1]');
+  say('i = 2（a = 5）', '這格比較有趣');
+  await step(tok);                                   // 3088.7 the if skips these two; 3, 3, 2 → 3
+  glow(c[3], RED); glow(c[4], RED); [5, 6, 7].forEach((j) => { glow(c[j], GREEN); glow(d[j], GOLD); });
+  chb('choices = [1, 3, 3, 2]');
+  setd(2);
+  say('2 和 4 比 5 小：if 跳過', '9、7、11 → 3、3、2，dp[2] = 3');
+  await step(tok);                                   // 3118.3 3 and 8: same idea
+  focus(1); setd(1); await beat(tok, 600);
+  focus(0); setd(0);
+  chb('8：choices = [1, 2, 2] → 3');
+  low('3 和 8 同樣算：dp[1] = 4、dp[0] = 3（老師留給大家算）');
+  you.mood('happy');
+  say('3 和 8 也一樣算', 'dp = [3, 4, 3, 4, 3, 2, 2, 1]');
 }]);
 
-// 52:12 答案是 max(dp)；圖的看法
+// 52:04 答案是 max(dp)；圖的看法
 FRAG.push(['dpmit2-lis-max', 'LIS 答案 = max(dp) = 4，不是 dp[0]', async (tok) => {
   fresh([0, 3.6, 12.5], [0, 3.6, 0]);
   const c = mLisRow(4.0);
   const d = LA.map((v, k) => mBox(LISDP[k], M.teal, LXp(k), 2.2, 0.9, 0.7, 0.4));
   tag('dp', 'ptr', -6.2, 2.2);
+  const top = board(0, 7.3), low = board(0, 0.9, 0.4, 'note');
+  const you = me(-6.2, -0.9, 1.0, 0.55);
+  await step(tok);                                   // 3124.7 the answer overall: not dp[0]
   glow(d[0], RED);
-  say('答案不是 dp[0] = 3', '起點不一定是第一個數');
-  await beat(tok, 2600);
-  glow(d[0], null); [1, 3].forEach((k) => glow(d[k], GREEN));
-  say('取 max(dp) = 4', 'dp[1] = dp[3] = 4');
-  await beat(tok, 2600);
+  top('整題的答案是？不是 dp[0]');
+  you.mood('wow');
+  say('整題的答案是什麼？', '不是 dp[0]！');
+  await step(tok);                                   // 3134.1 blackjack: start at the first card → dp[0]
+  low('blackjack：一定從第 0 張開始 → 答案是 dp[0]');
+  say('blackjack 一定從第 0 張開始', '所以那題的答案是 dp[0]');
+  await step(tok);                                   // 3142.0 the maximum of all the dps
+  glow(d[0], null);
+  for (let k = 0; k < 8; k++) { glow(d[k], GOLD); await beat(tok, 120); glow(d[k], null); }
+  top('答案 = 所有 dp 的最大值');
+  you.mood('calm');
+  say('這題要取所有 dp 的最大值');
+  await step(tok);                                   // 3146.0 I can start my sequence anywhere
+  low('LIS 可以從任何一個數開始');
+  say('因為子序列可以從任何一個數開始');
+  await step(tok);                                   // 3149.0 the overall answer: 4
+  [1, 3].forEach((k) => glow(d[k], GREEN));
+  tag('max(dp) = 4', 'good', 3.6, 1.4 - 0.5);
+  you.mood('happy'); await you.hop(tok);
+  say('最大值是 4', 'dp[1] = dp[3] = 4');
+  await step(tok);                                   // 3159.6 if you don't understand: represent it as a graph
+  top('還不懂？畫成圖看看');
+  you.mood('calm');
+  say('如果還不太懂', '試著畫成圖');
+  await step(tok);                                   // 3164.0 numbers are nodes; edge when first < second
   const arcs = [];
   for (let i = 0; i < LA.length; i++) for (let j = i + 1; j < LA.length; j++) if (LA[i] < LA[j]) { const a = mArc(LXp(i), 4.5, LXp(j), 4.5, mArcH(j - i) * 0.45, M.faint); a.i = i; a.j = j; arcs.push(a); }
-  say('圖的看法：前小後大就連邊', 'LIS = DAG 上的最長路徑');
-  await beat(tok, 2800);
+  low('數字 = 節點；前面比後面小 → 連一條邊');
+  say('每個數是一個節點', '前面的數比後面小，就連一條邊');
+  await step(tok);                                   // 3174.0 write the shortest-path formulation and compare
   const path = [1, 4, 5, 7];
   for (let k = 0; k + 1 < path.length; k++) mCol(arcs.find((a) => a.i === path[k] && a.j === path[k + 1]), M.ok);
   path.forEach((k) => glow(c[k], GREEN));
-  say('跟著 parent：3 → 4 → 9 → 11', '長度 4（2 → 4 → 7 → 11 也行）');
-  await beat(tok, 3000);
-  say('對照 blackjack：一定從第 0 張開始', '所以那題的答案是 dp[0]');
-  await beat(tok, 3000);
-  say('不懂時：畫成圖、寫最短路徑', '再對照 DP 的遞迴式');
-  await beat(tok, 2800);
+  low('LIS = DAG 上的最長路徑（例 3 → 4 → 9 → 11）：寫出來對照 DP');
+  say('寫成圖上的最長（最短）路徑', '再對照 DP 的式子，就看出兩者一樣');
 }]);
   }
   // @@FRAGMENTS@@
