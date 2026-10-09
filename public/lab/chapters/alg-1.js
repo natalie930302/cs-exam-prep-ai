@@ -2171,521 +2171,670 @@ const { arrow, tnode } = K;
 const AB2_B = (tok, k = 1.05) => (ms) => beat(tok, ms * k);
 const AB2_P = () => ctx.params || {};
 
+// ═════════ 漸近符號影片（1.8.2、1.9、1.10.x、1.11、Simplified）：cued scenes ═════════
+// 每個 await step(tok) 等老師講到那一句；step 之間只有短短的動作（≤ 3 秒），講完就停住。
+// 函數用小角色（buddy）表示，會跳、會開心或失望；說明用 'say'/'note'/'good'/'bad' 標籤，資料移動用 'pkt'。
+const { step, buddy, prop, bob, travel } = K;
+const S2 = (a, b = '') => say(a, b);
+// 依照 plan（一串動作名稱）一步一步播：每個動作前先等老師講到
+async function AB2_run(tok, plan, A) { for (const k of plan) { await step(tok); await A[k](); } }
+function AB2_marks() { const ls = []; const f = (t, cls, x, y, z = 0) => { const l = tag(t, cls, x, y, z); ls.push(l); return l; }; f.clear = () => { ls.forEach(kill); ls.length = 0; }; return f; }
+const AB2_rename = (b, t) => { if (b && b.name) b.name.element.textContent = t; };
+const AB2_walk = (tok, b, x, y, z, ms = 800) => travel(tok, b.g, b.g.position.clone(), V3(x, y, z), ms);
+
 // ───────── 1. 上下界夾擠：plot c₁·g ≤ f ≤ c₂·g ─────────
 const AB2_BP = {
   q4: { f: (n) => 2 * n * n + 3 * n + 4, fl: '2n² + 3n + 4', a: 0, xmax: 6, ymax: 330, g: 'n²',
-    hi: { fn: (n) => 9 * n * n, l: '9n²', why: '每項都換成 n²：≤ 9n²', fm: '2n² + 3n + 4 ≤ 2n² + 3n² + 4n² = 9n²' },
-    lo: { fn: (n) => n * n, l: '1·n²', why: '下界：≥ 1·n²', fm: '2n² + 3n + 4 ≥ 1·n²，n ≥ 1' } },
+    hi: { fn: (n) => 9 * n * n, l: '9n²', c: '9', why: '加起來：2n² + 3n + 4 ≤ 9n²', sw: '2n² + 3n + 4 ≤ 2n² + 3n² + 4n²' },
+    lo: { fn: (n) => n * n, l: '1·n²', why: '另一邊：2n² + 3n + 4 ≥ 1·n²' } },
   q1: { f: (n) => 2 * n * n + 3 * n + 1, fl: '2n² + 3n + 1', a: 0, xmax: 6, ymax: 330, g: 'n²',
-    hi: { fn: (n) => 6 * n * n, l: '6n²', why: '每項都換成 n²：≤ 6n²', fm: '2n² + 3n + 1 ≤ 2n² + 3n² + n² = 6n²' },
-    hi2: { fn: (n) => 6 * Math.pow(2, n), l: '6·2ⁿ', why: '每項換成 2ⁿ：≤ 6·2ⁿ 也對', fm: 'f(n) = O(2ⁿ)：對，但不是最接近的' },
-    lo: { fn: (n) => n * n, l: '1·n²', why: '下界：≥ 1·n²', fm: '2n² + 3n + 1 ≥ 1·n²，c = 1' } },
+    hi: { fn: (n) => 6 * n * n, l: '6n²', c: '6', why: '加起來：2n² + 3n + 1 ≤ 6n²', sw: '2n² + 3n + 1 ≤ 2n² + 3n² + n²' },
+    hi2: { fn: (n) => 6 * Math.pow(2, n), l: '6·2ⁿ', sw: '2n² + 3n + 1 ≤ 2·2ⁿ + 3·2ⁿ + 2ⁿ' },
+    lo: { fn: (n) => n * n, l: '1·n²', why: '每一項只留 n²：2n² + 3n + 1 ≥ 1·n²' } },
   nlog: { f: (n) => n * n * lg(n) + n, fl: 'n² log n + n', a: 1, xmax: 8, ymax: 420, g: 'n² log n',
-    hi: { fn: (n) => 10 * n * n * lg(n), l: '10·n² log n', why: '寫大一點：≤ 10·n² log n', fm: 'n² log n + n ≤ 10 n² log n' },
-    lo: { fn: (n) => n * n * lg(n), l: '1·n² log n', why: '下界：≥ 1·n² log n', fm: 'n² log n + n ≥ 1·n² log n' } },
+    hi: { fn: (n) => 10 * n * n * lg(n), l: '10·n² log n', c: '10', why: '隨便寫一個更大的係數：≤ 10·n² log n' },
+    lo: { fn: (n) => n * n * lg(n), l: '1·n² log n', why: '另一邊：≥ 1·n² log n' } },
+};
+const AB2_BP_PLAN = {
+  q4: ['f', 'swap', 'hi', 'n0', 'O', 'lo', 'W', 'T'],
+  nlog: ['f', 'hi', 'lo', 'sides', 'all3'],
+  q1O: ['def', 'ineq', 'f', 'swap', 'hi', 'n0', 'O', 'swap2', 'hi2', 'O2', 'upAll'],
+  q1W: ['def', 'ineq', 'f', 'lo', 'W', 'Wboth', 'T', 'sum'],
 };
 async function ab2BoundPlot(tok) {
-  const B = AB2_B(tok, (ctx.params || {}).part ? 1.5 : 1), p = AB2_P(), E = AB2_BP[p.ex] || AB2_BP.q4, part = p.part || 'all';
-  fresh([0, 5, 15], [0, 3.8, 0]);
-  const P = plot(-6, 0, 11, 7.2, E.xmax, E.ymax);
+  const p = AB2_P(), ex = p.ex || 'q4', part = p.part || '', E = AB2_BP[ex] || AB2_BP.q4, W = part === 'W';
+  const plan = AB2_BP_PLAN[ex === 'q1' ? (W ? 'q1W' : 'q1O') : ex] || AB2_BP_PLAN.q4;
+  fresh([0, 5.4, 16], [0, 4, 0]);
+  const P = plot(-6.2, 0, 10, 7, E.xmax, E.ymax);
   const lim = (fn) => { let b = E.xmax; while (b > E.a + 0.2 && fn(b) > E.ymax) b -= 0.05; return b; };
-  const draw = (fn, color, l, dy = 0.3) => { const b = lim(fn); P.curve(fn, color, E.a, b); return tag(l, 'ptr alt', Math.min(6.2, P.X(b) + 0.5), P.Y(fn(b)) + dy); };
-  draw(E.f, C.red, 'f(n) = ' + E.fl, -0.2);
-  say('f(n) = ' + E.fl, '找 c·g(n) 把它從上、下夾住');
-  await B(2600);
-  if (part !== 'W') {
-    draw(E.hi.fn, C.green, E.hi.l);
-    say(E.hi.why, E.hi.fm); await B(3000);
-    P.vmark(1, '#c08a1f', 'n₀ = 1');
-    say('n ≥ 1 起都成立 → O(' + E.g + ')', 'f(n) ≤ c·g(n)，c = ' + E.hi.l.split(/[n·]/)[0] + '，g(n) = ' + E.g); await B(3000);
-    if (E.hi2 && part === 'O') { draw(E.hi2.fn, C.purple, E.hi2.l); say(E.hi2.why, E.hi2.fm); await B(3400); }
-  } else { draw(E.hi.fn, C.green, E.hi.l); P.vmark(1, '#c08a1f', 'n₀ = 1'); }
-  if (part !== 'O') {
-    draw(E.lo.fn, C.blue, E.lo.l, -0.4);
-    say(E.lo.why + ' → Ω(' + E.g + ')', E.lo.fm); await B(3000);
-    P.zone(1, E.xmax);
-    say('兩邊都是 ' + E.g + ' → Θ(' + E.g + ')', E.lo.l + ' ≤ f(n) ≤ ' + E.hi.l);
-    await B(3400);
-  }
-  await B(1200);
+  const draw = (fn, color, l, dy = 0.3) => { const b = lim(fn); P.curve(fn, color, E.a, b); return tag(l, 'ptr alt', Math.min(5.0, P.X(b) + 0.6), P.Y(fn(b)) + dy); };
+  let card = null, fb = null, nm = 0;
+  const board = (t) => { if (card) kill(card); card = tag(t, 'say', -1.0, 8.1); };
+  const mark = (t, cls = 'good') => tag(t, cls, 6.0, 2.0 + 0.7 * nm++);
+  const fly2 = async (t) => { const pk = tag(t, 'pkt', -5, 8.8); await travel(tok, pk, V3(-5, 8.8, 0), V3(2.5, 8.8, 0), 1300); kill(pk); };
+  const A = {
+    def: () => { board(W ? 'f(n) = Ω(g(n)) ⇔ 存在正常數 c、n₀' : 'f(n) = O(g(n)) ⇔ 存在正常數 c、n₀'); S2(W ? 'Ω 的正式定義（下界）' : 'Big-O 的正式定義（上界）', ''); },
+    ineq: () => { board(W ? '對所有 n ≥ n₀：f(n) ≥ c·g(n)' : '對所有 n ≥ n₀：f(n) ≤ c·g(n)'); S2(W ? '從 n₀ 起，f(n) 一直在 c·g(n) 上面' : '從 n₀ 起，f(n) 一直在 c·g(n) 下面', ''); },
+    f: async () => { draw(E.f, C.red, 'f(n)', -0.25); fb = buddy('f(n)', '', C.red, 6.0, 0, 0.9, 0.7); board('f(n) = ' + E.fl); S2('例：f(n) = ' + E.fl, '紅線就是 f(n)'); await fb.hop(tok); },
+    swap: async () => { board(E.hi.sw); S2('每一項都換成 ' + E.g + '：只會變大', E.hi.sw); await fly2('每一項 → ' + E.g); },
+    hi: () => { draw(E.hi.fn, C.green, E.hi.l); board(E.fl + ' ≤ ' + E.hi.l); fb.look(-1); S2(E.hi.why, '綠線 ' + E.hi.l + ' 蓋在紅線上面'); },
+    n0: () => { P.vmark(1, '#c08a1f', 'n₀ = 1'); S2('從 n = 1 起都成立', 'n₀ = 1'); },
+    O: async () => { mark('O(' + E.g + ')'); fb.mood('happy'); S2('c = ' + E.hi.c + '、g(n) = ' + E.g + ' → f(n) = O(' + E.g + ')', 'f(n) ≤ c·g(n)'); await fb.hop(tok); },
+    swap2: async () => { board(E.hi2.sw); S2('也可以把每一項都換成 2ⁿ', E.hi2.sw + ' = 6·2ⁿ'); await fly2('每一項 → 2ⁿ'); },
+    hi2: () => { draw(E.hi2.fn, C.purple, E.hi2.l, 0.7); board(E.fl + ' ≤ 6·2ⁿ'); S2('從某個 n 起，f(n) ≤ 6·2ⁿ 也成立', '紫線'); },
+    O2: () => { mark('O(2ⁿ) 也對'); S2('c = 6、g(n) = 2ⁿ → f(n) = O(2ⁿ)', '對，但不是最接近的上界'); },
+    upAll: () => { board('≥ n² 的類別都是上界：O(n²)、O(n³)、O(2ⁿ)…'); S2('開頭說「≥ n² 的都是上界」就是這個意思', ''); },
+    lo: () => { draw(E.lo.fn, C.blue, E.lo.l, -0.45); board(E.fl + ' ≥ ' + E.lo.l); fb.look(-1); S2(E.lo.why, '藍線在紅線下面'); },
+    W: async () => { mark('Ω(' + E.g + ')'); fb.mood('happy'); S2('c = 1、g(n) = ' + E.g + ' → f(n) = Ω(' + E.g + ')', 'f(n) ≥ c·g(n)'); await fb.hop(tok); },
+    Wboth: () => { draw(E.hi.fn, C.green, E.hi.l); mark('O(' + E.g + ')'); S2('前面已經得到 O(' + E.g + ')，現在又有 Ω(' + E.g + ')', E.lo.l + ' ≤ f(n) ≤ ' + E.hi.l); },
+    T: async () => { P.zone(1, E.xmax); mark('Θ(' + E.g + ')', 'note'); board(E.lo.l + ' ≤ f(n) ≤ ' + E.hi.l); S2('夾在兩條 ' + E.g + ' 中間 → Θ(' + E.g + ')', '上下界相同 = tight bound'); fb.mood('happy'); await fb.hop(tok); },
+    sides: () => { P.zone(1, E.xmax); board(E.lo.l + ' ≤ f(n) ≤ ' + E.hi.l); S2('兩邊都是 ' + E.g, ''); },
+    all3: async () => { mark('O(' + E.g + ')'); mark('Ω(' + E.g + ')'); mark('Θ(' + E.g + ')', 'note'); fb.mood('happy'); S2('O、Ω、Θ 三個都是 ' + E.g, ''); await fb.hop(tok); },
+    sum: () => { board('漸近符號 = 上界 O、下界 Ω、tight bound Θ'); S2('漸近符號就是：上界、下界、tight bound', ''); },
+  };
+  await AB2_run(tok, plan, A);
 }
 
 // ───────── 2. 類別階梯 ─────────
 const AB2_CL = ['1', 'log n', '√n', 'n', 'n log n', 'n²', 'n³', '2ⁿ', '3ⁿ', 'nⁿ'];
+const AB2_CL7 = ['1', 'log n', 'n', 'n log n', 'n²', 'n³', '2ⁿ'];
+const AB2_LD_PLAN = {
+  classes: ['intro', 'g1', 'g2', 'g3', 'any', 'fq'],
+  nlog: ['none', 'insert', 'own'],
+  fact: ['fa', 'fb', 'fc', 'fd', 'fe', 'ff'],
+  q2: ['show', 'order', 'fq2', 'deg', 'up', 'lo', 'tight', 'O1', 'O2', 'O3', 'again', 'up', 'lo', 'tight', 'Ob', 'Oany', 'W1', 'W2', 'list', 'T'],
+  n5: ['fq5', 'up', 'lo5'],
+};
 async function ab2Ladder(tok) {
-  const B = AB2_B(tok, (ctx.params || {}).ex === 'nlog' ? 1.45 : 1), ex = AB2_P().ex || 'q2';
-  fresh([0, 5, 15], [0, 2.4, 0]);
-  const X = (k, N) => -6 + k * 12 / (N - 1);
-  const ms = AB2_CL.map((nm, k) => cube(nm, GRAY, [1.1, 0.5 + k * 0.1, 1], X(k, 10), (0.5 + k * 0.1) / 2, 0, 3));
-  const head = tag('', 'ptr alt', 0, 6.4);
-  say('時間複雜度的類別，由小到大', '1 < log n < √n < n < n log n < n² < n³ < 2ⁿ < 3ⁿ < nⁿ');
-  await B(2600);
-  if (ex === 'classes') {
-    const NM = [[0, '常數', 'f(n) = 1'], [1, '對數', 'binary search：3 log n + 2'], [3, '線性', 'sum：2n + 3'], [4, 'n log n', ''], [5, '平方', '矩陣相加：2n² + 2n + 1'], [6, '立方', '矩陣相乘：2n³ + …'], [7, '指數', 'T(n) = 2T(n−1) + 1 → 2ⁿ']];
-    for (const [k, nm, fm] of NM) { glow(ms[k], GOLD); txt(head, nm); say(AB2_CL[k] + '：' + nm, fm); await B(1900); glow(ms[k], null); }
-    say('演算法的時間是其中一類，或它們的組合', '從程式算出 f(n) 後，看最高次項');
-    await B(3000);
-    return;
-  }
-  if (ex === 'nlog') {
-    say('n² log n 不在表上', '比 n² 大、比 n³ 小');
-    await B(2000);
-    ms.forEach((m, k) => move(m, X(k >= 6 ? k + 1 : k, 11), m.position.y, 0));
-    await B(900);
-    const nm = cube('n² log n', C.gold, [1.1, 1.15, 1], X(6, 11), 0.58, 0, 3);
-    txt(head, 'n² < n² log n < n³');
-    say('可以在 n² 與 n³ 之間自成一類', '');
-    await B(2600);
-    glow(nm, GOLD);
-    say('上下界都是 n² log n', 'O、Ω、Θ 都是 n² log n');
-    await B(3000);
-    return;
-  }
-  if (ex === 'fact') {
-    const f = cube('n!', C.red, [1.1, 0.6, 1], X(0, 10), 3.4, 0, 2);
-    say('n! 要放在哪一格？', '');
-    await B(1800);
-    tint(ms[0], C.purple); tint(ms[9], C.green); txt(head, '下界 1　上界 nⁿ');
-    say('下界 1、上界 nⁿ', 'n! = O(nⁿ)、n! = Ω(1)');
-    await B(2400);
-    for (let r = 0; r < 2; r++) {
-      await anim(tok, 1800, (t) => { f.position.x = X(0, 10) + (X(9, 10) - X(0, 10)) * t; });
-      say('n 小時靠近小的類別，n 大時一路往上', '找不到固定的一格'); await B(500);
-      await anim(tok, 1800, (t) => { f.position.x = X(9, 10) - (X(9, 10) - X(0, 10)) * t; });
-    }
-    f.position.x = X(6, 10);
-    say('上下界不同 → 表上沒有 Θ', '不能說 n! 永遠介於 n¹⁰ 與 n¹¹ 之間');
-    await B(3200);
-    return;
-  }
-  const E = ex === 'n5' ? { f: 'n + 5', k: 3 } : { f: '2n² + 3n + 1', k: 5 };
-  const f = cube(E.f, C.red, [1.9, 0.6, 1], X(E.k, 10), 4.6, 0);
-  move(f, X(E.k, 10), 2.6, 0);
-  say('f(n) = ' + E.f + '：最高次項 ' + AB2_CL[E.k], '它屬於 ' + AB2_CL[E.k] + ' 這一類');
-  await B(2600);
-  txt(head, 'Big-O：上界');
-  for (let k = E.k; k < 10; k++) { tint(ms[k], C.green); await B(260); }
-  say('≥ ' + AB2_CL[E.k] + ' 的類別都是上界', 'f = O(' + AB2_CL[E.k] + ')、O(' + AB2_CL[E.k + 1] + ')、O(2ⁿ) 都對');
-  await B(2800);
-  ms.forEach((m) => tint(m, GRAY));
-  txt(head, 'Big-Ω：下界');
-  for (let k = E.k; k >= 0; k--) { tint(ms[k], C.purple); await B(260); }
-  say('≤ ' + AB2_CL[E.k] + ' 的類別都是下界', 'f = Ω(' + AB2_CL[E.k] + ')、Ω(' + AB2_CL[E.k - 2] + ')、Ω(1) 都對');
-  await B(2800);
-  ms.forEach((m, k) => tint(m, k === E.k ? C.gold : GRAY)); glow(ms[E.k], GOLD);
-  txt(head, 'Θ：tight bound');
-  say(AB2_CL[E.k] + ' 兩邊都有 → Θ(' + AB2_CL[E.k] + ')', 'O 與 Ω 是同一個 g(n) 時才能寫 Θ');
-  await B(3200);
+  const ex = AB2_P().ex || 'q2', plan = AB2_LD_PLAN[ex] || AB2_LD_PLAN.q2;
+  fresh([0, 5, 15], [0, 2.6, 0]);
+  const L = ex === 'classes' ? AB2_CL7 : AB2_CL, N = L.length;
+  const X = (k, n = N) => -6 + k * 12 / (n - 1), H = (k) => 0.5 + k * 0.12;
+  const ms = [];
+  const mk = (k) => { ms[k] = cube(L[k], GRAY, [1.1, H(k), 1], X(k), H(k) / 2, 0, 3); };
+  if (ex !== 'classes') L.forEach((_, k) => mk(k));
+  const mark = AB2_marks();
+  const k0 = ex === 'n5' ? 3 : 5;
+  let fb = null;
+  const goTo = (k, n, ms2 = 900) => AB2_walk(tok, fb, X(k, n), 0, 1.8, ms2);
+  const paint = (fn) => ms.forEach((m, k) => { if (m) tint(m, fn(k)); });
+  const up = () => paint((k) => (k >= k0 ? C.green : GRAY));
+  const lo = () => paint((k) => (k > k0 ? C.green : k < k0 ? C.purple : C.teal));
+  const A = {
+    // 常見類別（Simplified 開頭）
+    intro: () => { fb = buddy('演算法', '', C.teal, 0, 0, 2.4, 0.8); mark('我要跑多久？', 'say', 0, 2.1, 2.4); S2('漸近符號：用來表示演算法的時間複雜度', ''); },
+    g1: () => { mk(0); mk(1); S2('時間可能是常數 1，或對數 log n', ''); },
+    g2: () => { mk(2); mk(3); mk(4); S2('也可能是線性 n、n log n、平方 n²', ''); },
+    g3: () => { mk(5); mk(6); S2('還有立方 n³、指數 2ⁿ', '1 < log n < n < n log n < n² < n³ < 2ⁿ'); },
+    any: async () => { mark.clear(); S2('任何演算法都是其中一類，或它們的組合、倍數', ''); await goTo(4); glow(ms[4], GOLD); await fb.hop(tok); },
+    fq: () => { glow(ms[4], null); mark('frequency count：數每個敘述執行幾次', 'say', 0, 4.2); S2('先用 frequency count 算幾個演算法', ''); },
+    // n² log n 自成一類
+    none: () => { fb = buddy('n² log n', '', C.gold, 0, 0, 2.4, 0.7); fb.mood('wow'); mark('？', 'say', 0, 2.0, 2.4); S2('類別表上沒有 n² log n', ''); },
+    insert: async () => {
+      mark.clear(); ms.forEach((m, k) => move(m, X(k >= 6 ? k + 1 : k, 11), m.position.y, 0));
+      ms.push(cube('n² log n', C.gold, [1.1, 1.17, 1], X(6, 11), 0.58, 0, 3));
+      S2('n² log n 比 n² 大、比 n³ 小', 'n² < n² log n < n³'); await goTo(6, 11);
+    },
+    own: async () => { glow(ms[ms.length - 1], GOLD); mark('n² × log n：自成一類', 'good', X(6, 11), 2.4); fb.mood('happy'); S2('它是 n² 與 log n 的組合，可以另立一類', ''); await fb.hop(tok); },
+    // n! 找不到位置
+    fa: () => { fb = buddy('n!', '', C.red, X(0), 0, 1.8, 0.7); S2('n! 找不到 tight bound（Θ）', ''); },
+    fb: () => { fb.mood('wow'); mark('n! 在哪一格？', 'say', 0, 3.6); S2('想把 n! 放進類別表：表上沒有它', ''); },
+    fc: async () => { mark.clear(); S2('n 小時靠近小的類別，n 大時一路往上逼近 nⁿ', '找不到固定的一格'); await goTo(9, N, 2400); },
+    fd: async () => { mark('n¹⁰ < n! < n¹¹ ？ ✗', 'bad', 0, 3.6); fb.mood('sad'); S2('不能說 n! 永遠大於 n¹⁰、又小於 n¹¹', ''); await goTo(5, N, 1200); },
+    fe: () => { mark.clear(); tint(ms[0], C.purple); tint(ms[9], C.green); mark('下界 1', 'good', X(0), 1.6); mark('上界 nⁿ', 'good', X(9), 2.6); fb.mood('calm'); S2('能確定的只有：1 ≤ n! ≤ nⁿ', 'O(nⁿ)、Ω(1)'); },
+    ff: () => { mark('找不到 Θ → 用 O、Ω', 'note', 0, 3.6); S2('找不到 Θ 時，才退而用上界 O、下界 Ω', '這就是 O 與 Ω 的用處'); },
+    // 2n² + 3n + 2：上界、下界、tight bound
+    show: () => { S2('時間複雜度會是表上其中一類', '1 < log n < √n < n < … < 2ⁿ < 3ⁿ < nⁿ'); },
+    order: async () => { S2('類別已經照大小排好：左小右大', ''); const pk = tag('由小到大 →', 'pkt', X(0), 2.4); await travel(tok, pk, V3(X(0), 2.4, 0), V3(X(9), 2.4, 0), 1600); kill(pk); },
+    fq2: async () => { fb = buddy('f = 2n² + 3n + 2', '', C.red, 0, 0, 3.0, 0.75); S2('例：f(n) = 2n² + 3n + 2', ''); await fb.hop(tok); },
+    deg: async () => { S2('最高次項是 n² → 它站在 n² 這格', ''); await goTo(k0); glow(ms[k0], GOLD); },
+    up: () => { up(); S2('≥ ' + L[k0] + ' 的類別（含 ' + L[k0] + '）都是上界', 'upper bound（綠）'); },
+    lo: () => { lo(); S2('≤ ' + L[k0] + ' 的類別（含 ' + L[k0] + '）都是下界', 'lower bound（紫）'); },
+    tight: async () => { tint(ms[k0], C.gold); mark('tight bound', 'note', X(k0), 2.3); fb.mood('happy'); S2(L[k0] + ' 兩邊都有 → tight bound', ''); await fb.hop(tok); },
+    O1: () => { mark.clear(); paint((k) => (k >= k0 ? C.green : GRAY)); mark('f = O(n²)', 'good', X(k0), 2.3); S2('上界用 Big-O 表示：f = O(n²)', ''); },
+    O2: () => { mark('O(n³) ✓', 'good', X(6), 3.0); S2('f = O(n³)：也對', ''); },
+    O3: () => { mark('O(2ⁿ) ✓', 'good', X(7), 3.7); S2('f = O(2ⁿ)：也對', '≥ n² 的都能寫'); },
+    again: async () => { mark.clear(); paint(() => GRAY); glow(ms[k0], null); AB2_rename(fb, 'f = 2n² + 3n + 1'); fb.mood('calm'); S2('再看 f(n) = 2n² + 3n + 1：最高次一樣是 n²', ''); await fb.hop(tok); glow(ms[k0], GOLD); },
+    Ob: () => { mark.clear(); paint((k) => (k >= k0 ? C.green : GRAY)); mark('f = O(n²)', 'good', X(k0), 2.3); S2('f = O(n²)：Big-O 表示上界', ''); },
+    Oany: () => { mark('O(n³)、O(2ⁿ)…', 'good', X(7.5), 3.2); S2('任何 ≥ n² 的類別都能當上界', ''); },
+    W1: () => { lo(); tint(ms[k0], C.gold); mark('f = Ω(n²)', 'good', X(k0), 3.0); S2('下界用 Ω：f = Ω(n²)', ''); },
+    W2: () => { mark('Ω(n)、Ω(log n)…', 'good', X(1.5), 2.0); S2('f = Ω(n)、Ω(log n) 也都對', '比 n² 小的都是下界'); },
+    list: () => { S2('上界、下界只在這張排好的類別表裡找', '比 f 的最高次大 → 上界；小 → 下界'); },
+    T: async () => { mark('Θ(n²)', 'note', X(k0), 3.7); fb.mood('happy'); S2('O 和 Ω 都是 n² → f = Θ(n²)', ''); await fb.hop(tok); },
+    fq5: async () => { fb = buddy('f = n + 5', '', C.red, 0, 0, 3.0, 0.75); S2('再一例：f(n) = n + 5，最高次 n', ''); await goTo(k0); glow(ms[k0], GOLD); },
+    lo5: async () => { lo(); tint(ms[k0], C.gold); mark('tight bound', 'note', X(k0), 2.0); fb.mood('happy'); S2('≤ n 的都是下界；n 本身是 tight bound', 'f = Θ(n)'); await fb.hop(tok); },
+  };
+  await AB2_run(tok, plan, A);
 }
 
 // ───────── 3. n! 與 log n! 的上下界（例 n = 5） ─────────
+const AB2_FA_PLAN = {
+  n: ['f', 'desc', 'rev', 'upN', 'askLo', 'lo1', 'upB', 'notSame', 'OW'],
+  log: ['f', 'desc', 'upN', 'lo1', 'nlogn', 'noT'],
+  dds: ['f', 'notIn', 'desc', 'upN', 'O', 'askLo', 'lo1', 'W1', 'cmp', 'diff', 'logRow', 'Wn', 'noT2', 'tightDef'],
+};
 async function ab2Factorial(tok) {
-  const B = AB2_B(tok), isLog = !!AB2_P().log;
+  const p = AB2_P(), ex = p.log ? 'log' : (p.ex || 'n'), isLog = ex === 'log', plan = AB2_FA_PLAN[ex] || AB2_FA_PLAN.n;
   fresh([0, 5, 14.5], [0, 3.4, 0]);
-  const xs = (k) => -4.2 + k * 1.3, Y = { up: 5.6, mid: 3.4, lo: 1.2 };
-  if (isLog) ['up', 'mid', 'lo'].forEach((r) => tag('log(', 'ptr', -5.6, Y[r]));
-  const mid = [1, 2, 3, 4, 5].map((v, k) => cube(v, C.blue, [0.9, 0.7, 0.9], xs(k), Y.mid, 0, 2.5));
-  const rm = tag(isLog ? ') = log n!' : '= 120 = n!', 'ptr alt', 3.7, Y.mid);
-  say(isLog ? 'log n! = log(1·2·3·…·n)' : 'n! = 1·2·3·…·n', '例：n = 5');
-  await B(2600);
-  const up = [], lo = [];
-  for (let k = 0; k < 5; k++) { const c = cube(k + 1, C.green, [0.9, 0.7, 0.9], xs(k), Y.mid, 0); up.push(c); move(c, xs(k), Y.up, 0); await B(260); relabel(c, 'n'); }
-  tag(isLog ? ') = log nⁿ = n log n' : '= nⁿ = 3125', 'ptr alt', 3.9, Y.up);
-  say('每個因數都換成 n → 上界', isLog ? 'log n! ≤ log nⁿ = n log n' : 'n! ≤ nⁿ');
-  await B(2800);
-  for (let k = 0; k < 5; k++) { const c = cube(k + 1, C.purple, [0.9, 0.7, 0.9], xs(k), Y.mid, 0); lo.push(c); move(c, xs(k), Y.lo, 0); await B(260); relabel(c, '1'); }
-  tag(isLog ? ') = log 1 = 0（寫 1）' : '= 1', 'ptr alt', 3.9, Y.lo);
-  say('每個因數都換成 1 → 下界', isLog ? 'log n! ≥ 1' : 'n! ≥ 1');
-  await B(2800);
-  say(isLog ? 'O(n log n)、Ω(1)' : 'O(nⁿ)、Ω(1)', '上下界不同 → 老師：找不到 tight bound');
-  await B(3000);
-  if (isLog) {
-    mid.forEach((m) => glow(m, GOLD));
-    say('補充：其實 log n! = Θ(n log n)', '後半 n/2 個因數都 ≥ n/2 → log n! ≥ (n/2)log(n/2)');
-  } else say('補充：Stirling：n! = Θ(√n·(n/e)ⁿ)', '只是不在常用類別表裡');
-  await B(3400);
+  const xs = (k) => -4.0 + k * 1.3, Y = { up: 5.6, mid: 3.4, lo: 1.2 };
+  const mark = AB2_marks();
+  let fb = null, mid = [], lo = [], upT = null, loT = null, ask = null;
+  const A = {
+    f: async () => { fb = buddy(isLog ? 'log n!' : 'n!', '', C.red, -6.0, 0, 1.6, 0.7); S2(isLog ? '再一例：log n!' : '例：時間是 n!', isLog ? '' : 'n! 讀作 n 階乘'); await fb.hop(tok); },
+    notIn: () => { mark('n! 不在常見類別表上', 'say', 0, 7.2); fb.mood('wow'); S2('n! 不在類別表裡：它的上界是什麼？', ''); },
+    desc: () => {
+      const vs = isLog ? [1, 2, 3, 4, 5] : [5, 4, 3, 2, 1];
+      mid = vs.map((v, k) => cube(v, C.blue, [0.9, 0.7, 0.9], xs(k), Y.mid, 0, 2.5));
+      if (isLog) { tag('log(', 'ptr', -5.4, Y.mid); tag(') = log n!', 'ptr alt', 3.6, Y.mid); S2('log n! = log(1·2·3·…·n)', '例：n = 5'); }
+      else { tag('= n!', 'ptr alt', 3.4, Y.mid); S2('n! = n·(n−1)·(n−2)·…·2·1', '例：n = 5 → 5·4·3·2·1 = 120'); }
+    },
+    rev: () => { mid.forEach((m, k) => move(m, xs(4 - k), Y.mid, 0)); S2('倒過來寫：1·2·3·…·n', '乘法順序不影響'); },
+    upN: async () => {
+      if (isLog) { tag('log(', 'ptr', -5.4, Y.up); }
+      for (let k = 0; k < 5; k++) { const c = cube(k + 1, C.green, [0.9, 0.7, 0.9], xs(k), Y.mid, 0.6); move(c, xs(k), Y.up, 0); await beat(tok, 240); relabel(c, 'n'); }
+      upT = tag(isLog ? ') = log nⁿ' : '= nⁿ', 'ptr alt', 3.6, Y.up);
+      S2('照慣例：每個因數都換成 n（只會變大）', isLog ? 'log n! ≤ log(n·n·…·n) = log nⁿ' : 'n! ≤ n·n·…·n = nⁿ');
+    },
+    O: () => { mark('O(nⁿ)', 'good', 5.6, Y.up); S2('n! ≤ nⁿ → f(n) = O(nⁿ)', ''); },
+    askLo: () => { ask = tag('≥ ？', 'say', 0, Y.lo); S2('那下界呢？要換成更小的數', ''); },
+    lo1: async () => {
+      if (ask) { kill(ask); ask = null; }
+      if (isLog) tag('log(', 'ptr', -5.4, Y.lo);
+      for (let k = 0; k < 5; k++) { const c = cube(k + 1, C.purple, [0.9, 0.7, 0.9], xs(k), Y.mid, -0.6); lo.push(c); move(c, xs(k), Y.lo, 0); await beat(tok, 240); relabel(c, '1'); }
+      loT = tag(isLog ? ') = log 1 = 0 → 寫 1' : '= 1', 'ptr alt', 3.6, Y.lo);
+      S2('每個因數都換成 1（只會變小）', isLog ? 'log 1 = 0，但時間習慣寫成 1' : 'n! ≥ 1·1·…·1 = 1');
+    },
+    W1: () => { mark('Ω(1)', 'good', 5.6, Y.lo); S2('n! ≥ 1 → f(n) = Ω(1)', ''); },
+    upB: () => { mark('上界 nⁿ', 'good', 5.6, Y.up); mark('下界 1', 'good', 5.6, Y.lo); S2('上界 nⁿ、下界 1', ''); },
+    notSame: () => { fb.mood('sad'); mark('nⁿ ≠ 1', 'bad', 5.6, Y.mid); S2('上下兩邊不一樣', '一樣的話才能寫 Θ'); },
+    OW: () => { mark('O(nⁿ)、Ω(1)', 'good', 0, 7.2); S2('所以只能寫 O(nⁿ)、Ω(1)', '下界 1、上界 nⁿ：找不到 tight bound'); },
+    nlogn: () => { txt(upT, ') = log nⁿ = n log n'); S2('log nⁿ = n log n（次方拿下來當係數）', 'log n! ≤ n log n'); },
+    noT: () => { fb.mood('sad'); mark('O(n log n)、Ω(1)', 'good', 0, 7.2); S2('老師：上界 n log n、下界 1，沒有 tight bound', '補充：其實 log n! = Θ(n log n)'); },
+    cmp: () => { mark('上一題：O(n²)、Ω(n²) → Θ(n²)', 'say', 0, 7.2); S2('上一題 O 和 Ω 都是 n² → Θ(n²)', ''); },
+    diff: () => { fb.mood('sad'); mark('這題：O(nⁿ) ≠ Ω(1)', 'bad', 0, 6.5); S2('這題 O 是 nⁿ、Ω 是 1：不一樣', ''); },
+    logRow: async () => {
+      for (const c of lo) { tint(c, C.teal); relabel(c, 'log n'); await beat(tok, 200); }
+      txt(loT, '= (log n)ⁿ');
+      S2('老師：每個因數換成 log n', '乘起來其實是 (log n)ⁿ，不是 n log n');
+    },
+    Wn: () => { mark('Ω(n log n)、Ω(n) 也對', 'good', 3.6, 0.3); S2('n! ≥ n log n、n! ≥ n 都成立', 'Ω(n log n)、Ω(n) 都對'); },
+    noT2: () => { mark('沒有 Θ', 'bad', 5.6, Y.mid); S2('nⁿ ≠ 1、nⁿ ≠ n log n → n! 沒有 Θ', ''); },
+    tightDef: () => { mark('tight bound：O 與 Ω 相同', 'note', -1.8, 7.2); S2('tight bound 要 O 和 Ω 是同一個', '有些函數只找得到上界、下界'); },
+  };
+  await AB2_run(tok, plan, A);
 }
 
 // ───────── 4. 買手機的估價：最接近的界才有用 ─────────
+function ab2PhoneModel(x, y, z, s = 1) {
+  const g = new THREE.Group(); g.position.set(x, y, z); g.scale.setScalar(s);
+  const body = lab.box('#3d4450', [0.9, 1.6, 0.12]); body.position.y = 0.8; g.add(body);
+  const scr = lab.box('#9fd3f0', [0.76, 1.3, 0.02]); scr.position.set(0, 0.84, 0.07); g.add(scr);
+  const btn = lab.box('#d8cfc0', [0.18, 0.06, 0.02]); btn.position.set(0, 0.12, 0.07); g.add(btn);
+  lab.world.add(g); return g;
+}
 async function ab2Phone(tok) {
-  const B = AB2_B(tok);
-  fresh([0, 4.5, 14], [0, 2.4, 0]);
-  line(-6, 0.2, 6, 0.2, 0, '#6e5f49');
-  let max = 30000; const X = (v) => -6 + v / max * 12;
-  const ticks = [];
-  const drawTicks = () => { ticks.forEach(kill); ticks.length = 0; for (let i = 0; i <= 3; i++) ticks.push(tag((max / 3 * i).toLocaleString('en-US'), 'idx', X(max / 3 * i), -0.3)); };
-  drawTicks();
-  const item = (v, color, h, lb) => { const m = cube(v >= 100000 ? (v / 100000) + ' lakh' : (v / 1000) + 'k', color, [0.9, 0.6, 0.9], X(v), 0.5 + h, 0, 3); m.userData.v = v; m.userData.h = h; return m; };
-  say('手機大概多少錢？', '時間複雜度也一樣：要給最接近的值');
-  await B(2200);
-  const all = [item(20000, C.gold, 0, '')];
-  say('20,000：最接近的答案 → 像 Θ', '');
-  await B(2400);
-  all.push(item(18000, C.purple, 1.2), item(19000, C.purple, 2.2));
-  say('最少 18k、19k：接近的下界', ''); await B(2200);
-  all.push(item(21000, C.green, 1.2), item(24000, C.green, 2.2));
-  say('最多 21k、24k：接近的上界', ''); await B(2400);
-  max = 210000; drawTicks();
-  all.forEach((m) => move(m, X(m.userData.v), 0.5 + m.userData.h, 0));
-  await B(1200);
-  const lo = [item(2000, C.purple, 3.4), item(3000, C.purple, 4.4)];
-  say('最少 2,000、3,000：對，但沒用', '太遠的 Ω 不提供資訊'); await B(2800);
-  const hi = [item(100000, C.green, 1.2), item(200000, C.green, 2.4)];
-  say('最多 1 lakh、2 lakh：對，但沒意義', '太遠的 O 也一樣'); await B(2800);
-  [...lo, ...hi].forEach((m) => glow(m, RED));
-  glow(all[0], GOLD);
-  say('能給 Θ 就給 Θ；O、Ω 要給最近的', 'O、Ω 用在不確定精確值的時候');
-  await B(3400);
+  fresh([0, 4.8, 14], [0, 2.6, 0]);
+  const mark = AB2_marks();
+  let max = 30000, ticks = [], axis = [], items = [];
+  const X = (v) => -6 + v / max * 12;
+  const drawTicks = () => { ticks.forEach(kill); ticks = []; for (let i = 0; i <= 3; i++) ticks.push(tag((max / 3 * i).toLocaleString('en-US'), 'idx', X(max / 3 * i), -0.3)); };
+  const item = (v, color, h) => { const m = cube(v >= 100000 ? (v / 100000) + ' lakh' : (v / 1000) + 'k', color, [0.95, 0.55, 0.9], X(v), 0.5 + h, 0, 3); m.userData.v = v; m.userData.h = h; items.push(m); return m; };
+  let bT = null, bO = null, bW = null, you = null;
+  const A = {
+    th: async () => { bT = buddy('Θ', 'tight', C.gold, -4, 0, 0.6, 0.85); mark('能找到 Θ 就用 Θ', 'good', -4, 2.0, 0.6); S2('能求出 Θ 最好：它是 tight bound', ''); await bT.hop(tok); },
+    ow: () => { bO = buddy('O', '上界', C.green, -0.6, 0, 0.6, 0.85); bW = buddy('Ω', '下界', C.purple, 2.8, 0, 0.6, 0.85); mark('別給太大的', 'say', -0.6, 2.0, 0.6); mark('別給太小的', 'say', 2.8, 2.0, 0.6); S2('用 O、Ω 時也要給最接近的值', '上界別太大、下界別太小'); },
+    n2: () => { mark('f(n) = n² → 就寫 n²', 'note', 0, 4.6); mark('寫 n log n、n√n：對，但沒用', 'bad', 0, 3.8); bW.mood('sad'); S2('函數是 n² 就寫 n²', '寫 n log n、n√n 雖然對，但沒有意義'); },
+    phone: () => {
+      mark.clear(); [bT, bO, bW].forEach((b) => kill(b.g));
+      axis.push(line(-6, 0.2, 6, 0.2, 0, '#6e5f49')); drawTicks();
+      const ph = ab2PhoneModel(4.6, 3.2, -0.5, 1); bob(ph, 0.08);
+      you = buddy('你', '', C.blue, -5.6, 0.25, 2.0, 0.65);
+      S2('比喻：我想買一支手機，大概要多少錢？', '');
+    },
+    near: async () => { item(20000, C.gold, 0); mark('大約 20,000', 'say', -5.6, 1.6, 2.0); you.mood('happy'); S2('「大約 20,000」：最接近的答案 → 像 Θ', ''); await you.hop(tok); },
+    close: () => { mark.clear(); item(18000, C.purple, 1.2); item(19000, C.purple, 2.2); item(21000, C.green, 1.2); item(24000, C.green, 2.2); S2('最少 18k、19k；最多 21k、24k：都還接近', '接近的下界與上界'); },
+    far1: async () => {
+      max = 210000; drawTicks(); items.forEach((m) => move(m, X(m.userData.v), 0.5 + m.userData.h, 0));
+      await beat(tok, 700);
+      item(2000, C.purple, 3.4); item(3000, C.purple, 4.4); mark('對，但沒用', 'bad', -3.6, 5.6); you.mood('sad');
+      S2('最少 2,000、3,000：沒錯，但對我沒用', '太遠的下界 Ω');
+    },
+    far2: () => { item(100000, C.green, 1.2); item(200000, C.green, 2.4); mark('對，但沒意義', 'bad', 3.6, 4.0); S2('最多 1 lakh、2 lakh：也對，但沒意義', '太遠的上界 O（1 lakh = 10 萬）'); },
+    best: async () => { items.forEach((m) => { if (m.userData.v !== 20000) glow(m, null); }); glow(items[0], GOLD); you.mood('happy'); S2('函數是 n² 就說 n²：Θ 是最完美的答案', ''); await you.hop(tok); },
+    sure: () => { mark('Θ = 保證精確', 'good', -4.4, 3.2); S2('Θ 保證是精確的類別；O、Ω 可能離真值很遠', ''); },
+    unsure: () => { mark('不確定時：O、Ω（例：n!、log n!）', 'note', 0, 6.4); S2('不確定精確值時才用 O、Ω', '例如 n!、log n!'); },
+    free: () => { you.mood('calm'); S2('沒有規定只能用 Θ：三種符號都能用', 'Ω：至少這麼久；Θ：就是這麼久'); },
+  };
+  await AB2_run(tok, ['th', 'ow', 'n2', 'phone', 'near', 'close', 'far1', 'far2', 'best', 'sure', 'unsure', 'free'], A);
 }
 
 // ───────── 5. 漸近符號的性質 ─────────
 const AB2_PC = ['1', 'log n', 'n', 'n²', 'n³', '2ⁿ'];
+const AB2_PR_PLAN = {
+  scale: ['rule', 'f', 'a7', 'deg', 'all3'],
+  reflex: ['rule', 'ex', 'up', 'lo', 'is'],
+  trans: ['rule', 'ex', 'two', 'three', 'all'],
+  sym: ['rule', 'only', 'ex', 'back'],
+  transpose: ['rule', 'ex', 'O', 'W', 'vice'],
+  both: ['O', 'W', 'same', 'T', 'eq'],
+  sum: ['rule', 'ex', 'Os', 'add', 'max', 'swap', 'rule2'],
+  prod: ['rule', 'ex', 'rule2'],
+};
 async function ab2Props(tok) {
-  const B = AB2_B(tok, 1.65), p = AB2_P().p || 'scale';
-  fresh([0, 5, 14.5], [0, 2.8, 0]);
+  const p = AB2_P().p || 'scale', plan = AB2_PR_PLAN[p] || AB2_PR_PLAN.scale;
+  fresh([0, 5, 14.5], [0, 2.6, 0]);
   const X = (k) => -5 + k * 2;
-  const cls6 = AB2_PC.map((nm, k) => cube(nm, GRAY, [1.6, 0.5, 1], X(k), 0.25, 0, 2));
-  const fn = (l, k, y, color, w = 2.1) => cube(l, color, [w, 0.6, 1], X(k), y, 0, 3);
-  const head = tag('', 'ptr alt', 0, 6.6);
-  const arr = (a, b, lb, color) => { const h = arrow(a.position.clone().add(V3(0, 0.35, 0)), b.position.clone().add(V3(0, 0.35, 0)), color); const l = tag(lb, 'ptr', (a.position.x + b.position.x) / 2, Math.max(a.position.y, b.position.y) + 0.8); return [h, l]; };
-  if (p === 'scale') {
-    txt(head, 'General：a·f(n)');
-    fn('f = 2n² + 5', 3, 2.4, C.blue); say('f(n) = 2n² + 5 = O(n²)', ''); await B(2800);
-    fn('7f = 14n² + 35', 3, 3.6, C.purple, 2.6); say('乘上常數 a = 7', '7(2n² + 5) = 14n² + 35'); await B(2800);
-    glow(cls6[3], GOLD); say('最高次仍是 n² → 7f = O(n²)', 'f = O(g) ⇒ a·f = O(g)'); await B(3000);
-    say('Ω、Θ 也成立', '三種符號都有這個性質'); await B(3000);
-  } else if (p === 'reflex') {
-    txt(head, 'Reflexive');
-    const f = fn('f = n²', 3, 2.6, C.blue);
-    say('f(n) = O(f(n))', 'n² = O(n²)'); await B(2600);
-    const [h] = arr(f, cls6[3], '≤ 1·n²', 0x0f5a3a); glow(cls6[3], GREEN);
-    say('上界是「≥」：自己就是自己的上界', '含等號'); await B(3000);
-    kill(h); glow(cls6[3], GOLD);
-    say('下界「≤」也含等號：f = Ω(f)', '所以 f = Θ(f)；寫成 = 表示 is'); await B(3400);
-  } else if (p === 'trans') {
-    txt(head, 'Transitive');
-    const f = fn('f = n', 2, 2.4, C.blue), g = fn('g = n²', 3, 3.6, C.purple), h = fn('h = n³', 4, 4.8, C.red);
-    say('f = n、g = n²、h = n³', ''); await B(2200);
-    arr(f, g, 'O', 0x6e5f49); say('n = O(n²)', 'g 是 f 的上界'); await B(2200);
-    arr(g, h, 'O', 0x6e5f49); say('n² = O(n³)', 'h 是 g 的上界'); await B(2200);
-    arr(f, h, 'O', 0xc08a1f); glow(f, GOLD); glow(h, GOLD);
-    say('所以 n = O(n³)', 'f = O(g)、g = O(h) ⇒ f = O(h)'); await B(3000);
-    say('Ω、Θ 也有遞移性', ''); await B(2600);
-  } else if (p === 'sym') {
-    txt(head, 'Symmetric（只有 Θ）');
-    const f = fn('f = n²', 3, 2.4, C.blue), g = fn('g = n²', 3, 3.6, C.purple);
-    say('f = Θ(g) ⇒ g = Θ(f)', 'n² = Θ(n²)'); await B(2800);
-    glow(f, GOLD); glow(g, GOLD); say('同一類的函數才互為 Θ', ''); await B(2400);
-    const a = fn('n', 2, 2.4, C.teal, 1.4);
-    say('O 沒有對稱：n = O(n²)', '但 n² ≠ O(n)'); glow(a, RED); await B(3000);
-    say('對稱性只對 Θ 成立', ''); await B(2400);
-  } else if (p === 'transpose') {
-    txt(head, 'Transpose symmetric（O 與 Ω）');
-    const f = fn('f = n', 2, 2.4, C.blue), g = fn('g = n²', 3, 3.8, C.purple);
-    say('f = n、g = n²', ''); await B(2000);
-    arr(f, g, 'O：n² 是 n 的上界', 0x0f5a3a); say('n = O(n²)', ''); await B(2600);
-    arrow(g.position.clone().add(V3(-0.3, -0.3, 0.3)), f.position.clone().add(V3(0.3, 0.3, 0.3)), 0x9b7ef4);
-    tag('Ω：n 是 n² 的下界', 'ptr', -1.6, 4.4);
-    say('n² = Ω(n)', 'f = O(g) ⇔ g = Ω(f)'); await B(3000);
-    say('一個是另一個的上界 ⇔ 反過來是下界', ''); await B(2800);
-  } else if (p === 'both') {
-    txt(head, 'O 與 Ω 同一個 g');
-    const f = fn('f(n)', 3, 3.4, C.blue);
-    tint(cls6[3], C.green); say('f = O(g)：g 是上界', ''); await B(2200);
-    tint(cls6[3], C.purple); say('f = Ω(g)：g 也是下界', ''); await B(2200);
-    tint(cls6[3], C.gold); glow(f, GOLD);
-    say('同時 ≥ 又 ≤ → 同一類', 'f = O(g) 且 f = Ω(g) ⇒ f = Θ(g)'); await B(3400);
-    await B(1600);
-  } else if (p === 'sum') {
-    txt(head, '相加取 max');
-    fn('f = n → O(n)', 2, 2.4, C.blue, 2.0); fn('d = n² → O(n²)', 3, 3.6, C.purple, 2.2);
-    say('f = O(g)、d = O(e)', 'f = n、d = n²'); await B(2600);
-    const s = fn('f + d = n + n²', 3, 4.8, C.red, 2.6);
-    say('f + d = n + n²', '取大的那一項'); await B(2400);
-    glow(s, GOLD); glow(cls6[3], GOLD);
-    say('= O(n²)', 'f + d = O(max(g, e))'); await B(3000);
-    say('n² 與 n 對調，答案也一樣', ''); await B(2400);
-  } else {
-    txt(head, '相乘');
-    fn('f = n', 2, 2.4, C.blue, 1.6); fn('d = n²', 3, 2.4, C.purple, 1.6);
-    say('f = O(g)、d = O(e)', 'f = n、d = n²'); await B(2600);
-    const s = fn('f·d = n·n²', 4, 3.8, C.red, 2.2);
-    say('兩個相乘', ''); await B(1800);
-    relabel(s, 'f·d = n³'); glow(s, GOLD); glow(cls6[4], GOLD);
-    say('n · n² = n³', 'f·d = O(g·e)'); await B(3200);
-    await B(1800);
-  }
+  const cls6 = AB2_PC.map((nm, k) => cube(nm, GRAY, [1.6, 0.5, 1], X(k), 0.25, -0.8, 2));
+  const mark = AB2_marks();
+  let card = null;
+  const board = (t) => { if (card) kill(card); card = tag(t, 'say', 0, 6.4); };
+  const bud = (nm, color, x, size = 0.7) => buddy(nm, '', color, x, 0, 1.4, size);
+  const hd = (b) => b.g.position.clone().add(V3(0, 1.1, 0));
+  const arc = (a, b, color) => arrow(hd(a), hd(b), color);
+  const B = {};
+  const A = {
+    // 乘上常數
+    scale_rule: () => { board('f(n) = O(g(n)) ⇒ a·f(n) = O(g(n))'); S2('一般性質：乘上常數 a，上界不變', ''); },
+    scale_f: async () => { B.f = bud('f = 2n² + 5', C.blue, X(3) - 1.3); mark('O(n²)', 'good', X(3) - 1.3, 2.3, 1.4); S2('例：f(n) = 2n² + 5 = O(n²)', ''); await B.f.hop(tok); },
+    scale_a7: async () => { B.g = bud('7f = 14n² + 35', C.purple, X(3) + 1.3); const pk = tag('× 7', 'pkt', X(3) - 1.3, 1.8, 1.4); await travel(tok, pk, V3(X(3) - 1.3, 1.8, 1.4), V3(X(3) + 1.3, 1.8, 1.4), 900); kill(pk); S2('乘上 a = 7', '7(2n² + 5) = 14n² + 35'); },
+    scale_deg: async () => { glow(cls6[3], GOLD); mark('O(n²)', 'good', X(3) + 1.3, 2.3, 1.4); B.g.mood('happy'); S2('最高次還是 n² → 7f = O(n²)', '常數倍不改變類別'); await B.g.hop(tok); },
+    scale_all3: () => { mark('Ω、Θ 也成立', 'note', 0, 5.6); S2('Ω、Θ 也一樣', '三種符號都有這個性質'); },
+    // 反身性
+    reflex_rule: () => { board('Reflexive：f(n) = O(f(n))'); S2('反身性：f(n) = O(f(n))', ''); },
+    reflex_ex: async () => { B.f = bud('f = n²', C.blue, X(3)); S2('例：f(n) = n² → n² = O(n²)', ''); await B.f.hop(tok); },
+    reflex_up: () => { glow(cls6[3], GREEN); mark('上界：≥（含等號）', 'good', X(3), 2.3, 1.4); S2('上界是「≥」：含等號，自己就是自己的上界', 'n² ≤ 1·n²'); },
+    reflex_lo: () => { glow(cls6[3], GOLD); mark('下界：≤（也含等號）', 'good', X(3), 3.0, 1.4); B.f.mood('happy'); S2('下界「≤」也含等號 → f = Ω(f)', '所以 f = Θ(f)'); },
+    reflex_is: () => { mark('「=」讀作 is（屬於）', 'note', 0, 5.6); S2('這裡的「=」讀作 is：屬於這一類', ''); },
+    // 遞移性
+    trans_rule: () => { board('f = O(g)、g = O(h) ⇒ f = O(h)'); S2('遞移性 transitive', ''); },
+    trans_ex: () => { B.f = bud('f = n', C.blue, X(2), 0.6); B.g = bud('g = n²', C.purple, X(3), 0.6); B.h = bud('h = n³', C.red, X(4), 0.6); S2('例：f = n、g = n²、h = n³', ''); },
+    trans_two: () => { arc(B.f, B.g, 0x0f5a3a); arc(B.g, B.h, 0x0f5a3a); mark('O', 'good', X(2.5), 2.1, 1.4); mark('O', 'good', X(3.5), 2.1, 1.4); S2('n = O(n²)、n² = O(n³)', 'g 是 f 的上界、h 是 g 的上界'); },
+    trans_three: async () => { arrow(hd(B.f).add(V3(0, 1.0, 0)), hd(B.h).add(V3(0, 1.0, 0)), 0xc08a1f); mark('O', 'note', X(3), 3.3, 1.4); B.f.mood('happy'); B.h.mood('happy'); S2('所以 n = O(n³)：h 也是 f 的上界', 'f = O(g)、g = O(h) ⇒ f = O(h)'); await B.f.hop(tok); },
+    trans_all: () => { mark('Ω、Θ 也成立', 'note', 0, 5.6); S2('O、Ω、Θ 都有遞移性', '老師只示範 O'); },
+    // 對稱性
+    sym_rule: () => { board('Symmetric：f = Θ(g) ⇒ g = Θ(f)'); S2('對稱性 symmetric', ''); },
+    sym_only: () => { mark('只對 Θ 成立', 'note', 0, 5.6); S2('這個性質只對 Θ 成立', ''); },
+    sym_ex: () => { B.f = bud('f = n²', C.blue, X(3) - 1.2, 0.65); B.g = bud('g = n²', C.purple, X(3) + 1.2, 0.65); arc(B.f, B.g, 0xc08a1f); mark('f = Θ(g)', 'good', X(3), 2.6, 1.4); S2('例：f = n²、g = n² → f = Θ(g)', ''); },
+    sym_back: async () => { arrow(hd(B.g).add(V3(0, -0.3, 0.3)), hd(B.f).add(V3(0, -0.3, 0.3)), 0xc08a1f); mark('g = Θ(f)', 'good', X(3), 3.3, 1.4); B.f.mood('happy'); B.g.mood('happy'); S2('反過來 g = Θ(f) 也對', '兩個互為 Θ'); await Promise.all([B.f.hop(tok), B.g.hop(tok)]); },
+    // 轉置對稱
+    transpose_rule: () => { board('f = O(g) ⇔ g = Ω(f)'); S2('轉置對稱 transpose symmetric：O 與 Ω', ''); },
+    transpose_ex: () => { B.f = bud('f = n', C.blue, X(2), 0.65); B.g = bud('g = n²', C.purple, X(3) + 0.6, 0.65); S2('例：f = n、g = n²', ''); },
+    transpose_O: () => { arc(B.f, B.g, 0x0f5a3a); mark('n² 是 n 的上界', 'good', X(2.8), 2.3, 1.4); S2('n = O(n²)：n² 是 n 的上界', ''); },
+    transpose_W: () => { arrow(hd(B.g).add(V3(0, -0.4, 0.3)), hd(B.f).add(V3(0, -0.4, 0.3)), 0x9b7ef4); mark('n 是 n² 的下界', 'good', X(2.8), 3.0, 1.4); S2('n² = Ω(n)：n 是 n² 的下界', ''); },
+    transpose_vice: async () => { B.f.mood('happy'); B.g.mood('happy'); S2('一個是另一個的上界 ⇔ 反過來就是下界', 'f = O(g) ⇔ g = Ω(f)'); await B.f.hop(tok); },
+    // O 與 Ω 同一個 g
+    both_O: () => { board('f = O(g) 而且 f = Ω(g)'); B.f = bud('f(n)', C.blue, X(3)); tint(cls6[3], C.green); mark('g：上界', 'good', X(3) + 1.4, 0.9, 0); S2('若 f = O(g)：g 是 f 的上界', ''); },
+    both_W: () => { mark('g：也是下界', 'good', X(3) + 1.4, 1.6, 0); S2('又 f = Ω(g)：同一個 g 也是下界', ''); },
+    both_same: () => { tint(cls6[3], C.gold); S2('同一個 g 同時是上界、也是下界', ''); },
+    both_T: async () => { mark('f = Θ(g)', 'note', X(3), 2.4, 1.4); B.f.mood('happy'); S2('所以 f = Θ(g)', ''); await B.f.hop(tok); },
+    both_eq: () => { S2('上界含「≥」、下界含「≤」：兩個都成立 → 同一類', ''); },
+    // 相加取 max
+    sum_rule: () => { board('f = O(g)、d = O(e) → f + d = ？'); S2('兩個函數相加，上界是什麼？', ''); },
+    sum_ex: () => { B.f = bud('f = n', C.blue, X(2), 0.6); B.d = bud('d = n²', C.purple, X(3), 0.6); S2('例：f = n、d = n²', ''); },
+    sum_Os: () => { mark('O(n)', 'good', X(2), 1.9, 1.4); mark('O(n²)', 'good', X(3), 1.9, 1.4); S2('f = O(n)、d = O(n²)', ''); },
+    sum_add: async () => { mark.clear(); B.s = buddy('f + d = n + n²', '', C.red, X(4.4), 0, 1.4, 0.7); S2('f + d = n + n²', ''); await B.s.hop(tok); },
+    sum_max: async () => { glow(cls6[3], GOLD); S2('取比較大的那一項 → O(n²)', ''); await AB2_walk(tok, B.s, X(3) + 1.0, 0, 2.6, 900); mark('O(n²)', 'good', X(3) + 1.0, 1.9, 2.6); },
+    sum_swap: () => { AB2_rename(B.f, 'f = n²'); AB2_rename(B.d, 'd = n'); S2('n² 和 n 對調，答案一樣是 n²', ''); },
+    sum_rule2: () => { board('f + d = O(max(g, e))'); S2('f + d = O(max(g, e))', '大的那個說了算'); },
+    // 相乘
+    prod_rule: () => { board('f = O(g)、d = O(e) → f·d = ？'); S2('兩個函數相乘呢？', ''); },
+    prod_ex: async () => { B.f = bud('f = n', C.blue, X(2), 0.6); B.d = bud('d = n²', C.purple, X(3), 0.6); B.p = bud('f·d = n³', C.red, X(4) + 0.4, 0.7); glow(cls6[4], GOLD); S2('例：n · n² = n³', ''); await B.p.hop(tok); },
+    prod_rule2: () => { board('f·d = O(g·e)'); mark('上界也相乘', 'note', 0, 5.6); S2('f·d = O(g·e)', '上界也跟著相乘'); },
+  };
+  const AA = {}; for (const k of plan) AA[k] = A[p + '_' + k];
+  await AB2_run(tok, plan, AA);
 }
 
 // ───────── 6. 代值比較 n² 與 n³ ─────────
 async function ab2Sample(tok) {
-  const B = AB2_B(tok);
   fresh([0, 4.5, 14], [0, 2.6, 0]);
-  tag('藍 = n²　紅 = n³', 'ptr alt', 0, 6.8);
-  say('n² 和 n³ 誰大？先代幾個值', '');
-  await B(2000);
-  for (const [i, n] of [[0, 2], [1, 3], [2, 4]]) {
-    const x = -4 + i * 4;
+  const mark = AB2_marks();
+  let b2 = null, b3 = null;
+  const xs = [-2.5, 1, 4.5];
+  const col = async (i, n) => {
+    const x = xs[i];
     tag('n = ' + n, 'ptr', x, -0.3, 1);
     const a = bar(C.blue, 0.9, 0.9, x - 0.6, 0), b = bar(C.red, 0.9, 0.9, x + 0.6, 0);
     await growBar(tok, a, n * n * 0.09, 500); tag(String(n * n), 'idx', x - 0.6, n * n * 0.09 + 0.35);
-    await growBar(tok, b, n * n * n * 0.09, 600); tag(String(n * n * n), 'idx', x + 0.6, n * n * n * 0.09 + 0.35);
-    say('n = ' + n + '：' + n * n + ' < ' + n * n * n, n + '² vs ' + n + '³');
-    await B(1900);
-  }
-  say('取三個值就看得出 n³ 一直比較大', '方法一：sample 幾個 n 代入');
-  await B(3000);
-  say('方法二：兩邊取 log', 'log n² = 2 log n < 3 log n = log n³');
-  await B(3200);
+    await growBar(tok, b, n * n * n * 0.09, 700); tag(String(n * n * n), 'idx', x + 0.6, n * n * n * 0.09 + 0.35);
+    b3.mood('happy'); b2.mood('calm');
+  };
+  const A = {
+    intro: () => { mark('比較兩個函數：誰是上界、誰是下界？', 'say', 0, 6.4); S2('比較兩個函數（時間或空間）', '誰大、誰小？'); },
+    two: async () => { b2 = buddy('n²', '', C.blue, -6.2, 0, 1.2, 0.6); b3 = buddy('n³', '', C.red, -5.0, 0, 1.2, 0.6); S2('例：n² 和 n³', ''); await b3.hop(tok); },
+    how: () => { mark('一看就知道…但怎麼證明？', 'say', 0, 5.6); S2('一看就知道 n³ 大，但要怎麼檢查？', ''); },
+    n2: async () => { mark.clear(); S2('方法一：代值。n = 2：4 < 8', '2² = 4、2³ = 8'); await col(0, 2); },
+    n3: async () => { S2('n = 3：9 < 27', '3² = 9、3³ = 27'); await col(1, 3); },
+    n4: async () => { S2('n = 4：16 < 64', '4² = 16、4³ = 64'); await col(2, 4); },
+    done: async () => { mark('n³ 一直比較大', 'good', 1, 6.6); S2('代三個值就看得出：n³ 一直比 n² 大', '方法一：sample 幾個 n 代入'); await b3.hop(tok); },
+  };
+  await AB2_run(tok, ['intro', 'two', 'how', 'n2', 'n3', 'n4', 'done'], A);
 }
 
 // ───────── 7. 對數公式 ─────────
 async function ab2LogRules(tok) {
-  const B = AB2_B(tok);
   fresh([0, 5, 14], [0, 3.4, 0]);
   const R = [
-    ['log(a·b) = log a + log b', 'log(a·b)', ['log a', '+', 'log b'], '乘變加'],
-    ['log(a/b) = log a − log b', 'log(a/b)', ['log a', '−', 'log b'], '除變減'],
-    ['log aᵇ = b·log a', 'log aᵇ', ['b', '·', 'log a'], '次方拿下來當係數'],
-    ['a^(log_c b) = b^(log_c a)', 'a^(log_c b)', ['b', '^', '(log_c a)'], 'a、b 可以互換'],
-    ['aᵇ = n ⇔ b = log_a n', 'aᵇ = n', ['b', '=', 'log_a n'], '次方就是 log'],
+    ['log(a·b) = log a + log b', 'log(a·b)', ['log a', '+', 'log b'], '公式 1：乘變加'],
+    ['log(a/b) = log a − log b', 'log(a/b)', ['log a', '−', 'log b'], '公式 2：除變減'],
+    ['log aᵇ = b·log a', 'log aᵇ', ['b', '·', 'log a'], '公式 3：次方拿下來當係數'],
+    ['a^(log_c b) = b^(log_c a)', 'a^(log_c b)', ['b', '^', '(log_c a)'], '公式 4：a、b 可以互換'],
+    ['aᵇ = n ⇔ b = log_a n', 'aᵇ = n', ['b', '=', 'log_a n'], '公式 5：次方就是 log'],
   ];
   const cd = code(R.map((r) => r[0]), -3.6, 6.4, 0.75);
-  say('比較函數前，先記住這些 log 公式', 'log 預設以 2 為底');
-  await B(2400);
+  cd.ls.forEach((l) => showL(l, false));
   let old = [];
-  for (let i = 0; i < R.length; i++) {
-    old.forEach((o) => fly(o)); old = [];
-    cd.hl(i);
+  const show = async (i) => {
+    old.forEach((o) => kill(o)); old = [];
+    showL(cd.ls[i], true); cd.hl(i);
+    S2(R[i][3], R[i][0]);
     const L = cube(R[i][1], C.blue, [2.6, 0.7, 1], 3.6, 4.6, 0, 2);
-    say(R[i][3], R[i][0]);
-    await B(1500);
+    await beat(tok, 900);
     fly(L, V3(0, 6, -2));
     old = R[i][2].map((s, k) => (s.length <= 1 ? tag(s, 'ptr', 1.9 + k * 1.7, 2.3) : cube(s, k === 0 ? C.green : C.purple, [1.5, 0.6, 1], 1.9 + k * 1.7, 2.3, 0, 2)));
-    await B(2100);
-  }
-  cd.hl(-1);
-  say('第 3、4 條最常用來化簡', '例：2^(√n·log n) = n^√n');
-  await B(3000);
+  };
+  const A = { r0: () => show(0), r1: () => show(1), r2: () => show(2), r3: () => show(3), r4: () => show(4),
+    end: () => { cd.hl(-1); cd.ls.forEach((l) => showL(l, true)); S2('這些 log 公式在比較函數時會用到', 'log 預設以 2 為底'); } };
+  await AB2_run(tok, ['r0', 'r1', 'r2', 'r3', 'r4', 'end'], A);
 }
 
-// ───────── 8. 取 log 比較兩個函數：天平 ─────────
+// ───────── 8. 取 log 比較兩個函數：天平上的兩個小角色 ─────────
+// 每一步 { L, R：兩邊盤子上的式子, c：說明, s：公式行, t：傾斜（1 = g 重、−1 = f 重、0 = 平）, n：便條 }
 const AB2_LC = {
-  n2n3: { f: 'n²', g: 'n³', st: [['2 log n', '3 log n', '取 log：次方變係數']], v: 1, end: 'n² < n³' },
-  n2logn: { f: 'n² log n', g: 'n (log n)¹⁰', st: [['log n² + log log n', 'log n + log (log n)¹⁰', 'log(a·b) = log a + log b'], ['2 log n + log log n', 'log n + 10 log log n', 'log aᵇ = b log a']], v: -1, end: '2 log n > log n：log log n 像零錢' },
-  root3: { f: '3·n^√n', g: '2^(√n·log n)', st: [['3·n^√n', '2^(log n^√n)', '√n·log n = log n^√n'], ['3·n^√n', '(n^√n)^(log 2) = n^√n', 'a^(log_c b) = b^(log_c a)']], v: 0, end: '只差係數 3 → 漸近相等' },
-  nlogn: { f: 'n^(log n)', g: '2^√n', st: [['log n · log n = log² n', '√n · log 2 = √n', '取一次 log'], ['2 log log n', '½ log n', '還看不出來？再取一次 log']], v: 1, end: 'log log n < log n → 2^√n 較大' },
-  pow2: { f: '2^(log n)', g: 'n^√n', st: [['log n · log 2 = log n', '√n · log n', '取 log']], v: 1, end: 'log n < √n log n' },
-  coef: { f: '2n', g: '3n', st: [['Θ(n)', 'Θ(n)', '直接看函數：係數 2、3 都可以忽略']], v: 0, end: '係數可忽略：都是 Θ(n)' },
-  exp2: { f: '2ⁿ', g: '2²ⁿ', st: [['n · log 2 = n', '2n · log 2 = 2n', '取 log']], v: 1, end: '取 log 後係數不能刪！2²ⁿ = 4ⁿ' },
+  n2n3: { f: 'n²', g: 'n³', st: [
+    { c: '方法二：兩邊都取 log', s: '', log: 1 },
+    { L: 'log n²', R: 'log n³', c: '兩邊都取 log', s: 'log n²　vs　log n³' },
+    { L: '2 log n', R: '3 log n', c: '次方拿下來變係數', s: '2 log n　vs　3 log n' },
+    { t: 1, c: '2 log n < 3 log n → n² < n³', s: 'n² = O(n³)' },
+    { n: '函數很複雜時特別好用', c: '這個方法在函數很複雜時特別有用', s: '' }] },
+  n2logn: { f: 'n² log n', g: 'n (log n)¹⁰', st: [
+    { c: '比較 f(n) = n² log n 與 g(n) = n·(log n)¹⁰', s: '' },
+    { wob: 1, n: '次方 10 好像很大？', c: '次方 10 讓 g 看起來比較大，判斷不出來', s: '' },
+    { L: 'log(n² log n)', R: 'log(n (log n)¹⁰)', log: 1, c: '判斷不出來 → 兩邊取 log', s: '' },
+    { L: 'log n² + log log n', c: '公式 1：log(a·b) = log a + log b', s: '左邊：log n² + log log n' },
+    { R: 'log n + log (log n)¹⁰', c: '右邊也用公式 1', s: '右邊：log n + log (log n)¹⁰' },
+    { L: '2 log n + log log n', c: '公式 3：次方拿下來', s: 'log n² = 2 log n' },
+    { R: 'log n + 10 log log n', c: '右邊的次方 10 也拿下來', s: 'log (log n)¹⁰ = 10 log log n' },
+    { n: '先比大的項：2 log n > log n', c: '先比大的項：2 log n > log n', s: '' },
+    { n: 'log log n 很小：像零錢（paisa）', c: 'log log n 很小，像零錢對上整數的錢', s: '2 盧比多一點 vs 1 盧比多一點' },
+    { t: -1, c: 'f(n) 較大', s: 'g(n) = O(f(n))' }] },
+  root3: { f: '3·n^√n', g: '2^(√n·log n)', st: [
+    { c: '比較 f(n) = 3·n^√n 與 g(n) = 2^(√n·log n)', s: '' },
+    { R: '2^(log n^√n)', c: '公式 3 反過來：√n·log n = log n^√n', s: 'g(n) = 2^(log n^√n)' },
+    { n: 'log 預設以 2 為底', c: 'log 預設以 2 為底', s: '2^(log₂ n^√n)' },
+    { R: '(n^√n)^(log₂ 2)', c: '公式 4：底數和 log 裡面互換', s: 'a^(log_c b) = b^(log_c a)' },
+    { R: 'n^√n', c: 'log₂ 2 = 1 → g(n) = n^√n', s: '3·n^√n　vs　n^√n' },
+    { n: '這題沒有兩邊取 log，只用公式化簡', c: '這題沒有兩邊取 log，只用了 log 公式', s: '' },
+    { n: '只差一個係數 3', c: '兩邊一樣是 n^√n，只差係數 3', s: '' },
+    { t: 0, c: '就像 2n² 與 n²：係數可以忽略', s: '' },
+    { t: 0, eq: 1, c: '漸近上兩者相等；只是數值上 f 較大', s: 'f(n) = Θ(g(n))' }] },
+  nlogn: { f: 'n^(log n)', g: '2^√n', st: [
+    { c: '比較 n^(log n) 與 2^√n', s: '' },
+    { L: 'log n^(log n)', R: 'log 2^√n', log: 1, c: '兩邊取 log', s: '' },
+    { L: 'log n · log n', R: '√n · log 2', c: '公式 3：次方拿下來', s: '' },
+    { L: 'log² n', R: '√n', c: 'log₂ 2 = 1：log² n vs √n', s: '還是看不出來' },
+    { n: '再取一次 log！', log: 1, c: '還看不出來，就再取一次 log', s: '' },
+    { L: '2 log log n', R: '½ log n', c: '再取一次 log', s: 'log(log² n) = 2 log log n、log √n = ½ log n' },
+    { t: 1, c: 'log log n < log n → 2^√n 較大', s: 'n^(log n) = O(2^√n)' },
+    { n: '取 log 只是為了好比較', c: '取 log 只是為了好比較，沒有固定公式', s: '' }] },
+  pow2: { f: '2^(log n)', g: 'n^√n', st: [
+    { L: 'log n · log 2 = log n', R: '√n · log n', log: 1, c: '兩邊取 log', s: 'log n　vs　√n·log n' },
+    { t: 1, c: 'log n 較小 → 2^(log n) 較小', s: '其實 2^(log n) = n' }] },
+  coef: { f: '2n', g: '3n', st: [
+    { c: '比較 f(n) = 2n 與 g(n) = 3n', s: '' },
+    { L: 'Θ(n)', R: 'Θ(n)', c: '直接看函數時，係數 2、3 可以忽略', s: '' },
+    { t: 0, eq: 1, c: 'O(n)、Θ(n) 都一樣 → 兩者相等', s: '2n = Θ(3n)' }] },
+  exp2: { f: '2ⁿ', g: '2²ⁿ', st: [
+    { wob: 1, log: 1, c: '2ⁿ vs 2²ⁿ：先兩邊取 log', s: '' },
+    { L: 'log 2ⁿ', R: 'log 2²ⁿ', c: '兩邊取 log', s: '' },
+    { L: 'n · log 2 = n', R: '2n · log 2 = 2n', c: '次方拿下來，log₂ 2 = 1', s: 'n　vs　2n' },
+    { bad: '取 log 後不能刪係數！', c: '別說「一樣」：取 log 後不能刪掉係數', s: '直接看函數才能刪係數' },
+    { t: 1, c: '2n > n → 2²ⁿ 較大', s: '2ⁿ = O(2²ⁿ)' },
+    { n: '其實 2²ⁿ = 4ⁿ', c: '其實 2²ⁿ = 4ⁿ，本來就比 2ⁿ 大', s: '' }] },
 };
 async function ab2LogCompare(tok) {
-  const B = AB2_B(tok, ((AB2_LC[(ctx.params || {}).ex] || {}).st || [0]).length < 2 ? 1.45 : 1.15), E = AB2_LC[AB2_P().ex] || AB2_LC.n2n3;
+  const E = AB2_LC[AB2_P().ex] || AB2_LC.n2n3;
   fresh([0, 4.6, 14], [0, 3, 0]);
   cube('', '#8a7350', [0.3, 2.4, 0.3], 0, 1.2, 0);
   const beam = cube('', '#a99470', [7.6, 0.18, 0.4], 0, 2.5, 0);
   const pans = [-1, 1].map((s) => cube('', s < 0 ? C.blue : C.red, [2.4, 0.18, 1.4], s * 3.6, 2.0, 0));
-  const lbs = [-1, 1].map((s) => tag('', 'ptr', s * 3.6, 3.0));
-  tag('f(n)', 'idx', -3.6, 5.2); tag('g(n)', 'idx', 3.6, 5.2);
-  const stepL = tag('', 'ptr alt', 0, 6.4);
+  const bs = [buddy('f(n)', '', C.blue, -3.6, 2.1, 0, 0.6), buddy('g(n)', '', C.red, 3.6, 2.1, 0, 0.6)];
+  const lbs = [-1, 1].map((s) => tag('', 'ptr', s * 3.6, 4.0));
   let rz = 0;
-  const setTilt = (r) => { rz = r; beam.rotation.z = r; [-1, 1].forEach((s, i) => { const y = 2.5 + s * 3.6 * Math.sin(r); pans[i].position.y = y - 0.5; lbs[i].position.y = y + 0.6; }); };
+  const setTilt = (r) => { rz = r; beam.rotation.z = r; [-1, 1].forEach((s, i) => { const y = 2.5 + s * 3.6 * Math.sin(r); pans[i].position.y = y - 0.5; bs[i].g.position.y = y - 0.4; lbs[i].position.y = y + 1.5; }); };
   const tiltTo = (r, ms) => { const r0 = rz; return anim(tok, ms, (t) => setTilt(r0 + (r - r0) * t)); };
   setTilt(0);
   txt(lbs[0], E.f); txt(lbs[1], E.g);
-  say('比較 f(n) = ' + E.f + ' 與 g(n) = ' + E.g, '看不出來就取 log');
-  await B(2600);
-  let k = 0;
-  for (const [l, r, why] of E.st) {
-    k++; txt(stepL, '第 ' + k + ' 步'); await tiltTo(0.06, 300); await tiltTo(-0.06, 300); await tiltTo(0, 200);
-    txt(lbs[0], l); txt(lbs[1], r); say(why, l + '　vs　' + r);
-    await B(2800);
-  }
-  txt(stepL, E.v === 0 ? '一樣重' : E.v > 0 ? 'g(n) 較大' : 'f(n) 較大');
-  await tiltTo(E.v === 0 ? 0 : -E.v * 0.2, 900);
-  if (E.v !== 0) glow(pans[E.v > 0 ? 1 : 0], GOLD);
-  say(E.end, E.v === 0 ? 'f(n) = Θ(g(n))' : E.v > 0 ? 'f(n) = O(g(n))' : 'g(n) = O(f(n))');
-  await B(3400);
+  let note = null;
+  const A = {};
+  const plan = E.st.map((s, i) => { A[i] = async () => {
+    if (note) { kill(note); note = null; }
+    S2(s.c, s.s);
+    if (s.L) txt(lbs[0], s.L);
+    if (s.R) txt(lbs[1], s.R);
+    if (s.n) note = tag(s.n, 'note', 0, 6.4);
+    if (s.bad) note = tag(s.bad, 'bad', 0, 6.4);
+    if (s.log) { const pk = [-1, 1].map((sg) => tag('log', 'pkt', sg * 3.6, 6.4)); await Promise.all(pk.map((l, k) => travel(tok, l, V3((k ? 1 : -1) * 3.6, 6.4, 0), V3((k ? 1 : -1) * 3.6, 4.6, 0), 700))); pk.forEach(kill); }
+    if (s.wob) { await tiltTo(-0.07, 350); await tiltTo(0.07, 500); await tiltTo(0, 300); }
+    if (s.t !== undefined) {
+      await tiltTo(s.t === 0 ? 0 : -s.t * 0.2, 900);
+      if (s.t === 0) { bs.forEach((b) => b.mood(s.eq ? 'happy' : 'calm')); if (s.eq) pans.forEach((m) => glow(m, GOLD)); }
+      else { const w = s.t > 0 ? 1 : 0; bs[w].mood('happy'); bs[1 - w].mood('sad'); glow(pans[w], GOLD); await bs[w].hop(tok); }
+    }
+  }; return i; });
+  await AB2_run(tok, plan, A);
 }
 
 // ───────── 9. 分段函數 g1、g2 ─────────
 async function ab2Piecewise(tok) {
-  const B = AB2_B(tok);
   fresh([0, 4.6, 14], [0, 2.6, 0]);
-  line(-6, 0.05, 6.2, 0.05, 0, '#6e5f49');
-  tag('n', 'idx', 6.6, 0.1);
-  [[-2, '100'], [2, '10,000'], [6, '∞']].forEach(([x, l]) => { line(x, 0, x, 4.8, 0, '#c9b48e'); tag(l, 'idx', x, -0.35); });
-  tag('g₁ = n³（n < 100）、n²（n ≥ 100）', 'ptr', -1, 6.6);
-  tag('g₂ = n²（n ≤ 10,000）、n³（之後）', 'ptr alt', -1, 6.0);
-  say('兩個分段函數，誰比較大？', '');
-  await B(2600);
-  const Z = [[-4, 3, 2, 'n < 100：g₁ = n³ 較大'], [0, 2, 2, '100 ~ 10,000：兩個都是 n²'], [4, 2, 3, 'n > 10,000：g₂ = n³ 較大']];
+  const mark = AB2_marks();
+  let g1 = null, g2 = null;
+  const Z = [[-4, 3, 2], [0, 2, 2], [4, 2, 3]];
   const bars = [];
-  for (const [x, h1, h2, cap] of Z) {
+  const zoneBars = async (i) => {
+    const [x, h1, h2] = Z[i];
     const a = bar(C.blue, 0.9, 0.9, x - 0.6, 0), b = bar(C.red, 0.9, 0.9, x + 0.6, 0);
-    await growBar(tok, a, h1 * 1.2, 400); await growBar(tok, b, h2 * 1.2, 400);
+    await Promise.all([growBar(tok, a, h1 * 1.2, 700), growBar(tok, b, h2 * 1.2, 700)]);
     tag(h1 === 3 ? 'n³' : 'n²', 'idx', x - 0.6, h1 * 1.2 + 0.35); tag(h2 === 3 ? 'n³' : 'n²', 'idx', x + 0.6, h2 * 1.2 + 0.35);
     bars.push(a, b);
-    say(cap, '藍 g₁　紅 g₂'); await B(2400);
-  }
-  glow(bars[5], GOLD); P_ab2zone(4);
-  say('從 10,000 到 ∞ 都是 g₂ 大 → g₂ 較大', 'g₁ = O(g₂)：只看夠大的 n');
-  await B(3400);
-  say('不要只用小的 n 下結論', '');
-  await B(2400);
+  };
+  const A = {
+    two: async () => { g1 = buddy('g₁', '', C.blue, -6.3, 0, 2.2, 0.55); g2 = buddy('g₂', '', C.red, -5.1, 0, 2.2, 0.55); S2('比較兩個函數 g₁、g₂：誰比較大？', ''); await g1.hop(tok); },
+    d1: () => { tag('g₁ = n³（n < 100）、n²（n ≥ 100）', 'ptr', -0.6, 6.6); S2('g₁：n < 100 時是 n³，之後變成 n²', '越來越小'); },
+    d2: () => { tag('g₂ = n²（n ≤ 10,000）、n³（之後）', 'ptr alt', -0.6, 6.0); S2('g₂：到 10,000 都是 n²，之後變成 n³', ''); },
+    axis: () => { line(-6, 0.05, 6.2, 0.05, 0, '#6e5f49'); tag('n', 'idx', 6.6, 0.1); [[-2, '100'], [2, '10,000'], [6, '∞']].forEach(([x, l]) => { line(x, 0, x, 4.8, 0, '#c9b48e'); tag(l, 'idx', x, -0.35); }); S2('畫一條 n 的數線：100、10,000', '藍 g₁　紅 g₂'); },
+    z1: async () => { g1.mood('happy'); S2('n < 100：g₁ = n³ 較大', ''); await zoneBars(0); },
+    z2: async () => { g1.mood('calm'); g2.mood('calm'); S2('100 到 10,000：兩個都是 n²，一樣大', ''); await zoneBars(1); },
+    z3: async () => { g2.mood('happy'); g1.mood('sad'); S2('超過 10,000：g₂ = n³ 較大', ''); await zoneBars(2); },
+    win: async () => { glow(bars[5], GOLD); const m = ghostBox('#2fc092', 3.8, 4.6, 1.6); m.position.set(4, 2.3, 0); mark('g₂ 從 10,000 起永遠較大', 'good', 4, 5.6); S2('從 10,000 起一直都是 g₂ 大 → g₂ 較大', 'g₁ = O(g₂)'); await g2.hop(tok); },
+    large: () => { mark('不看小的 n', 'note', -4, 5.6); S2('比較函數不看小的 n', '只要從某一點起永遠較大，就算較大'); },
+    inf: async () => { S2('10,000 之後一直到無限大都不會變', '所以 g₂ 永遠比 g₁ 大'); const pk = tag('→ ∞', 'pkt', 2.2, 4.6); await travel(tok, pk, V3(2.2, 4.6, 0), V3(6, 4.6, 0), 1500); },
+  };
+  await AB2_run(tok, ['two', 'd1', 'd2', 'axis', 'z1', 'z2', 'z3', 'win', 'large', 'inf'], A);
 }
-function P_ab2zone(x) { const m = ghostBox('#2fc092', 3.8, 4.6, 1.6); m.position.set(x, 2.3, 0); }
 
 // ───────── 10. 是非題 ─────────
 async function ab2TrueFalse(tok) {
-  const B = AB2_B(tok);
   fresh([0, 5, 14], [0, 3.4, 0]);
   const S = [
-    ['(n + k)ᵐ = Θ(nᵐ)', true, '二項式展開，最高項 nᵐ'],
-    ['2ⁿ⁺¹ = O(2ⁿ)', true, '2ⁿ⁺¹ = 2·2ⁿ，係數可忽略'],
-    ['2²ⁿ = O(2ⁿ)', false, '2²ⁿ = 4ⁿ > 2ⁿ，應為 O(4ⁿ)'],
-    ['√(log n) = O(log log n)', false, '取 log：½ log log n > log log log n'],
-    ['n^(log n) = O(2ⁿ)', true, '取 log：log² n < n'],
+    ['(n + k)ᵐ = Θ(nᵐ)', true],
+    ['2ⁿ⁺¹ = O(2ⁿ)', true],
+    ['2²ⁿ = O(2ⁿ)', false],
+    ['√(log n) = O(log log n)', false],
+    ['n^(log n) = O(2ⁿ)', true],
   ];
-  say('考古題：判斷對錯', '');
-  await B(1800);
-  for (let i = 0; i < S.length; i++) {
-    const [s, ok, why] = S[i], y = 6.2 - i * 1.25;
-    const c = cube(s, GRAY, [4.6, 0.7, 1], -1.4, y, 0, 2);
-    say(s + '？', ''); await B(1400);
-    tint(c, ok ? C.green : C.red); tag(ok ? '✓ 對' : '✗ 錯', ok ? 'ptr alt' : 'ptr', 2.6, y);
-    say(ok ? '對' : '錯', why); await B(2600);
-  }
-  say('方法：化簡或取 log，再比最高項', '取 log 後不能刪係數');
-  await B(3000);
+  const rows = [];
+  let jd = null, note = null;
+  const yy = (i) => 6.2 - i * 1.25;
+  const row = (i) => { rows[i] = cube(S[i][0], GRAY, [4.6, 0.7, 1], -1.6, yy(i), 0, 2); };
+  const say2 = (t, cls = 'say', i = 0) => { if (note) kill(note); note = tag(t, cls, 3.6, yy(i) + 0.55); };
+  const verdict = async (i) => { const ok = S[i][1]; tint(rows[i], ok ? C.green : C.red); tag(ok ? '✓ 對' : '✗ 錯', ok ? 'good' : 'bad', 1.4, yy(i)); jd.mood(ok ? 'happy' : 'sad'); if (ok) await jd.hop(tok); };
+  const A = {
+    intro: async () => { jd = buddy('判官', '', C.teal, 5.6, 0, 1.6, 0.75); S2('考古題：判斷這些敘述是對還是錯', ''); await jd.hop(tok); },
+    r0: () => { row(0); jd.mood('wow'); S2('(n + k)ᵐ：把二項式展開', '最高次項是 nᵐ'); },
+    r0e: () => { say2('(n + 3)² = n² + 6n + 9', 'say', 0); S2('像 (n + 3)²：最高項是 n²', ''); },
+    r0v: async () => { S2('所以 (n + k)ᵐ = Θ(nᵐ)：對', '老師口誤說成 Θ(n²)，應為 Θ(nᵐ)'); await verdict(0); },
+    r1: () => { row(1); jd.mood('wow'); say2('2ⁿ⁺¹ = 2·2ⁿ', 'say', 1); S2('2ⁿ⁺¹ = 2·2ⁿ', ''); },
+    r1v: async () => { S2('係數 2 可以忽略：2ⁿ⁺¹ = Θ(2ⁿ)，O 當然也對', '對'); await verdict(1); },
+    r2: () => { row(2); jd.mood('wow'); say2('2²ⁿ = 4ⁿ > 2ⁿ', 'say', 2); S2('2²ⁿ = 4ⁿ，比 2ⁿ 大', ''); },
+    r2v: async () => { S2('比較小的 2ⁿ 不能當上界 → 錯', '應該是 O(4ⁿ)'); await verdict(2); },
+    r3: () => { row(3); jd.mood('wow'); say2('兩邊取 log', 'say', 3); S2('√(log n) vs log log n：兩邊取 log', ''); },
+    r3v: async () => { say2('½ log log n > log log log n', 'say', 3); S2('右邊比較小：小的不能當上界 → 錯', ''); await verdict(3); },
+    r4: async () => { row(4); say2('log² n < n', 'say', 4); S2('n^(log n) vs 2ⁿ：取 log 得 log² n vs n', 'n 比較大 → 對'); await verdict(4); },
+  };
+  await AB2_run(tok, ['intro', 'r0', 'r0e', 'r0v', 'r1', 'r1v', 'r2', 'r2v', 'r3', 'r3v', 'r4'], A);
 }
 
 // ───────── 11. Linear search ─────────
 const AB2_LS = [8, 6, 12, 5, 9, 7, 4, 3, 16, 18];
 async function ab2LinearSearch(tok) {
-  const B = AB2_B(tok, 1.12), p = AB2_P();
+  const p = AB2_P(), cases = p.mode === 'cases';
   fresh([0, 5, 13], [0, 1.6, 0]);
   const xs = (i) => -5.4 + i * 1.2;
-  const cs = AB2_LS.map((v, i) => { tag(String(i), 'idx', xs(i), -0.25, 0.8); return cube(v, C.blue, [1, 0.8, 1], xs(i), 0.4, 0, 2); });
-  const cur = tag('↓', 'ptr alt', xs(0), 1.6), keyL = tag('', 'ptr', -3.6, 4.6), cnt = tag('', 'ptr alt', 3.2, 4.6);
-  const run = async (key, cap) => {
-    cs.forEach((m) => { tint(m, C.blue); glow(m, null); });
-    txt(keyL, 'key = ' + key); let c = 0;
-    say(cap, '從左到右一個一個比'); await B(1600);
-    for (let i = 0; i < cs.length; i++) {
-      c++; cur.position.x = xs(i); glow(cs[i], GOLD); txt(cnt, '比較 ' + c + ' 次');
-      await B(380);
-      if (AB2_LS[i] === key) { tint(cs[i], C.green); return [i, c]; }
-      glow(cs[i], null);
+  let cs = [];
+  const mark = AB2_marks();
+  const list = () => { cs = AB2_LS.map((v, i) => { tag(String(i), 'idx', xs(i), -0.25, 0.8); return cube(v, C.blue, [1, 0.8, 1], xs(i), 0.4, 0, 2); }); };
+  if (cases) list();
+  let kb = null;
+  const reset = () => cs.forEach((m) => { tint(m, C.blue); glow(m, null); });
+  const keyAt = (i) => V3(xs(i), 0.85, 1.5);
+  // the key walks along the list, comparing one cell at a time
+  const scan = async (from, to, msEach, key) => {
+    for (let i = from; i <= to; i++) {
+      await travel(tok, kb.g, kb.g.position.clone(), keyAt(i), msEach * 0.6);
+      glow(cs[i], GOLD);
+      if (AB2_LS[i] === key) { tint(cs[i], C.green); kb.mood('happy'); return i; }
+      await beat(tok, msEach * 0.4); glow(cs[i], null);
     }
-    return [-1, c];
+    return -1;
   };
-  const pairs = p.mode === 'cases' ? [[8, 'best case：key 在第一格'], [18, 'worst case：key 在最後一格']] : p.key ? [[p.key, '搜尋 ' + p.key]] : [[7, '搜尋 7'], [20, '搜尋 20']];
-  for (const [key, cap] of pairs) {
-    const [i, c] = await run(key, cap);
-    if (p.mode === 'cases') say(key === 8 ? '只比 1 次 → B(n) = 1' : '比了 n = 10 次 → W(n) = n', key === 8 ? 'best case 時間 O(1)' : 'worst case 時間 O(n)');
-    else if (i >= 0) say('找到了：index ' + i + '，比較 ' + c + ' 次', '成功的搜尋');
-    else say('全部比完都沒有：失敗的搜尋', '比較 n = ' + c + ' 次');
-    await B(3000);
-  }
-  await B(1200);
+  const A = {
+    intro: () => { mark('linear search：在一串元素裡找 key', 'say', 0, 4.6); S2('Linear search：在一串元素裡找某個 key', ''); },
+    list: () => { list(); S2('這裡有 10 個元素', '[8, 6, 12, 5, 9, 7, 4, 3, 16, 18]'); },
+    key7: async () => { mark.clear(); kb = buddy('key', 7, C.gold, -6.6, 0, 1.5, 0.6); S2('要找 key = 7', ''); await kb.hop(tok); },
+    scan7: async () => { S2('從左邊開始，一次比一個：是 7 嗎？不是…', ''); await scan(0, 4, 450, 7); },
+    found7: async () => { await scan(5, 5, 450, 7); mark('比較 6 次', 'good', xs(5), 2.6); S2('第 6 次比較，在 index 5 找到 7', '成功的搜尋'); await kb.hop(tok); },
+    key20: async () => { reset(); mark.clear(); kb.set(20); kb.mood('calm'); S2('換成找 key = 20', ''); await travel(tok, kb.g, kb.g.position.clone(), V3(-6.6, 0, 1.5), 700); },
+    scan20: async () => { S2('第一個不是、下一個、下一個…', ''); await scan(0, 9, 240, 20); },
+    fail: () => { kb.mood('sad'); mark('比完 10 個都沒有', 'bad', 0, 2.6); S2('整串比完都沒有 → 失敗的搜尋', '比較了 n = 10 次'); },
+    both: () => { mark.clear(); mark('key 7：成功（index 5）', 'good', -3, 3.4); mark('key 20：失敗', 'bad', 3, 3.4); S2('搜尋可能成功，也可能失敗', ''); },
+    // best / worst
+    bw: () => { mark('best case？worst case？', 'say', 0, 4.6); S2('什麼是 best case？什麼是 worst case？', ''); },
+    best: () => { mark.clear(); glow(cs[0], GOLD); mark('第一個 index', 'note', xs(0), 2.0); S2('best case：要找的 key 剛好在第一個 index', ''); },
+    key8: async () => { kb = buddy('key', 8, C.gold, -6.6, 0, 1.5, 0.6); S2('例：找 8，比 1 次就找到', '常數時間'); await scan(0, 0, 500, 8); await kb.hop(tok); },
+    B: () => { mark('B(n) = 1 → O(1)', 'good', -2, 3.6); S2('best case 時間 B(n) = 1 → O(1)', ''); },
+    worst: () => { reset(); glow(cs[9], GOLD); mark('最後一個 index', 'note', xs(9), 2.0); kb.mood('calm'); S2('worst case：key 在最後一個 index', '花最多時間'); },
+    key18: async () => { kb.set(18); S2('例中最後一個是 18', ''); await travel(tok, kb.g, kb.g.position.clone(), V3(-6.6, 0, 1.5), 700); },
+    scan18: async () => { S2('要把 n 個元素都比過才找到', ''); await scan(0, 9, 240, 18); },
+    W: async () => { mark('W(n) = n → O(n)', 'good', 2.5, 3.6); S2('worst case 時間 W(n) = n → O(n)', ''); await kb.hop(tok); },
+  };
+  const plan = cases ? ['bw', 'best', 'key8', 'B', 'worst', 'key18', 'scan18', 'W'] : ['intro', 'list', 'key7', 'scan7', 'found7', 'key20', 'scan20', 'fail', 'both'];
+  await AB2_run(tok, plan, A);
 }
 
 // ───────── 12. 平均情況 (n + 1)/2 ─────────
 async function ab2LsAverage(tok) {
-  const B = AB2_B(tok);
   fresh([0, 4.6, 13], [0, 2, 0]);
   const xs = (i) => -5.4 + i * 1.2, H = 0.42;
+  const mark = AB2_marks();
   const bs = [];
-  AB2_LS.forEach((v, i) => { tag(String(v), 'idx', xs(i), -0.3, 0.9); });
-  say('平均 = 所有情況的時間總和 ÷ 情況數', '每一格都可能是 key');
-  await B(2400);
-  for (let i = 0; i < 10; i++) {
-    const b = bar(i === 0 ? C.green : i === 9 ? C.red : C.blue, 0.9, 0.9, xs(i), 0);
-    await growBar(tok, b, (i + 1) * H, 220); tag(String(i + 1), 'idx', xs(i), (i + 1) * H + 0.3);
-    bs.push(b);
-  }
-  say('key 在第 i 格 → 比較 i 次', '1 + 2 + … + n = n(n + 1)/2 = 55');
-  await B(3000);
-  await anim(tok, 1500, (t) => bs.forEach((b, i) => setBar(b, ((i + 1) + (5.5 - (i + 1)) * t) * H)));
-  line(-6, 5.5 * H, 6, 5.5 * H, 0, '#c08a1f');
-  tag('5.5', 'ptr alt', 6.4, 5.5 * H);
-  say('除以 n 種情況：(n + 1)/2', 'n = 10：55 ÷ 10 = 5.5');
-  await B(3000);
-  say('A(n) = (n + 1)/2，和 worst case 同為線性', '平均情況常常很難算，所以多半分析 worst case');
-  await B(3400);
+  const A = {
+    def: () => { mark('A(n) = 所有情況的時間總和 ÷ 情況數', 'say', 0, 5.4); S2('average case：所有情況的時間加起來，除以情況數', ''); },
+    hard: () => { mark('要列出每一種情況：很難', 'bad', 0, 4.6); S2('要列出所有情況、算每個的時間：很困難', '很多演算法做不到'); },
+    worst: () => { mark('平均通常和 worst case 差不多', 'note', 0, 3.8); S2('平均時間通常和 worst case 差不多', '所以多半分析 worst case'); },
+    cases: () => { mark.clear(); AB2_LS.forEach((v, i) => { tag(String(v), 'idx', xs(i), -0.3, 0.9); }); S2('linear search 的情況：key 在第 1、2、…、n 格', '每一格都可能是 key'); },
+    grow: async () => {
+      S2('key 在第 i 格 → 比較 i 次', '1、2、3、…、n');
+      for (let i = 0; i < 10; i++) { const b = bar(i === 0 ? C.green : i === 9 ? C.red : C.blue, 0.9, 0.9, xs(i), 0); bs.push(b); await growBar(tok, b, (i + 1) * H, 180); tag(String(i + 1), 'idx', xs(i), (i + 1) * H + 0.3); }
+    },
+    n: () => { mark('共 n 種情況　總和 n(n + 1)/2', 'say', 0, 5.4); S2('一共 n 種情況：1 + 2 + … + n = n(n + 1)/2', 'n = 10：55'); },
+    avg: async () => {
+      S2('除以 n：(n + 1)/2', 'n = 10：55 ÷ 10 = 5.5');
+      await anim(tok, 1500, (t) => bs.forEach((b, i) => setBar(b, ((i + 1) + (5.5 - (i + 1)) * t) * H)));
+      line(-6, 5.5 * H, 6, 5.5 * H, 0, '#c08a1f'); tag('5.5', 'ptr alt', 6.4, 5.5 * H);
+    },
+    cmp: () => { mark('時間 = 比較次數', 'note', 0, 4.6); S2('這裡的時間都用「比較次數」來算', 'A(n) = (n + 1)/2'); },
+  };
+  await AB2_run(tok, ['def', 'hard', 'worst', 'cases', 'grow', 'n', 'avg', 'cmp'], A);
 }
 
 // ───────── 13. case 與符號無關 ─────────
 async function ab2CaseNotation(tok) {
-  const B = AB2_B(tok);
   fresh([0, 5, 13.5], [0, 3.2, 0]);
-  const rows = [['B(n) = 1', '1'], ['A(n) = (n+1)/2', 'n'], ['W(n) = n', 'n']];
   const cols = ['O', 'Ω', 'Θ'];
-  cols.forEach((c, j) => tag(c, 'ptr', 0.4 + j * 2.1, 6.3));
-  say('linear search 的三種情況', '每一個都只是「一個函數」');
-  await B(2200);
-  for (let i = 0; i < 3; i++) {
-    const y = 5 - i * 1.5;
-    cube(rows[i][0], i === 0 ? C.green : i === 1 ? C.blue : C.red, [3.2, 0.7, 1], -4.2, y, 0, 2);
-    await B(500);
-    for (let j = 0; j < 3; j++) { cube(cols[j] + '(' + rows[i][1] + ')', C.green, [1.8, 0.6, 0.9], 0.4 + j * 2.1, y, 0, 2); await B(350); }
-    say(rows[i][0] + '：O、Ω、Θ 都能用', '屬於 ' + rows[i][1] + ' 這一類');
-    await B(1800);
-  }
-  const bad = cube('O = worst、Ω = best？', C.red, [4.4, 0.7, 1], 0.6, 0.4, 1.2, 2);
-  say('常見誤會：O 只給 worst、Ω 只給 best', '錯！case 與符號是兩回事');
-  await B(3000);
-  fly(bad);
-  say('符號描述函數；case 是分析方式', '任何 case 都能用任何符號');
-  await B(3000);
+  const rows = [['B(n) = 1', '1', 5], ['A(n) = (n+1)/2', 'n', 3.5], ['W(n) = n', 'n', 2]];
+  const mark = AB2_marks();
+  const fn = (i) => cube(rows[i][0], i === 0 ? C.green : i === 1 ? C.blue : C.red, [3.2, 0.7, 1], -4.2, rows[i][2], 0, 2);
+  const nt = (i, j) => cube(cols[j] + '(' + rows[i][1] + ')', C.green, [1.8, 0.6, 0.9], 0.4 + j * 2.1, rows[i][2], 0, 2);
+  const A = {
+    intro: () => { cols.forEach((c, j) => tag(c, 'ptr', 0.4 + j * 2.1, 6.3)); mark('符號描述函數；case 是一種分析', 'say', 0, 7.0); S2('case 和符號是兩回事', '符號描述函數；case 是對演算法做的分析'); },
+    B: () => { fn(0); nt(0, 0); S2('best case B(n) = 1：可以寫 O(1)', ''); },
+    B3: () => { nt(0, 1); nt(0, 2); S2('也可以寫 Ω(1)、Θ(1)', ''); },
+    cls: () => { mark('1 是常數函數 → 常數類', 'note', 4.6, 5.6); S2('1 是常數函數，屬於常數類', '所以三種都對'); },
+    W: () => { mark.clear(); fn(2); S2('worst case W(n) = n：屬於線性類', ''); },
+    W3: async () => { for (let j = 0; j < 3; j++) { nt(2, j); await beat(tok, 300); } S2('O(n)、Ω(n)、Θ(n) 都對', ''); },
+    none: () => { S2('沒有固定哪個 case 要用哪個符號', '任何 case 都能用任何符號'); },
+    bad: async () => { const b = cube('O = worst、Ω = best？', C.red, [4.4, 0.7, 1], 0.6, 0.4, 1.2, 2); mark('✗ 錯', 'bad', 3.4, 0.9, 1.2); S2('「O 就是 worst、Ω 就是 best」：錯！', ''); await beat(tok, 1400); fly(b); },
+    Av: async () => { mark.clear(); fn(1); for (let j = 0; j < 3; j++) { nt(1, j); await beat(tok, 300); } S2('average (n + 1)/2 也屬線性類：三種都能用', ''); },
+  };
+  await AB2_run(tok, ['intro', 'B', 'B3', 'cls', 'W', 'W3', 'none', 'bad', 'Av'], A);
 }
 
 // ───────── 14. BST 的 best / worst ─────────
 async function ab2BstCases(tok) {
-  const B = AB2_B(tok), skew = !!AB2_P().skew;
+  const skew = !!AB2_P().skew;
   fresh([0, 4.8, 14], [0, 3.4, 0]);
   const mk = (spec, ox, sc) => { const M = {}; for (const [v, x, y, par] of spec) M[v] = tnode(v, ox + x * sc, y, 0, par ? M[par] : null, C.blue); return M; };
   const BAL = [[20, 0, 6.2], [10, -2.4, 4.6, 20], [30, 2.4, 4.6, 20], [5, -3.6, 3.0, 10], [15, -1.2, 3.0, 10], [25, 1.2, 3.0, 30], [40, 3.6, 3.0, 30]];
+  const mark = AB2_marks();
+  let M = null, kb = null;
+  const near = (v) => M[v].position.clone().add(V3(0.95, -0.45, 0.4));
+  const go = (v, ms = 800) => travel(tok, kb.g, kb.g.position.clone(), near(v), ms);
   if (!skew) {
-    const M = mk(BAL, 0, 1);
-    const cnt = tag('', 'ptr alt', 4.6, 6.4);
-    say('BST：左小右大；搜尋 15', '');
-    await B(2600);
-    let c = 0;
-    for (const v of [20, 10, 15]) { c++; glow(M[v], GOLD); txt(cnt, '比較 ' + c + ' 次'); say(v === 15 ? '15 找到了' : '15 ' + (15 < v ? '<' : '>') + ' ' + v + ' → 往' + (15 < v ? '左' : '右'), ''); await B(1300); }
-    say('比較 3 次 = 樹高', '7 個元素：log 8 = 3 → log n');
-    await B(2600);
-    for (const v of [10, 15]) glow(M[v], null);
-    tint(M[20], C.green);
-    say('best case：key 在 root', 'B(n) = 1');
-    await B(2600);
-    glow(M[20], null);
-    for (const v of [5, 15, 25, 40]) tint(M[v], C.red);
-    say('worst case：key 在 leaf（5、15、25、40）', 'W(n) = 樹高 = log n');
-    await B(3600);
+    const A = {
+      tree: () => { M = mk(BAL, 0, 1); S2('binary search tree：用來搜尋', ''); },
+      rule: () => { mark('左邊都比較小', 'say', -3.2, 6.6); mark('右邊都比較大', 'say', 3.2, 6.6); S2('每個節點：左邊都比它小、右邊都比它大', ''); },
+      s15: async () => { mark.clear(); kb = buddy('key', 15, C.gold, -5.6, 5.6, 0.4, 0.5); S2('搜尋 15：從 root 20 開始', ''); await go(20); glow(M[20], GOLD); },
+      left: async () => { S2('15 < 20 → 往左；遇到 10', ''); await go(10); glow(M[10], GOLD); },
+      right: async () => { S2('15 > 10 → 往右：找到 15！', ''); await go(15); glow(M[15], GOLD); tint(M[15], C.green); kb.mood('happy'); await kb.hop(tok); },
+      cnt: () => { mark('比較 3 次', 'good', 5.4, 6.4); S2('總共比較 3 次', '20、10、15'); },
+      h: () => { line(5.0, 6.2, 5.0, 3.0, 0, '#c08a1f'); mark('= 樹高', 'note', 5.8, 4.6); S2('3 次剛好等於樹的高度', ''); },
+      logn: () => { mark('7 個 ≈ 8 個：log 8 = 3', 'note', 5.0, 2.2); S2('樹高約 log n：7 個元素 ≈ 8，log 8 = 3', '花的時間 = log n'); },
+      bw: () => { mark.clear(); [20, 10, 15].forEach((v) => { glow(M[v], null); tint(M[v], C.blue); }); kb.mood('calm'); S2('那 best case、worst case 呢？', ''); },
+      best: async () => { tint(M[20], C.green); kb.set(20); S2('best case：要找的就在 root', ''); await go(20); },
+      B1: async () => { mark('B(n) = 1', 'good', 0, 7.2); kb.mood('happy'); S2('找 20：看 root 一次就找到 → B(n) = 1', ''); await kb.hop(tok); },
+      worst: () => { kb.mood('calm'); S2('worst case：要找的在 leaf（最底下那層）', ''); },
+      leaves: async () => { for (const v of [5, 15, 25, 40]) { tint(M[v], C.red); await beat(tok, 250); } S2('leaf 是 5、15、25、40', '找它們要比最多次'); },
+      W: () => { mark('W(n) = 樹高 = log n', 'good', 0, 1.6); S2('worst case 時間 = 樹高 = log n', ''); },
+    };
+    await AB2_run(tok, ['tree', 'rule', 's15', 'left', 'right', 'cnt', 'h', 'logn', 'bw', 'best', 'B1', 'worst', 'leaves', 'W'], A);
     return;
   }
   mk(BAL.map(([v, x, y, p]) => [v, x, y - 0.6, p]), -3.2, 0.62);
-  tag('平衡：h = log n', 'ptr alt', -3.2, 0.9);
+  tag('平衡樹', 'ptr alt', -3.2, 0.9);
   const SK = [[40, 0, 6.6], [30, -0.7, 5.75, 40], [25, -1.4, 4.9, 30], [20, -2.1, 4.05, 25], [15, -2.8, 3.2, 20], [10, -3.5, 2.35, 15], [5, -4.2, 1.5, 10]];
-  say('同樣 7 個元素，也可以長成這樣', '左斜樹（left skewed）');
-  await B(1200);
-  const S = {}; for (const [v, x, y, par] of SK) { S[v] = tnode(v, 6 + x, y, 0, par ? S[par] : null, C.purple); await B(250); }
-  tag('左斜：h = n', 'ptr alt', 4.6, 0.6);
-  await B(1600);
-  tint(S[40], C.green); say('best case 一樣：搜尋 root', 'B(n) = 1'); await B(2200);
-  for (const v of [40, 30, 25, 20, 15, 10]) { glow(S[v], GOLD); await B(220); }
-  tint(S[5], C.red); say('worst case：唯一的 leaf 5，要比 n 次', 'W(n) = n'); await B(2600);
-  say('worst case 時間 = 樹高 h', 'log n ≤ h ≤ n');
-  await B(2400);
-  say('最小 worst case log n、最大 worst case n', '考題常問：minimum / maximum worst case time');
-  await B(3200);
+  const S = {};
+  const add = async (from, to) => { for (let k = from; k <= to; k++) { const [v, x, y, par] = SK[k]; S[v] = tnode(v, 6 + x, y, 0, par ? S[par] : null, C.purple); await beat(tok, 300); } };
+  const A = {
+    root: async () => { S2('同樣 7 個元素，也可以這樣建：root 是 40', ''); await add(0, 0); },
+    a: async () => { S2('40 的左邊 30、再左邊 25、再左邊 20', ''); await add(1, 3); },
+    b: async () => { S2('再來 15、10、5：每個都往左掛', '左斜樹（left skewed）'); await add(4, 6); tag('左斜樹', 'ptr alt', 4.6, 0.6); },
+    hts: () => { mark('高度最小：log n', 'good', -3.2, 5.6); mark('高度最大：n', 'good', 1.2, 6.8); S2('平衡樹是最矮的，左斜樹是最高的', ''); },
+    best: () => { tint(S[40], C.green); S2('best case 一樣：要找的在 root', 'B(n) = 1'); },
+    worst: () => { tint(S[5], C.red); S2('worst case：找唯一的 leaf 5', ''); },
+    dep: async () => { S2('時間取決於樹高：這棵的高度是 n', ''); for (const v of [40, 30, 25, 20, 15, 10, 5]) { glow(S[v], GOLD); await beat(tok, 220); } },
+    mm: () => { mark.clear(); mark('minimum worst case：log n', 'good', -3.2, 5.6); mark('maximum worst case：n', 'good', 1.2, 6.8); S2('最小的 worst case 時間 log n、最大的 n', ''); },
+    rep: () => { S2('再說一次：worst case = 找 leaf，leaf 在最底層', '所以時間看樹高'); },
+    hr: () => { S2('BST 的高度最小是 log n、最大是 n', ''); },
+    h: () => { mark('W(n) = h，log n ≤ h ≤ n', 'note', 0, 0.2); S2('worst case 時間寫成樹高 h', 'log n ≤ h ≤ n'); },
+    any: () => { S2('best、worst 都能用 O、Ω、Θ 任一種表示', ''); },
+  };
+  await AB2_run(tok, ['root', 'a', 'b', 'hts', 'best', 'worst', 'dep', 'mm', 'rep', 'hr', 'h', 'any'], A);
 }
 
 // ───────── 15. Binary search 的 frequency：3 log n + 2 ─────────
 async function ab2BinSearch(tok) {
-  const B = AB2_B(tok);
   fresh([0, 5.5, 14], [0, 3, 0]);
   const L = ['i = 1;', 'j = n;', 'while (i < j) {', '  mid = (i + j) / 2;', '  if (key == A[mid]) return mid;', '  else if (key < A[mid]) j = mid − 1;', '  else i = mid + 1;', '}'];
   const cd = code(L, -2.8, 7.2, 0.5);
@@ -2695,26 +2844,108 @@ async function ab2BinSearch(tok) {
   const zone = ghostBox('#2fc092', 1, 0.9, 1.0);
   const setZone = (i, j) => { zone.scale.x = (j - i + 1) * 0.75; zone.position.set((xs(i - 1) + xs(j - 1)) / 2, 0.45, 1.2); };
   const pi = tag('i', 'ptr', xs(0), 1.3, 1.2), pj = tag('j', 'ptr', xs(n - 1), 1.3, 1.2), pm = tag('mid', 'ptr alt', 0, 1.9, 1.2);
+  setZone(1, n);
   const cnt = tag('', 'ptr alt', 4.8, 3.6);
-  say('binary search：每圈砍掉一半', '例：n = 16，key 比所有元素都大');
-  cd.hl(0); txt(fq[0], '1'); await B(900); cd.hl(1); txt(fq[1], '1'); await B(900);
-  let i = 1, j = n, c = 0;
-  setZone(i, j);
-  while (i < j) {
-    c++; cd.hl(2); txt(cnt, '第 ' + c + ' 圈'); await B(500);
-    const mid = Math.floor((i + j) / 2); cd.hl(3); pm.position.x = xs(mid - 1); await B(600);
-    cd.hl(6); i = mid + 1; pi.position.x = xs(i - 1); setZone(i, j);
-    say('範圍剩 ' + (j - i + 1) + ' 格', 'i = mid + 1 = ' + i);
-    await B(1100);
-  }
-  cd.hl(-1);
-  say('迴圈跑了 ' + c + ' 次 = log₂ 16', '範圍每次除以 2 → log n 次');
-  await B(2400);
-  txt(fq[2], 'log n'); txt(fq[3], 'log n'); txt(fq[4], 'log n（if/else 只走一個）');
-  say('迴圈內每行約 log n 次', 'f(n) = 3 log n + 2');
-  await B(2800);
-  say('最高項 log n → 對數時間', 'Θ(log n)');
-  await B(2600);
+  const A = {
+    init: () => { cd.hl(0); txt(fq[0], '1'); txt(fq[1], '1'); S2('binary search：i = 1、j = n 各執行 1 次', '例：n = 16，key 比所有元素都大'); },
+    halve: async () => {
+      S2('每次取中間 (i + j)/2：範圍砍一半', 'n = 16 → 8 → 4 → 2 → 1');
+      let i = 1, j = n, c = 0;
+      while (i < j) {
+        c++; cd.hl(3); txt(cnt, '第 ' + c + ' 圈');
+        const mid = Math.floor((i + j) / 2); pm.position.x = xs(mid - 1); await beat(tok, 300);
+        cd.hl(6); i = mid + 1; pi.position.x = xs(i - 1); setZone(i, j); await beat(tok, 300);
+      }
+      cd.hl(-1);
+    },
+    logn: () => { cd.hl(2); txt(fq[2], 'log n'); txt(fq[3], 'log n'); S2('所以迴圈重複 log n 次', '16 → 4 圈 = log₂ 16'); },
+    either: () => { cd.hl(4); txt(fq[4], 'log n（if / else 只走一個）'); S2('if 或 else 每圈只會執行其中一個', '所以也只算 log n'); },
+    f: () => { cd.hl(-1); tag('f(n) = 3 log n + 2', 'note', 4.6, 2.6); S2('加起來：f(n) = 3 log n + 2', ''); },
+    cls: () => { S2('最高項是 log n → 對數時間', 'Θ(log n)'); },
+  };
+  await AB2_run(tok, ['init', 'halve', 'logn', 'either', 'f', 'cls'], A);
+}
+
+// ───────── 16. Frequency count（Simplified 用的 cued 版本）：Sum、矩陣 ─────────
+async function ab2FreqSum(tok) {
+  fresh([0, 6, 14], [0, 2.6, 0]);
+  const mark = AB2_marks();
+  const SUMA = [8, 3, 9, 7, 2];
+  let cd = null, fq = [], ip = null, cs = [];
+  const xs = (k) => -5 + k * 1.2;
+  const A = {
+    method: () => { mark('frequency count：數每個敘述執行幾次', 'say', 0, 6.6); S2('方法：算每個敘述執行幾次', 'frequency count'); },
+    one: () => { mark('只有一個敘述 → f = 1：常數', 'note', 0, 5.8); S2('只有一個敘述：f = 1 → 常數時間', ''); },
+    sum: () => {
+      mark.clear();
+      cd = code(['Algorithm Sum(A, n)', '{', '  s = 0;', '  for (i = 0; i < n; i++)', '    s = s + A[i];', '  return s;', '}'], -3.4, 6.8, 0.5);
+      fq = [null, null, tag('', 'ptr alt', -0.2, 5.8), tag('', 'ptr alt', -0.2, 5.3), tag('', 'ptr alt', -0.2, 4.8), tag('', 'ptr alt', -0.2, 4.3)];
+      cs = SUMA.map((v, k) => { tag('A[' + k + ']', 'idx', xs(k), 0, 0.95); return cube(v, C.blue, [1, 0.7, 1], xs(k), 0.35, 0, 2); });
+      cd.hl(2); txt(fq[2], '1'); txt(fq[3], 'n + 1');
+      S2('陣列求和：s = 0 執行 1 次、for 執行 n + 1 次', '例：n = 5');
+    },
+    body: () => { cd.hl(4); txt(fq[4], 'n'); txt(fq[5], '1'); S2('迴圈裡 s = s + A[i] 執行 n 次、return 1 次', ''); },
+    why: async () => {
+      cd.hl(3); S2('for 為什麼是 n + 1？i 走到 n 還要再檢查一次才停', 'i = 0、1、2、3、4 成立，i = 5 不成立');
+      ip = tag('i', 'ptr', xs(0), 1.5);
+      for (let i = 0; i <= 5; i++) { ip.position.x = xs(Math.min(i, 5)); cube('', i < 5 ? C.purple : C.red, [0.8, 0.3, 0.8], 4.4, 0.17 + i * 0.34, 0, 2); if (i < 5) glow(cs[i], GOLD); await beat(tok, 380); }
+      tag('檢查 6 次 = n + 1', 'ptr alt', 4.4, 2.6);
+    },
+    tot: () => { cd.hl(-1); mark('f(n) = 1 + (n + 1) + n + 1 = 2n + 3', 'note', 2.6, 6.6); S2('加起來：f(n) = 2n + 3', ''); },
+    poly: () => { S2('一行一行算，得到的是一個多項式', '2n + 3'); },
+    lin: () => { mark('最高次 n → 線性', 'good', 2.6, 5.9); S2('最高次是 n → 線性時間', 'O(n)'); },
+  };
+  await AB2_run(tok, ['method', 'one', 'sum', 'body', 'why', 'tot', 'poly', 'lin'], A);
+}
+async function ab2FreqMatrix(tok) {
+  let cd = null, fl = [];
+  const n = 3, cell = (i, j) => [-1.2 + j * 1.2, (i - 1) * 1.2];
+  const setup = (mul) => {
+    fresh([0, 6.5, 14], [0, 2.4, 0]);
+    const lines = mul
+      ? ['for (i = 0; i < n; i++)', '  for (j = 0; j < n; j++) {', '    C[i][j] = 0;', '    for (k = 0; k < n; k++)', '      C[i][j] += A[i][k] * B[k][j];', '  }']
+      : ['for (i = 0; i < n; i++)', '  for (j = 0; j < n; j++)', '    C[i][j] = A[i][j] + B[i][j];'];
+    cd = code(lines, -2.8, 6.8, 0.48);
+    fl = lines.map((_, i) => tag('', 'ptr alt', 2.8, 6.8 - i * 0.48));
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { const [x, z] = cell(i, j); ctx.tile(V3(x, 0.04, z), 1, 1); }
+    tag('C（n = 3）', 'ptr', -3.4, 0.2, 0);
+  };
+  const A = {
+    add: () => { setup(false); cd.hl(0); txt(fl[0], 'n + 1'); txt(fl[1], 'n(n + 1)'); S2('矩陣相加：外層 n + 1、內層 n(n + 1)', '內層在外層裡面，所以乘 n'); },
+    body: async () => {
+      cd.hl(2); S2('最內層敘述執行 n² 次', 'n = 3 → 9 次（一顆方塊 = 一次）');
+      for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { const [x, z] = cell(i, j); cube('', C.green, [0.8, 0.35, 0.8], x, 0.25, z, 3); await beat(tok, 180); }
+      txt(fl[2], 'n²');
+    },
+    f2: () => { cd.hl(-1); tag('f(n) = 2n² + 2n + 1', 'note', 3.6, 3.6); S2('f(n) = 2n² + 2n + 1', ''); },
+    quad: () => { tag('最高次 n² → 平方', 'good', 3.6, 2.9); S2('最高次 n² → 平方時間（quadratic）', 'O(n²)'); },
+    mul: () => { setup(true); cd.hl(0); txt(fl[0], 'n + 1'); txt(fl[1], 'n(n + 1)'); txt(fl[2], 'n²'); S2('矩陣相乘：三層迴圈', 'n + 1、n(n + 1)、n²'); },
+    inner: async () => {
+      cd.hl(4); txt(fl[3], 'n²(n + 1)'); S2('第三層 n²(n + 1)、最內層 n³ 次', 'n = 3 → 27 次');
+      for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) for (let k = 0; k < n; k++) { const [x, z] = cell(i, j); cube('', C.purple, [0.8, 0.3, 0.8], x, 0.23 + k * 0.34, z, 3); await beat(tok, 80); }
+      txt(fl[4], 'n³');
+    },
+    f3: () => { cd.hl(-1); tag('f(n) = 2n³ + 3n² + 2n + 1', 'note', 3.6, 3.6); S2('f(n) = 2n³ + 3n² + 2n + 1', ''); },
+    cubic: () => { tag('最高次 n³ → 立方', 'good', 3.6, 2.9); S2('最高次 n³ → 立方時間（cubic）', 'O(n³)'); },
+  };
+  await AB2_run(tok, ['add', 'body', 'f2', 'quad', 'mul', 'inner', 'f3', 'cubic'], A);
+}
+
+// ───────── 17. 遞迴函數 T(n) = 2T(n−1) + 1（Simplified 用的 cued 版本） ─────────
+async function ab2WriteRR2T(tok) {
+  fresh([0, 5, 14], [0, 3.2, 0]);
+  const cd = code(['void Test(int n) {', '  if (n > 0) {', '    printf("%d", n);', '    Test(n − 1);', '    Test(n − 1);', '  }', '}'], -3.6, 6.8, 0.55);
+  const cost = (ln, c, k) => { tag(c, 'ptr alt', 0.8, 6.8 - ln * 0.55); return cube(c, c.startsWith('T') ? C.purple : C.green, [1.6, 0.6, 1], 2.4 + k * 1.75, 0.3, 0, 3); };
+  let fb = null, rr = null;
+  const A = {
+    T: async () => { cd.hl(0); fb = buddy('Test(n)', 'T(n)', C.teal, -5.8, 0, 1.6, 0.7); S2('遞迴函數：設 Test(n) 花 T(n) 時間', ''); await fb.hop(tok); },
+    one: () => { cd.hl(2); cost(2, '1', 0); cd.hl(3); cost(3, 'T(n−1)', 1); S2('printf 花 1；呼叫自己 Test(n−1) 花 T(n−1)', '規模少 1 的同一個問題'); },
+    two: () => { cd.hl(4); cost(4, 'T(n−1)', 2); S2('再呼叫一次：又是 T(n−1)', ''); },
+    rr: () => { cd.hl(-1); rr = tag('T(n) = 2T(n−1) + 1', 'note', 3.8, 2.4); S2('全部加起來：T(n) = 2T(n−1) + 1', '這叫遞迴式（recurrence relation）'); },
+    sol: () => { tag('解出來 ≈ 2ⁿ', 'good', 3.8, 1.6); S2('解出這個遞迴式，會得到 2ⁿ', '解法在其他影片'); },
+    exp: async () => { fb.mood('wow'); S2('2ⁿ → 指數時間（exponential）', ''); await fb.hop(tok); },
+  };
+  await AB2_run(tok, ['T', 'one', 'two', 'rr', 'sol', 'exp'], A);
 }
 
 // ───────── 16. 從程式寫出遞迴式 ─────────
@@ -3209,6 +3440,9 @@ FRAG.push(['algbari2-ls-average', 'Linear search 平均情況 (n + 1)/2', ab2LsA
 FRAG.push(['algbari2-case-notation', 'Case 與 O/Ω/Θ 無關', ab2CaseNotation]);
 FRAG.push(['algbari2-bst-cases', 'BST 的 best / worst case 與樹高', ab2BstCases]);
 FRAG.push(['algbari2-binsearch-count', 'Binary search：3 log n + 2', ab2BinSearch]);
+FRAG.push(['algbari2-freq-sum', 'Frequency count：陣列求和 2n + 3（逐句）', ab2FreqSum]);
+FRAG.push(['algbari2-freq-matrix', '矩陣相加 2n² + 2n + 1、相乘 2n³ + …（逐句）', ab2FreqMatrix]);
+FRAG.push(['algbari2-write-rr-2t', '遞迴函數 T(n) = 2T(n−1) + 1（逐句）', ab2WriteRR2T]);
 FRAG.push(['algbari2-write-rr', '從程式寫出遞迴式', ab2WriteRR]);
 FRAG.push(['algbari2-rtree', '遞迴樹：逐層加總', ab2RTree]);
 FRAG.push(['algbari2-backsub', 'Back substitution：代 k 次', ab2BackSub]);
