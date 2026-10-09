@@ -4241,14 +4241,19 @@ FRAG.push(['dpbari3-lcs-stone-trace', 'LCS 回溯：得到 ONE', async (tok) => 
   // ═══ dpjiang1.js ═══
   {
 // ─── 交大江蕙如：359YMyqbEG4（Lec17 DP 1/3）、S5vS9YEvnFU（Lec19 DP 3/3） ───
-// 只用 K 與 ctx（say / beat）。老師的例子：
+// Cued scenes: every `await step(tok)` waits for the sentence it shows (cues in the notes; the number in
+// each step comment is the transcript line where the lecturer starts saying it). Motion between steps is
+// short; nothing loops or replays. Little buddies react to what happens.
+// 老師的例子：
 //   Weighted interval scheduling（KT Fig 6.2 那組）：v = 2 4 4 7 2 1、p = 0 0 1 0 3 3；O6 = {6}∪O3 或 O5；
 //   OPT(j) = max(vⱼ + OPT(p(j)), OPT(j−1))；遞迴樹 6→5,3、5→4,3…；memo 後只算 6 次；M[0..6] = 0 2 4 6 7 8 8。
-//   greedy（最早結束）反例 1 3 1；Fibonacci F0 = 0、F1 = 1，F5 → F4、F3；F[] 先填 −1；maze routing（wave propagation，O(mn)）。
+//   greedy（最早結束）反例 1 3 1；Fibonacci F0 = 0、F1 = 1，F5 → F4、F3；F[] 先填 −1；maze routing（wave propagation，O(mn)，
+//   倒著數 12 11 … 1）。
 //   Lec19：Bellman-Ford 表（KT Fig 6.23）b 欄 5 = min(−2, −1+2, −2+0) = −2；O(nm)；只要前一欄；negative cycle；
 //   套利 $1 → 1.3941 法郎 → 0.9308 歐元 → $1.00084（金 1 → $327.25）；−log 轉換；多跑一輪偵測；鴿籠證明；
 //   加一個新點 t（全部 0 邊）；TSP：OPT(S,u,v)、2ⁿn² / 2ⁿn³ vs n!；DP = 聰明的 recursion。
-const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, code, anim, line, arrow, GOLD, GREEN, RED, GRAY } = K;
+// 示意值：迷宮的牆、D&C／paradigm 的方塊、negative cycle 與 n = 3 小圖的邊權、TSP 城市位置。
+const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, code, anim, line, arrow, ghostBox, GOLD, GREEN, RED, GRAY, step, buddy, prop, bob, travel, remove } = K;
 const C = { blue: '#4b9ee2', teal: '#2fc092', purple: '#9b7ef4', orange: '#dd8238', pink: '#e55a9b', red: '#d64545', sand: '#c9b48e', paper: '#efe6d2', gold: '#c08a1f', brown: '#6e5f49', cyan: '#31aab0', gray: '#bdb3a2' };
 const LV = [C.purple, C.blue, C.cyan, C.orange, C.pink, C.gold];
 const box = (t, c, x, y, w = 0.9, h = 0.6, d = 0.5, drop = 0, z = 0) => cube(t, c, [w, h, d], x, y, z, drop);
@@ -4258,6 +4263,14 @@ function link(a, b, color = C.brown, trim = 0.42) {
   return arrow(A.clone().addScaledVector(d, trim), Bv.clone().addScaledVector(d, -trim), color);
 }
 const fade = (m, on) => { m.material.transparent = !on; m.material.opacity = on ? 1 : 0.25; };
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const pkt = (t, x, y, z = 0) => tag(t, 'pkt', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+// a little helper character standing on the floor in front of the picture
+const pal = (name, x, color = '#f4a56a', z = 1.6, size = 0.75, y = 0) => buddy(name, '', color, x, y, z, size);
+const hl = (l, on) => { l.element.className = 'lab-label ' + (on ? 'ptr alt' : 'ptr'); };
 // generic tree layout: node = { kids: [] }; leaves spaced by sp, parents centred over kids
 function layout(root, sp, yTop, dy, cx = 0) {
   const all = []; let leaf = 0;
@@ -4270,6 +4283,7 @@ function layout(root, sp, yTop, dy, cx = 0) {
   return all;
 }
 const sub = (t) => [t].concat(...t.kids.map(sub));
+const pre = (T) => { const o = []; (function w(t) { o.push(t); t.kids.forEach(w); })(T); return o; };
 
 // ── weighted interval scheduling 資料（依 finish time 排好） ──
 const WJ = [null, { s: 0, f: 3, v: 2, p: 0 }, { s: 1, f: 5, v: 4, p: 0 }, { s: 4, f: 7, v: 4, p: 1 }, { s: 2, f: 8, v: 7, p: 0 }, { s: 7, f: 10, v: 2, p: 3 }, { s: 7.5, f: 11, v: 1, p: 3 }];
@@ -4289,625 +4303,1211 @@ function drawJobs(withV = true, yOff = 0) {
 }
 // recursion tree of Compute-Opt(6)（省略 OPT(0)）：kids = [j−1, p(j)]
 function optTree(j) { const k = []; if (j - 1 >= 1) k.push(optTree(j - 1)); if (WJ[j].p >= 1) k.push(optTree(WJ[j].p)); return { j, kids: k }; }
+const fibT = (n) => ({ n, kids: n <= 1 ? [] : [fibT(n - 1), fibT(n - 2)] });
 
 // ════════════════ 359YMyqbEG4（Lec17 Dynamic Programming 1/3） ════════════════
 
 // 03:35 Divide & Conquer 回顧：divide → conquer → combine
 FRAG.push(['dpjiang1-dc-review', 'Divide & Conquer 回顧：拆、遞迴解、合併', async (tok) => {
   fresh([0, 4.2, 14], [0, 3.8, 0]);
+  await step(tok);                                   // 215.0 先 review D&C：和 DP 像雙胞胎
+  const dc = pal('D&C', -5.6, C.blue), dp = pal('DP', -4.2, C.orange);
+  dc.look(1); dp.look(-1);
+  const tw = bub('我們很像，但本質不一樣', -4.9, 2.2, 1.6);
+  say('先快速 review Divide & Conquer', '它和 DP 像雙胞胎');
+  await step(tok);                                   // 238.0 直接處理一個問題太複雜
+  remove(tw); dp.look(0); dc.mood('wow');
   const top = box('n', C.purple, 0, 7.2, 4.6, 0.6, 0.5, 1.2);
-  say('D&C：問題太複雜，先拆開', 'divide：拆成同性質的小問題');
-  await beat(tok, 2400);
+  const hard = bub('太大了，直接解好難…', 3.6, 8.2);
+  say('一個大問題：直接處理太複雜', '');
+  await step(tok);                                   // 243.0 divide：先拆成小問題
+  remove(hard); dc.mood('calm');
   const lv1 = [-2.6, 2.6].map((x) => box('n/2', C.blue, x, 5.6, 2.2, 0.55, 0.5, 1.0));
   const e1 = lv1.map((m) => line(0, 6.9, m.position.x, 5.9, 0, C.sand));
-  await beat(tok, 1600);
+  tag('divide', 'ptr', -5.4, 6.4);
+  say('第一步 divide：把大問題拆成小問題', '');
+  await step(tok);                                   // 249.0 problem size 小了，比較好解
   const lv2 = [-3.9, -1.3, 1.3, 3.9].map((x) => box('n/4', C.cyan, x, 4.0, 1.1, 0.5, 0.5, 1.0));
   const e2 = lv2.map((m, k) => line(lv1[k >> 1].position.x, 5.35, m.position.x, 4.25, 0, C.sand));
-  say('拆出來的小問題要同性質', '只有 problem size 變小');
-  await beat(tok, 2400);
-  lv2.forEach((m) => { tint(m, C.teal); glow(m, GREEN); });
-  say('小到 simple enough 就直接解', 'conquer：recursively solve');
-  await beat(tok, 2400);
-  lv2.forEach((m) => glow(m, null));
-  say('最難的是 combine', '把小答案兜回大答案');
-  for (let k = 0; k < 2; k++) {
-    move(lv2[2 * k], lv1[k].position.x - 0.3, 5.6, 0); move(lv2[2 * k + 1], lv1[k].position.x + 0.3, 5.6, 0);
-    await beat(tok, 900);
-    kill(lv2[2 * k]); kill(lv2[2 * k + 1]); kill(e2[2 * k]); kill(e2[2 * k + 1]);
-    tint(lv1[k], C.teal); glow(lv1[k], GOLD);
-    await beat(tok, 700);
-    glow(lv1[k], null);
-  }
+  say('拆小了，problem size 就變小', '小問題比較有機會解');
+  await step(tok);                                   // 264.0 小問題要和原問題同性質
+  const same = note('拆完還是「同一種問題」，只是比較小', 0, 2.9);
+  say('唯一條件：小問題要和原問題同性質', '拆完變成別種問題就不算成功');
+  await step(tok);                                   // 277.0 每一塊 recursively conquer
+  remove(same);
+  tag('conquer', 'ptr', -5.4, 4.0);
+  for (const m of lv2) { glow(m, GOLD); await beat(tok, 260); }
+  say('每一塊再 recursively conquer', '同樣的方法再拆下去');
+  await step(tok);                                   // 283.0 拆到 simple enough 就停
+  lv2.forEach((m) => { glow(m, null); tint(m, C.teal); });
+  good('simple enough：直接有答案', 0, 2.9);
+  dc.mood('happy');
+  say('拆到 simple enough 就停', '答案一眼就看得出來');
+  await step(tok);                                   // 299.0 combine：把小答案兜回大答案
+  tag('combine', 'ptr alt', -5.4, 5.6);
+  for (let k = 0; k < 2; k++) { move(lv2[2 * k], lv1[k].position.x - 0.3, 5.6, 0); move(lv2[2 * k + 1], lv1[k].position.x + 0.3, 5.6, 0); }
+  await beat(tok, 800);
+  lv2.forEach(kill); e2.forEach(kill); lv1.forEach((m) => tint(m, C.teal));
   lv1.forEach((m) => move(m, 0, 7.2, 0));
-  await beat(tok, 900);
-  lv1.forEach(kill); e1.forEach(kill);
-  tint(top, C.teal); glow(top, GOLD);
-  say('例：merge sort 的 merge 是 O(n)', 'combine 決定 time complexity');
-  await beat(tok, 2600);
-  glow(top, null);
-  tag('recurrence：T(n) = 2T(n/2) + O(n)', 'ptr alt', 0, 2.2);
-  say('用 recurrence 分析遞迴程式', '展開法／recursion tree／猜+數學歸納');
-  await beat(tok, 3200);
+  await beat(tok, 800);
+  lv1.forEach(kill); e1.forEach(kill); tint(top, C.teal);
+  say('最後 combine：小答案兜回大問題的答案', '');
+  await step(tok);                                   // 313.0 combine 最困難
+  glow(top, GOLD); dc.mood('wow');
+  bad('combine 通常最難設計', 3.6, 8.2);
+  say('幾乎所有 D&C，combine 都最困難', '它決定 time complexity 好不好');
+  await step(tok);                                   // 327.2 設計方法和數學歸納法結合
+  glow(top, null); dc.mood('calm');
+  pkt('數學歸納法（induction）', -3.6, 3.0);
+  say('D&C 的設計和數學歸納法綁在一起', '例如貼磁磚的例子');
+  await step(tok);                                   // 349.0 正確性也用數學歸納法證
+  good('正確性：用歸納法證明', -3.6, 2.2);
+  say('所以證明正確性也用數學歸納法', '');
+  await step(tok);                                   // 364.0 implementation 配合 recursive code
+  const cd = code(['solve(n):', '  if n 很小: 直接解', '  solve(左半); solve(右半)', '  combine'], 2.2, 3.6, 0.42);
+  cd.hl(2);
+  say('實作通常是 recursive code', '函式自己呼叫自己');
+  await step(tok);                                   // 375.0 寫 recurrence relation 分析
+  cd.hl(-1);
+  const rc = tag('T(n) = 2T(n/2) + O(n)', 'ptr alt', 2.2, 1.6);
+  say('分析時間：寫出 recurrence relation', '例：merge sort');
+  await step(tok);                                   // 380.0 展開法／recursion tree
+  txt(rc, 'T(n) 展開 → recursion tree → O(n log n)');
+  say('解法一：展開（iteration）', '也可以畫 recursion tree');
+  await step(tok);                                   // 395.0 猜答案再用歸納法證
+  bub('或先猜答案，再用數學歸納法證', 2.2, 0.8);
+  dp.look(1); await dp.hop(tok);
+  say('解法二：猜一個答案，再用歸納法證', '這就是 D&C 的 review');
 }]);
 
-// 06:52 Programming = 數學最佳化；DP 隱式試遍所有子問題、順序是關鍵
+// 06:58 Programming = 數學最佳化；DP 隱式試遍所有子問題、順序是關鍵
 FRAG.push(['dpjiang1-dp-idea', 'DP：Programming 是最佳化；隱式試遍、照順序算', async (tok) => {
   fresh([0, 4.2, 14.5], [0, 3.8, 0]);
-  const words = ['Linear', 'Quadratic', 'Convex', 'Non-linear'].map((w, k) => tag(w + ' Programming', 'idx', -4.2, 7.4 - k * 0.5));
-  say('Programming ≠ 寫程式', 'mathematical programming = 最佳化');
-  await beat(tok, 2600);
-  const obj = tag('objective：min cost / max value', 'ptr', 2.6, 7.0);
-  say('最佳化問題：解要有 quality', 'minimization 或 maximization');
-  await beat(tok, 2600);
-  tag('Richard Bellman, 1953', 'ptr alt', 2.6, 6.2);
-  say('Bellman 1953 年發表', '名字刻意避開太數學的字眼');
-  await beat(tok, 2600);
-  words.forEach(kill); kill(obj);
-  // left: D&C fully expanded tree with duplicates
-  tag('Divide & Conquer：完全展開', 'ptr', -3.6, 5.4);
-  const L = layout({ k: 4, kids: [{ k: 3, kids: [{ k: 2, kids: [] }, { k: 1, kids: [] }] }, { k: 2, kids: [{ k: 1, kids: [] }, { k: 0, kids: [] }] }] }, 1.0, 4.6, 1.15, -3.6);
-  L.forEach((t) => { if (t.par) line(t.par.x, t.par.y - 0.25, t.x, t.y + 0.25, 0, C.sand); t.m = box('P' + t.k, LV[t.d], t.x, t.y, 0.8, 0.45, 0.4, 1.0); });
-  await beat(tok, 1200);
+  const bel = pal('', -5.8, C.orange);
+  await step(tok);                                   // 421.0 Programming ≠ 寫程式
+  const pc = prop('monitor', -3.4, 4.6, 0, 1.2, 'coding？');
+  bad('Programming ≠ coding', -3.4, 7.2);
+  say('Dynamic Programming 的 Programming', '不是寫程式的意思');
+  await step(tok);                                   // 431.0 Mathematical Programming：Linear、Quadratic…
+  kill(pc);
+  const words = ['Linear', 'Quadratic', 'Convex', 'Non-linear'].map((w, k) => tag(w + ' Programming', 'idx', -3.4, 6.2 - k * 0.55));
+  say('是 Mathematical Programming', '例如 linear / quadratic programming：最佳化');
+  await step(tok);                                   // 461.9 DP 用來解最佳化問題
+  pkt('DP → 最佳化問題', 3.0, 7.2);
+  say('所以 DP 典型用來解最佳化問題', '');
+  await step(tok);                                   // 478.6 解有 quality：objective
+  const sc = tag('objective：評分方式', 'ptr', 3.0, 6.4);
+  say('解不只要對，還要分數最好', '有一個 objective（cost function）');
+  await step(tok);                                   // 500.0 minimization / maximization
+  txt(sc, 'objective：min cost／max value');
+  say('分成 minimization 或 maximization', '求最小或最大');
+  await step(tok);                                   // 515.0 Bellman 1953
+  words.forEach(kill);
+  const nm = tag('Richard Bellman，1953', 'ptr alt', -3.4, 6.6);
+  bel.mood('happy'); await bel.hop(tok);
+  say('Richard Bellman 在 1953 年發表', '之前已經醞釀很久');
+  await step(tok);                                   // 545.0 軍方單位，老闆不喜歡純數學
+  const boss = pal('老闆', -2.2, C.gray);
+  boss.mood('sad'); bel.look(1);
+  const b1 = bub('數學？不給錢…', -2.2, 2.0, 1.6);
+  say('他在軍方做研究，老闆不愛純數學', '名字太數學就拿不到 funding');
+  await step(tok);                                   // 601.0 取名 Dynamic Programming
+  remove(b1); boss.mood('happy');
+  bub('Dynamic Programming？聽起來不錯！', -2.2, 2.0, 1.6);
+  say('取名 Dynamic Programming', '外行看不出跟數學有關');
+  await step(tok);                                   // 629.7 basic idea：D&C 完全展開
+  kill(nm);
+  tag('Divide & Conquer：完全展開', 'ptr', -3.4, 5.4);
+  const L = layout({ k: 4, kids: [{ k: 3, kids: [{ k: 2, kids: [] }, { k: 1, kids: [] }] }, { k: 2, kids: [{ k: 1, kids: [] }, { k: 0, kids: [] }] }] }, 1.0, 4.6, 1.15, -3.4);
+  for (const t of L) { if (t.par) line(t.par.x, t.par.y - 0.25, t.x, t.y + 0.25, 0, C.sand); t.m = box('P' + t.k, LV[t.d], t.x, t.y, 0.8, 0.45, 0.4, 1.0); await beat(tok, 160); }
+  say('D&C：recursive call 把子問題全部攤開', '每個都很明白地算一遍');
+  await step(tok);                                   // 668.0 DP 也看過所有子問題，但 implicitly
   L.forEach((t) => { if (t.k === 2 || t.k === 1) glow(t.m, GOLD); });
-  say('D&C 把每個子問題攤開來算', '重複的也重算');
-  await beat(tok, 2400);
+  tag('DP：implicitly 試遍', 'ptr', 3.4, 5.4);
+  say('DP 也看過所有 subproblem', '但不是一個一個攤開：implicitly');
+  await step(tok);                                   // 697.0 從小的 solution 兜出大的
   L.forEach((t) => glow(t.m, null));
-  // right: DP in an order
-  tag('DP：implicitly 試遍，照順序', 'ptr', 3.4, 5.4);
   const cells = [0, 1, 2, 3, 4].map((k) => box('P' + k, C.gray, 1.4 + k * 1.0, 3.6, 0.85, 0.5, 0.45));
   for (let k = 0; k < 5; k++) {
-    tint(cells[k], C.teal); glow(cells[k], GREEN);
+    tint(cells[k], C.teal);
     if (k) link([1.4 + (k - 1) * 1.0, 3.6], [1.4 + k * 1.0, 3.6], C.teal, 0.43);
-    say('由小到大：P' + k, k ? '用前面算好的答案兜出來' : '最小的子問題先算');
-    await beat(tok, 900);
-    glow(cells[k], null);
+    await beat(tok, 300);
   }
-  say('計算子問題的順序是 key idea', '順序對了 DP 才會正常運作');
-  await beat(tok, 3000);
+  say('從小的 solution 兜出大的 solution', '');
+  await step(tok);                                   // 726.0 計算順序是 key idea
+  cells.forEach((m) => glow(m, GREEN));
+  note('計算順序 = key idea', 3.4, 2.4);
+  say('最講究的是：子問題的計算順序', '順序對了，DP 才會正常運作');
+  await step(tok);                                   // 780.0 培養 sense：看出能用 DP
+  cells.forEach((m) => glow(m, null));
+  bel.look(0); bel.mood('wow');
+  bub('這題聞起來像 DP？', -5.8, 2.2, 1.6);
+  say('之後要培養 sense', '看到題目就聞得出適不適合 DP');
 }]);
 
-// 13:19 Weighted interval scheduling：個數最多 ≠ value 最大；greedy 反例 1 3 1
+// 13:24 Weighted interval scheduling：個數最多 ≠ value 最大；greedy 反例 1 3 1
 FRAG.push(['dpjiang1-wis-greedy', 'Weighted interval scheduling：greedy 失效（1 3 1）', async (tok) => {
   fresh([0, 4.0, 13.5], [0, 3.8, 0]);
-  say('每個 request 做完有 value', '選一組不重疊的，總 value 最大');
-  const ex = tag('例：3 個 request（12、13、16）< 26 + 16 = 42', 'ptr', 0, 7.6);
-  await beat(tok, 3000);
-  say('個數最多 ≠ value 最大', 'unit weight → non-uniform weight');
-  await beat(tok, 2400);
-  kill(ex);
   const X = (t) => (t - 4) * 1.15;
+  await step(tok);                                   // 804.0 第一個問題：WIS
+  const cpu = prop('cpu', -5.6, 0, 1.4, 0.9, 'single core');
+  bob(cpu, 0.04);
+  tag('Weighted Interval Scheduling', 'ptr alt', 0, 8.0);
+  say('第一個問題：Weighted Interval Scheduling', '開學列的代表性問題之一');
+  await step(tok);                                   // 827.0 DP 的基礎是數學歸納法
+  const ind = pkt('DP ＝ induction？', 3.6, 7.2);
+  say('DP 最基礎的數學 idea 是數學歸納法', '有老師說：送你一個字 induction');
+  await step(tok);                                   // 878.0 有 weight；request 有 start / finish
+  remove(ind);
   line(X(0) - 0.3, 2.0, X(8) + 0.3, 2.0, 0, C.brown); tag('time', 'idx', X(8) + 0.6, 2.0);
+  const R0 = [[0, 2, 5.6], [1, 4, 4.8], [3, 6, 4.0], [5, 8, 3.2]].map(([s, f, y], k) => box(' ', C.gray, (X(s) + X(f)) / 2, y, X(f) - X(s) - 0.06, 0.45, 0.4, 1.0));
+  say('每個 request 有 start 和 finish time', '占用一段 interval');
+  await step(tok);                                   // 922.0 single core 一次一個；以前要做最多個
+  [0, 2, 3].forEach((k) => tint(R0[k], C.blue));
+  const cnt = tag('以前：做越多個越好（例：12、13、16 三個）', 'ptr', 0, 7.2);
+  say('一次只能做一個 request', '以前的目標：個數最多');
+  await step(tok);                                   // 947.0 每個 request 做完有 value
+  R0.forEach((m, k) => relabel(m, 'v=' + [3, 26, 2, 16][k]));
+  say('現在：每個 request 做完會得到 value', '');
+  await step(tok);                                   // 969.0 最佳解只要兩個：26 + 16 = 42
+  R0.forEach((m) => tint(m, C.gray)); [1, 3].forEach((k) => { tint(R0[k], C.orange); glow(R0[k], GREEN); });
+  txt(cnt, '這題最佳：兩個 request，26 + 16 = 42');
+  say('最佳解只要兩個：26 + 16 = 42', '比做三個的 value 還大');
+  await step(tok);                                   // 1005.0 unit weight vs non-uniform weight
+  R0.forEach(kill);
+  txt(cnt, '個數 = 每個 value 都一樣（unit weight）');
+  say('只看個數 = 每個 value 都一樣', '現在是 non-uniform weight');
+  await step(tok);                                   // 1037.0 greedy：每次挑最早結束的
+  txt(cnt, 'greedy：每次挑 finish time 最早的');
   const J = [{ s: 0, f: 3, v: 1, y: 5.6 }, { s: 2, f: 7, v: 3, y: 4.4 }, { s: 4, f: 8, v: 1, y: 3.2 }];
+  say('之前的 greedy：照 finish time 排', '挑最早結束的，刪掉衝突的，再重複');
+  await step(tok);                                   // 1062.0 小例子：weight 1 3 1
   const ms = J.map((j, k) => box('v=' + j.v, LV[k + 1], (X(j.s) + X(j.f)) / 2, j.y, X(j.f) - X(j.s) - 0.06, 0.5, 0.4, 1.2));
-  say('之前的 greedy：照 finish time 排', '每次挑最早結束的');
-  await beat(tok, 2400);
+  say('小例子：三個 request，weight 1 3 1', '');
+  await step(tok);                                   // 1071.0 greedy 選兩個 1：value 2
+  const g = pal('greedy', 5.6, C.blue);
   glow(ms[0], GOLD); tint(ms[0], C.teal);
-  say('先挑最早結束：v = 1', '和它重疊的刪掉');
-  await beat(tok, 1800);
   fly(ms[1]);
-  await beat(tok, 900);
+  await beat(tok, 700);
   glow(ms[2], GOLD); tint(ms[2], C.teal);
-  say('再挑下一個：v = 1', 'greedy 總和 = 1 + 1 = 2');
-  await beat(tok, 2400);
-  glow(ms[0], null); glow(ms[2], null);
-  fly(ms[0]); fly(ms[2]);
+  g.mood('happy');
+  bub('1 + 1 = 2', 5.6, 2.2, 1.6);
+  say('greedy 選兩個 1：value = 2', '');
+  await step(tok);                                   // 1077.0 最佳解只選 3
+  glow(ms[0], null); glow(ms[2], null); fly(ms[0]); fly(ms[2]);
   const best = box('v=3', C.orange, (X(2) + X(7)) / 2, 4.4, X(7) - X(2) - 0.06, 0.5, 0.4, 2);
-  await beat(tok, 900);
-  glow(best, GREEN);
-  say('最佳解只選中間那個：3', '3 > 2：有 weight 時 greedy 不保證最佳');
-  await beat(tok, 3000);
+  await beat(tok, 700);
+  glow(best, GREEN); g.mood('sad');
+  bad('greedy 2 < 最佳 3', 0, 1.0);
+  say('最佳解只選中間那個：value = 3', '有 weight 時 greedy 不保證最佳');
 }]);
 
-// 18:05 第一個企圖：induction on time（刻度 Δ 不好控制）
+// 18:12 第一個企圖：induction on time（刻度 Δ 不好控制）
 FRAG.push(['dpjiang1-wis-time', 'Induction on time：Δ 的刻度不好控制', async (tok) => {
   fresh([0, 4.2, 14], [0, 4.0, 0]);
+  const me = pal('', -6.4, C.orange, 1.6, 0.7);
+  await step(tok);                                   // 1097.0 給一些 request，各有 value
   const ms = drawJobs(true);
-  say('先照 finish time 排好', '1~6 號 request');
-  await beat(tok, 2400);
+  say('6 個 request，各有 value', '做完得到 2 塊、4 塊…');
+  await step(tok);                                   // 1136.0 第一個企圖
+  me.mood('wow');
+  bub('要對什麼做 induction？', -5.4, 2.0, 1.6);
+  say('最難的是決定 induction 在什麼上面', '第一個企圖');
+  await step(tok);                                   // 1151.0 用時間當 induction 的 base
+  const tl0 = pkt('time →', TX(0), 7.6);
+  await travel(tok, tl0, V3(TX(0), 7.6, 0), V3(TX(11), 7.6, 0), 1400);
+  say('想法一：在時間軸上做 induction', '時間慢慢往後推');
+  await step(tok);                                   // 1173.0 先照 finish time 排好
+  remove(tl0);
+  for (let j = 1; j <= 6; j++) { glow(ms[j], GOLD); await beat(tok, 150); glow(ms[j], null); }
+  say('和 greedy 一樣：先照 finish time 排序', '1 號最早結束…6 號最晚');
+  await step(tok);                                   // 1202.0 時間 0 到 t 的最大 value
   const cur = box('', C.red, TX(11), 4.4, 0.08, 5.6, 0.08);
   const tl = tag('t', 'ptr alt', TX(11), 7.6);
-  say('想法一：在時間軸上做 induction', 'OPT(t) = OPT(t′) + Δ 那一小段');
-  await beat(tok, 2600);
+  say('問：從時間 0 到 t，最大 value 是多少？', '');
+  await step(tok);                                   // 1237.0 = 小一點的 t′ 的答案 + Δ
   const cur2 = box('', C.blue, TX(10.4), 4.4, 0.08, 5.6, 0.08);
   const tl2 = tag("t′", 'ptr', TX(10.4), 7.6);
-  say('Δ 要切多大？', '固定刻度很難寫成 recursion');
-  await anim(tok, 1800, (e) => { cur2.position.x = TX(10.4 - 3 * e); tl2.position.x = cur2.position.x; });
-  await beat(tok, 1200);
-  glow(ms[6], GOLD);
-  say('其實 t 卡在最後一筆 request 結束', '只要問：第 6 筆要不要算？');
-  await beat(tok, 2600);
+  const dl = tag('Δ', 'idx', TX(10.7), 8.0);
+  say("OPT(t) = OPT(t′) + Δ 那一小段的貢獻", '一般 induction 的想法');
+  await step(tok);                                   // 1320.0 區間要取多大？
+  await anim(tok, 1600, (e) => { cur2.position.x = TX(10.4 - 3 * e); tl2.position.x = cur2.position.x; dl.position.x = (cur2.position.x + TX(11)) / 2; });
+  me.mood('sad');
+  say('問題：Δ 要切多大？', '固定刻度很難寫成好算的 recursion');
+  await step(tok);                                   // 1346.0 t 剛好落在最後 request 結束
+  kill(dl); glow(ms[6], GOLD);
+  say('其實 t 剛好卡在最後一筆 request 結束', '');
+  await step(tok);                                   // 1368.0 只考慮兩件事
+  const q = bub('第 6 筆要不要算？', TX(9.2), 7.0);
+  say('只要問：最後這筆在不在最佳解裡', '是的話怎樣？不是的話怎樣？');
+  await step(tok);                                   // 1398.0 要算：前面只能到 s₆ 之前
+  remove(q);
   cur2.position.x = TX(7.5); tl2.position.x = TX(7.5); txt(tl2, 's₆');
   ms.forEach((m, j) => { if (j && j <= 3) tint(m, C.teal); });
-  say('要算：前面只能到 s₆ 之前', '再加上 v₆');
-  await beat(tok, 2800);
+  say('要算 6：前面只能累計到 s₆ 之前', '再加上 v₆');
+  await step(tok);                                   // 1419.0 刻度不是固定的
+  note('這一段不是固定的 Δ', TX(9.3), 1.6);
+  say('切的位置不是固定的刻度', '');
+  await step(tok);                                   // 1439.0 不要算：前 5 筆的答案
   ms.forEach((m, j) => { if (j && j <= 3) tint(m, LV[j - 1]); });
   glow(ms[6], null); fade(ms[6], false);
   cur2.position.x = TX(10); tl2.position.x = TX(10); txt(tl2, 'f₅');
-  say('不算：就是前 5 筆的答案', '兩種情況的 Δ 都不固定');
-  await beat(tok, 2800);
+  say('不要算 6：就是倒數第二筆以前的答案', '');
+  await step(tok);                                   // 1459.0 時間軸不好控制，走不下去
   kill(cur); kill(tl);
-  say('改成：一次多考慮一個 request', 'induction on interval index');
-  await beat(tok, 3000);
+  bad('時間軸不好控制 ✗', 0, 0.6);
+  me.look(1);
+  say('用時間軸做 induction 不好控制', '這條路走不下去');
 }]);
 
-// 24:36 Induction on index；p(j)：往前第一個不重疊的
+// 24:39 Induction on index；p(j)：往前最後一個不重疊的
 FRAG.push(['dpjiang1-wis-p', 'p(j)：往前最後一個不會 overlap 的 request', async (tok) => {
   fresh([0, 4.2, 14], [0, 4.0, 0]);
+  const me = pal('', -6.4, C.orange, 1.6, 0.7);
+  await step(tok);                                   // 1478.9 第二個企圖：每次多考慮一個 request
   const ms = drawJobs(true);
-  say('依 finish time 由小排到大', 'f₁ ≤ f₂ ≤ … ≤ f₆');
-  await beat(tok, 2400);
-  say('一次多看一個：前 1 個、前 2 個…', 'induction 的對象是 index，不是時間');
-  for (let j = 1; j <= 6; j++) { glow(ms[j], GOLD); await beat(tok, 380); glow(ms[j], null); }
-  await beat(tok, 1200);
+  for (let j = 1; j <= 6; j++) fade(ms[j], false);
+  me.mood('happy');
+  say('第二個企圖（這次會成功）', '每次多考慮一個 request');
+  await step(tok);                                   // 1499.0 依 finish time 由小排到大
+  for (let j = 1; j <= 6; j++) { fade(ms[j], true); await beat(tok, 160); }
+  say('一樣先依 finish time 由小排到大', 'f₁ ≤ f₂ ≤ … ≤ f₆');
+  await step(tok);                                   // 1516.2 每次前進一格：前 1、前 2、前 3…
+  const cut = box('', C.red, TX(3) + 0.1, 4.6, 0.06, 4.8, 0.06);
+  for (let j = 1; j <= 6; j++) { cut.position.x = TX(WJ[j].f) + 0.1; glow(ms[j], GOLD); await beat(tok, 330); }
+  say('前 1 個、前 2 個、前 3 個…', '每次往後多切一格');
+  await step(tok);                                   // 1543.0 induction 在 index 上
+  kill(cut); for (let j = 1; j <= 6; j++) glow(ms[j], null);
+  for (let j = 1; j <= 6; j++) hl(ms[j].userData.id, true);
+  say('induction 的對象是 index：1 號、2 號…', '不是時間');
+  await step(tok);                                   // 1555.0 n 個的解和前 n−1 個的關係
+  const rel = tag('前 n 個的最佳解 ⇐ 前 n−1 個的最佳解？', 'ptr alt', 0, 8.2);
+  say('前 n 個的最佳解，和前 n − 1 個的關係？', '');
+  await step(tok);                                   // 1582.4 決定 induction 對象最難
+  for (let j = 1; j <= 6; j++) hl(ms[j].userData.id, false);
+  txt(rel, '選對 induction 的對象 ≈ 完成 80～90%');
+  me.mood('wow'); await me.hop(tok);
+  say('決定 induction 在誰身上最困難', '選對了，DP 幾乎完成八、九成');
+  await step(tok);                                   // 1607.0 照 finish time 排也是 DP trick
+  txt(rel, '照 finish time 排序：也是 DP 的 trick');
+  say('照 finish time 排序也有講究', '這題的 DP trick 之一');
+  await step(tok);                                   // 1630.0 定義參數 p
+  txt(rel, 'p(j)：往前最後一個跟 j 不重疊的 request');
+  me.mood('calm');
+  say('定義一個參數 p', '看意思比背定義好');
+  await step(tok);                                   // 1652.0 把自己槓掉，往前找不 overlap 的
+  glow(ms[6], GOLD);
+  const bar = box('', C.red, TX(WJ[6].s), 4.6, 0.06, 4.8, 0.06);
+  const x6 = bad('✗ 先劃掉自己', TX(9.5), JY(6) + 0.55);
+  say('把自己槓掉，往前看', '哪些 request 和我完全不 overlap');
+  await step(tok);                                   // 1669.8 第 6 筆：p = 3
+  remove(x6);
+  for (let i = 1; i < 6; i++) fade(ms[i], i <= 3);
+  glow(ms[3], GREEN);
   const plab = [];
-  const order = [6, 2, 1, 3, 4, 5];
-  for (const j of order) {
-    const J = WJ[j];
-    const bar = box('', C.red, TX(J.s), 4.6, 0.06, 4.8, 0.06);
-    glow(ms[j], GOLD);
-    for (let i = 1; i < j; i++) fade(ms[i], i <= J.p);
-    if (J.p) glow(ms[J.p], GREEN);
-    say('p(' + j + ') = ' + J.p, J.p ? '自己先劃掉，往前 1~' + J.p + ' 都不重疊' : '往前沒有人跟它不重疊');
-    await beat(tok, j === 6 || j === 2 ? 2600 : 1500);
-    plab[j] = tag('p=' + J.p, 'idx', TX(J.f) + 0.55, JY(j));
-    glow(ms[j], null); if (J.p) glow(ms[J.p], null);
-    for (let i = 1; i <= 6; i++) fade(ms[i], true);
-    kill(bar);
-  }
-  say('p = 0 0 1 0 3 3', 'p 只是讓式子比較好寫');
-  await beat(tok, 3000);
+  plab[6] = note('p=3', TX(WJ[6].f) + 0.55, JY(6));
+  say('第 6 筆：第 3 筆以前都不會 overlap', 'p(6) = 3');
+  await step(tok);                                   // 1693.0 第 2 筆：p = 0
+  glow(ms[6], null); glow(ms[3], null); kill(bar);
+  for (let i = 1; i <= 6; i++) fade(ms[i], true);
+  glow(ms[2], GOLD); fade(ms[1], false);
+  const bar2 = box('', C.red, TX(WJ[2].s), 4.6, 0.06, 4.8, 0.06);
+  plab[2] = note('p=0', TX(WJ[2].f) + 0.55, JY(2));
+  say('第 2 筆：前面那筆就 overlap 了', 'p(2) = 0：沒有人');
+  await step(tok);                                   // 1709.0 依此類推，每個都算出 p
+  kill(bar2); glow(ms[2], null); fade(ms[1], true);
+  for (const j of [1, 3, 4, 5]) { plab[j] = note('p=' + WJ[j].p, TX(WJ[j].f) + 0.55, JY(j)); await beat(tok, 300); }
+  say('依此類推：p = 0 0 1 0 3 3', '大家可以回去驗算');
+  await step(tok);                                   // 1729.0 p 只是讓式子好寫
+  say('p 只是讓式子比較好寫', 'idea 不變');
+  await step(tok);                                   // 1743.0 求前 n 個的答案；一般的 index j
+  txt(rel, '目標：OPT(n)；先看一般的 index j');
+  say('目標是前 n 個累計的最大 value', '先寫出一般 index j 的關係');
 }]);
 
-// 28:42 OPT(j) = max(vⱼ + OPT(p(j)), OPT(j−1))；O6 = {6} ∪ O3 或 O5
+// 29:30 OPT(j) = max(vⱼ + OPT(p(j)), OPT(j−1))；O6 = {6} ∪ O3 或 O5
 FRAG.push(['dpjiang1-wis-recur', 'OPT(j) = max(vⱼ + OPT(p(j)), OPT(j−1))', async (tok) => {
   fresh([0, 4.0, 14], [0, 3.8, 0]);
   const ms = drawJobs(true, 0.6);
-  say('Oⱼ：前 j 個的最佳解由誰組成', 'OPT(j)：它的最大 value');
-  await beat(tok, 2600);
+  const me = pal('', -6.4, C.orange, 1.6, 0.7);
+  await step(tok);                                   // 1771.0 Oⱼ：最佳解由哪些 request 組成
+  const d1 = tag('Oⱼ：前 j 個的最佳解「由誰組成」', 'ptr', -1.4, 1.2);
+  say('定義 Oⱼ：累計到 j 的最佳解是哪些 request', '是一個 set');
+  await step(tok);                                   // 1791.0 OPT(j)：那個最大值
+  const d2 = tag('OPT(j)：它的最大 value（一個數）', 'ptr', -1.4, 0.5);
+  say('OPT(j)：對應算出來的最大 value', 'O 是組成，OPT 是值');
+  await step(tok);                                   // 1810.0 拿最後一個人來看 O6
+  kill(d1); kill(d2);
   glow(ms[6], GOLD);
-  say('看 O6：只有兩種 case', '第 6 筆要算，或不要算');
-  await beat(tok, 2400);
-  // case 1
+  say('拿最後一個來看：O6 長什麼樣？', '善用前面累計的結果');
+  await step(tok);                                   // 1838.0 只要考慮兩個 case
+  const q = bub('6 號：要算？不要算？', TX(9.2), 7.9);
+  say('只要考慮兩個 case', '第 6 筆要算，或不要算');
+  await step(tok);                                   // 1867.0 case 1：第 6 個要算
+  remove(q);
+  tint(ms[6], C.orange);
+  const c1 = tag('case 1：{6} ∪ ？', 'ptr alt', -1.2, 1.2);
+  say('case 1：6 要算', '那 6 之外還有誰？');
+  await step(tok);                                   // 1876.4 前面紅色那包：O3
   for (let i = 1; i <= 5; i++) fade(ms[i], i <= 3);
   [1, 2, 3].forEach((i) => tint(ms[i], C.teal));
-  const c1 = tag('case 1：{6} ∪ O3 → v₆ + OPT(3)', 'ptr alt', -1.2, 1.2);
-  say('要算 6：前面接 O3（p(6) = 3）', 'v₆ + OPT(p(6))');
-  await beat(tok, 3000);
-  [1, 2, 3].forEach((i) => tint(ms[i], LV[i - 1]));
+  txt(c1, 'case 1：{6} ∪ O3');
+  say('再加上前面那一包的最佳解：O3', '6 和 O3 兜出一個解');
+  await step(tok);                                   // 1892.0 3 怎麼找？p(6)
+  const pn = note('3 = p(6)', TX(WJ[6].f) + 0.6, JY(6) + 0.6);
+  say('3 從哪來？就是 p(6)', '6 劃掉後，往前不重疊的累計到第 3 筆');
+  await step(tok);                                   // 1910.0 case 2：不算 6 → O5
+  remove(pn);
+  [1, 2, 3].forEach((i) => tint(ms[i], LV[i - 1])); tint(ms[6], LV[5]);
   for (let i = 1; i <= 6; i++) fade(ms[i], i <= 5);
   [1, 2, 3, 4, 5].forEach((i) => tint(ms[i], C.blue));
   glow(ms[6], null);
-  const c2 = tag('case 2：O5 → OPT(5)', 'ptr', -1.2, 0.5);
-  say('不算 6：直接用 O5', 'OPT(j − 1)');
-  await beat(tok, 3000);
+  const c2 = tag('case 2：O5', 'ptr', -1.2, 0.5);
+  say('case 2：6 不要算', '往前推一個：就是 O5');
+  await step(tok);                                   // 1933.0 OPT(6) = 兩者取大
   [1, 2, 3, 4, 5].forEach((i) => tint(ms[i], LV[i - 1]));
   for (let i = 1; i <= 6; i++) fade(ms[i], true);
-  kill(c1); kill(c2);
-  tag('OPT(j) = max( vⱼ + OPT(p(j)) , OPT(j − 1) )', 'ptr alt', 0, 1.0);
-  tag('OPT(0) = 0', 'idx', 0, 0.4);
-  say('兩者取其大', '取 max：value 越大越好');
-  await beat(tok, 2800);
-  say('recursion 寫出來就做完大半', '決定 induction 對象最難');
-  await beat(tok, 3000);
+  txt(c1, 'OPT(6) = max( v₆ + OPT(3) , OPT(5) )'); kill(c2);
+  me.mood('happy');
+  say('OPT(6)：看兩種 option 誰比較厲害', '要 maximum value → 取其大');
+  await step(tok);                                   // 1956.0 推廣到一般的 j
+  txt(c1, 'OPT(j) = max( ？ , ？ )');
+  say('推廣到一般的 index j', '一樣只有兩種可能');
+  await step(tok);                                   // 1983.0 不算 j：OPT(j−1)
+  txt(c1, 'OPT(j) = max( ？ , OPT(j − 1) )');
+  say('j 不要算：直接取前一個的解', 'OPT(j − 1)');
+  await step(tok);                                   // 1990.0 算 j：vⱼ + OPT(p(j))
+  txt(c1, 'OPT(j) = max( vⱼ + OPT(p(j)) , OPT(j − 1) )');
+  tag('OPT(0) = 0', 'idx', -1.2, 0.5);
+  say('j 要算：vⱼ 加上不重疊的那些人', 'vⱼ + OPT(p(j))，兩者取大');
+  await step(tok);                                   // 2006.0 recursion 寫出來就做完了
+  hl(c1, false); glow(ms[6], GREEN);
+  await me.hop(tok);
+  say('recursion 寫出來，DP 的目標就達成了', '接下來只是 implement');
 }]);
 
-// 33:36 直接翻成 recursive code → 遞迴樹很多重複
+// 33:41 直接翻成 recursive code → 遞迴樹很多重複
 FRAG.push(['dpjiang1-wis-tree', 'Compute-Opt 的遞迴樹：重複的子問題', async (tok) => {
   fresh([0, 4.0, 15], [0.6, 4.2, 0]);
+  const me = pal('', -6.4, C.orange, 1.6, 0.7);
+  await step(tok);                                   // 2021.0 implementation 決定真 DP 或假 DP
+  const rec = tag('OPT(j) = max(vⱼ + OPT(p(j)), OPT(j−1))', 'ptr alt', 3.4, 8.6);
+  say('procedure 怎麼寫？', '它決定你做的是真 DP 還是假 DP');
+  await step(tok);                                   // 2035.7 直接翻成 recursive code
   const cd = code(['Compute-Opt(j):', '  if j = 0: return 0', '  return max(Compute-Opt(j-1),', '             v[j] + Compute-Opt(p[j]))'], -4.6, 8.6, 0.45);
-  say('先排序、先算好 p(j)', '把 recursion 直接翻成 recursive code');
-  await beat(tok, 2600);
+  say('recursion 可以直接翻成 recursive code', '很直覺');
+  await step(tok);                                   // 2051.0 preprocessing：依 finish time 排序
+  const pp = note('前置：f₁ ≤ f₂ ≤ … ≤ fₙ', -4.6, 6.4);
+  say('前置作業一：依 finish time 排好', 'index 已重新安排');
+  await step(tok);                                   // 2067.0 算好每個 p(j)
+  txt(pp, '前置：排序 ＋ 算好 p(1..n)');
+  say('前置作業二：每個 request 算好 p 值', '');
+  await step(tok);                                   // 2093.7 boundary：j = 0 return 0
+  cd.hl(1);
+  say('boundary condition：j = 0', '沒有 request，return 0');
+  await step(tok);                                   // 2109.0 兩種 case 取 max
+  cd.hl(2);
+  say('其他：照 recursion 算兩種 case', '不貢獻取前一筆；貢獻就加 vⱼ + OPT(p(j))');
+  await step(tok);                                   // 2138.0 右邊龐大的 tree：每個 node 是一個 call
+  cd.hl(-1); remove(pp); kill(rec);
   const T = optTree(6);
   const all = layout(T, 1.35, 6.6, 1.0, 1.4);
+  T.m = box('O6', LV[0], T.x, T.y, 0.75, 0.45, 0.4, 1.0);
+  say('畫出 recursive call 產生的 tree', '每個 node 就是一次 recursive call');
+  await step(tok);                                   // 2172.0 O6 呼叫 O5 和 O3
   cd.hl(2);
-  say('O6 往下呼叫 O5 和 O3', 'O5 再呼叫 O4 和 O3 …');
-  const order = []; (function w(t) { order.push(t); t.kids.forEach(w); })(T);
-  for (const t of order) {
-    if (t.par) t.e = line(t.par.x, t.par.y - 0.25, t.x, t.y + 0.25, 0, C.sand);
-    t.m = box('O' + t.j, LV[(6 - t.j) % 6], t.x, t.y, 0.75, 0.45, 0.4, 1.0);
-    await beat(tok, 300);
-  }
+  for (const k of T.kids) { k.e = line(T.x, T.y - 0.25, k.x, k.y + 0.25, 0, C.sand); k.m = box('O' + k.j, LV[(6 - k.j) % 6], k.x, k.y, 0.75, 0.45, 0.4, 1.0); }
+  say('O6 往下呼叫 O5 和 O3', '再比誰比較厲害');
+  await step(tok);                                   // 2188.0 O5 呼叫 O4、O3…整棵長出來
   cd.hl(-1);
-  tag('（省略 Compute-Opt(0)）', 'idx', 4.6, 0.9);
-  say('整棵樹：' + all.length + ' 個呼叫', '這還沒算 Compute-Opt(0)');
-  await beat(tok, 2400);
-  for (const j of [3, 2, 1]) {
-    all.forEach((t) => glow(t.m, t.j === j ? GOLD : null));
-    say('O' + j + ' 被算了 ' + all.filter((t) => t.j === j).length + ' 次', '重複的地方都多算了');
-    await beat(tok, 2000);
+  for (const t of pre(T)) {
+    if (t.m) continue;
+    t.e = line(t.par.x, t.par.y - 0.25, t.x, t.y + 0.25, 0, C.sand);
+    t.m = box('O' + t.j, LV[(6 - t.j) % 6], t.x, t.y, 0.75, 0.45, 0.4, 1.0);
+    await beat(tok, 120);
   }
+  tag('（省略 Compute-Opt(0)）', 'idx', 4.6, 0.9);
+  say('O5 再呼叫 O4、O3…依此類推', '整棵 tree：' + all.length + ' 個 call');
+  await step(tok);                                   // 2214.0 很多地方是重複的
+  all.forEach((t) => { if (t.j === 3) glow(t.m, GOLD); });
+  me.mood('wow');
+  say('發現了嗎？很多地方是重複的', 'O3 被算了 ' + all.filter((t) => t.j === 3).length + ' 次');
+  await step(tok);                                   // 2228.4 重複就是多算了
   all.forEach((t) => glow(t.m, null));
-  say('同一個子問題只要算一次', '算好就記起來 → memoization');
-  await beat(tok, 3000);
+  const dup = {}; all.forEach((t) => { dup[t.j] = (dup[t.j] || 0) + 1; });
+  all.forEach((t) => { if (dup[t.j] > 1 && all.find((u) => u.j === t.j) !== t) tint(t.m, C.red); });
+  me.mood('sad');
+  say('重複 = 多算了', '紅色的其實只要算一次');
+  await step(tok);                                   // 2235.0 算好就記起來
+  const memo = pkt('算好的記起來！', 4.6, 8.4);
+  me.mood('happy'); await me.hop(tok);
+  say('怎麼只算一次？算好的記起來', '每個都是一個 subproblem 的解');
+  void memo;
 }]);
 
-// 37:24 Memoization：M[j] 先查；樹變成細長一條，只算 6 次
+// 37:35 Memoization：M[j] 先查；樹變成細長一條，只算 6 次
 FRAG.push(['dpjiang1-wis-memo', 'M-Compute-Opt：先查 M[j]，只算 6 次', async (tok) => {
   fresh([0, 4.0, 15], [0.6, 4.0, 0]);
-  const cd = code(['M-Compute-Opt(j):', '  if j = 0: return 0', '  if M[j] 有值: return M[j]', '  M[j] = max(M-Compute-Opt(j-1),', '             v[j] + M-Compute-Opt(p[j]))', '  return M[j]'], -4.7, 8.7, 0.42);
   const T = optTree(6);
   const all = layout(T, 1.35, 6.4, 0.95, 1.6);
   all.forEach((t) => {
     if (t.par) t.e = line(t.par.x, t.par.y - 0.25, t.x, t.y + 0.25, 0, '#d8cfc0');
     t.m = box('O' + t.j, GRAY, t.x, t.y, 0.75, 0.42, 0.38); fade(t.m, false);
   });
+  const me = pal('', -6.4, C.orange, 1.6, 0.7);
+  await step(tok);                                   // 2255.0 O3 先算好存起來，之後查
+  const o3 = all.find((t) => t.j === 3);
+  fade(o3.m, true); tint(o3.m, C.teal); glow(o3.m, GREEN);
+  const n3 = note('O3 算好 → 記下來', o3.x, o3.y + 0.65);
+  say('O3 第一次算好就存起來', '之後遇到相同狀況：先查有沒有算過');
+  await step(tok);                                   // 2277.0 這招叫 memoization
+  remove(n3); glow(o3.m, null);
+  pkt('memoization = 做 memo（小抄）', -3.6, 8.6);
+  say('這一招叫 memoization', 'memo 就是做筆記');
+  await step(tok);                                   // 2297.0 開一個小 table M
   const MX = (k) => -3.6 + k * 1.15;
   tag('M', 'ptr', MX(0) - 1.0, 0.75);
-  const cells = WM.map((v, k) => { tag(String(k), 'idx', MX(k), 0.15); return box(k ? ' ' : '0', k ? '#e6dccb' : C.teal, MX(k), 0.75, 1.0, 0.5, 0.45); });
-  say('開一個小抄 M[0..6]', 'recursive call 前先偷看小抄');
+  const cells = WM.map((v, k) => { tag(String(k), 'idx', MX(k), 0.15); return box(' ', '#e6dccb', MX(k), 0.75, 1.0, 0.5, 0.45); });
+  say('多開一個小 table（array）M', '存已經算過的小解');
+  await step(tok);                                   // 2314.0 recursive call 前先看 table
+  const cd = code(['M-Compute-Opt(j):', '  if j = 0: return 0', '  if M[j] 有值: return M[j]', '  M[j] = max(M-Compute-Opt(j-1),', '             v[j] + M-Compute-Opt(p[j]))', '  return M[j]'], -4.7, 8.0, 0.42);
   cd.hl(2);
-  await beat(tok, 2600);
+  say('遇到 subproblem 先看 table 有沒有值', '有就直接拿來用');
+  await step(tok);                                   // 2342.6 j = 0 return 0
+  cd.hl(1); relabel(cells[0], 0); tint(cells[0], C.teal);
+  say('第一行一樣：j = 0 就 return 0', '兩行變三行');
+  await step(tok);                                   // 2354.0 先看 M[j] 有值 → return
+  cd.hl(2);
+  say('算之前先查小抄 M[j]', '有值：不要 recursive call，直接 return');
+  await step(tok);                                   // 2373.0 沒存 → 才 recursive call
+  cd.hl(3);
+  say('沒存：表示沒算過', '才真的去做 recursive call');
+  await step(tok);                                   // 2380.0 算好存進 M[j] 再 return
+  cd.hl(5);
+  say('算完存進 M[j]，再 return', '多這一個步驟');
+  await step(tok);                                   // 2405.0 和 recursive code 九成像；top-down
+  cd.hl(-1);
+  tag('top-down', 'ptr alt', 5.2, 8.6);
+  say('和原本 recursive code 相似度九成', '從最大的問題往下呼叫：top-down');
+  await step(tok);                                   // 2452.0 省了什麼？只算 6 個 call
   const known = new Set([0]); let calls = 0;
   async function visit(t) {
-    if (known.has(t.j)) {
-      fade(t.m, true); tint(t.m, C.gold); glow(t.m, GOLD); glow(cells[t.j], GOLD); cd.hl(2);
-      const gone = sub(t).slice(1);
-      say('M[' + t.j + '] = ' + WM[t.j] + ' 已有：直接 return', gone.length ? '下面整棵不用展開' : '查表 O(1)');
-      await beat(tok, 1100);
-      gone.forEach((u) => { fly(u.m); if (u.e) kill(u.e); });
-      await beat(tok, 600);
-      glow(t.m, null); glow(cells[t.j], null);
-      return;
-    }
-    calls++;
-    fade(t.m, true); tint(t.m, LV[(6 - t.j) % 6]); glow(t.m, GOLD); cd.hl(3);
-    say('O' + t.j + '：M[' + t.j + '] 沒值', '只好真的 recursive call');
-    await beat(tok, 800); glow(t.m, null);
+    fade(t.m, true);
+    if (known.has(t.j)) { tint(t.m, C.gold); glow(cells[t.j], GOLD); await beat(tok, 90); glow(cells[t.j], null); return; }
+    calls++; tint(t.m, LV[(6 - t.j) % 6]); await beat(tok, 90);
     for (const k of t.kids) await visit(k);
-    known.add(t.j); relabel(cells[t.j], WM[t.j]); tint(cells[t.j], C.teal); glow(cells[t.j], GREEN);
-    tint(t.m, C.teal); cd.hl(5);
-    const J = WJ[t.j];
-    say('存 M[' + t.j + '] = ' + WM[t.j], 'max(' + J.v + ' + M[' + J.p + '], M[' + (t.j - 1) + '])');
-    await beat(tok, 900); glow(cells[t.j], null);
+    known.add(t.j); relabel(cells[t.j], WM[t.j]); tint(cells[t.j], C.teal); tint(t.m, C.teal);
+    await beat(tok, 90);
   }
   await visit(T);
-  cd.hl(-1);
-  say('真正只算了 ' + calls + ' 個 recursive call', '大樹變細長一條：linear time');
-  await beat(tok, 3000);
-  say('只存了 value；要組成就一起存 O', 'top-down = memoization');
-  await beat(tok, 2600);
+  say('真正只算了 ' + calls + ' 個 recursive call', '金色的都是查表');
+  await step(tok);                                   // 2468.0 多的那一塊都不見了
+  all.forEach((t) => { if (t.m.material.opacity < 1) { fly(t.m); if (t.e) kill(t.e); } });
+  me.mood('happy'); await me.hop(tok);
+  say('原本多出來的那一大塊都不見了', '這就是省下的地方');
+  await step(tok);                                   // 2487.0 變成 linear time
+  good('O(2ⁿ) → linear time', 4.6, 1.8);
+  say('DP 的方式：變成 linear time', '快非常多');
+  await step(tok);                                   // 2507.0 只存 value；組成要另外存
+  note('只存了 value；要組成 Oⱼ 就一起存', 1.0, -0.6);
+  say('注意：這裡只記了 value', '要 retrieve 組成，就要順便存 Oⱼ');
 }]);
 
-// 42:14 Bottom-up：M[0] = 0，for j = 1..n 由小填到大
+// 42:25 Bottom-up：M[0] = 0，for j = 1..n 由小填到大
 FRAG.push(['dpjiang1-wis-iter', 'Bottom-up：M[0..6] 由小填到大', async (tok) => {
   fresh([0, 4.2, 14], [0, 3.8, 0]);
+  const me = pal('', -6.4, C.orange, 1.6, 0.7);
+  await step(tok);                                   // 2545.0 bottom-up 比較流行
+  tag('bottom-up', 'ptr alt', 4.6, 8.4);
+  say('另一個版本：bottom-up', '為什麼比較流行？');
+  await step(tok);                                   // 2550.0 一定是 for loop，很簡單
   const cd = code(['Iterative-Compute-Opt:', '  M[0] = 0', '  for j = 1 to n:', '    M[j] = max(v[j] + M[p[j]], M[j-1])'], -3.0, 8.2, 0.48);
+  say('implementation 很簡單：一定是 for loop', 'recursion 寫好，安排好 loop 順序就結束');
+  await step(tok);                                   // 2598.0 反過來：從 O1 漲到 On
+  const up = pkt('O1 → O2 → O3 → … → On', 3.6, 1.0);
+  say('反過來操作：從最下面慢慢漲上去', 'O1、O2、O3…一直到 On');
+  await step(tok);                                   // 2625.0 一樣開 table M
+  remove(up);
   const MX = (k) => -4.2 + k * 1.4;
   tag('j', 'idx', MX(0) - 1.0, 2.55); tag('v', 'idx', MX(0) - 1.0, 5.35); tag('p', 'idx', MX(0) - 1.0, 4.85);
   const cells = WM.map((v, k) => { tag(String(k), 'idx', MX(k), 2.55); if (k) { tag(String(WJ[k].v), 'idx', MX(k), 5.35); tag(String(WJ[k].p), 'idx', MX(k), 4.85); } return box(' ', '#e6dccb', MX(k), 3.4, 1.2, 0.7, 0.5); });
-  say('同一個 recursion，反過來做', '從最小的 subproblem 長上去');
+  say('一樣開小抄 table M', '');
+  await step(tok);                                   // 2630.0 boundary：M[0] = 0
   cd.hl(1);
-  relabel(cells[0], 0); tint(cells[0], C.teal);
-  await beat(tok, 2400);
+  say('boundary：沒有 request 時是 0', 'M[0] = 0');
+  await step(tok);                                   // 2643.0 j = 1..n 用 for loop
+  cd.hl(2);
+  say('接著 j 從 1 到 n', 'for loop 慢慢算');
+  await step(tok);                                   // 2650.0 每次用同一個 recursion
   cd.hl(3);
-  for (let j = 1; j <= 6; j++) {
+  say('每次算的就是同一個 recursion', 'j 要貢獻 or 不貢獻');
+  await step(tok);                                   // 2664.0 只參考已填好的值：像填表
+  say('只參考 table 裡已填好的值', '看起來很像在填表');
+  await step(tok);                                   // 2681.0 誤解：DP 就是填表格
+  const myth = bad('DP ＝ 填表格？ ✗', 4.6, 6.6);
+  me.mood('wow');
+  say('有人誤解 DP 就是填表格', '錯！填表只是一種 implementation');
+  await step(tok);                                   // 2713.0 重點在 recursion
+  remove(myth); me.mood('calm');
+  good('重點：recursion 怎麼寫', 4.6, 6.6);
+  say('memoization 就不是填表', '重點放在 recursion 怎麼寫出來');
+  await step(tok);                                   // 2740.0 例子：n = 6，M[0] = 0
+  relabel(cells[0], 0); tint(cells[0], C.teal); glow(cells[0], GREEN);
+  say('例子 n = 6：開 M[0..6]', '一開始 M[0] 填 0');
+  const fill = async (j) => {
     const J = WJ[j];
     const a1 = link([MX(j), 3.85], [MX(j - 1), 3.85], C.blue, 0.2);
     const a2 = J.p !== j - 1 ? arrow(V3(MX(j), 2.9, 0.3), V3(MX(J.p), 2.9, 0.3), 0xc08a1f) : null;
     glow(cells[j], GOLD);
-    const take = J.v + WM[J.p];
-    say('M[' + j + '] = max(' + J.v + ' + M[' + J.p + '], M[' + (j - 1) + '])', '= max(' + take + ', ' + WM[j - 1] + ') = ' + WM[j]);
-    await beat(tok, 1700);
-    relabel(cells[j], WM[j]); tint(cells[j], take >= WM[j - 1] ? C.orange : C.teal); glow(cells[j], null);
-    kill(a1); if (a2) kill(a2);
     await beat(tok, 400);
-  }
+    const take = J.v + WM[J.p];
+    relabel(cells[j], WM[j]); tint(cells[j], take >= WM[j - 1] ? C.orange : C.teal); glow(cells[j], null);
+    await beat(tok, 200);
+    kill(a1); if (a2) kill(a2);
+    return 'M[' + j + '] = max(' + J.v + ' + M[' + J.p + '], M[' + (j - 1) + ']) = ' + WM[j];
+  };
+  await step(tok);                                   // 2747.0 填 M[1]：request 1 算或不算
+  glow(cells[0], null);
+  cd.hl(3);
+  say('進 for loop，填 M[1]', await fill(1));
+  await step(tok);                                   // 2764.0 填 M[2]：往前參考兩格
+  say('接下來 M[2]：往前參考兩個填好的格子', await fill(2));
+  await step(tok);                                   // 2780.0 最後填完：每次看前面兩格
+  let last = '';
+  for (let j = 3; j <= 6; j++) last = await fill(j);
   cd.hl(-1);
-  say('每格只看前面已填好的兩格', '順序保證查到的都有值');
-  await beat(tok, 2600);
-  say('M[6] = 8 就是最佳值', '補充：回溯得 {1, 3, 5}：2 + 4 + 2');
-  await beat(tok, 2600);
-  say('DP 不等於填表格', '填表只是一種 implementation');
-  await beat(tok, 2600);
+  say('M[3] 到 M[6]：每次都看前面兩格', last + '：最佳值');
+  await step(tok);                                   // 2799.0 guarantee 查到的格子都有值
+  cells.forEach((m) => glow(m, GREEN));
+  say('一定要保證：查到的格子都已經有值', '沒準備好的話，DP 就做錯了');
+  await step(tok);                                   // 2815.0 順序：for loop 由小算到大
+  cells.forEach((m) => glow(m, null));
+  const ord = pkt('j：0 → 6', MX(0), 1.6);
+  await travel(tok, ord, V3(MX(0), 1.6, 0), V3(MX(6), 1.6, 0), 1200);
+  me.mood('happy');
+  say('subproblem 的計算順序很重要', '這題：for loop 從小算到大');
 }]);
 
-// 47:26 兩種 implementation 比較：memoization（top-down）vs iteration（bottom-up）
+// 47:28 兩種 implementation：memoization（top-down）vs iteration（bottom-up）
 FRAG.push(['dpjiang1-memo-vs-iter', 'Memoization（top-down）vs Iteration（bottom-up）', async (tok) => {
   fresh([0, 4.2, 14], [0, 3.8, 0]);
-  tag('memoization：top-down', 'ptr', -3.4, 7.4);
-  tag('iteration：bottom-up', 'ptr', 3.4, 7.4);
   const L = [], R = [];
+  await step(tok);                                   // 2848.0 兩種形式，都對
+  const hL = tag('memoization：top-down', 'ptr', -3.4, 7.4), hR = tag('iteration：bottom-up', 'ptr', 3.4, 7.4);
   for (let k = 0; k < 6; k++) {
     L.push(box('P' + k, C.gray, -3.4, 1.4 + k * 1.0, 1.4, 0.55, 0.45));
     R.push(box('P' + k, C.gray, 3.4, 1.4 + k * 1.0, 1.4, 0.55, 0.45));
   }
-  say('兩種寫法都對', '同一個 recursion');
-  await beat(tok, 2200);
-  // top-down: starts at P5, only needed ones (示意：P5 需要 P3、P1)
+  say('summary：DP 有兩種 implement 方式', '兩種都對');
+  await step(tok);                                   // 2861.0 memoization：top-down，像 recursive code
+  hl(hL, true);
+  const mL = pal('memo', -6.0, C.blue);
+  say('第一招 memoization：top-down', '長得很像一般的 recursive code');
+  await step(tok);                                   // 2877.0 先偷看小抄，有就 return
+  tint(L[5], C.orange); glow(L[5], GOLD);
+  const peek = note('小抄有答案？有 → return', -6.0, 2.3, 1.6);
+  say('每次 recursive call 前先偷看小抄', '有答案就直接 return');
+  await step(tok);                                   // 2887.0 沒答案才真的 recursive call
+  remove(peek); glow(L[5], null);
   const need = [5, 3, 1, 0];
-  say('memo：從最大問題往下呼叫', '先查小抄，沒有才算');
-  for (let i = 0; i < need.length; i++) {
+  for (let i = 1; i < need.length; i++) {
     const k = need[i];
-    tint(L[k], C.orange); glow(L[k], GOLD);
-    if (i) link([-3.4, 1.4 + need[i - 1] * 1.0], [-3.4, 1.4 + k * 1.0], C.orange, 0.3);
-    await beat(tok, 900); glow(L[k], null);
+    tint(L[k], C.orange); link([-3.4, 1.4 + need[i - 1] * 1.0], [-3.4, 1.4 + k * 1.0], C.orange, 0.3);
+    await beat(tok, 500);
   }
-  say('只算上面需要用到的', '示意：P5 只用到 P3、P1、P0');
-  await beat(tok, 2600);
-  say('iteration：一層 for loop 由小算到大', '每個 subproblem 都算一次');
-  for (let k = 0; k < 6; k++) { tint(R[k], C.teal); glow(R[k], GREEN); await beat(tok, 500); glow(R[k], null); }
-  await beat(tok, 1000);
-  say('不管有沒有人用，全部都算', '但重複的不會再算');
-  await beat(tok, 2600);
-  say('memo 有時算得少一點', 'iteration 寫起來最簡單');
-  await beat(tok, 2800);
+  say('小抄沒有，才真的 recursive call 下去', '示意：P5 只用到 P3、P1、P0');
+  await step(tok);                                   // 2893.2 iteration：bottom-up，小長到大
+  hl(hL, false); hl(hR, true);
+  const mR = pal('loop', 6.0, C.teal);
+  say('第二招 iteration：bottom-up', '從比較小的 problem 慢慢長到大');
+  await step(tok);                                   // 2911.0 for loop：每圈算一個 subproblem
+  for (let k = 0; k < 6; k++) { tint(R[k], C.teal); await beat(tok, 300); }
+  say('一定是 for loop', '每個 iteration 算一個 subproblem');
+  await step(tok);                                   // 2919.0 保證參考的人都有值
+  for (let k = 1; k < 6; k++) link([3.4, 1.4 + (k - 1) * 1.0], [3.4, 1.4 + k * 1.0], C.teal, 0.3);
+  say('要保證：參考的更小答案都已經算好', '才能安全算完');
+  await step(tok);                                   // 2989.0（下一堂回顧）top-down = memoization
+  hl(hR, false); hl(hL, true); mL.mood('happy'); await mL.hop(tok);
+  say('（下一堂回顧）top-down 叫 memoization', '先查 lookup table，沒算過才展開');
+  await step(tok);                                   // 3035.0 bottom-up：iteration
+  hl(hL, false); hl(hR, true); mR.mood('happy'); await mR.hop(tok);
+  say('bottom-up 就是 iteration', '從最小的 subproblem 兜到最大');
+  await step(tok);                                   // 3110.0 差別：iteration 每個都算
+  R.forEach((m) => glow(m, GREEN));
+  note('不管有沒有人用，全部都算', 6.0, 2.3, 1.6);
+  say('最大不同：iteration 每個 subproblem 都算', '不管之後有沒有人參考');
+  await step(tok);                                   // 3134.0 memo 只算需要的，少一點
+  R.forEach((m) => glow(m, null));
+  [5, 3, 1, 0].forEach((k) => glow(L[k], GOLD));
+  note('需要才算 → 有時少一點', -6.0, 2.3, 1.6);
+  say('memoization：上面需要時才算', '有時算的 subproblem 少一點');
+  await step(tok);                                   // 3168.0 先從 D&C 思考，再轉成 DP
+  [5, 3, 1, 0].forEach((k) => glow(L[k], null));
+  hl(hR, false);
+  pkt('先用 D&C 想 → 再轉成 DP', 0, 0.4);
+  say('兩者都 based on induction', '常先用 D&C 思考，再轉成 DP');
 }]);
 
-// 52:47 什麼時候用 DP：子問題數 polynomial、由子問題兜出、自然順序；runtime ~ table size
+// 53:19 什麼時候用 DP：子問題數 polynomial、由子問題兜出、自然順序；runtime ~ table size
 FRAG.push(['dpjiang1-when-dp', '什麼時候用 DP：三個特性', async (tok) => {
   fresh([0, 4.2, 14], [0, 3.8, 0]);
-  say('DP 的 runtime 跟 table size 有關', '把 recursion 大樹壓成細長一條');
+  const me = pal('', -6.4, C.orange, 1.6, 0.7);
   const row = [];
+  await step(tok);                                   // 3201.0 背後一個 table；runtime 跟 table size
   for (let k = 0; k < 7; k++) row.push(box('', C.teal, -4.2 + k * 1.4, 6.6, 1.2, 0.5, 0.45, 1.0));
-  await beat(tok, 2600);
+  tag('lookup table', 'ptr', -5.6, 7.4);
+  say('DP 背後都有一個 table', 'runtime 和 table size 關係很大');
+  await step(tok);                                   // 3233.0 純 recurrence 直接寫：tree 很龐大
+  const big = [];
+  for (let k = 0; k < 15; k++) big.push(box('', C.gray, -2.8 + (k % 8) * 0.8, 4.7 - Math.floor(k / 8) * 0.6, 0.6, 0.4, 0.3));
+  say('直接照 recurrence 寫 recursive code', '展開的 tree 很龐大');
+  await step(tok);                                   // 3247.0 DP：重複的消失，只要查表
+  big.forEach((m, k) => { if (k > 5) fly(m); });
+  say('用 DP：重複的部分消失', '再遇到只要查表');
+  await step(tok);                                   // 3272.0 大樹變細長一條：省時間
+  big.slice(0, 6).forEach((m, k) => move(m, -2.8 + k * 1.1, 4.4, 0));
+  me.mood('happy');
+  say('大樹變成細細長長的一條', '計算時間大幅省下');
+  await step(tok);                                   // 3291.0 什麼時候才可以用？
+  big.slice(0, 6).forEach(kill);
+  me.mood('wow');
+  bub('什麼問題才適用？', -5.4, 2.0, 1.6);
+  say('什麼時候才可以用 DP？', '不是所有問題都適合');
+  await step(tok);                                   // 3319.0 ① subproblem 數是 polynomial
   const t1 = tag('① subproblem 總數是 polynomial', 'ptr alt', 0, 5.6);
-  say('① 子問題數要 polynomial', '它決定 lookup table 的大小');
-  await beat(tok, 2600);
+  say('① subproblem 總數是 polynomial', '不是 exponential');
+  await step(tok);                                   // 3334.0 exponential：table 太大，效果不明顯
   const ex = [];
   for (let k = 0; k < 16; k++) ex.push(box('', C.red, -5.6 + (k % 8) * 1.6, 4.5 - Math.floor(k / 8) * 0.6, 1.3, 0.4, 0.35, 1.0));
-  say('若是 exponential 個', 'table 也是 exponential：效果不大');
-  await beat(tok, 2400);
-  ex.forEach((m) => fly(m));
-  txt(t1, '② 大問題的解由子問題的解兜出');
-  say('② 大問題的解由小問題兜出', 'highly depends on subproblems');
+  say('若是 exponential 個', 'lookup table 也那麼大：還是很花時間');
+  await step(tok);                                   // 3364.0 ② 大問題的解由子問題兜出
+  ex.forEach((m) => fly(m)); me.mood('calm');
+  txt(t1, '② 原問題的解由 subproblem 的解兜出');
   for (let k = 1; k < 7; k++) link([-4.2 + (k - 1) * 1.4, 6.6], [-4.2 + k * 1.4, 6.6], C.brown, 0.62);
-  await beat(tok, 2600);
-  const t3 = tag('③ 有天生的 natural order：小 → 大', 'ptr alt', 0, 3.6);
-  say('③ 最重要：有自然的順序', '從最小的算到最大的');
-  for (let k = 0; k < 7; k++) { glow(row[k], GREEN); await beat(tok, 300); glow(row[k], null); }
-  await beat(tok, 1400);
-  tag('order 不會改變 → 90% 可以用 DP', 'ptr', 0, 2.6);
-  say('看到固定不變的順序', '就先試 DP');
-  await beat(tok, 3000);
-  kill(t3);
+  say('② 原問題的解由 subproblem 的解兜出來', 'highly depends on 子問題');
+  await step(tok);                                   // 3395.0 ③ 最重要：natural order
+  const t3 = tag('③ 有很自然的計算順序：小 → 大', 'ptr alt', 0, 3.6);
+  for (let k = 0; k < 7; k++) { glow(row[k], GREEN); await beat(tok, 200); }
+  say('③ 最重要：有天生的 natural order', '從最小的 subproblem 算到最大');
+  await step(tok);                                   // 3438.0 order 不會改變 → 90% 可用 DP
+  row.forEach((m) => glow(m, null));
+  good('看到不變的順序 → 90% 能用 DP', 0, 2.6);
+  me.mood('happy'); await me.hop(tok);
+  say('遇到固定不變的 ordering', '大概 90% 有機會用 DP');
+  await step(tok);                                   // 3462.0 配合容易計算的 recurrence
+  txt(t3, '＋ 一個容易計算的 recurrence relation');
+  say('再配合一個好算的 recurrence relation', '這幾點要銘記在心');
 }]);
 
-// 57:59 CLRS：optimal substructure + overlapping subproblems（用 WIS 說明）
+// 58:04 CLRS：optimal substructure + overlapping subproblems（用 WIS 說明）
 FRAG.push(['dpjiang1-clrs', 'CLRS 兩大特性：最佳子結構＋重疊子問題', async (tok) => {
   fresh([0, 4.2, 14.5], [0, 3.8, 0]);
-  say('Introduction to Algorithms 的說法', 'DP 要有兩大特性');
-  await beat(tok, 2200);
-  tag('overlapping subproblems', 'ptr', -3.4, 7.6);
+  await step(tok);                                   // 3484.0 Introduction to Algorithms
+  const bk = prop('file', -5.8, 0, 1.2, 1.2, 'CLRS');
+  bob(bk, 0.04);
+  say('Algorithm Bible：Introduction to Algorithms', '它說能用 DP 的問題有兩大特性');
+  await step(tok);                                   // 3499.0 兩大特性，倒過來解釋
+  const hO = tag('overlapping subproblems', 'ptr', -3.4, 7.6);
+  const hS = tag('optimal substructure', 'ptr', 3.4, 7.6);
+  say('optimal substructure ＋ overlapping subproblems', '倒過來先解釋第二個');
+  await step(tok);                                   // 3505.0 overlapping：子問題重複出現
+  hl(hO, true);
   const T = optTree(5);
   const all = layout(T, 1.0, 6.7, 0.95, -3.4);
-  all.forEach((t) => { if (t.par) line(t.par.x, t.par.y - 0.22, t.x, t.y + 0.22, 0, C.sand); t.m = box('O' + t.j, C.blue, t.x, t.y, 0.7, 0.4, 0.35, 1.0); });
-  await beat(tok, 1000);
-  all.forEach((t) => { if (t.j === 3) { tint(t.m, C.orange); glow(t.m, GOLD); } });
-  say('子問題重複出現（O3 兩次）', '記在 table 上只算一次');
-  await beat(tok, 2800);
+  all.forEach((t) => { if (t.par) line(t.par.x, t.par.y - 0.22, t.x, t.y + 0.22, 0, C.sand); t.m = box('O' + t.j, C.blue, t.x, t.y, 0.7, 0.4, 0.35); });
+  all.forEach((t) => { if (t.j === 3 || t.j === 2) { tint(t.m, C.orange); glow(t.m, GOLD); } });
+  say('overlapping：subproblem 重複出現', 'WIS 的遞迴樹就很明顯');
+  await step(tok);                                   // 3527.0 重疊的只算一次，記在 table
   all.forEach((t) => glow(t.m, null));
-  tag('optimal substructure', 'ptr', 3.4, 7.6);
+  const tb = [0, 1, 2, 3, 4, 5].map((k) => box(String(k), C.teal, -5.6 + k * 0.85, 1.6, 0.75, 0.45, 0.4, 1.0));
+  say('強烈的 hint：重疊的只要算一次', '記在 table 上，大幅簡化');
+  void tb;
+  await step(tok);                                   // 3541.0 optimal substructure
+  hl(hO, false); hl(hS, true);
   const o6 = box('O6', C.purple, 3.4, 6.2, 1.1, 0.55, 0.45, 1.2);
   const a = box('{6}', C.pink, 2.4, 4.6, 0.9, 0.5, 0.45, 1.2), b = box('O3', C.teal, 4.2, 4.6, 0.9, 0.5, 0.45, 1.2);
   line(3.4, 5.9, 2.4, 4.85, 0, C.sand); line(3.4, 5.9, 4.2, 4.85, 0, C.sand);
-  say('最佳解由子問題的最佳解兜出', '例：O6 = {6} ∪ O3');
-  await beat(tok, 2800);
+  say('optimal substructure：整體最佳解', '來自 subproblem 的最佳解兜起來（O6 = {6} ∪ O3）');
+  void a;
+  await step(tok);                                   // 3579.0 需要簡單的證明
   glow(b, GREEN);
-  say('O3 本身也必須是最佳', '這需要簡單的證明');
-  await beat(tok, 2600);
+  note('要證明：O3 自己也必須最佳', 3.4, 3.5);
+  say('這個特性需要簡單的證明', '確認問題真的符合');
+  await step(tok);                                   // 3594.0 最重要：objects 天生的 linear order
   glow(b, null);
-  tag('objects 有不能改變的 linear order', 'ptr alt', 0, 1.4);
-  say('最重要的 hint：linear order', '照這個順序就能算出解');
-  await beat(tok, 3000);
-  glow(o6, GOLD); void a;
-  say('DP 天生最適合最佳化問題', '來自 mathematical programming');
-  await beat(tok, 2600);
+  const lo = [1, 2, 3, 4, 5, 6].map((k) => box(String(k), C.gray, -2.5 + (k - 1) * 1.0, 0.4, 0.85, 0.5, 0.4, 1.0));
+  tag('objects 天生有 linear order', 'ptr alt', 0, 1.3);
+  say('紅字最重要：objects 天生有 linear order', '而且排好在那裡');
+  await step(tok);                                   // 3622.0 不能改變 → 照順序算
+  for (const m of lo) { tint(m, C.teal); await beat(tok, 200); }
+  say('order 給定且不能改變', '就照這個順序算出最後的解');
+  await step(tok);                                   // 3646.0 DP 天生適合最佳化問題
+  glow(o6, GOLD);
+  good('DP：天生最適合最佳化問題', 3.4, 8.4);
+  say('Programming 來自 mathematical programming', 'DP 典型用來解最佳化問題');
 }]);
 
-// 61:07 發展 DP 的步驟：recurrence、確認子問題數、決定順序
+// 61:15 發展 DP 的步驟：recurrence、確認子問題數、決定順序
 FRAG.push(['dpjiang1-steps', '發展 DP 的三個步驟', async (tok) => {
   fresh([0, 4.2, 14], [0, 3.8, 0]);
   const S = ['① 寫出 recurrence relation', '② 確認 subproblem 數是 polynomial', '③ 決定 subproblem 的計算順序'];
-  const bars = S.map((s, k) => box('', C.gray, 0, 6.4 - k * 1.7, 9.6, 0.9, 0.45));
-  const ls = S.map((s, k) => tag(s, 'ptr', 0, 6.4 - k * 1.7, 0.4));
+  const bars = [], ls = [];
+  const me = pal('', -6.4, C.orange, 1.6, 0.7);
+  const on = (k) => { tint(bars[k], [C.purple, C.blue, C.teal][k]); glow(bars[k], GOLD); ls[k].element.style.opacity = '1'; };
+  await step(tok);                                   // 3675.8 確認了 linear order 和兩特性之後
+  S.forEach((s, k) => { bars.push(box('', C.gray, 0, 6.4 - k * 1.7, 9.6, 0.9, 0.45)); ls.push(tag(s, 'ptr', 0, 6.4 - k * 1.7, 0.4)); });
   ls.forEach((l) => { l.element.style.opacity = '0.35'; });
-  say('確認可以用 DP 之後', '照固定步驟發展');
-  await beat(tok, 3200);
-  const caps = [['大問題最佳解跟小問題的關係', '可以先用 D&C 的方式思考'], ['決定 lookup table 的大小', 'exponential 個就做不好'], ['讓 DP 正常運作的關鍵', '查表時一定要已經有值']];
-  for (let k = 0; k < 3; k++) {
-    tint(bars[k], [C.purple, C.blue, C.teal][k]); glow(bars[k], GOLD); ls[k].element.style.opacity = '1';
-    say(caps[k][0], caps[k][1]);
-    await beat(tok, 3000);
-    glow(bars[k], null);
-  }
-  say('最難的是寫出 recursive form', '剩下只是 implement 它');
-  await beat(tok, 3000);
+  say('確認能用 DP 之後', '照特定步驟發展（借另一位教授的投影片）');
+  await step(tok);                                   // 3711.0 第一：recurrence relation
+  on(0);
+  say('第一：找 recurrence relation', '大問題最佳解和小問題最佳解的關係');
+  await step(tok);                                   // 3747.0 最難是 recursive form
+  me.mood('wow');
+  note('最難的一步！', 5.4, 7.3);
+  say('DP 最難的就是發展 recursive form', 'procedure 只是去 implement 它');
+  await step(tok);                                   // 3764.0 先用 D&C 的方式思考
+  pkt('先用 D&C 的方式想', -3.2, 5.6);
+  say('怎麼開始？先用 D&C 的方式思考', '兩者都源自 induction');
+  await step(tok);                                   // 3774.7 第二：確認 subproblem 數 polynomial
+  glow(bars[0], null); on(1); me.mood('calm');
+  say('第二：確認真的適用 DP', 'subproblem 個數要 bound 在 polynomial');
+  await step(tok);                                   // 3806.0 單元最後的反例
+  bad('exponential 個 → 效果很差（單元最後的例子）', 0, 3.9);
+  say('exponential 個：長得再美也沒用', '單元最後會看到例子');
+  await step(tok);                                   // 3820.0 它決定 lookup table size
+  note('它決定 lookup table 的大小', 5.0, 4.2);
+  say('subproblem 總數決定 lookup table 的 size', '');
+  await step(tok);                                   // 3835.0 第三：決定運算順序
+  glow(bars[1], null); on(2);
+  say('第三，也是 DP 能運作最重要的', '決定 subproblem 的運算順序');
+  await step(tok);                                   // 3853.0 照這個 order 發展 procedure
+  glow(bars[2], null);
+  me.mood('happy'); await me.hop(tok);
+  say('照這三步', '就能發展出 DP 的 procedure');
 }]);
 
-// 64:28 演算法 paradigm 回顧：brute force、greedy、D&C、DP
+// 64:38 演算法 paradigm 回顧：brute force、greedy、D&C、DP
 FRAG.push(['dpjiang1-paradigms', '四種 paradigm：暴力、greedy、D&C、DP', async (tok) => {
   fresh([0, 4.2, 14.5], [0, 3.8, 0]);
   const X = [-4.8, -1.6, 1.6, 4.8];
   const N = ['Brute force', 'Greedy', 'Divide & Conquer', 'Dynamic Prog.'];
-  const head = N.map((n, k) => box('', LV[k], X[k], 7.0, 2.9, 0.6, 0.4, 1.2));
-  N.forEach((n, k) => tag(n, 'ptr', X[k], 7.0, 0.3));
-  await beat(tok, 1000);
-  // brute force: all candidates
+  const head = [], hd = [];
+  const show = (k) => { head[k] = box('', LV[k], X[k], 7.0, 2.9, 0.6, 0.4, 1.2); hd[k] = tag(N[k], 'ptr', X[k], 7.0, 0.3); };
+  const focus = (k) => head.forEach((m, i) => m && glow(m, i === k ? GOLD : null));
+  await step(tok);                                   // 3877.7 暴力法：exhaustive search
+  show(0); focus(0);
   const bf = [];
   for (let k = 0; k < 9; k++) bf.push(box('', C.gray, X[0] - 0.9 + (k % 3) * 0.9, 5.6 - Math.floor(k / 3) * 0.7, 0.7, 0.45, 0.35, 0.8));
-  glow(head[0], GOLD);
-  say('暴力法：所有可能都試', 'exhaustive search，當 baseline');
-  await beat(tok, 1600);
-  tint(bf[7], C.teal);
-  await beat(tok, 1400); glow(head[0], null);
-  // greedy: step by step, never regret
-  glow(head[1], GOLD);
+  say('暴力法：exhaustive search', '所有可能的答案都拿來試');
+  await step(tok);                                   // 3892.5 試過全部 → 找到最好的
+  for (const m of bf) { tint(m, C.sand); await beat(tok, 120); }
+  tint(bf[7], C.teal); glow(bf[7], GREEN);
+  say('全部試過，當然找得到最好的', '');
+  await step(tok);                                   // 3900.8 當 baseline
+  note('baseline', X[0], 3.2);
+  say('暴力法常當 baseline（對照組）', '更厲害的方法至少要贏它');
+  await step(tok);                                   // 3920.0 學過：greedy、D&C、DP
+  show(1); show(2); show(3); focus(-1);
+  say('這門課：greedy、D&C、現在的 DP', '');
+  await step(tok);                                   // 3945.0 greedy：一步一步，選當下最好
+  focus(1);
   const gr = [];
-  for (let k = 0; k < 4; k++) { gr.push(box('', C.blue, X[1], 5.6 - k * 0.75, 1.6, 0.45, 0.35, 0.8)); await beat(tok, 450); }
-  say('Greedy：每步選當下最好的', '做了決定就不反悔');
-  await beat(tok, 2400); glow(head[1], null);
-  // D&C: split + combine
-  glow(head[2], GOLD);
+  for (let k = 0; k < 4; k++) { gr.push(box('', C.blue, X[1], 5.6 - k * 0.75, 1.6, 0.45, 0.35, 0.8)); await beat(tok, 300); }
+  say('Greedy：step by step 兜出 final solution', '每一步選當下看到最好的');
+  await step(tok);                                   // 3969.0 做了決定不反悔（有證明）
+  good('不反悔（有證明）', X[1], 2.4);
+  say('做好決定就不反悔', '證明保證它會在最佳解裡');
+  await step(tok);                                   // 3994.0 沒 guarantee → heuristic
+  note('沒證明 → heuristic', X[1], 1.7);
+  say('沒有 guarantee 的 greedy', '只是 heuristic（近似解）');
+  await step(tok);                                   // 4028.0 不建議只試 greedy
+  bad('別只試 greedy', X[1], 1.0);
+  say('做作業、研究時不建議只試 greedy', '要根據問題特性設計演算法');
+  await step(tok);                                   // 4062.0 D&C：大問題拆小
+  focus(2);
   const d0 = box('', C.cyan, X[2], 5.6, 2.2, 0.45, 0.35, 0.8);
   const d1 = [X[2] - 0.6, X[2] + 0.6].map((x) => box('', C.cyan, x, 4.6, 1.0, 0.45, 0.35, 0.8));
-  say('D&C：拆成同性質小問題', '重點在 combine（merge sort）');
-  await beat(tok, 2400); void d0; void d1; glow(head[2], null);
-  // DP: overlapping, table
-  glow(head[3], GOLD);
+  say('D&C：大問題不會，就拆成小問題', 'problem size 降下來');
+  await step(tok);                                   // 4085.0 subproblem 要同性質
+  note('同性質', X[2], 3.8);
+  say('拆出的 subproblem 本質不能變', '只有 size 變小');
+  await step(tok);                                   // 4111.0 conquer：recursively solve
+  d1.forEach((m) => { tint(m, C.teal); glow(m, GREEN); });
+  say('conquer：自動 recursively solve', '');
+  await step(tok);                                   // 4125.0 combine 最難；merge sort
+  d1.forEach((m) => { glow(m, null); move(m, X[2], 5.6, 0); });
+  await beat(tok, 700);
+  d1.forEach(kill); tint(d0, C.teal); glow(d0, GOLD);
+  say('最難的是 combine', 'merge sort：merge 是 linear → O(n log n)');
+  await step(tok);                                   // 4216.0 binary search：只有一個 subproblem
+  glow(d0, null);
+  note('binary search：1 個 subproblem → log n', X[2], 3.1);
+  say('binary search 也是 D&C', '每次只產生一個 subproblem：log n');
+  await step(tok);                                   // 4244.0 quick sort：不均勻地拆
+  note('quick sort：不均勻地拆', X[2], 2.4);
+  say('quick sort：不是均勻地拆成兩半', 'D&C 有很多變形');
+  await step(tok);                                   // 4291.6 DP 和 D&C 都源自 induction
+  focus(3);
+  tag('D&C 與 DP 都源自 induction', 'ptr alt', 0, 1.2);
+  say('DP 和 D&C 都源自數學歸納法', '都從 recurrence relation 開始');
+  await step(tok);                                   // 4307.0 recurrence：自己定義自己
+  const rr = note('f(n) 由 f(更小) 定義', X[3], 5.8);
+  say('recurrence relation：自己定義自己', '大的由小的定義');
+  await step(tok);                                   // 4350.0 DP 的 subproblem 會重複
+  remove(rr);
   const t = [0, 1, 2, 3].map((k) => box('', C.gray, X[3] - 1.05 + k * 0.7, 5.0, 0.6, 0.6, 0.35, 0.8));
-  say('DP：子問題會重複', '記在 table，從小到大');
-  for (let k = 0; k < 4; k++) { tint(t[k], C.orange); await beat(tok, 450); }
-  await beat(tok, 1400); glow(head[3], null);
-  tag('D&C 與 DP 都源自 induction', 'ptr alt', 0, 1.6);
-  say('都從 recurrence relation 出發', '子問題不重複 → D&C；會重複 → DP');
-  await beat(tok, 3200);
+  [1, 2].forEach((k) => glow(t[k], GOLD));
+  say('DP 特別側重：subproblem 會重複出現', 'overlapping');
+  await step(tok);                                   // 4362.0 沒重疊 → 不適合 DP
+  [1, 2].forEach((k) => glow(t[k], null));
+  bad('不重疊 → 存了也沒人用', X[3], 3.8);
+  say('每個 subproblem 只出現一次？', '不適合 DP：存了也沒人用');
+  await step(tok);                                   // 4397.0 照 natural ordering 算出 final solution
+  for (const m of t) { tint(m, C.orange); await beat(tok, 250); }
+  head.forEach((m) => glow(m, null));
+  say('照 natural ordering 把 subproblem 算出來', '兜出 final solution');
 }]);
 
-// 73:40 Fibonacci：F0 = 0、F1 = 1、螺旋
+// 73:49 Fibonacci：F0 = 0、F1 = 1、螺旋
 FRAG.push(['dpjiang1-fib-spiral', 'Fibonacci：每項是前兩項的和、正方形螺旋', async (tok) => {
   fresh([0, 4.0, 14], [0, 4.0, 0]);
   const seq = [0, 1, 1, 2, 3, 5, 8];
-  const lbl = seq.map((v, k) => tag('F' + k + '=' + v, 'idx', -5.6 + k * 1.0, 8.2));
-  lbl.forEach((l) => { l.element.style.visibility = 'hidden'; });
-  say('Fibonacci：不是最佳化問題', '只是一個計算');
-  await beat(tok, 2200);
-  for (let k = 0; k < 7; k++) {
-    lbl[k].element.style.visibility = '';
-    say(k < 2 ? 'F0 = 0、F1 = 1' : 'F' + k + ' = F' + (k - 1) + ' + F' + (k - 2), k < 2 ? 'initial number' : seq[k - 1] + ' + ' + seq[k - 2] + ' = ' + seq[k]);
-    await beat(tok, 800);
-  }
-  // squares 1,1,2,3,5,8 in a spiral (unit 0.5)
+  const lbl = [];
   const u = 0.48, sq = [[1, 0, 0], [1, 1, 0], [2, 0.5, 1.5], [3, -2, 1], [5, -1, -3], [8, 5.5, -1.5]];
-  say('邊長 1、1、2、3、5、8 的正方形', '一個一個接上去');
   const ms = [];
-  for (let k = 0; k < sq.length; k++) {
-    const [s, cx, cy] = sq[k];
-    ms.push(box(String(s), LV[k], (cx - 1.5) * u, 4.0 + cy * u, s * u - 0.06, s * u - 0.06, 0.15, 1.2));
-    await beat(tok, 900);
-  }
-  say('連起角落就是螺旋', '自然界的貝殼也有這個比例');
-  await beat(tok, 3000);
-  say('問題：怎麼算 F100？', '把 recurrence 直接寫成程式？');
-  await beat(tok, 2600);
+  const square = (k) => { const [s, cx, cy] = sq[k]; ms.push(box(String(s), LV[k], (cx - 1.5) * u, 4.0 + cy * u, s * u - 0.06, s * u - 0.06, 0.15, 1.2)); };
+  await step(tok);                                   // 4429.0 例子：Fibonacci sequence
+  const me = pal('', -6.4, C.orange, 1.6, 0.7);
+  tag('Fibonacci sequence', 'ptr alt', 0, 8.8);
+  say('第一個例子：Fibonacci sequence', '常被列為 DP 的 Exercise 1');
+  await step(tok);                                   // 4442.1 不是最佳化問題
+  bub('這題沒有「最好」，只是計算', -5.4, 2.0, 1.6);
+  say('先講好：它不是最佳化問題', '只是計算過程可以用 DP 的方式想');
+  await step(tok);                                   // 4461.0 每一項是前兩項的總和
+  tag('Fₙ = Fₙ₋₁ + Fₙ₋₂', 'ptr', 0, 8.1);
+  say('每一項都是前兩項的總和', 'Fₙ = Fₙ₋₁ + Fₙ₋₂');
+  await step(tok);                                   // 4476.0 F0 = 0、F1 = 1；F2 = 0 + 1
+  for (let k = 0; k < 3; k++) lbl.push(tag('F' + k + '=' + seq[k], 'idx', -5.6 + k * 1.0 + 2.0, 7.4));
+  say('initial：F0 = 0、F1 = 1', 'F2 = 0 + 1 = 1，依此類推');
+  await step(tok);                                   // 4484.0 算出整個 sequence
+  for (let k = 3; k < 7; k++) { lbl.push(tag('F' + k + '=' + seq[k], 'idx', -5.6 + k * 1.0 + 2.0, 7.4)); await beat(tok, 300); }
+  say('照 recurrence 一直算下去', '0, 1, 1, 2, 3, 5, 8, …');
+  await step(tok);                                   // 4497.0 和自然界結合：螺旋貝殼
+  me.mood('wow');
+  say('它在數學上有名：和自然界結合', '例如螺旋形的貝殼');
+  await step(tok);                                   // 4536.0 邊長 1 的正方形
+  square(0);
+  say('0 的面積是 0，先不看', '從 1 開始：畫邊長 1 的 square');
+  await step(tok);                                   // 4542.9 旁邊再一個 1
+  square(1);
+  say('旁邊再放一個 1', '1 + 1 會兜出 2');
+  await step(tok);                                   // 4559.0 邊長 2
+  square(2);
+  say('旁邊邊長放大：畫邊長 2 的 square', '');
+  await step(tok);                                   // 4573.0 1 + 2 = 3 → 邊長 3
+  square(3);
+  say('下一項 1 + 2 = 3', '畫邊長 3 的 square');
+  await step(tok);                                   // 4581.0 3 + 2 = 5 → 邊長 5
+  square(4);
+  say('下一項 3 + 2 = 5', '再畫一個 square');
+  await step(tok);                                   // 4587.0 5 + 3 = 8 → 邊長 8
+  square(5);
+  say('5 + 3 = 8', '再畫一個 square');
+  await step(tok);                                   // 4595.0 角連起來：螺旋
+  const pts = [[0.5, 0], [1, 1], [0.5, 2.5], [-3, 1], [-1, -3.5], [9.5, -1.5]];
+  for (let k = 1; k < pts.length; k++) { line((pts[k - 1][0] - 1.5) * u, 4.0 + pts[k - 1][1] * u, (pts[k][0] - 1.5) * u, 4.0 + pts[k][1] * u, 0.2, C.red); await beat(tok, 200); }
+  say('把角連起來：就是螺旋', '一直畫下去');
+  await step(tok);                                   // 4603.0 生物的螺旋，ratio 很像
+  me.mood('happy'); await me.hop(tok);
+  say('和很多生物的螺旋形狀很像', '比例（ratio）非常類似');
+  await step(tok);                                   // 4623.0 先不談延伸：想一件事
+  me.mood('calm');
+  bub('那…怎麼算出 Fₙ？', -5.4, 2.0, 1.6);
+  say('先不談延伸', '想一件事：怎麼算它？');
 }]);
 
-// 77:03 直接實作：F5 → F4、F3；大量重疊；依賴只有 5 個
+// 77:10 直接實作：F5 → F4、F3；大量重疊；依賴只有 5 個
 FRAG.push(['dpjiang1-fib-tree', 'Direct implementation：F5 的遞迴樹與依賴', async (tok) => {
   fresh([0, 4.0, 15], [0.4, 4.0, 0]);
-  const cd = code(['Fib(n):', '  if n <= 1: return n', '  return Fib(n-1) + Fib(n-2)'], -4.2, 8.6, 0.45);
-  const mk = (n) => ({ n, kids: n <= 1 ? [] : [mk(n - 1), mk(n - 2)] });
-  const T = mk(5);
+  const T = fibT(5);
   const all = layout(T, 1.3, 7.0, 1.3, 0.8);
-  say('直接翻成 recursive code', 'n ≤ 1 直接 return');
+  const me = pal('', -6.4, C.orange, 1.6, 0.7);
+  const grow = (t) => { if (t.par) t.e = line(t.par.x, t.par.y - 0.25, t.x, t.y + 0.25, 0, C.sand); t.m = box('F' + t.n, LV[t.d], t.x, t.y, 0.8, 0.45, 0.4, 1.0); };
+  await step(tok);                                   // 4632.0 給 recurrence，算 F100？
+  const q = bub('F100 = ？', -5.4, 2.0, 1.6);
+  say('給你 recurrence relation', '想算第 100 項 F100，怎麼算？');
+  await step(tok);                                   // 4652.0 第一種：direct implementation
+  remove(q);
+  tag('Direct implementation', 'ptr alt', -4.2, 9.2);
+  say('第一種：direct implementation', '');
+  await step(tok);                                   // 4672.0 直接翻成 recursive code
+  const cd = code(['Fib(n):', '  if n <= 1: return n', '  return Fib(n-1) + Fib(n-2)'], -4.2, 8.6, 0.45);
+  say('直接翻成 recursive code', 'recurrence 很簡單');
+  await step(tok);                                   // 4675.0 n ≤ 1 直接 return
+  cd.hl(1);
+  say('F0 = 0、F1 = 1', 'n ≤ 1 就直接 return');
+  await step(tok);                                   // 4690.0 其他：前兩項加起來
   cd.hl(2);
-  await beat(tok, 2200);
-  const order = []; (function w(t) { order.push(t); t.kids.forEach(w); })(T);
-  for (const t of order) {
-    if (t.par) t.e = line(t.par.x, t.par.y - 0.25, t.x, t.y + 0.25, 0, C.sand);
-    t.m = box('F' + t.n, LV[t.d], t.x, t.y, 0.8, 0.45, 0.4, 1.0);
-    await beat(tok, 260);
-  }
-  cd.hl(-1);
-  say('F5 呼叫 F4、F3；F4 再呼叫 F3、F2…', '共 ' + all.length + ' 次 recursive call');
-  await beat(tok, 2400);
+  say('比較大的：recursive call 前兩項', '再加起來');
+  await step(tok);                                   // 4701.0 會有什麼問題？
+  cd.hl(-1); me.mood('wow');
+  say('這樣寫會有什麼問題？', '');
+  await step(tok);                                   // 4708.0 試試看 F5
+  grow(T);
+  say('試試看：呼叫 F5', '');
+  await step(tok);                                   // 4718.0 F5 → F4、F3；F4 → F3、F2
+  T.kids.forEach(grow); T.kids[0].kids.forEach(grow);
+  say('F5 呼叫 F4、F3', 'F4 再呼叫 F3、F2');
+  await step(tok);                                   // 4729.0 F3 → F2、F1…畫成一棵樹
+  for (const t of pre(T)) { if (!t.m) { grow(t); await beat(tok, 110); } }
+  say('F3 呼叫 F2、F1，依此類推', '畫成一棵 tree：共 ' + all.length + ' 次 call');
+  await step(tok);                                   // 4761.0 重疊量非常高
   all.forEach((t) => glow(t.m, t.n === 3 ? GOLD : null));
-  say('F3 整棵子樹出現兩次', '重疊量非常高');
-  await beat(tok, 2400);
+  say('subproblem 的重疊量非常高', 'F3 整棵出現兩次');
+  await step(tok);                                   // 4768.0 這一塊也是重疊的
+  all.forEach((t) => glow(t.m, t.n === 2 ? GOLD : null));
+  say('這一塊也是重疊的', 'F2 出現 ' + all.filter((t) => t.n === 2).length + ' 次');
+  await step(tok);                                   // 4786.0 不需要每次都 call；算好記下來
   all.forEach((t) => glow(t.m, null));
-  // dependency: only 5 distinct calls
-  say('把 dependency 抽出來', '其實只有 F5…F1 五個');
+  me.mood('calm');
+  say('重複的不需要每次都 call', '算好先記下來');
+  await step(tok);                                   // 4805.0 之後查表：DP 的概念
+  pkt('需要時查表 = DP', 4.6, 8.6);
+  say('之後要用就去查表', '這就是 DP 的概念');
+  await step(tok);                                   // 4812.0 抽出 dependency
   const keep = {};
   all.forEach((t) => { if (!keep[t.n] && t.n >= 1) keep[t.n] = t; });
-  all.forEach((t) => { if (keep[t.n] !== t) { fly(t.m); } if (t.e) kill(t.e); });
-  await beat(tok, 900);
+  all.forEach((t) => { if (keep[t.n] !== t) fly(t.m); if (t.e) kill(t.e); });
+  await beat(tok, 700);
   for (let n = 5; n >= 1; n--) move(keep[n].m, -3.6 + (n - 1) * 1.8, 2.6, 0);
-  await beat(tok, 1200);
-  for (let n = 1; n <= 5; n++) {
-    if (n > 1) link([-3.6 + (n - 2) * 1.8, 2.6], [-3.6 + (n - 1) * 1.8, 2.6], C.teal, 0.5);
-    tint(keep[n].m, C.teal); glow(keep[n].m, GREEN);
-    await beat(tok, 500); glow(keep[n].m, null);
-  }
-  say('從沒有 dependency 的 F1 開始算', '算 5 次就結束');
-  await beat(tok, 3000);
+  say('把 dependency 抽出來', 'F5 ← F4、F3；F4 ← F3、F2…');
+  await step(tok);                                   // 4833.0 其實只有五個 call
+  for (let n = 2; n <= 5; n++) link([-3.6 + (n - 2) * 1.8, 2.6], [-3.6 + (n - 1) * 1.8, 2.6], C.brown, 0.5);
+  say('這麼大一棵 tree', '其實只是這五個 call 之間的關係');
+  await step(tok);                                   // 4845.0 從 F1 算起，五次就結束
+  for (let n = 1; n <= 5; n++) { tint(keep[n].m, C.teal); glow(keep[n].m, GREEN); await beat(tok, 350); glow(keep[n].m, null); }
+  me.mood('happy');
+  say('從沒有 dependency 的 F1 開始往後算', 'F1、F2、F3、F4、F5：五次就結束');
 }]);
 
-// 81:01 Memoization：F[] 先填 −1；F[0] = 0、F[1] = 1；查表
+// 81:07 Memoization：F[] 先填 −1；F[0] = 0、F[1] = 1；查表
 FRAG.push(['dpjiang1-fib-memo', 'Memoization：F[] 先填 −1，算過就查表', async (tok) => {
   fresh([0, 4.0, 15], [0.4, 4.0, 0]);
-  const cd = code(['F[0..n] = -1', 'F[0] = 0; F[1] = 1', 'MFib(n):', '  if F[n] = -1:', '    F[n] = MFib(n-1) + MFib(n-2)', '  return F[n]'], -4.6, 8.6, 0.42);
-  const mk = (n) => ({ n, kids: n <= 1 ? [] : [mk(n - 1), mk(n - 2)] });
-  const T = mk(5);
+  const T = fibT(5);
   const all = layout(T, 1.25, 6.9, 1.2, 1.2);
   all.forEach((t) => { if (t.par) t.e = line(t.par.x, t.par.y - 0.25, t.x, t.y + 0.25, 0, '#d8cfc0'); t.m = box('F' + t.n, GRAY, t.x, t.y, 0.75, 0.42, 0.38); fade(t.m, false); });
+  const me = pal('', -6.4, C.orange, 1.6, 0.7);
   const FX = (k) => -2.6 + k * 1.15;
+  const F = [-1, -1, -1, -1, -1, -1];
+  let cells = null, cd = null;
+  await step(tok);                                   // 4870.0 不想重複算：需要 lookup table
+  say('不想再重複計算', '需要一個小小的 lookup table');
+  await step(tok);                                   // 4886.0 top-down：memoization
+  pkt('top-down = memoization', -4.4, 9.0);
+  say('這是 top-down 的方法', 'memoization');
+  await step(tok);                                   // 4898.0 加一件事：create 一個 table
+  cd = code(['F[0..n] = -1', 'F[0] = 0; F[1] = 1', 'MFib(n):', '  if F[n] = -1:', '    F[n] = MFib(n-1) + MFib(n-2)', '  return F[n]'], -4.6, 8.4, 0.42);
+  say('把 recursive code 改成 memoization', '只多一件事：開一個 table 暫存');
+  await step(tok);                                   // 4914.0 存在 F 這個 array
   tag('F', 'ptr', FX(0) - 1.0, 0.7);
-  const F = [0, 1, -1, -1, -1, -1];
-  const cells = F.map((v, k) => { tag(String(k), 'idx', FX(k), 0.1); return box(String(v), k <= 1 ? C.teal : '#e6dccb', FX(k), 0.7, 1.0, 0.5, 0.45); });
+  cells = F.map((v, k) => { tag(String(k), 'idx', FX(k), 0.1); return box(' ', '#e6dccb', FX(k), 0.7, 1.0, 0.5, 0.45); });
+  say('算出來的 number 存在 array F', '');
+  await step(tok);                                   // 4928.0 怎麼判斷算過沒？
+  const q = bub('這格算過了沒？', FX(3), 1.6);
+  say('查表時怎麼知道這格算過沒？', '要填一個特殊值');
+  await step(tok);                                   // 4949.0 用 −1 initialize
+  remove(q);
   cd.hl(0);
-  say('−1 表示還沒算過', 'Fibonacci 的數都 ≥ 0');
-  await beat(tok, 2400);
+  for (const c of cells) { relabel(c, -1); await beat(tok, 120); }
+  say('Fibonacci 的數都 ≥ 0', '所以先全部填 −1：代表沒算過');
+  await step(tok);                                   // 4955.0 F0 填 0、F1 填 1
   cd.hl(1);
-  say('boundary：F[0] = 0、F[1] = 1', '先填好');
-  await beat(tok, 2000);
-  async function visit(t) {
-    fade(t.m, true);
-    if (F[t.n] !== -1) {
-      tint(t.m, C.gold); glow(t.m, GOLD); glow(cells[t.n], GOLD); cd.hl(5);
-      const gone = sub(t).slice(1);
-      say('F[' + t.n + '] = ' + F[t.n] + '：有值，直接 return', gone.length ? '不再展開' : '查表');
-      await beat(tok, 900);
-      gone.forEach((u) => { fly(u.m); if (u.e) kill(u.e); });
-      glow(t.m, null); glow(cells[t.n], null);
-      return;
+  F[0] = 0; F[1] = 1;
+  [0, 1].forEach((k) => { relabel(cells[k], F[k]); tint(cells[k], C.teal); });
+  say('boundary：F[0] 填 0、F[1] 填 1', '');
+  await step(tok);                                   // 4985.5 兩行變三行：多一個查表
+  cd.hl(3);
+  say('code 從兩行變三行', '多一個查表的動作');
+  await step(tok);                                   // 4999.0 −1 → 沒算過 → 老實 recursive call
+  cd.hl(4);
+  for (const t of [T, T.kids[0], T.kids[0].kids[0], T.kids[0].kids[0].kids[0]]) { fade(t.m, true); tint(t.m, LV[t.d]); await beat(tok, 300); }
+  say('F[n] 是 −1：沒算過', '老老實實 recursive call：F5 → F4 → F3 → F2');
+  await step(tok);                                   // 5013.0 算過 → 直接 return 記錄的值
+  cd.hl(5);
+  async function back(t) {
+    for (const k of t.kids) {
+      if (k.m.material.opacity === 1) continue;
+      fade(k.m, true); tint(k.m, C.gold); glow(cells[k.n], GOLD);
+      sub(k).slice(1).forEach((u) => { u.gone = true; fly(u.m); if (u.e) kill(u.e); });
+      await beat(tok, 160); glow(cells[k.n], null);
     }
-    tint(t.m, LV[t.d]); glow(t.m, GOLD); cd.hl(4);
-    say('F[' + t.n + '] = −1：沒算過', '老實 recursive call');
-    await beat(tok, 900); glow(t.m, null);
-    for (const k of t.kids) await visit(k);
     F[t.n] = F[t.n - 1] + F[t.n - 2];
-    relabel(cells[t.n], F[t.n]); tint(cells[t.n], C.teal); glow(cells[t.n], GREEN); tint(t.m, C.teal);
-    say('存 F[' + t.n + '] = ' + F[t.n], F[t.n - 1] + ' + ' + F[t.n - 2]);
-    await beat(tok, 800); glow(cells[t.n], null);
+    relabel(cells[t.n], F[t.n]); tint(cells[t.n], C.teal); tint(t.m, C.teal);
+    await beat(tok, 160);
   }
-  await visit(T);
+  for (const t of [T.kids[0].kids[0].kids[0], T.kids[0].kids[0], T.kids[0], T]) await back(t);
+  say('有算過：跳過，直接 return 記下的值', '金色 = 查表；F[5] = 5');
+  await step(tok);                                   // 5039.0 真正 recursive call 只有這五個
+  all.forEach((t) => { if (!t.gone && t.m.material.opacity < 1) { fly(t.m); if (t.e) kill(t.e); } });
+  me.mood('happy'); await me.hop(tok);
+  say('真正的 recursive call 只有這五個', '其他都來自查表，不會展開');
+}]);
+
+// 84:21 Bottom-up：F[0] = 0、F[1] = 1，i = 2..n 由小填到大（cued copy of the module's fib-table）
+FRAG.push(['dpjiang1-fib-table', 'Iteration：F[0..5] 由小填到大', async (tok) => {
+  fresh([0, 4.4, 14], [0, 3.8, 0]);
+  const me = pal('', -6.4, C.orange, 1.6, 0.7);
+  const FX = (k) => -3.2 + k * 1.3;
+  const F = [0, 1, 1, 2, 3, 5];
+  let cells = null, cd = null;
+  const fill = async (i) => {
+    const a1 = arrow(V3(FX(i - 2), 3.95, 0.3), V3(FX(i), 3.95, 0.3), 0xc08a1f), a2 = link([FX(i - 1), 3.4], [FX(i), 3.4], C.blue, 0.62);
+    glow(cells[i - 1], GOLD); glow(cells[i - 2], GOLD);
+    await beat(tok, 500);
+    relabel(cells[i], F[i]); tint(cells[i], C.teal); glow(cells[i], GREEN);
+    await beat(tok, 400);
+    glow(cells[i - 1], null); glow(cells[i - 2], null); glow(cells[i], null); kill(a1); kill(a2);
+    return 'F[' + i + '] = F[' + (i - 2) + '] + F[' + (i - 1) + '] = ' + F[i - 2] + ' + ' + F[i - 1] + ' = ' + F[i];
+  };
+  await step(tok);                                   // 5061.0 iteration：不是 recursive，從小算到大
+  tag('bottom-up：iteration', 'ptr alt', 0, 8.6);
+  say('另一個版本：bottom-up 的 iteration', '不 recursive，老實從小問題算到大問題');
+  await step(tok);                                   // 5071.0 subproblem 之間有 natural ordering？
+  const q = bub('有沒有天生的順序？', -5.4, 2.0, 1.6);
+  say('先想：subproblem 之間有沒有 natural ordering', '');
+  await step(tok);                                   // 5082.0 F1、F2、F3、F4、F5…
+  remove(q);
+  const ord = pkt('F1 → F2 → F3 → F4 → F5', 0, 1.4);
+  say('很簡單：F1、F2、F3、F4、F5…', '就照這個順序');
+  await step(tok);                                   // 5095.0 一層 for loop；開 F array
+  remove(ord);
+  cd = code(['fib(n):', '  F[0] = 0; F[1] = 1', '  for i = 2 to n:', '    F[i] = F[i-2] + F[i-1]', '  return F[n]'], 0, 7.6, 0.45);
+  cells = F.map((v, k) => { tag('F[' + k + ']', 'idx', FX(k), 2.6); return box(' ', '#e6dccb', FX(k), 3.4, 1.1, 0.7, 0.5); });
+  say('只要一層 for loop', '一樣開一個 array F 暫存');
+  await step(tok);                                   // 5108.0 F0、F1 填 0 和 1
+  cd.hl(1);
+  [0, 1].forEach((k) => { relabel(cells[k], F[k]); tint(cells[k], C.teal); });
+  say('initial boundary condition', 'F[0] = 0、F[1] = 1');
+  await step(tok);                                   // 5116.0 從 2 以上才用 recurrence
+  cd.hl(2);
+  say('從 i = 2 開始', '才真的 apply recurrence relation');
+  await step(tok);                                   // 5130.0 每個 F[i] = 前兩項的總和
+  cd.hl(3);
+  say('F[i] = 前兩項的總和', await fill(2));
+  await step(tok);                                   // 5137.0 算好存進 F[i]
+  say('算出來存進 F[i]', await fill(3));
+  await step(tok);                                   // 5145.0 i 從小到大計算
+  say('i 從小到大算', await fill(4));
+  await step(tok);                                   // 5153.0 i−1、i−2 一定已經有值
+  say('往前看的 i−1、i−2 一定已經有值', await fill(5));
+  await step(tok);                                   // 5161.0 for loop 不會中途卡住或算錯
+  cd.hl(4);
+  me.mood('happy');
+  say('所以 for loop 不會中途卡住、不會算錯', 'F[5] = 5');
+  await step(tok);                                   // 5169.0 照 natural ordering；共 5 個 subproblem
   cd.hl(-1);
-  say('真正展開的只有 F5→F4→F3→F2→F1', '其他都來自查表：top-down');
-  await beat(tok, 3000);
+  cells.slice(1).forEach((m) => glow(m, GREEN));
+  say('follow natural ordering', '要算的 subproblem 一樣是 5 個');
+  await step(tok);                                   // 5180.0 本質就是 induction
+  cells.forEach((m) => glow(m, null));
+  note('其實就是 induction：由小到大', 0, 1.4);
+  say('這樣做其實就是 induction', '做完照順序從小算到大');
+  await step(tok);                                   // 5194.0 也是 DP 的例子，但沒最佳化
+  await me.hop(tok);
+  say('Fibonacci 也可當 DP 的 example', '只是它沒有最佳化：比較特別');
 }]);
 
 // 86:53 Maze routing：wave propagation，一步、兩步…碰到 target，倒著數回去
 FRAG.push(['dpjiang1-maze', 'Maze routing：wave propagation 找最短路徑', async (tok) => {
   fresh([0, 3.8, 13], [0, 3.6, 0]);
-  const G = ['.........', '..##.....', '......#..', '.##.#.#..', '....#.#..', 'S...#.T..'];
-  const R = 6, CN = 9, at = (r, c) => G[R - 1 - r][c];
-  const X = (c) => (c - 4) * 1.1, Y = (r) => 1.0 + r * 1.0;
+  const G = ['........', '.##.#...', '...#....', '.#.#.#..', '.#...#..', 'S#.#..T.'];
+  const R = 6, CN = 8, at = (r, c) => G[R - 1 - r][c];
+  const X = (c) => (c - 3.5) * 1.1, Y = (r) => 1.0 + r * 1.0;
   const cell = {}; let S, Tt;
+  const d = {}; let front = [], w = 0, hit = false;
+  const wave = async (n, ms) => {
+    for (let s = 0; s < n && front.length && !hit; s++) {
+      w++; const nx = [];
+      for (const [r, c] of front) for (const [dr, dc] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nr = r + dr, nc = c + dc;
+        if (nr < 0 || nr >= R || nc < 0 || nc >= CN || at(nr, nc) === '#' || d[[nr, nc]] !== undefined) continue;
+        d[[nr, nc]] = w; nx.push([nr, nc]);
+        const m = cell[nr + ',' + nc];
+        if (at(nr, nc) === 'T') { hit = true; glow(m, GREEN); relabel(m, 'T' + w); } else { relabel(m, w); tint(m, w % 2 ? '#bfe3d3' : '#a9d8c4'); }
+      }
+      front = nx;
+      await beat(tok, ms);
+    }
+  };
+  let mouse = null;
+  await step(tok);                                   // 5213.0 DP 最好用在最佳化；下一個例子 maze routing
+  tag('Maze routing', 'ptr alt', 0, 8.2);
+  say('DP 最好用在最佳化問題', '下一個例子：maze routing');
+  await step(tok);                                   // 5227.0 老鼠走迷宮
+  mouse = pal('老鼠', -6.4, C.gray, 1.6, 0.7);
+  say('可以想成老鼠走迷宮', '');
+  await step(tok);                                   // 5233.0 格狀圖
   for (let r = 0; r < R; r++) for (let c = 0; c < CN; c++) {
     const ch = at(r, c);
-    cell[r + ',' + c] = box(ch === 'S' ? 'S' : ch === 'T' ? 'T' : ch === '#' ? '' : ' ', ch === '#' ? '#7d7466' : ch === 'S' ? C.purple : ch === 'T' ? C.gold : '#e9e1d0', X(c), Y(r), 1.0, 0.9, ch === '#' ? 0.6 : 0.15);
+    cell[r + ',' + c] = box(' ', '#e9e1d0', X(c), Y(r), 1.0, 0.9, 0.15);
     if (ch === 'S') S = [r, c]; if (ch === 'T') Tt = [r, c];
   }
-  say('格狀迷宮：灰色是障礙物', '老鼠 S 走到起司 T；只能上下左右');
-  await beat(tok, 2800);
-  say('就像 VLSI 繞線：source 接 target', '而且要走最短');
-  await beat(tok, 2200);
-  const d = { [S]: 0 }; let front = [S], w = 0, hit = false;
-  while (front.length && !hit) {
-    w++; const nx = [];
-    for (const [r, c] of front) for (const [dr, dc] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      const nr = r + dr, nc = c + dc;
-      if (nr < 0 || nr >= R || nc < 0 || nc >= CN || at(nr, nc) === '#' || d[[nr, nc]] !== undefined) continue;
-      d[[nr, nc]] = w; nx.push([nr, nc]);
-      const m = cell[nr + ',' + nc];
-      if (at(nr, nc) === 'T') { hit = true; glow(m, GREEN); relabel(m, 'T' + w); } else { relabel(m, w); tint(m, w % 2 ? '#bfe3d3' : '#a9d8c4'); }
-    }
-    front = nx;
-    say('wave：' + w + ' 步可以到的格子', hit ? '碰到 T：最短 = ' + w + ' 步' : '像水波一樣往外擴散');
-    await beat(tok, hit ? 2200 : 550);
-  }
-  say('倒過來數 ' + w + ', ' + (w - 1) + ', …, 1', '任何一條連續遞減的路都是解');
-  let cur = Tt;
-  while (d[cur] > 0) {
+  say('迷宮是一個格狀圖', '很多格子');
+  await step(tok);                                   // 5248.0 障礙物：灰色
+  for (let r = 0; r < R; r++) for (let c = 0; c < CN; c++) if (at(r, c) === '#') { const m = cell[r + ',' + c]; tint(m, '#7d7466'); m.scale.z = 4; }
+  say('迷宮有牆壁、障礙物', '用灰色 block 起來');
+  await step(tok);                                   // 5260.0 老鼠從入口進去，起司在出口
+  const sm = cell[S[0] + ',' + S[1]], tm = cell[Tt[0] + ',' + Tt[1]];
+  tint(sm, C.purple); relabel(sm, 'S'); tint(tm, C.gold); relabel(tm, '🧀');
+  say('老鼠 S 從入口進去', '起司 T 在另一個出口');
+  await step(tok);                                   // 5277.0 任何一點都可以放
+  mouse.mood('wow');
+  say('其實任何一點都可放老鼠、任何一點放起司', '想辦法讓老鼠走到起司');
+  await step(tok);                                   // 5294.9 VLSI 繞線
+  const vl = prop('cpu', 6.6, 0, 1.0, 0.8, 'VLSI 繞線');
+  bob(vl, 0.04);
+  say('和 VLSI 的繞線問題很像', 'source 拉線到 target，也有障礙物');
+  await step(tok);                                   // 5327.0 走最短距離
+  say('不只要找到路', '還希望走最短距離');
+  await step(tok);                                   // 5340.0 只能上下左右
+  const dirs = ['↑', '↓', '←', '→'].map((a, k) => tag(a, 'pkt', X(S[1]) + [0, 0, -0.7, 0.7][k], Y(S[0]) + [0.7, -0.7, 0, 0][k], 0.3));
+  say('限制方向：只能上下左右', '不能走斜的');
+  await step(tok);                                   // 5371.0 一步可以走到哪些點
+  dirs.forEach(remove);
+  d[S] = 0; front = [S];
+  await wave(1, 300);
+  say('從 source 開始：一步可以走到哪些點？', '標上 1');
+  await step(tok);                                   // 5380.0 兩步、三步、四步…
+  await wave(5, 350);
+  say('再看兩步、三步、四步可以走到的', '一直看下去');
+  await step(tok);                                   // 5401.0 像 wave propagation
+  await wave(5, 350);
+  say('像水波一樣往外擴散', 'wave propagation');
+  await step(tok);                                   // 5414.7 直到碰到 target 停下來
+  await wave(5, 400);
+  mouse.mood('happy'); await mouse.hop(tok);
+  say('一直到碰到 target 就停', '最短：' + w + ' 步');
+  await step(tok);                                   // 5423.0 保證最短；怎麼 retrieve？
+  say('停下來時保證找到最短路徑', '怎麼把路徑 retrieve 出來？');
+  await step(tok);                                   // 5431.0 剛才 1 2 3 數過去 → 倒過來數
+  say('剛才是照順序 1、2、3…數過去', '所以倒過來數就好');
+  await step(tok);                                   // 5442.0 12 11 10 … 1 連續的 path
+  let cur = Tt; const path = [];
+  while (d[cur] > 1) {
     const [r, c] = cur;
-    for (const [dr, dc] of [[0, -1], [1, 0], [-1, 0], [0, 1]]) {
-      const n = [r + dr, c + dc];
-      if (d[n] === d[cur] - 1) { cur = n; break; }
-    }
-    if (d[cur] > 0) { tint(cell[cur[0] + ',' + cur[1]], C.orange); await beat(tok, 260); }
+    for (const [dr, dc] of [[0, -1], [1, 0], [-1, 0], [0, 1]]) { const n = [r + dr, c + dc]; if (d[n] === d[cur] - 1) { cur = n; break; } }
+    path.push(cur);
   }
-  await beat(tok, 1200);
-  say('table 大小 = 格子數 m × n', '時間與空間都是 O(mn)');
-  await beat(tok, 3000);
+  for (const p of path) { tint(cell[p[0] + ',' + p[1]], C.orange); await beat(tok, 150); }
+  say('倒著數 ' + w + '、' + (w - 1) + '、…、1', '任何一條連續遞減的 path 都是解');
+  await step(tok);                                   // 5469.0 memory 和 runtime 多少？
+  say('這個 DP 要多少 memory 和 runtime？', '看 lookup table 的 size');
+  await step(tok);                                   // 5481.0 m × n 個格子 → O(mn)
+  tag('m × n 個格子 → O(mn)', 'ptr alt', 0, 7.4);
+  say('worst case：table = 整個平面的格數', 'm × n 格 → O(mn)');
+  await step(tok);                                   // 5497.0 table 多大，runtime 就 bound 在那
+  note('table 多大，runtime 就 bound 在那', 0, 0.0);
+  say('這也是 DP 的特性', 'table 有多大，running time 就 bound 在上面');
 }]);
 
 // ════════════════ S5vS9YEvnFU（Lec19 Dynamic Programming 3/3） ════════════════
@@ -4916,341 +5516,909 @@ FRAG.push(['dpjiang1-maze', 'Maze routing：wave propagation 找最短路徑', a
 const BV = ['t', 'a', 'b', 'c', 'd', 'e'];
 const BT = { t: [0, 0, 0, 0, 0, 0], a: [null, -3, -3, -4, -6, -6], b: [null, null, 0, -2, -2, -2], c: [null, 3, 3, 3, 3, 3], d: [null, 4, 3, 3, 2, 0], e: [null, 2, 0, 0, 0, 0] };
 const bfs = (v) => (v === null ? '∞' : String(v));
-function bfTable(x0, y0, cw = 0.95, chh = 0.62, cols = 6) {
+function bfTable(x0, y0, cw = 0.95, chh = 0.62, cols = 6, upto = cols) {
   const cells = {};
   for (let i = 0; i < cols; i++) tag(String(i), 'idx', x0 + i * cw, y0 + 0.6);
   BV.forEach((v, r) => {
     tag(v, 'ptr', x0 - 0.85, y0 - r * chh);
     cells[v] = [];
-    for (let i = 0; i < cols; i++) cells[v][i] = box(bfs(BT[v][i]), i === cols - 1 ? '#efe0c0' : '#e6dccb', x0 + i * cw, y0 - r * chh, cw - 0.08, chh - 0.08, 0.3);
+    for (let i = 0; i < cols; i++) cells[v][i] = box(i < upto ? bfs(BT[v][i]) : ' ', i === cols - 1 ? '#efe0c0' : '#e6dccb', x0 + i * cw, y0 - r * chh, cw - 0.08, chh - 0.08, 0.3);
   });
   return cells;
 }
+const colGlow = (cells, i, c) => BV.forEach((v) => glow(cells[v][i], c));
 
-// 00:15 Bellman-Ford 回顧：一欄一欄填；b 在 i = 5：min(−2, −1 + 2, −2 + 0)
+// 00:16 Bellman-Ford 回顧：一欄一欄填；b 在 i = 5：min(−2, −1 + 2, −2 + 0)
 FRAG.push(['dpjiang1-bf-cell', 'Bellman-Ford 填表：OPT(5, b) = −2', async (tok) => {
   fresh([0, 4.2, 13.5], [0.4, 3.9, 0]);
-  const cells = bfTable(-4.6, 6.4);
-  tag('i = 最多經過幾條 edge', 'idx', -2.2, 7.6);
-  say('上次的 Bellman-Ford：bottom-up', '最後一欄 = 每個點到 t 的最短距離');
-  await beat(tok, 3000);
-  say('每個 iteration 填一個新 column', '只參考前一個 column');
-  for (let i = 1; i < 6; i++) { BV.forEach((v) => glow(cells[v][i], GOLD)); await beat(tok, 450); BV.forEach((v) => glow(cells[v][i], null)); }
-  await beat(tok, 800);
-  glow(cells.b[5], GOLD);
-  tag('b→d：−1', 'ptr alt', 3.0, 5.0); tag('b→e：−2', 'ptr alt', 3.0, 4.3);
-  say('看 b 到 t、最多 5 條 edge', '兩種 option');
-  await beat(tok, 2600);
+  const X0 = -4.6, CW = 0.95;
+  let cells = null, opt = null;
+  const me = pal('', -6.4, C.orange, 1.6, 0.7);
+  await step(tok);                                   // 16.1 上次的 Bellman-Ford：iteration、bottom-up 建表
+  cells = bfTable(X0, 6.4);
+  tag('M[i, v]：v 到 t、最多 i 條 edge', 'idx', -2.2, 7.6);
+  say('上次的 Bellman-Ford：iteration 版本', 'bottom-up 建出這張 table');
+  await step(tok);                                   // 47.0 最後一個 column：每個點到 t 的最短距離
+  colGlow(cells, 5, GOLD);
+  say('最後一個 column', '就是每個點到 destination t 的最短距離');
+  await step(tok);                                   // 64.0 第一個 column：boundary condition
+  colGlow(cells, 5, null); colGlow(cells, 0, GREEN);
+  say('第一個 column 是 boundary condition', 't 自己是 0，其他是 ∞');
+  await step(tok);                                   // 72.0 每個 iteration 填一個新 column
+  colGlow(cells, 0, null);
+  for (let i = 1; i < 6; i++) { colGlow(cells, i, GOLD); await beat(tok, 300); colGlow(cells, i, null); }
+  say('每個 iteration 填一個新的 column', '');
+  await step(tok);                                   // 80.0 只參考前一個 column
+  colGlow(cells, 3, GOLD); colGlow(cells, 2, GREEN);
+  const lk = arrow(V3(X0 + 2 * CW, 7.25, 0), V3(X0 + 3 * CW, 7.25, 0), 0x0f5a3a);
+  say('填新 column 時', '只參考前面一個 column 的值');
+  await step(tok);                                   // 104.0 for each vertex：順序不在意
+  colGlow(cells, 3, null); colGlow(cells, 2, null); kill(lk);
+  const cd = code(['for i = 1 to n-1:', '  for each v (any order):', '    M[i,v] = min(M[i-1,v],', '      min_w c(v,w) + M[i-1,w])'], 2.9, 2.4, 0.42);
+  cd.hl(1);
+  say('for 每一個 vertex，in any order', '順序不在意，反正每個點都要看');
+  await step(tok);                                   // 126.0 option 1：沒用到第 i 條 → 左邊那格
+  cd.hl(2);
+  say('兩個 option。option 1：沒用到第 i 條 edge', '最多 i − 1 條：承接前一 column 的解');
+  await step(tok);                                   // 145.0 option 2：剛好 i 條 = 第一條 + i−1 條
+  cd.hl(3);
+  say('option 2：剛好用 i 條 edge', '拆成：v 出去的第一條 ＋ 從 w 到 t 的 i − 1 條');
+  await step(tok);                                   // 178.0 option 2 也只參考前一個 column
+  say('option 2 參考的也是前一個 iteration', '就是隔壁 column 的解');
+  await step(tok);                                   // 201.0 highlight：b 到 t、最多 5 條
+  cd.hl(-1);
+  glow(cells.b[5], GOLD); opt = cells.b[5]; relabel(opt, '?');
+  say('例子：b 到 t、最多 5 條 edge', '這格怎麼算？');
+  await step(tok);                                   // 209.0 option 1：最多 4 條的 b → 左邊格子
   glow(cells.b[4], GREEN);
-  say('option 1：沒用到第 5 條 edge', 'OPT(4, b) = −2（左邊那格）');
-  await beat(tok, 2600);
-  glow(cells.d[4], GREEN);
-  say('option 2：剛好 5 條，先走 b→d', '−1 + OPT(4, d) = −1 + 2 = 1');
-  await beat(tok, 2800);
-  glow(cells.d[4], null); glow(cells.e[4], GREEN);
-  say('或先走 b→e', '−2 + OPT(4, e) = −2 + 0 = −2');
-  await beat(tok, 2800);
-  glow(cells.e[4], null); glow(cells.b[4], null); glow(cells.b[5], GREEN);
-  say('取 minimum：還是 −2', 'OPT(5, b) = min(−2, 1, −2) = −2');
-  await beat(tok, 3000);
+  const o1 = note('option 1：−2', 4.0, 6.0);
+  say('option 1：參考最多 4 條的 b', '左邊那格：−2');
+  await step(tok);                                   // 226.0 b 出去可以到 d、也可以到 e
+  const ed = pkt('b→d：−1', 4.0, 5.2), ee = pkt('b→e：−2', 4.0, 4.5);
+  say('b 出去可以 reach d，也可以 reach e', '剛好 5 條 = 1 條 ＋ 4 條');
+  await step(tok);                                   // 250.0 b→d ＋ d 到 t 最多 4 條
+  glow(cells.d[4], GREEN); hl(ed, true);
+  say('第一種：b→d 這一段', '再加上 d 到 t 最多 4 條的解');
+  await step(tok);                                   // 258.0 b→e ＋ e 到 t 最多 4 條
+  glow(cells.e[4], GREEN); hl(ee, true);
+  say('第二種：b→e 這一段', '再加上 e 到 t 最多 4 條的解');
+  await step(tok);                                   // 277.0 2 + (−1) = 1；−2 + 0 = −2
+  txt(ed, '−1 + 2 = 1'); txt(ee, '−2 + 0 = −2');
+  say('d 那格是 2：2 + (−1) = 1', 'e 那格是 0：−2 + 0 = −2');
+  await step(tok);                                   // 287.0 take minimum：還是 −2
+  ['b', 'd', 'e'].forEach((v) => glow(cells[v][4], null));
+  relabel(opt, -2); glow(opt, GREEN); txt(o1, 'min(−2, 1, −2) = −2');
+  me.mood('happy'); await me.hop(tok);
+  say('take minimum：仍然是 −2', '每一格都用這種方式兜出來');
 }]);
 
-// 05:00 Complexity：O(nm) 而不是 O(n³)；空間只要前一欄，但回溯路徑要留紀錄
+// 05:02 Complexity：O(nm) 而不是 O(n³)；空間只要前一欄，但回溯路徑要留紀錄
 FRAG.push(['dpjiang1-bf-cost', 'Bellman-Ford 的 O(nm) 與空間', async (tok) => {
   fresh([0, 4.2, 13.5], [0.4, 3.9, 0]);
   const cells = bfTable(-4.6, 6.4);
   const cd = code(['for i = 1 to n-1:', '  for each v (any order):', '    M[i,v] = min(M[i-1,v],', '      min over (v,w): c(v,w) + M[i-1,w])'], 2.7, 2.4, 0.42);
+  const me = pal('', -6.4, C.orange, 1.6, 0.7);
+  let cx = null;
+  await step(tok);                                   // 302.0 complexity 主要來源在這裡
+  [0, 1, 2, 3].forEach((k) => { cd.ls[k].element.style.outline = '2px solid #c08a1f'; });
+  say('complexity 的主要來源', '是這兩層 for loop');
+  await step(tok);                                   // 313.0 外層：一個一個 column，n − 1 個
+  [0, 1, 2, 3].forEach((k) => { cd.ls[k].element.style.outline = ''; });
   cd.hl(0);
-  say('外層：最多填 n − 1 個 column', 'O(n)');
-  await beat(tok, 2600);
+  for (let i = 1; i < 6; i++) { colGlow(cells, i, GOLD); await beat(tok, 200); colGlow(cells, i, null); }
+  cx = tag('外層：n − 1 個 column → O(n)', 'ptr alt', 2.7, 0.4);
+  say('外層一個 column 一個 column 填', '最多 n − 1 個 column');
+  await step(tok);                                   // 326.0 option 1：直接參考左邊格子
+  cd.hl(2);
+  glow(cells.b[5], GOLD); glow(cells.b[4], GREEN);
+  say('每一格：option 1 直接參考左邊格子', '1 格，固定的');
+  await step(tok);                                   // 334.0 option 2：看 out-degree
   cd.hl(3);
-  glow(cells.b[5], GOLD); glow(cells.b[4], GREEN); glow(cells.d[4], GREEN); glow(cells.e[4], GREEN);
-  say('每個點只看左格＋out-degree 格', 'b：1 + 2 格');
-  await beat(tok, 2800);
+  glow(cells.d[4], GREEN); glow(cells.e[4], GREEN);
+  const od = note('b 的 out-degree = 2 → 再看 2 格', 4.0, 5.4);
+  say('option 2 要參考幾格？', '看這個點 outgoing 的 edge 數（out-degree）');
+  await step(tok);                                   // 354.0 每個點：out-degree ＋ 左邊 1 格
+  txt(od, 'b：1（左格）＋ 2（out-degree）');
+  say('每個點看：out-degree 個格子', '再加上自己隔壁的 1 格');
+  await step(tok);                                   // 386.0 全部點加總 = 總 edge 數 m
   ['b', 'd', 'e'].forEach((v) => glow(cells[v][4], null)); glow(cells.b[5], null);
-  say('全部點加總 = 總 edge 數 m', '內層 O(m) → 整體 O(nm)');
-  await beat(tok, 2800);
-  say('粗略看：每格看整欄 → O(n³)', '算太多了；詳細分析是 O(nm)');
-  await beat(tok, 2800);
+  colGlow(cells, 5, GOLD);
+  txt(od, 'Σ out-degree = m（總 edge 數）');
+  say('每個點的 outgoing edge 全部加起來', '就是總 edge 數 m');
+  await step(tok);                                   // 410.0 內層每個 iteration：O(m)
+  colGlow(cells, 5, null);
+  cd.hl(1);
+  txt(cx, '內層：每個 iteration O(m)');
+  say('所以內層在每個 iteration', '貢獻 O(m)');
+  await step(tok);                                   // 445.0 外層 n → 整體 O(nm)
   cd.hl(-1);
-  BV.forEach((v) => { for (let i = 1; i < 4; i++) fade(cells[v][i], false); });
-  say('每格只參考前一欄', '只求值的話，兩欄就夠');
-  await beat(tok, 2800);
-  BV.forEach((v) => { for (let i = 1; i < 4; i++) fade(cells[v][i], true); });
-  say('要還原整條路徑', '每格還要記「參考了誰」');
-  await beat(tok, 2800);
+  txt(cx, '整體：O(n) × O(m) = O(nm)');
+  me.mood('happy');
+  say('外層 bound 在 n、內層在 m', '兩層乘起來：O(nm)');
+  await step(tok);                                   // 470.0 粗略分析：每格看整欄 → n²
+  me.mood('wow');
+  BV.forEach((v) => glow(cells[v][4], GOLD)); glow(cells.b[5], GREEN);
+  txt(od, '粗略：每格看整個前一欄 → 一欄 n²');
+  say('如果粗略看：每格都參考整個前一欄', '一欄就要 n²');
+  await step(tok);                                   // 501.0 → n³，算太多
+  BV.forEach((v) => glow(cells[v][4], null)); glow(cells.b[5], null);
+  txt(od, '粗略總共 O(n³)：算太多了');
+  say('這樣算出來 O(n³)', '其實算太多了');
+  await step(tok);                                   // 506.0 詳細分析：n × m
+  txt(od, '詳細分析：O(nm)'); me.mood('calm');
+  say('詳細分析只有 n × m', '');
+  await step(tok);                                   // 517.9 只參考隔壁 column
+  colGlow(cells, 4, GOLD); colGlow(cells, 3, GREEN);
+  say('每一格真正參考的', '只有隔壁那一個 column，不會再往前看');
+  await step(tok);                                   // 530.0 table 不需要這麼大
+  colGlow(cells, 4, null); colGlow(cells, 3, null);
+  BV.forEach((v) => { for (let i = 0; i < 4; i++) fade(cells[v][i], false); });
+  say('所以 table 不一定要建這麼大', '可以壓縮成兩欄');
+  await step(tok);                                   // 551.0 只要記錄值 → 可以縮小
+  good('只要最短距離的值 → 兩欄就夠', 2.6, 8.4);
+  say('如果只要 shortest path 的值', 'table 可以縮小');
+  await step(tok);                                   // 567.0 要 retrieve 路徑 → 整張留著，記「參考誰」
+  BV.forEach((v) => { for (let i = 0; i < 4; i++) fade(cells[v][i], true); });
+  arrow(V3(-4.6 + 5 * 0.95, 6.4 - 2 * 0.62 + 0.15, 0.3), V3(-4.6 + 4 * 0.95, 6.4 - 5 * 0.62 + 0.15, 0.3), 0xa8730f);
+  note('每格記：我參考了誰', 4.0, 6.0);
+  say('想 retrieve 每個點到 t 的路徑', '整張 table 要留著，每格記下參考誰');
+  await step(tok);                                   // 599.0 DP 最後一步：需不需要 detail solution
+  me.mood('happy'); await me.hop(tok);
+  say('這是 DP 的最後一步', '看題目需不需要 detail solution 的長相');
 }]);
 
-// 10:29 Negative cycle：在 v 繞圈，每繞一圈更短
+// 10:39 Negative cycle：在 v 繞圈，每繞一圈更短
 FRAG.push(['dpjiang1-negcycle', 'Negative cycle：繞一圈就更短，出不來', async (tok) => {
   fresh([0, 4.0, 13], [0, 4.0, 0]);
   const P = { s: [-5, 2.4], v: [-1, 2.4], t: [5, 2.4], x: [0.6, 5.4], y: [-2.6, 5.4] };
   const N = {};
+  const tr = pal('', -6.4, C.orange, 1.6, 0.7);
+  await step(tok);                                   // 639.4 Negative cycle：shortest path 的重要主題
+  tag('Negative cycle', 'ptr alt', 0, 8.2);
+  say('今天的新重點：negative cycle', 'shortest path 裡很重要的主題');
+  await step(tok);                                   // 647.6 有 negative cycle：最短距離不探討
   for (const [k, p] of Object.entries(P)) N[k] = box(k, k === 's' || k === 't' ? C.purple : C.blue, p[0], p[1], 0.8, 0.6, 0.5, 1.4);
   link(P.s, P.v); link(P.v, P.t);
   const cyc = [['v', 'x', -2], ['x', 'y', 3], ['y', 'v', -4]];
   cyc.forEach(([a, b, w]) => { link(P[a], P[b], C.red); tag(String(w), 'ptr alt', (P[a][0] + P[b][0]) / 2, (P[a][1] + P[b][1]) / 2 + 0.4); });
-  tag('cycle C：−2 + 3 − 4 = −3 < 0', 'ptr', 0, 7.2);
-  say('s 到 t 的路上經過 v', 'v 在一個 negative cycle 上');
-  await beat(tok, 3000);
+  say('graph 裡有 negative cycle 時', '任兩點的最短距離不探討：不知道在哪');
+  await step(tok);                                   // 663.0 Bellman-Ford 吐出的解不對
+  const bf = bad('Bellman-Ford：答案不對', 4.4, 6.6);
+  say('Bellman-Ford 也一樣', '路上經過 negative cycle 時，吐出的解不對');
+  await step(tok);                                   // 683.0 其他演算法也一樣
+  txt(bf, '任何 shortest path 演算法：都給不出正解');
+  say('其他 shortest path 演算法', '遇到這種 case 也沒辦法');
+  await step(tok);                                   // 698.0 s 到 t，中間經過 v
+  glow(N.s, GOLD); glow(N.t, GOLD); glow(N.v, GOLD);
+  say('討論 s 到 t 的最短路徑', '中間經過某個點 v');
+  await step(tok);                                   // 712.0 v 在 cycle C 上，總和 < 0
+  glow(N.s, null); glow(N.t, null);
+  const sum = tag('cycle C：−2 + 3 − 4 = −3 < 0', 'ptr', 0, 7.4);
+  say('v 剛好在一個 cycle C 上', 'C 的 edge weight 總和是負的');
+  await step(tok);                                   // 728.0 s 到 v 之後在這裡繞圈圈
+  glow(N.v, null);
   const tk = box('', C.orange, P.s[0], P.s[1] + 0.65, 0.35, 0.35, 0.35);
-  const cost = tag('路徑長 −∞ ?', 'ptr alt', 4.2, 4.4);
+  const cost = tag('目前長度', 'ptr alt', 4.2, 4.4);
   move(tk, P.v[0], P.v[1] + 0.65, 0);
-  await beat(tok, 1200);
-  for (let lap = 1; lap <= 3; lap++) {
-    for (const k of ['x', 'y', 'v']) { move(tk, P[k][0], P[k][1] + 0.65, 0); await beat(tok, 600); }
-    txt(cost, '多繞 ' + lap + ' 圈：再 −' + 3 * lap);
-    say('每繞一圈總長再降 3', '繞 10 圈就賺 10 次');
-  }
-  await beat(tok, 1400);
-  say('最短路徑不存在', 'Bellman-Ford 也給不出正確解');
-  await beat(tok, 2600);
-  say('算最短路徑前', '先偵測有沒有 negative cycle');
-  await beat(tok, 2600);
+  await beat(tok, 700);
+  for (const k of ['x', 'y', 'v']) { move(tk, P[k][0], P[k][1] + 0.65, 0); await beat(tok, 450); }
+  txt(cost, '繞 1 圈：再 −3');
+  say('走到 v 之後會在這裡繞圈圈', '每繞一圈，總長再降 3');
+  await step(tok);                                   // 741.0 繞 10 圈賺 10 次，出不來
+  for (const k of ['x', 'y', 'v', 'x', 'y', 'v']) { move(tk, P[k][0], P[k][1] + 0.4, 0); await beat(tok, 300); }
+  txt(cost, '一直繞：−∞，出不來');
+  tr.mood('wow');
+  say('繞 10 圈就賺 10 次', '無限賺下去，出不來');
+  await step(tok);                                   // 751.3 一般問題：給 directed graph 算最短距離
+  kill(sum); tr.mood('calm');
+  say('一般的 shortest path 問題', '給 directed graph 和 edge weight，求任兩點最短距離');
+  await step(tok);                                   // 770.0 算之前先確認有沒有 negative cycle
+  const chk = bub('先檢查：有 negative cycle 嗎？', -6.0, 2.2, 1.6);
+  say('真正跑演算法之前', '先確認 graph 裡有沒有 negative cycle');
+  await step(tok);                                   // 781.0 negative cycle detection 很重要
+  remove(chk);
+  good('negative cycle detection', 0, 0.6);
+  say('negative cycle detection', '是很重要的議題');
+  await step(tok);                                   // 795.0 看一個有名的 application
+  tr.mood('happy'); await tr.hop(tok);
+  say('先看一個很有名的 application', '');
 }]);
 
-// 13:18 套利：匯率相乘 > 1 的 cycle
+// 13:21 套利：匯率相乘 > 1 的 cycle
 FRAG.push(['dpjiang1-arbitrage', '套利：匯率乘積 > 1 的 cycle', async (tok) => {
   fresh([0, 4.0, 13.5], [0, 4.0, 0]);
   const P = { USD: [-3.6, 2.2], CHF: [0, 6.6], EUR: [3.6, 2.2], GOLD: [-5.8, 6.0] };
   const N = {};
-  for (const [k, p] of Object.entries(P)) N[k] = box(k, k === 'GOLD' ? C.gold : C.blue, p[0], p[1], 1.2, 0.6, 0.5, 1.4);
+  const tr = pal('交易員', 6.0, C.orange, 1.6, 0.75);
+  let coin = null;
+  await step(tok);                                   // 801.0 技巧常見；找 negative cycle 的應用
+  say('這個技巧之後在很多地方都會看到', '問題：graph 裡有沒有 negative cycle？');
+  await step(tok);                                   // 825.0 不同貨幣之間的 exchange rate
+  for (const k of ['USD', 'CHF', 'EUR']) N[k] = box(k, C.blue, P[k][0], P[k][1], 1.2, 0.6, 0.5, 1.4);
+  say('這裡是不同貨幣之間的 exchange rate', '');
+  await step(tok);                                   // 832.0 有人靠匯差賺錢，用電腦算
+  const pc = prop('monitor', 6.0, 3.2, -1.0, 0.8);
+  say('有人專門賺匯差', '現在都靠電腦幫忙算');
+  void pc;
+  await step(tok);                                   // 854.0 學了演算法去金融業
+  const ws = bub('華爾街很多人是 CS 出身', 6.0, 2.4, 1.6);
+  tr.mood('happy');
+  say('有人學了演算法去金融業', '華爾街很多專家是 Computer Science 出身');
+  await step(tok);                                   // 880.0 只是 example，和現在匯率無關
+  remove(ws);
+  say('這只是一個參考圖', '跟現在的匯率沒有關係');
+  await step(tok);                                   // 892.0 1 單位金 → 327.25 美元
+  N.GOLD = box('GOLD', C.gold, P.GOLD[0], P.GOLD[1], 1.2, 0.6, 0.5, 1.4);
   link(P.GOLD, P.USD, C.brown, 0.6); tag('1 → 327.25', 'idx', -5.6, 4.0);
-  say('edge 上是兩種貨幣的 exchange rate', '例：1 單位金 → 327.25 美元');
-  await beat(tok, 3000);
-  say('換過去再直接換回來', '乘積一定 < 1：會虧');
-  await beat(tok, 2600);
+  say('例：1 單位的金', '可以換 327.25 美元');
+  await step(tok);                                   // 903.0 兩兩幣值之間都有 rate
+  link(P.USD, P.EUR, C.gray, 0.6); link(P.CHF, P.USD, C.gray, 0.6);
+  say('兩兩幣值之間', '都有一個 exchange rate（edge）');
+  await step(tok);                                   // 917.0 可以換過去，也可以換回來
+  coin = box('$1', C.orange, P.USD[0], P.USD[1] + 0.8, 0.7, 0.45, 0.4);
+  move(coin, P.EUR[0], P.EUR[1] + 0.8, 0);
+  await beat(tok, 800);
+  move(coin, P.USD[0], P.USD[1] + 0.8, 0);
+  say('可以換過去', '也可以換回來');
+  await step(tok);                                   // 932.0 換過去再換回來 → 一定虧
+  relabel(coin, '$0.98'); tint(coin, C.red);
+  tr.mood('sad');
+  say('直接換過去再換回來：乘積 < 1', '一定會虧，否則大家都在櫃檯賺錢');
+  await step(tok);                                   // 975.0 匯率波動：繞一大圈可能 > 1
+  relabel(coin, '$1'); tint(coin, C.orange); tr.mood('calm');
+  const q = bub('繞一大圈回來 > 1？', 0, 0.6);
+  say('但匯率每天在波動', '從某幣換 A、再換 B…繞一大圈回來可能 > 1');
+  await step(tok);                                   // 999.0 丟錢一直轉就賺
+  remove(q);
+  say('那就可以把錢丟進去一直轉', '一直賺');
+  await step(tok);                                   // 1043.0 找一個乘積 > 1 的 cycle
+  tag('找：rate 乘積 > 1 的 cycle', 'ptr alt', 0, 8.6);
+  say('問題：給你所有匯率的 graph', '找一個 rate 乘起來 > 1 的 cycle');
   const E = [['USD', 'CHF', '1.3941'], ['CHF', 'EUR', '0.6677'], ['EUR', 'USD', '1.0752']];
-  const coin = box('$1', C.orange, P.USD[0], P.USD[1] + 0.8, 0.7, 0.45, 0.4);
   const amt = ['1.3941 法郎', '0.9308 歐元', '$1.00084'];
-  for (let k = 0; k < 3; k++) {
+  const hop = async (k) => {
     const [a, b, r] = E[k];
     link(P[a], P[b], C.red, 0.6);
     tag('×' + r, 'ptr alt', (P[a][0] + P[b][0]) / 2 + (k === 2 ? 0 : (k ? 0.9 : -0.9)), (P[a][1] + P[b][1]) / 2 + (k === 2 ? -0.5 : 0.3));
     move(coin, P[b][0], P[b][1] + 0.8, 0); relabel(coin, amt[k]);
-    say(a + ' → ' + b + '：× ' + r, '手上變成 ' + amt[k]);
-    await beat(tok, 2200);
-  }
-  glow(coin, GREEN);
-  say('繞一圈：$1 變 $1.00084', '乘積 > 1：無本生意');
-  await beat(tok, 3000);
-  say('要找：edge 乘積 > 1 的 cycle', '但 shortest path 算的是「和」的最小');
-  await beat(tok, 3000);
+    await beat(tok, 700);
+  };
+  await step(tok);                                   // 1071.0 $1 → 1.3941 法郎
+  await hop(0);
+  say('$1 美元換 1.39 法郎', '× 1.3941');
+  await step(tok);                                   // 1078.0 法郎 → 歐元；歐元再換回美元
+  await hop(1);
+  say('1 法郎換 0.6677 歐元', '手上變成 0.9308 歐元；歐元再換回美元');
+  await step(tok);                                   // 1087.0 乘起來 > 1
+  await hop(2);
+  tag('1.3941 × 0.6677 × 1.0752 > 1', 'ptr', 0, 0.6);
+  say('這一圈乘起來', '是一個大於 1 的數字');
+  await step(tok);                                   // 1097.0 $1 繞一圈變 $1.00084
+  glow(coin, GREEN); tr.mood('happy'); await tr.hop(tok);
+  say('丟 $1 繞一圈回來', '變成 $1.00084');
+  await step(tok);                                   // 1105.0 一大筆錢一直繞：無本生意
+  relabel(coin, '$$$');
+  say('看起來不多，但會丟一大筆錢', '一直繞：無本生意');
+  await step(tok);                                   // 1128.0 問題：edge = rate，找乘積 > 1 的 cycle
+  glow(coin, null);
+  say('整理：edge weight = exchange rate', '找 edge weight「乘積」> 1 的 cycle');
+  await step(tok);                                   // 1155.0 我們會的是 shortest path
+  const sp = pkt('我們會的：shortest path', -4.0, 8.0);
+  say('但這個單元我們會的', '是 shortest path：任兩點（含自己到自己）的最短路徑');
+  await step(tok);                                   // 1175.0 shortest path 是「和」，這裡要「乘積」
+  txt(sp, 'shortest path：edge weight 的「和」');
+  tr.mood('wow');
+  say('shortest path 算的是 edge weight 的總和', '這裡要的是乘積：不一樣');
 }]);
 
-// 19:10 轉換：w = −log r，乘積 > 1 ⇔ 總和 < 0
+// 19:53 轉換：w = −log r，乘積 > 1 ⇔ 總和 < 0
 FRAG.push(['dpjiang1-neglog', '取 −log：乘積 > 1 變成 negative cycle', async (tok) => {
   fresh([0, 4.0, 13.5], [0, 4.0, 0]);
   const P = { USD: [-3.6, 2.2], CHF: [0, 6.6], EUR: [3.6, 2.2] };
   for (const [k, p] of Object.entries(P)) box(k, C.blue, p[0], p[1], 1.2, 0.6, 0.5, 1.4);
   const E = [['USD', 'CHF', 1.3941], ['CHF', 'EUR', 0.6677], ['EUR', 'USD', 1.0752]];
-  const lb = E.map(([a, b, r], k) => { link(P[a], P[b], C.red, 0.6); return tag('r = ' + r, 'ptr alt', (P[a][0] + P[b][0]) / 2 + (k === 2 ? 0 : (k ? 1.1 : -1.1)), (P[a][1] + P[b][1]) / 2 + (k === 2 ? -0.5 : 0.3)); });
-  say('問題一：要的是乘積，不是和', 'r₁₂ · r₂₃ · … · rₙ₁ > 1');
-  await beat(tok, 3000);
-  const f = tag('log(r₁₂ r₂₃ r₃₁) = log r₁₂ + log r₂₃ + log r₃₁', 'ptr', 0, 0.8);
-  say('取 log：乘法變加法', 'log 的乘積 = log 的和');
-  await beat(tok, 3000);
-  say('問題二：要越大越好', 'shortest path 是越小越好 → 加負號');
-  await beat(tok, 2600);
+  const pos = (k) => [(P[E[k][0]][0] + P[E[k][1]][0]) / 2 + (k === 2 ? 0 : (k ? 1.2 : -1.2)), (P[E[k][0]][1] + P[E[k][1]][1]) / 2 + (k === 2 ? -0.5 : 0.3)];
+  const lb = E.map(([a, b, r], k) => { link(P[a], P[b], C.red, 0.6); return tag('r = ' + r, 'ptr alt', pos(k)[0], pos(k)[1]); });
+  const me = pal('', -6.4, C.orange, 1.6, 0.7);
+  const f = tag(' ', 'ptr', 0, 0.6);
+  await step(tok);                                   // 1193.0 問題一：把乘積換成和
+  const p1 = note('① 乘積 → 和？', 5.0, 7.6);
+  say('第一個問題：要把乘積', '換成某種「和」的形式');
+  await step(tok);                                   // 1201.0 問題二：要 > 1；shortest path 找最小
+  note('② 越大越好 → 越小越好？', 5.0, 6.9);
+  say('第二個問題：我們要 > 1、越大越好', 'shortest path 找的是越小越好：方向相反');
+  void p1;
+  await step(tok);                                   // 1221.0 要做一些轉換
+  me.mood('wow');
+  say('所以要做一些轉換', '');
+  await step(tok);                                   // 1238.0 假設一個 cycle：v₁ → v₂ → … → v₁
+  txt(f, 'cycle：v₁ → v₂ → … → vₙ → v₁');
+  say('假設想找一個 cycle', 'v₁、v₂…繞一大圈回到 v₁');
+  await step(tok);                                   // 1247.0 對應的乘積
+  txt(f, 'r(v₁v₂) · r(v₂v₃) · … · r(vₙv₁)');
+  say('它對應的 exchange rate 乘積', 'r₁₂ · r₂₃ · … · rₙ₁');
+  await step(tok);                                   // 1263.0 希望 > 1：會賺錢
+  txt(f, 'r₁₂ · r₂₃ · … · rₙ₁ > 1 → 賺錢');
+  say('希望乘積 > 1', '就表示會賺錢');
+  await step(tok);                                   // 1280.0 shortest path 算的是總和
+  say('shortest path 算的是 edge weight 的總和', '需要一個轉換');
+  await step(tok);                                   // 1292.0 想找 cycle：c₁₂ + c₂₃ + …
+  const f2 = tag('新 weight：c₁₂ + c₂₃ + … + cₙ₁', 'ptr', 0, -0.1);
+  say('在 shortest path 上也找同一個 cycle', 'weight 是 c₁₂ + c₂₃ + … 一直加');
+  await step(tok);                                   // 1308.9 c 和 r 的關係：乘法換成加法
+  say('c 和 r 要怎麼設定？', '希望把乘法換成加法');
+  await step(tok);                                   // 1317.6 取 log：log 乘積 = log 的和
+  txt(f, 'log(r₁₂ · r₂₃ · …) = log r₁₂ + log r₂₃ + …');
+  me.mood('happy');
+  say('簡單的做法：取 log', 'log 的乘積 = 拆成 log 的和');
+  await step(tok);                                   // 1345.0 要 > 1：方向要反過來
+  say('原本要找 > 1 的', '設定要整個反向');
+  await step(tok);                                   // 1353.0 取負的 log
+  txt(f2, 'c = −log r');
+  say('所以取負的 log', 'c = −log r');
+  await step(tok);                                   // 1368.9 每條 edge 改成 −log r → 找 negative cycle
+  txt(f, '乘積 > 1 ⇔ Σ(−log r) < 0');
+  say('每個 edge weight 都改成 −log r 之後', '要找的就是 weight 總和 < 0 的 negative cycle');
+  await step(tok);                                   // 1383.0 紅色是 rate，藍色是 −log 之後
   const w = E.map(([, , r]) => -Math.log(r));
-  for (let k = 0; k < 3; k++) {
-    txt(lb[k], 'c = ' + w[k].toFixed(4)); lb[k].element.className = 'lab-label ptr';
-    say('c = −log r', '−log ' + E[k][2] + ' = ' + w[k].toFixed(4));
-    await beat(tok, 1700);
-  }
+  E.forEach((e, k) => tag('c = ' + w[k].toFixed(4), 'ptr', pos(k)[0], pos(k)[1] - 0.5));
+  say('紅色：原本的 exchange rate', '藍色：取 −log 之後的 weight');
+  await step(tok);                                   // 1401.6 這一圈加起來是負的
   const s = w[0] + w[1] + w[2];
-  txt(f, '總和 = ' + s.toFixed(5) + ' < 0');
-  say('乘積 > 1 ⇔ −log 的總和 < 0', '套利 = negative cycle');
-  await beat(tok, 3200);
-  say('問題轉成：圖裡有沒有 negative cycle', '用 Bellman-Ford 偵測');
-  await beat(tok, 2800);
+  txt(f2, '−0.3323 + 0.4040 − 0.0725 = ' + s.toFixed(5) + ' < 0');
+  lb.forEach((l) => hl(l, false));
+  say('這一圈加起來', '總和是負的：negative cycle');
+  await step(tok);                                   // 1413.0 轉化：乘積 > 1 → 總和 < 0
+  txt(f, '找 rate 乘積 > 1 的 cycle ⇒ 找 −log 權重的 negative cycle');
+  say('原本：找 rate 乘積 > 1 的 cycle', '現在：weight 改成 −log r，找 negative cycle');
+  await step(tok);                                   // 1446.0 問題變成找 negative cycle
+  await me.hop(tok);
+  say('問題轉化了', '給你一個 graph：能不能找到 negative cycle？');
 }]);
 
-// 24:14 偵測：多跑一個 iteration（最多 n 條 edge），值還會變小 → 有 negative cycle
+// 24:22 偵測：多跑一個 iteration（最多 n 條 edge），值還會變小 → 有 negative cycle
 FRAG.push(['dpjiang1-bf-extra', '多跑一輪：值還變小就有 negative cycle', async (tok) => {
   fresh([0, 4.0, 14], [0, 4.0, 0]);
-  tag('cycle ≥ 0', 'ptr', -3.6, 7.6);
-  tag('negative cycle', 'ptr alt', 3.6, 7.6);
-  // left: KT table, columns 5 and 6 equal
   const L = {};
-  BV.forEach((v, r) => { tag(v, 'idx', -5.6, 6.6 - r * 0.62); L[v] = [box(bfs(BT[v][5]), '#e6dccb', -4.4, 6.6 - r * 0.62, 1.0, 0.54, 0.3), null]; });
-  tag('i=5', 'idx', -4.4, 7.1); tag('i=6', 'idx', -3.2, 7.1);
-  say('正常 Bellman-Ford 停在 n − 1', '最多經過 n − 1 條 edge');
-  await beat(tok, 2600);
-  say('再多跑一個 iteration：i = n', '最多 n 條：可能繞回自己');
-  BV.forEach((v, r) => { L[v][1] = box(bfs(BT[v][5]), C.teal, -3.2, 6.6 - r * 0.62, 1.0, 0.54, 0.3, 1.0); });
-  await beat(tok, 2400);
-  say('左邊（上次的圖）：完全沒變', '沒有 negative cycle → 答案正確');
-  await beat(tok, 2600);
-  // right: v ⇄ w cycle (−3, +1), v → t (2); n = 3
   const P = { v: [2.4, 5.6], w: [5.0, 5.6], t: [2.4, 2.6] };
+  let vt = null, wt = null;
+  const me = pal('', -6.4, C.orange, 1.6, 0.7);
+  await step(tok);                                   // 1462.0 學到的演算法能不能 detect？
+  say('手上的演算法', '能不能幫我們 detect negative cycle？');
+  await step(tok);                                   // 1468.0 Bellman-Ford 的重要 property
+  pkt('Bellman-Ford 可以 detect！', 0, 8.6);
+  me.mood('happy');
+  say('這正是 Bellman-Ford 很重要的 property', '');
+  await step(tok);                                   // 1474.0 左：cycle 都 ≥ 0
+  tag('cycle 都 ≥ 0', 'ptr', -3.6, 7.6);
+  BV.forEach((v, r) => { tag(v, 'idx', -5.6, 6.6 - r * 0.62); L[v] = [box(bfs(BT[v][5]), '#e6dccb', -4.4, 6.6 - r * 0.62, 1.0, 0.54, 0.3), null]; });
+  tag('i=5', 'idx', -4.4, 7.1);
+  say('左邊：graph 有 cycle', '但不管怎樣都是 non-negative（≥ 0）');
+  await step(tok);                                   // 1494.0 右：存在 negative cycle
+  tag('negative cycle', 'ptr alt', 3.6, 7.6);
   for (const [k, p] of Object.entries(P)) box(k, k === 't' ? C.purple : C.blue, p[0], p[1], 0.7, 0.55, 0.5, 1.2);
   arrow(V3(2.8, 5.85, 0), V3(4.6, 5.85, 0), 0xd64545); tag('−3', 'ptr alt', 3.7, 6.3);
   arrow(V3(4.6, 5.35, 0), V3(2.8, 5.35, 0), 0x6e5f49); tag('1', 'ptr', 3.7, 4.95);
   link(P.v, P.t); tag('2', 'ptr', 2.0, 4.1);
-  const vt = tag('', 'ptr alt', 5.0, 3.4), wt = tag('', 'ptr alt', 5.0, 2.7);
-  const rows = [['i=1', 2, '∞'], ['i=2', 2, 3], ['i=3（多跑）', 0, 3]];
-  for (let k = 0; k < 3; k++) {
-    txt(vt, rows[k][0] + '：OPT(v) = ' + rows[k][1]); txt(wt, 'OPT(w) = ' + rows[k][2]);
-    say(k < 2 ? '右邊 n = 3：跑到 i = 2' : '多跑 i = 3：v 從 2 降到 0', k < 2 ? 'v = 2、w = 1 + 2 = 3' : '−3 + OPT(w) = 0 < 2');
-    await beat(tok, 2400);
-  }
-  vt.element.className = 'lab-label ptr';
-  say('值變小 → report negative cycle', 'infeasible：沒有最短路徑');
-  await beat(tok, 3000);
+  say('右邊：存在 negative cycle', 'v ⇄ w：−3 + 1 = −2');
+  await step(tok);                                   // 1509.0 procedure：induction 在 edge 數上
+  say('Bellman-Ford 是 induction 的概念', 'induction 在「經過的 edge 數」上');
+  await step(tok);                                   // 1522.0 n 個點：最多 n − 1 條就停
+  vt = tag('i=1：OPT(v) = 2', 'ptr alt', 5.0, 3.4); wt = tag('OPT(w) = ∞', 'ptr alt', 5.0, 2.7);
+  await beat(tok, 800);
+  txt(vt, 'i=2：OPT(v) = 2'); txt(wt, 'OPT(w) = 1 + 2 = 3');
+  say('n 個點：找最多 n − 1 條 edge 的最短路徑', '通常就停在 n − 1（右邊 n = 3，停在 i = 2）');
+  await step(tok);                                   // 1539.8 想法：再多 run 一個 iteration
+  const more = bub('再多跑一輪看看？', -6.0, 2.2, 1.6);
+  say('想法：再多 run 一個 iteration', '');
+  await step(tok);                                   // 1547.0 = 最多 n 條 edge 的最短路徑
+  remove(more);
+  say('多一輪代表', '最多經過 n 條 edge 的最短路徑');
+  await step(tok);                                   // 1556.3 有機會找到回到自己的 cycle
+  say('n 條 edge 就有機會', '找到「從某點回到自己」的 cycle');
+  await step(tok);                                   // 1563.6 worst case：全部串成一個 cycle
+  note('最大的 cycle：n 個點串一圈', -2.0, 0.6);
+  say('worst case：所有點串成一個完整的 cycle', '也可能是更小的 cycle');
+  await step(tok);                                   // 1584.0 多一個 column，和前一欄比
+  tag('i=6', 'idx', -3.2, 7.1);
+  BV.forEach((v, r) => { L[v][1] = box(bfs(BT[v][5]), C.teal, -3.2, 6.6 - r * 0.62, 1.0, 0.54, 0.3, 1.0); });
+  say('多列一個 column', '和最多 n − 1 條的那一欄比較');
+  await step(tok);                                   // 1598.0 數字降低 → 有 negative cycle
+  txt(vt, 'i=3（多跑）：OPT(v) = −3 + 3 = 0'); glow(L.a[1], null);
+  say('多一輪後 shortest path 的數字降低', '就代表有 negative cycle');
+  await step(tok);                                   // 1614.2 沒降低 → 沒有 negative cycle
+  BV.forEach((v) => glow(L[v][1], GREEN));
+  say('數字沒降低、維持不變', '就代表沒有 negative cycle');
+  await step(tok);                                   // 1636.0 正常：直接吐出剛算的解
+  BV.forEach((v) => glow(L[v][1], null));
+  good('沒變 → 正常 graph，答案吐出去', -3.8, 2.4);
+  say('正常狀況：值不會變', '完成檢查，直接吐出剛才的解');
+  await step(tok);                                   // 1642.0 降低 → report infeasible
+  bad('變小 → report negative cycle（infeasible）', 3.6, 1.6);
+  say('如果值降低了', 'report 有 negative cycle：infeasible，找不到最短路徑');
+  await step(tok);                                   // 1656.2 左：positive cycle 不會讓它變短
+  me.mood('calm');
+  say('左邊只有 positive cycle', '多跑一輪也不會讓最短路徑變短（取 minimum）');
+  await step(tok);                                   // 1686.0 右：negative cycle 讓值降低
+  hl(vt, true); me.mood('wow');
+  say('右邊有 negative cycle', '多跑一輪時它幫忙 reduce：v 從 2 降到 0');
+  await step(tok);                                   // 1699.8 這件事可以證明
+  await me.hop(tok);
+  say('這件事可以證明', '');
 }]);
 
-// 28:22 證明：剛好 n 條 edge 的路徑一定重複點（鴿籠）→ cycle；若 ≥ 0 砍掉更好 → 矛盾
+// 28:29 證明：剛好 n 條 edge 的路徑一定重複點（鴿籠）→ cycle；若 ≥ 0 砍掉更好 → 矛盾
 FRAG.push(['dpjiang1-bf-proof', '證明：n 條 edge 必重複點，cycle 必為負', async (tok) => {
   fresh([0, 4.0, 13.5], [0, 4.0, 0]);
-  say('假設多跑一輪後 OPT(n, v) 變小', '新解一定剛好用 n 條 edge');
-  await beat(tok, 3000);
   const xs = [-5.4, -3.6, -1.8, 0, 1.8, 3.6, 5.4];
   const nm = ['v', 'a', 'b', 'c', 'd', 'b', 't'];
-  const ms = xs.map((x, k) => box(nm[k], k === 0 || k === 6 ? C.purple : C.blue, x, 4.2, 0.8, 0.6, 0.5, 1.2));
+  let ms = [], cy = null;
+  const me = pal('', -6.4, C.orange, 1.6, 0.7);
+  const head = tag(' ', 'ptr alt', 0, 8.2);
+  await step(tok);                                   // 1709.0 多跑一輪，發現值變小
+  txt(head, '多跑一輪：OPT(n, v) < OPT(n − 1, v)');
+  say('假設多 run 一個 iteration', '發現某個點 v 的值變小');
+  await step(tok);                                   // 1716.3 claim：path 上有 negative cycle
+  good('claim：有 negative cycle', 0, 7.4);
+  say('claim：這條 shortest path 裡', '存在一個 negative cycle');
+  await step(tok);                                   // 1728.0 用反證法
+  say('用反證法', '');
+  await step(tok);                                   // 1741.0 值變低 → 最後一輪有用
+  say('值變低', '代表最後那一輪是有用的');
+  await step(tok);                                   // 1755.0 取的是剛好 n 條 edge 的解
+  ms = xs.map((x, k) => box(nm[k], k === 0 || k === 6 ? C.purple : C.blue, x, 4.2, 0.8, 0.6, 0.5, 1.2));
   for (let k = 0; k < 6; k++) link([xs[k], 4.2], [xs[k + 1], 4.2]);
-  tag('n = 6 個點，路徑走 6 條 edge → 7 個位置', 'ptr', 0, 6.4);
-  say('只有 n 個點，卻有 n + 1 個位置', '鴿籠原理：某個點出現兩次');
-  await beat(tok, 3000);
+  say('取 minimum 時選了新的解', '它剛好用到 n 條 edge（路徑 P）');
+  await step(tok);                                   // 1794.8 最多 n − 1 條的都比較差
+  note('最多 n − 1 條的路徑：都比 P 長', 0, 2.6);
+  say('所以最多用 n − 1 條 edge 的路徑', '都比 P 差（比較長）');
+  await step(tok);                                   // 1819.0 鴿籠原理
+  const pig = pkt('鴿籠原理', -4.0, 6.6);
+  say('離散數學學過的鴿籠原理', '');
+  void pig;
+  await step(tok);                                   // 1832.0 P 剛好 n 條 edge，v 到 t
+  tag('n = 6 個點，P 走 6 條 edge → 7 個位置', 'ptr', 1.2, 6.6);
+  say('P 從 v 到 t，剛好用 n 條 edge', '經過 n + 1 個位置');
+  await step(tok);                                   // 1844.0 只有 n 個點 → 一定有重複
+  say('graph 只有 n 個點', '所以一定有重複 visit 的點');
+  await step(tok);                                   // 1863.0 至少有一個點經過兩遍
   glow(ms[2], GOLD); glow(ms[5], GOLD);
-  say('b 出現兩次', 'b → c → d → b 形成 cycle');
-  await beat(tok, 2600);
-  const cy = tag('若此 cycle ≥ 0（反證）', 'ptr alt', 0, 2.4);
-  say('反證：假設 cycle 不是負的', '把它砍掉');
-  await beat(tok, 2400);
+  me.mood('wow');
+  say('至少找得到一個點經過兩遍', '這裡是 b');
+  await step(tok);                                   // 1885.0 重複點之間那段：cycle
+  [2, 3, 4, 5].forEach((k) => tint(ms[k], C.orange));
+  cy = tag('b → c → d → b：cycle', 'ptr alt', 0, 2.0);
+  say('重複 visit 的那一段', '就形成一個 cycle');
+  await step(tok);                                   // 1903.0 反設：它不是 negative cycle
+  me.mood('calm');
+  txt(cy, '反設：這個 cycle 不是 negative');
+  say('反設跟預期相反的結果', '這個 cycle 不是 negative cycle');
+  await step(tok);                                   // 1933.0 那它就 ≥ 0
+  txt(cy, '反設：cycle ≥ 0');
+  say('那這個 cycle 一定是正的（≥ 0）', '');
+  await step(tok);                                   // 1940.0 把 cycle 砍掉 → 更低
   [3, 4, 5].forEach((k) => fly(ms[k]));
-  await beat(tok, 900);
+  await beat(tok, 700);
   move(ms[6], xs[3], 4.2, 0);
-  txt(cy, '用更少 edge，cost 不會更高');
-  say('edge 數更少、cost 不更高', '那 n − 1 欄早就該有這個值');
-  await beat(tok, 3000);
-  txt(cy, '矛盾 → cycle 一定是 negative');
-  say('與「多跑一輪才變小」矛盾', '所以一定有 negative cycle');
-  await beat(tok, 3000);
+  txt(cy, '砍掉 cycle：路徑 weight 不會更高');
+  say('把這段 cycle 砍掉', 'P 的 path weight 可以更低（至少不更高）');
+  await step(tok);                                   // 1948.0 edge 更少、cost 更低 → 矛盾
+  txt(cy, 'edge 更少、cost 不更高 ⇒ 矛盾');
+  bad('和「n 條才比較好」矛盾', 0, 1.2);
+  say('用的 edge 更少、cost 又不更高', '矛盾：剛好 n 條的解應該比較厲害');
+  await step(tok);                                   // 1969.0 假設錯 → 一定有 negative cycle
+  txt(cy, '假設錯 ⇒ 一定有 negative cycle');
+  me.mood('happy'); await me.hop(tok);
+  say('所以一開始的假設是錯的', '這種情況一定存在 negative cycle');
+  await step(tok);                                   // 1990.0 正常跑到 n − 1；再多 run 一輪
+  ms.forEach((m) => kill(m));
+  txt(head, 'Bellman-Ford：跑到 n − 1，再多跑 1 輪');
+  say('利用這個 property', '正常跑到 n − 1，之後再多 run 一個 iteration');
+  await step(tok);                                   // 2011.0 值變小 → report error
+  bad('值變小 → report error：有 negative cycle', 0, 5.2);
+  say('觀察結果：值會變小', '就 report error：input graph 有 negative cycle');
+  await step(tok);                                   // 2026.0 沒 update → 答案正確，吐出去
+  good('沒有 update → 答案正確，吐出去', 0, 4.2);
+  say('沒有被 update', '沒有 negative cycle：剛才的答案正確');
 }]);
 
-// 34:02 找出所有 negative cycle：加一個新點 t，每個點連 0 邊到 t
+// 34:09 找出所有 negative cycle：加一個新點 t，每個點連 0 邊到 t
 FRAG.push(['dpjiang1-aug-t', '加新點 t：每個點都連 0 的 edge', async (tok) => {
   fresh([0, 4.0, 13.5], [0, 4.0, 0]);
   const P = { a: [-4.6, 6.0], b: [-1.6, 6.6], c: [1.6, 6.0], d: [-3.2, 3.6], e: [0.2, 3.8], f: [4.2, 4.4] };
-  for (const [k, p] of Object.entries(P)) box(k, C.teal, p[0], p[1], 0.7, 0.55, 0.5, 1.2);
-  [['a', 'b'], ['b', 'c'], ['d', 'a'], ['e', 'd'], ['c', 'e'], ['c', 'f']].forEach(([x, y]) => link(P[x], P[y], C.brown, 0.4));
-  say('原來的 input graph G', '隨便選一個 destination 不保險');
-  await beat(tok, 3000);
-  say('不是每條最短路都經過那個 cycle', '可能漏抓');
-  await beat(tok, 2400);
+  const N = {}, E = {};
   const T = [0.2, 0.6];
-  const tm = box('t', C.purple, T[0], T[1], 0.9, 0.6, 0.5, 2.0);
-  await beat(tok, 900);
-  for (const k of Object.keys(P)) { link(P[k], T, C.red, 0.42); await beat(tok, 300); }
-  tag('每條新 edge weight = 0', 'ptr alt', 4.0, 1.6);
-  say('加一個新點 t，所有點都連過去', 'edge weight 都是 0');
-  await beat(tok, 2800);
+  let tm = null;
+  const me = pal('', -6.4, C.orange, 1.6, 0.7);
+  await step(tok);                                   // 2049.0 偵測 = 多 run 一個 iteration
+  say('detect：多 run 一個 iteration 就行', '');
+  await step(tok);                                   // 2055.0 想把 negative cycle 抓出來
+  const want = bub('它長什麼樣？抓出來！', -6.0, 2.2, 1.6);
+  say('但我不只想知道有沒有', '還想把 negative cycle 抓出來 report');
+  await step(tok);                                   // 2068.0 對 input graph 做手腳
+  remove(want);
+  say('對原來的 input graph', '做一個小小的手腳');
+  await step(tok);                                   // 2075.0 一個隨意的 directed graph
+  for (const [k, p] of Object.entries(P)) N[k] = box(k, C.teal, p[0], p[1], 0.7, 0.55, 0.5, 1.2);
+  [['a', 'b'], ['b', 'c'], ['d', 'a'], ['e', 'd'], ['c', 'e'], ['c', 'f']].forEach(([x, y]) => { E[x + y] = link(P[x], P[y], C.brown, 0.4); });
+  say('假設 input graph 長這樣', '隨便畫的 directed graph');
+  await step(tok);                                   // 2102.0 隨便選一個點當 destination
+  glow(N.f, GOLD);
+  const dst = tag('destination？', 'ptr', 4.2, 5.2);
+  say('原本：隨便選一個點當 destination', '算每個點到它的最短路徑');
+  await step(tok);                                   // 2113.0 不保險：不是每條都經過那個 cycle
+  ['ab', 'bc', 'ce', 'ed', 'da'].forEach((k) => E[k].setColor && E[k].setColor(0xd64545));
+  ['a', 'b', 'c', 'e', 'd'].forEach((k) => tint(N[k], C.red));
+  bad('到 f 的最短路不一定經過這個 cycle', 1.0, 8.4);
+  me.mood('sad');
+  say('這樣不保險：可能漏抓', '不是所有到那個點的最短路徑都會經過 negative cycle');
+  await step(tok);                                   // 2134.0 加一個新的點 t
+  glow(N.f, null); kill(dst);
+  tm = box('t', C.purple, T[0], T[1], 0.9, 0.6, 0.5, 2.0);
+  me.mood('wow');
+  say('做個手腳：加一個新的點 t', '');
+  await step(tok);                                   // 2147.0 每個點都連到 t，weight 0
+  for (const k of Object.keys(P)) { link(P[k], T, C.blue, 0.42); await beat(tok, 200); }
+  tag('每條新 edge weight = 0', 'ptr alt', 4.2, 1.4);
+  say('原 graph 每一個點都連到 t', '新 edge 的 weight 都是 0');
+  await step(tok);                                   // 2164.0 Bellman-Ford：每個點到 t
+  say('用 Bellman-Ford 算', '原 graph 每個點到新 t 的最短路徑');
+  await step(tok);                                   // 2188.7 為什麼？假設原圖有 negative cycle
+  say('為什麼可以？', '假設原 graph 有 negative cycle（紅色）');
+  await step(tok);                                   // 2213.0 不管在哪，negative cycle 都 reach 得到 t
   glow(tm, GOLD);
-  say('任何 negative cycle 都 reach 得到 t', '算每個點到 t 就一定抓得到');
-  await beat(tok, 3000);
+  say('不管它在哪裡', '這個 negative cycle 一定 reach 得到 t（藍色 0 邊）');
+  await step(tok);                                   // 2237.0 算到 t 的最短路徑時一定抓得到
+  me.mood('happy'); await me.hop(tok);
+  say('算任何一點到 t 的最短路徑時', '只要能 reach 那個 cycle，就一定抓得到');
+  await step(tok);                                   // 2256.0 拿新 graph 跑 Bellman-Ford
   glow(tm, null);
-  tag("G′ 有 n + 1 個點：多跑一輪", 'ptr', 0, 8.0);
-  say("對 G′ 跑 Bellman-Ford 並多跑一輪", '最後一輪有 update → 有 negative cycle');
-  await beat(tok, 3000);
+  say('拿新的 graph 去 run Bellman-Ford', 't 當 destination');
+  await step(tok);                                   // 2271.0 n + 1 個點：G′
+  tag("G′ = 原 graph + t：n + 1 個點", 'ptr', 0, 8.6);
+  say("原本 n 個點，加 t 變 n + 1 個點", "這個新 graph 叫 G′");
+  await step(tok);                                   // 2285.0 要 run n + 1 個 iteration（多一輪）
+  note('G′ 跑到 (n + 1) − 1，再多 1 輪', 4.4, 7.6);
+  say('要 detect：多 run 一個 iteration', '這裡的 n 指 G′ 的點數');
+  await step(tok);                                   // 2319.0 步驟：augment → G′，run BF + 多一輪
+  const cd = code(['1. augment G → G′（加 t、0 邊）', '2. 對 G′ run Bellman-Ford', '3. 多 run 1 個 iteration'], -4.4, 1.4, 0.42);
+  void cd;
+  say('步驟：augment 原 graph 成 G′', '對 G′ run Bellman-Ford，再多 run 一輪');
+  await step(tok);                                   // 2340.0 看最後一輪有沒有 update
+  bad('最後一輪有 update → 有 negative cycle', 1.6, -0.6);
+  say('看最後那一輪有沒有讓 optimal 值 update', '有 → 有 negative cycle，把它抓出來');
+  await step(tok);                                   // 2357.9 很 general：正負 edge 都適用
+  good('正、負 edge weight 都適用', -4.0, 8.0);
+  say('這個方法很 general', '不管 edge weight 是正是負都適用');
+  await step(tok);                                   // 2377.0 Bellman-Ford 使用率很高
+  say('所以 Bellman-Ford 實務上', '使用率蠻高的');
 }]);
 
-// 39:48 TSP：拜訪每個城市一次再回來；n! 種排列；NP-complete
+// 39:51 TSP：拜訪每個城市一次再回來；n! 種排列；NP-complete
 FRAG.push(['dpjiang1-tsp-intro', 'Traveling salesman：n! 種路線', async (tok) => {
   fresh([0, 4.0, 13], [0, 4.0, 0]);
   const pos = [0, 1, 2, 3, 4].map((k) => [3.0 * Math.sin(k * 2 * Math.PI / 5), 4.0 + 3.0 * Math.cos(k * 2 * Math.PI / 5)]);
   const nm = ['base', 'c1', 'c2', 'c3', 'c4'];
-  pos.forEach((p, k) => box(nm[k], k ? C.blue : C.purple, p[0], p[1], 1.0, 0.55, 0.5, 1.2));
-  say('銷售員從公司所在地出發', '每個客戶城市拜訪一次，再回來');
-  await beat(tok, 3000);
-  const tours = [[0, 1, 2, 3, 4], [0, 2, 4, 1, 3], [0, 3, 1, 4, 2]];
-  const cnt = tag('', 'ptr alt', 0, 8.2);
-  for (let k = 0; k < tours.length; k++) {
-    const ar = [];
-    for (let i = 0; i < 5; i++) ar.push(link(pos[tours[k][i]], pos[tours[k][(i + 1) % 5]], k ? C.gray : C.orange, 0.55));
-    txt(cnt, '路線 ' + (k + 1) + '：' + tours[k].map((i) => nm[i]).join('→') + '→base');
-    say('總距離越短越好', '距離 = 機票錢、油錢…');
-    await beat(tok, 2400);
-    ar.forEach(kill);
-  }
-  txt(cnt, 'n 個城市的排列：n! 種');
-  say('暴力法：試所有排列', 'n! 種，非常高');
-  await beat(tok, 2800);
-  say('TSP 是 NP-complete', '沒人證明有 polynomial-time 最佳解');
-  await beat(tok, 3000);
+  const cm = [];
+  let sales = null, ar = [];
+  const cnt = tag(' ', 'ptr alt', 0, 8.2);
+  const drawTour = (t, col) => { ar.forEach(kill); ar = []; for (let i = 0; i < 5; i++) ar.push(link(pos[t[i]], pos[t[(i + 1) % 5]], col, 0.55)); };
+  await step(tok);                                   // 2391.0 Traveling salesman problem：很有名
+  txt(cnt, 'Traveling Salesman Problem（TSP）');
+  say('一個很有趣、很有名的問題', 'traveling salesman problem');
+  await step(tok);                                   // 2400.5 NP-complete
+  const np = bad('NP-complete', 5.4, 7.4);
+  say('它非常 classic，也非常難', '是 NP-complete 問題');
+  await step(tok);                                   // 2412.0 沒人證明有 polynomial 最佳解法
+  txt(np, 'NP-complete：沒有已知的 polynomial-time 最佳解法');
+  say('目前沒有人能證明', '存在 polynomial time 的方法求最佳解');
+  await step(tok);                                   // 2418.0 1962 年 Bellman 想用 DP
+  const bel = pal('Bellman', -6.0, C.orange, 1.6, 0.7);
+  bel.mood('happy');
+  say('1962 年 Richard Bellman 想到', '這麼難的問題，能不能用 DP 解？');
+  await step(tok);                                   // 2438.0 比 exhaustive search 好，但仍太高
+  bub('比暴力好一點，但還是太高', -6.0, 2.2, 1.6);
+  say('確實比 exhaustive search 好一點', '但 complexity 還是太高');
+  await step(tok);                                   // 2452.0 想成聖誕老公公送禮物
+  say('可以想成聖誕老公公送禮物', '');
+  await step(tok);                                   // 2466.0 銷售員，客戶在世界各地
+  pos.forEach((p, k) => { if (k) cm[k] = box(nm[k], C.blue, p[0], p[1], 1.0, 0.55, 0.5, 1.2); });
+  say('有一個銷售員', '客戶坐落在世界各地');
+  await step(tok);                                   // 2473.5 每年拜訪每個客戶一次
+  for (let k = 1; k < 5; k++) { glow(cm[k], GOLD); await beat(tok, 200); }
+  say('每年要例行拜訪每個客戶一次', '');
+  await step(tok);                                   // 2487.0 從 base city 出發
+  for (let k = 1; k < 5; k++) glow(cm[k], null);
+  cm[0] = box('base', C.purple, pos[0][0], pos[0][1], 1.0, 0.55, 0.5, 1.2);
+  sales = tag('🧳', 'pkt', pos[0][0], pos[0][1] + 0.7);
+  say('先從 base city（公司所在地）出發', '');
+  await step(tok);                                   // 2492.0 拜訪全部再回到原城市
+  const tour = [0, 1, 2, 3, 4, 0];
+  for (let i = 0; i < 5; i++) { ar.push(link(pos[tour[i]], pos[tour[i + 1]], C.orange, 0.55)); await travel(tok, sales, V3(pos[tour[i]][0], pos[tour[i]][1] + 0.7, 0), V3(pos[tour[i + 1]][0], pos[tour[i + 1]][1] + 0.7, 0), 380); }
+  say('安排路線，每個客戶拜訪一次', '最後回到原來的城市');
+  await step(tok);                                   // 2509.0 總距離越短越好
+  txt(cnt, '目標：總距離越短越好');
+  say('目標：travel 的總距離越短越好', '');
+  await step(tok);                                   // 2516.0 距離 = 機票錢、油錢…
+  txt(cnt, '「距離」= 機票錢、油錢、真的距離…');
+  say('距離可以代表很多事', '總機票錢、開車油錢，或真的距離');
+  await step(tok);                                   // 2534.6 很老很 classic；每年有 TSP contest
+  txt(cnt, '每年都有 TSP contest');
+  say('這個問題很老、很 classic', '世界上還有有名的 TSP 競賽');
+  await step(tok);                                   // 2553.0 Georgia Tech 維護；benchmark
+  txt(cnt, 'Georgia Tech 維護：benchmark（VLSI、美國城市地圖…）');
+  say('Georgia Tech 舉辦、維護網頁', 'benchmark 有 VLSI 繞線、美國城市地圖等');
+  await step(tok);                                   // 2589.0 前幾名公開軟體
+  say('前幾名隊伍會公開 software', '有興趣可以下載來玩');
+  await step(tok);                                   // 2606.0 n 個城市，兩兩距離已知
+  txt(cnt, 'n 個城市，兩兩距離已知');
+  say('n 個 city，兩兩之間的距離已知', '要安排 route，從某點出發回到原點');
+  await step(tok);                                   // 2614.0 最後一段回原點可先省略
+  ar[ar.length - 1].visible = false;
+  say('反正最後一定回到原點', '最後那一段可以先省略不看');
+  await step(tok);                                   // 2628.0 permutation：n! 種
+  const tours = [[0, 2, 4, 1, 3], [0, 3, 1, 4, 2], [0, 4, 3, 2, 1]];
+  for (const t of tours) { drawTour(t, C.gray); await beat(tok, 500); }
+  txt(cnt, 'n 個城市的 permutation：n! 種');
+  say('n 個 city 的 permutation', '有 n! 這麼多種：complexity 非常高');
+  await step(tok);                                   // 2640.0 試用 DP：Bellman 的方法
+  ar.forEach(kill); ar = [];
+  bel.mood('wow'); await bel.hop(tok);
+  say('希望用 DP 幫它降低', '這是 Richard Bellman 一開始想的方法');
+  await step(tok);                                   // 2657.0 S：所有城市的一個 subset
+  [1, 3].forEach((k) => tint(cm[k], C.teal));
+  txt(cnt, 'S：所有城市的一個 subset');
+  say('他定義的最佳解裡', 'S 是所有城市的一個 subset');
 }]);
 
-// 44:05 Bellman 1962：OPT(S, u, v)；|S| = 2 → c(u,v)；否則 min over w：c(u,w) + OPT(S − {u}, w, v)
+// 44:26 Bellman 1962：OPT(S, u, v)；|S| = 2 → c(u,v)；否則 min over w：c(u,w) + OPT(S − {u}, w, v)
 FRAG.push(['dpjiang1-tsp-dp', 'TSP 的 DP：OPT(S, u, v)', async (tok) => {
   fresh([0, 4.0, 13.5], [0, 4.0, 0]);
-  const pos = [[-4.6, 4.4], [-2.2, 6.6], [0.6, 6.0], [-1.2, 2.6], [2.2, 3.4]];
-  const nm = ['u', 'w1', 'w2', 'w3', 'v'];
-  const ms = pos.map((p, k) => box(nm[k], k === 0 || k === 4 ? C.purple : C.blue, p[0], p[1], 0.75, 0.55, 0.5, 1.2));
-  tag('OPT(S, u, v)：從 u 到 v、經過 S 每個點一次的最短 route', 'ptr', 0, 8.3);
-  say('Bellman 1962：用 DP 解 TSP', 'S 是城市的 subset，u、v 是頭尾');
-  await beat(tok, 3200);
-  const base = tag('S = {u, v} → c(u, v)', 'ptr alt', 4.6, 7.2);
-  const a0 = link(pos[0], pos[4], C.teal, 0.5);
-  say('boundary：S 只有 u、v', '直接飛：c(u, v)');
-  await beat(tok, 2600);
-  kill(a0); kill(base);
-  const rec = tag('OPT(S, u, v) = min_w { c(u, w) + OPT(S − {u}, w, v) }', 'ptr alt', 0, 0.9);
-  for (const k of [1, 2, 3]) {
-    const a = link(pos[0], pos[k], C.orange, 0.5);
-    glow(ms[k], GOLD); fade(ms[0], false);
-    say('u 先飛到 w' + k, '剩下：OPT(S − {u}, w' + k + ', v)');
-    await beat(tok, 1800);
-    kill(a); glow(ms[k], null); fade(ms[0], true);
-  }
-  say('每個 w 都試，取 minimum', 'u 已走過，所以從 S 拿掉');
-  await beat(tok, 2600);
-  txt(rec, '子問題 2ⁿ·n² 個；時間 2ⁿ·n³');
-  say('比 n! 小，但仍是 exponential', 'n = 20：2ⁿn³ ≈ 8.4×10⁹ vs n! ≈ 2.4×10¹⁸');
-  await beat(tok, 3400);
-  say('DP 可以用，但效果不好', '子問題數不是 polynomial');
-  await beat(tok, 2800);
+  const pos = [[-4.6, 4.4], [-2.2, 6.6], [0.6, 6.0], [-1.2, 2.6], [2.2, 3.4], [5.0, 6.4]];
+  const nm = ['u', 'w1', 'w2', 'w3', 'v', 'x'];
+  const ms = [];
+  const def = tag(' ', 'ptr', 0, 8.3);
+  let sb = null, a0 = null, rec = null;
+  const me = pal('', -6.4, C.orange, 1.6, 0.7);
+  await step(tok);                                   // 2666.0 只考慮一個 partial subset S
+  pos.forEach((p, k) => ms.push(box(nm[k], k === 5 ? C.gray : C.blue, p[0], p[1], 0.75, 0.55, 0.5, 1.2)));
+  sb = ghostBox(C.teal, 8.4, 5.4, 1.0); sb.position.set(-1.2, 4.6, 0);
+  tag('S', 'ptr alt', -5.0, 7.1);
+  say('先考慮一個 partial 的小 subset S', '（灰色的 x 不在 S 裡）');
+  await step(tok);                                   // 2672.0 抓頭尾 u、v；經過 S 每個點
+  tint(ms[0], C.purple); tint(ms[4], C.purple);
+  txt(def, 'OPT(S, u, v)：u 出發、經過 S 每個點一次、到 v');
+  say('從 S 裡抓兩點當頭尾：u、v', '中間要經過 S 裡所有的點');
+  await step(tok);                                   // 2684.0 u 到 v 的最短 route
+  txt(def, 'OPT(S, u, v)：這種 route 的最短長度');
+  say('完成這種 route 的最短長度', '就是 OPT(S, u, v)');
+  await step(tok);                                   // 2696.0 最後要 report：S = 全部，u = base
+  note('最後要的：S = 全部城市，u = base', 4.4, 1.2);
+  say('最後要 report 的', 'S 包含所有點，u 就是 base city');
+  await step(tok);                                   // 2720.0 recurrence 分兩個 case
+  rec = tag(' ', 'ptr alt', 0, 0.3);
+  say('用 DP：設計 recurrence relation', '分成兩個 case');
+  await step(tok);                                   // 2737.0 boundary：S 只有 u、v
+  [1, 2, 3].forEach((k) => fade(ms[k], false));
+  txt(rec, 'case 1：S = {u, v}');
+  say('case 1 是 boundary condition', 'S 只包含 u、v 兩點');
+  await step(tok);                                   // 2744.0 直接飛：c(u, v)
+  a0 = link(pos[0], pos[4], C.teal, 0.5);
+  txt(rec, 'case 1：S = {u, v} → c(u, v)');
+  say('只考慮兩點：直接飛就好', 'OPT = u、v 之間的直接距離 c(u, v)');
+  await step(tok);                                   // 2762.6 S 比較大，有第三個點
+  kill(a0);
+  [1, 2, 3].forEach((k) => fade(ms[k], true));
+  txt(rec, 'case 2：|S| ≥ 3');
+  say('如果 S 比較大', '有第三個點以上，怎麼辦？');
+  await step(tok);                                   // 2784.0 總要先 reach 到某一個點
+  me.mood('wow');
+  say('不管怎樣，一開始', '總要先 reach 到某一個點，再走剩下的');
+  await step(tok);                                   // 2800.4 u 先到 w
+  let a = link(pos[0], pos[1], C.orange, 0.5); glow(ms[1], GOLD);
+  say('u 先出發到另一個 city w', '');
+  await step(tok);                                   // 2807.0 再看 w 到 v 的最短 route
+  const r1 = ghostBox(C.orange, 4.6, 4.8, 0.9); r1.position.set(0, 4.6, 0);
+  say('接下來看 w 到 v', '之間的最短 route');
+  await step(tok);                                   // 2814.0 把 u 拿掉：已經走過
+  fade(ms[0], false);
+  say('剩下這段會踩過誰？', '把 u 去掉：u 已經走過了');
+  await step(tok);                                   // 2822.0 寫出 recurrence
+  txt(rec, 'OPT(S, u, v) = c(u, w) + OPT(S − {u}, w, v)');
+  me.mood('calm');
+  say('recurrence 很容易寫出來', '先走一段出去，再走剩下的人');
+  await step(tok);                                   // 2845.0 u 可以 reach 的人很多：每個都看
+  kill(r1); fade(ms[0], true);
+  for (const k of [2, 3]) { kill(a); glow(ms[k - 1], null); a = link(pos[0], pos[k], C.orange, 0.5); glow(ms[k], GOLD); await beat(tok, 700); }
+  say('u 可以 reach 的不只 w 一個', '把每個人都拿出來看');
+  await step(tok);                                   // 2851.0 take minimum
+  kill(a); glow(ms[3], null);
+  txt(rec, 'OPT(S, u, v) = min_w { c(u, w) + OPT(S − {u}, w, v) }');
+  say('看誰兜起來的解比較好', 'take minimum：這就是 recurrence');
+  await step(tok);                                   // 2866.0 efficiency：子問題 2ⁿ·n²
+  const cx = tag('subproblem 數：2ⁿ · n²', 'ptr', 3.6, 1.2);
+  say('分析 efficiency', 'S 有 2ⁿ 種，u、v 各 n 種：2ⁿ · n²');
+  await step(tok);                                   // 2884.0 running time：2ⁿ · n³
+  txt(cx, 'running time：2ⁿ · n³（每格試 n 個 w）');
+  say('running time 再多一維', '2ⁿ · n³');
+  await step(tok);                                   // 2891.0 brute force 是 n!
+  const bf = tag('brute force：n! = 1·2·3·…·n', 'ptr', 3.6, 0.5);
+  say('對照 brute force', '是 n! = 1 × 2 × 3 × …');
+  await step(tok);                                   // 2905.0 3 以後都遠大於 2 → 比較小
+  txt(bf, 'n = 20：2ⁿn³ ≈ 8.4×10⁹ < n! ≈ 2.4×10¹⁸');
+  me.mood('happy');
+  say('從 3 以後每個因子都遠大於 2', '所以 2ⁿn³ 比 n! 小（n = 20 時差很多）');
+  await step(tok);                                   // 2915.3 仍然不是 polynomial
+  bad('但仍是 exponential，不是 polynomial', 0, -0.5);
+  me.mood('sad');
+  say('但仍然不好', '它不是 polynomial time');
+  await step(tok);                                   // 2922.0 可以用 DP，但不如前面那些經典
+  say('TSP 確實可以用 DP 求解', '但 quality 不如前面課程介紹的經典例子');
 }]);
 
-// 48:56 總結：DP 是聰明的 recursion；填表不是本質；linear order
+// 49:04 總結：DP 是聰明的 recursion；填表不是本質；linear order
 FRAG.push(['dpjiang1-dp-essence', 'DP 的本質：聰明的 recursion，不是填表', async (tok) => {
   fresh([0, 4.2, 14], [0, 3.8, 0]);
-  const rec = box('recurrence relation', C.purple, 0, 6.8, 5.2, 0.7, 0.5, 1.2);
-  say('DP = recursion', '而且是不重複計算的聰明 recursion');
-  await beat(tok, 2800);
-  const td = box('top-down：memoization', C.blue, -3.2, 4.6, 4.2, 0.6, 0.45, 1.0);
-  const bu = box('bottom-up：填 table', C.teal, 3.2, 4.6, 4.2, 0.6, 0.45, 1.0);
-  link([0, 6.8], [-3.2, 4.6], C.brown, 0.5); link([0, 6.8], [3.2, 4.6], C.brown, 0.5);
-  say('填 table 只是一種實作', 'memoization 也不必從小填到大');
-  await beat(tok, 3000);
+  let rec = null, td = null, bu = null, row = null, tsp = null;
+  const me = pal('', -6.4, C.orange, 1.6, 0.7);
+  await step(tok);                                   // 2944.3 DP 就是一個 recursion
+  rec = box('recursion', C.purple, 0, 6.8, 5.2, 0.7, 0.5, 1.2);
+  say('summary：什麼是 Dynamic Programming？', '它其實就是一個 recursion');
+  await step(tok);                                   // 2950.0 聰明的 recursion
+  relabel(rec, '聰明的 recursion');
+  say('只是它是聰明的 recursion', '');
+  await step(tok);                                   // 2955.0 不重複計算
+  note('不重複計算', 3.6, 7.6);
+  say('它不會重複計算', '會省略重複的部分');
+  await step(tok);                                   // 2966.0 這單元多用 iteration 建 table
+  bu = box('bottom-up：建 table', C.teal, 3.2, 4.6, 4.2, 0.6, 0.45, 1.0);
+  link([0, 6.8], [3.2, 4.6], C.brown, 0.5);
+  say('這個單元很多實作用 iteration', '建 table，bottom-up 慢慢建');
+  await step(tok);                                   // 2977.0 不要從填表去看 DP
+  const no = bad('DP ≠ 填表格', 3.2, 3.6);
+  say('千萬不要從「填表格」去看 DP', '填表是為了防止重複計算');
+  await step(tok);                                   // 2985.0 源頭是 recurrence relation
   glow(rec, GOLD);
-  say('focus 在 recurrence 怎麼寫', 'recurrence 錯了，怎麼填都錯');
-  await beat(tok, 3000);
-  glow(rec, null); void td; void bu;
-  const row = [0, 1, 2, 3, 4].map((k) => box(String(k + 1), C.gray, -4.6 + k * 0.9, 2.2, 0.8, 0.5, 0.4, 1.0));
-  for (let k = 0; k < 5; k++) { tint(row[k], C.teal); await beat(tok, 300); }
-  say('objects 有固定的 linear order', '先試 DP');
-  await beat(tok, 2400);
-  const tsp = [0, 1, 2, 3, 4].map((k) => box('c' + (k + 1), C.red, 1.4 + k * 0.9, 2.2, 0.8, 0.5, 0.4, 1.0));
-  for (let r = 0; r < 3; r++) {
-    const perm = [0, 1, 2, 3, 4].sort(() => Math.random() - 0.5);
-    perm.forEach((p, k) => move(tsp[p], 1.4 + k * 0.9, 2.2, 0));
-    await beat(tok, 700);
-  }
-  say('TSP 的城市可以任意打亂', '沒有 linear order → 子問題 exponential');
-  await beat(tok, 3000);
+  say('所有的源頭', '還是 recursion：那個 recurrence relation');
+  await step(tok);                                   // 2992.0 寫對了才有填表；也不一定要填
+  glow(rec, null); remove(no);
+  say('recurrence 寫對了才有填 table 這件事', '而且也不一定要填 table');
+  await step(tok);                                   // 3006.0 memoization：有 table 但不必從小填
+  td = box('top-down：memoization', C.blue, -3.2, 4.6, 4.2, 0.6, 0.45, 1.0);
+  link([0, 6.8], [-3.2, 4.6], C.brown, 0.5);
+  say('top-down 的 memoization 也有 table', '但不必從小到大填，用 recursive call 就行');
+  await step(tok);                                   // 3017.0 填表絕不是本質
+  bad('慢慢填 table ≠ DP 的本質', 0, 2.9);
+  say('慢慢填 table', '絕對不是 DP 的本質');
+  await step(tok);                                   // 3023.0 本質：聰明、避免重複的 recursion
+  glow(rec, GOLD); me.mood('happy');
+  say('DP 的本質是 recursion', '聰明、會避免重複計算：這才是 key idea');
+  await step(tok);                                   // 3037.1 書上的例子全都在填表
+  glow(rec, null); me.mood('calm');
+  const bk = prop('file', -5.0, 2.6, 0, 0.9, '課本例子：都在填表');
+  void bk;
+  say('課本或別的書上的例子', '幾乎全部都在填 table');
+  await step(tok);                                   // 3050.0 focus 在 recurrence 與 induction
+  glow(rec, GOLD);
+  say('請不要 focus 在填表', 'focus 在 recurrence 怎麼寫、induction 怎麼做');
+  await step(tok);                                   // 3063.0 recurrence 錯，怎麼填都錯
+  glow(rec, RED);
+  say('recurrence 錯了', '怎麼填 table 都是錯的，algorithm 不會 work');
+  await step(tok);                                   // 3078.0 什麼時候適用：objects 有自然排列
+  glow(rec, null);
+  row = [0, 1, 2, 3, 4].map((k) => box(String(k + 1), C.gray, -4.6 + k * 0.9, 1.6, 0.8, 0.5, 0.4, 1.0));
+  say('什麼時候適合 DP？', '探討的 objects 呈現一種自然的排列');
+  await step(tok);                                   // 3093.0 order 不會再改變
+  row.forEach((m) => tint(m, C.teal));
+  say('而且這個 order 排好之後', '不會再被動到');
+  await step(tok);                                   // 3106.0 照 linear order 算出答案
+  for (const m of row) { glow(m, GREEN); await beat(tok, 200); }
+  say('做 induction 時', '就 follow 這個 linear order 把答案算出來');
+  await step(tok);                                   // 3111.0 TSP：沒有 linear order
+  row.forEach((m) => glow(m, null));
+  tsp = [0, 1, 2, 3, 4].map((k) => box('c' + (k + 1), C.red, 1.4 + k * 0.9, 1.6, 0.8, 0.5, 0.4, 1.0));
+  say('剛才的 TSP 為什麼不行？', '它的城市不存在 linear order');
+  await step(tok);                                   // 3120.0 可以隨意打亂，每種都可能是解
+  for (const perm of [[2, 0, 4, 1, 3], [4, 3, 0, 2, 1]]) { perm.forEach((p, k) => move(tsp[p], 1.4 + k * 0.9, 1.6, 0)); await beat(tok, 800); }
+  say('城市可以隨意打亂', '每一種打亂都可能是一個解');
+  await step(tok);                                   // 3132.0 subproblem 數不是 polynomial
+  tag('subproblem 數：不是 polynomial', 'ptr alt', 3.2, 0.6);
+  me.mood('sad');
+  say('所以它包含的 subproblem 個數', '不是 polynomial number');
+  await step(tok);                                   // 3142.0 比 brute force 好，但不夠 efficient
+  say('雖然比 brute force 好', '但達不到 efficient algorithm（polynomial time）的條件');
+  await step(tok);                                   // 3161.0 有 linear order → 第一優先試 DP
+  me.mood('happy'); await me.hop(tok);
+  good('有 linear order → first priority：DP', -2.8, 0.6);
+  say('發現 linear order 的特性', '就不要懷疑：first priority 先試 DP');
+}]);
+
+// 53:08 最後的 paradigm 總結：brute force、greedy、D&C、DP（Lec19 版）
+FRAG.push(['dpjiang1-paradigms3', '四種 paradigm 總結：greedy 最快、DP 靠重複', async (tok) => {
+  fresh([0, 4.2, 14.5], [0, 3.8, 0]);
+  const X = [-4.8, -1.6, 1.6, 4.8];
+  const N = ['Brute force', 'Greedy', 'Divide & Conquer', 'Dynamic Prog.'];
+  const head = N.map((n, k) => box('', LV[k], X[k], 7.0, 2.9, 0.6, 0.4, 1.2));
+  N.forEach((n, k) => tag(n, 'ptr', X[k], 7.0, 0.3));
+  head.forEach((m) => fade(m, false));
+  const focus = (k) => head.forEach((m, i) => { fade(m, i === k || m.userData.done); glow(m, i === k ? GOLD : null); if (i === k) m.userData.done = true; });
+  await step(tok);                                   // 3188.0 brute force：每種可能都算
+  focus(0);
+  for (let k = 0; k < 9; k++) { box('', C.sand, X[0] - 0.9 + (k % 3) * 0.9, 5.6 - Math.floor(k / 3) * 0.7, 0.7, 0.45, 0.35, 0.8); await beat(tok, 100); }
+  say('brute force：沒有任何 idea', '每種可能都算一次，挑最好的');
+  await step(tok);                                   // 3195.0 greedy：step by step 兜解
+  focus(1);
+  const gr = [];
+  for (let k = 0; k < 4; k++) { gr.push(box('', C.blue, X[1], 5.6 - k * 0.75, 1.6, 0.45, 0.35, 0.8)); await beat(tok, 250); }
+  say('greedy：step by step', '慢慢把解兜起來');
+  await step(tok);                                   // 3202.0 每一步選當下最好的
+  gr.forEach((m) => glow(m, GREEN));
+  say('每一步 make a decision', '都選當下看到最好的：所以叫 greedy');
+  await step(tok);                                   // 3214.9 可以證明會貢獻到最佳解
+  gr.forEach((m) => glow(m, null));
+  good('證明：每步都在最佳解裡', X[1], 2.4);
+  say('能達到最佳解時', '可以證明每次選的都會貢獻到 final optimal solution');
+  await step(tok);                                   // 3226.0 不需要反悔
+  note('決定了就不反悔', X[1], 1.7);
+  say('所以 make decision 後不需要反悔', '它一定是 final solution 的成員');
+  await step(tok);                                   // 3234.0 有這個特性就用 greedy
+  say('問題有這個好特性', '就不要懷疑，直接用 greedy');
+  await step(tok);                                   // 3249.0 greedy 通常最快
+  good('通常最快（簡單 for loop）', X[1], 1.0);
+  say('能用 greedy 得最佳解時，它通常最快', '簡單的 for loop，比 DP 還快一點');
+  await step(tok);                                   // 3261.0 D&C：拆成同性質小問題
+  focus(2);
+  const d0 = box('', C.cyan, X[2], 5.6, 2.2, 0.45, 0.35, 0.8);
+  const d1 = [X[2] - 0.6, X[2] + 0.6].map((x) => box('', C.cyan, x, 4.6, 1.0, 0.45, 0.35, 0.8));
+  say('D&C：大問題拆成相同性質的小問題', '');
+  await step(tok);                                   // 3272.0 recursively 解，再 combine
+  d1.forEach((m) => { tint(m, C.teal); move(m, X[2], 5.6, 0); });
+  await beat(tok, 700);
+  d1.forEach(kill); tint(d0, C.teal);
+  say('recursively 求解', '重點是把答案 combine 回來');
+  await step(tok);                                   // 3283.0 DP：一樣拆成小問題
+  focus(3);
+  const t = [0, 1, 2, 3].map((k) => box('', C.gray, X[3] - 1.05 + k * 0.7, 5.0, 0.6, 0.6, 0.35, 0.8));
+  say('DP：一樣把大問題拆成小問題', '');
+  await step(tok);                                   // 3294.0 很多 overlapping subproblem
+  [1, 2].forEach((k) => glow(t[k], GOLD));
+  say('但它發現有很多 overlapping subproblem', '有些會重複出現');
+  await step(tok);                                   // 3307.0 不重複 → 不用 DP
+  [1, 2].forEach((k) => glow(t[k], null));
+  bad('不重複 → 記 table 沒意義', X[3], 3.8);
+  say('如果每個 subproblem 都 unique', '記 table 沒意義：只用一次，沒人再用');
+  await step(tok);                                   // 3326.0 iteration：從小建表 build up
+  for (const m of t) { tint(m, C.orange); await beat(tok, 250); }
+  say('有重複，用 DP 就非常好', 'iteration 形式：從小問題建表，build up 大的解');
+  await step(tok);                                   // 3346.0 D&C 與 DP 都從 induction 出發
+  head.forEach((m) => glow(m, null));
+  tag('D&C 與 DP：都從 induction 出發', 'ptr alt', 0, 1.8);
+  say('D&C 和 DP', 'basic idea 都從 induction 出發');
+  await step(tok);                                   // 3352.0 不重複 → D&C
+  glow(head[2], GOLD);
+  note('subproblem 不重複 → D&C 就好', X[2] - 1.0, 1.0);
+  say('拆出來的 subproblem 都不會重複', '用 D&C 就好');
+  await step(tok);                                   // 3357.0 會重複 → DP 降 complexity
+  glow(head[2], null); glow(head[3], GOLD);
+  note('會重複 → 試 DP', X[3], 0.3);
+  say('subproblem 會重複', '就試 DP 來降低 complexity');
 }]);
   }
 
   // ═══ dpjiang2.js ═══
   {
 // ─── 交大江蕙如 Lec18 Dynamic Programming (2/3)：dkmxHij2pfU ───
-// 只用 K 與 ctx（say / beat）。老師的例子（Kleinberg & Tardos 6.4、6.8）：
+// Cued scenes: every `await step(tok)` waits for the sentence it shows (cues in the notes; the number in
+// each step comment is the transcript line where the lecturer starts saying it). Motion between steps is
+// short; nothing loops or replays. Tables fill one entry (or one row/column) per sentence that says it.
+// 老師的例子（Kleinberg & Tardos 6.4、6.8）：
 // Subset Sum：W = 15、物品 12 1 2 1 4 → 12 + 2 + 1 = 15；反例 W = 11、物品 1 2 5 6 7：大的先 7+2+1 = 10、小的先 1+2+5 = 8、最佳 5+6 = 11；
 // OPT(i) 只有一個變數不夠（放 12 kg 後只剩 3 kg）→ OPT(i, w)；填表 M[0..5][0..11]，M[5][11] = max(11, 7 + M[4][4] = 3) = 11；O(nW) pseudo-polynomial。
 // Knapsack：價值 1 6 18 22 28，貪心先偷最貴 28+6+1 = 35，最佳 18+22 = 40；wᵢ 改成 vᵢ；0/1 vs fractional；bin packing。
 // Bellman-Ford：Dijkstra 反例 s→t 1、s→a 2、a→b 3、b→t −6（正解 s-a-b-t = −1）；全部 +6 仍錯；negative cycle；simple path ≤ n−1 條邊；
 // OPT(i, v) = v 到 t 最多 i 條邊；課本圖 t a b c d e，表格最後一欄 0 −6 −2 3 0 0；a 的路徑 a→b→e→c→t = −6；O(nm)。
-const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, code, anim, line, arrow, ghostBox, GOLD, GREEN, RED, GRAY } = K;
+// 示意值：bin packing 的體積、optimization 的解空間點、simple path 圖。
+const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, code, anim, line, arrow, ghostBox, GOLD, GREEN, RED, GRAY, step, buddy, prop, bob, travel, remove } = K;
 const C = { blue: '#4b9ee2', teal: '#2fc092', purple: '#9b7ef4', orange: '#dd8238', pink: '#e55a9b', red: '#d64545', sand: '#c9b48e', paper: '#e6dccb', gold: '#c08a1f', brown: '#6e5f49' };
 const box = (t, c, x, y, w = 0.9, h = 0.6, d = 0.5, drop = 0, z = 0) => cube(t, c, [w, h, d], x, y, z, drop);
 function link(a, b, color = C.brown, trim = 0.42) {
@@ -5258,6 +6426,14 @@ function link(a, b, color = C.brown, trim = 0.42) {
   const d = Bv.clone().sub(A).normalize();
   return arrow(A.clone().addScaledVector(d, trim), Bv.clone().addScaledVector(d, -trim), color);
 }
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const pkt = (t, x, y, z = 0) => tag(t, 'pkt', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+const pal = (name, x, color = '#f4a56a', z = 1.6, size = 0.7, y = 0) => buddy(name, '', color, x, y, z, size);
+const hl = (l, on) => { l.element.className = 'lab-label ' + (on ? 'ptr alt' : 'ptr'); };
+const paint = (ar, c) => ar.setColor(new THREE.Color(c));
 const IW = [1, 2, 5, 6, 7], IV = [1, 6, 18, 22, 28];
 const ICOL = [C.teal, C.blue, C.purple, C.orange, C.pink];
 function ssTable(val) {
@@ -5313,206 +6489,446 @@ function bfFill(G, v, i, val, drop = 1.0) {
   const m = box(fmt(val), val === Infinity ? GRAY : i === 0 ? C.sand : C.teal, G.X(i), G.Y(r), 0.8, 0.52, 0.4, drop);
   G.cell[v + i] = m; return m;
 }
+const bfCol = (G, M, i, drop = 0.8) => BFN.forEach((v) => bfFill(G, v, i, M[v][i], drop));
 
 // ════════════════ dkmxHij2pfU（交大江蕙如 Lec18：Subset Sum、Knapsack、Bellman-Ford） ════════════════
 
-// 01:40 Subset Sum：W = 15，物品 12 1 2 1 4 → 12 + 2 + 1 = 15
+// 01:46 Subset Sum：W = 15，物品 12 1 2 1 4 → 12 + 2 + 1 = 15
 FRAG.push(['dpjiang2-subset-def', 'Subset Sum：包包限重 W，塞越滿越好', async (tok) => {
   fresh([0, 4.2, 14], [0, 3.8, 0]);
-  say('Subset Sum：21 個 NPC 之一', 'Karp 列出的難題，DP 卻能解得不錯');
-  await beat(tok, 2800);
-  const B = bag(-3.6, 0.6, 15, 0.36, 'W = 15 kg');
-  say('一個包包：限重 W = 15', '超過就破掉');
-  await beat(tok, 2400);
-  const ws = [12, 1, 2, 1, 4], xs = [0.6, 2.0, 3.2, 4.4, 5.6], it = [];
-  ws.forEach((w, k) => {
-    it.push(box(w, ICOL[k], xs[k], 0.6 + w * 0.36 / 2, 1.0, w * 0.36, 0.8, 1.6));
-    tag('w=' + w, 'idx', xs[k], 0.2);
-  });
-  say('旁邊 n 個 item，各重 wᵢ', '12、1、2、1、4 公斤');
-  await beat(tok, 2600);
-  say('目標：選一些塞進去', 'max Σ wᵢ，且 Σ wᵢ ≤ W');
-  await beat(tok, 2800);
-  for (const k of [0, 2, 1]) { fly(it[k], V3(0, 4, 2)); put(B, ws[k], ICOL[k], ws[k]); await beat(tok, 900); }
-  glow(B.items[0], GREEN); glow(B.items[1], GREEN); glow(B.items[2], GREEN);
+  let B = null; const it = [];
+  const ws = [12, 1, 2, 1, 4], xs = [0.6, 2.0, 3.2, 4.4, 5.6];
+  const me = pal('', -6.4, C.orange);
+  await step(tok);                                   // 110.0 Karp：21 個 NP-complete 之一
+  const np = tag('Karp 的 21 個 NP-complete 問題之一', 'ptr alt', 0, 8.6);
+  say('Subset Sum 被 Karp 列為 21 個 NP-complete 之一', 'NP-complete 期末才會正式介紹');
+  await step(tok);                                   // 129.0 很困難，跟前面的問題差很多
+  me.mood('wow');
+  say('它是很困難的問題', '和前面學過的問題難度明顯不同');
+  await step(tok);                                   // 145.0 DP 在合理情況下 quality 很好
+  txt(np, '很難，但 DP 在合理情況下能得到很好的答案');
+  me.mood('happy');
+  say('但在很多合理的情況下', 'DP 能得到非常好的答案');
+  await step(tok);                                   // 159.0 input：n 個物體
+  remove(np);
+  say('Subset Sum 的 input：n 個物體', '');
+  await step(tok);                                   // 168.0 還有一個包包
+  B = bag(-3.6, 0.6, 15, 0.36, '包包');
+  say('還有一個包包', '');
+  await step(tok);                                   // 175.0 capacity W = 15 kg
+  txt(B.l, 'W = 15 kg');
+  say('包包有限重 capacity W', '這裡 W = 15 kg，超過就破掉');
+  await step(tok);                                   // 191.0 旁邊的 item 各有重量 wᵢ
+  ws.forEach((w, k) => { it.push(box(w, ICOL[k], xs[k], 0.6 + w * 0.36 / 2, 1.0, w * 0.36, 0.8, 1.6)); tag('w=' + w, 'idx', xs[k], 0.2); });
+  say('旁邊有一些 item', '每個 item i 有自己的重量 wᵢ');
+  await step(tok);                                   // 208.0 塞進包包，不能破，越滿越好
+  const g1 = note('① 不能破', -1.4, 6.6);
+  say('把東西塞進包包：不能讓包包破掉', '而且塞得越滿越好');
+  await step(tok);                                   // 232.0 越接近 W 越好
+  note('② 越接近 W 越好', -1.4, 5.9);
+  say('第二：越接近 capacity W 越好', '');
+  void g1;
+  await step(tok);                                   // 240.0 maximize 重量、不超過 W
+  tag('max Σ wᵢ，且 Σ wᵢ ≤ W', 'ptr', 2.4, 8.2);
+  say('目標：maximize 塞進去的總重量', '但不能超過 W');
+  await step(tok);                                   // 260.0 15 kg；旁邊 12、1、2、1、4
+  it.forEach((m) => glow(m, GOLD));
+  say('包包 15 kg，旁邊有 12、1、2、1、4 kg', '怎麼塞最滿又不破？');
+  await step(tok);                                   // 277.0 12 + 2 + 1 = 15
+  it.forEach((m) => glow(m, null));
+  for (const k of [0, 2, 1]) { fly(it[k], V3(0, 4, 2)); put(B, ws[k], ICOL[k], ws[k]); await beat(tok, 600); }
+  B.items.forEach((m) => glow(m, GREEN));
   txt(B.l, '12 + 2 + 1 = 15');
-  say('眼睛看：12 + 2 + 1', '剛好 15 kg：塞滿又不破');
-  await beat(tok, 3000);
+  me.mood('happy'); await me.hop(tok);
+  say('case 很小，眼睛看：12 + 2 + 1', '剛好 15 kg：塞滿又不破，這是最佳解');
+  await step(tok);                                   // 284.0 但要怎麼解它？
+  me.mood('wow');
+  bub('那…一般要怎麼解？', -6.0, 2.2, 1.6);
+  say('問題來了：要怎麼解它？', '');
+  await step(tok);                                   // 293.2 看起來好像很簡單？
+  say('看起來好像很簡單？', '等一下看為什麼不簡單');
 }]);
 
-// 05:02 Greedy 反例：W = 11，物品 1 2 5 6 7
+// 05:05 Greedy 反例：W = 11，物品 1 2 5 6 7
 FRAG.push(['dpjiang2-subset-greedy', 'Greedy 反例：W = 11，大的先只得 10', async (tok) => {
   fresh([0, 4.2, 14.5], [0, 3.8, 0]);
-  const xs = [-3, -1.5, 0, 1.5, 3];
-  IW.forEach((w, k) => { box(w, ICOL[k], xs[k], 7.4, 1.0, 0.6, 0.6, 1.2); });
+  const xs = [-3, -1.5, 0, 1.5, 3], u = 0.4;
+  let B1 = null, B2 = null, B3 = null;
+  const g = pal('greedy', -6.4, C.blue);
+  const add = (B, k) => put(B, IW[k], ICOL[k], IW[k]);
+  await step(tok);                                   // 305.0 greedy 得不到最佳解；反例
+  bad('greedy 得不到最佳解', 0, 8.6);
+  say('先講：這題用 greedy 得不到最佳解', '舉一個反例');
+  await step(tok);                                   // 311.8 capacity 11 kg
+  B1 = bag(-4.2, 0.4, 11, u, 'W = 11'); B2 = bag(0, 0.4, 11, u, 'W = 11'); B3 = bag(4.2, 0.4, 11, u, 'W = 11');
+  say('包包限重 11 公斤', '');
+  await step(tok);                                   // 317.0 五樣物體：1 2 5 6 7
+  IW.forEach((w, k) => box(w, ICOL[k], xs[k], 7.4, 1.0, 0.6, 0.6, 1.2));
   tag('item 重量', 'idx', -4.6, 7.4);
-  say('W = 11，五個 item', '重量 1、2、5、6、7');
-  await beat(tok, 2600);
-  const u = 0.4;
-  const B1 = bag(-4.2, 0.4, 11, u, '大的先'), B2 = bag(0, 0.4, 11, u, '小的先'), B3 = bag(4.2, 0.4, 11, u, '最佳解');
-  const run = async (B, order, name) => {
-    let sum = 0;
-    for (const k of order) {
-      const w = IW[k];
-      if (sum + w <= 11) { put(B, w, ICOL[k], w); sum += w; say(name + '：放 ' + w, '剩 ' + (11 - sum) + ' kg'); }
-      else say(name + '：' + w + ' 放不下', sum + ' + ' + w + ' > 11');
-      await beat(tok, 900);
-    }
-    return sum;
-  };
-  const s1 = await run(B1, [4, 3, 2, 1, 0], '大的先');
-  txt(B1.l, '7+2+1 = ' + s1);
-  B1.items.forEach((m) => glow(m, RED));
-  say('greedy（大的先）只得 10', '7 放進去後只剩 4 kg');
-  await beat(tok, 2600);
-  const s3 = await run(B3, [2, 3], '最佳');
-  txt(B3.l, '5+6 = ' + s3);
-  B3.items.forEach((m) => glow(m, GREEN));
-  say('最佳解：5 + 6 = 11', '剛好塞滿');
-  await beat(tok, 2400);
-  const s2 = await run(B2, [0, 1, 2, 3, 4], '小的先');
-  txt(B2.l, '1+2+5 = ' + s2);
-  B2.items.forEach((m) => glow(m, RED));
-  say('倒過來小的先：1+2+5 = 8', 'greedy 都得不到最佳解');
-  await beat(tok, 3000);
+  say('旁邊五樣物體', '重量 1、2、5、6、7');
+  await step(tok);                                   // 325.6 怎麼選才最滿？
+  say('怎麼選，才能塞最滿又不破？', '');
+  await step(tok);                                   // 336.0 用 greedy 試試看
+  g.mood('happy');
+  say('第一個想法：用 greedy 試試', '');
+  await step(tok);                                   // 351.0 大的先塞
+  txt(B1.l, '大的先');
+  say('希望塞滿一點：大的先塞', '');
+  await step(tok);                                   // 360.0 先塞 7
+  add(B1, 4);
+  say('先塞重量 7', '');
+  await step(tok);                                   // 372.0 只剩 4 kg：再塞 2 和 1
+  await beat(tok, 300);
+  add(B1, 1); await beat(tok, 500); add(B1, 0);
+  say('7 放進去只剩 4 kg', '6、5 塞不下，只能再塞 2 和 1');
+  await step(tok);                                   // 383.0 只得 7 + 2 + 1 = 10
+  txt(B1.l, '7+2+1 = 10');
+  B1.items.forEach((m) => glow(m, RED)); g.mood('sad');
+  say('大的先：只得 7 + 2 + 1 = 10', '最佳解在哪裡？');
+  await step(tok);                                   // 392.0 最佳：5 + 6 = 11
+  txt(B3.l, '最佳解');
+  add(B3, 2); await beat(tok, 500); add(B3, 3);
+  txt(B3.l, '5+6 = 11'); B3.items.forEach((m) => glow(m, GREEN));
+  say('眼睛看：5 + 6 = 11', '剛好塞滿又不破');
+  await step(tok);                                   // 407.0 倒過來：小的先？
+  txt(B2.l, '小的先'); g.mood('calm');
+  say('也可以倒過來', '從最小的開始塞？');
+  await step(tok);                                   // 415.0 1 + 2 + 5 → 塞不下了
+  add(B2, 0); await beat(tok, 400); add(B2, 1); await beat(tok, 400); add(B2, 2);
+  txt(B2.l, '1+2+5 = 8'); B2.items.forEach((m) => glow(m, RED));
+  say('小的先：1 + 2 + 5 = 8', '6、7 都塞不下了');
+  await step(tok);                                   // 423.7 greedy 不行 → 想別的方法
+  g.mood('sad'); await g.hop(tok);
+  say('greedy 在這題沒辦法求得最佳解', '一定要想別的方法');
 }]);
 
-// 07:17 Optimization problem：objective function + constraints
+// 07:26 Optimization problem：objective function + constraints
 FRAG.push(['dpjiang2-opt-form', '最佳化問題 = objective function + constraints', async (tok) => {
   fresh([0, 4.0, 14], [0, 3.8, 0]);
-  say('DP 的 programming', '= mathematical programming（最佳化）');
-  await beat(tok, 2600);
-  const t1 = tag('Objective function：max 或 min', 'ptr', -3.2, 8.0);
-  say('第一部分：objective', '評分函數：越大越好或越小越好');
-  await beat(tok, 2600);
-  const t2 = tag('Constraints：圍出 solution space', 'ptr', 3.2, 8.0);
   const poly = [[-4, 1.2], [1.5, 1.2], [3.2, 4.0], [0.5, 6.6], [-4, 5.2]];
-  const ls = poly.map((p, k) => { const q = poly[(k + 1) % poly.length]; return line(p[0], p[1], q[0], q[1], 0, C.brown); });
   const pts = [[-3, 2], [-1.5, 3.5], [0, 2.5], [1.2, 4.6], [-2.5, 4.6], [0.3, 5.8], [4.5, 2.5], [5.2, 6.2], [-5.6, 7], [4.2, 6.8]];
   const inside = (k) => k < 6;
-  const dots = pts.map((p, k) => box('', inside(k) ? C.teal : GRAY, p[0], p[1], 0.35, 0.35, 0.35, 1.0));
-  say('第二部分：constraints', '合理解只能落在圍出的空間裡');
-  await beat(tok, 3000);
+  let t1 = null, t2 = null, ls = [], dots = [], f = null;
+  await step(tok);                                   // 445.0 Programming = mathematical programming
+  tag('Dynamic Programming 的 Programming = 最佳化', 'ptr alt', 0, 8.6);
+  say('DP 的 Programming', '指 mathematical programming：針對最佳化問題');
+  await step(tok);                                   // 458.0 正式描述 optimization problem
+  say('正式描述一下 optimization problem', '以後其他課也常看到這種 formulation');
+  await step(tok);                                   // 471.0 兩部分：objective + constraint
+  t1 = tag('① Objective function', 'ptr', -3.2, 7.8); t2 = tag('② Constraints', 'ptr', 3.2, 7.8);
+  say('由兩部分構成', 'objective function 和 constraints');
+  await step(tok);                                   // 494.0 一個評分方式：cost function
+  hl(t1, true);
+  say('objective：對解提出評分方式', '例如 cost function');
+  await step(tok);                                   // 501.0 有的越高越好、有的越低越好
+  say('有的問題分數越高越好（gain）', '有的越低越好（cost）');
+  await step(tok);                                   // 519.0 maximize 或 minimize
+  txt(t1, '① Objective：maximize 或 minimize');
+  say('所以分兩大類', 'maximize 或 minimize 某個 function');
+  await step(tok);                                   // 528.0 Subset Sum：塞得越滿越好
+  say('Subset Sum：塞進去的東西', '越多（越滿）越好');
+  await step(tok);                                   // 543.0 maximize Σ_{i∈S} wᵢ
+  f = tag('maximize Σ_{i∈S} wᵢ（S：選出的 item）', 'ptr alt', 0, 0.6);
+  say('objective：maximize Σ wᵢ', 'S 是最後選出來的 item');
+  await step(tok);                                   // 564.0 constraints：限制條件
+  hl(t1, false); hl(t2, true);
+  ls = poly.map((p, k) => { const q = poly[(k + 1) % poly.length]; return line(p[0], p[1], q[0], q[1], 0, C.brown); });
+  say('第二部分 constraints', '顧名思義：很多限制條件');
+  await step(tok);                                   // 570.0 規範出 solution space
+  ls.forEach((l) => { l.material.color.set(C.teal); });
+  say('限制條件規範出 solution space', '');
+  await step(tok);                                   // 578.0 合理解要落在圍出的空間裡
+  dots = pts.map((p, k) => box('', inside(k) ? C.teal : GRAY, p[0], p[1], 0.35, 0.35, 0.35, 1.0));
+  say('合理解一定落在 constraints 圍出的空間裡', '外面的（灰色）不合理');
+  await step(tok);                                   // 586.0 在合理解中挑 objective 最好的
   pts.forEach((p, k) => { if (!inside(k)) fly(dots[k]); });
-  say('不合 constraint 的解丟掉', '在合理解裡挑 objective 最好的');
-  await beat(tok, 2400);
+  await beat(tok, 500);
   glow(dots[5], GOLD); tint(dots[5], C.gold);
-  say('Subset Sum 的寫法', 'max Σ_{i∈S} wᵢ  s.t.  Σ_{i∈S} wᵢ ≤ W');
-  await beat(tok, 3200);
-  ls.forEach(kill); dots.forEach(kill); txt(t1, '一次式（含常數）→ Linear Programming'); txt(t2, '二次式 → Quadratic Programming');
+  say('在合理解當中', '挑讓 objective function 最好的那個');
+  await step(tok);                                   // 596.0 這題的 constraint：包包不能破
+  txt(f, 'max Σ_{i∈S} wᵢ   s.t.  Σ_{i∈S} wᵢ < W');
+  say('這題的 constraint 很簡單：包包不能破', '選出的 S 總重量不能超過 W');
+  await step(tok);                                   // 621.0 加上等號：≤
+  txt(f, 'max Σ_{i∈S} wᵢ   s.t.  Σ_{i∈S} wᵢ ≤ W');
+  say('加上等號比較合適', '可以剛好 reach capacity');
+  await step(tok);                                   // 634.0 標準的最佳化 formulation
+  hl(t2, false); hl(f, false);
+  say('這就是很標準的最佳化問題 formulation', '有 objective，也有 constraint');
+  await step(tok);                                   // 651.0 一次式 → Linear Programming
+  ls.forEach(kill); dots.forEach(kill);
+  txt(t1, '一次式（含常數）→ Linear Programming');
+  say('式子都是一次式以下', '叫 Linear Programming');
+  await step(tok);                                   // 664.1 二次式 → Quadratic Programming
+  txt(t2, '二次式 → Quadratic Programming');
+  say('出現二次式', '叫 Quadratic Programming');
+  await step(tok);                                   // 671.0 更高 → Non-linear Programming
   tag('更高次 → Non-linear Programming', 'ptr alt', 0, 5.6);
-  say('依式子的次數分類', 'LP、QP、Non-linear');
-  await beat(tok, 3200);
+  say('再上去', '廣泛稱為 non-linear programming');
+  await step(tok);                                   // 685.7 回到 Subset Sum：用 DP 設計
+  pkt('回到 Subset Sum → 設計 DP', 0, 3.6);
+  say('回到 Subset Sum', '用 DP 來發展演算法');
 }]);
 
-// 11:46 第一版：OPT(i) = 前 i 個 item 的最佳解；第 n 個 item 選或不選
+// 11:52 第一版：OPT(i) = 前 i 個 item 的最佳解；第 n 個 item 選或不選
 FRAG.push(['dpjiang2-subset-cases', '第一版：OPT(i)，第 n 個 item 選或不選', async (tok) => {
   fresh([0, 4.0, 14], [0, 3.8, 0]);
   const lbl = ['1', '2', '3', '…', 'n−1', 'n'], it = [];
+  const me = pal('', -6.4, C.orange);
+  let ov = null, def = null, c1 = null, c2 = null, f1 = null, f2 = null;
+  await step(tok);                                   // 712.0 DP 基本想法：數學歸納法
+  pkt('DP = 數學歸納法', -4.4, 8.6);
+  say('DP 的基本想法', '就是數學歸納法');
+  await step(tok);                                   // 717.0 objective 用 OPT 表示
+  def = tag('OPT = 某個最佳值', 'ptr', 2.6, 8.6);
+  say('把 objective 的最佳值', '用 OPT 來表示');
+  await step(tok);                                   // 730.0 越大越好但不超過 W
+  txt(def, 'OPT：越大越好，但 ≤ W');
+  say('最佳解的 value 越大越好', '但不能超過 W');
+  await step(tok);                                   // 738.6 對 n 個 item 來說
+  txt(def, 'OPT：n 個 item 裡選，越大越好，≤ W');
+  say('更明確地說：對 n 個 item 選出來', '越大越好');
+  await step(tok);                                   // 753.0 拆成 recurrence relation
+  say('由這個角度', '把它拆成 recurrence relation 的形式');
+  await step(tok);                                   // 757.0 定義較小的 subproblem：OPT(i)
+  txt(def, '子問題：OPT(i)');
+  say('先定一個比較小的 subproblem', 'OPT(i)');
+  await step(tok);                                   // 767.4 item 隨意編號 1 … n
   lbl.forEach((s, k) => it.push(box(s, k === 5 ? C.orange : C.blue, -4 + k * 1.6, 7.0, 1.2, 0.7, 0.6, 1.2)));
-  say('DP 的想法 = 數學歸納法', 'item 隨意編號 1 … n');
-  await beat(tok, 2600);
-  const ov = ghostBox(C.teal, 1, 1.0, 1.0);
-  for (let i = 1; i <= 6; i++) {
-    const w = i * 1.6; ov.scale.set(w, 1, 1); ov.position.set(-4 - 0.8 + w / 2, 7.0, 0);
-    say('OPT(i)：前 i 個 item', '不讓包包破的最大總重');
-    await beat(tok, 450);
-  }
-  say('目標：OPT(n)', '所有 item 都考慮');
-  await beat(tok, 2200);
+  say('item 事先隨意編號 1、2、3…n', '不用照重量排');
+  await step(tok);                                   // 784.0 OPT(i)：前 i 個 item 的最佳解
+  ov = ghostBox(C.teal, 1, 1.0, 1.0);
+  await anim(tok, 1200, (e) => { const w = (1 + e * 3) * 1.6; ov.scale.set(w, 1, 1); ov.position.set(-4 - 0.8 + w / 2, 7.0, 0); });
+  txt(def, 'OPT(i)：前 i 個 item、包包不破的最佳解');
+  say('OPT(i)：前 i 個 item 當中', '放進包包又不破的最佳解');
+  await step(tok);                                   // 801.0 找一個 S，讓 Σ wⱼ 最大
+  const sdef = tag('OPT(i) = max Σ_{j∈S} wⱼ', 'ptr alt', 0, 5.6);
+  say('也就是找一個 set S', '讓 Σ wⱼ 越大越好');
+  await step(tok);                                   // 824.0 S 是 {1..i} 的 subset，不爆掉
+  txt(sdef, 'OPT(i) = max Σ_{j∈S} wⱼ，S ⊆ {1..i}，Σ ≤ W');
+  say('S 是從 1 到 i 裡選的 subset', '全選也可以，只要不爆掉');
+  await step(tok);                                   // 848.0 最後目標：OPT(n)
+  await anim(tok, 800, (e) => { const w = (4 + e * 2) * 1.6; ov.scale.set(w, 1, 1); ov.position.set(-4 - 0.8 + w / 2, 7.0, 0); });
+  txt(def, '目標：OPT(n)');
+  say('最後要吐出 OPT(n)', '所有 item 都拿來考慮');
+  await step(tok);                                   // 882.0 從最後一個 instance 來看
+  say('怎麼兜出 OPT(n)？', '從最後一個來分析');
+  await step(tok);                                   // 897.4 跟 weighted interval scheduling 很像
+  note('跟 weighted interval scheduling 很像', 3.0, 5.0);
+  say('跟 weighted interval scheduling 的方式很類似', '');
+  await step(tok);                                   // 926.0 看最後一個 item n
+  kill(ov); kill(sdef);
   glow(it[5], GOLD);
-  say('看最後一個 item n', '最佳解 O 只有兩種 case');
-  await beat(tok, 2400);
-  const c1 = box('case 1：n ∉ O', C.purple, -3.2, 4.6, 3.6, 0.8, 0.6, 1.4);
+  say('編號 label 好就不再改', '看最後一個：第 n 個 item');
+  await step(tok);                                   // 933.0 最佳解只有兩種 case
+  say('最佳解的組成', '只會落在兩種 case');
+  await step(tok);                                   // 959.0 case 1：n ∉ O
+  c1 = box('case 1：n ∉ O', C.purple, -3.2, 4.6, 3.6, 0.8, 0.6, 1.4);
   link([1.2, 6.6], [-3.2, 5.0], C.brown);
-  say('case 1：不選 n', 'OPT(n) = OPT(n−1)');
-  tag('OPT(n) = OPT(n−1)', 'ptr', -3.2, 3.6);
-  await beat(tok, 3000);
-  const c2 = box('case 2：n ∈ O', C.orange, 3.2, 4.6, 3.6, 0.8, 0.6, 1.4);
+  say('case 1：第 n 個沒有選', '不屬於最佳解 O');
+  await step(tok);                                   // 969.0 case 2：n ∈ O
+  c2 = box('case 2：n ∈ O', C.orange, 3.2, 4.6, 3.6, 0.8, 0.6, 1.4);
   link([4.0, 6.6], [3.2, 5.0], C.brown);
-  tag('OPT(n) = wₙ + OPT(n−1)', 'ptr', 3.2, 3.6);
-  say('case 2：選 n，貢獻 wₙ', '剩下由前 n−1 個貢獻');
-  await beat(tok, 3000);
-  glow(c2, RED);
-  const q = tag('？少考慮了什麼', 'ptr alt', 3.2, 2.6);
-  say('這樣寫對嗎？', '有同學表情怪怪的……');
-  await beat(tok, 3000);
+  say('case 2：第 n 個有選', '在最佳解裡');
+  await step(tok);                                   // 997.0 case 1 分析：不放 → OPT(n−1)
+  glow(c1, GOLD);
+  f1 = tag('OPT(n) = OPT(n−1)', 'ptr', -3.2, 3.6);
+  say('case 1：第 n 個沒放進包包', '最佳解跟 OPT(n − 1) 一樣');
+  await step(tok);                                   // 1016.7 等於只考慮前 n−1 個
+  say('不考慮第 n 個', '等於只看前 n − 1 個：直接承接');
+  await step(tok);                                   // 1033.0 case 2：放進包包
+  glow(c1, null); glow(c2, GOLD);
+  say('case 2：第 n 個要放進包包', '會怎樣？');
+  await step(tok);                                   // 1045.0 貢獻 wₙ，剩下由前 n−1 個
+  say('第 n 個貢獻一點重量 wₙ', '剩下由前 n − 1 個貢獻');
+  await step(tok);                                   // 1063.0 OPT(n) = wₙ + OPT(n−1)
+  f2 = tag('OPT(n) = wₙ + OPT(n−1)', 'ptr', 3.2, 3.6);
+  say('初步寫成', 'OPT(n) = wₙ + OPT(n − 1)');
+  await step(tok);                                   // 1080.0 同學表情怪怪的
+  me.mood('wow');
+  bub('嗯…怪怪的？', -6.0, 2.2, 1.6);
+  say('有同學表情怪怪的', '這個 recurrence 有沒有問題？');
+  await step(tok);                                   // 1096.0 放進去會吃掉重量
+  glow(c2, RED); hl(f2, true);
+  bad('放進 n 會吃掉容量！', 3.2, 2.8);
+  say('怪在哪：第 n 個放進包包', '會吃掉重量（容量）');
+  void f1;
 }]);
 
-// 18:01 問題：放進 wₙ 會吃掉容量 → OPT(i, w)
+// 18:25 問題：放進 wₙ 會吃掉容量 → OPT(i, w)
 FRAG.push(['dpjiang2-subset-2var', '放進 12 kg 只剩 3 kg：多加一個變數 w', async (tok) => {
   fresh([0, 4.0, 14], [0, 3.8, 0]);
   const B = bag(-3.6, 0.5, 15, 0.38, 'W = 15');
-  say('放進第 n 個 item', '它會不會吃掉容量？');
-  await beat(tok, 2400);
-  const m = put(B, 12, C.orange, 12);
-  await beat(tok, 1200);
-  const rest = ghostBox(C.teal, 1.7, 3 * 0.38, 1.4); rest.position.set(-3.6, 0.5 + 12 * 0.38 + 1.5 * 0.38, 0);
+  const me = pal('', -6.4, C.orange);
+  let m = null, rest = null, info = tag(' ', 'ptr', 2.6, 6.6), grid = false, c1 = null;
+  await step(tok);                                   // 1111.0 會吃空間 → 剩下的人受限
+  say('放進去會吃空間', '剩下 n − 1 個能放的空間就受到限制');
+  await step(tok);                                   // 1121.1 少掉一塊；function 有考慮嗎？
+  txt(info, 'OPT(n − 1) 有考慮空間變少嗎？');
+  say('少掉一塊了', '原本的 function 有考慮到這件事嗎？');
+  await step(tok);                                   // 1128.9 沒有：OPT 是在容量 W 下定義的
+  txt(info, '沒有：OPT 永遠假設容量是 W');
+  me.mood('sad');
+  say('沒有', 'OPT 是在包包容量 W 的狀況下設計的');
+  await step(tok);                                   // 1145.0 例：放進 12 kg
+  m = put(B, 12, C.orange, 12);
+  say('剛才的例子：把 12 kg 放進包包', '');
+  await step(tok);                                   // 1159.3 15 kg 只剩 3 kg
+  rest = ghostBox(C.teal, 1.7, 3 * 0.38, 1.4); rest.position.set(-3.6, 0.5 + 12 * 0.38 + 1.5 * 0.38, 0);
   txt(B.l, '只剩 3 kg');
-  say('15 kg 的包包放進 12 kg', '剩下的人只能塞 3 kg');
-  await beat(tok, 2800);
-  const wrong = tag('OPT(n−1) 卻還以為有 15 kg', 'ptr', 2.6, 6.6);
+  say('15 kg 的包包', '現在只剩 3 kg 給剩下的人');
+  await step(tok);                                   // 1166.0 剩下的人要塞 3 kg，不是 15 kg
   glow(m, RED);
-  say('第一版沒考慮容量變化', 'available = W − wₙ');
-  await beat(tok, 3000);
+  txt(info, '剩下的人要塞的是 3 kg，不是 15 kg');
+  say('剩下的人要塞的是 3 kg', '不是 15 kg：不一樣');
+  await step(tok);                                   // 1175.0 available capacity = W − wₙ
   glow(m, null);
-  txt(wrong, 'capacity 也是變數！');
-  say('OPT(i) 的定義太窄', '答案不只跟 i 有關，也跟 w 有關');
-  await beat(tok, 2800);
-  // the 2-D subproblem grid
+  txt(info, 'available capacity = W − wₙ');
+  say('放進 wₙ 後，真正的容量變少', 'available capacity = W − wₙ');
+  await step(tok);                                   // 1205.0 OPT(i) 定義太窄
+  txt(info, 'OPT(i) 的定義太窄');
+  me.mood('wow');
+  say('所以 OPT(i) 的定義太窄了', '');
+  await step(tok);                                   // 1211.0 只跟 item 有關
+  say('它只跟 item 有關', '而且永遠在大 W 之下');
+  await step(tok);                                   // 1219.0 capacity 也是變數
+  txt(info, 'capacity 也是會影響 OPT 的變數！');
+  say('發現 capacity 也是一個變數', '會影響最佳值');
+  await step(tok);                                   // 1233.0 定義要 extend
+  say('所以定義要 extend', '最佳解不只跟前 i 個 item 有關');
+  await step(tok);                                   // 1250.0 w 也是很重要的引數
+  txt(info, '還跟包包能放多少（w）有關');
+  say('還跟包包能放多少東西有關', 'w 也是很重要的引數');
+  await step(tok);                                   // 1265.0 加一個 term：OPT(i, w)
   for (let i = 0; i < 4; i++) for (let w = 0; w < 6; w++) box('', C.paper, 0.6 + w * 0.95, 1.2 + i * 0.8, 0.8, 0.6, 0.2, 0, -0.2);
-  tag('w →', 'idx', 6.4, 1.2);
-  tag('i ↑', 'idx', 0.0, 4.4);
-  txt(wrong, 'OPT(i, w)');
-  say('OPT(i, w)：前 i 個、容量 w', 'max Σ wⱼ，且 Σ wⱼ ≤ w');
-  await beat(tok, 3000);
-  tag('case 2：wₙ + OPT(n−1, W − wₙ)', 'ptr alt', 2.8, 5.4);
-  say('第二個參數記住剩多少空間', '修正後 recurrence 就對了');
-  await beat(tok, 3200);
+  tag('w →', 'idx', 6.4, 1.2); tag('i ↑', 'idx', 0.0, 4.4);
+  grid = true;
+  txt(info, 'OPT(i, w)：前 i 個 item、容量 w');
+  me.mood('happy');
+  say('加一個 term：小寫 w', 'OPT(i, w)：前 i 個、目前考慮的容量 w');
+  await step(tok);                                   // 1287.0 Σ wⱼ 要在小 w 之下
+  txt(info, 'OPT(i, w) = max Σ wⱼ，且 Σ wⱼ ≤ w');
+  say('一樣要 Σ wⱼ 越大越好', '但同時要在小寫 w 之下');
+  await step(tok);                                   // 1312.9 修正後 recurrence 就對了
+  say('透過這個修正', '剛才的 recurrence 就可以變正確');
+  await step(tok);                                   // 1324.0 剛剛只對一半
+  say('剛剛那個只對一半', '照它做會產生錯的解');
+  await step(tok);                                   // 1350.0 把 w 放進 recurrence
+  say('把第二個 parameter w 放進來', '重看 recurrence 的長相');
+  await step(tok);                                   // 1359.0 前一頁：兩個 case
+  c1 = tag('case 1：n 不在最佳解', 'ptr', 2.8, 5.6);
+  tag('case 2：n 在最佳解', 'ptr', 2.8, 4.9);
+  say('前一頁的版本：分兩個 case', 'n 不在 / n 在最佳解');
+  await step(tok);                                   // 1398.0 沒考慮 w 的變化 → 修正
+  say('basic idea 沒錯太多', '只是沒考慮 capacity w 的變化：要修正');
+  await step(tok);                                   // 1412.0 case 1 需要修正嗎？
+  hl(c1, true);
+  say('case 1 需要修正嗎？', '');
+  await step(tok);                                   // 1420.0 沒選 → 沒吃重量，直接承接
+  say('第 n 個沒選，沒吃掉重量', '可以完完全全承接前 n − 1 個');
+  await step(tok);                                   // 1437.0 OPT(n, w) = OPT(n−1, w)
+  txt(c1, 'case 1：OPT(n, w) = OPT(n − 1, w)');
+  say('容量還是原來的小寫 w', 'case 1：OPT(n − 1, w)');
+  void grid;
 }]);
 
-// 22:21 完整 recurrence：邊界、wᵢ > w 跳過、max
+// 24:21 完整 recurrence：邊界、wᵢ > w 跳過、max
 FRAG.push(['dpjiang2-subset-recur', 'OPT(i, w) 的 recurrence：0／跳過／max', async (tok) => {
   fresh([0, 4.0, 14], [0, 3.8, 0]);
-  const cd = code([
+  const X = (w) => -3.4 + w * 0.95, Y = (i) => 1.0 + i * 0.85;
+  let cd = null, cur = null, ar = [];
+  const c2 = tag('case 2：OPT(n, w) = wₙ + OPT(n − 1, ？)', 'ptr alt', 0, 8.6);
+  const clear = () => { ar.forEach(kill); ar = []; };
+  await step(tok);                                   // 1461.0 case 2：第 n 個要放進來
+  say('case 2：第 n 個 item 要放進來', '');
+  await step(tok);                                   // 1469.0 會吃掉 capacity
+  const bite = bad('吃掉容量 wₙ', 4.2, 7.8);
+  say('它一放進來', '就會吃掉 capacity');
+  await step(tok);                                   // 1476.0 修正第二個 parameter
+  remove(bite);
+  say('所以第二個 parameter（capacity）', '要做修正');
+  await step(tok);                                   // 1490.0 wₙ 當然要貢獻
+  say('第 n 個的 wₙ', '當然要貢獻');
+  await step(tok);                                   // 1496.0 剩下由前 n−1 個貢獻
+  say('剩下的一樣由前 n − 1 個貢獻', '');
+  await step(tok);                                   // 1502.0 兜剩下的空間 W − wₙ
+  txt(c2, 'case 2：OPT(n, w) = wₙ + OPT(n − 1, w − wₙ)');
+  say('但它們要兜的是剩下的空間', 'w − wₙ：wₙ 被吃掉了');
+  await step(tok);                                   // 1519.0 recurrence 差不多寫出來了
+  say('recurrence 差不多寫出來了', '');
+  await step(tok);                                   // 1526.0 對任何第 i 個都成立
+  txt(c2, '對任何 i：OPT(i, w) …');
+  say('不只第 n 個', '任何第 i 個的 OPT(i, w) 都能這樣擴充');
+  await step(tok);                                   // 1544.0 真正的 recurrence 長相
+  kill(c2);
+  cd = code([
     'OPT(i,w) = 0                      if i = 0 or w = 0',
     '         = OPT(i-1, w)            if w_i > w',
     '         = max( OPT(i-1, w),',
     '                w_i + OPT(i-1, w - w_i) )   otherwise',
-  ], 0, 8.0, 0.55);
-  say('把 w 放進來重寫兩個 case', '對任何第 i 個 item 都成立');
-  await beat(tok, 2600);
-  const X = (w) => -3.4 + w * 0.95, Y = (i) => 1.0 + i * 0.85;
-  for (let i = 0; i <= 3; i++) for (let w = 0; w <= 7; w++) box('', i === 0 || w === 0 ? C.sand : C.paper, X(w), Y(i), 0.8, 0.62, 0.2, 0, -0.2);
+  ], 0, 8.4, 0.55);
+  for (let i = 0; i <= 3; i++) for (let w = 0; w <= 7; w++) box('', C.paper, X(w), Y(i), 0.8, 0.62, 0.2, 0, -0.2);
   tag('i', 'idx', X(0) - 0.9, Y(3)); tag('w →', 'idx', X(7) + 0.9, Y(0));
+  say('真正的 recurrence 長這樣', '左邊是 OPT(i, w)，右邊分三種情況');
+  await step(tok);                                   // 1553.0 boundary：包包沒空間 w = 0
   cd.hl(0);
-  say('邊界：沒 item 或沒空間', 'i = 0 或 w = 0 → 0');
-  await beat(tok, 2800);
-  const cur = ghostBox(C.gold, 0.95, 0.75, 0.6); cur.position.set(X(2), Y(3), 0);
+  for (let i = 0; i <= 3; i++) box(0, C.sand, X(0), Y(i), 0.66, 0.5, 0.35, 0.8);
+  say('第一種是 boundary condition', '包包已經塞滿或根本沒包包：w = 0');
+  await step(tok);                                   // 1576.0 → OPT = 0
+  say('w = 0：不管有多少 item 都塞不進去', 'OPT(i, w) = 0');
+  await step(tok);                                   // 1582.0 沒有 item：i = 0
+  for (let w = 1; w <= 7; w++) box(0, C.sand, X(w), Y(0), 0.66, 0.5, 0.35, 0.8);
+  say('另一個 boundary', '沒有任何 item：i = 0');
+  await step(tok);                                   // 1596.0 i 或 w 為 0 → 0
+  say('i 或 w 為 0', 'OPT(i, w) = 0');
+  await step(tok);                                   // 1607.0 item 太大：wᵢ > w
   cd.hl(1);
-  say('item 太大：wᵢ > w', '塞不進去 → skip，承接 OPT(i−1, w)');
-  const a0 = link([X(2), Y(2), 0.3], [X(2), Y(3), 0.3], C.teal, 0.3);
-  await beat(tok, 3000);
-  kill(a0);
-  cur.position.set(X(6), Y(3), 0);
+  cur = ghostBox(C.gold, 0.95, 0.75, 0.6); cur.position.set(X(1), Y(2), 0);
+  note('w₂ = 2 > w = 1', X(1) + 1.6, Y(2) + 0.7);
+  say('第二種：i、w 都不是 0', '但這個 item 太大：wᵢ > w，塞不進去');
+  await step(tok);                                   // 1626.0 skip → OPT(i−1, w)
+  ar.push(link([X(1), Y(1), 0.3], [X(1), Y(2), 0.3], C.teal, 0.3));
+  say('塞不進去就 skip 它', '承接前 i − 1 個：OPT(i − 1, w)');
+  await step(tok);                                   // 1639.0 第三種：general case
+  clear(); cur.position.set(X(6), Y(3), 0);
   cd.hl(2);
-  const a1 = link([X(6), Y(2), 0.3], [X(6), Y(3), 0.3], C.teal, 0.3);
-  say('case 1：item i 不放', 'OPT(i−1, w)：正上方那格');
-  await beat(tok, 2800);
+  say('第三種：一般的 general case', '第 i 個不會讓包包爆掉');
+  await step(tok);                                   // 1653.0 case 1：不放 → OPT(i−1, w)
+  ar.push(link([X(6), Y(2), 0.3], [X(6), Y(3), 0.3], C.teal, 0.3));
+  say('case 1：第 i 個不放', '承接 OPT(i − 1, w)：正上方那格');
+  await step(tok);                                   // 1672.0 case 2：放 → wᵢ + OPT(i−1, …)
   cd.hl(3);
-  const a2 = link([X(2), Y(2), 0.3], [X(6), Y(3), 0.3], C.gold, 0.35);
-  tag('w − wᵢ', 'idx', X(2), Y(2) - 0.55);
-  say('case 2：item i 放進去', 'wᵢ + OPT(i−1, w − wᵢ)');
-  await beat(tok, 3000);
-  cd.hl(-1);
-  say('兩個 case 取大的', 'max：誰的 quality 好選誰');
-  await beat(tok, 3000);
+  ar.push(link([X(1), Y(2), 0.3], [X(6), Y(3), 0.3], C.gold, 0.35));
+  say('case 2：第 i 個放進去', 'wᵢ ＋ 前 i − 1 個的貢獻');
+  await step(tok);                                   // 1693.0 要兜出 w − wᵢ 的容量
+  tag('w − wᵢ', 'idx', X(1), Y(2) - 0.55);
+  say('前 i − 1 個要兜的容量', '是 w − wᵢ（左上那格）');
+  await step(tok);                                   // 1704.0 兩個 case 取大：max
+  cd.hl(-1); glow(cur, GOLD);
+  say('兩個 case 怎麼選？', '誰的 quality 好選誰：max');
 }]);
 
-// 30:40 Bottom-up 實作：開表 M[0..n][0..W]，第 1–4 行邊界，5–10 行填表
+// 30:43 Bottom-up 實作：開表 M[0..n][0..W]，第 1–4 行邊界，5–10 行填表
 FRAG.push(['dpjiang2-subset-code', 'Bottom-up 實作：for loop 填表 M[i][w]', async (tok) => {
   fresh([0, 4.0, 14.5], [0, 3.8, 0]);
-  const cd = code([
+  const M = ssTable(IW);
+  const X = (w) => 0.8 + w * 0.8, Y = (i) => 6.8 - i * 0.8;
+  let cd = null, cur = null; const cell = {};
+  const fill = (i, w, c) => { cell[i + ',' + w] = box(M[i][w], c || C.teal, X(w), Y(i), 0.56, 0.48, 0.35, 0.8); };
+  const rec = tag(' ', 'ptr', 0, 8.9);
+  await step(tok);                                   // 1847.0 recurrence 寫上面當小抄
+  txt(rec, 'OPT(i,w) = 0｜OPT(i−1,w)｜max(OPT(i−1,w), wᵢ + OPT(i−1,w−wᵢ))');
+  say('recurrence 寫在上面當小抄', '');
+  await step(tok);                                   // 1852.0 把它 implement 出來
+  say('接下來就是把它 implement 出來', '');
+  await step(tok);                                   // 1860.0 n 個 item、容量 W：要算 OPT(n, W)
+  say('n 個 item、包包總重 W', '最終目的：算出 OPT(n, W)');
+  await step(tok);                                   // 1892.8 bottom-up 形式
+  pkt('bottom-up', -5.2, 8.3);
+  say('第一招：bottom-up 形式', '');
+  await step(tok);                                   // 1899.0 從小 subproblem 兜到大
+  say('從比較小的 subproblem', '慢慢兜出比較大的');
+  await step(tok);                                   // 1911.9 procedure：老實刻出 recurrence
+  cd = code([
     ' 1 for w = 0 to W',
     ' 2     M[0][w] = 0',
     ' 3 for i = 0 to n',
@@ -5525,367 +6941,895 @@ FRAG.push(['dpjiang2-subset-code', 'Bottom-up 實作：for loop 填表 M[i][w]',
     '10       M[i][w] = max(M[i-1][w],',
     '              w_i + M[i-1][w-w_i])',
     '11 return M[n][W]',
-  ], -3.6, 8.2, 0.52);
-  say('bottom-up：由小往大兜', '只要 for loop：就是填表格');
-  await beat(tok, 2800);
-  const X = (w) => 0.8 + w * 0.8, Y = (i) => 6.8 - i * 0.8;
-  for (let i = 0; i <= 5; i++) { tag(i === 5 ? 'n' : String(i), 'idx', X(0) - 0.7, Y(i)); for (let w = 0; w <= 6; w++) box('', C.paper, X(w), Y(i), 0.68, 0.6, 0.2, 0, -0.2); }
-  for (let w = 0; w <= 6; w++) tag(w === 6 ? 'W' : String(w), 'idx', X(w), 7.55);
+  ], -3.6, 7.6, 0.52);
+  say('procedure 很老實', '就是把 recurrence 刻出來');
+  await step(tok);                                   // 1923.0 只要 for loop：填表格
+  say('bottom-up iteration 形式', '只需要 for loop：就是填表格');
+  await step(tok);                                   // 1934.2 開一個 table M
+  for (let i = 0; i <= 5; i++) for (let w = 0; w <= 6; w++) box('', C.paper, X(w), Y(i), 0.68, 0.6, 0.2, 0, -0.2);
+  tag('M', 'ptr', X(0) - 1.3, Y(0) + 0.8);
+  say('心目中開一個 table', '叫 M');
+  await step(tok);                                   // 1950.0 M 存 OPT 的值
+  say('M 存的就是 OPT 的值', '');
+  await step(tok);                                   // 1958.0 w 從 0 長到 W
+  for (let w = 0; w <= 6; w++) tag(w === 6 ? '…W' : String(w), 'idx', X(w), Y(0) + 0.75);
+  say('一個方向：小寫 w 從 0', '一直長到大 W（這裡只畫到 6）');
+  await step(tok);                                   // 1977.0 item 從 0 到 n
+  for (let i = 0; i <= 5; i++) tag(i === 5 ? 'n' : String(i), 'idx', X(0) - 0.7, Y(i));
+  say('另一個方向：item', '前 0 個、前 1 個…一直到前 n 個');
+  await step(tok);                                   // 2015.7 接下來填 table
+  say('開好 table', '接下來就是填 table');
+  await step(tok);                                   // 2023.0 第 1–2 行：i = 0 那一列
   cd.hl(1);
-  say('1–2 行：i = 0 那一列', '沒有 item → 0');
-  for (let w = 0; w <= 6; w++) { box(0, C.sand, X(w), Y(0), 0.56, 0.48, 0.35, 0.9); await beat(tok, 160); }
-  await beat(tok, 1000);
+  for (let w = 0; w <= 6; w++) { fill(0, w, C.sand); await beat(tok, 120); }
+  say('第 1、2 行：i = 0 那一列', '沒有 item → 全填 0');
+  await step(tok);                                   // 2033.0 第 3–4 行：w = 0 那一欄
   cd.hl(3);
-  say('3–4 行：w = 0 那一欄', '沒有空間 → 0');
-  for (let i = 1; i <= 5; i++) { box(0, C.sand, X(0), Y(i), 0.56, 0.48, 0.35, 0.9); await beat(tok, 180); }
-  await beat(tok, 1000);
-  const cur = ghostBox(C.gold, 0.78, 0.72, 0.6);
-  for (let i = 1; i <= 2; i++) for (let w = 1; w <= 6; w++) {
-    cur.position.set(X(w), Y(i), 0);
-    cd.hl(IW[i - 1] > w ? 7 : 9);
-    say('5–10 行：一列一列由左往右', IW[i - 1] > w ? 'wᵢ > w：抄上面' : 'max(上面, wᵢ + 左上某格)');
-    box('', C.teal, X(w), Y(i), 0.56, 0.48, 0.35, 0.9);
-    await beat(tok, 380);
-  }
+  for (let i = 1; i <= 5; i++) { fill(i, 0, C.sand); await beat(tok, 140); }
+  say('第 3、4 行：w = 0 那一欄', '沒有空間 → 全填 0');
+  await step(tok);                                   // 2041.0 5–10 行兜兩個 case
+  cd.hl(4);
+  cur = ghostBox(C.gold, 0.78, 0.72, 0.6); cur.position.set(X(1), Y(1), 0);
+  say('第 5 到 10 行', '用來兜下面的兩個 case');
+  await step(tok);                                   // 2063.0 先 check 有沒有超過 w
+  cd.hl(6);
+  fill(1, 1);
+  say('先 check：item 有沒有超過現在的容量 w', '例：w₁ = 1 ≤ 1，放得下 → M[1][1] = 1');
+  await step(tok);                                   // 2071.0 超過：直接承接前面的解
+  cd.hl(7);
+  for (let w = 2; w <= 6; w++) fill(1, w);
+  cur.position.set(X(1), Y(2), 0);
+  say('超過的話：直接承接 i − 1 的解', '它會讓包包破掉，不會貢獻');
+  await step(tok);                                   // 2093.4 wᵢ > w：照抄上面（第 7–8 行）
+  const a1 = link([X(1), Y(1), 0.3], [X(1), Y(2), 0.3], C.teal, 0.25);
+  fill(2, 1);
+  say('例：w₂ = 2 > w = 1', '第 7–8 行：照抄上面 M[1][1] = 1');
+  await step(tok);                                   // 2100.0 沒超過：放或不放取 max
+  kill(a1); cd.hl(9);
+  fill(2, 2); cur.position.set(X(3), Y(2), 0);
+  const a2 = link([X(3), Y(1), 0.3], [X(3), Y(2), 0.3], C.teal, 0.25), a3 = link([X(1), Y(1), 0.3], [X(3), Y(2), 0.3], C.gold, 0.3);
+  fill(2, 3);
+  say('沒超過：放或不放，比一下取 max', 'M[2][3] = max(M[1][3] = 1, 2 + M[1][1] = 3) = 3');
+  await step(tok);                                   // 2118.8 第 10 行：做完
+  kill(a2); kill(a3);
+  for (let w = 4; w <= 6; w++) { fill(2, w); await beat(tok, 120); }
+  for (let i = 3; i <= 5; i++) for (let w = 1; w <= 6; w++) { fill(i, w); await beat(tok, 50); }
+  kill(cur); cd.hl(11);
+  say('這是第 10 行', '一列一列由左往右，就做完了');
+  await step(tok);                                   // 2124.0 忠實刻下 recurrence
   cd.hl(-1);
-  say('每格只查上一列：早就填好了', '從小到大填，查的值一定 ready');
-  await beat(tok, 3200);
+  say('procedure 就是很忠實地把 recurrence 刻下來', '沒有特殊技巧');
+  await step(tok);                                   // 2136.0 bottom-up：查的前面 solution 要 ready
+  glow(cell['3,4'], GOLD); glow(cell['2,4'], GREEN);
+  say('要注意：bottom-up 填每格時', '它參照的前面 solution 一定要 ready');
+  await step(tok);                                   // 2153.0 從小到大填 → 一定查得到
+  glow(cell['3,4'], null); glow(cell['2,4'], null);
+  good('從小到大填 → 查的值都已經 ready', 3.0, 1.6);
+  say('剛才都是從小到大填', '保證查的值在那一刻都查得到');
+  await step(tok);                                   // 2163.0 舉個例子：W = 11
+  pkt('例子：W = 11、重量 1 2 5 6 7', 3.0, 0.8);
+  say('接下來舉例：一開始那個 case', '大寫 W = 11');
 }]);
 
-// 36:06 例子：W = 11，物品 1 2 5 6 7 → 填表，M[5][11] = 11，倒推 5 + 6
+// 36:16 例子：W = 11，物品 1 2 5 6 7 → 填表，M[5][11] = 11，倒推 5 + 6
 FRAG.push(['dpjiang2-subset-table', '填表：W = 11、重量 1 2 5 6 7 → 11', async (tok) => {
   fresh([0, 4.2, 15], [0, 3.8, 0]);
   const M = ssTable(IW);
   const X = (w) => -5.0 + w * 0.95, Y = (i) => 7.3 - i * 0.95;
-  for (let w = 0; w <= 11; w++) tag(String(w), 'idx', X(w), 8.1);
   const rl = ['{ }', '{1}', '{1,2}', '{1,2,5}', '{…,6}', '{…,7}'];
-  const cell = [];
-  for (let i = 0; i <= 5; i++) { tag(rl[i], 'idx', X(0) - 1.2, Y(i)); cell[i] = []; for (let w = 0; w <= 11; w++) box('', C.paper, X(w), Y(i), 0.82, 0.7, 0.2, 0, -0.2); }
-  say('開 (n+1) × (W+1) 的表', 'w = 0 … 11；item 前 0 … 5 個');
-  await beat(tok, 2800);
-  for (let i = 0; i <= 5; i++) {
-    for (let w = 0; w <= 11; w++) cell[i][w] = box(M[i][w], i === 0 || w === 0 ? C.sand : C.teal, X(w), Y(i), 0.7, 0.55, 0.4, 1.0);
-    say(i === 0 ? '先填邊界 0' : '加入重量 ' + IW[i - 1] + ' 的 item', i === 0 ? 'i = 0 或 w = 0 → 0' : '第 ' + i + ' 列：M[' + i + '][11] = ' + M[i][11]);
-    await beat(tok, i === 0 ? 1400 : 1100);
-  }
+  const cell = [[], [], [], [], [], []];
+  const me = pal('', -6.6, C.orange, 1.8);
+  const fl = (i, w) => { cell[i][w] = box(M[i][w], i === 0 || w === 0 ? C.sand : C.teal, X(w), Y(i), 0.7, 0.55, 0.4, 0.8); };
+  const f = tag(' ', 'ptr alt', 0.6, 0.6);
+  await step(tok);                                   // 2176.0 W = 11 → 5 + 6
+  say('capacity 11：答案是 5 + 6', '用剛才的 procedure 跑一次');
+  await step(tok);                                   // 2184.0 開出 table
+  for (let i = 0; i <= 5; i++) for (let w = 0; w <= 11; w++) box('', C.paper, X(w), Y(i), 0.82, 0.7, 0.2, 0, -0.2);
+  say('第一件事：開出這樣一個 table', '');
+  await step(tok);                                   // 2192.5 w 從 0 到 W：W + 1 個欄位
+  for (let w = 0; w <= 11; w++) tag(String(w), 'idx', X(w), 8.1);
+  say('w 從 0 變化到 W', '一共 W + 1 = 12 個欄位');
+  await step(tok);                                   // 2205.0 item：不放、前 1、前 2…前 5
+  for (let i = 0; i <= 5; i++) tag(rl[i], 'idx', X(0) - 1.2, Y(i));
+  say('item：什麼都不放，再來前 1 個、前 2 個', '一直到全部 5 個');
+  await step(tok);                                   // 2220.0 第 1–2 行、第 3–4 行：邊界
+  for (let w = 0; w <= 11; w++) fl(0, w);
+  for (let i = 1; i <= 5; i++) fl(i, 0);
+  say('第 1、2 行把第一列填完', '第 3、4 行填第一欄：全是 0');
+  await step(tok);                                   // 2231.0 5–10 行：填剩下的
+  for (let i = 1; i <= 5; i++) { for (let w = 1; w <= 11; w++) fl(i, w); await beat(tok, 420); }
+  say('5 到 10 行把剩下的填完', '一列一列：加入重量 1、2、5、6、7');
+  await step(tok);                                   // 2247.0 highlight 最後一格
   glow(cell[5][11], GOLD);
-  say('答案：M[5][11] = 11', '怎麼來的？item 5 重 7');
-  await beat(tok, 2600);
+  say('highlight 最後一格', '');
+  await step(tok);                                   // 2257.0 所有 item、容量 W 的最佳解
+  say('考慮所有 item、容量 W 之下的最佳解', '把這格 report 回去就行');
+  await step(tok);                                   // 2268.3 = 11，來自 5 + 6；為什麼？
+  txt(f, 'M[5][11] = 11');
+  say('就是 11，來自 5 + 6', '來看為什麼');
+  await step(tok);                                   // 2284.0 最後一格怎麼填的？
+  say('最後一格是怎麼填的？', '');
+  await step(tok);                                   // 2288.0 第 5 個 item 重 7，W = 11
+  note('item 5：w = 7', X(11) + 0.2, Y(5) - 0.7);
+  say('考慮第 5 個 item：重量 7', '容量 W = 11');
+  await step(tok);                                   // 2308.0 case 1：自己不放
+  say('比較兩個 case', 'case 1：自己（7）不放進去');
+  await step(tok);                                   // 2316.0 看前 4 個 → 往上查
+  const a1 = link([X(11), Y(4), 0.3], [X(11), Y(5), 0.3], C.teal, 0.25);
   glow(cell[4][11], GOLD);
-  say('case 1：不放 7 → 查正上方', 'M[4][11] = 11');
-  await beat(tok, 2600);
+  say('看前 4 個 item 能兜出什麼', '往上查正上方的格子');
+  await step(tok);                                   // 2333.0 = 11
+  txt(f, 'case 1：M[4][11] = 11');
+  say('前 4 個塞容量 11 的包包', '最佳解是 11');
+  await step(tok);                                   // 2342.0 case 2：7 放進去
+  say('case 2：7 這個 item 要放進包包', '');
+  await step(tok);                                   // 2349.0 剩下由前 4 個兜
+  say('剩下由前 4 個來兜', '');
+  await step(tok);                                   // 2357.0 11 − 7 = 4 → 查第 4 欄
+  const a2 = link([X(4), Y(4), 0.3], [X(11), Y(5), 0.3], C.gold, 0.3);
   glow(cell[4][4], GOLD);
-  say('放 7：剩 11 − 7 = 4', '7 + M[4][4] = 7 + 3 = 10');
-  await beat(tok, 3000);
-  glow(cell[4][4], null);
-  say('max(11, 10) = 11', '承接上面的 11');
-  await beat(tok, 2400);
-  [[5, 11], [4, 11], [3, 5], [2, 0]].forEach(([i, w]) => glow(cell[i][w], GREEN));
+  say('剩下 capacity：11 − 7 = 4', '查第 4 欄');
+  await step(tok);                                   // 2367.6 前 4 個兜容量 4 → 3
+  txt(f, 'case 2：7 + M[4][4] = 7 + 3');
+  say('前 4 個兜容量 4', '最多只能兜到 3');
+  await step(tok);                                   // 2375.0 3 + 7 = 10
+  txt(f, 'case 2：7 + 3 = 10');
+  say('3 配上我的 7', '這個 case 貢獻 10');
+  await step(tok);                                   // 2383.0 和 11 比：取 11
+  kill(a2); glow(cell[4][4], null);
+  txt(f, 'max(11, 10) = 11：承接上面');
+  me.mood('happy');
+  say('和直接承接的 11 比', '當然 take 11');
+  await step(tok);                                   // 2401.0 可以繼續倒推
+  kill(a1);
+  say('還可以繼續倒推', '這個 11 又來自哪裡？');
+  await step(tok);                                   // 2408.0 一定來自第 3、4 個 item：5 + 6
+  for (const [i, w] of [[4, 11], [3, 5], [2, 0]]) { glow(cell[i][w], GREEN); await beat(tok, 400); }
   glow(cell[3][11], RED);
-  say('一路倒推：6 和 5 有放', 'M[4][11] ≠ M[3][11] → 放 6；M[3][5] → 放 5');
-  await beat(tok, 3400);
+  txt(f, 'M[4][11] ≠ M[3][11] → 放 6；M[3][5] ≠ M[2][5] → 放 5');
+  say('一步步倒推', '一定來自第 3、4 個 item：5 + 6');
+  await step(tok);                                   // 2421.0 往回推就找到最佳解的組成
+  await me.hop(tok);
+  say('一步一步往回推', '就找到最佳解是哪些 item 貢獻的');
 }]);
 
-// 40:30 O(nW)：pseudo-polynomial；n = 10、W = 10⁷
+// 40:33 O(nW)：pseudo-polynomial；n = 10、W = 10⁷
 FRAG.push(['dpjiang2-pseudo', 'O(nW) 是 pseudo-polynomial：W 不是 input size', async (tok) => {
   fresh([0, 4.0, 14], [0, 3.8, 0]);
   const g = ghostBox(C.teal, 3.0, 1.8, 0.6); g.position.set(-3.2, 6.0, 0);
   const lb = tag('(n+1) × (W+1) 格', 'ptr', -3.2, 7.4);
-  say('每格 O(1)：assign、抄、比大小', '重點是填了幾格');
-  await beat(tok, 2800);
-  say('格子數 (n+1)(W+1)', 'running time O(nW)');
-  await beat(tok, 2600);
-  const t2 = tag('看起來像多項式？', 'ptr alt', 3.2, 6.0);
-  say('看起來像多項式？', '不是！W 不是 input size');
-  await beat(tok, 2800);
-  txt(t2, 'n = input size；W 只是參數');
-  say('input size 是 n 個 item', 'W 只是 input 的一個參數');
-  await beat(tok, 2600);
+  const t2 = tag(' ', 'ptr alt', 3.2, 6.0);
+  const me = pal('', -6.4, C.orange);
+  let big = null;
+  await step(tok);                                   // 2433.0 填表動作都很簡單
+  say('跑完要花多少時間？', '填表動作都簡單：assign 0、照抄、比大小');
+  await step(tok);                                   // 2448.0 每個 operation 都 constant time
+  note('每格 O(1)', -3.2, 4.6);
+  say('每個 operation', '都是 constant time');
+  await step(tok);                                   // 2455.0 重點：填了幾格 (n+1)(W+1)
+  glow(g, GOLD);
+  say('重點是填了多少格子', '(n + 1) × (W + 1)');
+  await step(tok);                                   // 2463.0 running time O(nW)
+  glow(g, null);
+  txt(t2, 'running time：O(nW)');
+  say('running time bound 在', 'O(n × W)');
+  await step(tok);                                   // 2471.0 這樣好不好？
+  me.mood('wow');
+  say('這樣的 complexity 好不好？', '這個概念很重要');
+  await step(tok);                                   // 2486.3 看起來像多項式？
+  txt(t2, 'O(nW)：看起來像多項式？');
+  say('看起來像一個多項式', '');
+  await step(tok);                                   // 2496.0 並非 polynomial time
+  bad('不是 polynomial time！', 3.2, 5.2);
+  say('但它並非 polynomial time', '');
+  await step(tok);                                   // 2503.0 否則不會說它很難
+  say('如果真的是 polynomial time', '就不會說這個問題很難了');
+  await step(tok);                                   // 2511.0 pseudo-polynomial：假的
+  txt(t2, 'pseudo-polynomial（pseudo = 假的）');
+  say('我們叫它 pseudo-polynomial time', 'pseudo 是「假的」');
+  await step(tok);                                   // 2518.0 含 W，W 不是 input size
+  note('W 不是 input size', 3.2, 4.4);
+  say('因為 running time 含有 W', '而 W 不是 input size');
+  await step(tok);                                   // 2526.0 input size 是 n
+  note('input size 是 n（item 數）', 3.2, 3.7);
+  say('W 只是 input 的一個參數（引數）', 'input size 是 n 個 item');
+  await step(tok);                                   // 2558.0 所以叫 pseudo；21 個 NPC 之一
+  say('所以叫 pseudo-polynomial', 'Subset Sum 是 21 個 NP-complete 之一');
+  await step(tok);                                   // 2574.0 沒人找到真的 polynomial 演算法
+  say('到目前沒有人找到', '真正 polynomial time 的 Subset Sum 演算法');
+  await step(tok);                                   // 2585.0 卡在 W：n 小 W 很大
+  say('卡在 W 身上', '如果 n 很小、W 非常大');
+  await step(tok);                                   // 2592.0 n = 10，W = 1000 萬
   txt(lb, 'n = 10，W = 10⁷');
-  say('例：只有 10 個 item', '但 W = 1000 萬');
-  await anim(tok, 1800, (k) => { g.scale.set(1 + k * 3.4, 0.6 + 0.4 * (1 - k), 1); g.position.x = -3.2 + k * 3.2; });
-  tag('10,000,001 個 column', 'ptr', 0, 4.6);
-  say('要開 10⁷ + 1 個 column', '而且要填到最後一格才有答案');
-  await beat(tok, 3000);
-  txt(t2, 'pseudo-polynomial（假的多項式）');
-  say('所以叫 pseudo-polynomial', 'W 很大時 DP 效果並不好');
-  await beat(tok, 3200);
+  await anim(tok, 1600, (k) => { g.scale.set(1 + k * 3.4, 0.6 + 0.4 * (1 - k), 1); g.position.x = -3.2 + k * 3.2; });
+  say('例：只有 10 個 item', '但 W 有 1000 萬：table 有多大？');
+  await step(tok);                                   // 2599.4 要開 10⁷ + 1 個 column
+  big = tag('10⁷ + 1 個 column', 'ptr', 0, 4.9);
+  me.mood('sad');
+  say('要建 1000 萬多個 column', 'running time 很恐怖，卻只有 10 個 item');
+  await step(tok);                                   // 2610.2 不算快的演算法
+  say('從這個觀點看', '不會認為它是很快的演算法');
+  await step(tok);                                   // 2617.3 要填到最後一格才有答案
+  const cur = pkt('→ 最後一格', -1.0, 6.0);
+  await travel(tok, cur, V3(-1.0, 6.0, 0), V3(4.6, 6.0, 0), 1400);
+  say('table 一定要老老實實填到最後一格', '才知道答案');
+  await step(tok);                                   // 2624.0 W 很大時不好
+  say('所以 W 很大時', '這個 running time 不好');
+  await step(tok);                                   // 2631.0 書上推薦 DP，但 W 大時效果不好
+  me.mood('calm');
+  good('一般推薦 DP；但 W 很大時效果不好', 0, 1.2);
+  say('書上一般都推薦用 DP 解 Subset Sum', '但要知道：W 很大時效果並不好');
+  void big;
 }]);
 
-// 44:12 Knapsack：小偷、vᵢ；greedy 先偷最值錢 → 35，最佳 18 + 22 = 40
+// 44:22 Knapsack：小偷、vᵢ；greedy 先偷最值錢 → 35，最佳 18 + 22 = 40
 FRAG.push(['dpjiang2-knap-greedy', 'Knapsack：先偷最值錢只得 35，最佳 40', async (tok) => {
   fresh([0, 4.2, 14.5], [0, 3.8, 0]);
-  const xs = [-3.2, -1.6, 0, 1.6, 3.2];
-  IW.forEach((w, k) => { box('$' + IV[k], ICOL[k], xs[k], 7.5, 1.2, 0.6, 0.6, 1.2); tag(w + ' kg', 'idx', xs[k], 6.9); });
-  say('Knapsack：小偷背包包行竊', '每個 item 有重量 wᵢ、價值 vᵢ');
-  await beat(tok, 2800);
-  say('constraint 一樣：不能破', 'objective 改成 max Σ vᵢ');
-  await beat(tok, 2800);
-  const u = 0.4;
-  const B1 = bag(-3.2, 0.3, 11, u, 'greedy：最值錢先'), B2 = bag(3.2, 0.3, 11, u, '最佳解');
-  let sum = 0, val = 0;
-  for (const k of [4, 3, 2, 1, 0]) {
-    if (sum + IW[k] <= 11) { put(B1, IW[k], ICOL[k], '$' + IV[k]); sum += IW[k]; val += IV[k]; say('偷 $' + IV[k] + '（' + IW[k] + ' kg）', '剩 ' + (11 - sum) + ' kg，總價 ' + val); }
-    else say('$' + IV[k] + ' 重 ' + IW[k] + '：塞不下', sum + ' + ' + IW[k] + ' > 11');
-    await beat(tok, 1000);
-  }
-  txt(B1.l, '28 + 6 + 1 = 35');
-  B1.items.forEach((m) => glow(m, RED));
-  say('greedy 得 35', '先偷最貴的 28 就只剩 4 kg');
-  await beat(tok, 2600);
-  put(B2, 5, ICOL[2], '$18'); await beat(tok, 700); put(B2, 6, ICOL[3], '$22'); await beat(tok, 700);
-  txt(B2.l, '18 + 22 = 40');
-  B2.items.forEach((m) => glow(m, GREEN));
-  say('最佳解：18 + 22 = 40', 'greedy 不保證最佳解');
-  await beat(tok, 3200);
+  const xs = [-3.2, -1.6, 0, 1.6, 3.2], u = 0.4;
+  const thief = pal('小偷', -6.4, '#7d7466');
+  const it = [], wl = [];
+  let B1 = null, B2 = null, f = null;
+  await step(tok);                                   // 2662.0 小偷晚上去行竊
+  tag('Knapsack（背包問題）', 'ptr alt', 0, 8.6);
+  thief.mood('happy');
+  say('Knapsack：有人叫它小偷問題', '小偷晚上要去行竊');
+  await step(tok);                                   // 2671.0 包包有容量限制 W，到商店
+  B1 = bag(-3.2, 0.3, 11, u, 'W');
+  say('他背一個包包，容量限制 W', '到一家商店');
+  await step(tok);                                   // 2681.0 商店有 n 個 item
+  IW.forEach((w, k) => it.push(box(' ', ICOL[k], xs[k], 7.5, 1.2, 0.6, 0.6, 1.2)));
+  say('商店裡有 n 個 item', '');
+  await step(tok);                                   // 2689.0 每個有重量 wᵢ（像 Subset Sum）
+  IW.forEach((w, k) => wl.push(tag(w + ' kg', 'idx', xs[k], 6.9)));
+  say('每個 item 有重量 wᵢ', '這跟 Subset Sum 很像');
+  await step(tok);                                   // 2697.0 另外還有價值 vᵢ
+  it.forEach((m, k) => relabel(m, '$' + IV[k]));
+  say('但多了一件事：value', '每個 item 有價值 vᵢ');
+  await step(tok);                                   // 2705.0 把東西裝進包包
+  say('小偷要把東西裝進包包', '');
+  await step(tok);                                   // 2711.0 不能破；越值錢越好
+  say('前提：包包不能破', '目標：越值錢越好');
+  await step(tok);                                   // 2719.0 目標跟 Subset Sum 不一樣
+  say('目標跟 Subset Sum 有點不一樣', '');
+  await step(tok);                                   // 2744.0 max Σ wᵢ → max Σ vᵢ
+  f = tag('max Σ wᵢ', 'ptr', 3.2, 4.6);
+  await beat(tok, 600);
+  txt(f, 'max Σ vᵢ（重量不是重點）');
+  say('從 maximize Σ wᵢ', '變成 maximize Σ vᵢ');
+  await step(tok);                                   // 2765.0 只有 objective 不同，constraint 一樣
+  note('constraint 一模一樣：Σ wᵢ ≤ W', 3.2, 3.8);
+  say('formulation 只差 objective function', 'constraint 一模一樣');
+  await step(tok);                                   // 2782.0 選出 X，總重不能破
+  say('選出一些 item（集合 X）', '總重量不能讓包包破');
+  await step(tok);                                   // 2791.0 maximize Σ vᵢ
+  hl(f, true);
+  say('目標：偷出來的總價值越高越好', 'maximize Σ vᵢ');
+  await step(tok);                                   // 2811.0 greedy 也不能求最佳解
+  hl(f, false);
+  say('這個問題用 greedy', '一樣不能求得最佳解');
+  await step(tok);                                   // 2815.0 剛才的例子加上 value
+  say('用剛才的例子', '每個 item 加上 value');
+  await step(tok);                                   // 2823.0 重量一樣，W = 11
+  txt(B1.l, 'W = 11');
+  say('重量和剛才一樣', '包包一樣是 capacity 11');
+  await step(tok);                                   // 2829.0 偷最有價值的優先
+  txt(B1.l, 'greedy：最值錢先');
+  say('greedy 想法：最有價值的優先', '先把它偷走');
+  await step(tok);                                   // 2849.0 Largest vᵢ 先偷
+  glow(it[4], GOLD);
+  say('先偷 largest vᵢ', '最有價值的東西');
+  await step(tok);                                   // 2856.0 最有價值是 28
+  glow(it[4], null); fly(it[4], V3(0, 4, 2)); put(B1, 7, ICOL[4], '$28');
+  say('最有價值的是 $28', '先偷它');
+  await step(tok);                                   // 2862.0 它重 7 → 剩 4
+  note('剩 4 kg', -1.4, 3.6);
+  say('它重 7', '只剩 4 個單位的空間');
+  await step(tok);                                   // 2872.0 剩 4：只剩 6 和 1 塞得下
+  fly(it[1], V3(0, 4, 2)); put(B1, 2, ICOL[1], '$6');
+  await beat(tok, 500);
+  fly(it[0], V3(0, 4, 2)); put(B1, 1, ICOL[0], '$1');
+  say('依此類推：剩 4 kg 能偷什麼', '只剩 value 6 和 1 塞得進去');
+  await step(tok);                                   // 2888.0 總價 35；最佳是 18 + 22
+  txt(B1.l, '28 + 6 + 1 = 35'); B1.items.forEach((m) => glow(m, RED));
+  B2 = bag(3.6, 0.3, 11, u, '最佳解');
+  put(B2, 5, ICOL[2], '$18'); await beat(tok, 500); put(B2, 6, ICOL[3], '$22');
+  say('greedy 總價值 35', '真正的最佳解是 18 + 22');
+  await step(tok);                                   // 2897.0 = 40；greedy 不保證最佳
+  txt(B2.l, '18 + 22 = 40'); B2.items.forEach((m) => glow(m, GREEN));
+  thief.mood('wow'); await thief.hop(tok);
+  say('最佳是 40', '不是從最值錢的開始偷：重量也會帶來難度');
+  await step(tok);                                   // 2919.7 本質跟 Subset Sum 類似
+  thief.mood('calm');
+  say('本質上跟 Subset Sum 還是很類似', '只是 objective function 不同');
 }]);
 
 // 48:46 Knapsack 的 recurrence：只把 wᵢ 改成 vᵢ
 FRAG.push(['dpjiang2-knap-recur', 'Knapsack recurrence：把 wᵢ 改成 vᵢ 就好', async (tok) => {
   fresh([0, 4.0, 14], [0, 3.8, 0]);
-  const cd = code([
+  const me = pal('', -6.4, C.orange);
+  let cd = null, hd = null, hi = null;
+  await step(tok);                                   // 2926.0 Subset Sum 的 recurrence
+  hd = tag('Subset Sum', 'ptr', -4.6, 8.4);
+  cd = code([
     'OPT(i,w) = 0                      if i = 0 or w = 0',
     '         = OPT(i-1, w)            if w_i > w',
     '         = max( OPT(i-1, w),',
     '                w_i + OPT(i-1, w - w_i) )',
   ], 0, 7.6, 0.6);
-  tag('Subset Sum', 'ptr', -4.6, 8.4);
-  say('先看 Subset Sum 的版本', '邊界、太大跳過、一般 case');
-  await beat(tok, 2800);
+  say('上面是 Subset Sum 的 recurrence', '');
+  await step(tok);                                   // 2933.0 第一行 boundary
   cd.hl(0);
-  say('邊界兩行不用改', '沒東西偷或沒帶包包 → 0');
-  await beat(tok, 2600);
+  say('第一行是 boundary condition', '');
+  await step(tok);                                   // 2937.0 第二行：item 太大不考慮
   cd.hl(1);
-  say('太重塞不下：也不用改', '承接 OPT(i−1, w)');
-  await beat(tok, 2600);
+  say('第二行：第 i 個太大會讓包包破', '不考慮它');
+  await step(tok);                                   // 2943.0 第三行：正常 case
   cd.hl(2);
-  say('OPT(i, w) 改成最高總價值', '不放 item i：照抄');
-  await beat(tok, 2600);
+  say('第三行：正常的 case', '考慮前 i 個、容量 w');
+  await step(tok);                                   // 2962.2 case 1：不放 → OPT(i−1, w)
+  say('case 1：第 i 個不放', '承接 OPT(i − 1, w)');
+  await step(tok);                                   // 2971.0 case 2：wᵢ + OPT(i−1, w − wᵢ)
   cd.hl(3);
-  const hi = tag('w_i →', 'ptr alt', -4.0, 7.6 - 3 * 0.6);
-  say('只改一個地方？', '放進去的貢獻是價值，不是重量');
-  await beat(tok, 2600);
-  txt(cd.ls[3], cd.ls[3].element.textContent.replace('w_i +', 'v_i +'));
-  txt(hi, 'v_i ✓');
-  say('wᵢ 改成 vᵢ，其他都不動', '容量仍扣 w − wᵢ');
-  await beat(tok, 3000);
+  say('case 2：第 i 個放進來', 'wᵢ ＋ OPT(i − 1, w − wᵢ)');
+  await step(tok);                                   // 2988.0 Knapsack：有 value，maximize 總價值
+  txt(hd, 'Knapsack？');
   cd.hl(-1);
-  const r = box('M[5][11] = 40', C.teal, 0, 3.4, 3.2, 0.7, 0.6, 1.4);
-  say('補充：代回剛剛的例子', 'max(M[4][11] = 40, 28 + M[4][4] = 35) = 40');
-  await beat(tok, 3400);
+  say('這是 Subset Sum，不是 Knapsack', 'Knapsack 有 value：maximize 總價值');
+  await step(tok);                                   // 3003.0 前兩行 boundary 沒差
+  cd.hl(0);
+  say('前兩個 boundary 沒有太大差異', '沒東西偷、沒帶包包 → 0');
+  await step(tok);                                   // 3023.0 太重塞不下：一樣承接
+  cd.hl(1);
+  say('第 i 個太重塞不下', '一樣直接承接前 i − 1 個');
+  await step(tok);                                   // 3029.0 general case 怎麼辦？
+  cd.hl(2);
+  say('問題在一般的 general case', '');
+  await step(tok);                                   // 3054.0 最後一行怎麼改？
+  me.mood('wow');
+  bub('要改哪裡？', -6.0, 2.2, 1.6);
+  say('目標是總價值，不是總重量', '最後一行要怎麼改？');
+  await step(tok);                                   // 3067.0 OPT(i, w)：定義成價值最高
+  note('OPT(i, w)：前 i 個、容量 w、價值最高', 2.6, 4.4);
+  say('一樣定義 OPT(i, w)', '只是現在是「價值最高」的意思');
+  await step(tok);                                   // 3094.0 只要改一個地方
+  say('只需要改一個地方', '');
+  await step(tok);                                   // 3116.5 一樣兩個 case：放或不放
+  say('一樣分兩種 case', '第 i 個放或不放');
+  await step(tok);                                   // 3124.6 不放：前面照抄
+  cd.hl(2);
+  say('不放：前面這個 term 照抄', '意思變成前 i − 1 個的最高總價值');
+  await step(tok);                                   // 3163.0 放進包包：總價值是什麼？
+  cd.hl(3);
+  hi = tag('w_i →', 'ptr alt', -4.4, 7.6 - 3 * 0.6);
+  say('放進包包：總價值會是什麼？', '');
+  await step(tok);                                   // 3172.0 wᵢ 改成 vᵢ
+  txt(cd.ls[3], cd.ls[3].element.textContent.replace('w_i +', 'v_i +'));
+  txt(hi, 'v_i ✓'); txt(hd, 'Knapsack');
+  me.mood('happy'); await me.hop(tok);
+  say('把 wᵢ 改成 vᵢ 就行', '其他都不動（容量仍扣 w − wᵢ）');
+  await step(tok);                                   // 3185.0 這就是 Knapsack 的 recurrence
+  cd.hl(-1);
+  box('M[5][11] = 40', C.teal, 0, 3.0, 3.2, 0.7, 0.6, 1.4);
+  say('這就是 Knapsack 的 recurrence', '補充：代回例子 max(M[4][11] = 40, 28 + M[4][4] = 35) = 40');
 }]);
 
-// 53:17 0/1 knapsack vs fractional knapsack；O(nW) 仍是 pseudo-polynomial
+// 53:26 0/1 knapsack vs fractional knapsack；O(nW) 仍是 pseudo-polynomial
 FRAG.push(['dpjiang2-knap-frac', '0/1 Knapsack vs Fractional Knapsack', async (tok) => {
   fresh([0, 4.0, 14], [0, 3.8, 0]);
+  let a = null, b = null, br = null, half = null;
+  const thief = pal('小偷', -6.4, '#7d7466');
+  await step(tok);                                   // 3206.0 只能放或不放：0/1
   tag('0/1 knapsack', 'ptr', -3.4, 7.8);
+  a = box('$18', ICOL[2], -4.4, 6.0, 1.3, 1.0, 0.8, 1.2); b = box('$22', ICOL[3], -2.4, 6.0, 1.3, 1.0, 0.8, 1.2);
+  say('這個版本叫 0/1 knapsack', 'item 只能放或不放：yes / no，0 和 1');
+  await step(tok);                                   // 3221.0 另一種形式
   tag('fractional knapsack', 'ptr', 3.4, 7.8);
-  const a = box('$18', ICOL[2], -4.4, 6.0, 1.3, 1.0, 0.8, 1.2), b = box('$22', ICOL[3], -2.4, 6.0, 1.3, 1.0, 0.8, 1.2);
-  say('0/1：每個 item 選或不選', '只有 yes / no 兩種');
-  await beat(tok, 2600);
   move(a, -3.4, 2.4, 0); fly(b);
   tag('全拿 ✓ / 不拿 ✓ / 拿一半 ✗', 'idx', -3.4, 1.4);
-  await beat(tok, 2400);
-  const br = box('麵包', C.sand, 3.4, 6.0, 1.6, 1.0, 0.8, 1.2);
-  say('fractional：可以拿一部分', '麵包剝一半、米不用整包');
-  await beat(tok, 2600);
+  say('有 0/1，就有另一種形式', '');
+  await step(tok);                                   // 3229.0 可以偷一部分：麵包撥一半
+  br = box('麵包', C.sand, 3.4, 6.0, 1.6, 1.0, 0.8, 1.2);
+  await beat(tok, 600);
   br.scale.set(0.5, 1, 1); br.position.x = 2.95;
-  const half = box('½', C.sand, 3.85, 6.0, 0.8, 1.0, 0.8, 0);
+  half = box('½', C.sand, 3.85, 6.0, 0.8, 1.0, 0.8, 0);
   move(half, 3.4, 2.4, 0);
+  thief.mood('happy');
+  say('item 可以偷一部分', '麵包剝一半、米不用整包、金塊分開');
+  await step(tok);                                   // 3250.0 partial → fractional
   tag('可以拿比例', 'idx', 3.4, 1.4);
-  await beat(tok, 2400);
-  const s1 = tag('DP：最佳解', 'ptr alt', -3.4, 4.4), s2 = tag('greedy 就能最佳解', 'ptr alt', 3.4, 4.4);
-  say('0/1 → DP；fractional → greedy', '補充：依 vᵢ / wᵢ 由大到小拿');
-  await beat(tok, 3200);
-  say('Knapsack DP：O(nW)', '一樣是 pseudo-polynomial');
-  await beat(tok, 3000);
+  say('每個 item 可以拿部分', '叫 fractional knapsack');
+  await step(tok);                                   // 3269.0 0/1：DP 求最佳解
+  tag('DP：最佳解', 'ptr alt', -3.4, 4.4);
+  say('0/1 knapsack', '用 DP 可以求得最佳解');
+  await step(tok);                                   // 3279.0 fractional：學過的沒幾招 → greedy
+  tag('？學過的沒幾招', 'ptr alt', 3.4, 4.4);
+  say('fractional 要用什麼求最佳解？', '學過的沒幾招，試一下就知道（補充：greedy 依 vᵢ / wᵢ 拿）');
+  await step(tok);                                   // 3298.0 recurrence 只改 value
+  thief.mood('calm');
+  say('Knapsack 的 recurrence', '跟 Subset Sum 只差 value 那一處');
+  await step(tok);                                   // 3309.0 procedure 照抄，wᵢ 改 vᵢ
+  note('procedure 照抄：wᵢ → vᵢ', 0, 0.6);
+  say('procedure 也照抄', '把 wᵢ 改成 vᵢ 就行');
+  await step(tok);                                   // 3323.4 complexity O(nW)
+  const cx = tag('O(nW)', 'ptr', 0, 9.0);
+  say('complexity bound 在 table 大小', 'O(n × W)');
+  await step(tok);                                   // 3334.0 pseudo-polynomial；包包大效果不好
+  txt(cx, 'O(nW)：pseudo-polynomial');
+  say('一樣是 pseudo-polynomial', '包包很大時效果不好');
+  await step(tok);                                   // 3356.0 小變異 → bin packing
+  pkt('小變異 → bin packing', 0, -0.2);
+  say('Subset Sum / Knapsack 再一點變異', '可以延伸出別的難題：bin packing');
 }]);
 
-// 55:47 Bin packing：卡車越少越好，NP-complete
+// 56:09 Bin packing：卡車越少越好，NP-complete
 FRAG.push(['dpjiang2-binpack', 'Bin packing：用最少的卡車裝完', async (tok) => {
   fresh([0, 4.0, 14], [0, 3.8, 0]);
-  say('變形：bin packing', '物流公司要送 n 個包裹');
-  await beat(tok, 2400);
   const sz = [0.9, 1.6, 0.7, 1.2, 1.0, 0.5, 1.4, 0.8];
-  const it = sz.map((h, k) => box('', [C.teal, C.blue, C.purple, C.orange, C.pink, C.sand, C.red, C.gold][k], -5.6 + k * 1.6, 7.2, 1.0, h * 0.6, 0.8, 1.2));
-  say('每個 item 有不同體積', '每輛卡車容量相同');
-  await beat(tok, 2600);
-  const T = [-4, 0, 4].map((x, k) => { const g = ghostBox(C.brown, 2.2, 3.0, 1.4); g.position.set(x, 2.1, 0); tag('卡車 ' + (k + 1), 'ptr', x, 4.1); return { x, used: 0 }; });
+  let it = [], T = [];
+  await step(tok);                                   // 3369.0 n 個 item；像物流公司
+  it = sz.map((h, k) => box('', [C.teal, C.blue, C.purple, C.orange, C.pink, C.sand, C.red, C.gold][k], -5.6 + k * 1.6, 7.2, 1.0, h * 0.6, 0.8, 1.2));
+  say('一樣有 n 個 item', '但不只一個包包：像物流（宅配）公司');
+  await step(tok);                                   // 3383.0 包裹到公司，安排卡車
+  T = [-4, 0, 4].map((x, k) => { const g = ghostBox(C.brown, 2.2, 3.0, 1.4); g.position.set(x, 2.1, 0); tag('卡車 ' + (k + 1), 'ptr', x, 4.1); return { x, used: 0 }; });
+  say('客戶的包裹送到公司', '要安排卡車去運送');
+  await step(tok);                                   // 3393.0 卡車越少越好
+  say('當然希望', '用越少卡車越好');
+  await step(tok);                                   // 3399.0 每個 item 體積不同
+  it.forEach((m) => glow(m, GOLD));
+  say('bin packing：n 個 item', '每個體積不一樣');
+  await step(tok);                                   // 3411.0 每輛卡車容量固定
+  it.forEach((m) => glow(m, null));
+  note('每輛卡車容量相同', 0, 5.0);
+  say('知道每輛卡車', '總共可以裝多少');
+  await step(tok);                                   // 3420.0 把物品 assign 給卡車
   const plan = [0, 0, 1, 0, 1, 2, 1, 2];
-  for (let k = 0; k < sz.length; k++) {
-    const t = T[plan[k]], h = sz[k] * 0.6;
-    move(it[k], t.x, 0.65 + t.used + h / 2, 0); t.used += h;
-    say('把 item assign 給卡車', '不能超過卡車容量');
-    await beat(tok, 600);
-  }
-  say('目標：卡車數越少越好', 'minimize 使用的 bin 數');
-  await beat(tok, 2800);
-  say('跟 subset sum 一樣', 'bin packing 也是 NP-complete');
-  await beat(tok, 3000);
+  for (let k = 0; k < sz.length; k++) { const t = T[plan[k]], h = sz[k] * 0.6; move(it[k], t.x, 0.65 + t.used + h / 2, 0); t.used += h; await beat(tok, 250); }
+  say('把物品適當 assign 給卡車', '不能超過容量');
+  await step(tok);                                   // 3429.0 卡車數越少越好
+  good('目標：minimize 卡車數', 0, 8.6);
+  say('目標：用的卡車數越少越好', '');
+  await step(tok);                                   // 3435.9 NP-complete
+  bad('NP-complete', 0, 6.2);
+  say('難度一樣是 NP-complete', '');
 }]);
 
-// 57:19 Bellman-Ford 由來；shortest path 定義；Dijkstra 遇到負邊會錯
+// 57:31 Bellman-Ford 由來；shortest path 定義；Dijkstra 遇到負邊會錯
 FRAG.push(['dpjiang2-dijkstra-neg', 'Dijkstra 遇到 −6：回報 1，正解 −1', async (tok) => {
   fresh([0, 4.0, 14], [0, 3.8, 0]);
   const P = { s: [-4.6, 3.0], a: [-1.6, 6.6], b: [1.6, 6.6], t: [4.6, 3.0] };
-  const N = {};
-  for (const k in P) N[k] = box(k, k === 's' ? C.teal : k === 't' ? C.orange : C.blue, P[k][0], P[k][1], 0.8, 0.8, 0.5, 1.2);
+  const N = {}, E = {}, d = {};
   const ed = [['s', 't', 1], ['s', 'a', 2], ['a', 'b', 3], ['b', 't', -6]];
-  const E = {};
   const off = { st: [0, -0.4], sa: [-0.4, 0.3], ab: [0, 0.4], bt: [0.45, 0.3] };
-  for (const [u, v, w] of ed) { E[u + v] = link([...P[u], 0], [...P[v], 0], C.brown, 0.5); tag(String(w), 'idx', (P[u][0] + P[v][0]) / 2 + off[u + v][0], (P[u][1] + P[v][1]) / 2 + off[u + v][1]); }
-  say('Shortest path：s 到 t 最短', '路徑長 = Σ c_uv（經過的邊）');
-  await beat(tok, 3000);
-  say('Dijkstra 的限制', '每條 c_uv 必須 ≥ 0');
-  await beat(tok, 2600);
-  glow(N.s, GOLD);
-  const d = { s: tag('0', 'ptr', P.s[0], P.s[1] + 0.8) };
-  say('Dijkstra 從 s 出發', 'd(s) = 0');
-  await beat(tok, 2000);
-  d.t = tag('1', 'ptr', P.t[0], P.t[1] + 0.8); d.a = tag('2', 'ptr', P.a[0], P.a[1] + 0.8);
-  say('鄰居：t 是 1、a 是 2', '取最小的 t');
-  await beat(tok, 2400);
-  glow(N.t, RED); E.st.setColor(new THREE.Color(C.red));
-  say('t 被定案：d(t) = 1', 'greedy：定案後不再回頭');
-  await beat(tok, 3000);
-  ['sa', 'ab', 'bt'].forEach((k) => E[k].setColor(new THREE.Color(C.teal)));
-  E.st.setColor(new THREE.Color(C.brown)); glow(N.t, GREEN);
-  txt(d.t, '−1');
-  say('正解：s → a → b → t', '2 + 3 − 6 = −1 < 1');
-  await beat(tok, 3200);
-  say('有負邊 Dijkstra 會出錯', '前面走得長、後面大轉彎它看不到');
-  await beat(tok, 3000);
+  const hd = tag(' ', 'ptr alt', 0, 8.6);
+  const dj = pal('Dijkstra', -6.4, C.blue);
+  await step(tok);                                   // 3451.0 Bellman：DP 的發明人
+  txt(hd, 'Bellman-Ford');
+  say('第二階段：Bellman-Ford', 'Bellman 就是 DP 的發明人 Richard Bellman');
+  await step(tok);                                   // 3461.6 和 Ford 合作
+  say('跟他合作的是 Ford', '那個年代有幾位很有名的演算法學者');
+  await step(tok);                                   // 3488.0 Ford：下一單元 Ford-Fulkerson
+  note('Ford → 下單元 network flow：Ford-Fulkerson', 3.6, 7.8);
+  say('Ford 在下一單元 network flow 會再出現', 'Ford-Fulkerson');
+  await step(tok);                                   // 3511.1 回顧 Dijkstra
+  say('講 shortest path', '不得不回顧 Dijkstra');
+  await step(tok);                                   // 3516.0 shortest path 問題
+  for (const k in P) N[k] = box(k, k === 's' ? C.teal : k === 't' ? C.orange : C.blue, P[k][0], P[k][1], 0.8, 0.8, 0.5, 1.2);
+  for (const [u, v] of ed) E[u + v] = link([...P[u], 0], [...P[v], 0], C.brown, 0.5);
+  say('shortest path 問題：給一個 directed graph', 'G = (V, E)');
+  await step(tok);                                   // 3528.0 source s、destination t
+  glow(N.s, GOLD); glow(N.t, GOLD);
+  say('給起點 source s', '和終點 destination t');
+  await step(tok);                                   // 3535.9 每條 edge 有 weight c_uv
+  glow(N.s, null); glow(N.t, null);
+  for (const [u, v, w] of ed) tag(String(w), 'idx', (P[u][0] + P[v][0]) / 2 + off[u + v][0], (P[u][1] + P[v][1]) / 2 + off[u + v][1]);
+  say('每條 edge 上有一個 weight', 'edge (u, v) 的 cost 是 c_uv');
+  await step(tok);                                   // 3554.1 找 s 到 t 的最短路徑
+  say('請你找一條', '從 s 到 t 的最短路徑');
+  await step(tok);                                   // 3563.0 path 長度 = Σ c_uv
+  tag('path 長度 = Σ c_uv', 'ptr', 0, 1.2);
+  say('路徑長度', '= 經過的 edge cost 總和 Σ c_uv');
+  await step(tok);                                   // 3582.0 左下：Dijkstra
+  dj.mood('happy');
+  say('左下是 Dijkstra 的演算法', '');
+  await step(tok);                                   // 3590.2 Dijkstra 有限制
+  say('Dijkstra 有限制', '什麼時候可以 run？');
+  await step(tok);                                   // 3598.0 c_uv 一定要 ≥ 0
+  note('限制：c_uv ≥ 0', -5.6, 2.4, 1.6);
+  say('最大的限制：edge weight', 'c_uv 一定要 non-negative（≥ 0）');
+  await step(tok);                                   // 3605.0 < 0 會錯：舉例
+  say('出現小於 0 會怎樣？', '會錯，舉個例子');
+  await step(tok);                                   // 3624.0 小 graph 有 −6
+  glow(N.b, RED); glow(N.t, RED);
+  say('這個小 directed graph', '有一個 edge weight 是 −6');
+  await step(tok);                                   // 3639.0 最短：s-a-b-t = −1
+  glow(N.b, null); glow(N.t, null);
+  ['sa', 'ab', 'bt'].forEach((k) => paint(E[k], C.teal));
+  tag('s→a→b→t = 2 + 3 − 6 = −1', 'ptr alt', 0, 0.4);
+  say('直接算：最短是 s→a→b→t', '加起來 −1：正確答案');
+  await step(tok);                                   // 3658.3 run Dijkstra：從 s 出發 0
+  ['sa', 'ab', 'bt'].forEach((k) => paint(E[k], C.brown));
+  glow(N.s, GOLD); d.s = tag('0', 'pkt', P.s[0], P.s[1] + 0.8);
+  say('run Dijkstra：從 source 出發', '自己到自己距離 0');
+  await step(tok);                                   // 3663.0 往外看：t 是 1
+  d.t = tag('1', 'pkt', P.t[0], P.t[1] + 0.8);
+  say('往外看能 reach 到誰', 't：距離 1');
+  await step(tok);                                   // 3671.0 a 是 2；取小的 → t = 1
+  d.a = tag('2', 'pkt', P.a[0], P.a[1] + 0.8);
+  glow(N.t, GREEN); paint(E.st, C.red);
+  say('a：距離 2；take 比較小的', '說 s 到 t 最短是 1');
+  await step(tok);                                   // 3681.0 run 完 report：1
+  say('依此類推做完', 'report：s 到 t 最短距離 1，直接走這條 edge');
+  await step(tok);                                   // 3691.1 對嗎？不對
+  glow(N.t, RED); dj.mood('sad');
+  bad('Dijkstra：1 ✗（正解 −1）', 3.6, 1.4);
+  say('答案對嗎？不對', '正確答案是上面那一條');
+  await step(tok);                                   // 3709.0 有 negative weight 就不適用
+  say('出現 negative weight 時', 'Dijkstra 不適用，的確會出錯');
+  await step(tok);                                   // 3717.7 有沒有機會修正？
+  dj.mood('calm');
+  say('有沒有機會修正它', '讓它可以使用？');
+  await step(tok);                                   // 3735.0 Dijkstra 的原理是 greedy
+  say('觀察：為什麼會壞掉？', 'Dijkstra 的原理是 greedy algorithm');
+  await step(tok);                                   // 3743.0 判定後就不回頭
+  note('定案 → done，不再 revisit', P.t[0], P.t[1] - 0.9);
+  say('一判定某點的最短距離', '就認為 done，不再回頭');
+  await step(tok);                                   // 3757.0 第一次 s 走到 t 就認為最短
+  say('剛才第一次從 s 走到 t', '就認為找到最短距離');
+  await step(tok);                                   // 3764.0 前面長、後面很短的 path
+  ['sa', 'ab', 'bt'].forEach((k) => paint(E[k], C.teal));
+  say('沒想過有些 path 前面走得很長', '後面卻很短（大轉彎）');
+  await step(tok);                                   // 3781.0 一開始就假設 non-negative
+  say('Dijkstra 一開始就事先假設', 'cost 都是 non-negative，才能這麼大方地 guarantee');
+  await step(tok);                                   // 3796.0 negative weight 怎麼辦：第一個 idea
+  dj.mood('wow');
+  say('那有 negative weight 怎麼辦？', '第一個 idea…');
 }]);
 
-// 63:20 Naive reweighting：每條邊 +6 → Dijkstra 仍選 s→t；邊數不同、加的量不同
+// 63:24 Naive reweighting：每條邊 +6 → Dijkstra 仍選 s→t；邊數不同、加的量不同
 FRAG.push(['dpjiang2-reweight', '每條邊都 +6？邊數不同，加的量不同', async (tok) => {
   fresh([0, 4.0, 14], [0, 3.8, 0]);
   const P = { s: [-4.6, 3.0], a: [-1.6, 6.6], b: [1.6, 6.6], t: [4.6, 3.0] };
-  const N = {};
-  for (const k in P) N[k] = box(k, k === 's' ? C.teal : k === 't' ? C.orange : C.blue, P[k][0], P[k][1], 0.8, 0.8, 0.5, 1.2);
+  const N = {}, E = {}, L = {};
+  for (const k in P) N[k] = box(k, k === 's' ? C.teal : k === 't' ? C.orange : C.blue, P[k][0], P[k][1], 0.8, 0.8, 0.5);
   const ed = [['s', 't', 1, 0, -0.4], ['s', 'a', 2, -0.4, 0.3], ['a', 'b', 3, 0, 0.4], ['b', 't', -6, 0.45, 0.3]];
-  const E = {}, L = {};
   for (const [u, v, w, ox, oy] of ed) { E[u + v] = link([...P[u], 0], [...P[v], 0], C.brown, 0.5); L[u + v] = tag(String(w), 'idx', (P[u][0] + P[v][0]) / 2 + ox, (P[u][1] + P[v][1]) / 2 + oy); }
-  say('想法：把負的修成非負', '最負的是 −6 → 每條邊 +6');
-  await beat(tok, 3000);
-  for (const [u, v, w] of ed) { txt(L[u + v], String(w + 6)); L[u + v].element.className = 'lab-label ptr alt'; }
-  say('全部往上 shift 6', '1→7、2→8、3→9、−6→0');
-  await beat(tok, 3000);
-  E.st.setColor(new THREE.Color(C.red)); glow(N.t, RED);
-  const p1 = tag('s→t：7（1 條邊，+6）', 'ptr', 0, 1.6);
-  const p2 = tag('s→a→b→t：17（3 條邊，+18）', 'ptr', 0, 0.8);
-  say('非負了，跑 Dijkstra', '還是選 s→t：7 < 17，錯！');
-  await beat(tok, 3200);
-  say('為什麼錯？', '每條 path 經過的 edge 數不一樣');
-  await beat(tok, 2800);
-  say('邊多的 path 加得多', '原本 1 vs −1，shift 後 7 vs 17');
-  await beat(tok, 3000);
+  const me = pal('', -6.4, C.orange);
+  let p1 = null, p2 = null;
+  await step(tok);                                   // 3804.0 修正成非負
+  say('既然 edge weight 不能是負的', '那就把它修正成非負');
+  await step(tok);                                   // 3817.7 naive 的想法
+  me.mood('happy');
+  say('也許就能用 Dijkstra', '來試一個 naive 的想法');
+  await step(tok);                                   // 3825.0 最負的是 −6
+  glow(N.b, GOLD); L.bt.element.className = 'lab-label bad';
+  say('最負的 edge 是 −6', '把它往上提升');
+  await step(tok);                                   // 3834.0 全部 +6 → non-negative
+  glow(N.b, null);
+  for (const [u, v, w] of ed) { txt(L[u + v], String(w + 6)); L[u + v].element.className = 'lab-label ptr alt'; await beat(tok, 250); }
+  say('全部往上 shift：每條 +6', '1→7、2→8、3→9、−6→0：都 ≥ 0');
+  await step(tok);                                   // 3849.0 non-negative：apply Dijkstra
+  say('已經是 non-negative', '可以 apply Dijkstra');
+  await step(tok);                                   // 3855.0 還是找到 s→t
+  paint(E.st, C.red); glow(N.t, RED);
+  p1 = tag('s→t：7', 'ptr', 0, 1.6);
+  p2 = tag('s→a→b→t：8 + 9 + 0 = 17', 'ptr', 0, 0.8);
+  say('Dijkstra 還是找到 s→t', '7 < 17');
+  await step(tok);                                   // 3866.0 修正後 report 還是錯
+  me.mood('sad');
+  bad('還是錯', 4.6, 1.6);
+  say('但最短路徑其實是上面那條', '修正之後 report 還是錯的');
+  await step(tok);                                   // 3874.0 為什麼直接 reweighting 會錯？
+  say('為什麼直接往上 shift 會錯？', '講明確一點');
+  await step(tok);                                   // 3893.0 每條 path 經過的 edge 數不同
+  txt(p1, 's→t：1 條 edge → +6');
+  txt(p2, 's→a→b→t：3 條 edge → +18');
+  say('因為每條 path', '經過的 edge 數不一樣');
+  await step(tok);                                   // 3902.0 edge 多的 shift 多，少的加少
+  hl(p2, true);
+  say('edge 多的 path 被 shift 很多', 'edge 少的加得少：原本 1 vs −1 變成 7 vs 17');
+  await step(tok);                                   // 3919.0 應該整條 path 一起 shift 同一個值
+  hl(p2, false);
+  note('希望：每條 path 都加同一個量', 0, 0.0);
+  say('我們希望的是', '每條 path 的總 weight 一起 shift 同一個值');
+  await step(tok);                                   // 3927.0 naive reweighting 失效
+  say('所以單純這樣 reweighting', '是失效的、沒有用的');
+  await step(tok);                                   // 3934.2 文獻上有聰明的 reweighting：Johnson
+  txt(p1, 'Johnson：聰明的 reweighting');
+  say('文獻上有聰明的 reweighting', 'Johnson 發明的');
+  await step(tok);                                   // 3947.0 Johnson 一心想用 Dijkstra
+  say('Johnson 一心一意想用 Dijkstra', '設計很精巧、會正常工作的 reweighting');
+  await step(tok);                                   // 3962.0 本課不講
   txt(p1, 'Johnson：聰明的 reweighting（本課不講）');
-  txt(p2, 'Bellman-Ford：DP，induction 在 edge 數');
-  say('單純 shift 沒用', '改用 DP：Bellman-Ford');
-  await beat(tok, 3200);
+  say('這門課沒有特別講', '有興趣可以參考');
+  await step(tok);                                   // 3975.0 每條 path 調整量不同（variant）
+  say('這樣做沒效：每條 path 的 edge 數不同', '被調整的量會 vary');
+  await step(tok);                                   // 3995.0 不能保證最短 shift 後還最短
+  say('所以不能保證', '原本最短的，shift 之後還是最短');
+  await step(tok);                                   // 4005.0 Bellman-Ford：簡單 shift 做不到
+  txt(p2, 'Bellman-Ford：老老實實發展演算法');
+  say('Bellman-Ford 發現', '直接簡單 shift 是做不到的');
+  await step(tok);                                   // 4015.0 用 DP；induction 在 node 或 edge
+  me.mood('calm');
+  say('用 Dynamic Programming', 'induction 的對象可以是 node，也可以是 edge');
+  await step(tok);                                   // 4029.0 Bellman-Ford：induction 在 edge 上
+  txt(p2, 'Bellman-Ford：DP，induction 在 edge 數上');
+  say('Bellman-Ford 的 induction', '做在 edge 上');
+  await step(tok);                                   // 4041.0 先看一個簡單 property
+  await me.hop(tok);
+  say('發展演算法之前', '先看一個簡單的 property');
 }]);
 
-// 67:27 不考慮 negative cycle；沒有 negative cycle → 最短路徑是 simple path → 最多 n−1 條邊
+// 67:42 不考慮 negative cycle；沒有 negative cycle → 最短路徑是 simple path → 最多 n−1 條邊
 FRAG.push(['dpjiang2-simple-path', '無 negative cycle：最短路徑是 simple，≤ n−1 條邊', async (tok) => {
   fresh([0, 4.0, 14], [0, 3.8, 0]);
-  const s = box('s', C.teal, -5.2, 6.4, 0.7, 0.7, 0.5, 1.0), t = box('t', C.orange, 5.2, 6.4, 0.7, 0.7, 0.5, 1.0);
   const cyc = [[-1.2, 6.4], [0, 7.6], [1.2, 6.4], [0, 5.2]];
-  const cn = cyc.map((p) => box('', C.blue, p[0], p[1], 0.5, 0.5, 0.4, 1.0));
+  let dot = null, vv = null, lp = [], lb = null, info = null, Q = null;
+  const me = pal('', -6.4, C.orange);
+  const P = { s: [-5, 2.6], v: [-1, 2.6], t: [5, 2.6] };
+  await step(tok);                                   // 4062.0 graph 有 negative cycle 時
+  box('s', C.teal, -5.2, 6.4, 0.7, 0.7, 0.5, 1.0); box('t', C.orange, 5.2, 6.4, 0.7, 0.7, 0.5, 1.0);
+  cyc.forEach((p) => box('', C.blue, p[0], p[1], 0.5, 0.5, 0.4, 1.0));
   link([-5.2, 6.4], [-1.2, 6.4]); link([1.2, 6.4], [5.2, 6.4]);
+  say('有一種 case 不特別考慮', 'graph 裡有 negative cycle');
+  await step(tok);                                   // 4073.0 有一個 cycle 是負的
   cyc.forEach((p, k) => link([...p, 0], [...cyc[(k + 1) % 4], 0], C.red, 0.35));
   tag('cycle cost < 0', 'ptr', 0, 8.4);
-  say('若有 negative cycle', '每繞一圈 cost 就往下降');
-  const dot = box('', C.gold, -1.2, 6.4, 0.3, 0.3, 0.3);
-  await anim(tok, 2400, (k) => { const a = Math.PI - k * 4 * Math.PI; dot.position.set(Math.cos(a) * 1.2, 6.4 + Math.sin(a) * 1.2, 0.35); });
-  say('永遠不想出來：沒有最短', '所以只討論沒有 negative cycle 的圖');
-  await beat(tok, 2800);
+  say('假設 graph 裡有一個 cycle', 'cost 是負的（< 0）');
+  await step(tok);                                   // 4092.6 最短路徑是多少？不知道
+  me.mood('wow');
+  say('s 到 t 的最短路徑是多少？', '其實不知道');
+  await step(tok);                                   // 4103.1 走進去就不想出來：每圈都降
+  dot = box('', C.gold, -1.2, 6.4, 0.3, 0.3, 0.3);
+  await anim(tok, 2000, (k) => { const a = Math.PI - k * 4 * Math.PI; dot.position.set(Math.cos(a) * 1.2, 6.4 + Math.sin(a) * 1.2, 0.35); });
+  say('走進 negative cycle 就不想出來', '每走一圈 cost 就往下降：無窮迴圈');
+  await step(tok);                                   // 4114.7 不是我們探討的目標
+  say('這種 case', '不是 shortest path 問題探討的目標');
+  await step(tok);                                   // 4120.0 只討論沒有 negative cycle 的 graph
+  good('只討論：沒有 negative cycle 的 graph', 0, 4.2);
+  me.mood('calm');
+  say('我們只討論', '沒有 negative cycle 的 graph');
+  await step(tok);                                   // 4140.0 假設沒有 negative cycle
   fresh([0, 4.0, 14], [0, 3.8, 0]);
-  const P = { s: [-5, 4.4], v: [-1, 4.4], t: [5, 4.4] };
-  box('s', C.teal, P.s[0], P.s[1], 0.7, 0.7, 0.5); const vv = box('v', C.blue, P.v[0], P.v[1], 0.7, 0.7, 0.5); box('t', C.orange, P.t[0], P.t[1], 0.7, 0.7, 0.5);
-  link([...P.s, 0], [...P.v, 0]); const vt = link([...P.v, 0], [...P.t, 0]);
-  const loop = [[-1, 4.4], [0.4, 6.2], [-1, 7.4], [-2.4, 6.2]];
-  const lp = [];
-  for (let k = 0; k < 4; k++) lp.push(link([...loop[k], 0], [...loop[(k + 1) % 4], 0], C.gold, k === 0 || k === 3 ? 0.35 : 0.05));
-  const lb = tag('cycle ≥ 0', 'ptr alt', -1, 8.0);
-  say('反證：假設最短 P 不 simple', 'P 重複經過 v：中間有個 cycle');
-  await beat(tok, 3200);
-  say('沒有 negative cycle', '→ 這個 cycle 的總和 ≥ 0');
-  await beat(tok, 2600);
-  lp.forEach(kill); txt(lb, '砍掉 cycle → Q');
+  info = tag('前提：沒有 negative cycle', 'ptr alt', 0, 8.6);
+  box('s', C.teal, P.s[0], P.s[1], 0.7, 0.7, 0.5); vv = box('v', C.blue, P.v[0], P.v[1], 0.7, 0.7, 0.5); box('t', C.orange, P.t[0], P.t[1], 0.7, 0.7, 0.5);
+  say('假設 graph 沒有 negative cycle', '');
+  await step(tok);                                   // 4152.7 s 到 t 一定有 simple 的最短路徑
+  txt(info, 'claim：s 到 t 一定有一條 simple 的最短路徑');
+  say('s 到 t 的最短路徑', '一定可以找到一條是 simple path');
+  await step(tok);                                   // 4161.0 什麼是 simple path？
+  say('什麼叫 simple path？', '');
+  await step(tok);                                   // 4170.0 不重複經過同一個點
+  const sp = good('simple：每個點最多經過一次', 0, 7.6);
+  say('simple：這條 path', '不會重複經過一樣的點');
+  await step(tok);                                   // 4186.0 不 simple：中間重複經過某點
+  remove(sp);
+  bad('不 simple：某個點經過兩次', 0, 7.6);
+  say('不 simple', '就是中間會重複經過某些點');
+  await step(tok);                                   // 4216.0 用反證法
+  say('證明很容易', '用反證法');
+  await step(tok);                                   // 4227.0 假設最短路徑 P 不 simple
+  txt(info, '反設：最短路徑 P 不是 simple');
+  say('假設跟它相反', 's 到 t 的最短路徑 P 不是 simple');
+  await step(tok);                                   // 4241.0 一定 revisit 某個點
+  glow(vv, GOLD);
+  say('不 simple', '就一定會 revisit 某個點');
+  await step(tok);                                   // 4257.0 s→v，繞一圈回 v，再到 t
+  link([...P.s, 0], [...P.v, 0]);
+  const loop = [[-1, 2.6], [0.4, 4.4], [-1, 5.6], [-2.4, 4.4]];
+  for (let k = 0; k < 4; k++) { lp.push(link([...loop[k], 0], [...loop[(k + 1) % 4], 0], C.gold, k === 0 || k === 3 ? 0.35 : 0.05)); await beat(tok, 250); }
+  link([...P.v, 0], [...P.t, 0]);
+  say('s 先到 v', 'v 又繞一圈回來，再走到 t');
+  await step(tok);                                   // 4271.4 revisit v → 這裡形成 cycle
+  lb = tag('cycle', 'ptr alt', -1, 6.2);
+  say('revisit v', '這邊就形成一個 cycle');
+  await step(tok);                                   // 4286.0 沒有 negative cycle → 總和 ≥ 0
+  txt(lb, 'cycle ≥ 0');
+  say('沒有 negative cycle', '所以這個 cycle 的 edge weight 總和 ≥ 0');
+  await step(tok);                                   // 4294.0 這一塊是累贅 → 砍掉
+  lp.forEach((a) => paint(a, C.red));
+  say('這一塊是不是累贅？', '可以把它砍掉');
+  await step(tok);                                   // 4300.0 砍掉 → 更短
+  lp.forEach(kill); txt(lb, '砍掉 cycle');
+  say('把重複的 cycle 減掉', '得到一條更短（至少不更長）的路徑');
+  await step(tok);                                   // 4319.0 s→v→t：叫它 Q
   glow(vv, GREEN);
-  say('把 cycle 砍掉得到 Q', 'cost(Q) ≤ cost(P)');
-  await beat(tok, 3000);
-  say('所以一定有 simple 的最短路徑', 'simple：不重複經過同一點');
-  await beat(tok, 2600);
-  txt(lb, 'n 個點 → 最多 n−1 條 edge');
-  say('n 個點全踩過', '也只有 n−1 條 edge');
-  await beat(tok, 3000);
+  Q = tag('Q：s → v → t', 'ptr', 0, 1.4);
+  say('直接 s → v → t', '這條 path 叫 Q');
+  await step(tok);                                   // 4327.0 Q 的 weight 比 P 小
+  txt(Q, 'Q：s → v → t，cost(Q) ≤ cost(P)');
+  say('Q 的總長度', '一定比原來的 P 小（P 多了那個 cycle）');
+  await step(tok);                                   // 4341.0 contradiction
+  bad('contradiction：P 不是最短', 0, 0.6);
+  say('這就 contradiction', '和「P 是 shortest path」矛盾');
+  await step(tok);                                   // 4353.0 最短路徑一定是 simple path
+  txt(info, '沒有 negative cycle ⇒ 最短路徑一定是 simple path');
+  me.mood('happy');
+  say('沒有 negative cycle 時', '兩點之間的最短路徑一定是 simple path');
+  await step(tok);                                   // 4371.0 graph 有 n 個點
+  say('再往後延伸', '假設 graph 有 n 個點');
+  await step(tok);                                   // 4390.8 最多經過 n − 1 條 edge
+  txt(info, 'n 個點 → 最短路徑最多 n − 1 條 edge');
+  say('shortest path 都是 simple path', '最多只會經過 n − 1 條 edge');
+  await step(tok);                                   // 4398.0 worst case：每個點都踩過
+  const xs = [-5, -3, -1, 1, 3, 5];
+  const row = xs.map((x) => box('', C.teal, x, 0.4, 0.5, 0.5, 0.4, 1.0));
+  for (let k = 0; k < 5; k++) link([xs[k], 0.4], [xs[k + 1], 0.4], C.teal, 0.3);
+  say('worst case', '每個點都被踩過一次');
+  void row;
+  await step(tok);                                   // 4411.0 也只有 n − 1 條 edge
+  tag('6 個點 → 5 條 edge', 'ptr', 0, -0.4);
+  await me.hop(tok);
+  say('即使每個點都踩過', '也只有 n − 1 條 edge');
 }]);
 
-// 73:47 Bellman-Ford：induction 在 edge 數；OPT(i, v) = v 到 t 最多 i 條邊
+// 73:56 Bellman-Ford：induction 在 edge 數；OPT(i, v) = v 到 t 最多 i 條邊
 FRAG.push(['dpjiang2-bf-def', 'OPT(i, v)：v 到 t、最多 i 條 edge 的最短距離', async (tok) => {
   fresh([0, 4.0, 14], [0, 3.6, 0]);
   const G = bfGraph(0, 4.2, 1, 1.0);
-  say('Bellman-Ford：對 edge 數歸納', '1 條、2 條……到 n−1 條');
-  await beat(tok, 3000);
-  const T = tag('固定終點 t（課本）', 'ptr', G.P.t[0], G.P.t[1] + 0.9);
-  say('課本固定終點 t', '別本書固定起點 s：對稱，一樣');
-  await beat(tok, 2800);
-  const info = tag('', 'ptr alt', 0, 8.2);
-  const lv = [['t'], ['a', 'c', 'd', 'e'], ['b']];
-  for (let i = 0; i <= 2; i++) {
-    lv[i].forEach((v) => { glow(G.N[v], GOLD); tint(G.N[v], C.teal); });
-    if (i === 1) ['at', 'ct', 'dt', 'et'].forEach((k) => G.E[k].ar.setColor(new THREE.Color(C.teal)));
-    if (i === 2) ['bd', 'be'].forEach((k) => G.E[k].ar.setColor(new THREE.Color(C.teal)));
-    txt(info, '最多 ' + i + ' 條 edge 能到 t');
-    say('最多 i = ' + i + ' 條 edge', i === 0 ? '只有 t 自己' : i === 1 ? '跟 t 直接相連的點' : 'b 要繞一步才到');
-    await beat(tok, 2400);
-  }
+  const info = tag(' ', 'ptr alt', 0, 8.2);
+  let T = null;
+  const me = pal('', -6.4, C.orange);
+  const lit = (vs, es) => { vs.forEach((v) => { glow(G.N[v], GOLD); tint(G.N[v], C.teal); }); es.forEach((k) => paint(G.E[k].ar, C.teal)); };
+  await step(tok);                                   // 4436.0 開始發展 DP
+  say('Bellman-Ford', '開始發展 dynamic programming 的方法');
+  await step(tok);                                   // 4441.0 induction 在 edge 數上
+  txt(info, 'induction 在「經過的 edge 數」上');
+  say('它的 induction', '做在 edge 的數目上');
+  await step(tok);                                   // 4450.0 一條 edge 能到的最短路徑
+  glow(G.N.t, GOLD);
+  lit(['a', 'c', 'd', 'e'], ['at', 'ct', 'dt', 'et']);
+  txt(info, '最多 1 條 edge 能到 t');
+  say('先看 1 條 edge 可以到達的最短路徑', '跟 t 直接相連的點');
+  await step(tok);                                   // 4461.0 兩條、三條…到 n−1 條
+  ['a', 'c', 'd', 'e'].forEach((v) => glow(G.N[v], null));
+  lit(['b'], ['bd', 'be']);
+  txt(info, '最多 2 條、3 條、… 一直到 n − 1 條');
+  say('再看 2 條（b 要繞一步）', '3 條、4 條…一直做到 n − 1 條');
+  await step(tok);                                   // 4468.0 n−1 條就結束
   BFN.forEach((v) => glow(G.N[v], null));
+  say('最多 n − 1 條 edge 的最短路徑算完', '就結束了');
+  await step(tok);                                   // 4473.0 induction 在 edge 總數上
+  say('所以它 induction 在', '經過的 edge 總數上');
+  await step(tok);                                   // 4483.0 了解 DP 要先知道 induction 的對象
+  me.mood('happy');
+  note('看懂 DP：先找 induction 的對象', -4.6, 8.8);
+  say('了解一個 DP 演算法之前', '先知道它背後 induction 的對象是什麼');
+  await step(tok);                                   // 4511.0 想要 s 到 t 的最短路徑
+  say('現在想要的', '是 s 到 t 的最短路徑');
+  await step(tok);                                   // 4518.0 課本固定終點 t
+  T = tag('固定終點 t（課本）', 'ptr', G.P.t[0], G.P.t[1] + 0.9);
+  say('課本的版本', '固定終點 destination t');
+  await step(tok);                                   // 4529.0 其他書固定起點 s：對稱
+  txt(T, '固定終點 t（其他書固定起點 s：對稱）');
+  say('其他書固定起點 s', '是對稱的發展，沒有什麼不一樣');
+  await step(tok);                                   // 4560.0 最佳解定義在 edge 數上
+  say('最佳解', '定義在經過的 edge 總數上');
+  await step(tok);                                   // 4567.0 OPT 跟什麼有關？
+  txt(info, 'OPT( ？ , ？ )');
+  say('定義一個 OPT', '它跟什麼有關？');
+  await step(tok);                                   // 4575.6 t 固定，第二個引數 v
+  txt(info, 'OPT( ？ , v )');
+  glow(G.N.d, GOLD);
+  say('t 已經固定', '第二個引數是起點 v');
+  await step(tok);                                   // 4581.0 v 到 t 最短，最多 i 條 edge
   txt(info, 'OPT(i, v)');
-  say('OPT(i, v)', 'v → t、最多 i 條 edge 的最短距離');
-  await beat(tok, 3000);
-  txt(info, '目標：OPT(n−1, s)');
-  say('最短路徑最多 n−1 條 edge', '算到 OPT(n−1, s) 就結束');
-  await beat(tok, 3000);
+  say('任何 v 到 t 的 path，希望它最短', 'under 最多經過 i 條 edge');
+  await step(tok);                                   // 4590.0 OPT(i, v) 的意思
+  txt(info, 'OPT(i, v)：v 到 t、最多 i 條 edge 的最短距離');
+  say('OPT(i, v)', 'v 到 t 最多經過 i 條 edge 的最短距離');
+  await step(tok);                                   // 4608.0 最終：s 到 t、最多 n−1 條
+  glow(G.N.d, null);
+  txt(info, '目標：OPT(n − 1, s)');
+  say('最終目標', 's 到 t、最多經過 n − 1 條 edge 的最短路徑');
+  await step(tok);                                   // 4625.0 承接前面的證明
+  say('承接前面的證明', '任兩點的最短路徑最多經過 n − 1 條 edge');
+  await step(tok);                                   // 4632.0 第 n−1 個 iteration 就取出答案
+  say('所以到第 n − 1 個 iteration', '直接取出 s 到 t 的最短路徑');
+  await step(tok);                                   // 4646.4 發展演算法：寫 recurrence
+  say('怎麼發展這個演算法？', '一樣要寫出 recurrence relation');
+  await step(tok);                                   // 4654.0 考慮 v 到 t、最多 i 條
+  glow(G.N.b, GOLD);
+  say('考慮 v 到 t 最多經過 i 條 edge', '這個解怎麼兜出來？');
+  await step(tok);                                   // 4674.0 用 edge 數少的解兜：兩個 case
+  me.mood('wow');
+  say('用經過比較少 edge 的解', '去兜出最多 i 條的解：一樣兩個 case');
 }]);
 
-// 77:25 Recurrence：case 1 少用一條 → OPT(i−1, v)；case 2 先走 (v, w) → c_vw + OPT(i−1, w)
+// 78:05 Recurrence：case 1 少用一條 → OPT(i−1, v)；case 2 先走 (v, w) → c_vw + OPT(i−1, w)
 FRAG.push(['dpjiang2-bf-recur', 'OPT(i, v) = min(OPT(i−1, v), min c_vw + OPT(i−1, w))', async (tok) => {
   fresh([0, 4.0, 14], [0, 3.8, 0]);
-  say('對照 Subset Sum', '那邊看最後一個 item 放不放');
-  await beat(tok, 2600);
-  say('這邊看 edge 數', '用滿 i 條，還是最多 i−1 條就好');
-  await beat(tok, 2600);
-  const v = box('v', C.blue, -5, 6.6, 0.8, 0.8, 0.5, 1.0), t = box('t', C.orange, 5, 6.6, 0.8, 0.8, 0.5, 1.0);
-  const c1 = line(-4.5, 6.6, 4.5, 6.6, 0, C.teal);
-  tag('≤ i−1 條 edge', 'ptr', 0, 7.2);
-  say('case 1：最多 i−1 條就夠', 'OPT(i, v) = OPT(i−1, v)');
-  await beat(tok, 3000);
-  const v2 = box('v', C.blue, -5, 3.0, 0.8, 0.8, 0.5, 1.0), t2 = box('t', C.orange, 5, 3.0, 0.8, 0.8, 0.5, 1.0);
-  const ws = [[-1.8, 4.6, 'w₁'], [-1.8, 3.0, 'w₂'], [-1.8, 1.4, 'w₃']];
-  ws.forEach(([x, y, n]) => { box(n, C.purple, x, y, 0.8, 0.6, 0.5, 1.0); link([-5, 3.0], [x, y], C.gold); line(x + 0.45, y, 4.5, 3.0, 0, C.teal); });
-  tag('c_vw', 'idx', -3.6, 4.4); tag('≤ i−1 條', 'idx', 1.6, 4.3);
-  say('case 2：剛好用 i 條', '先走第一條 (v, w)：用掉一條');
-  await beat(tok, 3000);
-  say('後半 w → t 最多 i−1 條', 'c_vw + OPT(i−1, w)');
-  await beat(tok, 3000);
-  say('w 可能有好幾個：取最小', 'min over (v, w) ∈ E');
-  await beat(tok, 2600);
-  const cd = code(['OPT(i,v) = 0          if v = t', '         = ∞          if i = 0, v ≠ t', '         = min( OPT(i-1,v), min_w ( c_vw + OPT(i-1,w) ) )'], 0, 0.3, 0.5);
+  const me = pal('', -6.4, C.orange);
+  let r1 = null, r2 = null, cd = null, ws = [];
+  const f1 = tag(' ', 'ptr', 0, 7.7), f2 = tag(' ', 'ptr', 0, 0.2);
+  await step(tok);                                   // 4690.0 case 1：最多 i 條 → i−1 條也可以
+  box('v', C.blue, -5, 6.6, 0.8, 0.8, 0.5, 1.0); box('t', C.orange, 5, 6.6, 0.8, 0.8, 0.5, 1.0);
+  r1 = line(-4.5, 6.6, 4.5, 6.6, 0, C.teal);
+  txt(f1, '≤ i − 1 條 edge');
+  say('最多 i 條就好', 'i − 1 條也沒有超過 i');
+  await step(tok);                                   // 4702.0 直接用 i−1 條的解
+  say('case 1：直接使用', '最多 i − 1 條 edge 的解');
+  await step(tok);                                   // 4709.0 case 2：剛好用 i 條
+  box('v', C.blue, -5, 3.0, 0.8, 0.8, 0.5, 1.0); box('t', C.orange, 5, 3.0, 0.8, 0.8, 0.5, 1.0);
+  txt(f2, '剛好 i 條 edge');
+  say('case 2：剛剛好', '用到 i 條 edge');
+  await step(tok);                                   // 4718.0 兩個 case；跟 Subset Sum 類似
+  say('就這兩個 case', '分析方式跟其他 DP 很類似');
+  await step(tok);                                   // 4734.0 Subset Sum：最後 item 放不放
+  const cmp = note('Subset Sum：最後一個 item 放不放', 0, 5.0);
+  say('Subset Sum 對 item 數 induction', '看最後那個 item 放不放');
+  await step(tok);                                   // 4741.0 這裡：最後一條 edge 用不用
+  txt(cmp, 'Bellman-Ford：最後那條 edge 用不用');
+  say('這裡對 edge 數 induction', '看要用到 i 條，還是少一點');
+  await step(tok);                                   // 4770.0 case 1：直接承接 i−1
+  remove(cmp);
+  r1.material.color.set(C.gold);
+  say('case 1 沒有爭議', '沒用到第 i 條：直接承接最多 i − 1 條的解');
+  await step(tok);                                   // 4787.0 OPT(i, v) = OPT(i−1, v)
+  txt(f1, 'case 1：OPT(i, v) = OPT(i − 1, v)');
+  say('OPT(i, v) = OPT(i − 1, v)', '一樣是 v 到 t，最多 i − 1 條');
+  await step(tok);                                   // 4796.0 case 2：exactly i 條
+  say('case 2：exactly 用到 i 條', '這個解怎麼兜？');
+  await step(tok);                                   // 4812.0 拆成兩部分
+  say('把它拆成兩部分', '');
+  await step(tok);                                   // 4821.3 總要先走一條出去
+  say('不管怎樣，這 i 條 edge', '總要先經過一條出去');
+  await step(tok);                                   // 4830.0 第一條叫 (v, w)
+  const w1 = box('w', C.purple, -1.8, 3.0, 0.8, 0.6, 0.5, 1.0); ws.push(w1);
+  link([-5, 3.0], [-1.8, 3.0], C.gold);
+  tag('c_vw', 'idx', -3.4, 3.5);
+  say('第一條叫 (v, w)', 'w 是 v 出發可以 reach 的另一個點');
+  await step(tok);                                   // 4840.0 任何一個鄰居都可以是 w
+  ws.push(box('w₂', C.purple, -1.8, 4.6, 0.8, 0.6, 0.5, 1.0), box('w₃', C.purple, -1.8, 1.4, 0.8, 0.6, 0.5, 1.0));
+  link([-5, 3.0], [-1.8, 4.6], C.gold); link([-5, 3.0], [-1.8, 1.4], C.gold);
+  say('任何一個鄰居', '都可以是這個 w');
+  await step(tok);                                   // 4848.0 後半：w 到 t，最多 i−1 條
+  r2 = line(-1.3, 3.0, 4.5, 3.0, 0, C.teal);
+  tag('≤ i − 1 條', 'idx', 1.6, 3.5);
+  say('後半段：w 到 t 的最短路徑', '最多經過 i − 1 條（v→w 已用掉一條）');
+  await step(tok);                                   // 4879.0 case 2 = c_vw + OPT(i−1, w)
+  txt(f2, 'case 2：c_vw + OPT(i − 1, w)');
+  say('兜起來：第一段 c_vw', '再加上 w 到 t 的 OPT(i − 1, w)');
+  await step(tok);                                   // 4901.0 兩 case 取小
+  say('兩個 case 都可能發生', 'shortest path 越小越好：取其小');
+  await step(tok);                                   // 4915.0 寫下 recurrence
+  cd = code(['OPT(i,v) = 0          if v = t', '         = ∞          if i = 0, v ≠ t', '         = min( OPT(i-1,v), min_w ( c_vw + OPT(i-1,w) ) )'], 0, -0.8, 0.5);
+  say('寫下 recurrence relation', '');
+  await step(tok);                                   // 4923.0 boundary：v 就是 t → 0
   cd.hl(0);
-  say('邊界：自己到自己 = 0', '0 條 edge 又不是 t → ∞');
-  await beat(tok, 2800);
+  say('boundary：v 就是 t', '自己到自己，距離 0');
+  await step(tok);                                   // 4943.6 最多 0 條 edge
+  cd.hl(1);
+  say('另一個：最多經過 0 條 edge', '不經過任何 edge');
+  await step(tok);                                   // 4953.0 不是 t → ∞
+  say('除非 v 就是 t，不然走不到', '距離是 ∞');
+  await step(tok);                                   // 4979.0 中間的 i：general case
   cd.hl(2);
-  say('兩個 case 取最小', 'shortest path 要 min');
-  await beat(tok, 3000);
+  say('1 條、2 條…n − 1 條怎麼算？', '用 general case：case 1、case 2 取小');
+  await step(tok);                                   // 5040.0 w 可能好幾個：每個都算、取最小
+  ws.forEach((m) => glow(m, GOLD));
+  say('v 可能 reach 很多個 w', '每個都算一下，取最小');
+  await step(tok);                                   // 5053.5 整體也取最小
+  ws.forEach((m) => glow(m, null));
+  say('overall：case 1、case 2 也取最小', '這就是 Bellman-Ford 的 recurrence');
+  await step(tok);                                   // 5067.0 用兩個小圖就能理解
+  cd.hl(-1);
+  me.mood('happy'); await me.hop(tok);
+  say('用這兩個小圖', '就能了解 Bellman-Ford 的 idea');
+  void r2;
 }]);
 
-// 84:52 實作：M[i][v]，列是點、欄是 edge 數 0 … n−1；1–3 行邊界、4–6 行 general case
+// 84:56 實作：M[i][v]，列是點、欄是 edge 數 0 … n−1；1–3 行邊界、4–6 行 general case
 FRAG.push(['dpjiang2-bf-code', 'Bellman-Ford 實作：M 表 = 點 × edge 數', async (tok) => {
   fresh([0, 4.0, 14.5], [0, 3.8, 0]);
-  const cd = code([
+  let cd = null, G = null, gr = null;
+  const rec = tag(' ', 'ptr', 0, 8.9);
+  await step(tok);                                   // 5096.0 剩下 implementation
+  say('剩下的就是 implementation', '');
+  await step(tok);                                   // 5099.0 recurrence 寫在這
+  txt(rec, 'OPT(i,v) = min(OPT(i−1,v), min_w c_vw + OPT(i−1,w))');
+  say('recurrence relation 寫在這裡', '');
+  await step(tok);                                   // 5107.0 iteration：開一個 table
+  cd = code([
     '1 M[0, t] = 0',
     '2 for each v ≠ t',
     '3     M[0, v] = ∞',
@@ -5895,145 +7839,311 @@ FRAG.push(['dpjiang2-bf-code', 'Bellman-Ford 實作：M 表 = 點 × edge 數', 
     '         min_w ( c_vw + M[i-1, w] ) )',
     '7 return M[n-1, s]',
   ], -3.8, 7.8, 0.56);
-  say('一樣開一張表 M', '小抄：memoization 的 M table');
-  await beat(tok, 2600);
-  const G = bfGrid(1.6, 7.0, 0.95, 0.8);
-  say('一維：所有點 v', '另一維：edge 數 0 … n−1');
-  await beat(tok, 2800);
+  say('demo iteration 的做法', '一樣開一個 table');
+  await step(tok);                                   // 5119.0 叫 M（小抄）
+  G = bfGrid(1.6, 7.0, 0.95, 0.8);
+  say('姑且叫它 M', '就是小抄的那個 M table');
+  await step(tok);                                   // 5133.0 一維：所有點 v
+  note('列 = 點 v', -0.6, 4.2);
+  say('每個點都要看它到 t 的最短路徑', '一個 dimension 是所有點 v');
+  await step(tok);                                   // 5148.0 另一維：edge 數 0 … n−1
+  say('另一個 dimension 是 induction 的對象', '經過的 edge 數：0、1…n − 1');
+  await step(tok);                                   // 5163.0 1–3 行：boundary
   cd.hl(0);
+  say('1、2、3 行', '對應兩個 boundary condition');
+  await step(tok);                                   // 5172.0 t 到 t：0
   bfFill(G, 't', 0, 0);
-  say('第 1 行：t 到 t = 0', '不經過任何 edge');
-  await beat(tok, 2200);
+  say('t 自己到自己、不經過任何 edge', '當然是 0');
+  await step(tok);                                   // 5180.0 其他點：∞
   cd.hl(2);
-  for (const v of BFN.slice(1)) { bfFill(G, v, 0, Infinity); await beat(tok, 260); }
-  say('第 2–3 行：其他點 = ∞', '0 條 edge 走不到 t');
-  await beat(tok, 2200);
+  for (const v of BFN.slice(1)) { bfFill(G, v, 0, Infinity); await beat(tok, 200); }
+  say('第 2、3 行：其他點不經過 edge 到 t', '做不到：距離 ∞');
+  await step(tok);                                   // 5201.0 4–6 行：general case
   cd.hl(5);
-  const cur = ghostBox(C.gold, 0.95, 0.8 * 6, 0.6); cur.position.set(G.X(1), G.Y(2.5), 0);
-  say('第 4–6 行：一欄一欄往右算', '每格看左邊一欄 + 一條 edge');
-  await beat(tok, 3000);
+  gr = ghostBox(C.gold, 0.95, 0.8 * 6, 0.6); gr.position.set(G.X(1), G.Y(2.5), 0);
+  say('4、5、6 行算 general case', '就是照抄 recurrence');
+  await step(tok);                                   // 5217.0 case 1：最多 i−1 條
+  say('兩種 case', '第一種：只用最多 i − 1 條，承接前面的解');
+  await step(tok);                                   // 5237.9 case 2：exactly i 條
+  cd.hl(6);
+  say('第二種：exactly 用到 i 條', '');
+  await step(tok);                                   // 5244.0 先走一步到 w，再接 w 到 t
+  say('v 先往外走一步到 w：c_vw', '再加上 w 到 t、最多 i − 1 條的最短路徑');
+  await step(tok);                                   // 5263.0 w 很多：取最小
+  say('w 可能有很多個', '取最小，再跟直接承接的解比，取最小');
+  await step(tok);                                   // 5290.0 Bellman-Ford 非常重要
   cd.hl(-1);
-  say('適用時機比 Dijkstra 廣', '允許負 edge weight');
-  await beat(tok, 2800);
+  say('Bellman-Ford 在 shortest path', '演算法裡非常重要');
+  await step(tok);                                   // 5300.0 適用時機比 Dijkstra 廣
+  good('適用時機比 Dijkstra 廣：允許負 edge', 2.6, 1.6);
+  say('適用時機比 Dijkstra 廣非常多', '實務上用的機會很大');
+  await step(tok);                                   // 5306.0 課本的例子
+  say('接下來看課本的例子', '');
+  await step(tok);                                   // 5320.0 directed graph，有些 weight 是負的
+  say('一個 directed graph', '有些 edge weight 是負的');
+  await step(tok);                                   // 5327.0 不能用 Dijkstra → 用 Bellman-Ford
+  pkt('不能用 Dijkstra → Bellman-Ford', 2.6, 0.8);
+  say('不能用 Dijkstra', '用 Bellman-Ford 來做');
 }]);
 
-// 88:35 課本例子：6 個點、最多 5 條 edge；逐欄填表
+// 88:54 課本例子：6 個點、最多 5 條 edge；逐欄填表
 FRAG.push(['dpjiang2-bf-table', '課本例子：逐欄填 M[i, v]', async (tok) => {
   fresh([0, 4.0, 15], [0, 3.8, 0]);
   const G = bfGraph(-3.9, 4.0, 0.6);
-  const T = bfGrid(1.3, 7.0, 1.0, 0.85);
   const M = bfTable();
-  say('有負 edge：不能用 Dijkstra', '終點 t；6 個點 → 最多 5 條 edge');
-  await beat(tok, 3000);
-  BFN.forEach((v) => bfFill(T, v, 0, M[v][0]));
-  say('第 0 欄：t = 0，其他 ∞', '6 × 6 的表');
-  await beat(tok, 2600);
-  // column 1 with explanations
-  const cur = ghostBox(C.gold, 1.0, 0.75, 0.6);
-  cur.position.set(T.X(1), T.Y(0), 0);
+  let T = null, cur = null;
+  const rowsL = [];
+  const f = tag(' ', 'ptr alt', 0, -0.4);
+  await step(tok);                                   // 5334.4 destination t；開 table
+  glow(G.N.t, GOLD);
+  T = bfGrid(1.3, 7.0, 1.0, 0.85);
+  say('destination t 在這裡', '第一件事：把 table 開出來');
+  await step(tok);                                   // 5344.0 一個 dimension：每個點
+  glow(G.N.t, null);
+  say('第一個 dimension：每個點', '每個點到 t 都要算');
+  await step(tok);                                   // 5360.0 每個 row = 一個點到 t
+  say('最後每一個 row', '對應一個點到 t 的最短路徑');
+  await step(tok);                                   // 5370.3 另一個：最多 n−1 條 edge
+  say('另一個 dimension：經過的 edge 數', '最多 n − 1 條');
+  await step(tok);                                   // 5379.3 6 個點 → 最多 5 條
+  say('6 個點', '最多只能經過 5 條 edge');
+  await step(tok);                                   // 5385.0 從 0 條開始：n × n
+  say('initial：0 條 edge 的 boundary', 'overall 開 n × n 的 table');
+  await step(tok);                                   // 5398.0 左上角填 0
+  bfFill(T, 't', 0, 0);
+  say('左上角這格填 0', 't 到 t');
+  await step(tok);                                   // 5408.1 第一欄其他填 ∞
+  for (const v of BFN.slice(1)) { bfFill(T, v, 0, Infinity); await beat(tok, 180); }
+  say('第一個 column 其他人填 ∞', '不經過任何 edge 到不了 t');
+  await step(tok);                                   // 5424.0 4–6 行：column by column 填
+  cur = ghostBox(C.gold, 1.0, 0.75, 0.6); cur.position.set(T.X(1), T.Y(0), 0);
+  say('4、5、6 行把剩下的填起來', 'column by column 地填');
+  await step(tok);                                   // 5437.5 t 到 t 最多 1 條
+  say('先看第一格', 't 到 t、最多 1 條 edge');
+  await step(tok);                                   // 5462.0 case 1：0 條直接到自己 = 0
+  txt(f, 'case 1：M[0, t] = 0');
+  say('case 1：不經過 edge', '直接到自己：0');
+  await step(tok);                                   // 5470.8 case 2：t 沒有出邊
+  txt(f, 'case 2：t 沒有往外的 edge');
+  say('case 2：往外散出去再繞回來？', 't 沒有往外的 edge');
+  await step(tok);                                   // 5485.0 沒有 case 2 → 照抄 0
   bfFill(T, 't', 1, 0);
-  say('t 最多 1 條：照抄 0', 't 沒有出邊，沒有 case 2');
-  await beat(tok, 2600);
+  txt(f, 'M[1, t] = 0（照抄）');
+  say('沒有第二個 case', '直接照抄：距離 0');
+  await step(tok);                                   // 5490.0 a 到 t
   cur.position.set(T.X(1), T.Y(1), 0);
-  G.E.at.ar.setColor(new THREE.Color(C.teal)); glow(G.N.a, GOLD);
-  say('a 最多 1 條 edge', 'min(∞, c_at + 0 = −3) = −3');
-  await beat(tok, 2600);
+  glow(G.N.a, GOLD);
+  say('再看 a 到 t', '最多經過 1 條 edge');
+  await step(tok);                                   // 5509.0 case 1：承接 0 條的解 → ∞
+  txt(f, 'case 1：M[0, a] = ∞');
+  say('case 1：承接前面 0 條 edge 的解', '不可能：∞');
+  await step(tok);                                   // 5517.0 case 2：直接經過 1 條 edge
+  txt(f, 'case 2：a 經過 1 條 edge 到 t？');
+  say('case 2：直接經過 1 條 edge', 'a 有沒有辦法 1 條就到 t？');
+  await step(tok);                                   // 5532.0 有直接的 edge：−3
+  paint(G.E.at.ar, C.teal);
+  txt(f, 'case 2：c_at + M[0, t] = −3 + 0 = −3');
+  say('直接看到存在這條 edge', 'weight −3');
+  await step(tok);                                   // 5536.4 −3 < ∞ → take −3
   bfFill(T, 'a', 1, M.a[1]); glow(G.N.a, null);
-  await beat(tok, 800);
-  for (const v of ['b', 'c', 'd', 'e']) { cur.position.set(T.X(1), T.Y(BFN.indexOf(v)), 0); bfFill(T, v, 1, M[v][1]); await beat(tok, 450); }
-  glow(T.cell.b1, RED);
-  say('第 1 欄 = 直接相連的 edge', 'b 跟 t 沒有 edge → 還是 ∞');
-  await beat(tok, 3000);
-  glow(T.cell.b1, null);
-  for (let i = 2; i <= 5; i++) {
-    cur.position.set(T.X(i), T.Y(2.5), 0); cur.scale.set(1, 6, 1);
-    BFN.forEach((v) => bfFill(T, v, i, M[v][i]));
-    say('依此類推：第 ' + i + ' 欄', '最多 ' + i + ' 條 edge');
-    await beat(tok, 1300);
-  }
+  txt(f, 'M[1, a] = min(∞, −3) = −3');
+  say('−3 比 ∞ 小', 'take −3');
+  await step(tok);                                   // 5543.0 依此類推算完第 1 欄
+  for (const v of ['b', 'c', 'd', 'e']) { cur.position.set(T.X(1), T.Y(BFN.indexOf(v)), 0); bfFill(T, v, 1, M[v][1]); await beat(tok, 350); }
+  say('依此類推', '把最多 1 條 edge 的解算出來');
+  await step(tok);                                   // 5551.0 第 1 欄 = 直接相連的 edge
+  ['at', 'ct', 'dt', 'et'].forEach((k) => paint(G.E[k].ar, C.teal));
+  txt(f, '第 1 欄：來自和 t 直接相連的 edge');
+  say('最多 1 條 edge 的解', '來自和 t 直接相連的 edge');
+  await step(tok);                                   // 5559.5 b 沒有直接 edge → ∞
+  glow(T.cell.b1, RED); glow(G.N.b, RED);
+  say('b 和 t 之間沒有 edge', '所以保留 ∞');
+  await step(tok);                                   // 5568.2 其他人：剛好是 edge weight
+  glow(T.cell.b1, null); glow(G.N.b, null);
+  ['a', 'c', 'd', 'e'].forEach((v) => glow(T.cell[v + 1], GREEN));
+  say('其他人都和 t 有 edge 相連', '解剛好就是那條 edge weight');
+  await step(tok);                                   // 5586.0 依此類推：2 條、3 條
+  ['a', 'c', 'd', 'e'].forEach((v) => glow(T.cell[v + 1], null));
+  ['at', 'ct', 'dt', 'et'].forEach((k) => paint(G.E[k].ar, C.brown));
+  for (const i of [2, 3]) { cur.position.set(T.X(i), T.Y(2.5), 0); cur.scale.set(1, 6, 1); bfCol(T, M, i); await beat(tok, 900); }
+  say('依此類推推出', '最多 2 條、3 條 edge 的解');
+  await step(tok);                                   // 5595.3 一直到最多 5 條
+  for (const i of [4, 5]) { cur.position.set(T.X(i), T.Y(2.5), 0); bfCol(T, M, i); await beat(tok, 900); }
   kill(cur);
   BFN.forEach((v) => glow(T.cell[v + 5], GREEN));
-  say('最後一欄：每個點到 t 的最短距離', 't 0、a −6、b −2、c 3、d 0、e 0');
-  await beat(tok, 3400);
+  txt(f, '最後一欄：t 0、a −6、b −2、c 3、d 0、e 0');
+  say('一直到最多 5 條 edge', '最後一欄就是每個點到 t 的最短距離');
+  void rowsL;
 }]);
 
-// 93:18 每欄只參考左邊一欄 → 只要算值的話一兩個 column 就夠；要還原 path 才需要整張表
+// 93:23 每欄只參考左邊一欄 → 只要算值的話一兩個 column 就夠；要還原 path 才需要整張表
 FRAG.push(['dpjiang2-bf-space', '每欄只看左邊一欄：只要值就不用 n × n', async (tok) => {
   fresh([0, 4.0, 15], [0, 3.8, 0]);
   const G = bfGraph(-3.9, 4.0, 0.6);
   const T = bfGrid(1.3, 7.0, 1.0, 0.85);
   const M = bfTable();
-  for (let i = 0; i <= 1; i++) BFN.forEach((v) => bfFill(T, v, i, M[v][i], 0));
-  say('例：算 M[2, d]', 'd 的出邊：d→a（6）、d→t（4）');
-  await beat(tok, 2800);
-  glow(T.cell.d1, GOLD); glow(T.cell.a1, GOLD); glow(T.cell.t1, GOLD);
-  G.E.da.ar.setColor(new THREE.Color(C.teal)); G.E.dt.ar.setColor(new THREE.Color(C.teal));
-  say('只查左邊那欄：D1、A1、T1', 'min(4, 6 + (−3), 4 + 0) = 3');
-  await beat(tok, 3200);
-  bfFill(T, 'd', 2, M.d[2]);
-  BFN.forEach((v) => glow(T.cell[v + 1], null));
-  await beat(tok, 1000);
-  say('每次 iteration 只看左邊一欄', '不會再往前兩欄以上');
-  await beat(tok, 2600);
-  BFN.forEach((v) => { if (v !== 'd') bfFill(T, v, 2, M[v][2], 0); });
-  BFN.forEach((v) => fly(T.cell[v + 0], V3(0, 4, 3)));
-  say('只要最短距離的值', '一個（頂多兩個）column 就夠');
-  await beat(tok, 3000);
-  say('要還原 path 長相', '才需要整張 n × n 的表');
-  await beat(tok, 3000);
+  for (let i = 0; i <= 5; i++) bfCol(T, M, i, 0);
+  const colG = (i, c) => BFN.forEach((v) => glow(T.cell[v + i], c));
+  const fadeCol = (i, on) => BFN.forEach((v) => { const m = T.cell[v + i].material; m.transparent = !on; m.opacity = on ? 1 : 0.25; });
+  const f = tag(' ', 'ptr alt', 0, -0.4);
+  const me = pal('', -6.6, C.orange, 1.8);
+  await step(tok);                                   // 5603.0 case 1：承接左邊 column
+  colG(5, GOLD); colG(4, GREEN);
+  say('兜出答案時：case 1 承接前面的解', '就在左邊那個 column');
+  await step(tok);                                   // 5620.1 case 2：也只參考左邊 column
+  say('case 2 自己重新算一個', '參考的也是左邊那個 column，再配合一條 edge');
+  await step(tok);                                   // 5627.0 每次只看左邊一欄
+  colG(5, null); colG(4, null);
+  colG(3, GOLD); colG(2, GREEN);
+  say('每次 iteration 真正參考的', '都是左邊那一欄：不會往前兩欄以上');
+  await step(tok);                                   // 5652.0 有必要開 n × n 嗎？
+  colG(3, null); colG(2, null);
+  me.mood('wow');
+  say('那 table 有必要開 n × n 嗎？', '如果只要 shortest path 的值');
+  await step(tok);                                   // 5661.0 single column 就夠
+  for (let i = 0; i <= 3; i++) fadeCol(i, false);
+  say('不需要', 'single column 就行，頂多兩個 column');
+  await step(tok);                                   // 5671.2 怕被蓋掉 → 兩欄
+  fadeCol(4, true);
+  note('怕被蓋掉 → 兩欄', T.X(4.5), 8.4);
+  say('怕舊的值被蓋掉的話', '就用兩個 column，適當修正');
+  await step(tok);                                   // 5684.0 每欄只參考左邊：前面多記了
+  say('每個 iteration 只參考左邊一欄', '前面那些都多記了');
+  await step(tok);                                   // 5692.7 只要最後一欄的值 → 不需大 table
+  colG(5, GREEN);
+  say('如果只需要最後這個 column 的數值', '不需要開這麼大的 table');
+  await step(tok);                                   // 5698.0 要 retrieve path → 需要整張表
+  colG(5, null);
+  for (let i = 0; i <= 3; i++) fadeCol(i, true);
+  me.mood('calm');
+  say('但如果要 retrieve 整條 path 的長相', '可能還是需要這麼大的 table');
+  await step(tok);                                   // 5716.0 例子：D2 怎麼算
+  glow(T.cell.d2, GOLD);
+  paint(G.E.da.ar, C.teal); paint(G.E.dt.ar, C.teal);
+  txt(f, 'M[2, d] = ?');
+  say('舉例：D2 這格怎麼算', 'd 的出邊：d→a（6）、d→t（4）');
+  await step(tok);                                   // 5726.5 參考 D1、A1（和 T1）
+  glow(T.cell.d1, GREEN); glow(T.cell.a1, GREEN); glow(T.cell.t1, GREEN);
+  txt(f, 'M[2, d] = min(4, 6 + (−3), 4 + 0) = 3');
+  say('參考的是前一欄的 D1、A1（和 T1）', 'min(4, 6 − 3, 4 + 0) = 3');
+  await step(tok);                                   // 5736.4 不會再往前；怎麼找最短路徑？
+  ['d2', 'd1', 'a1', 't1'].forEach((k) => glow(T.cell[k], null));
+  say('不會再往前參考', '那怎麼找出最短路徑？');
+  await step(tok);                                   // 5749.0 最後一欄記錄每點到 t 的最短距離
+  colG(5, GREEN);
+  say('全部算完後', '每點到 t 的最短距離都記錄在最後一欄');
+  await step(tok);                                   // 5759.0 找出要 retrieve 的點
+  colG(5, null);
+  say('identify 要哪一點到 t 的最短路徑', '再 retrieve 它的 detail 長相');
+  await step(tok);                                   // 5765.0 例：a 到 t
+  glow(G.N.a, GOLD); glow(T.cell.a5, GOLD);
+  say('假設要找 a 到 t 的最短路徑', '');
+  await step(tok);                                   // 5775.0 總長 −6
+  txt(f, 'a 到 t：−6');
+  say('table 告訴我', '這條 path 的總長度是 −6');
 }]);
 
-// 95:44 還原 a 到 t 的最短路徑：−6 ← 抄左邊；a→b（−4）+ M[3, b] = −2；→ a b e c t
+// 96:17 還原 a 到 t 的最短路徑：−6 ← 抄左邊；a→b（−4）+ M[3, b] = −2；→ a b e c t
 FRAG.push(['dpjiang2-bf-trace', '倒推 a 的最短路徑：a→b→e→c→t = −6', async (tok) => {
   fresh([0, 4.0, 15], [0, 3.8, 0]);
   const G = bfGraph(-3.9, 4.0, 0.6);
   const T = bfGrid(1.3, 7.0, 1.0, 0.85);
   const M = bfTable();
-  for (let i = 0; i <= 5; i++) BFN.forEach((v) => bfFill(T, v, i, M[v][i], 0));
+  for (let i = 0; i <= 5; i++) bfCol(T, M, i, 0);
   glow(T.cell.a5, GOLD);
-  say('找 a 到 t 的最短路徑', 'M[5, a] = −6');
-  await beat(tok, 2800);
+  const f = tag(' ', 'ptr alt', 0, -0.4);
+  const walker = pkt('a', G.P.a[0], G.P.a[1] + 0.7);
+  await step(tok);                                   // 5783.0 take min 時可以記來源
+  say('算 take minimum 的時候', '可以順便記下它來自哪個 term');
+  await step(tok);                                   // 5796.0 有記就容易；沒記就倒推
+  say('有記的話 retrieve 很容易', '剛才沒記：我們倒推看看');
+  await step(tok);                                   // 5805.0 −6 照抄左邊：M[4, a]
   glow(T.cell.a4, GOLD);
-  say('−6 從哪來？照抄左邊', 'M[4, a] = −6');
-  await beat(tok, 2600);
+  txt(f, 'M[5, a] = −6 ← 照抄左邊 M[4, a]');
+  say('這個 −6 來自哪？', '直接照抄左邊：最多 4 條 edge 的解');
+  await step(tok);                                   // 5812.0 M[4, a] 的 −6 又來自哪？
+  say('那 M[4, a] 的 −6', '又來自哪裡？');
+  await step(tok);                                   // 5818.0 兩種可能
+  say('a 最多 4 條 edge', '有兩種可能');
+  await step(tok);                                   // 5823.0 照抄左邊是 −4 → 不是
   glow(T.cell.a3, RED);
-  say('M[4, a]：抄左邊是 −4', '不是 −4，有更小的');
-  await beat(tok, 2600);
-  glow(T.cell.a3, null); glow(T.cell.b3, GOLD);
-  G.E.ab.ar.setColor(new THREE.Color(C.teal));
-  say('走 a→b（−4）再接 M[3, b]', '−4 + (−2) = −6：找到邊 ab');
-  await beat(tok, 3000);
-  const steps = [['be', 'e2', 'b→e（−2）+ M[2, e] = 0'], ['ec', 'c1', 'e→c（−3）+ M[1, c] = 3'], ['ct', 't0', 'c→t（3）+ M[0, t] = 0']];
-  for (const [ek, ck, f] of steps) {
-    G.E[ek].ar.setColor(new THREE.Color(C.teal)); glow(T.cell[ck], GOLD);
-    say('繼續倒推', f);
-    await beat(tok, 2200);
+  txt(f, '照抄 M[3, a] = −4？不是，有更小的');
+  say('第一種：照抄前面的 −4', '但 −6 不是 −4：有更小的解');
+  await step(tok);                                   // 5833.0 a 先踩到某個人
+  glow(T.cell.a3, null);
+  say('第二種：a 先經過某個人', '');
+  await step(tok);                                   // 5842.0 再到 t，兜出 −6
+  say('再到達 t', '兜出最小的 −6');
+  await step(tok);                                   // 5857.3 b 到 t 最多 3 條：−2
+  glow(T.cell.b3, GOLD);
+  say('已知 b 到 t 最多 3 條 edge', '是 −2');
+  await step(tok);                                   // 5864.0 a→b（−4）+ (−2) = −6
+  paint(G.E.ab.ar, C.teal);
+  txt(f, 'c_ab + M[3, b] = −4 + (−2) = −6 ✓');
+  say('配合 a→b 的 −4', '−4 + (−2) = −6：兜出更小的解');
+  await step(tok);                                   // 5873.0 retrieve 到 edge ab
+  await travel(tok, walker, V3(G.P.a[0], G.P.a[1] + 0.7, 0), V3(G.P.b[0], G.P.b[1] + 0.7, 0), 700);
+  txt(walker, 'a→b');
+  say('所以 retrieve 出', 'a→b 這條 edge');
+  await step(tok);                                   // 5881.6 繼續倒推下去
+  const hop = [['be', 'e2', 'e'], ['ec', 'c1', 'c'], ['ct', 't0', 't']];
+  let at = 'b';
+  for (const [ek, ck, nx] of hop) {
+    paint(G.E[ek].ar, C.teal); glow(T.cell[ck], GOLD);
+    await travel(tok, walker, V3(G.P[at][0], G.P[at][1] + 0.7, 0), V3(G.P[nx][0], G.P[nx][1] + 0.7, 0), 650);
+    at = nx;
   }
+  say('繼續倒推：b→e、e→c、c→t', 'M[2, e]、M[1, c]、M[0, t]');
+  await step(tok);                                   // 5888.0 整條 path 走出來
   ['a', 'b', 'e', 'c', 't'].forEach((v) => glow(G.N[v], GREEN));
-  say('路徑：a→b→e→c→t', '−4 − 2 − 3 + 3 = −6');
-  await beat(tok, 3000);
-  say('填表時順便記「來自誰」', '倒走回去就能還原 path');
-  await beat(tok, 3000);
+  txt(f, 'a→b→e→c→t：−4 − 2 − 3 + 3 = −6');
+  txt(walker, '到了！');
+  say('整條 path 走出來', 'a→b→e→c→t');
+  await step(tok);                                   // 5897.0 有整張 table 就能還原任何 path
+  say('有了整張 table', '任何一條最短路徑都能 retrieve 回來');
+  await step(tok);                                   // 5915.0 每格多記一個欄位
+  note('每格多記一欄：我來自誰', T.X(2.5), 8.6);
+  say('為了方便 retrieve', '每格會另外記一個 field：這個值來自誰');
+  await step(tok);                                   // 5929.0 來自照抄左邊，或某條 edge
+  say('例如：來自照抄左邊', '或來自某一條 edge');
+  await step(tok);                                   // 5937.0 倒走回去就推出 path
+  say('記錄之後，整條 path', '倒走回去就推出來了');
 }]);
 
-// 99:09 Space O(n²)；naive time O(n³)；細算每欄只看每條 edge 一次 → O(nm)
+// 99:16 Space O(n²)；naive time O(n³)；細算每欄只看每條 edge 一次 → O(nm)
 FRAG.push(['dpjiang2-bf-time', 'Bellman-Ford：space O(n²)、time O(nm)', async (tok) => {
   fresh([0, 4.0, 15], [0, 3.8, 0]);
   const G = bfGraph(-3.9, 4.0, 0.6);
   const T = bfGrid(1.3, 7.0, 1.0, 0.85);
-  say('space：表格 n × n', 'O(n²)');
-  await beat(tok, 2600);
-  say('naive：n² 格 × n−1 個鄰居', 'O(n³)');
-  await beat(tok, 3000);
-  const cur = ghostBox(C.gold, 1.0, 0.85 * 6, 0.6); cur.position.set(T.X(1), T.Y(2.5), 0);
+  const f = tag(' ', 'ptr alt', 0, -0.4);
   const ek = Object.keys(G.E);
-  for (const k of ek) { G.E[k].ar.setColor(new THREE.Color(C.teal)); await beat(tok, 260); }
-  say('其實每格只看自己的出邊', '一欄加起來 = 每條 edge 看一次');
-  await beat(tok, 2800);
-  ek.forEach((k) => G.E[k].ar.setColor(new THREE.Color(C.brown)));
-  for (let i = 1; i <= 5; i++) { cur.position.x = T.X(i); say('第 ' + i + ' 欄：O(m)', 'm = edge 數'); await beat(tok, 600); }
-  say('n 次 iteration × O(m)', 'total O(nm)');
-  await beat(tok, 3000);
+  let cur = null;
+  await step(tok);                                   // 5956.0 space：n × n
+  const sp = ghostBox(C.teal, 6.2, 5.3, 0.4); sp.position.set(T.X(2.5), T.Y(2.5), 0);
+  txt(f, 'space：n × n → O(n²)');
+  say('space：table 開多大？', 'n by n：O(n²)');
+  await step(tok);                                   // 5964.0 naive：n² 格，每格看連線
+  kill(sp);
+  cur = ghostBox(C.gold, 1.0, 0.75, 0.6); cur.position.set(T.X(2), T.Y(2), 0);
+  say('running time 的 naive 分析', 'n² 個格子，每格看後面跟誰有連線');
+  await step(tok);                                   // 5982.0 每人可能和 n−1 人連 → n³
+  txt(f, 'naive：n² 格 × (n − 1) → O(n³)');
+  say('naive：每個人可能跟其他 n − 1 人都有連線', '算起來 O(n³)');
+  await step(tok);                                   // 5996.0 其實只看自己能 reach 的
+  paint(G.E.bd.ar, C.teal); paint(G.E.be.ar, C.teal);
+  say('但實際上沒那麼多', '每個點只往外看它能 reach 到的鄰居');
+  await step(tok);                                   // 6002.0 整欄看下來：每條 edge 一次
+  for (const k of ek) { paint(G.E[k].ar, C.teal); await beat(tok, 150); }
+  cur.scale.set(1, 6, 1); cur.position.y = T.Y(2.5);
+  say('整欄看下來', 'visit 的只是 edge 總數 m');
+  await step(tok);                                   // 6008.0 detail：n × m
+  txt(f, '詳細：每欄 O(m)');
+  say('detail 分析', '你只會走 n × m 這麼多');
+  await step(tok);                                   // 6022.0 每個 iteration 每條 edge 一次 → O(nm)
+  ek.forEach((k) => paint(G.E[k].ar, C.brown));
+  for (let i = 1; i <= 5; i++) { cur.position.x = T.X(i); await beat(tok, 300); }
+  txt(f, 'n 個 iteration × O(m) = O(nm)');
+  say('每個 iteration 每條 edge 頂多 visit 一次', 'total complexity：O(nm)');
 }]);
   }
 

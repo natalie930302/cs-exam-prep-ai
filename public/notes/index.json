@@ -201,7 +201,7 @@
   "label": "交大江蕙如 Lec17 Dynamic Programming (1/3)",
   "points": 126,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "3PfL2WIS22o": {
   "label": "清大周志遠 第1A講",
@@ -663,7 +663,7 @@
   "label": "交大江蕙如 Lec18 Dynamic Programming (2/3)",
   "points": 149,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "e2cF8a5aAhE": {
   "label": "Abdul Bari：8. NP-Hard and NP-Complete Problems",
@@ -1179,7 +1179,7 @@
   "label": "交大江蕙如 Lec19 Dynamic Programming (3/3)",
   "points": 80,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "SBQLkYIDAZI": {
   "label": "台大林軒田 DSA Heap / Hash Table",
