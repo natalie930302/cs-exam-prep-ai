@@ -85,9 +85,9 @@
  },
  "0UGaXukC4b0": {
   "label": "交大江蕙如 Lec11 Greedy Algorithms (2/5)",
-  "points": 128,
+  "points": 129,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "0vYydtG1Xi4": {
   "label": "清大周志遠 第23C講 Directory Structure & File System",
@@ -831,7 +831,7 @@
   "label": "交大江蕙如 Lec10 Greedy Algorithms (1/5)",
   "points": 110,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "IawM82BQ4II": {
   "label": "Abdul Bari：2.1.2 Recurrence Relation #2",

@@ -5,7 +5,27 @@
  "sections": [
   {
    "title": "複習與今天的證明法",
-   "scene": "grjiang1-two-proofs",
+   "scene": "grjiang1-review11",
+   "cues": [
+    15.7,
+    44.8,
+    66.8,
+    82.3,
+    97.8,
+    113.8,
+    135.8,
+    146.8
+   ],
+   "explain": [
+    "複習 greedy：它是 step by step 一步一步把最後的解兜出來。",
+    "每個 step 都會做一個 decision，選當下看到最好的。",
+    "所以 greedy 的 procedure 通常很單純，就是一個 loop：每個 iteration（迴圈的每一輪）挑一個最好的。",
+    "重點是「什麼叫當下最好」。要搭配適當的 greedy rule，才可能到達最佳解。",
+    "而且要透過證明，確認提出的方法真的能到達 optimal solution。",
+    "上次證明 interval scheduling 時用的是第一招：greedy always stays ahead，一路都是第一名，最後拿冠軍。",
+    "今天要介紹另外兩個也跟 interval graph 有關的問題。",
+    "今天改用第二招 exchange argument：把別人的最佳解挖掉一塊、換成 greedy 的。這是比較 general 的證法，大部分 greedy 都能這樣證。"
+   ],
    "points": [
     {
      "text": "複習：greedy step by step，每步做 decision、選當下最好的，慢慢兜出 final solution。",
@@ -31,7 +51,33 @@
   },
   {
    "title": "Interval partitioning problem",
-   "scene": "grjiang1-partition-intro",
+   "scene": "grjiang1-partition-intro2",
+   "cues": [
+    164.8,
+    176.8,
+    193.8,
+    200.8,
+    212.8,
+    240.8,
+    265.8,
+    281.8,
+    302.8,
+    327.8,
+    343.8
+   ],
+   "explain": [
+    "今天第一個問題：interval partitioning。",
+    "它還有另一個名字叫 interval coloring，也就是「著色問題」：在 interval graph 上塗顏色。",
+    "跟前一題一樣，每個 request 都有開始和結束時間，在時間軸上佔一段 interval。",
+    "之前的問題只有 single resource，也就是只有一台機器。",
+    "現在有 multiple resource：好幾台電腦可以一起做。",
+    "目標：用最少台電腦，完成所有 request。",
+    "跟前一題不同：之前只能做一部分、要做越多越好；現在每個 request 都一定要完成，只是機器要用得越少越好。",
+    "為什麼叫 coloring？把一個 resource 想成一種顏色，放到某台機器上的 request 就塗那台的顏色。",
+    "重疊的 request 不能放在同一台機器上，要分散到不同機器。例如 I1、I2、I3 在時間 0 同時開始。",
+    "這個例子規劃一下，三台機器就能全部做完，request 均勻分散在三個 resource 上。",
+    "而且不可能比三台更少。解可能不只一種，但最少都是三台。"
+   ],
    "points": [
     {
      "text": "Interval partitioning，又叫 interval coloring（著色問題）。",
@@ -62,6 +108,38 @@
   {
    "title": "Depth：resource 的 lower bound",
    "scene": "grjiang1-depth",
+   "cues": [
+    362.1,
+    408.8,
+    423.8,
+    436.8,
+    453.8,
+    464.8,
+    490.8,
+    501.8,
+    512.8,
+    541.8,
+    649.8,
+    671.8,
+    698.8,
+    735.8
+   ],
+   "explain": [
+    "要求「最少需要幾台」之前，先問一個比較簡單的問題：至少需要幾台？這叫 resource 數目的 lower bound（[[下界]]）。",
+    "為了找 lower bound，介紹一個概念叫 depth（深度）。",
+    "在任一個時間點，數一數有幾個 request 同時在跑（重疊）。例如時間 0.5，I1、I2、I3 三個同時在跑。",
+    "depth 就是整條時間軸看下來，重疊最多的那個數字。",
+    "要找 depth，就把時間軸從頭掃到尾，每個時間點都數一數。",
+    "這個例子最多同時有 3 個重疊，所以 depth = 3。",
+    "depth 就是需要 resource 數量的 lower bound：機器數量至少要 depth 這麼多。",
+    "為什麼？看時間 1：I1、I2、I3 同時要跑。",
+    "這三個不能在同一台機器上，一定要分散到三台。所以光這一刻就至少需要 3 台。",
+    "Property：給任何一組 interval，不管用什麼方法排，都至少需要 depth 個 resource。",
+    "證明：depth = d，表示某個時間點有 d 個 interval（I1 … Id）同時重疊。",
+    "這 d 個在那一刻都需要各自的一台機器。",
+    "所以至少要 d 台。但 d 只是 lower bound，d 台到底夠不夠，等一下再看。",
+    "留一個回家想的問題：能不能在 O(n log n) 內算出 d？因為 request 一開始是亂的，排序大概免不了。"
+   ],
    "points": [
     {
      "text": "先找 resource 數目的 lower bound：至少需要多少。",
@@ -100,6 +178,24 @@
   {
    "title": "策略：直接達到 lower bound",
    "scene": "grjiang1-reach-bound",
+   "cues": [
+    837.8,
+    855.8,
+    863.8,
+    869.8,
+    896.8,
+    908.8,
+    918.8
+   ],
+   "explain": [
+    "前面已經知道：depth d 是需要 resource 數量的 lower bound（橫線）。",
+    "可是我們不知道這個 lower bound 有多 tight（貼近真正答案）。也許每種解法都需要比 d 多很多台。",
+    "問題是：有沒有可能只用 d 個 resource，就把所有 request 做完？",
+    "答案是 yes：可以找到一個方法，剛好只用 d 個。",
+    "lower bound 的意思是：不管誰來做、用什麼方法，至少都需要這麼多。所有的解都 ≥ d。",
+    "我的方法直接 reach（達到）這個 lower bound，只用 d 個就做到了。",
+    "別人的方法只會比我多或跟我一樣，所以我的一定是最佳解。這樣證明就變得簡單。"
+   ],
    "points": [
     {
      "text": "有了 lower bound，但不知道它有多 tight。",
@@ -122,6 +218,32 @@
   {
    "title": "演算法：依 starting time 指派 label",
    "scene": "grjiang1-partition-code",
+   "cues": [
+    963.8,
+    980.8,
+    994.8,
+    1008.8,
+    1022.8,
+    1048.1,
+    1069,
+    1080.8,
+    1099.8,
+    1107.8,
+    1132.6
+   ],
+   "explain": [
+    "假設已經算出 depth d。先把 d 個 resource 編號 1、2、…、d，這些編號叫 label（標籤）。",
+    "演算法要做的事：幫每個 interval 指派一個 label，也就是決定它放在哪台機器。",
+    "一定要保持：重疊的 interval，要放在不同 label 上，不然就錯了。",
+    "演算法一共六行，寫在左邊。",
+    "第 1 行：先依開始時間排序（preprocessing），I1 是最早開始的，In 是最晚開始的。",
+    "第 2～6 行是一個 for 迴圈，把 interval 依序檢查一遍（linear scan）。",
+    "第一輪：把最早開始的 I1 拿出來看。",
+    "第 3 行：先把跟它衝突（不 compatible）的 label 排除掉。現在每個 label 都還空著，沒有要排除的。",
+    "第 4、5 行：如果還有沒被排除的 label，就把 I1 指派給它。I1 放進 label 1。",
+    "第 6 行：如果所有 label 都跟它衝突，只好先跳過它（skip）。這是防呆用的，等一下會證明這種情況不會發生。",
+    "接著依開始時間，一個一個拿出來：每次都找一個沒有衝突的 label 指派給它。"
+   ],
    "points": [
     {
      "text": "假設已知 depth d，演算法剛好用 d 個 resource。",
@@ -160,6 +282,42 @@
   {
    "title": "實作：每個 label 記 finish 水位",
    "scene": "grjiang1-partition-run",
+   "cues": [
+    1194.8,
+    1281.3,
+    1294.6,
+    1335.8,
+    1355.8,
+    1371.8,
+    1394.8,
+    1453.8,
+    1474.8,
+    1520.8,
+    1535.8,
+    1559.8,
+    1571.8,
+    1620.8,
+    1671.8,
+    1741.8
+   ],
+   "explain": [
+    "概念上很清楚，但實作的難處在第 3、4 行：怎麼快速檢查一個 interval 跟某個 label 會不會衝突？",
+    "每個 label 對應一台機器（resource）。",
+    "辦法：每個 label 記一個「水位」，就是目前放進去的 request 裡，最後的結束時間。水位之前的時間都已經被佔用了。",
+    "來了一個新的 interval j，就拿它的開始時間 s(j) 跟某個 label 的水位比。",
+    "如果開始時間比水位早，表示那個 label 的機器那時還在忙，一定重疊，這個 label 不能用。",
+    "如果開始時間 ≥ 水位，就不會重疊（compatible），可以把這個 label 給它。（影片 22:52 附近老師口誤把方向說反了，這裡才是正確的。）",
+    "看例子：已經依開始時間排好，編號 I1 到 I10，depth = 3，所以準備 3 個 label。",
+    "一開始每個 label 都是空的，水位都是 0。I1 放進 label 1，L1 的水位更新成 2。",
+    "I2 從時間 0 開始，但 L1 的水位已經到 2，0 < 2，會重疊，L1 不能用。",
+    "換看 L2：水位 0，可以用。I2 放進 L2，L2 的水位變成 5。",
+    "I3 也從 0 開始：L1 水位 2、L2 水位 5，都不行；L3 水位 0 可以。現在水位是 2 / 5 / 2。",
+    "I4 從 2 開始：L1 水位 2，2 ≥ 2，不重疊，放進 L1。",
+    "I5 到 I10 依此類推，每個都找到一個水位夠低的 label 放進去。",
+    "因為每個 label 都記著水位，檢查衝突只要比一下大小，每一輪都很快。",
+    "這個例子也看到：第 6 行（找不到 label 只好跳過）從來沒發生，每個 interval 都塞得進去。",
+    "做完了：每個 label 裡的 interval 彼此不重疊，而且只用了 3 個 label，正好等於 lower bound。"
+   ],
    "points": [
     {
      "text": "實作的問題在第 3、4 行：怎麼檢查跟某 label conflict。",
@@ -203,6 +361,42 @@
   {
    "title": "怎麼算 depth：端點排序後掃一次",
    "scene": "grjiang1-depth-sweep",
+   "cues": [
+    1756.8,
+    1804.1,
+    1827.8,
+    1849.8,
+    1938.8,
+    1961.8,
+    1986.8,
+    2008.8,
+    2050.8,
+    2065.8,
+    2076.8,
+    2101.8,
+    2124.8,
+    2160.8,
+    2222.8,
+    2251.8
+   ],
+   "explain": [
+    "回到上次留的問題：怎麼有效率地算出 depth d？",
+    "有同學觀察到：重疊的程度只有在某個 interval 開始或結束的那一刻才會改變。兩個端點之間不管切多細，數字都一樣。",
+    "所以把每個 interval 的開始和結束時間一起排序。n 個 interval 共有 2n 個數字。下面的數字是每個端點的時間。",
+    "開始（綠色 s）那一刻開始佔用 resource；結束（粉色 f）那一刻就不佔了，因為區間右邊是開區間。",
+    "排 2n 個數字仍然是 O(n log n)，等級不變。",
+    "接著從左到右掃一遍（linear scan），維護兩個變數：d 是目前同時重疊的數量，dmax 是到目前為止看過的最大值，也就是答案。",
+    "一開始 d 和 dmax 都是 0。",
+    "遇到 s1（I1 開始），d 加 1，變成 1。",
+    "每次 d 改變後都跟 dmax 比，1 比 0 大，dmax 也更新成 1。",
+    "s2、s3 也都是開始，d 一直加，變成 3，dmax 也跟著變成 3。",
+    "遇到結束 f1、f3：那個 interval 不再用 resource，d 減 1，變回 1。",
+    "依此類推掃完整串，dmax = 3，就是 depth。",
+    "要小心一種情況：同一個時間點，同時有 interval 結束、也有 interval 開始。這個例子在時間 2 就有。",
+    "同時刻要先排 finish、再排 start。不然先加再減，d 會短暫多算（這裡會多算成 5）。同樣是 start 或同樣是 finish 的，誰先誰後沒關係。",
+    "產生排序好的序列要 O(n log n)，掃描算 dmax 只要 O(n)。",
+    "不需要檢查每個時間點，所以跟 interval 有多長完全無關——就算一個 interval 佔一百萬個時間單位也一樣快。"
+   ],
    "points": [
     {
      "text": "回到怎麼算 depth d。",
@@ -245,6 +439,36 @@
   {
    "title": "證明一：每個 interval 都拿得到 label",
    "scene": "grjiang1-partition-proof",
+   "cues": [
+    2291.8,
+    2340.8,
+    2355.8,
+    2393.8,
+    2431.8,
+    2458.2,
+    2472.8,
+    2488.8,
+    2510.8,
+    2551.6,
+    2557.8,
+    2581.8,
+    2617.2
+   ],
+   "explain": [
+    "證明 optimal 的策略：先分析出 resource 數量的 lower bound（depth d），再證明演算法是正確的，而且剛好用到這個 lower bound。",
+    "要證演算法輸出的是合法解，分成兩件事。",
+    "第一件：每個 interval 都會拿到一個 label。第二件：重疊的兩個 interval 不會拿到同一個 label。",
+    "先證第一件：也就是第 6 行（全部衝突只好跳過）不會發生。",
+    "假設現在處理 Ij，它跟前面已經處理過的 t 個 interval 重疊。例子：I8，跟前面的 I6、I7 重疊，t = 2。",
+    "抓 Ij 的開始時間這一點（金線，s = 7）。",
+    "跟 Ij 重疊的那 t 個 interval 都比它早開始、又還沒結束，所以這一點上，它們加上 Ij 共 t + 1 個同時在跑。",
+    "depth 是整條時間軸上的最大重疊數。",
+    "這一點有 t + 1 個重疊，不會超過最大值，所以 t + 1 ≤ d。",
+    "第 3 行會排除跟 Ij 衝突的 label：前面這 t 個 interval 各自已經有 label，那些 label 不能用。",
+    "由 t + 1 ≤ d 得到 t ≤ d − 1：最多只有 d − 1 個 label 被排除。",
+    "總共有 d 個 label，最多排除 d − 1 個，至少剩一個，所以第 4 行一定能指派一個給 Ij。",
+    "每個 interval 都拿得到 label，第 6 行永遠不會發生，程式不寫它也沒關係。"
+   ],
    "points": [
     {
      "text": "Optimality 的策略：先求 lower bound，再證演算法正確且達到它。",
@@ -282,7 +506,29 @@
   },
   {
    "title": "證明二：overlap 的不同 label → optimal",
-   "scene": "grjiang1-partition-proof",
+   "scene": "grjiang1-partition-proof2",
+   "cues": [
+    2637,
+    2667.3,
+    2680.8,
+    2712.8,
+    2733.8,
+    2748.8,
+    2771.8,
+    2790.8,
+    2834.8
+   ],
+   "explain": [
+    "第二件事：兩個重疊的 interval，不會被指派到同一個 label，也就是不會撞在同一台機器上。",
+    "拿兩個重疊的 interval，叫 Ii 和 Ij。",
+    "一定有一個比較早被處理，一個比較晚。假設 Ii 在前、Ij 在後（依開始時間排序）。",
+    "處理到 Ij 那一輪時，Ii 早就處理完了；由第一部分，Ii 一定已經拿到一個 label。",
+    "第 3 行會把跟 Ij 衝突的 label 都排除，Ii 用的那個 label 一定被排除。",
+    "所以 Ij 絕對不會跟 Ii 拿到同一個 label。",
+    "兩部分合起來：每個 interval 都有 label、重疊的不同 label，所以輸出是合法解。",
+    "而演算法一開始只準備了 d 個 label，d 又是 lower bound（最低需求）。",
+    "它永遠只用最少可能的 label 數就完成指派，所以是 optimal。"
+   ],
    "points": [
     {
      "text": "接著證兩個 overlapping interval 不會被指派到同一個 label。",
@@ -309,6 +555,32 @@
   {
    "title": "Minimize lateness 問題",
    "scene": "grjiang1-lateness-def",
+   "cues": [
+    2876.8,
+    2905.8,
+    2923.8,
+    2942.8,
+    2964.8,
+    2986.8,
+    3017.8,
+    3036.8,
+    3057.8,
+    3074.8,
+    3090.8
+   ],
+   "explain": [
+    "第三個問題：scheduling to minimize lateness（排程，讓遲交最小）。這題要用 exchange argument 證明。",
+    "這次的 request 沒有固定的開始和結束時間，什麼時候做，要由我們自己決定。",
+    "每個 request 都有一個 deadline（截止時間），就像各科作業有不同的交期：有的明天要、有的下禮拜才要。",
+    "每個 request 需要花的時間 t 也不一樣，有的兩題一下就寫完，有的要做兩天。",
+    "所有 request 都要做完，而且一次只能做一件。下面是一種排法，紅線是各自的 deadline。",
+    "目標：把遲交的程度降到最低。最好當然是全部準時交。",
+    "這題的 lateness 定義比較特別：有好幾個遲交時，只取最大的遲交量，不加總。",
+    "例如 J4 在時間 10 才做完，deadline 是 9，晚了 1：lateness = f − d = 10 − 9 = 1。",
+    "J1 在時間 3 就做完，deadline 是 6，沒有遲交，lateness 算 0（不會變成負的）。",
+    "寫成公式：ℓ_i = max(0, f_i − d_i)；整個排程的 L = 所有 ℓ_i 的最大值，我們要讓 L 最小。",
+    "所以六個都遲交一天，和只有一個遲交一天，在這題算一樣差。這不太真實，但我們先研究這個版本。"
+   ],
    "points": [
     {
      "text": "第三題：scheduling to minimize lateness，用 exchange argument 證明。",
@@ -352,6 +624,52 @@
   {
    "title": "三個 rule 與反例",
    "scene": "grjiang1-lateness-rules",
+   "cues": [
+    3147.8,
+    3157.5,
+    3169.8,
+    3182.8,
+    3233.8,
+    3251.1,
+    3274.8,
+    3287.8,
+    3303.8,
+    3317.8,
+    3325.8,
+    3349.8,
+    3368.5,
+    3377.8,
+    3395.2,
+    3420.8,
+    3441.8,
+    3452.8,
+    3459.8,
+    3481.8,
+    3500
+   ],
+   "explain": [
+    "一樣先想 greedy rule。第一個：shortest interval first（花時間最短的先做）；第二個：smallest slack first。",
+    "第三個：earliest deadline first（deadline 最早的先做）。就像大家說的「事有輕重緩急」。",
+    "① shortest first 的想法：哪件事最容易做，就先挑來做。",
+    "② slack（餘裕）= deadline d − 需要的時間 t。slack 越小，表示現在馬上做、做完就要交了，感覺最緊急。",
+    "③ 直接看 deadline：誰最急就先做誰，例如有人說下午就要，就趕快先做。",
+    "接下來跟之前一樣，想辦法舉反例來反駁自己，看哪個 rule 會壞掉。",
+    "反例 ①：只有兩個 request，#1 要花 1 天，#2 要花 10 天。",
+    "#1 的 deadline 很久，是 100；#2 的 deadline 是 10（紅線），而它真的要做 10 天。",
+    "照 shortest first，先做簡單的 #1，時間 1 做完。",
+    "再做 #2，最快也只能從時間 1 做到時間 11。",
+    "可是 #2 第 10 天就要交，結果遲交了。",
+    "其實應該先做 #2：10 天做完剛好準時交，再做 #1 還很充裕，兩個都不遲交。所以 shortest first 不好。",
+    "反例 ②：看 smallest slack。",
+    "#1 要花 1 天、第 2 天要交；#2 要花 10 天、第 10 天要交。",
+    "slack：#1 是 2 − 1 = 1，#2 是 10 − 10 = 0，#2 看起來比較緊急。",
+    "照 smallest slack，先做 #2，時間 10 做完，準時交。",
+    "10 之後才做 #1，時間 11 才做完。",
+    "#1 第 2 天就要交，lateness = 11 − 2 = 9。",
+    "倒過來做：先做 #1，時間 1 做完不遲交；#2 從 1 做到 11。",
+    "#2 的 lateness = 11 − 10 = 1。因為只看最大值，這樣排 L = 1，比 9 好很多。",
+    "所以 smallest slack 這個 rule 也不好。"
+   ],
    "points": [
     {
      "text": "想幾個 greedy rule：shortest interval first、smallest slack first、earliest deadline first。",
@@ -390,10 +708,26 @@
   {
    "title": "Earliest deadline first",
    "scene": "grjiang1-edf-run",
+   "cues": [
+    3507.8,
+    3545.9,
+    3572.8,
+    3579.8,
+    3599.8,
+    3605.8
+   ],
+   "explain": [
+    "剩下第三個：earliest deadline first（EDF），deadline 越早越先做。這也很符合一般人的習慣：真的很急，就只好先做它。",
+    "有同學問：如果把遲交量加起來呢？那就變成另一個題目了。這題只看最大遲交量。",
+    "EDF 很簡單：先把 request 依 deadline 從小排到大：6、8、9、9、14、15。",
+    "然後照這個順序一件一件排下去。",
+    "第一件做完馬上做第二件、再做第三件……只有 J4 在 10 做完、deadline 9，遲交 1，所以 L = 1。",
+    "這個排程中間沒有任何空檔，壓得很緊，也就是沒有 idle time（閒置時間）。"
+   ],
    "points": [
     {
      "text": "剩下 earliest deadline first：越急的越先做。",
-     "t": 3509
+     "t": 3508
     },
     {
      "text": "（學生問）若改成遲交加總就是另一個題目。",
@@ -412,7 +746,31 @@
   {
    "title": "觀察：沒有 idle time",
    "scene": "grjiang1-no-idle",
+   "cues": [
+    3624.8,
+    3653.8,
+    3690.8,
+    3711.1,
+    3717.8,
+    3730.9,
+    3746.8,
+    3767.8
+   ],
+   "explain": [
+    "要證明 EDF 是最好的，先探討它的幾個好 property（性質）。",
+    "觀察 1：EDF 一件做完就緊接著做下一件，後一個的開始時間就是前一個的結束時間，所以中間沒有 idle time。",
+    "Property：一定存在一個沒有 idle time 的 optimal schedule。畫個圖就知道。",
+    "假設這是一個最佳解：三個 request 的 deadline 分別是 4、6、12。",
+    "它們都沒有遲交，中間甚至還能休息一下（idle），lateness 是 0，是最佳的。",
+    "把它往左壓緊：中間不休息，照順序一個接一個做。",
+    "每個都更早完成，一樣沒有遲交，lateness 還是 0，所以壓緊後的也是 optimal。",
+    "結論：一個有空檔的最佳解，壓緊後還是最佳解。壓縮不會改變 optimality。"
+   ],
    "points": [
+    {
+     "t": 3625,
+     "text": "要證 EDF 最好，先探討它的幾個 property。"
+    },
     {
      "text": "第一個觀察：greedy 產生的 schedule 沒有 idle time。",
      "t": 3657
@@ -435,10 +793,30 @@
   {
    "title": "Exchange argument 與 inversion",
    "scene": "grjiang1-inversion-def",
+   "cues": [
+    3786.8,
+    3800.8,
+    3807.8,
+    3823.8,
+    3860.8,
+    3915.8,
+    3935.8,
+    3942.8
+   ],
+   "explain": [
+    "接下來要看「沒有 inversion」這件事。先講要用的證明方法 exchange argument。",
+    "exchange argument：顧名思義，用交換的方式來證明。",
+    "慢慢把一個 solution，一步一步換成我心目中想要的 solution（greedy 的解）。",
+    "先假設有人用他自己的方法找到一個 optimal schedule O，不是用 greedy rule 找的，我們也不知道他怎麼找的。",
+    "把 O 裡不符合 greedy rule 的部分挖掉、換成 greedy 的樣子，再證明這樣做不會破壞它的 optimality。",
+    "這裡介紹 inversion（逆序）。我們排序時是依照 deadline 的先後來排的。",
+    "如果 deadline 比較早的，反而比較晚做，這裡就有一個 inversion。上面 J1（d = 6）卻排在 J2（d = 8）後面。",
+    "用符號說：有 i、j 兩個 request，j 的 deadline 比較早（d_j < d_i），排程卻把 j 放在 i 後面，就是 inversion。EDF 依 deadline 排好，所以沒有 inversion。"
+   ],
    "points": [
     {
      "text": "接下來要證沒有 inversion。",
-     "t": 3790
+     "t": 3787
     },
     {
      "text": "exchange argument：用交換的方式把一個 solution 慢慢換成我想要的。",
@@ -461,10 +839,36 @@
   {
    "title": "沒 inversion、沒 idle 的 schedule 一樣好",
    "scene": "grjiang1-same-deadline",
+   "cues": [
+    3955.8,
+    3967.8,
+    3971.8,
+    3982.8,
+    4009.8,
+    4042.8,
+    4049.8,
+    4106.8,
+    4154.8,
+    4191.2,
+    4207.8
+   ],
+   "explain": [
+    "第一個要證的 property：沒有 inversion、也沒有 idle time 的 schedule，max lateness 都一樣。",
+    "條件一：schedule 裡沒有 inversion，也就是沒有「比較早要交卻比較晚做」的情況。",
+    "條件二：沒有 idle time，中間都壓緊。",
+    "只要滿足這兩個條件，量出來的 max lateness 都一樣，一樣好也一樣差。",
+    "假設兩個同學各自找到一個 schedule，兩個都沒有 inversion、沒有 idle time。",
+    "兩個都是依 deadline 先後排好的。那為什麼還會不一樣？",
+    "唯一的可能：有些 request 的 deadline 相同，例如同一天要交好幾份作業。它們之間的先後順序可以不同。這裡 J3、J4 的 deadline 都是 9。",
+    "把 deadline 相同的那一坨挑出來看：它們黏在一起做，都在時間 5 到 10 之間。lateness 要看最後做完的那一個。",
+    "不管誰先誰後，最晚做完的那個 lateness 最大：甲是 J4，乙是 J3。",
+    "不管排成 ABC 還是 CBA，整坨結束的時間都一樣（這裡是 10），所以算出來都是 10 − 9 = 1。",
+    "所以兩個 schedule 的 max lateness 相同：一樣好。"
+   ],
    "points": [
     {
      "text": "Property：沒有 inversion、沒有 idle time 的 schedule，max lateness 都相同。",
-     "t": 3965
+     "t": 3956
     },
     {
      "text": "兩個同學各自的 schedule 都沒 inversion、沒 idle time。",
@@ -487,10 +891,42 @@
   {
    "title": "交換相鄰 inversion 不會變差",
    "scene": "grjiang1-swap",
+   "cues": [
+    4215.8,
+    4241.8,
+    4265.1,
+    4285.8,
+    4312.8,
+    4317.8,
+    4332.8,
+    4361.4,
+    4407.8,
+    4425.8,
+    4473.8,
+    4487.8,
+    4517.8,
+    4544.8
+   ],
+   "explain": [
+    "第二個 property：一定存在一個沒有 inversion、也沒有 idle time 的 optimal schedule。",
+    "idle time 的部分前面已經處理過：有空檔就壓緊，還是 optimal。",
+    "注意：不是說「所有」最佳解都沒有 inversion，而是一定「找得到一個」沒有 inversion 的最佳解。",
+    "假設有一個 optimal schedule O，已經壓緊了，但因為是別人做的，裡面有 inversion。",
+    "inversion 可能有好幾個，我們就抓「相鄰」的那一對 i、j 來看。",
+    "j 的 deadline（d_j = 5）比 i 的（d_i = 8）早，卻排在 i 後面做——這就是 inversion。",
+    "把 i 和 j swap（交換），這一對的 inversion 就解掉了，得到一個新的 schedule，inversion 少一個。",
+    "要證明：swap 之後的 max lateness 不會比原來大。這樣原本是最佳，換完也還是最佳。",
+    "先算原本的：j 很晚才在 f_j = 7 做完，但它很早就要交，lateness = 7 − 5 = 2。問題就出在 j 身上。",
+    "swap 之後，i 改到後面做，它的新結束時間就是原本 j 的結束時間 f_j = 7（兩個加起來的長度不變）。",
+    "j 提前完成，它的 lateness 變小了（這裡變成 0）。",
+    "i 變晚，會不會更糟？它的新 lateness = f_j − d_i；因為 d_i 比 d_j 大，所以 ≤ f_j − d_j = 原本 j 的 lateness。不會超過原來的最大值。",
+    "只有這兩個被動到，其他人的時間都沒變，它們的 lateness 也不變。",
+    "所以 swap 不會讓 max lateness 變大。原本是 optimal，換完也還是 optimal。"
+   ],
    "points": [
     {
      "text": "要證：存在一個沒有 inversion 也沒有 idle time 的 optimal schedule。",
-     "t": 4221
+     "t": 4216
     },
     {
      "text": "不是所有 optimal 都沒 inversion，而是一定找得到一個。",
@@ -526,6 +962,30 @@
   {
    "title": "結論：EDF 是 optimal",
    "scene": "grjiang1-fix-all",
+   "cues": [
+    4602.1,
+    4615.8,
+    4629.8,
+    4636.8,
+    4661.9,
+    4674,
+    4690.8,
+    4705.8,
+    4721.8,
+    4741.8
+   ],
+   "explain": [
+    "把前面的 property 綜合起來，就能證明 greedy 的 schedule 是 optimal。",
+    "假設有人找到一個 optimal schedule（這裡的 L = 1），它可能有 inversion。",
+    "如果它有 idle time，先壓緊再說——壓緊後還是 optimal。這張已經壓緊了。",
+    "壓緊後如果沒有 inversion，那它跟 greedy 找到的一樣好：最多只差 deadline 相同的 request 的順序（第一個 property）。",
+    "如果有 inversion 呢？這裡 J2（d = 8）排在 J1（d = 6）前面，是一個相鄰的 inversion。",
+    "把它們 swap。根據前面的推論，swap 不會讓 lateness 變大，而且 inversion 少了一個。",
+    "一直這樣兩兩交換（例如 J6 和 J5），直到一個 inversion 都沒有為止。L 一直都沒變差。",
+    "修完的排程沒有 inversion、沒有 idle time，就是 greedy（EDF）會吐出來的 solution。",
+    "這個解沒有比 optimal 差，所以 greedy 的解也是 optimal。",
+    "這就是一般 exchange argument 的做法。"
+   ],
    "points": [
     {
      "text": "綜合起來證 greedy schedule optimal。",
@@ -555,7 +1015,33 @@
   },
   {
    "title": "總結：greedy 與兩種證明",
-   "scene": "grjiang1-two-proofs",
+   "scene": "grjiang1-summary",
+   "cues": [
+    4770.8,
+    4777.8,
+    4791.8,
+    4816.8,
+    4835.8,
+    4848.8,
+    4863.8,
+    4894.8,
+    4913.8,
+    4935.7,
+    4950.8
+   ],
+   "explain": [
+    "exchange argument 的 basic idea：假設有人找到 optimal solution，把裡面不符合 greedy rule 的部分挖掉，換成 greedy 的選擇貼上去（cut and paste）。",
+    "貼上之後再做推論：證明換完的 solution 還是一樣好，沒有變糟。這樣就證完了。",
+    "證明 greedy 時，大概 90% 都用這個 strategy，因為它最容易用、各式各樣的問題都能證，普遍性最高。",
+    "總結 greedy：它很簡單，step by step 建出 solution，每一步選目前看到最好的。",
+    "「最好」要先設計一個 criterion 來判斷。",
+    "不過大部分日常會遇到的問題都很困難，運氣沒那麼好，能用簡單的 greedy 找到最佳解的機會很小。",
+    "如果真的能用，就不要猶豫趕快用：greedy 就是一個迴圈跑完，running time 快到不行。",
+    "證明有兩招。第一招 stays ahead：證明每一步都是第一名，一路領先到底。",
+    "第二招 exchange argument：比較常見，而且彈性比較大。",
+    "它把別人找到的 optimal solution，用交換的方式慢慢 transform（轉換）成 greedy 演算法的樣子。",
+    "轉換的過程中 solution quality 沒有損失，原來是 optimal，換完還是 optimal，所以 greedy 也保證找得到最佳解。"
+   ],
    "points": [
     {
      "text": "exchange argument 的 basic idea：挖掉不符合 greedy 的部分、換成我的（cut and paste），證明沒變糟。",
@@ -582,6 +1068,38 @@
   {
    "title": "Interval graph",
    "scene": "grjiang1-interval-graph",
+   "cues": [
+    4983.8,
+    5000.8,
+    5009.7,
+    5034.8,
+    5041.8,
+    5059.8,
+    5067.4,
+    5084.4,
+    5100.4,
+    5140.8,
+    5160.8,
+    5177.8,
+    5191.8,
+    5204.8
+   ],
+   "explain": [
+    "補充：前面三個問題一直說是 interval graph 上的問題，為什麼叫 interval graph？",
+    "投影片上只看到時間軸和一段段 interval，都沒看到 graph（圖：由點和連線組成）。",
+    "把每個 interval 用一個 node（點）代表：1、2、3、4、5……右邊的圓圈就是這 10 個點。",
+    "規則：兩個 interval 如果重疊，就在它們的點之間建一條 edge（邊、連線）。",
+    "例如 1 跟 2、3 重疊，就連起來；2 跟 1、3、4、5 重疊，也都連起來。",
+    "把所有會打架（重疊）的 interval 都連上 edge。",
+    "這樣用一張 graph 表示 interval 之間的關係，就叫 interval graph。",
+    "也有人叫它 intersection graph，因為它表達的就是有沒有重疊（intersection）。",
+    "graph coloring（圖著色）：幫每個點塗顏色，有 edge 相連的兩個點要塗不同顏色。",
+    "interval partitioning 其實就是在這張 interval graph 上做 coloring：每個 request 塗一個顏色（一台機器），重疊的就塗不同顏色。",
+    "照剛才的例子：1 號塗藍色、2 號塗橘色、3 號塗紅色。",
+    "其他點也一樣，相鄰的點都塗上不同顏色，3 種顏色就夠了。",
+    "interval graph 有一些很好的特性，在它上面做 coloring，用 greedy 就能解決。",
+    "但在一般的 graph 上，coloring 是很困難的問題。"
+   ],
    "points": [
     {
      "text": "補充：為什麼叫 interval graph。",

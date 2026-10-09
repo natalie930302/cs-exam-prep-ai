@@ -398,7 +398,7 @@
   async function loadSubs(id){
     subsFor = id; subs = null; subIdx = -1;
     let cues = null;
-    try { const r = await fetch('/transcripts/' + id + '.json'); if (r.ok) cues = await r.json(); } catch (e) {}
+    try { const r = await fetch('/transcripts/' + id + '.json', {cache: 'no-cache'}); if (r.ok) cues = await r.json(); } catch (e) {}
     if (subsFor !== id) return;
     subs = cues && cues.length ? cues : null;
     $('subBtn').hidden = !subs;

@@ -904,10 +904,23 @@ export default function (ctx) {
   const FRAG = [];
   // ═══ grjiang1.js ═══
   {
-const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, code, anim, line, arrow, GOLD, GREEN, RED, GRAY } = K;
 // ─── hZjp35QI-40 / 0UGaXukC4b0（交大江蕙如 Lec10–11 Greedy：interval scheduling、interval partitioning、minimize lateness） ───
-const gb = (tok, ms) => beat(tok, Math.round(ms * 1.35));
-const GJ = { blue: '#4b9ee2', orange: '#dd8238', red: '#d64545', teal: '#2fc092', purple: '#9b7ef4', sand: '#c9b48e', paper: '#efe6d2', pink: '#e55a9b', gold: '#c08a1f', ink: '#6e5f49', gray: '#bdb3a2' };
+// Cued scenes: every `await step(tok)` waits for the sentence it shows (cues in the notes; the number in each
+// step comment is the transcript time where the lecturer starts saying it). Motion between steps is short;
+// nothing loops or replays. Little buddies react to what happens.
+// 老師的例子：8 個 request 選 2、5、8；四個 rule 的反例；I1..I10（depth 3，水位 2/5/2）；minimize lateness 的
+// 兩組反例 (t=1,10; d=100,10) 與 (t=1,10; d=2,10)；idle 例子 d = 4、6、12；interval graph 1 連 2、3，2 連 1、3、4、5。
+// 示意值：8 個 request 與一次掃描 1–7 的確切時間、I4–I10 的時間、KT 的 6 個 job、idle 例子的長度 2、3、4。
+const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, code, anim, line, arrow, GOLD, GREEN, RED, GRAY, step, buddy, prop, bob, travel, remove } = K;
+const GJ = { blue: '#4b9ee2', orange: '#dd8238', red: '#d64545', teal: '#2fc092', purple: '#9b7ef4', sand: '#c9b48e', paper: '#efe6d2', pink: '#e55a9b', gold: '#c08a1f', ink: '#6e5f49', gray: '#bdb3a2', cyan: '#31aab0' };
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const pkt = (t, x, y, z = 0) => tag(t, 'pkt', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+// a little helper character standing in front of the picture
+const pal = (name, x, color = '#f4a56a', z = 1.6, size = 0.75, y = 0) => buddy(name, '', color, x, y, z, size);
+const walk = (tok, b, x, ms = 900) => { const x0 = b.g.position.x; return anim(tok, ms, (u) => { b.g.position.x = x0 + (x - x0) * u; }); };
 // 時間軸：t0..t1 映到 xa..xb，回傳 { X(t), sc }
 function gAx(t0, t1, xa, xb, y, every = 1) {
   const sc = (xb - xa) / (t1 - t0), X = (t) => xa + (t - t0) * sc;
@@ -920,821 +933,1698 @@ function gBar(ax, name, s, f, y, col, drop = 0, h = 0.38) {
   const m = cube(name, col, [Math.max(0.14, (f - s) * ax.sc - 0.08), h, 0.5], ax.X((s + f) / 2), y, 0, drop);
   m.userData.s = s; m.userData.f = f; return m;
 }
+const vline = (ax, t, y1, y2, c = '#c08a1f') => line(ax.X(t), y1, ax.X(t), y2, 0, c);
 const gOv = (a, b) => a[0] < b[1] && b[0] < a[1];
 // 老師的 8 個 request（2→5 無縫接、1/3/4 跟 2 overlap、最多選 3 個）；數字為示意
 const IS8 = [[0, 5], [1, 4], [3, 6], [2, 7], [4, 8], [5, 9], [6, 10], [8, 11]];
+const IS8ord = IS8.map((r, i) => i).sort((p, q) => IS8[p][1] - IS8[q][1]);
 // interval partitioning 例子（I1..I10 依 s 排好，depth = 3；I1、I3 在 2 結束、I2 在 5 結束，與老師的水位 2/5/2 一致）
 const IP10 = [[0, 2], [0, 5], [0, 2], [2, 6], [2, 7], [5, 8], [6, 9], [7, 10], [8, 10], [9, 11]];
 const LCOL = [GJ.blue, GJ.orange, GJ.red];
 function gPartition() { const fin = [0, 0, 0], lbl = []; IP10.forEach(([s, f]) => { const k = fin.findIndex((x) => x <= s); lbl.push(k); fin[k] = f; }); return lbl; }
 // minimize lateness：Kleinberg–Tardos 的 6 個 job（EDF 後只有第 4 個遲交 1）
 const LJ = [[3, 6], [2, 8], [1, 9], [4, 9], [3, 14], [2, 15]];
+const JCOL = [GJ.blue, GJ.orange, GJ.teal, GJ.purple, GJ.pink, GJ.sand];
 // 依序緊接著排；回傳每個 job 的 [start, finish]
 function gPack(order, t0 = 0) { let t = t0; return order.map((i) => { const s = t; t += LJ[i][0]; return [s, t]; }); }
+// 一排「每步選一個」的小方塊：step s 的三個選項掉下來，選最大的那個放到下面
+async function pickStep(tok, s, opts, x, keep) {
+  const cs = opts.map((v, k) => cube(v, GJ.paper, [0.9, 0.6, 0.6], x, 5.2 - k * 1.0, 0, 2));
+  await beat(tok, 700);
+  const best = opts.indexOf(Math.max(...opts));
+  glow(cs[best], GOLD); await beat(tok, 500);
+  cs.forEach((c, k) => { if (k !== best) tint(c, GJ.gray); });
+  tint(cs[best], GJ.teal); glow(cs[best], null);
+  move(cs[best], x, 1.2, 0);
+  if (keep) keep.push(cs[best]);
+  return cs[best];
+}
+// 兩種證明的小人：greedy 與 OPT 賽跑
+function racers(y0 = 0, xs = -6.2) {
+  const lane = [line(xs, y0 + 0.02, -0.6, y0 + 0.02, 1.2, '#a99470'), line(xs, y0 + 0.02, -0.6, y0 + 0.02, -0.2, '#a99470')];
+  line(-0.8, y0, -0.8, y0 + 1.6, 0.5, '#c08a1f');
+  const g = pal('greedy', xs, GJ.teal, 1.2, 0.6, y0), o = pal('OPT', xs, GJ.purple, -0.2, 0.6, y0);
+  return { g, o, lane };
+}
+async function race(tok, r, xs = -6.2, xe = -1.6, ms = 2000) {
+  await anim(tok, ms, (u) => { r.g.g.position.x = xs + (xe - xs) * u; r.o.g.position.x = xs + (xe - 0.6 - xs) * u; });
+}
 
 // ════════ hZjp35QI-40（Lec10：Greedy 概念、Interval scheduling） ════════
 // 02:04 Greedy：每一步選當下最好、做了決定不回頭
 FRAG.push(['grjiang1-myopic', 'Greedy：每步選當下最好、不回頭', async (tok) => {
   fresh([0, 4, 14], [0, 3, 0]);
-  const opts = [[3, 7, 5], [6, 2, 4], [1, 5, 8], [4, 9, 2]];
-  say('一步一步兜出 solution', '每個 step 做一個 decision');
-  await gb(tok, 1600);
-  let prev = null;
-  for (let s = 0; s < 4; s++) {
-    const x = -4.5 + s * 3;
-    tag('step ' + (s + 1), 'idx', x, 6.2);
-    const cs = opts[s].map((v, k) => cube(v, GJ.paper, [0.9, 0.6, 0.6], x, 5.2 - k * 1.0, 0, 2));
-    await gb(tok, 700);
-    const best = opts[s].indexOf(Math.max(...opts[s]));
-    if (s === 0) say('依 criterion 選當下最好', 'greedy rule：值最大者');
-    glow(cs[best], GOLD); await gb(tok, 700);
-    cs.forEach((c, k) => { if (k !== best) tint(c, GJ.gray); });
-    tint(cs[best], GJ.teal);
-    move(cs[best], x, 1.2, 0); await gb(tok, 600);
-    if (prev) arrow(V3(prev + 0.5, 1.2, 0), V3(x - 0.5, 1.2, 0));
-    if (s === 1) { say('做完決定就不再回頭看', '沒有反覆、所以跑得快'); tag('鎖定', 'ptr', x - 3, 0.4); }
-    prev = x; await gb(tok, 900);
-  }
-  say('好寫、好懂、跑得快', '通常是一個 loop');
-  await gb(tok, 2200);
-  say('但 quality 常常不好', '要設計對的 rule 並證明 optimal');
-  await gb(tok, 2800);
+  const opts = [[3, 7, 5], [6, 2, 4], [1, 5, 8], [4, 9, 2]], xs = [-3.4, -0.9, 1.6, 4.1], keep = [];
+  await step(tok);                                   // 126.0 為什麼叫 greedy：短視近利
+  const me = pal('greedy', -6, GJ.orange, 1.8, 0.8); me.mood('happy');
+  const b1 = bub('眼前最好的先拿！', -6, 2.4, 1.8);
+  say('Greedy：短視近利的方法', '只看眼前、不想以後');
+  await step(tok);                                   // 140.0 step by step 兜出 solution
+  remove(b1);
+  xs.forEach((x, s) => tag('step ' + (s + 1), 'idx', x, 6.4));
+  say('step by step 兜出最後的 solution', '每個 step 做一個 decision');
+  await step(tok);                                   // 149.0 每個 step 選當下看到最好的
+  me.look(0.6);
+  await pickStep(tok, 0, opts[0], xs[0], keep);
+  say('每一步都選「當下看起來最好」的', 'step 1：選 7');
+  await step(tok);                                   // 174.0 「最好」要靠一個 criterion 定義
+  const cr = pkt('criterion：數字最大 = 最好', -0.2, 7.2);
+  say('什麼叫最好？要給一個 criterion', '這個 rule 是需要設計的');
+  await step(tok);                                   // 200.0 很容易想出 greedy：直覺、一個 loop
+  await pickStep(tok, 1, opts[1], xs[1], keep);
+  arrow(V3(xs[0] + 0.5, 1.2, 0), V3(xs[1] - 0.5, 1.2, 0));
+  say('任何問題都很容易想出一個 greedy', '直覺，通常一個 loop 就寫完');
+  await step(tok);                                   // 232.0 做完決定就不再回頭
+  await pickStep(tok, 2, opts[2], xs[2], keep);
+  arrow(V3(xs[1] + 0.5, 1.2, 0), V3(xs[2] - 0.5, 1.2, 0));
+  const lk = note('鎖定，不回頭', xs[0], 0.4);
+  say('做完決定就不再回頭看', '沒有反覆猶豫');
+  await step(tok);                                   // 245.0 跑得快、好寫、好懂
+  await pickStep(tok, 3, opts[3], xs[3], keep);
+  arrow(V3(xs[2] + 0.5, 1.2, 0), V3(xs[3] - 0.5, 1.2, 0));
+  await me.hop(tok);
+  say('跑得快、好寫、好懂', '發展起來也很簡單');
+  await step(tok);                                   // 254.0 但 solution quality 常常很差
+  me.mood('sad'); remove(cr);
+  const q = bad('solution quality 常常很差', 0.4, 7.2);
+  say('壞就壞在：解常常不好', '短視的選擇不一定最後最好');
+  await step(tok);                                   // 261.0 有些問題它就能拿到最佳解
+  remove(q); me.mood('happy');
+  keep.forEach((c) => glow(c, GOLD));
+  good('有些問題用它就能得到 optimal', 0.4, 7.2);
+  say('但不是永遠運氣這麼背', '有些問題 greedy 就是最佳解');
+  await step(tok);                                   // 278.0 挑戰：設計出 optimal 的 greedy 並證明
+  remove(lk);
+  pkt('挑戰：設計對的 greedy rule ＋ 證明它 optimal', 0.4, 0.2, 1.2);
+  say('挑戰：為問題設計出 optimal 的 greedy', '而且要證明它');
 }]);
 
 // 04:54 兩種證明法：stays ahead（一路領先）與 exchange argument（挖掉貼上）
 FRAG.push(['grjiang1-two-proofs', '兩種證明：stays ahead 與 exchange argument', async (tok) => {
   fresh([0, 4, 14], [0, 3, 0]);
+  await step(tok);                                   // 294.0 證明 greedy 最佳常用兩招
   tag('① greedy stays ahead', 'ptr alt', -3.6, 6.4);
-  tag('greedy', 'idx', -6.3, 4.6); tag('OPT', 'idx', -6.3, 3.4);
-  line(-5.6, 5.2, -5.6, 2.8); line(-0.8, 5.2, -0.8, 2.8, 0, '#c08a1f');
-  const g = cube('G', GJ.teal, [0.6, 0.6, 0.6], -5.3, 4.6, 0), o = cube('O', GJ.purple, [0.6, 0.6, 0.6], -5.3, 3.4, 0);
-  say('第一招：每一步都不輸', '一路領先到終點 = 冠軍');
-  for (let k = 1; k <= 4; k++) { move(g, -5.3 + k * 1.15, 4.6, 0); move(o, -5.3 + k * 1.0, 3.4, 0); await gb(tok, 700); }
-  glow(g, GOLD); await gb(tok, 1200);
   tag('② exchange argument', 'ptr alt', 3.4, 6.4);
+  say('證明 greedy 是最佳解：兩招', '兩招都很常用');
+  await step(tok);                                   // 304.0 第一招：每一步都做決定、選當下最好
+  const r = racers(2.4);
+  say('第一招：greedy stays ahead', '每一步都拿來跟 OPT 比');
+  await step(tok);                                   // 325.0 一路第一名，像 100 公尺短跑
+  await race(tok, r);
+  r.g.mood('happy'); r.g.glow(GOLD); await r.g.hop(tok);
+  say('一路都是第一名，到終點就是冠軍', '像 100 公尺短跑');
+  await step(tok);                                   // 340.0 第二招更常用：exchange argument
+  const star = pkt('更常用，一定要學會', 3.4, 5.6);
+  say('第二招：exchange argument', '用「交換」的概念');
+  await step(tok);                                   // 379.0 先假設神人找到最佳解
+  remove(star);
+  const god = pal('神人', 6.2, GJ.purple, 1.6, 0.6, 2.4); god.mood('happy');
   const blocks = ['o1', 'o2', 'o3', 'o4'].map((t, k) => cube(t, GJ.purple, [0.9, 0.7, 0.7], 1.4 + k * 1.1, 4.4, 0, 2));
-  say('第二招：先假設神人給了 OPT', '我不管他怎麼找到的');
-  await gb(tok, 1800);
+  say('先假設有個神人找到 OPT', '我不管他怎麼找到的');
+  await step(tok);                                   // 413.0 OPT 裡可能有不符合 greedy 選法的部分
   glow(blocks[1], RED);
-  say('不符合 greedy rule 的部分', '挖掉它');
-  await gb(tok, 1400); fly(blocks[1], V3(0, 6, 3)); await gb(tok, 700);
+  bub('這塊不是 greedy 會選的', 2.5, 5.4);
+  say('OPT 裡有些部分不符合我的選法', '找出來');
+  await step(tok);                                   // 422.0 把它挖掉
+  fly(blocks[1], V3(0, 6, 3));
+  say('把不符合的那塊挖掉', 'cut');
+  await step(tok);                                   // 430.0 換成我的貼上去
   const mine = cube('g', GJ.teal, [0.9, 0.7, 0.7], 2.5, 4.4, 0, 3);
-  say('換成 greedy 的選擇貼上', 'cut and paste');
-  await gb(tok, 1400);
-  tag('quality 沒變差 → 仍是 optimal', 'ptr', 3.0, 3.2); glow(mine, GOLD);
-  say('換完一樣 optimal 就證完', '第二招最常用，一定要會');
-  await gb(tok, 3000);
+  say('換成 greedy 的選擇貼上去', 'paste');
+  await step(tok);                                   // 446.0 換完一樣是 optimal → 證完
+  glow(mine, GOLD); god.mood('wow');
+  good('quality 沒變差 → 仍是 optimal', 3.0, 3.1);
+  say('換完解一樣好，還是 optimal', '就證完了');
+  await step(tok);                                   // 492.0 很常用，其他課本也大多用第二招
+  pkt('★ 其他課本也大多用第二招', 3.4, 7.2);
+  say('第二招是很 general 的證法', '建議一定要學會');
 }]);
 
-// 08:46 Interval scheduling：single core、選最多個互相 compatible 的 request
+// 08:30 Interval scheduling：single core、選最多個互相 compatible 的 request
 FRAG.push(['grjiang1-is-problem', 'Interval scheduling：最多 compatible request', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.2, 0]);
+  await step(tok);                                   // 510.0 第一個問題 interval scheduling
+  tag('Interval scheduling', 'ptr alt', 0, 6.6);
+  say('第一個問題：interval scheduling', '用 stays ahead 來證明');
+  await step(tok);                                   // 545.0 幫 single core CPU 排程
+  const cpu = prop('cpu', 5.8, 0, 2.2, 0.8, 'single core');
+  say('背景：幫 CPU 排程', '早期只有一個 core');
+  await step(tok);                                   // 566.0 有 n 個 request，各有開始與結束時間
   const ax = gAx(0, 11, -5.5, 5.5, 0.8);
-  say('每個 request 有 [s(i), f(i))', '左閉右開：頭尾可以無縫接');
   const B = IS8.map(([s, f], i) => { tag(String(i + 1), 'idx', -6.3, 5.6 - i * 0.6); return gBar(ax, '', s, f, 5.6 - i * 0.6, GJ.sand, 2.5); });
-  for (let i = 0; i < 8; i++) { await gb(tok, 250); }
-  await gb(tok, 1200);
-  say('single core：一次只能跑一個', '選出的 interval 不能 overlap');
-  await gb(tok, 2000);
-  tint(B[1], GJ.teal); tint(B[4], GJ.teal);
-  const l = line(ax.X(4), 6.0, ax.X(4), 0.8, 0, '#c08a1f');
-  say('2 一結束馬上換 5：compatible', 'f(2) = s(5) = 4');
-  await gb(tok, 2400); kill(l);
+  say('n 個 request：開始、結束時間都先知道', '每個對應時間軸上一段 interval');
+  await step(tok);                                   // 612.0 第 i 個：s(i) 開始、f(i) 結束
+  glow(B[1], GOLD);
+  const sl = note('s(2)', ax.X(1), 5.3), fl = note('f(2)', ax.X(4), 5.3);
+  say('第 i 個 request：s(i) 開始，f(i) 結束', '例：request 2');
+  await step(tok);                                   // 620.0 左閉右開，頭尾可以無縫接起來
+  txt(sl, '[ s(2)'); txt(fl, 'f(2) )');
+  say('佔用 [s(i), f(i))：左閉右開', '頭尾可以無縫接起來');
+  await step(tok);                                   // 648.0 選最多 request，彼此不能 overlap
+  glow(B[1], null); remove(sl); remove(fl);
+  say('目標：選最多個 request 來執行', '選出的 interval 不能 overlap');
+  await step(tok);                                   // 677.0 這例子最多選 3 個
+  [1, 4, 7].forEach((i) => tint(B[i], GJ.teal));
+  const At = tag('最多 3 個：{ 2, 5, 8 }', 'ptr alt', 3.2, 6.1);
+  say('這個例子最多選 3 個', 'compatible 的 request');
+  await step(tok);                                   // 698.0 2 一結束馬上切去 5
+  const l4 = vline(ax, 4, 6.0, 0.8);
+  say('2 一結束馬上切去執行 5', 'f(2) = s(5) = 4，允許無縫接');
+  await step(tok);                                   // 707.0 選了 2 就不能選 1、3、4
+  kill(l4);
   [0, 2, 3].forEach((i) => glow(B[i], RED));
   say('選了 2 就不能選 1、3、4', '它們跟 2 overlap');
-  await gb(tok, 2400);
+  await step(tok);                                   // 741.0 演藝廳借場地也是這題
   [0, 2, 3].forEach((i) => glow(B[i], null));
-  [0, 2, 3, 5, 6].forEach((i) => tint(B[i], GJ.gray));
-  tint(B[7], GJ.teal);
-  tag('A = { 2, 5, 8 }', 'ptr alt', 0, 6.5);
-  say('這個例子最多選 3 個', 'max |compatible subset| = 3');
-  await gb(tok, 2600);
-  say('演藝廳借場地也是這題', '讓最多社團表演，不是先到先贏');
-  await gb(tok, 2800);
+  kill(cpu);
+  const hall = prop('warehouse', 5.8, 0, 2.4, 0.7, '演藝廳'); bob(hall, 0.03);
+  const cl = [-5.2, -4.2, -3.2].map((x, k) => pal('', x, [GJ.pink, GJ.blue, GJ.orange][k], 2.4, 0.5));
+  say('學校借演藝廳也是這個問題', '每個社團想好要哪一段時間');
+  await step(tok);                                   // 789.0 想讓最多社團表演，first come first serve 不一定最好
+  cl.forEach((c) => c.mood('happy'));
+  bub('先到先贏 ≠ 最多社團能表演', 0, 7.2);
+  say('要讓最多社團表演', 'first come first serve 不一定最好');
 }]);
 
-// 14:55 Greedy 模板：依 rule 選一個、reject overlap、重複；rule 有四個候選
+// 14:55 Greedy 模板：依 rule 選一個、reject overlap、重複
 FRAG.push(['grjiang1-is-template', 'Greedy 模板：選一個、刪 overlap、重複', async (tok) => {
   fresh([0, 3.8, 13.5], [0, 3.2, 0]);
-  const cd = code(['repeat', '  依 greedy rule 選 request i', '  accept i', '  reject 跟 i overlap 的', 'until 全部處理完'], -3.4, 6.0, 0.6);
-  const ax = gAx(0, 9, 0.6, 6.6, 1.6);
   const D = [[0, 3], [2, 5], [4, 7], [6, 9]];
-  const B = D.map(([s, f], i) => gBar(ax, String.fromCharCode(97 + i), s, f, 5.4 - i * 0.8, GJ.sand, 2));
-  say('greedy 都是同一個 loop', 'step by step 做決定');
-  await gb(tok, 1800);
-  const steps = [[1, [0, 2]], [3, []]];
-  for (const [pick, rej] of steps) {
-    cd.hl(1); glow(B[pick], GOLD); say('依 rule 選一個 request', '當下看起來最好的'); await gb(tok, 1300);
-    cd.hl(2); tint(B[pick], GJ.teal); glow(B[pick], null); await gb(tok, 800);
-    cd.hl(3); if (rej.length) say('跟它 overlap 的全部 reject', '保持 compatible');
-    rej.forEach((i) => fly(B[i], V3(2, 6, 3))); await gb(tok, 1200);
-  }
-  cd.hl(4); await gb(tok, 900);
-  say('rule 要怎麼訂？四個候選', 'greedy rule = 何謂「最好」');
-  const R = ['① 最早開始 s(i)', '② 最短 interval', '③ 最少 conflict', '④ 最早結束 f(i)'];
-  for (let k = 0; k < 4; k++) { cube(R[k], GJ.paper, [2.9, 0.55, 0.7], -4.65 + k * 3.1, 0.3, 0, 2); await gb(tok, 450); }
-  await gb(tok, 2600);
+  let cd, ax, B;
+  await step(tok);                                   // 899.5 要怎麼 select 適當的 request？
+  cd = code(['repeat', '  依 greedy rule 選 request i', '  accept i', '  reject 跟 i overlap 的', 'until 全部處理完'], -3.4, 6.0, 0.6);
+  ax = gAx(0, 9, 0.6, 6.6, 1.6);
+  B = D.map(([s, f], i) => gBar(ax, String.fromCharCode(97 + i), s, f, 5.4 - i * 0.8, GJ.sand, 2));
+  say('要怎麼選出適當的 request？', '先看 greedy 的一般流程');
+  await step(tok);                                   // 923.0 「當下最好」要有規範：greedy rule
+  pkt('greedy rule = 何謂「當下最好」', -3.4, 2.6);
+  say('先訂一個 criterion', '這叫 greedy rule');
+  await step(tok);                                   // 940.0 repeat：依想法選一個 request
+  cd.hl(1); glow(B[1], GOLD);
+  say('repeat：依 rule 選一個 request', '例：選 b');
+  await step(tok);                                   // 955.0 選出來去執行它
+  cd.hl(2); tint(B[1], GJ.teal); glow(B[1], null);
+  say('選出來就 accept 它', '去執行它');
+  await step(tok);                                   // 963.5 跟它 overlap 的先 reject
+  cd.hl(3); [0, 2].forEach((i) => fly(B[i], V3(2, 6, 3)));
+  say('跟它 overlap 的全部 reject', '只能留 compatible 的');
+  await step(tok);                                   // 970.0 剩下的依同樣 rule 再選
+  cd.hl(1); glow(B[3], GOLD); await beat(tok, 600);
+  cd.hl(2); tint(B[3], GJ.teal); glow(B[3], null);
+  say('再從剩下的用同樣的 rule 選', '選 d');
+  await step(tok);                                   // 978.0 再 reject overlap，直到做完
+  cd.hl(4);
+  say('沒有人跟 d overlap 了', '全部處理完就結束');
+  await step(tok);                                   // 987.0 greedy 大概都這樣做
+  cd.hl(-1);
+  good('A = { b, d }', 3.6, 6.5);
+  say('greedy algorithm 大概都長這樣', '一個 loop，step by step');
+  await step(tok);                                   // 999.0 rule 想出四種
+  for (let k = 0; k < 4; k++) cube('rule ' + (k + 1) + '？', GJ.paper, [2.6, 0.55, 0.7], -4.65 + k * 3.1, 0.3, 0, 1.5);
+  say('rule 怎麼訂？想出四種', '大家來討論哪個好');
 }]);
 
-// 16:47 四個 rule：前三個舉反例推翻，只剩最早結束
+// 16:51 四個 rule：前三個舉反例推翻，只剩最早結束
 FRAG.push(['grjiang1-four-rules', '四個 greedy rule：反例推翻前三個', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.2, 0]);
-  let ax = gAx(0, 12, -6, 6, 0.8);
+  const R = ['① 最早開始', '② 最短 interval', '③ 最少 conflict', '④ 最早結束'];
+  const card = (k) => cube(R[k], GJ.paper, [2.8, 0.6, 0.7], -4.65 + k * 3.1, 5.6, 0, 2);
+  const C = [];
+  await step(tok);                                   // 1011.0 ① 先開始的先選
+  C.push(card(0));
+  say('rule ①：最早開始的先選', '');
+  await step(tok);                                   // 1022.0 ② shortest interval
+  C.push(card(1));
+  say('rule ②：shortest interval', '佔用時間短，好像比較不會打架');
+  await step(tok);                                   // 1043.0 ③ fewest conflicts
+  C.push(card(2));
+  say('rule ③：最少 conflict 的先選', '最少跟人打架');
+  await step(tok);                                   // 1052.8 ④ 最早結束
+  C.push(card(3));
+  say('rule ④：最早結束的先選', '');
+  await step(tok);                                   // 1061.0 大家來表決
+  const voters = [-4.6, -1.5, 1.6, 4.7].map((x, k) => { const b = pal('', x, [GJ.blue, GJ.pink, GJ.orange, GJ.cyan][k], 1.8, 0.5, 3.0); return b; });
+  voters[2].mood('happy'); bub('③ 比較少打架，很安全！', 1.6, 4.4, 1.8);
+  say('大家來表決', '很多人選 ③');
+  await step(tok);                                   // 1091.0 答案是 ④，很不直覺
+  tint(C[3], GJ.teal); glow(C[3], GOLD); voters[3].mood('wow'); await voters[3].hop(tok);
+  say('答案是 ④：最早結束', '真正能得最佳解的 rule 通常不直覺');
+  await step(tok);                                   // 1125.0 前三個為什麼不行：舉反例就好
+  [0, 1, 2].forEach((k) => glow(C[k], RED));
+  say('前三個為什麼不行？舉反例就好', '一個 case 不 optimal 就不能 guarantee');
   // ① 最早開始
-  tag('① 最早開始', 'ptr alt', 0, 6.4);
-  const L = gBar(ax, '最早開始', 0, 11, 4.8, GJ.sand, 2);
-  const S = [[1, 3], [3, 5], [5, 7], [7, 9]].map(([s, f]) => gBar(ax, '', s, f, 3.6, GJ.sand, 2));
-  await gb(tok, 900);
-  tint(L, GJ.teal); S.forEach((b) => glow(b, RED));
-  say('最早開始的又很晚結束', '選它只有 1 個，別的選法有 4 個');
-  await gb(tok, 2800);
+  let ax, L, S, a, b, sh, top, mid;
+  await step(tok);                                   // 1151.0 反例①：最早開始卻很晚結束
+  fresh([0, 3.6, 13], [0, 3.2, 0]); ax = gAx(0, 12, -6, 6, 0.8);
+  tag('反例 ① 最早開始', 'ptr alt', 0, 6.4);
+  L = gBar(ax, '最早開始', 0, 11, 4.8, GJ.sand, 2);
+  S = [[1, 3], [3, 5], [5, 7], [7, 9]].map(([s, f]) => gBar(ax, '', s, f, 3.6, GJ.sand, 2));
+  say('它最早開始，但也很晚結束', '');
+  await step(tok);                                   // 1160.0 選它只有 1 個，別的選法 4 個
+  tint(L, GJ.teal); S.forEach((x) => glow(x, RED));
+  await beat(tok, 900);
+  tint(L, GJ.gray); S.forEach((x) => { glow(x, null); tint(x, GJ.teal); });
+  say('選它只有 1 個', '不選它可以有 4 個');
   // ② 最短 interval
+  await step(tok);                                   // 1173.0 反例②：shortest interval
   fresh([0, 3.6, 13], [0, 3.2, 0]); ax = gAx(0, 12, -6, 6, 0.8);
-  tag('② 最短 interval', 'ptr alt', 0, 6.4);
-  const a = gBar(ax, '', 0, 6, 3.6, GJ.sand, 2), b = gBar(ax, '', 6, 12, 3.6, GJ.sand, 2), sh = gBar(ax, '短', 5, 7, 4.8, GJ.sand, 2);
-  await gb(tok, 900);
-  tint(sh, GJ.teal); glow(a, RED); glow(b, RED);
-  say('短的卻跟兩個長的都打架', '選它得 1 個，最佳是 2 個');
-  await gb(tok, 2800);
+  tag('反例 ② 最短 interval', 'ptr alt', 0, 6.4);
+  a = gBar(ax, '', 0, 6, 3.6, GJ.sand, 2); b = gBar(ax, '', 6, 12, 3.6, GJ.sand, 2);
+  say('兩個長的 request', '雖然長，但彼此 compatible');
+  await step(tok);                                   // 1194.5 有一個很短，但跟兩個都打架
+  sh = gBar(ax, '短', 5, 7, 4.8, GJ.sand, 2);
+  await beat(tok, 700); glow(a, RED); glow(b, RED);
+  say('一個很短的', '可是它跟兩個人都打架');
+  await step(tok);                                   // 1208.0 選它只有 1 個，最佳是 2 個
+  tint(sh, GJ.gray); glow(a, null); glow(b, null); tint(a, GJ.teal); tint(b, GJ.teal);
+  say('選短的只有 1 個', '最佳是 2 個');
   // ③ 最少 conflict
+  await step(tok);                                   // 1214.0 反例③：最少 conflict
   fresh([0, 3.6, 13], [0, 3.2, 0]); ax = gAx(0, 12, -6, 6, 0.8);
-  tag('③ 最少 conflict', 'ptr alt', 0, 6.4);
-  const top = [[0, 3], [3, 6], [6, 9], [9, 12]].map(([s, f]) => gBar(ax, '', s, f, 5.2, GJ.sand, 2));
-  const mid = gBar(ax, '2', 5, 7, 4.4, GJ.sand, 2);
-  const cp = [];
-  for (let r = 0; r < 3; r++) { cp.push(gBar(ax, '', 2, 4, 3.6 - r * 0.6, GJ.sand, 2)); cp.push(gBar(ax, '', 8, 10, 3.6 - r * 0.6, GJ.sand, 2)); }
-  await gb(tok, 900);
-  [3, 4, 3, 3].forEach((c, i) => relabel(top[i], c));
-  say('標出每個 request 的 conflict 數', '中間那個只跟 2 個打架');
-  await gb(tok, 1800);
+  tag('反例 ③ 最少 conflict', 'ptr alt', 0, 6.4);
+  top = [[0, 3], [3, 6], [6, 9], [9, 12]].map(([s, f]) => gBar(ax, '', s, f, 5.2, GJ.sand, 2));
+  mid = gBar(ax, '', 5, 7, 4.4, GJ.sand, 2);
+  for (let r = 0; r < 3; r++) { gBar(ax, '', 2, 4, 3.6 - r * 0.6, GJ.sand, 2); gBar(ax, '', 8, 10, 3.6 - r * 0.6, GJ.sand, 2); }
+  say('很多 request 擺在這裡', '看每個跟幾個人打架');
+  await step(tok);                                   // 1238.0 它只跟兩個人 conflict
+  [3, 4, 4, 3].forEach((c, i) => relabel(top[i], c)); relabel(mid, 2);
   tint(mid, GJ.teal); glow(top[1], RED); glow(top[2], RED);
-  say('選它最多 3 個', '上面一排 4 個才是最佳');
-  await gb(tok, 2000);
+  say('中間那個 conflict 最少：只有 2', '選它，上面兩個就不能選');
+  await step(tok);                                   // 1249.5 其實可以選上面這四個
   glow(top[1], null); glow(top[2], null); tint(mid, GJ.gray); top.forEach((t) => tint(t, GJ.teal));
-  await gb(tok, 1400);
-  // ④ 最早結束
-  cube('④ 最早結束 f(i) ✔', GJ.teal, [4.2, 0.7, 0.8], 0, 6.3, 0.5, 2);
-  say('答案是第 4 個：最早結束', '直覺的 rule 不一定對，舉反例');
-  await gb(tok, 3000);
+  say('其實上面這 4 個才是最佳', '選 conflict 最少的只能湊到 3 個');
+  await step(tok);                                   // 1258.0 答案就是最後一個
+  cube('④ 最早結束 ✔', GJ.teal, [3.6, 0.7, 0.8], 0, 7.0, 0.5, 2);
+  say('剩下的答案：④ 最早結束', '');
 }]);
 
-// 21:07 選最早結束：最早把 resource 放出來；8 個 request 依 f 跑一次
+// 21:27 選最早結束：最早把 resource 放出來；8 個 request 依 f 跑一次
 FRAG.push(['grjiang1-eft-run', '最早結束優先：8 個 request 選出 2、5、8', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.2, 0]);
-  const ax = gAx(0, 11, -5.5, 5.5, 1.3);
-  const ord = IS8.map((r, i) => i).sort((p, q) => IS8[p][1] - IS8[q][1]);
-  const B = IS8.map(([s, f], i) => gBar(ax, String(i + 1), s, f, 6.0 - i * 0.6, GJ.sand, 2));
-  await gb(tok, 900);
-  say('先依 finish time 排序', 'O(n log n)');
-  ord.forEach((i, r) => move(B[i], ax.X((IS8[i][0] + IS8[i][1]) / 2), 6.0 - r * 0.6, 0));
-  await gb(tok, 1800);
-  const alive = new Set(ord), A = [];
-  const At = tag('A = { }', 'ptr alt', 0, 0.3);
-  for (const i of ord) {
-    if (!alive.has(i)) continue;
-    alive.delete(i); A.push(i + 1);
-    glow(B[i], GOLD); tint(B[i], GJ.teal);
-    const l = line(ax.X(IS8[i][1]), 6.4, ax.X(IS8[i][1]), 1.3, 0, '#c08a1f');
-    say('選 ' + (i + 1) + '：剩下的裡面最早結束', 'f(' + (i + 1) + ') = ' + IS8[i][1] + '，最早釋放 resource');
-    await gb(tok, 1600);
-    const rej = [...alive].filter((j) => gOv(IS8[i], IS8[j]));
-    if (rej.length) say('跟 ' + (i + 1) + ' overlap 的 reject', rej.map((j) => j + 1).join('、') + ' 被槓掉');
-    rej.forEach((j) => { alive.delete(j); fly(B[j], V3(1, 6, 3)); });
-    txt(At, 'A = { ' + A.join(', ') + ' }');
-    await gb(tok, 1500); glow(B[i], null); kill(l);
-  }
-  say('resource 越早放出來越好', '剩下的人越有機會用到');
-  await gb(tok, 2800);
+  let ax, B, At, alive, A = [];
+  const pick = (i) => { alive.delete(i); A.push(i + 1); glow(B[i], GOLD); tint(B[i], GJ.teal); txt(At, 'A = { ' + A.join(', ') + ' }'); return vline(ax, IS8[i][1], 6.4, 1.3); };
+  const reject = (i) => { const rej = [...alive].filter((j) => gOv(IS8[i], IS8[j])); rej.forEach((j) => { alive.delete(j); fly(B[j], V3(1, 6, 3)); }); glow(B[i], null); return rej; };
+  await step(tok);                                   // 1287.0 最早結束的人最早把 resource 放出來
+  ax = gAx(0, 11, -5.5, 5.5, 1.3);
+  B = IS8.map(([s, f], i) => gBar(ax, String(i + 1), s, f, 6.0 - i * 0.6, GJ.sand, 2));
+  const res = prop('cpu', 6.1, 0, 2.4, 0.6, 'resource');
+  say('最早結束 = 最早把 resource 放出來', '讓給後面的人用');
+  await step(tok);                                   // 1326.0 先依 finish time 排序
+  IS8ord.forEach((i, r) => move(B[i], ax.X((IS8[i][0] + IS8[i][1]) / 2), 6.0 - r * 0.6, 0));
+  alive = new Set(IS8ord); At = tag('A = { }', 'ptr alt', 0, 0.3);
+  say('先把 request 依 finish time 排序', '從小排到大');
+  let l;
+  await step(tok);                                   // 1333.0 選最早結束的 accept
+  l = pick(1);
+  say('選最早結束的：2', 'f(2) = 4，accept');
+  await step(tok);                                   // 1340.0 跟它 conflict 的砍掉
+  kill(l); reject(1);
+  say('跟 2 打架的砍掉', '1、3、4 出局');
+  await step(tok);                                   // 1346.1 剩下的再選最早結束、再砍
+  l = pick(4); await beat(tok, 900); kill(l); reject(4);
+  say('剩下的再選最早結束：5', '6、7 跟 5 打架，砍掉');
+  await step(tok);                                   // 1354.0 選最早把 resource 放出來的
+  l = pick(7); await beat(tok, 700); kill(l); reject(7);
+  say('最後選 8', 'A = { 2, 5, 8 }');
+  await step(tok);                                   // 1362.0 resource 越早放出來，剩下的人越有機會
+  bob(res, 0.05);
+  bub('越早放出來，後面越多人用得到', 3.2, 0.3, 2.4);
+  say('resource 越早釋放越好', '剩下的 request 越有機會用到');
 }]);
 
-// 22:50 Pseudocode：A ← ∅；while R 非空：選 f 最小、加入 A、刪掉它與 overlap；feasible
-FRAG.push(['grjiang1-eft-code', 'Interval scheduling 的 pseudocode 與 feasible', async (tok) => {
-  fresh([0, 3.8, 13.5], [0, 3.2, 0]);
-  const cd = code(['1 A ← ∅', '2 while R ≠ ∅', '3   選 i ∈ R，f(i) 最小', '4   A ← A ∪ {i}', '5   R ← R − {i} − X', '6 return A'], -3.6, 5.8, 0.62);
-  tag('X：跟 i overlap 的 request', 'idx', -3.6, 1.6);
+// 22:57 Pseudocode：A ← ∅；while R 非空：選 f 最小、加入 A、刪掉它與 overlap；feasible
+const EFTCODE = ['1 A ← ∅', '2 while R ≠ ∅', '3   選 i ∈ R，f(i) 最小', '4   A ← A ∪ {i}', '5   R ← R − {i} − X', '6 return A'];
+function eftSetup(withCode = true) {
+  const cd = withCode ? code(EFTCODE, -3.6, 5.8, 0.62) : null;
   const ax = gAx(0, 11, 0.6, 6.6, 0.8);
   const B = IS8.map(([s, f], i) => gBar(ax, String(i + 1), s, f, 5.8 - i * 0.6, GJ.sand, 2));
-  await gb(tok, 900);
-  cd.hl(0); const At = tag('A = { }', 'ptr alt', 3.6, 6.6);
-  say('R：還沒處理的 request', 'A：accepted，一開始空集合');
-  await gb(tok, 1800);
+  return { cd, ax, B };
+}
+function eftRound(st, A, alive, At) {
+  const i = [...alive].sort((p, q) => IS8[p][1] - IS8[q][1])[0];
+  return {
+    i,
+    choose() { st.cd && st.cd.hl(2); glow(st.B[i], GOLD); },
+    accept() { st.cd && st.cd.hl(3); tint(st.B[i], GJ.teal); glow(st.B[i], null); A.push(i + 1); alive.delete(i); txt(At, 'A = { ' + A.join(', ') + ' }'); },
+    remove() { st.cd && st.cd.hl(4); const rej = [...alive].filter((j) => gOv(IS8[i], IS8[j])); rej.forEach((j) => { alive.delete(j); fly(st.B[j], V3(1, 6, 3)); }); return rej; },
+  };
+}
+FRAG.push(['grjiang1-eft-code', 'Interval scheduling 的 pseudocode 與 feasible', async (tok) => {
+  fresh([0, 3.8, 13.5], [0, 3.2, 0]);
+  let st, At, cd;
   const alive = new Set(IS8.map((r, i) => i)), A = [];
-  while (alive.size) {
-    cd.hl(1); await gb(tok, 500);
-    const i = [...alive].sort((p, q) => IS8[p][1] - IS8[q][1])[0];
-    cd.hl(2); glow(B[i], GOLD); if (!A.length) say('每輪選 finish time 最小的', 'greedy rule：earliest finish'); await gb(tok, 1000);
-    cd.hl(3); tint(B[i], GJ.teal); glow(B[i], null); A.push(i + 1); txt(At, 'A = { ' + A.join(', ') + ' }'); alive.delete(i); await gb(tok, 700);
-    cd.hl(4); const rej = [...alive].filter((j) => gOv(IS8[i], IS8[j]));
-    if (A.length === 1) say('第 5 行：連 overlap 一起扣掉', 'R ← R − {i} − X');
-    rej.forEach((j) => { alive.delete(j); fly(B[j], V3(1, 6, 3)); }); await gb(tok, 1100);
-  }
-  cd.hl(5);
-  say('feasible：A 一定互相 compatible', '因為第 5 行刪光 overlap');
-  await gb(tok, 2600);
-  say('接著要問：是最佳嗎？多快？', 'optimal? running time?');
-  await gb(tok, 2600);
+  await step(tok);                                   // 1379.0 輸入 R：所有 request，各有 s、f
+  const ax = gAx(0, 11, 0.6, 6.6, 0.8);
+  const B = IS8.map(([s, f], i) => gBar(ax, String(i + 1), s, f, 5.8 - i * 0.6, GJ.sand, 2));
+  st = { ax, B, cd: null };
+  tag('R', 'ptr', 0.1, 6.4);
+  say('輸入 R：所有 request 的 set', '每個有 s 和 f');
+  await step(tok);                                   // 1392.0 輸出 A：accepted 的 set
+  At = tag('A = ?', 'ptr alt', 3.6, 6.6);
+  say('輸出 A：被 accept 的 request', '');
+  await step(tok);                                   // 1405.0 寫成程式很簡單：loop ＋ if-else
+  cd = code(EFTCODE, -3.6, 5.8, 0.62); st.cd = cd;
+  say('greedy 寫成程式很簡單', '一個 while／for loop 加 if-else');
+  await step(tok);                                   // 1425.0 A 先清成空集合
+  cd.hl(0); txt(At, 'A = { }');
+  say('第 1 行：A 先設成空集合 ∅', '裡面沒有任何 element');
+  await step(tok);                                   // 1495.0 一輪一輪選目前最好的放進 A
+  say('接著一輪一輪選目前最好的', '放進 A，最後吐出 A');
+  await step(tok);                                   // 1510.0 只要 R 還有 request 沒處理
+  cd.hl(1);
+  say('第 2 行：只要 R 還不是空的', '就繼續處理');
+  let rd = eftRound(st, A, alive, At);
+  await step(tok);                                   // 1528.0 選 finish time 最小的
+  rd.choose();
+  say('第 3 行：選 f(i) 最小的', '最早結束的是 2');
+  await step(tok);                                   // 1548.0 accept 它，放進 A
+  rd.accept();
+  say('第 4 行：accept，把 2 放進 A', '');
+  await step(tok);                                   // 1571.0 R 扣掉 i，也扣掉 overlap 的 X
+  rd.remove();
+  say('第 5 行：R 扣掉 2，也扣掉 X', 'X = 跟 2 overlap 的 1、3、4');
+  await step(tok);                                   // 1593.0 再從剩下的選最早結束
+  cd.hl(1); rd = eftRound(st, A, alive, At); rd.choose(); await beat(tok, 700); rd.accept(); await beat(tok, 500); rd.remove();
+  say('下一輪：選 5，扣掉 6、7', '');
+  await step(tok);                                   // 1608.0 一直做到 R 空了，吐出 A
+  cd.hl(1); rd = eftRound(st, A, alive, At); rd.choose(); await beat(tok, 600); rd.accept(); await beat(tok, 500); cd.hl(5);
+  say('選 8，R 空了就 return A', 'A = { 2, 5, 8 }');
+  await step(tok);                                   // 1632.0 第一個問題：feasible 嗎？
+  const fq = pkt('feasible？A 互相 compatible 嗎？', 3.6, 0.0);
+  say('先問：它 feasible 嗎？', '吐出來的 A 合不合法');
+  await step(tok);                                   // 1658.0 一定合法：第 5 行扣掉 overlap
+  cd.hl(4); remove(fq);
+  good('✔ feasible：第 5 行刪光 overlap', 3.6, 0.0);
+  say('一定合法', '每次都把 overlap 的扣掉了');
+  await step(tok);                                   // 1684.0 接著問：是最佳解嗎？
+  cd.hl(-1);
+  pkt('optimal？', -3.6, 1.6);
+  say('接著問：它是最佳解嗎？', '是不是最大的 set');
+  await step(tok);                                   // 1698.0 efficiency：run time？
+  pkt('running time？', -1.2, 1.6);
+  say('還要問：跑多快？', '下次用 stays ahead 證明');
+}]);
+
+// 28:54 第二堂：複習 interval scheduling 與 procedure
+FRAG.push(['grjiang1-is-review', '複習：interval scheduling 與 earliest finish', async (tok) => {
+  fresh([0, 3.8, 13.5], [0, 3.2, 0]);
+  let st, At, cd, cards;
+  const alive = new Set(IS8.map((r, i) => i)), A = [];
+  await step(tok);                                   // 1734.0 複習：每個 request 有開始結束時間
+  st = eftSetup(false);
+  say('複習：每個 request 有開始和結束時間', '在時間軸上形成一段 interval');
+  await step(tok);                                   // 1764.0 只有一台機器，同時只能跑一個
+  const cpu = prop('cpu', -4.6, 3.2, 0, 1.0, '只有一台機器');
+  say('只有一台機器', '同一時間只能跑一個 request');
+  await step(tok);                                   // 1776.0 不能 overlap，越多越好
+  [1, 4, 7].forEach((i) => tint(st.B[i], GJ.teal));
+  say('選出的 interval 不能 overlap', '目標：選越多越好');
+  await step(tok);                                   // 1831.0 何謂最好：greedy rule
+  [1, 4, 7].forEach((i) => tint(st.B[i], GJ.sand));
+  const gr = pkt('greedy rule = 何謂最好', -4.6, 1.4);
+  say('greedy：每步選當下看起來最好的', '「最好」由 greedy rule 定義');
+  At = tag('A = { }', 'ptr alt', 3.6, 6.6);
+  let rd = eftRound(st, A, alive, At);
+  await step(tok);                                   // 1851.0 依原則挑出第一個 request
+  rd.choose(); await beat(tok, 600); rd.accept();
+  say('依 rule 挑出第一個 request', '');
+  await step(tok);                                   // 1870.0 overlap 的先去掉
+  rd.remove();
+  say('跟它 overlap 的先去掉', '剩下的都還 compatible');
+  await step(tok);                                   // 1884.0 剩下的再依同樣 rule 選第二個
+  rd = eftRound(st, A, alive, At); rd.choose(); await beat(tok, 600); rd.accept(); await beat(tok, 500); rd.remove();
+  rd = eftRound(st, A, alive, At); await beat(tok, 300); rd.choose(); await beat(tok, 500); rd.accept();
+  say('剩下的依同樣 rule 選，直到做完', '');
+  await step(tok);                                   // 1912.0 四種 rule
+  kill(cpu); remove(gr);
+  cards = ['① 最早開始', '② 最短', '③ 最少 conflict', '④ 最早結束'].map((t, k) => cube(t, GJ.paper, [2.6, 0.5, 0.6], -4.2, 5.6 - k * 0.8, 0, 1.5));
+  say('上次想了四種 rule', '');
+  await step(tok);                                   // 1952.0 舉反例把前三種拒絕
+  [0, 1, 2].forEach((k) => { tint(cards[k], GJ.gray); glow(cards[k], RED); });
+  say('前三種都被反例推翻', '舉一個反例就夠了');
+  await step(tok);                                   // 1969.0 採用最早結束時間：早點 release resource
+  [0, 1, 2].forEach((k) => glow(cards[k], null));
+  tint(cards[3], GJ.teal); glow(cards[3], GOLD);
+  say('採用最早結束時間', '比較早把 resource release 出來');
+  await step(tok);                                   // 2010.0 寫成 procedure
+  cards.forEach(kill);
+  cd = code(EFTCODE, -3.6, 5.8, 0.62);
+  say('照這個 rule 就有一個 procedure', '');
+  await step(tok);                                   // 2023.0 R：還沒處理的；A 一開始空集合
+  cd.hl(0);
+  say('R = 還沒處理的 request', 'A 一開始是空集合');
+  await step(tok);                                   // 2049.0 選最早結束的，放進 A
+  cd.hl(2); await beat(tok, 700); cd.hl(3);
+  say('每輪選最早結束的', '把它放進 A');
+  await step(tok);                                   // 2079.0 R 扣掉它，也扣掉 overlap 的 X
+  cd.hl(4);
+  say('R 扣掉它，也扣掉 X', 'X = 跟它 overlap 的人');
+  await step(tok);                                   // 2118.0 先證合理：第 5 行保證 compatible
+  good('✔ 合法：第 5 行刪光 overlap', 3.6, 0.0);
+  say('先證合理：A 一定 compatible', '第 5 行保證');
+  await step(tok);                                   // 2184.0 接著：會不會到達最佳解？
+  cd.hl(-1);
+  pkt('optimal？', -3.6, 1.6);
+  say('接著要證：它是最佳解嗎？', '');
 }]);
 
 // 36:46 Stays ahead 的想法：只比個數，partial solution 每步都不輸
 const SA_A = [[0, 2], [3, 5], [6, 8]], SA_O = [[1, 3], [3.5, 6], [6, 9]];
 FRAG.push(['grjiang1-stays-ahead-idea', 'Stays ahead：只要 |A| = |O|', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.2, 0]);
-  const ax = gAx(0, 10, -5, 5, 1.2);
-  tag('A（greedy）', 'idx', -6.2, 4.6); tag('O（optimal）', 'idx', -6.2, 3.0);
-  const a = SA_A.map(([s, f], k) => gBar(ax, 'i' + (k + 1), s, f, 4.6, GJ.teal, 2));
-  const o = SA_O.map(([s, f], k) => gBar(ax, 'j' + (k + 1), s, f, 3.0, GJ.purple, 2));
-  await gb(tok, 900);
-  say('O：某個神人找到的最佳解', 'A：greedy 吐出來的解');
-  await gb(tok, 2200);
-  say('不用證 A 跟 O 一模一樣', '只要個數一樣：|A| = |O|');
-  await gb(tok, 2400);
-  say('i 依選的順序，j 依時間排好', 'A = {i1..ik}，O = {j1..jm}');
-  await gb(tok, 2200);
-  for (let r = 0; r < 3; r++) {
-    glow(a[r], GOLD); glow(o[r], GOLD);
-    const l1 = line(ax.X(SA_A[r][1]), 5.0, ax.X(SA_A[r][1]), 1.2, 0, '#1f9e6e'), l2 = line(ax.X(SA_O[r][1]), 3.4, ax.X(SA_O[r][1]), 1.2, 0, '#9b7ef4');
-    say('對齊第 ' + (r + 1) + ' 個比 finish', 'f(i' + (r + 1) + ') = ' + SA_A[r][1] + ' ≤ f(j' + (r + 1) + ') = ' + SA_O[r][1]);
-    await gb(tok, 1700); glow(a[r], null); glow(o[r], null); kill(l1); kill(l2);
-  }
-  say('每一步都跑在前面', 'greedy always stays ahead');
-  await gb(tok, 2800);
+  let ax, a, o, ra, ro;
+  await step(tok);                                   // 2208.0 第一種證法：stays ahead
+  tag('the greedy algorithm stays ahead', 'ptr alt', 0, 6.6);
+  ra = pal('A', -6.3, GJ.teal, 1.0, 0.55, 4.0); ro = pal('O', -6.3, GJ.purple, 1.0, 0.55, 2.4);
+  say('第一種證法：greedy stays ahead', '一路都是第一名');
+  await step(tok);                                   // 2234.0 題目：最大 size 的 compatible subset
+  ax = gAx(0, 10, -5, 5, 1.2);
+  a = SA_A.map(([s, f], k) => gBar(ax, 'i' + (k + 1), s, f, 4.6, GJ.teal, 2));
+  o = SA_O.map(([s, f], k) => gBar(ax, 'j' + (k + 1), s, f, 3.0, GJ.purple, 2));
+  say('題目要的是最大 size 的 compatible subset', '上：greedy 的 A；下：另一個解');
+  await step(tok);                                   // 2250.0 只關心個數
+  const ca = note('3 個', 5.8, 4.6), co = note('3 個', 5.8, 3.0);
+  say('我們只關心選了幾個', '你 3 個、我 3 個，就一樣好');
+  await step(tok);                                   // 2290.0 假設有人找到最佳解 O
+  ro.mood('happy'); relabelBuddy(ro, 'O（optimal）');
+  say('假設有人找到最佳解，叫它 O', 'big O 這個 set');
+  await step(tok);                                   // 2317.0 不用一模一樣，只要個數一樣
+  pkt('不必 A = O，只要 |A| = |O|', 0, 0.2);
+  say('不用證 A 跟 O 一模一樣', '只要個數一樣就好');
+  await step(tok);                                   // 2365.0 step by step 比 partial solution
+  glow(a[0], GOLD); glow(o[0], GOLD);
+  const l1 = vline(ax, 2, 5.0, 1.2, '#1f9e6e'), l2 = vline(ax, 3, 3.4, 1.2, '#9b7ef4');
+  say('step by step 比 A 和 O 的 partial solution', '第 1 個：A 比較早結束');
+  await step(tok);                                   // 2389.0 每一步 greedy 都不比 O 差
+  glow(a[0], null); glow(o[0], null); kill(l1); kill(l2);
+  for (let r = 1; r < 3; r++) { glow(a[r], GOLD); glow(o[r], GOLD); await beat(tok, 900); glow(a[r], null); glow(o[r], null); }
+  ra.mood('happy'); await ra.hop(tok);
+  say('每一步 greedy 都不比 O 差', 'always stays ahead');
 }]);
+function relabelBuddy(b, t) { if (b.name) b.name.element.textContent = t; }
 
-// 42:44 Lemma：f(i_r) ≤ f(j_r)；base case r = 1
+// 40:07 Lemma：f(i_r) ≤ f(j_r)；base case r = 1
 FRAG.push(['grjiang1-lemma-base', 'Lemma f(i_r) ≤ f(j_r)：base case', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.2, 0]);
-  tag('Lemma：r = 1..k，f(i_r) ≤ f(j_r)', 'ptr alt', 0, 6.5);
-  const ax = gAx(0, 10, -5, 5, 0.8);
+  let ax, B, lem, l1, l2;
   const R = [[1, 3], [0, 2], [2, 4], [3.5, 6], [3, 5], [6, 9], [5, 7]];
-  const B = R.map(([s, f], k) => gBar(ax, '', s, f, 5.6 - k * 0.62, GJ.sand, 2));
-  await gb(tok, 900);
-  say('用數學歸納法證 lemma', 'base：r = 1');
-  await gb(tok, 1800);
-  [0, 3, 5].forEach((k, n) => { tint(B[k], GJ.purple); relabel(B[k], 'j' + (n + 1)); });
-  say('O 只是其中一個 subset', 'j1 = O 裡最早結束的');
-  await gb(tok, 2200);
+  await step(tok);                                   // 2406.4 目標：|A| = |O|
+  tag('目標：|A| = |O|', 'ptr alt', 0, 6.6);
+  say('最後要證：A 的個數 = O 的個數', '');
+  await step(tok);                                   // 2419.0 分兩步，先證一個小 lemma
+  note('① 先證小 lemma　② 再證 |A| = |O|', 0, 6.0);
+  say('拆成兩步', '先證一個小 lemma');
+  await step(tok);                                   // 2436.0 A = {i1..ik}，依選的順序
+  ax = gAx(0, 10, -5, 5, 0.8);
+  B = R.map(([s, f], k) => gBar(ax, '', s, f, 5.4 - k * 0.62, GJ.sand, 2));
+  note('A = { i1, i2, …, ik }（依 greedy 選的順序）', -2.6, -0.2);
+  say('A = { i1 … ik }：k 個', '照 greedy 選進來的順序編號');
+  await step(tok);                                   // 2478.0 O = {j1..jm}，個數未知
+  [0, 3, 5].forEach((k) => tint(B[k], GJ.purple));
+  note('O = { j1, …, jm }', 3.6, -0.2);
+  say('O = { j1 … jm }：m 個', '現在還不知道 m、k 誰大');
+  await step(tok);                                   // 2531.0 把 O 依時間從小排到大
+  [0, 3, 5].forEach((k, n) => relabel(B[k], 'j' + (n + 1)));
+  say('O 互相不 overlap', '所以可以依時間從小排到大');
+  await step(tok);                                   // 2578.0 Lemma：f(i_r) ≤ f(j_r)
+  lem = pkt('Lemma：r = 1..k，f(i_r) ≤ f(j_r)', 0, 7.2);
+  say('Lemma：對齊第 r 個比', 'A 的 finish ≤ O 的 finish');
+  await step(tok);                                   // 2609.0 直覺：i1 是全部裡最早結束的
   tint(B[1], GJ.teal); relabel(B[1], 'i1'); glow(B[1], GOLD);
-  say('i1 = 全部 request 裡最早結束', 'greedy 第一步就選它');
-  await gb(tok, 2200);
-  const l1 = line(ax.X(2), 6.1, ax.X(2), 0.8, 0, '#1f9e6e'), l2 = line(ax.X(3), 6.1, ax.X(3), 0.8, 0, '#9b7ef4');
-  tag('f(i1)', 'idx', ax.X(2) - 0.4, 0.15); tag('f(j1)', 'idx', ax.X(3) + 0.4, 0.15);
-  say('整體最小 ≤ subset 的最小', 'f(i1) ≤ f(j1)');
-  await gb(tok, 2600);
-  glow(B[1], null);
-  say('r = 1 成立，接著做 inductive step', 'weak induction：每次前進一步');
-  await gb(tok, 2600); kill(l1); kill(l2);
-  await gb(tok, 300);
+  say('i1 是「全部」request 裡最早結束的', 'greedy 第一步就選它');
+  await step(tok);                                   // 2613.0 j1 只是 O 裡最早結束的
+  glow(B[0], GOLD);
+  say('j1 只是 O 這個 subset 裡最早結束的', '');
+  await step(tok);                                   // 2642.0 用數學歸納法
+  glow(B[0], null); glow(B[1], null);
+  note('數學歸納法：base → inductive step', 0, 6.0);
+  say('用數學歸納法（induction）證', '先做 base：r = 1');
+  await step(tok);                                   // 2659.0 base：全部的最小 ≤ subset 的最小
+  l1 = vline(ax, 2, 5.9, 0.8, '#1f9e6e'); l2 = vline(ax, 3, 5.9, 0.8, '#9b7ef4');
+  tag('f(i1)', 'idx', ax.X(2) - 0.4, 6.2); tag('f(j1)', 'idx', ax.X(3) + 0.4, 6.2);
+  say('整體的最小值 ≤ subset 的最小值', '');
+  await step(tok);                                   // 2693.0 所以 f(i1) ≤ f(j1)
+  good('r = 1：f(i1) ≤ f(j1) ✔', 3.8, 1.6);
+  say('所以 f(i1) ≤ f(j1)', 'base case 成立');
 }]);
 
-// 45:02 Inductive step：f(i_{r-1}) ≤ f(j_{r-1}) ≤ s(j_r) → j_r 還在 R → f(i_r) ≤ f(j_r)
+// 45:01 Inductive step：f(i_{r-1}) ≤ f(j_{r-1}) ≤ s(j_r) → j_r 還在 R → f(i_r) ≤ f(j_r)
 FRAG.push(['grjiang1-lemma-induct', 'Inductive step：j_r 還在 R 裡', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.2, 0]);
-  const ax = gAx(0, 10, -5, 5, 1.2);
+  let ax, i1, j1, j2, x, la, lb, lc, i2, inR, ghost;
+  await step(tok);                                   // 2701.3 inductive step：weak induction
+  ax = gAx(0, 10, -5, 5, 1.2);
   tag('A', 'idx', -6, 4.6); tag('O', 'idx', -6, 3.0);
-  const i1 = gBar(ax, 'i(r−1)', 0, 2, 4.6, GJ.teal, 2), j1 = gBar(ax, 'j(r−1)', 1, 3, 3.0, GJ.purple, 2), j2 = gBar(ax, 'j(r)', 3.5, 6, 3.0, GJ.purple, 2);
-  await gb(tok, 900);
-  say('假設 r−1 時成立', 'f(i(r−1)) ≤ f(j(r−1))');
-  const la = line(ax.X(2), 5.0, ax.X(2), 1.2, 0, '#1f9e6e'), lb = line(ax.X(3), 3.4, ax.X(3), 1.2, 0, '#9b7ef4');
-  await gb(tok, 2200);
-  const lc = line(ax.X(3.5), 3.4, ax.X(3.5), 1.2, 0, '#c08a1f');
-  say('O compatible：j(r−1) 結束才開始 j(r)', 'f(j(r−1)) ≤ s(j(r))');
-  await gb(tok, 2400);
+  i1 = gBar(ax, 'i(r−1)', 0, 2, 4.6, GJ.teal, 2); j1 = gBar(ax, 'j(r−1)', 1, 3, 3.0, GJ.purple, 2); j2 = gBar(ax, 'j(r)', 3.5, 6, 3.0, GJ.purple, 2);
+  say('inductive step：weak induction', '每次前進一步');
+  await step(tok);                                   // 2718.0 假設 r−1 時成立
+  la = vline(ax, 2, 5.0, 1.2, '#1f9e6e'); lb = vline(ax, 3, 3.4, 1.2, '#9b7ef4');
+  say('假設 r−1 時成立', 'f(i(r−1)) ≤ f(j(r−1))，要推到 r');
+  await step(tok);                                   // 2762.0 怕 i(r) 會比 j(r) 晚結束？
+  ghost = gBar(ax, 'i(r)?', 5, 8, 4.6, GJ.gray, 2);
+  bub('i(r) 會不會比 j(r) 晚結束？', 3.6, 6.2);
+  say('會不會下一個 i(r) 反而比 j(r) 晚？', '不用擔心，往下推');
+  await step(tok);                                   // 2806.6 O compatible：f(j(r−1)) ≤ s(j(r))
+  kill(ghost);
+  lc = vline(ax, 3.5, 3.4, 1.2);
+  say('O 是 compatible set', 'f(j(r−1)) ≤ s(j(r))');
+  await step(tok);                                   // 2848.0 f(i(r−1)) 更小 → 也 compatible
   glow(j2, GOLD);
-  say('所以 j(r) 跟 i(r−1) 不 overlap', 'f(i(r−1)) ≤ s(j(r))');
-  await gb(tok, 2200);
-  const inR = tag('j(r) 沒被槓掉，仍在 R', 'ptr', ax.X(4.75), 2.2);
-  say('選 i(r) 那輪，j(r) 還在 R', '第 5 行不會刪掉它');
-  await gb(tok, 2400);
-  const i2 = gBar(ax, 'i(r)', 3, 5, 4.6, GJ.teal, 2.5);
-  await gb(tok, 700); glow(i2, GOLD);
-  const ld = line(ax.X(5), 5.0, ax.X(5), 1.2, 0, '#1f9e6e'), le = line(ax.X(6), 3.4, ax.X(6), 1.2, 0, '#9b7ef4');
-  say('i(r) 是 R 裡 f 最小的', 'f(i(r)) ≤ f(j(r))（同一個就等號）');
-  await gb(tok, 2800);
-  [la, lb, lc, ld, le, inR].forEach(kill);
-  say('每一步都比 O 早結束', 'lemma 得證');
-  await gb(tok, 2400);
+  say('f(i(r−1)) 又更早', '所以 j(r) 跟 i(r−1) 也 compatible');
+  await step(tok);                                   // 2866.6 procedure：選 i(r−1) 時 reject overlap 的
+  x = gBar(ax, '', 1.5, 4, 5.6, GJ.sand, 2);
+  await beat(tok, 700); glow(x, RED); await beat(tok, 500); fly(x, V3(0, 6, 3));
+  say('選 i(r−1) 時，跟它 overlap 的被 reject', '');
+  await step(tok);                                   // 2905.0 j(r) 沒被槓掉，還在 R
+  inR = note('j(r) 沒被槓掉，仍在 R', ax.X(4.75), 2.2);
+  say('j(r) 跟它不 overlap，沒被槓掉', '選 i(r) 那輪，j(r) 還在 R');
+  await step(tok);                                   // 3000.0 i(r) 是 R 裡 finish 最小的
+  i2 = gBar(ax, 'i(r)', 3, 5, 4.6, GJ.teal, 2.5);
+  await beat(tok, 600); glow(i2, GOLD);
+  say('i(r) 選的是 R 裡 finish 最小的', 'j(r) 也在 R 裡給它挑');
+  await step(tok);                                   // 3068.0 可能剛好同一個 → 等號
+  note('同一個 → 等號', ax.X(4.5), 6.0);
+  say('可能剛好選到 j(r)', '那就是等號');
+  await step(tok);                                   // 3083.0 不一樣 → f(j(r)) 比較大
+  const ld = vline(ax, 5, 5.0, 1.2, '#1f9e6e'), le = vline(ax, 6, 3.4, 1.2, '#9b7ef4');
+  say('沒選到 j(r)，表示 j(r) 結束比較晚', 'f(i(r)) ≤ f(j(r))');
+  await step(tok);                                   // 3101.0 結論：對齊比，每個都比 O 早或一樣
+  [la, lb, lc, ld, le].forEach(kill); remove(inR);
+  good('Lemma 得證：每一個都不比 O 晚結束', 0, 6.6);
+  say('對齊比較，每個都比 O 早或一樣', 'lemma 證完');
 }]);
 
-// 52:26 反證：若 m > k，j(k+1) 在 i(k) 結束後仍在 R，loop 應繼續 → 矛盾
+// 52:52 反證：若 m > k，j(k+1) 在 i(k) 結束後仍在 R，loop 應繼續 → 矛盾
 FRAG.push(['grjiang1-optimal-contra', '反證法：|A| = |O|', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.2, 0]);
-  const ax = gAx(0, 10, -5, 5, 1.2);
+  let ax, a, o, l1, l2, l3, rt, ghost;
+  await step(tok);                                   // 3172.0 用反證法
+  tag('第二部分：反證法', 'ptr alt', 0, 6.6);
+  say('第二部分：用反證法', 'by contradiction');
+  await step(tok);                                   // 3193.0 假設 A 不是 optimal
+  ax = gAx(0, 10, -5, 5, 1.2);
   tag('A', 'idx', -6, 4.6); tag('O', 'idx', -6, 3.0);
-  say('假設 A 不是 optimal', '則 m > k');
-  const a = [[0, 2], [3, 5]].map(([s, f], k) => gBar(ax, 'i' + (k + 1), s, f, 4.6, GJ.teal, 2));
-  const o = [[1, 3], [3.5, 6], [6, 9]].map(([s, f], k) => gBar(ax, 'j' + (k + 1), s, f, 3.0, GJ.purple, 2));
-  relabel(a[1], 'ik'); relabel(o[1], 'jk'); relabel(o[2], 'j(k+1)');
-  await gb(tok, 2200);
+  a = [[0, 2], [3, 5]].map(([s, f], k) => gBar(ax, k ? 'ik' : 'i1', s, f, 4.6, GJ.teal, 2));
+  o = [[1, 3], [3.5, 6], [6, 9]].map(([s, f], k) => gBar(ax, ['j1', 'jk', 'j(k+1)'][k], s, f, 3.0, GJ.purple, 2));
+  say('假設 A 不是 optimal', '那 O 會選得比較多');
+  await step(tok);                                   // 3218.0 所以 m > k
+  note('m > k', 5.8, 3.0);
+  say('O 有 m 個、A 有 k 個', '所以 m > k');
+  await step(tok);                                   // 3238.0 由 lemma：f(i_k) ≤ f(j_k)
+  l1 = vline(ax, 5, 5.0, 1.2, '#1f9e6e'); l2 = vline(ax, 6, 3.4, 1.2, '#9b7ef4');
+  say('由 lemma：f(ik) ≤ f(jk)', '對齊來看 A 都比較早結束');
+  await step(tok);                                   // 3288.5 m 比較多 → 存在 j(k+1)
   glow(o[2], GOLD);
-  say('O 至少多一個 j(k+1)', '排在 jk 後面');
-  await gb(tok, 2000);
-  const l1 = line(ax.X(5), 5.0, ax.X(5), 1.2, 0, '#1f9e6e'), l2 = line(ax.X(6), 3.4, ax.X(6), 1.2, 0, '#9b7ef4');
-  say('lemma + compatible 串起來', 'f(ik) ≤ f(jk) ≤ s(j(k+1))');
-  await gb(tok, 2600);
-  tag('i(k) 選完，R 裡還有 j(k+1)', 'ptr', ax.X(7.5), 2.2);
-  say('ik 選完後 R 還不是空的', 'while loop 會再跑一輪');
-  await gb(tok, 2400);
-  const ghost = gBar(ax, 'i(k+1)?', 6, 9, 4.6, GJ.gray, 2.5);
-  await gb(tok, 800); glow(ghost, RED);
-  say('A 應有第 k+1 個 → 矛盾', '所以 A 是 optimal');
-  await gb(tok, 2200);
-  [l1, l2].forEach(kill); fly(ghost, V3(0, 6, 3));
-  tag('|A| = |O| = k', 'ptr alt', 0, 6.4);
-  say('greedy 一路領先到底', 'stays ahead 證完');
-  await gb(tok, 2800);
+  say('m 比較多，一定有 j(k+1)', '排在 jk 後面');
+  await step(tok);                                   // 3341.0 O compatible：s(j(k+1)) ≥ f(jk)
+  say('O 是 compatible set', 's(j(k+1)) ≥ f(jk)');
+  await step(tok);                                   // 3413.0 串起來：f(ik) ≤ s(j(k+1))
+  note('f(ik) ≤ f(jk) ≤ s(j(k+1))', 0, 0.2);
+  say('串起來：f(ik) ≤ s(j(k+1))', 'j(k+1) 跟 ik 也 compatible');
+  await step(tok);                                   // 3437.0 ik 選完，j(k+1) 槓不掉
+  rt = note('ik 選完，R 裡還有 j(k+1)', ax.X(7.5), 2.2);
+  say('選完 ik，j(k+1) 不會被槓掉', 'R 裡還有人');
+  await step(tok);                                   // 3478.0 while loop 會再跑 → 應有 i(k+1)
+  ghost = gBar(ax, 'i(k+1)?', 6, 9, 4.6, GJ.gray, 2.5);
+  say('while loop 還會再跑一輪', 'A 應該還有 i(k+1)');
+  await step(tok);                                   // 3499.0 但 A 只有 k 個 → 矛盾
+  glow(ghost, RED);
+  bad('矛盾！A 只有 k 個', 3.6, 6.0);
+  say('可是 A 只有 k 個', '跟 procedure 矛盾');
+  await step(tok);                                   // 3528.0 所以 A 是 optimal，|A| = |O|
+  [l1, l2].forEach(kill); fly(ghost, V3(0, 6, 3)); remove(rt);
+  good('|A| = |O|：A 是 optimal', 0, 6.0);
+  say('假設錯了，A 是 optimal', '個數一樣多');
+  await step(tok);                                   // 3563.0 stays ahead：greedy 都跑在前方
+  const g = pal('greedy', -6.2, GJ.teal, 1.8, 0.6); g.mood('happy'); await g.hop(tok);
+  say('這就是 stays ahead', 'greedy 一路跑在前方到底');
 }]);
 
-// 59:54 直接實作：排序 O(n log n)，但第 5 行每輪跟剩下全部比 → O(n²)
+// 59:59 直接實作：排序 O(n log n)，但第 5 行每輪跟剩下全部比 → O(n²)
 FRAG.push(['grjiang1-naive-n2', '直接照 pseudocode 做：O(n²)', async (tok) => {
   fresh([0, 3.6, 13], [0, 3, 0]);
-  const n = 8;
-  say('先依 finish time 排序', 'sorting：O(n log n)');
-  const C = [];
-  for (let i = 0; i < n; i++) { C.push(cube('r' + (i + 1), GJ.sand, [1.0, 0.55, 0.6], -4.9 + i * 1.4, 5.6, 0, 2)); await gb(tok, 200); }
-  await gb(tok, 1000);
-  say('第 5 行：要跟剩下的每個人比', 'finish 晚不代表不 overlap');
-  await gb(tok, 2200);
-  const cols = [];
-  for (let k = 0; k < n - 1; k++) {
-    glow(C[k], GOLD); tint(C[k], GJ.teal);
-    const h = (n - 1 - k) * 0.45;
-    cols.push(cube(String(n - 1 - k), GJ.orange, [0.9, Math.max(0.1, h), 0.6], -4.9 + k * 1.4, 0.3 + h / 2, 0, 1.5));
-    if (k === 0) say('第 1 個比 n−1 次', 'worst case');
-    if (k === 1) say('第 2 個比 n−2 次……', 'worst case');
-    await gb(tok, 750); glow(C[k], null);
-  }
-  say('總共 (n−1)+(n−2)+…+1', '= n(n−1)/2 = O(n²)');
-  await gb(tok, 2800);
-  say('排序省不掉，第 5 行能更快嗎？', '目標：整體 O(n log n)');
-  await gb(tok, 2800);
+  const n = 8, C = [], cols = [];
+  const bar = (k) => { const h = (n - 1 - k) * 0.45; glow(C[k], GOLD); tint(C[k], GJ.teal); cols.push(cube(String(n - 1 - k), GJ.orange, [0.9, Math.max(0.1, h), 0.6], -4.9 + k * 1.4, 0.3 + h / 2, 0, 1.5)); };
+  await step(tok);                                   // 3600.0 implementation：efficiency 多高
+  const cd = code(EFTCODE, -3.0, 7.2, 0.4);
+  say('接著寫程式：implementation', '要花多少時間？');
+  await step(tok);                                   // 3655.0 每次選最早結束 → 先依 finish 排序
+  cd.hl(2);
+  for (let i = 0; i < n; i++) C.push(cube('r' + (i + 1), GJ.sand, [1.0, 0.55, 0.6], -4.9 + i * 1.4, 4.6, 0, 2));
+  say('要每次選最早結束', '先依 finish time 從小排到大');
+  await step(tok);                                   // 3669.0 排序需要 O(n log n)
+  note('sorting：O(n log n)', 4.6, 5.6);
+  say('排序需要 O(n log n)', '之後的課再講為什麼');
+  await step(tok);                                   // 3703.0 第 5 行：去掉 overlap 的
+  cd.hl(4);
+  say('第 5 行：要把 overlap 的都去掉', '怎麼檢查？');
+  await step(tok);                                   // 3718.0 finish 晚不代表不 overlap
+  bub('finish 晚，start 也可能很早', 2.6, 3.4);
+  say('finish 比較晚不代表不 overlap', 'starting time 可能很早');
+  await step(tok);                                   // 3731.0 第 1 個要跟 n−1 個比
+  bar(0);
+  say('選出第 1 個，要跟剩下 n−1 個比', '');
+  await step(tok);                                   // 3749.0 第 2 個跟 n−2 個比
+  glow(C[0], null); bar(1);
+  say('第 2 個跟 n−2 個比', 'worst case');
+  await step(tok);                                   // 3756.0 第 3 個 n−3、第 4 個 n−4…
+  glow(C[1], null);
+  for (let k = 2; k < n - 1; k++) { bar(k); await beat(tok, 300); glow(C[k], null); }
+  say('第 3 個 n−3、第 4 個 n−4……', '');
+  await step(tok);                                   // 3767.5 加起來
+  note('(n−1)+(n−2)+…+1 = n(n−1)/2', 0, 6.4);
+  say('全部加起來', '(n−1)+(n−2)+…+1');
+  await step(tok);                                   // 3773.0 O(n²)
+  bad('第 5 行累計 O(n²)', 4.6, 2.6);
+  say('= O(n²)', '整個演算法變成 O(n²)');
+  await step(tok);                                   // 3799.0 能改進嗎？排序省不掉
+  say('這樣好嗎？顯然可以改進', '排序 O(n log n) 省不掉');
+  await step(tok);                                   // 3818.0 目標：其他部分不超過 n log n
+  pkt('目標：整體 O(n log n)', 4.6, 1.6);
+  say('目標：其他步驟都不超過 n log n', '');
 }]);
 
-// 63:46 一次掃描：S = 依 finish 排序後的 starting time；只清 partial conflict，6 留給 5 來槓
+// 63:53 一次掃描的想法：S = 依 finish 排序後的 starting time；只往前掃
 const OP7 = [[0, 2], [1, 3], [3, 5], [4, 6], [6, 8], [1, 9], [7, 10]];
-FRAG.push(['grjiang1-onepass', '只掃一次 R：partial reject，O(n)', async (tok) => {
+FRAG.push(['grjiang1-onepass-idea', '只掃一次 R：starting time sequence', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.2, 0]);
-  const ax = gAx(0, 10, -5, 5, 1.6);
-  const B = OP7.map(([s, f], i) => gBar(ax, String(i + 1), s, f, 6.0 - i * 0.6, GJ.sand, 2));
-  tag('S', 'idx', -6.2, 0.4);
-  const S = OP7.map(([s], i) => cube(s, GJ.paper, [0.7, 0.5, 0.6], -4.5 + i * 1.5, 0.4, 0, 1.5));
-  await gb(tok, 900);
-  say('已依 finish 排好，記下 starting time', 'S = 對應的 s 序列');
-  await gb(tok, 2200);
-  const cur = tag('▲ scan', 'ptr', -4.5, -0.3);
-  let p = 0, A = [];
-  while (p < 7) {
-    const i = p; glow(B[i], GOLD); tint(B[i], GJ.teal); tint(S[i], GJ.teal); A.push(i + 1);
-    const l = line(ax.X(OP7[i][1]), 6.4, ax.X(OP7[i][1]), 1.6, 0, '#c08a1f');
-    say('選 ' + (i + 1) + '，往後看 s 是否 < f(' + (i + 1) + ')', 'f(' + (i + 1) + ') = ' + OP7[i][1]);
-    await gb(tok, 1500); glow(B[i], null);
-    p++;
-    while (p < 7 && OP7[p][0] < OP7[i][1]) {
-      cur.position.x = -4.5 + p * 1.5; glow(S[p], RED);
-      await gb(tok, 900);
-      fly(B[p], V3(1, 6, 3)); tint(S[p], GJ.gray); glow(S[p], null); p++;
-    }
-    if (p < 7) {
-      cur.position.x = -4.5 + p * 1.5; glow(S[p], GREEN);
-      say('s(' + (p + 1) + ') ≥ f(' + (i + 1) + ')：停，不再往後比', '這一輪結束');
-      await gb(tok, 1600); glow(S[p], null);
-    }
-    if (i === 0) { glow(B[5], RED); say('6 也跟 1 打架，但先不理', '後面一定有人幫忙槓掉'); await gb(tok, 2400); glow(B[5], null); }
-    if (i === 4) { say('5 選起來時，6、7 才被槓掉', '沒有漏網之魚'); await gb(tok, 1800); }
-    kill(l);
-  }
-  tag('A = { ' + A.join(', ') + ' }', 'ptr alt', 0, 6.6);
-  say('cursor 只往前，不回頭', '第 5 行合計 O(n)，總共 O(n log n)');
-  await gb(tok, 3000);
+  const X = (i) => -4.5 + i * 1.5;
+  let S, cur;
+  await step(tok);                                   // 3835.0 另外 maintain starting time sequence S
+  tag('S', 'idx', -6.2, 3.0);
+  S = OP7.map((r, i) => cube('', GJ.paper, [0.8, 0.55, 0.6], X(i), 3.0, 0, 1.5));
+  say('另外維護一個 starting time sequence S', '');
+  await step(tok);                                   // 3853.0 依 finish 排好的順序記下 s
+  tag('依 finish 排好：r1 … r7', 'idx', 0, 4.2);
+  OP7.forEach(([s], i) => relabel(S[i], s));
+  say('依已排好的 finish 順序', '把每個人的 starting time 記下來');
+  await step(tok);                                   // 3874.0 重點：第 3–5 行怎麼做
+  say('重點是後面第 3、4、5 行', '');
+  await step(tok);                                   // 3881.0 不要每次從頭到尾掃
+  cur = pkt('▲', X(0), 2.2);
+  await travel(tok, cur, V3(X(0), 2.2, 0), V3(X(6), 2.2, 0), 900);
+  await travel(tok, cur, V3(X(6), 2.2, 0), V3(X(1), 2.2, 0), 900);
+  const back = bad('來回反覆掃 → n²', 0, 1.4);
+  say('原本每輪都把 R 從頭掃到尾', '來回走路，才會 n²');
+  await step(tok);                                   // 3903.0 只要從頭到尾掃一次
+  remove(back);
+  await travel(tok, cur, V3(X(1), 2.2, 0), V3(X(0), 2.2, 0), 400);
+  await travel(tok, cur, V3(X(0), 2.2, 0), V3(X(6), 2.2, 0), 1600);
+  say('希望 R 從頭到尾只掃一次', '指標只往前、不回頭');
+  await step(tok);                                   // 3912.0 第 5 行合計 O(n)
+  good('第 5 行合計 O(n)', 0, 1.4);
+  say('這樣第 5 行全部加起來 O(n)', '');
+  await step(tok);                                   // 3921.0 不破壞 n log n
+  note('總共 = O(n log n) + O(n) = O(n log n)', 0, 6.4);
+  say('O(n) 沒破壞 n log n', '整體還是 O(n log n)');
+  await step(tok);                                   // 3938.0 只 reject partially conflicting 的
+  say('關鍵：第 5 行不清得很徹底', '只 reject 一部分衝突的');
+  await step(tok);                                   // 3976.0 選定後往後看 starting time
+  cur.position.set(X(1), 2.2, 0); glow(S[0], GOLD);
+  say('選定一個後，往後看 starting time', '有沒有跟它 overlap');
+  await step(tok);                                   // 3991.0 比到超過 finish time 就停
+  glow(S[1], RED); await beat(tok, 600); cur.position.x = X(2); glow(S[2], GREEN);
+  say('比到 starting time 不再衝突就停', '不再往後比');
 }]);
 
-// 72:42 / Lec11 02:43 Interval partitioning：multiple resource、用最少台機器（coloring）
+// 66:49 一次掃描的例子：只清 partial conflict，6 留給 5 來槓
+FRAG.push(['grjiang1-onepass', '只掃一次 R 的例子：partial reject', async (tok) => {
+  fresh([0, 3.6, 13], [0, 3.2, 0]);
+  const XS = (i) => -4.5 + i * 1.5;
+  let ax, B, S, cur, l;
+  const A = [];
+  const pick = (i) => { glow(B[i], GOLD); tint(B[i], GJ.teal); tint(S[i], GJ.teal); A.push(i + 1); return vline(ax, OP7[i][1], 6.4, 1.6); };
+  const rej = (j) => { cur.position.x = XS(j); glow(S[j], RED); fly(B[j], V3(1, 6, 3)); tint(S[j], GJ.gray); };
+  const stop = (j) => { cur.position.x = XS(j); glow(S[j], GREEN); };
+  await step(tok);                                   // 4009.0 先花 n log n 依 finish 排好
+  ax = gAx(0, 10, -5, 5, 1.6);
+  B = OP7.map(([s, f], i) => gBar(ax, String(i + 1), s, f, 6.0 - i * 0.6, GJ.sand, 2));
+  tag('S', 'idx', -6.2, 0.4);
+  S = OP7.map(([s], i) => cube(s, GJ.paper, [0.7, 0.5, 0.6], XS(i), 0.4, 0, 1.5));
+  say('先花 O(n log n) 依 finish time 排好', '');
+  await step(tok);                                   // 4032.0 starting time 可能凸出去很多
+  glow(B[5], GOLD);
+  say('starting time 可能凸出去很多', '例如 6 很早就開始');
+  await step(tok);                                   // 4040.1 選 finish 最小的 1
+  glow(B[5], null); l = pick(0);
+  cur = pkt('▲', XS(1), -0.3);
+  say('選 finish 最小的：1', 'f(1) = 2');
+  await step(tok);                                   // 4059.0 用 1 的資訊檢查後面的 starting time
+  glow(B[0], null);
+  say('用 f(1) 去檢查後面的 starting time', '');
+  await step(tok);                                   // 4077.0 s(2) < f(1) → 一定 overlap
+  rej(1);
+  say('s(2) = 1 < f(1)：一定 overlap', '2 槓掉');
+  await step(tok);                                   // 4089.0 3 安全，停下來
+  stop(2);
+  say('s(3) = 3 ≥ f(1)：安全', '停下來，不再往後比');
+  await step(tok);                                   // 4113.0 其實 6 也該被 1 槓掉
+  glow(B[5], RED);
+  say('其實 6 也跟 1 打架', '照原本的第 5 行要槓掉它');
+  await step(tok);                                   // 4120.0 先不理它，後面一定有人槓掉
+  glow(B[5], null);
+  const later = note('6：先不理，交給後面', ax.X(5), 2.6);
+  say('先不理它', '後面一定會有人把它槓掉');
+  await step(tok);                                   // 4145.2 下一輪選 3
+  kill(l); glow(S[2], null); l = pick(2);
+  say('下一輪選 3', 'f(3) = 5');
+  await step(tok);                                   // 4160.0 4 的 starting time 在 f(3) 之前 → 槓掉
+  glow(B[2], null); rej(3); await beat(tok, 500); stop(4);
+  say('s(4) = 4 < f(3)：槓掉 4', '5 安全，停');
+  await step(tok);                                   // 4175.1 選 5
+  kill(l); glow(S[4], null); l = pick(4);
+  say('再選 5', 'f(5) = 8');
+  await step(tok);                                   // 4189.0 6、7 都比 f(5) 早開始 → 槓掉
+  glow(B[4], null); rej(5); await beat(tok, 600); rej(6);
+  remove(later);
+  say('s(6) = 1、s(7) = 7 都 < 8', '6、7 被槓掉');
+  await step(tok);                                   // 4200.0 6 被 5 收拾掉了
+  say('選 1 時沒槓的 6，現在被 5 收拾了', '後面總會有人幫忙');
+  await step(tok);                                   // 4222.0 6 從 f(1) 之前一路佔到後面
+  kill(l);
+  const ghost = gBar(ax, '6', 1, 9, 2.6, GJ.gray, 0);
+  say('6 在 f(1) 之前就開始，一路佔到很後面', '一定會跟後面選到的人打架');
+  await step(tok);                                   // 4283.2 不用每輪都清得乾乾淨淨
+  kill(ghost);
+  tag('A = { ' + A.join(', ') + ' }', 'ptr alt', 0, 6.6);
+  say('不用每輪都把衝突清乾淨', 'partially 清掉就好');
+  await step(tok);                                   // 4313.2 只清 partial，R 只掃一遍
+  good('cursor 只往前：第 5 行合計 O(n)', 3.0, -0.6);
+  say('每輪只清 partial conflict', 'R 從頭到尾只掃一遍');
+  await step(tok);                                   // 4337.0 總時間由排序決定 O(n log n)
+  pkt('總共 O(n log n)', -3.0, -0.6);
+  say('時間都花在一開始的排序', '總共 O(n log n)');
+}]);
+
+// 72:46 / Lec11 02:45 Interval partitioning：multiple resource、用最少台機器（coloring）
+function cpuRow(n, x0 = 4.6, z = 2.4, dx = 1.1) { const out = []; for (let k = 0; k < n; k++) out.push(prop('cpu', x0 + (k - (n - 1) / 2) * dx, 0, z, 0.55)); return out; }
+function ipBars(ax, drop = 2) { return IP10.map(([s, f], i) => gBar(ax, 'I' + (i + 1), s, f, 6.0 - i * 0.5, GJ.sand, drop, 0.34)); }
+function ipColor(ax, B) { const lbl = gPartition(), Y = [4.4, 3.0, 1.6]; ['resource 1', 'resource 2', 'resource 3'].forEach((t, k) => tag(t, 'idx', -6.4, Y[k])); B.forEach((b, i) => { tint(b, LCOL[lbl[i]]); move(b, ax.X((IP10[i][0] + IP10[i][1]) / 2), Y[lbl[i]], 0); }); }
 FRAG.push(['grjiang1-partition-intro', 'Interval partitioning：最少幾台機器', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.2, 0]);
-  const ax = gAx(0, 11, -5.5, 5.5, 0.6);
-  const B = IP10.map(([s, f], i) => gBar(ax, 'I' + (i + 1), s, f, 6.0 - i * 0.5, GJ.sand, 2, 0.34));
-  await gb(tok, 1000);
-  say('每個 request 都要做完', '現在有 multiple resource');
-  await gb(tok, 2200);
-  say('目標：用最少台機器', 'overlap 的不能放同一台');
-  await gb(tok, 2200);
-  const lbl = gPartition(), Y = [4.4, 3.0, 1.6];
-  ['resource 1', 'resource 2', 'resource 3'].forEach((t, k) => tag(t, 'idx', -6.4, Y[k]));
-  say('一個 resource = 一種顏色', '也叫 interval coloring');
-  for (let i = 0; i < 10; i++) { tint(B[i], LCOL[lbl[i]]); move(B[i], ax.X((IP10[i][0] + IP10[i][1]) / 2), Y[lbl[i]], 0); await gb(tok, 450); }
-  await gb(tok, 900);
-  say('這個例子 3 台就夠', '而且不可能更少');
-  await gb(tok, 3000);
+  let ax, B, cpus;
+  await step(tok);                                   // 4366.0 下一題：interval partitioning
+  tag('Interval partitioning（interval coloring）', 'ptr alt', 0, 6.7);
+  say('下一題：interval partitioning', '也叫 interval coloring：幫 interval 塗色');
+  await step(tok);                                   // 4409.0 前一題只有一顆 core
+  cpus = cpuRow(1);
+  say('前一題只有一個 core', '只能挑出最大的 compatible set');
+  await step(tok);                                   // 4431.3 現在有 multiple resource
+  cpus.forEach(kill); cpus = cpuRow(3);
+  say('現在有 multiple resource', '好幾個 core');
+  await step(tok);                                   // 4451.0 最少需要多少 core 才能全部做完
+  ax = gAx(0, 11, -5.5, 5.5, 0.6); B = ipBars(ax);
+  say('反過來問：最少要幾個 core', '才能把所有 request 都做完');
+  await step(tok);                                   // 4483.0 分成越少越好的 compatible subset
+  ipColor(ax, B);
+  say('把 request 分成 compatible subset', '分越少，用的 resource 越少');
+  await step(tok);                                   // 4499.3 這例子三個 core 就夠
+  cpus.forEach((c, k) => bob(c, 0.04));
+  good('這例子：3 個 core', 3.8, 6.0);
+  say('剛剛的例子只需要三個 core', '');
 }]);
 
 // ════════ 0UGaXukC4b0（Lec11：partitioning 的 depth、演算法、證明；minimize lateness） ════════
+// 00:15 複習：greedy 的長相、上次用 stays ahead，今天用 exchange argument
+FRAG.push(['grjiang1-review11', '複習：greedy 與兩種證明', async (tok) => {
+  fresh([0, 4, 14], [0, 3, 0]);
+  const opts = [[3, 7, 5], [6, 2, 4], [1, 5, 8]], xs = [-3.4, -0.9, 1.6];
+  let me, r;
+  await step(tok);                                   // 15.9 複習：greedy step by step
+  me = pal('greedy', -6, GJ.orange, 1.8, 0.8); me.mood('happy');
+  xs.forEach((x, s) => tag('step ' + (s + 1), 'idx', x, 6.4));
+  say('複習：greedy 一步一步兜出解', 'step by step');
+  await step(tok);                                   // 45.0 每個 step 選當下最好的
+  await pickStep(tok, 0, opts[0], xs[0]);
+  say('每個 step 做一個 decision', '選當下看到最好的');
+  await step(tok);                                   // 67.0 procedure 是 loop 的形式
+  await pickStep(tok, 1, opts[1], xs[1]);
+  await pickStep(tok, 2, opts[2], xs[2]);
+  note('一個 loop：每個 iteration select 最好的', 0, 0.3);
+  say('procedure 通常是一個 loop', '每個 iteration 選最好的');
+  await step(tok);                                   // 82.5 重點：何謂當下最好
+  pkt('何謂「當下最好」？ → greedy rule', 0, 7.2);
+  say('重點：什麼叫當下最好', '要配合適當的 greedy rule');
+  await step(tok);                                   // 98.0 要證明才能確認 optimal
+  bub('還要證明它真的 optimal', -6, 2.4, 1.8);
+  say('要透過證明確認', '它真的能到達最佳解');
+  await step(tok);                                   // 114.0 上次用第一招：stays ahead
+  fresh([0, 4, 14], [0, 3, 0]);
+  tag('① greedy stays ahead（上次）', 'ptr alt', -3.6, 6.4);
+  r = racers(2.4);
+  await race(tok, r, -6.2, -1.6, 1800); r.g.mood('happy');
+  say('上次用第一招：stays ahead', '一路第一名，最後拿冠軍');
+  await step(tok);                                   // 136.0 今天另外兩個 interval 問題
+  tag('今天：interval partitioning、minimize lateness', 'idx', 3.4, 5.4);
+  say('今天兩個 interval graph 的問題', '');
+  await step(tok);                                   // 147.0 改用 exchange argument：更 general
+  tag('② exchange argument（今天）', 'ptr alt', 3.4, 6.4);
+  const blocks = ['o1', 'o2', 'o3'].map((t, k) => cube(t, GJ.purple, [0.9, 0.7, 0.7], 2.2 + k * 1.1, 3.4, 0, 2));
+  await beat(tok, 700); fly(blocks[1], V3(0, 6, 3));
+  cube('g', GJ.teal, [0.9, 0.7, 0.7], 3.3, 3.4, 0, 2.5);
+  say('今天用第二招：exchange argument', '比較 general 的證法');
+}]);
+
+// 02:45 Interval partitioning：multiple resource、用最少台機器（coloring）
+FRAG.push(['grjiang1-partition-intro2', 'Interval partitioning：最少幾台機器', async (tok) => {
+  fresh([0, 3.6, 13], [0, 3.2, 0]);
+  let ax, B, cpus;
+  await step(tok);                                   // 165.0 interval partitioning
+  tag('Interval partitioning', 'ptr alt', 0, 6.7);
+  say('今天第一個問題：interval partitioning', '');
+  await step(tok);                                   // 177.0 也叫 interval coloring：著色
+  tag('= interval coloring（著色問題）', 'idx', 0, 6.25);
+  say('又叫 interval coloring', '在 interval graph 上塗顏色');
+  await step(tok);                                   // 194.0 每個 request 佔一段 interval
+  ax = gAx(0, 11, -5.5, 5.5, 0.6); B = ipBars(ax);
+  say('一樣：每個 request 有開始和結束', '在時間軸上佔一段 interval');
+  await step(tok);                                   // 201.0 之前只有 single resource
+  cpus = cpuRow(1);
+  say('之前只有 single resource', '一台機器');
+  await step(tok);                                   // 213.0 現在有 multiple resource
+  cpus.forEach(kill); cpus = cpuRow(3);
+  say('現在有 multiple resource', '好幾台電腦可以用');
+  await step(tok);                                   // 241.0 目標：最少台電腦完成
+  say('目標：用最少台電腦', '完成所有 request');
+  await step(tok);                                   // 266.0 每個 request 都要完成
+  pkt('每個 request 都要做完', 3.8, 6.0);
+  say('跟前題不同：每個 request 都要完成', '只是用的機器越少越好');
+  await step(tok);                                   // 282.0 一個 resource 想成一種顏色
+  ['resource 1 = 藍', 'resource 2 = 橘', 'resource 3 = 紅'].forEach((t, k) => tag(t, 'idx', -4 + k * 4, 0.0));
+  say('一個 resource 想成一種顏色', '所以叫 coloring');
+  await step(tok);                                   // 303.0 overlap 的不能放同一台
+  [0, 1, 2].forEach((i) => glow(B[i], RED));
+  say('overlap 的 request 不能放同一台', '要分散到不同機器');
+  await step(tok);                                   // 328.0 三個 resource 就做完
+  [0, 1, 2].forEach((i) => glow(B[i], null));
+  ipColor(ax, B);
+  say('這例子三台機器就做完', '均勻分散在三個 resource');
+  await step(tok);                                   // 344.0 不可能更少；解可能不只一種
+  good('最佳：3 台，不可能更少', 3.8, 6.6);
+  say('沒辦法比 3 台更少', '解可以不只一種，但都是 3 台');
+}]);
+
 // 06:02 Depth：任一時間點最多幾個 interval overlap；resource ≥ depth
 FRAG.push(['grjiang1-depth', 'Depth d：resource 的 lower bound', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.2, 0]);
-  const ax = gAx(0, 11, -5.5, 5.5, 0.6);
-  const B = IP10.map(([s, f], i) => gBar(ax, 'I' + (i + 1), s, f, 6.0 - i * 0.5, GJ.sand, 2, 0.34));
-  await gb(tok, 900);
-  say('depth：某時間點最多幾個 overlap', '掃過整條時間軸取最大');
-  const sw = line(0, 6.4, 0, 0.6, 0, '#c08a1f'); const cnt = tag('', 'ptr', 0, 6.7);
-  let dmax = 0;
-  for (const t of [0.5, 2.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5]) {
-    sw.position.x = ax.X(t); cnt.position.x = ax.X(t);
-    const on = IP10.map((r, i) => i).filter((i) => IP10[i][0] <= t && t < IP10[i][1]);
-    B.forEach((b, i) => glow(b, on.includes(i) ? GOLD : null));
-    dmax = Math.max(dmax, on.length); txt(cnt, on.length + ' 個');
-    await gb(tok, 950);
-  }
+  let ax, B, sw, cnt, dt, cpus;
+  const at = (t) => { if (sw) kill(sw); sw = line(ax.X(t), 6.3, ax.X(t), 0.6, 0, '#c08a1f'); cnt.position.x = ax.X(t); const on = IP10.map((r, i) => i).filter((i) => IP10[i][0] <= t && t < IP10[i][1]); B.forEach((b, i) => glow(b, on.includes(i) ? GOLD : null)); txt(cnt, on.length + ' 個'); return on.length; };
+  await step(tok);                                   // 362.3 先找 resource 數目的 lower bound
+  ax = gAx(0, 11, -5.5, 5.5, 0.6); B = ipBars(ax);
+  say('先問：至少需要幾台？', 'resource 數目的 lower bound');
+  await step(tok);                                   // 409.0 介紹 depth（深度）
+  tag('depth（深度）', 'ptr alt', 0, 6.9);
+  say('為了找 lower bound', '介紹一個概念：depth');
+  await step(tok);                                   // 424.0 任一時間點有多少 request overlap
+  cnt = tag('', 'ptr', ax.X(0), 6.55);
+  at(0.5);
+  say('看任一個時間點：有幾個 overlap', '時間 0.5：3 個');
+  await step(tok);                                   // 437.0 depth = overlap 程度最高的數字
+  say('depth = 整條時間軸上', 'overlap 最多的那個數字');
+  await step(tok);                                   // 454.0 時間軸掃一次
+  await anim(tok, 2200, (u) => at(0.5 + u * 10));
+  say('把時間軸掃過一次', '每個時間點數一數');
+  await step(tok);                                   // 465.0 這個例子最多 3 個 → depth 3
   B.forEach((b) => glow(b, null));
-  tag('depth d = ' + dmax, 'ptr alt', 0, 0);
-  await gb(tok, 900);
-  sw.position.x = ax.X(1); cnt.position.x = ax.X(1); txt(cnt, '3 個');
+  dt = tag('depth d = 3', 'ptr alt', 4.6, 6.9);
+  say('這個例子最多 3 個同時 overlap', 'depth = 3');
+  await step(tok);                                   // 491.0 depth 就是 resource 的 lower bound
+  pkt('#resource ≥ depth', -4.2, 6.9);
+  say('depth 就是 resource 的 lower bound', '');
+  await step(tok);                                   // 502.0 時間 1：三個 interval overlap
+  at(1);
   [0, 1, 2].forEach((i) => glow(B[i], RED));
-  say('時間 1：I1、I2、I3 同時要跑', '一定要放 3 台不同機器');
-  await gb(tok, 2600);
-  say('任何解都至少要 d 台', '#resource ≥ depth');
-  await gb(tok, 2600);
-  say('d 能在 O(n log n) 算出來嗎？', '回家想一想');
-  await gb(tok, 2400);
+  say('例如時間 1：I1、I2、I3 同時要跑', '');
+  await step(tok);                                   // 513.0 一定要分散到三台機器
+  cpus = cpuRow(3, 4.6, 2.4);
+  say('它們一定要分散到不同機器', '這一刻至少要 3 台');
+  await step(tok);                                   // 542.0 Property：至少需要 depth 這麼多
+  [0, 1, 2].forEach((i) => glow(B[i], null));
+  say('Property：任何 instance', '都至少需要 depth 個 resource');
+  await step(tok);                                   // 650.0 證明：I1..Id 在某時間點同時 overlap
+  at(1);
+  say('證明：depth = d', '表示某時間點有 I1 … Id 同時 overlap');
+  await step(tok);                                   // 672.0 每個都需要自己的 resource
+  cpus.forEach((c) => bob(c, 0.05));
+  say('每一個都要一台自己的 resource', '');
+  await step(tok);                                   // 699.0 至少 d 個；夠不夠等一下看
+  B.forEach((b) => glow(b, null));
+  note('至少 d 個；夠不夠？等一下看', 0, 0.1);
+  say('所以至少要 d 個', '它只是 lower bound，夠不夠再看');
+  await step(tok);                                   // 736.0 回家想：O(n log n) 內算出 d
+  bub('能在 O(n log n) 內算出 d 嗎？', 0, 7.4);
+  say('回家想：怎麼在 O(n log n) 算出 d', '排序免不了');
 }]);
 
-// 13:48 策略：先求 lower bound，再設計剛好用 d 台的方法 → 一定 optimal
+// 13:58 策略：先求 lower bound，再設計剛好用 d 台的方法 → 一定 optimal
 FRAG.push(['grjiang1-reach-bound', '策略：直接達到 lower bound d', async (tok) => {
   fresh([0, 3.4, 12], [0, 2.8, 0]);
   const d = 3, Y0 = 0.3;
-  const l = line(-6, Y0 + d * 0.9, 6, Y0 + d * 0.9, 0, '#c08a1f');
+  let g = [];
+  await step(tok);                                   // 838.0 depth d = resource 的 lower bound
+  line(-6, Y0 + d * 0.9, 6, Y0 + d * 0.9, 0, '#c08a1f');
   tag('lower bound d = 3', 'ptr alt', -4.6, Y0 + d * 0.9 + 0.4);
-  say('不管誰來做，至少 d 台', 'depth = lower bound');
-  await gb(tok, 2200);
-  const sols = [['某解', 5], ['某解', 4], ['某解', 6]];
-  for (let k = 0; k < 3; k++) {
-    const [name, n] = sols[k];
-    for (let r = 0; r < n; r++) cube('', GJ.purple, [1.0, 0.8, 0.8], -4.5 + k * 2.2, Y0 + 0.45 + r * 0.9, 0, 1.5);
-    tag(name + '：' + n + ' 台', 'idx', -4.5 + k * 2.2, Y0 - 0.4);
-    await gb(tok, 700);
-  }
-  say('別人的解都 ≥ d', '可能多，不可能少');
-  await gb(tok, 2000);
-  const g = [];
-  for (let r = 0; r < d; r++) { g.push(cube('', GJ.teal, [1.0, 0.8, 0.8], 3.6, Y0 + 0.45 + r * 0.9, 0, 2)); await gb(tok, 500); }
+  say('depth d 是需要 resource 的 lower bound', '');
+  await step(tok);                                   // 856.0 不知道這個 lower bound 多 tight
+  const sols = [5, 4, 6];
+  sols.forEach((n, k) => { for (let r = 0; r < n; r++) cube('', GJ.purple, [1.0, 0.8, 0.8], -4.5 + k * 2.2, Y0 + 0.45 + r * 0.9, 0, 1.5); tag('某解：' + n + ' 台', 'idx', -4.5 + k * 2.2, Y0 - 0.4); });
+  say('不知道它有多 tight', '別人的解可能都比 d 多');
+  await step(tok);                                   // 864.0 能不能只用 d 個就做完？
+  for (let r = 0; r < d; r++) g.push(cube('?', GJ.gray, [1.0, 0.8, 0.8], 3.6, Y0 + 0.45 + r * 0.9, 0, 2));
+  say('能不能只用 d 個 resource', '就把全部做完？');
+  await step(tok);                                   // 870.0 答案是 yes
+  g.forEach((c) => { tint(c, GJ.teal); relabel(c, ''); });
   tag('greedy：剛好 d 台', 'ptr', 3.6, Y0 - 0.4);
-  g.forEach((c) => glow(c, GOLD));
-  say('若能只用 d 台做完全部', 'reach lower bound → optimal');
-  await gb(tok, 2800);
-  say('答案是 yes：greedy 做得到', '證明就變簡單了');
-  await gb(tok, 2600);
+  const me = pal('greedy', 5.6, GJ.teal, 1.4, 0.55); me.mood('happy');
+  say('答案是 yes', '');
+  await step(tok);                                   // 897.0 不管誰來做，至少要這麼多
+  say('lower bound：不管誰來做都至少要這麼多', '所有解都 ≥ d');
+  await step(tok);                                   // 909.0 我的方法直接 reach lower bound
+  g.forEach((c) => glow(c, GOLD)); await me.hop(tok);
+  say('我的方法剛好 reach 這個 lower bound', '');
+  await step(tok);                                   // 919.0 所以一定是最好的
+  good('reach lower bound → optimal', 0, 6.0);
+  say('所以一定是最佳解', '證明就變簡單了');
 }]);
 
-// 16:06 演算法：依 s 排序；每個 interval 排除衝突的 label，指定一個空的
+// 16:04 演算法：依 s 排序；每個 interval 排除衝突的 label，指定一個空的
+const PCODE = ['1 依 s 排序 I1..In', '2 for j = 1..n', '3   排除跟 Ij overlap 的 label', '4   if 還有 label 沒被排除', '5     把 Ij 指定給它', '6   else 略過 Ij'];
 FRAG.push(['grjiang1-partition-code', 'Partitioning 演算法：依 s 排序、找空的 label', async (tok) => {
   fresh([0, 3.8, 13.5], [0, 3.2, 0]);
-  const cd = code(['1 依 s 排序 I1..In', '2 for j = 1..n', '3   排除跟 Ij overlap 的 label', '4   if 還有 label 沒被排除', '5     把 Ij 指定給它', '6   else 略過 Ij（不會發生）'], -3.3, 6.0, 0.62);
-  const ax = gAx(0, 11, 0.8, 6.6, 0.8);
-  const Y = [4.6, 3.4, 2.2];
+  let cd, ax;
+  const Y = [4.6, 3.4, 2.2], lbl = gPartition(), bars = [];
+  const place = (j) => { const [s, f] = IP10[j]; const b = bars[j]; tint(b, LCOL[lbl[j]]); move(b, ax.X((s + f) / 2), Y[lbl[j]], 0); };
+  const drop = (j) => { const [s, f] = IP10[j]; bars[j] = gBar(ax, 'I' + (j + 1), s, f, 6.2, GJ.sand, 1.5, 0.34); };
+  await step(tok);                                   // 964.0 resource 編號 1..d（label）
+  ax = gAx(0, 11, 0.8, 6.6, 0.8);
   Y.forEach((y, k) => tag('label ' + (k + 1), 'idx', 0.2, y + 0.4));
-  cd.hl(0); say('d 已知，準備 label 1..d', '先依 starting time 排序');
-  await gb(tok, 2000);
-  const lbl = gPartition();
-  for (let j = 0; j < 5; j++) {
-    const [s, f] = IP10[j];
-    const b = gBar(ax, 'I' + (j + 1), s, f, 6.2, GJ.sand, 1.5, 0.34);
-    cd.hl(1); await gb(tok, 500);
-    cd.hl(2); if (j === 0) say('先刪掉會打架的 label', '同 label 的 interval 不能 overlap'); await gb(tok, 900);
-    cd.hl(3); await gb(tok, 400);
-    cd.hl(4); tint(b, LCOL[lbl[j]]); move(b, ax.X((s + f) / 2), Y[lbl[j]], 0);
-    if (j === 0) say('有空的 label 就指定給它', 'linear scan 一次');
-    await gb(tok, 900);
-  }
+  say('已知 depth d，準備 d 個 resource', '編號 1 … d，叫 label');
+  await step(tok);                                   // 981.0 每個 interval 指派一個 label
+  say('每個 interval 指派一個 label', '');
+  await step(tok);                                   // 995.0 overlap 的要在不同 label
+  say('overlap 的 interval', '一定要放在不同 label');
+  await step(tok);                                   // 1009.0 procedure 共六行
+  cd = code(PCODE, -3.3, 6.0, 0.62);
+  say('procedure 一共六行', '');
+  await step(tok);                                   // 1023.0 先依 starting time 排序
+  cd.hl(0);
+  say('第 1 行：依 starting time 排序', 'I1 最早開始，In 最晚開始');
+  await step(tok);                                   // 1048.3 第 2–6 行：for loop，linear scan
+  cd.hl(1);
+  say('第 2–6 行：一個 for loop', 'linear scan 一次');
+  await step(tok);                                   // 1069.2 第一輪：拿最早開始的出來看
+  drop(0);
+  say('第一輪：拿最早開始的 I1 出來看', '');
+  await step(tok);                                   // 1081.0 先把跟它不 compatible 的 label 槓掉
+  cd.hl(2);
+  say('第 3 行：槓掉跟它打架的 label', '現在每個 label 都還空著');
+  await step(tok);                                   // 1100.0 有剩下的 label 就指派給它
+  cd.hl(3); await beat(tok, 500); cd.hl(4); place(0);
+  say('第 4、5 行：還有 label 就指派給它', 'I1 → label 1');
+  await step(tok);                                   // 1108.0 第 6 行：全部都衝突就先略過
   cd.hl(5);
-  say('第 6 行是防呆，等一下證明不會發生', 'Ij 一定拿得到 label');
-  await gb(tok, 3000);
+  say('第 6 行：全部衝突就先 skip', '等一下會證明這不會發生');
+  await step(tok);                                   // 1132.8 依序一一拿出來指派
+  for (let j = 1; j < 4; j++) { cd.hl(1); drop(j); await beat(tok, 350); cd.hl(4); place(j); await beat(tok, 350); }
+  say('依 starting time 一個一個拿出來', '指派一個不打架的 label');
 }]);
 
-// 21:14 / 23:10 實作：每個 label 記最後 finish（水位）；s_j ≥ 水位才可用；跑完 10 個
+// 19:53 實作：每個 label 記 finish 水位；s_j ≥ 水位才可用；跑完 10 個
 FRAG.push(['grjiang1-partition-run', '每個 label 記 finish 水位：10 個 interval 跑一次', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.2, 0]);
-  const ax = gAx(0, 11, -5, 6, 0.8);
+  let ax, W;
   const Y = [4.6, 3.4, 2.2], fin = [0, 0, 0];
-  const W = Y.map((y, k) => tag('L' + (k + 1) + ' 水位 0', 'ptr', -6.1, y));
+  const lit = (k, on) => { W[k].element.className = 'lab-label ' + (on ? 'ptr alt' : 'ptr'); };
+  const put = (j, k) => { const [s, f] = IP10[j]; const b = gBar(ax, 'I' + (j + 1), s, f, Y[k], LCOL[k], 1.5, 0.34); fin[k] = f; txt(W[k], 'L' + (k + 1) + ' 水位 ' + f); return b; };
+  const firstFree = (s) => fin.findIndex((x) => x <= s);
+  await step(tok);                                   // 1195.0 實作的問題在第 3、4 行
+  ax = gAx(0, 11, -5, 6, 0.8);
   Y.forEach((y, k) => line(-5, y - 0.25, 6, y - 0.25, 0, LCOL[k]));
-  say('每個 label 記最後的 finish time', '新 interval 的 s ≥ 水位才不衝突');
-  await gb(tok, 2400);
-  for (let j = 0; j < 10; j++) {
-    const [s, f] = IP10[j];
-    const b = gBar(ax, 'I' + (j + 1), s, f, 6.0, GJ.sand, 1.5, 0.34);
-    const sl = line(ax.X(s), 6.2, ax.X(s), 0.8, 0, '#c08a1f');
-    await gb(tok, 450);
-    let k = 0;
-    for (; k < 3; k++) {
-      if (fin[k] <= s) break;
-      W[k].element.className = 'lab-label ptr alt';
-      if (j < 3) say('s = ' + s + ' < 水位 ' + fin[k] + '：L' + (k + 1) + ' 不行', '已經被佔到 ' + fin[k]);
-      await gb(tok, j < 3 ? 1300 : 450);
-      W[k].element.className = 'lab-label ptr';
-    }
-    fin[k] = f; tint(b, LCOL[k]); move(b, ax.X((s + f) / 2), Y[k], 0); txt(W[k], 'L' + (k + 1) + ' 水位 ' + f);
-    if (j < 3) say('放進 L' + (k + 1) + '，水位更新成 ' + f, '水位 = ' + fin.join(' / '));
-    await gb(tok, j < 3 ? 1500 : 650); kill(sl);
-  }
-  say('10 個都塞進 3 個 label', '每個 label 內都不 overlap');
-  await gb(tok, 2200);
-  say('只用了 depth = 3 個', '剛好達到 lower bound');
-  await gb(tok, 2600);
+  W = Y.map((y, k) => tag('L' + (k + 1), 'ptr', -6.1, y));
+  say('實作的難處在第 3、4 行', '怎麼檢查跟某個 label 會不會 conflict？');
+  await step(tok);                                   // 1281.5 每個 level 對應一個 resource
+  say('每個 label 對應一個 resource', '');
+  await step(tok);                                   // 1294.8 每個 label 記最後的 finish time
+  W.forEach((w, k) => txt(w, 'L' + (k + 1) + ' 水位 0'));
+  say('每個 label 記一個「水位」', '= 裡面最後一個 finish time');
+  await step(tok);                                   // 1336.0 新 interval 拿 starting time 跟水位比
+  const demo = gBar(ax, 'Ij', 3, 6, 6.0, GJ.sand, 1.5, 0.34);
+  const sl = vline(ax, 3, 6.3, 0.8);
+  say('新 interval j：拿 s(j) 跟水位比', '');
+  await step(tok);                                   // 1356.0 開始得比水位早 → 一定 overlap
+  bad('s(j) < 水位 → conflict', 3.4, 6.7);
+  say('開始時間比水位早', '一定 overlap，這個 label 不能用');
+  await step(tok);                                   // 1372.0 開始時間 ≥ 水位 → compatible
+  good('s(j) ≥ 水位 → compatible', -2.6, 6.7);
+  say('開始時間 ≥ 水位', '就 compatible，可以指派');
+  await step(tok);                                   // 1395.0 例子：依 starting time 排好 I1..I10
+  kill(demo); kill(sl);
+  const names = IP10.map(([s], i) => tag('I' + (i + 1) + '：s=' + s, 'idx', -5 + i * 1.1, 0.05));
+  say('例子：依 starting time 排好', 'I1 … I10，depth = 3');
+  await step(tok);                                   // 1454.0 一開始水位都是 0，I1 放 L1
+  lit(0, true); put(0, 0); await beat(tok, 600); lit(0, false);
+  say('一開始水位都是 0', 'I1 放 label 1，水位變 2');
+  await step(tok);                                   // 1475.0 I2：開始時間 0，L1 水位已到 2 → 不行
+  lit(0, true);
+  const nb = bad('I2：s = 0 < 2', -6.1, 5.3);
+  say('I2 從 0 開始', 'L1 水位已經 2 → 不行');
+  await step(tok);                                   // 1521.0 第二個顏色可以 → 放 L2
+  lit(0, false); remove(nb); put(1, 1);
+  say('換看 L2：水位 0，可以', 'I2 放 L2，水位變 5');
+  await step(tok);                                   // 1536.0 I3：L1、L2 都不行 → L3，水位 2/5/2
+  lit(0, true); lit(1, true); await beat(tok, 700); lit(0, false); lit(1, false); put(2, 2);
+  say('I3：L1、L2 都不行，放 L3', '水位 = 2 / 5 / 2');
+  await step(tok);                                   // 1560.0 第四個拿下來看
+  put(3, firstFree(IP10[3][0]));
+  say('I4 從 2 開始', 'L1 水位 2 ≤ 2，可以放');
+  await step(tok);                                   // 1572.0 第五、六……第十依此類推
+  for (let j = 4; j < 10; j++) { put(j, firstFree(IP10[j][0])); await beat(tok, 380); }
+  names.forEach(remove);
+  say('I5 … I10 依此類推', '每個都找到水位夠低的 label');
+  await step(tok);                                   // 1621.0 靠水位就能快速檢查
+  say('每個 label 都記水位', '檢查只要比大小，很快');
+  await step(tok);                                   // 1672.0 第 6 行永遠不會發生
+  good('第 6 行從來沒用到', 3.4, 6.7);
+  say('第 6 行永遠不會發生', '每個人都塞得到適當的顏色');
+  await step(tok);                                   // 1742.0 每個 resource 不 overlap，只用 3 個
+  W.forEach((w, k) => lit(k, true));
+  pkt('只用 3 個 = depth（lower bound）', -2.4, 6.7);
+  say('每個 label 內都不 overlap', '只用 3 個 = lower bound');
 }]);
 
-// 29:14 算 depth：2n 個端點排序（同時刻先 finish 再 start），掃一次 d++/d--、記 dmax
+// 29:16 算 depth：2n 個端點排序（同時刻先 finish 再 start），掃一次 d++/d--、記 dmax
 FRAG.push(['grjiang1-depth-sweep', '算 depth：端點排序後掃一次', async (tok) => {
   fresh([0, 3.4, 13], [0, 2.8, 0]);
   const ev = [];
   IP10.forEach(([s, f], i) => { ev.push([s, 1, 's' + (i + 1)]); ev.push([f, 0, 'f' + (i + 1)]); });
   ev.sort((p, q) => p[0] - q[0] || p[1] - q[1]);
-  say('2n 個端點一起排序', 'O(2n log 2n) = O(n log n)');
-  const C = ev.map(([t, isS, nm], k) => { const c = cube(nm, isS ? GJ.teal : GJ.pink, [0.56, 0.5, 0.5], -6.0 + k * 0.63, 3.4, 0, 1.5); tag(String(t), 'idx', -6.0 + k * 0.63, 2.8); return c; });
-  await gb(tok, 1600);
-  const D = tag('d = 0', 'ptr alt', -2, 5.4), M = tag('dmax = 0', 'ptr alt', 2, 5.4);
-  say('start 就 d++，finish 就 d−−', '每次更新 dmax');
-  const cur = tag('▲', 'ptr', -6.0, 2.2);
-  let d = 0, dm = 0;
-  for (let k = 0; k < ev.length; k++) {
-    cur.position.x = -6.0 + k * 0.63; d += ev[k][1] ? 1 : -1; dm = Math.max(dm, d);
-    glow(C[k], GOLD); txt(D, 'd = ' + d); txt(M, 'dmax = ' + dm);
-    await gb(tok, 420); glow(C[k], null);
-  }
-  await gb(tok, 900);
-  say('同時刻：先 finish 再 start', '結束的那刻不佔 resource');
-  [2, 3, 4, 5].forEach((k) => glow(C[k], RED));
-  tag('若先 start：d 會多算成 5', 'ptr', -3.5, 1.4);
-  await gb(tok, 2800);
-  [2, 3, 4, 5].forEach((k) => glow(C[k], null));
-  say('掃描 O(n)，跟 interval 總長度無關', '不必檢查每個時間點');
-  await gb(tok, 2800);
+  const EX = (k) => -6.0 + k * 0.63;
+  let C, D, M, cur, d = 0, dm = 0, k = 0;
+  const adv = (n) => { for (let e = 0; e < n && k < ev.length; e++, k++) { cur.position.x = EX(k); d += ev[k][1] ? 1 : -1; dm = Math.max(dm, d); C.forEach((c) => glow(c, null)); glow(C[k], GOLD); txt(D, 'd = ' + d); txt(M, 'dmax = ' + dm); } };
+  await step(tok);                                   // 1757.0 回到怎麼算 depth
+  tag('怎麼算 depth？', 'ptr alt', 0, 6.4);
+  say('回到上次的問題：怎麼算 depth d', '');
+  await step(tok);                                   // 1804.3 overlap 只在 start / finish 時變化
+  say('overlap 的程度只在 start 或 finish 時改變', '中間切多細都一樣');
+  await step(tok);                                   // 1828.0 start 與 finish 一起排序，2n 個數
+  C = ev.map(([t, isS, nm], q) => { const c = cube(nm, isS ? GJ.teal : GJ.pink, [0.56, 0.5, 0.5], EX(q), 3.4, 0, 1.5); tag(String(t), 'idx', EX(q), 2.8); return c; });
+  say('把 start 和 finish 一起排序', '共 2n 個數字');
+  await step(tok);                                   // 1850.0 start 那刻佔用、finish 那刻不佔
+  note('綠 = start（佔用）　粉 = finish（不佔）', 0, 4.4);
+  say('start 那一刻開始佔用', 'finish 那一刻就不佔了');
+  await step(tok);                                   // 1939.0 2n 個排序仍是 O(n log n)
+  note('O(2n log 2n) = O(n log n)', 0, 5.6);
+  say('排 2n 個數', '還是 O(n log n)');
+  await step(tok);                                   // 1962.0 linear scan，維護 d 與 dmax
+  D = tag('d = 0', 'ptr alt', -2, 6.4); M = tag('dmax = 0', 'ptr alt', 2, 6.4);
+  say('linear scan，維護兩個變數', 'd = 目前 overlap，dmax = 答案');
+  await step(tok);                                   // 1987.0 一開始都是 0
+  cur = pkt('▲', EX(0) - 0.63, 2.2);
+  say('一開始 d 和 dmax 都是 0', '');
+  await step(tok);                                   // 2009.0 遇到 s1：d 加 1
+  adv(1);
+  say('遇到 s1：d++', 'd = 1');
+  await step(tok);                                   // 2051.0 d 比 dmax 大 → 更新 dmax
+  say('d 比目前的 dmax 大', 'dmax 也更新成 1');
+  await step(tok);                                   // 2066.0 s2、s3 也都加 1
+  adv(1); await beat(tok, 500); adv(1);
+  say('s2、s3 也是 start：d++', 'd = 3，dmax = 3');
+  await step(tok);                                   // 2077.0 遇到 finish：d 減 1
+  adv(1); await beat(tok, 500); adv(1);
+  say('遇到 finish：釋放 resource，d−−', 'd = 1');
+  await step(tok);                                   // 2102.0 依此類推做完
+  while (k < ev.length) { adv(1); await beat(tok, 140); }
+  C.forEach((c) => glow(c, null));
+  say('依此類推掃完', 'dmax = 3 = depth');
+  await step(tok);                                   // 2125.0 小心：同一時刻有 finish 也有 start
+  [3, 4, 5, 6].forEach((q) => glow(C[q], RED));
+  say('要小心：同一時刻', '有人 finish、也有人 start');
+  await step(tok);                                   // 2161.0 先 finish 再 start，否則會多算
+  note('同時刻：先 finish 再 start（不然 d 會多算成 5）', 0, 1.4);
+  say('同一時間：先排 finish 再排 start', '不然會多算');
+  await step(tok);                                   // 2223.0 算 dmax 只要 O(n)
+  [3, 4, 5, 6].forEach((q) => glow(C[q], null));
+  good('掃描 O(n)', 4.6, 0.6);
+  say('排序 O(n log n)，掃描只要 O(n)', '');
+  await step(tok);                                   // 2252.0 跟 interval 總長度無關
+  say('不必檢查每個時間點', '跟 interval 有多長無關');
 }]);
 
-// 37:50 Optimality 證明：每個 interval 都拿得到 label；overlap 的不同 label；用 d 個 → optimal
+// 38:12 Optimality 證明（一）：每個 interval 都拿得到 label
 FRAG.push(['grjiang1-partition-proof', '證明：t + 1 ≤ d，一定剩一個 label', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.2, 0]);
-  const ax = gAx(0, 11, -5, 6, 0.8);
-  const Y = [4.6, 3.4, 2.2], lbl = gPartition();
+  const Y = [4.6, 3.4, 2.2], lbl = gPartition(), j = 7, [s, f] = IP10[j];
+  let ax, B, Ij, sl;
+  await step(tok);                                   // 2292.0 策略：先 lower bound，再 reach 它
+  ax = gAx(0, 11, -5, 6, 0.8);
   Y.forEach((y, k) => tag('label ' + (k + 1), 'idx', -6.1, y));
-  const B = IP10.slice(0, 7).map(([s, f], i) => { const b = gBar(ax, 'I' + (i + 1), s, f, Y[lbl[i]], LCOL[lbl[i]], 0, 0.34); return b; });
-  const j = 7, [s, f] = IP10[j];
-  const Ij = gBar(ax, 'I8', s, f, 6.0, GJ.sand, 2, 0.34);
-  await gb(tok, 900);
-  say('處理 Ij 時，前面 t 個跟它 overlap', '例：I8，s = 7');
-  const sl = line(ax.X(s), 6.3, ax.X(s), 0.8, 0, '#c08a1f');
-  await gb(tok, 1600);
-  [5, 6].forEach((i) => glow(B[i], GOLD)); glow(Ij, GOLD);
-  say('它們都穿過 s(Ij) 這一點', 't + 1 個同時 overlap，t = 2');
-  await gb(tok, 2400);
-  say('depth 是最大 overlap', 't + 1 ≤ d → t ≤ d − 1');
-  await gb(tok, 2400);
+  B = IP10.slice(0, 7).map(([s0, f0], i) => gBar(ax, 'I' + (i + 1), s0, f0, Y[lbl[i]], LCOL[lbl[i]], 0, 0.34));
+  say('策略：先找 lower bound', '再證演算法正確、而且 reach 它');
+  await step(tok);                                   // 2341.0 分兩部分證
+  note('要證：① 每個 interval 都有 label　② overlap 的不同 label', 0, 6.9);
+  say('要證它是合法解', '分兩部分');
+  await step(tok);                                   // 2356.0 每個 interval 有 label、overlap 不同 label
+  say('① 每個 interval 都拿到 label', '② overlap 的不在同一個 label');
+  await step(tok);                                   // 2394.0 先證：第 6 行不會發生
+  pkt('先證 ①：第 6 行不會發生', 0, 0.1);
+  say('先證第一件事', '第 6 行（skip）不會發生');
+  await step(tok);                                   // 2432.0 假設 Ij 跟前面 t 個 overlap
+  Ij = gBar(ax, 'Ij（I8）', s, f, 6.0, GJ.sand, 2, 0.34);
+  [5, 6].forEach((i) => glow(B[i], GOLD));
+  say('假設 Ij 跟前面 t 個 interval overlap', '例：I8，t = 2');
+  await step(tok);                                   // 2458.4 看 Ij 的 starting time 那一點
+  sl = vline(ax, s, 6.3, 0.8);
+  say('抓 Ij 的 starting time 這一點', 's(Ij) = 7');
+  await step(tok);                                   // 2473.0 這 t + 1 個一定同時穿過這一點
+  glow(Ij, GOLD);
+  say('這 t + 1 個 interval', '一定同時穿過這一點');
+  await step(tok);                                   // 2489.0 depth：最大 overlap
+  note('depth d = 最大的 overlap', 3.6, 0.6);
+  say('depth 是整條時間軸的最大 overlap', '');
+  await step(tok);                                   // 2511.0 所以 t + 1 ≤ d
+  say('所以 t + 1 ≤ d', '');
+  await step(tok);                                   // 2551.8 前 t 個各自已經有顏色
   [5, 6].forEach((i) => glow(B[i], RED));
-  say('最多排除 d − 1 個 label', '至少剩一個 → 第 6 行不會發生');
-  await gb(tok, 2400);
-  glow(Ij, null); tint(Ij, LCOL[lbl[j]]); move(Ij, ax.X((s + f) / 2), Y[lbl[j]], 0);
-  await gb(tok, 1200); kill(sl);
-  say('overlap 的 Ii 早已有 label', '處理 Ij 時那個 label 被排除');
-  glow(B[5], RED); glow(Ij, RED);
-  await gb(tok, 2600);
-  [5, 6].forEach((i) => glow(B[i], null)); glow(Ij, null);
-  say('合法解，而且只用 d 個 label', '= lower bound → optimal');
-  await gb(tok, 2800);
+  say('第 3 行：前面 t 個各有 label', '那些 label 被排除');
+  await step(tok);                                   // 2558.0 t ≤ d − 1
+  say('t ≤ d − 1', '最多排除 d − 1 個 label');
+  await step(tok);                                   // 2582.0 至少剩一個 → 第 4 行一定能指派
+  glow(Ij, null); kill(sl); tint(Ij, LCOL[lbl[j]]); move(Ij, ax.X((s + f) / 2), Y[lbl[j]], 0);
+  say('d 個 label 至少剩一個', '第 4 行一定指派得到');
+  await step(tok);                                   // 2617.4 第 6 行可以不用寫
+  [5, 6].forEach((i) => glow(B[i], null));
+  good('① 成立：第 6 行可以不寫', 0, 0.1);
+  say('每個 interval 都有 label', '程式不寫第 6 行也沒關係');
 }]);
 
-// 47:26 Minimize lateness：t_i、d_i，ℓ_i = max(0, f_i − d_i)，L = max ℓ_i
+// 43:57 Optimality 證明（二）：overlap 的不同 label → 用 d 個 → optimal
+FRAG.push(['grjiang1-partition-proof2', '證明：overlap 的不同 label → optimal', async (tok) => {
+  fresh([0, 3.6, 13], [0, 3.2, 0]);
+  const Y = [4.6, 3.4, 2.2], lbl = gPartition();
+  let ax, B, Ij, x;
+  await step(tok);                                   // 2637.2 兩個 overlapping 不會到同一個 label
+  ax = gAx(0, 11, -5, 6, 0.8);
+  Y.forEach((y, k) => tag('label ' + (k + 1), 'idx', -6.1, y));
+  B = IP10.slice(0, 7).map(([s0, f0], i) => gBar(ax, 'I' + (i + 1), s0, f0, Y[lbl[i]], LCOL[lbl[i]], 0, 0.34));
+  pkt('② overlap 的不會在同一個 label', 0, 6.9);
+  say('第二件事：兩個 overlap 的 interval', '不會被指派到同一個 label');
+  await step(tok);                                   // 2667.5 兩個 overlap 的 Ii、Ij
+  Ij = gBar(ax, 'Ij', 7, 10, 6.0, GJ.sand, 2, 0.34);
+  glow(B[6], GOLD); glow(Ij, GOLD);
+  say('拿兩個 overlap 的：Ii、Ij', '');
+  await step(tok);                                   // 2681.0 Ii 在前、Ij 在後
+  relabel(B[6], 'Ii');
+  say('一定一個在前、一個在後', 'Ii 在前，Ij 在後');
+  await step(tok);                                   // 2713.0 處理 Ij 時，Ii 已經有 label
+  glow(B[6], RED);
+  say('處理 Ij 時，Ii 已經有 label 了', '（第一部分：每個都有 label）');
+  await step(tok);                                   // 2734.0 第 3 行會排除 Ii 用的 label
+  x = bad('✗ label 1（Ii 在用）', -2.0, 6.0);
+  say('第 3 行會把 Ii 用的 label 排除', '');
+  await step(tok);                                   // 2749.0 Ij 絕對不會跟 Ii 同色
+  glow(Ij, null); tint(Ij, LCOL[lbl[7]]); move(Ij, ax.X(8.5), Y[lbl[7]], 0);
+  say('所以 Ij 一定拿不同的 label', '');
+  await step(tok);                                   // 2772.0 兩部分合起來 → 合法解
+  glow(B[6], null); remove(x);
+  good('① ＋ ② → 合法解', -2.0, 6.0);
+  say('兩部分合起來', '輸出是合法解');
+  await step(tok);                                   // 2791.0 只設 d 個 label，d 是 lower bound
+  note('只用 d = 3 個 label = lower bound', 3.4, 0.1);
+  say('總共只設 d 個 label', 'd 又是 lower bound');
+  await step(tok);                                   // 2835.0 always 用最少 → optimal
+  B.forEach((b) => glow(b, GOLD));
+  say('永遠用最少可能的 label 數', '所以是 optimal');
+}]);
+
+// 47:57 Minimize lateness：t_i、d_i，ℓ_i = max(0, f_i − d_i)，L = max ℓ_i
 const LX = (t) => -6 + t * 0.8;
 function gJobs(order, y, drop = 0, t0 = 0) {
   const pk = gPack(order, t0);
-  return order.map((i, k) => { const [s, f] = pk[k]; const m = cube('J' + (i + 1), [GJ.blue, GJ.orange, GJ.teal, GJ.purple, GJ.pink, GJ.sand][i], [(f - s) * 0.8 - 0.06, 0.5, 0.6], LX((s + f) / 2), y, 0, drop); m.userData.f = f; m.userData.i = i; return m; });
+  return order.map((i, k) => { const [s, f] = pk[k]; const m = cube('J' + (i + 1), JCOL[i], [(f - s) * 0.8 - 0.06, 0.5, 0.6], LX((s + f) / 2), y, 0, drop); m.userData.f = f; m.userData.i = i; return m; });
 }
-function gDead(i, y) { const x = LX(LJ[i][1]); line(x, y - 0.25, x, y + 0.45, 0, '#d64545'); }
+function gDead(i, y) { const x = LX(LJ[i][1]); return line(x, y - 0.25, x, y + 0.45, 0, '#d64545'); }
+function lxAxis(y = 1.2) { line(LX(0), y, LX(15), y); for (let t = 0; t <= 15; t += 3) tag(String(t), 'idx', LX(t), y - 0.35); }
 FRAG.push(['grjiang1-lateness-def', 'Lateness：遲交多少、取最大值', async (tok) => {
   fresh([0, 3.2, 12.5], [0, 2.6, 0]);
-  line(LX(0), 1.2, LX(15), 1.2);
-  for (let t = 0; t <= 15; t += 3) tag(String(t), 'idx', LX(t), 0.85);
-  say('每個 request 只給長度 t 與 deadline d', '沒有 start / finish，要我們排');
-  const T = LJ.map(([t, d], i) => tag('J' + (i + 1) + ': t=' + t + ', d=' + d, 'idx', -4.5 + (i % 3) * 4.5, 6.2 - Math.floor(i / 3) * 0.6));
-  await gb(tok, 2600);
-  const J = gJobs([0, 1, 2, 3, 4, 5], 2.2, 2);
+  let me, T, J, lt;
+  await step(tok);                                   // 2877.0 第三題：minimize lateness
+  tag('Scheduling to minimize lateness', 'ptr alt', 0, 6.9);
+  me = pal('我', -6.2, GJ.orange, 1.8, 0.7);
+  say('第三題：minimize lateness', '用 exchange argument 證');
+  await step(tok);                                   // 2906.0 沒有 start / finish，要我們排
+  bub('什麼時候做？我自己決定', -6.2, 2.2, 1.8);
+  say('request 沒有 start、finish time', '要由我們決定什麼時候做');
+  await step(tok);                                   // 2924.0 每個 request 有 deadline
+  T = LJ.map(([t, d], i) => tag('J' + (i + 1) + '：d = ' + d, 'idx', -4.5 + (i % 3) * 4.5, 6.2 - Math.floor(i / 3) * 0.6));
+  say('每個 request 有 deadline', '像各科作業各有不同的 deadline');
+  await step(tok);                                   // 2943.0 每個要花的時間 t 不同
+  LJ.forEach(([t, d], i) => txt(T[i], 'J' + (i + 1) + '：t = ' + t + '，d = ' + d));
+  say('每個要花的時間也不一樣', 't_i');
+  await step(tok);                                   // 2965.0 全部都要做完
+  lxAxis();
+  J = gJobs([0, 1, 2, 3, 4, 5], 2.2, 2);
   for (let i = 0; i < 6; i++) gDead(i, 3.3 + (i % 2) * 0.6);
-  tag('紅線 = deadline', 'idx', 4.5, 4.6);
-  await gb(tok, 1600);
-  say('一個接一個做', '單一資源，一次一件');
-  await gb(tok, 2000);
-  glow(J[3], RED);
-  const lt = tag('ℓ4 = 10 − 9 = 1', 'ptr', LX(9.5), 4.6);
-  say('J4 在 10 才做完，deadline 9', 'ℓ_i = max(0, f_i − d_i)');
-  await gb(tok, 2800);
-  glow(J[0], GREEN); tag('ℓ1 = 0', 'ptr', LX(1.5), 4.6);
-  say('沒遲交就算 0', 'J1 在 3 做完，d = 6');
-  await gb(tok, 2200);
-  say('目標：最大遲交量越小越好', 'minimize L = max ℓ_i（不是加總）');
-  await gb(tok, 3000);
+  tag('紅線 = deadline', 'idx', 4.5, 4.7);
+  say('每個都要做完', '一次做一件');
+  await step(tok);                                   // 2987.0 目標：minimize 遲交程度
+  say('目標：遲交的程度越小越好', '最好都不遲交');
+  await step(tok);                                   // 3018.0 只取最大遲交量，不加總
+  pkt('lateness 只看最大的那個，不加總', 0, 5.0);
+  say('有好幾個遲交時', '只取最大的遲交量');
+  await step(tok);                                   // 3037.0 第四個晚了一天
+  glow(J[3], RED); me.mood('sad');
+  lt = bad('ℓ4 = 10 − 9 = 1', LX(9.5), 4.0);
+  say('J4 在 10 才做完，deadline 是 9', '晚了 1 → lateness = f − d = 1');
+  await step(tok);                                   // 3058.0 第一個早早做完 → 0
+  glow(J[0], GREEN);
+  good('ℓ1 = 0', LX(1.5), 4.0);
+  say('J1 在 3 做完，deadline 6', '沒遲交就算 0');
+  await step(tok);                                   // 3075.0 ℓ = max(0, f − d)，L = max ℓ
+  note('ℓ_i = max(0, f_i − d_i)　L = max ℓ_i', 0, 0.2);
+  say('ℓ_i = max(0, f_i − d_i)', 'L = 所有 ℓ_i 取最大');
+  await step(tok);                                   // 3091.0 六個都遲交一天 = 一個遲交一天
+  bub('六個都晚一天 = 一個晚一天？', -6.2, 2.2, 1.8); me.mood('wow');
+  say('所以六個都遲交一天，跟只遲交一個一天', '在這個題目一樣差（不太真實）');
 }]);
 
-// 52:06 三個 rule：shortest first、smallest slack 都有反例
+// 52:28 三個 rule：shortest first、smallest slack 都有反例
 FRAG.push(['grjiang1-lateness-rules', 'Shortest first、smallest slack 的反例', async (tok) => {
   fresh([0, 3.4, 13], [0, 2.8, 0]);
   const X = (t) => -5.5 + t * 0.95;
   const bar = (nm, s, f, y, c) => cube(nm, c, [(f - s) * 0.95 - 0.06, 0.5, 0.6], X((s + f) / 2), y, 0, 2);
-  line(X(0), 1.2, X(12), 1.2); for (let t = 0; t <= 12; t += 2) tag(String(t), 'idx', X(t), 0.85);
-  tag('① shortest first：t=(1,10)，d=(100,10)', 'ptr alt', 0, 6.4);
-  let a = bar('t=1', 0, 1, 4.6, GJ.teal), b = bar('t=10', 1, 11, 4.6, GJ.orange);
-  line(X(10), 4.2, X(10), 5.2, 0, '#d64545'); tag('d=100 →', 'idx', X(11.5), 5.3);
-  say('先做短的：第 2 個 11 才完成', 'd = 10 → 遲交 1');
-  glow(b, RED); await gb(tok, 2600);
-  const b2 = bar('t=10', 0, 10, 3.2, GJ.orange), a2 = bar('t=1', 10, 11, 3.2, GJ.teal);
-  say('先做急的那個就不遲交', '短但不急的可以晚點做');
-  glow(b2, GREEN); await gb(tok, 2600);
-  fresh([0, 3.4, 13], [0, 2.8, 0]);
-  line(X(0), 1.2, X(12), 1.2); for (let t = 0; t <= 12; t += 2) tag(String(t), 'idx', X(t), 0.85);
-  tag('② smallest slack：t=(1,10)，d=(2,10)', 'ptr alt', 0, 6.4);
-  say('slack = d − t：1 和 0', '先做 slack 小的第 2 個');
-  await gb(tok, 2200);
-  b = bar('t=10', 0, 10, 4.6, GJ.orange); a = bar('t=1', 10, 11, 4.6, GJ.teal);
-  line(X(2), 4.2, X(2), 5.2, 0, '#d64545');
-  glow(a, RED); tag('ℓ = 11 − 2 = 9', 'ptr', X(11), 5.4);
-  say('第 1 個 11 才做完', 'max lateness = 9');
-  await gb(tok, 2400);
-  const a3 = bar('t=1', 0, 1, 3.2, GJ.teal), b3 = bar('t=10', 1, 11, 3.2, GJ.orange);
-  tag('ℓ = 11 − 10 = 1', 'ptr', X(6), 2.5);
-  say('反過來只遲交 1', '1 < 9 → slack rule 也不行');
-  await gb(tok, 2400);
-  cube('③ earliest deadline first ✔', GJ.teal, [5, 0.6, 0.7], 0, 0.2, 0.6, 2);
-  say('剩下：deadline 最早的先做', 'earliest deadline first');
-  await gb(tok, 2800);
+  const axis = () => { line(X(0), 1.2, X(12), 1.2); for (let t = 0; t <= 12; t += 2) tag(String(t), 'idx', X(t), 0.85); };
+  let R, a, b, a2, b2;
+  await step(tok);                                   // 3148.0 shortest first、smallest slack first
+  R = ['① shortest interval first', '② smallest slack first', '③ earliest deadline first'].map((t, k) => cube(t, GJ.paper, [3.8, 0.6, 0.7], -4.3 + k * 4.3, 5.4, 0, 2));
+  relabel(R[2], '③ ?');
+  say('想幾個 greedy rule', '① shortest first ② smallest slack first');
+  await step(tok);                                   // 3157.7 earliest deadline first
+  relabel(R[2], '③ earliest deadline first');
+  say('③ earliest deadline first', '事有輕重緩急');
+  await step(tok);                                   // 3170.0 ① 最容易做的先挑
+  glow(R[0], GOLD);
+  say('①：哪件最容易做，先挑它', '花時間最少的先做');
+  await step(tok);                                   // 3183.0 ② slack = d − t 最小的
+  glow(R[0], null); glow(R[1], GOLD);
+  note('slack = d_i − t_i', -0.0, 4.4);
+  say('②：slack = d − t 最小的先做', '餘裕越少好像越急');
+  await step(tok);                                   // 3234.0 ③ 直接看誰最急
+  glow(R[1], null); glow(R[2], GOLD);
+  say('③：直接看 deadline', '誰最急先做誰');
+  await step(tok);                                   // 3251.3 舉反例反駁自己
+  glow(R[2], null);
+  say('再來舉反例', '看哪個 rule 會壞掉');
+  // ① shortest first 的反例
+  await step(tok);                                   // 3275.0 兩個 request：t = 1、10
+  fresh([0, 3.4, 13], [0, 2.8, 0]); axis();
+  tag('反例 ①：shortest first', 'ptr alt', 0, 6.4);
+  note('#1：t = 1　　#2：t = 10', -3.0, 5.6);
+  say('兩個 request', '要花 1 天和 10 天');
+  await step(tok);                                   // 3288.0 deadline：100 和 10
+  note('d = 100　　d = 10', 3.4, 5.6);
+  line(X(10), 4.2, X(10), 5.0, 0, '#d64545');
+  say('#1 的 deadline 是 100', '#2 的 deadline 是 10');
+  await step(tok);                                   // 3304.0 shortest first：先做 1
+  a = bar('#1', 0, 1, 4.6, GJ.teal);
+  say('shortest first：先做簡單的 #1', '時間 1 做完');
+  await step(tok);                                   // 3318.0 #2 從 1 做到 11
+  b = bar('#2', 1, 11, 4.6, GJ.orange);
+  say('再做 #2：從 1 做到 11', '');
+  await step(tok);                                   // 3326.0 第 10 天就要交 → 遲交
+  glow(b, RED); bad('ℓ = 11 − 10 = 1', X(11), 5.3);
+  say('#2 第 10 天就要交', '遲交了');
+  await step(tok);                                   // 3350.0 應該先做 #2 再做 #1
+  b2 = bar('#2', 0, 10, 3.2, GJ.orange); a2 = bar('#1', 10, 11, 3.2, GJ.teal);
+  glow(b2, GREEN); good('都不遲交', X(6), 2.5);
+  say('其實先做 #2 再做 #1', '兩個都準時');
+  // ② smallest slack 的反例
+  await step(tok);                                   // 3368.7 smallest slack
+  fresh([0, 3.4, 13], [0, 2.8, 0]); axis();
+  tag('反例 ②：smallest slack', 'ptr alt', 0, 6.4);
+  say('再看 smallest slack', '');
+  await step(tok);                                   // 3378.0 t = 1、d = 2；t = 10、d = 10
+  note('#1：t = 1，d = 2　　#2：t = 10，d = 10', 0, 5.6);
+  line(X(2), 4.2, X(2), 5.0, 0, '#d64545'); line(X(10), 2.8, X(10), 3.6, 0, '#d64545');
+  say('#1：花 1 天，第 2 天要交', '#2：花 10 天，第 10 天要交');
+  await step(tok);                                   // 3395.4 slack：1 和 0
+  note('slack：1　　0', 0, 5.0);
+  say('slack：#1 = 2 − 1 = 1', '#2 = 10 − 10 = 0');
+  await step(tok);                                   // 3421.0 先做 slack 小的 #2
+  b = bar('#2', 0, 10, 4.6, GJ.orange);
+  say('slack 小的先做：#2', '做到 10，準時交');
+  await step(tok);                                   // 3442.0 10 之後才做 #1，11 完成
+  a = bar('#1', 10, 11, 4.6, GJ.teal);
+  say('10 之後才做 #1', '11 才做完');
+  await step(tok);                                   // 3453.0 lateness 11 − 2 = 9
+  glow(a, RED); bad('ℓ = 11 − 2 = 9', X(11), 5.4);
+  say('#1 第 2 天就要交', 'lateness = 9');
+  await step(tok);                                   // 3460.0 倒過來：先做 #1
+  a2 = bar('#1', 0, 1, 3.2, GJ.teal); b2 = bar('#2', 1, 11, 3.2, GJ.orange);
+  say('倒過來：先做 #1', '#1 準時，#2 做到 11');
+  await step(tok);                                   // 3482.0 lateness 只有 1
+  glow(b2, GOLD); good('ℓ = 11 − 10 = 1', X(6), 2.5);
+  say('最大 lateness 只有 1', '1 < 9');
+  await step(tok);                                   // 3500.2 所以 slack rule 也不好
+  bad('smallest slack ✗', -3.6, 6.4);
+  say('所以 smallest slack 也不行', '');
 }]);
 
-// 58:44 EDF：依 deadline 排序，緊接著做（沒有 idle time）
+// 58:28 EDF：依 deadline 排序，緊接著做（沒有 idle time）
 FRAG.push(['grjiang1-edf-run', 'Earliest deadline first：依 d 排、緊接著做', async (tok) => {
   fresh([0, 3.2, 12.5], [0, 2.6, 0]);
-  line(LX(0), 1.2, LX(15), 1.2);
-  for (let t = 0; t <= 15; t += 3) tag(String(t), 'idx', LX(t), 0.85);
-  say('依 deadline 從小排到大', 'd = 6, 8, 9, 9, 14, 15');
-  const Q = LJ.map(([t, d], i) => cube('d=' + d, GJ.paper, [1.1, 0.5, 0.5], -4.5 + i * 1.8, 6.0, 0, 1.5));
-  await gb(tok, 1800);
-  const pk = gPack([0, 1, 2, 3, 4, 5]);
-  let L = 0; const Lt = tag('L = 0', 'ptr alt', 4.5, 4.8);
-  for (let i = 0; i < 6; i++) {
-    glow(Q[i], GOLD);
-    const [s, f] = pk[i];
-    const m = cube('J' + (i + 1), [GJ.blue, GJ.orange, GJ.teal, GJ.purple, GJ.pink, GJ.sand][i], [(f - s) * 0.8 - 0.06, 0.5, 0.6], LX((s + f) / 2), 2.2, 0, 2);
-    gDead(i, 3.3 + (i % 2) * 0.6);
-    const l = Math.max(0, f - LJ[i][1]); L = Math.max(L, l);
-    if (l > 0) glow(m, RED);
-    if (i === 0) say('一個做完馬上做下一個', '中間沒有 idle time');
-    if (i === 3) say('J4：f = 10，d = 9', 'ℓ4 = 1');
-    txt(Lt, 'L = ' + L);
-    await gb(tok, i === 3 ? 2200 : 1100); glow(Q[i], null); tint(Q[i], GJ.gray);
-  }
-  say('排完：最大遲交 L = 1', '只看急不急，不管長短');
-  await gb(tok, 3000);
+  let Q, Lt, L = 0;
+  const drop = (i) => { const [s, f] = gPack([0, 1, 2, 3, 4, 5])[i]; const m = cube('J' + (i + 1), JCOL[i], [(f - s) * 0.8 - 0.06, 0.5, 0.6], LX((s + f) / 2), 2.2, 0, 2); gDead(i, 3.3 + (i % 2) * 0.6); const l = Math.max(0, f - LJ[i][1]); L = Math.max(L, l); if (l > 0) glow(m, RED); glow(Q[i], null); tint(Q[i], GJ.gray); txt(Lt, 'L = ' + L); return m; };
+  await step(tok);                                   // 3508.0 earliest deadline first：越急越先做
+  tag('earliest deadline first', 'ptr alt', 0, 6.9);
+  const me = pal('我', -6.2, GJ.orange, 1.8, 0.7);
+  say('剩下第三個：earliest deadline first', '越急的越先做');
+  await step(tok);                                   // 3546.1 （學生問）加起來是另一題
+  bub('遲交加總？那是另一個題目', -6.2, 2.2, 1.8);
+  say('有同學問：遲交加總呢？', '那就變另一個題目');
+  await step(tok);                                   // 3573.0 先依 deadline 從小排到大
+  lxAxis();
+  Q = LJ.map(([t, d], i) => cube('d=' + d, GJ.paper, [1.1, 0.5, 0.5], -4.5 + i * 1.8, 6.0, 0, 1.5));
+  Lt = tag('L = 0', 'ptr alt', 4.5, 4.9);
+  say('先依 deadline 從小排到大', 'd = 6, 8, 9, 9, 14, 15');
+  await step(tok);                                   // 3580.0 照順序丟下來
+  for (let i = 0; i < 3; i++) { glow(Q[i], GOLD); drop(i); await beat(tok, 450); }
+  say('照 deadline 的順序排下去', '');
+  await step(tok);                                   // 3600.0 一個做完馬上做下一個
+  for (let i = 3; i < 6; i++) { glow(Q[i], GOLD); drop(i); await beat(tok, 450); }
+  me.mood('happy');
+  say('第一個做完馬上做第二個', '只有 J4 遲交 1：L = 1');
+  await step(tok);                                   // 3606.0 中間沒有空檔，壓得很緊
+  note('中間沒有空檔', LX(7.5), 0.3);
+  say('壓得很緊', '中間沒有 idle time');
 }]);
 
-// 60:15 觀察：一定有 optimal schedule 沒有 idle time（d = 4, 6, 12 往左壓）
+// 60:25 觀察：一定有 optimal schedule 沒有 idle time（d = 4, 6, 12 往左壓）
 FRAG.push(['grjiang1-no-idle', '有 idle 的 optimal 可以壓成沒 idle', async (tok) => {
   fresh([0, 3.2, 12.5], [0, 2.6, 0]);
   const X = (t) => -6 + t;
-  line(X(0), 1.2, X(12), 1.2); for (let t = 0; t <= 12; t += 2) tag(String(t), 'idx', X(t), 0.85);
   const D = [[2, 4], [3, 6], [4, 12]], S0 = [0, 3, 7];
-  D.forEach(([t, d], i) => { line(X(d), 3.3, X(d), 4.3, 0, '#d64545'); tag('d=' + d, 'idx', X(d), 4.6); });
-  say('一個 optimal：三個都沒遲交', 'deadline = 4、6、12');
-  const B = D.map(([t], i) => cube('J' + (i + 1), [GJ.blue, GJ.orange, GJ.teal][i], [t - 0.06, 0.5, 0.6], X(S0[i] + t / 2), 2.4, 0, 2));
-  await gb(tok, 2200);
-  const g1 = cube('idle', GJ.paper, [0.9, 0.3, 0.3], X(2.5), 2.0, 0), g2 = cube('idle', GJ.paper, [0.9, 0.3, 0.3], X(6.5), 2.0, 0);
-  say('中間有 idle time', 'L = 0');
-  await gb(tok, 2200);
+  let B, g1, g2;
+  await step(tok);                                   // 3625.0 先探討幾個好的 property
+  tag('證明前：先看幾個 property', 'ptr alt', 0, 6.4);
+  say('要證它最好', '先探討幾個好的 property');
+  await step(tok);                                   // 3654.0 greedy 的 schedule 沒有 idle time
+  note('觀察 1：greedy 的 schedule 沒有 idle time', 0, 5.8);
+  say('greedy 一個做完緊接著做下一個', '中間沒有 idle time');
+  await step(tok);                                   // 3691.0 一定存在一個沒有 idle 的 optimal
+  pkt('Property：存在沒有 idle time 的 optimal', 0, 5.2);
+  say('一定存在一個 optimal schedule', '中間沒有空檔');
+  await step(tok);                                   // 3711.3 例子：deadline 4、6、12
+  line(X(0), 1.2, X(12), 1.2); for (let t = 0; t <= 12; t += 2) tag(String(t), 'idx', X(t), 0.85);
+  D.forEach(([t, d]) => { line(X(d), 3.0, X(d), 3.8, 0, '#d64545'); tag('d=' + d, 'idx', X(d), 4.1); });
+  B = D.map(([t], i) => cube('J' + (i + 1), [GJ.blue, GJ.orange, GJ.teal][i], [t - 0.06, 0.5, 0.6], X(S0[i] + t / 2), 2.4, 0, 2));
+  say('假設這是一個最佳解', 'deadline 4、6、12');
+  await step(tok);                                   // 3718.0 都沒遲交，中間還休息
+  g1 = cube('idle', GJ.paper, [0.9, 0.3, 0.3], X(2.5), 1.9, 0); g2 = cube('idle', GJ.paper, [0.9, 0.3, 0.3], X(6.5), 1.9, 0);
+  say('都沒遲交，中間還能休息', 'lateness = 0');
+  await step(tok);                                   // 3731.1 壓一下：往左靠，不休息
   fly(g1, V3(0, 5, 3)); fly(g2, V3(0, 5, 3));
   let t = 0;
-  for (let i = 0; i < 3; i++) { move(B[i], X(t + D[i][0] / 2), 2.4, 0); t += D[i][0]; await gb(tok, 700); }
-  say('往左壓緊，誰都只會更早完成', 'lateness 不會變大');
-  await gb(tok, 2600);
-  say('所以存在沒有 idle time 的 optimal', 'greedy 的 schedule 也沒有 idle');
-  await gb(tok, 2800);
+  for (let i = 0; i < 3; i++) { move(B[i], X(t + D[i][0] / 2), 2.4, 0); t += D[i][0]; await beat(tok, 450); }
+  say('把它往左壓緊', '中間都不休息');
+  await step(tok);                                   // 3747.0 一樣沒遲交 → 也是 optimal
+  B.forEach((b) => glow(b, GREEN));
+  good('L 還是 0 → 也是 optimal', X(9), 3.0);
+  say('每個都更早完成，一樣沒遲交', '也是 optimal');
+  await step(tok);                                   // 3768.0 壓縮不會改變 optimality
+  say('有空檔的 optimal 壓緊後還是 optimal', '看圖就知道');
 }]);
 
 // 63:07 Exchange argument 與 inversion：d_j < d_i 卻 j 排在 i 後面
 FRAG.push(['grjiang1-inversion-def', 'Inversion：deadline 早的反而晚做', async (tok) => {
   fresh([0, 3.2, 12.5], [0, 2.6, 0]);
-  line(LX(0), 1.2, LX(15), 1.2);
-  for (let t = 0; t <= 15; t += 3) tag(String(t), 'idx', LX(t), 0.85);
-  say('exchange argument：從 O 出發', '把不符合 greedy 的部分換掉');
-  await gb(tok, 2400);
-  const J = gJobs([1, 0, 2, 3, 4, 5], 2.4, 2);
-  tag('某個 schedule：J2 排在 J1 前面', 'idx', 0, 5.4);
-  await gb(tok, 1600);
+  let J, god;
+  await step(tok);                                   // 3787.0 接著看：沒有 inversion
+  tag('觀察 2：沒有 inversion', 'ptr alt', 0, 6.4);
+  say('接下來看 inversion', '先講 exchange argument');
+  await step(tok);                                   // 3801.0 exchange argument
+  say('exchange argument', '用交換來證明');
+  await step(tok);                                   // 3808.0 用交換把一個解慢慢換成我要的
+  note('把別人的解，一步步換成我的樣子', 0, 5.8);
+  say('用交換的方式', '把一個 solution 慢慢換成我想要的');
+  await step(tok);                                   // 3824.0 假設有人找到 optimal（不是 greedy）
+  lxAxis();
+  god = pal('神人', -6.3, GJ.purple, 1.8, 0.6); god.mood('happy');
+  J = gJobs([1, 0, 2, 3, 4, 5], 2.4, 2);
+  tag('O：神人的 optimal schedule', 'idx', 0, 4.9);
+  say('假設有人找到 optimal O', '不是用 greedy rule 找的');
+  await step(tok);                                   // 3861.0 不符合 greedy 的部分挖掉換成我的
+  glow(J[0], GOLD); glow(J[1], GOLD);
+  say('不符合 greedy rule 的部分挖掉', '換成我的，證明沒變差');
+  await step(tok);                                   // 3916.0 介紹 inversion
+  glow(J[0], null); glow(J[1], null);
+  say('介紹 inversion', '排序時是依 deadline 先後排的');
+  await step(tok);                                   // 3936.0 deadline 早的反而比較晚做
   glow(J[0], RED); glow(J[1], RED);
   tag('d=8', 'ptr', LX(1), 3.4); tag('d=6', 'ptr', LX(3.5), 3.4);
   arrow(V3(LX(3.5), 3.9, 0), V3(LX(1), 3.9, 0), 0xd64545);
-  say('J1 的 d 比較早，卻比較晚做', '這就是一個 inversion');
-  await gb(tok, 2800);
-  say('EDF 的 schedule 沒有 inversion', '依 d 排好就不會反過來');
-  await gb(tok, 2600);
-  say('接著把 O 的 inversion 逐一消掉', '證明每次都不會變差');
-  await gb(tok, 2600);
+  say('deadline 比較早，卻比較晚做', '這就是一個 inversion');
+  await step(tok);                                   // 3943.0 i、j：d_j 較早，j 卻排在後面
+  note('inversion：d_j < d_i，j 卻排在 i 後面', 0, 0.2);
+  say('i、j 兩個：d_j 比較早', 'j 卻排在 i 後面');
 }]);
 
-// 66:00 沒 inversion、沒 idle 的 schedule 都有一樣的 max lateness（只差同 deadline 的順序）
+// 65:56 沒 inversion、沒 idle 的 schedule 都有一樣的 max lateness（只差同 deadline 的順序）
 FRAG.push(['grjiang1-same-deadline', '同 deadline 的順序不影響 L', async (tok) => {
   fresh([0, 3.2, 12.5], [0, 2.6, 0]);
-  line(LX(0), 0.8, LX(15), 0.8);
-  for (let t = 0; t <= 15; t += 3) tag(String(t), 'idx', LX(t), 0.45);
-  tag('同學甲', 'idx', -6.3, 4.4); tag('同學乙', 'idx', -6.3, 2.4);
-  const A = gJobs([0, 1, 2, 3, 4, 5], 4.4, 2), B = gJobs([0, 1, 3, 2, 4, 5], 2.4, 2);
-  await gb(tok, 900);
-  say('兩個 schedule 都沒 inversion、沒 idle', '只差 d 相同的 J3、J4 順序');
+  let A, B, p1, p2;
+  await step(tok);                                   // 3956.0 第一個 property
+  tag('Property：沒 inversion、沒 idle → L 都一樣', 'ptr alt', 0, 6.6);
+  say('第一個要證的 property', '');
+  await step(tok);                                   // 3968.0 所有 schedule 只要沒有 inversion
+  note('✔ 沒有 inversion', -3.0, 6.0);
+  say('所有 schedule，只要沒有 inversion', '');
+  await step(tok);                                   // 3972.0 而且沒有 idle time
+  note('✔ 沒有 idle time', 3.0, 6.0);
+  say('而且沒有 idle time', '都壓緊');
+  await step(tok);                                   // 3983.0 一定有相同的 max lateness
+  say('它們的 max lateness 都一樣', '一樣好或一樣差');
+  await step(tok);                                   // 4010.0 兩個同學各找到一個 schedule
+  line(LX(0), 0.8, LX(15), 0.8); for (let t = 0; t <= 15; t += 3) tag(String(t), 'idx', LX(t), 0.45);
+  p1 = pal('甲', -6.4, GJ.blue, 0.2, 0.5, 4.0); p2 = pal('乙', -6.4, GJ.pink, 0.2, 0.5, 2.0);
+  A = gJobs([0, 1, 2, 3, 4, 5], 4.4, 2); B = gJobs([0, 1, 3, 2, 4, 5], 2.4, 2);
+  say('兩個同學各找到一個 schedule', '都沒 inversion、沒 idle');
+  await step(tok);                                   // 4043.0 都照 deadline 排，為何不同？
+  say('都照 deadline 排好了', '為什麼還會不一樣？');
+  await step(tok);                                   // 4050.0 只可能是同樣 deadline 的先後
   [A[2], A[3], B[2], B[3]].forEach((m) => glow(m, GOLD));
-  await gb(tok, 2800);
-  const l1 = line(LX(5), 5.0, LX(5), 1.8, 0, '#c08a1f'), l2 = line(LX(10), 5.0, LX(10), 1.8, 0, '#c08a1f');
+  say('只可能是 deadline 相同的那幾個', 'J3、J4 都是 d = 9，先後不同');
+  await step(tok);                                   // 4107.0 這一坨的 lateness 算最後一個
+  vline({ X: LX }, 5, 5.0, 1.8); vline({ X: LX }, 10, 5.0, 1.8);
   line(LX(9), 5.0, LX(9), 1.8, 0, '#d64545'); tag('d = 9', 'ptr', LX(9) - 0.5, 5.4);
-  say('這一坨整體都在 5 到 10', '不管 J3J4 還是 J4J3');
-  await gb(tok, 2600);
+  say('同 deadline 的這一坨', 'lateness 看最後做完的那個');
+  await step(tok);                                   // 4155.0 一定是最晚做的那個
   glow(A[3], RED); glow(B[2], RED);
-  say('最晚完成的那個決定 lateness', '兩邊都是 10 − 9 = 1');
-  await gb(tok, 2600);
-  say('所以這些 schedule 一樣好', 'max lateness 相同');
-  await gb(tok, 2600);
+  say('最晚做的那個 lateness 最大', '甲是 J4、乙是 J3');
+  await step(tok);                                   // 4191.4 ABC 或 CBA，整坨結束時間一樣
+  note('整坨都在 5 到 10：10 − 9 = 1', LX(7.5), 0.1);
+  say('不管 ABC 還是 CBA', '整坨結束時間都一樣');
+  await step(tok);                                   // 4208.0 lateness 的值沒改變
+  p1.mood('happy'); p2.mood('happy');
+  say('所以兩個 schedule 的 L 一樣', '一樣好');
 }]);
 
 // 70:16 Swap 相鄰 inversion：ℓ'_i = f_j − d_i ≤ f_j − d_j = ℓ_j，max lateness 不變差
 FRAG.push(['grjiang1-swap', '交換相鄰 inversion，L 不會變大', async (tok) => {
   fresh([0, 3.2, 12.5], [0, 2.6, 0]);
   const X = (t) => -5 + t * 1.1;
-  line(X(0), 1.0, X(9), 1.0); for (let t = 0; t <= 9; t++) tag(String(t), 'idx', X(t), 0.65);
   const blk = (nm, s, f, y, c) => cube(nm, c, [(f - s) * 1.1 - 0.06, 0.55, 0.6], X((s + f) / 2), y, 0, 2);
-  blk('其他', 0, 2, 3.6, GJ.gray);
-  let I = blk('i (d=8)', 2, 5, 3.6, GJ.orange), J = blk('j (d=5)', 5, 7, 3.6, GJ.blue);
-  line(X(5), 4.1, X(5), 5.0, 0, '#d64545'); tag('d_j', 'idx', X(5), 5.3);
-  line(X(8), 4.1, X(8), 5.0, 0, '#d64545'); tag('d_i', 'idx', X(8), 5.3);
-  say('O 裡有相鄰 inversion：i 在 j 前', 'd_j < d_i');
-  await gb(tok, 2400);
-  glow(J, RED); const t1 = tag('ℓ_j = 7 − 5 = 2', 'ptr', X(6), 2.7);
-  say('原本 j 很晚才做完', 'ℓ_j = f_j − d_j = 2');
-  await gb(tok, 2400);
-  say('把 i、j swap', '只動這兩個，其他人不變');
-  move(J, X(3), 3.6, 0); move(I, X(5.5), 3.6, 0); glow(J, null); kill(t1);
-  await gb(tok, 1600);
-  glow(J, GREEN); tag('j 提早到 4 完成', 'ptr', X(3), 2.7);
-  await gb(tok, 1400);
-  glow(I, GOLD); tag("ℓ'_i = 7 − 8 → 0", 'ptr', X(6.5), 2.0);
-  say('i 改在原本 f_j = 7 完成', "ℓ'_i = f_j − d_i ≤ f_j − d_j = ℓ_j");
-  await gb(tok, 3000);
-  say('max lateness 不會變大', 'inversion 少一個，仍是 optimal');
-  await gb(tok, 2800);
+  let I, J, I2, J2, o1, o2;
+  await step(tok);                                   // 4216.0 存在沒 inversion、沒 idle 的 optimal
+  tag('Property：存在沒 inversion、沒 idle 的 optimal', 'ptr alt', 0, 6.6);
+  say('第二個 property', '一定存在沒 inversion、沒 idle 的 optimal');
+  await step(tok);                                   // 4242.0 有 idle 就 pack 一下
+  note('idle：前面已經會壓緊了', -3.0, 6.0);
+  say('idle time 的部分沒問題', '壓緊就好');
+  await step(tok);                                   // 4265.3 不是所有 optimal 都沒 inversion
+  note('不是「全部」，而是「找得到一個」', 3.0, 6.0);
+  say('不是所有 optimal 都沒 inversion', '而是一定找得到一個');
+  await step(tok);                                   // 4286.0 假設 optimal O 有 inversion
+  line(X(0), 3.0, X(9), 3.0); for (let t = 0; t <= 9; t++) tag(String(t), 'idx', X(t), 2.7);
+  tag('O', 'idx', -6, 3.6);
+  o1 = blk('其他', 0, 2, 3.6, GJ.gray);
+  I = blk('i (d=8)', 2, 5, 3.6, GJ.orange); J = blk('j (d=5)', 5, 7, 3.6, GJ.blue);
+  say('假設 optimal O（已壓緊）', '裡面有 inversion');
+  await step(tok);                                   // 4313.0 抓最相鄰的兩個
+  glow(I, GOLD); glow(J, GOLD);
+  say('inversion 可能好幾個', '抓最相鄰的兩個 i、j');
+  await step(tok);                                   // 4318.0 j 的 deadline 比較早卻比較晚做
+  line(X(5), 4.1, X(5), 4.9, 0, '#d64545'); tag('d_j', 'idx', X(5), 5.2);
+  line(X(8), 4.1, X(8), 4.9, 0, '#d64545'); tag('d_i', 'idx', X(8), 5.2);
+  glow(I, null); glow(J, RED);
+  say('j 的 deadline 比較早', '卻比較晚做');
+  await step(tok);                                   // 4333.0 swap 之後少一個 inversion
+  line(X(0), 0.6, X(9), 0.6); tag('swap 後', 'idx', -6, 1.2);
+  blk('其他', 0, 2, 1.2, GJ.gray);
+  J2 = blk('j', 2, 4, 1.2, GJ.blue); I2 = blk('i', 4, 7, 1.2, GJ.orange);
+  say('把 i、j swap', 'inversion 少一個');
+  await step(tok);                                   // 4361.6 要證 max lateness 不會變大
+  pkt('要證：swap 後 L 不會變大', 3.4, 0.0);
+  say('要證：swap 後 max lateness', '不會比原來大');
+  await step(tok);                                   // 4408.0 原本：ℓ_i = f_i − d_i、ℓ_j = f_j − d_j
+  bad('ℓ_j = f_j − d_j = 7 − 5 = 2', X(6), 4.6);
+  say('原本 j 在 f_j = 7 才完成', 'ℓ_j = 7 − 5 = 2');
+  await step(tok);                                   // 4426.0 swap 後 i 的新 finish = 原本的 f_j
+  glow(I2, GOLD); line(X(7), 3.3, X(7), 0.9, 0, '#c08a1f');
+  note("f'_i = f_j = 7", X(7.8), 2.0);
+  say('swap 後 i 的新 finish time', '就是原本的 f_j');
+  await step(tok);                                   // 4474.0 j 提前完成，lateness 變小
+  glow(J, null); glow(J2, GREEN);
+  good('j 提早到 4 完成：ℓ = 0', X(3), 0.0);
+  say('j 提前完成', '它的 lateness 變小');
+  await step(tok);                                   // 4488.0 i 變晚，但不超過原本 ℓ_j
+  note("ℓ'_i = f_j − d_i ≤ f_j − d_j = ℓ_j", 0, 6.0);
+  say('i 變晚了，會不會更糟？', "ℓ'_i = f_j − d_i ≤ f_j − d_j = ℓ_j");
+  await step(tok);                                   // 4518.0 只動這兩個，其他人不變
+  say('只有這兩個被動到', '其他人的 lateness 都不變');
+  await step(tok);                                   // 4545.0 swap 不會讓 optimal 變差
+  glow(I2, null);
+  good('swap 不會變差：仍是 optimal', -2.6, 0.0);
+  say('swap 後 max lateness 不會變大', '原本 optimal，換完也還是');
 }]);
 
-// 76:36 一直 swap 直到沒有 inversion → 變成 greedy 的 schedule，仍 optimal
+// 76:42 一直 swap 直到沒有 inversion → 變成 greedy 的 schedule，仍 optimal
 FRAG.push(['grjiang1-fix-all', '一直 swap 到沒有 inversion = EDF', async (tok) => {
   fresh([0, 3.2, 12.5], [0, 2.6, 0]);
-  line(LX(0), 1.2, LX(15), 1.2);
-  for (let t = 0; t <= 15; t += 3) tag(String(t), 'idx', LX(t), 0.85);
   let ord = [1, 0, 2, 3, 5, 4];
   const M = {};
-  gJobs(ord, 3.0, 2).forEach((m) => { M[m.userData.i] = m; });
-  const Lt = tag('O 的 L = 1', 'ptr alt', 0, 5.8);
-  say('神人給的 optimal O（已壓緊）', '裡面有 2 個 inversion');
-  await gb(tok, 2600);
+  let Lt, god;
   const place = () => { gPack(ord).forEach(([s, f], k) => move(M[ord[k]], LX((s + f) / 2), 3.0, 0)); };
-  for (const [p, q] of [[0, 1], [4, 5]]) {
-    glow(M[ord[p]], RED); glow(M[ord[q]], RED);
-    say('相鄰 inversion：J' + (ord[p] + 1) + ' 與 J' + (ord[q] + 1), 'd = ' + LJ[ord[p]][1] + ' > ' + LJ[ord[q]][1]);
-    await gb(tok, 1800);
-    [ord[p], ord[q]] = [ord[q], ord[p]]; place();
-    await gb(tok, 1200);
-    glow(M[ord[p]], null); glow(M[ord[q]], null);
-    const L = Math.max(...gPack(ord).map(([s, f], k) => Math.max(0, f - LJ[ord[k]][1])));
-    txt(Lt, 'swap 後 L = ' + L);
-    say('swap 完 L 沒變差', 'L = ' + L);
-    await gb(tok, 1600);
-  }
+  const Lnow = () => Math.max(...gPack(ord).map(([s, f], k) => Math.max(0, f - LJ[ord[k]][1])));
+  const swapAt = (p) => { [ord[p], ord[p + 1]] = [ord[p + 1], ord[p]]; place(); txt(Lt, 'swap 後 L = ' + Lnow()); };
+  await step(tok);                                   // 4602.3 綜合起來證 greedy 是 optimal
+  tag('綜合起來：EDF 是 optimal', 'ptr alt', 0, 6.6);
+  say('把前面綜合起來', '證 greedy schedule 是 optimal');
+  await step(tok);                                   // 4616.0 有人找到一個 optimal schedule
+  lxAxis();
+  god = pal('神人', -6.3, GJ.purple, 1.8, 0.6);
+  gJobs(ord, 3.0, 2).forEach((m) => { M[m.userData.i] = m; });
+  Lt = tag('O 的 L = ' + Lnow(), 'ptr alt', 0, 5.6);
+  say('假設有人找到一個 optimal schedule', '');
+  await step(tok);                                   // 4630.0 有 idle 就先壓緊
+  say('有 idle time？先壓緊再說', '這張已經壓緊');
+  await step(tok);                                   // 4637.0 沒 inversion → 跟我的一樣
+  note('沒 inversion → 跟 greedy 只差同 deadline 的順序', 0, 0.2);
+  say('如果沒有 inversion', '就跟 greedy 的一樣好');
+  await step(tok);                                   // 4662.1 有 inversion 怎麼辦？
+  glow(M[1], RED); glow(M[0], RED);
+  say('如果有 inversion 呢？', 'J2 (d=8) 排在 J1 (d=6) 前');
+  await step(tok);                                   // 4674.2 swap：不增加 lateness，inversion 減少
+  swapAt(0); glow(M[1], null); glow(M[0], null);
+  say('swap 它', 'L 沒變大，inversion 少一個');
+  await step(tok);                                   // 4691.0 兩兩交換直到沒有 inversion
+  glow(M[5], RED); glow(M[4], RED); await beat(tok, 800);
+  swapAt(4); await beat(tok, 600); glow(M[5], null); glow(M[4], null);
+  say('一直兩兩交換', '直到一個 inversion 都沒有');
+  await step(tok);                                   // 4706.0 修完就是 greedy 的 solution
   Object.values(M).forEach((m) => glow(m, GOLD));
-  say('沒有 inversion 了 = greedy 的解', '所以 EDF 也是 optimal');
-  await gb(tok, 3000);
+  say('修完的就是 greedy 吐出來的解', '依 deadline 排、沒有空檔');
+  await step(tok);                                   // 4722.0 沒比 optimal 差 → 也是 optimal
+  god.mood('wow');
+  good('greedy 的 L = optimal 的 L → EDF optimal', 0, 0.2);
+  say('greedy 的解沒有比 optimal 差', '所以也是 optimal');
+  await step(tok);                                   // 4742.0 這就是 exchange argument 的做法
+  say('這就是一般 exchange argument', '的做法');
 }]);
 
-// 83:00 Interval graph：一個 interval 一個 node，overlap 就連 edge；partitioning = coloring
+// 79:28 總結：exchange argument 的 basic idea、greedy 的兩招
+FRAG.push(['grjiang1-summary', '總結：greedy 與兩種證明', async (tok) => {
+  fresh([0, 4, 14], [0, 3, 0]);
+  let blocks, mine, me, r;
+  await step(tok);                                   // 4771.0 cut and paste
+  tag('exchange argument', 'ptr alt', 3.4, 6.4);
+  blocks = ['o1', 'o2', 'o3', 'o4'].map((t, k) => cube(t, GJ.purple, [0.9, 0.7, 0.7], 1.4 + k * 1.1, 4.4, 0, 2));
+  await beat(tok, 700); glow(blocks[2], RED); await beat(tok, 500); fly(blocks[2], V3(0, 6, 3));
+  mine = cube('g', GJ.teal, [0.9, 0.7, 0.7], 3.6, 4.4, 0, 3);
+  say('不符合的挖掉，換成我的貼上', 'cut and paste');
+  await step(tok);                                   // 4778.0 貼上之後沒有變糟
+  glow(mine, GOLD); good('沒有變糟', 3.4, 3.2);
+  say('再推論：換完沒有變糟', '');
+  await step(tok);                                   // 4792.0 約 90% 用這個 strategy
+  pkt('證 greedy 約 90% 用這招', 3.4, 7.2);
+  say('證 greedy 大概 90% 用這招', '普遍性最高');
+  await step(tok);                                   // 4817.0 greedy：step by step 選目前最好
+  me = pal('greedy', -4.6, GJ.orange, 1.8, 0.8);
+  say('總結：greedy step by step', '每步選目前看起來最好的');
+  await step(tok);                                   // 4836.0 要先設計 criterion
+  bub('先設計 criterion', -4.6, 2.5, 1.8);
+  say('要先設計一個 criterion', '判斷什麼叫最好');
+  await step(tok);                                   // 4849.0 大部分問題沒那麼幸運
+  me.mood('sad');
+  say('大部分問題沒那麼幸運', 'greedy 很難拿到最佳解');
+  await step(tok);                                   // 4864.0 可以的話：快到不行
+  me.mood('happy'); await me.hop(tok);
+  say('如果能用，就趕快用', 'running time 快到不行');
+  await step(tok);                                   // 4895.0 第一招 stays ahead
+  tag('① stays ahead', 'ptr alt', -3.6, 6.4);
+  r = racers(4.6, -6.2);
+  await race(tok, r, -6.2, -1.6, 1800);
+  say('第一招：stays ahead', '每一步都第一名，一路領先');
+  await step(tok);                                   // 4914.0 第二招：比較常見、彈性大
+  say('第二招：exchange argument', '比較常見、彈性比較大');
+  await step(tok);                                   // 4935.9 把別人的 optimal 換成我的樣子
+  blocks.forEach((b) => { if (b.parent) tint(b, GJ.teal); });
+  say('把別人的 optimal 慢慢換成', '我的 greedy 長相');
+  await step(tok);                                   // 4951.0 不損失 solution quality
+  blocks.forEach((b) => { if (b.parent) glow(b, GOLD); });
+  say('過程中 quality 沒損失', '所以 greedy 也是 optimal');
+}]);
+
+// 83:04 Interval graph：一個 interval 一個 node，overlap 就連 edge；partitioning = coloring
 FRAG.push(['grjiang1-interval-graph', 'Interval graph：partitioning = coloring', async (tok) => {
   fresh([0, 3.4, 13], [0, 3, 0]);
   const ax = { sc: 0.45, X: (t) => -6.6 + t * 0.45 };
-  line(ax.X(0), 0.6, ax.X(11), 0.6);
-  const B = IP10.map(([s, f], i) => gBar(ax, String(i + 1), s, f, 6.0 - i * 0.55, GJ.sand, 2, 0.32));
-  await gb(tok, 900);
-  say('每個 interval 變成一個 node', 'interval graph');
   const P = IP10.map((r, i) => { const a = Math.PI / 2 - i * 2 * Math.PI / 10; return [3.4 + 2.6 * Math.cos(a), 3.4 + 2.6 * Math.sin(a)]; });
-  const N = P.map(([x, y], i) => cube(String(i + 1), GJ.sand, [0.55, 0.55, 0.55], x, y, 0, 2));
-  await gb(tok, 1600);
-  say('兩個 interval overlap 就連一條 edge', '1 連 2、3；2 連 1、3、4、5');
-  for (let i = 0; i < 10; i++) for (let k = i + 1; k < 10; k++) if (gOv(IP10[i], IP10[k])) {
-    line(P[i][0], P[i][1], P[k][0], P[k][1], -0.1, '#a99470');
-    if (i < 2) { glow(N[i], GOLD); glow(N[k], GOLD); await gb(tok, 400); glow(N[k], null); }
-    else await gb(tok, 120);
-  }
-  N.forEach((n) => glow(n, null));
-  await gb(tok, 900);
-  say('塗色：相鄰的 node 不同色', 'interval partitioning = coloring');
+  let B, N;
+  const E = [];
+  for (let i = 0; i < 10; i++) for (let k = i + 1; k < 10; k++) if (gOv(IP10[i], IP10[k])) E.push([i, k]);
+  const edge = ([i, k]) => line(P[i][0], P[i][1], P[k][0], P[k][1], -0.1, '#a99470');
   const lbl = gPartition();
-  for (let i = 0; i < 10; i++) { tint(N[i], LCOL[lbl[i]]); tint(B[i], LCOL[lbl[i]]); await gb(tok, 300); }
-  await gb(tok, 900);
-  say('一般 graph 的 coloring 很難', '在 interval graph 上 greedy 就解得掉');
-  await gb(tok, 3000);
+  await step(tok);                                   // 4984.0 補充：為什麼叫 interval graph
+  line(ax.X(0), 0.6, ax.X(11), 0.6);
+  B = IP10.map(([s, f], i) => gBar(ax, String(i + 1), s, f, 6.0 - i * 0.55, GJ.sand, 2, 0.32));
+  say('補充：為什麼叫 interval graph？', '');
+  await step(tok);                                   // 5001.0 投影片上沒看到 graph
+  say('投影片上只看到時間軸和 interval', '沒看到 graph');
+  await step(tok);                                   // 5009.9 每個 interval 用一個 node
+  N = P.map(([x, y], i) => cube(String(i + 1), GJ.sand, [0.55, 0.55, 0.55], x, y, 0, 2));
+  say('每個 interval 用一個 node 代表', '');
+  await step(tok);                                   // 5035.0 overlap 就建一條 edge
+  say('兩個 interval overlap', '就建一條 edge');
+  await step(tok);                                   // 5042.0 1 連 2、3；2 連 1、3、4、5
+  E.filter(([i]) => i < 2).forEach((e) => { edge(e); glow(N[e[1]], GOLD); });
+  glow(N[0], GOLD); glow(N[1], GOLD);
+  say('1 跟 2、3 overlap', '2 跟 1、3、4、5 overlap');
+  await step(tok);                                   // 5060.0 會打架的都建 edge
+  N.forEach((n) => glow(n, null));
+  E.filter(([i]) => i >= 2).forEach(edge);
+  say('所有會打架的都連起來', '');
+  await step(tok);                                   // 5067.6 這就叫 interval graph
+  tag('interval graph', 'ptr alt', 3.4, 6.6);
+  say('這就叫 interval graph', '');
+  await step(tok);                                   // 5084.6 也叫 intersection graph
+  tag('= intersection graph', 'idx', 3.4, 6.15);
+  say('也有人叫它 intersection graph', '表達有沒有重疊');
+  await step(tok);                                   // 5100.6 coloring：相鄰的點要不同顏色
+  say('graph coloring：有 edge 相連的兩點', '要塗不同顏色');
+  await step(tok);                                   // 5141.0 interval partitioning = 在這張圖上 coloring
+  say('interval partitioning', '就是在這張圖上做 coloring');
+  await step(tok);                                   // 5161.0 1 號藍、2 號橘、3 號紅
+  for (let i = 0; i < 3; i++) { tint(N[i], LCOL[lbl[i]]); tint(B[i], LCOL[lbl[i]]); await beat(tok, 400); }
+  say('1 號塗藍、2 號塗橘、3 號塗紅', '');
+  await step(tok);                                   // 5178.0 其他的也塗不同顏色
+  for (let i = 3; i < 10; i++) { tint(N[i], LCOL[lbl[i]]); tint(B[i], LCOL[lbl[i]]); await beat(tok, 250); }
+  say('相鄰的都塗不同顏色', '');
+  await step(tok);                                   // 5192.0 interval graph 上 greedy 就解得掉
+  good('interval graph：greedy 就解得掉', 3.4, 0.1);
+  say('interval graph 有很好的特性', 'coloring 用 greedy 就能解');
+  await step(tok);                                   // 5205.0 一般 graph 的 coloring 很難
+  bad('一般 graph 的 coloring：困難', -3.4, 0.1);
+  say('但一般 graph 的 coloring', '是困難的問題');
 }]);
   }
 
