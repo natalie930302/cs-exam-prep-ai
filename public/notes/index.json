@@ -487,9 +487,9 @@
  },
  "ARvQcqJ_-NY": {
   "label": "Abdul Bari：Greedy Method - Introduction",
-  "points": 16,
+  "points": 17,
   "quiz": 5,
-  "cued": false
+  "cued": true
  },
  "Ax1OL2mikJo": {
   "label": "交大彭文志 Lec19 Graph (2/4)",
@@ -604,6 +604,12 @@
   "points": 36,
   "quiz": 7,
   "cued": false
+ },
+ "co4_ahEDCho": {
+  "label": "Abdul Bari：Huffman Coding - Greedy Method",
+  "points": 16,
+  "quiz": 7,
+  "cued": true
  },
  "cvooTtquDlQ": {
   "label": "Binary Search Tree | BST | Design & Algorithms",
@@ -790,6 +796,12 @@
   "points": 19,
   "quiz": 5,
   "cued": false
+ },
+ "HHIc5JZyenI": {
+  "label": "Abdul Bari：3.3 Optimal Merge Pattern - Greedy Method",
+  "points": 12,
+  "quiz": 5,
+  "cued": true
  },
  "HlFsexTpM4Q": {
   "label": "Dijkstra Algorithm",
@@ -1040,6 +1052,12 @@
  "OqLt2GfX6jg": {
   "label": "Abdul Bari：Why Pointers?",
   "points": 26,
+  "quiz": 6,
+  "cued": true
+ },
+ "oTTzNMHM05I": {
+  "label": "Abdul Bari：3.1 Knapsack Problem - Greedy Method",
+  "points": 19,
   "quiz": 6,
   "cued": true
  },
@@ -1455,6 +1473,12 @@
   "label": "交大彭文志 Lec10 Lists (3/4)",
   "points": 99,
   "quiz": 6,
+  "cued": true
+ },
+ "zPtI8q9gvX8": {
+  "label": "Abdul Bari：3.2 Job Sequencing with Deadlines - Greedy Method",
+  "points": 13,
+  "quiz": 5,
   "cued": true
  },
  "zRza99HPvkQ": {

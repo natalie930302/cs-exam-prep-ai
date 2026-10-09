@@ -4470,6 +4470,1085 @@ FRAG.push(['grjiang2-mst-tree', '為什麼答案是 tree：有 cycle 就剪一�
   say('這個問題有一些有趣的 property', '由它延伸出三種演算法');
 }]);
   }
+  // ═══ grbari.js ═══
+  {
+// ─── Abdul Bari：Greedy 導論、3.1 Knapsack、3.2 Job sequencing、3.3 Optimal merge pattern、Huffman coding ───
+// Cued scenes: every `await step(tok)` waits for the sentence it shows (cues in the notes; the number in each
+// step comment is the transcript time where the lecturer starts saying it). Motion between steps is short;
+// nothing loops or replays. Little buddies react to what happens.
+// Bari 的例子：A→B 旅行（12 小時、成本最小）；選車、1000 人徵才；
+//   knapsack n = 7、m = 15、P = 10 5 15 7 6 18 3、W = 2 3 5 7 1 4 1（x = 1 2/3 1 0 1 1 1）；
+//   job sequencing p = 20 15 10 5 1、d = 2 2 1 3 3 → 40；第二題 p = 35 30 25 20 15 12 5、d = 3 4 4 2 3 1 2 → 110；
+//   merge A = 3 8 12 20、B = 5 9 11 16；四個 list 6 5 2 3 → 40 / 32 / 31；檔案 20 30 10 5 30 → 205；
+//   Huffman 訊息 BCCABBDDAECCBBAEDDCC（A3 B5 C6 D4 E2）→ 160 / 115 / 97 bits。
+// 示意值：Greedy 一般演算法的 6 個 input（7 3 9 4 6 2，Select = 最大、Feasible = 總和 ≤ 15）、車子與應徵者的方塊數。
+const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, code, anim, line, arrow, GOLD, GREEN, RED, step, buddy, prop, bob, travel, remove } = K;
+const GB = { blue: '#4b9ee2', orange: '#dd8238', red: '#d64545', teal: '#2fc092', purple: '#9b7ef4', sand: '#c9b48e', paper: '#efe6d2', pink: '#e55a9b', gold: '#c08a1f', ink: '#6e5f49', gray: '#bdb3a2', cyan: '#31aab0', green: '#7cc66b' };
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const pkt = (t, x, y, z = 0) => tag(t, 'pkt', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+const ptr = (t, x, y, z = 0) => tag(t, 'ptr', x, y, z);
+const alt = (t, x, y, z = 0) => tag(t, 'ptr alt', x, y, z);
+const idx = (t, x, y, z = 0) => tag(t, 'idx', x, y, z);
+const pal = (name, x, color = '#f4a56a', z = 1.6, size = 0.75, y = 0) => buddy(name, '', color, x, y, z, size);
+const walkTo = (tok, b, x, ms = 900) => { const x0 = b.g.position.x; return anim(tok, ms, (u) => { b.g.position.x = x0 + (x - x0) * u; }); };
+const gone = (...xs) => xs.flat().forEach((o) => { if (o) kill(o.g && o.mood ? o.g : o); });
+// an upright bar that grows from the floor
+function col(color, w, d, x, z = 0) { const m = lab.box(color, [1, 1, 1]); m.scale.set(w, 0.001, d); m.position.set(x, 0, z); lab.world.add(m); return m; }
+const grow = (tok, bars, hs, ms = 1200) => anim(tok, ms, (u) => bars.forEach((m, k) => { m.scale.y = Math.max(0.001, hs[k] * u); m.position.y = (hs[k] * u) / 2; }));
+// a merge tree drawn bottom-up: leaves in a row, each merge puts the parent above its two children
+function mtree(leaves, o) {
+  const N = leaves.map((L, k) => ({ f: L.f, x: o.x0 + k * o.dx, y: o.y0, lv: 0 }));
+  N.forEach((n, k) => { n.m = cube(leaves[k].t, leaves[k].c || o.color || GB.blue, [o.w || 0.9, 0.5, 0.5], n.x, n.y, 0, o.drop || 0); });
+  const T = { N, bitsL: [] };
+  T.merge = (a, b, color = GB.teal) => {
+    const A = N[a], B = N[b], lv = Math.max(A.lv, B.lv) + 1;
+    const n = { f: A.f + B.f, x: (A.x + B.x) / 2, lv, L: a, R: b };
+    n.y = o.y0 + lv * o.dy;
+    n.m = cube(String(n.f), color, [0.8, 0.5, 0.5], n.x, n.y, 0, 1.2);
+    n.e = [line(n.x, n.y - 0.25, A.x, A.y + 0.25, 0, GB.ink), line(n.x, n.y - 0.25, B.x, B.y + 0.25, 0, GB.ink)];
+    glow(A.m, null); glow(B.m, null);
+    N.push(n); return N.length - 1;
+  };
+  T.bits = () => N.forEach((n) => { if (n.L === undefined) return; for (const [c, b] of [[N[n.L], '0'], [N[n.R], '1']]) T.bitsL.push(alt(b, (n.x + c.x) / 2 + (b === '0' ? -0.25 : 0.25), (n.y + c.y) / 2 + 0.1, 0.3)); });
+  T.pos = (i) => V3(N[i].x, N[i].y + 0.5, 0.4);
+  return T;
+}
+
+// ════════ ARvQcqJ_-NY（Greedy Method - Introduction） ════════
+// 00:00 Greedy 是一種策略；最佳化問題；A → B 的 feasible 與 optimal
+FRAG.push(['grbari-feasible', 'A 地到 B 地：feasible 與 optimal solution', async (tok) => {
+  fresh([0, 4.4, 14], [0, 3, 0]);
+  await step(tok);                                   // 0.5 greedy method 是一種解題策略，像 divide and conquer
+  const s1 = cube('Divide & Conquer', GB.blue, [3.2, 0.9, 0.9], -2.4, 3.6, 0, 2);
+  const s2 = cube('Greedy', GB.teal, [2.2, 0.9, 0.9], 2.2, 3.6, 0, 2.5);
+  const me = pal('我', -6, GB.orange, 1.8, 0.7); me.mood('happy');
+  say('Greedy：一種解題策略', '就像 divide and conquer');
+  await step(tok);                                   // 28.0 用來解 optimization problem：要求最小或最大
+  const op = pkt('最佳化問題：要最小 or 最大的結果', 0, 5.4);
+  say('Greedy 用來解最佳化問題', 'optimization problem：求 min 或 max');
+  await step(tok);                                   // 53.0 問題 P：從 A 地旅行到 B 地
+  gone(s1, s2, op);
+  alt('A', -6, 0.2, 1.8); alt('B', 6.2, 0.2, 1.8);
+  line(-5.6, 0.05, 5.8, 0.05, 1.8, GB.ink);
+  await walkTo(tok, me, -4.6, 700);
+  say('問題 P：從 A 地到 B 地', '這段路要怎麼走完？');
+  await step(tok);                                   // 75.8 解法：走路、腳踏車、汽車、火車、飛機
+  const OPT = [['走路', 7.2], ['腳踏車', 5.6], ['開車', 4.4], ['火車', 2.4], ['飛機', 1.2]];
+  const xs = (k) => -4.4 + k * 2.2;
+  const bars = OPT.map(([nm], k) => { ptr(nm, xs(k), -0.1, 0.9); return col(GB.blue, 1.2, 0.8, xs(k)); });
+  await grow(tok, bars, OPT.map((o) => o[1]), 1400);
+  OPT.forEach((o, k) => idx('solution ' + (k + 1), xs(k), o[1] + 0.35));
+  say('一個問題可以有很多 solution', '柱子高度 = 要花的時間');
+  await step(tok);                                   // 103.2 限制：12 小時內到
+  line(-5.6, 3.6, 5.6, 3.6, 0.5, GB.red);
+  const lim = bad('限制：12 小時內到', 5.0, 4.1);
+  say('加上 constraint：12 小時內要到', '這是題目給的條件');
+  await step(tok);                                   // 112.8 走路、開車來不及，只剩火車、飛機
+  bars.forEach((m, k) => tint(m, OPT[k][1] < 3.6 ? GB.teal : GB.gray));
+  me.mood('wow');
+  say('走路、開車都來不及', '只剩火車、飛機做得到');
+  await step(tok);                                   // 125.2 滿足條件的解 = feasible solution
+  const f1 = good('feasible', xs(3), 3.1), f2 = good('feasible', xs(4), 1.9);
+  me.mood('happy');
+  say('滿足條件的解：feasible solution', '火車、飛機都是 feasible');
+  await step(tok);                                   // 162.0 再要求成本最小 → minimization problem
+  const coins = [];
+  [[3, 2], [4, 6]].forEach(([k, n]) => { for (let c = 0; c < n; c++) coins.push(cube('', GB.gold, [0.5, 0.12, 0.5], xs(k) + 0.95, 0.06 + c * 0.14, 0.6, 1.2 + c * 0.2)); });
+  ptr('$ 成本', xs(4) + 1.4, 1.4, 0.6);
+  say('再要求「成本最少」', '這就變成 minimization problem');
+  await step(tok);                                   // 193.0 火車成本最小 → optimal solution
+  glow(bars[3], GREEN); remove(f1);
+  const ob = alt('optimal', xs(3), 3.2);
+  await me.hop(tok);
+  say('feasible 又最便宜：optimal solution', '火車就是 optimal');
+  await step(tok);                                   // 227.0 最佳解只有一個（最小值只有一個）
+  const one = note('min 只有一個值', xs(3) - 0.2, 4.6);
+  say('optimal：最小的成本只有一個', 'feasible 可以很多個');
+  await step(tok);                                   // 250.7 有的問題要求最大 → 統稱 optimization problem
+  remove(one); void ob; void lim; void f2;
+  pkt('要求 min 或 max 的問題 = optimization problem', 0, 6.0);
+  say('有的問題要最小、有的要最大', '都叫 optimization problem');
+  await step(tok);                                   // 278.0 複習：feasible、optimal、optimization
+  note('feasible：滿足 constraint', -3.4, 5.1); note('optimal：達成目標（min/max）', 3.0, 5.1);
+  say('複習三個名詞', 'feasible、optimal、optimization problem');
+}]);
+
+// 05:08 解最佳化問題的三種策略
+FRAG.push(['grbari-three', '解最佳化問題的三種策略', async (tok) => {
+  fresh([0, 4.4, 14], [0, 2.8, 0]);
+  await step(tok);                                   // 308.3 greedy 用來解 optimization problem
+  const g = cube('Greedy', GB.teal, [2.6, 1.1, 1.1], -4.2, 2.4, 0, 3);
+  pkt('最佳化問題', 0, 5.6);
+  say('Greedy method：解最佳化問題', 'optimization problem');
+  await step(tok);                                   // 315.7 這三種方法都用來解最佳化問題
+  cube('Dynamic Programming', GB.blue, [3.4, 1.1, 1.1], 0, 2.4, 0, 3);
+  cube('Branch & Bound', GB.purple, [3.0, 1.1, 1.1], 4.3, 2.4, 0, 3);
+  note('板書三種（推斷）', 4.3, 3.6);
+  say('解最佳化問題的三種策略', '做法不同，目的一樣');
+  await step(tok);                                   // 336.7 有的題只適合一種，有的三種都能用
+  const ps = [['題 1', -4.2], ['題 2', 0], ['題 3', 4.3]].map(([t, x]) => pal(t, x, GB.sand, 2.0, 0.55));
+  ps.forEach((p) => p.look(0));
+  ps[2].mood('happy');
+  bub('三種都能用', 4.3, 1.6, 2.0);
+  say('有的題目只適合其中一種', '有的題目三種都能用');
+  await step(tok);                                   // 355.0 一題一題學，先從 greedy 開始
+  glow(g, GOLD); ps[0].mood('wow'); await ps[0].hop(tok);
+  say('之後一題一題學', '先從 greedy method 開始');
+}]);
+
+// 06:15 Greedy 的一般演算法
+FRAG.push(['grbari-general', 'Greedy 一般演算法：Select、Feasible、加入解', async (tok) => {
+  fresh([0, 4.6, 14], [0, 3.2, 0]);
+  const A = [7, 3, 9, 4, 6, 2], cap = 15, xs = (k) => -5.4 + k * 1.2;
+  await step(tok);                                   // 375.0 greedy 的 general method：寫成一個演算法
+  const cd = code(['Algorithm Greedy(a, n)', '{', '  for i = 1 to n do', '  {', '    x = Select(a);', '    if Feasible(x) then', '      Solution = Solution + x;', '  }', '}'], -3.0, 7.4, 0.48);
+  say('Greedy 的 general method', '先看整體的演算法');
+  await step(tok);                                   // 382.0 分成 stages，每個 stage 考慮一個 input
+  const cs = A.map((v, k) => cube(v, GB.blue, [0.9, 0.6, 0.8], xs(k), 0.3, 1.2, 1.5));
+  ptr('inputs a', xs(0), -0.3, 2.2);
+  await beat(tok, 600);
+  glow(cs[0], GOLD);
+  say('分成 stages：每次考慮一個 input', 'stage by stage');
+  await step(tok);                                   // 390.0 這個 input feasible 就放進 solution
+  glow(cs[0], null);
+  const box = cube('', '#e9dcc4', [2.4, 0.1, 1.8], 4.8, 0.05, 0);
+  alt('Solution', 4.8, -0.2, 1.4);
+  const sumL = ptr('總和 0（≤ 15 才 feasible）', 4.6, 4.4);
+  say('如果 feasible，就放進 solution', '示意：Feasible = 總和 ≤ 15');
+  await step(tok);                                   // 399.0 把所有 feasible 的 input 都放進來 → optimal
+  pkt('全部 feasible 的 input → optimal solution', 0.6, 5.4, 1.2);
+  say('一個個收進 feasible 的 input', '最後得到 optimal solution');
+  await step(tok);                                   // 420.0 問題的 input 大小 n，放在 a 裡
+  cd.hl(0);
+  ptr('n = 6', xs(5) + 1.2, 0.3, 1.2);
+  say('Greedy(a, n)：a 是 input、n 是個數', '這裡 n = 6');
+  await step(tok);                                   // 431.5 for i = 1 to n 走過所有 input
+  cd.hl(2);
+  const iL = alt('i = 1', -6.2, 2.0);
+  say('for i = 1 to n', '一共做 n 個 stage');
+  await step(tok);                                   // 434.0 每次從 a 選一個，叫它 x
+  cd.hl(4);
+  const left = A.map((v, k) => ({ v, m: cs[k] })).sort((p, q) => q.v - p.v);
+  const x1 = left.shift(); glow(x1.m, GOLD); move(x1.m, x1.m.position.x, 1.8, 1.2);
+  say('x = Select(a)：選一個 input', '示意：Select = 挑最大的 9');
+  await step(tok);                                   // 440.3 x feasible 就放進 solution（其餘 stage 照做）
+  cd.hl(6);
+  let sum = x1.v, h = 1;
+  move(x1.m, 4.8, 0.4, 0); tint(x1.m, GB.teal); glow(x1.m, GREEN); txt(sumL, '總和 ' + sum);
+  await beat(tok, 500);
+  let i = 1;
+  for (const x of left) {
+    i++; txt(iL, 'i = ' + i);
+    if (sum + x.v <= cap) { sum += x.v; move(x.m, 4.8, 0.4 + h * 0.65, 0); h++; tint(x.m, GB.teal); txt(sumL, '總和 ' + sum); }
+    else { tint(x.m, GB.gray); move(x.m, x.m.position.x, 0.3, 2.8); }
+    await beat(tok, 380);
+  }
+  cd.hl(-1); void box;
+  say('Feasible 就加入解，否則丟掉', '9 + 6 = 15；其他都會超過');
+}]);
+
+// 07:35 例子：買一台最好的車
+FRAG.push(['grbari-car', '選車：照自己的方法層層篩選', async (tok) => {
+  fresh([0, 5.4, 14], [0, 2.4, 0]);
+  const me = pal('買車的人', -6, GB.orange, 2.6, 0.7);
+  await step(tok);                                   // 455.1 想買一台「最好的車」（看功能）
+  bub('我要最好的車！', -6, 1.4, 2.6); me.mood('happy');
+  say('例子：買一台最好的車', '「最好」是看功能（features）');
+  await step(tok);                                   // 487.2 一種方法：看遍所有品牌、所有型號
+  const cars = [];
+  for (let k = 0; k < 40; k++) cars.push(cube('', [GB.blue, GB.purple, GB.orange, GB.pink, GB.cyan][k % 5], [0.38, 0.3, 0.6], -4.6 + (k % 10) * 0.45, 0.15, -1.2 + Math.floor(k / 10) * 0.75, 1.5));
+  ptr('全世界／全市的車', -2.6, 0, 2.0);
+  say('方法一：看遍所有品牌、所有型號', '全部看完再挑最好的');
+  await step(tok);                                   // 509.2 這樣非常花時間
+  me.mood('sad');
+  bad('每一台都要看：太花時間', -2.6, 3.0);
+  say('這樣非常花時間', '每個品牌、每個型號都要比');
+  await step(tok);                                   // 526.4 實際做法：先篩品牌（Toyota、Hyundai）
+  me.mood('calm');
+  const stage = async (keep, x0, name) => {
+    const alive = cars.filter((m) => m.parent);
+    alive.forEach((m, k) => { if (k >= keep) fly(m, V3(0, 5, 3)); });
+    alive.slice(0, keep).forEach((m, k) => move(m, x0 + (k % 5) * 0.45 - (Math.min(keep, 5) - 1) * 0.225, 0.15, Math.floor(k / 5) * 0.75 - 0.4));
+    ptr(name, x0, 0, 1.6);
+    await beat(tok, 900);
+  };
+  await stage(10, 2.2, '品牌：Toyota、Hyundai');
+  say('實際上：先挑喜歡的品牌', '例如 Toyota 或 Hyundai');
+  await step(tok);                                   // 545.0 再挑頂級型號
+  await stage(3, 4.4, '頂級型號');
+  say('在這些品牌裡，只看頂級型號', '低階型號不看');
+  await step(tok);                                   // 552.0 最後挑最新、口碑好的那台
+  await stage(1, 6.0, '最新、口碑好');
+  const best = cars.find((m) => m.parent);
+  if (best) glow(best, GREEN);
+  me.mood('happy'); await me.hop(tok);
+  say('最後挑最新、口碑好的那台', '對你來說就是最好的車');
+  await step(tok);                                   // 568.0 你用的就是 greedy approach：自己的選擇方法
+  pkt('自己的選擇方法 → 結果 = greedy approach', 0.4, 5.6);
+  say('你用的方法就是 greedy approach', '照自己的選擇方法得到結果');
+  await step(tok);                                   // 587.7 不用浪費時間檢查市面上每一台
+  good('不用檢查每一台車', 3.6, 3.4);
+  say('不必浪費時間看完所有車', '選幾台，就說這是最好的');
+}]);
+
+// 10:05 例子：1000 人應徵，錄取一人
+FRAG.push(['grbari-hire', '徵人：1000 人層層篩選錄取一人', async (tok) => {
+  fresh([0, 5.4, 14], [0, 2.4, 0]);
+  const boss = pal('公司', 6.0, GB.purple, 2.6, 0.7);
+  let ppl = [];
+  const filter = async (keep, x0, name) => {
+    ppl.forEach((m, k) => { if (k >= keep) fly(m, V3(0, 5, 3)); });
+    ppl = ppl.slice(0, keep);
+    ppl.forEach((m, k) => move(m, x0 + (k % 4) * 0.38 - 0.57, 0.23, Math.floor(k / 4) * 0.45 - 0.6));
+    ptr(name, x0, 0, 1.4);
+    await beat(tok, 900);
+  };
+  await step(tok);                                   // 605.2 開公司要徵人，1000 人來面試
+  for (let k = 0; k < 48; k++) ppl.push(cube('', GB.blue, [0.3, 0.45, 0.3], -6.2 + (k % 8) * 0.38, 0.23, -1.4 + Math.floor(k / 8) * 0.45, 1.4));
+  ptr('1000 人', -4.9, 0, 1.6);
+  bub('登了徵才廣告', 6.0, 1.4, 2.6);
+  say('開公司徵人：1000 人來應徵', '只要錄取一個人');
+  await step(tok);                                   // 615.0 先筆試
+  await filter(18, -2.2, '筆試');
+  say('第一關：筆試（written test）', '只讓過關的人往下走');
+  await step(tok);                                   // 619.5 技術測驗、團體討論…好幾關
+  await filter(8, 0.4, '技術測驗');
+  await filter(4, 2.6, '團體討論');
+  say('再來技術測驗、團體討論', '好幾個階段一層層篩');
+  await step(tok);                                   // 625.6 最後選出一人：這是最好的
+  await filter(1, 4.4, '面試');
+  glow(ppl[0], GREEN);
+  boss.mood('happy');
+  say('最後選出一個人', '說他是 1000 人裡最好的');
+  await step(tok);                                   // 629.0 真的最好嗎？照你的程序，是
+  const ok = good('照這套篩選程序：他就是最好的', 0.4, 3.4);
+  await boss.hop(tok);
+  say('他真的最好嗎？照你的程序，是', '得到的就是 optimal solution');
+  await step(tok);                                   // 657.2 若每個人都考完所有關卡再挑：太耗時、太貴
+  remove(ok);
+  const cnt = bad('每人都考完 4 關：4000 場考試', 0.4, 4.6);
+  boss.mood('sad');
+  say('如果讓每個人都考完所有關卡', '1000 人 × 4 關：又慢又貴');
+  await step(tok);                                   // 676.0 我們只是層層篩選：greedy approach
+  remove(cnt); boss.mood('happy');
+  pkt('層層篩選 → 選最好的 = greedy approach', 0.4, 4.6);
+  say('實際上只做篩選，再選最好的', '這就是 greedy approach');
+  await step(tok);                                   // 690.1 照已知的方法快速解題 = greedy
+  good('照已知的方法，快速解題', 0.4, 3.4);
+  say('照已知的選擇方法、很快解完', '這種做法就叫 greedy');
+}]);
+
+// ════════ oTTzNMHM05I（3.1 Knapsack Problem - Greedy Method） ════════
+const KP = [10, 5, 15, 7, 6, 18, 3], KW = [2, 3, 5, 7, 1, 4, 1], KM = 15;
+const KR = ['5', '1.67', '3', '1', '6', '4.5', '3'];
+const kx = (k) => -5.6 + k * 1.45;
+// 7 個物品（紙箱，高度跟重量成比例）＋ 標籤
+function ksItems(y = 0.4, withTags = true) {
+  return KP.map((p, k) => {
+    const s = 0.55 + KW[k] * 0.07;
+    const g = prop('parcel', kx(k), y, 0, s);
+    const t = withTags ? [idx(String(k + 1), kx(k), y + 1.25 * s + 0.15), ptr('p ' + p, kx(k), y - 0.35, 0.6), ptr('w ' + KW[k], kx(k), y - 0.85, 0.6)] : [];
+    return { g, t, k };
+  });
+}
+// 背包：一個半透明高箱，裡面依序疊上放進去的重量
+function ksBag(x = 5.6) {
+  const kk = 0.3, H = KM * kk;
+  const bag = lab.box('#e9dcc4', [1.6, H + 0.1, 1.3]); bag.material.transparent = true; bag.material.opacity = 0.35; bag.material.depthWrite = false;
+  bag.position.set(x, H / 2, 0); lab.world.add(bag);
+  ptr('knapsack m = 15', x, H + 0.5);
+  const B = { x, kk, used: 0, blocks: [] };
+  B.put = (w, label, color = GB.teal) => { const h = w * kk; const m = cube(label, color, [1.4, h - 0.03, 1.1], x, B.used * kk + h / 2, 0, 1.5); B.used += w; B.blocks.push(m); return m; };
+  return B;
+}
+
+// 00:00 問題：7 個物品、背包容量 15、最大化 profit
+FRAG.push(['grbari-ks-problem', 'Knapsack 問題：7 個物品、容量 15', async (tok) => {
+  fresh([0, 4.2, 14], [0, 2.4, 0]);
+  await step(tok);                                   // 0.4 knapsack：有名的問題，greedy 可以用在這裡
+  const me = pal('搬運工', -6.2, GB.orange, 2.4, 0.65); me.mood('happy');
+  pkt('Knapsack problem（greedy）', 0, 5.6);
+  say('Knapsack problem', '看問題、怎麼解、為什麼是 greedy');
+  await step(tok);                                   // 18.6 7 個物品，每個有 profit 和 weight
+  const it = ksItems(0.6);
+  say('7 個物品：每個有 profit、weight', 'P = 10 5 15 7 6 18 3、W = 2 3 5 7 1 4 1');
+  await step(tok);                                   // 41.0 一個背包（knapsack），容量 15 kg
+  const B = ksBag(5.8); void B;
+  say('背包叫 knapsack：容量 m = 15', '單位就當 kg');
+  await step(tok);                                   // 70.0 把物品裝進背包，運到別處賣掉，就賺到 profit
+  await walkTo(tok, me, -6.6, 400);
+  bub('運過去賣掉 → 賺 profit', -6.0, 1.5, 2.4);
+  say('裝進背包、運到別的地方賣', '賣掉就得到 profit');
+  await step(tok);                                   // 95.1 也可以叫 container：container loading problem
+  note('container loading problem', 5.8, 6.4);
+  say('背包也可以叫 container', '日常的貨運就是這種問題');
+  await step(tok);                                   // 114.0 總重量超過容量時，才是問題
+  bad('總重 2+3+5+7+1+4+1 = 23 > 15', 0, 4.8);
+  me.mood('wow');
+  say('總重量比容量大，才有問題', '23 kg 裝不進 15 kg 的包');
+  await step(tok);                                   // 142.5 裝出最大 profit：maximization problem
+  good('目標：profit 最大', -3.6, 6.2);
+  say('要讓 profit 最大', '這是最佳化中的 maximization problem');
+  await step(tok);                                   // 170.1 constraint：總重量 ≤ 15
+  alt('constraint：總重 ≤ 15', 2.2, 6.2);
+  say('限制：裝進去的總重 ≤ 15 kg', '這是題目的 constraint');
+  await step(tok);                                   // 182.0 很多解：只放一個不夠多；全放放不下（不 feasible）
+  glow(it[4].g.children[0], GOLD);
+  note('只放一個？profit 不是最大', kx(4), 3.4);
+  me.mood('calm');
+  say('只放一個？不是最大', '全部放？放不下，不 feasible');
+  await step(tok);                                   // 201.1 給最大結果的那個 feasible 解 = optimal
+  glow(it[4].g.children[0], null);
+  pkt('feasible 中 profit 最大的 = optimal', 0, 3.6, 1.6);
+  say('解很多，profit 最大的才是 optimal', '接下來看怎麼解');
+}]);
+
+// 03:29 x 介於 0..1（可以切）；選擇標準 profit / weight
+FRAG.push(['grbari-ks-ratio', '可以切的物品：依 profit / weight 挑', async (tok) => {
+  fresh([0, 4.2, 14], [0, 2.4, 0]);
+  const it = ksItems(0.9);
+  await step(tok);                                   // 209.0 每個物品寫一個 x：放不放、放多少
+  const xl = KP.map((p, k) => alt('x' + (k + 1), kx(k), -1.4, 0.6));
+  say('每個物品寫一個 x', 'x 表示放不放、放多少');
+  await step(tok);                                   // 230.0 x 從 0 到 1：可以只拿一部分
+  pkt('0 ≤ x ≤ 1：可以拿一部分', 0, 5.4);
+  say('x 可以是 0 到 1 之間', '也就是可以拿「一部分」');
+  await step(tok);                                   // 245.3 這種 knapsack 的物品可以切
+  const cut = cube('5 kg', GB.sand, [1.2, 0.6, 0.6], 5.4, 3.6, 0, 1.5);
+  await beat(tok, 500);
+  move(cut, 5.4, 3.0, 0);
+  const piece = cube('2 kg', GB.green, [0.6, 0.6, 0.6], 6.4, 3.0, 0, 1.0);
+  say('物品可以切：5 kg 只拿 2 kg 也行', '這版 knapsack 是 divisible objects');
+  await step(tok);                                   // 262.0 例如蔬菜：馬鈴薯、番茄
+  const v = bub('蔬菜：馬鈴薯 7 kg、番茄 5 kg', 5.6, 4.6);
+  say('例如蔬菜', '7 kg 馬鈴薯，可以只拿 2 kg');
+  await step(tok);                                   // 283.2 不是不可分的東西：攪拌機、洗衣機
+  remove(v); kill(cut); kill(piece);
+  bad('洗衣機不能拿一半', 5.6, 4.0);
+  say('不是洗衣機這種不能切的東西', '洗衣機只能整台拿');
+  await step(tok);                                   // 306.0 用什麼標準挑？profit 最高的先放？
+  const a = pal('你', -6.4, GB.purple, 2.4, 0.6); a.mood('happy');
+  const ba = bub('profit 最高的先放！', -6.0, 1.5, 2.4);
+  glow(it[5].g.children[0], GOLD);
+  say('怎麼挑？profit 最高的先放？', '18 最大，先放物品 6');
+  await step(tok);                                   // 326.0 或者：先放重量小的，能裝更多個
+  glow(it[5].g.children[0], null);
+  const b = pal('我', 6.3, GB.cyan, 2.4, 0.6); b.mood('happy');
+  bub('輕的先放，裝更多個！', 5.8, 1.5, 2.4);
+  [4, 6].forEach((k) => glow(it[k].g.children[0], GOLD));
+  say('還是重量小的先放？', '輕的多裝幾個，profit 也多');
+  await step(tok);                                   // 357.0 正確：看 profit / weight（每 kg 賺多少）
+  [4, 6].forEach((k) => glow(it[k].g.children[0], null));
+  remove(ba);
+  note('18 是 4 kg 的 profit，每 kg 多少？', -1.0, 4.6);
+  a.mood('wow'); b.mood('wow');
+  say('兩個都不對：要看 profit / weight', '每 kg 能賺多少');
+  await step(tok);                                   // 387.0 算出每個物品的 profit / weight
+  const rl = KR.map((r, k) => tag(r, 'val', kx(k), 2.9, 0.6));
+  ptr('p / w', kx(0) - 0.9, 2.9, 0.6);
+  void xl; void rl;
+  say('算每個物品的 p / w', '5、1.67、3、1、6、4.5、3');
+  await step(tok);                                   // 415.0 依 profit / weight 由大到小放：正確的選法
+  [4, 0, 5].forEach((k) => glow(it[k].g.children[0], GREEN));
+  a.mood('happy'); b.mood('happy'); await a.hop(tok);
+  good('p / w 最大的先放', 0, 6.2);
+  say('依 p / w 由大到小放進背包', '這就是 greedy 的選擇標準');
+}]);
+
+// 07:19 照 p/w 由大到小放：5、1、6、3、7、2（2/3）
+FRAG.push(['grbari-ks-fill', 'Greedy 裝背包：依 p/w 放，最後切一塊', async (tok) => {
+  fresh([0, 4.2, 14], [0, 2.4, 0]);
+  const it = ksItems(0.9);
+  KR.forEach((r, k) => tag(r, 'val', kx(k), 2.9, 0.6));
+  const B = ksBag(5.9);
+  const xl = KP.map((p, k) => alt('x' + (k + 1) + ' = ?', kx(k), -1.4, 0.6));
+  const remL = ptr('剩 15 kg', 5.9, 5.6);
+  const put = async (k, take, rem, label) => {
+    glow(it[k].g.children[0], GOLD);
+    await travel(tok, it[k].g, it[k].g.position.clone(), V3(5.9, 5.2, 0), 700);
+    kill(it[k].g);
+    B.put(take, label || ('#' + (k + 1)), take < KW[k] ? GB.green : GB.teal);
+    txt(remL, '剩 ' + rem + ' kg');
+  };
+  await step(tok);                                   // 439.0 greedy：先決定怎麼選，再一個個選
+  pkt('先決定怎麼選（p / w），再一個一個選', -0.6, 5.6);
+  say('Greedy：先決定選法', '再照選法一個一個放');
+  await step(tok);                                   // 463.0 p/w 最大是物品 5（6）：整個放，15 − 1 = 14
+  await put(4, 1, 14); txt(xl[4], 'x5 = 1');
+  say('p/w 最大：物品 5（6）', '整個放：15 − 1 = 14');
+  await step(tok);                                   // 486.0 下一個是物品 1：14 − 2 = 12
+  await put(0, 2, 12); txt(xl[0], 'x1 = 1');
+  say('下一個：物品 1（5）', '整個放：14 − 2 = 12');
+  await step(tok);                                   // 500.0 第三大：物品 6，12 − 4 = 8
+  await put(5, 4, 8); txt(xl[5], 'x6 = 1');
+  say('第三大：物品 6（4.5）', '整個放：12 − 4 = 8');
+  await step(tok);                                   // 522.4 兩個都是 3，挑物品 3：8 − 5 = 3
+  await put(2, 5, 3); txt(xl[2], 'x3 = 1');
+  say('兩個 p/w = 3：先挑物品 3', '別看重量，看 p/w：8 − 5 = 3');
+  await step(tok);                                   // 554.2 再來物品 7：3 − 1 = 2
+  await put(6, 1, 2); txt(xl[6], 'x7 = 1');
+  say('物品 7（3）：1 kg', '3 − 1 = 2');
+  await step(tok);                                   // 564.5 物品 2 要 3 kg，只剩 2 kg → 拿 2/3
+  await put(1, 2, 0, '#2 的 2/3'); txt(xl[1], 'x2 = 2/3');
+  note('3 kg 只拿 2 kg', kx(1), 2.2);
+  say('物品 2 重 3 kg，只剩 2 kg', '只拿 2/3：2 − 2 = 0');
+  await step(tok);                                   // 597.5 物品可切，所以拿一部分；物品 4 沒放
+  txt(xl[3], 'x4 = 0');
+  tint(it[3].g.children[0], GB.gray);
+  say('能切，才能只拿一部分', '物品 4（p/w = 1）沒放：x4 = 0');
+  await step(tok);                                   // 609.5 這就是解：哪些物品、放多少
+  good('x = (1, 2/3, 1, 0, 1, 1, 1)', -0.8, 5.0);
+  say('解：x = (1, 2/3, 1, 0, 1, 1, 1)', '接下來算 profit');
+}]);
+
+// 10:32 驗證：Σ xᵢwᵢ = 15、Σ xᵢpᵢ = 55.33（影片 54.6）
+FRAG.push(['grbari-ks-sum', '驗算：總重 15、總 profit', async (tok) => {
+  fresh([0, 4.2, 14], [0, 3.0, 0]);
+  const X = ['1', '2/3', '1', '0', '1', '1', '1'];
+  X.forEach((x, k) => { alt('x' + (k + 1) + '=' + x, kx(k), 6.6); ptr('p ' + KP[k] + '  w ' + KW[k], kx(k), 6.0); });
+  const B = ksBag(6.0);
+  [[1, '#5'], [2, '#1'], [4, '#6'], [5, '#3'], [1, '#7']].forEach(([w, l]) => B.put(w, l));
+  B.put(2, '2/3', GB.green);
+  await step(tok);                                   // 632.0 總重：Σ xᵢ × wᵢ
+  const wl = X.map((x, k) => tag(x + '×' + KW[k], 'val', kx(k), 4.6, 0.6));
+  say('先驗算重量：Σ xᵢ × wᵢ', '每個 x 乘上它的重量');
+  await step(tok);                                   // 675.0 2+2+5+0+1+4+1 = 15 ≤ 15
+  ['2', '2', '5', '0', '1', '4', '1'].forEach((v, k) => txt(wl[k], v));
+  good('Σ xᵢwᵢ = 15 ≤ 15', -0.8, 3.8);
+  say('2+2+5+0+1+4+1 = 15', 'Σ xᵢwᵢ ≤ 15：剛好裝滿');
+  await step(tok);                                   // 702.6 profit：Σ xᵢ × pᵢ
+  const pl = X.map((x, k) => tag(x + '×' + KP[k], 'val', kx(k), 2.6, 0.6));
+  say('再算 profit：Σ xᵢ × pᵢ', '每個 x 乘上它的 profit');
+  await step(tok);                                   // 750.5 10 + 3.33 + 15 + 6 + 18 + 3 = 55.33（影片 54.6）
+  ['10', '3.33', '15', '0', '6', '18', '3'].forEach((v, k) => txt(pl[k], v));
+  good('Σ xᵢpᵢ = 55.33', -0.8, 1.6);
+  note('影片用 1.3 算出 54.6；5/3 ≈ 1.67 → 55.33', 2.0, 0.8);
+  const me = pal('', -6.4, GB.orange, 1.6, 0.6); me.mood('happy'); await me.hop(tok);
+  say('總 profit 約 55.33', '影片寫 54.6：把 5/3 算成 1.3');
+}]);
+
+// 12:56 constraint 與 objective；為什麼是 greedy
+FRAG.push(['grbari-ks-recap', '滿足 constraint、達成 objective', async (tok) => {
+  fresh([0, 4.2, 14], [0, 3.0, 0]);
+  const B = ksBag(5.6);
+  [[1, '#5'], [2, '#1'], [4, '#6'], [5, '#3'], [1, '#7']].forEach(([w, l]) => B.put(w, l));
+  B.put(2, '2/3', GB.green);
+  const me = pal('', -6.2, GB.orange, 1.8, 0.65);
+  await step(tok);                                   // 776.0 constraint：Σ xᵢwᵢ ≤ m，已滿足 → feasible
+  alt('constraint：Σ xᵢwᵢ ≤ m', -1.6, 6.0);
+  good('15 ≤ 15 ✓ → feasible', -1.6, 5.2);
+  say('constraint：Σ xᵢwᵢ ≤ m', '15 ≤ 15，滿足 → feasible');
+  await step(tok);                                   // 811.0 objective：Σ xᵢpᵢ 最大，也達成了
+  alt('objective：max Σ xᵢpᵢ', -1.6, 4.0);
+  good('兩個都做到 → optimal', -1.6, 3.2);
+  me.mood('happy');
+  say('objective：讓 Σ xᵢpᵢ 最大', 'constraint 和 objective 都達成');
+  await step(tok);                                   // 827.7 greedy 的做法：先定好選擇標準
+  pkt('先定選擇標準：p / w', -1.6, 1.6, 1.0);
+  say('Greedy：先決定選擇的標準', '再照標準一個一個放');
+  await step(tok);                                   // 852.0 沒有一一試，但方法本身就是最好的
+  bub('沒試每種組合也知道最好？', -6.0, 1.3, 1.8);
+  await me.hop(tok);
+  say('不用一一試所有組合', '每 kg 最值錢的先放，profit 一定最大');
+}]);
+
+// 14:37 0/1 knapsack 不一樣：不能切
+FRAG.push(['grbari-ks-01', 'Fractional vs 0/1 knapsack', async (tok) => {
+  fresh([0, 4.2, 14], [0, 2.6, 0]);
+  await step(tok);                                   // 877.8 還有一個 0/1 knapsack problem，不一樣
+  alt('這支：fractional knapsack', -3.4, 5.8); alt('0/1 knapsack', 3.4, 5.8);
+  line(0, 0, 0, 5.4, 0, GB.ink);
+  say('還有 0/1 knapsack problem', '跟這支不一樣');
+  await step(tok);                                   // 884.0 這裡可以拿一部分；0/1 不能切
+  const c = cube('5 kg', GB.sand, [1.2, 0.6, 0.6], -3.8, 2.4, 0, 1.5);
+  cube('2 kg', GB.green, [0.6, 0.6, 0.6], -2.6, 2.4, 0, 1.0);
+  const wm = prop('parcel', 3.4, 1.8, 0, 1.2); void wm;
+  bad('不能切', 3.4, 3.8);
+  void c;
+  say('這裡物品可以切一部分', '0/1 的物品不能切');
+  await step(tok);                                   // 891.0 蔬菜水果 vs 不可分：整個拿或不拿
+  bub('蔬菜、水果：可以分', -3.4, 1.2);
+  bub('x = 0 或 1：整個拿或不拿', 3.4, 1.0);
+  say('能分的貨：fractional', '0/1：整個拿或完全不拿');
+}]);
+
+// ════════ zPtI8q9gvX8（3.2 Job Sequencing with Deadlines） ════════
+const J1P = [20, 15, 10, 5, 1], J1D = [2, 2, 1, 3, 3];
+const J2P = [35, 30, 25, 20, 15, 12, 5], J2D = [3, 4, 4, 2, 3, 1, 2];
+// 時間格：slot k 是 [k, k+1]
+function jSlots(n, x0, w, y) {
+  const S = { n, x0, w, y, cells: [], who: [] };
+  for (let k = 0; k < n; k++) {
+    const x = x0 + k * w + w / 2;
+    S.cells.push(cube('', GB.paper, [w - 0.1, 0.12, 1.0], x, y, 0));
+    idx(k + '–' + (k + 1), x, y - 0.4);
+  }
+  idx('0', x0, y + 0.4); S.X = (k) => x0 + k * w + w / 2;
+  return S;
+}
+// 找 deadline 之前最晚的空格（從 d−1 往前）
+function jFree(S, d) { for (let k = Math.min(d, S.n) - 1; k >= 0; k--) if (!S.who[k]) return k; return -1; }
+function jCards(P, D, y, x0 = -5.6, dx = 1.25) {
+  return P.map((p, k) => {
+    const x = x0 + k * dx;
+    const c = cube('J' + (k + 1), GB.blue, [1.0, 0.6, 0.6], x, y, 0, 1.2);
+    return { c, x, y, t: [ptr('p ' + p, x, y - 0.6, 0.4), ptr('d ' + D[k], x, y - 1.05, 0.4)] };
+  });
+}
+async function jPlace(tok, S, cards, k, d, ms = 700) {
+  const s = jFree(S, d);
+  glow(cards[k].c, GOLD);
+  if (s < 0) { await beat(tok, 300); tint(cards[k].c, GB.gray); glow(cards[k].c, null); return -1; }
+  S.who[s] = k + 1;
+  move(cards[k].c, S.X(s), S.y + 0.4, 0);
+  await beat(tok, ms);
+  tint(cards[k].c, GB.teal); glow(cards[k].c, GREEN);
+  return s;
+}
+
+// 00:00 問題：5 個 job、profit、deadline；每個 job 一單位時間
+FRAG.push(['grbari-js-problem', 'Job sequencing：profit 與 deadline', async (tok) => {
+  fresh([0, 4.4, 14], [0, 2.8, 0]);
+  await step(tok);                                   // 1.7 job sequencing with deadlines，用 greedy 解
+  pkt('Job sequencing with deadlines（greedy）', 0, 6.2);
+  say('Job sequencing with deadlines', '用 greedy method 解');
+  await step(tok);                                   // 26.2 5 個 job，完成就拿到 profit
+  const ppl = J1P.map((p, k) => buddy('J' + (k + 1), p, [GB.blue, GB.purple, GB.orange, GB.pink, GB.cyan][k], -4.8 + k * 2.4, 0, 1.0, 0.75));
+  idx('profit', -6.4, 0.4, 1.0);
+  say('5 個 job：做完就拿到 profit', 'profit = 20 15 10 5 1');
+  await step(tok);                                   // 41.0 每個 job 要在 deadline 之前做完
+  const dl = J1D.map((d, k) => alt('d = ' + d, -4.8 + k * 2.4, 1.6, 1.0));
+  say('每個 job 要在 deadline 前完成', 'deadline = 2 2 1 3 3');
+  await step(tok);                                   // 73.0 只有一台機器，每個 job 花一單位時間
+  const pc = prop('monitor', 5.6, 0, -1.4, 1.0, '一台機器');
+  note('每個 job 都花 1 單位時間（1 小時）', 0, 4.6);
+  say('只有一台機器：一次做一個', '每個 job 都花 1 單位時間');
+  await step(tok);                                   // 109.9 例如打字行：每份文件一小時
+  const typ = pal('打字員', 4.0, GB.green, -1.4, 0.6);
+  void pc; void typ;
+  say('想像一位打字員', '每份文件都打一小時');
+  await step(tok);                                   // 138.0 早上開店，5 個人已經在排隊
+  ppl.forEach((p) => p.mood('calm'));
+  await ppl[0].hop(tok);
+  say('早上一開店，5 個人在等', '每人都有自己的工作');
+  await step(tok);                                   // 154.0 每人有自己的期限：只等 1 小時 / 願意等 3 小時
+  ppl[2].mood('wow'); ppl[3].mood('happy');
+  bub('第一個小時就要！', -4.8 + 2 * 2.4, 2.4, 1.0);
+  bub('我能等 3 小時', -4.8 + 3 * 2.4, 2.9, 1.0);
+  say('每個人的 deadline 不同', '9 點來，等到 10 點／12 點');
+  await step(tok);                                   // 187.0 誰先做？deadline 最早的？
+  glow(ppl[2].body, GOLD);
+  say('誰先做？deadline 最早的嗎？', 'J3 只等 1 小時');
+  await step(tok);                                   // 202.0 profit 最高的要先做
+  glow(ppl[2].body, null); glow(ppl[0].body, GREEN); await ppl[0].hop(tok);
+  say('不，profit 最高的先做', '做 J1 拿 20 比 J3 的 10 多');
+  await step(tok);                                   // 208.0 挑一組能準時完成的 job，profit 最大
+  void dl;
+  good('目標：準時完成的 job，profit 總和最大', -0.4, 5.4);
+  bad('限制：要在 deadline 前完成', -0.4, 4.6);
+  say('選一組能準時做完的 job', 'profit 最大：maximization problem');
+}]);
+
+// 04:05 3 個 slot；依 profit 由大到小，放在 deadline 前最晚的空位
+FRAG.push(['grbari-js-slots', '依 profit 排：J1 J2 J4 → 40', async (tok) => {
+  fresh([0, 4.4, 14], [0, 2.8, 0]);
+  const cards = jCards(J1P, J1D, 5.6, -5.0, 1.6);
+  let S = null;
+  await step(tok);                                   // 245.0 打字員有幾個小時？最晚 deadline 3
+  const me = pal('打字員', -6.2, GB.green, 1.6, 0.6);
+  alt('max deadline = 3', 4.6, 3.6);
+  say('有幾個小時可以用？', '最晚的 deadline 是 3');
+  await step(tok);                                   // 275.3 時段 0–1、1–2、2–3
+  S = jSlots(3, -2.4, 1.8, 0.4);
+  say('時段：0–1、1–2、2–3', '一格做一個 job');
+  await step(tok);                                   // 306.3 只有 3 格 → 5 個 job 最多做 3 個
+  note('9–10、10–11、11–12', 0.3, 1.6);
+  say('只有 3 格 → 最多做 3 個 job', '5 個裡挑 3 個，profit 最大');
+  await step(tok);                                   // 318.8 依 profit 由大到小挑
+  cards.forEach((c, k) => glow(c.c, k === 0 ? GOLD : null));
+  say('Greedy：依 profit 由大到小挑', '已經排好：20 15 10 5 1');
+  await step(tok);                                   // 341.0 J1：d = 2，放在 1–2
+  await jPlace(tok, S, cards, 0, 2);
+  say('J1（20）：願意等 2 小時', '放在最晚的 1–2');
+  await step(tok);                                   // 362.3 J2：d = 2，1–2 被占，往前放 0–1
+  await jPlace(tok, S, cards, 1, 2);
+  say('J2（15）：1–2 被占了', '往前找：放 0–1');
+  await step(tok);                                   // 388.4 J3：d = 1，0–1 已滿 → 不做
+  await jPlace(tok, S, cards, 2, 1);
+  bad('J3 沒位子', cards[2].x, 6.6);
+  say('J3（10）：只能在 0–1，已滿', 'J3 拒絕');
+  await step(tok);                                   // 408.3 J4：d = 3，放 2–3
+  await jPlace(tok, S, cards, 3, 3);
+  say('J4（5）：d = 3', '放在 2–3');
+  await step(tok);                                   // 421.7 J5：3 格都滿 → 不做
+  await jPlace(tok, S, cards, 4, 3);
+  say('J5（1）：沒有空格了', 'J5 拒絕');
+  await step(tok);                                   // 434.8 解：J2、J1、J4；J1 J2 可以對調
+  good('順序：J2 → J1 → J4（或 J1 → J2 → J4）', 0.3, 3.0);
+  me.mood('happy');
+  say('解：做 J1、J2、J4', 'J1、J2 都等 2 小時，可以對調');
+  await step(tok);                                   // 471.0 profit = 20 + 15 + 5 = 40
+  pkt('profit = 20 + 15 + 5 = 40', 0.3, 7.2);
+  await me.hop(tok);
+  say('總 profit：20 + 15 + 5 = 40', '');
+}]);
+
+// 08:11 用表格一步步記：考慮的 job、分到的 slot、solution、profit
+FRAG.push(['grbari-js-table', '表格：每考慮一個 job 記一列', async (tok) => {
+  fresh([0, 4.4, 14], [0, 3.2, 0]);
+  const hx = [-4.8, -2.0, 1.4, 4.8];
+  ['考慮的 job', 'slot', 'solution', 'profit'].forEach((h, c) => alt(h, hx[c], 7.0));
+  const S = jSlots(3, 2.2, 1.4, 0.3);
+  const cards = J1P.map((p, k) => ({ c: cube('J' + (k + 1), GB.blue, [0.9, 0.5, 0.5], -6.0 + k * 1.05, 0.4, 0, 1.0), x: -6.0 + k * 1.05 }));
+  let sol = [], prof = 0, row = 0;
+  const addRow = (job, slot) => { const y = 6.3 - row * 0.62; row++; [job, slot, '{' + sol.join(', ') + '}', String(prof)].forEach((v, c) => tag(v, 'val', hx[c], y)); };
+  await step(tok);                                   // 491.0 一開始什麼都沒有，profit 0
+  addRow('—', '—');
+  say('一開始：solution 空的，profit 0', 'slot 有 0–1、1–2、2–3');
+  const go = async (k) => {
+    const s = await jPlace(tok, S, cards, k, J1D[k], 600);
+    if (s >= 0) { sol.push('J' + (k + 1)); prof += J1P[k]; }
+    addRow('J' + (k + 1), s >= 0 ? '[' + s + ', ' + (s + 1) + ']' : '沒有');
+  };
+  await step(tok);                                   // 496.0 J1：d = 2 → slot [1, 2]，profit 20
+  await go(0);
+  say('J1：deadline 2 → slot [1, 2]', 'solution {J1}，profit 20');
+  await step(tok);                                   // 531.0 J2：slot [0, 1]，profit 35
+  await go(1);
+  say('J2：slot [0, 1]', 'solution {J1, J2}，20 + 15 = 35');
+  await step(tok);                                   // 567.3 J3：0–1 已占 → 沒有 slot
+  await go(2);
+  say('J3：deadline 1，0–1 已占', '不放：還是 35');
+  await step(tok);                                   // 593.0 J4：slot [2, 3]，profit 40
+  await go(3);
+  say('J4：slot [2, 3]', 'solution {J1, J2, J4}，40');
+  await step(tok);                                   // 619.5 J5：不能選，總 profit 40
+  await go(4);
+  good('最大 profit = 40', -2.0, 2.0);
+  say('J5：沒有位子', '總 profit = 40');
+}]);
+
+// 10:37 第二題：7 個 job、最晚 deadline 4 → 110
+FRAG.push(['grbari-js-ex2', '第二題：7 個 job、4 個 slot → 110', async (tok) => {
+  fresh([0, 4.4, 14], [0, 2.8, 0]);
+  const cards = jCards(J2P, J2D, 5.6, -5.4, 1.5);
+  let S = null;
+  const tot = ptr('profit 0', 4.6, 3.4);
+  let P = 0;
+  const go = async (k) => { const s = await jPlace(tok, S, cards, k, J2D[k]); if (s >= 0) { P += J2P[k]; txt(tot, 'profit ' + P); } return s; };
+  await step(tok);                                   // 637.0 再一題：依 profit 由大到小挑
+  say('再一題：7 個 job', '一樣依 profit 由大到小挑');
+  await step(tok);                                   // 655.0 最晚 deadline 4 → 4 個 slot
+  S = jSlots(4, -3.6, 1.8, 0.4);
+  alt('max deadline = 4 → 4 格', -0.0, 1.6);
+  say('最晚 deadline 4', '所以有 4 個 slot');
+  await step(tok);                                   // 690.0 J1：d = 3 → 2–3，35
+  await go(0);
+  say('J1（35）：d = 3', '放 2–3');
+  await step(tok);                                   // 707.7 J2：d = 4 → 3–4，30
+  await go(1);
+  say('J2（30）：d = 4', '放 3–4');
+  await step(tok);                                   // 715.4 J3：d = 4，3–4 被占，往前放 1–2
+  await go(2);
+  say('J3（25）：3–4、2–3 都被占', '往前放 1–2');
+  await step(tok);                                   // 734.1 可以提早做：願意等 4 小時不代表一定最後才做
+  const nb = note('願意等 4 小時，也可以提早做', -0.6, 2.6);
+  say('願意等，也可以提早做', '後面的時段已經給別人了');
+  await step(tok);                                   // 757.0 J4：d = 2，1–2 被占 → 0–1，20
+  remove(nb);
+  await go(3);
+  say('J4（20）：d = 2，1–2 被占', '往前放 0–1');
+  await step(tok);                                   // 772.2 J5、J6、J7：格子都滿了，不用檢查
+  for (const k of [4, 5, 6]) { tint(cards[k].c, GB.gray); }
+  bad('格子全滿：J5、J6、J7 不做', 1.6, 7.0);
+  say('4 格全滿', 'J5、J6、J7 不用檢查了');
+  await step(tok);                                   // 789.0 總 profit = 110
+  good('35 + 30 + 25 + 20 = 110', -0.4, 3.4);
+  say('總 profit = 110', '35 + 30 + 25 + 20');
+}]);
+
+// ════════ HHIc5JZyenI（3.3 Optimal Merge Pattern） ════════
+// 00:00 合併兩個已排序的 list：A = 3 8 12 20、B = 5 9 11 16
+FRAG.push(['grbari-om-merge2', '合併兩個排序好的 list：m + n', async (tok) => {
+  fresh([0, 4.2, 14], [0, 3.0, 0]);
+  const A = [3, 8, 12, 20], B = [5, 9, 11, 16];
+  await step(tok);                                   // 0.0 optimal merge pattern：greedy，也是 Huffman 的基礎
+  pkt('Optimal merge pattern（greedy）→ Huffman coding', 0, 6.4);
+  say('Optimal merge pattern', '學會它，就能懂 Huffman coding');
+  await step(tok);                                   // 18.0 先懂 merging：兩個 list A、B
+  const ma = A.map((v, k) => cube(v, GB.blue, [0.8, 0.6, 0.6], -5.4 + k * 0.95, 4.2, 0, 1.2));
+  const mb = B.map((v, k) => cube(v, GB.purple, [0.8, 0.6, 0.6], 2.6 + k * 0.95, 4.2, 0, 1.2));
+  alt('A', -6.4, 4.2); alt('B', 1.6, 4.2);
+  say('先了解 merging', '兩個 list：A 和 B');
+  await step(tok);                                   // 30.0 兩個已排序的 list 合成第三個排序 list
+  for (let k = 0; k < 8; k++) cube('', GB.paper, [0.8, 0.1, 0.6], -3.3 + k * 0.95, 1.0, 0);
+  alt('C（合併結果）', -4.6, 1.0);
+  say('兩個都已排序', '合成一個新的排序 list');
+  await step(tok);                                   // 38.0 比較兩邊第一個，小的寫下來：3
+  const all = [...A.map((v, k) => [v, ma[k]]), ...B.map((v, k) => [v, mb[k]])].sort((p, q) => p[0] - q[0]);
+  glow(ma[0], GOLD); glow(mb[0], GOLD);
+  await beat(tok, 500);
+  move(all[0][1], -3.3, 1.5, 0); glow(ma[0], null);
+  say('比較兩邊第一個：3 和 5', '3 比較小，寫下來');
+  await step(tok);                                   // 49.0 5、8、9、11、12、16、20 一個一個寫下
+  for (let k = 1; k < 8; k++) { glow(mb[0], null); move(all[k][1], -3.3 + k * 0.95, 1.5, 0); await beat(tok, 300); }
+  say('再比下一對：5、8、9、11…', '每次寫下比較小的那個');
+  await step(tok);                                   // 72.0 每次兩邊各比一個 → 一個排序好的 list
+  good('得到一個排序好的 list', 0.3, 3.0);
+  say('兩邊各拿一個比，小的先寫', '最後得到一個 sorted list');
+  await step(tok);                                   // 77.4 只有排序好的 list 才能這樣 merge
+  note('前提：兩個 list 都排序好', 0.3, 5.4);
+  say('merging 只能用在排序好的 list', '');
+  await step(tok);                                   // 80.5 時間 m + n：4 + 4 = 8 個元素
+  pkt('時間 = m + n = 4 + 4 = 8', 0.3, -0.2, 1.0);
+  say('花多少時間？m + n', '4 個 + 4 個 = 8 個元素');
+  await step(tok);                                   // 98.1 時間取決於 list 的大小
+  say('合併時間取決於 list 的大小', '下面就用「大小」當成本');
+}]);
+
+// 01:43 四個 list 6 5 2 3：三種合併順序 40、32、31
+FRAG.push(['grbari-om-patterns', '6 5 2 3：合併順序不同，成本 40 / 32 / 31', async (tok) => {
+  fresh([0, 4.0, 14.5], [0, 2.6, 0]);
+  const L = [['A', 6], ['B', 5], ['C', 2], ['D', 3]];
+  const mk = (cx) => mtree(L.map(([n, f]) => ({ t: n + ':' + f, f })), { x0: cx - 1.35, dx: 0.9, y0: 0.4, dy: 1.15, w: 0.8, drop: 1.2 });
+  let T1 = null, T2 = null, T3 = null, c1;
+  await step(tok);                                   // 103.3 超過兩個 list：4 個 list，大小 6 5 2 3
+  T1 = mk(-4.6);
+  say('4 個 list，大小 6、5、2、3', '只看大小，不看元素');
+  await step(tok);                                   // 121.0 可以四路合併；但這裡只做兩兩合併
+  note('一次只合併兩個（two-way merging）', 0, 6.4);
+  say('一次只合併兩個 list', 'two-way merging');
+  await step(tok);                                   // 137.3 順序一：先 6 + 5 = 11
+  const a = T1.merge(0, 1);
+  say('照順序合併：6 + 5 = 11', '');
+  await step(tok);                                   // 147.0 11 + 2 = 13
+  const b = T1.merge(a, 2);
+  say('11 + 2 = 13', '');
+  await step(tok);                                   // 153.0 13 + 3 = 16
+  T1.merge(b, 3);
+  say('13 + 3 = 16', '最後得到 16 個元素');
+  await step(tok);                                   // 163.0 成本 = 11 + 13 + 16 = 40
+  c1 = alt('11 + 13 + 16 = 40', -4.6, 5.1);
+  say('總成本：11 + 13 + 16 = 40', '每一次合併都要花時間');
+  await step(tok);                                   // 185.2 換一種：6+5、2+3、再合 → 11 + 5 + 16
+  T2 = mk(0);
+  const p = T2.merge(0, 1), q = T2.merge(2, 3); T2.merge(p, q);
+  say('換一種：6+5=11、2+3=5', '再 11 + 5 = 16');
+  await step(tok);                                   // 213.0 成本 32
+  alt('11 + 5 + 16 = 32', 0, 5.1);
+  say('總成本：11 + 5 + 16 = 32', '比 40 少');
+  await step(tok);                                   // 231.0 從另一邊：2+3=5、5+5=10、10+6=16
+  T3 = mk(4.6);
+  const r = T3.merge(2, 3), s = T3.merge(1, r); T3.merge(0, s);
+  say('從右邊開始：2+3=5、5+5=10', '再 10 + 6 = 16');
+  await step(tok);                                   // 248.4 成本 5 + 10 + 16 = 31
+  const c3 = good('5 + 10 + 16 = 31', 4.6, 5.1);
+  say('總成本：5 + 10 + 16 = 31', '又更少了');
+  await step(tok);                                   // 265.0 31 最小：每次都挑兩個最小的
+  void c1; void c3; void T1; void T2;
+  glow(T3.N[2].m, GOLD); glow(T3.N[3].m, GOLD);
+  say('31 最小：每次都挑最小的兩個', '6 被留到最後才合併');
+  await step(tok);                                   // 285.0 greedy：每次合併最小的一對
+  pkt('Greedy：每次合併最小的兩個 list', 0, 6.4, 0.6);
+  say('Greedy 方法：每次合併最小的一對', '總合併時間最少');
+}]);
+
+// 05:20 例題：x1..x5 = 20 30 10 5 30 → 205
+FRAG.push(['grbari-om-example', '5 個檔案 20 30 10 5 30：合併成 95', async (tok) => {
+  fresh([0, 4.0, 14.5], [0, 2.8, 0]);
+  const F = [['x1', 20], ['x2', 30], ['x3', 10], ['x4', 5], ['x5', 30]];
+  let raw = [], T = null, rem = null;
+  await step(tok);                                   // 320.0 5 個檔案 x1..x5 和它們的大小
+  raw = F.map(([n, f], k) => cube(n + ':' + f, GB.blue, [1.1, 0.5, 0.5], -4.4 + k * 2.2, 5.6, 0, 1.2));
+  say('5 個檔案 x1～x5', '大小 20、30、10、5、30');
+  await step(tok);                                   // 343.0 找總成本最小的合併方式；每次挑最小的一對
+  pkt('每次挑最小的兩個合併', 0, 7.0);
+  say('目標：總合併成本最小', 'Greedy：每次挑最小的一對');
+  await step(tok);                                   // 356.0 先依大小排成遞增：5 10 20 30 30
+  raw.forEach(kill);
+  T = mtree([['x4', 5], ['x3', 10], ['x1', 20], ['x2', 30], ['x5', 30]].map(([n, f]) => ({ t: n + ':' + f, f })), { x0: -4.4, dx: 2.2, y0: 0.4, dy: 1.25, w: 1.1, drop: 1.0 });
+  rem = ptr('剩下：5 10 20 30 30', 4.6, 6.0);
+  say('先依大小排好', '5、10、20、30、30');
+  await step(tok);                                   // 367.0 5 + 10 = 15
+  glow(T.N[0].m, GOLD); glow(T.N[1].m, GOLD); await beat(tok, 400);
+  const a = T.merge(0, 1); txt(rem, '剩下：15 20 30 30');
+  say('最小兩個：5 + 10 = 15', '得到一個 15 的新檔案');
+  await step(tok);                                   // 387.0 15 + 20 = 35
+  glow(T.N[a].m, GOLD); glow(T.N[2].m, GOLD); await beat(tok, 400);
+  const b = T.merge(a, 2); txt(rem, '剩下：35 30 30');
+  say('15、20 最小：15 + 20 = 35', '');
+  await step(tok);                                   // 411.0 35 30 30 → 30 + 30 = 60
+  glow(T.N[3].m, GOLD); glow(T.N[4].m, GOLD); await beat(tok, 400);
+  const c = T.merge(3, 4); txt(rem, '剩下：35 60');
+  say('35、30、30：挑兩個 30', '30 + 30 = 60');
+  await step(tok);                                   // 427.0 35 + 60 = 95
+  T.merge(b, c); txt(rem, '合併完成：95');
+  say('最後 35 + 60 = 95', '全部合成一個檔案');
+}]);
+
+// 07:16 總成本：內部節點相加 = Σ dᵢ xᵢ = 205
+FRAG.push(['grbari-om-cost', '總成本 205：內部節點和 = Σ 距離 × 大小', async (tok) => {
+  fresh([0, 4.0, 14.5], [0, 2.8, 0]);
+  const T = mtree([['x4', 5], ['x3', 10], ['x1', 20], ['x2', 30], ['x5', 30]].map(([n, f]) => ({ t: n + ':' + f, f })), { x0: -4.8, dx: 2.0, y0: 0.4, dy: 1.25, w: 1.1 });
+  const a = T.merge(0, 1), b = T.merge(a, 2), c = T.merge(3, 4), d = T.merge(b, c);
+  const sumL = ptr('總成本 = ?', 4.8, 6.2);
+  await step(tok);                                   // 436.0 總成本：每次合併的大小 15、35、60、95
+  [a, b, c, d].forEach((i) => glow(T.N[i].m, GOLD));
+  txt(sumL, '15 + 35 + 60 + 95');
+  say('每次合併的成本：15、35、60、95', '就是圓圈（內部節點）裡的數字');
+  await step(tok);                                   // 469.0 內部節點相加 = 205
+  txt(sumL, '15 + 35 + 60 + 95 = 205');
+  good('內部節點加總 = 205', 4.8, 5.4);
+  say('內部節點加起來：205', '這就是最小的合併總成本');
+  await step(tok);                                   // 474.0 另一種算法：5 被合併了幾次？3 次
+  [a, b, c, d].forEach((i) => glow(T.N[i].m, null));
+  glow(T.N[0].m, GOLD);
+  const dd = [3, 3, 2, 2, 2];
+  T.N.slice(0, 5).forEach((n, k) => idx('d = ' + dd[k], n.x, -0.3));
+  say('換個算法：5 被合併了幾次？', '從根走到它：距離 3');
+  await step(tok);                                   // 490.0 5×3 + 10×3 + 20×2 + 30×2 + 30×2
+  glow(T.N[0].m, null);
+  const fl = alt('5×3 + 10×3 + 20×2 + 30×2 + 30×2', 0, 7.0);
+  say('每個檔案：大小 × 距離', '5×3 + 10×3 + 20×2 + 30×2 + 30×2');
+  await step(tok);                                   // 519.0 也是 205：Σ dᵢ × xᵢ
+  txt(fl, '15 + 30 + 40 + 60 + 60 = 205');
+  pkt('總成本 = Σ dᵢ × xᵢ', 4.8, 4.6);
+  say('一樣是 205', '公式：Σ dᵢ × xᵢ（外部節點）');
+  await step(tok);                                   // 563.0 問題很簡單，但 Huffman coding 會用到
+  bub('下一支：Huffman coding', -4.8, 5.2);
+  say('Huffman coding 會用到它', '下一支影片');
+}]);
+
+// ════════ co4_ahEDCho（Huffman Coding - Greedy Method） ════════
+const HMSG = 'BCCABBDDAECCBBAEDDCC';
+const HC = { A: '001', B: '10', C: '11', D: '01', E: '000' };
+const HF = [['E', 2], ['A', 3], ['D', 4], ['B', 5], ['C', 6]];
+function hMsg(y, show = true) { return HMSG.split('').map((ch, k) => cube(show ? ch : '', GB.paper, [0.5, 0.5, 0.4], -5.7 + k * 0.6, y, 0)); }
+// Bari 的 Huffman tree（葉子依次數排：E2 A3 D4 B5 C6）
+function hTree(o = {}) {
+  const T = mtree(HF.map(([c, f]) => ({ t: c + ':' + f, f })), Object.assign({ x0: -3.2, dx: 1.6, y0: 0.4, dy: 1.3, w: 1.0 }, o));
+  T.build = () => { const ea = T.merge(0, 1), n9 = T.merge(ea, 2), n11 = T.merge(3, 4); T.merge(n9, n11); return T; };
+  return T;
+}
+
+// 00:00 壓縮；20 個字元用 ASCII：160 bits
+FRAG.push(['grbari-hf-ascii', '20 個字元用 ASCII：160 bits', async (tok) => {
+  fresh([0, 4.2, 14], [0, 3.0, 0]);
+  await step(tok);                                   // 1.0 Huffman coding：壓縮技術，減少資料大小
+  const f = prop('file', -4.6, 2.6, 0, 1.6);
+  const me = pal('', -6.2, GB.orange, 1.6, 0.6); me.mood('happy');
+  pkt('Huffman coding = 壓縮', 0, 6.4);
+  say('Huffman coding：一種壓縮技術', '讓資料或訊息變小');
+  await step(tok);                                   // 12.0 存檔變小、網路傳送成本變低
+  const pc = prop('disk', -1.6, 2.6, 0, 1.0);
+  const net = bub('網路傳送：越小越便宜', 3.2, 4.4);
+  say('存成檔案：檔案變小', '網路傳送：傳輸成本變低');
+  await step(tok);                                   // 27.3 比較：一般訊息、fixed size、variable size
+  gone(f, pc, net);
+  ['一般（ASCII）', 'fixed size code', 'variable size（Huffman）'].forEach((t, k) => alt(t, -4.2 + k * 4.2, 6.0));
+  say('先看一般訊息要多少 bits', '再看 fixed size、variable size');
+  await step(tok);                                   // 41.0 這是一則訊息
+  const ms = hMsg(4.4);
+  say('一則訊息：要存檔或傳出去', 'BCCABBDDAECCBBAEDDCC');
+  await step(tok);                                   // 57.0 大小用 bits 計算；長度 20
+  idx('長度 20', 6.4, 4.4);
+  say('訊息大小用 bits 算', '一共 20 個字元');
+  await step(tok);                                   // 71.8 用 ASCII code 傳送：每個字元 8 bits
+  note('電腦用 ASCII code：每個字元 8 bits', 0, 3.2);
+  say('電腦用 ASCII code 表示字元', '每個字元 8 bits');
+  await step(tok);                                   // 95.3 A = 65 = 01000001、B = 66 …
+  ['A = 65 = 01000001', 'B = 66 = 01000010', 'C = 67', 'D = 68', 'E = 69'].forEach((t, k) => ptr(t, -4.0 + (k % 3) * 4.0, 1.8 - Math.floor(k / 3) * 0.7));
+  say('A 的 ASCII 是 65', '二進位 01000001：8 個 bits');
+  await step(tok);                                   // 141.0 8 × 20 = 160 bits
+  ms.forEach((m) => tint(m, GB.sand));
+  good('8 × 20 = 160 bits', 0, 0.2, 1.0);
+  await me.hop(tok);
+  say('20 個字元 × 8 bits', '訊息大小 160 bits');
+}]);
+
+// 02:42 自己定 3-bit 的 fixed size code：60 + 表格 55 = 115
+FRAG.push(['grbari-hf-fixed', 'Fixed size code：60 + 55 = 115 bits', async (tok) => {
+  fresh([0, 4.2, 14], [0, 3.0, 0]);
+  const ms = hMsg(6.2);
+  await step(tok);                                   // 169.1 可以用自己的 code，不用 ASCII？只有 5 個字母
+  note('只用到 A～E 五個字母', 0, 7.0);
+  say('能不能不用 ASCII，用自己的 code？', '只有 5 個字母，不需要 8 bits');
+  await step(tok);                                   // 212.0 每個字母出現幾次：A3 B5 C6 D4 E2
+  const cnt = [['A', 3], ['B', 5], ['C', 6], ['D', 4], ['E', 2]];
+  cnt.forEach(([c, n], k) => { ptr(c, -5.6, 4.9 - k * 0.7); cube(n, GB.blue, [0.6, 0.45, 0.4], -4.7, 4.9 - k * 0.7, 0, 1.0); });
+  ms.forEach((m, k) => { if (HMSG[k] === 'A') glow(m, GOLD); });
+  idx('count', -4.7, 5.6);
+  say('數每個字母出現幾次', 'A 3、B 5、C 6、D 4、E 2，共 20');
+  await step(tok);                                   // 249.3 要幾個 bit？1 bit 只能表示 2 個
+  ms.forEach((m) => glow(m, null));
+  const bl = alt('1 bit：0、1 → 2 個', 1.6, 4.9);
+  say('code 要幾個 bit？', '1 bit：0 或 1，只能表示 2 個');
+  await step(tok);                                   // 275.0 2 bits：00 01 10 11 → 4 個，不夠
+  txt(bl, '2 bits：00 01 10 11 → 4 個，不夠 5 個');
+  say('2 bits：4 種組合', '還是不夠 5 個字母');
+  await step(tok);                                   // 288.0 3 bits：8 種，取 5 個：A 000 … E 100
+  txt(bl, '3 bits：8 種，取 5 個');
+  const FX = ['000', '001', '010', '011', '100'];
+  const codes = cnt.map(([c], k) => cube(FX[k], GB.teal, [0.9, 0.45, 0.4], -3.5, 4.9 - k * 0.7, 0, 1.2));
+  void codes;
+  say('3 bits：8 種組合，取 5 個', 'A 000、B 001、C 010、D 011、E 100');
+  await step(tok);                                   // 331.0 用這些 code 編碼：B 寫 001、C 寫 010 …
+  ms.forEach((m, k) => { relabel(m, ['000', '001', '010', '011', '100']['ABCDE'.indexOf(HMSG[k])]); tint(m, GB.teal); });
+  say('照表編碼：B → 001、C → 010…', '每個字母都換成 3 bits');
+  await step(tok);                                   // 342.1 訊息大小 20 × 3 = 60 bits
+  good('訊息：20 × 3 = 60 bits', 2.6, 1.2);
+  say('訊息只剩 20 × 3 = 60 bits', '');
+  await step(tok);                                   // 359.9 但接收的人怎麼知道 code？要附上表格
+  const rc = pal('接收者', 6.2, GB.purple, 1.6, 0.6); rc.mood('wow');
+  bub('000 是誰？', 6.0, 1.5, 1.6);
+  say('接收的人怎麼知道哪個 code 是誰？', '要把 code 表一起送過去');
+  await step(tok);                                   // 414.0 表格：5 × 8 = 40 + 5 × 3 = 15 → 55
+  alt('表格：字母 5 × 8 = 40', 2.0, 3.6); alt('code 5 × 3 = 15', 2.0, 2.9);
+  say('表格：5 個字母的 ASCII 5 × 8 = 40', '再加 5 個 code × 3 = 15，共 55');
+  await step(tok);                                   // 468.0 總共 60 + 55 = 115（從 160 降約 35–40%）
+  rc.mood('happy');
+  pkt('60 + 55 = 115 bits（原本 160）', 0, 0.2, 1.2);
+  say('訊息 + 表格 = 115 bits', '從 160 降到 115');
+}]);
+
+// 08:36 Huffman：依次數排序，照 optimal merge pattern 建樹；左 0 右 1
+FRAG.push(['grbari-hf-tree', 'Huffman tree：每次合併次數最小的兩個', async (tok) => {
+  fresh([0, 4.0, 14.5], [0, 3.0, 0]);
+  let T = null;
+  await step(tok);                                   // 516.7 variable size code：Huffman coding
+  alt('variable size code', 0, 7.2);
+  say('改用 variable size code', 'Huffman coding：還能再變小');
+  await step(tok);                                   // 531.0 出現多的字母給短 code
+  bub('出現多 → code 短；出現少 → code 長', 0, 6.3);
+  say('出現次數多的字母，給它短 code', '整則訊息就會變小');
+  await step(tok);                                   // 550.0 照次數，用 optimal merge pattern
+  pkt('跟 optimal merge pattern 一樣做', 0, 5.4);
+  say('Huffman 用的就是 optimal merge pattern', '把次數當成大小');
+  await step(tok);                                   // 577.8 依次數遞增排好：E2 A3 D4 B5 C6
+  T = hTree({ drop: 1.2 });
+  say('依次數由小到大排', 'E 2、A 3、D 4、B 5、C 6');
+  await step(tok);                                   // 595.0 合併最小兩個：2 + 3 = 5
+  glow(T.N[0].m, GOLD); glow(T.N[1].m, GOLD); await beat(tok, 400);
+  const ea = T.merge(0, 1);
+  say('最小兩個：E 2 + A 3 = 5', '做成一個新節點');
+  await step(tok);                                   // 606.3 剩 5 4 5 6：取 4 和 5 → 9
+  glow(T.N[2].m, GOLD); glow(T.N[ea].m, GOLD); await beat(tok, 400);
+  const n9 = T.merge(ea, 2);
+  say('剩 5、4、5、6：挑 4 和 5', '有兩個 5，任選一個：9');
+  await step(tok);                                   // 624.0 剩 9 5 6：5 + 6 = 11
+  glow(T.N[3].m, GOLD); glow(T.N[4].m, GOLD); await beat(tok, 400);
+  const n11 = T.merge(3, 4);
+  say('剩 9、5、6：5 + 6 = 11', '');
+  await step(tok);                                   // 634.2 最後 9 + 11 = 20
+  T.merge(n9, n11);
+  say('最後 9 + 11 = 20', '20 就是訊息長度');
+  await step(tok);                                   // 641.6 這就是 optimal merge pattern 的樹（greedy）
+  good('每次挑最小的兩個 = greedy', 4.6, 5.4);
+  say('得到 optimal merge pattern 的樹', '每次挑最小兩個：greedy');
+  await step(tok);                                   // 658.3 左邊的邊標 0、右邊標 1
+  T.bits();
+  say('左邊的邊標 0，右邊的邊標 1', '');
+  await step(tok);                                   // 672.8 從 root 走到字母：A 001、B 10、C 11、D 01、E 000
+  const ord = ['E', 'A', 'D', 'B', 'C'];
+  ord.forEach((c, k) => tag(HC[c], 'val', T.N[k].x, -0.35, 0.4));
+  const hand = alt('▼', T.N[8].x, T.N[8].y + 0.7);
+  await travel(tok, hand, hand.position.clone(), V3(T.N[1].x, T.N[1].y + 0.7, 0), 1200);
+  say('從 root 走到字母，把 0/1 串起來', 'A 001、B 10、C 11、D 01、E 000');
+}]);
+
+// 11:44 Huffman 後的大小：訊息 45 + 表格 52 = 97
+FRAG.push(['grbari-hf-size', 'Huffman：45 + 52 = 97 bits', async (tok) => {
+  fresh([0, 4.2, 14], [0, 3.0, 0]);
+  const rows = [['A', 3], ['B', 5], ['C', 6], ['D', 4], ['E', 2]];
+  rows.forEach(([c, n], k) => { ptr(c, -5.8, 5.8 - k * 0.75); cube(n, GB.blue, [0.6, 0.45, 0.4], -4.9, 5.8 - k * 0.75, 0); cube(HC[c], GB.teal, [0.9, 0.45, 0.4], -3.7, 5.8 - k * 0.75, 0); });
+  idx('count', -4.9, 6.5); idx('code', -3.7, 6.5);
+  const pr = [];
+  await step(tok);                                   // 704.0 variable size：有的 3 bits、有的 2 bits
+  note('A、E 3 bits；B、C、D 2 bits', 1.4, 6.6);
+  say('code 長短不一：variable size', '有的 3 bits、有的 2 bits');
+  await step(tok);                                   // 719.5 用新 code 編碼：B 10、C 11、C 11、A 001 …
+  const ms = HMSG.slice(0, 8).split('').map((ch, k) => cube(HC[ch], GB.teal, [0.62, 0.45, 0.4], -1.4 + k * 0.72, 4.8, 0, 1.0));
+  idx('B C C A B B D D …', 1.1, 4.2); void ms;
+  say('照新 code 編碼', 'B 10、C 11、C 11、A 001…');
+  await step(tok);                                   // 743.9 A：3 bits × 3 次 = 9
+  pr.push(ptr('A：3 × 3 = 9', -1.0, 3.2));
+  say('算大小：A 的 code 3 bits', '出現 3 次：3 × 3 = 9');
+  await step(tok);                                   // 756.1 B 5×2=10、C 6×2=12、D 4×2=8、E 2×3=6
+  ['B：5 × 2 = 10', 'C：6 × 2 = 12', 'D：4 × 2 = 8', 'E：2 × 3 = 6'].forEach((t, k) => pr.push(ptr(t, -1.0 + ((k + 1) % 3) * 2.8, 3.2 - Math.floor((k + 1) / 3) * 0.7)));
+  say('B 10、C 12、D 8、E 6', '次數 × code 長度');
+  await step(tok);                                   // 778.0 合計 45 bits
+  good('訊息 = 45 bits', 1.6, 1.6);
+  say('加起來：訊息只要 45 bits', '');
+  await step(tok);                                   // 804.0 還要附上表格（或樹）才能解碼
+  const rc = pal('接收者', 6.2, GB.purple, 1.6, 0.6); rc.mood('wow');
+  bub('要有表格才能解碼', 6.0, 1.5, 1.6);
+  say('一樣要附上 code 表（或樹）', '才能解碼');
+  await step(tok);                                   // 836.0 表格：5 × 8 = 40 + code 共 12 bits = 52
+  alt('表格：5 × 8 = 40 + code 3+2+2+2+3 = 12 → 52', 0.6, 0.6, 1.0);
+  say('表格：40 + 12 = 52 bits', 'code 本身共 12 bits');
+  await step(tok);                                   // 881.6 總共 45 + 52 = 97（比 fixed 的 115 還小）
+  rc.mood('happy'); await rc.hop(tok);
+  pkt('45 + 52 = 97 bits（fixed 115、ASCII 160）', 0.6, -0.4, 1.4);
+  say('總共 45 + 52 = 97 bits', '比 fixed size 的 115 更小');
+}]);
+
+// 15:00 從樹直接算大小：Σ dᵢ × fᵢ
+FRAG.push(['grbari-hf-formula', '從樹算大小：Σ 距離 × 次數 = 45', async (tok) => {
+  fresh([0, 4.0, 14.5], [0, 3.0, 0]);
+  const T = hTree().build(); T.bits();
+  const dd = [3, 3, 2, 2, 2];
+  await step(tok);                                   // 902.6 也能從樹算出 45：距離 × 次數
+  T.N.slice(0, 5).forEach((n, k) => idx('d = ' + dd[k], n.x, -0.35));
+  glow(T.N[0].m, GOLD);
+  say('也能直接從樹算訊息大小', 'E 的距離 3，次數 2：3 × 2');
+  await step(tok);                                   // 918.0 Σ dᵢ × fᵢ = 3×2 + 3×3 + 2×4 + 2×5 + 2×6
+  glow(T.N[0].m, null);
+  const fl = alt('3×2 + 3×3 + 2×4 + 2×5 + 2×6', 0, 7.0);
+  say('每個字母：距離 × 次數，再加總', 'Σ dᵢ × fᵢ');
+  await step(tok);                                   // 947.0 = 45，跟前面一樣；optimal merge 的公式
+  txt(fl, '6 + 9 + 8 + 10 + 12 = 45');
+  good('= 45 bits，跟剛剛一樣', 4.4, 5.6);
+  say('結果 45：跟前面算的一樣', '就是 optimal merge pattern 的公式');
+}]);
+
+// 16:07 解碼：從 root 照 bit 走，到葉子就輸出
+FRAG.push(['grbari-hf-decode', '解碼：照 bit 從 root 走到葉子', async (tok) => {
+  fresh([0, 4.0, 14.5], [0, 3.0, 0]);
+  const T = hTree({ y0: 0.2 }).build(); T.bits();
+  const bits = '001' + '11' + '11' + '01';
+  const bl = alt('收到：' + bits.split('').join(' ') + ' …', 0, 7.2);
+  const outL = ptr('輸出：', 4.8, 6.3);
+  const tk = cube('', GB.orange, [0.32, 0.32, 0.32], T.N[8].x, T.N[8].y + 0.6, 0.4);
+  let out = '';
+  const walk = async (path) => {
+    let n = 8;
+    for (const b of path) { n = b === '0' ? T.N[n].L : T.N[n].R; move(tk, T.N[n].x, T.N[n].y + 0.6, 0.4); await beat(tok, 380); }
+    glow(T.N[n].m, GREEN); out += HF[n][0]; txt(outL, '輸出：' + out);
+    await beat(tok, 300); move(tk, T.N[8].x, T.N[8].y + 0.6, 0.4); glow(T.N[n].m, null);
+  };
+  await step(tok);                                   // 967.0 解碼：收到一串 bits，手上要有樹
+  void bl;
+  say('解碼：收到的是一串 bits', '手上一定要有這棵樹');
+  await step(tok);                                   // 982.4 從 root：0 左、0 左、1 右 → 到葉子
+  await walk('001');
+  say('從 root：0 左、0 左、1 右', '走到葉子就輸出它（這棵樹是 A）');
+  await step(tok);                                   // 995.3 回到 root：1 右、1 右 → C
+  await walk('11');
+  say('回到 root：1 右、1 右', '到葉子 C');
+  await step(tok);                                   // 1005.0 再一次 1、1 → C
+  await walk('11');
+  say('再從 root：1、1', '又是 C');
+  await step(tok);                                   // 1010.0 0 左、1 右 → D
+  await walk('01');
+  say('0 左、1 右', '到葉子 D');
+  await step(tok);                                   // 1018.0 這樣就能解回原本的字元（ASCII）
+  good('一路解碼，換回 ASCII 字元', -3.2, 5.6);
+  say('照這樣就能解出整則訊息', '再換回 ASCII，像解壓縮 zip');
+}]);
+  }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
 
