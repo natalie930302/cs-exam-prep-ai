@@ -481,15 +481,17 @@
     termsGlossLen = n; termKey = {};
     const keys = Object.keys(glossary).filter(function(k){ return !glossary[k].basic; })
       .sort(function(x, y){ return y.length - x.length; });
-    keys.forEach(function(k){ termKey[k.toLowerCase()] = k; });
+    keys.forEach(function(k){ termKey[norm(k)] = k; });
     termRe = keys.length ? new RegExp(keys.map(function(k){
       const q = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      return /^[\w .'-]+$/.test(k) ? '\\b' + q + '(?:s|es|ed|ing)?\\b' : q;
+      // a space and a hyphen count as the same (depth-first / depth first search)
+      return /^[\w .'-]+$/.test(k) ? '\\b' + q.replace(/[\s-]+/g, '[\\s-]+') + '(?:s|es|ed|ing)?\\b' : q;
     }).join('|'), 'gi') : null;
     return termRe;
   }
+  function norm(w){ return w.toLowerCase().replace(/[\s-]+/g, ' '); }
   function keyFor(w){
-    const lw = w.toLowerCase();
+    const lw = norm(w);
     return termKey[lw] || termKey[lw.replace(/(?:es|s|ed|ing)$/, '')] || termKey[lw.replace(/(?:s|ed|ing)$/, '')] || null;
   }
   function termsIn(text){
