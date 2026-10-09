@@ -5,7 +5,7 @@
  "sections": [
   {
    "title": "複習 adjacency matrix",
-   "scene": "graphpeng-weiss-matrix",
+   "scene": "graphpeng-matrix-review",
    "points": [
     {
      "text": "回顧上次講的 graph 表示方式。",
@@ -39,6 +39,30 @@
      "text": "這張圖很多格是 0，屬於 sparse，於是有第二種存法。",
      "t": 120
     }
+   ],
+   "cues": [
+    16.0,
+    29.0,
+    43.0,
+    55.0,
+    63.0,
+    73.0,
+    81.7,
+    95.0,
+    102.0,
+    120.0
+   ],
+   "explain": [
+    "複習上次講的：graph 要怎麼表示（存進程式裡）。左邊是上次那張 7 個點的有向圖。",
+    "第一種用 matrix：n × n 的二維 matrix，n 是 vertex 的個數，這裡 n = 7。",
+    "兩點有連線就填 1，沒有連線就填 0。",
+    "這是 directed graph，所以 matrix 不是 symmetric（對稱）：M[1][2] = 1，但 M[2][1] = 0。",
+    "例如 1 連到 2、1 連到 3，第 1 列對應的格子就是 1。",
+    "1 也連到 4，所以 M[1][4] = 1。",
+    "如果是 undirected graph，matrix 就會 symmetric：M[u][v] 一定等於 M[v][u]。",
+    "matrix 的大小只跟頂點個數有關：7 個點就是 7 × 7。",
+    "如果 graph 很 dense（稠密），例如 complete graph，格子幾乎都有值，用 matrix 存還蠻有效率的。",
+    "但這張圖很多格都是 0，是 sparse（稀疏）的，浪費很多空間，於是有第二種存法。"
    ]
   },
   {
@@ -73,6 +97,34 @@
      "text": "directed graph 的 adjacency list 只記指出去的邊。",
      "t": 276
     }
+   ],
+   "cues": [
+    127.0,
+    138.0,
+    157.0,
+    165.0,
+    174.0,
+    191.7,
+    208.0,
+    213.0,
+    226.0,
+    252.9,
+    258.0,
+    270.0
+   ],
+   "explain": [
+    "第二種存法叫 adjacency list（鄰接串列）。",
+    "中間那一排叫 head node：7 個頂點各有一個 head，後面要接它的鄰居。",
+    "adjacent node（相鄰的點）：只經過一條邊（one hop）就到得了的頂點。從 1 出發一步就到 2、3、4。",
+    "所以 1 的串列接上 2、3、4。",
+    "串列裡的順序不重要：寫成 4、3、2 也可以，只要都是鄰居就好。",
+    "其他頂點的串列也接上。空間 space 是 O(V + E)：V 個 head 加上 E 個節點。",
+    "再看幾個 adjacency list 的例子。左邊是 G1。",
+    "G1 是 complete graph：每個頂點都跟其他所有頂點相連，所以每條串列都接了另外 3 個點。",
+    "每條串列的節點數一模一樣（都是 3 個），因為它是 complete。",
+    "右邊是 G3，一個有向圖：0 指向 1，所以 0 的串列是 1。",
+    "1 指向 0 和 2，所以 1 的串列是 0 → 2。",
+    "2 沒有指出去任何邊，所以 2 的串列是空的。有向圖的 adjacency list 只記「指出去」的邊。"
    ]
   },
   {
@@ -112,7 +164,43 @@
      "t": 562
     }
    ],
-   "trap": "影片說「總共有 7 個頂點」，其實 G4 是 0–7 共 8 個頂點；陣列大小 = n + 2e + 1 = 8 + 14 + 1 = 23（node[0..22]），node[8] = 23 是結尾哨兵。"
+   "trap": "影片說「總共有 7 個頂點」，其實 G4 是 0–7 共 8 個頂點；陣列大小 = n + 2e + 1 = 8 + 14 + 1 = 23（node[0..22]），node[8] = 23 是結尾哨兵。",
+   "cues": [
+    287.0,
+    303.2,
+    317.0,
+    335.0,
+    345.0,
+    358.5,
+    365.0,
+    388.0,
+    423.0,
+    480.0,
+    497.0,
+    504.0,
+    558.0,
+    572.0,
+    590.0,
+    602.0
+   ],
+   "explain": [
+    "第三種表示法：只用一個 one-dimensional（一維）[[陣列]]來存整張 graph。",
+    "例子是 G4：它有兩個 component H1、H2，頂點是 0～7。",
+    "陣列前面紅色的區塊，每一格記的是「這個頂點的鄰居從陣列的哪一格開始放」。",
+    "index 0～7 這幾格，剛好對應 8 個頂點。",
+    "index 8 沒有對應的頂點，它只是用來標示結尾的記號。",
+    "node[0] = 9：意思是跟 0 相連的點，從 index 9 開始放。",
+    "陣列後面是鄰居區。綠色的 index 9、10 就是 0 的鄰居。",
+    "node[9] = 2、node[10] = 1，所以 0 跟 2、1 相連，對照圖上的 H1 沒錯。",
+    "那 0 的鄰居放到哪裡為止？看下一個頂點 1：node[1] = 11，表示 1 的鄰居從 11 開始。",
+    "所以不用另外記終點：下一個頂點的起點減 1 就是終點。0 的鄰居就是 index 9 到 10。",
+    "再看 7：node[7] = 22，7 的鄰居從 index 22 開始。",
+    "index 22 放的是 6，所以 7 只跟 6 相連。",
+    "這種表示法的缺點：要在 graph 刪除或新增一個點時……",
+    "例如新增兩個點 vertex 8、vertex 9，它們的起點要放在 index 8、9。",
+    "可是 index 9 原本放的是 0 的鄰居，所以後面整段都要往右 shift（搬移）。",
+    "新增或刪除頂點都要搬動整個陣列，movement cost（搬移成本）很高。"
+   ]
   },
   {
    "title": "Inverse adjacency list",
@@ -147,7 +235,39 @@
      "t": 827
     }
    ],
-   "trap": "影片 13:47 口誤說「如果你有一個 adjacency list 就很快」，指的是 inverse adjacency list。"
+   "trap": "影片 13:47 口誤說「如果你有一個 adjacency list 就很快」，指的是 inverse adjacency list。",
+   "cues": [
+    626.0,
+    645.0,
+    656.0,
+    667.6,
+    676.0,
+    686.0,
+    695.0,
+    703.9,
+    758.0,
+    778.0,
+    788.5,
+    795.0,
+    816.3,
+    831.2
+   ],
+   "explain": [
+    "到目前講了三種表示法：二維陣列（matrix）、adjacency list、一維陣列的 sequential 表示法。還有第四種，等一下講。",
+    "先看 inverse adjacency list。inverse 是「顛倒」的意思。例子是有向圖 G3。",
+    "原本的 adjacency list 記的是「我指向誰」，串列長度就是 out-degree（出分支度）。",
+    "inverse adjacency list 反過來，記的是「誰指向我」，串列長度就是 in-degree（入分支度）。",
+    "誰指向 0？是 1。所以 inverse 的 0 那條串列放 1。",
+    "誰指向 1？是 0。",
+    "誰指向 2？是 1。",
+    "和 G3 原本的 adjacency list 比：左邊記「我指向誰」，右邊記「誰指向我」，資訊不一樣。",
+    "為什麼需要 inverse？假設只有 adjacency list，問你「2 的 in-degree 是多少」。",
+    "最笨的方法：把每條串列都 scan（掃描）一遍。先看 list[0]：沒有 2。",
+    "list[1] 裡有 2 → in-degree(2) 加 1。",
+    "list[2] 是空的，沒有 2。所以 in-degree(2) = 1。",
+    "要算所有點的 in-degree，也一樣要把全部串列掃過，很花時間。",
+    "有 inverse adjacency list 就很快：直接數 inverse[2] 有幾個節點，就是 in-degree(2) = 1。"
+   ]
   },
   {
    "title": "Adjacency multilist：為什麼需要",
@@ -181,17 +301,41 @@
      "text": "每條邊用一個 node 表示，第二、三欄是這條邊兩端的 vertex。",
      "t": 978
     }
+   ],
+   "cues": [
+    851.5,
+    863.0,
+    873.0,
+    885.0,
+    893.2,
+    914.8,
+    925.0,
+    934.0,
+    942.0,
+    962.9,
+    973.0,
+    993.0,
+    1013.0
+   ],
+   "explain": [
+    "第四種表示法：adjacency multilist，也叫 multi-linked list，顧名思義是「很多條 linked list 交織在一起」。",
+    "先回到 adjacency list，看其中一條邊 (u, v)。",
+    "在 adjacency list 裡，(u, v) 這條邊被存了兩次。",
+    "因為 u 的串列裡一定有 v……",
+    "……而 v 的串列裡也一定有 u。同一條邊，存了兩份資訊。",
+    "multilist 要做到的事：graph 裡的一條邊，只存一次。",
+    "adjacency list 是以 vertex（頂點）為出發點建立的串列。",
+    "multilist 則是以 edge（邊）為出發點。",
+    "例子：complete graph，頂點 0、1、2、3。",
+    "總共有 6 條邊，依序編號 N0～N5：(0,1)、(0,2)、(0,3)、(1,2)、(1,3)、(2,3)。",
+    "每條邊用一個 node 表示，例如 (0,1) 就是 node N0。",
+    "node 的第二、第三個欄位，放這條邊兩端的 vertex。",
+    "第一條邊 N0：左邊是 0，右邊是 1。"
    ]
   },
   {
    "title": "Adjacency multilist：沿 pointer 追蹤",
    "scene": "graphpeng-multilist",
-   "params": {
-    "v": [
-     0,
-     1
-    ]
-   },
    "points": [
     {
      "text": "後兩欄是 pointer：一個跟第一個端點有關，一個跟第二個端點有關。",
@@ -221,17 +365,45 @@
      "text": "每個 node 有兩個 pointer，分別串在兩個端點的串列上。",
      "t": 1249
     }
+   ],
+   "cues": [
+    1027.4,
+    1035.8,
+    1044.0,
+    1061.5,
+    1083.7,
+    1097.6,
+    1108.8,
+    1129.0,
+    1142.8,
+    1184.0,
+    1195.5,
+    1207.0,
+    1221.1,
+    1234.5,
+    1245.1
+   ],
+   "explain": [
+    "node 後面兩個欄位是[[指標]]（pointer）：link1 跟第一個端點有關，link2 跟第二個端點有關。",
+    "看 N0 = (0,1)：link1 寫的是 N1，紅色字表示「跟 0 有關」。左邊 head 0 指向 N0。",
+    "意思是：除了 (0,1)，下一條跟 0 有關的邊，存在 N1 這個 node 裡。",
+    "N1 是 edge (0,2)，起點 0、終點 2。",
+    "N1 的 link1 = N2：跟 0 有連線的，還有 N2。",
+    "N2 是 edge (0,3)。",
+    "N2 的 link1 是 0，代表 null（沒有下一個了），跟 0 有關的邊到此結束。",
+    "所以以 vertex 0 出發，沿著 pointer 走，構成一條 linked list：N0 → N1 → N2。",
+    "這條串列的內容，就等於 adjacency list 裡 0 的鄰居：(0,1)、(0,2)、(0,3) → 1、2、3。",
+    "再看 N0 的藍色數字（link2）：跟 1 有關的下一條邊在 N3。",
+    "到 N3：它是 edge (1,2)，以 1 為一端，另一端是 2。",
+    "N3 的 link1 指向 N4：跟 1 有關的下一個 node 在 N4。",
+    "N4 是 edge (1,3)：起點 1、終點 3。",
+    "N4 之後是 null，跟 1 有連線的邊就沒有了。vertex 1 的串列是 N0 → N3 → N4。",
+    "所以每個 node 記了一條邊的左右兩個頂點，加上兩個 pointer：一個串起左邊頂點的邊，一個串起右邊頂點的邊。"
    ]
   },
   {
    "title": "Multilist 節點數與四種表示法總結",
-   "scene": "graphpeng-multilist",
-   "params": {
-    "v": [
-     2,
-     3
-    ]
-   },
+   "scene": "graphpeng-multilist-sum",
    "points": [
     {
      "text": "multilist 的 node 個數 = graph 的 edge 數。",
@@ -253,6 +425,32 @@
      "text": "總結：graph 有四種表示法，回去想想各自的優缺點。",
      "t": 1440
     }
+   ],
+   "cues": [
+    1281.0,
+    1299.0,
+    1310.0,
+    1316.0,
+    1344.0,
+    1369.3,
+    1384.0,
+    1404.0,
+    1427.0,
+    1440.0,
+    1457.0
+   ],
+   "explain": [
+    "multilist 裡 node 的個數，等於 graph 的 edge 個數。",
+    "這張 complete graph 有 6 條邊，所以剛好 6 個 node（adjacency list 要 12 個節點）。",
+    "要畫出 multilist：第一步，先數 graph 有幾條邊。",
+    "第二步，每條邊給它編號：以 0 開頭的 (0,1)、(0,2)、(0,3)，再來以 1 開頭、以 2 開頭的。",
+    "編號完，再把每個 node 的兩個 pointer 填上去，就完成了。",
+    "很好玩的是：第四章的 linked list，一個 node 只屬於一條 list。",
+    "這裡一個 node 有兩個 pointer，同時屬於兩條 list。例如 N0 同時在 0 的串列和 1 的串列裡，所以叫 multi-linked list。",
+    "注意名字：adjacency list 和 adjacency multilist 只差幾個字母，意思完全不一樣。",
+    "一個以頂點為出發點建立串列，一個以邊為出發點。",
+    "總結：graph 有四種表示方法：二維 matrix、adjacency list、sequential 一維陣列、adjacency multilist。",
+    "這四種各有優缺點，回去要想一想每種的優缺點是什麼。"
    ]
   },
   {
@@ -261,7 +459,7 @@
    "points": [
     {
      "text": "edge 可以給 weight，不只是 0／1。",
-     "t": 1470
+     "t": 1464
     },
     {
      "text": "weight 可代表從一點到另一點的 cost 或距離。",
@@ -291,11 +489,41 @@
      "text": "路段 cost = 實際距離；找 S 到 D 距離總和最小的路段集合 → shortest path。",
      "t": 1688
     }
+   ],
+   "cues": [
+    1464.0,
+    1477.9,
+    1488.9,
+    1499.5,
+    1515.0,
+    1521.0,
+    1553.0,
+    1592.5,
+    1613.0,
+    1661.0,
+    1683.0,
+    1702.0,
+    1721.2
+   ],
+   "explain": [
+    "edge 還可以給它一個 weight（權重）。",
+    "前面看到的 graph，只有「有連線 = 1、沒連線 = 0」。",
+    "weight 可以代表很多意思，例如從一個頂點到另一個頂點要花的 cost（成本）。",
+    "也可以是兩個頂點之間的距離。",
+    "edge 有 weight 的 graph，通常統稱為 network（網絡）。",
+    "注意：這裡的 network 不是電腦網路、Wi-Fi 那種 network，而是「有權重的 graph」。",
+    "例如 Google Map 裡的道路網（road network），其實也是一個 graph。",
+    "road network 的頂點是什麼？是交叉路口（intersection），每一個路口就是一個 vertex。",
+    "一條路（例如光復路）被路口切成很多 road segment（路段），每一段就是一條 edge。",
+    "道路通常是雙向的，去也會過、回也會過，所以 road network 是 directed graph：雙向道就是兩條方向相反的邊。",
+    "路段的 cost 就是它的實際距離（physical distance）。",
+    "給一個起點 source S，和一個終點 destination D。",
+    "要找出一組路段，從 S 連到 D，而且距離總和最小，這就是 shortest path。這裡 S→B→A→C→D = 8 最短（數字為示意）。"
    ]
   },
   {
    "title": "DFS：追蹤課本範例",
-   "scene": "dfs-stack",
+   "scene": "graphpeng-dfs-book",
    "points": [
     {
      "text": "tree 有 traversal，graph 也有兩種：DFS 與 BFS。",
@@ -329,6 +557,52 @@
      "text": "用一個 boolean array 記錄每個頂點是否 visited。",
      "t": 2007
     }
+   ],
+   "cues": [
+    1755.0,
+    1771.0,
+    1782.7,
+    1792.9,
+    1816.0,
+    1834.0,
+    1857.4,
+    1868.8,
+    1892.7,
+    1920.0,
+    1930.0,
+    1940.0,
+    1950.4,
+    1960.0,
+    1979.0,
+    1989.0,
+    1999.0,
+    2019.0,
+    2047.0,
+    2064.2,
+    2073.7
+   ],
+   "explain": [
+    "在 tree 裡會做 traversal（走訪），例如 pre-order、level order，用來判別結構、複製或比較。",
+    "graph 也有一樣的概念，graph 的 traversal 有兩種：DFS 和 BFS。",
+    "DFS（depth first search）是深度優先，BFS（breadth first search）是廣度優先。",
+    "DFS 很像 tree 的 pre-order：有左邊就一直往左走，走到不能走為止。",
+    "假設 graph 用 adjacency list 表示。右邊是每個頂點的串列，左下是記錄有沒有拜訪過的 visited 陣列。",
+    "規則：看目前頂點的串列，第一個沒有被拜訪過的頂點就去拜訪它，然後[[遞迴]]（recursive）地繼續。",
+    "從 0 出發：拜訪 0、輸出 0，visited[0] 變成 1。",
+    "看 0 的串列，第一個是 1，沒拜訪過 → 走到 1。",
+    "看 1 的串列：第一個是 0，0 一開始就輸出過了，跳過。",
+    "第二個是 3，沒拜訪過 → 拜訪 3、輸出 3。",
+    "看 3 的串列：1 已經拜訪過了。",
+    "跳到下一個 7 → 拜訪 7。",
+    "看 7 的串列：3 已經拜訪過，下一個是 4 → 拜訪 4。",
+    "看 4 的串列：1、7 都已經拜訪過，4 沒有路可走。",
+    "就像 recursive 函式 return 一樣，回到呼叫它的地方 7，繼續看 7 的串列：下一個是 5 → 拜訪 5。",
+    "依此類推：5 的串列裡 2 沒拜訪過 → 拜訪 2；2 的串列裡 6 沒拜訪過 → 拜訪 6。DFS = 0 1 3 7 4 5 2 6。",
+    "DFS 運作時需要一個 Boolean array（布林陣列），記錄每個 vertex 有沒有被拜訪過。",
+    "拜訪過就 mark 成 1，沒有就是 0。",
+    "給一個點，看它的串列，再查 Boolean array：沒有 visit 過的，就去拜訪它、把它 output。",
+    "一直做到所有的點都被拜訪過為止，DFS 就完成了。",
+    "所以 DFS 可以寫成一個 recursive function：拜訪自己，再對每個沒拜訪過的鄰居呼叫自己。"
    ]
   },
   {
@@ -356,7 +630,31 @@
      "t": 2191
     }
    ],
-   "trap": "影片 36:55 說「一個是 order 1」是口誤或 ASR 誤聽，應為 adjacency list O(e)（嚴格說含頂點為 O(n + e)），adjacency matrix O(n²)。"
+   "trap": "影片 36:55 說「一個是 order 1」是口誤或 ASR 誤聽，應為 adjacency list O(e)（嚴格說含頂點為 O(n + e)），adjacency matrix O(n²)。",
+   "cues": [
+    2084.0,
+    2100.1,
+    2108.0,
+    2112.0,
+    2120.0,
+    2153.0,
+    2158.2,
+    2169.0,
+    2189.0,
+    2195.9
+   ],
+   "explain": [
+    "DFS 的結果會不會是唯一的？不一定。左右是同一張圖。",
+    "串列存放的方法不一樣，走出來的結果就不一樣。",
+    "例如 0 的串列，可以寫成 1、2，也可以寫成 2、1。",
+    "adjacency list 沒有規定小的要排前面，所以兩種都對。左邊先走 1，右邊先走 2，DFS 順序就不同。",
+    "統稱來看：DFS 就是對 graph 做 pre-order。",
+    "給一個點 v，從 v 的 adjacency list 看起，沒拜訪過的就 output 出來。",
+    "然後 recursive 地做下去。所以 DFS 的 complexity（複雜度）跟 edge 有關。",
+    "用 adjacency list 時，DFS 要 traverse 所有的邊，complexity 是 O(e)（e 是邊數）。",
+    "如果 graph 表示成 adjacency matrix 呢？",
+    "用 adjacency matrix 時是 O(n²)：每個點都要掃一整列 n 格才知道鄰居是誰，n 個點就是 n × n。老師留給同學證明。"
+   ]
   },
   {
    "title": "BFS：A B D E C",
@@ -386,11 +684,41 @@
      "text": "取出 E，最後取出 C，完成 BFS。",
      "t": 2387
     }
+   ],
+   "cues": [
+    2237.6,
+    2254.0,
+    2275.0,
+    2287.9,
+    2306.0,
+    2315.0,
+    2324.0,
+    2334.7,
+    2356.1,
+    2364.0,
+    2370.0,
+    2386.0,
+    2395.6
+   ],
+   "explain": [
+    "BFS 對應到 tree 的 level order traversal：一層一層走。",
+    "tree 的 level order 要用 queue（排隊，先進先出），BFS 也一樣要用 queue。",
+    "看這張 graph：第一層是 A，第二層是 B、D、E，第三層是 C。",
+    "每一層由左到右輸出，BFS 就是 A B D E C。考試出這題是送分題。",
+    "寫程式怎麼做？第一個看到的是 A，先輸出 A。",
+    "A 跟 B、D、E 有連線，所以把 B、D、E 依序放進 queue。",
+    "queue 不是空的，就取出第一個 element：B，輸出 B。",
+    "B 跟 C 有連線，所以把 C 放進 queue。",
+    "現在 queue 裡有 D、E、C 三個 element。",
+    "第一個是 D，取出、輸出 D。",
+    "D 跟 C 有連線，但 C 已經在 queue 裡了，不需要再放。",
+    "取出 E、輸出 E；E 也連到 C，C 一樣已經在 queue 裡。",
+    "最後取出 C，輸出 C，queue 空了，BFS 完成：A B D E C。"
    ]
   },
   {
    "title": "實作方式與 connected component",
-   "scene": "graphpeng-g4-components",
+   "scene": "graphpeng-cc-program",
    "points": [
     {
      "text": "總結：DFS 是 pre-order，串列中有沒拜訪過的頂點就去拜訪。",
@@ -413,7 +741,25 @@
      "t": 2491
     }
    ],
-   "trap": "補充：connected() 對每個尚未拜訪的頂點呼叫一次 dfs，呼叫次數就是 connected component 數。"
+   "trap": "補充：connected() 對每個尚未拜訪的頂點呼叫一次 dfs，呼叫次數就是 connected component 數。",
+   "cues": [
+    2407.4,
+    2433.0,
+    2446.0,
+    2474.0,
+    2478.0,
+    2486.0,
+    2498.7
+   ],
+   "explain": [
+    "總結 DFS：它就是 pre-order，只要串列裡有沒拜訪過的 vertex，就去拜訪它，會用到 recursive。",
+    "DFS 有兩種寫法：寫成 recursive code；或不用遞迴，自己用一個 [[stack]] 來實作。",
+    "BFS 很簡單，用 queue 就能完成。",
+    "BFS、DFS 可以拿來做很多事，例如檢查 graph 有幾個 connected component。",
+    "課本 Program 6.3：從 i = 0 到 n − 1，遇到沒拜訪過的點就呼叫 dfs(i)。i = 0 時 dfs(0) 走完整個 H1。",
+    "i = 1、2、3 都已拜訪，跳過；i = 4 沒拜訪 → dfs(4) 走完 H2。呼叫 dfs 幾次，就有幾個 connected component（這裡 2 個）。",
+    "老師提醒：回去一定要 trace code，花時間一步一步追程式。"
+   ]
   }
  ],
  "quiz": [

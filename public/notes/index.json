@@ -43,9 +43,9 @@
  },
  "0fVJsIC1QXs": {
   "label": "交大彭文志 Lec18 Graph (1/4)",
-  "points": 76,
+  "points": 77,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "0IAPZzGSbME": {
   "label": "Abdul Bari：1. Introduction to Algorithms",
@@ -495,7 +495,7 @@
   "label": "交大彭文志 Lec19 Graph (2/4)",
   "points": 81,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "aZjYr87r1b8": {
   "label": "Abdul Bari：B Trees and B+ Trees",
@@ -639,7 +639,7 @@
   "label": "Graph Data Structure Intro（表示法）",
   "points": 34,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "DBugSTeX1zw": {
   "label": "PERMUTATIONS and COMBINATIONS Review",
@@ -1077,7 +1077,7 @@
   "label": "Abdul Bari：BFS",
   "points": 49,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "PdvGEI-P3-M": {
   "label": "Abdul Bari：Stack vs Heap",
