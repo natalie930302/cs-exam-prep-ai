@@ -149,6 +149,12 @@
   "quiz": 7,
   "cued": false
  },
+ "24akv3pVt28": {
+  "label": "交大江蕙如 Lec06 Graphs (1/4)",
+  "points": 57,
+  "quiz": 7,
+  "cued": true
+ },
  "2dYV_lADfFI": {
   "label": "Amdahl's Law in COA: Basics, Proof, and CPU Performance",
   "points": 16,
@@ -754,6 +760,12 @@
   "points": 36,
   "quiz": 6,
   "cued": false
+ },
+ "FvUs-OlAy18": {
+  "label": "交大江蕙如 Lec07 Graphs (2/4)",
+  "points": 59,
+  "quiz": 8,
+  "cued": true
  },
  "FX4C-JpTFgY": {
   "label": "MIT 18.06 L3：Multiplication and Inverse Matrices",

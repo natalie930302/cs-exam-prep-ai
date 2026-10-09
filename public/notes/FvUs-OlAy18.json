@@ -1,0 +1,1084 @@
+{
+ "video": "FvUs-OlAy18",
+ "label": "交大江蕙如 Lec07 Graphs (2/4)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "複習 BFS；connected component",
+   "scene": "graphjiang1-ccintro",
+   "cues": [
+    16.35,
+    46.66,
+    63.8,
+    95.64,
+    108.49,
+    124.42,
+    137.35,
+    160.8,
+    173.8
+   ],
+   "explain": [
+    "上一堂介紹了第一個 graph traversal 技巧 BFS：給一張圖和一個起點，它一圈一圈往外擴散，visit 附近的鄰居。",
+    "在進入 DFS 之前，先講一個很重要的問題：[[connected component]]（連通元件）。",
+    "請注意：這裡討論的是 [[undirected graph]]（edge 沒有方向的圖）。",
+    "Connected 是「連在一起」，component 是「一個個體」，合起來就是連在一起的一坨、一團。",
+    "用眼睛看，這張小圖有三坨，也就是三個 connected component。",
+    "常見的問題：1 這個點所在的 component 是誰？就是這一群（1 到 8）。",
+    "包含 11 的 component 呢？就是 11、12、13 這一群。",
+    "這個單元一直強調 connectivity：給兩個點，看它們之間有沒有 path，能不能沿著 edge 到達對方。",
+    "所以 connected component 就是要找出一群人，他們彼此之間都存在一條路徑可以到達對方。"
+   ],
+   "points": [
+    {
+     "t": 16,
+     "text": "複習：BFS 給定起點後一圈一圈往外 visit 鄰居。"
+    },
+    {
+     "t": 43,
+     "text": "在 DFS 之前先講 connected component（只討論 undirected graph）。"
+    },
+    {
+     "t": 105,
+     "text": "例圖有三個 component；1 所在的是 1～8，11 所在的是 11、12、13。"
+    },
+    {
+     "t": 152,
+     "text": "Component：一群彼此都有 path 可以到達的點。"
+    }
+   ]
+  },
+  {
+   "title": "找 component：R 從 s 開始長大",
+   "scene": "graphjiang1-rproc",
+   "cues": [
+    199.83,
+    227.79,
+    258.53,
+    283.8,
+    302.33,
+    327.8,
+    342.8,
+    355.64,
+    366.8,
+    379.83,
+    401.72,
+    419.8,
+    451.8,
+    475.8
+   ],
+   "explain": [
+    "問題：給 undirected graph 裡的一個點 s，請找出 s 所在的 connected component，也就是所有跟它相連的人。",
+    "照定義，就是從 s 出發，沿著 edge 不斷拜訪鄰居，把跟 s 有 path 相連的人都抓出來。",
+    "最後要輸出的 component 叫 R，它是一個 set（集合），因為裡面有很多人。",
+    "第一步：先把起點 s（這裡是 1）放進 R。",
+    "接著反覆去找 edge，因為 path 是由 edge 組成的，靠 edge 才能找到更多鄰居。",
+    "要找的 edge (u, v) 是這樣：一端 u 已經在 R 裡，另一端 v 還不在 R 裡。這裡是 1–2。",
+    "找到這樣的 edge，就把 v 放進 R。2 被加進來了。",
+    "一直重複，直到再也找不到「一端在 R 裡、一端在 R 外」的 edge，procedure 就停下來。",
+    "這時候吐出來的 R，就是 s 所在的 connected component。",
+    "為什麼這樣做是對的？看中間某一刻，例如 R = {1, 2, 3}。",
+    "假設目前 R 裡的每個人，都跟 s 之間有 path（藍色）。",
+    "這一輪找到的 edge (u, v)：u = 3 在 R 裡，v = 5 在 R 外，中間有 edge 相連。",
+    "既然 s 到 u 有一條 path，把這條 path 再往後延伸一條 edge (u, v)，就得到一條 s 到 v 的 path。",
+    "所以 v 一定跟 s 相連、一定在 s 的 component 裡，把它加進 R 是安全的。"
+   ],
+   "points": [
+    {
+     "t": 187,
+     "text": "問題：給一點 s，找出它所在的 connected component R。"
+    },
+    {
+     "t": 277,
+     "text": "Procedure：R = {s}；反覆找 edge (u, v)，u ∈ R、v ∉ R，把 v 加進 R；找不到就停，R 就是答案。"
+    },
+    {
+     "t": 380,
+     "text": "為什麼對：R 裡的人都跟 s 有 path；s→u 的 path 加上 edge (u, v) 就是 s→v 的 path，所以加 v 是安全的。"
+    }
+   ]
+  },
+  {
+   "title": "證明：R 裡都連得到、R 外都連不到",
+   "scene": "graphjiang1-rproof",
+   "cues": [
+    513.16,
+    529.8,
+    543.8,
+    558.05,
+    611.08,
+    637.07,
+    657.57,
+    700.4,
+    730.8,
+    748.8,
+    780.6,
+    806.61,
+    824.96,
+    839.8
+   ],
+   "explain": [
+    "寫出 procedure 之後，要證明它的正確性：結束時吐出來的 R，真的就是包含 s 的 connected component。",
+    "證明分兩個 case 討論。",
+    "Case 1：R 裡面的人，是不是真的都跟 s 有 path 相連？這就是剛剛說明過的（每次加進來都是安全的）。",
+    "Case 2：光這樣還不夠，還要確定沒有「漏網之魚」：跟 s 有 path、卻沒被放進 R 的人。",
+    "Case 2 課本用反證法：先假設有漏網之魚，再推出矛盾。",
+    "假設 R 外面有一個點 w，沒有被放進 R。",
+    "並且假設 w 跟 s 之間有 path（也就是漏掉了）。接下來想辦法推出矛盾。",
+    "這條從 s 到 w 的 path，一開始會走在 R 裡面，走著走著，某一刻一定會跑出 R（因為 w 在 R 外）。",
+    "看「第一個跑出 R 的點」，叫它 b。",
+    "b 前面的那個點 a 還在 R 裡，而 a 和 b 之間有一條 edge；但 b 不在 R 裡。",
+    "依照 procedure，這種情況可能在結束時發生嗎？",
+    "不可能：procedure 會一直找「一端在 R、一端不在 R」的 edge，某一輪一定會挑出 (a, b)，然後把 b 放進 R。",
+    "所以 b 應該在 R 裡，跟「b 在 R 外」矛盾。",
+    "兩個 case 都成立：R 裡的人都跟 s 相連，R 外的人都跟 s 不相連，證完。"
+   ],
+   "points": [
+    {
+     "t": 494,
+     "text": "證明 procedure 結束時 R 就是 s 的 component，分兩個 case。"
+    },
+    {
+     "t": 544,
+     "text": "Case 1：R 裡的人都跟 s 有 path；Case 2：R 外沒有漏網之魚。"
+    },
+    {
+     "t": 608,
+     "text": "Case 2 反證：設 w ∉ R 但 s 到 w 有 path；path 第一個跑出 R 的點 b，前一個點 a ∈ R，(a, b) 會被 procedure 挑出 → b ∈ R，矛盾。"
+    }
+   ]
+  },
+  {
+   "title": "實作：用 BFS 或 DFS 找 component",
+   "scene": "graphjiang1-rimpl",
+   "cues": [
+    866.8,
+    884.95,
+    897.8,
+    905.8,
+    941.1,
+    955.8,
+    981.32
+   ],
+   "explain": [
+    "剛剛的 procedure 是概念上的。真的要實作時會遇到問題：每次要怎麼 explore 出新的 edge？",
+    "另一個問題：R 找出來後，s 到 R 裡的另一個點 t（這裡是 6）……",
+    "……對應的 path 要怎麼找出來？方法有很多種。",
+    "第一個方法：用 BFS 來做，一圈一圈往外找。",
+    "所以給一個點、要找它所在的 component，第一個方法就是 BFS。",
+    "這也是一開始講的：BFS 最大的功能，就是找出起點 reach 得到的所有點，而那些點就形成 connected component。",
+    "除了 BFS 還有別的方法嗎？有，接下來介紹 [[DFS]]，它也能找出跟起點有 path 相連的人。"
+   ],
+   "points": [
+    {
+     "t": 851,
+     "text": "實作問題：怎麼 explore 新的 edge？怎麼找出 s 到 t 的 path？"
+    },
+    {
+     "t": 906,
+     "text": "方法一：BFS，它能找到起點 reach 得到的所有點。"
+    },
+    {
+     "t": 977,
+     "text": "方法二：DFS，也能找出跟起點有 path 的人。"
+    }
+   ]
+  },
+  {
+   "title": "DFS：有路就走，死路就回頭",
+   "scene": "graphjiang1-dfsidea",
+   "cues": [
+    991.8,
+    1003.46,
+    1027.71,
+    1039.8,
+    1043.08,
+    1051,
+    1065.68,
+    1080.8,
+    1093.8,
+    1140.22,
+    1161.37,
+    1167.62,
+    1179.25,
+    1197.8,
+    1206.8,
+    1222.14,
+    1236.96
+   ],
+   "explain": [
+    "第二個方法是 [[DFS]]（Depth-First Search）。",
+    "大部分同學在資料結構課就認識它了，這裡會重新看一次，並多探討它額外的 property。",
+    "Depth 是深度，所以是「深度優先」：給一個起點開始 explore 這個 graph。這裡用迷宮來看。",
+    "規則：只要有路可以走（有 edge 可以連出去），就走出去，一路往深處走。",
+    "直到走到 dead end（死路）。",
+    "走到底沒路了，就回頭（retreat），看看有沒有別的路可以再出發。",
+    "這很像一隻沒有地圖的老鼠在走迷宮。",
+    "牠只能先一路走到底，撞到牆就回到前面一個岔路，再試別條路，最後找到出口。",
+    "也很像玩遊戲時跑進一個 dungeon（地下城），要一邊走一邊探索地圖。",
+    "用 DFS 找 connected component 的 procedure：就是做 DFS，順便把途中經過的人放進 R。",
+    "從 u 出發，第一件事是把 u 標成 explored，表示走過它了。",
+    "然後把 u 放進 R 這個 set。",
+    "接著照 DFS 的想法：看 u 有沒有 edge 可以連出去，for each edge 都試試看。",
+    "如果 edge 的另一端 v 目前還沒被看過，就走過去。",
+    "「走過去」的做法是 [[recursive]] call：呼叫 DFS(v)，從 v 再往下 explore。",
+    "如果 v 的鄰居都已經 explore 完、再也走不下去，這個 recursive call 就結束、return。",
+    "Return 會回到上一層，也就是前面那個分岔點，繼續試它的下一條 edge。一直這樣做下去。"
+   ],
+   "points": [
+    {
+     "t": 990,
+     "text": "Depth-First Search（深度優先）：有 edge 就走出去，走到 dead end 再回頭。"
+    },
+    {
+     "t": 1064,
+     "text": "像沒有地圖的老鼠走迷宮、玩遊戲探索 dungeon。"
+    },
+    {
+     "t": 1140,
+     "text": "DFS(u)：mark u explored、放進 R；for each edge (u, v)，v 沒 explored 就 recursive call DFS(v)；做完 return 回前一個分岔點。"
+    }
+   ]
+  },
+  {
+   "title": "DFS 實際走一次：1 2 3 5 4 6 7 8",
+   "scene": "graphjiang1-dfsrun",
+   "cues": [
+    1249.8,
+    1259.8,
+    1273.8,
+    1285.8,
+    1287.92,
+    1294.34,
+    1302.42,
+    1318.22,
+    1325.42,
+    1334.02,
+    1342.52,
+    1347.8,
+    1352.67,
+    1359.95,
+    1365.38,
+    1370.21,
+    1373.63,
+    1393.06,
+    1399.8,
+    1420.77,
+    1428.8,
+    1434.8,
+    1439.8,
+    1445.8,
+    1453.8,
+    1461.8,
+    1467.17,
+    1470.8,
+    1478.8,
+    1487.8,
+    1497.28,
+    1507.8
+   ],
+   "explain": [
+    "實際跑一次。從 1 開始 DFS：1 標成紅色（explored），右邊的 call stack 放進 DFS(1)。",
+    "規則：一個點伸出去的鄰居很多時，先走編號比較小的那條路。",
+    "1 有好幾條 edge，for each edge 都試試看，先挑 1–2 這條。",
+    "這時 1 已經 explored，而 2 還沒有。",
+    "所以往下走到 2，也就是呼叫 DFS(2)。",
+    "2 一進來，馬上被標成 explored（紅色）。",
+    "再看 2 的鄰居：1、3、4、5，照編號從小到大試，而且只走還沒 explored 的。",
+    "最小的是 1，它已經 explored 了，跳過（skip）。",
+    "接著試 3：還沒走過，走過去。",
+    "到了 3，就是 DFS(3)，3 變紅色。",
+    "3 的鄰居有 1、2、5、7、8。",
+    "1 走過了、2 也走過了，都跳過。",
+    "接著試 5：走過去。",
+    "5 的鄰居有 2、3、4、6。",
+    "2 走過了、3 也走過了，都跳過。",
+    "接下來走 4。",
+    "4 的鄰居是 2 和 5：2 走過了，5 也才剛走過。",
+    "所以 4 這個點做完了，它的 call 結束，從 call stack 拿掉（return）。",
+    "Return 會回到前一個分岔點，也就是 5（剛剛從 5 分出來走到 4）。",
+    "5 回到它的 for each：2、3 skip 過，4 也走完了，剩下 6 可以走，就走 6。",
+    "6 只有一個鄰居 5，而 5 已經 explored 了。",
+    "所以 6 結束，return 回 5。",
+    "5 這時所有鄰居也都試完了，繼續 return，回到 3。",
+    "回到 3 繼續看它的鄰居：1 skip 了、2 已經 explored、5 也走完了。",
+    "剩下 7 和 8，走比較小的 7。",
+    "7 試它的鄰居 3 和 8：3 走過了，不理它。",
+    "繼續走 8。",
+    "8 的鄰居是 3 和 7，都已經 explored，跳過。",
+    "這時 8 結束，return 回到 7。",
+    "7 的所有鄰居也都 explored 了，7 的 recursive call 也結束，return 到 3。",
+    "3 的 for each 也全部做完了，繼續 return。",
+    "再回到 2、再回到 1，整個 DFS 結束。走訪順序是 1 2 3 5 4 6 7 8。"
+   ],
+   "points": [
+    {
+     "t": 1243,
+     "text": "從 1 開始，鄰居多時編號小的先走。"
+    },
+    {
+     "t": 1288,
+     "text": "1→2（2 的鄰居 1、3、4、5，1 已走過）→3（鄰居 1、2、5、7、8）→5（鄰居 2、3、4、6）→4。"
+    },
+    {
+     "t": 1393,
+     "text": "4 做完 return 回分岔點 5，走 6；6 結束、5 結束，回到 3。"
+    },
+    {
+     "t": 1446,
+     "text": "3 走 7，7 走 8；8、7、3、2、1 依序 return。DFS 順序 1 2 3 5 4 6 7 8。"
+    }
+   ]
+  },
+  {
+   "title": "每條 edge 會被 check 兩次",
+   "scene": "graphjiang1-dfscheck",
+   "cues": [
+    1522.8,
+    1544.53,
+    1555.8,
+    1573.8,
+    1587.17,
+    1611.42,
+    1628.8,
+    1633.31,
+    1643.8,
+    1650.66
+   ],
+   "explain": [
+    "剛剛講得比較細，是因為 DFS 是 recursive call 的形式，運作過程有幾個重點要注意。",
+    "問題：在這個 undirected graph 上，整個 procedure 跑完，每條 edge 會被 check（檢查）幾次？",
+    "答案是兩次：從 1 出發 reach 得到的每條 edge，都會被踩過兩次。",
+    "以 1–2 為例：第一次是 1 嘗試要走到 2 的時候，會走過這條 edge。",
+    "第二次是 2 檢查自己的鄰居時，會回頭偷看 1，發現 1 已經 explored，就 skip。",
+    "虛線的 non-tree edge 也一樣被 check 兩次，例如 1–3。",
+    "第一次：3 檢查鄰居時看到 1，發現它已經是紅色，skip。",
+    "第二次：最後回到 1 的時候，1 也會 check 一下 3，同樣發現是紅色，skip。",
+    "所以每條 edge 都被 check 兩次，兩個端點各看一次。",
+    "老師建議：自己在紙上隨便畫一個 undirected graph，親手跑一次 DFS 的 recursive call。了解運作過程，等一下討論性質時才知道為什麼。"
+   ],
+   "points": [
+    {
+     "t": 1523,
+     "text": "Undirected graph 上做 DFS，每條 edge 會被 check 兩次（兩個端點各一次）。"
+    },
+    {
+     "t": 1646,
+     "text": "自己在紙上畫一個 graph 跑 DFS，才能理解它的運作與性質。"
+    }
+   ]
+  },
+  {
+   "title": "DFS tree：non-tree edge 連祖先與子孫",
+   "scene": "graphjiang1-dfstree",
+   "cues": [
+    1683.8,
+    1695.03,
+    1709.8,
+    1727.84,
+    1758.8,
+    1789.68,
+    1801.92,
+    1826.53,
+    1832.8
+   ],
+   "explain": [
+    "DFS 跟 BFS 很像的一點：DFS 做完也會產生一棵 tree，叫 DFS tree（BFS 做完的叫 BFS tree）。",
+    "在 DFS tree 裡，什麼是 tree edge、什麼不是？",
+    "Check 一條 edge 時，如果發現對方還沒 explore，就真的走過去，那一次用到的 edge 就是 [[tree edge]]（紅色）。",
+    "如果 check 時對方已經著色（explored），就 skip；一直被 skip 的 edge 就是 non-tree edge（虛線）。",
+    "原圖看不太出來，把它拉開：就是一棵以 1 為 root 的 DFS tree，長得又細又長。",
+    "Tree edge 一定連著這棵 tree 上的 parent（父）和 child（子）。",
+    "Non-tree edge 連的則是祖先和子孫，會跨好幾層，不是直接的父子（紫色的線）。",
+    "Property：DFS tree 裡任一條 non-tree edge (x, y)，其中一個一定是另一個的 [[ancestor]]（祖先），例如 3 是 8 的祖先。",
+    "另一個就是它的 [[descendant]]（子孫）：輩分大的連到輩分小的。"
+   ],
+   "points": [
+    {
+     "t": 1683,
+     "text": "DFS 做完也產生 DFS tree：check 時對方未 explored 而走過去的是 tree edge，被 skip 的是 non-tree edge。"
+    },
+    {
+     "t": 1782,
+     "text": "Tree edge 連 parent 和 child；non-tree edge (x, y) 的兩端一定是祖先（ancestor）與子孫（descendant）。"
+    }
+   ]
+  },
+  {
+   "title": "證明：non-tree edge 連祖先與子孫",
+   "scene": "graphjiang1-dfsproof",
+   "cues": [
+    1858.8,
+    1889.41,
+    1914.8,
+    1935.8,
+    1954.1,
+    1974.8,
+    2060.37,
+    2095.55,
+    2110.39,
+    2225.28,
+    2244.7,
+    2250.8,
+    2256.64
+   ],
+   "explain": [
+    "接下來證明：DFS tree 裡任何一條 non-tree edge，連的一定是祖先和子孫。",
+    "設 non-tree edge (x, y)，先假設 x 是比較早被 explore 的那個（另一個方向對稱）。這裡用 x = 3、y = 8 當例子。",
+    "目標是證明：x 是祖先，y 是 x 的 descendant。",
+    "畫一條時間軸。線索一：x 比 y 早被 explore。",
+    "線索二：(x, y) 是 non-tree edge。什麼時候會是 non-tree edge？就是 x check 這條 edge 時，y 已經 explored 了。",
+    "因為 x 比較早，所以 x 被 reach 的那一刻，y 還沒被看到，還是白色的。",
+    "但 x 在自己的 recursive call 裡偷看 (x, y) 時，發現 y 已經 explored，所以 skip，變成 non-tree edge。",
+    "那 y 到底是什麼時候被看到的？一定在 x 被看到之後。",
+    "而且在 x 這個 call 結束（return）之前，因為 x 還在 check 鄰居，還沒 return（粉紅色長條就是 DFS(x) 執行的期間）。",
+    "所以 y 是在進入 DFS(x) 之後、x return 之前的某一刻被 explore 的。",
+    "在 DFS(x) 執行期間被 explore 的點，都是從 x 往下走到的，也就是 x 底下那棵子樹裡的點。",
+    "所以 y 就是 x 的 descendant。",
+    "證完：x、y 是祖先與子孫的關係。老師強調：精確知道每個點何時被 explore，就能推出很多 property。"
+   ],
+   "points": [
+    {
+     "t": 1845,
+     "text": "設 non-tree edge (x, y)，x 比較早被 explore，要證 y 是 x 的 descendant。"
+    },
+    {
+     "t": 1932,
+     "text": "線索：x reach 時 y 還沒被看到；x check (x, y) 時 y 已 explored（才會是 non-tree edge）。"
+    },
+    {
+     "t": 2095,
+     "text": "所以 y 在進入 DFS(x) 之後、x return 之前被 explore → y 在 x 的子樹裡，是 x 的 descendant。"
+    }
+   ]
+  },
+  {
+   "title": "BFS 矮胖、DFS 瘦長",
+   "scene": "graphjiang1-bfsdfs",
+   "cues": [
+    2263.61,
+    2284.8,
+    2314.8,
+    2328.8,
+    2343.84,
+    2349.51,
+    2375.47,
+    2390.8,
+    2421.64,
+    2428.98,
+    2435.52
+   ],
+   "explain": [
+    "很快 summary 一下：目前學了兩個 explore graph 的技術，BFS 和 DFS。",
+    "相同的地方：兩個都能找 connected component。從一個點出發做 BFS 或 DFS，都能找到它 reach 得到的人。",
+    "不同的地方在 explore 的順序。BFS 從一點出發，先找它的鄰居，再找鄰居的鄰居……",
+    "一層一層往外擴，所以 BFS tree 比較寬、比較淺，矮矮胖胖的。",
+    "DFS tree 通常瘦瘦長長的。",
+    "因為 DFS 的特性是只要有路就一直走，沒路了才回頭，所以 tree 比較細長。",
+    "兩種 traversal 都討論過 non-tree edge：DFS 的 non-tree edge 連的是 DFS tree 裡的祖先和子孫。",
+    "那 BFS 的 non-tree edge 連誰？想想看：BFS 裡一條 edge 兩端的 layer 會差多少？",
+    "最多差 1，但不一定差 1，也可以差 0。",
+    "所以第一種是同一層，像兄弟姐妹（例如 2–3、4–5、7–8）。",
+    "第二種是連到 uncle（例如 3–5：5 的 parent 是 2，3 是 2 的兄弟，所以 3 是 5 的 uncle）；但 non-tree edge 不會連到自己的父母。"
+   ],
+   "points": [
+    {
+     "t": 2258,
+     "text": "BFS、DFS 都能找 connected component。"
+    },
+    {
+     "t": 2315,
+     "text": "BFS 一層一層擴，tree 寬而淺（矮胖）；DFS 有路就一直走，tree 細而長（瘦長）。"
+    },
+    {
+     "t": 2375,
+     "text": "DFS 的 non-tree edge 連祖先與子孫；BFS 的連同層（兄弟）或相鄰層（uncle），不會連父母。"
+    }
+   ]
+  },
+  {
+   "title": "找出所有的 connected component",
+   "scene": "graphjiang1-allcc",
+   "cues": [
+    2475.81,
+    2488.8,
+    2501.8,
+    2509.42,
+    2519.39,
+    2535.33
+   ],
+   "explain": [
+    "更大的問題：不是只找一個點的 component，而是要找出整張 graph 所有的 connected component。",
+    "很簡單：隨便挑一個點（例如 1）做一次 BFS，就找到包含它的那一坨。",
+    "把那一坨挖掉。圖裡還有一些點沒走到，就再隨便選一個沒走過的點。",
+    "例如選 9，再做一次 BFS，就找到 9、10 這個 component。",
+    "再選一個沒走過的點繼續 BFS，就找到第三個 component。反覆這樣做，所有 component 都會被找出來。",
+    "一樣的方法，換成 DFS 也可以，同樣找到三個 component。"
+   ],
+   "points": [
+    {
+     "t": 2455,
+     "text": "找出整張圖所有的 component：隨便挑一點做 BFS，挖掉找到的那塊，再從沒走過的點重複。"
+    },
+    {
+     "t": 2532,
+     "text": "同樣的方法也可以用 DFS。"
+    }
+   ]
+  },
+  {
+   "title": "n 個點、m 條邊：O(m + n) 叫 linear",
+   "scene": "graphjiang1-size",
+   "cues": [
+    2543.65,
+    2578.8,
+    2589.86,
+    2619.8,
+    2647.8,
+    2673.69,
+    2683.68,
+    2712.8,
+    2732.8,
+    2754.76,
+    2799.8,
+    2823.56,
+    2860.8
+   ],
+   "explain": [
+    "接下來講 BFS 和 DFS 怎麼實作，先介紹 graph 一般怎麼表示。",
+    "Graph G 的點集合是 V、edge 集合是 E，要想辦法維護這兩個集合。",
+    "常用符號：集合外面加兩條直線 |V|，意思是 cardinality，也就是數一數集合裡有幾個元素。",
+    "這本書習慣用 n 代表點的數目（|V|），用 m 代表 edge 的數目（|E|）。",
+    "一張圖可以很 dense（密集，edge 很多）或很 sparse（鬆散，edge 很少）。",
+    "先考慮 connected graph：n 個點的 connected graph，最少要幾條 edge？",
+    "最少的情況就是一棵 tree（前面說過 tree 是最簡單的 connected graph），有 n − 1 條 edge。",
+    "最多（upper bound）有幾條？",
+    "任兩點之間都有 edge 時最多，共 C(n, 2) 條，也就是 n(n − 1)/2，一定小於 n²。",
+    "所以 m 介於 n − 1 和 C(n, 2) 之間：最少是 O(n)，最多是 O(n²)。",
+    "我們希望表示一個 graph、或走訪它的時間，跟 graph 本身的大小成正比。",
+    "也就是 O(m + n)，這叫 linear（線性）時間，是最好的情況。",
+    "這樣圖簡單時就快，圖複雜時才慢，不用在意它是 dense 還是 sparse，都適用。"
+   ],
+   "points": [
+    {
+     "t": 2543,
+     "text": "表示 graph：|V| = n、|E| = m（|·| 是 cardinality）。"
+    },
+    {
+     "t": 2648,
+     "text": "Connected graph 的 m 介於 n − 1（tree）和 C(n, 2) < n² 之間：O(n)～O(n²)。"
+    },
+    {
+     "t": 2794,
+     "text": "希望表示與走訪的時間是 O(m + n)，叫 linear time，dense 或 sparse 都適用。"
+    }
+   ]
+  },
+  {
+   "title": "Adjacency matrix",
+   "scene": "graphjiang1-matrix",
+   "cues": [
+    2869.8,
+    2887.8,
+    2912.1,
+    2944.8,
+    2960.8,
+    3014.8,
+    3037.18,
+    3050.8,
+    3102.05,
+    3123.42,
+    3185.05,
+    3219.8,
+    3244.64,
+    3273.8,
+    3332.8
+   ],
+   "explain": [
+    "介紹兩種最常用的 graph 表示法：[[adjacency matrix]] 和 [[adjacency list]]。",
+    "資料結構課可能學過更多表示法，老師說都可以忘掉，看過就好，只記這兩種。",
+    "先看 adjacency matrix。把 n 個點隨便編號成 1 號到 n 號。",
+    "名字裡的 adjacency（相鄰）是重點：graph 最重要的概念是 object 之間的 relationship，也就是 edge。",
+    "Graph 前面加的形容詞，幾乎都在描述 edge：undirected / directed（有沒有方向）、cyclic、weighted（edge 上有沒有權重）……",
+    "所以表示 graph 最重要的是把點和點之間的關係表示出來，adjacency matrix 就是做這件事的。",
+    "n 個點，就開一個 n × n 的矩陣，每個 row、每個 column 各對應一個點。",
+    "第 i 個 row、第 j 個 column 那一格（entry）代表點 i 和點 j 的關係：1 表示有 edge，0 表示沒有。例如第 3 row、第 4 column 是 0，因為 3 和 4 之間沒有 edge。",
+    "在 undirected graph 裡，(u, v) 有 edge 就代表 (v, u) 也有，所以矩陣沿著對角線兩邊完全對稱（symmetric），轉置後還是自己。",
+    "這本書討論 [[simple graph]]：沒有 self-loop（自己連自己），也沒有 parallel edge（兩點之間多條 edge），所以對角線都是 0。",
+    "用 matrix 查兩點之間有沒有 edge，直接看那一格就知道，不用掃，是 O(1)，非常快。",
+    "要知道一個點（例如 4）有幾個鄰居，要掃它對應的那個 row（或 column）。",
+    "不管鄰居多或少，都一定要把整個 row 掃完才知道，所以要 Θ(n) 的時間，這是省不掉的。",
+    "如果圖很 sparse（edge 很少），矩陣裡幾乎都是 0（變淡的格子），掃描整張圖時會花很多時間在沒有意義的 0 上。",
+    "儲存空間要 n × n 格，Θ(n²)，省不掉。edge 很少時，這是比較浪費的方式。"
+   ],
+   "points": [
+    {
+     "t": 2869,
+     "text": "兩種最常用的表示法：adjacency matrix 和 adjacency list，其他看過就好。"
+    },
+    {
+     "t": 2937,
+     "text": "Graph 最重要的是 relationship（edge）；matrix 用 n × n 的 0/1 表記錄點與點之間有沒有 edge。"
+    },
+    {
+     "t": 3094,
+     "text": "Undirected → 對稱；simple graph 沒有 self-loop、parallel edge，對角線為 0。"
+    },
+    {
+     "t": 3185,
+     "text": "查一條 edge O(1)；找一個點的所有鄰居要掃整行 Θ(n)；空間 Θ(n²)，sparse 時很浪費。"
+    }
+   ]
+  },
+  {
+   "title": "Adjacency list",
+   "scene": "graphjiang1-list",
+   "cues": [
+    3361.54,
+    3373.8,
+    3386.94,
+    3402.44,
+    3426.27,
+    3451.8,
+    3465.82,
+    3470.25,
+    3487.39,
+    3541.09,
+    3556.83,
+    3578.8,
+    3610.75,
+    3652.8,
+    3682.33,
+    3691.55,
+    3704.8,
+    3726.42,
+    3744.46,
+    3820.8,
+    3839.8
+   ],
+   "explain": [
+    "第二種是 adjacency list，一樣用來表示點與點之間的鄰居關係。",
+    "它用的 data structure 是 [[linked list]]。",
+    "它分兩部分：第一部分是一個 array，存 vertex 用，每個點有一個對應的格子。",
+    "每個格子後面掛一條 linked list，存這個點的鄰居們。例如 1 後面掛著 2、3。",
+    "同一張 8 個點的圖，就是 8 格的 vertex array，每個點後面都掛著它的鄰居。",
+    "如果想確認 edge (2, 4) 存不存在，要怎麼做？",
+    "方法一：找到 4，在它後面的鄰居 list 裡一個一個找有沒有 2。",
+    "方法二：在 2 後面的 list 裡找有沒有 4。",
+    "Big-O 看的是 worst case：一條 list 最長有 n − 1 個鄰居，要找的可能在最後一個，所以查一條 edge 要 O(n)。",
+    "另一個問題：edge (2, 4) 在 adjacency list 裡存了幾次？",
+    "兩次：2 的鄰居裡有 4，4 的鄰居裡也有 2。因為 undirected 本來就是雙向關係，要記錄兩個方向。",
+    "如果是 directed graph，每條 edge 只會出現一次。",
+    "介紹符號：u 後面掛的這串叫 adj(u)，也就是 u 的鄰居們（neighbors / neighborhood）。",
+    "u 有幾個鄰居，就是 |adj(u)|，叫做 u 的 [[degree]]（度數），非常常用。這裡 degree(3) = 5。",
+    "空間需要多少？vertex array 不管怎樣都要 n 格。",
+    "每條 edge 要佔兩個格子，所以鄰居 list 一共 2m 格。",
+    "總共 n + 2m，Big-O 裡係數不重要，所以空間是 O(n + m)。",
+    "如果是 directed graph，edge 是單向的，只存一次，就是 n + m。",
+    "Directed graph 的 degree 要分兩種：射出去的 edge 數叫 [[out-degree]]，射進來的叫 [[in-degree]]。這裡 u 的 in-degree 是 2、out-degree 是 3。",
+    "最簡單的 directed adjacency list，每個點後面只記 outgoing（往外）的 edge。",
+    "有些應用需要很快找到 outgoing 也要很快找到 incoming，就分成兩條 list 分別記錄，看應用而定。"
+   ],
+   "points": [
+    {
+     "t": 3347,
+     "text": "Adjacency list：vertex array，每格後面掛一條 linked list 存鄰居。"
+    },
+    {
+     "t": 3452,
+     "text": "查一條 edge 要在 list 裡找，worst case O(n)。"
+    },
+    {
+     "t": 3533,
+     "text": "Undirected 的每條 edge 存兩次，directed 存一次；adj(u) 是 u 的鄰居，degree(u) = |adj(u)|。"
+    },
+    {
+     "t": 3674,
+     "text": "空間 n + 2m = O(n + m)（directed：n + m）；directed 分 in-degree、out-degree，list 至少記 outgoing。"
+    }
+   ]
+  },
+  {
+   "title": "Queue：兩端開口的水管",
+   "scene": "graphjiang1-queue",
+   "cues": [
+    3865.8,
+    3898.69,
+    3922.43,
+    3934.88,
+    3965.6,
+    3992.24,
+    4010.8,
+    4034.88,
+    4062.8,
+    4070.96,
+    4086.31,
+    4118.48,
+    4128.8,
+    4143.8,
+    4165.8,
+    4180.8
+   ],
+   "explain": [
+    "兩種表示法，實際上就是用 array 和 linked list 配合。",
+    "接下來要實作 BFS 和 DFS，必須選擇適當的 data structure。",
+    "會用到的是 [[queue]] 和 [[stack]]（還有 linked list 的實作方式）。先介紹 queue。",
+    "Queue 是一個兩端開口的容器，可以想成一根水管，裡面可以放很多資料。",
+    "它的規定是：先進去的人要先出來。",
+    "一個開口專門放東西進去（push），另一個開口專門拿東西出來（pop），就像把東西從水管一端擠進去、從另一端推出來。",
+    "所以 queue 也叫 [[FIFO]]：first in, first out，先進先出。",
+    "實作時要兩個 pointer：front（前端）和 rear（尾端）。每次 push 從尾端塞進去，pop 從前端拿出來。",
+    "一開始 queue 是空的。",
+    "Push 第一筆資料 A：這時 front 和 rear 都指向 A。",
+    "再 push B：front 還是指著 A，rear 往後移，指到 B。",
+    "Push C：rear 再往後移一格。",
+    "Push 第四筆 D。照 push 的順序是 A、B、C、D，像推進水管一樣。",
+    "現在 pop：先進去的先出來，所以從 front 拿出 A。",
+    "A 丟出去後，front 往後移一格，指到 B。再 push 的話，rear 繼續往後放。",
+    "總結：queue 一端只出、一端只進，資料只往一個方向移動，所以先進去的一定先出來。"
+   ],
+   "points": [
+    {
+     "t": 3851,
+     "text": "兩種表示法用 array、linked list 實作；實作 BFS、DFS 要用 queue 和 stack。"
+    },
+    {
+     "t": 3932,
+     "text": "Queue：兩端開口，rear 端 push、front 端 pop；FIFO（先進先出）。"
+    },
+    {
+     "t": 4058,
+     "text": "例：push A、B、C、D，pop 拿出 A，front 移到 B。"
+    }
+   ]
+  },
+  {
+   "title": "Stack：只有一端開口的瓶子",
+   "scene": "graphjiang1-stack",
+   "cues": [
+    4209.81,
+    4221.22,
+    4247.8,
+    4264.39,
+    4294.8,
+    4319.8,
+    4325.23,
+    4328.8,
+    4331.05,
+    4333.38,
+    4339.8,
+    4348.69,
+    4387.62,
+    4400.67,
+    4437.8,
+    4460.86,
+    4504.8,
+    4512.8
+   ],
+   "explain": [
+    "常跟 queue 一起講的是 [[stack]]。",
+    "Stack 像一個瓶子：只有上面一個開口，底部封死。",
+    "先丟進去的東西會沉到底部；要拿下面的東西，得先把上面的拿掉。",
+    "所以最後進去的要先出來，叫 [[LIFO]]：last in, first out。",
+    "因為只有一個開口，只要一個 pointer：top，記錄壓在最上面的那筆資料。push 時 top 往上移，pop 時 top 往下移。",
+    "一開始 push A，top 指向 A。",
+    "再 push B，top 指向 B。",
+    "Push C，top 指向 C。",
+    "Push D，top 指向 D。",
+    "Push E，top 指向 E。",
+    "現在要 pop：最上面的 E 先出來。",
+    "Pop 掉 E 之後，top 往下移，指到 D。相反地，最先進去的 A 一定最後才出來。",
+    "寫程式時，可以用 linked list 來實作，叫 linked stack 或 linked queue。",
+    "也可以用 array，例如 circular queue（環狀 queue），只要一個 array 就能做到。",
+    "Linked stack：每筆資料都有一個指標指向下一筆，最底下那筆指向空（0），另外記一個 top pointer 指向第一筆。",
+    "Linked queue：先進去的在前面、後進去的接在後面，要記兩個 pointer：front（拿資料）和 rear（放資料），因為兩端都開口。",
+    "為什麼要用 linked list 實作？",
+    "好處是長度可以改變：不知道應用會處理多少資料時，它可以動態增加或縮減。"
+   ],
+   "points": [
+    {
+     "t": 4207,
+     "text": "Stack：只有頂端開口，LIFO（後進先出），只要一個 top pointer。"
+    },
+    {
+     "t": 4320,
+     "text": "例：push A～E，pop 拿出 E，top 移到 D。"
+    },
+    {
+     "t": 4387,
+     "text": "實作：linked stack / linked queue，或 array（circular queue）；linked list 的長度可以動態變化。"
+    }
+   ]
+  },
+  {
+   "title": "實作 BFS：L[i]、discovered 與 T",
+   "scene": "graphjiang1-bfsimpl",
+   "cues": [
+    4538.86,
+    4554.29,
+    4562.8,
+    4588.07,
+    4600.8,
+    4640.8,
+    4673.8,
+    4688.8,
+    4709.8,
+    4719.67,
+    4740.49,
+    4771.8,
+    4790.98,
+    4812.8,
+    4827.8,
+    4838.4,
+    4847.8,
+    4900.8,
+    4906.8
+   ],
+   "explain": [
+    "假設 stack 和 queue 大家都會了，來看怎麼實作 BFS。",
+    "第一件事是決定 graph 用哪種表示法。這裡用 adjacency list。",
+    "因為它的儲存方式跟 BFS 的動作（一個點一個點看鄰居）完全 match，可以做得很快；用 adjacency matrix 的話 complexity 會變高。",
+    "給一個起點 s，從它開始一層一層往外擴散，找鄰居、鄰居的鄰居……",
+    "這本課本的 BFS 會幫每個點 label 它在第幾層。這個資訊很重要，所以用 L[i] 記錄第 i 層有哪些成員。",
+    "為了讓 BFS 順利運作，每個點再維護一個變數 discovered，記錄是不是看過它了（F 是 false、T 是 true）。",
+    "從 1 開始：1 是 L0，同時它馬上就被看到了，所以 initialize 時 discovered[1] = true。",
+    "其他人一開始都還沒看到，設成 false。",
+    "準備從 L0 開始做：i 先設成 0，L[0] 只有起點 1 一個人。",
+    "另外維護一個 set T 存 tree edge，因為之後常會用到 BFS tree。",
+    "進入 while loop：只要現在這一層 L[i] 不是空的，就繼續做，直到走不下去。",
+    "先開出下一層 L[i+1]，一開始是空的。",
+    "然後把 L[i] 的每個點 u 拿出來看它的鄰居。現在 L[0] 只有 1，1 的鄰居是 2 和 3。",
+    "鄰居 2 目前還沒被看過，就 discover 它：discovered[2] = true。",
+    "因為是透過 (1, 2) 這條 edge 看到 2 的，所以把 (1, 2) 加進 tree edge 的集合 T。",
+    "也因為是從第 i 層 explore 到 2，2 就在下一層，放進 L[i+1]。3 也是一樣的處理。",
+    "符號說明：集合「+」一個新元素就是 union（聯集）；扣掉元素常用減號或反斜線 \\。",
+    "兩個 for loop 處理完，新的一層 L[i+1] 就完成了。",
+    "然後 i 變成 i + 1，進到下一層去處理，依此類推，直到再也走不下去。L[2] = {4, 5, 7, 8}，L[3] = {6}。"
+   ],
+   "points": [
+    {
+     "t": 4536,
+     "text": "實作 BFS：用 adjacency list（存法跟 BFS 的動作 match）。"
+    },
+    {
+     "t": 4601,
+     "text": "維護 L[i]（第 i 層）、每個點的 discovered、tree edge 的集合 T。"
+    },
+    {
+     "t": 4737,
+     "text": "while L[i] 不空：對 L[i] 每個 u 的每條 edge (u, v)，v 沒 discovered 就設 true、(u, v) 加進 T、v 加進 L[i+1]；然後 i + 1。"
+    }
+   ]
+  },
+  {
+   "title": "L[i] 用 queue 或 stack？running time",
+   "scene": "graphjiang1-bfsds",
+   "cues": [
+    4936.36,
+    4965.96,
+    4978.8,
+    4982.62,
+    5005.47,
+    5021.98,
+    5029.92,
+    5045.8,
+    5054.38,
+    5066.46,
+    5097.92,
+    5106.59,
+    5118.8,
+    5145.66,
+    5167.8
+   ],
+   "explain": [
+    "這個 procedure 裡，每一層都分別開一個 list：L0、L1、L2、L3 各是一個 set。",
+    "每一層的 list 要用什麼 data structure 實作？stack 還是 queue？",
+    "學過資料結構的人會說：BFS 要用 queue。",
+    "其實這裡兩個都可以，因為每一層是獨立分開存的。用 queue 的好處是先進去的先處理，順序一樣。",
+    "用 stack 也可以，只是同一層裡存進去、拿出來的順序會反過來（L2 變成 8、7、5、4），結果還是對的。",
+    "但有一種情況不行。",
+    "如果不分 L0、L1、L2，只想用一條 list 存全部的點，這時就一定要用 queue，才能保證一層一層處理。",
+    "所以不要被騙：不是永遠一定要用哪一種 data structure，要看 procedure 的需求。",
+    "接著看 running time（執行時間）。",
+    "重點在這裡：每個點都要去 check 它的鄰居們。",
+    "用 adjacency list，看鄰居的時間跟鄰居數成正比，所以總共可以壓在 O(n + m)。",
+    "用 adjacency matrix 就不行。",
+    "因為每個點要找鄰居時，會把整個 row 都抓出來看，不管是不是鄰居，所以一定是 n²。",
+    "用 adjacency list 的話，edge 很少（例如只有 n − 1 條）時接近 O(n)；edge 很多時才接近 O(n²)。",
+    "它有彈性：圖複雜才做得久，圖簡單就做得快。所以實作 BFS 比較偏好用 adjacency list。"
+   ],
+   "points": [
+    {
+     "t": 4919,
+     "text": "每層各開一個 list 時，用 queue 或 stack 都可以（只是層內順序不同）。"
+    },
+    {
+     "t": 5017,
+     "text": "只用一條 list 存全部時，才一定要用 queue。"
+    },
+    {
+     "t": 5054,
+     "text": "Running time：adjacency list O(n + m)；adjacency matrix 每點掃整行，O(n²)。"
+    }
+   ],
+   "trap": "「BFS 一定要用 queue」不完全對：課本這個版本每層獨立存，stack 也可以；只有把所有點放在同一條 list 時才必須用 queue。"
+  },
+  {
+   "title": "實作 DFS：recursive 或明著用 stack",
+   "scene": "graphjiang1-dfsimpl",
+   "cues": [
+    5185.25,
+    5197.04,
+    5216.8,
+    5224.82,
+    5253.76,
+    5265.8,
+    5286.42,
+    5295.36,
+    5309.6,
+    5322.8,
+    5328.8,
+    5340.81,
+    5353.16,
+    5391.01,
+    5394.8,
+    5410.75,
+    5426.68,
+    5434.74
+   ],
+   "explain": [
+    "接著實作 DFS。前面看到的 procedure 是 recursive call 的形式。",
+    "給一個起點往下看，走 edge、explore，再走 edge、explore，無路可走就 return，去試下一個 branch。",
+    "用 [[recursive]] 寫的話，幾行就結束了。",
+    "所有的 recursive code 都可以翻譯成 iterative 版本（用 while loop、for loop），只是行數多一點。下面就是 while loop 版本。",
+    "一樣用 adjacency list 表示 graph。這個版本要搭配什麼 data structure？",
+    "它有一個 set S，存「鄰居還沒有完全看完」的那些點。",
+    "S 用 stack 來實作。",
+    "一開始 stack 裡只有起點 s（這裡是 1）。只要 S 不是空的就重複：從 stack pop 出一個點 u。",
+    "如果 u 還沒被 explore，就 explore 它（標成紅色）。",
+    "然後看它有沒有往外的 edge，要再往下走。",
+    "因為是 while loop，往外的鄰居就 push 進 stack 裡。",
+    "注意這裡用的是 stack，不是 queue：剛放進去的 2 會先被拿出來處理，所以會繼續往下走。",
+    "後放進去的人先處理，所以有路就一直往深處走，stack 吐光了才會回頭，這樣就做到 DFS 的效果。1 已經 explore 過就跳過，接著走 3。",
+    "那上面的 recursive 版本呢？其實它也有一個 stack。",
+    "只是不用我們自己維護：它用的是系統的 call stack，隱含（implicit）在 recursive call 裡。",
+    "While loop 版本則必須明確（explicit）宣告一個 stack 來處理。",
+    "老師建議：拿到一個 procedure，第一件事就是找個例子，用紙筆直接跑跑看，跑成功才算真的懂。",
+    "Running time 也一樣：用 adjacency list 是 O(n + m)，用 adjacency matrix 是 O(n²)。"
+   ],
+   "points": [
+    {
+     "t": 5185,
+     "text": "DFS 是 recursive call，幾行就寫完；recursive 都能翻成 while loop 版本。"
+    },
+    {
+     "t": 5266,
+     "text": "While 版：S 用 stack；pop 出 u，沒 explore 就 explore，並把往外的鄰居 push 進 S；後進先出所以會一路往深處。"
+    },
+    {
+     "t": 5382,
+     "text": "Recursive 版用系統的 call stack（implicit），while 版要明確宣告 stack；running time：list O(n + m)、matrix O(n²)。"
+    }
+   ]
+  },
+  {
+   "title": "下次預告",
+   "scene": null,
+   "points": [
+    {
+     "t": 5446,
+     "text": "下次：summary，然後進入 BFS、DFS 的 application。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "找 s 的 component 的 procedure，每一輪要找哪一種 edge (u, v)？",
+   "opts": [
+    "u 在 R 裡、v 不在 R 裡",
+    "u、v 都在 R 裡",
+    "u、v 都不在 R 裡",
+    "任意一條還沒走過的 edge"
+   ],
+   "ans": "u 在 R 裡、v 不在 R 裡",
+   "why": "這樣 s→u 的 path 加上 (u, v) 就是 s→v 的 path，把 v 加進 R 是安全的。"
+  },
+  {
+   "q": "從 1 開始、編號小的鄰居先走，這張圖（1–2、1–3、2–3、2–4、2–5、3–5、3–7、3–8、4–5、5–6、7–8）的 DFS 順序是？",
+   "opts": [
+    "1 2 3 5 4 6 7 8",
+    "1 2 3 4 5 6 7 8",
+    "1 2 4 5 3 7 8 6",
+    "1 3 8 7 5 6 4 2"
+   ],
+   "ans": "1 2 3 5 4 6 7 8",
+   "why": "1→2→3→5→4（死路回 5）→6（回 3）→7→8。"
+  },
+  {
+   "q": "在 undirected graph 上做 DFS，每條（reach 得到的）edge 會被 check 幾次？",
+   "opts": [
+    "2 次",
+    "1 次",
+    "依 degree 而定",
+    "只有 tree edge 會被 check"
+   ],
+   "ans": "2 次",
+   "why": "兩個端點各在自己的 for each 裡看一次。"
+  },
+  {
+   "q": "DFS tree 中，一條 non-tree edge (x, y) 的兩端是什麼關係？",
+   "opts": [
+    "一個是另一個的 ancestor",
+    "一定在同一層",
+    "一定是兄弟姐妹",
+    "一定相差一層"
+   ],
+   "ans": "一個是另一個的 ancestor",
+   "why": "若 x 先被 explore，y 一定在 DFS(x) 執行期間被 explore，所以在 x 的子樹裡。"
+  },
+  {
+   "q": "用 adjacency list 表示 undirected graph（n 個點、m 條邊），需要多少空間？",
+   "opts": [
+    "O(n + m)",
+    "O(n²)",
+    "O(m²)",
+    "O(n · m)"
+   ],
+   "ans": "O(n + m)",
+   "why": "vertex array n 格，每條 edge 存兩次共 2m 格。"
+  },
+  {
+   "q": "Adjacency matrix 下，查兩點之間有沒有 edge 要多少時間？",
+   "opts": [
+    "O(1)",
+    "O(n)",
+    "O(n²)",
+    "O(m)"
+   ],
+   "ans": "O(1)",
+   "why": "直接看第 u row、第 v column 那一格。"
+  },
+  {
+   "q": "依影片，課本的 BFS 實作（每層各存一個 L[i]）中，L[i] 可以用什麼實作？",
+   "opts": [
+    "queue 或 stack 都可以",
+    "只能用 queue",
+    "只能用 stack",
+    "只能用 adjacency matrix"
+   ],
+   "ans": "queue 或 stack 都可以",
+   "why": "每層獨立存，順序不影響正確性；只用一條 list 時才必須用 queue。"
+  },
+  {
+   "q": "DFS 的 while loop 版本用什麼 data structure 存待處理的點？",
+   "opts": [
+    "stack",
+    "queue",
+    "priority queue",
+    "hash table"
+   ],
+   "ans": "stack",
+   "why": "後放進去的先處理，才會一路往深處走；recursive 版則是用系統的 call stack。"
+  }
+ ]
+}
