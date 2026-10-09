@@ -2630,12 +2630,25 @@ FRAG.push(['grjiang1-interval-graph', 'Interval graph：partitioning = coloring'
 
   // ═══ grjiang2.js ═══
   {
-const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, showL, code, anim, line, arrow, ghostBox, GOLD, GREEN, RED } = K;
-// ─── 交大江蕙如 Lec12（yWZHGsd06dA）：證明策略、Dijkstra（小例子、loop invariant 證明、CLRS 例子）
-// ─── 交大江蕙如 Lec13（trkaH2uLxHw）：Dijkstra 實作、priority queue、heap（insert／pop／heapify／build／heapsort）、MST 定義
-const J2 = { node: '#cbbd9f', edge: '#a8987c', hot: '#e8b02a', tree: '#2f7fd0', exp: '#2fc092', dim: '#e4dccb', bad: '#d64545', blue: '#4b9ee2', gray: '#cfc6b4', ok: '#2fc092' };
+const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, showL, code, anim, line, arrow, ghostBox, GOLD, GREEN, RED, step, buddy, prop, bob, travel, remove } = K;
+// ─── 交大江蕙如 Lec12（yWZHGsd06dA）：證明策略、Dijkstra（procedure、小例子、loop invariant 證明、CLRS 例子）
+// ─── 交大江蕙如 Lec13（trkaH2uLxHw）：Dijkstra 實作、priority queue、Heap（insert／pop／heapify／build／heapsort）、MST 定義
+// Cued scenes: every `await step(tok)` waits for the sentence it shows (cues in the notes; the number in each
+// step comment is the transcript time where the lecturer starts saying it). Motion between steps is short;
+// nothing loops or replays. Each section has its own scene (the Lec12 / Lec13 retellings are separate scenes).
+const J2 = { node: '#cbbd9f', edge: '#a8987c', hot: '#e8b02a', tree: '#2f7fd0', exp: '#2fc092', dim: '#e4dccb', bad: '#d64545', blue: '#4b9ee2', gray: '#cfc6b4', ok: '#2fc092', ice: '#bfe3f5', pink: '#e55a9b' };
 const j2Cls = (l, c) => { l.element.className = 'lab-label' + (c ? ' ' + c : ''); };
 const j2F = (d) => (d === Infinity ? '∞' : String(d));
+const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const pkt = (t, x, y, z = 0) => tag(t, 'pkt', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+// a little character that walks (x, y) in ms
+async function walk(tok, b, x, y, ms = 700) {
+  const a = b.g.position.clone();
+  await anim(tok, ms, (u) => b.g.position.set(a.x + (x - a.x) * u, a.y + (y - a.y) * u, a.z));
+}
 // a graph in the x-y plane: P = {k: [x, y]}, E = [[u, v, w, off]]; directed arrows unless o.undirected
 function j2Graph(P, E, o = {}) {
   const N = {}, D = {}, ES = [];
@@ -2665,696 +2678,1796 @@ const J2S_E = [['s', 'u', 1], ['s', 'v', 2], ['s', 'x', 4], ['u', 'x', 1], ['u',
 const J2C_P = { s: [-5.2, 2.8], t: [-1.4, 5.4], x: [3.6, 5.4], y: [-1.4, 0.4], z: [3.6, 0.4] };
 const J2C_E = [['s', 't', 10], ['s', 'y', 5], ['t', 'x', 1], ['t', 'y', 2, -0.22], ['y', 't', 3, -0.22], ['y', 'x', 9], ['y', 'z', 2], ['x', 'z', 4, -0.22], ['z', 'x', 6, -0.22], ['z', 's', 7]];
 
-// ── complete-binary-tree heap view: tree on top, array row at the bottom
+// ── complete-binary-tree Heap view: tree on top, array row at the bottom
 const HX = (i) => { const d = Math.floor(Math.log2(i)), c = 1 << d; return -5.6 + (i - c + 0.5) * 11.2 / c; };
 const HY = (i) => 6.0 - Math.floor(Math.log2(i)) * 1.35;
 const AX = (i) => -5.9 + i * 1.12;
 function j2Heap(vals, o = {}) {
-  const H = { A: [null, ...vals], T: [null], R: [null], n: o.n === undefined ? vals.length : o.n, lines: [], idx: [] };
+  const H = { A: [null, ...vals], T: [null], R: [null], n: o.n === undefined ? vals.length : o.n, lines: [], idx: [], swaps: 0 };
   const cap = o.cap || vals.length;
-  if (o.zero) { cube('', J2.gray, [0.9, 0.55, 0.55], AX(0), 0.4, 0); H.idx.push(tag('0', 'idx', AX(0), -0.3)); }
+  if (o.zero) { H.z0 = cube('', J2.gray, [0.9, 0.55, 0.55], AX(0), 0.4, 0); H.idx.push(tag('0', 'idx', AX(0), -0.3)); }
   for (let i = 1; i <= cap; i++) {
     if (o.cells !== false) H.idx.push(tag(String(i), 'idx', AX(i), -0.3));
     if (i > vals.length) { cube('', '#ece4d2', [0.9, 0.55, 0.55], AX(i), 0.4, -0.2); continue; }
     const c = i <= H.n ? J2.blue : J2.gray;
-    H.R[i] = cube(vals[i - 1], c, [0.9, 0.55, 0.55], AX(i), 0.4, 0, o.drop || 0);
+    H.R[i] = o.noRow ? null : cube(vals[i - 1], c, [0.9, 0.55, 0.55], AX(i), 0.4, 0, o.drop || 0);
     H.T[i] = i <= H.n || o.keepTree ? cube(vals[i - 1], c, [0.8, 0.7, 0.6], HX(i), HY(i), 0, o.drop || 0) : null;
   }
   H.edges = () => { H.lines.forEach(kill); H.lines = []; for (let i = 2; i <= H.n; i++) H.lines.push(line(HX(i >> 1), HY(i >> 1) - 0.35, HX(i), HY(i) + 0.35, -0.1)); };
   H.edges();
   H.place = (i) => { if (H.T[i]) move(H.T[i], HX(i), HY(i), 0); if (H.R[i]) move(H.R[i], AX(i), 0.4, 0); };
-  H.swap = (i, j) => { [H.A[i], H.A[j]] = [H.A[j], H.A[i]]; [H.T[i], H.T[j]] = [H.T[j], H.T[i]]; [H.R[i], H.R[j]] = [H.R[j], H.R[i]]; H.place(i); H.place(j); };
+  H.swap = (i, j) => { [H.A[i], H.A[j]] = [H.A[j], H.A[i]]; [H.T[i], H.T[j]] = [H.T[j], H.T[i]]; [H.R[i], H.R[j]] = [H.R[j], H.R[i]]; H.place(i); H.place(j); H.swaps++; };
   H.hi = (i, c) => { if (H.T[i]) glow(H.T[i], c); if (H.R[i]) glow(H.R[i], c); };
   H.tint = (i, c) => { if (H.T[i]) tint(H.T[i], c); if (H.R[i]) tint(H.R[i], c); };
   H.unhi = () => { for (let i = 1; i < H.A.length; i++) H.hi(i, null); };
-  // sift down from i inside heap size n; each swap plays with a caption
-  H.sift = async (tok, i, ms, quiet) => {
-    for (;;) {
-      const l = 2 * i, r = l + 1; let m = i;
-      if (l <= H.n && H.A[l] > H.A[m]) m = l;
-      if (r <= H.n && H.A[r] > H.A[m]) m = r;
-      H.unhi(); H.hi(i, GOLD); if (l <= H.n) H.hi(l, RED); if (r <= H.n) H.hi(r, RED);
-      const kids = [l, r].filter((k) => k <= H.n).map((k) => H.A[k]);
-      if (m === i) { if (!quiet) say(kids.length ? H.A[i] + ' ≥ 小孩 ' + kids.join('、') : H.A[i] + ' 已是 leaf', '停下來'); await beat(tok, ms); H.unhi(); return; }
-      if (!quiet) say(H.A[i] + ' 比小孩小：和較大的 ' + H.A[m] + ' 交換', 'index ' + i + ' ↔ ' + m);
-      await beat(tok, ms * 0.5);
-      H.swap(i, m); H.hi(m, GOLD);
-      await beat(tok, ms * 0.5);
-      i = m;
-    }
-  };
+  H.big = (i) => { const l = 2 * i, r = l + 1; let m = i; if (l <= H.n && H.A[l] > H.A[m]) m = l; if (r <= H.n && H.A[r] > H.A[m]) m = r; return m; };
+  // one sift-down swap at i (returns the new index, or 0 when i is already fine)
+  H.down = (i) => { const m = H.big(i); if (m === i) return 0; H.swap(i, m); return m; };
+  // quiet sift-down from i with short motion beats
+  H.sink = async (tok, i, ms = 350) => { for (let m = H.down(i); m; m = H.down(m)) await beat(tok, ms); };
   return H;
 }
 
-// ═════════════ Lec12 ═════════════
+// ═════════════ Lec12（yWZHGsd06dA） ═════════════
 
-// 00:17 回顧：證明 greedy 最佳的兩招
+// 00:47 回顧：證明 greedy 最佳的兩招
 FRAG.push(['grjiang2-proof-strategies', '證明 greedy 最佳的兩招：stays ahead 與 exchange argument', async (tok) => {
   fresh([0, 3.6, 14], [0, 3.2, 0]);
-  say('Greedy：每步依 criterion 選當下最好', '要證明它能到 optimal');
-  await beat(tok, 2600);
-  say('第一招：greedy stays ahead', '每一步都不落後於其他解');
-  tag('greedy', 'ptr alt', -6.1, 6.2); tag('其他解', 'ptr', -6.1, 4.9);
-  const g = [1, 2, 3, 4, 5], q = [1, 1, 2, 3, 4];
+  const g = buddy('greedy', '', '#7cd1a8', -5.6, 0, 1.4, 0.75);
+  const ch = [3, 7, 5].map((v, k) => cube(v, J2.node, [0.8, 0.7, 0.6], -3.4 + k * 1.2, 0.35, 0.6));
+  await step(tok);                                   // 47 每一步選當下看到最好的解
+  glow(ch[1], GOLD); g.look(0.7); g.mood('happy');
+  say('Greedy：每一步選當下看起來最好的', '');
+  await step(tok);                                   // 53 要靠設計好的 criterion
+  const cr = note('criterion：怎樣才叫「最好」？', -2.2, 1.7, 0.6);
+  say('「最好」靠一把設計好的尺：criterion', 'criterion 需要特別設計');
+  await step(tok);                                   // 70 能證明 property → optimal
+  fly(ch[0]); fly(ch[2]); txt(cr, 'criterion 設計對了 → optimal');
+  await g.hop(tok);
+  say('若能證明 criterion 的 property', 'greedy 就能到達 optimal solution');
+  await step(tok);                                   // 88 第一招 stays ahead
+  kill(ch[1]); remove(cr);
+  tag('第一招：greedy stays ahead', 'ptr alt', -3.6, 6.9);
+  tag('greedy', 'ptr', -6.2, 5.6); tag('其他解', 'ptr', -6.2, 3.9);
+  const gv = [1, 2, 3, 4, 5], qv = [1, 1, 2, 3, 4], gb = [], qb = [];
   for (let k = 0; k < 5; k++) {
-    const x = -4.4 + k * 1.1;
-    cube('', J2.exp, [0.8, g[k] * 0.32, 0.6], x, 5.6 + g[k] * 0.16, 0, 1);
-    cube('', J2.blue, [0.8, q[k] * 0.32, 0.6], x, 4.3 + q[k] * 0.16 - 0.9, 0.6, 1);
-    await beat(tok, 500);
+    const x = -4.8 + k * 0.95;
+    gb.push(cube('', J2.exp, [0.7, 0.01, 0.5], x, 4.9, 0)); qb.push(cube('', J2.blue, [0.7, 0.01, 0.5], x, 3.2, 0));
   }
-  say('一路領先，最後也不輸', '第 k 步 greedy ≥ 其他解（示意）');
-  await beat(tok, 2600);
-  say('第二招：exchange argument', '先假設有人給了一個 optimal solution');
-  const opt = [];
-  const ok = [true, false, true, false, true];
-  for (let k = 0; k < 5; k++) opt.push(cube('O' + (k + 1), ok[k] ? J2.blue : J2.bad, [1.2, 0.7, 0.7], 0.6 + k * 1.35, 1.6, 0, 2));
-  tag('optimal（別的方法找到）', 'ptr', 3.3, 2.6);
-  await beat(tok, 2800);
-  say('紅色：不符合 greedy rule 的部分', '挑出來、砍掉');
-  for (const k of [1, 3]) glow(opt[k], GOLD);
-  await beat(tok, 2200);
-  for (const k of [1, 3]) {
-    fly(opt[k]);
-    await beat(tok, 700);
-    opt[k] = cube('G' + (k + 1), J2.exp, [1.2, 0.7, 0.7], 0.6 + k * 1.35, 1.6, 0, 2.5);
-    say('換成 greedy 選的，貼回去', '1. 仍然 feasible　2. 品質不變差');
-    await beat(tok, 2200);
-  }
-  say('一路換完 = greedy 的解', '品質沒損失 → greedy 也是 optimal');
-  for (const m of opt) glow(m, GREEN);
-  await beat(tok, 3200);
+  say('第一招：greedy stays ahead', '證明每一步都不落後於其他解');
+  await step(tok);                                   // 104 每一步都超越，一路領先
+  await anim(tok, 2000, (u) => {
+    for (let k = 0; k < 5; k++) {
+      const s = Math.max(0, Math.min(1, u * 5 - k));
+      gb[k].scale.y = 1 + s * gv[k] * 32; gb[k].position.y = 4.9 + gb[k].scale.y * 0.005;
+      qb[k].scale.y = 1 + s * qv[k] * 32; qb[k].position.y = 3.2 + qb[k].scale.y * 0.005;
+    }
+  });
+  g.mood('happy');
+  say('每一步都領先，最後也不會輸', '（柱高為示意）');
+  await step(tok);                                   // 111 第二招 exchange argument
+  tag('第二招：exchange argument', 'ptr alt', 3.4, 6.9);
+  const smart = buddy('高手', '', '#9fb8ff', 6.2, 0, 1.4, 0.7);
+  say('第二招：exchange argument（交換法）', '證明 greedy 時最常用');
+  await step(tok);                                   // 133 有人先得到 optimal solution
+  const ok = [true, false, true, false, true], opt = [];
+  for (let k = 0; k < 5; k++) opt.push(cube('O' + (k + 1), J2.blue, [1.0, 0.7, 0.7], 0.9 + k * 1.15, 4.6, 0, 2));
+  note('高手用別的方法找到的 optimal', 3.2, 5.6);
+  smart.mood('happy'); smart.look(-0.6);
+  say('先假設有個高手找到 optimal solution', '但他用的是別的方法');
+  await step(tok);                                   // 145 勢必有部分不符合 greedy rule
+  for (let k = 0; k < 5; k++) if (!ok[k]) { tint(opt[k], J2.bad); glow(opt[k], RED); }
+  say('它裡面一定有部分不符合 greedy rule', '紅色 = 不是 greedy 會選的');
+  await step(tok);                                   // 164 挑出來砍掉
+  for (const k of [1, 3]) fly(opt[k]);
+  smart.mood('wow');
+  say('把不符合的部分挑出來、砍掉', '');
+  await step(tok);                                   // 171.6 換成 greedy 選的貼回去
+  for (const k of [1, 3]) opt[k] = cube('G' + (k + 1), J2.exp, [1.0, 0.7, 0.7], 0.9 + k * 1.15, 4.6, 0, 2.2);
+  g.mood('happy');
+  say('換成 greedy 選的，貼回去', '砍掉 + 貼回 = 一次交換');
+  await step(tok);                                   // 189 要件一：仍然 feasible
+  good('① 仍是 feasible（合理的解）', 3.4, 3.1);
+  say('每次交換要證：解仍然 feasible', '第一要件');
+  await step(tok);                                   // 196 要件二：quality 不變差
+  good('② solution quality 不變差', 3.4, 2.3);
+  say('第二要件：品質不會變差', '');
+  await step(tok);                                   // 219 原本是最佳解，改了又沒損失
+  for (const m of opt) glow(m, GOLD);
+  say('原本就是最佳解，交換又沒損失品質', '所以交換後還是最佳解');
+  await step(tok);                                   // 224 改成 greedy 的解也是 optimal
+  for (const m of opt) { tint(m, J2.exp); glow(m, GREEN); }
+  smart.mood('happy'); await g.hop(tok);
+  say('一路換完 = greedy 的解，也是 optimal', '證明完成');
 }]);
 
-// 11:00 single-source shortest path 問題
+// 11:11 single-source shortest path 問題
 FRAG.push(['grjiang2-sssp-def', 'Single-source shortest path：輸入、目標、路徑長度', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.0, 0]);
-  say('輸入：directed graph G', 'edge 有方向；undirected 就看成兩個方向');
-  const G = j2Graph(J2S_P, J2S_E, { drop: 2 });
-  await beat(tok, 2800);
-  say('edge 上的 weight ℓ(e)：距離', '也可以是時間、機票錢等 cost');
-  for (const e of G.E) j2Cls(e.lb, 'ptr');
-  await beat(tok, 2800);
+  let G = null;
+  await step(tok);                                   // 671 input：directed graph
+  G = j2Graph(J2S_P, J2S_E, { drop: 2 });
+  for (const e of G.E) showL(e.lb, false);
+  say('Input：一個 directed graph', 'edge 有方向（箭頭）');
+  await step(tok);                                   // 686 undirected = 兩個方向
+  const two = note('undirected 的一條線 = 兩個方向的箭頭', 0, -0.9);
+  say('undirected graph 怎麼辦？', '一條 edge 想成兩個方向各一條');
+  await step(tok);                                   // 716 edge 有 weight
+  remove(two);
+  for (const e of G.E) { showL(e.lb, true); j2Cls(e.lb, 'ptr'); }
+  say('這次 edge 上有 weight（比重）', '在 shortest path 裡代表距離');
+  await step(tok);                                   // 739 點 = 地點、edge = 一段路
   for (const e of G.E) j2Cls(e.lb, 'idx');
+  for (const k of Object.keys(G.N)) { const h = prop('warehouse', G.P[k][0] + 0.75, G.P[k][1] - 0.4, -0.9, 0.35); bob(h, 0.03); }
+  say('點 = 地點或 building，edge = 一小段路', '數字 = 兩地之間的距離');
+  await step(tok);                                   // 763 也可以是時間、機票錢
+  const alt = bub('也可以是：開車時間、機票錢…', 0, 7.2);
+  say('weight 也可以換成時間或 cost', '例如兩個城市間的機票錢');
+  await step(tok);                                   // 799 給定起點 source s
+  remove(alt);
   glow(G.N.s, GOLD); txt(G.D.s, 'source s');
-  say('再給起點 source s', 'single-source shortest path（SSSP）');
-  await beat(tok, 2600);
-  for (const [u, v] of [['s', 'u'], ['u', 'x'], ['x', 'y']]) { G.e(u, v).set(J2.hot); await beat(tok, 500); }
-  say('路徑長度 = 經過的 edge 長度總和', 's→u→x→y：1 + 1 + 1 = 3');
-  await beat(tok, 3000);
+  const me = buddy('', '', '#f4a56a', -5.2, 1.6, 0.9, 0.55);
+  say('再給定一個起點 source s', 'single-source shortest path（SSSP）');
+  await step(tok);                                   // 816 目標：到剩下所有點的最短距離
+  for (const k of ['u', 'v', 'x', 'y', 'z']) { glow(G.N[k], GOLD); txt(G.D[k], '最短？'); await beat(tok, 250); }
+  me.look(1);
+  say('目標：s 到「剩下所有點」的最短距離', '');
+  await step(tok);                                   // 839 path 長度 = edge 總和
+  for (const k of ['u', 'v', 'x', 'y', 'z']) { glow(G.N[k], null); txt(G.D[k], ''); }
+  const path = [['s', 'u'], ['u', 'x'], ['x', 'y']];
+  for (const [a, b] of path) G.e(a, b).set(J2.hot);
+  for (const [, b] of path) await walk(tok, me, G.P[b][0], G.P[b][1] - 1.4, 550);
+  txt(G.D.y, '1 + 1 + 1 = 3');
+  say('路徑長度 = 經過的 edge 長度加起來', 's→u→x→y：1 + 1 + 1 = 3');
+  await step(tok);                                   // 864 只給起點、不限終點
   for (const e of G.E) e.set(J2.edge);
-  say('目標：s 到「所有其他點」的最短距離', '不給終點：一次全部算出來');
-  for (const k of ['u', 'v', 'x', 'y', 'z']) { glow(G.N[k], GOLD); txt(G.D[k], '最短？'); await beat(tok, 350); }
-  await beat(tok, 2600);
+  txt(G.D.y, '');
+  await walk(tok, me, -5.2, 1.6, 700);
+  const q = bub('終點呢？', -4.0, 1.8, 1.2);
+  me.mood('wow');
+  say('奇怪：只給起點，沒給終點', '平常用地圖都是有起點有終點');
+  await step(tok);                                   // 896 Dijkstra 一次算出到所有點
+  remove(q); me.mood('happy');
+  for (const k of ['u', 'v', 'x', 'y', 'z']) glow(G.N[k], GREEN);
+  say('因為 Dijkstra 能一次算出到所有點', '所以問題乾脆不給終點');
 }]);
 
-// 15:48 Dijkstra 的 procedure：集合 S 與 d 值
+// 15:52 Dijkstra 的 procedure：集合 S 與 d 值
 FRAG.push(['grjiang2-dijkstra-procedure', 'Dijkstra 的 procedure：S 集合、d 值、每輪選最近的新點', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.2, 0]);
-  const cd = code(['Dijkstra(G, ℓ)', '1 S = {s}; d(s) = 0', '2 while S ≠ V', "3   選 v ∉ S 使 d'(v) 最小", "4   d'(v) = min (d(u) + ℓ(u,v)), u∈S", '5   S = S ∪ {v}; d(v) = d\'(v)'], -3.4, 6.6, 0.56);
-  say('Dijkstra：greedy algorithm', '1959；要維護兩樣東西：集合 S 與 d 值');
-  await beat(tok, 3000);
-  const S = ghostBox('#e55a9b', 3.4, 2.2, 0.6); S.position.set(-3.6, 1.4, 0);
-  tag('S：已算好最短距離', 'ptr', -3.6, 2.85);
-  const s = cube('s', J2.exp, [0.7, 0.7, 0.7], -4.6, 1.4, 0, 1.5);
-  const ds = tag('d=?', 'ptr alt', -4.6, 0.4);
-  cd.hl(1);
-  say('一開始只知道 s 到 s 是 0', 'S = {s}，d(s) = 0');
-  txt(ds, 'd=0');
-  await beat(tok, 2800);
-  const u = cube('u', J2.exp, [0.7, 0.7, 0.7], -2.6, 1.4, 0, 1.5); tag('d=1', 'ptr alt', -2.6, 0.4);
-  await beat(tok, 600);
-  const cands = [['a', 3.0, 3.0, 'd(u)+ℓ = 1+4 = 5'], ['b', 3.0, 1.4, 'd(s)+ℓ = 0+2 = 2'], ['c', 3.0, -0.2, 'd(u)+ℓ = 1+3 = 4']];
-  const cm = [], ar = [];
-  cd.hl(3);
-  say('每輪：從 S 往外看一條 edge', '能 reach 到的新點，算 d(u) + ℓ(e)');
-  for (const [k, x, y, f] of cands) {
-    cm.push(cube(k, J2.node, [0.7, 0.7, 0.7], x, y, 0, 1.2));
-    ar.push(arrow(V3(k === 'b' ? -4.2 : -2.2, 1.4, 0), V3(x - 0.45, y, 0), J2.hot));
-    tag(f, 'idx', x + 2.0, y);
-    await beat(tok, 900);
-  }
-  await beat(tok, 1600);
-  cd.hl(4);
-  say('第 4 行：這個和取最小 = d\'(v)', '括號：d(u) + ℓ(e) 是一整項');
-  glow(cm[1], GOLD);
-  await beat(tok, 2600);
-  cd.hl(5);
-  ar.forEach(kill);
-  tint(cm[1], J2.exp); move(cm[1], -0.6, 1.4, 0); glow(cm[1], null);
-  S.scale.x = 1.6; S.position.x = -2.5;
-  say('最近的 b 放進 S，d(b) = 2 定案', '放進 S 後不再改變');
-  await beat(tok, 2800);
+  const dj = buddy('Dijkstra', '', '#f4a56a', 5.8, 3.6, 0.6, 0.7);
+  let cd = null, S = null, Sl = null;
+  await step(tok);                                   // 953 基本精神是 greedy
+  dj.mood('happy');
+  say('Dijkstra\'s algorithm：本質是 greedy', '做起來非常簡單');
+  await step(tok);                                   // 966 input：directed graph 與長度 ℓ
+  cd = code(['Dijkstra(G, ℓ)', '1 S = {s}; d(s) = 0', '2 while S ≠ V', "3   選 v ∉ S 使 d'(v) 最小", "4   d'(v) = min (d(u) + ℓ(u,v)), u∈S", "5   S = S ∪ {v}; d(v) = d'(v)"], -3.4, 6.8, 0.52);
+  cd.hl(0);
+  say('Input：directed graph G 與長度 ℓ', 'ℓ(e) = 每條 edge 的長度');
+  await step(tok);                                   // 980 要 maintain：S 集合
+  S = ghostBox(J2.pink, 2.2, 2.0, 0.6); S.position.set(-4.4, 1.2, 0);
+  Sl = tag('S', 'ptr', -4.4, 2.5);
+  say('要 maintain 兩樣東西：第一，集合 S', '');
+  await step(tok);                                   // 987 S = 已算好最短距離的點
+  txt(Sl, 'S：已算好最短距離的點');
+  say('S 裡放：已算好「從 s 出發最短距離」的點', '');
+  await step(tok);                                   // 1005 所有點都進 S → 結束
   cd.hl(2);
-  say('重複到所有點都在 S（或走不下去）', 'greedy：由近到遠');
-  await beat(tok, 2800);
+  const end = note('所有點都進 S → 結束', 3.0, 2.6);
+  say('最後所有點都放進 S，algorithm 就結束', '');
+  await step(tok);                                   // 1019 每個點有 d 值
+  remove(end);
+  const dd = tag('每個點都有一個 d 值', 'ptr alt', 3.0, 2.6);
+  say('第二：每個點 maintain 一個 d 值', 'd = 從 source 到它的最短距離');
+  await step(tok);                                   // 1067 s 到 s 是 0
+  const s = cube('s', J2.exp, [0.7, 0.7, 0.7], -4.8, 1.2, 0, 1.5);
+  const ds = tag('d=0', 'ptr alt', -4.8, 0.3);
+  remove(dd);
+  say('一開始就知道：s 到 s 是 0 距離', '站在起點，自己到自己');
+  await step(tok);                                   // 1082 先把 s 放進 S、d(s) = 0
+  cd.hl(1); glow(s, GREEN);
+  say('所以一開始 S = {s}，d(s) = 0', '第 1 行');
+  await step(tok);                                   // 1109 每輪從 S 往外找最近的新點
+  const u = cube('u', J2.exp, [0.7, 0.7, 0.7], -3.8, 1.2, 0, 1.5); tag('d=1', 'ptr alt', -3.8, 0.3);
+  const cands = [['a', 1.4, 3.4, 'd(u)+ℓ = 1+4 = 5', -3.4], ['b', 1.4, 1.2, 'd(s)+ℓ = 0+2 = 2', -4.4], ['c', 1.4, -1.0, 'd(u)+ℓ = 1+3 = 4', -3.4]];
+  const cm = [], ar = [], fm = [];
+  for (const [k, x, y, , fx] of cands) {
+    cm.push(cube(k, J2.node, [0.7, 0.7, 0.7], x, y, 0, 1.2));
+    ar.push(arrow(V3(fx, 1.2, 0), V3(x - 0.45, y, 0), J2.hot));
+  }
+  note('（假設 u 已在 S，d(u) = 1）', -4.2, -0.6);
+  say('每個 iteration：從 S 往外看', '找能 reach 到、最近的新點');
+  await step(tok);                                   // 1130 找到最近的，走過去放進 S
+  const qs = cands.map(([, x, y]) => bub('多遠？', x + 1.1, y + 0.3));
+  dj.look(-1);
+  say('找到最近的那個新點，就走過去', '放進 S，它的 d 就確定了');
+  await step(tok);                                   // 1157 第 3、4 行最複雜
+  cd.hl(3);
+  say('最複雜的是第 3、4 行', '其實是同一句話，拆開來看');
+  await step(tok);                                   // 1197 加一個括號：是一整項
+  cd.hl(4);
+  const par = note('(d(u) + ℓ(u,v)) 加括號：是一整項', 2.2, 4.4);
+  say('第 4 行請加括號：d(u) + ℓ(u,v) 是一項', '對這一項取 min');
+  await step(tok);                                   // 1205 S 的點 d 已知 + 一條 edge
+  qs.forEach(remove); remove(par);
+  cands.forEach(([, x, y, f]) => fm.push(tag(f, 'idx', x + 2.3, y)));
+  say('S 裡點的 d 已確定，再加一條 edge 長度', '加起來最小的那個');
+  await step(tok);                                   // 1238.5 選出來的叫 v
+  glow(cm[1], GOLD); relabel(cm[1], 'v');
+  say('最小的是 2：把它選出來，叫它 v', '');
+  await step(tok);                                   // 1253 v 放進 S，d(v) 定案
+  cd.hl(5);
+  ar.forEach(kill); fm.forEach(remove);
+  tint(cm[1], J2.exp); glow(cm[1], null); move(cm[1], -2.8, 1.2, 0);
+  tag('d=2', 'ptr alt', -2.8, 0.3);
+  await anim(tok, 700, (t) => { S.scale.x = 1 + t * 0.5; S.position.x = -4.4 + t * 0.55; });
+  say('v 放進 S，d(v) = 剛算出的 2', '放進 S 後不再改變');
+  await step(tok);                                   // 1267 重複到全部算完或走不下去
+  cd.hl(2); dj.mood('happy'); await dj.hop(tok);
+  say('一直重複，到所有點都進 S', '或 s 再也走不下去就停');
+  void ds;
 }]);
 
 // 21:29 小例子 step by step
 FRAG.push(['grjiang2-dijkstra-small', 'Dijkstra 小例子：s→u→v→x→y→z 由近到遠', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.0, 0]);
   const G = j2Graph(J2S_P, J2S_E);
-  const Sl = tag('S = { }', 'ptr alt', -3.6, -0.6);
-  const setS = (a) => txt(Sl, 'S = { ' + a.join(', ') + ' }');
-  say('directed graph，source = s', 'edge 長度都已給定');
-  await beat(tok, 2400);
-  j2Explore(G, 's'); txt(G.D.s, 'd=0'); setS(['s']);
-  say('s 到 s 是 0 距離', 'S = {s}，d(s) = 0');
-  await beat(tok, 2400);
-  const look = async (list) => { for (const [k, from, val] of list) { G.e(from, k).set(J2.hot); txt(G.D[k], "d'=" + val); glow(G.N[k], GOLD); } };
-  await look([['u', 's', 1], ['v', 's', 2], ['x', 's', 4]]);
-  say('從 s 往外看：u、v、x', "0+1 = 1、0+2 = 2、0+4 = 4");
-  await beat(tok, 3000);
-  const pick = async (k, d, from, S, f) => {
-    for (const e of G.E) if (e.obj && !G.tree?.includes(e)) e.set(J2.edge);
+  const Sl = tag('S = { }', 'ptr alt', -3.6, -0.7);
+  const inS = [];
+  const setS = () => txt(Sl, 'S = { ' + inS.join(', ') + ' }');
+  const me = buddy('', '', '#f4a56a', -5.2, 1.6, 0.9, 0.5);
+  const at = (k) => walk(tok, me, G.P[k][0], G.P[k][1] - 1.4, 650);
+  const dP = (k, v) => { txt(G.D[k], "d'=" + v); glow(G.N[k], GOLD); };
+  const put = async (k, d, from) => {
     for (const kk of Object.keys(G.N)) glow(G.N[kk], null);
-    (G.tree ||= []).push(G.e(from, k));
-    for (const e of G.tree) e.set(J2.tree);
-    j2Explore(G, k); txt(G.D[k], 'd=' + d); setS(S);
-    say('最小的是 ' + k + '：走過去，放進 S', f);
-    await beat(tok, 2600);
+    for (const e of G.E) if (!e.tree) e.set(J2.edge);
+    const e = G.e(from, k); e.tree = true; e.set(J2.tree);
+    j2Explore(G, k); txt(G.D[k], 'd=' + d); inS.push(k); setS();
+    await at(k);
   };
-  await pick('u', 1, 's', ['s', 'u'], '1 < 2 < 4 → d(u) = 1 定案');
-  await pick('v', 2, 's', ['s', 'u', 'v'], '再長到 v：d(v) = 2');
-  await look([['x', 'u', 2], ['y', 'u', 4], ['z', 'v', 5]]);
-  say('粉紅區 = {s, u, v}：往外看', "x：1+1 = 2　y：1+3 = 4　z：2+3 = 5");
-  await beat(tok, 3400);
-  await pick('x', 2, 'u', ['s', 'u', 'v', 'x'], '2、4、5 最小 → d(x) = 2，不再改變');
-  await look([['y', 'x', 3], ['z', 'x', 4]]);
-  say('經過 x 可以更近', "y：2+1 = 3 < 4　z：2+2 = 4 < 5");
-  await beat(tok, 3000);
-  await pick('y', 3, 'x', ['s', 'u', 'v', 'x', 'y'], '3 < 4 → 放 y');
-  await pick('z', 4, 'x', ['s', 'u', 'v', 'x', 'y', 'z'], '最後放 z，procedure 結束');
-  await beat(tok, 2200);
+  await step(tok);                                   // 1294 directed graph、source、距離已給
+  glow(G.N.s, GOLD);
+  say('Directed graph，source 是 s', '每條 edge 的距離都已給定');
+  await step(tok);                                   // 1310 d(s) = 0
+  glow(G.N.s, null); j2Explore(G, 's'); txt(G.D.s, 'd=0'); inS.push('s'); setS();
+  say('s 到 s 是 0：d(s) = 0', 'S = {s}');
+  await step(tok);                                   // 1325 往外看到 u、v、x
+  for (const k of ['u', 'v', 'x']) G.e('s', k).set(J2.hot);
+  me.look(1);
+  say('從 s 往外看：看得到 u、v、x', '因為有 edge 連過去');
+  await step(tok);                                   // 1342 0+1 到 u
+  dP('u', '0+1=1');
+  say('到 u：0 + 1 = 1', '');
+  await step(tok);                                   // 1347 0+4 到 x、0+2 到 v
+  dP('x', '0+4=4'); dP('v', '0+2=2');
+  say('到 x：0 + 4 = 4，到 v：0 + 2 = 2', '');
+  await step(tok);                                   // 1356 1、2、4 誰最近？
+  const q = bub('1、2、4 誰最近？', -3.2, 2.2, 1.2);
+  say('1、2、4：誰最近？', '');
+  await step(tok);                                   // 1364 選 u，走過去
+  remove(q);
+  await put('u', 1, 's');
+  say('選最小的 1：走到 u', 'd(u) = 1 定案');
+  await step(tok);                                   // 1371 S 長大：{s, u}
+  const pinkS = ghostBox(J2.pink, 4.4, 6.2, 0.9); pinkS.position.set(-3.6, 3.0, 0);
+  pinkS.scale.y = 0.6; pinkS.position.y = 4.2;
+  say('S 長大了：S = {s, u}', '');
+  await step(tok);                                   // 1388 再長到 v
+  dP('v', 2); await beat(tok, 300);
+  await put('v', 2, 's');
+  pinkS.scale.y = 1; pinkS.position.y = 3.0;
+  say('依此類推：下一個長到 v', 'd(v) = 2');
+  await step(tok);                                   // 1395 粉紅色 = 這三個點已確認
+  glow(G.N.s, GREEN); glow(G.N.u, GREEN); glow(G.N.v, GREEN);
+  say('粉紅色區 = S：這三個點的最短距離已確認', '剩下的人怎麼繼續 explore？');
+  await step(tok);                                   // 1418 x：1 + 1 = 2
+  for (const k of ['s', 'u', 'v']) glow(G.N[k], null);
+  G.e('u', 'x').set(J2.hot); dP('x', '1+1=2');
+  say("x：經過 u，1 + 1 = 2", "d'(x) = 2");
+  await step(tok);                                   // 1426 y：1 + 3 = 4
+  G.e('u', 'y').set(J2.hot); dP('y', '1+3=4');
+  say("y：1 + 3 = 4", '');
+  await step(tok);                                   // 1435 z：2 + 3 = 5
+  G.e('v', 'z').set(J2.hot); dP('z', '2+3=5');
+  say("z：經過 v，2 + 3 = 5", '目前看起來：2、4、5');
+  await step(tok);                                   // 1453 最近的 x 走過去
+  await put('x', 2, 'u');
+  pinkS.scale.x = 1.45; pinkS.position.x = -2.6;
+  say('最近的是 x：走過去，放進 S', '');
+  await step(tok);                                   // 1466 d(x) = 2 不再改變
+  glow(G.N.x, GREEN);
+  const fz = note('放進 S 就不會再變', 1.2, 1.9);
+  say('d(x) = 2 確認：放進 S 就不再改變', '');
+  await step(tok);                                   // 1493 經過 x：y 2+1 = 3
+  remove(fz); glow(G.N.x, null);
+  G.e('x', 'y').set(J2.hot); dP('y', '2+1=3');
+  say('經過 x 可以更近：y = 2 + 1 = 3', '比 4 小 → 暫時改成 3');
+  await step(tok);                                   // 1512.7 z：2+2 = 4 < 5
+  G.e('x', 'z').set(J2.hot); dP('z', '2+2=4');
+  say('z：2 + 2 = 4，比原來的 5 小', '也往下降');
+  await step(tok);                                   // 1519 3 < 4 → 放 y
+  await put('y', 3, 'x');
+  say('3 跟 4 比，3 比較小 → 放 y', 'd(y) = 3');
+  await step(tok);                                   // 1528 最後放 z，結束
+  await put('z', 4, 'x');
+  pinkS.scale.x = 2.6; pinkS.position.x = -0.1;
+  me.mood('happy');
+  say('最後放 z，procedure 結束', 'd = 0、1、2、2、3、4');
 }]);
 
-// 25:36 觀察：d 值從 ∞ 只降不升；explore 順序 d 遞增
-FRAG.push(['grjiang2-dijkstra-observe', 'Dijkstra 的兩個觀察：d 只降不升、由近到遠', async (tok) => {
+// 25:47 觀察：d 值從 ∞ 只降不升；explore 順序 d 遞增；實作難點
+FRAG.push(['grjiang2-dijkstra-observe', 'Dijkstra 的觀察：d 只降不升、由近到遠、第 3、4 行要快', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.0, 0]);
-  say('觀察一：d 值從 ∞ 不斷下降', '降到真正最短距離就 freeze');
-  const H = [['x', [Infinity, 4, 2]], ['y', [Infinity, 4, 3]], ['z', [Infinity, 5, 4]]];
-  const hgt = (d) => (d === Infinity ? 5.2 : d * 1.0);
-  const bars = [];
-  for (let r = 0; r < 3; r++) {
-    const x = -5 + r * 2.4;
-    tag(H[r][0], 'ptr', x, -0.4);
-    const b = cube('', J2.blue, [1.2, 1, 0.7], x, 0, 0); b.scale.y = hgt(Infinity); b.position.y = hgt(Infinity) / 2;
-    bars.push([b, tag('∞', 'ptr alt', x, hgt(Infinity) + 0.4)]);
-  }
-  await beat(tok, 2400);
-  for (let st = 1; st < 3; st++) {
-    for (let r = 0; r < 3; r++) {
-      const [b, l] = bars[r], from = b.scale.y, to = hgt(H[r][1][st]);
-      await anim(tok, 500, (t) => { b.scale.y = from + (to - from) * t; b.position.y = b.scale.y / 2; l.position.y = b.scale.y + 0.4; });
-      txt(l, String(H[r][1][st]));
-    }
-    say(st === 1 ? '經過 u、v：x 4、y 4、z 5' : '經過 x：x 2、y 3、z 4', st === 1 ? '新 explore 的點帶來更近的走法' : '放進 S 後就不再動');
-    await beat(tok, 2400);
-  }
-  for (const [b] of bars) tint(b, J2.exp);
-  say('觀察二：explore 的順序', 'd 值由小到大：greedy，由近走到遠');
+  const hgt = (d) => (d === Infinity ? 5.0 : Math.max(0.05, d * 1.0));
+  const mk = (name, x, d, c) => {
+    tag(name, 'ptr', x, -0.4);
+    const b = cube('', c, [1.0, 1, 0.7], x, 0, 0); b.scale.y = hgt(d); b.position.y = hgt(d) / 2;
+    return { b, l: tag(j2F(d), 'ptr alt', x, hgt(d) + 0.4) };
+  };
+  const to = async (bar, d) => {
+    const { b, l } = bar, from = b.scale.y, t = hgt(d);
+    await anim(tok, 450, (u) => { b.scale.y = from + (t - from) * u; b.position.y = b.scale.y / 2; l.position.y = b.scale.y + 0.4; });
+    txt(l, j2F(d));
+  };
+  let bars = [];
+  await step(tok);                                   // 1547 一開始只確定 s 是 0
+  const s = mk('s', -5.6, 0, J2.exp);
+  say('一開始只確定：s 到 s 是 0', '');
+  await step(tok);                                   // 1556 其他人像 ∞
+  bars = [mk('x', -4.0, Infinity, J2.blue), mk('y', -2.6, Infinity, J2.blue), mk('z', -1.2, Infinity, J2.blue)];
+  say('剩下的人還不確定：想成 ∞', '');
+  await step(tok);                                   // 1563 d 值不斷下降
+  await to(bars[0], 4); await to(bars[1], 4); await to(bars[2], 5);
+  say('運算過程中 d 值會不斷下降', '經過 u、v：x 4、y 4、z 5');
+  await step(tok);                                   // 1572 新 explore 的點帶來更近的走法
+  await to(bars[0], 2); await to(bars[1], 3); await to(bars[2], 4);
+  say('新 explore 的點帶來更近的走法', '經過 x：x 2、y 3、z 4');
+  await step(tok);                                   // 1589 放進 S 就 freeze
+  for (const { b } of [s, ...bars]) tint(b, J2.ice);
+  note('降到最短距離 → freeze', -3.2, 6.2);
+  say('降到真正的最短距離後就不再改變', '放進 S 就 freeze');
+  await step(tok);                                   // 1598 為什麼叫 greedy
+  line(0.8, 0.3, 6.8, 0.3, 0, '#6e5f49');
+  tag('距離 →', 'idx', 6.4, -0.3);
+  say('為什麼叫 greedy？看它 explore 的順序', '');
+  await step(tok);                                   // 1629 d 小的先、d 大的後
   const ord = [['s', 0], ['u', 1], ['v', 2], ['x', 2], ['y', 3], ['z', 4]];
-  line(1.0, 0.3, 6.6, 0.3, 0, '#6e5f49');
   for (let k = 0; k < ord.length; k++) {
-    const [n, d] = ord[k], x = 1.2 + d * 1.3;
-    cube(n, J2.exp, [0.6, 0.6, 0.6], x, 0.7 + (k === 3 ? 0.7 : 0), 0, 1.5);
+    const [n, d] = ord[k], x = 1.1 + d * 1.3;
+    cube(n, J2.exp, [0.6, 0.6, 0.6], x, 0.7 + (k === 3 ? 0.7 : 0), 0, 1.2);
     tag(String(d), 'idx', x, -0.1);
-    await beat(tok, 600);
+    await beat(tok, 300);
   }
-  await beat(tok, 1600);
-  say('難點：第 3、4 行每輪都要取 min', '要有好的 data structure 配合');
-  await beat(tok, 3000);
+  say('d 值由小到大：從近的走到遠的', '這就是 greedy 的想法');
+  await step(tok);                                   // 1657 寫程式的困難在第 3、4 行
+  const cd = code(["3 選 v ∉ S 使 d'(v) 最小", "4 d'(v) = min (d(u) + ℓ(u,v))"], 0.6, 6.6, 0.55);
+  cd.hl(0);
+  const dev = buddy('寫程式的人', '', '#9fb8ff', 5.8, 2.2, 0.8, 0.6);
+  dev.mood('wow');
+  say('真的寫程式時，難在第 3、4 行', '需要特別的 data structure 配合');
+  await step(tok);                                   // 1678 要知道 S 有誰
+  note('① 要知道 S 裡已經有誰', 2.6, 4.9);
+  say('第一：要隨時知道 S 裡有哪些人', '');
+  await step(tok);                                   // 1689 每輪選出最近的點
+  cd.hl(1);
+  note('② 每輪找出距離最近的點', 2.6, 4.2);
+  say('第二：每一輪要選出目前最近的點', '這個點要怎麼找？');
+  await step(tok);                                   // 1704 每個 S 點都往外 reach 一次 → 很慢
+  for (let k = 0; k < 5; k++) arrow(V3(3.4, 3.1, 0.3), V3(4.2 + k * 0.5, 3.6 - (k % 2) * 0.7, 0.3), 0xd64545);
+  bad('照字面：S 每個點都往外 reach 一次 → 很慢', 2.6, 2.6);
+  dev.mood('sad');
+  say('照字面：S 裡每個點都要往外看一次', '每輪 checking 很複雜');
+  await step(tok);                                   // 1730 希望 take minimum 很快
+  pkt('希望：take minimum 一下就好', 2.6, 1.6);
+  dev.mood('happy');
+  say('希望第 3、4 行取 min 可以很快', '怎麼做？證明完再回來看');
 }]);
 
 // 29:21 正確性：loop invariant + induction on |S|
 FRAG.push(['grjiang2-loop-invariant', 'Dijkstra 正確性：loop invariant 與對 |S| 做 induction', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.0, 0]);
-  say('要證：每點最後的 d 就是最短距離', '用 greedy stays ahead');
-  await beat(tok, 2600);
-  tag('Loop invariant：S 裡每個點的 d 都是最短距離', 'ptr alt', 0, 6.4);
-  say('while loop 有不變的性質', 'loop 結束時 S = V → 全部都對');
-  await beat(tok, 3000);
+  const dj = buddy('Dijkstra', '', '#f4a56a', -6.0, 4.4, 0.6, 0.6);
   const ord = [['s', 0], ['u', 1], ['v', 2], ['x', 2], ['y', 3], ['z', 4]];
-  const box = ghostBox('#e55a9b', 1.6, 2.0, 0.8); box.position.set(-4.6, 2.4, 0);
-  tag('S', 'ptr', -5.9, 3.7);
-  const kl = tag('|S| = 1', 'ptr', 3.8, 4.6);
+  const NX = (k) => -4.2 + k * 1.8;
+  let box = null, kl = null; const ns = [];
+  const fit = (k) => { const w = 1.4 + (k - 1) * 1.8; box.scale.x = w / 1.4; box.position.x = NX(0) - 0.7 + w / 2; txt(kl, '|S| = ' + k); };
+  await step(tok);                                   // 1761 要證明它是對的
+  const q = bub('我算的真的對嗎？', -4.6, 6.0, 0.6);
+  say('Procedure 有了，接著要證明它是對的', '');
+  await step(tok);                                   // 1766 final d 就是最短距離
+  remove(q);
+  tag('要證：每個點最後的 d = s 到它的最短距離', 'ptr alt', 0.6, 6.6);
+  say('要證：每點最後的 d 一定是最短距離', '');
+  await step(tok);                                   // 1785 兩招，這裡用 stays ahead
+  note('兩招：交換法、stays ahead → 這次用 stays ahead', 0.6, 5.9);
+  say('證明有兩招：這裡用 greedy stays ahead', '');
+  await step(tok);                                   // 1797 有一個 while loop
+  const cd = code(['while S ≠ V', '  選最近的 v', '  S = S ∪ {v}'], -1.6, 4.9, 0.5);
+  cd.hl(0);
+  say('Procedure 裡有一個 while loop', '');
+  await step(tok);                                   // 1845 loop invariant
+  const li = pkt('loop invariant：每一圈都不變的性質', 3.6, 4.4);
+  say('iterative 的 procedure：證 loop invariant', 'loop 每一圈都保持的 property');
+  await step(tok);                                   // 1884 S 裡每個點的 d 已確定
+  txt(li, 'invariant：S 裡每點的 d 都已是最短距離');
+  say('這裡的 invariant：S 裡每個點的 d', '都已是最短距離，不會再改變');
+  await step(tok);                                   // 1904 loop 何時結束？所有點都進 S
   for (let k = 0; k < ord.length; k++) {
-    const x = -4.6 + k * 1.8;
-    const m = cube(ord[k][0], k === 0 ? J2.exp : J2.node, [0.8, 0.8, 0.8], x, 2.4, 0, k === 0 ? 1.5 : 0);
-    tag('d=' + ord[k][1], 'idx', x, 1.3);
-    if (k === 0) {
-      say('Basis：S 只有 s', 'd(s) = 0 一定對（trivial）');
-      await beat(tok, 3000);
-      say('Inductive step：weak induction', '假設 |S| = k 成立，證 k + 1 也成立');
-      await beat(tok, 3200);
-      continue;
-    }
-    glow(m, GOLD);
-    await beat(tok, 700);
-    tint(m, J2.exp); glow(m, null);
-    const w = 1.6 + k * 1.8; box.scale.x = w / 1.6; box.position.x = -4.6 - 0.8 + w / 2;
-    txt(kl, '|S| = ' + (k + 1));
-    say('每輪 S 只多一個點', '|S| = ' + k + ' 對 → |S| = ' + (k + 1) + ' 也對');
-    await beat(tok, 1200);
+    ns.push(cube(ord[k][0], J2.node, [0.8, 0.8, 0.8], NX(k), 1.4, 0, 1));
+    tag('d=' + ord[k][1], 'idx', NX(k), 0.4);
   }
-  say('歸納到 S = V', '所有點的 d 都是最短距離 ∎');
-  await beat(tok, 3000);
+  box = ghostBox(J2.pink, 1.4, 1.6, 0.9); box.position.set(NX(0), 1.4, 0);
+  kl = tag('|S| = 1', 'ptr', 5.2, 2.6);
+  await anim(tok, 1200, (u) => fit(1 + Math.round(u * 5)));
+  cd.hl(0);
+  say('loop 什麼時候結束？所有點都進 S', 'S = V');
+  await step(tok);                                   // 1928 結束時所有 d 都正確
+  ns.forEach((m) => { tint(m, J2.exp); glow(m, GREEN); });
+  say('invariant 成立 → 結束時所有 d 都正確', '這就是要的結果');
+  await step(tok);                                   // 1968 S 從少長到多 → 數學歸納法
+  ns.forEach((m, k) => { glow(m, null); if (k) tint(m, J2.node); });
+  fit(1);
+  say('S 從 1 個點一個一個長大', '最適合用數學歸納法（induction）');
+  await step(tok);                                   // 1989 對 |S| 做 induction
+  j2Cls(kl, 'ptr alt');
+  say('對 S 裡的點數 |S| 做 induction', '');
+  await step(tok);                                   // 2041 basis：S 只有 source
+  glow(ns[0], GOLD);
+  tag('Basis', 'ptr', NX(0), 3.0);
+  say('Basis：一開始 S 只有 source s', '');
+  await step(tok);                                   // 2051 d(s)=0 成立，trivial
+  glow(ns[0], GREEN);
+  good('d(s) = 0 ✓（trivial）', NX(0) + 0.6, -0.5);
+  say('source 到自己是 0：成立', 'trivial');
+  await step(tok);                                   // 2061 困難的是 inductive step
+  glow(ns[0], null);
+  const st = bub('weak？strong？', -1.6, 3.2, 0.8);
+  dj.mood('wow');
+  say('困難在 inductive step', '要用 weak 還是 strong induction？');
+  await step(tok);                                   // 2079 weak：每輪只加一個點
+  txt(st, 'weak：每輪只加一個點');
+  dj.mood('happy');
+  say('用 weak induction', '每個 iteration S 只多一個點');
+  await step(tok);                                   // 2094 假設 |S| = k 成立
+  remove(st);
+  for (let k = 1; k < 3; k++) tint(ns[k], J2.exp);
+  fit(3); txt(kl, '|S| = k（成立）');
+  for (let k = 0; k < 3; k++) glow(ns[k], GREEN);
+  say('假設：|S| = k 時，S 裡的 d 都正確', 'induction hypothesis');
+  await step(tok);                                   // 2101.5 證 k+1 也成立
+  glow(ns[3], GOLD); bub('?', NX(3), 2.5, 0.5);
+  txt(kl, '|S| = k+1：也對嗎？');
+  say('要證：多放一個點（k + 1）仍成立', '');
 }]);
 
-// 35:36 inductive step：紅色 P_v 與綠色另一條路
+// 35:46 inductive step：紅色 P_v 與綠色另一條路
 FRAG.push(['grjiang2-dijkstra-proof', 'Inductive step：另一條路一定不比 P_v 短', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.0, 0]);
-  const S = ghostBox('#e55a9b', 6.0, 5.2, 0.6); S.position.set(-3.2, 3.0, 0);
-  tag('S（k 個點，d 都正確）', 'ptr', -3.2, 6.0);
   const P = { s: [-5.2, 3], u: [-2.0, 1.4], x: [-1.4, 4.6], v: [3.2, 1.4], y: [2.6, 4.6] };
   const N = {};
-  for (const k of Object.keys(P)) N[k] = cube(k, ['s', 'u', 'x'].includes(k) ? J2.exp : J2.node, [0.75, 0.75, 0.75], P[k][0], P[k][1], 0, 1.4);
-  say('第 k+1 輪選中 v：經過 u 進來', "d(v) = d(u) + ℓ(u,v) 是所有候選裡最小");
-  await beat(tok, 3200);
-  const seg = (a, b, c) => { const [x1, y1] = P[a], [x2, y2] = P[b]; const l = line(x1, y1, x2, y2, 0.3, c); return l; };
-  seg('s', 'u', J2.bad); arrow(V3(-1.55, 1.4, 0.3), V3(2.75, 1.4, 0.3), 0xd64545);
+  const mk = (k, c) => (N[k] = cube(k, c, [0.75, 0.75, 0.75], P[k][0], P[k][1], 0, 1.4));
+  mk('s', J2.exp);
+  const f = tag('', 'ptr alt', 0.6, -0.7);
+  let S = null;
+  await step(tok);                                   // 2154 這一輪要加入 v
+  mk('v', J2.node); glow(N.v, GOLD);
+  say('設第 k+1 輪想加入的點叫 v', '');
+  await step(tok);                                   // 2168.7 S：已確認 d 的人
+  S = ghostBox(J2.pink, 6.0, 5.2, 0.6); S.position.set(-3.2, 3.0, 0);
+  tag('S（k 個點，d 都正確）', 'ptr', -3.2, 6.0);
+  say('任何時刻都有 S：裡面的 d 都已確認', '');
+  await step(tok);                                   // 2194 v 是第 3、4 行選出的
+  note("v：d + ℓ 總和最小的那個", 3.2, 0.3);
+  say('v 為什麼被選？第 3、4 行', 'd 值 + edge 長度，總和最小');
+  await step(tok);                                   // 2208 經過 u 走到 v
+  mk('u', J2.exp);
+  arrow(V3(-1.55, 1.4, 0.3), V3(2.75, 1.4, 0.3), 0xd64545);
+  say('假設 v 是經過 u 走過來的', "d(v) = d(u) + ℓ(u,v)");
+  await step(tok);                                   // 2240 s 到 u 的路已找到
+  line(P.s[0], P.s[1], P.u[0], P.u[1], 0.3, J2.bad);
+  say('u 的 d 已確認：s 到 u 的路已找到', '畫成一條紅線');
+  await step(tok);                                   // 2265 叫它 P_v
   tag('P_v（紅）', 'ptr alt', 0.6, 0.7);
-  say('紅色路徑 P_v：s ⇝ u → v', 's ⇝ u 已是最短（induction hypothesis）');
-  await beat(tok, 3200);
-  seg('s', 'x', '#1f9e6e'); arrow(V3(-0.95, 4.6, 0.3), V3(2.15, 4.6, 0.3), 0x1f9e6e); seg('y', 'v', '#1f9e6e');
-  tag('另一條路（綠）', 'ptr', 0.6, 5.3);
-  say('假設還有綠色路徑到 v', '它一定在某處離開 S：x → y');
+  say('紅色整條 s ⇝ u → v 叫 P_v', '');
+  await step(tok);                                   // 2291 要證 P_v 真的最短
+  const dj = buddy('', '', '#f4a56a', 5.6, 1.0, 0.8, 0.55); dj.mood('wow');
+  say('要確認：P_v 真的最短，不會再被改', '');
+  await step(tok);                                   // 2334 induction hypothesis：s ⇝ u 最短
+  glow(N.u, GREEN);
+  say('by induction hypothesis：S 裡都正確', '所以 s ⇝ u 這段一定最短');
+  await step(tok);                                   // 2395 另一條綠色路
+  mk('x', J2.exp); mk('y', J2.node);
+  line(P.s[0], P.s[1], P.x[0], P.x[1], 0.3, '#1f9e6e'); arrow(V3(-0.95, 4.6, 0.3), V3(2.15, 4.6, 0.3), 0x1f9e6e); line(P.y[0], P.y[1], P.v[0], P.v[1], 0.3, '#1f9e6e');
+  tag('另一條路（綠）', 'ptr', 0.6, 5.4);
+  say('假設還有另一條綠色的路到 v', '');
+  await step(tok);                                   // 2427 一定在某處離開 S
+  bub('這裡跨出 S！', 0.6, 3.9, 0.6);
+  say('綠色的路從 s 出發、最後到 v', '一定在某處離開 S');
+  await step(tok);                                   // 2443 跨出去的叫 y、前一個叫 x
   glow(N.x, GOLD); glow(N.y, GOLD);
-  await beat(tok, 3400);
-  const f = tag('', 'ptr alt', 0.6, -0.6);
-  txt(f, "d(x) + ℓ(x,y) ≥ d(u) + ℓ(u,v) = d(v)");
-  say('第 4 行選了 v、沒選 y', '所以 s ⇝ x → y 這段已經 ≥ d(v)');
-  await beat(tok, 3600);
+  say('跨出去的點叫 y，它前面那個叫 x', '');
+  await step(tok);                                   // 2466 x 在 S 裡：s ⇝ x 也最短
+  glow(N.x, GREEN);
+  say('x 在 S 裡：s ⇝ x 也已是最短', '');
+  await step(tok);                                   // 2487 為什麼選 v 沒選 y？
+  dj.look(-1);
+  say('第 k+1 輪為什麼選 v、不選 y？', '因為第 4 行的選擇');
+  await step(tok);                                   // 2504 d(u)+ℓ(u,v) ≤ d(x)+ℓ(x,y)
+  txt(f, 'd(u) + ℓ(u,v) ≤ d(x) + ℓ(x,y)');
+  say('v 的總和是所有人裡最小的', '所以 ≤ x 的 d + ℓ(x,y)');
+  await step(tok);                                   // 2532 紅色總長 = d(v)
+  txt(f, '紅色總長 = d(u) + ℓ(u,v) = d(v)　≤　d(x) + ℓ(x,y)');
+  say('紅色 P_v 的總長 = d(u) + ℓ(u,v) = d(v)', '');
+  await step(tok);                                   // 2602 要比整條紅色和整條綠色
+  say('真正要比：整條紅色 vs 整條綠色', '');
+  await step(tok);                                   // 2615 s ⇝ y 這段已經比較大
   glow(N.y, null); glow(N.v, GOLD);
-  txt(f, '綠色 = (s⇝y) + (y⇝v) ≥ d(v) + 0');
-  say('剩下 y ⇝ v 這段長度 ≥ 0', '加上去只會更大');
-  await beat(tok, 3400);
-  tint(N.v, J2.exp); glow(N.v, GREEN);
-  say('綠色總長 ≥ 紅色：d(v) 是最短', '|S| = k+1 時 invariant 仍成立');
-  await beat(tok, 3200);
+  txt(f, '綠色的 s ⇝ x → y　≥　d(v)');
+  say('綠色走到 y 這一段，已經 ≥ d(v)', '');
+  await step(tok);                                   // 2623 y ⇝ v 一定 ≥ 0
+  txt(f, '綠色 = (s ⇝ y) + (y ⇝ v)　≥　d(v) + 0');
+  note('y ⇝ v ≥ 0', 3.6, 3.0);
+  say('後面 y ⇝ v 這段一定 ≥ 0', '加上去只會更大');
+  await step(tok);                                   // 2646 綠色 ≥ 紅色
+  txt(f, '綠色總長　≥　紅色總長 = d(v)');
+  say('所以綠色總長一定 ≥ 紅色', '');
+  await step(tok);                                   // 2664 d(v) 是最短 → k+1 成立
+  tint(N.v, J2.exp); glow(N.v, GREEN); dj.mood('happy');
+  await anim(tok, 700, (t) => { S.scale.x = 1 + t * 0.55; S.position.x = -3.2 + t * 1.65; });
+  say('v 記錄的 d 確實是最短距離', '|S| = k+1 時也成立 ∎');
 }]);
 
-// 44:32 只適用非負 edge weight（反例是補充）
+// 44:32 只適用非負 edge weight（Lec12）
 FRAG.push(['grjiang2-negative-weight', '為什麼 Dijkstra 要求 edge weight ≥ 0', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.0, 0]);
-  say('證明關鍵：y ⇝ v 那段 ≥ 0', '靠的是 ℓ(e) ≥ 0');
-  await beat(tok, 2800);
-  say('放進 S 就不再回頭改', 'greedy：決定了就不 revisit');
-  await beat(tok, 2600);
-  const G = j2Graph({ s: [-4.4, 3], a: [1.2, 5.2], b: [1.2, 0.8] }, [['s', 'a', 2], ['s', 'b', 3], ['b', 'a', -2]], { drop: 1.5 });
-  tag('補充反例：有負的 edge', 'ptr', 4.4, 6.2);
-  G.E[2].set(J2.bad); j2Cls(G.E[2].lb, 'ptr');
-  await beat(tok, 1600);
-  j2Explore(G, 's'); txt(G.D.s, 'd=0'); txt(G.D.a, "d'=2"); txt(G.D.b, "d'=3");
-  say('從 s 出發：a = 2、b = 3', '');
-  await beat(tok, 2400);
-  G.e('s', 'a').set(J2.tree); j2Explore(G, 'a'); txt(G.D.a, 'd=2 定案');
-  say('a 最近：d(a) = 2 定案', '放進 S，不再改');
-  await beat(tok, 2600);
-  G.e('s', 'b').set(J2.tree); j2Explore(G, 'b'); txt(G.D.b, 'd=3');
-  G.e('b', 'a').set(J2.hot); glow(G.N.a, GOLD);
-  say('其實 s→b→a = 3 + (−2) = 1', '比 2 還短，但 a 已經 freeze');
-  await beat(tok, 3400);
-  tint(G.N.a, J2.bad);
-  say('結果錯：負的 weight 不能用 Dijkstra', '有負 weight → 之後的 Bellman-Ford（DP）');
-  await beat(tok, 3400);
+  let lw = null, G = null;
+  await step(tok);                                   // 2672 ℓ(e) = 兩地之間的長度
+  const a = cube('', J2.node, [0.7, 0.7, 0.7], -5.6, 5.4, 0), b = cube('', J2.node, [0.7, 0.7, 0.7], -2.6, 5.4, 0);
+  arrow(V3(-5.1, 5.4, 0), V3(-3.1, 5.4, 0), J2.edge);
+  lw = tag('ℓ(e)', 'ptr', -4.1, 5.9);
+  say('ℓ(e)：一開始設定是兩地之間的長度', '');
+  await step(tok);                                   // 2684 紅色：≥ 0
+  txt(lw, 'ℓ(e) ≥ 0'); j2Cls(lw, 'bad');
+  say('這個版本假設 ℓ(e) ≥ 0', '投影片特別用紅色標出');
+  await step(tok);                                   // 2702 放進 S 就不再改
+  const S = ghostBox(J2.pink, 3.4, 2.0, 0.6); S.position.set(-4.4, 2.4, 0);
+  const sv = cube('v', J2.exp, [0.7, 0.7, 0.7], -4.4, 2.4, 0, 1.2);
+  const lk = prop('lock', -3.5, 2.5, 0.5, 0.8);
+  say('點一放進 S，答案就固定不再改', '');
+  await step(tok);                                   // 2716 為什麼不用再改？
+  const me = buddy('', '', '#9fb8ff', -6.0, 0, 1.0, 0.55); me.mood('wow');
+  bub('為什麼不用再改？', -4.4, 1.0, 1.0);
+  say('奇怪：為什麼不需要再改它？', '');
+  await step(tok);                                   // 2735 前面那段已經比較長
+  const seg1 = cube('', '#1f9e6e', [3.0, 0.4, 0.4], 2.0, 4.6, 0);
+  const t1 = tag('s ⇝ y：已經 ≥ d(v)', 'ptr', 2.0, 5.2);
+  say('證明裡：別條路前面那段已經比較長', '');
+  await step(tok);                                   // 2743 後面那段一定 ≥ 0
+  const seg2 = cube('', '#7fd1a8', [1.6, 0.4, 0.4], 4.3, 4.6, 0);
+  const t2 = tag('y ⇝ v：≥ 0', 'ptr alt', 4.6, 3.9);
+  say('後面那段要 ≥ 0，不等式才會對', '');
+  await step(tok);                                   // 2758 因為所有 edge 長度 ≥ 0
+  glow(seg2, GREEN);
+  const t3 = good('所有 edge 長度 ≥ 0 → 後段 ≥ 0 ✓', 2.6, 3.0);
+  me.mood('happy');
+  say('因為所有 edge 長度都 ≥ 0', '放進 S 的點不會被改得更好');
+  await step(tok);                                   // 2788 只在這個設定下才對
+  const t4 = pkt('適用時機：edge weight 非負', 2.6, 2.2);
+  say('Dijkstra 只在這個設定下才對', '請注意它的適用時機');
+  await step(tok);                                   // 2807 有負數就不要用（補充反例）
+  [a, b, seg1, seg2].forEach(kill); [t1, t2, t3].forEach(remove); t4.position.set(-3.2, -1.2, 0);
+  G = j2Graph({ s: [0.6, 0.6], p: [4.2, 2.2], q: [4.2, -0.9] }, [['s', 'p', 2], ['s', 'q', 3], ['q', 'p', -2]], { drop: 1.2, tagDy: 0.75 });
+  G.E[2].set(J2.bad); j2Cls(G.E[2].lb, 'bad');
+  note('補充反例', 0.6, -0.6);
+  say('edge weight 有負數：請不要用它', '（右邊是補充的小反例）');
+  await step(tok);                                   // 2814.5 會產生錯誤結果
+  j2Explore(G, 's'); txt(G.D.s, '0');
+  G.e('s', 'p').set(J2.tree); j2Explore(G, 'p'); txt(G.D.p, 'd=2 定案');
+  G.e('q', 'p').set(J2.hot); tint(G.N.p, J2.bad);
+  bad('s→q→p = 3 + (−2) = 1 < 2', 2.4, 3.5);
+  me.mood('sad');
+  say('p 先以 2 定案，其實 s→q→p 只要 1', '產生錯誤結果');
+  await step(tok);                                   // 2821 DP 再介紹別的演算法
+  pkt('有負 weight → 之後 DP 章節的其他演算法', 2.6, -1.9);
+  me.mood('happy');
+  say('有負數怎麼辦？等 dynamic programming', '再介紹其他 shortest path 演算法');
+  void sv; void lk;
 }]);
 
-// 47:11 ／ Lec13 12:36 min-priority queue 的操作次數與三種實作
-FRAG.push(['grjiang2-pq-costs', 'Min-priority queue：操作次數與 array／binary heap／Fibonacci heap', async (tok) => {
+// 47:35 實作：每個點記 d、放進 min-priority queue；三種實作（Lec12）
+FRAG.push(['grjiang2-pq-lec12', '實作：把 d 值放進 min-priority queue，三種實作方式', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.2, 0]);
-  say('d 值當 key 放進 min-PQ', '每輪 Extract-Min，再 update 鄰居');
-  await beat(tok, 2800);
-  const cols = [-5.2, -2.4, -0.4, 2.4, 5.0];
-  ['operation', '次數', 'array', 'binary heap', 'Fibonacci'].forEach((h, c) => tag(h, 'ptr', cols[c], 6.2));
-  const rows = [['Insert', 'n', 'O(1)', 'O(log n)', 'O(1)'], ['ExtractMin', 'n', 'O(n)', 'O(log n)', 'O(log n)*'], ['ChangeKey', 'm', 'O(1)', 'O(log n)', 'O(1)*'], ['IsEmpty', 'n', 'O(1)', 'O(1)', 'O(1)']];
-  const cells = [];
-  for (let r = 0; r < rows.length; r++) {
-    const y = 5.2 - r * 0.95;
-    cells.push(rows[r].map((v, c) => { const l = tag(v, c < 2 ? 'ptr alt' : 'idx', cols[c], y); if (c >= 2) showL(l, false); return l; }));
-  }
-  say('每個點 insert 一次、extract 一次', 'n 個點 → 各 n 次');
-  await beat(tok, 2800);
-  say('只 update 鄰居：總共 m 次 ChangeKey', 'm = edge 總數');
-  await beat(tok, 2800);
-  for (let r = 0; r < rows.length; r++) showL(cells[r][2], true);
-  say('Array：每次 Extract-Min 要掃一遍', 'n · O(n) → O(n²)');
-  const t1 = tag('O(n²)', 'ptr alt', cols[2], 1.0);
-  await beat(tok, 3200);
-  for (let r = 0; r < rows.length; r++) showL(cells[r][3], true);
-  say('Binary heap：每個操作 O(log n)', '(n + m) log n（課本 O(m log n)）');
-  tag('O((n+m) log n)', 'ptr alt', cols[3], 1.0);
-  await beat(tok, 3200);
-  for (let r = 0; r < rows.length; r++) showL(cells[r][4], true);
-  say('Fibonacci heap：理論最快、常數大', '補充：O(m + n log n)，*為 amortized');
-  tag('O(m + n log n)', 'ptr alt', cols[4], 1.0);
-  await beat(tok, 3200);
-  void t1;
-  say('本課重點：會用 binary heap 實作', '資料量不大時 Fibonacci heap 不一定快');
-  await beat(tok, 2800);
+  const L = ['s', 't', 'x', 'y', 'z'], NX = (k) => -5.8 + k * 1.3;
+  const ns = {}, ds = {};
+  let mach = null, out = null;
+  await step(tok);                                   // 2862 讓第 4 行很快找出最小
+  const c4 = code(["4 d'(v) = min (d(u) + ℓ(u,v))"], -2.6, 6.8);
+  c4.hl(0);
+  say('要讓第 4 行很快找出最小的那個', '');
+  await step(tok);                                   // 2869 需要很好的 data structure
+  mach = prop('printer', 4.4, 0.6, 0, 1.4, '吐出最小值的機器');
+  say('需要一個好的 data structure', '能很快吐出所有人裡的最小值');
+  await step(tok);                                   // 2889 原來：從 S 往外看
+  const S = ghostBox(J2.pink, 2.4, 1.4, 0.8); S.position.set(-4.6, 3.6, 0);
+  tag('S', 'ptr', -5.6, 4.5);
+  for (let k = 0; k < 3; k++) arrow(V3(-3.6, 3.6, 0), V3(-1.8, 2.8 + k * 0.8, 0), J2.hot);
+  say('原本的寫法：以 S 的觀點往外看', '誰距離最近？');
+  await step(tok);                                   // 2898 換角度：每個點身上記目前最短距離
+  for (let k = 0; k < L.length; k++) { ns[L[k]] = cube(L[k], J2.node, [0.7, 0.7, 0.7], NX(k), 1.0, 0, 1.2); ds[L[k]] = tag('d=?', 'ptr alt', NX(k), 1.8); }
+  say('實作時換個角度：每個點身上', '隨時記著「目前知道的最短距離」');
+  await step(tok);                                   // 2918 一開始設 ∞
+  txt(ds.s, 'd=0'); for (const k of L.slice(1)) txt(ds[k], 'd=∞');
+  say('一開始不知道怎麼走：先設 ∞', '（source 自己是 0）');
+  await step(tok);                                   // 2924 往下降到最短就停
+  const fin = { t: 8, x: 9, y: 5, z: 7 };
+  for (const k of ['t', 'x', 'y', 'z']) { txt(ds[k], 'd=' + fin[k]); await beat(tok, 300); }
+  for (const k of L) tint(ns[k], J2.exp);
+  say('運算中一路往下降', '降到 shortest path length 就停住');
+  await step(tok);                                   // 2941 min priority queue
+  if (mach.userData.label) mach.userData.label.element.textContent = 'min-priority queue';
+  say('要實作的是 min-priority queue', '');
+  await step(tok);                                   // 2945 所有點都放進去
+  for (const k of L) { await travel(tok, ds[k], ds[k].position.clone(), V3(3.4 + Math.random() * 2, 2.4, 0.3), 260); }
+  for (const k of L) showL(ds[k], false);
+  say('把所有點（帶著 d 值）都放進去', 'd 值就是 key');
+  await step(tok);                                   // 2963 吐出最小並 remove
+  out = pkt('吐出：s（d = 0）', 4.4, -0.6, 0.6);
+  await travel(tok, out, V3(4.4, 1.2, 0.6), V3(4.4, -0.6, 0.6), 600);
+  say('它能很快吐出最小值的那個點', '順便把它 remove');
+  await step(tok);                                   // 2985 很多種實作：array
+  remove(out); kill(S);
+  for (const k of L) kill(ns[k]);
+  tag('三種實作', 'ptr alt', -3.0, 5.6);
+  const arr = [0, '∞', '∞', '∞', '∞'].map((v, k) => cube(v, J2.blue, [0.8, 0.55, 0.55], -5.6 + k * 0.9, 4.4, 0, 1));
+  tag('array', 'ptr', -6.3, 5.0);
+  say('實作方式有很多種：第一種 array', '');
+  await step(tok);                                   // 2993 array 每次找最小都要掃一遍
+  const scan = pkt('掃 →', -5.6, 3.6);
+  await travel(tok, scan, V3(-5.6, 3.6, 0), V3(-2.0, 3.6, 0), 1200);
+  bad('每次找最小都掃一遍：慢', -3.6, 3.0);
+  say('array：大家存在一起', '每次找最小值都要整個掃一遍');
+  await step(tok);                                   // 3001 binary heap：tree，存成 sequence
+  tag('binary heap', 'ptr', -6.0, 2.0);
+  const tx = [-4.4, -5.2, -3.6], ty = [1.6, 0.6, 0.6];
+  for (let k = 0; k < 3; k++) cube(['0', '5', '8'][k], J2.exp, [0.6, 0.5, 0.5], tx[k], ty[k], 0, 1);
+  line(-4.4, 1.35, -5.2, 0.85, -0.1); line(-4.4, 1.35, -3.6, 0.85, -0.1);
+  note('Binary tree 的樣子，存成一串 sequence', -1.0, 1.0);
+  say('binary heap：binary tree 的形式', '用一個 sequence 記錄');
+  await step(tok);                                   // 3020 Fibonacci heap 更快一些
+  tag('Fibonacci heap：更高級、再快一些', 'ptr', -3.0, -0.4);
+  say('更高級的：Fibonacci heap', '速度再快一些');
+  await step(tok);                                   // 3028 至少要會 binary heap
+  good('這門課：至少要會用 binary heap 實作', -3.0, -1.3);
+  say('這門課至少要會：用 binary heap', '實作 min-priority queue');
+  void arr; void scan;
 }]);
 
-// 50:40 ／ Lec13 05:32 CLRS 例子：min-priority queue 版本
+// CLRS 例子共用：圖、d 值、min-PQ 列、Extract-Min 與 relax
+function j2Clrs(o = {}) {
+  const G = j2Graph(J2C_P, J2C_E, { drop: o.drop || 0 });
+  const d = { s: 0, t: Infinity, x: Infinity, y: Infinity, z: Infinity }, par = {}, done = new Set();
+  const Q = tag('', 'ptr', -0.8, -0.8);
+  const C = { G, d, done, Q, checked: 0 };
+  C.showD = () => { for (const k of Object.keys(d)) txt(G.D[k], j2F(d[k])); };
+  C.showQ = () => txt(Q, 'min-PQ：' + Object.keys(d).filter((k) => !done.has(k)).sort((a, b) => d[a] - d[b]).map((k) => k + ':' + j2F(d[k])).join('  '));
+  C.extract = (u) => {
+    for (const k of Object.keys(G.N)) glow(G.N[k], null);
+    for (const e of G.E) if (!e.tree) e.set(J2.edge);
+    done.add(u); tint(G.N[u], '#8a8478'); move(G.N[u], G.P[u][0], G.P[u][1], 0.5); j2Cls(G.D[u], 'ptr alt');
+    if (par[u]) { const e = G.e(par[u], u); e.tree = true; e.set(J2.tree); }
+    C.showQ();
+  };
+  C.relax = (u, v) => {
+    const e = G.e(u, v), nd = d[u] + e.w; C.checked++;
+    e.set(J2.hot); glow(G.N[v], GOLD);
+    if (nd < d[v]) { d[v] = nd; par[v] = u; txt(G.D[v], d[u] + '+' + e.w + '=' + nd); }
+    C.showQ();
+    return nd;
+  };
+  return C;
+}
+
+// 50:57 CLRS 例子（Lec12）
 FRAG.push(['grjiang2-dijkstra-clrs', 'Dijkstra（CLRS 例子）：Extract-Min 依序 0、5、7、8、9', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.0, 0]);
-  const p = (ctx.params || {});
-  const G = j2Graph(J2C_P, J2C_E);
-  const d = { s: 0, t: Infinity, x: Infinity, y: Infinity, z: Infinity }, par = {}, done = new Set();
-  const Q = tag('', 'ptr', -0.8, -0.7);
-  const cnt = tag('', 'ptr alt', 4.6, -0.7);
-  let upd = 0;
-  const showQ = () => { txt(Q, 'min-PQ：' + Object.keys(d).filter((k) => !done.has(k)).sort((a, b) => d[a] - d[b]).map((k) => k + ':' + j2F(d[k])).join('  ')); if (p.count) txt(cnt, 'update 次數 ' + upd); };
-  for (const k of Object.keys(d)) txt(G.D[k], j2F(d[k]));
-  showQ();
-  say('圈圈裡的數字 = 當下的 d 值', 's = 0，其他人都是 ∞');
-  await beat(tok, 2800);
-  while (done.size < 5) {
-    const u = Object.keys(d).filter((k) => !done.has(k)).sort((a, b) => d[a] - d[b])[0];
-    done.add(u); j2Explore(G, u); if (par[u]) G.e(par[u], u).set(J2.tree);
-    showQ();
-    say('Extract-Min 吐出 ' + u + '（d = ' + d[u] + '）', '變黑 = 放進 S，d 不再改變');
-    await beat(tok, 2000);
-    for (const e of G.E.filter((x) => x.u === u && !done.has(x.v))) {
-      const nd = d[u] + e.w, v = e.v;
-      e.set(J2.hot); glow(G.N[v], GOLD); upd++;
-      const better = nd < d[v];
-      say(u + ' → ' + v + '：' + d[u] + ' + ' + e.w + ' = ' + nd, better ? nd + ' < ' + j2F(d[v]) + ' → update' : nd + ' ≥ ' + d[v] + ' → 不變');
-      if (better) { if (par[v]) G.e(par[v], v).set(J2.edge); d[v] = nd; par[v] = u; txt(G.D[v], String(nd)); }
-      showQ();
-      await beat(tok, 1500);
-      e.set(par[v] === u ? J2.tree : J2.edge); glow(G.N[v], null);
-    }
-  }
-  say('explore 順序 s、y、z、t、x', 'd = 0、5、7、8、9：由近到遠');
-  await beat(tok, 2800);
-  if (p.count) { say('只 update 往外連出的 edge', '總 update 次數 ≤ m（edge 總數）'); await beat(tok, 2800); }
+  let C = null;
+  await step(tok);                                   // 3057 例子取自 CLRS
+  const book = prop('file', 5.8, 5.2, 0, 1.0, 'CLRS 課本');
+  bob(book, 0.04);
+  say('這個例子取自 Cormen 的書（CLRS）', '看實作時 Dijkstra 怎麼運作');
+  await step(tok);                                   // 3069 directed graph、edge 有距離
+  C = j2Clrs({ drop: 1.5 });
+  say('一開始：一個 directed graph', 'edge 上有距離');
+  await step(tok);                                   // 3083.5 圈圈數字 = 當下 d 值
+  note('點上的數字 = 當下記錄的 d 值', 0.4, 7.0);
+  say('每個點上的數字 = 當下記錄的 d 值', '');
+  await step(tok);                                   // 3089 source 是 0
+  txt(C.G.D.s, '0'); glow(C.G.N.s, GOLD);
+  say('source 自己到自己：d = 0', '一開始就確認');
+  await step(tok);                                   // 3103 其他人都 ∞
+  C.showD();
+  say('其他人還走不到：都設成 ∞', '');
+  await step(tok);                                   // 3112 全部放進 min-PQ
+  C.showQ();
+  say('所有點都放進 min-priority queue', '');
+  await step(tok);                                   // 3117 每次 Extract-Min
+  const ex = pkt('Extract-Min：吐出最小的', 4.6, -1.6);
+  say('每次 Extract-Min：把最小值吐出來、砍掉', '');
+  await step(tok);                                   // 3126 吐出 s
+  glow(C.G.N.s, null); C.extract('s');
+  say('一開始吐出 s（0），從 s 開始做', '');
+  await step(tok);                                   // 3133 黑色 = 放進 S
+  note('黑色 = 正在處理、已放進 S', -4.6, -1.6);
+  say('變成黑色 = 正在處理，已放進 S', '');
+  await step(tok);                                   // 3154 看能不能 update 別人
+  say('接著看：透過 s 能不能 update 別人', '');
+  await step(tok);                                   // 3162 t：0 + 10 = 10
+  C.relax('s', 't');
+  say('s → t：0 + 10 = 10，比 ∞ 好', 't 降成 10');
+  await step(tok);                                   // 3177 y：0 + 5 = 5
+  C.relax('s', 'y');
+  say('s → y：0 + 5 = 5', '從 ∞ 降到 5');
+  await step(tok);                                   // 3192 剩四個點，吐出 5
+  C.extract('y');
+  say('PQ 剩四個點：最小的是 5 → 吐出 y', '放進 S');
+  await step(tok);                                   // 3214 5 + 3 = 8 < 10
+  C.relax('y', 't');
+  say('y → t：5 + 3 = 8，比 10 好', 't 被 update 成 8');
+  await step(tok);                                   // 3230 5 + 9 = 14
+  C.relax('y', 'x');
+  say('y → x：5 + 9 = 14', '比 ∞ 好');
+  await step(tok);                                   // 3237 5 + 2 = 7
+  C.relax('y', 'z');
+  say('y → z：5 + 2 = 7', '也 update');
+  await step(tok);                                   // 3250 吐出 7（z）
+  C.extract('z');
+  say('剩三個：吐出最小的 7（z）', '');
+  await step(tok);                                   // 3264 7 + 6 = 13 < 14
+  C.relax('z', 'x');
+  say('z → x：7 + 6 = 13，比 14 好', '');
+  await step(tok);                                   // 3270 吐出 8（t），8 + 1 = 9
+  C.extract('t'); C.relax('t', 'x');
+  say('8 跟 13：吐出 t（8）', 't → x：8 + 1 = 9');
+  await step(tok);                                   // 3287 直到所有人都確認
+  C.extract('x');
+  say('最後吐出 x（9）', '所有人都放進 S，結束');
+  await step(tok);                                   // 3301 d 從 ∞ 往下降
+  note('每個 d：∞ → 往下降 → 停住', -2.0, 7.0);
+  say('每個點的 d 都從 ∞ 往下降', '降到最後就不再動');
+  await step(tok);                                   // 3307 visit 順序 d 遞增
+  const ord = [['s', 0], ['y', 5], ['z', 7], ['t', 8], ['x', 9]];
+  for (let k = 0; k < ord.length; k++) { cube(ord[k][0] + ':' + ord[k][1], J2.exp, [1.0, 0.5, 0.5], 1.6 + k * 1.15, -1.6, 0.6, 1); await beat(tok, 250); }
+  say('explore 的順序：0、5、7、8、9', 'd 值由小到大');
+  await step(tok);                                   // 3329 greedy：由近到遠
+  good('greedy：從近的走到遠的', 3.9, -2.4);
+  say('從比較近的走到比較遠的', '這就是 greedy 的 idea');
+  void ex;
 }]);
 
-// ═════════════ Lec13 ═════════════
+// ═════════════ Lec13（trkaH2uLxHw） ═════════════
 
-// 01:52 實作：從 edge 的角度取 min → 每個點記 d（shortest-path estimate）
+// 00:15 回顧：只適用非負 weight（Lec13）
+FRAG.push(['grjiang2-negative-review', '回顧：Dijkstra 只適用非負 edge weight', async (tok) => {
+  fresh([0, 3.4, 14], [0, 3.0, 0]);
+  const G = j2Graph({ s: [-4.8, 3], a: [1.0, 5.4], b: [1.0, 0.6] }, [['s', 'a', 2], ['s', 'b', 3], ['b', 'a', 2]], { drop: 1.5 });
+  const me = buddy('Dijkstra', '', '#f4a56a', -4.8, 1.2, 0.9, 0.6);
+  await step(tok);                                   // 15 適用時機：weight 非負
+  pkt('適用時機：edge weight ≥ 0', 4.4, 6.6);
+  say('Dijkstra：有名的 shortest path algorithm', '適用時機：edge weight 一定要非負');
+  await step(tok);                                   // 45 greedy 本質
+  j2Explore(G, 's'); txt(G.D.s, '0'); txt(G.D.a, '2'); txt(G.D.b, '3');
+  say('它的本質是 greedy', '');
+  await step(tok);                                   // 53 決定了就不回頭
+  G.e('s', 'a').set(J2.tree); j2Explore(G, 'a'); txt(G.D.a, '2 定案');
+  const lk = prop('lock', 1.9, 5.0, 0.5, 0.7);
+  await walk(tok, me, 1.0, 3.6, 800);
+  say('決定之後不會回頭 revisit', 'a 定案、上鎖');
+  await step(tok);                                   // 61 如果 edge weight 是負的
+  relabel(G.N.b, 'b'); txt(G.E[2].lb, '−2'); j2Cls(G.E[2].lb, 'bad'); G.E[2].set(J2.bad);
+  say('如果 edge weight 是負的…', '會影響後續的決定');
+  await step(tok);                                   // 67 整個 algorithm 運作錯誤
+  G.e('s', 'b').set(J2.tree); j2Explore(G, 'b');
+  await walk(tok, me, 1.0, -0.8, 800);
+  G.e('b', 'a').set(J2.hot); tint(G.N.a, J2.bad);
+  bad('s→b→a = 3 − 2 = 1 < 2，但 a 已鎖住', 4.2, 2.9);
+  me.mood('sad');
+  say('a 已經鎖住，更短的 1 改不回去', '整個 algorithm 就錯了（補充例子）');
+  await step(tok);                                   // 83 出現負數怎麼辦？
+  bub('那有負數怎麼辦？', -3.0, 1.0, 1.2);
+  say('同學問：edge weight 出現負數怎麼辦？', '');
+  await step(tok);                                   // 94 後續章節的其他演算法
+  pkt('之後的章節：可處理 negative weight 的演算法', 0.0, -1.8);
+  me.mood('happy');
+  say('有些問題允許負的 weight', '後續章節會介紹其他演算法處理');
+  void lk;
+}]);
+
+// 01:57 實作：每個點記 d（shortest-path estimate）；從 edge 的角度改成點的角度
 FRAG.push(['grjiang2-edge-vs-vertex', '實作加速：對 edge 取 min 改成每個點記 d 值', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.0, 0]);
   const G = j2Graph(J2S_P, J2S_E);
-  for (const [k, d] of [['s', 0], ['u', 1], ['v', 2]]) { j2Explore(G, k); txt(G.D[k], 'd=' + d); }
-  G.e('s', 'u').set(J2.tree); G.e('s', 'v').set(J2.tree);
-  say('S = {s, u, v} 時，原始寫法：', '把每條跨出 S 的 edge 都算一次');
-  await beat(tok, 2600);
-  const cross = [['s', 'x', '0+4=4'], ['u', 'x', '1+1=2'], ['u', 'y', '1+3=4'], ['v', 'z', '2+3=5']];
   const ls = [];
-  for (let k = 0; k < cross.length; k++) {
-    const [a, b, f] = cross[k]; G.e(a, b).set(J2.hot);
-    ls.push(tag(a + '→' + b + '：' + f, 'idx', -4.4 + k * 2.9, -0.7));
-    await beat(tok, 800);
-  }
-  say('對所有 edge 取 min：每輪都很慢', 'take minimum 的對象是 edge');
-  await beat(tok, 2800);
-  ls.forEach(kill);
+  await step(tok);                                   // 126 每個點都記一個 d
+  for (const k of Object.keys(G.N)) txt(G.D[k], 'd');
+  say('整個過程中，每個點都記一個 d 值', '');
+  await step(tok);                                   // 137 d = 估計值 estimate
+  note('d = shortest path 距離的「估計值」', 0.0, -0.8);
+  say('d 是最短距離的估計值（estimate）', '');
+  await step(tok);                                   // 145 一開始除了 source 都 ∞
+  txt(G.D.s, 'd=0'); for (const k of ['u', 'v', 'x', 'y', 'z']) txt(G.D[k], 'd=∞');
+  say('一開始除了 source，其他都是 ∞', '');
+  await step(tok);                                   // 152 慢慢往下降，降到最低就停
+  for (const [k, v] of [['u', 1], ['v', 2]]) { txt(G.D[k], 'd=' + v); glow(G.N[k], GOLD); await beat(tok, 400); }
+  say('隨著演算法進行，估計值往下降', '降到真正的最短長度就不再改變');
+  await step(tok);                                   // 180 確認後 mark explored = 放進 S
+  for (const k of ['s', 'u', 'v']) { glow(G.N[k], null); j2Explore(G, k); }
+  G.e('s', 'u').set(J2.tree); G.e('s', 'v').set(J2.tree);
+  say('確認後 mark 成 explored', '也就是放進 S');
+  await step(tok);                                   // 198 原本的版本：不是每點記 d
+  for (const k of ['x', 'y', 'z']) txt(G.D[k], '');
+  say('但原本的版本，並不是每個點都記 d', '');
+  await step(tok);                                   // 213 從已 reach 的點往外擴散
+  const cross = [['s', 'x', '0+4=4'], ['u', 'x', '1+1=2'], ['u', 'y', '1+3=4'], ['v', 'z', '2+3=5']];
+  for (let k = 0; k < cross.length; k++) { const [a, b, f] = cross[k]; G.e(a, b).set(J2.hot); ls.push(tag(a + '→' + b + '：' + f, 'idx', -4.6 + k * 3.0, -1.6)); await beat(tok, 300); }
+  say('每次都從已 reach 的點往外擴散', '看所有人裡的最低點');
+  await step(tok);                                   // 234 以 edge 的角度
+  ls.forEach((l) => j2Cls(l, 'ptr'));
+  say('所以原始想法是以 edge 的角度出發', '對每條 edge 算 d + ℓ');
+  await step(tok);                                   // 269 複雜度很高
+  const slow = bad('對所有 edge 取 min：很慢', 0.0, 7.0);
+  say('對 edge take minimum', '實作時複雜度會變非常高');
+  await step(tok);                                   // 274 加速
+  txt(slow, '加速！'); j2Cls(slow, 'pkt');
+  say('實作時有一個加速的辦法', '');
+  await step(tok);                                   // 292 反過來：每個點記 d
+  ls.forEach(remove);
   for (const [a, b] of cross) G.e(a, b).set(J2.edge);
-  say('改成每個點記一個 d 值', 'shortest-path estimate：多個來源先取 min');
-  for (const [k, v] of [['x', 2], ['y', 4], ['z', 5]]) { txt(G.D[k], 'd=' + v); glow(G.N[k], GOLD); await beat(tok, 700); }
-  await beat(tok, 2000);
-  for (const k of ['x', 'y', 'z']) glow(G.N[k], null);
-  say('一開始除了 s 都是 ∞，只降不升', 'unreachable 的點就一直是 ∞');
-  await beat(tok, 2800);
-  glow(G.N.x, GREEN);
-  say('take minimum 的對象變成點', 'x、y、z 三個 key 裡挑最小：x = 2');
-  await beat(tok, 3000);
+  for (const [k, v] of [['x', 2], ['y', 4], ['z', 5]]) { txt(G.D[k], 'd=' + v); glow(G.N[k], GOLD); await beat(tok, 300); }
+  say('反過來，改成以點的角度', '每個點記自己的 d 值');
+  await step(tok);                                   // 309 多個來源先取 min 當自己的 d
+  G.e('s', 'x').set(J2.hot); G.e('u', 'x').set(J2.hot);
+  note('x 有兩個來源：min(0+4, 1+1) = 2', 1.2, 1.8);
+  say('有多個來源？先取最小，當作自己的 d', 'x：min(4, 2) = 2');
+  await step(tok);                                   // 324 take minimum 的對象變成點
+  G.e('s', 'x').set(J2.edge); G.e('u', 'x').set(J2.edge);
+  for (const k of ['y', 'z']) glow(G.N[k], null);
+  glow(G.N.x, GREEN); j2Cls(slow, 'good'); txt(slow, '取 min 的對象：點（x、y、z 裡挑 x）');
+  say('take minimum 的對象從 edge 變成點', '運算就快多了');
 }]);
 
-// 19:49 priority queue：max／min 與四種操作（OS process 例子）
-FRAG.push(['grjiang2-pq-ops', 'Priority queue：Find／Extract／Insert／ChangeKey', async (tok) => {
+// 05:32 CLRS 例子：只 update 鄰居（Lec13）
+FRAG.push(['grjiang2-clrs-update', 'CLRS 例子：Extract-Min 與只 update 鄰居（≤ m 次）', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.0, 0]);
-  say('每筆 data 帶一個 key = priority', 'max-PQ：key 大優先　min-PQ：key 小優先');
-  await beat(tok, 2800);
-  tag('max-priority queue（OS 的 process，key 為示意）', 'ptr', 0, 6.3);
-  let q = [['P1', 9], ['P2', 7], ['P3', 4], ['P4', 2]];
-  const ms = {};
-  const lay = () => q.forEach(([n], k) => move(ms[n], -3.6 + k * 2.2, 3.2, 0));
-  q.forEach(([n, v], k) => { ms[n] = cube(n + ':' + v, J2.blue, [1.8, 0.8, 0.8], -3.6 + k * 2.2, 3.2, 0, 1.5); });
-  await beat(tok, 1600);
-  glow(ms.P1, GOLD);
-  say('Find-Max：看 priority 最高的', 'P1（key 9）');
-  await beat(tok, 2600);
-  say('Extract-Max：找到並移除（處理掉）', '剩下的還要維持 priority queue');
-  fly(ms.P1); q = q.slice(1); await beat(tok, 900); lay();
-  await beat(tok, 2000);
-  say('Insert：新 process（例如開影片）', 'key 8');
-  ms.P5 = cube('P5:8', J2.exp, [1.8, 0.8, 0.8], 0, 3.2, 0, 3);
-  q.unshift(['P5', 8]); await beat(tok, 700); lay();
-  await beat(tok, 2200);
-  say('ChangeKey：P4 等太久快 starving', '把 priority 提高：2 → 10');
-  glow(ms.P4, GOLD); relabel(ms.P4, 'P4:10');
-  q = [['P4', 10], ...q.filter(([n]) => n !== 'P4')]; await beat(tok, 900); lay();
-  await beat(tok, 2600);
-  glow(ms.P4, null);
-  say('Dijkstra 用 min-PQ', '以下 heap 用 max heap 講，min 對稱');
-  await beat(tok, 2800);
+  const C = j2Clrs();
+  const cnt = tag('', 'ptr alt', 4.8, -1.6);
+  const showCnt = () => txt(cnt, '檢查過的 edge：' + C.checked + ' / m = 10');
+  await step(tok);                                   // 338 數字 = shortest-path estimate
+  note('點上的數字 = shortest-path estimate', 0.4, 7.0);
+  say('圈圈裡的數字 = 當下的 shortest-path estimate', '');
+  await step(tok);                                   // 349 source 是 0
+  txt(C.G.D.s, '0');
+  say('唯一能確定的：source 是 0', '自己走到自己');
+  await step(tok);                                   // 355 其他設 ∞
+  C.showD();
+  say('其他人還不知道要走多遠：設 ∞', '');
+  await step(tok);                                   // 365 unreachable 的 ∞ 不會變
+  const ur = cube('w', J2.gray, [0.7, 0.7, 0.7], 6.2, 2.8, 0, 1.2), urT = tag('∞', 'ptr', 6.2, 3.6);
+  const urN = note('（示意）到不了的點：一直是 ∞', 5.2, 1.8);
+  say('有些 ∞ 降不下來：s 根本到不了', 'unreachable，無路可走');
+  await step(tok);                                   // 385 有路可走就會降到最短
+  kill(ur); remove(urT); remove(urN);
+  say('其他人只要有路可走', '一定會降到最短距離');
+  await step(tok);                                   // 394 d 當 key 放進 PQ
+  C.showQ();
+  say('把每個點的 d 當成 key', '丟進 priority queue');
+  await step(tok);                                   // 411 隨時吐出最小
+  const m = prop('printer', 5.6, -0.2, 0.6, 0.9, '吐最小');
+  say('要求：隨時都能吐出最小的那個', '');
+  await step(tok);                                   // 437 吐出 s
+  C.extract('s');
+  say('現在只有 s 是 0：吐出 s', '從 s 出發');
+  await step(tok);                                   // 446 順便 update
+  say('順便 update：透過 s 往外', '誰的 d 可以往下降？');
+  await step(tok);                                   // 468 t：0 + 10 = 10
+  C.relax('s', 't'); showCnt();
+  say('s → t：0 + 10，∞ 改成 10', '');
+  await step(tok);                                   // 476 y 改成 5
+  C.relax('s', 'y'); showCnt();
+  say('同樣道理，y 改成 5', '');
+  await step(tok);                                   // 484 PQ 也跟著 update
+  for (const k of ['t', 'y']) glow(C.G.N[k], null);
+  say('min-priority queue 也跟著 update', '');
+  await step(tok);                                   // 502 吐出 y
+  C.extract('y');
+  say('再叫它吐最小的：吐出 y（5）', '');
+  await step(tok);                                   // 519 黑色 = explored
+  note('黑色 = explored：不會再往下降', -4.6, -1.6);
+  say('吐出來 = 確認最短距離，不會再降', '圖上 mark 成黑色 = explored');
+  await step(tok);                                   // 529 丟到 S 不再改變
+  say('也就是丟進 S，從此不再改變', '');
+  await step(tok);                                   // 548 經過 y 看到更多人
+  for (const e of C.G.E.filter((x) => x.u === 'y')) e.set(J2.hot);
+  say('經過 y 又能看到更多人', 't、x、z');
+  await step(tok);                                   // 571 5 + 3 = 8
+  C.relax('y', 't'); showCnt();
+  say('y → t：5 + 3 = 8，比 10 小', '');
+  await step(tok);                                   // 579 找到更短的路，10 → 8
+  bub('找到更短的路！', -1.4, 7.0, 0.6);
+  say('找到另一條到 t 更短的路', '10 降成 8');
+  await step(tok);                                   // 588 x、z 從 ∞ 降下來
+  C.relax('y', 'x'); C.relax('y', 'z'); showCnt();
+  say('經過 y，x 和 z 也從 ∞ 降下來', 'x = 14、z = 7');
+  await step(tok);                                   // 601 每輪吐出最小的
+  C.extract('z');
+  say('每個 iteration：吐出 d 最小的', '吐出 z（7）');
+  await step(tok);                                   // 622 處理完要為後面的人 update
+  C.relax('z', 'x'); C.relax('z', 's'); showCnt();
+  say('處理它之後，為後面的人做 update', 'z → x：7 + 6 = 13');
+  await step(tok);                                   // 637 只 update 鄰居
+  C.extract('t');
+  for (const e of C.G.E.filter((x) => x.u === 't')) e.set(J2.hot);
+  say('update 只會動誰？只有它連出去的鄰居', '吐出 t（8）：只看 t→x、t→y');
+  await step(tok);                                   // 655 直到所有人 explore 完
+  C.relax('t', 'x'); C.relax('t', 'y'); showCnt();
+  C.extract('x'); C.relax('x', 'z'); showCnt();
+  say('直到所有人都 explore 完成就停', 'x：8 + 1 = 9，最後吐出 x');
+  await step(tok);                                   // 713 每次 take 一個點再 update 鄰居
+  j2Cls(cnt, 'pkt');
+  say('每次 take 一個點，再 update 它的鄰居', '');
+  await step(tok);                                   // 720 update 總數 = edge 數 m
+  j2Cls(cnt, 'good'); txt(cnt, 'update 的總次數 ≤ edge 總數 m = 10');
+  say('每條 edge 只會被看一次', 'update 總次數 = edge 總數 m');
+  await step(tok);                                   // 743 比 high-level 版本快
+  good('比一開始 high-level 的版本快', 0.4, 7.0);
+  say('比一開始 high-level 的演算法更快', '');
+  void m;
 }]);
 
-// 25:18 max heap 定義、complete binary tree
+// 12:40 min-priority queue 的操作次數與三種實作（Lec13）
+FRAG.push(['grjiang2-pq-costs', 'Min-priority queue：操作次數與 array／binary heap／Fibonacci heap', async (tok) => {
+  fresh([0, 3.4, 14], [0, 3.2, 0]);
+  const cols = [-5.2, -2.6, -0.4, 2.4, 5.0];
+  const rows = [['Insert', 'n', 'O(1)', 'O(log n)', 'O(1)'], ['ExtractMin', 'n', 'O(n)', 'O(log n)', 'O(log n)*'], ['ChangeKey', 'm', 'O(1)', 'O(log n)', 'O(1)*'], ['IsEmpty', 'n', 'O(1)', 'O(1)', 'O(1)']];
+  const cells = rows.map((r, ri) => r.map((v, c) => { const l = tag(v, c < 2 ? 'ptr alt' : 'idx', cols[c], 5.2 - ri * 0.95); showL(l, false); return l; }));
+  const head = ['operation', '次數', 'array', 'binary heap', 'Fibonacci'].map((h, c) => { const l = tag(h, 'ptr', cols[c], 6.2); showL(l, false); return l; });
+  const showRow = (r, upto) => { for (let c = 0; c <= upto; c++) showL(cells[r][c], true); };
+  const showCol = (c) => { showL(head[c], true); for (let r = 0; r < 4; r++) showL(cells[r][c], true); };
+  const dj = buddy('', '', '#f4a56a', -6.2, -1.4, 0.9, 0.55);
+  await step(tok);                                   // 760 min-PQ 要怎麼做才快？
+  dj.mood('wow');
+  bub('min-PQ 怎麼做才快？', -4.4, -0.6, 0.9);
+  say('留下的尾巴：min-priority queue', '要怎麼做才會快？');
+  await step(tok);                                   // 782 Dijkstra 對 min-PQ 做哪些操作
+  showL(head[0], true); showL(head[1], true);
+  say('先列出 Dijkstra 對 min-PQ 做的 operation', '');
+  await step(tok);                                   // 797 Insert：n 次
+  showRow(0, 1);
+  say('Insert：一開始所有點都丟進去', 'n 個點 → n 次');
+  await step(tok);                                   // 825 Extract-Min：n 次
+  showRow(1, 1);
+  say('每個 iteration 一次 Extract-Min', '每個點都要被吐出來 → n 次');
+  await step(tok);                                   // 851 ChangeKey：m 次
+  showRow(2, 1);
+  say('update 鄰居 = ChangeKey', '鄰居加起來 = edge 總數 → m 次');
+  await step(tok);                                   // 881 IsEmpty
+  showRow(3, 1);
+  say('還有 IsEmpty：每輪確認做完了沒', 'n 次');
+  await step(tok);                                   // 918 三種選擇：array
+  showCol(2);
+  say('實作的三種選擇，第一種：array', '最簡單，排成一排');
+  await step(tok);                                   // 970 Extract-Min 要掃完整個 array
+  glow(dj.body, null); j2Cls(cells[1][2], 'bad');
+  say('Extract-Min：要掃完整個 array', '才知道最小在哪 → O(n)');
+  await step(tok);                                   // 991 ChangeKey 直接 indexing 很快
+  j2Cls(cells[2][2], 'good');
+  say('ChangeKey：直接 indexing 改值', '很快，O(1)');
+  await step(tok);                                   // 1015 array 總共 n × n = O(n²)
+  tag('O(n²)', 'ptr alt', cols[2], 1.1);
+  say('用 array：n 次 × O(n) = O(n²)', '');
+  await step(tok);                                   // 1055 理論最快 Fibonacci heap
+  showCol(4);
+  tag('O(m + n log n)', 'ptr alt', cols[4], 1.1);
+  say('理論上最快：Fibonacci heap', '（* 為 amortized；總和依課本補上）');
+  await step(tok);                                   // 1097 係數很大
+  bad('係數很大：資料量小時不一定快', 4.4, 0.2);
+  say('但它前面的係數很大', '資料量不大時，不見得比較快');
+  await step(tok);                                   // 1119 一般最好用 binary heap
+  showCol(3);
+  say('一般最好用的：binary heap', '每個操作 O(log n)');
+  await step(tok);                                   // 1135 Heap 還能順便排序
+  pkt('Heap 還能順便做 n log n 的排序', -2.6, -0.6);
+  say('學 Heap 的好處：還能順便排序', '只要 n log n');
+  await step(tok);                                   // 1161 Dijkstra 的 min-PQ 用 binary heap
+  tag('O((n+m) log n)', 'ptr alt', cols[3], 1.1);
+  dj.mood('happy');
+  say('Dijkstra 的 min-PQ 也能用 binary heap 做', '總共 (n + m) log n（課本寫 O(m log n)）');
+}]);
+
+// 19:51 priority queue：max／min 與四種操作（OS process 例子）
+FRAG.push(['grjiang2-pq-ops', 'Priority queue：Find／Extract／Insert／ChangeKey', async (tok) => {
+  fresh([0, 3.6, 14], [0, 3.0, 0]);
+  const P = {};
+  let q = [];
+  const lay = async () => { const from = q.map(([n]) => P[n].g.position.x); await anim(tok, 600, (u) => q.forEach(([n], k) => { P[n].g.position.x = from[k] + (-4.6 + k * 1.9 - from[k]) * u; })); };
+  await step(tok);                                   // 1191 Heap：宣告成 array，操作像 Heap
+  const row = [9, 7, 4, 2].map((v, k) => cube(v, J2.blue, [0.8, 0.5, 0.5], -1.6 + k * 0.9, 6.4, 0, 1));
+  note('Heap：宣告成 array，操作起來像 Heap', 0.0, 5.6);
+  say('Heap 宣告成 array，但操作起來像 Heap', '硬體上的結構非常簡單');
+  await step(tok);                                   // 1224 兩種極端
+  row.forEach(kill);
+  tag('priority queue：兩種', 'ptr alt', 0, 6.4);
+  say('Priority queue 有兩種', '值小的優先，或值大的優先');
+  await step(tok);                                   // 1286 每筆 data 帶 key
+  q = [['P1', 9], ['P2', 7], ['P3', 4], ['P4', 2]];
+  const col = ['#f4a56a', '#9fb8ff', '#7cd1a8', '#e8cf8a'];
+  q.forEach(([n, v], k) => { P[n] = buddy(n, v, col[k], -4.6 + k * 1.9, 1.4, 0.4, 0.75); });
+  say('每筆 data 都帶一個 key value', 'key 的大小 = priority 的高低');
+  await step(tok);                                   // 1310 max-PQ／min-PQ
+  note('key 大優先 = max-PQ　key 小優先 = min-PQ', 0, 5.6);
+  say('key 越大越優先：max priority queue', 'key 越小越優先：min priority queue');
+  await step(tok);                                   // 1325 Dijkstra 用 min，例子用 max
+  pkt('Dijkstra 用 min；以下例子用 max（對稱）', 0, 4.8);
+  say('Dijkstra 用的是 min-PQ', '接下來的例子用 max-PQ，min 對稱');
+  await step(tok);                                   // 1356 Find-Max
+  P.P1.glow(GOLD); P.P1.mood('happy');
+  say('Find-Max：看 priority 最高的是誰', 'P1（key 9）');
+  await step(tok);                                   // 1384 Extract：find and remove
+  say('Extract-Max：找到它，處理完再移除', 'find and remove');
+  await step(tok);                                   // 1397 OS 先處理 priority 高的 process
+  const cpu = prop('cpu', 5.6, 1.4, 0.4, 0.9, 'CPU');
+  const p1 = P.P1.g, a = p1.position.clone();
+  await anim(tok, 800, (u) => p1.position.set(a.x + (5.6 - a.x) * u, a.y + Math.sin(u * Math.PI) * 1.2, a.z));
+  p1.visible = false; q = q.slice(1);
+  say('像 OS 處理 process：先拿 priority 高的', '處理完就從 queue 移開');
+  await step(tok);                                   // 1426 剩下的維持 PQ
+  await lay();
+  say('移除後，剩下的人還要維持 priority queue', '');
+  await step(tok);                                   // 1442 Insert：新 process
+  P.P5 = buddy('P5（看影片）', 8, '#f4a6c8', 5.6, 3.4, 0.4, 0.75);
+  await walk(tok, P.P5, 5.6, 1.4, 600);
+  q.unshift(['P5', 8]); await lay();
+  say('Insert：突然開一個 video', '多一個新的 process，key 8');
+  await step(tok);                                   // 1465 ChangeKey
+  P.P4.glow(GOLD);
+  say('ChangeKey：改變某筆 data 的 key', '');
+  await step(tok);                                   // 1477 priority 太低一直被插隊 → starving
+  P.P4.mood('sad');
+  bub('我一直被插隊…', 2.6, 3.2, 0.6);
+  say('P4 priority 太低，一直被插隊', '等太久會 starving（餓死）');
+  await step(tok);                                   // 1499 promote 到最前面
+  P.P4.set(10); P.P4.mood('happy'); P.P4.glow(null);
+  q = [['P4', 10], ...q.filter(([n]) => n !== 'P4')]; await lay();
+  say('把它的 priority 提高（2 → 10）', '從後面拉到最前面，趕快處理');
+  void cpu;
+}]);
+
+// 25:20 max heap 定義、complete binary tree
 FRAG.push(['grjiang2-heap-def', 'Max heap：每個點 ≥ 小孩，complete binary tree', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.0, 0]);
-  const H = j2Heap([14, 12, 7, 10, 8, 6], { cells: false, drop: 2 });
-  H.R.forEach((m) => m && kill(m));
-  say('Max heap：一棵 binary tree', '每個點的 key ≥ 小孩的 key');
-  await beat(tok, 2600);
-  for (const [p, cs] of [[1, [2, 3]], [2, [4, 5]], [3, [6]]]) {
-    H.hi(p, GOLD); cs.forEach((c) => H.hi(c, RED));
-    say(H.A[p] + ' ≥ ' + cs.map((c) => H.A[c]).join('、'), '');
-    await beat(tok, 1500); H.unhi();
-  }
-  H.hi(1, GREEN);
-  say('最大值一定在 root', 'max = 14');
-  await beat(tok, 2400);
-  H.unhi(); for (const i of [4, 5, 6]) H.hi(i, GOLD);
-  say('最小值一定在某個 leaf', '不在 leaf 就有小孩比它小 → 矛盾');
-  await beat(tok, 3000);
+  let H = null;
+  await step(tok);                                   // 1520 Heap 是一棵可愛的 binary tree
+  H = j2Heap([14, 12, 7, 10, 8, 6], { cells: false, noRow: true, drop: 2 });
+  say('Heap 長相很可愛：就是一棵 binary tree', '以下看 max heap');
+  await step(tok);                                   // 1567 每個點 = 一筆 data 的 key
+  note('每個點 = 一筆 data，存它的 key value', 0, 1.6);
+  say('tree 的每個點是一筆 data', '存著它的 key（priority）');
+  await step(tok);                                   // 1580 max heap：自己 ≥ 小孩
+  tag('max heap：每個點 ≥ 小孩', 'ptr alt', 0, 7.0);
+  say('Max heap：每個點的 key ≥ 小孩的 key', '');
+  await step(tok);                                   // 1598 root 比小孩大：14 > 12、7
+  H.hi(1, GOLD); H.hi(2, RED); H.hi(3, RED);
+  say('root 一定比下一層大', '14 > 12，14 > 7');
+  await step(tok);                                   // 1605 12 > 10、8；7 > 6
+  H.unhi(); H.hi(2, GOLD); H.hi(4, RED); H.hi(5, RED); H.hi(3, GOLD); H.hi(6, RED);
+  say('12 > 10、12 > 8；7 > 6', '維持一路往下變小的關係');
+  await step(tok);                                   // 1614 min heap 相反
   H.unhi();
-  const ix = [];
-  for (let i = 1; i <= 6; i++) { ix.push(tag(String(i), 'idx', HX(i) + 0.62, HY(i) + 0.4)); await beat(tok, 350); }
-  say('Complete binary tree', '由上而下、由左而右編號；只有最後一層右邊可缺');
-  await beat(tok, 3000);
-  const hole = cube('', J2.bad, [0.8, 0.7, 0.6], HX(7) + 0.0, HY(7), 0, 1.5); tint(H.T[6], J2.gray);
-  say('中間有洞（缺 6 卻有 7）', '就不是 heap，建錯了');
-  await beat(tok, 2800);
-  kill(hole); tint(H.T[6], J2.blue);
-  say('Min heap 對稱：每個點 ≤ 小孩', 'root 是最小值');
-  await beat(tok, 2600);
+  note('min heap 相反：每個點 ≤ 小孩（例 2 → 5、9）', 0, 0.8);
+  say('Min heap 相反：自己 ≤ 小孩', '');
+  await step(tok);                                   // 1636 最大值在 root
+  H.hi(1, GREEN);
+  say('Max heap 的最大值在哪？一定在 root', 'max = 14');
+  await step(tok);                                   // 1646 最小值在某個 leaf
+  H.unhi(); for (const i of [4, 5, 6]) H.hi(i, GOLD);
+  say('最小值一定在某個 leaf', '只是不確定是哪一個');
+  await step(tok);                                   // 1663 不在 leaf 就矛盾
+  bub('不在 leaf → 有小孩比它小 → 矛盾！', 3.0, 2.0, 0.6);
+  say('如果不在 leaf，就有小孩比它更小', '和定義矛盾');
+  await step(tok);                                   // 1684 complete binary tree
+  H.unhi();
+  tag('complete binary tree', 'ptr', -4.6, 7.0);
+  say('Heap 是一棵 complete binary tree', '（完整的 binary tree）');
+  await step(tok);                                   // 1696 編號 1；小孩 2、3；4、5…
+  for (let i = 1; i <= 6; i++) { tag(String(i), 'idx', HX(i) + 0.62, HY(i) + 0.4); await beat(tok, 250); }
+  say('root 編號 1，小孩 2、3', '2 的小孩 4、5…一層一層編下去');
+  await step(tok);                                   // 1715 上層都滿，只有最後一層右邊可缺
+  for (let i = 1; i <= 3; i++) H.hi(i, GREEN);
+  note('上層都塞滿；只有最後一層的右半段可能缺', 0, 0.0);
+  say('上面每層都塞滿', '只有最後一層的右半段可能缺');
+  await step(tok);                                   // 1738 有缺漏就不是 heap
+  H.unhi();
+  const hole = cube('?', J2.bad, [0.8, 0.7, 0.6], HX(7), HY(7), 0, 1.5); tint(H.T[6], J2.gray);
+  bad('缺 6 卻有 7：建錯了，不是 heap', HX(7) - 0.4, HY(7) - 0.9);
+  say('中間有缺漏，就不是 heap', '那是建錯了');
+  void hole;
 }]);
 
-// 29:21 用 array 存 heap：index 從 1 開始
+// 29:23 用 array 存 Heap：index 從 1 開始
 FRAG.push(['grjiang2-heap-array', 'Heap 存在 array：小孩 2i、2i+1，parent ⌊i/2⌋', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.0, 0]);
-  const H = j2Heap([14, 12, 7, 10, 8, 6], { cap: 10, zero: true, drop: 1.5 });
-  say('宣告成 array，心中把它當 heap', 'index 0 空著不用，從 1 開始');
-  await beat(tok, 3000);
+  let H = null;
+  await step(tok);                                   // 1770 用 array 就行
+  const dev = buddy('', '', '#9fb8ff', -6.4, 2.6, 0.6, 0.5);
+  say('實作很簡單：就用 array', '');
+  await step(tok);                                   // 1776 index 連續 1..n
+  H = j2Heap([14, 12, 7, 10, 8, 6], { cap: 10, drop: 1.5 });
+  say('complete binary tree 的編號是連續的', '1、2、3…n，沒有斷開');
+  await step(tok);                                   // 1805 index 0 捨棄不用
+  cube('', J2.gray, [0.9, 0.55, 0.55], AX(0), 0.4, 0, 1); tag('0', 'idx', AX(0), -0.3);
+  bad('不用', AX(0), 1.1);
+  say('投影片把 index 0 空下來不用', '從 1 開始，比較好對應');
+  await step(tok);                                   // 1821 6 筆 data，後面空的
+  for (let i = 7; i <= 10; i++) tag('空', 'idx', AX(i), 1.1);
+  say('這是 6 筆 data 的 max heap', '後面的格子是空的');
+  await step(tok);                                   // 1837 宣告 array，心中是 Heap
+  bub('宣告的是 array，心中把它當 Heap', -3.4, 3.2, 0.6);
+  dev.mood('happy');
+  say('宣告時是 array', '但心中要知道它是一個 Heap');
+  await step(tok);                                   // 1867 root index 1，小孩 2、3
   H.hi(1, GOLD); H.hi(2, RED); H.hi(3, RED);
-  say('root 在 index 1，小孩在 2、3', 'left = 2i，right = 2i + 1');
-  await beat(tok, 2800);
+  say('root 是 index 1', '它的小孩在 index 2、3');
+  await step(tok);                                   // 1885 2 的小孩 4、5：2i、2i+1
   H.unhi(); H.hi(2, GOLD); H.hi(4, RED); H.hi(5, RED);
-  say('index 2 的小孩：4、5', '找到 10 和 8');
-  await beat(tok, 2800);
-  H.unhi(); H.hi(4, RED); H.hi(5, RED); H.hi(2, GOLD);
-  say('反過來：parent = ⌊i / 2⌋', '⌊4/2⌋ = ⌊5/2⌋ = 2');
-  await beat(tok, 2800);
+  const rule = pkt('小孩：2i、2i+1', 3.6, 3.2);
+  say('index 2 的小孩：4、5', '兩倍、兩倍加 1');
+  await step(tok);                                   // 1893 找到 10 和 8
+  say('所以找到 10 和 8 這兩筆', '');
+  await step(tok);                                   // 1903 反過來：parent = 除以 2
+  H.unhi(); H.hi(4, GOLD); H.hi(2, RED);
+  txt(rule, '小孩：2i、2i+1　parent：i / 2');
+  say('反過來，8 號的 parent？', '自己的 index 除以 2');
+  await step(tok);                                   // 1918 5 號的 parent 也是 2 → 取下限
+  H.unhi(); H.hi(5, GOLD); H.hi(2, RED);
+  txt(rule, '小孩：2i、2i+1　parent：⌊i/2⌋');
+  say('5 號的 parent 也是 2', '除以 2 取下限：⌊5/2⌋ = 2');
+  await step(tok);                                   // 1952 heap size
   H.unhi();
-  const hs = tag('heap size = 6', 'ptr alt', AX(3.5), -1.1);
-  const cp = tag('capacity = 10（array 長度）', 'ptr', AX(8), -1.1);
-  say('heap size：前幾筆維持 heap', 'capacity：宣告的 array 長度');
-  await beat(tok, 3000);
-  say('超過 heap size 的格子不理它', '在 array 裡，但不在 heap 裡');
-  void hs; void cp;
-  await beat(tok, 2800);
+  const hs = ghostBox('#2f7fd0', AX(6) - AX(1) + 1.0, 0.9, 0.9); hs.position.set((AX(1) + AX(6)) / 2, 0.4, 0);
+  tag('heap size = 6', 'ptr alt', AX(3.5), -1.1);
+  say('heap size：從 index 1 開始', '有幾筆維持 Heap 的形式');
+  await step(tok);                                   // 1971 capacity
+  tag('capacity = 10（array 長度，可能宣告 100 萬）', 'ptr', AX(7), -1.8);
+  say('capacity：宣告的 array 長度', '可能宣告 100 萬，只放 5 筆');
+  await step(tok);                                   // 1990 heap size 決定誰在 PQ 裡
+  glow(dev.body, null);
+  say('heap size 告訴我們：', '有多少筆在 priority queue 裡');
+  await step(tok);                                   // 1999 超出範圍的不理
+  for (let i = 7; i <= 10; i++) bad('✗', AX(i), 1.7);
+  say('超出 heap size 的格子完全不理', '在 array 裡，但不在 Heap 裡');
 }]);
 
-// 33:28 insert 1、insert 21
+// 33:33 insert 1、insert 21
 FRAG.push(['grjiang2-heap-insert', 'Heap insert：放尾巴、往上浮（insert 1、insert 21）', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.0, 0]);
-  const H = j2Heap([20, 15, 2, 14, 10], { cap: 7, drop: 1.5 });
-  say('Max heap：20 15 2 14 10', 'insert key 1');
-  await beat(tok, 2600);
-  const ins = async (v) => {
+  const H = j2Heap([20, 15, 2, 14, 10], { cap: 7 });
+  const nw = { v: 0, T: null, R: null };
+  const add = (v) => {
     const i = ++H.n; H.A[i] = v;
     H.T[i] = cube(v, J2.exp, [0.8, 0.7, 0.6], HX(i), HY(i), 0, 2.5); H.R[i] = cube(v, J2.exp, [0.9, 0.55, 0.55], AX(i), 0.4, 0, 2.5);
-    H.edges();
-    say('先塞在最尾巴：index ' + i, '維持 complete binary tree');
-    await beat(tok, 2200);
-    let k = i;
-    while (k > 1) {
-      const pr = k >> 1; H.unhi(); H.hi(k, GOLD); H.hi(pr, RED);
-      if (H.A[k] <= H.A[pr]) { say(H.A[k] + ' ≤ parent ' + H.A[pr], '大小關係正確：結束'); await beat(tok, 2400); break; }
-      say(H.A[k] + ' > parent ' + H.A[pr] + '：交換', '往上浮一層');
-      await beat(tok, 1300);
-      H.swap(k, pr); k = pr;
-      await beat(tok, 1300);
-    }
-    if (k === 1) { H.unhi(); H.hi(1, GREEN); say('浮到 root 才停', H.A.slice(1).join(' ')); await beat(tok, 2400); }
-    H.unhi(); H.tint(k, J2.blue);
+    H.edges(); return i;
   };
-  await ins(1);
-  say('再 insert key 21', '');
-  await beat(tok, 1400);
-  await ins(21);
-  say('最多浮到 root：O(log n)', '高度 = log n');
-  await beat(tok, 2800);
+  let k = 0, card = null;
+  await step(tok);                                   // 2019 insert 一筆新的 data
+  say('最簡單的操作：insert 一筆新 data', 'max heap：20 15 2 14 10');
+  await step(tok);                                   // 2025 key value = 1
+  card = pkt('新 data：key 1', 4.6, 6.6);
+  say('要 insert 的 key value 是 1', '它應該放在哪裡？');
+  await step(tok);                                   // 2053 complete binary tree 要接在尾巴
+  const slot = ghostBox(J2.exp, 0.9, 0.8, 0.7); slot.position.set(HX(6), HY(6), 0);
+  say('它是 complete binary tree', '5 筆變 6 筆：第 6 個位置');
+  await step(tok);                                   // 2065 先塞在最尾巴
+  kill(slot); remove(card);
+  k = add(1);
+  say('先塞在最尾巴：index 6', '');
+  await step(tok);                                   // 2072 可能違反大小關係
+  H.hi(k, GOLD);
+  say('塞進去可能會違反 max heap 的大小關係', '要檢查一下');
+  await step(tok);                                   // 2088 一塞就對：1 ≤ parent 2
+  H.hi(3, RED);
+  say('1 沒有比 parent 2 大', '還是 max heap');
+  await step(tok);                                   // 2107 只要確認和 parent 的關係
+  H.unhi(); H.tint(k, J2.blue);
+  good('只要確認新來的和 parent ✓', 3.6, 2.0);
+  say('其他人本來就對，只要確認新的和 parent', 'insert 結束');
+  await step(tok);                                   // 2119 再 insert 21
+  card = pkt('新 data：key 21', 4.6, 6.6);
+  say('再 insert 一筆：key 21', '');
+  await step(tok);                                   // 2134 開新欄位塞進去
+  remove(card);
+  k = add(21);
+  say('一樣先開新欄位、塞在尾巴', 'index 7');
+  await step(tok);                                   // 2143 比 parent 大
+  H.hi(k, GOLD); H.hi(3, RED);
+  say('21 比 parent 2 大', '不維持 max heap 的關係');
+  await step(tok);                                   // 2159 跟 parent 交換，跳上來
+  H.swap(7, 3); k = 3; H.unhi(); H.hi(3, GOLD);
+  say('和 parent 交換：21 跳上來', '');
+  await step(tok);                                   // 2166 繼續往上 check
+  H.hi(1, RED);
+  say('繼續往上和 parent 比', '21 vs 20');
+  await step(tok);                                   // 2172 21 > 20 再換，到 root
+  H.swap(3, 1); k = 1; H.unhi(); H.hi(1, GREEN);
+  say('21 還是比 20 大，再換', '最差一路升到 root 才停');
+  await step(tok);                                   // 2191 insert：放尾巴、往上飄
+  H.unhi();
+  note('insert：放最尾巴 → 一層一層往上浮', 0, -1.2);
+  say('insert：先放最尾巴，再往上飄', 'worst case 飄到頂端');
+  await step(tok);                                   // 2205 複雜度多高？
+  const qq = bub('要飄幾層？', HX(7), HY(7) - 1, 0.6);
+  say('這樣的 complexity 有多高？', '');
+  await step(tok);                                   // 2232 log n
+  remove(qq);
+  tag('最多跳到 root：高度 = log n → O(log n)', 'ptr alt', 0, -2.0);
+  say('最多跳到 root 就停', 'log n 次 → O(log n)');
+  void nw;
 }]);
 
-// 37:23 pop（Extract-Max）
+// 37:27 pop（Extract-Max）
 FRAG.push(['grjiang2-heap-pop', 'Heap pop：拔 root、尾巴補上、往下沉', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.0, 0]);
-  const H = j2Heap([21, 15, 20, 14, 10, 1, 2], { drop: 1.5 });
-  say('Remove 一定是拔 priority 最大的', 'max heap：remove root（21）');
-  await beat(tok, 2600);
-  H.hi(1, GOLD); await beat(tok, 800);
+  const H = j2Heap([21, 15, 20, 14, 10, 1, 2]);
+  await step(tok);                                   // 2247 pop = remove
+  say('接著是 pop：把 data 拿出來處理', '處理完就離開 = remove');
+  await step(tok);                                   // 2267 一定先處理 priority 最高的
+  say('它是 priority queue', '每次一定先處理 priority 最高的');
+  await step(tok);                                   // 2291 max heap：remove root
+  H.hi(1, GOLD);
+  say('Max heap 要 remove 誰？', 'remove root（21）');
+  await step(tok);                                   // 2306 還要維持大小關係
+  note('remove 後，剩下的還要是 max heap', 0, -1.2);
+  say('remove 後還要讓剩下的人', '維持正常的 max heap 大小關係');
+  await step(tok);                                   // 2325 現在 7 筆
+  tag('7 筆 → 6 筆', 'ptr alt', 4.6, 6.6);
+  say('現在有 7 筆，pop 後應該剩 6 筆', '');
+  await step(tok);                                   // 2343 拔掉：上面一個洞
   fly(H.T[1]); fly(H.R[1]); H.T[1] = H.R[1] = null; H.A[1] = null;
-  await beat(tok, 1200);
-  say('root 空了：叫最尾巴的 2 補上', 'O(1)；heap size 7 → 6');
-  H.swap(1, 7); H.n = 6; H.edges(); H.A.length = 7; H.T.length = 7; H.R.length = 7;
-  await beat(tok, 2400);
-  say('只有新 root 不對，其餘仍是 heap', '跟左右小孩比，和較大的換');
-  await beat(tok, 2400);
-  await H.sift(tok, 1, 2600);
-  say('結果：20 15 2 14 10 1', '最多沉到 leaf：O(log n)');
-  await beat(tok, 3000);
+  const hole = ghostBox(J2.bad, 0.9, 0.8, 0.7); hole.position.set(HX(1), HY(1), 0);
+  say('拔掉 root：上面空了一個洞', '');
+  await step(tok);                                   // 2355 最尾巴的人填上去
+  kill(hole);
+  H.hi(7, GOLD); H.swap(1, 7);
+  await beat(tok, 600);
+  H.n = 6; H.edges(); H.A.length = 7; H.T.length = 7; H.R.length = 7;
+  say('叫排名最尾巴的 2 先填到 root', '先把洞塞住');
+  await step(tok);                                   // 2369 heap size 對了，只是大小不正常
+  say('heap size 對了：6 筆', '只是大小關係不正常');
+  await step(tok);                                   // 2384 只有新 root 錯
+  for (let i = 2; i <= 6; i++) H.hi(i, GREEN);
+  say('除了新 root，其他人原本就是 max heap', '只要修正它');
+  await step(tok);                                   // 2399 往下換
+  H.unhi(); H.hi(1, GOLD);
+  say('跟 insert 往上浮很像', '這次是往下換');
+  await step(tok);                                   // 2420 左右小孩比，大的有資格
+  H.hi(2, RED); H.hi(3, RED);
+  say('跟左右兩個小孩都比一下', '15 和 20：大的那個有資格交換');
+  await step(tok);                                   // 2435 20 跳上來
+  H.unhi(); H.swap(1, 3); H.hi(3, GOLD);
+  say('20 跳上來，2 換下去', '');
+  await step(tok);                                   // 2443 2 再往下 check，正常就停
+  H.hi(6, RED);
+  await beat(tok, 500);
+  H.unhi(); H.hi(1, GREEN);
+  say('2 再往下 check：2 ≥ 1，正常', '停下來：20 15 2 14 10 1');
+  await step(tok);                                   // 2456 拔 root O(1)
+  H.unhi();
+  note('① 拔 root：O(1)', -4.0, -1.2);
+  say('Complexity：拔掉 root 是 O(1)', '');
+  await step(tok);                                   // 2464 搬尾巴 O(1)
+  note('② 尾巴搬上來：O(1)', 0, -1.2);
+  say('把尾巴搬上來也是 O(1)', '');
+  await step(tok);                                   // 2477 沉到 leaf：log n
+  tag('③ 最多沉到 leaf：O(log n)', 'ptr alt', 4.0, -1.2);
+  say('最花時間的：一路沉到 leaf', 'log n 次 → O(log n)');
 }]);
 
-// 41:44 ／ 50:31 MAX-HEAPIFY：左右 subtree 已是 heap，只修自己
+// 41:45 MAX-HEAPIFY 的想法
 FRAG.push(['grjiang2-max-heapify', 'MAX-HEAPIFY：假設兩個 subtree 都是 heap，只修正自己', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.0, 0]);
+  let H = null, cnt = null, sub = [];
+  const st = buddy('', '', '#f4a56a', 6.2, 0, 1.2, 0.55);
+  await step(tok);                                   // 2509 很重要的 operation
+  tag('MAX-HEAPIFY', 'ptr alt', 0, 7.0);
+  say('Heap 很重要的 operation：MAX-HEAPIFY', '');
+  await step(tok);                                   // 2527 -ify：使它變成 heap
+  note('-ify = 動詞：使它變成 heap', 0, 6.3);
+  say('-ify 是動詞：讓資料變成 max heap 的形式', '');
+  await step(tok);                                   // 2553 min heap 也有 MIN-HEAPIFY
+  note('min heap 對應 MIN-HEAPIFY', 0, 5.6);
+  say('min priority queue 就有對應的', 'MIN-HEAPIFY');
+  await step(tok);                                   // 2562 亂放的 array 怎麼修？
+  H = j2Heap([1, 5, 2, 9, 8, 7, 6], { drop: 1.5 });
+  st.mood('wow');
+  say('給一堆亂放在 array 裡的數字', '要怎麼修成 max heap？');
+  await step(tok);                                   // 2607 直覺：root 先拿出來和小孩比
+  H.hi(1, GOLD); H.hi(2, RED); H.hi(3, RED);
+  say('第一個直覺：root 先拿出來看', '和它的小孩比一比');
+  await step(tok);                                   // 2623 不對就換上來，下面又違反再換
+  H.unhi(); H.swap(1, 2); await beat(tok, 500); H.swap(2, 4); await beat(tok, 500);
+  cnt = tag('已交換 2 次', 'ptr', 4.6, 6.4);
+  H.hi(1, RED); H.hi(2, RED);
+  say('不對就換上來；換下去又違反，再換', '');
+  await step(tok);                                   // 2640 很多 redundant 交換
+  bad('上面又壞了（5 < 9）→ 還要再換', 0.0, 1.6);
+  txt(cnt, '換了又換…');
+  st.mood('sad');
+  say('這樣會做很多 redundant 的交換', '');
+  await step(tok);                                   // 2687 同學：用遞迴？
+  H.unhi();
+  bub('用遞迴（recursive）？', 4.6, 1.6, 1.2);
+  say('同學說：用遞迴', '那真正是從誰開始修？');
+  await step(tok);                                   // 2723 bottom-up
+  pkt('↑ bottom-up：從下面修上來', -4.8, 2.4);
+  st.mood('happy');
+  say('真正的修正是 bottom-up', '從下面修上來');
+  await step(tok);                                   // 2732 也可以 iterative
+  note('recursive 和 iterative 可以互換', -4.8, 1.6);
+  say('可以 recursive，也可以 iterative', '從最下層一個一個掃上來');
+  await step(tok);                                   // 2757 本質是數學歸納法
+  tag('本質：數學歸納法', 'ptr alt', 4.6, 5.6);
+  say('這個 operation 本質上就是', '數學歸納法的 idea');
+  await step(tok);                                   // 2772 修自己時假設小孩正常
+  H.T.forEach((m) => m && kill(m)); H.R.forEach((m) => m && kill(m)); H.lines.forEach(kill); H.idx.forEach(remove);
+  H = j2Heap([3, 9, 8, 5, 4, 7, 6], { drop: 1.2 });
+  H.hi(1, GOLD);
+  say('修正自己時：先假設下面的小孩都正常', '');
+  await step(tok);                                   // 2794 左右 subtree 各自是 heap
+  for (const [x, y] of [[HX(2), HY(2) - 0.7], [HX(3), HY(3) - 0.7]]) { const g = ghostBox('#1f9e6e', 5.0, 2.4, 1.0); g.position.set(x, y, -0.2); sub.push(g); }
+  good('左 subtree 是 heap', HX(2), HY(5) - 0.9); good('右 subtree 是 heap', HX(3), HY(7) - 0.9);
+  say('假設左、右 subtree 各自已是 heap', '');
+  await step(tok);                                   // 2816 只處理我和兩個小孩
+  H.hi(2, RED); H.hi(3, RED);
+  say('只要處理「我」和左右兩個小孩', '這樣看就簡單多了');
+  await step(tok);                                   // 2823 不是最大就和最大的小孩換
+  H.unhi(); H.swap(1, 2); H.hi(2, GOLD);
+  say('三個人裡誰最大？我不是最大', '就和最大的小孩交換：9 上來');
+  await step(tok);                                   // 2829 再往下比，沉到底
+  H.hi(4, RED); H.hi(5, RED); await beat(tok, 500);
+  H.unhi(); H.swap(2, 4); H.hi(4, GOLD);
+  say('換下去後再和下面的小孩比', '不對再沉，一路沉到底');
+  await step(tok);                                   // 2884 base case：最簡單的在哪？
+  H.unhi(); sub.forEach(kill);
+  say('數學歸納法先看 base case', '在 tree 的哪裡最簡單？');
+  await step(tok);                                   // 2915 最下面：leaf 的 parent
+  for (const i of [2, 3]) H.hi(i, GOLD);
+  say('最下面要修的是：leaf 的 parent', '');
+  await step(tok);                                   // 2928 一個 node 就是一個 heap
+  for (const i of [4, 5, 6, 7]) H.hi(i, GREEN);
+  note('leaf：只有一個 node，自己就是 heap', 0, 0.0);
+  say('leaf 下面沒人：一個 node 自己就是 heap', '');
+  await step(tok);                                   // 2944 從 leaf 的 parent 開始做
+  H.unhi(); H.hi(3, GOLD); H.hi(2, GOLD);
+  say('所以從 leaf 的 parent 開始做', '它的兩個小孩一定是 heap');
+  await step(tok);                                   // 2963 往上一層，下面一定是 heap
+  H.unhi(); H.hi(1, GOLD); for (let i = 2; i <= 7; i++) H.hi(i, GREEN);
+  say('修完再往上一層：下面一定都是 heap', '每次只要檢查自己和小孩');
+  await step(tok);                                   // 3009 時間看這個點多高
+  H.unhi();
+  tag('時間 = 這個點的高度（最多換到底）', 'ptr alt', 0, -1.2);
+  say('修正一個點要多久？', '看它在多高：最多換到底');
+}]);
+
+// 50:40 MAX-HEAPIFY 例子：5 個點
+FRAG.push(['grjiang2-heapify-example', 'MAX-HEAPIFY 例子：從 ⌊n/2⌋ 開始，root 的 1 一路沉到底', async (tok) => {
+  fresh([0, 3.4, 14], [0, 3.0, 0]);
   const H = j2Heap([1, 15, 2, 14, 10], { drop: 1.5 });
-  say('MAX-HEAPIFY(i)', '假設左右 subtree 已是 heap，只處理 i 跟兩個小孩');
-  await beat(tok, 3000);
-  say('從最後一個 leaf 的 parent 開始', 'n = 5 → ⌊5/2⌋ = 2');
-  await beat(tok, 2400);
-  await H.sift(tok, 2, 2400);
-  say('換 root：左右 subtree 都是 heap 了', '1 和小孩 15、2 比');
-  await beat(tok, 2200);
-  await H.sift(tok, 1, 2400);
-  H.hi(1, GREEN);
-  say('修正完成：15 14 2 1 10', '時間 = 這個點的高度 O(h)');
-  await beat(tok, 3000);
+  const it = tag('', 'ptr alt', 4.2, 6.6);
+  await step(tok);                                   // 3043 從 leaf 端開始修
+  say('實際做的時候：先從 leaf 端開始修正', '');
+  await step(tok);                                   // 3058 最後一個 leaf 的 parent：n/2
+  pkt('從 ⌊n/2⌋ 開始（最後一個 leaf 的 parent）', -2.6, -1.2);
+  say('從最後一個 leaf 的 parent 開始', 'heap size = n → 從 n/2 開始');
+  await step(tok);                                   // 3069 從右側往上修
+  say('從右邊往上一個一個修正', '');
+  await step(tok);                                   // 3078 這裡 5 個點
+  for (let i = 1; i <= 5; i++) { H.hi(i, GOLD); await beat(tok, 150); }
+  H.unhi();
+  say('這裡只有 5 個點', '');
+  await step(tok);                                   // 3086 5 的 parent 在 index 2
+  H.hi(5, RED); H.hi(2, GOLD); txt(it, 'MAX-HEAPIFY(2)');
+  say('最後一個 leaf 是 index 5', 'parent 在 ⌊5/2⌋ = 2');
+  await step(tok);                                   // 3093 看 15 和小孩 14、10
+  H.hi(4, RED);
+  say('看 15 和它的小孩 14、10', '');
+  await step(tok);                                   // 3103 已經是 max heap，沒事
+  H.unhi(); H.hi(2, GREEN);
+  say('15 ≥ 14、10：已經是 max heap', '沒事');
+  await step(tok);                                   // 3118 往上到 root
+  H.unhi(); H.hi(1, GOLD); txt(it, 'MAX-HEAPIFY(1)');
+  say('再往上：直接到 root', '');
+  await step(tok);                                   // 3127 1 和 15、2 不正常
+  H.hi(2, RED); H.hi(3, RED);
+  say('1 和小孩 15、2：大小關係不正常', '');
+  await step(tok);                                   // 3134 大的換上來，1 沉下去
+  H.unhi(); H.swap(1, 2); H.hi(2, GOLD);
+  say('較大的 15 換上來，1 沉下去', '');
+  await step(tok);                                   // 3142 再往下確認，沉到底
+  H.hi(4, RED); H.hi(5, RED); await beat(tok, 500);
+  H.unhi(); H.swap(2, 4); H.hi(4, GOLD);
+  await beat(tok, 400);
+  H.unhi(); H.hi(1, GREEN);
+  say('1 再和 14、10 比：還是不對，再沉', '沉到底：15 14 2 1 10');
+  await step(tok);                                   // 3150 complexity 看高度
+  H.unhi();
+  tag('最多沉到底：看這個點的高度', 'ptr', 0, -1.9);
+  say('Complexity 看當下這個點的高度', 'worst case 沉到底');
+  await step(tok);                                   // 3166 這就是 MAX-HEAPIFY
+  txt(it, '這就是 MAX-HEAPIFY');
+  say('假設小孩都是 heap，修正自己一個人', '這個 operation 叫 MAX-HEAPIFY');
 }]);
 
 // 53:16 BUILD-MAX-HEAP（CLRS 例子）
 FRAG.push(['grjiang2-build-heap', 'Build max heap：i = ⌊n/2⌋ 到 1 依序 MAX-HEAPIFY', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.0, 0]);
-  const H = j2Heap([4, 1, 3, 2, 16, 9, 10, 14, 8, 7], { drop: 1.5 });
-  say('10 筆亂放的資料：不是 heap', '4 1 3 2 16 9 10 14 8 7');
-  await beat(tok, 2800);
-  const it = tag('', 'ptr alt', 4.2, 6.6);
-  for (let i = 5; i >= 1; i--) {
-    txt(it, 'MAX-HEAPIFY(' + i + ')');
-    say('i = ' + i + '：修正 ' + H.A[i], i === 5 ? '最後一筆在 10 → parent 是 index 5' : '下面的 subtree 都已是 heap');
-    await beat(tok, 1500);
-    await H.sift(tok, i, 1500);
-  }
-  txt(it, '完成');
-  for (let i = 1; i <= 10; i++) H.hi(i, GREEN);
-  say('Bottom-up：數學歸納法的想法', '16 14 10 8 7 9 3 2 4 1');
-  await beat(tok, 3200);
+  let H = null;
+  const it = tag('', 'ptr alt', 4.4, 6.9);
+  const bld = buddy('', '', '#f4a56a', -6.4, 4.6, 0.6, 0.5);
+  await step(tok);                                   // 3196 用 MAX-HEAPIFY build 整個 heap
+  bld.mood('happy');
+  say('會 MAX-HEAPIFY 之後', '就能 build up 整個 heap');
+  await step(tok);                                   // 3210 反覆用，從 leaf 的 parent 開始
+  note('反覆 MAX-HEAPIFY，從 leaf 的 parent 開始', 0, -1.2);
+  say('反覆使用 MAX-HEAPIFY', '從 leaf 的 parent 開始用');
+  await step(tok);                                   // 3238 10 筆資料
+  H = j2Heap([4, 1, 3, 2, 16, 9, 10, 14, 8, 7], { drop: 1.5 });
+  say('例子：10 筆資料，array 開 10 格', '4 1 3 2 16 9 10 14 8 7');
+  await step(tok);                                   // 3252 不維持 max heap
+  H.hi(2, RED); H.hi(5, RED);
+  say('它不維持 max heap 的關係', '只是一堆亂七八糟的數字');
+  await step(tok);                                   // 3272 最後一筆在 10，parent 是 5（16）
+  H.unhi(); H.hi(10, RED); H.hi(5, GOLD); txt(it, 'MAX-HEAPIFY(5)');
+  say('最後一筆在 index 10', 'parent 在 index 5：16');
+  await step(tok);                                   // 3286 直接符合
+  H.unhi(); H.hi(5, GREEN);
+  say('16 ≥ 7：直接符合，結束', '');
+  await step(tok);                                   // 3294 5、4、3、2、1 往上
+  H.unhi();
+  for (let i = 5; i >= 1; i--) { tag('i=' + i, 'ptr', HX(i) + 0.7, HY(i) + 0.45); await beat(tok, 200); }
+  say('接下來就是 5、4、3、2、1 往上做', '');
+  await step(tok);                                   // 3301 index 4：2 和 14、8 → swap
+  txt(it, 'MAX-HEAPIFY(4)'); H.hi(4, GOLD);
+  await H.sink(tok, 4, 500); H.unhi();
+  say('index 4 是 2：和 14、8 不對', 'swap：14 上來');
+  await step(tok);                                   // 3313 index 3 swap
+  txt(it, 'MAX-HEAPIFY(3)'); H.hi(3, GOLD);
+  await H.sink(tok, 3, 500); H.unhi();
+  say('index 3 是 3：也 swap 一下', '10 上來');
+  await step(tok);                                   // 3320 index 2：左右都是 heap
+  txt(it, 'MAX-HEAPIFY(2)'); H.hi(2, GOLD); H.hi(4, GREEN); H.hi(5, GREEN);
+  say('index 2 比較複雜', '左右都是 heap，自己和小孩不對');
+  await step(tok);                                   // 3335 16 換上來
+  H.unhi(); H.down(2); H.hi(5, GOLD);
+  say('先和較大的小孩換：16 換上來', '');
+  await step(tok);                                   // 3344 1 再和 7 換，沉到底
+  H.down(5); H.unhi(); H.hi(2, GREEN);
+  say('1 沉下來後再和 7 換', '一路沉到底');
+  await step(tok);                                   // 3352 最後修 root
+  H.unhi(); txt(it, 'MAX-HEAPIFY(1)'); H.hi(1, GOLD); H.hi(2, GREEN); H.hi(3, GREEN);
+  say('最後修正 root', '左右 subtree 都已是 heap');
+  await step(tok);                                   // 3359 大的換上來，4 換下去
+  H.unhi(); H.down(1); H.hi(2, GOLD);
+  say('大的 16 換上來，4 換下去', '');
+  await step(tok);                                   // 3366 再一路修到底，結束
+  await H.sink(tok, 2, 500);
+  H.unhi(); for (let i = 1; i <= 10; i++) H.hi(i, GREEN);
+  txt(it, '完成：16 14 10 8 7 9 3 2 4 1');
+  say('4 再一路往下修到底', '整個 heap 建好了');
+  await step(tok);                                   // 3373 就是數學歸納法
+  H.unhi();
+  pkt('build up = 數學歸納法', -4.0, 6.9);
+  say('這個 build up 的過程', '本身就是數學歸納法的做法');
+  await step(tok);                                   // 3399 basis：leaf 的 parent
+  for (const i of [6, 7, 8, 9, 10]) H.hi(i, GREEN);
+  say('Basis：leaf 本身就是 heap', 'leaf 的 parent 可以直接 apply');
+  await step(tok);                                   // 3407 iterative 做到 root
+  H.unhi(); H.hi(1, GREEN);
+  bld.mood('happy'); await bld.hop(tok);
+  say('一個一個往上做到 root', 'Heap 就改建完成');
 }]);
 
-// 56:12 build heap 的時間（老師說 n log n；更緊的界是 O(n)）
+// 57:00 build heap 的時間（老師說 n log n；更緊的界是 O(n)）
 FRAG.push(['grjiang2-build-heap-cost', 'Build heap 的時間：每點最多換「高度」次', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.0, 0]);
-  const H = j2Heap([16, 14, 10, 8, 7, 9, 3, 2, 4, 1], { cells: false });
-  H.R.forEach((m) => m && kill(m));
-  say('MAX-HEAPIFY 一個點：最多換到底', '次數 = 它的高度 h');
-  await beat(tok, 2800);
+  const H = j2Heap([16, 14, 10, 8, 7, 9, 3, 2, 4, 1], { cells: false, noRow: true });
   const hgt = (i) => { let h = 0; while (2 * i <= 10) { i *= 2; h++; } return h; };
-  let sum = 0; const sl = tag('Σ 高度 = 0', 'ptr alt', 0, 0.2);
-  for (let i = 5; i >= 1; i--) {
-    const h = hgt(i); sum += h;
-    H.hi(i, GOLD); tag('h=' + h, 'ptr', HX(i), HY(i) + 0.75);
-    txt(sl, 'Σ 高度 = ' + sum);
-    say('index ' + i + '：最多換 ' + h + ' 次', h === 1 ? 'leaf 的 parent：下面只有一層' : '越上面的點越少');
-    await beat(tok, 1700);
-    H.hi(i, null);
-  }
-  say('老師：每點 O(log n)，共 O(n log n)', '這是正確的上界');
-  await beat(tok, 3000);
-  say('補充：高度 h 的點約 n / 2^(h+1) 個', 'Σ h · n / 2^(h+1) = O(n)（CLRS）');
-  await beat(tok, 3600);
-  say('n = 10：最多 ' + sum + ' 次交換', '≤ n：build heap 其實是線性時間');
-  await beat(tok, 3000);
+  const sl = tag('', 'ptr alt', 0, 0.6);
+  await step(tok);                                   // 3425 老師：n log n
+  tag('build heap：n log n？', 'ptr alt', 0, 7.0);
+  say('仔細算：build up 整個 heap', '老師說需要 n log n');
+  await step(tok);                                   // 3443 看每一層
+  for (let i = 1; i <= 10; i++) tag('h=' + hgt(i), 'idx', HX(i) + 0.65, HY(i) + 0.4);
+  say('算法：看每一層', '每個點下面有幾層（高度 h）');
+  await step(tok);                                   // 3451 leaf 的 parent 最多換一次
+  for (const i of [4, 5]) H.hi(i, GOLD);
+  txt(sl, '換 1 次的：2 個點');
+  say('leaf 的 parent 下面只有一層', '最多換 1 次');
+  await step(tok);                                   // 3465 上面一層最多換兩次、三次…
+  for (const i of [2, 3]) H.hi(i, RED);
+  H.hi(1, GREEN);
+  txt(sl, '換 1 次：2 個　換 2 次：2 個　換 3 次：1 個');
+  say('再上一層最多 2 次，再上去 3 次…', '');
+  await step(tok);                                   // 3474 每種各有多少 node
+  say('分別數：換 1 次的有幾個 node', '換 2 次、3 次的又有幾個');
+  await step(tok);                                   // 3481 一路算到 root
+  txt(sl, '總共 ≤ 1×2 + 2×2 + 3×1 = 9 次交換');
+  say('一路算到 root', '把每層的交換次數加起來');
+  await step(tok);                                   // 3488 加總：n log n
+  H.unhi();
+  tag('老師：O(n log n)（正確的上界）', 'ptr', 0, -0.4);
+  note('補充：Σ h · n/2^(h+1) = O(n)，更緊（CLRS 6.3）', 0, -1.3);
+  say('加總得到 n log n 的 order', '補充：更仔細算其實是 O(n)');
 }]);
 
-// 58:47 heapsort
+// 58:51 heapsort
 FRAG.push(['grjiang2-heapsort', 'Heapsort：root 換到尾巴、heap size − 1、MAX-HEAPIFY', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.0, 0]);
-  const H = j2Heap([16, 14, 10, 8, 7, 9, 3, 2, 4, 1], { keepTree: true });
-  say('第一階段：build max heap', '16 14 10 8 7 9 3 2 4 1');
-  await beat(tok, 2600);
-  let first = true;
-  while (H.n > 1) {
-    const n = H.n;
-    H.unhi(); H.hi(1, GOLD); H.hi(n, RED);
-    if (first) { say('root 16 是最大：和尾巴的 1 交換', '16 放到最後，位置確定'); await beat(tok, 2200); }
-    H.swap(1, n);
-    H.n = n - 1; H.edges(); H.tint(n, J2.gray);
-    if (H.T[n]) { kill(H.T[n]); H.T[n] = null; }
-    if (first) { say('heap size 10 → 9', '只剩 root 不對：MAX-HEAPIFY(1)'); await beat(tok, 2400); }
-    else { say('取出 ' + H.A[n] + '，heap size → ' + (n - 1), ''); await beat(tok, 500); }
-    await H.sift(tok, 1, first ? 1800 : 700, !first);
-    first = false;
-  }
+  let H = null;
+  const sorter = buddy('', '', '#9fb8ff', -6.4, 4.6, 0.6, 0.5);
+  const takeOut = (n) => { H.swap(1, n); H.n = n - 1; H.edges(); H.tint(n, J2.gray); if (H.T[n]) { kill(H.T[n]); H.T[n] = null; } };
+  const hs = tag('', 'ptr alt', 4.4, 6.9);
+  await step(tok);                                   // 3531 能不能用 heap 從小排到大？
+  sorter.mood('wow');
+  bub('建好 max heap 後，能排序嗎？', -4.4, 6.0, 0.6);
+  say('建好 max heap 之後', '能不能用它從小排到大？');
+  await step(tok);                                   // 3553 小的在前、大的在後
+  const arr = [1, 2, 3, 4, 7].map((v, k) => cube(v, J2.gray, [0.8, 0.5, 0.5], -1.6 + k * 0.9, -1.0, 0.4, 1));
+  say('希望 output 的 array', '最小的在最前面、最大的在最後面');
+  await step(tok);                                   // 3589 會 extract max、會 build heap
+  arr.forEach(kill);
+  note('已經會：extract max、build heap', 0, -1.2);
+  say('我們已經會：extract max', '拿出最大值後剩下還能恢復成 heap');
+  await step(tok);                                   // 3604 最大值 16 應該在最尾巴
+  pkt('16 → 最後一格', 4.6, 2.2);
+  say('最大值是誰？16', '它應該在 output 的最尾巴');
+  await step(tok);                                   // 3669 第一階段：build heap
+  H = j2Heap([16, 14, 10, 8, 7, 9, 3, 2, 4, 1], { drop: 1.5 });
+  txt(hs, '第一階段：build max heap');
+  say('第一階段：把亂放的數字 build 成 max heap', '16 14 10 8 7 9 3 2 4 1');
+  await step(tok);                                   // 3680 第二階段：排序
+  txt(hs, '第二階段：從小排到大');
+  say('第二階段：讓它從小排到大', '');
+  await step(tok);                                   // 3690 root 最大，放尾端
+  H.hi(1, GOLD); H.hi(10, RED);
+  say('root 是最大值', '一定要放在 output 的尾端');
+  await step(tok);                                   // 3705 16 和尾巴的 1 交換
+  H.unhi(); H.swap(1, 10); H.hi(10, GREEN);
+  say('先把 16 和尾巴的 1 交換', '16 就站在正確的位置');
+  await step(tok);                                   // 3721 剩下的人要 re-structure
+  H.hi(1, GOLD);
+  say('1 換上來了', '剩下的人要重新修正成 heap');
+  await step(tok);                                   // 3730 左右都是 heap，只有 1 不對
+  for (let i = 2; i <= 9; i++) H.hi(i, GREEN);
+  say('左邊是 heap、右邊也是 heap', '只有換上來的 1 不對');
+  await step(tok);                                   // 3738 MAX-HEAPIFY on root
+  H.unhi(); H.hi(1, GOLD);
+  tag('MAX-HEAPIFY(1)', 'ptr', -4.2, 6.9);
+  say('所以要做：MAX-HEAPIFY on root', '');
+  await step(tok);                                   // 3752 heap size 改成 9
+  H.n = 9; H.edges(); H.tint(10, J2.gray); kill(H.T[10]); H.T[10] = null;
+  txt(hs, 'heap size：10 → 9');
+  say('先把 heap size 改成 9', '第 10 個人已經不在 heap 裡');
+  await step(tok);                                   // 3774 MAX-HEAPIFY 修下去
+  await H.sink(tok, 1, 400); H.unhi();
+  say('MAX-HEAPIFY on root，一路修下去', '');
+  await step(tok);                                   // 3784 root 又是剩下的最大
+  H.hi(1, GOLD);
+  say('修完後 root 又是剩下的人裡最大的', '14');
+  await step(tok);                                   // 3790 放到第 9 格，再 heapify
+  H.unhi(); takeOut(9); await beat(tok, 400);
+  await H.sink(tok, 1, 300);
+  txt(hs, 'heap size：9 → 8');
+  say('把它放到第 9 個位置', '換上來的人再做 MAX-HEAPIFY');
+  await step(tok);                                   // 3800 iteratively，一個個固定
+  for (let n = 8; n >= 2; n--) { takeOut(n); await beat(tok, 90); await H.sink(tok, 1, 70); txt(hs, 'heap size：' + (n - 1)); }
   H.unhi(); H.tint(1, J2.gray); if (H.T[1]) kill(H.T[1]);
-  say('由小排到大：1 2 3 4 7 8 9 10 14 16', 'build + n 次 heapify：O(n log n)');
-  await beat(tok, 3000);
-  say('只用原本的 array：in-place sorting', '同樣 n log n 的還有 merge sort');
-  await beat(tok, 2800);
+  H.lines.forEach(kill);
+  txt(hs, '1 2 3 4 7 8 9 10 14 16');
+  say('iteratively 一直做', '一個一個把位置都固定好');
+  await step(tok);                                   // 3806 build n log n + 第二階段 n log n
+  tag('build：n log n　＋　第二階段：n log n', 'ptr', 0, 6.0);
+  say('前面 build heap：n log n', '第二階段 restructure：也是 n log n');
+  await step(tok);                                   // 3824 這叫 heapsort
+  tag('Heapsort：O(n log n)', 'ptr alt', 0, 5.0);
+  sorter.mood('happy');
+  say('用 Heap 完成排序：叫 heapsort', '整體 O(n log n)');
+  await step(tok);                                   // 3840 最快；merge sort 也一樣快
+  note('沒有額外資訊時已是最快；merge sort 一樣快', 0, 4.1);
+  say('沒有額外資訊幫忙時，heapsort 就是最快', 'merge sort 也一樣快');
+  await step(tok);                                   // 3858 資料結構很簡單：array
+  good('data structure 很簡單：就是 array', 0, 3.2);
+  say('heapsort 很好做', '它的 data structure 很簡單，就是 array');
+  await step(tok);                                   // 3866 只開這個 array，省 memory
+  for (let i = 1; i <= 10; i++) glow(H.R[i], GREEN);
+  say('從頭到尾只用這個 array', '沒有開其他 data structure → 省 memory');
+  await step(tok);                                   // 3892 in-place sorting
+  for (let i = 1; i <= 10; i++) glow(H.R[i], null);
+  pkt('in-place sorting：當場排好', 0, 2.3);
+  await sorter.hop(tok);
+  say('直接對 input 的 array 操作', '這叫 in-place sorting');
 }]);
 
-// 65:35 MST：第四台拉線的例子（圖與數字為示意）
+// 65:09 min heap 對稱 → 自己的 Dijkstra implementation
+FRAG.push(['grjiang2-minheap-dijkstra', 'Min heap 與 Dijkstra：用 min heap 實作 min-priority queue', async (tok) => {
+  fresh([0, 3.4, 14], [0, 3.0, 0]);
+  let H = null;
+  const dj = buddy('Dijkstra', '', '#f4a56a', 5.6, 0.4, 1.0, 0.65);
+  await step(tok);                                   // 3909 max heap 和 min heap 對稱
+  H = j2Heap([0, 5, 7, 8, 9], { cells: false, noRow: true, drop: 1.5 });
+  for (let i = 1; i <= 5; i++) H.tint(i, J2.exp);
+  tag('min heap：每個點 ≤ 小孩，root 最小', 'ptr alt', 0, 7.0);
+  say('max heap 和 min heap 是對稱的', '往另一個方向推，就是 min heap');
+  await step(tok);                                   // 3920 寫出自己的 Dijkstra
+  dj.mood('happy');
+  bub('我可以自己寫 Dijkstra 了！', 3.6, 2.2, 1.0);
+  say('這樣就能寫出屬於自己的', 'Dijkstra implementation');
+  await step(tok);                                   // 3926 min heap 做 min-PQ
+  H.hi(1, GREEN);
+  pkt('min heap → min-priority queue → Extract-Min 就拿 root', 0, -0.8);
+  await dj.hop(tok);
+  say('用 min heap 實作 min-priority queue', 'Extract-Min 就是拿 root');
+}]);
+
+// 65:40 MST：第四台拉線的例子（圖與數字為示意）
 const J2M_P = { A: [-4.6, 4.6], B: [0, 5.6], C: [4.6, 4.6], D: [-3.6, 0.6], E: [0.6, 1.6], F: [4.8, 0.6] };
 const J2M_E = [['A', 'B', 4], ['A', 'D', 2], ['B', 'D', 5], ['B', 'E', 3], ['B', 'C', 6], ['C', 'E', 2], ['C', 'F', 4], ['E', 'F', 5], ['D', 'E', 7]];
 FRAG.push(['grjiang2-mst-cable', 'Minimum spanning tree：用最少的線連到每一戶', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.0, 0]);
-  say('第四台業者要拉線到每個客戶家', '線越長越貴（圖與數字為示意）');
-  const G = j2Graph(J2M_P, J2M_E, { undirected: true, drop: 1.5, tagDy: 0.8 });
-  await beat(tok, 2800);
-  say('輸入：undirected graph', 'edge cost ≥ 0；有 edge = 可以拉線的兩戶');
+  let G = null;
+  const title = tag('', 'ptr alt', 0, 7.2);
+  const ppl = buddy('', '', '#f4a56a', -6.4, -1.4, 1.2, 0.55);
+  await step(tok);                                   // 3940 最後一個問題：MST
+  txt(title, 'Minimum spanning tree（MST）');
+  say('本單元最後一個問題：minimum spanning tree', '演算法裡非常重要的主題');
+  await step(tok);                                   // 3956 Prim's
+  const m1 = note('① Prim\'s algorithm', -4.0, 6.4);
+  say('會介紹三個方法：第一個是 Prim 提出的', 'Prim\'s algorithm');
+  await step(tok);                                   // 3968 Kruskal's
+  const m2 = note('② Kruskal\'s algorithm', 0, 6.4);
+  say('第二個是 Kruskal 提出的', 'Kruskal\'s algorithm');
+  await step(tok);                                   // 3977 reverse-delete：對但很少人用
+  const m3 = note('③ reverse-delete（很耗時）', 4.0, 6.4);
+  say('第三個：reverse-delete', '是對的，但很耗時，現在沒人用');
+  await step(tok);                                   // 3994 第四台的例子
+  [m1, m2, m3].forEach(remove);
+  G = j2Graph(J2M_P, J2M_E, { undirected: true, drop: 1.5, tagDy: 0.8 });
+  for (const e of G.E) showL(e.lb, false);
+  for (const k of Object.keys(G.N)) { const h = prop('warehouse', G.P[k][0] + 0.75, G.P[k][1] - 0.4, -0.9, 0.35); bob(h, 0.03); }
+  say('例子：搬到新家，想裝第四台', '');
+  await step(tok);                                   // 4024 從最近的線路拉一條過來
+  G.e('A', 'D').set(J2.hot);
+  say('業者會從已有線路裡最近的點', '拉一條線到你家');
+  await step(tok);                                   // 4041 很多使用者，要建整個網路
+  G.e('A', 'D').set(J2.edge);
+  ppl.mood('happy');
+  say('業者有很多使用者', '要建一個健全的 cable 網路');
+  await step(tok);                                   // 4058 cost 跟長度有關，總長最短
+  for (const e of G.E) showL(e.lb, true);
+  say('cable 很貴，cost 跟長度有關', '希望用總長最短的線送到每一戶');
+  await step(tok);                                   // 4083 greedy 可以達到 optimal
+  good('greedy 就能到 optimal', 4.6, -1.4);
+  say('這個問題運氣很好', '用 greedy 就能達到 optimal solution');
+  await step(tok);                                   // 4099 隨便怎麼 greedy 都對
+  bub('直覺的 greedy 都會對！', -4.6, -0.3, 1.2);
+  say('很直覺的 greedy 方法都會對', '不需要特別精細的 criterion');
+  await step(tok);                                   // 4131 input：沒有方向的 graph
+  txt(title, 'Input：undirected graph');
+  say('Input：一個 graph，沒有方向性', '拉線不分方向');
+  await step(tok);                                   // 4143 點和點之間有 cost
   for (const e of G.E) j2Cls(e.lb, 'ptr');
-  await beat(tok, 2800);
-  say('選一個 edge 的 subset T', '每一戶都要 connected、總 cost 最小');
+  say('點和點之間有 cost', 'cable 費用或距離；造橋鋪路也一樣');
+  await step(tok);                                   // 4164 cost 非負
+  for (const e of G.E) j2Cls(e.lb, 'idx');
+  note('每條 edge cost ≥ 0：拉線就要花錢', 0, -1.4);
+  say('每條 edge 的 cost 都非負', '只要拉線就要花錢');
+  await step(tok);                                   // 4180 有 edge = 可以拉線
+  say('有 edge = 兩戶之間可以拉線', '沒有 edge：可能太遠、不適合拉');
+  await step(tok);                                   // 4220 選一些 edge 的 subset
   const pickA = [['A', 'B'], ['B', 'D'], ['B', 'C'], ['C', 'F'], ['D', 'E']];
-  for (const [a, b] of pickA) { G.e(a, b).set(J2.hot); await beat(tok, 450); }
-  say('這樣也連得到每一戶', '4 + 5 + 6 + 4 + 7 = 26');
-  await beat(tok, 2600);
+  for (const [a, b] of pickA) { G.e(a, b).set(J2.hot); await beat(tok, 300); }
+  const tot = tag('total = 4 + 5 + 6 + 4 + 7 = 26', 'ptr', 0, 7.2);
+  txt(title, '');
+  say('從這些 edge 裡選一個 subset 出來', '');
+  await step(tok);                                   // 4227 total cost 越低越好
+  say('目標只有一個：total cost 越低越好', '');
+  await step(tok);                                   // 4237 每一戶都要連到
+  for (const k of Object.keys(G.N)) { glow(G.N[k], GOLD); await beat(tok, 150); }
+  say('而且每一個客戶都要連到', '不能有人收不到訊號');
+  await step(tok);                                   // 4253 選出的 subgraph 要 connected
+  for (const k of Object.keys(G.N)) glow(G.N[k], null);
+  say('選出的 edge 把所有點連起來', '這個 subgraph 是 connected');
+  await step(tok);                                   // 4263 minimum spanning graph
   for (const e of G.E) e.set(J2.edge);
   const best = [['A', 'D'], ['C', 'E'], ['B', 'E'], ['A', 'B'], ['C', 'F']];
-  for (const [a, b] of best) { G.e(a, b).set(J2.tree); await beat(tok, 450); }
+  for (const [a, b] of best) { G.e(a, b).set(J2.tree); await beat(tok, 300); }
   for (const k of Object.keys(G.N)) tint(G.N[k], J2.exp);
-  say('最便宜的選法：總 cost 15', '2 + 2 + 3 + 4 + 4 = 15');
-  await beat(tok, 3000);
-  say('spanning 蓋住所有點、minimum 最便宜', 'Prim、Kruskal、Reverse-delete 三種方法');
-  await beat(tok, 3200);
+  txt(tot, 'total = 2 + 2 + 3 + 4 + 4 = 15（最便宜，數字為示意）');
+  say('要找的是 minimum spanning graph', '');
+  await step(tok);                                   // 4277 spanning = 蓋住所有點
+  for (const k of Object.keys(G.N)) glow(G.N[k], GREEN);
+  say('spanning：蓋住所有的點', '');
+  await step(tok);                                   // 4282 minimum = total cost 最低
+  for (const k of Object.keys(G.N)) glow(G.N[k], null);
+  j2Cls(tot, 'ptr alt');
+  await ppl.hop(tok);
+  say('minimum：total cost 最低', '');
 }]);
 
-// 70:30 為什麼解一定是 tree：有 cycle 就剪掉一條
+// 71:31 為什麼解一定是 tree：有 cycle 就剪掉一條
 FRAG.push(['grjiang2-mst-tree', '為什麼答案是 tree：有 cycle 就剪一條，仍 connected 且更便宜', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.0, 0]);
   const G = j2Graph(J2M_P, J2M_E, { undirected: true, tagDy: 0.8 });
   const sel = [['A', 'B'], ['A', 'D'], ['D', 'E'], ['B', 'E'], ['C', 'E'], ['C', 'F']];
+  const cyc = [['A', 'B'], ['B', 'E'], ['D', 'E'], ['A', 'D']];
+  const title = tag('', 'ptr alt', 0, 7.2);
+  let cost = null;
+  await step(tok);                                   // 4291 再進一步看要找什麼
+  say('開始設計演算法之前', '再看清楚：我們真正要找的是什麼');
+  await step(tok);                                   // 4305 final subgraph 是 general graph？
+  txt(title, '要找的 subgraph：一般的 graph？');
+  say('最後找的 subgraph 長什麼樣？', '是一般的 graph 嗎？');
+  await step(tok);                                   // 4312 只要是一棵 tree
+  txt(title, '推敲後：只要是一棵 tree');
+  say('仔細推敲：只要是一棵 tree 就行', '');
+  await step(tok);                                   // 4333 所以叫 MST
+  txt(title, 'minimum spanning tree，不是 …graph');
+  say('所以問題叫 minimum spanning tree', '而不是 minimum spanning graph');
+  await step(tok);                                   // 4344 選出的 edge 存在 T，黏起所有點
   for (const [a, b] of sel) G.e(a, b).set(J2.tree);
-  const cost = tag('total = 4+2+7+3+2+4 = 22', 'ptr alt', 0, -0.6);
-  say('假設選出的 subgraph 有 cycle', 'A–B–E–D–A');
-  await beat(tok, 2800);
-  for (const [a, b] of [['A', 'B'], ['B', 'E'], ['D', 'E'], ['A', 'D']]) { G.e(a, b).set(J2.hot); await beat(tok, 500); }
-  await beat(tok, 1400);
-  say('cycle 上隨便剪掉一條 edge', '剪 D–E（7）');
-  G.e('D', 'E').set(J2.dim); j2Cls(G.e('D', 'E').lb, 'idx');
-  await beat(tok, 2600);
+  cost = tag('T：4 + 2 + 7 + 3 + 2 + 4 = 22', 'ptr', 0, -0.8);
+  say('選出的 edge 存在 subset T 裡', '要把所有點黏起來');
+  await step(tok);                                   // 4376 一定沒有 cycle
+  txt(title, '這個 graph 一定沒有 cycle');
+  say('這樣的 graph 一定沒有 cycle', '為什麼？');
+  await step(tok);                                   // 4384 假設有 cycle
+  for (const [a, b] of cyc) { G.e(a, b).set(J2.hot); await beat(tok, 300); }
+  say('假設選出來的有 cycle', 'A–B–E–D–A 串成一圈');
+  await step(tok);                                   // 4398 隨便剪掉一條 edge
+  G.e('D', 'E').set(J2.dim); j2Cls(G.e('D', 'E').lb, 'bad');
+  const sc = bub('剪！', -1.4, 1.6, 0.6);
+  say('cycle 上隨便找一條 edge 剪掉', '剪 D–E（7）');
+  await step(tok);                                   // 4406 剩下變一條線，仍 connected
+  remove(sc);
   for (const [a, b] of [['A', 'B'], ['B', 'E'], ['A', 'D']]) G.e(a, b).set(J2.tree);
-  say('剩下的變一條線：仍然 connected', 'D 還是能經過 A、B 到 E');
-  for (const k of ['D', 'A', 'B', 'E']) { glow(G.N[k], GOLD); await beat(tok, 450); }
-  await beat(tok, 1400);
+  for (const k of ['D', 'A', 'B', 'E']) { glow(G.N[k], GOLD); await beat(tok, 300); }
+  say('剩下的變成一條線：仍然 connected', 'D 還是能經過 A、B 到 E');
+  await step(tok);                                   // 4416 所有 cycle 都能這樣剪
   for (const k of Object.keys(G.N)) glow(G.N[k], null);
-  txt(cost, 'total = 22 − 7 = 15');
-  say('cost 只會變低（cost ≥ 0）', '所以最佳解沒有 cycle');
-  await beat(tok, 3000);
-  say('connected + 沒有 cycle = tree', '問題叫 minimum spanning tree');
-  await beat(tok, 3000);
+  note('每個 cycle 都至少能剪掉一條', 0, -1.6);
+  say('所有的 cycle 都能這樣剪掉一條 edge', '還是維持 connected');
+  await step(tok);                                   // 4444 cost 變低
+  txt(cost, 'T：22 − 7 = 15');
+  good('cost 變低了', 4.4, -0.8);
+  say('剪掉後還是 connected', '但 cost 變低了（那條 edge 的錢省下來）');
+  await step(tok);                                   // 4457 只要一棵 tree
+  for (const k of Object.keys(G.N)) tint(G.N[k], J2.exp);
+  txt(title, '不需要 graph：解就是一棵 tree');
+  say('所以不需要建一個 graph', '對應的解只是一棵 tree');
+  await step(tok);                                   // 4475 summary：undirected graph + weight
+  txt(title, 'Summary：undirected graph，edge 有 weight');
+  say('Summary：給一個 undirected graph', 'edge 上有 weight');
+  await step(tok);                                   // 4490 蓋住所有點、connected
+  for (const k of Object.keys(G.N)) glow(G.N[k], GREEN);
+  say('選 edge 的 subset：蓋住所有點', '彼此 connected');
+  await step(tok);                                   // 4498 形成 tree：spanning tree
+  for (const k of Object.keys(G.N)) glow(G.N[k], null);
+  txt(title, 'spanning tree：蓋住所有點的 tree');
+  say('形成一棵 tree：spanning tree', '');
+  await step(tok);                                   // 4504 total cost 最小
+  txt(title, 'minimum spanning tree：total cost 最小');
+  j2Cls(cost, 'ptr alt');
+  say('total cost 越小越好：minimum', '合起來就是 minimum spanning tree');
+  await step(tok);                                   // 4519 有趣 property → 三種演算法
+  pkt('有趣的 property → Prim、Kruskal、reverse-delete', 0, -2.4);
+  say('這個問題有一些有趣的 property', '由它延伸出三種演算法');
 }]);
   }
   // @@FRAGMENTS@@

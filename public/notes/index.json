@@ -1237,9 +1237,9 @@
  },
  "trkaH2uLxHw": {
   "label": "交大江蕙如 Lec13 Greedy Algorithms (4/5)",
-  "points": 111,
+  "points": 114,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "tTFolqL1TX4": {
   "label": "交大江蕙如 Lec05 Chapter 2 Algorithm Analysis (2/2)",
@@ -1437,7 +1437,7 @@
   "label": "交大江蕙如 Lec12 Greedy Algorithms (3/5)",
   "points": 75,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "Yx0dJFe1VdM": {
   "label": "交大彭文志 Lec21 Graph (4/4)",
