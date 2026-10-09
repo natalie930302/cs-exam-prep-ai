@@ -1,0 +1,1195 @@
+{
+ "video": "iKhB0YbBRDI",
+ "label": "交大江蕙如 Lec14 Greedy Algorithms (5/5)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "MST 回顧與 Kruskal 的想法",
+   "scene": "grjiang3-mst-review",
+   "points": [
+    {
+     "text": "今天：minimum spanning tree 問題、三個演算法，最後講怎麼實作。",
+     "t": 15
+    },
+    {
+     "text": "Input：undirected graph，edge 上有 weight（cost：距離、造橋鋪路、鋪電線的花費）。",
+     "t": 28
+    },
+    {
+     "text": "目標：選一些 edge 把所有點連起來，total cost 越小越好 → 一棵蓋住所有點的 tree。",
+     "t": 51
+    },
+    {
+     "text": "Kruskal（greedy）：從 cost 低的 edge 開始選，不能造成 cycle，直到所有點都連起來。",
+     "t": 82
+    }
+   ],
+   "cues": [
+    15.8,
+    28.6,
+    45.8,
+    51.8,
+    66.3,
+    81.8,
+    106.8,
+    122.8,
+    137.8
+   ],
+   "explain": [
+    "這支影片要講 minimum spanning tree（最小生成樹，簡稱 MST）：怎麼用最少的花費把所有地點連起來。會介紹三個演算法，最後再講寫程式時要怎麼實作。",
+    "先回顧題目。graph（圖）是由「點」和連接兩點的「edge（邊）」組成的；undirected 表示 edge 沒有方向，A 連 B 就等於 B 連 A。每條 edge 上的數字叫 weight 或 cost。",
+    "cost 可以想成真實世界的花費：兩地之間的距離，或是造橋、鋪路、拉電線要花的錢。數字越大，這條 edge 越貴。",
+    "我們要從這些 edge 裡挑出一部分，讓所有的點都能互相連到（不一定直接相連，繞路也可以）。黃色是一種挑法。",
+    "挑出來的結果會是一棵 tree（樹：連通、而且沒有繞成一圈的圖）。spanning 的意思是「蓋住所有的點」，minimum 是「total cost 最小」。這張圖的答案總和是 39。",
+    "課本介紹三種常見的 MST 演算法，它們全都是 greedy（貪婪法：每一步都選當下看起來最好的）。第一種是 Kruskal's algorithm。",
+    "Kruskal 的直覺很簡單：既然要總花費最少，當然優先用便宜的 edge。黃色是 cost 最低的幾條，會先被考慮。",
+    "但不能亂加：如果加進一條 edge 會和已選的 edge 繞成一圈（cycle），就違反了 tree 的定義，而且那條 edge 根本多餘。紅色 BD 就會讓 A–B–D 繞成一圈。",
+    "就這樣一路從便宜的加起、遇到 cycle 就不加，直到所有點都連起來就停。這就是 Kruskal 的完整想法。"
+   ]
+  },
+  {
+   "title": "Kruskal demo：從小到大加 edge，cycle 就跳過",
+   "scene": "grjiang3-kruskal-demo",
+   "points": [
+    {
+     "text": "一開始只有點；先把所有 edge 依 cost 從小排到大。",
+     "t": 143
+    },
+    {
+     "text": "依序加入 AD 5、CE 5、DF 6、AB 7、BE 7（兩條 5 誰先都可以）。",
+     "t": 166
+    },
+    {
+     "text": "BC 8、EF 8、BD 9 都會形成 cycle → 跳過（多餘，又違反 tree）。",
+     "t": 207
+    },
+    {
+     "text": "加入 EG 9 後所有點都連起來，形成一棵 tree，結束；可以證明會得到最佳解。",
+     "t": 247
+    }
+   ],
+   "trap": "同樣 cost 的 edge 先看哪條都可以：可能得到不同的 MST，但 total cost 一樣。",
+   "cues": [
+    143.3,
+    152.8,
+    166.8,
+    182.8,
+    185.1,
+    191.8,
+    207.8,
+    228.7,
+    241.7,
+    246.9,
+    262.8
+   ],
+   "explain": [
+    "Kruskal 一開始的畫面：只有點，還沒有選任何 edge（淡色的 edge 只是「候選」）。每個點是綠色的小苗，代表它自己就是一棵小樹。",
+    "第一步：把所有 edge 依照 cost 從小排到大，就是右邊這張清單。接下來就照清單順序一條一條檢視。",
+    "最便宜的是兩條 cost 5 的 edge，誰先誰後沒關係。先看 AD：A 和 D 本來不連通，加進來不會有 cycle，所以收下。A、D 變成同一棵小樹（同一個顏色）。",
+    "下一條 5 是 CE：C 和 E 也還沒連通，收下，形成另一棵小樹。",
+    "接下來是 cost 6 的 DF。F 原本自己一棵，接到 A–D 那棵上，小樹變大了。",
+    "接著兩條 cost 7：AB 和 BE。AB 把 B 接到左邊那棵；BE 把左邊那棵和 C–E 那棵接起來。每加一條，連在一起的點就越來越多。",
+    "輪到 BC（cost 8）：B 和 C 已經可以透過 B–E–C 連到了，再加 BC 就會繞成一圈（cycle）。它的「連線能力」跟原來一樣，等於白花錢，所以跳過。",
+    "另一條 cost 8 的 EF 也一樣：E 和 F 早就在同一棵樹裡，加了會形成 cycle，沒有作用，跳過。",
+    "BD（cost 9）：B、D 也已經連通，跳過。",
+    "下一條 9 是 EG：G 還是孤零零的一個點，加進來剛好把它接上。現在 7 個點全都連起來，用了 6 條 edge，形成一棵 tree，演算法結束。",
+    "老師提到：可以證明 Kruskal 一定得到最佳解（optimal），也就是 total cost 最小的連法。這張圖是 5+5+6+7+7+9 = 39。證明會在後面的 cut property 講。"
+   ]
+  },
+  {
+   "title": "Kruskal 的長法：很多小苗合併成一棵大樹",
+   "scene": "grjiang3-kruskal-forest",
+   "points": [
+    {
+     "text": "Kruskal 的 idea：每個點是一顆種子（小苗），目標是長成一棵大樹。",
+     "t": 271
+    },
+    {
+     "text": "每加一條 edge，就把兩棵小樹 merge 成一棵比較大的樹。",
+     "t": 290
+    },
+    {
+     "text": "小樹越長越大，直到所有點形成一棵大樹就停。",
+     "t": 324
+    },
+    {
+     "text": "這樣看是因為 Prim 的長法不一樣（Prim 只有一棵樹往外長）。",
+     "t": 336
+    }
+   ],
+   "cues": [
+    271.7,
+    282.8,
+    290.8,
+    301.9,
+    311.5,
+    319.2,
+    324.2,
+    336.6
+   ],
+   "explain": [
+    "老師用剛剛的 demo 換個角度看 Kruskal：它到底是怎麼「長」出一棵樹的？",
+    "想像每個點都是一顆小種子（小苗），最後的目標是長成一棵包含所有點的大樹。",
+    "每加進一條 edge，就像長出一根樹枝，把兩棵小樹接在一起，變成一棵比較大的樹。（merge 就是「合併」。）",
+    "一開始全部都只有種子：7 個點就是 7 棵各自獨立的小樹。",
+    "加入 AD 之後，A 和 D 這兩顆小苗 merge 成一棵比較大的小樹（同一個顏色代表同一棵）。",
+    "一樣地，CE 讓 C 和 E 形成另外一棵小樹。現在場上有好幾棵大小不同的樹。",
+    "接著 DF、AB、BE、EG 依序加入，小樹越長越大、互相合併，直到所有的點都在同一棵大樹裡，就停下來。",
+    "為什麼要特別這樣看？因為下一個演算法 Prim 的長法不一樣：Prim 從頭到尾只有一棵樹，從一個起點往外長。"
+   ]
+  },
+  {
+   "title": "Prim's algorithm：從一點開始，每次接上最便宜的觸角",
+   "scene": "grjiang3-prim-demo",
+   "points": [
+    {
+     "text": "Prim's algorithm 發表得比 Dijkstra's 早一些，當年大約是平行發展。",
+     "t": 344
+    },
+    {
+     "text": "MST 的功勞歸給 Prim、shortest path 歸給 Dijkstra；本質上是同一個演算法。",
+     "t": 368
+    },
+    {
+     "text": "Prim 從頭到尾只維持一棵樹：從任一點出發，每一步選往外伸出、cost 最小的 edge。",
+     "t": 383
+    },
+    {
+     "text": "Demo：從 D 開始 → DA 5 → DF 6 → AB 7 → BE 7 → CE 5 → EG 9。",
+     "t": 450
+    }
+   ],
+   "cues": [
+    344.2,
+    349.8,
+    368.7,
+    383.8,
+    395.8,
+    416.8,
+    430.8,
+    450,
+    453.8,
+    473.4,
+    488.8,
+    496,
+    504.6
+   ],
+   "explain": [
+    "接下來 demo 第二個演算法：Prim's algorithm。",
+    "小歷史：Prim 發表的時間比 Dijkstra's algorithm（最短路徑演算法）還早一些。那個年代學術交流管道不暢通，大家差不多是同時在研究類似的問題。",
+    "後來大家把 minimum spanning tree 的功勞歸給 Prim，把 shortest path（最短路徑）的功勞歸給 Dijkstra。等一下看程式就會發現，兩者本質上是同一個演算法。",
+    "Prim 的想法：最後一樣要長成一棵大樹，但它在過程中 always 只維持「一棵」樹，不像 Kruskal 有很多小樹。",
+    "起點可以隨便挑任何一個點，因為最後這棵樹一定會連到所有的點，從哪裡開始都無所謂。",
+    "從起點開始慢慢往外擴張，讓樹長大。一樣是 greedy：每次都用 cost 比較小的 edge。",
+    "每一步都站在目前這棵樹上往外看：伸出去的「觸角」就是一端在樹裡、另一端在樹外的 edge。挑其中 cost 最小的那條，讓樹多長一點。",
+    "隨便挑一個起點：D。現在樹裡只有 D 一個點（綠色）。",
+    "從 D 往外看，觸角有 DA 5、DB 9、DE 15、DF 6（黃色）。最便宜的是 5，所以沿著 DA 長到 A。",
+    "樹變大了（D、A），往外看到四條：AB 7、DB 9、DE 15、DF 6。最小的是 6，長到 F。",
+    "注意每一輪都剛好多接一個新的點進來，所以這棵樹是一點一點慢慢長大的。",
+    "樹更大了，往外看到更多條 edge，但規則不變：選當下看到 cost 最小的。這次是 AB 7。",
+    "依此類推：接著是 BE 7、CE 5、EG 9，最後長完一整棵樹。total 一樣是 39，和 Kruskal 得到的答案相同。"
+   ]
+  },
+  {
+   "title": "Prim vs Kruskal：長法不一樣",
+   "scene": "grjiang3-prim-vs-kruskal",
+   "points": [
+    {
+     "text": "Prim：always 只有一棵樹，每個 iteration 增加一條 edge（一個點），往外擴張。",
+     "t": 519
+    },
+    {
+     "text": "Kruskal：一開始 maintain 很多小樹，每個 iteration 用一條 cost 低的 edge 把兩棵小樹 merge，最後成一棵大樹。",
+     "t": 546
+    }
+   ],
+   "cues": [
+    519.4,
+    546,
+    554.8,
+    563.8
+   ],
+   "explain": [
+    "左邊是 Prim：從一個起點開始，always 只有一棵樹；每個 iteration（每一輪）增加一條新的 edge，也就是增加一個新的點，慢慢往外擴張直到連起所有點。",
+    "右邊是 Kruskal：它不一樣，一開始就 maintain（維持）很多棵小樹，每個點自己就是一棵小苗。",
+    "每個 iteration 引進一條 cost 很低的 edge，把其中兩棵小樹 merge 成一棵。",
+    "一直合併，最後 merge 成一整棵大樹就停。兩種長法不同，但得到的 MST 一樣。"
+   ]
+  },
+  {
+   "title": "Reverse-delete：從貴的 edge 開始拔",
+   "scene": "grjiang3-reverse-delete",
+   "points": [
+    {
+     "text": "第三種 reverse-delete：反向操作，從整張圖開始，把不需要的 edge 拔掉。",
+     "t": 572
+    },
+    {
+     "text": "n 個點只要 n−1 條 edge；從 cost 高的拔起。",
+     "t": 609
+    },
+    {
+     "text": "拔了會讓圖 disconnected（有人變孤兒）的 edge 不能拔。",
+     "t": 650
+    },
+    {
+     "text": "Demo：拔 DE 15、FG 11、BD 9；拔 EG 9 會讓 G 變孤兒 → 恢復；再拔 BC 8、EF 8 就完成。",
+     "t": 676
+    },
+    {
+     "text": "實作上前兩種好做；reverse-delete 每拔一條都要檢查 connectivity，很難做快，實務上沒人用。",
+     "t": 762
+    }
+   ],
+   "trap": "reverse-delete 是對的（cycle property 保證），只是每一步都要檢查 connectivity，實作慢。",
+   "cues": [
+    572.8,
+    587.8,
+    598.8,
+    609,
+    620.8,
+    650.8,
+    676.1,
+    681.6,
+    695.8,
+    702.1,
+    711.7,
+    719.8,
+    729.4,
+    749.8,
+    762.5,
+    778.1
+   ],
+   "explain": [
+    "前兩種（Kruskal、Prim）都是用「加 edge、加點」的方式慢慢長大。第三種方法反向操作。",
+    "它叫 reverse-delete（反向刪除）：一開始就拿整張圖，所有 edge 都在。",
+    "想法是把不需要的 edge 一條一條拔掉，是「反過來拔」。",
+    "什麼叫不需要？n 個點只要 n−1 條 edge 就能全部連起來（這是 tree 的性質）。這裡 7 個點只需要 6 條，原本有 11 條，所以多的 5 條都可以拔光。",
+    "那要先拔哪條？當然是 cost 比較高的，因為貴的 edge 我們最不想要。從大的開始刪，所以叫 reverse delete。",
+    "但不是每條都能拔：如果拔掉後圖變成 disconnected（不連通），就有某個點變成「孤兒」，再也連不到其他點，這種 edge 不可以拔。",
+    "demo 開始：一樣先排序，不過這次是 cost 從大排到小（右邊清單）。",
+    "最大的是 DE 15。拔掉後檢查：整張圖還是 connected（所有點仍互相連得到），所以安全，真的拔掉。",
+    "下一條 FG 11：拔掉還是安全。",
+    "BD 9：拔了還是安全。",
+    "再來 EG 9：拔掉之後，G 只剩 FG 這條，但 FG 剛剛已經拔了，G 就變成孤兒、完全連不到。所以這條不能拔，要把它恢復。",
+    "下一條 BC 8：C 還能透過 CE 連到，拔掉安全。",
+    "再拔 EF 8：F 還能透過 DF 連到，也可以。現在剩 6 條 edge，已經是一棵 tree，做好了。",
+    "如果繼續看剩下的 edge，任何一條再拔都會造成 disconnected，拔了又得貼回去，所以全部保留，結束。結果跟 Kruskal、Prim 一樣是 39。",
+    "課本這三種方法裡，從 implementation（實作）的角度看，前兩種好做，第三種難做。",
+    "難在哪？每拔掉一條 edge，都要檢查整張圖是不是仍然 connected，這件事很難做得快。所以實務上幾乎沒人用 reverse-delete。"
+   ]
+  },
+  {
+   "title": "兩個重要 property：cut property 與 cycle property",
+   "scene": "grjiang3-two-properties",
+   "points": [
+    {
+     "text": "MST 的演算法會對，都是根據兩個 property。",
+     "t": 795
+    },
+    {
+     "text": "Cut property：Prim 與 Kruskal 會對的原因。",
+     "t": 820
+    },
+    {
+     "text": "Cycle property：reverse-delete 會對的原因；其他類似的 MST 演算法也都基於這兩個。",
+     "t": 829
+    }
+   ],
+   "cues": [
+    795.3,
+    814.8,
+    820,
+    829,
+    839.8
+   ],
+   "explain": [
+    "接下來介紹 minimum spanning tree 兩個非常重要的 property（性質）。",
+    "不管是剛剛的三種演算法，還是其他地方看到的 MST 演算法，它們為什麼會對（得到最佳解），都是根據這兩個 property。",
+    "第一個是 cut property：它是 Prim 和 Kruskal 會對的原因。",
+    "第二個是 cycle property：它是 reverse-delete 會對的原因。",
+    "其他很類似的 MST 長法，大概也都是從這兩個 property 發展出來的。所以搞懂這兩個，就懂了 MST 演算法的核心。"
+   ]
+  },
+  {
+   "title": "Cut property：被剪到的 edge 中最便宜的一定安全",
+   "scene": "grjiang3-cut-statement",
+   "points": [
+    {
+     "text": "簡化假設：所有 edge 的 cost 都不一樣。",
+     "t": 848
+    },
+    {
+     "text": "問題：什麼樣的 edge 放進 MST 一定沒問題（safe edge）？",
+     "t": 881
+    },
+    {
+     "text": "用剪刀把點切成兩半：S 與 V − S；剪刀一定會剪到一些 edge。",
+     "t": 917
+    },
+    {
+     "text": "Cut property：被剪到的 edge 中 cost 最小的那條一定在 MST 裡；用 exchange argument 證明。",
+     "t": 967
+    }
+   ],
+   "trap": "cut property 說的是「任何一個 cut」上 cost 最小的 edge 都在 MST 裡；cost 都不同時 MST 是唯一的。",
+   "cues": [
+    848.2,
+    865.8,
+    881.2,
+    901.8,
+    917.8,
+    939.9,
+    958.8,
+    967.8,
+    985.6
+   ],
+   "explain": [
+    "第一個：cut property。為了讓分析簡單、又不失去問題的本質，先做一個簡化的假設。",
+    "假設所有 edge 的 cost 都不一樣。就算有一樣的，其實也很容易推廣，只是先簡化。",
+    "我們想問：給定一張圖，什麼時候某一條 edge 放進 minimum spanning tree 是「非常安全」、一定沒問題的？",
+    "這種一定可以（而且應該）被放進 MST 的 edge，在其他書上叫 safe edge（安全的 edge）。",
+    "cut（切割）的意思：用剪刀把所有的點切成兩半。其中一半的點放在集合 S（藍色）。",
+    "剩下的點就在 V − S（橘色）。V 是全部點的集合，V − S 就是「不在 S 裡的點」。",
+    "這一刀一定會從圖中間剪到一些 edge：一端在 S、另一端在 V − S 的 edge（粉紅色），叫做跨過 cut 的 edge。",
+    "cut property 說：這些被剪到的 edge 中，cost 最小的那條（這裡是 cf 5）一定是安全的，而且一定要被放進 MST。不管你怎麼剪都成立。",
+    "怎麼證明？用 exchange argument（交換論證）：拿一個不含這條 edge 的解，把它的一部分換成這條 edge，證明換完不會更差。"
+   ]
+  },
+  {
+   "title": "Cut property 第一版證明：砍掉 f、貼上 e",
+   "scene": "grjiang3-cut-proof1",
+   "points": [
+    {
+     "text": "MST 蓋住所有點且 connected，所以不管怎麼切，至少有一條 tree edge 跨過 cut。",
+     "t": 991
+    },
+    {
+     "text": "第一版：假設別人的 spanning tree T 不含 e，它一定用另一條跨 cut 的 edge f，且 f 比 e 貴。",
+     "t": 1061
+    },
+    {
+     "text": "Exchange argument：把 f 砍掉、換成 e，cost 變便宜。",
+     "t": 1181
+    },
+    {
+     "text": "但這版有瑕疵：換完之後還是不是一棵 tree？不確定。",
+     "t": 1248
+    }
+   ],
+   "trap": "這是老師故意先給的「有瑕疵」版本：f 不一定在 e 兩端之間的 path 上，砍了可能斷開。",
+   "cues": [
+    991.8,
+    1009.6,
+    1038.7,
+    1061.8,
+    1086.8,
+    1128.8,
+    1158.8,
+    1181.1,
+    1208.8,
+    1231.8,
+    1248.8,
+    1278.1
+   ],
+   "explain": [
+    "先看 basic idea：我們要的 minimum spanning tree 會蓋住所有點，而且是一棵 connected（連通）的 tree。綠色是一棵這樣的樹。",
+    "所以不管剪刀怎麼切，一定至少剪到一條 tree edge（粉紅）。否則左右兩半黏不起來，長出來的就不是一棵連通的 tree。",
+    "問題是：這條跨過去的 edge 應該長什麼樣子？cut property 說，剪到的 edge 中 cost 最小的那條（叫 e，黃色）應該放在 MST 裡。",
+    "先看第一個版本的證明。想法是：證明「不包含 e 的 spanning tree，cost 比較高」。",
+    "假設 T 是別人隨意做出來的一棵 spanning tree，而且它沒有放 cut 上 cost 最低的 e。目前 T 的 cost 是 26。",
+    "T 是 spanning tree，一定要把 S 和 V − S 兩區連起來；既然沒用 e，就一定透過另一條跨 cut 的 edge，叫它 f。",
+    "f 也在這個 cut 上，但它不是 cost 最小的那條（最小的是 e），所以 f 的 cost 一定比 e 高：8 > 2。",
+    "exchange argument 的 idea：別人的解裡有不符合我心中 greedy rule 的地方，就把它剪掉，貼上我的選擇，再說明結果還是一個解、而且 cost 比較低。",
+    "套用：把 T 裡的 f 砍掉，換成 e 貼上去。",
+    "減掉一個比較大的數字（8）、加上一個比較小的數字（2），cost 從 26 變成 20，確實比較便宜。",
+    "但老師說：這個版本的證明不大對。它抓到了 key idea，可是有一個小瑕疵。",
+    "問題在於：我們只能說 cost 比較便宜，卻不確定剪掉 f、貼上 e 之後，結果還是不是一棵 tree。（這張圖剛好沒問題，但下一段會看到出事的例子。）"
+   ]
+  },
+  {
+   "title": "第一版的漏洞：換完不一定是 tree",
+   "scene": "grjiang3-cut-proof1-bug",
+   "points": [
+    {
+     "text": "Exchange argument 要保證兩件事：① cost 比較好；② 換完仍是 feasible solution。",
+     "t": 1291
+    },
+    {
+     "text": "反例：S 隨便剪，V − S 那側在 T 裡可能沒有 connected。",
+     "t": 1341
+    },
+    {
+     "text": "砍掉 f、換成 e：G 那部分變孤兒（disconnected），不是 feasible → 第一版證明不完整。",
+     "t": 1418
+    }
+   ],
+   "cues": [
+    1291.5,
+    1316,
+    1326.7,
+    1341.8,
+    1368.2,
+    1395,
+    1418,
+    1441.6
+   ],
+   "explain": [
+    "回顧 exchange argument：把解裡不符合我們想像的地方挖掉，換成 greedy rule 會做的選擇，再貼回去。這個技巧很常用。",
+    "但之前一直強調，做 exchange 要保證兩件事。第一：換完之後 cost 要比較好（至少不變差）。",
+    "第二：換完的東西還必須是 feasible solution（合法解）。如果換上去之後解壞掉了，就是白做工。",
+    "第一版證明的問題：它沒有照顧到 tree 的特性。舉個反例：綠色是一棵 spanning tree。",
+    "S 是隨便剪的，可能剪成這樣：左邊是 S，右邊是 V − S。注意右邊這兩個點在綠色的樹裡並沒有直接連在一起，右邊這一側是散開的。",
+    "跨過 cut 的有三條 edge，其中 e（cost 2）最便宜，但這棵樹沒有選 e；它選到的跨 cut edge 之一是 f。",
+    "照第一版的做法，砍掉 f、換成 e：e 確實比 f 便宜，但 f 砍掉後，G 那一部分就變成孤兒，整棵樹斷開（disconnected）了。",
+    "所以第一版不能保證造出來的還是 feasible solution，證明不完整，算是錯的。下一段用比較嚴謹的方式修正。"
+   ]
+  },
+  {
+   "title": "Cut property 正確版：找 path P 穿過 cut 的 e'",
+   "scene": "grjiang3-cut-proof2-setup",
+   "points": [
+    {
+     "text": "第二版：idea 一樣，但要維持 tree（connected、沒有 cycle）的特性。",
+     "t": 1447
+    },
+    {
+     "text": "T 不含 e = (v, w)；T 是 spanning tree，所以 v、w 之間有唯一的 path P。",
+     "t": 1473
+    },
+    {
+     "text": "P 一定穿過 cut boundary；穿過的那條叫 e'（端點 v'、w'），且 e' 比 e 貴。",
+     "t": 1552
+    },
+    {
+     "text": "T' = T − e' + e；要證 T' 是 spanning tree（feasible），而且比較便宜。",
+     "t": 1606
+    }
+   ],
+   "trap": "e' 不能隨便挑：要挑 T 裡 v 到 w 的 path P 穿過 cut 的那條，換完才保證還是 tree。",
+   "cues": [
+    1447,
+    1465.8,
+    1473.2,
+    1495.8,
+    1522.8,
+    1546.8,
+    1552,
+    1566.8,
+    1588.1,
+    1606.8,
+    1620.7,
+    1634.1
+   ],
+   "explain": [
+    "我們把證明寫得嚴謹一點：這是第二個、比較正確的版本。",
+    "idea 跟前面非常像，但這次要特別注意：換完之後要維持 tree 的特性，也就是 connected（連通）而且沒有 cycle。",
+    "一樣假設 T 是別人做出的 spanning tree（綠色），它沒有包含 cut 上最便宜的 e（淡色那條，cost 2）。T 的 cost 是 25。",
+    "e 連接的兩點叫 v 和 w。雖然 T 沒有用 e，但 T 是 spanning tree，所以 v 和 w 一定可以透過另一條路連起來。",
+    "tree 是 connected graph，任兩點之間一定有 path（路徑）；而且在 tree 裡，兩點之間的 path 是唯一的。",
+    "把 T 裡從 v 走到 w 的這條 path 叫做 P：v → v' → w' → w（黃色）。",
+    "v 在 S 這邊、w 在 V − S 那邊，P 從左走到右，所以一定會穿過 cut 的邊界（cut boundary）。",
+    "P 穿過邊界的那條 edge 叫 e'（讀作 e prime），它的兩個端點是 v' 和 w'。關鍵：e' 是「在 P 上」的那條，不是隨便一條跨 cut 的 edge。",
+    "e' 也跨過這個 cut，而 e 是 cut 上 cost 最小的，所以 e' 一定比較貴：7 > 2。",
+    "做 exchange argument：在 T 裡把 e' 拔掉、把 e 貼上去，得到一棵新的 T'。",
+    "要證明這樣是對的，需要兩件事：先說 T' 是一棵 spanning tree（feasible，合法），再說它比較便宜。",
+    "比較便宜沒問題：剪掉的 e' 比較貴，貼上的 e 是 cut 上最便宜的，cost 從 25 變成 20。"
+   ]
+  },
+  {
+   "title": "正確版（下）：T' 仍是 tree → MST 一定包含 e",
+   "scene": "grjiang3-cut-proof2-feasible",
+   "points": [
+    {
+     "text": "T' connected：原本靠 e' 連的點可以繞路 v' → v → e → w → w'。",
+     "t": 1645
+    },
+    {
+     "text": "T' 沒有 cycle：唯一可能的 cycle 需要 e'，而 e' 已被砍掉。",
+     "t": 1727
+    },
+    {
+     "text": "Connected + 沒有 cycle + edge 數一樣 → T' 是 tree，又比較便宜 → MST 包含 cut 上最便宜的 edge。",
+     "t": 1795
+    },
+    {
+     "text": "Cut property 很重要：Prim、Kruskal 都是 based on 它。",
+     "t": 1827
+    }
+   ],
+   "cues": [
+    1645.8,
+    1675.8,
+    1699.8,
+    1727.8,
+    1763.9,
+    1795.8,
+    1827.6
+   ],
+   "explain": [
+    "第一件事：新的 T' 一定是 connected（連通）嗎？",
+    "原本的 T 是 connected。拔掉 e' 只會影響那些原本要經過 e' 才連得到的點，所以只要確認 v' 和 w' 之間還有路就好。",
+    "有！re-route（重新繞路）：從 v' 往下走到 v，經過便宜的 e 到 w，再回到 w'。原本靠 e' 的地方都可以改走這條路，所以 T' 仍然連通。",
+    "第二件事：tree 除了 connected 之外，還不能有 cycle。要確認這個「剪掉再貼上」沒有造出新的 cycle。",
+    "T' 如果再加回 e'，才會出現 v–v'–w'–w–v 這一圈（原本的 T 本身很安全，沒有 cycle）。但 e' 已經被砍掉了，所以沒有引進任何 cycle，T' 是 acyclic（無環）的。",
+    "T' connected、沒有 cycle、edge 數又跟 T 一樣，所以它還是一棵 spanning tree；而且 cost 比較低。這就證明了：minimum spanning tree 應該包含 cut 上最便宜的那條 edge。",
+    "cut property 很重要，因為前面的 Prim 和 Kruskal 都是 based on 它推展出來的。"
+   ]
+  },
+  {
+   "title": "Cycle property：cycle 上最貴的 edge 可以砍掉",
+   "scene": "grjiang3-cycle-property",
+   "points": [
+    {
+     "text": "Cycle property 與 cut property 相反：討論什麼樣的 edge 可以放心砍掉。",
+     "t": 1845
+    },
+    {
+     "text": "圖裡的任一個 cycle 上，cost 最高的 edge 不需要放在 MST 裡，可以安全砍掉。",
+     "t": 1870
+    },
+    {
+     "text": "證明一樣用 exchange argument（課堂不講，參考課本）；重點是改完還要是一棵 tree。",
+     "t": 1899
+    }
+   ],
+   "cues": [
+    1845.5,
+    1849.8,
+    1870.8,
+    1886.8,
+    1899.8,
+    1922.7
+   ],
+   "explain": [
+    "第二個 property：cycle property。",
+    "它跟 cut property 是相反的兩個極端。cut property 討論什麼樣的 edge 適合「加」進 MST；cycle property 反過來，討論什麼樣的 edge 可以放心「砍」掉。",
+    "cycle 顧名思義就是一圈：一些 edge 串起來繞回原點。例如 A–B–D 這三條 edge 就形成一個 cycle。",
+    "cycle property：一個 cycle 上 cost 最高的那條 edge（這裡是 BD 9），可以非常安全地砍掉，它不需要放在 minimum spanning tree 裡。這很自然：這圈上的點靠其他比較便宜的 edge 就能互相連到。",
+    "證明一樣用 exchange argument，方法跟 cut property 很像，只是這次是要把 edge 拔掉。課堂上不講，可以參考課本。",
+    "要小心的地方跟前面一樣：證明過程中，改完的解要維持是一棵 tree。這也是 reverse-delete 會對的原因。"
+   ]
+  },
+  {
+   "title": "實作：Prim 用 priority queue，Kruskal 用 union-find",
+   "scene": "grjiang3-impl-overview",
+   "points": [
+    {
+     "text": "實作會用到兩種特別的 data structure。",
+     "t": 1936
+    },
+    {
+     "text": "Prim：min priority queue（跟 Dijkstra 一樣）；Kruskal：disjoint set（union-find）。",
+     "t": 1959
+    }
+   ],
+   "cues": [
+    1936.5,
+    1951.8,
+    1959.8,
+    1977.8
+   ],
+   "explain": [
+    "演算法都講完了，接下來看寫程式時要怎麼 implementation（實作）。",
+    "主要會用到兩種比較特別的 data structure（資料結構）。",
+    "Prim 用的是 min priority queue（每次可以快速取出最小值的佇列，常用 Heap 來做）。Prim 的 procedure 跟 Dijkstra 有 99% 一模一樣，所以背後的資料結構也一樣。",
+    "Kruskal 需要的是 disjoint set（互斥集合）這種資料結構，它的實作也有人叫 union-find。"
+   ]
+  },
+  {
+   "title": "Prim 為什麼對：S = 目前的樹，選 cut 上最便宜的",
+   "scene": "grjiang3-prim-cut",
+   "points": [
+    {
+     "text": "Prim 配合 cut property：每個 iteration，S = 目前長出的樹蓋住的點。",
+     "t": 1987
+    },
+    {
+     "text": "從 D 開始：S = {D}，選 cut 上最便宜的 edge；樹長大，cut 跟著往外移。",
+     "t": 2043
+    },
+    {
+     "text": "每一步選的都是某個 cut 上最便宜的 edge，cut property 保證這樣加沒問題。",
+     "t": 2105
+    }
+   ],
+   "cues": [
+    1987.9,
+    2004.6,
+    2022.8,
+    2043.9,
+    2067,
+    2072.9,
+    2084.8,
+    2089.8,
+    2099.8,
+    2105.6
+   ],
+   "explain": [
+    "很快再看一次 Prim，這次配合剛剛的 cut property，看它為什麼會對。",
+    "cut property 回顧：把點分成 S 和 V − S 兩塊，中間被剪到的 edge 裡，cost 最低的那條一定可以安全放進 tree。",
+    "Prim 的 basic idea：從一個點開始，每次往外看，用 cost 最低的 edge 伸出觸角，讓樹繼續長大。",
+    "從 D 開始。關鍵觀察：每個 iteration，S 就是「目前長出的樹所蓋住的點」。現在 S 只有 D，cut 就在 D 周圍，被剪到的 edge 是粉紅色這些。",
+    "Prim 選的就是這個 cut 上 cost 最便宜的 edge：DA 5，把它加進來。",
+    "第二個 iteration：樹在哪裡，S 就在哪裡。現在 S = {D, A}，cut 往外移，被剪到的 edge 也換了一批。",
+    "一樣選 cut 上 cost 最低的：DF 6。",
+    "cut 又變了，一樣在裡面選最低的：AB 7。",
+    "就這樣 cut 一直變、每次選最低的（BE 7、CE 5、EG 9），直到所有點都加進來。",
+    "為什麼 Prim 會對？因為它每一步加的都是「某個 cut 上最便宜的 edge」，而 cut property 告訴我們這樣的 edge 一定安全。"
+   ]
+  },
+  {
+   "title": "Prim = Dijkstra 改一行：d-value 的設計",
+   "scene": "grjiang3-prim-vs-dijkstra",
+   "points": [
+    {
+     "text": "Prim 和 Dijkstra 的 procedure 只有一行（第四行）不一樣：d-value 的設計。",
+     "t": 2115
+    },
+    {
+     "text": "Dijkstra：d[v] = 從 source 到 v 的最短距離 → 用 d[u] + w(u,v) 更新。",
+     "t": 2181
+    },
+    {
+     "text": "Prim：只在乎用最小 cost 黏上目前的樹 → d[v] = v 接到樹上最便宜的 edge，用 w(u,v) 更新。",
+     "t": 2218
+    },
+    {
+     "text": "寫好 Dijkstra，改這一行就變 Prim；都用 min priority queue，complexity 也很類似。",
+     "t": 2297
+    }
+   ],
+   "trap": "Dijkstra 的 d 是「從 source 的總距離」，Prim 的 d 是「接到目前這棵樹的最便宜 edge」，不累加。",
+   "cues": [
+    2115.8,
+    2134,
+    2159,
+    2166.8,
+    2181.8,
+    2199.8,
+    2218.1,
+    2235.8,
+    2252.8,
+    2277.9,
+    2297.8
+   ],
+   "explain": [
+    "這裡放的 procedure 其實是 Dijkstra 的。老師一直強調 Dijkstra 和 Prim 基本上一模一樣，現在來看到底哪裡不一樣。",
+    "答案：只有一行不一樣，就是第四行（亮起來的那行）。",
+    "不一樣的是 d-value 的設計。d-value 是每個點身上記的一個數字，priority queue 每次取出 d 最小的點。",
+    "題目不一樣，做法當然要跟著調整，不能閉上眼睛直接套。要想清楚 d 代表什麼。",
+    "Dijkstra 的 d-value：從 source（起點 s）一路到目前這個點的最短距離。圖中 d[u] = 7 表示 s 到 u 最短要 7。",
+    "所以要算 v 的 d，必須拿前一點 u 的最短距離，再往後延伸一條 edge 的長度：7 + 3 = 10。",
+    "Prim 考慮的完全不是「source 到每個點的最短距離」，它的目標是用最少 cost 把所有點連起來。",
+    "Prim 只需要看當下已經長出來的這棵樹：身上有沒有哪條觸角可以用最便宜的 cost 往外伸。",
+    "所以它不用管 root 在哪，也不用加上前面的 d-value，只看「黏上這棵樹」那條 edge 的 cost：d[v] = w(u,v) = 3。",
+    "換句話說，在 Prim 裡每個點 maintain 的 d-value 是：往回看目前的樹，跟樹上誰的 edge 最近（最便宜）。",
+    "所以如果你已經寫好 Dijkstra，只要改這一行就變成 Prim。兩者都用 min priority queue 實作，complexity 也非常類似。"
+   ]
+  },
+  {
+   "title": "Kruskal 的 procedure：兩端不在同一棵樹才加",
+   "scene": "grjiang3-kruskal-proc",
+   "points": [
+    {
+     "text": "Kruskal procedure：edge 依 cost 從小排到大；一開始只有點。",
+     "t": 2324
+    },
+    {
+     "text": "每個 iteration 加一條 edge，把對應的兩棵樹 merge 成一棵。",
+     "t": 2360
+    },
+    {
+     "text": "安全加入的條件：這條 edge 的兩端在目前的解中還沒有 connected（否則會形成 cycle）。",
+     "t": 2377
+    }
+   ],
+   "cues": [
+    2324,
+    2335.8,
+    2348.8,
+    2356.3,
+    2360.4,
+    2377.8,
+    2388.5,
+    2400.8,
+    2421.7
+   ],
+   "explain": [
+    "再看 Kruskal：它每個 iteration 加一條 edge，把兩棵小樹 merge 在一起。",
+    "下面的 procedure，就是把剛剛 demo 時口述的「第一步怎麼做、第二步怎麼做」寫成步驟。",
+    "一開始先把所有 edge 的 cost 從小排到大（右邊清單）。",
+    "一開始只看到點，沒有任何 edge；每個點自己是一棵小樹。",
+    "接著每個 iteration 加一條 edge 進來；每加一條，就把它兩端所在的兩棵樹 merge 成一棵。",
+    "什麼樣的狀況下，這條 edge 可以安全地放進來？demo 的時候用圖看：不要產生 cycle。現在輪到 BC。",
+    "寫成程式要更精確：這條 edge 的兩個端點，在目前的解當中還「沒有 connected」，才可以加。B 和 C 現在是同一個顏色，表示已經連通了。",
+    "如果兩端原本就已經 connected，再把這條 edge 加進去，馬上就會形成 cycle，所以不能加。",
+    "就這樣 iterative（一輪一輪）地做，直到所有點都加進來就停下來。"
+   ]
+  },
+  {
+   "title": "（不重要）其他等價的方法；下次再講實作",
+   "scene": null,
+   "points": [
+    {
+     "text": "下次再把 Kruskal 的實作講完。",
+     "t": 2428
+    },
+    {
+     "text": "課本裡其他的方法（如一次加很多條 edge）跟 Prim／Kruskal 等價，不重要可以忘了。",
+     "t": 2445
+    }
+   ]
+  },
+  {
+   "title": "（下一堂）回顧 Kruskal：樹枝只接在兩棵不同的樹之間",
+   "scene": "grjiang3-kruskal-recap",
+   "points": [
+    {
+     "text": "新的一堂：先把 Kruskal 的實作講完，再進入新的單元。",
+     "t": 2475
+    },
+    {
+     "text": "Kruskal：每個點是一棵小樹，每個 iteration 用一條 edge（樹枝）把兩棵樹 merge，從 cost 小的 branch 開始選。",
+     "t": 2495
+    },
+    {
+     "text": "每條加進來的 edge 都跨在兩棵不同的小樹之間；若兩端在同一棵樹，會造成 cycle → 跳過。",
+     "t": 2599
+    }
+   ],
+   "trap": "影片說這條 cost 8 的 edge 連的是 B 和 D；在這張圖上 BD 是 9、cost 8 的是 BC 與 EF，動畫用 BC 示意（兩端同樣已在同一棵樹）。",
+   "cues": [
+    2475.2,
+    2495.8,
+    2511.6,
+    2524.4,
+    2541.8,
+    2558.8,
+    2582.6,
+    2599.8,
+    2617.8,
+    2638.9,
+    2671.8
+   ],
+   "explain": [
+    "這是下一堂課的開頭：今天一開始先把上次 Kruskal 演算法的 implementation 講完，接著就進入新的單元。",
+    "回顧 Kruskal 的 idea：一開始每個點都是一棵小樹，就像一顆小苗。",
+    "每個 iteration 選一條 edge，這條 edge 就像樹枝，把兩顆小苗連起來，變成一棵比較大的樹。",
+    "每個 iteration 都這樣做：把兩棵現有的樹 merge 成比較大的樹，直到所有點都建成一棵大樹就停。",
+    "長出去的樹枝怎麼選？從 cost 比較小的 branch（樹枝）開始選起。",
+    "用上次的例子：一開始只有小苗。因為等一下要從 cost 低的開始考慮，所以第一件事是把 edge 從小排到大（右邊清單）。",
+    "從最小的開始：cost 5 的 AD 把 A、D merge 起來，依此類推（CE、DF、AB、BE），小樹慢慢 merge 出來。",
+    "有沒有發現：每次加進來的 edge，都是跨在「目前的兩棵不同小樹」之間，把它們變成一棵。G 現在還是自己一棵。",
+    "為什麼一定要跨兩棵？如果 edge 接在同一棵樹裡的兩個點，就會造成 cycle：最後的圖不是 tree，cost 反而更高。",
+    "例如這條 cost 8 的 edge：它的兩端在目前已經同屬一棵 tree，本來就連在一起了，加它只是多花 cost。",
+    "所以跳過它，繼續往下（另一條 8 和 BD 9 也跳過），EG 9 把 G 接上，直到所有點 merge 成一棵樹為止。"
+   ]
+  },
+  {
+   "title": "Kruskal pseudocode：排序、T = ∅、line 3–5",
+   "scene": "grjiang3-kruskal-code",
+   "points": [
+    {
+     "text": "Line 1：edge 依 cost 排序（e1 最小 … em 最大）；line 2：T = ∅。",
+     "t": 2684
+    },
+    {
+     "text": "Line 3–5 的 for loop：依序檢視；兩端同屬一棵 tree → discard，否則放進 T（兩棵 tree 合併）。",
+     "t": 2735
+    },
+    {
+     "text": "這是概念式的寫法；真的寫程式要配合 data structure 判斷「同一棵 tree」。",
+     "t": 2819
+    }
+   ],
+   "cues": [
+    2684.8,
+    2695.8,
+    2713.4,
+    2735.8,
+    2751.9,
+    2763.1,
+    2791.2,
+    2814.5,
+    2819.7
+   ],
+   "explain": [
+    "把剛剛的動作寫成 procedure（程序），就是上面這個簡單的樣子。",
+    "第一件事（line 1）：把所有 edge 依 cost 從小排到大。排好後 e1 是最小的 edge，em 是 cost 最大的（m 是 edge 的總數）。",
+    "Kruskal 從只有點開始。大寫 T 這個集合最後會放進選定的 edge，一開始什麼都沒有，是空集合（∅）。",
+    "接下來透過 line 3 到 5 的 for loop，每個 iteration 會加入一條新的 edge 放到 T 裡，樹就慢慢長出來。",
+    "怎麼選？依照排好的順序從小到大一一檢視：AD、CE、DF、AB、BE 的兩端都不在同一棵樹，全部放進 T。",
+    "line 4：如果這條 edge 的兩個端點當下已經同屬一棵 tree（例如 BC），就不要理它，discard（丟掉）。",
+    "line 5：如果兩端不在同一棵 tree（例如 EG），就把它放進 T，現有的兩棵小樹就長成一棵比較大的樹。",
+    "iteratively 這樣做到最後就停下來，回傳 T（line 6）。total cost 是 39。",
+    "不過這樣寫還是「概念式」的。真的寫成程式，「兩端在不在同一棵 tree」要怎麼判斷？這需要背後配合一個 data structure。"
+   ]
+  },
+  {
+   "title": "Union-find：disjoint set 與代表人",
+   "scene": "grjiang3-disjoint-set",
+   "points": [
+    {
+     "text": "Union-find 專門用來實作 disjoint set；Kruskal 當下的每棵小樹就是一個 disjoint set。",
+     "t": 2838
+    },
+    {
+     "text": "Disjoint set：一堆集合，元素不重複；每個 set 有一個代表人（representative）。",
+     "t": 2870
+    },
+    {
+     "text": "例子：學籍——一個系級是一個 set，班代是代表人；用代表人判斷兩人是否同一個 set。",
+     "t": 2915
+    },
+    {
+     "text": "三個 operation：MAKE-SET（建新 set）、FIND（回傳所屬 set 的代表人）、UNION（合併兩個 set，選新代表人）。",
+     "t": 3006
+    }
+   ],
+   "cues": [
+    2838.7,
+    2847.8,
+    2870.1,
+    2902.8,
+    2915.5,
+    2961.8,
+    2976.8,
+    2990.8,
+    3006.7,
+    3034.1,
+    3070.8
+   ],
+   "explain": [
+    "很快 review 一下 Data Structure 課教過的 union-find 這個資料結構。",
+    "它專門用來實作 disjoint set（互斥集合）。在 Kruskal 裡，每個 iteration 當下看到的每一棵小樹，就是一個 disjoint set。",
+    "disjoint set 顧名思義是一堆集合，而且每個元素只會出現在其中一個 set 裡，不會重複。",
+    "每一個 set 會有一個代表人，英文叫 representative（發光的那位）。",
+    "舉例：學校裡每個學生都有學籍，例如「交大電子系大三」。每個人只屬於一個系籍，不會同時屬於兩個（先不考慮輔系、雙學位）。",
+    "所以一個系級就是一個 set，全校學生就是很多個不重複的 set 組成的。",
+    "每個系級通常都有代表人，就是班代。",
+    "代表人為什麼重要？因為可以用它判斷兩個 element 是不是同一個 set：5 的班代是 1、2 的班代是 2，不一樣，所以 5 和 2 不同班。",
+    "union-find 要提供三種常用的 operation。第一個是 MAKE-SET（有些課本寫 make union find）：create 一個新的 set，例如新同學 8 自己成一組。",
+    "第二個是 FIND：給一個 element，問它屬於哪個 set。它會吐出那個 set 的 representative（代表人）。FIND(7) = 1。",
+    "第三個是 UNION：把兩個比較小的 set merge 成一個比較大的 set。原本兩個 set 各有代表人，合併後要重新選出一個新的代表人。"
+   ]
+  },
+  {
+   "title": "用 tree 表示 set：root 是代表人",
+   "scene": "grjiang3-uf-trees",
+   "points": [
+    {
+     "text": "例子：S1 = {0, 6, 7, 8}、S2 = {1, 4, 9}，UNION(S1, S2)。",
+     "t": 3098
+    },
+    {
+     "text": "每個 set 用一棵 tree 表示，root 就是代表人；FIND 沿 parent 往上走到 root：FIND(7) = 0、FIND(9) = 4。",
+     "t": 3127
+    },
+    {
+     "text": "UNION：把一棵樹的 root 指向另一棵的 root；新代表人是原本較大 set 的代表人。",
+     "t": 3186
+    },
+    {
+     "text": "把淺的 set 接到深的 set 上，之後的 FIND 才不會變長。",
+     "t": 3226
+    }
+   ],
+   "trap": "樹的形狀是示意：影片說 7 在比較深的地方、9 掛在 4 底下，動畫依此畫出。",
+   "cues": [
+    3098.8,
+    3110.8,
+    3115.9,
+    3127.8,
+    3145.8,
+    3176.5,
+    3186.4,
+    3211.8,
+    3226.8,
+    3255.8,
+    3281.8
+   ],
+   "explain": [
+    "看 union 的例子。左邊紅色是一個 set，叫 S1，member 有 0、6、7、8。",
+    "另一個 set 是 S2（藍色），member 是 1、4、9。",
+    "如果做 UNION(S1, S2)，把兩個 set 合起來，就會長成右邊這個樣子。",
+    "這張圖也暗示了常見的實作：每個 set 用一棵 tree 表示。每個點有一個箭頭指向它的 parent（上一層）；tree 的 root（最上面那個）就是這個 set 的 representative。",
+    "FIND(7) 怎麼做？從 7 開始往上問 parent：7 的 parent 是 6，6 的 parent 是 0，0 已經是 root，所以代表人是 0。",
+    "FIND(9)：9 往上一步就到 4，4 是 root，所以回應「屬於 4 這個 set」。",
+    "UNION 最簡單的做法：把其中一棵樹的 root 改成指向另一個 set 的 root。右圖中，4 的箭頭指向 0。",
+    "這也表示：merge 之後新的代表人，是原本比較大的那個 set 的代表人（0）。",
+    "為什麼這樣接？左邊紅色那棵比較深，FIND(7) 要往上 backtrack 比較長一段路；右邊藍色比較淺，問一次就到 root。",
+    "如果反過來，把左邊併到右邊（0 指向 4），左邊整棵每個點都會加深一層：FIND(7) 就要往上走 1、2、3 步，更久。",
+    "所以常見的做法是把比較淺的 set merge 到比較深的 set 上，讓之後的 query（查詢）都比較均勻、比較快。"
+   ]
+  },
+  {
+   "title": "Union by rank + path compression",
+   "scene": "grjiang3-uf-tricks",
+   "points": [
+    {
+     "text": "Disjoint set 的常見實作：forest，每個 set 一棵 tree，代表人在 root。",
+     "t": 3296
+    },
+    {
+     "text": "兩個技巧：union by rank（小的樹併到大的）與 path compression。",
+     "t": 3323
+    },
+    {
+     "text": "Path compression：FIND(9) 走過 9 → 4 → 0 之後，路上的人直接指向 root。",
+     "t": 3389
+    },
+    {
+     "text": "兩者合用：MAKE-SET、FIND、UNION 每個 operation 約 O(α(n))，α 成長極慢（實際 < 5），幾乎 constant。",
+     "t": 3528
+    }
+   ],
+   "trap": "α(n) 是 inverse Ackermann function；O(α(n)) 是分攤（amortized）時間，不是每一次都保證。",
+   "cues": [
+    3296.2,
+    3323.5,
+    3365.5,
+    3379.6,
+    3389.8,
+    3408.1,
+    3424.6,
+    3436.8,
+    3455.8,
+    3483.8,
+    3505.8,
+    3528.8,
+    3564.8,
+    3594
+   ],
+   "explain": [
+    "總結剛剛：disjoint set 最常見的實作是每個 set 長成一棵 tree；很多 set 就是很多小樹，叫做 forest（森林）。代表人在 root 端。",
+    "這裡介紹兩個常見的 technique，很容易理解，但理論特性非常好。Tarjan 等人經過理論分析，發現兩個技巧合在一起，disjoint set 的 operation 可以做到非常快。",
+    "第一個：union by rank，就是剛剛說的「把比較小（淺）的樹併到比較大（深）的樹」。rank 可以想成樹的高度。",
+    "第二個：path compression（路徑壓縮）。",
+    "用右邊這棵看：假設 S1、S2 已經 union 起來，現在想要 FIND(9)。",
+    "照原理，9 往上找 parent 到 4，再往上到 0，到 root 停下來，回應「屬於 0 這個 set」。",
+    "要往上走幾步？看它多深。越下面的點，backtrack（往回走）的次數越多。",
+    "Tarjan 他們提出 compression 的概念：只要做過一次 FIND，就知道 9 屬於 0 這個 set 了，所以順手把這條路上所有人的 parent 指標，都改成直接指向 root。",
+    "原本 9 → 4 → 0；做過一次 FIND(9) 之後，9 直接指向 root 0。",
+    "如果點在很下面，往上會經過很多人；壓縮後這條路上的每個人都直接指向 root，之後再對他們做 FIND 就會變得很快。這裡再對 7 做一次示範。",
+    "這個動作看起來很小，但後來的理論分析發現：以分攤（amortized，平均分攤到每一次操作）的角度來看，complexity 非常低。",
+    "結論：union by rank 加上 path compression，MAKE-SET、FIND、UNION 這些 operation 幾乎都可以在 constant time 做到。精確地說是 O(α(n))。",
+    "α 是一個特殊的函式，n 很大時成長得非常非常慢。實際會處理的 n，算出來的 α 都小於 5，所以大約可以視為 constant time。",
+    "總結：disjoint set 用 forest 實作，每個 set 是一棵 tree；UNION 時小的併到大的（union by rank）；FIND 之後做 path compression，把路上的祖先都直接接到 root，加速之後所有的 FIND。"
+   ]
+  },
+  {
+   "title": "Kruskal + union-find：FIND 兩端，不同才 UNION",
+   "scene": "grjiang3-kruskal-uf",
+   "points": [
+    {
+     "text": "一開始每個點 MAKE-SET 一次 → n 個 set。",
+     "t": 3634
+    },
+    {
+     "text": "依 cost 從小到大檢視每條 edge：對兩端 FIND，代表人相同 → discard；不同 → UNION。",
+     "t": 3667
+    }
+   ],
+   "cues": [
+    3634.6,
+    3647.8,
+    3667.8,
+    3677.8,
+    3703.8,
+    3720.7
+   ],
+   "explain": [
+    "Kruskal 的實作，就是利用 disjoint set（union-find）來處理這些小樹。",
+    "一開始只有小苗：每個點都是一棵小樹，也就是一個 set。所以對每個點都做一次 MAKE-SET，得到 n 個 set（n 是點數），每個點都是自己的代表。",
+    "接著依 edge cost 從小排到大，每個 iteration 拿一條出來看。AD、CE、DF、AB、BE 都被收下，代表人也跟著合併。",
+    "拿到一條 edge（例如 BC），對兩個端點各做一次 FIND。如果回報的代表人是同一個，表示它們當下已在同一棵樹裡，就 discard。",
+    "如果回報的代表人不一樣（例如 E 和 G），表示它們屬於不同的樹，就做 UNION 把它們 merge 起來，edge 收進 T。",
+    "一般就是這樣：Kruskal = 排序 + disjoint set（MAKE-SET、FIND、UNION）。"
+   ]
+  },
+  {
+   "title": "Kruskal 的排序：heapsort，O(m log n)",
+   "scene": "grjiang3-kruskal-sort",
+   "points": [
+    {
+     "text": "Line 1 排序可用 heapsort：m 條 edge → O(m log m)。",
+     "t": 3732
+    },
+    {
+     "text": "m ≤ n²，所以 log m ≤ 2 log n → 排序是 O(m log n)。",
+     "t": 3769
+    },
+    {
+     "text": "接著 MAKE-SET n 次，再依序檢視 edge：FIND(u) ≠ FIND(v) 就加進 T。",
+     "t": 3782
+    }
+   ],
+   "cues": [
+    3732.8,
+    3750.8,
+    3769.4,
+    3782.4,
+    3822.8
+   ],
+   "explain": [
+    "先看 line 1：從小排到大。上次學過 Heap 這個資料結構（一棵完全二元樹，最小值永遠在最上面），用 Heap 就能排序，這叫 heapsort。",
+    "heapsort 的 complexity 是 n log n，但要注意這裡被排序的是 edge，不是點。如果有 m 條 edge，排序要 O(m log m)。",
+    "m 的 upper bound（上界）是 n²（任兩點最多一條 edge）。log n² = 2 log n，常數 2 可以提出來，所以排序可以寫成 O(m log n)。",
+    "接下來是 line 3–5 的 iteration。在這之前先準備好：T 是空集合，每個點都 MAKE-SET 一次，做出 n 個 set。",
+    "然後依排好的 cost 一一拿出 edge 檢查：對兩端做 FIND(u) 和 FIND(v)，只要不相等，就表示不屬於同一個 set，把它接起來、丟進 T（並做 UNION）。"
+   ]
+  },
+  {
+   "title": "Kruskal 的總時間：O(m log n)；linear sort 可以更快",
+   "scene": "grjiang3-kruskal-total",
+   "points": [
+    {
+     "text": "排序 O(m log n)；line 3 檢視 m 條 edge，每條 2 次 FIND。",
+     "t": 3870
+    },
+    {
+     "text": "Line 5 的 UNION 只做 n − 1 次（MST 只有 n − 1 條 edge）。",
+     "t": 3934
+    },
+    {
+     "text": "每個 operation 約 α(n) → 總共 O(m log n)，由排序主導。",
+     "t": 4014
+    },
+    {
+     "text": "若能用 linear time sort（counting、radix），for loop 是 O(m α(n))，整體幾乎 linear。",
+     "t": 4039
+    }
+   ],
+   "trap": "UNION 只做 n − 1 次（不是 m 次）；FIND 是 2m 次。用 comparison-based sort 時，總時間被排序主導：O(m log n)。",
+   "cues": [
+    3870.9,
+    3900.8,
+    3918.8,
+    3934.8,
+    3964.8,
+    4014.8,
+    4039.8,
+    4064.6,
+    4089.7,
+    4120.8
+   ],
+   "explain": [
+    "整個 Kruskal 的 complexity 有多高？先看 line 1：用 heapsort 排序是 m log m，也就是 O(m log n)。",
+    "再看下面的 for loop。line 3 把每一條 edge 拿出來一一檢視，總共 m 條。",
+    "每一條 edge 要做什麼？兩個端點各做一次 FIND，所以每條 2 次，總共 2m 次 FIND。",
+    "line 5：如果 line 4 發現兩端不同就加進來（做 UNION），一樣就 discard。那 line 5 總共會做幾次？",
+    "不要算成 m 次！最後長成的 minimum spanning tree 有 n 個點，只會有 n − 1 條 edge 加進去，所以 exactly 只有 n − 1 次 UNION。",
+    "用 union by rank 加 path compression，每個 operation 的時間大約都在 α(n)，幾乎是 constant，所以 for loop 很快。整體被排序主導：O(m log n)。",
+    "還不滿意？可以改進排序。剛剛的排序只靠「比較大小」來決定順序，叫 comparison-based sort，它最快就是 n log n。",
+    "如果配合其他 information（例如 cost 都是不大的整數），可以用 counting sort 或 radix sort 這種 linear time 的排序。",
+    "後面 line 3–5 最多 m 個 iteration，每個幾乎都是 constant time，所以 for loop 是 O(m α(n))；α 成長極慢，幾乎就是 edge 總數的 linear time。",
+    "前提是：排序採用 linear sorting，再加上 union-find。這樣 Kruskal 就可以非常快。"
+   ]
+  },
+  {
+   "title": "單元總結：shortest path 與 MST 一定要會",
+   "scene": null,
+   "points": [
+    {
+     "text": "Greedy 單元的重點：證明 greedy 能 optimally 解問題的技巧，以及 shortest path、minimum spanning tree 兩個有名的問題。",
+     "t": 4135
+    },
+    {
+     "text": "修過演算法卻不會 Dijkstra 或 MST，就像沒修過——這幾個地方一定要掌握。",
+     "t": 4166
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "老師的例子用 Kruskal（edge 從小到大：AD 5、CE 5、DF 6、AB 7、BE 7、BC 8、EF 8、BD 9、EG 9…），第一條被跳過的是哪一條？為什麼？",
+   "opts": [
+    "BC 8：B、C 已經連通，加了會形成 cycle",
+    "DF 6：cost 太高",
+    "EG 9：G 會變孤兒",
+    "AB 7：A 已經在樹裡"
+   ],
+   "ans": "BC 8：B、C 已經連通，加了會形成 cycle",
+   "why": "加完 AD、CE、DF、AB、BE 後，B 可以經 B–E–C 到 C，BC 兩端已在同一棵樹，再加就是 cycle，所以跳過。"
+  },
+  {
+   "q": "Cut property（cost 都不同）說的是？",
+   "opts": [
+    "任一個 cut 上 cost 最小的 edge 一定在 MST 裡",
+    "任一個 cut 上 cost 最大的 edge 一定在 MST 裡",
+    "任一個 cycle 上 cost 最小的 edge 可以刪掉",
+    "每個點 cost 最小的 edge 都不在 MST 裡"
+   ],
+   "ans": "任一個 cut 上 cost 最小的 edge 一定在 MST 裡",
+   "why": "把點分成 S 與 V − S，跨過去的 edge 中最便宜的那條是 safe edge；Prim、Kruskal 都靠它保證正確。"
+  },
+  {
+   "q": "Cut property 第一版證明（砍掉任一條跨 cut 的 f、換成 e）錯在哪？",
+   "opts": [
+    "換完不一定還是 tree：可能有點變孤兒（disconnected）",
+    "e 不一定比 f 便宜",
+    "exchange argument 不能用在 MST",
+    "T 不一定跨過 cut"
+   ],
+   "ans": "換完不一定還是 tree：可能有點變孤兒（disconnected）",
+   "why": "f 若不在 T 裡 e 兩端之間的 path 上，砍掉會斷開。正確版要挑 path P 穿過 cut 的那條 e'，換完才仍 connected 且無 cycle。"
+  },
+  {
+   "q": "Prim 和 Dijkstra 的 procedure 只差一行，Prim 更新 d[v] 的方式是？",
+   "opts": [
+    "d[v] = min(d[v], w(u,v))",
+    "d[v] = min(d[v], d[u] + w(u,v))",
+    "d[v] = max(d[v], w(u,v))",
+    "d[v] = d[u]"
+   ],
+   "ans": "d[v] = min(d[v], w(u,v))",
+   "why": "Prim 只在乎 v 用多便宜的 edge 黏上目前的樹，不累加從 source 來的距離；Dijkstra 才用 d[u] + w(u,v)。"
+  },
+  {
+   "q": "老師的 reverse-delete demo 中，哪一條 edge 拔了之後必須恢復？",
+   "opts": [
+    "EG 9：拔了 G 變孤兒",
+    "DE 15：最貴的一定要留",
+    "BC 8：會形成 cycle",
+    "FG 11：會讓 F 變孤兒"
+   ],
+   "ans": "EG 9：拔了 G 變孤兒",
+   "why": "FG 11 已經拔掉，G 只剩 EG 這條；再拔圖就 disconnected，所以不能拔。"
+  },
+  {
+   "q": "Cycle property 說的是？",
+   "opts": [
+    "一個 cycle 上 cost 最大的 edge 不需要放在 MST 裡",
+    "一個 cycle 上 cost 最小的 edge 不需要放在 MST 裡",
+    "有 cycle 的圖沒有 MST",
+    "MST 裡一定有一個 cycle"
+   ],
+   "ans": "一個 cycle 上 cost 最大的 edge 不需要放在 MST 裡",
+   "why": "那條最貴的 edge 兩端靠 cycle 上其他較便宜的 edge 就能連到，可以安全砍掉；reverse-delete 靠它保證正確。"
+  },
+  {
+   "q": "Union-find 的 path compression 做的是？",
+   "opts": [
+    "FIND 之後，把路上每個點的 parent 直接改指向 root",
+    "UNION 時把深的樹接到淺的樹下",
+    "把所有 set 合併成一個",
+    "每次 FIND 都重新建樹"
+   ],
+   "ans": "FIND 之後，把路上每個點的 parent 直接改指向 root",
+   "why": "例如 9 → 4 → 0 做完 FIND(9) 後變成 9 → 0；配合 union by rank，每個 operation 約 O(α(n))。"
+  },
+  {
+   "q": "Kruskal 用 heapsort + union-find（n 點、m 條 edge），UNION 做幾次？整體時間？",
+   "opts": [
+    "n − 1 次；O(m log n)",
+    "m 次；O(m log n)",
+    "n − 1 次；O(n²)",
+    "2m 次；O(m α(n))"
+   ],
+   "ans": "n − 1 次；O(m log n)",
+   "why": "MST 只有 n − 1 條 edge，所以只 UNION n − 1 次；FIND 是 2m 次。排序 O(m log m) = O(m log n) 主導整體時間。"
+  }
+ ]
+}
