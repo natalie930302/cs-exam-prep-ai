@@ -685,9 +685,9 @@
  },
  "eKkXU3uu2zk": {
   "label": "Abdul Bari：4.3.1 Matrix Chain Multiplication (Program)",
-  "points": 40,
+  "points": 43,
   "quiz": 5,
-  "cued": false
+  "cued": true
  },
  "ENyox7kNKeY": {
   "label": "MIT 6.006 L12：DP II",
@@ -1105,9 +1105,9 @@
  },
  "prx1psByp7U": {
   "label": "Abdul Bari：4.3 Matrix Chain Multiplication - DP",
-  "points": 47,
+  "points": 48,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "Q4zHb-Swzro": {
   "label": "Abdul Bari：4.7 [New] TSP - DP using Formula",
@@ -1465,8 +1465,8 @@
  },
  "_WncuhSJZyA": {
   "label": "Abdul Bari：Matrix Chain Multiplication",
-  "points": 79,
+  "points": 80,
   "quiz": 6,
-  "cued": false
+  "cued": true
  }
 }

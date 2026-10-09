@@ -898,338 +898,760 @@ async function mcTree(tok, s, n, xL, yTop, dy, ms, onNode) {
   return { root, nodes };
 }
 
-// ═════════ _WncuhSJZyA / prx1psByp7U：矩陣相乘的成本 ═════════
+// ═════════ Abdul Bari matrix chain（prx1psByp7U、eKkXU3uu2zk、_WncuhSJZyA）：逐句 cue ═════════
+// 每個場景吃 params.seq：一個元素 = 老師說的一句話（await step(tok) 等到那一刻），元素裡是要做的 ops。
+// 元素可以是字串（一個 op）或陣列（多個 op，每個 op 是字串或 [名稱, 參數…]）。beat 只剩動作本身。
+const { step, buddy, prop, relabel } = K;
+const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const nte = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const pkt = (t, x, y, z = 0) => tag(t, 'pkt', x, y, z);
+const guide = (x, z, s = 0.7) => buddy('', '', '#ffc56b', x, 0, z, s);
+// 一個會被換掉的對話泡泡
+function slot(x, y, z = 0, cls = 'say') { let l = null; return (t, x2, y2) => { kill(l); l = t ? tag(t, cls, x2 ?? x, y2 ?? y, z) : null; return l; }; }
+async function runSeq(tok, seq, ops) {
+  for (const e of seq) {
+    await step(tok);
+    for (const o of (typeof e === 'string' ? [e] : e)) {
+      const a = typeof o === 'string' ? [o] : o;
+      const f = ops[a[0]];
+      if (!f) throw new Error('unknown op ' + a[0]);
+      await f(...a.slice(1));
+    }
+  }
+}
+// A_i…A_j 的括號寫法（中間不再細分）
+const grpStr = (i, j) => (i === j ? 'A' + i : '(' + Array.from({ length: j - i + 1 }, (_, t) => 'A' + (i + t)).join('') + ')');
+const splitStr = (i, k, j) => { const s = grpStr(i, k) + grpStr(k + 1, j); return j - i === 1 ? 'A' + i + 'A' + j : s; };
+
+// ── 兩個矩陣相乘：乘法次數 ──
 FRAG.push(['dp4bari-mm-cost', '兩個矩陣相乘：乘法次數 = p·q·r', async (tok) => {
   const P = prm(), p = P.p || 2, q = P.q || 3, r = P.r || 2;
+  const seq = P.seq || ['dims', 'cond', 'cell1', 'C', 'rest', 'total'];
   fresh([0, 6.2, 13], [0, 1.4, 0]);
   const s = 0.5, ax = -5.8, bx = -2.4, cx = 1.6, z0 = -1.2;
-  const A = [], B = [];
-  for (let i = 0; i < p; i++) for (let k = 0; k < q; k++) A.push(cube('', BLUE, [0.42, 0.12, 0.42], ax + k * s, 0.06, z0 + i * s));
-  for (let k = 0; k < q; k++) for (let j = 0; j < r; j++) B.push(cube('', PURPLE, [0.42, 0.12, 0.42], bx + j * s, 0.06, z0 + k * s));
-  tag('A：' + p + '×' + q, 'ptr', ax + (q - 1) * s / 2, 0.3, z0 + p * s + 0.3);
-  tag('B：' + q + '×' + r, 'ptr', bx + (r - 1) * s / 2, 0.3, z0 + q * s + 0.3);
-  say('A ' + p + '×' + q + '、B ' + q + '×' + r, 'A 的 column 數 ' + q + ' = B 的 row 數 ' + q + ' 才能乘');
-  await beat(tok, 2800);
-  if (P.swap) {
-    say('反過來 B×A 呢？', q + '×' + r + ' 乘 ' + p + '×' + q + '：' + r + ' ≠ ' + p + '，不能乘');
-    await beat(tok, 2600);
-  }
-  for (let i = 0; i < p; i++) for (let j = 0; j < r; j++) cube('', '#e9dfcb', [0.44, 0.03, 0.44], cx + j * s, 0.015, z0 + i * s);
-  tag('C：' + p + '×' + r, 'ptr alt', cx + (r - 1) * s / 2, 0.3, z0 + p * s + 0.3);
-  say('C = AB 是 ' + p + '×' + r, 'row 數取 A、column 數取 B');
-  await beat(tok, 2200);
-  const cnt = tag('乘法 0 次', 'ptr alt', 5.2, 3.2);
-  const per = Math.max(110, Math.min(380, 7600 / (p * q * r)));
-  let c = 0;
-  for (let i = 0; i < p; i++) for (let j = 0; j < r; j++) {
-    say('C[' + (i + 1) + '][' + (j + 1) + ']：第 ' + (i + 1) + ' 列 · 第 ' + (j + 1) + ' 行', q + ' 對元素相乘再相加');
+  const gd = guide(5.6, 1.2, 0.75), sb = slot(4.2, 4.6);
+  const A = [], B = [], done = new Set();
+  let tA = null, tB = null, tC = null, cnt = null, Cm = false, c = 0;
+  const ensureC = () => {
+    if (Cm) return; Cm = true;
+    for (let i = 0; i < p; i++) for (let j = 0; j < r; j++) cube('', '#e9dfcb', [0.44, 0.03, 0.44], cx + j * s, 0.015, z0 + i * s);
+    tC = tag('C：' + p + '×' + r, 'ptr alt', cx + (r - 1) * s / 2, 0.3, z0 + p * s + 0.3);
+  };
+  const ensureCnt = () => { if (!cnt) cnt = tag('乘法 0 次', 'ptr alt', 4.2, 3.2); };
+  const lit = (i, j, k) => {
+    A.forEach((m, z) => glow(m, i >= 0 && Math.floor(z / q) === i && z % q === k ? GOLD : null));
+    B.forEach((m, z) => glow(m, i >= 0 && Math.floor(z / r) === k && z % r === j ? GOLD : null));
+  };
+  async function cell(i, j, per) {
+    ensureC(); ensureCnt();
     for (let k = 0; k < q; k++) {
       cube('', TEAL, [0.42, 0.18, 0.42], cx + j * s, 0.1 + k * 0.2, z0 + i * s, 1.0);
-      A.forEach((m, z) => glow(m, Math.floor(z / q) === i && z % q === k ? GOLD : null));
-      B.forEach((m, z) => glow(m, Math.floor(z / r) === k && z % r === j ? GOLD : null));
-      c++; txt(cnt, '乘法 ' + c + ' 次');
+      lit(i, j, k); c++; txt(cnt, '乘法 ' + c + ' 次');
       await beat(tok, per);
     }
+    done.add(i + ',' + j);
   }
-  A.concat(B).forEach((m) => glow(m, null));
-  say('共 ' + p + '·' + q + '·' + r + ' = ' + p * q * r + ' 次乘法', p * r + ' 格 × 每格 ' + q + ' 次；中間的 ' + q + ' 是共用維度');
-  await beat(tok, 3000);
+  const ops = {
+    dims: () => {
+      for (let i = 0; i < p; i++) for (let k = 0; k < q; k++) A.push(cube('', BLUE, [0.42, 0.12, 0.42], ax + k * s, 0.06, z0 + i * s, 0.8));
+      for (let k = 0; k < q; k++) for (let j = 0; j < r; j++) B.push(cube('', PURPLE, [0.42, 0.12, 0.42], bx + j * s, 0.06, z0 + k * s, 0.8));
+      tA = tag('A：' + p + '×' + q, 'ptr', ax + (q - 1) * s / 2, 0.3, z0 + p * s + 0.3);
+      tB = tag('B：' + q + '×' + r, 'ptr', bx + (r - 1) * s / 2, 0.3, z0 + q * s + 0.3);
+      gd.mood('wow');
+      say('A 是 ' + p + '×' + q + '、B 是 ' + q + '×' + r, p + ' 列 ' + q + ' 行，乘上 ' + q + ' 列 ' + r + ' 行');
+    },
+    cond: () => {
+      setCls(tA, 'ptr alt'); setCls(tB, 'ptr alt'); gd.mood('calm');
+      sb('A 的 column ' + q + ' = B 的 row ' + q + ' ✓');
+      say('能相乘的條件', 'A 的 column 數 = B 的 row 數');
+    },
+    swap: () => {
+      tag('B×A：' + q + '×' + r + ' · ' + p + '×' + q, 'bad', -1.4, 2.4);
+      sb(r + ' ≠ ' + p + '：B×A 不能乘'); gd.mood('sad');
+      say('反過來 B×A 呢？', r + ' ≠ ' + p + '：A×B 能乘不代表 B×A 能乘');
+    },
+    C: () => { ensureC(); gd.mood('wow'); sb('C 是 ' + p + '×' + r + '：取兩端的維度'); say('結果 C = AB 是 ' + p + '×' + r, 'row 數取 A、column 數取 B'); },
+    count: () => { ensureC(); gd.mood('calm'); sb('C 共 ' + p + '×' + r + ' = ' + p * r + ' 個元素'); say('C 裡有 ' + p * r + ' 個元素', '每個元素都要算出來'); },
+    cell1: async () => {
+      gd.mood('calm'); sb('一個元素 = ' + q + ' 次乘法');
+      say('C[1][1]：A 第 1 列 · B 第 1 行', q + ' 對元素相乘再相加');
+      await cell(0, 0, Math.min(600, 2400 / q));
+    },
+    cell2: async () => { say('C[1][2]：第 1 列 · 第 2 行', '又是 ' + q + ' 次乘法'); await cell(0, 1, Math.min(600, 2400 / q)); },
+    rest: async () => {
+      const left = [];
+      for (let i = 0; i < p; i++) for (let j = 0; j < r; j++) if (!done.has(i + ',' + j)) left.push([i, j]);
+      say('每個元素都是 ' + q + ' 次乘法', p * r + ' 格，每格 ' + q + ' 次');
+      const per = Math.max(30, 2400 / Math.max(1, left.length * q));
+      for (const [i, j] of left) await cell(i, j, per);
+      lit(-1);
+    },
+    total: async () => {
+      ensureCnt(); lit(-1); txt(cnt, '乘法 ' + p * q * r + ' 次'); setCls(cnt, 'good');
+      sb(p + '·' + q + '·' + r + ' = ' + p * q * r); gd.mood('happy');
+      say('共 ' + p + '·' + q + '·' + r + ' = ' + p * q * r + ' 次乘法', '三個維度相乘');
+      await gd.hop(tok);
+    },
+    cost: () => { nte('兩矩陣相乘的成本 = 乘法次數', -1.2, 4.6); say('成本 = 做了幾次乘法', p + '×' + q + ' 乘 ' + q + '×' + r + '：' + p * q * r + ' 次'); },
+    pt1: () => { lit(-1); setCls(tA, 'ptr alt'); setCls(tB, 'ptr alt'); sb('① 中間兩個 ' + q + ' 要相等'); say('重點一：什麼時候能乘', '第一個的 column 數 = 第二個的 row 數'); },
+    pt2: () => { ensureC(); setCls(tC, 'good'); sb('② 結果 ' + p + '×' + r + '：取兩端'); say('重點二：結果的維度', p + '×' + r + '：A 的 row 數、B 的 column 數'); },
+    pt3: () => { sb('③ 乘法次數 = ' + p + '×' + q + '×' + r); say('重點三：要做幾次乘法', p + '·' + q + '·' + r + ' = ' + p * q * r); },
+    dims4: () => { pkt(p + '×' + q + ' · ' + q + '×' + r + '：4 個數', -3.6, 3.4); say('兩個矩陣寫下來有 4 個維度', p + '、' + q + '、' + q + '、' + r); },
+    dims3: async () => { tag('不同的維度：' + p + '、' + q + '、' + r, 'good', -3.6, 2.6); gd.mood('happy'); say('中間那個共用 → 只有 3 個不同的維度', '後面 matrix chain 會一直用到'); await gd.hop(tok); },
+  };
+  await runSeq(tok, seq, ops);
 }]);
 
+// ── 三個矩陣兩種括法：40 vs 36 ──
 FRAG.push(['dp4bari-chain3', '三個矩陣兩種括法：40 vs 36', async (tok) => {
-  const part = prm().part || 0;
+  const P = prm(), seq = P.seq || ['abc', 'way1', 'l1', 'l2', 'sum1'];
   fresh([0, 4.8, 14], [0, 3.4, 0]);
-  const d = [2, 3, 4, 2];
-  for (let k = 0; k < 3; k++) { cube('A' + (k + 1), k % 2 ? PURPLE : BLUE, [1.4, 0.55, 0.45], -2.4 + k * 2.4, 7.0, 0, part === 2 ? 0 : 1.5); tag(d[k] + '×' + d[k + 1], 'idx', -2.4 + k * 2.4, 7.6); }
-  d.forEach((v, k) => tag('d' + k + '=' + v, 'idx', -3.6 + k * 2.4, 6.4));
-  if (part !== 2) {
-    say('A1 2×3、A2 3×4、A3 4×2', '維度命名 d0、d1、d2、d3');
-    await beat(tok, 2600);
-    say('一次只能乘兩個', '(A1A2)A3 或 A1(A2A3)：結合律，結果相同');
-    await beat(tok, 2600);
-  }
+  const gd = guide(-6.3, 1.6, 0.7), sb = slot(0, 4.9);
+  const d = [2, 3, 4, 2], X = [-2.4, 0, 2.4];
   const H = (v) => v / 40 * 3.8;
+  let mats = [], top = [], tens = [], fast = false;
+  const L = {}, R = {};
   const seg = (color, x, y0) => { const m = cube('', color, [1.6, 1, 1.2], x, y0, 0); m.scale.y = 0.001; return m; };
-  async function grow(m, y0, v, inst) { const h = H(v); if (inst) { m.scale.y = h; m.position.y = y0 + h / 2; return; } await anim(tok, 800, (t) => { m.scale.y = Math.max(0.001, h * t); m.position.y = y0 + h * t / 2; }); }
-  tag('(A1A2)A3', 'ptr', -3, 0.25, 1.3);
-  const instL = part === 2;
-  if (!instL) say('先算 A1A2：2·3·4 = 24', '結果是 2×4；A3 自己不用乘 = 0');
-  const l1 = seg(TEAL, -3, 0); await grow(l1, 0, 24, instL); tag('24', 'idx', -4.2, H(12));
-  if (!instL) await beat(tok, 1600);
-  if (!instL) say('2×4 再乘 A3：2·4·2 = 16', '24 + 0 + 16 = 40');
-  const l2 = seg(ORANGE, -3, H(24)); await grow(l2, H(24), 16, instL); tag('16', 'idx', -4.2, H(32));
-  tag('40', 'ptr alt', -3, H(40) + 0.5);
-  if (!instL) await beat(tok, 2200);
-  if (part === 1) { say('(A1A2)A3 共 40 次乘法', '另一種括法要幾次？'); await beat(tok, 2800); return; }
-  tag('A1(A2A3)', 'ptr', 3, 0.25, 1.3);
-  say('先算 A2A3：3·4·2 = 24', '結果是 3×2；A1 這邊 = 0');
-  const r1 = seg(TEAL, 3, 0); await grow(r1, 0, 24); tag('24', 'idx', 4.2, H(12));
-  await beat(tok, 1600);
-  say('A1 乘 3×2：2·3·2 = 12', '0 + 24 + 12 = 36');
-  const r2 = seg(ORANGE, 3, H(24)); await grow(r2, H(24), 12); tag('12', 'idx', 4.2, H(30));
-  tag('36', 'ptr alt', 3, H(36) + 0.5);
-  await beat(tok, 1800);
-  glow(r1, GREEN); glow(r2, GREEN);
-  say('結果一樣，成本 40 vs 36', 'A1(A2A3) 比較好');
-  await beat(tok, 2400);
-  say('A1…A10 怎麼辦？', '先找出最省的括法，再真的去乘');
-  await beat(tok, 3000);
+  async function grow(m, y0, v) { const h = H(v); if (fast) { m.scale.y = h; m.position.y = y0 + h / 2; return; } await anim(tok, 800, (t) => { m.scale.y = Math.max(0.001, h * t); m.position.y = y0 + h * t / 2; }); }
+  const ops = {
+    abc: () => {
+      mats = X.map((x, k) => cube('A' + (k + 1), k % 2 ? PURPLE : BLUE, [1.4, 0.55, 0.45], x, 7.0, 0, fast ? 0 : 1.5));
+      X.forEach((x, k) => top.push(tag(d[k] + '×' + d[k + 1], 'idx', x, 7.6)));
+      gd.mood('wow'); say('三個矩陣 A1、A2、A3 要相乘', '2×3、3×4、4×2');
+    },
+    check: () => { top.push(tag('3 = 3 ✓', 'good', -1.2, 8.2), tag('4 = 4 ✓', 'good', 1.2, 8.2)); gd.mood('calm'); say('先檢查能不能乘', '相鄰的維度都對得上'); },
+    dlab: () => { d.forEach((v, k) => top.push(tag('d' + k + '=' + v, 'idx', -3.6 + k * 2.4, 6.4))); say('維度標成 d0、d1、d2、d3', '共用的維度只標一次'); },
+    two: () => { sb('一次只能乘兩個'); say('三個能一起乘嗎？不行', '一次只能乘兩個矩陣'); },
+    way1: () => { tag('(A1A2)A3', 'ptr', -3, 0.25, 1.3); mats.forEach((m, k) => glow(m, k < 2 ? GOLD : null)); say('方法一：A1 先乘 A2，結果再乘 A3', '(A1A2)A3'); },
+    way2: () => { tag('A1(A2A3)', 'ptr', 3, 0.25, 1.3); mats.forEach((m, k) => glow(m, k ? GOLD : null)); say('方法二：A2 先乘 A3，A1 再乘結果', 'A1(A2A3)'); },
+    assoc: () => { mats.forEach((m) => glow(m, null)); sb('結合律：兩種算法答案一樣'); say('兩種的結果一樣嗎？一樣', '矩陣乘法有結合律'); },
+    effort: () => { sb('不看元素，只數乘法次數'); gd.mood('wow'); say('我們不真的去乘', '只在乎要做多少次乘法'); },
+    l1: async () => { L.a = seg(TEAL, -3, 0); say('A1A2：2·3·4 = 24 次', '2×3 乘 3×4'); await grow(L.a, 0, 24); tag('24', 'idx', -4.2, H(12)); },
+    l0: () => { tag('+ 0（A3 單獨）', 'idx', -1.0, H(24)); say('A3 自己不用乘：0 次', ''); },
+    res: () => { pkt('A1A2 → 2×4', -5.2, 4.6); say('A1A2 的結果是 2×4', '列數取 A1、行數取 A2'); },
+    l2: async () => { L.b = seg(ORANGE, -3, H(24)); say('2×4 乘 A3（4×2）：2·4·2 = 16 次', ''); await grow(L.b, H(24), 16); tag('16', 'idx', -4.2, H(32)); },
+    sum1: () => { tag('40', 'ptr alt', -3, H(40) + 0.5); gd.mood('calm'); say('(A1A2)A3 共 24 + 0 + 16 = 40 次', ''); },
+    r1: async () => { R.a = seg(TEAL, 3, 0); pkt('A2A3 → 3×2', 5.2, 4.6); say('A2A3：3·4·2 = 24 次', '結果是 3×2'); await grow(R.a, 0, 24); tag('24', 'idx', 4.2, H(12)); },
+    r0: () => { tag('+ 0（A1 單獨）', 'idx', 1.0, H(24)); say('A1 這邊不用乘：0 次', ''); },
+    r2: async () => { R.b = seg(ORANGE, 3, H(24)); say('A1（2×3）乘 3×2：2·3·2 = 12 次', ''); await grow(R.b, H(24), 12); tag('12', 'idx', 4.2, H(30)); },
+    sum2: () => { tag('36', 'ptr alt', 3, H(36) + 0.5); say('A1(A2A3) 共 24 + 0 + 12 = 36 次', ''); },
+    cmp: async () => { glow(R.a, GREEN); glow(R.b, GREEN); gd.mood('happy'); sb('答案一樣，成本 40 vs 36'); say('結果相同，成本不同', 'A1(A2A3) 比較省'); await gd.hop(tok); },
+    diff4: () => { tag('差 4 次', 'note', 0, 2.4); say('才 3 個矩陣就差了 4 次', '矩陣越多，差距越大'); },
+    ten: async () => {
+      [...mats, ...top].forEach(kill);
+      tens = Array.from({ length: 10 }, (_, k) => cube('A' + (k + 1), k % 2 ? PURPLE : BLUE, [0.85, 0.5, 0.4], -4.725 + k * 1.05, 7.0, 0, 1.2));
+      gd.mood('wow'); say('如果有 A1 一直到 A10？', '直接從左乘到右可能非常貴');
+      await beat(tok, 400);
+    },
+    first: () => { sb('① 先決定怎麼乘　② 再真的去乘'); gd.mood('calm'); say('先找出怎麼乘最省', '再真的去乘'); },
+    mcm: () => { tag('Matrix Chain Multiplication', 'ptr alt', 0, 8.1); say('這就是 matrix chain multiplication', '找讓總乘法次數最少的括法'); },
+    dp: () => { gd.mood('happy'); sb('DP：試過所有括法，挑最好的'); say('DP 的想法', '試過所有可能的括法，挑最好的'); },
+    many: () => { tens.forEach((m) => glow(m, GOLD)); gd.mood('sad'); sb('10 個矩陣：括法太多 → 需要公式'); say('3 個只有 2 種，10 個就太多了', '不能手動列舉 → 需要公式'); },
+  };
+  if (P.pre) { fast = true; for (const o of ['abc', 'dlab', 'way1', 'way2', 'l1', 'l0', 'l2', 'sum1']) await ops[o](); mats.forEach((m) => glow(m, null)); gd.mood('calm'); fast = false; }
+  await runSeq(tok, seq, ops);
 }]);
 
-FRAG.push(['dp4bari-split-k', '切點 k：C(i,j) = min 左 + 右 + 合併', async (tok) => {
-  const P = prm(), p = P.p || [2, 3, 4, 2], nm = P.nm || 'C';
-  const n = p.length - 1, S = mcmSolve(p);
-  fresh([0, 4.6, 14.5], [0, 3.6, 0]);
-  dimsRow(p, 7.4);
-  const w = Math.min(1.35, 11 / n), xk = (k) => (k - (n + 1) / 2) * w;
-  say(nm + '(1,' + n + ')：最後一次乘法切在哪？', '切點 k：(A1…Ak)(Ak+1…A' + n + ')');
-  await beat(tok, 2400);
-  const c = []; for (let k = 1; k < n; k++) { const a = S.m[1][k], b = S.m[k + 1][n], x = p[0] * p[k] * p[n]; c.push({ k, a, b, x, v: a + b + x }); }
-  const maxV = Math.max(...c.map((z) => z.v)), H = (v) => v / maxV * 4.2;
-  const bx = (t) => (t - (c.length - 1) / 2) * 3.4;
-  let gl = null, gr = null; const bars = [];
-  for (let t = 0; t < c.length; t++) {
-    const z = c[t];
-    kill(gl); kill(gr);
-    gl = ghostBox(BLUE, z.k * w, 0.95, 0.8); gl.position.set((xk(1) + xk(z.k)) / 2, 7.4, 0);
-    gr = ghostBox(PURPLE, (n - z.k) * w, 0.95, 0.8); gr.position.set((xk(z.k + 1) + xk(n)) / 2, 7.4, 0);
-    say('k = ' + z.k + '：左 ' + nm + '(1,' + z.k + ')、右 ' + nm + '(' + (z.k + 1) + ',' + n + ')', z.a + ' + ' + z.b + ' + d0·d' + z.k + '·d' + n + '(' + p[0] + '·' + p[z.k] + '·' + p[n] + ') = ' + z.v);
-    const segs = []; let y = 0;
-    for (const [v, col] of [[z.a, BLUE], [z.b, PURPLE], [z.x, ORANGE]]) {
-      if (!v) continue;
-      const m = cube('', col, [1.5, 1, 1.1], bx(t), y, 0); m.scale.y = 0.001; const y0 = y, h = H(v);
-      await anim(tok, 600, (u) => { m.scale.y = Math.max(0.001, h * u); m.position.y = y0 + h * u / 2; });
-      y += h; segs.push(m);
-    }
-    tag('k=' + z.k, 'ptr', bx(t), 0.25, 1.2); tag(String(z.v), 'ptr alt', bx(t), y + 0.45);
-    bars.push(segs);
-    await beat(tok, 1700);
-  }
-  kill(gl); kill(gr);
-  const best = c.reduce((a, b) => (b.v < a.v ? b : a));
-  bars[c.indexOf(best)].forEach((m) => glow(m, GREEN));
-  say(nm + '(1,' + n + ') = ' + best.v + '：取最小', 'k = ' + best.k);
-  await beat(tok, 2400);
-  say('一般式：k 從 i 試到 j−1', nm + '(i,j) = min{ ' + nm + '(i,k) + ' + nm + '(k+1,j) + d_{i−1}·d_k·d_j }');
-  await beat(tok, 3200);
-}]);
-
-FRAG.push(['dp4bari-expand14', '直接展開 C(1,4)：子問題重複 → 由小到大', async (tok) => {
-  fresh([0, 4.4, 14.5], [0, 3.8, 0]);
-  await exTree(tok, { nm: 'C', mc: true, i0: 1, j0: 4, exp: [2, 4], rep: [3, 4] });
-}]);
-
-FRAG.push(['dp4bari-mc-fill', 'Matrix chain 填表：成本表 + 切點表', async (tok) => {
-  const P = prm(), p = P.p || [3, 2, 4, 2, 5], cn = P.cn || 'C', kn = P.kn || 'K', ms = P.ms || 1500;
-  fresh([0, 4.4, 15], [0, 4.0, 0]);
-  const st = mcStage(p, cn, kn), { n, S, gm, gk } = st;
-  const o = { gm, gk, p, cn, kn };
-  if (P.intro) {
-    say(cn + '(i,i) = 0：單一矩陣不用乘', 'k ≥ i 且 k < i：沒有 k 可試');
-    for (let i = 0; i < n; i++) { gm.set(i, i, 0, GRAY, 1.4); await beat(tok, 500); }
-    await beat(tok, 1200);
-    for (let l = 2; l <= n; l++) {
-      for (let i = 0; i + l - 1 < n; i++) { gm.mark(i, i + l - 1, '#f3d27a'); gk.mark(i, i + l - 1, '#f3d27a'); }
-      say('接著 j − i = ' + (l - 1) + ' 這條對角線', l === 2 ? '兩個矩陣一組' : l + ' 個矩陣一組');
-      await beat(tok, 1300);
-      for (let i = 0; i + l - 1 < n; i++) { gm.mark(i, i + l - 1); gk.mark(i, i + l - 1); }
-    }
-    say(kn + ' 表記下取到最小的 k', '課本叫 s 表；之後用來加括號');
-    await beat(tok, 2600);
-    if (!P.cells) return;
-  } else {
-    say(p.map((v, k) => 'd' + k + '=' + v).join(' '), cn + '(i,j) = min{' + cn + '(i,k) + ' + cn + '(k+1,j) + d_{i−1}d_k d_j}');
-    await beat(tok, 2200);
-  }
-  const order = S.steps.map((x) => [x.i, x.j]);
-  const { before, anim: cells } = prefillOrder(order, P.cells);
-  for (const [i, j] of before) { const x = S.steps.find((z) => z.i === i && z.j === j); gm.set(x.r, x.c, x.v, TEAL, 0); gk.set(x.r, x.c, x.bk, PURPLE, 0); }
-  let last = null;
-  for (const [i, j] of cells) { const x = S.steps.find((z) => z.i === i && z.j === j); await mcCell(x, o, tok, x.l === 2 ? ms : ms * 1.1); last = x; }
-  if (last && last.i === 1 && last.j === n) {
-    gm.mark(0, n - 1, '#9fe0c4');
-    say(cn + '(1,' + n + ') = ' + last.v + '：最少乘法次數', kn + '(1,' + n + ') = ' + last.bk + '，最後在 A' + last.bk + ' 後面切');
-  }
-  await beat(tok, 2800);
-}]);
-
-FRAG.push(['dp4bari-paren', '從切點表加括號', async (tok) => {
-  const P = prm(), p = P.p || [3, 2, 4, 2, 5], kn = P.kn || 'K';
-  const n = p.length - 1, S = mcmSolve(p);
-  fresh([0, 4.4, 15], [0, 3.8, 0]);
-  const g = grid({ rows: n, cols: n, cw: 0.72, ch: 0.58, x0: -5.4, y0: 6.4, colHdr: Array.from({ length: n }, (_, k) => k + 1), rowHdr: Array.from({ length: n }, (_, k) => k + 1), rowDx: 0.1 });
-  tag(kn + ' 表', 'ptr', -4.3, 7.3);
-  for (let i = 1; i <= n; i++) for (let j = 1; j <= n; j++) { if (j > i) g.set(i - 1, j - 1, S.s[i][j], PURPLE, 0); else g.mark(i - 1, j - 1, '#ddd2bf'); }
-  say(kn + '(1,' + n + ') = ' + S.s[1][n] + '：在 A' + S.s[1][n] + ' 後面切', '再看左右兩段各自的 ' + kn);
-  await beat(tok, 2600);
-  const xL = (k) => 0.4 + (k - 1) * (5.6 / Math.max(1, n - 1));
-  const t = await mcTree(tok, S.s, n, xL, 6.6, 1.35, 900, async (nd) => {
-    if (nd.i === nd.j) return;
-    const k = S.s[nd.i][nd.j];
-    g.mark(nd.i - 1, nd.j - 1, '#f3d27a'); glow(g.get(nd.i - 1, nd.j - 1), GOLD);
-    say(kn + '(' + nd.i + ',' + nd.j + ') = ' + k, '(A' + nd.i + '…A' + k + ')(A' + (k + 1) + '…A' + nd.j + ')');
-    await beat(tok, 900);
-    glow(g.get(nd.i - 1, nd.j - 1), null);
-  });
-  const pstr = parens(S.s, 1, n);
-  if (P.inorder) {
-    const out = mono(tag('', 'ptr alt', 0, 0.5, 0.6)); let sTxt = '';
-    const cur = tag('▼', 'ptr', 0, 7.4);
-    async function walk(nd) {
-      cur.position.set(nd.x, nd.y + 0.55, 0);
-      if (nd.i === nd.j) { sTxt += 'A' + nd.i; txt(out, sTxt); glow(nd.m, GOLD); await beat(tok, 650); glow(nd.m, null); return; }
-      sTxt += '('; txt(out, sTxt); await beat(tok, 350);
-      await walk(nd.L); await walk(nd.R);
-      cur.position.set(nd.x, nd.y + 0.55, 0);
-      sTxt += ')'; txt(out, sTxt); await beat(tok, 350);
-    }
-    say('對這棵樹做 in-order 走訪', '進節點印 (、葉子印 A、離開印 )');
-    await walk(t.root);
-    kill(cur);
-  } else {
-    tag(pstr, 'ptr alt', 0, 0.5, 0.6);
-  }
-  const post = []; (function w(nd) { if (nd.i === nd.j) return; w(nd.L); w(nd.R); post.push(nd); })(t.root);
-  let k = 0;
-  for (const nd of post) {
-    k++; glow(nd.m, GREEN);
-    say('第 ' + k + ' 次乘法：A' + nd.i + '…A' + nd.j, p[nd.i - 1] + '×' + p[S.s[nd.i][nd.j]] + ' 乘 ' + p[S.s[nd.i][nd.j]] + '×' + p[nd.j]);
-    await beat(tok, 1500);
-  }
-  say(pstr, '最少 ' + S.m[1][n] + ' 次乘法');
-  await beat(tok, 3000);
-}]);
-
-FRAG.push(['dp4bari-mc-time', '填表時間：n² 格 × 每格 ≤ n 個 k', async (tok) => {
-  const n = prm().n || 4;
-  fresh([0, 4.4, 14], [0, 3.6, 0]);
-  const cw = 1.2, ch = 0.85, x0 = -4.8, y0 = 6.2;
-  const g = grid({ rows: n, cols: n, cw, ch, x0, y0, colHdr: Array.from({ length: n }, (_, k) => 'j=' + (k + 1)), rowHdr: Array.from({ length: n }, (_, k) => 'i=' + (k + 1)), rowDx: 0.3 });
-  for (let i = 0; i < n; i++) for (let j = 0; j < i; j++) g.mark(i, j, '#ddd2bf');
-  const cl = tag('0 格', 'ptr alt', 3.6, 6.4);
-  let cnt = 0;
-  for (let l = 1; l <= n; l++) {
-    for (let i = 0; i + l - 1 < n; i++) { g.set(i, i + l - 1, '', l === 1 ? GRAY : TEAL, 1.2); cnt++; txt(cl, cnt + ' 格'); }
-    say('這條對角線 ' + (n - l + 1) + ' 格', n + ' + … + ' + (n - l + 1) + ' = ' + cnt);
-    await beat(tok, 1100);
-  }
-  say('n(n+1)/2 格：約 n²', n + '·' + (n + 1) + '/2 = ' + cnt);
-  await beat(tok, 2200);
-  let tries = 0; const tl = tag('試 k 共 0 次', 'ptr alt', 3.6, 5.6);
-  for (let l = 2; l <= n; l++) for (let i = 0; i + l - 1 < n; i++) {
-    const j = i + l - 1, p0 = g.pos(i, j);
-    for (let k = 0; k < l - 1; k++) cube('', ORANGE, [0.22, 0.22, 0.22], p0.x - 0.4 + k * 0.27, p0.y + 0.42, 0.4, 0.8);
-    tries += l - 1; txt(tl, '試 k 共 ' + tries + ' 次');
-    await beat(tok, 450);
-  }
-  say('每格最多試 n 個 k', 'n² × n → O(n³)（上界）');
-  await beat(tok, 3000);
-}]);
-
-// ═════════ prx1psByp7U：問題與括號樹 ═════════
+// ── prx1psByp7U：問題與括號樹 ──
 FRAG.push(['dp4bari-trees4', '四個矩陣：括號 = 二元樹，共 5 種', async (tok) => {
-  const p = [5, 4, 6, 2, 7];
+  const p = [5, 4, 6, 2, 7], seq = prm().seq || ['dims', 'pA', 'treeA', 'five', 'dp'];
   fresh([0, 4.4, 14.5], [0, 3.6, 0]);
-  dimsRow(p, 7.6);
-  say('4 個矩陣，相鄰維度都對得上', '問題不是乘出答案，是決定怎麼乘');
-  await beat(tok, 2600);
+  const gd = guide(-6.4, 1.8, 0.65), sb = slot(-0.4, 4.4);
+  const all = []; let nodesB = [];
   const sA = [], sB = [];
   for (let i = 0; i <= 5; i++) { sA[i] = []; sB[i] = []; }
   sA[1][4] = 3; sA[1][3] = 2; sA[1][2] = 1;
   sB[1][4] = 2; sB[1][2] = 1; sB[3][4] = 3;
-  say('((A1A2)A3)A4：一個接一個', '每個 × 是一次兩矩陣相乘');
-  tag('((A1A2)A3)A4', 'ptr', -3.6, 1.0, 0.6);
-  await mcTree(tok, sA, 4, (k) => -6.0 + (k - 1) * 1.1, 6.4, 1.2, 500);
-  await beat(tok, 1200);
-  say('(A1A2)(A3A4)：兩兩先乘', '另一種樹形');
-  tag('(A1A2)(A3A4)', 'ptr', 3.6, 1.0, 0.6);
-  await mcTree(tok, sB, 4, (k) => 1.6 + (k - 1) * 1.3, 6.4, 1.3, 500);
-  await beat(tok, 1400);
-  say('4 個矩陣 → 3 個 × 節點', '3 個節點的二元樹：C(6,3)/4 = 5 種');
-  await beat(tok, 2800);
-  say('5 種都要考慮，挑最小的', 'DP：用表格 bottom-up 有系統地試');
-  await beat(tok, 3000);
+  function tree(sp, xL, yTop, dy) {
+    const nodes = [];
+    (function walk(i, j, d, par) {
+      const x = (xL(i) + xL(j)) / 2, y = yTop - d * dy, nd = { i, j, x, y };
+      if (par) all.push(line(par.x, par.y - 0.25, x, y + 0.25));
+      nd.m = i === j ? cube('A' + i, BLUE, [0.8, 0.45, 0.4], x, y, 0, 1.0) : cube('×', TEAL, [0.6, 0.45, 0.4], x, y, 0, 1.0);
+      nodes.push(nd); all.push(nd.m);
+      if (i < j) { walk(i, sp[i][j], d + 1, nd); walk(sp[i][j] + 1, j, d + 1, nd); }
+    })(1, 4, 0, null);
+    return nodes;
+  }
+  const ops = {
+    dims: () => { dimsRow(p, 7.6); tag('4=4、6=6、2=2 ✓', 'good', 4.6, 7.6); gd.mood('wow'); say('4 個矩陣：5×4、4×6、6×2、2×7', '相鄰維度都相同 → 可以相乘'); },
+    ask: () => { sb('不是要乘出答案'); gd.mood('calm'); say('問題不是把它們乘出來', '一次只能乘一對：該先乘哪一對？'); },
+    how: () => { sb('要知道「怎麼乘」：怎麼加括號'); say('Matrix chain：決定怎麼加括號', '讓總成本最小'); },
+    pA: () => { all.push(tag('((A1A2)A3)A4', 'ptr', -4.35, 1.0, 0.6)); say('方法一：((A1A2)A3)A4', '一個接一個乘'); },
+    pB: () => { all.push(tag('(A1A2)(A3A4)', 'ptr', 3.55, 1.0, 0.6)); say('方法二：(A1A2)(A3A4)', '兩兩各乘，再相乘'); },
+    treeB: () => { nodesB = tree(sB, (k) => 1.6 + (k - 1) * 1.3, 6.2, 1.3); say('畫成樹：A1A2、A3A4 各乘，再相乘', '每個 × 是一次兩矩陣相乘'); },
+    three: () => { nodesB.forEach((nd) => glow(nd.m, nd.i < nd.j ? GOLD : null)); sb('3 次乘法 → 3 個節點'); say('4 個矩陣 → 3 次乘法 → 3 個節點', ''); },
+    treeA: () => { nodesB.forEach((nd) => glow(nd.m, null)); tree(sA, (k) => -6.0 + (k - 1) * 1.1, 6.2, 1.2); say('((A1A2)A3)A4 也是一棵樹', '樹的形狀 = 括法'); },
+    count: () => { sb('n 個節點的二元樹：C(2n,n)/(n+1) 種'); say('3 個節點能畫出幾種樹？', 'n 個節點：C(2n,n)/(n+1) 種'); },
+    five: () => { sb('n = 3：C(6,3)/4 = 5 種括法'); gd.mood('wow'); say('n = 3 → 5 種括法', '要挑出成本最小的那一種'); },
+    tryall: () => { sb('5 種全部算一遍再挑？'); gd.mood('sad'); say('要把 5 種都算出來再挑嗎？', '不用這樣做'); },
+    dp: async () => { sb('DP：有系統地試過所有可能'); gd.mood('happy'); say('DP：試過所有可能，挑最好的', '而且不會漏掉任何一種'); await gd.hop(tok); },
+    tables: () => {
+      all.forEach(kill); sb('');
+      const hd = (pre) => Array.from({ length: 4 }, (_, k) => pre + (k + 1));
+      const gm = grid({ rows: 4, cols: 4, cw: 1.15, ch: 0.8, x0: -5.0, y0: 5.5, colHdr: hd('j='), rowHdr: hd('i='), rowDx: 0.35 });
+      const gs = grid({ rows: 4, cols: 4, cw: 0.9, ch: 0.8, x0: 1.9, y0: 5.5, colHdr: hd('j='), rowHdr: hd('i='), rowDx: 0.3 });
+      for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { if (j < i) gm.mark(i, j, '#ddd2bf'); if (j <= i) gs.mark(i, j, '#ddd2bf'); }
+      tag('M 表', 'ptr', -6.5, 6.3); tag('S 表', 'ptr', 1.0, 6.5);
+      gd.mood('calm'); say('DP 用 tabulation：兩張表', 'M 存成本、S 存切點');
+    },
+  };
+  await runSeq(tok, seq, ops);
 }]);
 
-// ═════════ eKkXU3uu2zk：程式追蹤 ═════════
-const MC_CODE = ['p[] = {5,4,6,2,7};  n = 5;', 'm[5][5] = {0};  s[5][5] = {0};', 'for (d = 1; d < n-1; d++)', ' for (i = 1; i < n-d; i++) {', '  j = i + d;  min = INT_MAX;', '  for (k = i; k <= j-1; k++) {', '   q = m[i][k] + m[k+1][j]', '       + p[i-1]*p[k]*p[j];', '   if (q < min) { min = q; s[i][j] = k; }', '  }', '  m[i][j] = min;', ' }'];
-function codeStage() {
-  const p = [5, 4, 6, 2, 7];
-  const cd = code(MC_CODE, -2.0, 7.9, 0.41);
-  const hdr = Array.from({ length: 5 }, (_, k) => k);
-  const gm = grid({ rows: 5, cols: 5, cw: 0.7, ch: 0.46, x0: -5.0, y0: 2.5, colHdr: hdr, rowHdr: hdr, rowDx: 0.1 });
-  const gs = grid({ rows: 5, cols: 5, cw: 0.7, ch: 0.46, x0: 0.2, y0: 2.5, colHdr: hdr, rowHdr: hdr, rowDx: 0.1 });
-  tag('m', 'ptr', -6.3, 3.0); tag('s', 'ptr', -0.9, 3.0);
-  for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) if (i === 0 || j === 0 || j < i) { gm.mark(i, j, '#ddd2bf'); gs.mark(i, j, '#ddd2bf'); }
-  for (let i = 1; i < 5; i++) gm.set(i, i, 0, GRAY, 0);
-  const pc = p.map((v, k) => { const m = cube(v, ORANGE, [0.5, 0.4, 0.4], 3.6 + k * 0.65, 6.9, 0); tag('p[' + k + ']', 'idx', 3.6 + k * 0.65, 6.45); return m; });
-  return { p, cd, gm, gs, pc };
-}
-FRAG.push(['dp4bari-code-loops', '程式：d 是對角線、i 是列、j = i + d', async (tok) => {
-  fresh([0, 4.2, 15], [0, 4.0, 0]);
-  const { cd, gm } = codeStage();
-  cd.hl(0); say('p[] 存 5 個維度', '4 個矩陣 → 5 個維度，相鄰共用');
-  await beat(tok, 2400);
-  cd.hl(1); say('m、s 開 5×5：第 0 列、第 0 行不用', '索引直接對應 A1…A4');
-  await beat(tok, 2400);
-  const cur = tag('', 'ptr alt', 0, 0);
-  for (let d = 1; d <= 3; d++) {
-    cd.hl(2); say('d = ' + d + '：j − i = ' + d + ' 的對角線', 'd 從 1 到 n−2 = 3');
-    await beat(tok, 1300);
-    for (let i = 1; i < 5 - d; i++) {
-      const j = i + d, q0 = gm.pos(i, j);
-      cd.hl(3); txt(cur, 'i=' + i + ' j=' + j); cur.position.set(q0.x, q0.y + 0.45, 0.4);
-      gm.mark(i, j, '#f3d27a');
-      say('i = ' + i + '，j = i + d = ' + j, 'i 只到 n − d − 1 = ' + (4 - d) + '：越往上格子越少');
-      await beat(tok, 900);
-      gm.mark(i, j);
-    }
-  }
-  kill(cur); cd.hl(-1);
-  say('外層 d、中層 i、最內層 k', '最內層 k 套 DP 公式求 min');
-  await beat(tok, 2800);
+// ── prx1psByp7U：把填表的式子寫成一般公式 ──
+FRAG.push(['dp4bari-formula', '一般公式：m(i,j) = min{ m(i,k) + m(k+1,j) + d(i−1)·d(k)·d(j) }', async (tok) => {
+  const P = prm(), p = P.p || [5, 4, 6, 2, 7], nm = P.nm || 'm', n = p.length - 1;
+  const seq = P.seq || ['start', 'ik', 'plus', 'dlab', 'd0', 'full'];
+  fresh([0, 4.4, 14.5], [0, 3.6, 0]);
+  const gd = guide(-6.4, 1.8, 0.65), sb = slot(3.8, 1.2);
+  const w = Math.min(1.35, 11 / n), xk = (k) => (k - (n + 1) / 2) * w;
+  dimsRow(p, 7.4);
+  const fx = mono(tag('', 'ptr alt', 0, 5.6));
+  let rows = [], dT = [];
+  const L = nm + '(i,k) + ' + nm + '(k+1,j)';
+  const ops = {
+    start: () => { txt(fx, nm + '(i,j) = min {  …  }'); gd.mood('wow'); say('先把用過的式子寫成一般公式', nm + '(i,j) = min{ … }'); },
+    ik: () => {
+      rows = [1, 2, 3].map((k) => mono(tag(nm + '(1,' + k + ') + ' + nm + '(' + (k + 1) + ',' + n + ')', '', -2.6, 4.6 - (k - 1) * 0.6)));
+      say('回頭看 ' + nm + '(1,4) 的三項', '1,1 和 2,4；1,2 和 3,4；1,3 和 4,4');
+    },
+    glowik: () => {
+      rows.forEach((l, t) => tag('k=' + (t + 1) + '：i..k = 1..' + (t + 1) + '，k+1..j = ' + (t + 2) + '..' + n, 'idx', 2.2, 4.6 - t * 0.6));
+      txt(fx, nm + '(i,j) = min { ' + L + '  … }');
+      say('左邊 i 到 k、右邊 k+1 到 j', '所以寫成 ' + L);
+    },
+    plus: () => {
+      rows.forEach((l, t) => txt(l, nm + '(1,' + (t + 1) + ') + ' + nm + '(' + (t + 2) + ',' + n + ') + ' + p[0] + '·' + p[t + 1] + '·' + p[n]));
+      txt(fx, nm + '(i,j) = min { ' + L + ' + ?·?·? }');
+      say('還要加上兩段相乘的成本', '例子裡是 5·4·7、5·6·7、5·2·7');
+    },
+    dlab: () => { for (let k = 1; k <= n; k++) dT[k] = tag('d' + k, 'ptr', xk(k) + w / 2, 8.2); say('把維度編號：d1、d2、d3、d4', '每個矩陣右邊那個維度'); },
+    d0: () => { dT[0] = tag('d0', 'ptr alt', xk(1) - w / 2, 8.2); gd.mood('wow'); say('最前面那個叫 d0', '4 個矩陣有 5 個維度：d0…d4'); },
+    dim1: () => { dT.forEach((l) => setCls(l, 'ptr')); setCls(dT[0], 'ptr alt'); setCls(dT[1], 'ptr alt'); sb('A_i 的 row 數是 d(i−1)'); say('第 i 個矩陣是 d(i−1) × d(i)', '所以開頭要用 i − 1'); },
+    full: async () => {
+      txt(fx, nm + '(i,j) = min { ' + L + ' + d(i−1)·d(k)·d(j) }'); setCls(fx, 'good');
+      tag('i ≤ k < j', 'ptr', 0, 6.3); sb(''); gd.mood('happy');
+      say('合併成本 = d(i−1)·d(k)·d(j)', 'k 從 i 試到 j − 1，取最小');
+      await gd.hop(tok);
+    },
+  };
+  await runSeq(tok, seq, ops);
 }]);
-FRAG.push(['dp4bari-code-trace', '程式追蹤：k 迴圈求 min 並記 s', async (tok) => {
-  const P = prm(), d = P.d || 2;
+
+// ── _WncuhSJZyA：從 3 個矩陣的例子推出公式 ──
+FRAG.push(['dp4bari-derive', '從 40 和 36 兩個算式推出 C(i,j) 公式', async (tok) => {
+  const seq = prm().seq || ['c13', 'C12', 'C33', 'd023', 'k', 'full', 'min'];
+  fresh([0, 4.4, 14.5], [0, 3.8, 0]);
+  const gd = guide(-6.5, 1.8, 0.6), sb = slot(3.8, 0.4);
+  const d = [2, 3, 4, 2], X = [-2.4, 0, 2.4], PX = [-3.0, -0.4, 2.4];
+  X.forEach((x, k) => { cube('A' + (k + 1), k % 2 ? PURPLE : BLUE, [1.4, 0.5, 0.45], x, 7.4); tag(d[k] + '×' + d[k + 1], 'idx', x, 8.0); });
+  const dT = d.map((v, k) => tag('d' + k + '=' + v, 'idx', -3.6 + k * 2.4, 6.8));
+  let head = null, r1 = [], r2 = [], g = [], gLbl = null;
+  const row = (y, lbl, vals) => {
+    tag(lbl, 'ptr', -5.3, y);
+    const ps = vals.slice(0, 3).map((v, t) => cube(String(v), [BLUE, PURPLE, ORANGE][t], [2.1, 0.55, 0.45], PX[t], y, 0, 1.0));
+    tag('+', 'val', -1.7, y); tag('+', 'val', 1.0, y);
+    ps.res = tag('= ' + vals[3], 'ptr alt', 4.6, y);
+    return ps;
+  };
+  const hi = (ks) => dT.forEach((l, k) => setCls(l, ks.includes(k) ? 'ptr alt' : 'idx'));
+  const ops = {
+    c13: () => {
+      head = tag('C(1,3) = min { 40, 36 }', 'ptr alt', 0, 6.1);
+      r1 = row(5.0, '(A1A2)A3', [24, 0, 16, 40]); r2 = row(3.7, 'A1(A2A3)', [0, 24, 12, 36]);
+      gd.mood('wow'); say('要求 C(1,3)：A1…A3 的最小成本', '先看剛才兩種算法的算式');
+    },
+    C12: () => { relabel(r1[0], 'C(1,2)'); glow(r1[0], GOLD); say('24 就是 A1A2 的成本', '寫成 C(1,2)'); },
+    C33: () => { glow(r1[0], null); relabel(r1[1], 'C(3,3)'); glow(r1[1], GOLD); say('0 是 A3 自己的成本', 'C(3,3) = 0：單一矩陣不用乘'); },
+    d023: () => { glow(r1[1], null); relabel(r1[2], 'd0·d2·d3'); glow(r1[2], GOLD); hi([0, 2, 3]); say('最後相乘：2×4 乘 4×2', 'd0·d2·d3 = 2·4·2 = 16'); },
+    C11: () => { glow(r1[2], null); hi([]); relabel(r2[0], 'C(1,1)'); glow(r2[0], GOLD); say('另一式也改寫：0 是 C(1,1)', 'A1 自己不用乘'); },
+    C23: () => { glow(r2[0], null); relabel(r2[1], 'C(2,3)'); glow(r2[1], GOLD); say('24 是 A2A3 的成本：C(2,3)', '3·4·2 = 24'); },
+    d013: () => { glow(r2[1], null); relabel(r2[2], 'd0·d1·d3'); glow(r2[2], GOLD); hi([0, 1, 3]); say('最後相乘：2×3 乘 3×2', 'd0·d1·d3 = 2·3·2 = 12'); },
+    ij: () => { glow(r2[2], null); hi([]); txt(head, 'C(i,j)：i = 1、j = 3'); sb('兩式頭尾都是 1 和 3 → i、j'); say('兩式的頭尾都是 1 和 3', '叫它們 i 和 j'); },
+    dij: () => { hi([0, 3]); sb('d0 = d(i−1)、d3 = d(j)'); say('兩式都有 d0 和 d3', 'd0 = d(i−1)、d3 = d(j)'); },
+    k: () => {
+      gLbl = tag('C(i,j) = min', 'ptr alt', -5.3, 2.2);
+      g = ['C(i,k)', 'C(k+1,j)'].map((s, t) => cube(s, [BLUE, PURPLE][t], [2.1, 0.55, 0.45], PX[t], 2.2, 0, 1.0));
+      tag('+', 'val', -1.7, 2.2);
+      tag('k=2', 'idx', -5.3, 4.55); tag('k=1', 'idx', -5.3, 3.25);
+      say('中間切開的地方叫 k', '左邊 C(i,k)、右邊 C(k+1,j)');
+    },
+    dk: () => { hi([1, 2]); sb('中間的維度 d(k)：k=2 → d2、k=1 → d1'); say('中間那個維度就是 d(k)', 'k = 2 用 d2，k = 1 用 d1'); },
+    full: () => {
+      hi([]); g.push(cube('d(i−1)·d(k)·d(j)', ORANGE, [2.1, 0.55, 0.45], PX[2], 2.2, 0, 1.0)); tag('+', 'val', 1.0, 2.2);
+      sb(''); gd.mood('happy'); say('公式：左邊 + 右邊 + 合併', 'C(i,k) + C(k+1,j) + d(i−1)·d(k)·d(j)');
+    },
+    krange: () => { tag('i ≤ k < j', 'ptr', 4.6, 2.2); say('k 從 i 試到 j − 1', '例子裡 k = 1、2'); },
+    min: () => { r2.forEach((m) => glow(m, GREEN)); setCls(r2.res, 'good'); txt(head, 'C(1,3) = min { 40, 36 } = 36'); say('兩個裡面取最小', 'min{40, 36} = 36'); },
+    idea: async () => {
+      r2.forEach((m) => glow(m, null));
+      say('左、右、合併的成本', '都是「三個維度相乘」算出來的');
+      for (const m of g) { glow(m, GOLD); await beat(tok, 500); glow(m, null); }
+    },
+    tryall: async () => { sb('試所有 k，挑最好的'); say('矩陣越多，k 能取的值越多', '10 個矩陣 k 就從 1 試到 9'); await gd.hop(tok); },
+  };
+  await runSeq(tok, seq, ops);
+}]);
+
+// ── _WncuhSJZyA：四個矩陣有 5 種括法（module 的 mc-count 的逐句版） ──
+FRAG.push(['dp4bari-mc-count', '四個矩陣 5 種括法：Catalan 數', async (tok) => {
+  const seq = prm().seq || ['mats', 'p1', ['p2', 'p34', 'p5'], 'five', 'catalan', 'calc4', 'calc5'];
+  fresh([0, 4.4, 14], [0, 3.6, 0]);
+  const gd = guide(-6.5, 1.8, 0.6), sb = slot(-3.0, 1.4);
+  const ALL4 = ['A1(A2(A3A4))', 'A1((A2A3)A4)', '(A1A2)(A3A4)', '(A1(A2A3))A4', '((A1A2)A3)A4'];
+  let mats = [], ls = [], t = 0;
+  const addP = () => { const l = mono(tag(ALL4[t], 'ptr alt', -3.0, 5.9 - t * 0.6)); ls.push(l); t++; };
+  const bar = (v, x, lbl) => { const h = v * 0.15, m = cube('', ORANGE, [0.9, 1, 0.9], x, 0, 0); m.scale.y = h; m.position.y = h / 2; tag(lbl, 'idx', x, h + 0.35); return m; };
+  const ops = {
+    mats: () => {
+      mats = [0, 1, 2, 3].map((k) => cube('A' + (k + 1), k % 2 ? PURPLE : BLUE, [1.4, 0.5, 0.45], -3.3 + k * 2.2, 7.4, 0, 1.2));
+      [0, 1, 2, 3].forEach((k) => tag('d' + k + '×d' + (k + 1), 'idx', -3.3 + k * 2.2, 8.0));
+      gd.mood('wow'); say('四個矩陣，維度 d0…d4', '用公式之前，先看有幾種乘法');
+    },
+    ask: () => { sb('先找出最省力的括法'); say('有哪些相乘的方法？', '真的乘之前先知道哪種最省'); },
+    p1: () => { addP(); say('A1 乘上 A2(A3A4) 的結果', ALL4[0]); },
+    p2: () => { addP(); say('A3 先乘 A2，再乘 A4，最後 A1', ALL4[1]); },
+    p34: () => { addP(); addP(); say('(A1A2)(A3A4)，或 A4 留到最後', ALL4[2] + '、' + ALL4[3]); },
+    p5: () => { addP(); say('從左一路乘到右', ALL4[4]); },
+    five: () => { tag('共 5 種', 'good', -3.0, 2.6); gd.mood('calm'); say('4 個矩陣有 5 種括法', ''); },
+    catalan: () => { tag('Catalan 數：C(2n,n)/(n+1)', 'ptr', 3.2, 5.9); say('括法數用 Catalan 數算', 'C(2n,n)/(n+1)'); },
+    nminus1: () => { tag('n 要取「矩陣數 − 1」', 'note', 3.2, 5.3); gd.mood('wow'); say('注意：n 要取矩陣數 − 1', '4 個矩陣 → n = 3'); },
+    mod: () => { tag('C(2(n−1), n−1) / n（n = 矩陣數）', 'ptr', 3.2, 4.7); say('改寫成用矩陣數 n 的版本', 'C(2(n−1), n−1) / n'); },
+    calc4: () => { tag('4 個：6C3 / 4 = 20 / 4 = 5', 'good', 3.2, 4.0); bar(5, 2.4, '5'); gd.mood('happy'); say('4 個矩陣：6C3 / 4 = 5', '和剛才列出來的一樣'); },
+    calc5: () => { tag('5 個：8C4 / 5 = 70 / 5 = 14', 'good', 3.2, 3.4); bar(14, 4.2, '14'); gd.mood('wow'); say('5 個矩陣：8C4 / 5 = 14 種括法', '矩陣一多，括法就暴增'); },
+    pick: () => { ls.forEach((l) => setCls(l, 'ptr')); sb('從 5 種裡挑最小 → 用公式'); gd.mood('calm'); say('要從這些括法中挑出最省的', '用剛推出來的公式'); },
+  };
+  await runSeq(tok, seq, ops);
+}]);
+
+// ── _WncuhSJZyA：直接展開 C(1,4)：子問題重複 → 由小到大 ──
+FRAG.push(['dp4bari-expand14', '直接展開 C(1,4)：子問題重複 → 由小到大', async (tok) => {
+  const seq = prm().seq || ['root', 'k1', 'k2', 'k3', 'exp24', 'layer', 'rep'];
+  fresh([0, 4.4, 14.5], [0, 3.8, 0]);
+  const gd = guide(-6.5, 1.8, 0.6), sb = slot(4.6, 1.4);
+  const all = [], pars = [], cxs = [-4.4, 0, 4.4];
+  const lb = (a, b) => 'C(' + a + ',' + b + ')';
+  const node = (a, b, x, y, color) => { const m = cube(lb(a, b), color, [1.05, 0.48, 0.4], x, y, 0, 1.0); m.userData.key = lb(a, b); all.push(m); return m; };
+  const kOp = (k) => {
+    const cx = cxs[k - 1];
+    line(0, 7.35, cx, 6.25); tag('k=' + k, 'idx', cx, 6.75);
+    node(1, k, cx - 0.62, 6.0, BLUE); node(k + 1, 4, cx + 0.62, 6.0, PURPLE);
+    tag('+ d0·d' + k + '·d4', 'idx', cx, 5.45);
+    say('k = ' + k + '：' + lb(1, k) + ' + ' + lb(k + 1, 4), '+ d0·d' + k + '·d4');
+  };
+  const PS = ['A1(A2A3A4)', '(A1A2)(A3A4)', '(A1A2A3)A4'];
+  const ops = {
+    root: () => { node(1, 4, 0, 7.6, TEAL); gd.mood('wow'); say('套公式求 C(1,4)', 'i = 1、j = 4'); },
+    ks: () => { sb('k ≥ 1 且 k < 4：k = 1、2、3'); say('k 可以是 1、2、3', 'k ≥ i 且 k < j'); },
+    k1: () => kOp(1), k2: () => kOp(2), k3: () => kOp(3),
+    min: () => { tag('min { 三項 }', 'ptr alt', 2.0, 7.6); sb(''); say('三項取最小', '等於試過所有括法'); },
+    par: (k) => { pars.push(tag(PS[k - 1], 'ptr', cxs[k - 1], 4.95)); say('k = ' + k + ' 代表 ' + PS[k - 1], k === 1 ? 'A1 單獨，A2…A4 一組' : k === 2 ? '在 A2 後面切開' : 'A4 單獨'); },
+    known: () => {
+      all.filter((m) => m.userData.key === lb(1, 1) || m.userData.key === lb(4, 4)).forEach((m) => { tint(m, GRAY); relabel(m, m.userData.key + '=0'); });
+      gd.mood('calm'); say('C(1,1)、C(4,4) 已知 = 0', '單一矩陣不用乘');
+    },
+    exp24: () => {
+      pars.forEach(kill);
+      const ex = cxs[0] + 0.62;
+      [[2, [2, 2], [3, 4]], [3, [2, 3], [4, 4]]].forEach(([k, a, b], t) => {
+        const cx = ex + (t - 0.5) * 2.5;
+        line(ex, 5.75, cx, 4.05); tag('k=' + k, 'idx', cx, 4.6);
+        node(a[0], a[1], cx - 0.58, 3.8, BLUE); node(b[0], b[1], cx + 0.58, 3.8, PURPLE);
+      });
+      say('C(2,4) 不知道：再套一次公式', 'k = 2、3');
+    },
+    again: () => { all.forEach((m) => { const k = m.userData.key; glow(m, [lb(2, 3), lb(3, 4), lb(1, 2), lb(1, 3)].includes(k) ? GOLD : null); }); gd.mood('sad'); say('每一項又要再套公式', '一路展開下去太長了'); },
+    small: () => { all.forEach((m) => glow(m, null)); sb('先算小的，再算大的'); gd.mood('wow'); say('為什麼不先算小的？', '小的先算好，大的直接用'); },
+    diff: () => { sb('j−i = 3：3 項　2：2 項　1：1 項'); say('大小看 j − i', 'j − i 越大，要比的項越多'); },
+    layer: () => {
+      for (let d = 0; d <= 3; d++) {
+        const rw = []; for (let i = 1; i + d <= 4; i++) rw.push([i, i + d]);
+        const y = 0.3 + d * 0.6;
+        tag('j−i=' + d, 'idx', -4.0, y);
+        rw.forEach((a, t) => cube(lb(a[0], a[1]), d === 3 ? TEAL : d === 0 ? GRAY : BLUE, [1.0, 0.42, 0.35], (t - (rw.length - 1) / 2) * 1.15, y, 0, 1.0));
+      }
+      sb(''); say('先算 j − i = 0，再 1、2、3', '由小到大填');
+    },
+    rep: async () => {
+      all.forEach((m) => glow(m, m.userData.key === lb(3, 4) ? GOLD : null));
+      gd.mood('happy'); say('C(3,4) 在好幾個地方都要用', '算一次存起來，到處重複用');
+      await gd.hop(tok);
+    },
+  };
+  await runSeq(tok, seq, ops);
+}]);
+
+// ── 填表：成本表 C/M + 切點表 K/S，一句一格 ──
+FRAG.push(['dp4bari-mc-fill', 'Matrix chain 填表：成本表 + 切點表（逐句）', async (tok) => {
+  const P = prm(), p = P.p || [3, 2, 4, 2, 5], cn = P.cn || 'C', kn = P.kn || 'K';
+  const seq = P.seq || [[['pick', 1, 2]], [['set', 1, 2]], [['kset', 1, 2]], [['pick', 1, 3]], [['k', 1, 3, 1, 0], ['k', 1, 3, 2, 0]], [['kv', 1, 3, 1], ['kv', 1, 3, 2]], [['min', 1, 3], ['kset', 1, 3]]];
+  const n = p.length - 1, S = mcmSolve(p);
+  fresh([0, 4.4, 15], [0, 4.0, 0]);
+  const gd = guide(-6.4, 1.8, 0.65), sb = slot(4.6, 0.6);
+  const w = Math.min(1.35, 11 / n), xk = (k) => (k - (n + 1) / 2) * w;
+  let dims = null, gm = null, gk = null, cnT = null, ghost = null, hiCells = [];
+  let lines = {}, plist = [];
+  const stp = (i, j) => S.steps.find((z) => z.i === i && z.j === j);
+  const hd = (pre) => Array.from({ length: n }, (_, k) => pre + (k + 1));
+  const clearLines = () => { Object.values(lines).forEach(kill); lines = {}; plist.forEach(kill); plist = []; };
+  const unhi = () => { hiCells.forEach(([r, c]) => { if (gm) gm.mark(r, c); if (gk) gk.mark(r, c); }); hiCells = []; };
+  const hiCell = (r, c) => { if (gm) gm.mark(r, c, '#f3d27a'); if (gk) gk.mark(r, c, '#f3d27a'); hiCells.push([r, c]); };
+  const lineTxt = (i, j, k, lvl) => {
+    const c = stp(i, j).cands.find((z) => z.k === k), h = 'k=' + k + ':  ';
+    const sub = cn + '(' + i + ',' + k + ') + ' + cn + '(' + (k + 1) + ',' + j + ')';
+    if (lvl === 0) return h + sub + ' + d' + (i - 1) + '·d' + k + '·d' + j;
+    if (lvl === 1) return h + sub + ' + ' + p[i - 1] + '·' + p[k] + '·' + p[j];
+    if (lvl === 2) return h + c.a + ' + ' + c.b + ' + ' + p[i - 1] + '·' + p[k] + '·' + p[j];
+    return h + c.a + ' + ' + c.b + ' + ' + c.x + ' = ' + c.v;
+  };
+  const ops = {
+    dims: () => { if (dims) return; dims = dimsRow(p, 7.6); tag(p.map((v, k) => 'd' + k + '=' + v).join(' '), 'ptr', 5.0, 7.6); say('例題：d0…d4 = ' + p.join('、'), '4 個矩陣、5 個維度'); },
+    mgrid: () => {
+      if (gm) return;
+      gm = grid({ rows: n, cols: n, cw: 1.15, ch: 0.8, x0: -5.0, y0: 5.5, colHdr: hd('j='), rowHdr: hd('i='), rowDx: 0.35 });
+      for (let i = 0; i < n; i++) for (let j = 0; j < i; j++) gm.mark(i, j, '#ddd2bf');
+      cnT = tag(cn + ' 表', 'ptr', -6.5, 6.3);
+      gd.mood('wow'); say('準備一張 ' + n + '×' + n + ' 的表', 'row 是 i、column 是 j');
+    },
+    kgrid: () => {
+      if (gk) return;
+      gk = grid({ rows: n, cols: n, cw: 0.9, ch: 0.8, x0: 1.9, y0: 5.5, colHdr: hd('j='), rowHdr: hd('i='), rowDx: 0.3 });
+      for (let i = 0; i < n; i++) for (let j = 0; j <= i; j++) gk.mark(i, j, '#ddd2bf');
+      tag(kn + ' 表', 'ptr', 1.0, 6.5);
+      say('再準備一張 ' + n + '×' + n + ' 的表', '記錄取到最小值的 k');
+    },
+    z: (i) => { gm.set(i - 1, i - 1, 0, GRAY, 1.4); if (dims) dims.forEach((m, k) => glow(m, k === i - 1 ? GOLD : null)); say(cn + '(' + i + ',' + i + ') = 0', '只有 A' + i + '，沒有乘任何東西'); },
+    zall: async () => {
+      if (dims) dims.forEach((m) => glow(m, null));
+      say(cn + '(i,i) = 0', '單一矩陣不用乘');
+      for (let i = 0; i < n; i++) if (!gm.get(i, i)) { gm.set(i, i, 0, GRAY, 1.4); await beat(tok, 250); }
+    },
+    diag: (dd) => {
+      unhi(); for (let i = 0; i + dd < n; i++) hiCell(i, i + dd);
+      say('j − i = ' + dd + ' 的對角線', dd === 1 ? '兩個矩陣一組' : (dd + 1) + ' 個矩陣一組');
+    },
+    pick: (i, j) => {
+      clearLines(); unhi(); hiCell(i - 1, j - 1); if (gm) gm.clearArrows();
+      kill(ghost);
+      if (dims) {
+        ghost = ghostBox('#f3d27a', (j - i + 1) * w, 0.9, 0.8); ghost.position.set((xk(i) + xk(j)) / 2, 7.6, 0);
+        dims.forEach((m, k) => glow(m, k + 1 >= i && k + 1 <= j ? GOLD : null));
+      }
+      gd.mood('wow');
+      say(cn + '(' + i + ',' + j + ')：A' + i + '…A' + j, j - i === 1 ? '兩個矩陣相乘' : 'k = ' + i + '…' + (j - 1) + ' 都要試');
+    },
+    paren: (i, j) => {
+      plist.forEach(kill); plist = [];
+      const xs = []; for (let k = i; k < j; k++) xs.push(splitStr(i, k, j));
+      xs.forEach((s, t) => plist.push(pkt('k=' + (i + t) + '  ' + s, 4.6, 2.3 - t * 0.55)));
+      say(j - i + 1 + ' 個矩陣有 ' + xs.length + ' 種切法', xs.join(' 或 '));
+    },
+    look: () => {
+      const [i, j] = (hiCells[0] || [0, 0]).map((v) => v + 1);
+      for (let k = i; k < j; k++) { glow(gm.get(i - 1, k - 1), GOLD); glow(gm.get(k, j - 1), GOLD); }
+      sb('小問題的值：直接查表'); gd.mood('happy');
+      say('小問題的答案都在表裡', '直接拿來用，不用重算');
+    },
+    k: (i, j, k, lvl = 0) => {
+      gm.clearArrows(); gm.unglow();
+      gm.arrow(i - 1, k - 1, i - 1, j - 1, TRY); gm.arrow(k, j - 1, i - 1, j - 1, TRY);
+      if (gm.get(i - 1, k - 1)) glow(gm.get(i - 1, k - 1), GOLD);
+      if (gm.get(k, j - 1)) glow(gm.get(k, j - 1), GOLD);
+      const t = k - i;
+      if (!lines[k]) lines[k] = mono(tag('', '', -1.4, 2.2 - t * 0.5));
+      txt(lines[k], lineTxt(i, j, k, lvl));
+      const c = stp(i, j).cands.find((z) => z.k === k);
+      if (lvl < 2) say(cn + '(' + i + ',' + j + ')，k = ' + k, '左 ' + cn + '(' + i + ',' + k + ')、右 ' + cn + '(' + (k + 1) + ',' + j + ')');
+      else say('k = ' + k + '：' + lineTxt(i, j, k, lvl).split(':  ')[1], lvl === 3 ? '左邊 + 右邊 + 最後相乘' : '值從表裡查');
+      return c;
+    },
+    kv: (i, j, k) => ops.k(i, j, k, 3),
+    min: async (i, j) => {
+      const st = stp(i, j);
+      gm.clearArrows(); gm.unglow();
+      for (const c of st.cands) { if (!lines[c.k]) lines[c.k] = mono(tag(lineTxt(i, j, c.k, 3), '', -1.4, 2.2 - (c.k - i) * 0.5)); txt(lines[c.k], lineTxt(i, j, c.k, 3)); setCls(lines[c.k], c.k === st.bk ? 'ptr alt' : ''); }
+      gm.set(i - 1, j - 1, st.v, TEAL); unhi();
+      if (dims) dims.forEach((m) => glow(m, null)); kill(ghost); ghost = null;
+      gd.mood('happy');
+      say(cn + '(' + i + ',' + j + ') = ' + st.v, st.cands.length > 1 ? '最小的是 k = ' + st.bk : '只有一種切法');
+      await gd.hop(tok);
+    },
+    set: (i, j) => {
+      const st = stp(i, j);
+      clearLines(); gm.clearArrows();
+      lines[0] = mono(tag('A' + i + 'A' + j + ':  ' + p[i - 1] + '·' + p[i] + '·' + p[j] + ' = ' + st.v, 'ptr alt', -1.4, 2.2));
+      gm.set(i - 1, j - 1, st.v, TEAL); unhi();
+      if (dims) dims.forEach((m) => glow(m, null)); kill(ghost); ghost = null;
+      gd.mood('happy');
+      say(cn + '(' + i + ',' + j + ') = ' + p[i - 1] + '·' + p[i] + '·' + p[j] + ' = ' + st.v, 'A' + i + ' 乘 A' + j);
+    },
+    kset: (i, j) => {
+      const st = stp(i, j);
+      gk.set(i - 1, j - 1, st.bk, PURPLE); gk.mark(i - 1, j - 1);
+      say(kn + '(' + i + ',' + j + ') = ' + st.bk, '記下取到最小值的 k');
+    },
+    setk: (i, j) => { ops.set(i, j); ops.kset(i, j); say(cn + '(' + i + ',' + j + ') = ' + stp(i, j).v + '，' + kn + ' = ' + stp(i, j).bk, p[i - 1] + '·' + p[i] + '·' + p[j]); },
+    note: (a, b, bt) => { if (bt !== undefined) sb(bt); say(a, b || ''); },
+    mood: (m) => gd.mood(m),
+    done: async () => {
+      gm.mark(0, n - 1, '#9fe0c4'); gd.mood('happy');
+      say(cn + '(1,' + n + ') = ' + S.m[1][n] + '：最少乘法次數', kn + '(1,' + n + ') = ' + S.s[1][n]);
+      await gd.hop(tok);
+    },
+  };
+  // 開場就在的東西
+  if (P.built !== false) { ops.dims(); ops.mgrid(); ops.kgrid(); }
+  if (gm && P.zeros !== false) for (let i = 0; i < n; i++) gm.set(i, i, 0, GRAY, 0);
+  for (const [i, j] of P.pre || []) { const st = stp(i, j); gm.set(i - 1, j - 1, st.v, TEAL, 0); gk.set(i - 1, j - 1, st.bk, PURPLE, 0); }
+  say(cn + ' 表與 ' + kn + ' 表', cn + '(i,j) = min{' + cn + '(i,k) + ' + cn + '(k+1,j) + d_{i−1}d_k d_j}');
+  await runSeq(tok, seq, ops);
+}]);
+
+// ── 從切點表加括號（逐句） ──
+FRAG.push(['dp4bari-paren', '從切點表加括號', async (tok) => {
+  const P = prm(), p = P.p || [3, 2, 4, 2, 5], kn = P.kn || 'K';
+  const n = p.length - 1, S = mcmSolve(p);
+  const seq = P.seq || ['tab', [['split', 1, 4]], [['split', 1, 3]], [['split', 2, 3]], 'order', 'str'];
+  fresh([0, 4.4, 15], [0, 3.8, 0]);
+  const gd = guide(-6.5, 1.8, 0.6), sb = slot(-3.6, 1.6);
+  const g = grid({ rows: n, cols: n, cw: 0.72, ch: 0.58, x0: -5.4, y0: 6.4, colHdr: Array.from({ length: n }, (_, k) => k + 1), rowHdr: Array.from({ length: n }, (_, k) => k + 1), rowDx: 0.1 });
+  tag(kn + ' 表', 'ptr', -4.3, 7.3);
+  for (let i = 1; i <= n; i++) for (let j = 1; j <= n; j++) { if (j > i) g.set(i - 1, j - 1, S.s[i][j], PURPLE, 0); else g.mark(i - 1, j - 1, '#ddd2bf'); }
+  const xL = (k) => 0.4 + (k - 1) * (5.6 / Math.max(1, n - 1));
+  const nodes = {};
+  let lastCell = null, strT = null;
+  const mk = (i, j, d, par) => {
+    const key = i + ',' + j; if (nodes[key]) return nodes[key];
+    const x = (xL(i) + xL(j)) / 2, y = 6.6 - d * 1.35, nd = { i, j, x, y, d, par };
+    if (par) line(par.x, par.y - 0.25, x, y + 0.25);
+    nd.m = i === j ? cube('A' + i, BLUE, [0.8, 0.45, 0.4], x, y, 0, 1.2) : cube(i + '..' + j, TEAL, [0.95, 0.45, 0.4], x, y, 0, 1.2);
+    nodes[key] = nd; return nd;
+  };
+  const post = () => { const out = []; (function w(nd) { if (!nd || nd.i === nd.j) return; w(nodes[nd.i + ',' + S.s[nd.i][nd.j]]); w(nodes[(S.s[nd.i][nd.j] + 1) + ',' + nd.j]); out.push(nd); })(nodes['1,' + n]); return out; };
+  const ops = {
+    tab: () => { for (let i = 1; i <= n; i++) for (let j = i + 1; j <= n; j++) glow(g.get(i - 1, j - 1), GOLD); gd.mood('wow'); sb('括號要看 ' + kn + ' 表'); say('要知道怎麼加括號：看 ' + kn + ' 表', kn + '(i,j) = 最佳切點 k'); },
+    split: (i, j) => {
+      for (let a = 1; a <= n; a++) for (let b = a + 1; b <= n; b++) glow(g.get(a - 1, b - 1), null);
+      if (lastCell) g.mark(lastCell[0], lastCell[1]);
+      const k = S.s[i][j], nd = mk(i, j, 0, null);
+      g.mark(i - 1, j - 1, '#f3d27a'); glow(g.get(i - 1, j - 1), GOLD); lastCell = [i - 1, j - 1];
+      tag('k=' + k, 'idx', nd.x + 0.8, nd.y + 0.3);
+      mk(i, k, nd.d + 1, nd); mk(k + 1, j, nd.d + 1, nd);
+      gd.mood('calm'); sb(i + '..' + j + ' → ' + splitStr(i, k, j));
+      say(kn + '(' + i + ',' + j + ') = ' + k + '：在 A' + k + ' 後面切', grpStr(i, k) + ' 和 ' + grpStr(k + 1, j));
+    },
+    two: () => { sb('只剩兩個矩陣：不用再分'); say('A2、A3 只有兩個', '直接相乘，不用再看'); },
+    leaves: () => { Object.values(nodes).forEach((nd) => glow(nd.m, nd.i === nd.j ? GOLD : null)); say('葉子就是 A1、A2、A3、A4', '樹的形狀 = 括號'); },
+    order: async () => {
+      Object.values(nodes).forEach((nd) => glow(nd.m, null));
+      say('由下往上乘：A2A3 → 乘 A1 → 乘 A4', '先乘樹的最底層');
+      let t = 0;
+      for (const nd of post()) { t++; glow(nd.m, GREEN); tag('第' + t + '次', 'pkt', nd.x - 0.95, nd.y + 0.35); await beat(tok, 650); }
+      gd.mood('happy');
+    },
+    inorder: async () => {
+      const out = mono(tag('', 'ptr alt', 0, 0.5, 0.6)); let s = '';
+      say('對這棵樹做 in-order traversal', '進節點印 (、葉子印 A、離開印 )');
+      async function walk(nd) {
+        if (nd.i === nd.j) { s += 'A' + nd.i; txt(out, s); await beat(tok, 200); return; }
+        s += '('; txt(out, s); await beat(tok, 120);
+        await walk(nodes[nd.i + ',' + S.s[nd.i][nd.j]]); await walk(nodes[(S.s[nd.i][nd.j] + 1) + ',' + nd.j]);
+        s += ')'; txt(out, s); await beat(tok, 120);
+      }
+      await walk(nodes['1,' + n]);
+    },
+    str: async () => {
+      if (!strT) strT = tag(parens(S.s, 1, n), 'good', 0, 0.5, 0.6);
+      gd.mood('happy'); say(parens(S.s, 1, n), '最少 ' + S.m[1][n] + ' 次乘法');
+      await gd.hop(tok);
+    },
+    recap: async () => {
+      say('再看一次：' + kn + '(1,' + n + ') = ' + S.s[1][n] + '，' + kn + '(1,' + S.s[1][n] + ') = ' + S.s[1][S.s[1][n]], '一層一層往下切');
+      for (const nd of Object.values(nodes).filter((z) => z.i < z.j).sort((a, b) => a.d - b.d)) { glow(nd.m, GOLD); glow(g.get(nd.i - 1, nd.j - 1), GOLD); await beat(tok, 500); glow(nd.m, null); glow(g.get(nd.i - 1, nd.j - 1), null); }
+    },
+    note: (a, b, bt) => { if (bt !== undefined) sb(bt); say(a, b || ''); },
+  };
+  await runSeq(tok, seq, ops);
+}]);
+
+// ── 填表時間：n² 格 × 每格 ≤ n 個 k（逐句） ──
+FRAG.push(['dp4bari-mc-time', '填表時間：n² 格 × 每格 ≤ n 個 k', async (tok) => {
+  const P = prm(), n = P.n || 4, p = P.p || [5, 4, 6, 2, 7], S = mcmSolve(p), big = P.big || 'O';
+  const seq = P.seq || ['show', 'fill', 'n2', 'k', 'n3'];
+  fresh([0, 4.4, 14], [0, 3.6, 0]);
+  const gd = guide(-6.5, 1.8, 0.6), sb = slot(0.6, 6.8);
+  const cw = 1.0, ch = 0.75, x0 = -5.4, y0 = 6.2;
+  let g = null, cl = null, tl = null, cnt = 0;
+  const tx = (i, j) => 3.6 + ((i + j) - (n + 1)) * 0.6, ty = (i, j) => 1.2 + (j - i) * 0.8;
+  const ops = {
+    show: () => {
+      g = grid({ rows: n, cols: n, cw, ch, x0, y0, colHdr: Array.from({ length: n }, (_, k) => 'j=' + (k + 1)), rowHdr: Array.from({ length: n }, (_, k) => 'i=' + (k + 1)), rowDx: 0.3 });
+      for (let i = 0; i < n; i++) for (let j = 0; j < i; j++) g.mark(i, j, '#ddd2bf');
+      gd.mood('wow'); say('填這張表要花多少時間？', '數一數有幾格、每格做多少事');
+    },
+    fill: async () => {
+      if (!g) ops.show();
+      cl = cl || tag('0 格', 'ptr alt', -3.9, 3.2);
+      say('只填半張表', n + ' + … + 1 = n(n+1)/2 格');
+      for (let l = 1; l <= n; l++) {
+        for (let i = 0; i + l - 1 < n; i++) { g.set(i, i + l - 1, '', l === 1 ? GRAY : TEAL, 1.2); cnt++; }
+        txt(cl, cnt + ' 格 = ' + n + '·' + (n + 1) + '/2'); await beat(tok, 450);
+      }
+    },
+    diag0: () => { for (let i = 0; i < n; i++) glow(g.get(i, i), GOLD); sb('對角線都是 0：算不算都行'); say('對角線都是 0', 'n(n+1)/2 或 n(n−1)/2 都可以'); },
+    n2: () => { for (let i = 0; i < n; i++) glow(g.get(i, i), null); tag('≈ n² 格', 'ptr alt', -3.9, 2.5); say('格子數約 n²', 'n(n+1)/2 → n²'); },
+    k: async () => {
+      tl = tag('試 k 共 0 次', 'ptr alt', -3.9, 1.8); let tries = 0;
+      say('每一格要試所有 k 再取最小', '最多 n 個 k');
+      for (let l = 2; l <= n; l++) for (let i = 0; i + l - 1 < n; i++) {
+        const p0 = g.pos(i, i + l - 1);
+        for (let k = 0; k < l - 1; k++) cube('', ORANGE, [0.2, 0.2, 0.2], p0.x - 0.35 + k * 0.25, p0.y + 0.38, 0.4, 0.8);
+        tries += l - 1; txt(tl, '試 k 共 ' + tries + ' 次'); await beat(tok, 300);
+      }
+    },
+    n3: async () => { tag('n² × n = ' + big + '(n³)', 'good', -3.9, 1.1); gd.mood('happy'); say('n² 格 × 每格最多 n → ' + big + '(n³)', big === 'O' ? '這是上界' : 'matrix chain 的時間複雜度'); await gd.hop(tok); },
+    both: () => { sb('真的把矩陣乘出來也是 n³'); say('乘矩陣是 n³', '找最佳括法也是 n³'); },
+    less: () => { sb('k 不一定有 n 個：實際比 n³ 少一點'); gd.mood('calm'); say('k 不是每次都有 n 個值', '細算會比 n³ 少一點；n³ 是上界'); },
+    tri: () => {
+      for (let i = 1; i <= n; i++) for (let j = i; j <= n; j++) cube('', '#efe6d2', [0.95, 0.7, 0.1], tx(i, j), ty(i, j), -0.1);
+      for (let i = 1; i <= n; i++) tag('i=' + i, 'idx', tx(i, i) - 0.55, ty(i, i) - 0.55);
+      gd.mood('wow'); say('換個畫法：把表轉成三角形', '下半張用不到，乾脆不畫');
+    },
+    trij: () => { for (let j = 1; j <= n; j++) tag('j=' + j, 'idx', tx(j, j) + 0.55, ty(j, j) - 0.55); say('一邊看是 row i、另一邊是 column j', 'i=1 那一列沿著斜邊往上'); },
+    trivals: async () => {
+      say('三角形裡的值', '最上面 ' + S.m[1][n] + '，最底下一排是 0');
+      for (let d = n - 1; d >= 0; d--) { for (let i = 1; i + d <= n; i++) cube(String(S.m[i][i + d]), d === 0 ? GRAY : TEAL, [0.8, 0.55, 0.3], tx(i, i + d), ty(i, i + d), 0.15, 1.0); await beat(tok, 400); }
+      gd.mood('happy');
+    },
+  };
+  await runSeq(tok, seq, ops);
+}]);
+
+// ═════════ eKkXU3uu2zk：程式追蹤（逐句） ═════════
+const MC_CODE = ['p[] = {5,4,6,2,7};  n = 5;', 'm[5][5] = {0};  s[5][5] = {0};', 'for (d = 1; d < n-1; d++)', ' for (i = 1; i < n-d; i++) {', '  j = i + d;  min = INT_MAX;', '  for (k = i; k <= j-1; k++) {', '   q = m[i][k] + m[k+1][j]', '       + p[i-1]*p[k]*p[j];', '   if (q < min) { min = q; s[i][j] = k; }', '  }', '  m[i][j] = min;', ' }'];
+FRAG.push(['dp4bari-code', '程式：d 是對角線、i 是列、j = i + d、k 求 min', async (tok) => {
+  const P = prm(), p = [5, 4, 6, 2, 7], S = mcmSolve(p);
+  const seq = P.seq || ['p', 'ms', 'diag0', [['d', 2]], [['i', 1]], 'kl', [['k', 1, 2]], [['k', 2, 2]], [['kv', 1, 2]], 'min', 'sset'];
   fresh([0, 4.2, 15], [0, 4.0, 0]);
-  const { p, cd, gm, gs, pc } = codeStage();
-  const S = mcmSolve(p);
-  const all = []; for (let dd = 1; dd <= 3; dd++) for (let i = 1; i < 5 - dd; i++) all.push([i, i + dd]);
-  const cells = all.filter(([i, j]) => j - i === d && (!P.i || P.i === i));
-  const first = all.findIndex(([i, j]) => i === cells[0][0] && j === cells[0][1]);
-  for (const [i, j] of all.slice(0, first)) { gm.set(i, j, S.m[i][j], TEAL, 0); gs.set(i, j, S.s[i][j], PURPLE, 0); }
-  const qL = mono(tag('', 'ptr alt', 5.0, 5.4)), mL = mono(tag('', 'ptr', 5.0, 4.8));
-  cd.hl(2); say('d = ' + d, '前面的對角線都已經填好');
-  await beat(tok, 1600);
-  for (const [i, j] of cells) {
-    cd.hl(3); gm.mark(i, j, '#f3d27a');
-    cd.hl(4); txt(mL, 'min = INT_MAX'); txt(qL, '');
-    say('i = ' + i + '，j = ' + j + '：求 m[' + i + '][' + j + ']', 'k 從 ' + i + ' 到 ' + (j - 1));
-    await beat(tok, 1500);
-    let min = Infinity;
-    for (let k = i; k < j; k++) {
-      cd.hl(5);
-      gm.clearArrows(); gm.unglow(); pc.forEach((m) => glow(m, null));
-      gm.arrow(i, k, i, j, TRY); gm.arrow(k + 1, j, i, j, TRY);
-      glow(gm.get(i, k), GOLD); glow(gm.get(k + 1, j), GOLD);
-      [i - 1, k, j].forEach((z) => glow(pc[z], GOLD));
-      cd.hl(6);
-      const q = S.m[i][k] + S.m[k + 1][j] + p[i - 1] * p[k] * p[j];
-      txt(qL, 'q = ' + S.m[i][k] + '+' + S.m[k + 1][j] + '+' + p[i - 1] + '·' + p[k] + '·' + p[j] + ' = ' + q);
-      say('k = ' + k + '：q = ' + q, 'm[' + i + '][' + k + '] + m[' + (k + 1) + '][' + j + '] + p[' + (i - 1) + ']·p[' + k + ']·p[' + j + ']');
-      await beat(tok, 1700);
-      cd.hl(8);
-      if (q < min) { min = q; gs.set(i, j, k, PURPLE); txt(mL, 'min = ' + q); say('q < min：min = ' + q, 's[' + i + '][' + j + '] = ' + k); }
-      else say('q = ' + q + ' ≥ min = ' + min, '不更新');
-      await beat(tok, 1300);
-    }
-    gm.clearArrows(); gm.unglow(); pc.forEach((m) => glow(m, null));
-    cd.hl(10); gm.set(i, j, min, TEAL); gm.mark(i, j);
-    say('m[' + i + '][' + j + '] = ' + min, 's[' + i + '][' + j + '] = ' + S.s[i][j]);
-    await beat(tok, 1600);
+  const gd = guide(-6.6, 1.8, 0.55), sb = slot(5.0, 2.6);
+  let cd = null, gm = null, gs = null, pc = null, pT = [], dTag = null, mL = null, cur = null, mats = [], tmp = [];
+  let D = 0, I = 0, J = 0, Q = {};
+  const hdr = Array.from({ length: 5 }, (_, k) => k);
+  const ensureCode = () => { if (!cd) cd = code(MC_CODE, -2.0, 7.9, 0.41); };
+  const ensureP = (drop) => { if (!pc) pc = p.map((v, k) => cube(v, ORANGE, [0.5, 0.4, 0.4], 3.6 + k * 0.65, 6.9, 0, drop ? 1.2 : 0)); };
+  const ensurePT = () => { if (!pT.length) pT = p.map((v, k) => tag('p[' + k + ']', 'idx', 3.6 + k * 0.65, 6.45)); };
+  const ensureG = () => {
+    if (gm) return;
+    gm = grid({ rows: 5, cols: 5, cw: 0.7, ch: 0.46, x0: -5.0, y0: 2.5, colHdr: hdr, rowHdr: hdr, rowDx: 0.1 });
+    gs = grid({ rows: 5, cols: 5, cw: 0.7, ch: 0.46, x0: 0.2, y0: 2.5, colHdr: hdr, rowHdr: hdr, rowDx: 0.1 });
+    tag('m', 'ptr', -6.3, 3.0); tag('s', 'ptr', -0.9, 3.0);
+    for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) if (j < i && i > 0 && j > 0) { gm.mark(i, j, '#ddd2bf'); gs.mark(i, j, '#ddd2bf'); }
+  };
+  const markZero = () => { for (let k = 0; k < 5; k++) for (const g of [gm, gs]) { g.mark(0, k, '#c9bfae'); g.mark(k, 0, '#c9bfae'); } };
+  const unmarkUpper = () => { for (let i = 1; i < 5; i++) for (let j = i + 1; j < 5; j++) { gm.mark(i, j); gs.mark(i, j); } };
+  const clearQ = () => { Object.values(Q).forEach(kill); Q = {}; };
+  const qTxt = (k, lvl) => {
+    const a = S.m[I][k], b = S.m[k + 1][J], x = p[I - 1] * p[k] * p[J], h = 'k=' + k + ': ';
+    if (lvl === 0) return h + 'm[' + I + '][' + k + ']+m[' + (k + 1) + '][' + J + ']+p' + (I - 1) + '·p' + k + '·p' + J;
+    if (lvl === 1) return h + 'm[' + I + '][' + k + ']+m[' + (k + 1) + '][' + J + ']+' + p[I - 1] + '·' + p[k] + '·' + p[J];
+    if (lvl === 2) return h + a + ' + ' + b + ' + ' + p[I - 1] + '·' + p[k] + '·' + p[J];
+    return h + a + ' + ' + b + ' + ' + x + ' = ' + (a + b + x);
+  };
+  const ops = {
+    // ── 問題（還沒看程式） ──
+    prob: () => {
+      mats = [0, 1, 2, 3].map((k) => cube('A' + (k + 1), k % 2 ? PURPLE : BLUE, [1.4, 0.5, 0.45], -3.3 + k * 2.2, 5.6, 0, 1.2));
+      mats.forEach((m, k) => tag(p[k] + '×' + p[k + 1], 'idx', -3.3 + k * 2.2, 6.2));
+      gd.mood('wow'); say('例子：4 個矩陣要相乘', '5×4、4×6、6×2、2×7');
+    },
+    how: () => { sb('不是乘出答案，是決定「怎麼乘」', 0, 4.4); say('問題不是去乘', '是先決定怎麼加括號，讓乘法最少'); },
+    pair: () => { glow(mats[0], GOLD); glow(mats[1], GOLD); tag('一次只能乘一對', 'note', -2.2, 7.0); say('不能一次全部乘', '一次乘一對：先乘哪一對？'); },
+    inst: () => { mats.forEach((m) => glow(m, null)); prop('monitor', 3.6, 0.2, 0, 1.1, 'p[] = {5,4,6,2,7}'); gd.mood('calm'); say('程式裡直接寫好這組維度', '只解這一個例子'); },
+    input: () => { prop('keyboard', 0.6, 0.2, 1.2, 1.0, '換資料：改值重編譯，或讀輸入'); say('想解別的例子？', '改程式裡的值，或自己加輸入'); },
+    // ── 程式結構 ──
+    p: () => { ensureCode(); cd.hl(0); ensureP(true); gd.mood('wow'); say('維度存在陣列 p', '相鄰共用的維度只存一次'); },
+    pidx: () => { ensurePT(); pc.forEach((m) => glow(m, GOLD)); say('p[0] … p[4] 共 5 個', '4 個矩陣 → 5 個維度'); },
+    ms: () => { ensureCode(); cd.hl(1); if (pc) pc.forEach((m) => glow(m, null)); ensureG(); gd.mood('calm'); say('m、s 開 5×5 的二維陣列', 'm 存成本、s 存切點'); },
+    why5: () => { sb('開 5 → 索引 0…4，A4 用得到 4'); say('為什麼是 5×5？', '開 4 只有 0…3，用不到 4'); },
+    zero: () => { markZero(); sb('第 0 列、第 0 行用不到'); say('第 0 列、第 0 行用不到', '陣列一開始全部設成 0'); },
+    diag0: () => { ensureG(); for (let i = 1; i < 5; i++) if (!gm.get(i, i)) gm.set(i, i, 0, GRAY, 1.2); say('對角線 m[i][i] = 0', '單一矩陣不用乘'); },
+    diag: (dd) => {
+      unmarkUpper(); sb('');
+      const cs = []; for (let i = 1; i + dd < 5; i++) { gm.mark(i, i + dd, '#f3d27a'); gs.mark(i, i + dd, '#f3d27a'); cs.push('(' + i + ',' + (i + dd) + ')'); }
+      say('要填的格子：j − i = ' + dd, cs.join(' '));
+    },
+    dloop: () => { ensureCode(); cd.hl(2); unmarkUpper(); dTag = dTag || tag('d = 1, 2, 3', 'ptr alt', 4.9, 5.95); say('最外層 d：j − i 的差', 'd < n − 1 = 4 → d = 1、2、3'); },
+    jcalc: () => {
+      cd.hl(4);
+      for (let i = 1; i < 5; i++) for (let j = i + 1; j < 5; j++) { const q0 = gm.pos(i, j); tmp.push(tag(i + '+' + (j - i), 'idx', q0.x, q0.y, 0.4)); }
+      say('j = i + d', '例：1 + 2 = 3、2 + 2 = 4、1 + 3 = 4');
+    },
+    iloop: async () => {
+      cd.hl(3); tmp.forEach(kill); tmp = [];
+      sb('i：1 … n − d − 1（越上面越短）');
+      say('中層 i 是列：到 n − d − 1', 'd = 1：3 列，d = 2：2 列，d = 3：1 列');
+      for (let dd = 1; dd <= 3; dd++) { unmarkUpper(); for (let i = 1; i + dd < 5; i++) gm.mark(i, i + dd, '#f3d27a'); await beat(tok, 600); }
+      unmarkUpper();
+    },
+    kloop: () => { cd.hl(6); sb('最內層 k：套公式求 min'); say('最內層迴圈就是 DP 公式', '試每個 k，取最小值'); },
+    // ── 追蹤 ──
+    set: (i, j) => {
+      gm.set(i, j, S.m[i][j], TEAL); gm.mark(i, j); gs.mark(i, j);
+      sb('m[' + i + '][' + j + '] = ' + p[i - 1] + '·' + p[i] + '·' + p[j] + ' = ' + S.m[i][j]);
+      say('m[' + i + '][' + j + '] = ' + p[i - 1] + '·' + p[i] + '·' + p[j] + ' = ' + S.m[i][j], 'A' + i + ' 乘 A' + j + '，直接填值');
+    },
+    pick: (i, j) => { gm.mark(i, j, '#f3d27a'); say('先填 m[' + i + '][' + j + ']', 'A' + i + ' 和 A' + j + ' 兩個矩陣'); },
+    sall: async () => { say('s 表也填上 1、2、3', '兩個矩陣只有一種切法：k = i'); for (let i = 1; i <= 3; i++) { gs.set(i, i + 1, i, PURPLE); gs.mark(i, i + 1); await beat(tok, 400); } },
+    d: (dd) => { ensureCode(); cd.hl(2); D = dd; dTag = dTag || tag('', 'ptr alt', 4.9, 5.95); txt(dTag, 'd = ' + dd); sb(''); gd.mood('wow'); say('d 變成 ' + dd, '下一條對角線'); },
+    i: (ii) => {
+      cd.hl(4); I = ii; J = ii + D; clearQ(); gm.clearArrows(); gm.unglow();
+      gm.mark(I, J, '#f3d27a'); gs.mark(I, J, '#f3d27a');
+      const q0 = gm.pos(I, J); kill(cur); cur = tag('i=' + I + ' j=' + J, 'ptr alt', q0.x, q0.y + 0.42, 0.4);
+      mL = mL || mono(tag('', 'ptr', 4.9, 5.45)); txt(mL, 'min = INT_MAX');
+      say('i = ' + I + '，j = i + d = ' + J, '求 m[' + I + '][' + J + ']');
+    },
+    kl: () => { cd.hl(5); const ks = []; for (let k = I; k < J; k++) ks.push(k); sb('k = ' + ks.join('、')); say('k 從 i 到 j − 1', 'k = ' + ks.join('、')); },
+    two: () => { sb('k 迴圈跑 ' + (J - I) + ' 次'); say('k 迴圈跑 ' + (J - I) + ' 次', '每次用公式算一個 q'); },
+    minrule: () => { cd.hl(10); sb('最小的 q → m[' + I + '][' + J + ']'); say('每次算公式，留下最小的', '最小值放進 m[i][j]'); },
+    k: (k, lvl = 0) => {
+      cd.hl(6); gm.clearArrows(); gm.unglow(); if (pc) pc.forEach((m) => glow(m, null));
+      gm.arrow(I, k, I, J, TRY); gm.arrow(k + 1, J, I, J, TRY);
+      if (gm.get(I, k)) glow(gm.get(I, k), GOLD); if (gm.get(k + 1, J)) glow(gm.get(k + 1, J), GOLD);
+      if (lvl >= 1 && pc) [I - 1, k, J].forEach((z) => glow(pc[z], GOLD));
+      if (!Q[k]) Q[k] = mono(tag('', '', 4.9, 4.9 - (k - I) * 0.55));
+      txt(Q[k], qTxt(k, lvl));
+      say('k = ' + k + '：' + (I === k ? 'A' + I : 'A' + I + '…A' + k) + ' | ' + (k + 1 === J ? 'A' + J : 'A' + (k + 1) + '…A' + J), qTxt(k, lvl).split(': ')[1]);
+    },
+    kp: (k) => ops.k(k, 1),
+    kparen: (...ks) => { const xs = ks.map((k) => 'k=' + k + '：' + splitStr(I, k, J)); sb(xs.join('　')); say(xs.length > 1 ? '兩種括法' : '這代表的括法', xs.join('、')); },
+    kv: (...ks) => {
+      cd.hl(7);
+      for (const k of ks) { if (!Q[k]) Q[k] = mono(tag('', '', 4.9, 4.9 - (k - I) * 0.55)); txt(Q[k], qTxt(k, 3)); }
+      const last = ks[ks.length - 1];
+      say(ks.map((k) => qTxt(k, 3).split('= ').pop()).join('、'), '從表裡查值算出來');
+      return last;
+    },
+    min: async () => {
+      cd.hl(10); gm.clearArrows(); gm.unglow(); if (pc) pc.forEach((m) => glow(m, null));
+      const bk = S.s[I][J];
+      for (let k = I; k < J; k++) { if (!Q[k]) Q[k] = mono(tag(qTxt(k, 3), '', 4.9, 4.9 - (k - I) * 0.55)); setCls(Q[k], k === bk ? 'ptr alt' : ''); }
+      txt(mL, 'min = ' + S.m[I][J]);
+      gm.set(I, J, S.m[I][J], TEAL); gm.mark(I, J);
+      gd.mood('happy'); say('m[' + I + '][' + J + '] = ' + S.m[I][J], '最小的是 k = ' + bk);
+      await gd.hop(tok);
+    },
+    sset: () => { cd.hl(8); gs.set(I, J, S.s[I][J], PURPLE); gs.mark(I, J); say('s[' + I + '][' + J + '] = ' + S.s[I][J], '找最小值時順便記下 k'); },
+    note: (a, b, bt) => { if (bt !== undefined) sb(bt); say(a, b || ''); },
+  };
+  // 開場狀態
+  if (!P.intro) {
+    ensureCode();
+    if (P.full) { ensureP(false); ensurePT(); ensureG(); markZero(); for (let i = 1; i < 5; i++) gm.set(i, i, 0, GRAY, 0); }
+    for (const [i, j] of P.pre || []) { gm.set(i, j, S.m[i][j], TEAL, 0); gs.set(i, j, S.s[i][j], PURPLE, 0); }
+    if (P.d) { D = P.d; dTag = tag('d = ' + D, 'ptr alt', 4.9, 5.95); }
   }
-  cd.hl(-1);
-  await beat(tok, 2000);
+  await runSeq(tok, seq, ops);
 }]);
 
 // ═════════ vLS-zRCHo-Y / wAy6nDMPYAE：BST 與搜尋 ═════════
