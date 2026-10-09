@@ -1041,7 +1041,7 @@
   "label": "交大江蕙如 Lec03 Chapter 1 Introduction (2/2)",
   "points": 87,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "OynWkEj0S-s": {
   "label": "Abdul Bari：2.4.1 Masters Theorem Dividing #1",
@@ -1167,7 +1167,7 @@
   "label": "交大江蕙如 Lec04 Chapter 2 Algorithm Analysis (1/2)",
   "points": 118,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "rvdJDijO2Ro": {
   "label": "MIT 6.006 L10：Open Addressing, Cryptographic Hashing",
@@ -1239,7 +1239,7 @@
   "label": "交大江蕙如 Lec05 Chapter 2 Algorithm Analysis (2/2)",
   "points": 148,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "u7YMFRUFqe0": {
   "label": "Maximum Subarray solution using Divide & Conquer | Kadane",

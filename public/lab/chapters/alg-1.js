@@ -7131,516 +7131,1205 @@ FRAG.push(['algjiang1-two-stable', 'Stable matching 不唯一', async (tok) => {
 
   // ═══ algjiang2.js ═══
   {
-const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, code, anim, line, arrow, ghostBox, GOLD, GREEN, RED, GRAY } = K;
-// ─── OVhJHBYJLSE：交大江蕙如 Lec03 Ch1 Stable Matching 證明；rP2wm4bEfXo：Lec04 Ch2 Algorithm Analysis ───
-const J2 = { man: '#4b9ee2', wom: '#e55a9b', ok: '#2fc092', bad: '#d64545', sand: '#c9b48e', gold: '#c08a1f', purple: '#9b7ef4', orange: '#dd8238' };
-const j2p = (name, color, x, y, drop = 0) => cube(name, color, [1.2, 0.8, 0.8], x, y, 0, drop);
-const j2link = (a, b, color) => line(a.position.x + (a.position.x < b.position.x ? 0.62 : -0.62), a.position.y, b.position.x + (a.position.x < b.position.x ? -0.62 : 0.62), b.position.y, 0, color || '#3a3226');
-const j2bar = (label, color, x, h, w = 1.2) => { const m = cube('', color, [w, Math.max(0.05, h), 1], x, Math.max(0.05, h) / 2); const l = tag(label, 'idx', x, -0.45); return { m, l }; };
-
-// ══════════ Lec03：Stable Matching 證明 ══════════
-FRAG.push(['algjiang2-gs-states', 'Gale-Shapley 回顧：free → engaged → married', async (tok) => {
-  fresh([0, 4.4, 13], [0, 3.6, 0]);
-  const cd = code(['1  所有人 free', '2  while 有 free 男生 m 還沒求過所有人', '3    m 向還沒求過、排最前的 w propose', '4-8  w free → accept；否則比較 m 與 fiancé', '9  output 所有 engaged 配對 = S'], 0, 8.0, 0.48);
-  const m1 = j2p('m1', J2.man, -3.2, 4.4, 4), m2 = j2p('m2', J2.man, -3.2, 2.0, 4);
-  const w1 = j2p('w1', J2.wom, 3.2, 4.4, 4), w2 = j2p('w2', J2.wom, 3.2, 2.0, 4);
-  const st = { m1: tag('free', 'idx', -5.4, 4.4), m2: tag('free', 'idx', -5.4, 2.0), w1: tag('free', 'idx', 5.4, 4.4), w2: tag('free', 'idx', 5.4, 2.0) };
-  tag('m1、m2：w1 > w2', 'idx', -3.2, 0.7); tag('w1：m2 > m1｜w2：m1 > m2', 'idx', 3.2, 0.7);
-  cd.hl(0);
-  say('一開始大家都是 free', '補充小例子：2 男 2 女');
-  await beat(tok, 2200);
-  cd.hl(2); let a = arrow(V3(-2.5, 4.6, 0), V3(2.5, 4.6, 0), 0x2f6fb0);
-  say('m1 向最愛的 w1 propose', 'w1 是 free → 馬上 accept');
-  await beat(tok, 1600);
-  kill(a); let L1 = j2link(m1, w1); txt(st.m1, 'engaged'); txt(st.w1, 'engaged');
-  await beat(tok, 1000);
-  cd.hl(3); a = arrow(V3(-2.5, 2.2, 0), V3(2.5, 4.1, 0), 0x2f6fb0); glow(w1, GOLD);
-  say('m2 也向 w1 propose', 'w1 比較：m2 > 目前的 fiancé m1');
-  await beat(tok, 2400);
-  kill(a); kill(L1); j2link(m2, w1); glow(w1, null); glow(m1, RED);
-  txt(st.m1, 'free'); txt(st.m2, 'engaged');
-  say('w1 換人：dump 掉 m1', '女生一直 engaged，只是對象會換');
-  await beat(tok, 2600);
-  glow(m1, null); cd.hl(2); j2link(m1, w2); txt(st.m1, 'engaged'); txt(st.w2, 'engaged');
-  say('m1 改求下一位 w2 → accept', '男生在 free 與 engaged 之間切換');
-  await beat(tok, 2400);
-  cd.hl(4); for (const k in st) txt(st[k], 'married');
-  [m1, m2, w1, w2].forEach((p) => glow(p, GREEN));
-  say('沒有 free 男生 → 全部 married', 'S = {(m1, w2), (m2, w1)}');
-  await beat(tok, 3000);
-}]);
-
-FRAG.push(['algjiang2-n2-proposals', 'Termination：最多 n² 次 propose', async (tok) => {
-  fresh([0, 9.5, 8.5], [0, 0, 0.3]);
-  const N = 4, X = (j) => -2.4 + j * 1.6, Z = (i) => -2.4 + i * 1.6, cells = [];
-  for (let i = 0; i < N; i++) { tag('m' + (i + 1), 'ptr', -4.3, 0.2, Z(i)); tag('w' + (i + 1), 'ptr alt', X(i), 0.2, -4.1); }
-  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) { const t = cube('', GRAY, [1.3, 0.12, 1.3], X(j), 0.06, Z(i)); cells.push({ i, j, t }); }
-  const cnt = tag('propose 0 次', 'ptr alt', 4.6, 0.4, 0);
-  say('要證兩件事：正確 + 會停', 'correct = perfect + stable；termination');
-  await beat(tok, 2600);
-  say('每個 iteration 一定有一個男生 propose', '同一個男生不會向同一位女生求兩次');
-  const order = [[0, 0], [1, 0], [2, 1], [1, 2], [3, 0], [0, 1]]; let k = 0;
-  for (const [i, j] of order) { cube('', J2.man, [1.0, 0.5, 1.0], X(j), 0.4, Z(i), 3); k++; txt(cnt, 'propose ' + k + ' 次'); await beat(tok, 550); }
-  say('倒過來數：可能的 proposal 有幾個？', '每格 (m, w) 最多用一次');
-  await beat(tok, 2200);
-  for (const c of cells) { if (order.some(([i, j]) => i === c.i && j === c.j)) continue; cube('', J2.orange, [1.0, 0.5, 1.0], X(c.j), 0.4, Z(c.i), 3); k++; txt(cnt, 'propose ' + k + ' 次'); await beat(tok, 220); }
-  say('最差：每個男生都向每個女生求過', 'n × n 格用完 → n = 4 時 ≤ 16 次');
-  await beat(tok, 2600);
-  say('所以最多 n² 次 iteration 一定停', 'Perfect（每人都配到）上次用反證法證過');
-  await beat(tok, 3000);
-}]);
-
-FRAG.push(['algjiang2-not-greedy', 'Gale-Shapley 是 greedy 嗎？', async (tok) => {
-  fresh([0, 4.2, 13], [0, 2.6, 0]);
-  tag('Greedy algorithm', 'ptr', -4, 6.2); tag('Gale-Shapley', 'ptr alt', 3.6, 6.2);
-  line(0, 0, 0, 6.6, 0, '#a99470');
-  say('同學問：GS 很像 greedy？', '男生從最愛開始求，女生只挑更喜歡的');
-  await beat(tok, 2600);
-  const ds = [];
-  for (let k = 0; k < 3; k++) { ds.push(cube('d' + (k + 1), J2.sand, [1.1, 0.8, 1.0], -5.4 + k * 1.6, 3.2, 0, 3)); await beat(tok, 500); }
-  say('Greedy：step by step，每步選當下最好', '');
-  await beat(tok, 2000);
-  ds.forEach((d) => tint(d, J2.ok)); tag('決定後不反悔', 'idx', -3.8, 2.2);
-  say('而且做完決定就不再反悔', '可證明每步都會留在最終 optimal 解裡');
-  await beat(tok, 2800);
-  const m1 = j2p('m1', J2.man, 1.8, 4.2, 3), w1 = j2p('w1', J2.wom, 5.2, 3.2, 3);
-  let L = j2link(m1, w1);
-  say('GS：w1 先 accept m1', '');
-  await beat(tok, 1800);
-  const m2 = j2p('m2', J2.man, 1.8, 2.2, 3);
-  await beat(tok, 700);
-  kill(L); j2link(m2, w1); glow(m1, RED);
-  say('之後遇到更喜歡的 m2 就換人', '<span class="no">之前的決定被 revisit</span>');
-  await beat(tok, 2800);
-  say('有 greedy 本質，但不算 greedy', 'greedy 會在後面章節正式介紹');
-  await beat(tok, 3000);
-}]);
-
-FRAG.push(['algjiang2-contradiction', '反證法：假設相反 → 推出矛盾', async (tok) => {
-  fresh([0, 4.4, 13], [0, 2.4, 0]);
-  const P = ctx.params || {};
-  const xs = [-4.8, -1.6, 1.6, 4.8];
-  const a = cube('假設 ¬P', J2.bad, [2.2, 0.9, 1.1], xs[0], 2.0, 0, 4);
-  say(P.principles ? '一樣用反證法，先假設相反' : '本章的證明招數：反證法', '要證 P：先 suppose 相反的 ¬P');
-  await beat(tok, 2400);
-  const ar1 = arrow(V3(xs[0] + 1.2, 2, 0), V3(xs[1] - 1.2, 2, 0));
-  const b = cube('推演', J2.sand, [2.0, 0.9, 1.1], xs[1], 2.0, 0, 4);
-  say('從假設出發做 deduction', P.principles ? '理由一定要來自 procedure 的某一行' : '每一步都要有根據');
-  await beat(tok, 2400);
-  const ar2 = arrow(V3(xs[1] + 1.1, 2, 0), V3(xs[2] - 1.1, 2, 0));
-  const c = cube('⇄ 矛盾', J2.bad, [2.0, 0.9, 1.1], xs[2], 2.0, 0, 4); glow(c, RED);
-  say('推出矛盾（兩個相反的箭頭）', 'contradiction');
-  await beat(tok, 2400);
-  fly(a, V3(-2, 8, 3));
-  const d = cube('P 成立', J2.ok, [2.0, 0.9, 1.1], xs[3], 2.0, 0, 4); arrow(V3(xs[2] + 1.1, 2, 0), V3(xs[3] - 1.1, 2, 0));
-  say('矛盾來自假設 → 假設錯', '所以 P 成立，得證');
-  await beat(tok, 2600);
-  if (P.principles) {
-    const cd = code(['證演算法正確性：', '1. 理由要咬著 procedure 的 statement', '2. 用上所有條件：定義、procedure 行為'], 0, 6.4, 0.5);
-    cd.hl(1);
-    say('不能用 procedure 以外的理由', '否則證的就不是這個演算法');
-    await beat(tok, 2800);
-    cd.hl(2);
-    say('多半靠定義推出結論', '例：valid partner、best(m) 的定義');
-    await beat(tok, 2800);
-  } else {
-    tag('要證：line 9 輸出的 S 是 stable', 'ptr alt', 0, 4.6);
-    say('證明通常不超過一頁投影片', '接著：假設 S 不 stable');
-    await beat(tok, 3000);
-  }
-}]);
-
-function j2four(drop = 3) {
-  const m = j2p('m', J2.man, -3.2, 5.0, drop), mp = j2p('m′', J2.man, -3.2, 2.8, drop);
-  const w = j2p('w', J2.wom, 3.2, 5.0, drop), wp = j2p('w′', J2.wom, 3.2, 2.8, drop);
-  return { m, mp, w, wp };
+const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, code, anim, line, arrow, ghostBox, step, buddy, prop, bob, travel, remove, lnode, GOLD, GREEN, RED, GRAY } = K;
+// ─── 交大江蕙如 Lec03（OVhJHBYJLSE）Ch1 Stable Matching 證明、Lec04（rP2wm4bEfXo）Ch2 Algorithm Analysis、
+//     Lec05（tTFolqL1TX4）Ch2 (2/2) 漸近性質與 Gale-Shapley 的實作 ───
+// cued scenes：每個 await step(tok) 等老師講到那一句才動（註解是秒數），step 之間只有短短的動作。
+// 人物用小角色（buddy）：藍 = 男生、粉紅 = 女生；肚子上寫他現在的狀態。
+const J2 = { man: '#4b9ee2', wom: '#e55a9b', ok: '#2fc092', bad: '#d64545', sand: '#c9b48e', gold: '#c08a1f', purple: '#9b7ef4', orange: '#dd8238', teal: '#31aab0' };
+const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const pkt = (t, x, y, z = 0) => tag(t, 'pkt', x, y, z);
+const okT = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const noT = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+const cls = (l, c) => { l.element.className = 'lab-label' + (c ? ' ' + c : ''); };
+// a person: kind 'm' (blue) / 'w' (pink) / any color; x, y = where it stands
+function j2who(name, kind, x, y, z = 0, s = 0.85) {
+  const col = kind === 'm' ? J2.man : kind === 'w' ? J2.wom : kind;
+  const b = buddy(name, '', col, x, y, z, s);
+  b.x = x; b.y = y + 0.42 * s; b.z = z; return b;
 }
+// a pairing line between two people (black = matched, red = "like each other more")
+const j2tie = (a, b, color = '#3a3226') => line(a.x + (a.x < b.x ? 0.6 : -0.6), a.y, b.x + (a.x < b.x ? -0.6 : 0.6), b.y, a.z, color);
+// a little "propose" note flies from a to b
+async function j2send(tok, a, b, text = 'propose') {
+  const from = V3(a.x, a.y + 0.8, a.z), to = V3(b.x, b.y + 0.8, b.z);
+  const l = pkt(text + (b.x >= a.x ? ' →' : ' ←'), from.x, from.y, from.z);
+  await travel(tok, l, from, to, 900); remove(l);
+}
+const j2bar = (label, color, x, h, w = 1.2) => { const m = cube('', color, [w, Math.max(0.05, h), 1], x, Math.max(0.05, h) / 2); const l = tag(label, 'idx', x, -0.45); return { m, l }; };
+const j2rm = (...a) => a.forEach((o) => { if (!o) return; if (o.g) kill(o.g); else if (o.isMesh || o.isGroup || o.isLine) kill(o); else remove(o); });
+const J2_GS = ['1  所有人 free', '2  while 有 free 男生 m 還沒求過所有人', '3    m 向還沒求過、排最前的 w propose', '4-8  w free → accept；否則比較 m 與 fiancé', '9  output 所有 engaged 配對 = S'];
+
+// ══════════ Lec03（OVhJHBYJLSE）：Stable Matching 證明 ══════════
+// 0:35 回顧 GS 流程（2 男 2 女是示意例子）
+FRAG.push(['algjiang2-gs-states', 'Gale-Shapley 回顧：free → engaged → married', async (tok) => {
+  fresh([0, 4.6, 13.5], [0, 3.4, 0]);
+  say('先快速回顧上禮拜的 Gale-Shapley', '');
+  await step(tok); // 34.8 three stages
+  const st = [pkt('free 單身', -3.8, 5.7), pkt('engaged 訂婚', 0, 5.7), pkt('married 結婚', 3.8, 5.7)];
+  arrow(V3(-2.7, 5.7, 0), V3(-1.4, 5.7, 0)); arrow(V3(1.4, 5.7, 0), V3(2.7, 5.7, 0));
+  say('每個人會經過三個階段', 'free → engaged → married');
+  await step(tok); // 41.8 everyone starts free
+  const m1 = j2who('m1', 'm', -3.4, 2.6), m2 = j2who('m2', 'm', -3.4, 0.2), w1 = j2who('w1', 'w', 3.4, 2.6), w2 = j2who('w2', 'w', 3.4, 0.2);
+  [m1, m2, w1, w2].forEach((p) => p.set('free'));
+  note('m1、m2：w1 > w2', -5.9, 1.6); note('w1：m2 > m1', 5.9, 2.4); note('w2：m1 > m2', 5.9, 0.0);
+  say('一開始大家都是 free', '小例子：2 男 2 女（示意）');
+  await step(tok); // 49.8 men switch free <-> engaged
+  note('男生：free ⇄ engaged 來回切換', -3.4, 4.4);
+  m1.look(1); m2.look(1);
+  say('男生會在 free 和 engaged 之間切換', '');
+  await step(tok); // 63.8 women: once proposed, engaged
+  note('女生：被求婚後一直 engaged（對象可能換）', 3.0, 4.4);
+  w1.look(-1); w2.look(-1);
+  say('女生被 propose 後就進入 engaged', '之後一直 engaged，只是對象可能換');
+  await step(tok); // 77.8 all married at the end
+  cls(st[2], 'good');
+  say('結果穩定之後，所有人同時變 married', '然後就結束');
+  await step(tok); // 88.8 each iteration
+  const cd = code(J2_GS, 0, 8.7, 0.44);
+  say('每個 iteration：一個男生向一個女生 propose', '女生依喜好決定 accept 或 reject');
+  await step(tok); // 117.8 lines 2-8: the while loop
+  cd.hl(1); m1.glow(GOLD);
+  say('第 2～8 行：大 while loop', '找一個 free、還沒向所有女生求過的男生');
+  await step(tok); // 151.8 the favourite he hasn't proposed to
+  cd.hl(2);
+  say('m1 從還沒求過的女生裡挑最喜歡的', '→ 向 w1 propose');
+  await j2send(tok, m1, w1);
+  await step(tok); // 165.8 she is free -> accept
+  cd.hl(3); const L1 = j2tie(m1, w1); m1.set('engaged'); w1.set('engaged'); m1.mood('happy'); w1.mood('happy'); m1.glow(null);
+  say('w1 是 free → 馬上 accept', '兩人 engaged');
+  await step(tok); // 171.8 m2 proposes to an engaged w1
+  m2.glow(GOLD);
+  await j2send(tok, m2, w1);
+  const q = bub('m2 還是 m1？', 5.6, 3.9); w1.mood('wow');
+  say('m2 也向 w1 propose', 'w1 已經 engaged → 比較 m2 和目前的 fiancé m1');
+  await step(tok); // 179.8 dump the fiance or reject
+  remove(q); kill(L1); j2tie(m2, w1); m2.set('engaged'); m1.set('free'); m1.mood('sad'); m2.mood('happy'); w1.mood('happy'); m2.glow(null);
+  say('w1 比較喜歡 m2 → dump 掉 m1', 'm1 變回 free');
+  await step(tok); // 195.8 until every man is engaged
+  await j2send(tok, m1, w2);
+  j2tie(m1, w2); m1.set('engaged'); w2.set('engaged'); m1.mood('happy'); w2.mood('happy');
+  say('m1 改向下一位 w2 propose → accept', '一直做到沒有 free 的男生');
+  await step(tok); // 206.8 line 9: output S
+  cd.hl(4); [m1, m2, w1, w2].forEach((p) => { p.set('married'); p.glow(GREEN); });
+  okT('S = {(m1, w2), (m2, w1)}', 0, 1.4);
+  say('第 9 行：把 engaged 的配對 output 成 S', '大家都 married');
+}]);
+
+// 4:09 要證兩件事；termination
+FRAG.push(['algjiang2-n2-proposals', '要證兩件事；termination：最多 n² 次 propose', async (tok) => {
+  fresh([0, 7.6, 11], [0, 0.4, 0]);
+  const N = 4, X = (j) => 0.8 + j * 1.3, Z = (i) => -1.6 + i * 1.2, cells = [];
+  say('procedure 寫好之後，要證明什麼？', '');
+  await step(tok); // 251.8 correctness
+  pkt('① Correctness：輸出對不對？', -4.0, 0.3, -2.6);
+  say('第一類：correctness', '輸出要符合 stable matching 的條件');
+  await step(tok); // 271.8 perfect matching
+  note('perfect：每人剛好配到一個', -4.0, 0.3, -1.7);
+  say('條件一：perfect matching', '每個人都配到一個，而且一對一');
+  await step(tok); // 293.8 stable
+  note('stable：沒有一對互相更喜歡', -4.0, 0.3, -0.8);
+  say('條件二：stable', '沒有一對男女喜歡對方勝過自己的配偶');
+  await step(tok); // 317.8 termination
+  pkt('② Termination：會停嗎？幾圈？', -4.0, 0.3, 0.3);
+  say('第二類：procedure 會不會停下來', '還想知道大概要幾次 iteration');
+  await step(tok); // 355.8 the formulation
+  for (let i = 0; i < N; i++) { tag('m' + (i + 1), 'ptr', -0.3, 0.2, Z(i)); tag('w' + (i + 1), 'ptr alt', X(i), 0.2, -2.6); }
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) cells.push(cube('', GRAY, [1.1, 0.1, 1.0], X(j), 0.05, Z(i)));
+  say('Formulation 很乾淨：n 個男生、n 個女生', '每個人都有一份對所有異性的 preference list');
+  await step(tok); // 379.8 last time / today
+  note('上次證完：termination、perfect', -4.0, 0.3, 1.3); note('今天：stability、male-optimal', -4.0, 0.3, 2.1);
+  say('上次已經證完 termination 和 perfection', '今天重點：stability，還有 male-optimal');
+  await step(tok); // 442.8 how many rounds does the while loop run?
+  const cnt = tag('propose 0 次', 'ptr alt', 2.8, 0.4, 3.0);
+  say('第 2～8 行的 while loop 要跑幾次？', '');
+  await step(tok); // 460.8 count the possible proposals instead
+  cells.forEach((c) => tint(c, J2.sand));
+  say('不去數 free man，改數「可能的 proposal」', '每一格 (m, w) = 一次可能的 propose');
+  await step(tok); // 476.8 every iteration = one proposal
+  const order = [[0, 0], [1, 0], [2, 1], [1, 2], [3, 0], [0, 1]]; let k = 0;
+  for (const [i, j] of order) { cube('', J2.man, [0.9, 0.45, 0.8], X(j), 0.35, Z(i), 2); k++; txt(cnt, 'propose ' + k + ' 次'); await beat(tok, 260); }
+  say('每個 iteration 一定有一個男生 propose', '男生不會向同一位女生求兩次 → 每格最多用一次');
+  await step(tok); // 488.8 upper bound n^2
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) { if (order.some(([a, b]) => a === i && b === j)) continue; cube('', J2.orange, [0.9, 0.45, 0.8], X(j), 0.35, Z(i), 2); k++; txt(cnt, 'propose ' + k + ' 次'); await beat(tok, 110); }
+  say('格子只有 n × n 個 → 最多 n² 次', 'n = 4：最多 16 次');
+  await step(tok); // 501.8 worst case
+  noT('最差：每個男生都求過每個女生', 2.8, 0.4, 3.7);
+  say('最差的狀況：所有男生都向所有女生求過', '上限 n² 次 iteration，一定會停');
+  await step(tok); // 523.8 perfect: by contradiction last time
+  okT('perfect：上次用反證法證過 ✓', -4.0, 0.3, 3.0);
+  say('Perfect matching 上次用反證法證過', '');
+}]);
+
+// 9:17 GS 是 greedy 嗎？
+FRAG.push(['algjiang2-not-greedy', 'Gale-Shapley 是 greedy 嗎？', async (tok) => {
+  fresh([0, 4.6, 13.5], [0, 2.8, 0]);
+  line(0, 0, 0, 6.6, -1, '#a99470');
+  const stu = buddy('同學', '?', J2.orange, 0, 0, 2.6, 0.8);
+  say('講證明之前，先回答一個同學的問題', '');
+  await step(tok); // 558.8 a student: GS looks greedy
+  let q = bub('GS 好像 greedy？', 0, 1.8, 2.6);
+  say('同學觀察：GS 跟 greedy 很像', '');
+  await step(tok); // 565.8 men start from the favourite
+  tag('Gale-Shapley', 'ptr alt', 3.6, 6.2);
+  const m = j2who('m1', 'm', 1.8, 3.4), w = j2who('w1（最愛）', 'w', 5.4, 3.4);
+  say('男生從最喜歡的女生開始 propose', '');
+  await j2send(tok, m, w, '第 1 名');
+  await step(tok); // 572.8 women are greedy too
+  w.mood('happy'); note('女生照喜好 accept / reject', 5.4, 2.6);
+  say('女生也照自己的喜好決定', 'accept 或 reject');
+  await step(tok); // 587.8 everyone puts self-interest first
+  remove(q); stu.set('!');
+  okT('大家都先顧自己 → 有 greedy 本質', 3.6, 1.6);
+  say('大家都以自己的利益優先', '從這點看，確實有 greedy 的本質');
+  await step(tok); // 596.8 but not a greedy algorithm
+  stu.mood('wow'); q = bub('但不算 greedy algorithm', 0, 1.8, 2.6);
+  say('但我們不認為它是 greedy algorithm', 'greedy 之後的章節會正式介紹');
+  await step(tok); // 614.8 greedy: step by step, best choice now
+  remove(q); tag('一般的 greedy algorithm', 'ptr', -3.6, 6.2);
+  const ds = [];
+  for (let k = 0; k < 3; k++) { ds.push(cube('第 ' + (k + 1) + ' 步', J2.sand, [1.3, 0.8, 1], -5.2 + k * 1.6, 3.4, 0, 3)); await beat(tok, 300); }
+  say('Greedy：step by step 做決定', '每一步都挑「當下最好」的選擇');
+  await step(tok); // 634.8 never takes a decision back
+  ds.forEach((d, k) => { tint(d, J2.ok); prop('lock', -5.2 + k * 1.6, 3.85, 0, 0.6); });
+  say('另一個大特性：做完決定就不再反悔', '');
+  await step(tok); // 645.8 provably part of the final optimum
+  note('可證明：每一步都會留在最終 optimal 解裡', -3.6, 2.4);
+  say('因為能證明：每一步的決定一定在最終 optimal 解裡', '所以做完就不用再管');
+  await step(tok); // 678.8 no revisiting
+  okT('不 revisit 前面的決定', -3.6, 1.6);
+  say('也不會 revisit 前面做過的決定', '');
+  await step(tok); // 686.8 GS: she accepts now...
+  let L = j2tie(m, w); m.set('engaged'); w.set('engaged');
+  say('GS：女生現在 accept 這個 proposal', '但不表示會一路到底');
+  await step(tok); // 705.8 ...and switches when someone better proposes
+  const m2 = j2who('m2', 'm', 1.8, 1.0);
+  await j2send(tok, m2, w);
+  kill(L); L = j2tie(m2, w); m2.set('engaged'); m.set('free'); m.mood('sad');
+  noT('決定被反悔了', 3.6, 5.3);
+  say('之後有更喜歡的男生 propose，她就換人', '前面的決定可以反悔');
+  await step(tok); // 710.8 greedy nature, not greedy
+  stu.mood('happy'); stu.set('懂');
+  bub('有 greedy 本質，但不是 greedy algorithm', 0, 1.8, 2.6);
+  say('結論：GS 有 greedy 的本質', '但不符合 greedy algorithm 的特性');
+}]);
+
+// 12:27 反證法的步驟
+FRAG.push(['algjiang2-contradiction', '反證法：假設相反 → 推出矛盾', async (tok) => {
+  fresh([0, 4.4, 13], [0, 2.8, 0]);
+  const xs = [-4.8, -1.6, 1.6, 4.8];
+  say('這個單元為什麼證這麼多？', '');
+  await step(tok); // 746.8 lots of proofs this semester
+  const fs = [-1.6, 0, 1.6].map((x) => { const f = prop('file', x, 5.2, 0, 0.9); bob(f, 0.05); return f; });
+  pkt('這學期：每個演算法都伴隨證明', 0, 7.0);
+  say('這學期幾乎每個演算法都會伴隨大量證明', '從現在開始熟悉它，不要怕');
+  await step(tok); // 762.8 at most one slide
+  okT('證明通常不超過一頁投影片', 3.8, 5.6);
+  say('證明通常不長：不超過一頁投影片', '');
+  await step(tok); // 778.8 this chapter: proof by contradiction
+  note('本章招數：反證法，反覆一直用', -3.8, 5.6);
+  say('本章用的招數很單純：反證法', '一直重複用它');
+  await step(tok); // 797.8 suppose the opposite
+  const a = cube('假設 ¬P', J2.bad, [2.2, 0.9, 1.1], xs[0], 2.0, 0, 3);
+  say('第一步：先 suppose 跟期待結果相反的設定', '要證 P → 先假設「不是 P」');
+  await step(tok); // 804.8 deduce from it
+  arrow(V3(xs[0] + 1.2, 2, 0), V3(xs[1] - 1.1, 2, 0));
+  cube('推演', J2.sand, [2.0, 0.9, 1.1], xs[1], 2.0, 0, 3);
+  say('根據這個設定做 deduction（推演）', '');
+  await step(tok); // 813.8 reach a contradiction
+  arrow(V3(xs[1] + 1.1, 2, 0), V3(xs[2] - 1.1, 2, 0));
+  const c = cube('⇄ 矛盾', J2.bad, [2.0, 0.9, 1.1], xs[2], 2.0, 0, 3); glow(c, RED);
+  say('推演之後得到矛盾的結果', 'contradiction');
+  await step(tok); // 820.8 the assumption caused it -> it is wrong
+  fly(a, V3(-2, 8, 3));
+  noT('矛盾來自一開始的假設 → 假設錯', -3.2, 0.6);
+  say('矛盾的來源就是一開始的設定', '所以這個設定一定是錯的');
+  await step(tok); // 834.8 flip it back -> what we wanted
+  arrow(V3(xs[2] + 1.1, 2, 0), V3(xs[3] - 1.1, 2, 0));
+  cube('P 成立', J2.ok, [2.0, 0.9, 1.1], xs[3], 2.0, 0, 3);
+  say('把設定反過來 → 得到我們要的結果', '得證');
+  await step(tok); // 842.8 here: line 9's S is stable
+  fs.forEach((f) => kill(f));
+  pkt('要證：line 9 輸出的 S 是 stable matching', 0, 4.6);
+  say('這裡要證：第 9 行 output 的 S', '是一個 stable matching');
+}]);
+
+// 14:32 Stability 證明（1）
 FRAG.push(['algjiang2-unstable-pair', 'Stability 證明：假設 S 裡有 unstable pair', async (tok) => {
-  fresh([0, 4.4, 13], [0, 3.6, 0]);
-  say('反證：假設 GS 輸出的 S 不 stable', 'S = line 9 輸出的 engaged 配對');
-  const P = j2four(4);
-  await beat(tok, 2400);
-  j2link(P.m, P.w); j2link(P.mp, P.wp);
-  say('黑線：S 的配對結果', 'm–w、m′–w′');
-  await beat(tok, 2200);
-  line(-2.6, 4.9, 2.6, 2.9, 0, '#c0392b'); glow(P.m, RED); glow(P.wp, RED);
-  say('一定找得到一對 m、w′ 互相更喜歡', 'm：w′ > w；w′：m > m′');
-  await beat(tok, 3000);
-  glow(P.m, null); glow(P.wp, null);
-  const xs = [-3.0, -1.0, 1.0, 3.0], names = ['x', 'y', 'z', 'w'], cs = [];
-  tag('m 的 propose 順序', 'idx', -5.2, 7.4);
-  for (let k = 0; k < 4; k++) cs.push(cube(names[k], k === 3 ? J2.wom : GRAY, [1.0, 0.6, 0.6], xs[k], 7.4, 0));
-  const cur = tag('▼', 'ptr', xs[0], 8.2);
-  say('m 由愛到不愛依序 propose', '被拒絕就換下一位');
-  for (let k = 0; k < 3; k++) { cur.position.x = xs[k]; await beat(tok, 700); glow(cs[k], RED); await beat(tok, 300); }
-  cur.position.x = xs[3]; glow(cs[3], GREEN);
-  await beat(tok, 900);
-  say('m 最後停在最後 propose 的 w', '問題：m 之前有沒有向 w′ propose 過？');
-  await beat(tok, 3000);
+  fresh([0, 4.8, 14], [0, 3.6, 0]);
+  say('Stability 的證明（反證法）', '');
+  await step(tok); // 872.8 suppose S is not stable
+  const t1 = pkt('反證：假設 S 不是 stable matching', 0, 7.4);
+  say('假設最後吐出來的 S 不是 stable matching', '');
+  await step(tok); // 905.8 then some pair likes each other more
+  const t2 = note('那 S 裡至少找得到一對互相更喜歡的男女（挑一對來討論）', 0, 6.8);
+  say('S 裡至少找得到一對男女', '喜歡對方勝過自己的配偶；可能很多對，挑一對');
+  await step(tok); // 953.8 a small picture
+  const m = j2who('m', 'm', -3.2, 3.8), mp = j2who('m′', 'm', -3.2, 1.4), w = j2who('w', 'w', 3.2, 3.8), wp = j2who('w′', 'w', 3.2, 1.4);
+  say('畫個小圖比較好看', '');
+  await step(tok); // 964.8 black line: m with w
+  j2tie(m, w); tag('黑線 = S 的配對', 'idx', 0, 4.6);
+  say('黑線是 S 的結果：m 配給 w', '');
+  await step(tok); // 979.8 m' with w'
+  j2tie(mp, wp);
+  say('m′ 配給 w′', '');
+  await step(tok); // 996.8 red line: m and w' are unstable
+  line(m.x + 0.6, m.y, wp.x - 0.6, wp.y, 0, '#c0392b'); m.mood('wow'); wp.mood('wow'); m.look(1); wp.look(-1);
+  noT('紅線：m、w′ 互相更喜歡', 0, 2.2);
+  say('m 和 w′ 是 unstable pair（紅線）', 'm 喜歡 w′ 勝過 w；w′ 喜歡 m 勝過 m′');
+  await step(tok); // 1035.8 S came from one run, m ended with w
+  m.glow(GOLD); w.glow(GOLD);
+  say('S 一定是某一次執行的結果', '這次執行裡 m 最後配給 w');
+  await step(tok); // 1048.8 m proposes from his favourite down
+  remove(t1); remove(t2);
+  tag('m 的 propose 順序（由愛到不愛）', 'idx', -5.4, 7.0);
+  const xs = [-2.4, -0.8, 0.8, 2.4], cs = ['x', 'y', 'z', 'w'].map((s, k) => cube(s, k === 3 ? J2.wom : GRAY, [1.0, 0.6, 0.6], xs[k], 6.4, 0));
+  const cur = tag('▼', 'ptr', xs[0], 7.1);
+  say('男生由最喜歡的開始 propose', '被 reject 就換下一個');
+  for (let k = 0; k < 3; k++) { cur.position.x = xs[k]; await beat(tok, 350); glow(cs[k], RED); }
+  await step(tok); // 1060.8 he ends with the last one he proposed to
+  cur.position.x = xs[3]; glow(cs[3], GREEN); m.glow(null); w.glow(null);
+  say('最後停下來的對象 = 他最後 propose 的人', '所以 w 是 m 最後 propose 的對象');
+  await step(tok); // 1112.8 did he propose to w' before?
+  const q = bub('m 之前有向 w′ propose 過嗎？', 0, 5.4);
+  say('問題：在這之前 m 有沒有向 w′ propose 過？', '現在還不能確定');
+  await step(tok); // 1155.8 not sure -> split into cases
+  remove(q);
+  pkt('Case 1：沒求過 w′', -2.6, 5.4); pkt('Case 2：求過 w′', 2.6, 5.4);
+  say('不確定，就分 case 討論', '');
 }]);
 
+// 19:30 Stability 證明（2）
 FRAG.push(['algjiang2-stable-cases', 'Stability 證明：兩種 case 都矛盾', async (tok) => {
-  fresh([0, 4.4, 13], [0, 3.4, 0]);
-  const P = j2four(0);
-  j2link(P.m, P.w); j2link(P.mp, P.wp); line(-2.6, 4.9, 2.6, 2.9, 0, '#c0392b');
-  say('分 case：m 有沒有向 w′ propose 過？', 'm、w′ 互相更喜歡對方（假設）');
-  await beat(tok, 2600);
-  const l1 = cube('w', J2.wom, [0.9, 0.6, 0.6], -4.2, 7.4, 0, 2), l2 = cube('w′', GRAY, [0.9, 0.6, 0.6], -2.6, 7.4, 0, 2), lt = tag('m 的 list：w 排在 w′ 前', 'idx', -3.4, 6.6);
-  say('Case 1：沒求過 w′ 就停在 w', 'm 由愛到不愛 → m 喜歡 w 勝過 w′');
-  await beat(tok, 2600);
+  fresh([0, 4.8, 14.5], [0, 3.4, 0]);
+  const m = j2who('m', 'm', -3.2, 4.4), mp = j2who('m′', 'm', -3.2, 2.2), w = j2who('w', 'w', 3.2, 4.4), wp = j2who('w′', 'w', 3.2, 2.2);
+  j2tie(m, w); j2tie(mp, wp); line(m.x + 0.6, m.y, wp.x - 0.6, wp.y, 0, '#c0392b');
+  say('m、w′ 互相更喜歡（假設）', '分 case 討論');
+  await step(tok); // 1169.8 case 1
+  const title = pkt('Case 1：m 沒向 w′ propose 過', 0, 7.6);
+  say('Case 1：m 從沒向 w′ propose 過', '就停在 w 身上');
+  await step(tok); // 1188.8 then w comes before w' in his list
+  const l1 = cube('w', J2.wom, [0.9, 0.6, 0.6], -5.0, 6.6, 0), l2 = cube('w′', GRAY, [0.9, 0.6, 0.6], -3.6, 6.6, 0);
+  const lt = tag('m 的 list：w 排在 w′ 前面', 'idx', -4.3, 5.9);
+  say('由愛到不愛 propose，沒輪到 w′ 就停了', '→ m 的 list 裡 w 排在 w′ 前面');
+  await step(tok); // 1196.8 he prefers w -> contradiction
   glow(l1, RED); glow(l2, RED);
-  say('跟「m 喜歡 w′」相反 ⇄ 矛盾', '');
-  await beat(tok, 2000);
-  [l1, l2, lt].forEach(kill);
-  const ar = arrow(V3(-2.5, 4.6, 0), V3(2.5, 3.1, 0), 0xc0392b);
-  say('Case 2：求過 w′，但被 w′ 拒絕', '女生拒絕一定是因為更喜歡的 m″');
-  await beat(tok, 2400);
-  kill(ar);
-  const mpp = j2p('m″', J2.purple, -3.2, 0.8, 4); const Lpp = line(-2.6, 0.9, 2.6, 2.7, 0, '#c08a1f');
-  await beat(tok, 1200);
-  glow(P.mp, GOLD);
-  say('若 m″ 就是 m′：w′ 喜歡 m′ 勝過 m', '⇄ 假設 w′ 喜歡 m 勝過 m′');
-  await beat(tok, 2800);
-  glow(P.mp, null);
-  const lad = [tag('w′ 的 list', 'idx', 5.6, 6.6), tag('m′', 'ptr alt', 5.6, 5.9), tag('m″', 'ptr', 5.6, 5.2), tag('m', 'ptr', 5.6, 4.5)];
-  say('若 m″ 是別人：w′ 最後配到 m′', '女生只會換更喜歡的 → m′ > m″ > m');
-  await beat(tok, 3000);
-  glow(P.wp, RED);
-  say('又得到 w′ 喜歡 m′ 勝過 m ⇄ 矛盾', '');
-  await beat(tok, 2200);
-  [mpp, Lpp, ...lad].forEach(kill); glow(P.wp, null);
-  [P.m, P.mp, P.w, P.wp].forEach((p) => glow(p, GREEN));
-  say('兩種 case 都矛盾 → S 是 stable', '≤ n² 次一定停 + 輸出 stable matching');
-  await beat(tok, 3000);
+  const c1 = noT('m 喜歡 w 勝過 w′ ⇄ 假設', 0, 6.6);
+  say('表示 m 喜歡 w 勝過 w′', '跟一開始的假設相反 → 矛盾');
+  await step(tok); // 1208.8 case 2
+  j2rm(l1, l2, lt, c1); txt(title, 'Case 2：m 曾向 w′ propose 過');
+  say('Case 2：m 之前向 w′ propose 過', '');
+  await step(tok); // 1225.8 rejected, then ended with w
+  await j2send(tok, m, wp);
+  const rj = noT('被 w′ reject ✗', 0, 3.0);
+  say('但被拒絕了，最後才配到 w', '');
+  await step(tok); // 1246.8 a woman rejects for a reason
+  const why = bub('女生拒絕一定有原因', 5.6, 3.4);
+  say('女生拒絕一定是有原因的', '');
+  await step(tok); // 1301.8 she preferred another man
+  txt(why, '因為有更喜歡的男生');
+  say('一定是因為她更喜歡另一個男生', '她的 fiancé，或當時另一個 propose 的人');
+  await step(tok); // 1332.8 call him m''
+  remove(rj);
+  const mpp = j2who('m″', J2.purple, -3.2, 0.0);
+  const Lpp = line(mpp.x + 0.6, mpp.y, wp.x - 0.6, wp.y, 0, '#c08a1f');
+  say('那個男生姑且叫他 m″', '');
+  await step(tok); // 1340.8 possibility 1: m'' is m'
+  remove(why); mp.glow(GOLD);
+  const p1 = pkt('可能 ①：m″ 就是 m′', 0, 6.6);
+  say('可能 ①：m″ 剛好就是 w′ 最後的配偶 m′', '');
+  await step(tok); // 1361.8 then w' preferred m' -> contradiction
+  const c2 = noT('w′ 喜歡 m′ 勝過 m ⇄ 假設', 0, 5.9);
+  say('那 w′ 當下比較喜歡 m′', '跟假設「w′ 喜歡 m 勝過 m′」相反');
+  await step(tok); // 1385.8 how to write it: two opposite arrows
+  note('⇄（兩個相反箭頭）= contradiction', 4.6, 6.6);
+  say('矛盾怎麼寫？畫兩個相反的箭頭', 'contradiction');
+  await step(tok); // 1392.8 possibility 2: someone else
+  j2rm(c2); mp.glow(null); txt(p1, '可能 ②：m″ 是別人');
+  say('可能 ②：m″ 是另外某個人', '不是 m′');
+  await step(tok); // 1405.8 w' ends with m'
+  const lad = [tag('w′ 的喜好', 'idx', 6.2, 4.8), tag('m′', 'ptr alt', 6.2, 4.1)];
+  wp.glow(GOLD);
+  say('w′ 最後配到的是 m′', '');
+  await step(tok); // 1413.8 women only switch up -> m' > m''
+  lad.push(tag('m″', 'ptr', 6.2, 3.4)); arrow(V3(6.8, 3.5, 0), V3(6.8, 4.0, 0), 0x2f6fb0);
+  say('女生只會換成更喜歡的人', '所以 w′ 喜歡 m′ 勝過 m″');
+  await step(tok); // 1444.8 and m'' > m -> m' > m: contradiction
+  lad.push(tag('m', 'ptr', 6.2, 2.7)); arrow(V3(6.8, 2.8, 0), V3(6.8, 3.3, 0), 0x2f6fb0);
+  noT('w′ 喜歡 m′ 勝過 m ⇄ 假設', 0, 5.9); wp.glow(RED);
+  say('又因為拒絕 m 是為了 m″：m″ 勝過 m', '→ w′ 喜歡 m′ 勝過 m，又矛盾');
+  await step(tok); // 1535.8 so S is stable
+  j2rm(mpp, Lpp); [m, mp, w, wp].forEach((p) => p.glow(GREEN)); txt(title, '兩種 case 都矛盾');
+  okT('S 是 stable matching ✓', 0, 1.0);
+  say('兩種 case 都矛盾 → S 是 stable', 'GS 吐出的答案符合 stable matching 的條件');
+  await step(tok); // 1550.8 everyone stays put
+  [m, mp, w, wp].forEach((p) => p.mood('happy'));
+  bub('心裡有更喜歡的，但對方沒有更喜歡自己 → 不會換', 0, 0.2, 1.4);
+  say('大家都安於現狀', '對方並沒有比較喜歡自己，所以不會改變');
 }]);
 
+// 26:24 valid partner、best(m)
 FRAG.push(['algjiang2-valid-best', 'Valid partner、best(m) 與 male-optimal', async (tok) => {
-  fresh([0, 4.4, 13], [0, 2.6, 0]);
-  say('Stable matching 不是唯一解', '同樣的 preference list 可能有好幾種 stable 結果');
-  await beat(tok, 2600);
-  tag('m 的 preference list（左 = 最愛）', 'ptr', 0, 4.6);
-  const ws = [];
-  for (let k = 0; k < 6; k++) { ws.push(cube('w' + (k + 1), J2.wom, [1.2, 0.8, 0.8], -5 + k * 2, 2.6, 0, 3)); await beat(tok, 250); }
-  say('m 的女生由最愛排到最不愛', '');
-  await beat(tok, 1600);
-  [0, 1, 5].forEach((k) => tint(ws[k], GRAY)); [2, 3, 4].forEach((k) => tint(ws[k], J2.ok));
-  const vz = ghostBox('#2fc092', 6.0, 1.4, 1.2); vz.position.set(1, 2.6, 0); tag('valid partners', 'idx', 1, 1.6);
-  say('valid partner：有 stable 解能配在一起', '前幾名可能永遠追不到');
-  await beat(tok, 3000);
-  glow(ws[2], GOLD); tag('best(m)', 'ptr alt', ws[2].position.x, 3.6);
-  say('valid 裡排最前面的 = best(m)', '');
-  await beat(tok, 2200);
-  say('S*：每個男生都配到自己的 best(m)', 'GS 的輸出就是 S* → male-optimal');
-  await beat(tok, 2800);
-  say('best(m) 唯一 → 誰執行結果都一樣', '對女生則是最差的（female-pessimal）');
-  await beat(tok, 3000);
-  say('男女互換、改由女生 propose', '結果就變成對女生 optimal');
-  await beat(tok, 2600);
+  fresh([0, 4.6, 14], [0, 3.0, 0]);
+  say('目前證到哪裡？', '');
+  await step(tok); // 1586.8 stops within n^2
+  okT('≤ n² 次 iteration 一定停 ✓', -3.4, 6.8);
+  say('GS 最多 n² 次 iteration 一定會停', '');
+  await step(tok); // 1590.8 output is stable
+  okT('輸出一定是 stable matching ✓', 3.4, 6.8);
+  say('吐出來的結果一定是 stable matching', '');
+  await step(tok); // 1604.8 is it unique? no
+  const q = bub('stable matching 只有一個嗎？', 0, 5.8);
+  say('Stable matching 是唯一解嗎？', '不是，可能有好幾種');
+  await step(tok); // 1615.8 GS gives one of them
+  remove(q);
+  const Ss = ['S₁', 'S₂', 'S₃'].map((s, k) => cube(s, J2.sand, [1.6, 0.8, 1], -3 + k * 3, 4.6, 0, 3));
+  glow(Ss[0], GOLD); tag('GS 吐出其中一個', 'ptr alt', -3, 5.6);
+  say('GS 只是吐出其中某一種', '');
+  await step(tok); // 1636.8 male-optimal, female-pessimal
+  note('對男生最好（male-optimal）／對女生最悲觀', 0, 3.4);
+  say('它是 male-optimal 的結果', '對男生最好、對女生最悲觀');
+  await step(tok); // 1668.8 S*: each man with his best possible
+  pkt('S*：每個男生都配到 best possible 的對象', 0, 2.4);
+  say('S*：每個男生都跟他 best possible 的對象配在一起', '先把「best possible」的定義弄清楚');
+  await step(tok); // 1721.8 valid partner
+  fresh([0, 4.2, 13.5], [0, 2.4, 0]);
+  const m = j2who('m', 'm', -5.6, 1.2, 0, 0.8);
+  tag('m 的 preference list（左 = 最愛）', 'ptr', 1, 4.6);
+  const ws = []; for (let k = 0; k < 6; k++) ws.push(j2who('w' + (k + 1), 'w', -3.4 + k * 1.9, 1.2, 0, 0.75));
+  const sp = note('有某個 stable matching 把 m、w4 配在一起 → w4 是 valid partner', 1, 3.6);
+  ws[3].glow(GREEN);
+  say('Valid partner：只要有某個 stable 解', '能把這對男女配在一起，她就是他的 valid partner');
+  await step(tok); // 1771.8 maybe all of them are valid
+  remove(sp); ws.forEach((p) => p.glow(GREEN));
+  say('valid partner 可能不只一個', '最好的狀況：所有女生都是 valid');
+  await step(tok); // 1789.8 usually the top few are out of reach
+  [0, 1, 5].forEach((k) => { ws[k].glow(null); ws[k].mood('calm'); tint(ws[k].body, GRAY); });
+  const vz = ghostBox('#2fc092', 5.6, 1.6, 1.2); vz.position.set(ws[3].x, 2.0, 0); tag('valid partners', 'idx', ws[3].x, 0.6);
+  say('但通常前幾名是永遠追不到的', '只有一部分女生是 valid');
+  await step(tok); // 1814.8 best(m)
+  ws[2].glow(GOLD); tag('best(m)', 'ptr alt', ws[2].x, 3.0);
+  say('所有 valid partner 中排名最前面的', '叫 best valid partner，記作 best(m)');
+  await step(tok); // 1827.8 GS gives every man his best
+  j2tie(m, ws[2]); m.set('w3'); m.mood('happy'); await m.hop(tok);
+  say('GS 的好處：每個男生都配到 best(m)', '所以叫 male-optimal');
+  await step(tok); // 1889.8 best is unique -> same result for everyone
+  note('best(m) 只有一個 → 誰執行結果都一樣', 1, 5.4);
+  say('每個男生的 best(m) 是 unique 的', '不管誰來執行 GS，都得到相同的結果');
+  await step(tok); // 1928.8 whoever writes it
+  ['你寫', '同學寫', '高手寫'].forEach((s, k) => { const f = prop('file', -5.6 + k * 1.3, 4.6, -0.6, 0.7, s); bob(f, 0.04); });
+  say('不管是誰寫程式，結果都一樣', '實作演算法時最期待這種好事');
+  await step(tok); // 1944.8 next: the hardest proof
+  bub('接下來：這學期最需要轉彎的證明', 1, 6.4);
+  say('接下來要證它', '這學期最難（但其實沒那麼難）的證明');
+  await step(tok); // 1977.8 an extreme example
+  fresh([0, 4.2, 13], [0, 2.4, 0]);
+  const a1 = j2who('m1', 'm', -2.6, 3.0), a2 = j2who('m2', 'm', -2.6, 0.6), b1 = j2who('w1', 'w', 2.6, 3.0), b2 = j2who('w2', 'w', 2.6, 0.6);
+  j2tie(a1, b1); j2tie(a2, b2);
+  a1.set('第 1 名'); a2.set('第 1 名'); b1.set('最後一名'); b2.set('最後一名');
+  a1.mood('happy'); a2.mood('happy'); b1.mood('sad'); b2.mood('sad');
+  okT('還是 stable', 0, 5.2);
+  say('特例：男生都配到最喜歡的', '女生都配到最不喜歡的，但它還是 stable');
+  await step(tok); // 2009.8 she likes someone else, who doesn't like her back
+  note('女生有更喜歡的人，但那人沒有更喜歡她 → 不會劈腿', 0, 4.4);
+  say('女生其實有更喜歡的對象', '奈何對方沒那麼喜歡自己，所以不會換');
+  await step(tok); // 2036.8 swap the roles
+  bub('男女互換：改由女生 propose → 對女生 optimal', 0, 6.2);
+  b1.mood('happy'); b2.mood('happy');
+  say('男女互換，改由女生 propose', '結果就變成對女生 optimal');
 }]);
 
+// 34:13 證明演算法正確性的原則
+FRAG.push(['algjiang2-proof-rules', '證明演算法正確性的兩個原則', async (tok) => {
+  fresh([0, 4.4, 13], [0, 3.0, 0]);
+  say('怎麼證 male-optimal？', '');
+  await step(tok); // 2053 again by contradiction, last proof here
+  pkt('一樣用反證法（本章最後一個證明）', 0, 7.0);
+  say('一樣用反證法', '這是本章最後一個證明');
+  await step(tok); // 2060.8 induction later
+  note('之後章節：還會用數學歸納法', 0, 6.3);
+  say('後面章節會多看到數學歸納法', '');
+  await step(tok); // 2082.8 show S equals S*
+  const s = cube('S（GS 的輸出）', J2.sand, [3.0, 0.9, 1.1], -3.0, 4.6, 0, 3), ss = cube('S*', J2.gold, [2.0, 0.9, 1.1], 3.0, 4.6, 0, 3);
+  tag('=', 'ptr alt', 0, 4.6);
+  say('要證：GS 吐出來的 S 就是 S*', '');
+  await step(tok); // 2116.8 every man gets best(m)
+  note('S*：每個 m 都配到 best(m)', 3.0, 3.6);
+  say('也就是每個男生 m 都配到 best(m)', '反證：先 suppose 相反的事情');
+  await step(tok); // 2156.8 a few things to keep in mind
+  const t = buddy('證明時', '!', J2.orange, -5.4, 0, 1.6, 0.8);
+  say('證明之前，先講清楚幾件事', '之後的證明也要一直記得');
+  await step(tok); // 2168.8 reasons must come from the procedure
+  const f = prop('file', -2.6, 0.4, 1.2, 1.1, 'procedure 的某一行'); bob(f, 0.05);
+  arrow(V3(-1.7, 1.2, 1.2), V3(0.8, 1.2, 1.2), 0x0f5a3a);
+  okT('① 理由一定來自 procedure 的 statement', 3.4, 1.2, 1.2);
+  say('證的是演算法的正確性', '所有理由都要根據 procedure 的某個 statement');
+  await step(tok); // 2185.8 not some other reasons
+  noT('用 procedure 以外的理由 → 證到別的事情', 3.4, 0.4, 1.2); t.mood('wow');
+  say('不能用其他亂七八糟的理由', '那就不是在證這個 algorithm');
+  await step(tok); // 2208.8 use every condition you have
+  okT('② 盡量用上所有可用的條件', 3.4, 2.2, 1.2); t.mood('happy');
+  say('第二：想辦法用上所有可用的條件', '');
+  await step(tok); // 2215.8 usually definitions and the procedure's behaviour
+  note('通常靠：定義（valid、best(m)）＋ procedure 的行為', 0, 3.0, 1.2);
+  say('通常根據定義就能推得一些事', '或根據 procedure 的行為得到結果');
+}]);
+
+// 37:22 Male-optimal 證明（1）
 FRAG.push(['algjiang2-mopt-first-reject', 'Male-optimal 證明（1）：第一次被 valid partner 拒絕', async (tok) => {
-  fresh([0, 4.4, 13], [0, 3.4, 0]);
-  say('反證：某次執行 E 有男生沒配到 best', 'suppose 與要證的結果相反');
-  await beat(tok, 2400);
-  tag('執行 E 的 iterations', 'idx', -5.6, 7.9);
-  const its = [];
-  for (let k = 0; k < 8; k++) its.push(cube('', J2.sand, [0.9, 0.5, 0.6], -5.6 + k * 1.6, 7.2, 0));
-  say('他一定曾被某個 valid partner 拒絕', '否則由愛到不愛求，一定配到 best');
-  await beat(tok, 1400);
-  [3, 5, 6].forEach((k) => tint(its[k], J2.bad));
-  await beat(tok, 1600);
-  glow(its[3], GOLD); tag('第一次', 'ptr alt', its[3].position.x, 8.0);
-  say('只挑整個 E 中第一次 valid 拒絕', '那次的男生叫 m、女生叫 w');
-  await beat(tok, 2800);
-  const m = j2p('m', J2.man, -3.2, 4.6, 3), w = j2p('w', J2.wom, 3.2, 4.6, 3);
-  const ar = arrow(V3(-2.5, 4.6, 0), V3(2.5, 4.6, 0), 0xc0392b);
-  await beat(tok, 900);
-  tag('w = best(m)', 'ptr alt', 3.2, 5.6);
-  say('第一次被 valid 拒絕 → w = best(m)', 'best(m) 是 valid 裡排最前面的');
-  await beat(tok, 2600);
+  fresh([0, 4.6, 14], [0, 3.4, 0]);
+  say('反證：假設結果不是 male-optimal', '');
+  await step(tok); // 2246.8 some run E where a man misses his best
+  tag('執行 E 的 iterations', 'idx', -5.6, 7.6);
+  const its = []; for (let k = 0; k < 8; k++) its.push(cube('', J2.sand, [0.8, 0.5, 0.6], -5.6 + k * 1.1, 6.9, 0));
+  noT('E 裡有個男生沒配到 best(m)', 3.8, 7.6);
+  say('假設有一次執行 E（execution）', '有一個男生沒跟他的 best valid partner 配在一起');
+  await step(tok); // 2311.8 he must have been rejected by a valid partner
+  for (const k of [3, 5, 6]) { tint(its[k], J2.bad); await beat(tok, 300); }
+  say('那他一定被某個 valid partner 拒絕過', '紅色 = 被 valid partner 拒絕');
+  await step(tok); // 2325.8 otherwise he'd reach best(m)
+  note('沒被拒絕 → 由愛到不愛求，一定配到 best(m)', 0, 5.9);
+  say('否則他從最喜歡的往下求', '一定會配到 best(m)');
+  await step(tok); // 2383.8 pick the first such rejection in all of E
+  glow(its[3], GOLD); tag('第一次', 'ptr alt', its[3].position.x, 7.7);
+  say('可能很多次、很多個男生', '只挑整個 E 中「第一次」valid 拒絕的那個 iteration');
+  await step(tok); // 2441.8 the unlucky man: m
+  const m = j2who('m（倒楣）', 'm', -4.2, 3.4); m.mood('sad');
+  say('那次被拒絕的倒楣男生叫 m', '');
+  await step(tok); // 2462.8 she must be best(m): call her w
+  const w = j2who('w', 'w', -0.6, 3.4);
+  const ar = arrow(V3(-1.2, 3.9, 0), V3(-3.5, 3.9, 0), 0xc0392b);
+  tag('w = best(m)', 'ptr alt', -0.6, 5.0);
+  say('第一次被 valid 拒絕，又 best(m) 排最前', '→ 拒絕他的女生 w 就是 best(m)');
+  await step(tok); // 2528.8 w is valid -> some stable S' pairs m with w
+  const sp = ghostBox('#9b7ef4', 4.2, 2.6, 1.4); sp.position.set(4.6, 3.4, 0); tag('S′（某個 stable matching）', 'ptr', 4.6, 5.0);
+  const sm = j2who('m', 'm', 3.4, 2.8, 0, 0.6), sw = j2who('w', 'w', 5.8, 2.8, 0, 0.6); j2tie(sm, sw);
+  say('w 是 valid → 一定有另一個 stable matching S′', 'S′ 裡 m 跟 w 配在一起');
+  await step(tok); // 2587.8 two results at once
+  const hop = pkt('E ⇄ S′', 1.6, 6.0);
+  say('麻煩的地方：同時討論兩個結果', '有問題的執行 E，和 stable matching S′');
+  await travel(tok, hop, V3(-2.4, 6.0, 0), V3(4.6, 6.0, 0), 900);
+  await step(tok); // 2703.8 in E, w rejects m
+  remove(hop); glow(its[3], RED);
+  say('回到 E：m 被 w reject', '這是 E 裡第一次 valid 拒絕');
+  await step(tok); // 2715.8 because of another man m'
   kill(ar);
-  const mp = j2p('m′', J2.man, -3.2, 2.4, 3); j2link(mp, w);
-  say('w 拒絕 m 是因為更喜歡的 m′', '結論 1：w 喜歡 m′ 勝過 m');
-  await beat(tok, 2800);
-  const sp = ghostBox('#9b7ef4', 4.0, 1.3, 1.2); sp.position.set(4.6, 1.2, 0); tag('S′：m–w 配在一起', 'ptr', 4.6, 1.2);
-  say('w 是 valid → 存在 stable matching S′', 'S′ 裡 m 跟 w 配在一起');
-  await beat(tok, 3000);
-  glow(m, null);
+  const mp = j2who('m′', 'm', -4.2, 1.0); j2tie(mp, w);
+  say('女生拒絕一定有原因', '因為有另一個更好的對象，叫他 m′');
+  await step(tok); // 2771.8 conclusion 1
+  okT('結論 1：w 喜歡 m′ 勝過 m', -2.4, 0.0);
+  say('第一個重要結論', 'w 喜歡 m′ 勝過 m');
 }]);
 
+// 47:42 Male-optimal 證明（2）
 FRAG.push(['algjiang2-mopt-contra', 'Male-optimal 證明（2）：S′ 裡出現 unstable pair', async (tok) => {
-  fresh([0, 4.4, 13.5], [0, 3.2, 0]);
-  tag('S′', 'ptr', -3.3, 6.4);
-  const m = j2p('m', J2.man, -5.3, 4.6, 3), w = j2p('w', J2.wom, -1.4, 4.6, 3);
-  const mp = j2p('m′', J2.man, -5.3, 2.2, 3), wp = j2p('w′', J2.wom, -1.4, 2.2, 3);
-  j2link(m, w);
-  say('切到 S′：m 與 w 配在一起', 'S′ 是 stable matching');
-  await beat(tok, 2400);
-  j2link(mp, wp);
-  say('S′ 裡 m′ 總要配到某人 w′', '→ w′ 是 m′ 的 valid partner');
-  await beat(tok, 2600);
-  tag('回到 E：m′ 的 list', 'ptr alt', 3.6, 6.4);
-  const xs = [1.4, 2.9, 4.4, 5.9], L = [];
-  ['?', '?', 'w', ''].forEach((s, k) => L.push(cube(s, k === 2 ? J2.wom : J2.sand, [1.1, 0.7, 0.7], xs[k], 4.6, 0, 3)));
-  say('E 中 m′ 與 w engaged 的那一刻', '還沒有人被 valid partner 拒絕過');
-  await beat(tok, 2800);
-  [0, 1].forEach((k) => { tint(L[k], GRAY); relabel(L[k], '✗'); }); tag('invalid', 'idx', 2.15, 3.7);
-  say('w 前面的人都拒絕過 m′', '→ 她們都是 invalid（不是 valid）');
-  await beat(tok, 2800);
+  fresh([0, 4.8, 15], [0, 3.4, 0]);
+  const LX = [1.2, 2.5, 3.8, 5.1, 6.4];
+  say('接著討論 S′ 這邊', '');
+  await step(tok); // 2861.8 switch to S'
+  const box = ghostBox('#9b7ef4', 5.2, 4.8, 1.4); box.position.set(-3.6, 3.6, 0); tag('S′（stable matching）', 'ptr', -3.6, 6.4);
+  say('切到 S′：某人做出來的 stable matching', '');
+  await step(tok); // 2870.8 S' pairs m with w
+  const m = j2who('m', 'm', -5.2, 4.2, 0, 0.7), w = j2who('w', 'w', -2.0, 4.2, 0, 0.7); j2tie(m, w);
+  say('S′ 很好心地把 m 和他的 best partner w 配在一起', '');
+  await step(tok); // 2898.8 m' is matched with someone: w'
+  const mp = j2who('m′', 'm', -5.2, 2.0, 0, 0.7), wp = j2who('w′', 'w', -2.0, 2.0, 0, 0.7); j2tie(mp, wp);
+  say('S′ 是 stable matching，每個人都有配到', 'm′ 總會配到某個人，叫她 w′');
+  await step(tok); // 2948.8 so w' is a valid partner of m'
+  okT('w′ 是 m′ 的 valid partner', -3.6, 1.0);
+  say('S′ 把 m′、w′ 配在一起', '→ w′ 是 m′ 的 valid partner');
+  await step(tok); // 2972.8 what we have: w prefers m' over m
+  const known = note('已知：w 喜歡 m′ 勝過 m', -3.6, 7.2);
+  say('我們已經有：w 喜歡 m′ 勝過 m', '');
+  await step(tok); // 2984.8 what we want: m' prefers w over w'
+  const want = bub('想證：m′ 喜歡 w 勝過 w′ → S′ unstable', 3.6, 7.2);
+  say('再證出 m′ 喜歡 w 勝過 w′', 'S′ 就有 unstable pair → 矛盾');
+  await step(tok); // 3049.8 back to E
+  tag('回到 E：m′ 的 preference list', 'ptr alt', 3.8, 5.6);
+  const L = ['?', '?', 'w', '', ''].map((s, k) => cube(s, k === 2 ? J2.wom : J2.sand, [1.1, 0.7, 0.7], LX[k], 4.4, 0, 2));
+  tag('由愛到不愛 →', 'idx', 3.8, 3.5);
+  say('切回 E 的那次執行', '');
+  await step(tok); // 3121.8 before that moment nobody had a valid rejection
+  const t1 = note('m 被 w 拒絕之前：沒有任何人被 valid partner 拒絕過', 3.6, 6.4);
+  say('m 被 w 拒絕是 E 中第一次 valid 拒絕', '所以在那之前，沒有人被 valid partner 拒絕過');
+  await step(tok); // 3170.8 when m' got engaged to w
+  glow(L[2], GOLD);
+  say('m′ 和 w engaged 的那一刻', 'm′ 還沒被任何 valid partner 拒絕過');
+  await step(tok); // 3186.8 men propose from favourite to least
+  const cur = tag('▼', 'ptr', LX[0], 5.1);
+  for (let k = 0; k < 3; k++) { cur.position.x = LX[k]; await beat(tok, 350); }
+  say('男生一定從最喜歡的往不喜歡的 propose', '');
+  await step(tok); // 3209.8 so m' prefers w over w'
   relabel(L[3], 'w′'); tint(L[3], J2.ok);
-  say('w′ 是 valid → 只能排在 w 後面', '結論 2：m′ 喜歡 w 勝過 w′');
-  await beat(tok, 2800);
-  line(-4.7, 2.3, -2.0, 4.5, 0, '#c0392b'); glow(mp, RED); glow(w, RED);
-  say('S′ 裡 m′、w 互相更喜歡對方', '<span class="no">S′ unstable ⇄ S′ 是 stable</span>');
-  await beat(tok, 3000);
-  say('矛盾 → 每個男生都配到 best(m)', '證明在 E 與 S′ 之間來回切換');
-  await beat(tok, 3000);
+  okT('結論 2：m′ 喜歡 w 勝過 w′', 3.8, 2.6);
+  say('所以推得：m′ 喜歡 w 勝過 w′', '');
+  await step(tok); // 3231.8 S' has an unstable pair -> contradiction
+  line(mp.x + 0.5, mp.y, w.x - 0.5, w.y, 0, '#c0392b'); mp.mood('wow'); w.mood('wow');
+  noT('S′ unstable ⇄ S′ 是 stable', -3.6, 0.2);
+  say('S′ 裡 m′、w 互相更喜歡對方 → unstable', '但 S′ 是 stable matching → 矛盾');
+  await step(tok); // 3255.8 why can we say that?
+  remove(want); remove(known);
+  const why = bub('為什麼 w′ 一定排在 w 後面？', 3.6, 7.2);
+  say('最後一步大家可能有疑慮', '來看 m′ 的 preference list');
+  await step(tok); // 3306.8 w is somewhere in his list
+  relabel(L[3], ''); tint(L[3], J2.sand); cur.position.x = LX[2];
+  say('w 在他 list 的某個位置', '');
+  await step(tok); // 3338.8 w dumped m and took m'
+  note('w dump 掉 m → 跟 m′ engaged', 3.8, 1.8);
+  say('w 因為 m′ 把 m dump 掉', '然後跟 m′ engaged');
+  await step(tok); // 3364.8 the women before w are invalid
+  [0, 1].forEach((k) => { relabel(L[k], '✗'); tint(L[k], GRAY); });
+  tag('invalid', 'idx', 1.85, 3.0);
+  say('排在 w 前面的女生都拒絕過 m′', '那時還沒有 valid 拒絕 → 她們都是 invalid');
+  await step(tok); // 3412.8 w' is valid -> only after w
+  remove(why); relabel(L[3], 'w′'); tint(L[3], J2.ok); glow(L[3], GREEN);
+  say('w′ 是 valid，又不是 w', '只能排在 w 後面');
+  await step(tok); // 3471.8 picture: valid partners, best in front
+  const R = []; for (let k = 0; k < 5; k++) R.push(cube('', k >= 1 && k <= 3 ? J2.ok : GRAY, [1.1, 0.5, 0.7], LX[k], 0.6, 0));
+  tag('best', 'ptr alt', LX[1], 1.4); tag('valid partners', 'idx', LX[2], -0.2);
+  say('一排女生裡，可能中間三個是 valid', '排最前面的那個是 best');
+  await step(tok); // 3483.8 so GS is male-optimal
+  m.mood('happy'); mp.mood('happy');
+  okT('GS 的結果 male-optimal ✓', 0, 8.0);
+  say('所以 GS 的結果是 male-optimal', '每個男生都配到 best(m)');
+  await step(tok); // 3516.8 the complement of the assumption
+  note('假設：有男生沒配到 best(m)　反面：所有男生都配到 best(m)', 0, 7.4);
+  say('假設的反面（complement）', '所有男生都配到 best(m) → 證完');
+  await step(tok); // 3542.8 back and forth between E and S'
+  const hop = pkt('E ⇄ S′', -3.6, 6.4, 0.6);
+  say('這個證明在 E 與 S′ 之間交錯切換', '課本裡最不直覺的證明，回去仔細看');
+  await travel(tok, hop, V3(-3.6, 6.4, 0.6), V3(3.8, 6.4, 0.6), 1000);
 }]);
 
-FRAG.push(['algjiang2-effective-efficient', '好的演算法：Effective + Efficient', async (tok) => {
-  fresh([0, 4.2, 13], [0, 2.6, 0]);
-  const v2 = (ctx.params || {}).v === 2;
-  say(v2 ? '好演算法第一件事：正確' : 'Stable matching 教我們什麼？', v2 ? '答案錯了就沒有快慢之分' : '先釐清問題的本質，再設計演算法');
-  await beat(tok, 2400);
-  const L = cube('', J2.ok, [2.2, 0.1, 1.4], -3.2, 0.05, 0);
-  tag(v2 ? 'Correct' : 'Effective', 'ptr', -3.2, 5.0);
-  await anim(tok, 1200, (t) => { L.scale.y = 1 + t * 39; L.position.y = (0.1 * L.scale.y) / 2; });
-  say('靠 logical proof 保證正確', v2 ? '上一單元：反證法、直接推導' : '反證法：簡單、複雜的都能證');
-  await beat(tok, 2400);
-  if (!v2) {
-    tag('yes/no 問題 → 證正確', 'idx', -3.2, 4.4); tag('最佳化問題 → 還要證最佳解', 'idx', -3.2, 3.8);
-    say('之後還會談 solution quality', '不只合理，還要證是最好的答案');
-    await beat(tok, 2800);
-  }
-  tag('Efficient', 'ptr alt', 3.2, 5.0);
-  const t1 = cube('run time', J2.man, [2.4, 0.9, 1.2], 3.2, 0.45, 0, 4), t2 = cube('memory', J2.purple, [2.4, 0.9, 1.2], 3.2, 1.4, 0, 6);
-  say('Efficient：跑得快、memory 用得少', v2 ? 'time complexity + space complexity' : '下一單元細談 efficiency');
-  await beat(tok, 2800);
-  if (v2) {
-    const s = cube('5 對', J2.sand, [1.0, 0.6, 1.0], 1.4, 2.6, 0, 3), b = cube('100 對', J2.orange, [1.0, 2.4, 1.0], 5.0, 3.5, 0, 3);
-    say('時間跟 input size 有關', '5 對 vs 100 對：看成長的幅度');
-    await beat(tok, 2800);
-    [s, b].forEach(kill); glow(t1, GOLD);
-    say('本課重點：running time', '用 complexity 看，不用幾分幾秒');
-    await beat(tok, 3000);
-  } else {
-    say('好演算法：effective 又 efficient', '');
-    await beat(tok, 2600);
-  }
-  glow(t2, null);
-}]);
-
-// ══════════ Lec04：Algorithm Analysis ══════════
-FRAG.push(['algjiang2-trinity', 'Algorithm、Data Structure、Programming 一體三面', async (tok) => {
+// 1:00:15 單元總結（Lec03）
+FRAG.push(['algjiang2-effective-efficient', '單元總結：effective + efficient', async (tok) => {
   fresh([0, 4.2, 13], [0, 2.8, 0]);
-  say('本單元兩件事', '① 怎麼分析 efficiency　② GS 怎麼實作才快');
-  await beat(tok, 2600);
-  const A = cube('Algorithm', J2.gold, [2.8, 0.9, 1.2], 0, 5.0, 0, 3), D = cube('Data Structure', J2.man, [3.2, 0.9, 1.2], -3.6, 1.4, 0, 3), Pg = cube('Programming', J2.purple, [3.0, 0.9, 1.2], 3.6, 1.4, 0, 3);
-  await beat(tok, 900);
-  line(-0.9, 4.6, -3.0, 1.9); line(0.9, 4.6, 3.0, 1.9); line(-2.0, 1.4, 2.1, 1.4);
-  say('三件事是一體三面', '');
-  await beat(tok, 2000);
-  glow(A, GOLD);
-  say('先從 high level 設計演算法', 'logical proof 正確、run time 合理 → 再 implement');
-  await beat(tok, 2800);
-  glow(A, null); glow(D, RED);
-  say('好演算法配錯 data structure → 拖慢', '別人寫很快，你的卻很慢');
-  await beat(tok, 2800);
-  glow(D, null); glow(Pg, GOLD);
-  say('寫程式時三件事同時發生', '所以 programming 實作上最難');
-  await beat(tok, 2600);
-  glow(Pg, null);
-  tag('爛演算法 + 100 分 programmer → 最多 70 分', 'ptr', 0, 7.0); tag('好演算法 + 合理實作 → 85～90 分', 'ptr alt', 0, 6.3);
-  say('演算法決定上限', '寫得再好也受限於演算法本身');
-  await beat(tok, 3200);
+  say('第一單元的總結', '');
+  await step(tok); // 3618.8 lots of proofs; don't be afraid
+  const f = prop('file', -5.2, 4.6, 0, 1.0, '好多證明'); bob(f, 0.05);
+  say('這單元花很多時間在證明', '之後也一直會有，不要害怕');
+  await step(tok); // 3637.8 clean procedure, great result
+  okT('procedure 乾淨簡單、結果很好、還有額外 property', 0, 6.6);
+  say('Stable matching 的 procedure 異常乾淨簡單', '結果卻非常好，還有額外的 property');
+  await step(tok); // 3673.8 lesson 1: pin down the problem first
+  pkt('① 先釐清問題的本質，抓出重點', 0, 5.8);
+  say('學到的第一件事', '先把問題的本質釐清，抓出重點');
+  await step(tok); // 3693.8 effective and efficient
+  const L = cube('', J2.ok, [2.2, 0.1, 1.4], -3.2, 0.05, 0); tag('Effective（有效）', 'ptr', -3.2, 4.8);
+  tag('Efficient（有效率）', 'ptr alt', 3.2, 4.8);
+  say('演算法設計的核心', '設計 effective 而且 efficient 的演算法');
+  await step(tok); // 3700.8 effective: prove correctness
+  await anim(tok, 1000, (t) => { L.scale.y = 1 + t * 35; L.position.y = (0.1 * L.scale.y) / 2; });
+  tag('yes/no 問題 → 證明正確性', 'idx', -3.2, 4.2);
+  say('答案只有 yes/no 時', 'effective 就是要證明它正確');
+  await step(tok); // 3723.8 contradiction: simple and complex
+  note('反證法：簡單、複雜的都能證', -3.2, 3.6);
+  say('反證法是非常好用的技巧', '簡單、複雜的事情都能證');
+  await step(tok); // 3759.8 later: solution quality
+  note('之後：最佳化問題還要證「最好」', -3.2, 3.0);
+  say('後面章節會談 solution quality', '不只答案合理，還要證明是最佳解');
+  await step(tok); // 3789.8 efficient: run time
+  const t1 = cube('run time', J2.man, [2.4, 0.9, 1.2], 3.2, 0.45, 0, 3);
+  say('Efficient：寫成程式後很快跑出結果', 'run time 要短');
+  await step(tok); // 3820.8 memory
+  cube('memory', J2.purple, [2.4, 0.9, 1.2], 3.2, 1.4, 0, 3);
+  say('還有：memory 不要爆掉', '用一點點 memory 就能得到結果');
+  await step(tok); // 3827.8 next unit
+  glow(t1, GOLD);
+  say('Efficiency 下一個單元仔細討論', '');
 }]);
 
+// 1:03:55 Knuth 的建議
+FRAG.push(['algjiang2-knuth', 'Knuth 的建議：拿紙筆跑一遍', async (tok) => {
+  fresh([0, 4.4, 13], [0, 2.8, 0]);
+  say('最後引用兩位名人的話', '');
+  await step(tok); // 3834.8 two quotes
+  const q1 = prop('file', -4.4, 3.6, 0, 1.2, '名言 1'), q2 = prop('file', -2.4, 3.6, 0, 1.2, '名言 2 · Knuth'); bob(q1, 0.05); bob(q2, 0.05);
+  say('兩段名人的話', '');
+  await step(tok); // 3842.8 good algorithms give insight
+  note('好的演算法 → 對「計算」有更深的認識', -3.4, 2.8);
+  say('第一段：讚美演算法', '觀摩好的演算法，對計算這件事會有更深的認識');
+  await step(tok); // 3865.8 Knuth's plain advice
+  const k = buddy('Knuth', '', J2.gold, 3.4, 0, 0, 0.9);
+  say('第二段是 Knuth 很平實的建議', '');
+  await step(tok); // 3883.8 don't only read the procedure
+  const no = noT('只看 procedure 第一行、第二行…', 3.4, 2.6);
+  say('不要只看 procedure', '第一行怎樣、第二行怎樣');
+  await step(tok); // 3890.8 pen and paper, run an example
+  remove(no); k.mood('happy');
+  const paper = prop('note', 0.6, 0.05, 1.6, 2.0);
+  const a = j2who('m1', 'm', -0.6, 0.1, 1.6, 0.5), b = j2who('w1', 'w', 1.8, 0.1, 1.6, 0.5);
+  okT('拿出紙筆，找個例子 run 一遍', 3.4, 2.6);
+  say('老老實實拿出紙筆', '找一個例子 run 一遍，才能了解本質');
+  await j2send(tok, a, b);
+  await step(tok); // 3926.8 writing code shows gaps
+  j2tie(a, b);
+  note('寫成程式：才發現中間很多 gap', -3.4, 1.6);
+  say('procedure 看起來很普通', '寫成程式時才發現充滿 gap、好多關卡');
+  await step(tok); // 3943.8 hand-simulating gets stuck
+  note('手算試做：做到一半卡住', -3.4, 1.0);
+  say('真的叫你試做，做到一半會卡住', '');
+  await step(tok); // 3959.8 try examples, notice special behaviour
+  okT('多試例子 → 觀察到特殊行為、更懂本質', 0, 5.6);
+  say('透過試煉，更了解演算法的本質', '也能觀察到它執行時一些特殊的行為');
+  await step(tok); // 3973.8 end of unit 1
+  await k.hop(tok);
+  say('以上是第一單元', '');
+}]);
+
+// ══════════ Lec04（rP2wm4bEfXo）：Algorithm Analysis ══════════
+// 0:15 單元介紹：一體三面
+FRAG.push(['algjiang2-trinity', 'Algorithm、Data Structure、Programming 一體三面', async (tok) => {
+  fresh([0, 4.4, 13.5], [0, 3.0, 0]);
+  say('第二單元：演算法的分析', '');
+  await step(tok); // 15 how good = how you analyse it
+  pkt('演算法的好壞 → 看你怎麼分析它', 0, 7.4);
+  say('一個演算法的好壞，取決於怎麼分析它', '學設計之前，先懂遊戲規則');
+  await step(tok); // 52.8 part 1
+  note('① 怎麼分析 procedure 的 efficiency', -3.4, 6.7);
+  say('這個單元兩大部分', '第一：怎麼分析 procedure 的 efficiency');
+  await step(tok); // 69.8 part 2
+  note('② Gale-Shapley 要怎麼 implement 才快', 3.4, 6.7);
+  say('第二：真的寫成程式時', 'Gale-Shapley 要怎麼 implement 才會快');
+  await step(tok); // 89.8 one body, three faces
+  const A = cube('Algorithm', J2.gold, [2.8, 0.9, 1.2], 0, 5.0, 0, 3), D = cube('Data Structure', J2.man, [3.2, 0.9, 1.2], -3.6, 1.4, 0, 3), Pg = cube('Programming', J2.purple, [3.0, 0.9, 1.2], 3.6, 1.4, 0, 3);
+  line(-0.9, 4.6, -3.0, 1.9); line(0.9, 4.6, 3.0, 1.9); line(-2.0, 1.4, 2.1, 1.4);
+  say('Algorithm、Data Structure、Programming', '是一體三面的事情');
+  await step(tok); // 105.8 high level first, then implement
+  glow(A, GOLD);
+  const t = note('high level 設計 → logical proof → run time OK → implement', 0, 6.0);
+  say('先從 high level 分析問題、設計演算法', 'logical proof 確認正確、run time 合理，再 implement');
+  await step(tok); // 129.8 good algorithm needs a suitable data structure
+  remove(t); glow(A, null); glow(D, GOLD);
+  note('好演算法要配合適的 data structure', -3.6, 2.6);
+  say('好的演算法一定要配合適的 data structure', '');
+  await step(tok); // 136.8 or it's a tragedy
+  const you = buddy('你', '慢…', J2.bad, -1.0, 0, 3.0, 0.7), oth = buddy('別人', '快！', J2.ok, 1.0, 0, 3.0, 0.7);
+  you.mood('sad'); oth.mood('happy');
+  say('配錯 data structure 常是悲劇', '別人寫得很快，你的程式卻很慢');
+  await step(tok); // 170.8 this unit: design GS's data structure
+  note('本單元：幫 GS 設計對應的 data structure', 0, 0.2, 3.0);
+  say('這個單元會根據 GS 的 procedure', '幫它設計對應的 data structure');
+  await step(tok); // 185.8 programming: hardest
+  glow(D, null); glow(Pg, GOLD);
+  note('寫程式時：怎麼寫 + algorithm + data structure 同時發生', 3.6, 2.6);
+  say('Programming 實作上難度最高', '因為三件事同時發生');
+  await step(tok); // 244.8 a bad algorithm can't be saved
+  fresh([0, 4.2, 13], [0, 2.6, 0]);
+  const bad = buddy('爛演算法', '', J2.bad, -3.6, 0, 0, 0.9), good = buddy('好演算法', '', J2.ok, 3.6, 0, 0, 0.9);
+  bad.mood('sad');
+  noT('寫得再厲害，efficiency 也快不起來', -3.6, 2.4);
+  say('爛的演算法受限於天生的限制', '程式寫得再厲害也快不起來');
+  await step(tok); // 262.8 good algorithm + ordinary implementation
+  good.mood('happy');
+  okT('配差不多的 implementation → 結果還不錯', 3.6, 2.4);
+  say('好的演算法，配上差不多的 implementation', '結果也都還不錯');
+  await step(tok); // 279.8 not world-class programmers
+  note('不追求 World Class Programmer；要當合理的 algorithm designer', 0, 6.4);
+  say('這門課不要求大家成為 World Class Programmer', '但希望成為合理的 algorithm designer');
+  await step(tok); // 333.8 85-90 points
+  const g1 = cube('', J2.ok, [1.4, 0.1, 1], 3.6, 3.2, 0); tag('85～90 分', 'ptr alt', 3.6, 5.2);
+  await anim(tok, 800, (u) => { g1.scale.y = 1 + u * 17; g1.position.y = 3.2 + (0.1 * g1.scale.y) / 2; });
+  say('好演算法 + 合理的程式', '沒有 90 分，至少也有 85 分');
+  await step(tok); // 342.8 bad algorithm + 100-point programmer: 70
+  const g2 = cube('', J2.bad, [1.4, 0.1, 1], -3.6, 3.2, 0); tag('最多 70 分', 'ptr', -3.6, 4.9);
+  await anim(tok, 800, (u) => { g2.scale.y = 1 + u * 14; g2.position.y = 3.2 + (0.1 * g2.scale.y) / 2; });
+  say('壞演算法配 100 分的 programmer', '最多也只有 70 分');
+  await step(tok); // 353.8 so: what is a good algorithm?
+  bub('那什麼是一個好的演算法？', 0, 7.2);
+  say('接下來：怎麼分析演算法的好壞', '先問：什麼是好的演算法？');
+}]);
+
+// 6:28 好的演算法：正確 + 有效率
+FRAG.push(['algjiang2-good-algo', '好的演算法：正確 + 有效率', async (tok) => {
+  fresh([0, 4.2, 13], [0, 2.6, 0]);
+  say('好的演算法，直覺上要什麼？', '');
+  await step(tok); // 403.8 first: correct
+  const L = cube('', J2.ok, [2.2, 0.1, 1.4], -3.2, 0.05, 0); tag('① Correct', 'ptr', -3.2, 5.4);
+  await anim(tok, 900, (u) => { L.scale.y = 1 + u * 35; L.position.y = (0.1 * L.scale.y) / 2; });
+  say('第一件事：先求正確', '吐出來的結果一定要對');
+  await step(tok); // 419.8 a wrong answer has no speed
+  noT('答案錯了 → 沒有快慢之分', -3.2, 4.6);
+  say('答案不正確，就沒有快慢之分', '');
+  await step(tok); // 428.8 logical proof
+  note('靠 logical proof：反證法、直接推導', -3.2, 3.9);
+  say('正確怎麼保證？透過 logical proof', '上一單元的反證法、直接推導');
+  await step(tok); // 443.8 second: efficient
+  tag('② Efficient', 'ptr alt', 3.2, 5.4);
+  say('第二：是不是有效率', '');
+  await step(tok); // 459.8 fast, little memory
+  prop('cpu', 2.0, 0, 0, 1.2, '跑得快'); prop('disk', 4.4, 0, 0, 1.2, 'memory 少');
+  say('寫成程式後跑得很快', '而且需要的 memory 越少越好');
+  await step(tok); // 484.8 resources: two dimensions
+  note('efficiency = 對 resource 的需求：時間、空間', 3.2, 4.6);
+  say('Efficiency 就是對資源的需求', '分兩個 dimension：時間與空間');
+  await step(tok); // 499.8 time complexity
+  const tc = tag('time complexity', 'ptr', 2.0, 2.4);
+  say('Run time 的分析叫 time complexity', '');
+  await step(tok); // 510.8 space complexity
+  tag('space complexity', 'ptr', 4.4, 2.4);
+  say('Memory 的分析叫 space complexity', '');
+  await step(tok); // 533.8 this course: run time
+  cls(tc, 'ptr alt'); okT('本課重點', 2.0, 3.2);
+  say('這門課的重點放在 running time', '');
+  await step(tok); // 557.8 complexity, not seconds
+  note('用 complexity 看，不是用幾分幾秒', 3.2, 3.9);
+  say('而且用 complexity 的角度看', '不是用幾分幾秒');
+  await step(tok); // 597.8 5 pairs vs 100 pairs
+  fresh([0, 4.4, 13], [0, 2.2, 0]);
+  tag('5 對', 'ptr', -3.6, 3.4); tag('100 對', 'ptr', 3.0, 4.6);
+  for (let k = 0; k < 5; k++) { cube('', J2.man, [0.4, 0.4, 0.4], -4.4 + k * 0.4, 2.2, 0); cube('', J2.wom, [0.4, 0.4, 0.4], -4.4 + k * 0.4, 1.7, 0); }
+  for (let i = 0; i < 10; i++) for (let j = 0; j < 10; j++) cube('', (i + j) % 2 ? J2.man : J2.wom, [0.3, 0.3, 0.3], 1.2 + j * 0.38, 0.4 + i * 0.36, 0);
+  say('處理 5 對男女，和處理 100 對', '時間應該不一樣');
+  await step(tok); // 629.8 depends on input size: growth
+  noT('input size 變大 → 時間成長的幅度？', 0, 6.0);
+  say('Efficiency 跟 input size 有關', '關心的是 input 變大時，時間成長的幅度');
+}]);
+
+// 11:11 Babbage
 FRAG.push(['algjiang2-babbage-crank', 'Babbage：轉幾圈 = running time', async (tok) => {
   fresh([0, 4.0, 12], [0, 2.4, 0]);
   const THREE = ctx.THREE;
-  cube('Analytical Engine', J2.sand, [4.2, 2.6, 2.0], -1.2, 1.3, 0);
-  const g = new THREE.Group(); g.position.set(1.6, 1.6, 1.05); ctx.lab.world.add(g);
+  say('還沒寫成程式，怎麼談快慢？', '');
+  await step(tok); // 675.8 no program yet: how fast?
+  const q = bub('還沒有程式，怎麼知道快還是慢？', 0, 5.6);
+  say('設計演算法時還沒寫成程式', '沒有執行，怎麼知道快還是慢？');
+  await step(tok); // 691.8 analyse its nature
+  const q2 = note('看 procedure 的本質來分析', 0, 4.9);
+  say('希望從 procedure 的本質', '分析它比較快還是比較慢');
+  await step(tok); // 706.8 Babbage, 19th century
+  remove(q); remove(q2);
+  const bab = buddy('Babbage（19 世紀）', '', J2.gold, -5.0, 0, 0.8, 0.9);
+  say('最早可以推到 19 世紀的 Babbage', '第一個提出可以分析 running time 的概念');
+  await step(tok); // 734.8 the Analytical Engine
+  cube('Analytical Engine', J2.sand, [4.2, 2.6, 2.0], -0.2, 1.3, 0, 3);
+  say('他窮其一生想做 Analytical Engine', '');
+  await step(tok); // 748.8 funding was hard
+  bab.mood('sad'); noT('經費一直找得不順', -5.0, 2.6);
+  say('可惜運氣不好', 'funding 一直找得不順');
+  await step(tok); // 759.8 a machine that computes
+  note('想做一台可以做運算的機器', -0.2, 3.4);
+  say('他想做的是一台可以做運算的機器', '');
+  await step(tok); // 766.8 later built from his notes, and it works
+  const son = buddy('後人', '', J2.orange, -5.0, 0, -1.2, 0.7); son.mood('happy');
+  okT('依手稿造出來，真的會動', -0.2, 4.0);
+  say('後人收集他的手稿，把機器做出來', '真的會動（照片在博物館）');
+  await step(tok); // 791.8 difference engine: subtraction
+  note('difference engine：輸入兩個數做減法', -0.2, 4.6);
+  say('一開始設計的 difference engine', '輸入兩個數字，它就做減法');
+  await step(tok); // 798.8 a crank on the right
+  const g = new THREE.Group(); g.position.set(2.4, 1.6, 1.05); ctx.lab.world.add(g);
   const arm = ctx.lab.box('#6e5f49', [0.25, 1.4, 0.2]); arm.position.set(0, 0.55, 0); g.add(arm);
   const knob = ctx.lab.box(J2.gold, [0.35, 0.35, 0.5]); knob.position.set(0, 1.2, 0.2); g.add(knob);
-  const cnt = tag('轉 0 圈', 'ptr alt', 3.6, 3.6);
-  say('19 世紀 Babbage：Analytical Engine', '想做一台能運算的機器（經費一直不順）');
-  await beat(tok, 2800);
-  say('右邊有搖桿，每轉一圈機器動一次', '後人依手稿把機器做出來，真的會動');
-  await beat(tok, 2600);
-  const spin = async (n, label) => {
-    for (let k = 1; k <= n; k++) { await anim(tok, 450, (t) => { g.rotation.z = -2 * Math.PI * (k - 1 + t); }); txt(cnt, label + '：轉 ' + k + ' 圈'); }
-  };
-  say('完成 task A 要轉幾圈？', '');
-  await spin(3, 'A');
-  await beat(tok, 800);
-  say('task B 要轉更多圈', '');
-  await spin(8, 'B');
-  await beat(tok, 600);
-  say('轉越多圈 → running time 越長', 'A：3 圈 < B：8 圈');
-  await beat(tok, 2600);
-  say('最早把 efficiency 具體化的想法', '數「步驟」，而不是量幾秒');
-  await beat(tok, 3000);
+  const cnt = tag('轉 0 圈', 'ptr alt', 4.6, 3.6);
+  let turns = 0;
+  const spin = async (n, label, ms) => { for (let k = 1; k <= n; k++) { const t0 = turns; await anim(tok, ms, (u) => { g.rotation.z = -2 * Math.PI * (t0 + u); }); turns++; txt(cnt, label + '：轉 ' + k + ' 圈'); } };
+  say('右邊有一個搖桿', '每轉一圈，機器就動作一次');
+  await spin(1, '試轉', 500);
+  await step(tok); // 812.8 a task: how many turns?
+  bab.mood('calm');
+  say('完成一個 task 要轉幾圈？', 'task A');
+  await spin(3, 'A', 380);
+  await step(tok); // 820.8 more turns = longer running time
+  say('要轉很多圈才出答案', '→ running time 比較長、複雜度比較高');
+  await spin(8, 'B', 220);
+  await step(tok); // 835.8 fewer turns = faster
+  okT('A：3 圈 < B：8 圈 → A 比較快', 4.2, 4.6);
+  say('轉比較少圈就得到結果', '就認為 running time 比較快');
+  await step(tok); // 840.8 the first to bring out efficiency
+  bab.mood('happy'); await bab.hop(tok);
+  say('他是最早把 efficiency 帶出來的科學家', '過了很多年，分析方式才 finalize');
+  await step(tok); // 859.8 how to make "efficient" concrete
+  bub('「efficient」要怎麼變成具體的定義？', 0, 6.0);
+  say('第一個問題：efficient 這個概念', '怎麼轉成很具體、能分析的定義？');
 }]);
 
+// 14:45 Proposal 1
 FRAG.push(['algjiang2-def1-flaws', 'Proposal 1：「在 real input 上跑得快」不夠精確', async (tok) => {
+  fresh([0, 4.4, 13.5], [0, 2.8, 0]);
+  say('定義是一步一步演化出來的', '');
+  await step(tok); // 884.8 proposal 1
+  pkt('Proposal 1：寫成程式後，在 real input 上跑得很快', 0, 7.4);
+  say('第一個想法：efficient = 跑得很快', '寫成程式、餵真實的 input instance，很快吐出結果');
+  await step(tok); // 921.8 not precise
+  const q = bub('「跑得快」是多快？「real input」是什麼？', 0, 6.6);
+  say('這個定義不精確', '什麼叫跑得很快？什麼叫 real input？');
+  await step(tok); // 946.8 depends on the machine
+  remove(q);
+  prop('monitor', -5.6, 0, 0, 1.0, '高速電腦中心'); prop('monitor', -3.4, 0, 0, 0.75, '3 年前 notebook');
+  okT('1 分鐘', -5.6, 2.6); noT('1 小時', -3.4, 2.2);
+  say('同一個程式，換台機器跑', 'run time 差很多');
+  await step(tok); // 975.8 unfair: relative
+  note('爛演算法 + 超強電腦也很快 → 不公平', -4.5, 3.6);
+  say('再爛的演算法遇到超強電腦也很快', '變成相對的概念，不公平');
+  await step(tok); // 1000.8 what is "real input"?
+  buddy('使用者', '?', J2.orange, -0.2, 0, 1.0, 0.8);
+  ['?', '?', '?'].forEach((s, k) => cube(s, GRAY, [0.6, 0.6, 0.6], -1.0 + k * 0.8, 1.8, 1.0, 2));
+  say('什麼叫 real input instance？', '設計者不知道使用者會餵什麼 instance');
+  await step(tok); // 1042.8 also depends on input size
+  note('run time 也跟 input size 有關', -0.2, 3.4, 1.0);
+  say('run time 也跟 input size 大小很有關係', '還想看成長趨勢');
+  await step(tok); // 1057.8 A and B at n = 100
+  tag('A 同學 vs B 同學', 'ptr alt', 4.2, 6.2);
+  j2bar('A n=100', J2.man, 2.6, 0.6, 0.9); j2bar('B n=100', J2.purple, 3.6, 0.65, 0.9);
+  say('A、B 兩位同學各寫一個程式', 'input 100 個時，跑得差不多');
+  await step(tok); // 1072.8 at a million they separate
+  j2bar('A 100萬', J2.man, 5.0, 1.6, 0.9); const B2 = j2bar('B 100萬', J2.purple, 6.0, 5.0, 0.9); glow(B2.m, RED);
+  say('到 100 萬個才分出高下', 'A 跑得動，B 跑不動');
+  await step(tok); // 1101.8 scalability
+  okT('scalability：input 暴增，run time 只微幅上升', 3.6, 5.6);
+  say('希望分析時能看出 scalability', 'input size 急速成長，run time 只微幅上升');
+  await step(tok); // 1126.8 summary of proposal 1
   fresh([0, 4.2, 13], [0, 2.8, 0]);
-  say('Proposal 1：real input 上跑得快', 'efficient = 寫成程式後跑真實 instance 很快');
-  await beat(tok, 2800);
-  tag('同一個程式', 'ptr', -3.8, 6.4);
-  const a = j2bar('高速電腦中心', J2.ok, -5.0, 0.8, 1.3), b = j2bar('3 年前 notebook', J2.bad, -2.6, 4.2, 1.3);
-  say('換一台機器，run time 差很多', '→ 定義要跟機器無關');
-  await beat(tok, 2800);
-  const q = [];
-  for (let k = 0; k < 3; k++) q.push(cube('?', GRAY, [0.8, 0.8, 0.8], 0.6 + k * 1.0, 5.4, 0, 2));
-  say('使用者會餵什麼 input？不知道', '→ 定義要跟 instance 無關');
-  await beat(tok, 2800);
-  q.forEach(kill);
-  tag('A 同學 vs B 同學', 'ptr alt', 3.6, 6.4);
-  const A1 = j2bar('A n=100', J2.man, 1.4, 0.6, 0.9), B1 = j2bar('B n=100', J2.purple, 2.6, 0.65, 0.9);
-  say('n = 100 時 A、B 跑得差不多', '');
-  await beat(tok, 2200);
-  const A2 = j2bar('A n=10⁶', J2.man, 4.4, 1.6, 0.9), B2 = j2bar('B n=10⁶', J2.purple, 5.6, 5.0, 0.9); glow(B2.m, RED);
-  say('n = 100 萬才分出高下', '→ 要看 run time 隨 input size 的成長');
-  await beat(tok, 2800);
-  say('三個要求', '跟機器無關、跟 instance 無關、成長趨勢可預測');
-  await beat(tok, 3000);
+  pkt('Proposal 1：real input 上跑得快', 0, 6.6); noT('跑得快？不精確　real input？掌握不了', 0, 5.8);
+  say('Proposal 1 的問題', '「跑得快」不精確，「real input」也掌握不了');
+  await step(tok); // 1165.8 requirement: machine-independent
+  cube('① 跟機器無關', J2.man, [3.6, 0.8, 1.1], -4.0, 2.4, 0, 3);
+  say('修正的定義至少要：跟機器完全無關', '你永遠不知道程式會在哪台機器上跑');
+  await step(tok); // 1199.8 instance-independent
+  cube('② 跟 instance 無關', J2.purple, [3.6, 0.8, 1.1], 0, 2.4, 0, 3);
+  say('也要跟 instance 無關', '因為不知道會遇到什麼 test case');
+  await step(tok); // 1221.8 growth predictable
+  cube('③ 成長趨勢可預測', J2.ok, [3.6, 0.8, 1.1], 4.0, 2.4, 0, 3);
+  say('input size 成長時', 'run time 的成長趨勢要可以預測');
 }]);
 
+// 20:41 Stable matching 的 input size
 FRAG.push(['algjiang2-input-2n2', 'Stable matching 的 input size = 2n²', async (tok) => {
   fresh([0, 8.5, 9.5], [0, 0, 0.3]);
   const N = 4, X = (base, j) => base + j * 1.1, Z = (i) => -1.8 + i * 1.1;
-  say('Stable matching 的 input size？', 'n 個男生、n 個女生，加上 preference lists');
-  await beat(tok, 3500);
-  tag('男生的 lists', 'ptr', -3.6, 0.3, -3.2); tag('女生的 lists', 'ptr alt', 3.0, 0.3, -3.2);
-  for (let i = 0; i < N; i++) { tag('m' + (i + 1), 'idx', -6.2, 0.2, Z(i)); for (let j = 0; j < N; j++) cube('w' + (j + 1), J2.man, [0.95, 0.4, 0.95], X(-5.2, j), 0.2, Z(i), 2); await beat(tok, 400); }
-  say('每個男生的 list 長 n', '男生共 n × n 格');
-  await beat(tok, 2700);
-  for (let i = 0; i < N; i++) { tag('w' + (i + 1), 'idx', 6.4, 0.2, Z(i)); for (let j = 0; j < N; j++) cube('m' + (j + 1), J2.wom, [0.95, 0.4, 0.95], X(1.4, j), 0.2, Z(i), 2); await beat(tok, 400); }
-  say('女生也是 n × n 格', 'input size = 2n²');
-  await beat(tok, 3500);
-  say('running time 寫成 input size 的函數', 'T(n)：給定 n 就能推估，不是一個固定數字');
-  await beat(tok, 4000);
+  say('舉例：stable matching', '');
+  await step(tok); // 1240.8 what is its input size?
+  tag('Stable matching 的 input size？', 'ptr alt', 0, 0.4, -3.4);
+  say('Stable matching 的 input size 是什麼？', '');
+  await step(tok); // 1246.8 n men, n women, preference lists
+  for (let i = 0; i < N; i++) { tag('m' + (i + 1), 'idx', -6.2, 0.2, Z(i)); tag('w' + (i + 1), 'idx', 6.4, 0.2, Z(i)); }
+  say('n 個男生、n 個女生', '還有他們各自的 preference list');
+  await step(tok); // 1250.8 each man's list has length n
+  tag('男生的 lists', 'ptr', -3.6, 0.3, -2.6);
+  for (let i = 0; i < N; i++) { for (let j = 0; j < N; j++) cube('w' + (j + 1), J2.man, [0.95, 0.4, 0.95], X(-5.2, j), 0.2, Z(i), 2); await beat(tok, 200); }
+  say('每個男生的 list 有 n 那麼長', '有 n 個女生要排');
+  await step(tok); // 1256.8 each woman's list too
+  tag('女生的 lists', 'ptr alt', 3.0, 0.3, -2.6);
+  for (let i = 0; i < N; i++) { for (let j = 0; j < N; j++) cube('m' + (j + 1), J2.wom, [0.95, 0.4, 0.95], X(1.4, j), 0.2, Z(i), 2); await beat(tok, 200); }
+  say('每個女生的 list 也是 n 那麼長', '');
+  await step(tok); // 1261.8 n × n each
+  tag('n × n 格', 'ptr', -3.6, 0.3, 2.8); tag('n × n 格', 'ptr alt', 3.0, 0.3, 2.8);
+  say('男生全部是 n × n 格', '女生一樣是 n × n 格');
+  await step(tok); // 1267.8 total 2n^2
+  okT('input size = 2n² 格', 0, 0.4, 3.6);
+  say('總共 input size 是 2n² 格', '');
+  await step(tok); // 1282.8 GS as a program: run time vs input size
+  const f = prop('file', 0, 0.1, 0.4, 1.0, 'GS 寫成程式'); bob(f, 0.05);
+  say('有人把 GS 寫成程式', '希望它的 run time 跟 input size 有關係');
+  await step(tok); // 1307.8 running time as a function of n
+  pkt('running time 寫成 n 的函數 T(n)', 0, 0.4, -4.2);
+  say('給定 input size n', '把 running time 寫成 function of n');
+  await step(tok); // 1320.8 not a fixed number
+  note('給 n 就能推估；不是固定數字', 0, 0.4, 4.3);
+  say('給定 n 就能推得 running time 大約多少', '它不是絕對的數字，會隨 n 變動');
 }]);
 
+// 22:28 Worst case vs average case
 FRAG.push(['algjiang2-worst-avg', 'Worst case vs Average case', async (tok) => {
-  fresh([0, 4.0, 13], [0, 2.6, 0]);
+  fresh([0, 4.2, 13.5], [0, 2.6, 0]);
   const hs = [1.8, 3.1, 1.2, 5.2, 2.4, 1.6, 3.6, 2.0], bars = [];
-  say('不知道使用者會遇到哪些 instance', '公平一點：大家都拿最差的來比');
-  await beat(tok, 2600);
-  for (let k = 0; k < 8; k++) { bars.push(j2bar('I' + (k + 1), J2.sand, -5.25 + k * 1.5, hs[k], 1.0)); await beat(tok, 300); }
+  say('real input instance 又是什麼？', '');
+  await step(tok); // 1347 we never know how people will use it
+  const user = buddy('使用者', '?', J2.orange, -5.8, 0, 2.6, 0.75);
+  bub('我要這樣用！', -5.8, 1.9, 2.6);
+  say('寫程式的人常常不知道', '別人會怎麼用我們的程式');
+  await step(tok); // 1350.8 torture it with odd cases
+  user.mood('wow'); note('用各式各樣奇怪的 case 折磨程式', -3.4, 6.4);
+  say('可能拿去很暴力地折磨它', '用各式各樣奇怪的 case 測試');
+  await step(tok); // 1364.8 fair: everyone compares the worst
+  for (let k = 0; k < 8; k++) { bars.push(j2bar('I' + (k + 1), J2.sand, -5.25 + k * 1.5, hs[k], 1.0)); await beat(tok, 140); }
+  say('不知道 instance 的全貌', '取公平一點：大家都拿最差的來比');
+  await step(tok); // 1386.8 worst, not best: "no worse than this"
   glow(bars[3].m, RED); tag('worst case', 'ptr', bars[3].m.position.x, 5.9);
-  say('Worst case：最差也不過如此', '最差都能接受 → 平常的表現會更滿意');
-  await beat(tok, 3000);
+  okT('最差也不過如此', -0.8, 6.6);
+  say('拿最差的比，不拿最好的', '最差都能接受 → 平常的表現會更滿意');
+  await step(tok); // 1424.8 why not the average?
+  const q = bub('為什麼不用 average case？', 3.6, 6.6);
+  say('為什麼不用平均的表現？', '實務上確實有人用');
+  await step(tok); // 1450.8 average needs the input distribution
+  remove(q);
   const avg = hs.reduce((s, h) => s + h, 0) / hs.length;
-  line(-6.2, avg, 6.2, avg, 0.6, '#2f6fb0'); tag('average', 'ptr alt', 6.0, avg + 0.4);
-  say('Average case 要先知道 input 的分布', '理論分析時通常不知道 → 說不清楚');
-  await beat(tok, 3000);
+  line(-6.2, avg, 6.2, avg, 0.6, '#2f6fb0'); tag('average？', 'ptr alt', 6.4, avg + 0.4);
+  note('average 要先知道 input 的分布', 3.6, 6.6);
+  say('理論上用 worst case', 'average 要先知道所有 input 的分布長相');
+  await step(tok); // 1470.8 unknown distribution
+  noT('分布不知道 → 說不清楚什麼是 average', 3.6, 7.3);
+  say('不知道 input 的分布', '就沒辦法說明什麼叫 average case');
+  await step(tok); // 1493.8 contests: a benchmark
+  const bm = prop('file', -5.8, 3.4, 0, 1.0, 'benchmark'); bob(bm, 0.05);
   [0, 1, 2].forEach((k) => tint(bars[k].m, J2.ok));
-  say('程式競賽：主辦單位給 benchmark', '在這組上取平均 → 實務上會用');
-  await beat(tok, 3000);
-  say('理論上用 worst-case running time', '某個 instance 跑很好，另一個可能很差');
-  await beat(tok, 2800);
+  say('程式競賽：主辦單位拿一組 benchmark', '測大家的程式');
+  await step(tok); // 1521.8 average over that benchmark
+  okT('在這組 benchmark 上取平均 ✓', -3.0, 4.6);
+  say('在這組 benchmark 上可以取平均', '競賽常用這種方式');
+  await step(tok); // 1541.8 theory: we don't know the instances
+  note('理論分析：不知道 instance 長相', 0, 7.3);
+  say('但理論分析時', '我們不知道 input instance 長怎樣');
+  await step(tok); // 1563.8 one runs great, another badly
+  glow(bars[2].m, GREEN); okT('跑很好', bars[2].m.position.x, 1.9); noT('跑很差', bars[3].m.position.x, 6.6);
+  say('常常某個 instance 跑得很好', '另一個卻跑得很差');
 }]);
 
+// 26:25 跟 brute force 比
 FRAG.push(['algjiang2-brute-baseline', 'Brute force：拿來比較的基準', async (tok) => {
   fresh([0, 4.0, 13], [0, 2.6, 0]);
-  const v2 = (ctx.params || {}).v === 2;
-  if (!v2) {
-    say('跟誰比？找個肉腳：brute force', '把每個可能的答案都試一遍，再挑最好的');
-    await beat(tok, 2800);
-    const cs = [];
-    for (let k = 0; k < 12; k++) cs.push(cube('', GRAY, [0.7, 0.7, 0.7], -5.5 + (k % 6) * 1.0, 5.0 - Math.floor(k / 6) * 1.0, 0));
-    const cur = tag('試', 'ptr alt', -5.5, 6.0);
-    for (let k = 0; k < 12; k++) { cur.position.set(cs[k].position.x, cs[k].position.y + 0.8, 0); glow(cs[k], GOLD); await beat(tok, 200); glow(cs[k], null); tint(cs[k], J2.sand); }
-    glow(cs[7], GREEN);
-    say('沒有任何 idea 時只能這樣做', '已經試遍所有可能 → 最低標準');
-    await beat(tok, 2600);
-  } else {
-    say('Proposal 2：worst case 要 qualitatively 更好', '比較對象：brute force');
-    await beat(tok, 2800);
-  }
-  const bf = j2bar('brute force', J2.bad, 2.4, 5.0, 1.4), me = j2bar('你的演算法', J2.ok, 4.6, 1.4, 1.4);
-  say(v2 ? 'Worst-case performance 跟它比' : '你的演算法至少要比它好', v2 ? '要用可分析的 model 去量化' : '用了大腦之後改善多少？');
-  await beat(tok, 2800);
-  if (v2) {
-    say('但還沒說 input size 變大時怎麼成長', '要看 scalability → Proposal 3');
-    await beat(tok, 3000);
-  } else {
-    say('常常稍微花點心思就大幅改善', '');
-    await beat(tok, 2600);
-  }
+  say('今天最後一頁', '');
+  await step(tok); // 1589.0 compare with what?
+  bub('常拿什麼來比較？', 0, 6.6);
+  say('我們常拿什麼東西來比較？', '');
+  await step(tok); // 1591.8 a weakling: brute force
+  const bf = buddy('brute force（肉腳）', '', J2.sand, -5.6, 0, 1.0, 0.85);
+  say('找一個肉腳：暴力法', 'brute force');
+  await step(tok); // 1608.8 try every answer, pick the best
+  const cs = [];
+  for (let k = 0; k < 12; k++) cs.push(cube('', GRAY, [0.7, 0.7, 0.7], -3.4 + (k % 6) * 1.0, 5.0 - Math.floor(k / 6) * 1.0, 0));
+  const cur = tag('試', 'ptr alt', -3.4, 6.0);
+  say('沒有任何 idea 時：每個可能的答案都試一試', '再看哪個最好');
+  for (let k = 0; k < 12; k++) { cur.position.set(cs[k].position.x, cs[k].position.y + 0.8, 0); tint(cs[k], J2.sand); await beat(tok, 110); }
+  glow(cs[7], GREEN);
+  await step(tok); // 1623.8 it has tried everything
+  note('已經試過所有可能', -0.9, 3.0);
+  say('Brute force 已經把所有可能都試過', '');
+  await step(tok); // 1638.8 the lowest bar
+  j2bar('brute force', J2.bad, 3.2, 5.0, 1.4); const me = j2bar('你的演算法', J2.ok, 5.4, 3.6, 1.4);
+  say('它是最低標準', '再怎麼設計也不會比它差');
+  await step(tok); // 1646.8 how much did your brain help?
+  note('用了大腦之後，改善多少？', 4.3, 6.2);
+  say('可以看出經過你的設計與思考', '比沒用大腦的結果改善多少');
+  await step(tok); // 1678.8 a little thought, big improvement
+  await anim(tok, 900, (u) => { const h = 3.6 - u * 2.6; me.m.scale.y = h / 3.6; me.m.position.y = h / 2; });
+  okT('稍微花點心思 → 大幅 improvement', 4.3, 1.9);
+  bf.mood('wow');
+  say('常常稍微花一點心思', '就能得到很大的 improvement');
+  await step(tok); // 1684.8 proposal 2 next time
+  pkt('Proposal 2：下次分析', 0, 7.3);
+  say('第二個 proposal 下次再分析', '');
 }]);
 
+// 28:23 Proposal 2
+FRAG.push(['algjiang2-proposal2', 'Proposal 2：qualitatively 更好的 worst case', async (tok) => {
+  fresh([0, 4.2, 13], [0, 2.8, 0]);
+  say('（新的一堂課）', '');
+  await step(tok); // 1706.8 continue the efficiency definition
+  note('上次：Proposal 1、跟 brute force 比', 0, 7.4);
+  say('繼續 efficiency 的定義', '上次談到第二個 proposal');
+  await step(tok); // 1720.8 a more concrete definition
+  pkt('Proposal 2', 0, 6.7);
+  say('提出一個比第一個更 concrete 的定義', '');
+  await step(tok); // 1737.8 qualitatively better worst case
+  tag('efficient = qualitatively 更好的 worst-case performance', 'ptr alt', 0, 6.0);
+  say('能達到 qualitatively 比較好的', 'worst-case performance');
+  await step(tok); // 1768.8 an analysable model
+  note('要根據一個可以分析的 model', -3.4, 5.2);
+  say('要談「比較好」', '一定要根據一個可以分析的 model');
+  await step(tok); // 1781.8 compared with brute force
+  j2bar('brute force', J2.bad, -4.0, 4.2, 1.4); j2bar('你的演算法', J2.ok, -1.8, 1.4, 1.4);
+  say('跟誰比？前面找的肉腳：brute force', '');
+  await step(tok); // 1803.8 quantify the real running time
+  note('實際的 running time 要量化', 3.2, 5.2);
+  say('要用量化的方式', '描述實際的 running time');
+  await step(tok); // 1832.8 not enough: scalability
+  noT('還不夠：scalability？', 3.2, 4.4);
+  say('但還是不夠明確', '沒照顧到 scalability');
+  await step(tok); // 1856.8 small input fast; large input still fast?
+  okT('小 input：快', 3.2, 3.6); const q = bub('大 input：還快嗎？', 3.2, 2.8);
+  say('除了小 input 跑得快不快', '也要看 input size 很大時還快不快');
+  await step(tok); // 1880.8 performance vs input size
+  remove(q);
+  const P = plot(1.4, 0, 4.4, 2.4, 10, 100);
+  P.curve((n) => n * n, J2.bad); tag('run time vs n', 'idx', 3.6, 2.8);
+  say('要看 performance 和 input size 的關係', '才能推論 input 成長時變慢的幅度');
+  await step(tok); // 1905.8 terms first, then definition 3
+  bub('先介紹常用術語 → Definition 3', 0, 7.4);
+  say('正式提出第三個定義之前', '先講一些常用的術語');
+}]);
+
+// 31:54 Polynomial running time
 FRAG.push(['algjiang2-poly-cnd', 'Polynomial running time：T(n) ≤ c·nᵈ', async (tok) => {
-  fresh([0, 4.4, 14.5], [0, 3.6, 0]);
+  fresh([0, 4.6, 15], [0, 3.8, 0]);
   const P = plot(-6, 0, 11.2, 7, 10, 100);
-  say('Polynomial running time', 'T(n) ≤ c·nᵈ，c、d 是大於 0 的常數');
-  await beat(tok, 3300);
+  const top = tag(' ', 'ptr alt', 0, 8.6), sub = note(' ', 0, 7.9);
+  say('第一個術語', '');
+  await step(tok); // 1913.8 polynomial running time
+  txt(top, 'polynomial running time（多項式）');
+  say('Polynomial running time', 'polynomial 就是「多項式」');
+  await step(tok); // 1940.8 given input size N
+  txt(sub, '給定 input size N');
+  say('分析一個 procedure', '給定 input size 是 N');
+  await step(tok); // 1959.8 bounded by c·N^d
+  txt(top, 'running time ≤ c · Nᵈ');
+  say('它的 running time 上限', '可以被 c · Nᵈ bound 住');
+  await step(tok); // 1981.8 c, d > 0 constants
+  txt(sub, 'c、d 都是大於 0 的常數');
+  say('c 和 d 都是大於 0 的常數', '就叫 polynomial running time');
+  await step(tok); // 2002.8 blue = terminology
+  txt(sub, '投影片藍字 = 大家通用的 terminology');
+  say('投影片上藍色的字', '代表大家都這樣叫的術語');
+  await step(tok); // 2033.8 smaller d is better
+  txt(sub, 'd 越小越好');
+  say('running time 是 c · Nᵈ 的話', '當然希望 d 越小越好');
+  await step(tok); // 2041.8 d = 1
   P.curve((n) => 10 * n, J2.man); tag('d = 1', 'ptr', P.X(10) + 0.5, P.Y(100));
   say('d = 1：跟 input size 成正比', '');
-  await beat(tok, 2800);
+  await step(tok); // 2052.8 d = 2
   P.curve((n) => n * n, J2.bad); tag('d = 2', 'ptr', P.X(10) + 0.5, P.Y(100) - 0.7);
-  say('d = 2：二次成長', '同樣 c，d 越大長越快');
-  await beat(tok, 3100);
-  P.curve((n) => 10 * Math.sqrt(n), J2.ok); tag('d = 1/2（√n）', 'ptr alt', P.X(10) + 0.6, P.Y(32));
-  say('d = 1/2：根號，成長更慢', 'd 壓得越低越好');
-  await beat(tok, 3300);
-  say('單位：primitive computational step', '算 procedure 一共要幾個步驟');
-  await beat(tok, 3900);
+  say('d = 2：二次成長', '希望壓得越低越好');
+  await step(tok); // 2058.8 d = 1/2
+  P.curve((n) => 10 * Math.sqrt(n), J2.ok); tag('d = 1/2（√N）', 'ptr alt', P.X(10) + 0.7, P.Y(32));
+  say('d = 1/2：根號，成長得更慢', '');
+  await step(tok); // 2079.8 the unit: primitive computational step
+  txt(top, '單位：primitive computational step');
+  txt(sub, 'c · Nᵈ 算的是「步驟數」');
+  say('c · Nᵈ 的單位是 primitive computational step', '算 procedure 一共要花多少步驟');
+  await step(tok); // 2118.8 primitive = the most basic step
+  txt(sub, 'primitive = 最基本的計算步驟');
+  say('primitive：最基本型的計算步驟', '');
 }]);
 
+// 35:29 Primitive computational step
 FRAG.push(['algjiang2-primitive-step', 'Primitive computational step：跟 input size 無關', async (tok) => {
   fresh([0, 4.2, 13], [0, 3.0, 0]);
-  const cd = code(['① 一行組合語言 instruction ≈ 1 cycle', '② 一行高階語言：a > b、a = b + c', '③ 只要跟 input size 無關就算 1 步'], -2.6, 7.0, 0.55);
+  say('什麼叫 procedure 裡的「步驟」？', '');
+  await step(tok); // 2132.8 every line is an operation
+  const f = prop('file', -5.4, 4.2, 0, 1.3, 'procedure'); bob(f, 0.05);
+  note('每一行都是一個 operation', -5.4, 3.6);
+  say('procedure 第一行、第二行……', '每一行都是一個 operation');
+  await step(tok); // 2138.8 1 step or n steps?
+  bub('這一行算 1 步？還是 n 步？', -5.4, 6.4);
+  say('但寫一行可能對應很多步驟', '怎麼判定它算 1 步還是 n 步？');
+  await step(tok); // 2162.8 operational: one assembly instruction
+  const cd = code(['① 一行組合語言 instruction', '② 一行標準程式語言', '③ 只要跟 input size 無關就算 1 步'], 0.6, 7.0, 0.55);
   cd.hl(0);
-  say('一個步驟怎麼算？', '操作型定義：一行 assembly，RISC 一個 cycle');
-  await beat(tok, 2600);
+  say('操作型定義：一行組合語言 instruction', '算一個步驟');
+  await step(tok); // 2175.8 maps to machine code, CPU runs it
+  prop('cpu', 4.6, 0, 0, 1.3, 'CPU 讀 machine code 執行');
+  say('組合語言可以直接翻成 machine code', 'CPU 讀了就去執行');
+  await step(tok); // 2184.8 RISC: one instruction per cycle
+  note('RISC：一個 instruction ≈ 一個 cycle', 4.6, 2.4);
+  say('像 RISC 的機器', '一個 instruction 大約一個 cycle 完成');
+  await step(tok); // 2216.8 not practical: procedure is too high level
+  noT('procedure 比 C 還 high level，離 machine code 太遠', 0.6, 4.8);
+  say('但這對設計 procedure 不實際', 'procedure 是很抽象的描述，離 machine code 太遠');
+  await step(tok); // 2268.8 one line of a standard language
   cd.hl(1);
-  say('一行高階語言也可以算一步', '一次比較、一次簡單 assignment');
-  await beat(tok, 2600);
+  say('第二種：標準程式語言的一行', '也可以看成一個步驟');
+  await step(tok); // 2291.8 a comparison, a simple assignment
+  cube('a > b ?', J2.sand, [1.6, 0.6, 1], 0.0, 2.4, 1.2, 2); cube('a = b + c', J2.sand, [1.8, 0.6, 1], 2.2, 2.4, 1.2, 2);
+  say('例如一次比較：a 是否大於 b', '或一次簡單 assignment：a = b + c');
+  await step(tok); // 2314.8 the third line is the real point
   cd.hl(2);
-  say('重點：刻度大小無所謂', '一步 = 100 個 cycle 也行，只要跟 n 無關');
-  await beat(tok, 2800);
-  const a = cube('32-bit', J2.man, [1.3, 0.7, 0.8], 1.6, 4.4, 0, 3), b = cube('32-bit', J2.man, [1.3, 0.7, 0.8], 3.2, 4.4, 0, 3);
-  const c1 = tag('步驟：0', 'ptr alt', 5.6, 4.4);
-  await beat(tok, 900);
-  move(b, 1.6, 4.4, 0); kill(b); relabel(a, 'a + b'); tint(a, J2.ok); txt(c1, '步驟：1');
-  say('兩個 32-bit 數相加 = 1 步', '每個數都 32 bit → 跟 n 無關');
-  await beat(tok, 2600);
-  kill(a); kill(c1);
+  say('真正的重點是第三行', '刻度可以拉得很大');
+  await step(tok); // 2332.8 100 cycles is fine if independent of n
+  okT('一步 = 100 個 cycle 也行，只要跟 input size 無關', 0.6, 5.5);
+  say('一步對應 100 個 cycle 也可以', '只要這個步驟跟 input size 沒關係');
+  await step(tok); // 2346.8 example: add two 32-bit numbers
+  fresh([0, 4.2, 13], [0, 2.6, 0]);
+  const a = cube('32-bit', J2.man, [1.4, 0.7, 0.8], -1.6, 4.4, 0, 3), b = cube('32-bit', J2.man, [1.4, 0.7, 0.8], 0.2, 4.4, 0, 3);
+  const c1 = tag('步驟：0', 'ptr alt', 2.8, 4.4);
+  say('舉例：兩個 32-bit 數字相加', '');
+  await step(tok); // 2354.8 the adder looks complicated
+  prop('cpu', -4.4, 3.6, 0, 1.0, '32-bit adder 好複雜？');
+  say('做過 32-bit adder 的人', '會覺得它設計很複雜、要算很久');
+  await step(tok); // 2364.8 still one step: independent of n
+  move(b, -1.6, 4.4, 0); await beat(tok, 500); kill(b); relabel(a, 'a + b'); tint(a, J2.ok); txt(c1, '步驟：1');
+  okT('每個數都 32 bit → 跟 n 無關 → 1 步', 0, 5.6);
+  say('但可以說它是單一步驟', '所有數都用 32 bit 表示，跟 input size 無關');
+  await step(tok); // 2386.8 add n inputs together?
   const xs = [-4.5, -3.0, -1.5, 0, 1.5, 3.0], cs = xs.map((x, k) => cube('x' + (k + 1), J2.sand, [1.1, 0.6, 0.8], x, 1.2, 0, 2));
-  const c2 = tag('加法：0 次', 'ptr alt', 5.4, 1.2);
-  await beat(tok, 800);
-  say('n 個數相加還是 1 步嗎？', '加法器一次只加兩個數');
-  for (let k = 1; k < 6; k++) { move(cs[k], xs[0], 1.2, 0); await beat(tok, 350); kill(cs[k]); relabel(cs[0], 'Σ' + (k + 1)); txt(c2, '加法：' + k + ' 次'); await beat(tok, 250); }
-  tint(cs[0], J2.bad);
-  say('n = 6 → 5 次：n − 1 步', '跟 n 有關 → 太大，要切細');
-  await beat(tok, 3000);
+  const c2 = tag('加法：0 次', 'ptr alt', 5.0, 1.2);
+  const q = bub('n 個數加在一起，還是 1 步？', 0, 2.6);
+  say('如果是把 n 個 input 加在一起', '還算單一步驟嗎？');
+  await step(tok); // 2401.8 the adder adds two at a time
+  remove(q);
+  for (let k = 1; k < 6; k++) { move(cs[k], xs[0], 1.2, 0); await beat(tok, 220); kill(cs[k]); relabel(cs[0], 'Σ' + (k + 1)); txt(c2, '加法：' + k + ' 次'); }
+  say('加法器每次只把兩個數加起來', 'n 個數要做 n − 1 次加法');
+  await step(tok); // 2414.8 so n - 1 steps
+  tint(cs[0], J2.bad); noT('n = 6 → 5 次：n − 1 步', 0, 2.6);
+  say('所以不能說是 1 步', '要說它是 n − 1 步');
+  await step(tok); // 2443.8 depends on n -> cut finer
+  note('步驟跟 input size 有關 → 切太大，要再切細', 0, 6.4);
+  say('operation 跟 input size 有關', '表示步驟太大，要切到跟 n 無關');
+  await step(tok); // 2457.8 that is a primitive computational step
+  okT('跟 n 無關的步驟 = primitive computational step', 0, 7.1);
+  say('這樣才叫 primitive computational step', '');
 }]);
 
+// 41:22 Definition 3 與例外
 FRAG.push(['algjiang2-poly-exceptions', 'Definition 3：polynomial 就算 efficient（與例外）', async (tok) => {
-  fresh([0, 4.2, 13], [0, 3.0, 0]);
-  tag('Efficient ⇔ polynomial worst-case running time', 'ptr alt', 0, 7.0);
-  say('Definition 3', '不用再拿 brute force 來比');
-  await beat(tok, 2800);
-  say('經驗上 c、d 都不大 → 算是快', '');
-  await beat(tok, 2000);
-  const big = cube('6.02×10²³ · n²⁰', J2.bad, [3.6, 1.0, 1.2], -3.4, 4.6, 0, 3);
-  say('例外 1：是 polynomial，但 c、d 太大', '實際上不可行');
-  await beat(tok, 2800);
-  const lad = [tag('n²：最好不要超過', 'ptr', -3.4, 3.2), tag('n² log n：勉強', 'idx', -3.4, 2.5), tag('n³ 以上：大 input 跑不動', 'idx', -3.4, 1.8)];
-  say('老師建議：最好不超過 n²', '真的不行就 n² log n');
-  await beat(tok, 2800);
-  const s1 = cube('Simplex method', J2.ok, [3.0, 0.9, 1.2], 3.4, 4.6, 0, 3), s2 = cube('Unix grep', J2.ok, [3.0, 0.9, 1.2], 3.4, 3.2, 0, 3);
-  tag('worst case 2ⁿ 等級', 'idx', 3.4, 2.2);
-  say('例外 2：worst case 指數，實務卻很快', '一般 input 不容易撞到 worst case');
-  await beat(tok, 3000);
-  say('理論看 worst case，實務可能有落差', '記住這些例外');
-  await beat(tok, 2800);
+  fresh([0, 4.2, 13.5], [0, 3.6, 0]);
+  say('回到 polynomial running time', '');
+  await step(tok); // 2483.8 running time ≤ c·n^d
+  tag('running time ≤ c · nᵈ', 'ptr alt', 0, 7.6);
+  say('有 polynomial running time', '= running time 的上限被 c · nᵈ bound 住');
+  await step(tok); // 2491.8 you must find c and d
+  note('要真的找得到常數 c 和 d', 0, 7.0);
+  say('重點：一定要找得到 c 和 d', '');
+  await step(tok); // 2511.8 definition 3
+  pkt('Definition 3：efficient ⇔ polynomial running time', 0, 6.2);
+  say('這就是第三個定義', 'algorithm 有 polynomial running time 就是 efficient');
+  await step(tok); // 2543.8 worst case
+  note('看的是 worst-case running time（不是 average、best）', 0, 5.5);
+  say('討論的是 worst-case running time', '不是 average case，也不是 best case');
+  await step(tok); // 2577.8 in practice c and d are small
+  okT('經驗上 c、d 都很小 → 算快', -3.4, 4.6);
+  say('經驗上大部分人設計的演算法', 'c 和 d 都比較小，所以算快');
+  await step(tok); // 2602.8 no need to analyse brute force
+  const bf = buddy('brute force', '', J2.sand, 3.4, 2.4, 0, 0.7); bf.mood('sad');
+  note('不用再分析 brute force 來比', 3.4, 4.6);
+  say('好處：不用先分析 brute force 要花多少時間', '');
+  await step(tok); // 2638.8 just look at the procedure itself
+  okT('直接看 procedure 自己是不是 polynomial', 0, 1.6);
+  say('直接看這個 procedure 本身', '是不是 polynomial time');
+  await step(tok); // 2673.8 many problems aren't polynomial
+  note('很多問題找不到 polynomial → 相對慢', 0, 0.9);
+  say('言下之意：很多問題沒辦法', '在 polynomial running time 內算出來');
+  await step(tok); // 2705.8 exception 1: 6.02e23 · n^20
+  fresh([0, 4.2, 13.5], [0, 3.0, 0]);
+  tag('例外', 'ptr alt', 0, 7.4);
+  cube('6.02×10²³ · n²⁰', J2.bad, [3.8, 1.0, 1.2], -3.4, 5.4, 0, 3);
+  say('有些例外照顧不到', '例：6.02×10²³ · n²⁰ 個步驟');
+  await step(tok); // 2748.8 huge: not feasible
+  noT('c、d 都超大：實際上不可行', -3.4, 4.4);
+  say('它確實是 polynomial', '但任何電腦跑都要很久，不可行');
+  await step(tok); // 2778.8 some people cheat
+  note('有人投機：「我還是 polynomial 啊」', -3.4, 3.8);
+  say('有人會投機取巧', '說「我還是 polynomial，只是 c、d 大一點」');
+  await step(tok); // 2796.8 advice: at most n^2
+  okT('建議：最好不超過 n²', -3.4, 3.0); note('真的不行：n² log n', -3.4, 2.4);
+  say('老師建議：設計演算法最好不要超過 n²', '真的不行就 n² log n');
+  await step(tok); // 2814.8 VLSI design: too slow
+  note('超過這等級：VLSI design 會跑得非常慢', -3.4, 1.8);
+  say('超過這個等級', '像 VLSI design 的大 input 就跑得非常慢');
+  await step(tok); // 2874.8 exception 2: exponential worst case
+  cube('worst case：2ⁿ、3ⁿ…', J2.bad, [3.6, 1.0, 1.2], 3.4, 5.4, 0, 3);
+  say('相反的例外', 'worst case 是 exponential（2ⁿ、3ⁿ…）');
+  await step(tok); // 2894.8 yet useful in practice
+  okT('real case 上很好用：不容易撞到 worst case', 3.4, 4.4);
+  say('實際使用上卻很好用', '一般遇到的 case 不容易撞到 worst case');
+  await step(tok); // 2930.8 simplex method, grep
+  cube('Simplex method', J2.ok, [3.0, 0.8, 1.1], 2.4, 3.0, 0, 3); cube('Unix grep', J2.ok, [2.4, 0.8, 1.1], 5.4, 3.0, 0, 3);
+  say('例子：Simplex method', 'Unix 的 grep');
+  await step(tok); // 2944.8 complex but fast
+  note('理論上很複雜，real case 卻跑很快', 3.4, 1.9);
+  say('以難度來說很複雜', '但 real case 跑起來非常快');
+  await step(tok); // 2967.8 theory vs practice
+  noT('理論 worst case 很差 ↔ 實務很快', 3.4, 1.2);
+  say('用理論分析 worst case，表現很差', '跟實際使用有時會有落差');
+  await step(tok); // 2995.8 remember the exceptions
+  bub('記住例外；分析還是以 worst case 為準', 0, 6.6);
+  say('要記住這些例外', '我們還是以 worst-case running time 來比較');
 }]);
 
+// 50:13 Running time 表
 FRAG.push(['algjiang2-runtime-table', 'Running time 表：每秒 10⁶ 個指令', async (tok) => {
-  fresh([0, 4.2, 14], [0, 4.0, 0]);
+  fresh([0, 4.4, 14.5], [0, 4.0, 0]);
   const cols = [['n', (n) => Math.log10(n)], ['n log n', (n) => Math.log10(n * Math.log2(n))], ['n²', (n) => 2 * Math.log10(n)], ['n³', (n) => 3 * Math.log10(n)],
     ['1.5ⁿ', (n) => n * Math.log10(1.5)], ['2ⁿ', (n) => n * Math.log10(2)], ['n!', (n) => { let s = 0; for (let k = 2; k <= n; k++) s += Math.log10(k); return s; }]];
   const rows = [10, 30, 50, 100, 1000, 10000, 100000, 1000000];
@@ -7654,115 +8343,1208 @@ FRAG.push(['algjiang2-runtime-table', 'Running time 表：每秒 10⁶ 個指令
     if (ly > 25) return 'very long'; if (ly < 5) return Math.round(Math.pow(10, ly)).toLocaleString('en-US') + ' 年';
     const e = Math.floor(ly); return Math.round(Math.pow(10, ly - e)) + '×10' + sup(e) + ' 年';
   };
-  const X = (j) => -4.5 + j * 1.75, Y = (i) => 7.0 - i * 0.78, cells = [];
-  cols.forEach(([h], j) => tag(h, 'ptr', X(j), 7.9));
-  say('假想機器：每秒 10⁶ 個指令', 'high-level instruction；n 從 10 到 1,000,000');
-  await beat(tok, 2600);
-  for (let i = 0; i < rows.length; i++) {
-    tag('n = ' + rows[i].toLocaleString('en-US'), 'idx', -6.4, Y(i));
-    cells.push(cols.map(([, f], j) => { const v = fmtT(f(rows[i])); return tag(v, v === '< 1 s' ? 'idx' : '', X(j), Y(i)); }));
-    await beat(tok, 450);
-  }
-  say('n log n、n²：這範圍還等得下去', '');
-  await beat(tok, 2400);
-  cells[6][3].element.className = 'lab-label ptr alt';
-  say('n³：n = 10 萬就要 32 年', 'VLSI 的 input 動輒百萬、甚至 billion');
-  await beat(tok, 3000);
+  const X = (j) => -4.5 + j * 1.75, Y = (i) => 7.0 - i * 0.78, cells = [], heads = [];
+  const foot = note(' ', 0, 0.6, 0.8);
+  say('結論與一張對照表', '');
+  await step(tok); // 3012.8 polynomial worst case = efficient
+  pkt('polynomial worst-case running time → efficient', 0, 9.3);
+  say('有 polynomial 的 worst-case running time', '就是 efficient');
+  await step(tok); // 3026.8 rows: input size n
+  rows.forEach((n, i) => tag('n = ' + n.toLocaleString('en-US'), 'idx', -6.4, Y(i)));
+  say('表格每一列是 input size n', '10、30、50……一直到 100 萬');
+  await step(tok); // 3049.8 columns: how the steps are bounded
+  cols.forEach(([h], j) => heads.push(tag(h, 'ptr', X(j), 7.9)));
+  say('每一欄是步驟數被 bound 住的形式', 'n、n log n、n²、n³、1.5ⁿ、2ⁿ、n!');
+  await step(tok); // 3073.8 an imaginary machine: 10^6 instructions/s
+  prop('cpu', 6.6, 0, 0, 0.9, '每秒 10⁶ 個指令');
+  say('假想一台機器', '每秒執行 100 萬個 high-level instruction');
+  await step(tok); // 3100.8 fill in the table (very long > 10^25 years)
+  for (let i = 0; i < rows.length; i++) { cells.push(cols.map(([, f], j) => { const v = fmtT(f(rows[i])); return tag(v, v === '< 1 s' ? 'idx' : '', X(j), Y(i)); })); await beat(tok, 120); }
+  txt(foot, 'very long = 超過 10²⁵ 年');
+  say('格子是需要的時間', 'very long 表示超過 10²⁵ 年');
+  await step(tok); // 3117.8 n log n and n^2: bearable
+  cls(heads[1], 'good'); cls(heads[2], 'good');
+  say('n log n、n² 在這個範圍', '大家大概還等得下去');
+  await step(tok); // 3136.8 n^3: 32 years at n = 10^5
+  cls(cells[6][3], 'bad'); cls(heads[3], 'bad');
+  say('寫成 n³ 的話', 'input 不用太大：n = 10 萬就要 32 年');
+  await step(tok); // 3152.8 real machines are faster
+  txt(foot, '現在的電腦是 GHz，快一些等級，但 n³ 能處理的 n 還是不大');
+  say('這台機器其實沒那麼厲害', '現在是 GHz 等級，但 n³ 能處理的 n 還是不大');
+  await step(tok); // 3174.8 VLSI: millions, billions
+  txt(foot, 'VLSI design：input 動輒 100 萬、甚至 billion');
+  say('VLSI design 遇到的 input', '隨便就 100 萬以上，甚至 billion 等級');
+  await step(tok); // 3198.8 efficient algorithms matter
+  txt(foot, '→ 設計有效率的演算法非常重要');
+  say('input 很大時，簡單的事也變很難', '所以設計有效率的演算法非常重要');
+  await step(tok); // 3206.8 1.5^n, 2^n, n!: unbearable early
   const gz = ghostBox('#d64545', 5.4, 6.6, 0.2); gz.position.set(X(5), Y(3.5), -0.3);
-  say('1.5ⁿ、2ⁿ、n!：n 很小就受不了', '寫不成 c·nᵈ → non-polynomial');
-  await beat(tok, 3000);
-  say('有 poly-time 演算法 → 問題較簡單', '一直找不到 → 相對難');
-  await beat(tok, 3000);
+  say('1.5ⁿ、2ⁿ、n!', 'input 非常小的時候就已經受不了');
+  await step(tok); // 3225.8 polynomial vs non-polynomial
+  okT('polynomial：c · nᵈ', X(1.5), 8.6); noT('non-polynomial：exponential、階乘', X(5), 8.6);
+  say('左邊屬於 polynomial（c · nᵈ）', '右邊寫不成 c · nᵈ → non-polynomial');
+  await step(tok); // 3273.8 classify problem difficulty
+  txt(foot, '有人找得到 polynomial-time 演算法 → 問題相對簡單');
+  say('這個定義也能區分問題的難度', '找得到 polynomial-time 演算法的問題相對簡單');
+  await step(tok); // 3294.8 nobody can -> hard
+  txt(foot, '一直沒人找得到 → 問題相對難');
+  say('如果一直沒有人找得到', '這樣的問題就相對比較難');
 }]);
 
+// 55:06 Asymptotic order of growth
 FRAG.push(['algjiang2-drop-terms', 'T(n) = 1.62n² + 3.5n + 8：只留 n²', async (tok) => {
   fresh([0, 4.2, 13], [0, 3.0, 0]);
-  const eq = tag('T(n) = 1.62n² + 3.5n + 8', 'ptr alt', 0, 7.2);
-  say('把每一行的步驟算得很精細', 'T(n) = 1.62n² + 3.5n + 8');
-  await beat(tok, 2600);
+  say('接下來：asymptotic order of growth', '');
+  await step(tok); // 3307.8 important: homework, exam
+  pkt('Asymptotic order of growth', 0, 7.6); noT('作業一定有、考試一定考', 0, 6.9);
+  say('這個地方很重要', '作業一定有，考試也一定考');
+  await step(tok); // 3319.8 intrinsic computational tractability
+  tag('intrinsic computational tractability：本質上的 running time', 'ptr alt', 0, 6.2);
+  say('要談的是演算法本質上的', 'running time 表現');
+  await step(tok); // 3337.8 asymptotic analysis
+  note('分析它的理論：asymptotic analysis', 0, 5.5);
+  say('有一套理論分析它', '叫 asymptotic analysis');
+  await step(tok); // 3353.8 three symbols
+  const O = cube('Big-O', J2.ok, [2.0, 0.8, 1.1], -3.4, 3.8, 0, 3); cube('Big-Ω', J2.purple, [2.0, 0.8, 1.1], 0, 3.8, 0, 3); cube('Θ', J2.gold, [2.0, 0.8, 1.1], 3.4, 3.8, 0, 3);
+  const lo = [cube('little o', GRAY, [1.6, 0.5, 0.8], -1.8, 2.4, 0, 3), cube('little ω', GRAY, [1.6, 0.5, 0.8], 1.8, 2.4, 0, 3)];
+  say('重點放在三個符號', 'Big-O、Big-Ω、Θ；little o、little ω 不討論');
+  await step(tok); // 3371.8 focus on Big-O
+  glow(O, GOLD); lo.forEach((m) => fly(m, V3(0, 6, -4)));
+  say('之後主要用 Big-O', '大部分書也最常用它');
+  await step(tok); // 3399.8 worst case, never best case
+  okT('一定看 worst case', -3.0, 1.6); noT('不看 best case', 3.0, 1.6);
+  say('running time 一定以最差的狀況分析', '千萬不要找 best case');
+  await step(tok); // 3427.8 total steps as a function f(n)
+  note('給定 n：需要的步驟總和寫成 f(n)', 0, 0.9);
+  say('給定 input size n', '把需要的步驟總和寫成 function f(n)');
+  await step(tok); // 3445.8 upper bound; also lower and tight
+  note('主要談 upper bound，也順帶談 lower、tight bound', 0, 0.3);
+  say('課本常談的是 upper bound', '順帶討論 lower bound 和 tight bound');
+  await step(tok); // 3476.8 count every line very finely
+  fresh([0, 4.2, 13], [0, 3.0, 0]);
+  const eq = tag('T(n) = ?', 'ptr alt', 0, 7.2);
+  const cnt = buddy('精算', '', J2.orange, -5.6, 0, 1.4, 0.8);
+  say('為什麼要做 asymptotic analysis？', '假設把每一行的步驟算得非常精細');
+  await step(tok); // 3492.8 1.62n² + 3.5n + 8
+  txt(eq, 'T(n) = 1.62n² + 3.5n + 8');
+  say('算出來需要', '1.62n² + 3.5n + 8 個步驟');
+  await step(tok); // 3516.8 too fine is not good: say n²
   const ns = [10, 100, 1000], H = 5, parts = [];
   ns.forEach((n, k) => {
-    const a = 1.62 * n * n, b = 3.5 * n, c = 8, s = a + b + c, x = -3.6 + k * 3.6;
+    const a = 1.62 * n * n, b = 3.5 * n, c = 8, s = a + b + c, x = -2.4 + k * 3.0;
     const ha = H * a / s, hb = H * b / s, hc = Math.max(0.04, H * c / s);
     const ma = cube('', J2.bad, [1.6, ha, 1], x, ha / 2), mb = cube('', J2.man, [1.6, hb, 1], x, ha + hb / 2), mc = cube('', J2.ok, [1.6, hc, 1], x, ha + hb + hc / 2);
-    tag('n = ' + n, 'idx', x, -0.45); tag(Math.round(1000 * a / s) / 10 + '%', 'ptr', x + 1.4, ha / 2);
+    tag('n = ' + n, 'idx', x, -0.45); tag(Math.round(1000 * a / s) / 10 + '%', 'ptr', x + 1.3, ha / 2);
     parts.push({ ma, mb, mc });
   });
-  tag('紅：1.62n²　藍：3.5n　綠：8', 'idx', 0, 6.2);
-  say('n 變大，n² 項幾乎佔全部', 'n = 10：79%；n = 1000：99.8%');
-  await beat(tok, 3200);
+  tag('紅：1.62n²　藍：3.5n　綠：8', 'idx', 0, 6.3);
+  say('這樣描述太精細，不是好事', 'n 一變大，n² 那項幾乎佔全部');
+  await step(tok); // 3534.8 keep the highest order, drop the rest
   parts.forEach((p) => { fly(p.mb, V3(0, 8, 4)); fly(p.mc, V3(0, 8, 4)); });
   txt(eq, 'T(n) ≈ 1.62n²');
-  say('丟掉 low-order terms', '太細反而沒重點');
-  await beat(tok, 2600);
+  say('習慣上只取最高次方', 'low-order terms 全部不理');
+  await step(tok); // 3549.8 the coefficient isn't important
   txt(eq, 'T(n) ~ n²');
-  say('係數也不重要：跟步驟的刻度有關', '換個算法係數會變，次方不會變');
-  await beat(tok, 3000);
-  say('就說它是 n² 的表現', '都被 n² 界住的演算法 → 同一個 class');
-  await beat(tok, 3000);
+  say('前面的係數也不重要', '演算法不太差的話，係數不會太大');
+  await step(tok); // 3561.8 grows like n²
+  okT('成長跟 n² 成正比 → 「n² 的表現」', 0, 5.6);
+  say('就說它的成長', '跟 input size 的二次方成正比');
+  await step(tok); // 3585.8 the step size differs per person
+  const b2 = buddy('另一人', '', J2.purple, 5.6, 0, 1.4, 0.8);
+  note('1.62n² + …', -5.6, 2.6, 1.4); note('10n² + …', 5.6, 2.6, 1.4);
+  say('太細也沒意義：步驟跟刻度有關', '每個人切步驟的方式不同，算出來不一樣');
+  await step(tok); // 3627.8 coefficients differ, exponent doesn't
+  cnt.mood('happy'); b2.mood('happy');
+  okT('差在係數；次方一樣是 2', 0, 4.9);
+  say('差異只在係數上', '次方不會變，因為刻度跟 n 無關');
+  await step(tok); // 3652.8 too fine hinders classifying
+  noT('分太細 → 阻礙難度分類', 0, 4.2);
+  say('分這麼細，反而會阻礙', '我們對演算法難度的分類');
+  await step(tok); // 3663.8 one class for everything bounded by n²
+  const cl = ghostBox('#c08a1f', 9.6, 1.0, 1.6); cl.position.set(0, 7.2, -0.5);
+  tag('n² class：難度差不多，同等級', 'ptr', 0, 8.0);
+  say('連帶好處：都被 n² bound 住的演算法', '可以歸成同一個 class，難度差不多');
 }]);
 
+// 1:02:22 O、Ω、Θ 的定義
 FRAG.push(['algjiang2-bounds-def', 'O、Ω、Θ 的定義：找 c 與 n₀', async (tok) => {
-  fresh([0, 4.4, 14.5], [0, 3.6, 0]);
+  fresh([0, 4.6, 15], [0, 3.8, 0]);
   const T = (n) => 1.62 * n * n + 3.5 * n + 8;
   const P = plot(-6, 0, 11, 7, 20, 820);
+  const top = tag(' ', 'ptr alt', 0, 8.7), sub = note(' ', 0, 8.0);
+  say('正式介紹三個符號', '');
+  await step(tok); // 3741.8 T(n): worst-case running time
   P.curve(T, '#3a3226'); tag('T(n)', 'ptr', P.X(20) + 0.5, P.Y(T(20)) - 0.2);
-  say('T(n)：input size n 的 worst-case 步驟數', '例：T(n) = 1.62n² + 3.5n + 8');
-  await beat(tok, 2800);
+  txt(top, 'T(n)：input size n 的 worst-case running time');
+  say('T(n)：演算法在 input size n 之下', '分析出來的 worst-case running time');
+  await step(tok); // 3778.8 upper, lower, tight
+  txt(sub, '對 T(n) 找：上限、下限、tight bound');
+  say('有了 T(n)，接著分析它的', '上限、下限，還有 tight bound');
+  await step(tok); // 3801.8 the small picture: the black curve
+  txt(sub, '黑線：每個 n 對應的步驟數');
+  say('看小圖：黑色這條線就是 T(n)', '不同 n 之下的 running time');
+  await step(tok); // 3830.8 a function above it
   P.curve((n) => 2 * n * n, J2.bad); tag('2n²', 'ptr', P.X(20) + 0.5, P.Y(800));
-  say('Big-O：n ≥ n₀ 時 T(n) ≤ c·f(n)', '');
-  await beat(tok, 2400);
-  P.vmark(12, '#c08a1f', 'n₀ = 12'); const z = P.zone(12, 20, '#d64545');
-  say('c = 2：n ≥ 12 起 2n² 壓住 T(n)', 'T(n) = O(n²)；前段沒壓住沒關係');
-  await beat(tok, 3000);
+  txt(sub, '紅線：在上面壓住它（≥）→ upper bound');
+  say('找另一個 function 在上面壓住它', 'upper bound 要大於等於它');
+  await step(tok); // 3843.8 and one below it
   P.curve((n) => n * n, J2.man); tag('1·n²', 'ptr alt', P.X(20) + 0.5, P.Y(400));
-  say('Big-Ω：n ≥ n₀ 時 T(n) ≥ c·f(n)', 'c = 1 → T(n) = Ω(n²)');
-  await beat(tok, 2800);
-  say('Θ：上界、下界同時成立', 'c₁ = 1、c₂ = 2 可以不同 → T(n) = Θ(n²)');
-  await beat(tok, 3000);
-  say('也可用極限：T(n)/f(n) → 常數', 'lim T(n)/n² = 1.62 → 互為 Θ');
-  await beat(tok, 3000);
+  txt(sub, '藍線：在下面接近它（≤）→ lower bound');
+  say('lower bound 要小於等於它', '從下面接近它');
+  await step(tok); // 3851.8 only for large enough n
+  P.vmark(12, '#c08a1f', 'n₀ = 12'); const z = P.zone(12, 20, '#d64545'); z.visible = false;
+  txt(sub, '前面一段沒壓住沒關係：n 夠大之後成立就好');
+  say('前面一段不一定真的壓住', '只要在 n 足夠大之後成立就好');
+  await step(tok); // 3888.8 Big-O definition
+  txt(top, 'Big-O：存在 c > 0、n₀，使 n ≥ n₀ 時 T(n) ≤ c · f(n)');
+  txt(sub, ' ');
+  say('Big-O（upper bound）的定義', '找 n₀ 和常數 c > 0，讓 n ≥ n₀ 時 T(n) ≤ c · f(n)');
+  await step(tok); // 3935.8 red curve stays above after n0
   z.visible = true;
+  txt(sub, 'n ≥ 12 起 2n² 永遠在上 → T(n) = O(n²)');
+  say('紅線在 n₀ 之後永遠大於等於 T(n)', '所以 T(n) = O(n²)，c = 2');
+  await step(tok); // 3967.8 Big-Ω
+  txt(top, 'Big-Ω：n ≥ n₀ 時 c · f(n) ≤ T(n)，c > 0');
+  txt(sub, 'c = 1：n² ≤ T(n) → T(n) = Ω(n²)');
+  say('lower bound 一樣：n 足夠大之後', '藍線 c · f(n) 一定小於等於 T(n)');
+  await step(tok); // 4002.8 Θ: both
+  txt(top, 'Θ（tight bound）：上界、下界同時成立');
+  txt(sub, ' ');
+  say('Θ 是比較緊的 bound', '要同時符合 upper bound 和 lower bound');
+  await step(tok); // 4024.8 different c1, c2
+  txt(sub, 'c₁ = 2（上界）、c₂ = 1（下界）可以不同 → T(n) = Θ(n²)');
+  say('差別只在前面的係數', 'c₁ 時是 upper bound，c₂ 時是 lower bound');
+  await step(tok); // 4046.8 they grow alike
+  txt(sub, 'T(n) 和 n² 的成長趨勢非常相似');
+  say('為什麼叫 tight bound？', 'T(n) 和 f(n) 的成長趨勢非常相似');
+  await step(tok); // 4070.8 the limit view
+  txt(top, 'lim T(n) / n² = 1.62（常數）→ 互為 Θ');
+  txt(sub, '相除後 n → ∞ 趨近某個常數');
+  say('也可以用極限看', '兩者相除，n → ∞ 時趨近某個常數 → 互為 Θ');
+  await step(tok); // 4107.8 asymptotic = limit analysis
+  txt(top, 'asymptotic analysis = 極限分析');
+  txt(sub, '高中數學：n → ∞ 時 function 趨近什麼');
+  say('為什麼叫 asymptotic analysis？', '數學上就是極限分析：n → ∞ 時趨近什麼');
+  await step(tok); // 4141.8 large inputs: growth trend
+  txt(sub, '演算法：看 input size 很大時 running time 的成長趨勢');
+  say('在 algorithm 領域', '就是看 input size 很大時，running time 的成長趨勢');
 }]);
 
+// 1:09:56 九題 yes/no
 FRAG.push(['algjiang2-nine-quiz', '九題 yes/no：T(n) = 1.62n² + 3.5n + 8', async (tok) => {
-  fresh([0, 4.0, 13], [0, 3.4, 0]);
-  tag('T(n) = 1.62n² + 3.5n + 8', 'ptr alt', 0, 7.3);
+  fresh([0, 4.0, 13.5], [0, 3.4, 0]);
   const fs = ['n', 'n²', 'n³'], ops = ['O', 'Ω', 'Θ'], ans = [[0, 1, 1], [1, 1, 0], [0, 1, 0]];
   const X = (j) => -3.4 + j * 3.4, Y = (i) => 5.6 - i * 1.9, g = [];
-  for (let i = 0; i < 3; i++) { g.push([]); for (let j = 0; j < 3; j++) g[i].push(cube(ops[i] + '(' + fs[j] + ')', J2.sand, [2.2, 0.9, 1.0], X(j), Y(i), 0)); }
   const mark = (i, j) => { tint(g[i][j], ans[i][j] ? J2.ok : J2.bad); relabel(g[i][j], ops[i] + '(' + fs[j] + ') ' + (ans[i][j] ? '✓' : '✗')); };
-  say('九題 yes/no', 'O 上界、Ω 下界、Θ 兩者都要');
-  await beat(tok, 2400);
-  mark(0, 0); say('T(n) = O(n)？No', '找不到常數 c 讓 c·n 一直壓住 1.62n²'); await beat(tok, 2800);
-  mark(0, 1); say('O(n²)：Yes', '要真的找到 c 與 n₀，例如 c = 2，n₀ = 12'); await beat(tok, 2800);
-  mark(0, 2); glow(g[0][2], GOLD); say('O(n³)：也是 Yes', 'c·n³ 很容易超過 → 對，但不夠 tight'); await beat(tok, 3000);
-  glow(g[0][2], null);
-  mark(1, 0); mark(1, 1); say('Ω(n)、Ω(n²)：Yes', '係數取小一點就成立'); await beat(tok, 2600);
-  mark(1, 2); say('Ω(n³)：No', 'c·n³ 壓不到 T(n) 下面'); await beat(tok, 2400);
-  say('Θ：同時檢查 O 與 Ω 那兩題', '例：Θ(n) 看第 1、4 題'); await beat(tok, 2400);
-  mark(2, 0); mark(2, 1); mark(2, 2); say('只有 Θ(n²) 成立', ''); await beat(tok, 2400);
-  say('寫 Big-O，心裡要追求 Θ 等級', '明明是 n²，說成 n³ 人家會生氣'); await beat(tok, 3000);
+  const side = note(' ', 0, 0.3, 1.0);
+  say('來做小練習', '');
+  await step(tok); // 4199.8 nine yes/no questions
+  tag('T(n) = 1.62n² + 3.5n + 8', 'ptr alt', 0, 7.3);
+  for (let i = 0; i < 3; i++) { g.push([]); for (let j = 0; j < 3; j++) g[i].push(cube(ops[i] + '(' + fs[j] + ')', J2.sand, [2.2, 0.9, 1.0], X(j), Y(i), 0)); }
+  say('九個 yes/no 問題', 'T(n) 是前面那個例子');
+  await step(tok); // 4208.8 Q1 O(n): no
+  mark(0, 0);
+  say('第 1 題 T(n) = O(n)？No', '找不到常數 c 讓 T(n) ≤ c · n 一直成立');
+  await step(tok); // 4244.8 Q2 O(n²): yes
+  mark(0, 1);
+  say('第 2 題 O(n²)：可以', '前面的圖就是這樣取的');
+  await step(tok); // 4266.8 find c and n0, e.g. c = 2
+  txt(side, '例：c = 2 → n₀ = 12');
+  say('要找一個 c 和夠大的 n₀', '例如 c 取 2，再算 n₀ 要多大');
+  await step(tok); // 4283.8 homework: really find them
+  txt(side, '作業：一定要找出 c 和 n₀');
+  say('寫作業時一定要找到 c 和 n₀', '不能只說 yes / no（除非是簡答題）');
+  await step(tok); // 4306.8 Q3 O(n³)? show of hands
+  glow(g[0][2], GOLD); const vote = bub('覺得對的舉手？', X(2), 7.0);
+  say('第 3 題：T(n) = O(n³) 嗎？', '覺得對的舉手');
+  await step(tok); // 4339.8 yes, just not tight
+  remove(vote); mark(0, 2);
+  say('其實是對的：c · n³ 很容易超過 1.62n²', 'YES，只是不夠緊');
+  await step(tok); // 4356.8 Q4 Ω(n): yes
+  glow(g[0][2], null); mark(1, 0);
+  say('第 4 題 Ω(n)：是', '');
+  await step(tok); // 4371.8 Q5 Ω(n²): yes
+  mark(1, 1);
+  say('第 5 題 Ω(n²)：也是', '係數取小一點就成立');
+  await step(tok); // 4380.8 Q6 Ω(n³): no
+  mark(1, 2);
+  say('第 6 題 Ω(n³)：不是', 'c · n³ 很難壓在 T(n) 下面');
+  await step(tok); // 4390.8 Θ: check both sides (Q7 from Q1 and Q4)
+  glow(g[2][0], GOLD); glow(g[0][0], GOLD); glow(g[1][0], GOLD);
+  say('Θ 是 tight bound：上下界都要成立', '第 7 題看第 1、4 題就知道');
+  await step(tok); // 4409.8 both must hold; different c, n0 is fine
+  [g[2][0], g[0][0], g[1][0]].forEach((m) => glow(m, null)); mark(2, 0); mark(2, 1); mark(2, 2);
+  txt(side, '兩邊的 c、n₀ 可以不同');
+  say('問 Θ 就要兩邊都試', '都成立才對；只有 Θ(n²) 成立');
+  await step(tok); // 4436.8 hesitating on Q3 was right
+  glow(g[0][2], GOLD); bub('第 3 題會猶豫是對的', X(2), 7.0);
+  say('剛剛第 3 題有人猶豫', '這個猶豫是對的');
+  await step(tok); // 4453.8 aim for Θ even when writing Big-O
+  txt(side, '寫 Big-O，心裡要追求 Θ 等級');
+  say('雖然常寫 Big-O', '分析出的 complexity 要越接近真實表現越好');
+  await step(tok); // 4489.8 calling n² "n³" would anger people
+  const des = buddy('設計者', 'n²', J2.orange, -6.0, 0, 1.2, 0.75); des.mood('wow');
+  bub('明明是 n²，說成 n³！', -6.0, 1.9, 1.2);
+  say('明明是平方的表現', '人家說成三次方，應該會很生氣吧');
+  await step(tok); // 4513.8 keep it tight
+  glow(g[0][1], GREEN); okT('寫 Big-O 時，找比較 tight 的', 0, 8.0);
+  say('寫 Big-O 時，心裡還是要', '找比較 tight 的表現');
 }]);
 
+// 1:15:30 符號 abuse
 FRAG.push(['algjiang2-set-notation', 'O(n³) 是集合：「=」其實是「∈」', async (tok) => {
   fresh([0, 4.2, 13], [0, 3.0, 0]);
-  const f = cube('f(n) = 5n³', J2.bad, [2.6, 0.9, 1.0], -4.2, 6.0, 0, 3), g = cube('g(n) = 3n²', J2.man, [2.6, 0.9, 1.0], 4.2, 6.0, 0, 3);
-  say('f(n) = 5n³，g(n) = 3n²', '');
-  await beat(tok, 2700);
+  say('最後談一下符號', '');
+  await step(tok); // 4530.0 the "=" sign
+  tag('T(n) = O(f(n)) 的「=」', 'ptr alt', 0, 7.6);
+  bub('這個等號其實不太對', 0, 6.9);
+  say('前面寫的是等號', '其實這個等號不太對');
+  await step(tok); // 4549.8 f = 5n³, g = 3n²
+  const f = cube('f(n) = 5n³', J2.bad, [2.6, 0.9, 1.0], -4.2, 5.4, 0, 3), g = cube('g(n) = 3n²', J2.man, [2.6, 0.9, 1.0], 4.2, 5.4, 0, 3);
+  say('f(n) = 5n³', 'g(n) = 3n²');
+  await step(tok); // 4566.8 f = O(n³)
   const set = ghostBox('#c08a1f', 8.0, 3.4, 2.0); set.position.set(0, 2.0, 0); tag('O(n³)', 'ptr alt', -3.4, 3.4);
-  move(f, -1.8, 2.4, 0); move(g, 1.8, 2.4, 0);
-  say('f(n) = O(n³)、g(n) = O(n³) 都對', '');
-  await beat(tok, 3200);
-  glow(f, RED); glow(g, RED);
-  say('但不能推出 f(n) = g(n)', '<span class="no">5n³ ≠ 3n²</span>');
-  await beat(tok, 3200);
+  move(f, -1.8, 2.4, 0);
+  say('f(n) = O(n³)', 'f 被 n³ bound 住');
+  await step(tok); // 4573.8 g = O(n³) too
+  move(g, 1.8, 2.4, 0);
+  say('g(n) 也可以寫成 O(n³)', '這也成立');
+  await step(tok); // 4583.8 but f ≠ g
+  glow(f, RED); glow(g, RED); noT('但 f(n) ≠ g(n)：5n³ ≠ 3n²', 0, 6.2);
+  say('兩個等號都對', '但並不代表 f(n) = g(n)');
+  await step(tok); // 4615.8 O(n³) contains many functions: a set
   glow(f, null); glow(g, null);
-  ['n²', 'n log n', '7'].forEach((s, k) => cube(s, J2.sand, [1.4, 0.6, 0.8], -2.4 + k * 2.4, 1.0, 0, 4));
-  say('O(n³)：所有被 n³ 界住的函數的集合', '正確寫法：f(n) ∈ O(n³)');
-  await beat(tok, 3700);
-  say('數學家 abuse 了「=」這個 notation', '亞里斯多德是人，但人不一定是亞里斯多德');
-  await beat(tok, 3700);
+  ['n²', 'n log n', '7'].forEach((s, k) => cube(s, J2.sand, [1.4, 0.6, 0.8], -2.4 + k * 2.4, 1.0, 0, 3));
+  say('O(n³) 包含很多東西', '所有被 n³ bound 住的函數 → 一個集合');
+  await step(tok); // 4636.8 a set, not an element: use ∈
+  okT('正確寫法：f(n) ∈ O(n³)', 0, 4.4);
+  say('它是集合，不是單一 element', '理論上應該用「屬於」∈（belong to）');
+  await step(tok); // 4652.8 mathematicians abuse the notation
+  note('數學家 abuse 了「=」這個 notation', 0, 5.0);
+  say('這是數學家 abuse 了這個 notation', '意思其實是屬於，不是等價');
+  await step(tok); // 4687.8 Aristotle is a man
+  const ar = buddy('亞里斯多德', '', J2.gold, 5.8, 0, 2.4, 0.7); ar.mood('happy');
+  bub('亞里斯多德是人；但人不一定是亞里斯多德', 4.4, 1.8, 2.4);
+  say('有人為數學家辯解', '亞里斯多德「是」一個人，但人不一定是亞里斯多德');
+  await step(tok); // 4708.8 write "=", mean "∈"
+  note('習慣寫 =，意思是 ∈', 0, 0.2, 1.6);
+  say('習慣上還是寫等號', '但意思是「屬於」');
+}]);
+
+// ══════════ Lec05（tTFolqL1TX4）：漸近性質、Gale-Shapley 的實作 ══════════
+// 這支影片原本借用 algbari1 的場景；這裡是自己的 cued 版本（老師自己的例子：ManPref 1:[1,2,3] 2:[2,1,3] 3:[1,2,3]、
+// Current = [1,3,0]、WomanPref[1] = 3 1 4 5 6 2、未婚夫 m6 排第 5、m1 排第 2；取 log 比 n^(1/3)、lg n、2^√(lg n)）。
+const J2_GS9 = [
+  '1 Initialize all m, w to be free',
+  "2 while (∃ free m who hasn't proposed to all)",
+  "3   w = highest-ranked woman m hasn't proposed to",
+  '4   if (w is free)',
+  '5     (m, w) become engaged',
+  '6   else if (w prefers m to her fiancé m′)',
+  '7     (m, w) engaged, m′ becomes free',
+  '8   else w rejects m',
+  '9 return the set S of engaged pairs',
+];
+// a bar that grows from the floor
+function j2vbar(color, w, d, x, z) { const m = lab.box(color, [w, 1, d]); m.scale.y = 0.001; m.position.set(x, 0.0005, z); lab.world.add(m); return m; }
+function j2set(m, h) { const v = Math.max(0.001, h); m.scale.y = v; m.position.y = v / 2; }
+async function j2grow(tok, m, h, ms) { const h0 = m.scale.y; await anim(tok, ms, (t) => j2set(m, h0 + (h - h0) * t)); }
+
+// 0:15 開場與 O、Ω、Θ 回顧
+FRAG.push(['algjiang2-recap', 'O、Ω、Θ 回顧：「=」其實是「∈」', async (tok) => {
+  fresh([0, 5.5, 14], [0, 2.4, 0]);
+  say('今天的課', '');
+  await step(tok); // 15.7 finish asymptotics; then GS's data structures
+  pkt('今天：收尾 asymptotic analysis → 幫 GS 選 data structure', 0, 6.4);
+  say('今天收尾 asymptotic analysis', '再用它幫 stable matching 選合適的 data structure');
+  await step(tok); // 51.8 three notations
+  const T = [['Big-O', 'upper bound', J2.ok], ['Big-Ω', 'lower bound', J2.purple], ['Θ', 'tight bound', J2.gold]];
+  for (let k = 0; k < 3; k++) { const x = -3.6 + k * 3.6; cube(T[k][0], T[k][2], [2.4, 0.7, 1], x, 0.35, -2.2, 3); tag(T[k][1], 'idx', x, 1.2, -2.2); await beat(tok, 300); }
+  say('回顧三個 notation', 'upper bound、lower bound、tight bound');
+  await step(tok); // 79.7 prove by definition: find c and n0
+  note('證明要 by definition：找出適當的 c 和 n₀', 0, 5.6);
+  say('它們有精準的定義', '證明時要 by definition，找出適當的 c 和 n₀');
+  await step(tok); // 101.8 the proof is required
+  okT('一定要有這個 proof 才能說成立', 0, 4.9);
+  say('一定要有這個 proof', '才能說明它符合條件');
+  await step(tok); // 118.9 practised last time
+  note('上次練習過：怎麼分辨是不是 Ω、Θ', 0, 4.2);
+  say('上次用小例子練習過', '怎麼分辨是不是 Big-Ω、Θ');
+  await step(tok); // 126.8 we write T(n) = O(f(n)): an abuse
+  const gb = ghostBox(J2.ok, 7.4, 1.6, 2.4); gb.position.set(0, 0.8, 1.6);
+  tag('O(f(n))：一群函數（集合）', 'ptr alt', 0, 2.1, 1.6);
+  ['g₁(n)', 'g₂(n)', 'g₃(n)'].forEach((s, k) => cube(s, J2.man, [1.5, 0.5, 0.9], -2.4 + k * 1.6, 0.25, 1.6, 2.5));
+  const t = cube('T(n)', J2.bad, [1.5, 0.5, 0.9], 2.6, 0.25, 1.6, 4);
+  noT('T(n) = O(f(n))：這個等號是 abuse', 0, 3.4, 1.6);
+  say('習慣寫成 T(n) = O(f(n))', '上次說過，這個等號其實是 abuse');
+  await step(tok); // 152.8 it means "belongs to"
+  glow(t, GOLD); okT('T(n) ∈ O(f(n))', 2.6, 1.2, 2.9);
+  say('寫等號時，心裡要知道', '背後的意思是「屬於」∈');
+}]);
+
+// 2:43 性質：transitivity
+FRAG.push(['algjiang2-trans', 'O、Ω、Θ 的性質：transitivity', async (tok) => {
+  fresh([0, 5, 14], [0, 2.8, 0]);
+  say('最後兩張投影片做 summary', '');
+  await step(tok); // 170.8 properties of O, Ω, Θ
+  pkt('O、Ω、Θ 的 property', 0, 7.4);
+  say('這張介紹 Big-O、Big-Ω、Θ 的性質', '');
+  await step(tok); // 176.8 each provable by definition
+  note('每一條都能 by definition 自己證（不難）', 0, 6.8);
+  say('這裡只帶過去', '每一條回家都能 by definition 證明');
+  await step(tok); // 195.8 first: transitivity
+  tag('Transitivity（遞移性）', 'ptr alt', 0, 6.1);
+  say('很多性質非常常用', '第一個：transitivity，遞移性');
+  await step(tok); // 212.8 holds for O, Ω, Θ
+  note('Big-O、Big-Ω、Θ 都成立', 0, 5.5);
+  say('對 Big-O、Big-Ω、Θ 都成立', '用 Big-O 來套套看');
+  await step(tok); // 219.8 g is an upper bound of f
+  const top = (x, h) => V3(x, h + 0.2, 0);
+  const f = j2vbar(J2.man, 1.2, 1.2, -3.4, 0), g = j2vbar(J2.purple, 1.2, 1.2, 0, 0), h = j2vbar(J2.bad, 1.2, 1.2, 3.4, 0);
+  tag('f', 'ptr', -3.4, 0, 1.2); tag('g', 'ptr', 0, 0, 1.2);
+  await j2grow(tok, f, 1.6, 400); await j2grow(tok, g, 3.2, 400);
+  const a1 = arrow(top(-3.4, 1.6), top(0, 3.2)); tag('f = O(g)', 'ptr alt', -1.7, 3.2);
+  say('三個 function：g 是 f 的 upper bound', 'f(n) = O(g(n))');
+  await step(tok); // 226.8 h is an upper bound of g
+  tag('h', 'ptr', 3.4, 0, 1.2); await j2grow(tok, h, 4.8, 500);
+  arrow(top(0, 3.2), top(3.4, 4.8)); tag('g = O(h)', 'ptr alt', 1.7, 4.6);
+  say('h 是 g 的 upper bound', 'g(n) = O(h(n))');
+  await step(tok); // 232.7 so h is an upper bound of f
+  kill(a1); arrow(V3(-3.4, 1.9, 0.8), V3(3.4, 5.1, 0.8), 0xc08a1f); okT('f = O(h)', -0.4, 2.2, 0.8);
+  say('很容易推得：h 也是 f 的 upper bound', 'f = O(g)、g = O(h) ⇒ f = O(h)');
+  await step(tok); // 238.8 lower bound likewise
+  note('lower bound 也一樣：比它小、再比它小', 0, 4.9);
+  say('lower bound 也一樣', '比它小、再比它小 → 遞移');
+}]);
+
+// 4:11 Rule of sums
+FRAG.push(['algjiang2-rule-sums', 'Rule of sums：加起來 = 取 max', async (tok) => {
+  fresh([0, 5.5, 14], [0, 3.0, 0]);
+  say('第二個非常常用：rule of sums', '');
+  await step(tok); // 252.8 two functions f and g
+  const F = cube('f', J2.man, [1.6, 0.6, 1], -4.4, 7.0, 0, 2), G = cube('g', J2.bad, [4.0, 0.6, 1], -0.6, 7.0, 0, 2);
+  say('假設有兩個 function f 和 g', '');
+  await step(tok); // 256.8 bound of f + g?
+  const q = bub('f + g 的 O / Ω / Θ 是什麼？', 4.0, 7.0);
+  say('兩個相加之後', 'upper、lower、tight bound 變成什麼？');
+  await step(tok); // 267.8 take the max
+  remove(q); glow(G, GOLD); okT('取 max：拿比較大的那個來分析', 4.0, 7.0);
+  say('先取 max，看哪個比較大', '拿比較大的那個 function 來分析');
+  await step(tok); // 284.8 an algorithm has many lines
+  const L = [['line 1', 'O(1)', 0.4, J2.teal], ['line 2', 'O(n)', 1.6, J2.man], ['line 3', 'O(n²)', 5, J2.bad], ['line 4', 'O(n)', 1.6, J2.man]];
+  const ms = [];
+  for (let r = 0; r < L.length; r++) { const [nm, , , col] = L[r], y = 5.4 - r * 0.9; tag(nm, 'ptr', -5.4, y); ms.push(cube('', col, [0.3, 0.6, 1], -4.2, y, 0)); }
+  say('什麼時候用？implement 一個 algorithm', '它有很多行：line 1、line 2……');
+  await step(tok); // 294.8 each line has a different number of steps
+  for (let r = 0; r < L.length; r++) { const [, big, w] = L[r], y = 5.4 - r * 0.9; ms[r].scale.x = w / 0.3; ms[r].position.x = -4.4 + w / 2; tag(big, 'idx', -4.4 + w + 0.6, y); }
+  say('每一行的難度不一樣', '需要的步驟數不同');
+  await step(tok); // 301.8 total = all lines added up
+  let x = -6;
+  for (let r = 0; r < L.length; r++) { const w = L[r][2]; move(ms[r], x + w / 2, 0.3, 1.2); x += w + 0.05; await beat(tok, 300); }
+  tag('total', 'ptr alt', -6.4, 0.3, 2.2);
+  say('整個 algorithm 跑多久？', '把每一行的 running time 全部加起來');
+  await step(tok); // 328.8 = the worst line
+  glow(ms[2], RED); okT('f₁ + f₂ = O(max(g₁, g₂))', 2.6, 2.0, 1.2);
+  say('結果等同於挑最花時間的那一行', 'O(1) + O(n) + O(n²) + O(n) = O(n²)');
+  await step(tok); // 339.8 the bottleneck
+  note('bottleneck 綁在最花時間的步驟上', 2.6, 1.3, 1.2);
+  say('某個步驟特別花時間', 'bottleneck 就綁在那一步');
+}]);
+
+// 6:00 Rule of products
+FRAG.push(['algjiang2-rule-products', 'Rule of products：迴圈 = 圈數 × 每圈', async (tok) => {
+  fresh([0, 7, 12.5], [0, 1.4, 0]);
+  say('下面這個也非常常用', '');
+  await step(tok); // 361.8 rule of products
+  pkt('Rule of products（乘積）', 0, 0.3, -3.6);
+  say('Rule of products：乘積的 rule', '');
+  await step(tok); // 367.8 f1 bounded by g1, f2 by g2
+  note('f₁ 的 bound 是 g₁；f₂ 的 bound 是 g₂', 0, 0.3, -3.0);
+  say('f₁ 的 bound 是 g₁', 'f₂ 的 bound 是 g₂');
+  await step(tok); // 379.8 product: g1·g2
+  okT('f₁ · f₂ 的 bound = g₁ · g₂', 0, 0.3, -2.4);
+  say('兩個相乘之後的 bound', '就是 g₁、g₂ 相乘');
+  await step(tok); // 396.8 loops
+  const cd = code(['for (…)            // 跑 f₁ 圈', '{', '  每圈要做的事    // 每圈 f₂', '}'], 3.0, 6.0, 0.5);
+  say('最常用在 loop', 'for loop、while loop');
+  await step(tok); // 403.8 each iteration does some work
+  cd.hl(2);
+  say('for loop 底下', '每個 iteration 都要做一些事');
+  await step(tok); // 414.8 how many iterations -> f1
+  cd.hl(0);
+  const R = 5, W = 3;
+  tag('f₁ = 5 圈（示意）', 'ptr alt', -5.2, 0.2, -1.4);
+  for (let r = 0; r < R; r++) tag('第 ' + (r + 1) + ' 圈', 'idx', -4.6, 0.2, -0.6 + r * 0.8);
+  say('第一件事：這個 loop 執行幾圈', '得到 f₁');
+  await step(tok); // 422.8 work inside each iteration -> f2
+  cd.hl(2);
+  for (let r = 0; r < R; r++) for (let c = 0; c < W; c++) { cube('', J2.purple, [0.9, 0.4, 0.6], -2.8 + c * 1.1, 0.2, -0.6 + r * 0.8, 2); await beat(tok, 50); }
+  say('第二件事：每個 iteration 內部做多少', '得到 f₂（示意：3）');
+  await step(tok); // 436.8 total = f1 × f2
+  cd.hl(-1); okT('total = f₁ × f₂ = 5 × 3 = 15', 1.6, 0.3, 3.4);
+  say('整個 loop 要花多少時間', '次數 × 每次的時間 = f₁ × f₂');
+  await step(tok); // 444.8 analyse separately, multiply
+  note('分開看：圈數的 bound × 每圈的 bound', 1.6, 0.3, 4.0);
+  say('分析 Big-O 時就拆開看', '圈數最多幾次 × 每圈的 bound，相乘就行');
+  await step(tok); // 464.8 the two most common tricks
+  pkt('rule of sums + rule of products：最常用的兩招', 0, 0.3, 4.6);
+  say('這兩招分析 algorithm 時非常常用', '大家可能很直覺地就在用了');
+}]);
+
+// 8:01 Transpose symmetry、reflexivity、symmetry
+FRAG.push(['algjiang2-sym', 'Transpose symmetry、reflexivity、symmetry', async (tok) => {
+  fresh([0, 5, 14], [0, 2.6, 0]);
+  const bars = (spec) => spec.map(([nm, h, col, x]) => { const b = j2vbar(col, 1.2, 1.2, x, 0); tag(nm, 'ptr', x, 0, 1.2); return { b, h, x }; });
+  say('接下來三個性質', '');
+  await step(tok); // 480.8 transpose symmetry
+  tag('Transpose symmetry', 'ptr alt', -3.0, 6.4);
+  say('Transpose symmetry', '照字面就看得懂');
+  await step(tok); // 485.8 g upper of f <-> f lower of g
+  const B2 = bars([['f', 1.8, J2.man, -4.2], ['g', 4, J2.purple, -1.8]]);
+  for (const o of B2) await j2grow(tok, o.b, o.h, 350);
+  tag('g 是 f 的上界', 'ptr alt', -1.8, 4.6); tag('f 是 g 的下界', 'ptr alt', -4.2, 2.4);
+  say('g 是 f 的 upper bound', '相對地，f 就是 g 的 lower bound');
+  await step(tok); // 500.5 reflexivity
+  const B3 = bars([['f', 2.8, J2.teal, 1.2]]); await j2grow(tok, B3[0].b, 2.8, 350);
+  tag('f = O(f) = Ω(f) = Θ(f)', 'ptr alt', 1.2, 3.4); tag('Reflexivity（反身性）', 'idx', 1.2, 6.4);
+  say('Reflexivity：自己是自己的', 'upper、lower、tight bound');
+  await step(tok); // 506.8 symmetry (Θ only)
+  const B4 = bars([['f', 3, J2.orange, 3.8], ['g', 3, J2.gold, 5.4]]);
+  await j2grow(tok, B4[0].b, 3, 400); await j2grow(tok, B4[1].b, 3, 400);
+  tag('f = Θ(g) ⇔ g = Θ(f)', 'ptr alt', 4.6, 3.6); tag('Symmetry（只對 Θ）', 'idx', 4.6, 6.4);
+  say('Symmetry（對稱性）只對 Θ', 'g 是 f 的 tight bound，f 也是 g 的');
+  await step(tok); // 517.8 they behave exactly the same
+  okT('兩個人的表現一模一樣', 4.6, 4.4);
+  say('這兩個 function', '表現一模一樣');
+  await step(tok); // 533.8 try proving a few at home
+  note('回家挑幾條，by definition 證證看', 0, 7.2);
+  say('看起來都很直覺', '回家挑幾條，用定義證明看看');
+}]);
+
+// 9:37 常見的複雜度名稱
+FRAG.push(['algjiang2-poly-ladder', '常見複雜度：polynomial 與更高', async (tok) => {
+  fresh([0, 6, 14.5], [0, 2.2, 0]);
+  const P1 = [['O(1)', 'constant'], ['O(log n)', 'logarithmic'], ['O(n^0.5)', 'sublinear'], ['O(n)', 'linear'], ['O(n log n)', 'loglinear'], ['O(n²)', 'quadratic'], ['O(n³)', 'cubic'], ['O(n⁴)', 'quartic']];
+  const ms = [];
+  const put = (k) => { const x = -5.6 + k * 1.6, h = 0.4 + k * 0.28; ms[k] = cube(P1[k][0], J2.man, [1.4, h, 1], x, h / 2, 0, 3); tag(P1[k][1], 'idx', x, 0.1, 1.0); };
+  say('複雜度的最後一頁整理', '');
+  await step(tok); // 579.8 polynomial: O(p(n))
+  pkt('polynomial time：running time = O(p(n))', 0, 6.4);
+  say('Polynomial running time 有特殊定義', '算出來會是 O(p(n))，p(n) 是多項式');
+  await step(tok); // 602.8 n to a constant power
+  note('p(n) = n 的「常數」次方', 0, 5.8);
+  say('多項式就是 n 的多少次方', '那個次方是一個常數');
+  await step(tok); // 625.8 common names
+  bub('常見的 polynomial 名稱 → 再來是更高的', 0, 5.1);
+  say('下面列一些常見的', '再列一些已經不是 polynomial 的');
+  await step(tok); // 637.8 the lowest: n^0 = 1
+  put(0);
+  say('最低是多少？n 的 0 次方 = 1', '寫成 O(1)');
+  await step(tok); // 659.8 constant: independent of n
+  note('constant：跟 input size 完全無關', -5.6, 1.6, 1.0);
+  say('O(1) 是 constant running time', '不管怎麼跑，都跟 input size 完全無關');
+  await step(tok); // 690.8 log
+  put(1);
+  say('再高一點是 log', 'logarithmic；有些演算法 log 時間就跑完');
+  await step(tok); // 708.5 sqrt n: sublinear
+  put(2);
+  say('n^0.5 就是根號 n', '還不到 n 的一次方，叫 sublinear');
+  await step(tok); // 729.8 linear
+  put(3);
+  say('一次方：linear time', '');
+  await step(tok); // 736.8 n log n
+  put(4);
+  say('linear 再乘上 log', '連在一起叫 loglinear');
+  await step(tok); // 744.7 quadratic, cubic, quartic
+  put(5); put(6); put(7);
+  say('n² quadratic、n³ cubic', 'n⁴ quartic');
+  await step(tok); // 766.7 in order
+  arrow(V3(-5.6, 2.9, 0), V3(5.6, 2.9, 0), 0x6e5f49); tag('由小到大', 'idx', 0, 3.3);
+  say('有照順序排', 'O(1)、log、√n、n、n log n、n²……');
+  await step(tok); // 774.9 n^100 is still polynomial
+  note('n¹⁰⁰、n 的一千萬次方：還是 polynomial（但用不了）', 0, 4.4);
+  say('n¹⁰⁰、n 的一千萬次方都還是 polynomial', '理論上符合，實際上不可能使用');
+  await step(tok); // 803.8 2^n: exponential
+  cube('O(2ⁿ)', J2.bad, [1.8, 0.8, 1], -2.4, 0.4, 2.8, 3); tag('exponential', 'idx', -2.4, 0.1, 3.7);
+  say('2ⁿ、3ⁿ……任何常數的 n 次方', '都叫 exponential');
+  await step(tok); // 820.8 n!, n^n
+  cube('O(n!)', J2.bad, [1.8, 0.8, 1], 0, 0.4, 2.8, 3); tag('factorial', 'idx', 0, 0.1, 3.7);
+  cube('O(nⁿ)', J2.bad, [1.8, 0.8, 1], 2.4, 0.4, 2.8, 3);
+  say('n! 是 factorial', '還有更大的 nⁿ 等等');
+  await step(tok); // 844.8 aim for n^2 or less
+  for (let k = 0; k < 6; k++) glow(ms[k], GREEN);
+  okT('實作上：希望做到 n² 以下', 4.6, 2.0, 2.8);
+  say('實作上希望演算法盡量在 n² 以下', '就能處理蠻大的 problem size');
+}]);
+
+// 14:31 回到 Gale-Shapley
+FRAG.push(['algjiang2-gs-review', 'Gale-Shapley 回顧：已知的性質', async (tok) => {
+  fresh([0, 6, 13.5], [0, 2.8, 0]);
+  const top = note(' ', 0, 8.0);
+  say('回到 Gale-Shapley', '');
+  await step(tok); // 875.8 with asymptotic analysis in hand
+  txt(top, '現在會用 asymptotic analysis 分析 algorithm 了');
+  say('現在已經知道怎麼分析 complexity', '回頭看第一個 algorithm：stable matching');
+  await step(tok); // 894.8 its running time: how good?
+  txt(top, '它的 running time 最好能做到什麼程度？');
+  say('看它的 efficiency', 'running time 最好可以做到什麼程度');
+  await step(tok); // 906.8 so far: only ≤ n² iterations
+  txt(top, '之前只知道：while loop 最多 n² 圈');
+  say('之前只討論 while loop', '最多 n² 圈，還沒碰到 running time');
+  await step(tok); // 927.8 the algorithm again
+  const cd = code(J2_GS9, -1.6, 7.3, 0.46);
+  cd.hl(1);
+  say('一開始大家都 free', '每圈一個 free 男生向還沒求過、最喜歡的女生 propose');
+  await step(tok); // 949.8 she accepts or rejects
+  cd.hl(5);
+  say('女生依喜好程度', '決定 accept 或 reject');
+  await step(tok); // 955.8 until no free man; output
+  cd.hl(8);
+  say('直到沒有 free 男生就跳出', 'engaged 轉成 married，output 出來');
+  await step(tok); // 978.8 proven: ≤ n² iterations
+  cd.hl(-1);
+  const P = [['≤ n² 次 iteration 必停', J2.man], ['perfect matching', J2.ok], ['stable', J2.ok], ['man-optimal', J2.purple], ['woman-pessimal', J2.wom], ['求婚順序不影響結果', J2.orange]];
+  const cards = [];
+  const card = (k) => { const x = -4 + (k % 3) * 4, z = k < 3 ? 1.2 : 2.8; cards[k] = cube(P[k][0], P[k][1], [3.6, 0.5, 1.1], x, 0.25, z, 3); };
+  card(0);
+  say('已經證明：while loop 最多 n² 次一定停', 'n 個男生、n 個女生');
+  await step(tok); // 988.8 perfect
+  card(1);
+  say('輸出是 perfect matching', '每個人都有對象，而且一對一');
+  await step(tok); // 997.8 stable
+  card(2);
+  say('輸出符合 stable matching 的條件', '');
+  await step(tok); // 1014.8 man-optimal
+  card(3);
+  say('額外好處：對男生是最佳解', '都配到 best valid partner');
+  await step(tok); // 1021.8 woman-pessimal
+  card(4);
+  say('對女生則是最悲觀的結果', '只配到 worst valid partner');
+  await step(tok); // 1034.9 order doesn't matter
+  card(5);
+  say('不管男生 propose 的順序怎樣', '結果都一模一樣');
+  await step(tok); // 1061.8 today: termination -> running time
+  glow(cards[0], GOLD);
+  txt(top, '今天重點：第一項 termination → running time');
+  say('今天重點放在第一項', 'termination：來看 running time');
+}]);
+
+// 17:55 用 rule of sums / products 算 running time
+FRAG.push(['algjiang2-gs-budget', 'GS 的 running time：n² 圈 × O(1)', async (tok) => {
+  fresh([0, 6, 13.5], [0, 2.8, 0]);
+  const cd = code(J2_GS9, -1.6, 7.6, 0.48);
+  say('GS 的 running time 怎麼算？', '');
+  await step(tok); // 1078.8 only "≤ n² iterations" so far
+  note('只知道：最多 n² 個 proposal → 一定停', 0, 0.3, 2.6);
+  say('之前只說最多 n² 種 proposal 都試過就停', '還不知道 running time');
+  await step(tok); // 1104.8 rule of sums
+  note('rule of sums：每一行的時間加起來', 0, 0.3, 3.2);
+  say('Apply rule of sums', '把每一行要花的時間加起來');
+  await step(tok); // 1115.8 three parts
+  tag('三大段：line 1｜line 2–8｜line 9', 'ptr', 0, 0.3, 3.8);
+  say('這個 algorithm 分三大段', 'line 1、line 2–8 的 while loop、line 9');
+  await step(tok); // 1130.6 line 1: O(n)
+  cd.hl(0); tag('O(n)', 'ptr alt', 5.2, 7.6);
+  say('line 1：把所有男生女生設成 free', '每個人掃一次 → O(n)');
+  await step(tok); // 1147.8 line 9: O(n)
+  cd.hl(8); tag('O(n)', 'ptr alt', 5.2, 3.76);
+  say('line 9：把配對結果 output', '有記錄每個男生配誰 → O(n)');
+  await step(tok); // 1177.8 lines 2-8: ≤ n² rounds
+  cd.hl(1); const w = tag('≤ n² 圈 × ?', 'ptr alt', 5.2, 7.12);
+  say('重點是 line 2–8', 'while loop 最多 n² 圈');
+  await step(tok); // 1192.8 rounds × time per round
+  note('rule of products：圈數 × 每圈內部的 upper bound', 0, 0.3, 4.4);
+  say('除了圈數，還要知道每圈內部的工作', 'n² × 內部的 upper bound');
+  await step(tok); // 1228.5 at best O(1) per round -> O(n²)
+  cd.hl(-1); txt(w, '≤ n² 圈 × O(1)');
+  const b1 = j2vbar(J2.teal, 1.0, 1.0, -5.4, 1.4), b2 = j2vbar(J2.bad, 1.0, 1.0, -4.2, 1.4), b3 = j2vbar(J2.teal, 1.0, 1.0, -3.0, 1.4);
+  await j2grow(tok, b1, 0.6, 250); await j2grow(tok, b3, 0.6, 250); await j2grow(tok, b2, 2.6, 600);
+  say('每圈最快也不過 constant time', '若每圈 O(1)，while 就是 O(n²)');
+  await step(tok); // 1254.8 take the max: O(n²)
+  glow(b2, GOLD); okT('max(O(n), O(n²), O(n)) = O(n²)', -4.2, 3.4, 1.4);
+  say('line 1、9 是 O(n)，取 max', '整體 O(n²)');
+  await step(tok); // 1279.8 goal: O(1) per iteration
+  pkt('目標：每個 iteration 都在 O(1) 完成', 0, 8.4);
+  say('所以目標：每個 iteration O(1)', '做到就能說 GS 被 O(n²) bound 住');
+}]);
+
+// 21:50 每圈要 O(1) 完成的四件事
+FRAG.push(['algjiang2-gs-four-ops', 'line 2、3、4、6 各要 O(1)', async (tok) => {
+  fresh([0, 6.5, 13.5], [0, 2.6, 0]);
+  const cd = code(J2_GS9, -1.6, 7.6, 0.48);
+  const OPS = [['L2：O(1) 找出一個 free man', J2.man, -3, 1.2], ['L3：O(1) 找他還沒求過的第一名', J2.ok, 3, 1.2], ['L4：O(1) w 是 free 嗎？', J2.purple, -3, 2.8], ['L6：O(1) w 比較喜歡 m 還是 m′', J2.bad, 3, 2.8]];
+  const card = (k) => cube(OPS[k][0], OPS[k][1], [5.6, 0.5, 1], OPS[k][2], 0.25, OPS[k][3], 3);
+  say('每個 iteration 要做什麼？', '');
+  await step(tok); // 1313.8 look inside
+  say('看 procedure 的內部', '2 到 8 行裡有幾行特別重要');
+  await step(tok); // 1322.8 5, 7, 8 are simple
+  cd.hl(4); note('5、7：簡單的 engage　8：變 free', 5.6, 4.7);
+  say('line 5、7 是簡單的 engage', 'line 8 變 free，記錄 status 就好');
+  await step(tok); // 1358.8 the hard ones: 2, 3, 4, 6
+  cd.hl(-1); tag('難的是 2、3、4、6', 'ptr alt', 5.6, 5.4);
+  say('最難處理的是 line 2、3、4、6', '');
+  await step(tok); // 1366.8 line 2: identify a free man
+  cd.hl(1); card(0);
+  say('line 2：判定是否存在 free 男生', '要隨時都能 identify 一個');
+  await step(tok); // 1391.8 which one first doesn't matter
+  note('從哪個 free man 開始都可以：結果一樣', -3, 0.3, 0.2);
+  say('100 個 free 男生，從哪個開始？', '無所謂，output 都一模一樣');
+  await step(tok); // 1408.8 just pull one out fast
+  okT('重點：O(1) 吐一個出來', -3, 0.3, -0.5);
+  say('重點是每次都能很快吐一個出來', '希望 O(1)');
+  await step(tok); // 1423.8 line 3: highest-ranked not yet proposed
+  cd.hl(2); card(1);
+  say('line 3：找到他還沒 propose 過的女生裡', '排名最高的那一個');
+  await step(tok); // 1448.1 line 4: is she engaged?
+  cd.hl(3); card(2);
+  say('line 4：給定一個女生', '馬上判斷她是不是 free');
+  await step(tok); // 1461.8 and who is her fiancé
+  note('engaged 的話：fiancé 是誰？', -3, 0.3, 3.6);
+  say('如果 engaged', '還要馬上知道她的 fiancé 是誰');
+  await step(tok); // 1475.8 line 6: compare m and m'
+  cd.hl(5); card(3);
+  say('line 6 可能最難：給一個女生、兩個男生', '她比較喜歡誰？');
+  await step(tok); // 1512.8 all O(1) -> O(n²)
+  cd.hl(-1); pkt('四件事都 O(1) → 保證 O(n²)', 0, 8.4);
+  say('這些事都能 O(1) 完成的話', '就保證 O(n²) 內做完');
+}]);
+
+// 25:34 表示法：編號與 ManPref array
+FRAG.push(['algjiang2-gs-arrays', '男生女生編號 1..n、ManPref 用 array', async (tok) => {
+  fresh([0, 7.5, 11.5], [0, 0.8, 0]);
+  const MX = [-5, -3.9, -2.8], WX = [2.8, 3.9, 5];
+  say('真正 implement 之前', '');
+  await step(tok); // 1536.8 how to represent men and women?
+  bub('男生、女生要用什麼 data structure 表示？', 0, 1.6, -3.6);
+  say('有一個 fundamental 的問題', '男生和女生要怎麼表示？');
+  await step(tok); // 1549.8 design a representation
+  tag('男生', 'ptr', -3.9, 1.2, -2.8); tag('女生', 'ptr', 3.9, 1.2, -2.8);
+  const men = ['X', 'Y', 'Z'].map((s, k) => cube(s, J2.man, [1, 0.6, 0.9], MX[k], 0.3, -2.8, 3));
+  const wom = ['Amy', 'Bertha', 'Clare'].map((s, k) => cube(s, J2.wom, [1, 0.6, 0.9], WX[k], 0.3, -2.8, 3));
+  say('設計一種表示方式', '來 identify 這些男生和女生');
+  await step(tok); // 1570.9 numbers, not names
+  note('不記名字，用數字代表', 0, 0.3, -1.8);
+  say('n 個男生、n 個女生', '不記整個名字，用數字代表');
+  await step(tok); // 1585.8 men 1..n
+  men.forEach((m, k) => relabel(m, k + 1));
+  say('男生編號 1 號、2 號……n 號', '');
+  await step(tok); // 1590.8 women 1..n too: no clash
+  wom.forEach((m, k) => relabel(m, k + 1));
+  note('兩邊 index 不會打架 → 不用 n+1..2n', 0, 0.3, -1.2);
+  say('女生也是 1 號到 n 號', '兩邊不會打架，不需要 n+1 到 2n');
+  await step(tok); // 1615.8 an array of n for each
+  okT('男生、女生各一個 n 格的 array', 0, 1.6, -2.8);
+  say('男生開一個 n 格的 array', '女生也開一個 n 格的 array');
+  await step(tok); // 1641.8 most important input: men's preference lists
+  tag('ManPref', 'ptr', -3.6, 0.3, -0.4);
+  for (let r = 0; r < 3; r++) tag('男 ' + (r + 1), 'ptr alt', -3.6, 0.3, 0.6 + r * 1.1);
+  say('最重要的 input', '每個男生的 preference list');
+  await step(tok); // 1662.8 strings -> numbers
+  note('原本是字串（名字）→ 改記數字', 2.4, 0.3, -0.4);
+  say('原本 list 裡是名字這種字串', '接下來都改記數字');
+  await step(tok); // 1679.9 man 1: Amy, Bertha, Clare -> 1, 2, 3
+  const PREF = [[1, 2, 3], [2, 1, 3], [1, 2, 3]], NAMES = ['Amy', 'Bertha', 'Clare'], cells = [];
+  cells.push(PREF[0].map((w, c) => cube(NAMES[w - 1], J2.sand, [1.3, 0.45, 0.85], -1.6 + c * 1.5, 0.23, 0.6, 2.5)));
+  await beat(tok, 700); cells[0].forEach((m, c) => relabel(m, PREF[0][c]));
+  say('1 號男生：Amy、Bertha、Clare', '分別是 1、2、3 → 記 1、2、3');
+  await step(tok); // 1697.8 man 2: 2,1,3; man 3: 1,2,3
+  for (let r = 1; r < 3; r++) cells.push(PREF[r].map((w, c) => cube(w, J2.sand, [1.3, 0.45, 0.85], -1.6 + c * 1.5, 0.23, 0.6 + r * 1.1, 2.5)));
+  say('2 號男生：2、1、3', '3 號男生：1、2、3');
+  await step(tok); // 1703.8 each man: an array of length n
+  okT('每個男生後面串一個 n 格的 array', 2.0, 0.3, 4.0);
+  say('每個男生後面串一串數字', '長度 n 的 array');
+}]);
+
+// 28:53 free man 不適合 static array
+FRAG.push(['algjiang2-free-why', 'free man 數量會變：不適合 static array', async (tok) => {
+  fresh([0, 6.5, 12.5], [0, 1, 0]);
+  const n = 5, X = (k) => -4 + k * 1.6;
+  say('第一個難題：line 2', '');
+  await step(tok); // 1734.8 is there a free man? pull one out
+  pkt('line 2：有沒有 free man？有就取一個出來', 0, 0.4, -3.4);
+  say('while loop 的條件：有沒有 free 男生', '有的話趕快取一個出來處理');
+  await step(tok); // 1746.8 constant time
+  note('希望 constant time 完成', 0, 0.4, -2.8);
+  say('希望 constant time 完成', '');
+  await step(tok); // 1754.9 simplest: an array?
+  const q = bub('用 array 存 free 名單？', 4.2, 1.6, -1.4);
+  say('現有的 data structure：最簡單是 array', '但這裡直接說：不好');
+  await step(tok); // 1768.8 at first all n men are free
+  remove(q);
+  tag('男生 1..5 的狀態', 'ptr', 0, 0.4, -2.2);
+  const ms = []; for (let k = 0; k < n; k++) ms.push(cube(String(k + 1), J2.ok, [1.2, 0.6, 1], X(k), 0.3, -1.4, 3));
+  const cnt = tag('free：5 人', 'ptr alt', 5.6, 0.4, -1.4);
+  say('一開始 n 個男生全部都是 free', '');
+  await step(tok); // 1773.8 free -> engaged
+  tint(ms[0], GRAY); tint(ms[1], GRAY); txt(cnt, 'free：3 人');
+  say('執行中，男生會從 free 變成 engaged', '');
+  await step(tok); // 1780.2 engaged -> free
+  tint(ms[0], J2.ok); txt(cnt, 'free：4 人');
+  say('有些又從 engaged 變回 free', '');
+  await step(tok); // 1784.8 the count changes: not a static array
+  noT('free 人數動態變化 → 不適合 static array', 0, 1.4, -1.4);
+  say('free 男生的人數 dynamically 變化', '不適合用 static array 存');
+  await step(tok); // 1797.8 preference lists are fixed: array OK
+  tag('ManPref[1]：長度固定 n', 'ptr', 0, 0.4, 0.4);
+  [1, 2, 3, 4, 5].forEach((v, k) => cube(String(v), J2.sand, [1.2, 0.45, 0.9], X(k), 0.23, 1.2, 2.5));
+  okT('長度不變 → array OK', 5.6, 0.4, 1.2);
+  say('preference list 為什麼能用 array？', '每個男生都排 n 個女生，長度不會變');
+  await step(tok); // 1821.8 use a linked list
+  const XS = [-2.8, -0.2, 2.4];
+  XS.forEach((x, k) => lnode(k + 1, x, 0.4, 3.0, J2.ok));
+  XS.slice(0, 2).forEach((x, k) => arrow(V3(x + 0.95, 0.4, 3.0), V3(XS[k + 1] - 0.55, 0.4, 3.0)));
+  tag('linked list', 'ptr alt', -5.2, 0.4, 3.0);
+  say('不能用 static array', '就用 linked list');
+  await step(tok); // 1828.8 insert / delete in O(1)
+  okT('insertion、deletion：O(1)', 2.0, 1.4, 3.0);
+  say('linked list 的好處', '安插、拿出一個 free man 都是 O(1)');
+  await step(tok); // 1849.8 order doesn't matter
+  note('從哪個 free man 開始都沒差，快速吐一個就好', 0, 0.4, 4.2);
+  say('不在乎從哪個 free man 開始處理', '只要趕快吐一個出來');
+}]);
+
+// 31:18 Linked list 結構回顧
+FRAG.push(['algjiang2-llist-build', 'Linked list 結構回顧', async (tok) => {
+  fresh([0, 6, 12.5], [0, 1.2, 0]);
+  const XS = [-2.8, -0.2, 2.4], Y = 0.4;
+  say('沒學過或忘了 linked list？', '');
+  await step(tok); // 1877.8 a quick review
+  bub('快速複習 linked list', 0, 4.4);
+  say('沒關係，很快複習一下', '');
+  await step(tok); // 1889.8 stores objects, chained like a list
+  note('用來儲存一串 objects，像一份名單', 0, 3.7);
+  say('linked list 用來儲存一些 objects', '把每一筆資料串起來，像一串名單');
+  await step(tok); // 1916.8 singly linked: first pointer
+  const n1 = lnode(1, XS[0], Y, 0, J2.man);
+  tag('first', 'ptr', -5.6, Y + 0.9); arrow(V3(-5.6, Y + 0.6, 0), V3(XS[0] - 0.55, Y, 0));
+  say('先用單向 linked list', '一定有一個 first pointer 指向第一筆資料');
+  await step(tok); // 1932.9 two kinds of fields: data
+  glow(n1.userData.data, GOLD); const dt = tag('data：男生編號', 'idx', XS[0], Y + 1.1);
+  say('每筆資料分兩類欄位', '第一類是 data：這裡只存 free man 的編號');
+  await step(tok); // 1973.8 link: pointer to the next record
+  glow(n1.userData.data, null); const lk = tag('link：pointer → 下一筆', 'idx', XS[0] + 0.9, Y - 0.9);
+  say('第二類是 link', '它是一個 pointer，指向下一筆資料');
+  await step(tok); // 1989.4 example: 1 -> 2 -> 3
+  remove(dt); remove(lk);
+  lnode(2, XS[1], Y, 0, J2.man); lnode(3, XS[2], Y, 0, J2.man);
+  arrow(V3(XS[0] + 0.95, Y, 0), V3(XS[1] - 0.55, Y, 0)); arrow(V3(XS[1] + 0.95, Y, 0), V3(XS[2] - 0.55, Y, 0));
+  say('例：三筆資料', '1 號男生 → 2 號男生 → 3 號男生');
+  await step(tok); // 2004.8 the last pointer is NULL
+  tag('NULL', 'ptr alt', 4.6, Y); arrow(V3(XS[2] + 0.95, Y, 0), V3(4.1, Y, 0));
+  say('最後一筆沒有下一筆', '它的 pointer 是 NULL（指向空的）');
+  await step(tok); // 2020.8 initially: all n men chained in
+  okT('一開始：1..n 號男生全部串進來，大家都 free', 0, 2.2);
+  say('一開始就把 n 個男生全部串起來', '所有男生一開始都是 free');
+}]);
+
+// 34:12 取出與放回 free man
+FRAG.push(['algjiang2-llist-ops', 'free man 的 linked list：取出與放回', async (tok) => {
+  fresh([0, 6, 12.5], [0, 1.4, 0]);
+  const XS = [-2.8, -0.2, 2.4], Y = 0.4;
+  const nodes = XS.map((x, k) => lnode(k + 1, x, Y, 0, J2.man));
+  const linkA = (xa, xb) => arrow(V3(xa + 0.95, Y, 0), V3(xb - 0.55, Y, 0));
+  const links = [linkA(XS[0], XS[1]), linkA(XS[1], XS[2])];
+  tag('first', 'ptr', -5.6, Y + 0.9); tag('NULL', 'ptr alt', 4.6, Y); arrow(V3(XS[2] + 0.95, Y, 0), V3(4.1, Y, 0));
+  let firstA = arrow(V3(-5.6, Y + 0.6, 0), V3(XS[0] - 0.55, Y, 0));
+  const cap = note(' ', 0, 4.6);
+  say('line 2：從名單抓一個 free man', '');
+  await step(tok); // 2059.9 does first point to nothing?
+  txt(cap, 'first 指向空的（NULL）？');
+  say('怎麼判斷有沒有 free man？', '看 first 是不是指向空的');
+  await step(tok); // 2070.8 empty -> no free man -> loop ends
+  txt(cap, 'first = NULL → 名單空了 → 沒有 free man → while 結束');
+  say('指向空的 → list 已經空了', '沒有 free man，while loop 就結束');
+  await step(tok); // 2075.8 it points to a record -> free men exist
+  glow(nodes[0].userData.data, GOLD); txt(cap, 'first 指到真的資料 → 還有 free man');
+  say('first 真的指到某一筆資料', '表示後面還串著 free man');
+  await step(tok); // 2090.8 take the first one
+  txt(cap, '取誰？隨便 → 最簡單：取第一個');
+  say('取誰？隨便', '最簡單就取第一個');
+  await step(tok); // 2103.8 he will propose in this iteration
+  txt(cap, '這一圈他要去 propose → 先離開名單');
+  say('這個 iteration 他一定會 propose', '所以先讓他離開 linked list');
+  await step(tok); // 2118.3 delete the first record
+  move(nodes[0], XS[0], 3.2, -1); kill(links[0]);
+  txt(cap, 'delete：把第一筆男生資料拿掉');
+  say('做 delete：把第一筆刪掉', '然後要 update 這個 linked list');
+  await step(tok); // 2141.8 first must point to the second record
+  kill(firstA); txt(cap, 'first 要改指向第二筆');
+  say('deletion 很簡單', '把 first pointer 指向第二筆');
+  await step(tok); // 2149.8 found via the first record's next
+  const nx = arrow(V3(XS[0] + 0.95, 3.2, -1), V3(XS[1] - 0.3, Y + 0.4, 0), 0xc08a1f);
+  txt(cap, '第二筆在哪？第一筆的 next 就指著它');
+  say('怎麼找到第二筆？', '第一筆的 next 欄位就指向第二筆');
+  await step(tok); // 2163.8 first -> second; record 1 is out
+  kill(nx); firstA = arrow(V3(-5.6, Y + 0.6, 0), V3(XS[1] - 0.55, Y, 0));
+  txt(cap, 'first = first→next：1 號離開名單了');
+  say('借用這個 pointer，first 就指向第二筆', '第一筆已經從 list 離開了');
+  await step(tok); // 2178.3 the reverse: insert
+  glow(nodes[0].userData.data, null); txt(cap, '相反的動作：insert，什麼時候做？');
+  say('相反的動作是 insert', '什麼時候會做？');
+  await step(tok); // 2197.8 dumped fiance becomes free
+  txt(cap, '女生 accept 新的人 → 把 fiancé dump 掉 → 他變 free');
+  say('女生 accept 了新的男生', '原來的 fiancé 被 dump，從 engaged 變 free');
+  await step(tok); // 2214.8 put him back
+  txt(cap, '變回 free → 要塞回 linked list');
+  say('他一變成 free', '就要把他塞回這個 linked list');
+  await step(tok); // 2221.7 e.g. man 1 is free again
+  glow(nodes[0].userData.data, GOLD); move(nodes[0], XS[0] - 0.1, 1.9, -0.4);
+  txt(cap, '例：1 號男生被丟出來，恢復 free man');
+  say('例：1 號男生中途被丟出來', '恢復 free man 的身分');
+  await step(tok); // 2255.8 new record up front; first -> it
+  move(nodes[0], XS[0], Y, 0); kill(firstA); firstA = arrow(V3(-5.6, Y + 0.6, 0), V3(XS[0] - 0.55, Y, 0));
+  txt(cap, '新資料放到最前面，first 指向它');
+  say('倒回去做：新的這筆放上來', 'first 指向它');
+  await step(tok); // 2267.8 its next = the old first
+  links[0] = linkA(XS[0], XS[1]);
+  txt(cap, '它的 next = 原本 first 指的第二筆 → 又串回去了');
+  say('剛剛 first 指向的那筆', '寫進新資料的 next：繩子綁回去');
+  await step(tok); // 2283.8 both are just re-tying pointers
+  glow(nodes[0].userData.data, null); txt(cap, 'delete、insert：都只是拆線、綁線（1～2 個 pointer）');
+  say('deletion 和 insertion', '都只是重新 assign 一兩個 pointer');
+  await step(tok); // 2305.8 independent of n -> O(1)
+  okT('跟 n 沒關係 → O(1)', 0, 2.6);
+  say('做幾次 reassign 跟 n 沒關係', '所以 O(1)');
+  await step(tok); // 2321.2 line 2 solved
+  pkt('line 2 解決：用 linked list 存 free man', 0, 5.4);
+  say('line 2 解決了', 'identify 一個 free man 只要 O(1)');
+}]);
+
+// 39:01 line 3：Next 欄位
+FRAG.push(['algjiang2-gs-next', 'Next[m]：下一個要求婚的名次', async (tok) => {
+  fresh([0, 8, 10.5], [0, 0.4, 0.4]);
+  const PREF = [[1, 2, 3], [2, 1, 3], [1, 2, 3]], Z = (r) => -1.2 + r * 1.4, CX = (c) => -2.6 + c * 1.3;
+  say('接下來：line 3', '');
+  await step(tok); // 2340.8 whom does he propose to?
+  pkt('line 3：取出的 free man 要向誰 propose？', 0, 0.3, -3.6);
+  say('free man 取出來之後', '要順便 identify 他要向哪位女生 propose');
+  await step(tok); // 2353.8 O(1) highest-ranked not yet
+  note('O(1) 找到：還沒求過的女生裡排名最高的', 0, 0.3, -3.0);
+  say('也要在 O(1) 時間', '找到他還沒求過、排名最高的那位');
+  await step(tok); // 2369.9 each man already has a preference array
+  tag('ManPref（第 1、2、3 名）', 'ptr', -1.3, 0.3, -2.3);
+  for (let r = 0; r < 3; r++) { tag('男 ' + (r + 1), 'ptr alt', -4.6, 0.3, Z(r)); PREF[r].forEach((w, c) => cube('女' + w, J2.sand, [1.1, 0.45, 0.9], CX(c), 0.23, Z(r))); }
+  say('原本每個男生後面有一個 array', '再多開一個欄位');
+  await step(tok); // 2390.8 the extra field: next woman to propose to
+  const nx = [0, 1, 2].map((r) => cube(' ', J2.gold, [0.9, 0.5, 0.9], 2.6, 0.25, Z(r), 3));
+  say('這個欄位專門記錄', '他下一個要 propose 的女生');
+  await step(tok); // 2396.8 because men go from top to bottom
+  arrow(V3(CX(0), 0.8, Z(0) - 0.6), V3(CX(2), 0.8, Z(0) - 0.6), 0x6e5f49);
+  say('為什麼可以這樣做？', '男生一定從排名最高的往最低的移動');
+  await step(tok); // 2409.8 call it Next
+  tag('Next', 'ptr', 2.6, 0.3, -2.3);
+  say('所以每個男生多開一個欄位：Next', '');
+  await step(tok); // 2421.8 initially Next = 1
+  nx.forEach((m) => relabel(m, 1));
+  say('一開始大家都 free', '下一個要 propose 的一定是第 1 名 → 填 1');
+  await step(tok); // 2441.8 O(n) to fill
+  note('n 個男生各填一次 1 → O(n)', 2.6, 0.3, 3.0);
+  say('每個男生填一次，每次 O(1)', 'n 個男生 → O(n)');
+  await step(tok); // 2457.8 doesn't break O(n²)
+  okT('不破壞整體 O(n²)', 2.6, 0.3, 3.6);
+  say('這個 initialization', '不會破壞 while loop 的 O(n²)');
+  await step(tok); // 2472.8 mid-run: m1–w1, m2–w2, m3 keeps getting rejected
+  const tg = [tag('與女 1 engaged', 'idx', 4.6, 0.3, Z(0)), tag('與女 2 engaged', 'idx', 4.6, 0.3, Z(1)), tag('一直被 reject（free）', 'idx', 4.6, 0.3, Z(2))];
+  say('假設執行到一半', '男 1–女 1、男 2–女 2 engaged，男 3 一直被 reject');
+  await step(tok); // 2502.8 m1's Next = 2
+  relabel(nx[0], 2); glow(nx[0], GOLD);
+  say('1 號女生 accept 男 1 的那一刻', 'Next[1] 改成 2：下次找第 2 名');
+  await step(tok); // 2534.8 m2's Next = 2
+  glow(nx[0], null); relabel(nx[1], 2); glow(nx[1], GOLD);
+  say('男 2 跟他心目中第 1 名 engaged', '下次會找第 2 名 → 記 2');
+  await step(tok); // 2548.8 m3: rejected by #2 -> Next = 3
+  glow(nx[1], null); relabel(nx[2], 3); glow(nx[2], GOLD);
+  say('男 3 很倒楣，目前是 free', '被第 2 名 reject 時，Next 更新成 3');
+  await step(tok); // 2573.8 so he proposes to his #3
+  const cur = tag('▼', 'ptr alt', CX(2), 1.1, Z(2)); glow(nx[2], GREEN);
+  say('很容易 identify：', '他要向心目中的第 3 名 propose');
+  await step(tok); // 2581.8 pick a free man, look at Next
+  note('取出 free man → 直接看 Next → O(1)', -1.3, 0.3, 3.0);
+  say('identify 一個 free man 之後', '直接看 Next 就知道要找第幾名');
+  await step(tok); // 2615.8 Next++ after every proposal
+  okT('propose 完就 Next++（accept 或 reject 都一樣）', -1.3, 0.3, 3.6);
+  say('Next 什麼時候加 1？', '只要 propose 了就加 1，不管 accept 或 reject');
+}]);
+
+// 44:12 line 4：Current 欄位
+FRAG.push(['algjiang2-gs-current', 'Current[w]：女生目前的未婚夫', async (tok) => {
+  fresh([0, 7.5, 11], [0, 0.6, 0.4]);
+  const Z = (r) => -1.4 + r * 1.5;
+  say('接下來：line 4', '');
+  await step(tok); // 2651.8 line 4: is w engaged?
+  pkt('line 4：w 是 free 嗎？', 0, 0.3, -3.2);
+  for (let r = 0; r < 3; r++) cube('女 ' + (r + 1), J2.wom, [1.2, 0.6, 1], -1.6, 0.3, Z(r));
+  say('對一個女生', '要馬上知道她是不是 engaged');
+  await step(tok); // 2667.6 free -> accept; else who's the fiancé
+  note('free → accept；engaged → fiancé 是誰？要 O(1)', 0, 0.3, -2.6);
+  say('free 的話她就 accept', '不是的話，要很快知道她跟哪個男生 engaged');
+  await step(tok); // 2681.4 same trick as Next
+  note('技巧跟 Next 很像', 4.0, 0.3, -1.4);
+  say('這個技巧跟前面的 Next 很像', '');
+  await step(tok); // 2689.8 a field Current
+  tag('Current', 'ptr', 1.2, 0.3, -2.0);
+  const cs = []; for (let r = 0; r < 3; r++) cs.push(cube(' ', J2.gold, [1.0, 0.5, 0.9], 1.2, 0.25, Z(r), 3));
+  say('給女生開一個欄位 Current', '記錄她目前的對象是誰');
+  await step(tok); // 2706.8 initially 0
+  cs.forEach((m) => relabel(m, 0));
+  say('一開始女生都 free，沒有 fiancé', '初始值清成 0（只要不是 1..n 就好）');
+  await step(tok); // 2733.8 during the run some get engaged
+  say('執行過程中', '有些女生 engaged，有些還是 free');
+  await step(tok); // 2742.8 w1–m1, w2–m3, w3 free
+  cube('男 1', J2.man, [1.2, 0.6, 1], 4, 0.3, Z(0), 3); cube('男 3', J2.man, [1.2, 0.6, 1], 4, 0.3, Z(1), 3); tag('free', 'idx', 4, 0.3, Z(2));
+  say('例：女 1 跟男 1、女 2 跟男 3', '女 3 是 free');
+  await step(tok); // 2760.8 Current = 1, 3, 0
+  relabel(cs[0], 1); relabel(cs[1], 3); cs.forEach((m) => glow(m, GOLD));
+  okT('Current = [1, 3, 0]；0 號 = 沒有 fiancé', 1.2, 0.3, 3.0);
+  say('Current 就記成 1、3、0', '0 號代表沒有 fiancé');
+  await step(tok); // 2779.4 intuitive; the last line is the hard one
+  cs.forEach((m) => glow(m, null));
+  bub('到這裡都很直覺；最難的是 line 6', 0, 1.4, 3.6);
+  say('這些看起來都還蠻直覺的', '最後這一行最難');
+}]);
+
+// 46:26 line 6：掃 preference list 太慢
+const J2_WP = [3, 1, 4, 5, 6, 2], J2_RK = [2, 6, 1, 3, 4, 5];
+FRAG.push(['algjiang2-gs-scan', 'line 6：掃 preference list 是 O(n)', async (tok) => {
+  fresh([0, 7.5, 11], [0, 0.6, 0]);
+  const X = (k) => -3.75 + k * 1.5;
+  say('line 6', '');
+  await step(tok); // 2789.2 the one line needing a trick
+  pkt('line 6：唯一要動點腦筋的一行', 0, 0.3, -3.4);
+  say('這一行要動一點小腦筋', '不是直接 implement');
+  await step(tok); // 2797.8 compare proposer with fiancé
+  note('w 已 engaged：比較來 propose 的 m 和 fiancé m′', 0, 0.3, -2.8);
+  say('女生是 engaged 的狀態', '要比較來 propose 的男生和她的 fiancé');
+  await step(tok); // 2818.8 first idea: store her preference list
+  tag('WomanPref[1]（第 1 → 6 名）', 'ptr', 0, 0.3, -2.2);
+  const cs = J2_WP.map((m, k) => { tag('第 ' + (k + 1) + ' 名', 'idx', X(k), 0.1, -1.5); return cube('男 ' + m, J2.sand, [1.3, 0.5, 0.9], X(k), 0.25, -0.6, 3); });
+  say('第一個想法跟男生一樣', '女生也存 preference list，從最喜歡排到最不喜歡');
+  await step(tok); // 2864.4 w1 engaged to m6, ranked 5th
+  tag('Current[1] = 6（排第 5）', 'ptr alt', -2.6, 0.3, 2.2);
+  say('例：1 號女生現在跟 6 號男生 engaged', '6 號在她的 list 排第 5 名');
+  await step(tok); // 2883.2 m1 proposes: rank 2 beats rank 5
+  const pr = cube('男 1 求婚', J2.man, [2, 0.6, 1], 2.8, 0.3, 2.2, 3);
+  say('1 號男生來 propose', '他排第 2 名，比第 5 名高 → accept');
+  await step(tok); // 2907.8 how long does deciding take?
+  const q = bub('要花多少時間才能確定？', 2.8, 1.4, 2.2);
+  say('看起來很簡單', '但要花多少時間確定這件事？');
+  const cur = tag('▼', 'ptr alt', X(0), 1.2, -0.6);
+  const scan = async (target) => { for (let k = 0; k < J2_WP.length; k++) { cur.position.set(X(k), 1.2, -0.6); glow(cs[k], GOLD); await beat(tok, 200); glow(cs[k], null); if (J2_WP[k] === target) { glow(cs[k], GREEN); return k; } } return -1; };
+  await step(tok); // 2920.8 find 6's rank: scan
+  remove(q);
+  await scan(6);
+  say('要找 6 號排第幾', '在 list 裡掃：找到在第 5 格');
+  await step(tok); // 2936.8 scan for 1 too
+  await scan(1);
+  say('1 號排第幾？再掃一下', '第 2 名');
+  await step(tok); // 2943.8 if m2 proposes: scan to the end
+  cs.forEach((m) => glow(m, null)); relabel(pr, '男 2 求婚');
+  await scan(2);
+  noT('男 2 排最後 → 掃完整個 list：O(n)', 0, 1.4, 1.2);
+  say('如果是 2 號男生來 propose', '要掃完才知道 → worst case O(n)');
+  await step(tok); // 2961.8 O(n) × n² = O(n³)
+  noT('每圈 O(n) × n² 圈 = O(n³) ✗', 0, 0.3, 3.4);
+  say('O(n) 不是想要的 O(1)', '再乘上 n² 圈 → O(n³)，不能接受');
+}]);
+
+// 49:53 反過來存：Ranking array
+FRAG.push(['algjiang2-gs-ranking', 'Ranking[w][m]：反過來存名次，O(1)', async (tok) => {
+  fresh([0, 7.5, 11], [0, 0.6, 0]);
+  const X = (k) => -3.75 + k * 1.5;
+  say('可以更快嗎？可以', '');
+  await step(tok); // 2992.8 do it the other way round
+  pkt('反過來做！', 0, 0.3, -3.6);
+  say('怎麼做？反過來做', '');
+  await step(tok); // 3004.8 by rank: you have to scan
+  tag('WomanPref[1]：照名次存男生', 'ptr', 0, 0.3, -2.9);
+  const wp = J2_WP.map((m, k) => cube('男 ' + m, J2.sand, [1.3, 0.45, 0.8], X(k), 0.23, -2, 2));
+  note('給一個男生 → 要掃一遍才知道名次', 4.2, 0.3, -2.9);
+  say('前面照喜好高低存 preference list', '給一個男生，要掃完才知道他排第幾');
+  await step(tok); // 3026.8 we know his number, not his rank
+  note('手上知道的：男生編號；不知道的：名次', 0, 0.3, -1.2);
+  say('比較的對象是男生，編號是知道的', '不知道的是他的排名');
+  await step(tok); // 3048.8 store the ranking by index
+  tag('Ranking[1][m]：m 號男生排第幾', 'ptr', 0, 0.3, -0.6);
+  for (let k = 0; k < 6; k++) { tag('m=' + (k + 1), 'idx', X(k), 0.1, 1.3); cube('', GRAY, [1.3, 0.08, 0.9], X(k), 0.04, 0.4); }
+  say('不照 ranking 排 preference list', '改照男生的 index 記錄他的 ranking');
+  await step(tok); // 3066.8 her list: 3 1 4 5 6 2
+  wp.forEach((m) => glow(m, GOLD));
+  say('1 號女生的 list：3 1 4 5 6 2', '3 號男生、1 號男生、4 號……');
+  await step(tok); // 3083.8 store "m1 ranks __, m2 ranks __"
+  wp.forEach((m) => glow(m, null));
+  const rs = J2_RK.map((r, k) => cube(r, J2.gold, [1.3, 0.5, 0.9], X(k), 0.25, 0.4, 3));
+  say('反過來存：1 號男生排第幾、2 號排第幾……', 'Ranking = [2, 6, 1, 3, 4, 5]');
+  await step(tok); // 3098.7 same meaning, faster
+  okT('存的意義相同，但處理比較快', 4.2, 0.3, -1.2);
+  say('存的意義是相同的', '但處理上會快');
+  await step(tok); // 3124.8 fiancé m6: index 6 -> 5, O(1)
+  tag('Current[1] = 6', 'ptr alt', -2.8, 0.3, 2.6); glow(rs[5], GOLD);
+  say('fiancé 是 6 號：直接 indexing 第 6 格', '內容是 5 → 排第 5 名，O(1)');
+  await step(tok); // 3162.8 m1 proposes: cell 1 = 2 -> accept
+  cube('男 1 求婚', J2.man, [2, 0.6, 1], 2.8, 0.3, 2.6, 3); glow(rs[0], GREEN);
+  okT('2 < 5 → accept，O(1)', 2.8, 1.3, 2.6);
+  say('1 號男生來 propose：查第 1 格是 2', '排名 2 比 5 高 → accept，O(1) 結束');
+}]);
+
+// 53:14 建立 Ranking 與總時間
+FRAG.push(['algjiang2-gs-build-rank', '建 Ranking：O(n²)，只做一次', async (tok) => {
+  fresh([0, 7.5, 11], [0, 0.6, 0]);
+  const X = (k) => -3.75 + k * 1.5;
+  tag('WomanPref[1]', 'ptr', 0, 0.3, -2.9);
+  const ps = J2_WP.map((m, k) => cube('男 ' + m, J2.sand, [1.3, 0.45, 0.8], X(k), 0.23, -2, 2));
+  say('line 6 做完了', '');
+  await step(tok); // 3194.1 the least intuitive of 2, 3, 4, 6
+  bub('2、3、4、6 裡最不直覺的一行：反過來做', 0, 1.6, -3.6);
+  say('這行大概是 2、3、4、6 裡最複雜的', '因為它最不直覺：反過來做');
+  await step(tok); // 3210.8 any extra work?
+  note('做到 O(1) 之前：有沒有額外要做的事？', 0, 0.3, -1.0);
+  say('照這樣做就能 O(1)', '但有沒有額外要做的事？');
+  await step(tok); // 3225.8 build the Ranking array: how long?
+  tag('Ranking[1]', 'ptr', 0, 0.3, -0.5);
+  for (let k = 0; k < 6; k++) { tag('m=' + (k + 1), 'idx', X(k), 0.1, 1.3); cube('', GRAY, [1.3, 0.08, 0.9], X(k), 0.04, 0.4); }
+  say('有：要記錄 Ranking array', '建立它要花多少時間？');
+  const cur = tag('▼', 'ptr alt', X(0), 1.1, -2);
+  const fill = (k) => { const m = J2_WP[k]; cur.position.set(X(k), 1.1, -2); glow(ps[k], GOLD); cube(String(k + 1), J2.gold, [1.2, 0.5, 0.85], X(m - 1), 0.3, 0.4, 3); };
+  await step(tok); // 3239.8 m3 ranks 1 -> cell 3 = 1
+  fill(0);
+  say('看到 3 1 4 5 6 2：3 號男生排第 1', '馬上到第 3 格寫 1');
+  await step(tok); // 3263.8 m1 ranks 2 -> cell 1 = 2; scan on
+  glow(ps[0], null); fill(1);
+  say('1 號男生排第 2 → 第 1 格填 2', '邊掃邊填，掃完一遍就寫完了');
+  for (let k = 2; k < 6; k++) { await beat(tok, 260); glow(ps[k - 1], null); fill(k); }
+  glow(ps[5], null);
+  await step(tok); // 3270.8 done once, at the start
+  note('一開始 preprocess 一次，之後不用再改', 0, 0.3, 2.4);
+  say('什麼時候做？一開始就先 prepare 好', '寫好就不用再改，只做一次');
+  await step(tok); // 3287.8 n² to fill
+  note('每個女生 n 格 × n 個女生 = O(n²)', 0, 0.3, 3.0);
+  say('整個填完要花多少？', 'n 個女生 × n 格 = O(n²)');
+  await step(tok); // 3301.8 the pieces
+  note('初始化 O(n²)｜line 1、9：O(n)｜while：n² 圈 × O(1)', 0, 0.3, 3.6);
+  say('initialization O(n²)、line 1 和 9 各 O(n)', 'while：n² 圈，每圈 O(1)');
+  await step(tok); // 3316.8 overall O(n²)
+  okT('總共 O(n²) ✓ 達成目標', 0, 1.3, 3.6);
+  say('Overall 整個 algorithm', 'O(n²)：達到目標');
+}]);
+
+// 55:34 Data structure 決定 running time
+FRAG.push(['algjiang2-gs-compare', 'Data structure 決定 running time', async (tok) => {
+  fresh([0, 5.5, 13.5], [0, 2.6, 0]);
+  const b1 = j2vbar(J2.bad, 1.6, 1.6, -2.4, 0), b2 = j2vbar(J2.ok, 1.6, 1.6, 2.4, 0);
+  tag('line 6 用 preference list 掃', 'ptr', -2.4, 0, 1.6); tag('line 6 用 Ranking 查', 'ptr', 2.4, 0, 1.6);
+  say('第六行讓我們發現', '');
+  await step(tok); // 3334.8 good data structure = faster
+  pkt('好的 data structure → algorithm 跑得比較快', 0, 7.0);
+  say('好的 data structure', '可以讓 algorithm 執行速度比較快');
+  await step(tok); // 3339.8 inverse ranking: O(1)/iteration
+  await j2grow(tok, b2, 1.0, 500); tag('每圈 O(1)', 'idx', 2.4, 1.5);
+  say('用 inverse 的 Ranking list', '每個 iteration 壓到 O(1)');
+  await step(tok); // 3347.8 preference list: O(n) -> O(n³)
+  await j2grow(tok, b1, 5.4, 900); tag('每圈 O(n) → O(n³)', 'ptr alt', -2.4, 6.0);
+  say('用 preference list 是 O(n)', '整個 algorithm 變成 O(n³)');
+  await step(tok); // 3365.8 Ranking: O(n²)
+  await j2grow(tok, b2, 2.4, 600); tag('總共 O(n²)', 'ptr alt', 2.4, 3.0);
+  say('用 Ranking 就是 O(n²)', '');
+  await step(tok); // 3374.4 same procedure, different programmers
+  const a = buddy('同學 A', 'n³', J2.orange, -5.6, 0, 2.0, 0.7), b = buddy('同學 B', 'n²', J2.teal, 5.6, 0, 2.0, 0.7); a.mood('sad'); b.mood('happy');
+  say('同一個 procedure', '不同人寫程式，running time 可能不同');
+  await step(tok); // 3394.8 tailor-made data structure
+  note('implement 之前：為它量身訂做 data structure', 0, 6.3);
+  say('真正 implement 之前', '要為它量身訂做一個好的 data structure');
+  await step(tok); // 3401.2 no absolute best
+  cube('array', J2.sand, [1.6, 0.6, 1], -1.2, 7.8, 0, 2); cube('linked list', J2.sand, [2.0, 0.6, 1], 1.4, 7.8, 0, 2);
+  noT('沒有誰 always 比較好', 0, 8.6);
+  say('什麼叫好？沒有絕對', 'linked list 不一定比 array 好，反之亦然');
+  await step(tok); // 3422.8 depends on algorithm and operations
+  note('看用什麼 algorithm、要做什麼 operation', 0, 5.6);
+  say('一定 depends on 用什麼 algorithm', '要做什麼 operation');
+  await step(tok); // 3435.8 GS: O(n²)
+  okT('Gale-Shapley：O(n²) 內做完', 0, 4.9); b.hop && await b.hop(tok);
+  say('結論：Gale-Shapley', '可以在 O(n²) 內做完');
+}]);
+
+// 57:31 本單元總結
+FRAG.push(['algjiang2-unit-summary', '本單元總結', async (tok) => {
+  fresh([0, 5.5, 13.5], [0, 2.6, 0]);
+  const S = [['Efficient = polynomial running time', J2.ok], ['先想清楚 running time 再寫程式', J2.man], ['Data structure 很重要', J2.purple], ['Preprocessing：先轉成好處理的形式', J2.orange]];
+  const card = (k) => cube(S[k][0], S[k][1], [7.4, 0.6, 1], 0, 0.3 + k * 0.75, 0, 3);
+  say('這個單元學到什麼？', '');
+  await step(tok); // 3450.8 the concept of efficiency
+  bub('這個單元學到什麼？', 0, 6.6);
+  say('重點是 efficiency 的概念', '');
+  await step(tok); // 3456.8 efficient = polynomial upper bound
+  card(0);
+  say('一個 algorithm 是 efficient', 'running time 的 upper bound 落在 polynomial time');
+  await step(tok); // 3479.8 lessons from implementing GS
+  note('從 GS 的 implementation 學到：', -4.6, 5.6);
+  say('第二：從 Gale-Shapley 的 implementation', '學到一些很重要的事');
+  await step(tok); // 3484.8 know the running time before coding
+  card(1);
+  say('真正寫程式之前', '就要先知道 algorithm 本質上的 running time');
+  await step(tok); // 3502.5 don't hack when homework arrives
+  const st = buddy('學生', '', J2.teal, 5.2, 0, 2.0, 0.7); st.mood('wow');
+  prop('keyboard', 5.2, 0, 3.0, 0.8);
+  noT('作業一發下來就開電腦亂打 ✗', 4.2, 4.6);
+  say('不夠好就先別寫，先想清楚', '不要作業一發下來就開電腦亂打一通');
+  await step(tok); // 3519.1 plan first, code faster
+  st.mood('happy'); okT('先規劃 → 大幅縮短 coding 時間', 4.2, 5.3);
+  say('先做好規劃再去寫', '可以大幅縮短 coding 的時間');
+  await step(tok); // 3528.8 data structure matters
+  card(2);
+  say('Data structure 很重要', '');
+  await step(tok); // 3551.8 preprocessing
+  card(3);
+  say('有時要先 preprocessing', '把資料轉成方便處理的特殊形式');
+  await step(tok); // 3572.8 if the cost is affordable
+  note('前提：preprocessing 的代價承受得起（例：O(n²) 建 Ranking）', 0, 3.8);
+  say('前提是 preprocessing 的 running time', '代價是你承受得起的');
+}]);
+
+// 1:00:03 作業技巧：取 log 比成長率
+FRAG.push(['algjiang2-log-compare', '取 log 比成長率：n^(1/3)、lg n、2^√lg n', async (tok) => {
+  fresh([0, 6, 13.5], [0, 2.4, 0]);
+  const X = [-4, 0, 4], NM = ['f₁', 'f₂', 'f₃'];
+  say('補充一頁寫作業很好用的招數', '');
+  await step(tok); // 3602.0 a handy slide for homework
+  pkt('寫作業的好用招數', 0, 7.4);
+  say('最後補充一張投影片', '課堂沒特別講，但寫作業很好用');
+  await step(tok); // 3624.8 rank by growth rate
+  bub('給幾個 running time，依 growth rate 排大小', 0, 6.7);
+  say('常見題型：給幾個 algorithm 的 running time', '請你依 growth rate 排大小');
+  await step(tok); // 3677.8 the three functions
+  const fs = ['n^(1/3)', 'lg n', '2^√(lg n)'].map((s, k) => { tag(NM[k], 'ptr', X[k], 5.6); return cube(s, J2.man, [2.8, 0.7, 1], X[k], 4.6, 0, 3); });
+  say('f₁ = n 的三分之一次方、f₂ = log n', 'f₃ = 2 的 √(log n) 次方');
+  await step(tok); // 3689.8 lg = log base 2
+  note('lg = log₂（跟 log₁₀ 區分）', -4, 3.6);
+  say('lg 是 log₂ 的縮寫', '用來跟常見的 log₁₀ 區分');
+  await step(tok); // 3720.8 they look different: take log
+  okT('長得差很多 → 取 log', 0, 3.6);
+  say('三個長得差很多', '常用招數：取 log');
+  await step(tok); // 3747.6 order is preserved
+  note('log 是遞增的：大小關係不變', 4, 3.6);
+  say('原本有大小關係', '取 log 之後大小關係會維持');
+  await step(tok); // 3753.8 let z = lg n
+  tag('令 z = lg n', 'ptr alt', 0, 6.0);
+  say('把 log n 叫做 z', '');
+  const L = [['lg f₁ = (1/3) lg n', 'z/3'], ['lg f₂ = lg lg n', 'lg z'], ['lg f₃ = √(lg n) · lg 2', '√z']];
+  const conv = async (k, msg, sub) => { relabel(fs[k], L[k][0]); tint(fs[k], J2.purple); say(msg, sub); await beat(tok, 1300); relabel(fs[k], L[k][1]); };
+  await step(tok); // 3769.8 lg f1 = z/3
+  await conv(0, 'lg f₁：指數拿到前面', '(1/3) lg n = z/3');
+  await step(tok); // 3783.8 lg f2 = lg z
+  await conv(1, 'lg f₂ = lg lg n', 'lg n 就是 z → lg z');
+  await step(tok); // 3798.8 lg f3 = √z
+  await conv(2, 'lg f₃ = √(lg n) · lg 2', 'lg 2 = 1 → √z');
+  await step(tok); // 3838.8 now they look alike
+  tag('一次方', 'idx', X[0], 3.0); tag('log', 'idx', X[1], 3.0); tag('sublinear', 'idx', X[2], 3.0);
+  say('現在長得像了：z/3、lg z、√z', '一次方、log、根號（sublinear）');
+  await step(tok); // 3855.8 the order
+  move(fs[1], -4, 4.6, 0); move(fs[2], 0, 4.6, 0); move(fs[0], 4, 4.6, 0);
+  fs.forEach((m, k) => { relabel(m, ['n^(1/3)', 'lg n', '2^√(lg n)'][k]); tint(m, J2.ok); });
+  okT('lg n < 2^√(lg n) < n^(1/3)', 0, 1.6);
+  say('順序：log、根號、一次方', 'lg n < 2^√(lg n) < n^(1/3)');
+  await step(tok); // 3874.0 practise at home
+  note('不熟沒關係：回家多做題目', 0, 0.9);
+  say('不熟悉沒關係', '回家多做題目就行了');
 }]);
   }
 
