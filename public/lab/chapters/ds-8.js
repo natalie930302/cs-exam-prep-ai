@@ -2443,88 +2443,105 @@ FRAG.push(['sortbari-quick-recursive', 'QuickSort(l, h)：左邊用 pivot 當 �
   // ═══ sortlin.js ═══
   {
 // ─── cxbabnqtWsk：台大林軒田 DSA「Sorting / Summary」（selection → heap → bubble → insertion → shell → merge → tree → quick） ───
-// 只用 K 與 ctx。老師的例子：merge 用 6 5 4 7 8 3 1 2；quick 用 pivot 6，左堆 1 4 3 2 5、右堆 9 7 8 10，
-// 掃描交換 9↔5、7↔2、8↔3，最後 6↔3（陣列 6 1 4 9 7 8 3 10 2 5 由逐字稿重建）；insertion 的 adaptive 用 2 3 4 5 6；
-// shell 的間隔 10 → 5 → 2 → 1；壞資料 1..10 永遠挑第一個。其他小陣列是示意資料（老師板書沒有念出數字）。
-const { V3, fresh, tag, cube, move, glow, tint, txt, code, arrow, ghostBox, line, kill, GOLD, GREEN, RED } = K;
-const say = ctx.say, beat = ctx.beat, colorFor = ctx.colorFor, lab = ctx.lab;
-const BLUE = '#1f3a6e', PINK = '#8a1f5a';
+// Cued scenes: every `await step(tok)` waits for the sentence it shows; beats are motion only (≤ ~3 s per step).
+// 只用 K 與 ctx（加上本模組的 sort 引擎：S、sortStep、enterStab／enterHeap／enterDist／enterDC 給內建場景的 cued 版本用）。
+// 老師的例子：merge 用 6 5 4 7 8 3 1 2；quick 用 pivot 6，左堆 1 4 3 2 5、右堆 9 7 8 10，掃描交換 9↔5、7↔2、8↔3，
+// 最後 6↔3（陣列 6 1 4 9 7 8 3 10 2 5 由逐字稿重建）；insertion 的 adaptive 用 2 3 4 5 6；shell 的間隔 10 → 5 → 2 → 1；
+// 壞資料 1..10 永遠挑第一個。其他小陣列是示意資料（老師板書沒有念出數字）。
+// 人／小朋友用 buddy（會呼吸、眨眼、有表情）；對話泡泡用 tag 'say'、便條 'note'、移動的小標籤 'pkt'。
+const { V3, fresh, tag, cube, move, glow, tint, txt, code, arrow, ghostBox, line, kill, anim, travel, buddy, prop, bob, lnode, step, GOLD, GREEN, RED } = K;
+const beat = ctx.beat, colorFor = ctx.colorFor, lab = ctx.lab;
+const say = (a, b = '') => ctx.say(a, b);
+const BLUE = '#1f3a6e', PINK = '#8a1f5a', SUN = '#f4c27a';
 const LCAM = [0, 7.5, 12.5], LLOOK = [0, 2, 0];
 const nOf = (v) => parseInt(String(v), 10) || 0;
-// a small grey label hanging on a mesh (moves with it)
-function sub(m, text, dy = 0.75) { const l = lab.label(text, 'idx'); l.position.set(0, dy, 0); m.add(l); return l; }
-// a row of value cubes; R.v = values, R.m = meshes, slot i at x = R.x(i)
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const pkt = (t, x, y, z = 0) => tag(t, 'pkt', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+// glow / mood that work for both cubes and buddies (a buddy's group carries userData.bud)
+const gl = (m, c) => { if (!m) return; if (m.userData && m.userData.bud) m.userData.bud.glow(c); else glow(m, c); };
+const mood = (m, s) => { if (m && m.userData && m.userData.bud) m.userData.bud.mood(s); };
+const killAll = (list) => list.forEach((o) => kill(o));
+// a little helper character in a corner that reacts to what happens
+const helper = (x, z, name = '小幫手', s = 0.75) => buddy(name, '', SUN, x, 0, z, s);
+// a row of value cubes (or kids = buddies sized by value); R.v = values, R.m = meshes/groups, slot i at x = R.x(i)
 function lRow(vals, o = {}) {
-  const dx = o.dx || 1.05, y = o.y === undefined ? 0.5 : o.y, z = o.z || 0, sz = o.sz || 0.78;
+  const dx = o.dx || 1.05, kid = !!o.kids, y = o.y === undefined ? (kid ? 0.05 : 0.5) : o.y, z = o.z || 0, sz = o.sz || 0.78;
   const n = o.n || vals.length;
   const x0 = o.x0 === undefined ? -(n - 1) * dx / 2 : o.x0;
-  const R = { v: vals.slice(), m: [], dx, y, z, n };
+  const R = { v: vals.slice(), m: [], dx, y, z, n, h: y + (kid ? 1.9 : 1.1), zy: kid ? 0.6 : y, all: [] };
   R.x = (i) => x0 + i * dx;
-  if (o.tiles !== false) for (let i = 0; i < n; i++) ctx.tile(V3(R.x(i), 0.02, z), dx * 0.9, 1.0);
-  if (o.idx) for (let i = 0; i < n; i++) tag(String(i), 'idx', R.x(i), o.tiles === false ? y - 0.75 : 0.05, z + (o.tiles === false ? 0 : 0.75));
-  vals.forEach((v, i) => { R.m[i] = v === null ? null : cube(v, colorFor(nOf(v)), [sz, sz, sz], R.x(i), y, z, o.drop ? 2.4 : 0); });
-  R.hl = (list, c) => list.forEach((i) => { if (R.m[i]) glow(R.m[i], c); });
-  R.off = () => R.m.forEach((m) => { if (m) glow(m, null); });
-  R.at = (l, i, dy = 1.3) => { l.position.set(R.x(i), R.y + dy, R.z); };
+  if (o.tiles !== false) for (let i = 0; i < n; i++) R.all.push(ctx.tile(V3(R.x(i), 0.02, z), dx * 0.9, 1.0));
+  if (o.idx) for (let i = 0; i < n; i++) R.all.push(tag(String(i), 'idx', R.x(i), o.tiles === false ? y - 0.75 : 0.05, z + (o.tiles === false ? 0 : 0.75)));
+  vals.forEach((v, i) => {
+    if (v === null) { R.m[i] = null; return; }
+    if (kid) { const b = buddy('', v, colorFor(nOf(v)), R.x(i), y, z, 0.55 + 0.05 * Math.min(9, nOf(v))); b.g.userData.bud = b; R.m[i] = b.g; }
+    else R.m[i] = cube(v, colorFor(nOf(v)), [sz, sz, sz], R.x(i), y, z, o.drop ? 2.4 : 0);
+  });
+  R.hl = (list, c) => list.forEach((i) => gl(R.m[i], c));
+  R.off = () => R.m.forEach((m) => gl(m, null));
+  R.at = (l, i, dy = 1.3) => { l.position.set(R.x(i), R.y + dy + (kid ? 0.9 : 0), R.z); };
+  R.kill = () => { R.m.forEach((m) => kill(m)); R.all.forEach((m) => kill(m)); };
   // swap two slots: one hops over the other
   R.swap = async (tok, i, j, ms = 800) => {
-    const a = R.m[i], b = R.m[j], h = R.y + 1.1;
-    if (a) move(a, R.x(i), h, R.z); await beat(tok, ms * 0.3);
-    if (a) move(a, R.x(j), h, R.z); if (b) move(b, R.x(i), R.y, R.z); await beat(tok, ms * 0.4);
+    const a = R.m[i], b = R.m[j];
+    if (a) move(a, R.x(i), R.h, R.z); await beat(tok, ms * 0.3);
+    if (a) move(a, R.x(j), R.h, R.z); if (b) move(b, R.x(i), R.y, R.z); await beat(tok, ms * 0.4);
     if (a) move(a, R.x(j), R.y, R.z); await beat(tok, ms * 0.3);
     [R.m[i], R.m[j]] = [R.m[j], R.m[i]]; [R.v[i], R.v[j]] = [R.v[j], R.v[i]];
   };
   // take slot `from` out and put it at slot `to` (< from); the ones in between shift right by one
   R.rot = async (tok, from, to, ms = 1000) => {
-    const a = R.m[from], av = R.v[from], h = R.y + 1.1;
-    move(a, R.x(from), h, R.z); await beat(tok, ms * 0.25);
+    const a = R.m[from], av = R.v[from];
+    move(a, R.x(from), R.h, R.z); await beat(tok, ms * 0.25);
     for (let k = from - 1; k >= to; k--) { move(R.m[k], R.x(k + 1), R.y, R.z); R.m[k + 1] = R.m[k]; R.v[k + 1] = R.v[k]; await beat(tok, (ms * 0.45) / Math.max(1, from - to)); }
     R.m[to] = a; R.v[to] = av;
-    move(a, R.x(to), h, R.z); await beat(tok, ms * 0.15);
+    move(a, R.x(to), R.h, R.z); await beat(tok, ms * 0.15);
     move(a, R.x(to), R.y, R.z); await beat(tok, ms * 0.15);
   };
-  // rearrange slots lo..hi into the given value order (values must be a permutation of that range)
+  // rearrange slots lo.. into the given value order (values must be a permutation of that range)
   R.arrange = async (tok, lo, order, ms = 900) => {
     const pool = []; for (let k = lo; k < lo + order.length; k++) pool.push([R.v[k], R.m[k]]);
-    const h = R.y + 1.1;
-    pool.forEach(([, m], k) => move(m, R.x(lo + k), h, R.z)); await beat(tok, ms * 0.3);
-    order.forEach((v, k) => { const p = pool.findIndex((e) => e && e[0] === v); const [, m] = pool[p]; pool[p] = null; R.v[lo + k] = v; R.m[lo + k] = m; move(m, R.x(lo + k), h, R.z); });
+    pool.forEach(([, m], k) => move(m, R.x(lo + k), R.h, R.z)); await beat(tok, ms * 0.3);
+    order.forEach((v, k) => { const p = pool.findIndex((e) => e && e[0] === v); const [, m] = pool[p]; pool[p] = null; R.v[lo + k] = v; R.m[lo + k] = m; move(m, R.x(lo + k), R.h, R.z); });
     await beat(tok, ms * 0.4);
     for (let k = lo; k < lo + order.length; k++) move(R.m[k], R.x(k), R.y, R.z);
     await beat(tok, ms * 0.3);
   };
   // a translucent box over slots i..j
-  R.zone = (old, c, i, j, hgt = 1.2) => { if (old) kill(old); if (j < i) return null; const g = ghostBox(c, (j - i + 1) * dx, hgt, 1.2); g.position.set((R.x(i) + R.x(j)) / 2, R.y, R.z); return g; };
+  R.zone = (old, c, i, j, hgt = 1.2) => { if (old) kill(old); if (j < i) return null; const g = ghostBox(c, (j - i + 1) * dx, hgt, 1.2); g.position.set((R.x(i) + R.x(j)) / 2, R.zy, R.z); return g; };
   return R;
 }
 // one selection round: scan slots i+1.. for the minimum (strict <, so the smallest index wins), then swap or rotate it to slot i
 async function selRound(tok, R, i, o = {}) {
   const ms = o.ms || 260, n = R.v.length; let m = i;
   for (let j = i + 1; j < n; j++) {
-    R.off(); glow(R.m[i], GREEN); if (m !== i) glow(R.m[m], PINK); glow(R.m[j], GOLD);
+    R.off(); gl(R.m[i], GREEN); if (m !== i) gl(R.m[m], PINK); gl(R.m[j], GOLD);
     if (o.cnt) o.cnt.c++; if (o.onCmp) o.onCmp();
     await beat(tok, ms);
     if (nOf(R.v[j]) < nOf(R.v[m])) m = j;
   }
-  R.off(); glow(R.m[i], GREEN); glow(R.m[m], PINK);
-  await beat(tok, ms * 1.6);
-  if (m !== i) { if (o.rot) await R.rot(tok, m, i, 1000); else await R.swap(tok, i, m, 800); }
+  R.off(); gl(R.m[i], GREEN); gl(R.m[m], PINK);
+  await beat(tok, ms * 1.4);
+  if (m !== i) { if (o.rot) await R.rot(tok, m, i, o.sw || 1000); else await R.swap(tok, i, m, o.sw || 800); }
   R.off(); return m;
 }
 // backward insertion of slot i into the sorted part (step = gap): shift bigger ones by `gap`, stop at ≤ key
 async function insRound(tok, R, i, o = {}) {
   const ms = o.ms || 300, g = o.gap || 1, lo = o.lo || 0, hk = o.hk || (() => {});
-  const km = R.m[i], kv = R.v[i], h = R.y + 1.1;
-  glow(km, GOLD); move(km, R.x(i), h, R.z); hk('key', kv); await beat(tok, ms);
+  const km = R.m[i], kv = R.v[i];
+  gl(km, GOLD); move(km, R.x(i), R.h, R.z); hk('key', kv); await beat(tok, ms);
   let j = i - g;
   while (j >= lo) {
-    glow(R.m[j], BLUE); if (o.cnt) o.cnt.c++; hk('cmp', R.v[j], kv); await beat(tok, ms);
-    if (nOf(R.v[j]) <= nOf(kv)) { glow(R.m[j], null); break; }
-    glow(R.m[j], null); move(R.m[j], R.x(j + g), R.y, R.z); R.m[j + g] = R.m[j]; R.v[j + g] = R.v[j];
+    gl(R.m[j], BLUE); if (o.cnt) o.cnt.c++; hk('cmp', R.v[j], kv); await beat(tok, ms);
+    if (nOf(R.v[j]) <= nOf(kv)) { gl(R.m[j], null); break; }
+    gl(R.m[j], null); move(R.m[j], R.x(j + g), R.y, R.z); R.m[j + g] = R.m[j]; R.v[j + g] = R.v[j];
     if (o.mv) o.mv.c++; hk('shift', R.v[j + g]);
-    j -= g; move(km, R.x(j + g), h, R.z); await beat(tok, ms);
+    j -= g; move(km, R.x(j + g), R.h, R.z); await beat(tok, ms);
   }
-  R.m[j + g] = km; R.v[j + g] = kv; move(km, R.x(j + g), R.y, R.z); glow(km, null); hk('place', kv, j + g); await beat(tok, ms);
+  R.m[j + g] = km; R.v[j + g] = kv; move(km, R.x(j + g), R.y, R.z); gl(km, null); hk('place', kv, j + g); await beat(tok, ms);
   return j + g;
 }
 // one bubble pass over pairs (k, k+1), k = lo..hi-1 (dir 1) or hi-1..lo (dir -1)
@@ -2540,876 +2557,1791 @@ async function bubblePass(tok, R, lo, hi, dir = 1, o = {}) {
   }
   R.off(); return sw;
 }
+// play the module's recorded sort steps up to index `until`, spread over `ms`
+async function runTo(tok, until, ms) {
+  until = Math.min(until, S.steps.length - 1);
+  const n = until - S.i; if (n <= 0) return;
+  const per = Math.max(30, ms / n);
+  while (S.i < until) { sortStep(); await beat(tok, per); }
+}
+const lastStep = () => S.steps.length - 1;
+// a deterministic input that Heap Sort sorts unstably (so a replay shows the same picture)
+function heapUnstableVals() {
+  let s = 7; const r = () => { s = (s * 1103515245 + 12345) % 2147483648; return s / 2147483648; };
+  for (let t = 0; t < 500; t++) { const v = Array.from({ length: 6 }, () => 1 + Math.floor(r() * 4)); if (!isStableRun('heap', v)) return v; }
+  return [2, 1, 2, 3, 1, 3];
+}
 
-// 19:58 Selection Sort 的想法：從 unsorted 裡叫最小的出來，跟目的地交換
-FRAG.push(['sortlin-selection-swap', 'Selection Sort：叫最小的出來排隊', async (tok) => {
-  fresh(LCAM, LLOOK);
-  const R = lRow([5, 3, 8, 1, 6, 2], { idx: true, dx: 1.3 });
-  let zone = null;
-  const dst = tag('目的地', 'ptr', 0, 0, 0); R.at(dst, 0);
-  say('還沒排好的人：每次叫最小的出來', '由小排到大');
-  await beat(tok, 2400);
-  for (let i = 0; i < R.v.length - 1; i++) {
-    R.at(dst, i);
-    say('在 unsorted 裡找最小的', '綠 = 目的地 a[' + i + ']、桃紅 = 目前最小');
-    const m = await selRound(tok, R, i, { ms: 240 });
-    zone = R.zone(zone, GREEN, 0, i);
-    say(m === i ? R.v[i] + ' 已經在目的地' : '最小 ' + R.v[i] + ' 換到 a[' + i + ']', 'sorted 區多一格');
-    await beat(tok, 700);
-  }
-  zone = R.zone(zone, GREEN, 0, R.v.length - 1);
-  say('一個一個叫出來 → 排好了', '每輪：選最極端的，換到 sorted 尾端');
-  await beat(tok, 2800);
+// 17:26 今天的主題：Sorting 是 algorithm，但跟學過的 data structure 都有關
+FRAG.push(['sortlin-intro', '今天的主題：用 Sorting 串起資料結構', async (tok) => {
+  fresh([0, 6, 12.5], [0, 2.2, 0]);
+  await step(tok);                                   // 17:26 今天的課程叫做 Sorting
+  const host = buddy('Sorting', '排序', SUN, 0, 0, 0.6, 1.1);
+  say('今天的主題：Sorting（排序）', '刻意擺在最後一堂');
+  await step(tok);                                   // 17:42 Sorting 其實是 algorithm
+  const b1 = bub('我是一個 algorithm', 1.9, 1.9, 0.6);
+  say('Sorting 本身是一個 algorithm', '把資料照大小排好的步驟');
+  await step(tok);                                   // 17:56 跟學過的 data structure 很有關係
+  kill(b1);
+  const DS = [['Array', -4.6, 4.4], ['Linked list', -4.6, 1.8], ['Heap', 4.6, 4.4], ['BST', 4.6, 1.8], ['Sparse array', 0, 5.4]];
+  const ms = DS.map(([n, x, y]) => cube(n, '#2fc092', [2.5, 0.7, 0.7], x, y, 0, 1.2));
+  host.mood('wow'); host.look(0);
+  say('跟學過的 data structure 很有關係', '看懂它們的 behavior、用在哪裡');
+  await step(tok);                                   // 18:07 data structure 之間有關聯
+  [[0, 2], [2, 3], [0, 1], [4, 0], [4, 2]].forEach(([a, b]) => line(DS[a][1], DS[a][2], DS[b][1], DS[b][2], -0.3, '#a8730f'));
+  ms.forEach((m) => glow(m, GOLD)); await beat(tok, 900); ms.forEach((m) => glow(m, null));
+  say('這些 data structure 之間也有關聯', '用 sorting 把它們串起來');
+  await step(tok);                                   // 18:14 也當做半個 summary
+  host.mood('happy'); await host.hop(tok);
+  note('最後一堂課：sorting 也是半個 summary', 0, -0.3, 1.8);
+  say('Sorting 也當作半個 summary', '');
 }]);
 
-// 21:12 常見實作：swap 一步到位 vs rotate 一格一格擠；linked list 就是 insertion
+// 19:58 Selection Sort 的想法：一群人還沒排好，叫最小的出來排隊
+FRAG.push(['sortlin-selection-swap', 'Selection Sort：叫最小的出來排隊', async (tok) => {
+  fresh([0, 6.5, 12.5], [0, 1.4, 0.4]);
+  await step(tok);                                   // 19:58 用一連串 sorting algorithm 複習
+  const names = ['Selection', 'Heap', 'Bubble', 'Insertion', 'Shell', 'Merge', 'Tree', 'Quick'];
+  const chips = names.map((n, k) => pkt(n, -5.6 + k * 1.6, 4.4, 0));
+  say('用一連串 sorting algorithm 複習', '順便換幾個角度看它們');
+  await step(tok);                                   // 20:30 第一個：selection sort
+  chips.forEach((c, k) => { if (k) c.element.style.opacity = '0.3'; });
+  say('課裡教的第一個：Selection Sort', '');
+  await step(tok);                                   // 20:37 一群人還沒排好隊
+  const vals = [5, 3, 8, 1, 6, 2], CX = [2.0, 3.6, 5.2, 2.6, 4.3, 5.8], CZ = [-1.2, -1.0, -1.3, 0.5, 0.4, 0.6];
+  const ppl = vals.map((v, k) => ({ v, b: buddy('', v, colorFor(v), CX[k], 0, CZ[k], 0.55 + 0.05 * v) }));
+  note('還沒排好（unsorted）', 3.9, 0.05, 1.8); note('排好的隊伍', -4.0, 0.05, 2.9);
+  for (let k = 0; k < 6; k++) ctx.tile(V3(-5.6 + k * 1.2, 0.02, 1.9), 1.05, 1.0);
+  say('一群人還沒排好隊', '想要從小排到大');
+  await step(tok);                                   // 20:42 叫最小的出來去排隊
+  const order = ppl.slice().sort((a, b) => a.v - b.v);
+  order[0].b.glow(PINK); order[0].b.mood('happy');
+  const call = bub('最小的出來！', -2.5, 2.6, 1.9);
+  move(order[0].b.g, -5.6, 0, 1.9); await beat(tok, 1200); order[0].b.glow(null);
+  say('叫最小的出來排隊', '1 站到隊伍第一個');
+  await step(tok);                                   // 20:47 第二小、三小……一個一個出來
+  txt(call, '下一個最小的！');
+  for (let k = 1; k < 6; k++) { order[k].b.glow(PINK); move(order[k].b.g, -5.6 + k * 1.2, 0, 1.9); await beat(tok, 450); order[k].b.glow(null); order[k].b.mood('happy'); }
+  say('再叫第二小、第三小……', '一個一個出來排隊');
+  await step(tok);                                   // 20:56 從 unsorted 裡找最極端的
+  kill(call);
+  note('每輪：從 unsorted 裡選「最極端」的', -2.6, 2.7, 1.9);
+  say('每次從 unsorted 裡找最極端的那個', '最小（或最大）');
+}]);
+
+// 21:12 Array 實作：前面排好、後面還沒；swap、rotate、linked list 的 insertion
 FRAG.push(['sortlin-selection-rotate', 'Selection 的實作：swap、rotate、linked list', async (tok) => {
+  fresh(LCAM, LLOOK);
+  await step(tok);                                   // 21:12 array：前面幾格排好、後面幾格還沒
+  let R = lRow([1, 2, 8, 9, 3, 6], { idx: true, dx: 1.3 });
+  let zs = R.zone(null, GREEN, 0, 1), zu = R.zone(null, BLUE, 2, 5);
+  const ls = note('排好的', (R.x(0) + R.x(1)) / 2, 1.8), lu = note('還沒排好', (R.x(2) + R.x(5)) / 2, 1.8);
+  say('Array 裡：前面幾格當排好的', '後面幾格是還沒排好的');
+  await step(tok);                                   // 21:30 從沒排好的裡面選一個
+  for (let j = 2; j < 6; j++) { R.off(); R.hl([j], GOLD); await beat(tok, 420); }
+  R.off(); R.hl([4], PINK);
+  say('從還沒排好的裡選出最小的', '找到 3（桃紅）');
+  await step(tok);                                   // 21:46 要換到排好隊的最後位置
+  R.hl([2], GREEN); const dst = tag('目的地', 'ptr', 0, 0, 0); R.at(dst, 2, 1.0);
+  say('它該去：排好區後面那一格', '綠 = 目的地');
+  await step(tok);                                   // 21:52 跟那個位置交換
+  await R.swap(tok, 2, 4, 1000); R.off();
+  zs = R.zone(zs, GREEN, 0, 2); zu = R.zone(zu, BLUE, 3, 5); ls.position.x = R.x(1); lu.position.x = R.x(4);
+  say('交換：3 換到正確位置', '原本的 8 被丟到後面');
+  await step(tok);                                   // 21:59 一輪一輪過去
+  R.at(dst, 3, 1.0);
+  await selRound(tok, R, 3, { ms: 220, sw: 700 });
+  zs = R.zone(zs, GREEN, 0, 3); zu = R.zone(zu, BLUE, 4, 5); ls.position.x = (R.x(0) + R.x(3)) / 2; lu.position.x = (R.x(4) + R.x(5)) / 2;
+  say('一輪一輪做下去', 'sorted 區每輪多一格');
+  await step(tok);                                   // 22:07 綠色 destination、桃紅色最小
   fresh(LCAM, LLOOK);
   const A = lRow([3, 8, 6, 1, 9], { y: 3.6, tiles: false, dx: 1.3 });
   const B = lRow([3, 8, 6, 1, 9], { y: 0.6, dx: 1.3 });
-  tag('swap', 'ptr', -4.6, 3.6, 0); tag('rotate', 'ptr', -4.6, 0.6, 0);
+  const tA = tag('swap', 'ptr', -4.7, 3.6, 0); tag('rotate', 'ptr', -4.7, 0.6, 0);
   A.hl([0], GREEN); A.hl([3], PINK); B.hl([0], GREEN); B.hl([3], PINK);
-  say('第一輪：目的地 3（綠）、最小 1（桃紅）', '兩種做法換到前面');
-  await beat(tok, 2600);
-  say('做法一：直接 swap', '1 ↔ 3，一步到位');
-  await A.swap(tok, 0, 3, 1000); A.off();
-  say('3 被丟到後面去了', '[1, 8, 6, 3, 9]');
-  await beat(tok, 2400);
-  say('做法二：rotate，一格一格往後擠', '1 拿出來，3 8 6 各往後一格');
-  await B.rot(tok, 3, 0, 2200); B.off();
-  say('其他人的相對順序沒變', '[1, 3, 8, 6, 9]');
-  await beat(tok, 2400);
-  const ar = arrow(V3(B.x(3), 2.2, 0.9), V3(B.x(0) - 0.4, 1.3, 0.9), 0x8a1f5a);
-  say('Linked list：把 1 剪下、插到前面', 'insertion，不是 swap');
-  await beat(tok, 2800);
-  kill(ar);
-  say('rotate 多花幾步，但做的事一樣', '差別在：同值的順序會不會亂（stable）');
-  await beat(tok, 3000);
+  say('綠 = destination、桃紅 = 找到的最小', '兩種方式把 1 換到前面');
+  await step(tok);                                   // 22:14 兩個做交換
+  await A.swap(tok, 0, 3, 1100); A.off();
+  const nA = note('[1, 8, 6, 3, 9]', 4.9, 3.6);
+  say('Swap：兩個直接交換', '3 一下子跳到後面');
+  await step(tok);                                   // 22:20 也可以用 rotate
+  await B.rot(tok, 3, 0, 2400); B.off();
+  const nB = note('[1, 3, 8, 6, 9]', 4.9, 0.6);
+  say('Rotate：從後面一步一步換到前面', '3 8 6 各往後一格');
+  await step(tok);                                   // 22:38 rotate 多花幾步，做的事差不多
+  const h = helper(5.8, 2.2, '小幫手', 0.6); h.mood('calm');
+  bub('多幾步而已', 5.8, 1.7, 2.2);
+  say('Rotate 多花幾個交換', '大體上做的事情一樣');
+  await step(tok);                                   // 22:52 linked list：用 insertion 取代 swap
+  A.kill(); kill(tA); kill(nA);
+  const L = [3, 8, 6, 1, 9].map((v, k) => ({ v, g: lnode(v, -3.9 + k * 1.95, 3.4, 0) }));
+  const tL = tag('linked list', 'ptr', -6.0, 3.4, 0);
+  glow(L[0].g.userData.data, GREEN); glow(L[3].g.userData.data, PINK);
+  say('Linked list：用 insertion 取代 swap', '');
+  await step(tok);                                   // 23:10 把粉紅色 insert 到綠色前面
+  move(L[3].g, L[3].g.position.x, 4.9, 0); await beat(tok, 500);
+  move(L[3].g, -3.9, 4.9, 0); [0, 1, 2].forEach((k) => move(L[k].g, -3.9 + (k + 1) * 1.95, 3.4, 0)); await beat(tok, 900);
+  move(L[3].g, -3.9, 3.4, 0); await beat(tok, 500);
+  say('把粉紅色（1）插到綠色（3）前面', '只要改指標');
+  await step(tok);                                   // 23:21 等於把 unsorted 往後擠
+  [0, 1, 2].forEach((k) => glow(L[k].g.userData.data, BLUE));
+  note('3 8 6 順序沒變，只是往後擠', 0, 5.1, 0); kill(tL); h.mood('happy');
+  say('等於把 unsorted 往後擠', '跟交換不一樣：其他人的順序不變');
 }]);
 
-// 23:28 Stable：先用 final project 排、再用總成績排，同分保持原順序
+// 23:41 Stable：先用 final project 排、再用總成績排，同分保持原順序
 FRAG.push(['sortlin-stable-twokeys', 'Stable：總成績同分，保留 final project 的順序', async (tok) => {
-  fresh([0, 6, 12], [0, 1.6, 0]);
+  fresh([0, 6, 12], [0, 1.4, 0]);
+  await step(tok);                                   // 23:41 有一個 additional 性質：stable
+  const ttl = tag('Stable（穩定）', 'ptr', 0, 4.4, 0);
+  say('插隊、往後擠的做法有個額外性質', '叫做 stable');
+  await step(tok);                                   // 23:49 要排序的東西裡有很多一樣的值
   const recs = [{ n: 'A', t: 90, f: 80, c: '#4b9ee2' }, { n: 'B', t: 85, f: 95, c: '#2fc092' }, { n: 'C', t: 90, f: 88, c: '#e2a04b' }, { n: 'D', t: 85, f: 70, c: '#b07ad0' }];
-  const X = (k) => -3.6 + k * 2.4;
-  recs.forEach((r, k) => { r.m = cube(r.n, r.c, [1.1, 1.1, 1.1], X(k), 0.7, 0, 2); sub(r.m, '總 ' + r.t + '／FP ' + r.f, 1.05); });
-  const place = (order) => order.forEach((n, k) => { const r = recs.find((q) => q.n === n); move(r.m, X(k), 0.7, 0); });
-  say('排名次：總成績高的前面', '總成績同分 → 再比 final project');
-  await beat(tok, 2800);
-  say('第一輪：先用 FP 排', 'FP：95 > 88 > 80 > 70');
-  place(['B', 'C', 'A', 'D']); await beat(tok, 2400);
-  say('第二輪：用總成績排（stable）', '總：90、90、85、85');
-  await beat(tok, 1800);
-  place(['C', 'A', 'B', 'D']); await beat(tok, 1600);
-  glow(recs[2].m, GOLD); glow(recs[0].m, GOLD);
-  say('C、A 同是 90：C 還在 A 前面', 'same key → 相對順序不動');
-  await beat(tok, 2600);
-  glow(recs[2].m, null); glow(recs[0].m, null); glow(recs[1].m, GOLD); glow(recs[3].m, GOLD);
-  say('B、D 同是 85：B 還在 D 前面', '第一輪排好的 FP 高下沒被打亂');
-  await beat(tok, 2600);
-  glow(recs[1].m, null); glow(recs[3].m, null);
-  say('名次：C、A、B、D', 'stable = same-valued elements 保持原順序');
-  await beat(tok, 3000);
+  const X = (k) => -3.9 + k * 2.6;
+  recs.forEach((r, k) => { r.b = buddy(r.n, r.t, r.c, X(k), 0, 0, 1.0); r.fp = tag('FP ' + r.f, 'idx', X(k), 0.05, 0.9); });
+  const place = (order) => order.forEach((n, k) => { const r = recs.find((q) => q.n === n); move(r.b.g, X(k), 0, 0); r.fp.position.x = X(k); });
+  say('要排序的東西裡，有好幾個一樣的 key', '肚子上的數字 = 總成績');
+  await step(tok);                                   // 23:59 key 一樣，其他 data 不一定一樣
+  recs[0].b.glow(GOLD); recs[2].b.glow(GOLD); recs[0].b.mood('wow'); recs[2].b.mood('wow');
+  say('Key 一樣，其他資料不一定一樣', 'A、C 都 90 分，FP 不同');
+  await step(tok);                                   // 24:08 相對關係不要有所變動
+  recs[0].b.glow(null); recs[2].b.glow(null); recs[0].b.mood('calm'); recs[2].b.mood('calm');
+  const n1 = note('同 key：相對順序不要變', 0, 2.9, 0);
+  say('Key 一樣時，相對順序不要變', '');
+  await step(tok);                                   // 24:21 兩個 key：總成績
+  kill(n1);
+  recs.forEach((r) => r.b.glow(BLUE));
+  say('例：每筆資料有兩個 key', '第一個：總成績');
+  await step(tok);                                   // 24:31 還有 final project 成績
+  recs.forEach((r) => { r.b.glow(null); r.fp.element.className = 'lab-label pkt'; });
+  say('第二個：final project（FP）成績', '');
+  await step(tok);                                   // 24:41 先比總成績，同分再用 FP 分高下
+  const goal = note('名次：總成績高的前面；同分 → FP 高的前面', 0, 3.0, 0);
+  say('想要：先比總成績，同分再比 FP', '');
+  await step(tok);                                   // 25:05 第一輪先用 FP 排
+  recs.forEach((r) => { r.fp.element.className = 'lab-label ptr alt'; });
+  place(['B', 'C', 'A', 'D']); await beat(tok, 1200);
+  txt(goal, '第一輪：FP 95 > 88 > 80 > 70');
+  say('第一輪：先用 FP 排', 'B、C、A、D');
+  await step(tok);                                   // 25:14 第二輪用總成績排，同分順序不要變
+  recs.forEach((r) => { r.fp.element.className = 'lab-label idx'; });
+  place(['C', 'A', 'B', 'D']); await beat(tok, 1200);
+  txt(goal, '第二輪：總成績 90、90、85、85（stable）');
+  say('第二輪：用總成績排（stable）', 'C、A、B、D');
+  await step(tok);                                   // 25:22 不擾亂第一輪排好的高下
+  recs[2].b.glow(GOLD); recs[0].b.glow(GOLD); recs[1].b.glow(GREEN); recs[3].b.glow(GREEN);
+  recs.forEach((r) => r.b.mood('happy'));
+  txt(goal, 'C 仍在 A 前、B 仍在 D 前：FP 的高下保住了');
+  say('同分的人保持第一輪的順序', 'stable = same-valued elements 不換位');
 }]);
 
-// 25:32 swap 版的 selection 會把同值的順序弄亂；rotate（insertion）版保持 stable
-FRAG.push(['sortlin-selection-unstable', 'Swap 版 Selection 不 stable，rotate 版 stable', async (tok) => {
+// 25:38 swap 版 selection 會把同值的順序弄亂；最小取 smallest index ＋ 用插入 → stable
+FRAG.push(['sortlin-selection-unstable', 'Swap 版 Selection 不 stable，插入版 stable', async (tok) => {
   fresh(LCAM, LLOOK);
-  const A = lRow(['2A', 3, '2B', 1], { y: 3.6, tiles: false, dx: 1.5 });
-  const B = lRow(['2A', 3, '2B', 1], { y: 0.6, dx: 1.5 });
-  tag('swap', 'ptr', -4.4, 3.6, 0); tag('rotate', 'ptr', -4.4, 0.6, 0);
-  say('2A、2B 的 key 一樣', '找最小時，同值取 index 小的');
-  await beat(tok, 2400);
-  say('Swap 版：最小的跳很遠去交換', '');
-  for (let i = 0; i < 3; i++) await selRound(tok, A, i, { ms: 220 });
+  await step(tok);                                   // 25:38 粉紅色跟綠色剛好 same valued
+  const A = lRow(['2A', 3, '2B', 1], { y: 3.6, tiles: false, dx: 1.6 });
+  const B = lRow(['2A', 3, '2B', 1], { y: 0.6, dx: 1.6 });
+  tag('swap', 'ptr', -4.6, 3.6, 0); tag('插入', 'ptr', -4.6, 0.6, 0);
+  A.hl([0, 2], GOLD); B.hl([0, 2], GOLD);
+  say('2A、2B 是 same valued', '兩個 2，A 先來、B 後來');
+  await step(tok);                                   // 25:44 找出最小的
+  A.off(); B.off();
+  for (let j = 1; j < 4; j++) { A.off(); A.hl([0], GREEN); A.hl([j], GOLD); await beat(tok, 380); }
+  A.off(); A.hl([0], GREEN); A.hl([3], PINK);
+  say('找到最小的 1（桃紅）', '目的地是 2A 的位置（綠）');
+  await step(tok);                                   // 25:50 交換可能把順序打亂
+  await A.swap(tok, 0, 3, 1200); A.off(); A.hl([2, 3], RED);
+  const w = bad('2A 跳到 2B 後面了！', 4.9, 3.6);
+  say('交換讓 2A 一下跳到 2B 後面', '順序被打亂');
+  await step(tok);                                   // 25:56 要做 careful 的 implementation
+  A.off(); kill(w);
+  for (let i = 1; i < 3; i++) await selRound(tok, A, i, { ms: 150, sw: 600 });
   A.hl([1, 2], RED);
-  say('2B 跑到 2A 前面了', '<span class="no">unstable</span>');
-  await beat(tok, 2600);
-  say('Rotate 版：拿出來、其他往後擠', '');
-  for (let i = 0; i < 3; i++) await selRound(tok, B, i, { ms: 220, rot: true });
+  const nA = note('結果：1 2B 2A 3', 4.9, 3.6);
+  say('一路 swap 到底：2B 在 2A 前面', '要 stable 得小心實作');
+  await step(tok);                                   // 26:15 同值時取 smallest index
+  for (let j = 1; j < 4; j++) { B.off(); B.hl([0], GREEN); B.hl([j], GOLD); await beat(tok, 380); }
+  B.off(); B.hl([3], PINK);
+  say('改法一：找最小時，同值取 index 小的', '');
+  await step(tok);                                   // 26:20 不要交換，用插入
+  await B.rot(tok, 3, 0, 1800); B.off();
+  say('改法二：不交換，用插入', '1 插到最前面，其他往後擠');
+  await step(tok);                                   // 26:28 維持 stable
+  await selRound(tok, B, 1, { ms: 130, rot: true, sw: 700 }); await selRound(tok, B, 2, { ms: 130, rot: true, sw: 700 });
   B.hl([1, 2], GREEN);
-  say('2A 仍在 2B 前面', '<span class="ok">stable</span>：不 swap，改用 insertion');
-  await beat(tok, 3000);
+  good('結果：1 2A 2B 3', 4.9, 0.6);
+  say('2A 仍在 2B 前面', '<span class="ok">stable</span>');
+  await step(tok);                                   // 26:43 有些地方需要同值保持原順序
+  B.off();
+  note('有些需求：same value 要維持原順序', 0, 2.2, 0);
+  say('以前沒講 stable：同值排哪都行', '但有些需求要維持原順序');
+  await step(tok);                                   // 26:57 rotate 其實就是 insertion
+  pkt('rotate ＝ insertion 的做法', 0, -0.4, 1.2);
+  say('Rotate 其實就是 insertion', '不做 swap → 保留 stable');
+  await step(tok);                                   // 27:10 一般 swap 的實作 → unstable
+  txt(nA, 'swap 版：unstable');
+  nA.element.className = 'lab-label bad';
+  say('一般 swap 的 selection 不是 stable', '叫做 <span class="no">unstable</span>');
 }]);
 
-// 27:21 雙層 for loop → O(n²)；不用額外空間 → in-place
+// 27:25 雙層 for loop → O(n²)；不用額外空間 → in-place
 FRAG.push(['sortlin-selection-cost', 'Selection Sort：O(n²) 時間、in-place', async (tok) => {
   fresh([0, 7.5, 12.5], [0, 2.4, 0]);
+  await step(tok);                                   // 27:25 時間複雜度
   const cd = code(['for i = 0 .. n-2:          // 外層：每個位置', '  m = i', '  for j = i+1 .. n-1:      // 內層：找最小', '    if a[j] < a[m]: m = j', '  swap(a[i], a[m])'], 0, 7.0, 0.5, -2.6);
   const R = lRow([4, 2, 5, 1, 3], { dx: 1.3, z: 1.4, idx: true });
   const cnt = { c: 0 };
   const cl = tag('比較 0 次', 'ptr alt', 4.9, 2.0, 1.4);
-  say('雙層 for loop', '外層掃每個位置、內層找最小');
-  await beat(tok, 2600);
-  for (let i = 0; i < 4; i++) {
-    cd.hl(2); say('i = ' + i + '：內層比較 ' + (4 - i) + ' 次', 'n − 1 − i 次');
-    await selRound(tok, R, i, { ms: 300, cnt, onCmp: () => txt(cl, '比較 ' + cnt.c + ' 次') });
-    cd.hl(4); await beat(tok, 400);
-  }
+  say('先看時間複雜度', '大家已經很熟了');
+  await step(tok);                                   // 27:32 雙層 for loop
+  cd.hl(0); await beat(tok, 700); cd.hl(2);
+  say('Selection sort 就是雙層 for loop', '');
+  await step(tok);                                   // 27:38 內層找 minimum、外層掃每個 element
+  cd.hl(2);
+  await selRound(tok, R, 0, { ms: 300, sw: 700, cnt, onCmp: () => txt(cl, '比較 ' + cnt.c + ' 次') });
+  say('內層找最小、外層掃過每個位置', 'i = 0：比較 4 次');
+  await step(tok);                                   // 27:44 n 筆資料 → n²
+  for (let i = 1; i < 4; i++) await selRound(tok, R, i, { ms: 110, sw: 450, cnt, onCmp: () => txt(cl, '比較 ' + cnt.c + ' 次') });
   cd.hl(-1); R.hl([0, 1, 2, 3, 4], GREEN);
   say('4 + 3 + 2 + 1 = 10 次', 'n(n−1)/2 → <span class="ok">O(n²)</span>');
-  await beat(tok, 3000);
+  await step(tok);                                   // 27:54 空間複雜度：不需要額外空間
   R.off();
-  say('只在原本的格子裡換來換去', '不需要額外空間 → <span class="ok">in-place</span>');
-  await beat(tok, 3000);
+  const h = helper(-5.4, 1.4, '小幫手', 0.65);
+  bub('要借額外的格子嗎？不用！', -4.6, 2.4, 1.4);
+  say('再看空間複雜度', '排序的資料之外，不需要額外空間');
+  await step(tok);                                   // 28:08 用原來的空間做操作
+  for (let k = 0; k < 5; k++) { R.hl([k], GOLD); await beat(tok, 220); }
+  say('就在原本的格子裡換來換去', 'Array 或 linked list 都一樣');
+  await step(tok);                                   // 28:13 這叫 in-place
+  R.off(); h.mood('happy');
+  good('in-place：不需要額外空間', 0, 2.6, 1.4);
+  say('不需要額外空間的演算法', '叫做 <span class="ok">in-place</span>');
+  await step(tok);                                   // 28:24 in-place、stable、實作變化
+  ['in-place', 'stable', '實作的變化'].forEach((t, k) => pkt(t, -3 + k * 3, 0.0, 2.9));
+  say('今天多了幾個面向', 'in-place、stable、實作的變化');
 }]);
 
-// 29:02 Heap Sort = 把 unsorted pile 換成 heap 的 selection：前面 heap 區、後面 sorted 區
-FRAG.push(['sortlin-heap-select', 'Heap Sort：unsorted pile 換成 heap', async (tok) => {
-  fresh(LCAM, LLOOK);
-  const R = lRow([9, 7, 8, 3, 5, 6, 1], { idx: true, dx: 1.25 });
+// 29:04 Heap Sort：unsorted pile 換成 heap（max heap 放在原本的 array）
+FRAG.push(['sortlin-heap-select', 'Heap Sort：unsorted pile 換成 Heap', async (tok) => {
+  fresh([0, 7.5, 13], [0, 2.8, 0]);
+  await step(tok);                                   // 29:04 第一次講到很快的 sorting
+  const h = helper(-6.0, 1.6, '小幫手', 0.65);
+  const ttl = tag('第一個很快的 sorting', 'ptr', 0, 6.6, 0);
+  say('課裡第一次講到很快的 sorting', '');
+  await step(tok);                                   // 29:11 selection 從 unsorted pile 選一個
+  const PV = [3, 9, 1, 7, 5, 8, 6], PX = [-2.4, -0.6, 1.4, 3.0, -1.6, 0.5, 2.2], PZ = [-1.0, -1.4, -0.9, -1.2, 0.6, 0.9, 0.5];
+  const M = {}; PV.forEach((v, k) => { M[v] = cube(v, colorFor(v), [0.8, 0.8, 0.8], PX[k], 0.5, PZ[k], 1.5); });
+  const lp = note('unsorted pile', 0.3, 0.05, 2.0);
+  say('Selection：從 unsorted pile 選一個出來', '');
+  await step(tok);                                   // 29:23 要在裡面看半天才找到
+  for (const v of PV) { glow(M[v], GOLD); await beat(tok, 260); glow(M[v], null); }
+  glow(M[9], PINK); h.mood('sad');
+  say('沒排好：每個都要看過才找得到', '看半天，有夠煩');
+  await step(tok);                                   // 29:29 如果 pile 裡有一些結構
+  glow(M[9], null); h.mood('calm');
+  bub('如果 pile 有一點結構呢？', -5.2, 2.6, 1.6);
+  say('還是 unsorted，但加上一些結構', '');
+  await step(tok);                                   // 29:39 那個 pile 其實是一個 Heap
+  const HV = [9, 7, 8, 3, 5, 6, 1], HP = [[0, 5.6], [-2.4, 4.3], [2.4, 4.3], [-3.6, 3.0], [-1.2, 3.0], [1.2, 3.0], [3.6, 3.0]];
+  HV.forEach((v, k) => move(M[v], HP[k][0], HP[k][1], 0));
+  for (let k = 1; k < 7; k++) { const p = (k - 1) >> 1; line(HP[p][0], HP[p][1], HP[k][0], HP[k][1], -0.1); }
+  kill(lp); txt(ttl, 'unsorted pile → max Heap');
+  say('Pile 換成一個 Heap', '');
+  await step(tok);                                   // 29:56 資料結構的威力
+  h.mood('wow');
+  note('資料結構的威力', -5.2, 5.6, 0);
+  say('這就是「資料結構的威力」', '');
+  await step(tok);                                   // 30:05 老大壓在上面，比下面都大
+  glow(M[9], RED);
+  bub('老大在上面：比下面都大', 2.4, 6.4, 0);
+  say('只加一點規則：上面比下面大', '每個 subtree 都這樣');
+  await step(tok);                                   // 30:18 找最大就快很多
+  move(M[9], 0, 6.5, 0); await beat(tok, 600); move(M[9], 0, 5.6, 0); await beat(tok, 500);
+  h.mood('happy');
+  say('找最大：看最上面就好', '不用看半天');
+  await step(tok);                                   // 30:25 像有階層的團隊，找負責人很快
+  bub('有階層的團隊：負責人一找就到', -4.4, 3.8, 0);
+  say('像階層分明的團隊', '要找最主要的負責人很容易');
+  await step(tok);                                   // 30:56 Heap 可以放在 array 裡：max Heap
+  fresh([0, 7.5, 12.5], [0, 2, 0]);
+  const R = lRow(HV, { idx: true, dx: 1.25 });
   const n = R.v.length;
   let zh = R.zone(null, BLUE, 0, n - 1), zs = null;
-  const lh = tag('heap 區（unsorted）', 'ptr', 0, 1.6, 0), ls = tag('sorted', 'ptr alt', 0, 1.6, 0);
-  const lbl = (k) => { lh.position.set((R.x(0) + R.x(Math.max(0, k))) / 2, 1.6, 0); ls.position.set(k < n - 1 ? (R.x(k + 1) + R.x(n - 1)) / 2 : 0, 1.6, 0); ls.element.style.visibility = k < n - 1 ? '' : 'hidden'; };
-  lbl(n - 1);
-  say('unsorted pile 已經是 max heap', '老大壓在上面：a[0] 最大');
-  await beat(tok, 2600);
-  for (let k = n - 1; k > 0; k--) {
-    R.off(); R.hl([0], RED);
-    say('找最大不用掃：就是根 ' + R.v[0], '換到 heap 區最後面');
-    await beat(tok, 700);
-    await R.swap(tok, 0, k, 800);
+  const lh = note('Heap 區', 0, 1.8, 0), ls = note('sorted', 0, 1.8, 0); ls.element.style.visibility = 'hidden';
+  const lbl = (k) => { lh.position.x = (R.x(0) + R.x(Math.max(0, k))) / 2; if (k < n - 1) { ls.element.style.visibility = ''; ls.position.x = (R.x(k + 1) + R.x(n - 1)) / 2; } };
+  note('a[i] 的孩子：a[2i+1]、a[2i+2]', 0, 3.6, 0);
+  say('Heap 可以直接放在 array 裡', '用 max Heap：a[0] 最大');
+  const round = async (k, ms) => {
+    R.off(); R.hl([0], RED); await beat(tok, ms * 0.4);
+    await R.swap(tok, 0, k, ms);
     zh = R.zone(zh, BLUE, 0, k - 1); zs = R.zone(zs, GREEN, k, n - 1); lbl(k - 1);
     let i = 0;
     while (2 * i + 1 < k) {
       const l = 2 * i + 1, r = l + 1; let c = l; if (r < k && R.v[r] > R.v[l]) c = r;
-      R.off(); R.hl([i], GOLD); R.hl(r < k ? [l, r] : [l], BLUE);
-      await beat(tok, 450);
+      R.off(); R.hl([i], GOLD); R.hl(r < k ? [l, r] : [l], BLUE); await beat(tok, ms * 0.35);
       if (R.v[c] <= R.v[i]) break;
-      say(R.v[i] + ' 往下沉，' + R.v[c] + ' 浮上來', '只走一條路徑：O(log n)');
-      await R.swap(tok, i, c, 600); i = c;
+      await R.swap(tok, i, c, ms * 0.8); i = c;
     }
     R.off();
-  }
-  zh = R.zone(zh, BLUE, 0, -1); zs = R.zone(zs, GREEN, 0, n - 1); lbl(-1); lh.element.style.visibility = 'hidden';
-  say('每次找最大 O(log n)，共 n 次', '<span class="ok">O(n log n)</span>，heap 放原陣列 → in-place');
-  await beat(tok, 3000);
+  };
+  await step(tok);                                   // 31:07 最大的一路往 array 後面塞
+  await round(6, 700);
+  say('最大的換到 array 最後面', '換上來的往下沉，Heap 修好');
+  await step(tok);                                   // 31:13 前面是 Heap 區，後面是 sorted
+  await round(5, 550);
+  say('前面是 Heap 區（還沒排好）', '後面是 sorted 區');
+  await step(tok);                                   // 31:33 後面放好最大、第二大、第三大……
+  await round(4, 420); await round(3, 420);
+  say('後面依序是最大、第二大、第三大……', '');
+  await step(tok);                                   // 31:41 Heap 放在原本的 array：不用額外空間
+  await round(2, 420); await round(1, 420);
+  zh = R.zone(zh, BLUE, 0, -1); zs = R.zone(zs, GREEN, 0, n - 1); lh.element.style.visibility = 'hidden'; ls.position.x = 0;
+  good('in-place：不用額外空間', -3.8, 3.0, 0);
+  say('Heap 就放在原本的 array', '不需要額外空間');
+  await step(tok);                                   // 31:52 每次找最大 log n → n log n
+  good('每次 O(log n) × n 次 = O(n log n)', 3.2, 3.0, 0);
+  say('找最大只要 O(log n)', '總共 <span class="ok">O(n log n)</span>，比 n² 好');
 }]);
 
-// 36:21 Bubble Sort：每輪看相鄰兩個，大小不對就換
-FRAG.push(['sortlin-bubble-pass', 'Bubble Sort：相鄰兩個比高矮', async (tok) => {
-  fresh(LCAM, LLOOK);
-  const R = lRow([5, 1, 4, 2, 8], { idx: true, dx: 1.4 });
+// 32:13 Heap Sort 的缺點：不 stable、難寫（模組內建「stability」的 cued 版本）
+FRAG.push(['sortlin-heap-unstable', 'Heap Sort 的缺點：不 stable、難寫', async (tok) => {
+  await step(tok);                                   // 32:13 上浮、下沉時很難顧到原本的位置
+  stab.algo = 'heap'; stab.vals = heapUnstableVals(); enterStab(false); controls('');
+  say('同值標成 A、B：Heap Sort 會不會弄反？', '上浮、下沉一直在換位置');
+  await runTo(tok, Math.floor(lastStep() * 0.55), 2600);
+  await step(tok);                                   // 32:23 key 相同時尊重原本的位置關係？
+  await runTo(tok, lastStep(), 2600);
+  const w = bad('同值的 A、B 被弄反了', -3.2, 3.6, 1.2);
+  say('Key 一樣的 A、B 被弄反了', '很難顧到原本的位置關係');
+  await step(tok);                                   // 32:40 把原本的位置當 secondary key
+  kill(w);
+  const n1 = note('(值, 原本位置) 一起比：secondary key', -3.0, 3.6, 1.2);
+  say('把原本的位置當 secondary key', '這樣可以做到 stable');
+  await step(tok);                                   // 32:53 但要花額外空間
+  const n2 = bad('每筆多存一個位置 → 額外空間', 3.0, 3.6, 1.2);
+  say('但要多存原本位置', '得花額外空間');
+  await step(tok);                                   // 33:01 通常不被看成 stable
+  kill(n1); kill(n2);
+  const n3 = bad('Heap Sort：通常算 unstable', 0, 4.2, 1.2);
+  say('所以 Heap Sort 通常不算 stable', '');
+  await step(tok);                                   // 33:26 比 selection sort 快
+  kill(n3);
+  good('比 Selection 快：O(n log n) vs O(n²)', 0, 4.2, 1.2);
+  say('優點：比 Selection Sort 快', '');
+  await step(tok);                                   // 33:32 但比較難寫
+  const h = helper(-5.0, 1.8, '寫程式的人', 0.7);
+  const b1 = bub('白板寫 Selection：3～5 分鐘 ✓', -3.4, 3.2, 1.8);
+  say('缺點：比較難寫', 'Selection 白板 3～5 分鐘寫得完');
+  await step(tok);                                   // 33:43 Heap Sort 5 分鐘寫出來不容易
+  kill(b1); h.mood('sad');
+  bub('Heap Sort 5 分鐘寫完？不容易…', -3.4, 3.2, 1.8);
+  say('白板 5 分鐘寫出 Heap Sort', '不是那麼容易');
+  await step(tok);                                   // 33:57 有沒有 library 可用
+  h.mood('happy');
+  note('有 library 可以用 → 平常好用', 3.4, 2.6, 1.8);
+  say('有沒有 library 可用', '決定它平常好不好用');
+}]);
+
+// 36:21 Bubble Sort：只跟隔壁比高矮（小朋友排隊）
+FRAG.push(['sortlin-bubble-pass', 'Bubble Sort：只跟隔壁比高矮', async (tok) => {
+  fresh([0, 6.5, 12.5], [0, 1.4, 0]);
+  await step(tok);                                   // 36:21 sorting 界有名的 bubble sort
+  const R = lRow([5, 1, 4, 2, 8], { kids: true, idx: true, dx: 1.5 });
   const n = R.v.length; let zone = null;
-  say('排隊時：只跟隔壁比高矮', '第 1、2 個，再第 2、3 個……');
-  await beat(tok, 2600);
-  for (let p = 1; p < n; p++) {
-    say('第 ' + p + ' 輪：一路看相鄰的兩個', '左邊比較大就交換');
-    const sw = await bubblePass(tok, R, 0, n - p, 1, { ms: 420 });
-    zone = R.zone(zone, GREEN, n - p, n - 1);
-    if (sw === 0) { say('這一輪一次都沒換', '沒有 disordered pair → 排好了'); await beat(tok, 2400); break; }
-    say('最大的浮到右邊：' + R.v[n - p], '這一輪換了 ' + sw + ' 次');
-    await beat(tok, 1300);
+  tag('Bubble Sort', 'ptr', 0, 4.2, 0);
+  say('Sorting 界非常有名的 bubble sort', '');
+  await step(tok);                                   // 36:43 用迴圈一直跑過所有資料
+  const sw = pkt('掃過去 →', 0, 0, 0);
+  await travel(tok, sw, V3(R.x(0), 3.2, 0), V3(R.x(n - 1), 3.2, 0), 1800);
+  kill(sw);
+  say('用迴圈一直跑過所有資料', '每次只看旁邊的兩筆');
+  await step(tok);                                   // 37:03 先看第一筆跟第二筆
+  R.hl([0, 1], GOLD); await beat(tok, 500);
+  R.hl([0, 1], RED); mood(R.m[0], 'wow'); await R.swap(tok, 0, 1, 900); R.off(); mood(R.m[1], 'calm');
+  say('先看第 1、2 筆：大小對不對？', '5 > 1 → 換');
+  await step(tok);                                   // 37:09 再看第二筆跟第三筆……
+  for (let k = 1; k < n - 1; k++) {
+    R.off(); R.hl([k, k + 1], GOLD); await beat(tok, 380);
+    if (R.v[k] > R.v[k + 1]) { R.hl([k, k + 1], RED); await R.swap(tok, k, k + 1, 600); }
   }
-  zone = R.zone(zone, GREEN, 0, n - 1);
-  say('最多掃 n 輪；只用原本的空間', '<span class="ok">in-place</span>、O(n²)');
-  await beat(tok, 2800);
+  R.off(); zone = R.zone(zone, GREEN, n - 1, n - 1);
+  say('再看第 2、3 筆，第 3、4 筆……', '');
+  await step(tok);                                   // 37:17 整個掃過去叫一輪，再掃第二輪
+  const pl = pkt('第 1 輪做完', R.x(n - 1), 2.9, 0);
+  await bubblePass(tok, R, 0, n - 2, 1, { ms: 330 });
+  zone = R.zone(zone, GREEN, n - 2, n - 1); txt(pl, '第 2 輪'); pl.position.x = R.x(n - 2);
+  say('整個掃過去叫一輪', '再掃一次：第二輪');
+  await step(tok);                                   // 37:27 三輪、四輪……n 輪之後排好
+  await bubblePass(tok, R, 0, n - 3, 1, { ms: 260 }); await bubblePass(tok, R, 0, n - 4, 1, { ms: 260 });
+  zone = R.zone(zone, GREEN, 0, n - 1); kill(pl);
+  say('三輪、四輪……', '最多掃 n 輪就排好了');
+  await step(tok);                                   // 37:36 沒有 disordered pair
+  R.m.forEach((m) => mood(m, 'happy'));
+  good('沒有大的在前、小的在後', 0, 3.4, 0);
+  say('排好 = 沒有 disordered pair', '大的在前、小的在後的那種');
+  await step(tok);                                   // 37:45 每次都做 local 的微調
+  note('只跟隔壁比：local 的微調', 0, -0.5, 1.6);
+  say('每次只做 local 的微調', '很人性的演算法');
+  await step(tok);                                   // 38:02 小學生排隊時老師會用這方法
+  const t = helper(-6.0, 1.6, '老師', 0.8);
+  bub('你比較高，跟他換一下！', -4.6, 2.9, 1.6);
+  say('像小學生第一次排隊', '老師：你比較高一點，換過來');
+  await step(tok);                                   // 38:21 抓兩個人出來比很難，跟隔壁比容易
+  arrow(V3(R.x(0), 2.6, 0.4), V3(R.x(4), 2.6, 0.4), 0x7a1010);
+  bad('抓兩個人出來比：難', 3.0, 3.3, 0.4);
+  good('跟隔壁比高矮：容易', 3.0, -0.2, 1.6);
+  t.mood('happy');
+  say('抓兩個人出來比大小很難', '跟隔壁比高矮很容易');
 }]);
 
-// 38:39 Bubble：一樣高就不換 → stable；selection 的 swap 跳很遠，所以難 stable
+// 38:39 Bubble：in-place、最多 n 輪；一樣高就不換 → stable；selection 的 swap 跳很遠所以難 stable
 FRAG.push(['sortlin-bubble-stable', 'Bubble Sort：一樣高就不換 → stable', async (tok) => {
-  fresh(LCAM, LLOOK);
-  const R = lRow(['3A', 1, '3B', 2], { idx: true, dx: 1.6 });
-  say('3A、3B 一樣高', '看 bubble 會不會把它們換掉');
-  await beat(tok, 2400);
-  for (let p = 1; p < 4; p++) {
-    say('第 ' + p + ' 輪', '相鄰比較，左邊大才換');
-    const sw = await bubblePass(tok, R, 0, 4 - p, 1, { ms: 450, onEq: async () => { say('3A、3B 一樣高：不換', '鄰居交換 + 同值不換'); await beat(tok, 1600); } });
-    if (sw === 0) break;
-  }
-  R.hl([2, 3], GREEN);
-  say('3A 仍在 3B 前面', '<span class="ok">stable</span>');
-  await beat(tok, 2400);
+  fresh([0, 6.5, 12.5], [0, 1.4, 0]);
+  await step(tok);                                   // 38:39 空間：不需要額外空間
+  const R = lRow(['3A', 1, '3B', 2], { kids: true, idx: true, dx: 1.7 });
+  const h = helper(-5.8, 1.6, '小幫手', 0.6);
+  good('只跟旁邊換位置：不用額外空間', 0, 3.6, 0);
+  say('空間：不需要額外空間', '只是跟旁邊的人換位置');
+  await step(tok);                                   // 38:45 時間：最多掃 n 輪
+  note('時間：最多掃 n 輪', 0, -0.5, 1.6);
+  say('時間：最多掃 n 輪', '每輪看還有沒有不對的');
+  await step(tok);                                   // 39:04 很容易做到 stable
+  R.hl([0, 1], GOLD); await beat(tok, 450); R.hl([0, 1], RED); await R.swap(tok, 0, 1, 900); R.off();
+  say('它很容易做到 stable', '先看 3A 和 1：換');
+  await step(tok);                                   // 39:12 一樣高就不要換
+  R.hl([1, 2], GOLD); mood(R.m[1], 'wow'); mood(R.m[2], 'wow');
+  const eq = bub('一樣高：不換！', R.x(1.5), 3.4, 0);
+  await beat(tok, 1300); R.off(); mood(R.m[1], 'happy'); mood(R.m[2], 'happy');
+  R.hl([2, 3], GOLD); await beat(tok, 300); R.hl([2, 3], RED); await R.swap(tok, 2, 3, 800); R.off();
+  say('3A、3B 一樣高就不要換', '維持原來的位置關係');
+  await step(tok);                                   // 39:17 neighbor 交換都很容易 stable
+  kill(eq);
+  await bubblePass(tok, R, 0, 2, 1, { ms: 300 }); await bubblePass(tok, R, 0, 1, 1, { ms: 300 });
+  R.hl([2, 3], GREEN); h.mood('happy');
+  good('3A 仍在 3B 前面：stable', 0, 4.4, 0);
+  say('Neighbor 交換的方法都很容易 stable', '只要沒跟很遠的人換');
+  await step(tok);                                   // 39:40 selection 為什麼做不到：跳很遠
   R.off();
-  const ar = arrow(V3(R.x(3), 2.4, 0), V3(R.x(0), 2.4, 0), 0x8a1f5a);
-  say('對照 Selection 的 swap：一跳好幾格', '中間若有同值的人就被跨過 → 難 stable');
-  await beat(tok, 3000);
-  kill(ar);
-  say('只跟鄰居換，就很容易做到 stable', '');
-  await beat(tok, 2400);
+  const S2 = lRow(['2A', 3, '2B', 1], { y: 0.5, z: -2.6, tiles: false, dx: 1.7 });
+  tag('Selection 的 swap', 'ptr', -4.9, 0.5, -2.6);
+  S2.hl([0], GREEN); S2.hl([3], PINK);
+  say('Selection 為什麼做不到 stable？', '它的 swap 要跳很遠');
+  await step(tok);                                   // 39:53 換到六步以外的地方
+  await S2.swap(tok, 0, 3, 1400); S2.off(); S2.hl([2, 3], RED);
+  h.mood('sad');
+  say('一跳好幾格，中間的同值被跨過', '2A 跑到 2B 後面');
+  await step(tok);                                   // 40:07 要 stable 要做 neighbor 附近的檢查
+  h.mood('calm');
+  note('要 stable：檢查 neighbor 附近', 0, 2.4, -2.6);
+  say('要做到 stable', '得做 neighbor 附近的檢查');
 }]);
 
-// 40:20 Adaptive：差不多排好時，第一輪修好兩組鄰居，第二輪沒交換就停
+// 40:25 Adaptive：差不多排好時花很少力氣；一輪沒交換就 early stop
 FRAG.push(['sortlin-bubble-adaptive', 'Bubble Sort 的 adaptive：沒交換就提早停', async (tok) => {
   fresh(LCAM, LLOOK);
+  await step(tok);                                   // 40:25 新特性：adaptive
   const R = lRow([1, 3, 2, 4, 5, 7, 6, 8], { idx: true, dx: 1.1 });
   const n = R.v.length; const cnt = { c: 0 }; let swaps = 0;
-  const cl = tag('比較 0、交換 0', 'ptr alt', 0, 2.6, 0);
+  const h = helper(-6.0, 1.6, '小幫手', 0.6);
+  tag('Adaptive', 'ptr', 0, 4.4, 0);
+  say('新特性：adaptive', '已經差不多排好的 array');
+  await step(tok);                                   // 40:35 只需要花很少很少的力氣
+  note('原本排得越好 → 花的力氣越少', 0, 3.4, 0);
+  say('差不多排好時', '只要花很少很少的力氣');
+  await step(tok);                                   // 40:52 Heap Sort 不管怎樣都先重做一個 Heap
+  const hb = bad('Heap Sort：不管好壞，先重做一個 Heap', 0, -0.4, 1.6);
+  h.mood('sad');
+  say('對照 Heap Sort', '不管原本好不好，都先重做一個 Heap');
+  await step(tok);                                   // 41:04 bubble：鄰居反了的很少
+  kill(hb); h.mood('calm');
+  R.hl([1, 2, 5, 6], RED);
+  say('Bubble：差不多排好 → 反了的鄰居很少', '只要少數交換');
+  await step(tok);                                   // 41:35 一輪都沒違反 → 下一輪不用掃
+  R.off();
+  const rule = pkt('一輪都沒換 → 停！', 0, 2.6, 0);
+  say('某一輪掃過去都沒發現違反', '下一輪就不用掃');
+  await step(tok);                                   // 41:58 只有兩組鄰居反了，第一輪修好
+  const cl = tag('比較 0、交換 0', 'ptr alt', 4.8, 2.2, 0);
   const upd = () => txt(cl, '比較 ' + cnt.c + '、交換 ' + swaps);
-  say('差不多排好：只有兩組鄰居反了', '3,2 和 7,6');
-  R.hl([1, 2, 5, 6], RED); await beat(tok, 2600); R.off();
-  for (let p = 1; p < n; p++) {
-    say('第 ' + p + ' 輪', p === 1 ? '把那兩組換回來' : '再掃一次確認');
-    const sw = await bubblePass(tok, R, 0, n - p, 1, { ms: 330, cnt, onSwap: () => { swaps++; upd(); } });
-    upd();
-    if (sw === 0) { say('第 ' + p + ' 輪沒有任何交換', '第 ' + (p + 1) + ' 輪起不用掃 → early stop'); await beat(tok, 2800); break; }
-  }
-  R.hl([0, 1, 2, 3, 4, 5, 6, 7], GREEN);
-  say('原本排得越好，做得越少 → adaptive', '對照：Heap Sort 不管好壞都先重建 heap');
-  await beat(tok, 3200);
+  await bubblePass(tok, R, 0, n - 1, 1, { ms: 200, cnt, onSwap: () => { swaps++; upd(); } }); upd();
+  say('第一輪：把那兩組換回來', '3,2 和 7,6');
+  await step(tok);                                   // 42:02 第二輪沒換 → 第三輪不用做（early stop）
+  await bubblePass(tok, R, 0, n - 2, 1, { ms: 180, cnt }); upd();
+  R.hl([0, 1, 2, 3, 4, 5, 6, 7], GREEN); h.mood('happy');
+  txt(rule, '第 2 輪沒換 → early stop');
+  say('第二輪沒交換：第三輪起不用做', 'early stop ＝ <span class="ok">adaptive</span>');
 }]);
 
-// 42:07 磁帶：讀取頭只要捲一點就能換鄰居；跟 10 格外的換要捲很遠
+// 42:11 磁帶：讀取頭捲一點就能換鄰居；跟 10 格外的換要捲很遠
 FRAG.push(['sortlin-tape', '磁帶上的排序：鄰居交換便宜', async (tok) => {
-  fresh([0, 6.5, 12], [0, 1.4, 0]);
+  fresh([0, 6.5, 12.5], [0, 1.4, 0]);
+  await step(tok);                                   // 42:11 磁帶
   const R = lRow([4, 9, 2, 7, 5, 6, 1, 8, 3, 10, 12, 11], { dx: 0.95, sz: 0.68 });
-  const head = ghostBox('#c08a20', 0.9, 1.4, 1.3); const hl = tag('讀取頭', 'ptr', 0, 1.9, 0);
+  const strip = ghostBox('#6e5f49', 11.6, 0.1, 1.1); strip.position.set(0, 0.05, 0);
+  tag('磁帶', 'ptr', 0, 3.6, 0);
+  say('磁帶：存資料用的一長條帶子', '長得有點像錄音帶');
+  await step(tok);                                   // 42:27 想成捲筒衛生紙
+  const roll = (x) => { const m = new ctx.THREE.Mesh(new ctx.THREE.CylinderGeometry(0.7, 0.7, 1.3, 24), new ctx.THREE.MeshStandardMaterial({ color: '#f4f0e6', roughness: 0.9 })); m.rotation.x = Math.PI / 2; m.position.set(x, 0.75, 0); lab.world.add(m); return m; };
+  roll(-6.4); roll(6.4);
+  bub('像捲筒衛生紙，只是用來存資料', 0, 2.9, 0);
+  say('想成捲筒衛生紙', '一捲一捲的');
+  await step(tok);                                   // 42:41 讀取頭：捲到那裡才能讀
+  const head = ghostBox('#c08a20', 0.9, 1.4, 1.3); const hl = tag('讀取頭', 'ptr alt', 0, 1.9, 0);
   const put = (x) => { head.position.set(x, 0.6, 0); hl.position.set(x, 1.9, 0); };
-  let pos = 4, roll = 0; put(R.x(pos));
-  const rl = tag('捲動 0 格', 'ptr alt', 0, 3.0, 0);
-  const goTo = async (k, ms) => { const a = R.x(pos), b = R.x(k), d = Math.abs(k - pos); await K.anim(tok, ms, (t) => put(a + (b - a) * t)); roll += d; pos = k; txt(rl, '捲動 ' + roll + ' 格'); };
-  say('磁帶像捲筒衛生紙：捲到讀取頭才讀得到', '');
-  await beat(tok, 2800);
-  say('換鄰居：5 和 6', '讀一格、捲 1 格、再讀');
-  R.hl([4, 5], GOLD); await beat(tok, 900);
-  await goTo(5, 600); await R.swap(tok, 4, 5, 800); R.off();
-  say('只捲了 1 格', 'neighbor swap 很便宜');
-  await beat(tok, 2200);
-  roll = 0; txt(rl, '捲動 0 格');
-  say('換 10 格以外的：9 和 12', '捲過去 10 格、讀、再捲回來');
-  R.hl([1, 10], GOLD); await goTo(1, 900); await goTo(10, 1800);
-  await R.swap(tok, 1, 10, 900); await goTo(1, 1800); R.off();
-  say('一次遠距交換要捲 ' + roll + ' 格', '這種媒體上 Bubble Sort 反而好用');
-  await beat(tok, 3000);
+  let pos = 4, roll2 = 0; put(R.x(pos));
+  const rl = tag('捲動 0 格', 'note', 4.4, 3.6, 0);
+  const goTo = async (k, ms) => { const a = R.x(pos), b = R.x(k), d = Math.abs(k - pos); await anim(tok, ms, (t) => put(a + (b - a) * t)); roll2 += d; pos = k; txt(rl, '捲動 ' + roll2 + ' 格'); };
+  say('有一個讀取頭', '紙捲到讀取頭那邊才讀得到');
+  await step(tok);                                   // 42:57 附近的資料做交換很容易
+  R.hl([4, 5], GOLD); await goTo(5, 500); await R.swap(tok, 4, 5, 900); R.off();
+  say('換鄰居：5 和 6', '捲 1 格就讀到兩筆，很便宜');
+  await step(tok);                                   // 43:14 跟 10 步以外的交換：捲 10 步
+  roll2 = 0; txt(rl, '捲動 0 格');
+  R.hl([1, 10], GOLD); await goTo(1, 700); await goTo(10, 1500);
+  say('換 9 和 12：差了 9 格', '要捲過去才讀得到');
+  await step(tok);                                   // 43:21 再捲回來：移動距離很大
+  await R.swap(tok, 1, 10, 900); await goTo(1, 1400); R.off();
+  say('換完還要捲回來', '一次遠距交換捲了 ' + roll2 + ' 格');
+  await step(tok);                                   // 43:31 這種情境下 bubble sort 比較好用
+  good('鄰居交換便宜 → Bubble Sort 好用', 0, 4.4, 0);
+  say('在這種媒體上', 'Bubble 這種鄰居交換比較好用');
+  await step(tok);                                   // 43:57 「bubble sort 沒人在用」
+  const h = helper(-5.8, 2.4, '小幫手', 0.6);
+  const b1 = bub('Bubble Sort 沒人在用？', -4.4, 3.6, 2.4); h.mood('wow');
+  say('有人說 bubble sort 沒人在用', '在現在的架構下，確實大多不適用');
+  await step(tok);                                   // 44:13 曾經有用；未來也許會有新媒體
+  txt(b1, '曾經有用；未來也許又有用');
+  h.mood('happy');
+  say('它曾經有用', '未來也許會有新的儲存媒體');
+  await step(tok);                                   // 45:02 特性：neighbor swapping → adaptive
+  pkt('neighbor swapping → adaptive', 0, -0.4, 1.4);
+  say('重點是知道它的特性', 'neighbor swapping 帶來 adaptive');
+  await step(tok);                                   // 45:20 差不多排好的 linked list、鄰居運算便宜的媒體
+  note('適用：差不多排好的 linked list、鄰居便宜的媒體', 0, -1.3, 2.2);
+  say('適用：差不多排好的 linked list', '或鄰居運算比較便宜的儲存媒體');
 }]);
 
-// 45:38 Insertion Sort：玩撲克牌——手上一疊排好的，摸一張插到對的位置
+// 45:46 Insertion Sort：玩撲克牌——手上一疊排好的，摸一張插到對的位置
 FRAG.push(['sortlin-insert-cards', 'Insertion Sort：摸一張牌，插到對的位置', async (tok) => {
   fresh([0, 6, 12], [0, 1.6, 0]);
-  const CW = [0.8, 1.2, 0.25], X = (k) => -5 + k * 1.15, HY = 0.8;
-  const hand = [3, 7].map((v, k) => ({ v, m: cube(v, colorFor(v), CW, X(k), HY, 0) }));
-  const pile = [5, 2, 9].map((v, k) => ({ v, m: cube(v, colorFor(v), CW, 2.6 + k * 1.15, HY, 0) }));
-  tag('手上：sorted pile', 'ptr', -3.9, 2.2, 0); tag('桌上：unsorted pile', 'ptr alt', 3.75, 2.2, 0);
-  say('手上的牌一直保持排好', '大老二：小的在左、大的在右');
-  await beat(tok, 2600);
-  while (pile.length) {
-    const c = pile.shift(); glow(c.m, GOLD);
-    say('隨便摸一張：' + c.v, '不用挑最小的');
-    move(c.m, c.m.position.x, 3.0, 0); await beat(tok, 1000);
-    let k = hand.length;
-    while (k > 0 && hand[k - 1].v > c.v) k--;
+  await step(tok);                                   // 45:46 insertion sort
+  const p = helper(-6.0, 1.8, '玩家', 0.8);
+  tag('Insertion Sort', 'ptr', 0, 4.4, 0);
+  say('另一個要深化了解的：insertion sort', '');
+  await step(tok);                                   // 45:53 對應的現實情境：玩撲克牌
+  const CW = [0.8, 1.2, 0.25], X = (k) => -4.4 + k * 1.15, HY = 0.8;
+  const hand = [3, 7].map((v, k) => ({ v, m: cube(v, '#fffaf0', CW, X(k), HY, 0, 1.2) }));
+  const pile = [5, 9, 2].map((v, k) => ({ v, m: cube(v, '#fffaf0', CW, 2.6 + k * 1.15, HY, 0, 1.2) }));
+  say('現實的情境：玩撲克牌', '');
+  await step(tok);                                   // 46:17 大老二：手上的牌由小排到大
+  hand.concat(pile).forEach((c) => tint(c.m, colorFor(c.v)));
+  say('像玩大老二', '要把手上的牌由小排到大');
+  await step(tok);                                   // 46:23 也可以做 selection：用眼睛找最小的
+  glow(pile[2].m, PINK); const b1 = bub('先找最小的？那是 selection', 3.75, 2.7, 0);
+  say('可以做 selection：看哪張最小', '再看第二小、第三小……');
+  await step(tok);                                   // 46:35 另一種人：手上已經排好
+  glow(pile[2].m, null); kill(b1);
+  const lh = note('手上：sorted pile', -3.85, 2.3, 0);
+  hand.forEach((c) => glow(c.m, GREEN)); await beat(tok, 900); hand.forEach((c) => glow(c.m, null));
+  say('另一種人：手上已經拿好排好的牌', '');
+  const ins = async (c) => {
+    glow(c.m, GOLD); move(c.m, c.m.position.x, 3.0, 0); await beat(tok, 700);
+    let k = hand.length; while (k > 0 && hand[k - 1].v > c.v) k--;
     if (k > 0) glow(hand[k - 1].m, BLUE); if (k < hand.length) glow(hand[k].m, BLUE);
-    say('找位置：' + (k > 0 ? hand[k - 1].v : '最前') + ' 和 ' + (k < hand.length ? hand[k].v : '最後') + ' 之間', '後面的牌往右挪');
-    move(c.m, X(k), 3.0, 0); await beat(tok, 900);
+    move(c.m, X(k), 3.0, 0); await beat(tok, 700);
     for (let q = hand.length - 1; q >= k; q--) move(hand[q].m, X(q + 1), HY, 0);
-    await beat(tok, 600);
-    move(c.m, X(k), HY, 0); hand.splice(k, 0, c); await beat(tok, 700);
+    await beat(tok, 400);
+    move(c.m, X(k), HY, 0); hand.splice(k, 0, c); await beat(tok, 500);
     hand.forEach((h) => glow(h.m, null));
-  }
-  say('手上：2 3 5 7 9', 'sorted pile 長大、unsorted pile 變空');
-  await beat(tok, 2800);
+    return k;
+  };
+  await step(tok);                                   // 46:41 摸一張起來插到正確的地方
+  await ins(pile.shift()); p.mood('happy');
+  say('摸一張 5 起來', '插到 3 和 7 之間');
+  await step(tok);                                   // 46:47 手上維持 sorted pile，從 unsorted pile 拿
+  note('桌上：unsorted pile', 3.75, 2.3, 0);
+  say('手上一直維持 sorted pile', '從 unsorted pile 拿牌');
+  await step(tok);                                   // 46:54 隨便選一張，不是選最小的
+  await ins(pile.shift());
+  say('隨便拿一張：9', '不用挑最小的');
+  await step(tok);                                   // 47:05 放到正確的位置
+  await ins(pile.shift()); p.mood('happy'); await p.hop(tok);
+  txt(lh, '手上：2 3 5 7 9');
+  say('拿到的 2 放到最前面', '每張都放到正確的位置');
 }]);
 
-// 47:12 Insertion 的各種實作：sequential search / binary search；array 插入要往後擠，linked list 只改指標
+// 47:13 Insertion 的各種實作：sequential / binary search；skip list；linked list O(1)、array 要往後擠
 FRAG.push(['sortlin-insert-search', 'Insertion 的實作：怎麼找位置、怎麼插', async (tok) => {
   fresh(LCAM, LLOOK);
+  await step(tok);                                   // 47:13 各式各樣不同的 implementation
   const R = lRow([2, 4, 5, 7, 9, 11, null], { idx: true, dx: 1.2 });
   const key = cube(8, colorFor(8), [0.78, 0.78, 0.78], 5.6, 3.4, 0);
   const cl = tag('', 'ptr alt', 0, 3.6, 0);
-  const cur = tag('', 'ptr', 0, 0, 0);
-  say('要把 8 插進排好的 2 4 5 7 9 11', '先找位置');
-  await beat(tok, 2400);
-  say('Sequential search：從頭一個一個看', '找第一個比 8 大的');
-  for (let j = 0; j < 5; j++) { R.off(); R.hl([j], j === 4 ? RED : GOLD); R.at(cur, j); txt(cur, '看'); txt(cl, '比較 ' + (j + 1) + ' 次'); await beat(tok, 550); }
-  say('9 > 8：位置在 a[4]', 'sequential：O(n) 次比較');
-  await beat(tok, 2000);
-  R.off(); txt(cur, ''); txt(cl, '');
+  say('要把 8 放進排好的 2 4 5 7 9 11', '各種不同的實作');
+  await step(tok);                                   // 47:24 sequential search 找插入位置
+  for (let j = 0; j < 5; j++) { R.off(); R.hl([j], j === 4 ? RED : GOLD); txt(cl, '比較 ' + (j + 1) + ' 次'); await beat(tok, 450); }
+  say('最簡單：sequential search', '一個一個看，9 > 8：位置在 a[4]');
+  await step(tok);                                   // 47:35 sorted pile 是 array → binary search
+  R.off(); txt(cl, '');
   const lo = tag('lo', 'ptr', 0, 0, 0), hi = tag('hi', 'ptr', 0, 0, 0), md = tag('mid', 'ptr alt', 0, 0, 0);
-  say('Array 可以做 binary search', '每次看中間，砍掉一半');
   let L = 0, H = 5, c = 0;
   while (L <= H) {
     const M = (L + H) >> 1; c++;
     R.at(lo, L, 1.3); R.at(hi, H, 1.9); R.at(md, M, 2.5); R.off(); R.hl([M], GOLD); txt(cl, '比較 ' + c + ' 次');
-    await beat(tok, 900);
-    if (R.v[M] < 8) { say('a[' + M + '] = ' + R.v[M] + ' < 8', 'lo = mid + 1'); L = M + 1; } else { say('a[' + M + '] = ' + R.v[M] + ' > 8', 'hi = mid − 1'); H = M - 1; }
-    await beat(tok, 1100);
+    await beat(tok, 700);
+    if (R.v[M] < 8) L = M + 1; else H = M - 1;
   }
-  [lo, hi, md].forEach((l) => l.position.set(0, -5, 0)); R.off();
-  say('位置還是 a[4]，只比 ' + c + ' 次', 'binary search：O(log n) 次比較');
-  await beat(tok, 2200);
-  say('但 array 插入要把後面往後擠', '11、9 各往後一格 → O(n)');
-  for (let k = 5; k >= 4; k--) { move(R.m[k], R.x(k + 1), R.y, 0); R.m[k + 1] = R.m[k]; R.v[k + 1] = R.v[k]; await beat(tok, 700); }
-  move(key, R.x(4), 0.5, 0); R.m[4] = key; R.v[4] = 8; await beat(tok, 1200);
-  say('Linked list：插入只改指標 O(1)', '但只能從頭 sequential search');
-  await beat(tok, 2800);
-  say('Skip list：找得快也插得快', '可以，但要額外空間 → overkill');
-  await beat(tok, 3000);
+  [lo, hi, md].forEach(kill); R.off();
+  say('Array 可以做 binary search', '只比 ' + c + ' 次就找到 a[4]');
+  await step(tok);                                   // 47:51 skip list：找快插也快，但 overkill
+  const exp = ghostBox('#c08a20', 7.4, 0.1, 0.5); exp.position.set(-0.6, 1.6, -1.0);
+  [0, 2, 4].forEach((k) => cube(R.v[k], colorFor(R.v[k]), [0.5, 0.5, 0.5], R.x(k), 1.9, -1.0));
+  tag('skip list：快車道', 'ptr', -5.0, 1.9, -1.0);
+  bad('要額外空間 → overkill', 3.6, 2.6, -1.0);
+  say('也可以用 skip list：找、插都快', '但要額外空間，有點 overkill');
+  await step(tok);                                   // 48:14 linked list：插入 constant time
+  const n1 = note('Linked list：找到位置後，改一下指標 O(1)', 0, 4.6, 0);
+  say('Linked list：插入只要 constant time', '只是小紙條（指標）改一下');
+  await step(tok);                                   // 48:28 array：插入要花 n，把其他人往後擠
+  for (let k = 5; k >= 4; k--) { move(R.m[k], R.x(k + 1), R.y, 0); R.m[k + 1] = R.m[k]; R.v[k + 1] = R.v[k]; await beat(tok, 600); }
+  move(key, R.x(4), 0.5, 0); R.m[4] = key; R.v[4] = 8; await beat(tok, 900);
+  txt(n1, 'Array：後面的人往後擠 → O(n)');
+  say('Array：插入要把後面往後擠', '11、9 各往後一格 → 花 n 的時間');
 }]);
 
-// 48:35 從前面找 vs 從後面找：遇到同值時，backward 自然 stable
+// 48:36 從前面找 vs 從後面找：遇到同值時，backward 自然 stable
 FRAG.push(['sortlin-insert-forward-backward', 'Insertion：從前找 vs 從後找（stable）', async (tok) => {
   fresh(LCAM, LLOOK);
-  const A = lRow([1, '3A', 5, '3B'], { y: 3.6, tiles: false, dx: 1.5 });
-  const B = lRow([1, '3A', 5, '3B'], { y: 0.6, dx: 1.5 });
-  tag('從前面找', 'ptr', -4.7, 3.6, 0); tag('從後面找', 'ptr', -4.7, 0.6, 0);
-  say('前三張已排好，要插入 3B', '3A 先來、3B 後來');
-  await beat(tok, 2600);
-  say('Naive：從前面找第一個 ≥ 3 的', '');
+  await step(tok);                                   // 48:36 從前面找插入位置
+  const A = lRow([1, '3A', 5, '3B'], { y: 3.6, tiles: false, dx: 1.6 });
+  const B = lRow([1, '3A', 5, '3B'], { y: 0.6, dx: 1.6 });
+  tag('從前面找', 'ptr', -4.8, 3.6, 0); tag('從後面找', 'ptr', -4.8, 0.6, 0);
   A.hl([3], GOLD);
-  for (let j = 0; j < 2; j++) { A.hl([j], BLUE); await beat(tok, 700); A.m[j] && glow(A.m[j], null); }
+  for (let j = 0; j < 2; j++) { gl(A.m[j], BLUE); await beat(tok, 600); gl(A.m[j], null); }
   A.hl([1], RED);
-  say('碰到 3A 就停 → 3B 插到它前面', '同值的人被插隊了');
-  await beat(tok, 1600);
-  await A.rot(tok, 3, 1, 1600); A.hl([1, 2], RED);
-  say('[1, 3B, 3A, 5]：不 stable', '<span class="no">要 stable 得記得「跨過」同值</span>');
-  await beat(tok, 2600); A.off();
-  say('Backward：從後面往前，比 key 大才讓位', '');
-  await insRound(tok, B, 3, { ms: 650 });
-  B.hl([1, 2], GREEN);
-  say('碰到 3A（不比 3B 大）就停', '[1, 3A, 3B, 5]：<span class="ok">stable</span>');
-  await beat(tok, 3000);
+  say('要插入 3B（前三張已排好）', '一種從前面找：碰到 ≥ 3 就停');
+  await step(tok);                                   // 48:43 從後面開始找
+  B.hl([3], GOLD);
+  for (const j of [2, 1]) { gl(B.m[j], BLUE); await beat(tok, 600); gl(B.m[j], null); }
+  B.hl([1], GREEN);
+  say('一種從後面找：比 3B 大的才讓位', '碰到 3A 就停');
+  await step(tok);                                   // 48:50 兩個在 stable 上不太一樣
+  note('同一個演算法，stable 不一樣', 0, 2.2, 0);
+  say('兩種做法在 stable 上不一樣', '');
+  await step(tok);                                   // 48:59 從後面找到的位置比較 stable
+  B.off(); await insRound(tok, B, 3, { ms: 500 }); B.hl([1, 2], GREEN);
+  good('[1, 3A, 3B, 5]', 5.0, 0.6);
+  say('從後面找：3B 排在 3A 後面', '<span class="ok">stable</span>');
+  await step(tok);                                   // 49:08 從前面找：碰到同值就跳到它前面
+  A.off(); await A.rot(tok, 3, 1, 1700); A.hl([1, 2], RED);
+  bad('[1, 3B, 3A, 5]', 5.0, 3.6);
+  say('從前面找：3B 跳到 3A 前面', '<span class="no">不見得 stable</span>');
 }]);
 
-// 49:32 Gnome Sort（小精靈排序）：用鄰居交換把一個元素滾到正確位置
-FRAG.push(['sortlin-gnome', 'Gnome Sort：小精靈把牌一路滾回去', async (tok) => {
-  fresh(LCAM, LLOOK);
-  const R = lRow([3, 6, 8, 4, 2], { idx: true, dx: 1.4 });
-  const gm = tag('小精靈', 'ptr alt', 0, 0, 0);
-  say('Insertion 也能用鄰居交換來做', 'Gnome sort（小精靈排序）');
-  await beat(tok, 2600);
-  let pos = 0, guard = 0;
-  while (pos < R.v.length && guard++ < 40) {
-    R.at(gm, pos, 1.4); R.off();
-    if (pos === 0 || R.v[pos - 1] <= R.v[pos]) {
-      if (pos > 0) R.hl([pos - 1, pos], GREEN);
-      say(pos === 0 ? '最左邊：往右走' : R.v[pos - 1] + ' ≤ ' + R.v[pos] + '：順序對，往右走', '');
-      await beat(tok, 420); pos++;
-    } else {
-      R.hl([pos - 1, pos], RED);
-      say(R.v[pos - 1] + ' > ' + R.v[pos] + '：交換，往左退一步', '咚咚咚，滾回去');
-      await beat(tok, 300);
-      await R.swap(tok, pos - 1, pos, 650); pos--;
-    }
+// 49:18 Gnome Sort（小精靈排序）：用鄰居交換把一個元素滾到正確位置
+async function gnomeRoll(tok, R, gm, i, ms) {
+  let pos = i;
+  gm.g.position.x = R.x(pos);
+  while (pos > 0 && nOf(R.v[pos - 1]) > nOf(R.v[pos])) {
+    R.off(); R.hl([pos - 1, pos], RED); move(gm.g, R.x(pos), 0, 1.7);
+    await R.swap(tok, pos - 1, pos, ms); pos--;
   }
-  R.off(); R.hl([0, 1, 2, 3, 4], GREEN); gm.position.set(0, -5, 0);
-  say('每個元素都滾到 sorted 裡的正確位置', '跟 insertion 一樣的結果、一樣 stable');
-  await beat(tok, 3000);
+  R.off(); if (pos > 0) R.hl([pos - 1, pos], GREEN); move(gm.g, R.x(pos), 0, 1.7);
+  await beat(tok, 300); R.off();
+}
+FRAG.push(['sortlin-gnome', 'Gnome Sort：小精靈把牌一路滾回去', async (tok) => {
+  fresh([0, 6.5, 12.5], [0, 1.4, 0.4]);
+  await step(tok);                                   // 49:18 selection、bubble 都講到鄰居交換
+  const R = lRow([3, 6, 8, 4, 2], { idx: true, dx: 1.4 });
+  let z = R.zone(null, GREEN, 0, 2);
+  note('Bubble：neighbor swap', -3, 3.2, 0);
+  say('Bubble sort 講到 neighbor swap', 'Insertion 也可以嗎？');
+  await step(tok);                                   // 49:26 insertion 可以用鄰居交換來做
+  R.hl([3], GOLD);
+  say('Insertion 也可以用鄰居交換來做', '只要放到正確位置就好');
+  await step(tok);                                   // 49:36 Gnome sort（小精靈排序）
+  const gm = buddy('小精靈', '', '#9fd18b', R.x(3), 0, 1.7, 0.55);
+  say('可愛的名字：Gnome sort', '小精靈排序');
+  await step(tok);                                   // 49:43 咚咚咚，把它滾到正確的位置
+  await gnomeRoll(tok, R, gm, 3, 650); z = R.zone(z, GREEN, 0, 3); gm.mood('happy');
+  say('咚咚咚：跟左邊鄰居換，一路滾回去', '4 滾到 3 和 6 之間');
+  await step(tok);                                   // 49:50 滾到 sorted pile 裡正確的位置
+  await gnomeRoll(tok, R, gm, 4, 520); z = R.zone(z, GREEN, 0, 4); await gm.hop(tok);
+  say('不一定是最小的', '但會滾到 sorted pile 裡正確的位置');
 }]);
 
-// 50:11 Selection 把力氣花在「選」，Insertion 把力氣花在「放」
+// 49:59 Selection 把力氣花在「選」，Insertion 把力氣花在「放」
 FRAG.push(['sortlin-select-vs-insert', 'Selection vs Insertion：力氣花在選還是放', async (tok) => {
   fresh(LCAM, LLOOK);
+  await step(tok);                                   // 49:59 跟 bubble、selection 有類似的 flavor
   const A = lRow([4, 1, 3, 5, 2], { y: 3.6, tiles: false, dx: 1.3 });
   const B = lRow([4, 1, 3, 5, 2], { y: 0.6, dx: 1.3 });
   tag('Selection', 'ptr', -4.9, 3.6, 0); tag('Insertion', 'ptr', -4.9, 0.6, 0);
   const ca = { c: 0 }, cb = { c: 0 };
   const la = tag('選：比較 0 次', 'ptr alt', 4.9, 4.6, 0), lb = tag('放：比較 0 次', 'ptr alt', 4.9, 1.6, 0);
-  say('同一組資料、兩種想法', '');
-  await beat(tok, 2000);
-  say('Selection：每輪掃完 unsorted 才選得出最小', '選很累，放的位置很確定');
-  for (let i = 0; i < 4; i++) await selRound(tok, A, i, { ms: 210, cnt: ca, onCmp: () => txt(la, '選：比較 ' + ca.c + ' 次') });
-  A.hl([0, 1, 2, 3, 4], GREEN);
-  await beat(tok, 900);
-  say('Insertion：隨便拿下一張，花力氣找位置', '選很輕鬆，放要找＋挪');
-  for (let i = 1; i < 5; i++) await insRound(tok, B, i, { ms: 260, cnt: cb, hk: () => txt(lb, '放：比較 ' + cb.c + ' 次') });
+  say('Insertion 跟 selection 有類似的 flavor', '但做的事不一樣');
+  await step(tok);                                   // 50:11 隨便選出來，然後找要放到哪裡
+  for (let i = 1; i < 3; i++) await insRound(tok, B, i, { ms: 240, cnt: cb, hk: () => txt(lb, '放：比較 ' + cb.c + ' 次') });
+  say('Insertion：拿下一張就好', '然後找它要放哪裡');
+  await step(tok);                                   // 50:21 力氣都花在「放到哪裡」
+  for (let i = 3; i < 5; i++) await insRound(tok, B, i, { ms: 200, cnt: cb, hk: () => txt(lb, '放：比較 ' + cb.c + ' 次') });
   B.hl([0, 1, 2, 3, 4], GREEN);
-  say('兩個都是 for loop × O(n) → O(n²)', '都 reuse 原本空間（in-place）');
-  await beat(tok, 3200);
+  say('力氣都花在：放到哪裡', '找位置 + 往後挪');
+  await step(tok);                                   // 50:28 selection：選最小的，選的時候多花時間
+  for (let i = 0; i < 2; i++) await selRound(tok, A, i, { ms: 150, sw: 550, cnt: ca, onCmp: () => txt(la, '選：比較 ' + ca.c + ' 次') });
+  say('Selection：選最小的那個', '選的時候要多花時間');
+  await step(tok);                                   // 50:33 要放到哪裡很確定
+  for (let i = 2; i < 4; i++) await selRound(tok, A, i, { ms: 150, sw: 550, cnt: ca, onCmp: () => txt(la, '選：比較 ' + ca.c + ' 次') });
+  A.hl([0, 1, 2, 3, 4], GREEN);
+  say('放到哪裡很確定', '就是 sorted 區的下一格');
+  await step(tok);                                   // 50:41 力氣花在選最極端的，還是幫它找位置
+  A.off(); B.off();
+  note('選最極端的？還是隨便選、幫它找位置？', 0, 2.3, 0);
+  say('力氣要花在選最極端的', '還是隨便選、但幫它找位置');
+  await step(tok);                                   // 50:48 一樣可以 reuse 原本的空間
+  good('都 reuse 原本的空間（in-place）', -2.6, -0.4, 1.4);
+  say('跟 bubble、selection 一樣', '可以 reuse 原本的空間');
+  await step(tok);                                   // 50:55 for loop × n → n²
+  good('for loop × n → O(n²)', 3.2, -0.4, 1.4);
+  say('一個 for loop，每張牌花 n 的力氣', '總共 <span class="ok">O(n²)</span>');
 }]);
 
-// 51:21 Backward insertion 是 adaptive：2 3 4 5 6 每張只看前一張
-FRAG.push(['sortlin-insert-adaptive', 'Backward Insertion 是 adaptive：2 3 4 5 6', async (tok) => {
+// 51:21 Backward insertion：stable 比較容易；而且是 adaptive（2 3 4 5 6 每張只看前一張）
+FRAG.push(['sortlin-insert-adaptive', 'Backward Insertion：stable 又 adaptive', async (tok) => {
   fresh(LCAM, LLOOK);
-  const A = lRow([2, 3, 4, 5, 6], { y: 3.6, tiles: false, dx: 1.4 });
-  const B = lRow([2, 3, 4, 5, 6], { y: 0.6, dx: 1.4 });
+  await step(tok);                                   // 51:21 forward、backward 在 stable 上有差別
+  let A = lRow([1, '3A', 5, '3B'], { y: 3.6, tiles: false, dx: 1.5 });
+  let B = lRow([1, '3A', 5, '3B'], { y: 0.6, dx: 1.5 });
+  const tA = tag('forward', 'ptr', -4.6, 3.6, 0), tB = tag('backward', 'ptr', -4.6, 0.6, 0);
+  A.hl([3], GOLD); B.hl([3], GOLD);
+  say('Forward 和 backward 的實作', '在 stable 上有差別');
+  await step(tok);                                   // 51:28 從前面找：要記得跨過同 value 的
+  const jp = pkt('跨過 3A', A.x(1), 4.8, 0);
+  for (let j = 0; j < 3; j++) { gl(A.m[j], j === 1 ? GOLD : BLUE); await beat(tok, 450); gl(A.m[j], null); }
+  await A.rot(tok, 3, 2, 1000); A.hl([1, 2], GREEN);
+  say('從前面找：要記得跨過同值的', '才會 stable');
+  await step(tok);                                   // 51:43 從後面找：看到同樣或比較小的就插進去
+  kill(jp); B.off();
+  await insRound(tok, B, 3, { ms: 420 }); B.hl([1, 2], GREEN);
+  say('從後面找：看到同樣或較小的就停', '直接插進去，容易 stable');
+  await step(tok);                                   // 51:50 backward 版還是 adaptive
+  A.kill(); B.kill(); kill(tA); kill(tB);
+  A = lRow([2, 3, 4, 5, 6], { y: 3.6, tiles: false, dx: 1.4 });
+  B = lRow([2, 3, 4, 5, 6], { y: 0.6, dx: 1.4 });
   tag('backward', 'ptr', -5.0, 3.6, 0); tag('naive（從前）', 'ptr', -5.0, 0.6, 0);
   const ca = { c: 0 };
   const la = tag('比較 0 次', 'ptr alt', 5.0, 4.6, 0), lb = tag('比較 0 次', 'ptr alt', 5.0, 1.6, 0);
-  say('發到一副幾乎排好的牌：2 3 4 5 6', '一張一張掀起來');
-  await beat(tok, 2600);
-  say('Backward：只看前一張，比它大就放後面', '');
-  for (let i = 1; i < 5; i++) await insRound(tok, A, i, { ms: 380, cnt: ca, hk: () => txt(la, '比較 ' + ca.c + ' 次') });
-  say('每張只比 1 次：共 4 次', '幾乎排好 → 接近 O(n)');
-  await beat(tok, 2200);
-  say('Naive：從最前面開始找位置', '5 要先看 2、3、4……');
-  let c = 0;
-  for (let i = 1; i < 5; i++) {
-    B.off(); B.hl([i], GOLD);
-    for (let j = 0; j < i; j++) { glow(B.m[j], BLUE); c++; txt(lb, '比較 ' + c + ' 次'); await beat(tok, 300); }
-    B.off();
-  }
-  say('1 + 2 + 3 + 4 = 10 次', '已經排好還是 O(n²)：不 adaptive');
-  await beat(tok, 2600);
+  say('Backward 版另一個特性', 'adaptive');
+  await step(tok);                                   // 52:04 大部分只要檢查前一個人
+  await insRound(tok, A, 1, { ms: 450, cnt: ca, hk: () => txt(la, '比較 ' + ca.c + ' 次') });
+  say('差不多排好時', '大多只要看前一個人有沒有比你小');
+  await step(tok);                                   // 52:20 掀牌 2、3、4、5、6
+  for (let i = 2; i < 5; i++) await insRound(tok, A, i, { ms: 280, cnt: ca, hk: () => txt(la, '比較 ' + ca.c + ' 次') });
   A.hl([0, 1, 2, 3, 4], GREEN);
-  say('Backward 版：排得越好越快', '<span class="ok">adaptive</span>');
-  await beat(tok, 2800);
+  say('掀牌 2、3、4、5、6', '每張看一眼就放後面：共 4 次');
+  let c = 0;
+  const naive = async (i, ms) => { B.off(); B.hl([i], GOLD); for (let j = 0; j < i; j++) { gl(B.m[j], BLUE); c++; txt(lb, '比較 ' + c + ' 次'); await beat(tok, ms); } B.off(); };
+  await step(tok);                                   // 52:49 naive：從前面開始找，4 要看了 3
+  await naive(1, 350); await naive(2, 350);
+  say('Naive：從最前面開始找', '3 看 2；4 看 2、3');
+  await step(tok);                                   // 52:54 5 要看了 3、看了 4 才放後面
+  await naive(3, 260); await naive(4, 230);
+  say('5 要看 2、3、4 才放後面', '1 + 2 + 3 + 4 = 10 次');
+  await step(tok);                                   // 53:00 naive 不 adaptive，backward 才是
+  bad('naive：排好了還是 O(n²)', 3.4, -0.4, 1.4); good('backward：接近 O(n)', 3.4, 2.4, 0);
+  say('Naive 版不 adaptive', 'Backward 版才是 <span class="ok">adaptive</span>');
 }]);
 
-// 53:08 三個 O(n²) 怎麼選：Insertion 通常最好（stable、adaptive 都容易）
+// 53:08 三個 O(n²) 怎麼選：Insertion 通常最好（stable、adaptive 都容易），但 selection 對初學者最直覺
 FRAG.push(['sortlin-n2-compare', '三個 O(n²) 排序怎麼選', async (tok) => {
   fresh([0, 6.5, 12.5], [0, 2.6, 0]);
   const cols = ['Selection', 'Bubble', 'Insertion'], X = [-2.6, 0.6, 3.8];
-  const rows = [['stable', ['要小心', '容易', '容易']], ['adaptive', ['不容易', '容易', '容易']], ['實務速度', ['慢', '最慢', '較快']], ['直覺好寫', ['最直覺', '直覺', '要練']]];
-  const CC = { 容易: '#3e9e6e', 較快: '#3e9e6e', 最直覺: '#3e9e6e', 直覺: '#3e9e6e', 要小心: '#d8b25a', 要練: '#d8b25a', 慢: '#d8b25a', 不容易: '#c0504d', 最慢: '#c0504d' };
-  cols.forEach((c, k) => tag(c, 'ptr', X[k], 5.6, 0));
-  const msg = ['stable：鄰居交換、從後插入都容易', 'adaptive：bubble 提早停、backward insertion', '速度：insertion 通常比 bubble 快', '但初學者覺得 selection 最直覺'];
+  const CC = { 容易: '#3e9e6e', 較快: '#3e9e6e', 最直覺: '#3e9e6e', 直覺: '#3e9e6e', 要小心: '#d8b25a', 乍看難寫: '#d8b25a', 慢: '#d8b25a', 不容易: '#c0504d', 最慢: '#c0504d' };
   const cells = [];
-  for (let r = 0; r < rows.length; r++) {
-    const y = 4.3 - r * 1.2; tag(rows[r][0], 'idx', -5.4, y, 0);
-    rows[r][1].forEach((t, k) => cells.push(cube(t, CC[t], [2.4, 0.8, 0.6], X[k], y, 0, 1.6)));
-    say(msg[r], '');
-    await beat(tok, 2600);
-  }
-  cells.forEach((m, i) => { if (i % 3 === 2) glow(m, GOLD); });
-  say('O(n²) 裡選 Insertion', '效率、簡潔度通常都比 selection 好');
-  await beat(tok, 3200);
+  const row = (r, name, vals) => { const y = 4.3 - r * 1.2; tag(name, 'idx', -5.4, y, 0); vals.forEach((t, k) => cells.push(cube(t, CC[t], [2.4, 0.8, 0.6], X[k], y, 0, 1.6))); };
+  await step(tok);                                   // 53:08 跟剛才兩個 n² 演算法比
+  cols.forEach((c, k) => tag(c, 'ptr', X[k], 5.6, 0));
+  const h = helper(-6.0, 1.0, '小幫手', 0.6);
+  say('三個 O(n²) 的演算法放在一起比', '');
+  await step(tok);                                   // 53:16 insertion 通常比 bubble 快
+  row(0, '實務速度', ['慢', '最慢', '較快']);
+  say('Insertion 通常比 bubble 快', '位置找得精準，不耗額外力氣');
+  await step(tok);                                   // 53:35 selection 要 adaptive 不容易
+  row(1, 'adaptive', ['不容易', '容易', '容易']);
+  say('Selection 要做到 adaptive 不容易', '');
+  await step(tok);                                   // 53:49 insertion 要 adaptive、要 stable 都容易
+  row(2, 'stable', ['要小心', '容易', '容易']);
+  say('Insertion 要 adaptive、stable 都相對容易', '');
+  await step(tok);                                   // 53:54 在 n² 裡選 insertion
+  cells.forEach((m, i) => { if (i % 3 === 2) glow(m, GOLD); }); h.mood('happy');
+  say('在 n² 裡面選', 'insertion 應該是比較好的選擇');
+  await step(tok);                                   // 54:10 初學者覺得 selection 比較直覺
+  cells.forEach((m) => glow(m, null));
+  row(3, '直覺', ['最直覺', '直覺', '乍看難寫']);
+  glow(cells[9], GOLD); h.mood('wow');
+  say('但初學者覺得 selection 最直覺', '先選最小、再選第二小……');
+  await step(tok);                                   // 54:26 insertion 乍看好難寫
+  bub('指標變來變去、往後擠……好難寫？', 3.8, -0.4, 0.8);
+  say('乍看 insertion 好像很難寫', 'linked list 指標、往後擠');
+  await step(tok);                                   // 54:44 真的寫出來，效率、簡潔度都比較好
+  glow(cells[9], null); cells.forEach((m, i) => { if (i % 3 === 2) glow(m, GOLD); }); h.mood('happy');
+  good('寫出來：效率、簡潔度常比 selection 好', 0, 6.5, 0);
+  say('但真的寫出來', 'insertion 的效率、簡潔度常比較好');
 }]);
 
-// 56:14 Backward insertion = 「借過、借過」：一個 loop 同時找位置＋往後擠
+// 56:17 Backward insertion = 「借過、借過」：一個 loop 同時找位置＋往後擠
 FRAG.push(['sortlin-insert-shift', 'Backward Insertion：借過、借過', async (tok) => {
   fresh([0, 7.5, 12.5], [0, 2.4, 0]);
+  await step(tok);                                   // 56:17 同一個演算法，不同的實作
   const cd = code(['key = a[i];  j = i - 1', 'while j >= 0 and a[j] > key:', '    a[j+1] = a[j];  j--     // 借過', 'a[j+1] = key'], 0, 6.8, 0.52, -2.6);
-  const R = lRow([2, 4, 6, 8, 5], { dx: 1.4, z: 1.4, idx: true });
-  say('5 要排進已經排好的 2 4 6 8', '從隊伍最後面開始');
-  await beat(tok, 2400);
-  await insRound(tok, R, 4, { ms: 900, hk: (s, a, b) => {
-    if (s === 'key') { cd.hl(0); say('5 被選出來', 'key = 5'); }
-    else if (s === 'cmp') { cd.hl(1); say(a > b ? a + ' > 5：借過！' : a + ' ≤ 5：停', 'a[j] > key ?'); }
-    else if (s === 'shift') { cd.hl(2); say(a + ' 往後挪一格', 'a[j+1] = a[j]'); }
-    else { cd.hl(3); say('5 站進空位', 'a[j+1] = key'); }
-  } });
-  cd.hl(-1); R.hl([0, 1, 2, 3, 4], GREEN);
-  say('一個 loop 做完兩件事', '找到位置 ＋ 把人往後擠');
-  await beat(tok, 3000);
+  const R = lRow([2, 4, 6, 8, 5], { kids: true, dx: 1.5, z: 1.4, idx: true });
+  say('同一個演算法', '一點點不同的實作，結果就不同');
+  await step(tok);                                   // 56:42 naive 跟 backward implementation
+  pkt('naive：從前面找', -3.2, 4.2, 0); pkt('backward：從後面找', 3.2, 4.2, 0);
+  say('Insertion 有 naive、backward 兩種實作', 'Backward 其實一點也不難');
+  await step(tok);                                   // 57:04 你是被選出來的人，要排進排好的隊伍
+  const km = R.m[4]; gl(km, GOLD); mood(km, 'wow'); move(km, R.x(4), R.h, R.z); cd.hl(0);
+  say('5 是被選出來的人', '要排進已經排好的 2 4 6 8');
+  await step(tok);                                   // 57:10 從後面開始：借過、借過
+  let j = 3; const bb = bub('借過！', R.x(3), 3.6, 1.4);
+  while (j >= 0 && R.v[j] > 5) {
+    cd.hl(1); gl(R.m[j], BLUE); await beat(tok, 350);
+    cd.hl(2); gl(R.m[j], null); move(R.m[j], R.x(j + 1), R.y, R.z); R.m[j + 1] = R.m[j]; R.v[j + 1] = R.v[j];
+    j--; move(km, R.x(j + 1), R.h, R.z); bb.position.x = R.x(j + 1); await beat(tok, 500);
+  }
+  cd.hl(1); gl(R.m[j], BLUE); await beat(tok, 350); gl(R.m[j], null);
+  cd.hl(3); R.m[j + 1] = km; R.v[j + 1] = 5; move(km, R.x(j + 1), R.y, R.z); gl(km, null); mood(km, 'happy'); txt(bb, '到了！');
+  say('從隊伍後面：借過、借過', '8、6 往後挪，碰到 4 就停');
+  await step(tok);                                   // 57:23 大部分人的直覺：從前面找再插隊
+  const f = pkt('從前面找起…', R.x(0), 3.0, 1.4);
+  await travel(tok, f, V3(R.x(0), 3.0, 1.4), V3(R.x(2), 3.0, 1.4), 1400);
+  say('多數人第一直覺：從隊伍前面找', '找到再插隊，後面的人再讓開');
+  await step(tok);                                   // 57:45 一個 for loop 搞定兩件事
+  kill(f); cd.hl(-1); R.hl([0, 1, 2, 3, 4], GREEN);
+  good('一個 loop：找到位置 ＋ 把人往後擠', 0, 4.4, 1.4);
+  say('Backward：一個 for loop', '同時找到位置、把人往後擠');
 }]);
 
-// 77:59 標準函式庫的 sort：大堆用 quick sort 分，小堆改用 insertion sort（118:28 也講）
-FRAG.push(['sortlin-hybrid', '混合排序：大堆 partition、小堆 insertion', async (tok) => {
+// 1:09:26 影片：Selection 每次選一個放好；Insertion 每次拿一個插進 sorted 的正確位置
+FRAG.push(['sortlin-video-sel-ins', '影片：Selection 與 Insertion 的行為', async (tok) => {
   fresh(LCAM, LLOOK);
-  const R = lRow([7, 2, 10, 5, 12, 1, 9, 4, 13, 3, 11, 8], { idx: true, dx: 0.95, sz: 0.7 });
-  const TH = 5; let z = null;
-  say('實務上的 sort 是混合的', '大堆 divide and conquer、小堆 local 調整');
-  await beat(tok, 2600);
-  const go = async (lo, hi) => {
-    if (hi < lo) return;
-    z = R.zone(z, hi - lo + 1 <= TH ? GREEN : BLUE, lo, hi);
-    if (hi - lo + 1 <= TH) {
-      say('只剩 ' + (hi - lo + 1) + ' 個：改用 insertion sort', 'recursion overhead 不划算');
-      await beat(tok, 900);
-      for (let i = lo + 1; i <= hi; i++) await insRound(tok, R, i, { ms: 200, lo });
-      return;
-    }
-    const seg = R.v.slice(lo, hi + 1), p = seg[0];
-    R.off(); R.hl([lo], GOLD);
-    say(hi - lo + 1 + ' 個還很多：partition', 'pivot = ' + p + '，小的左、大的右');
-    await beat(tok, 1100);
-    const L = seg.filter((v) => v < p), G = seg.filter((v) => v > p);
-    await R.arrange(tok, lo, L.concat([p], G), 1000);
-    R.off(); R.hl([lo + L.length], GREEN); await beat(tok, 600);
-    await go(lo, lo + L.length - 1); await go(lo + L.length + 1, hi);
-  };
-  await go(0, R.v.length - 1);
-  z = R.zone(z, GREEN, 0, R.v.length - 1); R.off();
-  say('Quick sort 混合 insertion sort', '常數考慮進去，小堆用 O(n²) 反而快');
-  await beat(tok, 3000);
+  await step(tok);                                   // 1:09:26 來看 sorting 的視覺化影片
+  const mon = prop('monitor', -5.6, 0, -0.6, 1.3, 'sorting 影片'); bob(mon, 0.04);
+  const A = lRow([5, 2, 6, 1, 4, 3], { y: 3.6, tiles: false, dx: 1.2, x0: -2.0 });
+  const B = lRow([5, 2, 6, 1, 4, 3], { y: 0.6, dx: 1.2, x0: -2.0 });
+  tag('Selection', 'ptr', 5.6, 3.6, 0); tag('Insertion', 'ptr', 5.6, 0.6, 0);
+  say('看看不同 sorting 的 behavior', '網路上很容易找到這種影片');
+  await step(tok);                                   // 1:10:19 selection：每次選一個出來放好
+  for (let i = 0; i < 5; i++) await selRound(tok, A, i, { ms: 55, sw: 330 });
+  A.hl([0, 1, 2, 3, 4, 5], GREEN);
+  say('Selection：每次選一個出來', '放到它該放的地方');
+  await step(tok);                                   // 1:10:52 insertion：每次拿一個插進正確位置
+  for (let i = 1; i < 6; i++) await insRound(tok, B, i, { ms: 75 });
+  B.hl([0, 1, 2, 3, 4, 5], GREEN);
+  say('Insertion：每次拿一個', '插入 sorted 裡的正確位置');
+  await step(tok);                                   // 1:11:48 差在「找」和「插」哪個花力氣
+  A.off(); B.off();
+  note('力氣花在「找」', 1.0, 4.9, 0); note('力氣花在「插」', 1.0, 1.9, 0);
+  say('兩個很像', '差在找和插，哪個花比較多力氣');
 }]);
 
-// 81:23 影片：Bubble Sort 與 Cocktail Shaker Sort（左右來回搖）
+// 1:12:38 影片：Quick Sort 把東西分成一小堆一小堆，再分頭排好
+FRAG.push(['sortlin-video-quick', '影片：Quick Sort 分成小堆', async (tok) => {
+  fresh(LCAM, LLOOK);
+  await step(tok);                                   // 1:12:38 quick sort 比 n² 的快
+  const R = lRow([7, 2, 9, 4, 1, 8, 3, 6, 10, 5], { dx: 1.05, sz: 0.72 });
+  prop('monitor', -6.0, 0, -1.6, 1.0, '影片');
+  say('Quick Sort', '比 insertion、selection 這些 n² 的快');
+  await step(tok);                                   // 1:12:53 堆成一小堆一小堆，大小相近
+  await R.arrange(tok, 0, [2, 4, 1, 3, 5, 7, 9, 8, 6, 10], 1300);
+  let z1 = R.zone(null, BLUE, 0, 4), z2 = R.zone(null, GOLD, 5, 9);
+  say('把東西堆成一小堆一小堆', '同一堆的大小比較相近');
+  await step(tok);                                   // 1:13:01 再分頭把每一小堆擺好
+  await Promise.all([R.arrange(tok, 0, [1, 2, 3, 4, 5], 1200), R.arrange(tok, 5, [6, 7, 8, 9, 10], 1200)]);
+  kill(z1); kill(z2); R.hl([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], GREEN);
+  note('divide and conquer', 0, 2.2, 0);
+  say('再分頭把每一小堆擺好', '這叫 divide and conquer');
+}]);
+
+// 1:13:40 影片：Merge Sort 先排小堆，再合併成中堆、大堆
+FRAG.push(['sortlin-video-merge', '影片：Merge Sort 合併小堆', async (tok) => {
+  fresh(LCAM, LLOOK);
+  await step(tok);                                   // 1:13:40 merge sort
+  const R = lRow([6, 5, 4, 7, 8, 3, 1, 2], { dx: 1.2 });
+  prop('monitor', -6.0, 0, -1.6, 1.0, '影片');
+  say('Merge Sort', '視覺上很容易看懂');
+  await step(tok);                                   // 1:13:45 先把一些堆排好
+  await Promise.all([0, 2, 4, 6].map((s) => R.arrange(tok, s, R.v.slice(s, s + 2).sort((a, b) => a - b), 1100)));
+  const zs = [0, 2, 4, 6].map((s) => R.zone(null, BLUE, s, s + 1));
+  say('先把一些小堆排好', '');
+  await step(tok);                                   // 1:13:55 小堆合併起來變中堆
+  zs.forEach(kill);
+  await Promise.all([0, 4].map((s) => R.arrange(tok, s, R.v.slice(s, s + 4).sort((a, b) => a - b), 1300)));
+  const zm = [0, 4].map((s) => R.zone(null, GOLD, s, s + 3));
+  say('小堆合併 → 排好的中堆', '');
+  await step(tok);                                   // 1:14:01 中堆合併起來變大堆
+  zm.forEach(kill);
+  await R.arrange(tok, 0, [1, 2, 3, 4, 5, 6, 7, 8], 1400); R.hl([0, 1, 2, 3, 4, 5, 6, 7], GREEN);
+  say('中堆合併 → 排好的大堆', '一堆一堆合起來：Merge Sort');
+}]);
+
+// 1:14:38 影片：Heap Sort（模組內建「heap-sort」的 cued 版本）
+FRAG.push(['sortlin-heap-video', '影片：Heap Sort', async (tok) => {
+  await step(tok);                                   // 1:14:38 Heap Sort，大家應該很熟
+  Object.assign(CFG.heap, { input: 'random', n: 7, vals: [4, 9, 2, 7, 1, 8, 5] }); enterHeap(false); controls('');
+  say('Heap Sort', '看影片才發現：好像也沒特別快');
+  await step(tok);                                   // 1:14:48 前面花很長時間把 Heap 做出來
+  let built = S.steps.findIndex((st) => st.heapSize < S.vals.length); if (built < 0) built = Math.floor(lastStep() / 3);
+  await runTo(tok, built, 2600);
+  say('前面花不少時間把 Heap 做出來', '影片裡五顏六色的那段');
+  await step(tok);                                   // 1:14:55 然後才做 selection
+  await runTo(tok, built + Math.floor((lastStep() - built) / 2), 2600);
+  say('做好之後，每次拿最大的出來', '比 selection 快一些');
+  await step(tok);                                   // 1:15:00 每一步都還要花力氣調整 Heap
+  await runTo(tok, lastStep(), 2600);
+  say('但每一步都還要花力氣調整 Heap', '');
+  await step(tok);                                   // 1:15:06 漂亮、理想，但實務上沒那麼好用
+  tag('漂亮、理想的演算法', 'good', -3.2, 3.2, 1.0); tag('實務上通常沒那麼好用', 'bad', 3.2, 3.2, 1.0);
+  say('漂亮但很理想化', '實務上通常沒有那麼好用');
+}]);
+
+// 1:15:39 影片：Radix Sort（LSD、MSD）（模組內建「radix-lsd」的 cued 版本）
+FRAG.push(['sortlin-radix', '影片：Radix Sort（LSD、MSD）', async (tok) => {
+  await step(tok);                                   // 1:15:39 radix sort：今年不講
+  Object.assign(CFG.dist, { algo: 'radix', input: 'video' }); enterDist(true); controls('');
+  const n0 = tag('今年課程不講，但很有趣', 'note', 0, 4.4, 0);
+  say('Radix Sort', '今年的課程沒時間講');
+  await step(tok);                                   // 1:15:51 按千位、百位、十位、個位分開排
+  txt(n0, '千位、百位、十位、個位：拆成一位一位排');
+  say('把大數字拆成一位一位', '每一位分開排序，配合 stable sorting');
+  await step(tok);                                   // 1:16:15 像 hash：同一位數放一堆
+  await runTo(tok, Math.floor(lastStep() * 0.13), 2400);
+  txt(n0, '像 hash：這一位是 0 的一堆、是 1 的一堆…');
+  say('有點像 hash：同一位數的放一堆', '也是一種 divide');
+  await step(tok);                                   // 1:17:18 LSD：從個位數先排
+  await runTo(tok, Math.floor(lastStep() * 0.25), 2400);
+  txt(n0, 'LSD：從最低位（個位）先排');
+  say('影片寫 LSD', '從個位數先排，再十位、百位');
+  await step(tok);                                   // 1:17:08 再排十位、百位……
+  await runTo(tok, lastStep(), 2800);
+  txt(n0, '一位一位排完 → 全部排好（每回合要 stable）');
+  say('一位一位往上排', '最後全部排好');
+  await step(tok);                                   // 1:17:20 另一版從高位排到低位（MSD）
+  txt(n0, 'MSD：從最高位先分堆，再在每一堆裡排');
+  say('另一個版本從高位排到低位', 'MSD');
+  await step(tok);                                   // 1:17:49 用位數的觀念做 divide and conquer
+  txt(n0, '兩個版本：都用「位數」做 divide and conquer');
+  say('兩個版本相似', '都用位數的觀念 divide and conquer');
+}]);
+
+// 一棵「分堆的樹」：quick sort 的 pivot 一層一層往下長；x = 最終排序位置，每堆保持原本的順序
+function qTree(vals, o = {}) {
+  const sorted = [...vals].sort((a, b) => a - b), dx = o.dx || 1.1, top = o.top || 6.2, dy = o.dy || 1.3;
+  const X = (k) => (k - (vals.length - 1) / 2) * dx;
+  const M = {}; vals.forEach((v, i) => { M[v] = cube(v, colorFor(v), [0.75, 0.75, 0.75], X(i), top, 0); });
+  const T = { M, X: (v) => X(sorted.indexOf(v)), depth: 0, levels: [] };
+  // split the pile occupying sorted slots lo.. at depth d around pivot p
+  T.split = (pile, lo, p, d, par) => {
+    glow(M[p], GOLD);
+    const y = top - d * dy;
+    move(M[p], X(sorted.indexOf(p)), y, 0);
+    const L = pile.filter((v) => v < p), G = pile.filter((v) => v > p);
+    L.forEach((v, k) => move(M[v], X(lo + k), y - dy, 0));
+    G.forEach((v, k) => move(M[v], X(lo + L.length + 1 + k), y - dy, 0));
+    if (par !== null && par !== undefined) line(T.X(par), y + dy, T.X(p), y, -0.1);
+    T.depth = Math.max(T.depth, d);
+    (T.levels[d] = T.levels[d] || []).push(p);
+    return { L, G, lo, hi: lo + L.length + 1 };
+  };
+  T.done = (p) => { glow(M[p], null); tint(M[p], '#e8dcc0'); };
+  // finish a pile with a chooser for the pivot, fast
+  T.finish = async (tok, pile, lo, d, par, pick, ms) => {
+    if (!pile.length) return;
+    const p = pick(pile); const r = T.split(pile, lo, p, d, par); await beat(tok, ms); T.done(p);
+    await T.finish(tok, r.L, lo, d + 1, p, pick, ms); await T.finish(tok, r.G, r.hi, d + 1, p, pick, ms);
+  };
+  return T;
+}
+const midPick = (pile) => [...pile].sort((a, b) => a - b)[(pile.length - 1) >> 1];
+
+// 1:18:37 影片：標準函式庫的 sort（大堆 divide and conquer、小堆 local 調整）；stable_sort 的核心是 merge sort
+async function hybridRun(tok, R, lo, hi, TH, o) {
+  if (hi < lo) return;
+  if (hi - lo + 1 <= TH) {
+    o.z = R.zone(o.z, GREEN, lo, hi);
+    for (let i = lo + 1; i <= hi; i++) await insRound(tok, R, i, { ms: o.ms, lo });
+    return;
+  }
+  const seg = R.v.slice(lo, hi + 1), p = seg[0];
+  o.z = R.zone(o.z, BLUE, lo, hi); R.off(); R.hl([lo], GOLD); await beat(tok, o.ms * 2);
+  const L = seg.filter((v) => v < p), G = seg.filter((v) => v > p);
+  await R.arrange(tok, lo, L.concat([p], G), o.ms * 4); R.off(); R.hl([lo + L.length], GREEN);
+  o.parts.push([lo, lo + L.length - 1], [lo + L.length + 1, hi]);
+}
+FRAG.push(['sortlin-hybrid-video', '影片：標準函式庫的 sort', async (tok) => {
+  fresh(LCAM, LLOOK);
+  await step(tok);                                   // 1:18:37 標準函式庫用的不是純 quick sort
+  const R = lRow([7, 2, 10, 5, 12, 1, 9, 4, 13, 3, 11, 8], { idx: true, dx: 0.95, sz: 0.7 });
+  prop('monitor', -6.2, 0, -1.6, 1.0, '影片');
+  say('標準函式庫真正用的 sort', '不是純粹的 quick sort');
+  await step(tok);                                   // 1:18:42 混合了不同的 sort
+  const o = { ms: 160, parts: [], z: null };
+  await hybridRun(tok, R, 0, 11, 5, o);
+  note('混合好幾種 sort', 0, 2.6, 0);
+  say('它混合了不同的 sort', '大堆先像 quick sort 一樣分開');
+  await step(tok);                                   // 1:18:50 範圍小的時候做附近的 local 調整
+  const parts = o.parts.slice(); o.ms = 48;
+  for (const [a, b] of parts) await hybridRun(tok, R, a, b, 6, o);
+  if (o.z) kill(o.z); R.off(); R.hl(R.v.map((_, i) => i), GREEN);
+  say('範圍小的時候', '只在附近幾個做 local 的調整');
+  await step(tok);                                   // 1:18:58 global 用 divide and conquer
+  pkt('Global：divide and conquer', -2.6, -0.5, 1.4); pkt('Local：insertion', 3.0, -0.5, 1.4);
+  say('Global 用 divide and conquer 的想法', '');
+  await step(tok);                                   // 1:19:50 stable sort：核心是 merge sort
+  note('另一個：stable_sort → 核心是 Merge Sort', 0, 3.6, 0);
+  say('另一個 sort 是 stable sort', '顧名思義 stable；核心是 merge sort');
+}]);
+
+// 1:20:31 影片：Shell Sort 預告（以 insertion 為底、多次掃過）
+FRAG.push(['sortlin-shell-video', '影片：Shell Sort 預告', async (tok) => {
+  fresh([0, 7, 13], [0, 1.6, 0]);
+  await step(tok);                                   // 1:20:31 以 insertion sort 為底
+  const R = lRow([14, 3, 11, 7, 16, 1, 9, 13, 5, 12, 2, 15, 8, 4, 10, 6], { dx: 0.78, sz: 0.6 });
+  prop('monitor', -6.2, 0, -1.6, 1.0, '影片');
+  say('Shell Sort：等一下會講', '以 insertion sort 為底');
+  await step(tok);                                   // 1:20:38 像 bubble 一樣 multiple pass
+  for (const g of [5, 2]) for (let i = g; i < R.v.length; i++) await insRound(tok, R, i, { ms: 25, gap: g });
+  say('像 bubble sort 一樣掃很多次', 'multiple pass');
+  await step(tok);                                   // 1:20:50 巧妙運用 insertion 的特性
+  for (let i = 1; i < R.v.length; i++) await insRound(tok, R, i, { ms: 45 });
+  R.hl(R.m.map((_, i) => i), GREEN);
+  say('巧妙運用 insertion sort 的特性', '很快就完成');
+}]);
+
+// 1:21:23 影片：Bubble 像 selection（極值浮到定位）＋順便修鄰居；Cocktail Shaker 左右來回搖
 FRAG.push(['sortlin-cocktail', 'Cocktail Shaker：往左右兩邊的 bubble', async (tok) => {
   fresh(LCAM, LLOOK);
+  await step(tok);                                   // 1:21:23 bubble 的行為有點像 selection
   const R = lRow([3, 8, 5, 1, 9, 2], { idx: true, dx: 1.3 });
   let lo = 0, hi = R.v.length - 1, zr = null, zl = null;
-  say('Bubble：每輪把最大的浮到右邊', 'Cocktail：右邊搖一下、左邊搖一下');
-  await beat(tok, 2600);
-  while (lo < hi) {
-    say('往右搖：大的浮到右邊', '');
-    let sw = await bubblePass(tok, R, lo, hi, 1, { ms: 330 });
-    zr = R.zone(zr, GREEN, hi, R.v.length - 1); hi--;
-    if (!sw || lo >= hi) break;
-    say('往左搖：小的沉到左邊', '');
-    sw = await bubblePass(tok, R, lo, hi, -1, { ms: 330 });
-    zl = R.zone(zl, GREEN, 0, lo); lo++;
-    if (!sw) break;
-  }
-  zr = R.zone(zr, GREEN, 0, R.v.length - 1); if (zl) kill(zl);
-  say('兩頭一起收斂 → 排好', '一樣是鄰居交換：stable、O(n²)');
-  await beat(tok, 2800);
+  await bubblePass(tok, R, lo, hi, 1, { ms: 200 });
+  zr = R.zone(zr, GREEN, hi, hi); hi--;
+  say('Bubble：每輪最大的浮到右邊', '行為有點像 selection');
+  await step(tok);                                   // 1:21:40 同時也把很多錯誤的 pair 調整了
+  note('順便把錯誤的鄰居 pair 修好', 0, 2.4, 0);
+  say('選最極端的同時', '也把很多錯誤的鄰居 pair 修好');
+  await step(tok);                                   // 1:22:15 cocktail shaker
+  const sh = prop('parcel', -5.8, 0, 1.6, 0.7, '雞尾酒搖搖杯'); bob(sh, 0.15, 6);
+  say('Cocktail Shaker', '像調酒：左邊搖一下、右邊搖一下');
+  await step(tok);                                   // 1:22:27 往左右兩邊的 bubble sort
+  let sw = await bubblePass(tok, R, lo, hi, -1, { ms: 230 });
+  zl = R.zone(zl, GREEN, 0, lo); lo++;
+  say('往左搖：小的沉到左邊', '往左右兩邊的 bubble sort');
+  await step(tok);                                   // 1:22:35 一次做一個方向
+  sw = await bubblePass(tok, R, lo, hi, 1, { ms: 200 }); hi--;
+  if (sw) await bubblePass(tok, R, lo, hi, -1, { ms: 200 });
+  if (zl) kill(zl); zr = R.zone(zr, GREEN, 0, R.v.length - 1);
+  say('一次做一個方向，左右輪流', '一樣是鄰居交換');
 }]);
 
-// 85:35 Q&A：insertion 的「借過」和 bubble 都是鄰居交換，但每輪保證的東西不同
+// 1:23:01 影片：Gnome（小精靈）、Bitonic、Bogo sort
+FRAG.push(['sortlin-video-misc', '影片：Gnome、Bitonic、Bogo', async (tok) => {
+  fresh(LCAM, LLOOK);
+  await step(tok);                                   // 1:23:01 剛才講的小精靈
+  let R = lRow([3, 6, 8, 4, 2], { idx: true, dx: 1.4 });
+  const gm = buddy('小精靈', '', '#9fd18b', R.x(3), 0, 1.7, 0.55);
+  await gnomeRoll(tok, R, gm, 3, 450); await gnomeRoll(tok, R, gm, 4, 350); gm.mood('happy');
+  say('這是剛才講的小精靈（gnome sort）', '鄰居交換、一路搬運');
+  await step(tok);                                   // 1:23:18 bitonic sort
+  R.kill(); kill(gm.g);
+  R = lRow([2, 5, 7, 8, 6, 4, 3, 1], { dx: 1.2 });
+  const z1 = R.zone(null, BLUE, 0, 3), z2 = R.zone(null, GOLD, 4, 7);
+  note('小 → 大', R.x(1.5), 1.9); note('大 → 小', R.x(5.5), 1.9);
+  say('Bitonic sort', '課程不會講');
+  await step(tok);                                   // 1:23:45 有點像 merge：一半大排到小、一半小排到大再混合
+  await R.arrange(tok, 0, [1, 2, 3, 4, 5, 6, 7, 8], 1600); kill(z1); kill(z2); R.hl([0, 1, 2, 3, 4, 5, 6, 7], GREEN);
+  say('有點像 merge sort', '一半小到大、一半大到小，再混合');
+  await step(tok);                                   // 1:24:08 亂排亂換，看哪天排好
+  R.off();
+  await R.arrange(tok, 0, [5, 2, 8, 1, 7, 3, 6, 4], 900); await R.arrange(tok, 0, [3, 7, 1, 6, 2, 8, 4, 5], 900);
+  const h = helper(-6.0, 1.6, '小幫手', 0.6); h.mood('wow');
+  say('亂排亂換', '看看哪一天剛好排好');
+  await step(tok);                                   // 1:24:17 bogo sort：好玩為主
+  bad('Bogo sort：不是 formal 的演算法', 0, 2.4, 0);
+  h.mood('happy');
+  say('這叫 Bogo sort', '好玩為主，不是真的有用');
+}]);
+
+// 1:25:30 Q&A：insertion 的「借過」和 bubble 都是鄰居交換，但每輪保證的東西不同
 FRAG.push(['sortlin-bubble-vs-insert-guarantee', 'Bubble 與 Insertion 每輪保證什麼', async (tok) => {
   fresh(LCAM, LLOOK);
+  await step(tok);                                   // 1:25:30 insertion 一直借過，跟 bubble 一樣嗎？
   const A = lRow([4, 2, 5, 1, 3], { y: 3.6, tiles: false, dx: 1.3 });
   const B = lRow([4, 2, 5, 1, 3], { y: 0.6, dx: 1.3 });
   tag('Bubble', 'ptr', -4.9, 3.6, 0); tag('Insertion', 'ptr', -4.9, 0.6, 0);
-  say('兩個都在跟鄰居換位置', '差在：一輪做完保證了什麼');
-  await beat(tok, 2400);
-  say('Bubble 一輪', '');
-  await bubblePass(tok, A, 0, 4, 1, { ms: 330 });
-  A.hl([4], GREEN);
-  say('保證：最大的 5 浮到定位', '跟 selection 一樣，極值先就定位');
-  await beat(tok, 2400);
-  say('Insertion：借過到 1 為止', '');
-  for (let i = 1; i < 4; i++) await insRound(tok, B, i, { ms: 300 });
+  const h = helper(5.8, 1.6, '同學', 0.6); h.mood('wow');
+  bub('借過借過，跟 bubble 一樣嗎？', 4.6, 2.8, 1.6);
+  say('同學問：insertion 一直借過', '跟 bubble sort 一樣嗎？');
+  await step(tok);                                   // 1:25:37 neighbor 交換的都有類似的地方
+  note('都是 neighbor 交換', 0, 2.2, 0);
+  say('Neighbor 交換的', '都有一些類似的地方');
+  await step(tok);                                   // 1:25:45 差在一輪換完保證了什麼
+  say('差別在：一輪做完', '保證了什麼');
+  await step(tok);                                   // 1:25:52 insertion 保證那個東西塞到正確地方
+  for (let i = 1; i < 4; i++) await insRound(tok, B, i, { ms: 160 });
   B.hl([0, 1, 2, 3], GOLD);
-  say('保證：前面這段已排好 1 2 4 5', '但 4、5 還不是最終位置（3 還沒插）');
-  await beat(tok, 3200);
+  say('Insertion：拿的那個塞到正確的地方', '前面這段 1 2 4 5 排好了');
+  await step(tok);                                   // 1:25:59 bubble 像 selection：極值浮到該到的地方
+  await bubblePass(tok, A, 0, 4, 1, { ms: 260 }); A.hl([4], GREEN);
+  say('Bubble：像 selection', '保證最大的 5 浮到最終位置');
+  await step(tok);                                   // 1:26:14 其他值的相對關係就可能不同
+  h.mood('happy');
+  note('其他值：bubble 是 2 4 1 3，insertion 是 1 2 4 5', 0, 5.0, 0);
+  say('其他值的相對關係', '就可能不一樣');
 }]);
 
-// 87:13 Shell Sort：用 long jump 的 insertion，間隔 10 → 5 → 2 → 1
+// 1:27:21 Shell Sort：insertion with long jumps，間隔 10 → 5 → 2 → 1
 FRAG.push(['sortlin-shell', 'Shell Sort：間隔 10、5、2、1 的 insertion', async (tok) => {
   fresh([0, 7, 13], [0, 1.6, 0]);
+  await step(tok);                                   // 1:27:21 影片裡的 Shell Sort
   const R = lRow([14, 3, 11, 7, 16, 1, 9, 13, 5, 12, 2, 15, 8, 4, 10, 6], { idx: true, dx: 0.78, sz: 0.6 });
-  const mv = { c: 0 }; const ml = tag('移動 0 次', 'ptr alt', 0, 3.4, 0);
-  say('Insertion 在快排好的資料上很快', '那就先開「快車」：遠距離交換');
-  await beat(tok, 2600);
-  for (const g of [10, 5, 2, 1]) {
-    const before = mv.c;
-    const chain = []; for (let k = 0; k < R.v.length; k += g) chain.push(k);
-    R.off(); R.hl(chain, BLUE);
-    say('間隔 ' + g + '：' + (g > 1 ? chain.slice(0, 3).join('、') + '… 號看成一串' : '最後一般的 insertion'), '每串各做 insertion sort');
-    await beat(tok, 1800); R.off();
-    for (let i = g; i < R.v.length; i++) await insRound(tok, R, i, { ms: g === 1 ? 80 : 120, gap: g, mv, hk: () => txt(ml, '移動 ' + mv.c + ' 次') });
-    say('間隔 ' + g + ' 做完：這輪移動 ' + (mv.c - before) + ' 次', g > 1 ? '一次可以跳 ' + g + ' 格' : '');
-    await beat(tok, 1100);
-  }
-  R.hl(R.m.map((_, i) => i), GREEN);
-  say('最後的 insertion 幾乎不用動', 'insertion sort with long jumps');
-  await beat(tok, 2800);
+  const mv = { c: 0 }; const ml = tag('移動 0 次', 'ptr alt', 0, 3.6, 0);
+  const hk = () => txt(ml, '移動 ' + mv.c + ' 次');
+  const h = helper(-6.4, 1.8, '小幫手', 0.6);
+  say('Shell Sort 在做什麼？', '');
+  await step(tok);                                   // 1:27:29 insertion sort 是 adaptive
+  const n1 = note('Insertion：adaptive', 0, 4.6, 0);
+  say('Insertion sort 是 adaptive', '');
+  await step(tok);                                   // 1:27:37 快排好時快、差很遠時慢
+  txt(n1, '快排好 → 很快；離排好很遠 → 很慢');
+  h.mood('sad');
+  say('大概排好時很快', '離排好很遠時很慢');
+  await step(tok);                                   // 1:27:56 有點像 skip list：開快車
+  const car = pkt('快車 →', R.x(0), 2.6, 0);
+  for (const k of [10, 5, 15]) await travel(tok, car, car.position.clone(), V3(R.x(k), 2.6, 0), 600);
+  kill(car); h.mood('wow');
+  txt(n1, '開快車：可以做比較遠的交換');
+  say('有一點像 skip list', '不要都是慢車：開一些快車');
+  const chain = (c, g) => { const a = []; for (let k = c; k < R.v.length; k += g) a.push(k); return a; };
+  const runChain = async (c, g, ms) => { for (let i = c + g; i < R.v.length; i += g) await insRound(tok, R, i, { ms, gap: g, mv, hk }); };
+  await step(tok);                                   // 1:28:31 每 10 個：0 號、10 號……
+  R.hl(chain(0, 10), BLUE);
+  txt(n1, '間隔 10：0 號、10 號看成一串');
+  say('一開始每 10 個看一次', '0 號、10 號、20 號……');
+  await step(tok);                                   // 1:28:41 想成假的 linked list，跑 insertion
+  R.off(); await runChain(0, 10, 350);
+  say('把它們想成一串，跑 insertion sort', '有需要就一次跳很遠');
+  await step(tok);                                   // 1:29:02 1、11、21……；2、12、22……
+  for (let c = 1; c < 6; c++) { R.off(); R.hl(chain(c, 10), BLUE); await runChain(c, 10, 110); }
+  R.off(); txt(n1, '間隔 10 的每一串都做完');
+  say('再做 1、11、21……', '2、12、22……每一串都做');
+  await step(tok);                                   // 1:29:23 縮小：每 5 個
+  for (let i = 5; i < R.v.length; i++) await insRound(tok, R, i, { ms: 55, gap: 5, mv, hk });
+  txt(n1, '間隔 5');
+  say('縮小：每 5 個 5 個做', '');
+  await step(tok);                                   // 1:29:32 每 2 個 2 個
+  for (let i = 2; i < R.v.length; i++) await insRound(tok, R, i, { ms: 38, gap: 2, mv, hk });
+  txt(n1, '間隔 2');
+  say('再每 2 個 2 個做', '');
+  await step(tok);                                   // 1:29:39 最後每 1 個：資料幾乎排好
+  const before = mv.c;
+  for (let i = 1; i < R.v.length; i++) await insRound(tok, R, i, { ms: 45, mv, hk });
+  R.hl(R.m.map((_, i) => i), GREEN); h.mood('happy');
+  txt(n1, '間隔 1：只移動 ' + (mv.c - before) + ' 次，幾乎不用動');
+  say('最後一般的 insertion', '作用在幾乎排好的資料上，很快');
+  await step(tok);                                   // 1:29:55 insertion sort with long jumps
+  good('Shell Sort = insertion sort with long jumps', 0, 5.6, 0);
+  say('Shell Sort', '= insertion sort with long jumps');
 }]);
 
-// 90:07 Shell Sort 的性質：long jump → 不 stable；但很 adaptive；理論難分析、實務快
+// 1:30:09 Shell Sort 的性質：in-place；long jump → 不 stable；但很 adaptive；理論難分析、實務快
 FRAG.push(['sortlin-shell-props', 'Shell Sort：不 stable、但很 adaptive', async (tok) => {
   fresh(LCAM, LLOOK);
-  const A = lRow([3, '5A', '5B', 1], { y: 3.6, tiles: false, dx: 1.5 });
+  await step(tok);                                   // 1:30:09 用 insertion → 不需要額外空間
+  const A = lRow([3, '5A', '5B', 1], { y: 3.6, tiles: false, dx: 1.6 });
   tag('long jump', 'ptr', -4.6, 3.6, 0);
-  say('同值 5A、5B，間隔 2 先做', '5A 和 1 在同一串');
-  await beat(tok, 2400);
-  for (const g of [2, 1]) {
-    say('間隔 ' + g, g === 2 ? '1 一跳兩格，越過 5B' : '');
-    for (let i = g; i < 4; i++) await insRound(tok, A, i, { ms: 420, gap: g });
-  }
-  A.hl([2, 3], RED);
-  say('5B 跑到 5A 前面', '<span class="no">不 stable</span>：long jump 跨過了同值');
-  await beat(tok, 2600);
-  A.off();
+  const h = helper(5.8, 1.6, '小幫手', 0.6);
+  good('in-place：不需要額外空間', 0, 5.0, 0);
+  say('裡面用的是 insertion sort', '不需要額外空間');
+  await step(tok);                                   // 1:30:17 有 long jump → 不是 stable
+  for (const g of [2, 1]) for (let i = g; i < 4; i++) await insRound(tok, A, i, { ms: 150, gap: g });
+  A.hl([2, 3], RED); h.mood('sad');
+  bad('5B 跑到 5A 前面', 4.6, 2.6, 0);
+  say('有 long jump：1 一跳越過 5B', '所以<span class="no">不是 stable</span>');
+  await step(tok);                                   // 1:30:24 但跟 insertion 一樣很 adaptive
+  A.off(); h.mood('calm');
   const B = lRow([1, 2, 3, 4, 5, 6, 7, 8], { y: 0.6, dx: 1.1 });
   const mv = { c: 0 }; const ml = tag('移動 0 次', 'ptr alt', 0, 1.9, 0);
-  say('原本就排好的資料', '間隔 4 → 2 → 1');
-  for (const g of [4, 2, 1]) for (let i = g; i < 8; i++) await insRound(tok, B, i, { ms: 90, gap: g, mv, hk: () => txt(ml, '移動 ' + mv.c + ' 次') });
-  B.hl([0, 1, 2, 3, 4, 5, 6, 7], GREEN);
-  say('每輪都不用動 → adaptive', '<span class="ok">最壞情形難分析，實務上比單純 insertion 快</span>');
-  await beat(tok, 3200);
+  for (const g of [4, 2, 1]) for (let i = g; i < 8; i++) await insRound(tok, B, i, { ms: 40, gap: g, mv, hk: () => txt(ml, '移動 ' + mv.c + ' 次') });
+  B.hl([0, 1, 2, 3, 4, 5, 6, 7], GREEN); h.mood('happy');
+  say('但跟 insertion 一樣很 adaptive', '原本排好 → 每輪都不用動');
+  await step(tok);                                   // 1:30:38 理論上不好分析
+  const n1 = note('理論：最壞情形都不容易分析', 0, 5.8, 0);
+  say('理論上它不好分析', '連最壞情形都不太明朗');
+  await step(tok);                                   // 1:30:58 實務上比較快
+  txt(n1, '實務：比直接用 insertion 快');
+  say('但實務上', '比直接用 insertion sort 快');
+  await step(tok);                                   // 1:31:21 一堆加速的小技巧
+  txt(n1, '一堆加速 insertion 的小技巧');
+  say('可以想成一堆加速的 trick', '先 long jump，進入快排好的階段');
+  await step(tok);                                   // 1:31:58 理論分析和實務不見得一樣
+  txt(n1, '理論分析 ≠ 實務上的好用');
+  say('理論的分析', '跟實務上不見得完全一樣');
+  await step(tok);                                   // 1:32:43 多呼叫幾次 insertion sort
+  txt(n1, '不用另寫 Merge／Quick：多呼叫幾次 insertion');
+  say('不一定要寫複雜的 merge、quick', '多呼叫幾次 insertion sort 就好');
+  await step(tok);                                   // 1:33:07 好用的拼裝車
+  txt(n1, '好用的拼裝車：需要 adaptivity 時想到它');
+  await h.hop(tok);
+  say('好用的拼裝車', '需要 adaptivity 時可以想到它');
 }]);
 
-// 93:44 Merge Sort（bottom-up）：6 5 4 7 8 3 1 2 → 小堆 → 中堆 → 大堆
+// 1:33:47 Merge Sort（bottom-up）：6 5 4 7 8 3 1 2 → 小堆 → 中堆 → 大堆
 FRAG.push(['sortlin-merge-bottomup', 'Merge Sort：小堆合併成中堆、大堆', async (tok) => {
   fresh([0, 6.5, 13], [0, 3, 0]);
   const DX = 1.2, X = (i) => (i - 3.5) * DX, LY = [0.6, 2.2, 3.8, 5.4];
-  let cur = [6, 5, 4, 7, 8, 3, 1, 2].map((v, i) => cube(v, colorFor(v), [0.8, 0.8, 0.8], X(i), LY[0], 0));
-  let vals = [6, 5, 4, 7, 8, 3, 1, 2];
-  const lvl = ['每一筆自己是一個小堆', '兩兩合併 → 中堆', '中堆合併 → 大堆', '大堆合併 → 全部排好'];
-  say(lvl[0], '6 5 4 7 8 3 1 2');
-  await beat(tok, 2400);
-  let w = 1, ghosts = [];
-  for (let L = 1; L <= 3; L++) {
-    say(lvl[L], 'size ' + w + ' + ' + w + ' → ' + 2 * w);
-    const nv = [], nm = [];
-    for (let s = 0; s < 8; s += 2 * w) {
-      let p = s, q = s + w; const pe = s + w, qe = s + 2 * w;
-      while (p < pe || q < qe) {
-        const takeP = q >= qe || (p < pe && vals[p] <= vals[q]);
-        if (p < pe) glow(cur[p], GOLD); if (q < qe) glow(cur[q], GOLD);
-        await beat(tok, 220);
-        const k = takeP ? p++ : q++;
-        const v = vals[k], at = nv.length;
-        nv.push(v); nm.push(cube(v, colorFor(v), [0.8, 0.8, 0.8], X(at), LY[L], 0, 0.9));
-        glow(cur[k], null); tint(cur[k], '#cfc6b6');
-        await beat(tok, 200);
-      }
-      ghosts.push((() => { const g = ghostBox(GREEN, 2 * w * DX - 0.15, 1.05, 1.1); g.position.set((X(s) + X(s + 2 * w - 1)) / 2, LY[L], 0); return g; })());
+  let cur = [], vals = [6, 5, 4, 7, 8, 3, 1, 2], nxt = [], nv = [];
+  // merge the two runs starting at s (each w long) of level L-1 into level L
+  const mergeAt = async (s, w, L, ms) => {
+    let p = s, q = s + w, at = s; const pe = s + w, qe = s + 2 * w;
+    while (p < pe || q < qe) {
+      const takeP = q >= qe || (p < pe && vals[p] <= vals[q]);
+      if (p < pe) glow(cur[p], GOLD); if (q < qe) glow(cur[q], GOLD);
+      await beat(tok, ms);
+      const k = takeP ? p++ : q++;
+      const v = vals[k];
+      nv[at] = v; nxt[at] = cube(v, colorFor(v), [0.8, 0.8, 0.8], X(at), LY[L], 0, 0.9); at++;
+      glow(cur[k], null); tint(cur[k], '#cfc6b6');
+      await beat(tok, ms);
     }
-    cur = nm; vals = nv; w *= 2;
-    await beat(tok, 900);
-  }
-  say('1 → 2 → 4 → 8：共 log₂ n 層', '每層合併 O(n) → <span class="ok">O(n log n)</span>');
-  await beat(tok, 3000);
+    const g = ghostBox(GREEN, 2 * w * DX - 0.15, 1.05, 1.1); g.position.set((X(s) + X(s + 2 * w - 1)) / 2, LY[L], 0);
+  };
+  const nextLevel = () => { cur = nxt; vals = nv; nxt = []; nv = []; };
+  await step(tok);                                   // 1:33:47 merge sort 的行為很容易懂
+  tag('Merge Sort（bottom-up）', 'ptr', 0, 6.6, 0);
+  say('Merge Sort 的行為很容易懂', '');
+  await step(tok);                                   // 1:33:54 6 5 4 7 8 3 1 2，每一筆是一個小堆
+  cur = vals.map((v, i) => cube(v, colorFor(v), [0.8, 0.8, 0.8], X(i), LY[0], 0, 1.2));
+  tag('小堆', 'idx', -6.0, LY[0], 0);
+  say('6 5 4 7 8 3 1 2', '每一筆自己是一個小堆');
+  await step(tok);                                   // 1:34:03 小堆兩兩合併
+  tag('中堆', 'idx', -6.0, LY[1], 0);
+  say('試著把小堆兩兩合併', '');
+  await step(tok);                                   // 1:34:11 5、6 排好；4、7 排好
+  await mergeAt(0, 1, 1, 250); await mergeAt(2, 1, 1, 250);
+  say('6、5 → 5 6；4、7 → 4 7', '排好的中堆');
+  await step(tok);                                   // 1:34:20 3 跟 8
+  await mergeAt(4, 1, 1, 300);
+  say('8、3 → 3 8', '');
+  await step(tok);                                   // 1:34:29 1 跟 2；中堆再合成大堆
+  await mergeAt(6, 1, 1, 300); nextLevel();
+  tag('大堆', 'idx', -6.0, LY[2], 0);
+  say('1、2 → 1 2', '再把兩個中堆混成大堆');
+  await step(tok);                                   // 1:34:39 4 5 6 7；1 2 3 8
+  await mergeAt(0, 2, 2, 160); await mergeAt(4, 2, 2, 160); nextLevel();
+  say('5 6 + 4 7 → 4 5 6 7', '3 8 + 1 2 → 1 2 3 8');
+  await step(tok);                                   // 1:34:49 兩個大堆合起來：1 2 3 4 5 6 7 8
+  await mergeAt(0, 4, 3, 140); nextLevel();
+  say('兩個大堆合起來', '1 2 3 4 5 6 7 8');
 }]);
 
-// 95:05 合併兩個排好的堆 = sparse array／多項式相加：兩個指標各走一遍
+// 1:35:07 縱向 log n 層；合併 = sparse array／多項式相加，兩個指標各走一遍；橫向每層 n → n log n
 FRAG.push(['sortlin-merge-twoptr', 'Merge = 兩個 sparse array 合併', async (tok) => {
-  fresh([0, 6.5, 12], [0, 2, 0]);
+  fresh([0, 6.5, 12], [0, 2.4, 0]);
+  await step(tok);                                   // 1:35:07 1 → 2 → 4 → 8，合到 n
+  const lad = [1, 2, 4, 8].map((s, k) => cube('size ' + s, '#4b9ee2', [0.7 + s * 0.35, 0.6, 0.6], -4.2, 0.6 + k * 1.2, 0, 1.0));
+  say('縱向：堆的大小 1 → 2 → 4 → 8', '一直合到 n');
+  await step(tok);                                   // 1:35:16 要 log₂ n 層
+  const lg = good('log₂ n 層', -1.2, 2.4, 0);
+  say('要花 log₂ n 那麼多層', '');
+  await step(tok);                                   // 1:35:41 每一層 size 2ⁱ 的堆合起來
+  glow(lad[1], GOLD);
+  note('第 i 層：把 size 2ⁱ 的堆兩兩合起來', 0.8, 5.6, 0);
+  say('每一層：把做好的堆兩兩合併', '這一層的堆 size 是 2ⁱ');
+  await step(tok);                                   // 1:35:57 排好的 5 6 跟 4 7 怎麼合？
+  lad.forEach((m) => kill(m)); kill(lg);
   const Lv = [5, 6], Rv = [4, 7];
-  const Lm = Lv.map((v, k) => cube(v, colorFor(v), [0.85, 0.85, 0.85], -4.6 + k * 1.1, 3.4, 0));
-  const Rm = Rv.map((v, k) => cube(v, colorFor(v), [0.85, 0.85, 0.85], 3.5 + k * 1.1, 3.4, 0));
-  tag('x⁵ + x⁶', 'idx', -4.05, 2.6, 0); tag('x⁴ + x⁷', 'idx', 4.05, 2.6, 0);
+  const Lm = Lv.map((v, k) => cube(v, colorFor(v), [0.85, 0.85, 0.85], -4.6 + k * 1.1, 3.4, 0, 1.0));
+  const Rm = Rv.map((v, k) => cube(v, colorFor(v), [0.85, 0.85, 0.85], 3.5 + k * 1.1, 3.4, 0, 1.0));
   for (let k = 0; k < 4; k++) ctx.tile(V3(-1.65 + k * 1.1, 0.02, 0), 1.0, 1.0);
+  say('排好的 5 6 跟排好的 4 7', '怎麼快速合起來？');
+  await step(tok);                                   // 1:36:23 看成 x⁵ + x⁶、x⁴ + x⁷
+  tag('x⁵ + x⁶', 'pkt', -4.05, 2.5, 0); tag('x⁴ + x⁷', 'pkt', 4.05, 2.5, 0);
+  say('教過了：sparse array 相加', '5 6 看成 x⁵ + x⁶，4 7 看成 x⁴ + x⁷');
+  await step(tok);                                   // 1:36:56 兩個指標各走一個，走完就合起來
   const pp = tag('p', 'ptr', 0, 0, 0), qp = tag('q', 'ptr alt', 0, 0, 0);
+  let p = 0, q = 0, k = 0;
   const sp = () => { pp.position.set(p < 2 ? Lm[p].position.x : -2.6, 4.4, 0); qp.position.set(q < 2 ? Rm[q].position.x : 5.6, 4.4, 0); };
-  let p = 0, q = 0, k = 0; sp();
-  say('排好的 5,6 和排好的 4,7 怎麼合？', '我們教過：sparse array 相加');
-  await beat(tok, 2800);
+  sp();
   while (p < 2 || q < 2) {
     const takeP = q >= 2 || (p < 2 && Lv[p] <= Rv[q]);
-    if (p < 2) glow(Lm[p], GOLD); if (q < 2) glow(Rm[q], GOLD);
-    say(p < 2 && q < 2 ? '比 ' + Lv[p] + ' 和 ' + Rv[q] + '：小的先放' : '另一邊走完：剩下的照抄', '');
-    await beat(tok, 1200);
     const m = takeP ? Lm[p++] : Rm[q++];
-    glow(m, null); move(m, -1.65 + k * 1.1, 0.5, 0); k++; sp();
-    await beat(tok, 900);
+    glow(m, GOLD); await beat(tok, 250); glow(m, null);
+    move(m, -1.65 + k * 1.1, 0.5, 0); k++; sp(); await beat(tok, 350);
   }
-  tag('x⁴ + x⁵ + x⁶ + x⁷', 'idx', 0, -0.2, 0.9);
-  say('兩個指標各走完一遍', '兩堆 size 2ⁱ → 2ⁱ 的力氣，線性');
-  await beat(tok, 2800);
-  say('橫向：每層 merge 總共 O(n)', '縱向 log n 層 → O(n log n)');
-  await beat(tok, 3000);
+  say('兩個指標，兩邊各走一遍', 'size 2ⁱ 的兩堆 → 2ⁱ 的力氣');
+  await step(tok);                                   // 1:37:20 sparse array、多項式相加：一樣的演算法
+  note('merge ＝ sparse array 相加 ＝ 多項式相加', 0, 1.8, 0);
+  say('Merge 這個演算法我們早就教過', 'sparse array、多項式相加');
+  await step(tok);                                   // 1:37:29 橫向每層 n 的力氣
+  const rows = [0.4, 1.0].map((y) => ghostBox(GOLD, 9.5, 0.3, 0.6));
+  rows.forEach((g, i) => g.position.set(0, -0.1 + i * 0.01, 1.4));
+  pkt('橫向：每層合併總共 n', 0, -0.6, 1.4);
+  say('橫向：每層兩兩合併', '總共花 n 的力氣');
+  await step(tok);                                   // 1:37:52 bottom-up：n log n
+  good('n × log n 層 = O(n log n)', 0, 5.6, 0);
+  say('Bottom-up：小堆 → 中堆 → 大堆', '總共 <span class="ok">O(n log n)</span>');
 }]);
 
-// 98:02 Top-down：遞迴切一半、兩半各自排好、再 merge（divide and conquer）
+// 1:38:02 Top-down：遞迴切一半、兩半各自排好、再 merge（divide and conquer）
 FRAG.push(['sortlin-merge-topdown', 'Merge Sort（top-down）：分而治之', async (tok) => {
   fresh([0, 7.5, 12.5], [0, 2.4, 0]);
-  const cd = code(['msort(l, r):', '  if l >= r: return', '  m = (l + r) / 2', '  msort(l, m);  msort(m+1, r)', '  merge(l, m, r)        // O(n)'], 0, 7.0, 0.5, -2.6);
+  await step(tok);                                   // 1:38:02 也可以 top-down
   const R = lRow([6, 5, 4, 7, 8, 3, 1, 2], { dx: 1.1, z: 1.4, idx: true });
-  let z = null;
-  const dl = tag('', 'ptr alt', 0, 2.5, 1.4);
-  say('想排好整段：先排好左半、右半', '跟 binary search 一樣從中間切');
-  await beat(tok, 2600);
-  const ms = async (l, r, d) => {
-    z = R.zone(z, BLUE, l, r); txt(dl, 'depth ' + d); dl.position.set((R.x(l) + R.x(r)) / 2, 2.5, 1.4);
-    if (l >= r) { cd.hl(1); await beat(tok, 260); return; }
-    const m = (l + r) >> 1; cd.hl(2);
-    say('msort(' + l + ', ' + r + ')：切成 ' + l + '..' + m + ' 和 ' + (m + 1) + '..' + r, '兩半都要排（binary search 只走一半）');
-    await beat(tok, 500);
-    cd.hl(3); await ms(l, m, d + 1); await ms(m + 1, r, d + 1);
-    z = R.zone(z, GREEN, l, r); cd.hl(4); txt(dl, 'merge');
-    dl.position.set((R.x(l) + R.x(r)) / 2, 2.5, 1.4);
-    const sorted = R.v.slice(l, r + 1).sort((a, b) => a - b);
-    say('merge(' + l + '..' + r + ')：' + sorted.join(' '), 'conquer：合起來');
-    await R.arrange(tok, l, sorted, 700);
+  tag('top-down', 'ptr', -5.6, 1.4, 1.4);
+  say('不做 bottom-up，也可以 top-down', '');
+  await step(tok);                                   // 1:38:09 最終要排好，先把兩半排好
+  let zl = R.zone(null, BLUE, 0, 3), zr = R.zone(null, GOLD, 4, 7);
+  say('最終要把整段排好', '先想辦法把兩半各自排好');
+  await step(tok);                                   // 1:38:18 寫成 recursive code
+  const cd = code(['msort(l, r):', '  if l >= r: return', '  m = (l + r) / 2', '  msort(l, m);  msort(m+1, r)', '  merge(l, m, r)        // O(n)'], 0, 7.0, 0.5, -2.6);
+  say('寫成 recursive code', '');
+  await step(tok);                                   // 1:38:23 像 binary search：從中間切一半
+  cd.hl(2);
+  const mid = arrow(V3((R.x(3) + R.x(4)) / 2, 3.2, 1.4), V3((R.x(3) + R.x(4)) / 2, 1.2, 1.4), 0x7a1010);
+  say('像 binary search：從中間切一半', '');
+  const ms = async (l, r, sp) => {
+    if (l >= r) return;
+    const m = (l + r) >> 1;
+    await ms(l, m, sp); await ms(m + 1, r, sp);
+    await R.arrange(tok, l, R.v.slice(l, r + 1).sort((a, b) => a - b), sp);
   };
-  await ms(0, 7, 0);
-  cd.hl(-1); txt(dl, '');
-  say('遞迴 log n 層、每層 merge O(n)', '<span class="ok">O(n log n)</span>；divide and conquer');
-  await beat(tok, 3000);
+  await step(tok);                                   // 1:38:31 左邊先排好、右邊再排好
+  cd.hl(3); kill(mid);
+  await ms(0, 3, 650);
+  say('一半的左邊先排好', 'msort(l, m)：遞迴下去');
+  await step(tok);                                   // 1:38:38 binary search 只進一半；這裡兩邊都要排
+  await ms(4, 7, 650);
+  pkt('binary search 只走一半；這裡兩半都要', 0, 4.0, 1.4);
+  say('Binary search 偷懶只進一半', '這裡左右兩半都要排好');
+  await step(tok);                                   // 1:38:50 合併：n 的力氣
+  cd.hl(4); kill(zl); kill(zr);
+  await R.arrange(tok, 0, [1, 2, 3, 4, 5, 6, 7, 8], 1300); R.hl([0, 1, 2, 3, 4, 5, 6, 7], GREEN);
+  say('再 merge 起來', '跟剛才一樣，花 n 的力氣');
+  await step(tok);                                   // 1:38:59 呼叫 log n 個 level
+  cd.hl(-1);
+  good('log n 層遞迴 × 每層 n = O(n log n)', 0, 3.2, 1.4);
+  say('遞迴呼叫 log n 個 level', '');
+  await step(tok);                                   // 1:39:18 divide and conquer
+  note('divide（切開）→ conquer（merge 合起來）', 0, -0.6, 2.4);
+  say('這就是 divide and conquer', '分而治之：先分開，再合起來');
 }]);
 
-// 99:46 Merge Sort 的性質：stable、容易平行（各堆獨立）、適合 external sort
+// 1:39:49 Merge Sort 的性質：n log n、stable、容易平行（各堆獨立）、適合 external sort
 FRAG.push(['sortlin-merge-parallel', 'Merge Sort：stable、好平行、external sort', async (tok) => {
   fresh([0, 6.5, 12.5], [0, 2, 0]);
   const R = lRow([6, 5, 4, 7, 8, 3, 1, 2], { dx: 1.25, y: 0.6 });
   const cores = [];
-  const corez = (k, i, j) => { const g = ghostBox('#c08a20', (j - i + 1) * 1.25 - 0.1, 1.3, 1.3); g.position.set((R.x(i) + R.x(j)) / 2, 0.6, 0); const l = tag('核心 ' + k, 'ptr', g.position.x, 1.8, 0); cores.push(g, l); };
+  const corez = (k, i, j) => { const g = ghostBox('#c08a20', (j - i + 1) * 1.25 - 0.1, 1.3, 1.3); g.position.set((R.x(i) + R.x(j)) / 2, 0.6, 0); const l = prop('cpu', g.position.x, 1.5, 0, 0.45); const t = tag('核心 ' + k, 'ptr', g.position.x, 2.3, 0); cores.push(g, l, t); };
   const clear = () => { cores.forEach(kill); cores.length = 0; };
-  say('每一堆的工作互不相干', '可以丟給不同核心同時做');
+  await step(tok);                                   // 1:39:49 不管 bottom-up、top-down 都是 n log n
+  const n1 = good('bottom-up、top-down：都是 O(n log n)', 0, 4.4, 0);
+  say('不管 bottom-up 還是 top-down', '都花 n log n 的力氣');
+  await step(tok);                                   // 1:39:56 仔細實作通常是 stable
+  txt(n1, '仔細實作：通常是 stable');
+  say('仔細實作的話', '通常是 stable');
+  await step(tok);                                   // 1:40:05 標準函式庫的 stable sort 用 merge sort
+  txt(n1, '標準函式庫的 stable_sort：用 Merge Sort');
+  say('所以標準函式庫的 stable sort', '基本上是用 merge sort 做的');
+  await step(tok);                                   // 1:40:13 不同的堆可以獨立做
   for (let k = 0; k < 4; k++) corez(k + 1, 2 * k, 2 * k + 1);
-  await beat(tok, 2400);
   await Promise.all([R.arrange(tok, 0, [5, 6], 900), R.arrange(tok, 4, [3, 8], 900)]);
-  say('4 個核心同時排好 4 個小堆', '');
-  await beat(tok, 1600); clear();
-  corez(1, 0, 3); corez(2, 4, 7);
+  txt(n1, '不同的堆：可以獨立做');
+  say('一直作用在不同的堆上', '每一堆可以獨立做');
+  await step(tok);                                   // 1:40:21 丟到不同核心去做
+  clear(); corez(1, 0, 3); corez(2, 4, 7);
   await Promise.all([R.arrange(tok, 0, [4, 5, 6, 7], 1000), R.arrange(tok, 4, [1, 2, 3, 8], 1000)]);
-  say('2 個核心各合併一半', '做完再合起來就好');
-  await beat(tok, 1600); clear();
-  corez(1, 0, 7);
+  txt(n1, '多核心：各做各的，做完再合起來');
+  say('多核心電腦上丟給不同核心', '做完再合起來就好');
+  await step(tok);                                   // 1:40:33 Heap 牽一髮動全身，很難平行
+  clear(); corez(1, 0, 7);
   await R.arrange(tok, 0, [1, 2, 3, 4, 5, 6, 7, 8], 1000);
-  say('Heap 牽一髮動全身，很難平行', 'merge sort 容易平行化');
-  await beat(tok, 2800); clear();
-  const disk = ghostBox('#6e5f49', 13, 0.5, 1.6); disk.position.set(0, 3.6, -2); tag('磁碟上的大檔案', 'ptr alt', 0, 4.3, -2);
-  say('External sort：資料不在記憶體', '一段段讀進來排好 → 寫回 → merge');
-  await beat(tok, 3000);
-  R.hl([0, 1, 2, 3, 4, 5, 6, 7], GREEN);
-  say('仔細實作是 stable', '標準庫的 stable_sort 核心就是 merge sort');
-  await beat(tok, 2800);
+  bad('Heap：牽一髮動全身，很難平行', 0, 5.4, 0);
+  say('跟 Heap Sort 很不一樣', 'Heap 牽一髮動全身，很難平行化');
+  await step(tok);                                   // 1:40:56 external sort：資料在磁碟上
+  clear();
+  const disk = prop('disk', -5.4, 0, -2.4, 1.3, '磁碟（大檔案）'); bob(disk, 0.04);
+  txt(n1, 'External sort：資料在磁碟上，不在記憶體');
+  say('External sort', '不是在記憶體裡排，是在磁碟上');
+  await step(tok);                                   // 1:41:15 一段段抓進記憶體排好
+  const chunk = pkt('一段資料', -5.4, 1.8, -2.4);
+  await travel(tok, chunk, V3(-5.4, 1.8, -2.4), V3(0, 2.4, 0), 1200);
+  await R.arrange(tok, 0, [8, 7, 6, 5, 4, 3, 2, 1].reverse(), 600);
+  txt(chunk, '排好 → 寫回暫存檔');
+  await travel(tok, chunk, V3(0, 2.4, 0), V3(-5.4, 1.8, -2.4), 1000);
+  say('一次抓一段進記憶體排好', '再寫回暫存檔');
+  await step(tok);                                   // 1:41:43 暫存檔再 merge 起來
+  const f1 = prop('file', 3.6, 0, -2.4, 0.9), f2 = prop('file', 5.2, 0, -2.4, 0.9);
+  const mg = pkt('merge', 4.4, 2.0, -2.4);
+  txt(n1, '暫存檔之間再 merge：要靠 Merge Sort');
+  say('再跟其他暫存檔 merge 起來', '這種情境需要 merge sort');
 }]);
 
-// 103:02 Tree Sort：全部塞進 Binary Search Tree，再 in-order traversal
+// 1:43:02 Tree Sort：全部塞進 Binary Search Tree，再 in-order traversal
 const QV = [6, 1, 4, 9, 7, 8, 3, 10, 2, 5];
 const rk = (v) => [...QV].sort((a, b) => a - b).indexOf(v);
 const TX = (v) => (rk(v) - 4.5) * 1.15;
 FRAG.push(['sortlin-treesort', 'Tree Sort：塞進 BST，再 in-order', async (tok) => {
   fresh([0, 6.5, 13.5], [0, 3, 0]);
   const TY = (d) => 6.3 - d * 1.3;
+  const h = helper(-6.4, 2.6, '小幫手', 0.6);
+  await step(tok);                                   // 1:43:02 影片裡沒有，但三秒就懂
+  const n1 = note('影片裡沒有的 sort：三秒鐘就懂', 0, 7.0, 0);
+  say('特別講一個影片裡沒有的 sort', '三秒鐘就懂');
+  await step(tok);                                   // 1:43:17 BST、AVL tree、紅黑樹……
+  ['BST', 'AVL tree', '紅黑樹'].forEach((t, k) => pkt(t, -2.4 + k * 2.4, 5.6, 0));
+  say('花了好多力氣教 Binary Search Tree', 'AVL tree、紅黑樹……');
+  await step(tok);                                   // 1:43:29 BST 本質上就是排好的資料結構
+  txt(n1, 'BST：排序存在它的 node 裡');
+  say('BST 本質上就是排好序的資料結構', '');
+  await step(tok);                                   // 1:43:37 通通塞到 BST 裡面
   const T = {};
-  say('BST 本身就是排好的資料結構', '全部 insert，再做 in-order traversal');
-  await beat(tok, 2600);
   for (const v of QV) {
     let p = null, cur = T.root, d = 0;
-    while (cur) { glow(cur.m, GOLD); await beat(tok, 220); glow(cur.m, null); p = cur; cur = v < cur.v ? cur.l : cur.r; d++; }
-    const node = { v, l: null, r: null, d, m: cube(v, colorFor(v), [0.8, 0.8, 0.8], TX(v), TY(d), 0, 1.4) };
-    if (p) { line(p.m.position.x, TY(p.d), TX(v), TY(d), 0); if (v < p.v) p.l = node; else p.r = node; } else T.root = node;
-    say('insert ' + v + (p ? '：接在 ' + p.v + ' 的' + (v < p.v ? '左' : '右') + '邊' : '：當 root'), '比較小往左、比較大往右');
-    await beat(tok, 420);
+    while (cur) { p = cur; cur = v < cur.v ? cur.l : cur.r; d++; }
+    const node = { v, l: null, r: null, d, m: cube(v, colorFor(v), [0.8, 0.8, 0.8], TX(v), TY(d), 0, 1.0) };
+    if (p) { line(TX(p.v), TY(p.d), TX(v), TY(d), -0.1); if (v < p.v) p.l = node; else p.r = node; } else T.root = node;
+    await beat(tok, 240);
   }
-  say('In-order：左子樹 → 自己 → 右子樹', '輸出就是排好的');
-  await beat(tok, 1800);
-  const out = [];
-  const ino = async (n) => { if (!n) return; await ino(n.l); glow(n.m, GREEN); out.push(cube(n.v, colorFor(n.v), [0.7, 0.7, 0.7], TX(n.v), 0.4, 2.8, 1.2)); await beat(tok, 380); glow(n.m, null); await ino(n.r); };
-  await ino(T.root);
-  say('1 2 3 … 10：排好了', '樹平衡 O(n log n)、長歪 O(n²)；要 O(n) 額外空間');
-  await beat(tok, 3000);
-  say('資料一直進進出出時特別好用', '例如一直加歌、刪歌的推薦清單');
-  await beat(tok, 2600);
+  say('把要排序的東西通通塞進 BST', '小的往左、大的往右');
+  await step(tok);                                   // 1:43:56 再做 in-order traversal
+  const ino = async (nd) => { if (!nd) return; await ino(nd.l); glow(nd.m, GREEN); cube(nd.v, colorFor(nd.v), [0.7, 0.7, 0.7], TX(nd.v), 0.4, 2.8, 1.0); await beat(tok, 230); glow(nd.m, null); await ino(nd.r); };
+  await ino(T.root); h.mood('happy');
+  say('再做 in-order traversal', '排好的東西就輸出來：1 2 3 … 10');
+  await step(tok);                                   // 1:44:05 缺點：要花 n 的空間
+  txt(n1, '缺點：整棵樹要 n 的額外空間');
+  say('缺點：要花 n 的額外空間', '還要把 BST 處理好（可以用 library）');
+  await step(tok);                                   // 1:44:27 樹糟 n²、樹好 n log n
+  txt(n1, '樹長歪：O(n²)；樹還不錯：O(n log n)');
+  say('時間跟做出什麼樣的樹有關', '很糟的樹 n²，不錯的樹 n log n');
+  await step(tok);                                   // 1:44:45 不容易做成 stable
+  txt(n1, '不容易做成 stable');
+  h.mood('sad');
+  say('不容易做成 stable', 'BST 的調整不一定保得住順序');
+  await step(tok);                                   // 1:45:13 資料來來去去時是好方法：歌曲推薦
+  h.mood('happy');
+  const song = pkt('♪ 新歌加入', 6.0, 6.6, 0);
+  await travel(tok, song, V3(6.0, 6.6, 0), V3(TX(8) + 0.6, TY(4), 0), 1200);
+  txt(n1, '資料一直進進出出：例如推薦歌單');
+  say('資料一直加進來、移掉的時候', '例如個人的歌曲推薦清單');
+  await step(tok);                                   // 1:45:56 只是簡單排序：殺雞用牛刀
+  kill(song);
+  txt(n1, '只做簡單的排序：殺雞用牛刀');
+  say('只是要做簡單的 sorting', '那就有點殺雞用牛刀');
+  await step(tok);                                   // 1:46:03 把 Heap 換成更嚴格的 BST
+  txt(n1, 'Heap（寬鬆）→ BST（嚴格）：不用 selection，in-order 就好');
+  say('其實就是把 Heap 換成更嚴格的 BST', '不用 selection，in-order 就好');
 }]);
 
-// 106:40 Quick Sort = 用「隨機 root」的 BST 做 tree sort，但不真的建樹：只分成兩堆
+// 1:46:46 Quick Sort = 用「隨機 root」的 BST 做 tree sort，但不真的建樹：只分成兩堆
 FRAG.push(['sortlin-quick-as-bst', 'Quick Sort：pivot 就是 BST 的 root', async (tok) => {
   fresh([0, 6.5, 13], [0, 2.6, 0]);
-  const ms = QV.map((v, i) => cube(v, colorFor(v), [0.8, 0.8, 0.8], (i - 4.5) * 1.1, 0.6, 2.4));
-  say('Quick sort 其實就是 tree sort', '只是不真的把樹建出來');
-  await beat(tok, 2400);
+  await step(tok);                                   // 1:46:46 剛才影片的 quick sort 在做什麼
+  const ms = QV.map((v, i) => cube(v, colorFor(v), [0.8, 0.8, 0.8], (i - 4.5) * 1.1, 0.6, 2.4, 1.0));
+  const n1 = note('Quick Sort 到底在做什麼？', 0, 6.9, 0);
+  say('剛才影片的 Quick Sort', '到底在做什麼？');
+  await step(tok);                                   // 1:46:56 說穿了就是 tree sort
+  txt(n1, 'Quick Sort ＝ Tree Sort');
+  say('說穿了就是剛才的 Tree Sort', '');
+  await step(tok);                                   // 1:47:03 用的是一棵 random 的 BST
+  txt(n1, '用的樹：random 的 BST（不是 AVL、紅黑樹）');
+  say('它用的樹不是 AVL 或紅黑樹', '是一棵 random 的 BST');
+  await step(tok);                                   // 1:47:22 A0 當 root
   glow(ms[0], GOLD); move(ms[0], 0, 5.6, 0);
-  say('抓 6 當 root（pivot）', '');
-  await beat(tok, 1600);
+  txt(n1, '先想簡單的：A0 = 6 當 root');
+  say('先用 A0（6）當 BST 的 root', '');
+  await step(tok);                                   // 1:47:34 BST：比 A0 小往左、大往右
+  for (let i = 1; i < QV.length; i++) { glow(ms[i], QV[i] < 6 ? BLUE : PINK); await beat(tok, 140); }
+  txt(n1, 'BST：比 6 小 → 左邊；比 6 大 → 右邊');
+  say('BST 會把比 6 小的往左插', '比 6 大的往右插');
+  await step(tok);                                   // 1:47:50 quick sort：小的一堆、大的一堆
   let nl = 0, nr = 0;
-  for (let i = 1; i < QV.length; i++) {
-    const v = QV[i]; glow(ms[i], BLUE); await beat(tok, 260);
-    if (v < 6) move(ms[i], -5.2 + (nl++) * 0.95, 3.2, 0); else move(ms[i], 1.4 + (nr++) * 0.95, 3.2, 0);
-    glow(ms[i], null); await beat(tok, 260);
-  }
-  const g1 = line(0, 5.6, -3.3, 3.2, 0), g2 = line(0, 5.6, 2.8, 3.2, 0);
-  say('比 6 小一堆：1 4 3 2 5', '比 6 大一堆：9 7 8 10');
-  await beat(tok, 2800);
-  say('左堆自己去 sort ＝ 左子樹自己建 BST', '右堆同理');
-  await beat(tok, 2200);
+  for (let i = 1; i < QV.length; i++) { glow(ms[i], null); if (QV[i] < 6) move(ms[i], -5.2 + (nl++) * 0.95, 3.2, 0); else move(ms[i], 1.6 + (nr++) * 0.95, 3.2, 0); }
+  await beat(tok, 900);
+  line(0, 5.6, -3.3, 3.2, -0.1); line(0, 5.6, 3.0, 3.2, -0.1);
+  txt(n1, 'Quick：比 6 小一堆（1 4 3 2 5）、比 6 大一堆（9 7 8 10）');
+  say('Quick sort：比 6 小的放一堆', '比 6 大的放一堆');
+  await step(tok);                                   // 1:48:12 那一堆自己去排好 ＝ 自己去建 BST
   [1, 2, 3, 4, 5].forEach((v, k) => move(ms[QV.indexOf(v)], -5.2 + k * 0.95, 3.2, 0));
-  [7, 8, 9, 10].forEach((v, k) => move(ms[QV.indexOf(v)], 1.4 + k * 0.95, 3.2, 0));
-  await beat(tok, 1400);
-  kill(g1); kill(g2);
-  QV.forEach((v, i) => move(ms[i], TX(v), 0.6, 2.4));
-  glow(ms[0], GREEN);
-  say('In-order：左堆、6、右堆', '兩邊排好，接起來就排好了');
-  await beat(tok, 3000);
+  [7, 8, 9, 10].forEach((v, k) => move(ms[QV.indexOf(v)], 1.6 + k * 0.95, 3.2, 0));
+  await beat(tok, 1100);
+  txt(n1, '每一堆自己去 sort ＝ 自己去建 BST');
+  say('左堆自己去 sort', '就像左子樹自己去建 BST');
+  await step(tok);                                   // 1:48:37 in-order：左、中、右
+  QV.forEach((v, i) => move(ms[i], TX(v), 0.6, 2.4)); glow(ms[0], GREEN);
+  await beat(tok, 1100);
+  txt(n1, 'In-order：左邊、中間、右邊 → 排好了');
+  say('In-order：左邊、中間、右邊', '各自做好，接起來就排好了');
+  await step(tok);                                   // 1:49:10 不需要真的 build 一棵樹
+  pkt('心裡知道 6 是 root，樹不用真的建', 0, 5.2, 0);
+  say('沒有真的 build 一棵樹', '資料就不知不覺排好了');
 }]);
 
-// 一棵「堆的樹」：每層把每堆的第一個（或指定的）當 pivot，左右兩堆往下一層；x = 最終排序位置
-async function pileTree(tok, vals, o = {}) {
-  const dy = o.dy || 1.3, top = o.top || 6.2, pick = o.pick || ((pile) => pile[0]), ms = o.ms || 900;
-  const sorted = [...vals].sort((a, b) => a - b), X = (v) => (sorted.indexOf(v) - (vals.length - 1) / 2) * (o.dx || 1.1);
-  const M = {}; vals.forEach((v, i) => { M[v] = cube(v, colorFor(v), [0.75, 0.75, 0.75], (i - (vals.length - 1) / 2) * (o.dx || 1.1), top, 0); });
-  let level = [{ pile: vals.slice(), lo: 0, par: null }], d = 0, depth = 0;
-  while (level.length) {
-    const next = [];
-    if (o.onLevel) await o.onLevel(d, level);
-    for (const { pile, lo, par } of level) {
-      const p = pick(pile); glow(M[p], GOLD);
-      const L = pile.filter((v) => v < p), G = pile.filter((v) => v > p);
-      if (o.onPivot) await o.onPivot(p, L, G, d);
-      const y = top - d * dy;
-      move(M[p], X(p), y, 0);
-      L.forEach((v, k) => move(M[v], X(sorted[lo + k]), y - dy, 0));
-      G.forEach((v, k) => move(M[v], X(sorted[lo + L.length + 1 + k]), y - dy, 0));
-      if (par !== null) line(X(par), y + dy, X(p), y, 0);
-      await beat(tok, ms);
-      glow(M[p], null); tint(M[p], '#e8dcc0');
-      if (L.length) next.push({ pile: L, lo, par: p });
-      if (G.length) next.push({ pile: G, lo: lo + L.length + 1, par: p });
-    }
-    depth = d; level = next; d++;
-  }
-  return { M, X, depth };
-}
-
-// 109:41 模擬：6 先分兩堆；左堆不幸抓到 1（0 個 vs 4 個）；平衡時 log n 層 × 每層 n
+// 1:49:44 模擬：6 先分兩堆；左堆不幸抓到 1（0 個 vs 4 個）；抓中間 → 平衡 → log n 層 × 每層 n
 FRAG.push(['sortlin-quick-levels', 'Quick Sort：一層一層分堆，長出一棵樹', async (tok) => {
   fresh([0, 6, 13.5], [0, 3.2, 0]);
-  say('6 1 4 9 7 8 3 10 2 5', '每堆抓一個中間人（pivot）分兩堆');
-  await beat(tok, 2400);
-  const T = await pileTree(tok, QV, { dy: 1.3, ms: 850, onPivot: async (p, L, G) => {
-    if (p === 6) say('抓 6：左 1 4 3 2 5、右 9 7 8 10', '');
-    else if (p === 1) { say('左堆抓到 1：左 0 個、右 4 個', '不幸：樹長歪一邊'); await beat(tok, 1400); }
-    else say('抓 ' + p + '：左 ' + L.length + ' 個、右 ' + G.length + ' 個', '');
-  } });
-  say('分完了：pivot 排成一棵 BST', '高度 ' + (T.depth + 1) + ' 層');
-  await beat(tok, 2600);
-  say('平衡時 log n 層，每層搬動 O(n)', '<span class="ok">O(n log n)</span>');
-  await beat(tok, 2400);
+  await step(tok);                                   // 1:49:44 寫一個快速的 simulation
+  const T = qTree(QV, { dy: 1.3, top: 6.2 });
+  say('來做個 simulation', '6 1 4 9 7 8 3 10 2 5');
+  await step(tok);                                   // 1:49:49 一開始把 6 抓出來
+  glow(T.M[6], GOLD); move(T.M[6], T.X(6), 6.9, 0);
+  say('Quick sort 一開始把 6 抓出來', '想要 6 在中間');
+  await step(tok);                                   // 1:50:00 1 4 3 2 5 一邊；9 7 8 10 另一邊
+  const r1 = T.split(QV.slice(1), 0, 6, 0, null); await beat(tok, 900); T.done(6);
+  say('1 4 3 2 5 在一邊', '9 7 8 10 在另一邊');
+  await step(tok);                                   // 1:50:23 兩邊各自去做
+  const zl = ghostBox(BLUE, 5.6, 1.0, 1.0); zl.position.set(-2.75, 4.9, 0);
+  const zr = ghostBox(GOLD, 4.5, 1.0, 1.0); zr.position.set(3.3, 4.9, 0);
+  say('然後兩邊各自去做', '');
+  await step(tok);                                   // 1:50:33 左邊抓到 1：沒有比 1 小的
+  kill(zl);
+  const r2 = T.split(r1.L, 0, 1, 1, 6); await beat(tok, 900); T.done(1);
+  say('左邊可能把 1 抓出來', '比 1 小的 0 個、比 1 大的 4 個');
+  await step(tok);                                   // 1:50:41 unbalanced BST，歪向一邊
+  const w = bad('不平衡：歪向一邊', -4.4, 4.0, 0);
+  say('不幸：對應到 unbalanced 的 BST', 'root 下面沒有兩邊平衡發展');
+  await step(tok);                                   // 1:51:26 盡量抓在中點附近
+  kill(w); kill(zr);
+  await T.finish(tok, r2.G, r2.hi, 2, 1, midPick, 260);
+  await T.finish(tok, r1.G, r1.hi, 1, 6, midPick, 260);
+  say('Quick sort 一直在抓中間人', '盡量抓在中點附近 → 左右平均');
+  await step(tok);                                   // 1:51:58 平衡時只要 log n 層
+  good('平衡：只要 log n 層', 4.6, 6.6, 0);
+  say('平衡的話', '只需要 log n 那麼多層');
+  await step(tok);                                   // 1:52:15 橫向：分兩堆、移位置要 n
+  const band = ghostBox(GOLD, 11.5, 0.9, 0.8); band.position.set(0, 4.9, 0);
+  await anim(tok, 1600, (u) => { band.position.y = 4.9 - u * 2.6; });
+  say('橫向：把東西分兩堆、移位置', '每層花 n 的力氣');
+  await step(tok);                                   // 1:52:29 總共 n log n
   QV.forEach((v) => move(T.M[v], T.X(v), 0.4, 2.6));
-  say('依 x 讀出來：1 2 3 … 10', 'in-order = 排好的結果');
-  await beat(tok, 2800);
+  good('縱向 log n × 橫向 n = O(n log n)', 0, 7.2, 0);
+  say('總共的複雜度', '<span class="ok">O(n log n)</span>');
 }]);
 
-// 112:43 永遠挑第一個：1 2 … 10 會長成一條鍊（O(n²)）；隨機挑多半落在中間
+// 1:53:07 永遠挑第一個：1 2 … 10 會長成一條鍊；隨機挑 pivot 多半落在中間
 FRAG.push(['sortlin-quick-sorted-input', 'Pivot 永遠挑第一個 vs 隨機挑', async (tok) => {
   fresh([0, 6, 13.5], [0, 3.2, 0]);
   const D = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-  say('資料 1 2 3 … 10，永遠挑第一個', '');
-  await beat(tok, 2200);
-  await pileTree(tok, D, { dy: 0.58, top: 6.3, ms: 520, onPivot: async (p) => { say('挑 ' + p + '：左 0 個、右 ' + (10 - p) + ' 個', '每次只切掉 pivot 自己'); } });
-  say('樹長成一條鍊：n 層', '<span class="no">O(n²)</span>');
-  await beat(tok, 2800);
+  await step(tok);                                   // 1:53:07 每次都挑第一格
+  const n1 = note('如果每次都挑第一個當中間人……', 0, 7.4, 0);
+  say('要注意：如果每次都挑第一格', '');
+  await step(tok);                                   // 1:53:14 很糟糕的 data：1 2 3 … 10
+  let T = qTree(D, { dy: 0.58, top: 6.3 });
+  say('遇到很糟的 data', '1 2 3 4 5 6 7 8 9 10');
+  await step(tok);                                   // 1:53:26 總是挑第一個：樹永遠長歪
+  await T.finish(tok, D, 0, 0, null, (pile) => pile[0], 230);
+  bad('長成一條鍊：n 層 → O(n²)', 3.6, 1.0, 0);
+  say('總是挑第一個：每次只切掉自己', '樹永遠長歪 → <span class="no">O(n²)</span>');
+  await step(tok);                                   // 1:53:36 常做的事：randomly choose root
   fresh([0, 6, 13.5], [0, 3.2, 0]);
-  say('改成隨機挑 pivot', '10 個裡隨便挑，多半挑到中間附近');
-  await beat(tok, 2000);
-  const T = await pileTree(tok, D, { dy: 1.3, ms: 800, pick: (pile) => pile[pile.length >> 1], onPivot: async (p, L, G) => { say('挑到 ' + p + '：左 ' + L.length + '、右 ' + G.length, '（示意：剛好挑到中間）'); } });
-  say('只有 ' + (T.depth + 1) + ' 層：接近 log n', '隨機 pivot → 很大機率平衡');
-  await beat(tok, 3000);
+  T = qTree(D, { dy: 1.3, top: 6.2 });
+  const n2 = note('Randomly choose：隨機選 root', 0, 7.4, 0);
+  say('常做的事：隨機選 root', '');
+  await step(tok);                                   // 1:53:55 quick sort 裡叫 pivot
+  txt(n2, 'BST 的 root，在 Quick Sort 裡叫 pivot（仲裁點）');
+  say('這個 root 在 quick sort 裡', '通常叫做 pivot');
+  await step(tok);                                   // 1:54:08 隨機選，多半選到中間
+  await T.finish(tok, D, 0, 0, null, midPick, 260);
+  good('只有 ' + (T.depth + 1) + ' 層：接近 log n', 4.0, 1.0, 0);
+  say('10 個人裡隨機選一個', '很多時候會選到比較中間的');
+  await step(tok);                                   // 1:54:15 不要總是挑第一個
+  txt(n2, '隨便選中間點，不要總是挑第一個');
+  say('所以要隨便選一個中間點', '不要總是挑第一個');
 }]);
 
-// 114:30 真正的 partition：i 從左掃、j 從右掃，9↔5、7↔2、8↔3，最後 6↔3
+// 1:54:30 真正的 partition：從左掃、從右掃；9↔5、7↔2、8↔3，最後 6↔3
 FRAG.push(['sortlin-quick-partition', 'Partition：左右兩個指標掃過來交換', async (tok) => {
   fresh(LCAM, LLOOK);
+  await step(tok);                                   // 1:54:30 從左邊掃過去，留下比中間點小的
   const R = lRow(QV.slice(), { idx: true, dx: 1.15, sz: 0.74 });
-  const pi = tag('i', 'ptr', 0, 0, 0), pj = tag('j', 'ptr alt', 0, 0, 0);
+  const pi = tag('i →', 'ptr', 0, 0, 0), pj = tag('← j', 'ptr alt', 0, 0, 0);
+  R.at(pi, 1, 1.3); pj.element.style.visibility = 'hidden';
+  say('真正在做的時候', '從左邊掃過去：留下比中間點小的');
+  await step(tok);                                   // 1:54:41 從右邊掃回來，留下比中間點大的
+  pj.element.style.visibility = ''; R.at(pj, 9, 1.9);
+  say('從右邊掃回來', '留下比中間點大的');
+  await step(tok);                                   // 1:54:50 中間點 6：1 比較小，沒問題
   R.hl([0], GOLD);
-  say('pivot = 6', 'i 從左找 > 6、j 從右找 < 6');
-  await beat(tok, 2400);
-  const hi = R.v.length - 1, p = R.v[0];
-  let i = 1, j = hi;
-  while (true) {
-    while (i <= hi && R.v[i] < p) { R.at(pi, i, 1.3); say(R.v[i] + ' < 6：留在左邊沒問題', ''); await beat(tok, 500); i++; }
-    if (i <= hi) { R.at(pi, i, 1.3); R.hl([i], RED); say(R.v[i] + ' > 6：不該在左邊', 'i 停'); await beat(tok, 1000); }
-    while (j > 0 && R.v[j] > p) { R.at(pj, j, 1.9); say(R.v[j] + ' > 6：留在右邊沒問題', ''); await beat(tok, 500); j--; }
-    R.at(pj, j, 1.9); if (j > 0 && i < j) { R.hl([j], RED); say(R.v[j] + ' < 6：不該在右邊', 'j 停'); await beat(tok, 1000); }
-    if (i >= j) break;
-    say('交換 ' + R.v[i] + ' ↔ ' + R.v[j], 'long jump：左右各送一個過去');
-    await R.swap(tok, i, j, 900); R.off(); R.hl([0], GOLD);
-    i++; j--;
-  }
-  R.off(); R.hl([0, j], GOLD);
-  say('i、j 交錯：1 4 5 2 3 都比 6 小', '8 10 7 9 都比 6 大');
-  await beat(tok, 2200);
-  say('6 和 3 交換', '6 站到最終位置');
-  await R.swap(tok, 0, j, 1000); R.off(); R.hl([j], GREEN);
-  say('左邊都 < 6、右邊都 > 6', '掃一遍 O(n)，再各自遞迴');
-  await beat(tok, 3000);
+  R.hl([1], GREEN); await beat(tok, 600); gl(R.m[1], null);
+  say('中間點是 6', '1 比 6 小：留在左邊沒問題');
+  await step(tok);                                   // 1:54:58 4 沒問題；9 不應該在左邊；右邊看到 5
+  R.at(pi, 2, 1.3); R.hl([2], GREEN); await beat(tok, 500); gl(R.m[2], null);
+  R.at(pi, 3, 1.3); R.hl([3], RED); await beat(tok, 500);
+  R.hl([9], RED);
+  say('4 沒問題；9 比 6 大，不該在左邊', '從右邊掃，看到 5');
+  await step(tok);                                   // 1:55:09 5 不該在右邊：9 跟 5 交換
+  await R.swap(tok, 3, 9, 1000); R.off(); R.hl([0], GOLD);
+  say('5 比 6 小，不該在右邊', '把 9 跟 5 交換');
+  await step(tok);                                   // 1:55:19 quick sort 裡的 long jump
+  const lj = pkt('long jump：左右各送一個過去', 0, 3.4, 0);
+  say('這是 quick sort 裡的一種 long jump', '');
+  await step(tok);                                   // 1:55:25 7 比較大、2 比較小：交換
+  kill(lj);
+  R.at(pi, 4, 1.3); R.at(pj, 8, 1.9); R.hl([4, 8], RED); await beat(tok, 500);
+  await R.swap(tok, 4, 8, 900); R.off(); R.hl([0], GOLD);
+  say('再掃下去：7 比較大、2 比較小', '交換：2 到左邊、7 到右邊');
+  await step(tok);                                   // 1:55:38 10 沒問題；8 太大、3 太小：交換
+  R.at(pi, 5, 1.3); R.hl([5], RED);
+  R.at(pj, 7, 1.9); R.hl([7], GREEN); await beat(tok, 450); gl(R.m[7], null);
+  R.at(pj, 6, 1.9); R.hl([6], RED); await beat(tok, 450);
+  await R.swap(tok, 5, 6, 800); R.off(); R.hl([0], GOLD);
+  say('10 比較大沒問題', '8 太大、3 太小：交換');
+  await step(tok);                                   // 1:56:00 1 4 5 2 3 比 6 小；8 10 7 9 比 6 大
+  R.at(pi, 6, 1.3); R.at(pj, 5, 1.9);
+  const zl = R.zone(null, BLUE, 1, 5), zr = R.zone(null, PINK, 6, 9);
+  say('i、j 交錯了', '1 4 5 2 3 比 6 小，8 10 7 9 比 6 大');
+  await step(tok);                                   // 1:56:11 把 6 跟 3 換過來
+  await R.swap(tok, 0, 5, 1100); R.off(); R.hl([5], GREEN);
+  kill(zl); kill(zr); R.zone(null, BLUE, 0, 4); R.zone(null, PINK, 6, 9);
+  say('最後把 6 跟 3 換過來', '6 站到最終位置');
+  await step(tok);                                   // 1:56:21 6 左邊都比 6 小、右邊都比 6 大
+  pi.element.style.visibility = 'hidden'; pj.element.style.visibility = 'hidden';
+  good('左邊 < 6 < 右邊：再各自繼續', 0, 3.2, 0);
+  say('6 的左邊通通比 6 小', '右邊通通比 6 大，再繼續下去');
 }]);
 
-// 119:31 Sorting 之間的脈絡：selection → heap → tree → quick；quick 與 merge 的 recursion
+// 1:56:56 Quick Sort 實務：橫向兩指標 n、縱向隨機 pivot；三數取中；recursion 要 stack；最壞情形（內建「quick-worst-case」的 cued 版本）
+FRAG.push(['sortlin-quick-practice', 'Quick Sort 實務：pivot 選法、stack、最壞情形', async (tok) => {
+  const v = [3, 5, 7, 9, 11, 13, 15];
+  await step(tok);                                   // 1:56:56 橫向：兩個指標，n 的力氣
+  Object.assign(CFG.dc, { algo: 'quick', input: 'sorted', pivot: 'first', rule: 'bari', vals: v.slice(), n: 7 }); enterDC(false); controls('');
+  const n1 = note('橫向：兩個指標一左一右掃 → 每層 n', 0, 4.4, 0);
+  say('橫向：兩個指標一左一右掃', '維持 n 的力氣');
+  await step(tok);                                   // 1:57:04 縱向：隨機選 pivot，大機率平衡
+  txt(n1, '縱向：隨機選 pivot → 大機率分成平衡的兩堆');
+  say('縱向：隨機選 pivot', '大機率分成平衡的兩堆，log n 層');
+  await step(tok);                                   // 1:57:40 選第一個有缺點
+  txt(n1, '已排好的資料 ＋ 永遠選第一個');
+  await runTo(tok, lastStep(), 2600);
+  const worst = S.steps[lastStep()].cmp;
+  txt(n1, '選第一個：一邊 0 個、一邊 n−1 個 → 比較 ' + worst + ' 次');
+  say('選第一個有缺點', '已排好的資料：每次只切掉自己');
+  await step(tok);                                   // 1:57:49 選三個，取最中間的（median of three）
+  Object.assign(CFG.dc, { pivot: 'median3', vals: v.slice() }); enterDC(false); controls('');
+  await runTo(tok, lastStep(), 2600);
+  const n2 = note('三數取中：比較 ' + S.steps[lastStep()].cmp + ' 次（原本 ' + worst + ' 次）', 0, 4.4, 0);
+  say('也有人選三個位置', '取最中間的那個（median of three）');
+  await step(tok);                                   // 1:58:03 recursion：要付出 stack 的空間
+  txt(n2, 'Recursion：除了原本的空間，還要呼叫堆疊的空間');
+  say('用 recursion 實作', '還要在 stack 上付出一些空間');
+  await step(tok);                                   // 1:58:10 最壞：長出不平衡的樹
+  txt(n2, '最壞情形：不平衡的樹 → O(n²)');
+  say('最壞的情形', '長出一棵不平衡的樹');
+  await step(tok);                                   // 1:58:28 大資料、不需要 stability 時很有用
+  txt(n2, '運氣不太差：大資料、不需要 stable 時很好用');
+  say('運氣不太差的話很快', '大資料、不需要 stability 時很有用');
+  Object.assign(CFG.dc, { pivot: 'first', input: 'video', vals: null, n: 9 });
+}]);
+
+// 1:58:33 Quick Sort 混合 Insertion Sort：大堆 partition、小堆 insertion
+FRAG.push(['sortlin-hybrid', '混合排序：大堆 partition、小堆 insertion', async (tok) => {
+  fresh(LCAM, LLOOK);
+  await step(tok);                                   // 1:58:33 小資料時 recursion 有 overhead
+  const R = lRow([7, 2, 10, 5, 12, 1, 9, 4, 13, 3, 11, 8], { idx: true, dx: 0.95, sz: 0.7 });
+  const n1 = note('小資料：recursion 有 overhead；Insertion 很好用', 0, 3.6, 0);
+  say('比較小的資料', 'recursion 有 overhead，insertion 反而好用');
+  await step(tok);                                   // 1:58:46 quick 從大堆分到小堆
+  const o = { ms: 170, parts: [], z: null };
+  await hybridRun(tok, R, 0, 11, 5, o);
+  txt(n1, 'Quick：像 merge 一樣，從大堆分到小堆');
+  say('Quick sort 從大堆分到小堆', '');
+  await step(tok);                                   // 1:58:55 不一定要分到最小的堆
+  txt(n1, '堆已經夠小（≤ 5 個）：不用再分下去');
+  say('小堆那邊', '不一定要一路 quick sort 到最小');
+  await step(tok);                                   // 1:59:05 insertion 是 n²，但常數考慮進去比較 efficient
+  const parts = o.parts.slice(); o.ms = 48;
+  for (const [a, b] of parts) await hybridRun(tok, R, a, b, 6, o);
+  if (o.z) kill(o.z); R.off(); R.hl(R.m.map((_, i) => i), GREEN);
+  txt(n1, '小堆：insertion sort（n²，但常數小）');
+  say('Insertion 雖然是 n²', '常數考慮進去，小堆反而比較快');
+  await step(tok);                                   // 1:59:13 quicksort 混合 insertion sort
+  txt(n1, 'Quick Sort ＋ Insertion Sort');
+  say('Quick sort 混合 insertion sort', '到小堆就做 insertion');
+  await step(tok);                                   // 1:59:25 實務上常見
+  const h = helper(-6.0, 1.6, '小幫手', 0.6); h.mood('happy');
+  good('實務上常見的 implementation', 0, 4.6, 0);
+  say('這是實務上', '常見的 implementation');
+}]);
+
+// 1:59:37 Sorting 之間的脈絡：selection → heap → tree → quick；quick 與 merge 的 recursion
 FRAG.push(['sortlin-family', 'Sorting 的脈絡：從 selection 到 quick', async (tok) => {
   fresh([0, 6, 13], [0, 3, 0]);
   const N = {};
-  const node = (k, name, x, y, c) => { N[k] = { x, y, m: cube(name, c, [2.5, 0.75, 0.7], x, y, 0, 1.4) }; };
+  const node = (k, name, x, y, c) => { N[k] = { x, y, m: cube(name, c, [2.5, 0.75, 0.7], x, y, 0, 1.2) }; };
   const link = (a, b, lbl) => { const A = N[a], B = N[b]; const dx = Math.sign(B.x - A.x) * 1.3, dy = Math.sign(B.y - A.y) * 0.45; arrow(V3(A.x + (dx ? dx : 0), A.y + (dx ? 0 : dy), 0), V3(B.x - (dx ? dx : 0), B.y - (dx ? 0 : dy), 0)); tag(lbl, 'idx', (A.x + B.x) / 2 + (dx ? 0 : 1.5), (A.y + B.y) / 2 + (dx ? 0.55 : 0), 0); };
-  say('每個 sorting 都是一種計算思維的巧思', '把它們串起來看');
-  await beat(tok, 2400);
-  node('sel', 'Selection', -5.2, 5.4, '#4b9ee2'); await beat(tok, 900);
-  node('heap', 'Heap Sort', -1.75, 5.4, '#2fc092'); link('sel', 'heap', 'pile → heap');
-  say('Selection 的 unsorted pile 換成 heap', '找最大變快');
-  await beat(tok, 2400);
-  node('tree', 'Tree Sort', 1.75, 5.4, '#e2a04b'); link('heap', 'tree', 'heap → BST');
-  say('Heap 換成更嚴格的 BST', '不用 selection，in-order 就好');
-  await beat(tok, 2400);
-  node('quick', 'Quick Sort', 5.2, 5.4, '#b07ad0'); link('tree', 'quick', '隨機 root');
-  say('BST 不真的建，只分堆', 'pivot = 隨機的 root');
-  await beat(tok, 2400);
-  node('merge', 'Merge Sort', 5.2, 2.6, '#c0504d'); link('quick', 'merge', 'recursion 對照');
-  say('Quick：先分好再遞迴；Merge：先遞迴再合併', '兩種 divide and conquer');
-  await beat(tok, 2800);
-  node('ins', 'Insertion', -5.2, 2.6, '#4b9ee2'); node('shell', 'Shell Sort', -1.75, 2.6, '#2fc092'); link('ins', 'shell', 'long jump');
-  node('bub', 'Bubble', -5.2, 0.8, '#e2a04b');
-  say('Insertion 加上 long jump → Shell', 'Bubble 最好用的地方：教學');
-  await beat(tok, 3000);
+  const h = helper(-6.2, 0.2, '小幫手', 0.6);
+  await step(tok);                                   // 1:59:37 最後一頁 best use，自己做做看
+  const n1 = note('最後一頁：best use，有興趣自己試試', 0, 7.0, 0);
+  say('最後一頁是 best use', '有興趣可以自己做做看');
+  await step(tok);                                   // 1:59:49 quick sort 必講；給完整的面向
+  node('quick', 'Quick Sort', 5.2, 5.4, '#b07ad0');
+  txt(n1, 'Quick Sort 必講；其他是給你完整的面向');
+  say('Quick sort 是課程必須講的', '其他是給大家完整的面向');
+  await step(tok);                                   // 2:00:01 每個 sorting 都是計算思維的巧思
+  txt(n1, '每個 sorting：一種計算思維的巧思');
+  h.mood('wow');
+  say('每一個 sorting algorithm', '都代表一種計算思維的巧思');
+  await step(tok);                                   // 2:00:19 bubble 最好用的地方是教學
+  node('bub', 'Bubble', -5.2, 1.4, '#e2a04b');
+  bub('最好用在：教學', -2.6, 1.4, 0);
+  say('Bubble sort 最好用的地方', '其實是教學');
+  await step(tok);                                   // 2:00:45 selection → heap sort
+  node('sel', 'Selection', -5.2, 5.4, '#4b9ee2');
+  node('heap', 'Heap Sort', -1.75, 5.4, '#2fc092'); link('sel', 'heap', 'pile → Heap');
+  txt(n1, '把 sorting 之間的脈絡串起來');
+  say('從 selection sort 到 heap sort', '');
+  await step(tok);                                   // 2:00:52 heap → BST（tree sort）→ quick sort
+  node('tree', 'Tree Sort', 1.75, 5.4, '#e2a04b'); link('heap', 'tree', 'Heap → BST'); link('tree', 'quick', '隨機 root');
+  say('Heap 換成 BST：tree sort', '再到 quick sort');
+  await step(tok);                                   // 2:00:59 quick 的 recursion 跟 merge 的 recursion
+  node('merge', 'Merge Sort', 5.2, 2.6, '#c0504d'); link('quick', 'merge', 'recursion：異同？');
+  h.mood('happy');
+  say('Quick 跟 merge 的 recursion', '有什麼一樣、不一樣？值得想想');
 }]);
 
-// 140:01 總結：每個 sorting 都連到學過的資料結構
+// 2:20:01 總結：每個 sorting 都連到學過的資料結構；radix、counting 沒時間教
 FRAG.push(['sortlin-ds-links', 'Sorting 連回學過的資料結構', async (tok) => {
   fresh([0, 6, 12.5], [0, 2.9, 0]);
   const P = [['Merge Sort', 'Sparse array 合併'], ['Heap Sort', 'Heap'], ['Quick Sort', 'Binary Search Tree'], ['Insertion', 'Linked list'], ['Selection', 'Array、Heap']];
-  const msg = ['merge ＝ sparse array／多項式相加', 'heap sort 用的就是 heap', 'quick sort 跟 BST 有關', 'linked list 天生適合 insertion', 'selection 連到 array 和 heap'];
-  tag('Sorting', 'ptr', -3.6, 6.4, 0); tag('資料結構', 'ptr alt', 3.6, 6.4, 0);
-  for (let k = 0; k < P.length; k++) {
+  const msg = [['Merge 裡有 sparse array 的 merge', ''], ['Heap sort 裡當然有 Heap', ''], ['Quick sort 跟 BST 有關係', ''], ['Linked list 跟 insertion 比較貼近', ''], ['Selection 跟 Heap、跟 array 的連結', '']];
+  const pair = async (k) => {
     const y = 5.4 - k * 1.15;
     const a = cube(P[k][0], '#4b9ee2', [2.6, 0.75, 0.7], -3.6, y, 0, 1.2), b = cube(P[k][1], '#2fc092', [3.0, 0.75, 0.7], 3.6, y, 0, 1.2);
     await beat(tok, 500);
-    line(-2.2, y, 2.0, y, 0, '#6a4a00'); glow(a, GOLD); glow(b, GOLD);
-    say(msg[k], '');
-    await beat(tok, 2000);
-    glow(a, null); glow(b, null);
-  }
-  tag('Radix、Counting：這學期沒教，可以自己找資料', 'idx', 0, -0.5, 0.8);
-  say('Radix、Counting sort 沒時間教', '有興趣自己找資料、上 forum 討論');
-  await beat(tok, 3000);
+    line(-2.2, y, 2.0, y, 0, '#6a4a00'); glow(a, GOLD); glow(b, GOLD); say(msg[k][0], msg[k][1]);
+    await beat(tok, 900); glow(a, null); glow(b, null);
+  };
+  await step(tok);                                   // 2:20:03 很多東西都連到教過的資料結構
+  tag('Sorting', 'ptr', -3.6, 6.4, 0); tag('資料結構', 'ptr alt', 3.6, 6.4, 0);
+  say('Sorting 裡的很多東西', '一個一個連到教過的資料結構');
+  await step(tok); await pair(0);                    // 2:20:11 merge：sparse array
+  await step(tok); await pair(1);                    // 2:20:23 heap sort：Heap
+  await step(tok); await pair(2);                    // 2:20:30 quick sort：BST
+  await step(tok); await pair(3);                    // 2:20:46 linked list ↔ insertion
+  await step(tok); await pair(4);                    // 2:20:59 selection ↔ Heap、array
+  await step(tok);                                   // 2:21:05 radix sort：透過影片講過
+  const n1 = note('Radix Sort：只透過影片看過', 0, -0.4, 0.8);
+  say('Radix sort 這學期沒時間教', '剛才透過影片講過');
+  await step(tok);                                   // 2:21:12 counting sort：先數每個 element 出現幾次
+  const cv = [3, 1, 3, 2, 1, 3];
+  const cnt = [0, 0, 0, 0];
+  const cl = [1, 2, 3].map((v) => tag(v + '：0 個', 'pkt', -2.4 + (v - 1) * 2.4, -1.4, 1.6));
+  for (const v of cv) { cnt[v]++; txt(cl[v - 1], v + '：' + cnt[v] + ' 個'); await beat(tok, 300); }
+  txt(n1, 'Counting Sort：先數每個值出現幾次 → 知道放哪');
+  say('Counting sort', '先數每個 element 出現幾次，再決定放哪');
+  await step(tok);                                   // 2:21:27 跟 radix 搭配；有興趣自己找資料
+  txt(n1, 'Counting ＋ Radix 可以搭配；有興趣自己找資料');
+  say('Counting 跟 radix 可以搭配', '有興趣自己找資料、上 forum 討論');
 }]);
   }
 

@@ -621,7 +621,7 @@
   "label": "台大林軒田 DSA Sorting / Summary",
   "points": 366,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "CyknhZbfMqc": {
   "label": "Abdul Bari：2.2 Masters Theorem Decreasing Function",
