@@ -231,7 +231,7 @@
   "label": "MIT 6.006 Rec3：Document Distance, Insertion and Merge Sort",
   "points": 58,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "4tSdhWBVv6A": {
   "label": "Priority Queue, Binary Heap",
@@ -681,7 +681,7 @@
   "label": "MIT 6.006 L11：Integer Arithmetic, Karatsuba Multiplication",
   "points": 78,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "eKkXU3uu2zk": {
   "label": "Abdul Bari：4.3.1 Matrix Chain Multiplication (Program)",
@@ -897,7 +897,7 @@
   "label": "MIT 6.006 L3：Insertion Sort, Merge Sort",
   "points": 87,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "kGcO-nAm9Vc": {
   "label": "Abdul Bari：2.4.2 Examples for Master Theorem #2",

@@ -4014,451 +4014,1168 @@ FRAG.push(['dcjiang-cp-code', 'Closest-Pair 程式與 O(n log n)', async (tok) =
   // ═══ dcmit.js ═══
   {
 // ─── MIT 6.006：Kg4bqzAqRBM（L3 Insertion Sort, Merge Sort）、4iXLnF3hExw（Rec3 Document Distance）、eCaXlAaN2uE（L11 Integer Arithmetic, Karatsuba） ───
-// 只用 K 與 ctx。老師的例子：L3 insertion sort 5 2 4 6 1 3（交換 1、1、0、4、3 次）、merge 的 L′ = 2 7 13 20、R′ = 1 9 11 12，
-// recursion tree 三種 f(n)（cn、cn²、c），Python merge 2.2 n lg n μs / C insertion 0.01 n² μs；Rec3 count_frequency、
-// + → extend（K 字 × Z 行）、兩串列 1…10,000；L11 Catalan（λ、(α)β、C₂ = C₀C₁ + C₁C₀）、Newton x₀ = 1、x = x₁·r^(n/2) + x₀、
-// Karatsuba z₁ = (x₀ + x₁)(y₀ + y₁) − z₀ − z₂、半徑 5×10¹¹ 的大圓 demo。
-const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, code, anim, line, arrow, GOLD, GREEN, RED, GRAY } = K;
-const say = ctx.say, beat = ctx.beat;
-const DB = '#4b9ee2', DP = '#9b7ef4', DG = '#2fc092', DO = '#dd8238', DY = '#c08a1f', DR = '#d64545', PAPER = '#efe3c8', MINT = '#d4e8da', INK = '#3a3328';
+// Cued scenes: every `await step(tok)` waits for the sentence it shows (cue time in the // @t comment).
+// Numbers are little buddies that hop and react; motion between steps is short; nothing loops.
+// 老師的例子：5 2 4 6 1 3、L′ = 2 7 13 20、R′ = 1 9 11 12、三種 f(n)、2.2 n lg n vs 0.01 n²；Rec3 the fox is in the hat、
+// K 字 × Z 行、文件 3 4 6 8 9 / 2 3 6 7 8、兩串列 1…10,000；L11 λ、(α)β、C₂ = C₀C₁ + C₁C₀、x₀ = 1、Karatsuba、半兆半徑的大圓。
+const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, code, anim, line, arrow, step, buddy, prop, bob, travel, remove, zone, GOLD, GREEN, RED, GRAY } = K;
+const beat = ctx.beat;
+const say = (a, b = '') => ctx.say(a, b);
+const DB = '#4b9ee2', DP = '#9b7ef4', DG = '#2fc092', DO = '#dd8238', DY = '#c08a1f', DR = '#d64545', PAPER = '#efe3c8', MINT = '#d4e8da', SKY = '#7fb6e8', LILAC = '#c4b3f7', STU = '#f4a56a', TEA = '#e8cf8a';
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const pkt = (t, x, y, z = 0) => tag(t, 'pkt', x, y, z);
+const ok = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const no = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
 const dBox = (t, x, y, z = 0, w = 2.6, c = PAPER, drop = 0) => cube(t, c, [w, 0.6, 0.8], x, y, z, drop);
-// swap two static cubes along arcs (a ends at xb, b ends at xa)
-async function dSwap(tok, a, xa, b, xb, y, z, ms = 600) {
+// a number buddy standing on the floor
+const nb = (v, x, z, c = DB, s = 0.8, name = '') => buddy(name, v, c, x, 0, z, s);
+const bcol = (b, c) => b.body.material.color.set(c);
+// slide an object (not a spring body) to a point
+async function slide(tok, o, x, y, z, ms = 600) { const a = o.position.clone(), b = V3(x, y, z); await anim(tok, ms, (u) => o.position.lerpVectors(a, b, u)); }
+// swap two objects along arcs (a jumps over, b ducks forward)
+async function gswap(tok, a, b, ms = 500) {
+  const pa = a.position.clone(), pb = b.position.clone();
   await anim(tok, ms, (t) => {
-    a.position.set(xa + (xb - xa) * t, y + Math.sin(Math.PI * t) * 0.9, z);
-    b.position.set(xb + (xa - xb) * t, y, z + Math.sin(Math.PI * t) * 0.9);
+    a.position.set(pa.x + (pb.x - pa.x) * t, pa.y + Math.sin(Math.PI * t) * 0.9, pa.z);
+    b.position.set(pb.x + (pa.x - pb.x) * t, pb.y, pb.z + Math.sin(Math.PI * t) * 0.8);
   });
 }
-// a growing bar (static cube scaled in y)
+// vertical bar (static cube scaled in y) and horizontal bar (scaled in x)
 function dBar(color, x, z, w = 0.6) { const m = cube('', color, [w, 1, w], x, 0.001, z); m.scale.y = 0.002; return m; }
 const dSetBar = (m, h) => { const v = Math.max(0.002, h); m.scale.y = v; m.position.y = v / 2; };
+function hBar(color, x0, y, z = 0) { const m = cube('', color, [1, 0.32, 0.45], x0, y, z); m.scale.x = 0.002; m.userData.x0 = x0; return m; }
+const hSet = (m, w) => { const v = Math.max(0.002, w); m.scale.x = v; m.position.x = m.userData.x0 + v / 2; };
 
 // ═════════════ L3：Kg4bqzAqRBM ═════════════
 
-// 01:24 為什麼排序：中位數 B[n/2]、binary search
+// 01:29 為什麼排序：中位數 B[n/2]、binary search
 FRAG.push(['dcmit-why-sort', '排好序後：中位數與 binary search', async (tok) => {
-  fresh([0, 6.2, 12.5], [0, 1.4, 0]);
-  const A = [5, 2, 4, 6, 1, 3], B = [1, 2, 3, 4, 5, 6], X = (i) => -3.25 + i * 1.3;
-  tag('A', 'ptr', -5.2, 0.4, -1.8);
-  const ms = A.map((v, i) => cube(v, DB, [0.9, 0.7, 0.9], X(i), 0.35, -1.8));
-  say('A：n 個未排序的數', '只要有比較函數 ≤ 就能排序');
-  await beat(tok, 2800);
-  tag('B', 'ptr alt', -5.2, 0.4, 1.8);
-  B.forEach((_, i) => tag(String(i), 'idx', X(i), 0.02, 2.65));
-  ms.forEach((m, i) => move(m, X(B.indexOf(A[i])), 0.35, 1.8));
+  fresh([0, 6.4, 12.5], [0, 1.2, 0]);
+  const A = [5, 2, 4, 6, 1, 3], X = (i) => -3.25 + i * 1.3;
+  await step(tok); // @89.7 phone book, MP3, spreadsheets
+  const book = prop('file', -4.6, 0, -1.6, 1.3, '電話簿：照名字排好'); bob(book, 0.05);
+  const n1 = note('MP3 清單', -1.4, 0.5, -1.6), n2 = note('試算表', 1.4, 0.5, -1.6);
+  say('排好序，找東西就容易', '電話簿、MP3、試算表');
+  await step(tok); // @114.3 problems that become easy once sorted
+  const hint = bub('排好之後，有些問題就變簡單了', 0.4, 2.6, -1.6);
+  say('有些問題，排好就變簡單', '例如：找中位數');
+  await step(tok); // @143.6 A[0..n] unsorted
+  kill(book); remove(n1); remove(n2); remove(hint);
+  tag('A（沒排序）', 'ptr', -5.6, 0.5, -1.8);
+  const bs = A.map((v, i) => nb(v, X(i), -1.8, DB, 0.75));
+  say('A[0..n]：n 個數，還沒排序');
+  await step(tok); // @164.6 sort into increasing B
+  tag('B（排好）', 'ptr alt', -5.6, 0.5, 1.8);
+  A.forEach((v, i) => move(bs[i].g, X(v - 1), 0, 1.8));
+  A.forEach((_, i) => tag(String(i), 'idx', X(i), 0.02, 2.65));
+  bs.forEach((b) => b.mood('happy'));
   say('排序：A 變成遞增的 B', 'B[0] ≤ B[1] ≤ … ≤ B[n−1]');
-  await beat(tok, 2800);
-  const byV = (v) => ms[A.indexOf(v)];
-  glow(byV(4), GOLD);
-  const med = tag('B[n/2] = 4', 'ptr alt', X(3), 1.6, 1.8);
-  say('中位數：直接看 B[n/2]', '排好之後 Θ(1)（n 奇偶略有差別）');
-  await beat(tok, 3000);
-  glow(byV(4), null); kill(med);
-  tag('找 k = 5', 'ptr', 5.2, 1.6, 1.8);
-  const mid = tag('mid', 'ptr alt', X(3), 1.3, 1.8);
-  say('Binary search：k 先和 B[n/2] 比', 'B[3] = 4 < 5 → 只看右半');
-  glow(byV(4), GOLD); await beat(tok, 2200);
-  [1, 2, 3, 4].forEach((v) => tint(byV(v), GRAY)); glow(byV(4), null);
-  move(mid, X(5), 1.3, 1.8); glow(byV(6), GOLD);
-  say('B[5] = 6 > 5 → 只看左半', '每次丟掉一半');
-  await beat(tok, 2000);
-  tint(byV(6), GRAY); glow(byV(6), null);
-  move(mid, X(4), 1.3, 1.8); glow(byV(5), GREEN);
-  say('B[4] = 5：找到了', '線性掃描 Θ(n) → binary search Θ(log n)');
-  await beat(tok, 3200);
+  await step(tok); // @181.0 comparison function
+  const cmp = buddy('比較函數', '≤', TEA, 5.4, 0, -1.6, 0.8); cmp.mood('wow');
+  say('元素是「記錄」時：要給一個比較函數', '想成 ≤：能分出誰小就能排');
+  const byV = (v) => bs[A.indexOf(v)];
+  await step(tok); // @276.4 median = B[n/2]
+  byV(4).glow(GOLD);
+  const med = note('B[n/2] = 4：中位數', X(3), 1.85, 1.8);
+  await byV(4).hop(tok);
+  say('中位數：直接看 B[n/2]', '左邊的都比它小、右邊的都比它大');
+  await step(tok); // @306.1 constant time if sorted
+  const c1 = ok('排好之後只要 Θ(1)', X(3), 2.55, 1.8);
+  say('已經排好的話：常數時間');
+  await step(tok); // @316.2 binary search: find a specific item
+  remove(med); remove(c1); byV(4).glow(null); kill(cmp.g);
+  const kT = pkt('要找 k = 2', 5.6, 1.2, 1.8);
+  say('Binary search：在陣列裡找一個特定的 k');
+  await step(tok); // @343.3 scanning = linear time
+  const scan = pkt('一個一個看', X(0), 1.6, 1.8);
+  await travel(tok, scan, V3(X(0), 1.6, 1.8), V3(X(5), 1.6, 1.8), 1500);
+  say('直接從頭掃到尾：線性時間 Θ(n)');
+  await step(tok); // @368.0 compare k with B[n/2]
+  remove(scan);
+  const mid = tag('mid', 'ptr alt', X(3), 1.55, 1.8); byV(4).glow(GOLD);
+  say('排好的話：先拿 k 和 B[n/2] 比', 'B[3] = 4');
+  await step(tok); // @383.5 only look at half
+  [4, 5, 6].forEach((v) => bcol(byV(v), GRAY)); byV(4).glow(null);
+  say('4 > 2：右半一定沒有 2', '只要看左半');
+  await step(tok); // @394.0 left half, divide and conquer
+  move(mid, X(1), 1.55, 1.8); byV(2).glow(GREEN); byV(2).mood('wow');
+  await byV(2).hop(tok);
+  say('左半再對半：B[1] = 2', '找到了！每次丟掉一半');
+  await step(tok); // @415.6 linear search → logarithmic search
+  ok('Θ(n) → Θ(log n)', 0.4, 3.0, 0);
+  note('最簡單的 divide and conquer', 0.4, 2.3, 0);
+  remove(kT);
+  say('線性搜尋變成對數搜尋', '這招今天還會再出現');
 }]);
 
-// 07:10 沒那麼明顯的應用：壓縮（排序找重複）、繪圖（前→後 / 後→前）
+// 07:22 沒那麼明顯的應用：壓縮（排序找重複）、繪圖（前→後 / 後→前）
 FRAG.push(['dcmit-sort-apps', '排序的應用：壓縮與繪圖', async (tok) => {
-  fresh([0, 6, 13], [0, 1.8, 0]);
-  const items = ['a', 'c', 'a', 'b', 'a', 'c'], col = { a: DB, b: DO, c: DP }, X = (i) => -5.6 + i * 0.95;
+  fresh([0, 6, 13], [0, 1.6, 0]);
+  const items = ['a', 'c', 'a', 'b', 'a', 'c'], col = { a: DB, b: DO, c: DP }, X = (i) => -6.0 + i * 0.95;
+  await step(tok); // @442.2 data compression
+  const f = prop('file', -6.2, 0, -3.0, 0.9, '要壓縮的檔案'); bob(f, 0.05);
   const ms = items.map((v, i) => cube(v, col[v], [0.75, 0.6, 0.75], X(i), 0.3, -1.2, 2));
-  say('壓縮：先把 item 排序', '排好後重複的 item 會排在一起');
-  await beat(tok, 2900);
-  const order = [0, 2, 4, 3, 1, 5];
-  order.forEach((k, p) => move(ms[k], X(p), 0.3, -1.2));
-  await beat(tok, 1600);
-  const out = [['a × 3', DB, 0], ['b × 1', DO, 3], ['c × 2', DP, 4]];
-  out.forEach(([t, c, p]) => cube(t, c, [1.3, 0.5, 0.8], X(p) + 0.5, 0.25, 1, 1.5));
-  say('存一次 item ＋ 出現次數', '和 document distance 的 (字, 次數) 一樣');
-  await beat(tok, 3600);
-  const L = [[DR, 'opaque'], [DG, 'layer 2'], [DB, 'layer 3']];
-  const ls = L.map(([c, t], q) => cube(t, c, [1.6, 1.4, 0.15], 3.8, 1.2, -1.6 + q * 1.4));
-  tag('鏡頭', 'ptr', 3.8, 1.2, 3.2);
-  say('繪圖：多數時候由前往後 render', '前面不透明的擋住後面，省工');
-  for (let q = 0; q < 3; q++) { glow(ls[2 - q], GOLD); await beat(tok, 700); glow(ls[2 - q], null); }
-  say('有透明物件時要由後往前', '兩種順序的已排序串列都要維護');
-  for (let q = 0; q < 3; q++) { glow(ls[q], GOLD); await beat(tok, 700); glow(ls[q], null); }
-  await beat(tok, 2900);
+  say('資料壓縮：檔案是一堆 item');
+  await step(tok); // @450.2 sort the items
+  [0, 2, 4, 3, 1, 5].forEach((k, p) => move(ms[k], X(p), 0.3, -1.2));
+  say('先把 item 排序');
+  await step(tok); // @454.8 automatically finds duplicates
+  [0, 2, 4].forEach((k) => glow(ms[k], GOLD)); [1, 5].forEach((k) => glow(ms[k], GOLD));
+  note('重複的全排在一起', X(2.5), 1.3, -1.2);
+  say('排好後，重複的 item 自動擠在一起');
+  await step(tok); // @460.6 represent once + frequency
+  ms.forEach((m) => glow(m, null));
+  [['a × 3', DB, 1], ['b × 1', DO, 3], ['c × 2', DP, 4.5]].forEach(([t, c, p]) => cube(t, c, [1.3, 0.5, 0.8], X(p), 0.25, 1, 1.5));
+  say('每種只存一次，再記出現次數', '100 個一樣的 → 存 1 個 + 「100」');
+  await step(tok); // @470.8 similar to document distance
+  note('就像 document distance 的 (字, 次數)', X(2.5), 1.0, 2.2);
+  say('跟 document distance 一樣', '整本莎士比亞 → 一堆 (字, 次數)');
+  await step(tok); // @502.9 computer graphics
+  const L = [[DR, '不透明'], [DG, '第 2 層'], [DB, '第 3 層']];
+  const ls = L.map(([c, t], q) => cube(t, c, [1.6, 1.4, 0.15], 3.6, 1.0, 1.4 - q * 1.4, 1.5));
+  const eye = prop('monitor', 3.6, 0, 3.6, 0.7, '鏡頭（我們看的方向）');
+  say('電腦繪圖也用排序', '畫面是一層一層的物件');
+  await step(tok); // @518.8 front to back
+  const rp = pkt('render', 5.2, 2.2, 1.4);
+  for (let q = 0; q < 3; q++) { glow(ls[q], GOLD); move(rp, 5.2, 2.2, 1.4 - q * 1.4); await beat(tok, 500); glow(ls[q], null); }
+  say('多數時候由前往後 render');
+  await step(tok); // @528.6 occluded things need no work
+  tint(ls[1], GRAY); tint(ls[2], GRAY);
+  no('被擋住的：不用畫', 3.6, 2.4, -1.4);
+  say('前面不透明的大物件先畫', '後面被擋住的就省了');
+  await step(tok); // @540.9 transparency: back to front
+  tint(ls[1], DG); tint(ls[2], DB);
+  for (let q = 2; q >= 0; q--) { glow(ls[q], GOLD); move(rp, 5.2, 2.2, 1.4 - q * 1.4); await beat(tok, 500); glow(ls[q], null); }
+  say('有透明物件時要由後往前');
+  await step(tok); // @545.4 keep both orders
+  note('前→後、後→前：兩種排序都要維護', 3.4, 3.2, 0);
+  say('兩種順序的排序串列都要維護');
+  await step(tok); // @573.9 all sorts of sorts
+  ['cocktail sort', 'bitonic sort', '…還有很多'].forEach((t, i) => bub(t, -4.6 + i * 2.2, 3.4, 0));
+  say('排序演算法百百種', '各自在某些輸入上會贏');
+  await step(tok); // @612.8 insertion sort: analyze complexity
+  ok('第一個：insertion sort → 算它跑多快', -2.4, 4.3, 0);
+  say('先看 insertion sort', '講它是為了練習算複雜度');
 }]);
 
-// 09:55 Insertion sort：5 2 4 6 1 3，pairwise swaps
+// 10:30 Insertion sort：5 2 4 6 1 3，pairwise swaps
 FRAG.push(['dcmit-insertion-524613', 'Insertion sort：5 2 4 6 1 3', async (tok) => {
-  fresh([0, 5.6, 11.5], [0, 1.2, 0]);
-  const a = [5, 2, 4, 6, 1, 3], X = (i) => -3.25 + i * 1.3, Y = 0.4;
-  const ms = a.map((v, i) => cube(v, DB, [0.9, 0.8, 0.9], X(i), Y, 0));
-  a.forEach((_, i) => tag(String(i), 'idx', X(i), 0.02, 0.9));
-  const keyT = tag('key', 'ptr alt', X(1), 1.6, 0);
-  const cnt = tag('swap 0 次', 'ptr', 5, 3, 0);
-  say('for i = 1 … n−1：把 A[i] 插到對的位置', 'A[0..i−1] 已排好；用相鄰交換往左移');
-  await beat(tok, 3000);
+  fresh([0, 5.8, 11.5], [0, 1.0, 0]);
+  const a = [5, 2, 4, 6, 1, 3], X = (i) => -3.25 + i * 1.3;
+  await step(tok); // @630.4 for i = 1..n
+  const cd = code(['for i = 1 … n−1:', '  把 A[i] 插到正確位置', '  （用相鄰兩兩交換往左移）'], -0.2, 4.5, 0.5, -1.2);
+  cd.hl(0);
+  say('Insertion sort：i 從 1 跑到 n − 1');
+  await step(tok); // @641.5 insert A[i] in the right position
+  cd.hl(1);
+  say('每一輪：把 A[i] 插到正確的位置');
+  await step(tok); // @652.0 A[0..i-1] already sorted
+  const zs = zone('A[0..i−1]：已經排好', -1.95, 0, 0, 5.0, 1.6, MINT);
+  const zi = pkt('A[i]', X(4), 1.2, 0);
+  say('假設做到一半：A[0..i−1] 已經排好', '再多吸收一個 A[i]');
+  await step(tok); // @672.5 pairwise swaps down to the right position
+  cd.hl(2);
+  const ar = arrow(V3(X(4), 0.6, 0.9), V3(X(2), 0.6, 0.9), 0xa8730f);
+  say('做法：跟左邊鄰居兩兩交換', '一路換到對的位置');
+  await step(tok); // @704.5 example 5 2 4 6 1 3
+  remove(zs); remove(zi); kill(ar); cd.hl(-1);
+  const ms = a.map((v, i) => nb(v, X(i), 0, DB, 0.8));
+  a.forEach((_, i) => tag(String(i), 'idx', X(i), 0.02, 0.95));
+  const cnt = note('交換 0 次', 5.3, 2.2, 0);
+  say('例子：5 2 4 6 1 3', '排成遞增');
   let sw = 0;
-  for (let i = 1; i < a.length; i++) {
-    move(keyT, X(i), 1.6, 0); glow(ms[i], GOLD);
-    say('key = ' + a[i], 'A[0..' + (i - 1) + '] = ' + a.slice(0, i).join(' '));
-    await beat(tok, 1300);
-    let j = i, s = 0;
-    while (j > 0 && a[j - 1] > a[j]) {
-      await dSwap(tok, ms[j], X(j), ms[j - 1], X(j - 1), Y, 0, 520);
-      [a[j - 1], a[j]] = [a[j], a[j - 1]]; [ms[j - 1], ms[j]] = [ms[j], ms[j - 1]];
-      s++; sw++; txt(cnt, 'swap ' + sw + ' 次'); j--;
-    }
-    glow(ms[j], null);
-    if (s === 0) say(a[i] + ' > ' + a[i - 1] + '：不用換', a.join(' '));
-    else say(a[j] + ' 交換 ' + s + ' 次', a.join(' '));
-    await beat(tok, 1500);
-  }
-  ms.forEach((m) => tint(m, DG));
-  say('排好了：共 9 次交換', '1 要換 4 次：搬到正確位置的代價逃不掉');
-  await beat(tok, 3000);
+  const key = pkt('key', X(1), 1.55, 0);
+  const swapTo = async (j, ms0 = 500) => { await gswap(tok, ms[j].g, ms[j - 1].g, ms0); [ms[j - 1], ms[j]] = [ms[j], ms[j - 1]]; [a[j - 1], a[j]] = [a[j], a[j - 1]]; sw++; txt(cnt, '交換 ' + sw + ' 次'); };
+  showKey(1);
+  function showKey(i) { move(key, X(i), 1.55, 0); ms.forEach((m, k) => m.glow(k === i ? GOLD : null)); }
+  await step(tok); // @727.6 the key
+  ms[0].mood('happy');
+  say('key 從第二格開始', '第一格自己一個，本來就算排好');
+  await step(tok); // @754.8 5 > 2: swap
+  ms[1].mood('wow'); await swapTo(1);
+  say('2 < 5：交換一次', a.join(' '));
+  await step(tok); // @777.0 key at 4
+  showKey(2);
+  say('key 移到 4');
+  await step(tok); // @783.0 one swap → 2 4 5
+  await swapTo(2); ms[1].mood('happy');
+  say('4 < 5：換一次就好', a.join(' '));
+  await step(tok); // @807.6 key at 6
+  showKey(3);
+  say('key 移到 6');
+  await step(tok); // @823.0 6 > 5, nothing
+  ms[3].mood('happy'); await ms[3].hop(tok);
+  say('6 > 5：不用換', '前面已排好，直接往右');
+  await step(tok); // @842.1 key at 1
+  showKey(4); ms[4].mood('wow');
+  say('key 移到 1：這次要做很多事');
+  await step(tok); // @867.5 four swaps
+  for (let j = 4; j > 0; j--) await swapTo(j, 440);
+  say('1 一路換到最前面', a.join(' '));
+  await step(tok); // @903.5 four swaps, no getting away
+  const four = note('4 次：搬 1 到定位，逃不掉', X(1.5), 2.5, 0);
+  ms[0].mood('happy');
+  say('換了 4 次', '就算改成「整段右移」也是 4 個操作');
+  await step(tok); // @936.5 key at 3
+  remove(four); showKey(5);
+  say('最後：key 移到 3');
+  await step(tok); // @958.1 swap with 6, 5, 4
+  for (let j = 5; j > 2; j--) await swapTo(j, 500);
+  say('3 和 6、5、4 各換一次', a.join(' '));
+  await step(tok); // @969.5 3 > 2: done
+  ms.forEach((m) => { m.glow(null); bcol(m, DG); m.mood('happy'); });
+  kill(key);
+  await ms[2].hop(tok);
+  say('3 > 2：停下，排好了！', '共 1 + 1 + 0 + 4 + 3 = 9 次交換');
 }]);
 
-// 16:21 分析：Θ(n) 個 key 位置 × 每步 Θ(n) → Θ(n²)
+// 16:46 分析：Θ(n) 個 key 位置 × 每步 Θ(n) → Θ(n²)
 FRAG.push(['dcmit-insertion-cost', 'Insertion sort 的成本 Θ(n²)', async (tok) => {
-  fresh([0, 5.8, 12.5], [0, 2.2, 0]);
-  const a = [6, 5, 4, 3, 2, 1], X = (i) => -5.4 + i * 0.85;
+  fresh([0, 5.8, 12.5], [0, 2.0, 0]);
+  const a = [6, 5, 4, 3, 2, 1], X = (i) => -5.6 + i * 0.85;
+  await step(tok); // @1006.3 theta n steps (key positions)
   a.forEach((v, i) => cube(v, DB, [0.7, 0.6, 0.7], X(i), 0.3, -2));
-  say('最壞：反序 6 5 4 3 2 1', 'key 走過 n − 1 個位置 = Θ(n) 步');
-  await beat(tok, 2800);
-  const tot = tag('累計 0', 'ptr alt', 3.6, 5.6, 0);
-  let s = 0;
+  const kp = pkt('key', X(1), 1.2, -2);
+  for (let i = 1; i < 6; i++) { move(kp, X(i), 1.2, -2); await beat(tok, 300); }
+  note('key 走過 n − 1 格 = Θ(n) 步', X(2.5), 2.0, -2);
+  say('一步 = key 往右移一格', '共 n − 1 步 → Θ(n) 步');
+  await step(tok); // @1030.0 each step may be theta n work
+  bub('每一步要做多少工？', 2.6, 4.6, 0);
+  say('答案是 n²：因為每一步可能要 Θ(n) 的工作');
+  await step(tok); // @1039.5 example: four swaps
+  for (let k = 0; k < 4; k++) cube('', DO, [0.7, 0.42, 0.7], -0.9, 0.21 + k * 0.45, 0.6, 1.2);
+  note('剛才的 1：換 4 次', -0.9, 2.3, 0.6);
+  say('像剛才的 1：一步就換了 4 次');
+  await step(tok); // @1051.1 reverse sorted: n/2 swaps on average
+  const tot = tag('累計 4', 'ptr alt', 4.4, 4.6, 0);
+  let s = 4;
   for (let i = 1; i < 6; i++) {
-    for (let k = 0; k < i; k++) cube('', DO, [0.7, 0.42, 0.7], -1 + (i - 1) * 1.05, 0.21 + k * 0.45, 0.6, 1.2);
-    s += i; txt(tot, '累計 ' + s);
-    tag('i=' + i, 'idx', -1 + (i - 1) * 1.05, 0.02, 1.4);
-    say('key 在第 ' + i + ' 格：要換 ' + i + ' 次', '每一步最多 Θ(n) 次比較＋交換');
-    await beat(tok, 1100);
+    if (i === 4) continue;
+    for (let k = 0; k < i; k++) cube('', DO, [0.7, 0.42, 0.7], -0.9 + (i - 4) * 1.05, 0.21 + k * 0.45, 0.6, 1.2);
+    s += i; txt(tot, '累計 ' + s); await beat(tok, 350);
   }
-  say('1 + 2 + … + (n−1) = n(n−1)/2', 'Θ(n) 步 × 每步 Θ(n) = Θ(n²)');
-  await beat(tok, 3200);
-  const c1 = dBox('compare', -3, 5, 0, 2, MINT), c2 = dBox('swap', -0.6, 5, 0, 2, MINT);
-  say('數字：compare 與 swap 一樣便宜', '各一個指令（x86、MIPS）');
-  await beat(tok, 2800);
-  tint(c1, DR); glow(c1, RED);
-  say('記錄：比較可能是一個函數呼叫', 'swap 只換指標 → 比較貴得多');
-  await beat(tok, 3000);
+  for (let i = 1; i < 6; i++) tag('i=' + i, 'idx', -0.9 + (i - 4) * 1.05, 0.02, 1.4);
+  say('反序輸入：key 在第 i 格就要換 i 次', '平均每步約 n/2 次');
+  await step(tok); // @1065.1 each step theta n swaps (and compares)
+  note('每步：Θ(n) 次比較 ＋ 交換', 2.6, 3.4, 0.6);
+  say('所以每一步是 Θ(n) 次交換', '也是 Θ(n) 次比較');
+  await step(tok); // @1093.3 theta n^2
+  ok('1 + 2 + … + (n−1) = n(n−1)/2 = Θ(n²)', 0.6, 5.4, 0);
+  say('Θ(n) 步 × 每步 Θ(n) = Θ(n²)');
+  await step(tok); // @1110.4 what am I counting? compare + swap
+  const c1 = dBox('compare 比較', -4.6, 4.4, 0, 2.2, MINT, 1), c2 = dBox('swap 交換', -2.2, 4.4, 0, 2.2, MINT, 1);
+  say('在數什麼？一次比較、一次交換', '先假設兩個一樣貴');
+  await step(tok); // @1121.6 x86 / MIPS single instruction
+  const cpu = prop('cpu', -3.4, 2.4, 0, 0.8, 'x86、MIPS：各一個指令');
+  say('對數字來說確實一樣貴', '比較、交換都是一個機器指令');
+  await step(tok); // @1138.0 comparing records may be a method call
+  kill(cpu); tint(c1, DR); glow(c1, RED);
+  const bigC = note('比較記錄 = 呼叫一個函數 → 很貴', -4.6, 5.2, 0);
+  say('排的是記錄時：比較可能是一個函數呼叫');
+  await step(tok); // @1150.4 swap just pointers
+  glow(c2, GREEN); note('交換只換指標 → 便宜', -2.2, 3.6, 0.5);
+  remove(bigC);
+  say('交換只是換兩個指標', '這時比較比交換貴得多');
+  await step(tok); // @1166.6 we will count comparisons
+  bub('之後多半「數比較次數」', -3.4, 6.0, 0);
+  say('之後排序演算法多半數比較次數');
+  await step(tok); // @1193.6 theta n^2 compares and swaps
+  ok('Insertion sort：Θ(n²) 次比較、Θ(n²) 次交換', 0.6, 6.4, 0);
+  say('不論哪種情況：insertion sort 都是 Θ(n²)');
 }]);
 
-// 19:58 Binary insertion sort：比較 Θ(n log n)，交換仍 Θ(n²)
+// 20:00 Binary insertion sort：比較 Θ(n log n)，搬移仍 Θ(n²)
 FRAG.push(['dcmit-binary-insertion', 'Binary insertion sort', async (tok) => {
-  fresh([0, 5.6, 11.5], [0, 1.2, 0]);
-  const X = (i) => -3.25 + i * 1.3, Y = 0.4;
+  fresh([0, 5.8, 11.5], [0, 1.2, 0]);
+  const X = (i) => -3.6 + i * 1.3;
   const a = [2, 4, 5, 6, 1, 3];
-  const ms = a.map((v, i) => cube(v, i < 4 ? DG : DB, [0.9, 0.8, 0.9], X(i), Y, 0));
-  tag('已排好 A[0..i−1]', 'idx', X(1.5), 0.02, 1);
-  const keyT = tag('key', 'ptr alt', X(4), 1.6, 0);
-  const cc = tag('比較 0 次', 'ptr', -5.4, 3, 0), sc = tag('搬移 0 次', 'ptr', 5, 3, 0);
-  say('比較比交換貴：改用 binary search', '在已排好的 A[0..i−1] 裡找位置');
-  await beat(tok, 3600);
-  glow(ms[4], GOLD);
-  const steps = [[2, '1 < 5 → 往左'], [1, '1 < 4 → 往左'], [0, '1 < 2 → 位置 0']];
-  const mid = tag('mid', 'ptr', X(2), 1.6, 0);
-  for (let q = 0; q < 3; q++) {
-    const [m, t] = steps[q];
-    move(mid, X(m), 1.6, 0); glow(ms[m], GOLD);
-    txt(cc, '比較 ' + (q + 1) + ' 次');
-    say(t, 'Θ(log i) 次比較');
-    await beat(tok, 1300); glow(ms[m], null);
+  await step(tok); // @1199.5 compares more expensive than swaps?
+  const ms = a.map((v, i) => nb(v, X(i), 0, i < 4 ? DG : DB, 0.8));
+  const cc = note('比較 0 次', -5.6, 3.0, 0), sc = note('搬移 0 次', 4.6, 3.0, 0);
+  bub('如果「比較」比「交換」貴很多…', 0, 4.4, 0);
+  say('假設比較比交換貴', '擔心的是 Θ(n²) 次比較');
+  await step(tok); // @1228.0 simple fix?
+  const stu = buddy('同學', '?', STU, 5.6, 0, 1.8, 0.7); stu.mood('wow');
+  say('有什麼簡單的改法，讓比較次數變少？');
+  await step(tok); // @1265.3 binary search
+  stu.set('binary search！'); stu.mood('happy'); await stu.hop(tok);
+  say('答案：binary search');
+  await step(tok); // @1281.0 theta n log n compares
+  ok('比較：Θ(n log n)', 0, 5.2, 0);
+  say('insertion sort 一改就變 Θ(n log n) 次比較');
+  await step(tok); // @1302.0 A[0..i-1] already sorted
+  const zs = zone('A[0..i−1] 已排好', X(1.5), 0, 0, 5.4, 1.6, MINT);
+  ms[4].glow(GOLD);
+  const key = pkt('key = 1', X(4), 1.55, 0);
+  say('因為 A[0..i−1] 已經排好', '可以在上面做 binary search');
+  await step(tok); // @1311.6 binary search on A[0..i-1]
+  const mid = tag('mid', 'ptr alt', X(1.5), 1.55, 0);
+  const steps = [[1, '1 < 4 → 往左'], [0, '1 < 2 → 插在最前面']];
+  for (let q = 0; q < 2; q++) {
+    const [m] = steps[q];
+    move(mid, X(m), 1.55, 0); ms[m].glow(GOLD); txt(cc, '比較 ' + (q + 1) + ' 次');
+    await beat(tok, 700); ms[m].glow(null);
   }
-  kill(mid);
-  say('但陣列要把 4 個元素往右挪', '插到中間 → 最壞 Θ(n) 次搬移');
-  await anim(tok, 400, (t) => { ms[4].position.set(X(4), Y + 1.2 * t, 0.9 * t); });
-  for (let k = 3; k >= 0; k--) {
-    move(ms[k], X(k + 1), Y, 0); txt(sc, '搬移 ' + (4 - k) + ' 次');
-    await beat(tok, 500);
-  }
-  move(ms[4], X(0), Y, 0); move(keyT, X(0), 1.6, 0); glow(ms[4], null);
-  await beat(tok, 1600);
-  say('比較：Θ(n log n)', '交換／搬移：仍是 Θ(n²)');
-  await beat(tok, 3800);
+  say('二分找位置：1 < 4、1 < 2', '只比了 2 次');
+  await step(tok); // @1323.7 theta log i each → n log n
+  remove(mid);
+  note('每輪 Θ(log i) 次比較', X(1.5), 2.6, 0);
+  say('每一輪 Θ(log i) 次比較', '加起來 Θ(n log n)');
+  await step(tok); // @1350.1 does this help the swaps?
+  stu.set('?'); stu.mood('wow');
+  say('那交換（搬移）有變少嗎？');
+  await step(tok); // @1357.6 no: still have to insert
+  no('沒有：還是得插進陣列', 4.6, 4.0, 0);
+  stu.mood('sad');
+  say('沒有：binary search 只告訴你位置', '還是得把 1 插進去');
+  await step(tok); // @1387.0 shift things over to the right
+  remove(zs);
+  await slide(tok, ms[4].g, X(4), 1.2, 1.0, 350);
+  for (let k = 3; k >= 0; k--) { await slide(tok, ms[k].g, X(k + 1), 0, 0, 320); txt(sc, '搬移 ' + (4 - k) + ' 次'); }
+  await slide(tok, ms[4].g, X(0), 0, 0, 400); move(key, X(0), 1.55, 0); ms[4].glow(null);
+  say('插到中間：後面的全部往右挪', '這裡挪了 4 個');
+  await step(tok); // @1398.0 worst case theta n
+  note('最壞：一輪挪 Θ(n) 個', 0, 3.4, 1.0);
+  say('最壞一輪要挪 Θ(n) 個');
+  await step(tok); // @1403.0 n log n compares, n^2 swaps
+  no('搬移：仍是 Θ(n²)', 0, 4.6, 0.6);
+  say('比較 Θ(n log n)，搬移仍是 Θ(n²)');
+  await step(tok); // @1423.0 binary insertion sort
+  bub('名字：binary insertion sort', -3.8, 4.6, 0.6);
+  say('這個版本叫 binary insertion sort');
 }]);
 
 // 24:31 Merge sort：A → L、R → L′、R′ → merge 成 A
 FRAG.push(['dcmit-mergesort-split', 'Merge sort：切兩半、遞迴、merge', async (tok) => {
-  fresh([0, 4.6, 13], [0, 3, 0]);
-  const A = [20, 13, 7, 2, 12, 11, 9, 1], Lp = [2, 7, 13, 20], Rp = [1, 9, 11, 12];
-  const X = (i, gap = 0) => -3.5 + i * 0.95 + (i >= 4 ? gap : -gap);
-  tag('A（大小 n）', 'ptr', -6, 5.8, 0);
+  fresh([0, 4.6, 13.5], [0, 3, 0]);
+  const A = [20, 13, 7, 2, 12, 11, 9, 1];
+  const X = (i, gap = 0) => -3.3 + i * 0.95 + (i >= 4 ? gap : -gap);
+  await step(tok); // @1471.0 want theta n log n
+  const goal = no('binary insertion：搬移仍 Θ(n²)', 0, 6.9, 0);
+  say('還不滿意：想要真正的 Θ(n log n)');
+  await step(tok); // @1520.5 recursive, like binary search
+  txt(goal, '目標：Θ(n log n)'); goal.element.className = 'lab-label good';
+  tag('A（大小 n）', 'ptr', -6.2, 5.8, 0);
   A.forEach((v, i) => cube(v, DB, [0.8, 0.55, 0.8], X(i), 5.8, 0, 1.5));
-  say('Merge sort：和 binary search 一樣是遞迴', '陣列 A 切成兩半 L、R');
-  await beat(tok, 3100);
-  A.forEach((v, i) => cube(v, i < 4 ? DP : DO, [0.8, 0.55, 0.8], X(i, 0.9), 4.2, 0, 1));
-  tag('L', 'ptr', X(1.5, 0.9), 4.95, 0); tag('R', 'ptr', X(5.5, 0.9), 4.95, 0);
-  say('切開幾乎不用做事', '兩個大小 n/2 的子問題');
-  await beat(tok, 3100);
-  say('遞迴：L → L′、R → R′', '程式裡看不到「排序」，工作都在 merge');
-  Lp.forEach((v, i) => cube(v, DG, [0.8, 0.55, 0.8], X(i, 0.9), 2.6, 0, 1));
-  Rp.forEach((v, i) => cube(v, DG, [0.8, 0.55, 0.8], X(i + 4, 0.9), 2.6, 0, 1));
-  tag("L′", 'ptr alt', X(1.5, 0.9), 3.35, 0); tag("R′", 'ptr alt', X(5.5, 0.9), 3.35, 0);
-  await beat(tok, 3600);
-  const S = [1, 2, 7, 9, 11, 12, 13, 20];
-  S.forEach((v, i) => cube(v, DY, [0.8, 0.55, 0.8], X(i), 0.8, 0, 1.2));
-  tag('排好的 A', 'ptr alt', -6, 0.8, 0);
-  say('merge(L′, R′) → 排好的 A', '葉子先兩兩合併，再 4 個、8 個…往上');
-  await beat(tok, 3800);
-  say('輸入 n → 兩個已排序的 n/2 → 已排序的 n', 'merge 假設兩邊輸入已排好');
-  await beat(tok, 3400);
+  say('Merge sort：標準的遞迴演算法', '跟 binary search 一樣是 divide and conquer');
+  await step(tok); // @1530.1 split into L and R
+  A.forEach((v, i) => cube(v, i < 4 ? DP : DO, [0.8, 0.55, 0.8], X(i, 0.9), 4.3, 0, 1));
+  tag('L', 'ptr', X(1.5, 0.9), 5.0, 0); tag('R', 'ptr', X(5.5, 0.9), 5.0, 0);
+  say('陣列 A 切成兩半：L 和 R');
+  await step(tok); // @1540.4 keep splitting, no real work
+  const SX = (i) => X(i, 0.9) + (i % 2 ? 0.18 : -0.18) + (((i >> 1) % 2) ? 0.22 : -0.22);
+  const lv = A.map((v, i) => cube(v, i < 4 ? DP : DO, [0.75, 0.5, 0.75], SX(i), 2.6, 0, 1));
+  const lt = tag('一直切到一個一個', 'idx', -6.0, 2.6, 0);
+  say('切開幾乎不用做事', '一直切、切、切到只剩一個');
+  await step(tok); // @1550.0 all the work is in merge, pairs at the leaves
+  const PX = (i) => X(i, 0.9) + (((i >> 1) % 2) ? 0.2 : -0.2);
+  const pairs = [[1, 0], [3, 2], [5, 4], [7, 6]];   // sorted order of each pair by index
+  pairs.forEach((pr, p) => pr.forEach((idx, k) => move(lv[idx], PX(p * 2 + k), 2.6, 0)));
+  txt(lt, '兩兩合併');
+  say('工作都在最底下的 merge', '先把一對一對合併');
+  await step(tok); // @1560.0 merge two pairs → four
+  const quads = [[3, 2, 1, 0], [7, 6, 5, 4]];        // 2 7 13 20 | 1 9 11 12
+  quads.forEach((q, h) => q.forEach((idx, k) => { move(lv[idx], X(h * 4 + k, 0.9), 2.6, 0); tint(lv[idx], DG); }));
+  txt(lt, '再四個一起合併');
+  say('兩對合成四個，再往上…');
+  await step(tok); // @1570.0 L turns into L′
+  tag("L′", 'ptr alt', X(1.5, 0.9), 3.3, 0); tag("R′", 'ptr alt', X(5.5, 0.9), 3.3, 0);
+  say('L 變成排好的 L′、R 變成 R′');
+  await step(tok); // @1578.7 no explicit sorting code
+  note('程式裡沒有「排序」的程式碼：都在 merge 發生', 0, 1.7, 0.8);
+  say('看不到把 L 變成 L′ 的程式', '排序其實發生在 merge 裡');
+  await step(tok); // @1601.3 sorted array A
+  [1, 2, 7, 9, 11, 12, 13, 20].forEach((v, i) => cube(v, DY, [0.8, 0.55, 0.8], X(i), 0.5, 0, 1.2));
+  tag('排好的 A', 'ptr alt', -6.2, 0.5, 0);
+  say('最後得到排好的陣列 A');
+  await step(tok); // @1612.1 merge(L′, R′) → A
+  arrow(V3(X(1.5, 0.9), 2.2, 0.5), V3(X(2.5), 0.95, 0.5), 0xa8730f); arrow(V3(X(5.5, 0.9), 2.2, 0.5), V3(X(4.5), 0.95, 0.5), 0xa8730f);
+  bub('merge(L′, R′)', 0, 1.6, 1.4);
+  say('merge 把 L′、R′ 合成排好的 A');
+  await step(tok); // @1636.4 sizes n, n/2, n
+  tag('n', 'idx', 4.9, 5.8, 0); tag('n/2 ＋ n/2（已排序）', 'idx', 5.6, 3.3, 0); tag('n（已排序）', 'idx', 4.9, 0.5, 0);
+  say('輸入 n → 兩個已排序的 n/2 → 已排序的 n');
+  await step(tok); // @1682.3 merge assumes sorted inputs
+  ok('merge 的前提：兩邊輸入都已排好', 0, 7.6, 0);
+  say('merge 假設兩個輸入已經排好');
 }]);
 
 // 28:15 Two-finger merge：L′ = 2 7 13 20、R′ = 1 9 11 12
 FRAG.push(['dcmit-merge-twofinger', 'Merge：two-finger 演算法', async (tok) => {
-  fresh([0, 6.2, 12.5], [0, 1, 0.4]);
-  const L = [2, 7, 13, 20], R = [1, 9, 11, 12], X = (i) => -4.2 + i * 1.2, OX = (k) => -4.2 + k * 1.2;
-  const lm = L.map((v, i) => cube(v, DP, [0.9, 0.6, 0.9], X(i), 0.3, -2.2));
-  const rm = R.map((v, i) => cube(v, DO, [0.9, 0.6, 0.9], X(i), 0.3, -0.4));
-  tag("L′", 'ptr', -5.8, 0.3, -2.2); tag("R′", 'ptr', -5.8, 0.3, -0.4); tag('A', 'ptr alt', -5.8, 0.3, 2.2);
-  for (let k = 0; k < 8; k++) ctx.tile(V3(OX(k) * 0.7 - 1.2, 0.02, 2.2), 0.8, 0.9);
-  const fl = tag('左手指', 'ptr alt', X(0), 1.2, -2.2), fr = tag('右手指', 'ptr alt', X(0), 1.2, -0.4);
-  say('兩隻手指各指一個已排序串列', '比較兩個指到的值，小的寫進 A');
-  await beat(tok, 2800);
-  let i = 0, j = 0;
-  for (let k = 0; k < 8; k++) {
+  fresh([0, 6.4, 12.5], [0, 1, 0.4]);
+  const L = [2, 7, 13, 20], R = [1, 9, 11, 12], X = (i) => -3.2 + i * 1.3, OX = (k) => -5.0 + k * 1.15;
+  await step(tok); // @1694.5 invariant: inputs sorted
+  ok('merge 的前提：L′、R′ 都已排好', 0, 3.6, -2.2);
+  say('merge 的不變量：輸入已經排好');
+  await step(tok); // @1698.8 L′ = 20 13 7 2 (read bottom-up)
+  const lm = L.map((v, i) => cube(v, DP, [0.9, 0.6, 0.9], X(i), 0.3, -2.2, 1.2));
+  tag("L′", 'ptr', -5.2, 0.3, -2.2);
+  say("L′：2 7 13 20", '板書由下往上寫 20 13 7 2');
+  await step(tok); // @1707.6 R′ = 12 11 9 1
+  const rm = R.map((v, i) => cube(v, DO, [0.9, 0.6, 0.9], X(i), 0.3, -0.4, 1.2));
+  tag("R′", 'ptr', -5.2, 0.3, -0.4);
+  say("R′：1 9 11 12");
+  await step(tok); // @1716.2 two-finger algorithm
+  const fl = buddy('左手指', '', TEA, X(0), 0.62, -2.2, 0.45), fr = buddy('右手指', '', TEA, X(0), 0.62, -0.4, 0.45);
+  for (let k = 0; k < 8; k++) ctx.tile(V3(OX(k), 0.02, 2.0), 0.95, 0.95);
+  tag('A', 'ptr alt', -6.4, 0.3, 2.0);
+  say('Two-finger：兩隻手指各指一個串列');
+  await step(tok); // @1733.6 compare, take smaller
+  fl.look(1); fr.look(-1);
+  say('比較兩隻手指指到的值', '小的寫進 A');
+  let i = 0, j = 0, k = 0;
+  const take = (useL) => { const m = useL ? lm[i] : rm[j]; glow(m, null); move(m, OX(k), 0.3, 2.0); tint(m, DG); k++; if (useL) i++; else j++; };
+  const fingers = () => { if (i < 4) move(fl.g, X(i), 0.62, -2.2); if (j < 4) move(fr.g, X(j), 0.62, -0.4); };
+  await step(tok); // @1749.6 2 vs 1: 1 smaller
+  glow(lm[0], GOLD); glow(rm[0], GOLD); fr.mood('happy');
+  say('2 vs 1：1 比較小');
+  await step(tok); // @1756.0 write 1 down
+  glow(lm[0], null); take(false);
+  say('寫下 1', '1 圈起來，用掉了');
+  await step(tok); // @1771.0 right finger moves to 9
+  fingers(); glow(lm[0], GOLD); glow(rm[1], GOLD); fr.mood('calm');
+  say('右手指往前一格：現在是 2 vs 9');
+  await step(tok); // @1779.6 2 smaller, finger to 7
+  glow(rm[1], null); take(true); fingers(); fl.mood('happy');
+  say('2 比較小：寫下 2', '左手指移到 7');
+  await step(tok); // @1790.3 the rest of the steps
+  while (k < 8) {
     const useL = j >= 4 || (i < 4 && L[i] <= R[j]);
-    if (i < 4) glow(lm[i], GOLD); if (j < 4) glow(rm[j], GOLD);
-    const v = useL ? L[i] : R[j], m = useL ? lm[i] : rm[j];
-    if (k < 2) say(L[i] + ' vs ' + R[j] + '：' + v + ' 較小', '寫下 ' + v + '，那隻手指往前一格');
-    else if (i >= 4 || j >= 4) say((i >= 4 ? 'L′' : 'R′') + ' 用完：直接搬 ' + v, '');
-    else say(L[i] + ' vs ' + R[j] + ' → ' + v, '');
-    await beat(tok, k < 2 ? 1700 : 900);
-    if (i < 4) glow(lm[i], null); if (j < 4) glow(rm[j], null);
-    move(m, OX(k) * 0.7 - 1.2, 0.3, 2.2); tint(m, DG);
-    if (useL) i++; else j++;
-    move(fl, X(Math.min(i, 3.6)), 1.2, -2.2); move(fr, X(Math.min(j, 3.6)), 1.2, -0.4);
-    await beat(tok, k < 2 ? 900 : 500);
+    take(useL); fingers(); await beat(tok, 380);
   }
-  say('A = 1 2 7 9 11 12 13 20', '每個元素只寫一次：merge 是 Θ(n)');
-  await beat(tok, 3200);
+  kill(fl.g); kill(fr.g);
+  say('剩下的照樣走完', 'A = 1 2 7 9 11 12 13 20');
+  await step(tok); // @1827.8 splitting A[0..n/2-1]
+  note('切：L = A[0 .. n/2 − 1]、R = 後半', 0, 3.6, 0.6);
+  say('切陣列很簡單：從中間切開');
+  await step(tok); // @1885.2 merge is theta n
+  ok('每個元素寫一次 → merge 是 Θ(n)', 0, 3.6, 2.4);
+  say('兩個 n/2 的陣列 merge：Θ(n)');
 }]);
 
-// 32:00 / 46:49 / 49:26 Recursion tree：f = 'n'（merge sort）、'n2'（cn²）、'1'（c）
+// 32:00 / 46:08 / 49:31 Recursion tree：f = 'n'（merge sort）、'n2'（cn²）、'1'（c）
 FRAG.push(['dcmit-rectree', 'Recursion tree：把每層的工作加起來', async (tok) => {
   const f = ((ctx.params || {}).f) || 'n';
   fresh([0, 4.4, 13.5], [0, 3.2, 0]);
-  const LV = [5.9, 4.4, 2.9, 1.0], W = [1.6, 1.3, 1.0, 0.8];
+  const LV = [5.6, 4.2, 2.8, 1.0], W = [1.6, 1.3, 1.0, 0.8];
   const nodeL = { n: ['cn', 'cn/2', 'cn/4', 'c'], n2: ['cn²', 'cn²/4', 'cn²/16', 'c'], 1: ['c', 'c', 'c', 'c'] }[f];
   const sums = { n: ['cn', 'cn', 'cn', 'cn'], n2: ['cn²', 'cn²/2', 'cn²/4', 'nc'], 1: ['c', '2c', '4c', 'nc'] }[f];
-  const rec = { n: 'T(n) = c₁ + 2T(n/2) + cn', n2: 'T(n) = 2T(n/2) + cn²', 1: 'T(n) = 2T(n/2) + c' }[f];
-  const intro = { n: 'Merge sort 的遞迴式', n2: '假設 merge 寫爛了：cn²', 1: '假設 merge 只要常數時間' }[f];
-  const nx = (d, k) => -4.6 + (k + 0.5) * (9.2 / Math.pow(2, d));
-  tag(rec, 'ptr', -3.6, 7, 0);
-  say(intro, rec + (f === 'n' ? '（c₁ 是切開的常數，忽略）' : ''));
-  await beat(tok, 2600);
+  const nx = (d, k) => -4.4 + (k + 0.5) * (8.8 / Math.pow(2, d));
   const nodes = [];
-  for (let d = 0; d < 4; d++) {
+  const level = (d) => {
     nodes[d] = [];
     for (let k = 0; k < Math.pow(2, d); k++) {
       if (d) line(nx(d - 1, k >> 1), LV[d - 1] - 0.3, nx(d, k), LV[d] + 0.3, 0);
       nodes[d].push(cube(nodeL[d], d === 3 ? MINT : PAPER, [W[d], 0.55, 0.7], nx(d, k), LV[d], 0, 1));
     }
     if (d === 2) tag('⋮', 'ptr', 0, 1.95, 0);
-    say(d === 3 ? 'n 變成 1：葉子都是 c' : '第 ' + d + ' 層：' + Math.pow(2, d) + ' 個 ' + nodeL[d], d === 0 ? '根：最上層 merge 的工作' : '子問題大小 n/' + Math.pow(2, d));
-    await beat(tok, 1400);
+  };
+  const dims = () => { tag('1 + lg n 層', 'ptr alt', -6.1, 3.4, 0); tag('n 片葉子', 'ptr alt', 0, 0.25, 1); };
+  const sumT = (d) => tag('= ' + sums[d], 'ptr', 5.9, LV[d], 0);
+  const hot = (ds) => ds.forEach((d) => nodes[d].forEach((m) => glow(m, GOLD)));
+  if (f === 'n') {
+    await step(tok); // @n:1923.0 how do you prove theta n log n?
+    const q = bub('Merge sort 是 Θ(n log n)：怎麼證明？', 0, 7.2, 0);
+    say('Merge sort 是 Θ(n log n)', '可是要怎麼證明？');
+    await step(tok); // @n:1943.0 proof by picture
+    txt(q, 'proof by picture：畫出 recursion tree');
+    say('用「看圖證明」：recursion tree', '直觀，之後也能寫成正式證明');
+    await step(tok); // @n:2006.0 c1 to divide
+    remove(q);
+    const r0 = tag('T(n) = c₁', 'ptr', -3.6, 7.2, 0);
+    say('T(n)：n 個元素的工作量', 'c₁：切陣列的常數時間');
+    await step(tok); // @n:2016.1 2T(n/2)
+    txt(r0, 'T(n) = c₁ + 2T(n/2)');
+    say('兩個大小 n/2 的子問題：2T(n/2)', '這是遞迴的部分');
+    await step(tok); // @n:2028.5 cn merge
+    txt(r0, 'T(n) = c₁ + 2T(n/2) + cn');
+    say('加上 merge：cn', 'c 是常數，cn 就代表 Θ(n)');
+    await step(tok); // @n:2106.6 root cn (ignore c1)
+    level(0);
+    note('c₁ 被 cn 蓋過：忽略', -5.4, 5.6, 0);
+    say('展開：根是 cn', '最上層 merge 的工作');
+    await step(tok); // @n:2129.5 two subproblems of n/2
+    level(1);
+    say('下一層：兩個子問題，各 c·n/2');
+    await step(tok); // @n:2157.7 cn/4 …
+    level(2);
+    say('再下一層：四個 c·n/4…');
+    await step(tok); // @n:2169.8 n becomes 1: a bunch of c's
+    level(3);
+    say('n 一直減半到 1', '葉子都是 c');
+    await step(tok); // @n:2197.9 levels: 1 + lg n
+    tag('1 + lg n 層', 'ptr alt', -6.1, 3.4, 0);
+    say('有幾層？1 + lg n');
+    await step(tok); // @n:2221.7 n leaves
+    tag('n 片葉子', 'ptr alt', 0, 0.25, 1);
+    say('葉子幾個？n 個', '大小 1 的陣列本來就排好');
+    await step(tok); // @n:2244.6 add up: top level cn
+    sumT(0);
+    say('每層加起來：最上層 cn');
+    await step(tok); // @n:2252.0 every level cn
+    for (let d = 1; d < 4; d++) { sumT(d); await beat(tok, 450); }
+    say('第二層：cn/2 + cn/2 = cn', '每一層都是 cn！');
+    await step(tok); // @n:2291.6 (1 + lg n) cn
+    hot([0, 1, 2, 3]);
+    ok('T(n) = (1 + lg n) · cn = Θ(n lg n)', 0, 7.9, 0);
+    say('(1 + lg n) 層 × 每層 cn', '= Θ(n lg n)');
+  } else if (f === 'n2') {
+    await step(tok); // @n2:2768.0 same structure, other recurrences
+    bub('同一種樹，換別的遞迴式', 0, 7.2, 0);
+    say('最後幾分鐘：用同一種樹看別的遞迴式');
+    await step(tok); // @n2:2809.1 T(n) = 2T(n/2) + cn²
+    tag('T(n) = 2T(n/2) + cn²', 'ptr', -3.6, 6.6, 0);
+    say('T(n) = 2T(n/2) + cn²');
+    await step(tok); // @n2:2828.1 crummy merge taking n²
+    note('merge 寫壞了，要 n²', 3.4, 6.6, 0);
+    say('想像 merge 寫爛了：要 cn²');
+    await step(tok); // @n2:2847.2 root cn²
+    level(0);
+    say('樹的形狀一樣：根是 cn²');
+    await step(tok); // @n2:2850.7 two cn²/4
+    level(1);
+    say('下一層：兩個 c(n/2)² = cn²/4');
+    await step(tok); // @n2:2855.5 four cn²/16
+    level(2);
+    say('再下一層：四個 cn²/16');
+    await step(tok); // @n2:2867.0 down to 1: c at the leaves
+    level(3);
+    say('n 減到 1：葉子還是 c');
+    await step(tok); // @n2:2873.3 n leaves, 1 + log n levels
+    dims();
+    say('n 片葉子、1 + lg n 層', '和之前一模一樣');
+    await step(tok); // @n2:2898.5 add up each level
+    for (let d = 0; d < 4; d++) { sumT(d); await beat(tok, 450); }
+    say('每層加總：cn²、cn²/2、cn²/4 … nc', '一層比一層小一半');
+    await step(tok); // @n2:2916.0 this dominates, bounded by 2cn²
+    note('根以下全部加起來 ≤ cn²', 0.4, 7.4, 0);
+    say('根以下全部加起來 ≤ cn²', '總和 ≤ 2cn²');
+    await step(tok); // @n2:2942.2 theta n²
+    ok('Θ(n²)', 5.4, 7.4, 0);
+    say('所以是 Θ(n²)');
+    await step(tok); // @n2:2950.2 all the work at the root
+    hot([0]);
+    say('工作全集中在根（最上層）');
+    await step(tok); // @n2:2955.1 merge sort: equal work per level
+    bub('merge sort：每層一樣多', -5.0, 0.3, 1.2);
+    say('對照：merge sort 是每層工作一樣多');
+  } else {
+    await step(tok); // @1:2970.4 a recurrence with all work at the leaves
+    bub('最後一個：工作都在葉子', 0, 7.2, 0);
+    say('最後：工作都在葉子的例子');
+    await step(tok); // @1:2980.2 merge in constant time
+    tag('T(n) = 2T(n/2) + c', 'ptr', -3.6, 6.6, 0);
+    note('merge 神奇地只要常數時間', 3.4, 6.6, 0);
+    say('假設 merge 只要常數時間', 'T(n) = 2T(n/2) + c');
+    await step(tok); // @1:3001.8 c, c, c …
+    for (let d = 0; d < 4; d++) { level(d); await beat(tok, 450); }
+    say('每個節點都是 c');
+    await step(tok); // @1:3011.0 n leaves as before
+    dims();
+    say('一樣：n 片葉子、1 + lg n 層');
+    await step(tok); // @1:3018.1 c, 2c, 4c … nc
+    for (let d = 0; d < 4; d++) { sumT(d); await beat(tok, 450); }
+    say('每層加總：c、2c、4c … nc', '一層比一層多一倍');
+    await step(tok); // @1:3030.0 bottom dominates: theta n
+    ok('總和 ≤ 2nc → Θ(n)', 0, 7.6, 0);
+    say('最底層主導：Θ(n)');
+    await step(tok); // @1:3050.1 all the work at the leaves
+    hot([3]);
+    say('工作全集中在葉子');
+    await step(tok); // @1:3057.8 a theorem does this mechanically
+    note('master theorem 能機械地算；老師更愛畫樹', 0, 0.2, 2.2);
+    say('有定理（master theorem）能機械地解', '但畫 recursion tree 更好懂');
   }
-  tag('1 + lg n 層', 'ptr alt', -6.2, 3.5, 0);
-  tag('n 片葉子', 'ptr alt', 0, 0.2, 1);
-  say('層數 1 + lg n、葉子 n 個', '三種遞迴式的樹形完全一樣');
-  await beat(tok, 2600);
-  for (let d = 0; d < 4; d++) { tag('= ' + sums[d], 'ptr', 6.1, LV[d], 0); await beat(tok, 700); }
-  const hot = f === 'n' ? [0, 1, 2, 3] : f === 'n2' ? [0] : [3];
-  hot.forEach((d) => nodes[d].forEach((m) => glow(m, GOLD)));
-  if (f === 'n') { say('每一層都是 cn', '(1 + lg n) · cn = Θ(n lg n)'); }
-  else if (f === 'n2') { say('根最大：下面加起來 ≤ cn²', '總和 ≤ 2cn² → Θ(n²)；工作在根'); }
-  else { say('葉子最大：c + 2c + … + nc', '≤ 2nc → Θ(n)；工作在葉子'); }
-  await beat(tok, 3600);
 }]);
 
 // 39:38 Insertion sort 的優點：in-place（Θ(1) 輔助空間）vs merge sort Θ(n)
 FRAG.push(['dcmit-inplace', 'In-place：輔助空間 Θ(1) vs Θ(n)', async (tok) => {
-  fresh([0, 6, 13], [0, 1.8, 0]);
-  const X = (i) => -6.2 + i * 0.62;
-  tag('insertion sort', 'ptr', -4.2, 3.6, -1.5); tag('merge sort', 'ptr', 3, 3.6, -1.5);
-  [2, 4, 5, 6, 1, 3].forEach((v, i) => cube(v, DB, [0.55, 0.5, 0.6], X(i) + 0.6, 0.25, -1.5));
-  const tmp = cube('temp', DY, [0.9, 0.5, 0.6], -4.2, 0.25, 0.8, 2);
-  say('Insertion sort 只多一個 temp', '交換用的暫存 → Θ(1) 輔助空間 = in-place');
-  await beat(tok, 3800);
-  glow(tmp, GOLD);
-  const B = [20, 13, 7, 2, 12, 11, 9, 1], M = (i) => 0.6 + i * 0.68;
-  B.forEach((v, i) => cube(v, DB, [0.6, 0.5, 0.6], M(i), 0.25, -1.5));
-  say('Merge sort 要複製出 L、R', '再把結果寫回 A');
-  await beat(tok, 2400);
+  fresh([0, 6, 13], [0, 1.6, 0]);
+  const X = (i) => -6.0 + i * 0.62, M = (i) => 0.9 + i * 0.68;
+  await step(tok); // @2378.4 advantage of insertion over merge?
+  const ins = buddy('insertion sort', '', DB, -4.4, 0, -3.2, 0.8), mer = buddy('merge sort', '', DO, 3.3, 0, -3.2, 0.8);
+  ins.mood('wow'); mer.mood('happy');
+  bub('insertion sort 比 merge sort 好在哪？', 0, 3.6, -3.2);
+  say('insertion sort 有什麼比 merge sort 好？');
+  await step(tok); // @2409.0 in-place: auxiliary space
+  note('答案：in-place（跟額外空間有關）', 0, 2.9, -3.2);
+  say('in-place 排序', '比的是「要借多少額外空間」');
+  await step(tok); // @2419.0 merge sort copies L, R
+  const B = [20, 13, 7, 2, 12, 11, 9, 1];
+  B.forEach((v, i) => cube(v, DB, [0.6, 0.5, 0.6], M(i), 0.25, -1.2));
   const cp = B.map((v, i) => cube(v, i < 4 ? DP : DO, [0.6, 0.5, 0.6], M(i) + (i < 4 ? -0.25 : 0.25), 0.25, 0.8, 2));
-  say('多出 n 個格子：Θ(n) 輔助空間', '十億筆資料時記憶體就是問題');
-  await beat(tok, 3800);
+  say('merge sort：L′、R′ 和原本的 L、R 不一樣', '兩半先複製一份出來');
+  await step(tok); // @2434.7 dump into A
+  arrow(V3(M(1.5), 0.6, 0.5), V3(M(1.5), 0.6, -0.8), 0xa8730f); arrow(V3(M(5.5), 0.6, 0.5), V3(M(5.5), 0.6, -0.8), 0xa8730f);
+  say('結果再寫回 A');
+  await step(tok); // @2457.7 theta n auxiliary space
+  no('多出 n 格：Θ(n) 額外空間', M(3.5), 1.4, 1.6);
+  mer.mood('sad');
+  say('merge sort 要 Θ(n) 的額外空間');
+  await step(tok); // @2477.1 in-place definition
+  ok('in-place 的定義：只用 Θ(1) 額外空間', -3, 4.4, 0);
+  say('in-place = 額外空間只要常數 Θ(1)');
+  await step(tok); // @2484.3 insertion: one temp variable
+  const arr = [2, 4, 1].map((v, i) => cube(v, DB, [0.55, 0.5, 0.6], X(i) + 0.6, 0.25, -1.2));
+  const tmp = cube('temp', DY, [0.9, 0.5, 0.6], -4.6, 0.25, 0.8, 1.5);
+  await beat(tok, 300);
+  const pa = arr[1].position.clone(), pb = arr[2].position.clone();
+  await slide(tok, arr[1], -4.6, 0.85, 0.8, 450);
+  await slide(tok, arr[2], pa.x, pa.y, pa.z, 450);
+  await slide(tok, arr[1], pb.x, pb.y, pb.z, 450);
+  ins.mood('happy'); await ins.hop(tok);
+  ok('只多一個 temp：Θ(1)', -4.4, 1.3, 1.6);
+  say('insertion sort 只要一個暫存 temp', '交換時先放一下 → Θ(1)');
+  await step(tok); // @2510.7 billions of items: memory matters
+  note('資料有十億、一兆筆時，記憶體很要緊', 0, 5.2, 0);
+  say('資料量很大時，這個差別很重要');
+  await step(tok); // @2527.2 trick: copy only half → n/2
   for (let i = 0; i < 4; i++) fly(cp[i], V3(-1, 6, 3));
-  say('技巧：只複製一半 → n/2', '常數變小，仍是 Θ(n)');
-  await beat(tok, 3600);
-  say('In-place merge sort 存在', '仍 Θ(n lg n)，但常數太大，實務上少用');
-  await beat(tok, 3600);
+  bub('小技巧：只複製一半 → n/2', M(5.5), 2.4, 1.6);
+  say('小技巧：只複製一半', '額外空間降到 n/2（常數變小）');
+  await step(tok); // @2565.1 in-place merge sort exists
+  ok('in-place merge sort：存在！仍 Θ(n lg n)', 0, 6.0, 0);
+  say('其實有 in-place 的 merge sort', '超出 006 範圍');
+  await step(tok); // @2579.0 impractical constant factors
+  no('但常數太大，實務上沒人用', 0, 6.7, 0);
+  say('可是常數因子太大', '比普通 merge sort 慢很多');
 }]);
 
-// 43:45 常數因子：Python merge 2.2 n lg n μs vs C insertion 0.01 n² μs
+// 43:55 常數因子：Python merge 2.2 n lg n μs vs C insertion 0.01 n² μs
 FRAG.push(['dcmit-python-vs-c', 'Python merge sort vs C insertion sort', async (tok) => {
   fresh([0, 4.6, 12.5], [0, 2.6, 0]);
   const Ns = [1000, 2000, 4000, 8000], S = 5 / 640000;
   const mp = (n) => 2.2 * n * Math.log2(n), ic = (n) => 0.01 * n * n;
-  tag('Python merge：2.2 n lg n μs', 'ptr', -3.4, 6.6, 0);
-  tag('C insertion：0.01 n² μs', 'ptr alt', 3.2, 6.6, 0);
-  say('實測曲線擬合：時間（μs）', 'Python insertion 約 0.2 n²；C 快約 20 倍');
-  await beat(tok, 3000);
-  for (let q = 0; q < 4; q++) {
+  const bar = async (q) => {
     const x = -4.5 + q * 3, n = Ns[q];
     const b1 = dBar(DB, x - 0.4, 0), b2 = dBar(DO, x + 0.4, 0);
     tag('n = ' + n, 'idx', x, 0.02, 1);
     await anim(tok, 700, (t) => { dSetBar(b1, mp(n) * S * t); dSetBar(b2, ic(n) * S * t); });
-    const win = mp(n) < ic(n);
-    glow(win ? b1 : b2, GREEN);
-    say('n = ' + n + '：' + (win ? 'Python merge 較快' : 'C insertion 較快'), Math.round(mp(n) / 1000) + 'k vs ' + Math.round(ic(n) / 1000) + 'k μs');
-    await beat(tok, 1700);
-  }
-  say('n 到幾千以上，Python merge 就贏', '常數 20 倍救不了 n² → 漸近複雜度才是關鍵');
-  await beat(tok, 3600);
+    glow(mp(n) < ic(n) ? b1 : b2, GREEN);
+  };
+  await step(tok); // @2647.1 python merge 2.2 n lg n
+  const py = buddy('Python merge', '', DB, -5.8, 0, -2.6, 0.6);
+  tag('Python merge：2.2 n lg n μs', 'ptr', -3.4, 6.6, 0);
+  say('實測擬合：Python merge sort', '約 2.2 n lg n 微秒');
+  await step(tok); // @2672.0 python insertion 0.2 n²
+  note('Python insertion：0.2 n² μs', 0, 5.9, 0);
+  say('Python 的 insertion sort：約 0.2 n²');
+  await step(tok); // @2682.2 C insertion 20× faster
+  const cc = buddy('C insertion', '', DO, 5.8, 0, -2.6, 0.6);
+  tag('C insertion：0.01 n² μs', 'ptr alt', 3.2, 6.6, 0);
+  say('用 C 寫的 insertion sort 快約 20 倍', '0.01 n² 微秒');
+  await step(tok); // @2706.5 you can find an n
+  await bar(0); await bar(1);
+  cc.mood('happy');
+  say('n 小的時候：C insertion 比較快', '1000、2000 都是橘色贏');
+  await step(tok); // @2719.7 beyond about 4000 merge wins
+  await bar(2); await bar(3);
+  py.mood('happy'); cc.mood('sad');
+  say('n 到幾千以上：Python merge 反超', '4000、8000 藍色贏');
+  await step(tok); // @2737.0 asymptotic complexity is important
+  ok('漸近複雜度才是關鍵', 0, 7.3, 0);
+  say('這就是漸近複雜度重要的原因');
+  await step(tok); // @2739.5 factor 20 only keeps n² competitive a bit longer
+  note('20 倍的常數，只讓 n² 多撐一下', 0, 5.2, 0);
+  say('常數快 20 倍也救不了 n²', '只是多撐一會兒就被追過');
 }]);
 
 // ═════════════ Rec3：4iXLnF3hExw ═════════════
 
-// 02:17 document distance 回顧：call graph 與各函數成本
+// 02:36 document distance 回顧：call graph 與各函數成本
 FRAG.push(['dcmit-docdist-recap', 'Document distance：呼叫圖與成本', async (tok) => {
   fresh([0, 5, 13.5], [0, 3.2, 0]);
   const N = {
     main: ['main', 0, 6.4], wff: ['word_frequencies_for_file', -2.9, 4.8], va: ['vector_angle', 3.3, 4.8],
     gw: ['get_words_from_line_list', -4.3, 3], cf: ['count_frequency', -1.2, 3], ip: ['inner_product', 3.3, 3],
   };
-  const SH = { gw: 'get_words', cf: 'count_frequency', ip: 'inner_product', va: 'vector_angle', wff: 'word_freq_for_file' };
   const P = { wff: 'main', va: 'main', gw: 'wff', cf: 'wff', ip: 'va' };
   const M = {};
-  for (const k of Object.keys(N)) {
-    const [t, x, y] = N[k];
-    if (P[k]) line(N[P[k]][1], N[P[k]][2] - 0.3, x, y + 0.3, 0);
-    M[k] = dBox(t, x, y, 0, k === 'main' ? 1.4 : 2.9, PAPER, 1);
-    await beat(tok, 350);
-  }
-  say('Call graph：main 往下呼叫', 'read_file 當作 Θ(檔案長度)，不計');
-  await beat(tok, 2600);
-  tag('W = 字數　L = 不重複字數　w̄ = 字長', 'ptr', 0, 0.6, 1);
-  say('三個常數：W、L、w̄', '英文字長 5–10 字元 → w̄ 有界');
-  await beat(tok, 2800);
-  const C = [['gw', 'O(W²)', '元凶：word_list + …'], ['ip', 'O(L₁L₂)', '兩個向量逐一比對'], ['va', 'L₁L₂ + L₁² + L₂²', 'L₁² + L₂² ≥ L₁L₂ → 去掉 L₁L₂'], ['cf', '≤ W²（待算）', '先假設不超過 W²'], ['wff', 'O(W²)', '每份文件各呼叫一次']];
-  for (const [k, c, why] of C) {
-    glow(M[k], GOLD);
-    tag(c, k === 'gw' ? 'ptr' : 'ptr alt', N[k][1], N[k][2] - 0.75, 0.5);
-    say(SH[k] + '：' + c, why);
-    await beat(tok, 2000);
-    glow(M[k], null);
-  }
-  glow(M.main, GREEN);
-  tag('O(W₁² + W₂²)', 'ptr alt', 2.4, 6.4, 0);
-  say('全部：W₁² + W₂²', 'W ≥ L，所以 L₁²、L₂² 被吃掉');
-  await beat(tok, 3400);
+  const box = (k) => { const [t, x, y] = N[k]; if (P[k]) line(N[P[k]][1], N[P[k]][2] - 0.3, x, y + 0.3, 0); M[k] = dBox(t, x, y, 0, k === 'main' ? 1.4 : 2.9, PAPER, 1); };
+  const cost = (k, c, cls = 'ptr alt') => tag(c, cls, N[k][1], N[k][2] - 0.72, 0.5);
+  await step(tok); // @156.0 today: look at the code
+  const lst = prop('file', -5.6, 0, 1.4, 1.0, '程式碼 listing'); bob(lst, 0.05);
+  say('上次講理論，今天看程式碼', '分析執行時間，看理論和實際對不對得上');
+  await step(tok); // @194.9 call graph starts at main
+  box('main');
+  say('Call graph：從 main 開始的樹');
+  await step(tok); // @208.5 main calls word_frequencies_for_file
+  box('wff');
+  say('main 呼叫 word_frequencies_for_file');
+  await step(tok); // @219.8 which calls get_words_from_line_list, count_frequency
+  box('gw'); box('cf');
+  say('它再呼叫 get_words_from_line_list', '和 count_frequency');
+  await step(tok); // @231.4 pretend we don't see read_file
+  note('read_file：假裝看不到（時間 ∝ 檔案長度）', -3.2, 1.9, 0.6);
+  say('read_file 先不算', '當作資料已在記憶體');
+  await step(tok); // @254.2 vector_angle
+  box('va');
+  say('main 還呼叫 vector_angle');
+  await step(tok); // @267.8 inner_product
+  box('ip');
+  say('vector_angle 呼叫 inner_product');
+  await step(tok); // @282.8 W words
+  kill(lst);
+  const cs = tag('W = 文件字數', 'ptr', 0, 0.9, 1.4);
+  say('常數：文件有 W 個字');
+  await step(tok); // @291.5 L unique words
+  txt(cs, 'W = 文件字數　L = 不重複字數');
+  say('變成文件向量後有 L 個元素', 'L = 不重複的字數');
+  await step(tok); // @309.5 word length bounded
+  txt(cs, 'W = 文件字數　L = 不重複字數　w̄ = 字長');
+  say('英文字長有上限：5–10 個字元', '字長叫 w̄');
+  await step(tok); // @379.7 get_words_from_line_list O(W²)
+  glow(M.gw, GOLD); cost('gw', 'O(W²)', 'ptr');
+  say('get_words_from_line_list：O(W²)');
+  await step(tok); // @413.0 line 5: the plus
+  const pl = no('第 5 行：word_list = word_list + …', -4.3, 1.8, 0.6);
+  say('元凶：第 5 行的「+」', '每次都把整個串列複製一份');
+  await step(tok); // @426.6 count_frequency: cover it now
+  glow(M.gw, null); remove(pl); glow(M.cf, GOLD);
+  cost('cf', '待會算');
+  say('count_frequency 今天補上');
+  await step(tok); // @445.9 inner product: L1 L2
+  glow(M.cf, null); glow(M.ip, GOLD); cost('ip', 'O(L₁L₂)');
+  say('兩個向量長 L₁、L₂', 'inner_product：L₁L₂');
+  await step(tok); // @498.5 vector angle: + L1² + L2²
+  glow(M.ip, null); glow(M.va, GOLD);
+  const vt = cost('va', 'L₁L₂ + L₁² + L₂²');
+  say('vector_angle：三次內積', '分母要向量跟自己的內積：L₁²、L₂²');
+  await step(tok); // @516.5 L1²+L2² ≥ L1L2 → drop
+  txt(vt, 'O(L₁² + L₂²)');
+  say('L₁² + L₂² ≥ L₁L₂', '所以 L₁L₂ 可以拿掉');
+  await step(tok); // @534.2 count_frequency ≤ W²; wff W²
+  glow(M.va, null); glow(M.wff, GOLD); cost('wff', 'O(W²)');
+  say('先假設 count_frequency ≤ W²', 'word_frequencies_for_file 就是 W²');
+  await step(tok); // @566.8 called twice: W1² + W2²
+  glow(M.wff, null); glow(M.main, GOLD);
+  const mt = tag('W₁² + W₂² + L₁² + L₂²', 'ptr', 2.6, 6.4, 0);
+  say('每份文件各呼叫一次', '第一份 W₁ 個字、第二份 W₂ 個字');
+  await step(tok); // @604.1 W ≥ L dominates
+  txt(mt, 'O(W₁² + W₂²)'); glow(M.main, GREEN);
+  say('W₁ ≥ L₁、W₂ ≥ L₂', 'L 的平方被吃掉：總共 O(W₁² + W₂²)');
 }]);
 
-// 20:31 count_frequency：字串比較 w̄、緊與鬆的上界、哪行主導
+// 10:21 count_frequency 在做什麼、每行跑幾次（原 count-frequency-cost 的逐句版）
+FRAG.push(['dcmit-cf-loop', 'count_frequency：每行跑幾次', async (tok) => {
+  fresh([0, 5.5, 14.5], [0, 3, 0]);
+  const lines = ['1 def count_frequency(word_list):', '2   L = []', '3   for new_word in word_list:', '4     for entry in L:', '5       if new_word == entry[0]:', '6         entry[1] = entry[1] + 1', '7         break', '8     else:', '9       L.append([new_word, 1])', '10  return L'];
+  const Y = (i) => 7.4 - i * 0.42;
+  const W = ['the', 'fox', 'is', 'in', 'the', 'hat'], WX = (i) => -5.6 + i * 1.05, LX = (k) => -5.6 + k * 1.2;
+  await step(tok); // @621.0 count_frequency's cost
+  const cd = code(lines, -2.4, 7.4, 0.42);
+  say('補上 count_frequency 的成本');
+  await step(tok); // @640.4 cost once × times
+  tag('一次的成本 × 次數', 'ptr', 3.6, 7.85, 0);
+  const cl = lines.map((_, i) => tag('', 'ptr alt', 3.6, Y(i)));
+  say('方法：每行「跑一次的成本 × 跑幾次」', '最後全部加起來');
+  await step(tok); // @711.8 list of words
+  const wm = W.map((w, i) => cube(w, DB, [0.95, 0.45, 0.8], WX(i), 0.23, 2.6, 1.2));
+  tag('word_list', 'ptr', -6.6, 0.9, 2.6);
+  say('輸入：文件切成的字串列', 'the fox is in the hat');
+  await step(tok); // @738.3 output: list of [word, count]
+  bub('輸出：[字, 次數] 的串列', 4.8, 3.0, 1);
+  say('count_frequency 要回傳 [字, 次數] 的串列');
+  await step(tok); // @750.0 the 2, fox 1, is 1, in 1, hat 1
+  ['the 2', 'fox 1', 'is 1', 'in 1', 'hat 1'].forEach((t, i) => note(t, 4.8, 2.4 - i * 0.48, 1));
+  say('the 出現 2 次，其他各 1 次');
+  await step(tok); // @781.7 line 2: L initialized
+  cd.hl(1);
+  tag('L', 'ptr alt', -6.6, 0.9, 0.6);
+  say('第 2 行：L 一開始是空的', '最後把 L 回傳');
+  const Lm = [];
+  const visit = async (i, ms = 450) => {
+    const at = Lm.findIndex((e) => e.w === W[i]);
+    glow(wm[i], GOLD);
+    if (at >= 0) { Lm[at].c++; relabel(Lm[at].m, Lm[at].w + ':' + Lm[at].c); glow(Lm[at].m, GREEN); }
+    else Lm.push({ w: W[i], c: 1, m: cube(W[i] + ':1', DG, [1.1, 0.45, 0.8], LX(Lm.length), 0.23, 0.6, 1.2) });
+    await beat(tok, ms); glow(wm[i], null); if (at >= 0) glow(Lm[at].m, null);
+  };
+  await step(tok); // @793.1 line 3 iterates over the input
+  cd.hl(2);
+  for (let i = 0; i < 5; i++) await visit(i);
+  say('第 3 行：一個字一個字走過輸入', '第二個 the → 次數 +1');
+  await step(tok); // @799.2 line 4 scans the list under construction
+  cd.hl(3); glow(wm[5], GOLD);
+  const sc = pkt('找 hat', LX(0), 1.0, 0.6);
+  for (let k = 0; k < Lm.length; k++) { move(sc, LX(k), 1.0, 0.6); glow(Lm[k].m, GOLD); await beat(tok, 300); glow(Lm[k].m, null); }
+  say('第 4 行：在建構中的 L 裡找這個字', 'hat 跟每個項目比，都不是');
+  await step(tok); // @826.8 not found → new entry
+  cd.hl(8); remove(sc); glow(wm[5], null);
+  Lm.push({ w: 'hat', c: 1, m: cube('hat:1', DG, [1.1, 0.45, 0.8], LX(Lm.length), 0.23, 0.6, 1.2) });
+  say('找不到：新增一筆 [hat, 1]', '第一次看到，次數是 1');
+  await step(tok); // @841.4 line 2 cost 1
+  cd.hl(1); txt(cl[1], '1 × 1');
+  say('第 2 行：成本 1、跑 1 次');
+  await step(tok); // @897.0 line 3: W times
+  cd.hl(2); txt(cl[2], '1 × W');
+  say('第 3 行：word_list 有 W 個字', '跑 W 次');
+  await step(tok); // @973.0 line 4 inside the loop: W times at least
+  cd.hl(3);
+  note('第 4 行在外層迴圈裡：至少跑 W 輪', -2.4, 2.1, 0);
+  say('第 4 行在 for 裡面', '外層每一輪都會跑到它');
+  await step(tok); // @1112.0 worst case: L grows to L fast
+  note('最壞：L 很快長到 L 個，之後每輪都走 L 個', 3.2, 0.3, 2.6);
+  say('最壞：前面全是不同的字，L 很快長到 L', '之後每個字都要走過 L 個項目 → L·W 次');
+  await step(tok); // @1177.1 English ~250,000 words: L ≪ W
+  note('英文約 25 萬字：L 有上限，W 可以十億', -2.4, 1.5, 0);
+  say('L 是不重複字數：英文最多約 25 萬', 'W 可能是十億 → 兩個要分開記');
+  await step(tok); // @1219.0 one step of iterating: 1
+  txt(cl[3], '1 × L·W');
+  say('第 4 行每走一步 O(1)', '總共 1 × L·W');
+}]);
+
+// 20:43 count_frequency：字串比較 w̄、緊與鬆的上界、哪行主導
 FRAG.push(['dcmit-cf-strcmp-bounds', '字串比較 w̄ 與緊／鬆上界', async (tok) => {
   fresh([0, 5.2, 13.5], [0, 3.4, 0]);
+  const cd = code(['3 for new_word in word_list:', '4   for entry in L:', '5     if new_word == entry[0]:', '6       entry[1] += 1', '7       break', '8   else:', '9     L.append([new_word, 1])'], -1.6, 6.8, 0.5);
+  const cst = ['1 × W', '1 × L·W', '', '', '', '', ''];
+  const tg = cst.map((c, i) => tag(c, 'ptr alt', 4.4, 6.8 - i * 0.5, 0));
   const s1 = 'distance', s2 = 'distancy', X = (i) => -6 + i * 0.62;
-  const a = s1.split('').map((c, i) => cube(c, DB, [0.5, 0.45, 0.5], X(i), 5.6, 0));
-  const b = s2.split('').map((c, i) => cube(c, DP, [0.5, 0.45, 0.5], X(i), 4.9, 0));
-  const cur = tag('▲', 'ptr alt', X(0), 4.35, 0), cc = tag('比了 0 個字元', 'ptr', -3.8, 6.5, 0);
-  say('兩字串只差最後一個字元', '要一個一個比到最後');
-  await beat(tok, 2000);
+  await step(tok); // @1243.9 line 5 runs L·W times, cost?
+  cd.hl(2); txt(tg[2], '? × L·W');
+  say('第 5 行的 if：每次都會跑', '跟第 4 行一樣 L·W 次；一次多少？');
+  await step(tok); // @1273.0 depends on word length
+  const stu = buddy('同學', '跟字長有關', STU, 5.6, 0, 2.2, 0.6); stu.mood('happy');
+  say('一次比較的成本：跟字的長度有關');
+  await step(tok); // @1335.2 two long strings differing in the last char
+  const a = s1.split('').map((c, i) => cube(c, DB, [0.5, 0.45, 0.5], X(i), 2.2, 1.2, 1));
+  const b = s2.split('').map((c, i) => cube(c, DP, [0.5, 0.45, 0.5], X(i), 1.5, 1.2, 1));
+  say('兩個長字串，只差最後一個字元');
+  await step(tok); // @1339.0 character by character
+  const cur = pkt('▲', X(0), 0.9, 1.2), cc = note('比了 0 個字元', -3.8, 3.0, 1.2);
   for (let i = 0; i < 8; i++) {
-    move(cur, X(i), 4.35, 0); glow(a[i], s1[i] === s2[i] ? GOLD : RED); glow(b[i], s1[i] === s2[i] ? GOLD : RED);
-    txt(cc, '比了 ' + (i + 1) + ' 個字元'); await beat(tok, 330);
+    move(cur, X(i), 0.9, 1.2); glow(a[i], s1[i] === s2[i] ? GOLD : RED); glow(b[i], s1[i] === s2[i] ? GOLD : RED);
+    txt(cc, '比了 ' + (i + 1) + ' 個字元'); await beat(tok, 260);
   }
-  say('字串比較 = Θ(字長) = w̄', 'if new_word == entry[0]：成本 w̄ × L·W 次');
-  await beat(tok, 3000);
-  const cd = code(['3 for new_word in word_list:', '4   for entry in L:', '5     if new_word == entry[0]:', '6       entry[1] += 1', '7       break', '8   else:', '9     L.append([new_word, 1])'], 0.8, 6.4, 0.5);
-  const cst = ['1 × W', '1 × L·W', 'w̄ × L·W', '', '1 × (W − L)', '1 × L', '1 × L'];
-  const tg = cst.map((c, i) => tag(c, 'ptr alt', 5.6, 6.4 - i * 0.5, 0));
+  say('只能一個字元一個字元比', '比到最後才知道不一樣');
+  await step(tok); // @1348.5 proportional to string length → w̄
+  txt(tg[2], 'w̄ × L·W');
+  say('比較時間 ∝ 字串長度 = w̄', '第 5 行：w̄ × L·W');
+  await step(tok); // @1364.2 lines 6 and 7: cost 1
+  a.concat(b).forEach((m) => kill(m)); kill(cur); remove(cc);
+  cd.hl(3); stu.set('一次 O(1)');
+  say('第 6、7 行：跑一次是 O(1)', '難的是：跑幾次？');
+  await step(tok); // @1414.7 break exits the inner loop
   cd.hl(4);
-  say('6、7 行：只有重複字才跑', '緊：W − L 次；鬆：每輪最多 break 一次 → W');
-  await beat(tok, 3200);
-  cd.hl(6);
-  say('else：for 沒 break 才跑', '緊：只有新字 → L；鬆：W');
-  await beat(tok, 3000);
-  say('哪個上界都給出對的漸近答案', '緊的界代表你真的看懂了演算法');
-  await beat(tok, 2600);
-  cd.hl(2); tg[2].element.className = 'lab-label ptr';
-  say('第 5 行最大：O(W · L · w̄)', 'w̄ 有界 → W·L ≤ W²，先前的假設成立');
-  await beat(tok, 3400);
+  bub('break：跳出第 4–7 行的迴圈', 4.6, 1.2, 0);
+  say('break 跳出內層迴圈', '回到第 3 行拿下一個字');
+  await step(tok); // @1429.8 else aligned with for
+  cd.hl(5);
+  note('for…else：跑完沒 break 才執行 else', -1.6, 2.6, 0.6);
+  say('else 跟 for 對齊', '迴圈跑完、沒有 break 才執行（常用在「找不到」）');
+  await step(tok); // @1484.0 lines 6, 7: W − L times
+  cd.hl(3); txt(tg[3], '1 × (W − L)'); txt(tg[4], '1 × (W − L)');
+  ok('精確：只有重複字才跑 → W − L', 0, 1.8, 2);
+  say('第 6、7 行只在「重複字」跑', 'W 個字、L 個新字 → W − L 次');
+  await step(tok); // @1585.9 lazier bound: at most once per outer loop → W
+  note('偷懶的界：break 讓它每輪最多一次 → ≤ W', 0, 1.1, 2);
+  say('沒想到 W − L 也行', 'break 後就離開 → 每輪外層最多一次，≤ W');
+  await step(tok); // @1633.0 else runs at most L times
+  cd.hl(5); txt(tg[5], '1 × L');
+  say('else：只有新字會跑到', '最多 L 次');
+  await step(tok); // @1663.8 line 9 append: constant
+  cd.hl(6); txt(tg[6], '1 × L');
+  say('第 9 行 append：O(1)，跑 L 次');
+  await step(tok); // @1741.8 W also works; L is tighter
+  stu.set('else 也可以說 ≤ W？'); stu.mood('wow');
+  say('同學：else 也能說最多 W 次', '對！W 是好的界，L 更緊');
+  await step(tok); // @1781.3 either bound gives the right running time
+  stu.mood('happy');
+  ok('漸近分析：緊的、鬆的都會得到對的答案', 0, 0.4, 2);
+  say('哪個界都會得到正確的漸近時間', '緊的界代表你看懂了演算法');
+  await step(tok); // @1815.5 partial products
+  cd.hl(-1); tg.forEach((t) => { t.element.className = 'lab-label ptr alt'; });
+  say('把每行的乘積列出來', '1、W、L·W、w̄·L·W、W − L、…、L');
+  await step(tok); // @1861.5 line 5 dominates
+  cd.hl(2); tg[2].element.className = 'lab-label bad';
+  say('最大的是第 5 行：O(W · L · w̄)', '它就是這個函數的時間');
+  await step(tok); // @1877.7 w̄ bounded → W·L ≤ W²
+  ok('w̄ 有界 → O(W·L) ≤ W²：之前的假設成立', 0.4, 7.5, 0);
+  say('英文字長 5–10 個字元：w̄ 當常數', 'W·L ≤ W²，前面的總結不用改');
 }]);
 
-// 35:22 extend 的成本：每行 K 字、Z 行 → K·Z = W
+// 31:59 Profiler 與 + 改 extend（原 plus-vs-extend 的逐句版）
+FRAG.push(['dcmit-profiler', 'Profiler 找瓶頸：+ 改成 extend', async (tok) => {
+  fresh([0, 5, 14], [0, 2.8, 0]);
+  await step(tok); // @1926.4 1,000 lines by hand doesn't scale
+  const pile = [];
+  for (let i = 0; i < 10; i++) pile.push(cube('', i % 2 ? '#e6e1d8' : '#d9d4cb', [1.6, 0.12, 1.1], -5.4, 0.06 + i * 0.13, 0, 0.6 + i * 0.1));
+  no('上千行程式：逐行手算？不實際', -4.6, 2.2, 0);
+  say('一千行的程式，一行一行算？', '不會這樣做');
+  await step(tok); // @1937.6 run it through a profiler
+  const mon = prop('monitor', -2.2, 0, 0, 0.9, 'profiler：哪裡最花時間');
+  say('交給 profiler 跑', '電腦會告訴你哪一行最花時間');
+  const rows = [['word_frequencies_for_file', 0.6, 5.0], ['get_words_from_line_list', 3.8, 3.8], ['count_frequency', 2.0, 2.0]];
+  const RY = (i) => 6.2 - i * 0.75;
+  await step(tok); // @1964.7 total time per function
+  tag('total time', 'ptr', 2.0, 7.0, 0); tag('cumulative', 'ptr alt', 5.2, 7.0, 0);
+  const tb = rows.map(([n, t], i) => { tag(n, 'idx', -0.6, RY(i), 0); return hBar(DO, 0.6, RY(i), 0); });
+  await anim(tok, 700, (u) => tb.forEach((m, i) => hSet(m, rows[i][1] * 0.5 * u)));
+  say('total time：函數「自己」花的時間');
+  await step(tok); // @1971.7 cumulative: together with children
+  const cb = rows.map((_, i) => hBar(DB, 3.6, RY(i), 0));
+  await anim(tok, 700, (u) => cb.forEach((m, i) => hSet(m, rows[i][2] * 0.5 * u)));
+  say('cumulative：連同它呼叫的子函數', 'word_frequencies_for_file 看起來最大');
+  await step(tok); // @2015.8 look at total time: get_words_from_line_list
+  glow(tb[1], RED);
+  no('瓶頸：get_words_from_line_list', 2.0, 3.6, 0.4);
+  say('找瓶頸要看 total time', '最慢的是 get_words_from_line_list');
+  await step(tok); // @2024.3 there's a plus, it copies the list
+  kill(mon); pile.forEach((m) => kill(m));
+  tag('+', 'ptr', -6.3, 0.3, -1.2);
+  let s = 0;
+  const sumP = note('複製 0 個', -6.0, 2.2, -1.2);
+  for (let z = 1; z <= 6; z++) { const b = dBar(DR, -5.4 + (z - 1) * 0.9, -1.2, 0.6); s += 3 * z; txt(sumP, '複製 ' + s + ' 個'); await anim(tok, 220, (u) => dSetBar(b, 3 * z * 0.12 * u)); }
+  say('第 5 行有個「+」', '每加一行就把整串複製一次 → 越來越貴');
+  await step(tok); // @2040.0 extend: docdist2
+  tag('extend', 'ptr alt', -6.6, 0.3, 1.4);
+  const sumE = note('搬 0 個', -6.0, 1.3, 1.4);
+  let e = 0;
+  for (let z = 1; z <= 6; z++) { const b = dBar(DG, -5.4 + (z - 1) * 0.9, 1.4, 0.6); e += 3; txt(sumE, '搬 ' + e + ' 個'); await anim(tok, 180, (u) => dSetBar(b, 3 * 0.12 * u)); }
+  say('改用 extend：document distance 2', '只搬新來的幾個字');
+  await step(tok); // @2052.3 a few keystrokes, 30% faster
+  ok('改 8 個鍵 → 快約 30%', -2.6, 3.4, 0.6);
+  say('一個字元換成六個', '執行時間改善約 30%，划算！');
+}]);
+
+// 35:30 extend 的成本：每行 K 字、Z 行 → K·Z = W
 FRAG.push(['dcmit-extend-kz', 'extend：K 次 append × Z 行 = W', async (tok) => {
   fresh([0, 5.4, 13], [0, 2.6, 0]);
   const K = 3, Z = 4;
-  code(['4  words_in_line = get_words_from_string(line)', '5  word_list.extend(words_in_line)'], -0.4, 6.6, 0.5);
-  tag('文件', 'ptr', -5.8, 4.2, 0);
+  const TX = (i) => -2.4 + i * 0.6;
+  await step(tok); // @2132.7 reads lines, breaks into words, combines
+  tag('文件', 'ptr', -5.8, 4.3, 0);
   const doc = [];
-  for (let z = 0; z < Z; z++) for (let k = 0; k < K; k++) doc.push(cube('', DB, [0.5, 0.4, 0.5], -5.6 + k * 0.6, 3.6 - z * 0.55, 0));
-  say('K = 每行字數、Z = 行數', 'K 有界（一行要放得進螢幕）；W = K·Z');
-  await beat(tok, 2800);
-  tag('word_list（陣列，連續存放）', 'ptr alt', 1.4, 0.95, 1.2);
-  for (let i = 0; i < K * Z; i++) ctx.tile(V3(-2.4 + i * 0.6, 0.02, 1.2), 0.55, 0.6);
-  const cost = tag('成本 0', 'ptr', 5.2, 3.4, 0);
+  for (let z = 0; z < Z; z++) for (let k = 0; k < K; k++) doc.push(cube('', DB, [0.5, 0.4, 0.5], -5.6 + k * 0.6, 3.6 - z * 0.55, 0, 0.8));
+  say('get_words_from_line_list：逐行讀', '切成字，再全部接起來');
+  await step(tok); // @2142.0 line 4 words of a line, extend combines
+  const cd = code(['4  words_in_line = get_words_from_string(line)', '5  word_list.extend(words_in_line)'], -0.2, 6.6, 0.5);
+  cd.hl(0);
+  say('第 4 行：一行的字串列', '第 5 行：extend 接到大串列後面');
+  await step(tok); // @2155.9 K words per line
+  const kT = note('K = 每行字數', -5.0, 4.0, 0.6);
+  for (let k = 0; k < K; k++) glow(doc[k], GOLD);
+  say('K = 每行的字數');
+  await step(tok); // @2167.9 Z lines
+  for (let k = 0; k < K; k++) glow(doc[k], null);
+  tag('Z 行', 'ptr alt', -6.6, 2.8, 0);
+  say('Z = 行數', '所以 W = K · Z');
+  await step(tok); // @2207.8 K is bounded
+  txt(kT, 'K 有上限：一行要塞得進螢幕或紙');
+  say('K 不會無限大：一行得放得進螢幕', '但分析時還是用得到');
+  await step(tok); // @2254.0 line 4 gives K elements, line 5 appends
+  tag('word_list（大串列）', 'ptr alt', 1.0, 0.95, 1.2);
+  for (let i = 0; i < K * Z; i++) ctx.tile(V3(TX(i), 0.02, 1.2), 0.55, 0.6);
+  cd.hl(1);
+  for (let k = 0; k < K; k++) glow(doc[k], GOLD);
+  say('第 4 行給 K 個字', '第 5 行把這 K 個接到大串列');
+  await step(tok); // @2283.0 if Python lists were linked lists: concat O(1)
+  const stu = buddy('同學', 'linked list → O(1)?', STU, 5.2, 0, -1.6, 0.6); stu.mood('wow');
+  const chain = [0, 1, 2, 3, 4, 5].map((i) => cube(i ? '' : '頭', '#f3dcc0', [0.55, 0.4, 0.55], -0.4 + i * 0.95, 0.2, -2.4));
+  const arrs = [0, 1, 2, 3, 4].map((i) => arrow(V3(-0.1 + i * 0.95, 0.2, -2.4), V3(0.3 + i * 0.95, 0.2, -2.4), 0x6e5f49));
+  say('若 Python list 是 linked list', '兩串接起來確實 O(1)');
+  await step(tok); // @2300.8 but element 200 takes 200 steps
+  const walk = pkt('找第 200 個', -0.4, 0.9, -2.4);
+  await travel(tok, walk, V3(-0.4, 0.9, -2.4), V3(4.35, 0.9, -2.4), 1500);
+  say('但要拿中間第 200 個', '就得從頭走 200 步');
+  await step(tok); // @2319.5 Python list = CLRS array (contiguous)
+  remove(walk); chain.forEach((m) => kill(m)); arrs.forEach((m) => kill(m));
+  stu.set('原來是 array'); stu.mood('happy');
+  ok('Python list = CLRS 的 array（連續存放）', 1.0, 0.3, 2.4);
+  say('Python 的 list 其實是陣列', '名字叫 list，可不是 linked list');
+  await step(tok); // @2334.5 copying a block still moves every element
+  note('整塊複製也得搬每個元素', 4.6, 2.0, 0);
+  say('整塊複製也一樣', '1 萬個元素就得搬 1 萬份');
+  await step(tok); // @2370.5 extend = sequence of appends
+  for (let k = 0; k < K; k++) glow(doc[k], null);
+  bub('extend = K 次 append，每次 O(1)', 4.4, 4.6, 0);
+  say('extend 就是連續 append', '長度 K → K 次，每次常數');
+  await step(tok); // @2391.8 line 5 runs Z times
+  const cost = note('成本 0', 5.2, 3.0, 0);
   let c = 0;
-  for (let z = 0; z < Z; z++) {
-    say('第 ' + (z + 1) + ' 行：取出 K = 3 個字', 'extend = 3 次 append，每次 O(1)');
-    for (let k = 0; k < K; k++) {
-      const m = doc[z * K + k]; move(m, -2.4 + (z * K + k) * 0.6, 0.25, 1.2); tint(m, DG);
-      c++; txt(cost, '成本 ' + c); await beat(tok, 320);
-    }
-    await beat(tok, 700);
+  for (let z = 0; z < Z; z++) for (let k = 0; k < K; k++) {
+    const m = doc[z * K + k]; move(m, TX(z * K + k), 0.25, 1.2); tint(m, DG);
+    c++; txt(cost, '成本 ' + c); await beat(tok, 170);
   }
-  say('總共 K · Z = W', 'get_words_from_line_list：O(W²) → O(W)');
-  await beat(tok, 3000);
-  say('Python list = CLRS 的 array', 'linked list 串接 O(1)，但取第 200 個要走 200 步');
-  await beat(tok, 3200);
-  say('docdist2：O(W₁L₁ + W₂L₂ + L₁L₂)', 'L₁² ≤ W₁L₁，所以不用另外加');
-  await beat(tok, 3000);
+  say('第 5 行跑 Z 次（每行一次）', '每次 K');
+  await step(tok); // @2446.9 K·Z = W
+  ok('總共 K · Z = W → O(W)', 4.6, 3.8, 0);
+  say('K × Z = W', '從 O(W²) 降到 O(W)');
+  await step(tok); // @2464.5 word_frequencies_for_file: W·L
+  note('word_frequencies_for_file：O(W·L)', 2.2, 5.6, 0.6);
+  say('word_frequencies_for_file 變成 W·L', 'count_frequency 主導');
+  await step(tok); // @2505.9 L1² ≤ W1L1, no need to add
+  note('L₁² ≤ W₁L₁：不用另外加', 2.2, 5.0, 0.6);
+  say('要不要把 L₁² 加回來？', 'L₁² ≤ W₁L₁，已被吃掉（但要想過）');
+  await step(tok); // @2522.0 docdist2 improved
+  ok('document distance 2：O(W₁L₁ + W₂L₂ + L₁L₂)', 0.4, 7.4, 0);
+  say('docdist2：漸近複雜度和實際時間都變好');
+}]);
+
+// 42:14 已排序向量的內積：binary search → 兩指標（原 sorted-inner-product 的逐句版）
+FRAG.push(['dcmit-sorted-inner', '已排序向量內積：兩指標 O(L₁ + L₂)', async (tok) => {
+  fresh([0, 6, 14], [0, 1.8, 0]);
+  const D1 = [[3, 2], [4, 1], [6, 1], [8, 1], [9, 1]], D2 = [[2, 1], [3, 1], [6, 1], [7, 1], [8, 1]];
+  const X = (i) => -4.4 + i * 2;
+  await step(tok); // @2537.2 slowest: count_frequency, inner_product
+  const t1 = no('最慢：count_frequency、inner_product', 0, 5.0, 0);
+  say('profiler 說：接下來最慢的是', 'count_frequency 和 inner_product');
+  await step(tok); // @2548.8 make inner product faster, wff slower
+  const t2 = note('先讓 inner_product 變快；代價：word_frequencies_for_file 變慢', 0, 4.3, 0);
+  say('先加速 inner_product', '代價是 word_frequencies_for_file 要多做事');
+  await step(tok); // @2558.0 requires the words sorted
+  const t3 = bub('前提：向量裡的字要排好序', 0, 3.6, 0);
+  say('快很多的內積：前提是字已經排好');
+  await step(tok); // @2583.5 words in file order → sorted
+  const ws = ['the', 'fox', 'is', 'in', 'hat'];
+  const wm = ws.map((w, i) => cube(w, DB, [1.0, 0.5, 0.8], -4 + i * 2, 0.25, 0, 1));
+  await beat(tok, 400);
+  [...ws].sort().forEach((w, p) => move(wm[ws.indexOf(w)], -4 + p * 2, 0.25, 0));
+  say('現在的 L：照字在檔案裡出現的順序', '如果改成排好的順序…');
+  await step(tok); // @2616.8 numbers instead of words
+  remove(t1); remove(t2); remove(t3); wm.forEach((m) => fly(m));
+  note('字換成編號：the = 字典第 50 個字 → 50', 0, 4.4, 0);
+  say('字換成字典裡的編號', '數字比較好寫');
+  await step(tok); // @2633.0 doc 1: 3 4 6 8 9
+  const m1 = D1.map(([w, c], i) => cube(w + ':' + c, DB, [1.4, 0.6, 1], X(i), 0.3, -1.5, 1.5));
+  tag('文件 1', 'ptr', -6.4, 0.3, -1.5);
+  say('文件 1：字 3、4、6、8、9', '次數 2、1、1、1、1');
+  await step(tok); // @2648.5 doc 2: 2 3 6 7 8
+  const m2 = D2.map(([w, c], i) => cube(w + ':' + c, DP, [1.4, 0.6, 1], X(i), 0.3, 1.5, 1.5));
+  tag('文件 2', 'ptr', -6.4, 0.3, 1.5);
+  say('文件 2：字 2、3、6、7、8', '各出現一次');
+  await step(tok); // @2673.5 old algorithm: find same word, multiply
+  glow(m1[0], GOLD);
+  const sc = pkt('找 3', X(0), 1.1, 1.5);
+  await travel(tok, sc, V3(X(0), 1.1, 1.5), V3(X(1), 1.1, 1.5), 600);
+  glow(m2[1], GOLD);
+  const prod = note('2 × 1 = 2', X(1), 1.9, 0);
+  say('舊做法：拿文件 1 的 3，到文件 2 找 3', '找到就把次數相乘：2 × 1');
+  await step(tok); // @2713.2 step one won't get faster; lookup can
+  remove(prod); glow(m1[0], null); glow(m2[1], null); remove(sc);
+  note('① 走過每個元素：不會變快　② 在另一邊找：可以加速', 0, 3.6, 0);
+  say('走過文件 1 的每一項，省不掉', '「在文件 2 找」這步可以加速');
+  await step(tok); // @2727.5 sorted → binary search
+  glow(m1[0], GOLD);
+  const mid = tag('mid', 'ptr alt', X(2), 1.1, 1.5);
+  for (const k of [2, 0, 1]) { move(mid, X(k), 1.1, 1.5); glow(m2[k], GOLD); await beat(tok, 450); glow(m2[k], null); }
+  glow(m2[1], GREEN);
+  say('文件 2 排好了：用 binary search 找 3');
+  await step(tok); // @2751.4 L1 binary searches: L1 log L2 < L1 L2
+  remove(mid); glow(m1[0], null); glow(m2[1], null);
+  ok('L₁ 次 × log L₂：比 L₁L₂ 快', 0, 2.6, 0);
+  say('每次 log L₂，做 L₁ 次', '已經比 L₁L₂ 快，值得排序');
+  await step(tok); // @2766.3 class algorithm: L1 + L2
+  ok('上課的做法更好：L₁ + L₂', 0, 2.0, 0);
+  say('上課講的做法：只要 L₁ + L₂');
+  await step(tok); // @2794.0 both sorted: 4 can't be before 3
+  glow(m1[1], GOLD); tint(m2[0], GRAY); tint(m2[1], GRAY);
+  say('兩邊都排好了', '在 3 找到之後，4 不可能出現在 3 前面');
+  await step(tok); // @2827.0 a pointer remembers where we were
+  tint(m2[0], DP); tint(m2[1], DP); glow(m1[1], null);
+  const p1 = pkt('↑', X(0), 1.1, -1.5), p2 = pkt('↑', X(0), 1.1, 1.5);
+  const sl = tag('內積 = 0', 'ptr alt', 5.6, 3.0, 0);
+  say('用一個指標記住：上次看到哪裡');
+  await step(tok); // @2839.6 3: look at 2 (smaller), then 3: found
+  glow(m1[0], GOLD); glow(m2[0], GOLD); await beat(tok, 500); glow(m2[0], null);
+  move(p2, X(1), 1.1, 1.5); glow(m2[1], GREEN); tint(m1[0], DG); tint(m2[1], DG); txt(sl, '內積 = 2');
+  say('找 3：先看到 2（較小），再看到 3', '找到！2 × 1 = 2');
+  await step(tok); // @2850.0 4: look at 6 > 4, stop, keep pointer
+  glow(m1[0], null); glow(m2[1], null);
+  move(p1, X(1), 1.1, -1.5); move(p2, X(2), 1.1, 1.5); glow(m1[1], GOLD); glow(m2[2], GOLD);
+  say('找 4：看到 6 > 4', '後面不可能有 4 → 指標停在 6');
+  await step(tok); // @2862.0 6 matches
+  glow(m1[1], null);
+  move(p1, X(2), 1.1, -1.5); glow(m1[2], GOLD); tint(m1[2], DG); tint(m2[2], DG); txt(sl, '內積 = 3');
+  say('找 6：從 6 開始看，對上了', '1 × 1，累加');
+  await step(tok); // @2872.0 8: 6 < 8, 7 < 8, 8 = 8
+  glow(m1[2], null); glow(m2[2], null);
+  move(p1, X(3), 1.1, -1.5); glow(m1[3], GOLD);
+  move(p2, X(3), 1.1, 1.5); glow(m2[3], GOLD); await beat(tok, 500); glow(m2[3], null);
+  move(p2, X(4), 1.1, 1.5); tint(m1[3], DG); tint(m2[4], DG); txt(sl, '內積 = 4');
+  say('找 8：7 < 8，往下；8 = 8', '找到，再乘一次');
+  await step(tok); // @2888.2 9: keep looking down, hit the end
+  glow(m1[3], null); move(p1, X(4), 1.1, -1.5); glow(m1[4], GOLD);
+  move(p2, X(4.8), 1.1, 1.5);
+  say('找 9：往下走，走到底了');
+  await step(tok); // @2905.0 the rest can't be there: stop
+  glow(m1[4], null);
+  ok('內積 = 4：指標只往下走 → O(L₁ + L₂)', 0, 4.4, 0);
+  say('後面的都不可能在了：停', '兩個指標都只往前 → L₁ + L₂ 步');
 }]);
 
 // 48:40 為何兩指標不改 binary search；最壞 L₁ + L₂
 FRAG.push(['dcmit-ptr-vs-bsearch', '兩指標 vs binary search：L₁ + L₂', async (tok) => {
   fresh([0, 6, 13], [0, 1.6, 0]);
   const X = (i) => -4.2 + i * 1.2;
-  const top = [1, 2, 3, 4, 5, 6, 7, 8].map((v, i) => cube(v, DB, [0.9, 0.55, 0.9], X(i), 0.3, -2));
-  const bot = [1, 2, 3, 4, 5, 6, 7, 8].map((v, i) => cube(v, DP, [0.9, 0.55, 0.9], X(i), 0.3, 0.6));
-  tag('L₁', 'ptr', -5.9, 0.3, -2); tag('L₂', 'ptr', -5.9, 0.3, 0.6);
-  const c1 = tag('binary search：0 步', 'ptr', -3, 4.4, 0), c2 = tag('兩指標：0 步', 'ptr alt', 3, 4.4, 0);
-  say('兩串列都是 1 … N（N = 10,000）', '每個都做 binary search 會怎樣？');
-  await beat(tok, 2600);
+  const LBL = [1, 2, 3, 4, 5, 6, 7, 'N'];
+  await step(tok); // @2933.8 pointer goes down one at a time (+1)
+  const bot = LBL.map((v, i) => cube(v, DP, [0.9, 0.55, 0.9], X(i), 0.3, 0.6));
+  tag('L₂', 'ptr', -5.9, 0.3, 0.6);
+  const p = pkt('↑', X(0), 1.0, 0.6);
+  for (let i = 1; i < 4; i++) { move(p, X(i), 1.0, 0.6); await beat(tok, 350); }
+  note('指標一次往下一格（+1）', X(2), 2.2, 0.6);
+  say('指標一次只往下走一格', '直到找到，或走過頭就停');
+  await step(tok); // @2950.4 why not binary search?
+  const stu = buddy('同學', '為什麼不 binary search？', STU, 5.6, 0, -2.6, 0.6); stu.mood('wow');
+  say('同學問：為什麼不用 binary search 找？');
+  await step(tok); // @2960.2 one step at a time is optimal
+  bub('一格一格走，才是最佳', -2.0, 3.0, -2);
+  say('因為那樣分析就不快了', '一格一格走反而是最佳');
+  await step(tok); // @2968.5 example: both lists 1 … 10,000
+  move(p, X(0), 1.0, 0.6);
+  const top = LBL.map((v, i) => cube(v, DB, [0.9, 0.55, 0.9], X(i), 0.3, -2, 1.2));
+  tag('L₁', 'ptr', -5.9, 0.3, -2);
+  note('N = 10,000', 5.6, 1.3, -0.7);
+  say('例子：兩個串列都是 1, 2, …, 10,000');
+  await step(tok); // @2982.7 binary search for 1, 2, 3 … each ≈ log N
+  const c1 = tag('binary search：0 步', 'ptr', -3, 4.2, 0);
   let s = 0;
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 3; i++) {
     glow(top[i], GOLD);
     let lo = 0, hi = 7;
-    while (lo <= hi) { const m = (lo + hi) >> 1; glow(bot[m], GOLD); s++; txt(c1, 'binary search：' + s + ' 步'); await beat(tok, 110); glow(bot[m], null); if (m === i) break; if (m < i) lo = m + 1; else hi = m - 1; }
+    while (lo <= hi) { const m = (lo + hi) >> 1; glow(bot[m], GOLD); s++; txt(c1, 'binary search：' + s + ' 步'); await beat(tok, 120); glow(bot[m], null); if (m === i) break; if (m < i) lo = m + 1; else hi = m - 1; }
     glow(top[i], null);
-    if (i === 0) { say('每個元素各 ≈ log N 步', '總共 ≈ N log N'); await beat(tok, 900); }
   }
-  say('binary search：≈ N log N', '前一半就有 (N/2)·log(N/2)');
-  await beat(tok, 2200);
-  const p1 = tag('↑', 'ptr alt', X(0), 1, -2), p2 = tag('↑', 'ptr alt', X(0), 1, 0.6);
-  s = 0;
-  for (let i = 0; i < 8; i++) {
-    glow(top[i], GREEN); glow(bot[i], GREEN); s += 2; txt(c2, '兩指標：' + s + ' 步');
-    move(p1, X(Math.min(i + 1, 7.4)), 1, -2); move(p2, X(Math.min(i + 1, 7.4)), 1, 0.6);
-    await beat(tok, 220);
-  }
-  say('兩指標：N + N = 2N', '指標只往下走，從不回頭');
-  await beat(tok, 2800);
-  top.forEach((m, i) => { if (i > 2) fly(m, V3(-2, 6, -3)); else { relabel(m, 6 + i); tint(m, DY); glow(m, null); } });
+  say('找 1：log N 步；找 2：又差不多 log N…', '每個都要 log N');
+  await step(tok); // @3009.2 two pointers: 10,000 + 10,000
+  const c2 = tag('兩指標：0 步', 'ptr alt', 3, 4.2, 0);
+  const p1 = pkt('↑', X(0), 1.0, -2);
+  let t = 0;
+  for (let i = 0; i < 8; i++) { glow(top[i], GREEN); glow(bot[i], GREEN); t += 2; txt(c2, '兩指標：' + t + ' 步'); move(p1, X(Math.min(i + 1, 7.4)), 1.0, -2); move(p, X(Math.min(i + 1, 7.4)), 1.0, 0.6); await beat(tok, 220); }
+  say('兩指標：10,000 + 10,000 步', '就算兩串完全一樣也只要 2N');
+  await step(tok); // @3019.2 binary search: N log N
+  txt(c1, 'binary search：≈ N log N');
+  say('binary search 卻要 ≈ 10,000 × log 10,000');
+  await step(tok); // @3029.7 bound: first half alone > (N/2) log(N/2)
+  top.forEach((m, i) => { glow(m, i < 4 ? GOLD : null); }); bot.forEach((m) => glow(m, null));
+  note('光前一半：> (N/2) · log(N/2)', -1.8, 2.0, -2);
+  say('怎麼證明？只看前一半的 5,000 個', '每個都要 ≈ log(N/2) 步 → 已經 > (N/2) log(N/2)');
+  await step(tok); // @3086.5 how many times does this pointer advance? L2
+  top.forEach((m) => glow(m, null));
+  stu.set('下面的指標：L₂ 次'); stu.mood('happy');
+  say('下面的指標總共前進幾次？', '只往下走 → 最多 L₂ 次');
+  await step(tok); // @3108.3 the other pointer: L1
+  stu.set('上面的：L₁ 次');
+  say('上面的指標：最多 L₁ 次');
+  await step(tok); // @3177.4 worst case: short list's values at the end
+  top.forEach((m, i) => { if (i < 5) fly(m, V3(-2, 6, -3)); else { relabel(m, i + 1); tint(m, DY); glow(m, null); } });
   bot.forEach((m) => glow(m, null));
-  say('最壞：短串列的值都在長串列尾端', 'L₁ = 6 7 8：L₂ 的指標得走完整條 → L₁ + L₂');
-  move(p2, X(0), 1, 0.6);
-  for (let i = 0; i < 8; i++) { move(p2, X(i), 1, 0.6); glow(bot[i], GOLD); await beat(tok, 200); glow(bot[i], null); }
-  await beat(tok, 1000);
-  say('上界：O(L₁ + L₂)', 'docdist 的這個指標技巧＝merge sort 的 merge');
-  await beat(tok, 3000);
+  move(p, X(0), 1.0, 0.6);
+  for (let i = 0; i < 8; i++) { move(p, X(i), 1.0, 0.6); await beat(tok, 200); }
+  say('最壞：短串列的值都在長串列尾端', '下面的指標得走完整條');
+  await step(tok); // @3184.0 worst case L1 + L2
+  ok('最壞：L₁ + L₂', 0, 3.0, 0.6);
+  say('所以上界是 O(L₁ + L₂)');
+  await step(tok); // @3198.5 homework: insertion sort matches the textbook
+  kill(stu.g);
+  note('回家：對照課本讀 insertion sort 的程式，確認 N²', 0, 5.0, 0);
+  say('回家：insertion sort 對照課本', '一行一行標成本，確認是 N²');
+  await step(tok); // @3228.7 merge = this pointer trick
+  ok('merge sort 的 merge = 這個兩指標技巧', 0, 5.7, 0);
+  say('merge sort 的 merge 跟這個內積一模一樣', '就是這個指標魔法');
 }]);
 
 // ═════════════ L11：eCaXlAaN2uE ═════════════
@@ -4466,228 +5183,567 @@ FRAG.push(['dcmit-ptr-vs-bsearch', '兩指標 vs binary search：L₁ + L₂', a
 // 00:37 動機：64 位元不夠
 FRAG.push(['dcmit-bigint-why', '高精度：比 64 位元長得多的數', async (tok) => {
   fresh([0, 5, 12.5], [0, 2, 0]);
-  const w = cube('64-bit word', DB, [2.4, 0.7, 0.9], -4.2, 4.6, 0, 2);
-  say('一個機器字只有 64 位元', '8 → 32 → 64 位元');
-  await beat(tok, 3400);
-  tag('1024-bit RSA 數字', 'ptr', -1, 3.2, 0);
-  for (let i = 0; i < 16; i++) { cube('', i % 2 ? DB : '#7fb6e8', [0.7, 0.6, 0.8], -5.25 + i * 0.7, 2.2, 0, 1.5); await beat(tok, 90); }
-  say('RSA：數千位元的質數', '1024 位元 = 16 個 64 位元字');
-  await beat(tok, 3400);
-  const d = cube('√2 到百萬位', DY, [2.6, 0.6, 0.9], 2.2, 0.3, 1.2, 2), p = cube('π 到千萬位', DY, [2.6, 0.6, 0.9], -2.2, 0.3, 1.2, 2);
-  say('√2 算到百萬位怎麼做？', '要多位數的乘法與除法');
-  await beat(tok, 3900);
-  glow(d, GOLD); glow(p, GOLD); glow(w, GOLD);
-  say('這個單元：Newton 法 ＋ 大數乘除', '把長數字拆成機器字來算');
-  await beat(tok, 3900);
+  await step(tok); // @45.0 irrationals, recreational math
+  bub('今天：休閒數學 —— 無理數', 0, 5.6, 0);
+  say('今天是輕鬆的「休閒數學」', '主題：無理數');
+  await step(tok); // @57.8 numbers much longer than 64 bits
+  const w = cube('8 bits', DB, [0.6, 0.7, 0.9], -4.2, 4.2, 0, 2);
+  tag('一個機器字', 'ptr', -6.0, 4.9, 0);
+  say('有時要算比 64 位元長得多的數', '64 位元 = 現在電腦一個字的長度');
+  await step(tok); // @69.8 8 → 32 → 64 bits
+  for (const [b, sx] of [[32, 1.4 / 0.6], [64, 2.4 / 0.6]]) { const s0 = w.scale.x; await anim(tok, 600, (u) => { w.scale.x = s0 + (sx - s0) * u; }); relabel(w, b + ' bits'); }
+  say('以前 8 位元，後來 32，現在 64');
+  await step(tok); // @83.0 64 bits ain't near enough
+  no('64 位元根本不夠', -0.4, 4.2, 0);
+  say('可是 64 位元遠遠不夠');
+  await step(tok); // @96.8 high precision: ~100 decimal digits
+  const row = cube('3.14159265358979323846264338327950288419716939937510…（100 位）', PAPER, [9.4, 0.5, 0.7], 0, 2.9, 0, 1.5);
+  note('物理學家：100 位十進位精度', 4.0, 3.6, 0);
+  say('高精度計算：例如 100 位十進位', '比 64 位元多太多');
+  await step(tok); // @109.3 √2 to a million digits, π to 10 million
+  kill(row);
+  const d = cube('√2 到百萬位', DY, [2.6, 0.6, 0.9], -2.2, 2.9, 0, 1.5), p = cube('π 到千萬位', DY, [2.6, 0.6, 0.9], 1.8, 2.9, 0, 1.5);
+  say('√2 算到百萬位、π 算到千萬位', '電腦要怎麼做？');
+  await step(tok); // @123.0 this module: numerics, Newton's method
+  glow(d, GOLD); glow(p, GOLD);
+  ok("這個單元：Newton's method 算到任意精度", 0, 1.9, 0);
+  say("這個單元：用 Newton's method", '把無理數算到任意精度');
+  await step(tok); // @144.2 RSA: primes thousands of bits
+  const lock = prop('lock', 5.4, 0, 1.6, 1.3); bob(lock, 0.05);
+  for (let i = 0; i < 16; i++) cube('', i % 2 ? DB : SKY, [0.55, 0.45, 0.6], -5.0 + i * 0.58, 0.25, 1.6, 1.2);
+  tag('1024 位元 = 16 個 64 位元字', 'idx', -0.6, 0.9, 1.6);
+  say('作業：RSA 加密', '質數有上千位元');
+  await step(tok); // @163.0 multiply and divide thousands of bits
+  bub('上千位元的 × 和 ÷ 怎麼做？', 0, 1.1, 2.8);
+  say('上千位元的數要怎麼乘、怎麼除？', '這就是這個單元要解決的');
 }]);
 
 // 02:58 Pythagoras：對角線與邊不可公度；√2 的位數
 FRAG.push(['dcmit-sqrt2-diagonal', '√2：正方形的對角線', async (tok) => {
   fresh([0, 5, 12], [0, 2.4, 0]);
-  const x0 = -5, y0 = 0.6, s = 3.2;
+  const x0 = -5.4, y0 = 0.6, s = 3.0;
+  await step(tok); // @178.0 irrationals
+  bub('無理數', x0 + 1.5, 5.2, 0);
+  say('先來談無理數');
+  await step(tok); // @184.7 Pythagoras
+  const py = buddy('Pythagoras', '', TEA, 4.8, 0, 1.4, 0.8);
   line(x0, y0, x0 + s, y0); line(x0 + s, y0, x0 + s, y0 + s); line(x0 + s, y0 + s, x0, y0 + s); line(x0, y0 + s, x0, y0);
   tag('1', 'idx', x0 + s / 2, y0 - 0.3, 0); tag('1', 'idx', x0 - 0.3, y0 + s / 2, 0);
-  say('邊長 1 的正方形', '對角線多長？');
-  await beat(tok, 2500);
-  await beat(tok, 600);
+  say('Pythagoras（畢達哥拉斯）', '邊長 1 的正方形');
+  await step(tok); // @192.1 diagonal and side
   line(x0, y0, x0 + s, y0 + s, 0, '#d64545');
-  tag('√2', 'ptr alt', x0 + s / 2 + 0.4, y0 + s / 2 - 0.3, 0);
-  say('對角線與邊「不可公度」', '比值不是整數比 → 無理數');
-  await beat(tok, 3400);
+  tag('對角線', 'ptr alt', x0 + s / 2 + 0.5, y0 + s / 2 - 0.3, 0);
+  say('他發現：正方形的對角線和邊…');
+  await step(tok); // @199.4 incommensurable
+  note('不可公度：找不到共同的量尺', x0 + 1.5, 4.4, 0);
+  say('「不可公度」', '沒有一把尺能同時量盡兩者');
+  await step(tok); // @202.9 ratio not a ratio of integers
+  no('對角線 : 邊 = p : q ？ ✗', 0.4, 3.3, 0);
+  say('比值不能寫成整數比', '也就是無理數 √2');
+  await step(tok); // @211.6 Babylonians and Indians knew earlier
+  note('巴比倫人、印度人更早就知道', 0.4, 2.6, 0);
+  say('其實巴比倫人和印度人更早就知道', '但名字記在畢達哥拉斯身上');
+  await step(tok); // @227.4 "all is number"
+  py.set('萬物皆數'); py.mood('happy'); await py.hop(tok);
+  say('他的哲學：萬物皆數');
+  await step(tok); // @255.8 numbers = 1, 2, 3 …
+  [1, 2, 3].forEach((v, i) => nb(v, 2.6 + i * 1.0, 3.2, DB, 0.55));
+  py.mood('sad');
+  say('他心中的「數」是 1、2、3…', '√2 寫不成這種數');
+  await step(tok); // @268.0 "speechless"
+  py.set('無以言說…');
+  say('他把這個比值叫「無以言說」');
+  await step(tok); // @278.6 a threat: measuring gives different answers
+  const m = pkt('量：1.41', 0.4, 1.6, 1.2);
+  await travel(tok, m, V3(0.4, 1.6, 1.2), V3(2.4, 1.6, 1.2), 500); txt(m, '再量：1.414');
+  await travel(tok, m, V3(2.4, 1.6, 1.2), V3(4.0, 1.6, 1.2), 500); txt(m, '又是：1.4142…');
+  say('信徒們視無理數為威脅', '每次量得更準，答案就又不一樣');
+  await step(tok); // @304.8 they tried to find patterns
+  remove(m);
+  no('想找規律：沒找到', 2.6, 1.0, 1.2);
+  say('他們拚命找規律', '當然沒找到');
+  await step(tok); // @324.6 motivation: find patterns in irrationals
+  ok('高精度的另一個動機：在位數裡找規律', 0, 5.9, 0);
+  say('另一個高精度的動機', '算到幾百萬、幾兆位，說不定有規律？');
   const dg = ['1.414', '213', '562', '373', '095', '048', '…'];
-  for (let q = 0; q < dg.length; q++) { cube(dg[q], q ? PAPER : DY, [q ? 0.9 : 1.3, 0.55, 0.8], -0.2 + q * 1.05 + (q ? 0.2 : 0), 1.6, 0, 1.5); await beat(tok, 450); }
-  say('√2 = 1.414213562373095048…', '看不出規律');
-  await beat(tok, 3400);
-  say('畢氏學派視無理數為威脅', '算到幾百萬位，能找到規律嗎？');
-  await beat(tok, 3200);
+  await step(tok); // @368.4 1.414
+  cube(dg[0], DY, [1.3, 0.55, 0.8], -1.0, 1.6, 2.4, 1.5);
+  say('√2 = 1.414…', '這大家都知道');
+  await step(tok); // @372.2 213 562 373 095 048
+  for (let q = 1; q < dg.length; q++) { cube(dg[q], PAPER, [0.9, 0.55, 0.8], -0.6 + q * 1.0, 1.6, 2.4, 1.5); await beat(tok, 280); }
+  say('接下來 213 562 373 095 048…');
+  await step(tok); // @385.4 no pattern
+  py.set('看不出規律'); py.mood('sad');
+  say('看不出規律', '只看到幾個 0');
+  await step(tok); // @394.5 one program generates, another looks for patterns
+  prop('monitor', -4.6, 0, 3.4, 0.6, '程式 1：產生 √2');
+  prop('monitor', -2.2, 0, 3.4, 0.6, '程式 2：找規律');
+  say('寫一個程式產生 √2', '再寫一個程式在裡面找規律');
 }]);
 
-// 07:00 Catalan：平衡括號字串集合 P 的兩條規則
+// 06:57 Catalan：平衡括號字串集合 P 的兩條規則
 FRAG.push(['dcmit-catalan-rules', 'Catalan：平衡括號的兩條規則', async (tok) => {
   fresh([0, 5, 12.5], [0, 2.6, 0]);
   const P = (s, x, y, c = PAPER, drop = 1) => s.split('').map((ch, i) => cube(ch, c, [0.5, 0.6, 0.6], x + i * 0.55, y, 0, drop));
+  await step(tok); // @420.8 Catalan numbers: favorite
+  const cat = buddy('Catalan 數', '♥', '#f2a7c3', 5.2, 0, 1.6, 0.8); cat.mood('happy');
+  say('題外話：Catalan numbers', '老師最喜歡的數');
+  await step(tok); // @433.4 show up all over the place
+  await cat.hop(tok);
+  bub('到處都會出現', 5.2, 2.6, 1.6);
+  say('它們到處都會冒出來');
+  await step(tok); // @451.0 cardinality of set P of balanced parentheses
+  zone('P：平衡括號字串的集合', -1.2, 0, -1.2, 8.4, 2.2, MINT);
+  say('看成：平衡括號字串的集合 P', 'Catalan 數 = P 有幾個元素');
+  await step(tok); // @469.6 rule 1: λ ∈ P
   tag('規則 1：λ ∈ P（空字串）', 'ptr', -3.2, 6.3, 0);
-  tag('規則 2：α, β ∈ P ⇒ (α)β ∈ P', 'ptr alt', 2.8, 6.3, 0);
-  say('P = 平衡括號字串的集合', 'C_n = 恰有 n 對括號的字串個數');
-  await beat(tok, 3000);
-  const e = cube('λ', MINT, [0.6, 0.6, 0.6], -5, 4.6, 0, 1.5);
-  say('規則 1：空字串 λ 在 P 裡', '');
-  await beat(tok, 1800);
-  P('()', -3.2, 4.6, MINT);
-  tag('α = λ, β = λ', 'idx', -2.9, 4.0, 0.4);
-  say('α = β = λ 套規則 2 → ()', '');
-  await beat(tok, 2400);
-  const bad1 = P(')(', 1.6, 4.6, '#f2c5c5'), bad2 = P('(()', 3.6, 4.6, '#f2c5c5');
+  const e = cube('λ', MINT, [0.6, 0.6, 0.6], -4.8, 0.3, -1.2, 1.5);
+  say('規則 1：空字串 λ 在 P 裡');
+  await step(tok); // @494.7 rule 2: (α)β
+  tag('規則 2：α, β ∈ P ⇒ (α)β ∈ P', 'ptr alt', 2.4, 6.3, 0);
+  const tpl = P('(α)β', -1.2, 4.9, LILAC, 1);
+  say('規則 2：α、β 都在 P 裡', '就把 α 用括號包起來，後面接 β');
+  await step(tok); // @510.2 apply over and over
+  note('反覆套用 → 越來越多平衡字串', -1.0, 5.6, 0);
+  say('一直重複套用規則', '就會產生越來越多平衡字串');
+  await step(tok); // @516.8 balanced vs not balanced
+  const good = P('(())', -1.6, 3.6, MINT); good.forEach((m) => glow(m, GREEN));
+  const bad1 = P(')(', 1.4, 3.6, '#f2c5c5'), bad2 = P('(()', 3.0, 3.6, '#f2c5c5');
   bad1.concat(bad2).forEach((m) => glow(m, RED));
-  say(')(、(() 不平衡，產生不出來', '');
-  await beat(tok, 2400);
-  bad1.concat(bad2).forEach((m) => fly(m));
-  const s = P('(())()', -1.6, 2.2, PAPER);
-  say('例：(())()', '每個非空平衡字串只有一種 (α)β 拆法');
-  await beat(tok, 2600);
+  say('(()) 平衡；)( 和 (() 不平衡', '不平衡的永遠產生不出來');
+  await step(tok); // @538.8 unique (α, β) pair
+  bad1.concat(bad2, good).forEach((m) => fly(m));
+  ok('每個非空平衡字串：恰好一組 (α, β)', 0, 2.6, 0);
+  say('好性質：每個非空平衡字串', '都由唯一一組 (α, β) 用規則 2 產生');
+  await step(tok); // @570.2 example (())()
+  tpl.forEach((m) => kill(m));
+  const s = P('(())()', -1.6, 4.0, PAPER);
+  say('例子：(())()', '比剛才的都複雜一點');
+  await step(tok); // @580.2 α inside brackets, β after
   [1, 2].forEach((i) => tint(s[i], DB)); [4, 5].forEach((i) => tint(s[i], DO));
   [0, 3].forEach((i) => glow(s[i], GOLD));
-  tag('α = ()', 'ptr', -0.8, 1.2, 0.4); tag('β = ()', 'ptr', 1.4, 1.2, 0.4);
-  say('外層括號包住 α，後面接 β', 'α、β 都是先前產生過的字串');
-  await beat(tok, 3400);
+  tag('α = ()', 'ptr', -0.7, 3.1, 0.4); tag('β = ()', 'ptr', 1.4, 3.1, 0.4);
+  say('α = ()，外面包一層括號', '後面接 β = ()');
+  await step(tok); // @599.0 α, β generated before
+  note('α、β 都是之前產生過的', 3.6, 4.6, 0);
+  say('α 和 β 都是先前產生過的字串');
+  await step(tok); // @603.0 α = β = λ → ()
+  const pp = P('()', -5.2, 1.5, MINT);
+  glow(e, GOLD);
+  tag('α = β = λ', 'idx', -4.9, 0.9, 0.4);
+  say('α = β = λ 套規則 2', '得到 ()');
+  await step(tok); // @613.2 α = λ, β = () → ()()
+  glow(e, null);
+  P('()()', -2.6, 1.5, MINT);
+  tag('α = λ、β = ()', 'idx', -1.9, 0.9, 0.4);
+  say('α = λ、β = () → ()()', '就這樣一直做下去');
+  await step(tok); // @624.5 strings longer, set larger: Catalan numbers
+  cat.set('|P| 越來越大'); await cat.hop(tok);
+  say('字串越來越長，集合越來越大', '它的大小就是 Catalan 數');
+  await step(tok); // @640.8 enumerate: an analytical form?
+  bub('問題：數得出來嗎？有公式嗎？', 0, 6.9, 0);
+  say('不簡單的問題：怎麼算出集合有多大？');
 }]);
 
 // 10:55 Catalan 遞迴：C₀ = 1、C₂ = C₀C₁ + C₁C₀、C_{n+1} = Σ C_k C_{n−k}
 FRAG.push(['dcmit-catalan-recur', 'Catalan 遞迴：C_{n+1} = Σ C_k C_{n−k}', async (tok) => {
   fresh([0, 5, 13], [0, 2.8, 0]);
-  say('C₀ = 1（空字串）、C₁ = 1：()', 'C_n = n 對括號的平衡字串數');
-  await beat(tok, 2600);
-  cube('α = λ、β = () → ()()', MINT, [3.2, 0.5, 0.7], -3.6, 5.6, 0, 1);
-  cube('α = ()、β = λ → (())', MINT, [3.2, 0.5, 0.7], -3.6, 4.9, 0, 1);
-  say('C₂：α 可以是 λ 或 ()', 'C₂ = C₀C₁ + C₁C₀ = 2');
-  await beat(tok, 3000);
-  tag('C_{n+1} = Σ_{k=0..n} C_k · C_{n−k}', 'ptr alt', 2.8, 5.6, 0);
-  say('一般式：α 有 k 對、β 有 n − k 對', 'C_{n+1} = Σ C_k C_{n−k}，n ≥ 0');
-  await beat(tok, 3200);
+  await step(tok); // @655.0 C_n = # strings with n pairs
+  tag('C_n = 恰有 n 對括號的平衡字串個數', 'ptr', 0, 6.6, 0);
+  say('C_n：恰好 n 對括號的平衡字串有幾個');
+  await step(tok); // @682.0 C0 = 1
+  const r0 = dBox('C₀ = 1：λ', -4.6, 5.6, 0, 2.4, MINT, 1);
+  say('C₀ = 1：空字串也算一個', 'base case');
+  await step(tok); // @697.0 want an equation for C_{n+1}
+  const q = bub('C_{n+1} 怎麼用比較小的 C 算？', 2.6, 5.6, 0);
+  say('想要 C_{n+1} 的式子', '用之前產生過的字串，唯一地組出來');
+  await step(tok); // @774.0 C1 = 1
+  dBox('C₁ = 1：()', -4.6, 4.9, 0, 2.4, MINT, 1);
+  say('C₁ = 1', '只有 () 一種');
+  await step(tok); // @792.3 C2 in terms of C0, C1?
+  const stu = buddy('同學', 'C₀ + C₁？', STU, 5.6, 0, 1.8, 0.6); stu.mood('wow');
+  say('C₂ 怎麼用 C₀、C₁ 表示？', '同學猜 C₀ + C₁：數字對，式子不對');
+  await step(tok); // @860.4 C2 = C0C1 + C1C0
+  remove(q);
+  stu.set('C₀C₁ + C₁C₀'); stu.mood('happy'); await stu.hop(tok);
+  tag('C₂ = C₀C₁ + C₁C₀', 'ptr alt', 2.4, 5.6, 0);
+  say('C₂ = C₀C₁ + C₁C₀');
+  await step(tok); // @867.0 choose α, then β
+  cube('α = λ、β = () → ()()', PAPER, [3.4, 0.5, 0.7], 2.4, 4.8, 0, 1);
+  cube('α = ()、β = λ → (())', PAPER, [3.4, 0.5, 0.7], 2.4, 4.1, 0, 1);
+  say('先選 α，再選 β', 'α 可以是 λ 或 ()：兩種');
+  await step(tok); // @896.6 the number is 2
+  ok('C₂ = 2', 5.2, 4.45, 0);
+  say('答案都是 2', '但這個式子才是對的');
+  await step(tok); // @949.0 general: Σ C_k C_{n-k}
+  kill(stu.g);
+  tag('C_{n+1} = Σ_{k=0..n} C_k · C_{n−k}（n ≥ 0）', 'ptr', 0, 3.3, 0);
+  say('一般式：α 有 k 對、β 有 n − k 對', 'C_{n+1} = Σ C_k C_{n−k}');
+  await step(tok); // @992.0 the Catalan numbers on the board
   const Cs = [1, 1, 2, 5, 14, 42, 132, 429, 1430, 4862], bars = [];
   for (let n = 0; n < Cs.length; n++) {
-    const x = -5.4 + n * 1.2, h = 0.3 + Math.log10(Cs[n]) * 0.8;
-    const b = dBar(n === 5 || n === 9 ? DY : DB, x, 1.2, 0.7); bars.push(b);
-    await anim(tok, 240, (t) => dSetBar(b, h * t));
-    tag(String(Cs[n]), 'idx', x, h + 0.3, 1.2); tag('C' + n, 'idx', x, 0.02, 2);
+    const x = -5.4 + n * 1.2, h = 0.3 + Math.log10(Cs[n]) * 0.6;
+    const b = dBar(n === 5 || n === 9 ? DY : DB, x, 1.4, 0.7); bars.push(b);
+    dSetBar(b, h);
+    tag(String(Cs[n]), 'idx', x, h + 0.3, 1.4); tag('C' + n, 'idx', x, 0.02, 2.2);
+    await beat(tok, 150);
   }
-  say('1, 1, 2, 5, 14, 42, 132, 429, 1430, 4862', '高度用 log 刻度');
-  await beat(tok, 2600);
-  glow(bars[9], GOLD); glow(bars[5], GOLD);
-  say('車牌 4862？那是 C₉', '42 也在名單上（C₅）');
-  await beat(tok, 3000);
+  say('板書上的 Catalan 數', '1, 1, 2, 5, 14, 42, 132, 429, 1430, 4862');
+  await step(tok); // @1014.0 license plate 4862
+  glow(bars[9], GOLD);
+  const plate = cube('4862', '#f5f1e6', [1.6, 0.8, 0.12], 5.2, 3.4, 1.4); glow(plate, GOLD);
+  say('看到車牌 4862', '轉頭跟爸媽說：那是 C₉！');
+  await step(tok); // @1033.8 bumper sticker C17
+  note('C₁₇ = 129,644,790：做成保險桿貼紙', 3.4, 4.6, 1.4);
+  say('C₁₇ 太長上不了車牌', '可以做成保險桿貼紙');
+  await step(tok); // @1047.0 42 is on the list
+  glow(bars[5], GOLD);
+  ok('42 也在！（C₅）', -0.6, 2.4, 1.4);
+  say('42 也在名單上', '42 是所有問題的答案（笑）');
 }]);
 
 // 18:16 Newton 法：切線 y = f(xᵢ) + f′(xᵢ)(x − xᵢ)，f(x) = x² − a
 FRAG.push(['dcmit-newton-tangent', 'Newton 法：沿切線走到 x 軸', async (tok) => {
   fresh([0, 3.6, 12.5], [0, 2.8, 0]);
   const X = (x) => -5 + x * 4.4, Y = (y) => 2.8 + y * 1.0, f = (x) => x * x - 2;
+  await step(tok); // @1096.3 Newton's method
+  bub("回到無理數：Newton's method", -1.0, 6.9, 0);
+  say("回到 √2：用 Newton's method");
+  await step(tok); // @1116.6 y = f(x), axes
   line(X(0), Y(0), X(2.25), Y(0), 0, '#6e5f49'); tag('x', 'idx', X(2.3), Y(0), 0);
-  for (let k = 0; k < 24; k++) { const a = 0.05 + k * 0.09, b = a + 0.09; line(X(a), Y(f(a)), X(b), Y(f(b)), 0, '#d64545'); }
-  tag('f(x) = x² − a（a = 2）', 'ptr', X(1.9), Y(f(2.1)) + 0.4, 0);
-  say('求 f(x) = 0 的根：逐步逼近', 'a = 2 → 根是 √2');
-  await beat(tok, 2800);
+  line(X(0), Y(-2.1), X(0), Y(3.2), 0, '#6e5f49'); tag('y', 'idx', X(0), Y(3.4), 0);
+  say('有一個函數 y = f(x)', '橫軸 x、縱軸 y');
+  await step(tok); // @1128.0 root of f(x) = 0 by successive approximation
+  note('目標：f(x) = 0 的根（一步步逼近）', 3.0, 5.8, 0);
+  say('目標：找 f(x) = 0 的根', '用逐步逼近');
+  await step(tok); // @1150.7 f(x) = x² − a
+  for (let k = 0; k < 24; k++) { const a = 0.05 + k * 0.09, b = a + 0.09; line(X(a), Y(f(a)), X(b), Y(f(b)), 0, '#d64545'); await beat(tok, 40); }
+  tag('f(x) = x² − a', 'ptr', X(1.9), Y(f(2.1)) + 0.4, 0);
+  say('例：f(x) = x² − a');
+  await step(tok); // @1158.1 a = 2 → root √2
+  const r = cube('', DG, [0.22, 0.22, 0.22], X(Math.SQRT2), Y(0), 0); glow(r, GREEN);
+  tag('√2', 'ptr alt', X(Math.SQRT2), Y(0) - 0.45, 0);
+  say('a = 2：根就是 √2', '（另一個是 −√2）');
+  await step(tok); // @1177.4 geometrically: tangents
+  note('做法：一直畫切線', 3.0, 5.2, 0);
+  say('幾何上：Newton 法就是一直畫切線');
+  await step(tok); // @1197.0 x_i
   const dot = cube('', DY, [0.25, 0.25, 0.25], X(1), Y(f(1)), 0);
   tag('xᵢ', 'ptr alt', X(1), Y(0) + 0.35, 0);
   line(X(1), Y(0), X(1), Y(f(1)), 0, '#a99470');
-  say('從 xᵢ 出發，在曲線上畫切線', 'y = f(xᵢ) + f′(xᵢ)(x − xᵢ)');
-  await beat(tok, 3000);
+  say('目前猜到 xᵢ', '在曲線上找到 (xᵢ, f(xᵢ))');
+  await step(tok); // @1208.5 tangent → x-intercept = x_{i+1}
   const t0 = 0.85, t1 = 1.75;
   line(X(t0), Y(f(1) + 2 * (t0 - 1)), X(t1), Y(f(1) + 2 * (t1 - 1)), 0, '#1f3a6e');
   await anim(tok, 900, (t) => dot.position.set(X(1 + 0.5 * t), Y(f(1) * (1 - t)), 0));
-  tag('xᵢ₊₁', 'ptr alt', X(1.5), Y(0) - 0.4, 0);
-  say('切線和 x 軸的交點 = xᵢ₊₁', 'xᵢ₊₁ = xᵢ − f(xᵢ)/f′(xᵢ)');
-  await beat(tok, 3200);
-  say('f′(x) = 2x 代進去', 'xᵢ₊₁ = xᵢ − (xᵢ² − a)/(2xᵢ)');
-  await beat(tok, 2800);
-  say('化簡：xᵢ₊₁ = (xᵢ + a/xᵢ)/2', 'x₀ = 1 → x₁ = 1.5');
-  await beat(tok, 2800);
+  tag('xᵢ₊₁', 'ptr alt', X(1.5), Y(0) - 0.45, 0);
+  say('沿切線滑到 x 軸', '交點就是下一個 xᵢ₊₁');
+  await step(tok); // @1225.4 tangent equation? derivative
+  const stu = buddy('同學', '導數！', STU, 5.6, 0, 1.4, 0.6); stu.mood('happy');
+  say('切線方程式怎麼寫？', '要用導數（derivative）');
+  await step(tok); // @1341.0 y = f(xi) + f′(xi)(x − xi)
+  ok('切線：y = f(xᵢ) + f′(xᵢ)(x − xᵢ)', 2.2, 6.7, 0);
+  say('切線：y = f(xᵢ) + f′(xᵢ)(x − xᵢ)', 'f′(xᵢ) 是 xᵢ 那點的斜率');
+  await step(tok); // @1365.0 x_{i+1} = xi − f(xi)/f′(xi)
+  kill(stu.g);
+  const fm = tag('xᵢ₊₁ = xᵢ − f(xᵢ) / f′(xᵢ)', 'ptr', 3.4, 4.4, 0);
+  say('令 y = 0 解出 x', 'xᵢ₊₁ = xᵢ − f(xᵢ)/f′(xᵢ)');
+  await step(tok); // @1386.0 plug f = x² − a
+  txt(fm, 'xᵢ₊₁ = xᵢ − (xᵢ² − a) / (2xᵢ)');
+  say('f(x) = x² − a、f′(x) = 2x 代進去');
+  await step(tok); // @1411.7 (xi + a/xi)/2
+  txt(fm, 'xᵢ₊₁ = (xᵢ + a/xᵢ) / 2');
   glow(dot, GOLD);
-  say('只有加法，但 a/xᵢ 要做除法', 'xᵢ 可能有百萬位');
-  await beat(tok, 3000);
+  say('化簡：xᵢ₊₁ = (xᵢ + a/xᵢ)/2', '很直接');
+  await step(tok); // @1426.0 but a division is needed
+  no('a/xᵢ：要做除法！', 3.4, 3.6, 0);
+  say('a 很小（例如 2）', '可是 a/xᵢ 要做除法');
+  await step(tok); // @1440.7 x_i have millions of digits
+  cube('xᵢ = 1.41421356237309504880168872420969807856967187537694…', PAPER, [9.0, 0.45, 0.6], 0, 0.3, 1.6, 1.2);
+  say('xᵢ 可能有上百萬位', '百萬位的除法怎麼做？');
+}]);
+
+// 24:11 Newton 求 √2：正確位數每次翻倍（原 newton-sqrt-error 的逐句版）
+FRAG.push(['dcmit-newton-digits', 'Newton 求 √2：正確位數每次翻倍', async (tok) => {
+  fresh([0, 5, 13.5], [0, 3.0, 0]);
+  const xs = [1, 1.5, 17 / 12, 577 / 408, 665857 / 470832];
+  const str = ['1.000000000', '1.500000000', '1.416666666', '1.414215686', '1.414213562'];
+  const good = [1, 1, 3, 6, 10];   // leading digits that agree with √2 = 1.414213562
+  const RY = (i) => 6.2 - i * 0.9;
+  const rows = [];
+  const row = (i) => {
+    tag('x' + '₀₁₂₃₄'[i], 'ptr', -6.2, RY(i), 0);
+    const cs = str[i].split('').map((c, k) => cube(c, k < good[i] + (good[i] > 1 ? 1 : 0) ? MINT : PAPER, [0.42, 0.45, 0.5], -5.2 + k * 0.46, RY(i), 0, 1));
+    rows.push(cs);
+  };
+  await step(tok); // @1451.4 simulate Newton on a = 2
+  tag('xᵢ₊₁ = (xᵢ + 2/xᵢ) / 2', 'ptr alt', 3.2, 7.2, 0);
+  say('a = 2：模擬 Newton 迭代', '先不管怎麼實作');
+  await step(tok); // @1473.0 x0 = 1.000…
+  row(0);
+  say('x₀ = 1，後面一堆 0');
+  await step(tok); // @1479.7 x1 = 1.5
+  row(1);
+  say('x₁ = 1.5');
+  await step(tok); // @1487.1 x2 = 1.41666…
+  row(2);
+  say('x₂ = 1.41666…');
+  await step(tok); // @1506.0 d digits of precision, d maybe a million
+  note('其實每個 x 都是 d 位的整數（d 可以是百萬）', 2.6, 1.6, 1);
+  say('不是分數：是固定 d 位精度的數', 'd 可能是一百萬');
+  await step(tok); // @1530.1 x3 = 1.414215686
+  row(3);
+  say('下一個：1.414215686');
+  await step(tok); // @1542.5 x4 = 1.414213562
+  row(4);
+  say('再下一個：1.414213562', '和 √2 前 10 位一樣了');
+  await step(tok); // @1554.3 quadratic convergence
+  ok('quadratic convergence（二次收斂）', 3.2, 6.2, 0);
+  say('Newton 法：二次收斂');
+  await step(tok); // @1573.5 linear = one extra digit per iteration
+  note('線性收斂：每次只多 1 位', 3.2, 5.4, 0);
+  say('線性收斂：每迭代一次多一位');
+  await step(tok); // @1595.7 correct digits double
+  const bars = good.map((g, i) => { const b = hBar(DG, 0.4, RY(i), 0.9); return [b, g]; });
+  await anim(tok, 900, (u) => bars.forEach(([b, g]) => hSet(b, g * 0.32 * u)));
+  say('二次收斂：正確位數每次約翻倍', '綠條 = 對的位數');
+  await step(tok); // @1612.0 1 digit … 8 digits
+  note('1 位 → 3 位 → 6 位 → 10 位…', 3.2, 4.6, 0);
+  say('從約 1 位，到 4 位、8 位…', '越來越快');
+  await step(tok); // @1659.8 only a logarithmic number of iterations
+  ok('d 位精度只要約 log d 次迭代', 3.2, 1.0, 1);
+  say('算到百萬位也不可怕', '只要對數次迭代');
+  await step(tok); // @1665.8 2, 4, 8, 16: geometric
+  const dbl = pkt('2', -3, 0.3, 2.2);
+  for (const v of ['4', '8', '16', '…']) { await travel(tok, dbl, dbl.position.clone(), V3(dbl.position.x + 1.4, 0.3, 2.2), 380); txt(dbl, v); }
+  say('2、4、8、16…', '等比級數幫了大忙');
 }]);
 
 // 28:01 a/xᵢ 需要除法 → 先做乘法；精度用整數 ⌊10^d √2⌋
 FRAG.push(['dcmit-int-precision', '除法靠乘法；精度用整數表示', async (tok) => {
   fresh([0, 5, 12.5], [0, 2.4, 0]);
-  const b1 = dBox('加法：一次一個進位', -3.4, 5.2, 0, 3.6, MINT, 1);
-  say('長數字加法：手算也不難', '只要處理進位，Θ(n)');
-  await beat(tok, 2900);
-  const b2 = dBox('乘法：百位數 × 百位數', -3.4, 4.3, 0, 3.6, PAPER, 1);
-  const b3 = dBox('除法：100 位 ÷ 50 位', -3.4, 3.4, 0, 3.6, PAPER, 1);
-  say('乘、除就要靠電腦', '');
-  await beat(tok, 2900);
-  arrow(V3(-1.4, 3.4, 0), V3(1.2, 3.4, 0));
-  dBox('a/xᵢ = a × (1/xᵢ)', 3.2, 3.4, 0, 3.2, DY, 1);
-  say('除法：先求倒數，再乘 a', '實用的除法演算法都以乘法為子程序');
-  await beat(tok, 3600);
-  glow(b2, GOLD);
-  say('所以先學高精度乘法', '一般做法：n 位 × n 位 = Θ(n²)');
-  await beat(tok, 3100);
-  const dg = '1414213562'.split('');
-  tag('d = 9：⌊10⁹ · √2⌋', 'ptr alt', -2.6, 1.5, 0.8);
-  dg.forEach((c, i) => cube(c, DB, [0.45, 0.45, 0.5], 0 + i * 0.5, 0.25, 0.8, 1));
-  say('事先決定精度 d，全部用整數', '⌊10^d √2⌋ = ⌊√(2 · 10^(2d))⌋');
-  await beat(tok, 4100);
+  await step(tok); // @1681.2 the important part: a/xi
+  const tgt = tag('xᵢ₊₁ = (xᵢ + a/xᵢ) / 2', 'ptr', 0, 6.6, 0);
+  no('最關鍵：a/xᵢ 怎麼算？', 0, 5.9, 0);
+  say('最重要的一步：a/xᵢ 還沒講怎麼算');
+  await step(tok); // @1687.1 additions: just one carry
+  const n1 = '7 5 8 2 9 4 6'.split(' '), n2 = '3 4 1 7 0 5 8'.split(' ');
+  n1.forEach((c, i) => cube(c, DB, [0.45, 0.45, 0.5], -5.6 + i * 0.5, 4.8, 0));
+  n2.forEach((c, i) => cube(c, DB, [0.45, 0.45, 0.5], -5.6 + i * 0.5, 4.2, 0));
+  const carry = pkt('進位', -2.6, 5.4, 0);
+  await travel(tok, carry, V3(-2.6, 5.4, 0), V3(-5.6, 5.4, 0), 1400);
+  ok('加法：Θ(n)', -4.1, 3.5, 0);
+  say('這邊其實只有加法', '長數字加法只要處理進位 → Θ(n)');
+  await step(tok); // @1703.0 multiplying hundreds of digits by hand?
+  remove(carry);
+  const me = buddy('手算的我', '× ?', STU, 4.6, 0, 1.6, 0.7); me.mood('wow');
+  dBox('乘法：百位數 × 百位數', 1.2, 4.8, 0, 3.6, PAPER, 1);
+  say('百位數乘百位數，你手算過嗎？', '太痛苦 → 要靠電腦');
+  await step(tok); // @1727.0 divide 100-digit by 50-digit
+  dBox('除法：100 位 ÷ 50 位', 1.2, 4.1, 0, 3.6, PAPER, 1);
+  me.set('÷ ??'); me.mood('sad');
+  say('100 位除以 50 位？更不可能');
+  await step(tok); // @1745.6 next: high precision multiplication
+  bub('先搞定：高精度乘法', 1.2, 3.3, 0);
+  say('所以先只做高精度乘法');
+  await step(tok); // @1754.0 reciprocal times a
+  const rc = dBox('a/xᵢ = a × (1/xᵢ)', -3.0, 2.2, 0, 3.4, DY, 1);
+  say('除法的做法：先求倒數 1/xᵢ', '再乘上 a');
+  await step(tok); // @1774.0 division uses multiplication as a subroutine
+  note('實用的除法演算法：都拿乘法當子程序', 1.6, 2.2, 0);
+  say('實際的除法演算法', '都把乘法當子程序 → 先學乘法');
+  await step(tok); // @1825.0 vanilla n-bit multiplication: n²
+  me.set('n²'); me.mood('calm');
+  const cost = tag('一般乘法：n 位 → Θ(n²)', 'ptr alt', -3.0, 1.2, 0);
+  say('一般的 n 位乘法：n²');
+  await step(tok); // @1834.0 FFT does better (6.046)
+  note('更快：FFT（6.046 才教）', 1.6, 1.2, 0);
+  say('可以更快，例如 FFT', '那是 6.046 的內容');
+  await step(tok); // @1845.4 today: one algorithm better than n²
+  ok('今天：一個比 n² 好的演算法', 1.6, 0.5, 0);
+  say('今天會教一個比 n² 好的');
+  await step(tok); // @1869.2 we know digits of precision up front
+  [tgt].forEach(remove);
+  const dT = tag('事先知道精度 d', 'ptr', -3.4, 6.6, 0);
+  say('006 裡假設事先知道要幾位精度 d');
+  await step(tok); // @1882.5 d = 42, 125, RSA 1024 / 2048
+  txt(dT, '事先知道 d：42？125？RSA 1024、2048 位元');
+  say('d 可能是 42、125', 'RSA 作業是 1024 或 2048 位元');
+  await step(tok); // @1903.1 integer ⌊10^d √2⌋
+  const digs = '1414213562'.split('').map((c, i) => cube(c, DB, [0.42, 0.42, 0.5], 2.2 + i * 0.46, 0.25, 1.8, 1));
+  tag('d = 9：⌊10⁹ · √2⌋ = 1414213562', 'ptr alt', 4.3, 1.0, 1.8);
+  say('要的是整數 ⌊10^d · √2⌋', '小數點往右移 d 位，再取整');
+  await step(tok); // @1908.5 = ⌊√(2·10^(2d))⌋
+  tag('= ⌊√(2 · 10^(2d))⌋', 'ptr', 4.3, 1.6, 1.8);
+  say('等於 ⌊√(2 · 10^(2d))⌋');
+  await step(tok); // @1919.0 all integers, Newton works on integers
+  digs.forEach((m) => tint(m, DG));
+  ok('全部當整數：不用管小數點，Newton 照用', 0, 7.3, 0);
+  say('全部都是整數', '不用管小數點，Newton 法一樣能用');
 }]);
 
 // 33:08 分治：x = x₁·r^(n/2) + x₀；4 次 n/2 位乘法 → Θ(n²)
 FRAG.push(['dcmit-split-4mult', '大數乘法：拆半要 4 次乘法', async (tok) => {
   fresh([0, 5, 13], [0, 2.8, 0]);
-  const x1 = cube('x₁', DB, [1.6, 0.6, 0.8], -4.6, 6, 0, 1), x0 = cube('x₀', '#7fb6e8', [1.6, 0.6, 0.8], -3, 6, 0, 1);
-  const y1 = cube('y₁', DP, [1.6, 0.6, 0.8], -4.6, 5.1, 0, 1), y0 = cube('y₀', '#c4b3f7', [1.6, 0.6, 0.8], -3, 5.1, 0, 1);
-  tag('x', 'ptr', -6, 6, 0); tag('y', 'ptr', -6, 5.1, 0);
-  say('x、y 都是 n 位數（基底 r）', '0 ≤ x, y < rⁿ');
-  await beat(tok, 2600);
-  tag('高半', 'idx', -4.6, 6.55, 0.4); tag('低半', 'idx', -3, 6.55, 0.4);
-  say('x = x₁ · r^(n/2) + x₀', 'y = y₁ · r^(n/2) + y₀；每半 n/2 位');
-  await beat(tok, 3000);
-  const cnt = tag('乘法 0 次', 'ptr alt', 4.6, 6.4, 0);
-  const pr = [[x1, y1, 'z₂ = x₁y₁'], [x0, y1, 'x₀y₁'], [x1, y0, 'x₁y₀'], [x0, y0, 'z₀ = x₀y₀']];
-  for (let q = 0; q < 4; q++) {
-    const [a, b, t] = pr[q]; glow(a, GOLD); glow(b, GOLD);
-    cube(t, DO, [2.2, 0.5, 0.8], 2.6, 5 - q * 0.7, 0, 1.2);
-    txt(cnt, '乘法 ' + (q + 1) + ' 次'); say('第 ' + (q + 1) + ' 次：' + t, 'n/2 位 × n/2 位');
-    await beat(tok, 1300); glow(a, null); glow(b, null);
-  }
-  say('z₁ = x₀y₁ + x₁y₀', 'xy = z₂ · rⁿ + z₁ · r^(n/2) + z₀');
-  await beat(tok, 3000);
+  await step(tok); // @1988.6 two n-digit numbers
+  const xb = cube('x（n 位）', DB, [3.2, 0.6, 0.8], -3.8, 6, 0, 1), yb = cube('y（n 位）', DP, [3.2, 0.6, 0.8], -3.8, 5.1, 0, 1);
+  say('兩個 n 位數 x、y');
+  await step(tok); // @2002.4 radix r, 0 ≤ x, y < r^n
+  note('基底 r（2 或 10 都行）：0 ≤ x, y < rⁿ', -3.8, 6.8, 0);
+  say('基底 r 可以是 2、10', '0 ≤ x, y < rⁿ');
+  await step(tok); // @2026.8 divide and conquer: n/2-digit multiplications
+  bub('分治：拆成 n/2 位數的乘法', 2.6, 6.6, 0);
+  say('用最愛的 divide and conquer', '拆成 n/2 位數的乘法');
+  await step(tok); // @2040.8 down to 64 bits: one machine instruction
+  const cpu = prop('cpu', 5.2, 0, 1.6, 1.0, '64 位元 × 64 位元：一個指令'); bob(cpu, 0.05);
+  say('拆到 64 位元就停', '機器一個指令就算好（結果 128 位元）');
+  await step(tok); // @2064.8 x = x1 r^(n/2) + x0
+  kill(xb);
+  const x1 = cube('x₁', DB, [1.6, 0.6, 0.8], -4.6, 6, 0), x0 = cube('x₀', SKY, [1.6, 0.6, 0.8], -3.0, 6, 0);
+  tag('x', 'ptr', -6, 6, 0); tag('高半', 'idx', -4.6, 6.5, 0.4); tag('低半', 'idx', -3, 6.5, 0.4);
+  const fx = tag('x = x₁ · r^(n/2) + x₀', 'ptr alt', 2.6, 5.8, 0);
+  say('x 切兩半：x₁ 是高半、x₀ 是低半', 'x = x₁ · r^(n/2) + x₀');
+  await step(tok); // @2081.2 same for y
+  kill(yb);
+  const y1 = cube('y₁', DP, [1.6, 0.6, 0.8], -4.6, 5.1, 0), y0 = cube('y₀', LILAC, [1.6, 0.6, 0.8], -3.0, 5.1, 0);
+  tag('y', 'ptr', -6, 5.1, 0);
+  txt(fx, 'y = y₁ · r^(n/2) + y₀　（每半 n/2 位）');
+  say('y 也一樣', '每一半只有 n/2 位');
+  const cnt = tag('乘法 0 次', 'ptr alt', 4.6, 4.4, 0);
+  const pr = (a, b, t, q) => { glow(a, GOLD); glow(b, GOLD); cube(t, DO, [2.2, 0.5, 0.8], 1.6, 4.4 - q * 0.65, 0, 1.2); txt(cnt, '乘法 ' + (q + 1) + ' 次'); };
+  const off = (...ms) => ms.forEach((m) => glow(m, null));
+  await step(tok); // @2130.3 recursive multiply: z0 = x0 y0
+  pr(x0, y0, 'z₀ = x₀y₀', 0);
+  say('遞迴乘法：z₀ = x₀ · y₀');
+  await step(tok); // @2150.0 z2 = x1 y1, z1 = x0y1 + x1y0
+  off(x0, y0); pr(x1, y1, 'z₂ = x₁y₁', 1); await beat(tok, 700); off(x1, y1);
+  pr(x0, y1, 'x₀y₁', 2); await beat(tok, 500); off(x0, y1);
+  pr(x1, y0, 'x₁y₀', 3); await beat(tok, 500); off(x1, y0);
+  note('z₁ = x₀y₁ + x₁y₀', 4.6, 3.1, 0);
+  say('z₂ = x₁y₁（老師口誤說 x₂y₂）', 'z₁ = x₀y₁ + x₁y₀');
+  await step(tok); // @2172.3 xy = z2 r^n + z1 r^(n/2) + z0
   tag('rⁿ', 'idx', -4, 1.8, 0); tag('r^(n/2)', 'idx', -1.5, 1.8, 0); tag('1', 'idx', 1, 1.8, 0);
   cube('z₂', DO, [2.2, 0.5, 0.8], -4, 1.1, 0, 1.5); cube('z₁', DO, [2.2, 0.5, 0.8], -1.5, 0.6, 0, 1.5); cube('z₀', DO, [2.2, 0.5, 0.8], 1, 0.3, 0, 1.5);
-  say('移位後相加：加法 Θ(n)', 'T(n) = 4T(n/2) + Θ(n) = Θ(n²)');
-  await beat(tok, 3600);
+  tag('xy = z₂ · rⁿ + z₁ · r^(n/2) + z₀', 'ptr', 0, 2.5, 0);
+  say('xy = z₂ · rⁿ + z₁ · r^(n/2) + z₀', '移位後相加');
+  await step(tok); // @2202.5 four multiplications
+  no('4 次 n/2 位乘法', 4.6, 5.1, 0);
+  say('數一數：1、2、3、4', '要 4 次 n/2 位的乘法');
+  await step(tok); // @2231.0 T(n) = 4T(n/2) + Θ(n)
+  tag('T(n) = 4T(n/2) + Θ(n)', 'ptr alt', 4.2, 1.2, 1);
+  say('T(n) = 4T(n/2) + Θ(n)', '加法是線性時間');
+  await step(tok); // @2268.4 theta n²: not happy
+  no('= Θ(n²)：沒變快！', 4.2, 0.5, 1);
+  say('解出來還是 Θ(n²)', '跟手算一樣，不滿意');
 }]);
 
 // 38:03 Karatsuba：z₁ = (x₀ + x₁)(y₀ + y₁) − z₀ − z₂ → 3 次乘法
 FRAG.push(['dcmit-karatsuba-3', 'Karatsuba：3 次乘法 n^(lg 3)', async (tok) => {
   fresh([0, 5, 13], [0, 2.8, 0]);
-  const cnt = tag('乘法 0 次', 'ptr alt', 4.6, 6.4, 0);
-  say('Karatsuba：先算 z₀、z₂', '再用它們湊出 z₁');
-  await beat(tok, 2400);
-  const z0 = cube('z₀ = x₀y₀', DO, [2.4, 0.5, 0.8], -4, 5.6, 0, 1.2); txt(cnt, '乘法 1 次'); await beat(tok, 1000);
-  const z2 = cube('z₂ = x₁y₁', DO, [2.4, 0.5, 0.8], -4, 4.9, 0, 1.2); txt(cnt, '乘法 2 次'); await beat(tok, 1000);
-  const s = cube('(x₀ + x₁)(y₀ + y₁)', DY, [3.4, 0.5, 0.8], 1.2, 5.25, 0, 1.2); txt(cnt, '乘法 3 次');
-  say('第 3 次：兩個和相乘', '= x₀y₀ + x₀y₁ + x₁y₀ + x₁y₁');
-  await beat(tok, 3000);
+  await step(tok); // @2283.1 ways of doing better
+  bub('想比 Θ(n²) 更好', 0, 6.9, 0);
+  say('怎麼做得更好？方法很多');
+  await step(tok); // @2287.0 Karatsuba
+  const ka = buddy('Karatsuba', '', TEA, 5.4, 0, 1.4, 0.8); ka.mood('happy');
+  say('最簡單、又降很多的：Karatsuba');
+  const cnt = tag('乘法 0 次', 'ptr alt', 4.6, 6.2, 0);
+  await step(tok); // @2322.1 z0 = x0 y0
+  const z0 = cube('z₀ = x₀y₀', DO, [2.4, 0.5, 0.8], -4, 5.6, 0, 1.2); txt(cnt, '乘法 1 次');
+  say('先乘：z₀ = x₀ · y₀');
+  await step(tok); // @2326.6 z2 = x1 y1
+  const z2 = cube('z₂ = x₁y₁', DO, [2.4, 0.5, 0.8], -4, 4.9, 0, 1.2); txt(cnt, '乘法 2 次');
+  say('再乘：z₂ = x₁ · y₁');
+  await step(tok); // @2333.8 z1 = (x0 + x1)(y0 + y1) − z0 − z2
+  cube('(x₀ + x₁)(y₀ + y₁)', DY, [3.4, 0.5, 0.8], 1.2, 5.25, 0, 1.2); txt(cnt, '乘法 3 次');
   glow(z0, RED); glow(z2, RED);
-  const z1 = cube('z₁ = (x₀+x₁)(y₀+y₁) − z₀ − z₂', DG, [5.6, 0.5, 0.8], -0.6, 3.6, 0, 1.5);
-  say('減掉 z₀、z₂ 就是 z₁', '加減法便宜，乘法只剩 3 次');
-  await beat(tok, 3200);
+  const z1 = cube('z₁ = (x₀+x₁)(y₀+y₁) − z₀ − z₂', DG, [5.6, 0.5, 0.8], -0.6, 3.8, 0, 1.5);
+  say('z₁ = (x₀ + x₁)(y₀ + y₁) − z₀ − z₂', '展開：x₀y₀ + x₀y₁ + x₁y₀ + x₁y₁，減掉頭尾');
+  await step(tok); // @2345.1 compute z0, z2 first, then use them
   glow(z0, null); glow(z2, null); glow(z1, GREEN);
-  say('T(n) = 3T(n/2) + Θ(n)', '= Θ(n^(log₂3)) ≈ Θ(n^1.585)');
-  await beat(tok, 3000);
-  const b4 = dBar(DR, -2, 1.2, 0.9), b3 = dBar(DG, 0, 1.2, 0.9);
-  tag('4 次：n²', 'idx', -2, 0.02, 2); tag('3 次：n^1.585', 'idx', 0, 0.02, 2);
-  await anim(tok, 800, (t) => { dSetBar(b4, 2 * 1.2 * t); dSetBar(b3, 1.585 * 1.2 * t); });
-  say('下回預告：拆成三段', '直接做 9 次乘法，能更少就更快');
-  await beat(tok, 3000);
+  note('z₀、z₂ 先算好，再拿來湊 z₁', -0.6, 3.1, 0.4);
+  say('先算 z₀、z₂', '再用它們湊出 z₁');
+  await step(tok); // @2391.8 n^(log2 3)
+  const stu = buddy('同學', 'n^(log₂3)', STU, -5.6, 0, 1.4, 0.6); stu.mood('happy'); await stu.hop(tok);
+  say('為什麼更快？同學答：n^(log₂ 3)');
+  await step(tok); // @2401.0 only 3 multiplications, additions are easy
+  ok('只做 3 次乘法（不是 4 次）；加減法便宜', -0.4, 2.4, 0);
+  say('關鍵：乘法只做 3 次', '加減法是線性時間，很便宜');
+  await step(tok); // @2415.7 T(n) = 3T(n/2) + Θ(n)
+  tag('T(n) = 3T(n/2) + Θ(n)', 'ptr', -0.4, 1.7, 0);
+  say('T(n) = 3T(n/2) + Θ(n)');
+  await step(tok); // @2443.7 theta n^(log2 3) ≈ n^1.58
+  const b4 = dBar(DR, 2.6, 2.2, 0.8), b3 = dBar(DG, 4.0, 2.2, 0.8);
+  tag('4 次：n²', 'idx', 2.6, 0.02, 3.0); tag('3 次：n^1.58', 'idx', 4.0, 0.02, 3.0);
+  await anim(tok, 800, (t) => { dSetBar(b4, 2 * 1.1 * t); dSetBar(b3, 1.585 * 1.1 * t); });
+  ka.mood('wow'); await ka.hop(tok);
+  say('= Θ(n^(log₂ 3)) ≈ Θ(n^1.58)', '比 n² 小');
+  await step(tok); // @2479.0 1.5849… also irrational
+  note('log₂3 = 1.58496…（也是無理數！）', -0.4, 1.0, 0.6);
+  say('log₂ 3 = 1.58496…', '它自己也是無理數');
+  await step(tok); // @2504.5 split into thirds
+  kill(stu.g);
+  ['x 的上 1/3', '中 1/3', '下 1/3'].forEach((t, i) => cube(t, [DB, SKY, '#a9cff2'][i], [1.6, 0.5, 0.7], -4.4 + i * 1.7, 0.3, 2.6, 1.2));
+  say('下回預告：拆成三段呢？', '上、中、下三分之一');
+  await step(tok); // @2522.2 the original would take 9 multiplications
+  bub('直接做要 3 × 3 = 9 次：能更少，指數就更小', -2.7, 1.2, 2.6);
+  say('直接乘要 9 次（老師口誤說 8）', '能用更少次，1.58 還能再降');
 }]);
 
-// 42:56 Demo：半徑 5×10¹¹ 的大圓，AD = R − √(R² − 1) 的位數裡藏著 Catalan 數
+// 42:14 Demo：半徑 5×10¹¹ 的大圓，AD = R − √(R² − 1) 的位數裡藏著 Catalan 數
 FRAG.push(['dcmit-catalan-circle', 'Demo：大圓裡的 Catalan 數', async (tok) => {
   fresh([0, 4, 13], [0, 3, 0]);
   const cx = -3.2, cy = 3.5, r = 3;
-  for (let k = 0; k < 48; k++) { const a = k / 48 * Math.PI * 2, b = (k + 1) / 48 * Math.PI * 2; line(cx + r * Math.cos(a), cy + r * Math.sin(a), cx + r * Math.cos(b), cy + r * Math.sin(b), 0, '#6e5f49'); }
-  tag('C', 'ptr', cx - 0.3, cy, 0);
   const bx = cx + 1.2, by = cy - Math.sqrt(r * r - 1.44);
+  await step(tok); // @2534.2 demo of Victor's code
+  const mon = prop('monitor', 4.6, 0, -1.2, 1.0, 'Victor 的程式：算到上千位'); bob(mon, 0.04);
+  say('Demo：一個無理數算到上千位', '助教 Victor 寫的程式');
+  await step(tok); // @2574.3 high school geometry
+  bub('複習高中幾何', cx, 7.2, 0);
+  say('√2 太無聊了：來點高中幾何');
+  await step(tok); // @2589.2 a circle
+  for (let k = 0; k < 48; k++) { const a = k / 48 * Math.PI * 2, b = (k + 1) / 48 * Math.PI * 2; line(cx + r * Math.cos(a), cy + r * Math.sin(a), cx + r * Math.cos(b), cy + r * Math.sin(b), 0, '#6e5f49'); if (k % 4 === 3) await beat(tok, 60); }
+  say('畫一個圓');
+  await step(tok); // @2597.0 a trillion units
+  note('超大的圓：直徑一兆單位', cx, 0.0, 0.6);
+  say('這個圓超級大', '直徑一兆單位');
+  await step(tok); // @2607.4 center C
+  tag('C', 'ptr', cx - 0.3, cy, 0);
+  say('圓心叫 C');
+  await step(tok); // @2615.2 radii: B and A
   line(cx, cy, cx, cy - r, 0, '#1f3a6e'); line(cx, cy, bx, by, 0, '#1f3a6e');
   tag('A', 'ptr', cx - 0.3, cy - r - 0.15, 0); tag('B', 'ptr', bx + 0.3, by, 0);
-  say('直徑一兆單位的大圓，圓心 C', 'CA = CB = 半徑 = 5 × 10¹¹');
-  await beat(tok, 3200);
-  line(bx, by, cx, by, 0, '#d64545'); tag('D', 'ptr', cx - 0.35, by + 0.15, 0); tag('1', 'idx', cx + 0.6, by + 0.2, 0);
-  say('從 B 作垂線到 CA，高 1 單位', 'D 是垂足（圖上放大）');
-  await beat(tok, 3000);
-  const ad = cube('', DY, [0.18, Math.max(0.15, by - (cy - r)), 0.18], cx, (by + cy - r) / 2, 0);
-  glow(ad, GOLD);
-  tag('AD = R − √(R² − 1)', 'ptr alt', 3, 6.4, 0);
-  say('AD = AC − CD', 'R = 5 × 10¹¹ 時 = R − √(R² − 1)');
-  await beat(tok, 3200);
-  say('R² − 1 不是完全平方數', '→ AD 是無理數，算到幾千位看看');
-  await beat(tok, 2400);
-  const blk = ['0.000000000001', '…0001', '…0002', '…0005', '…0014', '…0042', '…0132'];
-  for (let q = 0; q < blk.length; q++) { cube(blk[q], q ? PAPER : MINT, [q ? 1.5 : 3, 0.5, 0.7], q ? 3.8 : 3, 5.5 - q * 0.65, 0, 1); await beat(tok, 450); }
-  say('每 24 位一組：1, 1, 2, 5, 14, 42…', '正是 Catalan 數！');
-  await beat(tok, 3600);
+  say('CB、CA 都是半徑');
+  await step(tok); // @2630.0 perpendicular one unit high
+  line(bx, by, cx, by, 0, '#d64545'); tag('1', 'idx', cx + 0.6, by + 0.2, 0);
+  say('從 B 作垂線到 CA', '高度只有 1 單位（圖上放大）');
+  await step(tok); // @2648.6 CB = CA = half a trillion
+  tag('CA = CB = 5 × 10¹¹', 'ptr alt', 2.6, 6.4, 0);
+  say('CB、CA = 半兆 = 5 × 10¹¹');
+  await step(tok); // @2660.7 call this D; AD = ?
+  tag('D', 'ptr', cx - 0.35, by + 0.15, 0);
+  const ad = cube('', DY, [0.18, Math.max(0.15, by - (cy - r)), 0.18], cx, (by + cy - r) / 2, 0); glow(ad, GOLD);
+  const stu = buddy('同學', 'AD = ?', STU, 0.6, 0, 1.6, 0.6); stu.mood('wow');
+  say('垂足叫 D', 'AD 有多長？');
+  await step(tok); // @2694.0 AD = AC − CD = R − √(R² − 1)
+  stu.set('R − √(R² − 1)'); stu.mood('happy'); await stu.hop(tok);
+  ok('AD = AC − CD = R − √(R² − 1)', 2.6, 5.6, 0);
+  say('AD = AC − CD', 'CD 用畢氏定理：√(R² − 1)');
+  await step(tok); // @2756.3 not a perfect square: irrational
+  note('R² − 1 不是完全平方數 → AD 是無理數', 2.6, 4.8, 0);
+  say('完全平方數減 1，不再是完全平方', 'AD 是無理數，位數無窮無盡');
+  const blk = ['0.000000000001', '…000000000001', '…000000000002', '…000000000005', '…000000000014', '…000000000042', '…000000000132'];
+  const bm = [];
+  await step(tok); // @2768.4 let's see the digits
+  kill(stu.g);
+  bm.push(cube(blk[0], MINT, [3.2, 0.45, 0.7], 3.0, 3.9, 0, 1));
+  say('看看算出來的位數…', '每 24 位一組排好');
+  await step(tok); // @2798.6 looking pretty good
+  for (let q = 1; q < blk.length; q++) { bm.push(cube(blk[q], PAPER, [3.2, 0.45, 0.7], 3.0, 3.9 - q * 0.55, 0, 1)); await beat(tok, 300); }
+  say('一組一組跑出來', '1、1、2、5、14、42、132…');
+  await step(tok); // @2807.2 seen these numbers before? Catalan!
+  bm.forEach((m) => glow(m, GOLD));
+  ok('正是 Catalan 數！', 3.0, 0.2, 0.6);
+  say('20 分鐘前才看過：Catalan 數！', '想知道為什麼？去上 recitation');
 }]);
   }
 
