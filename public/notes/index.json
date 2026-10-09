@@ -693,7 +693,7 @@
   "label": "MIT 6.006 L12：DP II",
   "points": 77,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "EpZgvKBf5eo": {
   "label": "清大周志遠 第16C講 Basic Concepts",
@@ -1029,7 +1029,7 @@
   "label": "MIT 6.006 L11：DP I",
   "points": 69,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "OqLt2GfX6jg": {
   "label": "Abdul Bari：Why Pointers?",
@@ -1341,7 +1341,7 @@
   "label": "MIT 6.006 Rec21：DP Knapsack Problem",
   "points": 82,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "WlBBTSL0ZRc": {
   "label": "Abdul Bari：1.10.2 Comparison of Functions #2",
