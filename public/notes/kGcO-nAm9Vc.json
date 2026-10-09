@@ -5,10 +5,21 @@
  "sections": [
   {
    "title": "Case 1 例題",
-   "scene": "algbari2-mt-sort",
-   "params": {
-    "set": "k1"
-   },
+   "scene": "algbari3-mt-k1",
+   "cues": [
+    4.8,
+    19.5,
+    29.8,
+    43,
+    57.5
+   ],
+   "explain": [
+    "快速練 Case 1。2T(n/2) + 1：log₂2 = 1，k = 0，左邊重 → Θ(n)。",
+    "4T(n/2) + 1：log₂4 = 2 > 0 → Θ(n²)。",
+    "4T(n/2) + n：2 > 1 → Θ(n²)。",
+    "8T(n/2) + n²：log₂8 = 3 > 2 → Θ(n³)。",
+    "16T(n/2) + n²：log₂16 = 4 > 2 → Θ(n⁴)。"
+   ],
    "points": [
     {
      "text": "2T(n/2) + 1：log₂2 = 1 > 0 → Θ(n)。",
@@ -34,10 +45,21 @@
   },
   {
    "title": "Case 3 例題",
-   "scene": "algbari2-mt-sort",
-   "params": {
-    "set": "k3"
-   },
+   "scene": "algbari3-mt-k3",
+   "cues": [
+    88.4,
+    103.5,
+    117.5,
+    134,
+    159.8
+   ],
+   "explain": [
+    "Case 3 例題。T(n/2) + n：log₂1 = 0 < 1，f(n) 重 → Θ(n)。",
+    "2T(n/2) + n²：1 < 2 → Θ(n²)。",
+    "2T(n/2) + n² log n：f(n) 整個照抄 → Θ(n² log n)。",
+    "4T(n/2) + n³ log² n：2 < 3 → Θ(n³ log² n)。",
+    "2T(n/2) + n²/log n：分母的 log 不要，只寫 n²（定理只保證 O(n²)）。"
+   ],
    "points": [
     {
      "text": "T(n/2) + n：log₂1 = 0 < 1 → Θ(n)。",
@@ -64,10 +86,25 @@
   },
   {
    "title": "Case 2 例題",
-   "scene": "algbari2-mt-sort",
-   "params": {
-    "set": "k2"
-   },
+   "scene": "algbari3-mt-k2",
+   "cues": [
+    188.8,
+    205.8,
+    222.5,
+    249,
+    268.5,
+    299.8,
+    325.8
+   ],
+   "explain": [
+    "Case 2 例題。T(n/2) + 1：log₂1 = 0 = k，f(n) = 1 乘 log n → Θ(log n)。這正是[[二分搜尋]]的遞迴式。",
+    "2T(n/2) + n：1 = 1 → n × log n。",
+    "2T(n/2) + n log n：再乘一個 log → n log² n。",
+    "4T(n/2) + n²：2 = 2 → n² log n。",
+    "4T(n/2) + (n log n)²：(n log n)² = n² log² n，再乘 log n → n² log³ n。",
+    "2T(n/2) + n/log n：p = −1 → Θ(n log log n)。",
+    "2T(n/2) + n/log² n：p = −2 < −1 → 只剩 Θ(n)。"
+   ],
    "points": [
     {
      "text": "T(n/2) + 1：log₂1 = 0 = k → Θ(log n)。",

@@ -5,7 +5,35 @@
  "sections": [
   {
    "title": "定理：比 log_b a 與 k",
-   "scene": "algbari2-mt-rules",
+   "scene": "algbari3-mt-div-rules",
+   "cues": [
+    6.7,
+    27,
+    32.4,
+    50.8,
+    84.8,
+    116.8,
+    139.8,
+    179.8,
+    193.5,
+    215.8,
+    240.9,
+    254.7
+   ],
+   "explain": [
+    "除法型的 [[Master Theorem]]：處理 T(n) = aT(n/b) + f(n)。a 是呼叫幾次，b 是每次除以多少。",
+    "條件：a ≥ 1（至少呼叫一次），b > 1（規模真的會變小）。",
+    "f(n) 寫成 Θ(nᵏ logᵖ n)：k 是 n 的次方，p 是 log 的次方。例如 n² log n 就是 k = 2、p = 1。",
+    "只要比兩個數：log_b a 和 k。右邊的天平：左盤放 log_b a（遞迴那邊的份量），右盤放 k（f(n) 的份量）。",
+    "Case 1：log_b a > k，左邊比較重 → 答案 Θ(n^(log_b a))，遞迴部分說了算。",
+    "Case 2：兩邊一樣重（log_b a = k），再看 p 分成三種小情況。",
+    "p > −1（最常見，例如 p = 0）→ Θ(nᵏ logᵖ⁺¹ n)，也就是 f(n) 再多乘一個 log n。",
+    "p = −1（log 在分母，例如 n/log n）→ Θ(nᵏ log log n)。",
+    "p < −1 → Θ(nᵏ)，log 直接丟掉。",
+    "Case 3：log_b a < k，右邊 f(n) 比較重。",
+    "p ≥ 0 → Θ(nᵏ logᵖ n)，就是 f(n) 本身。",
+    "p < 0 → O(nᵏ)，分母的 log 丟掉。接下來用例題讓它變簡單。"
+   ],
    "points": [
     {
      "text": "一般式：T(n) = aT(n/b) + f(n)。",
@@ -43,10 +71,37 @@
   },
   {
    "title": "Case 1 例題",
-   "scene": "algbari2-mt-sort",
-   "params": {
-    "set": "c1"
-   },
+   "scene": "algbari3-mt-c1",
+   "cues": [
+    280.8,
+    298,
+    318.8,
+    342.8,
+    360.8,
+    403.8,
+    423.1,
+    458.8,
+    482.8,
+    512.8,
+    527.6,
+    540.3,
+    572.8
+   ],
+   "explain": [
+    "第一題：T(n) = 2T(n/2) + 1。a = 2、b = 2，f(n) = Θ(1)（常數）。",
+    "常數 1 可以看成 n⁰ × log⁰ n，所以 k = 0、p = 0。",
+    "log_b a = log₂2 = 1（2 的 1 次方是 2）；k = 0。",
+    "1 > 0，天平往左倒 → Case 1 → Θ(n^(log_b a)) = Θ(n¹) = Θ(n)。",
+    "第二題：4T(n/2) + n。log₂4 = 2，k = 1（f(n) = n¹）。",
+    "2 > 1 → Case 1 → Θ(n²)。",
+    "8T(n/2) + n：log₂8 = 3 > 1 → Θ(n³)。",
+    "8T(n/2) + n²：3 > 2，還是左邊重 → Θ(n³)。",
+    "9T(n/3) + 1：log₃9 = 2（3² = 9），k = 0 → Θ(n²)。",
+    "9T(n/3) + n：2 > 1，一樣 n²。",
+    "9T(n/3) + n²：2 = 2，天平平衡，這就不是 Case 1，而是 Case 2 了。",
+    "快速練習：4T(n/2) + n → n²；8T(n/2) + n → n³。只要 log_b a 比較大，答案就是 n^(log_b a)。",
+    "8T(n/2) + n log n：只看 n 的次方 k = 1，3 > 1 → Θ(n³)，log 不影響。"
+   ],
    "points": [
     {
      "text": "2T(n/2) + 1：a = 2、b = 2、f = Θ(1) = n⁰log⁰n；log₂2 = 1 > 0 → Θ(n)。",
@@ -84,10 +139,25 @@
   },
   {
    "title": "Case 2：再乘一個 log n",
-   "scene": "algbari2-mt-sort",
-   "params": {
-    "set": "c2"
-   },
+   "scene": "algbari3-mt-c2",
+   "cues": [
+    605.8,
+    622.8,
+    658.8,
+    680.5,
+    702.8,
+    710.8,
+    741.1
+   ],
+   "explain": [
+    "Case 2 例題：2T(n/2) + n。log₂2 = 1，k = 1，天平平衡。",
+    "f(n) 裡沒有 log，p = 0 > −1，套 nᵏ logᵖ⁺¹ n = n log n。",
+    "老師的白話版：兩邊相等時，把 f(n) 原封不動再乘一個 log n。",
+    "4T(n/2) + n²：2 = 2 → n² log n。",
+    "4T(n/2) + n² log n：已經有 log n 了，再乘一個 → n² log² n。",
+    "同理 log² 變 log³，log⁵ 變 log⁶：log 的次方加 1。",
+    "8T(n/2) + n³：3 = 3 → n³ log n。"
+   ],
    "points": [
     {
      "text": "2T(n/2) + n：log₂2 = 1 = k，p = 0 > −1 → Θ(n log n)。",
@@ -117,10 +187,23 @@
   },
   {
    "title": "Case 2：p = −1 與 p < −1",
-   "scene": "algbari2-mt-sort",
-   "params": {
-    "set": "c2p"
-   },
+   "scene": "algbari3-mt-c2p",
+   "cues": [
+    780.8,
+    802.1,
+    807.8,
+    820.6,
+    843.8,
+    864.5
+   ],
+   "explain": [
+    "2T(n/2) + n/log n：log₂2 = 1，k = 1，一樣重。但 p 是多少？",
+    "log n 在分母，等於 log⁻¹ n，所以 p = −1。",
+    "如果照剛才「乘 log n」，分子分母的 log 會抵消——這裡不能這樣做，規則不同。",
+    "p = −1 → Θ(n log log n)。log log n 是「log 的 log」，長得極慢。",
+    "如果分母是 log² n，p = −2，比 −1 還小。",
+    "p < −1 → 連 log log n 都不要，只寫 Θ(n)。"
+   ],
    "points": [
     {
      "text": "2T(n/2) + n/log n：1 = 1，但 log 在分母 → p = −1。",
@@ -146,14 +229,29 @@
   },
   {
    "title": "Case 3：直接取 f(n)",
-   "scene": "algbari2-mt-sort",
-   "params": {
-    "set": "c3"
-   },
+   "scene": "algbari3-mt-c3",
+   "cues": [
+    890,
+    913.8,
+    927.8,
+    938.2,
+    949.8,
+    969.3,
+    986.8
+   ],
+   "explain": [
+    "Case 3 例題：T(n/2) + n²。a = 1，log₂1 = 0；k = 2。",
+    "0 < 2，天平往右倒，f(n) 主導 → Θ(n²)。",
+    "2T(n/2) + n²：1 < 2，還是 Θ(n²)。",
+    "如果 f(n) 帶 log，例如 n² log n、n² log² n，就原樣照抄。",
+    "白話：n 的次方比 log_b a 大，直接取 f(n) 當答案。",
+    "4T(n/2) + n³：2 < 3 → Θ(n³)。",
+    "如果 log 在分母（p < 0），就不要那個 log，只寫 n³（定理給的是 O）。"
+   ],
    "points": [
     {
      "text": "T(n/2) + n²：log₂1 = 0 < 2 → Θ(n²)。",
-     "t": 901
+     "t": 890
     },
     {
      "text": "2T(n/2) + n²：1 < 2 → 仍是 Θ(n²)。",
