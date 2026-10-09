@@ -291,7 +291,7 @@
   "label": "交大江蕙如 Lec15 Divide and Conquer (1/2)",
   "points": 105,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "63Dp2MjLlUo": {
   "label": "交大彭文志 Lec25 Search Structures (2/3)",
@@ -1209,7 +1209,7 @@
   "label": "交大江蕙如 Lec16 Divide and Conquer (2/2)",
   "points": 152,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "t5Wxk96QjUk": {
   "label": "MIT 6.006 Rec23：Computational Complexity",
