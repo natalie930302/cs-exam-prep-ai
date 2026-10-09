@@ -15,7 +15,7 @@
   "label": "MIT 6.006 Rec9b：DNA Sequence Matching",
   "points": 106,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "-FElVPKykgw": {
   "label": "MIT 6.006 Rec10：Quiz 1 Review",
@@ -1131,7 +1131,7 @@
   "label": "Abdul Bari：9.2 Rabin-Karp String Matching Algorithm",
   "points": 39,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "qZs767KQcvE": {
   "label": "Abdul Bari：8.1 NP-Hard Graph Problem - Clique Decision Problem",
@@ -1305,7 +1305,7 @@
   "label": "Knuth-Morris-Pratt（KMP）String Matching Algorithm",
   "points": 47,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "vLS-zRCHo-Y": {
   "label": "Abdul Bari：Optimal BST (Successful Search Only)",
