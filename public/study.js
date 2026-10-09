@@ -161,7 +161,7 @@
   function hm(sec){ const h = Math.floor(sec / 3600), m = Math.round(sec % 3600 / 60); return (h ? h + ' 小時 ' : '') + m + ' 分'; }
   // where each key point is taught: public/keymap.json (chapter → point → video parts)
   let keymap = null;
-  fetch('/keymap.json').then(function(r){ return r.ok ? r.json() : null; }).then(function(j){ keymap = j && j[subject.id + '-' + chIndex]; renderGoals(); }).catch(function(){});
+  fetch('/keymap.json', {cache: 'no-cache'}).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){ keymap = j && j[subject.id + '-' + chIndex]; renderGoals(); }).catch(function(){});
   function renderGoals(){
     const vids = chapterDisplayMaterials(chapter);
     const left = vids.filter(function(m){ return !done.has(chapterMaterialTaskId(subject.id, chapter, m)); });
@@ -423,6 +423,7 @@
     subIdx = k;
     el.hidden = k < 0;
     // English lectures carry a Chinese line too: Chinese on top, English below.
+    if (k >= 0) addCardTerms(subs[k][2] + ' ' + (subs[k][3] || ''));
     if (k >= 0) el.innerHTML = subs[k][3]
       ? '<span class="st-sub-zh">' + esc(subs[k][3]) + '</span><span class="st-sub-en">' + esc(subs[k][2]) + '</span>'
       : '<span class="st-sub-zh">' + esc(subs[k][2]) + '</span>';
@@ -431,7 +432,7 @@
   // ── Skip offer: segments checked by hand to be admin / chit-chat only
   // (public/skips.json). A button appears; it never skips by itself. ──
   let skips = {};
-  fetch('/skips.json').then(function(r){ return r.ok ? r.json() : {}; }).then(function(j){ skips = j || {}; }).catch(function(){});
+  fetch('/skips.json', {cache: 'no-cache'}).then(function(r){ return r.ok ? r.json() : {}; }).then(function(j){ skips = j || {}; }).catch(function(){});
   function showSkip(t){
     const b = $('skipBtn');
     const r = current && (skips[current.id] || []).find(function(x){ return t >= x[0] && t < x[1] - 3; });
@@ -449,7 +450,7 @@
   // section.explain[k] belongs to step k (the k-th cue); [[term]] marks a
   // word that gets a card from glossary.json (what it is + an everyday picture).
   let glossary = {}, lastTeach = null;
-  fetch('/glossary.json').then(function(r){ return r.ok ? r.json() : {}; }).then(function(g){ glossary = g || {}; lastTeach = null; }).catch(function(){});
+  fetch('/glossary.json', {cache: 'no-cache'}).then(function(r){ return r.ok ? r.json() : {}; }).then(function(g){ glossary = g || {}; lastTeach = null; }).catch(function(){});
   function setTeach(on){
     $('teach').hidden = !on;
     document.querySelector('.st-main').classList.toggle('has-teach', !!on);
@@ -468,26 +469,63 @@
     lastTeach = key;
     renderTeach(total ? sec.title + '・第 ' + (Math.max(0, k) + 1) + ' / ' + total + ' 步' : sec.title, text);
   }
-  function renderTeach(head, text){
-    $('teachStep').textContent = head;
-    // every glossary word in the step is marked and gets a card (longest
-    // first, so 主記憶體 wins over 記憶體); [[ ]] marks are just removed
-    const seen = [];
-    const keys = Object.keys(glossary).sort(function(x, y){ return y.length - x.length; });
-    const re = keys.length ? new RegExp(keys.map(function(k){
+  // Term cards. Basic words (程式, 變數 …) are marked "basic" in the glossary
+  // and get no card. English keys match whole words, any case, with a plural
+  // or -ed/-ing ending. Cards come from the step's explanation and from every
+  // subtitle line shown during the step (newest first), so a hard English word
+  // the lecturer says gets explained when it appears.
+  let termRe = null, termKey = {}, termsGlossLen = -1, cardTerms = [];
+  function termMatcher(){
+    const n = Object.keys(glossary).length;
+    if (n === termsGlossLen) return termRe;
+    termsGlossLen = n; termKey = {};
+    const keys = Object.keys(glossary).filter(function(k){ return !glossary[k].basic; })
+      .sort(function(x, y){ return y.length - x.length; });
+    keys.forEach(function(k){ termKey[k.toLowerCase()] = k; });
+    termRe = keys.length ? new RegExp(keys.map(function(k){
       const q = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      return /^[\w ]+$/.test(k) ? '\\b' + q + '\\b' : q;
-    }).join('|'), 'g') : null;
-    let html = esc(String(text).replace(/\[\[(.+?)\]\]/g, '$1'));
-    if (re) html = html.replace(re, function(w){ if (seen.indexOf(w) < 0) seen.push(w); return '<span class="st-term-w">' + w + '</span>'; });
-    const body = $('teachBody');
-    body.innerHTML = html;
-    body.classList.remove('swap'); void body.offsetWidth; body.classList.add('swap');
-    $('teachTerms').innerHTML = seen.filter(function(w){ return glossary[w]; }).map(function(w){
-      const g = glossary[w];
-      return '<div class="st-tcard"><h4>' + esc(w) + (g.en && g.en !== w ? '<small>' + esc(g.en) + '</small>' : '') + '</h4><p>' + esc(g.what) + '</p>'
+      return /^[\w .'-]+$/.test(k) ? '\\b' + q + '(?:s|es|ed|ing)?\\b' : q;
+    }).join('|'), 'gi') : null;
+    return termRe;
+  }
+  function keyFor(w){
+    const lw = w.toLowerCase();
+    return termKey[lw] || termKey[lw.replace(/(?:es|s|ed|ing)$/, '')] || termKey[lw.replace(/(?:s|ed|ing)$/, '')] || null;
+  }
+  function termsIn(text){
+    const re = termMatcher(), out = [];
+    if (!re || !text) return out;
+    String(text).replace(re, function(w){ const k = keyFor(w); if (k && out.indexOf(k) < 0) out.push(k); return w; });
+    return out;
+  }
+  function markTerms(html){
+    const re = termMatcher();
+    return re ? html.replace(re, function(w){ return keyFor(w) ? '<span class="st-term-w">' + w + '</span>' : w; }) : html;
+  }
+  function renderCards(){
+    $('teachTerms').innerHTML = cardTerms.slice(0, 6).map(function(k){
+      const g = glossary[k];
+      const sub = g.zh && g.zh !== k ? g.zh : (g.en && g.en !== k ? g.en : '');
+      return '<div class="st-tcard"><h4>' + esc(k) + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</h4><p>' + esc(g.what) + '</p>'
         + (g.like ? '<p class="like">' + esc(g.like) + '</p>' : '') + '</div>';
     }).join('');
+  }
+  // a subtitle line just appeared: its hard words join the cards of this step
+  function addCardTerms(text){
+    if ($('teach').hidden) return;
+    const add = termsIn(text).filter(function(k){ return cardTerms.indexOf(k) < 0; });
+    if (!add.length) return;
+    cardTerms = add.concat(cardTerms);
+    renderCards();
+  }
+  function renderTeach(head, text){
+    $('teachStep').textContent = head;
+    const plain = String(text).replace(/\[\[(.+?)\]\]/g, '$1');
+    const body = $('teachBody');
+    body.innerHTML = markTerms(esc(plain));
+    body.classList.remove('swap'); void body.offsetWidth; body.classList.add('swap');
+    cardTerms = termsIn(plain);
+    renderCards();
   }
 
   // ── 動畫講解: the cued animation as a walkthrough without the video ──
@@ -555,6 +593,7 @@
     const next = wSteps[wi + 1];
     const end = next && next.si === st.si ? next.t : st.t + 12;
     const q = quoteAt(st.t, end);
+    if (q) addCardTerms(q.zh + ' ' + q.en);
     $('walkQuote').innerHTML = q && q.zh ? '<b>老師這句（' + fmt(st.t) + '）</b><span class="zh">' + esc(q.zh) + '</span>' + (q.en ? '<span class="en">' + esc(q.en) + '</span>' : '') : '';
     $('walkHear').textContent = '▶ 聽老師講這句';
     $('walkHear').onclick = function(){ exitWalk(Math.max(0, st.t - 0.5)); };
