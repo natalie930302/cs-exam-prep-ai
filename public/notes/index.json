@@ -19,9 +19,9 @@
  },
  "-FElVPKykgw": {
   "label": "MIT 6.006 Rec10：Quiz 1 Review",
-  "points": 69,
+  "points": 70,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "-JTq1BFBwmo": {
   "label": "Abdul Bari：1.1 Priori Analysis and Posteriori Testing",
@@ -523,9 +523,9 @@
  },
  "a_otxyu0mSQ": {
   "label": "MIT 6.006 Rec11：Principles of Algorithm Design",
-  "points": 80,
+  "points": 81,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "B0ywTK-Lklw": {
   "label": "台大林軒田 DSA Array / Linked List",
@@ -1323,7 +1323,7 @@
   "label": "MIT 6.006 Rec9：Rolling Hashes, Amortized Analysis",
   "points": 87,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "w7t4_JUUTeg": {
   "label": "Abdul Bari：1.6 Classes of Functions",
