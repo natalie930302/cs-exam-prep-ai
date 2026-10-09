@@ -1197,6 +1197,476 @@ export default function (ctx) {
   // 每段影片的場景片段（由 sync pass 加入）：每個片段把 [id, 標題, play] 放進 FRAG。
   const K = kit(ctx);
   const FRAG = [];
+  // ═══ graphbari.js ═══
+  {
+const { V3, fresh, tag, cube, move, fly, kill, glow, tint, line, GOLD, step, travel, remove, anim, buddy } = K;
+// ds-7 module helpers this fragment relies on (copied so it also runs in alg-6)
+const colorFor = ctx.colorFor;
+  const COL = { idle: '#cdbfa6', visit: '#2fc092', edge: '#9c8b70', tree: '#c08a1f', dim: '#e6ddcf', hot: '#d64545', one: '#4b9ee2', neg: '#e55a9b', zero: '#efe5d3', diag: '#e2d6c2' };
+const UP = V3(0, 1, 0);
+const ek = (u, v) => Math.min(u, v) + '-' + Math.max(u, v);
+// remove a static object together with every CSS2D label inside it
+const drop = (o) => { lab.world.remove(o); o.traverse((c) => { if (c.element) c.element.remove(); }); };
+
+// ───────────────────────── 共用：頂點、邊、圖 ─────────────────────────
+function vertexMesh(name, pos, color, size = [0.8, 0.6, 0.8]) {
+  const m = lab.box(color, size);
+  m.add(lab.label(String(name), 'val'));
+  m.position.copy(pos);
+  lab.world.add(m);
+  return m;
+}
+// an edge = a thin rod between two vertex blocks (plus a cone when directed)
+function edgeMesh(a, b, o = {}) {
+  const gap = o.gap ?? 0.5, r = o.r ?? 0.05, off = o.off || 0;
+  const n = b.clone().sub(a).normalize();
+  const side = V3(-n.z, 0, n.x).multiplyScalar(off);
+  const s = a.clone().addScaledVector(n, gap).add(side);
+  const e = b.clone().addScaledVector(n, -gap).add(side);
+  const L = Math.max(0.05, s.distanceTo(e) - (o.directed ? 0.3 : 0));
+  const mat = new THREE.MeshStandardMaterial({ color: o.color || COL.edge, roughness: 0.6 });
+  const g = new THREE.Group();
+  const cyl = new THREE.Mesh(new THREE.CylinderGeometry(r, r, L, 8), mat);
+  cyl.position.copy(s).addScaledVector(n, L / 2);
+  cyl.quaternion.setFromUnitVectors(UP, n);
+  cyl.castShadow = true;
+  g.add(cyl);
+  if (o.directed) {
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.32, 12), mat);
+    cone.position.copy(e).addScaledVector(n, -0.16);
+    cone.quaternion.setFromUnitVectors(UP, n);
+    g.add(cone);
+  }
+  g.userData = { mat, cyl };
+  lab.world.add(g);
+  return g;
+}
+function paintEdge(g, color, thick) {
+  if (!g) return;
+  g.userData.mat.color.set(color);
+  const k = thick ? 1.9 : 1;
+  g.userData.cyl.scale.set(k, 1, k);
+}
+function ringXY(V, R) {
+  return Array.from({ length: V }, (_, i) => { const a = Math.PI / 2 - i * 2 * Math.PI / V; return [Math.cos(a) * R, -Math.sin(a) * R]; });
+}
+function adjOf(V, edges) {
+  const A = Array.from({ length: V }, () => []);
+  edges.forEach(([u, v]) => { A[u].push(v); A[v].push(u); });
+  A.forEach((l) => l.sort((x, y) => x - y));
+  return A;
+}
+
+// ─── pcKY4hjDrxk：Abdul Bari〈Graph Traversals - BFS & DFS〉— cued: every step(tok) waits for the sentence it shows ───
+// 老師的例子：小樹 1–{2,4,5}、2–{3,6,7}；binary tree 1..7；大圖 10 個頂點、13 條邊：
+// 1-2 1-4 2-3 2-5 2-7 2-8 3-4 3-9 3-10 5-6 5-7 5-8 7-8（由逐字稿的鄰接關係重建）。
+// 鄰居順序照老師口述（pref），其餘依編號小到大。圖畫在地板左半；右半是 queue／stack、結果列與直立的生成樹。
+// gbRun 的 o.at = { 事件編號: [null | fn, …] }：在那個事件前，每一項都先 await step(tok)（fn 在該步執行），
+// 沒列在 at 的事件只等 o.gap 毫秒（一小段動作），所以畫面只在老師說到時才前進。
+const GB_SMALL = { pos: { 1: [-3.6, -2.6], 2: [-5.6, -0.1], 4: [-3.6, -0.1], 5: [-1.6, -0.1], 3: [-6.5, 2.5], 6: [-5.4, 2.5], 7: [-4.3, 2.5] },
+  edges: [[1, 2], [1, 4], [1, 5], [2, 3], [2, 6], [2, 7]] };
+const GB_BIN = { pos: { 1: [-3.6, -2.6], 2: [-5.4, 0], 3: [-1.8, 0], 4: [-6.3, 2.6], 5: [-4.5, 2.6], 6: [-2.7, 2.6], 7: [-0.9, 2.6] },
+  edges: [[1, 2], [1, 3], [2, 4], [2, 5], [3, 6], [3, 7]] };
+const GB_BIG = { pos: { 1: [-5.2, -2.6], 4: [-2.8, -2.6], 2: [-5.2, 0.2], 3: [-2.8, 0.2], 10: [-0.8, -1.2], 9: [-0.8, 1.6], 7: [-5.2, 2.6], 5: [-6.6, 3.8], 8: [-3.8, 3.8], 6: [-5.2, 4.9] },
+  edges: [[1, 2], [1, 4], [2, 3], [2, 5], [2, 7], [2, 8], [3, 4], [3, 9], [3, 10], [5, 6], [5, 7], [5, 8], [7, 8]] };
+const GB_CAM = [0, 8.5, 11], GB_LOOK = [0, 1.6, 0.6], GB_TZ = -2.4, GB_DONE = '#1d8a68';
+const GB_BFS1 = { 1: [4, 2], 2: [3, 5, 8, 7], 3: [10, 9], 5: [8, 7, 6] };
+const GB_DFS1 = { 1: [4, 2], 3: [10, 9, 2], 2: [8], 8: [7], 7: [5], 5: [6] };
+
+function gbGraph(spec) {
+  const vs = {}, es = {}, adj = {};
+  for (const k in spec.pos) { const [x, z] = spec.pos[k]; vs[k] = vertexMesh(k, V3(x, 0.3, z), COL.idle, [0.7, 0.6, 0.7]); adj[k] = []; }
+  for (const [u, v] of spec.edges) { es[ek(u, v)] = edgeMesh(vs[u].position, vs[v].position, { gap: 0.42 }); adj[u].push(v); adj[v].push(u); }
+  const G = { vs, es, adj, edges: spec.edges, cur: null };
+  G.reset = () => { for (const k in vs) { tint(vs[k], COL.idle); glow(vs[k], null); } for (const k in es) paintEdge(es[k], COL.edge, false); G.cur = null; };
+  return G;
+}
+// a little note floating over a vertex (removed by the caller)
+const gbNote = (G, v, text, cls = 'note') => { const p = G.vs[v].position; return tag(text, cls, p.x, 1.25, p.z); };
+// neighbour order: the lecturer's preferred ones first, the rest ascending
+function gbOrd(A, pref = {}) {
+  const O = {};
+  for (const k in A) { const p = (pref[k] || []).filter((x) => A[k].includes(x)); O[k] = p.concat(A[k].filter((x) => !p.includes(x)).sort((a, b) => a - b)); }
+  return O;
+}
+function gbBfsEv(O, s) {
+  const ev = [{ t: 'visit', v: s, p: null }], vis = { [s]: 1 }, q = [s];
+  while (q.length) {
+    const u = q.shift(); ev.push({ t: 'explore', v: u });
+    for (const w of O[u]) if (!vis[w]) { vis[w] = 1; q.push(w); ev.push({ t: 'visit', v: w, p: u }); }
+    ev.push({ t: 'done', v: u });
+  }
+  return ev;
+}
+function gbDfsEv(O, s) {
+  const ev = [], vis = {};
+  (function rec(v, p) {
+    vis[v] = 1; ev.push({ t: 'visit', v, p });
+    for (const w of O[v]) if (!vis[w]) { rec(w, v); ev.push({ t: 'back', v, from: w }); }
+    ev.push({ t: 'done', v });
+  })(s, null);
+  return ev;
+}
+// a floor row of small cubes (queue / stack / result), x = 1.0 + 0.62 i
+function gbRow(z, label) {
+  tag(label, 'idx', 2.2, 0.05, z - 0.62);
+  const R = { items: [], vals: [] };
+  const X = (i) => 1.0 + i * 0.62;
+  R.push = (v, color) => { R.items.push(cube(v, color, [0.5, 0.5, 0.5], X(R.items.length), 0.25, z, 1.6)); R.vals.push(v); };
+  R.shift = () => { fly(R.items.shift(), V3(0, 6, -3)); R.vals.shift(); R.items.forEach((m, i) => move(m, X(i), 0.25, z)); };
+  R.pop = () => { fly(R.items.pop(), V3(0, 6, -3)); R.vals.pop(); };
+  R.top = () => R.items[R.items.length - 1];
+  R.head = () => R.items[0];
+  return R;
+}
+// spanning-tree layout (upright, plane z = GB_TZ): leaves get slots left to right, parents sit over their children
+function gbLayout(order, par) {
+  const kids = {}; order.forEach((v) => { kids[v] = []; });
+  order.forEach((v) => { if (par[v] !== null) kids[par[v]].push(v); });
+  const depth = {}, x = {}; let leaf = 0, maxD = 0;
+  (function walk(v, d) {
+    depth[v] = d; maxD = Math.max(maxD, d);
+    if (!kids[v].length) { x[v] = leaf++; return; }
+    kids[v].forEach((c) => walk(c, d + 1));
+    x[v] = (x[kids[v][0]] + x[kids[v][kids[v].length - 1]]) / 2;
+  })(order[0], 0);
+  const sx = Math.min(1.1, 5.4 / Math.max(1, leaf - 1)), dy = Math.min(1.3, 5.2 / Math.max(1, maxD));
+  const pos = {}; for (const v of order) pos[v] = [3.7 + (x[v] - (leaf - 1) / 2) * sx, 6.0 - depth[v] * dy];
+  return pos;
+}
+// a dashed arc between two tree nodes (non-tree edge)
+function gbArc(a, b, color = '#d64545') {
+  const T = ctx.THREE, p = V3(a[0], a[1], GB_TZ), q = V3(b[0], b[1], GB_TZ);
+  const mid = p.clone().add(q).multiplyScalar(0.5), d = q.clone().sub(p);
+  mid.add(V3(-d.y, d.x, 0).normalize().multiplyScalar(0.45));
+  const geo = new T.BufferGeometry().setFromPoints(new T.QuadraticBezierCurve3(p, mid, q).getPoints(16));
+  const l = new T.Line(geo, new T.LineDashedMaterial({ color, dashSize: 0.14, gapSize: 0.1 }));
+  l.computeLineDistances(); lab.world.add(l); return l;
+}
+// run BFS / DFS on graph G and animate it; returns { order, par, pos }
+async function gbRun(tok, G, o) {
+  const O = gbOrd(G.adj, o.pref), ev = o.kind === 'bfs' ? gbBfsEv(O, o.s) : gbDfsEv(O, o.s);
+  const bfs = o.kind === 'bfs', order = [], par = {}, all = [];
+  ev.forEach((e) => { if (e.t === 'visit') { par[e.v] = e.p; all.push(e.v); } });
+  const pos = o.tree ? gbLayout(all, par) : null;
+  if (o.state) Object.assign(o.state, { par, pos });
+  const gap = o.gap ?? 450, at = o.at || {}, hand = gap >= 300;
+  let res = null, box = null;
+  const cont = [];
+  const fm = () => (box ? (bfs ? 'queue：' : 'stack：') + (cont.join(' ') || '空') + '　' : '') + '結果：' + order.join(' ');
+  for (let k = 0; k < ev.length; k++) {
+    const e = ev[k], m = G.vs[e.v];
+    const last = k === ev.length - 1;
+    const shows = e.t !== 'done' || (!bfs && last);
+    if (at[k]) { for (const f of at[k]) { await step(tok); if (f) f(); } }
+    else if (shows && gap) await beat(tok, gap);
+    if (!res) {
+      res = gbRow(o.rowZ ?? 3.4, o.rowLabel || (bfs ? 'BFS 結果' : 'DFS 結果'));
+      box = o.contZ === null ? null : gbRow(o.contZ ?? 1.4, bfs ? 'queue（左邊是前端）' : 'stack（右邊是頂端）');
+    }
+    if (e.t === 'visit') {
+      if (hand && e.p !== null) {
+        const a = G.vs[e.p].position, b = m.position;
+        const h = tag('→', 'pkt', a.x, 1.0, a.z);
+        await travel(tok, h, V3(a.x, 1.0, a.z), V3(b.x, 1.0, b.z), 320);
+        remove(h);
+      }
+      order.push(e.v); tint(m, COL.visit);
+      if (e.p !== null) paintEdge(G.es[ek(e.p, e.v)], COL.tree, true);
+      res.push(e.v, COL.visit);
+      if (box) { cont.push(e.v); box.push(e.v, '#4b9ee2'); }
+      if (pos) {
+        const [x, y] = pos[e.v];
+        cube(e.v, COL.visit, [0.5, 0.5, 0.5], x, y, GB_TZ, 0.8);
+        if (e.p !== null) { const [px, py] = pos[e.p]; line(px, py - 0.25, x, y + 0.25, GB_TZ, '#c08a1f'); }
+      }
+      if (!bfs) { if (G.cur) glow(G.cur, null); glow(m, GOLD); G.cur = m; }
+      say(e.p === null ? '從 ' + e.v + ' 開始：拜訪 ' + e.v : bfs ? '拜訪 ' + e.v + '，放進 queue' : e.p + ' 暫停，拜訪 ' + e.v, fm());
+    } else if (e.t === 'explore') {
+      cont.shift(); if (box) box.shift();
+      if (G.cur) glow(G.cur, null);
+      glow(m, GOLD); G.cur = m;
+      const none = ev[k + 1].t === 'done';
+      say(none ? '探索 ' + e.v + '：沒有新的鄰居' : '取出 ' + e.v + '，開始探索', fm());
+    } else if (e.t === 'done') {
+      glow(m, null); tint(m, GB_DONE);
+      if (G.cur === m) G.cur = null;
+      if (!bfs) {
+        cont.pop(); if (box) box.pop();
+        if (last) say(e.v + ' 探索完，全部結束', fm());
+      }
+    } else if (e.t === 'back') {
+      if (G.cur) glow(G.cur, null);
+      glow(m, GOLD); G.cur = m;
+      say(e.from + ' 探索完 → 回到 ' + e.v, fm());
+    }
+  }
+  if (G.cur) glow(G.cur, null); G.cur = null;
+  return { order, par, pos };
+}
+// paint the edges that are not tree edges (cross / back edges); with a tree, draw them dashed there too
+function gbNonTree(G, r) {
+  const out = [];
+  for (const [u, v] of G.edges) {
+    if (r.par[u] === v || r.par[v] === u) continue;
+    paintEdge(G.es[ek(u, v)], '#d64545', false); out.push(u + '-' + v);
+    if (r.pos) gbArc(r.pos[u], r.pos[v]);
+  }
+  return out;
+}
+
+// 00:00 visit 與 explore
+FRAG.push(['graphbari-terms', 'visit 與 explore：走訪的兩個動作', async (tok) => {
+  fresh(GB_CAM, GB_LOOK);
+  await step(tok);                                   // 0:00 BFS and DFS: two graph traversals
+  tag('BFS = breadth first search（廣度優先）', 'say', 2.6, 1.6, -2.4);
+  tag('DFS = depth first search（深度優先）', 'say', 2.6, 1.6, -1.2);
+  say('BFS、DFS：兩種 graph traversal', 'traversal = 把每個頂點都走過一遍');
+  await step(tok);                                   // 0:27 a small example — a tree, and a tree is a graph
+  const G = gbGraph(GB_SMALL);
+  say('先看小例子：其實是一棵樹', 'tree 也是一種 graph');
+  await step(tok);                                   // 0:43 visiting = going onto a vertex
+  const me = buddy('', '', '#f4a56a', 1.0, 0, -2.6, 0.55);
+  await anim(tok, 700, (u) => me.g.position.set(1.0 - u * 3.9, 0, -2.6 + u * 0.0));
+  tint(G.vs[1], COL.visit); me.mood('happy');
+  tag('visit：走到頂點上', 'ptr', -3.6, 1.3, -3.4);
+  say('visit（拜訪）：走到某一個頂點上', '拜訪 1');
+  await step(tok);                                   // 0:48 exploring a vertex
+  glow(G.vs[1], GOLD);
+  tag('explore：拜訪它所有鄰居', 'ptr alt', 0.6, 1.0, -1.4);
+  say('explore（探索）：站在頂點上，拜訪它所有相鄰頂點');
+  await step(tok);                                   // 0:53 visit all adjacent vertices = exploration
+  for (const w of [2, 4, 5]) {
+    const a = G.vs[1].position, b = G.vs[w].position, h = tag('→', 'pkt', a.x, 1.0, a.z);
+    await travel(tok, h, V3(a.x, 1.0, a.z), V3(b.x, 1.0, b.z), 400);
+    remove(h); paintEdge(G.es[ek(1, w)], COL.tree, true); tint(G.vs[w], COL.visit);
+  }
+  me.mood('wow');
+  say('1 的鄰居 2、4、5 都拜訪了 → 1 探索完', 'visit 一個點　explore = visit 它全部鄰居');
+}]);
+
+// 00:59 小例子 BFS：1 → 2 4 5 → 7 3 6
+FRAG.push(['graphbari-small-bfs', '小例子 BFS：1 2 4 5 7 3 6', async (tok) => {
+  fresh(GB_CAM, GB_LOOK);
+  const G = gbGraph(GB_SMALL);
+  let n1 = null, n2 = null;
+  const r = await gbRun(tok, G, { kind: 'bfs', s: 1, pref: { 1: [2, 4, 5], 2: [7, 3, 6] }, gap: 450, at: {
+    0: [() => { glow(G.vs[1], GOLD); n1 = gbNote(G, 1, '起點：任選，這裡選 1'); say('BFS：起點可以任選', '這裡選 1'); }, () => { remove(n1); glow(G.vs[1], null); }],
+    1: [null],
+    2: [() => { n2 = tag('2、4、5 誰先？順序任意', 'note', -3.6, 1.6, 1.2); say('1 的鄰居：5、4、2', '拜訪的順序可以任意'); }, () => remove(n2)],
+    6: [() => { n2 = tag('下一個要探索的點？已拜訪：1 2 4 5', 'note', 2.6, 1.6, -1.4); say('1 探索完，挑下一個要探索的點'); }, () => remove(n2)],
+    7: [null],
+    11: [null],
+  } });
+  say('全部拜訪完、沒有點可探索 → BFS 完成', 'BFS = ' + r.order.join(' '));
+}]);
+
+// 02:06 小例子 DFS：1 2 3 6 7 4 5
+FRAG.push(['graphbari-small-dfs', '小例子 DFS：1 2 3 6 7 4 5', async (tok) => {
+  fresh(GB_CAM, GB_LOOK);
+  const G = gbGraph(GB_SMALL);
+  let n = null;
+  const r = await gbRun(tok, G, { kind: 'dfs', s: 1, pref: { 1: [2, 4, 5], 2: [3, 6, 7] }, gap: 500, at: {
+    0: [() => say('DFS：一樣從 1 開始'), null],
+    1: [null],
+    2: [() => { n = tag('4、5 先不要拜訪！', 'bad', -2.6, 1.4, -0.1); say('到了新頂點 2 → 改成探索 2', '4、5 等一下再回來'); }, () => remove(n)],
+    3: [() => { n = gbNote(G, 3, '3 沒有其他鄰居'); say('探索 3：沒有東西連著 3'); }],
+    4: [() => remove(n)],
+    5: [null], 8: [null], 10: [null], 13: [null], 15: [null], 16: [null], 18: [null],
+  } });
+  await step(tok);                                   // 3:32 BFS vs DFS: different results
+  tag('BFS = 1 2 4 5 7 3 6', 'say', 3.0, 1.8, -1.6); tag('DFS = ' + r.order.join(' '), 'good', 3.0, 1.8, -0.6);
+  say('兩種走法，結果不一樣', 'BFS 探索完一個點才換下一個');
+  await step(tok);                                   // 3:39 DFS suspends the current vertex for a new one
+  const s = tag('拜訪到新點 → 暫停目前的點', 'note', 3.0, 1.8, 0.6);
+  say('DFS：一拜訪到新點，就暫停（suspend）目前的點', '先去探索新點');
+  await step(tok);                                   // 3:50 from 1 got 2 → explore 2; from 2 to 3 → explore 3
+  for (const [a, b] of [[1, 2], [2, 3]]) {
+    glow(G.vs[a], GOLD);
+    const pa = G.vs[a].position, pb = G.vs[b].position, h = tag('暫停 ' + a, 'pkt', pa.x, 1.1, pa.z);
+    await travel(tok, h, V3(pa.x, 1.1, pa.z), V3(pb.x, 1.1, pb.z), 700);
+    remove(h); glow(G.vs[a], null);
+  }
+  glow(G.vs[3], GOLD);
+  say('1 → 2：開始探索 2；2 → 3：開始探索 3', '一路往深處走');
+}]);
+
+// 04:06 binary tree：BFS = level order，DFS = pre-order
+FRAG.push(['graphbari-tree-level-pre', 'Binary tree：BFS 像 level order，DFS 像 pre-order', async (tok) => {
+  fresh(GB_CAM, GB_LOOK);
+  const G = gbGraph(GB_BIN);
+  await gbRun(tok, G, { kind: 'bfs', s: 1, contZ: null, rowZ: 1.4, rowLabel: 'BFS = level order', gap: 260, at: {
+    0: [() => say('再一個例子：binary tree', 'tree 也是 graph'), () => say('照 binary tree 的 level order 走', '一層一層、由左到右'), null],
+    1: [null],
+    5: [null],
+  } });
+  await step(tok);                                   // 4:36 BFS is just like level order
+  say('BFS = 1 2 3 4 5 6 7', '<span class="ok">BFS 就像 binary tree 的 level order</span>');
+  await gbRun(tok, G, { kind: 'dfs', s: 1, contZ: null, rowZ: 3.4, rowLabel: 'DFS = pre-order', gap: 450, at: {
+    0: [() => G.reset()],
+    1: [null], 2: [null], 4: [null], 7: [null], 10: [null],
+  } });
+  await step(tok);                                   // 5:08 DFS is like pre-order
+  say('DFS = 1 2 4 5 3 6 7', '<span class="ok">根 → 左 → 右：DFS 就像 pre-order</span>');
+}]);
+
+// 05:17 大例子 BFS（queue）：1 4 2 3 5 8 7 10 9 6
+FRAG.push(['graphbari-bfs-queue', 'BFS 用 queue：1 4 2 3 5 8 7 10 9 6', async (tok) => {
+  fresh(GB_CAM, GB_LOOK);
+  const st = {};
+  let n = null, G = null;
+  const r = await gbRun(tok, G = gbGraph(GB_BIG), { kind: 'bfs', s: 1, pref: GB_BFS1, tree: true, gap: 500, state: st, at: {
+    0: [() => say('換一張較大的圖：10 個頂點', '詳細講 BFS'),
+      () => { n = tag('BFS 要用的資料結構：queue', 'note', 3.0, 1.2, 0.4); say('BFS 要用一個 queue', '先進先出：先排隊的先出來'); },
+      () => { remove(n); n = tag('初始：選一個起點', 'note', -5.2, 1.3, -3.4); say('初始步驟：起點任選'); },
+      () => remove(n)],
+    1: [() => { n = tag('重複：從 queue 取一點來探索', 'note', 3.0, 1.2, 0.4); say('重複的步驟：從 queue 取出一點，探索它'); }, () => remove(n)],
+    2: [null], 3: [null], 5: [null], 6: [null], 8: [null],
+    9: [() => { n = gbNote(G, 3, '3 已拜訪 → 跳過', 'bad'); say('2 的鄰居：3、5、7、8', '3 已經拜訪過了'); }, () => remove(n)],
+    10: [null], 11: [null], 13: [null], 14: [null], 15: [null], 17: [null], 18: [null], 20: [null],
+    22: [() => { gbNonTree(G, st); say('連到已拜訪頂點的邊 → 畫虛線'); }, null],
+    24: [null], 26: [null],
+  } });
+  await step(tok);                                   // 8:59 BFS completed
+  say('BFS 完成', 'BFS = ' + r.order.join(' '));
+}]);
+
+// 09:06 BFS spanning tree、cross edge、兩個規則
+FRAG.push(['graphbari-bfs-rules', 'BFS spanning tree、cross edge 與規則', async (tok) => {
+  fresh(GB_CAM, GB_LOOK);
+  const G = gbGraph(GB_BIG);
+  const r = await gbRun(tok, G, { kind: 'bfs', s: 1, pref: GB_BFS1, tree: true, contZ: null, gap: 0 });
+  say('BFS = ' + r.order.join(' '));
+  await step(tok);                                   // 9:07 BFS spanning tree
+  tag('BFS spanning tree', 'ptr alt', 3.7, 7.0, GB_TZ);
+  say('畫出來的樹：BFS spanning tree', '樹邊 = V − 1 = 9 條');
+  await step(tok);                                   // 9:17 dotted edges are cross edges
+  const ne = gbNonTree(G, r);
+  tag('cross edge', 'ptr', 6.2, 3.6, GB_TZ);
+  say('虛線的邊叫 cross edge', ne.join('、'));
+  await step(tok);                                   // 9:26 freedom 1: start from any vertex
+  const f1 = tag('自由 1：起點任選', 'good', -3.0, 1.6, -3.6);
+  say('學到的第一點：起點任選');
+  await step(tok);                                   // 9:32 freedom 2: neighbours in any order
+  const f2 = tag('自由 2：鄰居拜訪順序任選', 'good', -3.0, 1.6, -2.9);
+  say('第二點：探索時，鄰居的拜訪順序任選');
+  await step(tok);                                   // 9:49 rule 1: visit all neighbours before moving on
+  remove(f1); remove(f2);
+  tag('規則 1：鄰居全部拜訪完，才換下一個點', 'note', -3.0, 1.6, -3.6);
+  say('規則 1：選一個點探索，要拜訪完它所有鄰居', '才能換下一個點');
+  await step(tok);                                   // 10:02 exploring 1 → visit 4 and 2, only then explore 4
+  glow(G.vs[1], GOLD); glow(G.vs[4], GOLD); glow(G.vs[2], GOLD);
+  say('探索 1：4 和 2 都要先拜訪', '然後才能探索 4');
+  await step(tok);                                   // 10:15 rule 2: next vertex to explore comes from the queue
+  for (const k of [1, 4, 2]) glow(G.vs[k], null);
+  tag('規則 2：下一個探索點只能從 queue 取', 'note', -3.0, 1.6, -2.9);
+  say('規則 2：下一個要探索的點，只能從 queue 取', 'queue 先進先出 → 一層一層');
+}]);
+
+// 10:26 其他合法的 BFS
+FRAG.push(['graphbari-bfs-more', '同一張圖，很多種合法的 BFS', async (tok) => {
+  fresh(GB_CAM, GB_LOOK);
+  const G = gbGraph(GB_BIG);
+  const a = await gbRun(tok, G, { kind: 'bfs', s: 1, pref: { 1: [2, 4], 2: [8, 5, 7, 3], 3: [10, 9] }, contZ: null, rowZ: 1.4, rowLabel: '從 1 出發', gap: 400, at: {
+    0: [() => say('照這兩條規則，可以寫出很多答案', '再寫幾個合法的 BFS'), null],
+    1: [null], 2: [null], 5: [null], 6: [null], 11: [null], 13: [null], 15: [null], 18: [null],
+  } });
+  await step(tok);                                   // 11:17 this one is also valid
+  say('這也是合法的 BFS', a.order.join(' '));
+  const b = await gbRun(tok, G, { kind: 'bfs', s: 5, pref: { 5: [2, 8, 7, 6], 2: [3, 1], 3: [9, 10, 4] }, contZ: null, rowZ: 3.4, rowLabel: '從 5 出發', gap: 400, at: {
+    0: [() => G.reset()],
+    1: [null], 7: [null], 11: [null], 17: [null], 22: [null],
+  } });
+  await step(tok);                                   // 11:56 this is also valid
+  say('從 5 出發也合法', b.order.join(' '));
+  await step(tok);                                   // 12:01 any start, any order → numerous answers
+  tag('起點任選＋鄰居順序任選 → 答案很多', 'note', 3.0, 1.6, -1.6);
+  say('起點、鄰居順序都能變', 'BFS 的答案不唯一');
+}]);
+
+// 12:11 大例子 DFS（stack）：1 4 3 10 9 2 8 7 5 6
+FRAG.push(['graphbari-dfs-stack', 'DFS 用 stack：1 4 3 10 9 2 8 7 5 6', async (tok) => {
+  fresh(GB_CAM, GB_LOOK);
+  const G = gbGraph(GB_BIG);
+  let n = null, stk = null;
+  const r = await gbRun(tok, G, { kind: 'dfs', s: 1, pref: GB_DFS1, gap: 600, at: {
+    0: [() => { n = tag('DFS 用的資料結構：stack', 'note', 3.0, 1.2, 0.4); say('DFS 要用一個 stack', '後進先出：最後放的先拿'); }, () => remove(n)],
+    1: [() => { glow(G.vs[4], '#3a2a10'); glow(G.vs[2], '#3a2a10'); say('1 的鄰居：4 和 2', '先拜訪 4'); }, () => glow(G.vs[2], null)],
+    2: [() => { n = gbNote(G, 2, '2 先不管，之後再看'); say('規則：還有鄰居沒拜訪？先放著'); },
+      () => { remove(n); n = tag('暫停 1，放在 stack 裡', 'note', 3.0, 1.2, 0.4); say('到了新點 4 → 暫停 1，留在 stack', '先探索 4'); },
+      () => remove(n)],
+    3: [null],
+    5: [null],
+    6: [() => { n = tag('要回到哪？看 stack 頂端', 'note', 3.0, 1.2, 0.4); say('怎麼知道要回到哪裡？', 'stack 會告訴我們'); }, () => remove(n)],
+    8: [null], 9: [null], 10: [null], 11: [null], 12: [null], 13: [null], 15: [null],
+    17: [() => { n = gbNote(G, 5, '2、8 都拜訪過了'); say('5 還能去哪？2、8 都已拜訪', '5 沒有新的鄰居'); },
+      () => { remove(n); n = tag('一路往深處：幾乎全部拜訪了，才陸續探索完', 'note', 3.0, 1.2, 0.4); say('DFS 一路往深處走'); },
+      () => remove(n)],
+    19: [null], 21: [null], 23: [null],
+  } });
+  say('DFS 完成', 'DFS = ' + r.order.join(' '));
+}]);
+
+// 15:44 DFS spanning tree、back edge、pre-order
+FRAG.push(['graphbari-dfs-tree', 'DFS spanning tree、back edge 與 pre-order', async (tok) => {
+  fresh(GB_CAM, GB_LOOK);
+  const G = gbGraph(GB_BIG);
+  const r = await gbRun(tok, G, { kind: 'dfs', s: 1, pref: GB_DFS1, tree: true, contZ: null, gap: 0 });
+  await step(tok);                                   // 15:44 DFS result and DFS spanning tree
+  tag('DFS spanning tree', 'ptr alt', 3.7, 7.0, GB_TZ);
+  say('DFS 結果：' + r.order.join(' '), '走過的邊 = DFS spanning tree');
+  await step(tok);                                   // 15:58 these edges are back edges
+  const ne = gbNonTree(G, r);
+  tag('back edge', 'ptr', 6.2, 4.4, GB_TZ);
+  say('虛線的邊叫 back edge', ne.join('、') + '（都連回祖先）');
+  await step(tok);                                   // 16:03 make it a tree and do pre-order
+  const cur = tag('▼', 'ptr alt', r.pos[r.order[0]][0], r.pos[r.order[0]][1] + 0.6, GB_TZ);
+  say('對這棵樹做 pre-order', '根 → 左子樹 → 右子樹');
+  await step(tok);                                   // 16:09 1 4 3 10 9 2 8 7 5 6
+  const seen = [];
+  for (const v of r.order) {
+    const [x, y] = r.pos[v];
+    await travel(tok, cur, cur.position.clone(), V3(x, y + 0.6, GB_TZ), 220);
+    seen.push(v);
+    say('pre-order', seen.join(' '));
+  }
+  say('pre-order = DFS 的結果', '<span class="ok">' + r.order.join(' ') + '</span>');
+}]);
+
+// 16:24 其他合法的 DFS
+FRAG.push(['graphbari-dfs-more', '同一張圖，很多種合法的 DFS', async (tok) => {
+  fresh(GB_CAM, GB_LOOK);
+  const G = gbGraph(GB_BIG);
+  const a = await gbRun(tok, G, { kind: 'dfs', s: 1, pref: { 1: [2, 4], 2: [8, 3], 8: [7], 7: [5], 5: [6], 3: [9, 10] }, contZ: null, rowZ: 1.4, rowLabel: '從 1 出發', gap: 450, at: {
+    0: [() => say('直接看圖，再寫幾個合法的 DFS'), null],
+    1: [null], 2: [null], 4: [null], 7: [null], 9: [null], 14: [null], 17: [null], 20: [null], 23: [null],
+  } });
+  await step(tok);                                   // 17:21 this is one answer
+  say('這是一個合法的 DFS', a.order.join(' '));
+  const b = await gbRun(tok, G, { kind: 'dfs', s: 3, pref: { 3: [4, 10, 9], 4: [1], 1: [2], 2: [5], 5: [6, 7], 7: [8] }, contZ: null, rowZ: 3.4, rowLabel: '從 3 出發', gap: 450, at: {
+    0: [() => G.reset()],
+    1: [null], 2: [null], 7: [null], 8: [null], 11: [null], 17: [null], 22: [null],
+  } });
+  await step(tok);                                   // 18:04 this is also valid
+  say('從 3 出發也合法', b.order.join(' '));
+  await step(tok);                                   // 18:12 the only rule: suspend and explore the new vertex
+  tag('唯一規則：拜訪到新點 → 暫停目前的點，先探索新點', 'note', 3.0, 1.6, -1.6);
+  say('起點、鄰居都能任選', '唯一規則：遇到新點就先探索它');
+}]);
+
+// 18:22 時間複雜度
+FRAG.push(['graphbari-complexity', 'BFS、DFS 的時間複雜度', async (tok) => {
+  fresh(GB_CAM, GB_LOOK);
+  const G = gbGraph(GB_BIG);
+  await step(tok);                                   // 18:23 time complexity of both is O(n)
+  for (const k of Object.keys(G.vs)) { tint(G.vs[k], COL.visit); await anim(tok, 180, () => {}); }
+  tag('BFS、DFS：O(n)', 'ptr alt', 3.0, 1.6, -1.4);
+  say('BFS、DFS 的時間：O(n)', '每個頂點都只拜訪一次');
+  await step(tok);                                   // 18:28 n = number of vertices
+  tag('n = 頂點的個數', 'note', 3.0, 1.6, -0.4);
+  say('n = 頂點的個數');
+}]);
+  }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
 

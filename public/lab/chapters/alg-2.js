@@ -4121,16 +4121,23 @@ FRAG.push(['dcmit2-bs-vs-newton', 'Binary search 整個答案 vs Newton', async 
 
   // ═══ sortbari.js ═══
   {
-// ds-8 unpacks colorFor from ctx at module level; alg-2 does not, so take it here.
+const { V3, fresh, tag, cube, move, kill, glow, tint, txt, code, ghostBox, travel, remove, buddy, anim, step, GOLD, GREEN, GRAY } = K;
 const colorFor = ctx.colorFor;
-const { V3, fresh, tag, cube, move, kill, glow, tint, code, ghostBox, GOLD, GREEN, GRAY } = K;
 // ─── mB5HXBb_HY8：Abdul Bari〈Merge Sort〉、7h1s2SojIRw：Abdul Bari〈Quick Sort〉 ───
+// Cued scenes: every `await step(tok)` waits for the sentence it shows; beats are motion only.
 // Merge sort 的例子：索引 1..8 = 9 3 7 5 6 4 8 2（mid = ⌊(l+h)/2⌋，7 次 merge 依 post-order 編號）。
 // Quick sort 的例子：10 16 8 12 15 6 3 9 5，尾端放 ∞；pivot = A[l]，i 找 > pivot、j 找 ≤ pivot，
 // 交錯後 A[l] ↔ A[j]（第一次 partition → 6 5 8 9 3 10 15 12 16），之後 QuickSort(l, j)、QuickSort(j+1, h)。
+// 左下角的小幫手跟著反應：切開時好奇、合併好了開心。
 const SB_M = [9, 3, 7, 5, 6, 4, 8, 2];
 const SB_Q = [10, 16, 8, 12, 15, 6, 3, 9, 5, Infinity];
 const sbS = (v) => (v === Infinity ? '∞' : String(v));
+const bubble = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const pkt = (t, x, y, z = 0) => tag(t, 'pkt', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+const guide = (x = -6.2, z = 1.6, s = 0.7) => buddy('', '', '#ffc56b', x, 0, z, s);
 // merge-sort tree (upright, z = 0): a node of size g sits at height SB_Y[g]; groups are separated by a gap
 const SB_Y = { 1: 1.4, 2: 3.0, 4: 4.6, 8: 6.2 }, SB_GAP = { 1: 0.5, 2: 0.7, 4: 0.9, 8: 0 };
 const sbX = (k, g) => (k - 3.5) * 0.62 + (Math.floor(k / g) - (8 / g - 1) / 2) * SB_GAP[g];
@@ -4150,198 +4157,290 @@ async function sbMerge(tok, A, B, lo, g, ms) {
   }
   return out;
 }
-// top-down merge sort trace on 9 3 7 5 6 4 8 2; mode 'idx' shows (low, high) of every call
-async function sbTrace(tok, mode, ms) {
-  const vals = SB_M.slice(); let merges = 0;
-  const idx = mode === 'idx';
-  const rng = (l, h, g) => { if (idx) tag('(' + (l + 1) + ',' + (h + 1) + ')', 'idx', (sbX(l, g) + sbX(h, g)) / 2, SB_Y[g] - 0.55, 0); };
-  const root = vals.map((v, k) => sbCube(v, k, 8)); rng(0, 7, 8);
-  async function rec(l, h, nodes) {
-    const g = h - l + 1;
-    if (g === 1) {
-      glow(nodes[0], GREEN);
-      say(idx ? '(' + (l + 1) + ',' + (l + 1) + ')：l = h，一個元素' : vals[l] + '：只剩一個元素', '一個元素就是排好的串列');
-      await beat(tok, ms * 0.6); glow(nodes[0], null);
-      return nodes;
-    }
+// the top-down recursion on [0..7] as a list of events:
+//   L = make the left half, R = make the right half, leaf = one element, M = merge
+function sbEvents() {
+  const E = [];
+  (function rec(l, h) {
+    if (l === h) { E.push({ t: 'leaf', l, h }); return; }
     const m = (l + h) >> 1;
-    nodes.forEach((n) => tint(n, GRAY));
-    say(idx ? 'MergeSort(' + (l + 1) + ', ' + (h + 1) + ')：mid = ' + (m + 1) : '切開：' + vals.slice(l, m + 1).join(' ') + ' | ' + vals.slice(m + 1, h + 1).join(' '),
-      idx ? 'mid = (' + (l + 1) + ' + ' + (h + 1) + ') / 2 = ' + (m + 1) + '：先做左半，右半等一下' : '先處理左半，右半等一下');
-    await beat(tok, ms);
-    const L = []; for (let k = l; k <= m; k++) L.push(sbCube(vals[k], k, g / 2, 0.8)); rng(l, m, g / 2);
-    await beat(tok, ms * 0.5);
-    const Ls = await rec(l, m, L);
-    const R = []; for (let k = m + 1; k <= h; k++) R.push(sbCube(vals[k], k, g / 2, 0.8)); rng(m + 1, h, g / 2);
-    say(idx ? '左半完成，換右半 (' + (m + 2) + ',' + (h + 1) + ')' : '左半排好了，換右半', '');
-    await beat(tok, ms * 0.6);
-    const Rs = await rec(m + 1, h, R);
-    merges++;
-    nodes.forEach(kill);
-    const res = Ls.concat(Rs).map((x) => x.userData.v).sort((a, b) => a - b);
-    say('第 ' + merges + ' 次 merge → ' + res.join(' '), idx ? 'Merge(' + (l + 1) + ', ' + (m + 1) + ', ' + (h + 1) + ')' : 'post-order：左、右都好了才 merge（根）');
-    const out = await sbMerge(tok, Ls, Rs, l, g, ms);
-    tag('#' + merges, 'ptr alt', (sbX(l, g) + sbX(h, g)) / 2, SB_Y[g] + 0.55, 0);
-    await beat(tok, ms * 0.5);
-    return out;
-  }
-  return rec(0, 7, root);
+    E.push({ t: 'L', l, m, h }); rec(l, m);
+    E.push({ t: 'R', l, m, h }); rec(m + 1, h);
+    E.push({ t: 'M', l, m, h });
+  })(0, 7);
+  return E;
+}
+// a merge-sort trace that the scene advances one event (or a few) per sentence
+function sbTracer(mode) {
+  const idx = mode === 'idx', vals = SB_M.slice(), E = sbEvents();
+  const nodes = {}, res = {}; let e = 0, merges = 0;
+  const rng = (l, h, g) => { if (idx) tag('(' + (l + 1) + ',' + (h + 1) + ')', 'idx', (sbX(l, g) + sbX(h, g)) / 2, SB_Y[g] - 0.55, 0); };
+  const make = (l, h, g) => { const a = []; for (let k = l; k <= h; k++) a.push(sbCube(vals[k], k, g, 0.8)); nodes[l + ',' + h] = a; rng(l, h, g); return a; };
+  const T = {
+    root() { nodes['0,7'] = vals.map((v, k) => sbCube(v, k, 8, 1.2)); rng(0, 7, 8); },
+    // play events until event index `upto` (exclusive)
+    async to(tok, upto, ms = 500) {
+      while (e < upto) {
+        const ev = E[e++], g = ev.h - ev.l + 1;
+        if (ev.t === 'L') {
+          (nodes[ev.l + ',' + ev.h] || []).forEach((n) => tint(n, GRAY));
+          make(ev.l, ev.m, g / 2);
+          say(idx ? 'MergeSort(' + (ev.l + 1) + ', ' + (ev.m + 1) + ')：先做左半' : '左半：' + vals.slice(ev.l, ev.m + 1).join(' '),
+            idx ? 'mid = (' + (ev.l + 1) + ' + ' + (ev.h + 1) + ') / 2 = ' + (ev.m + 1) : '右半等一下再做');
+          await beat(tok, ms * 0.6);
+        } else if (ev.t === 'R') {
+          make(ev.m + 1, ev.h, g / 2);
+          say(idx ? 'MergeSort(' + (ev.m + 2) + ', ' + (ev.h + 1) + ')：換右半' : '右半：' + vals.slice(ev.m + 1, ev.h + 1).join(' '), '左半已經排好了');
+          await beat(tok, ms * 0.6);
+        } else if (ev.t === 'leaf') {
+          const n = nodes[ev.l + ',' + ev.l][0]; glow(n, GREEN); res[ev.l + ',' + ev.l] = [n];
+          say(idx ? '(' + (ev.l + 1) + ',' + (ev.l + 1) + ')：l = h，只有一個元素' : vals[ev.l] + '：只剩一個元素', '一個元素本身就是排好的');
+          await beat(tok, ms * 0.4); glow(n, null);
+        } else {
+          merges++;
+          (nodes[ev.l + ',' + ev.h] || []).forEach(kill);
+          const Ls = res[ev.l + ',' + ev.m], Rs = res[(ev.m + 1) + ',' + ev.h];
+          const sorted = Ls.concat(Rs).map((x) => x.userData.v).sort((a, b) => a - b);
+          say('第 ' + merges + ' 次 merge → ' + sorted.join(' '), idx ? 'Merge(' + (ev.l + 1) + ', ' + (ev.m + 1) + ', ' + (ev.h + 1) + ')' : '左、右都排好了，才合併');
+          res[ev.l + ',' + ev.h] = await sbMerge(tok, Ls, Rs, ev.l, g, ms);
+          tag('#' + merges, 'ptr alt', (sbX(ev.l, g) + sbX(ev.h, g)) / 2, SB_Y[g] + 0.55, 0);
+          await beat(tok, ms * 0.3);
+        }
+      }
+    },
+    final: () => res['0,7'] || [],
+  };
+  return T;
 }
 
 // ── Merge Sort ──
-// 00:00 divide and conquer：大問題拆開，一個元素就是「小問題」
+// 0:00 divide and conquer：大問題拆開，一個元素就是「小問題」
 FRAG.push(['sortbari-merge-dc', 'Divide and Conquer：拆到只剩一個元素', async (tok) => {
   fresh([0, 4, 13], [0, 3.4, 0]);
+  const gd = guide();
+  await step(tok);                                   // 0:00 we have seen merging (two-way, m-way)
+  const a = note('3 9', -2.4, 5.6, 0), b = note('5 7', 2.4, 5.6, 0);
+  say('上一集：merging', '兩個排好的串列合併成一個');
+  await Promise.all([travel(tok, a, V3(-2.4, 5.6, 0), V3(-0.5, 5.6, 0), 900), travel(tok, b, V3(2.4, 5.6, 0), V3(0.5, 5.6, 0), 900)]);
+  remove(a); remove(b); note('3 5 7 9', 0, 5.6, 0);
+  await step(tok);                                   // 0:20 merge sort: recursive, divide and conquer
+  bubble('Merge sort：recursive、divide and conquer', 0, 4.6, 0);
+  gd.mood('wow');
+  say('Merge sort：遞迴 + divide and conquer');
+  await step(tok);                                   // 0:30 large → subproblems, small → solve, combine
+  bubble('問題大 → 拆成子問題', -3.6, 3.6, 0); await beat(tok, 300);
+  bubble('問題小 → 直接解', 0, 3.6, 0); await beat(tok, 300);
+  bubble('把小解合併成大解', 3.6, 3.6, 0);
+  say('divide and conquer 三步', '拆開 → 解小的 → 合併');
+  await step(tok);                                   // 0:47 the problem is to sort these elements
   const ms = SB_M.map((v, k) => sbCube(v, k, 8, 1.2));
-  say('Merge sort：recursive、divide and conquer', '問題大 → 拆成子問題；小 → 直接解；再合併');
-  await beat(tok, 3200);
-  say('問題：把 8 個元素排好', '8 個元素 → 大問題');
-  await beat(tok, 2200);
-  for (const g of [4, 2, 1]) {
-    ms.forEach((m, k) => move(m, sbX(k, g), SB_Y[g], 0));
-    say(g > 1 ? '還是大問題 → 再拆' : '拆到只剩一個元素', g > 1 ? '每段 ' + g + ' 個元素（兩個也算大）' : '一個元素 = 小問題，不用排');
-    await beat(tok, 2200);
-  }
+  gd.mood('calm'); gd.look(1);
+  say('問題：把這 8 個元素排好', '8 個元素 → 大問題');
+  await step(tok);                                   // 0:55 small = a single element
+  glow(ms[0], GOLD);
+  const n1 = note('只有 1 個 → 不用排', sbX(0, 8), 7.0, 0);
+  say('什麼叫「小問題」？', '只有一個元素：不用排序');
+  await step(tok);                                   // 1:07 even two elements is a large problem → split
+  glow(ms[0], null); remove(n1);
+  for (const g of [4, 2, 1]) { ms.forEach((m, k) => move(m, sbX(k, g), SB_Y[g], 0)); await beat(tok, 700); }
+  say('兩個元素也算大問題 → 再拆', '一直拆到每段只剩一個元素');
+  await step(tok);                                   // 1:17 single element = small problem
   ms.forEach((m) => glow(m, GREEN));
-  say('小問題的解，合併成大問題的解', '<span class="ok">一個元素本身就是排好的</span>');
-  await beat(tok, 3000);
+  gd.mood('happy'); await gd.hop(tok);
+  say('一個元素 = 小問題，本身就排好了', '<span class="ok">接下來只要合併</span>');
 }]);
 
-// 01:25 演算法 MergeSort(l, h)
+// 1:25 演算法 MergeSort(l, h)
 FRAG.push(['sortbari-merge-code', 'MergeSort(l, h) 演算法', async (tok) => {
   fresh([0, 4, 13], [0, 3.4, 0]);
-  const C = code(['Algorithm MergeSort(l, h)', '{', '  if (l < h)', '  {', '    mid = (l + h) / 2;', '    MergeSort(l, mid);', '    MergeSort(mid + 1, h);', '    Merge(l, mid, h);', '  }', '}'], -3.4, 6.0, 0.5);
+  const gd = guide();
   const X = (k) => 0.9 + k * 0.72;
+  await step(tok);                                   // 1:25 let me write the algorithm
+  const C = code(['Algorithm MergeSort(l, h)', '{', '  if (l < h)', '  {', '    mid = (l + h) / 2;', '    MergeSort(l, mid);', '    MergeSort(mid + 1, h);', '    Merge(l, mid, h);', '  }', '}'], -3.4, 6.0, 0.5);
   const row = SB_M.map((v, k) => cube(v, colorFor(v), [0.55, 0.55, 0.55], X(k), 3.0, 0, 1.2));
   SB_M.forEach((v, k) => tag(String(k + 1), 'idx', X(k), 2.4, 0));
   C.hl(0);
-  say('參數：串列的開頭 l、結尾 h', 'l = low　h = high');
+  say('先寫出演算法，再來追蹤');
+  await step(tok);                                   // 1:46 two parameters: low and high
   const lt = tag('l', 'ptr', X(0), 3.8, 0), ht = tag('h', 'ptr', X(7), 3.8, 0);
-  await beat(tok, 3000);
-  C.hl(2);
+  say('參數：串列的開頭 l、結尾 h', 'l = low　h = high');
+  await step(tok);                                   // 2:09 if (l < h): at least two elements
+  C.hl(2); gd.mood('wow');
   say('l < h：至少兩個元素 → 大問題', 'l = h 表示只有一個元素，不用做');
-  await beat(tok, 3200);
-  C.hl(4);
-  tag('mid', 'ptr alt', X(3), 4.4, 0); glow(row[3], GOLD);
-  say('找中間：mid = (1 + 8) / 2 = 4', '整數除法：9 / 2 = 4');
-  await beat(tok, 3000);
+  await step(tok);                                   // 2:21 mid = (l + h) / 2 = 4
+  C.hl(4); gd.mood('calm');
+  const md = tag('mid', 'ptr alt', X(3), 4.4, 0); glow(row[3], GOLD);
+  say('mid = (1 + 8) / 2 = 9 / 2 = 4', '整數除法，小數捨去');
+  await step(tok);                                   // 2:49 merge sort the left half recursively
   C.hl(5);
-  let z = ghostBox('#4b9ee2', 4 * 0.72, 0.9, 0.9); z.position.set((X(0) + X(3)) / 2, 3.0, 0);
-  say('左半 1～4：遞迴 merge sort', 'MergeSort(1, 4)');
-  await beat(tok, 2800);
+  const z = ghostBox('#4b9ee2', 4 * 0.72, 0.9, 0.9); z.position.set((X(0) + X(3)) / 2, 3.0, 0);
+  say('左半 1～4：遞迴做 merge sort', 'MergeSort(l, mid) = MergeSort(1, 4)');
+  await step(tok);                                   // 3:07 and from mid + 1 to high
   C.hl(6);
   const z2 = ghostBox('#dd8238', 4 * 0.72, 0.9, 0.9); z2.position.set((X(4) + X(7)) / 2, 3.0, 0);
-  say('右半 5～8：遞迴 merge sort', 'MergeSort(5, 8)');
-  await beat(tok, 2800);
+  say('右半 5～8：遞迴做 merge sort', 'MergeSort(mid + 1, h) = MergeSort(5, 8)');
+  await step(tok);                                   // 3:26 when both are sorted, merge them
   C.hl(7); glow(row[3], null);
+  gd.mood('happy'); await gd.hop(tok);
   say('兩半都排好 → 合併', 'Merge(l, mid, h) = Merge(1, 4, 8)');
-  await beat(tok, 3000);
-  kill(lt); kill(ht);
-  say('一個陣列裡同時放兩個串列', '[l..mid] 與 [mid+1..h]');
-  await beat(tok, 3200);
+  await step(tok);                                   // 3:52 a single array is broken into two lists
+  C.hl(-1); kill(lt); kill(ht); kill(md);
+  bubble('串列 1：[l..mid]', (X(0) + X(3)) / 2, 4.2, 0); bubble('串列 2：[mid+1..h]', (X(4) + X(7)) / 2, 4.2, 0);
+  say('一個陣列裡放著兩個串列', '[l..mid] 與 [mid+1..h]');
+  await step(tok);                                   // 4:07 a single array can have many lists
+  for (let k = 0; k < 8; k += 2) { const q = ghostBox('#9b7ef4', 2 * 0.72 - 0.08, 1.0, 1.0); q.position.set((X(k) + X(k + 1)) / 2, 3.0, 0); }
+  say('一個陣列也可以放很多個串列', '只要記住每段的開頭與結尾');
 }]);
 
-// 04:19 追蹤（索引版）：7 次 merge
+// 4:19 追蹤（索引版）：7 次 merge
 FRAG.push(['sortbari-merge-trace-idx', '追蹤 MergeSort(1, 8)：遞迴樹與 7 次 merge', async (tok) => {
   fresh([0, 4, 13], [0, 3.4, 0]);
+  const gd = guide(), T = sbTracer('idx');
+  await step(tok);                                   // 4:19 initially low = 1, high = 8
+  T.root();
   say('MergeSort(1, 8)：9 3 7 5 6 4 8 2', 'low = 1、high = 8');
-  await beat(tok, 2400);
-  const out = await sbTrace(tok, 'idx', 620);
-  out.forEach((m) => glow(m, GREEN));
-  say('一路切到一個元素，再一路 merge', '<span class="ok">2 3 4 5 6 7 8 9</span>　共 7 次 merge');
-  await beat(tok, 3200);
+  const plan = [[1, 'wow'], [2], [6, 'wow'], [7, 'happy'], [12], [13, 'happy'], [14], [16, 'wow'], [20], [21, 'happy'], [26], [27], [28], [29, 'happy']];
+  for (const [upto, mood] of plan) {
+    await step(tok);                                 // 4:30 (1,4) · 5:13 (1,2) · 5:28 (1,1)(2,2) · 6:25 #1 · 6:40 (3,3)(4,4) · 6:57 #2 · 7:14 #3 · 7:41 (5,8)(5,6) · 7:57 (5,5)(6,6) · 8:04 #4 · 8:10 (7,7)(8,8) · 8:24 #5 · 8:33 #6 · 8:42 #7
+    if (mood) gd.mood(mood);
+    await T.to(tok, upto);
+  }
+  await step(tok);                                   // 9:00 split until one element, then merge
+  T.final().forEach((m) => glow(m, GREEN));
+  gd.mood('happy'); await gd.hop(tok);
+  say('一路切到一個元素，再一路 merge 回來', '<span class="ok">2 3 4 5 6 7 8 9</span>　共 7 次 merge');
 }]);
 
-// 09:00 和 two-way merge sort 比較
+// 9:25 和 two-way merge sort 比較
 FRAG.push(['sortbari-merge-twoway', 'Two-way merge sort vs merge sort', async (tok) => {
   fresh([0, 4, 13], [0, 3.4, 0]);
+  const gd = guide();
   let cur = SB_M.map((v, k) => sbCube(v, k, 1, 1.0));
+  await step(tok);                                   // 9:25 two-way: first two, next two, next two…
   tag('two-way（迭代）', 'ptr', -5.6, 6.6, 0);
-  say('two-way merge sort：一輪一輪', '前兩個、下兩個、再下兩個……');
-  await beat(tok, 2600);
-  let pass = 0;
   for (const g of [2, 4, 8]) {
-    pass++;
     const next = [];
-    for (let lo = 0; lo < 8; lo += g) {
-      const A = cur.slice(lo, lo + g / 2), B = cur.slice(lo + g / 2, lo + g);
-      next.push(...await sbMerge(tok, A, B, lo, g, 360));
-    }
+    for (let lo = 0; lo < 8; lo += g) next.push(...await sbMerge(tok, cur.slice(lo, lo + g / 2), cur.slice(lo + g / 2, lo + g), lo, g, 180));
     cur = next;
-    say('第 ' + pass + ' 輪：每段 ' + g + ' 個', cur.map((m) => m.userData.v).join(' '));
-    await beat(tok, 1800);
   }
-  say('merge sort：遞迴，先左半、再右半', 'pattern 不同，合併方式一樣');
-  await beat(tok, 3200);
-  say('一樣一次合併兩個串列 → 也是 two-way', '因為是遞迴版，另外叫 merge sort');
-  await beat(tok, 3200);
+  say('two-way merge sort：一輪一輪合併', '前兩個、下兩個、再下兩個……');
+  await step(tok);                                   // 9:31 merge sort: divide and divide, then merge
+  bubble('merge sort：遞迴，先切到 1 個再合併', 1.0, 7.2, 0);
+  gd.mood('wow');
+  say('merge sort：divide and conquer、遞迴', '一直切到一個元素才開始合併');
+  await step(tok);                                   // 9:46 only the pattern changes, result is sorted
+  cur.forEach((m) => glow(m, GREEN));
+  gd.mood('happy');
+  say('不同的只有切法（pattern）', '<span class="ok">結果一樣是排好的</span>');
+  await step(tok);                                   // 9:54 also merging two lists at a time
+  good('一次合併兩個串列 → 也是 two-way', 0, 0.4, 0);
+  say('一樣一次合併兩個串列', '因為是遞迴版，另外叫它 merge sort');
 }]);
 
 // 10:06 時間：每層 n 個、共 log n 層
 FRAG.push(['sortbari-merge-levels', 'Merge sort 的時間：n × log n', async (tok) => {
   fresh([0, 4, 13], [0, 3.4, 0]);
+  const gd = guide();
   const rows = { 1: SB_M, 2: [3, 9, 5, 7, 4, 6, 2, 8], 4: [3, 5, 7, 9, 2, 4, 6, 8], 8: [2, 3, 4, 5, 6, 7, 8, 9] };
+  await step(tok);                                   // 10:06 from the recursion tree
   rows[1].forEach((v, k) => sbCube(v, k, 1, 0.8));
-  say('從遞迴樹最下面開始 merge', '一個一個的元素');
-  await beat(tok, 2600);
+  say('從追蹤畫出的遞迴樹看時間', '最下面：一個一個的元素');
   let lv = 0;
   for (const g of [2, 4, 8]) {
+    await step(tok);                                 // 10:24 two, two… eight merged · 10:41 again eight · 10:46 again eight: n each time
     lv++;
     rows[g].forEach((v, k) => sbCube(v, k, g, 1.0));
     tag('8 個 = n', 'ptr alt', 5.6, SB_Y[g], 0);
-    tag('第 ' + lv + ' 層', 'idx', -5.6, SB_Y[g], 0);
-    say('這一層 merge 了 8 個元素', '每層 merge 的總量 = n');
-    await beat(tok, 2600);
+    say(lv === 1 ? '這一層：2 個、2 個……共 8 個被 merge' : '這一層又 merge 了 8 個', '每一層 merge 的總量 = n');
   }
-  say('8 個元素 → 3 層 = log₂ 8', '1 → 2 → 4 → 8：每層加倍');
-  await beat(tok, 3200);
-  say('遞迴先左後右，不是一輪輪 pass', '但層數一樣是 log n');
-  await beat(tok, 3000);
-  say('n × log n', '<span class="ok">Θ(n log n)</span>');
-  await beat(tok, 3000);
+  await step(tok);                                   // 10:53 total levels: one, two, three
+  for (const g of [2, 4, 8]) { tag('第 ' + Math.log2(g) + ' 層', 'idx', -5.6, SB_Y[g], 0); await beat(tok, 300); }
+  say('數一數：一共 3 層');
+  await step(tok);                                   // 11:00 three = log 8 (1, 2, 4, 8)
+  bubble('1 → 2 → 4 → 8：每層加倍', 0, 7.4, 0);
+  gd.mood('wow');
+  say('8 個元素 → 3 層 = log₂ 8', '每層的串列長度加倍');
+  await step(tok);                                   // 11:23 not passes: recursive, left first
+  note('不是一輪一輪的 pass：先做完左邊再做右邊', 0, 0.5, 1.2);
+  say('嚴格說不是 pass（遞迴先左後右）', '但層數一樣是 log n');
+  await step(tok);                                   // 11:41 n, log n times
+  say('每層 n，共 log n 層', 'n × log n');
+  gd.mood('calm');
+  await step(tok);                                   // 11:48 Θ(n log n)
+  good('Θ(n log n)', 5.6, 7.2, 0);
+  gd.mood('happy'); await gd.hop(tok);
+  say('Merge sort 的時間', '<span class="ok">Θ(n log n)</span>');
 }]);
 
 // 11:59 追蹤（數字版）：merge 在 post-order
 FRAG.push(['sortbari-merge-trace-num', '用數字追蹤：merge 發生在 post-order', async (tok) => {
   fresh([0, 4, 13], [0, 3.4, 0]);
+  const gd = guide(), T = sbTracer('num');
+  await step(tok);                                   // 11:59 taking these numbers: low 1, high 8
+  T.root();
   say('用數字再追一次：low 1、high 8', '9 3 7 5 6 4 8 2');
-  await beat(tok, 2400);
-  const out = await sbTrace(tok, 'num', 620);
-  out.forEach((m) => glow(m, GREEN));
-  say('呼叫自己兩次 → 追蹤樹是 binary tree', '<span class="ok">merge 的順序 = post-order</span>（左、右、根）');
-  await beat(tok, 3400);
+  const plan = [[1, 'wow'], [2], [6], [7, 'happy'], [12], [13], [14, 'happy'], [15], [16], [20], [21, 'happy'], [22], [26], [27, 'happy'], [28], [29, 'happy']];
+  for (const [upto, mood] of plan) {
+    await step(tok);                                 // 12:18 9 3 7 5 · 12:48 9 3 · 13:04 9 | 3 · 13:22 3 9 · 13:36 7 | 5 · 13:46 5 7 · 13:59 3 5 7 9 · 14:20 6 4 8 2 · 14:37 6 4 · 14:50 6 | 4 · 15:11 4 6 · 15:29 8 2 · 15:38 8 | 2 · 15:51 2 8 · 16:09 2 4 6 8 · 16:19 2…9
+    if (mood) gd.mood(mood);
+    await T.to(tok, upto);
+  }
+  await step(tok);                                   // 16:52 calls itself twice → like a binary tree
+  T.final().forEach((m) => glow(m, GREEN));
+  bubble('每次呼叫自己兩次 → 追蹤樹像 binary tree', 0, 7.4, 0);
+  gd.mood('wow');
+  say('呼叫自己兩次 → 追蹤樹是 binary tree');
+  await step(tok);                                   // 17:04 merging is done in post-order
+  good('左 → 右 → 根（merge）＝ post-order', 0, 0.4, 1.0);
+  gd.mood('happy'); await gd.hop(tok);
+  say('merge 的順序 = post-order', '先左、再右，最後才在根 merge');
 }]);
 
 // 17:28 遞迴式與 master theorem
 FRAG.push(['sortbari-merge-recurrence', 'T(n) = 2T(n/2) + n → Θ(n log n)', async (tok) => {
   fresh([0, 4, 13], [0, 3.4, 0]);
-  const C = code(['MergeSort(l, h)          T(n)', '{ if (l < h)', '  { mid = (l + h) / 2;     1', '    MergeSort(l, mid);     T(n/2)', '    MergeSort(mid + 1, h); T(n/2)', '    Merge(l, mid, h);      n', '  }', '}'], -3.0, 5.8, 0.55);
-  C.hl(0);
-  say('假設整個演算法花 T(n)', '用 recurrence relation 求時間');
-  await beat(tok, 2800);
-  C.hl(4);
-  say('左右各一半：T(n/2) + T(n/2)', 'mid 只是常數，忽略');
-  await beat(tok, 2800);
-  C.hl(5);
-  say('merge 兩個串列：共 n 個元素', 'Merge = n');
-  await beat(tok, 2600);
+  const gd = guide();
+  const full = ['MergeSort(l, h)          T(n)', '{ if (l < h)', '  { mid = (l + h) / 2;     1', '    MergeSort(l, mid);     T(n/2)', '    MergeSort(mid + 1, h); T(n/2)', '    Merge(l, mid, h);      n', '  }', '}'];
+  const w = Math.max(...full.map((s) => s.length));
+  const bare = full.map((s) => s.replace(/\s{2,}(T\(n\)|1|T\(n\/2\)|n)$/, '').padEnd(w, ' '));
+  await step(tok);                                   // 17:28 time complexity by recurrence relation
+  const C = code(full, -3.0, 5.8, 0.55);
+  C.ls.forEach((l, i) => txt(l, bare[i]));
+  say('用 recurrence relation 求時間', '遞迴演算法的老方法');
+  const show = (i) => txt(C.ls[i], full[i].padEnd(w, ' '));
+  await step(tok);                                   // 17:45 the algorithm takes T(n); mid is a constant
+  C.hl(0); show(0); show(2);
+  say('假設整個演算法花 T(n)', '算 mid 只是常數，可以忽略');
+  await step(tok);                                   // 17:59 calls itself on half the list, twice
+  C.hl(3); show(3); await beat(tok, 500); C.hl(4); show(4);
+  gd.mood('wow');
+  say('左右各處理一半：T(n/2) + T(n/2)');
+  await step(tok);                                   // 18:07 merging two lists, n elements in all
+  C.hl(5); show(5);
+  say('merge 兩個串列：一共 n 個元素', 'Merge 花 n');
+  await step(tok);                                   // 18:21 T(n) = 2T(n/2) + n
   C.hl(-1);
-  say('T(n) = 2T(n/2) + n（n > 1）', 'n = 1 時什麼都不做，寫常數 1');
-  await beat(tok, 3000);
-  const W = 4.4;
-  for (let d = 0; d < 4; d++) {
-    const cnt = 1 << d, w = W / cnt;
-    for (let c = 0; c < cnt; c++) cube(null, '#4b9ee2', [w - 0.1, 0.35, 0.5], 4.0 - W / 2 + w * (c + 0.5), 5.4 - d * 1.0, 0, 0.6);
-    tag('n', 'ptr alt', 6.6, 5.4 - d * 1.0, 0);
-    await beat(tok, 500);
-  }
-  tag('log n 層', 'idx', 4.0, 1.6, 0);
-  say('Master theorem：a = 2、b = 2', 'f(n) = n = n^k，k = 1');
-  await beat(tok, 3000);
-  say('log_b a = log₂ 2 = 1 = k → case 2', 'case 2：f(n) 乘上 log n');
-  await beat(tok, 3200);
+  const f = tag('T(n) = 2T(n/2) + n', 'ptr alt', 3.6, 6.2, 0);
+  gd.mood('calm');
+  say('全部加起來：T(n) = 2T(n/2) + n');
+  await step(tok);                                   // 18:39 when n > 1; when n = 1 write 1
+  txt(f, 'T(n) = 2T(n/2) + n（n > 1）');
+  note('n = 1：什麼都不做 → 寫 1', 3.6, 5.3, 0);
+  say('n > 1 才遞迴', 'n = 1 時寫一個常數 1');
+  await step(tok);                                   // 19:06 master theorem: a = 2, b = 2, f(n) = n
+  bubble('a = 2、b = 2、f(n) = n', 3.6, 4.3, 0);
+  say('Master theorem：a = 2、b = 2', 'f(n) = n = nᵏ，k = 1');
+  await step(tok);                                   // 19:27 log₂ 2 = 1 = k → case 2
+  bubble('log_b a = log₂ 2 = 1 = k', 3.6, 3.5, 0);
+  gd.mood('wow');
+  say('log₂ 2 = 1，和 k 相等 → case 2');
+  await step(tok);                                   // 19:38 case 2: f(n) times log n
+  bubble('case 2：f(n) × log n', 3.6, 2.7, 0);
+  say('case 2：f(n) 原樣寫下，再乘 log n', 'n × log n');
+  await step(tok);                                   // 20:16 Θ(n log n)
+  good('Θ(n log n)', 3.6, 1.8, 0);
+  gd.mood('happy'); await gd.hop(tok);
   say('Merge sort 的時間', '<span class="ok">Θ(n log n)</span>');
-  await beat(tok, 3000);
 }]);
 
 // ── Quick Sort ──
@@ -4351,7 +4450,7 @@ function sbRow(vals, o = {}) {
   const R = { v: vals.slice(), m: [], dx, z, y };
   R.x = (i) => x0 + i * dx;
   for (let i = 0; i < n; i++) ctx.tile(V3(R.x(i), 0.02, z), dx * 0.9, 1.0);
-  vals.forEach((v, i) => { R.m[i] = cube(sbS(v), v === Infinity ? '#d8cfc0' : colorFor(v), [0.8, 0.8, 0.8], R.x(i), y, z, o.drop ? 2.2 : 0); });
+  vals.forEach((v, i) => { R.m[i] = v === null ? null : cube(sbS(v), v === Infinity ? '#d8cfc0' : colorFor(v), [0.8, 0.8, 0.8], R.x(i), y, z, o.drop ? 2.2 : 0); });
   R.ptr = (text, cls, i, dy) => tag(text, cls, R.x(i), y + dy, z);
   R.at = (l, i, dy) => l.position.set(R.x(i), y + dy, z);
   R.swap = async (tok, i, j, ms = 800) => {
@@ -4366,193 +4465,324 @@ function sbRow(vals, o = {}) {
   R.str = () => R.v.map(sbS).join(' ');
   return R;
 }
-// Bari's partition(l, h): h is the sentinel slot (∞ or an earlier pivot); returns j
-async function sbPart(tok, R, l, h, o = {}) {
-  const ms = o.ms || 800, hl = o.code ? (k) => o.code.hl(k) : () => {}, p = R.v[l];
-  let i = l, j = h;
-  glow(R.m[l], GOLD);
-  const pt = R.ptr('pivot', 'ptr alt', l, 2.6), it = R.ptr('i', 'ptr', i, 1.3), jt = R.ptr('j', 'ptr', j, 1.9);
-  hl(1); say('pivot = A[l] = ' + p, 'i = l、j = h　' + R.str());
-  await beat(tok, ms);
-  while (i < j) {
-    hl(2); hl(3);
-    do { i++; R.at(it, i, 1.3); glow(R.m[i], '#1f3a6e'); await beat(tok, ms * 0.35); glow(R.m[i], null); } while (R.v[i] <= p);
-    say('i 停在 ' + sbS(R.v[i]) + '（> ' + p + '）', R.str());
-    await beat(tok, ms * 0.5);
-    hl(4);
-    do { j--; R.at(jt, j, 1.9); glow(R.m[j], '#8a1f5a'); await beat(tok, ms * 0.35); glow(R.m[j], null); } while (R.v[j] > p);
-    say('j 停在 ' + sbS(R.v[j]) + '（≤ ' + p + '）', R.str());
-    await beat(tok, ms * 0.5);
-    hl(5);
-    if (i < j) {
-      say('i < j：交換 ' + sbS(R.v[i]) + ' 和 ' + sbS(R.v[j]), R.str());
-      await R.swap(tok, i, j, ms);
-      say('交換後', R.str());
-      await beat(tok, ms * 0.3);
-    } else {
-      say('i > j：交錯了，不交換', 'j 停的地方就是 pivot 的位置');
-      await beat(tok, ms * 0.8);
+// Bari's partition(l, h) as a list of events the scene plays one sentence at a time
+// (h is the sentinel slot: ∞ or an earlier pivot). Events: init, i, j, swap, cross, final, done.
+function sbPartition(R, l, h, o = {}) {
+  const p = R.v[l], v = R.v.slice(), E = [['init']];
+  {
+    let i = l, j = h;
+    while (i < j) {
+      do i++; while (v[i] <= p); E.push(['i', i]);
+      do j--; while (v[j] > p); E.push(['j', j]);
+      if (i < j) { E.push(['swap', i, j]); [v[i], v[j]] = [v[j], v[i]]; } else E.push(['cross', i, j]);
     }
+    E.push(['final', j]); E.push(['done', j]);
   }
-  hl(7);
-  say('A[l] 和 A[j] 交換：' + p + ' ↔ ' + R.v[j], R.str());
-  await R.swap(tok, l, j, ms);
-  glow(R.m[j], null); tint(R.m[j], GREEN);
-  hl(8);
-  say(p + ' 歸位：return j', R.str());
-  await beat(tok, ms);
-  kill(pt); kill(it); kill(jt);
-  return j;
+  const ms = o.ms || 800, hl = (k) => { if (o.code) o.code.hl(k); };
+  let it = null, jt = null, pt = null, ci = l, cj = h, e = 0, xt = null;
+  return {
+    E, p,
+    async to(tok, upto) {
+      while (e < upto) {
+        const ev = E[e++];
+        if (ev[0] === 'init') {
+          hl(1); glow(R.m[l], GOLD);
+          pt = R.ptr('pivot', 'ptr alt', l, 2.6); it = R.ptr('i', 'ptr', l, 1.3); jt = R.ptr('j', 'ptr', h, 1.9);
+          say('pivot = ' + p + '；i 從 pivot、j 從尾端出發', R.str());
+          await beat(tok, ms * 0.4);
+        } else if (ev[0] === 'i') {
+          hl(3);
+          while (ci < ev[1]) { ci++; R.at(it, ci, 1.3); glow(R.m[ci], '#1f3a6e'); await beat(tok, ms * 0.3); if (ci < ev[1]) glow(R.m[ci], null); }
+          say('i 停在 ' + sbS(R.v[ci]) + '（> ' + p + '）', 'i 找比 pivot 大的');
+          await beat(tok, ms * 0.2);
+        } else if (ev[0] === 'j') {
+          hl(4);
+          while (cj > ev[1]) { cj--; R.at(jt, cj, 1.9); if (cj !== l) glow(R.m[cj], '#8a1f5a'); await beat(tok, ms * 0.3); if (cj > ev[1] && cj !== l) glow(R.m[cj], null); }
+          say('j 停在 ' + sbS(R.v[cj]) + '（≤ ' + p + '）', 'j 找比 pivot 小（或相等）的');
+          await beat(tok, ms * 0.2);
+        } else if (ev[0] === 'swap') {
+          hl(5);
+          say('i < j：交換 ' + sbS(R.v[ev[1]]) + ' 和 ' + sbS(R.v[ev[2]]));
+          glow(R.m[ev[1]], null); glow(R.m[ev[2]], null);
+          await R.swap(tok, ev[1], ev[2], ms);
+          say('交換後', R.str());
+        } else if (ev[0] === 'cross') {
+          hl(2); glow(R.m[ev[1]], null); if (ev[2] !== l) glow(R.m[ev[2]], null);
+          xt = tag('i > j：交錯了', 'bad', (R.x(ev[1]) + R.x(ev[2])) / 2, R.y + 3.4, R.z);
+          say('i 跑到 j 的右邊 → 不交換', '迴圈結束');
+          await beat(tok, ms * 0.3);
+        } else if (ev[0] === 'final') {
+          hl(7); if (xt) { kill(xt); xt = null; }
+          say('A[l] 和 A[j] 交換：' + p + ' ↔ ' + sbS(R.v[ev[1]]));
+          await R.swap(tok, l, ev[1], ms);
+          say(p + ' 換到 j 的位置', R.str());
+        } else {
+          hl(8); glow(R.m[ev[1]], null); tint(R.m[ev[1]], GREEN);
+          kill(pt); kill(it); kill(jt);
+          say(p + ' 歸位：return j', R.str());
+          await beat(tok, ms * 0.3);
+        }
+      }
+    },
+  };
+}
+// a student walks (a little character whose size is their height)
+async function sbWalk(tok, b, x, z, ms = 900) {
+  const a = b.g.position.clone(), t = V3(x, a.y, z);
+  await anim(tok, ms, (u) => b.g.position.lerpVectors(a, t, u));
 }
 
-// 00:00 想法：學生依身高自己找位置
+// 0:00 想法：學生依身高自己找位置
 FRAG.push(['sortbari-quick-students', 'Quick sort 的想法：學生自己找位置', async (tok) => {
-  fresh([0, 4, 11], [0, 1.4, 0]);
-  const H = [1.6, 2.4, 1.0, 2.0, 3.0, 1.3, 1.8], C = ['#4b9ee2', '#e55a9b', '#2fc092', '#dd8238', '#9b7ef4', '#31aab0', '#c08a1f'];
-  const X = (i) => -4.5 + i * 1.5;
-  let line = H.map((h, i) => { const m = cube('', C[i], [0.7, h, 0.7], X(i), h / 2, 0, 1.0); m.userData.h = h; return m; });
-  const place = async (moving, ms = 1600) => {
-    for (const m of moving) move(m, m.position.x, m.userData.h / 2, 1.8);
-    await beat(tok, ms * 0.35);
-    line.forEach((m, i) => move(m, X(i), m.userData.h / 2, moving.includes(m) ? 1.8 : 0));
-    await beat(tok, ms * 0.35);
-    for (const m of moving) move(m, X(line.indexOf(m)), m.userData.h / 2, 0);
-    await beat(tok, ms * 0.3);
+  fresh([0, 4, 11], [0, 1.2, 0]);
+  const H = [0.85, 1.15, 0.6, 1.0, 1.35, 0.7, 0.95], C = ['#4b9ee2', '#e55a9b', '#2fc092', '#dd8238', '#9b7ef4', '#31aab0', '#c08a1f'];
+  const X = (i) => -4.8 + i * 1.6;
+  await step(tok);                                   // 0:00 the idea behind quick sort
+  bubble('Quick sort 的想法是什麼？', 0, 3.6, 0);
+  say('先看 quick sort 背後的想法');
+  await step(tok);                                   // 0:12 students arrange by increasing height
+  let line = H.map((h, i) => { const b = buddy('', '', C[i], X(i), 0, 0, h); b.h = h; return b; });
+  say('一班學生要依身高排成一排', '由矮到高');
+  await step(tok);                                   // 0:23 option 1: the teacher shows each place
+  const t = buddy('老師', '', '#f3d36b', 0, 0, -2.6, 1.3);
+  const n1 = note('做法一：老師一個一個指定位置', -2.6, 2.6, -2.6);
+  t.look(-1); line.forEach((b) => b.mood('wow'));
+  say('做法一：老師指定每個人的位置');
+  await step(tok);                                   // 0:37 option 2: students arrange themselves
+  note('做法二：學生自己找位置', 2.6, 2.6, -2.6); t.look(0);
+  say('做法二：讓學生自己找位置');
+  await step(tok);                                   // 0:41 finding their own place is quicker
+  line.forEach((b) => b.mood('happy')); remove(n1);
+  good('自己找位置比較快 → quick sort', 0, 3.6, 1.0);
+  say('每個人自己找到排序後的位置 → 比較快', '這就是 quick sort 的想法');
+  const place = async (moving) => {
+    await Promise.all(moving.map((b) => sbWalk(tok, b, b.g.position.x, 1.8, 500)));
+    await Promise.all(line.map((b) => sbWalk(tok, b, X(line.indexOf(b)), moving.includes(b) ? 1.8 : 0, 900)));
+    await Promise.all(moving.map((b) => sbWalk(tok, b, X(line.indexOf(b)), 0, 500)));
   };
-  say('依身高排隊：老師指定位置？', '還是學生自己找位置？');
-  await beat(tok, 3000);
-  say('自己找位置比較快 → quick sort', '每個人找到自己在排序後的位置');
-  await beat(tok, 2600);
-  const short = line[2]; glow(short, GOLD);
+  await step(tok);                                   // 0:56 the shortest goes to the beginning
+  const short = line[2]; short.glow(GOLD); short.mood('happy');
+  line = [short].concat(line.filter((b) => b !== short)); await place([short]);
+  short.glow(null);
   say('最矮的：自己走到最前面', '不需要別人幫忙');
-  line = [short].concat(line.filter((m) => m !== short)); await place([short]);
-  glow(short, null);
-  const tall = line.find((m) => m.userData.h === 3.0); glow(tall, GOLD);
-  say('最高的：自己走到最後面', '');
-  line = line.filter((m) => m !== tall).concat([tall]); await place([tall]);
-  glow(tall, null);
-  const me = line.find((m) => m.userData.h === 1.8); glow(me, GOLD);
-  say('其他人：比我高的往後站', '比我矮的往前站');
-  await beat(tok, 2000);
-  const lo = line.filter((m) => m !== me && m.userData.h < 1.8), hi = line.filter((m) => m !== me && m.userData.h > 1.8);
-  const movers = line.filter((m, i) => m !== me && (m.userData.h < 1.8) !== (i < line.indexOf(me)));
+  await step(tok);                                   // 1:17 the tallest goes to the back
+  const tall = line.find((b) => b.h === 1.35); tall.glow(GOLD);
+  line = line.filter((b) => b !== tall).concat([tall]); await place([tall]);
+  tall.glow(null);
+  say('最高的：自己走到最後面');
+  await step(tok);                                   // 1:39 "taller: go back; shorter: come front"
+  const me = line.find((b) => b.h === 0.95); me.glow(GOLD); me.mood('wow');
+  const lo = line.filter((b) => b !== me && b.h < 0.95), hi = line.filter((b) => b !== me && b.h > 0.95);
+  const movers = line.filter((b, i) => b !== me && (b.h < 0.95) !== (i < line.indexOf(me)));
   line = lo.concat([me], hi); await place(movers);
-  tint(me, GREEN);
+  bubble('比我高的往後、比我矮的往前', me.g.position.x, 2.2, 0);
+  say('其他人：比我高的往後站、比我矮的往前站');
+  await step(tok);                                   // 2:04 and I find my place
+  me.glow(GREEN); me.mood('happy'); await me.hop(tok);
   say('我就站在自己的排序位置了', '前面都比我矮、後面都比我高');
-  await beat(tok, 3000);
 }]);
 
-// 02:13 什麼叫「在排序位置」
+// 2:14 什麼叫「在排序位置」
 FRAG.push(['sortbari-quick-sorted-pos', '在排序位置：左邊都小、右邊都大', async (tok) => {
-  fresh([0, 7, 10], [0, 0.4, 0]);
-  const A = sbRow([10, 80, 90, 60, 30, 20], { z: -2.0, dx: 1.05, drop: true });
-  say('10 80 90 60 30 20', '哪一個一眼就知道排好了？');
-  await beat(tok, 2600);
-  glow(A.m[0], GOLD);
+  fresh([0, 7, 10.5], [0, 0.4, 0]);
+  const gd = guide(-6.2, 2.2, 0.6);
+  await step(tok);                                   // 2:14 10 80 90 60 30 20: which one is sorted?
+  const A = sbRow([10, 80, 90, 60, 30, 20], { z: -2.4, dx: 1.05, drop: true });
+  gd.mood('wow');
+  say('10 80 90 60 30 20', '哪一個一眼就知道已經排好了？');
+  await step(tok);                                   // 2:27 this one (10: smallest, in front)
+  glow(A.m[0], GOLD); good('最小又在最前面', A.x(0), 1.6, -2.4);
+  gd.mood('happy');
   say('10：最小、又在最前面', '<span class="ok">10 已經在排序位置</span>');
-  await beat(tok, 2800);
-  say('同理：最大的在最後面也是', '其他元素還不知道');
-  await beat(tok, 2400);
-  const B = sbRow([4, 6, 7, 10, 16, 12, 13, 14], { z: 1.6, dx: 1.05, drop: true });
-  say('4 6 7 10 16 12 13 14', '哪一個在排序位置？');
-  await beat(tok, 2600);
-  glow(B.m[3], GOLD);
-  const gl = ghostBox('#2fc092', 3 * 1.05, 1.0, 1.1); gl.position.set(B.x(1), 0.5, 1.6);
-  say('10：左邊 4 6 7 都比 10 小', '');
-  await beat(tok, 2400);
-  const gr = ghostBox('#dd8238', 4 * 1.05, 1.0, 1.1); gr.position.set((B.x(4) + B.x(7)) / 2, 0.5, 1.6);
-  say('右邊 16 12 13 14 都比 10 大', '<span class="ok">10 在排序位置</span>，右邊自己還沒排好');
-  await beat(tok, 3200);
-  say('quick sort：讓元素找到排序位置', '名字叫 quick，但不是最快的排序');
-  await beat(tok, 3000);
+  await step(tok);                                   // 2:37 another list: the largest is at the back
+  const Bq = sbRow([null, null, null, null, null, null, null], { z: -0.2, dx: 1.05 });
+  for (let i = 0; i < 7; i++) Bq.m[i] = cube(i === 6 ? '最大' : '?', i === 6 ? '#e8c770' : '#cfc6b6', [0.8, 0.8, 0.8], Bq.x(i), 0.5, -0.2, 1.5);
+  glow(Bq.m[6], GOLD);
+  say('另一串：最大的在最後面', '它也在排序位置，其他的還不知道');
+  await step(tok);                                   // 2:53 4 6 7 10 16 12 13 14
+  const B = sbRow([4, 6, 7, 10, 16, 12, 13, 14], { z: 2.0, dx: 1.05, drop: true });
+  gd.mood('wow');
+  say('4 6 7 10 16 12 13 14', '哪一個在自己的排序位置？');
+  await step(tok);                                   // 3:06 this element (10)
+  glow(B.m[3], GOLD); gd.mood('calm');
+  say('看 10');
+  await step(tok);                                   // 3:13 everything before it is smaller
+  const gl = ghostBox('#2fc092', 3 * 1.05, 1.0, 1.1); gl.position.set(B.x(1), 0.5, 2.0);
+  say('10 前面的 4 6 7 都比 10 小');
+  await step(tok);                                   // 3:18 everything after it is greater
+  const gr = ghostBox('#dd8238', 4 * 1.05, 1.0, 1.1); gr.position.set((B.x(4) + B.x(7)) / 2, 0.5, 2.0);
+  tint(B.m[3], GREEN); gd.mood('happy');
+  say('10 後面的 16 12 13 14 都比 10 大', '<span class="ok">10 在排序位置</span>');
+  await step(tok);                                   // 3:22 quick sort works on this idea
+  bubble('左邊都比它小、右邊都比它大 → 它在排序位置', 0, 2.6, 0);
+  say('quick sort 的根據', '左小右大的元素，就站在排序後的位置');
+  await step(tok);                                   // 3:39 the rest may or may not be sorted
+  note('16 12 13 14 自己還沒排好', B.x(5.5), 1.6, 2.0);
+  say('其他元素可能還沒排好');
+  await step(tok);                                   // 3:45 that's how the name "quick" comes
+  say('名字叫 quick：像學生自己很快排好');
+  await step(tok);                                   // 3:53 but not the fastest method
+  bad('名字叫 quick，但不是最快的排序', 0, 3.4, 0);
+  gd.mood('wow');
+  say('但它不是最快的排序法', '只是名字叫 quick');
 }]);
 
-// 03:58 初始設定：l、h、∞、pivot、i、j
+// 4:02 初始設定：l、h、∞、pivot、i、j
 FRAG.push(['sortbari-quick-setup', 'Partition 的準備：∞、pivot、i、j', async (tok) => {
   fresh([0, 6, 12], [0, 1.2, 0]);
-  const R = sbRow(SB_Q.slice(0, 9).concat([Infinity]), { drop: true });
-  kill(R.m[9]); R.m[9] = null;
-  say('quick sort：divide and conquer', '9 個元素：10 16 8 12 15 6 3 9 5');
-  await beat(tok, 2600);
+  const gd = guide(-6.0, 2.4, 0.6);
+  await step(tok);                                   // 4:02 quick sort: divide and conquer
+  bubble('Quick sort：divide and conquer', 0, 3.8, 0);
+  say('quick sort 也是 divide and conquer', '把問題拆成子問題再解');
+  await step(tok);                                   // 4:19 initial setup: nine elements
+  const R = sbRow(SB_Q.slice(0, 9).concat([null]), { drop: true });
+  say('初始設定：9 個元素', '10 16 8 12 15 6 3 9 5');
+  await step(tok);                                   // 4:25 l = low, h = high
   R.ptr('l', 'idx', 0, -0.6); R.ptr('h', 'idx', 9, -0.6);
-  say('l = low 開頭，h = high 尾端', '尾端多一格');
-  await beat(tok, 2400);
+  say('l = low 開頭，h = high 尾端', '尾端多留一格');
+  await step(tok);                                   // 4:31 add infinity at the empty place
   R.m[9] = cube('∞', '#d8cfc0', [0.8, 0.8, 0.8], R.x(9), 0.5, 0, 2.2);
-  say('尾端放 ∞：end-of-list 標記', '像字串的 \\0；實作用最大整數');
-  await beat(tok, 3000);
+  gd.mood('wow');
+  say('空格放 ∞', '比所有數都大');
+  await step(tok);                                   // 4:42 a maximum integer: end-of-list marker
+  note('像字串結尾的 \\0', R.x(9), 1.6, 0);
+  say('電腦沒有 ∞：用最大整數', '當作 end-of-list 標記');
+  await step(tok);                                   // 5:04 the first element is the pivot: 10
   glow(R.m[0], GOLD); R.ptr('pivot', 'ptr alt', 0, 2.6);
+  gd.mood('calm');
   say('第一個元素當 pivot = 10', '目標：找到 10 的排序位置');
-  await beat(tok, 2800);
+  await step(tok);                                   // 5:25 smaller to the left, greater to the right
   const gl = ghostBox('#2fc092', 4.4, 1.0, 1.1); gl.position.set(R.x(1.5), 0.5, 0);
   const gr = ghostBox('#dd8238', 4.4, 1.0, 1.1); gr.position.set(R.x(6.5), 0.5, 0);
-  say('比 10 小的到左邊，大的到右邊', '');
-  await beat(tok, 2600);
+  say('比 10 小的都到左邊', '比 10 大的都到右邊');
+  await step(tok);                                   // 5:35 greater here → send there; smaller there → bring here
   kill(gl); kill(gr);
+  const p1 = pkt('大的 →', R.x(2), 1.6, 0), p2 = pkt('← 小的', R.x(7), 1.6, 0);
+  await Promise.all([travel(tok, p1, V3(R.x(2), 1.6, 0), V3(R.x(6), 1.6, 0), 900), travel(tok, p2, V3(R.x(7), 1.6, 0), V3(R.x(3), 1.6, 0), 900)]);
+  remove(p1); remove(p2);
+  say('左邊的大數送到右邊，右邊的小數帶到左邊');
+  await step(tok);                                   // 5:44 i starts at the pivot, j at infinity
   R.ptr('i', 'ptr', 0, 1.3); R.ptr('j', 'ptr', 9, 1.9);
-  say('i 從 pivot 出發，找 > pivot', 'j 從 ∞ 出發，找 ≤ pivot → 兩個交換');
-  await beat(tok, 3200);
+  say('i 從 pivot 出發，j 從 ∞ 出發');
+  await step(tok);                                   // 5:57 i looks for > pivot, j for ≤ pivot → exchange
+  bubble('i 找 > 10、j 找 ≤ 10 → 交換', 0, 3.4, 0);
+  say('i 找比 pivot 大的、j 找比 pivot 小的', '找到就交換');
+  await step(tok);                                   // 6:08 i stops at ∞ at most, j at the pivot
+  glow(R.m[9], GOLD);
+  gd.mood('happy');
   say('i 最遠停在 ∞，j 最遠停在 pivot', '所以不會跑出陣列');
-  await beat(tok, 3000);
 }]);
 
-// 06:30 partition 過程：16↔5、12↔9、15↔3，10↔6
+// 6:30 partition 過程：16↔5、12↔9、15↔3，10↔6
 FRAG.push(['sortbari-quick-partition', 'Partition：10 16 8 12 15 6 3 9 5', async (tok) => {
   fresh([0, 6, 12], [0, 1.2, 0]);
-  const R = sbRow(SB_Q);
-  say('partitioning procedure', 'i 找 > 10、j 找 ≤ 10，找到就交換');
-  await beat(tok, 2400);
-  const j = await sbPart(tok, R, 0, 9, { ms: 1000 });
-  const gl = ghostBox('#2fc092', j * R.dx, 1.0, 1.1); gl.position.set((R.x(0) + R.x(j - 1)) / 2, 0.5, 0);
-  const gr = ghostBox('#dd8238', (8 - j) * R.dx, 1.0, 1.1); gr.position.set((R.x(j + 1) + R.x(8)) / 2, 0.5, 0);
-  say('左邊都 < 10、右邊都 > 10', '兩邊還沒排好 → 各自遞迴 quick sort');
-  await beat(tok, 3400);
+  const gd = guide(-6.0, 2.4, 0.6);
+  const R = sbRow(SB_Q), P = sbPartition(R, 0, 9, { ms: 900 });
+  // 6:30 partitioning · 6:41 i → 16 · 6:48 j → 5 · 6:53 swap · 7:00 i → 12 · 7:17 j → 9 · 7:24 swap
+  // 7:36 i → 15, j → 3 · 7:44 swap · 7:52 i → 15, j → 6 · 7:57 crossed
+  const plan = [[1, 'calm'], [2], [3], [4, 'happy'], [5], [6], [7, 'happy'], [9], [10, 'happy'], [12], [13, 'wow']];
+  for (const [upto, mood] of plan) {
+    await step(tok);
+    if (mood) gd.mood(mood);
+    await P.to(tok, upto);
+    if (upto === 1) say('partitioning procedure', '先手做一次，再寫成演算法');
+  }
+  await step(tok);                                   // 8:09 wherever j points is the pivot's position
+  const jp = tag('pivot 的位置', 'good', R.x(5), 3.2, 0);
+  say('j 指著的地方，就是 pivot 的位置');
+  await step(tok);                                   // 8:14 send that element here, take 10 there
+  kill(jp);
+  await P.to(tok, P.E.length);
+  gd.mood('happy'); await gd.hop(tok);
+  await step(tok);                                   // 8:24 these lists are not yet sorted
+  const gl = ghostBox('#2fc092', 5 * R.dx, 1.0, 1.1); gl.position.set((R.x(0) + R.x(4)) / 2, 0.5, 0);
+  const gr = ghostBox('#dd8238', 3 * R.dx, 1.0, 1.1); gr.position.set((R.x(6) + R.x(8)) / 2, 0.5, 0);
+  note('還沒排好', R.x(2), 1.7, 0); note('還沒排好', R.x(7), 1.7, 0);
+  gd.mood('calm');
+  say('左右兩邊都還沒排好');
+  await step(tok);                                   // 8:32 left side < 10, right side > 10
+  say('但左邊都 < 10、右邊都 > 10', '6 5 8 9 3 │ 10 │ 15 12 16');
+  await step(tok);                                   // 8:44 10 is sorted: the partitioning position
+  good('10 已排好：partitioning position', R.x(5), 2.6, 0);
+  gd.mood('happy');
+  say('pivot 10 已經排好了', '這個位置叫 partitioning position');
+  await step(tok);                                   // 9:04 perform quick sort recursively on either side
+  bubble('左右兩邊再各自 quick sort', 0, 3.6, 0);
+  say('接著對兩邊遞迴做 quick sort');
 }]);
 
-// 09:17 partition 的程式碼
+// 9:19 partition 的程式碼
 FRAG.push(['sortbari-quick-code', 'partition(l, h) 演算法', async (tok) => {
   fresh([0, 6, 12], [0, 2.4, 0]);
+  const gd = guide(-6.0, 2.8, 0.6);
+  await step(tok);                                   // 9:19 partition takes low and high
   const C = code(['partition(l, h)', '{ pivot = A[l]; i = l; j = h;', '  while (i < j)', '  { do { i++; } while (A[i] <= pivot);', '    do { j--; } while (A[j] > pivot);', '    if (i < j) swap(A[i], A[j]);', '  }', '  swap(A[l], A[j]);', '  return j;', '}'], 0, 6.4, 0.46, -2.5);
-  const R = sbRow(SB_Q, { z: 1.8 });
+  const R = sbRow(SB_Q, { z: 1.8 }), P = sbPartition(R, 0, 9, { ms: 700, code: C });
   C.hl(0);
-  say('把剛才的步驟寫成 partition', '參數 l、h');
-  await beat(tok, 2400);
-  await sbPart(tok, R, 0, 9, { ms: 640, code: C });
-  C.hl(-1);
-  say('i 往右、j 往左，交錯就停', 'return j = pivot 的位置');
-  await beat(tok, 3000);
+  say('把剛才的步驟寫成 partition(l, h)', '參數：low、high');
+  await step(tok);                                   // 9:32 pivot = A[low]
+  C.hl(1); glow(R.m[0], GOLD);
+  say('第一個元素當 pivot：pivot = A[l]');
+  await step(tok);                                   // 9:39 i at low, j at high
+  await P.to(tok, 1);
+  say('i = l、j = h');
+  // 9:52 do i++ while A[i] ≤ pivot · 10:09 do j-- while A[j] > pivot · 10:46 if (i < j) swap
+  // 11:08 repeat: increment i, decrement j, swap · 11:20 put it all in while (i < j) · 11:31 i > j → stop
+  // 11:41 swap A[l] with A[j] · 11:50 return j
+  const plan = [[2, 'wow'], [3], [4, 'happy'], [7], [10], [13, 'wow'], [14], [15, 'happy']];
+  for (const [upto, mood] of plan) {
+    await step(tok);
+    if (mood) gd.mood(mood);
+    await P.to(tok, upto);
+    if (upto === 7) say('同樣的事再做一次：i 往右、j 往左、交換');
+    if (upto === 10) { C.hl(2); say('整段放進 while (i < j) 迴圈', '一直重複到 i、j 交錯'); }
+  }
+  say('return j：pivot 的位置', 'partitioning position　' + R.str());
 }]);
 
-// 11:57 QuickSort(l, h)：遞迴，pivot 當左半邊的 ∞
+// 12:04 QuickSort(l, h)：遞迴，pivot 當左半邊的 ∞
 FRAG.push(['sortbari-quick-recursive', 'QuickSort(l, h)：左邊用 pivot 當 ∞', async (tok) => {
   fresh([0, 6, 12], [0, 2.4, 0]);
+  const gd = guide(-6.0, 2.8, 0.6);
+  await step(tok);                                   // 12:04 QuickSort takes low and high
   const C = code(['QuickSort(l, h)', '{ if (l < h)', '  { j = partition(l, h);', '    QuickSort(l, j);', '    QuickSort(j + 1, h);', '  }', '}'], 0, 6.2, 0.5, -2.5);
-  const R = sbRow([6, 5, 8, 9, 3, 10, 15, 12, 16, Infinity], { z: 1.8 });
-  tint(R.m[5], GREEN);
+  const R = sbRow(SB_Q, { z: 1.8 });
+  C.hl(0);
+  say('QuickSort(l, h)', '一樣傳 low、high');
+  await step(tok);                                   // 12:12 if l < h: at least two elements
   C.hl(1);
-  say('l < h：還有東西要排', '');
-  await beat(tok, 2200);
+  say('l < h：至少兩個元素', '才需要排序');
+  await step(tok);                                   // 12:19 call partition with low and high
   C.hl(2);
-  say('partition 回傳 j：10 已歸位', R.str());
-  await beat(tok, 2600);
+  const P = sbPartition(R, 0, 9, { ms: 150 });
+  await P.to(tok, P.E.length);
+  say('呼叫 partition(l, h)', R.str());
+  await step(tok);                                   // 12:27 it returns j, where partitioning is done
+  const jt = R.ptr('j', 'ptr alt', 5, 1.4);
+  gd.mood('happy');
+  say('partition 回傳 j：10 歸位的位置', R.str());
+  await step(tok);                                   // 12:39 quick sort on the left: low to j
   C.hl(3);
-  let z = ghostBox('#2fc092', 6 * R.dx, 1.0, 1.1); z.position.set((R.x(0) + R.x(5)) / 2, 0.5, 1.8);
-  say('左邊 QuickSort(l, j)：包含 j', '已排好的 10 當左半邊的 ∞');
-  await beat(tok, 3200);
-  await sbPart(tok, R, 0, 5, { ms: 340 });
-  say('3 5 已就位；再 partition 9 8', '右邊的 10 當 ∞　' + R.str());
-  await beat(tok, 1600);
-  await sbPart(tok, R, 3, 5, { ms: 340 });
-  kill(z);
+  const zl = ghostBox('#2fc092', 6 * R.dx, 1.0, 1.1); zl.position.set((R.x(0) + R.x(5)) / 2, 0.5, 1.8);
+  gd.mood('calm');
+  say('左邊：QuickSort(l, j)', '從 low 到 j');
+  await step(tok);                                   // 12:46 and on the right: j + 1 to high
   C.hl(4);
-  z = ghostBox('#dd8238', 4 * R.dx, 1.0, 1.1); z.position.set((R.x(6) + R.x(9)) / 2, 0.5, 1.8);
-  say('右邊 QuickSort(j + 1, h)', '尾端本來就有 ∞');
-  await beat(tok, 2600);
-  await sbPart(tok, R, 6, 9, { ms: 340 });
-  kill(z);
-  C.hl(-1);
-  for (let k = 0; k < 9; k++) tint(R.m[k], GREEN);
-  say('每個 pivot 都歸位 → 排好了', R.str());
-  await beat(tok, 3000);
+  const zr = ghostBox('#dd8238', 4 * R.dx, 1.0, 1.1); zr.position.set((R.x(6) + R.x(9)) / 2, 0.5, 1.8);
+  say('右邊：QuickSort(j + 1, h)', '從 j + 1 到 high');
+  await step(tok);                                   // 13:07 this is already sorted — why include j?
+  C.hl(3); glow(R.m[5], GOLD);
+  gd.mood('wow');
+  say('10 已經排好了，左邊為什麼還包含 j？');
+  await step(tok);                                   // 13:13 the right list has ∞; where is ∞ for the left?
+  glow(R.m[9], GOLD);
+  note('右邊的 ∞', R.x(9), 1.6, 1.8);
+  say('右邊的串列尾端有 ∞', '左邊的 ∞ 在哪裡？');
+  await step(tok);                                   // 13:18 the sorted element acts as ∞ for the first list
+  glow(R.m[9], null); kill(jt);
+  note('左邊的 ∞ = 10', R.x(5), 1.6, 1.8);
+  gd.mood('happy'); await gd.hop(tok);
+  say('排好的 10 就當左邊串列的 ∞', '所以左邊寫 QuickSort(l, j)');
 }]);
   }
   // @@FRAGMENTS@@
