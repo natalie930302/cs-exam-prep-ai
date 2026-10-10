@@ -7454,3 +7454,5 @@ body#appRoot .rec-books.rec-fixed .rec-books-body { display: block !important; }
 body#appRoot .rec-books.rec-fixed .rec-books-hd::after, body#appRoot .rec-books.rec-fixed .rec-books-hd::before, body#appRoot .rec-books.rec-fixed .rec-books-chevron { display: none !important; content: none !important; }
 /* 系列素材：沒有「系列」標籤，名稱直接靠左 */
 body#appRoot .rec-series-row { grid-template-columns: 1fr !important; display: block !important; }
+/* 懸浮鈕間距加大，選中的圓不貼外框 */
+body#appRoot .fab-nav { gap: 10px !important; padding: 8px !important; }
