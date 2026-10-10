@@ -277,9 +277,9 @@
  },
  "5JxShDZ_ylo": {
   "label": "MIT 6.006 Rec13：BFS",
-  "points": 26,
+  "points": 29,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "5v-tKX2uRAk": {
   "label": "Abdul Bari：1.7 Compare Class of Functions",
@@ -339,7 +339,7 @@
   "label": "WilliamFiset：DFS",
   "points": 23,
   "quiz": 5,
-  "cued": false
+  "cued": true
  },
  "7gMLNiEz3nw": {
   "label": "Gate Smashers：Banker Algorithm",
@@ -475,9 +475,9 @@
  },
  "AfSk24UTFS8": {
   "label": "MIT 6.006 L14：DFS, Topological Sort",
-  "points": 39,
+  "points": 40,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "ak-pz7tS5DE": {
   "label": "Abdul Bari：2.7.3 MergeSort In-Depth Analysis",
@@ -583,9 +583,9 @@
  },
  "C5SPsY72_CM": {
   "label": "MIT 6.006 Rec14：DFS",
-  "points": 29,
+  "points": 35,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "cgaPEsMJkSc": {
   "label": "交大彭文志 Lec05 Arrays (3/4)",
@@ -1214,6 +1214,12 @@
  "rvdJDijO2Ro": {
   "label": "MIT 6.006 L10：Open Addressing, Cryptographic Hashing",
   "points": 61,
+  "quiz": 7,
+  "cued": true
+ },
+ "s-CYnVz-uh4": {
+  "label": "MIT 6.006 L13：BFS",
+  "points": 33,
   "quiz": 7,
   "cued": true
  },

@@ -1,163 +1,446 @@
 {
  "video": "C5SPsY72_CM",
  "label": "MIT 6.006 Rec14：DFS",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
-   "title": "Adjacency list 與遞迴 DFS 的寫法",
-   "scene": "dfs-rec14-parent",
+   "title": "開場：大家卡在哪裡",
+   "scene": null,
    "points": [
     {
-     "text": "有向圖用 adjacency list（Python dict）存：A 的串列是 [B, G]；B 只有 [C]，因為邊有方向，B 走不回 A。",
-     "t": 209
-    },
-    {
-     "text": "DFS(G, s) 呼叫 DFS-visit(G, s)；DFS-visit 對每個鄰居 n 遞迴——但這樣會在 A → B → C → A 無限遞迴。",
-     "t": 398
-    },
-    {
-     "text": "修正：用一個結果物件 r（「什麼都往裡面丟的抽屜」）記錄 visited，用 dict 而不是 list 才能快速檢查。",
-     "t": 500
-    },
-    {
-     "text": "再把 visited 換成 parent：parent[B] = A、parent[C] = B、parent[A] = None；在 parent 裡就代表拜訪過。",
-     "t": 850
-    },
-    {
-     "text": "注意要用「在不在 dict 裡」判斷，不能判斷是不是 None，因為起點的 parent 就是 None。",
-     "t": 948
+     "t": 21,
+     "text": "助教問大家上課哪裡不懂；同學提到「無向圖也會有 backward edge」很奇怪，助教決定今天重點放在邊的分類。"
     }
    ]
   },
   {
-   "title": "例子：A～G 依字母順序 trace",
-   "scene": "dfs-rec14-parent",
+   "title": "Adjacency list：用 dict 存有向圖",
+   "scene": "graphmit-r14-adj",
+   "cues": [
+    102.1,
+    130.5,
+    162.7,
+    180.2,
+    196.7,
+    247.4,
+    257.5,
+    291.8,
+    309.1,
+    330.7
+   ],
+   "explain": [
+    "複習：[[graph]] 就是一堆頂點（vertices）加一堆邊（edges）。",
+    "助教在黑板畫了一張圖，頂點 A～G。",
+    "邊上有箭頭，所以這是 [[directed graph]]（有向圖）：A → B 只能從 A 走到 B，不能反過來。",
+    "在 Python 裡怎麼存一張圖？正式名稱是 [[adjacency list]]。",
+    "實作上就是一個 [[dictionary]]（dict）：key 是頂點，value 是「從它一步走得到的頂點」組成的串列（右上 AL）。",
+    "A 的串列有誰？A 有箭頭指向 B 和 G，所以 AL[A] = [B, G]。",
+    "B 的串列為什麼沒有 A？因為邊是有方向的，只有 A → B，沒有 B → A，所以 B 走不回 A，AL[B] = [C]。其他頂點也照樣填好。",
+    "寫一點「幾乎是 Python」的程式：class G 裡面放一個 dict，叫 AL。",
+    "想拿到所有頂點：回傳 AL.keys()，因為 key 就是頂點。",
+    "想拿到頂點 v 的鄰居：回傳 AL[v]。例如 AL[C] = [A, D, F]。"
+   ],
    "points": [
     {
-     "text": "DFS-visit(A)：B 不在 parent → parent[B] = A，遞迴 B；B 的唯一鄰居 C → parent[C] = B。",
-     "t": 1051
+     "t": 102,
+     "text": "圖是頂點和邊的集合；黑板上是一張有向圖 A～G。"
     },
     {
-     "text": "C 的鄰居依序 A、D、F：A 已在 parent，跳過；D → parent[D] = C；D 的鄰居 E、F 都設 parent = D。",
-     "t": 1156
+     "t": 180,
+     "text": "有向圖用 adjacency list（Python dict）存：key 是頂點，value 是走得到的頂點串列。"
     },
     {
-     "text": "回到 C 看 F：已在 parent；B 結束後回到 A，看 G → parent[G] = A；G 的鄰居 C 已看過。",
-     "t": 1499
+     "t": 247,
+     "text": "A 的串列是 [B, G]；B 只有 [C]，因為邊有方向，B 走不回 A。"
     },
     {
-     "text": "parent 指標畫出的就是 DFS tree：A → B → C → D → {E, F}，A → G。",
-     "t": 1254
+     "t": 292,
+     "text": "寫成 class G：vertices() 回傳 AL.keys()，neighbors(v) 回傳 AL[v]。"
+    }
+   ]
+  },
+  {
+   "title": "遞迴 DFS 的寫法：從 visited 到 parent",
+   "scene": "graphmit-r14-code",
+   "cues": [
+    371.8,
+    399,
+    425.1,
+    480.6,
+    505.8,
+    521.4,
+    547.8,
+    610.4,
+    638.3,
+    712.5,
+    810.7,
+    833,
+    893.8,
+    917.7,
+    963.3,
+    987.8,
+    1028.9
+   ],
+   "explain": [
+    "來寫 DFS。它需要一張圖 G 和一個起點 s（跟 BFS 一樣）。左邊是程式，右邊是縮小的圖。",
+    "DFS 的想法：從 A 出發，挑它串列裡第一個頂點走下去，再挑那個頂點串列裡的第一個……一路往下，直到沒路。",
+    "既然是一直重複同樣的事，就寫成遞迴：DFS 呼叫 DFS_visit(G, s)。",
+    "DFS_visit 的核心：對 v 的每個鄰居 n，遞迴呼叫 DFS_visit(G, n)。",
+    "但這個版本有漏洞：A → B → C → A → B → … 會沿著環永遠走下去，程式永遠停不下來。",
+    "解法：記住哪些頂點已經去過，去過的就不要再去。",
+    "助教建一個物件 r = DFSResult()，比喻成家裡的「雜物抽屜」：之後需要記錄的東西都往裡面丟。程式裡把 r 一路傳下去。",
+    "visited 要用什麼存？用 list 的話，每次檢查「去過沒」都要從頭找，DFS 又很常檢查，太慢。所以用 dict（[[hash table]]），O(1) 就查到。",
+    "r.visited 這個 dict：key 是頂點，value 是 True。只放去過的頂點，沒去過的根本不在裡面，所以不用先初始化。",
+    "程式改成：if n not in r.visited 才標記 r.visited[n] = True 並遞迴。",
+    "試跑：A → B → C，然後 C 看到 A，A 在 visited 裡嗎？不在！因為起點 A 從來沒被標記，所以又會走回 A。",
+    "同學的建議：一進 DFS_visit 就先標記 r.visited[v] = True，起點也會被標到。這樣就沒問題了。",
+    "再改一版：不只記「去過沒」，改記 parent，也就是「從哪個頂點走過來的」，資訊更多。",
+    "從 A 走到 B，parent[B] = A；從 B 走到 C，parent[C] = B。A 是起點，沒有 parent，就設成 None。",
+    "程式改成 r.parent[n] = v：記住 n 是從 v 走來的。",
+    "「有沒有 parent」就等於「有沒有去過」。但小心：起點的 parent 是 None，所以要判斷「n 在不在 dict 裡」，不能判斷「parent 是不是 None」，否則起點會被當成沒去過。",
+    "還缺一個 parent：在 DFS 裡先設 r.parent[s] = None，再呼叫 DFS_visit。這樣程式就完整了。"
+   ],
+   "points": [
+    {
+     "t": 372,
+     "text": "DFS(G, s) 呼叫 DFS-visit(G, s)；DFS-visit 對每個鄰居 n 遞迴——但這樣會在 A → B → C → A 無限遞迴。"
+    },
+    {
+     "t": 548,
+     "text": "修正：用一個結果物件 r（「什麼都往裡面丟的抽屜」）記錄 visited，用 dict 而不是 list 才能快速檢查。"
+    },
+    {
+     "t": 810,
+     "text": "起點也要標記：一進 DFS-visit 就設 r.visited[v] = True，否則 C 還會走回 A。"
+    },
+    {
+     "t": 894,
+     "text": "再把 visited 換成 parent：parent[B] = A、parent[C] = B、parent[A] = None；在 parent 裡就代表拜訪過。"
+    },
+    {
+     "t": 988,
+     "text": "注意要用「在不在 dict 裡」判斷，不能判斷是不是 None，因為起點的 parent 就是 None；DFS 裡要先設 r.parent[s] = None。"
+    }
+   ],
+   "trap": "起點的 parent 是 None：用 `parent[n] is None` 判斷有沒有拜訪過會出錯，要用 `n in parent`。"
+  },
+  {
+   "title": "例子：A～G 依字母順序 trace",
+   "scene": "graphmit-r14-trace",
+   "cues": [
+    1092.3,
+    1120,
+    1135.8,
+    1172.3,
+    1206.5,
+    1212.4,
+    1234.1,
+    1238.8,
+    1254.1,
+    1287,
+    1303.2,
+    1315.4,
+    1335.8,
+    1352.3,
+    1371.2,
+    1388.3
+   ],
+   "explain": [
+    "用這張圖實際 trace 一次。右上角記 parent 字典，下方記「呼叫」的堆疊。",
+    "從哪開始？DFS(A)，它呼叫 DFS_visit(A)。parent[A] = None。",
+    "A 的鄰居第一個是 B。B 在 parents 裡嗎？目前 parents 裡只有 A，所以不在。",
+    "把 B 加進去，parent[B] = A，然後呼叫 DFS_visit(B)。B 唯一的鄰居是 C，也不在 parents 裡。",
+    "C 加進 parents，parent[C] = B，呼叫 DFS_visit(C)。",
+    "C 的鄰居有誰？假設串列都照字母順序：A、D、F。",
+    "A 在 parents 裡嗎？在（它是起點），跳過。",
+    "D 呢？不在，所以 parent[D] = C，呼叫 DFS_visit(D)。",
+    "D 的鄰居 E 不在 parents，parent[E] = D。E 沒有任何出邊，DFS_visit(E) 馬上結束（變黑），回到 D。",
+    "D 的下一個鄰居 F 不在 parents，parent[F] = D。",
+    "F 也沒有出邊，結束，回到 D；D 的鄰居都看完了，D 也結束，回到 C。",
+    "C 剛剛看到 D，現在看下一個鄰居 F：F 已經在 parents 裡了，所以不走。這條 C → F 是哪一種邊？先記著。",
+    "先處理簡單的：DFS 實際走過的 A→B、B→C、C→D、D→E、D→F（粗藍線）都叫 [[tree edge]]。",
+    "為什麼叫 tree edge？把每個點的 parent 指標連起來，會形成一棵樹，記錄 DFS 看頂點的順序。",
+    "把目前的 DFS tree 畫出來：A 在最上面，往下 B、C、D，D 底下分出 E 和 F。",
+    "每個點的 parent 指標都指向樹上的上一層。只要每個點都有 parent 指標，就會得到一棵樹。"
+   ],
+   "points": [
+    {
+     "t": 1092,
+     "text": "DFS-visit(A)：B 不在 parent → parent[B] = A，遞迴 B；B 的唯一鄰居 C → parent[C] = B。"
+    },
+    {
+     "t": 1212,
+     "text": "C 的鄰居依序 A、D、F：A 已在 parent，跳過；D → parent[D] = C；D 的鄰居 E、F 都設 parent = D。"
+    },
+    {
+     "t": 1303,
+     "text": "F、D 結束後回到 C，C 看 F：F 已在 parent。"
+    },
+    {
+     "t": 1336,
+     "text": "parent 指標畫出的就是 DFS tree：A → B → C → D → {E, F}。"
     }
    ]
   },
   {
    "title": "四種邊：tree、forward、back、cross",
-   "scene": "edge-rec14-classify",
+   "scene": "graphmit-r14-classify",
+   "cues": [
+    1404.7,
+    1416,
+    1445.2,
+    1461.7,
+    1487.9,
+    1525.5,
+    1568.1,
+    1599.1,
+    1629.5,
+    1659.1,
+    1686.5,
+    1759.9,
+    1774.6,
+    1799.9,
+    1847.6,
+    1909.7
+   ],
+   "explain": [
+    "畫好 DFS tree 後回到 C → F 這條邊（紫色）：它是 [[forward edge]]。",
+    "為什麼？F 在 C 的正下方，是 C 的後代（descendant，不只是兒子）。這條邊讓你從 C 直接跳到 F，像樹上的捷徑，往「前」跳。",
+    "到目前為止認識了兩種：tree edge 和 forward edge。",
+    "同學問：C → D 也是通往後代，為什麼不算 forward？因為 DFS 真的走了它。",
+    "規則：DFS 有走過的邊就是 tree edge，結束，其他分類根本不用看。",
+    "那 C → F 為什麼沒走？因為在 C 看到它時，F 已經在 parent 裡，DFS 不走它。",
+    "繼續 trace：C、B 都結束，回到 A，看 A → G。G 不在 parent，走過去，A → G 是 tree edge。",
+    "拜訪 G：G 唯一的鄰居是 C。",
+    "C 已經在 parents 裡，不拜訪。現在整棵樹長這樣：A 底下兩支，B 那一支和 G。",
+    "G → C 是什麼邊？C 不是 G 的後代，所以不是 forward；它是 [[cross edge]]（橘色）。",
+    "還有一條一開始就看到的：C → A。在 C 時第一個看的就是 A，A 已在 parent 裡，沒走。A 是 C 的祖先，所以它是 [[back edge]]（紅色）。",
+    "總結：DFS 建出一棵樹。forward edge 是樹上的捷徑，讓你往前跳；back edge 指回祖先，像「回到過去」。",
+    "cross edge 從一個點跳到另一個完全無關的點，例如從 G 那一邊（橘）跳到 B 那一支（藍），兩個不同的小世界。",
+    "考試時怎麼判斷一條邊 u → v？第一步：DFS 有沒有走它？有 → tree edge。",
+    "沒走的話：u 是 v 的祖先（v 在 u 底下）→ forward edge。",
+    "v 是 u 的祖先（往回指）→ back edge；兩者沒有祖先關係 → cross edge。四種就分完了。"
+   ],
    "points": [
     {
-     "text": "DFS 實際走過的邊（A–B、B–C、C–D、D–E、D–F、A–G）都是 tree edge，不用再判斷其他分類。",
-     "t": 1348
+     "t": 1404,
+     "text": "C → F 是 forward edge：從節點指向樹中後代（不只是直接的 child），像是樹裡的捷徑。"
     },
     {
-     "text": "C → F 是 forward edge：從節點指向樹中後代（不只是直接的 child），像是樹裡的捷徑。",
-     "t": 1300
+     "t": 1461,
+     "text": "DFS 實際走過的邊都是 tree edge，不用再判斷其他分類。"
     },
     {
-     "text": "G → C 是 cross edge：C 不是 G 的後代也不是祖先，兩個子樹是不同的小世界。",
-     "t": 1597
+     "t": 1568,
+     "text": "A → G 是 tree edge；G → C 是 cross edge：C 不是 G 的後代也不是祖先，兩個子樹是不同的小世界。"
     },
     {
-     "text": "C → A 是 back edge：指向樹中的祖先，「回到過去」。",
-     "t": 1641
+     "t": 1686,
+     "text": "C → A 是 back edge：指向樹中的祖先，「回到過去」。"
     },
     {
-     "text": "判斷流程：DFS 有走 → tree；否則 u 是 v 的祖先 → forward；v 是 u 的祖先 → back；其他 → cross。",
-     "t": 1786
+     "t": 1800,
+     "text": "判斷流程：DFS 有走 → tree；否則 u 是 v 的祖先 → forward；v 是 u 的祖先 → back；其他 → cross。"
     }
    ]
   },
   {
    "title": "同一張圖改成無向：只剩 tree 和 back",
-   "scene": "edge-rec14-undirected",
+   "scene": "graphmit-r14-undirected",
+   "cues": [
+    1932.8,
+    1983.8,
+    2041.5,
+    2051.1,
+    2063.6,
+    2097.1,
+    2122.7,
+    2151.8,
+    2169.1,
+    2217.8,
+    2252.9,
+    2259.9,
+    2304.2
+   ],
+   "explain": [
+    "換個問題：同樣的 DFS 做在[[undirected graph]]（無向圖）上，會有哪幾種邊？把箭頭拿掉試試看。",
+    "從 A 開始做 DFS，一邊走一邊把樹畫出來。",
+    "A → B → C。無向圖裡 C 的鄰居包含 A，而且排第一個。A 還在處理中（是祖先），所以 C–A 是 back edge。",
+    "接著 C → D → E，回到 D 再走 D → F。F 看到 F–C，C 是祖先，又是一條 back edge。",
+    "回到 C 還沒結束：還有 C → G。G 看到 G–A，A 是祖先，也是 back edge。",
+    "把樹整理好：9 條邊全部分類完成。",
+    "結果：只有 tree edge 和 back edge，沒有 forward、也沒有 cross。",
+    "非 tree 的邊 DFS 都沒有走，只是看了一眼。我們關心它們，是因為其他演算法（例如找 cycle）需要。",
+    "為什麼不會有 forward？要有 forward，得走 C → D → F 時沒注意到 F–C、回到 C 才看到。但無向邊兩端都看得到，在 F 時就會看到，它就被當成 back edge。",
+    "forward edge 的樣子：從 u 經過一串 tree edges 到 v，在 v 時「沒看到」這條邊，之後才從 u 看到。無向圖在 v 一定會看到它，所以會標成 back。",
+    "所以無向圖永遠不會有 forward edge。",
+    "為什麼不會有 cross？要有 cross，得走 A、B、C、C 的子孫，回到上面再走別處，才看到一條連回 C 的邊。但在 C 時就會看到那條邊，會直接走過去，它就變成 tree edge。",
+    "同學問 BFS 也有這些嗎？沒有：tree、forward、back、cross 全都是 DFS 專用的名詞。"
+   ],
    "points": [
     {
-     "text": "A → B → C，C 的串列第一個是 A，看到 C–A：back edge。",
-     "t": 1937
+     "t": 1933,
+     "text": "同一張圖拿掉箭頭再做 DFS：A → B → C，C 的串列第一個是 A，看到 C–A：back edge。"
     },
     {
-     "text": "C → D → E、D → F，F–C 是 back edge；回到 C 再走 C → G，A–G 也是 back edge。",
-     "t": 1989
+     "t": 2051,
+     "text": "C → D → E、D → F，F–C 是 back edge；回到 C 再走 C → G，A–G 也是 back edge。"
     },
     {
-     "text": "沒有 forward edge：若 u–v 是捷徑，DFS 在 v 時就會先看到它，當成 back edge。",
-     "t": 2090
+     "t": 2122,
+     "text": "結果只有 tree edge 和 back edge。"
     },
     {
-     "text": "沒有 cross edge：若 C 與另一子樹相連，在 C 的時候就會沿那條邊走過去，變成 tree edge。",
-     "t": 2186
+     "t": 2169,
+     "text": "沒有 forward edge：若 u–v 是捷徑，DFS 在 v 時就會先看到它，當成 back edge。"
     },
     {
-     "text": "這些名詞只屬於 DFS；BFS 沒有 forward/back 的概念。",
-     "t": 2232
+     "t": 2260,
+     "text": "沒有 cross edge：若 C 與另一子樹相連，在 C 的時候就會沿那條邊走過去，變成 tree edge；這些名詞只屬於 DFS。"
     }
    ]
   },
   {
    "title": "Topological sort：修課順序",
-   "scene": "topo-rec14-courses",
+   "scene": "graphmit-r14-courses",
+   "cues": [
+    2328.8,
+    2342.8,
+    2361.5,
+    2388.8,
+    2399.3,
+    2445.7,
+    2460.7,
+    2481.1,
+    2514.8,
+    2551.8,
+    2653.9,
+    2707,
+    2737.5,
+    2762.4
+   ],
+   "explain": [
+    "接著是 [[topological sort]]（拓撲排序），少數你以後真的可能自己寫的演算法。",
+    "把頂點想成課，邊想成先修關係：A → B 表示要先修 A（6.01）才能修 B（6.006），不然寫作業會哭。",
+    "目標：排出一個修課順序，讓你修每一門課時，它的先修都已經修過。",
+    "這張圖沒有環嗎？有：A → B → C → A（紅色）。",
+    "有 cycle 的話，這個問題根本無解。",
+    "想想 A、B、C：先修 A？要先修 C；先修 B？要先修 A；先修 C？要先修 B。三門都不能當第一門。",
+    "有環的圖不能當「依賴關係圖」，所以 topological sort 只能用在沒有環的圖上。",
+    "需要的圖有三個條件：directed（有方向，才知道誰先）、acyclic（沒有環，才有解）、graph。合起來叫 [[DAG]]。",
+    "把 C → A 拿掉，就變成 DAG。怎麼算順序？同學說：跑 DFS，再把某個順序反過來輸出。",
+    "反過來的到底是什麼？同學一開始以為是「拜訪的順序」A、B、C、D、E……",
+    "正確答案：是每個頂點「遞迴結束」（finish）的順序，不是開始拜訪的順序。",
+    "寫成程式：在 r 裡加一個 list 叫 finished，一開始是空的。",
+    "要在哪裡加入？DFS_visit 的 for 迴圈之後，也就是這個頂點的鄰居全部處理完、要完全離開它的時候。",
+    "加入的是 v（目前這個頂點）。全部跑完之後呼叫 r.finished.reverse()，反轉過來就是 topological sort 的結果。"
+   ],
    "points": [
     {
-     "text": "頂點是課程、邊是先修關係（A → B：先修 A 才能修 B）；要找一個修課順序。",
-     "t": 2282
+     "t": 2329,
+     "text": "頂點是課程、邊是先修關係（A → B：先修 A 才能修 B）；要找一個修課順序。"
     },
     {
-     "text": "有 cycle（A → B → C → A）就無解：任何一門都不能先修。所以需要 DAG：directed、acyclic、graph。",
-     "t": 2433
+     "t": 2389,
+     "text": "有 cycle（A → B → C → A）就無解：任何一門都不能先修。所以需要 DAG：directed、acyclic、graph。"
     },
     {
-     "text": "拿掉 C → A 後：跑 DFS，每個頂點結束時加入 finished list，最後把 list 反轉。",
-     "t": 2674
-    },
-    {
-     "text": "結束順序 E、F、D、C、B、G、A，反轉得 A、G、B、C、D、F、E。",
-     "t": 2921
+     "t": 2515,
+     "text": "拿掉 C → A 後：跑 DFS，每個頂點「遞迴結束」時加入 finished list，最後把 list 反轉。"
     }
    ]
   },
   {
    "title": "直覺：第一個結束的就是最後修的課",
-   "scene": "topo-rec14-courses",
+   "scene": "graphmit-r14-why",
+   "cues": [
+    2799.3,
+    2814.2,
+    2818.8,
+    2831.7,
+    2855,
+    2866.3,
+    2911.9,
+    2951.1,
+    2969.1,
+    3005.4,
+    3007.7,
+    3017.6,
+    3033.7,
+    3053.4,
+    3075
+   ],
+   "explain": [
+    "為什麼這樣做是對的？想一下：我們一邊跑，一邊在建「最終答案反過來」的 list。",
+    "所以第一個放進 finished 的，就是最後才修的課。",
+    "在拿掉 C → A 的圖上跑 DFS：A → B → C → D → E，E 後面沒有路了，E 結束。",
+    "沒有任何課依賴 E（如果有，DFS 會繼續往下走）。所以把 E 排在最後修，絕對不會違反先修規則。E 放進 finished。",
+    "離開 E 回到 D，走 D → F，F 也沒路，結束，放進 finished。",
+    "回到 D，D 的鄰居都處理完了，D 結束。這時候所有依賴 D 的課（E、F）都已經在 list 裡，所以輸出 D 是安全的。",
+    "這就是 topological sort 的直覺，可以寫成[[mathematical induction]]（歸納法）證明：輸出一個點時，依賴它的點都已經輸出了。",
+    "繼續：離開 D 回到 C，C 結束，輸出 C。依賴 C 的課是 D、E、F，都已經輸出了。",
+    "C → D 是 tree edge，遞迴回來時 D 已經輸出；C → F 是 forward edge（紫色），雖然沒有從 C 遞迴過去，但 F 早就結束、輸出了。",
+    "離開 C 回到 B，B 結束，輸出 B。",
+    "回到 A，走 A → G。G → C 這條 cross edge 指向的 C 早已結束。G 結束，輸出 G。",
+    "最後離開 A，輸出 A。finished 是 E, F, D, C, B, G, A，反轉得 A, G, B, C, D, F, E。照這個順序排成一列，所有邊都朝右。",
+    "為什麼 tree edge 沒問題？因為遞迴呼叫底下的頂點，一定在它回來之前就結束、輸出了。",
+    "forward edge 指向樹的更下面，在離開目前這個點之前，那些點早就結束了。",
+    "cross edge（G → C）：兩者沒有直接關係，但 C 一定是先處理完、回到共同的祖先之後，才輪到 G。所以 C 早已輸出。三種邊都不會出錯。"
+   ],
    "points": [
     {
-     "text": "DFS 走到 E 就沒路了 → 沒有課依賴 E，E 放最後修一定安全。",
-     "t": 2831
+     "t": 2799,
+     "text": "finished 是最終答案的反面：第一個放進去的，就是最後修的課。"
     },
     {
-     "text": "離開 D 時，所有依賴 D 的課（E、F）都已輸出，所以輸出 D 是安全的；可寫成歸納法證明。",
-     "t": 2875
+     "t": 2819,
+     "text": "DFS 走到 E 就沒路了 → 沒有課依賴 E，E 放最後修一定安全。"
     },
     {
-     "text": "tree edge：遞迴返回前子樹都已輸出；forward edge 指向更深、早已結束的點；cross edge 指向早已結束的另一子樹。",
-     "t": 3011
+     "t": 2866,
+     "text": "離開 D 時，所有依賴 D 的課（E、F）都已輸出，所以輸出 D 是安全的；可寫成歸納法證明。"
+    },
+    {
+     "t": 2951,
+     "text": "結束順序 E、F、D、C、B、G、A，反轉得 A、G、B、C、D、F、E。"
+    },
+    {
+     "t": 3033,
+     "text": "tree edge：遞迴返回前子樹都已輸出；forward edge 指向更深、早已結束的點；cross edge 指向早已結束的另一子樹。"
     }
    ]
   },
   {
    "title": "Back edge 會破壞 topological sort",
-   "scene": "topo-back-edge-breaks",
+   "scene": "graphmit-r14-back",
+   "cues": [
+    3116.9,
+    3130,
+    3135.6,
+    3150.2,
+    3161.1,
+    3190.8
+   ],
+   "explain": [
+    "那 back edge 呢？把 C → A 放回來（紅色），在排好的這一列上，它往左指。",
+    "有 back edge，topological sort 就會壞掉。",
+    "它的意思是「C 依賴 A」，A 要排在 C 後面才能先輸出；但 DFS 一定先離開 C，才輪到離開 A，順序一定被違反。",
+    "什麼時候會有 back edge？有 [[cycle]] 的時候：A → B → C → A。",
+    "back edge 代表有一條路往前、又有一條路往回，合起來就是一個環。所以只有 DAG 才能做 topological sort。",
+    "不用記正式證明，記住直覺就好：第一個印出來的就是最後修的課，因為已經沒有課依賴它了；其他的靠遞迴的結構一層層保證。"
+   ],
    "points": [
     {
-     "text": "若有 back edge C → A：它要求 A 先輸出（C 依賴 A）……",
-     "t": 3105
+     "t": 3117,
+     "text": "若有 back edge C → A：它要求 A 先輸出（C 依賴 A），但 DFS 一定比 A 更早離開 C，順序就違反了。"
     },
     {
-     "text": "但 DFS 一定比 A 更早離開 C，順序就違反了。",
-     "t": 3130
+     "t": 3150,
+     "text": "back edge 代表 cycle：有路往前也有路往回；所以只有 DAG 才能做 topological sort。"
     },
     {
-     "text": "back edge 代表 cycle：有路往前也有路往回；所以只有 DAG 才能做 topological sort。",
-     "t": 3153
+     "t": 3191,
+     "text": "記住直覺：第一個印出來的就是最後修的課，因為已經沒有課依賴它。"
     }
    ]
   }
@@ -172,29 +455,29 @@
     "tree edge"
    ],
    "ans": "cross edge",
-   "why": "C 在 A→B→C 的子樹裡，不是 G 的祖先也不是後代。"
+   "why": "C 在 B 那一支、早已結束；C 和 G 沒有祖先關係。"
   },
   {
    "q": "同一個 DFS 中，C → F 是？",
    "opts": [
     "forward edge",
     "tree edge",
-    "cross edge",
-    "back edge"
+    "back edge",
+    "cross edge"
    ],
    "ans": "forward edge",
-   "why": "F 是經由 D 被拜訪的，是 C 的後代但不是 DFS 走的邊。"
+   "why": "F 已經經由 D 被拜訪，是 C 的後代；C → F 沒被 DFS 走過。"
   },
   {
    "q": "為什麼判斷「拜訪過沒」要用「在不在 parent dict 裡」，而不是 parent 是否為 None？",
    "opts": [
     "起點的 parent 就是 None，會被誤判成沒拜訪過",
-    "None 不能放進 dict",
-    "效率比較好",
-    "Python 不允許比較 None"
+    "None 不能當 dict 的 value",
+    "判斷 None 比較慢",
+    "兩種寫法完全一樣"
    ],
    "ans": "起點的 parent 就是 None，會被誤判成沒拜訪過",
-   "why": "parent[s] = None 也代表 s 已經拜訪過。"
+   "why": "parent[s] = None，但 s 已經拜訪過。"
   },
   {
    "q": "拿掉 C → A 後做 DFS 版 topological sort，finished list 是 E, F, D, C, B, G, A，答案是？",
@@ -205,18 +488,18 @@
     "A, B, G, C, D, E, F"
    ],
    "ans": "A, G, B, C, D, F, E",
-   "why": "把 finished list 反轉。"
+   "why": "把 finished 反轉。"
   },
   {
    "q": "把同一張圖當無向圖做 DFS，會出現哪些邊？",
    "opts": [
     "tree edge 與 back edge",
-    "tree edge 與 cross edge",
     "四種都有",
+    "tree、forward、cross",
     "只有 tree edge"
    ],
    "ans": "tree edge 與 back edge",
-   "why": "無向圖不會有 forward 與 cross edge。"
+   "why": "捷徑在後代那端就被看到（back）；連到別的子樹的邊會被直接走過去（tree）。"
   },
   {
    "q": "哪一種邊出現就代表無法做 topological sort？",
@@ -227,8 +510,7 @@
     "tree edge"
    ],
    "ans": "back edge",
-   "why": "back edge ⇔ cycle；它要求祖先晚於子孫輸出，跟 finishing time 反序矛盾。"
+   "why": "back edge ⇔ 有 cycle；它要求的順序與 DFS 結束順序矛盾。"
   }
- ],
- "timing": "estimated"
+ ]
 }

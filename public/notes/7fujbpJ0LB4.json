@@ -1,134 +1,280 @@
 {
  "video": "7fujbpJ0LB4",
  "label": "WilliamFiset：DFS",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
    "title": "DFS 是什麼：往深處走，走不下去就回頭",
-   "scene": "dfs-fiset-walk",
+   "scene": "graphmit-fiset-intro",
+   "cues": [
+    12.1,
+    21.9,
+    25.2,
+    43.6,
+    66.3
+   ],
+   "explain": [
+    "先認識主角：[[depth-first search]]（DFS，深度優先搜尋）。畫面上這張圖有 0～11 共 12 個[[vertex]]（頂點，圓柱），用[[edge]]（邊，細棍）連起來。",
+    "DFS 是一種 [[traversal]]（走訪）：從某個頂點出發，想辦法把整張圖的頂點都走過一遍。橘色小人就是等一下負責「走」的探險家。",
+    "DFS 很好寫，而且時間是 O(V + E)：V 是頂點數、E 是邊數。意思是花的時間跟「圖有多大」成正比，圖大一倍、時間大約也多一倍。",
+    "光是走一遍用處不大，但稍微加工就能數 [[connected component]]、判斷兩點連不連通、找 bridge 和 [[articulation point]]。這些是後面章節的重頭戲。",
+    "名字的由來：「深度優先」就是一路往深處衝（0 → 9 → 8 → 7），不在乎挑哪條邊，直到走不下去才 backtrack（退回上一個還有路的地方）。"
+   ],
    "points": [
     {
-     "text": "Depth-first search 是圖論最核心的走訪（traversal）演算法之一，用來探索圖的所有節點與邊。",
-     "t": 8
+     "t": 12,
+     "text": "Depth-first search 是圖論最核心的走訪（traversal）演算法之一，用來探索圖的所有節點與邊。"
     },
     {
-     "text": "好寫、時間複雜度 O(V + E)，跟圖的大小成正比。",
-     "t": 25
+     "t": 25,
+     "text": "好寫、時間複雜度 O(V + E)，跟圖的大小成正比。"
     },
     {
-     "text": "單獨用不太有用，但加上一點修改就能算 connected components、判斷連通、找 bridges 與 articulation points。",
-     "t": 45
+     "t": 43,
+     "text": "單獨用不太有用，但加上一點修改就能算 connected components、判斷連通、找 bridges 與 articulation points。"
     },
     {
-     "text": "DFS 一路往深處走、不管挑哪條邊，直到走不下去才 backtrack，回到上一個還有路的節點繼續。",
-     "t": 65
+     "t": 66,
+     "text": "DFS 一路往深處走、不管挑哪條邊，直到走不下去才 backtrack，回到上一個還有路的節點繼續。"
     }
    ]
   },
   {
    "title": "例子：從節點 0 出發走一遍",
-   "scene": "dfs-fiset-walk",
+   "scene": "graphmit-fiset-walk",
+   "cues": [
+    83.7,
+    90.5,
+    100.3,
+    104.9,
+    111.4,
+    119,
+    127.1,
+    137.4,
+    147.2,
+    153.2,
+    157.5,
+    164.1,
+    169.8,
+    175.5,
+    179,
+    187.2,
+    192.8,
+    199.6
+   ],
+   "explain": [
+    "DFS 一定要有一個起點。老師選節點 0：它變成橘色，代表「正在拜訪」。左下角會記錄走過的路線。",
+    "從 0 出發，任意挑一條邊：老師選了往 9。走過的邊變粗、變金色。",
+    "9 只連到 0 和 8，0 已經來過，所以唯一的新路是 8。",
+    "8 有好幾條邊，老師任挑一條，走到 7。",
+    "7 的邊很多，先挑 10，再從 10 走到 11。一路往深處走，這就是 depth first。",
+    "11 還連到 7，但 7 正在拜訪中（我們就是從 7 一路走過來的），走回去會繞圈圈，所以不行。規則：已拜訪或正在拜訪的節點都不再進去。",
+    "11 沒路了，只好 backtrack（往回退）。退出來的節點標成灰色：11、10 都灰了，探險家回到 7。",
+    "回到 7 不代表 7 結束了：7 還有沒走過的邊（到 3、到 6），所以還要繼續探索。",
+    "從 7 走到 3，再從 3 走到 2。",
+    "2 只連到 3，是死路（dead end），標灰，退回 3。",
+    "3 再挑一條邊到 4，4 也是死路，標灰後再退回 3。",
+    "3 的最後一條邊通往 5，5 再走到 6。",
+    "6 連到 7，可是 7 還在拜訪中（還沒退出），所以不能走過去。",
+    "6 沒路了，一路回溯：6 → 5 → 3 → 7 → 8，經過的節點都標灰。",
+    "8 還有最後一條邊沒走：通往 1。",
+    "1 連回 0，但 0 正在拜訪中（它是整趟旅程的起點），不能去。",
+    "1 沒路了，一路回溯：1 → 8 → 9 → 0，最後 0 也標灰。每個節點都走過了，DFS 完成。",
+    "這只是其中一種走法。每次「任選一條邊」選得不同，走出來的順序就不同，所以 DFS 的順序不唯一；考題通常會指定「依編號小到大」來固定答案。"
+   ],
    "points": [
     {
-     "text": "從 0 出發：0 → 9 → 8 → 7 → 10 → 11，11 的鄰居 7 正在拜訪中，不能再進去。",
-     "t": 85
+     "t": 83,
+     "text": "從 0 出發：0 → 9 → 8 → 7 → 10 → 11，11 的鄰居 7 正在拜訪中，不能再進去。"
     },
     {
-     "text": "回溯（標成灰色）到 7，再走 7 → 3 → 2；2 是死路，回 3 再走 4，4 也是死路。",
-     "t": 125
+     "t": 127,
+     "text": "回溯（標成灰色）到 7，再走 7 → 3 → 2；2 是死路，回 3 再走 4，4 也是死路。"
     },
     {
-     "text": "3 → 5 → 6，6 的鄰居 7 正在拜訪中，所以一路回溯到 8。",
-     "t": 150
+     "t": 164,
+     "text": "3 → 5 → 6，6 的鄰居 7 正在拜訪中，所以一路回溯到 8。"
     },
     {
-     "text": "8 的最後一條邊到 1，1 的鄰居 0 正在拜訪中；全部回溯到 0，走訪完成。",
-     "t": 165
+     "t": 179,
+     "text": "8 的最後一條邊到 1，1 的鄰居 0 正在拜訪中；全部回溯到 0，走訪完成。"
     },
     {
-     "text": "這只是其中一種走法：每次「任選一條邊」不同，走出來的順序就不同。",
-     "t": 188
+     "t": 199,
+     "text": "這只是其中一種走法：每次「任選一條邊」不同，走出來的順序就不同。"
     }
    ],
    "trap": "補充：「拜訪中」（還在遞迴堆疊上）跟「拜訪完」在 CLRS 裡分別是灰色與黑色；這支影片把回溯過的點標灰，顏色意義和 CLRS 不同。"
   },
   {
    "title": "遞迴版 pseudocode",
-   "scene": "dfs-fiset-code",
+   "scene": "graphmit-fiset-code",
+   "cues": [
+    208.2,
+    217.8,
+    229.8,
+    233.3,
+    251.9,
+    262.1,
+    271.8,
+    281.2,
+    287.5,
+    303.6
+   ],
+   "explain": [
+    "接著把剛剛的走法寫成 [[pseudocode]]（虛擬碼）。左邊是程式，右邊是縮小的同一張圖。",
+    "第一個變數 n：圖裡有幾個節點，這裡 n = 12。",
+    "第二個變數 g：[[adjacency list]]。它替每個節點記一串「鄰居」，例如 g[0] = [9, 1]，表示 0 連到 9 和 1。",
+    "第三個是 visited：一個 true/false 陣列，第 i 格記錄節點 i 去過沒。一開始還沒去過任何地方，所以全部是 false（F）。",
+    "程式最下面設起點 start = 0，然後呼叫 dfs(0)。下方的「呼叫」那一排記錄目前正在執行哪些 dfs。",
+    "dfs 只有一個參數 at，意思是「目前站在哪個節點」。dfs 會呼叫自己，所以是遞迴（[[recursive]]）的。",
+    "先檢查 [[base case]]：如果 visited[at] 已經是 true，代表來過了，直接 return。這行是避免繞圈圈的關鍵。",
+    "還沒來過，就把 visited[0] 改成 true（T），代表「拜訪」了 0。",
+    "接著從 g 拿出 0 的所有鄰居，對每個鄰居遞迴呼叫 dfs：dfs(0) 先叫 dfs(9)，dfs(9) 又叫 dfs(8)……呼叫一層一層疊上去，這就是「往深處走」。",
+    "DFS 的核心就這幾行：檢查、標記、對鄰居遞迴。退回上一層（backtrack）是遞迴函式 return 時自動發生的。"
+   ],
    "points": [
     {
-     "text": "準備三樣東西：節點數 n、adjacency list g、全為 false 的 boolean 陣列 visited。",
-     "t": 200
+     "t": 208,
+     "text": "準備三樣東西：節點數 n、adjacency list g、全為 false 的 boolean 陣列 visited。"
     },
     {
-     "text": "從 start = 0 呼叫 dfs(at)；dfs 是遞迴的。",
-     "t": 233
+     "t": 252,
+     "text": "從 start = 0 呼叫 dfs(at)；dfs 是遞迴的。"
     },
     {
-     "text": "base case：visited[at] 已經是 true 就直接 return。",
-     "t": 245
+     "t": 272,
+     "text": "base case：visited[at] 已經是 true 就直接 return。"
     },
     {
-     "text": "否則標 visited[at] = true，從 adjacency list 拿出所有鄰居，對每個鄰居遞迴呼叫 dfs。",
-     "t": 255
+     "t": 281,
+     "text": "否則標 visited[at] = true，從 adjacency list 拿出所有鄰居，對每個鄰居遞迴呼叫 dfs。"
     }
    ]
   },
   {
    "title": "用 DFS 找 connected components",
-   "scene": "dfs-fiset-components",
+   "scene": "graphmit-fiset-comp",
+   "cues": [
+    308.5,
+    315.9,
+    331.5,
+    340.7,
+    346.6,
+    361.4,
+    369,
+    382.1,
+    397.7,
+    413.1,
+    417.9,
+    431.9,
+    443.6
+   ],
+   "explain": [
+    "第二個用途：找 [[connected component]]。這是一張新的圖，有 18 個節點，看起來散成好幾群。",
+    "[[connected component]]（連通分量）就是「彼此走得到的一整塊」。一張圖可能分成好幾塊，塊與塊之間完全沒有邊。",
+    "要分辨它們，最直覺的方法是每一塊塗一個顏色，一眼就看得出有幾塊。",
+    "可是電腦看不到顏色。對電腦來說，「上色」就是給同一塊的每個節點同一個 id 數字（節點下方的 id）。",
+    "老師舉例：某一塊的節點全部 id 1，另一塊全部 id 3。被抬起來的兩塊就是例子。",
+    "現在用 DFS 自動算出這些 id。先把顏色清掉，確認節點編號是 0 到 n−1（n = 18）。",
+    "演算法：從每個節點開始跑 DFS，但如果它已經被拜訪過就跳過；一次 DFS 走得到的節點，全部標同一個 id。",
+    "從節點 0 開始 DFS：0 → 8 → 14 → 13，走到的都標 id 0。",
+    "13 沒路了，回溯到 0，再走另一條邊到 4，也標 0。這一塊走完，第一個 component 找到了。",
+    "外層依編號往下看：節點 1 還沒被拜訪，所以從 1 開一次新的 DFS，id 換成 1。",
+    "1 → 5 → 17，回溯到 5 再走到 16，這四個都標 1。",
+    "接著是節點 2（開新 DFS、標 2）和節點 3（標 3）。如果輪到的節點已經被拜訪過，就直接跳過，不會重複標。",
+    "最後節點 6 自己一塊（沒有任何邊），標 4。所有節點都有 id，共 5 個 connected components；每個節點只被拜訪一次，所以總時間還是 O(V + E)。"
+   ],
    "points": [
     {
-     "text": "圖可能分成好幾塊互不相連的 component；要辨識、計數它們。",
-     "t": 290
+     "t": 308,
+     "text": "圖可能分成好幾塊互不相連的 component；要辨識、計數它們。"
     },
     {
-     "text": "對電腦來說「上色」就是給同一塊的每個節點同一個 id。",
-     "t": 315
+     "t": 336,
+     "text": "對電腦來說「上色」就是給同一塊的每個節點同一個 id。"
     },
     {
-     "text": "節點編號 0 … n−1，依序對「還沒拜訪」的節點啟動一次 DFS，DFS 到的全部標成同一個 id。",
-     "t": 340
+     "t": 361,
+     "text": "節點編號 0 … n−1，依序對「還沒拜訪」的節點啟動一次 DFS，DFS 到的全部標成同一個 id。"
     },
     {
-     "text": "從 0 開始：0、8、14、13、4 都標 0；接著輪到 1：1、5、17、16 都標 1；已拜訪的節點直接跳過。",
-     "t": 360
+     "t": 382,
+     "text": "從 0 開始：0、8、14、13、4 都標 0；接著輪到 1：1、5、17、16 都標 1；已拜訪的節點直接跳過。"
     }
    ]
   },
   {
    "title": "找 components 的 pseudocode",
-   "scene": "dfs-fiset-components",
+   "scene": "graphmit-fiset-compcode",
+   "cues": [
+    456,
+    459,
+    472.3,
+    486.8,
+    496.9,
+    507.9,
+    517.3,
+    525.8,
+    534.2,
+    545,
+    553.9
+   ],
+   "explain": [
+    "把剛剛的作法寫成程式。左邊是 pseudocode，右邊是縮小的同一張圖。",
+    "前一段的 n（節點數）、g（adjacency list）、visited（去過沒）照樣要用。",
+    "新增兩樣：count 記「目前開了幾次 DFS」；components 是長度 n 的整數陣列，第 i 格記節點 i 屬於第幾塊（下方那排小方塊）。",
+    "findComponents 用迴圈掃每個節點 i（藍色指標），先檢查它有沒有被拜訪過。",
+    "跟單純走訪不同：這裡不是只從 0 跑一次，而是每遇到一個沒拜訪過的節點就開一次 DFS。",
+    "DFS 走到的節點都會被標成 visited，所以同一個節點不會被拜訪第二次。",
+    "因此迴圈裡每個節點只有兩種下場：已經被拜訪過 → 跳過；還沒 → 從它開一次 DFS。",
+    "要開新的 DFS 之前先 count++。count 就等於做過幾次 DFS，也等於找到幾塊。",
+    "dfs 裡做兩件事：標 visited，並把 components[at] 設成目前的 count。於是 0、8、14、13、4 都記成 1。",
+    "再對還沒拜訪的鄰居遞迴。外層迴圈繼續往下找下一個沒拜訪的節點，其他塊也依序得到 2、3、4、5。",
+    "最後回傳 count（共 5 塊）和 components 陣列（每個節點屬於哪一塊）。每個節點只拜訪一次，時間 O(V + E)。"
+   ],
    "points": [
     {
-     "text": "除了 n、g、visited，再加一個計數器 count 與整數陣列 components。",
-     "t": 440
+     "t": 456,
+     "text": "除了 n、g、visited，再加一個計數器 count 與整數陣列 components。"
     },
     {
-     "text": "findComponents 迴圈掃過每個節點：沒拜訪過就 count++，再從它做 DFS。",
-     "t": 475
+     "t": 487,
+     "text": "findComponents 迴圈掃過每個節點：沒拜訪過就 count++，再從它做 DFS。"
     },
     {
-     "text": "DFS 內：標 visited、設 components[at] = count，然後對還沒拜訪的鄰居遞迴。",
-     "t": 520
+     "t": 534,
+     "text": "DFS 內：標 visited、設 components[at] = count，然後對還沒拜訪的鄰居遞迴。"
     },
     {
-     "text": "最後回傳 count（共幾塊）與 components 陣列；每個節點只會被拜訪一次。",
-     "t": 545
+     "t": 554,
+     "text": "最後回傳 count（共幾塊）與 components 陣列；每個節點只會被拜訪一次。"
     }
    ]
   },
   {
    "title": "DFS 的其他用途",
-   "scene": null,
+   "scene": "graphmit-fiset-uses",
+   "cues": [
+    566,
+    574.8,
+    587.8,
+    593.1
+   ],
+   "explain": [
+    "到這裡看了兩個用途：單純走訪一張圖，以及找 connected components。",
+    "把 DFS 加工還能做更多：[[minimum spanning tree]]、偵測並找出 [[cycle]]、檢查圖是不是 [[bipartite]]。",
+    "還有找 [[strongly connected component]]、[[topological sort]]、找 bridges 和 [[articulation point]]，這幾個都是資工所考試常客。",
+    "甚至在 flow network 裡找 [[augmenting path]]、產生迷宮。DFS 非常多才多藝，後面幾支影片會一個個看到。"
+   ],
    "points": [
     {
-     "text": "加以擴充後可以：求 MST、偵測 cycle、檢查 bipartite、找 strongly connected components、topological sort。",
-     "t": 565
+     "t": 566,
+     "text": "加以擴充後可以：求 MST、偵測 cycle、檢查 bipartite、找 strongly connected components、topological sort。"
     },
     {
-     "text": "還能找 bridges 與 articulation points、在 flow network 裡找 augmenting path、產生迷宮等。",
-     "t": 585
+     "t": 588,
+     "text": "還能找 bridges 與 articulation points、在 flow network 裡找 augmenting path、產生迷宮等。"
     }
    ]
   }
@@ -189,6 +335,5 @@
    "ans": "不唯一，取決於每次挑哪條邊（adjacency list 的順序）",
    "why": "影片也說這只是其中一種走法；考題通常會指定「依字母／編號順序」。"
   }
- ],
- "timing": "estimated"
+ ]
 }
