@@ -1,0 +1,214 @@
+{
+ "video": "Q2-sJ3eYGYE",
+ "label": "清大周志遠 第10B講 Memory Management",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Dynamic loading：用到才 load",
+   "scene": "mem-10b-why",
+   "cues": [
+    1.8,
+    31.5,
+    45.4,
+    63.3,
+    76.8,
+    94.3,
+    124.3,
+    137.8,
+    169.5,
+    191.8,
+    237.5,
+    255.8,
+    305.3,
+    339.8
+   ],
+   "explain": [
+    "先預告：之後的 paging、segmentation，講的全部都是 logical address 和 physical address 之間的 translation（翻譯）。",
+    "在那之前，既然有了「run time 才決定」的概念，就可以用它來最佳化記憶體的使用，於是出現 dynamic loading 和 dynamic linking。",
+    "先看 dynamic loading。loading 跟 loader 有關：loader 的工作是把程式在硬碟上的內容（disk image）載入記憶體，或在記憶體裡建立起來。",
+    "早期的 loader 用的是 static loading：在程式開始跑之前，把整個程式的記憶體內容全部建立、全部放進 memory，然後才開始用。",
+    "問題是：整個程式的內容都要 create 出來，而且全部佔住記憶體空間。",
+    "可是寫過程式就知道，程式常常 allocate 一大堆記憶體卻沒用。例如不小心多打幾個 0，int array 開了 1 萬個 element，其實只需要 10 個。",
+    "對電腦來說，load time 就得把這 1 萬個空間佔住給你，於是浪費了很多根本用不到的記憶體，整體效能變差。",
+    "解法就是 dynamic loading（動態載入）：等到發現你「真的要用」的時候，才把它 load 進記憶體；沒用到就先放著不配置。",
+    "像變數這種太底層的空間比較難管，OS 沒做到那麼細；它做的是 routine（常式）層級，也就是以 function code（函式的程式碼）為單位來 load。",
+    "意思是：某個 function 要被 call 到的時候，它的 code 才 load 進記憶體；沒被 call，它在記憶體裡根本不存在，只是硬碟上的 code。",
+    "大家觀察到：一支程式裡其實有非常多 routine 從來沒用過。程式要考慮各種可能性，但實際執行只會走其中一條路。",
+    "到了公司寫商業程式（commercial code）更明顯：可能 70%～80% 的 function 都在處理 error handling（錯誤處理），本來就不該常被用到。",
+    "老師分享 IBM 的真實經驗：為了加一個 flag 印出一個訊息，就得從頭到尾 test 一遍、加很多程式碼，花了將近半年。可見這些處理錯誤的程式碼有多龐大。",
+    "用 dynamic loading，就可以避免把這些不需要的 code 載入記憶體。"
+   ],
+   "points": [
+    {
+     "t": 2,
+     "text": "Paging、segmentation 講的都是 logical → physical 的 translation；有了 run time 概念，就能做 dynamic loading 與 linking 來最佳化 memory。"
+    },
+    {
+     "t": 45,
+     "text": "Static loading 在執行前把整個 program 的 content create 並放進 memory，但程式常 allocate 很多卻不用（例如 array 開 1 萬個只用 10 個）→ 浪費。"
+    },
+    {
+     "t": 138,
+     "text": "Dynamic loading：真的用到才 load；OS 以 routine（function code）為單位，call 到才 load。"
+    },
+    {
+     "t": 237,
+     "text": "很多 routine 從沒用到（商業程式 70～80% 是 error handling），dynamic loading 可避免 load 它們。"
+    }
+   ]
+  },
+  {
+   "title": "Dynamic loading 的用法：dlopen、dlsym",
+   "scene": "mem-10b-dl",
+   "cues": [
+    351.9,
+    371.8,
+    381.8,
+    399.8,
+    449.3,
+    459.8,
+    486.1,
+    514.8,
+    545.5,
+    554.9,
+    576.5,
+    608.4,
+    633.3,
+    655.3,
+    660.8,
+    690.5
+   ],
+   "explain": [
+    "什麼時候在 run time 把 function load 進來？OS 有提供這個功能，但它不會主動幫你決定。",
+    "現在一般 OS 的設計，是交給使用者（programmer）自己決定哪些 function 要用 dynamic loading。",
+    "看 C 的例子。第一步：include dlfcn.h 這個 header，才能使用 dynamic loading 的系統函式。",
+    "先把需要 dynamic loading 的 function 自己 compile 成一個 library（函式庫）。library 不需要 main，像 C library 一樣，裡面放很多 function。",
+    "在程式裡先 define 一個 function pointer（函式指標），例如叫 cosine，讓程式知道「有這個 function 存在」。",
+    "dlopen：把之前 compile 好的 library 開啟、註冊。裡面的 function 都是 run time 才會被 access 的。",
+    "dlsym：在 run time 做 binding，告訴程式 cosine 就是那個 dynamic library 裡的 cos 函式。",
+    "重點：程式 load 進記憶體時，cos 的 code 並沒有被 load。只有執行到 call cos 的這一行，才從 disk 上的 library 把它 load 進記憶體執行。",
+    "用完再 dlclose 關掉、取消註冊。寫程式要用 dynamic loading，就是這幾行。",
+    "dynamic loading 的好處：對系統來說，解決了記憶體浪費；對 programmer 來說，也很有彈性。",
+    "因為是 run time 才 bind，程式可以視情況決定要對到 cos，還是另一個更精準的 cos double 版本。不同 OS、不同系統支援的 function 不一樣，這很好用。",
+    "所以現在 programmer 用 dynamic loading，多半不是在意記憶體夠不夠（那是 OS 的事），而是想在 runtime 決定要 call 哪個 function。",
+    "用圖來看。左邊是 disk image：程式 compile 出來的 binary，裡面有 main 和 A、B、C 三個 function。",
+    "如果是 static loading，整個程式（main、A、B、C）全部 load 到記憶體。",
+    "如果 B 和 C 被定義成 dynamic library，一開始只有 static 的部分（main、A）在記憶體。等程式 call 了 B，B 才被 load 進來。",
+    "call 完它就可以離開，記憶體空間就這樣被動態地使用。"
+   ],
+   "points": [
+    {
+     "t": 352,
+     "text": "OS 提供 dynamic loading 的功能，但不主動決定；由 programmer 決定哪些 function 要 dynamic loading。"
+    },
+    {
+     "t": 382,
+     "text": "C 的做法：include dlfcn.h，把 function compile 成 library，用 dlopen 開啟、dlsym 取得 function、dlclose 關閉；call 到時才從 disk load 進 memory。"
+    },
+    {
+     "t": 555,
+     "text": "好處：省 memory，也讓 programmer 能在 runtime 決定 bind 到哪個 function（例如 cos 或更精準的版本）。"
+    },
+    {
+     "t": 633,
+     "text": "圖示：static loading 整個 load；dynamic loading 一開始只有 static 部分，call 到 B 才 load B。"
+    }
+   ]
+  },
+  {
+   "title": "Linking：每個程式都 link 一份 library",
+   "scene": "mem-10b-link",
+   "cues": [
+    730.4,
+    743.1,
+    759.8,
+    779,
+    800.2
+   ],
+   "explain": [
+    "講完 loading，接著講 linking（連結）。程式裡 call 一個 printf，就代表要去 link C library。",
+    "我們 include header 的目的，就是要 link 某個 library，程式才完整，至少要 link 系統的 library。",
+    "電腦上有很多程式，只要是 C 寫的，每一個都會 include、link 到 C library。",
+    "如果三個用到 C library 的程式同時執行，同一份 library 就會被重複 load 進記憶體三次。",
+    "對單一程式來說沒有重複、也一定要用；但從 OS 的角度看，跨程式之間有很多 duplicate（重複）的 library，造成浪費。下課後講 dynamic linking 怎麼解決。"
+   ],
+   "points": [
+    {
+     "t": 730,
+     "text": "Call printf 就要 link C library；include header 是為了 link。"
+    },
+    {
+     "t": 760,
+     "text": "每個 C program 都 link C library；同時執行時同一份 library 被重複 load，跨 program 造成 duplicate、浪費 memory。"
+    }
+   ]
+  },
+  {
+   "title": "下課",
+   "scene": null,
+   "points": [
+    {
+     "t": 811,
+     "text": "下課，回來講 dynamic linking。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Dynamic loading 的單位通常是？",
+   "opts": [
+    "單一 variable",
+    "Routine（function code）",
+    "整個 process",
+    "一個 byte"
+   ],
+   "ans": "Routine（function code）",
+   "why": "OS 沒做到 variable 那麼底層，而是以 routine（function code）為單位，call 到才 load。"
+  },
+  {
+   "q": "誰決定哪些 function 要用 dynamic loading？",
+   "opts": [
+    "OS 自動判斷",
+    "Programmer",
+    "MMU",
+    "Compiler 隨機"
+   ],
+   "ans": "Programmer",
+   "why": "OS 提供功能但不主動做，交給 programmer 用 dlopen/dlsym 等決定。"
+  },
+  {
+   "q": "用 dlopen、dlsym 取得的 cos，什麼時候才被 load 進 memory？",
+   "opts": [
+    "Compile 時",
+    "Link 時",
+    "程式 load 時",
+    "真的 call 到它的時候"
+   ],
+   "ans": "真的 call 到它的時候",
+   "why": "程式 load 時 cos 不在 memory；執行到 call 那行，才從 disk 的 library load 進來。"
+  },
+  {
+   "q": "為什麼 dynamic loading 能省很多 memory？",
+   "opts": [
+    "程式裡很多 routine（如 error handling）從沒被用到",
+    "Library 會被壓縮",
+    "MMU 會刪掉重複的 page",
+    "Stack 會變小"
+   ],
+   "ans": "程式裡很多 routine（如 error handling）從沒被用到",
+   "why": "很多 function 是為了各種可能性寫的（商業程式 70～80% 是 error handling），用不到就不 load。"
+  },
+  {
+   "q": "多個 C 程式同時執行、各自 static link 了 C library，會造成什麼問題？",
+   "opts": [
+    "External fragmentation",
+    "同一份 library 在 memory 裡重複好幾份",
+    "TLB miss",
+    "Deadlock"
+   ],
+   "ans": "同一份 library 在 memory 裡重複好幾份",
+   "why": "每支程式都帶一份 library，跨 program 的 duplicate 浪費 memory；dynamic loading 也解決不了，要靠 dynamic linking。"
+  }
+ ]
+}

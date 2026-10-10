@@ -1,0 +1,247 @@
+{
+ "video": "pJ6qrCB8pDw",
+ "label": "Paging in Operating Systems with Example & Working",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場",
+   "scene": null,
+   "points": [
+    {
+     "t": 8,
+     "text": "頻道開場：今天介紹 memory management 的 paging。"
+    }
+   ]
+  },
+  {
+   "title": "為什麼需要 paging",
+   "scene": "mem-pg-why",
+   "cues": [
+    52,
+    59.8,
+    100,
+    127,
+    165.6,
+    195.8,
+    211,
+    228.2,
+    263.4,
+    283.2
+   ],
+   "explain": [
+    "在談 paging 怎麼管理記憶體之前，先了解它到底是什麼、幫我們做到什麼。",
+    "以一台桌機或筆電為例，只看三個元件：primary memory（主記憶體，也就是 RAM）、secondary memory（硬碟）、還有執行指令的 CPU。",
+    "我們知道 RAM 的容量很有限：大概 4GB 到 128GB；硬碟通常從 500GB、1TB 起跳，而且越來越大。",
+    "同樣的錢，RAM 貴很多，因為它是完全不同的高速裝置，而且是 volatile（關機就消失）。程式平常存在硬碟，要執行時才搬到 RAM，CPU 才能很快地執行它的指令。",
+    "paging 在哪裡派上用場？程式越來越複雜，RAM 卻沒有變大多少。多工時有很多應用程式在 RAM 裡跑，打開工作管理員，背景就有好幾百個 process。",
+    "再開遊戲、繪圖這種吃資源的軟體，RAM 就滿了。這時就需要 memory management（記憶體管理）：有效率地管理記憶體，paging 就是其中一種方法。",
+    "paging 是由 memory management unit（MMU）來實作的，它是系統裡負責執行這套機制的單元。",
+    "影片的說法是：拿一部分 secondary memory 當作 virtual RAM，用來以 page 的形式存放 process。比較精確地說，這是 virtual memory 的 swap space（第九章的內容）。",
+    "例如 CPU 正在跑其中兩個 app，另外兩個暫時沒在用，就把它們移到 secondary memory，需要時再搬回 RAM。",
+    "所以這不是實體地加裝 RAM，而是借用一部分 secondary memory 來放執行中的程式。這是影片對 paging 的概觀。"
+   ],
+   "points": [
+    {
+     "t": 52,
+     "text": "電腦有 RAM（primary）、hard disk（secondary）、CPU；RAM 快但貴、容量有限，程式執行時要搬進 RAM。"
+    },
+    {
+     "t": 165,
+     "text": "程式越來越大、同時跑很多 process，RAM 會滿，需要 memory management。"
+    },
+    {
+     "t": 211,
+     "text": "Paging 由 MMU 實作；影片把一部分 disk 當「virtual RAM」，沒在用的 page 暫存到 disk，需要時再搬回（嚴格說這是 virtual memory／demand paging 的做法）。"
+    }
+   ],
+   "trap": "影片把 paging 和 virtual memory 混在一起講；課本上 paging 本身是「把 logical/physical 切成等大的 page/frame 並用 page table 對應」，把 page 暫存到 disk 是 virtual memory 的做法。"
+  },
+  {
+   "title": "Paging 的定義：page、frame、MMU",
+   "scene": "mem-pg-theory",
+   "cues": [
+    300.5,
+    337.6,
+    354.5,
+    365.7,
+    380.2,
+    391.4,
+    416.8,
+    429.8,
+    447.5,
+    467.6
+   ],
+   "explain": [
+    "接著詳細看 paging 怎麼運作。左邊是理論，右邊是同一張圖。",
+    "在這個機制下，OS 以「相同大小的 block」來存取資料，這些 block 叫做 pages（頁）。",
+    "先定好固定大小，例如整塊空間都切成 2KB、2KB、2KB……",
+    "paging 是 virtual memory 實作的重要部分：實體記憶體不夠時，用這塊空間存放程式。",
+    "第四點：它可以做 non-contiguous（不連續）的記憶體配置，也有助於解決 external fragmentation，因為大家都是同樣大小的格子。",
+    "logical address space（程式看到的位址空間）切成大小相同的 pages，每個 page 都需要一個位址，也就是 logical address。",
+    "physical address space 也就是 RAM，也切成同樣大小的區塊，叫做 frames（頁框）。",
+    "非常重要的一點：frame size 一定等於 page size。page 是 2KB，frame 也是 2KB，一個 page 剛好放進一個 frame。",
+    "logical address（也叫 virtual address）是由 CPU 產生的；physical address 則是 RAM 裡實際存在的位置。",
+    "最後，哪個 page 存在哪個記憶體位置——也就是 virtual 到 physical 的 mapping——是由 MMU 這個 hardware 完成的，這就叫 paging technique。"
+   ],
+   "points": [
+    {
+     "t": 300,
+     "text": "OS 以相同大小的 block（page，例如 2KB）在 secondary storage 與 main memory 之間存取資料；paging 是 virtual memory 實作的重要部分。"
+    },
+    {
+     "t": 380,
+     "text": "Paging 允許 non-contiguous allocation，沒有 external fragmentation。"
+    },
+    {
+     "t": 391,
+     "text": "Logical address space 切成 pages，physical address space（RAM）切成 frames；frame size = page size。"
+    },
+    {
+     "t": 447,
+     "text": "Logical（virtual）address 由 CPU 產生；virtual → physical 的 mapping 由 MMU（hardware）完成。"
+    }
+   ],
+   "trap": "frame size 一定等於 page size。"
+  },
+  {
+   "title": "例子：process X 的 P5 在 frame 21",
+   "scene": "mem-pg-ex",
+   "cues": [
+    506.4,
+    524.3,
+    564.9,
+    603.4,
+    615.6,
+    638,
+    707.4,
+    716.7,
+    745.7,
+    774,
+    829.7,
+    857.7,
+    916.8
+   ],
+   "explain": [
+    "用一個例子來看實際的運作。",
+    "假設有一個 process X，分成 P1 到 P5 共 5 個 page。process 就是背景中執行的實體，例如開 Chrome，背後就會啟動好幾個 process，我們看其中一個。（課本通常從 page 0 開始編號，影片從 1 開始。）",
+    "為什麼是 5 個？假設 process 有 10KB、page size 是 2KB，10 ÷ 2 = 5，所以要切成 5 個 2KB 的 page。",
+    "CPU 會產生 logical address。這個位址由兩部分組成：p 和 d。",
+    "p 是 page number，用來當作 page table 的 index；page table 記錄每個 page 在實體記憶體中的位置。",
+    "page table 負責把 page 對應到正確的 frame，它有兩個重要欄位：page number 和 frame number。每個 process 都有自己的 page table，它也存放在 RAM 裡（P1～P4 的 frame 值為示意）。",
+    "CPU 產生 logical address，所以它知道 page number。假設它要找 P5。",
+    "MMU 去 process X 的 page table 查 P5。它不會一行一行找，而是直接跳到第 5 列，因為 page number 就是 index。",
+    "MMU 看到 P5 對應的 frame number 是 f21，也就是 frame 21。所以 page 5 在 main memory 的 frame 21。",
+    "位址的另一部分 d 是 page offset，它跟 frame 的 base address 組合起來，就得到送到記憶體的 physical address。",
+    "一個 2KB 的 page 裡有很多內容。假設 d = 3（示意），表示要 page 裡的第 3 個位置。offset 在 page 裡和在 frame 裡是一樣的，因為我們只是找出 P5 在 main memory 的哪裡，內部位置不變。",
+    "MMU 這樣就解出 physical address：frame 21 加上 offset 3。如果把 offset 當成 byte 來算，就是 21 × 2048 + 3 = 43011。CPU 拿到 physical address，就去執行 P5。",
+    "再強調一次：每個 process 都有自己的 page table，而 page table 存在 main memory（實體記憶體）裡。"
+   ],
+   "points": [
+    {
+     "t": 506,
+     "text": "例：process X 有 10KB、page 2KB → 5 個 page（影片編號 P1～P5）。"
+    },
+    {
+     "t": 603,
+     "text": "CPU 產生 logical address (p, d)：p 是 page number，當作 page table 的 index；page table 存 page → frame，每個 process 一張、放在 main memory。"
+    },
+    {
+     "t": 707,
+     "text": "要找 P5：MMU 直接用 index 跳到 P5 那列，得到 frame 21；offset d（例如 3）在 page 與 frame 裡相同，接上後得到 physical address。"
+    }
+   ],
+   "trap": "page table 是用 page number 直接當 index，不是一行一行搜尋。"
+  },
+  {
+   "title": "Page fault 初探",
+   "scene": "mem-pg-fault",
+   "cues": [
+    932.2,
+    950.6,
+    957.7,
+    970.5,
+    985.3
+   ],
+   "explain": [
+    "最後快速介紹 page fault，怎麼處理會在下一支影片講。",
+    "假設這次 CPU 不是要 P5，而是要執行 process X 的 page 4。",
+    "MMU 查 process X 的 page table 中 P4 的 entry，看到的是 INV，也就是 invalid bit（無效）。",
+    "invalid 的意思是：P4 現在不在實體記憶體（RAM）裡，它在 secondary storage 的 virtual memory 區域。",
+    "這就叫 page fault：這個 process 要的 page 不在實體記憶體，必須先把它搬進來。怎麼處理、還有 paging 如何做到不連續配置，影片下一集會講。"
+   ],
+   "points": [
+    {
+     "t": 932,
+     "text": "若 CPU 要 P4，而 page table 的 entry 是 INV（invalid），代表 P4 不在 RAM、在 secondary storage，這就是 page fault，必須把 page 搬進 physical memory。"
+    }
+   ]
+  },
+  {
+   "title": "結尾",
+   "scene": null,
+   "points": [
+    {
+     "t": 1014,
+     "text": "影片結尾。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Process 10KB、page size 2KB，會切成幾個 page？",
+   "opts": [
+    "2",
+    "5",
+    "10",
+    "20"
+   ],
+   "ans": "5",
+   "why": "10KB ÷ 2KB = 5。"
+  },
+  {
+   "q": "下列關於 frame 與 page 的敘述何者正確？",
+   "opts": [
+    "Frame 比 page 大一倍",
+    "Frame size 一定等於 page size",
+    "Page 在 RAM、frame 在 disk",
+    "兩者大小沒有關係"
+   ],
+   "ans": "Frame size 一定等於 page size",
+   "why": "Page 是 logical 的區塊、frame 是 physical 的區塊，大小必須相同才能一對一放入。"
+  },
+  {
+   "q": "MMU 用 page number 查 page table 時是怎麼找的？",
+   "opts": [
+    "從第一列一行一行比對",
+    "直接當 index 跳到那一列",
+    "用 hash 找",
+    "問 OS"
+   ],
+   "ans": "直接當 index 跳到那一列",
+   "why": "Page number 就是 page table 的 index，直接跳過去。"
+  },
+  {
+   "q": "P5 在 frame 21，page size 2048 bytes，offset 3（以 byte 計），physical address 是？",
+   "opts": [
+    "24",
+    "2048 × 5 + 3",
+    "21 × 2048 + 3 = 43011",
+    "21 + 3"
+   ],
+   "ans": "21 × 2048 + 3 = 43011",
+   "why": "Frame number 取代 page number，offset 照抄：21 × 2048 + 3。"
+  },
+  {
+   "q": "MMU 查到 P4 的 entry 是 INV（invalid），代表什麼？",
+   "opts": [
+    "P4 是 read-only",
+    "P4 不在 RAM（在 secondary storage），發生 page fault",
+    "P4 已被刪除",
+    "TLB miss"
+   ],
+   "ans": "P4 不在 RAM（在 secondary storage），發生 page fault",
+   "why": "Invalid 代表該 page 目前不在 physical memory，需要搬進來。"
+  }
+ ]
+}

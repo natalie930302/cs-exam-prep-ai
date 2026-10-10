@@ -1,0 +1,385 @@
+{
+ "video": "p7C-ObHrCP8",
+ "label": "清大周志遠 第11A講 Non-Contiguous Memory Allocation - Paging(續)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Paging 複習：兩邊都切、page table 做 mapping",
+   "scene": "mem-11a-recap",
+   "cues": [
+    13.8,
+    43.3,
+    66.5,
+    78,
+    100.8,
+    122.9,
+    150.2,
+    160
+   ],
+   "explain": [
+    "今天的重點是 page table。複習一下：為了提高記憶體使用率、不浪費，我們用 discontiguous allocation（不連續配置）：只要有空間就能用，中間不要留洞。",
+    "其中一種方法就是 paging，它屬於 fixed allocation：logical（程式的記憶體空間）和 physical 兩邊都切成完全一樣大小的區塊。",
+    "每個程式分到的 page 數量不同，看程式有多大；程式會長，page 也會一直增加。",
+    "為什麼兩邊都要切？因為這樣就能做任意的 mapping（對應）。所以需要一個 table 來存這個對應關係，這個資料結構就叫 page table。",
+    "概念上就像這樣：一個 page 查這張表，就知道它存在實體記憶體的哪一個 frame。這裡寫的是 1、4、3、7。",
+    "寫 frame number 是概念上比較好懂。實作上存的其實是 frame 的 base address（起始位置），因為最後要翻譯出「第幾個 byte」。",
+    "很重要：每個 process 都有自己的 page table，所以 OS 要 maintain（維護）非常多張。",
+    "所以 process 被 load 進記憶體、放進 ready queue 之前，loader 要做很多事：建立 PCB、建立 page table、配置好記憶體，這才是 loader 最主要的工作。"
+   ],
+   "points": [
+    {
+     "t": 14,
+     "text": "Paging 是 discontiguous allocation 的一種：logical 與 physical 都切成相同大小，才能任意 mapping，mapping 存在 page table。"
+    },
+    {
+     "t": 101,
+     "text": "例：page 0～3 → frame 1、4、3、7；實作上 entry 存的是 frame 的 base address。"
+    },
+    {
+     "t": 150,
+     "text": "每個 process 有自己的 page table；loader 要 create PCB、page table，並 allocate memory。"
+    }
+   ]
+  },
+  {
+   "title": "Logical address 切成 p | d",
+   "scene": "mem-11a-pd",
+   "cues": [
+    197,
+    204.4,
+    247.9,
+    267.2,
+    291.3,
+    311.8,
+    336.8,
+    360.2,
+    385,
+    414.4,
+    431.2,
+    458.2,
+    486.4
+   ],
+   "explain": [
+    "進入重點：怎麼做一個完整的 address translation（位址翻譯）？剛才只知道可以做 mapping。",
+    "CPU 存取記憶體是 byte addressing：以 byte 為單位定位址，每個 address 指到一個 byte，就像每戶人家都有自己的門牌號碼。",
+    "但不是所有系統都這樣，有些設計是 4 個 byte 一個 address。沒有特別提醒的話，就當作 byte addressing。",
+    "program 裡拿到的 logical address 是一串 bit。因為有 paging，我們把它切成兩部分。",
+    "前面幾個 bit 叫 page number（頁號），寫成 p：表示在程式裡的第幾個 page。",
+    "後面的 bit 叫 page offset（頁內位移），寫成 d：表示在這個 page 裡面的哪個位置，是相對位置。",
+    "p 的目的，就是拿去 look up page table：它是第幾個 page，就查出它在第幾個 frame。",
+    "要留意 bit 長度的意義。例如 page number 有 10 個 bit，最大能表示 2¹⁰ 個數字，所以這個程式不管怎麼寫，最多只能用 2¹⁰ = 1024 個 page。",
+    "如果 page size 是 4KB，page number 只有 10 bits，就能算出這個程式最多能用 2¹⁰ × 4KB = 2²² bytes = 4MB。超過就沒辦法描述了。",
+    "這也是為什麼早期 32-bit 的電腦，程式最多只能 allocate 4GB（2³² bytes）：就是受限於位址的 bit 數。",
+    "電腦從 32 bit 換到 64 bit 很麻煩，因為所有的 address、所有的硬體都得跟著修改。",
+    "再看 page offset：如果 offset 有 n 個 bit，它能描述的最大範圍就是 2ⁿ，也就是一個 page 的大小。",
+    "所以系統的 page size 是 4KB，也就是 2¹²，位址裡就必須留 12 個 bit 給 offset，剛好指遍一個 4KB 的 page。"
+   ],
+   "points": [
+    {
+     "t": 197,
+     "text": "一般是 byte addressing（每個 address 指一個 byte）；有些系統是 4-byte addressing。"
+    },
+    {
+     "t": 267,
+     "text": "Logical address 切成 page number p（第幾個 page，用來查 page table）與 page offset d（page 內的相對位置）。"
+    },
+    {
+     "t": 360,
+     "text": "p 有 10 bits → 最多 2¹⁰ 個 page；配 4KB page，程式最多 4MB。32-bit 電腦的程式最多 4GB。"
+    },
+    {
+     "t": 458,
+     "text": "Offset 有 n bits → page size = 2ⁿ；4KB = 2¹² → offset 12 bits。"
+    }
+   ],
+   "trap": "page offset 的 bit 數只由 page size 決定；page number 的 bit 數決定程式最多有幾個 page。"
+  },
+  {
+   "title": "Address translation 與例題",
+   "scene": "mem-11a-xlate",
+   "cues": [
+    518.1,
+    525.4,
+    543.8,
+    570.1,
+    589.3,
+    603,
+    619.1,
+    631.9,
+    636,
+    654.3,
+    666.5,
+    686,
+    693.1,
+    717.5,
+    747.9,
+    761.3,
+    806.8
+   ],
+   "explain": [
+    "p 和 d 合起來，就是 logical 的 address。",
+    "變成 physical 時：用 page number 去找到 frame，把這個 frame 在實體記憶體的 base address 寫在前面。",
+    "然後加上「相同的」offset。因為 page 和 frame 大小剛好一樣，在 page 裡第幾個 byte，在 frame 裡也就是第幾個 byte。",
+    "直接看圖比較簡單：位址有很多 bit，現在 64 個，早期 32 個。前面一段叫 p，後面叫 d。",
+    "切在哪裡完全由系統的 page size 決定：page size 大一點，d 要留的 bit 就多，p 的 bit 就少。所以不同系統的 p、d 長度可以不同。",
+    "p 轉成數字，去 page table 找對應的 entry，裡面存著 frame 的 base address。",
+    "把它直接貼過來，跟 d 接在一起。這全部都是 bit operation（位元運算），不需要真的做乘除法。",
+    "接起來就是真正的 physical address。",
+    "來看例子：page size 是 1KB，也就是 2¹⁰。腦袋馬上要想到：offset 是 10 個 bit。",
+    "給你一串 0101…，先把後面 10 個 bit 切出來，那就是 page offset（畫面用 d 表示，因為老師沒給具體 bit）。",
+    "假設前面那段的值是 2，就去看 page table 的 index 2。注意從 0 開始數：0、1、2，所以是第三個位置。",
+    "假設裡面存的是 5，代表這個 page 在第 5 個 frame。",
+    "每個 frame 大小固定，第 5 個 frame 的 base address 就是 page size × 5 = 1024 × 5 = 5120。",
+    "這個位址一共 13 個 bit：後面 10 個全是 offset，只剩前面 3 個是 page number。",
+    "翻譯就是把 page number 的 2（010）換成 5（101），後面的 offset 照抄。physical address = 5 × 1024 + d = 5120 + d，完成一次 address translation。",
+    "這個概念非常重要。電腦設計會因需求改變 page size 或 logical address 的 bit 數（它決定一個 process 最多能用多少記憶體），但只要用 paging，翻譯的原理就不變。",
+    "老師列了一堆典型問題：給你一個系統，要能算出 page number 幾個 bit、offset 幾個 bit、page size、table size 等等。考前一定要能自己回答。"
+   ],
+   "points": [
+    {
+     "t": 518,
+     "text": "Translation：用 p 查 page table 得到 frame（base），offset d 原封不動接在後面，都是 bit operation。"
+    },
+    {
+     "t": 589,
+     "text": "Page size 越大，d 的 bit 越多，p 越少。"
+    },
+    {
+     "t": 636,
+     "text": "例：page 1KB（offset 10 bits），13-bit address 前 3 bits 為 p = 2，page table[2] = 5 → physical = 5 × 1024 + d = 5120 + d。"
+    },
+    {
+     "t": 761,
+     "text": "數字會隨系統設計改變，但 translation 原理不變；考前要能算 p、d 的 bit 數、page size、table size。"
+    }
+   ],
+   "trap": "page table 的 index 從 0 開始：p = 2 是第三個 entry。"
+  },
+  {
+   "title": "例題：32-bit logical、36-bit physical、page 4KB",
+   "scene": "mem-11a-calc",
+   "cues": [
+    837.2,
+    846.1,
+    869.5,
+    915.9,
+    977.3,
+    992.5,
+    1009.9,
+    1033.1,
+    1046.9,
+    1087.9,
+    1113.9,
+    1128.2
+   ],
+   "explain": [
+    "更複雜的例子：logical address 32 bits、physical address 36 bits、page size 4KB。",
+    "真實系統裡 logical 的 bit 數不一定等於 physical，兩者沒有關聯；只要一個唯一的 logical address 能對到一個唯一的 physical address 就行。",
+    "那剩下的實體空間給誰？別忘了這只是一支程式，剩下的給別的程式用。反過來，有了 virtual memory，logical 也可以比 physical 大，指不到的部分其實在 disk 上。",
+    "三個數字可以推出很多東西。第一，page table 有幾個 entry？就是有幾個 page：2³² ÷ 2¹²（4KB）= 2²⁰ 個。",
+    "一個程式最大能用多少記憶體？就是 2³² bytes = 4GB，logical address 的 bit 數已經決定了。",
+    "這就是早期電腦不能超過 4GB 的原因：沒有位址可以描述它，就算你有錢一直加硬體也沒用，翻譯不了。",
+    "實體記憶體多大？要看 physical address：2³⁶ bytes = 64GB。兩個 size 不一定要相同；講到 physical 就想 physical address，講到 program 就看 logical。",
+    "page number 有幾個 bit？跟第一題同一個意思：32 − 12 = 20 bits。",
+    "有時會問 page table 有幾個 byte：entry 數要乘上每個 entry 的大小，通常是 4 bytes（存一個位址），所以 2²⁰ × 4 bytes = 4MB。要看清楚題目問的是 entry 數、byte 數還是 bit 數。",
+    "frame number 有幾個 bit？要看 physical：36 − 12 = 24 bits，比 page number 多。",
+    "page offset 很單純：page size 是 4KB，所以 12 個 bit。",
+    "光給三個數字，就能推出這麼多關聯。不用死背，想清楚運作原理，就知道哪個數字該除以哪個。"
+   ],
+   "points": [
+    {
+     "t": 837,
+     "text": "Logical 32 bits、physical 36 bits、page 4KB；兩者 bit 數不必相同，只要能 map。"
+    },
+    {
+     "t": 916,
+     "text": "Page table entries = 2³² / 2¹² = 2²⁰；program 最大 2³² = 4GB；physical = 2³⁶ = 64GB。"
+    },
+    {
+     "t": 1033,
+     "text": "Page number 20 bits；page table size = 2²⁰ × 4 bytes = 4MB；frame number = 36 − 12 = 24 bits；offset 12 bits。"
+    }
+   ],
+   "trap": "問 page table「size」時要分清楚是 entry 數（2²⁰）還是 byte 數（2²⁰ × 4 B = 4MB）。"
+  },
+  {
+   "title": "Free frame list",
+   "scene": "mem-11a-free",
+   "cues": [
+    1162,
+    1182,
+    1192.4,
+    1226.4,
+    1232
+   ],
+   "explain": [
+    "會翻譯之後，還有一件事：allocate（配置）的時候，必須知道哪些 frame 是空的。",
+    "為了快速找到空的 frame，OS 會維護一個 free frame list，很單純，就是一個 linked list，把空的 frame 都放進去（畫面上哪些空著是示意）。",
+    "process 被建立、它的 page 要找一個 frame 放時，只要從 list 最上面 pop 一個出來就好。因為是不連續配置，任何一個 frame 都可以，然後寫進這個 process 的 page table，就完成配置。",
+    "這個 list 由 OS 維護，非常快，O(1)，一直 pop 出來就可以。",
+    "free 也很簡單：程式被 delete、kill 掉時，去看它的 page table 用了哪些 frame，把它們放回 free frame list，就可以給別人使用。"
+   ],
+   "points": [
+    {
+     "t": 1162,
+     "text": "OS 用 free frame list（linked list）記錄空的 frame；allocate 時 pop 一個寫進 page table，O(1)。"
+    },
+    {
+     "t": 1232,
+     "text": "Process 結束時看它的 page table，把 frame 放回 free frame list。"
+    }
+   ]
+  },
+  {
+   "title": "Page size 怎麼選",
+   "scene": "mem-11a-psize",
+   "cues": [
+    1262,
+    1287.8,
+    1309.3,
+    1352.1,
+    1386,
+    1446.8,
+    1462.3,
+    1510.1
+   ],
+   "explain": [
+    "paging 裡還有一個對效能很關鍵的設定：page size。不管 physical、logical 總共多大，兩邊唯一共通、一定要對上的就是 page size。",
+    "原則一：一定是 2 的次方（power of two）。因為翻譯都是 bit operation，用 and、or、shift 這些快速運算處理；不然還要十進位、二進位轉來轉去，很囉嗦也容易出錯。",
+    "一般系統從 512 bytes 到 16MB 都有可能，看系統特色；最常見的是 4KB 或 8KB，大家常說的「4KB 的 page」就是這個。",
+    "如果調大，例如 16MB：internal fragmentation 會很嚴重。很多程式只有幾 KB、1MB，配一個 16MB 的 page，大半都浪費了。",
+    "那調小呢？現在實體記憶體越來越大，logical 位址空間更大（64-bit）。位址 bit 數很多、page 又很小，page number 就很多，page table 會變得很大。",
+    "而且每個 process 都要存一張 page table，OS 會浪費不少記憶體在存這些表。",
+    "第二點很重要：page 很小，程式要碰的 page 數就很多。同樣讀 4KB，page 是 4KB 時一個就夠，1KB 就要讀 4 個，每個都要查、要花時間；還容易被放到 disk，一次一次去抓會非常慢。讀資料最好一次讀一堆。",
+    "所以效能會往下掉。這就是為什麼 page size 通常是 4KB（或 8KB），純粹是經驗法則。"
+   ],
+   "points": [
+    {
+     "t": 1262,
+     "text": "Page size 是 physical 與 logical 唯一共通的參數，一定是 2 的次方（才能用 bit operation）。"
+    },
+    {
+     "t": 1309,
+     "text": "一般 512 bytes 到 16MB；常見 4KB 或 8KB。"
+    },
+    {
+     "t": 1352,
+     "text": "太大 → internal fragmentation 嚴重；太小 → page number 多、page table 大（每個 process 一張），且要存取的 page 多、常從 disk 一次次抓，變慢。"
+    },
+    {
+     "t": 1510,
+     "text": "所以通常用 4KB，是經驗法則。"
+    }
+   ]
+  },
+  {
+   "title": "Paging 總結與 frame table",
+   "scene": "mem-11a-sum",
+   "cues": [
+    1554.9,
+    1576.1,
+    1606.5,
+    1622.2,
+    1643.4,
+    1661.5
+   ],
+   "explain": [
+    "總結 paging：page table 的目的就是做 translation，把 physical 和 logical memory 切開。",
+    "而且不只切開，還是不連續的：使用者看到的 logical space 永遠是連續的，physical 卻可以散落各地。不增加程式的複雜度，又能有效使用實體空間。",
+    "OS 為此要維護 page table，還要在 run time 翻譯；因為很花時間，大家都用 hardware 來做。",
+    "那有沒有 frame table？有，剛好倒過來：表裡記的是每個 frame 裡放的是哪個 process 的哪個 page。",
+    "在 paging 裡它意義不大，純粹是 accounting（記帳），不參與 translation；也許 debug 或特殊狀況才會用到。",
+    "唯一的特例最後會提到：inverted page table，它就是用 frame table 來做 translation。一般電腦很少用，等一下會介紹為什麼。"
+   ],
+   "points": [
+    {
+     "t": 1555,
+     "text": "Page table 把 logical 與 physical 切開：logical 永遠連續、physical 可散落；OS 維護、hardware 在 run time 翻譯。"
+    },
+    {
+     "t": 1622,
+     "text": "Frame table 記錄每個 frame 存哪個 process 的哪個 page，在 paging 中只是 accounting，不參與 translation；例外是 inverted page table。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Paging 系統中，logical address 的 page offset d 有幾個 bit 由什麼決定？",
+   "opts": [
+    "Physical memory 大小",
+    "Page size",
+    "Process 數量",
+    "TLB 大小"
+   ],
+   "ans": "Page size",
+   "why": "Offset n bits 對應 page size 2ⁿ；4KB = 2¹² → 12 bits。"
+  },
+  {
+   "q": "Page size 1KB，13-bit logical address 的前 3 bits 是 2，page table[2] = 5，physical address 是？",
+   "opts": [
+    "2 × 1024 + d",
+    "5 × 1024 + d",
+    "5 + d",
+    "13 × 5 + d"
+   ],
+   "ans": "5 × 1024 + d",
+   "why": "Page number 2 換成 frame 5，offset 照抄：5 × 1024 + d = 5120 + d。"
+  },
+  {
+   "q": "Logical 32 bits、page 4KB，page table 有幾個 entry？",
+   "opts": [
+    "2¹²",
+    "2²⁰",
+    "2³²",
+    "2²⁴"
+   ],
+   "ans": "2²⁰",
+   "why": "2³² ÷ 2¹² = 2²⁰。"
+  },
+  {
+   "q": "同上，physical address 36 bits，frame number 有幾個 bit？",
+   "opts": [
+    "20",
+    "24",
+    "12",
+    "36"
+   ],
+   "ans": "24",
+   "why": "Frame number 看 physical：36 − 12 = 24。"
+  },
+  {
+   "q": "同上，每個 entry 4 bytes，page table 有多大？",
+   "opts": [
+    "4 KB",
+    "1 MB",
+    "4 MB",
+    "4 GB"
+   ],
+   "ans": "4 MB",
+   "why": "2²⁰ × 4 bytes = 4MB。"
+  },
+  {
+   "q": "Page size 設太小的主要缺點是？",
+   "opts": [
+    "Internal fragmentation 很嚴重",
+    "Page table 很大，且要存取的 page 數變多",
+    "無法做 sharing",
+    "會產生 external fragmentation"
+   ],
+   "ans": "Page table 很大，且要存取的 page 數變多",
+   "why": "Page 小 → page number 多、table 大，存取同樣資料要碰更多 page；太大才會 internal fragmentation 嚴重。"
+  },
+  {
+   "q": "在一般 paging 中，frame table 的用途是？",
+   "opts": [
+    "做 address translation",
+    "只做 accounting，記錄每個 frame 被誰使用",
+    "取代 TLB",
+    "存放 PTBR"
+   ],
+   "ans": "只做 accounting，記錄每個 frame 被誰使用",
+   "why": "只有 inverted page table 會用 frame table 做 translation。"
+  }
+ ]
+}

@@ -1,0 +1,471 @@
+{
+ "video": "PTXHd17_NlU",
+ "label": "清大周志遠 第12B講 Non-Contiguous Memory Allocation - Paging(續)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場：提醒要花時間消化",
+   "scene": null,
+   "points": [
+    {
+     "t": 16,
+     "text": "這一塊比較有變化，需要回去看課本、重看影片、走過例子。"
+    }
+   ]
+  },
+  {
+   "title": "三種結構的重點複習",
+   "scene": "mem-12b-review",
+   "cues": [
+    55.8,
+    72.5,
+    85.8,
+    111.8,
+    131.1,
+    161.4,
+    204.8,
+    241.9,
+    256.1
+   ],
+   "explain": [
+    "有幾個重要觀念容易混淆。第一：我們之所以要切這些資料結構，是為了把 page table 的 size 變小。",
+    "因為 page table 也要放在實體記憶體，而實體記憶體已經被切成一格一格 4KB 的 frame（灰色是已被使用的）。",
+    "如果要放一張連續的大 page table，就需要連續好幾個 frame。我們的記憶體管理本來就希望不連續，要 MMU 找 10 個連續 frame 不容易，很可能就回你 out of memory——其實你明明還有記憶體。",
+    "第二：hierarchical 的 entry 數量其實是變多的，只是每一張 page table 變小；代價是要 lookup 很多次，memory access time 變慢。",
+    "第三：跟 hash 的差別。程式使用記憶體不會從第 0 個位置開始乖乖依序使用，因為有 dynamic allocation、heap、stack，user space 的位址其實是亂跳的（藍色是有用到的）。",
+    "如果是 table，中間沒用到的 page，entry 也都必須配置出來，就算有 valid bit、invalid bit、length 都沒用，只能標無效。",
+    "hash 則是只把有用到的 entry 拿去 hashing、放進 bucket；沒用到的根本不放，也不需要事先配置，因為它本身就是 linked list 的概念。",
+    "所以在真實系統中，如果空間很大、但真正用到的很分散、數量又少，用 hashing 比較有效率，省掉很多不需要的 entry 和 lookup。",
+    "可惜它還是 linked list。改良方法是 grouping：例如一次讀 4KB，大約 1000 個 entry 一起 load 進 MMU 硬體再搜尋，至少減少讀記憶體的次數。"
+   ],
+   "points": [
+    {
+     "t": 56,
+     "text": "切 data structure 是為了讓單一 page table 變小：physical memory 已切成 4KB frame，大 table 要連續 frame 很難找。"
+    },
+    {
+     "t": 112,
+     "text": "Hierarchical：entry 變多、每張變小，代價是 lookup 次數多。"
+    },
+    {
+     "t": 131,
+     "text": "Hash：程式使用的 virtual address 分散，只把用到的 entry 放進 bucket；可再 grouping 一次 load 多個 entry。"
+    }
+   ]
+  },
+  {
+   "title": "Inverted page table",
+   "scene": "mem-12b-inv",
+   "cues": [
+    298.2,
+    306.1,
+    323.1,
+    342.8,
+    376.1,
+    412.8,
+    454.3,
+    490.2,
+    505,
+    528.4,
+    560.1,
+    618.8,
+    655.9,
+    672.2
+   ],
+   "explain": [
+    "最後一個結構：inverted page table（反轉分頁表）。",
+    "如字面所說：不用 page table，改用 frame table。translation 本來就是一個 mapping，當然可以倒過來做。",
+    "之前講過 frame table：這張表的 index（第幾格）就是 frame number，跟 page table 倒過來，所以裡面存的是 page number（內容為示意）。",
+    "但別忘了很重要的一點：frame 只有一個，但同樣號碼的 page 有非常多，因為每個 process 都有自己的 page 1。所以 entry 除了 page number，還必須存 PID（process ID），才知道是哪個 process 的哪個 page。",
+    "為什麼要倒過來？一樣是為了減少記憶體的使用。page table 會隨著 process 變多而變多：OS 要管一萬個 process，就要管一萬張 page table，每張還會動態長大，所以前面才有那麼多複雜的解法。",
+    "frame 是硬體，從來不會變，所以 frame table 可以事先配置好，size 不用動；而且使用率應該接近 100%：每個 frame 大概都被某個 process 的某個 page 佔著，沒佔滿就代表還有空間。",
+    "這張表當然比單一張 page table 大，但所有 process 的 page table 加起來，一定遠大於 frame table。用 inverted 做翻譯，大小就只看實體記憶體多大，而且固定，用 array 放就好，連 hash 都不用。",
+    "但有兩個缺點。第一：address translation 的時間會比較長，因為必須 search 這張 frame table。",
+    "page table 的目的是可以直接跳：page 3 就跳到第 3 個 entry。但 frame table 裡每個 frame 屬於不同 process、不同 page，沒有順序；讀完 page 3 要讀 page 4 時，不知道它在哪個 frame，只能 search。",
+    "第二：sharing 很難做。OS 很喜歡做記憶體共用，可是倒過來後，一個 entry（一個 frame）只能記一個 page，想讓一個 frame 對到兩個 page 就沒辦法，或者會很複雜。",
+    "看圖：雖然還叫 page table，其實是 frame table。翻譯時給你 PID 和 p，就要一個 entry 一個 entry地找，找到符合的是第幾個 entry，就知道是第幾個 frame（這裡找到第 5 個 → frame 5），再接上 offset。",
+    "好處就是：一般程式的 virtual address bit 數遠大於 physical（因為有 virtual memory），倒過來後 size 只跟實體記憶體有關，entry 比較少，而且整個系統只要一張，省下很多空間。",
+    "search 的缺點也有辦法：table entry 是連續的，可以把它 load 進 MMU 做 linear search，像 hash 的 grouping 一樣減少記憶體存取次數。",
+    "比較難解決的是 page sharing，例如只能預留幾個 entry 讓幾個 process 共用，做法都不太好。因為 page sharing 實在太重要，這個做法很少見，雖然它真的能大幅省空間。"
+   ],
+   "points": [
+    {
+     "t": 298,
+     "text": "Inverted page table 就是 frame table：index 是 frame number，entry 存 (PID, page number)。"
+    },
+    {
+     "t": 376,
+     "text": "好處：frame 數量固定，全系統一張、事先配置，大小只看 physical memory；所有 process 的 page table 加起來遠大於它。"
+    },
+    {
+     "t": 490,
+     "text": "缺點：translation 要 search（沒有順序），且一個 frame 只記一個 page，page sharing 很難，所以很少見。"
+    }
+   ],
+   "trap": "inverted page table 全系統只有一張，但查找要 search，而且不易做 shared pages。"
+  },
+  {
+   "title": "Segmentation：用 programmer 的角度切",
+   "scene": "mem-12b-seg",
+   "cues": [
+    760.2,
+    770.8,
+    796.8,
+    812.4,
+    820.6,
+    837.3,
+    856.2,
+    884.5,
+    914.3,
+    948.4,
+    964.7
+   ],
+   "explain": [
+    "最後介紹 segmentation（分段）。剛剛一直講 paging，但你們寫程式時拿到的錯誤不是 page fault，而是 segmentation fault。",
+    "所以 OS 其實兩個都用，而離使用者、離 programmer 比較近的那一層是 segmentation。先把 paging 放一邊，最後再把兩個結合起來。",
+    "還記得記憶體配置分成 fixed-size 和 variable-size 嗎？fixed-size 就是 paging，因為它固定 4KB。",
+    "variable-size 用在不連續（discontiguous）配置時，名字就叫 segmentation。",
+    "它不只是大小不同，更重要的是：它是以使用者的角度，去想怎麼切割一個程式的記憶體。",
+    "其實很直接：我們的程式本來就是好幾個 segment。有 code segment、call stack 裡一個個 function、OO 裡的 object，都是一個一個的單位。",
+    "還有 heap、stack；學過 compiler 就知道，compile 完還需要一個 symbol table 記錄每個變數放在哪。程式整個就是一大堆物件組成的，這也是 OO 好用的原因。",
+    "而且每一個的大小都不同，stack、heap 還會動態長大，所以都是 variable size。",
+    "把程式依記憶體內容切成一個一個 segment，這個動作就叫 segmentation。寫過 assembly 就知道，它直接就寫 code segment、data segment，完全按 programmer 的方式切割。",
+    "compile 完會辨識出這些 segment。load 時要怎麼擺？跟 paging 同樣的概念：需要一個 segment table 做 translation，就能放到實體記憶體任何位置。",
+    "比較討厭的是：因為是 variable size，external fragmentation 會很嚴重。可以切成比較小的單位分開擺，但要找到有空間的地方，比 paging 困難。"
+   ],
+   "points": [
+    {
+     "t": 760,
+     "text": "寫程式拿到的是 segmentation fault：OS 同時用 paging 與 segmentation，segmentation 離 programmer 較近。"
+    },
+    {
+     "t": 797,
+     "text": "Variable-size 的 discontiguous allocation 就是 segmentation：依使用者的角度把 program 切成 code、function、object、heap、stack、symbol table 等 segment。"
+    },
+    {
+     "t": 948,
+     "text": "Load 時用 segment table 做 translation；缺點是 external fragmentation。"
+    }
+   ]
+  },
+  {
+   "title": "Segmentation 的 address translation",
+   "scene": "mem-12b-segx",
+   "cues": [
+    987.8,
+    991.8,
+    1030.1,
+    1078,
+    1098.8,
+    1116.1,
+    1162.5,
+    1199.6,
+    1215.3,
+    1261.3,
+    1284,
+    1330.5
+   ],
+   "explain": [
+    "來做 translation。",
+    "segmentation 的 logical address 內容跟 paging 很像：前面是 segment number（第幾個 segment），後面的 offset 告訴你在這個 segment 的哪個位置。寫 assembly 就是這樣寫的。",
+    "一個很大的不同：paging 的 offset 只到 4KB，是一個 page size；但 segment 可以長到任意大，理論上甚至可以把整個實體記憶體都給一個 segment。",
+    "所以 offset 的 bit 數只跟系統定義「一個 segment 最多能多大」有關，例如規定 dynamically allocated 的記憶體最多 4GB，offset 就要能描述到 4GB。",
+    "segment table 跟 page table 很像：每個 entry 指到某一個 segment，存它的 base address（起點）。畫面上的數字取自課本圖例，作為示意。",
+    "但多了一個 limit。因為 segment 長度可以任意，每個 segment 都要有自己的 limit，才知道 offset 是有效還是無效。",
+    "跟 paging 一樣：整張 segment table 的位置要有一個 pointer 存在 PCB 裡；也有 length，例如一個 process 最多可以有 1000 個 segment，但現在只用前面 4 個，就寫 4，後面不用配置。",
+    "最重要的一張圖：位址分成 segment number 和 offset。s 就是 table 的 index，例如 s = 2，查到第 2 個 segment 的 limit 400、base 4300。",
+    "注意這裡是真的「加」：page table 存的是 frame 起點，後面都是 0，可以直接把 offset 接上去；但 segment 可以從任意一個 byte 開始，不在 4KB 的 boundary，所以要兩個數字相加：4300 + 53 = 4353。",
+    "相加前會很快檢查：offset 必須比 limit 小。53 < 400，合法；如果是 (1, 500)，500 ≥ 400 就是無效，這就是你天天看到的 segmentation fault（第二個例子為示意）。",
+    "所以每個 segment 的使用空間是完全獨立控制的：heap 可能可以到 10GB，data 也許只有 1GB；用完就丟 segmentation fault。也可以設 read、write 權限，不對也丟。",
+    "不同 segment 永遠不會 overlap（重疊）。想重疊通常是為了 sharing，那就 create 一個獨立的 segment，讓兩個 process 共用整個 segment，不能只共用部分內容。"
+   ],
+   "points": [
+    {
+     "t": 988,
+     "text": "Logical address = (segment number s, offset d)；segment 的 offset 不像 page 只到 4KB，bit 數由系統定義的 segment 最大值決定。"
+    },
+    {
+     "t": 1099,
+     "text": "Segment table entry 存 base 與 limit；table 位置存在 PCB，也有 length。"
+    },
+    {
+     "t": 1199,
+     "text": "Physical = base + d（真的相加）；d 必須 < limit，否則 segmentation fault。例（課本圖例）：(2, 53) → 4300 + 53 = 4353。"
+    },
+    {
+     "t": 1284,
+     "text": "每個 segment 獨立控制大小與權限，segment 之間不會 overlap。"
+    }
+   ],
+   "trap": "segmentation 是 base「加」offset（base 可在任意 byte），paging 是 frame number「接上」offset。"
+  },
+  {
+   "title": "Segmentation vs paging、sharing 與 protection",
+   "scene": "mem-12b-segshare",
+   "cues": [
+    1402.1,
+    1420.8,
+    1450.1,
+    1456.4,
+    1484,
+    1523.5,
+    1550.3,
+    1571.2,
+    1601.3,
+    1616.8,
+    1647.8,
+    1686.2
+   ],
+   "explain": [
+    "整理一下：兩者很像，但 page table entry 存的是 frame 的 base address；segment entry 除了 base address，還有 limit。",
+    "第二：segment 的 base 可以是任何位置；page 一定在 frame 的 boundary（4KB、4KB 為單位）。所以 page 有時只記 frame number，後面直接 append（接上）offset，因為後面本來都是 0。",
+    "segment 就要乖乖用加的，把兩個數字加起來。",
+    "實際例子：一個 process 有很多塊記憶體內容，每一塊就是一個 segment。寫 code 時其實就已經告訴 OS 有多少 segment。",
+    "你告訴 OS 要配置多少空間，MMU 就用 free list 找有空間的地方，把 base address 填上去；要找到夠大的空間，就是我們教過的 variable size allocation，例如 best fit。每個 segment 獨立去找。",
+    "sharing 的概念跟 paging 一模一樣。為什麼要在 segment 這層做？還記得 paging 的 editor 例子嗎？editor 可能橫跨好幾個 page，最後一個 page 還沒用完，在 page 層做 sharing 要知道它在哪幾個 page，很複雜。",
+    "但 program 本來就是用 segment 寫的，editor 一定是一個 segment；load 一個 library，就是一個新的 segment。在 segment table 裡就只是一個 entry。",
+    "而且這個 entry 有多少 byte 可以精確控制：editor 剛好 43062 個 byte，就是這個數量，多一個 byte 都不會被 share。所以現在電腦真正是在 segmentation 這層做 sharing。",
+    "同樣的例子：兩個 process 各有一個 editor segment，但指到同一個 physical segment。",
+    "protection 也是：paging 的 bit 主要是 valid bit，是給 virtual memory 用的；segmentation 的 bit 通常拿來做 read / write / execute 權限，因為是以 shared library、file 或整個 segment 為單位。",
+    "還記得 thread 嗎？heap 是共用的、stack 不共用。所以 stack 和 heap 是兩個 segment：stack segment 設成 non-sharing，別人讀不到；heap 就可以 share。這也是 thread 溝通的方式。",
+    "方法很簡單：在兩個 process 的 segment table 裡，把 base address 設成相同，指到同一個 physical 位置就好。segmentation 跟 paging 概念一樣，只是可以指到任何位置、長度任意。"
+   ],
+   "points": [
+    {
+     "t": 1402,
+     "text": "Segment entry 除了 base 還有 limit；segment base 可在任意位置要相加，page 一定在 boundary 可直接 append。"
+    },
+    {
+     "t": 1456,
+     "text": "Process 的每塊 memory content 一個 segment，MMU 用 free list（如 best fit）找空間。"
+    },
+    {
+     "t": 1523,
+     "text": "Sharing 在 segment 層做最自然：editor 是一個 segment（如剛好 43062 bytes），兩個 process 的 base 設成相同即可；protection 用 rwx bit，thread 的 heap share、stack 不 share。"
+    }
+   ]
+  },
+  {
+   "title": "Segmentation + paging：linear address",
+   "scene": "mem-12b-segpage",
+   "cues": [
+    1716.8,
+    1727.2,
+    1734.8,
+    1744.1,
+    1756.8,
+    1791.2,
+    1811.8,
+    1830.7,
+    1856.1,
+    1894.7,
+    1962.4
+   ],
+   "explain": [
+    "最後：電腦裡 segmentation 在上面，大家寫程式只用這個概念。",
+    "但它的壞處是很容易有 external fragmentation。",
+    "所以電腦其實是在 segmentation 之後，再對它做 paging。有點抽象，看圖比較容易懂。",
+    "這是一個 process 的記憶體內容，不同顏色就是不同 segment：code segment、heap、stack。",
+    "中間有一個對應的空間，大家叫它 linear address。它根本不存在，完全是假象，只是一個數字的轉換：先把每個 segment map 到這個很大的空間的不同地方，中間可能有洞，但因為是假的，有洞也無所謂。",
+    "一個 segment 可以再切成好幾個 page：把這個很大的空間用學過的 paging 切成 fixed size，一個 segment 可能跨三個或四個 page，不一定。",
+    "切成一堆 page 之後，就套用之前學的 paging，把位址 map 到真正的實體記憶體：只要 physical 有空的 frame，就把 page 一個一個放上去，完成整個 address translation。",
+    "好處：programmer 可以用 code segment 寫程式，很容易；compiler 也很簡單，只要知道你是哪個 segment、在哪個位置，直接算就好，不用管它落在哪個 page、實體記憶體怎麼管理。",
+    "到了下一層，MMU 再把它切成很多小 page，所以完全沒有 external fragmentation，internal 又很少，記憶體使用率可以很高。一個 segment 很大也無所謂，可以分散放在好幾個地方。",
+    "正式的流程是這樣：CPU 送出 logical address，先做 segmentation，變成中間那個空間的位置，叫 linear address——它既不是 logical 也不是 physical。再把 linear address 送進 paging 轉換一次，才成為 physical address。",
+    "中間的 segmentation unit 和 paging unit 都在 MMU 裡：MMU 把兩件事都做，先 segmentation、再 paging。"
+   ],
+   "points": [
+    {
+     "t": 1717,
+     "text": "Segmentation 在上（programmer 用），但有 external fragmentation，所以 segment 之後再做 paging。"
+    },
+    {
+     "t": 1757,
+     "text": "Segment 先放到假的 linear address space，再把每個 segment 切成 page，用 paging map 到 physical frame。"
+    },
+    {
+     "t": 1830,
+     "text": "Programmer、compiler 只管 segment；沒有 external fragmentation、internal 很少。流程：CPU logical → segmentation unit → linear → paging unit → physical，兩個 unit 都在 MMU。"
+    }
+   ]
+  },
+  {
+   "title": "Intel Pentium 的位址轉換",
+   "scene": "mem-12b-pentium",
+   "cues": [
+    1976.8,
+    1996.2,
+    2014.3,
+    2043.9,
+    2069.8,
+    2119,
+    2129.5,
+    2160.2,
+    2196,
+    2279.9,
+    2304.8,
+    2350.5,
+    2434.8
+   ],
+   "explain": [
+    "來看具體例子：Pentium，比較早期的 Intel CPU，它的位址設計怎麼結合兩種 translation。",
+    "一開始拿到 logical address，假設是 48 bits（幾個 bit 都無所謂），分成兩個 part。",
+    "後面 32 bits 是 segment 的 offset，代表一個 segment 最多只能長到 4GB。這就是早期記憶體配置只能到 4GB 的原因：不是整個程式不能超過 4GB，而是你的 heap 或 stack 這種單一 segment 不能超過 4GB。",
+    "前面是 16 bits 的 selector。商業產品比較複雜：其中只有 13 bits 是 segment number，代表程式最多可以有 2¹³ 個 segment。",
+    "接著有一個 bit，表示這是 local（private）的 segment 還是 shared 的 segment。一開始宣告 private，之後想 share 出去，OS 也做不到，這個 bit 會擋掉，是比較好的 protection。",
+    "後面還有 protection bits，就是 read、write、execute 那些：用兩個 bit 區分這個 segment 是 read only、write 還是 executable。",
+    "真正有意義的是那 13 bits，加上 share 那一個 bit，其實是 2¹⁴ 個 segment，一半 share、一半不 share。所以一個程式最多 2¹⁴ 個 segment、每個最多 4GB，在設計上就限制住了。",
+    "做 translation 時，策略是先不要把兩個混在一起，一步一步做。先做 segmentation：share 和 private 是兩張完全不同的 segment table，不會亂用。假設這是 share 的，就去找 shared segment table。",
+    "用 13 bits 當 index 讀出那個 segment 的 base address，再跟 offset 相加，就得到一串數字，叫 linear address。base 是 32 bits，所以 linear address 也是 32 bits。",
+    "接下來交給 paging。Pentium 用 2-level page table，所以 32 bits 跟我們的例子一樣，切成 10 | 10 | 12。",
+    "前 10 bits 去看 outer page table 的第幾個 entry，找到 inner page table，再用後 10 bits 找它的第幾個 entry，得到 frame number，再加 offset 就是結果。paging 只是吃一堆 bit，不 care 它叫 linear 還是 virtual address。",
+    "真實系統還會做一些 trick：page 越來越大時，Intel 可以同時支援 4KB 和 4MB 的 page。outer table 查完後有一個 bit，如果指到 4MB 的 page，後面 22 bits 全部拿來當 offset（2²² = 4MB）。",
+    "想像實體記憶體：前面可能都是 4MB 的大 page，後面是小的 4KB page。程式很大就用大 page，很小就用 4KB，MMU 知道哪塊用哪種。"
+   ],
+   "points": [
+    {
+     "t": 1977,
+     "text": "Pentium：48-bit logical address = 16-bit selector + 32-bit offset，一個 segment 最多 4GB。"
+    },
+    {
+     "t": 2044,
+     "text": "Selector：13 bits segment number、1 bit local/shared、2 bits protection；最多 2¹⁴ 個 segment（一半 share）。"
+    },
+    {
+     "t": 2160,
+     "text": "先查 private 或 shared segment table 得 base，base + offset = 32-bit linear address；再用 2-level paging（10 | 10 | 12）。也支援 4MB page（22-bit offset）。"
+    }
+   ]
+  },
+  {
+   "title": "期中考例題：segmentation + paging",
+   "scene": "mem-12b-exam",
+   "cues": [
+    2489.9,
+    2516.3,
+    2524.9,
+    2535.4,
+    2544.8,
+    2560.1,
+    2579.5,
+    2591.8,
+    2600.4,
+    2616.4,
+    2636,
+    2641,
+    2657.4,
+    2710.9
+   ],
+   "explain": [
+    "真實系統不用想得那麼複雜，只要把基本的 paging、segmentation，還有兩個合起來的轉換方式搞懂就好。最後用一個例題總結。",
+    "前幾年期中考每次都考類似的題目，回去一定要自己看，至少這一題要做得出來。",
+    "題目說實體記憶體 512 bytes。腦中要馬上想到：512 = 2⁹，所以 physical address 是 9 個 bit（字幕聽成 8，依 512 = 2⁹ 應為 9 bits）。",
+    "page size 32 bytes = 2⁵，馬上跳出來：5 個 bit 是 page offset。",
+    "一共有 8 個 segment = 2³，所以 virtual address 的前 3 個 bit 是 segment number，剩下的都是 segment offset。",
+    "給你一個 logical address 0x448（字幕聽成 448；依後面算出 segment 2，應是 16 進位 0x448）。先換成二進位，一共 12 個 bit：0100 0100 1000。",
+    "hint 說前 3 bits 是 segment，看前三個 bit：010，答案是 2。剩下的 9 bits 0 0100 1000 = 72，就是 segment offset。",
+    "去 segment table 查第 2 個位置，讀出這個 segment 的 base address（題目表格的數值這裡沒聽到，所以寫成 base₂）。",
+    "把 base 跟 segment offset 相加，得到一串數字，就是 linear address：base₂ + 72。",
+    "再回到 paging，大家應該更熟了：page offset 是 5 bits，剩下的 4 bits 是 page number。老師的題目裡轉換出來是 5，所以要看 page table 的第 5 個 entry。",
+    "page table 第 5 個 entry 是 2，這就是 frame number。",
+    "把前面 4 個 bit 換成 2（0010），後面 5 bits 照抄，就是 physical address = 2 × 32 + linear 的低 5 bits。過程就是這樣。",
+    "不用擔心翻出來的位址會不會跟別的 process 撞在一起：那是 MMU 在配置時就確認過的。segment 有長度，如果 offset 超過長度，就會被擋掉。你只要知道怎麼做 translation 就好。",
+    "第八章就到這裡。後面殺了很多例子，考前一定要自己 go through，不然題目一變化可能就轉不過來。"
+   ],
+   "points": [
+    {
+     "t": 2490,
+     "text": "例題（常考）：physical 512 bytes → 9-bit physical address；page 32 bytes → offset 5 bits；8 個 segment → 前 3 bits 是 segment number。"
+    },
+    {
+     "t": 2560,
+     "text": "Logical 0x448（12 bits：010 001001000）→ segment 2、segment offset 72；查 segment table 得 base₂，linear = base₂ + 72。"
+    },
+    {
+     "t": 2616,
+     "text": "Linear 的低 5 bits 是 page offset、高 4 bits 是 page number = 5；page table[5] = 2 → physical = 2 × 32 + 低 5 bits。"
+    }
+   ],
+   "trap": "先做 segmentation（相加）得到 linear address，再對 linear address 做 paging（替換 page number）。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Inverted page table 的 index 與內容分別是？",
+   "opts": [
+    "Index 是 page number，存 frame number",
+    "Index 是 frame number，存 (PID, page number)",
+    "Index 是 PID，存 page table 位置",
+    "Index 是 segment number，存 base 與 limit"
+   ],
+   "ans": "Index 是 frame number，存 (PID, page number)",
+   "why": "它其實是 frame table：每個 frame 一個 entry，記錄是哪個 process 的哪個 page。"
+  },
+  {
+   "q": "Inverted page table 最大的缺點之一是？",
+   "opts": [
+    "每個 process 要一張很大的表",
+    "難以做 page sharing，且要 search",
+    "會產生 external fragmentation",
+    "無法用 TLB"
+   ],
+   "ans": "難以做 page sharing，且要 search",
+   "why": "一個 frame 只能記一個 (pid, page)，sharing 很難；表沒有順序要 search。"
+  },
+  {
+   "q": "Segment table 的 entry 比 page table entry 多了什麼？",
+   "opts": [
+    "Valid bit",
+    "Limit",
+    "PID",
+    "Frame number"
+   ],
+   "ans": "Limit",
+   "why": "Segment 長度任意，要 limit 判斷 offset 是否有效。"
+  },
+  {
+   "q": "課本圖例：segment 2 的 limit 400、base 4300，logical (2, 53) 的 physical address 是？",
+   "opts": [
+    "53",
+    "4353",
+    "4700",
+    "Segmentation fault"
+   ],
+   "ans": "4353",
+   "why": "53 < 400 合法，4300 + 53 = 4353（segment 是相加，不是接上）。"
+  },
+  {
+   "q": "Segmentation + paging 時，segmentation unit 輸出、送進 paging unit 的是？",
+   "opts": [
+    "Logical address",
+    "Linear address",
+    "Physical address",
+    "Frame number"
+   ],
+   "ans": "Linear address",
+   "why": "CPU logical → segmentation → linear → paging → physical。"
+  },
+  {
+   "q": "Pentium 的 logical address offset 為 32 bits，代表什麼？",
+   "opts": [
+    "整個程式最多 4GB",
+    "單一 segment 最多 4GB",
+    "Page size 是 4GB",
+    "Physical memory 最多 4GB"
+   ],
+   "ans": "單一 segment 最多 4GB",
+   "why": "限制的是單一 segment（如 heap、stack）的大小。"
+  },
+  {
+   "q": "例題：physical 512 bytes、page 32 bytes，physical address 中 frame number 有幾個 bit？",
+   "opts": [
+    "3",
+    "4",
+    "5",
+    "9"
+   ],
+   "ans": "4",
+   "why": "512 = 2⁹ → 9 bits；offset 5 bits → frame number 9 − 5 = 4 bits。"
+  }
+ ]
+}

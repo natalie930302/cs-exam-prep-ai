@@ -1,0 +1,412 @@
+{
+ "video": "xxwRs_2XjjY",
+ "label": "清大周志遠 第10A講 Memory Management",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "本章導覽：memory 怎麼管理",
+   "scene": "mem-10a-intro",
+   "cues": [
+    13.8,
+    49.1,
+    59.2,
+    85.8,
+    104.9,
+    124.1,
+    138.5,
+    179.4
+   ],
+   "explain": [
+    "這一章要談記憶體（memory）怎麼管理。program（程式檔案）要變成 process（正在執行的程式），關鍵就是它被 load（載入）到 memory 裡、有了自己的記憶體內容。",
+    "一開始先介紹基本概念：程式跟記憶體之間是怎麼「結合」在一起的。",
+    "接著是 swapping：把記憶體裡的內容搬到 disk（硬碟），需要時再搬回來。下一章的 virtual memory 會大量用到它。",
+    "memory 本身是一整塊連續的空間。程式裡的 code、heap、stack 這些區域，到底怎麼分配（allocate）給程式？",
+    "為了有效使用實體記憶體，這些空間其實會被切成小塊、散落在各地。管理這種「切開來放」的方法，就是 paging（分頁）和 segmentation（分段）。",
+    "所以程式看到的連續空間其實是假象。OS 用另一套方式，把你用的空間對應（map）到真正的實體記憶體，甚至對應到硬碟上。",
+    "你寫程式時 pointer 亂指，得到的錯誤叫 segmentation fault，就是因為最接近程式的那一層管理是 segmentation，它發現你存取了不該存取的地方，就丟出錯誤讓 OS 處理。",
+    "真正的作業系統很複雜，是把 paging 和 segmentation 結合起來用。課堂會先分開介紹，最後再套在一起。"
+   ],
+   "points": [
+    {
+     "t": 14,
+     "text": "Memory 管理是最重要的一章：program 變成 process 的關鍵就是 load 到 memory。"
+    },
+    {
+     "t": 49,
+     "text": "會介紹基本概念、swapping（memory 與 disk 之間搬移 content）。"
+    },
+    {
+     "t": 86,
+     "text": "Memory 是連續空間，但為了有效使用，實體空間會被切割、散落：paging 與 segmentation。"
+    },
+    {
+     "t": 124,
+     "text": "程式看到的空間是假象，OS 會 map 到實體甚至硬碟；segmentation fault 就是最上層 segmentation 抓到的錯。"
+    },
+    {
+     "t": 179,
+     "text": "真正的作業系統把 paging 和 segmentation 結合在一起使用。"
+    }
+   ]
+  },
+  {
+   "title": "背景：為什麼 memory 這麼重要",
+   "scene": "mem-10a-bg",
+   "cues": [
+    194.8,
+    207.8,
+    228.3,
+    235.2,
+    262.2,
+    275.9,
+    293.8,
+    321.4
+   ],
+   "explain": [
+    "為什麼記憶體這麼重要？第一，它是 CPU 唯一能「直接」存取（access）的儲存空間。CPU 要抓指令、抓資料，都是從 memory 抓。",
+    "不管是 instruction（指令）還是 data（資料），最後都必須放在 memory 裡。中間的 cache（快取）只是為了加速的暫存，本體還是在 memory。",
+    "CPU 沒辦法直接去讀 disk 或其他儲存裝置，資料一定要先搬進 memory。",
+    "為了提高 CPU 使用率，電腦會用 multiprogramming（多工）：同時把很多個 process 放在 memory 裡。",
+    "這樣一來就複雜了：OS 得決定每支程式可以用多少記憶體、這些空間散落在哪裡。",
+    "還要做 protection（保護）：你不能隨便去改別的程式的記憶體。這些都是 memory management 要支援的。",
+    "記憶體畢竟有限，所以現在的電腦有 virtual memory（虛擬記憶體）的概念，把 disk 也當作記憶體的一部分，資料在 disk 和 memory 之間切換。",
+    "但不是每台機器都這樣：手機或 embedded system（嵌入式系統）的儲存空間小，可能就把 virtual memory 拿掉。"
+   ],
+   "points": [
+    {
+     "t": 195,
+     "text": "Memory 是 CPU 唯一能直接 access 的儲存空間；instruction 和 data 最後都要在 memory，cache 只是加速用的暫存，CPU 不能直接讀 disk。"
+    },
+    {
+     "t": 235,
+     "text": "Multiprogramming 讓很多 process 同時在 memory：OS 要控制每支用多少、放哪裡，還要做 protection。"
+    },
+    {
+     "t": 294,
+     "text": "Memory 有限，所以有 virtual memory 把 disk 當作 memory 的一部分；手機或 embedded system 可能沒有。"
+    }
+   ]
+  },
+  {
+   "title": "本章路線圖：address binding 的三個時間點",
+   "scene": "mem-10a-steps",
+   "cues": [
+    355.2,
+    364.3,
+    400.9,
+    414,
+    435.4,
+    447.9,
+    460.8,
+    475.4,
+    494.8,
+    504.3,
+    521,
+    551.3,
+    569.2
+   ],
+   "explain": [
+    "第一個要介紹的是 address binding（位址綁定）：把程式和記憶體對在一起。",
+    "執行程式還有 loading（載入）和 linking（連結）這些過程，而且很多可以發生在 run time（執行期間），所以分成 static（靜態）和 dynamic（動態）。",
+    "最後是 swapping、paging、segmentation 這些管理方法，會花最多時間。",
+    "程式和記憶體的連結是什麼？你在程式裡寫了很多 variable（變數），每個變數最後都要變成某一個 memory address（記憶體位址）。",
+    "可是這個位址到底對到實體記憶體（physical address）的哪裡，並不是 compile 完就一定知道，有好幾種可能。",
+    "依「什麼時候決定」可以分成三種。先看程式從寫好到執行的流程：compile → link → load → run。",
+    "第一個時間點是 compile time：就在編譯程式的這段時間決定。",
+    "第二個是 load time：程式準備放進 memory 的那個時候。",
+    "第三個是 execution time，也叫 run time：程式已經在 memory 裡、真的開始執行的時候。",
+    "所以流程有 compile、link、load、run 四步，其中 compile time、load time、execution time 這三段，就是三種 binding 的時間點。",
+    "以 library（函式庫，例如 C library）為例：如果在 link 的時候就把它放進程式碼裡，這叫 static linking（靜態連結）。",
+    "在 load time 把東西載入叫 static loading；等到執行時、用到了才 load 進 memory，叫 dynamic loading（動態載入）。",
+    "同樣地，dynamic linking（動態連結）也是在 run time 才做。這四個名詞之後會分別解釋。"
+   ],
+   "points": [
+    {
+     "t": 355,
+     "text": "先介紹 address binding；loading、linking 有 static 與 dynamic 之分；再來是 swapping、paging、segmentation。"
+    },
+    {
+     "t": 414,
+     "text": "Variable 會變成 memory address，但對到 physical 的哪裡，不一定 compile 完就知道。"
+    },
+    {
+     "t": 448,
+     "text": "依時間點分成三種：compile time、load time、execution（run）time；流程是 compile → link → load → run。"
+    },
+    {
+     "t": 521,
+     "text": "Library 在 link time 放進來是 static linking；load time 做是 static loading；run time 做是 dynamic loading / dynamic linking。"
+    }
+   ]
+  },
+  {
+   "title": "Compile-time binding：absolute code",
+   "scene": "mem-10a-compile",
+   "cues": [
+    614.1,
+    628.4,
+    643.1,
+    682.2,
+    704,
+    725.3,
+    740.2,
+    744.4,
+    798.4,
+    827.8,
+    859.3,
+    898.9,
+    943.1
+   ],
+   "explain": [
+    "先看一個很簡單的程式：裡面有一個變數 data，它最後要 bind（綁定）到某個實體位址上。",
+    "最早期的做法，是在 compile time 就做 binding：編譯程式的時候，就直接決定變數放在實體記憶體的哪裡。",
+    "compile 會把程式翻成機器碼。機器碼的指令看不懂變數名稱，它吃的是位址，所以 compile 時就得寫上位址（這裡以 0x1018 表示 data 的位置）。",
+    "既然位置在 compile 時就決定了，程式 load 進記憶體時，就一定要放在一模一樣的位置，不然位址對不上（mismatch），就會讀錯資料。",
+    "例如 compile 時寫 0x1000，意思就是：我假設這個程式執行時會被放在 0x1000 開始的地方。",
+    "CPU 執行時只是一行一行讀指令，看到哪個位址就去哪裡讀。因為程式真的放在當初說好的位置，data 就在 0x1000 + 0x18 = 0x1018，讀得到正確的值。",
+    "這就叫 compile-time address binding（編譯時期位址綁定）。",
+    "如果電腦只跑一個程式，又知道記憶體怎麼擺，就可以這樣寫。早期的 DOS 就是這樣，所以它又叫 absolute code（絕對位址程式碼）。",
+    "好處是非常簡單，而且執行時很快：CPU 要的位置就在那裡，不需要再經過任何翻譯。",
+    "缺點很明顯：程式如果在記憶體裡被搬動，例如從 0x1000 搬到 0x2000，它就壞了。位址已經寫死在程式碼裡，還是去讀 0x1018。",
+    "想搬就只能 recompile（重新編譯）、重新 load、重新執行，等於把程式整個 kill 掉重來。",
+    "簡單的 embedded device、只有一個人用的機器還可以這樣做；但對很多使用者、很多 process 共用記憶體的一般電腦，這方法非常不理想。",
+    "為什麼程式會想搬家？例如記憶體不夠時，程式被搬到硬碟；等它搬回來，原本的位置可能已經被別的程式佔住，只能等，或放到別處——compile-time binding 做不到後者。"
+   ],
+   "points": [
+    {
+     "t": 614,
+     "text": "最早期在 compile time 就決定 variable 的 physical address；機器碼裡放的是 address。"
+    },
+    {
+     "t": 682,
+     "text": "Load 時位置必須和 compile 時一模一樣（例如假設程式在 0x1000），否則會讀錯資料。"
+    },
+    {
+     "t": 744,
+     "text": "又稱 absolute code，早期 DOS 這樣做；好處是簡單、run time 快。"
+    },
+    {
+     "t": 828,
+     "text": "缺點：程式一搬動（例如搬到 0x2000）就壞，必須 recompile、重新 load、重新執行；不適合多 process 共用 memory。"
+    }
+   ],
+   "trap": "compile-time binding 的 logical address 就等於 physical address，程式不能搬家。"
+  },
+  {
+   "title": "Load-time binding：relocatable code",
+   "scene": "mem-10a-load",
+   "cues": [
+    1004.8,
+    1020.9,
+    1041.2,
+    1061.4,
+    1087.8,
+    1102.8,
+    1127.1,
+    1162.9,
+    1178.8,
+    1197.8
+   ],
+   "explain": [
+    "改善的做法是 load-time binding：把「決定位址」這件事延後（delay）到 load 的時候。",
+    "同樣的例子，差別很小，要仔細看：compile 時不再寫死絕對位置。",
+    "做法是留一個叫 base register 的值當起點，compile 時不決定，留給 loader（載入器）去填。",
+    "compile 時只要管自己程式內部：程式空間是連續的，所以只要算出「離開頭多遠」的相對位置，例如 0x18。",
+    "等到要 load 的時候，才看這台電腦當下記憶體哪裡有空位。",
+    "loader 找到空位（例如 0x2000），就知道 base 是多少，然後把程式裡的位址改寫成正確位置：0x2000 + 0x18 = 0x2018，再放進去。",
+    "這種程式叫 relocatable code（可重定位程式碼）：compile 完可以搬到記憶體任何空位，寫程式和編譯時都不必知道哪裡有空。",
+    "可是如果程式已經在執行（run time），想換位置怎麼辦？例如被 swap 到 disk，回來時原位置被別人佔了，想放到別處。",
+    "還是得 reload：因為只有 loader 知道位置，必須把程式 kill 掉、重新 load、再跑一次。",
+    "至少不用重新 compile。而且 compile 完常常隔很久才執行，到時候再找空間就好，對很多情況已經夠有彈性。"
+   ],
+   "points": [
+    {
+     "t": 1005,
+     "text": "Load-time binding 把決定 address 的時間 delay 到 load：compile 時只用 base + 相對位置。"
+    },
+    {
+     "t": 1088,
+     "text": "Load 時 loader 找空間、決定 base，再把位址改寫成正確位置；這叫 relocatable code。"
+    },
+    {
+     "t": 1163,
+     "text": "但 run time 想換位置（例如 swap 出去再回來）還是要 reload，只是不用 recompile。"
+    }
+   ]
+  },
+  {
+   "title": "Execution-time binding：MMU 在送出前才翻譯",
+   "scene": "mem-10a-exec",
+   "cues": [
+    1273.9,
+    1303,
+    1318.4,
+    1356,
+    1379.1,
+    1394.1,
+    1420.8,
+    1445.5,
+    1467.4,
+    1491.8,
+    1545.1,
+    1589.8,
+    1625,
+    1639.8,
+    1662.4
+   ],
+   "explain": [
+    "前兩種還沒達到現代電腦的目標。我們要的是 runtime（execution time）address binding，這樣才能有 virtual memory、在執行時動態使用記憶體。",
+    "一樣的例子。這次 compile 之後、load 之後，程式碼都沒變，一直都是相對位置 0x18。",
+    "0x18 的意思是：從這個程式的開頭算起第 0x18 個位置。loader 什麼都不改，就把 0x18 原封不動放進記憶體。",
+    "重點來了：記憶體裡指令寫的位址，跟資料實際的位置居然不一樣！前兩種方法在放進記憶體之前，一定會先改成一致的。",
+    "程式實際放在 0x2000，所以 data 真正在 0x2000 + 0x18 = 0x2018，但指令裡寫的還是 0x18。",
+    "所以 0x18 這種位址叫 virtual address（虛擬位址）：它是假的，連送到 CPU 時都還是假的。0x2018 才是 physical address（實體位址），真正的位置。",
+    "那為什麼還能正確運作？因為 CPU 送出位址、要去記憶體之前，中間有一個元件叫 MMU（memory management unit）。",
+    "CPU 渾然不知，以為 0x18 就是正確位置，就把它送出去。在送到 memory 之前，MMU 才把它轉成 0x2018。這就是「run time」的意思。",
+    "記憶體看不到正確位置，CPU 也不知道，唯一知道的就是 MMU。這章後面講的 paging 和 segmentation，就是實作在 MMU 裡。",
+    "MMU 是 OS 工作的一部分，但程式執行時存取記憶體非常頻繁，每個位址都要翻譯，所以真實電腦把這個演算法做成 hardware（硬體電路）才夠快。",
+    "run time 到底發生什麼？CPU 送出一個 logical address（邏輯位址），例如 346，它其實是假的。",
+    "最簡單的翻譯：假設程式在實體記憶體是連續的，MMU 只要加上 base register 的值。程式放在 14000，所以 346 + 14000 = 14346，這才是真正的位置。",
+    "那 run time 要搬動程式呢？例如從 14000 搬到 24000，沒關係。",
+    "還記得 context switch 嗎？程式要上 CPU 前，OS 會把它的 base address 值 load 進 MMU。現在 base 變 24000，同一個 346 就翻成 346 + 24000 = 24346，程式完全不用改。",
+    "MMU 這個名詞要熟記，它是 hardware。後面的 paging、segmentation 也是 MMU 在做 address translation，只是不會像加一個值這麼簡單。"
+   ],
+   "points": [
+    {
+     "t": 1274,
+     "text": "Execution-time（run-time）binding：compile、load 都只放相對位置（0x18），memory 裡的位址和實際位置不同。"
+    },
+    {
+     "t": 1394,
+     "text": "0x18 是 virtual address，0x2018 才是 physical address；CPU 送出位址後，MMU 在送到 memory 之前才轉換。"
+    },
+    {
+     "t": 1467,
+     "text": "只有 MMU 知道真正位置；paging、segmentation 都實作在 MMU，而且用 hardware 做才夠快。"
+    },
+    {
+     "t": 1545,
+     "text": "例：logical 346 + base（relocation）register 14000 = 14346；程式搬到 24000，context switch 時載入新 base 即可：346 → 24346。"
+    }
+   ],
+   "trap": "execution-time binding 時，CPU 和 memory 裡看到的都是 logical address，只有 MMU 知道 physical address。"
+  },
+  {
+   "title": "Logical address vs physical address",
+   "scene": "mem-10a-lp",
+   "cues": [
+    1703,
+    1717.2,
+    1736.3,
+    1748,
+    1764.6,
+    1781.1,
+    1805.1,
+    1841.1
+   ],
+   "explain": [
+    "講完三種 binding，最重要的是建立兩個概念：logical address 和 physical address。",
+    "logical address 的標準定義：從 CPU 送出來的位址。它其實是假的，所以統稱 virtual address。",
+    "physical address：真正送到 memory module（記憶體模組）的位址。",
+    "在 compile time、load time binding 下，程式放進記憶體時就已經是真實位址，所以這兩個位址一模一樣，也必須一樣。",
+    "在 execution time binding 下，兩者不同，要靠 MMU 在執行時做 address translation，找出正確的對應。",
+    "這個設計非常重要。好處一：因為不用一致，OS 管理實體記憶體非常有彈性，哪裡有空位就能用，只要透過翻譯對上就好。",
+    "好處二：寫程式的人和 compiler 只要管 logical address，其他程式、記憶體怎麼管理，都可以視而不見。",
+    "這大幅降低整個系統的複雜度，compiler 受益最大：它跟原本一模一樣，loader、compiler 什麼都不用做，全部交給 MMU。"
+   ],
+   "points": [
+    {
+     "t": 1703,
+     "text": "Logical（virtual）address 是 CPU 送出來的 address；physical address 是真正送到 memory module 的 address。"
+    },
+    {
+     "t": 1748,
+     "text": "Compile time、load time binding：兩者相同；execution time：兩者不同，靠 MMU translation。"
+    },
+    {
+     "t": 1781,
+     "text": "好處：OS 管理 physical 空間很有彈性；programmer、compiler 只管 logical address，大幅降低複雜度。"
+    }
+   ],
+   "trap": "只有 execution-time binding 的 logical 和 physical address 會不同。"
+  },
+  {
+   "title": "結尾",
+   "scene": null,
+   "points": [
+    {
+     "t": 1860,
+     "text": "本段結束。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "CPU 唯一能直接存取的儲存空間是？",
+   "opts": [
+    "Memory",
+    "Disk",
+    "Swap space",
+    "File system"
+   ],
+   "ans": "Memory",
+   "why": "Instruction 和 data 都必須在 memory；cache 只是中間的加速暫存，CPU 不能直接讀 disk。"
+  },
+  {
+   "q": "Compile-time address binding 產生的程式又稱為？",
+   "opts": [
+    "Relocatable code",
+    "Absolute code",
+    "Reentrant code",
+    "Dynamic library"
+   ],
+   "ans": "Absolute code",
+   "why": "位址在 compile 時寫死，程式只能放在指定位置，所以叫 absolute code。"
+  },
+  {
+   "q": "Load-time binding 的程式要在執行中換位置，需要怎麼做？",
+   "opts": [
+    "只改 base register",
+    "什麼都不用做",
+    "重新 load（不必 recompile）",
+    "一定要 recompile"
+   ],
+   "ans": "重新 load（不必 recompile）",
+   "why": "只有 loader 知道位置，執行中要換就得 kill 掉重新 load；但不用重新 compile。"
+  },
+  {
+   "q": "老師的例子：程式放在 0x2000，指令裡的位址是 0x18。Execution-time binding 下，真正送到 memory 的是？",
+   "opts": [
+    "0x18",
+    "0x2018",
+    "0x2000",
+    "0x1018"
+   ],
+   "ans": "0x2018",
+   "why": "MMU 在送到 memory 前加上 base：0x2000 + 0x18 = 0x2018；0x18 是 virtual address。"
+  },
+  {
+   "q": "Relocation（base）register 為 14000，CPU 送出 logical address 346，physical address 是？",
+   "opts": [
+    "346",
+    "14000",
+    "14346",
+    "24346"
+   ],
+   "ans": "14346",
+   "why": "346 + 14000 = 14346；若程式搬到 24000，同一個 346 會變成 24346。"
+  },
+  {
+   "q": "哪一種 binding 下，logical address 和 physical address 會不同？",
+   "opts": [
+    "Compile time",
+    "Load time",
+    "Execution time",
+    "三種都相同"
+   ],
+   "ans": "Execution time",
+   "why": "Compile/load time binding 放進 memory 時已是真實位址；只有 execution time 靠 MMU 在執行時翻譯。"
+  }
+ ]
+}

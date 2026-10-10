@@ -1,0 +1,497 @@
+{
+ "video": "u4zElpAChLM",
+ "label": "清大周志遠 第12A講 Non-Contiguous Memory Allocation - Paging(續)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "EMAT 複習與 locality：hit rate 為什麼高",
+   "scene": "mem-12a-emat",
+   "cues": [
+    14.8,
+    50,
+    60.9,
+    77.9,
+    104,
+    115.9,
+    140.9,
+    159.2,
+    188.8,
+    200.9,
+    211,
+    244.3,
+    281.9,
+    300.3
+   ],
+   "explain": [
+    "上次最後的例子：TLB 是硬體，至少快 10 倍。這裡查 TLB 要 20 ns，讀 memory 要 100 ns。",
+    "給你一個 hit rate 就能算。hit 的時候：看一次 TLB（cache），就直接讀記憶體內容，20 + 100 = 120 ns。",
+    "TLB 這個最佳化也有代價：就算 miss，也要把查 TLB 的時間算進去，因為要先看了才知道 hit 還是 miss，所以 20 ns 不管怎樣都會發生。",
+    "miss 更慘：還要把 page table 的值讀進 MMU 做翻譯（100 ns），翻完才去讀真正要的資料（又 100 ns），總共 220 ns。",
+    "hit rate 70% 時：0.7 × 120 + 0.3 × 220 = 150 ns。跟沒有 TLB（每次 200 ns）比，還是快了 25%。",
+    "hit rate 如果是 98%：0.98 × 120 + 0.02 × 220 = 122 ns。",
+    "你可能會懷疑：98% 才到 122，真的有這麼厲害嗎？會不會實際只有 40%？",
+    "事實上電腦的 hit rate 非常高，常常超過 99%。原因很單純：程式讀資料有很強的 locality（區域性），讀的資料有順序、而且都在附近。",
+    "像你寫的 code 是一個 instruction 接一個 instruction，program counter 每次往下移 4 個 byte，連續地讀。",
+    "別忘了 TLB cache 的是什麼：一筆就是一整個 page 的翻譯，也就是 4KB（2¹² bytes）。",
+    "第一次讀一個 page 裡任何位置時會 miss，然後就把這個 page 的 entry 放進 TLB。假設接下來 4 byte、4 byte 地讀 1000 次，扣掉第一次，剩下 999 次都在同一個 page，全部 hit。",
+    "或是寫一個 for loop，對 array 每個 element 加 1。array 也許很大，但是連續讀，大部分都待在同一個 page，自然都是 hit。",
+    "所以 hit rate 通常相當高。98% 就是 122 ns，再高的話就能盡量接近 100 ns。",
+    "要記得：TLB 是一個最佳化，可以沒有；有它時間會大幅減少。translation 的過程沒有差別，只是從記憶體讀 page table，還是從 TLB 查 mapping。"
+   ],
+   "points": [
+    {
+     "t": 15,
+     "text": "TLB 20 ns、memory 100 ns：hit 120 ns；miss 也要先查 TLB，20 + 100 + 100 = 220 ns。"
+    },
+    {
+     "t": 104,
+     "text": "Hit rate 70% → 150 ns（比沒 TLB 的 200 ns 快 25%）；98% → 122 ns。"
+    },
+    {
+     "t": 141,
+     "text": "實際 hit rate 往往 > 99%：程式有很強的 locality；TLB 一筆管一整個 4KB page，第一次 miss 後同 page 的存取都 hit。"
+    },
+    {
+     "t": 300,
+     "text": "TLB 只是最佳化，translation 的過程不變。"
+    }
+   ]
+  },
+  {
+   "title": "作業說明（Nachos page table）",
+   "scene": null,
+   "points": [
+    {
+     "t": 324,
+     "text": "作業二：在 Nachos 實作 page table，讓不同程式的 virtual address 對到不同 physical 位置。"
+    }
+   ]
+  },
+  {
+   "title": "Protection bit：valid / invalid",
+   "scene": "mem-12a-valid",
+   "cues": [
+    387.8,
+    406.3,
+    420.4,
+    441.3,
+    503.2,
+    516.9,
+    547.4,
+    600.2,
+    637.3,
+    660.1
+   ],
+   "explain": [
+    "接下來講 page table 相關、需要知道的事。第一個是 memory protection：每個 process 有自己的記憶體，不能隨意存取別人的。",
+    "所以 page table 的每一格裡，通常會再加一個 bit，當作 protection bit（frame 值為示意）。",
+    "這個 bit 可以用來表示這個 page 有效或無效，也可以多幾個 bit 表示它是 read-only（唯讀）、可寫，還是 executable（可執行）。存取時就知道哪些動作能做、哪些不能。",
+    "有點像開檔案時有 read only、write only 的權限；或程式語言裡宣告成 constant 的變數，assign 之後就不能改。",
+    "可能性很多，但一般 OS 在這裡最主要用的，只是 valid（有效）和 invalid（無效）。",
+    "valid / invalid 是說：這個 page 對到的 frame 內容，目前能不能用？為什麼會不能用？例如程式一開始 OS 先幫你 reserve 很大的空間，但你還沒真的 malloc、stack 還沒長到那。",
+    "更重要的是下一章 virtual memory 非常依賴這個 bit：invalid 告訴 OS「這個 page 存在，所以在 page table 裡有，但它現在被 swap 到 disk 上了」。這是最常見的情況。",
+    "看例子：早期做法是根據 page number 的長度，先靜態配置整張 page table。page number 只有 3 bits，最多 8 個 page，就先建 8 個 entry。",
+    "但程式會長，一開始可能只用了 6 個。所以前面都標 v（valid），最後兩個 6、7 還沒配置，就標 i（invalid）。",
+    "如果 pointer 不小心指到 page 6 或 7，查 page table 時立刻就被擋掉，OS 丟出一個 fault（老師說程式常見的 segmentation fault，這裡其實是 page fault 類的錯誤），阻止這次存取。"
+   ],
+   "points": [
+    {
+     "t": 388,
+     "text": "Page table 可加 protection bit：valid/invalid、read-only/write/executable。"
+    },
+    {
+     "t": 503,
+     "text": "一般 OS 主要用 valid/invalid：page 已 reserve 但還沒用、或（下一章）被 swap 到 disk 時為 invalid。"
+    },
+    {
+     "t": 600,
+     "text": "例：page number 3 bits → 8 entries，程式只用 6 個 → page 6、7 invalid；pointer 指到就被擋下（fault）。"
+    }
+   ]
+  },
+  {
+   "title": "Page table length register（PTLR）",
+   "scene": "mem-12a-ptlr",
+   "cues": [
+    682,
+    694.3,
+    726.4,
+    740.8,
+    755.4,
+    821.5,
+    829,
+    881.2,
+    983.9,
+    1035.1,
+    1057.8,
+    1119.1
+   ],
+   "explain": [
+    "剛才的例子太小了。實際上電腦記憶體很大，page table 的 size 絕對不會這麼小，可以存取的空間相當大。",
+    "如果很多程式都很小，可能前十個 entry 是 valid，後面 9000 個全是 invalid。建了一張超大的表，存一堆 invalid bit，造成很多無謂的浪費。",
+    "所以實際上判斷一個位址有沒有效，除了 invalid bit，還會存一個 page table length register（PTLR，分頁表長度暫存器）。",
+    "回憶第一章怎麼保護記憶體：base 和 limit，limit 就是一個長度。在 page table 這一層是同樣的概念。",
+    "所以不會一開始就建 8 個 entry：程式長到哪，就配置多少個 entry，length 記成例如 6。小於它就有效，大於等於就直接擋掉，後面那些沒用的 entry 根本不用建。",
+    "length 的好處一：table 可以變短，不需要存那些有的沒的。",
+    "好處二、也是最主要的：valid bit 只能以 page 為單位，但配置記憶體是以 byte 為單位。有時最後一個 page 只用了前半，後半其實無效，要靠 length 精確記到第幾個 byte 才擋得住。",
+    "table 也是動態配置的：程式繼續長，如果還在同一個 page 裡，只要改 length；長到下一個新 page 時，OS 才再加一個 entry，標成 valid。",
+    "統整一下：page table 裡可以加一些 attribute（屬性 bit），統一告訴 OS 這個 page 的條件和限制，讓 OS 很快做判斷。判斷有效無效，主要靠 length（可到 byte 層級）。",
+    "那為什麼還需要中間這個 bit？原因一：page 可能被 swap 到 disk。就算在長度範圍內，它目前不在記憶體，還是要檢查一下。",
+    "原因二：理想上程式是一路往下連續長，但實際上 heap 和 stack 之間可能有沒配置的 page，還是要一個 bit 表示這個 page 到底有沒有被 allocate。",
+    "反過來，程式的長度也常常不剛好落在 page 的邊界（boundary），所以還是要知道 process 的長度。bit 和 length 兩個都需要。"
+   ],
+   "points": [
+    {
+     "t": 680,
+     "text": "實際 page table 很大，小程式卻只用前面幾格，其他全是 invalid → 浪費；所以有 page table length register（類似 base/limit 的 limit）。"
+    },
+    {
+     "t": 755,
+     "text": "PTLR 記錄 table 長度，只配置需要的 entry，超過就擋；而且 length 能精確到 byte，valid bit 只能以 page 為單位。"
+    },
+    {
+     "t": 984,
+     "text": "Valid bit 仍需要：(1) 在長度內的 page 可能被 swap 到 disk；(2) heap、stack 之間可能有沒配置的 page。"
+    }
+   ],
+   "trap": "length 比 valid bit 精細（到 byte），但兩者都需要。"
+  },
+  {
+   "title": "Shared pages：reentrant code",
+   "scene": "mem-12a-share",
+   "cues": [
+    1126.1,
+    1139.3,
+    1158,
+    1183.2,
+    1205.3,
+    1223.1,
+    1247,
+    1272.4,
+    1303.5,
+    1356.9,
+    1372.3,
+    1387.9
+   ],
+   "explain": [
+    "有了 page table，第一個好處是能很快判斷一塊記憶體有效無效，所以不會跟別的程式撞在一起。",
+    "第二是反過來：有時我們刻意要 sharing。例如 shared memory programming，或 thread 本來就希望共用一些記憶體。",
+    "或者 create process 時，不必立刻把整個記憶體複製一份：可以用 copy on write，有變動的部分才 copy，沒變動的先共用，省下很多時間。",
+    "更重要的是 shared library：load 到記憶體之後，大家共同使用。不管程式碼或資料，很多情況都只要共用一份，這可以用 page table 來實現。",
+    "尤其是 code 的部分。條件是：它必須是 reentrant code（可重入程式碼），也可以叫 pure code。",
+    "library 就是典型的 pure code：沒有任何使用者可以修改它的程式碼。OS 知道哪些程式是 pure code，不會改變。",
+    "這種 code 如果很多人同時要用，就可以只在記憶體放一份。很多例子：editor、application、library，都是 pure code。",
+    "有很多人要用同一份時，sharing 的概念很單純：在 page table 裡做 mapping。不同 process 有不同的 virtual address，卻可以指到同一個 frame、同一個 physical address，讀到相同內容，而每個人都以為自己 load 了一份。",
+    "paging 的好處是只有固定大小的分割，所以兩個 process 不必整個記憶體都 share。例如 library 只用了程式碼裡的某幾個 page，就只 share 那幾個；沒共用的私人資料，用自己原本的記憶體就好。",
+    "看例子：每個使用者都在用 editor，editor 用了三個 page。OS 發現它是 reentrant code、而且已經 load 在記憶體，就在三張 page table 的前三格都填 3、4、6。",
+    "所以 physically editor 只 load 了一份，data 卻有三份不同的（frame 1、7、2）。三個使用者看到的結果都正確，沒有任何問題。",
+    "因為是 pure code，可以把它的 read-only bit 設起來，就絕對不會出問題：如果有人想對這塊空間 write，OS 看到 read-only，直接丟 fault 擋掉，保護 editor 的程式碼。"
+   ],
+   "points": [
+    {
+     "t": 1126,
+     "text": "Page table 能快速判斷有效無效，也能刻意做 sharing：shared memory、thread、copy on write、shared library。"
+    },
+    {
+     "t": 1205,
+     "text": "可 share 的 code 必須是 reentrant（pure）code，執行時不會被修改，如 library、editor。"
+    },
+    {
+     "t": 1272,
+     "text": "做法：不同 process 的 page table 指到同一個 frame；paging 可只 share 需要的 page。例：editor 3 個 page 都對到 frame 3、4、6，data 各自一份；設 read-only，寫入就丟 fault。"
+    }
+   ],
+   "trap": "只有 reentrant（read-only、執行時不改自己）的 code 才能這樣共用。"
+  },
+  {
+   "title": "為什麼需要不同的 page table 結構",
+   "scene": "mem-12a-why",
+   "cues": [
+    1434.4,
+    1444.8,
+    1473.8,
+    1512.2,
+    1519.9,
+    1564,
+    1603.4,
+    1624
+   ],
+   "explain": [
+    "接下來非常重要：不同的 page table structure（結構）。",
+    "前面的做法很單純：page number 查一次、加 offset 就得到答案，叫 one level。但它有一個限制：程式越來越大、logical address 越來越大時，就出問題了。",
+    "我們算過：virtual address 要能存取 4GB（2³²），page 4KB（2¹²），就需要 2²⁰ 個 page table entry。",
+    "如果每個 entry 4 bytes，光這張 page table 就是 4MB。",
+    "這 4MB 是 MMU 在讀的，MMU 讀的是 physical address，沒人幫它翻譯：說第 3 個 entry，就直接跳到實體記憶體的第 3 個位置。所以這 4MB 必須在實體記憶體上完全連續。",
+    "可是實體記憶體已經切成 4KB 的 frame、到處散落，很難找到 4MB 連續的空間；要找就得專門保留一大塊來放 page table，非常沒效率。",
+    "所以接下來這些結構，都是要解決同一個問題：當要存取的記憶體空間還是很大時，怎麼讓 page table 的 size 變小，能塞進記憶體零碎的空位裡。",
+    "典型的做法有三個：hierarchical（階層式）、hashed（雜湊式）、inverted（反轉式）。注意看每種做法下，page table 大小怎麼變化。"
+   ],
+   "points": [
+    {
+     "t": 1434,
+     "text": "One-level page table 的限制：32-bit、4KB page → 2²⁰ entries × 4 B = 4MB。"
+    },
+    {
+     "t": 1520,
+     "text": "MMU 用 physical address 讀 page table，所以這 4MB 必須實體連續，很難配置；目標是讓每一張 page table 變小。"
+    },
+    {
+     "t": 1624,
+     "text": "三種典型結構：hierarchical、hashed、inverted。"
+    }
+   ]
+  },
+  {
+   "title": "Hierarchical（two-level）page table",
+   "scene": "mem-12a-hier",
+   "cues": [
+    1643.8,
+    1678.8,
+    1692.4,
+    1746.3,
+    1764,
+    1779.8,
+    1800.4,
+    1818.4,
+    1848.8,
+    1894.8,
+    1915,
+    1932.1,
+    1962.3,
+    2063.1,
+    2094.1,
+    2174.1,
+    2221.3
+   ],
+   "explain": [
+    "第一個做法：原本很大的 page table，用 hierarchical（階層）的方式切成很多小 table。直覺上就是：entry 非常多，那就把它 partition 成好幾段。",
+    "每一段都是一張獨立的小 table，可以塞到實體記憶體裡不同的位置。",
+    "可是放在不同位置，就必須知道第一張小 table 在哪、第二張在哪……所以前面要再建一張 table，記錄每張小 table 的位置。這就是 hierarchical。",
+    "原本學的叫 one level。接下來看 two level 的例子，大家可以自己延伸到三層、四層，做法相同。",
+    "假設輸入一樣是 32 bits。原本是前面 20 bits 當 page number、後面 12 bits 當 offset，page table 非常龐大。",
+    "把它切成兩個 level：10 | 10 | 12，變成三塊。後面的 12 bits 完全一樣，還是 page offset。",
+    "前面 20 bits 拆成兩段：外面這段叫 outer page number，裡面這段叫 inner page number。",
+    "前面 10 bits 是 outer page table 的 index；後面 10 bits 是那張小 table（inner page table）裡的 index。合起來，還是能找到原來的位置。",
+    "寫程式的人應該很熟：一個 1000 個 element 的 array 需要連續 1000 格的空間；但可以寫成 2-level array：10 個、每個 100 個 element 的小 array。任何位置都還找得到。",
+    "也可以再切成三層，每一層就越來越小。完全一樣的概念：只是 array 怎麼拆解的問題。",
+    "這樣拆解之後，最大的 page table 只有 2¹⁰ 個 entry。",
+    "同學點出常見誤解：entry 總數沒有變少！要 map 的位置數量一樣，小 table 合起來就是原本那張，還多了一張 outer table，所以 total entry 數其實是增加的。",
+    "重點在於：原本要 4MB 連續空間，現在每張只有 2¹⁰ × 4 bytes = 4KB，剛好一個 page 的大小。實體記憶體只要有空的 frame 就能塞進去，可以散落在任何地方。",
+    "代價：記憶體存取從兩次變成三次。看箭頭就知道，切得越細，要讀的次數就越多，越慢，所以 TLB 的功用就更大了。",
+    "看圖：outer table 有 2¹⁰ 個 entry，裡面存的不是資料的 frame number，而是「那張 inner table 存在第幾個 frame」。inner table 裡存的才是資料最後所在的 frame number。",
+    "為什麼是三次？p1 當 index 去查 outer page table，這是第 1 次記憶體存取；查出 inner table 在哪，再用 p2 查它（第 2 次），終於得到 frame number；加 offset 不用存取記憶體，最後去讀資料是第 3 次。",
+    "outer page table 存在哪？就是之前教的：PCB 裡存的 page table base register（PTBR），會直接指到 outer table。後面幾層它看不見，必須一層一層查表；inner table 可以放任何地方，只是 pointer 而已。"
+   ],
+   "points": [
+    {
+     "t": 1644,
+     "text": "把大 page table 切成很多小 table，分散放在 physical memory，再用一張 outer table 記它們的位置。"
+    },
+    {
+     "t": 1764,
+     "text": "32-bit 的 two-level：10 | 10 | 12；p1 查 outer table，p2 查 inner table，就像把 a[1000] 寫成 a[10][100]。"
+    },
+    {
+     "t": 1915,
+     "text": "每張 table 最多 2¹⁰ entries × 4 B = 4KB，剛好一個 frame；但 total entry 數其實增加。"
+    },
+    {
+     "t": 2063,
+     "text": "代價：memory access 從 2 次變 3 次；outer table 的位置由 PCB 裡的 PTBR 指出。"
+    }
+   ],
+   "trap": "hierarchical 讓「單一張」table 變小，總 entry 數反而變多；每多一層就多一次 memory access。"
+  },
+  {
+   "title": "64-bit：hierarchical 的極限",
+   "scene": "mem-12a-64",
+   "cues": [
+    2272.1,
+    2293.5,
+    2304.2,
+    2326,
+    2337.2,
+    2362.3,
+    2384
+   ],
+   "explain": [
+    "這就是 hierarchical page table：可以隨便切，三層、四層、五層，每層幾個 bit 也無所謂，那只決定每一層 table 的 entry 數。",
+    "問題是：現代電腦有 64 bits。如果只切 2 level，一種切法是 42 + 10 + 12。",
+    "outer table 就有 2⁴² 個 entry，乘上每個 4 bytes 是 16 TB。可以想見兩個 level 根本不夠。",
+    "頂多對分好了，每層還是二十幾個 bit，table 還是非常非常大。",
+    "每層最好是 10 個或 12 個 bit：12 bits 的 table 剛好塞進一個 4KB 的 frame，超過就不太行。所以 64 位元的位址要一直切，大概要切成 5 個 level。",
+    "那 total 的 memory access 就是 6 倍（5 層 table 各查一次，再讀一次資料），變成 6 倍慢。這就是 hierarchical 的問題：層數越多，存取時間不斷增加。",
+    "真實電腦確實用這種做法，但最多大概做到 4 level 就受不了了。總會有 cache miss 的時候，miss 時 4 倍是實務上還能接受的範圍。"
+   ],
+   "points": [
+    {
+     "t": 2272,
+     "text": "Hierarchical 可以任意切層數與 bit 數。"
+    },
+    {
+     "t": 2293,
+     "text": "64-bit 若只切 2 level（42 | 10 | 12），outer table 有 2⁴² 個 entry（16TB）；每層 10～12 bits 要切到約 5 層，memory access 變 6 倍。"
+    },
+    {
+     "t": 2384,
+     "text": "實務上最多約 4 level。"
+    }
+   ]
+  },
+  {
+   "title": "Hashed page table",
+   "scene": "mem-12a-hash",
+   "cues": [
+    2420.2,
+    2442.3,
+    2456.1,
+    2479.1,
+    2488.5,
+    2502.2,
+    2514.5,
+    2567.7,
+    2593.8,
+    2647.5,
+    2695.3,
+    2720.2,
+    2737.8,
+    2779
+   ],
+   "explain": [
+    "既然這本質上是一個 lookup（查找）動作，資料結構學過很多策略可以解決，其中一個就是 hashing（雜湊）。",
+    "hashing 的基本做法就是分 bucket（桶子）：先決定要幾個 bucket。",
+    "hash 的方式可以很簡單，這只是例子：如果有 5 個 bucket，就 mod 5，看餘數。",
+    "一開始我們手上只有 page number，所以就 hash by page number：page 3 放 bucket 3、page 6 放 bucket 1……（frame 值為示意）。",
+    "跟剛才的差別：bucket 數量很有彈性，跟 virtual address 的 bit 數無關。",
+    "bucket 很少時，會有很多 collision（碰撞）：找到 bucket 之後，還要一個一個 search，會變得很慢。這裡 3、13、23 都擠在 bucket 3。",
+    "bucket 建得非常多的話，每個裡面可能只有一兩個 entry，很快就找得到。要多少個 bucket，是一個 trade-off。",
+    "它真正的好處：程式並不會完完全全連續地使用 virtual address，有 heap、有 stack，用到的位置很分散。範圍也許跨 4TB，真正用到的可能才 4GB。",
+    "之前的 page table 跟你用了多少無關：最大多少就要留多少 entry。頭跟尾都用到、中間沒用到，中間的 entry 也得全部保留，只能標 invalid。",
+    "hash 就不一樣：沒用到的 page 根本不會出現在 bucket 裡，有用沒用彼此無關。用得少又分散時，bucket 不會很長，所以實際應用上比較有效率。",
+    "缺點是有很多 pointer。entry 本身只存一個 frame base address，才 4 bytes；pointer 又用掉 4 bytes，等於浪費一倍空間。",
+    "運氣不好時要 traverse（走訪）linked list，每走一個 pointer 就是一次 memory access，跟多層 hierarchical table 是一樣的意思。",
+    "翻譯長這樣：用 page number 直接 hash，就知道落在哪個 bucket，然後開始 traverse。因為餘數都是 3 的可能是 3、13、23，必須比對原本的 page 值相同，才算找到。",
+    "所以每個 element 存三樣東西：page number、frame number、指向下一個的 pointer。比對到相同的 page number，就拿它的 frame number 去完成 address translation。"
+   ],
+   "points": [
+    {
+     "t": 2420,
+     "text": "Hashed page table：hash(page number) 決定 bucket，例如 5 個 bucket 用 mod 5；bucket 數與 address bit 數無關，是 tradeoff。"
+    },
+    {
+     "t": 2567,
+     "text": "程式用的 virtual address 很分散時，沒用到的 page 根本不在 bucket 裡，比一般 page table 省。"
+    },
+    {
+     "t": 2695,
+     "text": "缺點：每個 element 多一個 pointer，且走 linked list 每一步都是一次 memory access。每個 element 存 page number、frame number、pointer（如 3、13、23 都落在 bucket 3）。"
+    }
+   ]
+  },
+  {
+   "title": "Clustered hashed page table",
+   "scene": "mem-12a-cluster",
+   "cues": [
+    2795.9,
+    2814.3,
+    2840.3,
+    2868.4
+   ],
+   "explain": [
+    "補充一下：hashing 的缺點是要走 linked list，一次只能看一個 entry 的值，不對就要再讀一次記憶體，會非常久。",
+    "很早就有人提出很簡單的改良：每個 linked list 節點不是只放一個 entry，而是放一組 entry，例如把 23、33、43 包在一起。",
+    "它們存在連續的記憶體空間，像一張小小的 inner table。lookup 時可以一次把它們讀進 MMU 硬體，一次比對有沒有 hit。",
+    "就算要 scan through 也沒關係，至少一次讀進去，而不是在那邊找好幾次，就減少了 linked list traverse 的次數。下課後再講最後一個：inverted page table。"
+   ],
+   "points": [
+    {
+     "t": 2796,
+     "text": "Hashing 要走 linked list，一次只看一個 entry；改良：每個 element 放一組 entry（如 23、33、43），連續存放，一次 load 進 MMU 比對，減少 traverse 次數。"
+    },
+    {
+     "t": 2884,
+     "text": "下課後講 inverted page table。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "TLB hit rate 實際上往往很高（> 99%），主要原因是？",
+   "opts": [
+    "TLB 容量很大",
+    "程式存取有 locality，一筆 TLB entry 涵蓋整個 page",
+    "Page table 很小",
+    "OS 會預先填滿 TLB"
+   ],
+   "ans": "程式存取有 locality，一筆 TLB entry 涵蓋整個 page",
+   "why": "第一次存取某 page miss，之後同一 page 內的連續存取都 hit。"
+  },
+  {
+   "q": "Page number 3 bits，程式只用了 6 個 page，page 6、7 的 valid bit 是？",
+   "opts": [
+    "valid",
+    "invalid",
+    "read-only",
+    "dirty"
+   ],
+   "ans": "invalid",
+   "why": "還沒 allocate 的 page 標 invalid，存取會被擋下。"
+  },
+  {
+   "q": "有了 page table length register 為什麼還需要 valid bit？",
+   "opts": [
+    "Length 只能以 page 為單位",
+    "長度內的 page 可能被 swap 到 disk，或 heap/stack 之間有沒配置的 page",
+    "Valid bit 可以取代 TLB",
+    "其實不需要"
+   ],
+   "ans": "長度內的 page 可能被 swap 到 disk，或 heap/stack 之間有沒配置的 page",
+   "why": "Length 管範圍（可到 byte），valid bit 管範圍內個別 page 的狀態。"
+  },
+  {
+   "q": "多個 process 共用 editor 的 code page，必須滿足什麼條件？",
+   "opts": [
+    "Code 是 reentrant（pure）code",
+    "Code 小於 4KB",
+    "Process 必須是 parent/child",
+    "必須用 inverted page table"
+   ],
+   "ans": "Code 是 reentrant（pure）code",
+   "why": "Reentrant code 執行時不會被修改，通常設 read-only。"
+  },
+  {
+   "q": "32-bit two-level paging 切成 10 | 10 | 12，相較 one-level，下列何者正確？",
+   "opts": [
+    "Total entry 數變少",
+    "每張 table 最多 4KB，但沒有 TLB 時要 3 次 memory access",
+    "只需要 1 次 memory access",
+    "Offset 變成 10 bits"
+   ],
+   "ans": "每張 table 最多 4KB，但沒有 TLB 時要 3 次 memory access",
+   "why": "單一 table 變小到一個 frame；代價是多一層查表，total entry 數反而增加。"
+  },
+  {
+   "q": "64-bit 若只用 2 level（42 | 10 | 12），outer page table 有多大（每 entry 4 bytes）？",
+   "opts": [
+    "4 MB",
+    "4 GB",
+    "16 TB",
+    "16 GB"
+   ],
+   "ans": "16 TB",
+   "why": "2⁴² × 4 B = 2⁴⁴ B = 16 TB。"
+  },
+  {
+   "q": "Hashed page table 的每個 element 存哪些資訊？",
+   "opts": [
+    "只有 frame number",
+    "Page number、frame number、指向下一個的 pointer",
+    "PID 與 page number",
+    "Base 與 limit"
+   ],
+   "ans": "Page number、frame number、指向下一個的 pointer",
+   "why": "同一 bucket 可能有 3、13、23 等多個 page，要比對 page number 才能拿 frame。"
+  }
+ ]
+}

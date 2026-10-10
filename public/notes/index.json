@@ -398,8 +398,8 @@
  "8RyRHYruy-8": {
   "label": "清大周志遠 第11B講 Non-Contiguous Memory Allocation - Paging(續)",
   "points": 25,
-  "quiz": 7,
-  "cued": false
+  "quiz": 6,
+  "cued": true
  },
  "8x6-r-maTZA": {
   "label": "清大周志遠 第16A講 Multithreaded Programming",
@@ -568,6 +568,12 @@
   "points": 27,
   "quiz": 5,
   "cued": false
+ },
+ "bFHb-eTM7oU": {
+  "label": "清大周志遠 第10D講 Memory Management",
+  "points": 29,
+  "quiz": 7,
+  "cued": true
  },
  "BRO7mVIFt08": {
   "label": "MIT 6.006 L9：Table Doubling, Karp-Rabin",
@@ -1325,6 +1331,12 @@
   "quiz": 6,
   "cued": true
  },
+ "p7C-ObHrCP8": {
+  "label": "清大周志遠 第11A講 Non-Contiguous Memory Allocation - Paging(續)",
+  "points": 22,
+  "quiz": 7,
+  "cued": true
+ },
  "P7frcB_-g4w": {
   "label": "MIT 6.006 Rec1：Asymptotic Complexity, Peak Finding",
   "points": 87,
@@ -1349,6 +1361,12 @@
   "quiz": 6,
   "cued": true
  },
+ "pJ6qrCB8pDw": {
+  "label": "Paging in Operating Systems with Example & Working",
+  "points": 13,
+  "quiz": 5,
+  "cued": true
+ },
  "pPMMUa8guTE": {
   "label": "交大彭文志 Lec14 Trees (3/6)",
   "points": 157,
@@ -1371,6 +1389,18 @@
   "label": "Abdul Bari：4.3 Matrix Chain Multiplication - DP",
   "points": 48,
   "quiz": 6,
+  "cued": true
+ },
+ "PTXHd17_NlU": {
+  "label": "清大周志遠 第12B講 Non-Contiguous Memory Allocation - Paging(續)",
+  "points": 26,
+  "quiz": 7,
+  "cued": true
+ },
+ "Q2-sJ3eYGYE": {
+  "label": "清大周志遠 第10B講 Memory Management",
+  "points": 11,
+  "quiz": 5,
   "cued": true
  },
  "Q4zHb-Swzro": {
@@ -1557,6 +1587,12 @@
   "label": "交大江蕙如 Lec05 Chapter 2 Algorithm Analysis (2/2)",
   "points": 148,
   "quiz": 8,
+  "cued": true
+ },
+ "u4zElpAChLM": {
+  "label": "清大周志遠 第12A講 Non-Contiguous Memory Allocation - Paging(續)",
+  "points": 29,
+  "quiz": 7,
   "cued": true
  },
  "u7YMFRUFqe0": {
@@ -1763,6 +1799,12 @@
   "quiz": 8,
   "cued": true
  },
+ "xxwRs_2XjjY": {
+  "label": "清大周志遠 第10A講 Memory Management",
+  "points": 27,
+  "quiz": 6,
+  "cued": true
+ },
  "xyqIXdUXeU0": {
   "label": "Approximation Algorithms 1 - Introduction and Vertex Cover Problem",
   "points": 35,
@@ -1790,6 +1832,12 @@
  "yV1d-b_NeK8": {
   "label": "Abdul Bari：7.2 0/1 Knapsack using Branch and Bound",
   "points": 15,
+  "quiz": 6,
+  "cued": true
+ },
+ "YwPv-XEWDSU": {
+  "label": "清大周志遠 第10C講 Memory Management",
+  "points": 19,
   "quiz": 6,
   "cued": true
  },

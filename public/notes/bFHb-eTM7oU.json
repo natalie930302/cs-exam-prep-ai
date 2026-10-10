@@ -1,0 +1,478 @@
+{
+ "video": "bFHb-eTM7oU",
+ "label": "清大周志遠 第10D講 Memory Management",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Swapping 與 swap space",
+   "scene": "mem-10d-swapspace",
+   "cues": [
+    2,
+    44.1,
+    63.8,
+    72.6,
+    92.2,
+    115.9,
+    133.3,
+    182.8,
+    204.9,
+    221
+   ],
+   "explain": [
+    "swapping（置換）之前提過好幾次：指的是 memory 的內容在 memory 和 disk 之間移動。注意是「已經 load 進記憶體之後」的內容，所以跟 loader 不一樣。",
+    "到底 swap 到 disk 的哪裡？是 disk 上一塊指定的空間，因為是 OS 在用的，所以專門留一塊，叫 swap space。",
+    "灌過作業系統的人會發現，安裝時會問你要切多少空間給 swap space，這其實蠻重要的。",
+    "因為 swap space 不夠，很快就會 out of memory。所謂 out of memory，其實是連 swap space 都用完了，不只是實體記憶體滿而已。",
+    "swap space 還有一個標準名詞叫 backing store。它是一塊特殊的空間，不是檔案系統的空間，在建立檔案系統之前就先切出來了。",
+    "切它出來的目的，就是之前學過的 midterm scheduling（中期排程）：記憶體不夠時，挑一些 process，把它整個 swap 到 backing store，讓其他程式先執行。",
+    "下一章的 virtual memory 會看到，swapping 不一定以整個 process 為單位，可以小到一個 page，也就是 4KB，非常細（fine grained）。",
+    "swap space 裡放的是一堆記憶體內容（page），不是使用者的檔案，所以不交給 file system 管理，而是由 OS 直接管理。",
+    "為什麼要做 swapping？理由很簡單：要把記憶體騰出來（free out memory）。很多記憶體是 run time 動態配置的，會一直長，不知道夠不夠。",
+    "另外，有些 process 比較重要，想讓它先跑；不重要的可能要等很久，一直佔著記憶體也不好，就先 swap 到 disk，讓正在執行的 process 有更多記憶體可用。"
+   ],
+   "points": [
+    {
+     "t": 2,
+     "text": "Swapping：已 load 的 memory content 在 memory 與 disk 之間移動（不是 loader 的工作）。"
+    },
+    {
+     "t": 44,
+     "text": "Swap 到 disk 上 OS 專用的 swap space（backing store），安裝 OS 時決定大小；連 swap 都用完才會 out of memory。"
+    },
+    {
+     "t": 116,
+     "text": "用途：midterm scheduling 把整個 process swap 出去；virtual memory 則以 page（4KB）為單位。Swap space 不是 user 檔案，由 OS 直接管理。"
+    },
+    {
+     "t": 205,
+     "text": "目的：free out memory，讓重要、正在執行的 process 有更多 memory。"
+    }
+   ]
+  },
+  {
+   "title": "Swapping 要配合 execution-time binding",
+   "scene": "mem-10d-bind",
+   "cues": [
+    243.3,
+    255.1,
+    278.1,
+    294.4,
+    306.8,
+    335.1
+   ],
+   "explain": [
+    "swapping（或 virtual memory）跟 address binding 有什麼關係？其實之前已經講過了。",
+    "如果 binding 是在 compile time 或 load time，要 swap 也不是不行，但 swap 回來時必須回到「原來的位置」，因為位址已經寫死了。",
+    "你離開的空間會給別人用。等你要回來時，佔住那裡的人必須先離開才行。",
+    "問題是，當初把你踢掉的那個人可能更重要。它一直站在那裡，你就永遠沒機會回到原位，只能一直等，非常沒有彈性。",
+    "如果是 execution time binding，就透過 base register 和 MMU 在 run time 決定位置，swap 回來的地方可以不一樣，只要改 base 值就好。這樣才能有效利用記憶體。",
+    "所以 swapping 一定要跟 execution time binding 一起使用才有效果，不然效果會很差。"
+   ],
+   "points": [
+    {
+     "t": 243,
+     "text": "Compile/load time binding 下，swap 出去的 process 必須回到原位置；原位置被更重要的 process 佔住就可能永遠回不去。"
+    },
+    {
+     "t": 307,
+     "text": "Execution time binding 靠 MMU 的 base register 在 run time 決定位置，可以 swap 回不同地方；swapping 一定要配合它才有效。"
+    }
+   ]
+  },
+  {
+   "title": "只有 idle 的 process 能 swap：I/O 與 OS buffer",
+   "scene": "mem-10d-io",
+   "cues": [
+    345.1,
+    371.5,
+    382.3,
+    394.8,
+    403,
+    422,
+    459.3,
+    491.4,
+    507.8,
+    527.4,
+    545,
+    556.8
+   ],
+   "explain": [
+    "有一個很重要的觀念：一個 process 已經 load 了，現在暫時不用，想把它 swap 到 disk。可是 OS 在 swap 之前必須先做檢查。",
+    "process 不是隨時都能 swap，它必須是所謂的 idle（閒置）。",
+    "idle 是什麼意思？簡單講，它不能正在做 I/O。",
+    "還記得嗎？OS 的設計就是讓 CPU time 和 I/O time 重疊（overlap），CPU 在算別人的時候，I/O 同時在進行。",
+    "所以一個在 waiting queue 的 process，雖然沒在用 CPU，但如果它在做 I/O，I/O device 正透過 memory bus，把資料從硬碟搬到它的記憶體空間。",
+    "這時候把它 swap 掉就完了：I/O device 會把資料寫到錯的地方，或根本沒地方可寫。",
+    "所以在 I/O 的 waiting queue 裡不能做 swapping；如果是 sleep 的 waiting queue 就可以。",
+    "解法有兩個。第一個比較強硬：程式要做 I/O 前設一個 flag，OS 知道它在做 I/O，就先不 swap，等它做完再說。",
+    "第二個比較常用：程式做 I/O 其實是透過 OS，所以 OS 會替它建立一個 OS buffer（緩衝區）。",
+    "I/O 的資料先搬到 OS 的記憶體裡。程式自己的記憶體沒被碰到，所以它可以放心被 swap 掉。",
+    "等 I/O 做完、程式被 swap 回記憶體，再把 OS buffer 的內容 copy 到程式的記憶體空間。",
+    "這就是所謂的 buffering。OS 一定存在記憶體裡、不會被 swap，所以 OS 會建立很多 buffer 做這件事，讓使用者程式的記憶體可以清出來給別人用。"
+   ],
+   "points": [
+    {
+     "t": 345,
+     "text": "Swap 前 OS 要檢查：process 必須 idle，不只不用 CPU，也不能在做 I/O。"
+    },
+    {
+     "t": 395,
+     "text": "CPU 與 I/O overlap：在 I/O waiting queue 的 process，I/O device 仍透過 memory bus 寫入它的 memory，此時 swap 會寫錯；sleep queue 則可以。"
+    },
+    {
+     "t": 491,
+     "text": "解法一：做 I/O 時設 flag 不 swap；解法二（常用）：I/O 先寫到 OS buffer，程式可被 swap，回來後再 copy（buffering）。"
+    }
+   ],
+   "trap": "在 waiting queue 不代表能 swap：等 I/O 的 process 的 memory 仍在被 device 使用。"
+  },
+  {
+   "title": "Swapping 的時間",
+   "scene": "mem-10d-time",
+   "cues": [
+    613.1,
+    629.9,
+    650.8,
+    665.8
+   ],
+   "explain": [
+    "swapping 的時間很重要。一直強調：disk 很慢、CPU 很快，memory 也比 disk 快很多，至少 100 倍。",
+    "swapping 的時間跟搬的大小成正比。如果一次 swap 整個 process，而它有 4GB 的記憶體，就要搬 4GB 到 disk，非常久。",
+    "所以要讓搬的資料越少越好；還有不要搬錯人——把 P1 搬走，結果使用者馬上又要執行 P1，又得搬回來，那就慘了。",
+    "第九章 virtual memory 討論的就是這件事：不搬整個程式，一次只搬一個 4KB 的小 page，再用演算法決定誰要被 swap，盡量減少搬的次數。這裡先有概念就好。"
+   ],
+   "points": [
+    {
+     "t": 613,
+     "text": "Disk 比 memory 慢很多（至少 100 倍），swapping 時間與 size 成正比：4GB 的 process 要搬 4GB。"
+    },
+    {
+     "t": 651,
+     "text": "要搬得越少越好，也不要搬錯人；第九章 virtual memory 一次只搬 4KB page，並用演算法決定 swap 誰。"
+    }
+   ]
+  },
+  {
+   "title": "Contiguous allocation：fixed vs variable partition",
+   "scene": "mem-10d-part",
+   "cues": [
+    700.2,
+    717.1,
+    730,
+    738.5,
+    769.2,
+    787.2,
+    813.4,
+    837.9,
+    865.4,
+    895.8,
+    937.9,
+    964.8
+   ],
+   "explain": [
+    "接下來進入這章的重點：allocation（配置）。先只看 memory，把 disk 丟一邊：記憶體要怎麼分配給這些程式？",
+    "第一種叫 contiguous allocation，簡單講就是「連續」：給你一整塊連續的空間。",
+    "比較難的是 discontiguous，也就是不連續的，等一下再講。",
+    "連續比較符合我們寫程式的概念：講 code、heap、stack 時，我們都說它是連續的，畫圖也畫成連續的。",
+    "連續配置的第一種做法叫 fixed partition（固定分割）：先把實體記憶體切成固定大小的區塊。",
+    "老師喜歡用停車場比喻：fixed partition 就像現在的停車場，切成一格一格相同大小的停車格。",
+    "一台車只能停一格。切了幾格，就代表最多能有幾個程式同時在記憶體裡，也就是 degree of multiprogramming（多工程度）。這樣很好控制，管理也很單純：一人一個位置。",
+    "問題是：一台小機車只用了四分之一格，整格卻被佔住，旁邊明明還能再停兩三台，很浪費空間。",
+    "所以有 variable size partition（可變大小分割）：你要多少空間，就切多少給你，每個人分到的大小不一樣。",
+    "這樣用就會出現一些「洞」（hole，空著的區塊），就像大家亂停車一樣。",
+    "為什麼會有洞？就算一開始填滿，process 大小都不同，而且會進來又離開（join or leave）；離開之後就留下洞，而且 run time 不斷在變化。",
+    "如果記憶體上面有一個大洞、下面有一個小洞，新來的程式都塞得下，那要塞哪一個？這就是接下來的演算法要決定的。"
+   ],
+   "points": [
+    {
+     "t": 700,
+     "text": "本章重點 allocation：contiguous（連續）比較符合 programming 的概念；discontiguous 稍後講。"
+    },
+    {
+     "t": 769,
+     "text": "Fixed partition：把 memory 切成相同大小的格子（像停車格），一個 process 一格，格數就是 degree of multiprogramming；問題是小程式佔大格很浪費。"
+    },
+    {
+     "t": 865,
+     "text": "Variable size partition：要多少切多少；process 進進出出會留下 hole，要決定塞進哪個 hole。"
+    }
+   ]
+  },
+  {
+   "title": "First fit、Best fit、Worst fit",
+   "scene": "mem-10d-fit",
+   "cues": [
+    993.5,
+    997.9,
+    1010.2,
+    1033.5,
+    1052.9,
+    1066.8,
+    1086.9,
+    1109.5,
+    1125.1,
+    1144.8
+   ],
+   "explain": [
+    "最基本、最直覺的三種演算法：first fit、best fit、worst fit。老師沒給數字，畫面用示意的洞：30K、70K、40K、90K，要放一個 35K 的程式。",
+    "first fit：從頭開始找，第一個塞得下的就停進去，免得被別人搶走。30K 不夠，70K 夠，放進去後剩 35K。",
+    "best fit：把全部的洞都看一遍，找最 match（最剛好）的那個。夠大的有 70K、40K、90K，最小的是 40K，放進去只剩 5K，看起來最替別人著想。",
+    "但出發點好，結果不一定好：best fit 還是會剩空間，而且剩得更小，小到很難再有人能用，反而等於浪費。",
+    "worst fit 的想法倒過來：不跟人家爭，直接找最大的洞 90K 來用。",
+    "它的想法是：大洞用掉一部分之後，剩下的 55K 還很大，別人還能用，不會直接變成浪費。運氣好說不定剛好全部用完。",
+    "考試可能會給你一連串誰進來、誰離開，要你用這三個規則模擬擺放的位置。課本後面有簡單的習題可以練習。",
+    "實際上哪個最好？其實比較多人用 first fit。因為這些都是 heuristic（經驗法則），不保證結果一定比較好。",
+    "但有一點確定：first fit 的 complexity，average case 一定最好。運氣好很快就找到第一個洞，然後就結束，不需要掃過整個記憶體的 list。",
+    "best fit 和 worst fit 一定要全部掃過一遍才能決定，比較花時間；效能又沒有保證比較好，所以實作上大家就選比較有效率的 first fit。"
+   ],
+   "points": [
+    {
+     "t": 993,
+     "text": "First fit：從頭找第一個塞得下的 hole；best fit：全部找過、挑最剛好（最小且夠大）的；worst fit：挑最大的 hole。"
+    },
+    {
+     "t": 1033,
+     "text": "Best fit 剩下的空間往往小到難以再用；worst fit 的想法是剩下的還夠大給別人用。"
+    },
+    {
+     "t": 1109,
+     "text": "實務上多用 first fit：average case 最快，找到第一個就結束；best / worst fit 要掃過整個 list。"
+    }
+   ],
+   "trap": "best fit 不一定最省空間：它常留下很小、沒人能用的 hole。"
+  },
+  {
+   "title": "External vs internal fragmentation",
+   "scene": "mem-10d-frag",
+   "cues": [
+    1164.9,
+    1178.8,
+    1192.1,
+    1197.7,
+    1209.8,
+    1237.2,
+    1267.1,
+    1287.2,
+    1311.1,
+    1343.2,
+    1357.8,
+    1370,
+    1400.9
+   ],
+   "explain": [
+    "剛才兩種 allocation 最大的問題是什麼？都可能造成空間的浪費。",
+    "這種浪費在記憶體管理裡有一個專有名詞，一定要記住：fragmentation（碎裂），指的是零零碎碎的空間。",
+    "fragmentation 分成兩種：external（外部）和 internal（內部）。",
+    "external 照英文解釋就好，意思是「在程式外面」。左邊這些洞都在程式中間，例如 P1 和 P2 中間。",
+    "如果現在有一個程式 P4 要執行，卻塞不進任何一個洞——明明有空的地方卻沒辦法擺程式，這就叫 external fragmentation，浪費在任何 process 之外。",
+    "這只會在 variable size 發生。fixed size 大家都切好格子，只要有 process 來，一定找得到一格停進去。",
+    "internal 則是右邊 fixed partition 會發生的事：每個 process 需要的空間都不一樣。",
+    "但 fixed partition 不管，就給你一整格。配給你的空間裡，沒用到的部分就浪費了，這叫 internal fragmentation，就像重型機車佔一整格，別人看了很眼紅。",
+    "internal 沒什麼好的解法，唯一辦法是把車位切得更小——這就是下一次要講的 paging 想解決的問題。",
+    "如果是 variable size，解法是 compaction（壓縮、緊縮）。",
+    "定期整理一次記憶體，把程式往一邊搬，空間就清到一起，變成一個大洞，P4 就放得下了。",
+    "compaction 和 external fragmentation 在 disk 空間配置上更常發生。電腦變慢時有人叫你「清理硬碟」（磁碟重組），其實就是在做 compaction。",
+    "記憶體也有同樣的現象，但之後會看到記憶體會先切成很小的 page，所以這問題其實不多，除非用最傳統的 variable size。"
+   ],
+   "points": [
+    {
+     "t": 1165,
+     "text": "Fragmentation：零碎、浪費的空間，分 external 與 internal。"
+    },
+    {
+     "t": 1197,
+     "text": "External：hole 在 process 之間，加起來有空間卻塞不進任何一個 hole；只發生在 variable size。"
+    },
+    {
+     "t": 1267,
+     "text": "Internal：fixed partition 給的區塊比需要的大，區塊內沒用到的空間；解法是把區塊切小（paging）。"
+    },
+    {
+     "t": 1343,
+     "text": "External 的解法：compaction，定期把 process 搬到一起、合併 hole；disk 上更常見。Memory 先切成小 page，所以較少發生。"
+    }
+   ],
+   "trap": "external 浪費在 process 之間（variable size）；internal 浪費在配出去的區塊裡面（fixed size）。"
+  },
+  {
+   "title": "Paging 入門：page、frame、page table",
+   "scene": "mem-10d-paging",
+   "cues": [
+    1428.9,
+    1436.2,
+    1455.8,
+    1482.5,
+    1512.5,
+    1520.9,
+    1540.2,
+    1575.8,
+    1598,
+    1609.3,
+    1641.8,
+    1670,
+    1706.9,
+    1740.1
+   ],
+   "explain": [
+    "接下來講一點 paging（分頁）。它跟剛剛的差別在哪？",
+    "剛才講的都是 contiguous（連續）。另一種放法叫 non-contiguous：單一程式的記憶體空間本身就是不連續的。",
+    "不連續的方法也分兩種：variable size 的（之後的 segmentation）和 fixed size 的。fixed size 的 non-contiguous，就是 paging。",
+    "怎麼做到不連續？我們有 logical（virtual）address 和 physical address，擺放就是在兩者之間做 mapping。之前只切 physical，現在 logical 這邊也切。",
+    "physical 那邊切出來的一個一個單位，叫做 frame（頁框），像車位一樣，是一塊實體空間。",
+    "logical 這邊切出來的叫做 page（頁），你的程式其實就是一堆 page。",
+    "嚴格來說這兩個詞不能互換：frame 指實體記憶體的空間，page 指程式那邊。但因為要做 mapping，兩者的 size 完全相同，所以常有人混著用。",
+    "一個程式依它的大小，會變成若干個 page。不管多少個，目的就是找到相同數量的 frame，把它們擺進去。",
+    "要做到這件事，OS 第一要知道哪些 frame 是 free（空的），才能分配。",
+    "第二件、也是本章重點：page table（分頁表）。它記錄 page number 和 frame number 之間的 mapping，其實就是一個 array，翻譯時需要的資訊都在裡面。",
+    "用了 page table，第一個好處：實體空間可以用不連續的方式分配。使用者以為自己的空間是連續的，實際上 page 散落在不同的 frame。",
+    "第二個好處：page 是固定大小，所以完全沒有 external fragmentation。internal fragmentation 可以盡量減少：page 切越小，最大浪費就越小；但也不能太小，page table 會很大、很慢，有 tradeoff。",
+    "第三個、非常重要的好處：share memory。之前講的 shared memory、dynamic linking 的 shared library，就是在 page table 動手腳：讓不同程式指到同一個 frame，看到的東西就一樣，不必複製。",
+    "為什麼要切成 page？因為我們不是 share 整支程式，可能只 share code section、library 的某個 function。切割之後，才能做這種細粒度（fine-grained）的 sharing。"
+   ],
+   "points": [
+    {
+     "t": 1429,
+     "text": "Non-contiguous allocation：單一程式的 memory 本身不連續；fixed size 的 non-contiguous 就是 paging。"
+    },
+    {
+     "t": 1482,
+     "text": "Logical 與 physical 都切成相同大小：physical 的叫 frame，logical 的叫 page，兩者不能互換。"
+    },
+    {
+     "t": 1598,
+     "text": "OS 要知道哪些 frame 是 free，並用 page table（array）記 page number ↔ frame number。"
+    },
+    {
+     "t": 1642,
+     "text": "好處：physical 可不連續分配、沒有 external fragmentation、internal 可減少，並能做 fine-grained 的 shared memory。"
+    }
+   ],
+   "trap": "frame 是 physical、page 是 logical，兩者大小相同但名詞不能混用。"
+  },
+  {
+   "title": "Page table 圖例：1、4、3、7",
+   "scene": "mem-10d-pt",
+   "cues": [
+    1768.3,
+    1781.1,
+    1791.8,
+    1797.3,
+    1813.2,
+    1823.8,
+    1844,
+    1863.5,
+    1873.1,
+    1913.6
+   ],
+   "explain": [
+    "看這張圖就一目瞭然。左邊是你的程式的 logical memory space，切成 page 0 到 page 3。",
+    "右邊是實體記憶體，切成一格一格的 frame，大小都一模一樣。",
+    "為什麼要 page table？比如 page 0 放到的是 frame 1，就在表的第 0 格寫 1。",
+    "page 1 放到 frame 4……可以隨便亂放，只要 page table 裡記好 mapping：0→1、1→4、2→3、3→7。",
+    "這張表就是我們說的 page table，靠它就能做不連續（discontinuous）的配置。",
+    "page table 是執行一個程式時需要的另一個資料結構。它由 OS 配置、維護，使用者不能碰，有點像 process control block。",
+    "很重要的一點：每個 process 都有自己的 page table。另一支程式的 page 0，對到的可能是 frame 2，它的表第 0 格就寫 2。",
+    "但我們可以做 sharing：只要兩張表裡的 pointer（frame number）寫得一樣，例如都寫 4（示意），兩個程式就共用那塊記憶體。",
+    "還有 protection（保護）：程式不能存取別人的記憶體。只要 page table 裡沒寫別人的 frame number 就好。這張表只有 1、4、3、7，MMU 翻譯時只會碰到這四個 frame，別人的 frame 5 根本指不到。",
+    "後面的 translation 下次講。要注意程式用的是 byte address（以 byte 為單位的位址），要把「某個 page 的第幾個 byte」轉成「實體的第幾個 byte」，不只是 page 對 frame 而已。"
+   ],
+   "points": [
+    {
+     "t": 1768,
+     "text": "圖例：page 0、1、2、3 分別放在 frame 1、4、3、7，記在 page table。"
+    },
+    {
+     "t": 1824,
+     "text": "Page table 由 OS allocate、maintain，使用者不能碰；每個 process 有自己的 page table。"
+    },
+    {
+     "t": 1863,
+     "text": "Frame number 寫一樣就能 sharing；表裡沒有別人的 frame 就存取不到，達成 protection。"
+    },
+    {
+     "t": 1913,
+     "text": "下次講 byte address 層級的 translation。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Swap space（backing store）的特性是？",
+   "opts": [
+    "屬於 file system 的一般檔案",
+    "Disk 上 OS 專用、不歸 file system 管的一塊空間",
+    "位於 CPU cache",
+    "只在 compile time 使用"
+   ],
+   "ans": "Disk 上 OS 專用、不歸 file system 管的一塊空間",
+   "why": "Swap space 放的是 memory content（page），不是 user 檔案，由 OS 直接管理。"
+  },
+  {
+   "q": "為什麼 swapping 要配合 execution-time binding？",
+   "opts": [
+    "Swap 回來時才能放到不同位置",
+    "可以避免 I/O",
+    "可以不需要 disk",
+    "可以省 TLB"
+   ],
+   "ans": "Swap 回來時才能放到不同位置",
+   "why": "Compile/load time binding 必須回原位置，可能永遠等不到；execution time 改 base register 即可。"
+  },
+  {
+   "q": "哪種 process 不能被 swap 出去？",
+   "opts": [
+    "在 sleep queue 的",
+    "在 ready queue 的",
+    "正在等 I/O、device 正寫入它 memory 的",
+    "已經結束的"
+   ],
+   "ans": "正在等 I/O、device 正寫入它 memory 的",
+   "why": "I/O device 透過 memory bus 寫它的 memory，swap 掉會寫錯；可用 OS buffer 解決。"
+  },
+  {
+   "q": "Holes 依序為 30K、70K、40K、90K，要放 35K。Best fit 會選哪個？",
+   "opts": [
+    "30K",
+    "70K",
+    "40K",
+    "90K"
+   ],
+   "ans": "40K",
+   "why": "Best fit 挑夠大的裡面最小的：40K（剩 5K）；first fit 選 70K，worst fit 選 90K。"
+  },
+  {
+   "q": "實務上最常用哪個演算法，為什麼？",
+   "opts": [
+    "Best fit，最省空間",
+    "Worst fit，剩下的最大",
+    "First fit，找到第一個就停，average case 最快",
+    "三者都不用"
+   ],
+   "ans": "First fit，找到第一個就停，average case 最快",
+   "why": "Best/worst fit 要掃整個 list，效能又沒保證較好。"
+  },
+  {
+   "q": "Fixed partition 給 process 的區塊比需要的大，區塊內沒用到的空間叫？",
+   "opts": [
+    "External fragmentation",
+    "Internal fragmentation",
+    "Compaction",
+    "Hole"
+   ],
+   "ans": "Internal fragmentation",
+   "why": "Internal：浪費在配出去的區塊裡面；external：hole 在 process 之間。"
+  },
+  {
+   "q": "Paging 中 physical memory 切出的單位叫什麼？",
+   "opts": [
+    "Page",
+    "Frame",
+    "Segment",
+    "Hole"
+   ],
+   "ans": "Frame",
+   "why": "Physical 切出來的是 frame，logical 切出來的是 page，兩者大小相同。"
+  }
+ ]
+}

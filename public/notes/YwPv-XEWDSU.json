@@ -1,0 +1,310 @@
+{
+ "video": "YwPv-XEWDSU",
+ "label": "清大周志遠 第10C講 Memory Management",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Loader 跟 swapper 不一樣",
+   "scene": "mem-10c-swapper",
+   "cues": [
+    1.8,
+    49.8,
+    68.5,
+    77.2,
+    83.1,
+    125.8,
+    164,
+    170.8,
+    196.8
+   ],
+   "explain": [
+    "同學問了一個問題，正好釐清一下。我們說 load time 的 address binding，是在把 disk 上的 disk image（程式檔）load 到記憶體時做的。",
+    "而 run time 的情況，例如 virtual memory 做 swapping 時，是把記憶體內容從 disk 搬回來之後，再設定位址、做 translation。",
+    "兩者很像的地方：都是把程式的記憶體內容從 disk 搬到 memory。",
+    "但做這件事的人不同：一個是 loader（載入器），一個是 swapper（負責 swapping 的元件），它們是不同的程式、不同的系統元件。",
+    "loader 假設整個程式是「重新開始」的，要做非常多事：建立 PCB、初始化記憶體、建立 heap、stack 等管理用的資料結構。它是把 program 變成 process 的過程，很複雜。",
+    "swapper（下一章 virtual memory 會介紹）只是單純搬運記憶體內容：不要了就搬到 disk，要了就搬回來，就只是 memory 和 disk 之間的 data copy。",
+    "所以如果叫 loader 去改程式的位置，意思就是整個程式重跑。",
+    "而 virtual memory 的機制是 run time 的：先把內容搬到確定的位置，再很簡單地修改一下對應的值就好。",
+    "所以一個叫 load time、一個叫 run time。雖然都跟 memory 和 disk 有關，但 load 是 program 變 process，swap 只是資料搬移，差別很大。"
+   ],
+   "points": [
+    {
+     "t": 2,
+     "text": "Load-time binding 發生在 disk image → memory；run time（swapping）則是把 content 從 disk 搬回時再設 address。"
+    },
+    {
+     "t": 68,
+     "text": "兩者都把 memory content 從 disk 搬到 memory，但 loader 與 swapper 是不同的 system component。"
+    },
+    {
+     "t": 83,
+     "text": "Loader 假設程式重新開始：create PCB、初始化 memory、heap、stack，是 program → process；swapper 只做 memory ↔ disk 的 data copy。"
+    },
+    {
+     "t": 164,
+     "text": "Loader 改位置 = 整個程式重跑（load time）；virtual memory 在 run time 只改 mapping 的值。"
+    }
+   ]
+  },
+  {
+   "title": "Static linking 的問題",
+   "scene": "mem-10c-static",
+   "cues": [
+    221.8,
+    231.1,
+    246.8,
+    261.1,
+    271.1,
+    283.5,
+    296.8,
+    313.8,
+    340.8
+   ],
+   "explain": [
+    "回到剛才的 linking（連結）。",
+    "一般的 static linking（靜態連結），就是你現在用 gcc 預設的做法：gcc 會呼叫 linker。",
+    "你的程式本來很小，link 完卻發現 binary 檔變大了。因為 linker 把其他 library 的程式碼一起綁進來。",
+    "最後變成一個 single binary：所有需要的 code 都已經放在同一個檔案裡。",
+    "loader load 的時候，拿到的就是一整包，它也不知道怎麼分，就整個 load 到記憶體。",
+    "問題是：library 之所以叫 library，就是大家都要用。很多程式一定 share 很多 library，尤其是 C library，於是每支程式都帶著一份。",
+    "library 都不小，記憶體可能就被這些重複（duplicate）的 library 佔滿，非常不理想。",
+    "要注意，這跟剛才的 dynamic loading 不一樣。dynamic loading 只管「一支程式」自己什麼時候用到某段 code。",
+    "這裡是跨程式的問題：對每支程式來說它就是需要這個 library，終究要 load。所以就算 static linking 加上 dynamic loading，每支程式還是各有一份 copy。"
+   ],
+   "points": [
+    {
+     "t": 222,
+     "text": "Static linking：gcc 呼叫 linker，把 library 的 code 一起綁進 single binary，binary 變大，loader 整包 load。"
+    },
+    {
+     "t": 283,
+     "text": "Library 大家都要用，每支程式各帶一份，memory 被 duplicate 的 library 佔滿。"
+    },
+    {
+     "t": 314,
+     "text": "這是跨程式的問題，和 dynamic loading（只管一支程式）不同；static linking 加 dynamic loading 仍會各有一份 copy。"
+    }
+   ]
+  },
+  {
+   "title": "Dynamic linking：library 只放一份",
+   "scene": "mem-10c-dynlink",
+   "cues": [
+    358.5,
+    378.8,
+    384.5,
+    399.8,
+    408.8,
+    416.4,
+    433.3
+   ],
+   "explain": [
+    "解法就是 dynamic linking（動態連結）。linking 是「你的 function 去 call 另一個 library 的 function」，dynamic 的意思是：到 run time 才 link。",
+    "看右邊的圖：程式 load 進記憶體時，可能只有 main program。",
+    "要用 C library 時，其實只需要放一份。因為 library 不會被修改（immutable，就是 static 的 code），所以大家可以 share。",
+    "當程式要 call printf 時，再 link 到 C library 裡 printf 的 function code 就好。",
+    "為什麼要在 run time？假設第一支程式先 call，那時才把 library load 到記憶體，開始使用。",
+    "第二支程式也要 call printf 時，它先去看這個 library 是不是已經 load 在記憶體了；有的話就直接用，不需要自己再 copy 一份。",
+    "如果都沒人用過，當然還是要 load。但 OS 會確保整個系統只有一份 library，就沒有重複的問題。"
+   ],
+   "points": [
+    {
+     "t": 358,
+     "text": "Dynamic linking = run time linking：程式 load 時只有 main program，call 到 library function 時才 link。"
+    },
+    {
+     "t": 384,
+     "text": "Library 是 immutable 的，可以 share：第一支 call 時 load，之後的程式先看 memory 裡有沒有，有就直接用。"
+    },
+    {
+     "t": 433,
+     "text": "OS 確保整個系統只有一份 library，沒有 duplication。"
+    }
+   ]
+  },
+  {
+   "title": "實作：dynamic library 與 stub",
+   "scene": "mem-10c-stub",
+   "cues": [
+    446.8,
+    458,
+    468.1,
+    478.5,
+    494.2,
+    505.8,
+    519.6,
+    547.8,
+    583.9,
+    602.8,
+    625.3
+   ],
+   "explain": [
+    "要真正做到 dynamic linking，compile library 的時候有兩種方式。",
+    "一種是 compile 成 dynamic library，另一種是 compile 成 static library。",
+    "Windows 裡大家很熟悉的 DLL（dynamic-link library）就是這個：系統資料夾裡一大堆 .dll 檔，全部都是 dynamic library。",
+    "為了系統效能，通常會偏好 dynamic library：run time call 它的時候，它才會被 load 到記憶體。",
+    "所以你 compile 自己的程式、include library 時，也要對 linker 下一個 flag，告訴它這個 library 是 dynamic 還是 static。",
+    "如果是 static，就像前面看到的：把程式全部綁在一起變一包丟給 loader，binary 裡什麼都有。",
+    "如果是 dynamic：library 本身必須先 compile 成 dynamic library 的形式；而你的 binary 會比較小，因為根本還沒把 library 的 code 放進去。",
+    "架構是這樣：用 dynamic 時，compile 和 link 的過程中，linker 會幫你偷加一段很簡單的小程式，叫 stub（替身）。",
+    "stub 是 function 層級的：程式 call 這個 function 時，先執行 stub，它去問 OS：「這個 library 已經 load 了嗎？在哪裡？」",
+    "被 call 的 library 那邊也要配合修改，所以 compile library 時要說明它是不是 dynamic library，OS 才能讓它和你的程式在 run time 溝通。",
+    "stub 問到位置，就完成 linking；如果還沒有，就請 OS 先把它 load 進來。這就是 dynamic linking。"
+   ],
+   "points": [
+    {
+     "t": 447,
+     "text": "Library 可 compile 成 dynamic library（如 Windows 的 DLL）或 static library；為了效能通常 prefer dynamic。"
+    },
+    {
+     "t": 494,
+     "text": "Compile 程式時要對 linker 下 flag：static 就全部綁進 binary；dynamic 則 binary 比較小。"
+    },
+    {
+     "t": 548,
+     "text": "Linker 會偷加一段 stub：run time 問 OS library 有沒有 load、在哪，找到就 link，沒有就先 load。"
+    }
+   ]
+  },
+  {
+   "title": "Dynamic vs static linking 的取捨",
+   "scene": "mem-10c-cmp",
+   "cues": [
+    637.3,
+    650.4,
+    662.4,
+    689.8,
+    695.8,
+    720.5,
+    745.8
+   ],
+   "explain": [
+    "dynamic linking 和 dynamic loading 的差別在於：它能一直節省記憶體，而且是節省「程式之間」重複的部分。",
+    "這件事 programmer 沒辦法細部控制，只能決定用 dynamic library 還是 static library；一旦選了，裡面所有 function 都用那種方式 link。",
+    "小缺點：比起 static，多了 stub。執行時要先去找 code、問 OS，所以 execution 會稍微慢一點，當然不是很多。",
+    "static 的好處就是比較快，而且不需要 OS 的支援。",
+    "像 embedded 或越來越多的 IoT 裝置，OS 很簡單，可能根本不支援 dynamic linking——這件事是需要 OS 配合的。",
+    "順帶一提：不管用 dynamic linking 還是 dynamic loading 去存取 library，那個 library 都叫 dynamic library，只是用法不同。",
+    "如果是 static library 就沒得選，兩件事都不能做。這兩件事，一個是 OS 幫你做（linking），一個是 programmer 自己做（loading）。"
+   ],
+   "points": [
+    {
+     "t": 637,
+     "text": "Dynamic linking 最大貢獻是節省「程式之間」的 memory；programmer 只決定用 dynamic 或 static library。"
+    },
+    {
+     "t": 662,
+     "text": "缺點：多了 stub，run time 要找 code，執行稍慢；static 比較快、不需要 OS support（embedded、IoT 可能不支援 dynamic）。"
+    },
+    {
+     "t": 720,
+     "text": "Dynamic library 可用在 dynamic linking（OS 做）或 dynamic loading（programmer 做）；static library 兩者都不能。"
+    }
+   ],
+   "trap": "dynamic loading 由 programmer 控制、解決單一程式不用的 code；dynamic linking 由 OS 支援、解決跨程式重複的 library。"
+  },
+  {
+   "title": "前半段重點整理",
+   "scene": "mem-10c-review",
+   "cues": [
+    765.2,
+    773.8,
+    781.2,
+    804.4,
+    825,
+    833.1
+   ],
+   "explain": [
+    "整理前半段。三種 address binding（compile、load、execution time）的差別一定要很清楚。",
+    "越往下（execution time）越有彈性，可以在 run time 做很多記憶體管理。",
+    "越往上越簡單，OS 設計簡單，執行也通常比較快，因為沒有 run time 那些額外工作——MMU 就算是硬體，翻譯也要時間。所以越簡單的裝置可能選上面的方式。",
+    "virtual address 和 physical address 的區隔很明顯：一個是從 CPU 送出來的，一個是送進 memory 的。",
+    "我們寫程式是「對著 CPU 寫」，所以看到的都只是 virtual address。",
+    "最後是 dynamic linking 和 loading。這很常見：自己裝比較複雜的系統套件時，常會被問是 static 還是 dynamic；寫程式遇到 porting（移植）問題，也常用 dynamic loading 解決。"
+   ],
+   "points": [
+    {
+     "t": 765,
+     "text": "三種 address binding：越下面（execution time）越有彈性；越上面（compile time）越簡單、越快。"
+    },
+    {
+     "t": 804,
+     "text": "Virtual address 是 CPU 送出來的，physical address 是送進 memory 的；我們寫程式只面對 virtual address。"
+    },
+    {
+     "t": 833,
+     "text": "Dynamic linking 與 loading 很常見：安裝套件時會遇到 static/dynamic，porting 問題常靠 dynamic loading 解決。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Loader 和 swapper 的主要差別是？",
+   "opts": [
+    "Loader 只搬 data，swapper 會 create PCB",
+    "Loader 把 program 變成 process（create PCB、初始化等）；swapper 只在 memory 與 disk 之間 copy data",
+    "兩者完全相同",
+    "Swapper 在 compile time 執行"
+   ],
+   "ans": "Loader 把 program 變成 process（create PCB、初始化等）；swapper 只在 memory 與 disk 之間 copy data",
+   "why": "Loader 假設程式重新開始，要做很多初始化；swapper 只搬 memory content。"
+  },
+  {
+   "q": "Static linking 的 binary 為什麼比較大？",
+   "opts": [
+    "加了 stub",
+    "Library 的 code 被一起綁進 binary",
+    "包含了 page table",
+    "包含 swap space"
+   ],
+   "ans": "Library 的 code 被一起綁進 binary",
+   "why": "Linker 把需要的 library code 全部放進 single binary。"
+  },
+  {
+   "q": "多個程式都用 C library 時，dynamic linking 怎麼省 memory？",
+   "opts": [
+    "把 library 壓縮",
+    "Library 在系統中只放一份，大家 run time link 到同一份",
+    "每支程式只 load 用到的 function",
+    "把 library 放到 disk 不 load"
+   ],
+   "ans": "Library 在系統中只放一份，大家 run time link 到同一份",
+   "why": "Library 是 immutable 的，OS 確保只有一份，第二支程式發現已 load 就直接用。"
+  },
+  {
+   "q": "Dynamic linking 中，linker 在程式裡加入、負責在 run time 問 OS library 位置的小程式叫？",
+   "opts": [
+    "Loader",
+    "Swapper",
+    "Stub",
+    "Handler"
+   ],
+   "ans": "Stub",
+   "why": "Stub 會問 OS library 是否已 load、在哪，找到就 link，沒有就先 load。"
+  },
+  {
+   "q": "Dynamic linking 相對於 static linking 的缺點是？",
+   "opts": [
+    "Binary 比較大",
+    "執行時稍慢，且需要 OS 支援",
+    "不能 share library",
+    "會造成 internal fragmentation"
+   ],
+   "ans": "執行時稍慢，且需要 OS 支援",
+   "why": "多了 stub 在 run time 找 code；且簡單的 embedded/IoT OS 可能不支援。"
+  },
+  {
+   "q": "三種 address binding 中，哪一種最有彈性、但需要 MMU 在執行時翻譯？",
+   "opts": [
+    "Compile time",
+    "Load time",
+    "Execution time",
+    "Link time"
+   ],
+   "ans": "Execution time",
+   "why": "越下面越有彈性；越上面越簡單、越快。"
+  }
+ ]
+}
