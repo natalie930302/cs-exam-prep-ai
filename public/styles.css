@@ -7448,3 +7448,7 @@ body#appRoot .fab-nav .fab-btn .ic { width: 18px; height: 18px; }
   body#appRoot #main #sec-subjects > #spPanels > .sp.on > .ch-list { grid-row: 4 / span 3 !important; }
   body#appRoot #main #sec-subjects > #spPanels > .sp.on > :is(.tip, .filter-empty) { grid-row: 7 !important; }
 }
+/* 系列素材：固定展開，標題不能點 */
+body#appRoot .rec-books.rec-fixed .rec-books-hd { cursor: default; pointer-events: none; }
+body#appRoot .rec-books.rec-fixed .rec-books-body { display: block !important; }
+body#appRoot .rec-books.rec-fixed .rec-books-hd::after, body#appRoot .rec-books.rec-fixed .rec-books-hd::before, body#appRoot .rec-books.rec-fixed .rec-books-chevron { display: none !important; content: none !important; }

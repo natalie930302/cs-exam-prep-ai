@@ -1713,14 +1713,15 @@ async function init(){
       + '</div></details>';
 
     var subjectPlaylists = SUBJECT_PLAYLISTS[s.id] || [];
-    var videosHtml = '<details class="rec-books rec-series"><summary class="rec-books-hd">本科完整影片系列素材 <span class="rec-count">'+subjectPlaylists.length+' 套</span><span class="expand-icon rec-books-chevron" aria-hidden="true"></span></summary><div class="rec-books-body">'
+    // always open: a plain card, no toggle
+    var videosHtml = '<div class="rec-books rec-series rec-fixed"><div class="rec-books-hd">本科完整影片系列素材 <span class="rec-count">'+subjectPlaylists.length+' 套</span></div><div class="rec-books-body">'
       + subjectPlaylists.map(function(series){
           return '<div class="rec-book-row rec-series-row"><span class="mat-badge mb-vid">系列</span><div class="rec-book-body">'
             +'<a class="rec-book-name" href="'+series.url+'" target="_blank" rel="noopener">'+series.name+'</a>'
             +'<span class="rec-book-note">開啟完整 YouTube Playlist</span>'
             +'</div></div>';
         }).join('')
-      + '</div></details>';
+      + '</div></div>';
 
     // Chapters render as a numbered sequence (dot + connecting line), the
     // same visual language as the Today page's stepper — one signature
