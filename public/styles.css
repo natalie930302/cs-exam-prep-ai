@@ -7282,3 +7282,10 @@ body#appRoot :is(.sh, .ss) { text-shadow: none !important; }
   .cal-what { font-size: 10px; -webkit-line-clamp: 3; }
   .cal-howmuch { font-size: 9.5px; }
 }
+
+/* 六科章節篩選（全部／必考／高頻／補充）：不要外框，只留按鈕本身 */
+body#appRoot #main .sp .filter-bar, body#appRoot #main .sp .filter-bar .filter-chips {
+  border: 0 !important; background: transparent !important; box-shadow: none !important;
+  backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+}
+body#appRoot #main .sp .filter-bar { padding: 0 !important; }
