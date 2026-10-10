@@ -7502,3 +7502,37 @@ body#appRoot #main #sec-subjects.on > .stabs { margin-top: 16px !important; }
 body#appRoot #sec-schedule .cal-header-card { display: none !important; }
 body#appRoot #sec-schedule > .sh { margin: 0 0 16px !important; }
 @media (min-width: 760px) { body#appRoot #sec-schedule .cal-head .cal-nav { margin-right: 60px !important; } }
+
+/* ── 手機：四邊 16px、標題貼頂（讓開右上懸浮鈕）、月曆一次看到整週 7 天 ── */
+@media (max-width: 759px) {
+  body#appRoot #main { padding: 0 !important; }
+  body#appRoot #main > .sec { padding: 20px 16px 28px !important; }
+  body#appRoot .sec > .sh { font-size: 28px !important; padding-right: 64px; min-height: 44px; display: flex; align-items: center; }
+  body#appRoot #sec-schedule .cal-head .cal-nav { margin-right: 0 !important; }
+  body#appRoot #main .sp .ch-list { padding: 16px !important; }
+  body#appRoot #main .sp :is(.subject-overview-card, .rec-books.rec-series) { padding-left: 16px !important; padding-right: 16px !important; }
+  body#appRoot .rec-books.rec-series .rec-books-hd { padding-left: 16px !important; padding-right: 16px !important; }
+  body#appRoot .rec-books.rec-series .rec-books-body { padding-left: 16px !important; padding-right: 16px !important; }
+}
+@media (max-width: 640px) {
+  body#appRoot #sec-schedule .cal-grid {
+    display: grid !important; grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+    gap: 4px !important; overflow: visible !important; min-width: 0 !important;
+  }
+  body#appRoot #sec-schedule .cal-grid > * { min-width: 0 !important; width: auto !important; }
+  body#appRoot #sec-schedule .cal-dow { padding: 0 0 4px !important; text-align: center; }
+  body#appRoot #sec-schedule .cal-cell { min-height: 64px !important; height: auto !important; padding: 6px 4px !important; border-radius: 10px !important; overflow: hidden; }
+  body#appRoot #sec-schedule .cal-cell .cal-tag { font-size: 9px !important; padding: 1px 4px !important; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  body#appRoot #sec-schedule .cal-cell :is(.cal-what, .cal-howmuch) { display: none !important; }
+  body#appRoot #sec-schedule .cal-title { font-size: 20px !important; }
+}
+/* 手機：懸浮鈕改橫排，剛好放在大標那一行的右邊，不蓋到下面的按鈕 */
+@media (max-width: 759px) {
+  body#appRoot .fab-nav { flex-direction: row !important; top: 18px !important; right: 16px !important; gap: 6px !important; padding: 4px !important; }
+  body#appRoot .fab-nav .fab-btn, body#appRoot .fab-nav .fab-btn.pill { width: 36px !important; height: 36px !important; }
+  body#appRoot .sec > .sh { padding-right: 140px; }
+}
+@media (max-width: 759px) {
+  body#appRoot .sec > .sh { font-size: 24px !important; padding-right: 132px; white-space: nowrap; }
+  body#appRoot .fab-nav .fab-btn, body#appRoot .fab-nav .fab-btn.pill { width: 34px !important; height: 34px !important; }
+}
