@@ -1,0 +1,429 @@
+{
+ "video": "jJZ8egWNiWo",
+ "label": "清大周志遠 第20A講 期中考檢討 & Critical Section補充",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "第 1 題：名詞解釋的 keyword",
+   "scene": "syn-20a-terms",
+   "cues": [
+    15.1,
+    19.7,
+    48.6,
+    55.7,
+    72.8,
+    105.7,
+    121.7
+   ],
+   "points": [
+    {
+     "t": 15,
+     "text": "名詞解釋要有 keyword：system call 是 OS 的 interface（呼叫 OS service）；context switch 是交換執行的 process。"
+    },
+    {
+     "t": 56,
+     "text": "microkernel：modularized，而且把不重要的 component 移到 user space，用 message passing 溝通（常漏掉而被扣分）。"
+    },
+    {
+     "t": 106,
+     "text": "time sharing：分享 CPU（timer 定期 context switch）；privileged instruction：只能在 kernel mode 執行。"
+    }
+   ],
+   "explain": [
+    "這段是期中考檢討。第一題名詞解釋，都是基本觀念；評分標準是一定要提到某些 keyword（關鍵字）。",
+    "[[system call]]：它是 OS 的 interface（介面），程式用它來呼叫 OS 提供的服務，不只是一般的 function call。",
+    "[[context switch]]：process 在執行時，把 CPU 從一個 process 交換給另一個 process 的動作。",
+    "microkernel OS 的第一個重點：它是 modularized（模組化）的，把一個 OS 切成很多 component。",
+    "更重要的第二點：把不重要的 component 都移到 user space（右下綠色區），彼此透過 message passing 溝通。很多人漏掉這個細節被扣一分。",
+    "time sharing：廣義就是讓 CPU 的資源被大家分享；詳細一點，是用 timer 機制定期做 context switch。",
+    "privileged instruction：只有在 [[kernel mode]] 下才能執行的指令。這些解釋都很簡短，但 keyword 一定要有。"
+   ]
+  },
+  {
+   "title": "第 2 題：評分方式（idle）",
+   "scene": null,
+   "points": [
+    {
+     "t": 131,
+     "text": "第 2 題照 slides 的圖自己對照；畫錯一條線或 event 寫錯扣一分，扣到 0 為止。"
+    }
+   ]
+  },
+  {
+   "title": "第 3 題：segmentation 在上、paging 在下",
+   "scene": "syn-20a-segpage",
+   "cues": [
+    161,
+    171.2,
+    181.6,
+    205.1,
+    220.3,
+    225.1,
+    244.6
+   ],
+   "points": [
+    {
+     "t": 159,
+     "text": "一般設計把 segmentation 放在上面（靠近 user）、paging 放在下面。"
+    },
+    {
+     "t": 182,
+     "text": "segmentation 符合程式的 organization（code、heap、local variable，大小不一）；paging 用固定大小的 frame 管 physical memory，好找空間、沒有 external fragmentation。"
+    },
+    {
+     "t": 225,
+     "text": "效能的部分交給底層 paging；方便 compiler 的放在上層 segmentation；答題要講出「為什麼」。"
+    }
+   ],
+   "explain": [
+    "第三題非常重要，上課還特別提醒過。",
+    "問題是：為什麼一般電腦的設計，是 segmentation 放在上面（靠近使用者），paging 放在下面？",
+    "因為 segmentation 比較符合程式碼的組織方式：有放 code 的、放 heap 的、放 local variable 的，每一塊就是一個 segment，大小都不一樣。",
+    "可是 OS 在管理實體記憶體（physical memory）時，希望每一塊大小固定，這樣就能用簡單的 page table mapping 來管理。",
+    "固定大小的好處：很快找到哪裡有空位，而且不會有 external fragmentation（外部碎片）。",
+    "所以效能、比較複雜的部分讓底層的 paging 處理；靠近使用者的那層，方便 compiler 把程式放進 memory，就用 segmentation。",
+    "答題時一定要明確講出為什麼是這樣的順序。這題被扣分的人比較多。"
+   ]
+  },
+  {
+   "title": "第 4–6 題：TLB、dynamic loading / linking、memory-mapped file",
+   "scene": "syn-20a-q456",
+   "cues": [
+    272.2,
+    288.4,
+    299.4,
+    314.2,
+    342.4,
+    358.4,
+    369.7,
+    403.5,
+    440.1
+   ],
+   "points": [
+    {
+     "t": 272,
+     "text": "TLB 是 page table 的 cache；page table 有很多個、TLB 只有一個，所以要 flush。"
+    },
+    {
+     "t": 288,
+     "text": "dynamic loading：減少單一 process 的 memory 使用（用到才 load）；dynamic linking：process 間 share library，runtime 才 link。"
+    },
+    {
+     "t": 342,
+     "text": "memory-mapped file：好處是快；壞處是不 reliable（停電就沒了）、多人修改有 synchronization 問題（file system 會幫忙保護）。"
+    },
+    {
+     "t": 404,
+     "text": "實際應用：Linux 的 I/O device 都有對應的 file，用 memory-mapped 的方式做 I/O，適合大量資料傳輸。"
+    }
+   ],
+   "explain": [
+    "第四題 [[TLB]]：它就是 page table 的 cache（快取）。為什麼 context switch 要 flush 它？因為每個 process 各有一張 page table，TLB 卻只有一個。",
+    "第五題 dynamic loading 和 dynamic linking，答案有點長，最重要的是兩個不要搞反。",
+    "dynamic loading：針對單一個 process，不用一次把整個程式載進 memory，用到才載，減少它的記憶體用量。",
+    "dynamic linking：針對 process 之間共用的 library。執行時（runtime）才去 link 要呼叫的 function；如果別人已經把它載進 memory，就不用再重複載。",
+    "第六題 memory-mapped file：把一個 file 對應到記憶體，直接用讀寫記憶體的方式操作檔案。",
+    "好處：放在 memory 比較快。壞處：不太 reliable（可靠），一停電，memory 裡的東西就全沒了。",
+    "而且記憶體裡的內容可能被很多人同時修改，正是我們現在學的同步問題。透過 file system 開檔，它會幫你保護檔案，像 Word 斷電後還能復原；自己用 memory-mapped file 就得自己想辦法。",
+    "實際上用在哪？大部分 I/O device 都是這樣操作的：在 Linux 裡每個 I/O device 都有一個對應的 file，它其實是 device 的 memory，用 memory-mapped 的方式操作它，就能對 device 做 I/O。",
+    "它主要適合大量資料的傳輸：一次把一整塊資料寫出去。"
+   ]
+  },
+  {
+   "title": "第 7 題：三種 page table 的 use case",
+   "scene": "syn-20a-pagetable",
+   "cues": [
+    462.4,
+    475.6,
+    497.4,
+    522.4,
+    538.1,
+    553.2,
+    586.2,
+    599.6
+   ],
+   "points": [
+    {
+     "t": 462,
+     "text": "要掌握 one-level、hashed、inverted page table 的優缺點。"
+    },
+    {
+     "t": 522,
+     "text": "page table 要拆成小塊：不想 allocate 連續的 physical memory，每塊 fit 一個 frame（通常 4KB），用 pointer 串起來。"
+    },
+    {
+     "t": 553,
+     "text": "scattered user memory → hashed；很快的 memory → one-level（只查一次）；大量 process（不考慮 sharing）→ inverted。"
+    }
+   ],
+   "explain": [
+    "第七題給了三個 use case（使用情境），要大家解釋各適合什麼樣的 page table。",
+    "重點是先掌握三種 page table 的優缺點：一般的 one-level、hashed、還有 inverted page table。",
+    "第一個系統：user memory 很 scattered（分散），實際用到的 frame 不多，但 page 非常分散。",
+    "先看小題：為什麼 page table 要用不同形式存？因為一張大 page table 需要一整塊連續的 physical memory，我們不希望這樣，而且 page table 本身沒辦法再做 mapping。",
+    "所以把它 break down 成很多小塊，用 pointer 串起來，讓每一塊剛好放得進一個 frame（通常就是 4KB）。",
+    "第一個 case 很分散：用 hash。可能出現的號碼範圍很大，但真正用到的很少，每個 bucket 裡的項目就很少，查詢次數少。",
+    "第二個 case 是很快的 memory：one-level 只要查一次 page table 就得到答案，一定最快、最直接（雖然有其他限制）。",
+    "第三個 case 有大量 process：每個 process 都有自己的 page table 會浪費很多 memory；題目又說不需要考慮 page sharing，inverted page table 的缺點就不是問題，所以它最好。"
+   ]
+  },
+  {
+   "title": "第 8 題：Belady's anomaly",
+   "scene": "syn-20a-belady",
+   "cues": [
+    639.4,
+    663.4,
+    699.3,
+    733.2
+   ],
+   "points": [
+    {
+     "t": 639,
+     "text": "Belady's anomaly：增加 frame 數量，page fault 反而增加。"
+    },
+    {
+     "t": 663,
+     "text": "它重要是因為系統管理者沒辦法 tune：不知道給更多 resource 會變好還是變壞。"
+    },
+    {
+     "t": 699,
+     "text": "LRU 沒有這個 anomaly：往過去看，frame 越多就包含越多最近用過的 page；不需要嚴謹證明，講出概念即可。"
+    }
+   ],
+   "explain": [
+    "第八題 Belady's anomaly：增加資源，也就是增加 memory frame 的數量，page fault 次數不但沒減少，反而增加。持平都不算，必須是增加。",
+    "為什麼重要？有這個 anomaly 的話，系統管理者就很難管理：他不知道多給資源，系統會變好還是變壞。系統很多東西是靠 tune（調整）出來的，沒有規律就沒辦法 tune。",
+    "LRU 為什麼沒有這個 anomaly？LRU 是往過去的 history 看。給它越多 frame，它就能包含越多「最近用過」的 page，而且原本會被包含的那些一定還在（3 個 frame 的內容是 4 個 frame 內容的一部分）。",
+    "這題不要求數學或很嚴謹的證明，只要把概念說出來就可以。"
+   ]
+  },
+  {
+   "title": "第 9 題：評分方式（idle）",
+   "scene": null,
+   "points": [
+    {
+     "t": 755,
+     "text": "第 9 題自己把三個 page replacement algorithm 再跑一遍；評分以上一步為基準，要標出造成 page fault 的 page，順序不拘。"
+    }
+   ]
+  },
+  {
+   "title": "第 10 題：page fault 次數",
+   "scene": "syn-20a-faults",
+   "cues": [
+    828,
+    837.3,
+    887.6,
+    914.4,
+    925.3,
+    938.4,
+    962.2,
+    975.6,
+    985,
+    1025.3
+   ],
+   "points": [
+    {
+     "t": 828,
+     "text": "程式的 code 用一個 page，每個 instruction 都會 access 它 → 一直佔住第一個 frame（load 時 1 次 page fault）。"
+    },
+    {
+     "t": 888,
+     "text": "array A：每個 element 4 bytes、每個 page 1000 bytes → 250 個一頁 → 4 個 page；存取順序 1 2 3 4 4 3 2 1，data 只剩 2 個 frame。"
+    },
+    {
+     "t": 938,
+     "text": "第一次掃 4 次 fault；回來時 4、3 hit，2、1 又 fault → 1 + 4 + 2 = 7。"
+    },
+    {
+     "t": 985,
+     "text": "data layout 很重要：分析程式的 page access pattern；切資料用 4KB 對齊 page 可以減少 page fault。"
+    }
+   ],
+   "explain": [
+    "第十題錯的人比較多，但概念很單純。這個程式的 code 只用到一個 page。上面三格是三個 frame。",
+    "每執行一個 instruction，其實都會去 access code 那個 page。所以 load program 時發生第一次 page fault，之後 code 一直佔住第一個 frame，不會再 fault。",
+    "再看資料：array A 每個 element 4 bytes，每個 page 1000 bytes，一個 page 放得下 250 個，所以 A 需要 4 個 page。",
+    "程式依序讀這 4 個 page，第一次讀到每一個都是 page fault。到這裡累計 5 次（code 1 次 + 4 次）。",
+    "整個 page 的存取順序是 1 2 3 4 4 3 2 1。三個 frame 裡第一個被 code 佔了，資料只剩兩個 frame 可用。",
+    "1 2 3 4 讀完後，兩個 frame 裡留下的是 3 和 4。往回讀的 4、3 都還在，是 hit（綠色），不會 page fault。",
+    "接著 2、1 很不幸都不在 frame 裡，又各發生一次 page fault（紅色）。用 LRU 或其他演算法，結果都一樣。",
+    "總共 7 次：code 1 次、第一次掃過 4 次、回來 2 次。",
+    "這就是為什麼 memory、data 的 layout 很重要。現在很多應用都卡在讀資料（I/O bound）：資料大到塞不進 cache、memory，甚至跑到 swap。分析程式就能知道它會 access 多少 page。",
+    "這裡只有兩個 page 能留在 memory，code 還會佔一個。很多程式切資料時用 4KB 這個「魔術數字」，就是要 match page 大小，減少 page fault。"
+   ]
+  },
+  {
+   "title": "最後幾題：address bits、page table、TLB、位址轉換",
+   "scene": "syn-20a-addr",
+   "cues": [
+    1078.6,
+    1094.2,
+    1126,
+    1141.7,
+    1167.5,
+    1183.3,
+    1222.3,
+    1256.5,
+    1280.4
+   ],
+   "points": [
+    {
+     "t": 1077,
+     "text": "offset 的 bit 數 = log₂(page size)：1KB → 10 bits。"
+    },
+    {
+     "t": 1126,
+     "text": "page table 大小 = entry 數 × 每個 entry 的 byte：logical address 12 bits − 10 = 2 bits → 4 entries，每個 4 bytes。"
+    },
+    {
+     "t": 1167,
+     "text": "access time：先判斷 TLB hit / miss（TLB 2 個 entry，第一次 access 的 page 會 miss），miss 多一次 page table 的 access（100）。"
+    },
+    {
+     "t": 1257,
+     "text": "位址轉換：page number 0 → page table 第 0 個 entry；frame number 的 bit 是 11 → 第 3 個 frame。"
+    }
+   ],
+   "explain": [
+    "最後一題看似複雜，其實只是問 memory address 的 bit 數，根據題目的敘述去找答案。",
+    "address 裡 offset 的 bit 數，取決於 page size：page 是 1KB = 2 的 10 次方，所以 offset 用 10 個 bit。",
+    "整個 page table 要多少記憶體？先算有幾個 entry，再乘上每個 entry 需要幾個 byte。",
+    "logical address 一共 12 bit，offset 用掉 10 個，剩下 2 個 bit 給 page number，所以有 2² = 4 個 entry。每個 entry 4 bytes，乘起來就是答案：16 bytes。",
+    "另一題算 memory access time，重點是：TLB 到底有幾次 hit。",
+    "依照 access 的順序，看每一個是不是跟前面在同一個 page。TLB 只有 2 個 entry，第一次 access 到的 page 都會 miss。",
+    "知道哪些 hit、哪些 miss 後套公式：hit 只要查一次 TLB，再 access 一次 memory；miss 要多一個 100，因為還要 access 一次 page table。公式對就好。",
+    "最後一題：logical address 和 physical address 都給你了，問它 access 的是 page table 的第幾個 entry、frame number 是多少。",
+    "把兩個位址轉成 bit，看前面的 page number 和 frame number：page number 是 0，就是第 0 個 entry；frame number 是 11（二進位），也就是 frame 3。"
+   ]
+  },
+  {
+   "title": "Q&A 與考試的意義（idle）",
+   "scene": null,
+   "points": [
+    {
+     "t": 1304,
+     "text": "下課可以再來問。"
+    },
+    {
+     "t": 1333,
+     "text": "考試希望大家發現：學的知識和實際的程式執行、系統設計有很多關聯，要套用進去才會發現。"
+    }
+   ]
+  },
+  {
+   "title": "Synchronization 回顧",
+   "scene": "syn-20a-review",
+   "cues": [
+    1361.2,
+    1379.6,
+    1398,
+    1410,
+    1424.6,
+    1446,
+    1456,
+    1475.7,
+    1517.3,
+    1549.8,
+    1586.7,
+    1616.3
+   ],
+   "points": [
+    {
+     "t": 1361,
+     "text": "synchronization：控制執行序的順序或時間點。目的一：解決 race condition → Pthread 的 mutex lock（課堂重點是 lock / unlock 的實作）。"
+    },
+    {
+     "t": 1456,
+     "text": "目的二：condition variable 控制觸發的時機，像 event waiting queue：wait 就 block，signal 叫醒一個、broadcast 叫醒全部。"
+    },
+    {
+     "t": 1550,
+     "text": "Pthread 的 cond_wait 要丟一個 mutex，因為觸發 condition 的變數（如 x）需要 critical section 保護；這是 Pthread 的 coding style，其他 library（如 C++）可以不同。"
+    }
+   ],
+   "explain": [
+    "上次講到一半就卡住了，這裡先把上次的內容完整 review 一次，再補充一些。",
+    "我們學了 synchronization 和 critical section 的概念。寫 Pthread 這種共用記憶體的平行程式時，就必須處理同步問題。",
+    "在程式設計裡，synchronization 指的是：控制這些執行序（thread）執行的順序，或執行的時間點。",
+    "目的有兩類。第一類是解決 [[race condition]]：結果沒辦法預測，這是 programmer 最不想要的。",
+    "解決它的工具，就是 Pthread 提供的 mutex lock。用 critical section 的概念，你不用自己寫 entry、exit，它包成函式讓你呼叫。",
+    "當然課堂上更想介紹的，是 lock 和 unlock 背後到底有哪些實作方式。",
+    "第二類用法是 [[condition variable]]：它的目的是控制、觸發這些執行序「什麼時候」執行。",
+    "一個 condition variable 就像一個 event waiting queue（等待事件的佇列）：thread 呼叫 wait 就被 block 住，等某個事件發生；觸發事件的人呼叫 signal 叫醒一個，或 broadcast 叫醒全部在等的人。",
+    "很多平行程式語言（尤其是 shared memory 的）都有 condition variable。每個 library 的實作、函式設計可能不太一樣，但概念完全相同。",
+    "以 Pthread 為例，就是 wait、signal、broadcast。比較特別的是 wait 除了要等一個 condition variable，還必須丟一把 mutex lock 給它。",
+    "原因是：觸發條件的往往不是 condition variable 本身，而是像 x 這樣的變數。比較 x 的過程中不希望有人去動它，所以它需要被 critical section 保護。",
+    "這是 Pthread 規定的 coding style，用來減少寫程式時無謂的錯誤。其他 thread library（例如 C++ 的）寫法可以不一樣，每個語言有自己的想法。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "microkernel 名詞解釋一定要提到的重點？",
+   "opts": [
+    "modularized，且把不重要的 component 移到 user space、用 message passing 溝通",
+    "所有功能都在 kernel space",
+    "沒有 system call",
+    "只能跑一個 process"
+   ],
+   "ans": "modularized，且把不重要的 component 移到 user space、用 message passing 溝通",
+   "why": "只寫 modularized 會被扣分。"
+  },
+  {
+   "q": "為什麼 segmentation 放在上層、paging 放在下層？",
+   "opts": [
+    "segmentation 符合程式組織、方便 compiler；paging 固定大小方便管理 physical memory、沒有 external fragmentation",
+    "paging 比較符合程式組織",
+    "segmentation 沒有 fragmentation",
+    "兩者順序無所謂"
+   ],
+   "ans": "segmentation 符合程式組織、方便 compiler；paging 固定大小方便管理 physical memory、沒有 external fragmentation",
+   "why": "效能交給底層，方便使用者的在上層。"
+  },
+  {
+   "q": "dynamic loading 與 dynamic linking 的差別？",
+   "opts": [
+    "loading 減少單一 process 的 memory 使用；linking 讓 process 間 share library、runtime 才 link",
+    "兩者相同",
+    "loading 是 process 間共用 library",
+    "linking 是 compile time 完成"
+   ],
+   "ans": "loading 減少單一 process 的 memory 使用；linking 讓 process 間 share library、runtime 才 link",
+   "why": "不要搞反。"
+  },
+  {
+   "q": "第 10 題（code 佔 1 frame、共 3 frame、A 佔 4 page、順序 1 2 3 4 4 3 2 1）共幾次 page fault？",
+   "opts": [
+    "7",
+    "5",
+    "8",
+    "9"
+   ],
+   "ans": "7",
+   "why": "code 1 + 第一次 4 + 回程 2、1 各 1 = 7；4、3 是 hit。"
+  },
+  {
+   "q": "page size 1KB、logical address 12 bits、每個 entry 4 bytes，page table 多大？",
+   "opts": [
+    "16 bytes",
+    "4 bytes",
+    "4KB",
+    "1KB"
+   ],
+   "ans": "16 bytes",
+   "why": "offset 10 bits → page number 2 bits → 4 entries × 4 bytes。"
+  },
+  {
+   "q": "LRU 為什麼沒有 Belady's anomaly？",
+   "opts": [
+    "frame 變多時，原本會留下的最近 page 仍會被包含",
+    "它不會 page fault",
+    "它是隨機的",
+    "它看未來"
+   ],
+   "ans": "frame 變多時，原本會留下的最近 page 仍會被包含",
+   "why": "LRU 是 stack algorithm：n 個 frame 的內容是 n+1 個 frame 內容的子集合。"
+  }
+ ]
+}

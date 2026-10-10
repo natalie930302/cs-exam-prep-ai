@@ -225,7 +225,7 @@
   "label": "清大周志遠 第20D講 Classical Synchronization Problems & Monitors",
   "points": 27,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "4HDjWNV09QY": {
   "label": "交大彭文志 Lec17 Trees (6/6)",
@@ -309,7 +309,7 @@
   "label": "清大周志遠 第19A講 Critical Section(續)",
   "points": 30,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "6n8vyWKGsIo": {
   "label": "交大江蕙如 Lec23 Beyond Polynomial Running Times (2/2)",
@@ -497,6 +497,12 @@
   "quiz": 5,
   "cued": true
  },
+ "akXZHPecIh4": {
+  "label": "清大周志遠 第21A講 Monitors(續)",
+  "points": 14,
+  "quiz": 6,
+  "cued": true
+ },
  "ARvQcqJ_-NY": {
   "label": "Abdul Bari：Greedy Method - Introduction",
   "points": 17,
@@ -631,9 +637,9 @@
  },
  "CNO_I8jhX3I": {
   "label": "清大周志遠 第18C講 Background & Critical Section",
-  "points": 36,
+  "points": 37,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "co4_ahEDCho": {
   "label": "Abdul Bari：Huffman Coding - Greedy Method",
@@ -927,7 +933,7 @@
   "label": "Semaphores in Operating Systems",
   "points": 21,
   "quiz": 5,
-  "cued": false
+  "cued": true
  },
  "HvXHTgLys1g": {
   "label": "清大周志遠 第22C講 Deadlock Prevention & Avoidance(續)",
@@ -989,6 +995,12 @@
   "quiz": 8,
   "cued": true
  },
+ "IOx8vtDzGO0": {
+  "label": "清大周志遠 第18D講 Critical Section(續)",
+  "points": 20,
+  "quiz": 6,
+  "cued": true
+ },
  "Iwc3Uj4aaF4": {
   "label": "Ford Fulkerson Algorithm for Maximum Flow Problem",
   "points": 21,
@@ -1010,6 +1022,12 @@
  "jFZsDDB0-vo": {
   "label": "Abdul Bari：5.2 Articulation Point and Biconnected Components",
   "points": 19,
+  "quiz": 6,
+  "cued": true
+ },
+ "jJZ8egWNiWo": {
+  "label": "清大周志遠 第20A講 期中考檢討 & Critical Section補充",
+  "points": 31,
   "quiz": 6,
   "cued": true
  },
@@ -1035,6 +1053,12 @@
   "label": "MIT 6.006 Rec20：DP Blackjack",
   "points": 92,
   "quiz": 8,
+  "cued": true
+ },
+ "k0XaqQzTW_I": {
+  "label": "清大周志遠 第20B講 Hardware Support(續) & Semaphore",
+  "points": 19,
+  "quiz": 7,
   "cued": true
  },
  "Kg4bqzAqRBM": {
@@ -1203,6 +1227,12 @@
   "label": "Abdul Bari：4.5 0/1 Knapsack - Two Methods",
   "points": 61,
   "quiz": 7,
+  "cued": true
+ },
+ "nNcqTc-00WA": {
+  "label": "清大周志遠 第19B講 Critical Section(續) & Hardware Support",
+  "points": 19,
+  "quiz": 6,
   "cued": true
  },
  "NOYNTuhXDGU": {
@@ -1385,6 +1415,12 @@
   "quiz": 6,
   "cued": true
  },
+ "r0h26ioGeG0": {
+  "label": "清大周志遠 第20C講 Semaphore(續)",
+  "points": 19,
+  "quiz": 6,
+  "cued": true
+ },
  "R0MpXbuqfZM": {
   "label": "台大林軒田 DSA Stack / Queue",
   "points": 284,
@@ -1457,9 +1493,21 @@
   "quiz": 8,
   "cued": true
  },
+ "sEVfeXqWY-s": {
+  "label": "Process Synchronisation | Critical Section Problem",
+  "points": 9,
+  "quiz": 5,
+  "cued": true
+ },
  "SLsHKh_OUEM": {
   "label": "Master's Theorem Explained",
   "points": 23,
+  "quiz": 6,
+  "cued": true
+ },
+ "SNwNax1Wz7k": {
+  "label": "清大周志遠 第21B講 Monitors(續) & Atomic Transaction",
+  "points": 11,
   "quiz": 6,
   "cued": true
  },

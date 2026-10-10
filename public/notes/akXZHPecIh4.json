@@ -1,0 +1,260 @@
+{
+ "video": "akXZHPecIh4",
+ "label": "清大周志遠 第21A講 Monitors(續)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Monitor 的概念：只有一個 active",
+   "scene": "syn-21a-monitor",
+   "cues": [
+    2.1,
+    7.5,
+    43.7,
+    72.1,
+    85,
+    102.6,
+    117.7,
+    141,
+    161.3,
+    190.4,
+    205.7,
+    233.4,
+    282.4
+   ],
+   "points": [
+    {
+     "t": 2,
+     "text": "monitor：high-level language construct，從 OO 的 class 衍生（private variable + method）。"
+    },
+    {
+     "t": 103,
+     "text": "它的 method 一次只有一個被執行（mutual exclusion）：很多 thread 呼叫會被 queue 住。"
+    },
+    {
+     "t": 141,
+     "text": "精確說法：monitor 裡同時只有一個 active 的 thread；在裡面 wait 的 thread 是 inactive，其他 thread 可以進來。"
+    },
+    {
+     "t": 233,
+     "text": "各語言（例如 Java）形式不同，概念相同：一個 specialized class。"
+    }
+   ],
+   "explain": [
+    "今天的重點是 monitor，同步工具的最後一個。它是 high-level language construct（高階語言結構），更方便寫程式。紫色框就是一個 monitor。",
+    "monitor 是從物件導向（OO）的概念衍生出來的，可以先把它想成一般 OO 裡的 class。",
+    "一個 class 有它的 private variable（私有變數），還有 method（方法），method 就是拿來操作、修改這些變數的。",
+    "這樣誰會存取這些變數、會做什麼動作，都能用 class 清楚定義出來。這也是大家喜歡用 OO 風格寫程式的原因：很清楚。",
+    "monitor 就是在 OO 的概念上再延伸：解決大家透過不同 method、去存取同一個 object 裡共用變數時的同步問題。",
+    "解法回到最基本的 [[mutual exclusion]]：這種 class 預設的特性是，它的 method 一次只有一個在執行。",
+    "可以有很多 thread 同時呼叫這個 object 的 method，但它們會被 queue 住，排隊一次一個進來執行。這樣就不會有 race condition。",
+    "大家常忽略一個細節：所謂「一次一個」，不是說一次只有一個人在呼叫 method，而是只有一個 active（正在執行）的 thread。",
+    "還記得 Pthread condition variable 的例子嗎？進到 critical section 之後，卻在裡面做 wait。呼叫 wait 就被 put to sleep，它不能執行，叫做 inactive。",
+    "它雖然在 object 裡執行到一半，但被暫時 suspend 了，這時可以讓其他 thread（T1）進來繼續用，因為只要維持「一個 active」就可以。",
+    "所以 active 這個字要特別強調：active 就是能執行裡面的 statement。monitor 保證的是：只有一個 process 是 active 地在 object 裡運作。",
+    "它跟 mutex、condition variable、critical section 一樣是一個概念，在不同程式語言裡用不同形式呈現。大部分平行語言和 Java 這種物件導向語言都支援，形式上有些差異。",
+    "因為它已經融入整個語言的設計，用物件、method 來做同步，所以說它 high level：它是一個 specialized class（特殊的類別）。"
+   ]
+  },
+  {
+   "title": "Monitor 與 condition variable",
+   "scene": "syn-21a-cv",
+   "cues": [
+    290.6,
+    308,
+    347.6,
+    372.5,
+    393.5,
+    416.6,
+    438.8,
+    467.4,
+    500.2,
+    527.4,
+    548.6,
+    587.7,
+    619.7,
+    643.7,
+    683.3,
+    723
+   ],
+   "points": [
+    {
+     "t": 291,
+     "text": "monitor object：shared data 是 private variable，只能透過 method 操作；呼叫的 thread 會被 queue 住、一次一個。"
+    },
+    {
+     "t": 373,
+     "text": "比 semaphore、mutex、condition variable 更 high level：那些要自己排 wait / signal / lock 的順序，移一行就可能 deadlock 或 race。"
+    },
+    {
+     "t": 417,
+     "text": "monitor 可以結合 condition variable：每個 CV 是一個 waiting queue，wait 會 suspend（inactive），signal 叫醒 list 裡的一個。"
+    },
+    {
+     "t": 549,
+     "text": "CV 與 semaphore 的差別：semaphore 是 counter，wait 一定 −1、signal 一定 +1；CV 是 queue，wait = enqueue，signal = dequeue，queue 空時 signal 什麼都不發生。"
+    },
+    {
+     "t": 683,
+     "text": "monitor 裡可以有很多 thread（在 CV queue 裡等），但 active 的只有一個。"
+    }
+   ],
+   "explain": [
+    "看這個圖就很清楚：這是一個 monitor class 產生出來的 object，它負責幫我們處理同步問題。",
+    "裡面的 shared data，對應到 class 的 private variable。依照 OO 的規則，只能透過 method 操作它，programmer 可以把所有存取、修改的動作都定義清楚，不受外面干擾。",
+    "它是特殊的 monitor class：語言本身知道它是 monitor，所以呼叫這些 method 的 thread 會被擋住、排隊，一次只有一個進來，保護 shared data。",
+    "它比之前教的 semaphore、mutex、甚至 condition variable 更 high level。那些都要自己寫 wait、signal、lock、unlock，順序都要自己想清楚。",
+    "常常往前移一行、往後移一行，結果就不一樣：有時 deadlock，有時根本還是 race condition。它們比較 low level，可能比較快，但很容易出錯，然後就是大家最怕的 debug。",
+    "monitor 也結合了 [[condition variable]]。condition variable 不是拿來解 race condition，但同步時非常常用。",
+    "結合方式跟之前很像：在 monitor 定義的 method 裡面，可以呼叫 condition variable 的 wait，讓 thread 在裡面等待。像之前的 thread pool，也可以用 monitor 來寫。",
+    "每一個 condition variable 代表一個獨立的 event waiting queue。要等某個東西就呼叫 wait，要叫醒人就呼叫 signal；不同的變數就是不同的 waiting queue。",
+    "wait 的意思是 suspend。所以在 monitor 裡是有可能被暫停的，最常見就是呼叫了 condition variable 的 wait。T0 變 inactive 去 queue 裡等，裡面沒有 active 的 thread，外面的 T1 就可以進來了。",
+    "signal 會去看這個 variable 的 waiting list 裡有沒有人，有的話就把他叫起來。",
+    "提醒一下：semaphore 也有 wait 和 signal，差別在哪？semaphore 只要 wait 就把值減 1，只要 signal 就加 1，呼叫幾次就加減幾次，正確與否要 programmer 自己負責。",
+    "condition variable 不是 counter，而是一個 waiting queue。wait 是把 thread 放進 queue 並 suspend（enqueue），signal 是從 queue 拿出一個（dequeue）。",
+    "所以 queue 是空的時候呼叫 signal：什麼事都不會發生，沒有人被叫醒，queue 還是空的，沒有「−1 個」這種概念。",
+    "但 semaphore 就算值是 0，你繼續呼叫 signal，它還是會加上去；值可正可負，永遠會被修改。一個是 queue、一個是 counter，這是最大的差別。",
+    "把 monitor 和 condition variable 結合，結構稍微複雜：進來的 thread 可能呼叫 wait，被放進某個 condition 的 waiting queue，一放進去就 inactive，別的 thread 才能進來、才有機會 signal 把它叫起來。跟 Pthread 的例子完全一樣。",
+    "重點：monitor 裡其實可以同時有很多 thread 存在，但 active 的只有一個。說「monitor 裡只能有一個 thread」是錯的。細節，但差很多。"
+   ]
+  },
+  {
+   "title": "Dining philosophers 的 monitor 解法",
+   "scene": "syn-21a-dining",
+   "cues": [
+    750,
+    755.2,
+    786,
+    803.7,
+    822.6,
+    850,
+    876.7,
+    945,
+    984.5,
+    1031.6,
+    1079.3,
+    1107.2,
+    1168,
+    1213.2,
+    1288.3,
+    1332,
+    1389.5,
+    1423.7,
+    1473.2,
+    1551.7
+   ],
+   "points": [
+    {
+     "t": 750,
+     "text": "變數：state[5]（THINKING / HUNGRY / EATING，EATING = 左右兩支筷子都在手上）、condition self[5]（每人一個 queue）。"
+    },
+    {
+     "t": 877,
+     "text": "能看到別人的 global state 是很大的 assumption（分散式更難）；shared state 本身也要確認不會 race。"
+    },
+    {
+     "t": 1032,
+     "text": "method：pickup(i)、putdown(i)、test(i)；初始都是 THINKING。"
+    },
+    {
+     "t": 1107,
+     "text": "pickup：state = HUNGRY → test(i) → 不是 EATING 就 self[i].wait()；putdown：state = THINKING → test 左右鄰居。"
+    },
+    {
+     "t": 1288,
+     "text": "test(k)：左右都不在 EATING 且 k 是 HUNGRY → state[k] = EATING、self[k].signal()；被測的人不一定是 active 的那個，queue 空時 signal 也無妨。"
+    }
+   ],
+   "trap": "課本補充：這個解法不會 deadlock（一次拿兩支），但仍可能讓某個哲學家 starvation（左右鄰居輪流吃）。",
+   "explain": [
+    "知道 monitor 的概念後，來看怎麼用它解 dining philosophers。",
+    "複習問題：N 個人用餐要兩根筷子，筷子放在每兩人的中間。沒有同步的話，大家可能同時拿起左邊的筷子，再去拿右邊時全部互相等待，deadlock。",
+    "用 monitor 的 OO 概念，把 method 定義出來，就比較容易解，不用再去想 low level 的哪裡會 race condition。右邊是課本的 monitor 解法。",
+    "先看 monitor 裡用來描述問題的變數。第一個是 state，這個例子五個人，array 記錄每個人目前的狀態。",
+    "狀態有三種：thinking 是在想事情、沒要吃（idle）；hungry 是想吃但還沒拿到筷子，在等；eating 是左邊和右邊的筷子都在他手上。",
+    "解法也不能憑空變出更多筷子，五根就是五根。有些寫錯的同步跑一跑發現大家都吃到了，結果是用了十根筷子，那不行。",
+    "補充：這裡用一個全域共用的變數讓大家看到彼此的狀態，這樣比較好解。真正難的是看不到別人狀態、完全分散式（fully distributed）的情況，那又難了一層。",
+    "state 是共用的資訊，要注意它本身被修改時會不會 race。判斷原則：只有一個人會寫、其他人只讀，就不會；兩個以上的人會改，就要保護（像 first readers-writers 的 readcount）。",
+    "接著是 self，它是 condition variable。某人 hungry 卻拿不到筷子，就要等，用它來代表等待：把他放進自己的 queue。五個人就五個 queue，可以指定對某個人做 wait、signal。",
+    "這個問題的動作，可以切成 pickup（拿起筷子）和 putdown（放下筷子），i 指第 i 個人。另外多加一個 test：吃之前試試看左右的筷子是不是都沒人用。",
+    "最後 initialization：一開始大家都是 thinking，什麼都沒在做。",
+    "寫 pickup：第 i 個人要吃，先呼叫 pickup，代表他 hungry 了，所以 state 改成 hungry。吃之前一定要 test，不然盲目地拿筷子一定會卡住。哲0 測試：左右鄰居都沒在吃，所以變成 eating（綠色）。",
+    "test 的結果如果不是 eating，代表失敗，那只好 wait：哲1 的鄰居哲0 正在吃，所以哲1 呼叫 self[1].wait()，把自己 suspend，等旁邊的人放下筷子再來叫他。",
+    "putdown 反過來：不管原本是什麼，放下筷子就變成 thinking。重點是要跟 pickup 搭配：放下筷子代表鄰居有機會吃了，所以要去 test 左邊 (i+4)%5 和右邊 (i+1)%5 的人。哲0 放下了。",
+    "最重要的 test。要注意：test(k) 測試的人，不一定是呼叫這個 function 的人。pickup 時測自己，putdown 時測的是左右的人，他們可能是之前被 suspend 的 thread。",
+    "怎樣才能吃？左邊的人不在吃、右邊的人也不在吃，代表兩邊的筷子都沒被拿起來。",
+    "還要第三個條件：這個人自己是 hungry。因為可能是在幫別人測試，鄰居有筷子不代表他想吃。",
+    "三個條件都成立，就把他的 state 換成 eating，再加上 self[k].signal()：因為鄰居可能正在 waiting queue 裡，要把他叫起來，他才完成 pickup。哲1 終於可以吃了。",
+    "如果鄰居根本沒在等，queue 是空的，signal 也沒有任何負面影響（condition variable 的 signal 在空 queue 上什麼都不做）。",
+    "所以把 pickup、putdown、test 這三個 function 照它們的行為描述出來，整個問題就解掉了。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "「monitor 裡同一時間只能有一個 thread」這句話？",
+   "opts": [
+    "錯：可以有很多 thread，但只有一個是 active",
+    "對",
+    "錯：可以有很多 active 的 thread",
+    "錯：monitor 裡不能有 thread"
+   ],
+   "ans": "錯：可以有很多 thread，但只有一個是 active",
+   "why": "在 CV queue 裡 wait 的 thread 是 inactive。"
+  },
+  {
+   "q": "condition variable 的 signal 和 semaphore 的 signal 最大差別？",
+   "opts": [
+    "CV 的 queue 空時 signal 什麼都不做；semaphore 的值一定加 1",
+    "兩者完全相同",
+    "CV 的 signal 會讓值減 1",
+    "semaphore 的 signal 在沒人等時什麼都不做"
+   ],
+   "ans": "CV 的 queue 空時 signal 什麼都不做；semaphore 的值一定加 1",
+   "why": "CV 是 queue，semaphore 是 counter。"
+  },
+  {
+   "q": "dining philosophers 的 monitor 解法中，test(k) 讓 k 開始吃的條件？",
+   "opts": [
+    "左右都不在 EATING，且 k 是 HUNGRY",
+    "左邊不在 EATING 即可",
+    "k 是 THINKING",
+    "左右都是 HUNGRY"
+   ],
+   "ans": "左右都不在 EATING，且 k 是 HUNGRY",
+   "why": "然後 state[k] = EATING、self[k].signal()。"
+  },
+  {
+   "q": "pickup(i) 中 test 失敗時會？",
+   "opts": [
+    "self[i].wait()，等鄰居 putdown 時 test 並 signal",
+    "一直 busy waiting",
+    "拿起一支筷子等另一支",
+    "直接進入 THINKING"
+   ],
+   "ans": "self[i].wait()，等鄰居 putdown 時 test 並 signal",
+   "why": "不會 hold and wait，所以不會 deadlock。"
+  },
+  {
+   "q": "putdown(i) 之後要做什麼？",
+   "opts": [
+    "test 左右鄰居 (i+4)%5、(i+1)%5",
+    "什麼都不做",
+    "signal 自己",
+    "test 所有人"
+   ],
+   "ans": "test 左右鄰居 (i+4)%5、(i+1)%5",
+   "why": "鄰居可能正在等這兩支筷子。"
+  },
+  {
+   "q": "相較於 semaphore，monitor 的優點？",
+   "opts": [
+    "high level：不用自己排 wait / signal 順序，較不易寫錯",
+    "執行一定比較快",
+    "不需要 condition variable",
+    "可以讓多個 thread 同時 active"
+   ],
+   "ans": "high level：不用自己排 wait / signal 順序，較不易寫錯",
+   "why": "semaphore 移一行就可能 deadlock 或 race。"
+  }
+ ]
+}

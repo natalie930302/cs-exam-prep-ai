@@ -1,201 +1,391 @@
 {
  "video": "CNO_I8jhX3I",
  "label": "清大周志遠 第18C講 Background & Critical Section",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
    "title": "Linux 的 active / expired array",
-   "scene": "linux-active-expired",
+   "scene": "syn-18c-linux",
+   "cues": [
+    17.3,
+    43.5,
+    52.1,
+    57.2,
+    75.7,
+    86.8,
+    91.7,
+    103.4,
+    144.6,
+    184
+   ],
    "points": [
     {
-     "text": "例子：H priority 高、time quantum 10；L priority 低、time quantum 200；兩個同時進系統。",
-     "t": 13
+     "t": 14,
+     "text": "例子：H priority 高、time quantum 10；L priority 低、time quantum 200；兩個同時進系統。"
     },
     {
-     "text": "沒有 active array：H 先做 10；L 給 200 卻只做 100 就結束這個 burst；第二輪 H 又先做，L 剩下的 100 浪費掉。",
-     "t": 29
+     "t": 43,
+     "text": "沒有 active array：H 先做 10；L 給 200 卻只做 100 就結束這個 burst；第二輪 H 又先做，L 剩下的 100 浪費掉。"
     },
     {
-     "text": "有 active array：H 把 quantum 用完 → 放進 expired array；L 只用了 100、還剩 100 → 留在 active array。",
-     "t": 66
+     "t": 76,
+     "text": "有 active array：H 把 quantum 用完 → 放進 expired array；L 只用了 100、還剩 100 → 留在 active array。"
     },
     {
-     "text": "scheduler 一定先從 active array 選完，所以第二個 burst 反而是 priority 低的 L 先做。",
-     "t": 97
+     "t": 103,
+     "text": "scheduler 一定先從 active array 選完，所以第二個 burst 反而是 priority 低的 L 先做。"
     },
     {
-     "text": "不完全看 priority，還要看 quantum 剩多少；保護 quantum 長但 priority 低的程式，比較 fair。",
-     "t": 128
+     "t": 145,
+     "text": "不完全看 priority，還要看 quantum 剩多少；保護 quantum 長但 priority 低的程式，比較 fair。"
     }
    ],
-   "trap": "補充：這是 Linux 2.6 早期的 O(1) scheduler 設計；2.6.23 之後改成 CFS（Completely Fair Scheduler）。"
+   "trap": "補充：這是 Linux 2.6 早期的 O(1) scheduler 設計；2.6.23 之後改成 CFS（Completely Fair Scheduler）。",
+   "explain": [
+    "先複習上一章的 Linux scheduler。兩個 process 同時進系統：H 的 priority（優先權）高，但每次只給 10 單位的 time quantum（可以連續用 CPU 的時間）；L 的 priority 低，但 quantum 有 200。",
+    "上面那一排是「沒有 active array」的作法：誰的 priority 高誰先做，所以 H 先跑完它的 10。",
+    "輪到 L，給它 200，但它只跑了 100 這次的 CPU burst（一段連續用 CPU 的工作）就結束了，還剩 100 沒用到。",
+    "下一輪大家的第二個 burst 又來了，H 的 priority 還是比較高，又先做。L 上次剩下的 100 就這樣白白浪費掉。",
+    "下面那一排是「有 active array」的作法。右邊多了兩個區：active array 放「還有 quantum 可以用」的 process，expired array 放「quantum 已經用完」的 process。第一輪跟剛才一樣，H 先、L 後。",
+    "H 這輪把它的 10 全部用完了，所以被放進 expired array（用完的那一區）。",
+    "L 有 200，卻只用了 100，還剩 100，所以留在 active array。",
+    "第二個 burst 同時到的時候，scheduler 一定先從 active array 裡挑。H 在 expired 裡，所以這次反而是 priority 低的 L 先做。",
+    "重點是：不只看 priority，也看你的 quantum 還剩多少。這樣能保護「quantum 長、priority 低」的程式，好不容易輪到它，就讓它把 quantum 用完。",
+    "這就是引入 active array 的理由：對 low priority 的程式比較 fair（公平），它的效能不會被影響太多。"
+   ]
   },
   {
    "title": "為什麼會有 synchronization 問題",
-   "scene": "counter-buffer",
+   "scene": "syn-18c-why",
+   "cues": [
+    210.2,
+    224,
+    235.6,
+    254.4,
+    290.9,
+    305.2,
+    338.7,
+    356.4,
+    378.7,
+    417.8
+   ],
    "points": [
     {
-     "text": "shared-memory / multi-thread programming 與 preemptive scheduling 都會帶來 synchronization 問題。",
-     "t": 200
+     "t": 210,
+     "text": "進入新的一章：synchronization。shared-memory / multi-thread programming 與 preemptive scheduling 都會帶來 synchronization 問題。"
     },
     {
-     "text": "條件：一份 shared data（memory content）被兩個以上的執行序 concurrent 地 read / write → data inconsistency。",
-     "t": 284
+     "t": 254,
+     "text": "這章的路線：critical section → hardware support → semaphore、monitor 等 tool。"
     },
     {
-     "text": "值會因為執行順序不同而不同；解法就是讓 process 之間 cooperate、控制執行的 ordering。",
-     "t": 346
+     "t": 291,
+     "text": "條件：一份 shared data（memory content）被兩個以上的執行序 concurrent 地 read / write → data inconsistency。"
+    },
+    {
+     "t": 356,
+     "text": "值會因為執行順序不同而不同；解法就是讓 process 之間 cooperate、控制執行的 ordering。"
     }
+   ],
+   "explain": [
+    "新的一章：[[synchronization]]（同步）。老師說這是很重要、也很麻煩的一章。",
+    "之前寫 shared memory 或 multi-thread 程式時就提過：好幾個 [[thread]] 共用同一份資料時，最大的缺點就是會有 synchronization 問題。",
+    "上一章的 CPU scheduling 分成 [[preemptive]]（可以中途把 CPU 搶走）跟 [[non-preemptive]]。preemptive 比較好，但同樣會造成 synchronization 問題。",
+    "這一章的路線圖：先講 [[critical section]]，再講硬體提供的支援，最後是 [[semaphore]] 和 monitor 這些程式語言或 OS 提供的工具。",
+    "問題的根源：有一份 shared data（共用資料）。所謂 data，其實就是某個記憶體位址裡存的內容。",
+    "這份資料同時被兩個以上的執行者（process 或 thread）讀寫，就可能發生 data inconsistency：大家看到的值不一致。",
+    "程式照理說照著邏輯走，結果應該固定。但同樣的程式有時跑出 A、有時跑出 B，這就是寫錯了，programmer 根本沒辦法寫程式。",
+    "為什麼會不一致？因為 concurrent（同時進行）的時候，兩個人都會改它的值，執行的先後順序不同，結果就不同。",
+    "所以解法就是讓它們 cooperate（合作）：確保每次執行的順序都一樣，值自然就一樣。",
+    "這就是 programmer 的責任：在程式裡想辦法控制執行的順序。能控制順序，就能解掉 synchronization 問題。"
    ]
   },
   {
    "title": "Producer–consumer 用 counter",
-   "scene": "counter-buffer",
+   "scene": "syn-18c-counter",
+   "cues": [
+    435.4,
+    448.9,
+    461.4,
+    476.8,
+    480.7,
+    495.2,
+    509.8
+   ],
    "points": [
     {
-     "text": "之前的 bounded buffer 解法沒有 synchronization 問題，但永遠浪費一格 buffer。",
-     "t": 426
+     "t": 432,
+     "text": "之前的 bounded buffer 解法沒有 synchronization 問題，但永遠浪費一格 buffer。"
     },
     {
-     "text": "想用滿整個 buffer：加一個 shared counter，producer 做 counter++，consumer 做 counter--，就知道滿或空。",
-     "t": 453
+     "t": 461,
+     "text": "想用滿整個 buffer：加一個 shared counter，producer 做 counter++，consumer 做 counter--，就知道滿或空。"
     },
     {
-     "text": "問題是 counter 本身又變成 shared memory，而且兩邊都要改寫（modify）它。",
-     "t": 487
+     "t": 495,
+     "text": "問題是 counter 本身又變成 shared memory，而且兩邊都要改寫（modify）它。"
     }
+   ],
+   "explain": [
+    "回到之前學過的 producer–consumer：producer（生產者）把東西放進一個共用的 buffer（暫存區），consumer（消費者）從裡面拿出來。",
+    "之前的解法沒有 synchronization 問題，但有個缺點：永遠要空一格，不然分不出「滿」還是「空」，等於浪費一格。（這裡畫 8 格是示意。）",
+    "想把每一格都用滿，最直覺的作法是加一個 counter（計數器），記錄 buffer 裡現在有幾個東西。這個 counter 兩個 process 都看得見。",
+    "producer 每放一個就 counter++（加 1），consumer 每拿一個就 counter--（減 1）。",
+    "這樣看 counter 就知道 buffer 是滿還是空，看起來又簡單又好懂。",
+    "但問題來了：counter 本身也是一塊大家共用的記憶體。",
+    "而且兩邊不只是讀它，還都要「改寫」它：一個加、一個減。這樣 counter 自己就會有 synchronization 問題。"
    ]
   },
   {
    "title": "counter++ 在指令層交錯",
-   "scene": "race-counter",
+   "scene": "syn-18c-race",
+   "cues": [
+    533.6,
+    541.7,
+    550.1,
+    577.8,
+    593.8,
+    608.7,
+    619.5,
+    639,
+    653.1,
+    664
+   ],
    "points": [
     {
-     "text": "counter++ 是 language level 的一行，到 CPU 會拆成三個指令：load 到 register、加 1、寫回 memory；counter-- 一樣。",
-     "t": 521
+     "t": 529,
+     "text": "counter++ 是 language level 的一行，到 CPU 會拆成三個指令：load 到 register、加 1、寫回 memory；counter-- 一樣。"
     },
     {
-     "text": "因為 preemptive scheduler，producer 可能只做了前兩個指令就被 context switch。",
-     "t": 574
+     "t": 578,
+     "text": "因為 preemptive scheduler，producer 可能只做了前兩個指令就被 context switch。"
     },
     {
-     "text": "換 consumer 做前兩個：把 memory 的值 5 load 進 register 再減 1。",
-     "t": 609
+     "t": 609,
+     "text": "換 consumer 做前兩個：把 memory 的值 5 load 進 register 再減 1。"
     },
     {
-     "text": "切回 producer 做最後一個：寫回 6。",
-     "t": 620
+     "t": 620,
+     "text": "切回 producer 做最後一個：寫回 6。"
     },
     {
-     "text": "再換 consumer 寫回：它 load 的是 5，減完是 4，counter 被蓋成 4。",
-     "t": 637
+     "t": 639,
+     "text": "再換 consumer 寫回：它 load 的是 5，減完是 4，counter 被蓋成 4。"
     },
     {
-     "text": "一次 ++ 一次 --，答案應該是 5，這個 ordering 卻得到 4。",
-     "t": 660
+     "t": 653,
+     "text": "一次 ++ 一次 --，答案應該是 5，這個 ordering 卻得到 4。"
     }
+   ],
+   "explain": [
+    "我們寫的 counter++ 只是程式語言裡的一行。但 CPU 看不懂這一行，到了 CPU 的指令層級，它會被拆成好幾個 instruction（指令）。",
+    "左邊是 counter++ 拆出來的三步：① 把 counter 從記憶體搬進 [[register]]（CPU 裡的小暫存格）；② 在 register 裡加 1；③ 再寫回記憶體。",
+    "counter-- 也一樣是三步，只是中間改成減 1。兩邊用的 register 各自不同（reg1、reg2），沒問題；但 counter 那塊記憶體是兩邊共用的。",
+    "開始跑。先從 producer 開始：第一步把 counter 的值 5 讀進 reg1。因為是 preemptive scheduling，不能保證它三步一口氣做完。",
+    "producer 做了第二步，reg1 變成 6，但還沒寫回去，[[context switch]] 就發生了：CPU 被換給別人。",
+    "換 consumer 跑前兩步：從記憶體讀 counter，讀到的還是 5（因為 producer 還沒寫回），減 1 變成 4，也還沒寫回。",
+    "再切回 producer，做它的最後一步：把 reg1 的 6 寫回記憶體，counter 變成 6。",
+    "最後 consumer 做它的最後一步：把 reg2 的 4 寫回去。這一寫，就把剛才的 6 蓋掉了。",
+    "整理一下：counter 原本是 5，先被改成 6，又被改成 4。",
+    "一次加 1、一次減 1，小學生都知道答案應該是 5。可是照這個順序跑，答案卻是 4。這就是 synchronization 問題。"
    ]
   },
   {
    "title": "結果可能是 4、5、6",
-   "scene": "race-outcomes",
+   "scene": "syn-18c-outcomes",
+   "cues": [
+    685.2,
+    699.3,
+    705.3,
+    719.9,
+    727.6,
+    756.2,
+    779.6,
+    809.2
+   ],
    "points": [
     {
-     "text": "倒過來（最後寫的是 producer）答案是 6，也不對。",
-     "t": 683
+     "t": 683,
+     "text": "倒過來（最後寫的是 producer）答案是 6，也不對。"
     },
     {
-     "text": "一次把一邊全部做完再做另一邊，答案才是 5；所以同一段程式跑出來可能是 4、5、6。",
-     "t": 696
+     "t": 699,
+     "text": "一次把一邊全部做完再做另一邊，答案才是 5；所以同一段程式跑出來可能是 4、5、6。"
     },
     {
-     "text": "先決條件一：有 shared memory content；沒有共享就不可能發生。",
-     "t": 724
+     "t": 720,
+     "text": "先決條件一：有 shared memory content；沒有共享就不可能發生。"
     },
     {
-     "text": "先決條件二：preemptive scheduling；non-preemptive 會把整個 CPU burst 做完，memory 的操作不會被中途篡改。",
-     "t": 753
+     "t": 756,
+     "text": "先決條件二：preemptive scheduling；non-preemptive 會把整個 CPU burst 做完，memory 的操作不會被中途篡改。"
     },
     {
-     "text": "所以 OS 在 kernel 裡的作法是把 interrupt disable，換成 non-preemptive。",
-     "t": 823
+     "t": 809,
+     "text": "所以 OS 在 kernel 裡的作法是把 interrupt disable，換成 non-preemptive。"
     }
+   ],
+   "explain": [
+    "換一種順序：consumer 先讀 5、減成 4；producer 再讀 5、加成 6；consumer 先寫回 4，producer 最後寫回 6。最後寫的是 producer，答案變成 6，一樣不對。上面列的就是這個順序。",
+    "如果一邊三個指令全部做完，另一邊再做，就不會互相干擾，答案才是正確的 5。",
+    "同一段程式，只因為交錯的順序不同，就可能跑出 4、5、6 三種答案，只有 5 是對的。",
+    "這就是 data 不一致：值跟執行的 ordering（先後順序）有關。",
+    "會發生的第一個先決條件：有一塊共用的記憶體內容（這裡是 counter）。如果大家沒共用任何東西，就根本不會有這問題。",
+    "第二個條件：[[preemptive]] scheduling。CPU 可以在程式做到一半時被搶走，才會出現「讀了還沒寫回就被換掉」的情況。",
+    "如果是 non-preemptive，一個 CPU burst 會一口氣做完：讀進來、算完、寫回去之後才換人，記憶體的值不會做到一半被別人改掉。",
+    "所以有些 OS 在 kernel（核心）裡的作法，就是把 [[interrupt]] 關掉，等於暫時變成 non-preemptive，就不會有這問題。"
    ]
   },
   {
    "title": "Race condition 的定義與解法方向",
-   "scene": "race-outcomes",
+   "scene": "syn-18c-racedef",
+   "cues": [
+    829.7,
+    841.3,
+    858.3,
+    865.8,
+    900.8,
+    910,
+    918.5,
+    937.6,
+    961.7
+   ],
    "points": [
     {
-     "text": "race condition：在 synchronization 問題裡，最後的值取決於最後修改它的人（last 完成的人決定值）。",
-     "t": 858
+     "t": 829,
+     "text": "race condition：在 synchronization 問題裡，最後的值取決於最後修改它的人（last 完成的人決定值）。"
     },
     {
-     "text": "要 prevent race condition 就要 synchronize 這些 process。",
-     "t": 917
+     "t": 901,
+     "text": "要 prevent race condition 就要 synchronize 這些 process。"
     },
     {
-     "text": "暴力解：disable scheduler 的 interrupt；OS 可以這麼做（kernel code 短、priority 高），一般使用者程式絕對不行。",
-     "t": 931
+     "t": 910,
+     "text": "暴力解：disable scheduler 的 interrupt；OS 可以這麼做（kernel code 短、priority 高），一般使用者程式絕對不行。"
     },
     {
-     "text": "一般程式的標準作法：定義成 critical section problem。",
-     "t": 982
+     "t": 962,
+     "text": "一般程式的標準作法：定義成 critical section problem。"
     }
+   ],
+   "explain": [
+    "所謂 synchronization 問題，指的就是剛才 counter 這種情況。",
+    "還有一個非常相關、一定要記住的名詞：[[race condition]]。最後的值會取決於最後修改它的那個程式。",
+    "就像賽跑，只是「最後一個跑完的人贏」：P 先寫 6、C 後寫 4，最後留下的就是 4。誰最後寫，誰決定結果。",
+    "synchronization 廣義來說還有很多其他狀況；race condition 是其中特別指「最後的值看誰最後執行」的那種情況。",
+    "要避免 race condition，就要讓這些 process 同步（synchronize）。",
+    "第一種很暴力的方法：把 scheduler 用的 interrupt 關掉，讓系統變成 non-preemptive，就不會在中途被切走。",
+    "有些 OS 會這樣做，但一般使用者的程式絕對不能這麼做：你一關，影響的是整個系統的運作，也影響其他使用者。",
+    "OS 可以這樣做，是因為 kernel 的程式碼通常很短，priority 本來就很高，關一下下影響不大。",
+    "那一般程式怎麼辦？標準的作法，是把它定義成 [[critical section]] 問題，接下來就來介紹。"
    ]
   },
   {
    "title": "Critical section 的架構",
-   "scene": "cs-structure",
+   "scene": "syn-18c-csstruct",
+   "cues": [
+    976.8,
+    985.5,
+    1012.7,
+    1022,
+    1041.6,
+    1069.8,
+    1085,
+    1102.4,
+    1130.6,
+    1155.4,
+    1189.6
+   ],
    "points": [
     {
-     "text": "critical section 解法其實是一套 protocol：大家都遵守，ordering 就受控制。",
-     "t": 999
+     "t": 974,
+     "text": "critical section 解法其實是一套 protocol：大家都遵守，ordering 就受控制。"
     },
     {
-     "text": "問題定義：n 個 processes 加一份 shared data，concurrent access。",
-     "t": 1038
+     "t": 1013,
+     "text": "問題定義：n 個 processes 加一份 shared data，concurrent access。"
     },
     {
-     "text": "會產生 race condition 的那段 code 叫 critical section。",
-     "t": 1071
+     "t": 1042,
+     "text": "會產生 race condition 的那段 code 叫 critical section。"
     },
     {
-     "text": "進入前執行 entry section、離開後執行 exit section，確保 mutual exclusion：一次只有一個人在裡面。",
-     "t": 1092
+     "t": 1070,
+     "text": "進入前執行 entry section、離開後執行 exit section，確保 mutual exclusion：一次只有一個人在裡面。"
     },
     {
-     "text": "通常寫成 do { … } while；其他程式碼是 remainder section；我們要寫的就是 entry 與 exit section。",
-     "t": 1155
+     "t": 1131,
+     "text": "通常寫成 do { … } while；其他程式碼是 remainder section；我們要寫的就是 entry 與 exit section。"
     }
+   ],
+   "explain": [
+    "critical section 的解法，其實是一套 protocol（協定），也就是大家都要遵守的規則。",
+    "要解決 synchronization，process 之間要互相合作。只要每個 process 都遵守同一套規則，執行順序就能被控制。",
+    "問題的定義很簡單：首先要有 N 個 process，才會有「同時存取」這件事。",
+    "再加上一份大家共用的 shared data。這兩個條件湊齊，才會有這個問題。",
+    "程式可以切成好幾段。存取共用資料、可能發生 race condition 的那一段程式碼，就叫做 [[critical section]]（臨界區）。",
+    "找到 critical section 後，在它前面加一段 [[entry section]]（進去前要執行的程式），後面加一段 [[exit section]]（出來後要執行的程式）。",
+    "目的很直接：[[mutual exclusion]]（互斥），一次只能有一個人在 critical section 裡面執行。",
+    "有一個 process 在裡面時，其他 process 都不能進去。這樣就沒有「同時存取」，把 race condition 的必要條件拿掉了。",
+    "範例通常寫成 do { … } while 迴圈，因為同步問題常發生在重複做某件事的時候。除了 critical section 和前後兩段，其他的程式碼叫 remainder section。",
+    "我們真正要設計的，就是 entry section 和 exit section 這兩段。每個 process 進去前一定先執行 entry，離開時一定執行 exit。",
+    "這樣一個出來、下一個才進去。接下來整章的各種解法，都在討論 entry、exit 該怎麼寫，才能確保 mutual exclusion。"
    ]
   },
   {
    "title": "三個條件（上廁所比喻）",
-   "scene": "cs-requirements",
+   "scene": "syn-18c-csreq",
+   "cues": [
+    1204.5,
+    1225.6,
+    1245.7,
+    1259.5,
+    1269.4,
+    1288.1,
+    1322.5,
+    1330.5,
+    1342.2,
+    1371.8,
+    1401.3,
+    1409.4
+   ],
    "points": [
     {
-     "text": "完整的 critical section solution 不只 mutual exclusion，以 programmer 角度還有其他條件。",
-     "t": 1232
+     "t": 1204,
+     "text": "完整的 critical section solution 不只 mutual exclusion，以 programmer 角度還有其他條件。"
     },
     {
-     "text": "Mutual exclusion：上廁所絕對不跟別人共用。",
-     "t": 1280
+     "t": 1246,
+     "text": "Mutual exclusion：上廁所絕對不跟別人共用。"
     },
     {
-     "text": "Progress：裡面空著，想進的人就要能進，不能被反鎖在外面說在維修 → 程式要能繼續運作。",
-     "t": 1292
+     "t": 1269,
+     "text": "Progress：裡面空著，想進的人就要能進，不能被反鎖在外面說在維修 → 程式要能繼續運作。"
     },
     {
-     "text": "Bounded waiting：很多人要用時，等待時間要有上限，不能無止境等；用 first come, first serve 排隊通常就能滿足。",
-     "t": 1338
+     "t": 1323,
+     "text": "Bounded waiting：很多人要用時，等待時間要有上限，不能無止境等；用 first come, first serve 排隊通常就能滿足。"
     },
     {
-     "text": "否則會 starvation；三個條件要記清楚、能區分。",
-     "t": 1423
+     "t": 1401,
+     "text": "否則會 starvation；三個條件要記清楚、能區分。"
     }
    ],
-   "trap": "progress 與 bounded waiting 最容易混：progress 管「空著時能不能有人進去、決定不能被無限延後」；bounded waiting 管「每個人最多被插隊幾次」。"
+   "trap": "progress 與 bounded waiting 最容易混：progress 管「空著時能不能有人進去、決定不能被無限延後」；bounded waiting 管「每個人最多被插隊幾次」。",
+   "explain": [
+    "解 critical section 問題有幾個條件。第一個當然是 [[mutual exclusion]]：做不到，就會同時存取，結果就錯。",
+    "但從寫程式的角度，一個完整的解法不只這一個條件，因為只顧著互斥，可能又製造出別的問題。",
+    "第二個條件叫 progress（進展）。老師用上廁所來比喻，非常好記。",
+    "先看第一個條件：上廁所絕對不會跟別人共用，A 在裡面時 B 不能進去，這就是 mutual exclusion。",
+    "progress 的意思：廁所裡面是空的，想進去的人就一定要進得去。不能明明沒人，卻掛個「維修中」把你鎖在外面。",
+    "放到程式上：保護了 critical section、不會 race，但也不能讓程式卡住不動。裡面沒人時，要進去的人一定要能進去。",
+    "第三個是 bounded waiting（有限等待），大家最容易跟 progress 搞混。",
+    "廁所可能一直都有人在用，但不能讓 D 無止境地等下去，一直被別人插隊。",
+    "分清楚：progress 只保證「空著時有人進得去」；bounded waiting 則保證「很多人要用時，你等待的次數有上限」。",
+    "怎麼做到？原則很簡單：排隊，first come, first serve（先到先用）。大家照順序用，就滿足 bounded waiting。",
+    "如果等待沒有上限，就會發生 [[starvation]]（飢餓）：有人永遠輪不到執行。",
+    "所以正確的 critical section 解法，三個條件都要滿足。這三個一定要記清楚，也要能分辨差別。"
+   ]
   }
  ],
  "quiz": [
@@ -276,6 +466,5 @@
    "ans": "影響整個系統的運作與其他使用者",
    "why": "只有 OS kernel（程式短、priority 高）可以這樣做。"
   }
- ],
- "timing": "estimated"
+ ]
 }

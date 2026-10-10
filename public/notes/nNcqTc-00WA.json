@@ -1,0 +1,381 @@
+{
+ "video": "nNcqTc-00WA",
+ "label": "清大周志遠 第19B講 Critical Section(續) & Hardware Support",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Pthread 的 mutex",
+   "scene": "syn-19b-mutex",
+   "cues": [
+    15,
+    19.4,
+    44.5,
+    59.1,
+    75.2,
+    87,
+    110.1,
+    127.9,
+    133.7,
+    147.4,
+    162.1
+   ],
+   "points": [
+    {
+     "t": 15,
+     "text": "實務上不自己寫 Peterson，而是用 tool：Pthread library 提供 mutex（mutual exclusion 的簡寫）。"
+    },
+    {
+     "t": 59,
+     "text": "用法：declare、initialize；entry = pthread_mutex_lock、exit = pthread_mutex_unlock；裡面就是 software 或 hardware 的 solution；用完 destroy。"
+    },
+    {
+     "t": 110,
+     "text": "會 race 的地方都要用同一個 mutex（shared variable）；不同的資料可以 declare 不同的 mutex，同一個 mutex 的 critical section 之間互斥。"
+    }
+   ],
+   "explain": [
+    "software 的解法講完了。可是自己寫程式時，真的會去寫 Peterson 那些嗎？大部分不會，大家都直接用現成的工具。",
+    "之前教過 Pthread（thread 程式庫）。寫 thread 程式常遇到同步問題，Pthread 提供的工具就是 [[mutex]]。",
+    "Pthread 裡有一個已經定義好的特殊變數（token）叫 mutex，名字就是 mutual exclusion 的縮寫。右邊的鎖就代表它。",
+    "用法非常簡單，它就是一把鎖。使用前先宣告（declare），再初始化（initialize），因為它其實是一個記錄了一些資訊的資料結構。",
+    "還記得 critical section 的解法有 entry 和 exit 嗎？在這裡，entry 就是 lock（上鎖），exit 就是 unlock（解鎖）。",
+    "這兩個函式裡面裝的是什麼？就是我們剛介紹的那些解法，software 的、或等一下要講的 hardware 的都可以。Pthread 只是把它們包起來，叫 lock 和 unlock。",
+    "程式裡所有可能造成 race condition 的地方，都必須呼叫 lock / unlock，而且要用同一個 mutex。",
+    "因為 mutex 本身是大家共用的變數，必須是同一把鎖，才能互相擋住。",
+    "如果程式裡要保護的是不同的、互不相關的資料，可以另外宣告其他的 mutex，等於有好幾把不同的鑰匙。",
+    "用同一把 mutex 的那些 critical section，彼此之間就有 [[mutual exclusion]]（互斥）的效果。",
+    "最後用完要 destroy（銷毀）。Pthread 裡最常用的就是 mutex，其實就是在實作 critical section。"
+   ]
+  },
+  {
+   "title": "Condition variable",
+   "scene": "syn-19b-cond",
+   "cues": [
+    185,
+    197,
+    227.2,
+    236.5,
+    268.9,
+    291.9,
+    310.3,
+    319.7,
+    343.3,
+    364.1,
+    380,
+    401.7,
+    417.5,
+    451.1,
+    474.8,
+    518.4,
+    542.3
+   ],
+   "points": [
+    {
+     "t": 178,
+     "text": "condition variable：用某個 event（condition）去 notify 其他 thread，例如資料載完叫大家開始處理。"
+    },
+    {
+     "t": 269,
+     "text": "wait：等某個 condition，沒人 signal 就 block；signal：叫醒其中一個等待的 thread；broadcast：全部叫醒。"
+    },
+    {
+     "t": 343,
+     "text": "API：pthread_cond_wait / signal / broadcast（要 init、destroy）；wait 一定要搭配 mutex lock。"
+    },
+    {
+     "t": 380,
+     "text": "例子：counter thread 改 x，action thread 要等 x == 0；x 是 shared，而且「檢查 x 後再 signal」要一次做完 → 兩邊都包在 critical section。"
+    }
+   ],
+   "trap": "補充：課本與 Pthread 文件建議把 if (x != 0) 寫成 while (x != 0)：被叫醒後要重新檢查條件（可能被別人搶先改掉，或有 spurious wakeup）。",
+   "explain": [
+    "Pthread 除了 mutex，還有另一個跟同步有關的工具，叫 [[condition variable]]（條件變數）。",
+    "很多程式同時在跑時，常常需要某個 event（事件）發生，再去 trigger（觸發）其他 thread 開始做事。左邊那個黃色方塊就是這個 condition。",
+    "condition variable 的用途就是：當某個條件發生時，去 notify（通知）其他 thread，告訴它們可以開始下一步了。",
+    "最常見的例子：資料還沒載進來，大家沒辦法處理。所以有一個 thread 專門把資料載進來，載完再通知所有 thread 一起幫忙處理。（示意）",
+    "用法很單純。第一個是 wait：等在某個 condition variable 上。如果沒人 signal 它，這個 thread 就會 block（卡住、睡著）在那裡。",
+    "第二個是 signal：表示事件發生了。等在這個 condition variable 上的 thread，會有一個被叫醒，通常是最早等的那個，看 library 怎麼實作。",
+    "如果要一次叫醒所有在等的 thread，就呼叫 broadcast（廣播）。",
+    "這是一個簡單的同步機制：雖然每個 thread 的執行順序、時間點不一定，但可以用它來控制大家做事的先後。",
+    "Pthread 的 API 就是 pthread_cond_wait、pthread_cond_signal、pthread_cond_broadcast，用之前一樣要 init、用完要 destroy。",
+    "你會發現 cond_wait 的參數還需要一把 mutex lock：condition variable 必須跟 mutex 一起用。",
+    "看例子：兩個 thread。右邊 counter 負責改 x 的值；左邊 action 要等 x 等於 0 才能做它的事。（x 的初值是示意。）",
+    "寫法：action 發現 x 不是 0，就 wait 在某個 condition 上；counter 發現 x 變成 0 時，就 signal，action 被叫醒、去做事。",
+    "這裡必須結合 mutex，把程式碼包進 critical section。為什麼？",
+    "原因一：拿來當條件的 x 通常是共用變數，可能很多 thread 同時在對它加加減減，本來就要保護它。",
+    "原因二：先檢查 x == 0、再 signal，這是好幾行。中間如果被 context switch、有人改了 x，signal 的那一瞬間 x 可能已經不是 0。所以「檢查」和「signal」必須一次做完，不能被插隊。",
+    "所以 signal 的那一邊一定要包在 critical section 裡；而要 wait 的那一邊，也必須在 critical section 裡（綠色框）。",
+    "這是一個固定的寫法（design pattern）：用 condition variable 時，兩邊都要在 critical section 裡，因為 cond_wait 本身就需要一把 mutex。細節最後再一步一步講。"
+   ]
+  },
+  {
+   "title": "Hardware support",
+   "scene": "syn-19b-hw",
+   "cues": [
+    572.5,
+    577.6,
+    583,
+    598.6,
+    612.1,
+    623.5,
+    639,
+    648.4,
+    664,
+    689
+   ],
+   "points": [
+    {
+     "t": 569,
+     "text": "hardware support：硬體提供 special instruction，一次把幾件事做完、不會被 interrupt → 沒有 synchronization issue。"
+    },
+    {
+     "t": 624,
+     "text": "disable interrupt 會影響別的程式；改用 atomic instruction：雖然好幾步，但不會被打斷。"
+    },
+    {
+     "t": 664,
+     "text": "兩個例子：TestAndSet、Swap；真實的 computer system 都有提供，速度快。"
+    }
+   ],
+   "explain": [
+    "講完 software 的解法，接下來是 hardware support（硬體支援）。",
+    "software 解法就是完全靠寫程式碼，我們可以去證明它的正確性。",
+    "hardware support 的意思是：硬體提供一些 special instruction（特殊指令），一次把好幾件事做完，而且保證中間不會被 interrupt（打斷）。",
+    "一次做完、不會被打斷，就不會有同步問題。所以硬體實作的東西，不用擔心 race condition。",
+    "寫同步解法時，直接呼叫這些硬體提供的功能，程式碼就能簡化很多。",
+    "同步問題是因為 [[interrupt]] 會打斷程式。software 的一種作法是把 interrupt 關掉，但這不好，會影響到其他程式。",
+    "另一種作法就是用硬體：硬體指令本身就是一次執行完的，這種指令叫 [[atomic]]（不可分割的）。",
+    "雖然一個指令裡可能做了好幾個動作（紫色框裡的步驟），但它不會被打斷。不管那個 function 寫得多複雜，只要是硬體實作的，就沒有同步問題。",
+    "接下來用兩個例子：TestAndSet 和 Swap，看怎麼呼叫它們來實作 entry 和 exit section。",
+    "真實的電腦系統都有提供這類指令來解同步問題。用硬體很快，又能確保不會有同步問題。"
+   ]
+  },
+  {
+   "title": "TestAndSet",
+   "scene": "syn-19b-tas",
+   "cues": [
+    711.3,
+    723,
+    740.6,
+    766.1,
+    770.6,
+    784.2,
+    813.9,
+    828.7,
+    855.5,
+    883.1,
+    892,
+    912.2,
+    941.6,
+    973,
+    989,
+    1021,
+    1025.2
+   ],
+   "points": [
+    {
+     "t": 711,
+     "text": "TestAndSet(&lock)：回傳 lock 原來的值，並把 lock 設成 true；hardware 保證 atomic，多人呼叫也會一個一個做。"
+    },
+    {
+     "t": 814,
+     "text": "lock 初值 false；entry：while (TestAndSet(&lock)); 拿到 false 的人進去，後面的人拿到 true 被卡住；exit：lock = false。"
+    },
+    {
+     "t": 912,
+     "text": "mutual exclusion ✓、progress ✓（N 個 process 也適用）；bounded waiting ✗：沒有排隊，先 call 的人先搶到。"
+    }
+   ],
+   "trap": "簡單版 TestAndSet lock 不滿足 bounded waiting；課本另外用 waiting[] 陣列，出來時依序把 lock 傳給下一個在等的人，才能滿足。",
+   "explain": [
+    "第一個硬體指令：TestAndSet。跟剛才一樣有一個 lock，它就只是一個 token 的值，一開始是 false（沒鎖）。",
+    "任何 process 呼叫它時，它會告訴你 lock 目前的值，同時把 lock 設成 true。左邊是它的程式碼。",
+    "test 的部分：先把 lock 原本的值存到 rv，最後把 rv 回傳。所以呼叫的人會知道「鎖原本是什麼狀態」。P0 拿到 false。",
+    "set 的部分：在這過程中，它一定會把 lock 設成 true，把原本的值蓋掉。",
+    "有點像去看門有沒有鎖，但不管看到什麼，都順手把門鎖起來。",
+    "這其實是三行程式，但它是硬體支援的函式，整個是 atomic 的。很多人同時呼叫也不會出錯，一定是一個人做完、下一個人才做（serialize）。",
+    "有了它，critical section 就變得很簡單。左右是兩個 process 的程式：while (test_and_set(&lock)); 上面的 lock 一開始設成 false，代表沒鎖。",
+    "第一個呼叫 TestAndSet 的人一定拿到 false（原本的值），false 就能 break 出 while，進到 critical section。",
+    "但它一呼叫，lock 就被設成 true 了。後面的人再呼叫，拿到的都是 true，while 條件成立，就被卡住（紅色）。",
+    "怎麼解鎖？離開 critical section 時，把 lock 設回 false。",
+    "解鎖之後，下一個呼叫 TestAndSet 的人就拿到 false，可以 break 出 while，進去了。",
+    "檢查三個條件。mutual exclusion：TestAndSet 是 atomic 的，第一個拿到 false 的人就把它改成 true 了，不可能兩個人同時拿到 false。",
+    "progress：沒人在裡面時 lock 是 false，第一個呼叫的人一定拿到 false、進得去。而且不管有幾個 process，這個解法都能用。",
+    "bounded waiting：不符合。想想看，它有沒有 first come, first serve？沒有，它沒有排隊。",
+    "假設有很多 process（老師舉 100 個，這裡畫 6 個示意）都想進去，在 while 裡一直呼叫。OS 的排程不一定輪流，誰剛好先呼叫誰就拿到鎖，等於是在「搶」。",
+    "用搶的就沒有任何保證，某個 process 可能一直搶不到，所以不符合 bounded waiting。",
+    "很多時候，要三個條件全部符合，代價太大，所以像這樣至少解掉前兩個。電腦有時候卡住，常常就是卡在這種同步問題裡。"
+   ]
+  },
+  {
+   "title": "Swap",
+   "scene": "syn-19b-swap",
+   "cues": [
+    1051.7,
+    1075.5,
+    1092.7,
+    1101.7,
+    1114.6,
+    1123,
+    1151.4,
+    1180.4,
+    1205.5,
+    1214.2,
+    1228.4,
+    1251.6,
+    1289.1,
+    1313.5,
+    1320.7,
+    1327.5
+   ],
+   "points": [
+    {
+     "t": 1051,
+     "text": "Swap(&a, &b)：把兩個值對調（hardware 實作、atomic）。比喻：只有一顆紅球（lock = false），大家手上都是藍球（key = true），換到紅球的人進去。"
+    },
+    {
+     "t": 1151,
+     "text": "key = true; while (key == true) Swap(&lock, &key); … critical section …; lock = false; N 個 process 程式完全一樣。"
+    },
+    {
+     "t": 1252,
+     "text": "跟 TestAndSet 一樣：ME ✓、progress ✓、bounded waiting ✗；要 bounded waiting 就要排隊（Bakery），不在乎就很 efficient。"
+    }
+   ],
+   "explain": [
+    "第二個例子：Swap。大家都知道它在做什麼：給它兩個變數，它把兩個值對調。這裡它是硬體實作的，所以是 atomic。",
+    "老師的比喻：每個 process 手上都有一顆球，全部都是藍色的，只有我（代表 lock 的管理者）手上那顆是紅色的。",
+    "拿到紅球的人可以進 critical section 執行。我自己不進去，我代表「沒人在執行」。其他人要搶這顆紅球。",
+    "swap 就像玩大風吹：大家換球。但全場只有一顆紅球。",
+    "每個 process 要進去之前，就呼叫 swap 跟我換球。換到紅球，就能進去。",
+    "紅球代表 false（lock 的值），藍球代表 true。其他 process 手上的 key 一開始都是 true。",
+    "程式長這樣：先 key = true（手上拿藍球），然後在 while 裡一直跟 lock 交換。只要 key 還是 true（拿到的還是藍球），就繼續換。",
+    "一開始 lock 是 false（紅球在我手上）。P0 第一個來換，換到 false，key 變 false，break 出 while（注意分號），進 critical section。這時 lock 變成 true（我手上變藍球）。",
+    "出來的時候，把 lock 設回 false，就像把紅球還到我手上。",
+    "這個方法一樣可以用在 N 個 process，因為大家的程式碼長得完全一樣，不用區分誰是誰。",
+    "下一個搶到的人（P1）一換到紅球，lock 就變成 true，擋住其他人：P2 怎麼換都只換到藍球，只能一直在 while 裡換。P1 出來後再把 lock 設回 false。",
+    "所以它跟 TestAndSet 原則完全一樣：lock 是 false 時，第一個呼叫 swap 的人進去。",
+    "驗證方式也一樣。mutual exclusion 會滿足：所有 key 和 lock 這些變數裡，同一時間只可能有一個是 false（只有一顆紅球），所以只有一個人能進去。",
+    "progress 也沒問題：lock 是 false 時，第一個呼叫的人一定能 break。",
+    "bounded waiting 一樣不滿足：沒有任何規則，先呼叫的人先進去。",
+    "所以 process 很多又要滿足 bounded waiting，就得排隊，像之前 software 的 Bakery algorithm，會比較複雜。如果不在乎 bounded waiting，這種硬體解法就非常有效率。"
+   ]
+  },
+  {
+   "title": "cond_wait 為什麼要傳 mutex（一步一步）",
+   "scene": "syn-19b-condwait",
+   "cues": [
+    1357.4,
+    1368.3,
+    1376,
+    1390,
+    1406,
+    1422.3,
+    1429,
+    1447.8,
+    1465.4,
+    1497.2,
+    1526.5,
+    1563,
+    1602.5
+   ],
+   "points": [
+    {
+     "t": 1350,
+     "text": "兩邊都要在 mutex 裡：action 先 lock 進去，x != 0 → cond_wait 睡著，並在裡面 release mutex，counter 才能進 critical section 改 x、signal。"
+    },
+    {
+     "t": 1465,
+     "text": "被叫醒的 action 手上沒有 lock，要等 counter unlock 離開，cond_wait return 前 reacquire mutex 才繼續執行。"
+    },
+    {
+     "t": 1563,
+     "text": "Pthread 的 API 把這個用法寫死，兩邊都在 critical section，避免錯誤。"
+    }
+   ],
+   "explain": [
+    "最後一步一步看：為什麼 condition variable 的兩邊都要放在 mutex（critical section）裡。",
+    "右邊的 counter 一定要在 critical section 裡，因為要保護 x，這應該沒問題。",
+    "左邊的 action 也一定要配對放在 critical section，而且要把 mutex 這個 token 交給 cond_wait，這樣執行順序才會正確。",
+    "兩個誰先執行都有可能。假如 action 先進 critical section，它會先把 mutex lock 住（鎖跟著它）。",
+    "x 不是 0，它去做 wait。這時 counter 想進來，但拿不到 lock，被擋在外面（紅色）。",
+    "action 進入 waiting，被 put to sleep（睡著），不會再被執行。",
+    "可是 counter 必須進 critical section 才有機會 signal！所以鎖必須放出來。你沒有呼叫 unlock，但 cond_wait 這個函式裡面會自動幫你把 lock 釋放掉。",
+    "lock 被放掉後，counter 才進得了 critical section。它把 x 減到 0，達到條件，於是 signal。",
+    "signal 把左邊的 action 叫醒。但特別的是：它雖然在 critical section 裡，手上卻沒有 lock（鎖在 counter 手上），所以還是卡在 cond_wait 這一行。",
+    "直到 counter 執行 unlock、離開 critical section，action 才重新拿回 lock，接著執行 take_action。",
+    "所以看起來兩個人同時在 critical section 裡，一個在等、一個在執行。能這樣，是因為 cond_wait 進去時先 release lock，醒來 return 之前第一件事就是 reacquire（重新拿回）lock，所以真正在執行的人手上一定有鎖。",
+    "所以兩邊都必須在 mutex 裡，才能保護 condition 用的變數，又能正確執行。Pthread 的 API 乾脆把這個寫法規定死，避免寫錯。",
+    "大家現在可能沒機會練習，以後寫 Pthread 時可以留意一下這個運作機制。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Pthread mutex 的 entry 與 exit 分別是？",
+   "opts": [
+    "pthread_mutex_lock 與 pthread_mutex_unlock",
+    "init 與 destroy",
+    "wait 與 signal",
+    "TestAndSet 與 Swap"
+   ],
+   "ans": "pthread_mutex_lock 與 pthread_mutex_unlock",
+   "why": "lock / unlock 包住 critical section，裡面就是某種 solution。"
+  },
+  {
+   "q": "condition variable 的 broadcast 會？",
+   "opts": [
+    "叫醒所有在這個 condition 上等待的 thread",
+    "只叫醒一個",
+    "讓所有 thread 去睡",
+    "釋放 mutex"
+   ],
+   "ans": "叫醒所有在這個 condition 上等待的 thread",
+   "why": "signal 叫醒一個，broadcast 叫醒全部。"
+  },
+  {
+   "q": "pthread_cond_wait 為什麼要傳入 mutex？",
+   "opts": [
+    "它會在睡覺時 release mutex，醒來 return 前 reacquire",
+    "它要 destroy mutex",
+    "它用 mutex 計數",
+    "不需要，只是習慣"
+   ],
+   "ans": "它會在睡覺時 release mutex，醒來 return 前 reacquire",
+   "why": "否則 signal 的一方進不了 critical section。"
+  },
+  {
+   "q": "TestAndSet(&lock) 做的事是？",
+   "opts": [
+    "回傳 lock 原本的值，並把 lock 設成 true（atomic）",
+    "把 lock 設成 false",
+    "交換兩個變數",
+    "等待 lock 變成 false"
+   ],
+   "ans": "回傳 lock 原本的值，並把 lock 設成 true（atomic）",
+   "why": "拿到 false 的人進去，後面拿到 true 的人卡在 while。"
+  },
+  {
+   "q": "TestAndSet / Swap 的 lock 解法不滿足哪個條件？",
+   "opts": [
+    "bounded waiting",
+    "mutual exclusion",
+    "progress",
+    "三個都滿足"
+   ],
+   "ans": "bounded waiting",
+   "why": "沒有排隊，先 call 的人先搶到。"
+  },
+  {
+   "q": "Swap 解法中，進入 critical section 的條件是？",
+   "opts": [
+    "和 lock 交換後拿到 false（紅球）",
+    "key 一直是 true",
+    "lock 是 true",
+    "自己 PID 最小"
+   ],
+   "ans": "和 lock 交換後拿到 false（紅球）",
+   "why": "全場只有一個 false，所以只有一個人能進去。"
+  }
+ ]
+}

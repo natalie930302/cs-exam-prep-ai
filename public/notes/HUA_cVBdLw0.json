@@ -1,117 +1,233 @@
 {
  "video": "HUA_cVBdLw0",
  "label": "Semaphores in Operating Systems",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
    "title": "Semaphore：wait 與 signal",
-   "scene": "sem-binary",
+   "scene": "syn-sem-intro",
+   "cues": [
+    0,
+    3,
+    10.8,
+    16,
+    26.3,
+    45.7,
+    63.4,
+    85.1,
+    97.4,
+    122.3
+   ],
    "points": [
     {
-     "text": "semaphore 名字來自鐵路的號誌；用兩個函式 wait 與 signal（也叫 P、V）。",
-     "t": 0
+     "t": 0,
+     "text": "semaphore 名字來自鐵路的號誌；用兩個函式 wait 與 signal（也叫 P、V）。"
     },
     {
-     "text": "wait 用在 critical section 的 entry section，signal 用在 exit section。",
-     "t": 21
+     "t": 16,
+     "text": "wait 用在 critical section 的 entry section，signal 用在 exit section。"
     },
     {
-     "text": "定義變數 S 代表資源數；wait(S)：S ≤ 0 就等，否則 S 減 1。",
-     "t": 35
+     "t": 26,
+     "text": "定義變數 S 代表資源數；wait(S)：S ≤ 0 就等，否則 S 減 1。"
     },
     {
-     "text": "S 初值 1：第一個 process wait 後 S 變 0，進 critical section；出來時 signal 把 S 加回 1。",
-     "t": 72
+     "t": 63,
+     "text": "S 初值 1：第一個 process wait 後 S 變 0，進 critical section；出來時 signal 把 S 加回 1。"
     },
     {
-     "text": "它在裡面時第二個 process 呼叫 wait，S = 0 → 在迴圈裡一直轉，等第一個做完。",
-     "t": 112
+     "t": 97,
+     "text": "它在裡面時第二個 process 呼叫 wait，S = 0 → 在迴圈裡一直轉，等第一個做完。"
     }
+   ],
+   "explain": [
+    "介紹另一個同步工具：[[semaphore]]（號誌）。",
+    "semaphore 這個名字來自鐵路上的號誌燈，用來告訴火車能不能通行。作業系統借用了這個名字。",
+    "在 OS 裡，semaphore 用兩個函式：wait 和 signal。左邊是它們的程式碼。",
+    "wait 放在 critical section 前面的 [[entry section]]，signal 放在後面的 [[exit section]]。它們也叫 P 和 V（來自荷蘭文）。",
+    "這次不用 lock，而是定義一個整數變數 S。S 的初值可以不同，這裡是 1，代表「資源的數量」：現在有 1 個位置可以用。",
+    "一個 process 想進 critical section，就呼叫 wait(S)。wait 會檢查 S 是不是 ≤ 0：如果是，就在 while 迴圈裡等。",
+    "現在 S = 1，P1 是第一個呼叫 wait 的，S 不是 ≤ 0，所以不用等，跳出迴圈，把 S 減 1 變成 0，然後進 critical section。",
+    "等 P1 做完、離開 critical section 時，會對同一個 S 呼叫 signal，把 S 加回 1。",
+    "但在 P1 還在裡面、S 是 0 的時候，如果 P2 來呼叫 wait：S 是 0，P2 就只能在 while 迴圈裡一直轉（紅色代表在空轉等待）。",
+    "這就是它叫 wait 的原因：P2 一直等到 P1 出來 signal，S 變回 1，P2 才跳出迴圈、把 S 減成 0，進去。"
    ]
   },
   {
    "title": "Counting semaphore",
-   "scene": "sem-counting",
+   "scene": "syn-sem-count",
+   "cues": [
+    130.7,
+    147.7,
+    168.1,
+    179,
+    194.5,
+    201.1,
+    211,
+    222.3,
+    236.1,
+    239.9,
+    245.5
+   ],
    "points": [
     {
-     "text": "semaphore 也能管多個資源：S 初值 3。",
-     "t": 150
+     "t": 130,
+     "text": "semaphore 也能管多個資源：S 初值 3。"
     },
     {
-     "text": "P1、P2、P3 依序 wait，S 從 3 → 2 → 1 → 0，都進 critical section。",
-     "t": 174
+     "t": 148,
+     "text": "P1、P2、P3 依序 wait，S 從 3 → 2 → 1 → 0，都進 critical section。"
     },
     {
-     "text": "P4 看到 S = 0 → 等；P5、P6 也一樣。",
-     "t": 220
+     "t": 194,
+     "text": "P4 看到 S = 0 → 等；P5、P6 也一樣。"
     },
     {
-     "text": "P2 出來 signal，S 從 0 變 1，P4 就能進去。",
-     "t": 235
+     "t": 211,
+     "text": "P2 出來 signal，S 從 0 變 1，P4 就能進去。"
     },
     {
-     "text": "初值 1 叫 binary semaphore（像 mutex lock）；初值大於 1 叫 counting semaphore，可讓多個 process 同時進。",
-     "t": 264
+     "t": 236,
+     "text": "初值 1 叫 binary semaphore（像 mutex lock）；初值大於 1 叫 counting semaphore，可讓多個 process 同時進。"
     }
    ],
-   "trap": "補充：課本的分法看「值域」：binary 只有 0、1；counting 是任意整數。counting semaphore 初值也可以是 1，影片「初值 1 就叫 binary」是簡化說法。"
+   "trap": "補充：課本的分法看「值域」：binary 只有 0、1；counting 是任意整數。counting semaphore 初值也可以是 1，影片「初值 1 就叫 binary」是簡化說法。",
+   "explain": [
+    "semaphore 也很適合管理「多個相同的資源」。例如把 S 的初值設成 3，代表有 3 個位置。",
+    "P1 呼叫 wait，檢查 S：3 是正的，不用等。把 S 減 1 變 2，進 critical section。",
+    "P2 來檢查，S = 2，也不用等，進去，S 變成 1。",
+    "P3 來，S = 1 還是大於 0，進去之前先減 1，S 變成 0。現在 3 個位置都滿了。",
+    "P4 來了，看到 S = 0，P4 只能等。",
+    "如果還有 P5、P6 或其他 process 來，也全部都要等，直到裡面有人出來。",
+    "例如 P2 做完離開 critical section，它呼叫 signal，S 從 0 加成 1，空出一個位置。",
+    "P4 的等待就結束了：它看到 S = 1，減成 0，進 critical section。",
+    "這種可以讓好幾個 process 同時進去的，叫 counting semaphore（計數號誌）。",
+    "還有一種叫 binary semaphore（二元號誌）。影片說初值是 1 的就是 binary，用起來就像 [[mutex lock]]，一次只讓一個進去。",
+    "初值大於 1（像這裡的 3）的叫 counting semaphore，適合有多個資源、想讓多個 process 同時進去的情況。（課本是用「值的範圍」來分，下面的陷阱有補充。）"
+   ]
   },
   {
    "title": "用 semaphore 排順序：S1 在 S2 之前",
-   "scene": "sem-order",
+   "scene": "syn-sem-order",
+   "cues": [
+    262.7,
+    271.9,
+    278.5,
+    295.6,
+    310,
+    339.7,
+    352.4,
+    365.2,
+    375.4,
+    397.2,
+    417,
+    449
+   ],
    "points": [
     {
-     "text": "P1 有一行 S1、P2 有一行 S2，要求 S1 一定要在 S2 之前執行。",
-     "t": 297
+     "t": 262,
+     "text": "P1 有一行 S1、P2 有一行 S2，要求 S1 一定要在 S2 之前執行。"
     },
     {
-     "text": "若 S2 先跑（例如 S2 在第 10 秒、S1 在第 20 秒）就不符合要求。",
-     "t": 340
+     "t": 310,
+     "text": "若 S2 先跑（例如 S2 在第 10 秒、S1 在第 20 秒）就不符合要求。"
     },
     {
-     "text": "定義 semaphore sync = 0；S1 後面寫 signal(sync)，S2 前面寫 wait(sync)。",
-     "t": 366
+     "t": 339,
+     "text": "定義 semaphore sync = 0；S1 後面寫 signal(sync)，S2 前面寫 wait(sync)。"
     },
     {
-     "text": "P2 先到 wait 時 sync = 0 → 等；第 20 秒 P1 signal 把 sync 加到 1，第 21 秒 P2 才執行 S2。",
-     "t": 385
+     "t": 375,
+     "text": "P2 先到 wait 時 sync = 0 → 等；第 20 秒 P1 signal 把 sync 加到 1，第 21 秒 P2 才執行 S2。"
     },
     {
-     "text": "P2 等的那段就是它多花的 waiting time。",
-     "t": 443
+     "t": 449,
+     "text": "P2 等的那段就是它多花的 waiting time。"
     }
+   ],
+   "explain": [
+    "另一個例子：兩個 process 用 semaphore 讓彼此同步，也就是控制「誰先誰後」。",
+    "有兩個 process：P1（上面那排）和 P2（下面那排），橫軸是時間。",
+    "P1 裡有一行程式叫 S1，P2 裡有一行叫 S2。要求是：S1 一定要在 S2 之前執行。",
+    "如果剛好 S1 在第 10 秒、S2 在第 11 秒執行，S1 在前面，符合要求，很開心。",
+    "但也可能是另一種情況：S2 在第 10 秒就跑了，S1 到第 20 秒才跑。S1 跑到 S2 後面，不符合要求。",
+    "解法：定義一個 semaphore，叫 sync，初值設成 0。0 代表「還沒有通行證」。",
+    "在 P1 的 S1 後面，寫 signal(sync)：S1 做完，就發一張通行證。",
+    "在 P2 的 S2 前面，寫 wait(sync)：要執行 S2 之前，先拿通行證。",
+    "如果 S2 比 S1 先到，sync 還是 0，wait 就會強迫 P2 停在這一行等（紅色那段）。",
+    "要等多久？等到第 20 秒，P1 做完 S1，執行 signal，把 sync 加到 1。",
+    "第 21 秒，P2 看到 sync = 1，結束等待（wait 把 sync 減回 0），然後執行 S2。順序就保證是 S1 → S2 了。",
+    "P2 在時間軸上變長了，多出來的紅色那段，就是 P2 為了等 S1 而花的 waiting time。"
    ]
   },
   {
    "title": "Busy waiting 與 block / wakeup",
-   "scene": "sem-block",
+   "scene": "syn-sem-block",
+   "cues": [
+    465,
+    471.6,
+    496,
+    517.1,
+    551.2,
+    559.4,
+    581.3,
+    598.1,
+    609.6,
+    631.2,
+    644,
+    653.1,
+    668,
+    699.8,
+    706.7,
+    728.9,
+    750.5
+   ],
    "points": [
     {
-     "text": "wait 用 while 迴圈實作時，等的 process 會一直在迴圈裡轉（spin），可能好幾個一起轉。",
-     "t": 459
+     "t": 465,
+     "text": "wait 用 while 迴圈實作時，等的 process 會一直在迴圈裡轉（spin），可能好幾個一起轉。"
     },
     {
-     "text": "每次 OS 給它 CPU，它只是在跑什麼都不做的迴圈，浪費 CPU cycle。",
-     "t": 510
+     "t": 517,
+     "text": "每次 OS 給它 CPU，它只是在跑什麼都不做的迴圈，浪費 CPU cycle。"
     },
     {
-     "text": "改用 OS 提供的兩個 system call：block 與 wakeup；跟 I/O 等待類似，睡著時不吃 CPU。",
-     "t": 543
+     "t": 551,
+     "text": "改用 OS 提供的兩個 system call：block 與 wakeup；跟 I/O 等待類似，睡著時不吃 CPU。"
     },
     {
-     "text": "wait：先把 S 減 1；若 S < 0，把自己加進這個 semaphore 的 waiting list，再 block。",
-     "t": 642
+     "t": 644,
+     "text": "wait：先把 S 減 1；若 S < 0，把自己加進這個 semaphore 的 waiting list，再 block。"
     },
     {
-     "text": "signal：先把 S 加 1；若還有人在等，從 list 移出一個 process，用 wakeup 叫醒它。",
-     "t": 696
+     "t": 700,
+     "text": "signal：先把 S 加 1；若還有人在等，從 list 移出一個 process，用 wakeup 叫醒它。"
     },
     {
-     "text": "這就是沒有 busy waiting（no spinlock）的 semaphore 實作。",
-     "t": 753
+     "t": 751,
+     "text": "這就是沒有 busy waiting（no spinlock）的 semaphore 實作。"
     }
    ],
-   "trap": "補充：課本 signal 的條件是「S.value++ 之後若 S.value ≤ 0」才 wakeup（代表還有人在等）；影片說成「變成 0 或大於 0」不精確。S 為負時，|S| 等於在等的 process 數。"
+   "trap": "補充：課本 signal 的條件是「S.value++ 之後若 S.value ≤ 0」才 wakeup（代表還有人在等）；影片說成「變成 0 或大於 0」不精確。S 為負時，|S| 等於在等的 process 數。",
+   "explain": [
+    "semaphore 還可以用另一種方式實作。先回頭看原本的 wait：裡面有一個 while 迴圈。",
+    "只要 S 還不是正數，在等的 process 就會一直在這個迴圈裡轉來轉去（spin），這叫 [[busy waiting]]。",
+    "這是 semaphore 原本做法的先天問題：在等的可能不只一個，兩個、三個……全部都在原地空轉。",
+    "對整個系統來說，每次 OS 讓這種 process 上 [[CPU]]，它只是跑一個什麼事都沒做的迴圈，白白浪費 CPU 的時間。",
+    "所以改成用 OS 提供的兩個 [[system call]]：一個叫 block，一個叫 wakeup。",
+    "還記得 process 等 I/O 的時候嗎？它會進入類似睡覺的狀態，不用 CPU，只是等 I/O 做完。",
+    "這裡做的事一樣，差別是：這次是 process 自己說「我在等 critical section 空出來，讓我去睡吧」。",
+    "process 宣告自己要等，呼叫 block 這個 system call，請 OS 把它放進 waiting state（等待狀態）。",
+    "當有 process 離開 critical section，它就用 wakeup 叫醒另一個正在等著進去的 process。",
+    "這樣不管有幾個 process 在等，都不會浪費 CPU：它們在 waiting state 裡，OS 不會把它們送上 CPU。",
+    "新版的 wait 怎麼寫？一進來就先把 S 減 1。S 初值 1，P1 呼叫 wait，S 變 0，不是負的，直接進去。",
+    "P2 來呼叫 wait，S 減成 −1，變成負的，代表沒位置了。P2 把自己加進這個 semaphore 專屬的 waiting list（等待名單）。",
+    "接著呼叫 block()：「我不想浪費 CPU，讓我去睡」，P2 睡著了（zZ）。P3 也一樣，S 變成 −2。S 是負的時候，它的絕對值剛好等於在等的人數。",
+    "再看 signal：離開 critical section 的 P1，先把 S 加 1，從 −2 變 −1。",
+    "接著檢查 S。課本的寫法是：加完以後 S ≤ 0，代表 list 裡還有人在等。（影片這裡說成「變成 0 或大於 0」，不精確，以課本為準。）",
+    "從 list 移出一個 process（這裡是 P2），用 wakeup 這個 system call 叫醒它，P2 就進 critical section 了。",
+    "這就是沒有 busy waiting 的 semaphore 實作，也叫 no spinlock：等待的 process 都在睡覺，不吃 CPU。"
+   ]
   }
  ],
  "quiz": [
@@ -170,6 +286,5 @@
    "ans": "等的 process 一直佔用 CPU 空轉",
    "why": "所以改成 block / wakeup。"
   }
- ],
- "timing": "estimated"
+ ]
 }

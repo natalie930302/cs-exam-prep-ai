@@ -1,0 +1,241 @@
+{
+ "video": "SNwNax1Wz7k",
+ "label": "清大周志遠 第21B講 Monitors(續) & Atomic Transaction",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Monitor 解法跑一次",
+   "scene": "syn-21b-trace",
+   "cues": [
+    2,
+    44.4,
+    64,
+    97.4,
+    115.7,
+    120.4,
+    129.7,
+    163.4,
+    186.1,
+    201.7,
+    223.7,
+    253.3,
+    265
+   ],
+   "points": [
+    {
+     "t": 2,
+     "text": "用 monitor 從 method 的角度解問題：好寫、會對；monitor 保證一次一人 call。"
+    },
+    {
+     "t": 64,
+     "text": "每個哲學家：DP.pickup(i) → 吃 → DP.putdown(i)；一開始都是 THINKING。"
+    },
+    {
+     "t": 120,
+     "text": "P1 先 pickup：HUNGRY → test 成功 → EATING；P2 接著 pickup：test 失敗 → self[2].wait()。"
+    },
+    {
+     "t": 202,
+     "text": "P1 putdown：THINKING，test(P0) 沒事，test(P2) 成功 → P2 變 EATING 並被 signal 叫醒。只有 DP object 是 monitor。"
+    }
+   ],
+   "explain": [
+    "這種解法跟之前「想哪些 variable 會 race、哪裡要變 critical section」完全不同：之前是從 memory 的角度，這裡是從 method、寫程式的角度解，好寫又正確。右邊是上次的 monitor 程式。",
+    "monitor 本身保證一次只有一個人呼叫它的 method，而且最後大家都會輪到（除非有人在裡面無止盡地等）。",
+    "整個程式怎麼用這個 monitor？每個哲學家（process 或 thread）在吃之前呼叫 pickup，吃完呼叫 putdown。",
+    "重點是左右相鄰的人不能同時吃。所以 pickup 完成，才可以開始吃；吃完 putdown。更多人也一樣照這個順序。",
+    "一開始大家的 state 都是 thinking。",
+    "假設 P1 先來，他要吃：呼叫 pickup，state 變成 hungry，然後 test 自己能不能吃。",
+    "第一個人的測試一定成功，因為他左右兩邊都在 thinking。所以 state 從 hungry 改成 eating（綠色），也不用 wait，直接去吃。",
+    "P1 還在吃、還沒 putdown 時，P2 進來 pickup：變成 hungry，但 test 失敗（鄰居 P1 在吃），state 還是 hungry、不是 eating，所以被放進 waiting list。",
+    "P2 就在 monitor 裡被卡住，一直到有人 signal、把它從 monitor 裡叫起來為止。",
+    "什麼時候會被叫起來？等 P1 呼叫 putdown。putdown 先把自己改回 thinking，然後幫左右鄰居測試：先測 P0，P0 只是 thinking、不 hungry，什麼事都沒發生。",
+    "再測 P2：左右都沒在吃、P2 又是 hungry，所有條件都符合。test 裡做兩件事：把 P2 的 state 改成 eating，並且 signal P2，把它叫醒。",
+    "所以 P1 的 putdown 結束後，P2 就可以進去吃了。大家就這樣同步。",
+    "注意：只有 DiningPhilosophers 這個 object 是 monitor，P1、P2 只是使用它的 application，用這個 class 的 method 來解問題。"
+   ]
+  },
+  {
+   "title": "Java 的 synchronized",
+   "scene": "syn-21b-java",
+   "cues": [
+    288,
+    305.6,
+    310.5,
+    323.4,
+    335.1,
+    346.7,
+    368.6,
+    390.6,
+    412,
+    431.9,
+    447.7,
+    474.6,
+    491.5,
+    514.6
+   ],
+   "points": [
+    {
+     "t": 288,
+     "text": "Java 的 synchronized method：跟 monitor 一樣但更 fine-grained，任一個 method 都可以標；標了的 method 之間全部互斥（不能分組）。"
+    },
+    {
+     "t": 391,
+     "text": "synchronized statement（block）：把一段 statement 框起來並指定 variable，compiler 幫你加 lock / unlock，比較接近 mutex lock。"
+    },
+    {
+     "t": 492,
+     "text": "Java 主要這兩種；Pthread 則提供 mutex、condition variable 的 API。classic problems 用來驗證這些 tool。"
+    }
+   ],
+   "explain": [
+    "這些概念在真實的程式語言裡都包裝得很好用。像 Java 有一個 synchronized method 的功能。",
+    "它的用法跟 monitor 一樣，但更 fine-grained（更細）。左邊的類別是示意。",
+    "它不是把整個 class 當成一個 monitor，而是 class 裡任何一個 method，你都可以在前面加 synchronized。",
+    "加上 synchronized 是告訴 compiler：這幾個 method 有 race condition（同步問題），不能同時執行。",
+    "這樣很有彈性：一個 class 裡可能有 10 個 method，programmer 可以自己決定哪些要 synchronize、哪些不用（像 id() 就沒加）。",
+    "但只要貼上 synchronized，這些 method 全部都要互斥地執行。不能像用好幾把不同的 mutex lock 那樣，分成不同的組。",
+    "這就是 Java 支援的方式，很容易用。它的概念就是 monitor，只是更有彈性，因為實際應用不會那麼單純，不一定每個 method 都要 synchronized。",
+    "Java 還支援另一種同步方式，在 statement 的層級，這個比較接近 [[mutex lock]]，不太像 monitor。",
+    "用法是把一段程式碼框起來，前面寫 synchronized 再加一個 variable，告訴 Java compiler：這個 variable 是共用的，會有 race condition。",
+    "compile 成最後的程式之前，它會自己幫你在前面加 lock、後面加 unlock。",
+    "這只是幫助 programmer：你自己用 mutex lock 也可以，但這樣比較簡單，程式比較乾淨、容易懂。",
+    "所以它是比較 fine-grained、在 statement 層級的同步工具。",
+    "每個語言把這些工具放進去的方式都不太一樣。Java 主要是剛才這兩種；Pthread 則提供 mutex lock、condition variable 的 API 讓你使用。",
+    "這就是 classic synchronization problems：大家用這些問題來驗證同步工具好不好用、能不能解決。它們在一般軟體運作中非常常見，只是被講得比較生活化。"
+   ]
+  },
+  {
+   "title": "Atomic transaction",
+   "scene": "syn-21b-atomic",
+   "cues": [
+    548,
+    565,
+    601.5,
+    627.5,
+    655.3,
+    670.5,
+    698.8,
+    716.5,
+    742.5,
+    762.7,
+    812.4,
+    841.9,
+    883.4,
+    920.4,
+    969.1,
+    1003.5,
+    1027.1,
+    1056.4,
+    1098
+   ],
+   "points": [
+    {
+     "t": 544,
+     "text": "atomic = 不可分割，可以形容 instruction、function，也可以形容 transaction（database 的交易，例如 ATM、跨行轉帳）。"
+    },
+    {
+     "t": 699,
+     "text": "transaction 是一連串 instruction 的邏輯；atomic transaction：all or nothing，不能做到一半（state unstable）；file system、OS 也是。"
+    },
+    {
+     "t": 812,
+     "text": "作法：commit / abort（two-phase）；沒 commit 就 rollback。rollback 靠 log（存在 stable storage：名稱、時間、動作、data 舊值 / 新值）。"
+    },
+    {
+     "t": 1027,
+     "text": "checkpoint（系統還原點）：從最近的 checkpoint 開始重做 log，不必從頭；長時間的 application 也常用。"
+    }
+   ],
+   "explain": [
+    "這一章最後提到的是 atomic transaction。",
+    "[[atomic]] 我們用過好幾次，意思是「不可分割」。它是一個形容詞，可以加在不同的執行單位上：atomic 的 instruction、atomic 的 function（像 semaphore 的 wait、signal），反正就是要一次做完。",
+    "這裡講的是 transaction（交易）。最常聽到 transaction 是在 database，像去 ATM 提款，這些交易都叫 transaction。",
+    "transaction 更複雜，它是一整個流程。像轉帳不只是呼叫一個函式，可能還牽涉兩家銀行的業務操作，非常冗長，整個包起來就叫 transaction。",
+    "在 database 這類系統裡，就會聽到 atomic transaction 這個詞。",
+    "它當然跟同步有關：atomic 就是為了避免同步問題。兩個人同時轉帳，結果錢只加了一筆；一個存錢一個領錢，結果餘額變 0，沒解好都可能發生。",
+    "transaction 指的是一連串 instruction（甚至 function）的集合，它是一段把整件事做完的邏輯、流程。",
+    "atomic 的意思：整個動作要嘛一次全部做完，要嘛就都不做，但不能做到一半。做到一半的狀態叫 unstable，你不知道結果是什麼，也不知道怎麼接下去或恢復。",
+    "例如存錢失敗，就是你的金額完全沒動；不能失敗了卻多出 500 塊。all or nothing，就是 atomic 的定義。",
+    "不只 database。整個 file system、甚至 OS 也可以這樣看：跳電後重開機變慢，就是它在檢查 file system 的狀態對不對、有沒有檔案遺失。",
+    "保證 atomic transaction，比較傳統、一般的作法是 commit / abort，也就是 two-phase（兩階段）的動作。",
+    "transaction 執行了很多動作之後，最後一定要再做一件事：commit（確認）。沒有 commit，前面就算看起來做了，也全部不承認，rollback（倒回去）。用過 git、GitHub 的 commit 就是這個意思。",
+    "所以要保證 atomic，就要有能力 rollback。all（做完）很簡單，難的是 none：已經做到一半了，要怎麼回到原本的狀態？",
+    "怎麼 rollback？一般系統的作法都是 logging（記日誌）：把 transaction 裡的每個步驟，存在 stable storage（穩定、不會遺失的儲存）裡。系統可以 crash，但 log 絕對不能掉。",
+    "log 記什麼？大概就是 transaction 的名稱（第幾筆交易）、時間、動作，最重要的是 data 的值：原本的舊值、改成的新值，才知道怎麼重建或改回去。",
+    "log 哪些內容是設計過的：log 太多，系統光寫 log 就變慢；log 太少，又沒辦法重建。",
+    "另一個方式是 checkpoint。log 的問題是沒有時間觀念：系統開機就開始記，記到 crash 為止，金融系統可能跑了十年，總不能從第一年開始重建十年吧。",
+    "checkpoint 就是系統還原點：把一個完整、stable 的狀態記下來。壞掉時從最近的 checkpoint 開始，再接著 log 往下做，不用從頭開始。",
+    "這是 file system、database 等系統很一般的作法。很多跑很久的應用程式（例如要跑三個月的大氣模擬）中間一定會遇到失敗，也會用 checkpoint、rollback、commit 來加快 recovery。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "monitor 解法中，P1 正在吃時 P2 呼叫 pickup(2)，會？",
+   "opts": [
+    "state[2] = HUNGRY，test 失敗 → self[2].wait()",
+    "P2 也開始吃",
+    "P2 拿起一支筷子等另一支",
+    "P1 被迫停止"
+   ],
+   "ans": "state[2] = HUNGRY，test 失敗 → self[2].wait()",
+   "why": "鄰居 P1 是 EATING。"
+  },
+  {
+   "q": "P1 putdown 後 P2 怎麼開始吃？",
+   "opts": [
+    "putdown 裡 test(2) 成功 → state[2] = EATING 並 self[2].signal()",
+    "P2 自己 busy waiting 發現",
+    "OS 自動叫醒",
+    "P2 重新呼叫 pickup"
+   ],
+   "ans": "putdown 裡 test(2) 成功 → state[2] = EATING 並 self[2].signal()",
+   "why": "test 做兩件事：改 state、signal。"
+  },
+  {
+   "q": "Java 的 synchronized method 的特性？",
+   "opts": [
+    "標了 synchronized 的 method 之間互斥，沒標的不受限",
+    "整個 class 所有 method 都互斥",
+    "可以把 method 分成不同組各自互斥",
+    "只能用在 static method"
+   ],
+   "ans": "標了 synchronized 的 method 之間互斥，沒標的不受限",
+   "why": "比 monitor 更 fine-grained，但不能分組。"
+  },
+  {
+   "q": "Java 的 synchronized(obj) { … } 區塊比較接近？",
+   "opts": [
+    "mutex lock（compiler 幫你加 lock / unlock）",
+    "semaphore 計數",
+    "condition variable",
+    "monitor 的整個 class"
+   ],
+   "ans": "mutex lock（compiler 幫你加 lock / unlock）",
+   "why": "statement level 的同步。"
+  },
+  {
+   "q": "atomic transaction 的意思？",
+   "opts": [
+    "all or nothing：要嘛全部完成，要嘛像沒發生",
+    "一定很快完成",
+    "只能一個人使用 database",
+    "不需要 log"
+   ],
+   "ans": "all or nothing：要嘛全部完成，要嘛像沒發生",
+   "why": "做到一半的 state 是 unstable。"
+  },
+  {
+   "q": "為什麼需要 checkpoint？",
+   "opts": [
+    "log 會越來越長，從 checkpoint 開始 recovery 不用從頭",
+    "取代 commit",
+    "讓 transaction 更快 commit",
+    "避免 deadlock"
+   ],
+   "ans": "log 會越來越長，從 checkpoint 開始 recovery 不用從頭",
+   "why": "checkpoint 是系統還原點。"
+  }
+ ]
+}

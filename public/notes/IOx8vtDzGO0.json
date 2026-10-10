@@ -1,0 +1,386 @@
+{
+ "video": "IOx8vtDzGO0",
+ "label": "清大周志遠 第18D講 Critical Section(續)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "解法的路線",
+   "scene": "syn-18d-plan",
+   "cues": [
+    1,
+    26.1,
+    40.7,
+    58
+   ],
+   "points": [
+    {
+     "t": 1,
+     "text": "接下來都在設計 entry / exit section，去滿足三個 requirements。"
+    },
+    {
+     "t": 26,
+     "text": "路線：software solution（programmer 改程式）→ hardware 特殊 instruction → high-level tools（Java 等提供的 API）。"
+    }
+   ],
+   "explain": [
+    "接下來整堂課都在講：entry section 和 exit section 要怎麼設計，才能滿足剛才的三個條件（mutual exclusion、progress、bounded waiting）。",
+    "第一類是 software solution：完全從寫程式的角度，programmer 在自己的 multi-thread 程式裡加程式碼來解決同步問題。",
+    "之後會看到 hardware 的解法：電腦系統其實提供一些特殊的 instruction（指令），可以拿來解同步問題。",
+    "最後是比較 high level 的工具，像 Java 或平行程式的語言裡都有提供，直接呼叫它們的 API 就好。"
+   ]
+  },
+  {
+   "title": "解法一：只用 turn 輪流",
+   "scene": "syn-18d-turn",
+   "cues": [
+    78.4,
+    93,
+    116.3,
+    129.1,
+    165.1,
+    180.8,
+    190.6,
+    200.6,
+    208.5,
+    221.5,
+    239.7,
+    258,
+    289.1,
+    293.4,
+    307.1,
+    312.2,
+    338.1,
+    351.7
+   ],
+   "points": [
+    {
+     "t": 78,
+     "text": "兩個 process P0、P1，在 do-while 迴圈裡不斷想進 critical section。"
+    },
+    {
+     "t": 116,
+     "text": "用一個 shared 的 token（turn），值是 0 或 1：turn = 0 讓 P0 進、turn = 1 讓 P1 進；出來時把 turn 交給對方。"
+    },
+    {
+     "t": 181,
+     "text": "turn 只有一個值 → 一次只有一個人進得去，mutual exclusion 沒問題。"
+    },
+    {
+     "t": 240,
+     "text": "progress 不符合：程式不是你一行我一行，P0 出來後想馬上再進，turn 卻在 P1 手上，而 P1 根本不想進。"
+    },
+    {
+     "t": 338,
+     "text": "bounded waiting 符合（輪流，最多等一次）；三個條件只滿足兩個。"
+    }
+   ],
+   "trap": "這個「只用 turn」的寫法也叫 strict alternation（嚴格輪流）：有 mutual exclusion、有 bounded waiting，但違反 progress。",
+   "explain": [
+    "先從最簡單的情況開始：只有兩個 process，P0 和 P1。左右是它們的程式，中間綠色房間是 critical section，兩個小方塊現在都在 remainder。",
+    "程式寫成 do-while，代表兩邊不是跑一次就結束，而是不斷不斷地想進 critical section 存取資料。",
+    "第一個解法很簡單，用一個像鑰匙一樣的 token，叫 turn。它是兩個 process 都看得到的 shared variable（上面那格）。",
+    "turn 的值就是 0 或 1。",
+    "turn 是 0，P0 可以進去；turn 是 1，P1 可以進去。看 turn 的值來輪流。",
+    "turn 不是 0 就是 1，所以一次只有一個人能進，[[mutual exclusion]] 一定沒問題。",
+    "為了輪流：P0 的 while 檢查 turn 是 0，通過、進去，做完出來後把 turn 改成 1，意思是「換 P1」。",
+    "P1 一樣：等到 turn 是 1 就進去，做完把 turn 改回 0，換別人。",
+    "左邊的 while (turn != i) 這行就是 entry section，turn = j 這行就是 exit section。",
+    "這個解法並不完美。一個一個條件檢查：mutual exclusion 沒問題，turn 不可能同時是 0 又是 1。",
+    "第二個條件 progress：裡面空著時，想進的人要能進來。這個程式其實可能不符合，來看看為什麼。",
+    "要注意：沒人規定兩個程式是「你一行、我一行」輪著跑。CPU scheduling 是執行時才決定的，P0 可能跑了很多次，P1 才跑一次。",
+    "假設 P0 先進去、做完、出來了（turn 交給 P1），P1 卻還在 remainder，還沒進去過。",
+    "P0 跑得快，馬上又想進去，執行到 while：turn 是 1，條件 turn != 0 成立，P0 卡在這裡（紅色）。",
+    "P1 不急，根本還沒跑到要進去的那一行。critical section 明明空著，P0 卻進不去，這就是沒有 progress。",
+    "這個解法強迫「你做完換我、我做完換你」，但現實中 P0 很可能要連續做兩次，對方還不想進，P0 手上卻沒有鑰匙。",
+    "bounded waiting 倒是一定符合：你一次、我一次地輪流，對方進去過一次後就一定換你，最多等一次。",
+    "結論：三個條件只符合兩個，mutual exclusion 和 bounded waiting 有，progress 沒有。"
+   ]
+  },
+  {
+   "title": "解法二：Peterson's solution",
+   "scene": "syn-18d-peterson",
+   "cues": [
+    376.4,
+    386.5,
+    398,
+    411.7,
+    425.8,
+    446.6,
+    464.6,
+    490,
+    504.6,
+    527,
+    544.8,
+    562.1,
+    617.5,
+    640.8
+   ],
+   "points": [
+    {
+     "t": 376,
+     "text": "Peterson's solution 延伸 turn 的想法，再多加 flag[i] 表示 Pi 想不想進去（true / false）。"
+    },
+    {
+     "t": 465,
+     "text": "entry：while (flag[j] && turn == j); 對方想進而且對方有 key 才等；對方有 key 卻不想進，我照樣能進 → progress。"
+    },
+    {
+     "t": 527,
+     "text": "進去前 flag[i] = true，出來 flag[i] = false；key 一樣輪流：進去前先 turn = j 把 key 交給對方。"
+    },
+    {
+     "t": 562,
+     "text": "turn = j 要寫在檢查之前：先讓對方有一次檢查的機會；兩人都想進時，對方想進就不會把 key 還你。"
+    }
+   ],
+   "explain": [
+    "第二個解法叫 Peterson's solution，這才是正確的解法。兩邊一開始都在 remainder。",
+    "它延續剛才的想法，一樣用 turn 表示輪到誰：turn 等於 i 時，Pi 手上有鑰匙。",
+    "為了解決 progress 的問題，再多加一個 flag，用來表示這個 process 現在到底想不想進 critical section。",
+    "剛才的問題就出在：我們只是死板地輪流，根本不知道對方想不想進去。",
+    "flag 是兩個值：flag[0] 表示 P0 想不想進，flag[1] 表示 P1 想不想進，就是簡單的 true、false。",
+    "這樣除了知道鑰匙（token）在誰手上，還知道對方到底想不想進去。",
+    "看 entry section 的 while（左邊亮起來那行）：turn == j 代表對方有鑰匙，我就要等。注意最後的分號：條件成立時就卡在這行一直檢查。",
+    "但多了一個條件：flag[j] 也必須是 true 我才會被卡住。也就是說「對方真的想進、而且對方有鑰匙」，我才等。",
+    "如果我自己有鑰匙，當然直接進去；就算對方有鑰匙（turn = 1），只要他說不想進（flag[1] 是 F），我也應該要能進去。P0 就這樣進去了，這就滿足 progress。",
+    "出來時把自己的 flag 設回 false（進去前則設成 true，表示「我要進去」）。",
+    "鑰匙的部分一樣要輪流。換一個兩人都想進的情況：P0、P1 都先把自己的 flag 設成 true。",
+    "接著兩人都執行 turn = j，把鑰匙交給對方。為什麼要先交出去？因為最後寫 turn 的那個人，等於讓了步：這裡 P1 最後寫，turn 變成 0。",
+    "再各自檢查：P0 看到 turn 是 0，可以進去；P1 看到 P0 想進、鑰匙也在 P0 手上，只好等。對方想進的話，鑰匙就不會還你。",
+    "所以 turn = j 一定要寫在 while 檢查的前面：先給對方一次檢查、決定要不要進的機會，自己才進去。"
+   ]
+  },
+  {
+   "title": "證明三個 requirements",
+   "scene": "syn-18d-proof",
+   "cues": [
+    652.3,
+    672.8,
+    684.8,
+    705.9,
+    723.1,
+    745,
+    755,
+    793.3,
+    803.6,
+    822.6,
+    846.2,
+    857.9,
+    893.4,
+    912.2,
+    950.7,
+    976.3,
+    990.1,
+    1010.5,
+    1058,
+    1073.6,
+    1088.9,
+    1111.5,
+    1141,
+    1167.6
+   ],
+   "points": [
+    {
+     "t": 652,
+     "text": "mutual exclusion（反證法）：兩人都在裡面需要「對方 flag 為 false 或 turn 是自己」；兩人 flag 都是 true，turn 又只能是 0 或 1 → 不可能。"
+    },
+    {
+     "t": 804,
+     "text": "progress：P1 剛離開（flag[1] = false）→ P0 能進；P1 繞一圈又想進 → 兩人都 ready，turn 決定一人進去，critical section 不會空著。"
+    },
+    {
+     "t": 976,
+     "text": "bounded waiting：P1 剛出來若沒被 context switch、又想進，它先把 turn 交給 P0，而 P0 的 flag 是 true → P1 卡在 while，直到換 P0 進去。"
+    }
+   ],
+   "explain": [
+    "為什麼這個解法能保證三個條件？先看 mutual exclusion。",
+    "用反證法：先假設兩個程式都已經在 critical section 裡面了，看會不會出現矛盾。",
+    "要能進去，while 的條件必須不成立：對 P0 來說，要嘛 flag[1] 是 false（對方不想做），要嘛 turn 剛好是 0；P1 反過來。",
+    "兩個都要進去，代表它們自己的 flag 都已經設成 true 了。所以「對方的 flag 是 false」這個條件不可能成立。",
+    "flag 那個條件幫不了任何人進去，能讓人進去的只剩 turn 的值。",
+    "turn 是用「設定（assign）」的方式寫入，不是 ++ 或 --，所以它一定是 0 或 1，不可能同時是 0 又是 1。",
+    "如果 turn 是 0，P0 可以在裡面，但 P1 的兩個條件都不成立，所以 P1 不可能在裡面（紅色）。",
+    "反過來 turn 是 1 也一樣。所以「兩人都在裡面」需要的條件永遠不會同時成立，反證完成：mutual exclusion 成立。",
+    "第二個 progress。",
+    "假設 P0 想進去。P1 要嘛在 remainder，要嘛在 while 之前，反正不在 critical section 裡。",
+    "要證明的是：P0 執行到 while 時，一定能 break（跳出）迴圈，進到 critical section。",
+    "情況一：P1 已經做完離開、不想進去。那 flag[1] 一定被設成 false，P0 的條件不成立，break 進去。",
+    "情況二：P1 做完後沒有被 context switch，還在同一個 CPU burst 裡，很快又繞一圈回來想進去。兩人都把 flag 設成 true，也各自設了 turn。",
+    "兩人同時想進，flag 都是 true、都 ready 了。turn 不是 0 就是 1，所以一定有一個人能進去：這裡 turn = 0，P0 進去。",
+    "兩種情況都有人能進去，critical section 不會空在那裡沒人用，progress 成立。",
+    "最後一個 bounded waiting。畫面設定成：P1 在 critical section 裡，P0 在 while 等。",
+    "跟 progress 有點像，但要更嚴謹：P1 剛執行完時，要確定下一個一定是 P0。",
+    "P1 出來把 flag[1] 設成 false。如果這時剛好 context switch，P0 檢查時看到 flag[1] 是 false，不管 turn 是多少都能 break，進去。",
+    "不一樣的情況：P1 執行完沒有被 context switch，它繼續跑，又繞回來想進去，flag[1] 又設成 true。",
+    "這就是為什麼 turn 要寫在 while 前面：P1 進下一輪之前，一定要先執行 turn = 0，把權力讓給 P0。",
+    "P1 的 flag 是 true，但鑰匙在 P0 那邊；P0 一直在等，它的 flag 也一直是 true。所以 P1 被卡在 while。",
+    "P1 只能在 while 迴圈裡一直檢查條件，直到它的 CPU burst 時間用完，OS 做 context switch 換到 P0。P0 一換過來馬上就能進去。",
+    "因為兩個都 ready 時，鑰匙一定交給另一個人，剛執行完的人沒辦法立刻重複進去，等的人一定先拿到鑰匙。bounded waiting 成立。",
+    "這就是「把鑰匙交給別人（turn = j）」和「把鑰匙設給自己」的差別。"
+   ]
+  },
+  {
+   "title": "Critical section 要定義在哪",
+   "scene": "syn-18d-csrange",
+   "cues": [
+    1183,
+    1198.1,
+    1210,
+    1223.9,
+    1238.4,
+    1247.5,
+    1261.8,
+    1290.2,
+    1309.1,
+    1330.2,
+    1363,
+    1384.1,
+    1399.1
+   ],
+   "points": [
+    {
+     "t": 1183,
+     "text": "在哪裡定義 critical section 很重要。把 producer-consumer 的整段 code 都包進去 → consumer 在裡面等資料、producer 被 entry 擋住 → deadlock。"
+    },
+    {
+     "t": 1290,
+     "text": "包進無關的 computation 雖然正確但效率差：被 context switch 後別人卡在 entry 空等，critical section 也被拉長。"
+    },
+    {
+     "t": 1399,
+     "text": "原則：critical section 越小越好，只包跟 race condition 有關的程式。"
+    }
+   ],
+   "explain": [
+    "學會寫法之後，第一個要注意的是：critical section 到底要定義在哪裡？",
+    "用之前 consumer–producer 的例子。一個很直覺的想法：把所有 code 都放進 critical section（紫色框），全部都保護應該最安全？",
+    "答案是錯的！這樣定義會產生 [[deadlock]]，程式卡住。原因很簡單，看下去。",
+    "一開始 buffer 是空的。假設 consumer 先被呼叫，它是第一個，順利進入 critical section。",
+    "它發現 buffer 是空的，沒東西可以拿，就在 critical section 裡面用迴圈等。",
+    "這時 producer 才被呼叫，但整段都是 critical section，它被 entry section 擋在外面，永遠沒機會進去放資料。",
+    "consumer 在等 producer 產生資料；producer 卻在等 consumer 離開 critical section。兩個互相等，卡死在那裡，這就是下一章的 deadlock。",
+    "第二種寫法是正確的、但不太好。重點在 critical section 的範圍。",
+    "假設程式裡有一些完全獨立的計算（compute），真正會 race 的只有 counter++，卻把計算也一起包進 critical section。",
+    "因為有 mutual exclusion，A 在裡面做到一半如果被 context switch，換到 B，B 也要進 critical section，就會卡在 entry section。",
+    "那些計算本來誰被排到誰就能做，包進去之後，變成一定要等 A 全部做完 B 才能做，等於把 critical section 的時間拉長了。",
+    "整體 CPU 效率就變差：很多時候輪到你執行，你卻卡在 entry section 做沒意義的等待。",
+    "所以原則是：critical section 包得越小越好，只包跟 race condition 有關的程式（這裡只有 counter++）。找出正確的 critical section 也很重要。"
+   ]
+  },
+  {
+   "title": "Bakery algorithm 的概念（預告）",
+   "scene": "syn-18d-bakery",
+   "cues": [
+    1419,
+    1428.6,
+    1438.3,
+    1459.8,
+    1476.6,
+    1489.5,
+    1499.7,
+    1521.3,
+    1534.8,
+    1565.8,
+    1595.3,
+    1608.4
+   ],
+   "points": [
+    {
+     "t": 1416,
+     "text": "兩個 process 的解法不夠，大部分問題是 N 個 process：Bakery algorithm 可以用在 N 個。"
+    },
+    {
+     "t": 1460,
+     "text": "概念像去郵局 / 麵包店抽號碼牌：一次服務一個、first come first serve（bounded waiting）、知道下一個是誰（progress）。"
+    },
+    {
+     "t": 1535,
+     "text": "程式裡抽號碼是好幾行，號碼可能相同（只保證 non-decreasing）；tie breaker 用 PID，小的先。"
+    }
+   ],
+   "explain": [
+    "剛剛介紹的都是兩個 process 之間的同步解法。",
+    "但大部分的問題不只兩個，而是 N 個 process 之間要同步。",
+    "解法叫 Bakery algorithm（麵包店演算法），可以用在 N 個 process，不像剛才的解法只能用在兩個。",
+    "概念就像去郵局或麵包店買東西：只有一個人幫大家結帳。",
+    "大家先抽號碼牌，依號碼一個一個來，就能確保一次只有一個人在結帳，人再多也能輪流。",
+    "抽了號碼牌就是 first come, first serve（先到先服務），所以滿足 bounded waiting。",
+    "只要有人抽號碼，就知道下一個要服務的是誰，所以也滿足 progress。",
+    "在程式裡：每個 process 進 critical section 之前先抽一個號碼，號碼越小越先執行。",
+    "但程式比現實複雜：現實裡號碼機一次吐一張，程式裡抽號碼卻是好幾行程式，兩個人同時抽，可能抽到一樣的號碼（像 3、3 或 5、5）。號碼只保證不會變小（non-decreasing）。",
+    "需要一個 tie breaker（平手時的判定）：用 process ID。號碼一樣時比 PID，PID 越小越先進去。",
+    "所以之後的程式在比較時，寫成 (a, b) < (c, d)：先比號碼 a、c，號碼一樣再比 PID b、d。",
+    "這是完整的解法，看起來比較複雜，下次會一行一行解釋每一行的意義。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "只用 turn 輪流的解法（strict alternation）不符合哪個條件？",
+   "opts": [
+    "progress",
+    "mutual exclusion",
+    "bounded waiting",
+    "三個都符合"
+   ],
+   "ans": "progress",
+   "why": "P0 出來後想立刻再進，turn 在不想進的 P1 手上，空著卻進不去。"
+  },
+  {
+   "q": "Peterson's solution 的 entry section 是？",
+   "opts": [
+    "flag[i] = true; turn = j; while (flag[j] && turn == j);",
+    "turn = i; while (turn != i);",
+    "flag[i] = true; while (flag[j]);",
+    "while (turn == j); flag[i] = true;"
+   ],
+   "ans": "flag[i] = true; turn = j; while (flag[j] && turn == j);",
+   "why": "先舉 flag、把 key 交給對方，對方想進且有 key 才等。"
+  },
+  {
+   "q": "Peterson 證 mutual exclusion 的關鍵？",
+   "opts": [
+    "turn 只能是 0 或 1，兩人的進入條件不能同時成立",
+    "flag 一定是 false",
+    "while 有分號",
+    "CPU 只有一個"
+   ],
+   "ans": "turn 只能是 0 或 1，兩人的進入條件不能同時成立",
+   "why": "兩人都在裡面時 flag 都是 true，只剩 turn 的條件，而 turn 不可能同時是 0 又是 1。"
+  },
+  {
+   "q": "Peterson 中剛出來的 P1 沒被 context switch、又想進，會怎樣？",
+   "opts": [
+    "它先把 turn 交給 P0，被擋在 while 直到換 P0 進去",
+    "立刻再進 critical section",
+    "造成 deadlock",
+    "把 P0 的 flag 設成 false"
+   ],
+   "ans": "它先把 turn 交給 P0，被擋在 while 直到換 P0 進去",
+   "why": "這就是 bounded waiting 的證明重點。"
+  },
+  {
+   "q": "把 producer-consumer 的所有 code 都包成 critical section，buffer 空時 consumer 先進去會？",
+   "opts": [
+    "deadlock",
+    "正常運作但效率差",
+    "race condition",
+    "starvation 但不會卡死"
+   ],
+   "ans": "deadlock",
+   "why": "consumer 在裡面等資料，producer 被 entry 擋住，互相等。"
+  },
+  {
+   "q": "定義 critical section 的原則？",
+   "opts": [
+    "越小越好，只包會 race 的程式",
+    "越大越安全",
+    "整個 function 都包",
+    "只包 remainder section"
+   ],
+   "ans": "越小越好，只包會 race 的程式",
+   "why": "包進無關程式會拉長等待、降低 CPU 效率，甚至 deadlock。"
+  }
+ ]
+}

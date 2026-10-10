@@ -1,0 +1,198 @@
+{
+ "video": "sEVfeXqWY-s",
+ "label": "Process Synchronisation | Critical Section Problem",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Independent 與 cooperative process",
+   "scene": "syn-csneso-coop",
+   "cues": [
+    0,
+    12,
+    51,
+    67.4,
+    113.3,
+    150.6,
+    158.2,
+    183.6,
+    196.3,
+    221,
+    256.7,
+    270
+   ],
+   "points": [
+    {
+     "t": 0,
+     "text": "從同步的角度，process 分成 independent（執行不影響別人）與 cooperative（執行會影響別人）。"
+    },
+    {
+     "t": 151,
+     "text": "synchronization 問題只發生在 cooperative process，因為它們共用 resource；independent process 各用自己的 resource。"
+    },
+    {
+     "t": 196,
+     "text": "比喻：社區劇場大家一起看同一部電影要協調；自己在家看自己的 TV 就沒問題。"
+    }
+   ],
+   "explain": [
+    "新主題：process synchronization（行程同步），看 OS 裡的 process 是怎麼同步的。",
+    "從同步的角度，process 可以分成兩種：independent process（獨立的）和 cooperative process（合作的）。",
+    "independent：名字就說明了，一個 process 跟另一個沒有任何依賴關係，一個的執行不會影響其他人。",
+    "cooperative：一個 process 依賴另一個，彼此之間要有互相的協調。",
+    "差別重點：independent process 的執行不影響別人；cooperative process 的執行會影響別人。",
+    "同步問題只會出現在 cooperative process 裡。",
+    "因為 independent process 之間沒有依賴，也不共用資源，每個都有自己的 resource，所以沒有問題。",
+    "而 cooperative process 會共用 resource，所以才有同步問題。",
+    "舉個生活例子：一個社區的人，一起在社區劇場看電影。",
+    "大家看同一個螢幕，就需要彼此合作：看完這部再看哪部。有人想看 A、有人想看 B，一個人的選擇會影響其他人，同步問題就出現了。",
+    "如果你自己在家看，用的是自己的 TV，想看什麼就看什麼，就沒有問題。",
+    "總結：independent process 沒有同步問題；同步問題只發生在共用 resource 的 cooperative process。"
+   ]
+  },
+  {
+   "title": "Critical section problem（劇場比喻）",
+   "scene": "syn-csneso-cs",
+   "cues": [
+    287,
+    317.3,
+    326.2,
+    340,
+    357.3,
+    387.2,
+    422.2,
+    445.8,
+    454.6,
+    512
+   ],
+   "points": [
+    {
+     "t": 287,
+     "text": "critical section 是一段 code segment，同一時間只能有一個 process 執行；裡面有需要同步的 shared variable。"
+    },
+    {
+     "t": 357,
+     "text": "比喻：劇場是 shared variable；P1、P2、P3 想看 A、B、C，先預約的先看（執行 critical section），其他人等。"
+    },
+    {
+     "t": 512,
+     "text": "所有 process 同時要用 shared variable 就會互相干擾，這就是 critical section problem。"
+    }
+   ],
+   "explain": [
+    "接著說明 critical section problem（臨界區問題）。",
+    "[[critical section]] 其實沒什麼神秘的，它就是一段 code segment（程式碼片段）。",
+    "這段程式碼同一時間只能被一個 process 存取、執行。",
+    "它裡面有 shared variable（共用變數），需要同步，才能維持資料的一致性。",
+    "用剛才的劇場比喻：大家都要用的劇場，就是 shared variable。",
+    "假設 P1 是一群想看電影 A 的人，P2 想看 B，P3 想看 C。三部電影都只能在同一個劇場放。",
+    "想看 A 的人先把劇場預約下來，這就像在執行 critical section。它在執行的時候，其他人要等，直到輪到自己。",
+    "A 看完，下一群人進來看，再下一群，一個接一個。",
+    "這就是彼此之間的 [[mutual exclusion]] 式的默契：你先看、我再看。critical section problem 可以用一些不同的 solution 來解。",
+    "但如果所有 process 同時都想用 shared variable，這個人想現在看、那個人也想現在看，就會互相干擾，電影根本放不成。這就是 critical section problem。"
+   ]
+  },
+  {
+   "title": "Entry section 上鎖、exit section 解鎖",
+   "scene": "syn-csneso-struct",
+   "cues": [
+    539.6,
+    558,
+    590.6,
+    608.6,
+    617.7,
+    627.1,
+    654.9,
+    660.2,
+    686,
+    734.3,
+    752.6,
+    784.9
+   ],
+   "points": [
+    {
+     "t": 540,
+     "text": "結構：do { entry section; critical section; exit section; remainder section; } while (true);"
+    },
+    {
+     "t": 591,
+     "text": "P1 通過 entry 進 critical section，在它 exit 之前別人都不能進；做完經過 exit 去做 remainder；不用 shared variable 的直接做 remainder。"
+    },
+    {
+     "t": 660,
+     "text": "entry section 控制進入並取得 resource 的 lock；exit section 解開 lock、通知別人 critical section 空了。多個同時到達時要讓誰進，就是要解的問題。"
+    }
+   ],
+   "explain": [
+    "寫一段範例程式。再說一次：critical section 是一段同一時間只能被一個 process 存取的 code segment，裡面有需要同步的 shared variable。",
+    "結構是：do { entry section（進入區）、critical section、exit section（離開區）、remainder section（剩餘區）} while (true)，一直重複。",
+    "假設 P1、P2、P3 都想用同一個共用的 resource。右邊房間是 critical section，鎖代表 resource 的 lock。",
+    "P1 先進 entry section，條件成立，就進到 critical section（拿到鎖）。",
+    "在 P1 進到 exit section 之前，其他 process 都不能進 critical section。",
+    "P1 的工作做完（電影看完），經過 exit section，然後去做 remainder section。remainder 是獨立的，不影響別人。",
+    "如果某個 process（例如 P2）不需要用 shared variable，就直接執行 remainder section 的程式，不用經過 entry、exit。",
+    "每個 process 離開時都要經過 exit section，它會通知其他 process：critical section 空了，你可以進來。也就是說，entry section 上鎖，exit section 解鎖。",
+    "entry section 控制誰能進 critical section，並且拿到所需 resource 的 lock，鎖住後才繼續執行。",
+    "process 工作結束後，exit section 把 resource 的 lock 解開，讓其他人知道 critical section 已經結束了。",
+    "lock 一解開，P2 就知道可以進 critical section 用 shared variable 了；在它 exit 之前，別的 process 也不能用。",
+    "問題是：如果 P1、P2、P3 同時要進，系統要選哪一個？這就是 critical section problem，要用一些 solution 解決，下一集再講。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "synchronization 問題會出現在哪種 process？",
+   "opts": [
+    "cooperative process",
+    "independent process",
+    "兩者都會",
+    "兩者都不會"
+   ],
+   "ans": "cooperative process",
+   "why": "cooperative process 共用 resource。"
+  },
+  {
+   "q": "independent process 的特性？",
+   "opts": [
+    "執行不影響其他 process，各用自己的 resource",
+    "一定共用 memory",
+    "執行會影響其他 process",
+    "一定要用 semaphore"
+   ],
+   "ans": "執行不影響其他 process，各用自己的 resource",
+   "why": "所以沒有同步問題。"
+  },
+  {
+   "q": "critical section 是？",
+   "opts": [
+    "一段同一時間只能被一個 process 執行、含 shared variable 的 code segment",
+    "一個硬體元件",
+    "一個 process",
+    "OS 的 kernel"
+   ],
+   "ans": "一段同一時間只能被一個 process 執行、含 shared variable 的 code segment",
+   "why": "影片強調：它只是一段 code segment。"
+  },
+  {
+   "q": "影片中 entry section 與 exit section 的角色？",
+   "opts": [
+    "entry 取得 lock、exit 解開 lock",
+    "entry 解鎖、exit 上鎖",
+    "兩者都上鎖",
+    "兩者都不涉及 lock"
+   ],
+   "ans": "entry 取得 lock、exit 解開 lock",
+   "why": "exit 會通知別人 critical section 空了。"
+  },
+  {
+   "q": "不需要 shared variable 的 process？",
+   "opts": [
+    "直接執行 remainder section",
+    "一定要先經過 entry section",
+    "要等別人 exit",
+    "會造成 deadlock"
+   ],
+   "ans": "直接執行 remainder section",
+   "why": "只有用 shared resource 的才需要 entry / exit。"
+  }
+ ]
+}

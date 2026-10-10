@@ -1,0 +1,319 @@
+{
+ "video": "r0h26ioGeG0",
+ "label": "清大周志遠 第20C講 Semaphore(續)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "期中考第 7 題的補充說明（idle）",
+   "scene": null,
+   "points": [
+    {
+     "t": 15,
+     "text": "第 7 題選項是 inverted、hash、hierarchical；hierarchical 不一定是 one-level，若用 multi-level 的理由選擇，解釋合理也可給分。"
+    },
+    {
+     "t": 151,
+     "text": "有疑問這週內來找老師（上課或 email 約）。"
+    }
+   ]
+  },
+  {
+   "title": "Non-busy waiting 的 semaphore",
+   "scene": "syn-20c-sleep",
+   "cues": [
+    181.2,
+    195.4,
+    209.5,
+    232.1,
+    264,
+    298.4,
+    312.6,
+    343.1,
+    367.9,
+    380.1,
+    410.7,
+    417.6,
+    461.3,
+    499
+   ],
+   "points": [
+    {
+     "t": 179,
+     "text": "busy waiting（spinlock）浪費 CPU；另一種實作是 non-busy waiting：把等的人 put to sleep。"
+    },
+    {
+     "t": 210,
+     "text": "semaphore = value + waiting queue（S.list）；value 為負時，|value| = 在等的 process 數。"
+    },
+    {
+     "t": 298,
+     "text": "用 block（sleep）與 wakeup 兩個 system call：block 把 process 放進 waiting queue，wakeup 移回 ready queue。"
+    },
+    {
+     "t": 343,
+     "text": "wait：先 value--，若 < 0 就加入 list、sleep（不用 CPU）；要先減再睡，所以條件是 < 0。"
+    },
+    {
+     "t": 461,
+     "text": "signal：value++，若 ≤ 0 代表有人在等，從 list 移出一個並 wakeup；程式裡沒有 while loop，不浪費 CPU。"
+    }
+   ],
+   "trap": "老師口頭說「value 初值設 0 = queue 空的」是這個實作的說法；課本的 value 初值是資源數量，負值的絕對值才是等待的 process 數。",
+   "explain": [
+    "回到 semaphore 的 wait、signal。之前看到的是用 while loop 的寫法，叫 [[busy waiting]] 或 [[spinlock]]，很浪費 CPU。",
+    "所以有另一種實作叫 non-busy waiting：不空轉，而是把等待的 process put to sleep，放進一個 sleeping queue。",
+    "現在 semaphore 的結構變複雜了：除了記錄數字的 value，更重要的是多了一個 waiting queue（S.list），有點像 condition variable 的等待佇列。左邊是新的 wait、signal 程式。",
+    "queue 裡放的是呼叫 wait 而被卡住的 process。P1 先進去（value 1 → 0）；P2 再來，value 變 −1，被放進 queue 睡覺：它被移出 ready queue，真的進入 sleep 狀態。",
+    "在這個實作裡，value 跟 queue 的長度有關：value 是負的時候，它的絕對值就是有多少個 process 在等。P3 也進來睡，value 變 −2。",
+    "用這個資料結構，怎麼實作 wait 和 signal？透過 block 和 wakeup 這兩個 system call。",
+    "block 把 process 放到 waiting queue（OS 不會排它上 CPU）；wakeup 把它從 waiting queue 拿出來，放回 ready queue，讓它可以被排程。",
+    "看 wait：S.value 小於 0，代表 queue 裡有人。P4 再來，value 變 −3，就代表有三個人在等；0 則代表沒人在等。",
+    "如果一開始 value 設成大於 0，就是 counting semaphore：前面的人一路減到 0 為止，都不會被 put to sleep。",
+    "value 小於 0 代表目前沒有資源，所以把這個 process 加進 queue，然後它自己呼叫 sleep。",
+    "它被放進 waiting queue 後就沒辦法執行，也不會用到 CPU，這就是 non-busy waiting 的意思。",
+    "注意：sleep 之前一定要先把 value 減 1，因為一呼叫 sleep 就沒機會再執行任何東西了。也因為先減了，判斷條件是 < 0 而不是 = 0：減完變 −1 才代表要去排隊。",
+    "signal 倒過來：先 value++（−3 → −2），如果還是 ≤ 0，代表 queue 裡有人在等，就 remove 一個出來，再呼叫 wakeup 叫醒它。P2 被叫醒，進去執行。",
+    "程式碼裡沒有任何 while loop，所以 CPU 不會被浪費。這就是 non-busy waiting 的實作。"
+   ]
+  },
+  {
+   "title": "什麼時候用 spinlock、什麼時候 sleep",
+   "scene": "syn-20c-choose",
+   "cues": [
+    516.4,
+    539.2,
+    559,
+    584.2,
+    613.3,
+    619.2,
+    635.2,
+    650
+   ],
+   "points": [
+    {
+     "t": 516,
+     "text": "不一定都用 non-busy waiting：sleep / wakeup 是 system call，很慢。"
+    },
+    {
+     "t": 559,
+     "text": "等待時間短 → spinlock（轉幾圈就 break，比較快）；等待時間長（例如平均 5 秒）→ non-busy waiting，把 CPU 讓出來。"
+    },
+    {
+     "t": 635,
+     "text": "sleep / wakeup 要 context switch、rescheduling，代價高；多核心時對方可能很快放掉，spinlock 甚至不用 context switch。"
+    }
+   ],
+   "explain": [
+    "考試常問：既然有兩種實作，是不是都用第二種？答案是看情形，兩種各有適合的情境。",
+    "non-busy waiting 看起來很棒，沒有浪費 CPU cycle。但它呼叫了 [[system call]]，而 system call 很慢，遠比 S-- 這種三、四個指令慢，可能是四、五十個以上。",
+    "如果等待的時間很短，就用 busy waiting：反正 while loop 檢查兩三次就 break 了，直接繼續執行，比較快。",
+    "但如果 waiting 時間可能很久，例如平均要等 5 秒才輪到你，5 秒對 CPU 是非常漫長的時間，你當然不想浪費在空轉。",
+    "那就 put to sleep，把 CPU 讓出來給別人用，5 秒後等別人把你 wake up。system call 雖然比較久，也就幾個 millisecond。",
+    "所以 depends on 等待時間的長短：等待時間短的用 spinlock，等待時間長的用 non-busy waiting。",
+    "別忘了 sleep、wakeup 是 system call，代價很高：要 context switch、rescheduling，而且你也不知道什麼時候才輪到你。",
+    "反過來，現在電腦多半是多核心、多個 thread 同時在跑。你 busy waiting 的時候，對方可能正在另一個 core 上執行，很快就放掉，你甚至沒被 context switch 就能 break 出 while loop。"
+   ]
+  },
+  {
+   "title": "wait / signal 怎麼做到 atomic",
+   "scene": "syn-20c-atomic",
+   "cues": [
+    680.1,
+    694,
+    708,
+    715.2,
+    732,
+    752.5,
+    775,
+    791.3,
+    795.2,
+    827
+   ],
+   "points": [
+    {
+     "t": 680,
+     "text": "兩種實作都必須 atomic：value 的 ++ / --、queue 的 insert / delete 都不能同時執行。"
+    },
+    {
+     "t": 708,
+     "text": "最暴力：kernel disable interrupt（multi-processor 時要整台 suspend，很沒效率）；或用 hardware / software 把 wait、signal 包成 critical section（if-else 兩個 case 各一個 exit）。"
+    },
+    {
+     "t": 775,
+     "text": "不能把 sleep / wakeup 包進 critical section（它只是 system call，不會幫你放 lock）；多人同時 call sleep / wakeup 則由 OS 保證沒問題。"
+    }
+   ],
+   "trap": "課本補充：在 multi-processor 上通常用 spinlock（或 compare_and_swap）來保護 wait / signal 這段很短的程式，而不是關整台電腦的 interrupt。",
+   "explain": [
+    "不管是第一種還是第二種實作，有一個很重要的條件：wait 和 signal 這兩個函式必須是 [[atomic]]（一次做完、不被打斷）。",
+    "前面那種只有 value 的加加減減；這裡不但有加減，還有 queue 的插入和刪除，更不可能讓它們同時執行。",
+    "怎麼保證 atomic？第一種最暴力，OS kernel 會做的：disable interrupt（關掉中斷）。",
+    "但有時候這還不夠：如果有好幾顆 CPU（multi-processor），只關一顆 CPU 沒用，要讓整台電腦暫停、只剩一支程式在跑，非常沒效率。",
+    "第二種就是剛教完的方法：用 hardware support，或 pure software 寫 entry section、exit section，總之把它變成 critical section。",
+    "如果用軟體寫 semaphore，wait 和 signal 的內容就用 critical section 保護起來。因為裡面有 if-else，兩種情況各要一個 exit section（左邊亮起來那行）。",
+    "但千萬不要把 sleep 和 wakeup 包進 critical section！一包進去，它就睡在 critical section 裡，沒有人進得去。",
+    "因為 sleep 就只是一個 system call，不像 condition variable 的 cond_wait，會幫你放掉 lock、醒來再拿回來。",
+    "反過來，不用擔心很多人同時呼叫 sleep 和 wakeup：它們是 OS 提供的 system call，OS 會保證它們本身沒有同步問題（例如內部關 interrupt），大家本來就能操作 OS 的 ready queue。",
+    "這樣就達到 atomic 的要求了。至於選哪一種實作，就看等待時間是長還是短。"
+   ]
+  },
+  {
+   "title": "用 semaphore 控制執行順序",
+   "scene": "syn-20c-order",
+   "cues": [
+    851.4,
+    863.1,
+    875.7,
+    900,
+    917.9,
+    932,
+    953.6,
+    985.3,
+    1016.3,
+    1039.3,
+    1072.6,
+    1080.7,
+    1095
+   ],
+   "points": [
+    {
+     "t": 851,
+     "text": "同步的目的：解決 race condition / counting，以及控制執行的時機與順序。"
+    },
+    {
+     "t": 876,
+     "text": "S1 一定在 S2 之前：sync = 0；P1：S1; signal(sync)；P2：wait(sync); S2。"
+    },
+    {
+     "t": 954,
+     "text": "data flow：每條 edge 一個 semaphore（初值 0）；有 incoming edge 就 wait、有 outgoing edge 就 signal（例如 P6：wait(f)、wait(d)，執行完 signal(h)）。"
+    }
+   ],
+   "explain": [
+    "回顧同步的目的：一個是解決 race condition，或做 counting；另一個是控制程式執行的時機點和順序。",
+    "semaphore 很多時候也拿來控制程式執行的順序，可以調整得很細。",
+    "例子：兩個 process。要求 P1 的某一行 S1 執行完之後，P2 的 S2 才可以執行。",
+    "用一個 semaphore，叫 sync。S1 要先做，就讓 P1 做完 S1 後 signal(sync)；S2 要等，就在 S2 前面先 wait(sync)。",
+    "sync 一開始設成 0，所以 P2 去 wait 一定會被卡住（紅色）。要等到有人呼叫 signal，也就是 P1 那邊。",
+    "所以兩個程式就算同時跑下去，一定是 S1 先執行完、signal，P2 才有機會 break 出來執行 S2。順序被控制住了，沒有其他可能。",
+    "再看一個複雜的例子：很多應用程式是一個 data flow（資料流），由一大堆 process 組成，一個的 output 給另一個，有的甚至要等兩個人的 output。（圖是示意，邊的名字照老師提到的。）",
+    "要 enforce 這個 data flow，用剛才同樣的原則：每一條 edge（邊）就當成剛才 P1、P2 的例子，各 create 一個 semaphore，初值都是 0。",
+    "P1 要先執行：它直接執行 S1，然後 signal(a)、signal(b)，trigger 下一個 process（P2、P3）開始執行。",
+    "P2：只要有 incoming edge（進來的邊）就呼叫 wait，有 outgoing edge（出去的邊）就呼叫 signal，中間是自己的 statement。所以 P2 先 wait(a)，執行完 signal(c)，讓 P4 開始。",
+    "隨便挑 P4：它 wait(c)，等 P2；後面有兩條出去的邊，所以 signal 兩個。",
+    "P6 要 wait(f) 和 wait(d)，兩個都被 signal 之後才能開始執行它的 statement，執行完 signal(h)，以此類推。",
+    "這就是用 semaphore 輕鬆做同步，控制整個 data flow 的進行。semaphore 常被這樣使用，而且常常是跨 process 的，不只是 thread 之間。"
+   ]
+  },
+  {
+   "title": "wait / signal 寫錯：deadlock 與 starvation",
+   "scene": "syn-20c-deadlock",
+   "cues": [
+    1119.7,
+    1136,
+    1148.1,
+    1167.6,
+    1182.2,
+    1199.7,
+    1205,
+    1216.6,
+    1229,
+    1245.4
+   ],
+   "points": [
+    {
+     "t": 1120,
+     "text": "wait / signal 都由 programmer 控制，順序寫錯會讓 process 互相等待。"
+    },
+    {
+     "t": 1148,
+     "text": "例子：P0：wait(S); wait(Q);　P1：wait(Q); wait(S);（S = Q = 1）→ P0 拿 S、P1 拿 Q，互相卡住 → deadlock。"
+    },
+    {
+     "t": 1217,
+     "text": "deadlock 的結果是 starvation（相關但不同）：starvation 指某程式永遠沒機會執行，原因也可能是 priority 太低；programmer 的錯誤常造成 deadlock → starvation。"
+    }
+   ],
+   "explain": [
+    "同步工具雖然好用，但就像剛才看到的，程式碼常變得很複雜：一堆 wait、一堆 signal，全都由 programmer 自己控制。",
+    "所以很容易發生的問題是：wait 和 signal 的順序寫得不對或不好，造成 process 之間互相等待，誰都沒辦法前進。",
+    "最簡單的例子：兩個 semaphore S 和 Q。P0 先 wait(S) 再 wait(Q)；P1 反過來，先 wait(Q) 再 wait(S)。",
+    "就算一開始 S、Q 都設成 1，第一步都能過：P0 拿走 S（S 變 0），P1 拿走 Q（Q 變 0）。",
+    "接著 P0 要 wait(Q)，但 Q 被 P1 拿走了，P0 卡住；P1 要 wait(S)，但 S 被 P0 拿走了，P1 也卡住。",
+    "如果一開始就是 0，那更不用說，第一行就卡住了。",
+    "兩個互相等待、沒辦法前進，這就是 [[deadlock]]（死結），下一章會專門講。",
+    "deadlock 發生後的結果是 [[starvation]]（飢餓）。兩者相關但不一樣：starvation 單純是說，從某個程式的角度，它永遠沒有機會執行。",
+    "沒辦法執行的原因很多：一個是 deadlock，另一個像之前學的 priority scheduling，priority 太低也會 starvation。",
+    "而在同步的過程中，往往很容易因為 programmer 不小心寫錯，產生 deadlock，最後變成 starvation。下一章會專門解釋 deadlock。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "non-busy waiting 的 semaphore 中，wait 的步驟是？",
+   "opts": [
+    "先 value--，若 < 0 就加入 list 並 sleep",
+    "先檢查 value，再 while 迴圈等待",
+    "先 sleep，再 value--",
+    "若 value == 0 就 wakeup"
+   ],
+   "ans": "先 value--，若 < 0 就加入 list 並 sleep",
+   "why": "睡著就沒機會再減，所以要先減。"
+  },
+  {
+   "q": "non-busy waiting 中 S.value = −3 代表？",
+   "opts": [
+    "有 3 個 process 在 waiting queue",
+    "還有 3 個資源",
+    "有 3 個 process 在 critical section",
+    "發生錯誤"
+   ],
+   "ans": "有 3 個 process 在 waiting queue",
+   "why": "負值的絕對值 = 等待的數量。"
+  },
+  {
+   "q": "等待時間很短時，比較適合哪種實作？",
+   "opts": [
+    "spinlock（busy waiting）",
+    "sleep / wakeup",
+    "關掉整台電腦的 interrupt",
+    "monitor"
+   ],
+   "ans": "spinlock（busy waiting）",
+   "why": "system call 的 sleep / wakeup 代價高；短等待轉幾圈就好。"
+  },
+  {
+   "q": "用 critical section 保護 semaphore 的 wait 時，要注意？",
+   "opts": [
+    "不能把 sleep 包在 critical section 裡",
+    "sleep 一定要包在 critical section 裡",
+    "不需要 exit section",
+    "只要一個 exit section"
+   ],
+   "ans": "不能把 sleep 包在 critical section 裡",
+   "why": "睡在裡面別人就進不來；sleep 不會幫你放 lock。"
+  },
+  {
+   "q": "要讓 S1（P1）先於 S2（P2），sync 的初值與寫法？",
+   "opts": [
+    "sync = 0；P1：S1; signal(sync)；P2：wait(sync); S2",
+    "sync = 1；兩邊都 wait",
+    "sync = 0；P1：wait(sync); S1",
+    "sync = 1；P2：signal(sync); S2"
+   ],
+   "ans": "sync = 0；P1：S1; signal(sync)；P2：wait(sync); S2",
+   "why": "P2 先到會被卡住，直到 P1 signal。"
+  },
+  {
+   "q": "P0：wait(S); wait(Q)，P1：wait(Q); wait(S)，S = Q = 1，可能發生？",
+   "opts": [
+    "deadlock",
+    "一定正常",
+    "race condition",
+    "priority inversion"
+   ],
+   "ans": "deadlock",
+   "why": "P0 拿 S、P1 拿 Q，互相等對方。"
+  }
+ ]
+}

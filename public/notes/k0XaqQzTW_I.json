@@ -1,0 +1,376 @@
+{
+ "video": "k0XaqQzTW_I",
+ "label": "清大周志遠 第20B講 Hardware Support(續) & Semaphore",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "cond_wait 會 release lock",
+   "scene": "syn-20b-cvwait",
+   "cues": [
+    15,
+    46.7,
+    67,
+    79.7,
+    92.3,
+    116.3,
+    136,
+    179,
+    207.6,
+    234.8,
+    241.8,
+    268.4,
+    285
+   ],
+   "points": [
+    {
+     "t": 15,
+     "text": "疑問：wait 的 thread 在 critical section 裡睡著，signal 的人不就進不來 → deadlock？"
+    },
+    {
+     "t": 47,
+     "text": "答案：call cond_wait 時 thread 被 put to sleep（inactive），同時把 lock release 掉，讓 signal 的人能進來。"
+    },
+    {
+     "t": 92,
+     "text": "被叫醒後必須先 reacquire lock 才能從 cond_wait return，所以要等 signal 的人離開 critical section；因此 cond_wait 要傳入同一把 mutex。"
+    },
+    {
+     "t": 208,
+     "text": "step by step：action lock → wait（內部 unlock）→ counter 進來 signal → action 醒來卡在 reacquire → counter 離開 → action 繼續。Java、C++ 也有 condition variable，但寫法不同。"
+    }
+   ],
+   "explain": [
+    "先回答一個問題：兩個人都要在 critical section 裡。action 進來後如果 wait，它就停在 critical section 裡面出不來；signal 的人因為有人在裡面而進不來，這不就是 [[deadlock]] 嗎？",
+    "所以實際上，在呼叫 wait 的同時，會把 lock 釋放掉，讓 signal 的那個 thread 也能進到 critical section（鎖飄到中間，代表沒人拿著）。",
+    "因為呼叫 wait 的 thread 已經被放進 waiting queue、put to sleep（睡著）了。它雖然在 critical section 裡，卻不會執行，是 inactive（不活動）的狀態。",
+    "既然它不活動，就可以把 lock 放掉。其他人（counter）才有機會進 critical section，把 x 改成 0，再 signal 把它叫起來，就不會 deadlock。",
+    "反過來，它被叫醒後，也不用擔心兩個人同時執行、違反 critical section：它在真正從 cond_wait 回來之前，必須先拿到 lock。",
+    "它雖然醒了、變 active 了，還是要等 counter 離開 critical section、把 lock 放掉，才能重新拿到 lock，繼續執行。",
+    "這就是為什麼呼叫 cond_wait 時還要給它一把 mutex：library 的實作會幫你 release、再 reacquire lock，所以它必須知道是哪一把。這裡講的 lock 全部是同一個物件。",
+    "這樣寫還有個好處：你要傳 mutex 給 cond_wait，自然就會把它放在 critical section 裡，programmer 也不會忘記。兩者相輔相成。",
+    "再 step by step 看一次：action 先 acquire lock。到了 wait，你沒看到 unlock，但 function 裡面會幫你 unlock。",
+    "也只有這樣，旁邊的 counter 才能進 critical section 去做 signal。",
+    "signal 完，action 會立刻被 wake up，這是 condition variable 的行為。但它手上沒有 lock，所以會卡在 reacquire lock 那裡，不會跟 counter 同時執行。",
+    "等 counter 做完、離開之後，action 才 acquire 到 lock，繼續執行。這就是整個運作方式。",
+    "這是 Pthread 的作法。Java、C++ 等很多高階平行語言也支援 condition variable，但 coding 和實作方式依 library 而不同。"
+   ]
+  },
+  {
+   "title": "Thread pool（condition variable 實作）",
+   "scene": "syn-20b-pool",
+   "cues": [
+    314,
+    329.3,
+    344,
+    356.1,
+    372.6,
+    381.4,
+    392.4,
+    415.4,
+    435.2,
+    452.5,
+    475.3,
+    513.1,
+    547.6,
+    568,
+    603.6,
+    631.5,
+    662.4,
+    688,
+    702.4
+   ],
+   "points": [
+    {
+     "t": 311,
+     "text": "thread pool：先 create thread，有工作才交給它，做完不 terminate；避免一直 create / delete，也能控制 thread 總數（太多只會一堆 context switch）。"
+    },
+    {
+     "t": 381,
+     "text": "實作：給 thread 一個 function pointer + argument；每個 thread 在 while loop 裡 cond_wait 同一個 condition variable，master 接到 request 填好資料後 signal 一個。"
+    },
+    {
+     "t": 548,
+     "text": "signal 不在乎叫醒誰（waiting queue 的第一個）；做完回到 cond_wait 等下一件；lock / cond_wait / unlock 確保一次只有一人操作 data structure。"
+    },
+    {
+     "t": 702,
+     "text": "同步的兩個層面：解決 race condition，以及控制執行的順序。"
+    }
+   ],
+   "explain": [
+    "補充一個之前教過的概念：thread pool（執行緒池），multi-thread 程式非常好用的技巧，大部分 web server 都這麼做。",
+    "它的作法：先把 thread 建好放著；有工作時讓 thread 去做，做完不結束它，留著等下一件工作再交給它。",
+    "重點是：thread 不用一直刪掉又重建。更重要的是，可以控制整個系統到底用了多少 thread。",
+    "否則執行時一堆 request 進來，就建一堆 thread。CPU、硬體資源有限，建越多只會一直 [[context switch]]，大家都變慢，整體更糟。",
+    "所以控制 thread pool 的大小，就能控制系統效能，達到最佳化。",
+    "今天要講的是 thread pool 的一種實作方式：透過 [[condition variable]]。",
+    "怎麼讓同一個 thread 做不同的工作？塞給它一個 function pointer（函式指標）和 argument（參數）。它照著執行這個 function，就等於在處理一個 request。",
+    "每個 thread 執行的 function，是一個不停的 while loop：等著被叫醒 → 被叫醒後去執行 data structure 裡的 function 和 argument → 做完再回去等（右邊是示意程式）。",
+    "它怎麼知道什麼時候被叫醒？所有 thread 都 wait 在同一個 condition variable 上（大家都睡著了）。",
+    "前面有一個 master server。一收到 request，就把 function pointer 和 argument 填進 data structure，然後 signal，叫醒其中一個 thread。",
+    "實作上要定義這個 data structure、一個 thread pool，最重要的是整個 pool 共用的 condition variable 和 mutex。用 condition variable 就一定要配一把 mutex。",
+    "事先建好 thread pool，要建幾個都可以，也記錄 thread count，master 就知道目前幾個 active、什麼時候可以 signal。",
+    "condition variable 的 signal 不在乎叫醒誰，waiting queue 裡的第一個來做就對了，一次一個。T0 醒了。",
+    "再看 thread 的 function：它被建立後其實什麼都不做，就在 cond_wait 上被 put to sleep，在 waiting queue 裡等。",
+    "被 signal 時它醒過來，照著 data structure 裡要它執行的 function 和 argument 去處理工作。",
+    "處理完，loop 繞回去，又在 cond_wait 等下一件工作。所以 thread 不會被 terminate，一直一個工作接一個工作做，這就是 thread pool。",
+    "一樣是 Pthread 的寫法：先 lock、再 cond_wait、再 unlock。中間一次只有一個人能操作 data structure，不會有一個 job 被兩個 thread 同時拿走。",
+    "condition variable 非常好用，thread pool 就是一個例子：透過它控制 thread 的執行、去做不同的事。",
+    "所以同步其實有兩個層面：一個是解決 race condition（critical section），另一個是控制整個執行的順序，讓程式有正確的行為（condition variable 的例子）。"
+   ]
+  },
+  {
+   "title": "Hardware support 回顧",
+   "scene": "syn-20b-hwrecap",
+   "cues": [
+    727.2,
+    735.5,
+    757,
+    766.8,
+    787.1,
+    810.6,
+    821.3,
+    836.7,
+    859,
+    883.6,
+    900.7
+   ],
+   "points": [
+    {
+     "t": 727,
+     "text": "TestAndSet、Swap 寫成 software function 本身就有 race condition；hardware 用線路燒成 single instruction，不會被 context switch。"
+    },
+    {
+     "t": 821,
+     "text": "好處：軟體簡化、而且快（software 的 entry section 七、八行以上）。"
+    },
+    {
+     "t": 859,
+     "text": "自己寫的 swap 被交錯執行，可能兩人都拿到 false；hardware 的 swap 才正確。兩個例子都沒有 bounded waiting。"
+    }
+   ],
+   "explain": [
+    "接回上次：講完 software 的作法後，我們介紹了 hardware。",
+    "hardware 這邊最重要的一點：投影片上的 TestAndSet 和 Swap，大家都看得出來它們是好幾行程式碼。",
+    "像 TestAndSet 有四行。如果它是一般的 software function，兩個 thread 同時呼叫，它自己就有 race condition，會出錯。",
+    "所謂 hardware support，就是把這個 function 用邏輯線路「燒死」在硬體裡。線路裡根本沒有 context switch 這種東西，所以不會有 race condition。",
+    "這裡寫的四行只是概念。實際上可以用 FPGA 之類的方式，在硬體做出這個邏輯，變成一個 single instruction（單一指令），不是一行 statement、也不是 function call。",
+    "這就是 hardware support instruction，用它來實作 entry section，解決 critical section 的問題。",
+    "好處有兩個：軟體可以簡化；更重要的是快，硬體永遠比軟體快。entry section 包成一個指令，執行速度非常快。",
+    "不像前面 software 的例子，entry section 可能七、八行甚至更多，指令越多就越慢、越浪費時間。這就是用 hardware support 的原因：減少 coding overhead，也提升效能。",
+    "swap 也一樣，至少三、四行，還有變數的操作。自己寫的話，兩個人同時呼叫可能交錯成這樣：P0、P1 都先讀到 lock 是 false，最後 key0、key1 都拿到 false，兩個人都進去了，答案是錯的。",
+    "但如果 swap 是硬體支援的指令，它不可能在中間被 context switch，結果就是對的。這就是 hardware 和 software support 的差別，非常重要。",
+    "這兩個例子都不是完美的解法，都不滿足 bounded waiting；但可以看出為什麼要用 hardware support。"
+   ]
+  },
+  {
+   "title": "Semaphore 的概念",
+   "scene": "syn-20b-sem",
+   "cues": [
+    922.4,
+    932.4,
+    954,
+    968.2,
+    980,
+    1004.5,
+    1032.4,
+    1054,
+    1073,
+    1123.7,
+    1155.5,
+    1171.8,
+    1195.6,
+    1212.3,
+    1236.6
+   ],
+   "points": [
+    {
+     "t": 916,
+     "text": "semaphore：有點像 condition variable + mutex，是一個 counter，代表它管理的 resource 數量。"
+    },
+    {
+     "t": 1005,
+     "text": "數量 1 → binary semaphore（0、1，像 mutex lock）；初值 > 1 → counting semaphore（例如 thread pool 有 10 個 thread 就設 10）。"
+    },
+    {
+     "t": 1156,
+     "text": "用之前 wait（拿一個，值減 1），用完 signal（還一個，值加 1）；值 = 目前 available 的數量，0 就要等。跟 condition variable 的 wait / signal 定義不同。"
+    }
+   ],
+   "explain": [
+    "critical section 的 software、hardware 解法介紹完，接下來是另一個非常好用的工具：[[semaphore]]。",
+    "它有一點像 condition variable 加上 mutex 的結合。",
+    "它跟 condition variable 一樣，是被定義出來幫我們簡化程式、控制執行順序的工具。",
+    "semaphore 首先是一個 counter（計數器），裡面存的就是一個 integer（整數）。",
+    "這個數字的意義：每個 semaphore 都在管理某一樣 resource（資源），數字代表這個資源的數量。它是用「計數」的方式來同步程式。",
+    "如果數量設成 1，代表系統裡這個資源只有一個，不可能兩個人同時用。值只會在 0 跟 1 之間變動，所以叫 binary semaphore，就像 [[mutex lock]]。",
+    "mutex lock 的概念：把 critical section 想成一種資源，很多 thread 想進去執行，但只能讓一個人進去。",
+    "但 semaphore 比 mutex 更 powerful。遇到需要比較一般化（generalized）的應用時，就會需要它。值是 1 的話，大家通常直接用 mutex lock 就好。",
+    "之所以需要 semaphore，是因為有 counting semaphore，數字可以大於 1。像剛才的 thread pool 有 10 個 thread，代表同時可以有 10 個人在做事，那就把它 initialize 成 10，10 個以內都可以進去用。",
+    "初值大於 1 的叫 [[counting semaphore]]，用來計數、決定現在資源夠不夠。電腦裡很多資源都是一個「數量」，不是只有 true、false。",
+    "怎麼操作？先把它 initialize 成資源的數量。要使用資源之前，先呼叫 wait。",
+    "注意：這裡也叫 wait 和 signal，但不要跟前面 condition variable 的 wait、signal 混在一起。它們都在做同步所以動作很像，但定義完全不同。",
+    "semaphore 的 wait 意思是「我需要一個 resource」；signal 是「我用完了，把 resource 還回去（free）」。",
+    "離開 wait，代表你拿到了一個資源，數值就減 1；signal 就反過來加 1。所以這個數字代表目前還有多少可用（available）。",
+    "當數字是 0，代表沒有剩下的資源，呼叫 wait 就真的會卡在那邊，直到數字大於 0 才能繼續。"
+   ]
+  },
+  {
+   "title": "Semaphore 的簡單實作：spinlock",
+   "scene": "syn-20b-semimpl",
+   "cues": [
+    1253.3,
+    1268.1,
+    1275.2,
+    1300.2,
+    1322.1,
+    1333.4,
+    1375,
+    1403.7,
+    1423.4,
+    1440.6,
+    1458.1
+   ],
+   "points": [
+    {
+     "t": 1253,
+     "text": "wait(S)：while (S <= 0); S--;　signal(S)：S++。"
+    },
+    {
+     "t": 1322,
+     "text": "wait、signal 必須是 atomic（hardware 指令、software critical section、kernel 關 interrupt 都可以），因為 S 本身是 shared variable，會 race。"
+    },
+    {
+     "t": 1404,
+     "text": "這種實作叫 spinlock：等的人一直在 while loop 空轉，CPU 100% 卻沒進展；好處是容易實作。"
+    }
+   ],
+   "explain": [
+    "一個簡單的實作：S 是 semaphore 的資料結構，裡面存的數字代表還有多少可用。左邊是 wait 和 signal 的程式。",
+    "wait：如果 S 小於等於 0，注意這裡有分號，代表會卡在 while 這行一直等。P2 就在等。",
+    "如果 S 大於 0，代表有可用的資源，就離開 while loop，S-- 表示拿走一個，然後繼續做後面的事。P1 出來後 S 變 1，P2 就拿走它進去了。",
+    "signal 很單純，就是 S++，把資源釋放出來。其他正在等的 thread 就有機會 break 出 while loop，用之前當然還是會再減回去。",
+    "這裡有兩件很重要的事。第一：wait 和 signal 必須是 [[atomic]] 的，也就是一次做完、不能被打斷。",
+    "用什麼技術都可以：用 hardware 做成特殊指令、用 software 包成 critical section，或像 OS kernel 先 disable interrupt、做完再 enable。重點是不能被打斷。這裡寫的只是概念。",
+    "為什麼要 atomic？因為 S 是共用變數，一個人在加、一個人在減，就跟最早 counter++、counter-- 的例子一樣，S 本身就會有 race condition。",
+    "第二：這種實作方式叫 [[spinlock]]（自旋鎖）。因為有一個 while loop，等的人一直在那邊 spinning（打轉）。",
+    "呼叫 wait 卡住的 thread，在使用者看來沒在做事，但對 CPU 來說它做了一大堆事：一直重複執行相同的指令。",
+    "壞處就是浪費 CPU 資源：你會看到 CPU 百分之百好忙，程式卻都沒在動，因為碰到了 spinlock。",
+    "但它比較容易實作，直接一個 while loop 就可以了。"
+   ]
+  },
+  {
+   "title": "POSIX semaphore 的 API",
+   "scene": "syn-20b-posix",
+   "cues": [
+    1475.3,
+    1485,
+    1514.3,
+    1545.7,
+    1553.4,
+    1578.4,
+    1593,
+    1612.4
+   ],
+   "points": [
+    {
+     "t": 1475,
+     "text": "semaphore 由 OS 提供（kernel 自己也需要），是 POSIX API 的一部分：include semaphore.h，用法像 mutex，但 init 可以給任意整數，還有 get value。"
+    },
+    {
+     "t": 1553,
+     "text": "它不屬於 Pthread，也能用在 process 之間；初值設 1 就像 lock / unlock。只是 binary 的問題建議用 mutex（實作簡單），需要 counting 才用 semaphore。"
+    }
+   ],
+   "explain": [
+    "實際要用 semaphore，去哪裡找 library？semaphore 是由 OS 來 support 的。",
+    "因為 semaphore 太重要了，kernel 自己在很多地方都需要它，所以它已經實作好，成為 API 的一部分。一般 Linux 是 POSIX 的 OS，它的 API 裡就有定義 semaphore。",
+    "使用時 include semaphore.h，用法跟 mutex 非常像。差別在 init 時可以塞入一個整數，自己決定初值是多少；mutex 只能是 0 跟 1。（POSIX 裡 signal 的名字叫 sem_post。）",
+    "還有 get value 這類函式，讓你知道 semaphore 目前的值和狀態。",
+    "它雖然是做同步，但不屬於 Pthread，不只限於 thread 之間。很多時候它是在 process 之間使用的，尤其在 OS level。",
+    "跟 mutex 比：把初值設成 1，wait 和 signal 就像當初的 lock 和 unlock，也能解 critical section 問題。",
+    "semaphore 更 powerful，但 mutex lock 的實作比較簡單。所以如果只是 binary 的問題，還是建議用 lock；需要 counting 的時候才用 semaphore。",
+    "先休息十分鐘。回來介紹另一種實作方式：不用 spinlock，而是把等待的人 put to sleep。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "呼叫 pthread_cond_wait 時，lock 會怎樣？",
+   "opts": [
+    "被 release，醒來 return 前再 reacquire",
+    "一直被持有",
+    "被 destroy",
+    "交給 OS 永久保管"
+   ],
+   "ans": "被 release，醒來 return 前再 reacquire",
+   "why": "否則 signal 的人進不了 critical section，會 deadlock。"
+  },
+  {
+   "q": "thread pool 中，worker thread 怎麼知道有工作？",
+   "opts": [
+    "wait 在同一個 condition variable，master 填好 job 後 signal",
+    "一直 busy waiting 檢查 job",
+    "每次有工作就 create 新 thread",
+    "由 OS 自動分配"
+   ],
+   "ans": "wait 在同一個 condition variable，master 填好 job 後 signal",
+   "why": "做完回到 cond_wait 等下一件，不 terminate。"
+  },
+  {
+   "q": "為什麼 TestAndSet 要用 hardware 實作？",
+   "opts": [
+    "software 版本身是好幾行，兩個 thread 同時呼叫就會 race",
+    "software 寫不出來",
+    "hardware 比較省電",
+    "為了 bounded waiting"
+   ],
+   "ans": "software 版本身是好幾行，兩個 thread 同時呼叫就會 race",
+   "why": "hardware 做成 single instruction，不會被 context switch。"
+  },
+  {
+   "q": "semaphore 的值代表什麼？",
+   "opts": [
+    "目前 available 的資源數量",
+    "在 critical section 裡的人數",
+    "thread 的 ID",
+    "priority"
+   ],
+   "ans": "目前 available 的資源數量",
+   "why": "wait 減 1、signal 加 1。"
+  },
+  {
+   "q": "semaphore 的 wait / signal 為什麼必須 atomic？",
+   "opts": [
+    "S 是 shared variable，++ / -- 本身會 race",
+    "為了 bounded waiting",
+    "為了避免 starvation",
+    "因為它是 hardware"
+   ],
+   "ans": "S 是 shared variable，++ / -- 本身會 race",
+   "why": "可用 hardware、software CS 或關 interrupt 實現。"
+  },
+  {
+   "q": "spinlock 的缺點？",
+   "opts": [
+    "等待時一直空轉，浪費 CPU",
+    "不能保證 mutual exclusion",
+    "只能用在 process 之間",
+    "一定會 deadlock"
+   ],
+   "ans": "等待時一直空轉，浪費 CPU",
+   "why": "優點是容易實作。"
+  },
+  {
+   "q": "只需要 binary 的互斥時，老師建議用？",
+   "opts": [
+    "mutex lock",
+    "counting semaphore",
+    "condition variable",
+    "busy waiting"
+   ],
+   "ans": "mutex lock",
+   "why": "mutex 實作較簡單；需要 counting 才用 semaphore。"
+  }
+ ]
+}

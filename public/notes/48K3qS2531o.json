@@ -1,152 +1,352 @@
 {
  "video": "48K3qS2531o",
  "label": "清大周志遠 第20D講 Classical Synchronization Problems & Monitors",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
    "title": "Classical synchronization problems",
-   "scene": null,
+   "scene": "syn-20d-classic",
+   "cues": [
+    2.1,
+    21.4,
+    46.5,
+    64.1,
+    90.7,
+    111.4,
+    135.8,
+    159.4,
+    176.4,
+    195.5,
+    215.5,
+    226.9,
+    236.7
+   ],
    "points": [
     {
-     "text": "有些問題用 mutex、critical section 或 semaphore 很難寫，所以要介紹 monitor。",
-     "t": 0
+     "t": 2,
+     "text": "有些問題用 mutex、critical section 或 semaphore 很難寫，所以要介紹更 high level 的 monitor。"
     },
     {
-     "text": "系統中的問題常可 reduce 成幾個 classic problem，用來檢驗你的 synchronization 是不是正確。",
-     "t": 32
+     "t": 46,
+     "text": "系統中的問題常可 reduce 成幾個 classic problem，用來檢驗你的 synchronization 是不是正確。"
     },
     {
-     "text": "最常見三個：bounded-buffer、readers-writers、dining-philosophers。",
-     "t": 95
+     "t": 111,
+     "text": "最常見三個：bounded-buffer、readers-writers（檔案讀寫）、dining-philosophers（五人五筷）。"
     }
+   ],
+   "explain": [
+    "我們已經介紹完 [[critical section]] 和 [[semaphore]] 這兩種同步工具。",
+    "最後還有一個更 high level（更高階、更好用）的工具叫 monitor。介紹它之前，先看一些經典問題。",
+    "同步的問題五花八門，怎麼判斷一個解法好不好、系統設計對不對？於是大家定義了一組 classical synchronization problems（經典同步問題）。",
+    "這些問題非常有名：電腦系統裡遇到的各種同步問題，幾乎都可以 reduce（化約）成這幾個。",
+    "所以它們的主要用途是當「考題」：你寫好的同步程式，拿這些問題來檢驗，看看是不是真的正確。",
+    "最常見的有三個。第一個是 bounded buffer，就是之前看過的 producer–consumer，我們一開始就是用它來說明同步問題怎麼產生的。",
+    "第二個是 readers-writers，檔案操作常碰到：對檔案的操作不是 read 就是 write，做 read 的叫 reader，做 write 的叫 writer。",
+    "兩個人同時寫同一個檔案，結果會亂掉，這是不可以的。所以檔案系統只要有一個人用寫入權限打開檔案，別人就不能再用寫入權限打開。",
+    "但如果只是讀（read only），大家可以同時打開，因為內容不會被改，資料是一致的。",
+    "最後一個更複雜也更有趣：dining philosophers（哲學家用餐），之後會用 monitor 示範它的解法。",
+    "吃飯要用兩支筷子，一支不行。現在有五個人卻只有五根筷子，筷子放在人跟人之間，要拿起左右兩邊的筷子才能吃。",
+    "如果大家都只拿起左手邊的筷子，那每個人都只有一支，結果誰都不能吃。",
+    "問題是：每個人要用什麼方式拿筷子，才不會卡住、不會發生 [[deadlock]]？"
    ]
   },
   {
    "title": "Bounded-buffer",
-   "scene": "bounded-buffer",
+   "scene": "syn-20d-bb",
+   "cues": [
+    252.5,
+    260.3,
+    267.2,
+    270.6,
+    277.2,
+    282.8,
+    298.2
+   ],
    "points": [
     {
-     "text": "bounded-buffer 就是之前看過的 producer-consumer 例子，buffer size 固定（limited）。",
-     "t": 250
+     "t": 252,
+     "text": "bounded-buffer 就是之前看過的 producer-consumer 例子，buffer size 固定（limited）。"
     },
     {
-     "text": "空的時候 consumer 要等，滿的時候 producer 要等。",
-     "t": 263
+     "t": 267,
+     "text": "空的時候 consumer 要等，滿的時候 producer 要等。"
     },
     {
-     "text": "真實系統很多：compiler 輸出給 linker、linker 給 loader；I/O 系統每層之間都有 buffer。",
-     "t": 279
+     "t": 283,
+     "text": "真實系統很多：compiler 輸出給 linker、linker 給 loader；I/O 系統每層之間都有 buffer。"
     }
    ],
-   "trap": "補充：課本的 semaphore 解法 mutex = 1、empty = n、full = 0；producer 要先 wait(empty) 再 wait(mutex)，順序反過來在 buffer 滿時會 deadlock。"
+   "trap": "補充：課本的 semaphore 解法 mutex = 1、empty = n、full = 0；producer 要先 wait(empty) 再 wait(mutex)，順序反過來在 buffer 滿時會 deadlock。",
+   "explain": [
+    "bounded buffer 之前講過了：左邊的 producer 放東西進 buffer，右邊的 consumer 拿出來。",
+    "buffer 的大小是固定的、有限的（bounded 就是「有上限」）。這裡畫 5 格是示意。",
+    "buffer 空的時候，consumer 沒東西可拿，只能等。",
+    "反過來，buffer 滿的時候，producer 沒地方放，也要等。這就是 bounded buffer problem。",
+    "它是檢驗 critical section 怎麼運作的一個好例子。",
+    "真實系統裡到處都是：compiler 的輸出交給 linker，linker 再交給 loader，中間都有 buffer 在控制資料流。",
+    "整個 I/O 系統也一樣，每一層之間都有 I/O buffer 在做 buffering，怎麼用這些空間就是這個問題。"
+   ]
   },
   {
    "title": "Readers-writers 問題",
-   "scene": "readers-writers",
+   "scene": "syn-20d-rw",
+   "cues": [
+    308.8,
+    315,
+    332.4,
+    340.3,
+    352.8,
+    365.4,
+    378.2,
+    407,
+    418.6,
+    429.7,
+    463.6,
+    470.3,
+    498.4,
+    516.7,
+    524.1,
+    535.4,
+    549.2,
+    567.5
+   ],
    "points": [
     {
-     "text": "檔案操作的標準問題：writer 一次只能一個，writer 在寫時其他 reader、writer 都不能碰；reader 可以同時讀。",
-     "t": 310
+     "t": 309,
+     "text": "檔案操作的標準問題：writer 一次只能一個，writer 在寫時其他 reader、writer 都不能碰；reader 可以同時讀。"
     },
     {
-     "text": "first readers-writers problem：最低要求，只要保證 writer 有 exclusive access。",
-     "t": 381
+     "t": 365,
+     "text": "first readers-writers problem：最低要求，只要保證 writer 有 exclusive access。"
     },
     {
-     "text": "second readers-writers problem：writer ready 後不能 starvation（老師一開始講反，後來更正為 writer 要比較高的 priority）。",
-     "t": 426
+     "t": 419,
+     "text": "second readers-writers problem：writer ready 後不能 starvation（老師一開始講反，後來更正為 writer 要比較高的 priority）。"
     },
     {
-     "text": "例子：reader 讀 10 秒，writer 第 2 秒就到，第二個 reader 第 8 秒到 → lock 傳給它，writer 可能永遠拿不到。",
-     "t": 515
+     "t": 470,
+     "text": "例子：reader 讀 10 秒，writer 第 2 秒就到，第二個 reader 第 8 秒到 → lock 傳給它，writer 可能永遠拿不到。"
     },
     {
-     "text": "還有 third readers-writers，要求更多。",
-     "t": 580
+     "t": 535,
+     "text": "second RW：writer ready 後，比它晚來的 reader 不能插隊；還有 third readers-writers，要求更多。"
     }
    ],
-   "trap": "老師在 L166 先說「reader priority 要高」再更正：second RW 是 writer 優先；first RW 的解法會讓 writer starvation（second RW 的解法則可能讓 reader starvation）。"
+   "trap": "老師先說「reader priority 要高」再更正：second RW 是 writer 優先；first RW 的解法會讓 writer starvation（second RW 的解法則可能讓 reader starvation）。",
+   "explain": [
+    "第二個經典問題：readers-writers。",
+    "它是存取資料時的標準問題，file system、storage system 都會碰到。reader 是只讀的 process，writer 是會修改內容的 process。",
+    "為了確保資料一致，writer 一次只能有一個在操作這個檔案。",
+    "而且只要有一個 writer 正在存取，其他所有的 reader 和 writer 都不能碰這個檔案，因為他們不知道檔案現在的正確狀態。",
+    "但如果全部都是 reader，就可以同時存取，因為大家都只讀，不會改到內容。",
+    "readers-writers 問題又分成好幾個版本，從要求最簡單的到要求最高、最複雜的。",
+    "最簡單的叫 first readers-writers problem，要求很少：只要保證 writer 在用的時候是 exclusive access（獨佔）就好，reader 之間可以共用。",
+    "至於 reader 要等多久、什麼時候做什麼，first 版本都不在乎。",
+    "再複雜一點、比較符合真實使用情境的，叫 second readers-writers problem。",
+    "它比第一個多一個條件。老師這裡一開始講成「reader 不能 starvation」……",
+    "……馬上更正：「我講反了」。second 版本要的是 writer 有比較高的 priority，writer 不能 starvation。",
+    "為什麼會有這個要求？因為 first 版本的簡單解法裡，reader 可以同時讀，拿到 lock 的 reader 可以把 lock 直接傳給下一個 reader。下面的時間軸：R1 從 0 秒開始讀 10 秒。",
+    "writer 其實很早就到了，第 2 秒就來，只比第一個 reader 慢一點。（10 秒、第 2 秒、第 8 秒都是老師的例子。）",
+    "第 8 秒第二個 reader 來了，R1 還沒讀完，lock 就交給 R2，R2 又讀 10 秒……就這樣一直傳下去。",
+    "第 2 秒就來的 writer，可能永遠拿不到 lock，這就是 writer 的 [[starvation]]。",
+    "second readers-writers 要求：writer 一 ready（第 2 秒進來），第一個 reader 做完就要換 writer。",
+    "比 writer 晚來的 reader 不能優先執行，不然 writer 一直被插隊，又會 starvation。",
+    "其實還有 third readers-writers，要求更多。這是經典問題，有興趣可以自己查。"
+   ]
   },
   {
    "title": "First readers-writers 的 semaphore 解法",
-   "scene": "rw-solution",
+   "scene": "syn-20d-rwsol",
+   "cues": [
+    583.3,
+    601.6,
+    614.3,
+    628.2,
+    645,
+    661.3,
+    681.6,
+    691.5,
+    705.6,
+    715.2,
+    736.3,
+    765.9,
+    772.7,
+    782.5,
+    798.7,
+    811.3,
+    830,
+    861,
+    889.2,
+    924.5,
+    962.8,
+    975.3,
+    996.7
+   ],
    "points": [
     {
-     "text": "用 counting 的概念：要數現在有多少 reader 在讀；只要還有 reader，lock 就在 reader 這邊。",
-     "t": 615
+     "t": 580,
+     "text": "用 counting 的概念：要數現在有多少 reader 在讀；只要還有 reader，lock 就在 reader 這邊。"
     },
     {
-     "text": "writer：wrt 是 binary semaphore（當 mutex 用），存取前 wait(wrt)、存取後 signal(wrt)。",
-     "t": 656
+     "t": 645,
+     "text": "writer：wrt 是 binary semaphore（當 mutex 用），存取前 wait(wrt)、存取後 signal(wrt)。"
     },
     {
-     "text": "reader：readcount++，若 readcount == 1（第一個 reader）才去 wait(wrt) 搶 lock；之後的 reader 直接讀。",
-     "t": 708
+     "t": 692,
+     "text": "reader：readcount++，若 readcount == 1（第一個 reader）才去 wait(wrt) 搶 lock；之後的 reader 直接讀。"
     },
     {
-     "text": "讀完 readcount--，若等於 0（最後一個 reader）才 signal(wrt) 讓 writer 有機會。",
-     "t": 783
+     "t": 766,
+     "text": "讀完 readcount--，若等於 0（最後一個 reader）才 signal(wrt) 讓 writer 有機會。"
     },
     {
-     "text": "readcount 本身是 reader 間共享的變數，也要用另一個 semaphore（mutex）保護，連同 if 判斷一起包起來。",
-     "t": 829
+     "t": 811,
+     "text": "readcount 本身是 reader 間共享的變數，也要用另一個 semaphore（mutex）保護，連同 if 判斷一起包起來。"
     },
     {
-     "text": "沒有關聯的資料用不同的 lock，有關聯的才用同一個；全部寫在一起會錯或沒效率。",
-     "t": 917
+     "t": 889,
+     "text": "沒有關聯的資料用不同的 lock，有關聯的才用同一個；全部寫在一起會錯或沒效率。"
     },
     {
-     "text": "這個解法的問題：reader 會一直把 lock 傳給後來的 reader → writer starvation。",
-     "t": 978
+     "t": 963,
+     "text": "這個解法的問題：reader 會一直把 lock 傳給後來的 reader → writer starvation。"
     }
+   ],
+   "explain": [
+    "課堂上看 first readers-writers 的解法。second 版本的解法也不長，老師強烈建議自己找來看，想想它為什麼對。",
+    "這裡用 [[semaphore]]，而且要用「計數」的概念：要數一數現在到底有多少個 reader 正在讀這個檔案。",
+    "只要還有 reader 在讀（數量至少 1），lock 就一直在 reader 這一邊。",
+    "只有在完全沒有 reader 的時候，lock 才能被放掉，writer 才有機會。",
+    "先看右邊的 writer。writer 要的是 exclusive access，同時只能有它一個。",
+    "所以準備一個 write lock 叫 wrt。它也是 semaphore，但只有 0 和 1 兩種值，叫 binary semaphore，一次只放一個 writer，用法就像 [[mutex]]。",
+    "writer 存取前先 wait(wrt) 拿鎖，存取後 signal(wrt) 放鎖，等於把寫入包成一個 critical section。",
+    "再看左邊的 reader，跟 writer 很像但有一點不同：reader 之間可以共用這把鎖。（有幾行先藏起來，等一下再出現。）",
+    "reader 想讀的時候，先把 readcount 加 1。readcount 記錄目前有多少人在讀。R1 來了，readcount 變成 1。",
+    "加完如果 readcount == 1，代表你是第一個 reader，你要代表大家去跟 writer 搶 write lock：wait(wrt)。如果 writer 已經拿著鎖，reader 就得等。這裡 R1 拿到了，wrt 變 0。",
+    "R2 來了，readcount 變 2，不等於 1，代表已經有 reader 幫大家拿到鎖了，所以跳過 wait，直接去讀。如果它也去 wait，反而會把自己卡住。",
+    "讀完要離開時，readcount 減 1。R1 先離開，readcount 變成 1。",
+    "R2 也離開，readcount 減成 0，代表它是最後一個 reader，這時才 signal(wrt) 把鎖放掉。等在外面的 writer W 終於有機會寫了。",
+    "如果減完不是 0（像剛才 R1 離開時還剩 1），就不用 signal，鎖要繼續留在 reader 這一群裡。",
+    "整個想法就是「以群組為單位」：第一個進來的 reader 替大家拿鎖，最後一個離開的 reader 替大家還鎖。",
+    "但程式還沒完全正確：readcount 自己也是好幾個 reader 共用的變數！",
+    "所有 reader 都可能同時做 readcount++，這跟之前 counter++ 一樣會 race。所以要再用另一個 semaphore 保護它，這裡叫 mutex（角色就像 mutex lock）。",
+    "把 readcount++ 用 wait(mutex)、signal(mutex) 包起來，而且要連後面的 if 一起包：改完要立刻檢查，不然值可能又被別人改掉。readcount-- 那段也一樣。",
+    "寫好大架構後，要再檢查一次程式哪些地方會 race，一一保護起來。不是整個程式只能用一個 lock：彼此有關聯的資料用同一把鎖，沒關聯的用不同的鎖。",
+    "這裡 writer 保護的是檔案內容（用 wrt），readcount 是另一份資料（用 mutex），兩者無關，所以用不同的鎖。全部用同一把，可能出錯，也會很沒效率。",
+    "這就是 first readers-writers 的解法：writer 有獨佔的寫入權，reader 可以一起讀。",
+    "它的問題是 writer 會 starvation：reader 可以把鎖一直傳給後面來的 reader，後來的 reader 會超過先來的 writer，一直插隊。",
+    "要解決 starvation，就是 second readers-writers 的解法。老師這裡不講，建議自己查：它甚至更短，但要想清楚它為什麼正確。"
    ]
   },
   {
    "title": "Dining philosophers",
-   "scene": "dining-deadlock",
+   "scene": "syn-20d-dining",
+   "cues": [
+    1026,
+    1039.8,
+    1049,
+    1055.1,
+    1060.3,
+    1069.4,
+    1077.6,
+    1094.2,
+    1101.2,
+    1105.8,
+    1121.7
+   ],
    "points": [
     {
-     "text": "五個人、五根筷子放在人與人之間，要拿起左右兩支才能吃，吃完放回去。",
-     "t": 1037
+     "t": 1026,
+     "text": "五個人、五根筷子放在人與人之間，要拿起左右兩支才能吃，吃完放回去。"
     },
     {
-     "text": "每支筷子是獨立的 resource，一次只能拿一支，不能 magically 同時拿兩支。",
-     "t": 1063
+     "t": 1060,
+     "text": "每支筷子是獨立的 resource，一次只能拿一支，不能 magically 同時拿兩支。"
     },
     {
-     "text": "需要多個資源的程式很常見，就跟這個問題一樣。",
-     "t": 1083
+     "t": 1078,
+     "text": "需要多個資源的程式很常見，就跟這個問題一樣。"
     },
     {
-     "text": "寫得不好：所有人都先拿左邊再拿右邊 → 全部卡住 → deadlock，接著 starvation。",
-     "t": 1097
+     "t": 1094,
+     "text": "寫得不好：所有人都先拿左邊再拿右邊 → 全部卡住 → deadlock，接著 starvation；解法要用 monitor。"
     }
+   ],
+   "explain": [
+    "最後一個經典問題：dining philosophers，用餐、用筷子的問題。圓桌旁坐著五位哲學家（哲0～哲4）。",
+    "筷子的數量跟人一樣多，每根筷子放在兩個人中間（數字是筷子的編號）。",
+    "每個人要把左邊和右邊的筷子都拿起來才能吃。像哲0 拿到兩支，就開始吃了（變綠色）。",
+    "吃完之後，要把筷子放回去，讓別人也能用。",
+    "每根筷子都是一個獨立的 resource（資源），就像一塊獨立的記憶體內容，一次只能拿一支。",
+    "你不能寫一個神奇的 function，一次就把左右兩支同時拿起來。如果可以，就根本沒有同步問題了。",
+    "但實際上，程式常常同時需要好幾個資源：既要左邊的、又要右邊的。這種時候就很像這個問題。",
+    "寫得不好就會 [[deadlock]]。例如規定每個人都先拿左邊、再拿右邊：拿左邊都沒問題，五個人各拿到一支。",
+    "接著要拿右邊時，右邊那支已經被隔壁拿走了，全部卡住（變紅色）：每個人拿著一支、等下一支，永遠等不到。",
+    "deadlock 接著又造成 [[starvation]]：大家都吃不到。使用者就會覺得這是個錯誤的程式。",
+    "要正確解決它比較複雜，需要透過 monitor 的機制，下次再講。"
    ]
   },
   {
    "title": "Monitor 的概念",
-   "scene": "monitor",
+   "scene": "syn-20d-monitor",
+   "cues": [
+    1141.8,
+    1143.9,
+    1154.4,
+    1159.3,
+    1169.8,
+    1180.5,
+    1194.6,
+    1200,
+    1208.4,
+    1222.4,
+    1228.6,
+    1240.5,
+    1252.3,
+    1271.5,
+    1289.2,
+    1304.2
+   ],
    "points": [
     {
-     "text": "semaphore、mutex 要自己呼叫一堆 wait / signal，順序寫錯就 deadlock，是很 low level 的工具。",
-     "t": 1139
+     "t": 1139,
+     "text": "semaphore、mutex 要自己呼叫一堆 wait / signal，順序寫錯就 deadlock，是很 low level 的工具。"
     },
     {
-     "text": "monitor 是 high-level language construct，其實就是 OO 的概念：一個特殊 class 的 object。",
-     "t": 1172
+     "t": 1170,
+     "text": "monitor 是 high-level language construct，其實就是 OO 的概念：一個特殊 class 的 object。"
     },
     {
-     "text": "要保護的變數是 local variable，操作它們的是 method；外面只能透過 method 碰它。",
-     "t": 1206
+     "t": 1200,
+     "text": "要保護的變數是 local variable，操作它們的是 method；外面只能透過 method 碰它。"
     },
     {
-     "text": "跟一般 OO 的差別：language 保證一次只有一個 method（thread）在執行 → mutual exclusion。",
-     "t": 1230
+     "t": 1222,
+     "text": "跟一般 OO 的差別：language 保證一次只有一個 method（thread）在執行 → mutual exclusion。"
     },
     {
-     "text": "只要定義要保護的變數與操作行為，就不會有 critical section 問題，所以容易得多。",
-     "t": 1286
+     "t": 1272,
+     "text": "只要定義要保護的變數與操作行為，就不會有 critical section 問題，所以容易得多。"
     }
+   ],
+   "explain": [
+    "為什麼需要 monitor？",
+    "用 semaphore、mutex lock 或 critical section，你都要自己在程式裡呼叫一堆 wait 和 signal。",
+    "一堆 wait、signal，只要順序不小心寫錯（例如左邊這種），就會 [[deadlock]]，程式就卡死了。",
+    "所以它們是非常 low level（低階）的同步工具，很容易因為寫程式的小錯誤就卡住。",
+    "monitor 是一種 high-level language construct（高階的程式語言結構）。說穿了，就是物件導向（OO）的概念。紫色框框就是一個 monitor。",
+    "把要保護的資源想成 OO 裡的東西：有 class（類別），由 class 產生 object（物件）。",
+    "一個 monitor，就是由一個「特殊的 class」產生出來的 object。",
+    "那些會發生 race condition、需要保護的變數，就當成這個 object 裡面的 local variable（區域變數）。",
+    "所有操作這些變數的動作，都寫成這個 class 的 method（方法）。任何人想碰這些變數，一定要透過這些 method。",
+    "這樣聽起來就是普通的 OO。那跟一般 OO 差在哪？只差一點點，但非常重要。",
+    "一般 OO 的 method 可以被很多 thread 同時呼叫、同時執行，同時執行就會產生 race condition。",
+    "monitor 這個特殊 class 多了一個條件：一次只能有一個 method 在執行。T0 在裡面時，其他 thread 只能在外面等。",
+    "很多 thread 同時呼叫也沒關係，程式語言本身會保護這個 object，讓一次只有一個 thread 執行它的 method，這就是 [[mutual exclusion]]。T0 出來，T1 才進去。",
+    "為什麼這樣簡單得多？因為你只要定義「行為」：想清楚哪些變數要保護、對它們有哪些操作，就好了。",
+    "預設上這些 method 就不能同時執行，所以永遠不會產生 critical section 的問題。",
+    "各個 thread 只要呼叫這些 method 去操作程式的狀態，就不會出問題。T2 也輪到了。"
    ]
   }
  ],
@@ -217,6 +417,5 @@
    "ans": "同一時間只有一個 thread 能在裡面執行 method",
    "why": "語言層級保證 mutual exclusion。"
   }
- ],
- "timing": "estimated"
+ ]
 }
