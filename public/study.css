@@ -395,3 +395,11 @@ a { color: inherit; }
   .st-main.walk .st-side, .st-main.walk .st-teach, .st-main.walk .st-now, .st-main.walk .st-timeline, .st-main.walk .st-more { grid-column: 1; grid-row: auto; }
   .st-main.walk .st-side { min-height: 0; }
 }
+
+/* 段落時間軸：不顯示捲軸（滾輪、觸控板、手指都還能左右捲），兩端淡出提示還有更多 */
+.st-timeline { scrollbar-width: none; -ms-overflow-style: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 28px), transparent 100%);
+          mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 28px), transparent 100%); }
+.st-timeline::-webkit-scrollbar { display: none; }
+.st-tabs { scrollbar-width: none; -ms-overflow-style: none; }
+.st-tabs::-webkit-scrollbar { display: none; }

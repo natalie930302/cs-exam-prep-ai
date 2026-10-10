@@ -653,6 +653,13 @@
     }; });
     renderWalkBtn();
   }
+  // the timeline has no visible scrollbar: a vertical wheel scrolls it sideways
+  $('timeline').addEventListener('wheel', function(e){
+    const tl = $('timeline');
+    if (Math.abs(e.deltaY) <= Math.abs(e.deltaX) || tl.scrollWidth <= tl.clientWidth) return;
+    e.preventDefault();
+    tl.scrollLeft += e.deltaY;
+  }, {passive: false});
   let lastPt = null, lastSec = -1;
   function syncNotes(t, force){
     if (!curNotes || walk) return;
