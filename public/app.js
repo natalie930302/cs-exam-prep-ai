@@ -374,7 +374,7 @@ function durationToMinutes(value){
   if(parts.some(function(n){ return !Number.isFinite(n); })) return 0;
   const seconds = parts.length === 3 ? parts[0]*3600+parts[1]*60+parts[2]
     : parts.length === 2 ? parts[0]*60+parts[1] : 0;
-  return Math.max(0, Math.ceil(seconds/60));
+  return Math.max(0, seconds/60);   // exact; summing per-video round-ups overstated hours
 }
 function foundationVideoMinutes(videos){
   const exact = (videos || []).reduce(function(sum, video){ return sum + durationToMinutes(video.dur); }, 0);
@@ -1005,8 +1005,15 @@ function foundationVideoQueue(){
         if(c.wk !== wk) return;
         chapterDisplayMaterials(c).forEach(function(m, vi, all){
           if(done.has(chapterMaterialTaskId(sub.id, c, m))) return;
+          // exact length (not rounded up per video), minus what was already
+          // watched of it in the study room (it resumes from there)
+          const p = String(m.dur || '').split(':').map(Number);
+          const sec = p.some(isNaN) ? 0 : p.length === 3 ? p[0]*3600+p[1]*60+p[2] : p.length === 2 ? p[0]*60+p[1] : 0;
+          let pos = 0;
+          try{ pos = Number(localStorage.getItem('yt-pos-' + m.videoId)) || 0; }catch(e){}
+          if(pos < 30 || pos >= sec - 30) pos = 0;
           out.push({subj:sub.name, subjId:sub.id, ci:ci, ch:c.t, vi:vi, vn:all.length, title:m.text,
-            series:m.series || '', dur:m.dur, min:Math.max(1, durationToMinutes(m.dur)), href:studyRoomUrl(sub.id, ci, m.videoId), wk:wk});
+            series:m.series || '', dur:m.dur, start:pos/60, min:Math.max(1, (sec - pos)/60), href:studyRoomUrl(sub.id, ci, m.videoId), wk:wk});
         });
       });
     });
@@ -1025,7 +1032,7 @@ function dayPlan(){
     while(cap > 0 && i < q.length){
       const v = q[i], left = v.min - usedOfVideo;
       const take = Math.min(left, cap);
-      items.push(Object.assign({}, v, {take:take, from:usedOfVideo, cont:usedOfVideo > 0, more:take < left}));
+      items.push(Object.assign({}, v, {take:take, from:v.start + usedOfVideo, cont:v.start + usedOfVideo > 0, more:take < left}));
       cap -= take; usedOfVideo += take;
       if(usedOfVideo >= v.min){ i++; usedOfVideo = 0; }
     }
