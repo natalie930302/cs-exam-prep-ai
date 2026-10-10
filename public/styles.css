@@ -7456,3 +7456,38 @@ body#appRoot .rec-books.rec-fixed .rec-books-hd::after, body#appRoot .rec-books.
 body#appRoot .rec-series-row { grid-template-columns: 1fr !important; display: block !important; }
 /* 懸浮鈕間距加大，選中的圓不貼外框 */
 body#appRoot .fab-nav { gap: 10px !important; padding: 8px !important; }
+
+/* ══ 一致的間距與外觀 ══
+   頁面四邊 32px；區塊之間 16px；大卡片圓角 20px、內距 22px；小格子圓角 14px */
+body#appRoot { --g: 16px; --card-r: 20px; --card-p: 22px; --cell-r: 14px; }
+body#appRoot #main > .sec { padding: 32px 32px 40px !important; }
+/* 大卡片：同圓角、同框線、同陰影 */
+body#appRoot :is(.cal-header-card, .ch-list, .tip, .calday, .sp .subject-overview-card, .rec-books.rec-series, .stabs, .cal-nav) {
+  border-radius: var(--card-r) !important; border: 1px solid var(--bd) !important; box-shadow: none !important; background: var(--surf) !important;
+}
+body#appRoot :is(.cal-header-card, .ch-list, .tip) { padding: var(--card-p) !important; }
+body#appRoot .calday { padding: 16px var(--card-p) !important; }
+body#appRoot .daily-focus { border-radius: var(--cell-r) !important; }
+body#appRoot .cal-cell { border-radius: var(--cell-r) !important; }
+body#appRoot .rec-books.rec-series .rec-books-hd { padding: 18px var(--card-p) 6px !important; }
+body#appRoot .rec-books.rec-series .rec-books-body { padding: 0 var(--card-p) 12px !important; }
+body#appRoot .sp .subject-overview-card { padding: 20px var(--card-p) !important; }
+/* 日曆頁：區塊之間都是 16px */
+body#appRoot #sec-schedule .cal-header-card { margin: 0 0 var(--g) !important; }
+body#appRoot #sec-schedule .cal-wrap { margin: 0 !important; }
+body#appRoot #sec-schedule .cal-head { margin: 0 0 12px !important; }
+body#appRoot #sec-schedule .cal-grid { padding: 0 !important; gap: 10px !important; }
+body#appRoot #sec-schedule .calday { margin-top: var(--g) !important; }
+body#appRoot .cal-greet { margin-bottom: 14px !important; }
+/* 六科頁：標題下 20px，其餘區塊 16px，左右欄間距 16px */
+@media (min-width: 1000px) {
+  body#appRoot #main #sec-subjects.on { column-gap: var(--g) !important; }
+  body#appRoot #main #sec-subjects.on > .stabs { margin: 20px 0 0 !important; }
+  body#appRoot #main #sec-subjects > #spPanels > .sp.on > .subject-overview-card,
+  body#appRoot #main #sec-subjects > #spPanels > .sp.on > .ch-list { margin: var(--g) 0 0 !important; }
+  body#appRoot #main #sec-subjects > #spPanels > .sp.on > .sp-rec-row { margin: var(--g) 0 0 !important; }
+  body#appRoot #main #sec-subjects > #spPanels > .sp.on > :is(.tip, .filter-empty) { margin: var(--g) 0 0 !important; }
+}
+body#appRoot #sec-subjects .ss { margin-top: 6px !important; }
+/* 懸浮鈕在日曆頂卡的右上方：卡片外緣不變（跟下面月曆對齊），只把卡片裡的內容往左讓開 */
+@media (min-width: 760px) { body#appRoot #sec-schedule .cal-header-card { padding-right: 84px !important; } }
