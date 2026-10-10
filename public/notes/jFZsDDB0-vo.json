@@ -1,0 +1,350 @@
+{
+ "video": "jFZsDDB0-vo",
+ "label": "Abdul Bari：5.2 Articulation Point and Biconnected Components",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "什麼是 articulation point",
+   "scene": "graphmisc-ap-what",
+   "cues": [
+    0.3,
+    8.2,
+    20.8,
+    24.8,
+    31.8,
+    37.8,
+    73.6,
+    82.2,
+    88.7,
+    106.0
+   ],
+   "explain": [
+    "這支影片講兩個相關的概念：articulation point（關節點）和 biconnected components（雙連通元件）。都和「圖會不會因為少一個點就斷掉」有關。",
+    "定義：在一張連通的圖裡，如果拿掉某個頂點（連同它的邊），圖就斷成好幾塊，這個頂點就叫 articulation point。畫面上就是老師的例子圖。",
+    "這張圖的關鍵點是 3。小人走到 3 上，等一下看看把它拿掉會怎樣。",
+    "把 3 抬起來（拿掉），連到 3 的邊都斷了。剩下的 1、4、2 彼此還連著，成為一塊，叫一個 component（連通塊）。",
+    "5、6 則變成另一塊。圖從一塊變成兩塊，所以 3 是 articulation point。",
+    "如果圖代表道路網或電腦網路，我們不希望有 articulation point：它一壞，整個網路就斷成兩邊，彼此無法聯絡。",
+    "怎麼消除 articulation point？先把 3 放回去。只要知道拿掉 3 之後會分成哪兩塊（1、4、2 和 5、6）就有辦法。",
+    "辦法很簡單：在兩塊之間加一條邊，例如 4–5。",
+    "現在再拿掉 3：5、6 還能透過 4 和其他點相連，整張圖還是一塊。要同時壞掉兩個點才會斷，機率小多了。",
+    "圖裡已經沒有 articulation point。總結：找到 articulation point 後，用一條邊把它兩邊的 component 連起來。"
+   ],
+   "points": [
+    {
+     "t": 0,
+     "text": "articulation point：拿掉它（和它的邊），圖就斷成多個 component。"
+    },
+    {
+     "t": 21,
+     "text": "例子：拿掉 3，1、4、2 一塊、5、6 一塊 → 3 是 articulation point。"
+    },
+    {
+     "t": 38,
+     "text": "網路不希望有 articulation point：一點故障就整個斷開。"
+    },
+    {
+     "t": 73,
+     "text": "解法：在兩邊的 component 之間加一條邊（例如 4–5）。"
+    }
+   ]
+  },
+  {
+   "title": "步驟 1：DFS spanning tree",
+   "scene": "graphmisc-ap-dfs",
+   "cues": [
+    115.0,
+    132.4,
+    142.7,
+    145.4,
+    148.6,
+    150.4,
+    151.8,
+    154.9,
+    159.8,
+    162.3,
+    164.9,
+    168.9,
+    178.4
+   ],
+   "explain": [
+    "人看圖一眼就知道 3 是關鍵，但電腦「看」不到圖，需要一套固定步驟（algorithm）才能找出來。",
+    "第一步：對圖做 DFS（深度優先搜尋），但要的不是走訪順序，而是走過的邊組成的 DFS spanning tree（生成樹）。右邊直立的板子會畫出這棵樹。",
+    "從 1 開始，小人站上 1，樹上出現根 1。",
+    "DFS 一碰到新點就往下走：1 → 4。金色粗邊是樹邊。",
+    "從 4 再往下走到 3。",
+    "從 3 走到 5。",
+    "從 5 走到 6。",
+    "6 還有一條邊連到 3，但 3 已經拜訪過了。這種連回祖先的邊叫 back edge，用紅色虛線表示。",
+    "6 沒有新的鄰居，退回 5；5 也沒有，再退回 3。",
+    "3 還有沒拜訪的鄰居 2，走過去。",
+    "2 有一條邊連回 1，1 是祖先，所以又是一條 back edge。",
+    "2、3、4、1 都沒有新鄰居了，一路退回去，全部探索完。",
+    "這就是 DFS spanning tree：實線是樹邊，虛線是 back edge。第一步完成。"
+   ],
+   "points": [
+    {
+     "t": 115,
+     "text": "電腦需要 algorithm 才能找 articulation point。"
+    },
+    {
+     "t": 132,
+     "text": "步驟 1：做 DFS，畫出 DFS spanning tree。"
+    },
+    {
+     "t": 143,
+     "text": "從 1 開始：1→4→3→5→6，6–3 是 back edge；回到 3 → 2，2–1 是 back edge。"
+    },
+    {
+     "t": 179,
+     "text": "虛線（不在樹上、連回祖先）= back edge。"
+    }
+   ]
+  },
+  {
+   "title": "步驟 2：discovery time",
+   "scene": "graphmisc-ap-d",
+   "cues": [
+    185.5,
+    195.8,
+    199.1,
+    199.9,
+    202.7,
+    206.1,
+    207.6,
+    212.8
+   ],
+   "explain": [
+    "第二步：替每個頂點寫上 discovery time（也叫 DFS number）d，就是它在 DFS 中第幾個被拜訪。",
+    "1 第一個被拜訪，所以 d[1] = 1。",
+    "4 第二個，d[4] = 2。",
+    "3 第三個，d[3] = 3。",
+    "5 第四個，d[5] = 4。",
+    "6 第五個，d[6] = 5。",
+    "2 最後才被拜訪，d[2] = 6。",
+    "整理成表格：頂點 1～6 的 d 分別是 1、6、3、2、4、5。"
+   ],
+   "points": [
+    {
+     "t": 186,
+     "text": "步驟 2：discovery time d = 拜訪順序。"
+    },
+    {
+     "t": 213,
+     "text": "d：1→1、2→6、3→3、4→2、5→4、6→5。"
+    }
+   ]
+  },
+  {
+   "title": "步驟 3：lowest number L",
+   "scene": "graphmisc-ap-low",
+   "cues": [
+    241.5,
+    249.9,
+    258.1,
+    260.8,
+    269.8,
+    284.8,
+    296.3,
+    302.8
+   ],
+   "explain": [
+    "第三步：對每個點算 L（lowest number）：從它出發，沿樹邊往下走，最後可以走「一條」back edge，能碰到的最小 d。",
+    "能讓你「往回跳」的就是這兩條 back edge：6→3 和 2→1。",
+    "1 本身 d 就是 1，不可能更小，L[1] = 1。",
+    "2 走 back edge 就到 1，所以 L[2] = d[1] = 1。",
+    "3 往下走到 2，再用 back edge 跳到 1，L[3] = 1。這表示 3 下面有路能繞回比它更上面的祖先。",
+    "4 往下 3 → 2，再跳到 1，L[4] = 1。",
+    "5 往下到 6，再用 back edge 跳到 3，最小只能到 d[3] = 3，所以 L[5] = 3。",
+    "6 直接跳到 3，L[6] = 3。"
+   ],
+   "points": [
+    {
+     "t": 242,
+     "text": "步驟 3：L[v] = 從 v 往下走、再走一條 back edge 能到的最小 d。"
+    },
+    {
+     "t": 258,
+     "text": "L：1、2、3、4 都是 1；5、6 是 3。"
+    }
+   ],
+   "trap": "L 只能用「一條」back edge，不能連續跳好幾次 back edge。"
+  },
+  {
+   "title": "步驟 4：判斷條件",
+   "scene": "graphmisc-ap-cond",
+   "cues": [
+    314.0,
+    319.8,
+    340.8,
+    359.8,
+    371.0,
+    377.6,
+    383.8,
+    393.2,
+    399.2,
+    408.8,
+    418.2
+   ],
+   "explain": [
+    "最後一步：用 d 和 L 判斷誰是 articulation point。",
+    "看 DFS 樹上每一對相鄰的點：上面那個叫 u（parent），下面那個叫 v（child）。",
+    "條件：L[v] ≥ d[u]。意思是：v 那一整支往下走，最多只能繞回 u，跳不到 u 更上面。",
+    "條件成立，就表示拿掉 u 之後 v 那一支會被切斷，所以 u 是 articulation point。",
+    "這個條件對 root（根）不適用，root 另外判斷，先跳過。",
+    "先檢查 u = 4、v = 3 這一對。",
+    "L[3] = 1，d[4] = 2。",
+    "1 ≥ 2 不成立：3 那支可以繞回 1，拿掉 4 也不會斷，所以 4 不是。",
+    "下一對：u = 3、v = 5。",
+    "d[3] = 3，L[5] = 3，3 ≥ 3 成立！5 那支最多只能回到 3。",
+    "所以 3 是 articulation point，和一開始用眼睛看到的一樣。"
+   ],
+   "points": [
+    {
+     "t": 314,
+     "text": "步驟 4：DFS 樹上 u 是 parent、v 是 child，若 L[v] ≥ d[u]，u 是 articulation point（root 除外）。"
+    },
+    {
+     "t": 378,
+     "text": "u=4、v=3：1 ≥ 2 不成立。"
+    },
+    {
+     "t": 399,
+     "text": "u=3、v=5：3 ≥ 3 成立 → 3 是 articulation point。"
+    }
+   ],
+   "trap": "條件是「≥」不是「>」：L[v] = d[u] 也算（v 那支只能繞回 u 自己）。"
+  },
+  {
+   "title": "寫成程式、加邊修補",
+   "scene": "graphmisc-ap-algo",
+   "cues": [
+    424.3,
+    428.5,
+    435.8,
+    444.3,
+    459.8,
+    473.2
+   ],
+   "explain": [
+    "把剛才的步驟整理成 algorithm，畫面上是四個步驟。",
+    "程式做 DFS 時，同時把每個點的 DFS number d 記下來。",
+    "每遇到一條 back edge，就順便更新 lowest number L。",
+    "得到 d、L 兩個陣列後，逐一比較 L[v] ≥ d[u]，成立的 u 就是 articulation point（紅色的 3）。",
+    "找到之後，它一邊是一個 component（藍）、另一邊是另一個（粉紅），在兩邊之間加一條邊。",
+    "這樣圖就變得更「強壯」，拿掉任何一個點都不會斷。"
+   ],
+   "points": [
+    {
+     "t": 424,
+     "text": "程式：DFS 時記 d；遇到 back edge 更新 L；比較兩個陣列。"
+    },
+    {
+     "t": 460,
+     "text": "找到 articulation point → 在兩邊的 component 之間加一條邊。"
+    }
+   ]
+  },
+  {
+   "title": "root 的特殊條件",
+   "scene": "graphmisc-ap-root",
+   "cues": [
+    485.2,
+    495.3,
+    497.8,
+    503.8
+   ],
+   "explain": [
+    "最後處理 root：上面的條件對 root 永遠會成立（沒有比 root 更上面的點），所以要另外判斷。",
+    "這裡的 root 1 只有一個 child（4），拿掉 1，其他點還是連在一起，所以 1 不是。",
+    "假設 root 下面多長出一個 child（橘色的 ?）。",
+    "root 有兩個以上 child 時，兩個子樹之間沒有別的路（不然 DFS 會把它們放在同一支），拿掉 root 就斷開，所以 root 是 articulation point。"
+   ],
+   "points": [
+    {
+     "t": 485,
+     "text": "root 另外判斷：DFS 樹中 root 有 ≥ 2 個 child → root 是 articulation point。"
+    }
+   ]
+  },
+  {
+   "title": "結尾",
+   "scene": null,
+   "points": [
+    {
+     "t": 508,
+     "text": "總結 articulation point 與 biconnected components。"
+    }
+   ],
+   "explain_idle": "影片結束。可以往下做小測驗複習。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "依影片，articulation point 是什麼？",
+   "opts": [
+    "拿掉它圖就斷成多個 component 的頂點",
+    "度數最大的頂點",
+    "DFS 的起點",
+    "在環上的頂點"
+   ],
+   "ans": "拿掉它圖就斷成多個 component 的頂點",
+   "why": "定義就是：移除後圖變得不連通。"
+  },
+  {
+   "q": "影片的圖中，d 依序為 1:1、4:2、3:3、5:4、6:5、2:6，L[5] 是多少？",
+   "opts": [
+    "3",
+    "1",
+    "4",
+    "5"
+   ],
+   "ans": "3",
+   "why": "5 → 6 再走 back edge 到 3，最小 d 是 3。"
+  },
+  {
+   "q": "非 root 的 u（parent）是 articulation point 的條件是？",
+   "opts": [
+    "存在 child v 使 L[v] ≥ d[u]",
+    "L[u] ≥ d[v]",
+    "d[u] > d[v]",
+    "u 有兩個 child"
+   ],
+   "ans": "存在 child v 使 L[v] ≥ d[u]",
+   "why": "v 那一支繞不回 u 的上面。"
+  },
+  {
+   "q": "root 什麼時候是 articulation point？",
+   "opts": [
+    "DFS 樹中 root 有兩個以上 child",
+    "root 的 L 等於 1",
+    "永遠是",
+    "永遠不是"
+   ],
+   "ans": "DFS 樹中 root 有兩個以上 child",
+   "why": "影片最後講的 root 特殊條件。"
+  },
+  {
+   "q": "影片中消除 articulation point 3 的方法是？",
+   "opts": [
+    "在兩邊的 component 之間加一條邊",
+    "把 3 刪掉",
+    "把圖改成有向圖",
+    "重新做 BFS"
+   ],
+   "ans": "在兩邊的 component 之間加一條邊",
+   "why": "加上 4–5，拿掉 3 也不會斷。"
+  },
+  {
+   "q": "計算 L 時，最多可以走幾條 back edge？",
+   "opts": [
+    "一條",
+    "零條",
+    "任意多條",
+    "兩條"
+   ],
+   "ans": "一條",
+   "why": "定義是往下走樹邊後，再走一條 back edge。"
+  }
+ ]
+}

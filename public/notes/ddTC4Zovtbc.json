@@ -1,0 +1,326 @@
+{
+ "video": "ddTC4Zovtbc",
+ "label": "Tushar Roy：Topological Sort",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "什麼是 topological sort",
+   "scene": "graphmisc-topo-def",
+   "cues": [
+    2.0,
+    4.8,
+    12.8,
+    21.6,
+    32.1,
+    36.4
+   ],
+   "explain": [
+    "Tushar 這支影片講 topological sort（拓撲排序）：把一張有向圖的頂點排成一列。",
+    "前提是 DAG（directed acyclic graph）：邊有方向，而且沒有環。有環的話就排不出來。",
+    "規則只有一條：每條邊 u → v，排序時 u 一定要在 v 前面。例如 A → C，A 就要排在 C 前面。",
+    "這張圖的一種拓撲排序：A B C E D F G。",
+    "另一種也可以：B D A C E F G。拓撲排序通常不只一種答案。",
+    "檢查重點：C 不能排在 A、B 前面；D 不能在 B 前面；E 不能在 C 前面……每一條紅色的邊都要「從前指到後」。"
+   ],
+   "points": [
+    {
+     "t": 2,
+     "text": "topological sort：DAG 的頂點排序，每條邊 u→v，u 在 v 前面。"
+    },
+    {
+     "t": 22,
+     "text": "例：A B C E D F G、B D A C E F G 都合法，答案不唯一。"
+    }
+   ],
+   "trap": "只有 DAG 才有拓撲排序；有環就沒有。"
+  },
+  {
+   "title": "應用：build system",
+   "scene": "graphmisc-topo-build",
+   "cues": [
+    53.2,
+    57.6,
+    65.6,
+    69.7,
+    73.8,
+    83.5
+   ],
+   "explain": [
+    "拓撲排序的一個應用是 build system（建置系統），例如編譯一大堆程式套件。",
+    "把每個 package 當成頂點、依賴關係當成邊：C 依賴 A 和 B，所以 A、B 要先 build。",
+    "同樣地，D 依賴 B、E 依賴 C……",
+    "問題是：build system 怎麼知道該先 build 哪一個？",
+    "它把 package 建成一張圖，做拓撲排序，得到一種順序。",
+    "照這個順序 build：A、B 先，C 接著，再來 E、D、F、G。每個 package 輪到時，它依賴的都已經好了。"
+   ],
+   "points": [
+    {
+     "t": 53,
+     "text": "應用：build system 依 package 依賴關係做拓撲排序，決定建置順序。"
+    }
+   ]
+  },
+  {
+   "title": "用 DFS 做拓撲排序",
+   "scene": "graphmisc-topo-walk",
+   "cues": [
+    97.6,
+    101.5,
+    105.8,
+    112.9,
+    116.0,
+    118.7,
+    130.5,
+    132.9,
+    141.1,
+    144.5,
+    147.6,
+    158.4,
+    163.2,
+    167.9,
+    174.2,
+    177.0,
+    183.0,
+    186.2,
+    198.8,
+    202.3,
+    210.1,
+    216.8,
+    218.8,
+    225.5,
+    227.8,
+    234.6,
+    243.1,
+    249.7,
+    256.2,
+    264.6,
+    273.0,
+    283.2,
+    286.0,
+    290.1,
+    296.0,
+    301.6,
+    310.0,
+    316.0
+   ],
+   "explain": [
+    "接下來看怎麼用程式做拓撲排序。",
+    "需要兩個資料結構：一個 set、一個 stack（後進先出的堆疊）。",
+    "set 記錄「拜訪過的頂點」；stack 最後會裝著排好的順序。",
+    "可以從任何一個頂點開始。",
+    "假設從 E 開始，小人走到 E。",
+    "E 不在 visited set 裡，先把它放進去（下方那一排）。",
+    "接著探索 E 的 children（E 指出去的點）：往 H 走。",
+    "H 沒拜訪過，放進 visited。",
+    "H 沒有任何 child，表示 H 已經「完全探索完」。",
+    "這時才把 H 放進 stack（右邊那一疊）。",
+    "規則：一個點要等它所有 children 都探索完，才能放進 stack。這保證它的後代都比它先進 stack。",
+    "回到 E，E 還有另一個 child F，走過去。",
+    "F 沒拜訪過，放進 visited。",
+    "F 有一個 child G，走過去。",
+    "G 沒拜訪過，放進 visited。",
+    "G 沒有 children。",
+    "G 探索完，放進 stack。",
+    "回到 F：F 沒有別的 child 了。",
+    "F 放進 stack。",
+    "再回到 E：E 的 children（H、F）都探索完，E 放進 stack。",
+    "從 E 能走到的都走完了，再挑任何一個還沒拜訪的點。",
+    "假設挑 B。",
+    "B 放進 visited。",
+    "探索 B 的 child，先挑 C。",
+    "C 沒拜訪過，放進 visited。",
+    "C 的 child E 已經在 visited 裡，什麼都不做（✗）。",
+    "C 沒有別的 child，C 放進 stack。",
+    "回到 B，B 還有 child D，D 放進 visited。",
+    "D 的 child F 已經拜訪過，不走過去。",
+    "D 沒有 child 可探索，放進 stack。",
+    "回到 B：兩個 children 都探索完，B 放進 stack。",
+    "還沒拜訪的只剩 A。",
+    "A 放進 visited。",
+    "A 的 child C 已經拜訪過。",
+    "A 沒有 child 可探索，A 放進 stack。",
+    "現在 stack 裡由上到下，就是拓撲排序。",
+    "一個一個 pop（從頂端拿）出來：A B D C E F G H。",
+    "拓撲排序有很多種，取決於挑頂點的順序；但不管哪一種，每條邊 u → v 都滿足 u 在 v 前面。"
+   ],
+   "points": [
+    {
+     "t": 98,
+     "text": "資料結構：visited set＋stack。"
+    },
+    {
+     "t": 113,
+     "text": "從任一點做 DFS；一個點的 children 全部探索完，才 push 進 stack。"
+    },
+    {
+     "t": 210,
+     "text": "還有沒拜訪的點就再挑一個繼續。"
+    },
+    {
+     "t": 302,
+     "text": "最後依序 pop stack：A B D C E F G H。"
+    }
+   ],
+   "trap": "頂點是在「探索完」時才進 stack，不是在剛拜訪時。"
+  },
+  {
+   "title": "程式碼：topSort 與 topSortUtil",
+   "scene": "graphmisc-topo-code",
+   "cues": [
+    344.0,
+    349.2,
+    351.6,
+    359.3,
+    367.8,
+    372.2,
+    379.0,
+    388.5,
+    393.3,
+    401.1,
+    408.6,
+    415.5,
+    421.7,
+    437.0,
+    449.0,
+    457.0,
+    466.8,
+    481.0,
+    489.8,
+    499.2,
+    515.3,
+    521.6,
+    531.1,
+    539.0,
+    551.2,
+    566.0,
+    575.7,
+    585.2,
+    595.0,
+    604.2,
+    609.1
+   ],
+   "explain": [
+    "最後看程式碼。右邊是虛擬碼，左邊是另一張圖（D、E 的位置和前面不同）。",
+    "主函式是 topSort。",
+    "先準備一個 stack 和一個 visited set，然後用 for 迴圈走過每個頂點。",
+    "第一個遇到的是 D，不在 visited 裡，就呼叫 util(D)。上方會顯示目前的呼叫鏈。",
+    "util 第一件事：把 D 加進 visited。",
+    "接著探索 D 的鄰居，只有 F。",
+    "F 不在 visited，遞迴呼叫 util(F)。遞迴就是函式呼叫自己。",
+    "在 util(F) 裡，先把 F 加進 visited。",
+    "F 只有一個鄰居 G。",
+    "G 也沒拜訪過，再遞迴呼叫 util(G)，把 G 加進 visited。",
+    "G 沒有任何鄰居。",
+    "G 的鄰居全部處理完，執行 stack.push(G)。",
+    "遞迴退回 util(F)：F 的鄰居也處理完，F 放進 stack。",
+    "再退回 util(D)：D 放進 stack。",
+    "回到 topSort 的 for 迴圈，挑下一個頂點 B。",
+    "B 不在 visited，呼叫 util(B)，B 加進 visited。",
+    "先探索 C：呼叫 util(C)，C 加進 visited。",
+    "C 的鄰居 D 已經在 visited，執行 continue 跳過。",
+    "C 沒有其他鄰居，C 放進 stack。",
+    "退回 B，B 還有鄰居 E，呼叫 util(E)。",
+    "E 加進 visited。",
+    "E 的鄰居 F 已經拜訪過，continue。",
+    "E 沒有鄰居可探索，E 放進 stack。",
+    "退回 B：兩個鄰居都處理完，B 放進 stack。",
+    "回到 for 迴圈，其他已拜訪的點都直接跳過。",
+    "碰到 A：不在 visited，呼叫 util(A)。",
+    "A 加進 visited；A 的鄰居 C 已拜訪過。",
+    "A 沒有其他鄰居，A 放進 stack。",
+    "所有頂點都處理完，回傳 stack。",
+    "把 stack 的元素一個一個 pop 出來，就是拓撲順序。",
+    "結果：A B E C D F G。"
+   ],
+   "points": [
+    {
+     "t": 344,
+     "text": "topSort：對每個未拜訪點呼叫 util；util：加進 visited、遞迴探索鄰居，最後 push 進 stack。"
+    },
+    {
+     "t": 604,
+     "text": "程式碼例子的結果：A B E C D F G。"
+    }
+   ]
+  },
+  {
+   "title": "結尾",
+   "scene": null,
+   "points": [
+    {
+     "t": 618,
+     "text": "結尾。"
+    }
+   ],
+   "explain_idle": "影片結束。可以往下做小測驗複習。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "topological sort 要求每條邊 u → v 滿足什麼？",
+   "opts": [
+    "u 排在 v 前面",
+    "v 排在 u 前面",
+    "u、v 相鄰",
+    "u 的編號比 v 小"
+   ],
+   "ans": "u 排在 v 前面",
+   "why": "這是拓撲排序唯一的規則。"
+  },
+  {
+   "q": "什麼樣的圖一定有拓撲排序？",
+   "opts": [
+    "DAG（有向無環圖）",
+    "任何有向圖",
+    "無向圖",
+    "完全圖"
+   ],
+   "ans": "DAG（有向無環圖）",
+   "why": "有環的話，環上的點無法彼此都排在前面。"
+  },
+  {
+   "q": "用 DFS 做拓撲排序時，頂點何時放進 stack？",
+   "opts": [
+    "它所有 children 都探索完時",
+    "剛被拜訪時",
+    "一開始全部放進去",
+    "被 pop 時"
+   ],
+   "ans": "它所有 children 都探索完時",
+   "why": "完成時才 push，最後 pop 的順序就是拓撲序。"
+  },
+  {
+   "q": "影片第一個例子 pop stack 得到的順序是？",
+   "opts": [
+    "A B D C E F G H",
+    "E H F G B C D A",
+    "H G F E C D B A",
+    "A B C D E F G H"
+   ],
+   "ans": "A B D C E F G H",
+   "why": "push 順序是 H G F E C D B A，pop 反過來。"
+  },
+  {
+   "q": "影片提到的拓撲排序應用是？",
+   "opts": [
+    "build system 決定 package 的建置順序",
+    "找最短路徑",
+    "壓縮資料",
+    "找最小生成樹"
+   ],
+   "ans": "build system 決定 package 的建置順序",
+   "why": "依賴的 package 要先 build。"
+  },
+  {
+   "q": "同一張 DAG 的拓撲排序答案？",
+   "opts": [
+    "可能有很多種",
+    "只有一種",
+    "最多兩種",
+    "取決於邊數"
+   ],
+   "ans": "可能有很多種",
+   "why": "起點與挑鄰居的順序不同，結果就不同。"
+  }
+ ]
+}

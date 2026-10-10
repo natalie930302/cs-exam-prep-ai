@@ -665,6 +665,12 @@
   "quiz": 6,
   "cued": true
  },
+ "ddTC4Zovtbc": {
+  "label": "Tushar Roy：Topological Sort",
+  "points": 10,
+  "quiz": 6,
+  "cued": true
+ },
  "DKCbsiDBN6c": {
   "label": "Abdul Bari：6 Introduction to Backtracking - Brute Force Approach",
   "points": 18,
@@ -899,6 +905,12 @@
   "quiz": 7,
   "cued": true
  },
+ "jFZsDDB0-vo": {
+  "label": "Abdul Bari：5.2 Articulation Point and Biconnected Components",
+  "points": 19,
+  "quiz": 6,
+  "cued": true
+ },
  "JR2fneVevbg": {
   "label": "Minimum Cost Spanning Tree | Kruskal's & Prim's",
   "points": 27,
@@ -939,6 +951,12 @@
   "label": "交大江蕙如 Lec02 Chapter 1 Introduction (1/2)",
   "points": 180,
   "quiz": 8,
+  "cued": true
+ },
+ "kyUpc_5705s": {
+  "label": "Abdul Bari：BFS DFS - Simplified",
+  "points": 15,
+  "quiz": 7,
   "cued": true
  },
  "lhXHk8IuFeQ": {
@@ -1071,6 +1089,12 @@
   "label": "Abdul Bari：Why Pointers?",
   "points": 26,
   "quiz": 6,
+  "cued": true
+ },
+ "oRpERQA4Vik": {
+  "label": "MIT 6.006 Rec16：Rubik's Cube, StarCraft Zero（圖搜尋應用，補充）",
+  "points": 31,
+  "quiz": 7,
   "cued": true
  },
  "oTTzNMHM05I": {
@@ -1209,6 +1233,12 @@
   "label": "交大江蕙如 Lec04 Chapter 2 Algorithm Analysis (1/2)",
   "points": 118,
   "quiz": 8,
+  "cued": true
+ },
+ "RpgcYiky7uw": {
+  "label": "Tushar Roy：Strongly Connected Components",
+  "points": 16,
+  "quiz": 6,
   "cued": true
  },
  "rvdJDijO2Ro": {
