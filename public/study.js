@@ -319,7 +319,7 @@
       host: 'https://www.youtube-nocookie.com',
       // YouTube's own captions stay off: the site shows its own (Traditional
       // Chinese, with English under English lectures), timed to the speech
-      playerVars: {rel: 0, modestbranding: 1, playsinline: 1, cc_load_policy: 0, cc_lang_pref: 'zh-Hant', iv_load_policy: 3},
+      playerVars: {rel: 0, modestbranding: 1, playsinline: 1, cc_load_policy: 0, iv_load_policy: 3},
       events: {
         onReady: function(){
           playerReady = true;
