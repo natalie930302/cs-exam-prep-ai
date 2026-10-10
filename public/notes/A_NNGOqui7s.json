@@ -1,188 +1,299 @@
 {
  "video": "A_NNGOqui7s",
  "label": "清大OCW 趙啟超《離散數學》第1A講 Logic and Set Theory",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
    "title": "課程定位與先修",
    "scene": null,
    "points": [
     {
-     "text": "清大 EECS 2060 Discrete Mathematics，授課教師趙啟超（清大電機系）。",
-     "t": 8
+     "t": 4,
+     "text": "清大 EECS 2060 Discrete Mathematics，授課教師趙啟超（清大電機系）。"
     },
     {
-     "text": "先修：高中數學，最好修過微積分（大一數學）。",
-     "t": 23
+     "t": 10,
+     "text": "先修：高中數學，最好修過微積分（大一數學）。"
     },
     {
-     "text": "課名是 Discrete and Combinatorial Mathematics：離散數學加組合數學，對象是電機系大二。",
-     "t": 55
+     "t": 55,
+     "text": "課名是 Discrete and Combinatorial Mathematics：離散數學加組合數學，對象是電機系大二。"
     },
     {
-     "text": "離散數學不像線性代數那樣有標準範圍，各校、各系教的內容不完全一樣。",
-     "t": 75
+     "t": 76,
+     "text": "離散數學不像線性代數那樣有標準範圍，各校、各系教的內容不完全一樣。"
     }
    ]
   },
   {
-   "title": "全課三大部分與 50 小時",
-   "scene": "course-map",
-   "params": {
-    "part": 0
-   },
-   "points": [
-    {
-     "text": "全課分三大部分：Fundamentals、Enumeration、Graph Theory。",
-     "t": 110
-    },
-    {
-     "text": "一學期 18 週扣掉期末考週，每週 3 小時，上課約 50 小時。",
-     "t": 535
-    },
-    {
-     "text": "三部分時數加起來剛好 50 小時；考試不佔上課時間。",
-     "t": 551
-    }
-   ],
-   "trap": "補充：影片只講了基礎 13 小時、圖論 22 小時；Enumeration 約 15 小時是用 50 − 13 − 22 推算的。"
-  },
-  {
    "title": "第一部分：Fundamentals（約 13 小時）",
-   "scene": "course-map",
-   "params": {
-    "part": 1
-   },
+   "scene": "lg-1a-fund",
+   "cues": [
+    116.9,
+    123.8,
+    126.2,
+    129.8,
+    137.9,
+    145.2,
+    156.5,
+    159.1,
+    170,
+    171.8
+   ],
+   "explain": [
+    "老師先把整門課分成三大塊：基礎（Fundamentals）、計數（Enumeration）、圖論（Graph Theory）。上面三個標籤就是這三塊，現在亮的是第一塊「基礎」。",
+    "基礎部分大約要上 13 個小時。之後會用這個數字算整學期的總時數。",
+    "基礎的第一個主題就是我們這一章的「邏輯」：判斷一句話是真是假、以及怎麼從前提推出結論。",
+    "第二個是「集合論」：把一群東西裝在一起，再談交集、聯集這些運算。老師說這兩個大家以前都學過，會很快帶過。",
+    "「數學歸納法」是證明「對所有正整數都成立」的方法。高中學過，所以老師只會提醒容易出錯的地方。",
+    "「函數」：每個輸入對到一個輸出。會講定義，以及幾種特別的函數（例如一對一、映成）的性質。",
+    "「鴿籠原理」：如果鴿子比籠子多，至少有一個籠子要擠兩隻以上。聽起來簡單，但能證出很多有趣的結論。",
+    "「關係」（relation）：描述兩個東西之間有沒有某種關聯，例如「a 小於 b」。binary 是「兩個之間」的意思。",
+    "第一種重要的關係叫「等價關係」：像「同一個班」這樣，可以把東西分成一組一組的。",
+    "第二種叫「偏序」（partial order）：像「a 整除 b」這種有先後、但不一定每兩個都能比較的關係。基礎部分就到這裡。"
+   ],
    "points": [
     {
-     "text": "基礎部分約 13 小時，Logic 與 Set Theory 以前學過，會很快帶過。",
-     "t": 116
+     "t": 116,
+     "text": "全課分三大部分：Fundamentals、Enumeration、Graph Theory；基礎部分約 13 小時。"
     },
     {
-     "text": "Mathematical Induction 也學過，課上只強調要注意的地方。",
-     "t": 133
+     "t": 126,
+     "text": "Logic 與 Set Theory 以前學過，會很快帶過。"
     },
     {
-     "text": "Functions：基本定義、幾類函數的性質，以及 Pigeonhole Principle。",
-     "t": 143
+     "t": 137,
+     "text": "Mathematical Induction 也學過，課上只強調要注意的地方。"
     },
     {
-     "text": "Binary Relation 的定義，特別講 equivalence relation 與 partial ordering 兩類。",
-     "t": 153
+     "t": 145,
+     "text": "Functions：基本定義、幾類函數的性質，以及 Pigeonhole Principle。"
+    },
+    {
+     "t": 159,
+     "text": "Binary Relation 的定義，特別講 equivalence relation 與 partial ordering 兩類。"
     }
    ]
   },
   {
    "title": "第二部分：Enumeration（計數）",
-   "scene": "course-map",
-   "params": {
-    "part": 2
-   },
+   "scene": "lg-1a-enum",
+   "cues": [
+    177,
+    187,
+    200.1,
+    219.1,
+    226.3,
+    230.7,
+    243.3,
+    248.5,
+    256.3,
+    283,
+    298,
+    310.4,
+    330.2,
+    344.7
+   ],
+   "explain": [
+    "第二部分是組合數學裡很重要的一塊：Enumeration，中文可以叫「計數」。",
+    "計數就是「數數看有幾個」或「有幾種方法」，跟高中的排列組合很像。",
+    "不同的是：高中大多用加減乘除就能算，這裡會教一些光靠加減乘除算不出來的新技巧。",
+    "一開始先回顧「計數原理」，也就是加法原理、乘法原理這些高中排列組合的基本功。",
+    "再來是「排容原理」：算「A 或 B」的個數時，先把 A、B 加起來，再扣掉重複算到的交集。",
+    "很多計數問題會變成「遞迴關係」：第 n 項用前面幾項來表示，例如 aₙ = aₙ₋₁ + aₙ₋₂。",
+    "遞迴關係又叫「差分方程」，可以把它想成離散版本的微分方程。",
+    "解法分兩步：先解比較簡單的齊次（homogeneous），再解多了一項的非齊次（non-homogeneous）。",
+    "如果學過微分方程，會覺得解法很像，只是更簡單；因為「一格一格跳」的離散問題，通常比連續的簡單。",
+    "這部分主要的新技巧是「生成函數」（Generating Function）：把一整串數字裝進一個多項式的係數裡。",
+    "用生成函數解遞迴，就像微分方程用 Laplace transform：先換到另一個世界把問題解掉，再換回來。",
+    "生成函數還能直接拿來計數：有時候算它的係數，比直接數還容易。",
+    "例子是「整數分割」：把一個整數拆成幾個正整數相加，有幾種拆法？用生成函數就能算。",
+    "計數有什麼用？常常是用來估計一個演算法要做多少事、花多少時間，也就是「複雜度」。"
+   ],
    "points": [
     {
-     "text": "Enumeration 就是計數：數東西有幾個、方法有幾種，類似高中排列組合。",
-     "t": 175
+     "t": 177,
+     "text": "Enumeration 就是計數：數東西有幾個、方法有幾種，類似高中排列組合。"
     },
     {
-     "text": "先回顧 Principle of Counting，再學 Principle of Inclusion and Exclusion（排容原理）。",
-     "t": 205
+     "t": 200,
+     "text": "會教高中只用加減乘除算不出來的新技巧。"
     },
     {
-     "text": "計數常會化成 Recurrence Relation（差分方程），先解 homogeneous，再解 non-homogeneous。",
-     "t": 222
+     "t": 219,
+     "text": "先回顧 Principle of Counting，再學 Principle of Inclusion and Exclusion（排容原理）。"
     },
     {
-     "text": "解法和微分方程很像但更簡單，因為離散通常比連續簡單。",
-     "t": 250
+     "t": 230,
+     "text": "計數常會化成 Recurrence Relation（差分方程），先解 homogeneous，再解 non-homogeneous。"
     },
     {
-     "text": "Generating Function 解遞迴關係，就像微分方程用 Laplace transform：換到另一個 domain 解完再變回來。",
-     "t": 283
+     "t": 256,
+     "text": "解法和微分方程很像但更簡單，因為離散通常比連續簡單。"
     },
     {
-     "text": "Generating Function 也能直接拿來計數，例如 Partition of Integer。",
-     "t": 309
+     "t": 283,
+     "text": "Generating Function 解遞迴關係，就像微分方程用 Laplace transform：換到另一個 domain 解完再變回來。"
     },
     {
-     "text": "計數常用來估計 algorithm 的複雜度：要花多少時間、多少計算量。",
-     "t": 332
+     "t": 310,
+     "text": "Generating Function 也能直接拿來計數，例如 Partition of Integer。"
+    },
+    {
+     "t": 344,
+     "text": "計數常用來估計 algorithm 的複雜度：要花多少時間、多少計算量。"
     }
    ]
   },
   {
    "title": "第三部分：Graph Theory（約 22 小時）",
-   "scene": "course-map",
-   "params": {
-    "part": 3
-   },
+   "scene": "lg-1a-graph",
+   "cues": [
+    382.1,
+    398.1,
+    415,
+    420.5,
+    426.6,
+    434.7,
+    441.2,
+    449.3,
+    453.9,
+    456.2
+   ],
+   "explain": [
+    "第三部分是「圖論」：用點和線來描述「誰跟誰有連接」，像地圖、網路、朋友關係都能畫成圖。",
+    "圖論會教大約 22 小時，比前兩部分多，也比一般的離散數學課多；老師覺得它對電機系很重要。",
+    "先從定義開始：什麼是 graph（由點 vertex 和邊 edge 組成）、它有哪些基本性質。",
+    "「同構」（isomorphism）：兩張圖畫得不一樣，但只要把點重新命名就完全相同，就說它們同構。",
+    "Euler trail / circuit：能不能「一筆畫」把每條邊都走過剛好一次？能回到起點的叫 circuit。",
+    "「平面圖」：能畫在紙上、而且邊和邊不交叉的圖。",
+    "「樹」是一種特別的圖：連通、而且沒有繞圈圈。",
+    "有些樹會指定一個點當「根」（root），叫 rooted tree，像家族樹一樣有上下層。",
+    "「生成樹」：從一張圖裡挑一些邊，剛好把所有點連起來又不繞圈，就是一棵 spanning tree。",
+    "還會談樹跟排序（sorting）的關係，例如用樹來描述排序過程。"
+   ],
    "points": [
     {
-     "text": "圖論對電機系很重要、很多課沒教，這門課教得比一般離散數學多，約 22 小時。",
-     "t": 380
+     "t": 382,
+     "text": "圖論對電機系很重要、很多課沒教，這門課教得比一般離散數學多，約 22 小時。"
     },
     {
-     "text": "先介紹 Graph 的定義與性質，再講 Graph isomorphism。",
-     "t": 403
+     "t": 415,
+     "text": "先介紹 Graph 的定義與性質，再講 Graph isomorphism。"
     },
     {
-     "text": "Euler Trail、Euler Circuit（Euler Cycle）及相關問題。",
-     "t": 415
+     "t": 426,
+     "text": "Euler Trail、Euler Circuit（Euler Cycle）及相關問題。"
     },
     {
-     "text": "Planar Graph：能畫在平面上的圖。",
-     "t": 425
+     "t": 434,
+     "text": "Planar Graph：能畫在平面上的圖。"
     },
     {
-     "text": "Tree 的定義與性質、rooted tree、spanning tree，以及 tree 與 sorting。",
-     "t": 434
+     "t": 441,
+     "text": "Tree 的定義與性質、rooted tree、spanning tree，以及 tree 與 sorting。"
     }
    ]
   },
   {
    "title": "Optimization 與 Matching 四個問題",
-   "scene": "course-map",
-   "params": {
-    "part": 4
-   },
+   "scene": "lg-1a-opt",
+   "cues": [
+    458.7,
+    465.1,
+    471.4,
+    475.1,
+    488.7,
+    495.8,
+    502,
+    512.7
+   ],
+   "explain": [
+    "圖論的最後是「最佳化」與「配對」，老師列了四個經典問題。",
+    "第一個：最短路徑。在一張有距離的圖上，從 A 到 B 怎麼走最短？",
+    "最短路徑常用 Dijkstra's algorithm：從起點開始，一步步確定離起點最近的點。",
+    "第二個：最小生成樹。一張圖有很多棵生成樹，要找邊的總長度最小的那棵，也有對應的演算法。",
+    "第三個：配對。在「兩邊分開」的二分圖（bipartite graph）裡，把左邊的點跟右邊的點配成一對一對。",
+    "目標是找「最多對」的配法，叫 maximum matching。",
+    "第四個：最大流量。把網路想成水管，每條管子有容量限制，最多能從起點送多少水到終點？",
+    "這裡有個有名的定理：最大流量 = 最小割（max-flow min-cut theorem）。"
+   ],
    "points": [
     {
-     "text": "Shortest Paths Problem，常用 Dijkstra's algorithm 解。",
-     "t": 460
+     "t": 458,
+     "text": "最後講 Optimization 與 Matching，主要有四個問題。"
     },
     {
-     "text": "Minimal Spanning Tree：一個 graph 有很多 spanning tree，要找最小的。",
-     "t": 474
+     "t": 465,
+     "text": "Shortest Paths Problem，常用 Dijkstra's algorithm 解。"
     },
     {
-     "text": "Matching Problem：在 bipartite graph 找 Maximum Matching。",
-     "t": 490
+     "t": 475,
+     "text": "Minimal Spanning Tree：一個 graph 有很多 spanning tree，要找最小的。"
     },
     {
-     "text": "Max Flow：在網路中定義 flow 並找最大流，對應 Max-Flow Min-Cut Theorem。",
-     "t": 505
+     "t": 488,
+     "text": "Matching Problem：在 bipartite graph 找 Maximum Matching。"
+    },
+    {
+     "t": 502,
+     "text": "Max Flow：在網路中定義 flow 並找最大流，對應 Max-Flow Min-Cut Theorem。"
     }
    ],
-   "trap": "補充：字幕的「代數 algorithm」是 Dijkstra's algorithm 的誤聽；「Max Flow Mean Cut」是 Max-Flow Min-Cut。"
+   "trap": "補充：字幕的「代刷 algorithm」是 Dijkstra's algorithm 的誤聽；「max flow mean cut」是 Max-Flow Min-Cut。"
+  },
+  {
+   "title": "全課 50 小時怎麼來",
+   "scene": "lg-1a-hours",
+   "cues": [
+    529.2,
+    537.1,
+    545,
+    547.5,
+    551.2
+   ],
+   "explain": [
+    "整門課預計上課 50 個小時。小離來陪你算一算這個數字是怎麼來的。",
+    "一學期 18 週，扣掉最後一週期末考，剩 17 週；每週上 3 小時，17 × 3 = 51 小時。",
+    "其中有一天放假，少了 1 小時，所以實際剩下 50 小時。",
+    "三部分加起來剛好 50：基礎 13 小時、圖論 22 小時，計數就是剩下的大約 15 小時（這個 15 是我們推算的）。",
+    "老師的考試不在上課時間考，所以這 50 小時都可以拿來上課。"
+   ],
+   "points": [
+    {
+     "t": 529,
+     "text": "預計上課 50 小時。"
+    },
+    {
+     "t": 537,
+     "text": "一學期 18 週扣掉期末考週，每週 3 小時原本 51 小時，有一天放假剩 50 小時。"
+    },
+    {
+     "t": 547,
+     "text": "三部分時數加起來剛好 50 小時；考試不在課堂上，不佔上課時間。"
+    }
+   ],
+   "trap": "補充：影片只講了基礎 13 小時、圖論 22 小時；Enumeration 約 15 小時是用 50 − 13 − 22 推算的。"
   },
   {
    "title": "課本與參考書",
    "scene": null,
    "points": [
     {
-     "text": "課本：Grimaldi《Discrete and Combinatorial Mathematics》第 5 版。",
-     "t": 562
+     "t": 557,
+     "text": "課本：Grimaldi《Discrete and Combinatorial Mathematics》第 5 版。"
     },
     {
-     "text": "參考書包含 McEliece（老師的博士指導教授，已絕版）與 Biggs，兩本較簡潔。",
-     "t": 590
+     "t": 592,
+     "text": "參考書包含 McEliece（老師的博士指導教授，已絕版）與 Biggs，兩本較簡潔。"
     },
     {
-     "text": "台灣最常用的是 Grimaldi 與 Rosen 兩本，內容字數較多。",
-     "t": 639
+     "t": 628,
+     "text": "台灣最常用的是 Grimaldi 與 Rosen 兩本，內容字數較多。"
     },
     {
-     "text": "另列劉炯朗（C. L. Liu）的兩本書，以及 Ron Graham、Donald Knuth 等人的書。",
-     "t": 655
+     "t": 651,
+     "text": "另列劉炯朗（C. L. Liu）的兩本書，以及 Ron Graham、Donald Knuth 等人的書。"
     }
    ]
   }
@@ -265,6 +376,5 @@
    "ans": "Grimaldi 第 5 版",
    "why": "Grimaldi 為課本；Rosen 是台灣另一本常用的書，列為參考。"
   }
- ],
- "timing": "estimated"
+ ]
 }

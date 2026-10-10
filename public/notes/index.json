@@ -535,9 +535,9 @@
  },
  "A_NNGOqui7s": {
   "label": "清大OCW 趙啟超《離散數學》第1A講 Logic and Set Theory",
-  "points": 31,
+  "points": 34,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "a_otxyu0mSQ": {
   "label": "MIT 6.006 Rec11：Principles of Algorithm Design",
@@ -1001,6 +1001,12 @@
   "quiz": 7,
   "cued": true
  },
+ "ih43BS7GsNY": {
+  "label": "交大OCW 易志偉《離散數學》Lec02 Logic and Proofs (2/5)",
+  "points": 33,
+  "quiz": 7,
+  "cued": true
+ },
  "IilVRpUsAiQ": {
   "label": "B-Tree Insertion",
   "points": 27,
@@ -1028,6 +1034,12 @@
  "IWzYoXKaRIc": {
   "label": "MIT 6.006 Rec6：AVL Trees",
   "points": 112,
+  "quiz": 7,
+  "cued": true
+ },
+ "jBoa60H5XVU": {
+  "label": "清大OCW 趙啟超《離散數學》第1C講 Logic and Set Theory",
+  "points": 34,
   "quiz": 7,
   "cued": true
  },
@@ -1089,6 +1101,12 @@
   "label": "Abdul Bari：2.4.2 Examples for Master Theorem #2",
   "points": 17,
   "quiz": 5,
+  "cued": true
+ },
+ "klWl-t7V5qY": {
+  "label": "交大OCW 易志偉《離散數學》Lec01 Logic and Proofs (1/5)",
+  "points": 72,
+  "quiz": 7,
   "cued": true
  },
  "ko8ogLJc1Ko": {
@@ -1472,6 +1490,12 @@
  "qbUTlZ05VYk": {
   "label": "清大周志遠 第6A講 OS Structure/Processes Concept",
   "points": 41,
+  "quiz": 6,
+  "cued": true
+ },
+ "QCh-aVmXANA": {
+  "label": "清大OCW 趙啟超《離散數學》第1B講 Logic and Set Theory",
+  "points": 34,
   "quiz": 6,
   "cued": true
  },
