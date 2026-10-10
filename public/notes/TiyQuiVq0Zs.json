@@ -1,0 +1,444 @@
+{
+ "video": "TiyQuiVq0Zs",
+ "label": "清大周志遠 第26C講 RAID",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "RAID level：三個技巧的不同組合",
+   "scene": "io-26c-intro",
+   "cues": [
+    14,
+    19.2,
+    47.2
+   ],
+   "points": [
+    {
+     "t": 14,
+     "text": "RAID 的差別在於怎麼做 striping、mirroring、error correction；設計不同就叫不同 level（RAID 0、1、2、3 …），常見的是前面幾種。"
+    }
+   ],
+   "explain": [
+    "上一講說 RAID 有三個技巧：striping（切開分散放）、mirroring（複製備份）、error correction（用 coding 偵錯修錯）。",
+    "所有 RAID 的目的都一樣（可靠度、效能），用的也都是這三招，只是組合和設計方式不同。不同的設計，就叫做不同 level 的 RAID。",
+    "接下來從最簡單的 RAID 0 開始，依序看 RAID 1、2、3…。實際上最常見的是前面幾種，例如 0、1、5（亮起來的那幾個）。"
+   ]
+  },
+  {
+   "title": "RAID 0：只有 striping",
+   "scene": "io-26c-r0",
+   "cues": [
+    56.3,
+    72.5,
+    85,
+    96.6,
+    109.6,
+    122.9,
+    135.4,
+    157,
+    185.6
+   ],
+   "points": [
+    {
+     "t": 56,
+     "text": "RAID 0 只用 striping：把資料切開，用 round robin 依序放到每顆硬碟。"
+    },
+    {
+     "t": 110,
+     "text": "同一份資料分散在各顆，要全部讀出來才完整。"
+    },
+    {
+     "t": 135,
+     "text": "目的只有 performance：n 顆硬碟，讀寫速度約 n 倍（前提是瓶頸在 disk）；但沒有任何 redundancy，壞一顆資料就毀了。"
+    }
+   ],
+   "explain": [
+    "RAID 0：只用了 striping 這一招，沒有備份、也沒有 parity。",
+    "striping 就是把資料切成一塊一塊，看有幾顆硬碟，就依序輪流放上去。例子是兩顆硬碟。",
+    "同一個 data block A 切成 A1、A2、A3、A4，A1 放 disk 0、A2 放 disk 1、A3 又回到 disk 0…輪流放。",
+    "如果有三顆硬碟，就是 A1、A2、A3 各放一顆，以此類推。",
+    "因為它們是同一份資料切開的，讀的時候要把每一塊都讀出來，才拼得回完整的值。",
+    "A 放完，接著放下一個（B），一樣從某個位置開始，用 [[round robin]]（輪流）的方式 stripe（分散）到所有硬碟上。",
+    "RAID 0 的目的只有一個：performance。兩顆硬碟可以同時讀，I/O 的頻寬（bandwidth）就變兩倍；三顆就三倍。",
+    "所以 I/O 不夠快時，RAID 是很直覺的解法：多加硬碟。前提是瓶頸真的在硬碟，而不是在 system [[bus]] 這些上游。通常最接近 I/O device 的那一層最慢，所以常常有效。",
+    "n 顆硬碟，讀寫速度大約就是 n 倍，這是 RAID 0 最大的好處。但它完全沒有備份（redundancy）：任何一顆壞了，所有檔案都缺一塊，資料就毀了。"
+   ]
+  },
+  {
+   "title": "RAID 1：mirroring",
+   "scene": "io-26c-r1",
+   "cues": [
+    205.1,
+    228,
+    236.4,
+    250.9,
+    266.7,
+    280.4,
+    306.6
+   ],
+   "points": [
+    {
+     "t": 205,
+     "text": "RAID 1 只追求 reliability：把資料 copy 成好幾份（兩顆兩份），除非全部同時壞，資料不會遺失。"
+    },
+    {
+     "t": 267,
+     "text": "缺點：空間只剩一半（兩顆 1T 只能存 1T）。"
+    },
+    {
+     "t": 280,
+     "text": "讀可以從兩邊分攤，頻寬也加倍；寫要每份都寫，速度跟一顆一樣，甚至受最慢那顆拖累。"
+    }
+   ],
+   "explain": [
+    "RAID 1 是另一個極端：它不追求速度，只在乎 reliability（可靠度）：資料一定不能丟。",
+    "一般人通常只有一顆硬碟，而硬碟壞掉的機率其實不低。很多公司把重要資料放在 RAID 1 的儲存系統上。",
+    "做法是 mirroring：每一塊資料都 copy 一份，放到另一顆硬碟（紫色是副本）。三顆硬碟就可以存三份，以此類推。",
+    "如果 disk 0 壞了（紅色），disk 1 上還有完整的一份，資料不會遺失。除非 n 顆同時壞掉，資料才會真的不見。",
+    "一般認為備份三份就夠了，再多太浪費。缺點就是空間：兩顆 1TB 的硬碟，用 RAID 1 只能存 1TB 的資料。",
+    "順帶的好處：讀也可以變快。因為兩邊都有同一份資料，讀 A 時可以 A1 從 disk 0 讀、A2 從 disk 1 讀，各讀一半再合起來，讀的頻寬也能倍增。",
+    "寫就不行了：每一份都要寫，所以寫的速度最多跟一顆硬碟一樣；還要等最慢的那顆寫完，甚至比一顆還差一點。"
+   ]
+  },
+  {
+   "title": "RAID 2：Hamming code",
+   "scene": "io-26c-r2",
+   "cues": [
+    333.1,
+    349.2,
+    370.3,
+    382.5,
+    407.3,
+    421,
+    441.4,
+    471.8,
+    482.5,
+    506,
+    543.4,
+    588.8
+   ],
+   "points": [
+    {
+     "t": 333,
+     "text": "RAID 2、3、4 用 coding 做 error correction，比 RAID 1 的 copy 省空間。"
+    },
+    {
+     "t": 370,
+     "text": "RAID 2 用 Hamming code，bit level：D 是 data bit、P 是 parity bit，每個 P 管幾個交錯的 data bit。"
+    },
+    {
+     "t": 472,
+     "text": "例：data 1101 → parity 010；任一 bit flip，會讓涵蓋它的 parity 對不上，就能找出是哪個 bit 並修正。只錯一個可以 recover，錯兩個只能 detect。"
+    },
+    {
+     "t": 543,
+     "text": "(7,4) Hamming code 要 4 個 data + 3 個 parity = 7 顆硬碟；多存 3/4 = 75%，比 mirroring 的 100% 少。"
+    }
+   ],
+   "explain": [
+    "接下來的 RAID 2、3、4，主要都在做 error correction（錯誤更正），而且要做得比 RAID 1 更省空間。",
+    "回想 RAID 1：兩份 copy 就浪費一半的空間，多存的資料（data redundancy）比例非常高，不是很有效率。",
+    "RAID 2 用 coding（編碼）來解決。畫面上每顆硬碟只放一個 bit：D1～D4 是原始的 data bit（1、1、0、1）。",
+    "RAID 2 第一件事，是要知道「哪一顆」出錯。有時候資料壞掉只是某個 bit 翻過來（bit flip，0 變 1 或 1 變 0），完全沒有徵兆。知道誰錯之後，還要能算出它原本的值。",
+    "RAID 2 用的是 Hamming code（漢明碼），一種很經典的 error-correcting code，其他課可能也會學到。",
+    "D 是 data bit，P 是 parity bit。這種做法只適用在 bit level：每一格就是一個 0 或 1。",
+    "每個 parity bit 負責「交錯」的幾個 data bit：P1 管 D2、D3、D4，P2 管 D1、D2、D4，P3 管 D1、D3、D4。parity 就是把它管的 bit 做 XOR（⊕，看 1 的個數是奇數還是偶數）。（圈怎麼分是配合老師的數字設定的。）",
+    "老師的例子：data 是 1101。照規則算：P1 = 1⊕0⊕1 = 0，P2 = 1⊕1⊕1 = 1，P3 = 1⊕0⊕1 = 0，parity 就是 010。",
+    "假設 D2 從 1 flip 成 0。重新檢查：P1、P2 都管到 D2，所以都對不上（✕）；P3 沒管 D2，還是對的（✓）。被 P1、P2 管、但不被 P3 管的只有 D2，所以知道是它錯了；現在是 0，那原本一定是 1，改回來。",
+    "只有一個 bit 錯時，可以找出誰錯並修好（recover）。如果兩個 bit 同時錯，效果可能互相抵消，只知道「有錯」（detect），卻不知道是哪兩個，就沒辦法更正。",
+    "用幾顆硬碟跟 coding 綁在一起：這種 (7,4) Hamming code 需要 4 個 data 加 3 個 parity，所以一定要剛好 7 顆硬碟，數量受限是它的缺點。",
+    "好處是省空間：一樣能修好一顆壞掉的，mirroring 要多存 100%（4 份 data 再多 4 份），Hamming 只多 3 份，也就是 3/4 = 75%。"
+   ]
+  },
+  {
+   "title": "RAID 3 / 4：一個 parity 就夠",
+   "scene": "io-26c-r34",
+   "cues": [
+    635.1,
+    657.5,
+    674.1,
+    681.8,
+    709.2,
+    728.4,
+    755.5,
+    761.6,
+    786.3,
+    809,
+    835.7,
+    848.5,
+    889.3,
+    916
+   ],
+   "points": [
+    {
+     "t": 635,
+     "text": "每個 sector 本來就有 ECC，硬碟自己知道哪裡壞了；RAID 只要負責 recovery，所以一個 parity（XOR）就夠。"
+    },
+    {
+     "t": 728,
+     "text": "3 data + 1 parity 多存 33%，4 data + 1 parity 只要 25%；但硬碟越多，同時壞多顆的機率越高。"
+    },
+    {
+     "t": 786,
+     "text": "RAID 3 是 bit level，RAID 4 是 block level，原理一樣。bit level 讀一個 byte 也要所有硬碟同步；block level 小資料只讀一顆、不用同步，不同使用者讀不同 block 仍可平行。"
+    }
+   ],
+   "explain": [
+    "Hamming code 是從純數學（0 和 1）的角度想問題，還不夠好，因為它沒有利用硬碟本身的特性。",
+    "真實的硬碟，每個 sector 本來就有 error-correcting code（上一講的 low-level formatting）。",
+    "就算 ECC 修不好，它至少知道「是哪個 sector 壞了」。所以「偵測是誰壞」這件事硬碟已經做完，RAID 只要負責把壞掉的資料算回來（recovery）就好。",
+    "既然只考慮一顆硬碟壞掉，又已經知道是哪一顆，只要一個 parity 就夠了：P = 所有 data 的 XOR。這裡 A1=1、A2=0、A3=1，P = 1⊕0⊕1 = 0（數值是示意）。",
+    "假設 disk 1 壞了，A2 不知道是多少。把其他的都 XOR 起來：A1 ⊕ A3 ⊕ P = 1⊕1⊕0 = 0，A2 就算回來了。XOR 的特性就是「少了誰，就把剩下的全部 XOR，得到的就是它」。",
+    "space efficiency（空間效率）大幅改善：3 顆 data 只配 1 個 parity，多存的比例只有 1/3，約 33%。",
+    "data 用的硬碟越多，overhead 越小：4 顆 data 配 1 個 parity，只要多存 25%。",
+    "但這是有代價的：硬碟越多，同時壞掉兩顆以上的機率就越高，而 RAID 3、4 只能救一顆。這裡的計算都是假設保證只壞一顆。",
+    "RAID 3 和 4 差在「單位」。RAID 3 是 bit level：每個 A1、A2 都只是一個 bit，striping 和 parity 都是一個 bit 一個 bit 做。",
+    "RAID 4 是 block level：每個 A1 是一整個 block（例如 8 個 bit），parity 也是一個 block，每個位置各自做 XOR。",
+    "原理完全一模一樣，只是單位一個是 bit、一個是 block，但效能就不同了。",
+    "平常讀資料至少讀一個 byte。RAID 3 是 bit level，一個 byte 的 8 個 bit 分散在好幾顆上，每顆都要一起讀、彼此同步，才能拼回那個 byte，要互相等，就浪費時間。",
+    "RAID 4 是 block level，要讀的資料如果在同一個 block 裡，只要讀那一顆就好，不用同步，速度比較快。",
+    "那其他顆不就閒著？不會：系統有很多使用者，你讀 A1 的時候，別人可能在讀 A2 或 C3，大家讀不同的 block，各顆硬碟還是同時在工作，平行度仍然維持。"
+   ]
+  },
+  {
+   "title": "RAID 5：parity 輪流放",
+   "scene": "io-26c-r5",
+   "cues": [
+    964.9,
+    975.7,
+    990.1,
+    998,
+    1021.3,
+    1033.1,
+    1069.8,
+    1096,
+    1104.8
+   ],
+   "points": [
+    {
+     "t": 965,
+     "text": "RAID 5 最常用：跟 RAID 4 一樣是 block 加 parity，但 parity 也做 striping，用 round robin 散在每顆硬碟。"
+    },
+    {
+     "t": 990,
+     "text": "使用者平常不讀 parity；RAID 4 parity 集中一顆，讀只剩 n−1 顆，寫時那顆 parity disk 永遠是 bottleneck。"
+    },
+    {
+     "t": 1033,
+     "text": "RAID 5 讀的頻寬是 n 倍，讀和寫都平均分配到每一顆硬碟。"
+    }
+   ],
+   "explain": [
+    "RAID 5 是最常被用到的 RAID。畫面是四顆硬碟。",
+    "它跟 RAID 3、4 長得很像，一樣是 data block 加上一個 parity（金色）。差別在 parity 放的位置：每一列的 parity 放在不同顆。",
+    "parity 是算出來的 coding 資料，使用者讀檔案時不會去讀它，除非有硬碟 fail，要用它把資料救回來。",
+    "在 RAID 4，所有 parity 都集中在同一顆。對讀資料的人來說，那顆硬碟等於不存在，讀的頻寬只剩 n−1 顆。",
+    "RAID 5 把 parity 也做 striping：第一列放最後一顆、下一列放前一顆…用 [[round robin]] 散在每一顆硬碟上（順序怎麼排無所謂）。",
+    "這樣讀 A 時用 disk 0、1、2（A1、A2、A3 同時讀），同一時間另一個使用者讀 B3，剛好用 disk 3。每顆硬碟都用得到，讀的頻寬就是 n 倍，而不是 n−1。",
+    "寫的時候問題更大：只要改一個值（例如 A2），它那一列的 parity（Pa）也一定要跟著改。",
+    "在 RAID 4，每一次寫入都要去改那一顆 parity disk，所有人都搶著寫它，它永遠是 bottleneck（瓶頸）。",
+    "RAID 5 的 parity 分散在各顆，不管讀或寫，負擔都平均分配到每一顆硬碟，就沒有單一的瓶頸。"
+   ]
+  },
+  {
+   "title": "RAID 5 寫入：怎麼更新 parity",
+   "scene": "io-26c-write",
+   "cues": [
+    1141.3,
+    1163.5,
+    1174.5,
+    1188,
+    1207.8,
+    1230.9,
+    1247,
+    1256.7,
+    1272.6,
+    1296.1
+   ],
+   "points": [
+    {
+     "t": 1141,
+     "text": "write 效能取決於怎麼更新 parity；例：4 顆（3 data + 1 parity），改第三顆的資料。"
+    },
+    {
+     "t": 1175,
+     "text": "方法一：讀出其他 N−2 個 data，算新 parity，再寫回 data 與 parity（2 個 write），共 N 個 request，跟一顆硬碟一樣。"
+    },
+    {
+     "t": 1231,
+     "text": "方法二：只讀舊 data 與舊 parity，新 P = 舊 P ⊕ 舊 data ⊕ 新 data，永遠 2 read + 2 write。"
+    },
+    {
+     "t": 1273,
+     "text": "write bandwidth ≈ n ÷ 4：4 顆時跟一顆一樣，硬碟越多寫入也越快。"
+    }
+   ],
+   "explain": [
+    "讀很簡單（n 倍）。寫的效能則要看「parity 怎麼更新」，有兩種算法。畫面上 disk 0～2 放 data、最後一顆放 parity，數值都是示意：1010、0110、0011，P = 1010⊕0110⊕0011 = 1111。",
+    "現在要把第三顆（disk 2）的資料從 0011 改成新值 0101。",
+    "方法一是最直覺、最笨的：要算新的 parity，需要知道所有 data。新值我知道，但另外兩個（disk 0、disk 1）不知道，只好先讀出來，就是 N−2 = 2 個 read。",
+    "算出新的 parity：1010 ⊕ 0110 ⊕ 0101 = 1001。再把新 data 和新 parity 寫回去，這是 2 個 write。",
+    "加起來是 (N−2) + 2 = N 個 request。有 N 顆硬碟，卻要發 N 個 request 才完成一次寫，效能跟只有一顆硬碟一樣，沒有任何 improvement。",
+    "方法二：真的需要把大家都讀出來嗎？只改了一個人，只要讀出「舊的 parity」和「要被改的那個舊 data」就好，只讀這兩個。",
+    "把新舊值的差（舊 data ⊕ 新 data）加到 parity 上：新 P = 1111 ⊕ 0011 ⊕ 0101 = 1001，跟方法一算的一模一樣。原因是 XOR 兩次同一個值會抵消：把舊值的影響拿掉，再加上新值。",
+    "不管有幾顆硬碟，永遠只要 2 個 read（舊 data、舊 parity）加 2 個 write（新 data、新 parity），就完成一次寫入。",
+    "n 顆硬碟同時工作是 n 倍，但每次寫要花 4 個 request，所以要打折除以 4：write bandwidth 約 n ÷ 4。",
+    "如果只有 4 顆，4 ÷ 4 = 1，跟一顆一樣；但 5 顆、6 顆、8 顆…硬碟越多，寫入速度也跟著提升（8 顆約 2 倍）。所以 write 可能持平，也可能加速，看 parity 怎麼更新。"
+   ]
+  },
+  {
+   "title": "RAID 6：多顆壞掉也能救",
+   "scene": "io-26c-r6",
+   "cues": [
+    1330.6,
+    1346.3,
+    1369.9,
+    1391.7
+   ],
+   "points": [
+    {
+     "t": 1331,
+     "text": "RAID 6 之後放更多 parity（例如 P、Q），目的是解決 multiple disk failure；RAID 0–5 只考慮一顆壞掉。"
+    },
+    {
+     "t": 1392,
+     "text": "parity 越多越浪費空間、寫入效能越差，所以 RAID 7、8、9 實際上很少用。"
+    }
+   ],
+   "explain": [
+    "RAID 6 以後的做法都更複雜：每一列放不只一個 parity，例如 P 和 Q 兩個（橘色是第二個 parity）。",
+    "目的是解決 multiple disk failure：兩顆硬碟同時壞掉（紅色）也要救得回來。RAID 0 到 5 都只處理一顆壞掉的情況。",
+    "要同時救兩顆，就需要更多 redundant（冗餘）資訊，又得回到像 Hamming code 那樣比較複雜的 coding 去算。這裡只是例子，細節不追究。",
+    "parity 越多，浪費的空間就越多，寫入也越慢。RAID 7、8、9 等更多 level 都有，但除非資料真的非常非常重要，實際上很少人用。"
+   ]
+  },
+  {
+   "title": "Hybrid：RAID 0+1 與 1+0",
+   "scene": "io-26c-hybrid",
+   "cues": [
+    1414.3,
+    1428,
+    1438.6,
+    1450.1,
+    1462,
+    1473.1,
+    1488.8,
+    1517.7,
+    1550.8
+   ],
+   "points": [
+    {
+     "t": 1414,
+     "text": "Hybrid RAID 把不同 RAID 拼在一起，最常見是 0 和 1 的結合。"
+    },
+    {
+     "t": 1439,
+     "text": "RAID 0+1：先 striping 再 mirror（兩組 stripe 互為副本）；RAID 1+0：先 mirror 再 striping（多對 mirror 再 stripe）。"
+    },
+    {
+     "t": 1462,
+     "text": "看起來一樣，但 1+0 較可靠：底層 mirror 對能就地拿副本修好；0+1 一顆壞整組 stripe 讀不出，要回報上層、跨 controller 溝通，delay 較多。"
+    }
+   ],
+   "explain": [
+    "最後是 hybrid（混合）RAID：把不同 RAID 的概念拼在一起用。",
+    "有 parity 的那些太複雜，沒必要再拼。所以 hybrid 最常見的就是 RAID 0 和 RAID 1 的結合，分成 0+1 和 1+0，差別只在先做哪一個。",
+    "RAID 0+1：先做 RAID 0（striping），把 A1～A4 分散在兩顆上組成一組；再做 RAID 1，把整組 mirror 一份到另外兩顆（紫色）。",
+    "RAID 1+0：反過來，先做 RAID 1，每塊資料先 copy 成一對（A1 和它的副本）；再把這幾對 mirror 做 striping。",
+    "兩邊都是 4 顆硬碟、每塊資料都存兩份，乍看完全一模一樣。仔細看有個小差別。",
+    "通常 RAID 1+0 比較好：讀資料失敗、要多花時間處理的機會比較小。",
+    "RAID 是有階層（hierarchy）的，每一層都有自己的 controller。1+0 的底層是一對一對的 mirror：如果其中一顆壞了，底層的 controller 直接拿旁邊的副本，問題在這一層就解決，上層根本不知道。",
+    "0+1 的底層是 stripe 組：上層請它讀 A1、A2，它發現 A2 壞了就讀不出來，只能回報 error；上層再去請另一組 stripe 讀。來來回回溝通，delay 就比較多。",
+    "總結：1+0 在 local 就先把 failure 解決；0+1 需要跨 controller 溝通、同步才知道怎麼處理，所以 1+0 通常比較好。"
+   ]
+  },
+  {
+   "title": "總結：第 12 章",
+   "scene": null,
+   "points": [
+    {
+     "t": 1574,
+     "text": "本章兩個重點：disk scheduling 與 RAID；RAID 0 到 5 一定要清楚，買 RAID 時 configure 的就是這些 level。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "RAID 0 的特性？",
+   "opts": [
+    "只用 striping，效能約 n 倍，但沒有 redundancy",
+    "只用 mirroring，空間剩一半",
+    "用 Hamming code 偵錯",
+    "parity 輪流放在每顆硬碟"
+   ],
+   "ans": "只用 striping，效能約 n 倍，但沒有 redundancy",
+   "why": "RAID 0 只切塊分散，壞一顆就毀。"
+  },
+  {
+   "q": "兩顆 1TB 硬碟組成 RAID 1，可用容量是多少？",
+   "opts": [
+    "1TB",
+    "2TB",
+    "0.5TB",
+    "1.5TB"
+   ],
+   "ans": "1TB",
+   "why": "每塊資料存兩份，容量剩一半。"
+  },
+  {
+   "q": "依課堂例子，data 1101 用 Hamming code 算出 parity 010。哪一種 RAID 用這種 bit-level 的 Hamming code？",
+   "opts": [
+    "RAID 2",
+    "RAID 3",
+    "RAID 4",
+    "RAID 5"
+   ],
+   "ans": "RAID 2",
+   "why": "RAID 2 用 Hamming code，例如 (7,4) 要 4 data + 3 parity 共 7 顆。"
+  },
+  {
+   "q": "為什麼 RAID 3/4 只要一個 parity 就能救回一顆壞掉的硬碟？",
+   "opts": [
+    "硬碟的 ECC 已經知道哪一顆壞了，只需要 recovery",
+    "parity 可以找出任意兩顆錯誤",
+    "因為資料都有兩份",
+    "因為只用 bit level"
+   ],
+   "ans": "硬碟的 ECC 已經知道哪一顆壞了，只需要 recovery",
+   "why": "detection 由 sector 的 ECC 做掉，XOR 剩下的就能算回壞掉的那塊。"
+  },
+  {
+   "q": "RAID 5 相對 RAID 4 的主要改進？",
+   "opts": [
+    "parity 分散到每顆硬碟，避免單一 parity disk 成為瓶頸",
+    "可以容忍兩顆硬碟壞掉",
+    "不需要 parity",
+    "容量變成 100%"
+   ],
+   "ans": "parity 分散到每顆硬碟，避免單一 parity disk 成為瓶頸",
+   "why": "RAID 4 每次寫都要寫同一顆 parity disk；RAID 5 讀寫平均分散。"
+  },
+  {
+   "q": "RAID 5 用「新 P = 舊 P ⊕ 舊 data ⊕ 新 data」更新 parity，寫一次需要幾個 I/O？",
+   "opts": [
+    "2 read + 2 write",
+    "N−2 read + 2 write",
+    "1 read + 1 write",
+    "N read + N write"
+   ],
+   "ans": "2 read + 2 write",
+   "why": "讀舊 data、舊 parity，寫新 data、新 parity，不管幾顆硬碟都一樣。"
+  },
+  {
+   "q": "RAID 1+0 和 0+1 比較，何者通常比較可靠？",
+   "opts": [
+    "RAID 1+0",
+    "RAID 0+1",
+    "兩者完全相同",
+    "都沒有 redundancy"
+   ],
+   "ans": "RAID 1+0",
+   "why": "1+0 底層是 mirror 對，一顆壞了就地用副本；0+1 一顆壞整組 stripe 都不能用。"
+  }
+ ]
+}

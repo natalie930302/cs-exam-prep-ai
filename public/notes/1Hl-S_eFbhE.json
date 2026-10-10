@@ -1,196 +1,385 @@
 {
  "video": "1Hl-S_eFbhE",
  "label": "清大周志遠 第26B講 Mass Storage / I/O Systems",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
-   "title": "Low-level formatting",
-   "scene": "low-format",
+   "title": "Low-level formatting：header／data／trailer",
+   "scene": "io-26b-format",
+   "cues": [
+    15,
+    47.6,
+    74,
+    87.8,
+    104.7,
+    115.4,
+    122.7,
+    130.7,
+    153,
+    168.7
+   ],
    "points": [
     {
-     "text": "本段介紹 disk management：formatting、booting、壞軌處理，以及 swap space 和硬碟管理的關係。",
-     "t": 3
+     "t": 15,
+     "text": "本段介紹 disk management：formatting、booting、壞軌處理，以及 swap space 和硬碟管理的關係。"
     },
     {
-     "text": "disk 硬體本身也要 formatting：在 partition 與 file system formatting 之前，要先做 low-level formatting，建立 sector。",
-     "t": 18
+     "t": 48,
+     "text": "在 partition 與 file system formatting 之前，硬碟要先做 low-level formatting，建立一個一個 sector。"
     },
     {
-     "text": "sector 由 header、data、trailer 組成，存 sector number 與 error-correcting code；bit 多可以更正，bit 少（例如 parity bit）至少能偵測錯誤。",
-     "t": 48
+     "t": 88,
+     "text": "sector 由 header、data、trailer 組成，存 sector number 與 error-correcting code（ECC）；bit 多可以更正，bit 少（例如 parity bit）至少能偵測錯誤。"
     },
     {
-     "text": "一般說的 sector 大小只算 data area，不含 header 和 trailer。",
-     "t": 76
+     "t": 131,
+     "text": "俗稱的 sector 大小只算 data area，不含 header 和 trailer。"
     },
     {
-     "text": "買來的硬碟已經做好 low-level formatting；之後 OS 才做 partitioning 和 logical formatting（建立 file system）。",
-     "t": 85
+     "t": 153,
+     "text": "買來的硬碟已經做好 low-level formatting；之後 OS 才做 partitioning 和 logical formatting（建立 file system）。"
     }
+   ],
+   "explain": [
+    "這一段要談「硬碟怎麼管理」的幾個議題：① formatting（格式化）② booting（開機）③ 壞軌怎麼處理 ④ swap space 跟硬碟的關係。",
+    "我們學過 file system 要 formatting，其實硬碟這個硬體本身也要先 formatting，叫做 low-level formatting（低階格式化）。灰色長條代表一片還沒規劃的磁碟空間。",
+    "low-level formatting 做的事，就是把空間切成一個一個 sector（磁區）。要先有 sector，上面才能放 file system 的 data block。",
+    "為了知道資料有沒有壞掉，硬碟會在每個 sector 加上 error-correcting code（ECC，錯誤更正碼）。它至少要能「偵測」到錯誤，不一定能修好。",
+    "把一個 sector 放大來看：前面是 header（標頭），中間是 data（真正存資料的地方，常見 512 bytes），後面是 trailer（尾端）。",
+    "header 裡存的是這個 sector 的編號（sector number），trailer 裡存的是 ECC。",
+    "ECC 用的 bit 越多，越有能力：多到一定程度可以直接把錯誤「更正」回來。bit 少的話，例如只用一個 parity bit（檢查 1 的個數是奇數還是偶數），只能「偵測」出有錯。",
+    "header 和 trailer 會佔掉一些空間，但我們平常說「sector 有多大」，只算中間的 data 區，也就是真正能存資料的大小。",
+    "low-level formatting 通常在工廠就做好了。你買來的硬碟已經切好 sector，馬上可以裝系統、開始使用。",
+    "接下來才輪到作業系統：先 partitioning（把硬碟切成幾個分割區），再做 logical formatting（在分割區上建立 file system）。有了 sector number，上層才能這樣管理。"
    ]
   },
   {
    "title": "Booting：boot block 與開機流程",
-   "scene": "boot-flow",
+   "scene": "io-26b-boot",
+   "cues": [
+    185.3,
+    201.5,
+    222.9,
+    235.7,
+    249.2,
+    273.6,
+    298.5,
+    334,
+    359,
+    390.7
+   ],
    "points": [
     {
-     "text": "OS 存在 file system 裡，但 file system 沒架起來前無法透過它讀資料，所以很多 boot code 以 raw data 形式直接放在硬碟上。",
-     "t": 103
+     "t": 185,
+     "text": "開機需要 code；OS 存在 file system 裡，但 FS 沒架起來前讀不到，所以很多 boot code 以 raw data 直接放在硬碟上。"
     },
     {
-     "text": "最一開始的 bootstrap program 做最基本的初始化（CPU、register、memory），這部分燒在主機板的 ROM。",
-     "t": 127
+     "t": 236,
+     "text": "最一開始的 bootstrap program 做最基本的初始化（CPU、register、memory），燒在主機板的 ROM。"
     },
     {
-     "text": "其餘較複雜、跟 OS 有關的 boot code 放在 disk；有這段 code 的磁碟稱為 system drive / boot disk，前面的空間叫 boot block。",
-     "t": 148
+     "t": 274,
+     "text": "較複雜、跟 FS/OS 有關的 boot code 放在 disk；有這段 code 的磁碟叫 system drive / boot disk，存它的空間叫 boot block。"
     },
     {
-     "text": "流程：ROM 的 code 先偵測各磁碟的 MBR（boot block），知道裝了哪些 OS 讓你選；接著讀開機程式、load partition 與 file system，再讀出作業系統程式。",
-     "t": 215
+     "t": 359,
+     "text": "流程：ROM 的 code 偵測各硬碟的 MBR（boot block）讓你選 OS → 讀開機程式、load partition 與 file system → 讀出作業系統。"
     }
+   ],
+   "explain": [
+    "開機（booting）也需要程式碼。電腦關機後只有硬碟的東西會留著，所以開機要用的 code 最後都放在硬碟上。",
+    "問題來了：作業系統是存在 [[file system]] 裡的檔案。但 file system 本身也要靠軟體才能運作，在它還沒「架起來」之前，根本沒辦法透過它讀檔案，就像鎖住一樣。",
+    "解法：很多 boot code 不放成檔案，而是用 raw data（原始資料）的形式，直接寫在硬碟固定的位置。讀它不需要 file system。",
+    "開機的第一段程式叫 bootstrap program，做最最基本的事：初始化 [[CPU]]、register、memory，搞清楚電腦有哪些硬體資源。",
+    "這一段 code 燒在主機板（motherboard）上的 ROM 裡，所以一通電就能執行，不需要硬碟。",
+    "另一部分 code 比較複雜，例如要用哪種 file system、哪個作業系統，會隨你裝的系統改變，所以放在硬碟上。",
+    "放了這段開機 code 的硬碟，叫 system drive 或 boot disk（可以開機的磁碟）。硬碟最前面存放這段 code 的空間叫 boot block。",
+    "boot block 後面就是 partition（分割區），partition 裡面就是平常存檔案的 file system。",
+    "整個流程：主機板 ROM 的 code 先跑起來，接著去偵測各顆硬碟的 MBR（Master Boot Record，也就是 boot block），讀完就知道裝了哪些作業系統，讓你選要用哪一個開機。",
+    "選好之後，繼續讀開機程式，把 partition 和 file system 載入、架起來；file system 能用了，就能讀出作業系統的程式（OS kernel），完成開機。"
    ]
   },
   {
    "title": "壞軌：simple disk 只能標記",
-   "scene": "bad-simple",
+   "scene": "io-26b-bad",
+   "cues": [
+    416,
+    436.3,
+    446.9,
+    467.7,
+    479,
+    489.5
+   ],
    "points": [
     {
-     "text": "壞軌處理分兩種，取決於 controller 是否有計算能力；早期 IDE 屬於 simple disk。",
-     "t": 264
+     "t": 416,
+     "text": "壞軌會造成資料遺失；處理方式取決於 controller 有沒有計算能力。"
     },
     {
-     "text": "simple disk 靠每個 sector 的 ECC 偵測錯誤，能重建就重建，不能就資料遺失，然後把它 mark 成壞軌、以後不用。",
-     "t": 288
+     "t": 447,
+     "text": "早期 IDE 這種 simple disk 靠每個 sector 的 ECC 偵測錯誤，能重建就重建，不能就遺失，然後 mark 成壞軌、以後不用。"
     },
     {
-     "text": "對上層軟體沒有任何處理，可能直接遺失資料，甚至開不了機；可用空間越來越少。",
-     "t": 312
+     "t": 490,
+     "text": "對上層軟體沒有任何處理：資料可能遺失，甚至開不了機。"
     }
+   ],
+   "explain": [
+    "第三個議題：壞軌（bad sector）。畫面是一條 track 上的 sector：藍色方塊上的數字是 logical sector 編號，底下的小數字是它真正的 physical 位置；最右邊兩格綠色是預留的 spare（備用格）。",
+    "壞軌怎麼處理，要看 disk controller（硬碟上的控制晶片）：是很簡單、沒什麼計算能力的，還是比較新、比較聰明的。",
+    "早期的 IDE 硬碟屬於 simple disk。每個 sector 都有 ECC，所以它能偵測到「sector 4 壞了」（紅色）。",
+    "偵測到之後，如果 ECC 還能把資料算回來，就幫你重建；算不回來，這筆資料就遺失了。",
+    "simple disk 能做的只有把這格 mark（標記）成壞軌，以後不再使用它。",
+    "它對上層的軟體不做任何補救：資料可能就這樣不見，如果剛好壞在重要的地方，系統甚至開不了機；可用空間也會越來越少。"
    ]
   },
   {
    "title": "Sector sparing（forwarding）",
-   "scene": "sector-sparing",
+   "scene": "io-26b-spare",
+   "cues": [
+    501.5,
+    516.5,
+    531.7,
+    543.9,
+    553.5,
+    561.5
+   ],
    "points": [
     {
-     "text": "SCSI 這類較新的 controller 不只知道哪裡壞，還會讓壞掉的 sector 能重新使用。",
-     "t": 318
+     "t": 500,
+     "text": "SCSI 這類較新的 controller 不只知道哪裡壞，還會讓壞掉的 sector 能重新使用。"
     },
     {
-     "text": "Sector sparing（remap / forwarding）：sector 4 壞掉時，把後面空著的 spare sector 當作 sector 4 來用，瞬間解決。",
-     "t": 345
+     "t": 532,
+     "text": "Sector sparing（remap / forwarding）：sector 4 壞掉時，把後面空著的 spare sector 當作 sector 4 來用，瞬間解決。"
     },
     {
-     "text": "缺點：logical sector number 連續，physical 位置卻不連續，磁頭移動會亂掉，影響 disk scheduling 的效能。",
-     "t": 357
+     "t": 554,
+     "text": "缺點：logical sector number 連續，physical 位置卻不連續；依序讀 0–9 磁頭要多跳，影響 disk scheduling 效能。"
     }
+   ],
+   "explain": [
+    "第二種是比較新、比較聰明的 controller，例如 SCSI 介面用的 controller，它有計算能力。",
+    "它不只知道 sector 4 壞了，還會想辦法讓「sector 4」這個編號可以繼續使用，上層的軟體完全不用管。",
+    "方法一叫 sector sparing，也叫 forwarding 或 remap（重新對應）：硬碟在 track 最後面預留了空的 spare sector。",
+    "把 sector 4 改指到後面的 spare（physical 10），以後讀寫「sector 4」就去那裡。只要改一個對應，瞬間就解決了。",
+    "但是位置亂了：logical 編號 0、1、2、3、4、5…還是連續的，physical 位置卻變成 3 → 10 → 5，不再連續。",
+    "依序讀 0 到 9 時，讀寫頭要從 3 跳到最後面的 10，再跳回 5，總共移動 19 格（原本只要 9 格）。實際位置不連續，磁頭移動就亂掉，排程效能變差。"
    ]
   },
   {
    "title": "Sector slipping",
-   "scene": "sector-slipping",
+   "scene": "io-26b-slip",
+   "cues": [
+    571.5,
+    583.8,
+    596.4,
+    610.3,
+    624.4
+   ],
    "points": [
     {
-     "text": "Sector slipping（shift）：sector 4 空掉後，原本的 5 重新 label 成 4，後面的全部往後移一格。",
-     "t": 373
+     "t": 572,
+     "text": "Sector slipping（shift）：sector 4 壞掉後，原本 physical 5 重新 label 成 sector 4，後面的全部往後移一格（用掉一個 spare）。"
     },
     {
-     "text": "要搬動所有資料，代價高、修補時間長，但修補完讀取效能比較好。",
-     "t": 388
+     "t": 597,
+     "text": "要搬動後面所有資料，代價高、修補時間長，但修補完讀取仍連續、效能比較好。"
     },
     {
-     "text": "sparing 和 slipping 都只有聰明的 controller 才會做；simple disk 的儲存空間只會越來越少。",
-     "t": 403
+     "t": 625,
+     "text": "sparing 和 slipping 都只有聰明的 controller 才會做；simple disk 的空間只會越來越少。"
     }
    ],
-   "trap": "sparing：快但 physical 不連續；slipping：慢但之後仍連續。"
+   "explain": [
+    "方法二叫 sector slipping，也就是 shift（往後挪）。一樣是 sector 4 壞掉。",
+    "這次不跳到最後面，而是讓大家往後挪一格：5 到 9 的資料都搬到下一格（9 搬進 spare），空出來的 physical 5 就重新 label 成 sector 4。",
+    "代價很高：壞掉那格後面的所有資料都要搬一次，所以修補的時間會很長。",
+    "但修補完之後，logical 0–9 在 physical 上還是幾乎連續的（只跳過壞掉的那一格）。依序讀只移動 10 格，比 sparing 的 19 格好，讀取效能比較好。",
+    "不管 sparing 還是 slipping，都只有比較聰明、有計算能力的 controller 才會做。如果是 simple disk，就只能標記壞軌，可用空間越來越少。"
+   ]
   },
   {
    "title": "Swap space 放在哪裡",
-   "scene": "swap-where",
+   "scene": "io-26b-swapwhere",
+   "cues": [
+    639,
+    651.9,
+    682,
+    703.8,
+    726.8,
+    761.8,
+    775,
+    798.8
+   ],
    "points": [
     {
-     "text": "virtual memory 換出的 page 放在硬碟的 swap space；第一種管理方式：當成 file system 裡的一個檔案，透過 FS 存取。",
-     "t": 412
+     "t": 638,
+     "text": "virtual memory 換出的 page 放在硬碟的 swap space；方法一：當成 file system 裡的一個檔案，透過 FS 存取。"
     },
     {
-     "text": "第二種（多數人的選擇）：直接切一塊 raw partition，不經過 FS，由 OS 的 memory management 自己管理；page 大小固定（4KB），演算法簡單、很快。",
-     "t": 448
+     "t": 682,
+     "text": "方法二（多數人的選擇）：切一塊 raw partition，不經過 FS，由 OS 的 memory management 自己管；page 大小固定（4KB），演算法簡單、很快。"
     },
     {
-     "text": "缺點：大小固定；swap 切太小之後要 resize partition 很麻煩，切太大又壓縮了存檔案的空間。",
-     "t": 509
+     "t": 727,
+     "text": "缺點：大小固定；切太小之後要 resize partition 很麻煩，切太大又壓縮了存檔案的空間。用 FS 雖然慢，但很有彈性。"
     },
     {
-     "text": "現在大部分 OS 兩者都用：安裝時先切 swap partition，不夠時再跟 file system 借空間（比較慢）。",
-     "t": 567
+     "t": 799,
+     "text": "現在大部分 OS 兩者都用：先切 swap partition，不夠時再跟 file system 借空間（比較慢）。"
     }
+   ],
+   "explain": [
+    "[[virtual memory]] 會把暫時用不到的 page 從 memory 換出去（swap out），放到硬碟上一塊叫 [[swap space]] 的空間。這塊空間要怎麼管理，有兩種做法。",
+    "方法一：把 swap space 當成 file system 裡的一個普通檔案（swap file）。存取它就跟讀寫檔案一樣，要透過 file system。",
+    "方法二：直接在硬碟上切一塊 raw partition（不建 file system 的分割區）專門當 swap，由作業系統的 memory management 自己管理。",
+    "大部分人裝系統都選方法二，因為比較快：不用經過 file system，而且每個 page 大小固定 4KB，可以用很簡單的演算法快速存取。",
+    "缺點是它是獨立的一塊，大小一開始就固定了。如果當初切太小，之後要 resize（調整）partition，非常麻煩。",
+    "切太大也不好：硬碟被硬生生分成兩塊，swap 佔太多，能拿來存檔案的空間就被壓縮了。",
+    "用 file system 的方式雖然比較慢，但空間可以全部交給 file system，swap 需要多少再拿多少，很有彈性。",
+    "所以現在大部分作業系統兩者都用：安裝時先切一塊 swap partition，用完不夠時再跟 file system 借空間（借來的部分會慢一點），結合兩邊的好處。"
    ]
   },
   {
    "title": "Swap space 的使用策略",
-   "scene": "swap-policy",
+   "scene": "io-26b-swappolicy",
+   "cues": [
+    821.6,
+    837.2,
+    846.2,
+    858,
+    877.3,
+    890.9,
+    909.1,
+    928.4,
+    958.7,
+    980.3,
+    1036.1
+   ],
    "points": [
     {
-     "text": "最傳統：只要 load 到 memory，就 copy 一份到 swap space 當 backup，不管需不需要，空間浪費大。",
-     "t": 630
+     "t": 822,
+     "text": "swap space 比較慢、空間有限，存越少越好；swap 也滿時系統可能直接 crash。"
     },
     {
-     "text": "改進：load 時先不 copy，只有 page 要被 swap out（memory 放不下）時才 copy。",
-     "t": 664
+     "t": 858,
+     "text": "最傳統：只要 load 到 memory 就 copy 一份到 swap 當 backup，空間浪費大。改進：load 時不 copy，page 被 swap out 時才 copy。"
     },
     {
-     "text": "code（text segment）本來就在 file system 的 binary file 裡，被 swap 時直接丟掉，需要時再從 binary 重新 load。",
-     "t": 712
+     "t": 909,
+     "text": "code（text segment）本來就在 file system 的 binary file 裡，被 swap 時直接丟掉，需要再從 binary 重新 load。"
     },
     {
-     "text": "只有 run time 動態產生的 memory（stack、heap）被 swap 時才放進 swap space；static 的不存。",
-     "t": 776
+     "t": 959,
+     "text": "只有 run time 動態產生的 stack、heap 被 swap 時才放進 swap space；static 的不存。"
     },
     {
-     "text": "總結：creation time 不 copy、只在 page out 時 copy，而且只存動態資料，swap 用量最小。",
-     "t": 945
+     "t": 1036,
+     "text": "總結：creation time 不 copy、只在 page out 時 copy，而且只存動態資料，swap 用量最小。"
     }
+   ],
+   "explain": [
+    "接下來的問題：哪些資料、在什麼時間點要放到 swap space？左邊是 memory 裡一支程式的各部分：code（程式碼）、data、heap、stack；右邊粉紅區是硬碟上的 swap space。",
+    "swap space 在硬碟上，第一是比較慢，第二它的空間有限，所以能存越少越好。",
+    "如果 swap space 也被塞滿了，很多時候系統就會直接 crash，所以要省著用。",
+    "最傳統的做法：只要程式被 load 到 memory，就馬上 copy 一份放到 swap space 當 backup（備份），不管內容需不需要。",
+    "結果每樣東西都多存一份，造成很大的空間浪費。",
+    "第二種做法：load 時先不急著 copy，反正 memory 裡已經有一份。只有當 memory 放不下、這個 page 真的要被 swap out 時，才把它寫到硬碟。",
+    "有些作業系統再進一步：注意那些 code 的 page（發亮的）。",
+    "code 本來就是一個 binary 執行檔，存在 file system 裡。所以 code 的 page 被換出時，連 swap space 都不用放，直接丟掉；需要時再從原本的 binary 檔重新讀進來。",
+    "只有 run time（執行時）才動態產生的資料，例如 stack 和 heap，在硬碟上沒有原本的檔案，被 swap out 時才必須放進 swap space。",
+    "像 code 這種 static（靜態）的內容，本來就是從 file system 讀出來的，就不要再存一份了。",
+    "總結：① 建立（creation）時不 copy，只有 page out 時才 copy；② 只存動態產生的資料，code 不存。兩招加起來，swap space 只放真正需要的，用量最小。"
    ]
   },
   {
    "title": "Swap map：用 counter 管理",
-   "scene": "swap-map",
+   "scene": "io-26b-swapmap",
+   "cues": [
+    1087.3,
+    1108.4,
+    1120.1,
+    1132.6,
+    1142,
+    1145,
+    1156.3
+   ],
    "points": [
     {
-     "text": "raw partition 管理很快是因為 page size 固定：用一個簡單的 array，記每個 slot 存哪個 process 的第幾個 page。",
-     "t": 988
+     "t": 1087,
+     "text": "raw partition 管理很快是因為 page size 固定：用一個簡單的 array，記每個 slot 存哪個 process 的第幾個 page。"
     },
     {
-     "text": "每個 slot 一個 counter，記有多少 process reference 這個 page；process 離開就 −1，降到 0 表示沒人用，可以存別人的 page。",
-     "t": 1033
+     "t": 1133,
+     "text": "每個 slot 一個 counter，記有多少 process reference 這個 page；process 離開就 −1，降到 0 表示沒人用，可以存別人的 page。"
     },
     {
-     "text": "因為 size 固定，只靠 counter 就能管理，不需要透過 file system。",
-     "t": 1091
+     "t": 1156,
+     "text": "只靠 counter 就能管理，不需要透過 file system。"
     }
+   ],
+   "explain": [
+    "自己用 raw partition 管理 swap 為什麼能這麼快？因為每一格（slot）的大小都固定，剛好放一個 page。",
+    "所以只要一個簡單的 array（陣列），每格記下「這裡存的是哪個 process 的第幾個 page」，例如 A:p3 代表 process A 的第 3 個 page（這些名字是示意）。",
+    "用這個 array 就知道哪些格子是空的、誰在用。什麼時候能回收一格？要看還有沒有人要 access（存取）這個 page。",
+    "所以每格再存一個 counter（計數器），記有多少個 process reference（參照）這個 page。格子上的數字就是 counter（示意值）。",
+    "當一個 process 離開、不再需要那些 page，它用到的格子 counter 就各減 1。",
+    "counter 降到 0，代表沒有任何 process 在用了，這格就可以清掉，拿去存別人的 page。",
+    "整個管理只要 counter 和一個 integer array，非常簡單，完全不需要透過 file system。"
    ]
   },
   {
    "title": "RAID 的目的與三個技巧",
-   "scene": "raid-why",
+   "scene": "io-26b-raidwhy",
+   "cues": [
+    1167,
+    1190.6,
+    1217,
+    1242.3,
+    1267,
+    1293.1,
+    1317.5,
+    1337.9,
+    1352.1
+   ],
    "points": [
     {
-     "text": "RAID 是一種 storage system；背景是硬體每單位儲存空間的價格越來越便宜（memory、disk 都是）。",
-     "t": 1100
+     "t": 1167,
+     "text": "RAID 是一種 storage system；背景是硬體每單位儲存空間的價格越來越便宜。"
     },
     {
-     "text": "想法：把很多便宜（容易壞、效能較差）的硬碟兜在一起，達到和昂貴硬碟一樣甚至更好的可靠度或效能；RAID = Redundant Arrays of Inexpensive (or Independent) Disks。",
-     "t": 1173
+     "t": 1217,
+     "text": "把很多便宜（容易壞、效能較差）的硬碟兜在一起，達到和昂貴硬碟一樣甚至更好的可靠度或效能；RAID = Redundant Arrays of Inexpensive Disks。"
     },
     {
-     "text": "兩個目的：reliability（有多的空間可以備份，同時壞很多顆的機率更小）與 performance（平行度：一顆 100–150 MB/s，兩顆一起讀就約兩倍）。",
-     "t": 1239
+     "t": 1267,
+     "text": "兩個目的：reliability（可以備份，很多顆同時壞的機率更小）與 performance（平行：一顆 100–150 MB/s，兩顆一起讀約兩倍）。"
     },
     {
-     "text": "三個技巧：striping（切開放到多顆，平行）、mirroring / replication（備份）、coding（產生 redundant code 做 error detection 甚至修正）。",
-     "t": 1318
+     "t": 1318,
+     "text": "三個技巧：striping（切開放多顆，平行）、mirroring / replication（備份）、coding（多存 redundant code 做偵錯甚至修正）。"
+    }
+   ],
+   "explain": [
+    "最後一個主題是 [[RAID]]，非常重要。RAID 本身是一種 storage system（儲存系統），由很多顆硬碟組成。",
+    "會出現 RAID 的背景是：硬體越來越便宜。硬碟總價好像沒降，但容量一直變大，換算成「每單位儲存空間」的價格其實越來越低。",
+    "既然便宜，就想到：能不能把很多顆便宜的硬碟兜在一起？「便宜」通常代表比較容易壞、效能也比較差。",
+    "目標是讓這一堆便宜硬碟，整體達到跟一顆很貴的硬碟一樣、甚至更好的可靠度或效能。RAID 的全名就是 Redundant Arrays of Inexpensive Disks（便宜磁碟組成的備援陣列）。",
+    "目的一：reliability（可靠度），資料比較不會遺失。硬碟多、空間多，就可以把資料備份；要很多顆「同時」壞掉的機率小很多。",
+    "目的二：performance（效能）。硬碟多就能平行讀：一顆的頻寬大約 100 到 150 MB/s，兩顆一起讀，速度就大約兩倍。",
+    "要達成這兩個目的，靠三個技巧。第一個是 striping（分條）：把資料切開，分散放到很多顆硬碟上，讀的時候大家一起讀，有平行度。",
+    "第二個是 mirroring（鏡像），也叫 replication：把資料複製一份（紫色副本）放在另一顆，一顆壞了還有另一份，更可靠。",
+    "第三個是 coding（編碼）：額外存一些 redundant（多餘的）資料，例如 parity（金色 P），用來偵測錯誤，甚至把壞掉的資料算回來。反正硬碟多、空間夠，多存一點沒關係。"
+   ]
+  },
+  {
+   "title": "休息",
+   "scene": null,
+   "points": [
+    {
+     "t": 1379,
+     "text": "休息 10 分鐘，回來介紹各種不同的 RAID level。"
     }
    ]
   }
@@ -273,6 +462,5 @@
    "ans": "Striping",
    "why": "資料切開放在多顆，可以平行讀寫。"
   }
- ],
- "timing": "estimated"
+ ]
 }

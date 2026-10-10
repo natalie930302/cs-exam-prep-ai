@@ -1,6 +1,8 @@
 // 作業系統 第11章：虛擬化與安全（Type 1 / Type 2 hypervisor、trap-and-emulate、protection rings、access matrix、安全威脅）。
 // Chapter module for lab-shell.js — see public/lab/README-labs.md.
 // 本章影片（Hypervisor Type 1 vs Type 2）尚無字幕，場景全部依恐龍書 Ch.16–18 製作。
+import kit from './_kit.js';
+
 export default function (ctx) {
   const { THREE, lab, sleep, $, log, clearLog, setState, controls, on, say, beat } = ctx;
   let timer = null;
@@ -480,6 +482,168 @@ export default function (ctx) {
     'threat-network': { title: '課本：worm、DoS、port scanning', play: scThreatNet },
   };
 
+
+  // 每段影片的場景片段（由 sync pass 加入）：每個片段把 [id, 標題, play] 放進 FRAG。
+  const K = kit(ctx);
+  const FRAG = [];
+  // ═══ hv.js ═══
+  {
+const P = K; const { V3, tag, cube, kill, glow, code, anim, arrow, zone, travel, remove, step, buddy, prop, bob, fresh } = P;
+const { txt, tint, relabel } = P;
+// (kit has no beat: short waits use ctx.beat)
+// ─── 作業系統 第 11 章 Virtualization：What is a Hypervisor? Type 1 vs Type 2（英文短片）— cued scenes ───
+// 一句一步：每一步等影片講到那句才動，動作很短，不重播。影片沒給數字，畫面上的 VM 數量是示意。
+const wt = (tok, ms) => ctx.beat(tok, ms);
+const cap = (a, b = '') => say(a, b);
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+const hd = (t, x, y, z = 0) => tag(t, 'ptr', x, y, z);
+const hot = (t, x, y, z = 0) => tag(t, 'ptr alt', x, y, z);
+const sm = (t, x, y, z = 0) => tag(t, 'idx', x, y, z);
+const bx = (t, c, x, y, z = 0, w = 2.4, h = 0.6, d = 0.9) => cube(t, c, [w, h, d], x, y, z);
+const MC = { hw: '#8a7a60', vmm: '#c08a1f', host: '#31aab0', guest: '#4b9ee2', app: '#2fc092', red: '#d64545', purple: '#9b7ef4', orange: '#dd8238', gray: '#c9bba3', pink: '#e55a9b' };
+const HL = '#6a4a00', OKG = '#0f5a3a', NG = '#5a1010';
+const gone = (...os) => os.forEach((o) => { if (!o) return; if (Array.isArray(o)) return gone(...o); if (o.g) kill(o.g); else if (o.element) remove(o); else kill(o); });
+async function slide(tok, o, x, y, z = 0, ms = 600) { const a = o.position.clone(); await travel(tok, o, a, V3(x, y, z), ms); }
+function scene(id, title, cam, steps) {
+  FRAG.push([id, title, async (tok) => {
+    fresh(cam[0], cam[1]);
+    const S = {};
+    for (const f of steps) { await step(tok); await f(tok, S); }
+  }]);
+}
+const CAM = [[0, 4.4, 14.5], [0, 2.8, 0]];
+// 一台 VM：guest OS + app，疊在 (x, y)
+function vm(name, x, y, c = MC.guest) {
+  const os = bx(name + ' OS', c, x, y, 0, 2.2, 0.6, 1.0);
+  const ap = bx('app', MC.app, x, y + 0.65, 0, 1.6, 0.5, 0.8);
+  return [os, ap];
+}
+
+// ════════ pS-QM22YXmU（What is a Hypervisor? Type 1 vs Type 2） ════════
+scene('hv-what', 'Hypervisor 是什麼', CAM, [
+  async (tok, S) => {                                   // 0 建立、管理 VM 的軟體
+    S.hw = bx('physical computer（hardware）', MC.hw, 0, 0.4, 0, 9, 0.8, 1.4);
+    S.hv = bx('hypervisor', MC.vmm, 0, 1.25, 0, 9, 0.6, 1.2);
+    cap('hypervisor：一個軟體', '專門建立和管理 virtual machine（VM）');
+  },
+  async (tok, S) => {                                   // 5 也叫 VMM
+    hot('= VMM（virtual machine monitor）', 0, 2.2, 0.8);
+    cap('又叫 virtual machine monitor', '簡稱 VMM');
+  },
+  async (tok, S) => {                                   // 10 一台 host 跑好幾台 guest
+    relabel(S.hw, 'host（實體電腦）');
+    S.vms = [-3, 0, 3].map((x, i) => vm('guest ' + (i + 1), x, 2.9));
+    sm('（VM 數量為示意）', 4.6, 4.6);
+    cap('讓一台實體電腦（host）', '同時執行好幾台虛擬電腦（guest）');
+  },
+  async (tok, S) => {                                   // 16 切分 memory 與 processing
+    S.parts = [-3, 0, 3].map((x) => bx('CPU / RAM 一份', MC.gray, x, -0.45, 0.6, 2.6, 0.4, 0.6));
+    cap('做法：把 memory 和 processing', '切成好幾份分給各 VM');
+  },
+  async (tok, S) => {                                   // 22 每一份都像獨立電腦
+    S.vms.forEach(([o]) => glow(o, OKG));
+    good('每個 VM 都像一台獨立的電腦', 0, 5.0);
+    cap('虛擬化後，每一份都像', '一台分開、獨立的電腦：靠 hypervisor 做到');
+  },
+  async (tok, S) => {                                   // 38 為什麼需要：充分利用、彈性
+    S.vms.forEach(([o]) => glow(o, null));
+    note('充分利用一台電腦的能力；管理 IT 更有彈性', -3.6, 6.0);
+    cap('為什麼需要 hypervisor？', '充分利用電腦的能力，管理上更有彈性');
+  },
+  async (tok, S) => {                                   // 48 VM 跟硬體無關 → 可搬到別台 server
+    S.h2 = bx('另一台 server', MC.hw, 6.0, 0.4, -2.6, 2.6, 0.8, 1.2);
+    const [o, a] = S.vms[2]; await anim(tok, 1200, (u) => { o.position.set(3 + 3 * u, 2.9 - 1.8 * u, -2.6 * u); a.position.set(3 + 3 * u, 3.55 - 1.8 * u, -2.6 * u); });
+    cap('VM 不綁定底下的硬體', '所以可以很容易地搬（migrate）到別台 server');
+  },
+]);
+
+scene('hv-types', 'Type 1（bare metal） vs Type 2（hosted）', CAM, [
+  async (tok, S) => {                                   // 54 兩種類型，原理一樣
+    hd('Type 1', -3.4, 6.4); hd('Type 2', 3.4, 6.4);
+    cap('cloud computing 用的 hypervisor 分兩種', '不管哪一種，原理都一樣');
+  },
+  async (tok, S) => {                                   // 65 VM 可以建在各種 hypervisor 上
+    note('VM 可以建立在各種 hypervisor 上', 0, 5.7);
+    cap('VM 可以建立在很多種 hypervisor 上', '');
+  },
+  async (tok, S) => {                                   // 71 Type 1：直接在硬體上
+    S.h1 = bx('hardware', MC.hw, -3.4, 0.4, 0, 5.0, 0.7, 1.2);
+    S.v1 = bx('Type 1 hypervisor', MC.vmm, -3.4, 1.15, 0, 5.0, 0.6, 1.1);
+    S.g1 = [-4.6, -2.2].map((x, i) => vm('guest ' + (i + 1), x, 1.9));
+    cap('Type 1：直接跑在硬體上', '中間沒有別的作業系統');
+  },
+  async (tok, S) => {                                   // 75 bare metal
+    hot('bare-metal hypervisor', -3.4, 3.6);
+    cap('所以也叫 bare-metal hypervisor', 'bare metal = 「裸機」');
+  },
+  async (tok, S) => {                                   // 80 hypervisor 就是 host 的 OS
+    glow(S.v1, HL); good('hypervisor 本身就當 host 的作業系統', -3.4, 4.3);
+    cap('在實體 server 上', 'hypervisor 本身就扮演 host 的作業系統');
+  },
+  async (tok, S) => {                                   // 84 Type 2：hosted
+    glow(S.v1, null);
+    S.h2 = bx('hardware', MC.hw, 3.4, 0.4, 0, 5.0, 0.7, 1.2);
+    hot('hosted hypervisor', 3.4, 4.3);
+    cap('Type 2：hosted hypervisor', '');
+  },
+  async (tok, S) => {                                   // 90 跑在已安裝的 OS 上
+    S.os2 = bx('host OS（Windows / macOS / Linux）', MC.host, 3.4, 1.15, 0, 5.0, 0.6, 1.1);
+    S.v2 = bx('Type 2 hypervisor', MC.vmm, 2.2, 1.8, 0, 2.5, 0.6, 1.0); bx('一般 app', MC.app, 4.7, 1.8, 0, 2.2, 0.6, 1.0);
+    S.g2 = vm('guest', 2.2, 2.45);
+    cap('跑在一個已經裝好的作業系統上面', '就像一般的應用程式');
+  },
+  async (tok, S) => {                                   // 96 先裝 host OS
+    glow(S.os2, HL); note('用 Type 2 之前：host 要先裝好作業系統', 3.4, 5.1);
+    cap('用 Type 2 之前', 'host 一定要先裝好作業系統');
+  },
+]);
+
+scene('hv-pros', 'Hypervisor 的優缺點', CAM, [
+  async (tok, S) => {                                   // 100 優點一：快
+    S.hw = bx('server', MC.hw, -3.4, 0.4, 0, 5.0, 0.7, 1.2); S.hv = bx('hypervisor', MC.vmm, -3.4, 1.15, 0, 5.0, 0.6, 1.1);
+    S.g = [];
+    for (let i = 0; i < 3; i++) { S.g.push(vm('VM' + (i + 1), -5.0 + i * 1.6, 1.9 + 0 * i)); await wt(tok, 250); }
+    S.g.forEach(([o, a], i) => { o.scale.x = 0.65; a.scale.x = 0.8; });
+    good('① quickness：VM 很快就能開好', -3.4, 3.6);
+    cap('優點一：quickness', '開一台 VM 比準備一台實體 server 快很多');
+  },
+  async (tok, S) => {                                   // 113 優點二：效率
+    good('② efficiency：一台 server 跑多台 VM，硬體不閒置', -3.4, 4.3);
+    cap('優點二：efficiency', '一台 server 同時跑多台 VM，硬體用得更充分');
+  },
+  async (tok, S) => {                                   // 123 缺點一：要外部管理介面
+    S.adm = prop('monitor', 3.4, 2.2, -1.0, 0.8, '外部管理機');
+    bad('① 要另一台機器 / 介面來管理 hypervisor', 3.4, 4.6);
+    cap('缺點一：需要外部的管理介面', '要控制 hypervisor，得靠另一台系統');
+  },
+  async (tok, S) => {                                   // 135 缺點二：較不安全（依賴 host OS）
+    S.os = bx('host OS', MC.host, 3.4, 0.4, 1.2, 4.4, 0.6, 1.0);
+    bad('② 依賴 host OS → host 有漏洞，VM 也跟著曝險', 3.4, 5.3);
+    cap('缺點二：比較不安全', 'hypervisor 依賴 host OS 時，整個系統就暴露在風險中');
+  },
+  async (tok, S) => {                                   // 143 缺點三：host OS 壞了全倒
+    tint(S.os, MC.red); bad('③ host OS 掛掉 → hypervisor 和上面的 VM 全部掛', 3.4, 6.0);
+    cap('缺點三：比較不可靠', 'host OS 一掛，上面的 hypervisor 和 VM 全掛');
+  },
+  async (tok, S) => {                                   // 150 缺點四：資源受限
+    tint(S.os, MC.host); sm('④ 要跟 host OS 分 CPU、storage → 拿不到全部資源', 3.4, -0.4, 1.6);
+    cap('缺點四：資源受限', '要跟 host OS 共用 CPU、storage，拿不到完全控制');
+  },
+  async (tok, S) => {                                   // 164 缺點五：不是給個人電腦用（影片說法）
+    sm('⑤ 影片說：hypervisor 不是設計給個人桌機跑 VM', 3.4, -1.0, 1.6);
+    cap('缺點五（影片的說法）', '不是設計來在個人桌機上跑 VM');
+  },
+  async (tok, S) => {                                   // 171 也有不需要 hypervisor 的工具；結論
+    note('也有不需要 hypervisor 的虛擬化工具（例如 container）', 0, 6.8);
+    cap('也有一些不需要 hypervisor 的虛擬化工具', '結論：介紹了 hypervisor 和它的分類');
+  },
+]);
+  }
+  // @@FRAGMENTS@@
+  FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
+
   return {
     kicker: '作業系統・第 11 章',
     title: '虛擬化與安全',
@@ -492,7 +656,7 @@ export default function (ctx) {
     ],
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
-    sceneOrder: ['vm-idea', 'type1', 'type2', 'trap-emulate', 'binary-translation', 'prot-rings', 'access-matrix', 'acl-vs-cap', 'threat-program', 'buffer-overflow', 'threat-network'],
+    sceneOrder: ['vm-idea', 'type1', 'type2', 'trap-emulate', 'binary-translation', 'prot-rings', 'access-matrix', 'acl-vs-cap', 'threat-program', 'buffer-overflow', 'threat-network'].concat(FRAG.map((f) => f[0])),
     stop() { stopTimer(); busy = false; },
   };
 }

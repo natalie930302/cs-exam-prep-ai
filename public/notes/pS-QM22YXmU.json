@@ -1,0 +1,176 @@
+{
+ "video": "pS-QM22YXmU",
+ "label": "What is a Hypervisor? Type 1 vs Type 2 Hypervisors Explained",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Hypervisor 是什麼",
+   "scene": "hv-what",
+   "cues": [
+    0,
+    4.8,
+    10.2,
+    16.3,
+    21.6,
+    37.6,
+    47.8
+   ],
+   "points": [
+    {
+     "t": 0,
+     "text": "hypervisor（又叫 virtual machine monitor, VMM）是專門建立與管理 virtual machine 的軟體。"
+    },
+    {
+     "t": 10,
+     "text": "它讓一台實體電腦（host）同時執行多台虛擬電腦（guest），做法是把 memory 和 processing 切分給各 VM，每台都像獨立的電腦。"
+    },
+    {
+     "t": 38,
+     "text": "好處：充分利用硬體、管理更有彈性；VM 不綁定底層硬體，可以輕鬆 migrate 到別台 server。"
+    }
+   ],
+   "explain": [
+    "先認識 [[virtual machine]]（VM，虛擬機）：用軟體「模擬」出來的一台電腦，裡面可以裝自己的作業系統。hypervisor 就是專門用來建立、管理這些 VM 的軟體，畫面上它夾在實體硬體和 VM 之間。",
+    "hypervisor 也叫 virtual machine monitor，簡稱 VMM。課本兩個名字都會用，意思一樣。",
+    "有了 hypervisor，一台實體電腦（叫 host，主機）就能同時執行好幾台虛擬電腦（叫 guest，客人）。每台 guest 都有自己的作業系統和應用程式。（畫面上三台是示意。）",
+    "怎麼做到的？hypervisor 把實體電腦的 memory 和運算能力（CPU 時間）切成好幾份，分給各台 VM 使用。",
+    "切開之後，每一份對裡面的作業系統來說，都像一台分開、獨立的電腦，它不知道旁邊還有別人。負責讓這件事成立的就是 hypervisor。",
+    "為什麼需要 hypervisor？一台電腦的能力常常用不完，切給好幾台 VM 就能充分利用；要新增、移除、調整一台「電腦」也變得很有彈性，管理 IT 更方便。",
+    "VM 不綁定底下的實體硬體，所以可以很容易地從一台 server 搬到另一台（migrate），例如那台要維修時，把 VM 移過去就好。"
+   ]
+  },
+  {
+   "title": "Type 1（bare metal） vs Type 2（hosted）",
+   "scene": "hv-types",
+   "cues": [
+    53.7,
+    65.2,
+    70.9,
+    75.3,
+    79.7,
+    84.2,
+    89.7,
+    95.9
+   ],
+   "points": [
+    {
+     "t": 54,
+     "text": "hypervisor 分兩種，原理相同。"
+    },
+    {
+     "t": 71,
+     "text": "Type 1：直接跑在硬體上（bare-metal hypervisor），hypervisor 本身就扮演 host 的作業系統。"
+    },
+    {
+     "t": 84,
+     "text": "Type 2：hosted hypervisor，跑在已經安裝好的作業系統上，所以 host 要先裝好 OS。"
+    }
+   ],
+   "explain": [
+    "cloud computing（雲端運算）用的 hypervisor 分成兩種：Type 1 和 Type 2。不管用哪一種，「切分資源給 VM」的原理都一樣。",
+    "VM 可以建立在各種不同的 hypervisor 上。差別在 hypervisor 自己「放在哪一層」。",
+    "Type 1：hypervisor 直接跑在硬體上，中間沒有其他作業系統。左邊這疊：最下面是 hardware，上面就是 hypervisor，再上面是各台 guest。",
+    "所以 Type 1 又叫 bare-metal hypervisor。bare metal 是「裸機」的意思：直接裝在沒有作業系統的電腦上。常見於資料中心的 server（例如 VMware ESXi、Xen）。",
+    "在實體 server 上，Type 1 hypervisor 自己就扮演 host 的作業系統：管理硬體、分配資源都由它來做。少了一層，通常效能好、也比較安全。",
+    "Type 2 叫 hosted hypervisor（寄居式的）。右邊這疊從 hardware 開始。",
+    "Type 2 跑在一個已經安裝好的作業系統（host OS，例如 Windows、macOS）上面，就像一般的應用程式一樣，例如 VirtualBox、VMware Workstation。guest 再跑在它上面。",
+    "所以用 Type 2 之前，host 一定要先裝好作業系統。好處是在自己的電腦上就能用，很方便；缺點是多了一層 host OS，效能和安全性都受它影響。"
+   ]
+  },
+  {
+   "title": "Hypervisor 的優缺點",
+   "scene": "hv-pros",
+   "cues": [
+    100.1,
+    112.8,
+    123,
+    135,
+    142.5,
+    149.4,
+    163.8,
+    171.1
+   ],
+   "points": [
+    {
+     "t": 100,
+     "text": "優點：quickness（比準備實體 server 快很多就能開好 VM）、efficiency（一台 server 跑多台 VM）。"
+    },
+    {
+     "t": 123,
+     "text": "影片列的缺點：需要外部管理介面；依賴 host OS 時較不安全、較不可靠（host OS 掛掉 VM 全掛）、資源要跟 host OS 分享；後幾項主要是 Type 2 的問題。"
+    },
+    {
+     "t": 164,
+     "text": "影片說 hypervisor 不是為個人桌機設計（其實 Type 2 正是給桌機用的）；也有不需要 hypervisor 的虛擬化工具。"
+    }
+   ],
+   "explain": [
+    "優點一：quickness（快速）。要一台新的「電腦」時，用 hypervisor 開一台 VM，比去準備一台實體的 bare-metal server 快很多，複雜的工作可以很快分到資源。",
+    "優點二：efficiency（效率）。一台 server 可以同時跑好幾台 VM，硬體資源不會閒著，用得更充分。",
+    "接著是缺點。缺點一：要控制 hypervisor，需要一個外部的管理介面，也就是另一台系統或機器。",
+    "缺點二：比較不安全。當 hypervisor 依賴 host OS（也就是 Type 2）時，host OS 一有漏洞，上面的 hypervisor 和 VM 都跟著暴露在風險中。",
+    "缺點三：比較不可靠。host OS 一當機，跑在上面的 hypervisor 和所有 VM 都一起倒（紅色）。這也是 Type 2 才有的問題。",
+    "缺點四：資源受限。Type 2 hypervisor 必須跟 host OS 一起分 CPU 和 storage，永遠拿不到硬體資源的完全控制權。",
+    "缺點五是影片的說法：hypervisor 不是設計來在個人桌機上跑 VM。這點要小心：Type 1 的確多半用在 server，但 Type 2（像 VirtualBox）正是給個人電腦用的。",
+    "影片最後提到：也有一些虛擬化工具不需要 hypervisor（例如 container，讓多個程式共用同一個作業系統核心），可以當替代方案。結論：這支影片介紹了 hypervisor 和它的兩種類型。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Type 1 hypervisor 的特徵？",
+   "opts": [
+    "直接跑在硬體上（bare metal）",
+    "跑在已安裝的作業系統上",
+    "一定要先裝 host OS",
+    "只能跑一台 VM"
+   ],
+   "ans": "直接跑在硬體上（bare metal）",
+   "why": "Type 1 本身就扮演 host 的作業系統；Type 2 才跑在 host OS 上。"
+  },
+  {
+   "q": "Type 2 hypervisor 又叫做？",
+   "opts": [
+    "hosted hypervisor",
+    "bare-metal hypervisor",
+    "microkernel",
+    "container"
+   ],
+   "ans": "hosted hypervisor",
+   "why": "它寄居在一個已經安裝好的作業系統上，例如 VirtualBox。"
+  },
+  {
+   "q": "hypervisor 的另一個名稱？",
+   "opts": [
+    "virtual machine monitor（VMM）",
+    "memory management unit（MMU）",
+    "device driver",
+    "bootstrap program"
+   ],
+   "ans": "virtual machine monitor（VMM）",
+   "why": "hypervisor = VMM，負責建立與管理 VM。"
+  },
+  {
+   "q": "「host OS 當機，上面的 VM 也全部停擺」主要是哪一種 hypervisor 的問題？",
+   "opts": [
+    "Type 2",
+    "Type 1",
+    "兩者都不會",
+    "只有 container"
+   ],
+   "ans": "Type 2",
+   "why": "Type 2 依賴 host OS；Type 1 直接跑在硬體上。"
+  },
+  {
+   "q": "為什麼 VM 可以容易地 migrate 到另一台 server？",
+   "opts": [
+    "VM 不綁定底層的實體硬體",
+    "VM 沒有作業系統",
+    "VM 只存在 cache 裡",
+    "hypervisor 會複製硬體"
+   ],
+   "ans": "VM 不綁定底層的實體硬體",
+   "why": "hypervisor 把硬體抽象化，VM 看到的是虛擬硬體。"
+  }
+ ]
+}

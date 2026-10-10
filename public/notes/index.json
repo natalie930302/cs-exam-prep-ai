@@ -115,9 +115,9 @@
  },
  "1Hl-S_eFbhE": {
   "label": "清大周志遠 第26B講 Mass Storage / I/O Systems",
-  "points": 34,
+  "points": 35,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "1K9ebQJosvo": {
   "label": "Abdul Bari：2.3.3 Recurrence [T(n)=2T(n/2)+n] #3",
@@ -1091,6 +1091,12 @@
   "quiz": 5,
   "cued": true
  },
+ "ko8ogLJc1Ko": {
+  "label": "SCAN Disk Scheduling Algorithm",
+  "points": 7,
+  "quiz": 5,
+  "cued": true
+ },
  "ku1XgA2bZTE": {
   "label": "清大周志遠 第2B講 Computer-System Architecture",
   "points": 24,
@@ -1421,6 +1427,12 @@
   "quiz": 6,
   "cued": true
  },
+ "pS-QM22YXmU": {
+  "label": "What is a Hypervisor? Type 1 vs Type 2 Hypervisors Explained",
+  "points": 9,
+  "quiz": 5,
+  "cued": true
+ },
  "PTXHd17_NlU": {
   "label": "清大周志遠 第12B講 Non-Contiguous Memory Allocation - Paging(續)",
   "points": 26,
@@ -1601,6 +1613,12 @@
   "quiz": 4,
   "cued": true
  },
+ "TiyQuiVq0Zs": {
+  "label": "清大周志遠 第26C講 RAID",
+  "points": 27,
+  "quiz": 7,
+  "cued": true
+ },
  "TnmN_KNIbc4": {
   "label": "清大周志遠 第13A講 Background",
   "points": 27,
@@ -1659,6 +1677,12 @@
   "label": "Abdul Bari：2.6.2 Binary Search Recursive Method",
   "points": 21,
   "quiz": 5,
+  "cued": true
+ },
+ "Ui3Pei65U80": {
+  "label": "清大周志遠 第26A講 Mass Storage System",
+  "points": 42,
+  "quiz": 7,
   "cued": true
  },
  "uJOmqBwENB8": {
@@ -1874,6 +1898,12 @@
  "yn0ZAifhyNM": {
   "label": "交大彭文志 Lec11 Lists (4/4)",
   "points": 67,
+  "quiz": 7,
+  "cued": true
+ },
+ "Ypxv0k322n8": {
+  "label": "清大周志遠 第26D講 I/O Systems",
+  "points": 37,
   "quiz": 7,
   "cued": true
  },

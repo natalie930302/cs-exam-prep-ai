@@ -1,0 +1,598 @@
+{
+ "video": "Ypxv0k322n8",
+ "label": "清大周志遠 第26D講 I/O Systems",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場：最後一章",
+   "scene": null,
+   "points": [
+    {
+     "t": 17,
+     "text": "最後一章：storage device 和 OS 之間的 input / output 怎麼被處理；內容比較瑣碎，重點在各種 I/O method 的分類。"
+    }
+   ]
+  },
+  {
+   "title": "I/O subsystem：多樣的 device，統一的 interface",
+   "scene": "io-26d-why",
+   "cues": [
+    56.8,
+    82.3,
+    92.7,
+    115,
+    133.6,
+    151.5,
+    171,
+    194.1,
+    211.6,
+    223.7
+   ],
+   "points": [
+    {
+     "t": 57,
+     "text": "系統運作不是計算就是 I/O；I/O device 非常多樣化，這是 I/O subsystem 最大的挑戰。"
+    },
+    {
+     "t": 115,
+     "text": "software 希望 unified interface，所以 OS 最下層有 device driver layer，由廠商依統一 interface 實作，把差異隔離起來。"
+    },
+    {
+     "t": 171,
+     "text": "interface 很難一個打天下，所以先把 device 分類（storage、network …），不同類型各一種 interface；另有直接操作 device 的「後門」，很多 bug 由此而來。"
+    }
+   ],
+   "explain": [
+    "電腦不是在「計算」（[[CPU]]、memory），就是在做 I/O（input / output，跟外部裝置交換資料）。I/O system 負責後者：storage 和各種 device 怎麼跟系統溝通。",
+    "I/O 的終點是 I/O device：鍵盤、螢幕、印表機、硬碟…各式各樣。",
+    "I/O subsystem 最難的地方就是 device 太多樣化了，每一種控制方式都不同。",
+    "但對寫程式的人來說，我們希望有 unified interface（統一的介面）：不管什麼 device，都用同一套方法（open、read、write…）來操作。",
+    "演進的結果：在 OS 的最下層放一層 device driver（驅動程式）。每種 device 有自己的 driver，通常是 device 廠商自己寫、自己安裝。",
+    "OS 規定好統一的 interface，廠商照著實作「怎麼跟系統溝通」。這樣上層看不到 device 之間的差異，就像把差異關進 driver 裡，叫 isolation（隔離）。",
+    "一種 interface 很難套用到所有 device，所以先分類。例如 storage 類：SSD、hard drive、甚至 tape，行為都很像（以 block / byte 為單位讀寫），就定一種 interface。",
+    "networking 也是一類：不管哪一種網路卡（network adapter），運作方式都類似，可以定另一種 interface。",
+    "所以最後不是只有一個 interface，而是不同類型各有一個。還有一種「開後門」的做法：讓程式隨便直接控制 device，很方便，但很多 bug 也是從這裡來的。",
+    "interface 也會隨時代改變：像手機的 touch screen 有「位置」這種資訊，很難歸到舊的類別，就可能要加新的 interface。"
+   ]
+  },
+  {
+   "title": "I/O 硬體：port、bus、controller",
+   "scene": "io-26d-hw",
+   "cues": [
+    258.2,
+    276.6,
+    297.2,
+    316,
+    339,
+    359.7,
+    378.8,
+    419.3,
+    438.7,
+    462.5,
+    471.8,
+    504.4
+   ],
+   "points": [
+    {
+     "t": 245,
+     "text": "device 連到系統的點叫 port（endpoint），port number 就像 device 的 ID。"
+    },
+    {
+     "t": 297,
+     "text": "資料透過 bus 傳遞：包含物理上的傳輸方式與溝通的 protocol；最常見的是 PCI（現在是 PCIe）bus。"
+    },
+    {
+     "t": 360,
+     "text": "controller 是控制 port、bus、device 的硬體；smart controller（如 SCSI）能自己處理錯誤，減少 CPU loading。controller 之間也能直接溝通。"
+    },
+    {
+     "t": 472,
+     "text": "北橋晶片管高頻寬、低延遲的（memory 等），南橋管速度慢的傳統 controller（如 IDE），快慢分開不會互相拖累。"
+    }
+   ],
+   "explain": [
+    "不管什麼 device，最後都要連到電腦系統上。連接的那個點叫 port（連接埠），它是一個 endpoint，對應到一個 device。",
+    "像插一個 USB 隨身碟、接投影機，一定是插到某個 port。對上層軟體來說，管的就是 port number，它就像這個 device 的 ID。",
+    "資料要透過 [[bus]] 傳進來。bus 就是連接 controller 和 device、或 controller 和 controller 的那一組線（wire）。",
+    "bus 有兩層意思：一是物理上怎麼傳訊號；二是溝通的規則（protocol）：一個 message 有幾個 byte、怎麼解讀上面的資料。兩者組合出各式各樣的 bus。",
+    "最常聽到的是 PCI bus，主機板上用來接 I/O device 的 bus。",
+    "controller（控制器）是負責「透過 bus 溝通」的那塊硬體，上面也有自己的程式碼。",
+    "有些 controller 很 smart，例如上一講的 SCSI controller，自己就能修復硬碟問題，不用靠 OS 或 driver。這樣 CPU 的負擔（loading）就變少，整台電腦更快，但這種 controller 比較貴，就像一個幫忙的 co-processor。",
+    "一般電腦的架構：同一類的 device 由一個 controller 管理，controller 最後再跟 processor（CPU）溝通。",
+    "controller 和 controller 之間也可以直接溝通：比較強的電腦，資料可以從一個 port 進來、直接從另一個 port 出去，不用經過 CPU。它們之間一樣透過 bus。",
+    "現在的電腦主要用 PCIe bus 連接這些 controller；另外還可能有自己的 IDE bus 和 IDE controller。",
+    "CPU 晶片組常提到南橋、北橋晶片。北橋管「快的」：頻寬高、頻率高的東西，像 memory 和需要 high bandwidth、low latency 的 device。",
+    "南橋管「慢的」：傳統的 IDE controller 等。速度差很多的東西分開管，慢的才不會把快的拖慢。最後它們都再跟 CPU 溝通。"
+   ]
+  },
+  {
+   "title": "Port-mapped I/O：I/O instruction 寫到 port",
+   "scene": "io-26d-port",
+   "cues": [
+    541.2,
+    559,
+    571,
+    604.3,
+    629.3,
+    646.4,
+    657.7,
+    691.3,
+    699.6
+   ],
+   "points": [
+    {
+     "t": 541,
+     "text": "最傳統的下指令方式是 port-mapped I/O：每個 device 有固定的 port number（硬體決定）。"
+    },
+    {
+     "t": 629,
+     "text": "controller 上有 data、status、control（command）register；CPU 把值寫進 register 就能做 I/O。"
+    },
+    {
+     "t": 658,
+     "text": "這類指令叫 I/O instruction，欄位裡是 port address 而不是 memory address，例如 IN、OUT。"
+    }
+   ],
+   "explain": [
+    "有了 port、controller、bus 這些硬體之後，問題是：軟體到底怎麼對 device 下指令？",
+    "最傳統的方法叫 port-mapped I/O。",
+    "每個 device 都有自己的 port number（也叫 port address）。電腦做出來時這些號碼就固定（燒死）了，例如哪個是 USB port，跟軟體無關。0x3F8 只是一個例子。",
+    "有了 port number，CPU 執行的程式就知道資料要送給哪一個 device。",
+    "送什麼呢？就是以前講 interrupt 時看過的：controller 上有幾個 register（小小的暫存格）：放資料的 data register、表示狀態的 status register、下命令的 control（command）register。",
+    "CPU 把命令寫進這些 register（要 read 還是 write、多少資料），controller 就照著做，透過 bus 把資料傳過去，I/O 就開始了。",
+    "對 port 下的指令叫 I/O instruction。一般 CPU 指令操作的是 memory address；I/O instruction 有一個欄位一定是 port address。這是分辨它們最簡單的方法。",
+    "常見的 I/O instruction 有 IN 和 OUT：issue 時給一個 port number，後面是要傳的資料。",
+    "課本列出典型 PC 的 port 位址：DMA controller、interrupt controller、timer、game controller、serial port…都有固定的範圍（16 進位）。這些一開始就 hardcode 好，也知道由哪個 driver、哪個 controller 控制。"
+   ]
+  },
+  {
+   "title": "Port-mapped vs memory-mapped I/O",
+   "scene": "io-26d-mmio",
+   "cues": [
+    743.3,
+    762,
+    785.2,
+    807.4,
+    817.6,
+    837.4,
+    862.2,
+    885.8,
+    905.9,
+    925.6,
+    949.8
+   ],
+   "points": [
+    {
+     "t": 743,
+     "text": "分法一（addressing）：port-mapped I/O 用 I/O instruction 指定 port；memory-mapped I/O 把 controller 的 buffer map 到 memory 的一段，用一般的 MOV 寫 memory 就等於寫到 device。"
+    },
+    {
+     "t": 862,
+     "text": "memory-mapped 適合大量資料（CPU 寫完 memory 就交給 DMA / controller），例如顯示卡；缺點是較不 reliable、資料小時 setup 不划算，像 keyboard 就不適合。"
+    }
+   ],
+   "explain": [
+    "把資料寫到 I/O device 的方式，可以從幾個角度分類。第一個角度：用什麼方式「定位」要寫給哪個 device（addressing）。",
+    "第一種就是剛剛的 port-mapped I/O：用 I/O instruction，直接告訴 CPU 要把資料寫到哪個 port number。",
+    "第二種叫 memory-mapped I/O：不寫到 port，而是寫到 memory 的某一段區間。",
+    "這時用的就是一般搬資料到 memory 的指令（例如 MOV），指令裡面沒有 port number。",
+    "寫 memory 怎麼會寫到 device？跟學過的 memory-mapped file 一樣：事先把 device controller 上的 buffer 空間，map（對應）到 memory 的某一段位址。",
+    "因為已經登記好「這段 memory 就是某個 device 的 buffer」，寫到這段 memory，就等於寫到那個 port 上。對寫程式的人來說只是在寫 memory，所以叫 memory-mapped I/O。",
+    "好處：很適合大量資料。CPU 是最快的元件，我們不希望它為了 I/O 在那邊空等。",
+    "CPU 只要把資料寫進 memory 就不管了，剩下的交給 DMA 或 controller 去搬，CPU 馬上空出來做別的事。資料量大、I/O 很久的時候特別有效率。",
+    "缺點（老師說的）：跟 memory-mapped file 一樣，第一是比較不 reliable，一 crash，還沒真正送出去的資料可能就遺失；第二是資料量小的時候，光做 map、setup 的時間就浪費不少。",
+    "最好的例子是顯示卡：螢幕畫面是大量資料，全部適合用 memory-mapped I/O。檔案很大時也會這樣做。",
+    "資料很小的就不適合，例如 keyboard 一次只送一個 byte，為它 map 一段 memory 很不划算，用 port-mapped 比較好。要看 I/O 的特性選方式。"
+   ]
+  },
+  {
+   "title": "Polling vs interrupt：主動還是被動",
+   "scene": "io-26d-poll",
+   "cues": [
+    967.8,
+    981.3,
+    1001.7,
+    1011,
+    1021.8,
+    1034
+   ],
+   "points": [
+    {
+     "t": 968,
+     "text": "分法二：CPU 主動一直問（polling / busy-waiting，一直檢查 status register），或被動等 device 用 interrupt 通知。"
+    },
+    {
+     "t": 1022,
+     "text": "I/O 很小時，設定與處理 interrupt 反而花時間，直接 busy-wait；資料量大就用 interrupt，讓 CPU 空出來。"
+    }
+   ],
+   "explain": [
+    "第二個角度：知道要寫給誰之後，CPU 要「主動」把資料推過去，還是「被動」等 device 通知？右邊 device 上方是它的 status（狀態）register。",
+    "主動的叫 [[polling]]（輪詢）：寫一個 while loop，一直去讀 status register 問「好了沒？」。在等的時候 CPU 什麼事也不能做，這就是 [[busy waiting]]。",
+    "等 status 變成 ready，就寫下一個 byte 過去。就這樣一個 byte 一個 byte 主動 push 給 device。",
+    "被動的叫 [[interrupt]]（中斷）：CPU 先去做別的事，device 準備好了，再發一個訊號通知 CPU「我好了」。",
+    "polling 雖然浪費 CPU，但如果 I/O 非常小、很快就好，設定和處理一次 interrupt 反而比較花時間，乾脆 busy-waiting 等一下就好。",
+    "如果資料量大、要等很久，就用 interrupt，讓 CPU 空出來去做其他事。"
+   ]
+  },
+  {
+   "title": "Programmed I/O vs DMA：誰來搬資料",
+   "scene": "io-26d-dma",
+   "cues": [
+    1040.9,
+    1054.9,
+    1067.4,
+    1090.6,
+    1111.2,
+    1133.3,
+    1160.2,
+    1175,
+    1200.5,
+    1224.6
+   ],
+   "points": [
+    {
+     "t": 1041,
+     "text": "分法三：誰執行搬移。programmed I/O 由 CPU 每搬一筆就下一個 instruction，CPU 被綁住。"
+    },
+    {
+     "t": 1111,
+     "text": "DMA（Direct Memory Access）由獨立的 DMA controller 搬資料，CPU 只發起 request、等 interrupt；適合資料量大。"
+    },
+    {
+     "t": 1201,
+     "text": "常見組合：DMA + memory-mapped + interrupt；programmed I/O + polling（busy-waiting，一個 byte 一個 byte）。"
+    }
+   ],
+   "explain": [
+    "第三個角度：知道給誰、用哪種方式了，那到底「誰」來執行搬資料這個動作？",
+    "搬資料需要一個會執行指令的 processor。I/O device 是被動的，只是一塊可以被讀寫的空間，自己不會動。",
+    "傳統做法是讓 CPU 來搬：每一次搬移都由 CPU 下指令，叫 programmed I/O。",
+    "看程式就會發現：每搬一小筆（例如 4 bytes），就要一個 CPU instruction。CPU 一直忙著下 I/O instruction，等於被綁住，不能做別的事。",
+    "最重要的做法是 DMA，全名 Direct Memory Access（直接記憶體存取）：由 I/O 端的 controller 直接把資料搬進 memory，CPU 不用參與搬的過程。",
+    "負責搬的是一個專門的 DMA controller。它獨立於所有 device controller 之外，唯一的任務就是取代 CPU 搬資料，它不做計算。",
+    "什麼時候值得請它幫忙？資料量很大的時候。小東西自己搬比較快。",
+    "CPU 只要跟 DMA 發起（initiate）一個 I/O request，之後去做別的事；DMA 搬完，再用 interrupt 通知 CPU。",
+    "CPU 不想看到每一步搬的過程，只想知道「資料已經在我的 memory 裡了」。所以 DMA 通常搭配 memory-mapped I/O 和 interrupt 一起用。",
+    "這三種分法可以互相組合，但常見的是兩大型：DMA + interrupt + memory-mapped；或 programmed I/O + polling（busy-waiting，一個 byte 一個 byte 推過去）。"
+   ]
+  },
+  {
+   "title": "DMA 一步一步：讀 100 MB 的檔案",
+   "scene": "io-26d-dmastep",
+   "cues": [
+    1242.5,
+    1291.1,
+    1307.3,
+    1314.5,
+    1356.4,
+    1377.7,
+    1399.2,
+    1419,
+    1432.7,
+    1443.6,
+    1476.5,
+    1486.8,
+    1521.3
+   ],
+   "points": [
+    {
+     "t": 1243,
+     "text": "例：程式要把 100 MB 的 file 讀進 memory。① CPU 下 I/O request（program → OS → driver）；② driver 告訴 disk controller：disk 的位置、放到 memory buffer X、長度 C。"
+    },
+    {
+     "t": 1356,
+     "text": "③ disk controller 用 DMA：④ 請 DMA controller set up（來源、目的）；⑤ 每次搬 controller buffer 大小（例如 4 bytes），來回很多次都由 DMA 做；⑥ DMA 更新 X 與 C 直到搬完。"
+    },
+    {
+     "t": 1433,
+     "text": "⑦ 搬完 DMA 發一個 interrupt 給 CPU；⑧ 通知 program，資料已在 memory。CPU 全程只接到一次 interrupt；programmed I/O 則每 4 bytes 都要 CPU 處理。"
+    }
+   ],
+   "explain": [
+    "來看 DMA 一步一步怎麼運作。畫面上有 CPU、device driver、memory 裡的 buffer X、disk controller 和 DMA controller。一切都從 CPU 開始。",
+    "例子：一個程式要把一個 100 MB 的 file 從硬碟整個讀進來，放到自己的 memory 空間，之後就能直接 access。",
+    "① CPU 執行到讀檔的指令，發出一個 I/O request。它從 program 經過 OS，最後交給 device driver，driver 知道要讀哪個 file、在哪個位置。",
+    "② driver 去跟 disk controller 說：資料在 disk 的哪個位置，要放到 memory buffer 的 X 位置，長度 C（這裡是 100 MB）。",
+    "③ 並且告訴 disk controller：這次要用 DMA 的方式完成。",
+    "④ disk controller 請 DMA controller 來搬，也就是 set up / initiate 一個 I/O：DMA 會知道資料從哪來、要寫到 memory 的哪裡、還剩多少。",
+    "⑤ controller 上的 buffer 不大（假設只有 4 bytes），所以 100 MB 要 4 bytes、4 bytes 慢慢搬，中間有非常多次來回，但這些全部都由 DMA controller 執行。",
+    "⑥ DMA 每搬 4 bytes 就寫到 X 的位置，然後 X 往後移、剩下的 C 減少，它自己就知道什麼時候搬完（C = 0）。",
+    "⑦ 全部搬完，DMA 才產生一個 interrupt 去通知 CPU：剛剛叫我做的 I/O request 已經完成了。",
+    "⑧ interrupt 處理完，再通知當初發出 I/O 的 program。它去看 memory，資料都已經在裡面了。對程式來說，它只呼叫了一個 system call。",
+    "重點：整個過程 CPU 只接到「一個」interrupt，就是做完的那一個。中間的來來回回都是 DMA 在做。",
+    "如果改用 programmed I/O：每 4 bytes CPU 都要親自下指令、處理一次，100 MB ÷ 4 bytes 是上千萬次，CPU 的速度就一直被拖慢。",
+    "總結 DMA：driver 先跟 disk controller 講，disk controller 再找 DMA controller set up 一個 I/O request 並開始搬，搬完由 DMA controller signal CPU。考試範圍到這裡：三種 I/O 分法、各適合大或小的 I/O、以及 DMA。"
+   ]
+  },
+  {
+   "title": "考試範圍說明",
+   "scene": null,
+   "points": [
+    {
+     "t": 1548,
+     "text": "期末考範圍到這裡：三種不同型別的 I/O 方式、各適合大或小的 I/O，以及 DMA；後面約 15 分鐘快速帶過。"
+    }
+   ]
+  },
+  {
+   "title": "Kernel I/O subsystem：scheduling、buffering、caching、spooling",
+   "scene": "io-26d-kio",
+   "cues": [
+    1577.1,
+    1588.3,
+    1594.1,
+    1612.9,
+    1632,
+    1652.2,
+    1671.2,
+    1698.6,
+    1714.9,
+    1734.8,
+    1768.7
+   ],
+   "points": [
+    {
+     "t": 1577,
+     "text": "kernel I/O subsystem 的工作：I/O scheduling（如 disk scheduling）、buffering（解決 device 速度不同，代價是 memory copy）。"
+    },
+    {
+     "t": 1652,
+     "text": "caching：在快的 memory 放可丟的副本，讓重複存取更快；同一塊 memory 可兼做 buffer 與 cache，但目的不同。"
+    },
+    {
+     "t": 1699,
+     "text": "spooling：只用在 output（如 printer），每份輸出先收齊在 spool，再一次送去印。"
+    },
+    {
+     "t": 1735,
+     "text": "error handling：偵測與修復錯誤（ECC、RAID），不能讓系統 crash；protection：I/O instruction 都是 privileged instruction。"
+    }
+   ],
+   "explain": [
+    "知道 I/O method 之後，實際系統還要處理很多事，這些由 kernel 的 I/O subsystem 負責。左邊列出幾項，第一項是 I/O scheduling。",
+    "I/O scheduling 就是學過的 [[disk scheduling]]，還有 file system 層的排程。安排先做哪個 I/O，會直接影響效能。",
+    "第二項是 [[buffering]]（緩衝）。不同 device 速度一定不一樣：memory 和 disk 不同、disk 和 network 又不同，很難把資料直接從一個 controller 快速寫到另一個。",
+    "解法就是 buffer：在 memory 開一塊有彈性的空間，慢的那邊先一點一點寫進來累積，等累積一段時間，再一次寫到另一個 device。",
+    "buffer 一定是某一塊 memory，所以代價是搬資料時多了幾次 data copy；但也只有這樣，才不會因為速度不合而 overflow（溢出）。",
+    "第三項是 caching（快取）。在 file system 那章看過很多 [[cache]]：目的是不要每次都跑到最下層、最慢的 device。",
+    "cache 也是 memory copy，跟 buffer 很像，有時同一塊 memory 既是 cache 也是 buffer，但目的不同：cache 裡是「可以丟掉的副本」，為了讓重複讀更快；buffer 是為了調節兩個 device 之間的速度。",
+    "第四項是 spooling，只用在 output，典型例子是 printer（印表機）。",
+    "每個程式的輸出先 load 到 spool 空間（放在 disk 上排隊），等一份資料都到齊了，才一次送到 printer 印出來。這樣多個程式同時要印，也不會把內容交錯在一起。",
+    "第五項是 error handling：不同 device 都有自己的錯誤檢查（像 sector 的 ECC、RAID），I/O system 要偵測、修復錯誤，更重要的是不能讓整個系統 crash。很多 bug、很多入侵也是從 I/O 這裡來的。",
+    "第六項是 protection。I/O device 是大家共用的、非常敏感，所以 I/O instruction 全部是 privileged instruction（只有 kernel mode 能執行），在指令層級就做基本的保護。"
+   ]
+  },
+  {
+   "title": "Unix：device 當成 file；device queue",
+   "scene": "io-26d-devfile",
+   "cues": [
+    1784.2,
+    1812.7,
+    1832.2,
+    1849.2,
+    1856.9
+   ],
+   "points": [
+    {
+     "t": 1784,
+     "text": "Linux / Unix 把 device 當成 file 管理：/dev 底下每個檔案對應一個 device，寫進去其實是寫到 device 的 buffer。"
+    },
+    {
+     "t": 1832,
+     "text": "每個 device 有 device queue 串起它的 request 與狀態（waiting / processing），scheduling 依此排序。"
+    }
+   ],
+   "explain": [
+    "Linux、Unix 管理 I/O 的方式：把 device 全部當成 file。反正 device 就是 input、output，跟讀寫檔案是同一個概念。",
+    "所以作業系統裡有一個資料夾（/dev），裡面一大堆檔案，每個檔案對應一個 device。寫進這個「檔案」，其實是寫到那個 device 的 memory buffer，而不是真的寫到硬碟的 file system。",
+    "為了管理各種 device，還有 device queue：OS 記得有哪些 device，每個 device 上的 request 都串成一串。",
+    "disk scheduling 這類排程就利用 queue 裡的資訊，決定哪個 request 先做、哪個後做（畫面上順序被重新排了）。",
+    "每個 request 還記錄它的 status：現在是 waiting（等待中）還是 processing（處理中），把所有 request 的狀態串起來，就是 I/O 的管理。"
+   ]
+  },
+  {
+   "title": "Blocking vs non-blocking I/O",
+   "scene": "io-26d-block",
+   "cues": [
+    1879.9,
+    1898,
+    1904.6,
+    1921.1,
+    1951.2,
+    1968.8,
+    1980.7,
+    2010.4
+   ],
+   "points": [
+    {
+     "t": 1880,
+     "text": "blocking I/O：system call 做完才 return，是 synchronous；好寫但程式卡住、效能差。"
+    },
+    {
+     "t": 1921,
+     "text": "non-blocking：馬上 return，I/O 可能還沒完成（asynchronous），完成時用 interrupt 通知；實作常拆成 write 與 write callback 兩階段。"
+    }
+   ],
+   "explain": [
+    "每個 I/O 最後都是一個 [[system call]]。如果 call 下去之後，要等 I/O 真的做完才 return（回來），這叫 blocking I/O。program 只能卡在那裡等。",
+    "blocking 的結果是 synchronous（同步）的溝通：上下兩層的狀態是一致的。",
+    "例如 call 一個 write，等到它 return 的時候，就確定 write 已經做完了。",
+    "另一種是 non-blocking：call 下去馬上 return，不會卡住 program，program 可以繼續做別的事。",
+    "它能馬上 return，是因為系統把需要的資訊記下來，之後慢慢幫你做。但 return 的時候 I/O 其實還沒完成，上面以為好了、下面還在做，這叫 asynchronous（非同步）。（課本把「馬上回傳目前能拿到的資料」叫 non-blocking，「之後才完成並通知」叫 asynchronous，老師這裡把兩者合在一起講。）",
+    "blocking 寫程式最直覺：叫它做一件事，回來就做完了。缺點是效能很差，因為上面的程式一直卡著等。",
+    "所以系統內部幾乎都用 non-blocking / asynchronous：先 return，等真的做完，再透過 [[interrupt]] 通知。",
+    "寫起來就變成兩個 function：先 call write（立刻 return），等 write callback function 被呼叫時，才代表真的做完。兩個階段接在一起，才是一個完整的 I/O。"
+   ]
+  },
+  {
+   "title": "I/O 為什麼慢：很多層、很多 copy",
+   "scene": "io-26d-perf",
+   "cues": [
+    2047.3,
+    2059.4,
+    2069.2,
+    2087.6,
+    2114.3,
+    2144.4,
+    2183.4,
+    2201.9,
+    2224.9
+   ],
+   "points": [
+    {
+     "t": 2047,
+     "text": "I/O 經過 hardware、driver、I/O subsystem / FS 很多層；上層盡量用 cache 快速回到 user，不行才到 driver，driver 用 interrupt 跟 controller 溝通。"
+    },
+    {
+     "t": 2088,
+     "text": "I/O 常是 bottleneck：層數多 → context switch 多；每層 buffer / cache → data copy 多（zero copy 技術在減少 copy）；interrupt 也有 overhead。"
+    },
+    {
+     "t": 2225,
+     "text": "提升效能：減少 context switch 與 copy，小 I/O 少用 interrupt，大量資料用 DMA 讓 CPU 空出來。"
+    }
+   ],
+   "explain": [
+    "一次 I/O 會經過很多層：最下面是 hardware（controller），上面是 device driver，再上面是 I/O subsystem 或 file system，最上面是使用者的程式。",
+    "上層會盡量用 caching：如果資料已經在 cache 裡，就不用走到最下層，很快就能回到使用者那邊。",
+    "cache 沒有的話，才一路往下到 device driver，真的去操作硬體。driver 透過 interrupt 跟下面的 controller 溝通，程式就不用卡在那裡。",
+    "I/O 通常非常慢。現在大家處理大量 data，I/O 常常是整個系統的 bottleneck（瓶頸）。",
+    "為什麼慢？第一，要一層一層 call 下去才能完成（subsystem → driver → controller）。層數一多，就會有一堆 [[context switch]]（切換執行對象的成本）。",
+    "第二，每一層都有自己的 buffer 或 cache，資料一層一層被 copy。理想上只要從 user memory 一次 copy 到 I/O device 就好，實際上每層都在幫你 copy，就慢很多。",
+    "所以很多高效能 I/O device 在發展 zero copy：直接在 controller 之間、或從 user 的 memory 直接 copy 到 controller，甚至直接到遠端電腦的 memory，減少中間的 copy。",
+    "第三，interrupt 有好有壞：好處是 CPU 和 device 可以分工；壞處是每次 interrupt 都有額外的 overhead。",
+    "總結提升 I/O 效能的原則：少一點 layer 和 context switch、少 copy、小的 I/O 不要用 interrupt，大量資料用 DMA，讓 CPU 空出來。"
+   ]
+  },
+  {
+   "title": "Application I/O interface：device 分類",
+   "scene": "io-26d-api",
+   "cues": [
+    2248.7,
+    2267.7,
+    2279.5,
+    2301.5,
+    2348.5,
+    2355.6,
+    2364.2,
+    2374.7,
+    2384.4
+   ],
+   "points": [
+    {
+     "t": 2249,
+     "text": "driver 提供 interface；device 特性（存取方式、速度、單向 / 雙向）不同，所以分類：block、character、memory-mapped、network、timer。"
+    },
+    {
+     "t": 2302,
+     "text": "分不進去的就開 backdoor（早期 MS-DOS 讓程式直接寫 controller），方便但是嚴重的 security hole。"
+    },
+    {
+     "t": 2349,
+     "text": "block：read、write、seek；character：以 byte 為單位（keyboard）；network：send、receive；另有 stream、pipe 等。"
+    }
+   ],
+   "explain": [
+    "最後一小塊：driver 最主要的功能，就是提供一個 interface 給上層使用。",
+    "I/O device 的型別太多，特性都不同：存取方式（循序或隨機）、速度快慢、資料是單向還是雙向傳輸…",
+    "所以依照特性分類，每一類制定適合它的 interface。常見的分類：block、character、memory-mapped、network、timer。",
+    "不管怎麼分，總有 device 分不進去，或者為了配合固定的 interface 要犧牲效能。早期 MS-DOS 常被 hack，就是因為它有 backdoor interface：程式可以直接寫 device controller，完全不管 I/O system 的規則。開發很方便，卻是很嚴重的 security 漏洞。",
+    "block device（例如硬碟）：熟悉的 file system 操作，read、write、seek，一次處理一整個 block。",
+    "character device（例如 keyboard）：以一個 byte 為單位傳輸。",
+    "資料大小不同，適合的方式也不同：資料小的可以用 polling，資料大的用 interrupt。",
+    "network device：行為就是 send（送出）和 receive（接收），常透過 socket 介面。",
+    "其他比較特殊的還有 stream、pipe 等，一個 I/O 要經過很多層才完成，所以又有不同的 interface。第 13 章後半只是簡單介紹，考試重點在前半的 I/O method。"
+   ]
+  },
+  {
+   "title": "結束",
+   "scene": null,
+   "points": [
+    {
+     "t": 2395,
+     "text": "第 13 章後面只是簡單介紹；期末考記得前半段到各種 I/O method。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "使用 memory-mapped I/O 時，CPU 用什麼指令把資料送到 device？",
+   "opts": [
+    "一般的 memory 指令（如 MOV）",
+    "IN / OUT 等 I/O instruction",
+    "只能用 system call",
+    "interrupt 指令"
+   ],
+   "ans": "一般的 memory 指令（如 MOV）",
+   "why": "device 的 buffer 被 map 到一段 memory，寫那段 memory 就等於寫到 device；port-mapped 才用 IN / OUT。"
+  },
+  {
+   "q": "哪一種 device 最適合 memory-mapped I/O？",
+   "opts": [
+    "顯示卡（大量資料）",
+    "keyboard（一次一個 byte）",
+    "timer",
+    "滑鼠按鍵"
+   ],
+   "ans": "顯示卡（大量資料）",
+   "why": "大量資料時 CPU 只要寫 memory；小資料光 setup 就不划算。"
+  },
+  {
+   "q": "I/O 很小、很快就完成時，哪種方式可能比較划算？",
+   "opts": [
+    "polling（busy-waiting）",
+    "interrupt",
+    "DMA",
+    "spooling"
+   ],
+   "ans": "polling（busy-waiting）",
+   "why": "設定與處理 interrupt 反而比較花時間。"
+  },
+  {
+   "q": "用 DMA 讀 100 MB 的檔案，CPU 在整個傳輸過程中大約會收到幾次「傳輸完成」的 interrupt？",
+   "opts": [
+    "1 次",
+    "每 4 bytes 一次",
+    "每個 sector 一次",
+    "0 次"
+   ],
+   "ans": "1 次",
+   "why": "中間的搬移都由 DMA controller 做，全部完成才 interrupt CPU 一次。"
+  },
+  {
+   "q": "buffering 和 caching 的主要差別？",
+   "opts": [
+    "cache 是可丟掉的副本，為了加速重複存取；buffer 是為了調節 device 之間的速度",
+    "buffer 一定在 disk 上，cache 一定在 memory",
+    "兩者完全相同",
+    "cache 只用在 output"
+   ],
+   "ans": "cache 是可丟掉的副本，為了加速重複存取；buffer 是為了調節 device 之間的速度",
+   "why": "同一塊 memory 可以兼做兩者，但目的不同。"
+  },
+  {
+   "q": "Spooling 最典型的例子？",
+   "opts": [
+    "印表機的列印佇列",
+    "TLB",
+    "page table",
+    "RAID 0"
+   ],
+   "ans": "印表機的列印佇列",
+   "why": "各程式的輸出先存到 spool 排隊，一份收齊再送去印。"
+  },
+  {
+   "q": "blocking I/O 的特性？",
+   "opts": [
+    "system call 要等 I/O 完成才 return（synchronous）",
+    "system call 立刻 return，之後用 interrupt 通知",
+    "不需要 system call",
+    "只能用在 network"
+   ],
+   "ans": "system call 要等 I/O 完成才 return（synchronous）",
+   "why": "好寫但程式會卡住；non-blocking / asynchronous 則先 return。"
+  }
+ ]
+}
