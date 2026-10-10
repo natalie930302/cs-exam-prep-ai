@@ -7291,7 +7291,7 @@ body#appRoot #main .sp .filter-bar .filter-chips {
 
 /* 六科：標題獨立一行；下一行左邊科目列、右邊進度條，兩個同高同樣式、中線對齊 */
 @media (min-width: 900px) {
-  body#appRoot #main #sec-subjects { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 12px; align-items: center; }
+  body#appRoot #main #sec-subjects.on { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 12px; align-items: center; }
   body#appRoot #main #sec-subjects > .sh, body#appRoot #main #sec-subjects > .ss { grid-column: 1 / -1; }
   body#appRoot #main #sec-subjects > .stabs { grid-column: 1; grid-row: 3; margin: 0 !important; }
   body#appRoot #main #sec-subjects > #spPanels,
