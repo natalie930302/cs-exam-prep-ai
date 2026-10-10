@@ -797,6 +797,12 @@
   "quiz": 7,
   "cued": true
  },
+ "dVPDdHE3RJU": {
+  "label": "Solving Recurrences Using Substitution Method",
+  "points": 13,
+  "quiz": 5,
+  "cued": true
+ },
  "DXU7SqsYDvg": {
   "label": "Page Replacement Algorithms（LRU and Optimal）",
   "points": 10,
@@ -861,6 +867,12 @@
   "label": "清大周志遠 第8B講 Processes Concept",
   "points": 36,
   "quiz": 6,
+  "cued": true
+ },
+ "eWIlWXtnDzY": {
+  "label": "清大OCW 趙啟超《離散數學》第13A講 Recurrence Relations",
+  "points": 13,
+  "quiz": 5,
   "cued": true
  },
  "f-mBLtGY6Ig": {
@@ -959,11 +971,23 @@
   "quiz": 5,
   "cued": true
  },
+ "hbOYxWE_Qks": {
+  "label": "清大OCW 趙啟超《離散數學》第12B講 Recurrence Relations",
+  "points": 18,
+  "quiz": 5,
+  "cued": true
+ },
  "HEQuN0QELSQ": {
   "label": "Gram-Schmidt Orthogonalization（換個角度講解）",
   "points": 19,
   "quiz": 5,
   "cued": false
+ },
+ "Hfc676iknHY": {
+  "label": "清大OCW 趙啟超《離散數學》第12D講 Recurrence Relations",
+  "points": 17,
+  "quiz": 5,
+  "cued": true
  },
  "HHIc5JZyenI": {
   "label": "Abdul Bari：3.3 Optimal Merge Pattern - Greedy Method",
@@ -1379,6 +1403,12 @@
   "quiz": 7,
   "cued": true
  },
+ "n_mt9ym4MAk": {
+  "label": "清大OCW 趙啟超《離散數學》第12C講 Recurrence Relations",
+  "points": 13,
+  "quiz": 5,
+  "cued": true
+ },
  "OApn18tz9EU": {
   "label": "清大周志遠 第4D講 Hardware Protection",
   "points": 23,
@@ -1430,6 +1460,12 @@
  "oTTzNMHM05I": {
   "label": "Abdul Bari：3.1 Knapsack Problem - Greedy Method",
   "points": 19,
+  "quiz": 6,
+  "cued": true
+ },
+ "oUULN2JwYbw": {
+  "label": "清大OCW 趙啟超《離散數學》第13B講 Recurrence Relations",
+  "points": 17,
   "quiz": 6,
   "cued": true
  },
@@ -1697,6 +1733,12 @@
   "quiz": 5,
   "cued": true
  },
+ "SIJSKBFIMhI": {
+  "label": "清大OCW 趙啟超《離散數學》第12A講 Recurrence Relations",
+  "points": 20,
+  "quiz": 6,
+  "cued": true
+ },
  "SLsHKh_OUEM": {
   "label": "Master's Theorem Explained",
   "points": 23,
@@ -1731,6 +1773,12 @@
   "label": "MIT 6.006 Rec23：Computational Complexity",
   "points": 93,
   "quiz": 8,
+  "cued": true
+ },
+ "tA2cqfNh5EM": {
+  "label": "Generating Functions | Part 1",
+  "points": 24,
+  "quiz": 6,
   "cued": true
  },
  "TA7728hp_IA": {
