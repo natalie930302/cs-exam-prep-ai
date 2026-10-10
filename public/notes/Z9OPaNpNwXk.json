@@ -1,0 +1,287 @@
+{
+ "video": "Z9OPaNpNwXk",
+ "label": "清大周志遠 第16B講 Threading Issues",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Threading issues：thread 都屬於同一個 process",
+   "scene": "thr-16b-intro",
+   "points": [
+    {
+     "t": 16,
+     "text": "thread 都屬於同一個 process，有些行為細節跟 process 不同；課本列六個，這裡講四個。"
+    }
+   ],
+   "cues": [
+    16.4,
+    17.4,
+    21.0
+   ],
+   "explain": [
+    "create 了這些 thread 之後，有些行為跟 process 不一樣，要稍微注意一下。",
+    "因為 process 彼此沒有關聯，但 thread 都屬於同一個 process，所以有一些比較細的小細節。",
+    "課本列了六個問題，這裡只講其中四個比較基本、比較需要理解的：fork／exec、cancellation、signal handling、thread pool。"
+   ]
+  },
+  {
+   "title": "在 thread 裡呼叫 fork()",
+   "scene": "thr-16b-fork",
+   "points": [
+    {
+     "t": 48,
+     "text": "process 有兩個 thread，其中一個 call fork：新 process 要複製全部 thread，還是只複製呼叫的那個？"
+    },
+    {
+     "t": 105,
+     "text": "Linux 把 thread 當 process，比較像只複製呼叫者；兩種都可能，看 OS 支援哪一種。"
+    }
+   ],
+   "trap": "課本：有些 UNIX 提供兩種 fork；若 fork 之後馬上 exec，只複製呼叫的 thread 就夠了（反正整個會被換掉）。",
+   "cues": [
+    48.1,
+    56.7,
+    69.6,
+    72.2,
+    91.0,
+    105.0,
+    125.1,
+    137.7,
+    160.0
+   ],
+   "explain": [
+    "第一個問題：我們知道 process 可以 [[fork]]（複製出一個新的 process）。",
+    "如果一個 process 本來有兩個 thread，其中某一個 thread call 了 fork，會發生什麼事？新的 process 應該長什麼樣子？",
+    "其實有兩種可能。",
+    "第一種：fork 是針對整個 process 的。雖然只有一個 thread call fork，還是把整個 process 複製一份；原來有兩個 thread，新的也要有兩個。",
+    "第二種：因為只有一個 thread call fork，新 create 出來的 process 就只包含原來那一個 thread 的行為。",
+    "Linux 比較容易這麼做，因為它本來就把 thread 當作 process：OS 看到的不是 P0 底下的 thread，而就是那一個 thread，所以 fork 時當然只 create 它。",
+    "因為 process 跟 thread 在 programming 上是兩個 level，fork 的 behavior 就可能是左邊那種，也可能是右邊那種。",
+    "這種系統設計沒有對錯，也一定辦得到：OS 可以兩種 mode 都支援、讓 programmer 選一個當 default，或者只支援其中一個。兩種情況實際上都有。",
+    "所以寫程式時要去試試看，或查那個 OS 的規格，看它怎麼管理 thread 跟 process，才知道你的 fork 是哪一種。"
+   ]
+  },
+  {
+   "title": "exec()：整個 process 換掉",
+   "scene": "thr-16b-exec",
+   "points": [
+    {
+     "t": 180,
+     "text": "exec 是 replace：整個 process（含所有 thread）換成新程式，所以沒有爭議。"
+    }
+   ],
+   "cues": [
+    180.0,
+    185.2,
+    195.5
+   ],
+   "explain": [
+    "exec 就比較沒有問題。之前教過 fork 和 exec。",
+    "exec 的定義是 replace（取代）：call 了 exec，整個 process 就沒了，直接替換成新的程式。",
+    "所以原來到底有幾個 thread，OS 通常都不管，整個換掉就對了，沒有差別。"
+   ]
+  },
+  {
+   "title": "Thread cancellation",
+   "scene": "thr-16b-cancel",
+   "points": [
+    {
+     "t": 202,
+     "text": "thread 被 cancel（terminate）時，thread library 要 clean up 它的 memory 等資源。"
+    },
+    {
+     "t": 253,
+     "text": "兩種：asynchronous cancellation 與 deferred cancellation。"
+    },
+    {
+     "t": 299,
+     "text": "deferred：target thread 預設 cancellation point，被砍時仍執行到那個點才結束；不立刻清理是因為 overhead 與同步問題。"
+    }
+   ],
+   "trap": "課本定義：asynchronous cancellation＝立刻終止 target thread（資源、共享資料可能沒處理好）；deferred cancellation＝target thread 自己定期檢查，到 cancellation point 才安全結束（Pthreads 預設）。影片口述這段把兩者講得有點混，考試以課本為準。",
+   "cues": [
+    202.2,
+    213.7,
+    227.1,
+    241.4,
+    253.2,
+    261.5,
+    299.7,
+    320.5,
+    361.0,
+    378.2
+   ],
+   "explain": [
+    "另一個 issue：cancellation（取消 thread）。",
+    "如果一個 thread 被 terminate（終止）掉，它的行為會是什麼？",
+    "一個 thread 被結束了，照理說 main thread 要把這個被 cancel 的 thread 用過的記憶體清掉，需要一些動作。",
+    "也就是 thread library 必須去 clean up（清理）被 cancel 的那個 thread 的 memory content。",
+    "在 cancel、clean up 的過程中，library 通常有兩種做法：asynchronous cancellation 和 deferred cancellation。",
+    "老師強調的重點是：不會一 cancel 就馬上隨時處理，而是等執行到某個階段才 clean up，這樣比較好實作、比較容易拿到 consistent（一致）的 state。課本的分法是：asynchronous＝立刻終止（左），deferred＝等到安全的點（右）。",
+    "deferred cancellation：被取消的 target thread 本來就預設了幾個可以被中斷的地方（cancellation point，畫面上的 ◆）。",
+    "所以雖然你按了 Ctrl-C 要把那個 thread 砍掉，它還是會執行到指定的 checkpoint 才結束，這就叫 defer（延後）。",
+    "簡單來說，這段在講兩個 thread 互相運作時，什麼時候把被 cancel 者的 memory 這些 content free（釋放）出來、重新分配。",
+    "通常不會立刻去做，因為 overhead 很大；而且 thread 可能執行到一半，有些指令還沒做完，立刻砍掉可能造成 synchronization 的問題。"
+   ]
+  },
+  {
+   "title": "Signal handling",
+   "scene": "thr-16b-signal",
+   "points": [
+    {
+     "t": 393,
+     "text": "signal（例如 sleep 10 秒後的通知）先送到 process，再決定交給哪個 thread。"
+    },
+    {
+     "t": 511,
+     "text": "四種：給產生它的 thread、給所有 thread、給指定 thread、由特定 thread（如 main thread）處理。"
+    }
+   ],
+   "trap": "課本的四個選項：deliver 給 signal 適用的那個 thread、給每個 thread、給某些 thread、指定一個 thread 接收所有 signal。",
+   "cues": [
+    393.8,
+    401.2,
+    418.2,
+    495.4,
+    511.3,
+    518.1,
+    538.5,
+    566.4,
+    597.0
+   ],
+   "explain": [
+    "第三個部分是 signal handling。signal（訊號）是 OS 用來通知 process「某件事發生了」的機制。",
+    "舉例：一個 thread 裡呼叫 sleep 10 秒，10 秒後會有一個 signal 跑出來 notify（通知）這個 process，讓這個 thread 可以繼續運作。",
+    "因為一個 process 有很多 threads，OS 第一個要判斷的是：這個 signal 是給某個指定的 thread，還是給所有的 threads？有幾種可能。",
+    "一般的形式（general form）是：產生一個 signal 後，它先送到 process 的 level，然後 process 再決定要怎麼 handle。可能性就是下面四種。",
+    "第一種：交給當初產生這個 signal 的那個 thread 去 handle，像 sleep：只有那個 thread 去睡，10 秒後也只有它收到 signal 被叫醒。",
+    "第二種：交給所有 thread。例如有一個 thread 直接 call terminate process（exit），這時當然要 kill 掉所有 threads。",
+    "第三種：給某一個指定的 thread。thread 跟 thread 之間也可以互傳 signal，只要有 thread ID 就能這麼做：一個 thread 產生 signal，交給另一個特定的 thread 處理。",
+    "第四種：丟出 signal 的人沒說要誰處理，process 就用一個特定的 thread（例如 main thread）來 handle；有些 signal 預設就是由 main thread 處理，其他 thread 不管。",
+    "所以丟出一個 signal 時，OS 要判斷：是要 broadcast（廣播）給所有 threads、給指定的 thread，還是由 main thread 處理。畢竟它們是同一個 process 產生的 signal，要知道誰產生、誰來接。"
+   ]
+  },
+  {
+   "title": "Thread pools",
+   "scene": "thr-16b-pool",
+   "points": [
+    {
+     "t": 638,
+     "text": "動態 create / delete thread 不 efficient；thread pool 一開始就 create 一池 thread（例如 20 或 100 個）重複使用。"
+    },
+    {
+     "t": 705,
+     "text": "好處：不用 run time create，處理 request 更快；控制 pool size 就控制 resource 使用量，避免系統被拖垮。"
+    }
+   ],
+   "cues": [
+    638.4,
+    650.7,
+    665.0,
+    674.1,
+    684.0,
+    690.5,
+    705.0,
+    724.3,
+    738.0,
+    753.6,
+    793.1
+   ],
+   "explain": [
+    "下一個跟 thread 有關的是 thread pool，大家可以好好記下來，因為實作上很常用。",
+    "原本 thread programming 的概念是：需要平行時才動態產生一個 thread，不要的時候再把它 delete 掉。",
+    "壞處是你會不斷 create thread、再 delete thread，比較不 efficient（沒效率）。",
+    "所以很多應用，像 web server 的設計，會用 thread pool：一開始就 create 一堆 thread，也就是一個 pool of threads（一池 thread）。",
+    "而且可以控制這個 pool 的 size，例如 20 個 thread 還是 100 個 thread。",
+    "執行過程中就一直 reuse（重複使用）這些 thread，讓它們執行不同的 function。",
+    "最大的好處之一：一個 event（事件）進來時，不需要在 run time 才 create thread，所以處理 request 的速度更快。",
+    "第二個、而且更主要的原因：可以控制 pool size，也就是控制這台 server（host）的 resource 使用量。",
+    "想想看，web server 如果沒有限制，request 進來越多就 create 越多 thread，最後 CPU 全被分光，電腦可能 hang 住，OS 都跑得很慢，這是很大的 issue。",
+    "如果把 pool size 控制在 10 或 100，就知道它最多只會用掉這麼多 CPU 資源，剩下的可以保留給系統。",
+    "所以 thread pool 其實是一種 resource control 的方法：依你有幾個 CPU core、多少 memory 等實體資源，估算每個 thread 最吃什麼、吃多少，就能算出最多開幾個。"
+   ]
+  },
+  {
+   "title": "第四章回顧",
+   "scene": "thr-16b-recap",
+   "points": [
+    {
+     "t": 828,
+     "text": "第四章重點：user / kernel thread 的差別、三種 mapping model；Pthread、Java thread 自己練習。"
+    },
+    {
+     "t": 860,
+     "text": "在 thread 裡呼叫 fork、signal 等 function 時，要記得同一個 process 有很多 thread。"
+    }
+   ],
+   "cues": [
+    828.1,
+    836.4,
+    839.2,
+    860.0
+   ],
+   "explain": [
+    "這就是第四章 multithread 的部分。最主要是 [[user thread]] 跟 [[kernel thread]] 的差別。",
+    "然後是三個 mapping model 的差異在哪裡。",
+    "Pthread、Java thread 和後面這些 use case，是未來大家寫 thread programming、自己練習時可以再去學、去用的。",
+    "還要注意：在 thread 裡面去 call 這些 function（fork、exec、signal……），它的 behavior 要考慮到同一個 process 裡有很多 threads，它們會怎麼被 handle。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "多執行緒 process 中，一個 thread 呼叫 fork()，新 process 會有幾個 thread？",
+   "opts": [
+    "視 OS 而定：可能複製全部 thread，也可能只複製呼叫的那個",
+    "一定複製全部 thread",
+    "一定只有呼叫的那個",
+    "fork 在 thread 裡不能呼叫"
+   ],
+   "ans": "視 OS 而定：可能複製全部 thread，也可能只複製呼叫的那個",
+   "why": "兩種設計都存在，有的 OS 兩種都提供；要查該 OS 的規格。"
+  },
+  {
+   "q": "thread 呼叫 exec() 之後？",
+   "opts": [
+    "整個 process（包含所有 thread）被新程式取代",
+    "只有呼叫的 thread 被取代",
+    "其他 thread 繼續執行舊程式",
+    "會產生新的 process"
+   ],
+   "ans": "整個 process（包含所有 thread）被新程式取代",
+   "why": "exec 是 replace，原本幾個 thread 都不重要。"
+  },
+  {
+   "q": "Deferred cancellation 的意思是？",
+   "opts": [
+    "target thread 執行到 cancellation point 才安全結束",
+    "立刻終止 target thread",
+    "取消後由 OS 重新啟動 thread",
+    "只能取消 main thread"
+   ],
+   "ans": "target thread 執行到 cancellation point 才安全結束",
+   "why": "asynchronous 是立刻終止（較危險）；deferred 讓 thread 在安全的點結束。"
+  },
+  {
+   "q": "thread 呼叫 sleep(10) 後產生的 signal，通常交給誰處理？",
+   "opts": [
+    "產生這個 signal 的那個 thread",
+    "所有 thread",
+    "隨機一個 thread",
+    "kernel thread"
+   ],
+   "ans": "產生這個 signal 的那個 thread",
+   "why": "這類 synchronous signal 只跟呼叫者有關；像 terminate process 才需要給所有 thread。"
+  },
+  {
+   "q": "Thread pool 的兩大好處是？",
+   "opts": [
+    "不用每次臨時 create thread，且能限制同時使用的資源量",
+    "thread 永遠不會 block",
+    "不需要 synchronization",
+    "能讓 single core 真正平行"
+   ],
+   "ans": "不用每次臨時 create thread，且能限制同時使用的資源量",
+   "why": "pool size 固定（如 20、100），request 來了就重用現成的 thread。"
+  }
+ ]
+}

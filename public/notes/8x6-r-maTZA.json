@@ -1,217 +1,446 @@
 {
  "video": "8x6-r-maTZA",
  "label": "清大周志遠 第16A講 Multithreaded Programming",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
-   "title": "Shared-memory programming 的代價與三種寫法",
-   "scene": "shm-three-ways",
+   "title": "本講預告：pthread、Java thread、Linux",
+   "scene": "thr-16a-intro",
    "points": [
     {
-     "text": "shared memory 的問題：大家隨時能寫同一塊 memory，會覆蓋、順序不同結果就不同，甚至 deadlock。",
-     "t": 0
+     "t": 14,
+     "text": "後半段講 thread 實際使用：user thread 就是 thread library；介紹 pthread（C/C++）與 Java Thread class。"
     },
     {
-     "text": "為了正確而做的同步，花的時間可能比得到的好處還多；但通常還是比較快，因為不用 memory copy。",
-     "t": 19
-    },
-    {
-     "text": "第一種：pthread，用 thread 的概念做 memory sharing。",
-     "t": 36
-    },
-    {
-     "text": "第二種：process 之間透過 OS，在 run time 建立 segment 並宣告 share between processes；比 thread 重。",
-     "t": 75
-    },
-    {
-     "text": "thread by default 就共用 global variable。",
-     "t": 113
-    },
-    {
-     "text": "第三種：compiler directive，標記要平行化的程式碼，compiler 轉成 multi-thread program。",
-     "t": 131
-    },
-    {
-     "text": "例：for loop 每個 iteration create 一個 thread 平行處理大 array；最省力，但只適用有規律的 pattern。",
-     "t": 187
+     "t": 20,
+     "text": "OS 的部分講 Linux：它不區分 process 與 thread，用同一套 data structure 管理。"
     }
    ],
-   "trap": "補充：第三種在實務上就是 OpenMP 這類 #pragma omp parallel for。"
-  },
-  {
-   "title": "POSIX 與 portability",
-   "scene": "posix-api",
-   "points": [
-    {
-     "text": "programmer 想要 portability：換平台只要 recompile，不用改 code。",
-     "t": 248
-    },
-    {
-     "text": "靠的是 OS 上面的 API layer：大家支援相同的 interface，下面怎麼用 system call 實作各自決定。",
-     "t": 287
-    },
-    {
-     "text": "Windows 有自己的 API；UNIX、Linux 等 open source 社群訂了 POSIX（portable operating system interface）。",
-     "t": 325
-    },
-    {
-     "text": "Mac、Linux 符合 POSIX，recompile 就能跑；放到 Windows 可能要整個重寫。",
-     "t": 344
-    },
-    {
-     "text": "C library 屬於 POSIX；pthread 就是 POSIX 下定義的 thread API，p 指 POSIX。",
-     "t": 382
-    }
+   "cues": [
+    13.8,
+    16.4,
+    18.8,
+    20.7,
+    63.1,
+    70.2
+   ],
+   "explain": [
+    "這一講的後半段是 thread 在使用上的特性。user thread 這一層，就是 thread library，也就是寫程式要用的東西。",
+    "會簡單介紹 [[pthread]]：在 Linux 上用 C、C++ 寫程式時會用的 thread library。",
+    "Java 就不用多說，它本來就有 Thread 這個 class，可能更容易使用。",
+    "OS 的部分主要講 Linux 怎麼處理 thread。Windows 比較複雜，用不同的 data structure 管 thread 和 process，有興趣可以看課本。",
+    "Linux 沒有特別做區隔，就把 process 當作 thread 來管理。",
+    "對 programmer 來說，process 和 thread 是完全不同的 programming model，要分得很清楚；但對 OS 來說，它們都是要 CPU core 去執行指令的執行序，可以用一樣的 data structure 和機制來管理。"
    ]
   },
   {
-   "title": "pthread_create 的參數",
-   "scene": "pthread-create-args",
+   "title": "Shared-memory programming：共用與私有",
+   "scene": "thr-shm-concept",
    "points": [
     {
-     "text": "pthread library 很單純：create、terminate、thread 間溝通，其餘讓 programmer 自由控制。",
-     "t": 418
+     "t": 99,
+     "text": "thread programming 是一種平行程式；平行程式依溝通方式分 shared memory 與 message passing，thread 屬於前者。"
     },
     {
-     "text": "一個 thread 就是去執行一個 function：local variable 私有，global variable 共用。",
-     "t": 478
+     "t": 144,
+     "text": "架構：global、data segment、heap 共用；local variable（stack）私有；透過 global 或 pointer 讀寫來溝通。"
     },
     {
-     "text": "第一個參數：pointer，取得 thread ID 這個 token，之後指定要對哪個 thread 動作。",
-     "t": 537
-    },
-    {
-     "text": "第二個參數 attribute：細部控制，例如把 thread 綁在某個 core，因不同 core 的 L1 cache 不 share，可提高 hit rate。",
-     "t": 597
-    },
-    {
-     "text": "第三個是 function pointer，第四個是 function 的 argument。",
-     "t": 658
-    },
-    {
-     "text": "只給一個 argument：多個參數就包成 data structure，傳它的 pointer。",
-     "t": 735
-    },
-    {
-     "text": "型別是 void*，programmer 要自己 cast 回正確的 data structure，搞錯就讀到亂碼。",
-     "t": 799
-    },
-    {
-     "text": "回傳值也透過 pointer，要 call join 才拿得到；沒有 delete thread，function return 就結束。",
-     "t": 861
+     "t": 195,
+     "text": "優點：不用 memory copy，通常比較快；缺點：同時寫入會覆蓋、順序不同結果不同、deadlock，要做 synchronization。"
     }
+   ],
+   "cues": [
+    99.0,
+    110.0,
+    127.2,
+    144.7,
+    161.6,
+    173.6,
+    184.7,
+    195.7,
+    210.2,
+    235.3
+   ],
+   "explain": [
+    "講到 thread programming，首先要知道：它其實是一種平行程式。",
+    "平行程式最主要的差別在「怎麼溝通」。電腦系統裡的溝通可以從記憶體的角度分成兩種：shared memory programming 和 message passing programming。",
+    "thread 屬於 shared memory：大家都能存取一塊共用的記憶體空間，對裡面的 variable 讀（read）和寫（write）來溝通。",
+    "基本架構就像畫面：有一塊所有 thread 都讀得到的 memory，同時每個 thread 也有自己 local（private）的記憶體空間。",
+    "這就是一開始講的：同一個 process 產生的所有 thread，global memory 是共用的，包括 data segment 和 [[heap]]。",
+    "私有的部分是 local variable，也就是 function 在 [[stack]] 裡的變數，每個 thread 一份，別人拿不到。",
+    "溝通時通常用 global variable，或是用 malloc 動態配置出來的 pointer：一個 thread 寫進去，另一個讀出來。",
+    "跟 message passing 比通常比較快，因為不用做 memory copy（把資料複製一份傳過去）。",
+    "缺點是之後專門一章會講的 synchronization（同步）和 [[deadlock]]（互相等待卡死）：所有人隨時都能寫同一塊記憶體，可能互相覆蓋，執行順序不同結果也不同，非常麻煩。",
+    "有時為了確保程式正確、符合 programmer 的邏輯，花的時間可能比省下的還多。所以哪個比較快要看情形，不過通常還是比較好，畢竟不用 memory copy。"
+   ]
+  },
+  {
+   "title": "Shared-memory programming 的三種方式",
+   "scene": "thr-shm-ways",
+   "points": [
+    {
+     "t": 258,
+     "text": "① 用 thread 做 memory sharing（本課重點）。"
+    },
+    {
+     "t": 276,
+     "text": "② process 之間也可以：run time 建 segment，告訴 OS 要 share；但 process 較 heavy，thread 預設就共用 global。"
+    },
+    {
+     "t": 320,
+     "text": "③ compiler directive：標記規律的程式碼（例如 for loop），compiler 轉成 multithreaded program；最省力但有限制。"
+    }
+   ],
+   "trap": "補充：③ 實務上就是 OpenMP 這類 #pragma omp parallel for。",
+   "cues": [
+    258.0,
+    265.1,
+    276.4,
+    285.7,
+    305.3,
+    320.1,
+    339.5,
+    356.0,
+    366.9,
+    390.0,
+    408.5
+   ],
+   "explain": [
+    "shared memory programming 其實有很多種寫法，大致上有三種常見的用法。",
+    "第一種：用 thread 的概念做 memory sharing，就是這堂課要講的。",
+    "第二種：沒有人說一定要用 thread，就 shared memory 的概念而言，process 跟 process 之間也可以做。",
+    "做法是透過 OS：OS 是用 segment 的概念管理記憶體的，所以可以在 run time 建立一些 segment，然後告訴 OS「這個 segment 是 share between processes 的」。",
+    "但 thread 會比 process 快：process 比較 heavy，很多東西要透過 OS 才能共用；thread 預設（by default）就能共用 global variable。",
+    "第三種其實最方便，從 porting（移植程式）的角度也比較多人用：透過 compiler。",
+    "有一些 shared memory library，你只要在程式碼裡加上 compiler directive（給編譯器的指示），告訴 compiler 這一塊要平行化，它就會幫你轉成 thread 的形式。",
+    "當然能被平行化的程式碼不可能是任意程式，一定要很有規律，compiler 才認得出來、知道怎麼幫你。",
+    "最簡單的例子是 for loop：用 for loop 處理一個很大的 array 很花時間，就告訴 compiler 把每個 iteration（每一圈）都 create 一個 thread，同時平行處理。",
+    "compiler 就把它 convert 成 multithreaded program。這種方式最省 programmer 的力氣，但只能用在有特定 pattern 的程式碼。",
+    "這堂課主要講的是第一種：thread。"
+   ]
+  },
+  {
+   "title": "POSIX 與 portability",
+   "scene": "thr-posix",
+   "points": [
+    {
+     "t": 417,
+     "text": "programmer 想要 portability：換平台只要 recompile，不用改 code；靠的是 OS 上面的 API layer。"
+    },
+    {
+     "t": 483,
+     "text": "Windows 有自己的 API；Linux、UNIX 等 open source 社群訂了 POSIX（Portable Operating System Interface）。"
+    },
+    {
+     "t": 528,
+     "text": "Mac、Linux 符合 POSIX，recompile 就能跑；搬到 Windows 可能要重寫。pthread 的 p 就是 POSIX。"
+    }
+   ],
+   "cues": [
+    417.8,
+    431.5,
+    449.3,
+    461.0,
+    483.0,
+    492.1,
+    507.6,
+    528.7,
+    539.0,
+    546.0
+   ],
+   "explain": [
+    "thread 最主要用在 Linux，或者說 POSIX 的平台上。先回想第一章講過的 API 和 system call 的概念。",
+    "programmer 都喜歡 portability（可攜性）：在某個平台、某個作業系統上寫的程式，只要 re-compile（重新編譯），不用 re-modify（改程式碼），就能在另一台電腦上執行。",
+    "怎麼做到？就是之前提過的：所有 OS 上面還有一層 API layer（介面層）。",
+    "不同作業系統可以有自己複雜的 kernel module，甚至定義自己的 [[system call]]；但在 API 這一層大家同意使用完全相同的 interface，下面怎麼用 system call 實現，是各自的事。",
+    "早期開發作業系統時，Windows 是一大宗，它當然有自己的 API。",
+    "Windows 以外，尤其是 open source 的社群，像 Linux、早期的 UNIX，這些作業系統的 developer 一起訂了一個 API 叫 POSIX。",
+    "POSIX 是 Portable Operating System Interface 的縮寫：所有這些作業系統的 API 完全相同，都要符合這個 standard（標準）。",
+    "只要照這個 standard 寫程式，基本上就能跑在很多系統上。Mac 也符合，所以在 Mac、Linux 上程式 recompile 就能跑。",
+    "可是搬到 Windows 上就不一樣了，可能要整個重寫。",
+    "之前介紹 API 時也提過：C library 就屬於 POSIX 的一部分。Pthread 是 thread library，裡面的 P 指的就是 POSIX，也就是這個 standard 下定義的 thread API。"
+   ]
+  },
+  {
+   "title": "pthread 的流程：create → function → join",
+   "scene": "thr-pt-flow",
+   "points": [
+    {
+     "t": 587,
+     "text": "pthread 很單純：只提供 create、terminate、thread 間溝通；thread 裡做什麼由 programmer 決定。"
+    },
+    {
+     "t": 615,
+     "text": "pthread_create 讓 thread 去執行一個 function（local 私有、global 共用）；結束後 join 把結果帶回 main thread。"
+    }
+   ],
+   "cues": [
+    587.7,
+    593.2,
+    615.3,
+    627.6,
+    647.1,
+    659.9,
+    674.6
+   ],
+   "explain": [
+    "pthread library 的基本使用其實蠻單純、蠻容易的。",
+    "thread programming 非常有彈性：它只讓 programmer 可以 create thread、terminate（結束）thread，再加上一些 thread 之間溝通的簡單 function；thread 裡面做什麼完全由 programmer 自由控制。",
+    "流程中最重要的 library call 是 pthread_create，用來 create 一個 thread。",
+    "create 出來的 thread 要執行什麼？它就是對到一個 function。在 pthread 和大部分 thread library 裡，一個 thread 的定義就是「去執行一個 function」。",
+    "所以 function 裡的 local variable 是 private 的，function 之間的 global variable 則是共用的，很好體會。",
+    "結束之後有一個 join：把 thread 的結果回傳到所謂的 main thread（你的 main program）裡。這樣就完成一個 thread programming。",
+    "可以同時 call 很多次 pthread_create，就 create 出非常多的 thread。"
+   ]
+  },
+  {
+   "title": "pthread_create 的四個參數",
+   "scene": "thr-pt-args",
+   "points": [
+    {
+     "t": 681,
+     "text": "① pthread_t *：回傳 thread ID（token），之後用它指定 thread。"
+    },
+    {
+     "t": 707,
+     "text": "② attribute：細部控制，例如把 thread 綁在某個 core（L1 cache 不共用，可提高 hit rate）；本質是每個 bit 一個選項的 integer。"
+    },
+    {
+     "t": 796,
+     "text": "③ function pointer、④ 一個 void* argument：多個參數要包成 struct 傳 pointer，進 function 後自己 cast。"
+    },
+    {
+     "t": 923,
+     "text": "回傳值也透過 pointer，要 join 才拿得到；沒有 delete thread，function return 就結束。"
+    }
+   ],
+   "cues": [
+    681.9,
+    686.0,
+    700.2,
+    707.7,
+    720.7,
+    751.0,
+    765.1,
+    796.6,
+    809.0,
+    818.5,
+    848.7,
+    868.0,
+    889.5,
+    923.6,
+    945.2,
+    967.5
+   ],
+   "explain": [
+    "來看 pthread_create 有哪些 argument（參數）。",
+    "第一個其實是「回傳值」：你給它一個位置（pointer），它把這個 thread 的 ID 寫進去。可以想成 create 之後拿到一個 token（號碼牌）。ID 的值是示意。",
+    "之後就用這個 token 指定你要對哪一個 thread 做動作，例如 join 它。",
+    "第二個 argument 是 attribute（屬性）：一些比較細的設定，控制 thread 被 create 之後的行為。",
+    "例如在 multi-core 系統上，有時想把 thread 綁在某一個 core 上。因為不同 core 的 L1 [[cache]] 不共用，綁在同一個 core 可以提高 cache 的 hit rate（命中率）。",
+    "OS 預設不會幫你限制，哪個 core 有空就跑；如果想告訴 OS 這些 hint（提示），就透過 attribute。",
+    "attribute 其實只是一個 integer（整數），每個 bit 代表某個行為 enable 或 disable，照 API 的定義去設定就好。bit 內容是示意。",
+    "第三個是 function pointer（函式指標），告訴它這個 thread 要執行哪一個 function。",
+    "最後一個是 function 的 argument。它的行為就像拿這個 argument 去 call 那個 function。",
+    "可是 function 通常不只一個參數。API 為了越簡潔、越 general 越好，不可能定義一個參數版、兩個參數版……所以只給你一個 argument。",
+    "要很多個 argument 怎麼辦？很簡單：把它們包進一個 data structure（例如 struct），再把這個 structure 的 pointer 傳進去就好。",
+    "到了 function 裡面，再自己把這個 data structure 解開，讀出每個 member 的值。",
+    "pthread 幫你做的事比較少：參數型別是 void pointer（可以指向任何型別），所以傳進來後 programmer 要自己 cast（轉型）成正確的 data structure；搞錯了就會讀出亂碼，這要 programmer 自己負責。",
+    "return 也一樣：不能直接回傳一個 value，要像傳入參數一樣，透過一個 pointer 傳出來。",
+    "要讀回這個值就得 call join；不 join 就拿不到 return 的值。",
+    "沒有所謂的 delete thread：thread 就是執行一個 function，function return，thread 就結束了；main thread 只是決定要不要把值讀回來。"
    ]
   },
   {
    "title": "Hello world 範例與 join",
-   "scene": "pthread-hello-join",
+   "scene": "thr-pt-hello",
    "points": [
     {
-     "text": "main program 只是 print hello world。",
-     "t": 882
+     "t": 982,
+     "text": "範例：array 存 thread ID，for loop create 多個 thread，每個印 Hello World；argument 轉成 void* 傳入，function 內再 cast。"
     },
     {
-     "text": "用 array 存 thread ID，可以 create 任意數量；user thread 多不代表 map 到不同的 kernel thread。",
-     "t": 901
+     "t": 1057,
+     "text": "再用 for loop 一個一個 join，讀回 return 值。"
     },
     {
-     "text": "用 for loop create，argument 傳 thread ID，要轉成 void* 傳入、function 內再 cast。",
-     "t": 940
-    },
-    {
-     "text": "每個 thread 執行同一行，但 thread ID 不同。",
-     "t": 961
-    },
-    {
-     "text": "再寫一個 for loop 一個一個 join，把每個 thread 的回傳值讀回來。",
-     "t": 996
-    },
-    {
-     "text": "model：main thread 執行非平行部分，需要平行時 create，做完 join 回來繼續，可以動態重複。",
-     "t": 1036
+     "t": 1088,
+     "text": "model：main thread 跑非平行部分，需要平行就 create，做完 join 回來繼續，可以動態重複。"
     }
+   ],
+   "cues": [
+    982.7,
+    991.1,
+    998.5,
+    1012.5,
+    1021.8,
+    1033.8,
+    1042.5,
+    1057.3,
+    1066.8,
+    1079.0,
+    1088.3,
+    1098.0,
+    1106.0
+   ],
+   "explain": [
+    "來看一個簡單的 example：main program 去 create thread，每個 thread 只是 print Hello World。",
+    "create thread 時用一個 array 存 thread ID，所以可以 create 任意數量的 thread，沒有限制。",
+    "這就是 user thread：通常可以有很多個，但不代表它們會 map 到不同的 kernel thread。",
+    "用一個 for loop，就 create 出很多個 thread。",
+    "傳進去的 argument 就是 thread 的 ID。注意必須先把它轉成 void* 才能傳進去。",
+    "讀進 function 的時候，function 必須對它做 cast，轉回原來的型別。pthread 就是必須這麼做。",
+    "每個 thread 都會執行 printf 這一行，但印出來的 thread ID 不同；誰先印不一定。",
+    "所以 pthread 基本上要用到的 library，就是 create，然後 join 回來。",
+    "剛剛提到的 join，最主要的目的就是把 thread 的 return 值讀回來。",
+    "create 了很多 thread，就再寫一個 for loop 一個一個 join 回來，把每個 thread 的 return 值讀回來。",
+    "所以一般 thread programming 的 model 是：有一個 main thread，先執行不需要平行的部分。",
+    "有平行的部分就開始 create thread：每個 thread 執行不同或相同的 function，傳進不同的 data。",
+    "執行完再 join，把結果全部取回 main thread，然後繼續運作；之後還可以再動態 create、再 join。"
    ]
   },
   {
    "title": "pthread_detach",
-   "scene": "pthread-detach",
+   "scene": "thr-pt-detach",
    "points": [
     {
-     "text": "不讀回資料就不會 call join，但大部分 thread library 會要求 call pthread_detach。",
-     "t": 1077
+     "t": 1120,
+     "text": "不讀回資料就不會 join，但大部分 thread library 要求 call pthread_detach。"
     },
     {
-     "text": "否則 library 不知道未來會不會 join，結束的 thread 一直 hang 著，program 也無法結束。",
-     "t": 1096
+     "t": 1145,
+     "text": "否則 library 不知道會不會有人 join，結束的 thread 一直 hang 著，program 也無法結束。"
     },
     {
-     "text": "好習慣：create 之後要嘛 join，要嘛立刻 detach，結束後 OS 立刻清掉它的 memory。",
-     "t": 1132
+     "t": 1167,
+     "text": "好習慣：create 後要嘛 join、要嘛立刻 detach；detach 後永遠不能 join。"
     },
     {
-     "text": "detach 之後永遠不能 join；除了 global variable，main 和 worker thread 不再有關聯。",
-     "t": 1150
-    },
-    {
-     "text": "pthread 程式比較麻煩的是 synchronization（lock / unlock），留到同步章節補充。",
-     "t": 1187
+     "t": 1218,
+     "text": "pthread 主要就是 create、join；麻煩的是 synchronization（lock / unlock 留到同步章）。"
     }
+   ],
+   "cues": [
+    1120.0,
+    1131.0,
+    1138.0,
+    1145.6,
+    1154.6,
+    1167.4,
+    1183.9,
+    1192.3,
+    1198.6,
+    1218.2,
+    1236.4
+   ],
+   "explain": [
+    "有一件事要比較小心：create thread 之後，如果你不需要把資料讀回來，當然就不會 call join。",
+    "可是不 call join 的話，大部分 thread library 會要求你去 call pthread_detach。",
+    "意思是告訴 thread library：這個 thread 結束之後，直接把它的 resource free（釋放）掉就好。",
+    "如果不 call，程式畢竟是 run time 在跑，OS 也不知道未來會不會有人 join 它。",
+    "所以結束掉的 thread 會一直 hang 在那裡，它的 return 值一直被 keep 著，你的 program 也就無法結束，因為不知道你什麼時候會 join。",
+    "比較好的 programming 習慣是：create 完之後，要嘛會去 join；不 join 的話就立刻 detach。",
+    "這樣它結束之後，OS 就會立刻把它用到的記憶體空間清乾淨，也不會有 hang 在那邊的問題。",
+    "當然，一旦 detach 了，就永遠不能再 join，定義就是這樣。",
+    "detach 代表之後 main thread 跟這個 worker thread 沒有關聯了，除了使用同樣的 global variable 之外，它們不會再 join 在一起。",
+    "pthread 主要就是這兩個（create、join／detach）。thread programming 比較麻煩的是 synchronization（同步）。",
+    "pthread 有提供一兩個 lock、unlock 的 library function；什麼時候該 lock、什麼時候 unlock，等講完 synchronization 那章再回來補充。"
    ]
   },
   {
    "title": "Java thread",
-   "scene": "java-thread-jvm",
+   "scene": "thr-java",
    "points": [
     {
-     "text": "Java 有專門的 Thread class，implement Runnable interface。",
-     "t": 1224
+     "t": 1263,
+     "text": "Java 有 Thread class（implement Runnable）；Java 有自己的 virtual machine，portability 比其他語言好。"
     },
     {
-     "text": "Java 有自己的 virtual machine，像一層 OS，所以 portability 比其他語言好。",
-     "t": 1264
+     "t": 1311,
+     "text": "Windows 的 JVM 把 Java thread 對到 Win32 thread，UNIX 的 JVM 對到 pthread；pthread 不能跑在 Windows，Java 可以。"
     },
     {
-     "text": "裝 Windows 的 JVM，Java thread 對到 Win32 thread；UNIX 的 JVM 對到 pthread。",
-     "t": 1303
-    },
-    {
-     "text": "pthread 不能跑在 Windows，寫 Java 卻可以，因為隔了一層 VM。",
-     "t": 1338
-    },
-    {
-     "text": "對到 one-to-one 還是 many-to-many 依 OS 而定，由 JVM 控制；pthread 則是 programmer 透過 attribute 控制。",
-     "t": 1376
+     "t": 1373,
+     "text": "對到 one-to-one 或 many-to-many 依 OS 而定，由 JVM 控制；pthread 則是 programmer 透過 attribute 控制。"
     }
+   ],
+   "cues": [
+    1263.3,
+    1287.0,
+    1296.0,
+    1304.0,
+    1311.7,
+    1323.1,
+    1331.7,
+    1342.4,
+    1349.2,
+    1373.5,
+    1392.5
+   ],
+   "explain": [
+    "Java thread：Java 本來就有一個專門處理 thread 的 Thread class，它 implement（實作）Runnable 這個 interface。知道就好，需要時再自己去用。",
+    "Java 的特性是它有自己的 virtual machine（虛擬機器，JVM），自己就像一個 OS 一樣。",
+    "所以 Java 的 portability 比其他語言都好，因為中間隔了一層 virtual machine。",
+    "今天寫了一個 Java program，可以放在 Windows 上，也可以放在 Linux 上。",
+    "因為安裝 Java machine 時，你可以選 Windows 上的 Java machine，或 Linux（POSIX）上的 Java machine。",
+    "如果是 Windows 的 Java machine，Java 這邊的 thread 就會對到 Win32 thread。",
+    "如果是 UNIX（Linux），它就會對到 pthread。",
+    "也就是說它隔了一層：Java 上 create 一個 thread，會先對到那個 OS 的 user thread library，再往下到 kernel。",
+    "所以 portability 更好：剛剛的 pthread 沒辦法 run 在 Windows 上，可是寫 Java 就可以，因為 Java 多了一層 virtual machine，會對到各個 OS 的 user thread。",
+    "它甚至對到不同作業系統時，behavior（行為）可能不一樣，看那個 OS 的設計：可能是 one-to-one，比較複雜的 OS 可能變成 many-to-many。",
+    "這是由 JVM 幫忙控制的；如果是 pthread，就是 programmer 自己透過 attribute 去控制一些設定。"
    ]
   },
   {
    "title": "Linux thread：clone()",
-   "scene": "linux-clone",
+   "scene": "thr-clone",
    "points": [
     {
-     "text": "這裡講的是 kernel 怎麼管理 thread；Linux 某種程度根本不 support thread（對 OS 而言）。",
-     "t": 1414
+     "t": 1411,
+     "text": "Linux thread 指 kernel 怎麼管 thread：某種程度上 Linux 不 support thread，把每個 thread 當成一個 process。"
     },
     {
-     "text": "programmer 用 pthread 照樣有 thread，但 Linux 把每個 thread 當成一個 process。",
-     "t": 1452
+     "t": 1465,
+     "text": "fork 出來的兩個 process memory 完全不相通；thread 需要部分共用，所以 Linux 提供 clone system call。"
     },
     {
-     "text": "fork 出來的兩個 process memory 完全不相通，要 copy。",
-     "t": 1469
-    },
-    {
-     "text": "thread 需要部分 memory 共用：Linux 另提供 clone system call 來 create process。",
-     "t": 1487
-    },
-    {
-     "text": "clone 的 flag 控制 file system、memory space、signal 等資源是否 share。",
-     "t": 1544
-    },
-    {
-     "text": "所以 kernel 不必另外寫 code 管理 thread，就是 process 加上不同的 share 設定。",
-     "t": 1583
+     "t": 1530,
+     "text": "clone 的 flag 決定 file system、memory space、signal 等是否 share；kernel 不必另寫 code 管 thread。"
     }
+   ],
+   "trap": "clone() 的 flag 例如 CLONE_FS、CLONE_VM、CLONE_SIGHAND、CLONE_FILES：全部共用 ≈ thread；全部不共用 ≈ fork。Linux 統稱 task。",
+   "cues": [
+    1411.1,
+    1424.1,
+    1432.1,
+    1437.3,
+    1457.5,
+    1465.4,
+    1479.5,
+    1489.5,
+    1501.0,
+    1530.3,
+    1546.2,
+    1556.7,
+    1568.0,
+    1574.3
+   ],
+   "explain": [
+    "最後講 Linux 的 thread。這跟剛剛完全不同：這裡指的是 OS kernel 怎麼管理 thread。",
+    "選 Linux 來講是因為它非常好講：因為它根本就是 process。",
+    "某種程度來講，Linux 根本不 support thread，這是指對 OS 本身而言。",
+    "對 programmer 來說還是有 thread，因為 programmer 用的是 pthread library，可以在 process 裡 create thread，就像剛才介紹的。",
+    "但這不代表 OS 真的把每個 thread 當成 thread 來管。在 Linux 裡，你 create 的每一個 thread，它都當作一個 process。",
+    "差別在哪？之前教過：要 create 一個 process 用 [[fork]]，fork 的行為是兩個人的記憶體完全不相通，所以要 copy 一份。",
+    "可是透過 pthread 你會 create 一些很特別的 process：它們有些記憶體是共用的。",
+    "所以 Linux 的做法是另外提供一個 system call，叫做 clone。它的目的一樣是 create process，但有比較多的 argument。",
+    "這些 argument 可以讓你控制哪些 segment 要共用、哪些不要共用，直接把新 process 變成像 thread 那樣的行為。",
+    "clone 裡有一些 flag，每個 flag 很明確地定義一種資源：例如 file system，也就是 parent 和 child 之間 file handler（開啟的檔案）是不是共用，你開了之後另一個人讀不讀得到。",
+    "還有 memory space 是不是共用、signal（訊號處理）的部分等等，這些 resource 都各有一個 flag。",
+    "用 0 跟 1 控制每個 flag，就可以 create 出一個新的 process。flag 的寫法是示意。",
+    "很多 memory content 預設就設成共用，這就是 Linux create thread 的方式。",
+    "所以 kernel 不需要另外寫 code 去 maintain、管理 thread：它就是 process，只是 create 時用一個 system call 和很多參數控制哪些記憶體內容共用、哪些不共用。"
    ]
   }
  ],
@@ -232,7 +461,7 @@
    "opts": [
     "包成 struct，傳它的 pointer",
     "呼叫多次 pthread_create",
-    "改用 global variable 以外沒有辦法",
+    "只能改用 global variable",
     "用 pthread_join 傳"
    ],
    "ans": "包成 struct，傳它的 pointer",
@@ -250,7 +479,7 @@
    "why": "回傳值透過 pointer，要 join 才讀得到。"
   },
   {
-   "q": "不 join 的 thread 應該？",
+   "q": "不打算 join 的 thread 應該？",
    "opts": [
     "呼叫 pthread_detach",
     "呼叫 kill",
@@ -258,7 +487,18 @@
     "呼叫 fork"
    ],
    "ans": "呼叫 pthread_detach",
-   "why": "否則結束後資源一直 hang 著；detach 後不能再 join。"
+   "why": "否則結束後資源一直 hang 著；detach 後就不能再 join。"
+  },
+  {
+   "q": "Shared-memory（thread）溝通比 message passing 快的主要原因？",
+   "opts": [
+    "不用做 memory copy",
+    "不會有同步問題",
+    "不需要 CPU",
+    "可以跨電腦"
+   ],
+   "ans": "不用做 memory copy",
+   "why": "直接讀寫共用的 global variable；代價是要處理 synchronization。"
   },
   {
    "q": "Linux kernel 怎麼實作 thread？",
@@ -282,6 +522,5 @@
    "ans": "JVM 這層會對到各 OS 的 thread library（Win32 thread、pthread）",
    "why": "隔了一層 virtual machine，同一份程式可在不同 OS 執行。"
   }
- ],
- "timing": "estimated"
+ ]
 }

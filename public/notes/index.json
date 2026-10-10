@@ -403,9 +403,9 @@
  },
  "8x6-r-maTZA": {
   "label": "清大周志遠 第16A講 Multithreaded Programming",
-  "points": 42,
-  "quiz": 6,
-  "cued": false
+  "points": 30,
+  "quiz": 7,
+  "cued": true
  },
  "9bkvws_vqLU": {
   "label": "MIT 6.006 Rec7：Comparison/Counting/Radix Sort",
@@ -851,6 +851,12 @@
   "quiz": 6,
   "cued": false
  },
+ "GO4Lbeh8M_0": {
+  "label": "清大周志遠 第15B講 Thread Introduction(續)",
+  "points": 20,
+  "quiz": 6,
+  "cued": true
+ },
  "gqphGLSGyQ4": {
   "label": "台大林軒田 DSA 2-3-4 Tree / Red-Black Tree",
   "points": 201,
@@ -927,6 +933,12 @@
   "label": "Abdul Bari：2.1.2 Recurrence Relation #2",
   "points": 25,
   "quiz": 5,
+  "cued": true
+ },
+ "iEipIUjbQxk": {
+  "label": "清大周志遠 第15A講 Thread Introduction",
+  "points": 34,
+  "quiz": 6,
   "cued": true
  },
  "IFEFVXvjiHY": {
@@ -1065,6 +1077,12 @@
   "label": "清大周志遠 第5C講 OS Application Interface",
   "points": 27,
   "quiz": 7,
+  "cued": true
+ },
+ "LsgJDGJIrJI": {
+  "label": "Multithreading Models in Operating Systems（Many-to-One/One-to-One/Many-to-Many）",
+  "points": 8,
+  "quiz": 5,
   "cued": true
  },
  "lY1SKWSR3pk": {
@@ -1689,6 +1707,12 @@
   "label": "交大彭文志 Lec21 Graph (4/4)",
   "points": 90,
   "quiz": 7,
+  "cued": true
+ },
+ "Z9OPaNpNwXk": {
+  "label": "清大周志遠 第16B講 Threading Issues",
+  "points": 13,
+  "quiz": 5,
   "cued": true
  },
  "Zc54gFhdpLA": {

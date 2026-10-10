@@ -1,0 +1,191 @@
+{
+ "video": "LsgJDGJIrJI",
+ "label": "Multithreading Models in Operating Systems（Many-to-One/One-to-One/Many-to-Many）",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "三種 model 與 user / kernel thread",
+   "scene": "thr-neso-intro",
+   "points": [
+    {
+     "t": 0,
+     "text": "三種 multithreading model：many-to-one、one-to-one、many-to-many。"
+    },
+    {
+     "t": 15,
+     "text": "像 process 有 user mode / kernel mode，thread 也有 user thread / kernel thread；user thread 要在 kernel thread 上執行。"
+    }
+   ],
+   "cues": [
+    0.0,
+    6.8,
+    15.7,
+    21.6
+   ],
+   "explain": [
+    "這支影片討論 multithreading model（多執行緒模型），講者用印度語夾英文講解。",
+    "一共有三種 model：many-to-one、one-to-one、many-to-many。",
+    "開始前先懂一個重點：就像 process 有 [[user mode]] 和 [[kernel mode]]，thread 也分 [[user thread]] 和 [[kernel thread]]。",
+    "任何 user thread 要執行，都必須在某個 kernel thread 上執行。三種 model 的差別就在「怎麼對應」。"
+   ]
+  },
+  {
+   "title": "Many-to-One",
+   "scene": "thr-neso-m1",
+   "points": [
+    {
+     "t": 26,
+     "text": "多個 user thread 對到一個 kernel thread；管理都在 user space，有 context switch 但沒有 mode switch。"
+    },
+    {
+     "t": 62,
+     "text": "優點：creation、context switch 很快；缺點：一個 thread block 整個 process block，沒有 parallelism。"
+    }
+   ],
+   "cues": [
+    26.9,
+    35.1,
+    38.1,
+    52.5,
+    62.7,
+    74.4,
+    107.7,
+    119.0
+   ],
+   "explain": [
+    "Many-to-one：把多個 user-level thread 對到一個 kernel thread。圖上有 4 個 user thread，全部 map 到同一個 kernel thread。",
+    "同一時間只有一個能 map 上去：先執行這一個，再執行下一個，輪流使用。",
+    "這些 thread 的管理全部在 user space 進行，不進 kernel space，所以不會有 mode switching（user mode 和 kernel mode 之間的切換）。",
+    "[[context switch]]（從一個 thread 換到另一個 thread 執行）還是有的：停下這個、改跑那個；但沒有 mode switching。",
+    "優點：thread creation 和 context switching 非常快，因為都在 user space 做，不需要 [[system call]]，也沒有 mode switching。",
+    "缺點：blocking issue。這 4 個 thread 屬於同一個 process；如果正在執行的 T1 因為某種原因 block 了，整個 process 都會被 block。",
+    "因為 kernel 根本不知道這個 process 被分成好幾個 thread，它以為「這只是一個 process」，所以 T1 一 block，整個就 block。",
+    "也沒有 parallelism（真正同時執行）：一次只有一個 thread 能 access kernel。"
+   ]
+  },
+  {
+   "title": "One-to-One",
+   "scene": "thr-neso-o1",
+   "points": [
+    {
+     "t": 128,
+     "text": "每個 user thread 剛好對到一個 kernel thread。"
+    },
+    {
+     "t": 163,
+     "text": "優點：true parallelism、沒有 blocking issue；缺點：kernel 參與 overhead 高、thread 數量有上限、creation 與切換較貴。"
+    }
+   ],
+   "cues": [
+    128.1,
+    145.0,
+    163.4,
+    172.0,
+    183.3,
+    208.4,
+    231.4
+   ],
+   "explain": [
+    "One-to-one：看圖就懂，每個 thread 都有一個專屬的 kernel thread。",
+    "也就是 each user thread maps to exactly one kernel thread：每個 user thread 剛好對應一個 kernel thread。",
+    "優點：parallelism。每個 thread 都可以分開、同時執行（在多核心上真的一起跑）。",
+    "沒有 blocking issue：如果這個 thread block 了，其他的會不會也被 block？答案是不會，因為每個 thread 都有自己的 kernel thread。",
+    "缺點：higher overhead due to kernel involvement。建立 thread 不只在 user space，kernel 也要參與（建立對應的 kernel thread），所以額外成本比較高。",
+    "OS 可能會限制 thread 的最大數量。講者假設：如果最多只能建 100 個 kernel thread，同一時間就只能執行 100 個 user thread（100 是舉例）。",
+    "thread creation 和 context switching 比較貴，因為這裡會發生 mode change；前一種 many-to-one 則沒有。"
+   ]
+  },
+  {
+   "title": "Many-to-Many",
+   "scene": "thr-neso-mm",
+   "points": [
+    {
+     "t": 240,
+     "text": "多個 user thread 對到較少或相等數量的 kernel thread。"
+    },
+    {
+     "t": 271,
+     "text": "優點：true parallelism、無 blocking issue、scalability 比 one-to-one 好；缺點：設計實作複雜、scheduling 難、creation 與切換仍貴。"
+    }
+   ],
+   "trap": "kernel thread 數量 ≤ user thread 數量；課本補充：Two-level model 是 many-to-many 再允許把某個 user thread 綁定到一個 kernel thread。",
+   "cues": [
+    240.2,
+    246.6,
+    263.6,
+    271.0,
+    281.2,
+    290.6,
+    303.0,
+    310.8
+   ],
+   "explain": [
+    "下一個 multithreading model 是 many-to-many。",
+    "It maps many user-level threads to a smaller or equal number of kernel threads：多個 user thread 對到較少或相等數量的 kernel thread。",
+    "也就是說 kernel thread 的數量會等於或少於 user thread，不會比 user thread 多。",
+    "優點：true parallelism，多個 thread 可以跑在多個 core 上，因為有好幾個 kernel thread 可以同時執行。",
+    "沒有 blocking issue：某個 thread 被 assign 到的 kernel thread block 了，其他 thread 可以用別的 kernel thread 繼續執行。",
+    "scalability（擴充性）比 one-to-one 好：one-to-one 是一個 thread 固定一個 kernel thread；這裡一個 thread 可以被 assign 到任何一個 kernel thread。",
+    "缺點：設計和實作比較複雜，thread scheduling（排程）也比較困難，因為是多對多。",
+    "thread creation 和 context switching 一樣比較貴：kernel 也參與，而且會有 mode switching。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Many-to-One model 為什麼 thread creation 與切換很快？",
+   "opts": [
+    "管理都在 user space，不需要 system call 與 mode switching",
+    "kernel thread 很多",
+    "每個 thread 都有自己的 kernel thread",
+    "它不需要 context switch"
+   ],
+   "ans": "管理都在 user space，不需要 system call 與 mode switching",
+   "why": "仍有 context switch，但沒有 user/kernel mode 切換。"
+  },
+  {
+   "q": "Many-to-One 中 T1 被 block，為什麼整個 process 也 block？",
+   "opts": [
+    "kernel 不知道 process 裡分成多個 thread，只看到一個執行單位",
+    "其他 thread 自動結束",
+    "OS 會 kill 整個 process",
+    "因為有 mode switching"
+   ],
+   "ans": "kernel 不知道 process 裡分成多個 thread，只看到一個執行單位",
+   "why": "唯一的 kernel thread 被卡住，大家都不能跑。"
+  },
+  {
+   "q": "One-to-One model 的缺點是？",
+   "opts": [
+    "kernel 參與、overhead 高，且 OS 可能限制 thread 數量",
+    "一個 block 全部 block",
+    "沒有 parallelism",
+    "無法在多核心上執行"
+   ],
+   "ans": "kernel 參與、overhead 高，且 OS 可能限制 thread 數量",
+   "why": "每個 user thread 都要一個 kernel thread，建立與切換都較貴。"
+  },
+  {
+   "q": "Many-to-Many model 中，kernel thread 的數量？",
+   "opts": [
+    "小於或等於 user thread 的數量",
+    "一定大於 user thread",
+    "一定只有一個",
+    "一定等於 CPU 核心數"
+   ],
+   "ans": "小於或等於 user thread 的數量",
+   "why": "maps many user-level threads to a smaller or equal number of kernel threads。"
+  },
+  {
+   "q": "下列哪個 model 沒有 true parallelism？",
+   "opts": [
+    "Many-to-One",
+    "One-to-One",
+    "Many-to-Many",
+    "三者都有"
+   ],
+   "ans": "Many-to-One",
+   "why": "一次只有一個 thread 能進 kernel 執行。"
+  }
+ ]
+}

@@ -1,0 +1,513 @@
+{
+ "video": "iEipIUjbQxk",
+ "label": "清大周志遠 第15A講 Thread Introduction",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場：第四章 Thread",
+   "scene": null,
+   "points": [
+    {
+     "t": 2,
+     "text": "第四章 Thread：期中不考、期末才考；本章最短、最好讀，也最常用到。"
+    },
+    {
+     "t": 42,
+     "text": "現在電腦都是多核心、計算量越來越大，一定要平行；最容易取得的平行方式就是 thread。"
+    },
+    {
+     "t": 71,
+     "text": "以前有 thread 程式作業，現在改成自己練習；pthread library 不難用，值得練。"
+    }
+   ]
+  },
+  {
+   "title": "本章地圖",
+   "scene": "thr-15a-map",
+   "points": [
+    {
+     "t": 111,
+     "text": "本章先正式定義 thread，以及它和 process 的差別（找工作必問）。"
+    },
+    {
+     "t": 138,
+     "text": "thread 分 user level 與 kernel level 兩層，要知道兩者執行時的關係。"
+    },
+    {
+     "t": 167,
+     "text": "再介紹 thread library（create thread 的 API），最後談使用上的 issues。"
+    }
+   ],
+   "cues": [
+    111.7,
+    119.9,
+    138.7,
+    157.3,
+    160.4,
+    167.0,
+    178.5
+   ],
+   "explain": [
+    "這一講要正式定義什麼是 [[thread]]（執行緒）。可以先把 thread 想成「程式裡一條正在跑的執行路線」。",
+    "接著要比較 thread 跟 process（行程）差在哪。老師說這是 101 等級的基本題，找工作面試常被問，答不出來就不會被考慮。",
+    "很多人沒意識到：thread 其實分兩層。就像 OS 分 user（使用者程式那層）和 kernel（作業系統核心那層），thread 也分 user level 和 kernel level。",
+    "兩層的東西都叫 thread，但其實是不同的東西：[[user thread]] 是程式設計師建立的，[[kernel thread]] 是 OS 真正拿去排程執行的。",
+    "電腦執行時，這兩種 thread 之間是什麼關係、OS 怎麼管理它們，是本章的重點之一（後面會講 mapping model）。",
+    "之後會介紹 thread library：一組可以呼叫的 API（函式），例如 pthread_create 用來建立 thread、pthread_join 用來等它結束。",
+    "最後會講 thread 使用上要特別注意的 issue，因為 thread 畢竟不是 process，有些行為不一樣。"
+   ]
+  },
+  {
+   "title": "什麼是 thread：lightweight process",
+   "scene": "thr-15a-what",
+   "points": [
+    {
+     "t": 188,
+     "text": "thread 又叫 lightweight process：跟 process 的界線很模糊。"
+    },
+    {
+     "t": 208,
+     "text": "把 process 的一些東西拿掉、或跟其他 thread 共用，就是 thread；process 比較像容器。"
+    },
+    {
+     "t": 238,
+     "text": "真正在 CPU core 上執行的是 thread：thread 是 utilize CPU 的最基本單位。"
+    }
+   ],
+   "cues": [
+    188.2,
+    192.9,
+    198.4,
+    208.0,
+    231.0,
+    238.7,
+    246.8,
+    250.5,
+    258.5
+   ],
+   "explain": [
+    "那什麼是 thread？先從定義開始。",
+    "thread 又被叫做 lightweight process，意思是「輕量級的 process」。左邊大的是 process，右邊小的是 thread。",
+    "從名字就看得出來：thread 跟 process 的界線其實很模糊，它不是完全不同的東西，只是比較「輕」。",
+    "一個完整的 process 有自己的 code、data、files、stack。把其中一些拿掉，或者跟其他 thread 共用（畫面上 code、data、files 被搬到共用區），這樣的 process 就叫 thread。",
+    "所以在電腦系統裡，process 有點像是把 thread 裝起來的容器。",
+    "真正在使用 CPU core 做計算的，其實是 thread。core 就是 CPU 裡能獨立執行指令的「核心」。",
+    "因為一個 process 可以拆成很多個 thread。",
+    "最後真正執行在 CPU core 上的是 thread，而不是 process：是「某個 process 的某個 thread」正在用這個 core。",
+    "所以 thread 才是 OS 使用 CPU 的最基本單位（basic unit of CPU utilization）。"
+   ]
+  },
+  {
+   "title": "共用的 memory content：code、data、resources",
+   "scene": "thr-15a-shared",
+   "points": [
+    {
+     "t": 264,
+     "text": "lightweight 要從 memory content 看：同一 process 的 threads 共用 code、data、resource（如開啟的檔案）。"
+    },
+    {
+     "t": 311,
+     "text": "用 segmentation 的角度：create thread 只要讓 segment table 指到同樣的 segment。"
+    },
+    {
+     "t": 337,
+     "text": "因為共用、不用另外準備，所以 thread 輕。"
+    }
+   ],
+   "cues": [
+    264.5,
+    272.3,
+    286.0,
+    295.0,
+    311.0,
+    322.2,
+    337.7
+   ],
+   "explain": [
+    "什麼叫 lightweight（輕量）？最重要的觀點是看 memory content：它在記憶體裡放了哪些東西。",
+    "之前講 process 時說過，process 的重點是記憶體裡的內容：code segment（程式指令）、data segment（全域變數）等等。",
+    "thread 的定義很明確：code、data、resource（例如開啟的檔案）這三塊 memory content 是 shared（共用）的，畫面上亮起來的就是這三塊。",
+    "同一個 process 裡的不同 thread（T1、T2）都指向同樣的這三塊。這是現代大部分 OS 對 thread 最基本（minimum）的定義。",
+    "學過 [[segmentation]] 會更清楚：這些就是不同的 segment，segment table 裡一個 segment 一個 entry（表格中的一列），記錄它在記憶體的位置。",
+    "所以 create 一個 thread，只要讓新 thread 的 segment table 指到同樣的 segment（同樣的位址），就共用了，thread 就跑得出來。位址數字是示意。",
+    "因為共用，不需要另外複製一份，就省掉了那些部分，所以叫 lightweight。同一個 process 的 threads 關係非常緊密。"
+   ]
+  },
+  {
+   "title": "每個 thread 自己擁有的：TCB、ID、PC、registers、stack",
+   "scene": "thr-15a-private",
+   "points": [
+    {
+     "t": 344,
+     "text": "課本 Fig. 4.1：single-threaded vs multithreaded process；code、data、files 共用。"
+    },
+    {
+     "t": 364,
+     "text": "每個 thread 自己擁有：thread control block（TCB）、thread ID、program counter、registers、stack。"
+    },
+    {
+     "t": 386,
+     "text": "Nachos、Linux 用同一種資料結構管 process 與 thread；Windows 的 TCB 和 PCB 設計不同。"
+    },
+    {
+     "t": 455,
+     "text": "PC 獨立 → 每個 thread 可以執行不同的指令、不同的 function。"
+    },
+    {
+     "t": 503,
+     "text": "global 與 heap（malloc）共用；stack 裡的 local variable 各自一份，名字相同但位址不同。"
+    }
+   ],
+   "trap": "共用：code、data（global）、heap、open files。私有：thread ID、PC、register set、stack。考題常把 heap 或 stack 放錯邊。",
+   "cues": [
+    344.2,
+    352.0,
+    364.7,
+    375.7,
+    386.5,
+    407.2,
+    445.0,
+    455.0,
+    476.4,
+    492.0,
+    503.1,
+    517.3,
+    520.0,
+    537.3
+   ],
+   "explain": [
+    "這是課本 Fig. 4.1 的左邊：single-threaded process（只有一個 thread 的 process），code、data、files、registers、stack 什麼都有一份。",
+    "右邊是在 process 裡 create 了三個 thread：上排的 code、data、files 三塊大家共用（亮金色）。",
+    "但每個 thread 能獨立執行，所以「執行用的部分」不能共用、必須自己擁有，也就是下面每一欄的 registers 和 stack。",
+    "第一個自己擁有的：thread control block（TCB）。process 有 [[process control block]]（PCB）記錄它的狀態，thread 也有對應的 TCB，只是名字不同。",
+    "老師提到 Nachos（課程作業用的教學 OS）：trace code 時只看見 thread，看不到 PCB，因為 process 跟 thread 本質上相同，可以用同一種資料結構管理。",
+    "比較複雜的 OS 會分開設計：Linux 為了簡單好維護，跟 Nachos 一樣不特別區分；Windows 則比較複雜，TCB 跟 PCB 的內容不同（課本 case study 有介紹）。",
+    "control block 管的是一個執行中的單位，所以每個 thread 都有自己獨立的 ID，就是畫面上肚子上的 id 1、2、3。",
+    "[[program counter]]（PC，記錄「下一個要執行哪一行」的暫存器）也是獨立的，所以每個 thread 執行到的位置可以不一樣。行號是示意。",
+    "有自己的 PC，代表每個 thread 可以完全獨立地執行不同的 instruction、做不同的事；後面會看到，不同 thread 通常在跑不同的 function。",
+    "既然獨立執行，[[register]]（CPU 裡暫存運算中間值的小格子）當然也要各自一份。",
+    "data 除了 global variable，還有 [[heap]]：用 malloc 動態配置（dynamic allocate）出來的記憶體，這些也都是共用的。",
+    "但有一種變數不共用：放在 [[stack]] 裡的。",
+    "stack 存的是 local variable（函式裡宣告的區域變數）。每個 thread 執行同一個 function 時，程式碼裡的名字相同（都叫 i），其實指到不同的記憶體位址。位址是示意。",
+    "function return 之後 local variable 就沒了，是暫時的（temporary）。所以每個 thread 都有一個自己獨立的 stack。"
+   ]
+  },
+  {
+   "title": "寫程式時：local 私有、global / malloc 共用",
+   "scene": "thr-15a-progview",
+   "points": [
+    {
+     "t": 547,
+     "text": "寫程式時：local variable 在 stack，各 thread 獨立；global 與 malloc 的記憶體可以共用。"
+    },
+    {
+     "t": 567,
+     "text": "pointer 傳給別的 thread 依然有效（data section 本來就共用）；OS 可能混著管，但 programmer 要分清楚。"
+    }
+   ],
+   "cues": [
+    547.0,
+    552.0,
+    559.0,
+    567.3,
+    583.1
+   ],
+   "explain": [
+    "這樣應該很清楚了：thread 跟 process 差在哪，寫程式時其實很容易分辨。看這段範例程式碼。",
+    "local variable（例如 work 裡的 i）放在 stack，所以每個 thread 各自一份、互相獨立。",
+    "global variable（例如 g），或用 malloc 配置出來的記憶體，thread 之間是可以共用的。",
+    "把 pointer（指標，存位址的變數）傳給別的 thread 用，也不會出現 segmentation fault（存取到不該碰的記憶體而當掉），因為 data section 本來就是大家共用的，位址有效。",
+    "OS 在實作、管理 thread 和 process 時可能用同一套東西，看起來有點混；但對 programmer 來說，兩者是完全不同的東西。"
+   ]
+  },
+  {
+   "title": "為什麼要 thread：browser、web server、RPC",
+   "scene": "thr-15a-apps",
+   "points": [
+    {
+     "t": 599,
+     "text": "很多事要靠 multithreading：browser 用不同 thread 各自下載文字和圖片。"
+    },
+    {
+     "t": 650,
+     "text": "web server：main thread 一直等，接到 connection 就 create thread 處理，自己回去等下一個。"
+    },
+    {
+     "t": 703,
+     "text": "不用 thread：一個 request 就卡住所有使用者，連不進去。"
+    },
+    {
+     "t": 728,
+     "text": "RPC server 也一樣：新 thread 接 request，main thread loop 等待。"
+    }
+   ],
+   "cues": [
+    599.0,
+    614.3,
+    632.0,
+    650.6,
+    668.5,
+    684.4,
+    692.1,
+    703.4,
+    728.7,
+    755.0
+   ],
+   "explain": [
+    "thread programming 為什麼重要？因為它有很多好處，很多事甚至一定要靠 multithreading（多執行緒）才能完成，而且你每天都在用。",
+    "例 1：web browser。開網頁時文字很快出來，圖片過一陣子才 pop out（跳出來），有先後順序。",
+    "因為 browser 下載資料時用了多個 thread：每個 object（文字、每張圖片）用不同 thread 獨立下載，最後再顯示在頁面上。",
+    "例 2：web server。之前講 socket programming（網路程式）時就用它當過例子。",
+    "server 要接很多 request（請求），每個 request 通常都很小。所以 server 有一個 main thread 一直在等。",
+    "一接到 connection（連線），它就 create 一個新的 thread 去 handle 這個 request。",
+    "main thread 自己馬上回去，繼續等下一個 request，所以大家都能不斷連進來。",
+    "如果不用 multithreading，一個使用者的 request 就可能卡住所有使用者，大家連不進去，看起來就像 denial of service（服務被癱瘓）。",
+    "例 3：RPC（remote procedure call，遠端呼叫別台電腦上的 function）也是一樣的概念，它也有一個 server，讓很多人同時 remote call。",
+    "client 連進來後，用新的 thread 接 request，server 的 main thread 一直 loop 等下一個。處理也許很花時間，但 connection 要馬上接起來。"
+   ]
+  },
+  {
+   "title": "好處 1、2：Responsiveness、Resource sharing",
+   "scene": "thr-15a-benefit12",
+   "points": [
+    {
+     "t": 779,
+     "text": "好處 1 Responsiveness：server 不被某個 request 卡住；遊戲用不同 thread 控制車流與鍵盤輸入。"
+    },
+    {
+     "t": 861,
+     "text": "好處 2 Resource sharing：不同 process 為了 protection 不共用記憶體，透過 OS 溝通很慢；thread 直接用 global variable。"
+    }
+   ],
+   "cues": [
+    779.5,
+    788.4,
+    813.0,
+    827.5,
+    845.0,
+    861.8,
+    871.4,
+    887.0
+   ],
+   "explain": [
+    "整理一下 thread 的作用，課本列了四個好處。第一個：responsiveness（反應快）。",
+    "從 server 的角度想：它能非常快地回應每個 connection，不會因為某些 request 把整個 server 卡住、拖慢 response time。",
+    "或是寫互動遊戲，老師舉的例子是「青蛙過河」這種小遊戲。",
+    "可以用一個 thread 控制車子的流量，另一個 thread 接收使用者的 keyboard input（鍵盤輸入）；用很多 thread 就很容易把程式兜出來。",
+    "這些 thread 彼此獨立，但必要時又能同步或溝通，例如青蛙被車撞到了，兩邊就得溝通。重點是各自很快反應、不互相卡住。",
+    "第二個好處：resource sharing（資源共享）。接續剛才的例子：撞到時要怎麼溝通？",
+    "如果是不同 process，為了 protection（保護），彼此的記憶體不共用，要溝通得透過 OS 轉交，可以但很慢。",
+    "同一個 process 的 thread 就簡單了：直接透過共用的 memory（例如 global variable）溝通，預設（by default）就能共享資料。"
+   ]
+  },
+  {
+   "title": "好處 3、4：用上多核心、Economy",
+   "scene": "thr-15a-benefit34",
+   "points": [
+    {
+     "t": 911,
+     "text": "好處 3：現在硬體都是 multi-core，要用滿多核心一定要靠 thread。"
+    },
+    {
+     "t": 962,
+     "text": "好處 4 Economy：create process 比 create thread 慢很多（實驗：thread 快 20 幾倍到 50 倍）。"
+    },
+    {
+     "t": 1066,
+     "text": "溝通：shared memory 比 message passing（MPI）快 2～15 倍；只有不同系統／application 才必須用 process。"
+    }
+   ],
+   "cues": [
+    911.8,
+    926.5,
+    946.3,
+    962.5,
+    969.4,
+    978.2,
+    1004.8,
+    1021.2,
+    1066.1,
+    1093.6,
+    1118.8,
+    1133.1
+   ],
+   "explain": [
+    "第三個好處：現在所有電腦系統都是 [[multi-core]]（多核心），一顆 CPU 裡有好幾個核心。",
+    "多核心、多顆 CPU，甚至跑到 cloud（雲端）上，就是很多台電腦。",
+    "要把這些資源用滿、跑出最好的效能，一定要靠 thread，讓每個 core 都有 thread 在跑；不用 thread 就浪費掉了。",
+    "第四個好處：Economy（經濟、省成本）。你可能會說：用 process 也能利用多核心啊？那 process 和 thread 最大的差別在哪？",
+    "process 做事的 cost（成本）比較高：凡事都要透過 OS，而且它的 memory content 比較多。",
+    "所以 create process 的時間遠比 create thread 長：要配置的記憶體多、要準備的管理資料結構也多；thread 只要多一組 registers 和 stack。",
+    "所以能用 thread 做到的，就不要用 process：程式跑得比較快、系統負擔也比較輕，這就是 Economy。",
+    "老師給了實驗數據：用 [[fork]] 建 process 和用 pthread_create 建 thread 比，thread 快了 20 幾倍到 50 倍（依系統不同）。長條長度只是示意。",
+    "第二點是溝通。MPI 是 message passing（訊息傳遞）的 library，process 之間用 send、receive 溝通，要做 memory copy（複製資料）。",
+    "thread 用 shared memory：直接寫進 global variable 再讀出來。即使在同一台電腦上（還沒算網路），傳輸量也能差到 2 倍甚至 15 倍。",
+    "除非溝通的兩方根本是不同的系統、不同的 application（應用程式），不可能混在一起，這時才有必要用 process。",
+    "如果只是想把自己的工作平行加速，大家本來就在解同一個問題，那就用 thread programming。"
+   ]
+  },
+  {
+   "title": "Software × Hardware：multithreaded programming 與 multicore",
+   "scene": "thr-15a-hwsw",
+   "points": [
+    {
+     "t": 1151,
+     "text": "Software：multithreaded programming（Pthread、Java thread）；Hardware：multi-core。兩者相輔相成。"
+    },
+    {
+     "t": 1212,
+     "text": "Death of CPU scaling：時脈到瓶頸，改靠增加核心；不會 thread programming 就跑不贏。"
+    },
+    {
+     "t": 1274,
+     "text": "OS 要管 thread 與 core 的 binding；Hyper-Threading 讓一個 core 同時跑兩個 thread，排程有好幾層。"
+    }
+   ],
+   "cues": [
+    1151.6,
+    1159.4,
+    1181.5,
+    1197.0,
+    1212.3,
+    1226.0,
+    1257.1,
+    1274.1,
+    1292.5,
+    1311.0,
+    1333.2
+   ],
+   "explain": [
+    "thread programming 可以從 software（軟體）和 hardware（硬體）兩個角度來看。",
+    "Software 這邊就是 multithreaded programming：用 Pthread 或 Java thread 這類 library 寫程式，讓使用者能有效率、方便地 concurrent（並行）執行指令。",
+    "Hardware 這邊就是 multi-core 系統：多核心、多 CPU。在這樣的系統上，就需要 thread programming。",
+    "兩邊相輔相成：因為有 thread programming，硬體廠商才會不斷增加核心數，讓一台電腦更 powerful。",
+    "大家都知道 Death of CPU scaling：以前電腦變快主要靠時脈（frequency，單位 GHz），一直往上加。",
+    "但現在製程技術到了瓶頸，時脈加不上去了。以前買電腦問時脈多少，現在大家比的是有幾個核心。",
+    "所以如果有這種多核心系統，你卻不會 thread programming，或程式沒有用 thread，基本上就跑不贏人家。",
+    "對 OS 來說，接下來的重點是：怎麼把 thread 跟 core 做 binding（綁定、分配到哪個核心）。嚴格來說，OS 的部分功能已經拆進 CPU 裡面了。",
+    "例如 Intel 的 Hyper-Threading：一個 core 可以讓兩個 thread 同時跑。",
+    "所以 scheduling（排程，決定誰先用 CPU）更複雜了：不只 OS 在排，CPU 內部、甚至單一 core 也在做 hardware level 的排程。",
+    "thread 最後還是會被放到最底層的某個硬體執行單位上跑，但中間有好幾層，就像記憶體不是直接用 physical address，而是 virtual address 轉換過去一樣。"
+   ]
+  },
+  {
+   "title": "Multicore programming 的挑戰",
+   "scene": "thr-15a-challenges",
+   "points": [
+    {
+     "t": 1354,
+     "text": "thread programming 是 parallel programming 的一種；挑戰一：dividing activities，挑戰二：data splitting。"
+    },
+    {
+     "t": 1530,
+     "text": "挑戰三：data dependency；挑戰四：load balancing（程式結束取決於最慢的人）。"
+    },
+    {
+     "t": 1627,
+     "text": "挑戰五：testing 與 debugging 最難，先後順序不同結果就不同。"
+    }
+   ],
+   "trap": "課本 Ch4 的五個挑戰：identifying tasks（dividing activities）、balance、data splitting、data dependency、testing and debugging。",
+   "cues": [
+    1354.6,
+    1395.1,
+    1409.0,
+    1425.8,
+    1439.6,
+    1463.4,
+    1496.4,
+    1530.0,
+    1576.2,
+    1615.4,
+    1627.0,
+    1661.0,
+    1693.1,
+    1749.0
+   ],
+   "explain": [
+    "thread programming 是 parallel programming（平行程式設計）的一種，另一種是 message passing。兩者遇到的問題相同，只是技巧不同。這門課不會叫你寫平行程式，但要知道它跟一般程式的差別。",
+    "第一點：dividing activities（拆分工作）。用 thread 就是把一件事拆給很多人一起做，前提是要先把事情拆開。",
+    "就像分組作業要先分配：你寫 report、我寫 code、你去做 survey、我做實驗。拿到一個程式，第一件事就是把它拆成不同 activity，讓每個 thread 知道自己要做什麼。",
+    "不是所有問題都能這樣拆，而且怎麼拆影響很大：拆不好就會卡在某一個人身上，時間被拖延。",
+    "第二點：data splitting（拆分資料）。電腦做的事說穿了就是 compute on data：拿資料出來計算。所以計算要拆，資料也要拆。",
+    "例：平行 sorting（排序）。給你 10 個 element、5 個 thread，要平分成每人兩個嗎？數字內容是示意。",
+    "平分不一定最好，因為每個資料需要的計算量可能不同。資料更複雜時，例如 graph（圖），要讓每份 vertex 數一樣還是 edge 數一樣？並不單純。",
+    "第三點：data dependency（資料相依）。拆開後，一個計算可能牽涉多個資料：兩個 thread 同時要改同一個資料，或第二個必須等第一個改完才能做。這時就很難切，切了結果也不一定正確。",
+    "第四點：balance（load balancing，負載平衡）。就像團隊合作，整個程式什麼時候結束，取決於最後結束的那個人；工作量不平均，就等於沒有平行。時間長度是示意。",
+    "而且很多執行時間是跑了之後才發現的，沒辦法事先預測，所以不容易達到最好的效果。",
+    "最後一個幾乎無解：testing 跟 debugging（測試、除錯）。",
+    "GDB 這類 debugger 能 watch 變數、一步一步 trace，但它們基本上只適用 sequential code（單一 thread 或單一 process 依序執行的程式）。",
+    "跨 core、跨電腦同時執行時，很難同時追蹤所有資訊；每個 thread 都照步驟做，但一個先一個後，結果就不一樣。這就是期中後 synchronization（同步）章節要處理的問題。",
+    "以上就是 thread（parallel）programming 跟一般 sequential programming 的差別。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "同一個 process 的多個 thread 之間，下列哪一個「不是」共用的？",
+   "opts": [
+    "stack（local variable）",
+    "code section",
+    "global variable（data section）",
+    "開啟的檔案"
+   ],
+   "ans": "stack（local variable）",
+   "why": "每個 thread 有自己的 stack、registers、PC 和 thread ID；code、data、heap、files 共用。"
+  },
+  {
+   "q": "為什麼 thread 被稱為 lightweight process？",
+   "opts": [
+    "它共用 process 的 code、data、resources，只需自己的 ID、PC、registers、stack",
+    "它的程式碼比較短",
+    "它不需要用到 CPU",
+    "它只能在單核心上執行"
+   ],
+   "ans": "它共用 process 的 code、data、resources，只需自己的 ID、PC、registers、stack",
+   "why": "建立 thread 只要讓 segment 共用，不必複製整個 address space，所以輕。"
+  },
+  {
+   "q": "每個 thread 有自己的 program counter，代表什麼？",
+   "opts": [
+    "每個 thread 可以執行不同位置的指令",
+    "所有 thread 一定執行同一行",
+    "thread 不能呼叫 function",
+    "thread 共用同一組 registers"
+   ],
+   "ans": "每個 thread 可以執行不同位置的指令",
+   "why": "PC 記錄下一個要執行的指令；各自一份，所以能獨立執行不同的 function。"
+  },
+  {
+   "q": "web server 用 multithreading 的典型做法是？",
+   "opts": [
+    "main thread 持續等待，每個 request 交給新的 thread 處理",
+    "每個 request 都 fork 一個 process 並等它結束",
+    "只用一個 thread 依序處理所有 request",
+    "讓 client 自己建立 thread"
+   ],
+   "ans": "main thread 持續等待，每個 request 交給新的 thread 處理",
+   "why": "這樣一個慢的 request 不會卡住其他使用者（responsiveness）。"
+  },
+  {
+   "q": "thread 的 Economy 這個好處是指？",
+   "opts": [
+    "create、切換 thread 比 process 便宜很多",
+    "thread 可以跨電腦共用記憶體",
+    "thread 不會有同步問題",
+    "thread 不需要 OS"
+   ],
+   "ans": "create、切換 thread 比 process 便宜很多",
+   "why": "課堂實驗：pthread_create 比 fork 快 20 幾倍到 50 倍。"
+  },
+  {
+   "q": "Load balancing 為什麼重要？",
+   "opts": [
+    "程式的結束時間取決於最慢的那個 thread",
+    "thread 越多一定越快",
+    "debugger 需要它才能運作",
+    "它能消除 data dependency"
+   ],
+   "ans": "程式的結束時間取決於最慢的那個 thread",
+   "why": "工作量不平均時，其他 thread 都在等最慢的那個，等於沒有平行。"
+  }
+ ]
+}

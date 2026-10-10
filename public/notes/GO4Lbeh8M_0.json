@@ -1,0 +1,356 @@
+{
+ "video": "GO4Lbeh8M_0",
+ "label": "清大周志遠 第15B講 Thread Introduction(續)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "User thread 與 kernel thread：兩層與 binding",
+   "scene": "thr-15b-twolevels",
+   "points": [
+    {
+     "t": 16,
+     "text": "thread management 分兩層：user thread（Pthreads、Java threads、Win32 threads 等 thread library）與 kernel thread。"
+    },
+    {
+     "t": 89,
+     "text": "kernel thread 是 OS 真正管理的執行單位，每個 OS 有自己的 kernel thread。"
+    },
+    {
+     "t": 117,
+     "text": "兩者是 binding（mapping）關係：要執行時 OS 把 user thread bind 到某個 kernel thread，run time 可以改變。"
+    }
+   ],
+   "cues": [
+    15.9,
+    20.3,
+    63.3,
+    84.5,
+    89.6,
+    108.7,
+    117.6,
+    132.0,
+    145.3,
+    167.6
+   ],
+   "explain": [
+    "回到 thread management。電腦系統裡的 thread 分成兩層：[[user thread]] 跟 [[kernel thread]]。上面架子是 user space，下面是 kernel space。",
+    "什麼是 user thread？就是平常看到的那些：[[pthread]]、Java threads，還有 Windows 上的 Win32 threads。",
+    "它們都是 thread library，被放在電腦系統的 API 層裡，屬於 user level。現在的電腦都支援 thread programming。",
+    "programmer 寫程式時，直接用的就是這些 user thread 的 library。",
+    "什麼是 kernel thread？它是 OS 裡面的，是 OS 真正在管理、排程的執行單位；前一講說「使用 CPU 的最基本單位」，其實指的就是 kernel thread。",
+    "每個 OS 都有自己的 kernel thread，就像每個 OS 有自己定義的 process 一樣。",
+    "這兩者沒有一對一的關聯，而是一種 binding（綁定）或 mapping（對應）的關係。",
+    "使用者呼叫 API create 的是 user thread；它要執行時，OS 會把它 bind 到其中一個 kernel thread 上，才能開始執行、存取記憶體。",
+    "這個 binding 在 run time 可以調整：thread 現在 bind 在第一個 kernel thread，去做 I/O 離開 CPU，之後再回到 ready queue 被排程時，可能 bind 到第二個，哪個有空就用哪個。",
+    "programmer 不用管 kernel thread；但 OS 的 designer（設計者）就是在管理這些 kernel threads。"
+   ]
+  },
+  {
+   "title": "User thread 快；kernel thread 互不影響",
+   "scene": "thr-15b-fastblock",
+   "points": [
+    {
+     "t": 184,
+     "text": "user thread 在 user level：不用 interrupt、不用找 OS，create 快、好管理。"
+    },
+    {
+     "t": 231,
+     "text": "但若全部 bind 到同一個 kernel thread，一個 user thread 做 I/O 或 sleep 被 block，大家都動不了。"
+    },
+    {
+     "t": 287,
+     "text": "kernel thread 在 kernel 裡較慢，但彼此獨立，一個 block 其他照常；這是 kernel level 才有的特性。"
+    }
+   ],
+   "cues": [
+    184.7,
+    191.6,
+    222.6,
+    234.0,
+    249.0,
+    252.4,
+    263.0,
+    287.0,
+    297.6,
+    303.6,
+    327.5
+   ],
+   "explain": [
+    "再深入一點：user thread 就是這些 thread library，也就是 API。",
+    "它通常很快，因為它是 user level thread，在 OS 的上面。之前一直強調：API 只是 user level 的東西，system call 才進 kernel。所以不用透過 [[interrupt]]、不用跟 OS 溝通，只要沒碰到 system call 就很快。",
+    "create 快、也容易 manage。那問題在哪？為什麼還需要 kernel thread？",
+    "如果 kernel 這邊只有一個 thread，user level 就算有很多 thread，其實也沒用。",
+    "因為它們是 binding 的關係：上面 create 了一堆 user threads，如果全部 bind 到同一個 kernel thread……",
+    "只要其中一個 user thread 在 kernel 裡 call 了 I/O 或 sleep，把自己 block（卡住、等待）住……",
+    "大家都 bind 在同一個 kernel thread，就沒有人能再用它了。使用者以為 create 了一堆 thread，其實只是假象，或只是寫程式方便而已。",
+    "kernel thread 才是 OS 裡最基本去使用 CPU 的單位。這裡換成每個 user thread 各有一個 kernel thread 來比較。",
+    "因為在 kernel 裡，凡事都要經過 protection 等複雜機制，所以 kernel thread 一定比較慢。",
+    "好處是：有很多 kernel thread 時，每個都是獨立執行的。任何一個被 block 住，其他 kernel thread 一定能照常運作。",
+    "就像不同 process 互不影響一樣。但這個特性只有 kernel level 的 thread 才有，user level 不一定有。"
+   ]
+  },
+  {
+   "title": "Many-to-One",
+   "scene": "thr-15b-m1",
+   "points": [
+    {
+     "t": 334,
+     "text": "OS 要決定 user / kernel thread 的 mapping，有幾種 model。"
+    },
+    {
+     "t": 360,
+     "text": "many-to-one：一個 process 的所有 user thread 對到一個 kernel thread。"
+    },
+    {
+     "t": 389,
+     "text": "任何一個 thread block，整個 process 都停；多核心上也從不同時執行，但仍可 resource sharing。"
+    }
+   ],
+   "cues": [
+    334.8,
+    360.2,
+    369.0,
+    376.5,
+    389.6,
+    395.7,
+    404.0,
+    420.2
+   ],
+   "explain": [
+    "既然有 user thread 也有 kernel thread，關係就是 mapping。OS 支援 thread programming 時，有一部分工作就是決定這個 mapping；不管怎麼對，OS 都要保證執行正確。所以有幾種 model。",
+    "最簡單的第一種：所有 user thread 都對到同一個 kernel thread。",
+    "這就叫 many-to-one（多對一）：使用者不管 create 多少個 thread，全部對到一個 kernel thread。",
+    "這個 model 通常是以 process 的角度來看：同一個 process create 了一堆 threads，OS 只管那個 process，一個 process 就是一個 kernel thread。",
+    "所以只要任何一個 thread 在這個 process 裡 block 住，這個 process 的其他 thread 都不能跑了。",
+    "這比較像傳統 process 的觀念，只是多了讓 thread 之間做 resource sharing。",
+    "從硬體看：電腦有 4 個 core，你在同一個 process create 了 4 個 thread，它們從來沒有同時執行過，因為大家得排隊，沒辦法用到硬體資源。",
+    "不過還是可以用 global variable 做 sharing，前面說的 responsiveness 也做得到，所以它的用途不一樣。"
+   ]
+  },
+  {
+   "title": "One-to-One",
+   "scene": "thr-15b-o1",
+   "points": [
+    {
+     "t": 432,
+     "text": "one-to-one：一個 user thread 一個 kernel thread，最單純、很多 OS 這樣做。"
+    },
+    {
+     "t": 476,
+     "text": "壞處：kernel thread 有 control block 等成本，數量有上限；programmer 亂開 thread 可能拖垮系統。"
+    }
+   ],
+   "cues": [
+    432.0,
+    441.2,
+    450.0,
+    462.0,
+    476.6,
+    488.0,
+    507.0
+   ],
+   "explain": [
+    "第二種比較常見：one-to-one（一對一）。",
+    "一個 user thread 就配一個 kernel thread。因為是一對一，你使用時不會有任何感覺。",
+    "實際上它們是不同的東西，純粹是因為 kernel 跟 user 是不同層；為了方便實作和管理，就一對一很單純地使用。",
+    "很多 OS 都這麼做，尤其現在電腦資源多，不怕你 create 一堆 kernel thread，它都能 handle。",
+    "壞處是：kernel thread 畢竟要有 control block 等管理資料，所以 OS 允許的數量通常有上限。",
+    "就像在電腦上開 file 的數量也有上限，不會讓你開無限個，因為怕影響整個系統運作。",
+    "使用者常以為可以開無限個 thread，有事沒事、或 programming error 就開一個；在 one-to-one 下這樣做，可能把整個系統卡住。"
+   ]
+  },
+  {
+   "title": "Many-to-Many",
+   "scene": "thr-15b-mm",
+   "points": [
+    {
+     "t": 518,
+     "text": "many-to-many：只要能對到就好，數量不必相同；OS 實作最複雜。"
+    },
+    {
+     "t": 552,
+     "text": "例：4 個 user thread share 3 個 kernel thread，一個 block 了，其他三個輪流用剩下兩個。"
+    },
+    {
+     "t": 577,
+     "text": "最有彈性、kernel 可自己決定要幾個 kernel thread；但管理 overhead 大。"
+    }
+   ],
+   "cues": [
+    518.3,
+    527.3,
+    532.4,
+    552.0,
+    559.0,
+    564.2,
+    577.2,
+    584.0,
+    598.0
+   ],
+   "explain": [
+    "第三種，可以想見是最複雜的：many-to-many（多對多）。",
+    "沒有什麼規則，只要能對到就好；兩邊的數量不一定相同，也沒有固定關聯。",
+    "要支援這種 feature 的 OS，實作當然最複雜：它得在內部自己管理，執行時確保 mapping 一定正確。",
+    "例如這四個 user thread，可能只 share 三個 kernel thread。",
+    "假設有一個被 block 了，它就占用掉一個 kernel thread。",
+    "這時剩下三個人就 share 另外兩個 kernel thread，輪流使用、繼續執行。只要它們不卡住同一個 kernel thread，其他人就能繼續跑。",
+    "所以它最有彈性，最不容易碰到互相卡住的問題。",
+    "同時 kernel 也可以自己看到底需要幾個 kernel thread：如果很多 user thread 的 loading（工作量）很輕，就全部交給一個 kernel thread 處理，整體效能可以最好。",
+    "反過來說，這個管理機制一定複雜、有很多 overhead（額外花的時間）。如果使用情境很單純，多花時間管理卻沒得到效能上的好處，未必划算。"
+   ]
+  },
+  {
+   "title": "三種 model 的好處與壞處",
+   "scene": "thr-15b-compare",
+   "points": [
+    {
+     "t": 622,
+     "text": "many-to-one：管理在 user space、快；但會 blocking，無法利用 multiprocessor。"
+    },
+    {
+     "t": 680,
+     "text": "one-to-one：concurrency 最高、最常見（大部分 OS）；但 thread 數量受限、建立較慢。"
+    },
+    {
+     "t": 764,
+     "text": "many-to-many：run time 任意 mapping、沒限制；但 overhead 大、OS 易出錯。"
+    }
+   ],
+   "trap": "課本：Linux、Windows 用 one-to-one；many-to-one 因無法利用多核心而少見。Two-level model 是 many-to-many 再允許某個 user thread 綁定一個 kernel thread。",
+   "cues": [
+    622.4,
+    638.1,
+    662.4,
+    680.6,
+    690.7,
+    708.4,
+    714.4,
+    728.2,
+    753.0,
+    764.7,
+    784.0,
+    791.0
+   ],
+   "explain": [
+    "這三種其實看圖就知道是什麼意思，重點是把它們的好處、壞處記下來。老師其實都講過了，這裡整理成表。",
+    "Many-to-one：全部對到一個 kernel thread。好處是 thread management 在 user space，create thread 時不會 create 任何 kernel thread，所以一定快。",
+    "問題是 blocking：像剛才的例子，一個卡住就全部卡住。另外更大的問題是沒辦法利用 multiprocessor（多處理器），沒有真的平行計算。",
+    "One-to-one：剛才提過，它是最單純的 case。",
+    "它的問題是 thread 數量通常會被 kernel 限制住，連帶 user 也被限制；從 programmability（好不好寫程式）的角度不理想，我們希望 programmer 不受任何限制。",
+    "好處是 concurrency（並行程度）一定最高，彼此完全不會互相影響。",
+    "缺點是每個 user thread 都等於 create 一個 kernel thread，沒得選，所以一定比較慢，至少比 many-to-one 明顯慢。",
+    "但 one-to-one 其實很常見：現代電腦資源很多，反而比較在意 programmability 和不互相影響，所以大部分 OS 都用一對一。",
+    "OS 其實不希望太複雜：太複雜不好 debug，而且在一般情況（common case）整體效能反而變慢，違背系統設計的理念。",
+    "Many-to-many：最複雜，可以任意 mapping，而且是在 run time（執行中）、每次 thread 要被執行之前才決定 mapping。",
+    "好處：沒有任何限制，也不太容易被卡住。",
+    "缺點就是 overhead：很複雜，一般情況下執行會慢一些，OS 也比較容易出錯。只要了解 kernel thread 和 user thread 的差別，好壞處都推得出來。"
+   ]
+  },
+  {
+   "title": "回顧：thread vs process、user / kernel 與 binding",
+   "scene": "thr-15b-recap",
+   "points": [
+    {
+     "t": 815,
+     "text": "回顧：thread 與 process 的差別、為什麼用 thread、thread programming 的 challenge。"
+    },
+    {
+     "t": 836,
+     "text": "OS 管理上分 user / kernel 兩層，有不同 binding option：多數 one-to-one，部分 many-to-many，many-to-one 少見（embedded）。"
+    }
+   ],
+   "cues": [
+    815.4,
+    829.9,
+    836.2,
+    846.0,
+    854.6
+   ],
+   "explain": [
+    "前半段很重要：thread 跟 process 的差別。",
+    "為什麼要用 thread，以及 thread programming 可能碰到的 challenge。",
+    "更重要的是，OS 會特別強調：thread 在管理上分成 user 跟 kernel 兩個不同的 layer。",
+    "兩層之間有不同的 binding option：有些 OS 全部是 one-to-one（課本：Linux、Windows），也有一些是 many-to-many。",
+    "many-to-one 比較少見，可能用在一些 embedded device（嵌入式裝置）或硬體資源比較有限的地方。"
+   ]
+  },
+  {
+   "title": "下課：下週考試",
+   "scene": null,
+   "points": [
+    {
+     "t": 870,
+     "text": "下週一考試、週三放假；回來把這章結束，介紹 thread programming。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "programmer 呼叫 pthread_create 建立的是哪一種 thread？",
+   "opts": [
+    "user thread",
+    "kernel thread",
+    "interrupt handler",
+    "hardware thread"
+   ],
+   "ans": "user thread",
+   "why": "Pthreads、Java threads、Win32 threads 都是 user-level 的 thread library；要執行時 OS 再把它 bind 到 kernel thread。"
+  },
+  {
+   "q": "Many-to-One model 中，一個 thread 呼叫 blocking system call 會怎樣？",
+   "opts": [
+    "整個 process 的 thread 都被卡住",
+    "只有那個 thread 被卡住",
+    "OS 自動建立新的 kernel thread",
+    "其他 thread 移到別的 CPU 繼續跑"
+   ],
+   "ans": "整個 process 的 thread 都被卡住",
+   "why": "所有 user thread 共用唯一的 kernel thread；它被 block，大家都不能跑。"
+  },
+  {
+   "q": "哪一種 model 無法讓同一 process 的 threads 在多核心上平行執行？",
+   "opts": [
+    "Many-to-One",
+    "One-to-One",
+    "Many-to-Many",
+    "Two-level"
+   ],
+   "ans": "Many-to-One",
+   "why": "kernel 只看到一個 kernel thread，一次只能在一個 core 上跑。"
+  },
+  {
+   "q": "One-to-One model 的主要缺點是？",
+   "opts": [
+    "每個 user thread 都要建立 kernel thread，成本高且數量有上限",
+    "一個 thread block 會讓全部 block",
+    "無法利用多核心",
+    "mapping 在 run time 決定，最複雜"
+   ],
+   "ans": "每個 user thread 都要建立 kernel thread，成本高且數量有上限",
+   "why": "kernel thread 需要 control block 等資源，OS 會限制數量。"
+  },
+  {
+   "q": "Many-to-Many model 的特點是？",
+   "opts": [
+    "多個 user thread 對到較少或相等數量的 kernel thread，彈性最好但 overhead 大",
+    "一個 user thread 對到多個 kernel thread",
+    "所有 user thread 對到一個 kernel thread",
+    "不需要 kernel thread"
+   ],
+   "ans": "多個 user thread 對到較少或相等數量的 kernel thread，彈性最好但 overhead 大",
+   "why": "run time 動態 mapping：不容易卡住，但管理複雜。"
+  },
+  {
+   "q": "大部分現代 OS（如 Linux、Windows）採用哪種 model？",
+   "opts": [
+    "One-to-One",
+    "Many-to-One",
+    "Many-to-Many",
+    "沒有 kernel thread"
+   ],
+   "ans": "One-to-One",
+   "why": "資源充足，重視 concurrency 與簡單好 debug。"
+  }
+ ]
+}
