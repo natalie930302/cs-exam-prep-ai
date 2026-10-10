@@ -1481,6 +1481,12 @@
   "quiz": 7,
   "cued": true
  },
+ "qilMh8Uoabk": {
+  "label": "交大OCW 易志偉《離散數學》Lec04 Logic and Proofs (4/5)",
+  "points": 57,
+  "quiz": 7,
+  "cued": true
+ },
  "QK63Mw9hPec": {
   "label": "清大周志遠 第1B講",
   "points": 22,
@@ -2019,6 +2025,12 @@
   "label": "Abdul Bari：Matrix Chain Multiplication",
   "points": 80,
   "quiz": 6,
+  "cued": true
+ },
+ "_WXIdyyHfqk": {
+  "label": "交大OCW 易志偉《離散數學》Lec03 Logic and Proofs (3/5)",
+  "points": 50,
+  "quiz": 7,
   "cued": true
  }
 }
