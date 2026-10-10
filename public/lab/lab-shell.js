@@ -115,7 +115,8 @@ const ctx = makeCtx();
 const mod = await import('./chapters/' + CH + '.js?v=17');
 const def = mod.default(ctx);
 const modes = def.modes || [];
-const pages = def.pages || [];
+// the lab is for trying things by hand; quizzes live in the study room
+const pages = (def.pages || []).filter((p) => p.id !== 'quiz' && !/小測驗|測驗|quiz/i.test(p.name || ''));
 const scenes = def.scenes || {};
 const order = def.sceneOrder || Object.keys(scenes);
 // for automated checks: play every scene / mode from the console
