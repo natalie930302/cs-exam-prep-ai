@@ -1,0 +1,467 @@
+{
+ "video": "lpOMe56f1Nw",
+ "label": "清大周志遠 第5C講 OS Application Interface",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "System call：OS 唯一的介面",
+   "points": [
+    {
+     "t": 3,
+     "text": "本章最重要：system call 和 API 不是別名，是不一樣的東西。"
+    },
+    {
+     "t": 79,
+     "text": "CLI / GUI 給人下指令；program 只能透過 function call（API、system call）使用 service。"
+    },
+    {
+     "t": 127,
+     "text": "OS 提供的 function 叫 system call：OS 唯一的 interface，part of OS。"
+    },
+    {
+     "t": 165,
+     "text": "特性：是 software interrupt、一定進 kernel mode；用 assembly 寫以求效能（作業一的 .S 檔）。"
+    }
+   ],
+   "scene": "osB-syscall-props",
+   "cues": [
+    3.46,
+    37.3,
+    58.8,
+    78.88,
+    95.01,
+    103.6,
+    126.82,
+    145.85,
+    165.09,
+    177.8,
+    188.4,
+    209.8,
+    228.28,
+    245.8
+   ],
+   "explain": [
+    "這一章最重要的部分：[[system call]] 和 API 到底差在哪裡？API 你一定聽過，這堂課一開始又講了 system call。",
+    "它們不是同一個東西換個名字（別名），而是真的不一樣的東西。",
+    "OS 本質上是提供服務的軟體：例如 communication 要 send、receive message，檔案要讀寫，這些就是 file system 的 API 或 system call。",
+    "剛才介紹的 CLI、GUI，是給「人」下指令用的介面。",
+    "但 program 跑在電腦上時，能用的只有 function call（[[函式]]呼叫），也就是 API 或 system call 這些。",
+    "所以每個 service 都會被定義成一個 function 的形式，程式才能呼叫它、叫它完成要做的事。",
+    "第一種毫無疑問：OS 自己提供的 function，就叫 system call。它是 OS 唯一的 interface，OS 上會定義一層 system call layer。",
+    "因為它跟 OS 緊緊連在一起，所以它是 part of OS：OS 最外層 interface 的定義。既然是 OS，就要講求效能，不能顧及所有人的方便。",
+    "system call 跟其他 function 最不一樣的第一點：它就是一個 software interrupt（[[trap]]）。",
+    "因為只有 interrupt 才能改變 user mode 和 kernel mode：call 了 system call，就一定進入 [[kernel mode]]、離開 [[user mode]]，只有 system call 有這個特性。",
+    "第二點：為了效能，system call 通常用 [[assembly language]]（組合語言）寫，才夠快。",
+    "system call 是大家共用的，所以效能優先，不管方不方便；方便性交給上面的 shell，以及等一下要講的 API。",
+    "這也是為什麼作業一 trace code 時，有一個要改的檔案是 .S 檔：它就是定義 system call interface 的 assembly 檔。",
+    "可是 assembly 大部分人都沒寫過，老師自己也說不太會寫。那要怎麼在上面寫程式？這就需要下一層概念：API。"
+   ]
+  },
+  {
+   "title": "API：在 system call 上再加一層",
+   "points": [
+    {
+     "t": 259,
+     "text": "API（Application Program Interface）是 system call 上面的另一層，純粹為了 programming 方便。"
+    },
+    {
+     "t": 328,
+     "text": "寫程式是 program against API，很少直接 call system call。"
+    },
+    {
+     "t": 359,
+     "text": "API 的形式是一堆 library：C library 是 OS 的 API 之一；Android 用 Java。"
+    }
+   ],
+   "scene": "osB-api-layer",
+   "cues": [
+    258.8,
+    275.51,
+    287.48,
+    299.8,
+    313.28,
+    328.25,
+    359.69,
+    363.8,
+    385.8,
+    413.8,
+    433.8
+   ],
+   "explain": [
+    "這跟 shell 的概念很像：shell 是讓「人」方便下 command；這裡則是讓「program」方便 call function。",
+    "所以對程式來說，電腦上會再加一層介面，叫 API，全名 Application Program Interface（應用程式介面）。",
+    "它純粹是為了寫程式（programming）和應用程式的方便而設計，跟作業系統本身不需要那麼緊密。",
+    "所以 API 建在 system call 的上面，是另一層：API 在上，下面才是 system call。",
+    "system call 之後，才去執行 OS 裡的 service routine，再由它操作 hardware。（看小方塊一層一層往下。）",
+    "所以寫程式時我們都說「API」：你其實是 program against API（對著 API 寫程式），並不會直接碰到 system call；可以，但很少。",
+    "API 是誰加的、長什麼樣？它的形式就是一堆 library（函式庫）。",
+    "事實上，C library 就被定義為作業系統的 API 之一；大部分作業系統的 API 都用 C 這個語言。",
+    "但 C 不是唯一的：例如手機的 Android，它的 API 是 Java，鼓勵上面的程式 program against Java，再由 Java 去 call 下面的 system call。",
+    "所以 C、Java 這些常被叫做 system programming language：它們被定義成電腦系統的標準 API。",
+    "如果系統只提供 C，而你不會 C，那很抱歉，就只能直接對 system call 寫程式，那非常難、非常複雜。所以一般都限制在 API 上寫。"
+   ]
+  },
+  {
+   "title": "API 與 system call 的對應",
+   "points": [
+    {
+     "t": 448,
+     "text": "API 與 system call 是兩層，不是一對一轉送：可能一對多、一對零。"
+    },
+    {
+     "t": 492,
+     "text": "一對零：math library 的 abs、指數，不需要 OS，只為方便寫程式。"
+    },
+    {
+     "t": 554,
+     "text": "system call 越少越好、各做一件事；fopen 要三四個以上 system call。"
+    },
+    {
+     "t": 622,
+     "text": "多對一：malloc 和 free 都 call 同一個 system call brk（參數不同）。"
+    },
+    {
+     "t": 674,
+     "text": "call API 不是 interrupt、不會進 kernel mode；system call 要簡潔快速，API 慢一點沒差。"
+    }
+   ],
+   "trap": "課本：malloc / free 屬於 C library（API），底層透過 brk / sbrk（或 mmap）向 OS 要記憶體；不是每個 API 呼叫都會觸發 system call。",
+   "scene": "osB-api-map",
+   "cues": [
+    447.8,
+    463.27,
+    463.27,
+    491.97,
+    507.34,
+    511.36,
+    554.43,
+    577.8,
+    589.29,
+    606.8,
+    622.5,
+    628.45,
+    655.8,
+    674.72,
+    682.8,
+    717.62,
+    738.8
+   ],
+   "explain": [
+    "非常重要：API 和 system call 是不同的兩層，API 不只是把呼叫「一對一」翻譯或轉送給 system call，兩者目的完全不同。上排黃色是 API，下排紅色是 system call。",
+    "一個 API function 可能要呼叫很多個 system call 才能完成，這叫一對多。",
+    "也可能是一對零：你呼叫了一個 API，它完全沒有 call 任何 system call，就幫你把事情做完了。兩者沒有絕對的對應關係。",
+    "例如數學函式庫（math library）的 abs，取絕對值只是單純處理數字，根本不需要 OS 進來。",
+    "那 API 為什麼還要有這個 function？因為方便你寫程式：call 一下就完成。",
+    "或者像指數運算，用一個 function 包起來，就很容易使用。API 的目的就是方便使用者寫程式，不是一定要去 call system call。",
+    "相對的，很多 API 需要好幾個 system call 才能完成。為什麼？因為使用者使用的方式五花八門（配置記憶體、做 I/O 都有很多方式）。",
+    "可是 system call 卻希望越少越好：越多就越要 debug、越容易出問題、越複雜。",
+    "最好每個 system call 之間完全沒有交集，每個只做一件事，單純、好 debug、互不干擾。",
+    "所以方便的 API 往下常常對到好幾個 system call。例如 fopen 是 API，它背後至少要三四個以上的 system call 才能完成。",
+    "還有一個有趣的例子：malloc（要記憶體）和 free（還記憶體），大家都用過，它們是不一樣的 API。",
+    "可是它們 call 的 system call 其實是同一個，叫 brk，只是參數不同（增加或減少）。這就是多對一：為了方便區隔，API 做成兩個 function。",
+    "所以一對多、多對一、不同 API 對到同一個 system call 都有，沒有限制，看需求。",
+    "另一個大差別：call API 並不是 interrupt，它本身不會產生 interrupt；是 API 裡面 call 到 system call 時，才產生 interrupt。",
+    "所以 call API 不會進 kernel mode；只有它裡面 call 了 system call，才間接進到 OS 請它完成。",
+    "別忘了 system call 是一個 interrupt：等於打斷別人、偷偷過來趕快做一件事。被打斷很久的人當然不高興，所以 system call 一定要寫得非常簡潔、越快越好。",
+    "API 則完全是我自己要做的事、方便我自己，做久一點也沒差，所以用 C、Java 寫都 OK。"
+   ]
+  },
+  {
+   "title": "Interface 與 library",
+   "points": [
+    {
+     "t": 748,
+     "text": "interface 只定義怎麼 call；implementation 可以很多種（for 迴圈、shift、hardware support）。"
+    },
+    {
+     "t": 825,
+     "text": "這些 implementation 集合起來就是 library。"
+    }
+   ],
+   "scene": "osB-interface-impl",
+   "cues": [
+    747.8,
+    767.75,
+    779.71,
+    789.56,
+    797.89,
+    824.84,
+    828.8
+   ],
+   "explain": [
+    "確認一下觀念：interface 和 library 有什麼不同？剛才講到 C library 和 API interface。",
+    "你寫的程式都在 call function，function 的「定義」（名字、參數）就是 interface。在物件導向、Java 裡會看得很清楚：你只定義了 interface，怎麼實作（implement）是另一回事。",
+    "例如一個簡單的指數：算 2 的 n 次方，可以寫一個 for [[迴圈]]，一直乘 2。",
+    "聰明一點的做法：用 shift（位移）。因為電腦是二進位，左移一位就等於乘以 2。",
+    "更厲害的是 hardware support：真的做一個硬體裝置幫你算，你只要 call 那個 hardware instruction，瞬間就完成（第七章 synchronization 也會看到）。",
+    "所以同一個 interface，可以有三種不同的 implementation。",
+    "這些 implementation 集合在一起，就是我們俗稱的 library（函式庫）。interface（API）只是定義怎麼 call，不同的實作可以同時存在。"
+   ]
+  },
+  {
+   "title": "Win32、POSIX、Java API",
+   "points": [
+    {
+     "t": 857,
+     "text": "Windows 的 API 是 Win32（不是 system call）。"
+    },
+    {
+     "t": 910,
+     "text": "UNIX、Linux、Mac 的 API 都 follow POSIX（Portable Operating System Interface）：system call 不同，API 相同。"
+    },
+    {
+     "t": 971,
+     "text": "portable：程式換到另一個 POSIX 系統只要重新 compile，不用改寫；Pthread 的 P 就是 POSIX。"
+    },
+    {
+     "t": 1073,
+     "text": "Java 跑在 Java Virtual Machine 上，portability 更好，有自己的 Java API。"
+    }
+   ],
+   "scene": "osB-posix",
+   "cues": [
+    856.93,
+    882.8,
+    894.46,
+    909.93,
+    930.02,
+    942.8,
+    970.82,
+    989.8,
+    1034.9,
+    1040.67,
+    1073.66,
+    1087.8,
+    1120.74,
+    1136.68
+   ],
+   "explain": [
+    "為什麼要強調 interface 和 implementation 的差別？看真實的作業系統。以前最常見的 Windows，它的 API 叫 Win32。",
+    "Windows 要求你在 Win32 API 上面寫程式，它定義了一整套 function。",
+    "注意：Win32 是 API，不是 [[system call]]，不要搞混。",
+    "另一個到現在依然很大的陣營：UNIX、Linux，包括 Mac，它們的 API 都 follow POSIX。POSIX 是這些社群、開發者共同同意的標準化 API。",
+    "POSIX 的全名是 Portable Operating System Interface（for UNIX）。",
+    "這些作業系統的 system call 其實都不一樣，實作也不一樣；但 API 這個 interface 的定義完全相同，每個系統都要自己寫好那一層 API，確保它能 call 到自己的 system call。",
+    "為什麼叫 portable（可攜）？原因很明顯。",
+    "因為使用者的程式是 program against API：在 Linux 上寫的程式，拿到 Mac 或另一個 POSIX 系統上，只要重新 compile（指令集不同，一定要重編），不用改寫程式，因為 API 長得一模一樣。",
+    "例如 multi-thread programming 用的是 Pthread 這個 library。",
+    "為什麼前面多一個 P？因為 P 就是 POSIX 的簡寫：它是依照 POSIX 這個 API 定義的 [[thread]] function。",
+    "最後一個是 Java。Java 是一個程式語言，為什麼也有自己的 API？",
+    "因為 Java 很特殊：它跑在 Java Virtual Machine（JVM）上，是在自己的虛擬機器上執行的程式，跟 Nachos 是同樣的概念。",
+    "它在自己模擬的 machine 上跑，下面真實的機器是什麼不重要，所以 Java 的 portability（可攜性）更好，也能更保護你的程式。",
+    "因為它自己就是一個 [[virtual machine]]，所以它自己定義的 API，就叫 Java API。"
+   ]
+  },
+  {
+   "title": "例子：copy 一個檔案",
+   "points": [
+    {
+     "t": 1161,
+     "text": "例子：把一個 file 的內容 copy 到另一個 file。"
+    },
+    {
+     "t": 1177,
+     "text": "Java 在 runtime translate code 所以較慢：越 general、越 portable 要做的越多（trade-off）。"
+    },
+    {
+     "t": 1246,
+     "text": "直接用 system call 要十幾二十個，low level、不 friendly；用 API（fopen、fread、fwrite）三行就好。"
+    }
+   ],
+   "scene": "osB-copy-example",
+   "cues": [
+    1161.05,
+    1177.41,
+    1197.8,
+    1245.8,
+    1256.8,
+    1274.8,
+    1282.94
+   ],
+   "explain": [
+    "來看實際例子（只要看看、體會就好）：把一個 [[檔案]]的內容 copy 到另一個檔案。",
+    "中間有同學問 Java 的問題：Java 要在 runtime（執行時）把你的程式碼 translate 成 x86 或 MIPS 指令，就像 Nachos 一樣，所以會比較慢一點。",
+    "這是一個 [[trade-off]]：你要它越 general、越 portable，要做的事就越多（例如下載 Java 時也要選對應的機器版本）。",
+    "回到例子：大一大二都寫過的 copy 程式，如果直接用 system call，大概要十幾二十個，每一行都是 system call。",
+    "而且你不只要寫很 low level 的語言，還要懂很多細節，它的設計一點都不 programming friendly，要自己想辦法兜起來。",
+    "所以才有 API：用 C library，call 一個 fopen、fread，再一個 fwrite，大概三行就寫完。",
+    "API 一樣有很多 parameter（參數），但每個欄位都是為了明確的目的設計、定義得很清楚，所以很好用。"
+   ]
+  },
+  {
+   "title": "呼叫流程與為什麼要 API",
+   "points": [
+    {
+     "t": 1319,
+     "text": "流程：user application → API library →（需要 OS 時）system call → interrupt → service routine → return。"
+    },
+    {
+     "t": 1349,
+     "text": "很多 API 不碰 system call；printf 要寫螢幕（I/O，privileged）才一定要 system call。"
+    },
+    {
+     "t": 1405,
+     "text": "為什麼要 API：① 好寫程式 ② portability（POSIX）③ efficiency（system call 很 expensive，API 用最有效率的方式 call）。"
+    }
+   ],
+   "scene": "osB-api-why",
+   "cues": [
+    1318.8,
+    1321.44,
+    1333.8,
+    1348.8,
+    1364,
+    1371.11,
+    1384.89,
+    1404.8,
+    1414.8,
+    1421.8,
+    1425.84,
+    1440.8,
+    1470.8,
+    1483.8
+   ],
+   "explain": [
+    "比較重要的是：它們是不同的 layer。實際發生的事是：user application（使用者程式）先 call API library。",
+    "API library 裡面如果需要 OS 幫忙，才會去 call [[system call]]，這時才進到 OS 裡。",
+    "接著就是 [[interrupt]] 那一套：找到 service routine 執行，做完再 return 回 API。所以是兩層。",
+    "但很多 API 根本沒碰到 system call，單純在 API 那層就做完了。",
+    "大家最熟的 standard C 的 printf：它要把東西 output 到螢幕，螢幕是一個 I/O device。",
+    "上一講說過，I/O 指令一定是 [[privileged instruction]]，所以要 call system call；printf 這個 API 就去 call system call，再去下那些特權指令。",
+    "做完之後 return 回原來的地方，跟之前講的 system call 流程一樣。",
+    "那為什麼要在 system call 上面再加一層 API（就像 shell 的概念）？第一很簡單：這樣才能用 C、Java 這些語言很快寫程式。",
+    "第二是 portability（可攜性），像 POSIX。",
+    "POSIX 這個 interface 會出現，很大的目的就是整合大家，對抗當時的 Microsoft。",
+    "第三是 efficiency（效率）：很多程式碼其實根本不需要 call OS。",
+    "對系統不熟的人，常常不知道該不該 call system call。但 system call 非常 expensive（昂貴）：它不只是移動 program counter，而是一個 interrupt（作業一 trace 的那整段流程），還會動到 OS、影響其他使用者。",
+    "例如 copy 一個檔案要二十幾個 system call，你自己寫，有辦法寫到最好嗎？大概贏不過設計 OS 的人。",
+    "設計 OS 的人知道怎麼用最 efficient 的方式組合這些 system call（例如完成一個 fprintf）。透過 API，使用者就不需要了解下層怎麼實現。"
+   ]
+  },
+  {
+   "title": "System call 的參數傳遞",
+   "points": [
+    {
+     "t": 1515,
+     "text": "system call 傳參數的方式跟一般 function call 相同。"
+    },
+    {
+     "t": 1547,
+     "text": "三種：① register ② table in memory（傳 pointer，OS 在 kernel mode 可讀任何 pointer）③ stack（push / pop）。"
+    },
+    {
+     "t": 1685,
+     "text": "去看作業一的實作用哪一種；本講重點是 system call 與 API 的差別。"
+    }
+   ],
+   "scene": "osB-param-pass",
+   "cues": [
+    1515.74,
+    1530.8,
+    1547.16,
+    1562.66,
+    1576.7,
+    1590.8,
+    1608.8,
+    1611.62,
+    1630.8,
+    1669.2,
+    1684.8,
+    1712
+   ],
+   "explain": [
+    "最後稍微講一下：system call 就像大一學的 function call 一樣，要傳遞參數（passing parameter）。",
+    "傳參數的方式跟一般 function call 完全相同，只是後面的流程（interrupt）不一樣。",
+    "第一種：直接用 [[register]]。把值寫進 register，CPU 讀到那個值就可以做事。",
+    "第二種：table in memory，簡單講就是傳一個 pointer（[[指標]]）。",
+    "當參數很多時，常見做法是先建立一個 data structure（[[資料結構]]），把參數都放進去。",
+    "然後把這個 data structure 的 pointer 傳進去，收到的一方拿到 pointer，就能讀裡面的值。",
+    "OS 也是這樣做，差別在 OS 有所有權限：它已經在 [[kernel mode]] 裡，任何人給它的 pointer 它都能存取，不會被擋。",
+    "最後一種是 [[stack]]（堆疊）。下一節講 process 時會更清楚：每個 process 都有一塊叫 stack 的記憶體。",
+    "呼叫的一方把參數 push 進去，被呼叫的一方就知道要 pop 出來拿值。這部分有點瑣碎，不需要背。",
+    "投影片的圖就是：資料放在某個地方（table），把指向它的 pointer X 放進 register，就讀得到資料在哪裡。",
+    "老師希望大家看一下作業一的實作，不要只是 copy paste：它用的是這三種的哪一種？demo 時助教可能會問。",
+    "這一講最主要的，就是清楚知道 system call 和 API 的差別。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "下列關於 system call 的敘述何者正確？",
+   "opts": [
+    "是 software interrupt，呼叫後會進入 kernel mode",
+    "呼叫 API 一定會進入 kernel mode",
+    "system call 通常用 Java 寫",
+    "system call 和 API 只是別名"
+   ],
+   "ans": "是 software interrupt，呼叫後會進入 kernel mode",
+   "why": "只有 system call（interrupt）能切換 mode；API 本身不是 interrupt。"
+  },
+  {
+   "q": "malloc() 和 free() 與 system call 的對應關係是？",
+   "opts": [
+    "多對一：兩個 API 都 call brk",
+    "一對一",
+    "一對零：都不需要 OS",
+    "各自對到十幾個 system call"
+   ],
+   "ans": "多對一：兩個 API 都 call brk",
+   "why": "課堂例子：只是參數不同（增加或減少）。"
+  },
+  {
+   "q": "math library 的 abs() 說明了 API 與 system call 的哪種關係？",
+   "opts": [
+    "一對零",
+    "一對多",
+    "多對一",
+    "一對一"
+   ],
+   "ans": "一對零",
+   "why": "只處理數字，不需要 OS，API 只是方便寫程式。"
+  },
+  {
+   "q": "POSIX 帶來的主要好處是？",
+   "opts": [
+    "portability：程式換到其他 POSIX 系統只需重新 compile",
+    "讓 system call 都一樣",
+    "讓程式不用 compile",
+    "讓程式跑得更快"
+   ],
+   "ans": "portability：程式換到其他 POSIX 系統只需重新 compile",
+   "why": "各系統 system call 不同，但 API 定義相同。"
+  },
+  {
+   "q": "Win32 屬於？",
+   "opts": [
+    "Windows 的 API",
+    "Windows 的 system call",
+    "Linux 的 API",
+    "一種 shell"
+   ],
+   "ans": "Windows 的 API",
+   "why": "老師特別提醒：它不是 system call，不要搞混。"
+  },
+  {
+   "q": "下列何者「不是」system call 傳遞參數的方式？",
+   "opts": [
+    "透過 cache 傳遞",
+    "放在 register",
+    "放在 memory 的 table，傳 pointer",
+    "放在 stack"
+   ],
+   "ans": "透過 cache 傳遞",
+   "why": "三種方式：register、table in memory（pointer）、stack。"
+  },
+  {
+   "q": "為什麼不建議直接用 system call 寫一般程式？",
+   "opts": [
+    "system call 很 expensive 又 low level，API 用最有效率的方式包好",
+    "system call 不能用",
+    "system call 比 API 更安全",
+    "API 一定比 system call 快"
+   ],
+   "ans": "system call 很 expensive 又 low level，API 用最有效率的方式包好",
+   "why": "copy 一個檔案要二十幾個 system call，用 API 三行就好。"
+  }
+ ]
+}

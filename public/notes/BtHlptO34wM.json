@@ -1,243 +1,580 @@
 {
  "video": "BtHlptO34wM",
  "label": "清大周志遠 第4A講 Computer-System Organization(續)",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
+   "title": "開場：先懂 OS 在做什麼",
+   "points": [
+    {
+     "t": 1,
+     "text": "上一講的 introduction 不用死背，但要想想自己用作業系統時是不是真的有這些體會。"
+    },
+    {
+     "t": 45,
+     "text": "先知道 OS 在做什麼，比怎麼實現 detail 更重要；走系統領域才需要更深。"
+    }
+   ],
+   "scene": null
+  },
+  {
    "title": "Device controller 與 buffer",
-   "scene": "controller-buffer",
    "points": [
     {
-     "text": "device 和 memory 速度差太多，中間有 device controller。",
-     "t": 53
+     "t": 61,
+     "text": "device 和 memory 速度差太多，中間有 device controller。"
     },
     {
-     "text": "controller 有 register，CPU 下指令給 controller，叫它搬資料。",
-     "t": 73
+     "t": 103,
+     "text": "controller 有 register，CPU 下 instruction 給 controller，叫它搬資料。"
     },
     {
-     "text": "資料先搬進 controller 的 buffer 再寫到 memory；buffer 空間有限。",
-     "t": 92
+     "t": 116,
+     "text": "資料先搬進 controller 的 buffer 再寫到 memory；buffer 空間有限。"
     },
     {
-     "text": "controller 和 buffer 的設計決定 device I/O 速度的極限。",
-     "t": 113
+     "t": 138,
+     "text": "controller 和 buffer 的設計決定 device I/O 速度的極限。"
     },
     {
-     "text": "controller 也是被動的：最終 master 是 CPU 上執行的 instruction。",
-     "t": 134
+     "t": 153,
+     "text": "controller 是被動的：最終 master 是 CPU 上執行的 instruction。"
     },
     {
-     "text": "buffer 滿了就要等它清空，所以簡單的 I/O 也需要 CPU 控制。",
-     "t": 171
+     "t": 172,
+     "text": "buffer 滿了就要等它清空，所以連簡單的 I/O 也需要 CPU 控制。"
     }
+   ],
+   "scene": "osB-ctl-buffer",
+   "cues": [
+    61.24,
+    85.8,
+    93.06,
+    103.75,
+    110.3,
+    115.93,
+    123.42,
+    129.79,
+    138.54,
+    153.08,
+    155.61,
+    172.55,
+    185.8,
+    196.56
+   ],
+   "explain": [
+    "上一講結尾，老師用「從硬碟讀資料」這種 I/O（輸入／輸出）當例子，來看電腦怎麼運作。畫面左邊是 [[CPU]]，中間是記憶體（memory），右邊是硬碟（disk）。",
+    "仔細看會發現：硬碟這類 device 跟 memory 之間，其實還夾著一個小幫手，叫 device controller（裝置控制器）。它是一塊硬體，專門負責指揮那個 device。",
+    "為什麼要多一層？因為兩邊速度差太多了：CPU 和 memory 很快，device 很慢。就像儲存有階層一樣，中間放個 controller 來緩衝。",
+    "controller 上面有幾個 [[register]]（很小、很快的暫存格子）。CPU 就是把 instruction（指令）寫進這些 register，告訴 controller 要做什麼。",
+    "CPU 下完指令，controller 就開始做事：負責把資料搬來搬去。",
+    "資料不是直接從硬碟飛進 memory，而是先搬到 controller 自己的 buffer（緩衝區）裡，一格一格裝進去。",
+    "等 buffer 裡有了資料，再把它寫到 memory。所以路線是：device → controller 的 buffer → memory。",
+    "controller 畢竟只是一塊小硬體，它的 buffer 通常不大，一次只能裝一點點資料。",
+    "所以 controller 怎麼設計、buffer 有多大、搬資料的方法好不好，就決定了這個 device 每秒最多能搬幾個 [[byte]]，也就是 I/O 速度的上限。",
+    "重點：controller 是「被動」的。它不會自己決定要做什麼，要等別人下指令。",
+    "整台電腦真正的老大（master）是 CPU：一切都是 CPU 上執行的 instruction 說了算，CPU 下指令，controller 才去搬。",
+    "buffer 很小，所以資料不能像水流一樣一直灌。buffer 一滿（紅色），就沒辦法再寫資料進去了。",
+    "這時只能等 buffer 把資料送走、有空位或清空了，才能搬下一批進去。",
+    "結論：就算是這麼簡單的 I/O，也需要 CPU 在旁邊控制、一直下指令。那 CPU 要怎麼控制呢？下一段就看最早的做法。"
    ]
   },
   {
-   "title": "Busy-wait",
-   "scene": "busy-wait",
+   "title": "Busy waiting：CPU 一直 peek",
    "points": [
     {
-     "text": "早期最直覺的方式：busy/wait，由 CPU 完全控制。",
-     "t": 189
+     "t": 207,
+     "text": "早期最直覺的方式：busy waiting，由 CPU 完全控制。"
     },
     {
-     "text": "例：輸出一串字元直到 end of character，一個一個 poke 到 controller。",
-     "t": 207
+     "t": 218,
+     "text": "例：輸出一串字元直到 end of character，一個一個 poke 到 controller。"
     },
     {
-     "text": "buffer 可能滿，所以要用 peek 一直檢查 status 是不是 busy。",
-     "t": 243
+     "t": 248,
+     "text": "buffer 可能滿，所以要用 peek 一直檢查 status 是不是 busy。"
     },
     {
-     "text": "搬一個 byte 要好幾 ms，這段時間 CPU 只是在燒 cycle，對使用者沒幫助。",
-     "t": 279
+     "t": 287,
+     "text": "搬一個 byte 要好幾 ms，這段時間 CPU 只是在燒 cycle，對使用者沒幫助。"
     },
     {
-     "text": "程式做 I/O 時仍霸佔 CPU，multiprogramming 也沒有用。",
-     "t": 318
+     "t": 336,
+     "text": "程式做 I/O 時仍霸佔 CPU，multiprogramming 也沒有用；使用率 100% 卻沒幫助。"
     }
+   ],
+   "trap": "busy waiting 又叫 polling：CPU 自己一直問「好了沒」。考題常拿它和 interrupt-driven I/O 比較。",
+   "scene": "osB-busy-wait",
+   "cues": [
+    207.08,
+    211.8,
+    217.8,
+    222.58,
+    228.8,
+    237.9,
+    244.35,
+    247.8,
+    269.8,
+    272.8,
+    287.68,
+    303.65,
+    335.8,
+    343.57,
+    369.38
+   ],
+   "explain": [
+    "在這樣的架構下，早期大家最直接想到的控制方法是什麼呢？",
+    "叫做 busy waiting（忙碌等待）：整個 I/O 過程完全由 [[CPU]] 自己盯著、自己控制。",
+    "老師的例子：把一個字串（string）輸出到 device。上面是這段程式的示意：外層迴圈一個字一個字送，內層迴圈負責等待。",
+    "字串最後會有一個「結尾字元」（\\0），看到它就知道字串結束，不用再輸出了。",
+    "輸出的方式是用一個指標一個字元（一個 [[byte]]）往前走，每次用 poke 這個動作，把一個字元寫到 controller。",
+    "字元被寫進 device controller 的 buffer，再由 controller 搬出去。",
+    "可是剛才說過，buffer 很小，很快就會滿。",
+    "所以每次寫之前，都要先用另一個指令 peek 去「偷看」controller 的 status（狀態）：是 BUSY（滿了、還不能寫），還是可以寫。",
+    "如果是 BUSY，程式就卡在那個 while 迴圈裡，一直 peek、一直 peek，什麼也不做，只是一直問「好了沒？」。",
+    "直到 status 說 OK 了，才終於寫下一個字元進去。然後又重複同樣的等待。",
+    "問題在於：I/O 很慢、CPU 很快。搬一個 byte 可能就要好幾個毫秒（ms），對 CPU 來說是超長的時間。",
+    "這段時間 CPU 只是在燒自己的運算週期（cycle），一直重複 peek，對使用者一點幫助都沒有，純粹浪費。",
+    "而且這支程式 A 在做 I/O 的時候，還一直霸佔著 CPU，CPU 跟 I/O 沒辦法「同時」各做各的（overlap）。",
+    "就算記憶體裡放了很多程式等著跑（這叫 [[multiprogramming]]），B 也輪不到 CPU，等於沒用。",
+    "最諷刺的是：CPU 使用率看起來是 100%，好像很忙，但其實都在做無意義的 peek，對使用者沒有任何幫助。"
    ]
   },
   {
-   "title": "Interrupt-driven",
-   "scene": "interrupt-timeline",
+   "title": "Interrupt-driven：改變 CPU 的 flow",
    "points": [
     {
-     "text": "現在的電腦都是 driven by interrupt，也就是 event-driven。",
-     "t": 357
+     "t": 377,
+     "text": "現在的電腦都是 driven by interrupt，也就是 event-driven。"
     },
     {
-     "text": "interrupt 可以改變 CPU 執行的 flow：隨時打斷它去做別的事。",
-     "t": 375
+     "t": 406,
+     "text": "interrupt 可以改變 CPU 執行的 flow：隨時打斷它去做別的事。"
     },
     {
-     "text": "圖：上面是 CPU（高＝做原程式），下面是 I/O（低＝傳輸中）。",
-     "t": 431
+     "t": 457,
+     "text": "圖：上面是 CPU（高＝做原程式），下面是 I/O（低＝傳輸中）。"
     },
     {
-     "text": "傳輸結束需要 CPU 幫忙搬進 memory 時，發 interrupt，切到 OS 的 routine 處理。",
-     "t": 488
+     "t": 531,
+     "text": "傳輸告一段落需要 CPU 幫忙搬進 memory 時，發 interrupt，切到 OS 的 routine 處理。"
     },
     {
-     "text": "處理完可以 return 回原來的狀態 resume，不會把原程式 kill 掉。",
-     "t": 547
+     "t": 592,
+     "text": "處理完 return 回原來的狀態 resume，不會把原程式 kill 掉；CPU 與 I/O 同時運作。"
     }
+   ],
+   "scene": "osB-intr-timeline",
+   "cues": [
+    377.02,
+    384.8,
+    405.8,
+    417.69,
+    456.8,
+    471.23,
+    498.44,
+    507.19,
+    530.96,
+    536.16,
+    547.92,
+    575.66,
+    591.98,
+    619.44
+   ],
+   "explain": [
+    "所以現在的電腦改用完全不同的方式：driven by [[interrupt]]，也就是靠「中斷」來驅動。",
+    "這叫 event-driven（事件驅動）：平常各做各的，有事件發生時才通知、才處理，不用一直盯著問。",
+    "interrupt 這個名字的意思就是「打斷」：它可以改變 CPU 執行的流程（flow）。",
+    "CPU 本來在執行某支程式，interrupt 可以隨時把它打斷，叫它先去做另一件事。",
+    "老師用一張時間圖來看：上面那條線是 CPU，下面是 I/O。CPU 線在「高」代表在做原本的程式，「低」代表去處理別的事。",
+    "I/O 那條線剛好相反：在上面代表 idle（閒著，沒資料要傳），往下才代表 busy（正在傳資料）。",
+    "有了 interrupt 之後，我們希望看到：程式在 CPU 上算的同時，I/O 也同時在傳資料，兩邊一起動，不用互等。",
+    "傳到一個段落，例如 controller 的 buffer 滿了。",
+    "要把資料搬進 memory 需要 CPU 幫忙（memory 由 CPU 控制），這時 device 就發出一個 interrupt（紅色）通知 CPU。",
+    "CPU 被打斷，直接切換到 OS 裡負責處理 I/O 的那個小程式（routine，紫色），去搬資料。",
+    "搬完之後，interrupt 就結束了，CPU 回去繼續執行原來的程式；I/O 也繼續傳下一批。",
+    "也就是說：需要 OS 出手時，可以隨時透過 interrupt，從使用者的程式切換到 OS 的程式，先處理比較急的事。",
+    "很重要的是，OS 做完會 return（返回）原來的狀態，原程式可以 resume（接著做），不會被 kill（砍掉）。",
+    "所以有了 interrupt，CPU 和 I/O 才能真正「同時」運作，各忙各的。"
    ]
   },
   {
    "title": "用 interrupt 做 I/O 的流程",
-   "scene": "interrupt-io-flow",
    "points": [
     {
-     "text": "使用者要 output 一個大檔案 → call OS → 走到 device driver。",
-     "t": 603
+     "t": 631,
+     "text": "使用者要 output 一個大檔案 → call OS → 走到 device driver。"
     },
     {
-     "text": "driver 用 interrupt 方式 initiate I/O：交代 controller 搬幾百 byte，搬完再通知。",
-     "t": 658
+     "t": 668,
+     "text": "driver 用 interrupt 方式 initiate I/O：交代 controller 搬幾百 byte，搬完再通知。"
     },
     {
-     "text": "搬完 controller signal 一個 interrupt 通知 CPU，資料已在 memory 指定位置。",
-     "t": 677
+     "t": 726,
+     "text": "搬完 controller signal 一個 interrupt 通知 CPU，資料已在 memory 指定位置。"
     },
     {
-     "text": "程式 A 停在 printf 等結果；CPU 切去執行 program B。",
-     "t": 736
+     "t": 757,
+     "text": "程式 A 停在 printf 等結果；CPU 切去執行 program B。"
     },
     {
-     "text": "interrupt 進來：打斷 B，handler 確認 I/O 完成，把 A 改成可執行狀態。",
-     "t": 793
+     "t": 794,
+     "text": "interrupt 進來：打斷 B，handler 把 A 改成可執行狀態；接著由 CPU scheduling 決定誰先跑。"
     },
     {
-     "text": "接下來 A 和 B 都 ready，由 CPU scheduling 決定誰先跑。",
-     "t": 811
-    },
-    {
-     "text": "滑鼠：hardware 直接丟 signal，交給 OS 的 mouse handler，再呼叫 display 程式。",
-     "t": 865
+     "t": 883,
+     "text": "滑鼠：hardware 直接丟 signal，交給 OS 的 mouse handler，再呼叫 display 程式，全在 OS 裡。"
     }
+   ],
+   "scene": "osB-intr-io",
+   "cues": [
+    630.98,
+    646.3,
+    652.2,
+    668.76,
+    689.28,
+    702.21,
+    718.8,
+    725.89,
+    735.8,
+    756.8,
+    772.86,
+    784.8,
+    794.16,
+    822.54,
+    833.19,
+    875.25,
+    883.53,
+    931.41,
+    947.8
+   ],
+   "explain": [
+    "現在一步一步看「用 interrupt 做 I/O」的完整流程。左邊是 CPU 正在跑的程式 A，上方等著的是程式 B，中間是 OS，右邊是 controller 和硬碟。",
+    "假設使用者的程式 A 要輸出（output）一個很大的檔案，例如呼叫 printf。",
+    "A 自己不能直接碰硬體，所以它會呼叫 OS（[[system call]]），一路走到 OS 最底層、專門控制這個裝置的程式：device driver（驅動程式）。",
+    "driver 知道要用 interrupt 的方式做 I/O，於是由它啟動（initiate）這次 I/O。",
+    "CPU 只要下一道指令給 controller，請它開始搬資料就好，自己不用一直顧著。",
+    "指令裡會交代要搬多少，例如 100 或 200 個 [[byte]]，並說好：「搬的過程不用來找我，全部搬完再通知我。」",
+    "接著 controller 就自己開始搬資料（controller 裡其實有個簡單的小晶片，可以自己做事）。",
+    "等全部搬完，controller 才會 signal 一個 interrupt，通知 CPU：資料都搬好了。",
+    "資料已經放在 memory 裡指定的位置，CPU 可以直接拿來用。",
+    "那這段時間 A 在幹嘛？A 呼叫 printf 之後，要等 I/O 做完才能執行下一行，所以它就停在旁邊等。",
+    "CPU 這時不會閒著，它可以切換去跑另一支程式。",
+    "於是 CPU switch（切換）到程式 B，B 還有計算要做，就先讓 B 用 CPU。",
+    "等 interrupt 一進來，CPU 就知道 A 的 I/O 做完了，於是打斷正在執行的 B，先回頭處理 A 的事。",
+    "現在 A 的 I/O 已經完成，所以 A 和 B 都是 ready（準備好可以跑）的狀態。",
+    "處理這個 interrupt 的 OS 程式叫 interrupt handler：它確認 I/O 真的做完，並把 A 的狀態改成「可以執行」。",
+    "接下來誰先跑？由 OS 的 CPU 排程（[[CPU scheduling]]）決定：可能讓 B 繼續，也可能因為 A 比較重要（priority 高）就先跑 A。",
+    "有同學問滑鼠的情況：那時沒有程式先發起 I/O，而是 hardware 直接丟出一個 signal（硬體產生的 interrupt）。",
+    "OS 會叫出負責滑鼠的 handler 處理，處理完再呼叫顯示（display）的程式，把游標移動畫到螢幕上。",
+    "注意：剛剛這些步驟全部在 OS 內部的各層之間完成，完全沒有經過任何使用者程式。"
    ]
   },
   {
-   "title": "Hardware vs Software interrupt",
-   "scene": "signal-vs-trap",
+   "title": "Hardware 被動、Software 主動；不需要 while loop",
    "points": [
     {
-     "text": "所有 OS 都是 interrupt driven：沒事時 CPU idle，一動滑鼠就 trigger interrupt。",
-     "t": 990
+     "t": 965,
+     "text": "interrupt 分 hardware 產生（被動：直接打斷現有程式）與 software 產生（主動：自己 suspend，等完成再被叫醒）。"
     },
     {
-     "text": "hardware 產生的 interrupt，課堂給它特殊名字：signal。",
-     "t": 1065
+     "t": 1008,
+     "text": "程式 call I/O 後被 suspend，CPU 讓給別人；不需要 while loop 一直看 register。"
     },
     {
-     "text": "software 的第一種：程式錯誤，例如除以零、segmentation fault，OS 偵測到後 throw interrupt 處理，系統不 crash。",
-     "t": 1137
-    },
-    {
-     "text": "第二種最常見：system call。所有 system call 都透過 interrupt，跟一般 function call 不同。",
-     "t": 1230
-    },
-    {
-     "text": "間接處理的原因是 protection：OS 可以檢查這是不是有效的 interrupt，不能繞過。",
-     "t": 1305
-    },
-    {
-     "text": "software interrupt 稱為 trap：程式被 trap 進 OS，由 OS 決定怎麼處理。",
-     "t": 1381
+     "t": 1039,
+     "text": "所有 OS 都是 interrupt driven：沒事時 CPU idle，一動滑鼠就 trigger interrupt。"
     }
    ],
-   "trap": "補充：恐龍書把 software-generated interrupt 稱為 trap（或 exception）；UNIX 的 signal 另指送給 process 的非同步通知，答題時以課本用語為準。"
+   "scene": "osB-active-passive",
+   "cues": [
+    964.8,
+    975.41,
+    982.59,
+    1008.72,
+    1018.88,
+    1038.8,
+    1052.7,
+    1064.16
+   ],
+   "explain": [
+    "這個流程會因情況有點不同。第一個要分清楚：這個 interrupt 是 software（軟體）產生的，還是 hardware（硬體）產生的？",
+    "hardware 產生的是「被動」的：程式正跑得好好的，突然就被直接打斷。",
+    "software 產生的是「主動」的：程式自己發出 interrupt（例如要做 I/O），然後把自己 suspend（暫停），等完成時再被叫起來。",
+    "這就是和 busy waiting 最大的差別：程式 call I/O 之後就被暫停，CPU 空出來，讓別的程式可以用。",
+    "也就不需要一個 while 迴圈一直下指令、一直看 [[register]] 的狀態，CPU 不會被浪費。",
+    "所以現在所有的作業系統都是 [[interrupt]] driven（事件驅動）：有事要處理時，才把 OS 叫醒來做事。",
+    "沒事的時候，最好一條指令都不執行，CPU 就 idle（閒置）在那裡，所以你常看到 CPU 使用率很低。",
+    "但它隨時能反應：你一動滑鼠，就 trigger（觸發）了一個 interrupt，電腦馬上開始處理接下來的事。"
+   ]
+  },
+  {
+   "title": "Hardware interrupt 叫 signal",
+   "points": [
+    {
+     "t": 1079,
+     "text": "觸發 interrupt 分 software 與 hardware 兩大類。"
+    },
+    {
+     "t": 1105,
+     "text": "任何 device 產生的 interrupt（不是 user program 的 instruction 產生）叫 signal；signal 不會由 software 產生。"
+    }
+   ],
+   "trap": "補充：恐龍書把 software-generated interrupt 稱為 trap（或 exception）；UNIX 的 signal 另指送給 process 的非同步通知，答題時以課本用語為準。",
+   "scene": "osB-signal",
+   "cues": [
+    1078.8,
+    1091.24,
+    1105.32,
+    1128.71
+   ],
+   "explain": [
+    "能觸發 [[interrupt]] 的方式很多，但最大的分法就兩種：software 產生的，和 hardware 產生的，兩者處理起來差很多。",
+    "hardware 的意思是：由任何 device（鍵盤、硬碟、滑鼠……）產生的，只要不是使用者程式裡的指令產生的，都算 hardware interrupt。",
+    "課堂上給 hardware 產生的 interrupt 一個特別的名字：signal（訊號），就像 device 打了一個訊號跟 OS 說「有事要處理了」。",
+    "要特別記住：signal 一定是 hardware 產生的，不可能是 software 產生的，這樣就能清楚區分。"
+   ]
+  },
+  {
+   "title": "Software interrupt（trap）：error 與 system call",
+   "points": [
+    {
+     "t": 1139,
+     "text": "software interrupt 一定由 user program 引起，主要兩種。"
+    },
+    {
+     "t": 1152,
+     "text": "第一種：程式錯誤（除以零、segmentation fault），OS 偵測後 throw interrupt 處理，系統不 crash。"
+    },
+    {
+     "t": 1250,
+     "text": "第二種最常見：system call。所有 system call 都透過 interrupt，跟一般 function call 不同。"
+    },
+    {
+     "t": 1312,
+     "text": "間接處理是為了 protection：OS 可以檢查這是不是有效的 interrupt，不能繞過。"
+    },
+    {
+     "t": 1372,
+     "text": "software interrupt 稱為 trap：程式被 trap 進 OS，由 OS 決定怎麼處理。"
+    }
+   ],
+   "scene": "osB-trap-kinds",
+   "cues": [
+    1139.45,
+    1152.49,
+    1160.34,
+    1174.52,
+    1192.32,
+    1218.8,
+    1250.59,
+    1267.16,
+    1288.26,
+    1312.26,
+    1335.8,
+    1372.29,
+    1393.62
+   ],
+   "explain": [
+    "再來看 software 這邊：software interrupt 一定是由使用者的程式（user program）引起的。左邊是使用者程式，右邊是 OS。",
+    "第一種情況是「不預期的」：你的程式碼裡有錯誤（error），寫程式時幾乎天天發生。",
+    "例如除以 0，或是常見的 segmentation fault（存取了不該碰的記憶體）。",
+    "這時原本的程式已經沒辦法繼續執行了。那為什麼整台電腦不會跟著當掉（crash），還能好好印出錯誤訊息？",
+    "因為 OS 偵測到錯誤時，會丟出（throw）一個 [[interrupt]]，由 OS 接手處理：例如把 [[program counter]] 移到印錯誤訊息的地方，不再往下跑。",
+    "又像你的程式去存取別人的記憶體，OS 會把你擋下來，丟一個錯誤訊息給你。這些都是 OS 幫你處理，系統才不會整個掛掉。",
+    "第二種情況最常見：[[system call]]，也就是使用者程式請 OS 幫忙做事時呼叫的 OS 介面（API）。",
+    "system call 和一般的 [[函式]]呼叫最大的不同：一般 function call 只是把 program counter 跳過去；system call 則一定要透過 interrupt。",
+    "例如呼叫「寫到螢幕」：程式會丟出一個 software interrupt，然後在那裡等。OS 接到後，查出要交給哪個 routine 處理，處理完才通知程式。",
+    "為什麼要繞這麼一圈「間接」處理？老師說後面講系統保護時就會懂：這跟 protection（保護）有關。",
+    "透過 interrupt，OS 就能區分這是 OS 的功能還是一般函式，並檢查這是不是一個有效（合法）的 interrupt。哪些有效全都事先定義好，使用者繞不過去。",
+    "所以 software 產生的 interrupt 有個名字叫 [[trap]]；hardware 產生的叫 signal。只說 interrupt 會不夠清楚。",
+    "為什麼叫 trap（陷阱）？因為程式本來要做別的事，卻因為這個 interrupt 被「困」進 OS 裡，由 OS 決定怎麼處理。"
+   ]
   },
   {
    "title": "Hardware interrupt 的處理流程",
-   "scene": "interrupt-vector",
    "points": [
     {
-     "text": "hardware interrupt 是被動的：會在程式任何一行 instruction 中間打斷它。",
-     "t": 1457
+     "t": 1420,
+     "text": "流程圖：resident monitor（memory）裡有 user program 與 OS。"
     },
     {
-     "text": "hardware 偵測到 signal 後，先查 interrupt vector。",
-     "t": 1493
+     "t": 1457,
+     "text": "hardware interrupt 是被動的：會在程式任何一行 instruction 中間打斷它。"
     },
     {
-     "text": "vector 是 array of function pointers，每格只放 4 bytes 的 pointer，因為各 handler 大小不同。",
-     "t": 1530
+     "t": 1494,
+     "text": "主機板 detect 到 signal 後，先查 interrupt vector。"
     },
     {
-     "text": "signal 帶有 signal number，對到 vector 的某一格；裝 driver 就是改寫那一格的 pointer。",
-     "t": 1567
+     "t": 1517,
+     "text": "vector 是 array of function pointers，每格只放 4 bytes 的 pointer，因為各 handler 大小不同。"
     },
     {
-     "text": "真正處理的程式叫 service routine。",
-     "t": 1627
+     "t": 1543,
+     "text": "signal 帶有 signal number，對到 vector 的某一格；裝 driver 就是改寫那一格的 pointer。"
     },
     {
-     "text": "OS 會記下被打斷的 program 和它的 PC，做完 restore，從正確位置 resume。",
-     "t": 1648
+     "t": 1596,
+     "text": "真正處理的程式叫 service routine。"
     },
     {
-     "text": "vector 的欄位跟主機板綁死，能處理的 signal number 是固定的。",
-     "t": 1684
+     "t": 1625,
+     "text": "OS 會記下被打斷的 program 和它的 PC，做完 restore，從正確位置 resume。"
+    },
+    {
+     "t": 1671,
+     "text": "vector 的欄位跟主機板綁死，能處理的 signal number 是固定的。"
     }
+   ],
+   "scene": "osB-hw-flow",
+   "cues": [
+    1420.19,
+    1428.98,
+    1456.8,
+    1477.39,
+    1493.8,
+    1507.8,
+    1517.47,
+    1537.8,
+    1543.76,
+    1568.37,
+    1588.7,
+    1596.44,
+    1625.16,
+    1642.8,
+    1649.8,
+    1671.2
+   ],
+   "explain": [
+    "接著仔細看處理流程，也會看到 hardware 和 software 在處理上的不同。",
+    "圖中整塊是 memory（老師說 resident monitor 是它的別名）。左邊放使用者的程式，右邊是 OS 的一大堆程式碼。",
+    "hardware interrupt 是被動的：例如你的程式正在跑，使用者突然動了一下滑鼠，碰到了 device。",
+    "這時不管程式執行到哪一行，都會被打斷：任何兩行指令之間都有可能。",
+    "偵測到這個 hardware signal 的是硬體（主機板），跟軟體無關。",
+    "偵測到之後，第一件事是去查一個叫 [[interrupt vector]] 的表。",
+    "這個 vector 其實是一個[[陣列]]，裡面每一格裝的只是 function pointer（函式的位址，告訴你處理程式在哪裡）。",
+    "為什麼只放 pointer？因為每個處理程式的大小都不一樣，沒辦法塞進固定大小的格子；所以每格只放 4 個 [[byte]] 的 pointer。",
+    "每個 signal 都帶有一個 signal number（編號），看編號就知道要用陣列的哪一格。這裡示意是第 2 格。",
+    "你安裝 driver 時做的事，就是把那一格的 pointer 改寫（override）成指向新 driver 的程式碼。",
+    "拿到 function pointer 後，就被導向（redirect）到那段程式碼去處理。",
+    "這段真正處理 signal 的程式，叫做 service routine（服務程序）：因為它是 OS 提供的一項服務。",
+    "做完之後最重要的是：一定要 return（返回），而且不能影響原本程式的執行。",
+    "所以在 interrupt 發生時，OS 就已經記下被打斷的是哪支程式，以及它的 [[program counter]]（PC，下一行要執行的位置）。",
+    "處理完就把這些資訊還原（restore），讓那支程式從正確的位置繼續（resume）。",
+    "注意 interrupt vector 是固定的：主機板買來時，能處理哪些 signal number、有幾格，都已經跟硬體綁死，你只能換格子裡的 pointer。"
    ]
   },
   {
    "title": "Software interrupt（trap）的處理流程",
-   "scene": "trap-switch",
    "points": [
     {
-     "text": "software interrupt 是主動的：程式 call system call（或除以零）需要 OS 幫忙。",
-     "t": 1722
+     "t": 1699,
+     "text": "software interrupt 是主動的：程式 call system call（或除以零）需要 OS 幫忙。"
     },
     {
-     "text": "一樣記下位置、trap 進 OS，但用 switch-case 而不是 array。",
-     "t": 1762
+     "t": 1740,
+     "text": "一樣記下位置、trap 進 OS，但用 switch-case 而不是 array。"
     },
     {
-     "text": "因為 system call 數量是 unbounded，可以 load kernel module 任意新增。",
-     "t": 1802
+     "t": 1779,
+     "text": "因為 system call 數量是 unbounded，可以 load kernel module 任意新增。"
     },
     {
-     "text": "依 system call number 找到 routine 執行，做完 return 給呼叫者。",
-     "t": 1839
+     "t": 1808,
+     "text": "依 system call number 找到 routine 執行，做完 return 給呼叫者。"
     },
     {
-     "text": "流程相同，只是 hardware 用 interrupt vector、software 用 OS 寫的 switch-case。",
-     "t": 1878
+     "t": 1848,
+     "text": "流程相同，只是 hardware 用 interrupt vector、software 用 OS 寫的 switch-case。"
     }
+   ],
+   "scene": "osB-sw-flow",
+   "cues": [
+    1699.52,
+    1713.22,
+    1740.04,
+    1751.64,
+    1765.8,
+    1778.8,
+    1790.58,
+    1808.21,
+    1821.84,
+    1848.35,
+    1859.8
+   ],
+   "explain": [
+    "再來看 software 的流程。看起來很像，但它是「主動」的。",
+    "程式在執行時，自己主動需要 OS 幫忙：例如呼叫 [[system call]]，或是寫了除以 0 讓 OS 必須出手。",
+    "跟剛才一樣，先記下自己目前執行到的位置，然後 [[trap]] 進 OS。",
+    "不一樣的是：OS 這邊用的是 switch-case（依編號分流），而不是一個固定的陣列。",
+    "為什麼？因為這是軟體，有無限的可能：一個 OS 可以定義 100 個 system call，另一個定義 1000 個，甚至一萬個也行，跟硬體無關。",
+    "也就是說 system call 的數量是 unbounded（沒有上限），不可能像 interrupt vector 那樣做成燒死的固定陣列。",
+    "你甚至可以載入（load）一個 [[kernel]] module，就能任意新增新的 system call，靠的就是 switch-case 可以一直加。",
+    "每個 system call 都有自己的編號（number），OS 依編號比對，找到對應的 routine 開始執行。",
+    "執行完一樣 return，回到剛剛呼叫 system call 的那個程式身上。",
+    "整理：hardware interrupt 由 [[interrupt vector]] 找處理程式；software interrupt 由 OS 自己寫的 switch-case 找。",
+    "它們跑到 OS 裡不同的程式碼去處理，但流程其實完全相同，因為都是 interrupt。"
    ]
   },
   {
    "title": "共同架構與中斷中的中斷",
-   "scene": "interrupt-mask",
    "points": [
     {
-     "text": "一定會有：interrupt vector、可被 overwrite 的 handler/routine、記錄被打斷者的 address。",
-     "t": 1921
+     "t": 1869,
+     "text": "一定會有：interrupt vector、可被 overwrite 的 handler/routine、記錄被打斷者的 address。"
     },
     {
-     "text": "routine 執行到一半又被 interrupt：要保存的狀態更多，還會有 synchronization 問題。",
-     "t": 1961
+     "t": 1942,
+     "text": "routine 執行到一半又被 interrupt：要保存的狀態更多，還會有 synchronization 問題。"
     },
     {
-     "text": "OS 要非常快：service routine 常用 assembly 寫。",
-     "t": 2035
+     "t": 1997,
+     "text": "OS 要非常快：service routine 常用 assembly 寫。"
     },
     {
-     "text": "Linux 這類 OS 處理 interrupt 時會 disable 後來的 signal，直接忽略。",
-     "t": 2053
+     "t": 2036,
+     "text": "Linux 這類 OS 處理 interrupt 時會 disable 後來的 signal，直接忽略。"
     },
     {
-     "text": "interrupt 可以被 mask：high priority 執行時 low priority 被忽略；動滑鼠沒反應可能就是這樣。",
-     "t": 2094
+     "t": 2059,
+     "text": "interrupt 可以被 mask：high priority 執行時 low priority 被忽略；動滑鼠沒反應可能就是這樣。"
     },
     {
-     "text": "trap = software interrupt、signal = hardware interrupt，兩個 term 要記住。",
-     "t": 2153
+     "t": 2148,
+     "text": "trap = software interrupt、signal = hardware interrupt，兩個 term 要記住。"
     }
+   ],
+   "scene": "osB-intr-common",
+   "cues": [
+    1869.54,
+    1886.77,
+    1895.81,
+    1942.18,
+    1970.19,
+    1990.8,
+    1997.18,
+    2019.8,
+    2035.8,
+    2058.8,
+    2073.63,
+    2089.8,
+    2147.8
+   ],
+   "explain": [
+    "不管 hardware 還是 software，廣義來說架構都一樣，一定有三樣東西。第一：[[interrupt vector]]，裡面只存 function pointer。",
+    "第二：interrupt handler（或叫 routine），真正做處理的程式，而且可以被改寫（overwrite），例如安裝新 driver。",
+    "第三：一定要記住被打斷那個人的位址（address），也就是 [[program counter]]。就算是自己主動打斷自己也算打斷，因為要從使用者程式跳到 OS，記下位址才回得來。",
+    "那如果 routine 執行到一半，又來一個 interrupt 呢？這是可能發生的，會不會一直被打斷下去？",
+    "每次被打斷，[[register]]、程式狀態、記憶體狀態都要能回到原樣，所以要把很多東西記下來，這要花很多額外成本（[[overhead]]）。",
+    "而且兩支程式一直切換、一直被打斷，會產生很嚴重的 [[synchronization]]（同步）問題，後面的章節會詳細講。",
+    "OS 必須非常快。理想上，你用電腦時應該感覺不到 OS 存在：一動滑鼠就馬上有反應，沒有明顯延遲。",
+    "所以大部分 OS 為了讓 service routine 夠快，通常用 [[assembly language]]（組合語言）來寫，並避免任何延遲。",
+    "像 Linux 這種比較重視效能、比較單純的系統，處理 interrupt 時會把後面來的 signal 先 disable（關掉），當作沒看見；要的話就再送一次。這樣可以避開同步問題。",
+    "另外 interrupt 可以被 mask（遮蔽）：分成高優先權和低優先權，高的在執行時，低的會全部被忽略。",
+    "所以有時你動滑鼠，電腦卻沒反應，可能就是它正卡在某個比較重要的 interrupt routine 裡，把你的滑鼠訊號忽略了。",
+    "這段一定要記住：interrupt vector 是什麼、interrupt routine 是什麼、為什麼要記錄被打斷者正在執行的位址。作業一 trace Nachos 時就會看到一樣的 switch-case。",
+    "最後兩個專有名詞一定要記：[[trap]] 就是 software interrupt，signal 就是 hardware interrupt。"
    ]
   }
  ],
@@ -308,6 +645,5 @@
    "ans": "讓 OS 能檢查與保護系統，user 不能直接跳進 OS",
    "why": "透過 trap 才能區分 OS 的服務與一般 function，並做合法性檢查。"
   }
- ],
- "timing": "estimated"
+ ]
 }

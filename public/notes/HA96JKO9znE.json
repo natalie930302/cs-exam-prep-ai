@@ -1,126 +1,304 @@
 {
  "video": "HA96JKO9znE",
  "label": "清大周志遠 第5B講 OS Services",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
    "title": "本章內容",
-   "scene": null,
    "points": [
     {
-     "text": "OS 是唯一的 API、唯一的 manager，提供的 system call 就是 services。",
-     "t": 0
+     "t": 3,
+     "text": "OS 是唯一的 API、唯一的 manager，提供的 system call 就是 services。"
     },
     {
-     "text": "本章重點之一：API 和 system call 是不同的東西。",
-     "t": 36
+     "t": 68,
+     "text": "本章重點之一：API 和 system call 是不同的東西。"
     },
     {
-     "text": "最後介紹 OS structure（含 virtual machine）。",
-     "t": 53
+     "t": 74,
+     "text": "最後介紹 OS structure（含 virtual machine）。"
     }
+   ],
+   "scene": "osB-ch2-map",
+   "cues": [
+    2.86,
+    5.65,
+    67.8,
+    73.8,
+    96.42
+   ],
+   "explain": [
+    "正式進入第二章：OS 的結構。先複習一句老話：[[operating system]] 是唯一的 API（程式跟它要東西的介面）、唯一的 manager（資源管理者），所有程式都要透過它。",
+    "所以 OS 提供的 [[system call]] 等等動作，本質上就是「服務」（services）：你要做什麼，它幫你做。這就是 OS 的本質。",
+    "這一章的重點在第二部分：API 和 system call 到底差在哪裡。這兩個東西其實不一樣，一定要分清楚。",
+    "最後會介紹 OS 的 structure：一個作業系統是怎麼搭建起來的。就像寫程式有物件導向等不同架構，OS 也有不同的結構方式。",
+    "剛才講 Nachos 時提到的 [[virtual machine]]，就是其中一種結構。"
    ]
   },
   {
    "title": "OS services",
-   "scene": "os-services",
    "points": [
     {
-     "text": "OS 幫 user program 做事；為了 protect system，很多事一定要透過 OS 的 service（system call）。",
-     "t": 107
+     "t": 118,
+     "text": "OS 幫 user program 做事；為了 protect system，很多事一定要透過 OS 的 service（system call）。"
     },
     {
-     "text": "user interface、program execution、I/O、file system、communication、error detection。",
-     "t": 147
+     "t": 165,
+     "text": "user interface、program execution、I/O、file system、communication、error detection。"
     },
     {
-     "text": "communication 包含不同電腦之間，也包含同一台電腦 process 之間。",
-     "t": 164
+     "t": 187,
+     "text": "communication 包含不同電腦之間，也包含同一台電腦 process 之間。"
     },
     {
-     "text": "resource allocation：例如 CPU scheduling algorithm。",
-     "t": 237
+     "t": 262,
+     "text": "resource allocation：例如 CPU scheduling algorithm。"
     },
     {
-     "text": "accounting：追蹤每個程式用了多少資源，例如限制一個 process 最多 4 GB、開檔數上限。",
-     "t": 290
+     "t": 274,
+     "text": "accounting：追蹤每個程式用了多少資源，例如限制一個 process 最多 4 GB、開檔數上限。"
     },
     {
-     "text": "administrator 可以修改 limit；protection & security：帳號密碼、防惡意程式。",
-     "t": 325
+     "t": 338,
+     "text": "administrator 可以修改 limit；protection & security：帳號密碼、防惡意程式。"
     },
     {
-     "text": "後三項讓系統本身運作；program execution、I/O、file system 後面各有一章。",
-     "t": 363
+     "t": 392,
+     "text": "後三項讓系統本身運作；program execution、I/O、file system 後面各有一章。"
     }
+   ],
+   "scene": "osB-services",
+   "cues": [
+    118.62,
+    143.8,
+    164.8,
+    169.29,
+    187.75,
+    198.8,
+    243.48,
+    262.51,
+    267.61,
+    274.72,
+    285.98,
+    315.93,
+    338.78,
+    356.16,
+    364.8,
+    392.5
+   ],
+   "explain": [
+    "先看 OS 提供哪些服務（services）。老師說這不需要背，看看大概有哪幾大類就好。",
+    "為什麼叫「服務」？因為 OS 在幫使用者的程式做事；而且為了保護系統，很多事一定要透過 OS 的服務，也就是呼叫 [[system call]] 才能做。上一講的 interrupt routine，也有人叫 service routine。",
+    "第一類：user interface（使用者介面），也就是使用者怎麼跟電腦溝通。",
+    "再來是：程式怎麼執行（program execution）、I/O 怎麼做、檔案怎麼管理（[[file system]]）。",
+    "還有 communication（溝通）：不只是不同電腦上的 process 之間，例如網路上的 HTTP、TCP。",
+    "也包括同一台電腦上 process 和 process 之間的溝通。一個大系統通常由很多程式組成，它們要互相溝通；之後的 multi-thread 平行程式也一樣。",
+    "error detection（錯誤偵測）：沒有定義、偵測錯誤，有 bug 時系統就沒辦法正常運作。",
+    "接下來三項比較偏系統內部。第一是 resource allocation（資源分配），這正是 OS 一直在做的事。",
+    "例如 CPU 排程演算法（CPU scheduling algorithm），就是一種分配資源的演算法。",
+    "accounting（記帳）：OS 要隨時追蹤每支程式用了多少資源。",
+    "例如某支程式開了 1000 個檔案，整台電腦就被拖慢了，所以不能讓資源被無限制使用。",
+    "因此通常會設 limit（上限）：例如早期記憶體有限，就規定一個 process 最多只能用 4 GB 的 memory，開檔數也有上限，確保系統不會被單一使用者拖垮。",
+    "如果你是 administrator（系統管理者，最高權限），就可以修改這些 limit，讓某支程式用更多資源，前提是你知道自己在做什麼。",
+    "最後是 protection 和 security（保護與安全）：防病毒、防有惡意（malicious）的使用者。",
+    "電腦最起碼都會有帳號的概念，要輸入 password 才能 login，這就是 protection and security。",
+    "後三項是讓電腦系統本身能運作；中間的程式執行、I/O、file system，後面每一個都有一整章。所以今天只講 user interface 和 communication。"
    ]
   },
   {
-   "title": "User interface：CLI、shell 與 GUI",
-   "scene": "shell-layer",
+   "title": "User interface：CLI 與 GUI",
    "points": [
     {
-     "text": "介面只有兩種：CLI（command line）和 GUI（graphic user interface）。",
-     "t": 418
+     "t": 429,
+     "text": "介面只有兩種：CLI（command line）和 GUI（graphic user interface）。"
     },
     {
-     "text": "GUI 加在 CLI 上面，GUI 做得到的 CLI 全做得到；自動化、串工具都靠 CLI。",
-     "t": 472
-    },
-    {
-     "text": "提供 CLI 的程式叫 shell，例如 bash、C shell。",
-     "t": 593
-    },
-    {
-     "text": "為什麼要 shell：每個使用者習慣不同，例如習慣 dir 的人可設 alias 代替 ls。",
-     "t": 695
-    },
-    {
-     "text": "system call 由 OS 定義、不可隨意改；shell 讓每人調整自己的環境（顏色、指令）。",
-     "t": 731
-    },
-    {
-     "text": "shell 不屬於 OS，是上面一層 interface。",
-     "t": 818
-    },
-    {
-     "text": "GUI 方便但較慢、受限：convenience 與 performance 的 trade-off。",
-     "t": 919
+     "t": 494,
+     "text": "GUI 加在 CLI 上面，GUI 做得到的 CLI 全做得到；自動化、串工具都靠 CLI。"
     }
+   ],
+   "scene": "osB-cli-gui",
+   "cues": [
+    429.16,
+    438.75,
+    454.5,
+    480.3,
+    494.78,
+    513.9,
+    529.8,
+    564.85
+   ],
+   "explain": [
+    "user interface（使用者介面）其實只分兩種，就這麼單純。",
+    "第一種是 CLI，Command Line Interface（命令列介面）：一行一行打指令，傳統早期的電腦就只有這種。",
+    "第二種是 GUI，Graphic User Interface（圖形使用者介面）：用視窗、圖示、滑鼠操作。Microsoft 會崛起，就是因為提供了很好用的 GUI。",
+    "老師說大家以前大概都用 GUI，但從這堂課開始希望大家用 CLI，所以要 login 到 Linux server 上直接 compile。",
+    "因為 GUI 其實是架在 CLI 上面的，GUI 做得到的事 CLI 全部做得到，CLI 甚至能做很多 GUI 做不到的事。",
+    "電腦世界是一層一層堆疊起來的（software stack），程式和程式之間溝通、下指令，靠的就是 command line。",
+    "所以要建一個大系統、把工具串在一起做自動化，都是透過 CLI。以後做系統相關的工作，用 Linux 和 CLI 的機會很多。",
+    "CLI 的運作很單純：讀取（fetch）使用者打的指令，然後開始執行。"
    ]
   },
   {
-   "title": "Communication：message passing vs shared memory",
-   "scene": "ipc-two-models",
+   "title": "Shell：讓每個人調整自己的介面",
    "points": [
     {
-     "text": "CPU 只能直接 access memory，所以溝通依 memory 用法分兩類：message passing、shared memory。",
-     "t": 955
+     "t": 595,
+     "text": "提供 CLI 的程式叫 shell，例如 bash、C shell。"
     },
     {
-     "text": "message passing 就像寄 email：A 把 message copy 到 kernel，B 再從 kernel copy 過去。",
-     "t": 1008
+     "t": 669,
+     "text": "為什麼要 shell：每個使用者習慣不同，例如習慣 dir 的人可設 alias 代替 ls。"
     },
     {
-     "text": "不能直接 copy 是因為 protection：每個 process 有自己的 base 與 limit。",
-     "t": 1044
+     "t": 747,
+     "text": "system call 由 OS 定義、不可隨意改；shell 讓每人調整自己的環境（顏色、指令）。"
     },
     {
-     "text": "跨電腦也一樣：copy 到 kernel 後送網路封包（TCP/IP socket），一層層 copy 所以慢。",
-     "t": 1131
-    },
-    {
-     "text": "shared memory：兩邊都能讀寫同一塊，寫了對方直接看到。",
-     "t": 1168
-    },
-    {
-     "text": "process 間要先用 system call 建立共用區；threads 之間 by default 就有共用的 memory。",
-     "t": 1241
-    },
-    {
-     "text": "缺點：message passing 有 copy 較慢；shared memory 會有 synchronization、deadlock 問題。",
-     "t": 1314
+     "t": 846,
+     "text": "shell 不屬於 OS，是上面一層 interface。"
     }
+   ],
+   "scene": "osB-shell",
+   "cues": [
+    595.19,
+    606.4,
+    635.52,
+    669.38,
+    706.86,
+    714.13,
+    738.47,
+    747.5,
+    796.93,
+    845.9
+   ],
+   "explain": [
+    "你在 CLI 打的指令，並不是直接交到 OS 手上。提供這個介面的是一支程式，在 OS 的世界裡統稱為 shell（殼）。它是 OS 上面的一層。",
+    "就像你寫好程式要靠 [[compiler]] 翻成 binary 一樣，shell 負責接下你在 CLI 打的指令，再去告訴 OS。多這幾層都是為了方便你。",
+    "shell 有很多版本，現在最常見的是 csh（C shell）和 bash。灌好作業系統通常都支援，你可以設定要用哪一個。",
+    "重點來了：已經有完整的 OS 可以運作，下指令就好，為什麼還要多一層 shell？",
+    "因為一台電腦有很多使用者，每個人的習慣和喜好都不同。舉最簡單的例子：想看資料夾裡有哪些檔案，Linux 的標準指令是 ls。",
+    "但從 Microsoft 來的人，可能習慣打 dir。那怎麼辦？",
+    "透過 shell！在 shell 的設定檔加一個 alias（別名），讓 dir 代表 ls，就能做完全一樣的事。",
+    "OS 是從系統的角度出發：[[system call]] 等定義一旦定下去就不能隨意修改，而且這台電腦上所有人的程式都要遵守。所以個人化要放在 OS 外面那一層。",
+    "每個人都有自己的 shell，可以換成 bash 或 csh、重新定義指令，甚至調顏色：例如資料夾顯示藍色、檔案顯示綠色，看起來很清楚。",
+    "所以 shell 並不屬於 OS 的一部分，它是在 OS 外面的一層 interface，提供比較友善的 CLI。"
+   ]
+  },
+  {
+   "title": "GUI：方便但較慢",
+   "points": [
+    {
+     "t": 873,
+     "text": "GUI 用滑鼠、icon，目的和需求跟 CLI 相同。"
+    },
+    {
+     "t": 926,
+     "text": "單純處理資料、計算、跟人無關時都用 CLI。"
+    },
+    {
+     "t": 947,
+     "text": "GUI 方便但較慢、受限：convenience 與 performance 的 trade-off。"
+    }
+   ],
+   "scene": "osB-gui-tradeoff",
+   "cues": [
+    873.69,
+    926.08,
+    946.8
+   ],
+   "explain": [
+    "GUI 大家很熟：用滑鼠、點 icon（圖示）就能操作，簡單方便。它的目的和需求跟 CLI 完全相同，每個人的喜好也不同。",
+    "現在的系統兩種都有。但只要是單純處理資料、檔案、做計算這種跟人無關的工作，都是用 CLI；只有最上層的應用才是給人看的介面。",
+    "這呼應之前說的：電腦系統設計都有 convenience（方便）和 performance（效能）的 [[trade-off]]。GUI 方便，但比較慢，而且比較受限。"
+   ]
+  },
+  {
+   "title": "Communication：message passing",
+   "points": [
+    {
+     "t": 957,
+     "text": "CPU 只能直接 access memory，所以溝通依 memory 用法分兩類：message passing、shared memory。"
+    },
+    {
+     "t": 1016,
+     "text": "message passing 就像寄 email：A 把 message copy 到 kernel，B 再從 kernel copy 過去。"
+    },
+    {
+     "t": 1062,
+     "text": "不能直接 copy 是因為 protection：每個 process 有自己的 base 與 limit。"
+    },
+    {
+     "t": 1131,
+     "text": "跨電腦也一樣：copy 到 kernel 後送網路封包（TCP/IP socket），一層層 copy 所以慢。"
+    }
+   ],
+   "scene": "osB-msg-passing",
+   "cues": [
+    956.93,
+    964.69,
+    981.48,
+    993.8,
+    1015.8,
+    1033.8,
+    1038.72,
+    1045.64,
+    1061.84,
+    1068.8,
+    1090.3,
+    1122.8,
+    1130.8,
+    1154.8
+   ],
+   "explain": [
+    "再來講 communication（溝通），這裡只講最基本的概念。",
+    "溝通不只是一台電腦上的 process（執行中的程式）之間，甚至可以跨電腦。",
+    "不管哪一種，都可以依照「怎麼使用 memory」分成兩大類：[[message passing]]（傳訊息）和 [[shared memory]]（共用記憶體）。",
+    "為什麼用 memory 來分？因為 [[CPU]] 能直接存取的只有 memory，程式跑在 CPU 上就只能碰 memory。所以重點是：怎麼透過 memory 讓兩支程式交換資料。",
+    "message passing 就像寫 email：把訊息寄出去，對方收到再讀。電腦和人的世界差不多。",
+    "流程是：Process A 先把自己的訊息 copy 到 [[kernel]]，也就是 OS 的記憶體。",
+    "然後 Process B 再從 kernel 把訊息 copy 過來，讀裡面的資料。",
+    "簡單講，message passing 就是 memory copy：把一塊記憶體的內容複製到另一邊。",
+    "注意：不是直接從 A copy 到 B，而是先經過 OS 的記憶體。為什麼？因為 protection（保護）。",
+    "還記得嗎？每個 process 都有自己的 base 和 limit（記憶體範圍的起點和長度）。就算 B 的記憶體就在旁邊，A 也沒有權利直接寫進去，那是違法的。",
+    "所以就算是這麼簡單的事，也要呼叫 [[system call]]：只有 OS 有權讀寫各個 process 的資料。OS 會先整份收好、確認完整，再交給另一邊。",
+    "追求效能的話也可以直接 copy，但比較少這樣做：萬一 copy 到一半斷掉、系統 fail，要同時救回兩支程式會很複雜。",
+    "所以 TCP/IP 網路其實很慢，因為要一層一層 copy 來 copy 去，最後才送出一個封包。",
+    "跨電腦也是同一招：copy 到 kernel 後送一個網路封包（例如 TCP/IP 的 [[socket]] programming）到另一台，另一台的 kernel 收到再 copy 到對方的記憶體。一堆 copy，所以有點慢。"
+   ]
+  },
+  {
+   "title": "Communication：shared memory",
+   "points": [
+    {
+     "t": 1172,
+     "text": "shared memory：兩邊都能讀寫同一塊，寫了對方直接看到。"
+    },
+    {
+     "t": 1222,
+     "text": "process 間要先用 system call 建立共用區；threads 之間 by default 就有共用的 memory。"
+    },
+    {
+     "t": 1310,
+     "text": "缺點：message passing 有 copy 較慢；shared memory 會有 synchronization、deadlock 問題。"
+    }
+   ],
+   "scene": "osB-shared-mem",
+   "cues": [
+    1172.61,
+    1183.25,
+    1221.8,
+    1256.38,
+    1310.15,
+    1318.62
+   ],
+   "explain": [
+    "另一種做法很直覺：既然要溝通，為什麼不乾脆「共用」一塊記憶體呢？",
+    "如果兩個 process 都看得到同一塊記憶體，而且都有權利 read 和 write，那 A 寫進去，B 直接就看到了，非常簡單。這就是 [[shared memory]]。",
+    "但為了保護，平常每個程式都有自己的範圍，共用區不會憑空出現：process 之間要先透過 [[system call]] 請 OS 建立（create）這塊共用空間。",
+    "那什麼時候「預設」就有共用？multi-thread programming。[[thread]] 的定義就是：建立 thread 時，部分記憶體 by default 就是共用的，不用另外跟 OS 講，所以 thread 之間可以直接溝通。",
+    "注意兩種方式都要透過 OS。message passing 的壞處很明顯：要做 memory copy，所以通常比較慢。",
+    "shared memory 的壞處則是後面第 7、8 章的 [[synchronization]]（同步）和 [[deadlock]]（死結）：大家同時存取同一塊記憶體，會冒出很多不可預期的問題。"
    ]
   }
  ],
@@ -180,6 +358,5 @@
    "ans": "限制一個 process 最多配置 4 GB、開檔數有上限",
    "why": "OS 追蹤資源使用量，避免單一使用者拖垮系統。"
   }
- ],
- "timing": "estimated"
+ ]
 }

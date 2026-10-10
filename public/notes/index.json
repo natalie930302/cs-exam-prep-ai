@@ -355,9 +355,9 @@
  },
  "7z3hoaide-4": {
   "label": "清大周志遠 第4B講 Computer-System Organization(續)",
-  "points": 18,
+  "points": 19,
   "quiz": 4,
-  "cued": false
+  "cued": true
  },
  "868qXWoGS9E": {
   "label": "Abdul Bari：Pointer to Array",
@@ -453,7 +453,7 @@
   "label": "清大周志遠 第5A講 Nachos解說/OS Structure",
   "points": 27,
   "quiz": 4,
-  "cued": false
+  "cued": true
  },
  "A03oI0znAoc": {
   "label": "Abdul Bari：1.8.1 Asymptotic Notations #1",
@@ -559,9 +559,9 @@
  },
  "BtHlptO34wM": {
   "label": "清大周志遠 第4A講 Computer-System Organization(續)",
-  "points": 47,
+  "points": 53,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "bULIs7AVDNk": {
   "label": "交大彭文志 Lec23 Hashing",
@@ -680,6 +680,12 @@
  "ddTC4Zovtbc": {
   "label": "Tushar Roy：Topological Sort",
   "points": 10,
+  "quiz": 6,
+  "cued": true
+ },
+ "dFXJM1ZTxdA": {
+  "label": "清大周志遠 第3B講 Computer-System Organization",
+  "points": 14,
   "quiz": 6,
   "cued": true
  },
@@ -835,9 +841,9 @@
  },
  "HA96JKO9znE": {
   "label": "清大周志遠 第5B講 OS Services",
-  "points": 24,
+  "points": 26,
   "quiz": 5,
-  "cued": false
+  "cued": true
  },
  "HEQuN0QELSQ": {
   "label": "Gram-Schmidt Orthogonalization（換個角度講解）",
@@ -1025,6 +1031,12 @@
   "quiz": 6,
   "cued": true
  },
+ "lpOMe56f1Nw": {
+  "label": "清大周志遠 第5C講 OS Application Interface",
+  "points": 27,
+  "quiz": 7,
+  "cued": true
+ },
  "lY1SKWSR3pk": {
   "label": "交大江蕙如 Lec20 Network Flow (1/2)",
   "points": 129,
@@ -1125,6 +1137,12 @@
   "label": "MIT 6.006 L7：Counting Sort, Radix Sort",
   "points": 93,
   "quiz": 7,
+  "cued": true
+ },
+ "OApn18tz9EU": {
+  "label": "清大周志遠 第4D講 Hardware Protection",
+  "points": 23,
+  "quiz": 6,
   "cued": true
  },
  "ocZMDMZwhCY": {
@@ -1649,9 +1667,21 @@
   "quiz": 6,
   "cued": true
  },
+ "ZsiNkiwki5Q": {
+  "label": "清大周志遠 第4C講 Computer-System Organization(續)",
+  "points": 17,
+  "quiz": 5,
+  "cued": true
+ },
  "zXhWPrMLXGo": {
   "label": "Abdul Bari：Merge Sort - Hindi",
   "points": 54,
+  "quiz": 6,
+  "cued": true
+ },
+ "_RxbSP6hjqU": {
+  "label": "清大周志遠 第5D講 OS Structure",
+  "points": 19,
   "quiz": 6,
   "cued": true
  },

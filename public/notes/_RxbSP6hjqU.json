@@ -1,0 +1,350 @@
+{
+ "video": "_RxbSP6hjqU",
+ "label": "清大周志遠 第5D講 OS Structure",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "OS 設計目標：使用者 vs 系統",
+   "points": [
+    {
+     "t": 1,
+     "text": "OS structure：作業系統本身的軟體架構，從 simple 到 virtual machine 有很多種。"
+    },
+    {
+     "t": 46,
+     "text": "使用者要：easy to use、reliable（不 crash）、safe / secure、interactive 的快。"
+    },
+    {
+     "t": 153,
+     "text": "系統設計者要：easy to design、debug、implement、maintain，kernel 要 reliable、efficient。"
+    }
+   ],
+   "scene": "osB-os-goals",
+   "cues": [
+    1.41,
+    4.23,
+    46.11,
+    80.32,
+    83.91,
+    90.98,
+    100.35,
+    124.35,
+    153.64,
+    153.64,
+    175.73,
+    189.01
+   ],
+   "explain": [
+    "最後一塊：system structure，也就是作業系統本身的軟體架構是什麼。剛才看 Nachos 時已經看到一點了。",
+    "架構有非常多種：從最簡單的 simple，到 layered、microkernel、modular，再到現在很熱門的 [[virtual machine]]，都稍微 cover 一下。",
+    "一直強調的：使用者要的東西，往往跟系統看的東西不一樣，兩邊有很大的落差（所以中間才有 API）。設計 OS 時，雙方目標又不一樣了。",
+    "先想想自己：怎樣的 OS 才算好？第一，easy to use、方便。",
+    "第二，要很 reliable（可靠）：不能隨時 crash。",
+    "早期的作業系統常常 blue screen（藍色當機畫面），變成大家的笑話，就是因為不穩定。",
+    "再來是 safe、security：你不希望電腦隨便被人入侵。",
+    "還要快（efficiency）。但使用者在乎的是 interactive 的快：像手機點下去就要有反應，是處理 I/O、time sharing 的快，而不是純粹算一個 for 迴圈多快。",
+    "反過來，系統設計者要的不是 easy to use，而是 easy to design。",
+    "還有 easy to debug、easy to implement。寫得很複雜的話，bug 很難抓，要擴充、修改、維護（maintain）都會非常頭大。",
+    "系統也要 reliable：[[kernel]] code 必須沒有 bug；也要 efficient，但這裡指的是系統本身運作的效率，不是互動的快。",
+    "最大的差別：使用者需要「用」得方便；系統則需要「維護、實作」得方便。接下來看各種架構就會很清楚。"
+   ]
+  },
+  {
+   "title": "Simple OS（MS-DOS）",
+   "points": [
+    {
+     "t": 207,
+     "text": "第一代 OS：simple 架構，代表是 MS-DOS。"
+    },
+    {
+     "t": 233,
+     "text": "最下層是 driver（BIOS、software driver），上面的 resident system program 包辦一切：沒有分層。"
+    },
+    {
+     "t": 291,
+     "text": "唯一的架構是 driver 與 OS 分開；缺點：非常不安全、容易被鑽漏洞、很難 maintain。"
+    },
+    {
+     "t": 339,
+     "text": "單一公司 total control 還好，但 open source 社群沒辦法在這種架構下 co-work。"
+    }
+   ],
+   "scene": "osB-simple-os",
+   "cues": [
+    207.33,
+    219.8,
+    232.8,
+    240.8,
+    252.8,
+    260.97,
+    267.19,
+    291.07,
+    306.02,
+    319.8,
+    329.28,
+    339.28,
+    351.8
+   ],
+   "explain": [
+    "看第一代、最早期的 OS：不管裡面多複雜，它的架構大概就是這樣。",
+    "最具代表性的是 Microsoft 的 MS-DOS，最簡單架構的 OS。為什麼叫 simple？",
+    "看它的架構：最下層一定要有 driver（驅動程式），因為有 I/O device。",
+    "這邊是 BIOS 的 driver，那邊是 software 的 driver，兩個都算 driver。",
+    "真正的 OS 是中間這個 resident system program（常駐系統程式），一言以蔽之，所有事情都在它裡面；最上面是 application。",
+    "簡單講就是「沒分」：所有東西都堆在裡頭，怎麼 call 隨便你，沒有定義，所以叫 simple，也就是基本上沒有架構。",
+    "當時系統沒那麼複雜，開發可能很快，會動就好；把上面的 GUI、API 弄得 user-friendly 比較重要。",
+    "唯一的架構是：driver 跟 OS 切開了。driver 確實是一層，所以可以 plug-in 其他的 I/O device。",
+    "問題很明顯：它非常不安全。",
+    "這就是為什麼 90 年代有那麼多 bug、worm（蠕蟲病毒）：定義不清楚，非常容易被鑽漏洞。",
+    "而且非常難去 maintain（維護）。",
+    "從 Microsoft 的角度還好：它是單一公司，可以 total control，所有人都在公司裡面。",
+    "但像後來的 Linux，現在講求 open source，一個社群大家一起貢獻；這種架構你改一處可能就影響所有人，大家沒辦法一起 co-work。所以很快就發現這不是好的 solution。"
+   ]
+  },
+  {
+   "title": "Layered OS",
+   "points": [
+    {
+     "t": 393,
+     "text": "OS 是很大的 program，有很多互相依賴的 subsystem（virtual memory 用 disk：memory call I/O，I/O 也 call memory）。"
+    },
+    {
+     "t": 479,
+     "text": "layered：最內層 layer 0；layer N 只能 call layer 0 ～ N−1，不能往上 call。"
+    },
+    {
+     "t": 530,
+     "text": "好處：容易 debug、maintain，可一層一層 test。"
+    },
+    {
+     "t": 581,
+     "text": "缺點：layer 很難定義；效能較差（一層層 call、package / unpack、memory copy）；早期 Linux 較像這樣。"
+    }
+   ],
+   "scene": "osB-layered",
+   "cues": [
+    392.8,
+    398.8,
+    400.97,
+    432.52,
+    441.61,
+    449.98,
+    478.94,
+    481.8,
+    507.27,
+    522.08,
+    530.74,
+    535.8,
+    581.36,
+    601.09,
+    619.61,
+    645.47
+   ],
+   "explain": [
+    "很快就有人提出 layer（分層）的 OS 架構。",
+    "因為 OS 其實是一個很大很大的 program。",
+    "裡面有非常多 subsystem（子系統）：memory、I/O driver、process、CPU scheduling，甚至最底層的 hardware instruction，就像課本每一章講的。整個 OS 跑起來就是很多 process 互相溝通。",
+    "這些 subsystem 很複雜，而且互相依賴彼此。",
+    "舉例：後面會講的 virtual memory，是用 disk 當儲存空間，所以 memory 要 call I/O。",
+    "那 I/O 難道不 call memory？其實也會：I/O 想更快、少做 memory copy，就要用到 memory management 的功能。",
+    "layered 的做法比較強硬：把這些全部切成一層一層。最核心、最 low level 的叫 layer 0，再一層一層往上包。",
+    "規則：上面（外面）的可以 call 裡面的，裡面的不能 call 外面的。",
+    "以投影片的例子：memory 可以 call process，但 memory 不能 call I/O，因為 I/O 在比較高的 layer；設計上就不該做這個 function call，否則會破壞分層。",
+    "也就是：layer N 可以 call 任何 layer 0 到 N−1 的 function，只能往下，不能往上。",
+    "好處：非常容易 debug 和 maintain。",
+    "因為可以一層一層 test：呼叫路徑不會繞圈，某一層 OK，下面的也一定 OK，很容易知道是哪一層的 subsystem 出問題。",
+    "缺點一：怎麼定義 layer 很 arbitrary（主觀），有時根本切不好；像剛說的 I/O 和 memory 會互相 call，切不好效能就會很差。",
+    "缺點二：效能比較差，因為要一層一層往下 call。",
+    "就像網路的 socket programming：好幾層，一層一層 package、unpack，會有很多 memory copy、一大堆 function call，沒辦法直接跳到某一層。",
+    "這就是傳統的 layer 架構，知道「切 layer」的概念就好。早期的 Linux 比較像這樣。"
+   ]
+  },
+  {
+   "title": "Microkernel",
+   "points": [
+    {
+     "t": 663,
+     "text": "microkernel（Carnegie Mellon 提出）：kernel 越小越好 → 比較 reliable。"
+    },
+    {
+     "t": 696,
+     "text": "subsystem 變成 module，kernel 只負責 module 間的溝通與 interface；換 memory management 只要重寫那個 module。"
+    },
+    {
+     "t": 764,
+     "text": "OS 元件都在 user space，像 user program，crash 沒關係；容易 portable、extension。"
+    },
+    {
+     "t": 817,
+     "text": "缺點：效能更差：subsystem 間溝通都是 system call，還要 message passing（memory copy）；IoT / embedded、Mac 有部分採用。"
+    }
+   ],
+   "trap": "課本：microkernel（如 Mach）把大部分服務移到 user space，靠 message passing 溝通；好處是易擴充、易移植、較可靠安全，缺點是 system-function overhead 造成效能下降。",
+   "scene": "osB-microkernel",
+   "cues": [
+    662.8,
+    668.8,
+    679.68,
+    687.95,
+    696.03,
+    708.8,
+    724.3,
+    763.8,
+    776.16,
+    802.02,
+    816.8,
+    846.92,
+    860.69,
+    888.8,
+    900.91
+   ],
+   "explain": [
+    "除了 Windows 和早期 Linux 的做法，研究界還提出一個非常有趣、大家一定要知道的概念：microkernel（微核心）。上面綠色是 user space，下面紫色是 kernel space。",
+    "它是 Carnegie Mellon 大學當時在設計 OS 架構時提出的（課本的代表例子是 Mach）。",
+    "為什麼叫 micro？意思是 [[kernel]] 的程式碼應該越少越好、越小越好。",
+    "第一個好處很重要：比較 reliable。只要那一點點 kernel code 沒 bug 就好，其他地方有 bug 無所謂。",
+    "第二個：引進 modulize（模組化）的概念。把所有 subsystem 都變成一個一個的 module（模組）。",
+    "中間的 kernel 只負責這些 module 之間怎麼溝通、怎麼傳輸、怎麼處理失敗，以及 interface 的部分。",
+    "所以想換掉某個部分，例如 memory management（就像 Nachos 作業那樣），只要重寫那個 module、把它 hook 上去就好。",
+    "比較嚴謹的定義是：kernel 以外的東西，連 graphics subsystem、I/O manager，全部都放在 user space，而不是 kernel 裡。",
+    "它們就像一般 user program 一樣，所以 crash 了也沒關係，只要 kernel 不 crash 就好。",
+    "所有 OS 元件都像 user program 在運作，所以很容易 portable，也非常容易做 extension（擴充）。",
+    "缺點很明顯：效能比 layered 又更差一點。",
+    "因為 subsystem 在 user space、kernel 在 kernel space，每次 subsystem 之間要溝通都要經過 kernel，全部都是 [[system call]]（interrupt），所以非常慢。前面的 layered、simple 都在 kernel space，直接 call 就好。",
+    "而且很多元件一起運作，為了避免 [[synchronization]] 問題，它用 [[message passing]] 溝通，傳參數一定要做 memory copy，就更慢了。很 reliable，但效能較差。",
+    "老師聽說：現在很多新的 IoT 裝置、embedded system（嵌入式系統）的 specialized OS，有往這個方向走。",
+    "也有混合的做法，像 Mac 就有部分是用 microkernel 的概念做的。"
+   ]
+  },
+  {
+   "title": "Modular OS 與 loadable kernel module",
+   "points": [
+    {
+     "t": 930,
+     "text": "modular OS（現在的 Linux）：像 OO 一樣切成 interface 定義好的 subsystem，但全部在 kernel space，不需要 message passing。"
+    },
+    {
+     "t": 994,
+     "text": "modular = loadable：可以 load kernel module 改變 OS 的 feature。"
+    },
+    {
+     "t": 1049,
+     "text": "system call 有 table（有 reserve 的空 entry）；insert module 就是改 table entry：可新增或 replace（如偷印 file name 再 call 原本的 open），用來攔截、profiling、debugging。"
+    }
+   ],
+   "scene": "osB-modular",
+   "cues": [
+    930.63,
+    944.8,
+    959.8,
+    969.35,
+    986.19,
+    994.52,
+    1018.11,
+    1048.8,
+    1053.8,
+    1060.72,
+    1068.06,
+    1071.55,
+    1087.35,
+    1121.36,
+    1123.58
+   ],
+   "explain": [
+    "第四種：modular OS，這就常見了，現在 Linux 這些基本上都是 modular OS。",
+    "就像程式語言用 OO（物件導向）的概念，系統最後也應該用 OO 的概念來寫。",
+    "跟 microkernel 很像：把 OS 切成一堆 subsystem，而且每個都必須 define 好它的 interface，像用 OO 的方式組織系統。",
+    "跟 microkernel 唯一的不同：它們全部都在 kernel space 裡，是單一的系統，沒那麼嚴謹，有很多彈性。",
+    "所以 subsystem 之間溝通時，不需要透過 [[message passing]]，效能比較好。",
+    "為什麼叫 modular？很重要的意思是 loadable（可載入）：你可以 load 一個 [[kernel]] module 進去，改變作業系統的某些功能。",
+    "老師非常鼓勵大家試試：網路上有很簡單的範例，照步驟大概一小時，就能在自己裝的 Linux 上寫一個自己的 kernel module 載進去。",
+    "kernel module 怎麼運作？之前說過，system call 會透過 interrupt 找到一個 table：hardware signal 用 [[interrupt vector]]，system call 這邊則有一個 system call table。",
+    "就跟你們改 Nachos 一樣，這個 table 本來就 reserve（預留）了一些空的 entry。",
+    "用 administrator 權限執行 insert module（insmod），意思就是去修改這個 table 的 entry。",
+    "所以你可以定義新的 system call。",
+    "但實際上最常見的做法是 replace（取代）：例如本來有一個 system call 叫 open，你就 insert 一個自己寫的 kernel code，override 那個 entry。",
+    "你寫的版本第一行先偷偷印出 file name，做點事，然後再去 call 原來的 function。呼叫路徑中間先經過你的 module，再接到原本 file system 的 module，所以不會影響系統運作。",
+    "這就是改 kernel 的常見方式：insert 一個 kernel module 替代原來的，再接回去，就能攔截（intercept）那個 system call。",
+    "攔截之後可以拿來做 profiling（效能分析）、debugging 或其他事情，靠的就是修改 system call table 的 entry。"
+   ]
+  },
+  {
+   "title": "下課：下次講 virtual machine",
+   "points": [
+    {
+     "t": 1138,
+     "text": "今天上到這裡，下次（禮拜三）講 virtual machine。"
+    }
+   ],
+   "scene": null
+  }
+ ],
+ "quiz": [
+  {
+   "q": "MS-DOS 這類 simple OS 最大的問題是？",
+   "opts": [
+    "沒有清楚分層，非常不安全、難以 maintain",
+    "效能太差",
+    "kernel 太小",
+    "一定要 message passing"
+   ],
+   "ans": "沒有清楚分層，非常不安全、難以 maintain",
+   "why": "所有東西堆在 resident system program 裡，唯一的分隔只有 driver。"
+  },
+  {
+   "q": "Layered OS 中，layer N 可以 call 哪些 layer？",
+   "opts": [
+    "layer 0 ～ N−1",
+    "layer N+1 以上",
+    "任何 layer",
+    "只有 layer 0"
+   ],
+   "ans": "layer 0 ～ N−1",
+   "why": "外層可以 call 內層，內層不能 call 外層。"
+  },
+  {
+   "q": "Layered OS 的缺點不包括？",
+   "opts": [
+    "很難一層一層 debug",
+    "layer 很難定義",
+    "一層層往下 call，效能較差",
+    "I/O 和 memory 互相依賴不好切"
+   ],
+   "ans": "很難一層一層 debug",
+   "why": "容易 debug、maintain 正是 layered 的優點。"
+  },
+  {
+   "q": "Microkernel 效能較差的主要原因是？",
+   "opts": [
+    "user space 的元件彼此溝通都要經過 kernel（system call + message passing）",
+    "kernel 太大",
+    "沒有 driver",
+    "不能使用 cache"
+   ],
+   "ans": "user space 的元件彼此溝通都要經過 kernel（system call + message passing）",
+   "why": "每次溝通都是 system call，還要 memory copy。"
+  },
+  {
+   "q": "Modular OS（如 Linux）和 microkernel 最大的不同？",
+   "opts": [
+    "module 全部在 kernel space，溝通不必 message passing",
+    "module 全部在 user space",
+    "沒有 interface 定義",
+    "不能動態載入"
+   ],
+   "ans": "module 全部在 kernel space，溝通不必 message passing",
+   "why": "兩者都模組化，但 modular OS 的 module 在 kernel 裡。"
+  },
+  {
+   "q": "insert 一個 kernel module 來攔截 open，本質上是修改什麼？",
+   "opts": [
+    "system call table 的 entry",
+    "interrupt vector 的硬體欄位數",
+    "base register",
+    "shell 的 alias"
+   ],
+   "ans": "system call table 的 entry",
+   "why": "replace entry 指向自己的 code，做完再 call 原本的 open。"
+  }
+ ]
+}

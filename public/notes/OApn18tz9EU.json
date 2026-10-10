@@ -1,0 +1,404 @@
+{
+ "video": "OApn18tz9EU",
+ "label": "清大周志遠 第4D講 Hardware Protection",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Protection 是什麼：程式之間互不影響",
+   "points": [
+    {
+     "t": 1,
+     "text": "protection 不只是 security：很多程式共用系統時，我的程式 crash 不能影響你，只能碰自己的 memory。"
+    },
+    {
+     "t": 109,
+     "text": "CPU 吃的 instruction 沒有 tag，hardware 本來分不出誰是 OS → 需要 dual mode。"
+    },
+    {
+     "t": 245,
+     "text": "最底層靠 hardware（改不了）做最基本的 protection，software 再靠它做剩下的。"
+    }
+   ],
+   "scene": "osB-protect-why",
+   "cues": [
+    2.38,
+    5.27,
+    47.74,
+    64.98,
+    89.57,
+    109.29,
+    121.42,
+    146.8,
+    153.8,
+    244.86,
+    262.8
+   ],
+   "explain": [
+    "電腦架構最後一個非常重要的主題：protection（保護）。它不只是 security（防病毒、防網路攻擊）。",
+    "而是：一台電腦上有很多使用者、很多程式同時在執行、共用資源時，要確保彼此不會互相影響。",
+    "簡單說：我的程式 crash 了，你的程式應該能繼續跑；我只會看到自己的 segmentation fault，而不是整台機器關機。",
+    "也就是說，我的程式能碰到的 memory，只有自己建立、自己存的那些；絕對不能不透過 OS，就跑去存取別的程式的 memory。",
+    "這裡最重要的是 dual mode（雙模式），馬上就會講到。",
+    "很多同學會困惑：我們把 OS 和一般程式切開來講，但真正在執行時，hardware 真的知道誰是 OS、誰是使用者程式嗎？",
+    "學過計算機結構就知道：[[CPU]] 吃進去的 instruction 上面，從來沒有一個標記說「這是 OS 的程式」。所以光看 CPU，它根本分不出來。",
+    "分不出來就糟了：使用者也能寫一段像 OS 的指令叫 CPU 執行，做 OS 才能做的事。就像分不出總統還是平民，誰都能亂發號司令，天下大亂。",
+    "所以電腦系統有 dual mode，可以做區分。CPU 本身不知道，但透過 interrupt 的概念，在執行過程中就能知道並區隔開來。",
+    "要能保證這些，最最底層必須靠 hardware，因為 hardware 是不能被修改的：上面不管寫什麼惡意程式，都不可能把硬體重燒。",
+    "所以 hardware 提供最 minimum（最基本）的保護，其他軟體的保護，再靠這些 hardware support 來實現。"
+   ]
+  },
+  {
+   "title": "Dual mode 與 mode bit",
+   "points": [
+    {
+     "t": 287,
+     "text": "至少兩個 mode：user mode（執行 OS 以外的程式）與 monitor mode / kernel mode（OS 在執行）。"
+    },
+    {
+     "t": 368,
+     "text": "printf 由 OS 的程式碼代替使用者做（on behalf of）；I/O device 只有一個，必須由 OS 統一管。"
+    },
+    {
+     "t": 428,
+     "text": "主機板上用一個 mode bit：平常 1（user），interrupt 時 flip 成 0（monitor），return 時 flip 回來。"
+    }
+   ],
+   "trap": "課本：mode bit 0 = kernel（monitor）mode、1 = user mode；trap / interrupt 會切到 kernel mode，return-from-trap 切回 user mode。",
+   "scene": "osB-dual-mode",
+   "cues": [
+    286.91,
+    289.8,
+    312.67,
+    327.72,
+    367.85,
+    392.15,
+    408.8,
+    428.35,
+    452.8,
+    461.73,
+    467.8,
+    484.14,
+    497.8,
+    532.53
+   ],
+   "explain": [
+    "hardware 要提供的 support：至少要有兩個 mode（模式）。左邊綠色是使用者那邊，右邊紫色是 OS 那邊。",
+    "一個叫 [[user mode]]：電腦正在執行的指令來自使用者程式，也就是 OS 以外的所有程式。",
+    "另一個叫 monitor mode，也叫 [[kernel mode]]：反過來，代表現在是 OS 在執行。",
+    "同樣是一條 instruction，可能長得一模一樣（例如都是 add），但它是 OS 的程式碼送出來的，還是使用者程式送出來的，意義就不同：有些事使用者不能做，會被擋掉。",
+    "什麼叫「代替使用者執行」（on behalf of）？例如你 printf，最後其實是 OS 的程式碼在做 printf；只是因為你呼叫了 [[system call]]，OS 才去做。",
+    "為什麼一定要透過 OS？因為螢幕只有一個、I/O device 只有一個，必須由 OS 統一管理，不能讓使用者想印什麼就直接印。",
+    "不然你 output、我也 output，上一講看到的 device controller buffer 就會亂掉，造成一團混亂。",
+    "那到底怎麼區分是誰在執行？答案意外地簡單。",
+    "主機板上就用一個 bit（mode bit）：兩個 mode，一個 bit 就夠了，這是 hardware 上的東西。",
+    "平常是 user mode，例如這個 bit 的值是 1。",
+    "當你呼叫 [[interrupt]] 時，它就 flip（翻轉）成 0。因為呼叫 interrupt 就代表在呼叫 system call，而 system call 就是要執行 OS 的 service routine。",
+    "不只 system call：程式出錯（fault）、或 hardware 送來 signal 打斷使用者程式時也一樣，處理 interrupt 的第一件事就是把這個 bit 翻過來。",
+    "所以 CPU 只要看到 0，就知道現在的指令來自 OS；看到 1，就知道不是 OS 的。CPU 照樣直接執行，但靠這個 bit 知道是誰。",
+    "等 OS 做完、return to user program（回到使用者程式）時，再把 bit flip 回 1。所以 interrupt 除了切換程式，還有一個重要意義：切換 mode。"
+   ]
+  },
+  {
+   "title": "Privileged instruction",
+   "points": [
+    {
+     "t": 562,
+     "text": "會影響別人的 instruction 設計成 privileged instruction（寫死在 instruction set），只能在 monitor mode 執行。"
+    },
+    {
+     "t": 608,
+     "text": "user mode 執行 privileged instruction：CPU check mode bit → 丟 interrupt，OS 丟 fault 停掉程式。"
+    },
+    {
+     "t": 654,
+     "text": "例：寫 I/O device 是 privileged → 必須 call system call，flip 到 monitor mode 由 OS 的 routine 去做。"
+    }
+   ],
+   "scene": "osB-privileged",
+   "cues": [
+    561.8,
+    584.8,
+    592.99,
+    607.94,
+    611.87,
+    622.8,
+    654.03,
+    662.25,
+    684.8,
+    694.85,
+    741.5
+   ],
+   "explain": [
+    "有了 mode，就能用它來保護電腦。電腦做任何事都要靠 instruction，其中有些會影響到其他人，我們就要求它一定要透過 OS。",
+    "所以在設計 instruction set 時（例如 x86），就寫死了一組特權指令：[[privileged instruction]]。",
+    "privileged instruction 必須在 monitor mode（kernel mode）下才能執行。",
+    "使用者也可以把這種指令寫進自己的程式、送到 CPU。CPU 一看是 privileged instruction，就會去檢查那個 mode bit。",
+    "一看是 user mode：抱歉，不幫你做，直接丟一個 interrupt 出來，告訴 OS「有人在亂來」。",
+    "OS 的處理通常就是丟一個 fault（錯誤），把你的程式停掉。",
+    "例如「把資料寫到 I/O device」就是一個 privileged instruction。使用者既然不能直接執行，怎麼辦？",
+    "你必須呼叫 [[system call]]，請 OS 幫你把資料寫到螢幕。OS 定義了這個 system call，你就得透過它，所以 OS 能完全控制什麼能做、什麼不能做。",
+    "呼叫 system call 時，mode bit 就 flip 到 monitor mode。",
+    "OS 透過自己寫好的 routine、照它的規則，把你的資料寫到螢幕上；而不是讓你自己隨便直接去寫 device。",
+    "原則：privileged instruction 的目的，就是保護電腦，強迫使用者一定要透過 OS 才能執行這些指令。"
+   ]
+  },
+  {
+   "title": "I/O 保護：所有 I/O 指令都是 privileged",
+   "points": [
+    {
+     "t": 754,
+     "text": "要保護的不外乎 I/O、memory、CPU。"
+    },
+    {
+     "t": 763,
+     "text": "I/O 全部要保護：device 都只有一個、共用，所以所有 I/O instruction（含 poke、peek）都是 privileged。"
+    },
+    {
+     "t": 826,
+     "text": "hacker 繞道 memory：改寫 interrupt vector 指向自己的 driver，在 monitor mode 做壞事（如 buffer overflow）。"
+    },
+    {
+     "t": 934,
+     "text": "只保護 I/O 不夠，更重要的是保護 memory。"
+    }
+   ],
+   "scene": "osB-io-protect",
+   "cues": [
+    754.31,
+    763.14,
+    772.88,
+    788.8,
+    794.45,
+    826.47,
+    843.8,
+    873.4,
+    880.51,
+    914.68,
+    934.3
+   ],
+   "explain": [
+    "來看怎麼保護。電腦不外乎就是三樣東西：I/O、memory、CPU，我們一直繞著這三個講。",
+    "I/O 哪些要保護？答案是全部都要。",
+    "因為 I/O device 都只有一個：螢幕、printer、網路卡、硬碟……全部是共用的，device controller 和它的 buffer 也只有一個。",
+    "所以保護 I/O 最簡單的方法：所有 I/O 的 instruction，全部設成 [[privileged instruction]]，一定要透過 OS（driver）。",
+    "上一講看到的 poke、peek，也全部是 privileged instruction；不然使用者就能不透過 driver 亂寫 device。",
+    "這樣 I/O 就完全安全了嗎？hacker 會找漏洞。",
+    "繞不過 I/O，就繞 memory：如果 memory 沒有保護，使用者可以任意改寫 memory，甚至改寫 OS 裡的內容。",
+    "例如把 memory 裡 [[interrupt vector]] 的某一格偷偷改掉，不告訴 OS。",
+    "把它換成指向自己寫的程式（例如偽裝成網路卡的 driver）。OS 以為你要寫硬碟，結果被繞到別的地方；因為已經進到 monitor mode，想做什麼都可以。",
+    "早期很常見的 buffer overflow 攻擊，就是偷偷繞過 OS、改寫 memory 內容，讓它執行不該執行的指令。這個例子不用記。",
+    "要記住的是：I/O instruction 全部是 privileged；但只保護 I/O 不夠，更重要的是保護 memory。"
+   ]
+  },
+  {
+   "title": "Memory 保護：base register 與 limit register",
+   "points": [
+    {
+     "t": 936,
+     "text": "要保護 memory 裡的 interrupt vector、service routine，user program 之間也不能互相篡改。"
+    },
+    {
+     "t": 987,
+     "text": "每支程式限制在一段連續空間：base register（起點）+ limit register（長度）；malloc 透過 OS 調整，越界就 segmentation fault。"
+    },
+    {
+     "t": 1153,
+     "text": "每次存取 memory：address < base → trap；≥ base + limit → trap；在區間內才送上 memory bus。"
+    },
+    {
+     "t": 1212,
+     "text": "修改 base / limit 的指令必須是 privileged instruction，否則使用者自己擴大 limit 就完了。"
+    }
+   ],
+   "scene": "osB-mem-protect",
+   "cues": [
+    935.8,
+    955.8,
+    979.48,
+    987.53,
+    1017.43,
+    1025.22,
+    1035.35,
+    1057.69,
+    1065.28,
+    1068.85,
+    1152.8,
+    1157.34,
+    1171.8,
+    1193.15,
+    1211.9,
+    1224.43,
+    1243.1
+   ],
+   "explain": [
+    "所以更重要的是保護 memory 的內容。左邊直立的一格一格，代表 memory（想成一段連續的空間，最下面位址小）。",
+    "剛才的攻擊就是改 memory 裡 [[interrupt vector]] 的值，或 service routine 的程式碼，這些都放在 memory（紫色是 OS 的區域）。",
+    "一般人說的 memory 保護則是：不要 override 別的程式。不只 OS，就算大家都是 user program，也不能互相篡改，不然根本沒辦法跑。",
+    "保護的方式其實沒有想像中複雜：記錄兩個 [[register]]。",
+    "每支程式能讀、能改的記憶體，都被限制在一段連續空間裡（綠色框）；超過了就很抱歉，不能用。",
+    "如果空間需要變大，就像你寫的 malloc（動態配置記憶體），其實是透過 OS 去調整這個空間，不是你自己調。",
+    "沒跟 OS 講就自己超過範圍，就會被丟一個 segmentation fault，這就是大家最常遇到、指標指到不該指的地方的原因。",
+    "因為是連續空間，只需要兩個暫存器：[[base register]] 和 limit register。（圖上的 3 只是示意。）",
+    "base 是這段空間開始的位置，limit 是它到底有多長。",
+    "例如這支程式可以用 4 GB 還是 100 GB 的 memory，就是 limit 決定的。程式開始執行時，這兩個值會載入 CPU（主機板）上的 register 來檢查。",
+    "之後每一個要存取 memory 的 CPU instruction 都會走這個流程：先拿位址跟 base 比，小於 base 就丟掉。",
+    "這裡丟的是 [[trap]]，因為它是 software instruction 引起的錯誤，交給 OS 處理。",
+    "接著再檢查位址有沒有小於 base + limit，也就是有沒有落在這個區間。",
+    "都通過了，才會把這個指令送上 memory bus，請 memory controller 存取資料。注意：base、limit 都只是兩個值而已。",
+    "那請問：修改這兩個 register 值的那個指令，應不應該是 privileged instruction？這是關鍵。",
+    "如果不是，整套機制就沒用了：使用者偷偷用那個指令把自己的 limit 擴大一倍，就能越界亂來。所以這些載入 base、limit 的指令全部都是 privileged。",
+    "當你呼叫 malloc 時，裡面（經由 OS）做的事情就是修改 limit register，所以你才能用到新的空間。"
+   ]
+  },
+  {
+   "title": "CPU 保護：timer",
+   "points": [
+    {
+     "t": 1269,
+     "text": "CPU 保護：避免一支程式霸佔 CPU（例如寫錯的 while(1) infinite loop），讓 OS 與別人沒機會執行。"
+    },
+    {
+     "t": 1360,
+     "text": "靠 time sharing：主機板上的 timer 定時丟 interrupt，讓 OS scheduler 決定誰跑，控制權回到 OS。"
+    },
+    {
+     "t": 1495,
+     "text": "timer 值可調整；load timer 是 privileged instruction，否則使用者設成無限大就能永遠霸佔 CPU。"
+    }
+   ],
+   "scene": "osB-cpu-protect",
+   "cues": [
+    1269.79,
+    1283.17,
+    1300.47,
+    1313.79,
+    1316.8,
+    1359.8,
+    1401.91,
+    1405.03,
+    1417.8,
+    1460.92,
+    1494.8,
+    1508.38,
+    1521.8,
+    1526.8
+   ],
+   "explain": [
+    "最後一個要保護的是 [[CPU]]。",
+    "這裡的保護是指：要阻止一支程式霸佔 CPU，讓其他程式、甚至 OS 自己的程式都沒機會執行。CPU 就是在執行一堆指令。",
+    "舉例：你在程式裡不小心寫錯了 while(1)，變成 infinite loop（無窮迴圈），寫作業常常發生。",
+    "可是這時你會發現，你還是可以 take control the system（取回系統控制權），電腦不會整個死掉只執行這支程式。",
+    "你還能按 Ctrl-C，或切換到另一支程式。為什麼？照理說輪到它時它可以一直佔著 CPU。",
+    "答案就是 [[time sharing]]（分時）：除了讓使用者能互動，它其實也是對 CPU 的保護，沒有人能一直佔住 CPU。",
+    "主機板上有一個 timer（計時器）。使用者沒呼叫 system call、也沒丟 interrupt，它也會定期觸發。",
+    "時間一到，timer 就丟一個 [[interrupt]]，打斷目前正在執行的程式，讓 CPU 去執行 OS。",
+    "執行的是 OS 的 [[scheduler]]（排程器，作業三會寫）：由它決定原程式繼續跑，還是換別的程式，或先處理 OS 自己的事。",
+    "所以每次 timer 觸發，就是把 CPU 的控制權拿回 OS 手上；OS 其實一直都在掌控。",
+    "timer 到底多久觸發一次（10 ms 還是 100 ms），這個值是可以在執行中動態調整的。",
+    "調整要用 load 指令。注意這裡的 load 是指「載入到 hardware register」，也就是覆寫（override）現在的設定，不是讀出來。",
+    "所以 load timer 是 [[privileged instruction]]：只有 OS 能調整 timer 觸發的時間點，使用者不行。",
+    "不然使用者把 timer 設成無限大，就永遠不會觸發 OS，可以一直霸佔 CPU，危害整台電腦的運作。"
+   ]
+  },
+  {
+   "title": "總結：怎麼判斷 privileged instruction",
+   "points": [
+    {
+     "t": 1545,
+     "text": "要記得 dual mode（kernel / user mode）以及 privileged instruction 如何保護電腦。"
+    },
+    {
+     "t": 1567,
+     "text": "考題：某指令是不是 privileged？判斷使用者擅自執行會不會危害系統。"
+    },
+    {
+     "t": 1591,
+     "text": "例：add（3 + 4）只動自己的資料，不是 privileged。"
+    }
+   ],
+   "scene": "osB-priv-quiz",
+   "cues": [
+    1544.86,
+    1566.8,
+    1579.8,
+    1591.1,
+    1599.55
+   ],
+   "explain": [
+    "這一講最重要的是 dual mode：kernel mode、user mode 的定義，以及怎麼透過 [[privileged instruction]] 保護整台電腦。",
+    "考試常有一種題目：這個 instruction 到底應不應該是 privileged instruction？yes or no。",
+    "判斷標準：如果使用者擅自執行這個指令，會不會危害電腦的運作？會，就是 privileged instruction；不會，就不用是。",
+    "什麼是不會危害的？像加減乘除。程式裡寫 3 + 4，就是一個 add 指令。",
+    "add 只是把兩個 [[register]] 的值相加，動的是你自己程式的資料，跟系統無關，所以不是 privileged。反過來，I/O、改 base/limit、load timer 都是 privileged。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "mode bit 在什麼時候會從 user mode 切到 monitor（kernel）mode？",
+   "opts": [
+    "發生 interrupt / trap（含 system call）時",
+    "程式執行 add 指令時",
+    "使用者按下 Enter 時",
+    "每讀一次 memory 時"
+   ],
+   "ans": "發生 interrupt / trap（含 system call）時",
+   "why": "處理 interrupt 第一件事就是 flip mode bit；return to user program 時再切回。"
+  },
+  {
+   "q": "user mode 下的程式執行 privileged instruction 會怎樣？",
+   "opts": [
+    "CPU 檢查 mode bit 後拒絕並 trap 給 OS，通常程式被停掉",
+    "照常執行",
+    "自動切到 kernel mode 再執行",
+    "電腦直接重開機"
+   ],
+   "ans": "CPU 檢查 mode bit 後拒絕並 trap 給 OS，通常程式被停掉",
+   "why": "privileged instruction 只能在 monitor mode 執行，要做就得 call system call。"
+  },
+  {
+   "q": "下列何者「不」需要是 privileged instruction？",
+   "opts": [
+    "add（兩個 register 相加）",
+    "I/O 指令（poke / peek）",
+    "載入 base / limit register",
+    "設定 timer（load timer）"
+   ],
+   "ans": "add（兩個 register 相加）",
+   "why": "判斷標準：使用者擅自執行會不會危害系統；add 只動自己的資料。"
+  },
+  {
+   "q": "base register 與 limit register 的作用是？",
+   "opts": [
+    "限制程式只能存取自己那段連續 memory",
+    "記錄被打斷程式的 PC",
+    "決定 timer 多久觸發",
+    "存放 system call 編號"
+   ],
+   "ans": "限制程式只能存取自己那段連續 memory",
+   "why": "address < base 或 ≥ base + limit 就 trap。"
+  },
+  {
+   "q": "為什麼只把 I/O 指令設成 privileged 還不夠？",
+   "opts": [
+    "使用者若能改 memory（如 interrupt vector），就能繞過 OS",
+    "因為 I/O 太慢",
+    "因為 CPU 不支援",
+    "因為 timer 會失效"
+   ],
+   "ans": "使用者若能改 memory（如 interrupt vector），就能繞過 OS",
+   "why": "所以還要用 base / limit 保護 memory。"
+  },
+  {
+   "q": "寫錯 while(1) 時還能按 Ctrl-C 取回控制，靠的是？",
+   "opts": [
+    "timer 定期丟 interrupt，把控制權交回 OS",
+    "busy waiting",
+    "cache coherence",
+    "DMA"
+   ],
+   "ans": "timer 定期丟 interrupt，把控制權交回 OS",
+   "why": "time sharing 也是對 CPU 的保護，沒有人能一直佔住 CPU。"
+  }
+ ]
+}

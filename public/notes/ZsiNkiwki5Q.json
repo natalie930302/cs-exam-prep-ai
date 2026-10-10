@@ -1,0 +1,268 @@
+{
+ "video": "ZsiNkiwki5Q",
+ "label": "清大周志遠 第4C講 Computer-System Organization(續)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Hard drive：機械式，位置決定時間",
+   "points": [
+    {
+     "t": 1,
+     "text": "hard drive 是機械式的：磁碟轉動、讀寫手臂上的磁頭移動。"
+    },
+    {
+     "t": 65,
+     "text": "資料位置跟讀取時間有絕對關係：磁頭在附近就快，在對面就要等磁盤轉過來。"
+    },
+    {
+     "t": 97,
+     "text": "讀取時間 = transfer time（只跟資料量有關）+ positioning time（seek，時間不 uniform）。"
+    },
+    {
+     "t": 124,
+     "text": "所以 hard drive 不是 random access；轉速（7200、3600 轉）越快 seek 越短、越貴。"
+    }
+   ],
+   "scene": "osB-hdd",
+   "cues": [
+    2.83,
+    6.11,
+    52.8,
+    64.8,
+    74.31,
+    78.8,
+    97.69,
+    102.21,
+    115.8,
+    123.8,
+    134.21
+   ],
+   "explain": [
+    "講完 memory，來看現在最普及的存資料地方：hard drive（硬碟）。它的特點是「機械式」的，不是電子式的。",
+    "硬碟裡有一支讀寫手臂，上面有很多磁頭（讀寫頭），底下疊著好幾片磁碟，可以同時對這些磁碟讀寫。",
+    "機械式的意思是：磁碟會轉動、磁頭會移動，這樣才能讀到磁碟上任何一個位置的資料。",
+    "因為是機械結構，所以「資料放在哪裡」跟「讀取要花多久」有絕對的關係。紅色小方塊代表要讀的資料。",
+    "如果剛好磁頭就落在資料附近，讀起來就很快。",
+    "如果很不幸，資料剛好在磁頭的對面，就要等磁盤轉過來才能讀，多花一段時間。",
+    "所以硬碟的讀取時間會切成兩塊：transfer time（傳輸時間）和 positioning time（定位時間）。",
+    "transfer time 只跟資料量有關：資料越多，要讀的越多，花的時間越長，這很直觀。",
+    "positioning time 則要 seek（找到資料所在的位置），跟磁頭目前在哪有關，所以時間不固定（不 uniform）。",
+    "因此我們不會說硬碟是 random access：讀不同位置花的時間不同，也沒辦法很有效率地隨機讀取。",
+    "買硬碟會看到 7200 轉、3600 轉這種規格：轉得越快，seek 越短、讀取越快，價錢也越高。RAM 就沒有這段，所以時間才能一致。"
+   ]
+  },
+  {
+   "title": "SSD vs hard drive",
+   "points": [
+    {
+     "t": 167,
+     "text": "SSD 是電子式的，像 memory 但資料不會遺失，沒有 seek time，效能好預測。"
+    },
+    {
+     "t": 197,
+     "text": "sequential 讀大量資料時 transfer time dominate，hard drive 不會輸 SSD 太多。"
+    },
+    {
+     "t": 224,
+     "text": "資料跳來跳去讀（例如 booting）時 SSD 才有優勢：小 SSD 裝 OS、大 hard drive 放檔案。"
+    }
+   ],
+   "scene": "osB-ssd",
+   "cues": [
+    166.94,
+    182.8,
+    197.09,
+    219.37,
+    224.1,
+    242.59,
+    275.33
+   ],
+   "explain": [
+    "SSD 為什麼快、效能好？第一，它是電子式的，跟 memory 很像，只是斷電資料不會遺失。",
+    "另外它讀取時沒有「轉磁盤找位置」的問題，等於去掉了 seek time，所以效能比較容易預測，隨機讀取明顯比硬碟好。",
+    "但如果你讀的資料是連續的（sequential），而且量夠大，transfer time 會遠大於 positioning time（綠色長條佔了大部分）。",
+    "實際測試（benchmark）會發現：資料在硬碟上也連續擺放、一路讀過去的話，hard drive 並不會輸 SSD 太多。",
+    "SSD 真正贏的地方，是資料讀取跳來跳去、磁頭要一直移動浪費時間的時候。大部分程式（尤其開機 booting、控制程式）就是這樣跳來跳去。",
+    "所以很多人買一顆比較貴的小 SSD 裝 OS，而需要大空間、一次讀一大堆的檔案就放在 hard drive。這就是依照 device 的不同特性做系統設計。",
+    "這也就是儲存的 hierarchy：越上層越快、空間越小；size 和 access time 是最主要的考量。"
+   ]
+  },
+  {
+   "title": "Caching：copy 到快的那一層",
+   "points": [
+    {
+     "t": 295,
+     "text": "儲存 hierarchy 用 caching：資料最後存在最慢最大的 device，讀過就 copy 一份到較快的層，越常用越往上。"
+    },
+    {
+     "t": 357,
+     "text": "cache 是 copy 不是搬移，是暫時的，砍掉也不能造成資料遺失。"
+    },
+    {
+     "t": 401,
+     "text": "CPU 先找最近的一層，miss 就一層層往下，讀回來時被 cache；miss 可能比沒 cache 還慢。"
+    },
+    {
+     "t": 449,
+     "text": "程式 access 有 pattern：第一次 miss 慢、之後很快，總和有幫助。"
+    },
+    {
+     "t": 484,
+     "text": "巨量資料讀一遍就丟，這類系統不 cache 反而更快。"
+    }
+   ],
+   "scene": "osB-caching",
+   "cues": [
+    294.98,
+    307.47,
+    319.59,
+    326.8,
+    357.22,
+    371,
+    401.1,
+    411.46,
+    416.8,
+    424.44,
+    449.49,
+    453.37,
+    484,
+    511.64
+   ],
+   "explain": [
+    "儲存為什麼要有 hierarchy、怎麼運用？關鍵就是 caching（快取）的概念。左邊是 CPU，右邊從上到下是 register、cache、memory、disk。",
+    "資料最終其實都存在最慢、但空間最大的那個 device 上（例如 disk），這份叫「本尊」。",
+    "但每次都去最慢的地方讀太慢了。所以既然讀過一次，就把它 copy 一份，暫存在比較快的 device 上。",
+    "用到的頻率越高，就 cache 到越上層。register 最快，所以才有 L1、L2、L3 cache 來加速 CPU 的計算。",
+    "請注意：caching 是 copy，不是搬移，後面一定還有一份。如果是搬移，就不叫 cache 了。",
+    "cache 的定義是：那份 copy 是暫時的，隨時把它砍掉都不應該造成資料遺失。",
+    "CPU 要存取資料時，會先到最近的那一層找；有的話直接讀，所以很快。",
+    "沒有（miss）就往下一層找，再沒有就再往下，一層一層往後看。最後一定找得到，資料不會掉。",
+    "找到的資料讀回來時，會順便被 cache 在上面幾層。",
+    "所以 cache miss 時反而會比較慢：要一層一層檢查，回來還要做 copy，有時甚至比完全沒有 cache 還慢。",
+    "但我們知道人寫的程式有特性：存取的資料有 pattern（規律），常用的就是那些。",
+    "所以第一次 miss 很慢，之後就非常快，總和起來 cache 還是讓整體效能變好。如果沒有這種特性，就要重新考慮要不要 cache。",
+    "反例：巨量資料（big data）。資料大到 memory 都塞不下，通常讀一遍就丟，不會來回重讀。",
+    "這種時候 cache 沒有意義（下次回來早就被擠掉了），所以處理巨量資料的系統甚至不做 cache，效能反而更好。"
+   ]
+  },
+  {
+   "title": "Cache coherence 與 consistency",
+   "points": [
+    {
+     "t": 527,
+     "text": "cache 是分身，若與本尊不同就有 coherence / consistency 問題（例如只改了 cache 還沒 update memory）。"
+    },
+    {
+     "t": 569,
+     "text": "暫時不同可以，重點是保證程式看到一致的值。"
+    },
+    {
+     "t": 618,
+     "text": "multi-core 各有 L1，要處理 cache coherence；只有一支程式用資料就沒問題。"
+    },
+    {
+     "t": 671,
+     "text": "很多程式（multi-thread）share memory、程式換 core，就要維持一致的假象。"
+    },
+    {
+     "t": 755,
+     "text": "分散式系統跨網路更難；Google 等雲端系統選擇放棄 consistency，因為要通知上萬台太慢。"
+    }
+   ],
+   "scene": "osB-coherence",
+   "cues": [
+    526.99,
+    533.88,
+    556.42,
+    568.8,
+    597.44,
+    618.77,
+    640.16,
+    670.8,
+    694.22,
+    707.8,
+    735.8,
+    755.04,
+    768.8,
+    802.4,
+    812.37,
+    835.8
+   ],
+   "explain": [
+    "回到 cache 的定義：它只是 copy，是一個「分身」，所以不能跟「本尊」（memory 上的資料）不同。",
+    "如果不同，就會有 coherence（一致性），也叫 consistency 的問題。這是 caching 雖然好、卻很討厭的地方。",
+    "例如你修改資料時，通常只改最上層的 [[cache]]（x 變成 7），還沒 update 到 memory（還是 5），兩邊內容就不一樣了。",
+    "其實在系統運作中，暫時不一樣是可以的，因為最後在乎的只有使用者：只要電腦上的程式看到的都是同一個值，就能繼續運作。",
+    "所以重點是：怎麼讓所有程式看到一致（consistent）的值。不可能同時改完所有 copy，一定有延遲和技巧，但要保證上面的程式看到一模一樣的值。",
+    "這就是 multi-core 處理器要處理的 cache coherence 問題：每個 core 的 L1 cache 是不同的，L2、L3 則應該是同一個值，要想辦法同步。",
+    "如果資料只有一支程式在用，通常不會有問題：CPU 讀資料一定是一層一層從上往下，改了最上層，下次也只讀最上層。",
+    "但很不幸，電腦裡不只一個人、一支程式在跑，很多資料（memory 的內容）是共用的，只要有 [[指標]]就能存取到。右邊的 core 1 就可能讀到舊的 5。",
+    "而且很多程式是故意要共用資料的，例如後面會教的 multi-thread programming，[[thread]] 就是要 share memory 的內容。",
+    "在 multi-core 上更難：一支程式可能在第一個 core 跑一跑，換到第二個 core，兩邊看到的 cache 不同。",
+    "所以電腦設計必須符合程式的邏輯：資料只是 copy，邏輯上應該相同，系統一定要製造出這個「大家看到都一樣」的假象。",
+    "問題越擴大越複雜：到了分散式系統，根本是不同的電腦、不同的 memory，但串在一起的目的是讓它們以為是同一塊 memory。",
+    "還要考慮網路：同一台電腦的 memory bus 不會斷，可是網路不穩定，隨時可能斷線，還要確保 consistency，非常困難。",
+    "老師補充：像 Google 這類公司做雲端計算，系統能長到這麼大，其實是因為他們最後選擇放棄 consistency。",
+    "例如看網頁：同一個網址打下去，你看到的和我看到的版本不一定一樣，但其實不影響使用者。",
+    "因為要保證一致就要大量溝通：一台電腦改了要告訴所有人，如果要告訴一萬台，一定沒辦法很快。所以 consistency 是很大的議題。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "hard drive 的讀取時間可以拆成哪兩部分？",
+   "opts": [
+    "transfer time + positioning（seek）time",
+    "cache time + memory time",
+    "CPU time + I/O time",
+    "boot time + run time"
+   ],
+   "ans": "transfer time + positioning（seek）time",
+   "why": "transfer 只跟資料量有關；positioning 跟磁頭位置有關，時間不固定。"
+  },
+  {
+   "q": "為什麼 hard drive 不被稱為 random access？",
+   "opts": [
+    "讀不同位置要 seek，花的時間不一樣",
+    "因為它是 volatile",
+    "因為它只能循序寫入",
+    "因為 CPU 可以直接讀它"
+   ],
+   "ans": "讀不同位置要 seek，花的時間不一樣",
+   "why": "random access 指任何位置讀取時間都相同，硬碟做不到。"
+  },
+  {
+   "q": "下列哪種情況 SSD 相對 hard drive 的優勢最大？",
+   "opts": [
+    "資料讀取跳來跳去（random）",
+    "連續讀一個很大的檔案",
+    "資料完全不讀",
+    "只寫入一次的備份"
+   ],
+   "ans": "資料讀取跳來跳去（random）",
+   "why": "sequential 大量讀取時 transfer time dominate，硬碟不會輸太多。"
+  },
+  {
+   "q": "關於 cache，下列何者正確？",
+   "opts": [
+    "cache 是 copy，砍掉不應造成資料遺失",
+    "cache 是把資料搬移到上層",
+    "cache miss 一定比沒有 cache 快",
+    "巨量資料系統一定要 cache"
+   ],
+   "ans": "cache 是 copy，砍掉不應造成資料遺失",
+   "why": "搬移就不叫 cache；miss 可能更慢；巨量資料讀一遍就丟，常不 cache。"
+  },
+  {
+   "q": "只修改 cache、還沒 update 到 memory，造成的是什麼問題？",
+   "opts": [
+    "coherence / consistency 問題",
+    "deadlock",
+    "starvation",
+    "page fault"
+   ],
+   "ans": "coherence / consistency 問題",
+   "why": "分身和本尊不一致；multi-core 各自的 L1 cache 也要處理 cache coherence。"
+  }
+ ]
+}

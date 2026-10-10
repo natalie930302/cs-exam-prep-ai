@@ -1,0 +1,253 @@
+{
+ "video": "dFXJM1ZTxdA",
+ "label": "清大周志遠 第3B講 Computer-System Organization",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "電腦系統的運作：control 與 coordinate",
+   "points": [
+    {
+     "t": 1,
+     "text": "知道 OS 的角色與目的後，開始看電腦系統如何透過 OS 運作。"
+    },
+    {
+     "t": 36,
+     "text": "von Neumann architecture：CPU、memory、I/O device 用 bus 串起來。"
+    },
+    {
+     "t": 78,
+     "text": "OS 的目的：control，並讓大家 share 同一塊 memory；instruction 在 CPU 跑、data 要在 memory。"
+    },
+    {
+     "t": 111,
+     "text": "coordinate：很多程式 concurrent 執行又不能出錯，例如不能改到別人的 memory。"
+    }
+   ],
+   "scene": "osB-cso",
+   "cues": [
+    4.37,
+    36.38,
+    56.8,
+    67.96,
+    78.73,
+    80.8,
+    94.14,
+    99.64,
+    102.8,
+    110.8,
+    119.9,
+    125.8,
+    140.16
+   ],
+   "explain": [
+    "知道了作業系統的角色和目的，接下來真正開始看：整個電腦系統是怎麼透過作業系統來運作的。",
+    "電腦用的是 von Neumann（馮紐曼）架構：有 [[CPU]]（負責計算）、memory（[[記憶體]]，放程式和資料）、I/O device（輸入輸出裝置，例如硬碟、印表機），把它們串起來就成了一台電腦。",
+    "「串起來」是什麼意思？打開主機會看到一條條線，也就是 [[bus]]（匯流排），把各種 device 接在一起。",
+    "實際的線路可能很複雜，但抽象起來，就是透過這些 bus 把所有東西連在一起。",
+    "那作業系統跑在這台電腦上要做什麼？第一件事就是 control（控制）。",
+    "而且這些 device 都接在 bus 上，大家要共用（share）那一塊 memory，這也要靠 OS 管。",
+    "你執行任何程式時，程式的 instruction（指令）當然是在 CPU 上跑。",
+    "指令要用的 data（資料），一定要放在 memory 裡。",
+    "最後的結果，可能會寫到某個 I/O device 上，例如存進硬碟。以上是 control 的部分。",
+    "OS 的另一個工作是 coordinate（協調）：問題在於電腦上有很多程式，每個都有自己的需求。",
+    "要讓它們同時（concurrent，並行）在這台電腦上執行，又不能出錯。",
+    "什麼叫出錯？最簡單的例子：我的程式不能修改到你的程式的記憶體內容。如果可以亂改別人的資料，電腦根本不能用。",
+    "怎麼讓大家同時共用資源、又互不干擾，就是 OS 要負責的事。"
+   ]
+  },
+  {
+   "title": "一個 I/O 的例子：controller 與 buffer",
+   "points": [
+    {
+     "t": 150,
+     "text": "例子：CPU 要對 disk 做 I/O，OS 扮演什麼角色。"
+    },
+    {
+     "t": 188,
+     "text": "資料要透過 device controller（硬體）：做最 low level 的控制，例如磁頭轉動。"
+    },
+    {
+     "t": 206,
+     "text": "controller 上一定有 buffer，因為 I/O device 很慢、CPU 很快；沒有 buffer CPU 會 idle 很久。"
+    },
+    {
+     "t": 244,
+     "text": "status register 告訴你 busy 還是 idle；data register 就是另一個 buffer。"
+    },
+    {
+     "t": 277,
+     "text": "I/O 分兩段：device → buffer 由 controller 自己做；buffer → memory 一定要 CPU 下指令。"
+    }
+   ],
+   "scene": "osB-cso-io",
+   "cues": [
+    149.8,
+    161.46,
+    180.8,
+    187.86,
+    194.13,
+    199.74,
+    205.8,
+    213.8,
+    231.8,
+    243.8,
+    253.21,
+    255.8,
+    276.84,
+    284.12,
+    305.8,
+    314.8
+   ],
+   "explain": [
+    "用一個例子來看 OS 怎麼運作。左邊是 [[CPU]] 和 memory。",
+    "假設 CPU 要對一個 I/O device（例如 disk 硬碟）做 I/O：讀或寫一筆資料。OS 在這裡扮演什麼角色？",
+    "最右邊是 hardware device，就把它想成一顆硬碟。",
+    "要把資料寫過去，必須透過一個 controller（控制器）。controller 是硬體。",
+    "它負責最 low level（最底層）的控制，直接操控那個 device。",
+    "例如控制硬碟磁頭（讀寫頭）的轉動和移動。",
+    "資料在 controller 上流動，一定會有一個 buffer（緩衝區），資料要先寫到這裡，再寫出去。",
+    "為什麼一定要 buffer？因為 I/O device 很慢，CPU 很快，兩邊速度差太多。",
+    "如果沒有 buffer，就得直接把資料從 disk 慢慢 copy 到 memory，要很久，這段時間 CPU 一定會 idle（閒置），沒辦法達到一開始說的「CPU 和 I/O 同時做事」。",
+    "為了透過 buffer 讀寫，controller 上有兩種 [[register]]（暫存器）：status register 和 data register。",
+    "status register 告訴你現在的狀態：正在做 I/O（busy），還是閒著（idle）。",
+    "data register 單純就是另一個小 buffer：資料可以很快先寫進 register，再寫到 buffer。",
+    "做 I/O 時，資料要先從 I/O device 寫到 buffer。",
+    "device 和 buffer 之間這一段，controller 自己做就好：它裡面其實有一個簡單的小 CPU chip，可以自己完成，跟 CPU 無關。",
+    "但 buffer 到 memory 這後半段不一樣：memory 是 CPU 在使用的，所以一定要透過 CPU（或別人）下指令來控制，才能完成。",
+    "所以一次 I/O 其實分成兩段：① device → buffer（controller 自己做）；② buffer → memory（要 CPU 下指令）。"
+   ]
+  },
+  {
+   "title": "Busy waiting：最基本的控制方式",
+   "points": [
+    {
+     "t": 327,
+     "text": "例：把一串字串寫到 I/O device；buffer 空間有限，不能一次全塞。"
+    },
+    {
+     "t": 346,
+     "text": "busy waiting：buffer 滿了就等，清空再寫下一批。"
+    },
+    {
+     "t": 385,
+     "text": "CPU 端用 while loop 一直 peek status register，不是 busy 才 poke 下一個字元。"
+    },
+    {
+     "t": 427,
+     "text": "I/O 花的時間 CPU 都在燒 cycle，等於 idle；CPU 和 I/O 無法 overlap，還同時霸佔兩者。"
+    },
+    {
+     "t": 473,
+     "text": "下一段：用 interrupt 解決。"
+    }
+   ],
+   "scene": "osB-cso-busy",
+   "cues": [
+    326.8,
+    335.96,
+    343.95,
+    345.8,
+    350.67,
+    358.8,
+    369.62,
+    384.8,
+    387.8,
+    397.8,
+    402.73,
+    415.36,
+    427.78,
+    434.3,
+    457.57,
+    463.8,
+    472.8
+   ],
+   "explain": [
+    "CPU 那邊要怎麼控制？先看一個非常簡單、最基本的例子，等一下再講怎麼改進。",
+    "例子：我要把一串字串寫到 I/O device 上。",
+    "因為速度的關係，不可能一次把整串都塞進 buffer：buffer 空間有限。",
+    "其中一種方法叫 [[busy waiting]]（忙碌等待）。",
+    "意思是：buffer 寫滿了，就只能等。",
+    "等 buffer 裡的資料真的寫到硬碟、清空了，才能再寫下一批，所以要分好幾趟。",
+    "上面是 CPU 端程式的示意：一直看下一個 character（字元），看到結尾字元，就知道字串結束了。",
+    "每次要寫出去之前，怕 buffer 還沒清空，所以要寫一個 while 迴圈，一直 peek（偷看）。",
+    "去看 status register 的值：如果是 BUSY，就只能卡在這裡一直等，這就是 busy waiting。",
+    "等到值變了，代表 controller 沒事了，可以寫了。",
+    "這時就把指標加一（p++），然後用 poke 把字元寫出去，寫進 buffer。",
+    "注意：做 I/O 時，真正在「寫」的時間只有一點點，大部分時間都在等「什麼時候可以寫」。",
+    "I/O 很慢，老師假設一次花了 10 ms，那這 10 ms CPU 在幹嘛？",
+    "它只是在浪費 CPU 的運算週期（cycle），某種程度上就跟 idle 一樣。字串越長，浪費越多，這樣電腦根本沒效率。",
+    "所以這種方式做不到一開始說的：CPU 和 I/O 要 overlap（同時進行）。",
+    "它同時霸佔了 CPU，也霸佔了 I/O，電腦就沒辦法讓大家 sharing。",
+    "下一段（休息回來）就會解釋：怎麼透過 [[interrupt]] 解決這個問題，這才是現在 OS 真正的控制方式。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "von Neumann 架構把哪三樣東西用 bus 串起來？",
+   "opts": [
+    "CPU、memory、I/O device",
+    "CPU、cache、register",
+    "OS、shell、user program",
+    "disk、tape、光碟"
+   ],
+   "ans": "CPU、memory、I/O device",
+   "why": "課堂一開始的電腦架構：CPU、memory、I/O device，透過 bus 連在一起。"
+  },
+  {
+   "q": "OS 的「coordinate」最在意的是什麼？",
+   "opts": [
+    "很多程式同時執行又不出錯（例如不能改到別人的 memory）",
+    "讓 CPU 跑得更快",
+    "把資料壓縮",
+    "決定螢幕解析度"
+   ],
+   "ans": "很多程式同時執行又不出錯（例如不能改到別人的 memory）",
+   "why": "程式要 concurrent 地 share 電腦，又不能互相破壞。"
+  },
+  {
+   "q": "device controller 上為什麼一定要有 buffer？",
+   "opts": [
+    "I/O device 很慢、CPU 很快，沒有 buffer CPU 會 idle 很久",
+    "因為 memory 不夠大",
+    "因為 buffer 比 memory 便宜",
+    "為了讓 disk 轉更快"
+   ],
+   "ans": "I/O device 很慢、CPU 很快，沒有 buffer CPU 會 idle 很久",
+   "why": "資料先進 buffer，CPU 不必等慢速 device 一個一個傳。"
+  },
+  {
+   "q": "controller 的 status register 用來？",
+   "opts": [
+    "告訴 CPU 現在是 busy 還是 idle",
+    "存放要寫出的資料",
+    "記錄被打斷程式的 PC",
+    "存放 system call 編號"
+   ],
+   "ans": "告訴 CPU 現在是 busy 還是 idle",
+   "why": "data register 才是放資料（像另一個 buffer）。"
+  },
+  {
+   "q": "一次 I/O 的兩段中，哪一段一定需要 CPU 下指令？",
+   "opts": [
+    "buffer → memory",
+    "device → buffer",
+    "兩段都不需要",
+    "兩段都由 controller 自己完成"
+   ],
+   "ans": "buffer → memory",
+   "why": "device → buffer 由 controller 自己做；memory 由 CPU 管，所以後半段要 CPU 下指令。"
+  },
+  {
+   "q": "busy waiting 的主要問題是？",
+   "opts": [
+    "CPU 一直 peek 狀態、浪費 cycle，CPU 與 I/O 無法 overlap",
+    "buffer 會變大",
+    "資料會寫錯位置",
+    "需要很多 interrupt"
+   ],
+   "ans": "CPU 一直 peek 狀態、浪費 cycle，CPU 與 I/O 無法 overlap",
+   "why": "等待期間 CPU 等於 idle，還同時霸佔 CPU 與 I/O。"
+  }
+ ]
+}

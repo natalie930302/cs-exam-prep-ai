@@ -1,145 +1,227 @@
 {
  "video": "9vrPlp_f5A0",
  "label": "清大周志遠 第5A講 Nachos解說/OS Structure",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
    "title": "作業一公告",
-   "scene": null,
    "points": [
     {
-     "text": "作業一已公布，deadline 約兩週後，要從今天開始每天 trace code。",
-     "t": 36
+     "t": 1,
+     "text": "作業一已公布，deadline 約兩週後，要從今天開始每天 trace code。"
     },
     {
-     "text": "slides 在課程網頁，裡面寫了要求與跟章節的關聯。",
-     "t": 55
+     "t": 78,
+     "text": "slides 在課程網頁，裡面寫了要求與跟章節的關聯。"
     }
-   ]
+   ],
+   "scene": null
   },
   {
    "title": "Nachos 是一個 virtual machine",
-   "scene": "nachos-vm",
    "points": [
     {
-     "text": "Nachos 不是跑在 hardware 上，而是跑在 Linux 上的完整 OS → virtual machine 的概念。",
-     "t": 91
+     "t": 100,
+     "text": "Nachos 不是跑在 hardware 上，而是跑在 Linux 上的完整 OS → virtual machine 的概念。"
     },
     {
-     "text": "user program 是很短的 C++ 程式，要 include syscall.h 才能呼叫 Nachos 的 system call。",
-     "t": 166
+     "t": 158,
+     "text": "user program 是很短的 C++ 程式，要 include syscall.h 才能呼叫 Nachos 的 system call。"
     },
     {
-     "text": "作業一：trace 已有的 system call（interrupt 流程），再加一個 hardware、一個 software 的。",
-     "t": 206
-    },
-    {
-     "text": "Nachos 模擬的是 MIPS 指令，不是 x86：MIPS 簡單、容易產生。",
-     "t": 279
-    },
-    {
-     "text": "machine simulation code 模擬 MIPS CPU，做 instruction set translation 成 x86 再給 Linux 執行。",
-     "t": 340
-    },
-    {
-     "text": "Nachos kernel code 才是真正的 OS 程式，跟模擬的 machine 互動。",
-     "t": 418
-    },
-    {
-     "text": "一定要用 Nachos 的 compile 指令產生 MIPS binary；兩邊的 binary 互相看不懂。",
-     "t": 554
-    },
-    {
-     "text": "沒實作的部分直接丟給下面完整的 Linux 處理。",
-     "t": 631
+     "t": 221,
+     "text": "作業一：trace 已有的 system call（interrupt 流程），再加一個 hardware、一個 software 的。"
     }
+   ],
+   "scene": "osB-nachos-vm",
+   "cues": [
+    99.8,
+    107.65,
+    122.8,
+    137.8,
+    157.81,
+    159.8,
+    204.86,
+    220.8,
+    236.35
+   ],
+   "explain": [
+    "Nachos 是作業要用的教學用作業系統。老師說：它是一個「完整的」作業系統，有 OS 該有的架構。",
+    "但它不是直接跑在硬體上，而是跑在 Linux 上面。下面藍色是真正的 OS（Linux），最下面是 x86 硬體，Nachos 坐在 Linux 上。",
+    "也就是說，電腦上本來就有一個作業系統，上面卻又架了一個作業系統，而且運作方式還要跟真的作業系統完全一樣。這是怎麼做到的？",
+    "答案就是 [[virtual machine]]（虛擬機器）的概念：在真的機器上「模擬」出另一台機器。Nachos 本身某種程度就是一個 virtual machine。",
+    "就像真的作業系統一樣，你要在 Nachos 上面寫自己的 user program（使用者程式）來執行。",
+    "這個 user program 是很基本的 C++ 程式，不會超過十行，也有範例程式可以改。",
+    "一般程式要透過作業系統執行，就一定要呼叫 [[system call]]。所以程式開頭要 include syscall.h，才能連到 Nachos 的 system call。",
+    "作業一要你 trace（一行一行追）現有最簡單的 system call，也就是上一講的 interrupt 流程，實際看它怎麼被寫出來。",
+    "然後要再加兩個 system call：一個是 hardware 的、一個是 software 的。上一講說過，兩者流程很像，但還是有不同。"
    ]
   },
   {
-   "title": "Nachos 的資料夾",
-   "scene": "nachos-folders",
+   "title": "Nachos 模擬 MIPS：instruction set translation",
    "points": [
     {
-     "text": "一堆資料夾不用怕，先知道每個在幹嘛。",
-     "t": 666
+     "t": 270,
+     "text": "Nachos 模擬的是 MIPS 指令，不是 x86：MIPS 簡單、容易產生。"
     },
     {
-     "text": "lib：Nachos 自己內部用的 utility function，不用理。",
-     "t": 705
+     "t": 319,
+     "text": "machine simulation code 模擬 MIPS CPU，做 instruction set translation 成 x86 再給 Linux 執行。"
     },
     {
-     "text": "machine：模擬的硬體；只有作業一會改（加一個 signal），改這裡等於動 hardware。",
-     "t": 742
+     "t": 414,
+     "text": "Nachos kernel code 才是真正的 OS 程式，跟模擬的 machine 互動。"
     },
     {
-     "text": "threads：把整個 OS 跑起來的程式；Nachos 本身靠 multi-thread 執行。",
-     "t": 818
+     "t": 541,
+     "text": "一定要用 Nachos 的 compile 指令產生 MIPS binary；兩邊的 binary 互相看不懂。"
     },
     {
-     "text": "test：user program 放這裡，在此 compile 與執行。",
-     "t": 898
-    },
-    {
-     "text": "userprog：主要的 OS 程式碼，作業二三四的 file system、scheduling、memory 都在這裡改。",
-     "t": 956
-    },
-    {
-     "text": "network 可模擬到 TCP/IP，本課不碰；filesys 在作業四。",
-     "t": 1015
+     "t": 605,
+     "text": "沒實作的部分直接丟給下面完整的 Linux 處理。"
     }
+   ],
+   "scene": "osB-nachos-mips",
+   "cues": [
+    269.86,
+    285.92,
+    291.81,
+    318.8,
+    338.37,
+    362.18,
+    413.8,
+    460.8,
+    502.28,
+    541.56,
+    554.62,
+    605.51
+   ],
+   "explain": [
+    "這是 virtual machine 的妙處：Nachos 模擬的 instruction（機器指令）不是 x86。下面的 Linux 跑的是 x86 指令，兩種指令長得完全不一樣。",
+    "Nachos 跑的是另一種指令集：[[MIPS]]。你的 user program 編出來的是 MIPS 指令（綠色那層）。",
+    "為什麼選 MIPS？因為它簡單，比較容易產生這些指令。",
+    "那 MIPS 程式怎麼能在 x86 的電腦上跑？因為 Nachos 裡有一段 machine simulation code（機器模擬程式）。",
+    "它模擬一顆 MIPS [[CPU]] 的動作：把收到的 MIPS 指令轉換成 x86 指令，再交給下面的 Linux 去執行。",
+    "所以 virtual machine 的關鍵，就是在做 instruction set translation（指令集翻譯）。",
+    "模擬出來的機器也需要有人管，所以 Nachos 裡還有 Nachos kernel code，它才是真正的 Nachos 作業系統程式，負責跟這台「假的機器」互動。",
+    "看起來好像有一顆 MIPS 處理器在跑，其實真正做事的是下面那台實體機器：真的 CPU、甚至真的 file system，做完再把結果傳回來。",
+    "模擬出來的 OS 跟 machine 之間的互動，和你在實體硬體上裝 Linux 的行為完全一樣。這就是 Nachos 的基本架構。",
+    "所以 compile（[[編譯]]）你的 user program 時，不能用一般的 gcc，一定要用 Nachos 的指令，編出 MIPS 的 binary（機器碼）。",
+    "兩邊的 binary 互相看不懂：把 MIPS binary 直接丟到你的機器上跑會 fail；用 gcc 編的 x86 程式給 Nachos 跑也會 fail。就像兩台不同的電腦。",
+    "Nachos 是教學用的，不完整：沒實作的部分，就全部丟給下面完整的 Linux 去做。重要的部分留著，OS 的架構還是完全相同。"
    ]
   },
   {
-   "title": "File system stub",
-   "scene": "nachos-fs-stub",
+   "title": "Nachos 的資料夾導覽（作業用）",
    "points": [
     {
-     "text": "Nachos 的 file system 有兩種：real（作業四才實作）與 stub。",
-     "t": 1055
+     "t": 624,
+     "text": "一堆資料夾不用怕，先知道每個在幹嘛。"
     },
     {
-     "text": "stub 沒有真的實作：open file 時直接 redirect 到下面 Linux server 的 file system。",
-     "t": 1095
+     "t": 681,
+     "text": "lib：Nachos 自己內部用的 utility function，不用理。"
     },
     {
-     "text": "所以作業一到三在 Nachos 看到的檔案，跟 login server 看到的一模一樣。",
-     "t": 1133
+     "t": 709,
+     "text": "machine：模擬的硬體；只有作業一會改（加一個 signal），改這裡等於動 hardware。"
     },
     {
-     "text": "作業一 part 2 要加的 software system call 就是 open 跟 close，只要把 call path 接起來。",
-     "t": 1190
+     "t": 780,
+     "text": "threads：把整個 OS 跑起來的程式；Nachos 本身靠 multi-thread 執行。"
     },
     {
-     "text": "要看 Nachos 印出的 counter 才能確定是 Nachos 做的，眼睛分不出來。",
-     "t": 1387
+     "t": 855,
+     "text": "test：user program 放這裡，在此 compile 與執行。"
     },
     {
-     "text": "不要用 standard I/O（printf）：那根本沒經過 Nachos。",
-     "t": 1406
+     "t": 903,
+     "text": "userprog：主要的 OS 程式碼，作業二三四的 file system、scheduling、memory 都在這裡改。"
+    },
+    {
+     "t": 952,
+     "text": "network 可模擬到 TCP/IP，本課不碰；filesys 在作業四。"
     }
+   ],
+   "scene": null
+  },
+  {
+   "title": "File system：real 與 stub",
+   "points": [
+    {
+     "t": 994,
+     "text": "Nachos 的 file system 有兩種：real（作業四才實作）與 stub。"
+    },
+    {
+     "t": 1032,
+     "text": "stub 沒有真的實作：open file 時直接 redirect 到下面 Linux server 的 file system。"
+    },
+    {
+     "t": 1071,
+     "text": "所以作業一到三在 Nachos 看到的檔案，跟 login server 看到的一模一樣。"
+    },
+    {
+     "t": 1142,
+     "text": "作業一 part 2 要加的 software system call 就是 open 跟 close，只要把 call path 接起來。"
+    }
+   ],
+   "scene": "osB-nachos-stub",
+   "cues": [
+    994.72,
+    998.8,
+    1004.8,
+    1024.8,
+    1032.69,
+    1056.8,
+    1071.07,
+    1084.55,
+    1105.8,
+    1141.95,
+    1200.8
+   ],
+   "explain": [
+    "作業最後會碰到 [[file system]]（檔案系統，負責管理檔案的那部分 OS）。在 Nachos 裡，它有兩種不同的支援方式。",
+    "第一種是 real file system：真的在 Nachos 裡實作出來的檔案系統。",
+    "作業系統一定要先有一個 file system，你才能在上面存取檔案；不然對 Nachos 來說，連放你程式的資料夾都不存在。",
+    "但 real file system 比較複雜，而且正是你們之後（作業四）才要去實作的部分。",
+    "在還沒有 real file system 的時候怎麼辦？用第二個 version，它其實是「假的」。Nachos 是不完整的 VM，所以可以在這裡偷吃步。",
+    "當 Nachos 上的程式說「我要 open 一個檔案」，stub 就直接把這個指令 redirect（轉送）給下面真的 Linux（你們 server）的 file system 去處理。",
+    "所以作業一到三時，你在 Nachos 裡看到的檔案，跟你 login 那台 server 看到的完全一模一樣。",
+    "在真正的 virtual machine 或真正的 OS 上，當然不能依靠另一個 OS，必須完全獨立，所以這種事本來不會發生；只是 Nachos 沒實作 real file system，就借用下面那層。",
+    "所以它只是一個 stub（替身、樁）：它只負責把你的指令轉送到下面的 file system 處理，自己並沒有真的做。",
+    "作業一 Part 2 要加的 software [[system call]]，其實就是 file system 的 open 和 close。",
+    "你不需要實作 file system，原本的程式都寫好了，只是沒有開放出來；你只要 trace 之後把呼叫的路徑（call path）接起來就好。"
    ]
   },
   {
-   "title": "實作提醒",
-   "scene": "trap-switch",
+   "title": "作業提醒：counter、demo、.S 檔、make clean、vim",
    "points": [
     {
-     "text": "demo 時助教會問 interrupt、system call 的基本運作，兩者流程其實一樣。",
-     "t": 1444
+     "t": 1210,
+     "text": "照 spec 的指令 download、compile、用 nachos -x 執行 user program。"
     },
     {
-     "text": "要改的檔案有一個 .S：system call 是用 assembly code 寫的。",
-     "t": 1541
+     "t": 1279,
+     "text": "要看 Nachos 印出的 counter 才能確定是 Nachos 做的，眼睛分不出來。"
     },
     {
-     "text": "run 之前記得 make clean，不然可能 link 到舊的版本。",
-     "t": 1620
+     "t": 1361,
+     "text": "不要用 standard I/O（printf）：那根本沒經過 Nachos。"
     },
     {
-     "text": "學會 VIM 的基本操作，直接在 server 上修改、compile。",
-     "t": 1659
+     "t": 1403,
+     "text": "demo 時助教會問 interrupt、system call 的基本運作，兩者流程其實一樣。"
+    },
+    {
+     "t": 1515,
+     "text": "要改的檔案有一個 .S：system call 是用 assembly code 寫的。"
+    },
+    {
+     "t": 1592,
+     "text": "run 之前記得 make clean，不然可能 link 到舊的版本；學會 vim 直接在 server 上改。"
     }
-   ]
+   ],
+   "scene": null
   }
  ],
  "quiz": [
@@ -187,6 +269,5 @@
    "ans": "printf 走的是 Linux 的 standard I/O，沒經過 Nachos",
    "why": "要用 Nachos 的 system call 與 counter 確認。"
   }
- ],
- "timing": "estimated"
+ ]
 }

@@ -1,96 +1,212 @@
 {
  "video": "7z3hoaide-4",
  "label": "清大周志遠 第4B講 Computer-System Organization(續)",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
    "title": "Storage hierarchy",
-   "scene": "storage-hierarchy",
    "points": [
     {
-     "text": "資料儲存是 hierarchical：越上面越快、空間越小；越下面存越多、越慢、越便宜。",
-     "t": 19
+     "t": 3,
+     "text": "資料儲存是 hierarchical：越上面越快、空間越小；越下面存越多、越慢、越便宜。"
     },
     {
-     "text": "有限的錢下，用 hierarchy 通常達到最好的效益；每層多大、放什麼看設計。",
-     "t": 58
+     "t": 84,
+     "text": "有限的錢下，用 hierarchy 通常達到最好的效益；每層多大、放什麼看設計。"
     },
     {
-     "text": "register、cache（L1、L2、L3；上層 per-core、下層 shared）、main memory。",
-     "t": 113
+     "t": 139,
+     "text": "register、cache（L1、L2、L3；上層 per-core、下層 shared）、main memory。"
     },
     {
-     "text": "memory 以下統稱 secondary storage：hard drive、光碟、tape。",
-     "t": 154
+     "t": 178,
+     "text": "memory 以下統稱 secondary storage：hard drive、光碟、tape。"
     },
     {
-     "text": "tape 便宜、容量大、不容易壞：大型系統最後一層仍是 tape。",
-     "t": 175
-    },
-    {
-     "text": "flash、SSD、non-volatile memory 等新技術插在中間。",
-     "t": 214
-    },
-    {
-     "text": "不變的三個因素：速度、價錢、volatile 與否；memory 以上全是 volatile。",
-     "t": 271
+     "t": 206,
+     "text": "tape 便宜、容量大、不容易壞：大型系統最後一層仍是 tape。"
     }
+   ],
+   "scene": "osB-hierarchy",
+   "cues": [
+    3.05,
+    7.28,
+    51.31,
+    54.01,
+    63.49,
+    72.49,
+    83.8,
+    103.8,
+    139.18,
+    146.8,
+    159.93,
+    170.1,
+    178.24,
+    187.8,
+    205.8,
+    216.03
+   ],
+   "explain": [
+    "講完 interrupt（處理計算的機制），接下來看電腦怎麼「儲存、讀取資料」。",
+    "電腦很重要的工作就是處理資料，而很多資料是常駐的，像我們的[[檔案]]，要一直保存下去。",
+    "這些資料是用「階層式」（hierarchical）的方式存放的：越上面的儲存越快，但空間越小。左邊箭頭往上代表「越快、越小」。",
+    "越往下則存得越多，但速度越慢。",
+    "而且越下面的價格也越便宜。速度、容量、價錢互相牽制，才形成這種層層疊疊的結構。",
+    "如果你很有錢，能不能全部都用最快的那一種？當然可以，沒有人規定電腦一定要長什麼樣子，這很有彈性。",
+    "但在錢有限、又要考慮效率的情況下，用階層的方式通常能達到最好的結果：再多花錢也不一定會更快。",
+    "每一層要多大、要放什麼資料，就看你怎麼設計。設計得好表現就好；設計不好，花大錢裝很多記憶體也不會變快。",
+    "來看每一層。最上面是 [[register]]（暫存器），就在 [[CPU]] 裡面，最快也最小。",
+    "接著是 [[cache]]（快取），有好幾層：L1、L2、L3。",
+    "多核心處理器裡，上層的 cache（L1）通常是每個 core 自己的，下層的 L2、L3 可能是大家共用的，所以會有一些問題要處理。",
+    "再來是 memory（[[主記憶體]]），它是最主要的一層，而且是 CPU 可以直接存取的。",
+    "memory 以下的全部統稱 secondary storage（次要儲存），例如硬碟（hard drive）。",
+    "再往下有光碟，還有 tape（磁帶）。老師說別笑，以為 tape 早就過時了？其實不是。",
+    "現在最先進的大型電腦系統，儲存的最後一層仍然是 tape。",
+    "因為 tape 便宜、能存很多，而且很不容易壞（硬碟摔一下就壞了），比較可靠。速度就靠上面好幾層來加速。"
+   ]
+  },
+  {
+   "title": "新技術與三個不變的因素",
+   "points": [
+    {
+     "t": 251,
+     "text": "flash、SSD、non-volatile memory 等新技術插在中間。"
+    },
+    {
+     "t": 291,
+     "text": "不變的三個因素：速度、價錢、volatile 與否；memory 以上全是 volatile。"
+    },
+    {
+     "t": 336,
+     "text": "non-volatile memory 又快又不怕斷電，但比較貴，仍只在 hierarchy 中間。"
+    }
+   ],
+   "scene": "osB-hier-factors",
+   "cues": [
+    251.01,
+    291.14,
+    298.8,
+    310.52,
+    325.8,
+    336.1
+   ],
+   "explain": [
+    "儲存技術一直在進步：像 Flash、SSD，甚至是 non-volatile memory（斷電也不會遺失資料的記憶體），會插進這個階層的中間。剛才那張圖只是最傳統的版本。",
+    "不管怎麼變，有三件事一定不會變。第一是速度：上層一定比較快，這是製程決定的。",
+    "第二是錢：一定得考慮價錢。",
+    "第三是 volatile（揮發性）或 non-volatile。volatile 的意思是：一關電，資料就消失。memory、cache 以上（標紅的這幾層）全部都是 volatile。",
+    "所以最大的問題是：如果系統出錯當掉（crash），這些層裡的資料就沒了，沒辦法挽回。",
+    "這就是為什麼 non-volatile memory 讓人充滿希望：它大概跟 memory 一樣快，又不會因斷電遺失。但它比較貴，所以也只是放在階層中間，不可能全部都用它。"
    ]
   },
   {
    "title": "Main memory 是分界",
-   "scene": "memory-boundary",
    "points": [
     {
-     "text": "von Neumann 架構：CPU、memory、I/O，memory 是主角。",
-     "t": 350
+     "t": 363,
+     "text": "von Neumann 架構：CPU、memory、I/O，memory 是主角。"
     },
     {
-     "text": "memory 是 CPU 能直接 access 的最後一層，資料要在 memory 才能被 CPU 使用。",
-     "t": 369
+     "t": 394,
+     "text": "memory 是 CPU 能直接 access 的最後一層，資料要在 memory 才能被 CPU 使用。"
     },
     {
-     "text": "register、cache 都只是 copy，最後以 memory 上的資料為準。",
-     "t": 389
+     "t": 407,
+     "text": "register、cache 都只是 copy，最後以 memory 上的資料為準；技術是 RAM。"
     },
     {
-     "text": "secondary storage 的資料要先搬到 memory 才能被讀，所以 real-time system 不用它。",
-     "t": 429
+     "t": 439,
+     "text": "secondary storage 的資料要先搬到 memory 才能被讀，所以 real-time system 不用它。"
     },
     {
-     "text": "secondary storage 比較大、比較便宜、而且 non-volatile。",
-     "t": 468
+     "t": 472,
+     "text": "secondary storage 比較大、比較便宜、而且 non-volatile。"
     }
+   ],
+   "scene": "osB-mem-boundary",
+   "cues": [
+    362.8,
+    376.5,
+    393.89,
+    406.94,
+    425.63,
+    439.36,
+    456.57,
+    472.18,
+    477.58,
+    490.53
+   ],
+   "explain": [
+    "整個儲存階層裡，最重要的分界點就是 memory（[[主記憶體]]）這一層。",
+    "回到最早學的 von Neumann 電腦架構：CPU、memory、I/O device 三樣東西。上下可以加很多層，但 memory 一直都是主角。",
+    "它之所以重要，是因為 memory 是 [[CPU]] 能「直接」存取的最後一層。資料一定要放在 memory 裡，CPU 才能用；右邊的 I/O device，CPU 不能直接讀。",
+    "memory 上面雖然還有 [[register]]、[[cache]]，但它們都只是 copy（複本），最後還是以 main memory 上的資料為準。",
+    "main memory 用的技術叫 RAM，也就是 Random Access Memory 的縮寫。去買電腦加「RAM」，就是在加 memory。",
+    "memory 以下的 secondary storage，CPU 沒辦法直接讀；要用的話必須先把資料搬到 main memory，所以會比較慢，而且越往下越慢。",
+    "所以 real-time system（即時系統，必須在時限內完成）不會用 secondary storage，因為搬移、copy 太花時間了，它要能立刻存取。",
+    "secondary storage 的特色是：一定比較大，因為它比較便宜。",
+    "還有一點：它是 non-volatile 的，斷電之後資料仍然保留。main memory 只是暫時的，把資料 load 進來讓 CPU 執行而已。",
+    "最標準的 secondary storage 是硬碟，但別忘了現在還有 SSD、flash、non-volatile memory 等等，也都屬於 secondary storage。"
    ]
   },
   {
    "title": "DRAM vs SRAM、random access",
-   "scene": "dram-sram",
    "points": [
     {
-     "text": "DRAM 只需一個 transistor：小、便宜、省電，但較慢 → main memory。",
-     "t": 526
+     "t": 517,
+     "text": "DRAM 只需一個 transistor：小、便宜、省電，但較慢 → main memory。"
     },
     {
-     "text": "DDR 幾代改進的是存取 DRAM 的 bus；多核心搶著讀，bus 常是 bottleneck。",
-     "t": 566
+     "t": 550,
+     "text": "DDR 幾代改進的是存取 DRAM 的 bus；多核心搶著讀，bus 常是 bottleneck。"
     },
     {
-     "text": "SRAM 快但大、耗電、貴 → cache 甚至 register。",
-     "t": 603
+     "t": 587,
+     "text": "SRAM 快但大、耗電、貴 → cache 甚至 register。"
     },
     {
-     "text": "技術都有 tradeoff，若某技術全面勝出，舊的就會從 hierarchy 消失。",
-     "t": 642
+     "t": 626,
+     "text": "技術都有 trade-off，若某技術全面勝出，舊的就會從 hierarchy 消失。"
     },
     {
-     "text": "random access：讀任何位置的時間都一樣，效能可預期。",
-     "t": 682
+     "t": 664,
+     "text": "random access：讀任何位置的時間都一樣，效能可預期。"
     },
     {
-     "text": "disk 不同：讀寫位置不同時間就不同。",
-     "t": 721
+     "t": 707,
+     "text": "disk 不同：讀寫位置不同時間就不同。"
     }
+   ],
+   "scene": "osB-dram-sram",
+   "cues": [
+    517.53,
+    520.8,
+    529.57,
+    550.38,
+    555.79,
+    572.48,
+    587.36,
+    597.8,
+    625.84,
+    634.8,
+    663.87,
+    683.88,
+    706.88
+   ],
+   "explain": [
+    "這部分稍微知道就好（偏電機）：RAM 的製程分兩種，DRAM 和 SRAM。",
+    "DRAM 每個位元只需要一個 transistor（電晶體），所以體積小、便宜，耗電也少，很有效率。",
+    "但它速度比較慢，所以拿來做一般的 main memory。",
+    "近年真正進步比較多的，是存取 DRAM 的那條 [[bus]]（匯流排，資料通道）。",
+    "買電腦時聽到的 DDR 第一代、第二代、第三代，講的就是這個 memory bus。",
+    "因為核心（core）越來越多，大家都搶著到 memory 讀資料，所以那條通道（bus）常常才是真正的瓶頸（bottleneck），RAM 本身反而不是最關鍵。",
+    "另一種是 SRAM：比較大、比較耗電，但速度快，所以比較貴。",
+    "因此 SRAM 拿來做 L1、L2、L3 這些 [[cache]]，甚至是 [[register]]。差別就是製程不同，造成速度、大小、成本不同。",
+    "大部分技術都有 [[trade-off]]（取捨）：越快的通常越貴。",
+    "為什麼一定有取捨？因為如果某個技術全面勝過另一個，誰還用舊的？舊技術很快就被淘汰，從 hierarchy 上消失了。",
+    "random access（隨機存取）的意思是：讀取任何位置的資料，花的時間都一樣，不會因為讀第 1 個 byte 或第 100 個 byte 而不同。",
+    "這跟之前講的 NUMA、UMA 有關：使用者希望系統效能一致、可預期，每次跑的結果和速度都一樣，才好掌控。",
+    "等一下要講的 disk（硬碟）就完全不同了：讀寫的位置不同，花的時間就不同，這算是它的缺點。"
    ]
   }
  ],
@@ -139,6 +255,5 @@
    "ans": "便宜、容量大、不容易壞",
    "why": "tape 可靠，上面再用多層加速。"
   }
- ],
- "timing": "estimated"
+ ]
 }
