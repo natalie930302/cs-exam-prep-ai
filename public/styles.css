@@ -7400,7 +7400,7 @@ body#appRoot .fab-nav .fab-btn:hover { background: var(--surf2); color: var(--tx
 body#appRoot .fab-nav .fab-btn.on { background: var(--ac, #5b7a45); color: #fff; }
 body#appRoot .fab-nav .fab-btn:focus-visible { outline: 2px solid var(--ac, #5b7a45); outline-offset: 2px; }
 /* 主要內容讓出右邊一點空間，懸浮鈕不會蓋到卡片的右上角 */
-@media (min-width: 760px) { body#appRoot #main { padding-left: 56px; padding-right: 56px; } }
+/* 兩邊不另外留空；懸浮鈕直接浮在內容上 */
 @media (max-width: 759px) {
   body#appRoot .fab-nav { top: 10px; right: 10px; }
   body#appRoot .fab-nav .fab-btn { width: 38px; height: 38px; }
@@ -7417,3 +7417,26 @@ body#appRoot .fab-nav .fab-btn, body#appRoot .fab-nav .fab-btn.pill {
 body#appRoot .fab-nav .fab-btn:hover { background: color-mix(in srgb, var(--tx) 6%, transparent) !important; color: var(--tx) !important; }
 body#appRoot .fab-nav .fab-btn.on { background: var(--ac, #5b7a45) !important; color: #fff !important; }
 body#appRoot .fab-nav .fab-btn .ic { width: 18px; height: 18px; }
+
+/* 六科：科目列自己一行；下面「進度（左，直排、捲動時黏著）｜章節清單（右）」並排在同一橫排 */
+@media (min-width: 1000px) {
+  body#appRoot #main #sec-subjects.on { grid-template-columns: 240px minmax(0, 1fr) !important; column-gap: 14px !important; align-items: start !important; }
+  body#appRoot #main #sec-subjects.on > .sh { grid-row: 1; }
+  body#appRoot #main #sec-subjects.on > .ss { grid-row: 2; }
+  body#appRoot #main #sec-subjects.on > .stabs { grid-column: 1 / -1 !important; grid-row: 3 !important; justify-self: start; }
+  body#appRoot #main #sec-subjects > #spPanels > .sp.on > .sp-rec-row { grid-column: 1 / -1 !important; grid-row: 4 !important; }
+  body#appRoot #main #sec-subjects > #spPanels > .sp.on > .subject-overview-card {
+    grid-column: 1 !important; grid-row: 5 !important; justify-self: stretch !important; align-self: start !important;
+    position: sticky; top: 16px; margin: 14px 0 0 !important; padding: 18px 16px !important;
+  }
+  body#appRoot #main #sec-subjects > #spPanels > .sp.on > .ch-list { grid-column: 2 !important; grid-row: 5 !important; margin-top: 14px !important; }
+  body#appRoot #main #sec-subjects > #spPanels > .sp.on > :is(.tip, .filter-empty) { grid-column: 1 / -1 !important; grid-row: 6 !important; }
+  body#appRoot #main .sp .subject-overview-card .sp-top { flex-direction: column !important; align-items: stretch !important; gap: 14px !important; }
+  body#appRoot #main .sp .sp-donut { align-self: center; width: 76px !important; height: 76px !important; flex-basis: 76px !important; }
+  body#appRoot #main .sp .sp-donut-svg, body#appRoot #main .sp .sp-donut-svg svg { width: 76px !important; height: 76px !important; }
+  body#appRoot #main .sp .sp-donut-pct { font-size: 16px !important; }
+  body#appRoot #main .sp .smeta { flex-direction: column !important; align-items: stretch !important; gap: 0 !important; }
+  body#appRoot #main .sp .smeta .sm { justify-content: space-between; padding: 10px 2px !important; }
+  body#appRoot #main .sp .smeta .sm + .sm { border-left: 0 !important; border-top: 1px solid var(--bd) !important; }
+  body#appRoot #main .sp .smeta .sm-n { order: 2; }
+}
