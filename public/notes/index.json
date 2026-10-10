@@ -109,9 +109,9 @@
  },
  "1gIwNYCcwAk": {
   "label": "清大周志遠 第2D講 Special-purpose Systems",
-  "points": 23,
-  "quiz": 4,
-  "cued": false
+  "points": 26,
+  "quiz": 5,
+  "cued": true
  },
  "1Hl-S_eFbhE": {
   "label": "清大周志遠 第26B講 Mass Storage / I/O Systems",
@@ -176,8 +176,8 @@
  "2nTqrHZhVQ0": {
   "label": "清大周志遠 第2A講 Historical Prospective(Mainframe)",
   "points": 34,
-  "quiz": 5,
-  "cued": false
+  "quiz": 6,
+  "cued": true
  },
  "2raV0H9KqY8": {
   "label": "Abdul Bari：Shortest Path Algorithms (Dijkstra/Bellman-Ford) - Simplified",
@@ -211,9 +211,9 @@
  },
  "3PfL2WIS22o": {
   "label": "清大周志遠 第1A講",
-  "points": 15,
-  "quiz": 3,
-  "cued": false
+  "points": 19,
+  "quiz": 4,
+  "cued": true
  },
  "3RBNPc0_Q6g": {
   "label": "Abdul Bari：7 Branch and Bound Introduction",
@@ -567,6 +567,12 @@
   "label": "交大彭文志 Lec23 Hashing",
   "points": 185,
   "quiz": 8,
+  "cued": true
+ },
+ "bzE9oX8bKqY": {
+  "label": "清大周志遠 第3A講 What is an OS?",
+  "points": 32,
+  "quiz": 6,
   "cued": true
  },
  "C2apEw9pgtw": {
@@ -977,6 +983,12 @@
   "quiz": 5,
   "cued": true
  },
+ "ku1XgA2bZTE": {
+  "label": "清大周志遠 第2B講 Computer-System Architecture",
+  "points": 24,
+  "quiz": 5,
+  "cued": true
+ },
  "kxIQ86qMtfk": {
   "label": "交大江蕙如 Lec02 Chapter 1 Introduction (1/2)",
   "points": 180,
@@ -993,6 +1005,12 @@
   "label": "Abdul Bari：BFS DFS - Simplified",
   "points": 15,
   "quiz": 7,
+  "cued": true
+ },
+ "lhToWeuWWfw": {
+  "label": "Neso Academy：System Calls（精簡版）",
+  "points": 11,
+  "quiz": 5,
   "cued": true
  },
  "lhXHk8IuFeQ": {
@@ -1241,6 +1259,12 @@
   "quiz": 7,
   "cued": true
  },
+ "QK63Mw9hPec": {
+  "label": "清大周志遠 第1B講",
+  "points": 22,
+  "quiz": 4,
+  "cued": true
+ },
  "qQ8vS2btsxI": {
   "label": "Abdul Bari：9.2 Rabin-Karp String Matching Algorithm",
   "points": 39,
@@ -1439,6 +1463,12 @@
   "quiz": 7,
   "cued": true
  },
+ "veTbz_7sDtM": {
+  "label": "清大周志遠 第2C講 Computer-System Architecture(續)",
+  "points": 26,
+  "quiz": 6,
+  "cued": true
+ },
  "vLS-zRCHo-Y": {
   "label": "Abdul Bari：Optimal BST (Successful Search Only)",
   "points": 65,
@@ -1497,6 +1527,12 @@
   "label": "台大林軒田 DSA Hash Table",
   "points": 333,
   "quiz": 8,
+  "cued": true
+ },
+ "wzRwuRrUzNQ": {
+  "label": "清大周志遠 第1C講",
+  "points": 23,
+  "quiz": 5,
   "cued": true
  },
  "x72xBomc-XE": {

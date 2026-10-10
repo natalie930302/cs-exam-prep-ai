@@ -1,0 +1,417 @@
+{
+ "video": "veTbz_7sDtM",
+ "label": "清大周志遠 第2C講 Computer-System Architecture(續)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Multiprocessor、multi-core、many-core 怎麼分",
+   "scene": "osA-mcmp",
+   "points": [
+    {
+     "t": 0,
+     "text": "打開機殼有多個 CPU / GPU 插槽 → multiprocessor computer system（仍是一台電腦）。"
+    },
+    {
+     "t": 88,
+     "text": "一個 processor 裡有多個計算核心 → multi-core processor；兩者可結合。"
+    },
+    {
+     "t": 133,
+     "text": "Many-core：單一 device（例如一張 GPU 卡）像小型電腦，有上百個 core，硬體設計與指令方式都不同。"
+    },
+    {
+     "t": 215,
+     "text": "GPU、Xeon Phi、Tile64 型態多樣；core 多了要處理 chip 上 interconnect 的 congestion。"
+    }
+   ],
+   "cues": [
+    0.8,
+    45.8,
+    71.8,
+    87.8,
+    112.8,
+    133.1,
+    161.8,
+    185.8,
+    214.8,
+    239.8,
+    262.8,
+    298.8
+   ],
+   "explain": [
+    "前面講了好幾個名詞，如果難跟現實的電腦連起來，就用「買電腦」重新看一次：什麼叫 multiprocessor、multi-core、many-core？",
+    "打開機殼，如果主機板上有多個 CPU、或可以計算的 GPU 插槽，就叫 multiprocessor computer system。",
+    "它還是一台電腦，只是多個 processor 在同一個 motherboard（主機板）上連起來。",
+    "Multi-core 指的是單一個 processor：一顆 CPU 裡就有多個計算核心（core）。它本身還不算一個 computer system，只是 processor 裡有 multi-core。",
+    "兩者可以結合：multiprocessor 的系統上，再插 multi-core 的 processor，核心數就能一直增加，而且同一個 chip 上的核心連結更緊密。",
+    "Many-core processor 也是單一 device，但它自己就像一個小型電腦系統，在整台電腦裡看起來就是一張可以插上去的卡。",
+    "最新的電腦可能插 8 張 GPU 卡幫你計算，每張卡裡就塞進 100 多個 core。",
+    "core 數量能遠多於傳統 CPU，代表它的 hardware design 有很大的 revolution，指令處理方式也跟 general purpose CPU 不同。",
+    "Many-core 很新，型態很多樣：早期直接把 GPU 當 many-core 用，Intel 做了 Xeon Phi，還有 Tile64 這種全新的架構。",
+    "Tile64 裡放的其實是傳統 CPU，沒什麼調整，但它在 chip 上的 interconnect（晶片內的網路）下了很大功夫。",
+    "因為很多東西塞在小空間又共用，如果不減少 congestion（塞車），大家你等我、我等你，以為跑了 64 個 CPU，結果像只有 1 個在運作。",
+    "這非常複雜，也是這幾年很多研究和未來發展的方向。"
+   ]
+  },
+  {
+   "title": "UMA vs NUMA",
+   "scene": "osA-numa",
+   "points": [
+    {
+     "t": 318,
+     "text": "從 memory 看 multiprocessor：分 UMA 與 NUMA。"
+    },
+    {
+     "t": 377,
+     "text": "UMA：大家用同樣方式接到 memory，重點是 memory access time 相同；適合 SMP，一般電腦、手機都是。"
+    },
+    {
+     "t": 464,
+     "text": "CPU 一多，大家搶同一條 memory bus → bottleneck。"
+    },
+    {
+     "t": 496,
+     "text": "NUMA：hierarchy，每區有 local memory，remote 要經過對方 controller，較慢 → access time 不同，但可 scale 很大。"
+    },
+    {
+     "t": 599,
+     "text": "NUMA 上 memory 擺在哪有差：好的 OS 會自動管理或讓使用者用 flag 指定；高效能電腦多半是 NUMA。"
+    }
+   ],
+   "trap": "UMA / NUMA 的「uniform」指的是 memory access time 是否相同，不只是接線方式。",
+   "cues": [
+    318,
+    341.3,
+    360.6,
+    377.6,
+    394.8,
+    408.5,
+    445.8,
+    464.4,
+    495.8,
+    511.8,
+    523.8,
+    551.8,
+    562.9,
+    578.6,
+    598.8,
+    611.8,
+    630.8,
+    672.9
+   ],
+   "explain": [
+    "另一個看電腦系統的角度是從 memory 看，因為計算就是 processor 加上 memory。",
+    "Multiprocessor 系統在 memory 這邊通常分成兩大類：UMA 和 NUMA。",
+    "這些系統一定有多個 CPU，memory 當然也要共用。問題是 CPU 越來越多時，memory 要怎麼在它們之間 share？",
+    "Uniform 很直觀：大家都用同樣的方式接上 memory，沒有任何區隔，這叫 Uniform Memory Access（UMA）。",
+    "這種系統最適合常見的 SMP，因為大家都一樣。",
+    "「uniform」的重點不只是接法，而是 memory access time（存取時間）相同：程式不管跑在哪個 CPU、哪個 core，存取 memory 的速度都一樣。",
+    "大部分比較單純的電腦，包括你的電腦和手機都是這樣；好處是使用者不必在意程式跑在哪個 CPU，看到的效能都一樣。",
+    "但 scale 變大、CPU 變多時，所有人都要搶同一個 memory channel 或 bus，contention（爭用）變多，memory 就成了 bottleneck，會變慢。",
+    "NUMA（Non-Uniform Memory Access）的概念是 hierarchy（階層）：要管的東西越多，最好的解法就是分層。",
+    "在這個例子裡，CPU 被切成四個區域，每個區域都有一塊自己的 memory。",
+    "同一區的那塊 memory 就是這些 CPU 的 local memory，存取最快；其他區的則是 remote memory。",
+    "因為整台電腦是共用的，CPU 也連得到 remote memory，但要先跟那塊 memory 的 controller 溝通才能存取，是間接的。",
+    "好處可想而知：有 hierarchy 就能建出更大的電腦，例如上面四個區域，下面可能就有 16 個 CPU，可以 scale 得更大。",
+    "缺點是 remote access 的路線比較長，於是 memory access time 不同了：local 快、remote 慢，這就是 non-uniform 的原因。",
+    "結果是：執行程式或 allocate memory 時要注意，想要效能最好，資料擺在哪裡是有差別的。",
+    "例如程式 run 在左上角，memory 卻被 allocate 在右下角。如果 OS 不幫你管、看到有空間就丟過去，就會變成 remote access，速度一定變慢。",
+    "好的 OS 會自動幫你管理；或至少提供 flag，讓使用者指定程式跑在哪裡，或只從 local memory 要空間，確保效能最好。",
+    "你可能不常見到 NUMA，但非常講究效能、scale 很大的高效能計算系統，多半都是 NUMA 架構。用到時，OS 和使用者對效能就要更加注意。"
+   ]
+  },
+  {
+   "title": "Distributed system（loosely coupled）",
+   "scene": "osA-distsys",
+   "points": [
+    {
+     "t": 710,
+     "text": "tightly coupled 都在同一個 box 裡；distributed system 是 loosely coupled，透過網路把很多電腦連起來（Internet 也算）。"
+    },
+    {
+     "t": 786,
+     "text": "最大差別：memory 都是 local、不共用，別人要透過我的程式和 OS 才能用。"
+    },
+    {
+     "t": 827,
+     "text": "目的：resource sharing、load balancing，以及最注重的 reliability（一台壞了不影響別台）。"
+    },
+    {
+     "t": 960,
+     "text": "multiprocessor 是同一台 machine，memory bus 壞了整台就毀，reliability 有限。"
+    }
+   ],
+   "cues": [
+    710.7,
+    729.8,
+    760.8,
+    770.2,
+    786.1,
+    805.8,
+    826.8,
+    838.8,
+    853.5,
+    891.4,
+    913.8,
+    932.8,
+    959.8
+   ],
+   "explain": [
+    "剛才介紹完 tightly coupled：看起來很複雜，但都在同一台電腦 box 裡，你買來大概就是一台 server。",
+    "接著是 distributed system（分散式系統），也就是 loosely coupled 的電腦系統：透過網路（internet）把很多電腦連在一起。",
+    "像學校常做的事：把電腦串在一起，做同樣的事，就成了一個分散式系統。",
+    "廣義來說，把 Internet 看成一個系統也可以，它就是透過 cable 連起來的分散式電腦系統。",
+    "跟之前最大的差別，一個是連線方式不同，另一個很重要的是 memory：每台電腦都有自己的 memory，全部是 local 的，不會 share。",
+    "就像我們透過網路連到別的電腦，不代表別人能直接用我電腦上的 memory 空間，一定要透過我的程式、我的 OS 才行。",
+    "分散式系統的目的也跟之前不太一樣。之前講的都是 performance（效能）。",
+    "更常見的目的之一是 resource sharing：上網就是為了分享 resource 或 information，例如去你那邊抓照片、抓檔案。",
+    "目的二是 load balancing（負載平衡）：一台電腦工作量太多時，把一些工作移給另一台分擔，大家可以同時把事做完。",
+    "目的三是 reliability。parallel system 也提過 reliability，但真正最注重它的是分散式系統：不會因為有東西 fail 就 crash，資料不會掉、程式不會被 kill。",
+    "為什麼分散式系統比較容易做到？因為每台電腦都是獨立的，彼此只是連線溝通資訊，一台壞掉不會影響另一台。",
+    "像 cloud computing 用很多台電腦，就是為了 reliability：一台壞了，就把工作交給另一台；資料也可以備份在很多台，同時壞掉的機率很低。",
+    "相較之下，multiprocessor 畢竟是同一台 machine，例如 memory bus 壞了，整台電腦就毀了，所以它的 reliability 很有限。"
+   ]
+  },
+  {
+   "title": "Client-server",
+   "scene": "osA-cs",
+   "points": [
+    {
+     "t": 994,
+     "text": "分散式系統的架構：client-server 與 peer-to-peer。"
+    },
+    {
+     "t": 1011,
+     "text": "Client-server 就是 master-slave：client / worker 透過 server 的 centralized control 做事（例：FTP）。"
+    },
+    {
+     "t": 1067,
+     "text": "容易建，但 server 是 bottleneck、也是單點失效；雲端 data center 仍用它，但用多台 server、backup server 補強。"
+    },
+    {
+     "t": 1173,
+     "text": "減輕 server：計算交給 client，server 只做最短最快的事。"
+    }
+   ],
+   "cues": [
+    994.1,
+    1010.8,
+    1016.8,
+    1036.6,
+    1067,
+    1079.8,
+    1088.8,
+    1105.8,
+    1146.8,
+    1172.8
+   ],
+   "explain": [
+    "分散式系統的架構簡單分兩種：peer-to-peer 和 client-server，大家一定常常在用。",
+    "Client-server 簡單講就是 master-slave（主從）。",
+    "系統裡有一個 server，其他都是 client 或 worker，要透過 server 的控制才知道要做什麼，所有事情都經過 server 的 centralized control（集中控制）。",
+    "常見例子是 FTP：你架的是 FTP server 還是 FTP client，角色很明確（資料往哪個方向傳是另一回事）。",
+    "這種架構比較容易建起來，網路課的作業常會請你寫這種系統。",
+    "壞處也很明顯：所有工作量都要經過 server，server 往往就是 bottleneck（瓶頸）。",
+    "雲端計算像 Google、Microsoft 管 data center 時，因為方便，還是用 client-server，但下了很多功夫。",
+    "例如：沒人規定 server 只能是一台電腦，可以用十台、二十台來擔任 server 這個角色。master server 壞了，立刻把職權交給 backup server，就達到 reliability。",
+    "一定要處理這個問題，因為 server 沒了，整個系統就不能動了。",
+    "另外，也可以減輕 server 的工作量：真正需要計算的部分讓 client 去做，server 只處理最重要、但最簡短、最快做完的事。"
+   ]
+  },
+  {
+   "title": "Peer-to-peer",
+   "scene": "osA-p2p",
+   "points": [
+    {
+     "t": 1198,
+     "text": "Peer-to-peer：沒有 server，每個人都是 peer，靠 protocol 溝通。"
+    },
+    {
+     "t": 1239,
+     "text": "沒有 single point of failure，任何一台離開都能運作；很 reliable、load 平衡。"
+    },
+    {
+     "t": 1277,
+     "text": "例：streaming，大家就近互相 share 片段分擔 load。"
+    },
+    {
+     "t": 1338,
+     "text": "Internet 是標準的 peer-to-peer：沒人管理、永遠不會 break。"
+    }
+   ],
+   "trap": "client-server 的弱點是 server（bottleneck、單點失效）；peer-to-peer 沒有 single point of failure。",
+   "cues": [
+    1198,
+    1204.8,
+    1220.8,
+    1238.8,
+    1241.3,
+    1261.3,
+    1277.3,
+    1311.8,
+    1338.3,
+    1347.8,
+    1356.8,
+    1380.8
+   ],
+   "explain": [
+    "分散式系統的另一種做法叫 peer-to-peer：沒有 server。",
+    "每個人都是 peer（同僚），角色相同，就像同修一門課的同學，沒有誰是 master、誰是 slave。",
+    "那它們怎麼溝通？寫 peer-to-peer 系統時會制定 protocol、rule 或 policy，大家 follow 這套規則就能溝通。",
+    "這種做法最重要的特點：沒有 single point of failure（單點失效）。",
+    "任何一台電腦死掉或離開系統，peer-to-peer 系統都能繼續運作，因為沒有誰是必要的；甚至只要兩台電腦就能組成一個。",
+    "所以它非常 reliable，不會因為任何一台電腦而影響整體；loading 通常也很平衡，因為大家都能做同樣的事。",
+    "大家常用的例子：網路上的 streaming，例如全世界的人同時看奧運、世界盃，看的都是同樣的內容。",
+    "影片量很大，不可能每個人都從同一個 server 拷貝。實際上是大家互相 share，從就近的點讀取片段，分擔 load。",
+    "其實 Internet 就是一個標準的 peer-to-peer 分散式系統。",
+    "老師舉電影魔鬼終結者：阿諾的敵人 SkyNet，其實就像 Internet。",
+    "沒有任何一個國家或組織在管理 Internet，但到處都能上網；它最厲害的地方是永遠不會 break，你自己連不上，Internet 還是存在。",
+    "唯一能消滅 Internet 的方法，是把所有連在一起的電腦全部拿掉，這當然不可能。可見 peer-to-peer 非常 powerful。"
+   ]
+  },
+  {
+   "title": "Cluster",
+   "scene": "osA-cluster",
+   "points": [
+    {
+     "t": 1409,
+     "text": "Cluster 是分散式系統的 subset：用 local area network 連在同一個機房，傳輸更快。"
+    },
+    {
+     "t": 1492,
+     "text": "高效能 cluster / supercomputer 用 InfiniBand（快約十倍、貴十倍以上），宿舍 cluster 多用 Ethernet。"
+    },
+    {
+     "t": 1530,
+     "text": "InfiniBand 快的原因是 RDMA：把 DMA 擴充到跨網路。cluster 也可分 symmetric / asymmetric。"
+    }
+   ],
+   "cues": [
+    1415.8,
+    1425.6,
+    1443.7,
+    1458.2,
+    1466.6,
+    1491.8,
+    1499.8,
+    1504.8,
+    1530.3,
+    1556.3
+   ],
+   "explain": [
+    "分散式系統常聽到的名詞：cluster（叢集電腦）。",
+    "Cluster 把很多台電腦連在一起，符合分散式系統的定義，但它是其中一個比較特殊的 subset（子集合）。",
+    "特殊在網路：通常是 local area network（區域網路），頻寬比較高、網路線比較好，所以溝通更快。",
+    "因為 Internet 可能很遠，從台灣連到美國，送一個訊息的 delay 相對就比較久。",
+    "Cluster 通常就在同一個區域、同一個機房，彼此很近，傳輸速度可以更快。",
+    "怎樣才能最快？目前最新的技術叫 InfiniBand，已經用了大約十年。",
+    "在宿舍也能自己 build cluster，大家用的是 Ethernet（一般網路）。",
+    "但 high performance cluster 或 supercomputer 用的是 InfiniBand：速度快個十倍，價錢也貴十倍以上，真的很講求效能的電腦幾乎都用它。",
+    "為什麼 InfiniBand 快？用的是 RDMA（Remote DMA）：電腦系統裡常用的 DMA 技術能讓資料搬移不必經過 CPU，RDMA 把它擴充到跨網路，所以 I/O 很快。這門課之後會教。",
+    "Cluster 也可以分 symmetric 和 asymmetric：例如十台電腦中有一台是 master，或大家都對等。這個稍微知道就好，比較不重要。"
+   ]
+  },
+  {
+   "title": "統整：從 single core 到分散式系統",
+   "scene": "osA-archsum",
+   "points": [
+    {
+     "t": 1572,
+     "text": "single-core → multi-core（一顆 CPU 多核）→ multiprocessor（主機板多插槽）→ cluster（LAN、單一管理）→ 分散式系統（Internet、雲端）。"
+    },
+    {
+     "t": 1722,
+     "text": "tightly coupled：在一個 box（machine）裡；loosely coupled：跨網路的多個 box。"
+    }
+   ],
+   "cues": [
+    1572.7,
+    1599.2,
+    1601.8,
+    1614.1,
+    1647.8,
+    1667.2,
+    1693.7,
+    1722.1
+   ],
+   "explain": [
+    "統整剛剛介紹的各種名詞，它們非常常見，要記一下，並知道定義和意義、能夠區分。",
+    "一開始是 single-core computer system，就像最早期的 PC。",
+    "擴充一下就變成 multi-core 的系統：可能只有一個 CPU，但那個 CPU 有很多個 core，就像手機。",
+    "再擴充就是現在常見的 PC 或 server：主機板上不只一個 CPU 插槽，可以插好幾個 CPU、GPU 或其他 coprocessor，這就是 multiprocessor 系統。",
+    "再往外，一台電腦的主機板空間有限，想要更多計算量，就把很多台電腦湊在一起，變成 cluster。",
+    "Cluster 通常用 local area 的好網路串起來，上面的軟體和管理者是單一的，像很多實驗室自建的 cluster，OS 可能都一模一樣。",
+    "再往外就是最 general 的分散式系統：完全沒有限制，電腦之間能溝通完成一件事就算，像 Internet、雲端計算的 data center。",
+    "所以 tightly coupled 和 loosely coupled 簡單講就是：在一個 box（一台 machine）裡面，還是跨網路的多個 box。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "UMA 的「uniform」指的是什麼相同？",
+   "opts": [
+    "memory access time",
+    "CPU 的時脈",
+    "每個 core 的 cache 大小",
+    "網路頻寬"
+   ],
+   "ans": "memory access time",
+   "why": "程式不管跑在哪個 CPU、哪個 core，存取 memory 的速度都一樣。"
+  },
+  {
+   "q": "關於 NUMA，下列何者正確？",
+   "opts": [
+    "存取 local memory 比 remote memory 快，且可 scale 得更大",
+    "所有 CPU 存取任何 memory 的時間都相同",
+    "NUMA 的 memory 完全不共用",
+    "一般手機都是 NUMA"
+   ],
+   "ans": "存取 local memory 比 remote memory 快，且可 scale 得更大",
+   "why": "hierarchy 讓系統可擴大，但 remote 要經過對方 controller，較慢。"
+  },
+  {
+   "q": "Distributed system 和 multiprocessor 最大的差別之一是？",
+   "opts": [
+    "每台電腦的 memory 都是 local、不共用",
+    "分散式系統只有一個 CPU",
+    "分散式系統一定比較快",
+    "multiprocessor 透過 Internet 連線"
+   ],
+   "ans": "每台電腦的 memory 都是 local、不共用",
+   "why": "別人要透過我的程式與 OS 才能用我的 memory。"
+  },
+  {
+   "q": "Peer-to-peer 相較 client-server 最大的優點是？",
+   "opts": [
+    "沒有 single point of failure",
+    "比較容易建",
+    "有集中控制",
+    "server 計算力強"
+   ],
+   "ans": "沒有 single point of failure",
+   "why": "任何一台離開系統都能繼續運作；client-server 的 server 是 bottleneck 也是單點失效。"
+  },
+  {
+   "q": "InfiniBand 傳輸很快，主要用了什麼技術？",
+   "opts": [
+    "RDMA：把 DMA 擴充到跨網路",
+    "SIMD",
+    "virtual memory",
+    "time sharing"
+   ],
+   "ans": "RDMA：把 DMA 擴充到跨網路",
+   "why": "高效能 cluster 與 supercomputer 幾乎都用 InfiniBand。"
+  },
+  {
+   "q": "主機板上有多個 CPU 插槽的電腦稱為？",
+   "opts": [
+    "Multiprocessor computer system",
+    "Multi-core processor",
+    "Many-core processor",
+    "Cluster"
+   ],
+   "ans": "Multiprocessor computer system",
+   "why": "multi-core 是一顆 processor 裡多個核心；many-core 是單一 device 上百個 core。"
+  }
+ ]
+}

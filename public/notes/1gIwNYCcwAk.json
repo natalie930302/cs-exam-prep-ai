@@ -1,135 +1,289 @@
 {
  "video": "1gIwNYCcwAk",
  "label": "清大周志遠 第2D講 Special-purpose Systems",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
-   "title": "Real-time 的定義與 EDF",
-   "scene": "realtime-edf",
+   "title": "導言：以「用途」區分電腦系統",
+   "scene": null,
    "points": [
     {
-     "text": "這段以「用途」區分電腦系統。",
-     "t": 0
+     "t": 1,
+     "text": "前面看的是系統架構；最後十分鐘以使用者角度，看為不同目的設計的電腦系統。"
     },
     {
-     "text": "Real-time 不是越快越好：慢慢做沒關係，但每個工作要在 deadline 前完成。",
-     "t": 63
+     "t": 34,
+     "text": "每種系統都可以用各種架構（multi-core、GPU 加 CPU），這裡只依用途區分。"
+    }
+   ]
+  },
+  {
+   "title": "Real-time 的定義與 EDF",
+   "scene": "osA-rt",
+   "points": [
+    {
+     "t": 61,
+     "text": "Real-time 不是越快越好：慢慢做沒關係，但每個工作要在 deadline 前完成。"
     },
     {
-     "text": "因此 real-time 系統裡 scheduler 最 critical，要確保執行順序讓大家都趕上 deadline。",
-     "t": 85
+     "t": 103,
+     "text": "因此 real-time 系統裡 scheduler 最 critical，要確保執行順序讓大家都趕上 deadline。"
     },
     {
-     "text": "最有效的演算法之一：earliest deadline first（最早要交的作業先寫），但不保證一定不 miss。",
-     "t": 131
+     "t": 127,
+     "text": "最有效的演算法之一：earliest deadline first（最早要交的作業先寫），直覺有效但不保證不 miss。"
     },
     {
-     "text": "deadline 由使用者定義：可接受的 response time 或做決定的 critical point。",
-     "t": 173
+     "t": 161,
+     "text": "deadline 由使用者定義：可接受的 response / reaction time，或做決定的 critical point。"
     }
    ],
-   "trap": "補充：EDF 範例的作業長度與 deadline 是動畫自訂的，課堂只用寫作業比喻。"
+   "trap": "動畫中 EDF 範例的作業長度與 deadline 是自訂的示意數字，課堂只用寫作業比喻。",
+   "cues": [
+    61.8,
+    74,
+    84,
+    94.4,
+    102.8,
+    116.3,
+    126.8,
+    140.8,
+    160.8,
+    177.3
+   ],
+   "explain": [
+    "第一種依用途分的系統：real-time（即時）的 OS 或電腦系統，非常重要。",
+    "很多人以為 real-time 就是「很快、很即時」，叫它做什麼就立刻做。",
+    "但 real-time 的定義其實相反：你慢慢做、多慢都沒關係，重點是要在 deadline（截止時間）之前做完。",
+    "每一個工作都有自己的 deadline。紅色直線就是作業 A、B、C 各自的截止時間（長度與 deadline 是示意數字）。",
+    "所以 real-time 系統裡最關鍵（critical）的是 scheduler（排程器）：它要決定執行順序，讓每個工作都在自己的 deadline 前完成。",
+    "這就像大家寫作業。如果照拿到的順序寫（A→B→C），寫完 A 才寫 B，B 就遲交了（打叉）。",
+    "最有效的 real-time 排程演算法之一叫 Earliest Deadline First（EDF）：誰的 deadline 最早就先做誰。照 B→C→A 的順序，三份都準時交。",
+    "EDF 很直覺也很有效，通常效果不錯，但不能保證永遠不 miss deadline；要真的保證就沒那麼簡單（之後 CPU scheduling 章節再講）。",
+    "deadline 不是隨便訂的，是使用者定義的：使用者可以接受的 response time（反應時間）或 reaction time。",
+    "也可能是做出某個決定的 critical point（關鍵時間點），在那之前完成就好。所以 deadline 通常不會很寬鬆。"
+   ]
   },
   {
    "title": "Real-time 的應用",
-   "scene": "hard-soft-rt",
+   "scene": "osA-rtuse",
    "points": [
     {
-     "text": "一台車可以想成有四個輪子的電腦，全靠電腦控制。",
-     "t": 212
+     "t": 194,
+     "text": "一台車可以想成多了四個輪子的電腦，全靠電腦控制。"
     },
     {
-     "text": "踩油門車不走、踩煞車車不停都會出事：控制都跟時間有關。",
-     "t": 233
+     "t": 216,
+     "text": "踩油門車不走、踩煞車車不停都會出事：控制都跟時間有關，靠 real-time OS。"
     },
     {
-     "text": "武器、醫療、各種 control system 都是 real-time system。",
-     "t": 252
+     "t": 239,
+     "text": "武器、醫療、各種 control system 都是 real-time system。"
     }
+   ],
+   "cues": [
+    194,
+    199.8,
+    215.8,
+    222.8,
+    230.8,
+    238.8
+   ],
+   "explain": [
+    "現在電腦無所不在，real-time system 扮演很重要的角色。",
+    "大家都說：一台車子就應該想成一台電腦，只是多了四個輪子。這些複雜的機器，其實都靠電腦控制。",
+    "這些控制都跟時間絕對有關：踩了油門，車子就要動起來。",
+    "如果踩了煞車，車子卻沒有及時停下來，就會撞車。所以時間的觀念都在裡面。",
+    "負責控制整台機器、確保這些動作準時發生的，就是 real-time OS。",
+    "武器、醫療設備、各種 control system（控制系統）也都是 real-time system。"
    ]
   },
   {
    "title": "Soft vs Hard real-time",
-   "scene": "hard-soft-rt",
+   "scene": "osA-softhard",
    "points": [
     {
-     "text": "Soft：盡量趕 deadline，沒趕上也不會出人命；用 priority 處理。",
-     "t": 272
+     "t": 257,
+     "text": "real-time 分 hard 與 soft。"
     },
     {
-     "text": "例：串流影片收訊差時先看到輪廓、再有顏色、最後解析度提高（重要的先送）。",
-     "t": 314
+     "t": 273,
+     "text": "Soft：盡量趕 deadline，沒趕上也不會出人命；用 priority 處理。"
     },
     {
-     "text": "Hard：miss 任何一個 deadline 就是 fundamental failure，系統 crash。",
-     "t": 354
+     "t": 297,
+     "text": "例：串流影片收訊差時先看到輪廓、再有顏色、最後解析度提高（重要的先送）。"
     },
     {
-     "text": "汽車、武器控制多是 hard real-time；歐洲（德國）在這塊很強。",
-     "t": 374
+     "t": 344,
+     "text": "Hard：miss 任何一個 deadline 就是 fundamental failure，系統可能 crash。"
     },
     {
-     "text": "挑戰：scheduling 演算法；而且通常沒有 secondary storage，因為 disk 慢且存取時間難掌握。",
-     "t": 437
+     "t": 362,
+     "text": "汽車、武器控制多是 hard real-time；歐洲（如德國）在這塊很強。"
+    },
+    {
+     "t": 400,
+     "text": "挑戰：scheduling 演算法；而且通常沒有 secondary storage，因為 disk 慢且存取時間難掌握。"
+    },
+    {
+     "t": 479,
+     "text": "一般電腦硬體一樣，能不能 real-time 是 OS 控制的問題。"
     }
+   ],
+   "cues": [
+    257,
+    272.8,
+    289.8,
+    297.2,
+    304.8,
+    312.4,
+    319.8,
+    343.8,
+    361.8,
+    370.6,
+    400.3,
+    407.8,
+    422.8,
+    432.8,
+    438.8,
+    450.8,
+    479.3
+   ],
+   "explain": [
+    "Real-time system 又分成 soft 和 hard 兩種，差別就像字面上的意思。",
+    "Soft（軟性）：盡量在 deadline 前完成；萬一沒完成，天也不會塌下來，不會有人因此出事。",
+    "Soft 用 priority（優先順序）的概念：依照優先順序，盡量把事情做完。",
+    "最標準的例子是 multimedia，例如網路上的串流（streaming）影片。",
+    "收訊很不好時，你會先看到影像的「框」（大致輪廓）。",
+    "收訊好一點，開始有顏色；再好一點，解析度慢慢提高。",
+    "因為它會 prioritize（排優先）：比較重要的線條 priority 高、先送；不那麼重要的高解析度細節後送。這樣最能維持使用者的滿意度，是標準的 soft real-time。",
+    "Hard（硬性）就不是鬧著玩的了：miss 任何一個 deadline 都是根本性的失敗（fundamental failure），整個系統可能就 crash，就像車子沒在時間內煞住。",
+    "車子、武器這類很重要的 control system，大部分都是 hard real-time。",
+    "老師提到：大家以為資訊產業都在美國，其實歐洲（尤其德國）在控制汽車這類 real-time system 的發展非常好。",
+    "這種系統的挑戰一：scheduling algorithm（排程演算法），之後會介紹。",
+    "挑戰二：這些系統通常沒有 secondary storage（次級儲存），簡單說就是沒有 hard drive，資料全部放在 memory。",
+    "電腦裡的 memory 是第一層（primary）storage；memory 以外的儲存裝置（像 disk）叫 secondary storage。",
+    "為什麼不用？因為 disk 太慢了。",
+    "更大的問題是：disk 的讀取時間不好掌握，你根本不知道一件事要花多久，就無法保證趕上 deadline。",
+    "所以 hard real-time 系統大多避免使用 secondary storage，想辦法讓需要的資料一定在 memory 裡。",
+    "你的電腦硬體其實也差不多，但沒用 real-time 的 OS。能不能成為 real-time system，是 OS 控制的問題。"
    ]
   },
   {
    "title": "Multimedia system",
-   "scene": "special-systems",
+   "scene": "osA-media",
    "points": [
     {
-     "text": "圖形、speech、video、audio 等影音應用，屬於 soft real-time。",
-     "t": 536
+     "t": 493,
+     "text": "圖形、speech、video、audio 等影音應用叫 multimedia system，屬於 soft real-time。"
     },
     {
-     "text": "分 on-demand 或 live；傳輸可先 buffer。",
-     "t": 556
+     "t": 534,
+     "text": "分 on-demand 或 live；傳輸可先 buffer。"
     },
     {
-     "text": "資料太大又不全那麼重要 → 各式壓縮格式，畫質、壓縮/解壓速度各有取捨。",
-     "t": 597
+     "t": 550,
+     "text": "資料太大又不全那麼重要 → 各式壓縮格式，畫質、壓縮/解壓速度各有取捨。"
     }
+   ],
+   "cues": [
+    493,
+    516.8,
+    527.8,
+    533.8,
+    549.8,
+    565.8,
+    573.8
+   ],
+   "explain": [
+    "大家用手機，很多時間都在用影音 application，這類系統叫 multimedia system（多媒體系統）。",
+    "它處理的是圖形、speech（語音）、video、audio 這類資料，這幾年非常熱門。",
+    "Multimedia 通常是 soft real-time，就像剛才的串流影片：晚一點到不會出大事。",
+    "它又分成 on-demand（隨選，例如看已經存好的影片）和 live（直播）；傳輸時可以先 buffer（暫存）或存在某個地方。",
+    "這些系統都有很重要的壓縮技術，所以影片、照片才會有一大堆格式。橘色方塊縮小就是壓縮。",
+    "為什麼要壓縮？因為資料實在太大，可是裡面的內容又不是每一點都那麼重要。",
+    "各種壓縮方式各有取捨：有的檔案小但畫質差，有的解壓縮快，有的壓縮快，看使用情境挑選。"
    ]
   },
   {
    "title": "Handheld / embedded system",
-   "scene": "special-systems",
+   "scene": "osA-hand",
    "points": [
     {
-     "text": "mobile、體積小；硬體 specialized（例如手機沒有 keyboard）。",
-     "t": 637
+     "t": 600,
+     "text": "mobile、體積小；硬體 specialized（例如手機沒有 keyboard）。"
     },
     {
-     "text": "OS 也是 customized，component 可以 modular 地增減以適應不同裝置。",
-     "t": 656
+     "t": 635,
+     "text": "OS 也是 customized，component 可以 modular 地增減以適應不同裝置。"
     },
     {
-     "text": "不裝傳統 OS：光跑 OS 就吃掉大部分資源，而且不管電力。",
-     "t": 698
+     "t": 656,
+     "text": "不裝傳統 OS：光跑 OS 就吃掉大部分資源，而且不管電力。"
     },
     {
-     "text": "memory 小、processor 慢 → 把計算丟到雲端；電力非常 critical。",
-     "t": 718
+     "t": 688,
+     "text": "memory 小、processor 慢 → 把計算丟到雲端；電力非常 critical。"
     }
+   ],
+   "cues": [
+    600,
+    608.8,
+    618.8,
+    634.8,
+    655.8,
+    665.8,
+    673.8,
+    687.8,
+    699.8,
+    709.4
+   ],
+   "explain": [
+    "第三類：handheld device（手持裝置）和 embedded system（嵌入式系統）。",
+    "它們都是 mobile device：可以到處移動、體積很小，像手機。",
+    "和一般電腦最大的差別：硬體通常是 specialized（專用的），像手機就沒有 keyboard，很多東西拿掉了才能做得這麼小，目的也很專一。",
+    "所以它的 OS 也一定是 customize（客製化）的：很多 component（元件）可以用 modular（模組化）的方式增加或減少，去適應各種不同的裝置。",
+    "我們知道有 Android 這種手機 OS，但沒有人把傳統的 OS 裝在手機上，因為不符合需求。",
+    "傳統 OS 效能可能不好，光是跑 OS 本身就吃掉大部分資源。",
+    "而且傳統 OS 對電力的管理很差，甚至沒有，因為電腦插著電源線，誰管用多少電？手機可不行。",
+    "手機的 memory 比較小、processor 比較慢，所以才有雲端的概念：把東西丟到別人那邊去算。",
+    "Pokémon Go 一推出，大家討論的第一件事就是去買行動電源。可見電力對手機有多 critical。",
+    "還有怎麼 display（顯示）、怎麼做 I/O，也一直需要改善。"
    ]
   },
   {
    "title": "Cloud computing 與 IoT",
-   "scene": "special-systems",
+   "scene": "osA-cloud",
    "points": [
     {
-     "text": "這些名詞不用背，但要知道各系統的設計考量和差別。",
-     "t": 756
+     "t": 718,
+     "text": "依計算能力、連線方式、目的，有各式各樣的系統名詞；不用背，但要知道設計考量和差別。"
     },
     {
-     "text": "Cloud computing：透過 internet，把網路當成自己的電腦。",
-     "t": 796
+     "t": 768,
+     "text": "Cloud computing：透過 internet，把 internet 當成自己的電腦。"
     },
     {
-     "text": "IoT（物聯網）：把所有物品連在一起計算、溝通，需要新的 OS。",
-     "t": 815
+     "t": 793,
+     "text": "IoT（物聯網）：把所有物品連在一起計算、溝通，需要新的 OS。"
     }
+   ],
+   "cues": [
+    718,
+    736.7,
+    767.8,
+    778.5,
+    792.8,
+    801.8
+   ],
+   "explain": [
+    "依照計算能力、連線方式、或使用目的，就會出現各式各樣系統的名詞。",
+    "這些名詞不用背。重點是聽到某種系統時，知道它的設計考量是什麼、跟一般系統差在哪裡。",
+    "過去幾年大家一定要知道的：雲端計算（cloud computing），一種完全不同的提供計算功能的形式。",
+    "它透過 internet，把 internet 當成自己的電腦在用，現在已經非常普及。",
+    "手機發展到極致，就是物聯網（IoT，Internet of Things）：把所有物品都連在一起計算、溝通。",
+    "這些新的系統，都需要開發新的作業系統。"
    ]
   }
  ],
@@ -177,7 +331,17 @@
    ],
    "ans": "Earliest deadline first",
    "why": "就像寫作業：最早要交的先做。"
+  },
+  {
+   "q": "手機為什麼不裝傳統的 OS？",
+   "opts": [
+    "光跑 OS 就吃掉大部分資源，而且不管電力",
+    "手機沒有 CPU",
+    "傳統 OS 不支援 C 語言",
+    "手機不需要 memory"
+   ],
+   "ans": "光跑 OS 就吃掉大部分資源，而且不管電力",
+   "why": "handheld 的 memory 小、processor 慢、電力 critical，OS 要客製化。"
   }
- ],
- "timing": "estimated"
+ ]
 }

@@ -1,0 +1,532 @@
+{
+ "video": "bzE9oX8bKqY",
+ "label": "清大周志遠 第3A講 What is an OS?",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Chapter 1 導覽：protection 不是 security",
+   "scene": "osA-ch1",
+   "points": [
+    {
+     "t": 0,
+     "text": "不管什麼電腦系統都要有 OS；OS 的核心問題對應到基本的 component 與 subsystem。"
+    },
+    {
+     "t": 90,
+     "text": "本章：什麼是 OS（從角色看）、OS 怎麼管理電腦、protection。"
+    },
+    {
+     "t": 131,
+     "text": "Protection 是正常使用下一個使用者不會影響別人（一個程式 crash 不能讓整台 crash）；惡意、透過網路的是 security，不在此範圍。"
+    }
+   ],
+   "trap": "Protection ≠ Security：protection 處理正常使用下使用者互不影響；security 處理惡意攻擊。",
+   "cues": [
+    0.8,
+    4.7,
+    43.8,
+    59.6,
+    89.8,
+    105.7,
+    120.8,
+    130.8,
+    146.8,
+    196.8
+   ],
+   "explain": [
+    "Chapter 1，終於要開始講作業系統。上一堂介紹了各式各樣的系統，硬體一直在演進。",
+    "但不管是什麼樣的電腦系統，一定要有作業系統，不然它沒辦法執行，也沒辦法讓使用者使用。",
+    "這些作業系統一定有核心的問題，例如怎麼讓使用者共用、怎麼跟使用者 interactive，因此就有作業系統最基本的 component（元件）和 subsystem（子系統），也就是這門課要教的。",
+    "很多電腦是 special purpose 的，有其他 requirement，所以 OS 必須不斷 adapt（適應）不同使用者需求和新的硬體技術。那些不會細講，但都是上課概念的衍生。",
+    "這章的第一部分：到底什麼是作業系統？會從不同的角度、它扮演的角色來看。",
+    "第二部分：一台基本的電腦是什麼架構，作業系統用什麼方式去管理它。",
+    "最後：怎麼去保護這台電腦的使用。",
+    "要注意：這裡講的是 protection（保護），不是 security（資訊安全）。",
+    "Protection 是說：在正常使用的情況下，一個使用者不會影響到別的使用者。例如大家同時在用這台電腦，一個人的程式 crash 了，不能造成整台電腦 crash，否則其他人都被影響。",
+    "而 security 處理的是惡意的、透過網路的攻擊，不在這邊的範圍。"
+   ]
+  },
+  {
+   "title": "電腦系統的組成",
+   "scene": "osA-comp",
+   "points": [
+    {
+     "t": 207,
+     "text": "電腦系統由 user、application、OS、hardware 組成；OS 是連結 application 與 hardware 的橋樑。"
+    },
+    {
+     "t": 331,
+     "text": "User 不一定是人，也可能是 machine、程式、其他電腦（IoT、自動駕駛的車）。"
+    },
+    {
+     "t": 399,
+     "text": "OS 把 hardware 看成資源：CPU（計算）、memory（儲存）、I/O（disk、網路頻寬）；有的要獨占，有的可切細分配。"
+    }
+   ],
+   "cues": [
+    207.1,
+    225.8,
+    237.2,
+    258.8,
+    279.8,
+    290.3,
+    306.8,
+    330.8,
+    342.5,
+    364.8,
+    399.6,
+    418.3,
+    429.1,
+    435.7,
+    441.8
+   ],
+   "explain": [
+    "什麼是作業系統？先從電腦的組成看。第一，一定有 user（使用者）來用這台電腦。",
+    "使用者透過什麼使用電腦？透過 application（應用程式）。",
+    "application 可以定義得很廣：game、Word editor，甚至 compiler，只要是透過程式去達成你的目的，都可以叫 application。",
+    "這些 application 要在 hardware 上執行。",
+    "hardware 不外乎 CPU、memory、I/O device 等等。",
+    "中間特地切開的就是 OS。不管把電腦切得多粗淺，OS 都在那裡，因為它是連結 application 和 hardware 的橋樑。",
+    "要透過 OS 的管理，才能使用或共享這些 hardware 資源來執行程式。所以 OS 就夾在 hardware 和 software 中間。",
+    "把定義講細一點：user 不一定是人，也可以是 machine、其他程式、其他電腦。",
+    "例如老師說未來最火紅的物聯網（IoT）：物體跟物體、device 跟 device 直接溝通，每個 device 其實都是一台電腦、上面有 OS，中間沒有人參與。",
+    "像自動駕駛：車子要跟很多 device 溝通、車子跟車子之間也要溝通，所以這個系統裡的 user，其實就是別的自動駕駛車。",
+    "在 OS 的世界裡，我們比較喜歡把 hardware 講成「資源」（resource）：不在乎它是什麼 device，只在乎它提供什麼資源、有多少、可以怎麼 allocate（分配）。",
+    "有些資源因為硬體限制，一次就要整個獨占；有些可以切得更細來分配。",
+    "資源不外乎：CPU，通常叫 computing resource（計算資源）。",
+    "Memory：儲存資源，而且是主要的、比較快的儲存資源。",
+    "I/O device：input、output 資料的資源，像 disk，或 network 的 bandwidth（能傳多少資料）。這些都是 hardware 提供的。"
+   ]
+  },
+  {
+   "title": "OS 的角色：Control 與 Coordinate",
+   "scene": "osA-ctrl",
+   "points": [
+    {
+     "t": 458,
+     "text": "OS 的角色可分成 control（控制）與 coordinate（協調）。"
+    },
+    {
+     "t": 474,
+     "text": "Control：程式要用 CPU，透過 OS 控制來使用（單方向）。"
+    },
+    {
+     "t": 497,
+     "text": "電腦都是 sharing，大家競爭資源 → OS 要 coordinate；time sharing 有 overhead，但對使用者是想要的。"
+    },
+    {
+     "t": 572,
+     "text": "coordinate 才是 OS 更複雜、研究更多的部分；control 多半是寫 driver。定義不用硬背。"
+    }
+   ],
+   "cues": [
+    458,
+    474.1,
+    497,
+    509.2,
+    524.8,
+    528.8,
+    545,
+    557.6,
+    571.8,
+    588,
+    597.2
+   ],
+   "explain": [
+    "OS 在中間扮演的角色，可以分成 control（控制）和 coordinate（協調）。",
+    "Control 就是單純的控制：你 run 一個 application，它要 CPU，就透過 OS 去控制 CPU，讓它能使用 computing cycle。",
+    "但千萬不要忘記：電腦系統不會只有一個人、一支程式，都是 sharing，所以整個系統才這麼複雜。",
+    "像第一代的 batch，一次一個人，沒有 sharing 的概念，OS 根本不用做什麼。",
+    "現在一定有很多程式和人在用，大家都要競爭：你要 CPU，我也要，怎麼辦？",
+    "OS 就在中間做協調：coordinate，讓大家都能在上面 run，並滿足大家的需求。",
+    "例如：何必要 time sharing、把時間切得這麼細？之後會講到，它會造成 overhead（額外負擔），浪費一些計算資源。",
+    "以系統角度它不是好事，但對使用者來說，那正是我們想要的：大家可以同時使用。所以 OS 用這種方式 coordinate 大家怎麼使用 CPU。",
+    "兩個字意義不同：control 只是單方向的控制；coordinate 是作業系統更複雜的部分，要協調大家怎麼分配資源。",
+    "所以很多研究不在 control，而在 coordinate；control 基本上就是寫寫 driver。",
+    "這些不是要你硬背的定義，只是描述。能用自己的方式講出它的意義，就是正確的解讀。"
+   ]
+  },
+  {
+   "title": "OS：永遠在的軟體，把硬體抽象成 API",
+   "scene": "osA-api",
+   "points": [
+    {
+     "t": 632,
+     "text": "OS 是 permanent 的 software：電腦一啟動就一直在，沒有它電腦不會運作。"
+    },
+    {
+     "t": 686,
+     "text": "OS 製造一個抽象：把 hardware 抽象成一堆 API（像 virtual machine 的 interface），API 決定程式看到的電腦。"
+    },
+    {
+     "t": 790,
+     "text": "抽象化近似 control；所有 application 都經過同一個 OS 的 API，OS 就能 coordinate（例如決定 time slot 給誰）。"
+    }
+   ],
+   "cues": [
+    632.3,
+    645.8,
+    661.8,
+    685.8,
+    704.8,
+    713.8,
+    721.7,
+    755.3,
+    789.8,
+    800.8,
+    828.8
+   ],
+   "explain": [
+    "application 裡有一堆軟體，作業系統本身也是軟體。那 OS 這個軟體有什麼特別？",
+    "它是 permanent（永久）的 software：電腦一啟動，你一定看得到 OS，它就一直坐在那邊。",
+    "OS 不見了，電腦基本上就不會運作；其他所有程式都沒有這個特性。",
+    "OS 還很特別的是：它夾在中間，製造一個 abstraction（抽象）或使用的假象，讓使用者來使用電腦，就像一個 virtual machine 的 interface。",
+    "就像大家寫程式都要 call API（應用程式介面），程式就是這樣做出來的。",
+    "OS 的角色就是把下面的 hardware 抽象化，變成一堆 API 讓上面的使用者去 call。",
+    "所以 API 怎麼定義，就完全決定上面的使用者或程式，看到、使用這台電腦的方式。OS 本身就是一個 virtual 的概念。",
+    "大家聽過很紅的 virtual machine（虛擬機）技術，某種程度上很自然：OS 本來就是一層一層的 interface，可以一層一層往上搭。",
+    "這個抽象化比較接近 control：抽象成 API 之後，就能照你定義的 API 去控制、使用資源。",
+    "Coordinate 也看得出來：電腦上 OS 只有一個，上面卻有很多 application，它們都必須透過這個 API。",
+    "既然大家都要經過同一個 OS，OS 就能動手腳，決定怎麼分配：例如現在這個 CPU time slot 要給這個程式還是那個程式，這就是在做 coordinate。"
+   ]
+  },
+  {
+   "title": "程式怎麼跟 OS 互動",
+   "scene": "osA-stack",
+   "points": [
+    {
+     "t": 852,
+     "text": "架構：hardware → driver（OS 的一部分，可安裝）→ OS（管理 memory、CPU…）→ system library → 你的程式。"
+    },
+    {
+     "t": 900,
+     "text": "user mode 是你的程式用的空間；kernel 是 OS 自己用的空間與資源。"
+    },
+    {
+     "t": 979,
+     "text": "OS 的目的就是 implement 一個 API，俗稱 system library，更常叫 system call（作業一）。"
+    }
+   ],
+   "cues": [
+    852.4,
+    871.6,
+    890.6,
+    900.3,
+    919.8,
+    935.7,
+    961.8,
+    978.8,
+    993.8,
+    1000.8,
+    1014.8,
+    1019.4
+   ],
+   "explain": [
+    "概念講完了，來看你寫程式時，到底是怎麼跟 OS 互動的。電腦上任何運作其實都經過 OS。",
+    "大一大二寫程式：compile、run，印出結果就很高興了。那 OS 在哪？什麼時候 call 到 OS？可能還不太清楚。",
+    "最下面是 hardware，最上面是你寫的程式。",
+    "user mode 和 kernel mode 之後會詳細講。基本上 user mode 指的是你寫的程式、它使用的 memory 空間；kernel 指的是 OS 這支程式自己使用的空間和資源。",
+    "程式在電腦上跑，一定會碰到 I/O。hardware 上需要 driver，而 driver 其實是 OS 的一部分，因為要用它來控制硬體。",
+    "為什麼把 driver 特別切開？因為 I/O device 實在太多樣，每個 device 可能需要自己的 driver，所以它在 OS 架構的最下層，而且可以抽換、需要時先安裝。",
+    "driver 上面才是真正主要的 OS，也就是這門課要講的：怎麼管理 memory、怎麼管理 CPU 等等。",
+    "OS 的目的是什麼？它在 implement 一個 API 讓大家使用，就像 C language implement 那些 function 一樣。",
+    "這個 API 俗稱 system library（系統函式庫）。",
+    "更常見的名字叫 system call（系統呼叫），非常重要，因為它代表的就是 OS 的 interface（API）。",
+    "作業一就是要 implement 一些這樣的 API library。",
+    "library 是什麼？你定義了很多 function，把它們包在一起的檔案就叫 library。寫 C 程式第一件事是 include C library，才能用 C 寫好的 function。OS 也一樣，把 system library 包好等你使用。"
+   ]
+  },
+  {
+   "title": "Compile、link 與 printf 的路徑",
+   "scene": "osA-link",
+   "points": [
+    {
+     "t": 1052,
+     "text": "程式先 compile 成 machine language（.o），再 link：一定會自動 link system library，才成為完整執行檔。"
+    },
+    {
+     "t": 1121,
+     "text": "例：printf 要輸出到 screen，負責的是 OS；可能經 C library 間接 link 到 system library。"
+    },
+    {
+     "t": 1164,
+     "text": "執行時 printf → system call → driver → 硬體；只是包了很多層所以看不到。不 link system library 幾乎什麼都不能執行。"
+    }
+   ],
+   "cues": [
+    1052.6,
+    1076.9,
+    1086.8,
+    1094.8,
+    1120.8,
+    1129.8,
+    1142.8,
+    1164.4,
+    1179.8,
+    1197.8
+   ],
+   "explain": [
+    "回到你寫的程式。第一件事是 compile（編譯）：把程式從程式語言變成 machine language，也就是 .o 檔。",
+    "你可能按一個鍵就全部 build 好，但其實是拆開的：compile 完，下一步是 link（連結）。",
+    "link 的目的：把這些 compile 好的 binary 檔接在一起。需要 link，代表你要使用別人 implement 好的程式。",
+    "link 時一定會自動 link 的，不是你在程式碼裡寫的 C library，而是 system library。link 到 system library 之後，才成為真的能執行的完整執行檔。",
+    "為什麼一定要 link？例如你的程式寫了 printf，printf 要把東西輸出到 screen。",
+    "誰負責輸出到 screen？是 OS，不是 C library。所以它必須 call 到 system library 裡的 system call。",
+    "它可能不是直接 link：先 link 到 C library，C library 裡再說要用 system library，間接地，最後一定會 link 進去。",
+    "執行時：你的程式 call printf，printf 會 call 到 system call，system call 再 call 到 driver，一路往下到硬體。全程都經過 OS。",
+    "只是因為包得太多層（system library、OS 定義的 system call），你沒有直接看到而已。任何電腦系統都是這樣。",
+    "除非你的程式完全不用 OS 的 code，否則不 link system library，基本上就沒辦法執行任何東西。這整個流程要好好記起來。"
+   ]
+  },
+  {
+   "title": "OS 的定義：resource allocator、control program、kernel",
+   "scene": "osA-defs",
+   "points": [
+    {
+     "t": 1225,
+     "text": "Resource allocator：manage 並 allocate 資源（memory、disk block、CPU cycle），兼顧效率、公平、即時。"
+    },
+    {
+     "t": 1279,
+     "text": "Control program：透過 driver 控制 hardware，多半是苦工。"
+    },
+    {
+     "t": 1327,
+     "text": "Kernel 是 OS 的別名；application、compiler、toolchain 不是 kernel。"
+    }
+   ],
+   "cues": [
+    1227.8,
+    1244.8,
+    1261.8,
+    1279.5,
+    1304.8,
+    1316.6,
+    1327.2,
+    1338.2,
+    1349.8
+   ],
+   "explain": [
+    "如果要定義 OS 呢？有人說它是 resource allocator（資源分配者），因為整個角色就是在分配資源。",
+    "它要 manage（管理）資源再 allocate（分配），讓大家很有效率地使用，又能滿足公平性、即時性等要求。",
+    "後面會發現：memory management 在 allocate memory，file system 在 allocate disk 上的 storage block，CPU 在 allocate CPU cycle 給 process，全部都在做 allocation。",
+    "第二種說法是 control program：比較 practical 的角度，它就是幫我控制硬體，例如透過 driver 最終控制 hardware，讓它做我要的事。",
+    "這部分問題比較小，多半是苦工：不同 device 要怎麼控制、看它的 spec、寫它的 driver。",
+    "前兩個不用背：實際上沒人直接把 OS 叫做 resource allocator，只是概念。",
+    "但這個要記起來：kernel（核心）。OS 的別名就叫 kernel，事實上更多人用 kernel 來稱呼作業系統。",
+    "大家常說「我在裝一個 kernel」、「我在用什麼 kernel」，kernel 就是 OS。",
+    "它是所有東西的核心，只有一個 kernel；其他像 application、compiler、toolchain 那些都不是 kernel。"
+   ]
+  },
+  {
+   "title": "設計目標：convenience vs efficiency",
+   "scene": "osA-goals",
+   "points": [
+    {
+     "t": 1383,
+     "text": "使用者對 OS 要兩件事：convenience（Windows 靠 GUI 崛起）與 efficiency / performance。"
+    },
+    {
+     "t": 1506,
+     "text": "兩者互相矛盾：為了方便加 GUI 會吃資源變慢 → trade-off。"
+    },
+    {
+     "t": 1554,
+     "text": "Windows、手機重 convenience；科學計算重 efficiency；早期只看 efficiency，手機的耗電也是 efficiency。"
+    }
+   ],
+   "cues": [
+    1383.7,
+    1400.8,
+    1413.5,
+    1435.1,
+    1461.8,
+    1506.7,
+    1530.8,
+    1543.5,
+    1553.8,
+    1570.8,
+    1589.8
+   ],
+   "explain": [
+    "如果要自己開發或選擇一個作業系統，要考量什麼？",
+    "從使用者的角度，通常希望兩件事。第一件：convenience（方便），越是商業產品、越接近人的產品越重要。",
+    "這也是 Microsoft Windows 崛起的原因：它是第一個圖形介面，那時很多人不是 CS 背景、只是想用，覺得非常方便。",
+    "第二個角度：efficiency（效率），也可以說 performance。跑 game 總希望不要一直 delay，跑程式越快完成越好。",
+    "早期的作業系統比較偏向 efficiency。像這門課用 Linux 的 command line，效能是重要原因之一：不必每個人都把圖形 display 到自己電腦，浪費資源。",
+    "兩件事我們都想要，但很不幸，它們一定是 contradict（互相矛盾）的。",
+    "為了方便，你多加了一些東西，這些東西跟效能無關，只是讓人覺得方便；例如顯示 GUI 圖形介面要用資源、多跑程式，速度一定慢下來。蹺蹺板就往一邊倒了。",
+    "所以這是一個 trade-off（取捨），看這個電腦系統的使用者在乎什麼。",
+    "Windows、手機這類 OS，convenience 非常重要；如果要跑大型程式、科學計算、解很複雜的問題，就會想用 efficient 的作業系統。",
+    "早期電腦不普及、很貴，花了錢就要看到效果，所以只在乎 efficiency；現在價格普及、用途很多，方便性變得很重要。",
+    "手機也是取捨：方便固然重要，但它吃多少電、能完成多少工作量，也是 efficiency 的概念，你也不想要一跑就沒電的手機。"
+   ]
+  },
+  {
+   "title": "為什麼 OS 這麼重要",
+   "scene": "osA-why2",
+   "points": [
+    {
+     "t": 1612,
+     "text": "一、OS 是 user program 與 hardware 之間唯一的 interface：語言可以多選，OS 只能選一個，換掉就要重寫。"
+    },
+    {
+     "t": 1678,
+     "text": "二、OS 絕對不能有 bug：App 壞了重開就好，OS crash 整台電腦與狀態都沒了。"
+    },
+    {
+     "t": 1747,
+     "text": "三、掌握 OS 就能掌握上面軟體與下面硬體的開發（Microsoft、Wintel、Apple），但兩者互相影響、配合。"
+    }
+   ],
+   "cues": [
+    1632.8,
+    1650,
+    1662.2,
+    1678.1,
+    1693.8,
+    1709.2,
+    1731.8,
+    1746.9,
+    1769.8,
+    1776.8,
+    1795.7,
+    1828.3,
+    1849.7,
+    1867
+   ],
+   "explain": [
+    "為什麼作業系統在電腦世界這麼重要？原因一：它是 user program 和 hardware 之間唯一的 interface，系統架構就是這樣，不可能改變。",
+    "你寫程式可以選 C、Java、Python，有好多選擇。",
+    "但講到 OS，就只是看你要哪一個；如果不要它，上面整個東西就要重寫，或重新調整，因為它是唯一的 interface，掌握了上面的 application。",
+    "原因二：作業系統比一般程式更困難，因為它絕對不能壞掉、不能有 bug。",
+    "大家寫的程式多少有 bug，就算商業軟體、Android 上的 App 也常有 bug，很多人不在意，重新開一下網頁就好。",
+    "但 OS 不一樣：它一 crash，整台電腦就沒了；重點是電腦的狀態、上面執行的程式全都沒了，大家都會很痛苦。",
+    "所以 OS 的原則是不能容許任何 bug，有 bug 就代表這台電腦掛了。",
+    "原因三：因為它是唯一的 interface，在電腦發展過程中，如果你能控制 OS（你是提供 OS 的廠商），基本上就能掌握上面軟體和下面硬體的開發。",
+    "這就是為什麼 Microsoft 曾經是最有錢的公司：它只做一個 OS。",
+    "想在 Windows 上跑的 application，就要 follow 它的 API；它不幫你做特殊調整，你的程式效能可能就比較差，所以它能控制上面。",
+    "同樣地，因為它夾在中間，hardware 的設計也要跟 OS 搭配。電腦產業有個詞叫 Wintel：Windows 加 Intel，兩家結合，電腦效能才能達到比較好的程度。",
+    "相對地，Apple 的不同在於 hardware 和 OS 都自己做，也是為了很強的配合。",
+    "當然 OS 也不是完全控制 hardware 怎麼做，兩者是互相影響、互相配合；使用者需求不同，OS 也要調整。",
+    "最佳例子就是手機：手機的硬體就是手機，不能強迫它變成 PC，所以 OS 要去配合、調整，手機才有自己的 iOS、Android。"
+   ]
+  },
+  {
+   "title": "形形色色的 OS",
+   "scene": "osA-oslist",
+   "points": [
+    {
+     "t": 1915,
+     "text": "x86 PC：Windows、Linux（大型重要系統多選 Linux，與 open source 有關）、Apple 自己做。"
+    },
+    {
+     "t": 1966,
+     "text": "手機：Android、iOS、Windows 10 Mobile；Ubuntu 等也有不同版本。"
+    },
+    {
+     "t": 1993,
+     "text": "Embedded：非常廣（IoT），OS 要 flexible；手機也算 embedded 但更 general；Xbox、PS 的 OS 綁在硬體上；Raspberry Pi 用來做雛形。"
+    },
+    {
+     "t": 2118,
+     "text": "這些描述是概念，不需要把字背下來，理解意義即可。"
+    }
+   ],
+   "cues": [
+    1916.9,
+    1922.8,
+    1945.9,
+    1957.8,
+    1965.9,
+    1986.8,
+    1992.8,
+    2016.5,
+    2036.6,
+    2047.1,
+    2066.1
+   ],
+   "explain": [
+    "所以 OS 是形形色色的。",
+    "早期 x86 的電腦，不外乎大家熟悉的 Windows，另外 Linux 其實是歷史最久的。",
+    "一般使用者喜歡 Windows，但真的大型、重要的系統，大家多半還是選 Linux，這跟它是 open source 有很大的關係。",
+    "Apple 則是自己來，它的作業系統比較不一樣。",
+    "隨著時代改變有了手機：Android、iOS。Windows 也做調整，有 Windows 10，也有修改過、能跑在手機上的 Windows 10 Mobile。",
+    "Linux 這邊像 Ubuntu 現在更多人用，它也會有不同版本去調整。",
+    "Embedded（嵌入式）跟手機不同：它非常廣泛，任何嵌入式系統都算。尤其物聯網世代，各式各樣的 device 都叫 embedded，上面也需要 OS。",
+    "這種 OS 必須很 flexible：新產品出來很快就能裝上去，還能快速調整，把不要的部分拿掉、要的留下來。",
+    "手機也算一種 embedded，只是它更 general 一些。",
+    "有些 OS 不只是純 software，而是綁在 hardware 上的 embedded system，像 Xbox、PS3、PS4，上面都有 embedded OS。",
+    "未來如果走 device 端，可能會碰到 Raspberry Pi：一塊很小的板子，上面有 Raspberry Pi 的 OS，可以拿來開發各式各樣嵌入式系統的雛形。這些 OS 基本上都一樣，只是依需求調整。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "課堂所說的 protection 是指？",
+   "opts": [
+    "正常使用下，一個使用者（程式 crash）不會影響其他使用者",
+    "防止駭客透過網路入侵",
+    "加密使用者的檔案",
+    "防毒軟體"
+   ],
+   "ans": "正常使用下，一個使用者（程式 crash）不會影響其他使用者",
+   "why": "惡意、透過網路的攻擊屬於 security，不在 protection 範圍。"
+  },
+  {
+   "q": "OS 的 control 與 coordinate，哪個敘述正確？",
+   "opts": [
+    "control 是單方向控制；coordinate 是在多人共享時協調資源分配",
+    "control 比 coordinate 複雜",
+    "coordinate 就是寫 driver",
+    "batch 系統最需要 coordinate"
+   ],
+   "ans": "control 是單方向控制；coordinate 是在多人共享時協調資源分配",
+   "why": "很多研究在 coordinate；control 多半是寫 driver。"
+  },
+  {
+   "q": "程式呼叫 printf 時，輸出到螢幕的路徑是？",
+   "opts": [
+    "printf → system call → driver → hardware",
+    "printf → compiler → hardware",
+    "printf 直接寫入螢幕的記憶體",
+    "printf → linker → screen"
+   ],
+   "ans": "printf → system call → driver → hardware",
+   "why": "負責輸出到 screen 的是 OS；link 時一定會連到 system library。"
+  },
+  {
+   "q": "OS 的別名、最常用來稱呼作業系統的是？",
+   "opts": [
+    "kernel",
+    "compiler",
+    "toolchain",
+    "shell"
+   ],
+   "ans": "kernel",
+   "why": "resource allocator、control program 只是概念描述，kernel 才是常用的名字。"
+  },
+  {
+   "q": "關於 OS 的 convenience 與 efficiency，何者正確？",
+   "opts": [
+    "兩者互相矛盾，要依使用者需求取捨（trade-off）",
+    "兩者可以同時最大化",
+    "現在的 OS 只在乎 efficiency",
+    "手機 OS 不在乎 efficiency"
+   ],
+   "ans": "兩者互相矛盾，要依使用者需求取捨（trade-off）",
+   "why": "為了方便加 GUI 會吃資源而變慢；手機的耗電也是 efficiency。"
+  },
+  {
+   "q": "下列何者不是老師說 OS 重要的原因？",
+   "opts": [
+    "OS 是程式執行最快的部分",
+    "它是 user program 與 hardware 之間唯一的 interface",
+    "OS 絕對不能有 bug，crash 會讓整台電腦與狀態都沒了",
+    "掌握 OS 就能影響上面軟體與下面硬體的開發"
+   ],
+   "ans": "OS 是程式執行最快的部分",
+   "why": "三個原因：唯一 interface、不能壞、能掌握上下游的開發。"
+  }
+ ]
+}

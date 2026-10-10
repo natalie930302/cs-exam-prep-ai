@@ -1,0 +1,231 @@
+{
+ "video": "lhToWeuWWfw",
+ "label": "Neso Academy：System Calls（精簡版）",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "User mode 與 Kernel mode",
+   "scene": "osA-modes",
+   "points": [
+    {
+     "t": 0,
+     "text": "System call 提供一個 interface，讓程式使用 OS 提供的 services。"
+    },
+    {
+     "t": 29,
+     "text": "程式有兩種執行 mode：user mode 不能直接存取 memory、hardware；kernel mode 可以（privileged mode）。"
+    },
+    {
+     "t": 81,
+     "text": "kernel mode 的程式 crash 會讓整個系統當掉；user mode crash 不會 → user mode 較安全，大部分程式在 user mode 執行。"
+    }
+   ],
+   "cues": [
+    0.1,
+    8.7,
+    29,
+    52.5,
+    62.8,
+    71.8,
+    81.2,
+    97.8,
+    110.8,
+    119.8
+   ],
+   "explain": [
+    "這一講介紹 system call（系統呼叫）：它是什麼、拿來做什麼。",
+    "system call 提供一個 interface（介面），讓程式能使用作業系統提供的各種 services（服務），例如讀檔、用 I/O、要 memory。",
+    "在細講之前，要先懂程式執行時的兩種 mode（模式）：user mode（使用者模式）和 kernel mode（核心模式）。",
+    "在 user mode 執行的程式，不能直接存取 memory、hardware 這類資源。",
+    "在 kernel mode 執行的程式，則可以直接存取 memory 和 hardware。",
+    "因為能直接動很多資源，kernel mode 又叫 privileged mode（特權模式）。",
+    "但問題是：在 kernel mode 執行的程式如果 crash，整個系統都會跟著 crash 或停擺。",
+    "在 user mode 執行的程式如果 crash，整個系統並不會當掉。",
+    "所以 user mode 是比較安全的執行方式，kernel mode 則是有特權的方式。",
+    "正因為 user mode 比較安全，大部分的程式都在 user mode 執行。"
+   ]
+  },
+  {
+   "title": "System call：從 user mode 切到 kernel mode",
+   "scene": "osA-syscall",
+   "points": [
+    {
+     "t": 128,
+     "text": "user mode 的程式需要資源時，呼叫 OS，瞬間從 user mode 切到 kernel mode，用完再切回來。"
+    },
+    {
+     "t": 187,
+     "text": "這個呼叫就是 system call：程式向 OS kernel 請求 service 的 programmatic 方式，通常是 C / C++ 寫的 routine。"
+    }
+   ],
+   "trap": "Neso 把 user↔kernel 的切換稱為 context switch；課本（Silberschatz）稱為 mode switch，context switch 指 CPU 換到另一個 process（要存取 PCB）。考試請用課本說法。",
+   "cues": [
+    128,
+    136.8,
+    146.8,
+    159.8,
+    186.8,
+    199.4,
+    217.1,
+    239
+   ],
+   "explain": [
+    "程式在 user mode 執行時，可能需要用到 memory、hardware 之類的資源，但它不能直接碰。",
+    "於是程式會呼叫作業系統，告訴 OS：我需要使用某些資源。",
+    "發出呼叫的那一瞬間，程式從 user mode 切換到 kernel mode，這樣才能使用那些資源。",
+    "這裡發生了切換：從 user mode 到 kernel mode，用完再切回 user mode。Neso 把它叫 context switching；但恐龍書稱這種切換為 mode switch，context switch 是指 CPU 換去執行另一個 process，考試要分清楚。",
+    "程式為了存取資源、進入 kernel mode 而發出的這個呼叫，就叫做 system call。",
+    "也就是說：在 user mode 執行的程式，需要暫時切到 kernel mode 存取某些資源時，就會發出 system call。",
+    "正式定義：system call 是電腦程式向作業系統的 kernel 請求 service 的一種 programmatic（用程式呼叫）的方式，service 可以是存取某些資源等等。",
+    "這些 system call 通常是以 C、C++ 寫成的 routine（函式），例如 open()、read()、write()。"
+   ]
+  },
+  {
+   "title": "例子：複製檔案的 system call 序列",
+   "scene": "osA-copy",
+   "points": [
+    {
+     "t": 248,
+     "text": "例子：把 source 檔案複製到 destination 檔案。"
+    },
+    {
+     "t": 287,
+     "text": "取得 input 檔名、顯示提示、接收輸入，每一步都是 system call（用到螢幕、鍵盤滑鼠等 hardware）；output 檔名同樣三步。"
+    },
+    {
+     "t": 460,
+     "text": "開啟 input 檔（不存在就 abort）、建立 output 檔（已存在就 abort），都要 system call。"
+    },
+    {
+     "t": 593,
+     "text": "loop：讀 input、寫 output 直到 read fails；出錯就 abort；最後 close、顯示完成訊息、terminate normally。"
+    }
+   ],
+   "cues": [
+    257.3,
+    286.9,
+    312.8,
+    327,
+    332.8,
+    341.8,
+    386.8,
+    398.8,
+    418.7,
+    460.6,
+    481.8,
+    503.8,
+    514.8,
+    592.8,
+    622.9,
+    633.8,
+    641.1,
+    653.3,
+    665.8
+   ],
+   "explain": [
+    "用一個簡單的例子看 system call 怎麼被使用：把一個檔案（source）的內容，複製到另一個檔案（destination）。左邊列出所需的 system call 序列。",
+    "第一步：取得 input 檔案的名字，要知道從哪個檔案複製。這就需要一個 system call。右上角的計數器會記錄用了幾個。",
+    "接著在螢幕上顯示提示，請使用者輸入 input 檔名，這要另一個 system call。",
+    "然後接收使用者輸入的內容，又是一個 system call。",
+    "這裡的每一個框（每一行），都代表一個獨立的 system call。",
+    "取得 input 檔名有兩種方式：請使用者打字輸入，或把系統裡的檔案列出來，讓使用者用滑鼠瀏覽、點選。",
+    "為什麼顯示提示要 system call？因為要用到 monitor 這個 output device，也就是 hardware；存取 hardware 必須透過 system call。",
+    "接收輸入要用 keyboard 或 mouse，它們是 input device，同樣是 hardware，所以也需要 system call。",
+    "取得 input 檔名後，同樣三步取得 output（目的地）檔名：取得名字、顯示提示、接收輸入，又是 3 個 system call。",
+    "兩個檔名都有了，接著打開 input 檔案準備開始複製（檔案存在儲存裝置上），這又需要 system call。",
+    "可能出錯：使用者輸入的 input 檔案根本不存在，這時要 abort（終止執行），終止也需要 system call。",
+    "同樣地，要用使用者給的名字建立 output 檔案，這也是 system call。",
+    "如果同名的檔案已經存在，也要 abort，因為我們要建立的是一個新檔案，不能建立已經存在的檔案。",
+    "一切正常的話，就跑一個 loop（迴圈）：從 input 檔讀資料、寫進 output 檔，一直重複到讀不到東西為止（read fails）。",
+    "複製過程中也可能發生錯誤，例如 hardware error，這時也要 abort，同樣需要 system call。",
+    "而且每一次讀 input、寫 output 本身都是 system call，所以 loop 裡是一整串 system call。",
+    "全部複製完後，關閉 output 檔案，需要 system call。",
+    "接著在螢幕上顯示「複製完成」的訊息讓使用者知道，也需要 system call。",
+    "最後正常結束程式（terminate normally），這也需要最後一個 system call。"
+   ]
+  },
+  {
+   "title": "總結：system call 無所不在",
+   "scene": "osA-sysum",
+   "points": [
+    {
+     "t": 673,
+     "text": "連複製檔案這種簡單的事都要很多 system call；有些程式每秒執行上千個。"
+    },
+    {
+     "t": 712,
+     "text": "OS 的 services 透過 system call 提供給程式：程式需要 service 或 resource 時就發出 system call。"
+    }
+   ],
+   "cues": [
+    673,
+    691.8,
+    712,
+    729.1
+   ],
+   "explain": [
+    "只是複製一個檔案這麼簡單的事，就執行了一大堆 system call。",
+    "某些程式執行時，每秒會執行上千個 system call，system call 隨時都在被執行。",
+    "所以 system call 就是使用作業系統 services 的 interface：OS 的所有 services，都是透過 system call 提供給程式。",
+    "只要程式需要使用這些 service 或 resource，就會發出 system call。下一講再介紹 system call 的種類。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "為什麼大部分程式在 user mode 執行？",
+   "opts": [
+    "user mode 比較安全：程式 crash 不會讓整個系統當掉",
+    "user mode 可以直接存取 hardware",
+    "user mode 速度比 kernel mode 快很多",
+    "kernel mode 不能執行 C 程式"
+   ],
+   "ans": "user mode 比較安全：程式 crash 不會讓整個系統當掉",
+   "why": "kernel mode 是 privileged mode，在那裡 crash 會讓整個系統停擺。"
+  },
+  {
+   "q": "System call 的定義是？",
+   "opts": [
+    "程式向 OS kernel 請求 service 的 programmatic 方式",
+    "硬體送給 CPU 的中斷訊號",
+    "CPU 換執行另一個 process",
+    "編譯器產生的機器碼"
+   ],
+   "ans": "程式向 OS kernel 請求 service 的 programmatic 方式",
+   "why": "user mode 程式需要資源時，經 system call 暫時進入 kernel mode。"
+  },
+  {
+   "q": "複製檔案的例子中，「在螢幕上顯示提示」為什麼需要 system call？",
+   "opts": [
+    "要存取 monitor 這個 output device（hardware）",
+    "因為要建立新檔案",
+    "因為要切換到另一個 process",
+    "其實不需要 system call"
+   ],
+   "ans": "要存取 monitor 這個 output device（hardware）",
+   "why": "user mode 程式不能直接碰 hardware，顯示、輸入、讀寫檔案都要透過 system call。"
+  },
+  {
+   "q": "依恐龍書，程式經 system call 從 user mode 進入 kernel mode 的切換稱為？",
+   "opts": [
+    "mode switch",
+    "context switch",
+    "process creation",
+    "page fault"
+   ],
+   "ans": "mode switch",
+   "why": "Neso 稱之為 context switching，但課本的 context switch 指 CPU 換到另一個 process。"
+  },
+  {
+   "q": "在 kernel mode 執行的程式若 crash，會怎樣？",
+   "opts": [
+    "整個系統可能 crash 或停擺",
+    "只有那個程式結束",
+    "自動切回 user mode 繼續",
+    "沒有任何影響"
+   ],
+   "ans": "整個系統可能 crash 或停擺",
+   "why": "kernel mode 能直接存取 memory、hardware，出錯影響整個系統。"
+  }
+ ]
+}

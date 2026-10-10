@@ -1,23 +1,27 @@
 {
  "video": "3PfL2WIS22o",
  "label": "清大周志遠 第1A講",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
-   "title": "課本：Operating System Concepts",
+   "title": "開場：課本 Operating System Concepts",
    "scene": null,
    "points": [
     {
-     "text": "課本是 Silberschatz 的 Operating System Concepts（恐龍書），資工的聖經之一，本課以第九版為主。",
-     "t": 15
+     "t": 1,
+     "text": "周志遠老師開場：這門課是作業系統。"
     },
     {
-     "text": "各版差異很小，核心內容幾乎沒變，借到舊版也可以。",
-     "t": 60
+     "t": 23,
+     "text": "課本是 Silberschatz 的 Operating System Concepts（恐龍書），是資工的聖經之一，本課以第九版為主。"
     },
     {
-     "text": "不要只看 slides：課本才有 details，定義與例子講得最清楚，考試以課本為主。",
-     "t": 100
+     "t": 93,
+     "text": "各版差異很小、核心內容幾乎沒變，借到舊版也可以。"
+    },
+    {
+     "t": 136,
+     "text": "不要只看 slides：課本才有 details，定義與例子講得最清楚，考試以課本為主。"
     }
    ]
   },
@@ -26,65 +30,149 @@
    "scene": null,
    "points": [
     {
-     "text": "電腦形式變化很大，但 OS 的核心 concepts 幾十年沒變。",
-     "t": 180
+     "t": 182,
+     "text": "電腦的形式、功能變化很大，但 OS 的核心 concepts 幾十年沒變。"
     },
     {
-     "text": "這門課不教最新手機 OS 怎麼運作，而是教不會變的核心基礎。",
-     "t": 250
+     "t": 246,
+     "text": "這門課不教最新手機 OS 怎麼運作，而是教不會變的核心基礎。"
     },
     {
-     "text": "書只講到概念，沒有實作 → 用程式作業補上 hands-on 的部分。",
-     "t": 330
+     "t": 314,
+     "text": "書只講到概念，沒有實作 → 用程式作業補上 hands-on 的部分。"
     }
    ]
   },
   {
-   "title": "Nachos 作業",
-   "scene": "nachos-vm",
+   "title": "Nachos：教學用的模擬 OS",
+   "scene": "osA-nachos",
    "points": [
     {
-     "text": "四個作業：修改一個教學用、模擬的作業系統 Nachos，該有的 component 都有。",
-     "t": 400
+     "t": 409,
+     "text": "四個程式作業：修改一個教學用、模擬的作業系統 Nachos，該有的 component 都有。"
     },
     {
-     "text": "Nachos 在國外與國內重要學校都很普遍，資料要用英文查。",
-     "t": 450
+     "t": 441,
+     "text": "Nachos 在國外與國內重要學校都很普遍，資料要用英文查。"
     },
     {
-     "text": "demo 時助教會問兩位組員問題，分數依貢獻度與回答調整，不要只找答案。",
-     "t": 540
+     "t": 497,
+     "text": "去年加入 file system，主要 component 都齊了。"
     },
     {
-     "text": "程式是 C++ 寫的：會 C 加上物件導向觀念就夠。",
-     "t": 580
+     "t": 544,
+     "text": "demo 時助教會問兩位組員問題，分數依貢獻度與回答調整，不要只找答案。"
     }
+   ],
+   "cues": [
+    409.8,
+    417.4,
+    422.8,
+    440.8,
+    463.8,
+    496.8,
+    543.8
+   ],
+   "explain": [
+    "這門課最大的特色是四個程式作業。作業不是從零寫一個 OS，而是去「修改」一個已經寫好的作業系統，紫色的小傢伙就是它。",
+    "這個 OS 是 simulated（模擬的）、for education（為教學而做的）。雖然是模擬的，但一個作業系統該有的部分它都有，很適合拿來練習。",
+    "它的名字叫 Nachos，跟墨西哥玉米片同名，但全名其實和作業系統有關，只是縮寫好念。",
+    "國外的知名大學、國內重要的學校，很多都拿 Nachos 當教材，所以它不是什麼冷門的東西。",
+    "因為很多人用，網路上的資料和討論很多。不過大多是英文，要用英文關鍵字去查才找得到。",
+    "這幾年作業內容一直加：去年加了 file system（檔案系統）。主要的元件（component）都已經有了，今年沒再加。",
+    "Demo（展示作業）的時候，助教會分別問兩位組員問題。分數看每個人的貢獻和回答，所以要自己真的寫、真的懂，不要只上網找答案。"
    ]
   },
   {
-   "title": "Linux 環境與 code tracing",
-   "scene": "nachos-folders",
+   "title": "作業環境：C++ 與 Linux command line",
+   "scene": "osA-env",
    "points": [
     {
-     "text": "開發環境是 Linux 的 command line，不是 GUI 的 IDE。",
-     "t": 620
+     "t": 575,
+     "text": "程式是 C++ 寫的：會 C 加上物件導向觀念就夠。"
     },
     {
-     "text": "用指令操作更貼近 OS，能感受到指令背後 OS 在做的事。",
-     "t": 700
+     "t": 624,
+     "text": "開發環境是 Linux 的 command line，不是 GUI 的 IDE；Linux 是 open source，可以改。"
     },
     {
-     "text": "真實世界多半是修改別人幾萬、幾十萬行的程式，而不是從 main 自己寫。",
-     "t": 790
+     "t": 669,
+     "text": "用指令做 code tracing、檔案處理、compile、執行、debug。"
     },
     {
-     "text": "code tracing：先看懂架構與 code path，知道要改的部分在哪些檔案、哪些 function。",
-     "t": 860
-    },
-    {
-     "text": "改完要能 compile、用 printf 之類的方式 debug。",
-     "t": 920
+     "t": 700,
+     "text": "用指令操作更貼近 OS，能感受到指令背後 OS 在做的事。"
     }
+   ],
+   "cues": [
+    577.8,
+    592.8,
+    624.3,
+    628.8,
+    639.5,
+    646.8,
+    668.8,
+    699.8,
+    741.8
+   ],
+   "explain": [
+    "第一個挑戰：Nachos 是用 C++ 寫的。C++ 可以想成「C 語言＋物件導向」。",
+    "大家都學過 C；如果上過物件導向（Object Oriented，OO）的課，把兩者合起來就是 C++，所以應該不會太難。",
+    "第二個挑戰：開發環境是 Linux 的 command line（命令列），也就是打字下指令，而不是用滑鼠點。",
+    "很多人以前寫程式只用 Visual Studio 這種 GUI（圖形介面）工具，所以剛開始可能不習慣。",
+    "作業系統的課當然用 Linux，因為它是 open source（原始碼公開），你可以去改、去動它的程式碼。",
+    "Windows 是商業產品（commercial），包裝得很好、很 user friendly，但你看不到也改不了裡面。",
+    "在 Linux 上，trace 程式碼、處理檔案、compile（編譯）、執行、debug 都用指令完成。螢幕上一行一行亮起的就是這類指令。",
+    "用指令操作比點圖形介面更貼近作業系統本身：你下的每個指令，背後都是 OS 在幫你做事，看著輸出就更能感受到 OS 的運作。",
+    "未來去工作，很多也是在這種環境。在學校就先熟悉，比到時候才學好得多。"
+   ]
+  },
+  {
+   "title": "Code tracing：先懂架構再動手改",
+   "scene": "osA-trace",
+   "points": [
+    {
+     "t": 765,
+     "text": "以前作業從 main 自己寫；真實世界多半是修改別人幾萬、幾十萬行的程式。"
+    },
+    {
+     "t": 814,
+     "text": "code tracing：先看懂架構與 code path，知道要改的部分在哪些檔案、哪些 function。"
+    },
+    {
+     "t": 868,
+     "text": "每個作業第一步先 trace 目前的實作，再決定改哪裡、用 printf 之類的方式 debug。"
+    },
+    {
+     "t": 928,
+     "text": "這是學會 compile、debug 別人程式的好機會。"
+    }
+   ],
+   "cues": [
+    765,
+    769.6,
+    786.4,
+    810.8,
+    813.8,
+    822.6,
+    842.8,
+    852.8,
+    867.8,
+    882.8,
+    927.8
+   ],
+   "explain": [
+    "第三個、也是最特別的挑戰：code tracing（追蹤程式碼）。",
+    "以前的程式作業，多半是從 main 開始自己寫到完，寫到一千行就覺得很了不起。",
+    "可是真實世界的程式動輒幾萬、幾十萬行，不可能一個人從頭寫完。",
+    "所以未來寫程式，大多是在「修改別人的程式」。",
+    "要改別人的程式，第一步是看懂它的架構：程式分成哪些部分？我要做的事落在哪一塊？這幾個方塊就像 Nachos 的資料夾。",
+    "如果改完連 compile（編譯）都過不了，你得有能力找出原因，這就是 debug。",
+    "要改的地方通常不在同一個檔案，而是散在好幾個檔案裡（發亮的那幾個）。",
+    "這些檔案、function 之間的呼叫順序叫 code path。一個地方改了，順著 code path 的其他地方也要跟著調整，這就叫 code tracing。",
+    "所以每個作業的第一個工作，都是先 trace 一遍「它現在是怎麼實作的」。",
+    "trace 完、搞懂了，才判斷要改哪一塊；改的時候再用 printf 印訊息這種基本方式來 debug。",
+    "這是很好的練習機會：不只 debug 自己的程式，還學會 compile、debug 別人寫的大型程式。"
    ]
   }
  ],
@@ -121,7 +209,17 @@
    ],
    "ans": "先了解程式架構與 code path，再判斷要改哪裡",
    "why": "修改別人的大型程式，要先知道檔案、function 之間的呼叫順序。"
+  },
+  {
+   "q": "老師說這門課用 Linux 而不是 Windows 的主要原因是？",
+   "opts": [
+    "Linux 是 open source，可以去改、去動",
+    "Linux 比較 user friendly",
+    "Windows 沒有 command line",
+    "Nachos 只能在手機上跑"
+   ],
+   "ans": "Linux 是 open source，可以去改、去動",
+   "why": "Windows 是 commercial、包起來的產品；OS 課要能看到、改到裡面。"
   }
- ],
- "timing": "estimated"
+ ]
 }

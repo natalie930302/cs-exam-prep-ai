@@ -1,0 +1,367 @@
+{
+ "video": "ku1XgA2bZTE",
+ "label": "清大周志遠 第2B講 Computer-System Architecture",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "各式各樣的電腦系統架構",
+   "scene": "osA-archintro",
+   "points": [
+    {
+     "t": 1,
+     "text": "從 hardware 角度看，電腦的形式與組成方式五花八門。"
+    },
+    {
+     "t": 56,
+     "text": "Parallel system：很多電腦不只一個 CPU core；有的是 loosely coupled，透過網路連成一個系統。"
+    }
+   ],
+   "cues": [
+    1.4,
+    44.8,
+    56.3,
+    63.8
+   ],
+   "explain": [
+    "接下來介紹各式各樣的 computer system architecture（電腦系統架構）。不管什麼電腦都會遇到前面講的 OS 問題，但從硬體角度看，它的形式和組成方式五花八門。",
+    "先很快看一下最早期的 PC，大家看過就好。",
+    "會多介紹 parallel system（平行系統）：很多電腦不是只有一個 CPU core（計算核心）在計算，通常有很多個。",
+    "有些系統是 loosely coupled（鬆散耦合）：電腦不在同一個地方，透過網路連在一起。像 Internet，也可以說是一個透過遠端網路連起來的系統。"
+   ]
+  },
+  {
+   "title": "Personal computer",
+   "scene": "osA-pc",
+   "points": [
+    {
+     "t": 108,
+     "text": "最單純的電腦只有一個 single core；PC 就是每個人擁有自己的電腦系統。"
+    },
+    {
+     "t": 135,
+     "text": "使用者在乎 convenience 與 responsiveness（interactive → time sharing）；I/O device 演進很快（keyboard → 觸控 → 聲控）。"
+    },
+    {
+     "t": 231,
+     "text": "PC 的 OS（Linux、Mac OS、Windows、Android）重 convenience，有很好的 GUI。"
+    },
+    {
+     "t": 276,
+     "text": "缺點是 security 差：早期 software architecture 沒定義好、當初沒想到 Internet（例：ATM 被植入病毒吐鈔）。"
+    }
+   ],
+   "cues": [
+    108,
+    123.2,
+    134.8,
+    148.8,
+    181.7,
+    230.8,
+    258,
+    276.3,
+    292.8,
+    313.8,
+    331.8,
+    349.8
+   ],
+   "explain": [
+    "最早期、最單純的電腦只有一個 single core（單一核心），早期的 personal computer 就是這樣。",
+    "為什麼叫 personal？因為每個人都能擁有自己的一個電腦系統。",
+    "買 PC 或手機，大家最在乎的是 convenience（方便、好不好用）。手機的設計花了很多功夫，讓它用起來最方便。",
+    "另一個是 responsiveness（反應快）。personal computer 都是 interactive 的，做一個動作要等好幾秒，你就會不滿意。所以 response time 要很短，這也是為什麼現在的電腦幾乎一定是 time sharing。",
+    "第二個特色是 I/O device，它演進得非常快：從 keyboard 到觸控螢幕，現在很多甚至用聲控，只要講話就能控制，這也是 I/O device。",
+    "這些系統當然都有自己的作業系統：以前熟悉的 Linux、Mac OS、Windows，現在還有 Apple 的 OS、手機的 Android。",
+    "這些 OS 的特色就是 convenience：一定有很好的 GUI（Graphical User Interface，圖形化使用者介面），用圖像或特殊的 I/O 方式來操作。",
+    "它們的缺點，尤其像早期的 Windows，是很容易被入侵，security（資訊安全）通常非常差。",
+    "原因一：PC 算是比較早期的東西，software architecture 沒有定義得很好，只求能快點運作，所以容易被找到漏洞、侵入修改。",
+    "最主要的原因：當初的 PC 根本沒想到 Internet。那時只要使用者不惡意破壞自己的電腦就好。",
+    "現在電腦都連網，會有很多外來的、沒有授權、你根本沒預期的使用者，可以透過網路修改你的東西。",
+    "老師舉的新聞：台灣的 ATM 被植入病毒，可以自動吐鈔票。透過各種 wireless 通訊就可能危害一個系統，早期 PC 的 OS 沒想到這麼多。"
+   ]
+  },
+  {
+   "title": "Multiprocessor（tightly coupled）",
+   "scene": "osA-mp",
+   "points": [
+    {
+     "t": 395,
+     "text": "計算量變大 → 一個系統裡有很多 CPU core；用 system bus（hardware line）緊密連在一起，叫 multiprocessor 或 tightly coupled。"
+    },
+    {
+     "t": 465,
+     "text": "memory 與 I/O 都是 shared：所有 core 看到相同的 memory content，同時修改就有 synchronization 問題。"
+    },
+    {
+     "t": 507,
+     "text": "就算一顆 CPU chip 也是多核心，本身就是 tightly coupled 的平行系統。"
+    },
+    {
+     "t": 541,
+     "text": "好處：throughput 提高、economy（共用省成本）、reliability（一個壞了還能跑）；前兩者最重要。"
+    }
+   ],
+   "cues": [
+    395,
+    405.6,
+    416.8,
+    431.8,
+    446.5,
+    464.8,
+    478.8,
+    487.8,
+    506.8,
+    541.4,
+    573.8,
+    609.8,
+    639.8
+   ],
+   "explain": [
+    "剛才是很單純的電腦：一個使用者、一個 CPU core。",
+    "隨著需要的計算量越來越大，你買來的電腦系統裡通常不會只有一個 core，而是很多個。",
+    "當這些 core 非常緊密地連結在一起，我們就稱為 multiprocessor system（多處理器系統）。",
+    "什麼叫緊密？就是這些 CPU core 透過 system bus（系統匯流排，也就是硬體的線）連在一起。",
+    "這也叫 tightly coupled（緊密耦合）：買來一個盒子，裡面全部用硬體的線接好。",
+    "電腦就是 memory、CPU、I/O device。在 multiprocessor 裡，I/O device 是共用的，memory 也是共用的（shared memory）。",
+    "所以跑在所有 core 上的程式，看到的都是同一份 memory content，例如同一個 x。",
+    "如果兩個 core 上的程式同時去修改它，結果就亂掉了，這就造成 synchronization（同步）的問題。",
+    "這種系統非常普遍：就算你只買一顆 CPU chip，它其實是四核心、八核心，本身就已經是 tightly coupled 的平行系統。",
+    "為什麼會走向這種系統？原因一：throughput（每秒能完成的計算量）。製造技術進步，同樣空間能塞更多核心，計算能力就提高，所以核心越多 CPU 越 powerful。",
+    "原因二：economy（經濟）。memory、I/O device、主機板都能共用，與其拆成很多台獨立電腦，不如拼在一起，省下成本。",
+    "原因三：reliability（可靠度）。有很多 core，其中一個不正常或壞掉，其他的還能繼續運作。",
+    "不過老師說，大家比較需要記得的是 throughput 和 economical 這兩個原因。"
+   ]
+  },
+  {
+   "title": "SMP vs AMP",
+   "scene": "osA-smp",
+   "points": [
+    {
+     "t": 652,
+     "text": "現在電腦都是 multiprocessor；依 processor 的角色分成 Symmetric（SMP）與 Asymmetric（AMP）。"
+    },
+    {
+     "t": 692,
+     "text": "SMP：每個 core 角色相同、沒有 master，由 OS 決定程式放哪個 core；現在手上的 CPU 都是 SMP。"
+    },
+    {
+     "t": 755,
+     "text": "SMP 缺點：要同步（locking），overhead 讓 core 數量難以 scale 很大；消費性電腦夠用。"
+    },
+    {
+     "t": 808,
+     "text": "AMP：一個 master core 管理其他 core、指令先經過它，可 scale 更大（supercomputer），但 master 不做使用者計算。"
+    }
+   ],
+   "trap": "SMP 每個 core 對等、由 OS 分配；AMP 有 master。現在一般 multi-core CPU 是 SMP。",
+   "cues": [
+    652,
+    661.8,
+    682.8,
+    691.8,
+    720.3,
+    727.8,
+    754.9,
+    764.8,
+    796.8,
+    808.4,
+    825.8,
+    845.5,
+    849.8,
+    871.8
+   ],
+   "explain": [
+    "現在的電腦系統全部都是 multiprocessor 的電腦系統。",
+    "它們可以再分類成 Symmetric（對稱，SMP）和 Asymmetric（不對稱，AMP）兩種 multiprocessor system。",
+    "為什麼要知道？因為兩種系統裡，processor 扮演的角色不太一樣。",
+    "SMP（Symmetric）：所有 CPU core 的角色完全相同，沒有誰是 master（主管）。哪個程式要放到哪個 core 上，由 OS 來決定，大家是對等的。",
+    "現在大家手上的 CPU 幾乎都是 SMP，因為它比較簡單。",
+    "重點是每個 core 都能做計算，不會有一個 core 只負責管別人而浪費掉；core 多了就讓大家一起分擔 loading，使用率比較高。",
+    "缺點：要 synchronize（同步）不同 processor 上的程式時，需要 locking 等機制。",
+    "大家都對等、沒有人統一管理，就要靠 protocol、規則協調，這些都是 overhead（額外負擔），所以 SMP 的 core 數量沒辦法 scale（擴充）到很大。",
+    "一般消費性的電腦，計算需求沒那麼高，用 SMP 就足夠了。",
+    "但 supercomputer（超級電腦）等需要非常多計算核心的系統，會採用 Asymmetric（不對等）。",
+    "不對等的意思是：有一個 CPU core 是 master，專門管理其他所有 core；所有指令都先經過它，再交給其他 core 執行。",
+    "因為有人統一管理，AMP 通常可以 scale 到比較大，core 的數量可以比較多。",
+    "缺點是：master 基本上不做使用者的計算，只在管理，等於浪費掉了。",
+    "這種系統確實存在，用在比較注重 performance 的電腦，一般買到的比較少見。但要知道：很多 core 時，依角色分成 SMP 和 AMP。"
+   ]
+  },
+  {
+   "title": "Multi-core 與 cache 一致性",
+   "scene": "osA-cache",
+   "points": [
+    {
+     "t": 894,
+     "text": "一個 CPU chip 上有很多 core（multi-core processor），它們共用主機板上的 memory。"
+    },
+    {
+     "t": 939,
+     "text": "memory 與 register 之間有多層 cache（L1、L2、L3），L1 每個 core 各有一份。"
+    },
+    {
+     "t": 988,
+     "text": "資料被 copy 到不同 core 的 cache；一個 core 只改到自己的 cache 會不一致，現在用 hardware 反映到 memory 或其他 cache。"
+    },
+    {
+     "t": 1071,
+     "text": "程式幾個 ms 就可能換到另一個 core，同一個 address 必須看到同樣的值。"
+    },
+    {
+     "t": 1116,
+     "text": "multi-core 是燒在同一個 chip 上，最 tightly coupled 的方式。"
+    }
+   ],
+   "cues": [
+    894,
+    914.8,
+    938.8,
+    966.8,
+    974.5,
+    987.8,
+    998.8,
+    1006.8,
+    1032.8,
+    1070.8,
+    1094.8,
+    1102.6,
+    1115.8
+   ],
+   "explain": [
+    "把一顆 CPU chip 打開來看，上面通常有很多 core，這叫 multi-core processor（多核心處理器）。",
+    "memory 不在 CPU 上，而是在主機板上，所以這些 core 共用同一個 memory，看到相同的 memory content。",
+    "但現在的電腦設計，在 memory 和 CPU 的 register（暫存器）之間都會有 cache（快取），把常用的資料存起來加速。",
+    "cache 又分 Level 1、Level 2、Level 3，比較複雜的電腦有很多層。",
+    "最上層的 L1 cache 最接近 register，基本上每個 core 一定有自己的一份。",
+    "所以同一份資料，會被 copy 到不同 core 的 cache 上。",
+    "因為只是複製，這些 copy 的內容應該要相同。",
+    "可是如果 Core 0 要改寫這個內容，它可能只改到自己的 cache，於是不同 copy 的內容就不一樣了，這是必須解決的大問題。",
+    "現在的電腦用 hardware 解決：CPU 會跟 memory、各 core 管理 cache 的機制溝通，確保一個 core 改寫時，資料會反映到 memory，或至少反映到所有存了這份資料的 cache。",
+    "這很重要，因為程式常常被切換：也許先在 Core 0 執行，過幾個 millisecond 就換到另一個 core。",
+    "同一個 memory address、同一個變數，你沒動它就該是同樣的值。換個 core 看到的值不一樣，程式就出問題了。",
+    "所以 multi-core processor 必須處理的，就是確保這些 cache 的資料一致（cache coherence）。",
+    "跟前面透過 memory bus 連結不同，multi-core 是在單一 CPU 上就有好幾個 core，燒在同一個 chip 上，是最 tightly coupled 的方式；很多東西沒有共用，但要處理到看起來一致。"
+   ]
+  },
+  {
+   "title": "Many-core：GPGPU 與 SIMD",
+   "scene": "osA-many",
+   "points": [
+    {
+     "t": 1150,
+     "text": "Many-core：同一個 processor 上核心數到幾百等級，平行度越高越 powerful。"
+    },
+    {
+     "t": 1189,
+     "text": "GPGPU：用顯示卡做一般計算；GPU 是 SIMD，同一時間只能做一個 instruction，套用到不同 data。"
+    },
+    {
+     "t": 1272,
+     "text": "適合 array / matrix 計算；有很多 if-else 分支的程式不適合。"
+    },
+    {
+     "t": 1336,
+     "text": "Intel Xeon Phi 介於傳統 CPU 與 GPU 之間；趨勢是更多 core、更緊密。"
+    }
+   ],
+   "cues": [
+    1150,
+    1163.8,
+    1181.5,
+    1188.8,
+    1199.8,
+    1209.8,
+    1228.8,
+    1250.1,
+    1255.8,
+    1265.6,
+    1271.8,
+    1301.8,
+    1336.1,
+    1380.5
+   ],
+   "explain": [
+    "前面只是一顆 chip。現在計算量需求越來越大，大家希望把核心連結得越緊密越好。",
+    "過去幾年很熱門的是 many-core processor：同一個 processor 上，計算核心的數量到幾百的等級（畫面上的小方塊數量只是示意）。",
+    "core 越多，平行度越高，就越 powerful。",
+    "現在最常見的 many-core 就是 GPGPU（General-Purpose GPU）。",
+    "也就是用顯示卡來做計算。顯示卡以前只拿來處理圖形的 display。",
+    "大家發現，一般程式裡也有很多計算跟圖形計算是同一型的，放到 GPU 上做就能更快。",
+    "GPU 為什麼能塞進幾百個 core？因為它犧牲掉了一些東西。",
+    "從計算架構看，GPU 是 SIMD processor：Single Instruction, Multiple Data（單一指令、多筆資料）。",
+    "意思是：就算裡面有 700 個 processor，同一時間它們只能做同一個 instruction（例如都在「乘以 2」）。",
+    "但這個 instruction 可以同時套用到不同的 data 上，所以一次就把每個數字都乘以 2。",
+    "這非常適合 array、matrix 的計算（線性代數）：同樣的運算放到不同的 row、column 上，可以同時算，所以非常快。",
+    "可是一般程式很複雜，有很多 if else 條件，同一時間各自要做不同的事，這種計算就沒辦法放在 GPU 上。",
+    "GPU 流行之後，Intel 也推出 Xeon Phi：大約塞 50 個 core，介於傳統 CPU 和 SIMD 的 GPU 之間，比較 flexible，不一定要用 SIMD，但 core 數沒有 GPU 那麼多。",
+    "重點是：現在設計 processor 的想法和以前很不一樣，都希望增加 core 的數量、緊密地放在一起，讓大量 thread 或 process 同時執行。"
+   ]
+  },
+  {
+   "title": "下課休息",
+   "scene": null,
+   "points": [
+    {
+     "t": 1416,
+     "text": "休息十分鐘，之後繼續介紹。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Multiprocessor（tightly coupled）系統最主要的兩個好處是？",
+   "opts": [
+    "throughput 與 economy",
+    "security 與 GUI",
+    "interactive 與 convenience",
+    "virtual memory 與 file system"
+   ],
+   "ans": "throughput 與 economy",
+   "why": "老師說 reliability 也有，但比較需要記得 throughput 和 economical。"
+  },
+  {
+   "q": "SMP 和 AMP 的差別是？",
+   "opts": [
+    "SMP 每個 core 對等；AMP 有一個 master 管理其他 core",
+    "SMP 只有一個 core；AMP 有很多 core",
+    "SMP 透過網路連結；AMP 用 system bus",
+    "SMP 用在 supercomputer；AMP 用在手機"
+   ],
+   "ans": "SMP 每個 core 對等；AMP 有一個 master 管理其他 core",
+   "why": "AMP 的 master 只管理不做使用者計算，但能 scale 更大。"
+  },
+  {
+   "q": "Multi-core processor 為什麼要處理 cache coherence？",
+   "opts": [
+    "每個 core 有自己的 L1 cache，一個 core 改寫後各 copy 可能不一致",
+    "因為 memory 不能共用",
+    "因為 GPU 太慢",
+    "因為每個 core 執行不同的 OS"
+   ],
+   "ans": "每個 core 有自己的 L1 cache，一個 core 改寫後各 copy 可能不一致",
+   "why": "程式會在 core 之間切換，同一 address 必須看到同樣的值。"
+  },
+  {
+   "q": "GPU 屬於哪種架構？",
+   "opts": [
+    "SIMD：同一時間一個 instruction，套用到多筆 data",
+    "MIMD：每個 core 做不同的 instruction",
+    "單核心 CPU",
+    "AMP"
+   ],
+   "ans": "SIMD：同一時間一個 instruction，套用到多筆 data",
+   "why": "所以適合 matrix 計算，不適合很多 if-else 分支的程式。"
+  },
+  {
+   "q": "早期 PC 作業系統 security 差的最主要原因是？",
+   "opts": [
+    "當初沒想到 Internet，外來使用者可透過網路入侵",
+    "CPU 太慢",
+    "沒有 GUI",
+    "memory 太小"
+   ],
+   "ans": "當初沒想到 Internet，外來使用者可透過網路入侵",
+   "why": "早期只要使用者不破壞自己的電腦就好；現在都連網。"
+  }
+ ]
+}
