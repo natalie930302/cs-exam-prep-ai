@@ -1805,8 +1805,10 @@ async function init(){
         +'<div class="sm"><div class="sm-n" style="color:'+s.color+';">'+remainingHours+'hr</div><div class="sm-l">剩餘影片長度</div></div>'
         +'<div class="sm"><div class="sm-n" style="color:'+s.color+';">'+doneChapterCount+'/'+s.chapters.length+'</div><div class="sm-l">完成章節</div></div>'
       +'</div>'
-      +'</div>'
-      +'<div class="rec-row">'+booksHtml+videosHtml+'</div></div>'
+      +'</div></div>'
+      // the series list sits on its own row below; the progress card above is
+      // small enough to share the header row with the title and subject tabs
+      +'<div class="rec-row sp-rec-row">'+booksHtml+videosHtml+'</div>'
       +'<div class="filter-bar"><div class="filter-chips" data-chfilter>'
         +'<button class="filter-chip ui-btn active" type="button" data-pri="all" aria-pressed="true">全部</button>'
         +'<button class="filter-chip ui-btn" type="button" data-pri="must" aria-pressed="false">必考</button>'
