@@ -877,8 +877,17 @@
     const el = $('panel-lab');
     if (el.dataset.loaded) return;
     el.dataset.loaded = '1';
-    el.innerHTML = '<iframe class="st-lab-frame" src="' + labUrl + '&embed=1" title="互動實驗室" loading="lazy"></iframe>'
-      + '<a class="st-lab-open" href="' + labUrl + '" target="_blank" rel="noopener">在新分頁全螢幕開啟實驗室 ↗</a>';
+    el.innerHTML = '<iframe class="st-lab-frame" src="' + labUrl + '&embed=1" title="互動實驗室" loading="lazy"></iframe>';
+    // the frame is as tall as the lab's own content, so no blank space below it
+    const fr = el.querySelector('iframe');
+    fr.addEventListener('load', function(){
+      try {
+        const doc = fr.contentDocument;
+        const fit = function(){ fr.style.height = Math.max(320, Math.ceil(doc.documentElement.getBoundingClientRect().height)) + 'px'; };
+        fit();
+        new ResizeObserver(fit).observe(doc.body);
+      } catch (e) {}
+    });
   }
 
   // ── Quiz ──
