@@ -1073,7 +1073,7 @@ function renderCalDayDetail(iso){
 // ── Month view: just subject/phase per day, nothing else — the detailed
 // breakdown lives in week view instead. ──────────────────────────────
 function buildCalMonthCells(y, m, ctx){
-  const startWeekday = new Date(y, m, 1).getDay();
+  const startWeekday = (new Date(y, m, 1).getDay() + 6) % 7;   // weeks start on Monday
   const daysInMonth = new Date(y, m+1, 0).getDate();
   const gridStart = new Date(y, m, 1 - startWeekday);
   const totalCells = Math.ceil((startWeekday + daysInMonth) / 7) * 7;
@@ -1142,7 +1142,7 @@ function renderCalMonthView(container){
   const todayIso = isoDate(new Date());
   const y = calMonthCursor.getFullYear(), m = calMonthCursor.getMonth();
   const cellsHtml = buildCalMonthCells(y, m, {s, todayIso});
-  const dowLabels = ['日','一','二','三','四','五','六'];
+  const dowLabels = ['一','二','三','四','五','六','日'];
   const dowRowHtml = dowLabels.map(function(l){ return '<div class="cal-dow">'+l+'</div>'; }).join('');
 
   container.innerHTML =
