@@ -1085,6 +1085,12 @@
   "quiz": 6,
   "cued": true
  },
+ "OQDaruIDCjY": {
+  "label": "交大江蕙如 Lec09 Graphs (4/4)",
+  "points": 80,
+  "quiz": 8,
+  "cued": true
+ },
  "OqLt2GfX6jg": {
   "label": "Abdul Bari：Why Pointers?",
   "points": 26,
@@ -1208,6 +1214,12 @@
  "R0MpXbuqfZM": {
   "label": "台大林軒田 DSA Stack / Queue",
   "points": 284,
+  "quiz": 8,
+  "cued": true
+ },
+ "r5CTlHdo9Oo": {
+  "label": "交大江蕙如 Lec08 Graphs (3/4)",
+  "points": 50,
   "quiz": 8,
   "cued": true
  },

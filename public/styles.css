@@ -7283,9 +7283,8 @@ body#appRoot :is(.sh, .ss) { text-shadow: none !important; }
   .cal-howmuch { font-size: 9.5px; }
 }
 
-/* 六科章節篩選（全部／必考／高頻／補充）：不要外框，只留按鈕本身 */
-body#appRoot #main .sp .filter-bar, body#appRoot #main .sp .filter-bar .filter-chips {
+/* 六科章節篩選：外面的工具列框保留；緊貼按鈕組、沒有間距的那層框拿掉 */
+body#appRoot #main .sp .filter-bar .filter-chips {
   border: 0 !important; background: transparent !important; box-shadow: none !important;
   backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
 }
-body#appRoot #main .sp .filter-bar { padding: 0 !important; }

@@ -1,0 +1,769 @@
+{
+ "video": "r5CTlHdo9Oo",
+ "label": "交大江蕙如 Lec08 Graphs (3/4)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場：上次介紹完 BFS、DFS",
+   "scene": null,
+   "points": [
+    {
+     "text": "上次介紹完 BFS 和 DFS，以及它們 implementation 需要配合的 data structure。",
+     "t": 15
+    }
+   ]
+  },
+  {
+   "title": "Adjacency matrix vs adjacency list：六個問題",
+   "scene": "graphjiang2-rep-compare",
+   "points": [
+    {
+     "text": "快速總結兩種最常用的 graph 表示法：adjacency matrix 與 adjacency list。",
+     "t": 29
+    },
+    {
+     "text": "查一條給定的 edge 是否存在：matrix 直接 access entry，O(1)；list 要掃完那條 list。",
+     "t": 54
+    },
+    {
+     "text": "求一個 node 的 degree：matrix 要掃一整個 row（O(n)）；list 掃它自己的 list 就好。",
+     "t": 94
+    },
+    {
+     "text": "畫出（traverse）整張圖：list 是 O(n + m)；matrix 每格都要確認，O(n²)。",
+     "t": 163
+    },
+    {
+     "text": "存 sparse graph：list 的空間跟 edge 數成正比；matrix 永遠 n²。dense 時 matrix 小贏一點，order 差不多。",
+     "t": 251
+    },
+    {
+     "text": "Insert／delete 一條 edge：matrix 直接翻轉 0/1 最容易；list 的 delete 要先找到。",
+     "t": 339
+    },
+    {
+     "text": "大部分 application 用 adjacency list，但不是全部；要依 application 的 procedure 選 data structure。",
+     "t": 386
+    }
+   ],
+   "cues": [
+    29,
+    54.4,
+    65.5,
+    81,
+    94.1,
+    112.5,
+    138.5,
+    163,
+    192,
+    218.7,
+    251.6,
+    262,
+    280.8,
+    298.3,
+    339.4,
+    351.8,
+    362.4,
+    386.7,
+    399.8,
+    414
+   ],
+   "explain": [
+    "Graph 最常用的兩種表示法：adjacency matrix 是一個 n×n 的表格，第 i 列第 j 行是 1 就代表 i、j 之間有 edge；adjacency list 是每個點後面掛一串「鄰居清單」。中間是同一張小圖。",
+    "第一題：給你一條 edge (2, 3)，問它在不在圖裡。看看哪一種表示法比較快回答。",
+    "Matrix 直接去看第 2 列第 3 行那一格就知道答案，只要一步，也就是 O(1)。matrix 拿下一分。",
+    "List 就得沿著 2 後面那串清單一個一個看，看到 3 才知道它在。清單長的話就慢。",
+    "第二題：問 node 3 的 degree。degree（度數）就是一個點連出去幾條 edge。",
+    "Matrix 要把第 3 列整排 n 格都看過，把 1 加起來，所以要 O(n)，n 是點數。",
+    "List 只要把 3 後面掛的清單數一遍：有 3 個，degree 就是 3。清單長度剛好等於 degree，通常比 n 小，所以 list 贏。",
+    "第三題：把整張圖畫出來，也就是 traverse（走遍）整張圖。",
+    "List 先掃點的陣列，再把每串清單掃一遍，就畫出所有 edge，總共 O(n + m)，m 是 edge 數。",
+    "Matrix 不管有沒有 edge，每一格都要看才知道，至少要看半個表格，所以是 O(n²)。",
+    "第四題：要存一個 sparse graph。sparse（稀疏）就是 edge 很少的圖。",
+    "List 只存真的存在的 edge，空間跟 edge 數成正比，越稀疏越省。",
+    "Matrix 不管圖稀疏還是密集，一定要開 n² 那麼大的表格。",
+    "如果圖是 dense（密集，edge 很多），matrix 反而小贏一點：list 要點陣列加上總長 2m 的清單（每條 edge 兩端各記一次）。不過兩者的 order 差不多。",
+    "第五題：在圖上動手腳，加一條 edge 或刪一條 edge，哪一種容易？",
+    "Matrix 直接把那一格（和對稱的那一格）的 0 翻成 1、或 1 翻成 0，insert、delete 都很快。",
+    "List 要 insert 的話，接一個新節點上去就好；但要 delete 就得先在清單裡找到它，所以比較久。",
+    "最後一題：對大部分的 application 來說，比較喜歡用哪一種？注意是「大部分」，不是全部。",
+    "多數時候是 adjacency list 贏，課本裡的很多 algorithm 也用它。",
+    "但老師強調：不要養成「只用 list」的既定觀念。要看你要實作的 procedure 來選 data structure，選錯會嚴重影響 performance。"
+   ]
+  },
+  {
+   "title": "BFS／DFS 的 data structure 與時間",
+   "scene": "graphjiang2-bfs-dfs-ds",
+   "points": [
+    {
+     "text": "BFS 常用 queue；如果每一層的 list 分開存，用 stack 也可以。",
+     "t": 448
+    },
+    {
+     "text": "DFS 對應的 data structure 是 stack。",
+     "t": 471
+    },
+    {
+     "text": "兩者都用 adjacency list 表示，時間都是 O(n + m)。",
+     "t": 484
+    }
+   ],
+   "cues": [
+    448.1,
+    459.7,
+    471,
+    484,
+    497
+   ],
+   "explain": [
+    "複習：BFS 一層一層往外走，常用 queue（排隊，先進先出）存「等著被處理的點」。",
+    "上次提過：如果每一層（L0、L1、L2…）的 list 分開存，處理順序已經由層數決定，這時候用 stack 也可以。",
+    "DFS 一路往深處走、走不下去再退回來，對應的就是 stack（疊盤子，後進先出）。",
+    "上次實作 BFS 和 DFS 時，graph 都是用 adjacency list 來表示。",
+    "在這樣的表示法下，BFS 和 DFS 的時間一樣，都是 O(n + m)：每個點、每條 edge 都只處理常數次。"
+   ]
+  },
+  {
+   "title": "Testing bipartiteness：bipartite graph 的定義",
+   "scene": "graphjiang2-bip-def",
+   "points": [
+    {
+     "text": "BFS／DFS 的第一個 application：testing bipartiteness，判定一張圖是不是 bipartite graph。",
+     "t": 523
+    },
+    {
+     "text": "Bipartite graph：點可以分成兩個 set X、Y，edge 只跨兩組，同一組裡沒有 edge；表示成 G = (X, Y, E)。",
+     "t": 559
+    },
+    {
+     "text": "常用在 matching：X 當男生、Y 當女生，edge 表示可以配對；選最多條 edge 配對就是 maximum cardinality bipartite matching。",
+     "t": 650
+    }
+   ],
+   "cues": [
+    527.8,
+    537.8,
+    571.8,
+    581.8,
+    587.8,
+    603.8,
+    626.8,
+    657.8,
+    664.8,
+    688.8
+   ],
+   "explain": [
+    "接下來介紹 BFS 和 DFS 的 application。第一個叫 testing bipartiteness：測試一張圖是不是 bipartite。",
+    "Bipartite graph（二分圖）是一種特別的 graph。我們的任務是：給一張圖，判定它是不是符合 bipartite 的性質。",
+    "Bipartite 顧名思義是「分成兩部分」：點可以很明顯地分成兩個 set，這裡叫 X 和 Y。",
+    "Edge 只存在於跨越兩組之間：每一條 edge 的兩個端點，一定一個在 X、一個在 Y。",
+    "同一組裡面的點彼此之間沒有關係，也就是沒有 edge。",
+    "所以表示一個 bipartite graph 時，用三個集合：兩組點 X、Y，再加上 edge 的集合 E。",
+    "右上角是一些小例子：五個點的 bipartite graph 可以長成好幾種樣子，例如 2+3 全連，或一個點連四個點。",
+    "Bipartite graph 我們之前看過，常常用在 matching（配對）的問題上。",
+    "例如把 X 當作男生、Y 當作女生，一條 edge 表示這一對男女有機會配成一對。",
+    "如果適當地選出最多條 edge，讓大家兩兩配對（每人最多一對），就是 maximum cardinality bipartite matching 問題。這裡選到三對。"
+   ]
+  },
+  {
+   "title": "Bipartite ⇔ two coloring；odd cycle 塗不成",
+   "scene": "graphjiang2-bip-color",
+   "points": [
+    {
+     "text": "已知是 bipartite 時可以畫得很漂亮；但隨便給一張圖，眼睛很難看出是不是。",
+     "t": 710
+    },
+    {
+     "text": "判定 bipartite 等同於幫點塗色：每條 edge 兩端不同色，塗得成就是 bipartite → two coloring 問題（two colorable）。",
+     "t": 776
+    },
+    {
+     "text": "例子的圖重畫一下就是 bipartite；三個點兩兩相連（三角形）則一定塗不成。",
+     "t": 847
+    },
+    {
+     "text": "可以證明：bipartite graph 裡不會有 odd cycle（edge 數為奇數的 cycle，例如 3、5、7 條）。",
+     "t": 912
+    }
+   ],
+   "cues": [
+    709.8,
+    743,
+    776,
+    786.4,
+    817.5,
+    829.2,
+    847.8,
+    881.3,
+    911.8,
+    927.6
+   ],
+   "explain": [
+    "如果我們已經知道一張圖是 bipartite，就可以畫得很美：上面一組、下面一組，edge 全部跨組。",
+    "但沒有人保證圖會畫得這麼乖。同一張圖隨便畫成這樣，第一眼就看不出來它是不是 bipartite。",
+    "老師的想法：判定 bipartite，其實等同於幫這些點「塗色」。",
+    "把一組（男生）塗藍、另一組（女生）塗紅，那每一條 edge 的兩端一定是一藍一紅。",
+    "反過來，如果能幫一張圖塗兩色，讓每條 edge 兩端顏色都不同，塗色順利完成，這張圖就能變成 bipartite graph。",
+    "所以 testing bipartite 變成 two coloring 問題：用兩種顏色塗一張圖。塗得成功，就說這張圖是 two colorable。",
+    "這張圖實際上就是 bipartite：把 2、5、7 排一排，3、1 不動，6 和 4 翻過去，就是剛剛那張漂亮的圖，其實一模一樣。",
+    "右邊這個是三個點、兩兩都有 edge。不管怎麼塗，一定會有一條 edge 的兩端同色，所以不是 bipartite。",
+    "三條 edge 連成的 cycle 是最簡單的例子。可以證明：如果 graph 是 bipartite，裡面就不會有 odd cycle。",
+    "Odd cycle（奇數 cycle）就是 edge 數是奇數的 cycle，像 3、5、7 條。沿著圈紅藍交替塗，繞回起點時一定撞色，所以塗不成。"
+   ]
+  },
+  {
+   "title": "BFS 著色 procedure",
+   "scene": "graphjiang2-bip-procedure",
+   "points": [
+    {
+     "text": "目標：用紅、藍兩色塗圖，維持每條 edge 兩端不同色；做法就是 BFS 配上塗色。",
+     "t": 952
+    },
+    {
+     "text": "先假設 G 是 connected；不是的話，各個 connected component 分開著色（彼此沒有 edge）。",
+     "t": 1009
+    },
+    {
+     "text": "隨便選一個點當 BFS 起點塗紅（L0），鄰居塗藍（L1），再下一層塗紅（L2）…",
+     "t": 1055
+    },
+    {
+     "text": "BFS 的 edge 只連上下兩層或同一層；check 時若另一端已塗且同色 → 不是 bipartite。",
+     "t": 1124
+    },
+    {
+     "text": "一直 repeat 到所有 edge 處理完都順利 → bipartite，並可依著色結果畫成 bipartite 形式。",
+     "t": 1161
+    }
+   ],
+   "cues": [
+    952,
+    981,
+    997,
+    1009.2,
+    1020.8,
+    1055.8,
+    1068.5,
+    1083.8,
+    1088.8,
+    1091.8,
+    1097.8,
+    1112.8,
+    1124,
+    1144.8,
+    1161.5,
+    1178.8
+   ],
+   "explain": [
+    "接下來要真正做塗色：給一張 graph，用藍色跟紅色，透過某種機制讓塗色成功。",
+    "重點是維持：每一條 edge 的兩個端點顏色不同。塗得成，就說它是 bipartite graph。",
+    "這個 procedure 很單純，基本形式就是 BFS，只是在 BFS 的過程中配上塗色的動作。",
+    "先假設給定的 graph 是 connected（任兩點之間都有 path），讓接下來的 procedure 比較好處理。",
+    "如果不是 connected 也不難：它會分成好幾個 connected component（連通的一塊一塊），它們之間沒有 edge、不會互相影響，分開著色就好。",
+    "反正每個點都要塗顏色，起點選哪個都沒關係，隨便選一個。",
+    "選好的起點就是 BFS 的 source（源頭），先把它塗成紅色。它在第 0 層，叫 L0。",
+    "跟它有 edge 相連的鄰居就是下一層 L1，塗成藍色。",
+    "藍色的鄰居（L2）再塗回紅色，然後反覆這樣做下去。",
+    "如果在 check edge 的時候發現塗色不成功，就失敗：這張圖不是 bipartite。",
+    "如果能順利地全部塗完，就沒有問題，做完了。",
+    "整理一下：L0 塗紅、L1 塗藍、L2 塗紅，依此類推，偶數層紅、奇數層藍。",
+    "做 BFS 時，edge 只有兩種情況：連接上下相鄰兩層，或連接同一層（橘色那條）。",
+    "Check 每條 edge 時順便檢查：如果另一端已經塗過，而且顏色跟我現在要塗的一樣（e、f 都是紅），它就不是 bipartite，直接結束。",
+    "一直 repeat，直到所有 edge 都處理完。如果著色過程都很順利，這張圖就是 bipartite graph。",
+    "而且根據著色結果，可以把這張圖轉成 bipartite graph 的形式：紅色一排、藍色一排。"
+   ]
+  },
+  {
+   "title": "例子：從 6 開始塗色；實作 = BFS 每層著色",
+   "scene": "graphjiang2-bip-example",
+   "points": [
+    {
+     "text": "例子：random pick 6 塗紅，鄰居塗藍，再下一層塗紅…",
+     "t": 1187
+    },
+    {
+     "text": "遇到連回已塗過的點：check 顏色相反就是 safe edge。全部順利 → bipartite。",
+     "t": 1208
+    },
+    {
+     "text": "實作：在原本的 BFS 中，每一層 label 時順便著色即可。",
+     "t": 1266
+    }
+   ],
+   "cues": [
+    1189.7,
+    1196.8,
+    1200.5,
+    1203.4,
+    1208.5,
+    1221.8,
+    1233.4,
+    1238.8,
+    1245.8,
+    1268.3,
+    1292.8
+   ],
+   "explain": [
+    "來試試看：先 random pick 一個點，就選 6。（圖的 edge 是依講解重建的示意。）",
+    "先把 6 塗成紅色，它是 L0。",
+    "6 的鄰居 2、7 塗成藍色，這是 L1。",
+    "藍色的鄰居 1、4、3 再塗成紅色，這是 L2。",
+    "要注意：這些人也有鄰居會反過來連到已經塗過的人，例如 4 也連到 7。",
+    "這時候做 check 就好：另一端已經塗過，而且顏色跟我相反（一紅一藍），那就是 safe 的 edge。",
+    "繼續塗：5 是紅色點的鄰居，塗成藍色，這樣就塗完了。",
+    "塗的過程中都很順利，所以它是一個 bipartite graph。",
+    "根據著色結果，就可以把它畫成 bipartite graph 的形式：藍色一排、紅色一排。",
+    "怎麼 implement？剛剛講的其實就隱含了：這個 procedure 可以配合 BFS 的 procedure 完成。右邊是概念上的寫法。",
+    "原來的 BFS 只要在每一層 label 點的時候，額外加一個著色的動作（塗跟上一層相反的顏色），就結束了。"
+   ]
+  },
+  {
+   "title": "正確性證明：同層 edge ⇒ odd cycle",
+   "scene": "graphjiang2-bip-proof",
+   "points": [
+    {
+     "text": "要證明紅藍交替著色是正確的：G connected，做 BFS 得到 L0、L1…，則以下兩者恰有一個成立。",
+     "t": 1313
+    },
+    {
+     "text": "(i) 沒有 edge 連同一層 → bipartite；(ii) 有 edge 連同一層 → G 有 odd cycle → 不是 bipartite。",
+     "t": 1382
+    },
+    {
+     "text": "BFS property：任一條 edge 兩端的 layer 最多差 1，所以只有同層或相鄰層兩種；Case 1 trivial。",
+     "t": 1483
+    },
+    {
+     "text": "Case 2：edge (x, y) 都在 Lj；往回推到 lowest common ancestor z（在 Li）。",
+     "t": 1570
+    },
+    {
+     "text": "Cycle x → y → z → x 的 edge 數 = 1 + 2(j − i)，是奇數 → odd cycle → 不是 bipartite。",
+     "t": 1719
+    }
+   ],
+   "cues": [
+    1313,
+    1340.1,
+    1346.8,
+    1370.2,
+    1381.8,
+    1403.6,
+    1438.4,
+    1483.7,
+    1505.6,
+    1537.8,
+    1570.5,
+    1591.8,
+    1628,
+    1648.5,
+    1697.8,
+    1712.8,
+    1718.8,
+    1735.8,
+    1738.8,
+    1748.8,
+    1766.8
+   ],
+   "explain": [
+    "剛剛的例子很小，眼睛看好像會成功。但所有的 case 都會成功嗎？需要證明。",
+    "所以要 proof：證明紅藍交替著色這個 procedure 的正確性。",
+    "給定一個 connected graph G。因為實作配合 BFS，做 BFS 時就會產生 L0、L1、L2… 的分層。",
+    "要證明的是：下面這兩件事一定有一個成立。",
+    "第一種：沒有任何 edge 連接同一層的兩個點。這時可以判定 G 是 bipartite。左邊的小圖就是這種。",
+    "第二種：至少有一條 edge 連接 BFS 同一層的兩個點（右邊紅色那條）。這時可以推出 G 一定有 odd cycle，所以不是 bipartite。",
+    "左邊：做完 BFS 後，edge 剛好只連相鄰兩層；右邊：不巧有一條紅色 edge 連同一層的兩個點。",
+    "為什麼這樣分？因為以前證過 BFS 的 property：任何一條 edge 兩個端點的 layer 數，最多差 1。",
+    "也就是說，一條 edge 要嘛連同一層、要嘛連相鄰層，只有這兩種 case。",
+    "Case 1 很 trivial：每條 edge 都連相鄰層，而相鄰層本來就給不同顏色，紅藍交替一定成功。",
+    "重點是 Case 2：有同層 edge 時，這張圖一定沒辦法 two coloring。接下來證明它。",
+    "假設有一條 edge 連 x、y，兩點都在同一層，一般化地叫 Lj。",
+    "BFS 做完會有一棵 tree。從 x 和 y 各自沿著 tree 往回推向 source s，兩條路一定會在某處匯集。",
+    "最早遇到的那個共同祖先叫 z，稱為 lowest common ancestor（最低的共同祖先），因為它是最底層、而且共同的祖先。",
+    "圖上 x 到 z、y 到 z 的每一段，其實可能不只一條 edge，而是一條 path（一條或數條 edge）。",
+    "假設 z 所在的 layer 是 Li（i 比 j 小）。",
+    "這樣就找到一個 cycle：x 到 y，y 往上到 z，z 再往下回到 x。",
+    "數一數這個 cycle 有幾條 edge：x–y 這段是 1 條。",
+    "y 到 z 每往上一步就上一層，所以是 j − i 條；z 到 x 一樣是 j − i 條。",
+    "同樣的數字有兩份，2(j − i) 一定是偶數；偶數再加 1 就是奇數。不管 i、j 是多少都成立。",
+    "所以 Case 2 一定存在 odd cycle。有 odd cycle 就不可能塗成兩色，也就不是 bipartite graph。證明完成。"
+   ]
+  },
+  {
+   "title": "延伸：k-coloring 與先進製程 mask 的多次曝光",
+   "scene": "graphjiang2-coloring-mask",
+   "points": [
+    {
+     "text": "Bipartite test 等同於 two coloring；延伸到三色、四色難度瞬間變高，3-coloring 是 NP-complete。",
+     "t": 1779
+    },
+    {
+     "text": "Planar graph（攤平後 edge 不交錯）上 four coloring 做得到；但 3-coloring 在 general graph 很難。",
+     "t": 1852
+    },
+    {
+     "text": "應用：先進製程的 mask 圖形太小太近、無法單次曝光，拆成兩次（三次、四次）曝光，每多一次錢就 double。",
+     "t": 1882
+    },
+    {
+     "text": "每個圖形是 node，太靠近就連 edge；two colorable → 兩次曝光。常遇到 odd cycle → 改三色、四色。",
+     "t": 2017
+    }
+   ],
+   "cues": [
+    1778.8,
+    1799.8,
+    1815.6,
+    1827.8,
+    1851.8,
+    1872.8,
+    1881.8,
+    1910.8,
+    1956.8,
+    1974.8,
+    1991.8,
+    2016.8,
+    2023.8,
+    2042.4,
+    2059.8,
+    2074.8,
+    2089.6
+   ],
+   "explain": [
+    "剛剛做的 BFS application 是測試一張圖是不是 bipartite，這等同於對 graph 做 two coloring（塗兩色）。",
+    "這個問題還可以延伸：要塗三種、四種、五種顏色呢？難度會瞬間變得很高。",
+    "判斷一張圖能不能成功塗成三種顏色，是很困難的問題，屬於 NP-complete（目前沒有已知的有效率解法）。",
+    "規則一樣：每個點塗三色之一，但所有 edge 的兩端都要不同色。這類問題叫 coloring problem。左邊這張圖用三色就塗得成。",
+    "Planar graph（平面圖）是能攤在平面上、所有 edge 都不交錯的圖。在 planar graph 上，四色著色是做得到的。",
+    "但是三色著色在一般的 graph 上，是很難做到的。",
+    "這類問題近年在 VLSI 很常用：TSMC、UMC 這些 foundry（晶圓代工廠）做先進製程時，要生產 mask（光罩）。",
+    "Mask 上的 polygon（畫的金屬線等圖形）尺寸太小，很難靠一次曝光就把一整層的圖形曝出來。",
+    "因為光的能力有限：圖形之間的距離要超過某個值，才能成功曝出來；比這更近的兩個圖形，單次曝光會失敗。",
+    "比較貴的辦法：把一層 mask 拆成兩組，曝兩次；後來還有三次、甚至四次。",
+    "每多曝一次，錢就 double，mask 非常貴。",
+    "這個問題可以 model 成 graph：每一個小圖形就是一個 node。",
+    "兩個圖形如果太靠近、沒辦法在同一次曝光完成，就在它們之間畫一條 edge。",
+    "接著做 two coloring 測試。如果是 two colorable，這些圖形就能拆成兩個獨立的 set，用兩次曝光完成。",
+    "但兩種顏色常常失敗，因為常出現 odd cycle（這裡 P3、P4、P5 三個互相太近）。所以多花點錢，改塗三種顏色。",
+    "最近幾年的 paper 甚至可以塗四種顏色，就是口袋夠深繼續掏錢。",
+    "可以看到：graph 上有些問題看起來很簡單、形式很單純，卻能用來處理完全不相干的實際問題，應用很廣。"
+   ]
+  },
+  {
+   "title": "Directed graph 的 connectivity",
+   "scene": "graphjiang2-dir-connect",
+   "points": [
+    {
+     "text": "Undirected graph 的 edge 是雙向的，只要看 connected component；directed graph 的 edge 有方向，要求更嚴。",
+     "t": 2121
+    },
+    {
+     "text": "2 → 3 有 edge，2 可以 reach 3；但 3 能不能 reach 2 要另外找 path。兩個方向都有 path 才算 connected。",
+     "t": 2175
+    },
+    {
+     "text": "Directed graph 常對每個 vertex maintain 兩條 list（outgoing、incoming）；BFS／DFS 要順著 edge 方向走。",
+     "t": 2256
+    },
+    {
+     "text": "例子：從 1 做 BFS，看起來 7 個點連在一起，但永遠到不了 2、3：edge 方向對 connectivity 影響很大。",
+     "t": 2310
+    }
+   ],
+   "cues": [
+    2120.8,
+    2125.8,
+    2157.8,
+    2174.8,
+    2192,
+    2204.7,
+    2255.8,
+    2285.7,
+    2309.7,
+    2321.8,
+    2327.8,
+    2330.9,
+    2339.8,
+    2349.8,
+    2359.3
+   ],
+   "explain": [
+    "接下來探討 directed graph（有向圖）上的 connectivity（連通性）。",
+    "之前大多在討論 undirected graph。它的 edge 是雙向的，只要找出 connected component，就知道哪些人彼此 connected。",
+    "Directed graph 比較困難，要求比較高，因為 edge 有方向性。",
+    "例如要判定 2 和 3 是不是 connected：2 到 3 有一條 edge，所以 2 可以 reach（到達）3。",
+    "但 3 可不可以 reach 到 2？要想辦法找看看，有沒有一條從 3 走到 2 的 path。",
+    "所以在 directed graph 裡要求很嚴格：要判定兩種方向都存在 path，才能說這兩點是 connected。",
+    "表示法也會調整：如果常常需要射進來（incoming）和射出去（outgoing）的 edge，就對每個 vertex 維護兩條 list。",
+    "在 directed graph 上做 BFS 或 DFS 要講究方向：只有順著 edge 的方向，才看得到對方。考慮進去後 BFS、DFS 仍然可以完成。",
+    "舉例：這是一張 directed graph，先從 1 開始 traversal。",
+    "第一層可以 reach 到 4 和 5。",
+    "接下來可以 reach 到 6。",
+    "再做一次，reach 到 7。",
+    "剛剛猛然一看，會覺得這七個點是 connected 的一大塊。",
+    "但講究方向之後就會發現：從 1 出發不管怎麼走，永遠看不到 2 和 3，沒辦法 reach 到它們。",
+    "可以明顯看到：edge 的方向，對 connectivity 的影響很大。"
+   ]
+  },
+  {
+   "title": "Strong connectivity 與 strongly connected component",
+   "scene": "graphjiang2-strong-def",
+   "points": [
+    {
+     "text": "Directed graph 考慮 strong connectivity：u 到 v、v 到 u 都有 path（mutually reachable）才算 strongly connected。",
+     "t": 2366
+    },
+    {
+     "text": "整張 directed graph strongly connected：任兩點都 mutually reachable；大部分 directed graph 不是。",
+     "t": 2438
+    },
+    {
+     "text": "可以把 directed graph 拆成幾部分，每部分自己 strongly connected：strongly connected component（SCC）。",
+     "t": 2499
+    }
+   ],
+   "cues": [
+    2365.8,
+    2383.8,
+    2397.8,
+    2414.8,
+    2431.8,
+    2437.8,
+    2458.8,
+    2489.8,
+    2498.8,
+    2514.8
+   ],
+   "explain": [
+    "在 directed graph 裡，考慮的不是 connected component，而是 strong connectivity（強連通）。",
+    "為什麼叫 strong？因為它要求雙向：互相都可以到達對方，叫 mutually reachable。",
+    "示意圖：給兩點 u、v。首先 u 存在一條 path 可以到達 v。",
+    "同時也存在一條 path，可以從 v 回到 u。走得過去、又走得回來。",
+    "可去可回，這兩點才是 mutually reachable，也就是 strongly connected。",
+    "一張 directed graph 要說是 strongly connected，要求很嚴格：圖裡任何兩點之間都要 mutually reachable。右邊這張繞成圈的圖就是。",
+    "如果有某些點沒辦法跟其他人互相到達，例如 e 進得來卻回不去，整張圖就不是 strongly connected。",
+    "一般來說，大部分 directed graph 都是這種狀況：很難要求任兩點之間都 mutually reachable。",
+    "但可以把 directed graph 拆成一些部分，使得每一部分自己符合 strongly connected 的特性。",
+    "這些部分叫 strongly connected component（強連通元件），簡稱 SCC。這裡拆成 {a, b, c, d} 和 {e}。"
+   ]
+  },
+  {
+   "title": "Lemma：mutually reachable 有遞移性；SCC 要 maximal",
+   "scene": "graphjiang2-transitive",
+   "points": [
+    {
+     "text": "Lemma（transitive）：u、v mutually reachable 且 v、w mutually reachable ⇒ u、w mutually reachable。",
+     "t": 2535
+    },
+    {
+     "text": "SCC 跟 connected component 一樣要 maximal：再加任何一個點就會破壞「任兩點 mutually reachable」。",
+     "t": 2602
+    }
+   ],
+   "cues": [
+    2535,
+    2546,
+    2548.8,
+    2551,
+    2554.8,
+    2562.8,
+    2569.8,
+    2577,
+    2589.4,
+    2602,
+    2622.4,
+    2628.8,
+    2648.2
+   ],
+   "explain": [
+    "這裡有一個 lemma（引理），很容易想像也很容易證明，雖然簡單但很重要。",
+    "它講的是 transitive（遞移）的概念：關係可以一個接一個傳下去。",
+    "條件一：u 和 v 是 mutually reachable。",
+    "條件二：v 和 w 也是 mutually reachable。",
+    "結論：u 和 w 也是 mutually reachable。",
+    "畫圖就看得出來：u 和 v 之間有一條 path 過去，也有一條 path 回來（藍色）。",
+    "v 和 w 之間也是：有 path 過去、有 path 回來（綠色）。",
+    "把它們併在一起：u 經過 v 可以走到 w，w 經過 v 也可以走回 u。所以 u、w 可去可回。",
+    "這就是 transitive 的概念。透過它，就有機會找出 directed graph 中的 strongly connected component。",
+    "跟之前的 connected component 很像：SCC 考慮的是最大的形式（maximal）。",
+    "我們不是只看一小撮人彼此是不是 mutually reachable。",
+    "Maximal 的意思：這個 component 已經長到最大，不管再多加哪一個點（例如只有 w → x、回不來的 x），都會破壞任兩點 mutually reachable。",
+    "如果還能再加上另一個點，仍然維持 mutually reachable（例如 {u, v} 還能加 w），那就不是最大，不算 SCC。"
+   ]
+  },
+  {
+   "title": "Linear time 判定 strongly connected",
+   "scene": "graphjiang2-sc-test",
+   "points": [
+    {
+     "text": "問題：給定 directed graph，能不能在 linear time 判定它是 strongly connected？可以，run 兩次 BFS。",
+     "t": 2660
+    },
+    {
+     "text": "Run 1：從任一點 s 在 G 上 BFS，得到 R（s 到得了誰）。",
+     "t": 2797
+    },
+    {
+     "text": "產生 G^rev（點一樣、edge 全翻轉），從 s 在 G^rev 上 BFS 得 R^rev（誰走得回 s）。R = R^rev = V ⇒ strongly connected。",
+     "t": 2816
+    },
+    {
+     "text": "BFS、翻轉、BFS、比對都是 linear time，總共 O(n + m)。",
+     "t": 2919
+    },
+    {
+     "text": "正確性：原圖中 u 走回 s 的 path，在翻轉圖中變成 s 走到 u 的 path。",
+     "t": 2953
+    },
+    {
+     "text": "相關問題：把 directed graph 拆成（最大的）SCC，複雜度一樣，可用兩次 DFS 或兩次 BFS 做到。",
+     "t": 3015
+    }
+   ],
+   "cues": [
+    2660.4,
+    2683.8,
+    2692.8,
+    2724.8,
+    2764,
+    2769.8,
+    2781.8,
+    2796.8,
+    2816.6,
+    2845.8,
+    2875.8,
+    2893.8,
+    2911.8,
+    2919.4,
+    2924,
+    2929.8,
+    2933.4,
+    2941.8,
+    2953.6,
+    2972.8,
+    2986.8,
+    3008.1,
+    3014.8,
+    3027.1,
+    3046.8
+   ],
+   "explain": [
+    "比拆解 SCC 簡單一點的基本問題：給定一個 directed graph，判定它本身是不是 strongly connected。",
+    "而且希望在 linear time（跟圖的大小成正比的時間）內判定，其實是可以的。",
+    "做法很簡單：run 兩次 BFS 就可以確定。",
+    "想法：如果這張圖是 strongly connected，任兩點都 mutually reachable。所以任選一個點 s 做 BFS，一定可以 reach 到所有人。",
+    "做完之後，就知道從 s 出發可以 reach 到哪些人。",
+    "但還差一個方向：mutually reachable 還要求對方也走得回 s。",
+    "笨方法：到達的每個人都做一次 BFS，看能不能走回來。這樣太笨了，時間不會是 linear。",
+    "所以第一個 run：從 s 出發對 G 做 BFS，可以 reach 到的人存進 set R。",
+    "接下來要判定誰走得回來。產生一個跟 G 很像、但方向相反的 graph，叫 G 的 reverse（G^rev）：點一模一樣，edge 的箭頭全部翻轉。",
+    "因為方向全反了，原本「d 走回 s」的 path（d → a → b → s），在 G^rev 上就變成「s 走到 d」（s → b → a → d）。兩者等價。",
+    "所以在 G^rev 上一樣從 s 做 BFS，reach 到的人存進 R^rev。R^rev 代表的是：哪些人可以走回 s。",
+    "判定是不是 strongly connected：確認 R 和 R^rev 這兩個 set 是不是一模一樣，而且剛好等於 G 的 vertex set V。",
+    "這三個完全一樣，這個 graph 就是 strongly connected。",
+    "這個判定是 linear time：BFS 是 O(n + m)。",
+    "產生翻轉的 graph，也是 linear time。",
+    "在翻轉的 graph 上做 BFS，linear time。",
+    "判定 set 是否相同：一個一個數人頭，scan 一次，也是 linear time。",
+    "所以整體時間複雜度是 O(n + m)。",
+    "正確性很容易證明。回到原來的 G：第一次 BFS 找的是從 s 出發，透過紅色這些 path 可以到達的人。",
+    "第二次要找的是有哪些人可以走回來，例如藍色這條 d → a → b → s。直接找很麻煩。",
+    "所以把所有 edge 翻轉：原本從 u 走回 s 的 path，在翻轉的 graph 中變成從 s 走到 u。",
+    "於是在翻轉的 graph 上做 BFS 就能找到對方，最後再測試兩個 set 是不是一模一樣就結束了。",
+    "很相關的問題：給一個 directed graph，能不能把它拆成一些 strongly connected component？當然可以。",
+    "這門課沒有特別講這個 procedure，大家可以回去想。記得要拆成最大（maximal）的形式。",
+    "它的複雜度跟這個一樣，概念上可以用兩次 DFS 做到，也可以用兩次 BFS 做到。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "江老師比較 adjacency matrix 與 list：查詢「一條給定的 edge 是否存在」哪個快？",
+   "opts": [
+    "matrix，O(1)",
+    "list，O(1)",
+    "兩者都是 O(n + m)",
+    "list，O(log n)"
+   ],
+   "ans": "matrix，O(1)",
+   "why": "Matrix 直接 access A[u][v] 那格；list 要掃完 u 的那條 list。"
+  },
+  {
+   "q": "用 adjacency matrix 畫出（traverse）整張圖的時間？",
+   "opts": [
+    "O(n²)",
+    "O(n + m)",
+    "O(m)",
+    "O(n log n)"
+   ],
+   "ans": "O(n²)",
+   "why": "不管有沒有 edge，每一格都要確認；adjacency list 則是 O(n + m)。"
+  },
+  {
+   "q": "用 BFS 做 bipartite 測試時，哪種情況表示不是 bipartite？",
+   "opts": [
+    "有一條 edge 的兩端在 BFS 的同一層",
+    "有一條 edge 連相鄰兩層",
+    "BFS tree 的高度是奇數",
+    "graph 不是 connected"
+   ],
+   "ans": "有一條 edge 的兩端在 BFS 的同一層",
+   "why": "同層 edge 兩端同色；而且可以找到長度 1 + 2(j − i) 的 odd cycle。不 connected 只要各 component 分開塗。"
+  },
+  {
+   "q": "證明中，同層 edge (x, y) 在 Lj、lowest common ancestor z 在 Li，找到的 cycle 長度是？",
+   "opts": [
+    "2(j − i) + 1",
+    "2(j − i)",
+    "j − i + 1",
+    "j + i"
+   ],
+   "ans": "2(j − i) + 1",
+   "why": "y 到 z、z 到 x 各 j − i 條，再加 x–y 一條，必為奇數。"
+  },
+  {
+   "q": "下列哪一種 graph 一定不是 bipartite？",
+   "opts": [
+    "含有 5 條 edge 組成的 cycle",
+    "一棵 tree",
+    "含有 4 條 edge 組成的 cycle",
+    "沒有任何 edge 的 graph"
+   ],
+   "ans": "含有 5 條 edge 組成的 cycle",
+   "why": "Bipartite graph 不會有 odd cycle；tree 和偶數 cycle 都能塗兩色。"
+  },
+  {
+   "q": "判定一張 graph 能不能塗成三種顏色（3-coloring），老師說屬於？",
+   "opts": [
+    "NP-complete 的困難問題",
+    "用 BFS 就能 linear time 解",
+    "只要 O(n²) 的貪婪法",
+    "planar graph 上才有定義"
+   ],
+   "ans": "NP-complete 的困難問題",
+   "why": "2-coloring 用 BFS 就能判定；3-coloring 在 general graph 是 NP-complete。"
+  },
+  {
+   "q": "Linear time 判定 directed graph G 是否 strongly connected 的做法是？",
+   "opts": [
+    "從 s 在 G 上 BFS 得 R，再從 s 在 G^rev 上 BFS 得 R^rev，檢查 R = R^rev = V",
+    "從每個點各做一次 BFS",
+    "只要從 s 在 G 上做一次 BFS 到達所有點即可",
+    "對 G 做 topological sort"
+   ],
+   "ans": "從 s 在 G 上 BFS 得 R，再從 s 在 G^rev 上 BFS 得 R^rev，檢查 R = R^rev = V",
+   "why": "G^rev 上 s 到得了 u ⇔ G 上 u 走得回 s；兩次 BFS 加翻轉都是 O(n + m)。"
+  },
+  {
+   "q": "u、v mutually reachable 且 v、w mutually reachable，可以推得？",
+   "opts": [
+    "u、w mutually reachable",
+    "u → w 有一條 edge",
+    "u、v、w 形成 odd cycle",
+    "沒有任何結論"
+   ],
+   "ans": "u、w mutually reachable",
+   "why": "這是 transitive 的 lemma：u 經 v 到 w，w 經 v 回 u。"
+  }
+ ]
+}
