@@ -7493,3 +7493,8 @@ body#appRoot #sec-subjects .ss { margin-top: 6px !important; }
 @media (min-width: 760px) { body#appRoot #sec-schedule .cal-header-card { padding-right: 84px !important; } }
 /* 六科：最下面的科目說明（.tip）不要 */
 body#appRoot #main .sp .tip { display: none !important; }
+/* 六科：不要副標；標題和科目列之間 16px */
+body#appRoot #sec-subjects .ss { display: none !important; }
+body#appRoot #sec-subjects .sh { margin-bottom: 0 !important; }
+body#appRoot #main #sec-subjects.on > .stabs { margin-top: 16px !important; }
+@media (min-width: 1000px) { body#appRoot #main #sec-subjects.on > .stabs { margin: 16px 0 0 !important; } }
