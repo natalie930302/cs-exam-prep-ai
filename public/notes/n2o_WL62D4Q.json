@@ -1,0 +1,446 @@
+{
+ "video": "n2o_WL62D4Q",
+ "label": "清大周志遠 第16D講 Scheduling Algorithms",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "衡量排程的指標",
+   "scene": "sch-16d-metrics",
+   "cues": [
+    16.4,
+    43.4,
+    51.7,
+    83.4,
+    99.4,
+    127.9,
+    152.9,
+    183.9,
+    198.6,
+    233.1,
+    290.5,
+    317.6,
+    357.8,
+    372.5,
+    398.1
+   ],
+   "explain": [
+    "上一段講到 dispatcher 負責換人，scheduler 只負責選。接下來要一個一個介紹排程演算法，但在比較之前，要先講清楚「目標是什麼」。",
+    "衡量一個 scheduling 好不好，有好幾種 performance metric（效能指標）：最上面這五個。下面一個一個看。",
+    "第一個：CPU utilization（CPU 使用率）。打開 Linux 的 top 或 Windows 的工作管理員就看得到。如果使用率很低、電腦卻很慢，通常代表 OS 管理沒做好。",
+    "理論上使用率在 0% 到 100% 之間，一般系統大約落在 40% 到 90%，到 90% 就算很高了。",
+    "第二個：throughput（產出量）。CPU 很忙不代表在做有意義的事，所以計算型的系統更在乎「每單位時間完成多少工作」。",
+    "對 CPU 排程來說，工作量就用「完成幾個 process」來算。例如丟進 100 個 process，看每秒平均能完整執行完幾個（綠色區就是完成的）。",
+    "這個數字跟輸入有關：如果每個 process 都很大，throughput 自然就小。它沒有像 0～100% 那樣的絕對標準，只能拿同樣的輸入比較不同電腦或方法。",
+    "接下來三個「時間」，跟 CPU scheduler 關係最密切，也最好計算。下面這條是一個 job 從進來到結束的時間軸（示意）：灰色是在 ready queue 排隊，藍色在用 CPU，橘色在做 I/O。",
+    "turnaround time（周轉時間）：從使用者 submit（送出）這個 process，到它整個結束的時間。這是單一 job、使用者的角度，當然越短越好。這裡是 9。",
+    "waiting time（等待時間）：程式明明可以跑，卻因為別人在用 CPU 而在 ready queue 裡等的時間總和。紅色兩段加起來 2 + 1 = 3。注意做 I/O 的時間不算。",
+    "response time（回應時間）：從 submit 到「第一個 CPU burst 開始執行」的時間，也就是第一次有反應。這裡是 2。",
+    "差別在哪？一個程式有好幾個 CPU burst。response time 只看第一次開始；waiting time 要等全部做完，把每一次在 ready queue 等的都加起來。",
+    "像打字、點按鈕這種 interactive（互動式）系統，最重視 response time：只要有回應，使用者就覺得它在動了。",
+    "至於 waiting time，有一個演算法可以理論上證明是最短的：Shortest Job First（最短的先做），等一下就會看到。",
+    "前兩個（utilization、throughput）是整個系統的角度；比較不同演算法時，我們主要看 turnaround、waiting、response 這三個單一 job 角度的指標。"
+   ],
+   "points": [
+    {
+     "t": 14,
+     "text": "dispatcher 稍微知道就好；介紹演算法前，先定義目標：用哪些 performance metrics 衡量 scheduling 好壞。"
+    },
+    {
+     "t": 51,
+     "text": "CPU utilization：Linux top / Windows 工作管理員看得到；理論 0～100%，一般系統 40～90%。"
+    },
+    {
+     "t": 99,
+     "text": "Throughput：每單位時間完成的工作量（例如每秒完成幾個 process）；跟 workload 有關，只能用同樣的輸入比較。"
+    },
+    {
+     "t": 184,
+     "text": "三個跟 CPU scheduler 最相關的時間：turnaround time（submit 到整個結束）、waiting time（在 ready queue 等的總時間）、response time（submit 到第一個 CPU burst 開始）。"
+    },
+    {
+     "t": 317,
+     "text": "response 只看第一次；waiting 要把所有 burst 前在 ready queue 等的時間加總，兩者不同。interactive 系統最重視 response。"
+    },
+    {
+     "t": 372,
+     "text": "waiting time 有 optimal 演算法：Shortest Job First；比較演算法時看 turnaround、waiting、response 這三個 job 角度的指標。"
+    }
+   ],
+   "trap": "waiting time 只算在 ready queue 等的時間，做 I/O 的時間不算；turnaround = 完成 − 到達。"
+  },
+  {
+   "title": "FCFS：先來先做",
+   "scene": "sch-16d-fcfs",
+   "cues": [
+    421.6,
+    435.3,
+    465.4,
+    529.5,
+    536.6,
+    544.6,
+    573,
+    588.8,
+    596.5,
+    629.2,
+    689.2,
+    701.3,
+    744.8,
+    769
+   ],
+   "explain": [
+    "第一個演算法：first come, first serve（FCFS，先來先做），名字就說明了一切。",
+    "scheduler 拿到的 input：ready queue 裡有哪些 process，以及它們這一次的 CPU burst 要多久。這裡三個：P1 要 24、P2 要 3、P3 要 3，全部在第 0 秒到。",
+    "P1 只寫了一個 24，是因為簡化。真實程式有很多個 CPU burst，做完一段去做 I/O，再回來排下一段。這裡我們只模擬「現在這一刻」的這一段。",
+    "雖然都在 0 秒到，假設 P1 稍微早一點點，所以 P1 先上 CPU，一路做到 24。下方 Gantt chart 長出 P1 的藍色區塊。",
+    "這是 non-preemptive：P1 做完才換 P2（24～27），再換 P3（27～30）。",
+    "如果改成 preemptive 呢？對 FCFS 沒差：就算可以打斷，先來的還是先做，順序不會變，所以兩種結果一樣。",
+    "算 waiting time（在 ready queue 等多久）：P1 一來就跑，等 0；P2 要等 P1 做完，等 24；P3 等到 27。",
+    "平均 waiting time = (0 + 24 + 27) ÷ 3 = 17。",
+    "response time（第一次開始跑要等多久）也是 0、24、27，因為每個人只有一段 burst，第一次開始就等於全部的等待。",
+    "但如果 P1 還有第二段：做完 24 後去做 I/O 4 秒，第 28 秒回來；這時 P2、P3 還在跑，要等到 30 才輪到它。它這次等了 30 − 28 = 2，而不是 30 − 24 = 6，因為 I/O 那 4 秒不算等待。第二段長度是示意。",
+    "我們的例子只模擬一個 burst，所以 waiting time 剛好等於 response time；有多個 burst 時兩者就不一樣了。",
+    "如果在意平均等待時間，FCFS 很糟：一開始先跑一個超大的 P1，後面每個人的等待都從 24 起跳。這種「短工被長工卡住」的現象，課本叫 convoy effect（護航效應）。",
+    "同樣三個工作、同樣 0 秒到，只是順序剛好變成 P2、P3、P1：等待變成 0、3、6，平均只剩 3！短的放前面，平均等待就大幅下降。",
+    "所以 FCFS 沒有任何智慧（intelligence），表現完全看運氣：輸入一開始是長工，大家就等很久。"
+   ],
+   "points": [
+    {
+     "t": 421,
+     "text": "First come first serve：scheduler 的 input 是 ready queue 裡的 process 與各自的 burst time（例子只看一個 CPU burst）。"
+    },
+    {
+     "t": 529,
+     "text": "P1 24、P2 3、P3 3 依序到（都在 0）：P1 0～24、P2 24～27、P3 27～30；FCFS 的 preemptive / non-preemptive 結果一樣。"
+    },
+    {
+     "t": 573,
+     "text": "waiting time：0、24、27，平均 17；response time 也是 0、24、27。"
+    },
+    {
+     "t": 615,
+     "text": "若 P1 做完 24 後做 I/O 4 秒、28 回來、30 才能跑：它這次的 wait 是 2（I/O 不算 waiting）。"
+    },
+    {
+     "t": 701,
+     "text": "一開始跑很大的 process，後面的 wait 都從 24 起跳（convoy effect）；改成 P2、P3、P1 平均只要 3。"
+    },
+    {
+     "t": 769,
+     "text": "FCFS 沒有 intelligence，表現看運氣（到達順序）。"
+    }
+   ],
+   "trap": "課本把「短工被一個長工卡在後面」稱為 convoy effect。FCFS 一定是 non-preemptive 的效果。"
+  },
+  {
+   "title": "SJF（non-preemptive）",
+   "scene": "sch-16d-sjf",
+   "cues": [
+    788.5,
+    798.7,
+    811.7,
+    834.6,
+    856.1,
+    877.4,
+    893.8,
+    926.2,
+    940.7,
+    958.1,
+    1000.2,
+    1016.3,
+    1039,
+    1052.7
+   ],
+   "explain": [
+    "如果目標是讓平均等待時間最短，答案很直覺：讓最短的先做。看這兩塊：長的（6）放前面，短的就要等 6。",
+    "把它們交換（swapping）：短的放前面，長的只要等 2，總等待變小。可以證明：任何兩個 process 換成「短的在前」，總等待只會變小或不變。",
+    "這就是 Shortest Job First（SJF，最短工作優先）：最短的先執行，平均等待時間理論上一定是最小（minimal）。",
+    "要注意：SJF 也分 preemptive 和 non-preemptive。當 process 到達的時間不一樣時，兩種的排程結果就可能不同。",
+    "「最佳」在兩種裡都成立；而且 preemptive 的最佳平均等待一定小於或等於 non-preemptive 的，因為它有更多重新選擇的機會，只會更好。",
+    "例子：四個 job 到達時間不同，表格寫著到達時間（arr）和 burst 長度。一樣只模擬一個 CPU burst。先看 non-preemptive。",
+    "第 0 秒只有 P1 到，沒得選。雖然它的 7 看起來最長，但 P2、P3、P4 都還沒來，只能讓 P1 跑；而且 non-preemptive 一跑就跑完，一路到 7。期間 P2、P3、P4 陸續進 ready queue。",
+    "到了第 7 秒才有機會重新排程。這時 P2（4）、P3（1）、P4（4）都在排隊，選最短的 P3，跑 7～8。",
+    "剩下 P2 和 P4，都是 4，一樣長。這叫 tie（平手），誰先都可以；這裡讓 P2 先（8～12），再 P4（12～16）。",
+    "算 waiting time，記住是在 ready queue 等的時間：P1 一來就跑，0；P3 第 7 秒開始，可是第 4 秒才到，所以等了 7 − 4 = 3。",
+    "依此類推：P2 第 8 秒開始、第 2 秒到，等 6；P4 第 12 秒開始、第 5 秒到，等 7。平均 = (0 + 6 + 3 + 7) ÷ 4 = 4。任何 non-preemptive 演算法都不可能比 4 更小。",
+    "但這不代表它是「最好」的演算法。它只在「平均 waiting time」這個指標上最好，可能犧牲 response time 或 turnaround time。",
+    "例如看 response time：P1 是 0；P2 第 2 秒到，第 8 秒才開始，等了 6。",
+    "有些系統想要平均 response time 最小，有些要 waiting time 最小，沒有一定。要看系統需求，選不同的演算法。"
+   ],
+   "points": [
+    {
+     "t": 779,
+     "text": "要讓 average wait time 最小：讓最短的先（可用 swapping 證明），這就是 Shortest Job First，理論上 optimal。"
+    },
+    {
+     "t": 834,
+     "text": "到達時間不同時，preemptive 與 non-preemptive 結果不同；兩者各有 optimum，preemptive 的 ≤ non-preemptive 的。"
+    },
+    {
+     "t": 877,
+     "text": "例：P1(0,7)、P2(2,4)、P3(4,1)、P4(5,4)。non-preemptive：t=0 只有 P1，做到 7；t=7 選最短的 P3；P2、P4 同為 4（tie）。"
+    },
+    {
+     "t": 958,
+     "text": "WT：P1 0、P2 6、P3 3（7 − 4）、P4 7，平均 4，是 non-preemptive 中最小的。"
+    },
+    {
+     "t": 1016,
+     "text": "平均 WT 最小不代表樣樣最好，可能犧牲 response / turnaround；例如 P2 response = 8 − 2 = 6。看系統需求選演算法。"
+    }
+   ]
+  },
+  {
+   "title": "SJF（preemptive）",
+   "scene": "sch-16d-srtf",
+   "cues": [
+    1078.3,
+    1083.8,
+    1090.9,
+    1131.4,
+    1137,
+    1169.3,
+    1192,
+    1203.6,
+    1209.6,
+    1224,
+    1252,
+    1259.2
+   ],
+   "explain": [
+    "同一組 P1～P4 再跑一次，這次用 preemptive：只要有新的人進 ready queue，就重新比一次，可以打斷正在跑的人。buddy 肚子上的數字是「還剩多少要跑」。",
+    "一開始一樣是空的，只有 P1，先讓它跑。",
+    "第 2 秒 P2 進來。P2 只要 4；P1 原本要 7，已經跑了 2，只剩 5。4 比 5 短，所以把 P1 打斷（preempt），P1 回去排隊，P2 上 CPU。P1 的 CPU burst 被砍成兩半。",
+    "注意：之後再比較時，P1 的長度是剩下的 5，不是原來的 7。",
+    "第 4 秒 P3 進來，只要 1。這時 P2 原本 4、做了 2，剩 2；P1 剩 5。1 < 2 < 5，P3 最短，又打斷 P2，P3 跑 4～5。",
+    "第 5 秒 P4 進來，要 4；P3 剛好做完。比較：P2 剩 2、P4 要 4、P1 剩 5 → P2 最短，P2 跑 5～7 做完。",
+    "P2 做完，接著 P4（4）比 P1（5）短，P4 跑 7～11，最後才輪到 P1 跑 11～16。",
+    "看 Gantt chart：顏色亂掉了，P1、P2 都被切成好幾段（紅色），這就是 preemption（搶佔）發生的樣子。",
+    "平均 waiting time：P1 = 16 − 0 − 7 = 9，P2 = 1，P3 = 0，P4 = 11 − 5 − 4 = 2，平均 (9 + 1 + 0 + 2) ÷ 4 = 3。比 non-preemptive 的 4 還小，preemptive 只可能更好或一樣。",
+    "被打斷的情況，waiting time 比較難算。像 P2：第 2 秒一來就開始跑，沒等；但中間被打斷，真正結束是第 7 秒。不能只看「什麼時候開始」。",
+    "簡單的公式：waiting time = 完成時間（completion）− 到達時間（arrival）− 執行時間（burst）。P2 = 7 − 2 − 4 = 1。",
+    "這是只有一個 burst 的情況。如果有好幾個 burst，還要再減掉做 I/O 的時間，因為 I/O 不算在 ready queue 裡等。"
+   ],
+   "points": [
+    {
+     "t": 1068,
+     "text": "同一組改用 preemptive：t=2 P2 要 4 < P1 剩 5 → P1 被 preempt（剩 5，不是 7）。"
+    },
+    {
+     "t": 1137,
+     "text": "t=4 P3 要 1 < P2 剩 2 < P1 剩 5 → 再 preempt；t=5 P4 到（4），P2 剩 2 先做完，再 P4、最後 P1。"
+    },
+    {
+     "t": 1203,
+     "text": "Gantt chart 顏色亂掉 = preemption；平均 WT = (9 + 1 + 0 + 2)/4 = 3，≤ non-preemptive 的 4。"
+    },
+    {
+     "t": 1224,
+     "text": "被打斷時用公式：WT = completion − arrival − burst（P2 = 7 − 2 − 4 = 1）；多個 burst 時還要減掉 I/O 的時間。"
+    }
+   ],
+   "trap": "課本把 preemptive SJF 叫 SRTF（shortest-remaining-time-first）：比的是「剩餘時間」，不是原本的 burst。"
+  },
+  {
+   "title": "預測下一個 CPU burst",
+   "scene": "sch-16d-predict",
+   "cues": [
+    1284.3,
+    1303.3,
+    1321.4,
+    1342.2,
+    1385.2,
+    1419,
+    1456,
+    1467.5,
+    1537.3,
+    1566.1,
+    1589,
+    1610.5,
+    1621.6,
+    1637.8,
+    1659.4,
+    1669.2
+   ],
+   "explain": [
+    "SJF 雖然理論上可以證明最好，但就像很多理論上很好的演算法一樣，實際上通常做不到。",
+    "為什麼？因為我們根本不知道 burst time。排程是在程式「開始執行之前」決定的，跑之前沒人知道這一段 CPU burst 會跑多久。",
+    "解法是 approximate（近似的）SJF：根據這個程式過去的歷史，猜它下一個 CPU burst 大概多長，再拿猜的值做 SJF。",
+    "一個程式每一段 CPU burst 的長度排起來，就是一串隨時間出現的數字，叫 time series（時間序列）。我們要用前面的 t₁、t₂……猜下一個。",
+    "最簡單的方法：exponential average（指數平均）。下一次的預測 τₙ₊₁ = α × 這次實際值 tₙ + (1 − α) × 這次的預測 τₙ。α 介於 0 和 1，決定比較相信「最近一次」還是「過去的平均」。",
+    "為什麼叫「指數」？把式子展開，越久以前的觀察值，前面乘的 (1 − α) 次方越多，影響力就越來越小，像指數一樣衰減（decay）。",
+    "老師說：作業三就是要實作這個預測方法。",
+    "下面畫兩種柱子：灰色是預測值 τ，藍色是實際跑出來的 t。預測不會完全一樣，但希望會越來越貼近。",
+    "一開始（第 0 次）完全不知道這個程式的行為，只能隨便猜：先猜 10。",
+    "照這個猜測排下去跑，跑完才發現：它居然只跑了 6。",
+    "用公式更新：(6 + 10) ÷ 2 = 8，下一次猜 8。結果下一段實際只跑了 4，又更低了。",
+    "剛才猜得還不夠低，再修正一次：(4 + 8) ÷ 2 = 6。",
+    "這個例子 α = 0.5，也就是「最近一次」和「過去的預測」各佔一半，所以直接相加除以 2 就好。",
+    "下一段實際跑了 6，跟預測的 6 剛好一樣，所以下一次繼續猜 6。之後它還可能再變化，就繼續照公式修正。",
+    "只要程式的行為有規律、趨勢穩定（例如迴圈每次做的事都一樣），預測最後就會貼近真實值。",
+    "也可以換成更複雜的時間序列預測方法；如果 burst 長度隨時間有某種 pattern，就有機會猜得更準。"
+   ],
+   "points": [
+    {
+     "t": 1284,
+     "text": "SJF 理論上 optimal，實務上無法實現：排程發生在執行之前，不知道 burst time。"
+    },
+    {
+     "t": 1321,
+     "text": "Approximate SJF：用過去的 history 猜下一個 burst；burst 序列是 time series。"
+    },
+    {
+     "t": 1385,
+     "text": "Exponential average：τₙ₊₁ = α·tₙ + (1 − α)·τₙ；越舊的觀察值影響力以 (1 − α) 的次方 decay。作業三要實作。"
+    },
+    {
+     "t": 1537,
+     "text": "例（α = 0.5）：先猜 10，實際 6 → 猜 8；實際 4 → 猜 6；實際 6 → 繼續猜 6。趨勢穩定就會貼近。"
+    },
+    {
+     "t": 1669,
+     "text": "也可以套更複雜的 time series prediction 方法。"
+    }
+   ],
+   "trap": "α = 0：只看歷史（預測永遠不變）；α = 1：只看上一次實際值。恐龍書例題 τ₀ = 10、α = 1/2。"
+  },
+  {
+   "title": "Priority scheduling、starvation 與 aging",
+   "scene": "sch-16d-priority",
+   "cues": [
+    1695,
+    1705.3,
+    1732.4,
+    1743.3,
+    1758.7,
+    1797.1,
+    1805.2,
+    1819.5,
+    1853.9,
+    1866.4,
+    1889
+   ],
+   "explain": [
+    "最後一個基本演算法：priority scheduling（優先權排程）。每個 process 都給它一個 priority；畫面上 buddy 背後的金色柱子越高，代表 priority 越高。",
+    "priority 可以一建立就固定，例如 OS 自己的 process 最高、使用者的較低；也可以在執行過程中，依它的行為往上或往下調。",
+    "不管會不會變，scheduler 就是看「當下」每個人的 priority，挑最高的先做。P1 柱子最高，先上 CPU。",
+    "一樣分 preemptive 和 non-preemptive：如果執行到一半，有一個 priority 非常高的人加入系統，preemptive 版本就會打斷正在跑的人。",
+    "其實剛才的 SJF 也是 priority scheduling 的一種：它只是用「執行時間」當 priority，時間越短 priority 越高，而且會隨預測值動態改變。",
+    "之後介紹的真實作業系統，全部都是 priority scheduling，因為它最 general（通用），什麼規則都能換算成 priority。",
+    "但它有一個問題：starvation（飢餓）。P4 的 priority 很低，又一直有比它高的新 process（P5、P6）進來插隊，P4 就一直卡在那裡輪不到。",
+    "課本有個真實故事：一台 IBM 大型主機從 1967 年用到 1973 年，退役時才發現佇列裡有一個 process 從來沒被執行過，整整等了六年。",
+    "starvation 的定義：想跑卻永遠跑不到，等到超過某個程度，就像餓死一樣。priority scheduling 一定要解決這個問題。",
+    "解法很簡單，叫 aging（老化）：每過一段時間它都沒被執行，就把它的 priority 往上加。P4 的柱子慢慢長高，總有一天會升到最高。作業三也要實作這個。",
+    "P4 終於上 CPU 做完了。所以一般的 priority scheduling，都會搭配 aging 機制，才不會有人餓死。"
+   ],
+   "points": [
+    {
+     "t": 1684,
+     "text": "Priority scheduling：每個 process 一個 priority；可以固定（OS 的最高、使用者的較低），也可以依 run time 行為調整；依當下的 priority 排。"
+    },
+    {
+     "t": 1743,
+     "text": "一樣分 preemptive / non-preemptive；SJF 是 priority scheduling 的特例（priority 由執行時間決定）；真實 OS 全都是 priority scheduling。"
+    },
+    {
+     "t": 1805,
+     "text": "問題：starvation，priority 低的人一直輪不到；課本例子：IBM 機器 1973 年退役時發現 1967 年送進去的 process 從沒執行過。"
+    },
+    {
+     "t": 1866,
+     "text": "解法：aging，每過一段時間沒被執行就提高 priority；priority scheduling 一般都伴隨 aging（作業三要實作）。"
+    }
+   ],
+   "trap": "恐龍書慣例：priority 數字越小越優先；但各系統定義不同（下一講會看到 Solaris、Windows 數字越大越優先），題目要先看清楚。"
+  },
+  {
+   "title": "下課",
+   "scene": null,
+   "points": [
+    {
+     "t": 1896,
+     "text": "今天上到這裡。"
+    }
+   ],
+   "explain_idle": "這堂課結束了。可以往下做小測驗，複習各種演算法的平均 waiting time 怎麼算。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "FCFS，P1 24、P2 3、P3 3 依序在 0 到達，平均 waiting time？",
+   "opts": [
+    "17",
+    "3",
+    "24",
+    "9"
+   ],
+   "ans": "17",
+   "why": "WT = 0、24、27，平均 51/3 = 17。"
+  },
+  {
+   "q": "同一組工作改成 P2、P3、P1 的順序到達（FCFS），平均 waiting time？",
+   "opts": [
+    "3",
+    "17",
+    "6",
+    "10"
+   ],
+   "ans": "3",
+   "why": "WT = 0、3、6，平均 3；FCFS 的表現全看到達順序。"
+  },
+  {
+   "q": "P1(0,7)、P2(2,4)、P3(4,1)、P4(5,4)，non-preemptive SJF 的平均 waiting time？",
+   "opts": [
+    "4",
+    "3",
+    "6",
+    "7"
+   ],
+   "ans": "4",
+   "why": "P1 0–7、P3 7–8、P2 8–12、P4 12–16；WT = 0、6、3、7。"
+  },
+  {
+   "q": "同一組用 preemptive SJF，平均 waiting time？",
+   "opts": [
+    "3",
+    "4",
+    "2",
+    "5"
+   ],
+   "ans": "3",
+   "why": "P1 0–2、P2 2–4、P3 4–5、P2 5–7、P4 7–11、P1 11–16；WT = 9、1、0、2。"
+  },
+  {
+   "q": "Exponential average，α = 0.5，上次預測 τ = 8，實際 burst t = 4，下次預測？",
+   "opts": [
+    "6",
+    "4",
+    "8",
+    "12"
+   ],
+   "ans": "6",
+   "why": "τ' = 0.5×4 + 0.5×8 = 6，跟影片例子一樣。"
+  },
+  {
+   "q": "Response time 的定義是？",
+   "opts": [
+    "submit 到第一個 CPU burst 開始執行",
+    "submit 到整個 process 結束",
+    "在 ready queue 等的總時間",
+    "CPU burst 的總長度"
+   ],
+   "ans": "submit 到第一個 CPU burst 開始執行",
+   "why": "整個結束是 turnaround；ready queue 等的總時間是 waiting。"
+  },
+  {
+   "q": "Priority scheduling 的 starvation 用什麼方法解決？",
+   "opts": [
+    "aging",
+    "convoy effect",
+    "exponential average",
+    "dispatcher"
+   ],
+   "ans": "aging",
+   "why": "等越久 priority 越高，遲早會被執行。"
+  }
+ ]
+}

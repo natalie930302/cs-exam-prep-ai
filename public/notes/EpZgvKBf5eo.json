@@ -1,177 +1,371 @@
 {
  "video": "EpZgvKBf5eo",
  "label": "清大周志遠 第16C講 Basic Concepts",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
-   "title": "為什麼需要 CPU scheduler",
-   "scene": "burst-cycle",
+   "title": "本章要談什麼",
+   "scene": "sch-16c-intro",
+   "cues": [
+    27.4,
+    76,
+    96.1,
+    114.6,
+    130.7
+   ],
+   "explain": [
+    "這一章叫 process scheduling（行程排程）。「排程」就是排順序：很多程式都想用 CPU，可是 CPU 一次只能跑一個，要有人決定「現在輪到誰」。老師說 thread 和 process 在這裡不用分那麼細，反正就是「CPU 上的指令來自誰」。",
+    "OS 裡其實有好幾種 scheduler：決定哪些工作可以進系統的 job scheduler、把程式暫時搬出記憶體的 midterm scheduler……這一章只談亮起來的那個：CPU scheduler，也就是決定下一個上 CPU 的是誰。",
+    "每一種排程方法都分兩個版本。preemptive（可搶佔）：別人正在跑，也可以中途把它換下來；non-preemptive（不可搶佔）：一旦開始跑，就讓它跑完這一段才換人。這個區別整章都會一直用到。",
+    "接下來會一個一個介紹這些基本演算法：先來先做（FCFS）、最短的先做（SJF）、看優先權（Priority）、輪流做（RR）、多層佇列（MLQ）。老師的作業三就是要把它們寫進教學用的作業系統 Nachos。",
+    "最後會看真實的作業系統（Linux、Solaris）怎麼排程。你會發現它們不是只用某一個演算法，而是把好幾種想法拼在一起，調成最適合使用者的樣子。"
+   ],
    "points": [
     {
-     "text": "這章的 process scheduling 指的是：CPU 上執行的指令來自哪個執行緒的決定，不特別區分 thread 或 process。",
-     "t": 27
+     "t": 15,
+     "text": "上一章講完 thread，這章進入 process scheduling，也是作業三會用到的內容。"
     },
     {
-     "text": "只談 CPU scheduler（不是 job scheduler、midterm scheduler）；所有演算法都分 preemptive 與 non-preemptive。",
-     "t": 64
+     "t": 27,
+     "text": "雖然叫 process scheduling，但 OS 把 thread 和 process 看成差不多：談的是「CPU 上執行的指令來自哪個執行單位」的決定。"
     },
     {
-     "text": "multiprogramming 把很多 process 放進 memory，同時 ready，但 CPU core 有限；scheduler 讓 CPU 一直有指令做、提高使用率。",
-     "t": 159
+     "t": 76,
+     "text": "OS 裡有 job scheduler、midterm scheduler 等好幾種；這章只 focus 在 CPU scheduling。"
     },
     {
-     "text": "程式執行就是 CPU burst（一連串用 CPU 的指令）和 I/O burst（一連串做 I/O）交替出現。",
-     "t": 198
+     "t": 96,
+     "text": "不管哪種演算法，都分成 preemptive（能中途打斷）與 non-preemptive（不打斷）。"
     },
     {
-     "text": "CPU scheduler 只在乎 CPU burst：做 I/O burst 的 process 在 waiting queue，scheduler 看不到它。",
-     "t": 271
+     "t": 114,
+     "text": "接著會走過好幾個基本演算法（作業三要在 Nachos 實作），最後介紹 Linux、Solaris 這類真實 OS 怎麼混搭這些概念。"
     }
    ]
   },
   {
-   "title": "CPU-bound vs I/O-bound",
-   "scene": "cpu-io-bound",
+   "title": "為什麼需要 CPU scheduler：CPU burst 與 I/O burst",
+   "scene": "sch-16c-burst",
+   "cues": [
+    166.9,
+    176.5,
+    185.9,
+    188.6,
+    199.3,
+    224.2,
+    235.5,
+    242,
+    268.5,
+    280.5,
+    296
+   ],
+   "explain": [
+    "先問一個問題：為什麼一定要有 CPU scheduler？",
+    "multiprogramming（多工）的意思是：OS 一次把很多程式放進記憶體。畫面上 P1～P5 都住在 memory 裡，每個都準備好（ready）可以跑了。",
+    "可是 CPU 的核心（core）數量有限，同一時間只能有一個程式在上面跑。大家都看著 CPU，需要有人決定誰先。",
+    "scheduler 的任務就是：只要 CPU 一空下來，就馬上挑一個 ready 的程式送上去，讓 CPU 一直有指令可做，這樣 CPU 的使用率（utilization）才會高。",
+    "從程式自己的角度看，它在任何時刻只會做兩件事之一：用 CPU 計算，或是做 I/O（讀寫硬碟、等鍵盤、印東西）。",
+    "把程式的指令一條一條攤開，會看到一段一段的「burst」。連續好幾條都在用 CPU 計算的那一段，叫做 CPU burst（藍色）。",
+    "反過來，連續好幾條都在做 I/O 的那一段，叫做 I/O burst（橘色）。",
+    "所以任何程式的執行過程，都是藍、橘、藍、橘……CPU burst 和 I/O burst 一直交替出現。",
+    "只要指令一直在用 CPU，就全部算成同一個 CPU burst，所以兩個 CPU burst 不會相鄰：CPU burst 後面一定接 I/O burst，I/O burst 後面一定接 CPU burst。",
+    "CPU scheduler 只管 CPU burst。程式一開始做 I/O，就會被放進 waiting queue（等待佇列）去等 I/O 做完，這時它根本沒辦法用 CPU。",
+    "所以 scheduler 完全看不見正在做 I/O 的程式。它能看見、能挑的，只有已經 ready、等著開始下一段 CPU burst 的程式。"
+   ],
    "points": [
     {
-     "text": "管理者常要判斷程式是 CPU-bound 還是 I/O-bound：效能卡在 CPU，還是卡在 disk、memory 等 I/O。",
-     "t": 312
+     "t": 167,
+     "text": "multiprogramming 把很多 process 放進 memory、同時 ready，但 CPU core 有限；scheduler 讓 CPU 一直有指令可做，提高使用率。"
     },
     {
-     "text": "CPU-bound：有非常長的 CPU burst，例如 for 迴圈 i++ 從 1 跑到 1 萬。",
-     "t": 350
+     "t": 199,
+     "text": "程式不是在計算就是在做 I/O：CPU burst = 一連串用 CPU cycle 的指令；I/O burst = 一連串做 I/O 的指令。"
     },
     {
-     "text": "I/O-bound：只有很多很短的 CPU burst（i++ 後就 fread、write），時間主要花在等 I/O。",
-     "t": 372
+     "t": 242,
+     "text": "程式執行就是 CPU burst 與 I/O burst 交替；連續的 CPU 指令合成一個 burst，所以 CPU burst 後面一定接 I/O burst。"
     },
     {
-     "text": "CPU burst 長度分佈（histogram）：絕大多數 CPU burst 都非常短（ms 等級），少數很長。",
-     "t": 481
+     "t": 280,
+     "text": "CPU scheduler 只在乎 CPU burst：做 I/O burst 的 process 在 waiting queue，scheduler 根本看不見它。"
+    }
+   ]
+  },
+  {
+   "title": "CPU-bound vs I/O-bound 與 burst 分佈",
+   "scene": "sch-16c-bound",
+   "cues": [
+    317.4,
+    345.8,
+    364.9,
+    389.2,
+    399.8,
+    420.5,
+    476.3,
+    498.7,
+    525.9,
+    548.9,
+    561.8
+   ],
+   "explain": [
+    "系統管理者想把電腦調得更快時，第一個問題是：這支程式主要是「吃 CPU」還是「吃 I/O」？",
+    "也就是要找出瓶頸（bottleneck）：是 CPU 算不夠快，還是硬碟、記憶體這些 I/O 太慢，大家都在等它？",
+    "CPU-bound（受限於 CPU）的程式，會有非常非常長的 CPU burst。老師的例子：一個 for 迴圈，從 1 跑到 1 萬一直做 i++，中間完全不碰 I/O，這就是一條超長的藍色 burst。",
+    "I/O-bound（受限於 I/O）的程式剛好相反：它沒有那種很長的 CPU burst。",
+    "原因是 CPU 的速度遠遠快過 I/O，幾條 CPU 指令一下子就做完了，接著就要等很久的 I/O。",
+    "老師的例子：i++ 之後馬上 fread 讀檔，再 write 寫出去。藍色（i++）非常短，橘色（讀寫）很長，所以整支程式的時間幾乎都花在等 I/O。",
+    "哪些算 CPU、哪些算 I/O？從記憶體 load 資料、加減乘除，都是 CPU 的工作；等待 I/O 完成，就是 I/O。",
+    "這張長條圖（histogram）統計：一般程式的 CPU burst 長度分佈。橫軸是 burst 長度（毫秒），縱軸是「有多少比例的 burst 是這麼長」。圖的形狀是示意。",
+    "你會看到最左邊的幾根最高：幾乎所有 CPU burst 都非常短。這很合理，通常執行三四條指令就要去做 I/O 了。",
+    "最右邊那幾根很矮，但還是有：少數 CPU burst 非常長。擁有這種長 burst 的程式，就是 CPU-bound 程式。",
+    "因為現在的 CPU 非常快，大部分程式其實都卡在 I/O，CPU 常常沒事做。所以 OS 才要把一大堆程式載進記憶體，大家輪流用 CPU，CPU 才不會閒著。"
+   ],
+   "points": [
+    {
+     "t": 317,
+     "text": "管理者 tune 系統時想知道程式是 CPU-bound 還是 I/O-bound：效能卡在 CPU cycle，還是卡在 disk、memory 等 I/O。"
     },
     {
-     "text": "CPU 很快，所以大部分程式其實 bound 在 I/O；這也是 OS 要載入很多程式輪流用 CPU 的原因。",
-     "t": 539
+     "t": 365,
+     "text": "CPU-bound：有非常長的 CPU burst，例如 for 迴圈 i++ 從 1 跑到 1 萬。"
+    },
+    {
+     "t": 389,
+     "text": "I/O-bound：沒有很長的 CPU burst，只有很多很短的（i++ 後就 fread、write），時間花在等 I/O；因為 CPU 遠比 I/O 快。"
+    },
+    {
+     "t": 498,
+     "text": "CPU burst 長度的 histogram：絕大多數 CPU burst 都非常短（ms 等級），只有少數很長。"
+    },
+    {
+     "t": 562,
+     "text": "CPU 很快，所以大部分程式其實 bound 在 I/O；這也是 OS 要載入很多程式、輪流使用 CPU 的原因。"
     }
    ]
   },
   {
    "title": "Scheduler 只看 ready queue",
-   "scene": "ready-queue-only",
+   "scene": "sch-16c-ready",
+   "cues": [
+    588,
+    602.2,
+    613.5,
+    624.2
+   ],
+   "explain": [
+    "這是 process 的五種狀態圖。CPU scheduler 做的事只有一件：從 ready（準備好）的那群裡挑一個，讓它進到 running（正在 CPU 上跑）。",
+    "當程式跑到要做 I/O 的地方，它會「自己」從 running 走到 waiting（等待），這不是 scheduler 決定的。",
+    "它在 waiting 裡等 I/O，還沒有 ready，所以 scheduler 在 ready queue 裡根本看不到它，也不用替它排程。",
+    "等 I/O 做完，它回到 ready，重新排進 ready queue，這時 scheduler 才會把它當成候選人，考慮要不要讓它上 CPU。"
+   ],
    "points": [
     {
-     "text": "CPU scheduler 決定 ready queue 裡誰可以進 running state 使用 core。",
-     "t": 568
+     "t": 588,
+     "text": "CPU scheduler 決定 ready queue 裡誰可以進 running state 使用 core。"
     },
     {
-     "text": "進入 I/O burst 時，process 自己換到 waiting state，跟 scheduler 無關。",
-     "t": 579
+     "t": 602,
+     "text": "進入 I/O burst 時，process 自己換到 waiting state，跟 scheduler 無關；它不在 ready queue，scheduler 看不到它。"
     },
     {
-     "text": "做完 I/O 回到 ready queue，scheduler 才會考慮要不要讓它執行。",
-     "t": 602
+     "t": 624,
+     "text": "做完 I/O 回到 ready queue，scheduler 才會考慮要不要讓它執行。"
     }
    ]
   },
   {
    "title": "四個 scheduling 時機",
-   "scene": "four-points",
+   "scene": "sch-16c-four",
+   "cues": [
+    642.2,
+    657.4,
+    670.3,
+    687.2,
+    698.7,
+    727.5,
+    739.4,
+    769.9
+   ],
+   "explain": [
+    "preemptive 和 non-preemptive 差在哪？關鍵是「scheduler 在什麼時候可以被叫起來重新選人」。",
+    "從 process 在狀態之間的移動來看，能讓 scheduler 重新做決定的時機，最多只有四種。下面一個一個看。",
+    "① running → waiting：正在跑的程式要做 I/O 了，它的 CPU burst 結束，自己跑去 waiting 等。",
+    "它一離開，CPU 就空了。這時 scheduler 一定會被叫起來，看看誰來接手。",
+    "② running → ready：程式明明還在跑，卻被踢回 ready。這是 time sharing（分時）：timer 每隔一段時間（老師舉例每 100 毫秒）響一次，強迫正在跑的程式先下來。",
+    "timer 響了，OS 就拿回控制權重新決定。可能還是選它，也可能換別人，這樣大家才能分享 CPU。",
+    "③ waiting → ready：某個程式 I/O 做完，從 waiting 回到 ready。ready queue 多了一個新的候選人，說不定它很重要，想讓它馬上跑。",
+    "④ running → terminate：程式整個執行完畢、結束了。CPU 空出來，當然要叫 scheduler 選下一個。"
+   ],
    "points": [
     {
-     "text": "從 process 狀態轉換來看，可以做 scheduling 的點最多四個。",
-     "t": 636
+     "t": 642,
+     "text": "preemptive / non-preemptive 的關鍵：什麼時機點可以做 rescheduling；從狀態轉換看最多四個。"
     },
     {
-     "text": "① running → waiting：自己去做 I/O，CPU burst 結束，CPU 空了，scheduler 被叫起來。",
-     "t": 651
+     "t": 670,
+     "text": "① running → waiting：自己去做 I/O，CPU burst 結束，CPU 空了，scheduler 被叫起來。"
     },
     {
-     "text": "② running → ready：time sharing 的 timer interrupt（例如每 100 ms）把它踢回 ready，OS 重新決定，可能選同一個人也可能換人。",
-     "t": 678
+     "t": 698,
+     "text": "② running → ready：time sharing 的 timer interrupt（例如每 100 ms）把它踢回 ready，OS 重新決定，可能選同一個人也可能換人。"
     },
     {
-     "text": "③ waiting → ready：I/O 做完回到 ready queue，有新的 candidate，可能是很重要的人。",
-     "t": 719
+     "t": 739,
+     "text": "③ waiting → ready：I/O 做完回到 ready queue，有新的 candidate，可能是很重要的人。"
     },
     {
-     "text": "④ running → terminate：process 執行完，當然要叫 scheduler 選下一個。",
-     "t": 752
+     "t": 770,
+     "text": "④ running → terminate：process 執行完，當然要叫 scheduler 選下一個。"
     }
    ]
   },
   {
    "title": "Non-preemptive vs preemptive",
-   "scene": "preempt-vs-non",
+   "scene": "sch-16c-preempt",
+   "cues": [
+    786.8,
+    817,
+    832.4,
+    842.7,
+    852,
+    867.5,
+    903.1,
+    924.2,
+    959,
+    987,
+    1011.2
+   ],
+   "explain": [
+    "non-preemptive（不可搶佔）的意思很直白：P1 正在一段 CPU burst 的中間，還能繼續跑，就不要打斷它。",
+    "看四個時機。① running → waiting：P1 自己去做 I/O，CPU burst 已經結束了，沒有打斷任何人，所以 non-preemptive 在這裡也會選下一個人（打綠色）。",
+    "④ terminate：程式都跑完了，當然也沒有打斷問題，non-preemptive 也會排程。",
+    "所以 non-preemptive 只在 ① 和 ④ 這兩種情況重新選人，也就是「CPU burst 自然結束」的時候。",
+    "preemptive（可搶佔）則是：只要有可能改變決定的時刻，就重新排程，所以 ① ② ③ ④ 全部都會。② 和 ③ 是它多出來的機會。",
+    "看情況 ②：P1 跑到一半，timer 響了。如果是 preemptive，scheduler 可以選別人，P1 就被趕回 ready queue 排隊，換 P3 上 CPU。",
+    "同樣的情況如果是 non-preemptive：scheduler 知道 P1 的 CPU burst 還沒跑完、不能打斷，所以馬上又把 P1 放回 CPU 繼續跑。",
+    "情況 ③：P1 在跑，P2 做完 I/O 回到 ready，而且 P2 比較重要（priority 高）。preemptive 會叫 P1 立刻讓開。下方 Gantt chart（甘特圖，一條時間軸，色塊表示那段時間誰在用 CPU）：P1 跑了 3，P2 插進來，P1 之後才繼續。數字是示意。",
+    "如果是 non-preemptive：雖然來了更重要的 P2，也先不理它，讓 P1 把這一段 CPU burst 跑完（到 7），P2 才上。",
+    "最簡單的判斷法：看 Gantt chart。如果有某個程式的 CPU burst 被切成兩段、中間插了別人（紅色那兩段 P1），就是 preemptive。",
+    "如果每一段都剛好是一個完整的 CPU burst，一定要跑完才換人，就是 non-preemptive。"
+   ],
    "points": [
     {
-     "text": "Non-preemptive：不打斷在 CPU burst 中間的人，只在 ① 和 ④ 做 scheduling。",
-     "t": 770
+     "t": 787,
+     "text": "Non-preemptive：不打斷在 CPU burst 中間的人，只在 ① 和 ④ 做 scheduling。"
     },
     {
-     "text": "Preemptive：有機會改變決定的時間點都重新 scheduling，① ② ③ ④ 全部。",
-     "t": 841
+     "t": 852,
+     "text": "Preemptive：有可能改變決定的時間點都重新 scheduling，① ② ③ ④ 全部。"
     },
     {
-     "text": "情況 ②：preemptive 可能改選別人；non-preemptive 知道它還沒做完，馬上放回 running。",
-     "t": 857
+     "t": 867,
+     "text": "情況 ②：preemptive 可能改選別人；non-preemptive 知道它還沒做完，馬上放回 running。"
     },
     {
-     "text": "情況 ③：P2 從 waiting 回到 ready 且 priority 較高，preemptive 讓 P1 立刻讓開；non-preemptive 忽略，等 P1 做完再說。",
-     "t": 919
+     "t": 924,
+     "text": "情況 ③：P2 從 waiting 回到 ready 且 priority 較高，preemptive 讓 P1 立刻讓開；non-preemptive 忽略，等 P1 做完再說。"
     },
     {
-     "text": "判斷法：畫 Gantt chart 時，CPU burst 畫到一半就換人 → preemptive；一定要整段 burst 做完才換 → non-preemptive。",
-     "t": 994
+     "t": 987,
+     "text": "判斷法：畫 Gantt chart 時，CPU burst 畫到一半就換人 → preemptive；一定要整段 burst 做完才換 → non-preemptive。"
     }
    ],
    "trap": "時機 ③（waiting → ready）只有 preemptive 會換人；non-preemptive 雖然 ready queue 有新人，也不會打斷正在跑的 CPU burst。"
   },
   {
    "title": "Preemptive 的代價：synchronization",
-   "scene": "preempt-sync",
+   "scene": "sch-16c-sync",
+   "cues": [
+    1036.4,
+    1052.2,
+    1073.6,
+    1103.6,
+    1127.4,
+    1142.3,
+    1166.6,
+    1193.1,
+    1213.2,
+    1254.5,
+    1266.5
+   ],
+   "explain": [
+    "比較兩種方式：preemptive 的效能通常比較好，因為它比較靈活（dynamic），隨時可以把 CPU 交給更適合的人。",
+    "它能排程的時機有四個，non-preemptive 只有兩個，前者完全包含後者（superset），所以通常能讓 CPU 使用率更高、整體效能更好。",
+    "但它有一個大缺點：CPU burst 跑到一半被打斷，會造成 synchronization（同步）問題。這裡用示意例子：P1 要把共享的 count 加 1，剛把 5 讀進暫存器就被打斷；P2 把 count 加成 6；P1 回來把它算出的 6 寫回去。加了兩次，結果卻是 6 不是 7。第 6 章會詳細講。",
+    "為什麼只怕「CPU burst 中間」被打斷？因為只有 CPU burst 會去讀寫記憶體，I/O burst 碰的是硬碟等裝置。如果 CPU burst 整段做完才換人，就不會在改到一半時被別人插手。",
+    "既然 preemptive 會在中途打斷，寫程式的人就得自己處理 synchronization，這很花時間、也很容易寫錯。",
+    "更麻煩的是：被打斷的不只是使用者的程式，連 kernel（作業系統核心）自己的程式也是被排程的對象之一，也可能改到一半被打斷。",
+    "解法一：kernel 程式裡，每次碰到共享的資料結構就自己加鎖（lock）、解鎖（unlock）。這可以解決，但 OS 會寫得很囉嗦、很複雜。",
+    "解法二（大部分 Linux 系統的作法）：執行 kernel 的程式時，把 timer 的 interrupt 關掉（disable）。timer 不響，就不會有人來打斷。",
+    "沒有 timer 打斷，kernel 跑的時候就沒有 time sharing，它會一口氣做完，對 kernel 來說排程等於變成 non-preemptive，自然不會有 synchronization 問題。",
+    "所以一般作業系統的做法是：平常用 preemptive scheduler（效能好），但 kernel 在執行時不讓它被打斷，減少寫 kernel 的負擔。",
+    "這也是為什麼 kernel 程式要寫得很精簡：如果寫得又臭又長，interrupt 就被關很久，其他事情都要等，整個系統的反應就會變慢。"
+   ],
    "points": [
     {
-     "text": "preemptive 的排程時機是 non-preemptive 的 superset，通常 CPU 使用率與整體效能較好。",
-     "t": 1041
+     "t": 1036,
+     "text": "preemptive 的排程時機（4 個）是 non-preemptive（2 個）的 superset，通常 CPU 使用率與整體效能較好。"
     },
     {
-     "text": "缺點：CPU burst 執行到一半被 context switch，會造成 synchronization 問題（第 5 章開頭的例子）；只有 CPU burst 會碰 memory。",
-     "t": 1078
+     "t": 1073,
+     "text": "缺點：CPU burst 執行到一半被 context switch，會造成 synchronization 問題（第 6 章開頭的例子）；只有 CPU burst 會碰 memory。"
     },
     {
-     "text": "kernel 自己的程式也會被打斷；解法一：kernel 裡存取共享資料都自己加 lock / unlock，很囉嗦。",
-     "t": 1154
+     "t": 1142,
+     "text": "kernel 自己的程式也會被打斷；解法一：kernel 裡存取共享資料都自己加 lock / unlock，很囉嗦。"
     },
     {
-     "text": "解法二（Linux 常見作法）：執行 kernel 程式時把 timer interrupt disable，等於 kernel 變成 non-preemptive，一次做完。",
-     "t": 1205
+     "t": 1193,
+     "text": "解法二（Linux 常見作法）：執行 kernel 程式時把 timer interrupt disable，等於 kernel 變成 non-preemptive，一次做完。"
     },
     {
-     "text": "所以 kernel code 要寫得精簡，否則 interrupt 被關太久，整個系統反應變慢。",
-     "t": 1283
+     "t": 1254,
+     "text": "一般 OS 用 preemptive scheduler 加上這個 trick；所以 kernel code 要寫得精簡，否則 interrupt 被關太久，整個系統反應變慢。"
     }
    ],
    "trap": "補充：恐龍書提到 Linux 2.6 之後 kernel 本身也可以是 preemptive（用 preempt_count 等機制保護）；考題問「non-preemptive kernel」時指的是 kernel mode 不被搶佔的設計。"
   },
   {
    "title": "Dispatcher",
-   "scene": "dispatcher",
+   "scene": "sch-16c-dispatch",
+   "cues": [
+    1288.4,
+    1294.6,
+    1303.5,
+    1314.7,
+    1328.2,
+    1356.4,
+    1364.8,
+    1368.7,
+    1388.7
+   ],
+   "explain": [
+    "這一章的重點是 scheduler（排程器），它的工作只有「選」：決定下一個要執行的是誰。這裡它選了 P2。",
+    "可是光選好還不夠，還要有人真的去換。OS 裡負責換人的叫 dispatcher（分派器）。",
+    "scheduler 選好之後，把「下一個是 P2」這個決定交給 dispatcher，由 dispatcher 執行換人的動作。",
+    "之前學過的 context switch（情境切換）其實就是 dispatcher 在做的事：先把 P1 目前的狀態（暫存器等）存進它的 PCB（行程控制區塊，記錄一個 process 所有資訊的資料結構）。",
+    "然後把 P2 的狀態載入：它的 program counter（下一條要執行的指令位置）、page table pointer（記憶體對照表的位置）等等，P2 就能從上次停下來的地方繼續跑。",
+    "換人不是免費的，dispatcher 也要花時間，主要就花在 context switch 上。從停掉一個程式到啟動下一個所花的時間，課本叫 dispatch latency（分派延遲）。",
+    "另外還有 interrupt 的關閉與開啟（enable / disable）也要花時間。",
+    "老師提醒作業三：trace 程式碼時會看到，在做 context switch、呼叫 scheduler 之前，會先把 timer 的 interrupt 關掉，免得換人換到一半又被打斷。",
+    "所以 dispatcher 是比較大的元件：它會先呼叫 scheduler 選人，再完成 dispatch（真正換上去）的動作。"
+   ],
    "points": [
     {
-     "text": "scheduler 只負責選下一個要執行的人，選好後交給 dispatcher。",
-     "t": 1304
+     "t": 1288,
+     "text": "scheduler 只負責選下一個要執行的人，選好後交給 dispatcher。"
     },
     {
-     "text": "dispatcher 實際執行換人：context switch（存 PCB、載入新的 program counter、page table pointer 等 state）。",
-     "t": 1320
+     "t": 1314,
+     "text": "dispatcher 實際執行換人：context switch（存 PCB、載入新的 program counter、page table pointer 等 state）。"
     },
     {
-     "text": "dispatcher 也要花時間，主要花在 context switch，還有 interrupt 的 enable / disable。",
-     "t": 1366
+     "t": 1356,
+     "text": "dispatcher 也要花時間，主要花在 context switch，還有 interrupt 的 enable / disable。"
     },
     {
-     "text": "作業三 trace code 時會看到：做 context switch、呼叫 scheduler 之前會先把 timer disable。",
-     "t": 1379
+     "t": 1368,
+     "text": "作業三 trace code 時會看到：做 context switch、呼叫 scheduler 之前會先把 timer disable；dispatcher 是較大的 component，會呼叫 scheduler 再做 dispatch。"
     }
    ],
    "trap": "補充：dispatch latency（恐龍書）＝ dispatcher 停止一個 process 並啟動另一個所需的時間；dispatcher 的工作包含 context switch、切換到 user mode、跳到新程式的正確位置。"
@@ -244,6 +438,5 @@
    "ans": "把 timer interrupt disable",
    "why": "不被打斷就等於 non-preemptive，一次做完。"
   }
- ],
- "timing": "estimated"
+ ]
 }

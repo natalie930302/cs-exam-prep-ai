@@ -1,189 +1,437 @@
 {
  "video": "0NRkuhnupzs",
  "label": "清大周志遠 第18A講 Special Scheduling Issues",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
-   "title": "Affinity 回顧：提高 cache hit rate",
-   "scene": "affinity",
+   "title": "回顧：兩層排程與 affinity",
+   "scene": "sch-18a-affinity",
+   "cues": [
+    3.3,
+    6.7,
+    53.1,
+    72.7,
+    85.7,
+    92.9,
+    104.3
+   ],
+   "explain": [
+    "這一章前半段都在講軟體，也就是 OS level 的排程，像 shortest job first 這些演算法。",
+    "但別忘了硬體這一層（CPU、主機板）運作時也有自己的排程決定，所以排程其實分兩層。",
+    "上次比較重要的是 processor 這邊：排程問題不只是「誰用 CPU」，還跟 memory access（記憶體存取）、cache（快取）的運作有很大關係。",
+    "第一個重要概念 affinity：可以把 process 或 thread pin（釘住）、bind（綁定）在某一個 processor 或 core 上。",
+    "為什麼要這樣？最主要是為了重複使用 cache，提高 cache 的 hit rate（命中率：要的資料剛好在 cache 裡的比例）。",
+    "因為不同 processor 的 cache 通常是不共用的。換到 processor 1，它的 cache 裡沒有 P 的資料（變灰）。",
+    "所以 affinity 會影響排程的決定，目的是讓 cache line 被重複使用；cache 比 main memory 快，程式就跑得更快。"
+   ],
    "points": [
     {
-     "text": "本章前半是 OS（software）的 scheduling，hardware level 也有 scheduling decision，分兩層。",
-     "t": 5
+     "t": 2,
+     "text": "本章前半是 OS（software）的 scheduling，hardware level 也有 scheduling decision，分兩層。"
     },
     {
-     "text": "processor 的 scheduling 跟 memory access、cache 息息相關。",
-     "t": 41
+     "t": 53,
+     "text": "processor 的 scheduling 跟 memory access、cache 息息相關。"
     },
     {
-     "text": "affinity：把 process / thread pin（bind）到特定 processor 或 core，目的是 reuse cache、提高 hit rate；不同 processor 的 cache 通常不共用。",
-     "t": 57
+     "t": 72,
+     "text": "affinity：把 process / thread pin（bind）到特定 processor 或 core，目的是 reuse cache、提高 hit rate；不同 processor 的 cache 通常不共用。"
     }
    ]
   },
   {
    "title": "NUMA 與排程",
-   "scene": "numa",
+   "scene": "sch-18a-numa",
+   "cues": [
+    120.5,
+    139.3,
+    159.5,
+    171.2,
+    182.5,
+    196.5,
+    224.6,
+    248.6,
+    262.8
+   ],
+   "explain": [
+    "另一個跟排程和記憶體存取有關的：memory architecture（記憶體架構）分成 UMA（Uniform，均勻存取）和 NUMA（Non-Uniform，非均勻存取）。",
+    "規模比較大、processor 比較多的電腦，通常採用 NUMA：每顆 CPU 旁邊有一塊比較近的 memory，記憶體也有層次（hierarchy）。",
+    "重點是：不同 CPU 去讀寫記憶體時，資料放在哪一個 memory chip 上，速度就不一樣。讀自己旁邊的（local，綠）快，讀別人那邊的（remote，紅）慢。",
+    "所以排程時，會希望把 process 排在跟它的資料同一側的 CPU 上，記憶體存取時間才短。P 在 CPU 0 建立的資料，就在 memory 0。",
+    "資料一旦建立就待在那裡。如果要把資料搬（migrate）到另一邊，就是做 memory copy，成本很高、很花時間。",
+    "OS 本來就會定期重新排程，只要有空的 core 都能跑。如果 P 被排到 CPU 1，每次存取資料都要跨過去，很慢；所以會希望把它放回原本那顆 processor。",
+    "寫 thread 程式時，也可以透過一些 flag 給 OS 提示（hint）：例如要求記憶體一定要在 local，或用 affinity 的概念把它綁在同一顆 CPU。",
+    "NUMA 是以「CPU」為單位：一顆 CPU 上有好幾個 core，跑在哪一個都沒關係，因為它們都接到同一個 memory bank（記憶體庫）。",
+    "所以 NUMA 的放置方式，對 process scheduling 也有影響，而且會嚴重影響執行效能。"
+   ],
    "points": [
     {
-     "text": "memory architecture 分 UMA 與 NUMA；規模大、processor 多的系統通常是 NUMA，memory 也有 hierarchy。",
-     "t": 107
+     "t": 120,
+     "text": "memory architecture 分 UMA 與 NUMA；規模大、processor 多的系統通常是 NUMA，memory 也有 hierarchy。"
     },
     {
-     "text": "不同 CPU access 放在不同 memory chip 上的資料，速度不一樣。",
-     "t": 156
+     "t": 159,
+     "text": "不同 CPU access 放在不同 memory chip 上的資料，速度不一樣，所以希望把 process 排在跟它 memory 同一個位置。"
     },
     {
-     "text": "資料建立後就在那裡，搬資料（memory copy）很貴；所以 schedule 時希望放回跟資料同一個位置。",
-     "t": 170
+     "t": 182,
+     "text": "資料建立後就在那裡，搬資料（memory copy）很貴；OS 會定期 reschedule，希望放回同一個 processor。"
     },
     {
-     "text": "寫 thread programming 時可以用 flag 給 OS hint，要求 local memory 或綁在同一顆 CPU（同一顆 CPU 上哪個 core 都可以）。",
-     "t": 225
+     "t": 224,
+     "text": "寫 thread programming 時可以用 flag 給 OS hint，要求 local memory 或綁在同一顆 CPU（NUMA 以 CPU 為單位，同一顆 CPU 上哪個 core 都可以）。"
     }
    ]
   },
   {
    "title": "Load balancing：push 與 pull",
-   "scene": "load-balance",
+   "scene": "sch-18a-lb",
+   "cues": [
+    277.1,
+    292.8,
+    311.6,
+    324.3,
+    336.2,
+    356.4,
+    362.9,
+    393.9,
+    414.4,
+    432.1,
+    451.2,
+    460.6,
+    490.4,
+    531.2,
+    575.5
+   ],
+   "explain": [
+    "因為資料有 locality（在哪裡建立就在哪裡），使用者有時想把程式指定在某一個 processor 上。但它的代價（trade-off）是 load balancing（負載平衡）。畫面上四個 core，每塊磚代表一個要執行的工作。",
+    "一開始程式被放在哪個 core，可能是隨機的。可是一旦在那裡跑了，就建立了資料、有了 cache，之後就會想綁在那裡。",
+    "結果那顆 core（core 0）要執行的工作越疊越多，大家的 wait time 都變久；別的 core（core 3）卻很閒。這就是不平衡。",
+    "所以 locality（資料存取的區域性）和整個系統的 load balancing，往往是 trade-off：綁得越緊，越不平衡。",
+    "在硬體層面，一顆 CPU 內部通常一定會實作 load balancing 機制，讓每個 core 的工作量差不多，減少大家的等待時間。",
+    "怎麼做 load balancing？一般分成 push（推）和 pull（拉）兩種。",
+    "push：由工作量重的人主動發起，把自己的工作推給工作量輕的人。core 0 把一塊磚推給了 core 3。",
+    "搬工作（migration）一定有來源（source）和目的地（destination）。差別只在「誰先發起」，就分成這兩種 model。",
+    "pull 剛好反過來：工作量低的人（自己的 queue 空了，甚至已經閒著 idle）主動去找有多的工作的人，把工作拉過來做。core 1 從 core 0 拉走一塊。",
+    "兩種的結果其實一樣，都是讓工作平均，只差在實作、設計上是誰先發起。",
+    "實際上要選哪一種？要看整個系統的 loading（負載）是高還是低。",
+    "因為搬工作要一個忙、一個閒才成立，而每一次詢問「你能不能接？」都浪費時間（overhead）。所以希望發起的人越少越好。",
+    "整個系統都很忙時，閒的人很少，就用 pull：讓少數真的閒的人去發起。如果用 push，每個忙的人都想推，卻只有幾個閒的人能接，要找到他們很浪費時間。",
+    "反過來，整個系統都很閒時，忙的人很少，就用 push：只有少數忙的人會發起搬工作。",
+    "這部分知道就好。比較重要的還是 affinity：為什麼要把 process 綁在某個位置，以及它的代價是 load balancing 變差，兩者是 trade-off。"
+   ],
    "points": [
     {
-     "text": "為了 locality 綁在特定 processor，會造成有的 CPU loading 比別人重、wait time 變久 → 跟 load balancing 是 trade-off。",
-     "t": 282
+     "t": 276,
+     "text": "為了 locality 綁在特定 processor，會造成有的 CPU loading 比別人重、wait time 變久 → 跟 load balancing 是 trade-off。"
     },
     {
-     "text": "hardware level 的 CPU 內部通常都有 load balancing 機制，讓每個 core loading 差不多。",
-     "t": 344
+     "t": 336,
+     "text": "hardware level 的 CPU 內部通常都有 load balancing 機制，讓每個 core loading 差不多；分 push 與 pull。"
     },
     {
-     "text": "push：loading 高的人主動發起，把工作 push 給 loading 低的人。",
-     "t": 372
+     "t": 362,
+     "text": "push：loading 高的人主動發起，把工作 push 給 loading 低的人。pull：loading 低（queue 空了甚至 idle）的人主動把工作拉過來。"
     },
     {
-     "text": "pull：loading 低（queue 空了甚至 idle）的人主動把工作拉過來。",
-     "t": 426
+     "t": 451,
+     "text": "每次詢問都是 overhead，希望發起的人越少越好：系統 loading 高用 pull，loading 低用 push。"
     },
     {
-     "text": "每次詢問都是 overhead，希望發起的人越少越好：系統 loading 高用 pull，loading 低用 push。",
-     "t": 461
+     "t": 575,
+     "text": "比較重要的是 affinity 與 load balancing 之間的 trade-off。"
     }
    ],
    "trap": "補充：恐龍書只定義 push / pull migration（Linux 兩種都用）；「高負載用 pull、低負載用 push」是本講從減少發起次數推出的實作考量。"
   },
   {
    "title": "Multicore 與 memory stall",
-   "scene": "memory-stall",
+   "scene": "sch-18a-stall",
+   "cues": [
+    593.4,
+    620.7,
+    631.2,
+    648.3,
+    665.2,
+    679.4,
+    697,
+    715.4,
+    724.8,
+    754.3,
+    795.7,
+    807.4,
+    840.5,
+    860.8,
+    895.1
+   ],
+   "explain": [
+    "再深入到單一顆 CPU。現在的 CPU 基本上都是多核心（multicore）。",
+    "在更低的層次，一個 core 要執行很多 thread 時，還要考慮另一個問題：memory stall（記憶體停頓）。",
+    "修過計算機組織就知道：一條指令的執行分成好幾個 cycle，其中很重要的一步是存取記憶體（灰色）。",
+    "當一顆 CPU 有很多 core、或一個 core 想執行很多 thread 時，它們共用同一條 memory bus（記憶體匯流排）。不同指令的記憶體存取可能撞在一起（collision），就要停下來等，這就是 stall。",
+    "memory stall 發生時，CPU 其實沒有在執行指令，只是卡在等記憶體。時間軸上灰色那幾段就是在乾等。",
+    "所以有了這類技術：Intel CPU 的 hyper-threading，或越來越流行的 GPU，都說一個 core 可以有好幾個 hardware thread，甚至 10 個以上。",
+    "為什麼很多 thread 同時在一個 core 上跑，速度卻不會變慢？因為它們利用了 memory stall 的空檔：thread 0 在等記憶體時，thread 1（橘）剛好拿來計算。",
+    "怎麼利用 stall 的空檔去排另一個 thread 進來，這也是一種排程問題，而且是在硬體層級做的。",
+    "概念上，把「執行」和「等記憶體」重疊（overlap）起來，就能塞進兩個 thread；如果再加更多 register（暫存器），像 GPU 這種特化硬體，可以塞進更多 thread，卻不影響執行時間。",
+    "這已經是硬體 instruction pipeline（指令管線，指令分 IF、ID、EX、MEM、WB 幾個階段同時進行）的層次。換 thread 時，pipeline 裡還有上一個 thread 的東西要處理。",
+    "第一種做法 coarse-grained（粗粒度）：把整個 pipeline 清空（flush），再換另一個 thread 執行。清空很花時間。",
+    "第二種 fine-grained（細粒度）：碰到 memory stall 時，就像在硬體裡做 context switch。它多加了 hardware register，把 pipeline 上的狀態全部保留下來，直接切到另一個 thread 執行。",
+    "簡單講：coarse 會 flush pipeline 再換人；fine 保留 pipeline 的狀態，去執行沒有 memory stall 的那個 thread。",
+    "這些雖然都跟排程有關，但都在硬體層級。整個電腦系統來看：軟體層級是 OS，管理 ready queue 裡 process 的順序。",
+    "硬體層級的排程已經直接做進 CPU 裡了。對 OS 來說，它只在乎硬體告訴它「現在有幾個可以執行的位置」，然後給出順序。"
+   ],
    "points": [
     {
-     "text": "一顆 CPU 多個 core、一個 core 多個 thread 時，還要考慮 memory stall。",
-     "t": 607
+     "t": 593,
+     "text": "一顆 CPU 多個 core、一個 core 多個 thread 時，還要考慮 memory stall：指令分好幾個 cycle，access memory 時 memory bus 共用會撞到，CPU 卡在 memory 沒在執行指令。"
     },
     {
-     "text": "指令執行分好幾個 cycle，其中 access memory 時 memory bus 共用會撞到，CPU 卡在 memory 沒在執行指令。",
-     "t": 644
+     "t": 679,
+     "text": "hyper-threading、GPU 一個 core 好多 hardware thread：利用 memory stall 的空檔塞另一個 thread 進來，速度不變慢。"
     },
     {
-     "text": "hyper-threading、GPU 一個 core 好多 hardware thread：利用 memory stall 的空檔塞另一個 thread 進來，速度不變慢。",
-     "t": 694
+     "t": 754,
+     "text": "coarse-grained：flush 整個 pipeline 再換人；fine-grained：增加 hardware register 保留 pipeline state，直接切到沒有 stall 的 thread。"
     },
     {
-     "text": "coarse-grained：flush 整個 pipeline 再換人；fine-grained：增加 hardware register 保留 pipeline state，直接切到沒有 stall 的 thread。",
-     "t": 827
-    },
-    {
-     "text": "這些是 hardware level 的 scheduling；OS 只管有多少可執行的位置、順序是什麼。",
-     "t": 908
+     "t": 860,
+     "text": "這些是 hardware level 的 scheduling；OS 只管有多少可執行的位置、順序是什麼。"
     }
    ],
    "trap": "補充：恐龍書說 coarse-grained 只在遇到長延遲事件（如 memory stall）才切換，切換要 flush pipeline、成本高；fine-grained 在指令邊界就切換，靠額外硬體所以成本低。"
   },
   {
    "title": "Real-time：deadline 與 (period, execution)",
-   "scene": "rt-periodic",
+   "scene": "sch-18a-rt",
+   "cues": [
+    913.2,
+    923.9,
+    940,
+    952.3,
+    964.5,
+    987.8,
+    1001.2,
+    1030.3,
+    1050.3,
+    1061.1,
+    1075.8,
+    1088.5,
+    1115.3,
+    1128.3,
+    1157.1
+   ],
+   "explain": [
+    "最後一個比較重要的主題：real-time（即時）排程。",
+    "之前介紹的排程，都是用 wait time 或整個系統的效能來衡量。",
+    "但有一類很特殊的應用叫 real-time application。real-time 的定義是：必須在 deadline（截止時間）之前完成，重點不是越快越好，而是不能超過期限。",
+    "所以它跟一般排程不一樣：一般排程不知道 deadline，real-time 的工作一定會告訴你 deadline，目標就是在 deadline 前做完。",
+    "real-time 分兩種：soft（軟性）盡量避免 miss deadline；hard（硬性）必須有一套排程演算法可以保證（guarantee）不 miss，更嚴格。",
+    "例如一般的影音串流（media streaming）：有時候畫面很清楚、有時候不太清楚，沒關係，盡量讓你看得到就好，這是 soft。",
+    "hard 的應用其實很廣，大部分控制系統（control system）都是：汽車、武器、核電廠。只要 miss 一次 deadline，可能就是車子失控、目標偏離，非常嚴重。",
+    "這類問題有很通用的描述方式：用一個有三個參數的 tuple（組）。",
+    "第一個是 ready time：這個工作什麼時候進系統、開始可以執行，跟一般工作一樣。",
+    "第二個是 execution：就像之前的 CPU burst，每一次要執行多久。",
+    "第三個是 real-time 才有的 period（週期）：多久之後會出現下一次 CPU burst。也可以把它想成 deadline。",
+    "要保證趕上 deadline，這種工作必須很有規律。如果完全沒有規律，根本沒辦法排程，一預測錯就 miss 了。",
+    "所以 real-time 的 CPU burst 會規律地一直重複出現。例子：period 10、execution 4，代表每 10 個時間單位來一個 burst（金色柱子是到達時間），每次要執行 4 個單位（藍色）。",
+    "每一次都必須在下一個 burst 到來之前（也就是 10、20、30）把這 4 個單位做完。",
+    "hard real-time 更難，有很多研究，演算法可能非常複雜。這裡介紹的兩個常見的基本做法，只能用在 soft real-time，也就是盡量滿足 deadline。"
+   ],
    "points": [
     {
-     "text": "real-time 的定義：必須在 deadline 之前完成，不是越快越好。",
-     "t": 986
+     "t": 911,
+     "text": "real-time 的定義：必須在 deadline 之前完成，不是越快越好；一般 scheduling 不知道 deadline，real-time 一定會給。"
     },
     {
-     "text": "soft：盡量避免 miss deadline（media streaming）；hard：必須保證（汽車、武器、核電廠等 control system）。",
-     "t": 1015
+     "t": 964,
+     "text": "soft：盡量避免 miss deadline（media streaming）；hard：必須保證（汽車、武器、核電廠等 control system）。"
     },
     {
-     "text": "用 tuple 描述：ready time、execution（CPU burst 長度）、period（多久來一次 burst）。",
-     "t": 1088
+     "t": 1030,
+     "text": "用 tuple 描述：ready time、execution（CPU burst 長度）、period（多久來一次 burst，可想成 deadline）。"
     },
     {
-     "text": "real-time job 要很有規律才能保證；例如每 10 個 time unit 來一次、每次要執行 4，要在下一次來之前做完。",
-     "t": 1131
+     "t": 1088,
+     "text": "real-time job 要很有規律才能保證；例如每 10 個 time unit 來一次、每次要執行 4，要在下一次來之前做完。"
     },
     {
-     "text": "這裡介紹的兩個演算法用在 soft real-time。",
-     "t": 1203
+     "t": 1157,
+     "text": "這裡介紹的兩個演算法用在 soft real-time。"
     }
    ]
   },
   {
-   "title": "Rate-Monotonic",
-   "scene": "rate-monotonic",
+   "title": "Rate-Monotonic 與 EDF 的觀念",
+   "scene": "sch-18a-rmedf",
+   "cues": [
+    1165.5,
+    1173.8,
+    1190.8,
+    1205.8,
+    1219.3,
+    1230.9,
+    1243.2,
+    1261.4,
+    1287.7,
+    1294.8
+   ],
+   "explain": [
+    "第一個演算法：rate monotonic（RM）。",
+    "它是一個 static（靜態）的 priority scheduling：把每個工作的優先順序固定下來，依據的是 period（週期）。",
+    "period 越短，代表下一個 burst 越快就來，越趕、越急，所以 priority 越高。就像寫作業，越急的先做。這裡 period 4 的最優先。",
+    "period 是事先給定的常數，所以 priority 在執行時不會改變，這就是 static。",
+    "名字的意思：rate 指的就是 period；monotonic 是單調的意思，把工作照 period 由短到長排好。",
+    "另一個更常被用到的，是 dynamic（動態）的方法：earliest deadline first（EDF，最早截止期限優先）。",
+    "大家寫作業都在用這個演算法：看哪個作業 deadline 最近，剩三天的先做再說，因為任何一個做不完都會被當。",
+    "注意：period 長不代表 deadline 遠。很早就公布、期限很長的作業，放著放著也會變成只剩兩天。兩者沒有直接關係。",
+    "所以 EDF 看的是「當下」誰的 deadline 最近，priority 一直在變，是 dynamic priority 演算法。",
+    "有趣的是，EDF 可以用數學證明：它 miss deadline 的比例最高不會超過多少。所以 EDF 是不錯的演算法，但不保證完全不會 miss。"
+   ],
    "points": [
     {
-     "text": "Rate-Monotonic 是 static priority scheduling：依 period 排，period 越短越急、priority 越高，run time 不變。",
-     "t": 1213
+     "t": 1165,
+     "text": "Rate-Monotonic 是 static priority scheduling：依 period 排，period 越短越急、priority 越高，run time 不變（rate = period，monotonic = 單調排序）。"
     },
     {
-     "text": "例子（先寫 period 再寫 execution）：T1 (4,1)、T2 (5,2)、T3 (20,5) → T1 > T2 > T3。",
-     "t": 1400
+     "t": 1230,
+     "text": "EDF 是 dynamic priority：誰的 deadline 最近誰先做（就像寫作業）；period 長不代表 deadline 遠。"
     },
     {
-     "text": "決定 priority 後就是 priority scheduling：T1 做 1，T2 做 2，再 T3。",
-     "t": 1463
-    },
-    {
-     "text": "preemptive：t = 4 紅色 T1 又出現，T3 才做一個 time unit 就被打斷；T2 也比 T3 優先。",
-     "t": 1519
-    },
-    {
-     "text": "只有 T1、T2 都不在時才做 T3；模擬時要小心交錯。",
-     "t": 1557
-    },
-    {
-     "text": "只看 period，不看 execution：T3 改成 19 一樣是最低 priority；static 結果不一定特別好。",
-     "t": 1584
+     "t": 1287,
+     "text": "EDF 可以被證明 missed deadline rate 的上界，是不錯的演算法，但不能保證不 miss。"
     }
    ],
-   "trap": "補充：題目的 tuple 順序要看清楚（本例先 period 再 execution）。RM 保證可排程的 CPU 使用率上界是 n(2^{1/n} − 1)。"
+   "trap": "補充：RM 保證可排程的 CPU 使用率上界是 n(2^{1/n} − 1)；EDF 理論上只要使用率 ≤ 1 就排得完（不計 overhead）。"
   },
   {
-   "title": "EDF（Earliest Deadline First）",
-   "scene": "edf",
+   "title": "Rate-Monotonic 例子",
+   "scene": "sch-18a-rm",
+   "cues": [
+    1334.9,
+    1346.1,
+    1365.1,
+    1372.1,
+    1388.9,
+    1403.9,
+    1422.4,
+    1451.4,
+    1461,
+    1482.5,
+    1495.4,
+    1503.7,
+    1521.6,
+    1551.4,
+    1567.2
+   ],
+   "explain": [
+    "直接看 rate monotonic 的例子。重點：它是 fixed priority（固定優先權）的演算法。",
+    "三個工作，arrival time 都從 0 開始。注意 tuple 的順序：前面例子先寫 execution，這題先寫 period、再寫 execution，要看仔細。",
+    "period 一定比 execution 長；如果 execution 大於 period，代表一個週期內根本做不完，一定 miss deadline，沒有意義。",
+    "T1 每 4 個單位來一次、每次做 1；T2 每 5 個單位來一次、每次做 2；T3 是 (20, 5)。下面每個 task 的彩色細柱子，就是它每次到達（也是上一次的 deadline）的時間點。",
+    "依 period 給 priority：4、5、20，越短越優先，所以 T1 > T2 > T3。",
+    "決定好 priority 之後，做法就跟 priority scheduling 完全一樣：先看誰最高。T1 最高，只要做 1 個單位就結束。",
+    "T1 做完，在第 4 秒之前不會再出現。ready queue 剩 T2、T3，T2 比較高，做兩個單位（1～3）。",
+    "現在 ready queue 只剩 T3，輪到 T3 執行。",
+    "這個例子是 preemptive（可搶佔）的。到第 4 秒，T3 才做了 1 個單位，紅色 T1 又出現了，T1 priority 最高，就把 T3 打斷。",
+    "T1 做完後，第 5 秒橘色 T2 剛好也出現了。T2 的 priority 仍然比 T3 高，所以再做兩個單位（5～7）。",
+    "7～8 剛好有一個空檔，沒有更高的人，就讓 T3 做。",
+    "第 8 秒又回到紅色 T1。T1 做完後，T2 要到第 10 秒才會再來，所以 9～10 又有一個空位，T3 再做一個單位。",
+    "只有 T1、T2 都不在時，才輪得到 T3。接著 T2（10～12）、T1（12～13），T3 在 13～15 做完它的 5 個單位，趕上 deadline 20。交錯很多，模擬時要小心。",
+    "最後 T2、T1 繼續照規則跑。注意：RM 完全不管 execution time。就算把 T3 的 execution 改成 19，它還是 priority 最低，因為只看 period。",
+    "因為它是 static（固定）的，所以有不少缺點，排出來的結果不一定特別好。"
+   ],
    "points": [
     {
-     "text": "EDF 是 dynamic priority：誰的 deadline 最近誰先做（就像寫作業）；period 長不代表 deadline 遠。",
-     "t": 1282
+     "t": 1332,
+     "text": "例子（先寫 period 再寫 execution，arrival 都從 0）：T1 (4,1)、T2 (5,2)、T3 (20,5) → T1 > T2 > T3。"
     },
     {
-     "text": "EDF 可以被證明 missed deadline rate 的上界，是不錯的演算法，但不能保證不 miss。",
-     "t": 1345
+     "t": 1403,
+     "text": "決定 priority 後就是 priority scheduling：T1 做 1，T2 做 2，再 T3。"
     },
     {
-     "text": "例子：T1 (2, 0.9)、T2 (5, 2.3)；t = 0 時 T1 deadline 2 比 5 近，先做 T1，剩下時間做 T2。",
-     "t": 1628
+     "t": 1461,
+     "text": "preemptive：t = 4 T1 又出現，T3 才做一個 time unit 就被打斷；t = 5 T2 也比 T3 優先。"
     },
     {
-     "text": "t = 2 新的 T1 deadline 4 < T2 的 5 → T1 先做。",
-     "t": 1659
+     "t": 1521,
+     "text": "只有 T1、T2 都不在時才做 T3；模擬時要小心交錯。"
     },
     {
-     "text": "t = 4 新的 T1 deadline 6 > T2 的 5 → T2 繼續做完剩下的；同一個 task 的 priority 會倒過來。",
-     "t": 1686
+     "t": 1551,
+     "text": "只看 period，不看 execution：T3 改成 19 一樣是最低 priority；static 結果不一定特別好。"
+    }
+   ],
+   "trap": "題目的 tuple 順序要看清楚（本例先 period 再 execution）。本例 RM 排程：T1 0–1、T2 1–3、T3 3–4、T1 4–5、T2 5–7、T3 7–8、T1 8–9、T3 9–10、T2 10–12、T1 12–13、T3 13–15，T3 在 15 做完。"
+  },
+  {
+   "title": "EDF 例子",
+   "scene": "sch-18a-edf",
+   "cues": [
+    1575.7,
+    1584.8,
+    1601.8,
+    1609,
+    1617,
+    1626.8,
+    1654.6,
+    1661.3,
+    1683.9,
+    1699,
+    1716.1,
+    1739.2,
+    1755.2
+   ],
+   "explain": [
+    "接著看 EDF。它是 dynamic 的，priority 一直在變，看起來比較複雜，但其實比較容易想像執行過程。",
+    "假設只有兩個 task。tuple 裡大的數字是 period、小的是 execution：T1 (2, 0.9)：每 2 個單位來一次、做 0.9；T2 (5, 2.3)：每 5 個單位來一次、做 2.3。",
+    "第 0 秒要先做誰？EDF 不看 period，只看「下一個 deadline」是什麼時候。",
+    "對 T1 來說，下一個 deadline 是 2；T2 是 5。2 比較近，所以先做紅色 T1（0～0.9）。",
+    "剩下的時間就做橘色 T2（0.9～2），做了 1.1，還剩 1.2。",
+    "第 2 秒，新的紅色 T1 進來，要想一下會不會打斷 T2。新 T1 的 deadline 是 2 + 2 = 4；T2 是同一個 task，deadline 還是 5。4 比 5 小，紅色比較急，所以先做 T1（2～2.9）。",
+    "紅色做完，就可以繼續做橘色（2.9～4），又做了 1.1。",
+    "注意第 4 秒：紅色又來了，但這次決定倒過來了！新的 T1 deadline 是 6，橘色 T2 的 deadline 還是 5，5 比較早，所以橘色的 priority 比較高。",
+    "所以橘色會超過 4 繼續做，把剩下的做完：2.3 − 1.1 − 1.1 = 0.1，做到 4.1 結束，紅色才接著做到 5。",
+    "這就是 dynamic priority：前一個時間點（第 2 秒）紅色比較高，下一個時間點（第 4 秒）卻變成橘色比較高，完全看當下誰的 deadline 比較趕。",
+    "後面大家可以自己繼續模擬。考試時特別要小心這些時間長度的計算（0.9、1.1、0.1……）。",
+    "EDF 每次都要重新決定誰的 priority 高。也別忘了：一個 period 裡只需要做 execution 那麼多，像 T1 的 0.9 做完，它這一輪就離開 ready queue，不用再考慮。",
+    "只要有新的 task 進入 ready queue（下一個 period 到了），就要重新決定一次 priority。"
+   ],
+   "points": [
+    {
+     "t": 1575,
+     "text": "EDF 是 dynamic，但比較容易想像；例子：T1 (2, 0.9)、T2 (5, 2.3)。"
     },
     {
-     "text": "每次有新 task 進 ready queue 都要重新決定 priority；一個 period 內只要做 execution time 那麼多。",
-     "t": 1753
+     "t": 1601,
+     "text": "t = 0 時不看 period 而看 deadline：T1 deadline 2 比 5 近，先做 T1，剩下時間做 T2。"
+    },
+    {
+     "t": 1626,
+     "text": "t = 2 新的 T1 deadline 4 < T2 的 5 → T1 先做。"
+    },
+    {
+     "t": 1661,
+     "text": "t = 4 新的 T1 deadline 6 > T2 的 5 → T2 繼續做完剩下的；同一個 task 的 priority 會倒過來。"
+    },
+    {
+     "t": 1716,
+     "text": "考試要小心長度；每次有新 task 進 ready queue 都要重新決定 priority；一個 period 內只要做 execution time 那麼多。"
     }
    ],
    "trap": "影片說 T2 第一段做完 1.1 後剩 1.2；第二段又做 1.1，所以 t = 4 時只剩 0.1，做到 4.1 結束。"
+  },
+  {
+   "title": "結語",
+   "scene": null,
+   "points": [
+    {
+     "t": 1775,
+     "text": "rate monotonic 與 EDF 是 real-time scheduling 兩個非常基本的演算法，要稍微知道。"
+    }
+   ],
+   "explain_idle": "這一講到這裡結束。可以往下做小測驗，練習 RM 與 EDF 的模擬。"
   }
  ],
  "quiz": [
@@ -253,6 +501,5 @@
    "ans": "靠額外 hardware register 保留 state，切換成本低",
    "why": "coarse-grained 才會 flush pipeline。"
   }
- ],
- "timing": "estimated"
+ ]
 }

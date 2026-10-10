@@ -1,0 +1,293 @@
+{
+ "video": "XYreyOCoBuk",
+ "label": "清大周志遠 第18B講 Operating System Examples",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Solaris：priority class",
+   "scene": "sch-18b-solaris",
+   "cues": [
+    16.3,
+    49.2,
+    56.4,
+    68.5,
+    87,
+    103.2,
+    112.9,
+    120.6,
+    138.6,
+    156.6,
+    168.7,
+    191.4,
+    204.5,
+    216.3
+   ],
+   "explain": [
+    "最後來看幾個 case study（實例）：前面學了 priority、shortest job、multilevel 這些基本演算法，現在看真實作業系統實際怎麼用。",
+    "你會發現，大部分真實 OS 都是 based on priority（以優先權為基礎），因為它最通用。",
+    "第一個是 Solaris，一個很早期的工作站（workstation）作業系統。",
+    "在這些系統裡，每個 process 一建立就有一個 priority。像在 Linux 打 top 指令，就會看到每個程式的 priority 或 nice 值（右邊示意）。",
+    "Solaris 的 priority 從 0 到 169，169 最高，數字越大越優先（左邊這根尺）。等一下會看到，不同系統的定義完全不同。",
+    "Solaris 把 process 分成六大類，叫 priority class。",
+    "第一類當然是 interrupt（中斷），最重要，所以 priority 最高：160 到 169（紅色）。",
+    "不是任何 process 都能隨便放在任何 class。建立時，OS 會依照一些 policy 或提示決定它屬於哪一類；放進去之後，就一直待在那一類。",
+    "再來是 real-time（即時）：100 到 159（橘）；system（系統）：60 到 99（紫）。",
+    "後面四類（像 time sharing、interactive，大多是你自己開的應用程式）全部擠在 0 到 59 之間。所以不同 class 的 process，priority 可能一樣。",
+    "重點：每個 class 對應整個 priority 範圍裡的一塊；一個 process 只屬於一個 class，不會在 class 之間跳來跳去。",
+    "每個 class 有自己的排程演算法，有點像之前學的 multilevel queue。",
+    "不管 class 內用什麼演算法，結果都會轉換成「在自己的範圍裡 priority 往上或往下調」。這個 P 就在 0～59 裡上下移動。",
+    "對整個 OS 來說，它只看 global priority（全域的優先權數字）：數字最大的先做，最上面的 class 做完了，才可能輪到下面的。"
+   ],
+   "points": [
+    {
+     "t": 16,
+     "text": "case study：真實 OS 的 scheduling 大部分都 based on priority（最 general）。"
+    },
+    {
+     "t": 56,
+     "text": "Solaris：priority 0～169，數字越大越優先（不同系統定義不同）；分六個 class。"
+    },
+    {
+     "t": 112,
+     "text": "interrupt 160～169、real-time 100～159、system 60～99、其餘四類（time sharing、interactive 等）都在 0～59；class 在 create 時決定，之後不變。"
+    },
+    {
+     "t": 191,
+     "text": "每個 class 有自己的演算法（像 multilevel queue），結果轉成 range 內的升降；OS 只看 global priority。"
+    }
+   ],
+   "trap": "Solaris、Windows XP：數字越大越優先；Linux：數字越小越優先。看題目要先確認方向。"
+  },
+  {
+   "title": "Solaris 的 dispatch table",
+   "scene": "sch-18b-soltable",
+   "cues": [
+    236.8,
+    253.3,
+    271.3,
+    279.6,
+    295.7,
+    310.8,
+    320.5,
+    334.5,
+    356,
+    374.3,
+    390.6,
+    414,
+    435.4,
+    470.7
+   ],
+   "explain": [
+    "system level（60 以上）的那些 process，priority 一建立就固定，基本上不太會變動。",
+    "使用者的 process 比較難預測，所以 Solaris 建了一張表（dispatch table）。這裡是課本表格的節錄：每一列是一個 priority，右邊三欄是它的 quantum、用完 quantum 後變成多少、睡醒回來變成多少。",
+    "首先，每一個 priority 都對應一個 time quantum（每次最多能跑多久）。",
+    "同一個 priority 可能有好幾個 process（A、B、C 都是 30），它們之間用 round robin 輪流，排得更細。",
+    "例如 priority 30 這一層：每個 process 上 CPU 跑它的 CPU burst，最多只能做 80，時間到就換下一個。",
+    "看表會發現：priority 越高的，time quantum 反而越小（59 只有 20）。",
+    "因為高 priority 的應該是「短的工作」：CPU burst 越短，priority 越高。所以給你很高的 priority，但你只能做 20 毫秒就要換人。",
+    "如果你一次就超過這個 quantum，系統就認為你這個工作不夠短，把你的 priority 降低：59 降到 49，放進 49 那個 queue。",
+    "只要超過 quantum，priority 就往下降。壞處是比較不容易被執行；好處是輪到你時，quantum 比較長，可以做久一點。這正適合 CPU-bound 的程式。",
+    "另一個規則（純粹是系統工程經驗）：如果程式從 sleep 或 waiting queue 回到 ready queue，就把它的 priority 提高。",
+    "為什麼？它在 waiting queue 代表它沒在用 CPU，很可能是一個常做 I/O 的程式（I/O-bound）。這純粹是直覺（intuition）。",
+    "例如原本 priority 20 的 Y，呼叫 sleep 回來之後，就升到 52，讓它先做。",
+    "總結 Solaris 調整 priority 的方法：超過 quantum → 你是 CPU-bound → 降；執行中呼叫了 I/O 的 system call、進入等待 → 升。這樣 CPU-bound 會慢慢沉下去，I/O-bound（CPU burst 短）會慢慢升上來。",
+    "priority 越高，quantum 越小。之前課堂的 multilevel feedback queue 例子（上層 8、下層 16），跟 Solaris 的做法非常像。"
+   ],
+   "points": [
+    {
+     "t": 236,
+     "text": "system level（60 以上）priority 固定；使用者的難以預測，所以建一張表：每個 priority 對應一個 time quantum，同 priority 的用 RR。"
+    },
+    {
+     "t": 310,
+     "text": "priority 越高 quantum 越小（59 只有 20 ms，像 shortest job）；超過 quantum → 認為不夠短，priority 降低（59 → 49），但之後 quantum 較長（CPU-bound）。"
+    },
+    {
+     "t": 374,
+     "text": "從 sleep / waiting 回到 ready → priority 提高（例 20 → 52），因為可能是 I/O-bound（直覺）。"
+    },
+    {
+     "t": 435,
+     "text": "CPU-bound 慢慢沉下去，I/O-bound 慢慢升上來；跟課堂的 MLFQ 例子很像。"
+    }
+   ],
+   "trap": "恐龍書 Solaris dispatch table 節錄：priority 0 → quantum 200、用完 0、睡醒 50；20 → 120、10、52；30 → 80、20、53；59 → 20、49、59。"
+  },
+  {
+   "title": "Windows XP",
+   "scene": "sch-18b-winxp",
+   "cues": [
+    487.7,
+    499.5,
+    521.9,
+    532.8,
+    553.5,
+    565.3,
+    583.6,
+    596.1,
+    613.6
+   ],
+   "explain": [
+    "下一個是 Windows XP，它跟 Solaris 很像，概念大多相同，只是定義上有些差別。",
+    "Windows XP 的 priority 等級比較少，只有 0 到 31（Solaris 有到 169）。一樣是數字越大，priority 越高。",
+    "它也分成 class：橫的有 6 個 class（real-time、high、above normal、normal、below normal、idle），每個 class 裡又分 7 個 relative priority（相對優先權）。表格裡的數字就是最後的 priority。",
+    "它也會根據程式執行的情況調整：CPU 用得多就很快往下降，I/O 做得多就往上升。這裡 P 從 10 降到 8。",
+    "每個 class 只在自己那七個數字之間跳動。唯一不會跳動的是 real-time。",
+    "一個工作如果被認定是 real-time job，它的 priority 就是 static（固定）的，而且一直都很重要，最低也有 16（橘色區）。",
+    "所以 Solaris 和 Windows XP 其實非常像，只是切割 priority 範圍的數字不同。",
+    "一樣是 highest priority 先：整個 OS 看 global priority；priority 相同的 process 放在同一個 queue，用 round robin 輪流。",
+    "跟 Solaris 不同的大概是 time quantum：這裡沒有特別說 quantum 會隨 priority 不同，但原則是一樣的。"
+   ],
+   "points": [
+    {
+     "t": 487,
+     "text": "Windows XP 跟 Solaris 很像：priority 0～31，數字越大越優先；6 個 class × 7 個 relative priority。"
+    },
+    {
+     "t": 532,
+     "text": "依執行情況調整：CPU 用多往下降、I/O 多往上升，只在 class 自己的 7 個數字內跳；real-time（16～31）是 static，不會動。"
+    },
+    {
+     "t": 583,
+     "text": "看 global priority，最高的先；同 priority 的放同一個 queue 用 RR；沒特別說 quantum 不同。"
+    }
+   ]
+  },
+  {
+   "title": "Linux：active 與 expired array",
+   "scene": "sch-18b-linux",
+   "cues": [
+    625.6,
+    637.9,
+    651.7,
+    675.6,
+    688.2,
+    713.3,
+    731.6,
+    749.7,
+    768.6,
+    792.7,
+    801.3,
+    838,
+    864,
+    888.8,
+    927.5
+   ],
+   "explain": [
+    "最後一個例子是大家常用的 Linux，它比較特別一點（這裡講的是 2.6 版的排程器）。",
+    "Linux 的範圍是 0 到 140，而且數字越小 priority 越高，跟 Solaris、Windows 剛好相反。",
+    "一樣，每個 priority 對應一個 time quantum。注意：課本寫的是 Linux 給 priority 高的較長的 quantum（最高 200 ms），priority 低的較短（最低 10 ms），跟 Solaris 相反；老師這段口述說得有點混，以課本為準。",
+    "0 到 99 屬於 real-time 或 system 的 task，priority 是固定的。",
+    "priority 比較低的（100 到 140）通常是使用者的 process，執行時會調整：看它的 quantum 有沒有用完（expire）、有沒有呼叫 I/O 的 system call，跟前面的例子很像。",
+    "Linux 的特點：它把所有 process 分成兩個 list：active array（活躍陣列）和 expired array（過期陣列）。",
+    "每個 task 有一個 priority，也有一個 time quantum，比如說 200（buddy 肚子上是剩下的 quantum）。",
+    "前面的 OS 是這樣：輪到你就跑一個 CPU burst。如果給你 200，你只做了 100 這段 burst 就結束，剩下的 quantum 就浪費掉，你回到 queue 最尾巴。",
+    "Linux 認為那樣不公平：既然給了你 200，就應該讓你把 200 用完。所以 T1 做完一個 burst 還剩 100（沒用完 budget），它就留在 active array，還可以再被執行。",
+    "如果你把 quantum 用完了（T2 剩 0），就把你放到 expired array，這一輪就不能再執行了。",
+    "所以每個人每一輪都真的能用滿自己的 quantum，別人才用。等於每個 task 的執行時間，是依照它的 quantum 來分配比例（weighted）。",
+    "priority 什麼時候降？要「一個 CPU burst 就超過 quantum」才降。給你 200，你分四五次才用完，priority 不受影響。",
+    "每次用完一段 burst，就從 200 裡扣掉用掉的，看還剩多少（T1 剩 40），繼續留在 active queue。",
+    "實作很簡單：process 用完就放進其中一個 array。等 active array 全部空了（大家都用完 quantum），只要把兩個 array 的 pointer（指標）交換：expired 就變成新的 active，大家 quantum 重新補滿，開始下一輪。",
+    "這就是 Linux 不一樣的地方：不是執行完一個 cycle 就換人，而是希望讓你把 quantum 全部用完。"
+   ],
+   "points": [
+    {
+     "t": 625,
+     "text": "Linux：priority 0～140，數字越小越優先；0～99 是 real-time（固定），100～140 是 user（run time 調整）；每個 priority 對應一個 quantum。"
+    },
+    {
+     "t": 713,
+     "text": "特點：active array 與 expired array；沒用完 quantum 的留在 active 繼續執行，用完的放到 expired。"
+    },
+    {
+     "t": 838,
+     "text": "一個 CPU burst 就超過 quantum 才降 priority；分次用完不受影響。active 空了就交換兩個 array 的 pointer。"
+    },
+    {
+     "t": 927,
+     "text": "Linux 不是做完一個 burst 就換人，而是讓你把 quantum 用完；case study 不會考。"
+    }
+   ],
+   "trap": "課堂口誤小心：恐龍書（Linux 2.6）說 Linux 跟 Solaris、Windows 相反，priority 越高的 quantum 越「長」（最高約 200 ms，最低約 10 ms）。"
+  },
+  {
+   "title": "本章結束",
+   "scene": null,
+   "points": [
+    {
+     "t": 940,
+     "text": "第五章（CPU scheduling）結束；case study 不會考，但可以想想基本想法怎麼被套進真實系統。休息十分鐘後進入下一章。"
+    }
+   ],
+   "explain_idle": "老師在收尾、宣布下課休息。case study 不考，但可以想想：真實 OS 是怎麼把 priority、RR、MLFQ 這些基本想法拼在一起的。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Solaris 的 priority 數字與優先順序的關係？",
+   "opts": [
+    "數字越大越優先（0～169）",
+    "數字越小越優先（0～140）",
+    "數字越大越優先（0～31）",
+    "沒有數字，只看 class"
+   ],
+   "ans": "數字越大越優先（0～169）",
+   "why": "Solaris 169 最高；Windows XP 0～31 也是越大越優先；Linux 0～140 是越小越優先。"
+  },
+  {
+   "q": "Solaris 的 time-sharing process 用完整個 time quantum 時？",
+   "opts": [
+    "priority 降低（例 59 → 49），之後 quantum 較長",
+    "priority 提高",
+    "priority 不變",
+    "被移到 interrupt class"
+   ],
+   "ans": "priority 降低（例 59 → 49），之後 quantum 較長",
+   "why": "超過 quantum → 判定不夠短（CPU-bound）→ 往下沉。"
+  },
+  {
+   "q": "Solaris 中 process 從 sleep 回到 ready queue 時，priority 通常？",
+   "opts": [
+    "提高（例 20 → 52）",
+    "降低",
+    "歸零",
+    "改成 real-time"
+   ],
+   "ans": "提高（例 20 → 52）",
+   "why": "在 waiting 代表沒用 CPU，可能是 I/O-bound，讓它先做。"
+  },
+  {
+   "q": "Windows XP 中哪一類 process 的 priority 是 static（不會被調整）？",
+   "opts": [
+    "real-time（16～31）",
+    "normal",
+    "idle",
+    "above normal"
+   ],
+   "ans": "real-time（16～31）",
+   "why": "其他 class 會在自己的 7 個數字內依 CPU / I/O 行為升降。"
+  },
+  {
+   "q": "Linux（2.6）的 active / expired array：task 用完它的 time quantum 後會？",
+   "opts": [
+    "放到 expired array，等兩個 array 交換",
+    "留在 active array 隊尾",
+    "立刻降 priority 並重新開始",
+    "被 kill"
+   ],
+   "ans": "放到 expired array，等兩個 array 交換",
+   "why": "沒用完的留在 active；active 全空時交換 pointer，開始下一輪。"
+  },
+  {
+   "q": "依恐龍書，Linux 2.6 的 time quantum 與 priority 的關係？",
+   "opts": [
+    "priority 越高 quantum 越長",
+    "priority 越高 quantum 越短",
+    "所有 priority 一樣",
+    "只有 real-time 有 quantum"
+   ],
+   "ans": "priority 越高 quantum 越長",
+   "why": "跟 Solaris、Windows 相反：最高約 200 ms，最低約 10 ms。"
+  }
+ ]
+}

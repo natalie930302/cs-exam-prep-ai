@@ -73,9 +73,9 @@
  },
  "0NRkuhnupzs": {
   "label": "清大周志遠 第18A講 Special Scheduling Issues",
-  "points": 34,
+  "points": 35,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "0oJyNmEbS4w": {
   "label": "Abdul Bari：2.9 Strassens Matrix Multiplication",
@@ -391,9 +391,9 @@
  },
  "8RlCb74uFp0": {
   "label": "清大周志遠 第17A講 Process Scheduling",
-  "points": 54,
+  "points": 58,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "8RyRHYruy-8": {
   "label": "清大周志遠 第11B講 Non-Contiguous Memory Allocation - Paging(續)",
@@ -763,9 +763,9 @@
  },
  "EpZgvKBf5eo": {
   "label": "清大周志遠 第16C講 Basic Concepts",
-  "points": 32,
+  "points": 36,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "Erea1QASjXY": {
   "label": "Discrete Math II - 10.8.1 Graph Coloring",
@@ -841,9 +841,9 @@
  },
  "G4v9HUllv-Q": {
   "label": "清大周志遠 第17B講 Special Scheduling Issues",
-  "points": 12,
-  "quiz": 4,
-  "cued": false
+  "points": 13,
+  "quiz": 5,
+  "cued": true
  },
  "Go2aLo7ZOlU": {
   "label": "MIT OCW 18.06 L33：Left and Right Inverses; Pseudoinverse",
@@ -1149,6 +1149,12 @@
   "label": "Abdul Bari：1.10.1 Comparison of Functions #1",
   "points": 27,
   "quiz": 5,
+  "cued": true
+ },
+ "n2o_WL62D4Q": {
+  "label": "清大周志遠 第16D講 Scheduling Algorithms",
+  "points": 31,
+  "quiz": 7,
   "cued": true
  },
  "Nd0XDY-jVHs": {
@@ -1547,6 +1553,12 @@
   "quiz": 7,
   "cued": true
  },
+ "VCIVXPoiLpU": {
+  "label": "Gate Smashers：Shortest Job First (SJF) Scheduling Algorithm",
+  "points": 9,
+  "quiz": 6,
+  "cued": true
+ },
  "veTbz_7sDtM": {
   "label": "清大周志遠 第2C講 Computer-System Architecture(續)",
   "points": 26,
@@ -1676,6 +1688,12 @@
  "xyqIXdUXeU0": {
   "label": "Approximation Algorithms 1 - Introduction and Vertex Cover Problem",
   "points": 35,
+  "quiz": 6,
+  "cued": true
+ },
+ "XYreyOCoBuk": {
+  "label": "清大周志遠 第18B講 Operating System Examples",
+  "points": 16,
   "quiz": 6,
   "cued": true
  },

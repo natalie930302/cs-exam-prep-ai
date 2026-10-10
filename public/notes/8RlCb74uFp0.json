@@ -1,306 +1,633 @@
 {
  "video": "8RlCb74uFp0",
  "label": "清大周志遠 第17A講 Process Scheduling",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
    "title": "回顧：preemptive 的兩種情況",
-   "scene": "preempt-vs-non",
+   "scene": "sch-17a-recap",
+   "cues": [
+    14.7,
+    19.1,
+    55.7,
+    77.5,
+    100.6
+   ],
+   "explain": [
+    "先複習最重要的觀念：一個程式就是 CPU burst（藍，正在用 CPU，也就是 running 狀態）和 I/O burst（橘，在做 CPU 以外的事）交替出現。",
+    "non-preemptive（不可搶佔）：P1 一旦進到 running，就讓它一直做，直到它自己說要去做 I/O、讓出 CPU，或是整個執行完，才重新排程。",
+    "preemptive（可搶佔）很好判斷：程式還在做 CPU 指令、CPU burst 做到一半，就被 context switch（換人）換掉了。",
+    "什麼時候會想中途換人？情況一：有新的程式進到 ready queue。可能是剛被建立的，也可能是做完 I/O 或睡醒（sleep）回來的舊程式。P2 走進了排隊區。",
+    "情況二：time sharing 系統裡，時間一到 timer 就發出 interrupt，強迫 OS 做決定。正在跑的 P1 會被放回 ready，重新被選一次。只有這兩種情況會在中途多做排程決定。"
+   ],
    "points": [
     {
-     "text": "non-preemptive：一旦進 running 就做到它自己去 I/O burst 或結束，才重新 scheduling。",
-     "t": 25
+     "t": 14,
+     "text": "程式就是 CPU burst（running state）與 I/O burst 交替。"
     },
     {
-     "text": "preemptive：CPU burst 做到一半就 context switch 換人。",
-     "t": 45
+     "t": 19,
+     "text": "non-preemptive：一旦進 running 就做到它自己去 I/O burst 或結束，才重新 scheduling。"
     },
     {
-     "text": "情況一：有新 process 進 ready queue（剛 create 的，或剛做完 I/O、sleep 回來的）。",
-     "t": 70
+     "t": 55,
+     "text": "preemptive：CPU burst 做到一半就 context switch 換人。"
     },
     {
-     "text": "情況二：time sharing 的 timer interrupt，強迫目前的程式回 ready state 重選一次。",
-     "t": 96
+     "t": 77,
+     "text": "情況一：有新 process 進 ready queue（剛 create 的，或剛做完 I/O、sleep 回來的）。"
+    },
+    {
+     "t": 100,
+     "text": "情況二：time sharing 的 timer interrupt，強迫目前的程式回 ready state 重選一次。"
     }
    ]
   },
   {
    "title": "FCFS",
-   "scene": "fcfs-convoy",
+   "scene": "sch-17a-fcfs",
+   "cues": [
+    141.8,
+    146.9,
+    153.2,
+    159.8
+   ],
+   "explain": [
+    "最基本的 first come, first serve（FCFS，先來先做）。這裡沿用上一講的例子示範：P1 要 24，P2、P3 各要 3。",
+    "它明顯不好：先進來的那一個，可能剛好是要跑很久的（P1 要 24），它一上 CPU 就是很長一段。",
+    "結果後面的人全部陪著等：P2 等了 24，P3 等了 27，wait time 都被拉得很高（buddy 都不開心）。",
+    "從整個系統看，平均等待時間 (0 + 24 + 27) ÷ 3 = 17，非常大，這不是使用者想看到的。"
+   ],
    "points": [
     {
-     "text": "First come, first serve：先來的先做，課堂直說它明顯不好。",
-     "t": 141
+     "t": 140,
+     "text": "First come, first serve：先來的先做，課堂直說它明顯不好。"
     },
     {
-     "text": "一開始排到的先進來 process，可能是執行時間很長的 process。",
-     "t": 146
+     "t": 146,
+     "text": "一開始排到的先進來 process，可能是執行時間很長的 process，後面的人 wait time 都被拉高。"
     },
     {
-     "text": "後面的人 wait time 都被拉高，從整個系統看 average wait time 很大，不是使用者想見到的。",
-     "t": 154
+     "t": 159,
+     "text": "從整個系統看 average wait time 很大，不是使用者想見到的。"
     }
    ],
    "trap": "補充：恐龍書例子 P1 24、P2 3、P3 3 依序到達，FCFS 平均 WT = (0+24+27)/3 = 17；改成 P2、P3、P1 只要 3。短工被長工卡住叫 convoy effect。"
   },
   {
    "title": "SJF（non-preemptive）",
-   "scene": "sjf-nonpre",
+   "scene": "sch-17a-sjf",
+   "cues": [
+    167,
+    178.4,
+    182.4,
+    188.9,
+    198,
+    207.8,
+    222.7,
+    250.2,
+    256.8
+   ],
+   "explain": [
+    "如果想把平均等待時間降到最小，理論上可以證明答案就是 shortest job first（SJF，最短的先做）。",
+    "注意「最短」是指：目前已經在 ready queue 裡排隊的人當中最短的，還沒來的不算。",
+    "這時 preemptive 和 non-preemptive 的結果就會不一樣了。先看 non-preemptive，用表格裡的例子：P1(0,7)、P2(2,4)、P3(4,1)、P4(5,4)。",
+    "P1 雖然很長（7），但它第 0 秒就來、其他人還沒到，沒得選，只好讓它先做。",
+    "一旦開始就不能打斷。這裡「不能打斷」指的是「這一個 CPU burst」，不是整個程式。",
+    "因為一個程式其實有很多 burst。像右上的 for 迴圈：i++ 是 CPU burst，print(i) 是 I/O burst，一個迴圈就繞了好幾輪 CPU、I/O。",
+    "考試可能會這樣出：P1 第一個 burst 7，接著做一段 I/O，第二個 burst 4。下面那條就是這樣的 P1（中間間隔是示意）。",
+    "第二個 CPU burst 來的時候，它會重新加入 ready queue，跟當時排隊的人一起比，重新排程。",
+    "把例子做完：t=7 選最短的 P3，再 P2、P4。non-preemptive 不會打斷，所以 Gantt chart 上每一段的長度，一定剛好等於那個人的 burst 長度。"
+   ],
    "points": [
     {
-     "text": "要讓 average wait time 最小，理論上可證明就是 shortest job first：ready queue 裡最短的先排。",
-     "t": 167
+     "t": 167,
+     "text": "要讓 average wait time 最小，理論上可證明就是 shortest job first：ready queue 裡最短的先排。"
     },
     {
-     "text": "non-preemptive：P1 雖然很長，但它先進來、沒有選擇，只好讓它先做，一旦開始就不能打斷。",
-     "t": 190
+     "t": 182,
+     "text": "non-preemptive：P1 雖然很長，但它先進來、沒有選擇，只好讓它先做，一旦開始就不能打斷。"
     },
     {
-     "text": "打斷指的是打斷「這一個 CPU burst」，真實程式有很多 burst；考題可能給第一個 burst 7、第二個 burst 4、中間隔多久。",
-     "t": 200
+     "t": 198,
+     "text": "打斷指的是打斷「這一個 CPU burst」；真實程式有很多 burst（for loop 裡 i++ 是 CPU burst、print 是 I/O burst），考題可能給第一個 burst 7、第二個 burst 4、中間隔多久。"
     },
     {
-     "text": "non-preemptive 的 Gantt chart 上，每段長度一定剛好等於它的 burst。",
-     "t": 261
+     "t": 250,
+     "text": "下一個 CPU burst 來時要重新加入 ready queue；non-preemptive 的 Gantt chart 上，每段長度一定剛好等於它的 burst。"
     }
    ]
   },
   {
-   "title": "SRTF（preemptive SJF）",
-   "scene": "srtf",
+   "title": "SJF（preemptive）：response 與 waiting 不同",
+   "scene": "sch-17a-srtf",
+   "cues": [
+    264.6,
+    276.3,
+    295.4,
+    318,
+    333.3,
+    337.6
+   ],
+   "explain": [
+    "換成 preemptive 就複雜一點：每當有新的人進 ready queue，都要重新比一次「剩下的時間」誰最短。",
+    "同一組例子，P1 還是先執行，但第 2 秒就被更短的 P2 打斷了。整條 Gantt chart：P1、P2、P3、P2、P4、P1。紅色的 P1 被切成兩段，它的 CPU burst 被切開，這就是 preemptive 的結果。",
+    "看 P1：它一來就上 CPU，所以 response time（第一次回應）是 0，很快；可是中間從 2 等到 11，在 ready queue 裡等了 9（紅線），wait time 很久。",
+    "所以在 preemptive 的情況下，response time 和 waiting time 很容易不一樣。它們是兩個不同的效能指標，不要混在一起。",
+    "整體來說 preemptive 比 non-preemptive 好：這個例子平均等待 3，比 non-preemptive 的 4 還少。",
+    "代價是：CPU burst 跑到一半就做 context switch，下一章會看到這會造成 synchronization（同步）問題。"
+   ],
    "points": [
     {
-     "text": "preemptive 要隨時判斷有沒有新的人進 ready queue。",
-     "t": 272
+     "t": 264,
+     "text": "preemptive 要隨時判斷有沒有新的人進 ready queue；剛剛的 P1 還是先執行，但被打斷了，CPU burst 被切開。"
     },
     {
-     "text": "剛剛的 P1 還是先執行，但被打斷了，CPU burst 被切開。",
-     "t": 282
+     "t": 288,
+     "text": "P1 的 response time 很快（一進來就執行），但中間一直在 ready queue 等，wait time 還是很久。"
     },
     {
-     "text": "P1 的 response time 很快（一進來就執行），但中間一直在 ready queue 等，wait time 還是很久。",
-     "t": 293
+     "t": 318,
+     "text": "preemptive 時 response time 和 wait time 很容易不同，是兩個不同的 performance metric。"
     },
     {
-     "text": "preemptive 時 response time 和 wait time 很容易不同，是兩個不同的 performance metric。",
-     "t": 323
+     "t": 333,
+     "text": "preemptive 比 non-preemptive 好，但 CPU burst 中途 context switch 會有 synchronization 問題（下一章）。"
     }
    ],
    "trap": "補充：例題 P1(0,7) P2(2,4) P3(4,1) P4(5,4)：SJF 平均 WT 4、SRTF 平均 WT 3；SRTF 比的是「剩餘時間」，不是原本的 burst。"
   },
   {
    "title": "預測下一個 CPU burst",
-   "scene": "sjf-predict",
+   "scene": "sch-17a-predict",
+   "cues": [
+    350.2,
+    364.2,
+    375.8,
+    379.9,
+    387.7,
+    406.8,
+    419.1
+   ],
+   "explain": [
+    "SJF 理論上很好，但實際上沒辦法直接實作：根本不知道一個程式的 burst time 有多長，又怎麼知道誰最短？",
+    "所以上次提到 approximate（近似）的方法：一個程式每段 burst 的長度排起來就是一串 time series（時間序列），可以用數學方法預測下一個。",
+    "用的是 exponential decay（指數衰減）的公式：下一次預測 = α × 這次實際 + (1 − α) × 這次預測。越舊的資料影響越小。",
+    "一開始當然可能很不準，因為第一個值是隨便猜的。這裡畫恐龍書的例子（α = 1/2）：先猜 10，實際 6、4、6；灰色預測一路修正成 8、6、6。",
+    "但程式通常有規律，不是亂跳的。像 for 迴圈每一輪做的指令都一樣，burst time 就很穩定。實際值穩定在 13 之後，預測 5、9、11、12 很快就追上了。",
+    "用這種逼近的方式，預測準了，你挑中的就真的是最短的 job，自然也就最快。",
+    "最後一節會介紹真實 OS 的做法：概念一樣是「CPU burst 越短的越優先」，但不一定用這麼複雜的數學，而是用一些直覺的方法。"
+   ],
    "points": [
     {
-     "text": "SJF 理論很好，但實際上不知道 burst time，所以不知道誰最短。",
-     "t": 363
+     "t": 350,
+     "text": "SJF 理論很好，但實際上不知道 burst time，所以不知道誰最短。"
     },
     {
-     "text": "burst time 是一串 time series，可用 exponential decay（exponential averaging）的方式預測。",
-     "t": 382
+     "t": 364,
+     "text": "burst time 是一串 time series，可用 exponential decay（exponential averaging）的方式預測。"
     },
     {
-     "text": "一開始亂猜可能不準，但程式通常有規律（例如迴圈），burst time 很穩定，預測會貼近。",
-     "t": 404
+     "t": 380,
+     "text": "一開始亂猜可能不準，但程式通常有規律（例如迴圈），burst time 很穩定，預測會貼近；猜中了選到的就是最短的 job。"
     },
     {
-     "text": "真實 OS 會用比較直覺的方式（後面介紹），概念一樣：CPU burst 短的先做。",
-     "t": 440
+     "t": 419,
+     "text": "真實 OS 會用比較直覺的方式（最後介紹），概念一樣：CPU burst 短的先做。"
     }
    ],
    "trap": "補充：τₙ₊₁ = α·tₙ + (1 − α)·τₙ；α = 0 只看歷史、α = 1 只看上一次。恐龍書例子 τ₀ = 10、α = 1/2。"
   },
   {
    "title": "Priority scheduling 與 aging",
-   "scene": "priority-aging",
+   "scene": "sch-17a-priority",
+   "cues": [
+    448.5,
+    453.8,
+    480.1,
+    485.6,
+    499.8,
+    507.5,
+    521.7,
+    529.9,
+    544.2,
+    551.5,
+    567.9
+   ],
+   "explain": [
+    "再來是 priority scheduling（優先權排程），它其實是最 general（通用）的情況。每個 buddy 背後的金色柱子越高，priority 越高。",
+    "SJF 也可以看成 priority scheduling：只要把 priority 的值設成 CPU burst time，最短的就是 priority 最高的，演算法完全一樣。",
+    "事實上，真實的作業系統都是 based on priority scheduling。",
+    "只是它們決定 priority 的方式，會摻雜很多規則和經驗。排好之後就讓 priority 最高的 P1 先跑。",
+    "priority scheduling 最大、一定要解決的問題叫 starvation（飢餓）：priority 低的 P4 永遠都很低，又一直有更高的人（P5）進來，它就永遠輪不到。",
+    "老師的比喻：就像貧富不均，貧窮的人一直沒辦法翻身，最後就餓死了。",
+    "這不是理論而已，課本也提到現實中真的發生過（上一講那個等了六年的 process）。",
+    "解法叫 aging（老化）：每過一段時間，還沒被執行的 process，就把它的 priority 往上加。",
+    "P4 的柱子慢慢長高，遲早會升到最高，就會被執行到，不會永遠餓著。",
+    "至於多久加一次、每次加多少，那只是 policy（策略），看你怎麼調整（tune）。aging 本身是非常常見的做法。",
+    "作業三就會實作一個基本的 aging，確保 priority scheduling 不會出問題。"
+   ],
    "points": [
     {
-     "text": "priority scheduling 是最 general 的；SJF 可視為 priority = CPU burst time 的特例。",
-     "t": 463
+     "t": 443,
+     "text": "priority scheduling 是最 general 的；SJF 可視為 priority = CPU burst time 的特例。"
     },
     {
-     "text": "真實 OS 都是 priority-based，只是決定 priority 時摻雜很多規則與經驗。",
-     "t": 509
+     "t": 478,
+     "text": "真實 OS 都是 priority-based，只是決定 priority 時摻雜很多規則與經驗。"
     },
     {
-     "text": "最大的問題是 starvation：priority 低的人可能永遠輪不到（像貧富不均翻不了身）。",
-     "t": 527
+     "t": 499,
+     "text": "最大的問題是 starvation：priority 低的人可能永遠輪不到（像貧富不均翻不了身）；課本有真實例子。"
     },
     {
-     "text": "解法 aging：沒被執行的 process 每過一段時間就提高 priority，遲早升到最高被執行。",
-     "t": 558
+     "t": 530,
+     "text": "解法 aging：沒被執行的 process 每過一段時間就提高 priority，遲早升到最高被執行。"
     },
     {
-     "text": "多久升、每次升多少只是 policy，看怎麼 tune；作業三要 implement 基本的 aging。",
-     "t": 579
+     "t": 551,
+     "text": "多久升、每次升多少只是 policy，看怎麼 tune；作業三要 implement 基本的 aging。"
     }
    ],
    "trap": "補充：恐龍書慣例是數字越小 priority 越高；題目若沒說清楚要先確認。"
   },
   {
    "title": "Round-robin 與 time quantum",
-   "scene": "rr-quantum",
+   "scene": "sch-17a-rr",
+   "cues": [
+    581.3,
+    588.6,
+    596.8,
+    609.6,
+    620.8,
+    645,
+    654.1,
+    676.6,
+    682.1,
+    697.2
+   ],
+   "explain": [
+    "下一個基本演算法：Round Robin（RR，輪流制）。這裡用一組示意的工作示範：P1 要 5、P2 要 3、P3 要 4，都在第 0 秒到。",
+    "就是大家輪流做，理論上是最公平（fair）的方式。",
+    "RR 要控制的東西是：每次輪到你，最多可以做多久。這段時間叫 time quantum（時間配額）。",
+    "quantum 可以設成每次 100 毫秒，也可以設小一點，例如每次只能做 10 毫秒就必須換人。示意例子用 q = 2。",
+    "因為 quantum 是固定的，不管你的 CPU burst 多長，時間一到就要讓出來。P1 做了 2 就被叫停（還剩 3），所以 RR 其實就像 preemptive。",
+    "剛做完一輪的人，放到 ready queue 的最後面重新排隊。P2、P3、P1……輪下去：誰剩的不到 2 就提早結束（像 P2 第二輪只做 1）。",
+    "如果 quantum 設得非常非常大，大過所有可能的 CPU burst，那每個人一上去都能一次做完，就變成 FIFO / FCFS（先來先做）了。",
+    "如果 quantum 非常非常小（例如 1），大家一次只做一點點，非常公平。",
+    "但要注意 context switch（換人）：每次換人都有成本。q 很大只換 2 次、q = 2 換 6 次、q = 1 要換 11 次，太小的話 overhead 會很大。",
+    "所以一般系統的 time quantum 不會設得非常大，也不會設得非常小。"
+   ],
    "points": [
     {
-     "text": "round-robin：大家輪流做，supposedly 最 fair；參數 time quantum 決定每次輪到可以做多久。",
-     "t": 607
+     "t": 578,
+     "text": "round-robin：大家輪流做，supposedly 最 fair；參數 time quantum 決定每次輪到可以做多久（例如 100 ms 或 10 ms）。"
     },
     {
-     "text": "quantum 固定，不管 CPU burst 多長，時間到就讓出來 → 本質上是 preemptive。",
-     "t": 651
+     "t": 620,
+     "text": "quantum 固定，不管 CPU burst 多長，時間到就讓出來 → 本質上是 preemptive；剛做完的人放到 ready queue 最後面。"
     },
     {
-     "text": "剛做完的人放到 ready queue 最後面排隊。",
-     "t": 673
+     "t": 654,
+     "text": "quantum 非常大 → 每個人都一次做完，就變成 FIFO / FCFS。"
     },
     {
-     "text": "quantum 非常大 → 每個人都一次做完，就變成 FIFO / FCFS。",
-     "t": 682
-    },
-    {
-     "text": "quantum 非常小 → 非常 fair，但 context switch 次數很多，overhead 大；一般系統不設太大也不設太小。",
-     "t": 704
+     "t": 676,
+     "text": "quantum 非常小 → 非常 fair，但 context switch 次數很多，overhead 大；一般系統不設太大也不設太小。"
     }
    ]
   },
   {
    "title": "RR 例子：q = 20",
-   "scene": "rr-q20",
+   "scene": "sch-17a-rr20",
+   "cues": [
+    704.2,
+    717.5,
+    726.8,
+    740.2,
+    744.6,
+    755.2
+   ],
+   "explain": [
+    "RR 的例子：time quantum = 20。四個工作 P1 53、P2 17、P3 68、P4 24，都在第 0 秒到。RR 很規律，模擬起來比較容易。",
+    "每 20 個單位就強迫換人。雖然 P1 要 53，做到 20 就得下來，剩 33，回到隊尾。",
+    "輪到 P2，它只要 17，所以會提早結束，不會硬做滿 20。",
+    "所以到第 37 秒，P2 就做完了，接著換下一個 P3。",
+    "P3 要 68，超過 20 也只能做 20；再換 P4、P1……以此類推。最後：P4 在 121 做完、P1 在 134、P3 在 162。",
+    "這就是標準的 round robin，quantum 可以設大或小。補充算平均等待：P1 = 134 − 53 = 81、P2 = 37 − 17 = 20、P3 = 162 − 68 = 94、P4 = 121 − 24 = 97，平均 73。"
+   ],
    "points": [
     {
-     "text": "time quantum 20：P1 要 53，但做 20 就得換人。",
-     "t": 734
+     "t": 704,
+     "text": "time quantum 20：P1 要 53，但做 20 就得換人。"
     },
     {
-     "text": "P2 只要 17，不會做滿 20，t = 37 就提早結束，接著換 P3。",
-     "t": 752
+     "t": 726,
+     "text": "P2 只要 17，不會做滿 20，t = 37 就提早結束，接著換 P3。"
     },
     {
-     "text": "P3 超過 20 也只能做 20，再換下一個，以此類推到大家做完。",
-     "t": 770
+     "t": 744,
+     "text": "P3 超過 20 也只能做 20，再換下一個，以此類推到大家做完；quantum 可大可小。"
     }
    ],
    "trap": "補充：這組（53、17、68、24）平均 WT = (81+20+94+97)/4 = 73。剛好用完 quantum 的瞬間若有人同時到達，課本慣例是新到的先排進 queue。"
   },
   {
    "title": "RR 的 turnaround 與 response",
-   "scene": "rr-tradeoff",
+   "scene": "sch-17a-rrtrade",
+   "cues": [
+    765,
+    786.6,
+    793.6,
+    799.9,
+    819.1,
+    835.6,
+    847.1,
+    866.7,
+    887.9
+   ],
+   "explain": [
+    "經驗上（不能嚴格證明）可以感覺到：RR 的平均 turnaround time（從來到做完）通常比較高。用 q = 20 那組算：RR 平均 113.5（藍）。數字是補充計算。",
+    "複習衡量演算法的三個指標：wait time、response time，還有 turnaround time（整個程式做完花的時間）。",
+    "同一組用 SJF（橘）平均 turnaround 只有 78.5。RR 太公平，公平的結果就是大家都很慢。",
+    "老師的比喻：算平均財富時，如果 1% 的人擁有 50% 的財富，平均看起來就很高。平均值要降下來，靠的是讓少數人特別快。",
+    "RR 完全公平，大家一起被拉長，沒有人特別短，所以平均 turnaround 降不下來。",
+    "但反過來看 response time（第一次輪到的時間），RR 就非常好：RR 平均 28.5，SJF 是 38。",
+    "因為 RR 保證輪流：最多等「前面的人數 × quantum」就一定輪到你（這裡最多 3 × 20 = 60），很快就有回應。",
+    "所以演算法沒有絕對的好壞，系統設計也一樣，只看使用者的需求，以及要用哪個指標（metric）衡量。",
+    "要 response time 好的系統，就用 round robin；想讓平均等待時間最小，就用 SJF。"
+   ],
    "points": [
     {
-     "text": "經驗上（無法證明）RR 的 average turnaround time 通常比較高：fair 的結果是大家都被拉長。",
-     "t": 785
+     "t": 765,
+     "text": "經驗上（無法證明）RR 的 average turnaround time 通常比較高：fair 的結果是大家都被拉長（像平均財富的比喻）。"
     },
     {
-     "text": "但 response time 非常好：輪流做，最多等 process 數 × quantum 就輪到你。",
-     "t": 852
+     "t": 835,
+     "text": "但 response time 非常好：輪流做，最多等 process 數 × quantum 就輪到你。"
     },
     {
-     "text": "演算法沒有好壞，要看使用者的 metric：要 response 好用 RR，要 average wait time 最小用 SJF。",
-     "t": 887
+     "t": 866,
+     "text": "演算法沒有好壞，要看使用者的 metric：要 response 好用 RR，要 average wait time 最小用 SJF。"
     }
    ]
   },
   {
    "title": "Multilevel queue",
-   "scene": "mlq",
+   "scene": "sch-17a-mlq",
+   "cues": [
+    909.8,
+    922.6,
+    932.2,
+    942.7,
+    960.2,
+    970.2,
+    998.9,
+    1023.5,
+    1039.9,
+    1064.8,
+    1072.8,
+    1095.5
+   ],
+   "explain": [
+    "前面那些都是最常見、最基本的做法。實際的系統會把各種做法兜（mix）在一起，再依需求調整。",
+    "第一種兜法：ready queue 不是只有一個，而是很多個。畫面上五條排隊道，每條各有自己的人。",
+    "這就叫 multilevel queue（多層佇列，MLQ）。它又分兩種，先講比較單純的第一種。",
+    "每個 queue 放不同類型的工作。不同類型的工作重要性不同，管理、排程的方式也就不同。",
+    "例如 interactive（互動式）的工作，需要 response time 好，就用 round robin。",
+    "如果是 system process（系統程式），非常重要，最重要的 kernel 程式一定要先執行，就用 priority scheduling。每個 queue 都可以選自己的演算法。",
+    "可是問題來了：雖然有五個 queue，每一個時刻還是只能選一個人上 CPU，不能五個一起跑。",
+    "通常的做法是 weighted（加權）：依照設定的比例，隨機（randomly）決定這次從哪一個 queue 拿 job。",
+    "例如 50% 的機會從 system process 挑，因為它重要；剩下 50% 分成 20%、10%、10%、10%。畫面上依機率抽中的 queue，最前面的人就上 CPU。",
+    "某個 queue 可能已經空了（student 那條），抽到空的就重新抽一次而已。",
+    "注意：雖然畫成上下五層，這種 multilevel queue 的上下沒有意義，純粹看機率，比例加起來 100% 就好。process 也一直待在自己的 queue，不會移動。",
+    "這樣就能把不同的演算法組合在一起。因為 OS 其實知道程式的一些特性（hint），可以管理得更好，更符合使用者的需求。"
+   ],
    "points": [
     {
-     "text": "實際系統把多種作法 mix 在一起；第一種：ready queue 不只一個，而是很多個。",
-     "t": 933
+     "t": 903,
+     "text": "實際系統把多種作法 mix 在一起；第一種：ready queue 不只一個，而是很多個（multilevel queue）。"
     },
     {
-     "text": "每個 queue 放不同類型的工作、用不同演算法：interactive 用 RR（response 好），system process 用 priority。",
-     "t": 961
+     "t": 942,
+     "text": "每個 queue 放不同類型的工作、用不同演算法：interactive 用 RR（response 好），system process 用 priority。"
     },
     {
-     "text": "每個時間點只能選一個人，所以還要決定 queue 之間怎麼選：用 weight（例如 system 50%，其他 20、10、10、10）機率挑 queue。",
-     "t": 1020
+     "t": 998,
+     "text": "每個時間點只能選一個人，所以還要決定 queue 之間怎麼選：用 weight（例如 system 50%，其他 20、10、10、10）機率挑 queue；空了就重選。"
     },
     {
-     "text": "這裡 queue 的上下沒有意義，純粹是機率；queue 空了就重選。process 不會在 queue 之間移動。",
-     "t": 1085
+     "t": 1072,
+     "text": "這裡 queue 的上下沒有意義，純粹是機率；process 不會在 queue 之間移動。"
     }
    ],
    "trap": "補充：恐龍書的 MLQ 是 queue 之間 fixed-priority preemptive（上層有人下層就不能跑），或 time slice（例如 foreground 80%、background 20%）；本講的「按權重機率挑 queue」屬於 time-slice 這一類。"
   },
   {
    "title": "Multilevel feedback queue",
-   "scene": "mlfq",
+   "scene": "sch-17a-mlfq",
+   "cues": [
+    1119.5,
+    1133.8,
+    1160.9,
+    1180.4,
+    1196.9,
+    1219.4,
+    1259.5,
+    1287.4,
+    1296.7,
+    1313,
+    1345.6,
+    1374.7,
+    1402.6
+   ],
+   "explain": [
+    "另一種比較複雜的做法：multilevel feedback queue（多層回饋佇列，MLFQ）。不只有好幾個 queue，更重要的是會「feedback」。",
+    "跟剛剛不一樣：這裡的上下有意義。上面的一定先做，第一個 queue 全部做空了，才會去第二個 queue 拿 job，依此類推。",
+    "而且放進來的 process 可以在 queue 之間移動。P3 就從 Q1 往下移到了 Q2。",
+    "feedback 的意思是：OS 在執行時（run time）觀察程式的行為，再判斷它應該待在第幾層。",
+    "OS 每次都從最上面那個 queue 挑人執行（P1 在 Q0，所以 P1 上 CPU）。看起來跟 MLQ 很像，運作邏輯卻剛好顛倒。",
+    "為什麼要這樣做？因為很多事情要跑了才知道。像使用者的程式佔了 80%，有的一直做 I/O、有的一直計算，使用者也不會告訴 OS，事先沒有 hint。",
+    "但只要執行過，OS 就知道了：它過去的 CPU burst、I/O burst 多長，呼叫了哪些 system call。於是可以在 run time 幫它分類。",
+    "分類的結果：上層放的通常是 I/O-bound 的程式。別想反了，最先執行的反而是常做 I/O 的程式。",
+    "因為對 CPU 來說，I/O-bound 代表它的 CPU burst 很短，先做它就等於 shortest job first，而 SJF 是平均等待最小的方法。",
+    "所以 OS 觀察到程式呼叫了 I/O 的 system call，或它的 CPU burst 真的比較短，就把它往上提到上一層（P4 從 Q1 升到 Q0）。",
+    "反過來，給你的 quantum 你用完了還做不完，代表你的 CPU burst 很長、是 CPU-bound，就把你往下踢一層（P1 被降到 Q1，不開心）。",
+    "但這樣有個問題：只從最上層開始執行，其實就是一種 priority scheduling（上層 priority 最高）。一直卡在最下層的 P3 就會 starvation（餓死）。",
+    "所以 MLFQ 一定也有 aging 機制：程式等太久，就把它往上提升一層，讓它比較有機會被執行。"
+   ],
    "points": [
     {
-     "text": "feedback：queue 有上下之分，上面的一定先做，第一個 queue 空了才去第二個拿 job。",
-     "t": 1134
+     "t": 1117,
+     "text": "multilevel feedback queue：queue 有上下之分，上面的一定先做，第一個 queue 空了才去第二個拿 job。"
     },
     {
-     "text": "process 會在 queue 之間移動：run time 觀察它的行為再決定放在第幾層。",
-     "t": 1177
+     "t": 1160,
+     "text": "process 會在 queue 之間移動：run time 觀察它的行為再決定放在第幾層；OS 每次選最上面的 queue。"
     },
     {
-     "text": "call I/O system call、CPU burst 短的往上提；quantum 用完還沒做完（CPU-bound）就往下踢。",
-     "t": 1292
+     "t": 1219,
+     "text": "很多事 run time 才知道（使用者不給 hint）；執行後就知道 burst 長短、call 了哪些 system call。"
     },
     {
-     "text": "也要有 aging：等太久往上提；這樣的設計會自動貼近 SJF，排程資訊記在 PCB 裡。",
-     "t": 1384
+     "t": 1287,
+     "text": "上層放 I/O-bound（CPU burst 短 ≈ SJF）：call I/O、burst 短的往上提；quantum 用完還沒做完（CPU-bound）就往下踢。"
     },
     {
-     "text": "例子：Q0 RR q = 8、Q1 RR q = 16、Q2 FCFS；用完 8 ms 就降到第二層，16 以內留在第二層。",
-     "t": 1443
-    },
-    {
-     "text": "最下層 FCFS 不會 starvation；只有上層都空了才輪到下層，但下層也有機會執行。",
-     "t": 1520
-    },
-    {
-     "text": "MLFQ 要設計：queue 數量、每層演算法、何時 upgrade、何時 downgrade；大部分系統都用 feedback queue。",
-     "t": 1705
+     "t": 1374,
+     "text": "只從最上層開始 = priority scheduling，最下層可能 starvation，所以也要有 aging：等太久往上提。"
     }
    ],
    "trap": "MLQ 與 MLFQ 名字很像但完全不同：MLQ 的 process 固定在一個 queue；MLFQ 依 run time 行為升降級，而且一定從最上層開始選。"
   },
   {
-   "title": "評估排程演算法",
-   "scene": "eval-methods",
+   "title": "MLFQ 例子：8 / 16 / FCFS",
+   "scene": "sch-17a-mlfq-ex",
+   "cues": [
+    1424,
+    1440.7,
+    1451.1,
+    1467.8,
+    1479.8,
+    1498.9,
+    1508.6,
+    1522,
+    1539.9,
+    1567,
+    1589.4,
+    1615.5,
+    1652.6,
+    1685.3,
+    1714.8,
+    1743.6
+   ],
+   "explain": [
+    "來看一個例子：這次 queue 串在一起，因為 job 會在 queue 之間移動。設定是 Q0：RR，q = 8；Q1：RR，q = 16；Q2：FCFS。工作 P1～P4 是示意。",
+    "前兩層都用 round robin，大家輪流，比較容易避免 starvation。",
+    "quantum 上面小、下面大：Q0 的 8 代表一次最多只能執行 8 ms，很短就要換人；Q1 可以做到 16。",
+    "把 8 ms 全部用完的話，系統就認定你的 CPU burst 一定超過 8，把你往下移。P1 用完 8 還沒做完，降到 Q1。",
+    "CPU burst 小於 8 的程式，才可以留在第一層。P2 只要 6，在 Q0 就做完了。它們不一定是最短的，但都是比 8 短的 job。",
+    "同樣道理，16 以內的中等長度工作，就保留在第二層，還是能比較快被執行。P3 用完 8 降到 Q1；P4 剛到，進 Q0 先做。",
+    "如果系統裡沒有 8 ms 以內的人了，第一個 queue 一空，就開始從第二個 queue 找。Q1 的 P1 做了 16 還沒完，再沉到 Q2。",
+    "如果上面兩層都空了，代表剩下的都是很吃 CPU 的程式（每次 burst 都超過 16），全部丟在最下層。P3 在 Q1 做完後，只剩 P1 在最下層。",
+    "最下層用 FCFS（先來先做）的目的：先來的先被排到，比較不會 starvation。P1 最後也做完了。",
+    "這樣拼的好處：在執行時自動貼近 shortest job first，又比較不會 starvation，是比較好的設計。",
+    "如果拼法剛好反過來，整個系統的平均等待時間等指標就可能變得很差。",
+    "同學問：「留在第一層」是什麼意思？老師說：程式做完 CPU burst 去做 I/O 時，會離開整個 ready queue；重點是下次回來加入時，會被放回它原本那一層。",
+    "不用怕這些資訊遺失：它們都存在 PCB（行程控制區塊）裡，PCB 有一塊記錄 scheduling 的資訊。作業三的正確做法也是在 PCB 加欄位記錄。",
+    "別忘了：最下層也有機會執行，只要前面的 queue 全部是空的。不是只有第一層才能跑。",
+    "所以 MLFQ 要設計的決定又多了：有幾個 queue、每個 queue 用什麼演算法，還有什麼時候往上升（upgrade）、什麼時候往下降（downgrade）。queue 之間怎麼挑倒不用設計，一律從最上面開始。",
+    "MLFQ 跟 MLQ 名字很像，但完全不同。大部分系統都用 feedback queue，因為它在執行時就能做選擇，不需要依賴複雜的數學預測（那容易有預測誤差，也比較花時間）。"
+   ],
    "points": [
     {
-     "text": "先定義 performance metric：minimize response time、wait time 還是 turnaround time。",
-     "t": 1797
+     "t": 1416,
+     "text": "例子：Q0 RR q = 8、Q1 RR q = 16、Q2 FCFS；前兩層 RR 比較不會 starvation。"
     },
     {
-     "text": "Deterministic modeling：給定全部輸入手動模擬（課堂例子都是）；不 general，FCFS 先短後長很好、先長後短最糟。",
-     "t": 1840
+     "t": 1467,
+     "text": "用完 8 ms 就降到第二層；小於 8 的留在第一層（shorter job）；16 以內留在第二層。"
     },
     {
-     "text": "Queueing model：把 scheduling 對應到 queueing theory，用機率分析；但常找不到完全吻合的 model，assumption 有落差。",
-     "t": 1896
+     "t": 1508,
+     "text": "第一層空了才輪到第二層；兩層都空時剩 CPU-bound 的在最下層 FCFS，不會 starvation。"
     },
     {
-     "text": "Simulation：寫程式模擬，用 real system log 等大量 workload。",
-     "t": 1987
+     "t": 1567,
+     "text": "這樣設計會自動貼近 SJF、比較不會 starvation；反過來拼效能會很差。"
     },
     {
-     "text": "Implementation：放進真的系統，才會看到 context switch 等 overhead（quantum 太小的壞處）。",
-     "t": 2043
+     "t": 1615,
+     "text": "問答：burst 做完去 I/O 會離開 ready queue，下次回來留在原本那層；資訊記在 PCB。最下層只要上面全空也會執行。"
+    },
+    {
+     "t": 1714,
+     "text": "MLFQ 要設計：queue 數量、每層演算法、何時 upgrade、何時 downgrade；大部分系統都用 feedback queue。"
+    }
+   ],
+   "trap": "例子中的 process（P1 30、P2 6、P3 14、P4 3）是示意，老師只給了 queue 的設定（8 / 16 / FCFS）。"
+  },
+  {
+   "title": "評估排程演算法",
+   "scene": "sch-17a-eval",
+   "cues": [
+    1786.8,
+    1798,
+    1815.3,
+    1834.3,
+    1859.6,
+    1897,
+    1931,
+    1955.9,
+    1974,
+    1999.1,
+    2028.6,
+    2040,
+    2068.3
+   ],
+   "explain": [
+    "補充一個觀念：不只作業系統，任何電腦系統裡，scheduling 都是非常核心（fundamental）的機制。",
+    "要評估（evaluate）一個排程演算法，第一步是定義 performance metric：要讓 response time 最小？wait time 最小？還是 turnaround time 最小？不同應用要選不同目標。",
+    "第二步：提出一堆演算法，有些甚至理論上可以證明最好。有了之後，要評估新提出的到底有多好。",
+    "第一種評估法：deterministic modeling（確定性模型）。把輸入全部給定，然後像投影片的例子一樣，一步一步手動模擬一遍。",
+    "它最大的問題是不 general：輸入一改，結果可能完全不同。像 FCFS，先短後長表現很好，先長後短就變最糟，只能當作例子幫助直覺理解。",
+    "比較嚴謹的做法是理論模型。scheduling 本質上就是排隊（queue），所以可以把它對應到 queueing theory（排隊理論）的 model。",
+    "用機率來分析，得到像是「有多少百分比的機會，等待時間是多少」這種結果。",
+    "但理論有限制：實際上常常找不到完全吻合的 model，只好加一些假設（assumption），而那些假設在真實世界不一定成立，結果就有落差。",
+    "再來是 simulation（模擬）：寫一個程式，把演算法實作進去模擬執行。",
+    "並且收集大量的 workload（工作負載）來測，例如真實系統的 log（紀錄）：什麼時候有哪些 job、burst 長度怎麼變化，餵進模擬器看結果好不好。",
+    "模擬覺得不錯，最後就真的 implement 進系統。",
+    "差別在於真實系統有額外的 overhead，例如 context switch 的時間。模擬時可能沒考慮，實作後才發現：把 quantum 設很小，切換成本累積起來非常大，所以 quantum 不能調太小。",
+    "課堂上我們大概只用第一種（deterministic）。作業三的 Nachos 比較像一個 OS 模擬器；如果再收集真實的 trace 來跑，就能更嚴謹地看設計的演算法好不好。"
+   ],
+   "points": [
+    {
+     "t": 1777,
+     "text": "scheduling 是任何電腦系統的核心機制；評估時先定義 performance metric（minimize response、wait 還是 turnaround），再 propose 演算法。"
+    },
+    {
+     "t": 1834,
+     "text": "Deterministic modeling：給定全部輸入手動模擬（課堂例子都是）；不 general，FCFS 先短後長很好、先長後短最糟。"
+    },
+    {
+     "t": 1897,
+     "text": "Queueing model：把 scheduling 對應到 queueing theory，用機率分析；但常找不到完全吻合的 model，assumption 有落差。"
+    },
+    {
+     "t": 1974,
+     "text": "Simulation：寫程式模擬，用 real system log 等大量 workload。"
+    },
+    {
+     "t": 2028,
+     "text": "Implementation：放進真的系統，才會看到 context switch 等 overhead（quantum 太小的壞處）；課堂用 deterministic，作業三比較像 simulator。"
     }
    ]
   },
   {
    "title": "本章要記清楚的重點",
-   "scene": "metrics",
+   "scene": "sch-17a-sum",
+   "cues": [
+    2116.2,
+    2124.2,
+    2133.1
+   ],
+   "explain": [
+    "這章最重要的：每個演算法要會模擬，尤其是 preemptive 和 non-preemptive 的差別，要能自己畫出 Gantt chart。",
+    "還要能分清楚 multilevel feedback queue（會在 queue 間移動、從最上層開始選）和 multilevel queue（固定在一個 queue、照比例挑）。",
+    "最後，waiting、response、turnaround 這些時間的定義一定要記清楚，記錯了算出來就全錯。"
+   ],
    "points": [
     {
-     "text": "最重要：各演算法，尤其 preemptive / non-preemptive 怎麼模擬。",
-     "t": 2133
+     "t": 2116,
+     "text": "最重要：各演算法，尤其 preemptive / non-preemptive 怎麼模擬。"
     },
     {
-     "text": "要能區分 multilevel feedback queue 與 multilevel queue。",
-     "t": 2144
+     "t": 2124,
+     "text": "要能區分 multilevel feedback queue 與 multilevel queue。"
     },
     {
-     "text": "waiting、response、turnaround 的定義一定要記清楚，記錯就算錯。",
-     "t": 2151
+     "t": 2133,
+     "text": "waiting、response、turnaround 的定義一定要記清楚，記錯就算錯。"
     }
    ],
    "trap": "補充：Turnaround = 完成 − 到達；Waiting = Turnaround − burst（只算在 ready queue 等的時間）；Response = 第一次上 CPU − 到達。"
@@ -395,6 +722,5 @@
    "ans": "結果只對那組輸入成立，不 general",
    "why": "例：FCFS 先短後長很好，先長後短最糟。"
   }
- ],
- "timing": "estimated"
+ ]
 }

@@ -1,0 +1,186 @@
+{
+ "video": "VCIVXPoiLpU",
+ "label": "Gate Smashers：Shortest Job First (SJF) Scheduling Algorithm",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "SJF 例題：畫 Gantt chart",
+   "scene": "sch-gs-gantt",
+   "cues": [
+    1,
+    15.3,
+    26.8,
+    32.4,
+    45.4,
+    56.8,
+    71.3,
+    82,
+    97.9,
+    125.9,
+    149.1,
+    168.2,
+    243.1,
+    266.8,
+    293.6,
+    320.9,
+    347.3,
+    359.4,
+    372.8
+   ],
+   "explain": [
+    "這支影片用一題數值例題教 Shortest Job First（SJF，最短工作優先）。有四個 process，表格給了每個的 arrival time（AT，到達時間）和 burst time（BT，需要的 CPU 時間）。",
+    "題目通常要你算四個東西：completion time（CT，完成時間）、turnaround time（TAT，周轉時間）、waiting time（WT，等待時間）、response time（RT，回應時間）。",
+    "SJF 決定「下一個是誰」的標準（criteria）是 burst time。",
+    "shortest job 的意思：burst time 最小的 process，最先讓它在 CPU 上跑。",
+    "這題的 mode 是 non-preemptive（不可搶佔）：一旦把 CPU 交給某個 process，它就一路跑完，中間不會被打斷。",
+    "用 Gantt chart（甘特圖）來做會很清楚。時間一定從 0 開始。",
+    "站在 t = 0，先檢查：有沒有 process 在 0 到達？看表格，沒有任何一個。",
+    "考試也會出這種題目，沒關係：沒有 process，CPU 就只能 idle（閒置），所以 0～1 畫成 idle。",
+    "現在站在 t = 1。第一件事永遠是：先看誰已經到了，burst 等一下再比。P1 和 P3 都在 1 到達，走進 ready queue。",
+    "兩個都到了，才用 burst time 比：P1 要 3、P3 要 2。P3 比較短，所以先選 P3。",
+    "non-preemptive，P3 要整個跑完：從 1 開始跑 2 個單位，1 + 2 = 3，P3 在 3 完成。",
+    "現在站在 t = 3。P1 在 1 就到了但還沒跑；P2 在 2 也到了。ready queue 裡有 P1、P2。",
+    "比 burst time：P1 是 3、P2 是 4。P1 比較短，跑 3 個單位：3 + 3 = 6，P1 在 6 完成。",
+    "先看時間：現在是 6。這時誰到了？P2 一直在等，P4 在 4 也到了。",
+    "比 burst time：P2 是 4，P4 也是 4，兩個一樣長！老師說這題是故意設計的，要讓你看到各種狀況。",
+    "遇到平手（conflict）時，退一步看 arrival time：誰先到？P2 在 2 到，P4 在 4 到，所以選 P2。",
+    "假如連 arrival time 也一樣呢？那就直接選 process id 比較小的那一個（例如 P2 比 P4 小）。",
+    "所以先跑 P2，4 個單位：6 + 4 = 10，P2 在 10 完成。",
+    "最後只剩 P4，沒有選擇的問題，跑 4 個單位：10 + 4 = 14，P4 在 14 完成。Gantt chart 完成。"
+   ],
+   "points": [
+    {
+     "t": 0,
+     "text": "例題：P1（AT 1, BT 3）、P2（2, 4）、P3（1, 2）、P4（4, 4）；要算 completion、turnaround、waiting、response time。"
+    },
+    {
+     "t": 26,
+     "text": "SJF 的 criteria 是 burst time：burst 最小的先上 CPU；mode 是 non-preemptive，給了 CPU 就跑完。"
+    },
+    {
+     "t": 56,
+     "text": "Gantt chart 從 0 開始：t = 0 沒人到 → 0～1 idle；t = 1 P1、P3 到，P3（2）< P1（3）→ P3 1～3。"
+    },
+    {
+     "t": 168,
+     "text": "t = 3：P1、P2 在 queue，P1（3）< P2（4）→ P1 3～6。"
+    },
+    {
+     "t": 266,
+     "text": "t = 6：P2、P4 都是 4（tie）→ 比 arrival time，P2 先（arrival 也同就比 process id）→ P2 6～10，最後 P4 10～14。"
+    }
+   ],
+   "trap": "每到一個時間點，先檢查「誰已經到了」，再在到了的人裡比 burst time；還沒到的不能選。"
+  },
+  {
+   "title": "SJF 例題：計算各種時間與平均",
+   "scene": "sch-gs-calc",
+   "cues": [
+    380.6,
+    407.3,
+    426.1,
+    444.7,
+    457.9,
+    483.6,
+    517.5,
+    534.3
+   ],
+   "explain": [
+    "先寫 completion time：看 Gantt chart 上每個 process 色塊的右邊。P1 在 6、P2 在 10、P3 在 3、P4 在 14 完成。",
+    "turnaround time（從到達到完成花多久）= CT − AT：P1 6 − 1 = 5、P2 10 − 2 = 8、P3 3 − 1 = 2、P4 14 − 4 = 10。",
+    "waiting time（在 ready queue 等多久）= TAT − BT：P1 5 − 3 = 2、P2 8 − 4 = 4、P3 2 − 2 = 0、P4 10 − 4 = 6。",
+    "response time：在 non-preemptive 的情況下其實不用另外算，它一定等於 waiting time。",
+    "真的被問到的話，定義是「process 第一次拿到 CPU 的時間 − 到達時間」。例如 P3 第一次拿到 CPU 是 1，到達也是 1，所以 1 − 1 = 0。其他也都等於 WT。",
+    "為什麼會相等？因為 non-preemptive 一拿到 CPU 就跑到完，不會有第二次、第三次。只有 preemptive 時，CPU 會切換，process 之後可能再輪到，RT 和 WT 才會不同。",
+    "題目接著可能問平均 turnaround time：5 + 8 + 2 + 10 = 25，除以 4 個 process，得到 6.25。",
+    "平均 waiting time：2 + 4 + 0 + 6 = 12，除以 4，得到 3。這就是 SJF 題目的完整解法。"
+   ],
+   "points": [
+    {
+     "t": 380,
+     "text": "Completion time 看 Gantt chart 右邊：P1 6、P2 10、P3 3、P4 14。"
+    },
+    {
+     "t": 407,
+     "text": "TAT = CT − AT：5、8、2、10；WT = TAT − BT：2、4、0、6。"
+    },
+    {
+     "t": 444,
+     "text": "non-preemptive 時 response time 等於 waiting time（RT = 第一次拿到 CPU − AT）；preemptive 才可能不同。"
+    },
+    {
+     "t": 517,
+     "text": "平均 TAT = 25 / 4 = 6.25；平均 WT = 12 / 4 = 3。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "這題（P1 1/3、P2 2/4、P3 1/2、P4 4/4，non-preemptive SJF）0～1 的 CPU 狀態？",
+   "opts": [
+    "idle",
+    "執行 P1",
+    "執行 P3",
+    "執行 P2"
+   ],
+   "ans": "idle",
+   "why": "沒有任何 process 在 0 到達，CPU 只能閒置。"
+  },
+  {
+   "q": "t = 1 時 P1（BT 3）與 P3（BT 2）都到了，先選誰？",
+   "opts": [
+    "P3",
+    "P1",
+    "兩個輪流",
+    "看 process id，選 P1"
+   ],
+   "ans": "P3",
+   "why": "SJF 比 burst time，2 < 3。"
+  },
+  {
+   "q": "t = 6 時 P2 與 P4 的 burst time 都是 4，選誰？",
+   "opts": [
+    "P2，因為 arrival time 較早",
+    "P4，因為比較晚到",
+    "任選，結果不同",
+    "兩個同時執行"
+   ],
+   "ans": "P2，因為 arrival time 較早",
+   "why": "平手先比 arrival time；arrival 也相同才比 process id。"
+  },
+  {
+   "q": "這題的平均 waiting time？",
+   "opts": [
+    "3",
+    "6.25",
+    "4",
+    "2.5"
+   ],
+   "ans": "3",
+   "why": "WT = 2、4、0、6，總和 12，除以 4。"
+  },
+  {
+   "q": "這題的平均 turnaround time？",
+   "opts": [
+    "6.25",
+    "3",
+    "5",
+    "14"
+   ],
+   "ans": "6.25",
+   "why": "TAT = 5、8、2、10，總和 25，除以 4。"
+  },
+  {
+   "q": "Non-preemptive 排程下，response time 與 waiting time 的關係？",
+   "opts": [
+    "相等",
+    "RT 一定比較大",
+    "RT 一定是 0",
+    "沒有關係"
+   ],
+   "ans": "相等",
+   "why": "一拿到 CPU 就跑完，第一次拿到 CPU 前的等待就是全部的等待。"
+  }
+ ]
+}
