@@ -7440,3 +7440,11 @@ body#appRoot .fab-nav .fab-btn .ic { width: 18px; height: 18px; }
   body#appRoot #main .sp .smeta .sm + .sm { border-left: 0 !important; border-top: 1px solid var(--bd) !important; }
   body#appRoot #main .sp .smeta .sm-n { order: 2; }
 }
+/* 「本科完整影片系列素材」放到左欄、進度卡下面；章節清單在右邊跨兩列 */
+@media (min-width: 1000px) {
+  body#appRoot #main #sec-subjects.on { grid-template-columns: 280px minmax(0, 1fr) !important; grid-template-rows: auto auto auto auto auto 1fr auto !important; }
+  body#appRoot #main #sec-subjects > #spPanels > .sp.on > .subject-overview-card { position: static !important; grid-row: 4 !important; }
+  body#appRoot #main #sec-subjects > #spPanels > .sp.on > .sp-rec-row { grid-column: 1 !important; grid-row: 5 !important; margin-top: 12px !important; align-self: start; }
+  body#appRoot #main #sec-subjects > #spPanels > .sp.on > .ch-list { grid-row: 4 / span 3 !important; }
+  body#appRoot #main #sec-subjects > #spPanels > .sp.on > :is(.tip, .filter-empty) { grid-row: 7 !important; }
+}
