@@ -1467,11 +1467,13 @@ FRAG.push(['dijk-path', 'Dijkstra：沿 parent 回推最短路徑', async (tok) 
 
   // ═══ spbari.js ═══
   {
-const { cube, glow, kill, GOLD, RED } = K;
+const { cube, glow, kill, GOLD, RED, step, buddy, travel } = K;
+const kanim = K.anim;
 // ─── Abdul Bari 3.6 Dijkstra（XB4MIexjvY0）、TechDose Bellman-Ford（FrLWd1tJ_Wc）、Abdul Bari 4.4 Bellman-Ford（FtN3BYH2Zes）、
 //     Abdul Bari 4.2 Floyd-Warshall（oNI0rf2P9gE）、Abdul Bari Shortest Path Algorithms（2raV0H9KqY8）───
-// 用本章模組的畫圖工具（buildGraph、dijkstraGen、bfGen、nodeTag、edgeColor…）；fresh / tag / code / anim 是模組自己的版本。
-// 4.4 的 7 頂點、4 頂點、負 cycle 例子直接沿用 bf-bari7 / bf-bari4 / bf-detect-cycle。
+// cued：每個 await step(tok) 等講者說到那一句（notes 的 cues）。step 之間只放短動作。
+// 用本章模組的畫圖工具（buildGraph、nodeTag、edgeColor…）；fresh / tag / code 是模組自己的版本。
+// 4.4 的 7 頂點、4 頂點、負 cycle 例子做成 cued 版本 spbari-bf-bari7 / spbari-bf-bari4 / spbari-bf-cycle4。
 const SB = {
   // 3.6：起點 1，1→2 = 2、2→3 = 4
   d3: { title: '1, 2, 3', directed: true, names: ['1', '2', '3'], pos: [[-4.4, 0.8], [0, -2.0], [4.2, 0.8]], edges: [[0, 1, 2], [1, 2, 4]] },
@@ -1506,17 +1508,242 @@ const sbTri = (w) => ({ title: '0, 1, 2', directed: true, names: ['0', '1', '2']
 const sbE = (u, v) => findEdge(u, v);
 const sbPath = (vs, color, k = 2.2) => { for (let i = 0; i + 1 < vs.length; i++) edgeColor(sbE(vs[i], vs[i + 1]), color, k); };
 const sbD = (arr) => arr.forEach((v, i) => nodeTag(i, v === null ? '' : fmt(v), 'ptr'));
-// 一顆小方塊沿著 cycle 走；回傳最後總和
-async function sbLoop(tok, pts, ws, laps, sumTag, start = 0) {
+const sbSum = (a, w) => fmt(a) + (w < 0 ? ' − ' + fmt(-w) : ' + ' + fmt(w));
+const sbCls = (l, c) => { l.element.className = 'lab-label' + (c ? ' ' + c : ''); };
+
+// ── 小幫手：會走、會說話的小方塊（buddy）與沿著邊跑的封包（pkt） ──
+const sbHome = (i) => GR.nodes[i].home;
+const sbAt = (i) => V(sbHome(i).x - 0.95, 0, sbHome(i).z + 0.15);
+function sbBuddy(x, z, s = 0.5, color = '#f4a56a', name = '') {
+  const b = buddy(name, '', color, x, 0, z, s);
+  const sp = lab.label(' ', 'say'); sp.position.set(0, s + (name ? 0.85 : 0.45), 0); b.g.add(sp);
+  b.talk = (t) => { sp.element.style.display = t ? '' : 'none'; sp.element.textContent = t || ''; };
+  b.talk('');
+  return b;
+}
+async function sbGo(tok, b, p, ms = 700) { await travel(tok, b.g, b.g.position.clone(), p, ms); }
+async function sbPkt(tok, text, u, v, ms = 800) {
+  const a = sbHome(u), c = sbHome(v);
+  const l = tag(text, 'pkt', a.x, 1.0, a.z);
+  await travel(tok, l, V(a.x, 1.0, a.z), V(c.x, 1.0, c.z), ms);
+  return l;
+}
+// 一個封包沿著一串頂點走
+async function sbWalk(tok, text, path, ms = 600) {
+  const p = (k) => V(sbHome(k).x, 1.0, sbHome(k).z);
+  const l = tag(text, 'pkt', p(path[0]).x, 1.0, p(path[0]).z);
+  for (let i = 0; i + 1 < path.length; i++) await travel(tok, l, p(path[i]), p(path[i + 1]), ms);
+  return l;
+}
+// 同時從一個頂點送封包到好幾個頂點
+async function sbFan(tok, from, tos, ms = 900) {
+  const a = sbHome(from);
+  const ls = tos.map((v) => ({ l: tag(nm(from) + '→' + nm(v), 'pkt', a.x, 1.0, a.z), b: sbHome(v) }));
+  await kanim(tok, ms, (u) => ls.forEach(({ l, b }) => l.position.set(a.x + (b.x - a.x) * u, 1.0, a.z + (b.z - a.z) * u)));
+  return ls.map((x) => x.l);
+}
+// 一顆小方塊沿著 cycle 走一圈；回傳總和
+async function sbLoop(tok, pts, ws, sumTag, start = 0, ms = 480) {
   const m = lab.box('#e8b02a', [0.4, 0.4, 0.4]); m.position.set(pts[0].x, 0.9, pts[0].z); lab.world.add(m);
   let total = start;
-  for (let l = 0; l < laps; l++) for (let i = 0; i < pts.length; i++) {
+  for (let i = 0; i < pts.length; i++) {
     const a = pts[i], b = pts[(i + 1) % pts.length];
-    await anim(tok, 520, (t) => m.position.set(a.x + (b.x - a.x) * t, 0.9, a.z + (b.z - a.z) * t));
+    await kanim(tok, ms, (t) => m.position.set(a.x + (b.x - a.x) * t, 0.9, a.z + (b.z - a.z) * t));
     total += ws[i]; txt(sumTag, '走過的總權重 = ' + fmt(total));
   }
   kill(m);
   return total;
+}
+// 跟著講者：groups 每一項是一句話 — 數字 n = 播下 n 個事件；函式 = 執行這段畫面
+async function sbRun(tok, evs, groups, show) {
+  const need = groups.reduce((a, g) => a + (typeof g === 'number' ? g : 0), 0);
+  if (need !== evs.length) log('groups ' + need + ' ≠ events ' + evs.length + '：' + evs.map((e) => e.t + (e.e ? '(' + nm(e.e.u) + nm(e.e.v) + ')' : e.u !== undefined ? nm(e.u) : '')).join(' '), true);
+  let k = 0;
+  for (const g of groups) {
+    await step(tok);
+    if (typeof g === 'function') { await g(); continue; }
+    const ms = Math.min(850, Math.floor(2400 / Math.max(1, g)));
+    for (let i = 0; i < g && k < evs.length; i++) await show(evs[k++], ms);
+  }
+}
+
+// ── Dijkstra：先算好事件，再一句一句播 ──
+const sbOut = (u) => GR.edges.filter((e) => e.u === u || (!GR.directed && e.v === u)).map((e) => ({ e, v: e.u === u ? e.v : e.u }));
+function sbDijEv(s, o = {}) {
+  const n = GR.n, d = Array(n).fill(INF), par = Array(n).fill(-1), done = Array(n).fill(false), ev = [];
+  d[s] = 0;
+  if (o.direct) { done[s] = true; for (const { e, v } of sbOut(s)) if (e.w < d[v]) { d[v] = e.w; par[v] = s; } }
+  ev.push({ t: 'init', d: d.slice(), par: par.slice() });
+  for (;;) {
+    let u = -1;
+    for (let v = 0; v < n; v++) if (!done[v] && (u < 0 || d[v] < d[u])) u = v;
+    if (u < 0) break;
+    if (d[u] === INF) { ev.push({ t: 'unreach', vs: [...Array(n).keys()].filter((v) => !done[v]) }); break; }
+    done[u] = true; ev.push({ t: 'pick', u, du: d[u], pe: par[u] });
+    for (const { e, v } of sbOut(u)) {
+      const nd = d[u] + e.w;
+      if (done[v]) {
+        if (nd < d[v]) ev.push({ t: 'late', u, v, e, du: d[u], nd, old: d[v] });
+        else if ((o.check || []).includes(u + '-' + v)) ev.push({ t: 'doneKeep', u, v, e, du: d[u], nd, old: d[v] });
+        continue;
+      }
+      if (nd < d[v]) { ev.push({ t: 'upd', u, v, e, du: d[u], nd, old: d[v], ope: par[v] }); d[v] = nd; par[v] = u; }
+      else ev.push({ t: 'keep', u, v, e, du: d[u], nd, old: d[v] });
+    }
+  }
+  ev.push({ t: 'end', d: d.slice() });
+  return ev;
+}
+function sbDijShow(tok, s, o = {}) {
+  const b = sbBuddy(sbAt(s).x, sbAt(s).z, 0.48);
+  let pk = null, tb = null;
+  const setD = (v, val, cls) => { nodeTag(v, fmt(val), cls); if (tb && tb[v]) txt(tb[v].userData.l, nm(v) + '：' + fmt(val)); };
+  const show = async (ev, ms) => {
+    if (pk) { kill(pk); pk = null; }
+    if (ev.t === 'init') {
+      for (let v = 0; v < GR.n; v++) setD(v, ev.d[v], v === s ? 'ptr' : 'ptr alt');
+      nodeColor(s, C.ok, 0.3);
+      for (let v = 0; v < GR.n; v++) if (ev.par[v] === s) edgeColor(findEdge(s, v), C.pq, 1.6);
+      b.talk('先看直接邊'); await b.hop(tok);
+      say('起點 ' + nm(s) + ' = 0：直接邊先填上', '沒有直接邊 → ∞');
+    } else if (ev.t === 'pick') {
+      b.talk('選 ' + nm(ev.u) + '！'); b.mood('calm');
+      await sbGo(tok, b, sbAt(ev.u), Math.min(ms, 800));
+      nodeColor(ev.u, C.ok, 0.3); setD(ev.u, ev.du, 'ptr');
+      if (ev.pe >= 0) edgeColor(findEdge(ev.pe, ev.u), C.tree, 2.2);
+      if (tb && tb[ev.u]) tb[ev.u].material.color.set('#bfe8d6');
+      say('選 ' + nm(ev.u) + '（距離 ' + fmt(ev.du) + '）', '還沒選的頂點裡最小的 → 定案');
+    } else if (ev.t === 'upd') {
+      edgeColor(ev.e, C.hot, 1.8);
+      pk = await sbPkt(tok, sbSum(ev.du, ev.e.w) + ' = ' + fmt(ev.nd), ev.u, ev.v, ms);
+      setD(ev.v, ev.nd, 'ptr alt');
+      if (ev.ope >= 0 && ev.ope !== ev.u) edgeColor(findEdge(ev.ope, ev.v), C.edge, 1);
+      edgeColor(ev.e, C.pq, 1.6);
+      txt(pk, fmt(ev.nd) + ' < ' + fmt(ev.old)); b.mood('happy'); b.talk('改成 ' + fmt(ev.nd));
+      say(nm(ev.u) + ' → ' + nm(ev.v) + '：' + sbSum(ev.du, ev.e.w) + ' = ' + fmt(ev.nd) + ' < ' + fmt(ev.old), 'relax：' + nm(ev.v) + ' 改成 ' + fmt(ev.nd));
+    } else if (ev.t === 'keep' || ev.t === 'doneKeep') {
+      edgeColor(ev.e, C.hot, 1.8);
+      pk = await sbPkt(tok, sbSum(ev.du, ev.e.w) + ' = ' + fmt(ev.nd), ev.u, ev.v, ms);
+      txt(pk, fmt(ev.nd) + ' ≥ ' + fmt(ev.old)); sbCls(pk, 'bad');
+      edgeColor(ev.e, C.edge, 1); b.mood('calm'); b.talk('不用換');
+      say(nm(ev.u) + ' → ' + nm(ev.v) + '：' + sbSum(ev.du, ev.e.w) + ' = ' + fmt(ev.nd) + ' ≥ ' + fmt(ev.old), ev.t === 'doneKeep' ? nm(ev.v) + ' 已經選過了，也不會更好' : '沒有比較短 → 不更新');
+    } else if (ev.t === 'late') {
+      edgeColor(ev.e, C.back, 2);
+      pk = await sbPkt(tok, sbSum(ev.du, ev.e.w) + ' = ' + fmt(ev.nd), ev.u, ev.v, ms);
+      nodeTag(ev.v, fmt(ev.old) + ' → ' + fmt(ev.nd) + '？', 'ptr alt'); b.mood('wow'); b.talk('它早就定案了…');
+      say(nm(ev.v) + ' 早已定為 ' + fmt(ev.old), '可是 ' + sbSum(ev.du, ev.e.w) + ' = ' + fmt(ev.nd) + ' 更小');
+    } else if (ev.t === 'unreach') {
+      ev.vs.forEach((v) => { nodeColor(v, C.dim, 0); nodeTag(v, '∞', 'ptr'); });
+      b.mood('sad'); b.talk('走不到');
+      say('剩下的頂點還是 ∞', '沒有邊走得到 → 一直是 ∞');
+    } else if (ev.t === 'end') {
+      b.mood(o.endSad ? 'sad' : 'happy'); b.talk(o.endTalk || '完成！');
+      say(o.endCap || [...Array(GR.n).keys()].filter((v) => v !== s).map((v) => nm(v) + ' ' + fmt(ev.d[v])).join('、'), o.endF || '');
+      await b.hop(tok);
+    }
+  };
+  show.b = b;
+  show.mkTable = () => {
+    tb = {};
+    tag('距離表', 'idx', -5.3, 0.3, -4.5);
+    [...Array(GR.n).keys()].filter((v) => v !== s).forEach((v, i) => {
+      const m = lab.box(C.q, [1.3, 0.4, 0.7]); m.position.set(-3.8 + i * 1.6, 0.2, -4.5);
+      m.userData.l = lab.label(nm(v) + '：', 'val'); m.add(m.userData.l); lab.world.add(m); tb[v] = m;
+    });
+  };
+  return show;
+}
+
+// ── Bellman-Ford：事件與畫面 ──
+function sbBFEv(s, o = {}) {
+  const n = GR.n, E = GR.edges, R = o.rounds || n - 1, X = o.extra || 0;
+  const d = Array(n).fill(INF); d[s] = 0;
+  const ev = [{ t: 'cards' }, { t: 'init' }];
+  let neg = false;
+  for (let r = 1; r <= R + X; r++) {
+    const chk = r > R ? r - R : 0;
+    if (chk) ev.push({ t: 'chk', r: chk });
+    let ch = false;
+    for (let j = 0; j < E.length; j++) {
+      const e = E[j], du = d[e.u], dv = d[e.v];
+      if (du === INF) { ev.push({ t: 'inf', r, j, e, old: dv, chk }); continue; }
+      const nd = du + e.w;
+      if (nd < dv) {
+        d[e.v] = nd; ch = true; if (chk) neg = true;
+        ev.push({ t: 'upd', r, j, e, du, nd, old: dv, chk });
+        if (chk && o.stopOnDetect === chk) { ev.push({ t: 'end', d: d.slice(), neg: true }); return ev; }
+      } else ev.push({ t: 'keep', r, j, e, du, nd, old: dv, chk });
+    }
+    if (o.sum && !chk) ev.push({ t: 'sum', r, d: d.slice() });
+    if (!ch && !chk && o.stable) { ev.push({ t: 'stable', r }); break; }
+  }
+  ev.push({ t: 'end', d: d.slice(), neg });
+  return ev;
+}
+function sbBFShow(tok, s, o = {}) {
+  const E = GR.edges, gap = Math.min(1.15, 11.4 / E.length);
+  const cards = [], cc = E.map(() => C.q);
+  const rt = tag('', 'ptr alt', -4.2, 0.3, 4.55);
+  const b = sbBuddy(-5.7, 4.0, 0.48);
+  const par = Array(GR.n).fill(null);
+  let pk = null, cur = -1;
+  const ename = (e) => '(' + nm(e.u) + ',' + nm(e.v) + ')';
+  const show = async (ev, ms) => {
+    if (pk) { kill(pk); pk = null; }
+    if (cur >= 0 && cards[cur]) { cards[cur].material.color.set(cc[cur]); cur = -1; }
+    if (ev.t === 'cards') {
+      E.forEach((e, i) => {
+        const m = lab.box(C.q, [gap * 0.9, 0.45, 0.7]);
+        m.add(lab.label(fmt(e.w), 'val'));
+        const l = lab.label(ename(e), 'idx'); l.position.set(0, 0, 0.62); m.add(l);
+        m.position.set(-5.7 + gap / 2 + i * gap, 2.6, -4.5); lab.world.add(m); cards.push(m);
+      });
+      await kanim(tok, Math.min(700, ms), (u) => cards.forEach((m) => { m.position.y = 2.6 + (0.23 - 2.6) * u; }));
+      b.talk('先列出所有邊');
+      say('列出所有邊（照這個順序 relax）', E.map(ename).join('、'));
+    } else if (ev.t === 'init') {
+      for (let v = 0; v < GR.n; v++) nodeTag(v, v === s ? '0' : '∞', 'ptr');
+      nodeColor(s, C.ok, 0.3); txt(rt, '第 0 輪');
+      b.talk('起點 0，其他 ∞'); await b.hop(tok);
+      say('起點 ' + nm(s) + ' = 0，其他全部 ∞', GR.n + ' 個頂點 → 做 ' + (GR.n - 1) + ' 輪');
+    } else if (ev.t === 'chk') {
+      txt(rt, '多做的第 ' + ev.r + ' 輪'); b.mood('wow'); b.talk('再檢查一次');
+      say('V − 1 輪做完了，再 relax 一輪', '還會變 → 有負權重 cycle');
+    } else if (ev.t === 'inf' || ev.t === 'upd' || ev.t === 'keep') {
+      const e = ev.e;
+      txt(rt, ev.chk ? '多做的第 ' + ev.chk + ' 輪' : '第 ' + ev.r + ' 輪');
+      cur = ev.j; cards[cur].material.color.set(C.hot); edgeColor(e, C.hot, 1.8);
+      const ex = ev.t === 'inf' ? sbSum(INF, e.w) + ' = ∞' : sbSum(ev.du, e.w) + ' = ' + fmt(ev.nd);
+      pk = await sbPkt(tok, ex, e.u, e.v, ms);
+      if (ev.t === 'upd') {
+        nodeTag(e.v, fmt(ev.nd), ev.chk ? 'ptr alt' : 'ptr');
+        if (par[e.v] && par[e.v] !== e) edgeColor(par[e.v], C.edge, 1);
+        par[e.v] = e; edgeColor(e, ev.chk ? C.back : C.tree, 2);
+        if (ev.chk) cc[ev.j] = C.back;
+        txt(pk, fmt(ev.nd) + ' < ' + fmt(ev.old));
+        b.mood(ev.chk ? 'wow' : 'happy'); b.talk(ev.chk ? '還在變！' : nm(e.v) + ' 改成 ' + fmt(ev.nd));
+        say(ename(e) + '：' + ex + ' < ' + fmt(ev.old), ev.chk ? 'V − 1 輪後還能變小 → 有負 cycle' : '更新 ' + nm(e.v) + ' = ' + fmt(ev.nd));
+      } else {
+        sbCls(pk, 'bad');
+        txt(pk, ev.t === 'inf' ? '∞ → 不變' : fmt(ev.nd) + ' ≥ ' + fmt(ev.old));
+        edgeColor(e, par[e.v] === e ? C.tree : C.edge, par[e.v] === e ? 2 : 1);
+        b.mood('calm'); b.talk('不變');
+        say(ename(e) + '：' + (ev.t === 'inf' ? nm(e.u) + ' 還是 ∞ → 不變' : ex + ' ≥ ' + fmt(ev.old) + ' → 不變'), '');
+      }
+    } else if (ev.t === 'sum') {
+      b.talk(ev.d.map(fmt).join('、'));
+      say('第 ' + ev.r + ' 輪結束', [...Array(GR.n).keys()].map((v) => nm(v) + ' = ' + fmt(ev.d[v])).join('、'));
+    } else if (ev.t === 'stable') {
+      b.mood('happy'); b.talk('跟上一輪一樣 → 停');
+      say('第 ' + ev.r + ' 輪沒有任何更新', '已經收斂，可以停');
+    } else if (ev.t === 'end') {
+      if (ev.neg) { b.mood('sad'); b.talk('有負 cycle！'); } else { b.mood('happy'); b.talk('完成！'); }
+      say(o.endCap || ('結果：' + [...Array(GR.n).keys()].map((v) => nm(v) + ' = ' + fmt(ev.d[v])).join('、')), o.endF || '');
+      await b.hop(tok);
+    }
+  };
+  show.b = b; show.rt = rt;
+  return show;
 }
 
 // ══════════ Abdul Bari 3.6 Dijkstra（XB4MIexjvY0）══════════
@@ -1524,59 +1751,111 @@ async function sbLoop(tok, pts, ws, laps, sumTag, start = 0) {
 FRAG.push(['spbari-dij-problem', 'Dijkstra：單一起點最短路徑（greedy）', async (tok) => {
   fresh();
   buildGraph(SB.d6);
-  nodeColor(0, C.ok, 0.3); nodeTag(0, '起點', 'ptr alt');
-  say('起點選 1', '找 1 到其他每個頂點的最短路徑');
-  await beat(tok, 3000);
+  const b = sbBuddy(-5.6, 3.6, 0.55);
+  const bd = tag('', 'note', 2.6, 0.3, 3.7); bd.element.style.display = 'none';
+  const board = (t) => { bd.element.style.display = ''; txt(bd, t); };
+  await step(tok); // single source shortest path
+  for (let v = 1; v < 6; v++) nodeTag(v, '?', 'ptr alt');
+  b.talk('最短的路怎麼走？'); await b.hop(tok);
+  say('single source shortest path', '從一個起點，到其他每個頂點的最短路徑');
+  await step(tok); // 起點選 1
+  nodeColor(0, C.ok, 0.3); nodeTag(0, '起點', 'ptr');
+  await sbGo(tok, b, sbAt(0), 800); b.talk('起點選 1');
+  say('起點選 1', '起點可以任選');
+  await step(tok); // direct path or via other vertices
   edgeColor(sbE(0, 2), C.hot, 1.8);
-  say('可以直接走：1 → 3 = 4', 'direct path');
-  await beat(tok, 2400);
-  edgeColor(sbE(0, 2), C.edge, 1); sbPath([0, 1, 2], C.tree);
-  say('也可以經過別的頂點', '1 → 2 → 3 = 2 + 1 = 3');
-  await beat(tok, 2800);
-  sbPath([0, 1, 2], C.edge, 1);
-  say('求最短：minimization problem', '= optimization problem');
-  await beat(tok, 2600);
-  const st = ['階段 1', '階段 2', '階段 3'].map((s, i) => cube(s, '#efe3c8', [1.6, 0.4, 0.8], -3.2 + i * 2.2, 0.2, 4.2, 3));
-  say('用 greedy method', '分階段，每次只考慮一個輸入');
-  await beat(tok, 3000);
+  let p = await sbPkt(tok, '直接：4', 0, 2, 800);
+  edgeColor(sbE(0, 2), C.edge, 1); kill(p); sbPath([0, 1, 2], C.tree);
+  p = await sbWalk(tok, '2 + 1 = 3', [0, 1, 2], 600);
+  say('可以直接走，也可以經過別的頂點', '1 → 3 = 4；1 → 2 → 3 = 3');
+  await step(tok); // minimization → optimization
+  kill(p); sbPath([0, 1, 2], C.edge, 1);
+  board('求最短 = minimization → optimization problem');
+  say('求最短：minimization problem', '屬於 optimization problem');
+  await step(tok); // greedy method
+  const st = ['階段 1', '階段 2', '階段 3'].map((s, i) => cube(s, '#efe3c8', [1.6, 0.4, 0.8], -3.0 + i * 2.0, 0.2, 4.6, 3));
+  board('optimization problem → greedy method');
+  say('optimization problem 可以用 greedy method', '');
+  await step(tok); // stages, one input at a time
+  for (const m of st) { glow(m, GOLD); await kanim(tok, 500, () => {}); glow(m, null); }
+  b.talk('一次一步');
+  say('greedy：分階段，一次只考慮一個輸入', '照固定的程序做，得到最佳解');
+  await step(tok); // Dijkstra gives a procedure
   st.forEach(kill);
-  say('Dijkstra 給出 greedy 的程序', '有向、無向圖都能用');
-  await beat(tok, 3000);
+  board('Dijkstra = 一套 greedy 程序 → 最短路徑');
+  say('Dijkstra 就是這樣一套程序', '結果是最短路徑');
+  await step(tok); // directed and non-directed
+  board('有向圖、無向圖都能用');
+  say('Dijkstra 有向、無向圖都能用', '');
+  await step(tok); // drawback
+  b.mood('wow'); b.talk('也有缺點喔');
+  say('影片最後也會示範它的缺點', '');
 }]);
 
-// 01:23 小例子：先選最近的 2，再 relax 3：2 + 4 = 6
+// 01:47 小例子：先選最近的 2，再 relax 3：2 + 4 = 6；relaxation 的定義
 FRAG.push(['spbari-dij-relax', 'Dijkstra 的想法：選最近的，再 relax', async (tok) => {
   fresh();
   buildGraph(SB.d3);
-  sbD([0, 2, INF]);
-  say('起點 1：到 2 有直接邊 2', '到 3 沒有直接邊 → ∞');
-  await beat(tok, 3000);
-  nodeColor(1, C.ok, 0.3); edgeColor(sbE(0, 1), C.tree, 2);
-  say('先選距離最小的頂點 2', '2 < ∞');
-  await beat(tok, 2600);
+  const b = sbBuddy(sbAt(0).x, sbAt(0).z, 0.5);
+  const bd = tag('', 'note', 0, 0.3, 3.4); bd.element.style.display = 'none';
+  const board = (t) => { bd.element.style.display = ''; txt(bd, t); };
+  let pk = null;
+  await step(tok); // 起點 1，找 2、3
+  nodeColor(0, C.ok, 0.3); nodeTag(0, '0', 'ptr'); b.talk('從 1 出發'); await b.hop(tok);
+  say('起點 1：要找到 2、到 3 的最短路徑', '');
+  await step(tok); // direct path to 2 = 2
+  edgeColor(sbE(0, 1), C.hot, 1.8);
+  pk = await sbPkt(tok, '2', 0, 1, 800); nodeTag(1, '2', 'ptr alt'); edgeColor(sbE(0, 1), C.pq, 1.6);
+  say('1 → 2 有直接邊：2', '');
+  await step(tok); // no direct path to 3
+  kill(pk); nodeTag(2, '∞', 'ptr alt'); b.talk('3 呢？');
+  say('1 → 3 沒有直接邊 → 先記 ∞', '還不知道路');
+  await step(tok); // select the shortest: 2
+  b.talk('2 < ∞，選 2'); await sbGo(tok, b, sbAt(1), 800);
+  nodeColor(1, C.ok, 0.3); nodeTag(1, '2', 'ptr'); edgeColor(sbE(0, 1), C.tree, 2.2);
+  say('先選距離最小的頂點：2', '2 < ∞');
+  await step(tok); // from 2 go to 3: 2 + 4 = 6
   edgeColor(sbE(1, 2), C.hot, 1.8);
-  say('從 2 到 3：2 + 4 = 6', '6 < ∞ → 改成 6');
-  await beat(tok, 2400);
-  nodeTag(2, '6', 'ptr alt');
-  say('找到 1 → 2 → 3，長度 6', '不是直接邊，但有路');
-  await beat(tok, 2800);
-  nodeNote(1, 'u'); nodeNote(2, 'v');
-  say('這種更新叫 relaxation', 'if d[u] + c(u,v) < d[v]');
-  await beat(tok, 3000);
-  say('條件成立就改小 d[v]', 'd[v] = d[u] + c(u,v)');
-  await beat(tok, 3000);
-  say('每選一個頂點就 relax 鄰居', '2 + 4 < ∞ → d[3] = 6');
-  await beat(tok, 2800);
+  pk = await sbPkt(tok, '2 + 4 = 6', 1, 2, 900);
+  say('從 2 可以到 3：2 + 4 = 6', '');
+  await step(tok); // infinity changed to 6
+  nodeTag(2, '6', 'ptr alt'); txt(pk, '6 < ∞'); b.mood('happy'); b.talk('改成 6！');
+  say('6 < ∞ → 把 3 改成 6', '');
+  await step(tok); // path 1-2-3 of distance 6
+  kill(pk); sbPath([0, 1, 2], C.tree);
+  pk = await sbWalk(tok, '1 → 2 → 3 = 6', [0, 1, 2], 600);
+  say('找到 1 → 2 → 3，長度 6', '不是直接邊，是經過 2');
+  await step(tok); // always select shortest then update
+  kill(pk); board('選最短的頂點 → 更新其他頂點的距離');
+  say('Dijkstra：每次選距離最短的頂點', '再更新其他頂點的距離');
+  await step(tok); // relaxation
+  board('這個「更新」叫 relaxation'); b.talk('relaxation！'); await b.hop(tok);
+  say('這種更新叫 relaxation', '');
+  await step(tok); // u, v, d[u], d[v], c(u,v)
+  nodeNote(1, 'u'); nodeNote(2, 'v'); nodeTag(1, 'd[u]', 'ptr'); nodeTag(2, 'd[v]', 'ptr alt'); edgeColor(sbE(1, 2), C.hot, 1.8);
+  say('把 2 叫 u、3 叫 v', 'd[u]、d[v]，邊的成本 c(u, v)');
+  await step(tok); // if d[u] + c(u,v) < d[v]
+  board('if d[u] + c(u, v) < d[v]');
+  say('relaxation：if d[u] + c(u, v) < d[v]', '');
+  await step(tok); // 2 + 4 < ∞
+  nodeTag(1, '2', 'ptr'); nodeTag(2, '∞', 'ptr alt');
+  pk = await sbPkt(tok, '2 + 4 < ∞', 1, 2, 900);
+  say('代進去：d[u] = 2、c = 4、d[v] = ∞', '2 + 4 < ∞ 成立');
+  await step(tok); // d[v] = d[u] + c(u,v)
+  kill(pk); board('then d[v] = d[u] + c(u, v)'); nodeTag(2, '6', 'ptr alt'); b.mood('happy');
+  say('成立就改：d[v] = d[u] + c(u, v)', 'd[3] = 6');
+  await step(tok); // relax whenever a vertex is selected
+  board('每選一個頂點，就 relax 它連到的頂點'); b.talk('接下來照做！');
+  say('每選定一個頂點，就 relax 它連出去的頂點', '');
 }]);
 
-// 04:16 6 頂點例子：d = 2, 3, 8, 6, 9
+// 04:24 6 頂點例子：d = 2, 3, 8, 6, 9
 FRAG.push(['spbari-dij-g6', 'Dijkstra：6 頂點例子（2, 3, 8, 6, 9）', async (tok) => {
   fresh();
   buildGraph(SB.d6);
-  say('起點 1 = 0，其他先 ∞', '每次選最小的，再 relax 它的出邊');
-  await beat(tok, 2600);
-  run.gen = dijkstraGen(0, { k: 0.8, endCap: '1 到 2～6：2, 3, 8, 6, 9', endF: '藍色邊 = 最短路徑' });
-  await playGen(tok);
+  const ev = sbDijEv(0, { direct: true });
+  const show = sbDijShow(tok, 0, { endCap: '1 到 2～6：2, 3, 8, 6, 9', endF: '藍色邊 = 最短路徑' });
+  await sbRun(tok, ev, [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], show);
 }]);
 
 // 07:48 時間複雜度：n 個頂點 × 每次最多 relax n 個 = Θ(n²)（2raV0H9KqY8 用 params.rb 多講 red-black tree）
@@ -1584,157 +1863,264 @@ FRAG.push(['spbari-dij-n2', 'Dijkstra 複雜度：n × n = Θ(n²)', async (tok)
   const p = ctx.params || {};
   fresh();
   buildGraph(SB.d6, { scale: 0.55, dx: -3.6, dz: 0 });
-  say('n 個頂點都要選一次', '外層：n 次');
-  await beat(tok, 2600);
+  const b = sbBuddy(-5.8, 3.4, 0.45);
+  const bd = tag('', 'note', 3.4, 0.3, 4.0); bd.element.style.display = 'none';
+  const board = (t) => { bd.element.style.display = ''; txt(bd, t); };
   const cs = [];
+  await step(tok); // n vertices
   for (let i = 0; i < 6; i++) {
     nodeColor(i, C.ok, 0.3);
     cs.push(cube(String(i + 1), '#bfe8d6', [0.7, 0.35, 0.7], 0.6, 0.18, -2.6 + i * 1.0, 2));
-    await beat(tok, 380);
+    await kanim(tok, 300, () => {});
   }
-  say('每選一個，最多 relax n 個', '完全圖：每個頂點都相連');
-  await beat(tok, 2600);
-  for (let i = 0; i < 6; i++) {
+  board('n 個頂點：每個都要選一次');
+  say('n 個頂點：每個都要找一次最短路徑', '外層做 n 次');
+  if (!p.rb) {
+    await step(tok); // example: on 3 relaxed 5; on 2 relaxed 3, 4
+    edgeColor(sbE(2, 4), C.hot, 1.8); await kanim(tok, 700, () => {});
+    edgeColor(sbE(1, 2), C.hot, 1.8); edgeColor(sbE(1, 3), C.hot, 1.8);
+    b.talk('relax 幾個要看圖');
+    say('每選一個就 relax 相連的頂點', '例：選 3 只 relax 5；選 2 relax 3、4');
+  }
+  await step(tok); // at most n
+  GR.edges.forEach((e) => edgeColor(e, C.edge, 1));
+  for (let j = 0; j < 6; j++) { cs.push(cube('', '#efe3c8', [0.62, 0.3, 0.62], 1.6 + j * 0.85, 0.15, -2.6, 1.5)); await kanim(tok, 200, () => {}); }
+  board('每選一個，最多 relax n 個');
+  say('最多可能要檢查全部 n 個頂點', '');
+  await step(tok); // n × n
+  for (let i = 1; i < 6; i++) {
     for (let j = 0; j < 6; j++) cs.push(cube('', '#efe3c8', [0.62, 0.3, 0.62], 1.6 + j * 0.85, 0.15, -2.6 + i * 1.0, 1.5));
-    await beat(tok, 300);
+    await kanim(tok, 300, () => {});
   }
-  say('n × n', 'worst case Θ(n²) = Θ(V²)');
-  await beat(tok, 3000);
+  board('n × n');
+  say('n 個頂點 × 每次 n 個 = n × n', '');
+  if (!p.rb) {
+    await step(tok); // complete graph
+    board('complete graph：每個頂點都相連 → 真的 n × n');
+    say('完全圖：每對頂點都有邊', '這時就是 n × n');
+  }
+  await step(tok); // Θ(n²)
+  board('worst case：Θ(n²) = Θ(V²)'); b.talk('n²！'); await b.hop(tok);
+  say('worst case 時間：Θ(n²)', '也寫成 Θ(V²)');
   if (p.rb) {
-    say('影片：用 red-black tree 更快', '約 n log n（細節影片沒講）');
-    await beat(tok, 3000);
-    say('課本：binary heap', 'O((V + E) log V)');
-    await beat(tok, 2800);
+    await step(tok); // red-black tree
+    board('用 red-black tree：約 n log n（影片沒講細節）');
+    say('用 red-black tree 可以更快：約 n log n', '課本常用 binary heap：O((V + E) log V)');
   }
-  await beat(tok, 2400);
 }]);
 
 // 09:23 課本有向圖：寫成表格；6 沒有進來的邊 → ∞
 FRAG.push(['spbari-dij-table', 'Dijkstra：課本有向圖（50, 45, 10…）', async (tok) => {
   fresh();
   buildGraph(SB.hs, { scale: 0.95 });
-  say('起點 1：直接邊 50、45、10', '5、6 沒有直接邊 → ∞');
-  await beat(tok, 3000);
-  run.gen = dijkstraGen(0, { k: 0.75, endCap: '6 沒有進來的邊 → 一直 ∞', endF: '2→45、3→45、4→10、5→25、6→∞' });
-  await playGen(tok);
+  const ev = sbDijEv(0, { direct: true, check: ['2-4'] });
+  const show = sbDijShow(tok, 0, { endCap: '2→45、3→45、4→10、5→25、6→∞', endF: '6 沒有進來的邊 → 一直 ∞' });
+  await step(tok); // textbook graph
+  GR.edges.forEach((e) => edgeColor(e, C.hot, 1.4)); await kanim(tok, 900, () => {});
+  GR.edges.forEach((e) => edgeColor(e, C.edge, 1));
+  show.b.talk('課本的圖');
+  say('課本常見的加權有向圖', '起點 1');
+  await step(tok); // write in a table
+  show.mkTable(); show.b.talk('距離寫在表格裡');
+  say('距離改寫在表格裡', '不寫在頂點上');
+  await sbRun(tok, ev, [1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1], show);
 }]);
 
-// 12:58 無向圖：一條邊 = 兩條反向、同權重的有向邊
+// 13:05 無向圖：一條邊 = 兩條反向、同權重的有向邊
 FRAG.push(['spbari-dij-undirected', '無向邊拆成兩條有向邊', async (tok) => {
   fresh();
+  const b = sbBuddy(-0.3, 2.8, 0.55);
+  await step(tok); // works on non-directed graph
   buildGraph({ title: '無向', directed: false, names: ['a', 'b'], pos: [[-5.2, 0], [-1.6, 0]], edges: [[0, 1, 3]] });
-  say('無向邊：兩個方向都能走', '權重 3');
-  await beat(tok, 3000);
+  b.talk('無向圖也行嗎？');
+  say('Dijkstra 也能用在無向圖', '無向邊：兩個方向都能走');
+  await step(tok); // convert by adding parallel edges
   buildGraph({ title: '有向', directed: true, names: ['a', 'b'], pos: [[1.6, 0], [5.2, 0]], edges: [[0, 1, 3], [1, 0, 3]] });
   edgeColor(sbE(0, 1), C.hot, 1.8); edgeColor(sbE(1, 0), C.hot, 1.8);
-  say('換成兩條平行的有向邊', 'a → b = 3，b → a = 3');
-  await beat(tok, 3400);
-  edgeColor(sbE(1, 0), C.edge, 1);
-  say('a → b：權重 3', '');
-  await beat(tok, 1800);
-  edgeColor(sbE(0, 1), C.edge, 1); edgeColor(sbE(1, 0), C.hot, 1.8);
-  say('b → a：權重也是 3', '');
-  await beat(tok, 1800);
-  edgeColor(sbE(0, 1), C.hot, 1.8);
-  say('無向圖就變成有向圖', 'Dijkstra 有向、無向都能用');
-  await beat(tok, 3000);
+  say('換成兩條平行、方向相反的有向邊', '');
+  await step(tok); // this is 3 and this is also 3
+  let p = await sbPkt(tok, '3', 0, 1, 800); kill(p);
+  p = await sbPkt(tok, '3', 1, 0, 800);
+  say('兩條的權重都是 3', 'a → b = 3，b → a = 3');
+  await step(tok); // becomes a directed graph
+  kill(p); b.mood('happy'); b.talk('兩種都能用！'); await b.hop(tok);
+  say('無向圖就變成有向圖', '所以 Dijkstra 有向、無向都能用');
 }]);
 
-// 13:38 缺點：負邊 −3 時剛好對，改成 −10 就錯
+// 13:45 缺點：負邊 −3 時剛好對，改成 −10 就錯
 FRAG.push(['spbari-dij-neg', 'Dijkstra 的缺點：負權重邊', async (tok) => {
   fresh();
   buildGraph(sbNeg(-3));
+  let bd = tag('', 'note', 0, 0.3, 4.2); bd.element.style.display = 'none';
+  const board = (t) => { bd.element.style.display = ''; txt(bd, t); };
+  await step(tok); // negative weighted edge
   edgeColor(sbE(2, 1), C.back, 1.8);
-  say('3 → 2 的權重是 −3', '權重不一定是距離，可以是負的');
-  await beat(tok, 3000);
-  run.gen = dijkstraGen(0, { k: 0.7, endCap: '檢查 3 → 2：7 − 3 = 4 > 3', endF: '這次答案剛好正確' });
-  await playGen(tok);
+  say('這張小圖有一條負權重的邊', '3 → 2 = −3');
+  await step(tok); // not distance
+  board('權重不一定是用尺量的距離');
+  say('權重怎麼會是負的？', '它不是用尺量的距離，是某種數值');
+  await step(tok); // Dijkstra has not considered
+  board('Dijkstra 沒有考慮負邊的情況');
+  say('Dijkstra 沒有考慮過負邊', '照他的程序做做看');
+  let show = sbDijShow(tok, 0, { endCap: '這次答案剛好正確', endF: '檢查 3 → 2：7 − 3 = 4 ≥ 3', endTalk: '答案對耶' });
+  await sbRun(tok, sbDijEv(0, { direct: true, check: ['2-1'] }), [1, 1, 1, 1, 1, 1, 1], show);
+  await step(tok); // change to −10
   fresh();
   buildGraph(sbNeg(-10));
   edgeColor(sbE(2, 1), C.back, 1.8);
-  say('把 −3 改成 −10 再做一次', '');
-  await beat(tok, 2400);
-  run.gen = dijkstraGen(0, { k: 0.7, endCap: '真正答案：1→4→3→2 = −3', endF: 'greedy 太早把 2 定案成 3 → 錯' });
-  await playGen(tok);
+  bd = tag('', 'note', 0, 0.3, 4.2); bd.element.style.display = 'none';
+  say('把 −3 改成 −10，重新做一次', '');
+  show = sbDijShow(tok, 0, { endCap: 'Dijkstra 給的答案：2 = 3', endF: '其實有更短的路', endTalk: '糟糕…', endSad: true });
+  await sbRun(tok, sbDijEv(0, { direct: true }), [1, 1, 1, 1, 1, 2], show);
+  await step(tok); // in a hurry
+  sbPath([0, 3, 2, 1], C.back, 2.2);
+  const p = await sbWalk(tok, '5 + 2 − 10 = −3', [0, 3, 2, 1], 600);
+  board('太急著把 2 定成 3');
+  say('太急著把 2 定案成 3', '走 1 → 4 → 3 → 2 只要 −3');
+  await step(tok); // correct answer −3
+  kill(p); nodeTag(1, '−3 才對', 'ptr alt');
+  board('正確答案 −3，Dijkstra 給了 3 → 錯');
+  say('正確答案是 −3', 'Dijkstra 給出錯的答案');
+  await step(tok); // negative edge → may or may not
+  board('有負邊：Dijkstra 可能對、可能錯');
+  say('原因是負邊', '有負邊時 Dijkstra 可能對、也可能錯');
+  await step(tok); // greedy doesn't try all
+  board('greedy：沒試過所有可能就做決定');
+  show.b.talk('我沒全部試過…');
+  say('greedy 不會試所有可能', '看到目前最小的就選定');
+  await step(tok); // Bellman-Ford
+  board('另一個解法：Bellman-Ford（dynamic programming）');
+  say('另一個解法：Bellman-Ford', '之後在 dynamic programming 講');
 }]);
 
 // ══════════ TechDose Bellman-Ford（FrLWd1tJ_Wc）══════════
 // 00:00 Dijkstra vs Bellman-Ford：誰能偵測負 cycle
 FRAG.push(['spbari-td-compare', 'Dijkstra vs Bellman-Ford：能否偵測負 cycle', async (tok) => {
   fresh([0, 11, 9], [0, 0, 0]);
-  const dj = cube('Dijkstra', '#4b9ee2', [3.4, 0.5, 1.1], -3.2, 0.25, -2.2, 4);
-  const bf = cube('Bellman-Ford', '#dd8238', [3.4, 0.5, 1.1], 3.2, 0.25, -2.2, 4);
-  say('有負 cycle：兩個都找不到最短路徑', 'single source shortest path');
-  await beat(tok, 3200);
-  const a = tag('偵測不到負 cycle', 'ptr', -3.2, 0.3, -0.6);
-  glow(dj, RED);
-  say('Dijkstra 偵測不到', '照樣給答案 → 可能是錯的');
-  await beat(tok, 3000);
-  const b = tag('偵測得到負 cycle', 'ptr alt', 3.2, 0.3, -0.6);
-  glow(dj, null); glow(bf, GOLD);
-  say('Bellman-Ford 偵測得到', '有負 cycle 就回報');
-  await beat(tok, 3000);
-  const c = tag('沒有負 cycle → 最短路徑', 'ptr', 3.2, 0.3, 0.6);
-  say('沒有負 cycle', '就給出 source 到每個點的最短路徑');
-  await beat(tok, 3000);
-  glow(bf, null);
-  tag('O(E log V)', 'idx', -3.2, 0.3, 1.8); tag('O(VE)', 'idx', 3.2, 0.3, 1.8);
-  say('代價：Bellman-Ford 比較慢', '複雜度最後再比');
-  await beat(tok, 3000);
-  [a, b, c].forEach((l) => l.element.className = 'lab-label ptr');
-  await beat(tok, 1000);
+  const dj = sbBuddy(-3.2, -2.2, 0.9, '#4b9ee2', 'Dijkstra');
+  const bf = sbBuddy(3.2, -2.2, 0.9, '#dd8238', 'Bellman-Ford');
+  await step(tok); // compare
+  await dj.hop(tok); await bf.hop(tok);
+  say('先比較 Dijkstra 和 Bellman-Ford', '兩個都是 single source shortest path');
+  await step(tok); // neither finds shortest path with negative cycle
+  dj.mood('sad'); bf.mood('sad');
+  tag('有負權重 cycle → 兩個都找不到最短路徑', 'bad', 0, 0.3, 2.8);
+  say('有負權重 cycle：兩個都找不到最短路徑', '');
+  await step(tok); // Dijkstra cannot detect
+  dj.talk('我看不出來'); tag('偵測不到負 cycle', 'ptr', -3.2, 0.3, 0.6);
+  say('差別：Dijkstra 偵測不到負 cycle', '');
+  await step(tok); // BF can detect
+  bf.mood('happy'); bf.talk('我偵測得到！'); await bf.hop(tok);
+  tag('偵測得到負 cycle', 'ptr alt', 3.2, 0.3, 0.6);
+  say('Bellman-Ford 偵測得到', '');
+  await step(tok); // BF says it has negative cycle
+  bf.glow(GOLD); bf.talk('這張圖有負 cycle！');
+  say('有負 cycle → Bellman-Ford 會直接回報', '');
+  await step(tok); // otherwise shortest paths
+  bf.glow(null); bf.talk('沒有？最短路徑給你');
+  say('沒有負 cycle → 給出起點到每個點的最短路徑', '');
+  await step(tok); // Dijkstra still gives an answer, may be wrong
+  dj.mood('wow'); dj.talk('答案…（可能是錯的）');
+  say('Dijkstra 遇到負 cycle 照樣給答案', '那個答案可能是錯的');
+  await step(tok); // higher complexity
+  tag('O(E log V)', 'idx', -3.2, 0.3, 1.6); tag('O(VE)', 'idx', 3.2, 0.3, 1.6);
+  bf.mood('calm'); bf.talk('但我比較慢'); dj.mood('happy'); dj.talk('我比較快');
+  say('代價：Bellman-Ford 的複雜度比較高', '影片最後再比');
 }]);
 
 // 01:38 負權重 cycle：2 + 3 − 6 = −1；換成 −3 → 2
 FRAG.push(['spbari-td-cycle', '負 cycle：2 + 3 − 6 = −1', async (tok) => {
   fresh();
   buildGraph(sbTri(-6));
-  edgeColor(sbE(2, 0), C.back, 1.8);
-  const sum = tag('', 'ptr alt', 0, 0.3, 3.6);
+  const sum = tag('', 'note', 0, 0.3, 3.6);
+  const b = sbBuddy(-5.2, 3.0, 0.5);
   const P = GR.nodes.map((nd) => nd.home);
-  say('0 → 1 → 2 → 0，權重 2、3、−6', '從 0 出發再回到 0');
-  await beat(tok, 2600);
-  await sbLoop(tok, P, [2, 3, -6], 1, sum);
-  say('2 + 3 + (−6) = −1', '沒花成本，反而賺 1');
-  await beat(tok, 3000);
-  say('總和為負 → negative weight cycle', '');
-  await beat(tok, 2400);
-  setW(sbE(2, 0), -3);
-  txt(sum, '');
-  say('把 −6 換成 −3', '');
-  await beat(tok, 1600);
-  await sbLoop(tok, P, [2, 3, -3], 1, sum);
-  say('2 + 3 + (−3) = 2 > 0', '不是負 cycle');
-  await beat(tok, 3000);
-  say('有負邊 ≠ 有負 cycle', '−3：兩個演算法都對');
-  await beat(tok, 2800);
+  await step(tok); // 0 1 2 with 2 3 −6
+  edgeColor(sbE(2, 0), C.back, 1.8); await b.hop(tok);
+  say('三個頂點 0、1、2', '邊的權重 2、3、−6');
+  await step(tok); // start from 0 and come back to 0
+  await sbLoop(tok, P, [2, 3, -6], sum);
+  say('從 0 出發，繞一圈回到 0', '');
+  await step(tok); // 2 + 3 − 6 = −1
+  txt(sum, '2 + 3 + (−6) = −1');
+  say('成本 = 2 + 3 + (−6) = −1', '');
+  await step(tok); // getting benefit of one unit
+  b.mood('happy'); b.talk('沒花錢還賺 1！');
+  say('總和是負的：沒花成本，反而賺 1', '');
+  await step(tok); // negative edge weight cycle
+  const nc = tag('negative edge weight cycle', 'bad', 0, 0.3, -3.6);
+  say('這就是負權重 cycle', 'negative edge weight cycle');
+  await step(tok); // −6 → −3
+  kill(nc); setW(sbE(2, 0), -3); txt(sum, ''); b.mood('calm'); b.talk('換成 −3 呢？');
+  say('如果 −6 換成 −3', '');
+  await step(tok); // 2 + 3 − 3 = 2
+  await sbLoop(tok, P, [2, 3, -3], sum);
+  txt(sum, '2 + 3 + (−3) = 2 > 0');
+  say('總和 2 是正的 → 不是負 cycle', '');
+  await step(tok); // negative edge ≠ negative cycle
+  b.talk('有負邊 ≠ 有負 cycle');
+  say('只有負邊，不代表有負 cycle', '');
+  await step(tok); // both correct
+  tag('−3：Dijkstra ✓　Bellman-Ford ✓', 'ptr', 0, 0.3, -3.6);
+  say('−3 時：兩個演算法都給出正確答案', '');
+  await step(tok); // −6: BF reports, Dijkstra wrong
+  setW(sbE(2, 0), -6); txt(sum, '2 + 3 − 6 = −1');
+  tag('−6：Bellman-Ford 回報負 cycle；Dijkstra 給錯答案', 'bad', 0, 0.3, 4.5);
+  b.mood('wow');
+  say('換回 −6：Bellman-Ford 會說有負 cycle', 'Dijkstra 則給出錯的答案');
 }]);
 
-// 03:12 無向圖有負邊 → 一定有負 cycle
+// 03:16 無向圖有負邊 → 一定有負 cycle
 FRAG.push(['spbari-td-undirected', '無向圖有負邊 = 一定有負 cycle', async (tok) => {
   fresh();
+  const bd = tag('', 'note', 0, 0.3, 3.8);
+  const b = sbBuddy(-5.4, 2.6, 0.5);
+  let pk = null;
+  await step(tok); // special case
+  txt(bd, '無向圖：有負邊 → 一定有負 cycle'); await b.hop(tok);
+  say('無向圖的特殊情況', '只要有一條負邊，就一定有負 cycle');
+  await step(tok); // two nodes
   buildGraph({ title: '無向', directed: false, names: ['0', '1'], pos: [[-5.4, 0], [-2.0, 0]], edges: [[0, 1, -2]] });
-  say('無向邊 0 — 1，權重 −2', '');
-  await beat(tok, 2600);
+  say('假設圖只有 0、1 兩個頂點', '一條無向邊');
+  await step(tok); // = 0→1 and 1→0
   buildGraph({ title: '有向', directed: true, names: ['0', '1'], pos: [[1.4, 0], [5.2, 0]], edges: [[0, 1, -2], [1, 0, -2]] });
-  say('等於 0 → 1 和 1 → 0', '兩條都是 −2');
-  await beat(tok, 2800);
-  nodeTag(0, '0', 'ptr'); nodeTag(1, '∞', 'ptr');
-  const seq = [[0, 1, -2], [1, 0, -4], [0, 1, -6], [1, 0, -8]];
-  for (const [u, v, d] of seq) {
-    edgeColor(sbE(u, v), C.hot, 1.8);
-    nodeTag(v, fmt(d), 'ptr alt');
-    say(nm(u) + ' → ' + nm(v) + '：再加 −2', 'd(' + nm(v) + ') = ' + fmt(d));
-    await beat(tok, 1700);
-    edgeColor(sbE(u, v), C.edge, 1);
-  }
-  say('越繞越小：無限迴圈', '0 → 1 → 0 就是負 cycle');
-  await beat(tok, 3000);
-  say('無向圖：先掃有沒有負邊', '有 → 兩個演算法都不能用');
-  await beat(tok, 3000);
+  say('無向邊 = 0 → 1 加上 1 → 0', '');
+  await step(tok); // both −2
+  edgeColor(sbE(0, 1), C.back, 1.8); edgeColor(sbE(1, 0), C.back, 1.8);
+  say('權重 −2：兩個方向都是 −2', '');
+  await step(tok); // source 0: 0; to 1: −2
+  nodeTag(0, '0', 'ptr');
+  pk = await sbPkt(tok, '0 − 2 = −2', 0, 1, 800); nodeTag(1, '−2', 'ptr alt');
+  say('起點 0 成本 0；到 1 是 −2', '');
+  await step(tok); // 1 to 0: −4
+  kill(pk); pk = await sbPkt(tok, '−2 − 2 = −4', 1, 0, 800); nodeTag(0, '−4', 'ptr alt');
+  say('從 1 回到 0：−2 + (−2) = −4', '');
+  await step(tok); // again 0 to 1: −6
+  kill(pk); pk = await sbPkt(tok, '−4 − 2 = −6', 0, 1, 800); nodeTag(1, '−6', 'ptr alt');
+  say('再到 1：−4 + (−2) = −6', '比 −2 小 → 取代');
+  await step(tok); // infinite loop
+  kill(pk); pk = await sbPkt(tok, '−8', 1, 0, 550); nodeTag(0, '−8', 'ptr alt');
+  kill(pk); pk = await sbPkt(tok, '−10', 0, 1, 550); nodeTag(1, '−10', 'ptr alt');
+  b.mood('wow'); b.talk('停不下來！');
+  say('越來越小，變成無限迴圈', '');
+  await step(tok); // surely negative cycle
+  kill(pk); txt(bd, '無向圖 + 負邊 = 負 cycle');
+  say('無向圖有負邊，一定有負權重 cycle', '');
+  await step(tok); // both fail
+  tag('Dijkstra ✗　Bellman-Ford ✗', 'bad', 0, 0.3, -3.2);
+  b.mood('sad');
+  say('Dijkstra 和 Bellman-Ford 都會失敗', '');
+  await step(tok); // check for negative edge first
+  txt(bd, '先掃一遍：有負邊 → 不能用最短路徑演算法');
+  b.mood('calm'); b.talk('先檢查！');
+  say('無向圖先檢查有沒有負邊', '有 → 不能用最短路徑演算法');
+  await step(tok); // all positive → can apply
+  txt(bd, '全部是正的 → 可以用');
+  b.mood('happy');
+  say('所有邊都是正的', '才能用最短路徑演算法');
 }]);
 
-// 05:20 Bellman-Ford 三步驟；為什麼是 V − 1 次
+// 05:31 Bellman-Ford 三步驟；為什麼是 V − 1 次
 FRAG.push(['spbari-td-steps', 'Bellman-Ford 三步驟', async (tok) => {
   fresh();
   buildGraph({ title: '0, 1, 2', directed: true, names: ['0', '1', '2'], pos: [[-5.4, -1.4], [-3.6, 1.6], [-1.6, -1.4]], edges: [[0, 1, 1], [1, 2, 1]] });
@@ -1747,80 +2133,113 @@ FRAG.push(['spbari-td-steps', 'Bellman-Ford 三步驟', async (tok) => {
     '3. 再 relax 一次：',
     '     還會變 → 有負 cycle',
   ], 2.6, -2.8, 0.75);
-  cd.hl(0); sbD([0, INF, INF]);
-  say('第 1 步：初始化', 'source = 0，其他 ∞');
-  await beat(tok, 3000);
+  const nt = tag('', 'note', -3.6, 0.3, 3.6); nt.element.style.display = 'none';
+  const note = (t) => { nt.element.style.display = ''; txt(nt, t); };
+  let pk = null;
+  await step(tok); // step 1 init
+  cd.hl(0); sbD([0, INF, INF]); nodeColor(0, C.ok, 0.3);
+  say('第 1 步：起點 0，其他 ∞', '起點到自己的成本 = 0');
+  await step(tok); // step 2 V−1 times
   cd.hl(1);
-  say('第 2 步：relax 全部邊 V − 1 次', '');
-  await beat(tok, 2400);
-  sbPath([0, 1, 2], C.hot, 2);
-  say('3 個頂點：最少 2 條邊才到得了', 'V 個頂點 → V − 1 條邊');
-  await beat(tok, 3200);
-  sbPath([0, 1, 2], C.edge, 1);
-  cd.hl(3); nodeNote(0, 'u'); nodeNote(1, 'v'); edgeColor(sbE(0, 1), C.hot, 1.8);
-  say('relax (u, v)：新路比較短嗎？', 'd[u] + c(u,v) < d[v]');
-  await beat(tok, 3000);
-  cd.hl(4); nodeTag(1, '1', 'ptr alt');
-  say('是 → 換成新路', 'd[v] = d[u] + c(u,v)');
-  await beat(tok, 2600);
-  say('比較大就跳過', '不更新');
-  await beat(tok, 2000);
-  cd.hl(5); edgeColor(sbE(0, 1), C.edge, 1);
-  say('第 3 步：再全部 relax 一次', '');
-  await beat(tok, 2200);
+  say('第 2 步：relax 重複 V − 1 次', '');
+  await step(tok); // relax all adjacent from source
+  cd.hl(2); edgeColor(sbE(0, 1), C.hot, 1.8);
+  pk = await sbPkt(tok, 'relax', 0, 1, 800); edgeColor(sbE(0, 1), C.edge, 1);
+  say('從起點開始，relax 相鄰的邊', '');
+  await step(tok); // why V−1: 3 nodes need 2 edges
+  kill(pk); sbPath([0, 1, 2], C.hot, 2);
+  pk = await sbWalk(tok, '2 條邊', [0, 1, 2], 600);
+  say('3 個頂點：從頭走到尾最少要 2 條邊', '= V − 1');
+  await step(tok); // V vertices → V−1 edges
+  kill(pk); note('V 個頂點 → 要 V − 1 條邊 → relax V − 1 次');
+  say('V 個頂點要 V − 1 條邊才能全部走到', '所以重複 V − 1 次');
+  await step(tok); // u → v
+  sbPath([0, 1, 2], C.edge, 1); sbD([null, null, null]);
+  nodeNote(0, 'u'); nodeNote(1, 'v'); edgeColor(sbE(0, 1), C.hot, 1.8);
+  say('relax：在 u，有一條邊 (u, v) 到 v', '');
+  await step(tok); // d[u] and cost(u,v)
+  nodeTag(0, 'd[u]', 'ptr');
+  pk = await sbPkt(tok, 'd[u] + c(u,v)', 0, 1, 900);
+  say('到 u 的成本 d[u]，加上邊的權重 c(u, v)', '');
+  await step(tok); // d[v] via other path
+  nodeTag(1, 'd[v]', 'ptr alt');
+  say('v 原本也有成本 d[v]', '可能是從別條路來的');
+  await step(tok); // new path lower → replace
+  cd.hl(3); await kanim(tok, 700, () => {}); cd.hl(4);
+  nodeTag(1, 'd[u] + c(u,v)', 'ptr alt'); txt(pk, '比較便宜 → 換');
+  say('新路比較便宜 → 換掉舊路', 'd[v] = d[u] + c(u, v)');
+  await step(tok); // greater → skip
+  cd.hl(3); txt(pk, '比較貴 → 跳過'); sbCls(pk, 'bad');
+  say('d[u] + c(u, v) 比 d[v] 大', '跳過，不更新');
+  await step(tok); // step 3 relax once more
+  kill(pk); cd.hl(5); edgeColor(sbE(0, 1), C.edge, 1);
+  say('第 3 步：V − 1 輪後，再全部 relax 一次', '');
+  await step(tok); // new shorter → negative cycle
   cd.hl(6);
-  say('還有新的更短距離', '→ 有 negative weight cycle');
-  await beat(tok, 3000);
+  say('還找得到更短的 → 有負權重 cycle', '沒有 → 直接回傳答案');
 }]);
 
-// 08:31 Dry run：5 頂點，第 2 輪沒變化就停
+// 08:37 Dry run：5 頂點，第 2 輪沒變化就停
 FRAG.push(['spbari-td-dryrun', 'Bellman-Ford：TechDose 5 頂點 dry run', async (tok) => {
   fresh();
   buildGraph(SBT5);
-  say('起點 0；V = 5 → 最多 4 輪', '每輪依序 relax 7 條邊');
-  await beat(tok, 2800);
-  run.gen = bfGen(0, { k: 0.9 });
-  await playGen(tok);
-  say('連續兩輪一樣 → 可以提早停', '0、1、−1、2、6');
-  await beat(tok, 2600);
+  const ev = sbBFEv(0, { sum: true, stable: true });
+  const show = sbBFShow(tok, 0, { endCap: '0 → 3 = 2、0 → 4 = 6', endF: '不用做滿 4 輪' });
+  const fnV = async () => { show.b.talk('V = 5 → 最多 4 輪'); await show.b.hop(tok); say('V = 5（0～4）', 'V − 1 = 4 輪'); };
+  await sbRun(tok, ev, [2, fnV, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], show);
 }]);
 
 // 12:59 提早停止；O(VE) vs Dijkstra O(E log V)
 FRAG.push(['spbari-td-complexity', 'Bellman-Ford：提早停止與 O(VE)', async (tok) => {
   fresh([0, 11, 9], [0, 0, 0]);
-  say('每一輪：relax 全部 E 條邊', '最多 V − 1 輪');
-  const cs = [];
-  for (let r = 0; r < 4; r++) {
-    tag('第 ' + (r + 1) + ' 輪', 'idx', -5.6, 0.3, -2.8 + r * 1.2);
-    for (let j = 0; j < 7; j++) cs.push(cube('', r < 2 ? '#efe3c8' : '#e4dccb', [0.7, 0.3, 0.7], -4.2 + j * 0.95, 0.15, -2.8 + r * 1.2, 1.5));
-    await beat(tok, 550);
-  }
-  await beat(tok, 1600);
-  for (let k = 14; k < 28; k++) cs[k].material.color.set('#c9c1b2');
-  const cut = tag('第 2 輪沒變化 → break', 'ptr alt', 2.6, 0.3, 1.0);
-  say('某一輪完全沒更新', '下一輪也一樣 → 直接停');
-  await beat(tok, 3200);
-  kill(cut);
-  tag('Bellman-Ford：O(VE)', 'ptr', -2.6, 0.3, 2.6);
-  say('E 條邊 × (V − 1) 輪', 'O(VE)');
-  await beat(tok, 2800);
-  tag('Dijkstra：O(E log V)', 'ptr alt', 2.8, 0.3, 2.6);
-  say('Dijkstra 快很多', '確定沒有負邊就用 Dijkstra');
-  await beat(tok, 3000);
-  say('無向圖：先掃一遍邊', '沒有負邊 → 用 Dijkstra');
-  await beat(tok, 2800);
+  const b = sbBuddy(5.4, -2.2, 0.55);
+  const bd = tag('', 'note', 2.6, 0.3, 3.6); bd.element.style.display = 'none';
+  const board = (t) => { bd.element.style.display = ''; txt(bd, t); };
+  const row = (r, col) => { tag('第 ' + (r + 1) + ' 輪', 'idx', -5.6, 0.3, -2.8 + r * 1.2); const cs = []; for (let j = 0; j < 7; j++) cs.push(cube('', col, [0.7, 0.3, 0.7], -4.2 + j * 0.95, 0.15, -2.8 + r * 1.2, 1.5)); return cs; };
+  await step(tok); // a step updated → do next
+  const r1 = row(0, '#efe3c8'); r1[0].material.color.set(C.ok); r1[2].material.color.set(C.ok);
+  b.talk('有更新 → 再做一輪');
+  say('某一輪至少有一個頂點更新', '就一定要做下一輪');
+  await step(tok); // a step with no update
+  row(1, '#d8cfc0');
+  b.talk('這輪完全沒更新');
+  say('如果某一輪完全沒有更新', '');
+  await step(tok); // next will be the same → break
+  row(2, '#ece6da'); row(3, '#ece6da');
+  tag('不用做 → break', 'bad', 2.6, 0.3, 0.4);
+  b.mood('happy'); b.talk('提早停！');
+  say('下一輪 relax 一樣的邊，也不會有更新', '可以直接 break');
+  await step(tok); // O(VE)
+  board('Bellman-Ford：E 條邊 × (V − 1) 輪 = O(VE)'); b.mood('calm');
+  say('時間複雜度 O(VE)', 'E 條邊、做 V − 1 輪');
+  await step(tok); // Dijkstra E log V much faster
+  tag('Dijkstra：O(E log V) → 快很多', 'ptr alt', 2.6, 0.3, 2.6);
+  say('比 Dijkstra 的 O(E log V) 慢很多', '');
+  await step(tok); // sure no negative edge → Dijkstra
+  board('確定沒有負邊 → 用 Dijkstra');
+  say('確定沒有負邊：用 Dijkstra', '');
+  await step(tok); // not sure → BF
+  board('不確定有沒有負邊 → 用 Bellman-Ford');
+  say('不確定：用 Bellman-Ford', '');
+  await step(tok); // undirected: scan edges
+  board('無向圖：先掃邊；有負邊 → 都不能用；全正 → Dijkstra');
+  b.talk('先掃一遍邊');
+  say('無向圖可以先掃一遍所有邊', '有負邊兩個都不行；全是正的就用 Dijkstra');
 }]);
 
-// 14:57 偵測負 cycle：relax 2 輪後再一輪，0→1 又變小
+// 15:03 偵測負 cycle：relax 2 輪後再一輪，0→1 又變小
 FRAG.push(['spbari-td-detect', 'Bellman-Ford：多 relax 一輪偵測負 cycle', async (tok) => {
   fresh();
   buildGraph(sbTri(-6));
-  say('3 個頂點 → relax 2 輪', '之後多做 1 輪檢查');
-  await beat(tok, 2600);
-  run.gen = bfGen(0, { k: 1 });
-  await playGen(tok);
-  say('每繞一圈少 1：−1、−2…', '2 + 3 − 6 = −1');
-  await beat(tok, 3000);
+  const ev = sbBFEv(0, { rounds: 2, extra: 1, stopOnDetect: 1 });
+  const show = sbBFShow(tok, 0, { endCap: '第 V 輪還找到更短的路', endF: '→ 確定有負權重 cycle' });
+  const sum = tag('', 'note', 3.2, 0.3, 3.6); sum.element.style.display = 'none';
+  const P = GR.nodes.map((nd) => nd.home);
+  const fnDone = async () => { show.b.talk('V − 1 = 2 輪做完'); say('做完 V − 1 = 2 輪', '應該已經找到所有最短路徑'); await show.b.hop(tok); };
+  const fnLoop1 = async () => { sum.element.style.display = ''; sbPath([0, 1, 2, 0], C.back, 2); await sbLoop(tok, P, [2, 3, -6], sum); txt(sum, '2 + 3 − 6 = −1'); say('這個 cycle：2 + 3 + (−6) = −1', '負權重 cycle'); };
+  const fnLoop2 = async () => { await sbLoop(tok, P, [2, 3, -6], sum, -1); txt(sum, '再繞一圈：−2'); say('每繞一圈總和就少 1', '−1、−2、…'); };
+  const fnEnd = async () => { show.b.mood('sad'); show.b.talk('永遠找不到最小'); say('有負 cycle 時', 'Dijkstra、Bellman-Ford 都求不出最短路徑'); };
+  await sbRun(tok, ev, [2, 1, 1, 1, 1, 1, 1, fnDone, 1, 1, 1, fnLoop1, fnLoop2, fnEnd], show);
 }]);
 
 // ══════════ Abdul Bari 4.4 Bellman-Ford（FtN3BYH2Zes）══════════
@@ -1828,67 +2247,172 @@ FRAG.push(['spbari-td-detect', 'Bellman-Ford：多 relax 一輪偵測負 cycle',
 FRAG.push(['spbari-bf-why', '為什麼要 Bellman-Ford：DP 試遍所有可能', async (tok) => {
   fresh();
   buildGraph(GRAPHS.bari7);
-  nodeColor(0, C.ok, 0.3);
-  say('有向加權圖，起點 1', '找 1 到每個頂點的最短路徑');
-  await beat(tok, 2800);
+  const b = sbBuddy(-5.6, 3.6, 0.5);
+  const bd = tag('', 'note', 1.6, 0.3, 4.2); bd.element.style.display = 'none';
+  const board = (t) => { bd.element.style.display = ''; txt(bd, t); };
+  await step(tok); // topic
+  await b.hop(tok); b.talk('最短路徑！');
+  say('single source shortest path', '這支影片：Bellman-Ford 怎麼做、缺點是什麼');
+  await step(tok); // directed weighted graph, source 1
+  nodeColor(0, C.ok, 0.3); nodeTag(0, '起點', 'ptr');
+  await sbGo(tok, b, sbAt(0), 800);
+  say('有向加權圖，起點選 1', '找 1 到其他每個頂點的最短路徑');
+  await step(tok); // Dijkstra exists
+  board('已經有 Dijkstra 了…');
+  say('已經有 Dijkstra 可以解最短路徑', '');
+  await step(tok); // not with negative edges
   GR.edges.forEach((e) => { if (e.w < 0) edgeColor(e, C.back, 1.8); });
-  say('有負邊：Dijkstra 可能對、可能錯', '沒辦法確認答案');
-  await beat(tok, 3200);
-  say('Bellman-Ford：保證答案正確', 'dynamic programming');
-  await beat(tok, 2800);
-  GR.edges.forEach((e) => edgeColor(e, C.hot, 1.4));
-  say('DP：試遍所有可能，挑最好的', '所有邊反覆 relax');
-  await beat(tok, 3200);
+  board('有負邊：Dijkstra 可能對、可能錯'); b.mood('wow');
+  say('但有負邊時 Dijkstra 不一定正確', '沒辦法確認答案');
+  await step(tok); // BF confirms correct answers
+  board('Bellman-Ford：保證答案正確'); b.mood('happy');
+  say('要一個能保證答案正確的演算法', '→ Bellman-Ford');
+  await step(tok); // DP
+  board('Bellman-Ford 用 dynamic programming');
+  say('它用 dynamic programming', '');
+  await step(tok); // try out all possible solutions
+  GR.edges.forEach((e) => edgeColor(e, C.hot, 1.4)); await kanim(tok, 900, () => {});
   GR.edges.forEach((e) => edgeColor(e, e.w < 0 ? C.back : C.edge, e.w < 0 ? 1.8 : 1));
-  say('有負邊也能確認答案', '代價：比 Dijkstra 慢');
-  await beat(tok, 2800);
+  board('DP：試遍所有可能，挑最好的');
+  say('DP：試遍所有可能的解', '再挑最好的那個');
 }]);
 
 // 01:12 所有邊 relax n − 1 = 6 次；relax 的定義（以 2、5 為例）
 FRAG.push(['spbari-bf-relax', 'Bellman-Ford：所有邊 relax n − 1 次', async (tok) => {
   fresh();
   buildGraph(GRAPHS.bari7);
-  say('7 個頂點 → relax 7 − 1 = 6 次', '');
-  await beat(tok, 2600);
+  const b = sbBuddy(-5.6, 3.6, 0.5);
+  const bd = tag('', 'note', 1.6, 0.3, 4.2); bd.element.style.display = 'none';
+  const board = (t) => { bd.element.style.display = ''; txt(bd, t); };
+  let pk = null;
+  await step(tok); // relax all edges n − 1 times
+  GR.edges.forEach((e) => edgeColor(e, C.hot, 1.4)); await kanim(tok, 800, () => {});
+  GR.edges.forEach((e) => edgeColor(e, C.edge, 1));
+  board('所有的邊，反覆 relax n − 1 次');
+  say('把所有邊反覆 relax', '共 n − 1 次');
+  await step(tok); // 7 vertices → 6
+  board('n = 7 個頂點 → relax 7 − 1 = 6 次'); b.talk('6 次！');
+  say('n = 頂點數 = 7', 'relax 7 − 1 = 6 次');
+  await step(tok); // longest path has 6 edges
   const lp = [0, 3, 2, 1, 4, 6];
   sbPath(lp, C.hot, 2);
-  say('從起點出發的路徑最多 6 條邊', 'relax 6 次就涵蓋所有路徑');
-  await beat(tok, 3400);
-  sbPath(lp, C.edge, 1);
-  GR.edges.forEach((e) => { if (e.w < 0) edgeColor(e, C.edge, 1); });
-  nodeNote(1, 'u'); nodeNote(4, 'v'); nodeTag(1, 'd[u]', 'ptr'); nodeTag(4, 'd[v]', 'ptr');
-  edgeColor(sbE(1, 4), C.hot, 2);
-  say('以 2、5 為例：u = 2、v = 5', '');
-  await beat(tok, 2600);
-  say('relax (u, v)', 'if d[u] + c(u,v) < d[v]');
-  await beat(tok, 3000);
-  nodeTag(4, 'd[u] + c(u,v)', 'ptr alt');
-  say('成立就改 d[v]', 'd[v] = d[u] + c(u,v)');
-  await beat(tok, 3000);
-  say('邊的順序任選，但每條都要', '一輪 = 全部邊各 relax 一次');
-  await beat(tok, 2800);
+  pk = await sbWalk(tok, '最多 6 條邊', lp, 380);
+  say('從 1 到 7 的路徑，最多 6 條邊', '');
+  await step(tok); // covers all paths
+  kill(pk); sbPath(lp, C.edge, 1);
+  board('relax 6 次 → 連最長的路徑也涵蓋');
+  say('relax 6 次就能涵蓋所有可能的路徑', '');
+  await step(tok); // take 2 and 5
+  edgeColor(sbE(1, 4), C.hot, 2); nodeColor(1, C.pq, 0.3); nodeColor(4, C.pq, 0.3);
+  say('relaxation 是什麼？拿 2、5 當例子', '');
+  await step(tok); // path to this plus this < this → change
+  nodeTag(1, '到 2 的距離', 'ptr'); nodeTag(4, '到 5 的距離', 'ptr alt');
+  pk = await sbPkt(tok, '+ 這條邊', 1, 4, 900);
+  say('到 2 的距離 + 這條邊，比到 5 的距離短？', '是 → 改掉到 5 的距離');
+  await step(tok); // call them u and v
+  kill(pk); nodeNote(1, 'u'); nodeNote(4, 'v'); nodeTag(1, 'd[u]', 'ptr'); nodeTag(4, 'd[v]', 'ptr alt');
+  say('把它們叫 u 和 v', '');
+  await step(tok); // condition
+  board('if d[u] + c(u, v) < d[v]');
+  say('邊 (u, v)：if d[u] + c(u, v) < d[v]', '');
+  await step(tok); // update
+  board('then d[v] = d[u] + c(u, v)'); nodeTag(4, 'd[u] + c(u,v)', 'ptr alt'); b.mood('happy');
+  say('成立就改：d[v] = d[u] + c(u, v)', '解題時再示範');
 }]);
 
-// 09:04 複雜度：(V − 1) × E = O(VE)；一般 n²，完全圖 n³（2raV0H9KqY8 也用）
+// 02:56 7 頂點例子（cued 版 bf-bari7）
+FRAG.push(['spbari-bf-bari7', 'Bellman-Ford：7 頂點逐輪 relax', async (tok) => {
+  fresh();
+  buildGraph(GRAPHS.bari7);
+  const ev = sbBFEv(0, { stable: true });
+  const show = sbBFShow(tok, 0, { endCap: '1～7：0、1、3、5、0、4、3', endF: '再做兩輪也一樣' });
+  const fn6 = async () => { show.b.talk('10 條邊 × 6 次'); say('照頂點順序列，共 10 條邊', '全部 relax 6 次'); await show.b.hop(tok); };
+  const fnHand = async () => { show.b.talk('程式會做滿 n − 1 輪'); say('手算可以停；程式照樣做滿 n − 1 輪', ''); };
+  const fnSome = async () => { show.b.talk('有快有慢'); say('有的圖第 1 輪就好', '有的要到最後一輪才收斂'); };
+  await sbRun(tok, ev, [1, fn6, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    3, 1, 1, 2, 1, 1, 1,
+    3, 1, 1, 1, 1, 2, 1,
+    3, 2, 2, 3,
+    1, 1, fnHand, fnSome], show);
+}]);
+
+// 09:04 複雜度：(V − 1) × E = O(VE)；一般 n²，完全圖 n³（2raV0H9KqY8 用 params.sp：少最後一句）
 FRAG.push(['spbari-bf-complexity', 'Bellman-Ford 複雜度：O(VE)，完全圖 O(n³)', async (tok) => {
+  const p = ctx.params || {};
   fresh([0, 11, 9], [0, 0, 0]);
-  say('每一輪 relax 全部 E 條邊', '做 V − 1 輪');
+  const b = sbBuddy(5.6, -3.4, 0.5);
+  const bd = tag('', 'note', 2.4, 0.3, 4.0); bd.element.style.display = 'none';
+  const board = (t) => { bd.element.style.display = ''; txt(bd, t); };
+  await step(tok); // E edges
+  cube('E 條邊', '#efe3c8', [4.2, 0.35, 0.6], -3.4, 0.18, -3.0, 2);
+  say('relax 全部的邊：E 條', '');
+  await step(tok); // V − 1 times
   for (let r = 0; r < 6; r++) {
-    cube('E 條邊', '#efe3c8', [4.2, 0.35, 0.6], -3.4, 0.18, -3.0 + r * 0.8, 2);
+    if (r) cube('E 條邊', '#efe3c8', [4.2, 0.35, 0.6], -3.4, 0.18, -3.0 + r * 0.8, 2);
     tag('第 ' + (r + 1) + ' 輪', 'idx', -6.1, 0.3, -3.0 + r * 0.8);
-    await beat(tok, 420);
+    await kanim(tok, 300, () => {});
   }
-  say('時間 = O(V · E)', 'V、E 都是 n → O(n²)');
-  await beat(tok, 3000);
+  say('做幾次？V − 1 次', '');
+  await step(tok); // O(VE)
+  board('時間 = O(V · E)');
+  say('時間 = O(V · E)', '');
+  await step(tok); // n²
+  board('V、E 都看成 n → O(n²)');
+  say('V、E 都看成 n', '→ O(n²)');
+  await step(tok); // complete graph
   buildGraph({ title: 'K5', directed: false, names: ['1', '2', '3', '4', '5'],
     pos: [[3.4, -2.6], [5.6, -1.0], [4.8, 1.6], [2.0, 1.6], [1.2, -1.0]],
     edges: [[0, 1], [0, 2], [0, 3], [0, 4], [1, 2], [1, 3], [1, 4], [2, 3], [2, 4], [3, 4]] });
-  say('完全圖：每對頂點都有邊', 'E = n(n − 1) / 2');
-  await beat(tok, 3200);
-  say('n(n − 1)/2 × (n − 1)', '= O(n³)');
-  await beat(tok, 3000);
-  say('最少 O(n²)，完全圖最多 O(n³)', '');
-  await beat(tok, 2800);
+  b.mood('wow');
+  say('完全圖：每一對頂點之間都有邊', '');
+  await step(tok); // n(n−1)/2
+  GR.edges.forEach((e) => edgeColor(e, C.hot, 1.4));
+  board('完全圖：E = n(n − 1) / 2 ≈ n²');
+  say('邊數 E = n(n − 1) / 2', '');
+  await step(tok); // × (n − 1)
+  board('n(n − 1)/2 × (n − 1)');
+  say('時間 = n(n − 1)/2 × (n − 1)', 'E 乘上輪數');
+  await step(tok); // n³
+  board('= O(n³)'); b.talk('n³！'); await b.hop(tok);
+  say('化簡 → O(n³)', '完全圖時 Bellman-Ford 要 n³');
+  if (!p.sp) {
+    await step(tok); // min n², max n³
+    board('最少約 O(n²)，完全圖最多 O(n³)');
+    say('最少約 n²', '完全圖時最多 n³');
+  }
+}]);
+
+// 10:21 4 頂點、邊倒序（cued 版 bf-bari4）
+FRAG.push(['spbari-bf-bari4', 'Bellman-Ford：倒序的邊要到第 3 輪才收斂', async (tok) => {
+  fresh();
+  buildGraph(GRAPHS.bari4);
+  const ev = sbBFEv(0, { extra: 1 });
+  const show = sbBFShow(tok, 0, { endCap: '多 relax 一次也沒有變化', endF: '→ 答案正確' });
+  const fnRev = async () => { show.b.talk('故意倒過來'); say('邊的順序故意倒過來', '讓你看出 relax 順序的影響'); await show.b.hop(tok); };
+  const fn3 = async () => { show.b.talk('4 個頂點 → 3 輪'); say('4 個頂點 → relax 4 − 1 = 3 輪', ''); };
+  const fnRes = async () => { show.b.mood('happy'); show.b.talk('0、−2、8、5'); say('結果：1 = 0、2 = −2、3 = 8、4 = 5', ''); };
+  const fnNeg = async () => { show.b.talk('負邊也沒問題'); say('有負邊，Bellman-Ford 也求得出來', ''); await show.b.hop(tok); };
+  await sbRun(tok, ev, [1, fnRev, 1, fn3, 1, 1, 1, 1, 1, 1, 2, 1, 3, fnRes, fnNeg, 1, 4, 1], show);
+}]);
+
+// 13:19 加 2→4 = 5：負 cycle（cued 版 bf-detect-cycle）
+FRAG.push(['spbari-bf-cycle4', 'Bellman-Ford 偵測負 cycle：多做一輪還在變', async (tok) => {
+  fresh();
+  buildGraph(GRAPHS.bari4c);
+  const ev = sbBFEv(0, { extra: 2, stopOnDetect: 2 });
+  const show = sbBFShow(tok, 0, { endCap: '還在一直變小', endF: '答案定不下來' });
+  const sum = tag('', 'note', 3.6, 0.3, 4.4); sum.element.style.display = 'none';
+  const cyc = [1, 3, 2];
+  const P = cyc.map((v) => GR.nodes[v].home);
+  const fnAdd = async () => { edgeColor(sbE(1, 3), C.hot, 2); await kanim(tok, 800, () => {}); edgeColor(sbE(1, 3), C.edge, 1); say('同一張圖，加一條 2 → 4 = 5', ''); };
+  const fnShould = async () => { show.b.talk('不應該再變！'); say('做完 n − 1 輪後', '再 relax 一次不應該有任何改變'); };
+  const fnCyc = async () => { sbPath([1, 3, 2, 1], C.back, 2.2); show.b.talk('2 → 4 → 3 → 2'); say('原因：2、4、3 形成一個 cycle', ''); };
+  const fnSum = async () => { sum.element.style.display = ''; await sbLoop(tok, P, [5, 3, -10], sum); txt(sum, '5 + 3 − 10 = −2'); say('cycle 總權重：5 + 3 − 10 = −2', '是負的'); };
+  const fnMore = async () => { await sbLoop(tok, P, [5, 3, -10], sum, -2); txt(sum, '每繞一圈再少 2'); say('每繞一圈，路徑就更短', '答案永遠定不下來'); };
+  const fnFail = async () => { show.b.mood('sad'); show.b.talk('解不了'); say('有負權重 cycle 的圖：無解', 'Bellman-Ford 也解不了'); };
+  const fnDetect = async () => { show.b.mood('happy'); show.b.talk('但我偵測得到！'); await show.b.hop(tok); say('但 Bellman-Ford 偵測得到', 'n − 1 輪後再 relax 一次，還會變 → 有負 cycle'); };
+  await sbRun(tok, ev, [fnAdd, 2, 2, 2, 1, 1, 1, 3, 1, 3, 1, 1, 1, 1, 3, fnShould, 2, 1, fnCyc, fnSum, fnMore, fnFail, fnDetect], show);
 }]);
 
 // ══════════ Abdul Bari 4.2 Floyd-Warshall（oNI0rf2P9gE）══════════
@@ -1916,158 +2440,272 @@ function fwMat(D, k) {
   };
 }
 function fwScene(k) { fresh([0, 12.5, 8], [0, 0, -0.3]); buildGraph(FW4, { scale: 0.85, dx: -0.4 }); const D = fwAt(k); return { D, M: fwMat(D, k) }; }
-// 算 A^(k+1)：detail 裡的格子逐一講解，其餘變小的格子快速更新
-async function fwK(tok, M, D, k, detail, quick = true) {
-  M.title('A' + SUP[k + 1]); M.paint(k); nodeColor(k, C.hot, 0.5);
-  say('A' + SUP[k + 1] + '：中間頂點 = ' + (k + 1), '第 ' + (k + 1) + ' 列、第 ' + (k + 1) + ' 行照抄');
-  await beat(tok, 2400);
-  const old = D.map((r) => r.slice());
-  const N = fwStep(old, k);
-  for (const [i, j] of detail) {
-    const c = M.cells;
-    glow(c[i][j], GOLD); glow(c[i][k], RED); glow(c[k][j], RED);
-    say((i + 1) + ' → ' + (j + 1) + '：經過 ' + (k + 1) + ' 會更短嗎？', 'min(' + fmt(old[i][j]) + ', ' + fmt(old[i][k]) + ' + ' + fmt(old[k][j]) + ')');
-    await beat(tok, 2600);
-    M.set(i, j, N[i][j], N[i][j] < old[i][j] ? C.ok : null);
-    say(N[i][j] < old[i][j] ? '更新成 ' + fmt(N[i][j]) : '維持 ' + fmt(N[i][j]), N[i][j] < old[i][j] ? (i + 1) + ' → ' + (k + 1) + ' → ' + (j + 1) + ' 比較短' : '經過 ' + (k + 1) + ' 沒有更短');
-    await beat(tok, 2200);
-    glow(c[i][j], null); glow(c[i][k], null); glow(c[k][j], null);
-  }
-  if (quick) {
-    const rest = [];
-    for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) if (N[i][j] < old[i][j] && !detail.some(([a, b]) => a === i && b === j)) rest.push([i, j]);
-    if (rest.length) {
-      say('其他格子同樣算', rest.map(([i, j]) => (i + 1) + '→' + (j + 1) + ' = ' + fmt(N[i][j])).join('、'));
-      for (const [i, j] of rest) { M.set(i, j, N[i][j], C.ok); await beat(tok, 500); }
-      await beat(tok, 1800);
-    }
-  }
-  for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) D[i][j] = N[i][j];
-  nodeColor(k, C.white, 0);
+const fwGlow = (M, cs, c) => cs.forEach(([i, j]) => glow(M.cells[i][j], c));
+// 換到 A^(k+1)：標題、第 k+1 列與行
+function fwHead(M, k) { M.title('A' + SUP[k + 1]); M.paint(k); for (let v = 0; v < 4; v++) nodeColor(v, v === k ? C.hot : C.white, v === k ? 0.5 : 0); }
+// 這一階段其他變小的格子（講者「同樣算」）快速填上
+async function fwRest(tok, M, old, N, skip) {
+  const rest = [];
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) if (N[i][j] < old[i][j] && !skip.some(([a, b]) => a === i && b === j)) rest.push([i, j]);
+  for (const [i, j] of rest) { M.set(i, j, N[i][j], C.ok); await kanim(tok, 400, () => {}); }
+  return rest.map(([i, j]) => (i + 1) + '→' + (j + 1) + ' = ' + fmt(N[i][j])).join('、');
 }
+function fwNote() { const l = tag('', 'note', -2.6, 0.3, 3.9); l.element.style.display = 'none'; return (t) => { l.element.style.display = t ? '' : 'none'; txt(l, t || ''); }; }
 
 // 00:00 所有點對最短路徑；Dijkstra 跑 n 次 = O(n³)
 FRAG.push(['spbari-fw-problem', 'All pairs shortest path', async (tok) => {
   fresh();
   buildGraph(FW4, { scale: 1.1, dx: 3.6, dz: 0.3 });
-  say('每一對頂點都要最短路徑', 'all pairs shortest path');
-  await beat(tok, 2800);
-  for (let s = 0; s < 4; s++) {
-    for (let v = 0; v < 4; v++) nodeColor(v, v === s ? C.ok : C.white, v === s ? 0.4 : 0);
-    nodeTag(s, '起點', 'ptr alt');
-    say('起點 ' + (s + 1) + '：到其他 3 個頂點', [0, 1, 2, 3].filter((v) => v !== s).map((v) => (s + 1) + '→' + (v + 1)).join('、'));
-    await beat(tok, 1900);
-    nodeTag(s, '', '');
-  }
-  nodeColor(3, C.white, 0);
-  say('像 single source：Dijkstra', '一次 O(n²)');
-  await beat(tok, 2800);
-  say('每個頂點各跑一次 Dijkstra', 'n × O(n²) = O(n³)');
-  await beat(tok, 3000);
-  say('這裡改用 dynamic programming', '');
-  await beat(tok, 2400);
+  const b = sbBuddy(-4.8, 3.2, 0.55);
+  const bd = tag('', 'note', -3.6, 0.3, 0.2); bd.element.style.display = 'none';
+  const board = (t) => { bd.element.style.display = ''; txt(bd, t); };
+  let ps = [];
+  const fan = async (s) => { ps.forEach(kill); for (let v = 0; v < 4; v++) nodeColor(v, v === s ? C.ok : C.white, v === s ? 0.4 : 0); ps = await sbFan(tok, s, [0, 1, 2, 3].filter((v) => v !== s), 900); };
+  await step(tok); // every pair
+  board('每一對頂點之間的最短路徑'); await b.hop(tok);
+  say('All pairs shortest path', '找每一對頂點之間的最短路徑');
+  await step(tok); // from 1
+  await fan(0);
+  say('起點 1：1→2、1→3、1→4', '');
+  await step(tok); // from 2
+  await fan(1);
+  say('起點 2：到 1、3、4', '');
+  await step(tok); // from 3 and 4
+  await fan(2); await fan(3);
+  say('起點 3、起點 4 也一樣', '');
+  await step(tok); // looks like Dijkstra
+  ps.forEach(kill); ps = []; nodeColor(3, C.white, 0);
+  board('很像 single source shortest path（Dijkstra）'); b.talk('Dijkstra？');
+  say('看起來像 single source：Dijkstra', '');
+  await step(tok); // Dijkstra n²
+  board('Dijkstra：一個起點，O(n²)');
+  say('Dijkstra 只處理一個起點', '一次 O(n²)');
+  await step(tok); // n times → n³
+  for (let v = 0; v < 4; v++) { nodeColor(v, C.ok, 0.3); await kanim(tok, 300, () => {}); }
+  board('每個頂點各跑一次：n × O(n²) = O(n³)');
+  say('對 n 個頂點各跑一次 Dijkstra', 'n × O(n²) = O(n³)');
+  await step(tok); // DP
+  for (let v = 0; v < 4; v++) nodeColor(v, C.white, 0);
+  board('這裡改用 dynamic programming'); b.mood('happy'); b.talk('換 DP！');
+  say('也能用 greedy 解；這裡看 DP 怎麼做', '');
 }]);
 
-// 01:30 DP：一連串決策——要不要經過中間頂點 k
+// 01:34 DP：一連串決策——要不要經過中間頂點 k
 FRAG.push(['spbari-fw-idea', 'Floyd-Warshall 的決策：經過哪個中間頂點', async (tok) => {
   fresh();
   buildGraph(FW4, { scale: 1.1, dx: 3.6, dz: 0.3 });
+  const b = sbBuddy(-4.8, 3.2, 0.55);
+  const bd = tag('', 'note', -3.6, 0.3, 0.2); bd.element.style.display = 'none';
+  const board = (t) => { bd.element.style.display = ''; txt(bd, t); };
+  let pk = null;
+  await step(tok); // sequence of decisions
+  board('DP：一連串的決策，每階段做一個'); await b.hop(tok);
   say('DP：每個階段做一個決策', 'sequence of decisions');
-  await beat(tok, 2600);
+  await step(tok); // 1 → 2 direct
   edgeColor(sbE(0, 1), C.hot, 2);
-  say('1 → 2：有直接邊 3', '');
-  await beat(tok, 2400);
-  nodeColor(2, C.pq, 0.4); nodeTag(2, '經過 3？', 'ptr alt');
-  say('還是經過頂點 3 比較短？', '');
-  await beat(tok, 2400);
-  nodeColor(2, C.white, 0); nodeTag(2, '', '');
-  nodeColor(3, C.pq, 0.4); nodeTag(3, '經過 4？', 'ptr alt');
-  say('或經過頂點 4？', '');
-  await beat(tok, 2400);
+  pk = await sbPkt(tok, '直接：3', 0, 1, 800);
+  say('1 → 2：可能直接邊就最短', '');
+  await step(tok); // via 3
+  kill(pk); nodeColor(2, C.pq, 0.4); nodeTag(2, '經過 3？', 'ptr alt');
+  say('也可能經過頂點 3 比較短', '');
+  await step(tok); // via 4
+  nodeColor(2, C.white, 0); nodeTag(2, '', ''); nodeColor(3, C.pq, 0.4); nodeTag(3, '經過 4？', 'ptr alt');
+  say('或經過頂點 4', '');
+  await step(tok); // middle vertex 1 first
   nodeColor(3, C.white, 0); nodeTag(3, '', ''); edgeColor(sbE(0, 1), C.edge, 1);
-  for (let k = 0; k < 4; k++) {
-    nodeColor(k, C.hot, 0.5);
-    say('第 ' + (k + 1) + ' 階段：中間頂點 = ' + (k + 1), '所有點對都檢查一次');
-    await beat(tok, 1500);
-    nodeColor(k, C.white, 0);
+  nodeColor(0, C.hot, 0.5); nodeTag(0, '中間點', 'ptr alt');
+  board('第 1 階段：所有點對，經過 1 會更短嗎？');
+  say('先選中間頂點 = 1', '所有點對都檢查：經過 1 會不會更短');
+  await step(tok); // then 2, 3, 4
+  for (let k = 1; k < 4; k++) {
+    nodeColor(k - 1, C.white, 0); nodeTag(k - 1, '', '');
+    nodeColor(k, C.hot, 0.5); nodeTag(k, '中間點', 'ptr alt');
+    await kanim(tok, 600, () => {});
   }
-  say('依序決定：經過 1、2、3、4', '每階段一個矩陣');
-  await beat(tok, 2800);
+  board('再經過 2、3、4 → 一連串的決策');
+  say('再經過 2、經過 3…', '這就是 sequence of decisions');
 }]);
 
-// 02:24 A⁰：鄰接矩陣（對角線 0，沒有邊 ∞）
+// 02:32 A⁰：鄰接矩陣（對角線 0，沒有邊 ∞）
 FRAG.push(['spbari-fw-a0', 'Floyd-Warshall：A⁰ 鄰接矩陣', async (tok) => {
   fresh([0, 12.5, 8], [0, 0, -0.3]);
   buildGraph(FW4, { scale: 0.85, dx: -0.4 });
   const D = fwA0();
   const M = fwMat(D.map((r) => r.map(() => null)), 0);
   M.cells.forEach((row) => row.forEach((m) => txt(m.userData.l, '')));
-  say('A⁰：原本的鄰接矩陣', '');
-  await beat(tok, 2200);
-  for (let i = 0; i < 4; i++) M.set(i, i, 0, '#d8cfc0');
-  say('對角線 = 0', '自己到自己，沒有 self loop');
-  await beat(tok, 2600);
-  const ex = [[0, 1], [1, 2]];
-  for (const [i, j] of ex) {
+  const note = fwNote();
+  await step(tok); // matrices; adjacency matrix
+  note('A⁰ = 原圖的鄰接矩陣');
+  say('用矩陣來做：A⁰ 是鄰接矩陣', '');
+  await step(tok); // diagonal 0
+  for (let i = 0; i < 4; i++) { M.set(i, i, 0, '#d8cfc0'); await kanim(tok, 250, () => {}); }
+  say('對角線 = 0', '自己到自己；沒有 self loop');
+  for (const [i, j, t] of [[0, 1, '有邊：1 → 2 = 3'], [1, 2, '有邊：2 → 3 = 2']]) {
+    await step(tok);
+    if (i === 1) { edgeColor(sbE(0, 1), C.edge, 1); glow(M.cells[0][1], null); }
     edgeColor(sbE(i, j), C.hot, 2); glow(M.cells[i][j], GOLD); M.set(i, j, D[i][j]);
-    say((i + 1) + ' → ' + (j + 1) + ' 有邊', '權重 ' + D[i][j]);
-    await beat(tok, 2400);
-    edgeColor(sbE(i, j), C.edge, 1); glow(M.cells[i][j], null);
+    say(t, '填權重');
   }
+  await step(tok); // 3 → 2 none → ∞
+  edgeColor(sbE(1, 2), C.edge, 1); glow(M.cells[1][2], null);
   glow(M.cells[2][1], RED); M.set(2, 1, INF);
   say('3 → 2 沒有邊', '記成 ∞');
-  await beat(tok, 2600);
+  await step(tok); // fill all
   glow(M.cells[2][1], null);
-  for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { M.set(i, j, D[i][j]); }
-  say('填完 A⁰', '有邊 = 權重，沒邊 = ∞');
-  await beat(tok, 3000);
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) M.set(i, j, D[i][j]);
+  note('有邊 = 權重；沒邊 = ∞；對角線 = 0');
+  say('A⁰ 填好了', '有邊 = 權重，沒邊 = ∞');
 }]);
 
-// 03:19 A¹：經過頂點 1（2→3 不變、2→4 = 15、3→2 = 8）
+// 03:25 A¹：經過頂點 1（2→3 不變、2→4 = 15、3→2 = 8）
 FRAG.push(['spbari-fw-a1', 'Floyd-Warshall：A¹（經過頂點 1）', async (tok) => {
   const { D, M } = fwScene(0);
-  say('A¹ 由 A⁰ 算出來', '只多允許經過頂點 1');
-  await beat(tok, 2600);
-  await fwK(tok, M, D, 0, [[1, 2], [1, 3], [2, 1]]);
-  say('A¹ 完成', '下一步：經過頂點 2');
-  await beat(tok, 2600);
+  const note = fwNote();
+  const N = fwStep(D, 0);
+  let pk = null;
+  await step(tok); // A¹ from A⁰ via 1
+  fwHead(M, 0); M.paint(-1);
+  say('A¹：中間頂點 = 1', '由 A⁰ 算出來');
+  await step(tok); // row 1, col 1 unchanged
+  M.paint(0);
+  say('第 1 列、第 1 行照抄', '0 3 ∞ 7；8、5、2');
+  await step(tok); // diagonals
+  fwGlow(M, [[0, 0], [1, 1], [2, 2], [3, 3]], GOLD); await kanim(tok, 700, () => {}); fwGlow(M, [[0, 0], [1, 1], [2, 2], [3, 3]], null);
+  say('對角線也照抄：0', '');
+  await step(tok); // A⁰[2,3] = 2
+  glow(M.cells[1][2], GOLD); note('A⁰[2,3] = 2');
+  say('2 → 3：A⁰[2,3] = 2', '');
+  await step(tok); // 8 + ∞
+  fwGlow(M, [[1, 0], [0, 2]], RED); note('A⁰[2,1] + A⁰[1,3] = 8 + ∞ = ∞');
+  say('經過 1：A⁰[2,1] + A⁰[1,3]', '8 + ∞ = ∞');
+  await step(tok); // keep 2
+  fwGlow(M, [[1, 0], [0, 2], [1, 2]], null); M.set(1, 2, 2); note('min(2, ∞) = 2 → 維持');
+  say('經過 1 沒有更短', 'A¹[2,3] = 2');
+  await step(tok); // A⁰[2,4] = ∞
+  glow(M.cells[1][3], GOLD); note('A⁰[2,4] = ∞');
+  say('2 → 4：A⁰[2,4] = ∞', '');
+  await step(tok); // 8 + 7 = 15
+  fwGlow(M, [[1, 0], [0, 3]], RED); note('A⁰[2,1] + A⁰[1,4] = 8 + 7 = 15');
+  pk = await sbWalk(tok, '8 + 7', [1, 0, 3], 600);
+  say('經過 1：A⁰[2,1] + A⁰[1,4]', '8 + 7 = 15');
+  await step(tok); // update 15
+  fwGlow(M, [[1, 0], [0, 3], [1, 3]], null); M.set(1, 3, 15, C.ok); note('15 < ∞ → 更新成 15');
+  say('15 < ∞ → 更新成 15', '');
+  await step(tok); // 2 → 1 → 4
+  kill(pk); sbPath([1, 0, 3], C.tree);
+  say('意思是：2 → 1 → 4，8 + 7 = 15', '沒有直接邊，但經過 1 有路');
+  await step(tok); // 3 → 2
+  sbPath([1, 0, 3], C.edge, 1);
+  glow(M.cells[2][1], GOLD); fwGlow(M, [[2, 0], [0, 1]], RED);
+  note('A⁰[3,2] = ∞ 對比 A⁰[3,1] + A⁰[1,2] = 5 + 3');
+  say('3 → 2：∞ 對比 5 + 3', '');
+  await step(tok); // 8
+  fwGlow(M, [[2, 1], [2, 0], [0, 1]], null); M.set(2, 1, 8, C.ok); note('5 + 3 = 8 < ∞ → 8');
+  say('得到比較小的 8', 'A¹[3,2] = 8');
+  await step(tok); // rest
+  const r = await fwRest(tok, M, D, N, [[1, 2], [1, 3], [2, 1]]);
+  note('A¹ 完成：經過頂點 1');
+  say('其他格子同樣算', r);
 }]);
 
-// 06:37 A²、A³、A⁴：最後的矩陣就是答案
+// 06:43 A²、A³、A⁴：最後的矩陣就是答案
 FRAG.push(['spbari-fw-a2a4', 'Floyd-Warshall：A² → A³ → A⁴', async (tok) => {
   const { D, M } = fwScene(1);
-  await fwK(tok, M, D, 1, [[0, 2], [0, 3]]);
-  await fwK(tok, M, D, 2, [[0, 1]]);
-  await fwK(tok, M, D, 3, []);
-  M.paint(-1);
-  say('A⁴ = 每一對頂點的最短距離', '每階段一個決策 → 一個矩陣');
-  await beat(tok, 3200);
+  const note = fwNote();
+  let pk = null;
+  let N = fwStep(D, 1);
+  await step(tok); // A² via 2
+  fwHead(M, 1); M.paint(-1);
+  say('A²：中間頂點 = 2', '由 A¹ 算出來');
+  await step(tok); // row 2, col 2
+  M.paint(1);
+  say('第 2 列、第 2 行照抄', '8 0 2 15；3 0 8 5');
+  await step(tok); // A¹[1,3] = ∞
+  glow(M.cells[0][2], GOLD); note('A¹[1,3] = ∞');
+  say('1 → 3：A¹[1,3] = ∞', '');
+  await step(tok); // 3 + 2 = 5
+  fwGlow(M, [[0, 1], [1, 2]], RED); note('A¹[1,2] + A¹[2,3] = 3 + 2 = 5');
+  pk = await sbWalk(tok, '3 + 2', [0, 1, 2], 600);
+  say('經過 2：A¹[1,2] + A¹[2,3]', '3 + 2 = 5');
+  await step(tok); // update 5
+  kill(pk); fwGlow(M, [[0, 1], [1, 2], [0, 2]], null); M.set(0, 2, 5, C.ok); note('5 < ∞ → 更新成 5');
+  say('5 比較小 → 更新成 5', '1 → 2 → 3');
+  await step(tok); // A¹[1,4] = 7
+  glow(M.cells[0][3], GOLD); note('A¹[1,4] = 7');
+  say('1 → 4：A¹[1,4] = 7', '');
+  await step(tok); // 3 + 15 = 18
+  fwGlow(M, [[0, 1], [1, 3]], RED); note('A¹[1,2] + A¹[2,4] = 3 + 15 = 18');
+  say('經過 2：3 + 15 = 18', '');
+  await step(tok); // keep 7
+  fwGlow(M, [[0, 1], [1, 3], [0, 3]], null); note('min(7, 18) = 7 → 維持');
+  say('原本的 7 比較好', 'A²[1,4] = 7');
+  await step(tok); // rest of A²
+  let r = await fwRest(tok, M, D, N, [[0, 2], [0, 3]]);
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) D[i][j] = N[i][j];
+  note('A² 完成：經過頂點 2');
+  say('其他格子同樣算', r);
+  await step(tok); // A³ via 3
+  N = fwStep(D, 2); fwHead(M, 2); M.cells.forEach((row) => row.forEach((m) => { if (m.material.color.getHexString() === '2fc092') m.material.color.set(FWBASE); }));
+  M.paint(2);
+  say('A³：中間頂點 = 3', '第 3 列 5 8 0 1、第 3 行 5 2 0 7 照抄');
+  await step(tok); // 1 → 2 via 3: 5 + 8 = 13
+  glow(M.cells[0][1], GOLD); fwGlow(M, [[0, 2], [2, 1]], RED);
+  note('A²[1,2] = 3 對比 A²[1,3] + A²[3,2] = 5 + 8 = 13');
+  say('1 → 2：3 對比 5 + 8 = 13', '');
+  await step(tok); // keep 3
+  fwGlow(M, [[0, 1], [0, 2], [2, 1]], null); note('min(3, 13) = 3 → 維持');
+  say('3 本身就比較小', 'A³[1,2] = 3');
+  await step(tok); // rest of A³
+  r = await fwRest(tok, M, D, N, [[0, 1]]);
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) D[i][j] = N[i][j];
+  note('A³ 完成：經過頂點 3');
+  say('其他格子同樣算', r);
+  await step(tok); // A⁴
+  N = fwStep(D, 3); fwHead(M, 3);
+  r = await fwRest(tok, M, D, N, []);
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) D[i][j] = N[i][j];
+  note('A⁴：經過頂點 4');
+  say('最後做到頂點 4：A⁴', r);
+  await step(tok); // all pairs shortest
+  M.paint(-1); nodeColor(3, C.white, 0);
+  note('A⁴ = 每一對頂點的最短距離');
+  say('A⁴ 就是每一對頂點的最短距離', '');
+  await step(tok); // sequence of decisions
+  note('A⁰ → A¹ → A² → A³ → A⁴：每階段一個決策');
+  say('每個階段做一個決策', '得到一個矩陣');
 }]);
 
-// 10:09 公式：A^k[i,j] = min(A^(k−1)[i,j], A^(k−1)[i,k] + A^(k−1)[k,j])
+// 10:18 公式：A^k[i,j] = min(A^(k−1)[i,j], A^(k−1)[i,k] + A^(k−1)[k,j])
 FRAG.push(['spbari-fw-formula', 'Floyd-Warshall 公式', async (tok) => {
   const { M } = fwScene(2);
-  say('A³ 從 A² 算出來', 'A^k 由 A^(k−1) 來');
-  await beat(tok, 2600);
-  M.paint(2); nodeColor(2, C.hot, 0.5);
-  const c = M.cells;
-  glow(c[1][3], GOLD);
-  say('A^k[i, j] = min(', 'A^(k−1)[i, j], A^(k−1)[i, k] + A^(k−1)[k, j] )');
-  await beat(tok, 3600);
-  say('不經過 k：A²[2, 4] = 15', 'A^(k−1)[i, j]');
-  await beat(tok, 2600);
-  glow(c[1][2], RED); glow(c[2][3], RED);
-  say('經過 k = 3：2 + 1 = 3', 'A^(k−1)[i, k] + A^(k−1)[k, j]');
-  await beat(tok, 3000);
-  M.set(1, 3, 3, C.ok);
-  say('兩者取小：min(15, 3) = 3', 'A³[2, 4] = 3');
-  await beat(tok, 3000);
-  glow(c[1][2], null); glow(c[2][3], null); glow(c[1][3], null);
-  say('每個矩陣都用同一個公式', 'k 插在中間相加，取較小的');
-  await beat(tok, 3000);
+  const note = fwNote();
+  M.title('A²');
+  await step(tok); // any matrix from previous
+  note('每個矩陣都由前一個算出來');
+  say('任何一個矩陣的值', '都從前一個矩陣來');
+  await step(tok); // A³ from A²
+  fwHead(M, 2);
+  note('A⁴ ← A³，A³ ← A²：A^k ← A^(k−1)');
+  say('A⁴ 由 A³、A³ 由 A² 算出', 'A^k 由 A^(k−1) 來');
+  await step(tok); // formula of A^k[i,j]
+  note('A^k[i, j] = min( ?, ? )');
+  say('寫成公式：A^k[i, j] = min(…)', '');
+  await step(tok); // A^(k−1)[i,j]
+  glow(M.cells[1][3], GOLD); note('第一項：A^(k−1)[i, j]　例：A²[2,4] = 15');
+  say('第一項：前一個矩陣的 A^(k−1)[i, j]', '例：A²[2,4] = 15');
+  await step(tok); // A^(k−1)[i,k] + A^(k−1)[k,j]
+  fwGlow(M, [[1, 2], [2, 3]], RED); note('第二項：A^(k−1)[i, k] + A^(k−1)[k, j]　例：2 + 1 = 3');
+  say('第二項：A^(k−1)[i, k] + A^(k−1)[k, j]', '例：A²[2,3] + A²[3,4] = 2 + 1 = 3');
+  await step(tok); // smaller one
+  M.set(1, 3, 3, C.ok); fwGlow(M, [[1, 2], [2, 3], [1, 3]], null);
+  note('k 插在中間相加，取較小的：min(15, 3) = 3');
+  say('k 插在 i、j 中間相加', '兩個取較小的：min(15, 3) = 3');
+  await step(tok); // same formula for all
+  note('A^k[i, j] = min(A^(k−1)[i, j], A^(k−1)[i, k] + A^(k−1)[k, j])');
+  say('所有矩陣都用同一個公式', '先看做法，再推出公式');
 }]);
 
-// 11:47 程式：三層迴圈、一個 2D 陣列就地更新 → Θ(n³)
+// 11:55 程式：三層迴圈、一個 2D 陣列就地更新 → Θ(n³)
 FRAG.push(['spbari-fw-code', 'Floyd-Warshall 程式：Θ(n³)', async (tok) => {
   fresh([0, 12.5, 8], [0, 0, -0.3]);
   const D = fwA0();
@@ -2079,98 +2717,155 @@ FRAG.push(['spbari-fw-code', 'Floyd-Warshall 程式：Θ(n³)', async (tok) => {
     '      A[i][j] = min(A[i][j],',
     '                A[i][k] + A[k][j]);',
   ], -3.4, -2.4, 0.7);
-  cd.hl(1);
-  say('一個矩陣 n × n 個值', '兩層迴圈 i、j');
-  await beat(tok, 3000);
-  cd.hl(3);
-  say('取兩者中較小的', 'A[i][j] = min(A[i][j], A[i][k] + A[k][j])');
-  await beat(tok, 3200);
-  say('只用一個 2D 陣列', '就地更新，不必存 n 個矩陣');
-  await beat(tok, 2600);
-  cd.hl(0);
-  say('外層 k：第 k 個矩陣', 'k = 1, 2, 3, 4');
-  await beat(tok, 2400);
+  const note = fwNote();
   let A = D;
-  for (let k = 0; k < 4; k++) {
+  const runK = async (k) => {
     M.title('A' + SUP[k + 1]); M.paint(k);
     const N = fwStep(A, k);
-    for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
-      if (N[i][j] < A[i][j]) M.set(i, j, N[i][j], C.ok);
-    }
-    cd.hl(3);
-    await beat(tok, 1300);
-    A = N;
-  }
-  M.paint(-1); cd.hl(-1);
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) if (N[i][j] < A[i][j]) M.set(i, j, N[i][j], C.ok);
+    A = N; await kanim(tok, 900, () => {});
+  };
+  await step(tok); // four matrices
+  note('要產生 4 個矩陣：A¹、A²、A³、A⁴');
+  say('一共產生 4 個矩陣', '');
+  await step(tok); // n × n terms
+  for (let i = 0; i < 4; i++) { M.cells[i].forEach((m) => glow(m, GOLD)); await kanim(tok, 300, () => {}); M.cells[i].forEach((m) => glow(m, null)); }
+  note('每個矩陣有 n × n 個值');
+  say('每個矩陣有 n × n 個值', '要一格一格算');
+  await step(tok); // two for loops
+  cd.hl(1); await kanim(tok, 700, () => {}); cd.hl(2);
+  say('兩層迴圈 i、j', '走過每一格');
+  await step(tok); // A[i][j] = min(A[i][j],
+  cd.hl(3);
+  say('A[i][j] = min(A[i][j], …)', '');
+  await step(tok); // single 2D array
+  note('只用一個 2D 陣列，就地更新');
+  say('只用一個 2D 陣列', '在同一個陣列裡更新');
+  await step(tok); // A[i][k] + A[k][j]
+  cd.hl(4);
+  say('另一項：A[i][k] + A[k][j]', '兩個取較小的');
+  await step(tok); // k changes the intermediate
+  note('兩層迴圈只產生一個矩陣；k = 中間頂點');
+  say('k 是中間頂點', '兩層迴圈只產生一個矩陣');
+  await step(tok); // for k
+  cd.hl(0);
+  say('最外層：for k = 1 到 n', '');
+  await step(tok); // k = 1, 2
+  await runK(0); await runK(1);
+  say('k = 1 → 第 1 個矩陣；k = 2 → 第 2 個', '');
+  await step(tok); // k = 3, 4
+  await runK(2); await runK(3);
+  M.paint(-1);
+  say('k = 3、k = 4', '每個 k 產生一個矩陣');
+  await step(tok); // Θ(n³)
+  cd.hl(-1); note('三層巢狀迴圈 → Θ(n³)');
   say('三層巢狀迴圈', 'Θ(n³)');
-  await beat(tok, 3000);
 }]);
 
 // ══════════ Abdul Bari：Shortest Path Algorithms（2raV0H9KqY8）══════════
 // 00:00 t → u → v：單邊路徑與 relaxation（5 + 3 = 8）
 FRAG.push(['spbari-sp-tuv', '最短路徑與 relax：t → u → v', async (tok) => {
   fresh();
+  const dj = sbBuddy(-2.2, -3.8, 0.45, '#4b9ee2', 'Dijkstra');
+  const bf = sbBuddy(2.2, -3.8, 0.45, '#dd8238', 'Bellman-Ford');
+  const bd = tag('', 'note', 0, 0.3, 3.6); bd.element.style.display = 'none';
+  const board = (t) => { bd.element.style.display = ''; txt(bd, t); };
+  let b = null, pk = null;
+  await step(tok); // two algorithms
+  await dj.hop(tok); await bf.hop(tok);
+  say('兩個最短路徑演算法', 'Dijkstra 與 Bellman-Ford');
+  await step(tok); // problem
+  board('問題：從一個頂點，到其他所有頂點的最短路徑');
+  say('從一個頂點到其他所有頂點的最短路徑', '');
+  await step(tok); // t, u, v
   buildGraph(SB.tuv);
-  nodeColor(0, C.ok, 0.3);
-  say('起點 t：找 t → u、t → v', '');
-  await beat(tok, 2600);
-  sbD([0, 5, INF]); edgeColor(sbE(0, 1), C.hot, 1.8);
-  say('t → u 直接邊 5', 't → v 沒直接邊 → ∞');
-  await beat(tok, 3000);
-  say('路徑可以不只一條邊', '經過 u 就到得了 v');
-  await beat(tok, 2600);
-  edgeColor(sbE(0, 1), C.tree, 2); nodeColor(1, C.ok, 0.3);
+  say('簡單的圖：三個頂點 t、u、v', '');
+  await step(tok); // t is the start
+  nodeColor(0, C.ok, 0.3); nodeTag(0, '起點', 'ptr');
+  b = sbBuddy(sbAt(0).x, sbAt(0).z, 0.45); await b.hop(tok);
+  say('起點選 t', '找 t → u、t → v');
+  await step(tok); // direct t → u = 5
+  edgeColor(sbE(0, 1), C.hot, 1.8);
+  pk = await sbPkt(tok, '5', 0, 1, 800);
+  say('t → u 有直接邊：5', '');
+  await step(tok); // no direct t → v
+  kill(pk); nodeTag(2, '∞', 'ptr alt');
+  board('t → v 沒有直接邊 → ∞');
+  say('t → v 沒有直接邊 → ∞', '');
+  await step(tok); // more than one edge
+  board('路徑可以不只一條邊');
+  say('路徑可以是一條邊，也可以不只一條', '');
+  await step(tok); // via u: 8
+  sbPath([0, 1, 2], C.tree);
+  pk = await sbWalk(tok, '5 + 3 = 8', [0, 1, 2], 650);
+  say('到了 u 還能走到 v', 't → u → v 總共 8');
+  await step(tok); // relaxation condition
+  kill(pk); sbPath([0, 1, 2], C.edge, 1);
+  board('做法：靠 relaxation 條件');
+  say('怎麼找？靠 relaxation 條件', '');
+  await step(tok); // label distances 0, 5, ∞
+  sbD([0, 5, INF]); edgeColor(sbE(0, 1), C.pq, 1.6);
+  say('標距離：t = 0、u = 5、v = ∞', '');
+  await step(tok); // stop here? no
+  b.talk('停在這裡就好？不行'); b.mood('wow');
+  say('停在這裡：t → v 就是 ∞？', '不行，還要看多條邊的路');
+  await step(tok); // select u
+  b.mood('calm'); b.talk('選 u'); await sbGo(tok, b, sbAt(1), 800);
+  nodeColor(1, C.ok, 0.3); edgeColor(sbE(0, 1), C.tree, 2.2);
+  say('t → u = 5，選定 u', '');
+  await step(tok); // condition 5 + 3 = 8 < ∞
   edgeColor(sbE(1, 2), C.hot, 1.8);
-  say('選 u，檢查 relaxation 條件', 'd[u] + c(u,v) < d[v]');
-  await beat(tok, 3000);
-  say('5 + 3 = 8 < ∞', '→ d[v] = 8');
-  nodeTag(2, '8', 'ptr alt');
-  await beat(tok, 2800);
-  edgeColor(sbE(1, 2), C.tree, 2);
-  say('v 被 relax 了', 't → u → v = 8');
-  await beat(tok, 2600);
+  pk = await sbPkt(tok, '5 + 3 = 8 < ∞', 1, 2, 900);
+  board('d[u] + c(u, v) < d[v]？');
+  say('檢查 d[u] + c(u, v) < d[v]', '5 + 3 = 8 < ∞');
+  await step(tok); // d[v] = 8
+  kill(pk); nodeTag(2, '8', 'ptr alt'); edgeColor(sbE(1, 2), C.tree, 2.2);
+  board('d[v] = 8：v 被 relax 了'); b.mood('happy'); b.talk('改成 8！');
+  say('條件成立 → d[v] = 8', '這就是 v 被 relax');
 }]);
 
 // 02:57 P～U：Q1、R2、U3、S4、T7
 FRAG.push(['spbari-sp-dij-pq', 'Dijkstra：P、Q、R、S、T、U', async (tok) => {
   fresh();
   buildGraph(SB.pq);
-  say('起點 P：Q 1、T 7、S 6', 'R、U 沒有直接邊 → ∞');
-  await beat(tok, 2800);
-  run.gen = dijkstraGen(0, { k: 0.8, endCap: 'Q 1、R 2、U 3、S 4、T 7', endF: 'T 是直接邊 7；S 走 P→Q→R→S' });
-  await playGen(tok);
+  const ev = sbDijEv(0, { direct: true });
+  const show = sbDijShow(tok, 0, { endCap: 'Q 1、R 2、U 3、S 4、T 7', endF: '每個頂點都標上最短距離' });
+  let pk = null;
+  const fnPaths = async () => { pk = await sbWalk(tok, 'P→Q→R→S = 4', [0, 1, 2, 3], 550); say('R 經過 Q；U 經過 Q、R', 'S 走 P→Q→R→S；T 是直接邊 7'); };
+  await sbRun(tok, ev, [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, fnPaths], show);
 }]);
 
 // 06:41 A～F：B 1、C 2、D 3、E 3、F 6
 FRAG.push(['spbari-sp-dij-af', 'Dijkstra：A～F', async (tok) => {
   fresh();
   buildGraph(SB.af);
-  say('起點 A：B 1、C 2', 'D、E、F → ∞');
-  await beat(tok, 2600);
-  run.gen = dijkstraGen(0, { k: 0.75, endCap: 'B 1、C 2、D 3、E 3、F 6', endF: 'D、E 同為 3：先選 D' });
-  await playGen(tok);
+  const ev = sbDijEv(0, { direct: true });
+  const show = sbDijShow(tok, 0, { endCap: 'B 1、C 2、D 3、E 3、F 6', endF: 'A 到每個頂點的最短距離' });
+  await sbRun(tok, ev, [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], show);
 }]);
 
-// 10:38 有負邊，但這張圖 Dijkstra 剛好對
+// 10:41 有負邊，但這張圖 Dijkstra 剛好對
 FRAG.push(['spbari-sp-neg-ok', '負邊：Dijkstra 剛好正確的例子', async (tok) => {
   fresh();
   buildGraph(sbNeg2(8));
-  edgeColor(sbE(2, 3), C.back, 1.8);
-  say('3 → 4 = −6：有負邊', '起點 1：8、2、∞');
-  await beat(tok, 2800);
-  run.gen = dijkstraGen(0, { k: 0.75, endCap: '4 還沒選就被改成 −1', endF: '這張圖有負邊也正確' });
-  await playGen(tok);
+  const ev = sbDijEv(0, { direct: true });
+  const show = sbDijShow(tok, 0, { endCap: '4 = −1：答案正確', endF: '這張圖有負邊也正確' });
+  const fnNeg = async () => { edgeColor(sbE(2, 3), C.back, 1.8); show.b.talk('有負邊？'); say('圖裡有負權重的邊（3 → 4 = −6）', 'Dijkstra 會怎樣？'); };
+  await sbRun(tok, ev, [fnNeg, 1, 1, 1, 1, 1, 1, 1], show);
 }]);
 
-// 12:07 1 → 4 改成 1：4 先被選，之後又被改 → 出錯
+// 12:10 1 → 4 改成 1：4 先被選，之後又被改 → 出錯
 FRAG.push(['spbari-sp-neg-fail', '負邊：Dijkstra 出錯的例子', async (tok) => {
   fresh();
   buildGraph(sbNeg2(1));
   edgeColor(sbE(2, 3), C.back, 1.8);
-  say('1 → 4 改成 1', '起點 1：1、2、∞');
-  await beat(tok, 2800);
-  run.gen = dijkstraGen(0, { k: 0.75, endCap: '已選的 4 又被改小 → 錯', endF: '負邊時 Dijkstra 可能對、可能錯' });
-  await playGen(tok);
+  const ev = sbDijEv(0, { direct: true });
+  const show = sbDijShow(tok, 0, { endCap: '已經定案的 4 又被改小', endF: 'Dijkstra 之前給的結果是錯的', endTalk: '我錯了…', endSad: true });
+  const fnFix = async () => { nodeTag(3, '1（定案）', 'ptr'); show.b.talk('1 → 4 = 1，定案'); say('1 → 4 的最短路徑定為 1', '選定 = 定案'); };
+  const fnRule = async () => { show.b.talk('定案的不能再改'); say('Dijkstra 規定：已選定的頂點不再 relax', '可是這裡還是被改了'); };
+  const fnMay = async () => { say('有負邊時', 'Dijkstra 不一定每次都正確'); };
+  const fnBoth = async () => { show.b.talk('可能對，可能錯'); say('上一張圖對、這張圖錯', '有負邊：可能對、也可能錯'); };
+  await sbRun(tok, ev, [1, 1, fnFix, 1, 1, 1, 1, 1, fnRule, fnMay, fnBoth], show);
 }]);
 
 // 14:28 Bellman-Ford：列出所有邊、全部設 ∞（即使有直接邊）
@@ -2178,55 +2873,79 @@ FRAG.push(['spbari-sp-bf-list', 'Bellman-Ford：列出邊、其他全部 ∞', a
   fresh();
   buildGraph(sbAbcd(false));
   edgeColor(sbE(3, 1), C.back, 1.8);
-  say('Dijkstra：每個頂點 relax 一次', 'Bellman-Ford：反覆 relax');
-  await beat(tok, 3000);
+  const bf = sbBuddy(-5.4, 3.6, 0.55, '#dd8238', 'Bellman-Ford');
+  const bd = tag('', 'note', 1.6, 0.3, 4.3); bd.element.style.display = 'none';
+  const board = (t) => { bd.element.style.display = ''; txt(bd, t); };
   const L = [[3, 1, -6], [2, 3, 3], [0, 2, 2], [0, 1, 1]];
-  const bl = [];
-  say('先列出所有邊', '刻意從 D → B 開始');
-  for (let i = 0; i < L.length; i++) {
+  const gap = 1.15, bl = [];
+  const card = async (i) => {
     const [u, v, w] = L[i];
-    const m = cube(fmt(w), C.q, [1.6, 0.45, 0.7], -4.4 + i * 1.9, 0.23, -4.4, 3);
+    const m = lab.box(C.q, [gap * 0.9, 0.45, 0.7]); m.add(lab.label(fmt(w), 'val'));
     const l = lab.label('(' + nm(u) + ',' + nm(v) + ')', 'idx'); l.position.set(0, 0, 0.62); m.add(l);
-    bl.push(m);
+    const x = -5.7 + gap / 2 + i * gap; m.position.set(x, 2.6, -4.5); lab.world.add(m); bl.push(m);
     edgeColor(sbE(u, v), C.hot, 1.8);
-    await beat(tok, 900);
+    await kanim(tok, 600, (t) => { m.position.y = 2.6 + (0.23 - 2.6) * t; });
     edgeColor(sbE(u, v), w < 0 ? C.back : C.edge, w < 0 ? 1.8 : 1);
-  }
-  await beat(tok, 1600);
-  sbD([0, INF, INF, INF]);
-  say('起點 A = 0，其他全部 ∞', '有直接邊也先不管');
-  await beat(tok, 3200);
-  say('4 個頂點 → relax 3 次', 'V − 1');
-  await beat(tok, 2800);
-  say('反覆 relax，直到正確', '有負邊也保證正確');
-  await beat(tok, 2400);
+  };
+  await step(tok); // another algorithm
+  await bf.hop(tok); bf.talk('有負邊也一定對');
+  say('另一個演算法：Bellman-Ford', '有負邊時也一定正確');
+  await step(tok); // has its drawback
+  bf.mood('wow'); bf.talk('不過我也有缺點');
+  say('但它也有自己的缺點', '最後會看到');
+  await step(tok); // relax once vs repeatedly
+  bf.mood('calm'); board('Dijkstra：每個頂點只 relax 一次 ／ Bellman-Ford：一直重複 relax');
+  say('Dijkstra 每個頂點只 relax 一次', 'Bellman-Ford 反覆 relax，直到全部正確');
+  await step(tok); // list of edges
+  board('第一步：列出所有邊');
+  say('第一步：列出所有的邊', '');
+  await step(tok); await card(0);
+  say('第一條：D → B', '');
+  await step(tok); await card(1);
+  say('第二條：C → D', '');
+  await step(tok); await card(2); await card(3);
+  say('再來 A → C、A → B', '只有 4 條邊');
+  await step(tok); // deliberately D → B first
+  glow(bl[0], GOLD); bf.talk('故意從 D → B 開始');
+  say('故意從 D → B 開始，不是 A → B', '之後就知道為什麼');
+  await step(tok); // source 0, others ∞
+  glow(bl[0], null); sbD([0, INF, INF, INF]); nodeColor(0, C.ok, 0.3);
+  say('起點 A = 0，其他全部 ∞', '');
+  await step(tok); // even with direct edges
+  edgeColor(sbE(0, 1), C.hot, 1.8); edgeColor(sbE(0, 2), C.hot, 1.8);
+  board('A → B、A → C 有直接邊，也先記 ∞');
+  say('即使有直接邊，也先不管', '全部記 ∞');
+  await step(tok); // V − 1 = 3
+  edgeColor(sbE(0, 1), C.edge, 1); edgeColor(sbE(0, 2), C.edge, 1);
+  board('4 個頂點 → relax V − 1 = 3 次'); bf.talk('3 輪！'); await bf.hop(tok);
+  say('4 個頂點 → relax V − 1 = 3 次', '');
 }]);
 
-// 16:51 逐輪 relax：B −1、C 2、D 5
+// 16:54 逐輪 relax：B −1、C 2、D 5
 FRAG.push(['spbari-sp-bf-abcd', 'Bellman-Ford：A～D 三輪 relax', async (tok) => {
   fresh();
   buildGraph(sbAbcd(false));
-  say('邊的順序：D→B、C→D、A→C、A→B', '4 個頂點 → 3 輪');
-  await beat(tok, 2800);
-  run.gen = bfGen(0, { k: 0.85 });
-  await playGen(tok);
+  const ev = sbBFEv(0, {});
+  const show = sbBFShow(tok, 0, { endCap: '3 輪做完：B −1、C 2、D 5', endF: '有負邊也正確' });
+  const fnIdea = async () => { show.b.talk('重複 V − 1 次就對'); say('反覆 relax V − 1 次', '所有頂點都會得到正確的最短路徑'); };
+  await sbRun(tok, ev, [3, 1, 1, 1, 1, 1, 2, 1, 2, 1, 1, fnIdea], show);
 }]);
 
 // 20:39 加 B → C = 1：B→C→D→B = 1 + 3 − 6 = −2，第 4 輪還在變
 FRAG.push(['spbari-sp-bf-cycle', 'Bellman-Ford：加 B → C 形成負 cycle', async (tok) => {
   fresh();
   buildGraph(sbAbcd(true));
-  edgeColor(sbE(1, 2), C.hot, 1.8);
-  say('同一張圖加一條 B → C = 1', '邊的順序最後多一條 B→C');
-  await beat(tok, 2800);
-  edgeColor(sbE(1, 2), C.edge, 1);
-  run.gen = bfGen(0, { k: 0.75 });
-  await playGen(tok);
-  sbPath([1, 2, 3, 1], C.back, 2.2);
-  say('B → C → D → B', '1 + 3 − 6 = −2 < 0');
-  await beat(tok, 3200);
-  say('負 cycle：Bellman-Ford 也解不了', '但多 relax 一輪就偵測得到');
-  await beat(tok, 3000);
+  const ev = sbBFEv(0, { extra: 2 });
+  const show = sbBFShow(tok, 0, { endCap: '頂點的距離一直在變', endF: '答案定不下來' });
+  const sum = tag('', 'note', 3.6, 0.3, 4.4); sum.element.style.display = 'none';
+  const P = [1, 2, 3].map((v) => GR.nodes[v].home);
+  const fnAdd = async () => { edgeColor(sbE(1, 2), C.hot, 2); await kanim(tok, 800, () => {}); edgeColor(sbE(1, 2), C.edge, 1); say('同一張圖，加一條 B → C = 1', ''); };
+  const fnOne = async () => { show.b.talk('D 從 5 變成 3'); say('做滿 3 輪後還有頂點被 relax', 'D：5 → 3'); };
+  const fnCyc = async () => { sbPath([1, 2, 3, 1], C.back, 2.2); show.b.talk('B、C、D 繞成一圈'); say('問題：B、C、D 形成一個 cycle', '權重 1、3、−6'); };
+  const fnSum = async () => { sum.element.style.display = ''; await sbLoop(tok, P, [1, 3, -6], sum); txt(sum, '1 + 3 − 6 = −2 < 0'); say('cycle 總和：1 + 3 − 6 = −2', '是負的（講者口誤說 −3）'); };
+  const fnFail = async () => { show.b.mood('sad'); show.b.talk('負 cycle 我也不行'); say('有負邊沒問題', '但有負權重 cycle，Bellman-Ford 也無法求解'); };
+  const fnDetect = async () => { show.b.mood('happy'); show.b.talk('但我抓得到！'); await show.b.hop(tok); say('V − 1 輪後再 relax 一次', '還有頂點更新 → 偵測出負 cycle'); };
+  await sbRun(tok, ev, [fnAdd, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 1, 3, 1, 1, 1, 1, 3, fnOne, 2, 3, 1, 1, fnCyc, fnSum, fnFail, fnDetect], show);
 }]);
   }
 

@@ -183,7 +183,7 @@
   "label": "Abdul Bari：Shortest Path Algorithms (Dijkstra/Bellman-Ford) - Simplified",
   "points": 57,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "2Rr2tW9zvRg": {
   "label": "Abdul Bari：2 Divide And Conquer（介紹）",
@@ -759,13 +759,13 @@
   "label": "Bellman Ford Algorithm",
   "points": 41,
   "quiz": 5,
-  "cued": false
+  "cued": true
  },
  "FtN3BYH2Zes": {
   "label": "Abdul Bari：4.4 Bellman Ford Algorithm - DP",
   "points": 36,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "FvUs-OlAy18": {
   "label": "交大江蕙如 Lec07 Graphs (2/4)",
@@ -1077,7 +1077,7 @@
   "label": "Abdul Bari：4.2 All Pairs Shortest Path (Floyd-Warshall)",
   "points": 35,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "OQ5jsbhAv_M": {
   "label": "MIT 6.006 L11：DP I",
@@ -1473,7 +1473,7 @@
   "label": "Abdul Bari：3.6 Dijkstra Algorithm",
   "points": 41,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "XcZw01FuH18": {
   "label": "Abdul Bari：Recurrence Relation Dividing [T(n)=T(n/2)+n]",
