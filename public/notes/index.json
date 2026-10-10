@@ -1023,7 +1023,7 @@
   "label": "MIT 6.006 Rec15：Shortest Paths",
   "points": 89,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "mwN18xfwNhk": {
   "label": "Abdul Bari：1.10.1 Comparison of Functions #1",
@@ -1125,7 +1125,7 @@
   "label": "MIT 6.006 L17：Bellman-Ford",
   "points": 79,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "p1EnSvS3urU": {
   "label": "Abdul Bari：1.5.3 Time Complexity of While and if #3",
@@ -1287,7 +1287,7 @@
   "label": "MIT 6.006 Rec18：Quiz 2 Review",
   "points": 99,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "sSno9rV8Rhg": {
   "label": "Abdul Bari：4.9 Longest Common Subsequence (LCS)",
