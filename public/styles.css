@@ -7491,3 +7491,5 @@ body#appRoot .cal-greet { margin-bottom: 14px !important; }
 body#appRoot #sec-subjects .ss { margin-top: 6px !important; }
 /* 懸浮鈕在日曆頂卡的右上方：卡片外緣不變（跟下面月曆對齊），只把卡片裡的內容往左讓開 */
 @media (min-width: 760px) { body#appRoot #sec-schedule .cal-header-card { padding-right: 84px !important; } }
+/* 六科：最下面的科目說明（.tip）不要 */
+body#appRoot #main .sp .tip { display: none !important; }
