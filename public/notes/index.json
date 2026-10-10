@@ -165,7 +165,7 @@
   "label": "MIT 6.006 L16：Dijkstra",
   "points": 66,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "2IdtqGM6KWU": {
   "label": "MIT OCW 18.06 L11：Matrix Spaces; Rank 1; Small World Graphs",
@@ -471,7 +471,7 @@
   "label": "MIT 6.006 L15：Single-Source Shortest Paths Problem",
   "points": 81,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "AfSk24UTFS8": {
   "label": "MIT 6.006 L14：DFS, Topological Sort",
@@ -603,7 +603,7 @@
   "label": "MIT 6.006 L18：Speeding up Dijkstra",
   "points": 73,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "CNO_I8jhX3I": {
   "label": "清大周志遠 第18C講 Background & Critical Section",
@@ -891,7 +891,7 @@
   "label": "Ford Fulkerson Algorithm for Maximum Flow Problem",
   "points": 21,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "IWzYoXKaRIc": {
   "label": "MIT 6.006 Rec6：AVL Trees",
@@ -975,7 +975,7 @@
   "label": "交大江蕙如 Lec20 Network Flow (1/2)",
   "points": 129,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "Lzr5-m7ap-8": {
   "label": "台大林軒田 DSA Skip List / BST / AVL Tree",
@@ -1059,7 +1059,7 @@
   "label": "交大江蕙如 Lec21 Network Flow (2/2)",
   "points": 107,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "Nz1KZXbghj8": {
   "label": "MIT 6.006 L7：Counting Sort, Radix Sort",

@@ -2951,18 +2951,29 @@ FRAG.push(['spbari-sp-bf-cycle', 'Bellman-Ford：加 B → C 形成負 cycle', a
 
   // ═══ spmit1.js ═══
   {
-const { V3, cube, glow, kill, arrow, GOLD, GREEN, RED } = K;
-// ─── MIT 6.006 L15／L16／L18（Aa2sqUhIn-E、2E7MmKv0Y24、CHvQ3q_gJ7E）補上的場景 ───
-// 用本章模組的畫圖工具（buildGraph、nodeTag、edgeColor…）；fresh / tag / code / anim 是模組自己的版本。
+const { V3, cube, glow, kill, arrow, GOLD, buddy, travel, step } = K;
+const kanim = K.anim;
+// ─── MIT 6.006 L15／L16／L18（Aa2sqUhIn-E、2E7MmKv0Y24、CHvQ3q_gJ7E）── cued scenes ───
+// 每個 await step(tok) 等講者說到那一句（行尾 // @秒數 = 那句話開始的時間）。
+// 用本章模組的畫圖工具（buildGraph、nodeTag、edgeColor…）；fresh / tag / code 是模組自己的版本。
+// 內建場景（sp-exp-paths、relax-safe、dij-clrs5…）的跟講版本也在這裡，id 前綴 spmit1-。
 const SM = {
+  map: { title: 's, a, b, t', directed: true, names: ['s', 'a', 'b', 't'], pos: [[-4.6, 0.4], [-0.8, -2.3], [-0.6, 2.4], [3.8, 0.2]], edges: [[0, 1, 3], [0, 2, 2], [1, 3, 4], [2, 3, 6], [1, 2, 1]] },
+  k4: { title: 'K4', directed: false, names: ['a', 'b', 'c', 'd'], pos: [[-1.6, -1.6], [1.6, -1.6], [1.6, 1.6], [-1.6, 1.6]], edges: [[0, 1], [1, 2], [2, 3], [3, 0], [0, 2], [1, 3]] },
+  path4: { title: 'v0 … v3', directed: true, names: ['v0', 'v1', 'v2', 'v3'], pos: [[-5, 0.6], [-1.7, -1.4], [1.7, -1.4], [5, 0.6]], edges: [[0, 1, 2], [1, 2, 1], [2, 3, 3]] },
   // L15 δ 定義的小例子（示意）
   delta: { title: 'δ(u, v)', directed: true, names: ['u', 'x', 'v', 'z'], pos: [[-4.4, 0.6], [0, -2.2], [4.0, 0.6], [1.6, 3.0]], edges: [[0, 1, 2], [1, 2, 3], [0, 2, 7]] },
   // L15 負權重的動機（示意）：a → t 是「倒貼的收費站」
   toll: { title: '倒貼收費', directed: true, names: ['s', 'a', 't'], pos: [[-4.6, 0.8], [0, -2.4], [4.4, 0.8]], edges: [[0, 1, 3], [1, 2, -2], [0, 2, 2]] },
+  opt: { title: 'v0 → v3', directed: true, names: ['v0', 'v1', 'v2', 'v3'], pos: [[-5, 0.6], [-1.7, -1.4], [1.7, -1.4], [5, 0.6]], edges: [[0, 1, 4], [1, 2, 3], [2, 3, 2]] },
+  tri3: { title: 'v0, v1, v2', directed: true, names: ['v0', 'v1', 'v2'], pos: [[-4.4, 1.4], [4.4, 1.4], [0, -2.2]], edges: [[0, 1, 'δ(v0,v1)'], [0, 2, 'δ(v0,v2)'], [2, 1, 'δ(v2,v1)']] },
   // L16 relaxation 安全性：s、u、v 三角形（標籤是符號）
   tri: { title: 's, u, v', directed: true, names: ['s', 'u', 'v'], pos: [[-4.4, 1.2], [0, -2.0], [4.2, 1.2]], edges: [[0, 1, 'δ(s,u)'], [1, 2, 'w(u,v)'], [0, 2, 'δ(s,v)', 0.25]] },
   // L16 DAG：A、B 在 S 的左邊（走不到）
   dagL: { title: 'A, B, S', directed: true, names: ['A', 'B', 'S'], pos: [[-4.6, 0], [-1.2, 0], [2.2, 0]], edges: [[0, 1, 1], [1, 2, 1], [0, 2, 4, 0.3]] },
+  // L16 白板的 DAG（= CLRS 圖 24.5）；講者叫第三、四個頂點 a、b
+  dagv: { title: 'DAG', directed: true, names: ['r', 'S', 'a', 'b', 'c', 'd'], pos: [[-5.5, 0], [-3.3, 0], [-1.1, 0], [1.1, 0], [3.3, 0], [5.5, 0]],
+    edges: [[0, 1, 5], [0, 2, 3, 0.3], [1, 2, 2], [1, 3, 6, -0.3], [2, 3, 7], [2, 4, 4, 0.3], [2, 5, 2, -0.26], [3, 4, -1], [3, 5, 1, 0.42], [4, 5, -2]] },
   // L18 雙向搜尋的示意圖（沒有權重）
   bi: { title: 's … t', directed: true, names: ['s', 'v1', 'v3', 'v2', 't', 'x'], pos: [[-5.2, 0], [-2.6, -2.2], [0.4, -2.2], [2.8, 0], [5.4, 0], [-1.0, 2.2]], edges: [[0, 1], [0, 5], [1, 2], [2, 3], [5, 3], [3, 4]] },
   // L18 位能：s 出去兩條 5（t1→t、t2→t 的權重是示意）
@@ -2971,467 +2982,2403 @@ const SM = {
 };
 const smE = (u, v) => findEdge(u, v);
 const smPath = (vs, color, k = 2.2) => { for (let i = 0; i + 1 < vs.length; i++) edgeColor(smE(vs[i], vs[i + 1]), color, k); };
+// 小幫手：一個會跟著講者動的小角色
+const guide = (x, z, name = '小路', color = '#f4a56a', s = 0.6) => buddy(name, '', color, x, 0, z, s);
+const goTo = (tok, b, x, z, ms = 700) => travel(tok, b.g, b.g.position.clone(), V3(x, 0, z), ms);
+const hp = (i, y = 1.0) => { const h = GR.nodes[i].home; return V3(h.x, y, h.z); };
+function hideW(on = true) { GR.edges.forEach((e) => { if (e.lbl) e.lbl.element.style.visibility = on ? 'hidden' : ''; }); }
+const showW = (e, on = true) => { if (e && e.lbl) e.lbl.element.style.visibility = on ? '' : 'hidden'; };
+function dropEdge(e) { lab.world.remove(e.group); if (e.lbl) kill(e.lbl); const i = GR.edges.indexOf(e); if (i >= 0) GR.edges.splice(i, 1); }
+// 一個小封包沿著一串頂點走，帶著它算的數字
+async function walk(tok, text, path, ms = 600) {
+  const a = hp(path[0]);
+  const pk = tag(text, 'pkt', a.x, 1.0, a.z);
+  for (let i = 1; i < path.length; i++) await travel(tok, pk, hp(path[i - 1]), hp(path[i]), ms);
+  return pk;
+}
+// relax 一條邊：封包帶著 d(u) + w 走過去，比較後才改數字（一次一條）
+function relaxer(d, par, o = {}) {
+  let pk = null;
+  const show = o.show || ((v) => nodeTag(v, (o.pre || '') + fmt(d[v])));
+  const r = async (tok, u, v) => {
+    if (pk) { kill(pk); pk = null; }
+    const e = smE(u, v); edgeColor(e, C.hot, 1.8);
+    const sum = fmt(d[u]) + (e.w < 0 ? ' − ' + Math.abs(e.w) : ' + ' + e.w);
+    pk = await walk(tok, sum, [u, v], o.ms || 650);
+    const nd = d[u] + e.w, old = d[v];
+    if (nd < old) {
+      if (par && par[v] >= 0) { const pe = smE(par[v], v); if (pe && pe !== e) edgeColor(pe, C.dim, 1); }
+      d[v] = nd; if (par) par[v] = u;
+      show(v); if (par && o.pi) nodeNote(v, 'π = ' + nm(u));
+      txt(pk, sum + ' = ' + fmt(nd) + ' < ' + fmt(old)); edgeColor(e, C.tree, 2.2);
+      if (o.after) o.after(v);
+      return true;
+    }
+    txt(pk, sum + ' = ' + fmt(nd) + ' ≥ ' + fmt(old)); edgeColor(e, C.dim, 1);
+    return false;
+  };
+  r.clear = () => { if (pk) { kill(pk); pk = null; } };
+  return r;
+}
 
-// ══════════ L15 ══════════
-// 00:19 / 03:59 加權圖 G = (V, E, W)；Dijkstra vs Bellman-Ford
-FRAG.push(['spmit1-two-algos', 'L15：加權圖與兩個演算法', async (tok) => {
+// ══════════ L15（Aa2sqUhIn-E）══════════
+// 00:19 加權圖：這個單元要做什麼
+FRAG.push(['spmit1-weighted', 'L15：邊上有權重的圖', async (tok) => {
   fresh([0, 12.5, 8], [0, 0, -0.3]);
-  buildGraph(GRAPHS.tri, { scale: 0.75, dx: -2.6, dz: -0.2 });
-  say('邊上多了權重', 'G = (V, E, W)，W：E → ℝ');
-  await beat(tok, 3000);
-  setW(smE(0, 2), 0.5); edgeColor(smE(0, 2), C.hot, 1.8);
-  say('權重可以是整數、實數', '也可以是負的');
-  await beat(tok, 2200);
-  setW(smE(1, 2), -1); edgeColor(smE(1, 2), C.back, 1.8);
-  await beat(tok, 1600);
-  setW(smE(0, 2), 3); setW(smE(1, 2), 1); edgeColor(smE(0, 2), C.edge, 1); edgeColor(smE(1, 2), C.edge, 1);
-  const dj = cube('Dijkstra', '#4b9ee2', [3.0, 0.5, 1.0], 3.4, 0.25, -1.8, 4);
-  tag('權重 ≥ 0', 'ptr', 3.4, 0.3, -0.9);
-  say('Dijkstra：權重必須非負', 'O(V log V + E)：幾乎線性');
-  await beat(tok, 3200);
-  const eL = tag('簡單圖：E = O(V²)', 'idx', 3.4, 0.3, 0.1);
-  say('簡單圖每對頂點最多一條邊', '完全圖 E = Θ(V²)；通常 E 主導');
-  await beat(tok, 3000);
-  const bf = cube('Bellman-Ford', '#dd8238', [3.0, 0.5, 1.0], 3.4, 0.25, 1.6, 4);
-  tag('可有負權重', 'ptr', 3.4, 0.3, 2.5);
-  say('Bellman-Ford：正負權重都行', 'O(VE)，E = V² 時是 O(V³)');
-  await beat(tok, 3200);
-  glow(dj, GOLD);
-  say('能用 Dijkstra 就用 Dijkstra', '有負邊才換 Bellman-Ford');
-  await beat(tok, 2600);
-  glow(dj, null); glow(bf, RED);
-  say('負邊麻煩在負 cycle', 'Bellman-Ford 要多做事');
-  await beat(tok, 2800);
-  kill(eL);
+  const g = guide(-6.2, 3.4);
+  await step(tok);                                   // @19.0 a series of lectures on shortest paths
+  buildGraph(SM.map); hideW();
+  const q = tag('最短的路怎麼走？', 'say', -6.2, 1.7, 3.4);
+  say('新單元：最短路徑 shortest paths', '接在 BFS、DFS 之後');
+  await step(tok);                                   // @39.0 graphs that have weights on their edges
+  hideW(false); kill(q);
+  GR.edges.forEach((e) => edgeColor(e, C.hot, 1.6));
+  g.mood('wow');
+  say('最大的不同：邊上有權重 weight', 'BFS、DFS 的邊上沒有數字');
+  await step(tok);                                   // @67.6 these weights can be integers
+  GR.edges.forEach((e) => edgeColor(e, C.edge, 1));
+  g.mood('calm');
+  say('權重可以是整數', '3、2、4、6、1');
+  await step(tok);                                   // @70.5 real numbers, irrationals
+  setW(smE(0, 1), 2.5); setW(smE(1, 3), '√2');
+  edgeColor(smE(0, 1), C.hot, 1.8); edgeColor(smE(1, 3), C.hot, 1.8);
+  say('也可以是實數、無理數', '2.5、√2');
+  await step(tok);                                   // @75.0 they could be negative
+  edgeColor(smE(0, 1), C.edge, 1); edgeColor(smE(1, 3), C.edge, 1);
+  setW(smE(1, 2), -1); edgeColor(smE(1, 2), C.back, 2);
+  say('還可以是負的', 'a → b：−1');
+  await step(tok);                                   // @79.0 different classes → different algorithms
+  const k1 = tag('圖的種類 ＋ 權重的限制 → 各有適合的演算法', 'say', 0.4, 1.6, -3.9);
+  say('不同的圖、不同的權重限制', '各有最適合的演算法');
+  await step(tok);                                   // @97.3 no specific algorithms today
+  kill(k1);
+  const plan = code(['今天：', '① 定義問題', '② 通用的作法', '③ optimal substructure'], 4.8, -3.8, 0.55);
+  plan.hl(1);
+  say('今天先不講具體演算法', '定義問題、通用結構、optimal substructure');
+  await step(tok);                                   // @151.0 borrow a cannon from Caltech to MIT
+  plan.hl(-1);
+  setW(smE(0, 1), 3); setW(smE(1, 3), 4); setW(smE(1, 2), 1); edgeColor(smE(1, 2), C.edge, 1);
+  nodeNote(0, 'Caltech'); nodeNote(3, 'MIT');
+  const pk = await walk(tok, '大砲', [0, 1, 3], 700);
+  g.mood('happy');
+  say('經典動機：從 Caltech 把大砲運到 MIT', '要找最快的路');
+  await step(tok);                                   // @178.0 Google Maps from A to B
+  kill(pk); nodeNote(0, 'A'); nodeNote(3, 'B');
+  smPath([0, 1, 3], C.tree);
+  say('Google Maps：從 A 到 B', '權重就用距離');
+  await step(tok);                                   // @199.3 graph G = (V, E, W)
+  const G = tag('G = (V, E, W)', 'ptr alt', 0, 0.3, 3.9);
+  say('整個單元的圖：G = (V, E, W)', 'V 頂點、E 邊、W 權重');
+  await step(tok);                                   // @218.3 W maps edges to weights
+  smPath([0, 1, 3], C.edge, 1);
+  edgeColor(smE(0, 1), C.hot, 2);
+  tag('W(s, a) = 3', 'note', -4.4, 0.3, -2.4);
+  txt(G, 'W：E → ℝ（每條邊對應一個實數）');
+  say('W 是函數：把每條邊對應到一個實數', 'W：E → ℝ');
+}]);
+
+// 04:03 Dijkstra vs Bellman-Ford
+FRAG.push(['spmit1-two-algos', 'L15：Dijkstra 與 Bellman-Ford', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  await step(tok);                                   // @250.3 the simpler algorithm: Dijkstra
+  const dj = buddy('Dijkstra', '', '#4b9ee2', -4.6, 0, -1.6, 0.9);
+  say('第一個（比較簡單）：Dijkstra', '以 Edsger Dijkstra 命名');
+  await step(tok);                                   // @268.3 assumes non-negative weight edges
+  tag('條件：權重 ≥ 0', 'ptr', -1.6, 0.3, -2.2);
+  say('Dijkstra 假設權重都不是負的', 'non-negative');
+  await step(tok);                                   // @280.2 complexity O(V log V + E)
+  const t2 = tag('O(V log V + E)', 'ptr alt', -1.6, 0.3, -1.4);
+  dj.mood('happy');
+  say('複雜度 O(V log V + E)', '');
+  await step(tok);                                   // @292.2 practically linear time
+  txt(t2, 'O(V log V + E)：幾乎線性');
+  say('實際上幾乎是線性時間', '');
+  await step(tok);                                   // @304.1 E vs V in a simple graph?
+  buildGraph(SM.k4, { dx: 3.4, dz: -0.6, scale: 0.8 });
+  const qq = tag('E 最多有多少條？', 'say', 3.4, 1.6, 1.8);
+  say('簡單圖裡，E 和 V 有什麼關係？', '');
+  await step(tok);                                   // @327.5 E is O(V^2)
+  txt(qq, 'E = O(V²)');
+  say('E = O(V²)', '');
+  await step(tok);                                   // @340.0 complete graph
+  GR.edges.forEach((e) => edgeColor(e, C.hot, 1.8));
+  txt(qq, '完全圖：4 點、6 條邊 → E = Θ(V²)');
+  say('完全圖：每一對頂點之間都有邊', 'E = Θ(V²)');
+  await step(tok);                                   // @357.3 simple graph vs multigraph
+  GR.edges.forEach((e) => edgeColor(e, C.edge, 1));
+  txt(qq, '簡單圖：每對頂點最多一條邊');
+  say('簡單圖：每對頂點最多一條邊', 'multigraph（多重邊）這裡不討論');
+  await step(tok);                                   // @381.1 dominated by E; linear in edges
+  t2.element.className = 'lab-label good';
+  say('很多情況由 E 主導', 'Dijkstra 對邊數是線性的');
+  await step(tok);                                   // @404.0 Bellman-Ford: positive and negative
+  const bf = buddy('Bellman-Ford', '', '#dd8238', -4.6, 0, 1.9, 0.9);
+  tag('正、負權重都可以', 'ptr', -1.6, 0.3, 1.4);
+  say('Bellman-Ford：正負權重都能處理', '');
+  await step(tok);                                   // @416.8 complexity O(VE)
+  const t4 = tag('O(VE)', 'ptr alt', -1.6, 0.3, 2.2);
+  say('複雜度 O(VE)', '');
+  await step(tok);                                   // @426.0 V cubed
+  txt(t4, 'O(VE)：E = V² 時是 O(V³)');
+  bf.mood('sad');
+  say('E 可以到 V²，所以是 O(V³)', 'O(V³) 對上 O(V log V)');
+  await step(tok);                                   // @437.0 when you have a chance, use Dijkstra
+  dj.mood('happy'); await dj.hop(tok);
+  say('有機會就用 Dijkstra', '');
+  await step(tok);                                   // @442.2 stuck with negative edges → Bellman-Ford
+  bf.mood('calm');
+  say('被負權重的邊卡住時', '才用 Bellman-Ford');
+  await step(tok);                                   // @451.3 negative weight cycles
+  const cyc = tag('負權重 cycle：繞一圈總和 < 0', 'bad', -1.6, 0.3, 3.1);
+  bf.mood('wow');
+  say('麻煩在於：要找出權重為負的 cycle', '它會打亂最短路徑');
+  await step(tok);                                   // @470.9 more edges, but smaller weight
+  kill(cyc);
+  tag('a → c：2', 'note', 3.4, 0.3, 2.8);
+  tag('a → b → c：3 + (−4) = −1', 'note', 3.4, 0.3, 3.6);
+  say('有負權重時：多走一步，總權重反而變小', '邊數較多，權重卻較小');
+  await step(tok);                                   // @487.4 that's why the complexities differ
+  bf.mood('calm');
+  say('所以 Bellman-Ford 要多做事', '兩個複雜度才會差這麼多');
+}]);
+
+// 08:24 path、w(p) 與指數多條路徑（內建 sp-exp-paths 的跟講版）
+FRAG.push(['spmit1-paths', 'L15：path、w(p) 與指數多條路徑', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(SM.path4); hideW();
+  await step(tok);                                   // @514.5 a path is a sequence of vertices
+  const pk0 = tag('p = v0, v1, v2, v3', 'say', 0, 1.6, 2.6);
+  for (let i = 0; i < 4; i++) nodeColor(i, C.pq, 0.3);
+  say('path p：一串頂點 v0, v1, …, vk', '');
+  await step(tok);                                   // @529.8 each (vi, vi+1) must be in E
+  for (let i = 0; i < 4; i++) nodeColor(i, C.white, 0);
+  smPath([0, 1, 2, 3], C.hot, 2);
+  txt(pk0, '每一段 (vᵢ, vᵢ₊₁) 都要是 E 裡的邊');
+  say('相鄰兩點之間一定要有邊', '(vᵢ, vᵢ₊₁) ∈ E');
+  await step(tok);                                   // @553.0 w(p), the weight of the path
+  hideW(false); smPath([0, 1, 2, 3], C.edge, 1);
+  txt(pk0, 'w(p)：這條路徑的權重');
+  say('w(p)：路徑的權重', '');
+  await step(tok);                                   // @564.8 the sum of the edge weights
+  const pk = await walk(tok, '2 + 1 + 3', [0, 1, 2, 3], 500);
+  txt(pk, '2 + 1 + 3 = 6');
+  txt(pk0, 'w(p) = 路上每條邊的權重加起來');
+  say('w(p) = 邊權重的總和', '2 + 1 + 3 = 6');
+  await step(tok);                                   // @583.0 find a path p with minimum weight
+  kill(pk);
+  const alt = addEdge(GR, 0, 3, 7, 0.25); edgeColor(alt, C.back, 1.6);
+  smPath([0, 1, 2, 3], C.tree, 2);
+  txt(pk0, '最短路徑問題：找 w(p) 最小的 p');
+  say('最短路徑問題：找權重最小的 path', '直走 7、繞路 6 → 選 6');
+  await step(tok);                                   // @613.3 many, many possible paths
+  txt(pk0, '可能的路徑非常多，甚至指數多條');
+  say('可能的路徑非常多', '甚至是指數級');
+  await step(tok);                                   // @623.0 a simple example with exponential paths
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(GRAPHS.chain); hideW();
+  const cl = tag('一個簡單的例子', 'say', 0, 1.6, 3.6);
+  say('一個會有指數多條路徑的例子', '');
+  await step(tok);                                   // @638.4 directed, all go this way
+  GR.edges.forEach((e) => edgeColor(e, C.hot, 1.6));
+  txt(cl, '有向圖：箭頭都往右');
+  say('所有邊都往同一個方向', '有向圖');
+  await step(tok);                                   // @646.3 the path that goes all the way
+  GR.edges.forEach((e) => edgeColor(e, C.edge, 1));
+  smPath([0, 1, 2, 3, 4, 5, 6], C.tree, 2.2);
+  txt(cl, '路徑 ①：沿著鋸齒一路走');
+  say('可以沿著鋸齒一路走到底', '');
+  await step(tok);                                   // @649.0 the path on top
+  smPath([0, 1, 2, 3, 4, 5, 6], C.edge, 1);
+  [[0, 2], [2, 4], [4, 6]].forEach(([a, b]) => edgeColor(smE(a, b), C.ok, 2.2));
+  txt(cl, '路徑 ②：走直的捷徑');
+  say('也可以走直的那幾段', '');
+  await step(tok);                                   // @653.0 two choices to this vertex
+  [[0, 2], [2, 4], [4, 6]].forEach(([a, b]) => edgeColor(smE(a, b), C.edge, 1));
+  nodeColor(2, C.pq, 0.35); nodeTag(2, '2 條');
+  txt(cl, '到 v2：2 種走法');
+  say('到 v2 有兩種走法', '');
+  await step(tok);                                   // @661.0 four ways of getting here
+  nodeColor(2, C.white, 0); nodeColor(4, C.pq, 0.35); nodeTag(4, '4 條');
+  txt(cl, '到 v4：2 × 2 = 4 種');
+  say('每種再接兩種：到 v4 有 4 條', '');
+  await step(tok);                                   // @663.2 eight ways… exponential
+  nodeColor(4, C.white, 0); nodeColor(6, C.pq, 0.35); nodeTag(6, '8 條');
+  txt(cl, '每多一段 ×2 → 指數多條');
+  say('到 v6 有 8 條，越長越多', '指數多條路徑');
 }]);
 
 // 11:23 複雜度裡沒有權重 W
 FRAG.push(['spmit1-weight-range', 'L15：複雜度與權重大小無關', async (tok) => {
   fresh([0, 12.5, 8], [0, 0, -0.3]);
   buildGraph(GRAPHS.tri, { scale: 0.8, dx: -2.4, dz: -0.6 });
-  say('觀察：兩個複雜度都沒有 W', 'O(V log V + E)、O(VE)');
-  await beat(tok, 3000);
-  const ws = ['0.0001', '10⁹⁸', '2⁶⁴'];
-  [smE(0, 1), smE(1, 2), smE(0, 2)].forEach((e, i) => { txt(e.lbl, ws[i]); edgeColor(e, C.hot, 1.8); });
-  say('權重可以 0.0001，也可以 10⁹⁸', '最多 E 種值，但範圍可以指數大');
-  await beat(tok, 3400);
-  [smE(0, 1), smE(1, 2), smE(0, 2)].forEach((e) => edgeColor(e, C.edge, 1));
-  const a = tag('Dijkstra：O(V log V + E)', 'ptr', 3.6, 0.3, -1.4);
-  const b = tag('Bellman-Ford：O(VE)', 'ptr', 3.6, 0.3, -0.4);
-  const n = tag('不含 W', 'ptr alt', 3.6, 0.3, 0.6);
-  say('好演算法不受權重範圍影響', '只跟 V、E 有關');
-  await beat(tok, 3200);
-  say('BFS 只數邊數，不能直接用', '提示：權重的範圍太大');
-  edgeColor(smE(0, 2), C.back, 2);
-  await beat(tok, 3200);
-  say('難處一：指數多條路徑', '難處二：權重範圍可以很大');
-  edgeColor(smE(0, 2), C.edge, 1);
-  await beat(tok, 3000);
-  [a, b, n].forEach(kill);
+  tag('Dijkstra：O(V log V + E)', 'ptr', 3.4, 0.3, -1.6);
+  tag('Bellman-Ford：O(VE)', 'ptr', 3.4, 0.3, -0.8);
+  await step(tok);                                   // @683.0 anybody want to point that out?
+  const q = tag('這兩個複雜度有什麼特別？', 'say', 3.4, 1.6, 0.4);
+  say('看這兩個複雜度，發現什麼？', '');
+  await step(tok);                                   // @701.7 it's not a function of weight
+  txt(q, '學生：它不是權重的函數！');
+  say('它們都不是權重的函數', '');
+  await step(tok);                                   // @738.0 W doesn't exist in the complexity
+  kill(q);
+  const n = tag('式子裡沒有 W', 'good', 3.4, 0.3, 0.2);
+  say('複雜度裡沒有 W', '這很重要');
+  await step(tok);                                   // @743.0 W could be 2^64
+  setW(smE(0, 2), '2⁶⁴'); edgeColor(smE(0, 2), C.hot, 1.8);
+  say('W 可以很大，例如 2⁶⁴', '');
+  await step(tok);                                   // @750.3 only ~E different values
+  const c = tag('邊只有 E 條 → 權重最多 E 種值', 'note', -2.4, 0.3, 2.6);
+  say('權重的「種類」最多 E 種', '');
+  await step(tok);                                   // @769.5 0.0001 and 10^98
+  setW(smE(0, 1), '0.0001'); setW(smE(1, 2), '10⁹⁸');
+  [smE(0, 1), smE(1, 2)].forEach((e) => edgeColor(e, C.hot, 1.8));
+  txt(c, '範圍卻可以指數大：0.0001 ～ 10⁹⁸');
+  say('範圍卻可以指數大', '0.0001 和 10⁹⁸ 同時出現');
+  await step(tok);                                   // @783.9 don't depend on the dynamic range
+  GR.edges.forEach((e) => edgeColor(e, C.edge, 1));
+  txt(n, '好演算法不受權重範圍影響');
+  say('Dijkstra、Bellman-Ford 不受權重範圍影響', 'dynamic range（數值範圍）');
+  await step(tok);                                   // @799.0 why BFS / DFS aren't directly applicable
+  const bfs = buddy('BFS', '', '#9a9a9a', 3.4, 0, 2.4, 0.6);
+  say('為什麼 BFS、DFS 不能直接用？', '明天 section 會講');
+  await step(tok);                                   // @811.2 the hint: dynamic range of the weights
+  const sp = tag('把 2⁶⁴ 拆成 2⁶⁴ 條單位邊？太多了！', 'bad', 3.4, 1.9, 2.4);
+  bfs.mood('sad');
+  say('提示：權重的範圍', 'BFS 只會數邊數');
+  await step(tok);                                   // @817.7 exponential number of paths
+  kill(sp); kill(c);
+  tag('難處一：指數多條路徑', 'ptr alt', -2.4, 0.3, 2.4);
+  say('這問題比排序、搜尋難：', '一、路徑有指數多條');
+  await step(tok);                                   // @829.3 dynamic range can be very large
+  tag('難處二：權重範圍可以非常大', 'ptr alt', -2.4, 0.3, 3.2);
+  say('二、權重的範圍可以非常大', '');
+  await step(tok);                                   // @839.0 optimal substructure → VE
+  tag('解法：optimal substructure', 'good', -2.4, 0.3, 4.0);
+  bfs.mood('calm');
+  say('要靠 optimal substructure', '做到接近線性，或 O(VE)');
 }]);
 
-// 14:19 δ(u, v) 的定義
+// 14:26 δ(u, v) 的定義
 FRAG.push(['spmit1-delta-def', 'L15：δ(u, v) 的定義', async (tok) => {
   fresh([0, 12.5, 8], [0, 0, -0.3]);
   buildGraph(SM.delta);
-  say('v₀ →ᵖ vₖ：一條從 v₀ 到 vₖ 的路徑', '單一頂點 v₀ 自己就是長度 0 的路徑');
-  nodeColor(0, C.pq, 0.3); nodeTag(0, 'w = 0');
-  await beat(tok, 3000);
-  nodeColor(0, C.white, 0);
-  smPath([0, 2], C.hot);
-  say('u → v 直接走：7', '');
-  await beat(tok, 2000);
-  smPath([0, 2], C.dim, 1); smPath([0, 1, 2], C.tree);
-  say('u → x → v：2 + 3 = 5', '');
-  await beat(tok, 2200);
-  nodeTag(2, 'δ = 5');
-  say('δ(u, v) = 所有 u→v 路徑的最小 w(p)', 'min(7, 5) = 5');
-  await beat(tok, 3000);
-  nodeColor(3, C.dim, 0); nodeTag(3, 'δ = ∞');
-  say('沒有路徑就是 ∞', '從這裡開車到東京：∞');
-  await beat(tok, 2800);
-  say('不只要 δ，也要那條路徑本身', '');
-  await beat(tok, 2200);
+  const g = guide(-6.0, 3.0);
+  const nt = tag('', 'say', 0, 1.6, 4.4); nt.element.style.visibility = 'hidden';
+  const sayN = (s) => { nt.element.style.visibility = ''; txt(nt, s); };
+  await step(tok);                                   // @866.2 v0 —p→ vk
+  smPath([0, 1, 2], C.hot, 2);
+  sayN('u ─p→ v：p 是一條從 u 到 v 的路徑');
+  say('記號 v₀ ─p→ vₖ', 'p 是從 v₀ 到 vₖ 的一條路徑');
+  await step(tok);                                   // @892.5 a single-vertex path, weight 0
   smPath([0, 1, 2], C.edge, 1);
+  nodeColor(0, C.pq, 0.35); nodeTag(0, 'w = 0');
+  sayN('只有 u 自己：長度 0 的路徑，權重 0');
+  say('單一頂點也是路徑：u 到 u', '權重 0');
+  await step(tok);                                   // @915.1 what if there isn't a path?
+  nodeColor(0, C.white, 0); nodeTag(0, '');
+  nodeColor(3, C.dim, 0); nodeTag(3, '？');
+  sayN('另一個極端：根本沒有路徑');
+  g.mood('wow');
+  say('另一個極端：沒有路徑怎麼辦？', 'z 沒有任何邊連進來');
+  await step(tok);                                   // @929.7 δ(u, v)
+  nodeTag(3, ''); nodeColor(3, C.white, 0); g.mood('calm');
+  nodeTag(2, 'δ(u,v) = ?');
+  sayN('δ(u, v)：u 到 v 最短路徑的權重');
+  say('δ(u, v)：u 到 v 最短路徑的權重', 'δ 讀作 delta');
+  await step(tok);                                   // @943.1 also find the path
+  sayN('不只要數字，也要知道路怎麼走');
+  say('除了權重，也要找出路徑本身', '只知道 14 英里、不知道路也沒用');
+  await step(tok);                                   // @966.1 the minimum over all paths
+  const p1 = await walk(tok, '7', [0, 2], 650);
+  smPath([0, 1, 2], C.tree, 2);
+  const p2 = await walk(tok, '2 + 3 = 5', [0, 1, 2], 500);
+  nodeTag(2, 'δ = min(7, 5) = 5');
+  kill(p1);
+  sayN('δ(u, v) = 所有 u→v 路徑 p 的 w(p) 最小值');
+  say('δ(u, v) = 所有路徑權重的最小值', 'min(7, 5) = 5');
+  await step(tok);                                   // @1000.3 infinity otherwise
+  kill(p2);
+  nodeColor(3, C.dim, 0); nodeTag(3, 'δ(u,z) = ∞');
+  sayN('沒有路徑：δ = ∞（開車到東京）');
+  say('沒有路徑時 δ = ∞', '從這裡開車到東京：中間隔著太平洋');
+  await step(tok);                                   // @1031.0 from the source: 0, others ∞
+  smPath([0, 1, 2], C.edge, 1); nodeColor(3, C.white, 0);
   nodeTag(0, 'd 0'); nodeTag(1, 'd ∞'); nodeTag(2, 'd ∞'); nodeTag(3, 'd ∞');
-  say('從起點出發：d(s) = 0，其他 ∞', '把 ∞ 一路降下來');
-  await beat(tok, 2600);
-  nodeTag(1, 'd 2'); await beat(tok, 700); nodeTag(2, 'd 7'); await beat(tok, 700); nodeTag(2, 'd 5');
-  say('走得到的會降到 δ', '走不到的 z 永遠是 ∞');
+  await goTo(tok, g, -5.8, 1.8, 600);
+  sayN('起點 0，其他一開始都是 ∞');
+  say('從起點出發：起點是 0', '還沒找到路，其他都 ∞');
+  await step(tok);                                   // @1044.7 reduce the infinities of reachable vertices
+  const p3 = await walk(tok, '0 + 2', [0, 1], 500); nodeTag(1, 'd 2'); kill(p3);
+  nodeTag(2, 'd 5'); smPath([0, 1, 2], C.tree, 2);
+  sayN('走得到的頂點：∞ 一路降下來');
+  say('把走得到的頂點從 ∞ 往下降', 'x → 2，v → 5');
+  await step(tok);                                   // @1065.2 unreachable stays ∞
   nodeColor(3, C.back, 0.3);
-  await beat(tok, 3000);
+  g.mood('sad');
+  sayN('走不到的 z：永遠是 ∞');
+  say('走不到的頂點會一直是 ∞', '');
+}]);
+
+// 17:56 S、A～F 手動降 d 值（內建 sp-relax-s-af 的跟講版）
+FRAG.push(['spmit1-saf', 'L15：S、A～F 手動降 d 值', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  const g = guide(-6.2, 3.4);
+  await step(tok);                                   // @1076.5 let's look at an example
+  const sb = tag('來看一個例子：一步一步把數字降下來', 'say', -6.2, 1.7, 3.4);
+  say('看一個例子', '找最短路徑是一個反覆的過程');
+  await step(tok);                                   // @1109.9 source vertex, a through f, edges
+  kill(sb);
+  buildGraph(GRAPHS.l15);
+  nodeColor(0, C.ok, 0.3);
+  say('起點 S，其他頂點 A～F', '還有一堆有權重的邊');
+  await step(tok);                                   // @1151.6 want δ(S, ·) for every vertex
+  for (let v = 1; v < 7; v++) nodeTag(v, 'δ(S,' + nm(v) + ')?');
+  say('想求 δ(S, A)、δ(S, B)…', 'S 到每個頂點的最短距離');
+  await step(tok);                                   // @1170.7 try it like BFS
+  for (let v = 1; v < 7; v++) nodeTag(v, '');
+  g.mood('wow');
+  say('先手動試試，像 BFS 那樣', '沿著邊填數字');
+  await step(tok);                                   // @1186.9 prove afterwards: the hard part
+  const hp1 = tag('之後還要證明：這真的是最短', 'note', 0.8, 0.3, 4.2);
+  say('填完還要證明它們真的最短', '這才是難的部分');
+  await step(tok);                                   // @1198.6 d(u) inside the vertices
+  kill(hp1); g.mood('calm');
+  const d = [0, INF, INF, INF, INF, INF, INF], par = Array(7).fill(-1);
+  const R = relaxer(d, par);
+  for (let v = 0; v < 7; v++) nodeTag(v, 'd ?');
+  say('圈上的數字 d(u)：目前找到的權重', 'current weight');
+  await step(tok);                                   // @1214.0 d(S) = 0, the others ∞
+  for (let v = 0; v < 7; v++) nodeTag(v, fmt(d[v]));
+  say('起點 d(S) = 0', '其他 d 都是 ∞');
+  await step(tok);                                   // @1231.2 decrease d until it equals δ
+  const goal = tag('目標：d 一路降到 δ，就完成', 'note', 0.8, 0.3, 4.2);
+  say('把 d 一路降，直到等於 δ', '全部等於 δ 時演算法結束');
+  await step(tok);                                   // @1257.7 seat-of-the-pants: iteratively reduce
+  kill(goal);
+  say('憑直覺來試：一個一個降', '');
+  await step(tok);                                   // @1264.0 from S: mark this as 1
+  await R(tok, 0, 1);
+  say('從 S 出發，A 可以標 1', '0 + 1 = 1');
+  await step(tok);                                   // @1271.9 mark this as 2
+  await R(tok, 0, 2);
+  say('同樣，B 標 2', '0 + 2 = 2');
+  await step(tok);                                   // @1275.4 pick A, look at the edges from A
+  R.clear(); nodeColor(1, C.pq, 0.35);
+  await goTo(tok, g, -3.6, -3.6, 600);
+  say('隨便挑 A，看從 A 出去的邊', '');
+  await step(tok);                                   // @1287.7 mark this as 6
+  await R(tok, 1, 3);
+  say('C 標 1 + 5 = 6', '');
+  await step(tok);                                   // @1296.4 from B: mark this as 3
+  nodeColor(1, C.white, 0);
+  await R(tok, 2, 4);
+  say('從 B 出發，D 標 2 + 1 = 3', '');
+  await step(tok);                                   // @1302.3 is δ(S, C) really 6? No.
+  R.clear(); nodeColor(3, C.hot, 0.4);
+  const qc = tag('δ(S, C) = 6？', 'say', 0.8, 1.7, 0);
+  g.mood('wow');
+  say('δ(S, C) 真的是 6 嗎？', '不是！');
+  await step(tok);                                   // @1316.0 a better way? through which vertex?
+  txt(qc, '有更好的路嗎？要經過誰？');
+  say('有沒有更好的路？', '要經過哪個頂點？');
+  await step(tok);                                   // @1329.3 S → B → D → C
+  kill(qc); nodeColor(3, C.white, 0);
+  const pk = await walk(tok, '2 + 1 + 2', [0, 2, 4, 3], 450);
+  say('走 S → B → D → C', '');
+  await step(tok);                                   // @1339.1 that gives 5
+  kill(pk);
+  await R(tok, 4, 3);
+  g.mood('happy');
+  say('只要 5！比 6 小', 'C 從 6 降成 5');
+  await step(tok);                                   // @1343.6 can I do better than 5? No.
+  R.clear(); nodeColor(3, C.ok, 0.3);
+  say('還能比 5 更好嗎？', '這張圖不行：δ(S, C) = 5');
+  await step(tok);                                   // @1348.9 fewest edges ≠ smallest weight
+  const tip = tag('邊數最少（S→A→C）≠ 權重最小（S→B→D→C）', 'note', 0.8, 0.3, 4.2);
+  say('邊數最少的路，權重不一定最小', '');
+  await step(tok);                                   // @1381.0 enumerate implicitly
+  g.mood('calm');
+  txt(tip, '路徑有指數多條：只能「隱式地」考慮所有走法');
+  say('不能一條一條列出所有路徑', '要隱式地考慮所有走法');
+  await step(tok);                                   // @1406.3 non-negative here; negative is harder
+  txt(tip, '這張圖權重都非負；有負權重會更複雜');
+  say('這張圖的權重都不是負的', '有負權重時更複雜');
 }]);
 
 // 23:46 predecessor π
 FRAG.push(['spmit1-pred', 'L15：predecessor π 與回推路徑', async (tok) => {
   fresh([0, 12.5, 8], [0, 0, -0.3]);
-  buildGraph(GRAPHS.l15);
-  const d = [0, 1, 2, 5, 3, 6, 8], par = [-1, 0, 0, 4, 2, 3, 4];
-  for (let v = 0; v < 7; v++) { nodeTag(v, String(d[v])); nodeNote(v, par[v] >= 0 ? 'π = ' + nm(par[v]) : 'π = NIL'); if (par[v] >= 0) edgeColor(smE(par[v], v), C.tree, 2); }
-  say('d(v)：圈裡的數字，目前最佳權重', 'π(v)：最佳路徑上的前一個頂點');
-  await beat(tok, 3400);
-  say('π(S) = NIL', '目前的最佳路徑沿 π 往回走就得到');
-  nodeColor(0, C.pq, 0.3);
-  await beat(tok, 2600);
+  buildGraph(GRAPHS.l15, { noDrop: true });
+  const d = [0, 1, 2, 6, 3, INF, INF];
+  for (let v = 0; v < 7; v++) nodeTag(v, fmt(d[v]));
+  [[0, 1], [0, 2], [1, 3], [2, 4]].forEach(([a, b]) => edgeColor(smE(a, b), C.tree, 2));
+  const g = guide(-6.2, 3.4);
+  await step(tok);                                   // @1426.6 δ is the weight; we want the path itself
+  const sb = tag('δ 只是數字；路要怎麼走？', 'say', -6.2, 1.7, 3.4);
+  say('δ 只告訴我們權重', '還要能找出路徑本身');
+  await step(tok);                                   // @1446.6 the predecessor relationship
+  kill(sb);
+  for (let v = 0; v < 7; v++) nodeNote(v, 'π ?');
+  say('定義 predecessor（前一個頂點）關係', '');
+  await step(tok);                                   // @1456.2 d(v) is the value inside the circle
+  for (let v = 0; v < 7; v++) nodeTag(v, fmt(d[v]), 'ptr alt');
+  say('d(v)：圈上的數字，目前的權重', '');
+  await step(tok);                                   // @1472.6 eventually d goes to δ
+  for (let v = 0; v < 7; v++) nodeTag(v, fmt(d[v]));
+  const nd = tag('d(v) 最後要變成 δ(S, v)', 'note', 0.8, 0.3, 4.2);
+  say('d 最後要變成 δ', '');
+  await step(tok);                                   // @1490.8 π(v): predecessor on the best path
+  [-1, 0, 0, 1, 2, -1, -1].forEach((p, v) => nodeNote(v, p >= 0 ? 'π = ' + nm(p) : ''));
+  txt(nd, 'π(v)：到 v 目前最佳路徑上的前一個頂點');
+  say('π(v)：目前最佳路徑上，v 的前一個頂點', '');
+  await step(tok);                                   // @1506.7 π(S) = NIL
+  nodeNote(0, 'π = NIL'); nodeColor(0, C.pq, 0.3);
+  say('起點沒有前一個：π(S) = NIL', '');
+  await step(tok);                                   // @1521.0 follow the predecessors → current best path
   nodeColor(0, C.white, 0);
-  say('現在 π(E) = C，π(C) = D …', 'E 目前 6');
+  txt(nd, '目前的最佳路徑 = 沿著 π 一路往回走');
+  say('沿著 π 往回走，就是目前的最佳路徑', 'π 也會一直被修改');
+  await step(tok);                                   // @1534.0 at E: π(E) points to C
+  d[5] = 7; nodeTag(5, '7'); nodeNote(5, 'π = C'); edgeColor(smE(3, 5), C.tree, 2);
   nodeColor(5, C.hot, 0.4);
-  await beat(tok, 2800);
-  const e = smE(1, 5);
-  edgeColor(e, C.hot, 2);
-  await beat(tok, 800);
-  edgeColor(smE(3, 5), C.edge, 1); edgeColor(e, C.tree, 2);
-  d[5] = 3; par[5] = 1; nodeTag(5, '3'); nodeNote(5, 'π = A');
-  say('找到 A → E 更好：d 6 → 3', 'π 也跟著改：π(E) = A');
-  await beat(tok, 3000);
-  edgeColor(smE(4, 6), C.edge, 1); edgeColor(smE(5, 6), C.tree, 2);
-  nodeTag(6, '6'); nodeNote(6, 'π = E');
-  say('最後回推：E ← A ← S', 'π(E) = A，π(A) = S');
-  nodeColor(1, C.hot, 0.4); await beat(tok, 900); nodeColor(0, C.hot, 0.4);
-  await beat(tok, 2400);
-  say('d 與 π 兩個資料結構一起更新', 'd 等於 δ 時，π 也正確');
-  await beat(tok, 3000);
+  await goTo(tok, g, 3.0, -3.8, 700);
+  const bk = tag('π(E) = C', 'pkt', hp(5).x, 1.0, hp(5).z);
+  say('站在 E：π(E) 指向 C', '假設 E 這時是從 C 來的（6 + 1 = 7）');
+  await step(tok);                                   // @1550.2 π(C) points to A
+  await travel(tok, bk, hp(5), hp(3), 600); txt(bk, 'π(C) = A'); nodeColor(3, C.hot, 0.4);
+  say('再看 π(C)：指向 A', '一路往回走…');
+  await step(tok);                                   // @1554.0 finally π(E) = A, π(A) = S
+  kill(bk); nodeColor(5, C.white, 0); nodeColor(3, C.white, 0);
+  edgeColor(smE(3, 5), C.dim, 1);
+  d[5] = 3; nodeTag(5, '3'); nodeNote(5, 'π = A');
+  smPath([0, 1, 5], C.hot, 2.4);
+  g.mood('happy');
+  say('最後：π(E) = A、π(A) = S', '最佳路徑 S → A → E（1 + 2 = 3）');
+  await step(tok);                                   // @1572.6 two data structures
+  smPath([0, 1, 5], C.tree, 2);
+  txt(nd, '兩個資料結構：d（目前距離）與 π（前一個）');
+  say('d 和 π：兩個要一起反覆更新的資料結構', '');
+  await step(tok);                                   // @1584.0 when d = δ you're done; π is correct
+  txt(nd, 'd 全部等於 δ → 完成，π 也正確');
+  say('d 等於 δ 時就完成', '這時 π 也是正確的');
 }]);
 
-// 26:37 為什麼有負權重；能不能平移成非負
+// 26:41 為什麼有負權重；能不能平移成非負
 FRAG.push(['spmit1-neg-why', 'L15：負權重從哪來？能平移掉嗎？', async (tok) => {
   fresh([0, 12.5, 8], [0, 0, -0.3]);
   buildGraph(SM.toll);
-  say('負權重：開這段路反而有錢拿', '倒貼的收費站、社群網路的好惡');
+  const g = guide(-6.0, 3.0);
+  await step(tok);                                   // @1603.4 the last complication: negative weights
   edgeColor(smE(1, 2), C.back, 2);
-  await beat(tok, 3200);
-  smPath([0, 1, 2], C.tree);
-  say('s → a → t：3 + (−2) = 1', '比直接 s → t 的 2 還短');
-  await beat(tok, 3000);
-  say('想法：每條邊都加 2，變成非負？', '就能用 Dijkstra');
-  await beat(tok, 2600);
+  say('最後一個麻煩：負權重', 'a → t 是 −2');
+  await step(tok);                                   // @1627.2 why do these things exist?
+  const sb = tag('負的權重？現實中有這種事嗎？', 'say', -6.0, 1.7, 3.0);
+  g.mood('wow');
+  say('為什麼會有負權重？', '老師要大家舉例');
+  await step(tok);                                   // @1682.6 getting paid to drive
+  txt(sb, '開這段路反而有錢拿！');
+  const pk = await walk(tok, '+ $', [1, 2], 700);
+  g.mood('happy');
+  say('開車反而有錢拿', '距離不會是負的，但「花費」可以');
+  await step(tok);                                   // @1704.4 Monopoly: pay rent or get money
+  kill(pk);
+  txt(sb, '大富翁：踩到格子要付錢，也可能收錢');
+  say('像大富翁：有時付租金，有時拿錢', '');
+  await step(tok);                                   // @1782.9 shift the weights to make them all positive?
+  kill(sb); g.mood('calm');
+  const pq = tag('每條邊都 + 2，全部變成非負？', 'say', 0, 1.6, 4.0);
   setW(smE(0, 1), 5); setW(smE(1, 2), 0); setW(smE(0, 2), 4);
-  smPath([0, 1, 2], C.edge, 1);
-  await beat(tok, 900);
-  smPath([0, 1, 2], C.hot, 1.8);
-  say('s → a → t 變 5 + 0 = 5', '');
-  await beat(tok, 2200);
+  GR.edges.forEach((e) => edgeColor(e, C.hot, 1.6));
+  say('常考：能不能把權重平移成全部非負？', '例如每條邊都加 2');
+  await step(tok);                                   // @1803.1 it may not be possible
+  GR.edges.forEach((e) => edgeColor(e, C.edge, 1));
   smPath([0, 1, 2], C.dim, 1); edgeColor(smE(0, 2), C.tree, 2.2);
-  say('s → t 變 4：最短路徑換人了！', '邊數多的路加得多');
-  await beat(tok, 3200);
-  say('要證明答案不變才能平移', '能做到：O(VE) → O(V log V + E)');
-  await beat(tok, 3200);
+  txt(pq, '原本 s→a→t = 1 最短；加完變 5，輸給 s→t 的 4');
+  g.mood('sad');
+  say('不一定做得到：最短路徑可能換人', '邊數多的路加得比較多');
+  await step(tok);                                   // @1810.0 if you can (and prove it): VE → V log V
+  setW(smE(0, 1), 3); setW(smE(1, 2), -2); setW(smE(0, 2), 2);
+  GR.edges.forEach((e) => edgeColor(e, C.edge, 1)); edgeColor(smE(1, 2), C.back, 2);
+  txt(pq, '若能證明答案不變：O(VE) → O(V log V + E)');
+  g.mood('calm');
+  say('如果能平移、又能證明答案不變', '就能從 Bellman-Ford 換成 Dijkstra');
+  await step(tok);                                   // @1828.2 get rid of negative edges without changing the problem
+  txt(pq, '能去掉負邊就去掉，但問題的答案不能變');
+  say('盡量去掉負權重的邊', '但不能改變原本的問題');
+  await step(tok);                                   // @1852.2 reverse toll: ads
+  txt(pq, '倒貼的收費站：一路看廣告，反而賺錢');
+  const pk2 = await walk(tok, '看廣告 +$', [1, 2], 700);
+  g.mood('happy');
+  say('例子：看廣告的「倒貼收費」公路', '');
+  await step(tok);                                   // @1874.0 social networks
+  kill(pk2);
+  txt(pq, '社群網路：喜歡（正）、討厭（負）');
+  say('社群網路：喜歡和討厭', '有正有負');
+  await step(tok);                                   // @1911.0 a whole lecture on Bellman-Ford
+  txt(pq, '不管動機如何：會花一整堂講 Bellman-Ford');
+  say('就算不買單這些例子', '也會花一整堂講 Bellman-Ford');
 }]);
 
-// ══════════ L16 ══════════
-// 08:00 relaxation 安全的證明（歸納 + 三角不等式）
+// 31:58 負權重 cycle（內建 sp-negative-cycle 的跟講版）
+FRAG.push(['spmit1-negcyc', 'L15：負權重 cycle', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  const g = guide(-6.0, 3.6);
+  await step(tok);                                   // @1918.4 negative weight cycles
+  const sb = tag('負權重 cycle 是什麼？', 'say', -6.0, 1.7, 3.6);
+  say('負權重 cycle：值得花一分鐘', '');
+  await step(tok);                                   // @1940.4 an even worse problem
+  txt(sb, '比指數多條路徑還糟！');
+  g.mood('wow');
+  say('比指數多條路徑更糟的問題', '');
+  await step(tok);                                   // @1964.6 what if you didn't even terminate?
+  txt(sb, '演算法可能根本停不下來');
+  say('如果演算法根本不會停呢？', '');
+  await step(tok);                                   // @1967.0 a graph with some negative edges
+  kill(sb); g.mood('calm');
+  buildGraph(GRAPHS.l15neg);
+  say('一張圖：有些邊是負的、有些是正的', '');
+  await step(tok);                                   // @1985.5 this one is −6
+  edgeColor(smE(2, 3), C.back, 2.2);
+  say('這條是 −6', '');
+  await step(tok);                                   // @1997.4 2, 4, −6, 3, 2, 1, −2
+  GR.edges.forEach((e) => edgeColor(e, e.w < 0 ? C.back : C.hot, 1.6));
+  say('權重：2、−6、3、2、1、−2…', '老師唸的數字有一個對不上，圖是示意');
+  await step(tok);                                   // @2006.3 an annoying negative weight cycle
+  GR.edges.forEach((e) => edgeColor(e, C.edge, 1));
+  [[2, 3], [3, 4], [4, 2]].forEach(([a, b]) => edgeColor(smE(a, b), C.back, 2.2));
+  say('討厭的地方：這裡有一個 cycle', 'B → C → D → B');
+  await step(tok);                                   // @2017.6 −6 + 2 = −4
+  const pk = await walk(tok, '−6 + 2 = −4', [2, 3, 4], 600);
+  say('−6 + 2 = −4', '');
+  await step(tok);                                   // @2019.0 −4 + 3 = −1
+  await travel(tok, pk, hp(4), hp(2), 600); txt(pk, '−4 + 3 = −1');
+  say('−4 + 3 = −1：負權重 cycle', '繞一圈總和小於 0');
+  await step(tok);                                   // @2033.0 non-negative weights: bounded below by 0
+  kill(pk);
+  const nt = tag('權重非負：d 不會低於 0，總會停', 'note', 0, 0.3, 4.3);
+  say('權重非負時，d 有下界 0', '降到某處一定會停');
+  await step(tok);                                   // @2041.2 a negative cycle → infinite loop
+  txt(nt, '有負 cycle：無窮迴圈的配方');
+  const lp = await walk(tok, '繞圈中…', [2, 3, 4, 2], 420);
+  g.mood('sad');
+  say('有負 cycle：程式可能陷入無窮迴圈', '錯的是演算法的停止條件');
+  await step(tok);                                   // @2059.3 get to B: δ(S, B) = 4?
+  kill(lp); g.mood('calm');
+  nodeTag(0, '0'); nodeTag(1, '2'); nodeTag(2, '4');
+  smPath([0, 1, 2], C.tree, 2);
+  txt(nt, '走到 B：以為 δ(S, B) = 4（2 + 2）');
+  say('走到 B：以為 δ(S, B) = 4', '2 + 2 = 4');
+  await step(tok);                                   // @2076.6 back to B with 3
+  const lp2 = await walk(tok, '4 − 6 + 2 + 3', [2, 3, 4, 2], 380);
+  txt(lp2, '= 3'); nodeTag(2, '3');
+  txt(nt, '繞一圈回到 B：變成 3');
+  say('再繞一圈回到 B：3', '');
+  await step(tok);                                   // @2082.3 again 2, and so on
+  kill(lp2);
+  const lp3 = await walk(tok, '3 − 1', [2, 3, 4, 2], 330);
+  txt(lp3, '= 2'); nodeTag(2, '2');
+  g.mood('sad');
+  txt(nt, '再一圈：2、1、0、…一直降下去');
+  say('再一圈：2…一直降下去', '');
+  await step(tok);                                   // @2106.7 δ(S, S) = 0
+  kill(lp3); g.mood('calm');
+  nodeColor(0, C.ok, 0.3); nodeTag(2, '?');
+  txt(nt, '不是每個 δ 都沒定義');
+  say('不是所有 δ 都沒定義', 'δ(S, S) = 0');
+  await step(tok);                                   // @2114.5 δ(S, A) = 2
+  nodeColor(1, C.ok, 0.3);
+  say('δ(S, A) = 2', '到 A 不會碰到負 cycle');
+  await step(tok);                                   // @2134.8 anything in here: −∞
+  for (const v of [2, 3, 4, 5]) { nodeColor(v, C.back, 0.3); nodeTag(v, '−∞'); }
+  txt(nt, 'cycle 裡、cycle 之後：可以繞無限圈 → −∞');
+  say('cycle 裡（和它後面）的頂點', '可以繞任意多圈：δ = −∞');
+  await step(tok);                                   // @2152.8 negative weights aren't the hard part
+  nodeColor(6, C.ok, 0.3); nodeTag(6, '0'); edgeColor(smE(1, 6), C.tree, 2);
+  txt(nt, 'A → F 是 −2，但 δ(S, F) = 0 照樣有定義');
+  say('難的不是負邊，是負 cycle', 'A → F 的 −2 只走一次，沒問題');
+  await step(tok);                                   // @2174.7 Bellman-Ford: O(VE), finite δ, others −∞
+  const bf = buddy('Bellman-Ford', '', '#dd8238', 4.8, 0, 3.8, 0.6);
+  txt(nt, 'O(VE) 內結束：有限的 δ 給值，其他標 −∞');
+  say('Bellman-Ford：在 O(VE) 內結束', '能算的給 δ，其他標成 −∞');
+  await step(tok);                                   // @2232.0 BF must detect negative cycles; Dijkstra doesn't
+  bf.mood('wow');
+  txt(nt, 'Bellman-Ford 必須偵測負 cycle；Dijkstra 不用');
+  say('Bellman-Ford 一定要能偵測負 cycle', 'Dijkstra 不用處理，所以比較簡單');
+}]);
+
+// 37:30 通用結構：relaxation（內建 sp-generic-relax 的跟講版）
+FRAG.push(['spmit1-generic', 'L15：通用結構——一直挑邊 relax', async (tok) => {
+  fresh([0, 12.5, 8], [0.5, 0, -0.3]);
+  buildGraph(GRAPHS.l15, { scale: 0.68, dx: 2.6, dz: -0.6 });
+  const cd = code(['Initialize：for v ∈ V：', '  d(v) = ∞', '  π(v) = NIL', 'd(s) = 0', 'repeat', '  挑一條邊 (u, v)', '  Relax(u, v, w):', '    if d(v) > d(u) + w(u, v):', '      d(v) = d(u) + w(u, v)', '      π(v) = u', 'until 每條邊 d(v) ≤ d(u) + w(u, v)'], -3.8, -3.2, 0.6);
+  const d = Array(7).fill(INF);
+  await step(tok);                                   // @2250.7 the general structure
+  say('最短路徑演算法的通用結構', '');
+  await step(tok);                                   // @2262.1 relaxation (we already did it)
+  cd.hl(6);
+  say('核心概念：relaxation', '剛剛 C 從 6 變 5 就是');
+  await step(tok);                                   // @2297.2 d(v) = ∞
+  cd.hl(1); for (let v = 0; v < 7; v++) nodeTag(v, '∞');
+  say('初始化：每個 v 的 d(v) = ∞', '');
+  await step(tok);                                   // @2300.3 π(v) = NIL
+  cd.hl(2); for (let v = 0; v < 7; v++) nodeNote(v, 'π NIL');
+  say('π(v) = NIL', '還沒有前一個');
+  await step(tok);                                   // @2306.2 d(s) = 0
+  cd.hl(3); d[0] = 0; nodeTag(0, '0'); nodeColor(0, C.ok, 0.3);
+  say('起點 d(s) = 0', 'single source：一個起點');
+  await step(tok);                                   // @2325.2 repeat: select some edge (u, v)
+  cd.hl(5); edgeColor(smE(0, 1), C.hot, 1.8);
+  say('repeat：挑某一條邊 (u, v)', '這裡挑 S → A');
+  await step(tok);                                   // @2328.9 not specifying how
+  const how = tag('怎麼挑 → 決定是哪個演算法', 'note', -3.8, 0.3, 4.0);
+  say('沒規定怎麼挑', '挑法不同 = 不同的演算法');
+  await step(tok);                                   // @2338.6 relax edge (u, v)
+  kill(how); cd.hl(6);
+  say('對這條邊做 relax', '');
+  await step(tok);                                   // @2355.5 if d(v) > d(u) + w(u, v)
+  cd.hl(7);
+  const pk = await walk(tok, '0 + 1', [0, 1], 600);
+  txt(pk, '∞ > 0 + 1 ✓');
+  say('如果 d(v) > d(u) + w(u, v)', '代表找到更好的走法');
+  await step(tok);                                   // @2373.6 d(v) could be ∞
+  txt(pk, 'd(A) = ∞：還沒找到路');
+  say('d(v) 可能還是 ∞（還沒找到路）', 'd(u) 有限、邊又存在 → 可以更新');
+  await step(tok);                                   // @2393.5 set d(v) = d(u) + w(u, v)
+  cd.hl(8); d[1] = 1; nodeTag(1, '1'); edgeColor(smE(0, 1), C.tree, 2); txt(pk, '∞ → 1');
+  say('就令 d(v) = d(u) + w(u, v)', 'd(A)：∞ → 1');
+  await step(tok);                                   // @2405.7 update the predecessor
+  cd.hl(9); nodeNote(1, 'π = S'); kill(pk);
+  say('也更新 predecessor：π(v) = u', 'π(A) = S');
+  await step(tok);                                   // @2431.0 repeat until all edges satisfy d(v) ≤ d(u) + w
+  cd.hl(10);
+  say('一直重複，直到每條邊都滿足', 'd(v) ≤ d(u) + w(u, v)');
+  await step(tok);                                   // @2456.8 assumption: no negative cycles
+  const nc = tag('前提：沒有負 cycle', 'bad', -3.8, 0.3, 4.0);
+  say('前提：沒有負權重 cycle', 'Bellman-Ford 要用不同的結構');
+  await step(tok);                                   // @2494.7 the 6 → 5 picture
+  kill(nc); cd.hl(-1);
+  const st = [0, 1, 2, 6, 3, INF, INF], pr = [-1, 0, 0, 1, 2, -1, -1];
+  for (let v = 0; v < 7; v++) { d[v] = st[v]; nodeTag(v, fmt(d[v])); nodeNote(v, pr[v] >= 0 ? 'π = ' + nm(pr[v]) : ''); }
+  [[0, 2], [1, 3], [2, 4]].forEach(([a, b]) => edgeColor(smE(a, b), C.tree, 2));
+  say('用圖來看：剛剛 C 從 6 變 5 那一步', 'D 是 3，C 原本是 6');
+  await step(tok);                                   // @2509.4 d(C) = 6 > d(D) + 2
+  cd.hl(7); edgeColor(smE(4, 3), C.hot, 1.8);
+  const pk2 = await walk(tok, '3 + 2 = 5', [4, 3], 600);
+  txt(pk2, '6 > 3 + 2 = 5');
+  say('d(C) = 6 > d(D) + 2 = 5', '');
+  await step(tok);                                   // @2522.3 5 < 6: relax, 6 → 5
+  cd.hl(8); d[3] = 5; nodeTag(3, '5'); edgeColor(smE(4, 3), C.tree, 2); edgeColor(smE(1, 3), C.dim, 1); txt(pk2, '6 → 5');
+  say('5 < 6：relax，把 6 改成 5', '');
+  await step(tok);                                   // @2529.0 π(C) = D
+  cd.hl(9); nodeNote(3, 'π = D'); kill(pk2);
+  say('再更新 π(C) = D', '這就是 relaxation');
+  await step(tok);                                   // @2544.8 stop when no edge can be relaxed
+  cd.hl(10);
+  d[5] = 3; d[6] = 6; nodeTag(5, '3'); nodeNote(5, 'π = A'); nodeTag(6, '6'); nodeNote(6, 'π = E');
+  edgeColor(smE(1, 5), C.tree, 2); edgeColor(smE(5, 6), C.tree, 2);
+  say('什麼時候停？沒有邊能再 relax', '');
+  await step(tok);                                   // @2567.0 the check is O(E)
+  GR.edges.forEach((e) => edgeColor(e, C.hot, 1.4));
+  const ck = tag('檢查一次 = 看過全部 E 條邊', 'note', -3.8, 0.3, 4.0);
+  say('檢查停止條件本身就要 O(E)', '要看過每一條邊');
+  await step(tok);                                   // @2596.6 brute force: works, but slow
+  GR.edges.forEach((e) => edgeColor(e, C.edge, 1));
+  txt(ck, '暴力法：會對，但很慢');
+  say('這是暴力演算法', '會對，只是很慢');
+  await step(tok);                                   // @2623.3 never implement this; do implement relax
+  txt(ck, 'relax 要實作；「亂挑邊」不要');
+  say('這種演算法你不會想實作', 'relax 要留著，亂挑邊的方式不要');
+}]);
+
+// 45:00 壞的 relax 順序（內建 sp-bad-order 的跟講版）
+FRAG.push(['spmit1-badorder', 'L15：壞的 relax 順序 → 指數時間', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(GRAPHS.chain);
+  const g = guide(-6.2, 3.6);
+  const d = Array(7).fill(INF);
+  const R = relaxer(d, null);
+  const hist = []; let h6 = null;
+  const upd6 = () => { hist.push(d[6]); if (!h6) h6 = tag('', 'ptr alt', 3.6, 0.3, 3.6); txt(h6, 'v6：' + hist.join(' → ')); };
+  await step(tok);                                   // @2699.8 precisely this example
+  say('不想實作暴力法的原因：就是這個例子', '');
+  await step(tok);                                   // @2719.8 an exponential number of paths
+  nodeTag(2, '2 條'); nodeTag(4, '4 條'); nodeTag(6, '8 條');
+  say('它同時點出兩件事', '一、路徑有指數多條');
+  await step(tok);                                   // @2730.0 issues with the weights of edges
+  for (let v = 0; v < 7; v++) nodeTag(v, '');
+  GR.edges.forEach((e) => edgeColor(e, C.hot, 1.6));
+  say('二、邊的權重也會出問題', '');
+  await step(tok);                                   // @2750.9 4 vs 1 or 2: exponentially related
+  GR.edges.forEach((e) => edgeColor(e, e.w === 4 ? C.back : C.edge, e.w === 4 ? 2 : 1));
+  say('權重 4、2、1：每段減半', '4 跟 1、2 是「指數」關係');
+  await step(tok);                                   // @2759.9 n vertices → range 2^(n/2)
+  GR.edges.forEach((e) => edgeColor(e, C.edge, 1));
+  const rg = tag('n 個頂點 → 權重範圍約 2^(n/2)', 'note', 0, 0.3, 3.8);
+  say('照這個結構延長：n 個頂點', '權重範圍約 2^(n/2)');
+  await step(tok);                                   // @2797.3 n = 100 → 2^50
+  txt(rg, 'n = 100 → 權重到 2⁵⁰');
+  say('n 可以是 100，權重到 2⁵⁰', '');
+  await step(tok);                                   // @2808.3 2^50 fits in 64 bits
+  txt(rg, '2⁵⁰ 還在 64 位元以內：完全合理的輸入');
+  say('2⁵⁰ 電腦存得下（小於 64 位元）', '完全合理的例子');
+  await step(tok);                                   // @2848.0 what happens with this example?
+  kill(rg); g.mood('wow');
+  say('用暴力法跑這個例子會怎樣？', '');
+  await step(tok);                                   // @2861.1 this starts with a 0
+  d[0] = 0; for (let v = 0; v < 7; v++) nodeTag(v, fmt(d[v]));
+  nodeColor(0, C.ok, 0.3); g.mood('calm');
+  say('先沿著鏈走：起點 0', '');
+  await step(tok);                                   // @2865.2 this is a 4
+  await R(tok, 0, 1);
+  say('這個是 4', '0 + 4');
+  await step(tok);                                   // @2868.4 8, 10, 12, 13, 14
+  R.clear();
+  for (const [u, v] of [[1, 2], [2, 3], [3, 4], [4, 5], [5, 6]]) { d[v] = d[u] + smE(u, v).w; nodeTag(v, fmt(d[v])); edgeColor(smE(u, v), C.tree, 2); await beat(tok, 260); }
+  upd6();
+  say('8、10、12、13、14', '第一輪沿著鏈走完');
+  await step(tok);                                   // @2890.0 relax this edge: 14 → 13
+  await R(tok, 4, 6); upd6();
+  say('relax 捷徑 v4 → v6：14 → 13', '12 + 1 = 13');
+  await step(tok);                                   // @2907.7 this 12 becomes 10
+  await R(tok, 2, 4);
+  say('v4 被捷徑更新：12 → 10', '8 + 2 = 10');
+  await step(tok);                                   // @2915.3 this 13 becomes 11
+  await R(tok, 4, 5);
+  say('v5：13 → 11', '10 + 1 = 11');
+  await step(tok);                                   // @2935.6 it might go to 12 first
+  await R(tok, 5, 6); upd6();
+  say('先 relax v5 → v6：13 → 12', '11 + 1 = 12');
+  await step(tok);                                   // @2939.0 then 11
+  await R(tok, 4, 6); upd6();
+  say('再 relax v4 → v6：12 → 11', '10 + 1 = 11');
+  await step(tok);                                   // @2947.0 14, 13, 12, 11 with a bad ordering
+  R.clear(); nodeColor(6, C.hot, 0.4); g.mood('sad');
+  say('最後一個頂點：14、13、12、11…', '壞的挑邊順序，一點一點降');
+  await step(tok);                                   // @2956.8 weights ~2^(n/2): exponentially many relaxations
+  const ex = tag('權重 ~ 2^(n/2) → relax 次數也 ~ 2^(n/2)', 'bad', 0, 0.3, 4.3);
+  say('權重是 2^(n/2) 等級', 'relax 的次數也可能是指數級');
+  await step(tok);                                   // @2976.3 relaxations ~ weights → exponential time
+  say('relax 次數跟權重大小同一個數量級', '→ 指數時間演算法');
+  await step(tok);                                   // @3001.0 an issue with the ordering
+  txt(ex, '問題出在挑邊的順序（病態的順序）');
+  g.mood('wow');
+  say('學生：是挑邊順序的問題', '對！這是病態的順序');
+  await step(tok);                                   // @3029.6 next week: select the edges properly
+  txt(ex, '下週：怎麼正確地挑邊');
+  g.mood('happy');
+  say('下週的重點：怎麼正確地挑邊', '');
+}]);
+
+// 50:35 optimal substructure 與三角不等式（內建 sp-optimal-substructure 的跟講版）
+FRAG.push(['spmit1-optsub', 'L15：optimal substructure 與三角不等式', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  const g = guide(-6.2, 3.4);
+  await step(tok);                                   // @3035.0 two very simple theorems
+  const sb = tag('兩個一行就能證明的定理', 'say', -6.2, 1.7, 3.4);
+  say('最後：兩個很簡單的定理', '一行就能證明');
+  await step(tok);                                   // @3050.1 subpaths of a shortest path are shortest paths
+  kill(sb);
+  buildGraph(SM.opt);
+  const th = tag('定理一：最短路徑的子路徑，也是最短路徑', 'ptr alt', 0, 0.3, 3.8);
+  say('定理一：最短路徑的子路徑也是最短路徑', '');
+  await step(tok);                                   // @3061.4 v0, v1, v2 … p01, p12, p23
+  [[0, 1], [1, 2], [2, 3]].forEach(([a, b], i) => edgeColor(smE(a, b), [C.hot, C.ok, C.purple][i], 2.2));
+  say('v0 → v1 → v2 → v3，每段中間可能還有很多頂點', '三段：p₀₁、p₁₂、p₂₃');
+  await step(tok);                                   // @3086.2 if v0 → v3 is a shortest path
+  smPath([0, 1, 2, 3], C.tree, 2.2);
+  const pk = await walk(tok, '4 + 3 + 2 = 9', [0, 1, 2, 3], 450);
+  say('如果整條 v0 → v3 是最短路徑（9）', '');
+  await step(tok);                                   // @3102.9 then each of these is a shortest path too
+  kill(pk);
+  for (let v = 0; v < 4; v++) nodeColor(v, C.ok, 0.2);
+  say('那每一段也都是最短路徑', '');
+  await step(tok);                                   // @3109.7 a better way from v0 to v1? use it
+  const alt = addEdge(GR, 0, 1, 2, 0.45); edgeColor(alt, C.back, 1.8);
+  g.mood('wow');
+  say('假設 v0 → v1 有更好的走法（2 < 4）', '換上去整條變 7 < 9：原本就不是最短，矛盾');
+  await step(tok);                                   // @3123.0 the optimal substructure property
+  dropEdge(alt);
+  txt(th, 'optimal substructure：最佳解裡面也是最佳解');
+  g.mood('happy');
+  say('這就叫 optimal substructure 性質', '');
+  await step(tok);                                   // @3126.7 the triangle inequality
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(SM.tri3, { noDrop: true });
+  const g2 = guide(-6.2, 3.4);
+  const tt = tag('定理二：三角不等式', 'ptr alt', 0, 0.3, 3.8);
+  say('定理二：三角不等式', '和 optimal substructure 有關');
+  await step(tok);                                   // @3141.6 δ(v0, v1) ≤ δ(v0, v2) + δ(v2, v1)
+  edgeColor(smE(0, 1), C.tree, 2.2); edgeColor(smE(0, 2), C.hot, 2); edgeColor(smE(2, 1), C.hot, 2);
+  txt(tt, 'δ(v0, v1) ≤ δ(v0, v2) + δ(v2, v1)');
+  say('δ(v0, v1) ≤ δ(v0, v2) + δ(v2, v1)', '');
+  await step(tok);                                   // @3168.3 if this plus this were smaller…
+  const pk2 = await walk(tok, '繞 v2 比較短？', [0, 2, 1], 550);
+  g2.mood('wow');
+  say('如果經過 v2 比較短…', '那「最短」就該經過 v2：矛盾');
+  await step(tok);                                   // @3175.5 paths, not edges
+  kill(pk2); g2.mood('calm');
+  txt(tt, '注意：δ 講的是最短「路徑」，不是單一條邊');
+  say('記住：這裡講的是路徑，不是邊', '');
+  await step(tok);                                   // @3185.5 these two → (almost) linear time next time
+  g2.mood('happy');
+  txt(tt, '這兩個性質 → 下堂課變成接近線性時間');
+  say('只靠這兩個性質', '下堂課就能做到接近線性時間');
+}]);
+
+// ══════════ L16（2E7MmKv0Y24）══════════
+// 01:42 複習：d、δ、π 與 relaxation（內建 relax-safe 的跟講版，前半）
+FRAG.push(['spmit1-review', 'L16：複習 d、δ、π 與 relax', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  const g = guide(-6.0, 3.0);
+  const d = [0, INF, INF];
+  const R = relaxer(d, null);
+  await step(tok);                                   // @102.1 a trivial example
+  buildGraph(GRAPHS.tri); hideW();
+  say('複習：一個很簡單的圖', '');
+  await step(tok);                                   // @109.9 numbers inside vertices: priority values
+  for (let v = 0; v < 3; v++) nodeTag(v, '?');
+  say('頂點上的數字：priority 值', '');
+  await step(tok);                                   // @118.0 d(v): length of the current shortest path
+  const nt = tag('d(v)：目前找到的 s → v 最短路徑長度', 'note', 0, 0.3, 3.8);
+  say('d(v)：目前從 s 到 v 的最短路徑長度', 'current');
+  await step(tok);                                   // @142.0 d(s) = 0
+  nodeTag(0, '0'); nodeColor(0, C.ok, 0.3);
+  say('d(s) = 0', '起點到自己是 0');
+  await step(tok);                                   // @146.5 the others initialized to ∞
+  nodeTag(1, '∞'); nodeTag(2, '∞');
+  say('其他初始化成 ∞', '');
+  await step(tok);                                   // @149.9 relaxation reduces d down to δ
+  txt(nt, 'relaxation：把 d 一路降到 δ（真正的最短長度）');
+  say('relaxation：不斷把 d 往下降', '降到 δ：最短路徑的長度');
+  await step(tok);                                   // @174.6 may or may not be unique
+  txt(nt, '最短路徑可能不只一條，但 δ（最小值）只有一個');
+  say('最短路徑可能不唯一', '但要的是最小值');
+  await step(tok);                                   // @182.2 all converge → done
+  txt(nt, '所有頂點的 d 都收斂到 δ → 演算法結束');
+  say('全部 d 都收斂到 δ', '演算法就結束');
+  await step(tok);                                   // @194.0 the predecessor, to reconstruct the path
+  txt(nt, '要重建路徑：還需要 predecessor');
+  say('還有一件重要的事：predecessor', '用來重建路徑');
+  await step(tok);                                   // @202.5 π(v)
+  nodeNote(0, 'π NIL'); nodeNote(1, 'π ?'); nodeNote(2, 'π ?');
+  txt(nt, 'π(v)：最短路徑上 v 的前一個頂點');
+  say('π(v)：s 到 v 最短路徑上，v 的前一個', '');
+  await step(tok);                                   // @216.6 follow the predecessor chain
+  txt(nt, '收斂後，沿 π 一路往回走就是最短路徑');
+  say('收斂之後，沿著 π 鏈往回走', '就能重建路徑');
+  await step(tok);                                   // @244.4 put on a few weights
+  hideW(false); GR.edges.forEach((e) => edgeColor(e, C.hot, 1.6));
+  txt(nt, '放上權重：s→a 1、s→b 3、a→b 1');
+  say('放上幾個權重', '');
+  await step(tok);                                   // @261.8 follow this edge, update d(a): ∞ → 1
+  GR.edges.forEach((e) => edgeColor(e, C.edge, 1));
+  await R(tok, 0, 1); nodeNote(1, 'π = s');
+  say('relax：沿著 s → a，更新 d(a)', '∞ → 0 + 1 = 1');
+  await step(tok);                                   // @273.4 this infinity becomes 3
+  await R(tok, 0, 2); nodeNote(2, 'π = s');
+  say('同樣 b：∞ → 3', '');
+  await step(tok);                                   // @285.8 found the shortest path to A
+  R.clear(); nodeColor(1, C.ok, 0.3);
+  say('這時已找到到 a 的最短路徑', '');
+  await step(tok);                                   // @292.2 there's a path of length 2 to B
+  nodeColor(2, C.hot, 0.4);
+  const q = tag('b 目前 3，其實有長度 2 的路', 'say', 3.6, 1.7, 0.6);
+  g.mood('wow');
+  say('但到 b 其實有長度 2 的路', '目前 d(b) 還是 3');
+  await step(tok);                                   // @306.0 go like so → 2; done
+  kill(q);
+  await R(tok, 1, 2); nodeNote(2, 'π = a'); nodeColor(2, C.ok, 0.3);
+  g.mood('happy');
+  say('走 s → a → b：3 → 2', '這樣就完成了');
+  await step(tok);                                   // @315.6 prove convergence, termination, complexity
+  R.clear(); g.mood('calm');
+  txt(nt, '每個演算法都要證明：收斂到 δ、會停；再算複雜度');
+  say('任何演算法都要證明：收斂到 δ、會停', '還要算複雜度');
+  await step(tok);                                   // @331.0 two algorithms today: DAGs, non-negative edges
+  txt(nt, '今天兩個特例：DAG、沒有負邊（Dijkstra）');
+  say('今天兩個演算法（都是特例）', 'DAG、權重非負');
+}]);
+
+// 05:49 relaxation 是安全的（內建 relax-safe 的跟講版，後半）
+FRAG.push(['spmit1-safe', 'L16：relaxation 是安全的', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(GRAPHS.tri, { scale: 0.7, dx: -2.6, dz: -1.0, noDrop: true });
+  const g = guide(-6.2, 3.6);
+  const d = [0, INF, INF], dl = [0, 1, 2];
+  for (let v = 0; v < 3; v++) nodeTag(v, fmt(d[v]));
+  // 每個頂點一根柱子：高度 = d；綠色薄板 = δ（柱子只能往下降到板子）
+  const H = (x) => (x === INF ? 3.0 : 0.25 + x * 0.8);
+  const bars = [], vt = [];
+  for (let v = 0; v < 3; v++) {
+    const x = 2.2 + v * 1.6;
+    bars.push(cube('', '#e6c36a', [0.7, 1, 0.7], x, 0, 0.6));
+    cube('', '#2fc092', [1.0, 0.06, 1.0], x, H(dl[v]), 0.6);
+    tag(nm(v), 'idx', x, 0.05, 1.6);
+    vt.push(tag('', 'ptr', x, 0, 0.6));
+  }
+  const cur = [0, INF, INF];
+  const setBar = (v, x) => { const h = H(x); bars[v].scale.y = h; bars[v].position.y = h / 2; vt[v].position.y = h + 0.4; txt(vt[v], 'd ' + fmt(x)); };
+  [0, 1, 2].forEach((v) => setBar(v, cur[v]));
+  const lower = async (v) => { const a = cur[v], b = d[v], top = a === INF ? 3.75 : a; await kanim(tok, 700, (t) => { const h = H(top + (b - top) * t); bars[v].scale.y = h; bars[v].position.y = h / 2; vt[v].position.y = h + 0.4; }); setBar(v, b); cur[v] = b; };
+  const R = relaxer(d, null);
+  const nt = tag('柱子 = d；綠色薄板 = δ（真正最短）', 'note', 3.8, 0.3, 2.4);
+  let cd = null;
+  await step(tok);                                   // @349.5 relaxation is useful and safe
+  say('relaxation 有用，而且「安全」', '');
+  await step(tok);                                   // @383.6 if d(v) > d(u) + w(u, v)
+  cd = code(['Relax(u, v, w):', '  if d(v) > d(u) + w(u, v):', '    d(v) = d(u) + w(u, v)', '    π(v) = u'], -3.4, 1.6, 0.55);
+  cd.hl(1);
+  say('Relax：如果 d(v) > d(u) + w(u, v)', '');
+  await step(tok);                                   // @392.1 update d(v) = d(u) + w(u, v)
+  cd.hl(2);
+  await R(tok, 0, 1); await lower(1);
+  say('就把 d(v) 改成 d(u) + w(u, v)', 'd(a)：∞ → 1');
+  await step(tok);                                   // @400.0 a better way through u; also π
+  cd.hl(3); nodeNote(1, 'π = s'); R.clear();
+  say('找到經過 u 的更短走法', 'priority 和 predecessor 都要更新');
+  await step(tok);                                   // @419.8 show that relaxation is safe
+  cd.hl(-1);
+  txt(nt, '安全 = relax 永遠不會做錯事');
+  say('要證明 relaxation 是安全的', '');
+  await step(tok);                                   // @432.5 never get a value less than δ
+  txt(nt, '絕不能 relax 出比 δ 還小的值');
+  g.mood('wow');
+  say('永遠不會得到比 δ(s, v) 還小的值', '');
+  await step(tok);                                   // @443.2 converge from the top
+  await R(tok, 0, 2); await lower(2);
+  txt(nt, '從上面收斂：∞ → … → δ');
+  g.mood('calm');
+  say('從上面收斂：從 ∞ 一路往下降', 'd(b)：∞ → 3');
+  await step(tok);                                   // @459.0 don't go any further
+  await R(tok, 1, 2); await lower(2);
+  glow(bars[2], GOLD);
+  txt(nt, '降到 δ 就停；絕不穿過綠色薄板');
+  say('降到 δ 就好，不能再往下', 'd(b)：3 → 2 = δ');
+  await step(tok);                                   // @476.7 a lemma by induction, any order
+  R.clear(); glow(bars[2], null);
+  txt(nt, '引理（歸納法）：不論 relax 的順序');
+  say('引理：用歸納法證明', '不管用什麼順序 relax 都成立');
+  await step(tok);                                   // @516.5 invariant d(v) ≥ δ(s, v) for all v
+  bars.forEach((b) => b.material.color.set('#9fdcc4'));
+  txt(nt, '不變量：所有 v 都有 d(v) ≥ δ(s, v)');
+  say('relaxation 維持不變量：d(v) ≥ δ(s, v)', '對所有頂點都成立');
+  await step(tok);                                   // @549.6 pick an edge, relax it, pick another
+  txt(nt, '通用結構：挑邊 → relax → 再挑邊…');
+  say('上週的通用結構：挑一條邊 relax', '再挑一條、再 relax');
+  await step(tok);                                   // @565.2 never less in the middle; eventually terminate
+  txt(nt, '中途也不會出現比最短還小的值');
+  g.mood('happy');
+  say('中途絕不會出現比 δ 小的值', '跑夠久就會停');
+}]);
+
+// 09:56 引理的證明：歸納 + 三角不等式
 FRAG.push(['spmit1-relax-lemma', 'L16：證明 relax 永遠 d(v) ≥ δ(s, v)', async (tok) => {
   fresh([0, 12.5, 8], [0, 0, -0.3]);
-  buildGraph(SM.tri, { dz: -1.2 });
-  say('引理：只用 relax 改 d，就有 d(v) ≥ δ(s,v)', '不管 relax 的順序');
-  await beat(tok, 3200);
-  const L = [];
-  const row = (s, z, cls) => { const l = tag(s, cls || 'ptr', 0, 0.3, z); L.push(l); return l; };
+  buildGraph(SM.tri, { dz: -1.2 }); hideW();
+  const g = guide(-6.2, 3.6);
+  const row = (s, z, cls) => tag(s, cls || 'ptr', 0, 0.3, z);
+  await step(tok);                                   // @596.2 by induction on the number of steps
+  const hd = tag('證明方法：對 relax 的步數做歸納', 'say', 0, 1.6, 2.2);
+  say('證明：對步數做歸納', '');
+  await step(tok);                                   // @605.0 assume d(u) ≥ δ(s, u)
+  kill(hd);
   nodeTag(1, 'd(u) ≥ δ(s,u)', 'ptr alt');
-  say('歸納假設：d(u) ≥ δ(s, u)', '現在 relax 邊 (u, v)');
-  edgeColor(smE(1, 2), C.hot, 2);
-  await beat(tok, 3000);
-  edgeColor(smE(0, 1), C.tree, 2); edgeColor(smE(0, 2), C.tree, 2);
+  say('假設 relax 之前 d(u) ≥ δ(s, u)', '');
+  await step(tok);                                   // @618.5 do the relaxation operation
+  showW(smE(1, 2)); edgeColor(smE(1, 2), C.hot, 2);
+  say('現在 relax 邊 (u, v)', '');
+  await step(tok);                                   // @636.8 relax doesn't make d(v) incorrect
+  nodeTag(2, 'd(v) ≥ δ(s,v)？');
+  say('要證明：relax 不會讓 d(v) 變錯', '這是歸納的那一步');
+  await step(tok);                                   // @650.5 the triangle inequality
   row('δ(s,v) ≤ δ(s,u) + δ(u,v)', 2.2);
-  say('三角不等式（講的是路徑，不是邊）', '經過 u 不會比最短的更短');
-  await beat(tok, 3400);
+  say('三角不等式：δ(s,v) ≤ δ(s,u) + δ(u,v)', '');
+  await step(tok);                                   // @677.7 a picture: s, u, v
+  hideW(false); setW(smE(1, 2), 'δ(u,v)');
+  GR.edges.forEach((e) => edgeColor(e, C.edge, 1));
+  say('畫出來：s、u、v', '');
+  await step(tok);                                   // @695.4 not an edge — a path
+  GR.edges.forEach((e) => edgeColor(e, C.tree, 2.4));
+  say('注意：這些不是邊，是路徑', '可能剛好只是一條邊');
+  await step(tok);                                   // @710.8 s→u→v shorter than the best s→v: contradiction
+  const pk = await walk(tok, '繞 u 更短？', [0, 1, 2], 550);
+  g.mood('wow');
+  say('如果 s → u → v 比最短的 s → v 還短', '那就矛盾了');
+  await step(tok);                                   // @746.6 by definition: direct, or through u
+  kill(pk); g.mood('calm');
+  say('最短的 s → v 本來就考慮了所有走法', '直接走、或經過 u');
+  await step(tok);                                   // @759.0 s → a → b shorter than s → b
+  setW(smE(0, 1), 1); setW(smE(1, 2), 1); setW(smE(0, 2), 3);
+  GR.edges.forEach((e) => edgeColor(e, C.edge, 1)); smPath([0, 1, 2], C.hot, 2);
+  nodeNote(1, 'u = a'); nodeNote(2, 'v = b'); nodeTag(1, ''); nodeTag(2, '');
+  say('例子：s → a → b 比 s → b 這條邊還短', '1 + 1 = 2 < 3');
+  await step(tok);                                   // @777.8 no contradiction: δ(s, b) = 2
+  nodeTag(2, 'δ(s,b) = 2');
+  say('不矛盾：δ(s, b) = 2', '最短的路本來就經過 a');
+  await step(tok);                                   // @801.0 shortest paths, not single edge weights
+  const tn = tag('三角不等式講最短路徑，不是單一條邊的權重', 'note', 0, 0.3, 4.4);
+  say('別被搞混：講的是最短路徑', '不是單一條邊的權重');
+  await step(tok);                                   // @817.5 half the proof
+  kill(tn);
+  setW(smE(0, 1), 'δ(s,u)'); setW(smE(1, 2), 'δ(u,v)'); setW(smE(0, 2), 'δ(s,v)');
+  GR.edges.forEach((e) => edgeColor(e, C.tree, 2.4));
+  nodeNote(1, ''); nodeNote(2, ''); nodeTag(1, 'd(u) ≥ δ(s,u)', 'ptr alt'); nodeTag(2, '');
+  say('這樣證了一半', '剩下的請同學接下去');
+  await step(tok);                                   // @889.7 put d(u) here
   row('≤ d(u) + δ(u,v)', 3.0);
-  say('δ(s,u) 換成 d(u)：只會變大', '因為 d(u) ≥ δ(s,u)');
   nodeColor(1, C.pq, 0.3);
-  await beat(tok, 3200);
+  say('學生：把 δ(s, u) 換成 d(u)', '右邊只會變大或不變');
+  await step(tok);                                   // @904.1 because d(u) ≥ δ(s, u)
   nodeColor(1, C.white, 0);
+  say('因為歸納假設 d(u) ≥ δ(s, u)', '');
+  await step(tok);                                   // @923.8 replace δ(u, v) with w(u, v)
   row('≤ d(u) + w(u,v)', 3.8);
-  say('δ(u,v) 換成 w(u,v)：單一條邊不會比最短短', '');
-  await beat(tok, 3200);
-  row('= relax 後的 d(v)', 4.6, 'ptr alt');
-  nodeTag(2, 'd(v) ≥ δ(s,v)', 'ptr alt');
-  nodeColor(2, C.ok, 0.3);
-  say('所以 relax 之後仍有 d(v) ≥ δ(s,v)', '證畢：relaxation 是安全的');
-  await beat(tok, 3200);
-  say('s→b 邊 3 > s→a→b 的 2 不矛盾', 'δ(s,b) = 2：三角不等式講最短路徑');
-  await beat(tok, 3000);
+  setW(smE(1, 2), 'w(u,v)'); edgeColor(smE(1, 2), C.hot, 2.4);
+  say('學生：把 δ(u, v) 換成 w(u, v)', '');
+  await step(tok);                                   // @980.3 a single edge is never shorter than the shortest path
+  say('單一條邊的權重 ≥ 最短路徑', '例子裡 3 ≥ 2');
+  await step(tok);                                   // @1005.6 that is d(v) after the relaxation
+  row('= relax 之後的 d(v)', 4.6, 'ptr alt');
+  nodeTag(2, 'd(v) ≥ δ(s,v) ✓', 'ptr alt'); nodeColor(2, C.ok, 0.3);
+  g.mood('happy');
+  say('右邊正好是 relax 之後的 d(v)', '所以 d(v) ≥ δ(s, v)，證畢');
+  await step(tok);                                   // @1029.3 relaxation is safe; algorithms = sequences of relaxations
+  say('relaxation 是安全的', '之後每個演算法 = 某種順序的 relax');
 }]);
 
-// 17:37 DAG：topological sort + 一次 relax；起點左邊都是 ∞
+// 17:40 DAG 最短路徑：topological sort + 一次 relax
 FRAG.push(['spmit1-dag-idea', 'L16：DAG 最短路徑的作法', async (tok) => {
   fresh([0, 12.5, 8], [0, 0, -0.3]);
   buildGraph(SM.dagL, { dz: -2.2 });
-  say('DAG：沒有 cycle → 不會有負 cycle', '負邊可以，只走一次就照減');
-  await beat(tok, 3200);
-  const cd = code(['1. topological sort（DFS，O(V + E)）', '   u → v 的路徑 ⇒ u 排在 v 前面', '2. 由左到右走一次', '   relax 這個頂點的每條出邊', '總共 O(V + E)'], -2.2, 0.6, 0.62);
+  const g = guide(-6.2, 3.6);
+  await step(tok);                                   // @1060.8 DAGs first
+  const tg = tag('DAG = directed acyclic graph（有向、沒有 cycle）', 'say', 0, 1.6, 0.4);
+  say('先看 DAG', 'directed acyclic graph');
+  await step(tok);                                   // @1078.3 no cycles → no negative cycles
+  const back = addEdge(GR, 2, 0, null, -0.35); edgeColor(back, C.back, 1.6);
+  txt(tg, '加一條 S → A 就有 cycle：DAG 不准！');
+  say('沒有 cycle，自然沒有負 cycle', '');
+  await step(tok);                                   // @1098.3 DAGs with negative edges are allowed
+  dropEdge(back);
+  setW(smE(0, 2), -2); edgeColor(smE(0, 2), C.back, 2);
+  txt(tg, 'DAG 可以有負權重的邊');
+  say('這裡允許負權重的邊', '');
+  await step(tok);                                   // @1107.0 a negative edge used once: just subtract
+  const pk = await walk(tok, '−2', [0, 2], 700);
+  say('負邊只走一次：照減就好', '沒問題');
+  await step(tok);                                   // @1116.0 only a negative cycle → −∞
+  kill(pk);
+  txt(tg, '問題只出在能一直繞的負 cycle（→ −∞）');
+  say('只有能一直繞的負 cycle', '才會讓最短路徑變 −∞');
+  await step(tok);                                   // @1129.5 with a DAG: first try a topological sort
+  txt(tg, '遇到 DAG：先試 topological sort！');
+  g.mood('happy');
+  say('遇到 DAG，第一件事：試 topological sort', '作業也一樣');
+  await step(tok);                                   // @1152.0 topological sort: path u → v ⇒ u before v
+  kill(tg); g.mood('calm');
+  const cd = code(['1. topological sort（DFS，O(V + E)）', '   u → v 有路徑 ⇒ u 排在 v 前面', '2. 由左到右走一遍', '   relax 這個頂點的每條出邊', '總共 O(V + E)'], -2.0, 0.9, 0.6);
   cd.hl(0);
-  say('第一步：topological sort', '有 DAG 就先試 topo sort');
-  await beat(tok, 3000);
-  cd.hl(2);
-  for (let v = 0; v < 3; v++) { nodeColor(v, C.hot, 0.35); await beat(tok, 600); nodeColor(v, C.white, 0); }
-  say('第二步：由左到右，一個頂點處理一次', '每條邊只 relax 一次');
-  await beat(tok, 2600);
-  cd.hl(4);
-  say('時間 O(V + E)', '');
-  await beat(tok, 2000);
-  cd.hl(-1);
-  nodeColor(2, C.ok, 0.3); nodeTag(2, '0'); nodeTag(0, '∞'); nodeTag(1, '∞');
-  say('起點是 S：A、B 在它左邊', 'δ(S, A) = δ(S, B) = ∞');
-  await beat(tok, 3200);
-  nodeColor(0, C.dim, 0); nodeColor(1, C.dim, 0);
-  say('先排好，再決定起點', '起點左邊的全部 ∞');
-  await beat(tok, 3000);
-}]);
-
-// 33:29 Dijkstra pseudocode（L16 的 5 頂點例子）；params.target：L18 的「取出 t 就停」
-FRAG.push(['spmit1-dij-pseudo', 'Dijkstra pseudocode（Extract-Min、S、Q）', async (tok) => {
-  const P = ctx.params || {};
-  fresh([0, 12.5, 8], [0, 0, -0.3]);
-  buildGraph(GRAPHS.clrs5, { scale: 0.62, dx: 3.2, dz: -0.6 });
-  const T = P.target ? GRAPHS.clrs5.names.indexOf(P.target) : -1;
-  const lines = ['Dijkstra(G, w, s):', '  Initialize：d(s)=0，其他 ∞', '  S = ∅ ;  Q = V', '  while Q ≠ ∅:', '    u = Extract-Min(Q)'];
-  if (T >= 0) lines.push('    if u == t: stop');
-  lines.push('    S = S ∪ {u}', '    for v in Adj[u]:', '      Relax(u, v, w)');
-  const I = (s) => lines.findIndex((l) => l.includes(s));
-  const cd = code(lines, -4.0, -2.8, 0.6);
-  const n = GR.n, d = Array(n).fill(INF), inS = Array(n).fill(false), Sl = [];
-  d[0] = 0;
-  const sT = tag('S = { }', 'ptr alt', -4.4, 0.3, 3.0), qT = tag('', 'ptr', -4.4, 0.3, 3.8);
-  const showQ = () => txt(qT, 'Q：' + [...Array(n).keys()].filter((v) => !inS[v]).map((v) => nm(v) + ' ' + fmt(d[v])).join('  '));
-  for (let v = 0; v < n; v++) nodeTag(v, fmt(d[v]));
-  if (T >= 0) { nodeNote(T, '目標 t'); nodeColor(T, C.purple, 0); }
-  cd.hl(1); showQ();
-  say(T >= 0 ? '同一份 Dijkstra，只多一行' : 'Initialize：起點 A 的 d = 0', T >= 0 ? '單一目標 t = ' + nm(T) : '其他頂點 ∞');
-  await beat(tok, 2600);
-  cd.hl(2);
-  say('S：已知最短路徑的頂點', 'Q：priority queue，key = d');
-  await beat(tok, 2600);
-  for (;;) {
-    let u = -1;
-    for (let v = 0; v < n; v++) if (!inS[v] && (u < 0 || d[v] < d[u])) u = v;
-    if (u < 0) break;
-    cd.hl(I('Extract-Min'));
-    nodeColor(u, C.hot, 0.4);
-    say('Extract-Min：' + nm(u) + '（d = ' + fmt(d[u]) + '）', 'greedy：Q 裡最小的就是確定的');
-    await beat(tok, 1500);
-    if (T >= 0) {
-      cd.hl(I('stop'));
-      if (u === T) {
-        nodeColor(u, C.ok, 0.4);
-        say('u == t：停！', 'δ(A, ' + nm(u) + ') = ' + fmt(d[u]) + '；剩下的不用做');
-        await beat(tok, 3200);
-        return;
-      }
-      await beat(tok, 500);
-    }
-    cd.hl(I('S = S'));
-    inS[u] = true; Sl.push(u); nodeColor(u, C.ok, 0.3); txt(sT, 'S = { ' + Sl.map(nm).join(', ') + ' }'); showQ();
-    await beat(tok, 800);
-    for (const { e, to: v } of adjOf(u)) {
-      cd.hl(I('Relax'));
-      edgeColor(e, C.hot, 1.8);
-      const nd = d[u] + e.w;
-      if (nd < d[v]) {
-        const old = d[v]; d[v] = nd; nodeTag(v, fmt(nd)); showQ();
-        say('Relax ' + nm(u) + '→' + nm(v) + '：' + fmt(old) + ' → ' + nd, 'Decrease-Key');
-        await beat(tok, 1100);
-        edgeColor(e, C.tree, 1.6);
-      } else {
-        say(nm(u) + '→' + nm(v) + '：' + nd + ' ≥ ' + fmt(d[v]) + '，不變', '');
-        await beat(tok, 800);
-        edgeColor(e, C.edge, 1);
-      }
-    }
-    nodeColor(u, C.ok, 0);
-  }
+  say('第一步：topological sort', 'u 到 v 有路徑 ⇒ u 排在 v 前面');
+  await step(tok);                                   // @1177.9 a linear ordering; go left to right
+  cd.hl(1);
+  const ar = arrow(V3(-4.6, 0.3, -3.4), V3(2.2, 0.3, -3.4), 0x2f7fd0);
+  say('排好之後是一條直線', '由左到右，依序 relax');
+  await step(tok);                                   // @1195.0 one pass, relax each edge leaving the vertex
   cd.hl(3);
-  say('Q 空了：' + [...Array(n).keys()].map((v) => nm(v) + ' ' + fmt(d[v])).join('、'), '每個頂點只取出一次');
-  await beat(tok, 3000);
+  for (let v = 0; v < 3; v++) { nodeColor(v, C.hot, 0.35); await beat(tok, 380); nodeColor(v, C.white, 0); }
+  say('第二步：由左到右走一遍', 'relax 每個頂點的出邊');
+  await step(tok);                                   // @1232.9 topological sort O(V + E); each edge once
+  cd.hl(0);
+  say('topological sort 是 O(V + E)（含 DFS）', '每條邊只碰一次');
+  await step(tok);                                   // @1245.9 the first special case: O(V + E)
+  cd.hl(4);
+  say('第一個特例演算法：O(V + E)', '');
+  await step(tok);                                   // @1256.9 why does it work? the starting vertex
+  cd.hl(-1); kill(ar);
+  say('為什麼可行？有個細節：', '跟起點在哪裡有關');
+  await step(tok);                                   // @1280.3 a DAG like this; mark S
+  setW(smE(0, 2), 4); GR.edges.forEach((e) => edgeColor(e, C.edge, 1));
+  nodeColor(2, C.ok, 0.3); nodeTag(2, '0');
+  say('例如這個 DAG，起點標成 S', '');
+  await step(tok);                                   // @1286.6 paths from S to A, B don't exist
+  nodeTag(0, '∞'); nodeTag(1, '∞'); nodeColor(0, C.dim, 0); nodeColor(1, C.dim, 0);
+  g.mood('wow');
+  say('S 到 A、B 的路徑不存在', 'δ(S, A) = δ(S, B) = ∞');
+  await step(tok);                                   // @1306.0 general: any choice of starting vertex
+  g.mood('calm');
+  say('演算法沒有限定起點', '任何起點都要能用');
+  await step(tok);                                   // @1315.2 topological sort first, then commit to the start
+  tag('先排好，再決定起點；起點左邊全部 ∞', 'note', 0, 0.3, 4.0);
+  g.mood('happy');
+  say('可以先 topological sort', '再決定起點；只算走得到的');
 }]);
 
-// ══════════ L18 ══════════
-// 00:41 三種最短路徑問題
+// 22:16 白板的 DAG：5, 3, 2, 6, 7, 4, 2, −1, −2（後來補一條 1）（內建 dag-sp 的跟講版）
+FRAG.push(['spmit1-dagrun', 'L16：DAG 例子逐步 relax', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  const g = guide(-6.2, 3.6);
+  const d = Array(6).fill(INF);
+  const R = relaxer(d, null);
+  await step(tok);                                   // @1336.0 a DAG like this
+  buildGraph(SM.dagv); hideW();
+  say('來看一個 DAG', '');
+  await step(tok);                                   // @1343.7 topologically sorted → drawn in a line
+  const ar = arrow(V3(-5.5, 0.3, 2.6), V3(5.5, 0.3, 2.6), 0x2f7fd0);
+  const tl = tag('topological 順序：由左到右', 'idx', 0, 0.3, 3.1);
+  say('topological sort 之後', 'DAG 一定能畫成一直線');
+  await step(tok);                                   // @1372.0 5, 3, 2, 6, 7, 4, 2, −1, −2
+  hideW(false); showW(smE(3, 5), false);
+  say('權重：5, 3, 2, 6, 7, 4, 2, −1, −2', '');
+  await step(tok);                                   // @1387.5 in topological order; go left to right
+  say('已經依 topological 順序畫好', '由左到右處理');
+  await step(tok);                                   // @1394.2 step two: what's my source?
+  kill(tl); kill(ar);
+  const q = tag('起點是誰？', 'say', -6.2, 1.7, 3.6);
+  say('到第二步：起點是哪一個？', '');
+  await step(tok);                                   // @1403.4 if this were the source: nothing to do
+  nodeColor(5, C.purple, 0.3);
+  txt(q, '如果起點是最右邊的 d…');
+  nodeTag(5, '0'); for (let v = 0; v < 5; v++) nodeTag(v, '∞');
+  say('如果起點是最右邊這個', '沒有出邊，什麼都不用做；左邊全部 ∞');
+  await step(tok);                                   // @1426.0 this is the starting vertex
+  nodeColor(5, C.white, 0); for (let v = 0; v < 6; v++) nodeTag(v, '');
+  nodeColor(1, C.ok, 0.3);
+  txt(q, '起點：S（第二個頂點）');
+  say('起點選第二個：S', '粗體標起來');
+  await step(tok);                                   // @1436.9 everything to the left gets ∞
+  nodeTag(0, '∞'); nodeColor(0, C.dim, 0);
+  say('起點左邊的全部是 ∞', '永遠走不到');
+  await step(tok);                                   // @1446.9 not the shortest instantly; negative edges
+  kill(q);
+  const nt = tag('走到某頂點時，不一定已是最短（負邊會讓長路更短）', 'note', 0, 0.3, 4.1);
+  say('走到一個頂點時，不一定馬上最短', '有負邊時，更長的路可能更短');
+  await step(tok);                                   // @1470.5 relax the edges from S; all ∞ to start
+  d[1] = 0; for (let v = 0; v < 6; v++) nodeTag(v, fmt(d[v]));
+  nodeColor(1, C.hot, 0.45);
+  await goTo(tok, g, -3.3, 1.8, 700);
+  txt(nt, '處理 S：relax 它的出邊');
+  say('從 S 開始，relax 它的出邊', 'S = 0，其他一開始都 ∞');
+  await step(tok);                                   // @1484.2 this becomes 2
+  await R(tok, 1, 2);
+  say('這個變成 2', '0 + 2');
+  await step(tok);                                   // @1491.1 this becomes 6
+  await R(tok, 1, 3);
+  say('這個變成 6', '0 + 6');
+  await step(tok);                                   // @1494.3 done with S: 2 and 6
+  R.clear(); nodeColor(1, C.ok, 0);
+  say('S 處理完：2 和 6', '');
+  await step(tok);                                   // @1502.1 the next vertex: call it a
+  nodeColor(2, C.hot, 0.45);
+  await goTo(tok, g, -1.1, 1.8, 600);
+  txt(nt, '處理 a：relax 它的出邊');
+  say('下一個頂點，叫它 a', 'relax a 的出邊');
+  await step(tok);                                   // @1509.8 2 + 7 = 9 > 6
+  await R(tok, 2, 3);
+  say('2 + 7 = 9 > 6', '不用更新');
+  await step(tok);                                   // @1519.0 2 + 4 = 6
+  await R(tok, 2, 4);
+  say('2 + 4 = 6 < ∞', '');
+  await step(tok);                                   // @1523.8 2 + 2 = 4
+  await R(tok, 2, 5);
+  say('2 + 2 = 4', '');
+  await step(tok);                                   // @1532.0 done with a; b is 6
+  R.clear(); nodeColor(2, C.ok, 0); nodeColor(3, C.hot, 0.45);
+  await goTo(tok, g, 1.1, 1.8, 600);
+  txt(nt, '處理 b：relax 它的出邊');
+  say('a 處理完。下一個是 b', 'd(b) = 6');
+  await step(tok);                                   // @1538.9 6 − 1 = 5 < 6
+  await R(tok, 3, 4);
+  say('6 − 1 = 5 < 6', '更新成 5');
+  await step(tok);                                   // @1547.0 oh, this is a 1: 6 + 1 = 7 > 4
+  showW(smE(3, 5));
+  await R(tok, 3, 5);
+  say('喔，這條是 1：6 + 1 = 7 > 4', '不用動');
+  await step(tok);                                   // @1558.8 the final value 3 for this one
+  R.clear(); nodeColor(3, C.ok, 0); nodeColor(4, C.hot, 0.45);
+  await R(tok, 4, 5);
+  say('接著 5 − 2 = 3', '最右邊的最終值是 3');
+  await step(tok);                                   // @1565.5 final values 5, 6, 2, 0, ∞
+  R.clear(); nodeColor(4, C.ok, 0); nodeColor(5, C.ok, 0);
+  txt(nt, '最終：∞、0、2、6、5、3');
+  g.mood('happy');
+  say('最終值：∞、0、2、6、5、3', '');
+  await step(tok);                                   // @1580.3 topological sort, find the start, run to the right
+  txt(nt, 'topological sort → 找起點 → 一路往右 relax');
+  say('作法：topological sort、找起點', '一路往右');
+  await step(tok);                                   // @1586.7 the simplest example of dynamic programming
+  txt(nt, '其實是 dynamic programming 最簡單的例子');
+  say('這是 dynamic programming 最簡單的例子', '11 月會詳細講');
+  await step(tok);                                   // @1596.4 O(V + E) because there are no cycles
+  txt(nt, '最簡單的特例：O(V + E)，因為沒有 cycle');
+  say('最簡單的特例：O(V + E)', '原因：沒有 cycle');
+  await step(tok);                                   // @1633.6 Dijkstra doesn't work for negative edges
+  const dj = buddy('Dijkstra', '', '#4b9ee2', 4.6, 0, -3.4, 0.6);
+  txt(nt, 'Dijkstra 不能有負邊 → 這個演算法沒被 Dijkstra 取代');
+  say('Dijkstra 不能處理負邊', '所以 DAG 演算法沒有被 Dijkstra 包含');
+  await step(tok);                                   // @1645.0 Dijkstra: cycles, ≥ 0; DAG: negatives, no cycles
+  dj.mood('happy');
+  txt(nt, 'Dijkstra：可有 cycle、權重 ≥ 0｜DAG：可有負邊、不能有 cycle');
+  say('兩者各有用處', 'Dijkstra 可有 cycle；DAG 演算法可有負邊');
+}]);
+
+// 27:46 掛球示範（內建 dij-ball-demo 的跟講版）
+FRAG.push(['spmit1-balls', 'L16：掛球示範——提起起點', async (tok) => {
+  fresh([0, 4.2, 14], [0, 3.2, 0]);
+  // 繩長：G–P 7、P–B 5、G–Y 19 出自影片；B–Y 4、Y–R 6、B–R 13 為示意
+  const names = ['G', 'P', 'B', 'Y', 'R'], cols = ['#2fc092', '#9b7ef4', '#4b9ee2', '#e8c22a', '#d64545'];
+  const xs = [-4.8, -2.4, 0, 2.4, 4.8];
+  const ropes = [[0, 1, 7], [1, 2, 5], [0, 3, 19], [2, 3, 4], [3, 4, 6], [2, 4, 13]];
+  const SC = 0.27;
+  let balls = [], lines = [], dl = [], rl = [];
+  const draw = (tight) => {
+    lines.forEach((l) => lab.world.remove(l)); lines = [];
+    for (const [a, b, len] of ropes) {
+      const A = balls[a].position, B = balls[b].position;
+      const isT = tight ? tight(a, b, len) : false;
+      const gap = A.distanceTo(B), sag = Math.max(0, len * SC - gap) * 0.45;
+      const mid = A.clone().add(B).multiplyScalar(0.5); mid.y -= sag;
+      const curve = new THREE.QuadraticBezierCurve3(A.clone(), mid, B.clone());
+      const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(16)), new THREE.LineBasicMaterial({ color: isT ? '#2f7fd0' : '#a8987c' }));
+      lab.world.add(l); lines.push(l);
+    }
+    balls.forEach((b, i) => { dl[i].position.set(b.position.x, b.position.y + 0.9, 0); });
+  };
+  const lift = async (dist, ms) => {
+    const top = 6.6;
+    rl.forEach((l) => { l.element.style.visibility = 'hidden'; });
+    await kanim(tok, ms, (t) => {
+      const h = 0.42 + (top - 0.42) * t;
+      balls.forEach((b, i) => { b.position.y = Math.max(0.42, h - dist[i] * SC); });
+      draw((a, b, len) => Math.abs(Math.abs(dist[a] - dist[b]) - len) < 1e-9 && balls[a].position.y > 0.43 && balls[b].position.y > 0.43);
+    });
+  };
+  const g = guide(-5.8, 3.4, '小路', '#f4a56a', 0.7);
+  await step(tok);                                   // @1666.1 I have a demo
+  const sb = tag('6.006 唯一的示範！', 'say', -5.8, 1.9, 3.4);
+  say('看 Dijkstra 之前：一個示範', '6.006 唯一的一個');
+  await step(tok);                                   // @1677.3 straightforward to code; not trivial to prove
+  txt(sb, '程式很直接，正確性不好證');
+  say('Dijkstra 寫起來很直接', '但證明正確不簡單');
+  await step(tok);                                   // @1691.9 a greedy algorithm
+  txt(sb, '因為它是 greedy（貪心）');
+  g.mood('happy');
+  say('原因：它是 greedy algorithm', '每一步都挑眼前最好的');
+  await step(tok);                                   // @1697.2 incrementally, vertex by vertex
+  txt(sb, '一個頂點、一個頂點建出最短路徑');
+  say('一步一步、一個頂點一個頂點', '建出最短路徑');
+  await step(tok);                                   // @1708.0 the demo gives intuition
+  kill(sb); g.mood('calm');
+  say('這個示範能給你直覺', '為什麼 Dijkstra 會對');
+  await step(tok);                                   // @1731.0 an undirected graph: balls are the vertices
+  balls = names.map((n2, i) => {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(0.42, 24, 16), new THREE.MeshStandardMaterial({ color: cols[i], roughness: 0.4 }));
+    m.castShadow = true; m.add(lab.label(n2, 'val')); m.position.set(xs[i], 0.42, 0); lab.world.add(m); return m;
+  });
+  dl = names.map(() => tag('', 'ptr', 0, 0, 0));
+  balls.forEach((b, i) => { dl[i].position.set(b.position.x, b.position.y + 0.9, 0); });
+  say('無向圖：每顆球是一個頂點', '');
+  await step(tok);                                   // @1743.0 G = green, Y = yellow
+  balls.forEach((b, i) => txt(dl[i], ['green', 'purple', 'blue', 'yellow', 'red'][i]));
+  say('G = green、Y = yellow…', '用顏色的第一個字母命名');
+  await step(tok);                                   // @1749.3 strings = the weights
+  balls.forEach((b, i) => txt(dl[i], ''));
+  draw(null);
+  rl = ropes.map(([a, b, len], i) => tag(String(len), 'idx', (xs[a] + xs[b]) / 2, 0.1, 0.9 + (i % 3) * 0.55));
+  say('球之間用繩子連起來', '繩長 = 邊的權重');
+  await step(tok);                                   // @1761.0 the green–yellow string is 19 cm
+  rl[2].element.className = 'lab-label ptr alt';
+  say('綠球到黃球的繩子：19 公分', '其他繩子也各有長度');
+  await step(tok);                                   // @1777.7 what do I do, mechanically?
+  rl[2].element.className = 'lab-label idx';
+  g.mood('wow');
+  say('要「機械地」算最短路徑', '該怎麼做？');
+  await step(tok);                                   // @1791.1 pick up the ball and lift it
+  glow(balls[0], GOLD);
+  say('學生：把球提起來！', '對，提起起點那顆');
+  await step(tok);                                   // @1810.0 from G: P is 7, the closest
+  txt(dl[1], '7'); txt(dl[0], '0');
+  say('起點 G：到紫球 P 是 7', 'P 離 G 最近');
+  await step(tok);                                   // @1824.4 the next closest: B = 7 + 5 = 12
+  txt(dl[2], '12');
+  say('第二近：藍球 B', '7 + 5 = 12');
+  await step(tok);                                   // @1851.1 lift it up
+  glow(balls[0], null);
+  const dG = [0, 7, 12, 16, 22];
+  await lift(dG, 2400);
+  dG.forEach((x, i) => txt(dl[i], String(x)));
+  g.mood('happy');
+  say('提起綠球 G', '其他球依序離開地面');
+  await step(tok);                                   // @1861.3 green on top, then purple, blue, Y, R
+  say('順序：G、P、B、Y、R', '離 G 越近，越早離地');
+  await step(tok);                                   // @1871.0 taut strings = the predecessors
+  const pi = tag('藍色（拉緊的）繩子 = predecessor π', 'note', 0, 0.3, 2.6);
+  say('拉緊的繩子（藍）就是 predecessor π', '鬆的繩子不在最短路徑上');
+  await step(tok);                                   // @1880.1 computed the shortest paths mechanically
+  txt(pi, '機械地算出最短路徑，連 π 也有了');
+  say('機械地算出了最短路徑', '量繩子的張力就知道 π');
+  await step(tok);                                   // @1900.0 take R and lift it
+  balls.forEach((b) => { b.position.y = 0.42; }); dl.forEach((l) => txt(l, ''));
+  const dR = [22, 15, 10, 6, 0];
+  await lift(dR, 2400);
+  dR.forEach((x, i) => txt(dl[i], String(x)));
+  txt(pi, '改提紅球 R');
+  say('改提紅球 R', '');
+  await step(tok);                                   // @1905.6 R, Y, B, P, G
+  say('順序變成 R、Y、B、P、G', '換起點，順序就變');
+  await step(tok);                                   // @1919.2 greedy: gravity is greedy
+  txt(pi, 'gravity 也是 greedy');
+  say('這裡有一個 greedy algorithm', '重力就是 greedy');
+  await step(tok);                                   // @1951.0 a kinetic simulation would be slow
+  txt(pi, '用物理模擬算？很酷，但慢得要命');
+  g.mood('sad');
+  say('可以寫物理模擬來算', '很酷，但會非常慢');
+  await step(tok);                                   // @1971.3 Dijkstra computes the steady state
+  txt(pi, 'Dijkstra：直接算出最後靜止的狀態');
+  g.mood('calm');
+  say('Dijkstra 直接算出穩定狀態', '');
+  await step(tok);                                   // @1980.6 greedily: G, then purple, blue, yellow, red
+  txt(pi, '從 G 開始：P、B、Y、R 依序確定');
+  g.mood('happy');
+  say('greedy 地建出最短路徑', '從 G 開始，依序 P、B、Y、R');
+}]);
+
+// 33:30 Dijkstra pseudocode（L16）
+FRAG.push(['spmit1-dij-code', 'L16：Dijkstra pseudocode', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(GRAPHS.tri, { scale: 0.6, dx: 3.6, dz: -1.4, noDrop: true });
+  const cd = code(['Dijkstra(G, w, s):', '  Initialize(G, s)', '  S = ∅', '  Q = V[G]', '  while Q ≠ ∅:', '    u = Extract-Min(Q)', '    S = S ∪ {u}', '    for v in Adj[u]:', '      Relax(u, v, w)'], -3.6, -3.0, 0.62);
+  cd.ls.forEach((l) => { l.element.style.visibility = 'hidden'; });
+  const d = [INF, INF, INF], inS = [false, false, false];
+  const R = relaxer(d, null);
+  const sT = tag('S = { }', 'ptr alt', 3.6, 0.3, 2.4), qT = tag('Q = { s, a, b }', 'ptr', 3.6, 0.3, 3.2);
+  sT.element.style.visibility = 'hidden'; qT.element.style.visibility = 'hidden';
+  const showQ = () => { txt(sT, 'S = { ' + [0, 1, 2].filter((v) => inS[v]).map(nm).join(', ') + ' }'); txt(qT, 'Q = { ' + [0, 1, 2].filter((v) => !inS[v]).map((v) => nm(v) + ' ' + fmt(d[v])).join(', ') + ' }'); };
+  await step(tok);                                   // @2009.8 the pseudocode for Dijkstra
+  cd.ls.forEach((l) => { l.element.style.visibility = ''; });
+  say('Dijkstra 的 pseudocode', '');
+  await step(tok);                                   // @2040.0 G graph, w weights, s start
+  cd.hl(0);
+  say('G 是圖、w 是權重、小寫 s 是起點', '');
+  await step(tok);                                   // @2046.4 initialize: mark s as the start
+  cd.hl(1); nodeColor(0, C.ok, 0.3);
+  say('Initialize：標出起點 s', '');
+  await step(tok);                                   // @2058.2 capital S = ∅
+  cd.hl(2); sT.element.style.visibility = '';
+  say('大寫 S 是一個集合', '一開始是空的');
+  await step(tok);                                   // @2073.5 Q = all the vertices
+  cd.hl(3); qT.element.style.visibility = ''; txt(qT, 'Q = { s, a, b }');
+  say('Q：一開始是全部頂點', '');
+  await step(tok);                                   // @2080.3 nothing processed yet; Q = to be processed
+  say('還沒處理任何頂點', 'Q = 等著處理的頂點');
+  await step(tok);                                   // @2096.0 move them from Q to S; invariant
+  const inv = tag('不變量：S 裡都是「最短路徑已確定」的頂點', 'note', -3.6, 0.3, 3.4);
+  say('處理完的頂點從 Q 搬到 S', 'S 裡都是已知最短路徑的頂點');
+  await step(tok);                                   // @2117.3 while Q is not empty
+  cd.hl(4);
+  say('while 還有頂點要處理', '');
+  await step(tok);                                   // @2128.6 u = Extract-Min(Q)
+  cd.hl(5);
+  say('u = Extract-Min(Q)', '取出 priority 最小的');
+  await step(tok);                                   // @2146.2 this deletes u from Q
+  say('Extract-Min 也會把 u 從 Q 刪掉', '');
+  await step(tok);                                   // @2160.2 initialization sets d(s) = 0, others ∞
+  cd.hl(1); d[0] = 0;
+  for (let v = 0; v < 3; v++) nodeTag(v, fmt(d[v]));
+  showQ();
+  say('Initialize 其實就是 d(s) = 0', '其他頂點都是 ∞');
+  await step(tok);                                   // @2179.6 the first Extract-Min pulls s out
+  cd.hl(5); nodeColor(0, C.hot, 0.45);
+  say('第一次 Extract-Min：取出 s', '只有它是 0');
+  await step(tok);                                   // @2191.5 S = S ∪ {u}
+  cd.hl(6); inS[0] = true; nodeColor(0, C.ok, 0.3); showQ();
+  say('S = S ∪ {u}', 'S = { s }');
+  await step(tok);                                   // @2202.4 relax the edges from the vertex just added
+  cd.hl(8);
+  await R(tok, 0, 1); showQ();
+  say('relax 剛加入的頂點的出邊', 's → a：∞ → 1');
+  await step(tok);                                   // @2210.7 for each v in Adj[u]: relax(u, v, w)
+  await R(tok, 0, 2); showQ();
+  say('for v in Adj[u]：Relax(u, v, w)', 's → b：∞ → 3');
+  await step(tok);                                   // @2228.5 that's Dijkstra: greedy, iterative
+  R.clear(); cd.hl(-1);
+  say('這就是 Dijkstra', 'greedy、反覆做');
+  await step(tok);                                   // @2238.9 greedy: pick the min and claim it's done
+  cd.hl(5); nodeColor(1, C.hot, 0.45);
+  say('greedy 在這一行：挑 Q 中最小的', '並宣稱它的最短路徑已確定');
+  await step(tok);                                   // @2260.0 putting it into S: "I'm done"
+  cd.hl(6); inS[1] = true; nodeColor(1, C.ok, 0.3); showQ();
+  say('放進 S 就是說：這個做完了', 'S = { s, a }');
+  await step(tok);                                   // @2268.1 relax its outgoing edges; priorities change
+  cd.hl(8);
+  await R(tok, 1, 2); showQ();
+  say('處理它：relax 出邊、更新 priority', 'a → b：3 → 2');
+  await step(tok);                                   // @2296.0 next time a different minimum, two reasons
+  R.clear(); cd.hl(5);
+  txt(inv, '下一輪的最小值會不同：① 剛取出的已刪掉 ② priority 改了');
+  say('下一輪的最小值會不同', '取出的已刪掉；relax 改了 priority');
+  await step(tok);                                   // @2318.4 in the demo: lifting green = choosing the start
+  txt(inv, '掛球示範：提起綠球 = 選起點；最先拉緊的 = priority 最小');
+  say('對照掛球示範', '提起綠球 = 選起點；最近的那顆 = 最小 priority');
+  await step(tok);                                   // @2341.0 read the proof in CLRS
+  txt(inv, '正確性證明：CLRS（約半頁～一頁）');
+  say('證明不在課堂講', '請讀 CLRS 的證明');
+  await step(tok);                                   // @2380.0 Q is a priority queue keyed by d
+  cd.hl(3);
+  txt(inv, 'Q 是 priority queue：priority = d 值');
+  say('學生：頂點要怎麼比大小？', 'Q 是 priority queue，priority 就是 d');
+  await step(tok);                                   // @2430.6 initially d(s) = 0: first u = s, relax from s
+  cd.hl(5);
+  say('一開始 d(s) = 0、其他 ∞', '第一個 u 一定是 s，接著 relax 它的出邊');
+  await step(tok);                                   // @2451.8 change the priorities; select the min next time
+  cd.hl(8);
+  txt(inv, 'relax 改了 Q 裡的值 → 下一輪再選最小的');
+  say('relax 改變 priority queue 裡的值', '下一輪再選最小的');
+}]);
+
+// 41:10 5 頂點例子（內建 dij-clrs5 的跟講版）
+FRAG.push(['spmit1-clrs5', 'L16：Dijkstra 5 頂點例子', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  const g = guide(-6.2, 3.6);
+  const d = Array(5).fill(INF), inS = Array(5).fill(false);
+  let sT = null, qT = null;
+  const showQ = () => {
+    if (!sT) { sT = tag('', 'ptr alt', -0.5, 0.3, 3.6); qT = tag('', 'ptr', -0.5, 0.3, 4.3); }
+    txt(sT, 'S = { ' + [0, 1, 2, 3, 4].filter((v) => inS[v]).map(nm).join(', ') + ' }');
+    txt(qT, 'Q：' + [0, 1, 2, 3, 4].filter((v) => !inS[v]).map((v) => nm(v) + ' ' + fmt(d[v])).join('  '));
+  };
+  const R = relaxer(d, null, { after: () => showQ() });
+  const take = (u) => { inS[u] = true; nodeColor(u, C.ok, 0.3); showQ(); };
+  await step(tok);                                   // @2470.2 a couple of steps of an example
+  const sb = tag('跑前幾步就好', 'say', -6.2, 1.7, 3.6);
+  say('來跑一個例子的前幾步', '完整的在講義');
+  await step(tok);                                   // @2487.7 how the priority queue works
+  txt(sb, '看 priority queue 怎麼運作');
+  say('重點：看 priority queue 怎麼運作', '');
+  await step(tok);                                   // @2502.2 a directed graph with five vertices
+  kill(sb);
+  buildGraph(GRAPHS.clrs5);
+  say('5 個頂點的有向圖', '');
+  await step(tok);                                   // @2534.0 A is the start, d(A) = 0
+  d[0] = 0; nodeTag(0, '0'); nodeColor(0, C.purple, 0.2);
+  say('起點 A：d(A) = 0', '');
+  await step(tok);                                   // @2541.4 B..E are ∞; S is empty
+  for (let v = 1; v < 5; v++) nodeTag(v, '∞');
+  showQ(); qT.element.style.visibility = 'hidden';
+  say('B～E 都是 ∞', 'S 一開始是空的');
+  await step(tok);                                   // @2551.5 Q has all five vertices
+  qT.element.style.visibility = '';
+  say('Q 裡有全部 5 個頂點', '');
+  await step(tok);                                   // @2559.7 Extract-Min selects A
+  nodeColor(0, C.hot, 0.45);
+  say('Extract-Min 選 A', '只有它是 0');
+  await step(tok);                                   // @2571.4 S = {A}; relax the edges out of A
+  take(0);
+  say('S = { A }', '接著 relax A 的兩條出邊');
+  await step(tok);                                   // @2577.3 relax A → B
+  await R(tok, 0, 1);
+  say('A → B：∞ → 10', '');
+  await step(tok);                                   // @2581.4 0, 10, 3, ∞, ∞
+  await R(tok, 0, 2);
+  say('A → C：∞ → 3', '現在是 0, 10, 3, ∞, ∞');
+  await step(tok);                                   // @2586.9 the next Extract-Min selects 3 (C)
+  R.clear(); nodeColor(2, C.hot, 0.45);
+  await goTo(tok, g, -3.0, 3.8, 600);
+  take(2);
+  say('下一次 Extract-Min 選 3（C）', 'S = { A, C }');
+  await step(tok);                                   // @2592.7 kind of a BFS, but greedy
+  const fr = tag('像 BFS：先看一個頂點的所有鄰居…', 'say', -3.0, 1.7, 3.8);
+  say('有點像 BFS', '但它是 greedy 的');
+  await step(tok);                                   // @2609.0 pick the vertex in the frontier with the lowest priority
+  txt(fr, '…再 greedy 地挑 frontier 裡最近的：C（3 < 10）');
+  g.mood('happy');
+  say('frontier 裡挑 priority 最小的', 'C 是 3，B 是 10 → 選 C');
+  await step(tok);                                   // @2628.5 process C: this edge
+  kill(fr); g.mood('calm');
+  await R(tok, 2, 1);
+  say('處理 C：這條邊 C → B', '3 + 4 = 7 < 10');
+  await step(tok);                                   // @2634.0 that edge
+  await R(tok, 2, 3);
+  say('那條邊 C → D', '3 + 8 = 11');
+  await step(tok);                                   // @2638.0 0, 7, 3, 11, 5
+  await R(tok, 2, 4);
+  say('還有 C → E：3 + 2 = 5', '現在是 0, 7, 3, 11, 5');
+  await step(tok);                                   // @2643.8 0 and 3 are gone: in S, never change
+  R.clear();
+  const nt = tag('S 裡的 0、3 不會再變', 'note', 3.4, 0.3, 3.6);
+  say('0 和 3 已經在 S 裡', '它們的值不會再改變');
+  await step(tok);                                   // @2659.7 Dijkstra guarantees it (the proof)
+  txt(nt, 'Dijkstra 保證：S 裡的值不會再降');
+  say('這是 Dijkstra 的保證', '正確性證明要花點功夫');
+  await step(tok);                                   // @2673.0 what's remaining: 5, the E vertex
+  nodeColor(4, C.hot, 0.45);
+  await goTo(tok, g, 1.8, 3.8, 600);
+  say('剩下最小的是 5', '對應 E');
+  await step(tok);                                   // @2679.0 S becomes A, C, E
+  take(4);
+  g.mood('happy');
+  say('S = { A, C, E }', '依此類推');
+}]);
+
+// 44:50 複雜度：priority queue 怎麼實作（內建 dij-complexity 的跟講版）
+FRAG.push(['spmit1-cost', 'L16：Dijkstra 的複雜度', async (tok) => {
+  fresh([0, 9, 11], [0, 0.6, -0.6]);
+  const ops = [], imp = [];
+  const cell = (x, z, s) => tag(s, 'idx', x, 0.3, z);
+  await step(tok);                                   // @2690.1 now complexity: PQ as an ADT
+  const sb = tag('priority queue（ADT）的操作要做幾次？', 'say', -3.6, 1.6, -3.4);
+  say('來算複雜度', 'Dijkstra 用了 priority queue 這個 ADT');
+  await step(tok);                                   // @2703.5 like early in the term: lists, arrays, heaps
+  txt(sb, '像學期初：串列、陣列、Heap、樹，挑最好的');
+  say('像學期初比較 linked list、array、heap', '看哪個做這組操作最好');
+  await step(tok);                                   // @2725.0 what operations am I performing?
+  kill(sb);
+  say('看 pseudocode：做了哪些操作？', '');
+  await step(tok);                                   // @2737.7 Θ(V) inserts
+  ops.push(tag('Insert：Θ(V) 次', 'ptr', -4.2, 0.3, -2.8));
+  say('Θ(V) 次 insert', '每個頂點放進 Q 一次');
+  await step(tok);                                   // @2757.3 Θ(V) Extract-Min
+  ops.push(tag('Extract-Min：Θ(V) 次', 'ptr', -4.2, 0.3, -2.0));
+  say('Θ(V) 次 Extract-Min', '每個頂點只處理一次');
+  await step(tok);                                   // @2775.7 Θ(E) Decrease-Key
+  ops.push(tag('Decrease-Key：Θ(E) 次', 'ptr', -4.2, 0.3, -1.2));
+  say('Θ(E) 次 Decrease-Key', '');
+  await step(tok);                                   // @2786.8 relax = decrease the key
+  ops[2].element.className = 'lab-label ptr alt';
+  say('relax 就是在降低 key', '把 d 值變小');
+  await step(tok);                                   // @2804.7 each edge processed once
+  ops[2].element.className = 'lab-label ptr';
+  say('每條邊只會被處理一次', '所以是 Θ(E)');
+  await step(tok);                                   // @2826.3 you're the data structure designer
+  say('現在你是資料結構設計師', '有幾種選擇');
+  await step(tok);                                   // @2834.8 using an array
+  imp.push(buddy('Array', '?', '#dd8238', -1.2, 0, 0.8, 0.8));
+  say('如果用 array 做 priority queue', '');
+  await step(tok);                                   // @2857.3 Extract-Min in an array: Θ(V)
+  cell(-1.2, 2.2, 'Extract-Min Θ(V)');
+  say('array 的 Extract-Min：Θ(V)', '要掃過整個陣列');
+  await step(tok);                                   // @2862.5 Decrease-Key in an array: Θ(1)
+  cell(-1.2, 2.8, 'Decrease-Key Θ(1)');
+  say('Decrease-Key：Θ(1)', '直接改那一格');
+  await step(tok);                                   // @2883.0 multiply: V·V + E·1
+  imp[0].set('Θ(V²+E)');
+  say('乘起來：V × V + E × 1', 'Θ(V² + E)');
+  await step(tok);                                   // @2899.8 E = O(V²) → Θ(V²)
+  imp[0].set('Θ(V²)');
+  say('E 最多 V²，所以就是 Θ(V²)', '');
+  await step(tok);                                   // @2922.0 which data structure? a min-heap
+  imp[0].mood('sad');
+  imp.push(buddy('Binary Heap', '?', '#4b9ee2', 1.6, 0, 0.8, 0.8));
+  say('要用 array 嗎？', '學生：用 min-heap！');
+  await step(tok);                                   // @2933.8 binary min-heap: find-min constant, delete Θ(log V)
+  cell(1.6, 2.2, 'Extract-Min Θ(log V)');
+  say('binary min-heap：看最小值 O(1)', '但刪掉再調整要 Θ(log V)');
+  await step(tok);                                   // @2968.0 Decrease-Key Θ(log V)
+  cell(1.6, 2.8, 'Decrease-Key Θ(log V)');
+  say('Decrease-Key 也是 Θ(log V)', '比 array 的 Θ(1) 慢');
+  await step(tok);                                   // @2977.8 V log V + E log V
+  imp[1].set('Θ((V+E)log V)');
+  say('乘起來：V log V + E log V', '');
+  await step(tok);                                   // @2985.8 not optimal → Fibonacci heap
+  imp.push(buddy('Fibonacci Heap', '?', '#2fc092', 4.4, 0, 0.8, 0.8));
+  say('這還不是最好的', 'Fibonacci heap（6.046 才教）');
+  await step(tok);                                   // @3022.7 amortized: Θ(log V) Extract-Min, Θ(1) Decrease-Key
+  cell(4.4, 2.2, 'Extract-Min Θ(log V)'); cell(4.4, 2.8, 'Decrease-Key Θ(1) 攤銷');
+  say('攤銷：Extract-Min Θ(log V)', 'Decrease-Key Θ(1)');
+  await step(tok);                                   // @3043.0 Θ(V log V + E)
+  imp[2].set('Θ(V log V+E)'); imp[2].mood('happy');
+  say('結果：Θ(V log V + E)', '就是第一堂寫的那個複雜度');
+  await step(tok);                                   // @3058.9 DAGs linear, Dijkstra almost linear
+  tag('DAG：O(V + E)｜Dijkstra：幾乎線性', 'note', 1.6, 0.3, 4.0);
+  say('兩個特例：DAG 線性', 'Dijkstra 配好的資料結構也幾乎線性');
+  await step(tok);                                   // @3076.0 next time: possibly negative cycles
+  say('下次：可能有負 cycle 的一般情況', '複雜度會更高');
+}]);
+
+// ══════════ L18（CHvQ3q_gJ7E）══════════
+const FWD = '#bfe8d6', BWD = '#cfe0f5';
+// 00:45 三種最短路徑問題
 FRAG.push(['spmit1-three-problems', 'L18：三種最短路徑問題', async (tok) => {
   fresh([0, 12.5, 8], [0, 0, -0.3]);
   buildGraph(GRAPHS.l15);
-  say('今天：不改最壞複雜度', '但實際跑得更快');
-  await beat(tok, 2600);
-  nodeColor(0, C.ok, 0.3); nodeColor(3, C.purple, 0.3);
-  smPath([0, 2, 4, 3], C.tree);
-  say('① single source、single target', '只要 S 到 C');
-  await beat(tok, 3000);
-  nodeColor(3, C.white, 0);
+  const g = guide(-6.2, 3.6);
+  const nt = tag('', 'note', 0.6, 0.3, 4.3); nt.element.style.visibility = 'hidden';
+  const note = (s) => { nt.element.style.visibility = ''; txt(nt, s); };
+  const tree = [[0, 1], [0, 2], [2, 4], [4, 3], [1, 5], [5, 6]];
+  await step(tok);                                   // @48.6 optimizations that don't change the worst case
+  note('今天：最壞複雜度不變的優化');
+  say('最短路徑單元最後一講', '講不改變最壞複雜度的優化');
+  await step(tok);                                   // @60.5 better real-life / average-case performance
+  note('但實際（平均）跑得更快');
+  g.mood('happy');
+  say('實際上、平均情況下跑得更快', '這點沒辦法證明');
+  await step(tok);                                   // @75.2 the first: Dijkstra for a single target
+  nodeColor(0, C.ok, 0.3); nodeColor(3, C.purple, 0.3); nodeNote(3, '目標 t');
+  note('優化一：只要一個目標 t 的 Dijkstra');
+  say('第一個你已經做過了', '只找一個目標時優化 Dijkstra');
+  await step(tok);                                   // @84.9 so far: single source, all destinations
+  tree.forEach(([u, v]) => edgeColor(smE(u, v), C.tree, 2));
+  note('之前：single source、所有目的地');
+  say('之前其實都在解：一個起點、所有目的地', 'Dijkstra、Bellman-Ford 都是');
+  await step(tok);                                   // @108.5 a source s, one specific destination t
+  tree.forEach(([u, v]) => edgeColor(smE(u, v), C.edge, 1));
+  smPath([0, 2, 4, 3], C.tree, 2.4);
+  note('很多時候：起點 s、一個特定目的地 t');
+  say('很多時候只要 s 到某個 t', '作業裡就在做');
+  await step(tok);                                   // @117.8 reduces runtime, especially if t is close
+  note('t 很近時，不用走遍整張圖');
+  say('最壞情況不變，但能省時間', '尤其 t 很近時');
+  await step(tok);                                   // @132.1 still must prove the path is shortest
+  note('演算法還是要保證找到的是最短路徑');
+  say('當然還是要證明找到的是最短的', '');
+  await step(tok);                                   // @145.7 bidirectional search
   smPath([0, 2, 4, 3], C.edge, 1);
-  for (const [u, v] of [[0, 1], [0, 2], [2, 4], [4, 3], [1, 5], [5, 6]]) { edgeColor(smE(u, v), C.tree, 2); await beat(tok, 350); }
-  say('② single source、所有目的地', '原本的 Dijkstra、Bellman-Ford');
-  await beat(tok, 2800);
-  for (const [u, v] of [[0, 1], [0, 2], [2, 4], [4, 3], [1, 5], [5, 6]]) edgeColor(smE(u, v), C.edge, 1);
-  nodeColor(0, C.white, 0);
-  say('③ all pairs：任兩點都要', '起點也在變，工作更多（6.046）');
-  for (const [a, b] of [[1, 6], [2, 5], [4, 6]]) {
-    nodeColor(a, C.ok, 0.3); nodeColor(b, C.purple, 0.3);
-    await beat(tok, 1000);
-    nodeColor(a, C.white, 0); nodeColor(b, C.white, 0);
-  }
-  say('今天專攻 ①：提早停、雙向搜尋、位能', '');
+  note('優化二：雙向搜尋 bidirectional search');
+  say('雙向搜尋', '');
+  await step(tok);                                   // @161.6 a frontier from S going forward
+  nodeColor(0, FWD, 0.3); nodeColor(1, FWD, 0.3); nodeColor(2, FWD, 0.3);
+  edgeColor(smE(0, 1), C.ok, 2); edgeColor(smE(0, 2), C.ok, 2);
+  say('從 S 往前長出一個 frontier', '');
+  await step(tok);                                   // @170.6 a backward frontier from t, edges backward
+  nodeColor(3, BWD, 0.3); nodeColor(4, BWD, 0.3);
+  edgeColor(smE(4, 3), C.tree, 2);
+  say('從目的地沿著邊「反方向」長出另一個', '');
+  await step(tok);                                   // @178.1 when the frontiers meet → shortest paths
+  edgeColor(smE(2, 4), C.hot, 2.4);
+  note('兩個 frontier 相遇 → 找到最短路徑？');
+  say('兩個 frontier 相遇時', '就能找到最短路徑');
+  await step(tok);                                   // @184.0 not as simple as that
+  g.mood('wow');
+  note('沒有聽起來那麼簡單！');
+  say('其實沒那麼簡單', '要仔細看');
+  await step(tok);                                   // @199.2 all-pairs shortest paths
+  for (let v = 0; v < 7; v++) { nodeColor(v, C.white, 0); nodeNote(v, ''); }
+  GR.edges.forEach((e) => edgeColor(e, C.edge, 1)); g.mood('calm');
+  note('還有 all-pairs shortest paths（6.046）');
+  say('還有 all-pairs shortest paths', '6.006 不講，6.046 才講');
+  await step(tok);                                   // @208.5 any pair of vertices
+  for (const [a, b] of [[1, 6], [2, 5], [4, 6]]) { nodeColor(a, C.ok, 0.3); nodeColor(b, C.purple, 0.3); await beat(tok, 500); nodeColor(a, C.white, 0); nodeColor(b, C.white, 0); }
+  say('起點、終點都不知道', '任兩個頂點都要');
+  await step(tok);                                   // @222.1 more work: varying the source
+  note('起點也在變 → 比 single source 更多工作');
+  say('比 single source 還多工作', '因為起點也在變');
+  await step(tok);                                   // @229.8 the three different problems
+  note('三種問題：單一 s→t｜單一起點→全部｜任兩點');
+  say('這就是三種最短路徑問題', '今天專攻第一種');
+  await step(tok);                                   // @254.8 worst-case complexity unchanged
   nodeColor(0, C.ok, 0.3); nodeColor(3, C.purple, 0.3);
-  await beat(tok, 3000);
+  note('今天所有版本：最壞複雜度都不變');
+  say('強調：今天每個 Dijkstra 版本', '最壞複雜度都不變');
+}]);
+
+// 04:25 優化一：取出 t 就停
+FRAG.push(['spmit1-dij-stop', 'L18：取出 t 就停的 Dijkstra', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(GRAPHS.clrs5, { scale: 0.62, dx: 3.2, dz: -0.6, noDrop: true });
+  const lines = ['Dijkstra(G, w, s, t):', '  Initialize：d(s) = 0，其他 ∞', '  Q = V', '  while Q ≠ ∅:', '    u = Extract-Min(Q)', '                        ', '    for v in Adj[u]:', '      Relax(u, v, w)'];
+  const cd = code(lines, -4.0, -2.8, 0.62);
+  const d = Array(5).fill(INF), inS = Array(5).fill(false);
+  const qT = tag('', 'ptr', -4.2, 0.3, 3.4);
+  const showQ = () => txt(qT, 'Q：' + [0, 1, 2, 3, 4].filter((v) => !inS[v]).map((v) => nm(v) + ' ' + fmt(d[v])).join('  '));
+  const R = relaxer(d, null, { pi: true, after: showQ });
+  const par = null;
+  await step(tok);                                   // @265.0 put up the Dijkstra pseudocode
+  say('先把 Dijkstra pseudocode 放上來', '待會改它');
+  await step(tok);                                   // @281.9 the vertices we don't know shortest paths to
+  cd.hl(2); showQ();
+  say('Q：還不知道最短路徑的頂點', '');
+  await step(tok);                                   // @288.0 initialize d(s) = 0, the others ∞
+  cd.hl(1); d[0] = 0;
+  for (let v = 0; v < 5; v++) nodeTag(v, fmt(d[v]));
+  showQ();
+  say('Initialize：d(s) = 0', '其他 ∞');
+  await step(tok);                                   // @299.1 keep extracting the minimum from Q
+  cd.hl(4);
+  say('不斷從 Q 取出 priority 最小的', 'Extract-Min');
+  await step(tok);                                   // @313.9 once extracted, its shortest path is known
+  nodeColor(0, C.ok, 0.3); inS[0] = true; showQ();
+  say('取出 u 的那一刻', '它的最短路徑就確定了（invariant）');
+  await step(tok);                                   // @324.4 relaxation updates the priorities
+  cd.hl(7);
+  await R(tok, 0, 1); await R(tok, 0, 2);
+  say('接著 relax：更新 priority', 'B 10、C 3');
+  await step(tok);                                   // @342.1 also π(v) = u, d(v) decremented
+  R.clear();
+  say('也設定 parent：π(v) = u', 'd(v) 跟著變小');
+  await step(tok);                                   // @361.5 one line: if u == t, stop
+  txt(cd.ls[5], '    if u == t: stop   ← 只多這一行'.padEnd(26, ' '));
+  cd.hl(5);
+  nodeColor(4, C.purple, 0.2); nodeNote(4, '目標 t');
+  say('只多一行：如果 u == t 就停', '這裡讓目標 t = E');
+  await step(tok);                                   // @376.2 no need to wait until Q is empty
+  cd.hl(4); nodeColor(2, C.ok, 0.3); inS[2] = true; showQ();
+  await R(tok, 2, 1); await R(tok, 2, 3); await R(tok, 2, 4);
+  say('不用等 Q 變空', '繼續：取出 C，relax 它的邊');
+  await step(tok);                                   // @388.0 stop when t is lifted off Q
+  R.clear(); cd.hl(5);
+  nodeColor(4, C.ok, 0.45); inS[4] = true; showQ();
+  say('取出 E：u == t → 停！', 'δ(A, E) = 5');
+  await step(tok);                                   // @395.9 runs faster; the check is ~free
+  nodeColor(1, C.dim, 0); nodeColor(3, C.dim, 0);
+  const nt = tag('B、D 沒被取出：省下來的工作', 'note', 3.2, 0.3, 3.4);
+  say('一定更快', '多一個比較，幾乎不花時間');
+  await step(tok);                                   // @410.3 faster for sure with a specific target
+  txt(nt, '有特定目標時：只會更快');
+  say('有特定目標時，一定比較快', '');
+  await step(tok);                                   // @417.0 if t is the last vertex: no slower
+  txt(nt, '最壞：t 是最後一個取出的 → 也不會更慢');
+  say('t 剛好最後一個取出', '也不會比較慢');
 }]);
 
 // 07:18 雙向搜尋：forward + backward、資料結構加倍
 FRAG.push(['spmit1-bidir-setup', 'L18：雙向搜尋的設定', async (tok) => {
   fresh([0, 12.5, 8], [0, 0, -0.3]);
-  buildGraph(SM.bi, { dz: -0.6 });
-  say('從 s 往前、從 t 往回', '兩個 frontier 相遇就能找到路徑');
-  await beat(tok, 3000);
-  nodeTag(0, 'd_f 0'); nodeNote(4, 'd_b 0');
-  const t1 = tag('d_f(s) = 0、d_b(t) = 0，其他 ∞', 'ptr alt', 0, 0.3, 3.6);
-  say('兩套 priority：d_f、d_b', '兩個 queue：Q_f、Q_b');
-  await beat(tok, 3000);
-  nodeColor(0, '#bfe8d6', 0.3);
-  edgeColor(smE(0, 1), C.ok, 2); edgeColor(smE(0, 5), C.ok, 2);
-  say('forward 一步：取出 s', '處理 s 的兩條出邊');
-  await beat(tok, 2800);
-  nodeColor(4, '#cfe0f5', 0.3);
-  edgeColor(smE(3, 4), C.tree, 2);
-  const ar = arrow(V3(5.0, 0.9, -1.1), V3(3.2, 0.9, -1.1), 0x2f7fd0);
-  say('backward 一步：取出 t', '沿著邊「反方向」走到 v2');
-  await beat(tok, 3200);
-  say('圖要能反向走訪邊', '權重不變，只是方向倒過來');
-  await beat(tok, 2800);
-  kill(ar);
-  say('forward、backward 交替', '什麼時候停？');
-  await beat(tok, 2600);
-  kill(t1);
+  const g = guide(-6.2, 3.6);
+  let t1 = null;
+  await step(tok);                                   // @438.5 bidirectional search
+  const sb = tag('雙向搜尋：兩頭一起找', 'say', -6.2, 1.7, 3.6);
+  say('來看雙向搜尋', '比較有趣、不那麼顯然');
+  await step(tok);                                   // @453.3 we have S and T
+  kill(sb);
+  buildGraph({ ...SM.bi, edges: [] });
+  for (let v = 1; v < 6; v++) if (v !== 4) nodeColor(v, C.dim, 0);
+  say('有起點 s 和終點 t', '');
+  await step(tok);                                   // @457.9 a bunch of nodes in between
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(SM.bi, { noDrop: true });
+  const g2 = guide(-6.2, 3.6);
+  say('中間有一堆頂點', '');
+  await step(tok);                                   // @471.2 alternate forward and backward
+  const ar1 = arrow(V3(-5.2, 0.9, -3.4), V3(-1.2, 0.9, -3.4), 0x2fc092), ar2 = arrow(V3(5.4, 0.9, -3.4), V3(1.4, 0.9, -3.4), 0x2f7fd0);
+  say('forward、backward 交替進行', '');
+  await step(tok);                                   // @486.9 one step of standard Dijkstra, from s
+  kill(ar1); kill(ar2);
+  nodeColor(0, C.hot, 0.45);
+  say('forward：做一步標準 Dijkstra', '從 s 出發');
+  await step(tok);                                   // @507.2 pick s off Q; process its two edges
+  nodeColor(0, FWD, 0.3);
+  edgeColor(smE(0, 1), C.ok, 2.2); edgeColor(smE(0, 5), C.ok, 2.2);
+  say('第一步：從 Q 取出 s', '處理 s 的兩條出邊');
+  await step(tok);                                   // @523.4 stop forward; one step of backward search
+  nodeColor(4, C.hot, 0.45);
+  say('forward 先停', '換 backward 做一步');
+  await step(tok);                                   // @537.7 backward from t, following edges backward
+  nodeColor(4, BWD, 0.3);
+  edgeColor(smE(3, 4), C.tree, 2.2);
+  const back = arrow(V3(5.0, 0.9, -0.8), V3(3.2, 0.9, -0.8), 0x2f7fd0);
+  say('backward 從 t 出發', '沿著邊「反方向」走');
+  await step(tok);                                   // @543.1 the data structure must allow both directions
+  t1 = tag('邊要能正著走、也能反著走', 'note', 0, 0.3, 4.0);
+  say('資料結構要能反向走訪邊', '這點要記得');
+  await step(tok);                                   // @557.0 in the backward search t has the min priority
+  kill(back);
+  say('backward 搜尋裡', 't 是 priority 最小的');
+  await step(tok);                                   // @570.2 two priorities: d_f(s) = 0
+  nodeTag(0, 'd_f 0', 'ptr alt');
+  txt(t1, '兩套 priority：forward 用 d_f');
+  say('要兩套 priority', 'forward：d_f(s) = 0');
+  await step(tok);                                   // @584.1 d_b(t) = 0
+  nodeNote(4, 'd_b 0');
+  txt(t1, 'backward 用 d_b：d_b(t) = 0');
+  say('backward：d_b(t) = 0', '下標 f、b 分開兩套');
+  await step(tok);                                   // @596.3 complementary: everything else ∞
+  for (const v of [1, 2, 3, 4, 5]) nodeTag(v, 'd_f ∞');
+  for (const v of [0, 1, 2, 3, 5]) nodeNote(v, 'd_b ∞');
+  txt(t1, '完全對稱：其他頂點兩邊都是 ∞');
+  say('完全對稱', '其他頂點一開始都是 ∞');
+  await step(tok);                                   // @617.5 forward, backward, … when do you stop?
+  txt(t1, 'forward、backward、forward…什麼時候停？');
+  g2.mood('wow');
+  say('前、後、前、後…', '什麼時候停？待會再說');
+  await step(tok);                                   // @647.4 a doubling of the data structures
+  g2.mood('calm');
+  txt(t1, '資料結構全部加倍');
+  say('資料結構要加倍', '');
+  await step(tok);                                   // @650.1 two min priority queues Q_f, Q_b
+  const qf = tag('Q_f（forward 的 min priority queue）', 'ptr', -3.4, 0.3, 3.3), qb = tag('Q_b（backward）', 'ptr', 3.4, 0.3, 3.3);
+  say('兩個 min priority queue', 'Q_f 和 Q_b');
+  await step(tok);                                   // @664.0 this edge goes this way; we go backward
+  edgeColor(smE(3, 4), C.hot, 2.6);
+  const back2 = arrow(V3(5.0, 0.9, -0.8), V3(3.2, 0.9, -0.8), 0x2f7fd0);
+  say('這條邊在圖裡是往 t', 'backward 卻是倒著走它');
+  await step(tok);                                   // @682.6 d_f(u) forward distances, d_b(u) backward
+  kill(back2); edgeColor(smE(3, 4), C.tree, 2.2);
+  txt(t1, 'd_f(u)：forward 距離；d_b(u)：backward 距離');
+  say('d_f(u)：forward 的距離', 'd_b(u)：backward 的距離');
+  await step(tok);                                   // @728.2 initialize d_f(s) = 0, d_b(t) = 0, others ∞
+  txt(t1, '初始化：d_f(s) = 0、d_b(t) = 0，其他都 ∞');
+  kill(qf); kill(qb);
+  g2.mood('happy');
+  say('初始化：d_f(s) = 0、d_b(t) = 0', '其他全部 ∞');
 }]);
 
-// 12:22 終止條件；用 π_f、π_b 從 w 組路徑
+// 12:24 何時停？怎麼組路徑？
 FRAG.push(['spmit1-bidir-stop', 'L18：雙向搜尋何時停、怎麼組路徑', async (tok) => {
   fresh([0, 12.5, 8], [0, 0, -0.3]);
-  buildGraph(SM.bi, { dz: -0.6 });
-  for (const v of [0, 1, 5]) nodeColor(v, '#bfe8d6', 0.3);
-  for (const v of [4, 3]) nodeColor(v, '#cfe0f5', 0.3);
+  buildGraph(SM.bi, { dz: -0.6, noDrop: true });
+  const g = guide(-6.2, 3.6);
+  nodeColor(0, FWD, 0.3); nodeColor(4, BWD, 0.3);
   edgeColor(smE(0, 1), C.ok, 2); edgeColor(smE(0, 5), C.ok, 2); edgeColor(smE(3, 4), C.tree, 2);
-  say('frontier「相遇」寫不成程式', '要更具體的條件');
-  await beat(tok, 2800);
-  edgeColor(smE(1, 2), C.ok, 2); edgeColor(smE(2, 3), C.tree, 2);
+  const nt = tag('', 'note', 0, 0.3, 4.0); nt.element.style.visibility = 'hidden';
+  const note = (s) => { nt.element.style.visibility = ''; txt(nt, s); };
+  await step(tok);                                   // @760.4 intuitively, stop when the frontiers meet
+  note('直覺：兩個 frontier 相遇就停');
+  say('直覺上：frontier 相遇就停', '');
+  await step(tok);                                   // @771.0 can't stop when they look like this
+  note('現在還沒碰到：不能停');
+  say('像這樣分開時當然不能停', '');
+  await step(tok);                                   // @785.0 a termination condition you can code
+  note('「相遇」寫不成程式：要更具體的條件');
+  g.mood('wow');
+  say('看程式碼：停止條件該是什麼？', '「相遇」沒辦法寫成程式');
+  await step(tok);                                   // @814.0 a student: some node in Q_f and Q_b…
+  note('學生：某個頂點同時在 Q_f、Q_b…（還不夠具體）');
+  say('學生：某個頂點在 Q_f 和 Q_b 裡…', '接近了，但還不能寫成程式');
+  await step(tok);                                   // @846.7 a node extracted from both Q_f and Q_b
+  edgeColor(smE(1, 2), C.ok, 2); nodeColor(1, FWD, 0.3);
+  edgeColor(smE(2, 3), C.tree, 2); nodeColor(3, BWD, 0.3);
   nodeColor(2, C.back, 0.5); nodeTag(2, 'w');
-  say('停：某個 w 同時被 Q_f、Q_b 取出', '這裡 w = v3');
-  await beat(tok, 3200);
-  nodeNote(1, 'π_f = s'); nodeNote(2, 'π_f = v1');
-  say('從 w 套 π_f：v3 → v1 → s', 'π_f(v3) = v1，π_f(v1) = s');
+  note('另一位學生：被 Q_f 和 Q_b 都取出過的頂點');
+  g.mood('happy');
+  say('同時從 Q_f 和 Q_b 都被取出的頂點！', '');
+  await step(tok);                                   // @865.0 like u == t: extract from both, then stop
+  note('就像 u == t 就停：兩邊都取出某頂點 → 停');
+  say('就像單一目標時 u == t 就停', '這次是兩邊都取出了某個頂點');
+  await step(tok);                                   // @895.9 the termination condition
+  note('終止條件：某個頂點在 forward 和 backward 都處理過');
+  g.mood('calm');
+  say('終止條件：某個頂點 u', '在 forward、backward 都被處理過');
+  await step(tok);                                   // @923.8 = the frontiers meeting
+  note('這就是「frontier 相遇」：從 Q_f、Q_b 都被刪掉');
+  say('這就是 frontier 相遇', '精確地說：從 Q_f、Q_b 都被取出');
+  await step(tok);                                   // @946.0 the harder question: the path after stopping
+  note('較難的問題：停下來之後，s 到 t 的路怎麼找？');
+  say('較難的問題', '停下後怎麼找出 s 到 t 的最短路徑？');
+  await step(tok);                                   // @973.0 we need π_f and π_b
+  note('需要 π_f、π_b；π_b 是沿著反向邊的 predecessor');
+  say('需要 π_f 和 π_b', 'π_b 沿著反向的邊');
+  await step(tok);                                   // @995.0 v2: (wrongly) π_b(t) = v2
+  nodeNote(4, 'π_b(t) = v2 ?');
+  say('老師先寫 π_b(t) = v2', '（待會學生會糾正）');
+  await step(tok);                                   // @1027.6 π_f(v1) = s
+  nodeNote(1, 'π_f = s');
+  say('這邊 π_f(v1) = s', '');
+  await step(tok);                                   // @1047.0 how do we find the path? where to switch?
+  note('問題：從 π_f 換成 π_b 的那一點在哪？');
+  say('停下後怎麼組出 s 到 t？', '在哪裡從 π_f 換成 π_b？');
+  await step(tok);                                   // @1105.2 use π_f from w back to s
+  note('從造成終止的 w 開始：用 π_f 回到 s');
+  nodeNote(2, 'π_f = v1');
+  say('w 是第一個兩邊都被取出的頂點', '從 w 用 π_f 回到 s');
+  await step(tok);                                   // @1145.0 apply π_f to w until you get to s
+  const pk = await walk(tok, 'π_f', [2, 1, 0], 550);
   smPath([0, 1, 2], C.hot, 2.4);
-  await beat(tok, 3200);
-  nodeNote(3, 'π_b = t');
-  say('老師先寫 π_b(t) = v2，學生糾正', '反向搜尋時 t 是 v2 的前一個：π_b(v2) = t');
-  await beat(tok, 3400);
-  nodeNote(2, 'π_b = v2');
+  say('對 w 一直套 π_f', '直到回到 s');
+  await step(tok);                                   // @1159.8 use π_b: the backward path t to w
+  kill(pk);
+  note('再用 π_b：從 w 一路走到 t');
+  say('再用 π_b', '這是從 t 到 w 的反向路徑');
+  await step(tok);                                   // @1199.0 a student: shouldn't it be π_b(v2) = t?
+  g.mood('wow');
+  say('學生：不是應該 π_b(v2) 嗎？', '好問題：老師可能寫錯了');
+  await step(tok);                                   // @1230.9 the forward path s → v1 → v3 → … → t
+  smPath([0, 1, 2, 3, 4], C.hot, 2.2);
+  say('先看一般的 forward 路徑', 's → v1 → v3 → … → t');
+  await step(tok);                                   // @1265.0 π_f(v3) = v1
+  nodeNote(2, 'π_f = v1');
+  say('π_f(v1) = s、π_f(v3) = v1', '');
+  await step(tok);                                   // @1272.4 the backward path: pretend the edges are flipped
+  smPath([0, 1, 2, 3, 4], C.tree, 2);
+  const flip = arrow(V3(5.0, 0.9, -1.4), V3(3.2, 0.9, -1.4), 0x2f7fd0);
+  note('反向路徑：假裝每條邊都翻過來');
+  say('看 backward 路徑', '假裝邊全部翻轉');
+  await step(tok);                                   // @1304.8 t is the predecessor of v2: π_b(v2) = t
+  kill(flip);
+  nodeNote(4, ''); nodeNote(3, 'π_b = t');
+  g.mood('happy');
+  note('翻過來後 t 是 v2 的前一個：π_b(v2) = t');
+  say('t 是 v2 的 predecessor', '正確寫法：π_b(v2) = t');
+  await step(tok);                                   // @1374.2 forward: apply π_f to w over and over
+  nodeNote(2, 'π_f v1 / π_b v2');
+  smPath([0, 1, 2], C.hot, 2.4);
+  note('forward：從 w 一直套 π_f，回到 s');
+  say('forward：從 w 套 π_f、再套 π_f…', '直到 s');
+  await step(tok);                                   // @1398.7 apply π_b to w until t; both start at w
   smPath([2, 3, 4], C.hot, 2.4);
-  say('從 w 套 π_b：v3 → v2 → t', '兩段接起來就是 s → t');
-  await beat(tok, 3000);
-  say('聽起來對…但 w 不一定在最短路徑上', '終止條件沒錯，錯在用 w 組路徑');
-  await beat(tok, 3200);
+  note('backward：從 w 一直套 π_b，到 t；兩邊都從 w 出發');
+  say('backward：從 w 套 π_b，直到 t', 'π_f、π_b 都從造成終止的 w 開始');
 }]);
 
-// 28:05 反例 s、u、u′、w、t：part 1 = 前四步，part 2 = 後兩步與 10 ≠ 9
-FRAG.push(['spmit1-bidir-trace', 'L18：雙向搜尋反例逐步執行', async (tok) => {
-  const part = (ctx.params || {}).part === 2 ? 2 : 1;
+// 24:11 w 不一定在最短路徑上（內建 bidir-wrong-w 的跟講版）
+FRAG.push(['spmit1-wrongw', 'L18：w 不一定在最短路徑上', async (tok) => {
   fresh([0, 12.5, 8], [0, 0, -0.3]);
-  buildGraph(GRAPHS.bidir);
-  tag('上 = d_f、下 = d_b', 'idx', 0, 0.3, 4.2);
-  const df = [0, INF, INF, INF, INF], db = [INF, INF, INF, 0, INF];
-  const doneF = new Set(), doneB = new Set();
-  const sh = () => { for (let v = 0; v < 5; v++) { nodeTag(v, 'f ' + fmt(df[v])); nodeNote(v, 'b ' + fmt(db[v])); } };
-  const S = [
-    [0, 'f', [[0, 1], [0, 4]], 'forward 取 s：d_f(u)=3、d_f(w)=5', 'Q_f 只有 s 是 0'],
-    [3, 'b', [[2, 3], [4, 3]], 'backward 取 t：d_b(u′)=3、d_b(w)=5', '沿反向邊走'],
-    [1, 'f', [[1, 2]], 'forward 取 u（3 < 5）', 'd_f(u′) = 3 + 3 = 6'],
-    [2, 'b', [[1, 2]], 'backward 取 u′（3 < 5）', 'd_b(u) = 3 + 3 = 6'],
-    [4, 'f', [[4, 3]], 'forward 取 w（5 < 6）', 'd_f(t) = 5 + 5 = 10'],
-    [4, 'b', [[0, 4]], 'backward 取 w（5 < 6）', 'd_b(s) = 10；w 兩邊都取出 → 停'],
-  ];
-  const doStep = (st, quiet) => {
-    const [u, dir, es2] = st;
-    (dir === 'f' ? doneF : doneB).add(u);
-    nodeColor(u, doneF.has(u) && doneB.has(u) ? C.back : dir === 'f' ? '#bfe8d6' : '#cfe0f5', 0.3);
-    for (const [a, b] of es2) {
-      const e = smE(a, b); edgeColor(e, dir === 'f' ? C.ok : C.tree, 2);
-      if (dir === 'f') df[b] = Math.min(df[b], df[a] + e.w); else db[a] = Math.min(db[a], db[b] + e.w);
-    }
-    if (!quiet) sh();
-  };
-  if (part === 1) {
-    sh();
-    say('上面 3 + 3 + 3 = 9 是最短', '下面 5 + 5 = 10');
-    await beat(tok, 3200);
-    for (let i = 0; i < 4; i++) { doStep(S[i]); say(S[i][3], S[i][4]); await beat(tok, 2600); }
-    say('綠 = 已從 Q_f 取出，藍 = 已從 Q_b 取出', '下一步輪到 forward');
-    await beat(tok, 3000);
-    return;
-  }
-  for (let i = 0; i < 4; i++) doStep(S[i], true);
-  sh();
-  say('接著做：前四步之後的狀態', 'Q_f：w 5、u′ 6；Q_b：w 5、u 6');
-  await beat(tok, 3200);
-  for (let i = 4; i < 6; i++) { doStep(S[i]); say(S[i][3], S[i][4]); await beat(tok, 2800); }
-  say('用 w 組路徑：d_f(w) + d_b(w) = 10', '<span class="no">但最短是 9！</span>');
-  await beat(tok, 3200);
-  [[0, 1], [1, 2], [2, 3]].forEach(([a, b]) => edgeColor(smE(a, b), C.hot, 2.4));
-  say('交替搜尋在「邊數最少」的路徑相遇', '邊數最少 ≠ 權重最小');
-  await beat(tok, 3200);
+  buildGraph(SM.bi, { dz: -0.6, noDrop: true });
+  const g = guide(-6.2, 3.6);
+  for (const v of [0, 1]) nodeColor(v, FWD, 0.3);
+  for (const v of [3, 4]) nodeColor(v, BWD, 0.3);
+  nodeColor(2, C.back, 0.5); nodeTag(2, 'w');
+  const nt = tag('', 'note', 0, 0.3, 4.0); nt.element.style.visibility = 'hidden';
+  const note = (s) => { nt.element.style.visibility = ''; txt(nt, s); };
+  await step(tok);                                   // @1451.7 this is not quite correct
+  g.mood('wow');
+  note('剛剛的作法：還不完全正確');
+  say('剛剛講的不完全正確', '');
+  await step(tok);                                   // @1464.3 recap: w caused the termination
+  g.mood('calm');
+  note('複習：造成終止的頂點叫 w');
+  say('複習：造成終止的頂點叫 w', '');
+  await step(tok);                                   // @1476.4 w is on the intersection of the frontiers
+  say('w 在兩個 frontier 的交會處', '');
+  await step(tok);                                   // @1482.3 build two sub-paths from w
+  smPath([0, 1, 2], C.ok, 2.4); smPath([2, 3, 4], C.tree, 2.4);
+  note('用 π_f、π_b 從 w 組出兩段路');
+  say('從 w 用 π_f、π_b 組兩段子路徑', '');
+  await step(tok);                                   // @1495.0 w may not be on the shortest path
+  smPath([0, 5, 3], C.hot, 2.6);
+  note('問題：w 不一定在最短路徑上！（也許最短的是 s→x→v2→t）');
+  g.mood('sad');
+  say('問題：w 可能不在最短路徑上', '');
+  await step(tok);                                   // @1506.5 an example later; a subtle condition
+  say('等一下會看例子', '這是很微妙的情況');
+  await step(tok);                                   // @1525.0 the termination condition is correct
+  smPath([0, 5, 3], C.edge, 1);
+  note('終止條件沒錯：交替做，w 兩邊都取出就停');
+  g.mood('calm');
+  say('終止條件是對的', '拿到 cushion 的同學答得沒錯');
+  await step(tok);                                   // @1552.0 what's wrong: using w to build the path
+  note('錯的是：直接拿 w 來組路徑');
+  say('錯的是用 w 來組最短路徑', '停下後要再多做一點事');
+  await step(tok);                                   // @1569.5 any ideas how to fix?
+  g.mood('wow');
+  say('怎麼修？', '如果 w 不在最短路徑上，那誰在？');
+  await step(tok);                                   // @1591.8 we must use both π_f and π_b
+  g.mood('calm');
+  note('一定要同時用 π_f 和 π_b：兩邊才剛碰到就停了');
+  say('一定要同時用 π_f 和 π_b', '兩個 frontier 才剛碰到');
+  await step(tok);                                   // @1604.0 can't use π_f all the way, nor π_b
+  note('π_f 走不到 t，π_b 也走不到 s');
+  say('不能只用 π_f 從 s 走到 t', '也不能只用 π_b 從 t 走到 s');
+  await step(tok);                                   // @1618.3 a student: are the weights identical?
+  note('學生問：邊的權重一樣嗎？→ 權重不變，只是能反著走');
+  say('學生：每條邊權重一樣嗎？', '權重不變，也沒有新增邊');
+  await step(tok);                                   // @1653.3 Dijkstra's requirement: non-negative
+  note('權重可以是任意實數、無理數，但都 ≥ 0');
+  say('權重可以任意', '但要非負：Dijkstra 的要求');
+  await step(tok);                                   // @1671.4 the backward search uses the same weight
+  edgeColor(smE(3, 4), C.hot, 2.6);
+  note('backward 走同一條邊：權重一樣');
+  say('backward 反著走這條邊', '權重還是一樣');
 }]);
 
-// 45:38 位能 λ：w̄(u,v) = w(u,v) − λ(u) + λ(v)
+// 28:05 反例 s、u、u′、w、t：前四步（內建 bidir-wrong-w 前半的跟講版）
+FRAG.push(['spmit1-trace1', 'L18：反例逐步執行（前四步）', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  const g = guide(-6.2, 3.8);
+  const df = [INF, INF, INF, INF, INF], db = [INF, INF, INF, INF, INF];
+  const doneF = new Set(), doneB = new Set();
+  const sh = (v) => { nodeTag(v, 'f ' + fmt(df[v])); nodeNote(v, 'b ' + fmt(db[v])); };
+  const shAll = () => { for (let v = 0; v < 5; v++) sh(v); };
+  const paint = (u) => nodeColor(u, doneF.has(u) && doneB.has(u) ? C.back : doneF.has(u) ? FWD : BWD, 0.3);
+  // forward relax a → b, or backward relax b ← a (the edge a → b walked in reverse)
+  const fR = async (a, b) => { const e = smE(a, b); edgeColor(e, C.ok, 2.2); const pk = await walk(tok, fmt(df[a]) + ' + ' + e.w, [a, b], 600); df[b] = Math.min(df[b], df[a] + e.w); sh(b); kill(pk); };
+  const bR = async (a, b) => { const e = smE(a, b); edgeColor(e, C.tree, 2.2); const pk = await walk(tok, fmt(db[b]) + ' + ' + e.w, [b, a], 600); db[a] = Math.min(db[a], db[b] + e.w); sh(a); kill(pk); };
+  await step(tok);                                   // @1685.0 let me show you an example
+  const sb = tag('來看反例', 'say', -6.2, 1.7, 3.8);
+  say('來看一個例子', '');
+  await step(tok);                                   // @1694.1 a five-node example that took a while
+  txt(sb, '老師花了好一陣子設計的 5 頂點反例');
+  say('5 個頂點的例子', '想了好一陣子才設計出來');
+  await step(tok);                                   // @1702.3 the termination condition in a specific case
+  txt(sb, '照規則交替 forward／backward，看它在哪裡停');
+  say('照規則交替做', '看它停在哪、該怎麼組路徑');
+  await step(tok);                                   // @1720.3 the termination condition is correct
+  txt(sb, '終止條件是對的：不是停太早');
+  say('再說一次：終止條件是對的', '不是太早停');
+  await step(tok);                                   // @1730.7 s over here; a straightforward graph
+  kill(sb);
+  buildGraph(GRAPHS.bidir); hideW();
+  tag('上 = d_f（forward）、下 = d_b（backward）', 'idx', 0, 0.3, 4.3);
+  say('s 在這裡，一張簡單的圖', '');
+  await step(tok);                                   // @1740.5 5, 5, 3, 3, 3
+  hideW(false);
+  say('權重：5, 5, 3, 3, 3', '');
+  await step(tok);                                   // @1746.7 the shortest path: three edges on top, 9
+  smPath([0, 1, 2, 3], C.hot, 2.4);
+  say('不用電腦也看得出來：最短是上面三條邊', '3 + 3 + 3 = 9');
+  await step(tok);                                   // @1757.9 the forward search; names u, u′, t
+  smPath([0, 1, 2, 3], C.edge, 1);
+  say('這是 forward 搜尋', '頂點叫 u、u′、t…');
+  await step(tok);                                   // @1769.6 the first step of the forward search
+  df[0] = 0; shAll(); doneF.add(0); paint(0);
+  say('forward 第一步：取出 s', 'd_f(s) = 0');
+  await step(tok);                                   // @1780.8 this one is w: d_f(w) = 5
+  await fR(0, 4);
+  say('這個叫 w：d_f(w) = 5', '');
+  await step(tok);                                   // @1787.0 d_f(u) = 3
+  await fR(0, 1);
+  say('d_f(u) = 3', 'd_f(s) 當然是 0');
+  await step(tok);                                   // @1795.9 not bothering to write the infinities
+  say('∞ 就不寫了', '免得黑板太亂');
+  await step(tok);                                   // @1808.6 the first step of the backward search
+  say('換 backward 第一步', '記得要交替');
+  await step(tok);                                   // @1836.4 hash t vertically (backward); d_b(t) = 0
+  db[3] = 0; sh(3); doneB.add(3); paint(3);
+  say('t 用直線畫掉 = backward 取出', 'd_b(t) = 0');
+  await step(tok);                                   // @1843.0 follow this and this backwards; same weights
+  edgeColor(smE(2, 3), C.hot, 2); edgeColor(smE(4, 3), C.hot, 2);
+  say('沿這兩條邊反著走', '權重不變，同一張圖');
+  await step(tok);                                   // @1855.5 d_b(u′) = 3
+  await bR(2, 3);
+  say('d_b(u′) = 3', '');
+  await step(tok);                                   // @1860.1 d_b(w) = 5
+  await bR(4, 3);
+  say('d_b(w) = 5', '');
+  await step(tok);                                   // @1867.7 haven't seen u or s yet
+  say('backward 還沒看到 u 和 s', '只標了這兩個');
+  await step(tok);                                   // @1895.2 forward search again
+  g.mood('wow');
+  say('再做 forward', '');
+  await step(tok);                                   // @1928.0 a choice: w or u — 5 vs 3
+  nodeColor(1, C.hot, 0.45); nodeColor(4, C.hot, 0.45);
+  say('Q_f 裡要選 w 還是 u？', 'd_f(w) = 5，d_f(u) = 3');
+  await step(tok);                                   // @1940.6 Extract-Min picks u
+  nodeColor(4, C.white, 0); doneF.add(1); paint(1);
+  g.mood('calm');
+  say('Extract-Min 當然選 u', '3 < 5');
+  await step(tok);                                   // @1948.3 d_f(u′) = 6
+  await fR(1, 2);
+  say('處理這條邊：d_f(u′) = 6', '3 + 3');
+  await step(tok);                                   // @1961.0 now the backward search
+  say('換 backward', '');
+  await step(tok);                                   // @1983.7 horizontal = out of Q_f, vertical = out of Q_b
+  tag('綠 = 已從 Q_f 取出（橫線）｜藍 = 已從 Q_b 取出（直線）', 'note', 0, 0.3, 3.6);
+  say('橫線 = 已從 Q_f 取出', '直線 = 已從 Q_b 取出');
+  await step(tok);                                   // @2023.0 d_b(w) = 5 vs d_b(u′) = 3 → pick u′
+  doneB.add(2); paint(2);
+  say('Q_b 裡：d_b(u′) = 3、d_b(w) = 5', '選小的 u′');
+  await step(tok);                                   // @2035.9 process it: d_b(u) = 6
+  await bR(1, 2);
+  say('處理它：d_b(u) = 6', '3 + 3');
+  await step(tok);                                   // @2044.4 picked off Q_b; relaxed the edge backwards
+  g.mood('happy');
+  say('剛剛：從 Q_b 取出 u′', '把這條邊「反著」relax');
+}]);
+
+// 34:46 反例：後兩步與 10 ≠ 9
+FRAG.push(['spmit1-trace2', 'L18：反例的後兩步與 10 ≠ 9', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(GRAPHS.bidir, { noDrop: true });
+  const g = guide(-6.2, 3.8);
+  tag('上 = d_f（forward）、下 = d_b（backward）', 'idx', 0, 0.3, 4.3);
+  const df = [0, 3, 6, INF, 5], db = [INF, 6, 3, 0, 5];
+  const doneF = new Set([0, 1]), doneB = new Set([3, 2]);
+  const sh = (v) => { nodeTag(v, 'f ' + fmt(df[v])); nodeNote(v, 'b ' + fmt(db[v])); };
+  for (let v = 0; v < 5; v++) sh(v);
+  const paint = (u) => nodeColor(u, doneF.has(u) && doneB.has(u) ? C.back : doneF.has(u) ? FWD : doneB.has(u) ? BWD : C.white, 0.3);
+  [0, 1, 2, 3, 4].forEach(paint);
+  edgeColor(smE(0, 1), C.ok, 2); edgeColor(smE(0, 4), C.ok, 2); edgeColor(smE(1, 2), C.ok, 2);
+  edgeColor(smE(2, 3), C.tree, 2); edgeColor(smE(4, 3), C.tree, 2);
+  const nt = tag('', 'note', 0, 0.3, 3.6); nt.element.style.visibility = 'hidden';
+  const note = (s) => { nt.element.style.visibility = ''; txt(nt, s); };
+  await step(tok);                                   // @2087.4 getting pretty close
+  say('快結束了', '前四步之後的狀態');
+  await step(tok);                                   // @2134.7 forward again
+  say('再做一次 forward', '');
+  await step(tok);                                   // @2137.6 the only choice: w (d_f = 5); u is done; u′ is 6
+  nodeColor(4, C.hot, 0.45); nodeColor(2, C.hot, 0.45);
+  say('Q_f 裡：w 是 5', 'u 已經取出過；u′ 是 6');
+  await step(tok);                                   // @2163.9 compare u′ and w → pick w
+  doneF.add(4); paint(4); paint(2);
+  say('比較 u′ 和 w：選 w', '5 < 6');
+  await step(tok);                                   // @2188.6 d_f(t) = 10
+  const e = smE(4, 3); edgeColor(e, C.ok, 2.2);
+  const pk = await walk(tok, '5 + 5', [4, 3], 600); df[3] = 10; sh(3); kill(pk);
+  say('處理 w：d_f(t) = 10', '5 + 5');
+  await step(tok);                                   // @2197.0 you start to see a problem
+  g.mood('wow');
+  say('開始看出問題了…', '');
+  await step(tok);                                   // @2210.5 w removed from Q_f
+  note('w 已從 Q_f 取出（綠）');
+  say('w 已經從 Q_f 移除', '');
+  await step(tok);                                   // @2218.2 the last step: backward search
+  g.mood('calm');
+  say('最後一步：backward', '');
+  await step(tok);                                   // @2244.4 d_b(u′) = 3, d_f(u′) = 6, d_f(w) = 5, d_b(w) = 5
+  note('Q_b 裡：w 是 5、u 是 6');
+  nodeColor(4, C.hot, 0.45); nodeColor(1, C.hot, 0.45);
+  say('看一下各個值', 'd_b(w) = 5，d_b(u) = 6');
+  await step(tok);                                   // @2266.0 compare → pick w and remove it
+  doneB.add(4); paint(4); paint(1);
+  note('w 兩邊都取出了 → 終止！');
+  say('選 w，從 Q_b 取出', '（老師口誤說成 Q_f）w 兩邊都取出 → 停');
+  await step(tok);                                   // @2290.0 d_b(s) = 10
+  const e2 = smE(0, 4); edgeColor(e2, C.tree, 2.2);
+  const pk2 = await walk(tok, '5 + 5', [4, 0], 600); db[0] = 10; sh(0); kill(pk2);
+  say('d_b(s) = 10', '5 + 5');
+  await step(tok);                                   // @2306.2 see the problem?
+  g.mood('wow');
+  say('看出問題了嗎？', '');
+  await step(tok);                                   // @2313.4 terminated; forward weight of t is 10
+  nodeColor(3, C.hot, 0.45);
+  note('forward 看 t：10');
+  say('停下來了：forward 給 t 的是 10', '');
+  await step(tok);                                   // @2334.8 backward weight of s is 10
+  nodeColor(0, C.hot, 0.45);
+  note('forward 看 t：10｜backward 看 s：10');
+  say('backward 給 s 的也是 10', '');
+  await step(tok);                                   // @2336.0 the shortest path should be 9
+  [[0, 1], [1, 2], [2, 3]].forEach(([a, b]) => edgeColor(smE(a, b), C.hot, 2.6));
+  note('但最短路徑是 9（上面三條邊）！');
+  g.mood('sad');
+  say('可是最短路徑是 9', '');
+  await step(tok);                                   // @2342.6 we stopped when w came off Q_f and Q_b
+  [[0, 1], [1, 2], [2, 3]].forEach(([a, b]) => edgeColor(smE(a, b), C.edge, 1));
+  edgeColor(smE(0, 4), C.back, 2.6); edgeColor(smE(4, 3), C.back, 2.6);
+  note('照條件停在 w');
+  g.mood('calm');
+  say('照終止條件，在 w 停了', 'w 從 Q_f、Q_b 都被取出');
+  await step(tok);                                   // @2350.6 the short path in number of edges (2)
+  note('s → w → t：只有 2 條邊（邊數最少）');
+  say('因為 s → w → t 是「短」的路', '以邊數來算：只有 2 條');
+  await step(tok);                                   // @2362.5 the frontiers collide regardless of weights
+  note('交替搜尋：frontier 在邊數最少的路徑上相撞，與權重無關');
+  say('frontier 相撞的地方跟權重無關', '交替做 → 會在邊數最少的路徑上相遇');
+  await step(tok);                                   // @2380.9 shortest-length path ≠ shortest-weight path
+  note('這個例子：邊數最少的路 ≠ 權重最小的路');
+  say('這個例子刻意設計成', '邊數最少的路，不是權重最小的路');
+}]);
+
+// 39:49 修正：找 d_f(x) + d_b(x) 最小的 x（內建 bidir-fix-x 的跟講版）
+FRAG.push(['spmit1-fixx', 'L18：修正——找 d_f(x) + d_b(x) 最小的 x', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  buildGraph(GRAPHS.bidir, { noDrop: true });
+  const g = guide(-6.2, 3.8);
+  tag('上 = d_f、下 = d_b', 'idx', 0, 0.3, 4.3);
+  const df = [0, 3, 6, 10, 5], db = [10, 6, 3, 0, 5];
+  for (let v = 0; v < 5; v++) { nodeTag(v, 'f ' + fmt(df[v])); nodeNote(v, 'b ' + fmt(db[v])); }
+  [[0, FWD], [1, FWD], [2, BWD], [3, BWD], [4, C.back]].forEach(([v, c]) => nodeColor(v, c, 0.3));
+  const nt = tag('', 'note', 0, 0.3, 3.6); nt.element.style.visibility = 'hidden';
+  const note = (s) => { nt.element.style.visibility = ''; txt(nt, s); };
+  await step(tok);                                   // @2389.2 can't use w with π_f and π_b
+  edgeColor(smE(0, 4), C.back, 2.4); edgeColor(smE(4, 3), C.back, 2.4);
+  note('不能直接用 w 接 π_f、π_b');
+  say('不能拿 w 來接 π_f、π_b', '');
+  await step(tok);                                   // @2407.0 we'd get a path of length 10
+  note('那樣會得到長度 10 的路（錯）');
+  say('那樣會得到長度 10 的路', '');
+  await step(tok);                                   // @2412.3 how do we fix it? termination unchanged
+  edgeColor(smE(0, 4), C.edge, 1); edgeColor(smE(4, 3), C.edge, 1);
+  note('怎麼修？終止條件不變');
+  g.mood('wow');
+  say('怎麼修？', '終止條件不用改');
+  await step(tok);                                   // @2423.8 a student: alternate based on the weights
+  note('學生：依權重決定要做 forward 還是 backward');
+  say('學生：依權重來決定交替', '總成本低的那邊多做幾步');
+  await step(tok);                                   // @2462.8 weighted alternation: a nice idea
+  note('老師：好點子，可能是對的，但要證明');
+  g.mood('calm');
+  say('老師喜歡這個點子', '「加權交替」可能是對的');
+  await step(tok);                                   // @2494.0 worried: irrational weights, hard to implement
+  note('但權重是 √2、π 之類時，加權交替不好實作');
+  say('擔心：權重是 √2、π 這種數', '加權交替會很難實作');
+  await step(tok);                                   // @2533.1 another answer: almost exactly correct
+  note('另一位學生的答案：幾乎完全正確！');
+  g.mood('happy');
+  say('另一位同學的答案', '幾乎完全正確');
+  await step(tok);                                   // @2575.2 the answer was correct; write it up
+  say('答案是對的', '寫下來');
+  await step(tok);                                   // @2584.0 a little more work: same termination, strict alternation
+  note('照樣嚴格交替、照樣終止；停下後多做一點事');
+  g.mood('calm');
+  say('照樣嚴格交替、照樣終止', '停下後多做一點事');
+  await step(tok);                                   // @2599.9 find x (maybe ≠ w) minimizing d_f(x) + d_b(x)
+  note('找一個 x（不一定是 w），讓 d_f(x) + d_b(x) 最小');
+  say('找一個 x，可能不是 w', '讓 d_f(x) + d_b(x) 最小');
+  await step(tok);                                   // @2640.0 look at Q_f and Q_b
+  say('去掃 Q_f 和 Q_b', '');
+  await step(tok);                                   // @2645.2 maybe w is the minimum — not here
+  nodeColor(4, C.hot, 0.5);
+  const pk = await walk(tok, '5 + 5 = 10', [4], 300);
+  note('w：5 + 5 = 10');
+  say('有可能 w 就是最小的', '但這個例子不是：5 + 5 = 10');
+  await step(tok);                                   // @2656.6 scan: u and u′
+  kill(pk); nodeColor(4, C.back, 0.3);
+  note('還有兩個有意思的頂點：u、u′');
+  say('w 造成終止，但要再掃一遍', '有意思的還有 u 和 u′');
+  await step(tok);                                   // @2664.7 d_f(u) + d_b(u) = 3 + 6 = 9
+  nodeColor(1, C.hot, 0.5);
+  note('u：3 + 6 = 9');
+  say('d_f(u) + d_b(u)', '3 + 6 = 9');
+  await step(tok);                                   // @2672.7 d_f(u′) + d_b(u′) = 6 + 3 = 9
+  nodeColor(2, C.hot, 0.5);
+  note('u′：6 + 3 = 9');
+  say('d_f(u′) + d_b(u′)', '6 + 3 = 9');
+  await step(tok);                                   // @2688.3 both less than 10: pick one as x
+  nodeColor(1, C.ok, 0.5); nodeTag(1, 'x：3 + 6 = 9', 'ptr alt');
+  note('9 < 10：選其中一個當 x（這裡選 u）');
+  say('兩個都比 10 小', '挑一個當 x');
+  await step(tok);                                   // @2695.3 use x instead of w
+  [[0, 1], [1, 2], [2, 3]].forEach(([a, b]) => edgeColor(smE(a, b), C.tree, 2.6));
+  note('用 x 取代 w：π_f 接回 s、π_b 接到 t → 9 ✓');
+  g.mood('happy');
+  say('用 x 取代 w', 'π_f 接回 s、π_b 接到 t：最短路徑 9');
+  await step(tok);                                   // @2716.3 the small tweak, summarized
+  note('交替 → 終止 → 找 d_f(x) + d_b(x) 最小的 x');
+  say('小修正：交替、終止', '再找 d_f(x) + d_b(x) 最小的 x');
+}]);
+
+// 45:31 位能 λ：w̄(u,v) = w(u,v) − λ(u) + λ(v)
 FRAG.push(['spmit1-potential', 'L18：位能改權重，讓搜尋往下坡走', async (tok) => {
   fresh([0, 12.5, 8], [0, 0, -0.3]);
+  const g = guide(-6.2, 3.6);
+  const nt = tag('', 'note', 0.4, 0.3, 4.3); nt.element.style.visibility = 'hidden';
+  const note = (s) => { nt.element.style.visibility = ''; txt(nt, s); };
+  const lam = [9, 4, 4, 0];
+  let bars = null;
+  const H = (x) => Math.max(0.05, x * 0.3);
+  const setBar = (v, x) => { const h = H(x), p = GR.nodes[v].home; bars[v].scale.y = h; bars[v].position.set(p.x + 0.8, h / 2, p.z); };
+  await step(tok);                                   // @2742.0 heuristics that modify the graph
+  note('啟發式：改一下圖，讓實際跑得更快');
+  say('最後：用啟發式改圖', '讓實際跑得更快');
+  await step(tok);                                   // @2756.6 goal-directed search, A*
+  note('goal-directed search（和 A* 有共通點）');
+  say('goal-directed search', '修過 6.034 的話：和 A* 很像');
+  await step(tok);                                   // @2772.1 modify the weights: go downhill toward the shortest path
+  note('改邊的權重：讓搜尋「往下坡」朝最短路徑走');
+  say('修改邊的權重', '讓搜尋像往下坡走，朝著最短路徑');
+  await step(tok);                                   // @2796.7 heuristic priorities; prune the search
+  note('priority 被啟發式地改過 → 修剪搜尋範圍');
+  say('priority 被啟發式地調整', '修剪搜尋範圍');
+  await step(tok);                                   // @2810.0 careful: nothing incorrect
+  note('要小心：不能讓答案變錯');
+  g.mood('wow');
+  say('要小心改', '不能做出錯的事');
+  await step(tok);                                   // @2818.0 a potential function λ
+  g.mood('calm');
   buildGraph(SM.pot);
-  say('s 出去兩條邊都是 5', 'Dijkstra 不知道該先往哪');
-  edgeColor(smE(0, 1), C.hot, 1.8); edgeColor(smE(0, 2), C.hot, 1.8);
-  await beat(tok, 3000);
+  bars = [0, 1, 2, 3].map(() => cube('', '#c9b6f2', [0.24, 1, 0.24], 0, 0, 0));
+  for (let v = 0; v < 4; v++) { setBar(v, lam[v]); nodeNote(v, 'λ = ' + lam[v]); }
+  note('位能函數 λ：每個頂點一個高度（紫柱）');
+  say('用一個位能函數 λ', '每個頂點一個「高度」');
+  await step(tok);                                   // @2830.7 w̄(u, v) = w(u, v) − λ(u) + λ(v)
+  note('新權重：w̄(u, v) = w(u, v) − λ(u) + λ(v)');
+  say('邊 (u, v) 的新權重', 'w̄(u, v) = w(u, v) − λ(u) + λ(v)');
+  await step(tok);                                   // @2845.3 careful with the choice of λ
+  say('λ 要小心選', '');
+  await step(tok);                                   // @2865.5 a source s, a single target t
+  nodeColor(0, C.ok, 0.3); nodeColor(3, C.purple, 0.3);
+  say('起點 s', '一樣是單一目標 t');
+  await step(tok);                                   // @2874.1 an edge of 5 and an edge of 5
+  edgeColor(smE(0, 1), C.hot, 2); edgeColor(smE(0, 2), C.hot, 2);
+  say('s 出去兩條邊，都是 5', '');
+  await step(tok);                                   // @2879.1 guess which is more likely on the shortest path?
+  g.mood('wow');
+  say('能不能猜哪條比較可能在最短路徑上？', '');
+  await step(tok);                                   // @2896.8 increase the potential of this node (t2)
+  g.mood('calm');
   edgeColor(smE(0, 1), C.edge, 1); edgeColor(smE(0, 2), C.edge, 1);
-  const lam = [9, 4, 8, 0];
-  say('給每個頂點一個位能 λ（紫柱高度）', 'w̄(u,v) = w(u,v) − λ(u) + λ(v)');
-  const bars = [];
-  for (let v = 0; v < 4; v++) { nodeNote(v, 'λ = ' + lam[v]); const h = Math.max(0.05, lam[v] * 0.32); const p = GR.nodes[v].home; bars.push(cube('', '#c9b6f2', [0.22, h, 0.22], p.x + 0.75, h / 2, p.z)); }
-  await beat(tok, 3400);
-  say('t2 的位能拉高：往 t2 變上坡', '往 t1 是下坡（λ 是示意的數字）');
-  glow(bars[2], GOLD); nodeColor(2, C.pq, 0.3);
-  await beat(tok, 3000);
-  glow(bars[2], null); nodeColor(2, C.white, 0);
-  for (const e of GR.edges) {
-    const nw = e.w - lam[e.u] + lam[e.v];
-    edgeColor(e, C.hot, 1.8);
-    say(nm(e.u) + '→' + nm(e.v) + '：' + e.w + ' − ' + lam[e.u] + ' + ' + lam[e.v] + ' = ' + nw, '');
-    await beat(tok, 1300);
-    setW(e, nw); edgeColor(e, nw === 0 ? C.ok : C.edge, nw === 0 ? 2 : 1);
-  }
-  say('任一條 s→t 路徑：w̄(p) = w(p) − λ(s) + λ(t)', '全部平移同一個量 → 最短路徑不變');
-  await beat(tok, 3400);
-  smPath([0, 1, 3], C.tree, 2.4);
-  say('s→t1→t：9 → 0；s→t2→t：13 → 4', 'Dijkstra 先往下坡的 t1 走，更快到 t');
-  await beat(tok, 3400);
+  glow(bars[2], GOLD);
+  say('提高這個頂點的位能', '這個叫 t2，那個叫 t1');
+  await step(tok);                                   // @2910.6 t2 goes uphill, t1 downhill
+  await kanim(tok, 900, (k) => setBar(2, 4 + 4 * k));
+  lam[2] = 8; nodeNote(2, 'λ = 8'); glow(bars[2], null);
+  note('t2 墊高：往 t2 是上坡；往 t1 是下坡');
+  say('t2 墊高：往 t2 變上坡', '往 t1 是下坡');
+  await step(tok);                                   // @2920.0 the weights steer Dijkstra downhill
+  for (const e of GR.edges) { const nw = e.w - lam[e.u] + lam[e.v]; setW(e, nw); edgeColor(e, nw === 0 ? C.ok : C.edge, nw === 0 ? 2 : 1); }
+  note('新權重：s→t1 0、s→t2 4 → Dijkstra 先往下坡');
+  say('新權重讓 Dijkstra 往下坡走', '早一點結束');
+  await step(tok);                                   // @2931.9 same asymptotic complexity, faster in practice
+  note('漸近複雜度不變；選對位能，實際快一點');
+  say('漸近複雜度不變', '選對位能，實際會快一點');
+  await step(tok);                                   // @2940.3 feels like magic: how to choose?
+  g.mood('wow');
+  note('像變魔術：哪些點該墊高？哪些該壓低？');
+  say('像魔術：怎麼知道要墊高誰？', '');
+  await step(tok);                                   // @2961.3 a correct example: landmarks
+  g.mood('calm');
+  note('等一下：一種正確的作法——landmark');
+  say('等一下給一個正確的例子', '用 landmark 來定位能');
+  await step(tok);                                   // @2980.1 any path weight changes based on its source and destination
+  smPath([0, 1, 3], C.hot, 2.2);
+  note('任一條路徑 p 的權重：只跟起點、終點有關地改變');
+  say('任一條路徑的權重', '依它的起點和終點而改變');
+  await step(tok);                                   // @3005.7 the shortest paths must not change
+  note('原本的最短路徑，改完還要是最短路徑');
+  say('不能改變任何最短路徑', '原本最短的要繼續最短');
+  await step(tok);                                   // @3026.0 subtract a function of s and of t
+  note('w̄(p) = w(p) − λ(s) + λ(t)：中間的 λ 全部互相抵消');
+  say('一條 s→t 路徑：w̄(p) = w(p) − λ(s) + λ(t)', '中間頂點的 λ 一加一減抵消了');
+  await step(tok);                                   // @3042.2 every s → t path shifts by the same amount
+  smPath([0, 1, 3], C.tree, 2.2); smPath([0, 2, 3], C.purple, 2);
+  note('s→t1→t：9 → 0｜s→t2→t：13 → 4：都減了 9');
+  say('每條 s→t 路徑都平移同一個量', '都減了 λ(s) − λ(t) = 9');
+  await step(tok);                                   // @3051.2 the final shortest path is correct
+  smPath([0, 2, 3], C.edge, 1);
+  g.mood('happy');
+  note('最短路徑不變，只是可能更快找到');
+  say('找到的最短路徑一定正確', '只是可能更快找到');
 }]);
 
-// 50:59 landmark：λ_t(u) = δ(u, L) − δ(t, L)
+// 51:08 landmark：λ_t(u) = δ(u, L) − δ(t, L)
 FRAG.push(['spmit1-landmark', 'L18：用 landmark 算位能', async (tok) => {
   fresh([0, 12.5, 8], [0, 0, -0.3]);
   buildGraph(SM.land);
-  nodeColor(4, C.purple, 0.3);
-  say('選一個 landmark L ∈ V', '例：Caltech → Boston 必經 Austin');
-  await beat(tok, 3000);
+  const g = guide(-6.2, 3.6);
+  const nt = tag('', 'note', 0, 0.3, 4.2); nt.element.style.visibility = 'hidden';
+  const note = (s) => { nt.element.style.visibility = ''; txt(nt, s); };
   const dl = [11, 6, 10, 2, 0];
-  for (let v = 0; v < 5; v++) { nodeTag(v, 'δ(·,L) ' + dl[v], 'ptr'); await beat(tok, 450); }
-  say('預先算每個 u 到 L 的 δ(u, L)', '工作量大，但只做一次');
-  await beat(tok, 2800);
-  nodeColor(3, C.hot, 0.3);
-  say('對目標 t 再算一次 δ(t, L) = 2', '只有一個 t，很便宜');
-  await beat(tok, 2600);
-  nodeColor(3, C.white, 0);
+  await step(tok);                                   // @3068.2 one way of getting potentials: a landmark
+  note('一種得到位能的方法：landmark');
+  say('得到位能的一種方法', '叫 landmark（地標）');
+  await step(tok);                                   // @3079.7 a landmark L ∈ V
+  nodeColor(4, C.purple, 0.35);
+  say('選一個 landmark L', 'L 是圖裡的一個頂點');
+  await step(tok);                                   // @3087.7 precompute δ(u, L)
+  note('預先算好 δ(u, L)');
+  say('預先算 δ(u, L)', '');
+  await step(tok);                                   // @3097.8 every vertex to the landmark: change the source, same destination
+  note('每個頂點到 L 的最短距離：起點換來換去，終點固定 L');
+  say('每個頂點到 landmark 的最短路徑', '等於起點在變、終點固定');
+  await step(tok);                                   // @3108.7 λ_t(u) = δ(u, L) − δ(t, L)
+  note('λ_t(u) = δ(u, L) − δ(t, L)');
+  say('位能：λ_t(u) = δ(u, L) − δ(t, L)', '');
+  await step(tok);                                   // @3120.7 source S, destination T, landmark L
+  nodeColor(0, C.ok, 0.3); nodeColor(3, C.hot, 0.3);
+  say('起點 s、終點 t、landmark L', '');
+  await step(tok);                                   // @3128.1 precompute δ(u, L) for all u
+  for (let v = 0; v < 5; v++) { nodeTag(v, 'δ(·,L) ' + dl[v]); await beat(tok, 300); }
+  say('對所有 u 預先算 δ(u, L)', '');
+  await step(tok);                                   // @3136.7 for the given t: δ(t, L), just once
+  const pk = await walk(tok, '4 + … → 2', [3, 4], 600);
+  kill(pk);
+  note('給定 t：δ(t, L) = 2，只算一次');
+  say('對給定的 t 算 δ(t, L)', '只有一個 t，算一次就好');
+  await step(tok);                                   // @3145.4 the other one is much more computation
+  note('δ(u, L) 那一大批才是主要的工作量（但只做一次）');
+  say('δ(u, L) 那一批工作量大得多', '');
+  await step(tok);                                   // @3148.3 correct, by the triangle inequality
   const lam = dl.map((x) => x - dl[3]);
   for (let v = 0; v < 5; v++) nodeNote(v, 'λ = ' + fmt(lam[v]));
-  say('λ_t(u) = δ(u, L) − δ(t, L)', 's 9、t1 4、t2 8、t 0（數字是示意）');
-  await beat(tok, 3400);
   for (const e of GR.edges) { const nw = e.w - lam[e.u] + lam[e.v]; setW(e, nw); edgeColor(e, nw === 0 ? C.ok : C.edge, nw === 0 ? 2 : 1); }
-  say('新權重全部 ≥ 0：三角不等式', 'δ(u, L) ≤ w(u, v) + δ(v, L)');
-  await beat(tok, 3400);
-  smPath([0, 1, 3], C.tree, 2.4);
-  say('Dijkstra 照跑，答案一樣', '選對 landmark：實際快 20%～2 倍');
-  await beat(tok, 3200);
+  note('三角不等式 δ(u, L) ≤ w(u, v) + δ(v, L) → 新權重都 ≥ 0');
+  say('用三角不等式可以證明它是對的', '新權重全部 ≥ 0');
+  await step(tok);                                   // @3155.6 a heuristic: a good landmark → faster
+  note('這是 heuristic：選對 landmark，Dijkstra 實際跑更快');
+  say('這是 heuristic', '選對 landmark，Dijkstra 跑得更快');
+  await step(tok);                                   // @3165.8 Caltech to Boston via middle America
+  nodeNote(0, 'Caltech'); nodeNote(3, 'Boston');
+  smPath([0, 1, 3], C.tree, 2.2);
+  say('例如 Caltech 到 Boston', '一定會經過美國中部');
+  await step(tok);                                   // @3178.0 pick Austin, Texas
+  nodeNote(4, 'Austin');
+  g.mood('happy');
+  say('選德州 Austin 當 landmark', '');
+  await step(tok);                                   // @3182.8 maybe 2x faster, 20% faster
+  note('Dijkstra 可能快 20%～2 倍');
+  say('Dijkstra 也許快 2 倍、或快 20%', '');
+  await step(tok);                                   // @3187.4 the correctness argument is in the notes
+  note('正確性的論證：放在講義裡');
+  say('正確性的細節', '放在講義裡');
 }]);
   }
 
