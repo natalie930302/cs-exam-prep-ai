@@ -7289,34 +7289,45 @@ body#appRoot #main .sp .filter-bar .filter-chips {
   backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
 }
 
-/* 六科：進度縮成一張小卡，和標題、科目列並排（桌機）；手機照原本上下排 */
+/* 六科：標題獨立一行；下一行左邊科目列、右邊進度條，兩個同高同樣式、中線對齊 */
 @media (min-width: 900px) {
-  body#appRoot #main #sec-subjects { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 24px; align-items: end; }
-  body#appRoot #main #sec-subjects > .sh { grid-column: 1; grid-row: 1; }
-  body#appRoot #main #sec-subjects > .ss { grid-column: 1; grid-row: 2; }
-  body#appRoot #main #sec-subjects > .stabs { grid-column: 1; grid-row: 3; justify-self: start; }
+  body#appRoot #main #sec-subjects { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 12px; align-items: center; }
+  body#appRoot #main #sec-subjects > .sh, body#appRoot #main #sec-subjects > .ss { grid-column: 1 / -1; }
+  body#appRoot #main #sec-subjects > .stabs { grid-column: 1; grid-row: 3; margin: 0 !important; }
   body#appRoot #main #sec-subjects > #spPanels,
   body#appRoot #main #sec-subjects > #spPanels > .sp.on { display: contents; }
   body#appRoot #main #sec-subjects > #spPanels > .sp.on > * { grid-column: 1 / -1; }
   body#appRoot #main #sec-subjects > #spPanels > .sp.on > .subject-overview-card {
-    grid-column: 2; grid-row: 1 / span 3; align-self: end; margin: 0 !important;
+    grid-column: 2; grid-row: 3; justify-self: end; align-self: stretch; margin: 0 !important;
   }
 }
-body#appRoot #main .sp .subject-overview-card { padding: 10px 16px !important; border-radius: 18px !important; }
-body#appRoot #main .sp .subject-overview-card .sp-top { display: flex !important; align-items: center; gap: 16px; margin: 0 !important; }
-body#appRoot #main .sp .sp-donut { width: 64px !important; height: 64px !important; min-width: 0 !important; padding: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; position: relative; flex: 0 0 64px; }
-body#appRoot #main .sp .sp-donut-svg, body#appRoot #main .sp .sp-donut-svg svg { width: 64px !important; height: 64px !important; }
-body#appRoot #main .sp .sp-donut-label { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
-body#appRoot #main .sp .sp-donut-pct { font-size: 14px !important; line-height: 1.1; }
-body#appRoot #main .sp .sp-donut-sub { font-size: 9.5px !important; }
-body#appRoot #main .sp .smeta { display: flex !important; gap: 18px !important; margin: 0 !important; }
-body#appRoot #main .sp .smeta .sm { background: none !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; min-width: 0 !important; text-align: left; }
-body#appRoot #main .sp .smeta .sm-n { font-size: 20px !important; line-height: 1.2; }
-body#appRoot #main .sp .smeta .sm-l { font-size: 11px !important; margin: 0 !important; white-space: nowrap; }
-body#appRoot #main .sp .sp-rec-row { margin-top: 14px; }
-@media (max-width: 899px) {
-  body#appRoot #main .sp .subject-overview-card .sp-top { flex-direction: row !important; flex-wrap: nowrap !important; justify-content: flex-start !important; }
-  body#appRoot #main .sp .smeta { display: flex !important; flex-direction: row !important; grid-template-columns: none !important; gap: 12px !important; }
-  body#appRoot #main .sp .smeta .sm-n { font-size: 17px !important; }
-  body#appRoot #main .sp .smeta .sm-l { font-size: 10px !important; }
+/* 進度條：外觀和科目列一樣（白底、細框、同樣圓角），內容一行排開 */
+body#appRoot #main .sp .subject-overview-card {
+  display: flex !important; align-items: center; padding: 6px 18px 6px 8px !important;
+  background: var(--surf) !important; border: 1px solid var(--bd) !important; box-shadow: none !important;
+  border-radius: var(--ui-radius-section, 18px) !important; min-height: 0 !important;
 }
+body#appRoot #main .sp .subject-overview-card .sp-top { display: flex !important; flex-direction: row !important; align-items: center; gap: 14px; margin: 0 !important; padding: 0 !important; }
+body#appRoot #main .sp .sp-donut { width: 46px !important; height: 46px !important; min-width: 0 !important; padding: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; position: relative; flex: 0 0 46px; }
+body#appRoot #main .sp .sp-donut-svg, body#appRoot #main .sp .sp-donut-svg svg { width: 46px !important; height: 46px !important; }
+body#appRoot #main .sp .sp-donut-label { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+body#appRoot #main .sp .sp-donut-pct { font-size: 12px !important; line-height: 1; }
+body#appRoot #main .sp .sp-donut-sub { display: none !important; }
+body#appRoot #main .sp .smeta { display: flex !important; flex-direction: row !important; grid-template-columns: none !important; gap: 0 !important; margin: 0 !important; }
+body#appRoot #main .sp .smeta .sm { display: flex !important; flex-direction: row !important; align-items: baseline; gap: 5px; background: none !important; border: 0 !important; box-shadow: none !important; padding: 0 14px !important; min-width: 0 !important; }
+body#appRoot #main .sp .smeta .sm + .sm { border-left: 1px solid var(--bd) !important; }
+body#appRoot #main .sp .smeta .sm-n { font-size: 16px !important; line-height: 1.2; font-weight: 800; }
+body#appRoot #main .sp .smeta .sm-l { font-size: 12px !important; margin: 0 !important; white-space: nowrap; color: var(--mt) !important; }
+body#appRoot #main .sp .sp-rec-row { margin-top: 14px; width: 100%; }
+body#appRoot #main .sp .sp-rec-row { grid-template-columns: 1fr !important; }
+body#appRoot #main .sp .sp-rec-row > * { max-width: none !important; width: 100% !important; }
+@media (max-width: 899px) {
+  body#appRoot #main .sp .subject-overview-card { margin-top: 10px !important; }
+  body#appRoot #main .sp .smeta .sm { padding: 0 9px !important; flex-direction: column !important; gap: 0; align-items: flex-start; }
+  body#appRoot #main .sp .smeta .sm-n { font-size: 15px !important; }
+  body#appRoot #main .sp .smeta .sm-l { font-size: 10.5px !important; }
+}
+body#appRoot #main .sp :is(.sp-donut, .smeta, .smeta .sm, .sp-top) { min-height: 0 !important; height: auto !important; }
+body#appRoot #main .sp .sp-donut { height: 46px !important; }
+body#appRoot #main .sp .smeta { align-items: center !important; }
+@media (min-width: 900px) { body#appRoot #main #sec-subjects > #spPanels > .sp.on > .subject-overview-card { align-self: center; } }
