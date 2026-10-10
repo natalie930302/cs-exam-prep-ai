@@ -1864,13 +1864,9 @@ async function init(){
     p.querySelectorAll('.ch-mat').forEach(function(task){
       task.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); task.click(); } });
     });
-    try{
-      var savedFilter = localStorage.getItem('subjectFilter-'+s.id);
-      if(savedFilter && savedFilter !== 'all'){
-        var savedBtn = chFilterBar.querySelector('[data-pri="'+savedFilter+'"]');
-        if(savedBtn) savedBtn.click();
-      }
-    }catch(err){}
+    // the priority filter is no longer shown: always list every chapter
+    // (each chapter still carries its 必考／高頻／補充 tag)
+    try{ localStorage.removeItem('subjectFilter-'+s.id); }catch(err){}
   });
 
   stabs.addEventListener('keydown', function(e){

@@ -7331,3 +7331,11 @@ body#appRoot #main .sp :is(.sp-donut, .smeta, .smeta .sm, .sp-top) { min-height:
 body#appRoot #main .sp .sp-donut { height: 46px !important; }
 body#appRoot #main .sp .smeta { align-items: center !important; }
 @media (min-width: 900px) { body#appRoot #main #sec-subjects > #spPanels > .sp.on > .subject-overview-card { align-self: center; } }
+
+/* 六科：不要「全部／必考／高頻／補充」篩選列（每章的標籤保留）；只留右側「全部展開」 */
+body#appRoot #main .sp .filter-bar .filter-chips { display: none !important; }
+body#appRoot #main .sp .filter-bar {
+  display: flex !important; justify-content: flex-end !important;
+  border: 0 !important; background: transparent !important; box-shadow: none !important; padding: 0 !important;
+  backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+}
