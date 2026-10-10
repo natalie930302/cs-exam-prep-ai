@@ -437,6 +437,12 @@
   "quiz": 7,
   "cued": true
  },
+ "8zfYKqZaSi8": {
+  "label": "清大OCW 趙啟超《離散數學》第15B講 Generating Functions",
+  "points": 13,
+  "quiz": 6,
+  "cued": true
+ },
  "8_bLOJfZW6g": {
   "label": "交大OCW 易志偉《離散數學》Lec05 Sets, Functions, Sequences, and Sums (1/3)",
   "points": 46,
@@ -536,6 +542,12 @@
  "akXZHPecIh4": {
   "label": "清大周志遠 第21A講 Monitors(續)",
   "points": 14,
+  "quiz": 6,
+  "cued": true
+ },
+ "Al6ODllhdnc": {
+  "label": "清大OCW 趙啟超《離散數學》第14C講 Generating Functions",
+  "points": 15,
   "quiz": 6,
   "cued": true
  },
@@ -983,6 +995,12 @@
   "quiz": 5,
   "cued": true
  },
+ "ghXHy5y3EuE": {
+  "label": "清大OCW 趙啟超《離散數學》第15D講 Generating Functions",
+  "points": 6,
+  "quiz": 5,
+  "cued": true
+ },
  "Go2aLo7ZOlU": {
   "label": "MIT OCW 18.06 L33：Left and Right Inverses; Pseudoinverse",
   "points": 35,
@@ -1287,6 +1305,12 @@
   "label": "Abdul Bari：1.11 Best Worst and Average Case Analysis",
   "points": 41,
   "quiz": 6,
+  "cued": true
+ },
+ "LO5yHmkp5c4": {
+  "label": "清大OCW 趙啟超《離散數學》第15A講 Generating Functions",
+  "points": 13,
+  "quiz": 5,
   "cued": true
  },
  "lpOMe56f1Nw": {
@@ -1649,6 +1673,12 @@
   "quiz": 7,
   "cued": true
  },
+ "q-T1GS0zeM4": {
+  "label": "清大OCW 趙啟超《離散數學》第14D講 Generating Functions",
+  "points": 14,
+  "quiz": 6,
+  "cued": true
+ },
  "Q2-sJ3eYGYE": {
   "label": "清大周志遠 第10B講 Memory Management",
   "points": 11,
@@ -1893,6 +1923,12 @@
   "label": "交大江蕙如 Lec05 Chapter 2 Algorithm Analysis (2/2)",
   "points": 148,
   "quiz": 8,
+  "cued": true
+ },
+ "TTSM0M9qlfA": {
+  "label": "清大OCW 趙啟超《離散數學》第14A講 Generating Functions",
+  "points": 15,
+  "quiz": 6,
   "cued": true
  },
  "TXcPJuccafA": {
@@ -2237,6 +2273,12 @@
   "quiz": 7,
   "cued": true
  },
+ "zjsDjXEa6Zc": {
+  "label": "清大OCW 趙啟超《離散數學》第15C講 Generating Functions",
+  "points": 10,
+  "quiz": 5,
+  "cued": true
+ },
  "zLuuRC56uvI": {
   "label": "交大彭文志 Lec10 Lists (3/4)",
   "points": 99,
@@ -2277,6 +2319,12 @@
   "label": "清大周志遠 第24A講 File System Implementation",
   "points": 27,
   "quiz": 6,
+  "cued": true
+ },
+ "zyiBuJs8gm4": {
+  "label": "清大OCW 趙啟超《離散數學》第14B講 Generating Functions",
+  "points": 12,
+  "quiz": 5,
   "cued": true
  },
  "ZZqiVUT8EWI": {

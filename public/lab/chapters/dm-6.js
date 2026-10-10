@@ -2195,6 +2195,1798 @@ scene('acB-stirling', '11D：第二類 Stirling 數 S(m, n) = onto(m, n) / n!', 
   },
 ]);
   }
+
+  // ═══ acC.js ═══
+  {
+const P = K; const { V3, tag, cube, kill, glow, code, anim, arrow, zone, travel, remove, step, buddy, prop, bob, fresh } = P;
+const { txt, tint } = P;
+// (kit has no beat: short waits use ctx.beat)
+// ─── 離散數學 第 6 章（清大 趙啟超 第14A–14D、15A–15D講 Generating Functions）— cued scenes ───
+// 生成函數的定義與 formal power series、formal derivative、convolution ↔ 相乘、
+// extended binomial theorem、用生成函數解 recurrence（Fibonacci、non-homogeneous、三階）、
+// 用生成函數計數（a + b = n、z₁ + ⋯ + z_m = n 加上下限）。
+// 每個 scene 是一串 step；每個 step 等老師說到那句話（notes 的 cues）才動一下，不重播。
+// 老師的例子（數字、順序）照用；老師沒給數字、為了看清楚而加的例子在台上標「示意」。
+const wt = (tok, ms) => ctx.beat(tok, ms);
+const cap = (a, b = '') => say(a, b);
+const hd = (t, x, y, z = 0) => tag(t, 'ptr', x, y, z);
+const hot = (t, x, y, z = 0) => tag(t, 'ptr alt', x, y, z);
+const sm = (t, x, y, z = 0) => tag(t, 'idx', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const C = { blue: '#4b9ee2', orange: '#dd8238', green: '#2fc092', purple: '#9b7ef4', pink: '#e55a9b', teal: '#31aab0', red: '#d64545', sand: '#e9dcc4', gray: '#d8cfc0', gold: '#c08a1f', mint: '#d2f1e6', sky: '#cfe6f7', lilac: '#dfd3fb', peach: '#f6d3b8', rose: '#f6d0dc', lemon: '#f7ecb5' };
+const HL = '#6a4a00', OKG = '#0f5a3a', NG = '#5a1010';
+const ww = (t) => Math.min(12.6, Math.max(1.4, [...String(t)].length * 0.19 + 0.9));
+const card = (t, c, x, y, w, h = 0.55) => cube(t, c, [w || ww(t), h, 0.8], x, y, 0, 1.0);
+const tile = (t, c, x, y, s = 0.78) => cube(t, c, [s, s, 0.5], x, y, 0, 0);
+const gone = (...os) => os.forEach((o) => { if (!o) return; if (Array.isArray(o)) return gone(...o); kill(o); });
+const relab = (m, t) => { if (m && m.userData.lbl) txt(m.userData.lbl, String(t)); };
+const lit = (m, c = HL) => { if (m && m.material) glow(m, c); };
+const dark = (...ms) => ms.flat().forEach((m) => { if (m && m.material) glow(m, null); });
+function scene(id, title, steps, cam) {
+  FRAG.push([id, title, async (tok) => {
+    const c = cam || CAM; fresh(c[0], c[1]);
+    const S = {};
+    for (const f of steps) { await step(tok); await f(tok, S); }
+  }]);
+}
+const CAM = [[0, 3.6, 15.5], [0, 3.2, 0]];
+// 一行一行的推導：新的一行發亮，舊的變暗
+function chain(x, yTop, dy = 0.72) {
+  const ls = [];
+  return {
+    ls,
+    add(e, c, w) { ls.forEach((m) => glow(m, null)); const m = card(e, c || C.sky, x, yTop - ls.length * dy, w); glow(m, HL); ls.push(m); return m; },
+    clear() { gone(ls); ls.length = 0; },
+  };
+}
+// 幾個東西一起移動（帶一點弧度）
+async function moveAll(tok, list, ms = 800, arc = 0.4) {
+  const from = list.map(([o]) => o.position.clone());
+  await anim(tok, ms, (u) => list.forEach(([o, x, y], i) => { o.position.x = from[i].x + (x - from[i].x) * u; o.position.y = from[i].y + (y - from[i].y) * u + Math.sin(Math.PI * u) * arc; }));
+}
+// 一排係數格子：上面是係數方塊，下面是 xᵏ 標籤
+function slotRow(heads, x0, dx, y) { return heads.map((h, i) => sm(h, x0 + i * dx, y)); }
+const XP = ['x⁰', 'x¹', 'x²', 'x³', 'x⁴', 'x⁵', 'x⁶', 'x⁷', 'x⁸', 'x⁹'];
+
+// ════════ TTSM0M9qlfA（趙啟超 14A：定義、formal power series、λⁿ、formal derivative） ════════
+scene('acC-gf-def', '14A：generating function 的定義', [
+  async (tok, S) => { // 4.4
+    S.t = card('generating function（生成函數）', C.lilac, 0, 6.3); glow(S.t, HL);
+    cap('今天開始：generating function', '');
+  },
+  async (tok, S) => { // 6.6
+    glow(S.t, null);
+    const names = ['a₀', 'a₁', 'a₂', 'a₃', '⋯', 'aₙ', '⋯'];
+    S.a = names.map((t, i) => tile(t, t === '⋯' ? C.gray : C.peach, -4.5 + i * 1.5, 4.9));
+    S.sq = hd('一個 sequence：a₀, a₁, a₂, …（可能無窮下去）', 0, 5.7);
+    cap('先有一個 sequence', 'general term 是 aₙ');
+  },
+  async (tok, S) => { // 42.5
+    S.h = slotRow(['常數項', 'x 一次', 'x²', 'x³', '', 'xⁿ', ''], -4.5, 1.5, 2.6);
+    await moveAll(tok, S.a.slice(0, 3).map((m, i) => [m, -4.5 + i * 1.5, 3.3]), 900, 0.5);
+    cap('a₀ 放常數項、a₁ 放 x 項、a₂ 放 x² 項', '');
+  },
+  async (tok, S) => { // 51.7
+    await moveAll(tok, S.a.slice(3).map((m, i) => [m, -4.5 + (i + 3) * 1.5, 3.3]), 800, 0.5);
+    S.A = card('A(x) = a₀ + a₁x + a₂x² + ⋯ + aₙxⁿ + ⋯', C.sky, 0, 1.5); glow(S.A, HL);
+    cap('aₙ 放在 xⁿ 前面當係數，全部加起來', '');
+  },
+  async (tok, S) => { // 66.5
+    glow(S.A, null);
+    S.sig = card('A(x) = Σₙ₌₀^∞ aₙ xⁿ', C.mint, 0, 0.6); glow(S.sig, OKG);
+    cap('寫成 summation：n 從 0 開始', '');
+  },
+  async (tok, S) => { // 82.6
+    glow(S.sig, null);
+    lit(S.a[5]); S.q = hot('要 aₙ？看 xⁿ 前面的係數', 3.0, 0.6 - 0.9);
+    cap('給你 A(x)，就知道整個 sequence', '取 xⁿ 的係數就是 aₙ');
+  },
+  async (tok, S) => { // 102.6
+    dark(S.a);
+    S.a.forEach((m) => { if (m.userData.lbl && m.userData.lbl.element.textContent !== '⋯') glow(m, OKG); });
+    good('A(x)「生出」整個數列 → generating function', 0, -1.2);
+    cap('它 generate 這個 sequence', '所以叫 generating function');
+  },
+]);
+
+scene('acC-gf-formal', '14A：formal power series（不管收斂）', [
+  async (tok, S) => { // 127.4
+    S.A = card('A(x) = Σ aₙ xⁿ  是一個 formal power series', C.sky, 0, 6.2); glow(S.A, HL);
+    cap('A(x) 是 formal power series', '');
+  },
+  async (tok, S) => { // 137.4
+    glow(S.A, null);
+    S.f = card('formal = having the appearance without the substance', C.lilac, 0, 5.2); glow(S.f, HL);
+    S.ap = card('appearance 外表', C.mint, -2.6, 4.2, 3.4); S.su = card('substance 實質', C.rose, 2.6, 4.2, 3.4);
+    cap('formal：有外表，沒有實質', '');
+  },
+  async (tok, S) => { // 167.0
+    glow(S.f, null); glow(S.ap, OKG); glow(S.su, NG);
+    sm('看起來跟 power series 一樣', -2.6, 3.4); sm('但沒有 power series 的實質', 2.6, 3.4);
+    cap('樣子像 power series', '但不談那些實質的東西');
+  },
+  async (tok, S) => { // 181.2
+    S.x1 = card('示意：x = 0.5 收斂？', C.gray, -3, 2.3, 3.6); S.x2 = card('示意：x = 2 發散？', C.gray, 3, 2.3, 3.6);
+    S.no = bad('都不管！不談 convergence', 0, 1.5);
+    cap('不管 x 代多少收不收斂', 'convergence 的 issue 都不管');
+  },
+  async (tok, S) => { // 194.7
+    gone(S.x1, S.x2); remove(S.no);
+    const ts = ['a₀', 'a₁', 'a₂', 'a₃'].map((t, i) => tile(t, C.peach, -3 + i * 2, 2.6));
+    slotRow(['x⁰', 'x¹', 'x²', 'x³'], -3, 2, 1.8);
+    ts.forEach((m) => glow(m, HL));
+    cap('只是把 a₀、a₁、a₂… 寫在各次項上', '就這樣而已');
+  },
+  async (tok, S) => { // 243.2
+    note('文 ＝ appearance（外表）　質 ＝ substance（實質）', 0, 0.8);
+    sm('《論語》：文質彬彬，然後君子', 0, 0.2);
+    cap('中文：文是外表，質是內在', 'formal 就是「只有文」');
+  },
+]);
+
+scene('acC-gf-z', '14A：跟 Z 轉換很像', [
+  async (tok, S) => { // 302.4
+    S.g = card('生成函數：Σ aₙ xⁿ', C.sky, -3.2, 5.2, 4.6); S.z = card('Z 轉換：Σ aₙ z⁻ⁿ', C.peach, 3.2, 5.2, 4.6);
+    glow(S.z, HL);
+    cap('電機系學過的 Z 轉換', '');
+  },
+  async (tok, S) => { // 321.3
+    glow(S.g, HL); glow(S.z, HL);
+    hd('xⁿ  ⟷  z⁻ⁿ', 0, 4.2);
+    cap('兩個定義很像', '數學上習慣用 xⁿ，不用 z⁻¹');
+  },
+  async (tok, S) => { // 329.3
+    dark(S.g, S.z);
+    bad('Z 轉換會談 region of convergence', 3.2, 3.3); good('這裡收斂都不管', -3.2, 3.3);
+    cap('Z 轉換要討論收斂區域', '這邊都不管');
+  },
+  async (tok, S) => { // 340.2
+    S.k = card('後面算生成函數 ≈ 算 Z 轉換', C.mint, 0, 2.2); glow(S.k, OKG);
+    cap('算法很類似', '學過 Z 轉換就像已經算過一次');
+  },
+]);
+
+scene('acC-gf-binom', '14A：aₙ = C(m, n) → (1 + x)ᵐ', [
+  async (tok, S) => { // 369.3
+    S.d = card('aₙ = C(m, n)　（binomial coefficient）', C.sky, 0, 6.2); glow(S.d, HL);
+    note('示意 m = 4', -5.6, 5.3);
+    const v = [1, 4, 6, 4, 1, 0, 0, 0];
+    S.t = v.map((x, i) => tile(x, i <= 4 ? C.peach : C.peach, -4.9 + i * 1.4, 4.6));
+    slotRow(['n=0', '1', '2', '3', '4', '5', '6', '7'], -4.9, 1.4, 3.85);
+    cap('第一個例子：aₙ = C(m, n)', '');
+  },
+  async (tok, S) => { // 382.7
+    glow(S.d, null);
+    S.t.slice(5).forEach((m) => { tint(m, C.gray); glow(m, NG); });
+    bad('n > m：下面比上面大 → 自動是 0', 2.8, 3.1);
+    cap('n 大於 m 以後都是 0', '不是 0 的只有 n = 0 … m');
+  },
+  async (tok, S) => { // 400.1
+    S.L = chain(0, 2.3);
+    S.L.add('A(x) = Σₙ C(m, n) xⁿ');
+    cap('算它的生成函數', '');
+  },
+  async (tok, S) => { // 407.1
+    S.L.add('後面都是 0 → 只加到 n = m：Σₙ₌₀ᵐ C(m, n) xⁿ');
+    cap('n 只要加到 m', '');
+  },
+  async (tok, S) => { // 426.7
+    const m = S.L.add('= (1 + x)ᵐ　← binomial theorem', C.mint); glow(m, OKG);
+    sm('示意：(1 + x)⁴ = 1 + 4x + 6x² + 4x³ + x⁴', 0, 0.2);
+    cap('就是 (1 + x)ᵐ', 'binomial theorem，要懂它怎麼來');
+  },
+  async (tok, S) => { // 461.4
+    S.t.slice(0, 5).forEach((m) => glow(m, OKG));
+    hot('反過來：給 (1 + x)ᵐ → 展開就知道 aₙ', 0, -0.5);
+    cap('反過來給你 (1 + x)ᵐ', '用 binomial theorem 展開就知道 aₙ');
+  },
+]);
+
+scene('acC-gf-geo', '14A：aₙ = λⁿ → 1/(1 − λx)', [
+  async (tok, S) => { // 486.1
+    S.t = ['1', 'λ', 'λ²', 'λ³', 'λ⁴', '⋯'].map((t, i) => tile(t, t === '⋯' ? C.gray : C.peach, -4 + i * 1.6, 6.1));
+    sm('aₙ = λⁿ：geometric（等比）數列', 0, 5.4);
+    cap('再來：aₙ = λⁿ', '等比數列');
+  },
+  async (tok, S) => { // 499.1
+    S.L = chain(0, 4.5);
+    S.L.add('A(x) = Σ λⁿxⁿ = 1 + λx + (λx)² + (λx)³ + ⋯');
+    cap('代進定義', '每一項是 (λx)ⁿ');
+  },
+  async (tok, S) => { // 519.5
+    const m = S.L.add('= 1 / (1 − λx)', C.mint); glow(m, OKG);
+    cap('答案是 1/(1 − λx)', '');
+  },
+  async (tok, S) => { // 536.7
+    note('看成等比級數的和：首項 1、公比 λx', 3.3, 3.25);
+    cap('怎麼看？等比級數的和', '首項 ÷ (1 − 公比)');
+  },
+  async (tok, S) => { // 554.7
+    S.L.add('另一算法：A(x) − 1 = λx + (λx)² + ⋯ = λx · A(x)', C.lilac);
+    cap('或者：把 1 移到左邊', '右邊提出 λx，裡面還是 A(x)');
+  },
+  async (tok, S) => { // 604.8
+    const m = S.L.add('(1 − λx)·A(x) = 1  ⇒  A(x) = 1/(1 − λx)', C.mint); glow(m, OKG);
+    cap('A(x) 放同一邊', '一樣得到 1/(1 − λx)');
+  },
+  async (tok, S) => { // 623.3
+    S.L.clear();
+    S.e = card('(1 − λx) · (1 + λx + λ²x² + λ³x³ + ⋯)  =  1 ?', C.sky, 0, 4.5); glow(S.e, HL);
+    cap('等號是什麼意思？', '乘過去，每個係數都相等');
+  },
+  async (tok, S) => { // 649.1
+    glow(S.e, null);
+    const hs = ['常數', 'x', 'x²', 'x³', 'x⁴'], v = ['1', 'λ − λ', 'λ² − λ²', 'λ³ − λ³', '⋯'];
+    S.c = v.map((t, i) => card(t, C.peach, -4.4 + i * 2.2, 3.2, 1.9));
+    slotRow(hs, -4.4, 2.2, 2.45);
+    await wt(tok, 900);
+    S.c.slice(1, 4).forEach((m) => { relab(m, '0'); tint(m, C.gray); });
+    glow(S.c[0], OKG);
+    cap('常數項 1，一次項 0，二次項 0 …', '只剩下 1 ✓');
+  },
+  async (tok, S) => { // 695.0
+    hot('反過來：看到 1/(1 − λx) → aₙ = λⁿ', 0, 1.4);
+    cap('反過來也要會', '看到 1/(1 − λx)，aₙ 就是 λⁿ');
+  },
+  async (tok, S) => { // 713.0
+    const m = card('λⁿ  ⟷  1/(1 − λx)', C.lemon, 0, 0.4, 5.2); glow(m, HL);
+    cap('記成一對', '兩個方向後面都會用');
+  },
+]);
+
+scene('acC-gf-fderiv', '14A：formal derivative', [
+  async (tok, S) => { // 747.4
+    S.t = card('新工具：formal derivative', C.lilac, 0, 6.3); glow(S.t, HL);
+    cap('再多一個工具', '後面算起來比較方便');
+  },
+  async (tok, S) => { // 760.0
+    glow(S.t, null);
+    S.A = card('A(x) = Σₙ≥₀ aₙ xⁿ', C.sky, -3.2, 5.3, 4.8);
+    S.D = card('A′(x) = Σₙ≥₁ n·aₙ xⁿ⁻¹', C.mint, 3.2, 5.3, 4.8); glow(S.D, OKG);
+    cap('A(x) 的 formal derivative', '它不是 derivative，是 formal derivative');
+  },
+  async (tok, S) => { // 793.0
+    glow(S.D, null);
+    S.r = ['a₀', 'a₁x', 'a₂x²', 'a₃x³', 'a₄x⁴'].map((t, i) => card(t, C.peach, -4.4 + i * 2.2, 3.9, 1.9));
+    sm('A(x)', -6.2, 3.9);
+    cap('定義跟以前「每一項微下來」一樣', '');
+  },
+  async (tok, S) => { // 811.3
+    const d = ['', 'a₁', '2a₂x', '3a₃x²', '4a₄x³'];
+    tint(S.r[0], C.gray); glow(S.r[0], NG);
+    await moveAll(tok, S.r.slice(1).map((m, i) => [m, -4.4 + i * 2.2, 2.6]), 900, 0.5);
+    S.r.slice(1).forEach((m, i) => { relab(m, d[i + 1]); glow(m, OKG); });
+    sm("A′(x)", -6.2, 2.6);
+    hd('常數項沒了；n 掉到前面；x 的次數少 1', 0, 1.8);
+    cap('常數項不見，n 乘到前面', 'x 的次數少一個');
+  },
+  async (tok, S) => { // 827.6
+    S.lim = card("微積分：f′(x) = lim_{h→0} [f(x + h) − f(x)] / h", C.rose, 0, 0.9); glow(S.lim, NG);
+    cap('原本的微分是極限定義', '');
+  },
+  async (tok, S) => { // 850.0
+    bad('formal derivative：根本沒有極限', 0, 0.1);
+    good('aₙ 可以是 discrete 的東西 — 只有微分的「樣子」', 0, -0.6);
+    cap('這裡完全沒有極限', '有微分的樣子、沒有微分的實質');
+  },
+]);
+
+scene('acC-gf-rules', '14A：微分規則照樣成立', [
+  async (tok, S) => { // 901.6
+    S.t = card('有微分的樣子 → 常用的微分 rule 還是成立', C.lilac, 0, 6.2); glow(S.t, HL);
+    S.L = chain(0, 4.9, 0.9);
+    cap('以前微分常用的 rule', 'formal derivative 也照樣成立');
+  },
+  async (tok, S) => { // 924.4
+    glow(S.t, null);
+    S.L.add('(f + g)′ = f′ + g′', C.sky, 6);
+    cap('加起來取 formal derivative', '= 個別取再加起來');
+  },
+  async (tok, S) => { // 946.6
+    S.L.add('(f · g)′ = f′g + f g′', C.sky, 6);
+    cap('乘在一起：一個微、一個不微', '');
+  },
+  async (tok, S) => { // 976.4
+    S.L.add('(f / g)′ = (f′g − f g′) / g²', C.sky, 6);
+    cap('分式也一樣', '');
+  },
+  async (tok, S) => { // 1018.2
+    S.L.ls.forEach((m) => glow(m, OKG));
+    good('代定義兩邊比一比 → 一樣；工具又多了', 0, 1.6);
+    cap('兩邊代進去比，發現一樣', '多了這些工具，後面比較好算');
+  },
+]);
+
+// ════════ zyiBuJs8gm4（趙啟超 14B：n·λⁿ、n·aₙ ↔ x·A′(x)、convolution ↔ 相乘） ════════
+scene('acC-gf-nlam', '14B：aₙ = n·λⁿ 用 formal derivative', [
+  async (tok, S) => { // 4.3
+    S.q = card('aₙ = n · λⁿ　的生成函數 = ？', C.lilac, 0, 6.3); glow(S.q, HL);
+    cap('要算 aₙ = n·λⁿ 的生成函數', '');
+  },
+  async (tok, S) => { // 8.5
+    glow(S.q, null);
+    S.k = card('已知：λⁿ ⟷ 1/(1 − λx)', C.mint, 0, 5.5, 5.4);
+    cap('剛才算過 λⁿ 的生成函數', '');
+  },
+  async (tok, S) => { // 24.4
+    const v = ['0', 'λx', '2λ²x²', '3λ³x³', '4λ⁴x⁴', '⋯'];
+    S.A = v.map((t, i) => card(t, C.peach, -4.5 + i * 1.8, 4.3, 1.6));
+    sm('A(x) =', -6.3, 4.3);
+    cap('A(x) = 0 + λx + 2λ²x² + 3λ³x³ + ⋯', 'n = 0 那項是 0');
+  },
+  async (tok, S) => { // 52.4
+    [2, 3, 4].forEach((i) => lit(S.A[i]));
+    hot('前面多出 2、3、4 → 微下來才會多', 0, 3.5);
+    cap('什麼時候前面會多一個 2、3？', '微分的時候 → 跟 formal derivative 有關');
+  },
+  async (tok, S) => { // 93.3
+    dark(S.A);
+    const v = ['1', 'λx', 'λ²x²', 'λ³x³', 'λ⁴x⁴', '⋯'];
+    S.B = v.map((t, i) => card(t, C.sky, -4.5 + i * 1.8, 2.6, 1.6));
+    sm('B(x) =', -6.3, 2.6); sm('= 1/(1 − λx)', 5.4, 1.95);
+    cap('令 B(x) = Σ λⁿxⁿ = 1/(1 − λx)', '這個已經知道');
+  },
+  async (tok, S) => { // 120.8
+    const d = ['', 'λ', '2λ²x', '3λ³x²', '4λ⁴x³', '⋯'];
+    tint(S.B[0], C.gray);
+    S.B.forEach((m, i) => { if (i) { relab(m, d[i]); glow(m, HL); } });
+    sm('B′(x) =', -6.3, 1.95);
+    cap('對 B(x) 取 formal derivative', 'B′(x) = λ + 2λ²x + 3λ³x² + ⋯');
+  },
+  async (tok, S) => { // 148.2
+    dark(S.B);
+    for (let i = 1; i <= 4; i++) { lit(S.A[i]); lit(S.B[i]); }
+    hd('B′ 的每一項 × x → 就是 A 的每一項', 0, 1.0);
+    cap('B′(x) 跟 A(x) 比', '每一項差一個 x');
+  },
+  async (tok, S) => { // 214.3
+    dark(S.A, S.B);
+    S.r = card('A(x) = x · B′(x)', C.mint, 0, 0.1, 4.6); glow(S.r, OKG);
+    cap('所以 A(x) = x · B′(x)', '要算的跟知道的扯上關係');
+  },
+  async (tok, S) => { // 251.2
+    glow(S.r, null);
+    S.d = card('B′(x) = [ (1 − λx)⁻¹ ]′ = λ/(1 − λx)²', C.sky, 0, -0.65); glow(S.d, HL);
+    cap('B′ 用以前的微分算法', '平方、負號、再乘 −λ → λ/(1 − λx)²');
+  },
+  async (tok, S) => { // 303.9
+    glow(S.d, null);
+    gone(S.k);
+    S.ans = card('n·λⁿ  ⟷  λx/(1 − λx)²', C.lemon, 0, 5.5, 5.6); glow(S.ans, OKG);
+    cap('A(x) = λx/(1 − λx)²', '');
+  },
+  async (tok, S) => { // 317.8
+    good('橋樑：formal derivative', 0, 6.95);
+    cap('中間的橋樑就是 formal derivative', '取完再代回來，答案就出來');
+  },
+]);
+
+scene('acC-gf-nrule', '14B：推廣 n·aₙ ⟷ x·A′(x)', [
+  async (tok, S) => { // 374.1
+    S.c = card('剛才的推導：λx + 2λ²x² + 3λ³x³ + ⋯', C.sky, 0, 6.2); glow(S.c, HL);
+    cap('其實不一定要是 λⁿ', '');
+  },
+  async (tok, S) => { // 397.9
+    hot('把 λⁿ 圈起來：過程裡它根本沒被動到', 0, 5.4);
+    cap('每個 λⁿ 圈起來看', '只是把 2、3、n 掉下來而已');
+  },
+  async (tok, S) => { // 416.0
+    glow(S.c, null);
+    S.a = card('假設已知：aₙ ⟷ A(x)', C.mint, -3.3, 4.4, 4.8);
+    cap('假設 aₙ 的生成函數 A(x) 已經知道', '');
+  },
+  async (tok, S) => { // 444.4
+    S.b = card('n·aₙ ⟷ x · A′(x)', C.lemon, 3.3, 4.4, 4.8); glow(S.b, OKG);
+    arrow(V3(-0.8, 4.4, 0), V3(0.8, 4.4, 0));
+    cap('每一項乘 n：n·aₙ ⟷ x·A′(x)', '只是這樣而已');
+  },
+  async (tok, S) => { // 500.4
+    glow(S.b, null);
+    const r1 = ['a₁', '2a₂x', '3a₃x²', '4a₄x³'], r2 = ['a₁x', '2a₂x²', '3a₃x³', '4a₄x⁴'];
+    S.r = r1.map((t, i) => card(t, C.sky, -3.3 + i * 2.2, 2.9, 1.9));
+    sm('A′(x) =', -5.4, 2.9);
+    await wt(tok, 700);
+    await moveAll(tok, S.r.map((m, i) => [m, -3.3 + i * 2.2, 1.7]), 800, 0.4);
+    S.r.forEach((m, i) => { relab(m, r2[i]); glow(m, OKG); });
+    sm('x·A′(x) =', -5.4, 1.7);
+    slotRow(['1·a₁', '2·a₂', '3·a₃', '4·a₄'], -3.3, 2.2, 0.95);
+    cap('寫出來、乘上 x', 'xⁿ 的係數正好是 n·aₙ ✓');
+  },
+  async (tok, S) => { // 534.1
+    note('學過 Z 轉換的話，這些都很類似', 0, 0.1);
+    cap('跟 Z 轉換的性質類似', '');
+  },
+]);
+
+scene('acC-gf-conv-def', '14B：convolution cₙ = Σ aₖbₙ₋ₖ', [
+  async (tok, S) => { // 554.5
+    S.s = ['aₙ', 'bₙ', 'cₙ'].map((t, i) => card(t, [C.sky, C.peach, C.mint][i], -3 + i * 3, 6.2, 1.6));
+    cap('三個 sequence：aₙ、bₙ、cₙ', '');
+  },
+  async (tok, S) => { // 577.4
+    S.e = card('cₙ = a₀bₙ + a₁bₙ₋₁ + ⋯ + aₙb₀', C.mint, 0, 5.1); glow(S.e, HL);
+    cap('cₙ 跟 aₙ、bₙ 的關係', '');
+  },
+  async (tok, S) => { // 596.4
+    glow(S.e, null);
+    S.f = card('cₙ = Σₖ₌₀ⁿ aₖ bₙ₋ₖ', C.lemon, 0, 4.2, 5); glow(S.f, HL);
+    cap('寫成 summation', '兩個下標 k 和 n − k');
+  },
+  async (tok, S) => { // 607.4
+    glow(S.f, null);
+    note('示意 n = 3', -5.6, 3.4);
+    const sub = '₀₁₂₃';
+    S.p = [0, 1, 2, 3].map((k) => {
+      const a = tile('a' + sub[k], C.sky, -4.2 + k * 2.6, 2.6, 0.7), b = tile('b' + sub[3 - k], C.peach, -3.4 + k * 2.6, 2.6, 0.7);
+      sm(k + ' + ' + (3 - k) + ' = 3', -3.8 + k * 2.6, 1.85); return [a, b];
+    });
+    cap('下標加起來都是 n', 'a 的下標慢慢變大，b 的慢慢變小');
+  },
+  async (tok, S) => { // 646.5
+    S.n = card('這叫 aₙ 和 bₙ 的 convolution（摺積）', C.lilac, 0, 0.9); glow(S.n, HL);
+    cap('這叫 convolution', '重點：下標的和固定是 n');
+  },
+  async (tok, S) => { // 704.1
+    glow(S.n, null);
+    S.q = hot('已知 aₙ ⟷ A(x)、bₙ ⟷ B(x)，cₙ 的 C(x) = ？', 0, 0.0);
+    cap('問題：C(x) 是多少？', '');
+  },
+  async (tok, S) => { // 757.5
+    note('提示：Z 轉換裡，convolution ↔ 兩個轉換相乘', 0, -0.7);
+    cap('學過 Z 轉換的會知道', 'convolution 會變成相乘');
+  },
+]);
+
+const NK = (n, k) => [-6.3 + n * 0.55, -0.2 + k * 0.55];
+scene('acC-gf-conv-proof', '14B：交換 double summation 的證明', [
+  async (tok, S) => { // 770.2
+    S.L = chain(0, 6.4, 0.7);
+    S.L.add('C(x) = Σₙ≥₀ cₙxⁿ = Σₙ≥₀ Σₖ₌₀ⁿ aₖ bₙ₋ₖ xⁿ');
+    cap('把 convolution 的定義代進來', '');
+  },
+  async (tok, S) => { // 841.3
+    S.h1 = hd('先描述 n（n ≥ 0），給了 n 再描述 k（0 ≤ k ≤ n）', 0, 4.95);
+    cap('double summation', '先 n，再 k');
+  },
+  async (tok, S) => { // 857.0
+    S.h2 = note('碰到 double summation／double integral：試著把順序反過來', 0, 4.4);
+    cap('要推導通常怎麼辦？', '把兩個 summation 反過來');
+  },
+  async (tok, S) => { // 886.0
+    S.w = bad('n 和 k 有關係 → 範圍要重新描述', 3.6, 3.4);
+    cap('兩個範圍有關', '反過來時範圍要重寫');
+  },
+  async (tok, S) => { // 922.6
+    S.pt = [];
+    for (let n = 0; n <= 5; n++) for (let k = 0; k <= n; k++) { const [x, y] = NK(n, k); const m = tile('', C.gray, x, y, 0.22); m.userData.nk = [n, k]; S.pt.push(m); }
+    sm('n →', -2.6, -0.2); sm('k ↑', -6.3, 3.1);
+    cap('畫 (n, k) 平面', 'n = 0, 1, 2, 3, …（離散的點）');
+  },
+  async (tok, S) => { // 949.5
+    for (let n = 0; n <= 2; n++) { S.pt.filter((m) => m.userData.nk[0] === n).forEach((m) => { tint(m, C.blue); glow(m, HL); }); await wt(tok, 500); }
+    cap('n = 0：k 只有 0；n = 1：k = 0, 1', 'n = 2：k = 0, 1, 2');
+  },
+  async (tok, S) => { // 965.4
+    S.pt.forEach((m) => { tint(m, C.blue); glow(m, null); });
+    const [x0, y0] = NK(0, 0), [x1, y1] = NK(5.4, 5.4);
+    arrow(V3(x0, y0, 0), V3(x1, y1, 0), 0xc08a1f);
+    sm('n = k 這條 45° 線（含線上）下方的點', -3.4, 3.6);
+    cap('整個區域：n = k 線和它下方的點', '');
+  },
+  async (tok, S) => { // 988.7
+    remove(S.w);
+    good('反過來：先描述 k（k ≥ 0）', 3.6, 3.4);
+    cap('反過來，先描述 k', 'k 可以是 0, 1, 2, …');
+  },
+  async (tok, S) => { // 1010.0
+    S.pt.filter((m) => m.userData.nk[1] === 2).forEach((m) => { tint(m, C.orange); glow(m, HL); });
+    good('給定 k（例：k = 2）→ n 從 k 開始：n ≥ k', 3.6, 2.7);
+    cap('給定 k，n 要 ≥ k', '');
+  },
+  async (tok, S) => { // 1061.2
+    remove(S.h1); remove(S.h2);
+    S.L.add('= Σₖ≥₀ Σₙ≥ₖ aₖ bₙ₋ₖ xⁿ', C.lilac);
+    cap('改寫：k ≥ 0，n ≥ k', '');
+  },
+  async (tok, S) => { // 1087.4
+    S.L.add('= Σₖ≥₀ aₖxᵏ · Σₙ≥ₖ bₙ₋ₖ xⁿ⁻ᵏ', C.lilac);
+    cap('跟 n 無關的 aₖ 提出來', 'xⁿ 拆成 xᵏ · xⁿ⁻ᵏ');
+  },
+  async (tok, S) => { // 1128.2
+    S.L.add('令 k′ = n − k ≥ 0：= Σₖ aₖxᵏ · Σₖ′≥₀ bₖ′ xᵏ′', C.lilac);
+    cap('n − k 換成新變數 k′', 'n ≥ k ⇒ k′ ≥ 0');
+  },
+  async (tok, S) => { // 1173.2
+    const m = card('= A(x) · B(x)', C.mint, 3.4, 1.6, 4); glow(m, OKG);
+    cap('兩個無關 → 拆成乘積', '前面是 A(x)，後面是 B(x)');
+  },
+]);
+
+scene('acC-gf-conv-sum', '14B：convolution ⟷ 生成函數相乘', [
+  async (tok, S) => { // 1198.0
+    S.a = card('cₙ = Σₖ aₖ bₙ₋ₖ', C.sky, -3.3, 5.0, 4.2); S.b = card('C(x) = A(x) · B(x)', C.mint, 3.3, 5.0, 4.2);
+    glow(S.b, OKG);
+    cap('結論', 'cₙ 是 aₙ、bₙ 的 convolution ⇒ C(x) = A(x)B(x)');
+  },
+  async (tok, S) => { // 1236.0
+    arrow(V3(-1.0, 5.0, 0), V3(1.0, 5.0, 0));
+    hd('sequence 做 convolution ⟷ 生成函數相乘', 0, 4.1);
+    cap('sequence 這邊做 convolution', '生成函數那邊就是 product');
+  },
+  async (tok, S) => { // 1250.6
+    good('新數列能寫成兩個已知數列的 convolution → 生成函數相乘就好', 0, 3.1);
+    cap('又多一個工具', '');
+  },
+]);
+
+// ════════ Al6ODllhdnc（趙啟超 14C：1/(1 − λx)² 兩種算法、(1 + x)⁻ⁿ 與重複組合） ════════
+scene('acC-gf-recap', '14C：手上的兩個工具', [
+  async (tok, S) => { // 4.4
+    S.t = card('目前：給 sequence → 算生成函數', C.lilac, 0, 6.2); glow(S.t, HL);
+    cap('前面都是給 sequence 算生成函數', '');
+  },
+  async (tok, S) => { // 5.4
+    glow(S.t, null);
+    S.a = card('工具 1：n·aₙ ⟷ x·A′(x)（formal derivative）', C.sky, 0, 5.0); glow(S.a, HL);
+    cap('第一個工具：formal derivative', '');
+  },
+  async (tok, S) => { // 7.3
+    glow(S.a, null);
+    S.b = card('工具 2：convolution ⟷ 生成函數相乘', C.sky, 0, 4.1); glow(S.b, HL);
+    cap('第二個工具：convolution ⟷ 相乘', '');
+  },
+  async (tok, S) => { // 9.4
+    glow(S.b, null);
+    S.c = card('已知：λⁿ ⟷ 1/(1 − λx)', C.mint, 0, 3.2, 5.4); glow(S.c, OKG);
+    cap('還有已經算過的', 'λⁿ ⟷ 1/(1 − λx)');
+  },
+]);
+
+scene('acC-gf-inv2', '14C：反方向 — 給生成函數求 sequence', [
+  async (tok, S) => { // 36.9
+    S.f = card('sequence  ⟶  生成函數', C.sky, -3.2, 5.6, 4.6); S.g = card('生成函數  ⟶  sequence', C.peach, 3.2, 5.6, 4.6);
+    glow(S.g, HL);
+    cap('兩個方向都要會', '像 Z 轉換和 inverse Z 轉換');
+  },
+  async (tok, S) => { // 64.3
+    glow(S.g, null);
+    S.q = card('1/(1 − λx)²  對應的 cₙ = ？', C.lilac, 0, 4.3, 5.8); glow(S.q, HL);
+    cap('反過來：給 1/(1 − λx)²', '求原來的 sequence cₙ');
+  },
+  async (tok, S) => { // 76.8
+    glow(S.q, null);
+    hd('方法一：convolution（相乘）', -3.2, 3.2); hd('方法二：formal derivative', 3.2, 3.2);
+    cap('手上有兩種方法可以用', '先看第一種');
+  },
+]);
+
+scene('acC-gf-sq-conv', '14C：方法一 1/(1 − λx)² 看成相乘', [
+  async (tok, S) => { // 99.8
+    S.L = chain(0, 6.4, 0.7);
+    S.L.add('1/(1 − λx)² = 1/(1 − λx) · 1/(1 − λx)');
+    cap('拆成兩個 1/(1 − λx) 相乘', '');
+  },
+  async (tok, S) => { // 129.7
+    S.L.add('A(x) = B(x) = 1/(1 − λx)，C(x) = A(x)·B(x)');
+    cap('令 A、B 都是 1/(1 − λx)', 'C = A·B');
+  },
+  async (tok, S) => { // 138.3
+    S.L.add('⇒ cₙ = aₙ 和 bₙ 的 convolution；aₙ = bₙ = λⁿ');
+    cap('相乘 ⟷ convolution', 'aₙ、bₙ 都是 λⁿ');
+  },
+  async (tok, S) => { // 167.0
+    S.L.add('cₙ = Σₖ₌₀ⁿ aₖ bₙ₋ₖ');
+    cap('下標加起來是 n', 'k 最小 0、最大 n');
+  },
+  async (tok, S) => { // 208.5
+    S.L.add('= Σₖ₌₀ⁿ λᵏ · λⁿ⁻ᵏ = Σₖ₌₀ⁿ λⁿ');
+    note('示意 n = 3', -5.6, 3.0);
+    const sp = ['λ⁰·λ³', 'λ¹·λ²', 'λ²·λ¹', 'λ³·λ⁰'];
+    S.p = sp.map((t, i) => card(t, C.peach, -3.6 + i * 2.4, 2.2, 2.1));
+    await wt(tok, 700);
+    S.p.forEach((m) => { relab(m, 'λ³'); glow(m, HL); });
+    cap('λᵏ · λⁿ⁻ᵏ = λⁿ', '每一項都一樣');
+  },
+  async (tok, S) => { // 267.8
+    dark(S.p);
+    S.L.add('λⁿ 跟 k 無關 → constant，提出來：λⁿ · Σₖ₌₀ⁿ 1', C.lilac);
+    cap('λⁿ 是 constant', '跟 k 無關，提到外面');
+  },
+  async (tok, S) => { // 310.2
+    S.p.forEach((m, i) => { relab(m, '1'); tint(m, C.mint); });
+    for (let i = 0; i < 4; i++) { glow(S.p[i], OKG); sm('k = ' + i, -3.6 + i * 2.4, 1.45); await wt(tok, 350); }
+    hd('k = 0, 1, …, n：一共 n + 1 個 1', 0, 0.7);
+    cap('k = 0 是 1、k = 1 也是 1 …', '一共 n + 1 個 1');
+  },
+  async (tok, S) => { // 352.6
+    const m = card('cₙ = (n + 1) λⁿ', C.lemon, 0, -0.2, 4.6); glow(m, OKG);
+    cap('cₙ = (n + 1)λⁿ', '');
+  },
+]);
+
+scene('acC-gf-sq-deriv', '14C：方法二 用 formal derivative', [
+  async (tok, S) => { // 389.0
+    S.t = card('取 formal derivative → 分母會跑出平方', C.lilac, 0, 6.3); glow(S.t, HL);
+    cap('第二個方法', '1/(1 − λx) 微一次，分母就有平方');
+  },
+  async (tok, S) => { // 425.5
+    glow(S.t, null);
+    S.r = card('工具：n·aₙ ⟷ x·A′(x)', C.mint, 0, 5.5, 5); glow(S.r, OKG);
+    cap('用前面的結果', 'n·aₙ ⟷ x·A′(x)');
+  },
+  async (tok, S) => { // 442.5
+    glow(S.r, null);
+    S.L = chain(0, 4.7, 0.72);
+    S.L.add('aₙ = λⁿ，A(x) = 1/(1 − λx)');
+    cap('aₙ = λⁿ', '');
+  },
+  async (tok, S) => { // 457.0
+    S.L.add('n·λⁿ ⟷ x · A′(x) = λx / (1 − λx)²');
+    cap('A 取 formal derivative 再乘 x', '');
+  },
+  async (tok, S) => { // 495.3
+    S.L.add('λx/(1 − λx)² = 0 + λx + 2λ²x² + 3λ³x³ + ⋯', C.peach);
+    cap('左邊的 sequence 是 n·λⁿ', '照定義寫出來');
+  },
+  async (tok, S) => { // 525.6
+    S.L.add('= λx · (1 + 2λx + 3λ²x² + ⋯)', C.peach);
+    cap('每一項都可以提出 λx', '');
+  },
+  async (tok, S) => { // 549.4
+    const m = S.L.add('兩邊除以 λx：1/(1 − λx)² = 1 + 2λx + 3λ²x² + ⋯', C.mint); glow(m, OKG);
+    cap('左右兩邊都除掉 λx', '');
+  },
+  async (tok, S) => { // 573.0
+    hot('xⁿ 的係數：(n + 1) λⁿ', 0, 1.2);
+    cap('右邊通式：xⁿ 前面是 (n + 1)λⁿ', '平方項 3λ²、一次項 2λ');
+  },
+  async (tok, S) => { // 647.4
+    const m = card('1/(1 − λx)²  ⟷  (n + 1) λⁿ', C.lemon, 0, 0.3, 5.6); glow(m, OKG);
+    good('兩種方法，同一個答案', 0, -0.5);
+    cap('convolution 和 formal derivative', '都算出 (n + 1)λⁿ');
+  },
+]);
+
+scene('acC-gf-next', '14C：下一步 — extended binomial theorem', [
+  async (tok, S) => { // 674.4
+    S.a = card('1/(1 − λx)  ⟷  λⁿ', C.mint, -3.2, 6.0, 4.6); S.b = card('1/(1 − λx)²  ⟷  (n + 1)λⁿ', C.mint, 3.2, 6.0, 4.6);
+    cap('一次方、平方都算好了', '');
+  },
+  async (tok, S) => { // 690.6
+    S.q = card('1/(1 − λx)³？ … 1/(1 − λx)ᵐ？', C.rose, 0, 5.0, 5.8); glow(S.q, NG);
+    cap('下一步三次方、m 次方', '這樣一個一個算太慢');
+  },
+  async (tok, S) => { // 735.6
+    glow(S.q, null);
+    S.e = card('新工具：extended binomial theorem', C.lilac, 0, 4.0); glow(S.e, HL);
+    cap('引進新的東西', 'extended binomial theorem');
+  },
+  async (tok, S) => { // 753.9
+    glow(S.e, null);
+    S.o = card('以前：(1 + x)ⁿ = Σᵣ₌₀ⁿ C(n, r) xʳ，n 是正整數', C.sky, 0, 2.9); glow(S.o, HL);
+    cap('以前的 binomial theorem', 'n 是正整數');
+  },
+  async (tok, S) => { // 800.6
+    glow(S.o, null);
+    S.n = card('第一個推廣：(1 + x)⁻ⁿ　負整數次方', C.lemon, 0, 1.8); glow(S.n, OKG);
+    sm('(1 + x)⁻², (1 + x)⁻³, (1 + x)⁻⁴, …', 0, 1.1);
+    cap('推廣到負整數次方', '');
+  },
+]);
+
+scene('acC-gf-negpow', '14C：(1 + x)⁻ⁿ 展開有無窮多項', [
+  async (tok, S) => { // 836.3
+    S.q = card('(1 + x)⁻ⁿ = ？（n 是正整數）', C.lilac, 0, 6.2); glow(S.q, HL);
+    cap('負整數次方怎麼展開？', '先寫一個樣子');
+  },
+  async (tok, S) => { // 852.7
+    glow(S.q, null);
+    hd('正整數次方：只有 n + 1 項', -3.2, 5.3); hot('負整數次方：無窮多項', 3.2, 5.3);
+    cap('這個展開有無窮多項', 'r 從 0 一直下去');
+  },
+  async (tok, S) => { // 868.7
+    const v = ['1', '− x', '+ x²', '− x³', '+ x⁴', '⋯'];
+    sm('(1 + x)⁻¹ =', -6.0, 4.2);
+    S.t = [];
+    for (let i = 0; i < v.length; i++) { S.t.push(card(v[i], i % 2 ? C.rose : C.mint, -4.2 + i * 1.75, 4.2, 1.5)); await wt(tok, 250); }
+    cap('例：(1 + x)⁻¹ = 1 − x + x² − x³ + ⋯', '正負相間、無窮下去');
+  },
+  async (tok, S) => { // 897.5
+    S.th = card('(1 + x)⁻ⁿ = Σᵣ≥₀ (−1)ʳ C(n + r − 1, r) xʳ', C.lemon, 0, 2.9); glow(S.th, OKG);
+    cap('展開的結果', 'xʳ 係數 = (−1)ʳ C(n + r − 1, r)');
+  },
+  async (tok, S) => { // 916.0
+    glow(S.th, null);
+    hot('C(n + r − 1, r)：重複組合數！為什麼？', 0, 1.9);
+    cap('C(n + r − 1, r) 是重複組合數', '看證明');
+  },
+]);
+
+const PICKS = []; for (let i = 0; i <= 4; i++) for (let j = 0; j <= 4 - i; j++) PICKS.push([i, j, 4 - i - j]);
+const EX = ['1', 'x', 'x²', 'x³', 'x⁴'];
+scene('acC-gf-negproof', '14C：證明 — xʳ 係數 = 可重複的選法數', [
+  async (tok, S) => { // 942.0
+    S.top = card('先算 (1 − x)⁻ⁿ，最後再把 x 換成 −x', C.lilac, 0, 6.35); glow(S.top, HL);
+    cap('先考慮 (1 − x)⁻ⁿ', '比較好看，最後 x 用 −x 代');
+  },
+  async (tok, S) => { // 984.0
+    glow(S.top, null);
+    S.e = card('(1 − x)⁻ⁿ = (1 − x)⁻¹ · (1 − x)⁻¹ ⋯ (1 − x)⁻¹　（n 個）', C.sky, 0, 5.6); glow(S.e, HL);
+    cap('n 個 (1 − x)⁻¹ 乘起來', '');
+  },
+  async (tok, S) => { // 998.0
+    glow(S.e, null);
+    relab(S.e, '(1 − x)⁻ⁿ = (1 + x + x² + ⋯)(1 + x + x² + ⋯)⋯（n 個）');
+    S.cols = [-5.2, -3.7, -2.2].map((cx) => EX.map((t, i) => tile(t, C.sky, cx, 4.3 - i * 0.78, 0.66)));
+    cap('(1 − x)⁻¹ = 1 + x + x² + ⋯', '就是 λ = 1 的等比級數');
+  },
+  async (tok, S) => { // 1045.0
+    S.eq = note('兩個 formal power series 相等 = 任何有限項的係數都一樣', 2.4, 4.6);
+    cap('等號的意思', '任何有限項係數都相等，不管收斂');
+  },
+  async (tok, S) => { // 1063.0
+    S.r = card('要算 xʳ 的係數', C.lemon, 2.4, 3.6, 4.2); glow(S.r, HL);
+    cap('要算 xʳ 的係數', '');
+  },
+  async (tok, S) => { // 1082.6
+    glow(S.r, null);
+    S.ex = hot('例：n = 3、r = 4', 2.4, 2.8);
+    sm('(1 − x)⁻¹', -5.2, 4.95); sm('(1 − x)⁻¹', -3.7, 4.95); sm('(1 − x)⁻¹', -2.2, 4.95);
+    cap('先看例子：n = 3、r = 4', '三個括號，要 x⁴');
+  },
+  async (tok, S) => { // 1104.7
+    hd('乘開 = 每個括號隨便挑一項，乘起來', 2.4, 2.1);
+    cap('什麼叫乘開？', '每個括號挑一項乘起來，所有可能加起來');
+  },
+  async (tok, S) => { // 1140.0
+    [2, 1, 1].forEach((e, c) => { tint(S.cols[c][e], C.orange); glow(S.cols[c][e], HL); });
+    S.pk = card('x² · x · x = x⁴　→ 貢獻 1', C.peach, 2.4, 1.3, 4.6); glow(S.pk, HL);
+    cap('例如：x² 挑第一個、x、x', '乘起來 x⁴，貢獻係數 1');
+  },
+  async (tok, S) => { // 1176.6
+    glow(S.pk, null);
+    const reset = () => S.cols.forEach((col) => col.forEach((m) => { tint(m, C.sky); glow(m, null); }));
+    S.cnt = card('指數加起來 = 4 的挑法：0 種', C.mint, 2.4, 0.5, 4.6);
+    for (let p = 0; p < PICKS.length; p++) {
+      reset(); PICKS[p].forEach((e, c) => { tint(S.cols[c][e], C.orange); glow(S.cols[c][e], HL); });
+      relab(S.cnt, '指數加起來 = 4 的挑法：' + (p + 1) + ' 種'); await wt(tok, 150);
+    }
+    glow(S.cnt, OKG);
+    cap('x⁴ 的係數 = 指數和是 4 的挑法數', '一共 15 種');
+  },
+  async (tok, S) => { // 1209.2
+    gone(S.pk);
+    S.kind = card('= 三種東西，可重複地拿 4 個（x² 是第一種拿 2 個）', C.lilac, 0, -0.35); glow(S.kind, HL);
+    cap('這是學過的問題', '3 種東西拿 4 個，可重複');
+  },
+  async (tok, S) => { // 1307.4
+    glow(S.kind, null);
+    relab(S.kind, '(1 − x)⁻ⁿ 的 xʳ 係數 = 從 n 種東西、可重複、不計順序，選 r 個');
+    cap('一般化', 'unordered selection with repetition');
+  },
+  async (tok, S) => { // 1390.5
+    remove(S.eq); remove(S.ex); gone(S.r);
+    S.bar = card('× × │ × │ ×　（r 個 ×、n − 1 根柵欄）', C.peach, 2.4, 4.3, 5.2); glow(S.bar, HL);
+    S.cf = card('= C(n + r − 1, r)；例：C(6, 4) = 15 ✓', C.mint, 2.4, 3.4, 5.2); glow(S.cf, OKG);
+    cap('= C(n + r − 1, r)', 'n − 1 根柵欄和 r 個 × 的排法');
+  },
+  async (tok, S) => { // 1457.4
+    dark(S.bar, S.cf);
+    S.neg = card('x 換成 −x：xʳ → (−1)ʳxʳ ⇒ (1 + x)⁻ⁿ 的係數 (−1)ʳ C(n + r − 1, r)', C.lemon, 0, -1.1); glow(S.neg, OKG);
+    cap('我們要的是 (1 + x)⁻ⁿ', 'x 用 −x 代，多一個 (−1)ʳ，證完');
+  },
+  async (tok, S) => { // 1526.7
+    good('關鍵：「乘開」就是每個括號挑一項', 2.4, 1.4);
+    cap('關鍵在怎麼看乘開', '下一步算 1/(1 − λx)ᵐ');
+  },
+]);
+
+// ════════ q-T1GS0zeM4（趙啟超 14D：1/(1 − λx)ᵐ、extended binomial coefficient／theorem、(1 + x)^(−1/2)） ════════
+scene('acC-gf-lam-m', '14D：1/(1 − λx)ᵐ ⟷ C(n + m − 1, m − 1)λⁿ', [
+  async (tok, S) => { // 3.8
+    S.q = card('1/(1 − λx)ᵐ　對應的 sequence = ？（m ≥ 1）', C.lilac, 0, 6.35); glow(S.q, HL);
+    cap('一般的 m 次方', '');
+  },
+  async (tok, S) => { // 6.5
+    glow(S.q, null);
+    sm('m = 1：λⁿ　　m = 2：(n + 1)λⁿ　（已算過）', 0, 5.75);
+    cap('m = 1、m = 2 前面算過', '');
+  },
+  async (tok, S) => { // 7.6
+    S.L = chain(0, 5.1, 0.72);
+    S.L.add('定理：(1 + x)⁻ᵐ = Σᵣ (−1)ʳ C(m + r − 1, r) xʳ');
+    cap('用剛才的定理', '(1 + x)⁻ᵐ 的展開');
+  },
+  async (tok, S) => { // 38.4
+    S.L.add('x 換成 −λx：(1 − λx)⁻ᵐ = Σᵣ (−1)ʳ C(m + r − 1, r) (−λx)ʳ');
+    cap('把 x 用 −λx 代進去', '');
+  },
+  async (tok, S) => { // 57.2
+    S.L.add('其中 (−λx)ʳ = (−1)ʳ λʳ xʳ', C.peach);
+    cap('xʳ 變成 (−λx)ʳ', '多出 (−λ)ʳ');
+  },
+  async (tok, S) => { // 74.3
+    S.L.add('(−1)ʳ · (−1)ʳ = 1 → = Σᵣ C(m + r − 1, r) λʳ xʳ', C.mint);
+    cap('(−1)ʳ 乘 (−1)ʳ always 是 1', '負號就沒有了');
+  },
+  async (tok, S) => { // 120.3
+    S.L.add('r 換成 n：aₙ = C(m + n − 1, n) λⁿ', C.lilac);
+    cap('只是把 r 改名成 n', '');
+  },
+  async (tok, S) => { // 147.3
+    const m = S.L.add('取 n 個 = 取 m − 1 個：aₙ = C(n + m − 1, m − 1) λⁿ', C.lemon); glow(m, OKG);
+    cap('binomial coefficient 的性質', 'C(N, n) = C(N, N − n)，下面 m − 1 固定比較好看');
+  },
+  async (tok, S) => { // 232.0
+    const rows = ['m = 1：C(n, 0)λⁿ = λⁿ', 'm = 2：C(n + 1, 1)λⁿ = (n + 1)λⁿ', 'm = 3：C(n + 2, 2)λⁿ = (n + 2)(n + 1)/2 · λⁿ'];
+    for (let i = 0; i < 3; i++) { card(rows[i], C.mint, 0, 0.7 - i * 0.65); await wt(tok, 450); }
+    cap('代 m = 1, 2, 3 檢查', '跟前面算的一樣，而且推廣了');
+  },
+  async (tok, S) => { // 268.1
+    bad('不要硬背這個式子 → 背錯就沒道理了', 0, -1.4);
+    cap('不要硬去記結果', '後面有更好看的寫法');
+  },
+]);
+
+scene('acC-gf-extcoef', '14D：extended binomial coefficient C(α, r)', [
+  async (tok, S) => { // 285.3
+    S.t = card('定義：extended binomial coefficient　C(α, r)', C.lilac, 0, 6.3); glow(S.t, HL);
+    cap('怎麼讓答案好看一點？', '定義 extended binomial coefficient');
+  },
+  async (tok, S) => { // 304.0
+    glow(S.t, null);
+    S.a = card('α：任何 real number（正負、非整數都行）', C.sky, -3.1, 5.2, 5.6); S.r = card('r：非負整數（要算 r!）', C.sky, 3.1, 5.2, 4.6);
+    cap('兩個 parameter', 'α 是實數；r 是非負整數');
+  },
+  async (tok, S) => { // 362.5
+    S.z = card('r = 0：C(α, 0) = 1', C.mint, 0, 4.0, 5); glow(S.z, OKG);
+    cap('r = 0 時 always 定義成 1', '任何東西取 0 個都是 1');
+  },
+  async (tok, S) => { // 385.1
+    glow(S.z, null);
+    S.p = card('r > 0：C(α, r) = α(α − 1)(α − 2)⋯(α − r + 1) / r!', C.lemon, 0, 3.0); glow(S.p, OKG);
+    cap('r > 0：跟以前的定義一模一樣', '上面 r 個連乘、下面 r!');
+  },
+  async (tok, S) => { // 431.8
+    glow(S.p, null);
+    note('示意：C(−2, 3) = (−2)(−3)(−4) / 3! = −24 / 6 = −4', 0, 2.0);
+    good('以前用「連乘 / r!」定義，才能推廣到任何實數', 0, 1.2);
+    cap('上面任何實數都能代', '把以前的 binomial coefficient 推廣了');
+  },
+]);
+
+scene('acC-gf-negcoef', '14D：C(−n, r) = (−1)ʳ C(n + r − 1, r)', [
+  async (tok, S) => { // 451.3
+    S.o = card('(1 + x)⁻ⁿ = Σ (−1)ʳ C(n + r − 1, r) xʳ　← 有點麻煩', C.rose, 0, 6.3); glow(S.o, NG);
+    cap('剛才的展開式', '不夠簡單、不夠漂亮');
+  },
+  async (tok, S) => { // 500.7
+    glow(S.o, null);
+    S.L = chain(0, 5.3, 0.75);
+    S.L.add('C(−n, r) = ？　（n 正整數，上面是負的）');
+    cap('看看 C(−n, r) 是多少', '以前沒定義，現在有了');
+  },
+  async (tok, S) => { // 534.8
+    S.L.add('= (−n)(−n − 1)(−n − 2)⋯(−n − r + 1) / r!');
+    cap('代 extended 的定義', '');
+  },
+  async (tok, S) => { // 557.0
+    S.L.add('r 個因子各提出一個 −1 → (−1)ʳ', C.lilac);
+    cap('把 −1 都提出來', '0 到 r − 1，一共 r 個');
+  },
+  async (tok, S) => { // 576.7
+    S.L.add('= (−1)ʳ · (n + r − 1)(n + r − 2)⋯(n) / r!', C.lilac);
+    cap('大的寫前面、小的寫後面', '從 n + r − 1 一路到 n');
+  },
+  async (tok, S) => { // 614.3
+    const m = S.L.add('= (−1)ʳ · C(n + r − 1, r)', C.mint); glow(m, OKG);
+    note('示意 n = 3、r = 4：(−3)(−4)(−5)(−6)/4! = 360/24 = 15 = C(6, 4)', 0, 1.25);
+    cap('r 個連乘除以 r!', '就是 C(n + r − 1, r)');
+  },
+  async (tok, S) => { // 645.1
+    S.n = card('(1 + x)⁻ⁿ = Σᵣ≥₀ C(−n, r) xʳ', C.lemon, 0, 0.3, 6.4); glow(S.n, OKG);
+    cap('所以剛才的定理寫成這樣', '');
+  },
+  async (tok, S) => { // 692.6
+    glow(S.n, null);
+    hd('跟 (1 + x)ⁿ = Σ C(n, r) xʳ 一模一樣，只是次方是負的', 0, -0.55);
+    cap('又簡單又好看', '會原本的 binomial theorem 就不用背');
+  },
+]);
+
+scene('acC-gf-extthm', '14D：extended binomial theorem（任意實數 α）', [
+  async (tok, S) => { // 768.7
+    sm('正整數次方 ✓　負整數次方 ✓　其他次方？', 0, 6.3);
+    cap('不只是整數次方', '');
+  },
+  async (tok, S) => { // 814.7
+    S.t = card('(1 + x)^α = Σᵣ≥₀ C(α, r) xʳ', C.lemon, 0, 5.3, 6); glow(S.t, OKG);
+    cap('extended binomial theorem', '');
+  },
+  async (tok, S) => { // 834.5
+    glow(S.t, null);
+    ['α = −1/2', 'α = −4', 'α = 1/2', 'α = 5/4'].forEach((t, i) => card(t, C.sky, -4.2 + i * 2.8, 4.1, 2.3));
+    cap('α 是任何實數', '−1/2、1/2、5/4 都可以');
+  },
+  async (tok, S) => { // 881.3
+    S.p = card('證明要用微積分的 Maclaurin series', C.lilac, 0, 3.0); glow(S.p, HL);
+    cap('證明用 Maclaurin series', '所以有一些技術上的限制');
+  },
+  async (tok, S) => { // 917.9
+    glow(S.p, null);
+    S.x = card('技術性假設：x 是實數，|x| < 1（收斂）', C.rose, 0, 2.1); glow(S.x, NG);
+    cap('主要是對 x 的假設', '因為微積分的定理有收斂問題');
+  },
+  async (tok, S) => { // 943.4
+    good('除了這個技術限制，樣子跟原本的 binomial theorem 一樣', 0, 1.2);
+    cap('樣子跟原來一樣', '');
+  },
+]);
+
+scene('acC-gf-maclaurin', '14D：證明 — Maclaurin series', [
+  async (tok, S) => { // 947.9
+    S.t = card('Maclaurin series', C.lilac, 0, 6.3, 4); glow(S.t, HL);
+    cap('證明用微積分的 Maclaurin series', '');
+  },
+  async (tok, S) => { // 971.4
+    glow(S.t, null);
+    sm('= 在 x = 0 這一點的 Taylor series 展開', 0, 5.65);
+    cap('就是在 x = 0 的 Taylor 展開', '');
+  },
+  async (tok, S) => { // 997.4
+    S.m = card('f(x) = Σᵣ≥₀ [ f⁽ʳ⁾(0) / r! ] xʳ', C.sky, 0, 4.9, 6); glow(S.m, HL);
+    cap('係數：r 次微分代 0，除以 r!', '');
+  },
+  async (tok, S) => { // 1020.7
+    glow(S.m, null);
+    S.f = card('f(x) = (1 + x)^α　→ 只要算 r 次微分', C.mint, 0, 4.0);
+    cap('現在 f(x) = (1 + x)^α', '');
+  },
+  async (tok, S) => { // 1051.1
+    S.d = ['α', '(α − 1)', '(α − 2)', '⋯'].map((t, i) => card(t, C.peach, -3.6 + i * 2.4, 3.0, 2));
+    for (let i = 0; i < 3; i++) { glow(S.d[i], HL); sm('第 ' + (i + 1) + ' 次', -3.6 + i * 2.4, 2.3); await wt(tok, 450); }
+    cap('微一次 α 掉下來', '再微一次 α − 1 掉下來 …');
+  },
+  async (tok, S) => { // 1072.0
+    dark(S.d);
+    S.r = card('f⁽ʳ⁾(x) = α(α − 1)⋯(α − r + 1) · (1 + x)^(α − r)', C.sky, 0, 1.5); glow(S.r, HL);
+    cap('微 r 次', '最後一次 α − r + 1 掉下來');
+  },
+  async (tok, S) => { // 1094.8
+    glow(S.r, null);
+    S.z = card('代 x = 0：(1 + 0)^(α − r) = 1', C.mint, 0, 0.7, 5);
+    cap('x = 0 代進去', '1 的任何次方都是 1');
+  },
+  async (tok, S) => { // 1121.3
+    const m = card('f⁽ʳ⁾(0) / r! = α(α − 1)⋯(α − r + 1) / r! = C(α, r)', C.lemon, 0, -0.1); glow(m, OKG);
+    cap('再除以 r!', '正好是 extended binomial coefficient');
+  },
+  async (tok, S) => { // 1153.9
+    good('證完：(1 + x)^α = Σ C(α, r) xʳ　（|x| < 1）', 0, -0.95);
+    cap('證完了', '|x| < 1 是收斂的技術要求');
+  },
+]);
+
+scene('acC-gf-halfneg', '14D：例 (1 + x)^(−1/2) 的展開', [
+  async (tok, S) => { // 1211.4
+    S.t = card('(1 + x)^(−1/2) = 1/√(1 + x)', C.lilac, 0, 6.3, 5.4); glow(S.t, HL);
+    cap('例子：(1 + x) 的 −1/2 次方', '= 1/√(1 + x)');
+  },
+  async (tok, S) => { // 1229.0
+    glow(S.t, null);
+    S.c = [card('C(−½, 0) = 1', C.mint, -4.4, 5.0, 3.6), card('C(−½, 1) = −1/2', C.rose, 0, 5.0, 3.6)];
+    cap('取 0 是 1；取 1 是 −1/2', '');
+  },
+  async (tok, S) => { // 1247.4
+    S.c.push(card('C(−½, 2) = (−½)(−3/2) / 2! = 3/8', C.mint, -2.2, 4.0, 6));
+    glow(S.c[2], HL);
+    cap('取 2：(−1/2)(−1/2 − 1)/2!', '= 3/8');
+  },
+  async (tok, S) => { // 1263.8
+    glow(S.c[2], null);
+    S.c.push(card('C(−½, 3) = (−½)(−3/2)(−5/2) / 3! = −5/16', C.rose, -1.2, 3.1, 7.2));
+    glow(S.c[3], HL);
+    cap('取 3：再乘 (−1/2 − 2)，除以 3!', '= −5/16');
+  },
+  async (tok, S) => { // 1291.5
+    glow(S.c[3], null);
+    S.e = card('1/√(1 + x) = 1 − ½x + ⅜x² − (5/16)x³ + ⋯', C.sky, 0, 2.0); glow(S.e, HL);
+    cap('整理起來', '正負相間');
+  },
+  async (tok, S) => { // 1322.5
+    glow(S.e, null);
+    S.g = card('xʳ 的係數 = (−1)ʳ · C(2r, r) / 2²ʳ', C.lemon, 0, 1.0, 6); glow(S.g, OKG);
+    cap('通式', '(−1)ʳ 正負相間、分母 2 的 2r 次方');
+  },
+  async (tok, S) => { // 1376.5
+    good('驗 r = 2：C(4, 2) / 2⁴ = 6/16 = 3/8 ✓', 0, 0.1);
+    cap('代 r = 2 檢查', 'C(4, 2)/2⁴ = 3/8 ✓');
+  },
+]);
+
+scene('acC-gf-extsum', '14D：任何次方都直接展開', [
+  async (tok, S) => { // 1392.2
+    S.t = card('(1 + x)^α：任何次方都能用 extended binomial theorem 展開', C.mint, 0, 6.0); glow(S.t, OKG);
+    cap('這樣就好用多了', '只要適當定義 C(α, r)');
+  },
+  async (tok, S) => { // 1415.2
+    glow(S.t, null);
+    const v = [1, 4, 6, 4, 1, 0, 0, '⋯'];
+    note('示意 (1 + x)⁴', -5.6, 5.0);
+    v.forEach((x, i) => { const m = tile(x, i < 5 ? C.peach : C.gray, -4.6 + i * 1.3, 4.2); });
+    sm('r > n：C(n, r) 自動是 0 → 無窮項變有限項', 0, 3.4);
+    cap('正整數次方其實也可看成無窮項', '下面比上面大自動變 0');
+  },
+  async (tok, S) => { // 1443.8
+    hot('算 inverse generating function：直接展開，不要硬背式子', 0, 2.4);
+    cap('前面那些結果', '直接用它展開就好，不小心就背錯');
+  },
+]);
+
+// ════════ LO5yHmkp5c4（趙啟超 15A：用生成函數解 recurrence — Fibonacci、aₙ = 3aₙ₋₁ + n） ════════
+scene('acC-rr-intro', '15A：應用一 — 解 recurrence relation', [
+  async (tok, S) => { // 3.8
+    S.a = card('sequence  ⟷  generating function（兩個方向）', C.sky, 0, 6.2); glow(S.a, HL);
+    cap('前面：兩個方向都會算了', '');
+  },
+  async (tok, S) => { // 8.4
+    glow(S.a, null);
+    S.b = card('應用一：解 recurrence relation', C.lilac, 0, 5.2); glow(S.b, HL);
+    cap('第一個應用：解 recurrence relation', '以前是直接解');
+  },
+  async (tok, S) => { // 33.1
+    glow(S.b, null);
+    const st = ['recurrence', '算出 A(x)', '展開 / inverse', 'aₙ 的公式'];
+    S.s = st.map((t, i) => card(t, [C.peach, C.mint, C.sky, C.lemon][i], -4.8 + i * 3.2, 3.8, 2.6));
+    for (let i = 0; i < 3; i++) arrow(V3(-3.4 + i * 3.2, 3.8, 0), V3(-3.0 + i * 3.2, 3.8, 0));
+    cap('先算生成函數，再反算回來', '');
+  },
+  async (tok, S) => { // 42.2
+    note('類比：微分方程 → Laplace transform → inverse Laplace transform', 0, 2.7);
+    cap('像用 Laplace transform 解微分方程', '');
+  },
+]);
+
+const FR = (rowY, items, col) => items.map((t, i) => card(t, col, -4.6 + i * 1.9, rowY, 1.7));
+scene('acC-rr-fib-gf', '15A：Fibonacci — 兩邊乘 xⁿ 再加總', [
+  async (tok, S) => { // 58.6
+    S.v = [0, 1, 1, 2, 3, 5, 8].map((v, i) => tile(v, C.peach, -4.5 + i * 1.5, 6.3, 0.7));
+    sm('F₀  F₁  F₂ …', -6.3, 6.3);
+    cap('例子：Fibonacci number', '前面直接解過，現在用生成函數再解一次');
+  },
+  async (tok, S) => { // 67.8
+    S.d = card('Fₙ = Fₙ₋₁ + Fₙ₋₂（n ≥ 2），F₀ = 0，F₁ = 1', C.sky, 0, 5.45); glow(S.d, HL);
+    cap('定義：n ≥ 2 時 Fₙ = Fₙ₋₁ + Fₙ₋₂', '兩個 initial condition');
+  },
+  async (tok, S) => { // 86.0
+    glow(S.d, null);
+    S.F = card('F(x) = Σₙ≥₀ Fₙ xⁿ', C.mint, 0, 4.7, 4.4); glow(S.F, OKG);
+    cap('令 F(x) 是 Fₙ 的生成函數', '');
+  },
+  async (tok, S) => { // 106.0
+    glow(S.F, null);
+    S.e = card('Σₙ≥₂ Fₙxⁿ = Σₙ≥₂ Fₙ₋₁xⁿ + Σₙ≥₂ Fₙ₋₂xⁿ', C.lilac, 0, 3.95); glow(S.e, HL);
+    cap('兩邊都乘 xⁿ，從 n = 2 加起來', '因為式子對所有 n ≥ 2 成立');
+  },
+  async (tok, S) => { // 150.8
+    glow(S.e, null);
+    hot('想辦法讓三項都跟 F(x) 扯上關係', 0, 3.3);
+    cap('再把它跟生成函數扯上關係', '');
+  },
+  async (tok, S) => { // 162.5
+    S.r1 = FR(2.5, ['F₂x²', 'F₃x³', 'F₄x⁴', '⋯'], C.peach);
+    sm('第一項', -6.3, 2.5);
+    cap('第一項：n = 2, 3, 4 … 代進去', 'F₂x² + F₃x³ + ⋯');
+  },
+  async (tok, S) => { // 186.7
+    S.k1 = card('= F(x) − F₀ − F₁x', C.mint, 4.4, 2.5, 3.8); glow(S.k1, OKG);
+    cap('差了常數項跟一次項', '');
+  },
+  async (tok, S) => { // 206.9
+    glow(S.k1, null);
+    S.r2 = FR(1.6, ['F₁x²', 'F₂x³', 'F₃x⁴', '⋯'], C.sky);
+    sm('第二項', -6.3, 1.6);
+    cap('第二項：F₁x² + F₂x³ + ⋯', '次方比下標多 1 → 提出 x');
+  },
+  async (tok, S) => { // 268.8
+    S.k2 = card('= x · (F(x) − F₀)', C.mint, 4.4, 1.6, 3.8); glow(S.k2, OKG);
+    cap('提出 x 以後只差一個常數項', '');
+  },
+  async (tok, S) => { // 285.4
+    glow(S.k2, null);
+    S.r3 = FR(0.7, ['F₀x²', 'F₁x³', 'F₂x⁴', '⋯'], C.lilac);
+    sm('第三項', -6.3, 0.7);
+    await wt(tok, 500);
+    S.k3 = card('= x² · F(x)', C.mint, 4.4, 0.7, 3.8); glow(S.k3, OKG);
+    cap('第三項：次方比下標多 2 → 提出 x²', '剛好是 x²F(x)');
+  },
+  async (tok, S) => { // 323.7
+    [S.k1, S.k2, S.k3].forEach((m) => glow(m, OKG));
+    good('三個都跟 F(x) 扯上關係了', 0, -0.2);
+    cap('三項都變成 F(x) 的式子', '');
+  },
+]);
+
+scene('acC-rr-fib-solve', '15A：解出 F(x) = x/(1 − x − x²)', [
+  async (tok, S) => { // 349.3
+    S.L = chain(0, 6.2, 0.78);
+    S.L.add('F(x) − F₀ − F₁x = x(F(x) − F₀) + x²F(x)');
+    cap('有 F(x) 的放一邊，沒有的放另一邊', '');
+  },
+  async (tok, S) => { // 361.6
+    S.L.add('(1 − x − x²)·F(x) = F₀ + (F₁ − F₀)x');
+    cap('左邊提出 F(x)', '剩下的移到右邊');
+  },
+  async (tok, S) => { // 397.8
+    S.L.add('代 F₀ = 0、F₁ = 1：右邊 = x', C.lilac);
+    cap('用 initial condition', '右邊剩下 x');
+  },
+  async (tok, S) => { // 414.0
+    const m = S.L.add('F(x) = x / (1 − x − x²)', C.lemon); glow(m, OKG);
+    note('驗算（示意）：x/(1 − x − x²) = 0 + x + x² + 2x³ + 3x⁴ + 5x⁵ + ⋯', 0, 2.75);
+    const v = [0, 1, 1, 2, 3, 5, 8];
+    v.forEach((x, i) => tile(x, C.peach, -4.5 + i * 1.5, 1.9, 0.7));
+    cap('除過去，生成函數找到了', '下面只是把它 inverse 回來');
+  },
+  async (tok, S) => { // 446.4
+    hd('乘 xⁿ → 從 n = 2 加總 → 化成 F(x) → 代 initial condition', 0, 1.0);
+    cap('回顧步驟', '分母 1 − x − x² 來自移項');
+  },
+]);
+
+scene('acC-rr-fib-pf', '15A：partial fraction 反算回 Fₙ', [
+  async (tok, S) => { // 487.8
+    S.k = card('λⁿ ⟷ 1/(1 − λx)：想辦法變成這個樣子', C.mint, 0, 6.3); glow(S.k, HL);
+    cap('反過來：要湊成 1/(1 − λx)', '');
+  },
+  async (tok, S) => { // 510.5
+    glow(S.k, null);
+    S.L = chain(0, 5.45, 0.74);
+    S.L.add('1 − x − x² = (1 − λ₁x)(1 − λ₂x)');
+    cap('分母分解因式', '');
+  },
+  async (tok, S) => { // 527.2
+    S.L.add('λ₁ = (1 + √5)/2，λ₂ = (1 − √5)/2', C.lilac);
+    cap('λ₁、λ₂ 可以解出來', 'λ₁ + λ₂ = 1、λ₁λ₂ = −1');
+  },
+  async (tok, S) => { // 542.6
+    S.L.add('x/(1 − x − x²) = α₁/(1 − λ₁x) + α₂/(1 − λ₂x)');
+    cap('做 partial fraction expansion', '分項分式');
+  },
+  async (tok, S) => { // 584.4
+    note('跟積分時的分項分式一樣（電機系的 residue 也會用）', 0, 2.55);
+    cap('積分時也做過分項分式', '');
+  },
+  async (tok, S) => { // 645.0
+    S.L.add('兩邊乘分母：x = α₁(1 − λ₂x) + α₂(1 − λ₁x)', C.peach);
+    cap('左右兩邊乘 (1 − λ₁x)(1 − λ₂x)', '');
+  },
+  async (tok, S) => { // 676.2
+    S.a1 = card('代 x = 1/λ₁：α₂ 那項變 0', C.sky, -3.3, 1.7, 4.8); glow(S.a1, HL);
+    cap('代根讓一項消失', 'x = λ₁⁻¹ 代進去');
+  },
+  async (tok, S) => { // 733.0
+    relab(S.a1, 'α₁ = 1/(λ₁ − λ₂) = 1/√5'); glow(S.a1, OKG);
+    cap('λ₁ − λ₂ = √5', 'α₁ = 1/√5');
+  },
+  async (tok, S) => { // 748.5
+    S.a2 = card('代 x = 1/λ₂：α₂ = 1/(λ₂ − λ₁) = −1/√5', C.sky, 3.3, 1.7, 5.4); glow(S.a2, OKG);
+    cap('再用 x = λ₂⁻¹', 'α₂ = −1/√5');
+  },
+  async (tok, S) => { // 809.5
+    dark(S.a1, S.a2);
+    S.p = card('F(x) = (1/√5)·1/(1 − λ₁x) − (1/√5)·1/(1 − λ₂x)', C.mint, 0, 0.8); glow(S.p, HL);
+    cap('再 inverse 回來', '1/(1 − λx) ⟷ λⁿ');
+  },
+  async (tok, S) => { // 832.0
+    glow(S.p, null);
+    S.ans = card('Fₙ = (1/√5)·[ ((1 + √5)/2)ⁿ − ((1 − √5)/2)ⁿ ]，n ≥ 0', C.lemon, 0, -0.05); glow(S.ans, OKG);
+    cap('得到 Fibonacci 的通式', '');
+  },
+  async (tok, S) => { // 871.5
+    good('跟以前直接解的答案一模一樣', 0, -0.85);
+    cap('兩種方法，答案只有一個', '');
+  },
+]);
+
+scene('acC-rr-flow', '15A：生成函數解 recurrence 的流程', [
+  async (tok, S) => { // 880.0
+    S.s = ['① 兩邊乘 xⁿ、加總 → 解出 A(x)', '② 分母分解因式', '③ partial fraction expansion', '④ 1/(1 − λx) ⟷ λⁿ 反回 aₙ'].map((t, i) => card(t, C.gray, 0, 5.8 - i * 1.0, 6.4));
+    glow(S.s[0], HL); tint(S.s[0], C.mint);
+    cap('先把生成函數解出來', '');
+  },
+  async (tok, S) => { // 904.5
+    glow(S.s[0], null);
+    [1, 2].forEach((i) => { tint(S.s[i], C.sky); glow(S.s[i], HL); });
+    cap('反過來：分解因式', '再做 partial fraction expansion');
+  },
+  async (tok, S) => { // 917.4
+    dark(S.s);
+    tint(S.s[3], C.lemon); glow(S.s[3], OKG);
+    cap('再把生成函數反回 sequence', '');
+  },
+  async (tok, S) => { // 938.5
+    dark(S.s);
+    hd('Fₙ 就是展開以後 xⁿ 的係數', 0, 1.6);
+    cap('要的第 n 項', '就是 xⁿ 的係數');
+  },
+]);
+
+scene('acC-rr-nonhom', '15A：non-homogeneous aₙ − 3aₙ₋₁ = n', [
+  async (tok, S) => { // 960.7
+    S.h = card('剛才：Fₙ − Fₙ₋₁ − Fₙ₋₂ = 0　homogeneous', C.sky, 0, 6.3); glow(S.h, HL);
+    cap('剛才是 homogeneous', '移項以後右邊是 0');
+  },
+  async (tok, S) => { // 979.4
+    glow(S.h, null);
+    S.n = card('現在：aₙ − 3aₙ₋₁ = n（n ≥ 1），a₀ = 1　non-homogeneous', C.lilac, 0, 5.55); glow(S.n, HL);
+    cap('右邊不是 0：non-homogeneous', '可以直接解，也可以用生成函數');
+  },
+  async (tok, S) => { // 1004.5
+    glow(S.n, null);
+    S.L = chain(0, 4.7, 0.72);
+    S.L.add('A(x) = Σ aₙxⁿ；兩邊乘 xⁿ，從 n = 1 加');
+    cap('一樣：乘 xⁿ、對 n ≥ 1 加起來', '');
+  },
+  async (tok, S) => { // 1027.0
+    S.L.add('Σₙ≥₁ aₙxⁿ = A(x) − a₀', C.peach);
+    cap('第一項差一個常數項 a₀', '');
+  },
+  async (tok, S) => { // 1046.4
+    S.L.add('Σₙ≥₁ 3aₙ₋₁xⁿ = 3x · A(x)', C.peach);
+    cap('第二項：a₀x + a₁x² + ⋯', '提出 x，就是 A(x)');
+  },
+  async (tok, S) => { // 1087.4
+    S.L.add('Σₙ≥₁ n·xⁿ = x/(1 − x)²　（n·λⁿ 取 λ = 1）', C.peach);
+    cap('右邊：前面算過 n·λⁿ', 'λ = 1 → x/(1 − x)²');
+  },
+  async (tok, S) => { // 1179.3
+    S.L.add('(1 − 3x)·A(x) = a₀ + x/(1 − x)² = 1 + x/(1 − x)²', C.mint);
+    cap('A(x) 放一邊，a₀ = 1 代進來', '');
+  },
+  async (tok, S) => { // 1216.5
+    const m = S.L.add('A(x) = 1/(1 − 3x) + x / [(1 − x)²(1 − 3x)]', C.lemon); glow(m, OKG);
+    cap('除過去', '第一項 1/(1 − 3x) 先不要併進去');
+  },
+  async (tok, S) => { // 1257.6
+    dark(S.L.ls);
+    hd('1/(1 − 3x) 已經是 1/(1 − λx) 的樣子 → 不動', -3.3, 0.0);
+    hot('只對後面那項做 partial fraction', 3.3, 0.0);
+    cap('第一項已經會反了', '只做後面那項');
+  },
+  async (tok, S) => { // 1295.7
+    S.pf = card('x/[(1 − x)²(1 − 3x)] = α₁/(1 − x) + α₂/(1 − x)² + α₃/(1 − 3x)', C.sky, 0, -0.85); glow(S.pf, HL);
+    cap('會有三項', '(1 − x) 是平方，所以有 1 − x 和 (1 − x)²');
+  },
+  async (tok, S) => { // 1329.0
+    glow(S.pf, null);
+    note('下一步：求出 α₁、α₂、α₃，再 inverse 回來', 0, -1.6);
+    cap('接著把三個係數找出來', '跟積分時算係數一樣');
+  },
+]);
+
+// ════════ 8zfYKqZaSi8（趙啟超 15B：求 α、驗算、三階 recurrence） ════════
+scene('acC-rr-alpha', '15B：求 α₁、α₂、α₃（代根）', [
+  async (tok, S) => { // 4.3
+    S.e = card('x = α₁(1 − x)(1 − 3x) + α₂(1 − 3x) + α₃(1 − x)²', C.sky, 0, 6.3); glow(S.e, HL);
+    cap('兩邊乘 (1 − x)²(1 − 3x)', '');
+  },
+  async (tok, S) => { // 35.4
+    glow(S.e, null);
+    hd('技巧：代分母的根，讓某些項變 0', 0, 5.55);
+    cap('通常代那個根', '有些項就消掉');
+  },
+  async (tok, S) => { // 40.0
+    S.a2 = card('x = 1：1 = α₂(1 − 3) ⇒ α₂ = −1/2', C.mint, 0, 4.7, 7); glow(S.a2, OKG);
+    cap('代 x = 1', 'α₁、α₃ 那兩項都是 0');
+  },
+  async (tok, S) => { // 63.4
+    glow(S.a2, null);
+    S.a3 = card('x = 1/3：1/3 = α₃(1 − 1/3)² = α₃·4/9 ⇒ α₃ = 3/4', C.mint, 0, 3.9, 8.4); glow(S.a3, OKG);
+    cap('再代 1 − 3x = 0 的根 x = 1/3', 'α₃ = 3/4');
+  },
+  async (tok, S) => { // 97.6
+    glow(S.a3, null);
+    S.c = card('比常數項（x = 0）：0 = α₁ + α₂ + α₃', C.sky, 0, 3.1, 7); glow(S.c, HL);
+    cap('α₁ 用別的方法：比常數項', '左邊常數項 0');
+  },
+  async (tok, S) => { // 128.6
+    glow(S.c, null);
+    S.a1 = card('α₁ = −α₂ − α₃ = 1/2 − 3/4 = −1/4', C.mint, 0, 2.3, 7); glow(S.a1, OKG);
+    cap('α₂、α₃ 已知', 'α₁ = −1/4');
+  },
+  async (tok, S) => { // 148.4
+    glow(S.a1, null);
+    S.f = card('A(x) = 1/(1 − 3x) + [ −¼/(1 − x) − ½/(1 − x)² + ¾/(1 − 3x) ]', C.lilac, 0, 1.2); glow(S.f, HL);
+    cap('別忘了前面還有一項', '1/(1 − 3x)');
+  },
+  async (tok, S) => { // 180.7
+    glow(S.f, null);
+    S.g = card('A(x) = (7/4)/(1 − 3x) − (1/4)/(1 − x) − (1/2)/(1 − x)²', C.lemon, 0, 0.3); glow(S.g, OKG);
+    cap('兩個 1/(1 − 3x) 合起來', '1 + 3/4 = 7/4');
+  },
+]);
+
+scene('acC-rr-inv', '15B：反回 aₙ 並驗算', [
+  async (tok, S) => { // 203.0
+    S.g = card('A(x) = (7/4)/(1 − 3x) − (1/4)/(1 − x) − (1/2)/(1 − x)²', C.lemon, 0, 6.3); glow(S.g, HL);
+    S.t = [];
+    cap('把 A(x) inverse 回來', '1/(1 − λx) ⟷ λⁿ');
+  },
+  async (tok, S) => { // 217.9
+    glow(S.g, null);
+    S.t.push(card('(7/4)·3ⁿ', C.mint, -4.4, 5.2, 2.8)); glow(S.t[0], OKG);
+    cap('1/(1 − 3x) ⟷ 3ⁿ', '');
+  },
+  async (tok, S) => { // 222.1
+    S.t.push(card('− (1/4)·1ⁿ = − 1/4', C.mint, -0.6, 5.2, 3.6)); glow(S.t[1], OKG);
+    cap('1/(1 − x) ⟷ 1ⁿ = 1', '');
+  },
+  async (tok, S) => { // 249.0
+    S.t.push(card('− (1/2)(n + 1)', C.mint, 3.6, 5.2, 3.2)); glow(S.t[2], OKG);
+    sm('1/(1 − x)² = Σ C(−2, n)(−x)ⁿ = Σ (n + 1)xⁿ', 0, 4.45);
+    cap('平方那項用 extended binomial theorem', '不要去背，直接展開');
+  },
+  async (tok, S) => { // 283.5
+    dark(S.t);
+    S.a = card('aₙ = (7/4)·3ⁿ − n/2 − 3/4，n ≥ 0', C.lemon, 0, 3.6, 7); glow(S.a, OKG);
+    cap('整理一下', '');
+  },
+  async (tok, S) => { // 308.3
+    glow(S.a, null);
+    S.c0 = card('n = 0：7/4 − 3/4 = 1 = a₀ ✓', C.mint, 0, 2.7, 6); glow(S.c0, OKG);
+    cap('驗算 n = 0', '7/4 − 3/4 = 1 ✓');
+  },
+  async (tok, S) => { // 318.1
+    glow(S.c0, null);
+    const rr = [['a₁ = 3·1 + 1 = 4', '公式：21/4 − 1/2 − 3/4 = 4 ✓'], ['a₂ = 3·4 + 2 = 14', '公式：63/4 − 1 − 3/4 = 14 ✓'], ['a₃ = 3·14 + 3 = 45', '公式：189/4 − 3/2 − 3/4 = 45 ✓']];
+    for (let i = 0; i < 3; i++) { card(rr[i][0], C.peach, -3.3, 1.8 - i * 0.75, 4.2); card(rr[i][1], C.mint, 2.6, 1.8 - i * 0.75, 5.4); await wt(tok, 500); }
+    sm('示意：用 recurrence 算前幾項，代進公式比對', 0, -0.5);
+    cap('用 recurrence 算前幾個', '代進公式看對不對');
+  },
+  async (tok, S) => { // 372.7
+    good('驗算要用「別的方法」去驗', 0, -1.2);
+    cap('不只是重看一遍', '要用別的方法驗算');
+  },
+  async (tok, S) => { // 388.5
+    hd('homogeneous 或 non-homogeneous：方法都一樣；右邊多算一個生成函數而已', 0, -1.9);
+    cap('方法都一樣', '正著算、反著算');
+  },
+]);
+
+scene('acC-rr-third', '15B：三階 recurrence，右邊只有 n = 3 是 1', [
+  async (tok, S) => { // 418.1
+    S.t = card('再一個例子', C.lilac, 0, 6.35, 3); glow(S.t, HL);
+    cap('再看一個例子', '');
+  },
+  async (tok, S) => { // 438.3
+    glow(S.t, null);
+    S.r = card('aₙ − 2aₙ₋₁ − aₙ₋₂ + 2aₙ₋₃ = f(n)，n ≥ 3', C.sky, 0, 5.6); glow(S.r, HL);
+    S.f = card('f(3) = 1；n ≥ 4 時 f(n) = 0', C.peach, 0, 4.85, 5.4);
+    cap('third order recurrence', '右邊 n = 3 是 1，n ≥ 4 是 0');
+  },
+  async (tok, S) => { // 465.9
+    glow(S.r, null);
+    S.ic = card('三階 → 3 個 initial condition：a₀ = 0、a₁ = 0、a₂ = 2', C.mint, 0, 4.1); glow(S.ic, OKG);
+    cap('三階要三個 initial condition', 'n 從 3 開始，well defined');
+  },
+  async (tok, S) => { // 486.7
+    glow(S.ic, null);
+    S.L = chain(0, 3.3, 0.7);
+    S.L.add('兩邊乘 xⁿ，從 n = 3 加起來');
+    cap('一樣：乘 xⁿ、從 n ≥ 3 加', '');
+  },
+  async (tok, S) => { // 497.3
+    S.L.add('Σₙ≥₃ aₙxⁿ = A(x) − a₀ − a₁x − a₂x²', C.peach);
+    cap('第一項差了三項', '常數、一次、二次項');
+  },
+  async (tok, S) => { // 525.3
+    S.L.add('−2x(A − a₀ − a₁x)　− x²(A − a₀)　+ 2x³A', C.peach);
+    cap('後面依序提出 x、x²、x³', '各差兩項、一項、零項');
+  },
+  async (tok, S) => { // 583.7
+    S.L.add('左邊合起來：(1 − 2x − x² + 2x³)·A(x) − (初始項)', C.lilac);
+    cap('A(x) 前面是 1 − 2x − x² + 2x³', '');
+  },
+  async (tok, S) => { // 600.3
+    S.rs = card('右邊：1·x³ + 0·x⁴ + 0·x⁵ + ⋯ = x³', C.peach, 0, -0.2, 6.4); glow(S.rs, HL);
+    cap('右邊也乘 xⁿ 加起來', 'n = 3 是 1·x³，後面都是 0');
+  },
+  async (tok, S) => { // 645.8
+    glow(S.rs, null);
+    note('右邊再怎麼奇怪，乘上去加起來照算', 0, -0.85);
+    cap('右邊不管什麼樣子', '照算就對了');
+  },
+  async (tok, S) => { // 670.2
+    S.L.add('代 a₀ = a₁ = 0、a₂ = 2：只剩 −2x² 移到右邊', C.lilac);
+    cap('只有 a₂ 不是 0', '移過去多一個 2x²');
+  },
+  async (tok, S) => { // 714.2
+    S.A = card('A(x) = (2x² + x³) / (1 − 2x − x² + 2x³)', C.lemon, 0, -1.5); glow(S.A, OKG);
+    cap('A(x) 算出來了', '');
+  },
+]);
+
+scene('acC-rr-third-pf', '15B：三個不同的根 — partial fraction', [
+  async (tok, S) => { // 751.9
+    S.A = card('A(x) = x² · (2 + x) / (1 − 2x − x² + 2x³)', C.lemon, 0, 6.3); glow(S.A, HL);
+    cap('把 x² 提出來', '只對後面做 partial fraction');
+  },
+  async (tok, S) => { // 813.0
+    glow(S.A, null);
+    S.d = card('1 − 2x − x² + 2x³ = (1 − 2x)(1 − x)(1 + x)', C.sky, 0, 5.4); glow(S.d, HL);
+    cap('分母分解因式', '三個不同的 factor');
+  },
+  async (tok, S) => { // 830.7
+    glow(S.d, null);
+    S.p = card('(2 + x)/[(1 − 2x)(1 − x)(1 + x)] = α₁/(1 − 2x) + α₂/(1 − x) + α₃/(1 + x)', C.lilac, 0, 4.5); glow(S.p, HL);
+    cap('上面三個 constant', '');
+  },
+  async (tok, S) => { // 860.5
+    glow(S.p, null);
+    S.a = [card('× (1 − 2x)，x = 1/2：α₁ = (5/2)/[(1/2)(3/2)] = 10/3', C.mint, 0, 3.5, 9)]; glow(S.a[0], OKG);
+    cap('乘 (1 − 2x)，再代 x = 1/2', 'α₁ = 10/3');
+  },
+  async (tok, S) => { // 950.2
+    glow(S.a[0], null);
+    S.a.push(card('× (1 − x)，x = 1：α₂ = 3/[(−1)(2)] = −3/2', C.mint, 0, 2.7, 9)); glow(S.a[1], OKG);
+    cap('乘 (1 − x)，代 x = 1', 'α₂ = −3/2');
+  },
+  async (tok, S) => { // 966.5
+    glow(S.a[1], null);
+    S.a.push(card('× (1 + x)，x = −1：α₃ = 1/[(3)(2)] = 1/6', C.mint, 0, 1.9, 9)); glow(S.a[2], OKG);
+    cap('乘 (1 + x)，代 x = −1', 'α₃ = 1/6');
+  },
+  async (tok, S) => { // 1001.3
+    glow(S.a[2], null);
+    S.n = card('沒有 x² 的話：(10/3)·2ⁿ − 3/2 + (1/6)(−1)ⁿ', C.sky, 0, 1.0); glow(S.n, HL);
+    cap('如果前面沒有 x²', '直接反回去是這樣');
+  },
+  async (tok, S) => { // 1018.0
+    glow(S.n, null);
+    const sh = [0, 0, 2, 5, 12, 25];
+    S.sh = sh.map((v, i) => tile(i < 2 ? '0' : 'b' + '₀₁₂₃'[i - 2], i < 2 ? C.gray : C.peach, -3.6 + i * 1.3, 0.1, 0.72));
+    slotRow(['x⁰', 'x¹', 'x²', 'x³', 'x⁴', 'x⁵'], -3.6, 1.3, -0.6);
+    hot('× x²：整個往後移兩格 → n 變 n − 2', 3.4, 0.6);
+    cap('多乘一個 x²', '全部往後挪兩格');
+  },
+  async (tok, S) => { // 1052.8
+    const m = card('aₙ = (10/3)·2ⁿ⁻² − 3/2 + (1/6)(−1)ⁿ⁻²，n ≥ 2；a₀ = a₁ = 0', C.lemon, 0, -1.4); glow(m, OKG);
+    cap('公式從 n ≥ 2 開始', '展開至少是平方項，前面都是 0');
+  },
+  async (tok, S) => { // 1075.8
+    good('驗算（示意）：a₃ = 20/3 − 3/2 − 1/6 = 5 ✓（由 recurrence：2·2 + 0 − 0 + 1 = 5）', 0, -2.15);
+    cap('步驟都一樣', '正的反的要算熟');
+  },
+]);
+
+// ════════ zjsDjXEa6Zc（趙啟超 15C：生成函數拿來計數 — a + b = n、集合的生成函數相乘） ════════
+scene('acC-cnt-intro', '15C：應用二 — 用生成函數計數', [
+  async (tok, S) => { // 123.8
+    S.t = card('應用二：直接拿來做 enumeration（計數）', C.lilac, 0, 6.2); glow(S.t, HL);
+    cap('生成函數的第二個用途', '拿來數「有幾種」');
+  },
+  async (tok, S) => { // 141.9
+    glow(S.t, null);
+    S.a = card('要數的東西跟 n 有關：叫它 aₙ', C.sky, 0, 5.1, 6); glow(S.a, HL);
+    cap('要算的數目跟 n 有關', '叫它 aₙ');
+  },
+  async (tok, S) => { // 147.0
+    glow(S.a, null);
+    bad('不一個一個算 aₙ', -3.2, 4.2); good('去算 aₙ 的生成函數 A(x)', 3.2, 4.2);
+    cap('不直接算 aₙ', '有時候算生成函數反而容易');
+  },
+  async (tok, S) => { // 173.8
+    S.e = card('A(x) 算出來 → 展開 → 每一個 aₙ 都知道', C.mint, 0, 3.1); glow(S.e, OKG);
+    cap('算出來以後展開', '所有的 aₙ 一次全都知道');
+  },
+]);
+
+const SA = [0, 1, 2, 3, 4], SB = [2, 3, 4];
+const AX = (a) => -4.2 + a * 1.05, BX = (b) => -4.2 + b * 1.05;
+scene('acC-cnt-ab', '15C：a + b = n，a ∈ A、b ∈ B 有幾組解', [
+  async (tok, S) => { // 201.5
+    S.t = card('兩個集合 A、B（都是非負整數），n 是 non-negative integer', C.sky, 0, 6.3); glow(S.t, HL);
+    cap('先用一類問題當例子', '');
+  },
+  async (tok, S) => { // 240.3
+    glow(S.t, null);
+    S.q = card('a + b = n，a ∈ A、b ∈ B：有幾組解？', C.lilac, 0, 5.5); glow(S.q, HL);
+    cap('解 a + b = n', 'a 在 A 裡、b 在 B 裡');
+  },
+  async (tok, S) => { // 253.2
+    glow(S.q, null);
+    sm('A =', -5.6, 4.5); sm('B =', -5.6, 3.5);
+    S.A = SA.map((a) => tile(a, C.sky, AX(a), 4.5, 0.75));
+    S.B = SB.map((b) => tile(b, C.peach, BX(b), 3.5, 0.75));
+    S.gl = []; S.cnt = card('gₙ：', C.gray, 3.8, 4.0, 4.4);
+    cap('例：A = {0, 1, 2, 3, 4}，B = {2, 3, 4}', '答案跟 n 有關');
+  },
+  async (tok, S) => { // 292.7
+    const show = async (n, rowY) => {
+      const pairs = []; SA.forEach((a) => SB.forEach((b) => { if (a + b === n) pairs.push([a, b]); }));
+      dark(S.A, S.B);
+      for (const [a, b] of pairs) { glow(S.A[a], HL); glow(S.B[SB.indexOf(b)], HL); await wt(tok, 350); }
+      S.gl.push(sm('n = ' + n + '：' + pairs.map(([a, b]) => a + '+' + b).join('、') + ' → ' + pairs.length + ' 組', 3.8, rowY));
+      return pairs.length;
+    };
+    S.show = show;
+    await show(2, 3.2);
+    cap('n = 2：0 + 2', '1 + 什麼都不會是 2 → 1 組');
+  },
+  async (tok, S) => { // 330.4
+    await S.show(3, 2.6);
+    cap('n = 3：0 + 3、1 + 2', '2 + 2 就超過了 → 2 組');
+  },
+  async (tok, S) => { // 368.4
+    await S.show(4, 2.0);
+    cap('n = 4：0 + 4、1 + 3、2 + 2', '3 組');
+  },
+  async (tok, S) => { // 385.0
+    await S.show(5, 1.4);
+    cap('n = 5：1 + 4、2 + 3、3 + 2', '也是 3 組');
+  },
+  async (tok, S) => { // 430.0
+    dark(S.A, S.B);
+    S.gl.push(sm('n = 0、1：怎麼加都不可能 → 0 組', 3.8, 0.8));
+    cap('n = 0、n = 1', '怎麼加都不可能 → 0 組');
+  },
+  async (tok, S) => { // 499.3
+    const v = [0, 0, 1, 2, 3, 3];
+    S.g = v.map((x, i) => tile(x, C.mint, -4.2 + i * 1.05, 1.0, 0.7));
+    slotRow(['g₀', 'g₁', 'g₂', 'g₃', 'g₄', 'g₅'], -4.2, 1.05, 0.3);
+    cap('這個數目叫 gₙ', 'g₀, g₁, g₂, … = 0, 0, 1, 2, 3, 3, …');
+  },
+]);
+
+scene('acC-cnt-gfab', '15C：集合的生成函數，相乘就得到 G(x)', [
+  async (tok, S) => { // 515.4
+    S.G = card('G(x) = Σ gₙ xⁿ', C.mint, 0, 6.3, 4.4); glow(S.G, HL);
+    cap('gₙ 的生成函數 G(x)', '跟平常的定義一樣');
+  },
+  async (tok, S) => { // 552.0
+    glow(S.G, null);
+    sm('直接算 G(x) 比較容易 → 一次把所有 gₙ 都算出來', 0, 5.6);
+    cap('不一個一個算 gₙ', '直接算 G(x)，展開就全部知道');
+  },
+  async (tok, S) => { // 593.8
+    S.ga = card('G_A(x) = Σ_{a ∈ A} xᵃ', C.sky, -3.3, 4.7, 4.6); glow(S.ga, HL);
+    sm('A 的每個元素 a → 取 xᵃ 加起來', -3.3, 4.0);
+    cap('定義 A 集合的生成函數', '每個元素 a 取 x 的 a 次方，加起來');
+  },
+  async (tok, S) => { // 641.1
+    glow(S.ga, null);
+    S.gb = card('G_B(x) = Σ_{b ∈ B} xᵇ', C.peach, 3.3, 4.7, 4.6); glow(S.gb, HL);
+    sm('B 也一樣：取 xᵇ 加起來', 3.3, 4.0);
+    cap('B 集合也一樣', '');
+  },
+  async (tok, S) => { // 678.4
+    glow(S.gb, null);
+    S.p = card('G_A(x) · G_B(x)：乘開 = 左邊挑一項 × 右邊挑一項，全部加起來', C.lilac, 0, 3.0); glow(S.p, HL);
+    cap('考慮兩個相乘', '每邊挑一項乘起來，所有可能加起來');
+  },
+  async (tok, S) => { // 709.4
+    glow(S.p, null);
+    S.ty = card('典型的一項：xᵃ · xᵇ = x^(a + b)', C.sky, 0, 2.1, 6); glow(S.ty, HL);
+    cap('看一個典型項', 'xᵃ · xᵇ = x 的 a + b 次方');
+  },
+  async (tok, S) => { // 735.2
+    glow(S.ty, null);
+    note('例：乘出 x⁵ ⇔ a + b = 5（a ∈ A、b ∈ B）', 0, 1.3);
+    cap('乘出五次方', '就代表 a + b = 5');
+  },
+  async (tok, S) => { // 796.8
+    S.c = card('xⁿ 的係數 = 「a + b = n」的組數（每一組貢獻 1）', C.mint, 0, 0.5); glow(S.c, OKG);
+    cap('一組解就貢獻一個 1', '有幾組就貢獻幾');
+  },
+  async (tok, S) => { // 829.4
+    glow(S.c, null);
+    const m = card('⇒ G(x) = G_A(x) · G_B(x)', C.lemon, 0, -0.35, 5.6); glow(m, OKG);
+    cap('那個係數就是 gₙ', '所以 G(x) = G_A(x) · G_B(x)');
+  },
+]);
+
+scene('acC-cnt-gen', '15C：推廣到很多個變數', [
+  async (tok, S) => { // 892.4
+    S.e = card('a₁ + a₂ + ⋯ + a_m = n，aᵢ ∈ Aᵢ（i = 1 … m）', C.sky, 0, 5.8); glow(S.e, HL);
+    cap('推廣：不只 a、b 兩個', 'm 個變數，各自在自己的集合裡');
+  },
+  async (tok, S) => { // 948.7
+    glow(S.e, null);
+    S.g = card('G(x) = G_{A₁}(x) · G_{A₂}(x) ⋯ G_{A_m}(x)', C.lemon, 0, 4.6); glow(S.g, OKG);
+    cap('gₙ 的生成函數', '把每個集合的生成函數乘在一起');
+  },
+  async (tok, S) => { // 989.2
+    hd('剛才 A、B 只是 m = 2 的情形', 0, 3.6);
+    cap('只是把 A、B 推廣成 A₁ … A_m', '');
+  },
+]);
+
+const MX = (j) => -3.4 + j * 1.25, MY = (i) => 4.2 - i * 0.78;
+scene('acC-cnt-mult', '15C：回到例子 — 乘開一次全部算出來', [
+  async (tok, S) => { // 1005.8
+    S.h = card('手算：g₀ … g₅ = 0, 0, 1, 2, 3, 3', C.gray, 0, 6.35, 5.4); glow(S.h, HL);
+    cap('回到剛才的例子', 'A = {0,1,2,3,4}、B = {2,3,4}');
+  },
+  async (tok, S) => { // 1040.0
+    glow(S.h, null);
+    S.ga = card('G_A = 1 + x + x² + x³ + x⁴', C.sky, -2.9, 5.55, 5); glow(S.ga, HL);
+    S.ra = SA.map((a, i) => tile(XP[a], C.sky, -5.0, MY(i), 0.7));
+    cap('A 集合的生成函數', '每個元素取 x 次方加起來');
+  },
+  async (tok, S) => { // 1100.9
+    glow(S.ga, null);
+    S.gb = card('G_B = x² + x³ + x⁴', C.peach, 3.2, 5.55, 4); glow(S.gb, HL);
+    S.cb = SB.map((b, j) => tile(XP[b], C.peach, MX(j), 4.95, 0.7));
+    cap('B 集合的生成函數', 'x² + x³ + x⁴');
+  },
+  async (tok, S) => { // 1106.6
+    glow(S.gb, null);
+    S.cell = [];
+    for (let i = 0; i < 5; i++) for (let j = 0; j < 3; j++) {
+      const e = SA[i] + SB[j];
+      const m = tile(XP[e], C.gray, MX(j), MY(i), 0.7); m.userData.e = e; S.cell.push(m);
+      await wt(tok, 110);
+    }
+    cap('兩個相乘：每一格 = 左 × 上', '都是有限項，直接乘開');
+  },
+  async (tok, S) => { // 1159.1
+    const col = { 2: C.blue, 3: C.green, 4: C.orange, 5: C.purple, 6: C.pink, 7: C.teal, 8: C.gold };
+    S.cell.forEach((m) => tint(m, col[m.userData.e]));
+    S.poly = card('= x² + 2x³ + 3x⁴ + 3x⁵ + 3x⁶ + 2x⁷ + x⁸', C.mint, 0, 0.1, 7.6); glow(S.poly, OKG);
+    cap('同次方的格子數一數', 'x² + 2x³ + 3x⁴ + 3x⁵ + 3x⁶ + 2x⁷ + x⁸');
+  },
+  async (tok, S) => { // 1177.6
+    glow(S.poly, null);
+    const v = [0, 0, 1, 2, 3, 3, 3, 2, 1];
+    S.g = v.map((x, i) => tile(x, C.lemon, 0.5 + i * 0.72, 3.0, 0.6));
+    slotRow(['g₀', 'g₁', 'g₂', 'g₃', 'g₄', 'g₅', 'g₆', 'g₇', 'g₈'], 0.5, 0.72, 2.4);
+    sm('之後都是 0', 3.4, 1.85);
+    cap('每個 gₙ 都知道了', 'g₀ … g₈ = 0, 0, 1, 2, 3, 3, 3, 2, 1');
+  },
+  async (tok, S) => { // 1190.1
+    for (let i = 0; i <= 5; i++) glow(S.g[i], OKG);
+    glow(S.h, OKG); relab(S.h, '手算 g₀ … g₅ = 0, 0, 1, 2, 3, 3 ✓ 一樣');
+    cap('跟手算的一樣', '但一次全部算出來');
+  },
+  async (tok, S) => { // 1218.4
+    good('只是機械式地乘開；這一類問題都可以這樣做', 0, -0.7);
+    cap('這類問題都可以這樣做', '集合怎麼變都照樣做');
+  },
+]);
+
+// ════════ ghXHy5y3EuE（趙啟超 15D：z₁ + ⋯ + z_m = n 的非負整數解、加上下限的例子） ════════
+scene('acC-cnt-rep', '15D：z₁ + ⋯ + z_m = n — 用生成函數重算重複組合', [
+  async (tok, S) => { // 4.5
+    S.t = card('再一個例子（以前算過，用生成函數再算一次）', C.lilac, 0, 6.35); glow(S.t, HL);
+    cap('再看一個例子', '答案當然一樣');
+  },
+  async (tok, S) => { // 30.0
+    glow(S.t, null);
+    S.q = card('z₁ + z₂ + ⋯ + z_m = n 的非負整數解有幾組？', C.sky, 0, 5.6); glow(S.q, HL);
+    cap('非負整數解有幾組', '');
+  },
+  async (tok, S) => { // 46.2
+    glow(S.q, null);
+    S.old = card('以前：重複組合 —— × × │ × │ ⋯ 排 × 和柵欄', C.gray, -2.6, 4.7, 7.2);
+    cap('以前用 × 和柵欄去想', '重複組合數');
+  },
+  async (tok, S) => { // 54.4
+    S.nw = card('現在：生成函數 → 直接算', C.mint, 4.2, 4.7, 3.8); glow(S.nw, OKG);
+    cap('現在直接用生成函數', '很機械式，不必特別去想');
+  },
+  async (tok, S) => { // 78.6
+    glow(S.nw, null);
+    S.A = card('套框架：zᵢ ∈ Aᵢ，每個 Aᵢ = {0, 1, 2, 3, …}', C.sky, 0, 3.8); glow(S.A, HL);
+    cap('A₁、A₂ … A_m 都一樣', '都是所有的非負整數');
+  },
+  async (tok, S) => { // 147.4
+    glow(S.A, null);
+    S.g1 = card('G_{Aᵢ}(x) = x⁰ + x¹ + x² + ⋯ = 1/(1 − x)', C.mint, 0, 2.95); glow(S.g1, OKG);
+    cap('每個集合的生成函數', '只要算一次：1/(1 − x)');
+  },
+  async (tok, S) => { // 184.1
+    glow(S.g1, null);
+    S.G = card('G(x) = [1/(1 − x)]ᵐ = (1 − x)⁻ᵐ', C.lemon, 0, 2.1, 6); glow(S.G, OKG);
+    cap('m 個乘在一起', 'G(x) = (1 − x) 的 −m 次方');
+  },
+  async (tok, S) => { // 255.4
+    glow(S.G, null);
+    S.L = chain(0, 1.25, 0.7);
+    S.L.add('extended binomial theorem：= Σₙ C(−m, n)(−x)ⁿ');
+    cap('用 extended binomial theorem 展開', '');
+  },
+  async (tok, S) => { // 316.2
+    S.L.add('C(−m, n) = (−1)ⁿ C(m + n − 1, n)；(−1)ⁿ·(−1)ⁿ = 1', C.lilac);
+    cap('C(−m, n) 前面算過', '負號提出來，兩個 (−1)ⁿ 相乘消失');
+  },
+  async (tok, S) => { // 362.4
+    const m = S.L.add('gₙ = C(m + n − 1, n)', C.lemon); glow(m, OKG);
+    cap('xⁿ 的係數', 'gₙ = C(m + n − 1, n)');
+  },
+  async (tok, S) => { // 394.4
+    note('示意 m = 3：gₙ = C(n + 2, n) = 1, 3, 6, 10, 15, …', 0, -0.95);
+    cap('= 從 m 種可重複、不計順序選 n 個', '跟以前算的一模一樣');
+  },
+  async (tok, S) => { // 421.5
+    good('不必想 × 和柵欄，只是正著算、反著算', 0, -1.6);
+    cap('過程不必去想那些麻煩的事', '就是生成函數的計算');
+  },
+]);
+
+const NVX = (v) => -6.0 + v * 0.4;
+const ROWS = [
+  { n: 'z₁ ≥ 0', ok: (v) => v >= 0, more: true, gf: 'A₁：1 + x + x² + ⋯ = 1/(1 − x)' },
+  { n: '4 ≤ z₂ ≤ 7', ok: (v) => v >= 4 && v <= 7, more: false, gf: 'A₂：x⁴ + x⁵ + x⁶ + x⁷' },
+  { n: '2 ≤ z₃ ≤ 6', ok: (v) => v >= 2 && v <= 6, more: false, gf: 'A₃：x² + x³ + x⁴ + x⁵ + x⁶' },
+  { n: 'z₄ ≥ 13', ok: (v) => v >= 13, more: true, gf: 'A₄：x¹³ + x¹⁴ + ⋯ = x¹³/(1 − x)' },
+];
+const RY = (i) => 4.5 - i * 0.85;
+scene('acC-cnt-bounds', '15D：z₁ + z₂ + z₃ + z₄ = n 加上下限', [
+  async (tok, S) => { // 440.7
+    S.t = card('好處：不管 Aᵢ 長什麼樣，方法都一樣', C.lilac, 0, 6.35); glow(S.t, HL);
+    cap('生成函數的方便', 'Aᵢ 不同，直接算的話要一直想');
+  },
+  async (tok, S) => { // 493.5
+    glow(S.t, null);
+    S.q = card('z₁ + z₂ + z₃ + z₄ = n 的非負整數解，但有限制', C.sky, 0, 5.55); glow(S.q, HL);
+    cap('故意加一些限制', '');
+  },
+  async (tok, S) => { // 531.8
+    glow(S.q, null);
+    S.rows = ROWS.map((r, i) => {
+      sm(r.n, -6.6, RY(i) + 0.4);
+      const ts = [];
+      for (let v = 0; v <= 15; v++) { const m = tile(v, r.ok(v) ? [C.blue, C.green, C.orange, C.purple][i] : '#efe8dc', NVX(v), RY(i), 0.34); ts.push(m); }
+      if (r.more) sm('⋯', 0.5, RY(i));
+      return ts;
+    });
+    cap('z₁ ≥ 0、4 ≤ z₂ ≤ 7', '2 ≤ z₃ ≤ 6、z₄ ≥ 13');
+  },
+  async (tok, S) => { // 568.1
+    bad('直接算：不同的 n 要分好多 case', 3.8, 5.0);
+    cap('直接算有點麻煩', '用生成函數就很簡單');
+  },
+  async (tok, S) => { // 589.5
+    S.gf = [];
+    const add = (i) => { const m = card(ROWS[i].gf, C.mint, 3.9, RY(i), 5.6); glow(m, OKG); S.gf.forEach((o) => glow(o, null)); S.gf.push(m); S.rows[i].forEach((t) => { if (ROWS[i].ok(+t.userData.lbl.element.textContent)) glow(t, HL); }); };
+    S.add = add; add(0);
+    cap('A₁：所有非負整數', '1/(1 − x)');
+  },
+  async (tok, S) => { // 599.7
+    S.rows[0].forEach((t) => glow(t, null)); S.add(1);
+    cap('A₂ = {4, 5, 6, 7}', 'x⁴ + x⁵ + x⁶ + x⁷');
+  },
+  async (tok, S) => { // 610.7
+    S.rows[1].forEach((t) => glow(t, null)); S.add(2);
+    cap('A₃ = {2, 3, 4, 5, 6}', 'x² + ⋯ + x⁶');
+  },
+  async (tok, S) => { // 621.8
+    S.rows[2].forEach((t) => glow(t, null)); S.add(3);
+    cap('A₄ = {13, 14, 15, …}', '提出 x¹³，剩 1/(1 − x)');
+  },
+  async (tok, S) => { // 719.7
+    S.rows[3].forEach((t) => glow(t, null)); dark(S.gf);
+    S.P = card('G(x) = x¹⁹ (1 + x + x² + x³)(1 + x + x² + x³ + x⁴) / (1 − x)²', C.lemon, 0, 0.75); glow(S.P, OKG);
+    cap('四個乘起來，能提的提出來', 'x⁴·x²·x¹³ = x¹⁹');
+  },
+  async (tok, S) => { // 757.4
+    glow(S.P, null);
+    hd('後面：乘開分子 → 除法 → partial fraction → 反回去（機械式，不算了）', 0, 0.0);
+    cap('後面只是展開', '一定做得出來，只是麻煩一點');
+  },
+  async (tok, S) => { // 829.8
+    note('示意（電腦逐一數過）：g₁₉ = 1、g₂₀ = 4、g₂₁ = 10；n < 19 時 0', 0, -0.65);
+    cap('重點是把生成函數算出來', '後面展開不是問題');
+  },
+  async (tok, S) => { // 850.6
+    good('一次把所有 gₙ 算出來，反而比一個一個算容易', 0, -1.3);
+    cap('直接算要考慮好多 case', '生成函數一次全部搞定');
+  },
+]);
+  }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
 
