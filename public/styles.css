@@ -7498,3 +7498,7 @@ body#appRoot #sec-subjects .ss { display: none !important; }
 body#appRoot #sec-subjects .sh { margin-bottom: 0 !important; }
 body#appRoot #main #sec-subjects.on > .stabs { margin-top: 16px !important; }
 @media (min-width: 1000px) { body#appRoot #main #sec-subjects.on > .stabs { margin: 16px 0 0 !important; } }
+/* 日曆：跟六科一樣只放大標，不要問候＋今日主任務卡；標題到月曆 16px */
+body#appRoot #sec-schedule .cal-header-card { display: none !important; }
+body#appRoot #sec-schedule > .sh { margin: 0 0 16px !important; }
+@media (min-width: 760px) { body#appRoot #sec-schedule .cal-head .cal-nav { margin-right: 60px !important; } }
