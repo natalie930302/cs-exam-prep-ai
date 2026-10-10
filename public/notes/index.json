@@ -1015,9 +1015,9 @@
  },
  "moPtwq_cVH8": {
   "label": "MIT 6.006 L23：Computational Complexity",
-  "points": 93,
+  "points": 94,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "mQSp6VmfakA": {
   "label": "MIT 6.006 Rec15：Shortest Paths",
@@ -1305,7 +1305,7 @@
   "label": "MIT 6.006 Rec23：Computational Complexity",
   "points": 93,
   "quiz": 8,
-  "cued": false
+  "cued": true
  },
  "tIE2lkJv20c": {
   "label": "Theory of Computation：P, NP, NP-Complete and NP-Hard",
