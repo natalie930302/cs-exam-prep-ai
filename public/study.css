@@ -403,3 +403,5 @@ a { color: inherit; }
 .st-timeline::-webkit-scrollbar { display: none; }
 .st-tabs { scrollbar-width: none; -ms-overflow-style: none; }
 .st-tabs::-webkit-scrollbar { display: none; }
+/* 段落名稱前的圓點有一圈光暈：留一點左邊距，避免被 overflow 切掉 */
+.st-now-sec { padding-left: 4px; padding-top: 3px; padding-bottom: 3px; }
