@@ -7339,3 +7339,38 @@ body#appRoot #main .sp .filter-bar {
   border: 0 !important; background: transparent !important; box-shadow: none !important; padding: 0 !important;
   backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
 }
+
+/* 六科頂列：科目列｜進度（撐滿中間）｜全部展開，三個同高排成一列，不留空洞 */
+@media (min-width: 900px) {
+  body#appRoot #main #sec-subjects { grid-template-columns: auto minmax(0, 1fr) auto; }
+  body#appRoot #main #sec-subjects > #spPanels > .sp.on > .subject-overview-card {
+    grid-column: 2 !important; justify-self: stretch !important; align-self: stretch !important;
+  }
+  body#appRoot #main #sec-subjects > #spPanels > .sp.on > .filter-bar {
+    grid-column: 3 !important; grid-row: 3; align-self: stretch; margin: 0 !important;
+  }
+  body#appRoot #main #sec-subjects > #spPanels > .sp.on > .filter-bar .collapse-all-btn { height: 100%; border-radius: var(--ui-radius-section, 18px); padding: 0 20px; }
+}
+body#appRoot #main .sp .subject-overview-card .sp-top { flex: 1; }
+body#appRoot #main .sp .smeta { flex: 1; justify-content: space-around; }
+body#appRoot #main .sp .smeta .sm { border-radius: 0 !important; }
+@media (min-width: 900px) { body#appRoot #main #sec-subjects > .stabs { align-self: stretch; align-items: center; } }
+/* 不夠寬時：科目列自己一行，進度＋全部展開排在下一行 */
+@media (min-width: 900px) and (max-width: 1299px) {
+  body#appRoot #main #sec-subjects > .stabs { grid-column: 1 / -1 !important; }
+  body#appRoot #main #sec-subjects > #spPanels > .sp.on > .subject-overview-card { grid-column: 1 / 3 !important; grid-row: 4 !important; margin-top: 12px !important; }
+  body#appRoot #main #sec-subjects > #spPanels > .sp.on > .filter-bar { grid-row: 4 !important; margin-top: 12px !important; }
+}
+body#appRoot #main .sp .subject-overview-card { min-width: 0; overflow: hidden; }
+
+/* 日曆頂卡：今日主任務撐滿整張卡；寬螢幕時六科進度放右邊，不留一大片空白 */
+body#appRoot #sec-schedule .cal-header-card .daily-focus { max-width: none !important; width: 100% !important; margin-left: 0 !important; margin-right: 0 !important; }
+@media (min-width: 1100px) {
+  body#appRoot #sec-schedule .daily-focus { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(300px, 34%); column-gap: 28px; align-items: start; }
+  body#appRoot #sec-schedule .daily-focus > :not(.progress-strip) { grid-column: 1; }
+  body#appRoot #sec-schedule .daily-focus > .progress-strip {
+    grid-column: 2; grid-row: 1 / span 4; align-self: stretch; margin: 0; padding: 0 0 0 28px;
+    border-top: 0; border-left: 1px solid var(--bd);
+  }
+  body#appRoot #sec-schedule .daily-focus > .progress-strip .ps-subjs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
