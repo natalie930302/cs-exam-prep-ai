@@ -7374,3 +7374,12 @@ body#appRoot #sec-schedule .cal-header-card .daily-focus { max-width: none !impo
   }
   body#appRoot #sec-schedule .daily-focus > .progress-strip .ps-subjs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* 六科：不要「全部展開」按鈕；頂列只剩科目列＋進度 */
+body#appRoot #main .sp .filter-bar { display: none !important; }
+@media (min-width: 900px) {
+  body#appRoot #main #sec-subjects.on { grid-template-columns: auto minmax(0, 1fr); }
+}
+@media (min-width: 900px) and (max-width: 1299px) {
+  body#appRoot #main #sec-subjects > #spPanels > .sp.on > .subject-overview-card { grid-column: 1 / -1 !important; }
+}
