@@ -5,7 +5,7 @@
  "sections": [
   {
    "title": "複習：X ≤p Y",
-   "scene": "np1-j-reduce-def",
+   "scene": "np1-j-reduce-review",
    "points": [
     {
      "text": "今天的重點是 polynomial time reduction。",
@@ -39,6 +39,34 @@
      "text": "Y 的演算法當作 black box，只要專注在 efficient 的 transformation。",
      "t": 215
     }
+   ],
+   "cues": [
+    16.9,
+    34.4,
+    43.0,
+    54.6,
+    73.0,
+    79.8,
+    102.8,
+    148.8,
+    168.3,
+    179.8,
+    205.8,
+    240.8
+   ],
+   "explain": [
+    "今天的重點是 polynomial time reduction，先很快複習一下上次講的。",
+    "Polynomial time reduction 探討的是：兩個問題 X、Y 之間，能不能做轉換。",
+    "符號寫成 X ≤p Y，讀作「X 可以 polynomial time reduce 到 Y」。",
+    "「≤」隱含 complexity 的高低：Y 比較難（Y 變大了），或頂多跟 X 一樣難。",
+    "下標 p 表示：這個轉換是 polynomial time 的。",
+    "流程：把 X 的 input 轉成 Y 的 input，再用 Y 的演算法解；中間的轉換 f 只要 polynomial time。",
+    "嚴謹定義：對 X 的任何一個 input instance x，都能在 polynomial time 內建構出對應的 Y 的 input f(x)。",
+    "而且要符合 reduction 的關係：x 在 X 會回答 yes（例如符合給定的 bound），轉成 f(x) 後，在 Y 也必須回答 yes。",
+    "這是 if and only if：反過來，右邊回答 yes，左邊也要回答 yes。兩邊的回答要一樣。",
+    "為什麼？因為用 Y 解完後，要知道怎麼把答案轉回 X 的樣子。不能只會轉過去，也要能翻譯回來：可去可回。",
+    "有趣的是：Y 的演算法到底怎麼做，我們不用管，把它當成 black box，只要假設它存在就能直接用。",
+    "所以重點放在轉換 f：希望它是 efficient 的，能在 polynomial time 內做完。"
    ]
   },
   {
@@ -76,6 +104,36 @@
      "text": "文獻上 bipartite matching 有自己的演算法，複雜度比 network flow 再低一些。",
      "t": 526
     }
+   ],
+   "cues": [
+    260.8,
+    299.8,
+    306.8,
+    316.8,
+    344.8,
+    368.4,
+    389.8,
+    425.8,
+    438.8,
+    447.8,
+    467.8,
+    486.0,
+    526.8
+   ],
+   "explain": [
+    "老師覺得這一頁非常重要：我們為什麼要用 polynomial time reduction？建構出 X ≤p Y，代表右邊比較難、左邊比較簡單或一樣難。",
+    "使用的時機大概分成三種。",
+    "請一定要分清楚，因為方向弄錯的話，證明就完全沒有作用。",
+    "Case 1：遇到一個新問題，想替它設計一個 efficient algorithm。",
+    "但不想從頭設計全新的演算法，而是想用手邊已經知道的現有演算法來解它。",
+    "這時建構的關係是：新問題放左邊（X），已知有演算法的問題放右邊（Y）。",
+    "例子（前一單元）：bipartite matching ≤p network flow。",
+    "把 bipartite matching 的圖，經過轉換，變成 network flow 吃的 input：flow network。",
+    "再用 network flow 的 Ford-Fulkerson 演算法找到解。",
+    "找到解之後，再翻譯回 bipartite matching 的 solution 長相，就結束了。",
+    "這代表：新問題可以被 efficient 解掉，而且用的是舊的、已知的演算法。",
+    "同時也隱含：新問題的難度比較低，沒有 network flow 那麼難（network flow 比較強，能解很多事）。",
+    "實際上文獻裡，bipartite matching 有自己的演算法，複雜度比 network flow 再低一些，也印證了這點。"
    ]
   },
   {
@@ -114,7 +172,37 @@
      "t": 833
     }
    ],
-   "trap": "更正：老師在 09:36 把 intractable 說成「polynomial time solvable 的意思」是口誤——tractable 才是 poly time 可解，intractable 是相反。"
+   "trap": "更正：老師在 09:36 把 intractable 說成「polynomial time solvable 的意思」是口誤——tractable 才是 poly time 可解，intractable 是相反。",
+   "cues": [
+    546.8,
+    570.8,
+    597.0,
+    614.8,
+    624.8,
+    641.8,
+    658.8,
+    707.8,
+    728.9,
+    761.8,
+    780.8,
+    797.8,
+    829.8
+   ],
+   "explain": [
+    "Case 2：遇到一個新問題，覺得它很難，想說服大家它真的很難。",
+    "這叫 intractability：目前看不到 polynomial time 的解法。（老師口誤說成「polynomial time solvable」，應該是相反：tractable 才是 poly time 可解。）",
+    "一樣建構 X ≤p Y。問題來了：新的難問題要放 X 還是 Y？",
+    "答案：新問題要放在 Y（右邊），我們要建構的是「Y 很難」。",
+    "做法：找一個已經知道很難的問題當 X。很多書、很多「字典」裡都找得到。",
+    "例如 circuit satisfiability，它很難，放左邊。",
+    "reduction 做成之後：左邊已經是 NP-complete，右邊比它更難或一樣難，所以新問題真的非常難。",
+    "如果 X、Y 角色互換，就變成白做工。大部分同學第一次證明時，都錯在這裡。",
+    "看看為什麼錯：把已知很難的問題放在 Y，新的、不知道多難的問題放在 X…",
+    "…得到的只是「新問題比一個已知難題簡單，或一樣難」。它可能很簡單、也可能很難，沒有帶來任何資訊。",
+    "因為任何簡單的問題都比難的問題簡單，例如排序也可以 reduce 到 CIRCUIT-SAT，這說明不了什麼。",
+    "所以正確時機是：已知 X 很難、沒人找到 polynomial time 解法；新問題放 Y，才能說服大家 Y 真的很難。",
+    "等一下會用 Hamiltonian cycle ≤p traveling salesman problem 來示範：HC 是已知的 NP-complete，要證 TSP 也很難。"
+   ]
   },
   {
    "title": "Case 3：證明兩個問題一樣難",
@@ -143,6 +231,26 @@
      "text": "同學最常錯在 Case 2，甚至有學位論文把 X、Y 放錯位置，證明變得沒有作用。",
      "t": 963
     }
+   ],
+   "cues": [
+    860.8,
+    878.8,
+    890.8,
+    907.8,
+    926.8,
+    933.8,
+    957.8,
+    977.8
+   ],
+   "explain": [
+    "Case 3：要建構 equivalence，也就是證明兩個問題一樣難。",
+    "做法：X 可以 poly reduce 到 Y，Y 也可以 poly reduce 到 X（兩個方向的箭頭）。",
+    "那兩者的難度就是 polynomially equivalent：互相轉換之後，難度一樣。",
+    "常見情況：要 model 一個新問題，結果發現它跟已知的經典問題很像，一體兩面，只是換句話說。",
+    "這時就像做一個 one-to-one 的 correspondence（一對一對應）。",
+    "要花的功夫只剩下 transformation 所需的時間，難度是一樣的。",
+    "老師再提醒：Case 2 是同學最常出錯的地方。",
+    "有些錯很不可饒恕：甚至有學位論文把 X、Y 放錯位置，整個證明就沒有作用。"
    ]
   },
   {
@@ -169,6 +277,30 @@
      "text": "NP-complete 領域就是採取這招：沒有人找得到 efficient algorithm，所以認為它很難。",
      "t": 1144
     }
+   ],
+   "cues": [
+    1009.0,
+    1020.8,
+    1033.0,
+    1049.0,
+    1063.8,
+    1078.8,
+    1104.0,
+    1114.6,
+    1133.3,
+    1141.6
+   ],
+   "explain": [
+    "為什麼證明「很難」要用這種招數？先看一則漫畫：公司裡，老闆 assign 一個 task 給員工。",
+    "過了一週或幾天，老闆來問：上次交給你的問題，解決得如何？",
+    "第一次：員工老實回報，他真的找不到 efficient 的演算法。",
+    "還說「可能是因為我太笨了」，覺得是自己能力不足。",
+    "老闆通常會說：沒關係，再多花一點時間研究就行了。",
+    "又過了一週，員工還是找不到，這次比較理直氣壯：「找不到，因為根本不存在！」",
+    "老闆通常會說：可能只是你找得不夠仔細，找不到不代表不存在。",
+    "再過一週，員工非常有自信地去找老闆。",
+    "他說：沒錯我是找不到，但不是只有我，這些名人、天才們也都找不到！所以不是我的問題。",
+    "NP-complete 這個領域就是採取這一招：證明它和「大家都解不出來的問題」一樣難。沒有人找得到 efficient 演算法，所以認為它很難。"
    ]
   },
   {
@@ -204,7 +336,29 @@
      "t": 1311
     }
    ],
-   "trap": "補充：右圖的確切樣子逐字稿沒有；點數為奇數（或兩邊點數不等）的 bipartite graph 一定沒有 HC，動畫用 K₂,₃ 示意。"
+   "trap": "補充：右圖的確切樣子逐字稿沒有；點數為奇數（或兩邊點數不等）的 bipartite graph 一定沒有 HC，動畫用 K₂,₃ 示意。",
+   "cues": [
+    1168.8,
+    1197.8,
+    1218.8,
+    1227.8,
+    1246.8,
+    1272.8,
+    1287.0,
+    1294.8,
+    1310.8
+   ],
+   "explain": [
+    "這個單元最後一塊：用 Hamiltonian cycle ≤p TSP 的例子，示範怎麼完成一個 polynomial time reduction。",
+    "先接受一件事：Hamiltonian cycle problem 是很難的問題。有人叫它 Hamiltonian cycle，也有人叫 Hamiltonian circuit，都是 cycle 的意思。",
+    "它的 input 是一張沒有方向性的圖（undirected graph）。",
+    "問題是：能不能拿一支筆，從任何一個點出發，一筆畫經過所有的點，最後回到原來的起點？黃球就是筆尖。",
+    "「筆不離開紙」的意思是：只能用 input 圖上給定的 edge 來完成這個 cycle。",
+    "左邊這張由很多五角形拼成的圖是特別做的例子，它存在 Hamiltonian cycle（紅色這一圈）。",
+    "右邊這張是 bipartite graph（點分成左右兩組，邊只連左右）。",
+    "這張就畫不出來：左右必須交替走，左邊 2 個點、右邊 3 個點，走到 b2 就卡住，b3 永遠走不到。",
+    "Hamiltonian circuit problem 已經被前人證明是 NP-complete，是很難的問題。"
+   ]
   },
   {
    "title": "目標：HC ≤p TSP",
@@ -237,6 +391,34 @@
      "text": "要證：HC instance 找得到 cycle ⇒ 轉出的 TSP 有 route ≤ bound；反過來也要。",
      "t": 1570
     }
+   ],
+   "cues": [
+    1326.8,
+    1339.8,
+    1358.0,
+    1387.8,
+    1396.8,
+    1404.8,
+    1429.8,
+    1458.8,
+    1503.8,
+    1512.8,
+    1568.8,
+    1600.8
+   ],
+   "explain": [
+    "現在要處理的是 traveling salesman problem（TSP）。",
+    "回顧：給定 n 個 city（一個業務的客戶），也知道任兩個 city 之間的距離。",
+    "要找一條 route：從某個 city 出發，經過所有 city、每個 exactly 一次，最後回到出發的 city。",
+    "而且 route 的總長要小於等於給定的 bound。這是 TSP 的 decision 版。",
+    "我們想建構的是：TSP 也很難。",
+    "方法：做一個 polynomial time reduction，從 Hamiltonian circuit reduce 到 TSP：HC ≤p TSP。",
+    "HC 已知很難；如果能成功 reduce 到 TSP，就代表 TSP 也很難（這就是 Case 2）。",
+    "這個 reduction 包含兩塊。第一塊：建構 transformation，把左邊問題的 input 轉成右邊的 input。",
+    "而且要 check 這個轉換能在 polynomial time 內做到。",
+    "第二塊：if and only if。左邊的 instance 回答 yes，右邊也要回答 yes；右邊回答 yes，也能轉回左邊原本的樣子。",
+    "具體來說：如果 HC 的 input 找得到一個 cycle，那轉出來的 TSP 圖上，也要找得到一條 route，總長 ≤ bound。",
+    "反過來也要證：如果 TSP 那邊真的找到一條符合 bound 的 route，也能轉回 HC 的 cycle。可以過去，也要可以回來。"
    ]
   },
   {
@@ -275,7 +457,37 @@
      "t": 1886
     }
    ],
-   "trap": "補充：CLRS 34.5.4 用 cost 0／1、bound 0 的版本，道理相同。"
+   "trap": "補充：CLRS 34.5.4 用 cost 0／1、bound 0 的版本，道理相同。",
+   "cues": [
+    1643.8,
+    1662.0,
+    1681.8,
+    1690.4,
+    1705.0,
+    1745.8,
+    1760.8,
+    1781.8,
+    1797.8,
+    1823.8,
+    1846.8,
+    1888.0,
+    1899.8
+   ],
+   "explain": [
+    "第一塊：transformation 其實就是一個 mapping，所以要建構一個 function f。",
+    "f 的輸入：左邊 HC 給定的 instance，一張 undirected graph G（一些點，點之間有一些連線）。",
+    "TSP 的 input 是 n 個 city：左邊有幾個點，右邊就先建出幾個對應的 city。",
+    "TSP 還需要一個資訊：兩兩 city 之間的距離。所以要把左邊的 edge 轉成右邊的 edge。",
+    "特別注意：TSP 的圖是 complete graph，任兩點之間一定有 edge（任兩個 city 都算得出距離）。所以原本沒有 edge 的地方，也要建一條，並給適當的 weight。",
+    "原圖有 edge 的地方，右邊也建 edge，給一個單位的 weight：cost 1（綠色）。",
+    "原圖沒有 edge 的地方，右邊也建一條（這是必要的），cost 給貴一點：2（紅色）。",
+    "沒有 edge 的地方 cost 比較高，走 TSP 時就比較不傾向使用它。",
+    "那 bound 要設多少？",
+    "Hamiltonian circuit 要經過全部 n 個點，所以 bound 設為 n。",
+    "為什麼是 n？如果只用原圖給的 edge 就能走完一圈，總共 n 條 edge，每條 cost 1，加起來剛好 n。",
+    "這個轉換要花多少時間？左邊有 n 個點，右邊建 n 個點需要 O(n)。",
+    "任兩點之間都有 edge，邊數接近 n²，所以整個 mapping 是 O(V²)（V 是點數），是 polynomial time。第一步完成。"
+   ]
   },
   {
    "title": "HC yes ⇒ TSP yes",
@@ -308,6 +520,26 @@
      "text": "總長 n ≤ bound n → TSP 回答 yes。",
      "t": 2102
     }
+   ],
+   "cues": [
+    1941.0,
+    1955.0,
+    1976.4,
+    2037.6,
+    2050.0,
+    2074.0,
+    2102.0,
+    2141.0
+   ],
+   "explain": [
+    "接下來建構 solution 之間的關係：左邊回答 yes ⇒ 右邊 yes，右邊 yes ⇒ 左邊 yes。",
+    "第二步：左邊 yes 會導致右邊 yes。",
+    "假設 HC 的 input instance G，找得到一個 Hamiltonian circuit（黃色那一圈）。",
+    "它經過所有的點，可以寫成 v1 → v2 → … → vn，再回到 v1。",
+    "把同一個 circuit 搬到右邊 TSP 的圖上：它也繞過所有點、每點剛好一次、回到起點，是一條 TSP 的 route。",
+    "這個 cycle 經過 n 條 edge，而且都是原圖上本來就有的 edge，所以在 TSP 的圖上，每條 cost 都是 1。",
+    "總長 = n 條 × 1 = n，符合 bound = n 的條件，所以 TSP 回答 yes。",
+    "結論：左邊有解，右邊就找得到解。"
    ]
   },
   {
@@ -349,6 +581,32 @@
      "text": "完成 Hamiltonian circuit ≤p traveling salesman problem。",
      "t": 2404
     }
+   ],
+   "cues": [
+    2145.2,
+    2160.0,
+    2194.0,
+    2227.8,
+    2265.0,
+    2290.0,
+    2307.8,
+    2334.0,
+    2365.0,
+    2380.0,
+    2404.0
+   ],
+   "explain": [
+    "第三步：假設右邊 TSP 有人找到一個解，要看能不能轉回左邊。",
+    "一般的 reduction 證明裡，if and only if 通常有一個方向比較難。從左到右是一開始設計時就想好的，比較自然；回來的方向通常是卡關的地方。",
+    "這個問題回來的方向也稍微難一點，但因為很直覺，其實很好算。",
+    "假設轉出來的 TSP 圖上找到一條 route，總長 ≤ n（bound 就是 n）。",
+    "TSP 的 tour 經過所有點、每個點只經過一次，再回到原點，形成像 cycle 的形狀。",
+    "有 n 個點，所以這個 tour 經過 n 條 edge，而且 total distance ≤ n。",
+    "把總長 n 平均分攤給 n 條 edge，每條最多只能是 cost 1。",
+    "當初建 TSP instance 時，edge cost 只有 1 和 2 兩種，沒有 0.5。只要用到一條 cost 2（粉紅那圈：7 > 5），總長就超過 n。所以每條一定都是 cost 1。",
+    "cost 1 的 edge，在左邊原圖上都有對應的 edge（綠色）。",
+    "直接把這一圈貼回左邊，就形成一個 Hamiltonian circuit。右邊 yes ⇒ 左邊 yes。",
+    "以上幾步完成了證明：Hamiltonian circuit ≤p traveling salesman problem。"
    ]
   },
   {
@@ -383,6 +641,30 @@
      "text": "Cook 的方法比較 tricky：用 general representation 表示所有問題，再證那個表示能轉過來。",
      "t": 2589
     }
+   ],
+   "cues": [
+    2418.8,
+    2444.8,
+    2462.8,
+    2470.8,
+    2485.8,
+    2514.8,
+    2531.0,
+    2559.1,
+    2569.0,
+    2588.9
+   ],
+   "explain": [
+    "HC 已知是 NP-complete，所以這裡建構出 TSP 也很難。",
+    "最後給 NP-complete 的定義：NP 這個 class 裡最難的那些問題（藍圈是 NP，橘色小人是 L）。",
+    "一個 decision problem L 是 NP-complete，在定義上代表兩件事。",
+    "第一：L 一定屬於 NP。它說的是 NP 裡最難的，當然要在 NP 裡，這個條件缺一不可。",
+    "第二：NP 裡其他任何一個問題 L′（藍色方塊），都能 polynomial reduce 到 L。",
+    "所有人都能 reduce 到 L、用 L 的方法解，所以 L 最厲害、最難。",
+    "第二個性質另外有一個名字：NP-hard。只滿足 ② 叫 NP-hard；① ＋ ② 都滿足才是 NP-complete。",
+    "史上第一個 NP-complete 問題，當初就是照這個定義證的，這很難證。",
+    "因為第二個性質要證明「每一個」NP 問題（for each）都能 poly reduce 過來。",
+    "Cook 的方法比較 tricky：用一種通用的表示法（general representation）把所有問題表示出來，再證明那個表示能轉過來，就一次完成了。"
    ]
   },
   {
@@ -409,6 +691,24 @@
      "text": "NP-complete 比較靠哪一邊，目前沒有人知道。",
      "t": 2717
     }
+   ],
+   "cues": [
+    2616.0,
+    2628.3,
+    2640.8,
+    2656.8,
+    2672.8,
+    2707.5,
+    2716.8
+   ],
+   "explain": [
+    "找到一個 NP-complete 問題後，最有名的問題就是：P 是否等於 NP？目前沒人能回答。",
+    "但只有兩種情況：等於，或不等於。",
+    "情況一：如果有一天，有人對一個 NP-complete 問題找到了 polynomial time 演算法，L 就屬於 P。",
+    "根據定義，所有 NP 問題都能 reduce 到 L，而 L 又能 poly time 解，所以所有 NP 問題都能 poly time 解：P = NP。",
+    "情況二：如果有人能明確證明 NP-complete 問題不可能有 polynomial time 演算法，就建構出 P ≠ NP。",
+    "Tractable 代表 polynomial time solvable（能有效率解）；intractable 就是相反。",
+    "NP-complete 到底比較靠左邊（tractable）還是右邊（intractable）？目前的確沒有人知道。"
    ]
   },
   {
@@ -447,6 +747,36 @@
      "text": "透過 Hamiltonian circuit 當媒介，證明 TSP 是 NP-complete。",
      "t": 2981
     }
+   ],
+   "cues": [
+    2727.8,
+    2734.8,
+    2757.5,
+    2768.8,
+    2787.8,
+    2794.8,
+    2810.8,
+    2838.8,
+    2845.8,
+    2877.8,
+    2895.8,
+    2930.8,
+    2976.8
+   ],
+   "explain": [
+    "最後總結：遇到一個問題，想證明它是 NP-complete，要怎麼證？",
+    "照定義：① 證明它屬於 NP；② 證明所有 NP 問題都能 polynomial reduce 到它。",
+    "但實用上這樣太難證，很難對所有 NP 問題都做 reduction。",
+    "所以實務上不用定義去證，而是用一個 theorem（定理）。",
+    "Theorem 的第一個條件不變：L 要屬於 NP。",
+    "第二個條件有點變化：先找一個已知很難的問題，例如已知是 NP-complete 的 L′。",
+    "再建構 L′ polynomial reduce 到 L（L′ ≤p L）。這樣就證明 L 也很難。一般的證明都用這個方法。",
+    "其實這個單元已經完成了一個證明：traveling salesman problem is NP-complete。",
+    "第一個 property：前面猜一個 tour、在 polynomial time 內檢查是否符合條件，所以 TSP 屬於 NP。",
+    "第二個 property：找一個已知 NP-complete 的問題 L′，就是 Hamiltonian circuit。",
+    "建構 reduction function f，把 HC 的 instance 轉成 TSP 的 instance（cost 1／2、bound = n），而且 polynomial time 做得完。",
+    "最後證明：左邊回答 yes ⇔ 右邊回答 yes，兩個方向都要證。",
+    "所以透過 Hamiltonian circuit 當媒介，證明了 TSP 是 NP-complete。"
    ]
   },
   {

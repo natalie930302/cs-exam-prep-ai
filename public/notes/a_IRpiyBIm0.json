@@ -49,6 +49,36 @@
      "text": "Optimization 至少和 decision 一樣難；所以證 NPC 的第一步是找出 decision 版。",
      "t": 248
     }
+   ],
+   "cues": [
+    72.2,
+    78.0,
+    86.8,
+    103.9,
+    119.8,
+    120.8,
+    129.8,
+    139.8,
+    175.0,
+    197.7,
+    216.2,
+    244.8,
+    259.0
+   ],
+   "explain": [
+    "第一個重要觀念：同一個問題可以有兩種問法。optimization problem 要「找出最好的答案」；decision problem 只問「是或不是」。",
+    "證明 NP-completeness 時，我們主要看 decision problem，不看 optimization problem。等一下會說為什麼。",
+    "optimization 的例子：在一張圖上找 s 到 t 的最短路徑。紅球沿著綠色的路走，2 + 1 + 2 + 3 = 8，就是最短的。",
+    "同一個問題的 decision 版是：「s 到 t 有沒有長度 k（或 ≤ k）的路？」它是一個問句。",
+    "這種問句的答案只有兩種：yes 或 no。",
+    "所以 decision 版簡單多了：不用把最短路找出來，只要判斷「有沒有」。",
+    "舉例：k = 9 時，因為有一條長度 8 的路（8 ≤ 9），答案是 YES。",
+    "結論：decision 版比 optimization 版簡單（至少不會更難）。",
+    "那為什麼證明 NP-completeness 時要專注在 decision 版？右邊的小人也在問。",
+    "如果我們證明「連 decision 版都是 NP-complete」，就表示連這個比較簡單的版本都設計不出有效率的演算法。",
+    "那 optimization 版要找出最短、最小，比回答是非題更難，當然更不可能有有效率的演算法。",
+    "所以可以把 optimization problem 想成「至少和 decision problem 一樣難」。證明簡單的版本很難，就連帶證明了難的版本。",
+    "所以證 NPC 的第一步：手上的問題如果是 optimization 版，先把它改寫成 decision 版。"
    ]
   },
   {
@@ -79,6 +109,32 @@
      "text": "最重要：yes 要對應到 yes、no 對應到 no，否則解不出 A。",
      "t": 446
     }
+   ],
+   "cues": [
+    277.8,
+    309.8,
+    328.4,
+    339.0,
+    357.8,
+    372.0,
+    405.0,
+    429.3,
+    435.0,
+    446.2,
+    471.5
+   ],
+   "explain": [
+    "接下來是最重要的一步：reduction（歸約）。先看它原本是拿來「解題」的。",
+    "假設有一個 decision problem A，我們想用 polynomial time 解它，但不知道怎麼做。",
+    "A 的一個具體輸入叫做一個 instance，這裡叫它 α。例如「這張圖、這兩個點、k = 9」就是一個 instance。",
+    "另外有一個問題 B，我們已經會用 polynomial time 解它了（B 身上寫著 poly ✓）。",
+    "想法很自然：自己不會解 A，就借 B 的力量。",
+    "第一步：把 A 的 instance α，在 polynomial time 內轉換成 B 的 instance β。這個轉換就叫 reduction。",
+    "這就是那張圖的流程：α → 轉換（poly time）→ β → 交給 B 的演算法。",
+    "B 本來就有 polynomial time 的演算法，把 β 丟進去，很快就得到答案。",
+    "轉換花 polynomial、解 B 也花 polynomial，兩個 polynomial 加起來還是 polynomial。所以 A 也能用 polynomial time 解了。",
+    "最重要的條件：A 的答案是 yes 時，轉出來的 B 也要是 yes；no 要對應 no。不然 B 的答案就不能直接當成 A 的答案。",
+    "整理：想解 A，就把它轉成會解的 B，再借 B 的演算法。這就是 reduction 的概念。"
    ]
   },
   {
@@ -114,7 +170,35 @@
      "t": 719
     }
    ],
-   "trap": "補充：「已知 A 沒有 poly 解」其實沒人證過，是假設 P ≠ NP；嚴格說法是「若 B 有 poly 解，A（NPC）也有 → P = NP」。"
+   "trap": "補充：「已知 A 沒有 poly 解」其實沒人證過，是假設 P ≠ NP；嚴格說法是「若 B 有 poly 解，A（NPC）也有 → P = NP」。",
+   "cues": [
+    489.8,
+    505.9,
+    519.0,
+    551.8,
+    558.9,
+    572.4,
+    602.0,
+    628.4,
+    646.4,
+    689.8,
+    701.7,
+    714.4
+   ],
+   "explain": [
+    "現在換個方向：把 reduction 拿來證明一個問題「很難」。",
+    "記住：NP-completeness 不是在證明問題簡單，而是證明它很難、沒有有效率的解法。",
+    "這次的主角換成 B（發光的那個）。",
+    "目標：證明 B 沒有 polynomial time 的解法。",
+    "已知條件一：A 沒有 polynomial time 解（A 變紅、愁眉苦臉）。",
+    "已知條件二：有一個從 A 到 B 的 polynomial time reduction，可以把 A 的 instance 快速轉成 B 的。",
+    "證明方法：反證法。先假設相反的事情成立，推出矛盾，就證明原本的假設錯了。",
+    "假設 B 有 polynomial time 解（B 暫時變綠）。",
+    "那 A 的任何 instance 都能先 poly 轉成 B，再用 B 的快速解法解掉，A 豈不是也有 polynomial time 解？",
+    "但我們已知 A 沒有 polynomial time 解，這就矛盾了。",
+    "所以假設錯了：B 不可能有 polynomial time 解。B 也變紅了。",
+    "回顧到目前為止的三件事：只看 decision 版、reduction 怎麼做、用反證法證明 B 很難。"
+   ]
   },
   {
    "title": "第一個 NPC：Cook–Levin",
@@ -144,6 +228,28 @@
      "text": "任一個 NPC 問題有 poly 解，bucket 裡全部都會被解掉。",
      "t": 849
     }
+   ],
+   "cues": [
+    758.9,
+    782.7,
+    797.1,
+    802.8,
+    821.9,
+    827.1,
+    837.8,
+    849.1,
+    877.4
+   ],
+   "explain": [
+    "問題來了：這套邏輯需要一個「已知不能 polynomial time 解」的 A，那第一個 A 從哪裡來？",
+    "所以一定要有「第一個」NP-complete 問題，後面的人才能拿它當 A。",
+    "幸好有 Cook's theorem（Cook–Levin 定理）。",
+    "他們不靠 reduction，而是從 first principles（最根本的定義）直接證明 Boolean satisfiability（SAT）是 NP-complete。",
+    "於是 SAT 成為第一個放進「NP-complete bucket（籃子）」的問題。",
+    "之後大家用 reduction：從 SAT reduce 到新問題，證明它也很難，就把它加進籃子。",
+    "籃子裡有兩個以後，要證第三個，可以從籃子裡任何一個 reduce 過來，不一定要從 SAT。",
+    "這也代表：只要籃子裡任何一個問題找到 polynomial time 解，透過這些 reduction，全部問題都會被解掉。",
+    "它們全部綁在一起：解一個，就等於解全部。"
    ]
   },
   {
@@ -182,6 +288,30 @@
      "text": "最後提醒：L 和 L′ 都是 decision problem。",
      "t": 1028
     }
+   ],
+   "cues": [
+    887.3,
+    903.8,
+    913.5,
+    923.1,
+    942.2,
+    947.2,
+    959.4,
+    970.5,
+    995.9,
+    1027.5
+   ],
+   "explain": [
+    "最後整理證明步驟。L 是你想證明是 NP-complete 的問題。",
+    "L′ 是一個大家已經知道的 NP-complete 問題（例如 SAT）。",
+    "第一步：證明 L ∈ NP，也就是 L 的解可以在 polynomial time 內被驗證。",
+    "注意：L 和 L′ 都必須是 decision 版本，不是 optimization 版本。",
+    "第二步非常重要，很多學生在這裡犯錯。",
+    "要把已知 NPC 的 L′ reduce 到 L（綠色箭頭：L′ → L）。",
+    "方向不能反過來：不是把 L reduce 到 L′（紅色箭頭打叉）。",
+    "為什麼反過來沒意義？把自己的問題轉成一個難題，只代表「走這條路很難」，不代表沒有別條簡單的路。",
+    "正確方向 L′ ≤p L 的意義：如果 L 能快速解，大家都知道很難的 L′ 也能快速解了，這不太可能，所以 L 很難。",
+    "最後提醒：兩步都完成（L ∈ NP、L′ ≤p L），L 就是 NP-complete；而且 L、L′ 都是 decision problem。"
    ]
   },
   {

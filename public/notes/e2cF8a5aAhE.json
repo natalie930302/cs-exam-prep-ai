@@ -50,7 +50,35 @@
      "t": 187
     }
    ],
-   "trap": "補充：比較型排序的下界是 Ω(n log n)，「O(n) 的比較排序」不可能；這裡只是說明研究動機。"
+   "trap": "補充：比較型排序的下界是 Ω(n log n)，「O(n) 的比較排序」不可能；這裡只是說明研究動機。",
+   "cues": [
+    26.5,
+    41.8,
+    58.8,
+    67.6,
+    70.8,
+    80.1,
+    107.8,
+    126.8,
+    138.8,
+    158.8,
+    192.8,
+    214.8
+   ],
+   "explain": [
+    "Bari 先說：這個主題其實是一個「研究」主題。中間的小人就是在做研究的人。",
+    "我們學過的演算法可以分兩類：左邊是 polynomial time（像 n、n²），右邊是 exponential time（像 2ⁿ）。",
+    "搜尋的例子：linear search 要 n 步，binary search 只要 log n 步，都是 polynomial time。",
+    "排序：簡單的排序要 n²，merge sort 更快，n log n。也都是 polynomial time。",
+    "右邊是指數時間的問題：0/1 knapsack、traveling salesperson、sum of subsets、graph coloring、Hamiltonian cycle，用目前的方法都要大約 2ⁿ。",
+    "實際上有的是 n·2ⁿ、有的是 nⁿ，Bari 統一寫成 2ⁿ，只是要表示「它們都是指數時間」。",
+    "研究在做什麼？例如搜尋：已經有 log n 的 binary search，我們還想要更快、O(1) 的搜尋方法。",
+    "排序也一樣：最快的 merge sort 是 n log n，我們想要 O(n) 的排序。（補充：只靠「比較」的排序其實不可能比 n log n 快。）",
+    "對右邊那些指數時間的問題，我們最想要的是 polynomial time 的演算法。",
+    "為什麼？因為 n 夠大時，就算 n¹⁰、甚至 n¹⁰⁰ 都比 2ⁿ 小很多，指數時間實在太耗時了。",
+    "電腦科學家、數學家研究了很久，到現在還是沒有找到用 polynomial time 解這些問題的方法。小人有點沮喪。",
+    "研究一直沒結果，至少要讓做過的工作有用。所以有了一套研究框架（guidelines）：NP-hard 和 NP-complete。"
+   ]
   },
   {
    "title": "研究框架的兩點",
@@ -72,6 +100,24 @@
      "text": "② 寫不出 deterministic 的 poly 演算法，就寫 non-deterministic 的 poly 演算法。",
      "t": 301
     }
+   ],
+   "cues": [
+    234.8,
+    244.8,
+    265.8,
+    273.8,
+    278.8,
+    300.8,
+    311.8
+   ],
+   "explain": [
+    "整個 NP-hard、NP-complete 的主題，就建立在接下來這兩點上。",
+    "第一點：如果解不出 polynomial 演算法，至少證明這些問題之間很像（相似），這樣只要解出一個，其他的也能跟著解出來。",
+    "不要各做各的：我研究 knapsack、你研究 graph coloring，彼此沒關係，努力就分散了。",
+    "要把它們集體關聯起來，找出它們之間的關係（黃色的連桿）。",
+    "關係建立好以後，只要有人解出其中一個（中間變綠），全部都跟著解出來。",
+    "第二點：如果寫不出 deterministic（每一步都清楚）的演算法，就先寫 non-deterministic 的演算法：不知道怎麼做的那一行（???）先空著。",
+    "重點是要寫出 polynomial time 的 non-deterministic 演算法。這是什麼意思，下一段解釋。"
    ]
   },
   {
@@ -110,6 +156,42 @@
      "text": "不知道怎麼運作的叫 magic；知道之後就變成 technique，變成 deterministic。",
      "t": 614
     }
+   ],
+   "cues": [
+    334.7,
+    350.0,
+    361.8,
+    395.8,
+    409.6,
+    424.0,
+    434.2,
+    463.3,
+    493.8,
+    510.8,
+    518.8,
+    537.7,
+    566.4,
+    589.8,
+    614.6,
+    640.0
+   ],
+   "explain": [
+    "我們平常寫的演算法都是 deterministic：每一行在做什麼、怎麼運作，我們都很清楚（每行都打勾）。",
+    "也可以寫 non-deterministic 演算法：意思是裡面有些敘述，我們還不知道它是怎麼做到的。",
+    "例如想寫 0/1 knapsack 的 polynomial time 演算法：大部分的行都會寫，但有一兩行不知道怎麼做成 polynomial，就先留白，標成 non-deterministic。",
+    "這樣做的好處：研究成果被保存下來。將來別人研究同一個問題時，可以把留白那幾行補成 deterministic。",
+    "就算我花了十幾年還是解不出來，做過的工作也不會白費，用這種形式留下來。",
+    "來看例子：non-deterministic search，在大小為 n 的陣列 A 裡找 key。",
+    "其中 choice、success、failure 是 non-deterministic 的敘述。我們假設每一個都只花 1 個單位的時間，也就是 O(1)。",
+    "看一下整個演算法：沒有迴圈，每行都是 O(1)，所以整個是 O(1)！比最快的 binary search（log n）還快。",
+    "第一行 j = choice()：choice 直接告訴我們 key 在第 j 格。",
+    "接著檢查 A[j] 是不是 key：是的話就輸出 j，搜尋成功（success）。",
+    "如果 A[j] 不是 key，就代表 key 根本不在陣列裡，輸出 0，failure。注意：不是「找不到」，而是真的不存在。",
+    "問題是：choice 怎麼知道 key 在第 j 格？我們不知道，這就是「non-deterministic」的部分。",
+    "例子：要找 key = 9。choice 不做任何搜尋、不檢查任何東西，直接說「在 index 4」，一步就到。",
+    "它怎麼在 O(1) 內知道？今天我們不知道，但也許明天有人找到直接得到答案的方法。這就是寫 non-deterministic 演算法的想法。",
+    "不知道怎麼運作的東西，我們叫它 magic（魔法）；一旦知道怎麼做，它就變成 technique（技術），也就是 deterministic。",
+    "所以：對那些目前要指數時間的問題，我們寫的是 polynomial time 的 non-deterministic 演算法（不再寫指數時間的，那沒有意義）。"
    ]
   },
   {
@@ -137,7 +219,29 @@
      "t": 809
     }
    ],
-   "trap": "補充：Bari 的「non-deterministic = 我們還不知道怎麼做」是直覺說法；正式定義中 NP 是 nondeterministic TM poly time 可決定（等價於 poly time 可驗證）的 decision problem，和人類知不知道解法無關。"
+   "trap": "補充：Bari 的「non-deterministic = 我們還不知道怎麼做」是直覺說法；正式定義中 NP 是 nondeterministic TM poly time 可決定（等價於 poly time 可驗證）的 decision problem，和人類知不知道解法無關。",
+   "cues": [
+    670.8,
+    703.8,
+    716.3,
+    737.8,
+    753.8,
+    771.8,
+    803.9,
+    814.8,
+    819.0
+   ],
+   "explain": [
+    "定義兩個類別。P：deterministic、polynomial time 的演算法，例如 linear／binary search、bubble sort、最短路徑、MST、Huffman coding。",
+    "NP：non-deterministic、但 polynomial time 的演算法。",
+    "這正是我們想替 knapsack、TSP 這些指數時間問題寫的：不知道怎麼變成 polynomial 的地方，就留成 non-deterministic。",
+    "著名的圖：P 是 NP 的子集（藍色的 NP 把綠色的 P 包起來）。",
+    "為什麼？以 merge sort 為例：以前大家還不知道有 n log n 的方法（只會 bubble sort 的 n²），那時它對我們來說是 non-deterministic。",
+    "後來有人找到了 merge sort，它就變成 deterministic，搬進 P 裡面。",
+    "所以今天 deterministic 的，昨天是 non-deterministic；今天 non-deterministic 的，明天可能變成 deterministic。",
+    "因此說 deterministic ⊆ non-deterministic，也就是 P ⊆ NP。（這是 Bari 的直覺說法；正式定義是用「能不能 polynomial time 驗證」。）",
+    "還有一個 Cook's theorem，跟「P 是 NP 的子集還是等於 NP」有關，最後再講。"
+   ]
   },
   {
    "title": "Base problem：SAT 與 state space tree",
@@ -167,14 +271,41 @@
      "text": "可以畫成 state space tree，root 到 leaf 的一條路就是一組 (x1, x2, x3)。",
      "t": 1007
     }
+   ],
+   "cues": [
+    826.7,
+    864.6,
+    874.0,
+    886.8,
+    897.8,
+    917.3,
+    928.0,
+    945.8,
+    958.1,
+    977.8,
+    1004.2,
+    1028.5,
+    1069.6
+   ],
+   "explain": [
+    "研究框架的第一部分（寫 non-deterministic 演算法）講完了，接著是第二部分：把問題關聯起來。",
+    "要關聯問題，需要一個問題當「基準」，叫 base problem。",
+    "base problem 就是 satisfiability（SAT），它用 CNF 公式來表示。",
+    "公式用 boolean 變數 x1、x2、x3，每個變數只能是 0（假）或 1（真）。",
+    "例子：F = (x1 ∨ ¬x2 ∨ x3) ∧ (¬x1 ∨ x2 ∨ ¬x3)。∨ 是 or（或），∧ 是 and（且），¬x2 是「x2 的相反」。",
+    "括號裡的叫子句（clause），這裡有 C1、C2。子句裡用 ∨ 連，子句之間用 ∧ 連，這種形式叫 CNF。",
+    "Satisfiability 問題：x1、x2、x3 取什麼值，整個公式 F 會是真的？",
+    "每個變數 0 或 1，三個變數一共 000、001、…、111，8 種組合（下面一排黃色便條）。",
+    "把 8 種都代進去檢查：010 和 101 會讓某個子句全部是 0，F 為假（紅）；其他 6 種 F 為真（綠）。",
+    "要試 8 = 2³ 種；n 個變數就要試 2ⁿ 種，所以 SAT 用這種方法也是指數時間，和 knapsack 那些問題同一類。",
+    "這些組合可以畫成一棵 state space tree：每一層決定一個變數，左邊分支 = 1、右邊分支 = 0。",
+    "從 root 走到 leaf 的一條路，就是一組 (x1, x2, x3)。例如黃色這條 1 → 0 → 1，就是 101。8 個 leaf 就是 8 種組合。",
+    "接下來要證明這些問題和 SAT 很像：只要 SAT 能用 polynomial time 解，其他問題也都能。"
    ]
   },
   {
    "title": "0/1 knapsack 用同一棵樹",
-   "scene": "np1-b-sat-tree",
-   "params": {
-    "knap": 1
-   },
+   "scene": "np1-b-knap-tree",
    "points": [
     {
      "text": "例：0/1 knapsack，3 個物品各有 profit 與 weight，背包容量 8。",
@@ -197,7 +328,27 @@
      "t": 1202
     }
    ],
-   "trap": "補充：Bari 板書上的 profit／weight 數字沒有唸出來，動畫只畫出共用的樹。"
+   "trap": "補充：Bari 板書上的 profit／weight 數字沒有唸出來，動畫只畫出共用的樹。",
+   "cues": [
+    1104.6,
+    1116.6,
+    1122.8,
+    1142.8,
+    1152.8,
+    1179.2,
+    1190.8,
+    1205.0
+   ],
+   "explain": [
+    "用 0/1 knapsack 來說明。3 個物品，每個有 profit（價值）和 weight（重量），背包容量是 8。",
+    "要把物品放進背包：profit 越大越好，但總重量不能超過容量。",
+    "解可以寫成 (x1, x2, x3)：xi = 1 表示放第 i 個物品，0 表示不放。",
+    "每個物品放或不放，一樣是 2³ = 8 種，畫出來就是同一棵 state space tree；n 個物品就是 2ⁿ 種。",
+    "解法也和 SAT 一樣，逐一嘗試每個 leaf：SAT 看公式是不是真的，knapsack 看 profit 是不是最大、有沒有超重。",
+    "現在把兩個題目都拿掉，只剩這棵樹。請問：這棵樹是 SAT 的，還是 knapsack 的？",
+    "兩個都是！它們的解長得一模一樣。Bari 就是用這棵共同的樹把兩個問題關聯起來（正式的方法是下一段的 reduction）。",
+    "所以只要能用 polynomial time 解這棵樹，兩個問題就都能用 polynomial time 解。"
+   ]
   },
   {
    "title": "Reduction：SAT ∝ L",
@@ -231,12 +382,46 @@
      "text": "Reduction 有遞移性：SAT ∝ L1、L1 ∝ L2 → L2 也 NP-hard（例：0/1 → graph coloring → sum of subsets／Hamiltonian）。",
      "t": 1430
     }
+   ],
+   "cues": [
+    1227.6,
+    1232.0,
+    1247.6,
+    1271.0,
+    1288.0,
+    1299.1,
+    1319.5,
+    1344.2,
+    1359.8,
+    1379.5,
+    1425.3,
+    1442.3,
+    1469.6
+   ],
+   "explain": [
+    "把 SAT 也加進指數時間問題的清單。",
+    "先給這些問題一個名字：hard problems（難的問題）。",
+    "SAT 是我們的 base problem，所以叫它 NP-hard（NP 的意思等一下解釋），其他的先叫 hard problems。",
+    "怎麼證明其他問題和 SAT 有關係？方法叫 reduction（歸約）。",
+    "例如寫成「satisfiability reduces to 0/1 knapsack」，符號是 SAT ∝ 0/1 knapsack。",
+    "做法：拿 SAT 的一個 instance（一個具體的公式），把它轉換成 0/1 knapsack 的一個 instance。",
+    "意義：如果有人能用 polynomial time 解 knapsack，同一個演算法（先轉換、再解）也能 polynomial time 解 SAT。",
+    "誰先被解出來不重要。重點是它們連在一起：任何一個被解出來，另一個也自動解出來。",
+    "轉換本身只能花 polynomial time。如果轉換就要花 exponential time，那就沒有用了。",
+    "SAT 是 NP-hard，而 SAT ∝ 0/1 knapsack，所以 0/1 knapsack 也變成 NP-hard（變紅）。",
+    "reduction 有遞移性：SAT ∝ L1 讓 L1 變 NP-hard；再證 L1 ∝ L2，L2 也變 NP-hard。",
+    "例如：0/1 knapsack → graph coloring，再從 graph coloring → sum of subsets、Hamiltonian cycle。不用每個都直接從 SAT 轉。",
+    "結論：只要 SAT（直接或間接）reduce 得到某個問題，那個問題就是 NP-hard。"
    ]
   },
   {
    "title": "NP-hard ∩ NP = NP-complete",
    "scene": "np1-b-npc-venn",
    "points": [
+    {
+     "text": "另一件事：這些 NP-hard 問題，有沒有 non-deterministic polynomial time 演算法？",
+     "t": 1487
+    },
     {
      "text": "SAT 有 non-deterministic polynomial time 演算法。",
      "t": 1500
@@ -262,7 +447,31 @@
      "t": 1667
     }
    ],
-   "trap": "補充：Bari 用「有 non-deterministic poly 演算法」表示屬於 NP；正式條件是 L ∈ NP（有 poly time verifier）。"
+   "trap": "補充：Bari 用「有 non-deterministic poly 演算法」表示屬於 NP；正式條件是 L ∈ NP（有 poly time verifier）。",
+   "cues": [
+    1487.1,
+    1498.8,
+    1510.8,
+    1532.8,
+    1544.3,
+    1560.8,
+    1609.4,
+    1650.8,
+    1660.8,
+    1677.6
+   ],
+   "explain": [
+    "回到第二件事（寫 non-deterministic 演算法）：這些 NP-hard 問題裡，有沒有哪一個已經有 non-deterministic polynomial time 演算法？",
+    "有：SAT 已經被證明有 non-deterministic polynomial time 演算法。",
+    "SAT 既是 NP-hard，又有 non-deterministic poly 演算法，所以它是 NP-complete，位在兩個圈的交集。",
+    "換成你的問題：先證明 SAT ∝ 你的問題（直接或間接），它就進了 NP-hard。",
+    "再替它寫出 non-deterministic polynomial time 演算法，它就走進交集，成為 NP-complete。",
+    "所以研究一個新問題，基本要做兩件事：① 證明 SAT（直接或間接）reduce 到它；② 寫出 non-deterministic 演算法。能直接解出來當然最好，解不出來至少做完這兩件。",
+    "再看一次這張著名的圖：紅色是 NP-hard 的集合，裡面有 SAT、0/1 knapsack、graph coloring…（被 SAT 直接或間接 reduce 到的都在這裡）。",
+    "藍色是另一個集合：有 non-deterministic polynomial time 演算法的問題，也就是 NP。",
+    "SAT 兩個條件都符合，所以落在交集裡。",
+    "NP-hard 和 NP 的交集，就叫做 NP-complete。"
+   ]
   },
   {
    "title": "P 會長大嗎？Cook's theorem",
@@ -289,7 +498,31 @@
      "t": 1883
     }
    ],
-   "trap": "補充：Cook–Levin 定理的正式內容是「SAT 是 NP-complete」；「SAT ∈ P ⇔ P = NP」是它的推論。"
+   "trap": "補充：Cook–Levin 定理的正式內容是「SAT 是 NP-complete」；「SAT ∈ P ⇔ P = NP」是它的推論。",
+   "cues": [
+    1694.8,
+    1707.3,
+    1735.8,
+    1746.5,
+    1762.8,
+    1782.7,
+    1816.8,
+    1845.1,
+    1863.9,
+    1878.9
+   ],
+   "explain": [
+    "圖上還有 P：今天已經知道的 deterministic polynomial time 演算法。",
+    "今天 non-deterministic 的，明天可能變成 deterministic、進到 P 裡。所以我們相信 P 會越長越大（綠圈在變大）。",
+    "甚至相信總有一天，P 會長到跟 NP 一樣大。",
+    "但還有一個大問題：這個想法真的行得通嗎？",
+    "如果 non-deterministic 永遠變不成 deterministic，那我們寫的這些 non-deterministic 演算法，研究就都白做了。",
+    "所以至少要證明這條路是對的：證明 P = NP。",
+    "證明 P = NP 的意思是：這些解法其實已經存在，只是我們還沒「發現」它，不需要重新發明。",
+    "Cook 試著處理這件事，留下了著名的 Cook's theorem。",
+    "Cook 說：SAT ∈ P 若且唯若 P = NP。也就是 SAT 一旦有 deterministic polynomial 演算法，P 就撐滿整個 NP。",
+    "Cook 自己並沒有證出 SAT ∈ P，他只說：誰能證出來，我們做的這些研究就是對的。（正式的 Cook–Levin 定理內容是「SAT 是 NP-complete」，這句是它的推論。）"
+   ]
   },
   {
    "title": "結尾",

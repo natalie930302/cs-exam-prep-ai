@@ -31,6 +31,26 @@
      "text": "等價說法：解能在 deterministic TM 上 polynomial time 驗證。",
      "t": 58
     }
+   ],
+   "cues": [
+    7.8,
+    9.3,
+    19.8,
+    30.8,
+    32.0,
+    42.8,
+    50.8,
+    57.8
+   ],
+   "explain": [
+    "先從 P 開始。這裡談的都是decision problem：問題只要回答 YES 或 NO，例如「這張圖有沒有長度 ≤ 10 的路？」。左邊的小人就是一個等著被回答的問題。",
+    "P 的定義：在 deterministic Turing machine（確定型圖靈機，可以想成「一般的電腦」）上，能在polynomial time內解出答案的 decision problem。藍色方塊一格一格亮起，代表它每一步都很確定地往下算。",
+    "n 是 input 的大小（例如陣列有幾個數字）。時間是 n^O(1)，意思是 n 的某個固定次方，像 n²、n³，都算 polynomial。",
+    "接著看 NP，右邊這一區。",
+    "初學者最常見的誤會：把 NP 當成「Not Polynomial（不是多項式）」。這是錯的，紅色就是這個誤解。",
+    "NP 其實是 Nondeterministic Polynomial time：在「非確定型」機器上能在 polynomial time 內解出的問題。N 是 nondeterministic，不是 not。",
+    "非確定型圖靈機（NTM）可以想成會「分身」的機器：每遇到選擇，就同時往所有分支走。只要有一條路走到 YES，就回答 YES。綠色是那條成功的路，路的長度是 polynomial。",
+    "換個說法更好懂：把「猜中的那條路」當成一個解交給一般電腦，它能在 polynomial time 內「檢查」這個解對不對。所以 NP = 解可以被快速驗證的問題。找解可能很難，但檢查很快。"
    ]
   },
   {
@@ -58,7 +78,23 @@
      "t": 103
     }
    ],
-   "trap": "補充：例如質數判定（PRIMES）在 2002 年由 AKS 證明在 P。"
+   "trap": "補充：例如質數判定（PRIMES）在 2002 年由 AKS 證明在 P。",
+   "cues": [
+    67.8,
+    72.8,
+    84.8,
+    87.8,
+    95.8,
+    102.8
+   ],
+   "explain": [
+    "根據剛才的定義，P 和 NP 的關係只有兩種可能，左右各放一種。",
+    "先確定一件事：P 裡的問題，非確定型機器當然也能 polynomial time 解（不分身照樣算就好）。所以 P 一定被 NP 包住：P ⊆ NP，綠圈在藍圈裡。",
+    "可能一：P 是 NP 的「真子集」（P ⊊ NP），也就是 NP 裡有一些問題不在 P，真的沒辦法快速解。",
+    "可能二：P = NP，兩個圈完全一樣大，所有能快速驗證的問題，也都能快速解。",
+    "歷史上真的發生過：某些本來以為只在 NP、不在 P 的問題，後來找到 polynomial 演算法，被證明在 P（例如 2002 年的質數判定）。小人從外面走進了 P。",
+    "到底是哪一種？到現在沒人能證明。這就是理論計算機科學最有名的 open problem：P vs NP。"
+   ]
   },
   {
    "title": "NP-hard",
@@ -84,7 +120,23 @@
      "t": 144
     }
    ],
-   "trap": "更正：NP-hard 的定義是「所有 NP 問題都能 poly time reduce 到它」；說它不在 P 必須先假設 P ≠ NP（若 P = NP，NPC 問題就都在 P）。"
+   "trap": "更正：NP-hard 的定義是「所有 NP 問題都能 poly time reduce 到它」；說它不在 P 必須先假設 P ≠ NP（若 P = NP，NPC 問題就都在 P）。",
+   "cues": [
+    106.8,
+    120.8,
+    128.8,
+    134.8,
+    143.8,
+    147.0
+   ],
+   "explain": [
+    "紅色這一大區是 NP-hard：難度至少跟 NP 裡最難的問題一樣，甚至更難。",
+    "影片說 NP-hard 問題「永遠不可能在 P」。這要小心：這句話只有在假設 P ≠ NP 時才成立；如果哪天證明 P = NP，就不是這樣了。",
+    "NP-hard 這個分類太廣了：它也收了一些連「快速驗證」都做不到的問題（沒有 polynomial time verifier），它們落在 NP 圈圈外面。",
+    "甚至連「不可判定」的問題都算，例如停機問題（Halting problem）：沒有任何程式能對所有輸入回答它。",
+    "所以說一個問題是 NP-hard，只告訴你「它至少和 NP 一樣難」，對它到底多難說得很少。",
+    "而且很多實際上重要的問題其實都在 NP 裡面，例如 TSP 的判定版、satisfiability（SAT）。所以更值得問的是 NP 裡面的事。"
+   ]
   },
   {
    "title": "NP-complete",
@@ -121,6 +173,28 @@
      "text": "目前最好的 deterministic 方法都是 exponential time。",
      "t": 241
     }
+   ],
+   "cues": [
+    151.8,
+    164.3,
+    165.8,
+    170.8,
+    176.7,
+    188.8,
+    201.5,
+    215.8,
+    234.8
+   ],
+   "explain": [
+    "更好的問題是：NP 裡有沒有一些問題，我們還不知道能不能用 polynomial time 解？",
+    "答案是有，例如 SAT（布林公式可不可以被滿足）。它就放在 NP 和 NP-hard 交疊的地方。",
+    "1970 年代初，Stephen Cook 和 Leonid Levin 各自發現了這件事。",
+    "他們發現：某些 NP 問題的難度，和整個 NP 綁在一起。黃色的線就是這種「綁在一起」的關係。",
+    "意思是：只要這些問題裡任何一個有 polynomial 演算法，所有 NP 問題都能用 polynomial time 解。SAT 變綠，就是在想像這件事。",
+    "原因是：每一個 NP 問題都能 reduce（轉換）到這一類特殊問題。這一類就叫 NP-complete（NPC），剛好是 NP 和 NP-hard 的交集。",
+    "影響很大：從 NPC 裡挑一題、給出 polynomial 演算法，就能拿到千禧年大獎的一百萬美元（當然，目前沒人做到）。",
+    "實際上也很有用：假設主管要你做一個「即時」解某個問題的 app，結果那個問題是 NPC…",
+    "你就可以有根據地跟主管說明：目前已知最好的 deterministic 方法都要 exponential time，要即時算出最佳解很不實際。"
    ]
   },
   {
@@ -151,7 +225,25 @@
      "t": 287
     }
    ],
-   "trap": "更正：NPC 沒有 poly decider 只是猜測，並未被證明；NP-hard 也不是「所有沒有 poly decider 的問題」，而是看能不能被所有 NP 問題 reduce 到。"
+   "trap": "更正：NPC 沒有 poly decider 只是猜測，並未被證明；NP-hard 也不是「所有沒有 poly decider 的問題」，而是看能不能被所有 NP 問題 reduce 到。",
+   "cues": [
+    247.8,
+    252.8,
+    258.8,
+    262.5,
+    273.8,
+    286.8,
+    291.8
+   ],
+   "explain": [
+    "最後用一張圖總結四個類別：P、NP、NP-complete、NP-hard。",
+    "大部分理論學者相信 P ≠ NP，所以這張圖是照 P ≠ NP 的情況畫的。",
+    "最裡面是 P：有 polynomial time 的 decider（能快速回答 YES/NO 的演算法）。",
+    "外面一圈是 NP：裡面的問題可能有、也可能沒有 polynomial decider，但都能 polynomial time 驗證一個解。",
+    "NP 裡最難的那一類是 NP-complete。影片說它們「確定沒有」polynomial decider，這要更正：這只是大家的猜測，還沒有被證明。",
+    "NP-hard 範圍最廣：包含 NPC，也包含很多不在 NP 裡的問題。",
+    "影片最後說 NP-hard 是「所有沒有 polynomial decider 的問題」，這也不準確。NP-hard 的定義是：所有 NP 問題都能 polynomial time reduce 到它。"
+   ]
   }
  ],
  "quiz": [

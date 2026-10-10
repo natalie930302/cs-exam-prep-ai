@@ -315,7 +315,7 @@
   "label": "交大江蕙如 Lec23 Beyond Polynomial Running Times (2/2)",
   "points": 89,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "6pV2IF0fgKY": {
   "label": "Abdul Bari：2.7.1 Two Way MergeSort - Iterative",
@@ -519,7 +519,7 @@
   "label": "How to prove NP-Completeness - The Steps",
   "points": 37,
   "quiz": 5,
-  "cued": false
+  "cued": true
  },
  "A_NNGOqui7s": {
   "label": "清大OCW 趙啟超《離散數學》第1A講 Logic and Set Theory",
@@ -685,9 +685,9 @@
  },
  "e2cF8a5aAhE": {
   "label": "Abdul Bari：8. NP-Hard and NP-Complete Problems",
-  "points": 57,
+  "points": 58,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "E82x-cug9YE": {
   "label": "Modes of Transfer | Programmed, Interrupt-initiated I/O & DMA",
@@ -1171,9 +1171,9 @@
  },
  "PqN0aJeYtuA": {
   "label": "交大江蕙如 Lec22 Beyond Polynomial Running Times (1/2)",
-  "points": 101,
+  "points": 102,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "prx1psByp7U": {
   "label": "Abdul Bari：4.3 Matrix Chain Multiplication - DP",
@@ -1209,7 +1209,7 @@
   "label": "Abdul Bari：8.1 NP-Hard Graph Problem - Clique Decision Problem",
   "points": 48,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "R0MpXbuqfZM": {
   "label": "台大林軒田 DSA Stack / Queue",
@@ -1311,7 +1311,7 @@
   "label": "Theory of Computation：P, NP, NP-Complete and NP-Hard",
   "points": 27,
   "quiz": 4,
-  "cued": false
+  "cued": true
  },
  "tp4_UXaVyx8": {
   "label": "MIT 6.006 L22：DP IV: Guitar Fingering, Tetris, Super Mario Bros.（進階DP範例，補充）",
