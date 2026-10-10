@@ -293,6 +293,12 @@
   "quiz": 7,
   "cued": true
  },
+ "5QvVXhrnTHQ": {
+  "label": "清大OCW 趙啟超《離散數學》第4B講 Functions",
+  "points": 26,
+  "quiz": 6,
+  "cued": true
+ },
  "5v-tKX2uRAk": {
   "label": "Abdul Bari：1.7 Compare Class of Functions",
   "points": 13,
@@ -611,6 +617,12 @@
   "quiz": 8,
   "cued": true
  },
+ "BxbJxYFSOdo": {
+  "label": "清大OCW 趙啟超《離散數學》第2B講 Logic and Set Theory",
+  "points": 18,
+  "quiz": 5,
+  "cued": true
+ },
  "bzE9oX8bKqY": {
   "label": "清大周志遠 第3A講 What is an OS?",
   "points": 32,
@@ -892,6 +904,12 @@
   "points": 49,
   "quiz": 7,
   "cued": false
+ },
+ "f_Vw45CmKXs": {
+  "label": "清大OCW 趙啟超《離散數學》第2A講 Set Theory",
+  "points": 44,
+  "quiz": 7,
+  "cued": true
  },
  "G3H-L-K9kM4": {
   "label": "台大林軒田 DSA Class Introduction",
@@ -1601,6 +1619,12 @@
   "quiz": 8,
   "cued": true
  },
+ "r8HEDHCKhR4": {
+  "label": "清大OCW 趙啟超《離散數學》第2B講 Set Theory",
+  "points": 25,
+  "quiz": 7,
+  "cued": true
+ },
  "RjvhXL0WTrY": {
   "label": "台大林軒田 DSA Tree / Heap",
   "points": 166,
@@ -2085,6 +2109,12 @@
   "label": "清大周志遠 第4C講 Computer-System Organization(續)",
   "points": 17,
   "quiz": 5,
+  "cued": true
+ },
+ "zsQ-r279BbA": {
+  "label": "清大OCW 趙啟超《離散數學》第4A講 Functions",
+  "points": 27,
+  "quiz": 6,
   "cued": true
  },
  "zXhWPrMLXGo": {

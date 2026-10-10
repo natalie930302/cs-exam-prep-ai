@@ -1,0 +1,343 @@
+{
+ "video": "5QvVXhrnTHQ",
+ "label": "清大OCW 趙啟超《離散數學》第4B講 Functions",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "left inverse 與 right inverse",
+   "scene": "sfA-lr",
+   "points": [
+    {
+     "t": 4,
+     "text": "g 是 f 的 inverse 要滿足兩個條件：g ∘ f = 1_A 和 f ∘ g = 1_B。"
+    },
+    {
+     "t": 8,
+     "text": "只滿足 g ∘ f = 1_A：g 是 f 的 left inverse；只滿足 f ∘ g = 1_B：g 是 right inverse。"
+    },
+    {
+     "t": 34,
+     "text": "合成不 commute，所以左右不同；又是 left 又是 right inverse 才叫 inverse。"
+    }
+   ],
+   "cues": [
+    3.8,
+    8,
+    9.6,
+    34.4,
+    52.4,
+    62
+   ],
+   "explain": [
+    "延續上一講：g 叫做 f 的 inverse，要滿足兩個條件：① g ∘ f = 1_A（先 f 再 g 回到原點），② f ∘ g = 1_B。",
+    "如果只滿足第一個，g 寫在 f 的左邊，就叫 f 的 left inverse（左反函數）。",
+    "如果只滿足第二個，g 在 f 的右邊，叫 right inverse（右反函數）。",
+    "為什麼要分左右？因為合成不滿足交換律，從左邊合成和從右邊合成是不一樣的事。",
+    "又是 left inverse、又是 right inverse，兩個條件都成立，才叫做 inverse。",
+    "可以把「∘」想成乘法：從左邊合成上去，把 f「消掉」，只剩 a；從右邊合成上去消掉，只剩 b。"
+   ]
+  },
+  {
+   "title": "an inverse：唯一性是性質，不是定義",
+   "scene": "sfA-uniqintro",
+   "points": [
+    {
+     "t": 71,
+     "text": "定義說「g 是 f 的 an inverse」：不定冠詞，因為定義只說存在，沒有排除可能有兩個。"
+    },
+    {
+     "t": 104,
+     "text": "只有一個時才用定冠詞 the；「inverse 存在就唯一」通常當性質來證明。"
+    },
+    {
+     "t": 163,
+     "text": "只有 left inverse 或只有 right inverse 時，不見得唯一（像長方形矩陣）。"
+    }
+   ],
+   "cues": [
+    71.1,
+    84.8,
+    103.6,
+    117.9,
+    162.9,
+    198.7
+   ],
+   "explain": [
+    "老師注意到一個小細節：定義裡說 g 是 f 的「an」inverse，用的是不定冠詞 an。",
+    "因為定義只說「如果有一個 g 滿足條件」，並沒有排除「可能有兩個不同的 g 都滿足」。",
+    "如果確定只有一個，才會用定冠詞 the，說「the inverse」。",
+    "「唯一」通常不寫進定義，而是當作性質來證明：只要 f 有 inverse，那個 inverse 一定只有一個。下一段就證。",
+    "但如果只有 left inverse（或只有 right inverse），就不見得唯一。示意例子：f 把 1 對到 x、2 對到 y；g₁、g₂ 都把 x 送回 1、y 送回 2，只差 z 送到哪，兩個都滿足 g ∘ f = 1_A。",
+    "這有點像矩陣：方陣才有 inverse，從左乘、從右乘都變單位矩陣；長方形矩陣可能有左反矩陣或右反矩陣，但不一定唯一。"
+   ]
+  },
+  {
+   "title": "證明：inverse 唯一",
+   "scene": "sfA-uniqpf",
+   "points": [
+    {
+     "t": 248,
+     "text": "證唯一的標準做法：假設有兩個，證它們相等。"
+    },
+    {
+     "t": 274,
+     "text": "設 g、g′ 都是 f 的 inverse：g ∘ f = 1_A、f ∘ g = 1_B，g′ ∘ f = 1_A、f ∘ g′ = 1_B。"
+    },
+    {
+     "t": 312,
+     "text": "要證 g = g′：對 B 裡每個 b，g(b) = g′(b)。"
+    },
+    {
+     "t": 382,
+     "text": "g(b) = (g′ ∘ f)(g(b)) = g′(f(g(b))) = g′((f ∘ g)(b)) = g′(b)，用到結合律。"
+    },
+    {
+     "t": 527,
+     "text": "所以 g = g′，inverse 若存在必唯一。"
+    }
+   ],
+   "trap": "唯一性要用到 g 的 left 條件和 g′ 的 right 條件（或反過來）；只有單邊 inverse 時不一定唯一。",
+   "cues": [
+    247.7,
+    274.2,
+    311.8,
+    381.8,
+    412.4,
+    434.1,
+    457.7,
+    513.3,
+    527.1
+   ],
+   "explain": [
+    "怎麼證「唯一」？幾乎都是同一個套路：假設有兩個都滿足條件，然後推一推，發現它們其實相等。以後學代數也是這樣證。",
+    "假設 g 和 g′ 都是 f 的 inverse，把它們各自滿足的兩個條件寫下來，這些是證明裡可以用的東西。",
+    "要證 g = g′。兩個函數相等的意思是：定義域（B）裡每一個 b，對過去的結果都一樣。先把目的搞清楚。",
+    "第一步：g(b) 是 g 從 B 對到 A 的結果，所以 g(b) 是 A 裡的一個元素。",
+    "因為 g′ ∘ f = 1_A，A 裡任何元素經過 g′ ∘ f 都不變。把 g(b) 當成那個元素，所以 g(b) = (g′ ∘ f)(g(b))。",
+    "把合成的定義寫開：(g′ ∘ f)(g(b)) = g′(f(g(b)))。",
+    "換個括法，把裡面的 f(g(b)) 看成 (f ∘ g)(b)。這一步用到合成滿足結合律。",
+    "因為 f ∘ g = 1_B，(f ∘ g)(b) 就是 b，所以整個等於 g′(b)。",
+    "對每一個 b 都有 g(b) = g′(b)，所以兩個函數相等。有兩個就一定相等，所以 inverse 唯一。"
+   ]
+  },
+  {
+   "title": "記號 f⁻¹",
+   "scene": "sfA-finv",
+   "points": [
+    {
+     "t": 578,
+     "text": "大部分運算的 inverse 都是：定義只說存在，但存在就唯一。"
+    },
+    {
+     "t": 594,
+     "text": "因為唯一，可以用記號 f⁻¹ 表示 f 的 inverse（反函數）。"
+    },
+    {
+     "t": 624,
+     "text": "(f⁻¹)⁻¹ = f。"
+    }
+   ],
+   "trap": "f⁻¹ 是反函數，不是 1/f。",
+   "cues": [
+    594.4,
+    624
+   ],
+   "explain": [
+    "因為 inverse 只有一個，用一個符號表示它就很明確：在 f 的右上角加 −1，寫成 f⁻¹，中文叫反函數。圖上橘色箭頭就是 f⁻¹（示意）。",
+    "反函數再取反函數，就回到原來的 f：(f⁻¹)⁻¹ = f。把橘色箭頭再反過來，就是藍色的 f。"
+   ]
+  },
+  {
+   "title": "什麼時候有 inverse：invertible ⇔ bijective",
+   "scene": "sfA-iff",
+   "points": [
+    {
+     "t": 662,
+     "text": "不是每個函數都有 inverse。"
+    },
+    {
+     "t": 695,
+     "text": "性質：f invertible ⇔（iff，if and only if）f 是 bijective。"
+    },
+    {
+     "t": 747,
+     "text": "要證兩個方向。"
+    },
+    {
+     "t": 819,
+     "text": "直觀：inverse 就是把箭頭反過來；要 onto 才每個 b 都有定義，要 one-to-one 才不會反回去有兩個選擇。"
+    }
+   ],
+   "cues": [
+    662.2,
+    694.6,
+    725.8,
+    747.3,
+    819.4,
+    835.6,
+    846.1
+   ],
+   "explain": [
+    "最後一個性質：什麼時候函數才有 inverse？不是每個函數都有。",
+    "答案寫成「f invertible ⇔ ？」。⇔ 就是 iff，if and only if，中文「若且唯若」，表示兩邊互相推得出來。",
+    "答案是：f 是 bijective，也就是又一對一（one-to-one）又蓋滿（onto）。",
+    "「若且唯若」要證兩個方向：bijective 推出 invertible，以及 invertible 推出 bijective。",
+    "先直觀想：inverse 就是把每支箭頭反過來（藍色是 f，橘色是反過來的）。這是示意圖。",
+    "為什麼要 onto？反函數要對 B 的每一個元素都有定義。如果 B 裡有個 b₄ 沒人對到，反回去就不知道送去哪。",
+    "為什麼要 one-to-one？如果兩個（a₁、a₂）對到同一個 b₂，反回去時 b₂ 就不知道該回 a₁ 還是 a₂。"
+   ]
+  },
+  {
+   "title": "證 ⇐：bijective ⇒ invertible",
+   "scene": "sfA-bij2inv",
+   "points": [
+    {
+     "t": 857,
+     "text": "設 f bijective：onto ⇒ 對每個 b 都存在 a 使 f(a) = b；one-to-one ⇒ 這個 a 唯一。"
+    },
+    {
+     "t": 926,
+     "text": "定義 g(b) = 那個唯一的 a；g 對每個 b 都有定義且值唯一，所以 g 是 B → A 的函數。"
+    },
+    {
+     "t": 996,
+     "text": "g(f(a)) = a、f(g(b)) = b，所以 g 是 f 的 inverse，f invertible。"
+    }
+   ],
+   "cues": [
+    857.3,
+    863.8,
+    879,
+    926.1,
+    957.4,
+    995.7,
+    1022
+   ],
+   "explain": [
+    "先證向左推：假設 f 是 bijective（又 1-1 又 onto），要證它有 inverse。",
+    "onto：B 這個集合裡每一個 b，都存在 A 裡的 a，使 f(a) = b。",
+    "再加上 one-to-one：不會有兩個 a 對到同一個 b，所以這個 a 是唯一的。兩個條件都用到了。",
+    "那 inverse 怎麼取？就定義 g(b) = 那個唯一的 a。也就是把箭頭反過來（橘色）。",
+    "g 真的是一個函數嗎？是：每個 b 都有 a 對應（因為 onto），而且對應的 a 只有一個、沒有歧義（因為 1-1）。",
+    "再證 g 是 inverse。先看 g(f(a))：f(a) = b，而 g(b) 就是那個 a，所以 g(f(a)) = a，g 是 left inverse。",
+    "再看 f(g(b))：g(b) = a，f(a) = b，所以 f(g(b)) = b，g 也是 right inverse。兩邊都成立，f 是 invertible。"
+   ]
+  },
+  {
+   "title": "證 ⇒：invertible ⇒ bijective",
+   "scene": "sfA-inv2bij",
+   "points": [
+    {
+     "t": 1082,
+     "text": "反方向：設 f invertible，inverse 是 f⁻¹；要證 f surjective 且 injective。"
+    },
+    {
+     "t": 1117,
+     "text": "surjective：對任何 b ∈ B，取 a = f⁻¹(b)，則 f(a) = f(f⁻¹(b)) = b。"
+    },
+    {
+     "t": 1209,
+     "text": "injective：若 f(a₁) = f(a₂)，兩邊取 f⁻¹ 得 a₁ = a₂。"
+    },
+    {
+     "t": 1265,
+     "text": "所以 f bijective。invertible ⇔ bijective 證完。"
+    },
+    {
+     "t": 1279,
+     "text": "直觀：不是 onto 就有 b 沒定義；兩個對一個就反回去不知去哪。要理解意思，不要死背。"
+    }
+   ],
+   "cues": [
+    1081.6,
+    1109.1,
+    1117.3,
+    1134.5,
+    1141.4,
+    1209.2,
+    1230.8,
+    1264.5,
+    1279
+   ],
+   "explain": [
+    "另一個方向：假設 f 是 invertible，它的 inverse 用剛才的記號 f⁻¹。要證 f 是 bijective。",
+    "bijective 要證兩件事：injective 和 surjective，先證哪個都可以。老師先證 surjective。",
+    "surjective 的意思：codomain B 裡每個 b，都要找到 domain A 裡的 a 對到它。只要把那個 a 找出來就好。",
+    "怎麼找？既然有 inverse，就用 inverse 對回去：取 a = f⁻¹(b)（橘色箭頭）。",
+    "檢查：f(f⁻¹(b)) = b，因為 f⁻¹ 是 right inverse（f ∘ f⁻¹ = 1_B）。每個 b 都找得到，所以 f 是 surjective。",
+    "最後證 injective：照前面的方法，假設兩個對過去一樣，f(a₁) = f(a₂)，要推到 a₁ = a₂。",
+    "等號兩邊都取 f⁻¹，因為 f⁻¹(f(a)) = a，就像把 f「消掉」，得到 a₁ = a₂。所以 f 是 injective。",
+    "又是 injective 又是 surjective，就是 bijective。兩個方向都證完了。",
+    "老師最後提醒用圖去理解：不是 onto，有的 b 沒被對到，反函數在那裡沒定義；兩個對一個，反回去不知道去哪。懂意思就不用死背。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "g ∘ f = 1_A 但 f ∘ g ≠ 1_B，g 叫做 f 的？",
+   "opts": [
+    "left inverse",
+    "right inverse",
+    "inverse",
+    "identity"
+   ],
+   "ans": "left inverse",
+   "why": "g 在 f 的左邊合成得 identity。"
+  },
+  {
+   "q": "為什麼定義說「an inverse」？",
+   "opts": [
+    "定義只說存在，沒排除有兩個",
+    "因為 inverse 一定有兩個",
+    "因為 inverse 不存在",
+    "只是文法習慣，沒有意義"
+   ],
+   "ans": "定義只說存在，沒排除有兩個",
+   "why": "唯一性是另外證明的性質。"
+  },
+  {
+   "q": "證明 inverse 唯一時，g(b) = g′((f ∘ g)(b)) 這一步用了什麼？",
+   "opts": [
+    "合成的結合律",
+    "交換律",
+    "De Morgan",
+    "分配律"
+   ],
+   "ans": "合成的結合律",
+   "why": "g′(f(g(b))) 重新括成 g′((f ∘ g)(b))。"
+  },
+  {
+   "q": "f: A → B 有 inverse 的充要條件是？",
+   "opts": [
+    "f 是 bijective",
+    "f 是 injective",
+    "f 是 surjective",
+    "A = B"
+   ],
+   "ans": "f 是 bijective",
+   "why": "invertible ⇔ bijective（iff）。"
+  },
+  {
+   "q": "證 invertible ⇒ surjective 時，對 b 要取哪個 a？",
+   "opts": [
+    "a = f⁻¹(b)",
+    "a = f(b)",
+    "a = b",
+    "任意 a"
+   ],
+   "ans": "a = f⁻¹(b)",
+   "why": "f(f⁻¹(b)) = b。"
+  },
+  {
+   "q": "(f⁻¹)⁻¹ 等於？",
+   "opts": [
+    "f",
+    "f⁻¹",
+    "1_A",
+    "1/f"
+   ],
+   "ans": "f",
+   "why": "反函數的反函數就是原函數。"
+  }
+ ]
+}

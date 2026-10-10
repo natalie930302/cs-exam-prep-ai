@@ -1,0 +1,355 @@
+{
+ "video": "zsQ-r279BbA",
+ "label": "清大OCW 趙啟超《離散數學》第4A講 Functions",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "合成函數 g ∘ f",
+   "scene": "sfA-comp",
+   "points": [
+    {
+     "t": 4,
+     "text": "複習：函數的定義、one-to-one（injective）、onto（surjective）、one-to-one correspondence（bijective）。"
+    },
+    {
+     "t": 7,
+     "text": "合成函數：f: A → B，g: B → C，合成 g ∘ f: A → C。"
+    },
+    {
+     "t": 74,
+     "text": "定義：(g ∘ f)(a) = g(f(a))；裡面的先做，f 在右邊先做。"
+    },
+    {
+     "t": 120,
+     "text": "合成不滿足交換律：g ∘ f 和 f ∘ g 不一樣，f ∘ g 甚至不一定有定義（像矩陣乘法）。"
+    },
+    {
+     "t": 182,
+     "text": "圖像：a 經 f 到 B 的 b，b 再經 g 到 C 的 c；直接從 a 到 c 就是 g ∘ f。"
+    }
+   ],
+   "cues": [
+    4.3,
+    7.2,
+    34.3,
+    43.3,
+    74,
+    99.5,
+    110.2,
+    119.5,
+    137.8,
+    181.5,
+    195.5,
+    209.6,
+    232.2
+   ],
+   "explain": [
+    "上一講學了函數的定義，以及三種特別的函數：one-to-one（injective，單射，不同的輸入對到不同的輸出）、onto（surjective，滿射，每個輸出都有人對到）、兩個都滿足的 one-to-one correspondence（bijective，雙射）。",
+    "今天先講兩個函數之間的「運算」：合成。第一個函數 f 從 A 對到 B：A 叫 domain（定義域），B 叫 codomain（對應域）。箭頭表示每個元素對到哪裡（元素是示意）。",
+    "另一個函數 g 從 B 對到 C。注意 g 的 domain 剛好是 f 的 codomain B，兩個才接得起來。",
+    "把兩個接起來就得到合成函數 g ∘ f（讀作「g 圈 f」），它還是一個函數，從 A 直接對到 C。",
+    "它的定義是 (g ∘ f)(a) = g(f(a))。跟著金色小方塊走：a 先經過 f，跑到 B 裡面的 f(a)。",
+    "再經過 g，從 B 跑到 C，得到 g(f(a))。這就是合成函數在 a 的值。",
+    "順序要注意：括號裡面的先做，所以是先 f 再 g。寫的時候 f 在右邊、g 在左邊，剛好按照「由內而外」的順序。",
+    "這個運算不滿足交換律：g ∘ f 和 f ∘ g 一般不是同一個東西。",
+    "而且 f ∘ g 甚至可能沒有定義：g 的結果在 C 裡，但 f 只吃 A 裡的東西。就像矩陣乘法，反過來有時根本不能乘。",
+    "老師再用一張圖想一次合成。箭頭先淡掉，我們跟著一個元素走。",
+    "A 裡的一點 a，經過 f 對應到 B 裡的一點 b。",
+    "g 對 B 裡所有元素都有定義，所以 b 再經過 g 跑到 C 裡的一點 c。",
+    "如果直接看「從 A 這邊到 C 那邊」，綠色的直達箭頭就是合成函數 g ∘ f，它是 A 到 C 的函數。"
+   ]
+  },
+  {
+   "title": "合成滿足結合律",
+   "scene": "sfA-assocf",
+   "points": [
+    {
+     "t": 260,
+     "text": "f: A → B，g: B → C，h: C → D。"
+    },
+    {
+     "t": 268,
+     "text": "h ∘ g: B → D，再和 f 合成得 (h ∘ g) ∘ f: A → D；先做 g ∘ f: A → C，再和 h 合成得 h ∘ (g ∘ f): A → D。"
+    },
+    {
+     "t": 324,
+     "text": "兩者相等：合成滿足結合律，所以可以寫 h ∘ g ∘ f。"
+    },
+    {
+     "t": 354,
+     "text": "但 domain、codomain 要接得起來才能合成。"
+    }
+   ],
+   "cues": [
+    260.2,
+    268.4,
+    288.9,
+    306.5,
+    320.1,
+    324.5,
+    353.8
+   ],
+   "explain": [
+    "一個簡單的性質（老師不詳細證）：現在有三個函數，f 從 A 到 B，g 從 B 到 C，h 從 C 到 D。",
+    "可以先讓 h 和 g 合成：h ∘ g 從 B 到 D。",
+    "這個結果再跟 f 合成：(h ∘ g) ∘ f，從 A 到 D。",
+    "也可以先做 g ∘ f：從 A 到 C。",
+    "再跟 h 合成：h ∘ (g ∘ f)，也是從 A 到 D。稍微想一下，兩種做法每個元素最後都走 f、g、h 三步，結果一樣。",
+    "所以合成滿足結合律，括號可以不寫，直接寫 h ∘ g ∘ f。",
+    "但順序不能亂：每一步的 codomain 要接得上下一步的 domain，不然根本沒辦法合成。"
+   ]
+  },
+  {
+   "title": "合成的三個性質",
+   "scene": "sfA-compprops",
+   "points": [
+    {
+     "t": 374,
+     "text": "f: A → B，g: B → C。"
+    },
+    {
+     "t": 390,
+     "text": "① f、g 都 injective ⇒ g ∘ f injective。"
+    },
+    {
+     "t": 428,
+     "text": "② f、g 都 surjective ⇒ g ∘ f surjective。"
+    },
+    {
+     "t": 445,
+     "text": "③ f、g 都 bijective ⇒ g ∘ f bijective。"
+    }
+   ],
+   "cues": [
+    374.2,
+    389.7,
+    427.7,
+    445.3
+   ],
+   "explain": [
+    "接著看合成的幾個性質。設定一樣：f 從 A 到 B，g 從 B 到 C。",
+    "第一：如果 f 和 g 都是 injective（一對一），合成以後 g ∘ f 還是一對一。",
+    "第二：如果 f 和 g 都是 surjective（onto，蓋滿），合成以後還是 onto。",
+    "第三：如果兩個都是 bijective（雙射），合成以後還是 bijective。接下來一條一條證。"
+   ]
+  },
+  {
+   "title": "證明：injective ∘ injective",
+   "scene": "sfA-injpf",
+   "points": [
+    {
+     "t": 493,
+     "text": "要證：f、g 都 injective ⇒ g ∘ f injective。"
+    },
+    {
+     "t": 503,
+     "text": "injective 的定義：f(a₁) = f(a₂) ⇒ a₁ = a₂（等式比不等式好處理）。"
+    },
+    {
+     "t": 523,
+     "text": "假設 (g ∘ f)(a₁) = (g ∘ f)(a₂) ⇒ g(f(a₁)) = g(f(a₂)) ⇒ f(a₁) = f(a₂)（g injective）⇒ a₁ = a₂（f injective）。"
+    },
+    {
+     "t": 694,
+     "text": "直接推不動時，從前面和後面兩頭推，在中間接起來。"
+    }
+   ],
+   "cues": [
+    492.9,
+    503.1,
+    523.1,
+    535.8,
+    580,
+    597.2,
+    635.7,
+    693.6
+   ],
+   "explain": [
+    "先證第一點：假設 f、g 都是 injective，要證 g ∘ f 也是。",
+    "injective 的定義：如果對過去的結果一樣，原來的兩個就一樣，即 f(a₁) = f(a₂) ⇒ a₁ = a₂。它等價於「不一樣的對到不一樣」，但等式比不等式好處理，所以用這個寫法。",
+    "所以證明的第一行：假設合成以後對過去一樣，(g ∘ f)(a₁) = (g ∘ f)(a₂)。",
+    "終點是 a₁ = a₂。證明的好處是你知道答案在哪，中間想辦法走過去就好。",
+    "第一步只是合成的定義：把 a 先帶進 f，再帶進 g，寫成 g(f(a₁)) = g(f(a₂))。",
+    "f(a₁)、f(a₂) 都是 B 裡的元素。g 是一對一：g 的結果一樣，g 裡面的東西就一樣，所以 f(a₁) = f(a₂)。",
+    "再因為 f 是一對一，f 的結果一樣，原來的就一樣：a₁ = a₂。證完，完全只用定義，一個彎也沒轉。",
+    "老師的心法：證明有假設、有結論。能直接推下去就推；推不動時，就從前面往後推、從後面往前推，找個地方接起來。"
+   ]
+  },
+  {
+   "title": "證明：surjective ∘ surjective",
+   "scene": "sfA-surjpf",
+   "points": [
+    {
+     "t": 703,
+     "text": "要證：f、g 都 surjective ⇒ g ∘ f surjective。"
+    },
+    {
+     "t": 712,
+     "text": "surjective（onto）：codomain 的每個元素都有 domain 的元素對到它。"
+    },
+    {
+     "t": 730,
+     "text": "目標：∀c ∈ C，∃a ∈ A 使 (g ∘ f)(a) = c；中間要經過 B。"
+    },
+    {
+     "t": 798,
+     "text": "g onto ⇒ 存在 b ∈ B 使 g(b) = c；f onto ⇒ 存在 a ∈ A 使 f(a) = b。"
+    },
+    {
+     "t": 883,
+     "text": "串起來：c = g(b) = g(f(a)) = (g ∘ f)(a)，所以 g ∘ f 是 onto。橋樑是 b。"
+    }
+   ],
+   "cues": [
+    703.2,
+    711.6,
+    729.7,
+    753.1,
+    797.6,
+    852.8,
+    883.3,
+    913.7,
+    994.7
+   ],
+   "explain": [
+    "再證第二點：f、g 都是 surjective（onto），要證 g ∘ f 也是。",
+    "onto 的定義：對過去那一邊（codomain）的每一個元素，都有原來那邊的某個元素對到它。",
+    "所以要證的是：C 裡任何一個 c（亮起來的那個），都找得到 A 裡的 a，經過合成函數對到 c。圖上的小集合是示意。",
+    "合成是從 A 經過 B，兩次才走到 C。所以我們從 c 反著推回去兩次。",
+    "因為 g 是 onto：C 裡任何一個 c，B 裡至少有一個 b 經過 g 對到它，即 g(b) = c（金色箭頭從 c 指回 b）。",
+    "又因為 f 是 onto：B 裡的每一個都有 A 裡的元素對到它，這個 b 當然也有，即存在 a 使 f(a) = b。",
+    "把兩個式子串起來：c = g(b)，而 b = f(a)，代進去得 c = g(f(a)) = (g ∘ f)(a)。",
+    "對 C 裡任何 c 都找得到這樣的 a，這正是「g ∘ f 是 onto」的定義。證完。",
+    "整個證明的橋樑就是 B 裡那個 b。只用了 onto 的定義和合成函數的定義，沒有轉任何彎。老師說這要會，作業可能會換個樣子考。"
+   ]
+  },
+  {
+   "title": "bijective ∘ bijective",
+   "scene": "sfA-bijc",
+   "points": [
+    {
+     "t": 1028,
+     "text": "bijective = injective 而且 surjective。"
+    },
+    {
+     "t": 1041,
+     "text": "由 ①、② 直接得到：兩個 bijective 合成還是 bijective。"
+    }
+   ],
+   "cues": [
+    1027.9,
+    1041,
+    1044.7,
+    1050.6
+   ],
+   "explain": [
+    "第三點：bijective 就是同時是 injective 和 surjective。",
+    "f 和 g 都是 injective，根據第一點，合成是 injective。",
+    "f 和 g 都是 surjective，根據第二點，合成是 surjective。",
+    "兩個都成立，所以 g ∘ f 是 bijective。第三點直接由第一、二點得到。"
+   ]
+  },
+  {
+   "title": "invertible 與 inverse 的定義",
+   "scene": "sfA-invdef",
+   "points": [
+    {
+     "t": 1073,
+     "text": "有了合成這個運算，就可以談 inverse。"
+    },
+    {
+     "t": 1083,
+     "text": "f: A → B 是 invertible：存在 g: B → A，使得對所有 a ∈ A，(g ∘ f)(a) = a；對所有 b ∈ B，(f ∘ g)(b) = b。"
+    },
+    {
+     "t": 1157,
+     "text": "兩個方向都變成 identity；這時 f 叫 invertible，g 叫 f 的 inverse。"
+    }
+   ],
+   "cues": [
+    1072.8,
+    1082.7,
+    1113.7,
+    1131.3,
+    1157.3,
+    1168.7
+   ],
+   "explain": [
+    "有了合成這個「運算」，就會有反運算：inverse（反函數）。圖上是 f 從 A 對到 B（示意）。",
+    "f 叫做 invertible（可逆），意思是存在另一個函數 g，把 domain 和 codomain 反過來，從 B 對回 A（橘色箭頭）。",
+    "g 要滿足兩個條件。第一：A 裡任何 a，先經過 f 再經過 g，回到原來的 a，即 (g ∘ f)(a) = a。",
+    "第二：B 裡任何 b，先經過 g 再經過 f，回到原來的 b，即 (f ∘ g)(b) = b。這兩個順序相反，一般是不一樣的條件。",
+    "兩種走法都回到原點，也就是 g ∘ f 和 f ∘ g 都是 identity（恆等函數：什麼都不變的函數），記作 1_A、1_B。",
+    "這時就說 f 是 invertible，而 g 叫做 f 的 inverse。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "(g ∘ f)(a) 的意思是？",
+   "opts": [
+    "g(f(a))",
+    "f(g(a))",
+    "f(a) · g(a)",
+    "g(a) + f(a)"
+   ],
+   "ans": "g(f(a))",
+   "why": "裡面的先做：先 f 再 g。"
+  },
+  {
+   "q": "f: A → B，g: B → C，下列何者一定有定義？",
+   "opts": [
+    "g ∘ f: A → C",
+    "f ∘ g",
+    "兩個都有",
+    "兩個都沒有"
+   ],
+   "ans": "g ∘ f: A → C",
+   "why": "f 的 codomain 是 g 的 domain；f ∘ g 需要 C 接上 A，一般不成立。"
+  },
+  {
+   "q": "合成函數滿足哪一條？",
+   "opts": [
+    "結合律",
+    "交換律",
+    "兩者都滿足",
+    "兩者都不滿足"
+   ],
+   "ans": "結合律",
+   "why": "h ∘ (g ∘ f) = (h ∘ g) ∘ f；但 g ∘ f 和 f ∘ g 一般不同。"
+  },
+  {
+   "q": "證 g ∘ f 是 injective 時，從 g(f(a₁)) = g(f(a₂)) 推到 f(a₁) = f(a₂)，用的是？",
+   "opts": [
+    "g 是 injective",
+    "f 是 injective",
+    "g 是 surjective",
+    "合成的定義"
+   ],
+   "ans": "g 是 injective",
+   "why": "g 一對一：g 的值相同 ⇒ 輸入相同。"
+  },
+  {
+   "q": "證 g ∘ f 是 onto 時，中間的「橋樑」是什麼？",
+   "opts": [
+    "B 裡的元素 b，g(b) = c",
+    "C 裡的兩個元素",
+    "f 的 inverse",
+    "A 的 power set"
+   ],
+   "ans": "B 裡的元素 b，g(b) = c",
+   "why": "先由 g onto 找 b，再由 f onto 找 a。"
+  },
+  {
+   "q": "f: A → B invertible 的條件是存在 g: B → A 使得？",
+   "opts": [
+    "g ∘ f = 1_A 而且 f ∘ g = 1_B",
+    "只要 g ∘ f = 1_A",
+    "只要 f ∘ g = 1_B",
+    "g = f"
+   ],
+   "ans": "g ∘ f = 1_A 而且 f ∘ g = 1_B",
+   "why": "inverse 要兩個方向都變成 identity。"
+  }
+ ]
+}
