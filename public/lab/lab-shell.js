@@ -203,7 +203,7 @@ if (STAGE) {
     if (e.data.type === 'tour') tour(e.data.from);
     if (e.data.type === 'visible') lab.setVisible(e.data.visible);
   });
-  $('handsOn').onclick = () => {
+  if ($('handsOn')) $('handsOn').onclick = () => {
     stopAll();
     document.body.classList.add('hands-on');
     const first = modes[0];
