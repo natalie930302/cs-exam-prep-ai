@@ -1,4 +1,10 @@
 {
+ "--gFe7gbFIQ": {
+  "label": "交大OCW 易志偉《離散數學》Lec15 Counting (2/2)",
+  "points": 53,
+  "quiz": 7,
+  "cued": true
+ },
  "-1FYYVpgyUo": {
   "label": "台大林軒田 DSA Analysis Tools / Stack",
   "points": 201,
@@ -139,9 +145,9 @@
  },
  "2-mxYrCNX60": {
   "label": "TrevTutor：Pigeonhole Principle",
-  "points": 27,
+  "points": 28,
   "quiz": 5,
-  "cued": false
+  "cued": true
  },
  "23LLB9mNJvc": {
   "label": "MIT 18.06 L19：Determinant Formulas and Cofactors",
@@ -533,6 +539,12 @@
   "quiz": 6,
   "cued": true
  },
+ "aLDHXK2M2yk": {
+  "label": "交大OCW 易志偉《離散數學》Lec14 Induction and Recur (4/4) / Counting (1/2)",
+  "points": 37,
+  "quiz": 6,
+  "cued": true
+ },
  "ARvQcqJ_-NY": {
   "label": "Abdul Bari：Greedy Method - Introduction",
   "points": 17,
@@ -659,10 +671,22 @@
   "quiz": 6,
   "cued": true
  },
+ "cB9unFFDJOE": {
+  "label": "清大OCW 趙啟超《離散數學》第5C講 Pigeonhole Principle",
+  "points": 6,
+  "quiz": 4,
+  "cued": true
+ },
  "cfPNAeAatGs": {
   "label": "清大周志遠 第14D講 Allocation of Frames",
   "points": 32,
   "quiz": 7,
+  "cued": true
+ },
+ "Cg-9z4Epzq4": {
+  "label": "清大OCW 趙啟超《離散數學》第5D講 Pigeonhole Principle",
+  "points": 7,
+  "quiz": 5,
   "cued": true
  },
  "cgaPEsMJkSc": {
@@ -739,9 +763,9 @@
  },
  "DBugSTeX1zw": {
   "label": "PERMUTATIONS and COMBINATIONS Review",
-  "points": 48,
+  "points": 46,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "dDghjse91lE": {
   "label": "清大周志遠 第9A講 Processes Concept",
@@ -809,6 +833,12 @@
   "quiz": 6,
   "cued": true
  },
+ "dzc9FMJua_g": {
+  "label": "清大OCW 趙啟超《離散數學》第9B講 Principles of Counting",
+  "points": 13,
+  "quiz": 5,
+  "cued": true
+ },
  "e2cF8a5aAhE": {
   "label": "Abdul Bari：8. NP-Hard and NP-Complete Problems",
   "points": 58,
@@ -872,6 +902,12 @@
  "eWIlWXtnDzY": {
   "label": "清大OCW 趙啟超《離散數學》第13A講 Recurrence Relations",
   "points": 13,
+  "quiz": 5,
+  "cued": true
+ },
+ "EznkkFQJ5TM": {
+  "label": "清大OCW 趙啟超《離散數學》第5A講 Pigeonhole Principle",
+  "points": 14,
   "quiz": 5,
   "cued": true
  },
@@ -1139,6 +1175,12 @@
   "quiz": 6,
   "cued": true
  },
+ "jGwwJ6boXns": {
+  "label": "清大OCW 趙啟超《離散數學》第9C講 Principles of Counting",
+  "points": 12,
+  "quiz": 5,
+  "cued": true
+ },
  "jJZ8egWNiWo": {
   "label": "清大周志遠 第20A講 期中考檢討 & Critical Section補充",
   "points": 31,
@@ -1160,6 +1202,12 @@
  "JvcqtZk2mng": {
   "label": "Abdul Bari：2.1.4 Recurrence Relation #4",
   "points": 30,
+  "quiz": 5,
+  "cued": true
+ },
+ "jz8pyl6zXbY": {
+  "label": "清大OCW 趙啟超《離散數學》第9A講 Principles of Counting",
+  "points": 12,
   "quiz": 5,
   "cued": true
  },
@@ -1853,6 +1901,12 @@
   "quiz": 7,
   "cued": true
  },
+ "tz_miTx3owE": {
+  "label": "清大OCW 趙啟超《離散數學》第5B講 Pigeonhole Principle",
+  "points": 9,
+  "quiz": 5,
+  "cued": true
+ },
  "u4zElpAChLM": {
   "label": "清大周志遠 第12A講 Non-Contiguous Memory Allocation - Paging(續)",
   "points": 29,
@@ -2043,6 +2097,12 @@
   "label": "Abdul Bari：3.6 Dijkstra Algorithm",
   "points": 41,
   "quiz": 6,
+  "cued": true
+ },
+ "xCEpXWbSGuM": {
+  "label": "清大OCW 趙啟超《離散數學》第9D講 Principles of Counting",
+  "points": 17,
+  "quiz": 5,
   "cued": true
  },
  "XcZw01FuH18": {
