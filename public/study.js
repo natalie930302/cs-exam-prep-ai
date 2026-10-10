@@ -747,8 +747,15 @@
   function asked(id){ try { return JSON.parse(store.get(askedKey(id)) || '[]'); } catch (e) { return []; } }
   function markAsked(id, qi){ const a = asked(id); if (a.indexOf(qi) < 0) { a.push(qi); store.set(askedKey(id), JSON.stringify(a)); } }
 
+  // Options in a fresh random order each time, so the answer isn't always first
+  function shuffled(a){
+    const r = a.slice();
+    for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = r[i]; r[i] = r[j]; r[j] = t; }
+    return r;
+  }
   // One question card. `onDone` runs after the answer (or skip) has shown.
   function questionCard(host, q, onDone){
+    q = Object.assign({}, q, {opts: shuffled(q.opts)});
     const card = document.createElement('div');
     card.className = 'st-qz';
     card.innerHTML = '<div class="st-qz-hd">小挑戰</div><div class="st-qz-q">' + esc(q.q) + '</div>'
@@ -888,7 +895,7 @@
     const el = $('panel-quiz');
     if (!quizPool.length) { el.innerHTML = '<div class="st-nonotes">這章影片的重點整理好之後，題目會出現在這裡。</div>'; return; }
     const q = quizPool[quizPos % quizPool.length];
-    const opts = q.opts.slice().sort(function(){ return Math.random() - 0.5; });
+    const opts = shuffled(q.opts);
     el.innerHTML = '<div class="st-quiz"><div class="st-quiz-top"><span>第 ' + (quizPos % quizPool.length + 1) + ' / ' + quizPool.length + ' 題・出自 ' + esc(q.src) + '</span><span>答對 ' + score + ' / ' + answered + '</span></div>'
       + '<div class="st-quiz-q">' + esc(q.q) + '</div><div class="st-quiz-opts">'
       + opts.map(function(o){ return '<button data-o="' + encodeURIComponent(o) + '">' + esc(o) + '</button>'; }).join('') + '</div><div id="quizWhy"></div></div>';
