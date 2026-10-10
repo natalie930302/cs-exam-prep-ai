@@ -180,10 +180,6 @@
     $('goals').innerHTML =
       '<li class="st-goal-left"><b>還剩多少</b>這章還有 <b>' + left.length + '</b> / ' + vids.length + ' 支影片，約 <b>' + hm(secsLeft(left)) + '</b>。'
       + esc(subject.name) + '整科還有 ' + sLeftN + ' / ' + sTotal + ' 支，約 ' + hm(sLeftSec) + '。</li>'
-      + '<li class="st-goal-h">任務</li>'
-      + '<li class="st-goal-auto' + (left.length ? '' : ' done') + '"><span class="st-box">' + (left.length ? '' : '✓') + '</span>① 照順序看完這章的影片（看完一支按「標記看完」）</li>'
-      + check('kq-' + chKey, '② 做「小測驗」，答對 8 成以上')
-      + check('kt-' + chKey, '③ 不看畫面，能用自己的話說出這章每張名詞小卡在講什麼')
       + '<li class="st-goal-h">看完要會（點時間跳到影片講這個的地方）</li>'
       + items.map(function(t){
         const k = (keymap && keymap.points || []).find(function(p){ return p.point === t; });
@@ -192,7 +188,7 @@
           : '<span class="st-where none">這章的影片沒有找到專門講這一點的段落</span>';
         return check('kp-' + chKey + '-' + stableTaskKey(t), esc(t)) .replace('</li>', where + '</li>');
       }).join('')
-      + '<li class="st-src">任務 ② ③ 和「看完要會」：自己覺得做到了再打勾。</li>';
+      + '<li class="st-src">「看完要會」：自己覺得做到了再打勾。</li>';
     $('goals').querySelectorAll('.st-check').forEach(function(b){
       b.onclick = async function(){ await setTask(b.dataset.task, !done.has(b.dataset.task)); renderGoals(); };
     });
