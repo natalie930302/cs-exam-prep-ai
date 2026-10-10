@@ -7452,3 +7452,5 @@ body#appRoot .fab-nav .fab-btn .ic { width: 18px; height: 18px; }
 body#appRoot .rec-books.rec-fixed .rec-books-hd { cursor: default; pointer-events: none; }
 body#appRoot .rec-books.rec-fixed .rec-books-body { display: block !important; }
 body#appRoot .rec-books.rec-fixed .rec-books-hd::after, body#appRoot .rec-books.rec-fixed .rec-books-hd::before, body#appRoot .rec-books.rec-fixed .rec-books-chevron { display: none !important; content: none !important; }
+/* 系列素材：沒有「系列」標籤，名稱直接靠左 */
+body#appRoot .rec-series-row { grid-template-columns: 1fr !important; display: block !important; }
