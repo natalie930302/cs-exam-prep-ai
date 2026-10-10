@@ -1289,6 +1289,12 @@
   "quiz": 5,
   "cued": true
  },
+ "Mez5poBYLcc": {
+  "label": "清大OCW 趙啟超《離散數學》第11B講 Principle of Inclusion and Exclusion",
+  "points": 32,
+  "quiz": 6,
+  "cued": true
+ },
  "MfhjkfocRR0": {
   "label": "What is a HashTable Data Structure",
   "points": 27,
@@ -1319,6 +1325,12 @@
   "quiz": 8,
   "cued": true
  },
+ "MQfb_LrlWl0": {
+  "label": "清大OCW 趙啟超《離散數學》第10A講 Principles of Counting and Principle of Inclusion and Exclusion",
+  "points": 41,
+  "quiz": 6,
+  "cued": true
+ },
  "mQSp6VmfakA": {
   "label": "MIT 6.006 Rec15：Shortest Paths",
   "points": 89,
@@ -1341,6 +1353,12 @@
   "label": "清大周志遠 第22B講 Deadlock Prevention & Avoidance",
   "points": 16,
   "quiz": 6,
+  "cued": true
+ },
+ "NarGsMWpqc8": {
+  "label": "清大OCW 趙啟超《離散數學》第10B講 Principles of Counting and Principle of Inclusion and Exclusion",
+  "points": 29,
+  "quiz": 5,
   "cued": true
  },
  "Nd0XDY-jVHs": {
@@ -1473,6 +1491,12 @@
   "label": "交大江蕙如 Lec03 Chapter 1 Introduction (2/2)",
   "points": 87,
   "quiz": 7,
+  "cued": true
+ },
+ "oWrW8vI5Bas": {
+  "label": "清大OCW 趙啟超《離散數學》第11A講 Principle of Inclusion and Exclusion",
+  "points": 24,
+  "quiz": 5,
   "cued": true
  },
  "OynWkEj0S-s": {
@@ -2192,6 +2216,12 @@
  "ZYgU9wrZaZo": {
   "label": "清大周志遠 第24A講 File System Implementation",
   "points": 27,
+  "quiz": 6,
+  "cued": true
+ },
+ "ZZqiVUT8EWI": {
+  "label": "清大OCW 趙啟超《離散數學》第11C+D講 Principle of Inclusion and Exclusion",
+  "points": 40,
   "quiz": 6,
   "cued": true
  },
