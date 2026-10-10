@@ -1,0 +1,392 @@
+{
+ "video": "TA7728hp_IA",
+ "label": "清大周志遠 第23D講 File System Implementation",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "File system 實作：disk allocation",
+   "scene": "fs-23d-intro",
+   "points": [
+    {
+     "t": 14,
+     "text": "進入 file system 內部：structure 與管理檔案的方式；最重要的是 disk allocation method。"
+    },
+    {
+     "t": 48,
+     "text": "File system 管的是儲存資源：一個 1GB 的檔案要連續放，還是切開放？切開後怎麼記得放在哪？這就是 disk allocation，也是最後一個作業要改寫的部分。"
+    }
+   ],
+   "cues": [
+    14.8,
+    43.3,
+    48.3,
+    64.2,
+    72.1,
+    76.4,
+    81.4,
+    89.7
+   ],
+   "explain": [
+    "接下來進入檔案系統的第二部分：不管使用者了，看 file system 內部，設計時的 structure 和管理檔案的方式。",
+    "其中最重要、你們一定要知道的，就是 disk allocation method（磁碟配置方法）。",
+    "作業系統就是在管理各種資源；file system 管的是儲存資源，也就是 disk 的儲存空間。",
+    "舉例：一個 1 GB 的檔案，要怎麼擺到硬碟的哪些位置？",
+    "要一次把它連續放好嗎？",
+    "如果把它切開，又怎麼知道被切成的每一塊放到了哪些地方？",
+    "這就是 disk allocation：決定怎麼把一個檔案 map 到 physical device 的位置，是 file system 最主要的管理機制。",
+    "這也是你們最後一個作業：implement 一個 file system 時要改寫的就是這一塊。"
+   ]
+  },
+  {
+   "title": "Block 與 sector",
+   "scene": "fs-23d-block",
+   "points": [
+    {
+     "t": 114,
+     "text": "File system 在做 mapping，把資料放到 physical storage device（主流是 hard drive）上。"
+    },
+    {
+     "t": 141,
+     "text": "File system 讀寫的最小單位是 block（data block）；physical 的最小單位是 sector，兩者不一定一樣大。"
+    },
+    {
+     "t": 187,
+     "text": "一個 block 可能由多個 sector 組成：sector 通常 512 bytes，block 可能 1KB 到 4KB，但不可能小於 sector；file system 只碰得到 block。"
+    }
+   ],
+   "trap": "Block 是 logical（file system）的單位，sector 是 physical 的單位；block ≥ sector，通常是倍數。",
+   "cues": [
+    114.1,
+    130.7,
+    141.4,
+    155.6,
+    168.4,
+    175.6,
+    187.8,
+    192.3,
+    194.5,
+    200.4,
+    212.5
+   ],
+   "explain": [
+    "之前提過，file system 最主要就是在做 mapping：把資料放到 physical storage device 上。",
+    "這裡講的是 disk。其他裝置類似但情況不太一樣；現在主流還是 hard drive。",
+    "file system 對下層 I/O device 讀寫時，會有一個最小的單位。不管軟體這邊怎麼管理，都是以這個單位操作。",
+    "這個單位通常叫做 block，也就是 data block（資料區塊），是 file system 最小的單位。",
+    "但 physical storage device 那邊，以 hard drive 來說，最小的單位其實是 sector（磁區）。下面這排小格子就是 sector。",
+    "sector 和 block 並不一定要對在一起：有可能剛好一樣大，但通常是倍數。",
+    "所以一個 block 可能由好幾個 sector 組成，例如這裡 block 0 對到 4 個 sector。",
+    "通常一個 sector 是 512 bytes。",
+    "一個 block 可能是 1KB，甚至 4KB（4KB 就等於 8 個 512 bytes 的 sector）。",
+    "但 block 不可能小於 sector，因為 sector 是 physically 最小的單位了，logical 的單位只能建在它上面。",
+    "這章講的只有 block。block 不會直接等於 sector，下面還有一層轉換，mapping 不一定一對一；但 file system 管到最後，只碰得到以 block 為單位的東西。"
+   ]
+  },
+  {
+   "title": "一個 OS 可以有多種 file system",
+   "scene": "fs-23d-multi",
+   "points": [
+    {
+     "t": 230,
+     "text": "一個作業系統可以同時有多個 file system：不同 volume（C 槽、D 槽）可以 format 成 FAT32、NTFS 等不同格式。"
+    },
+    {
+     "t": 285,
+     "text": "不同 file system 最大的差別在 disk allocation 與 file structure search 的實作；對上的介面（file、sequential read/write、directory）都一樣。"
+    },
+    {
+     "t": 345,
+     "text": "管理方式完全不同，所以換檔案系統要整個 format，資料清掉。"
+    }
+   ],
+   "cues": [
+    230.9,
+    248.3,
+    269,
+    285.7,
+    305.5,
+    337.7,
+    345.5
+   ],
+   "explain": [
+    "另一點：一個作業系統不一定只能有一個 file system。",
+    "很多時候整個 directory 用到好幾個 file system，尤其不同 volume（C 槽、D 槽）可以 format 成不同的檔案系統來管理（作業系統要支援才行）。",
+    "例如傳統的 FAT32、NTFS，Mac 也有自己的 file system。後面會稍微介紹 FAT32 怎麼管理檔案。",
+    "不同 file system 最大的差別，在於 disk allocation 的方式，還有 search（搜尋）file structure 的實作，也就是管理資源的方式不同。",
+    "但使用介面都一樣：都是 file，support sequential 的讀寫，也都有 directory 的概念，大家看到的 API 和 operation 都一樣。",
+    "差別在對下：對 disk 的管理，各家做法不同。",
+    "所以為什麼換一種 file system，format 時資料要全部清掉？因為整個管理方式完全不同，不可能互相使用，只能整個格式化。"
+   ]
+  },
+  {
+   "title": "File system 就是在做 mapping",
+   "scene": "fs-23d-mapping",
+   "points": [
+    {
+     "t": 366,
+     "text": "File system 提供 sequential access API（file handle、buffer、size），最後要把資料對到 storage device 上正確的位置。"
+    },
+    {
+     "t": 405,
+     "text": "看似單純：把 memory 的位置對到 disk 的位置；再由 driver 透過 I/O controller 的 register 把資料寫到 device。"
+    }
+   ],
+   "cues": [
+    366.8,
+    373.8,
+    389.8,
+    405.6,
+    415.6,
+    428.1
+   ],
+   "explain": [
+    "檔案系統最主要的角色就是做 mapping（對應）。",
+    "檔案系統提供的 API 通常是 sequential access：有 file handle（檔案代號）、buffer（緩衝區，在 memory 裡）、size，就這樣讀寫。",
+    "最後的目的，是把這些資訊對到 physical storage device 上的一塊空間。",
+    "看起來很單純：把 memory 的一個位置，對到最後 disk 上的一個位置，資料從 memory 寫到正確的地方。",
+    "當然還要有 driver（驅動程式）下指令去操作 storage device 的 I/O controller（控制器）。",
+    "最後透過 I/O controller 上的 register（暫存器），一個一個 byte 寫到 storage device 上。細節在 I/O system 章節會再介紹。"
+   ]
+  },
+  {
+   "title": "Layered file system",
+   "scene": "fs-23d-layers",
+   "points": [
+    {
+     "t": 438,
+     "text": "File system 分成多個 layer，比較 modular。"
+    },
+    {
+     "t": 465,
+     "text": "Logical file system：最接近使用者，定義 API、處理 permission（ACL）、open 檔案；改 ACL 或 API 只要改這層。"
+    },
+    {
+     "t": 541,
+     "text": "File-organization module：把 logical 的 file position 轉成第幾個 block，各家 FS 最大差異（怎麼分配 disk）就在這層，也是作業要寫的地方。"
+    },
+    {
+     "t": 643,
+     "text": "Basic file system：把 block 對到哪個 disk、partition、cylinder、track、sector；一般很少改。"
+    },
+    {
+     "t": 742,
+     "text": "File system 包含這三層；真正的 I/O 由 file system 外的 driver 執行。"
+    }
+   ],
+   "cues": [
+    438.5,
+    456,
+    465.8,
+    481.4,
+    495,
+    505.5,
+    525.5,
+    541.1,
+    558.7,
+    580,
+    608.5,
+    631.6,
+    643.7,
+    696,
+    726.6,
+    742.6,
+    787.7,
+    817.2
+   ],
+   "explain": [
+    "中間光是 mapping，就會經過很多不同 layer（層）。現在一般 file system 的設計都是這個樣子。",
+    "把整個系統切成很多 layer，每一層比較 modularize（模組化），也比較清楚自己該做什麼。",
+    "第一層叫 logical file system。它還是 file system，但是 logical 的：最接近使用者，負責把整個檔案呈現給使用者。",
+    "它決定了 logical 的長相（view）。像剛剛看到的，檔案系統用 sequential access 的 API，這些 API 就是它定義的。",
+    "它也負責 resolve permission：剛才的 ACL（存取控制清單）就屬於 logical file system 要做的事。",
+    "它的目的就是找到這個 file、把它 open 出來，用 API 提供出去，並在 access 時管理這個存取是有效還是無效。",
+    "所以如果要改 ACL 的控制機制，或改 API、增加新的 method，只要改 logical file system 就好。",
+    "第二層開始做 mapping，叫做 file-organization module（檔案組織模組）。",
+    "它把 logical 的位置（file access position）轉換成 physical 的位置，也就是「第幾個 block」。",
+    "什麼是 logical 的資訊？你有 file handle，知道是 a.txt，知道它目前的 position，要讀寫多少 size（這裡的 100 是示意）。要對到的是：它存在哪一個 data block？",
+    "你們作業最主要寫的就是這一層的機制：檔案要切成多少個 block、這些 block 要放在 physical 的什麼位置。",
+    "給你一個 file handler，知道是哪個檔案之後，第 3 個、第 100 個 byte 到底在第幾個 block 裡？這就是 file organization 在做的事。",
+    "知道在哪個 block 之後，還要對到 disk 上的實際位置：哪個 disk、哪個 partition（甚至跨兩顆 disk）、哪個 cylinder（磁柱）、哪片盤的哪個 track、從哪個 sector number 開始。這層叫 basic file system。",
+    "這一層一般設計很少去碰：只要是 hard drive 就是這樣。除非出現新的 storage device，才需要重寫這裡的 mapping。",
+    "現在一般 file system 最大的差異就在 file-organization 這層：怎麼去分配 disk 的資源。",
+    "到這裡為止，俗稱的 file system 就包括這三個 layer。再外面一層是 driver。",
+    "有了位置要真的開始 read、write，也就是 I/O（input / output）操作，就需要 driver 執行，那是在 file system 外面的：只要安裝這個 device 的 driver，讓 file system 能下指令寫到要的位置。",
+    "file system 的 structure 大概就是這樣。右邊這些名字不必硬背，但要知道設計分成這三層，目的完全不同，也就知道要修改的部分在哪一層。"
+   ]
+  },
+  {
+   "title": "Virtual file system（VFS）",
+   "scene": "fs-23d-vfs",
+   "points": [
+    {
+     "t": 852,
+     "text": "OS 要同時 support multiple file system 與 multiple storage device。"
+    },
+    {
+     "t": 888,
+     "text": "使用者（fopen）只想看到一個 file system；不同 partition 可能是 UNIX FS、NTFS，所以中間需要一層 interface 做 abstraction。"
+    },
+    {
+     "t": 960,
+     "text": "同一個 FS 用不同 disk 靠 driver；上面是一層很薄的 virtual file system，依檔案由哪個 FS 管理，轉給對應的 file system。"
+    }
+   ],
+   "cues": [
+    852.8,
+    879.1,
+    888.6,
+    893.8,
+    906.6,
+    920.4,
+    960.1,
+    987,
+    998.5
+   ],
+   "explain": [
+    "另一件事：以整個 OS 來說，很重要的是要能 support multiple file system（多種檔案系統），而且還有 multiple storage device（多個儲存裝置）。一般系統很常見這種設定。",
+    "整個架構圖會變成這樣：下面有不同的 file system，例如 UNIX file system 和 NTFS。",
+    "但對使用者來說，我們希望他只看到一個 file system manager。",
+    "我們寫程式 call library 的 fopen，就是假設只有一個 file system 存在，也只看到一個 directory。",
+    "可是事實上，不同 partition 被 format 成不同 volume，可能用不同的 file system：這邊是 UNIX file system，那邊是 NTFS。",
+    "使用者不需要看見這件事，所以中間需要一層 interface，做 abstraction（抽象化），把差異藏起來。",
+    "另外，同一個 file system 也可能用到不同的 disk。這件事只要透過 driver：不同 driver 讓同樣的 block I/O 讀寫到不同的 device 上，file system 不用特別做什麼。",
+    "上面那層 interface 叫 virtual file system（VFS，虛擬檔案系統）：很簡單、很薄的一層，當作 unified（統一）的 file system interface。",
+    "它看檔案是由哪一個檔案系統管理，就把呼叫轉（dispatch）給那個 file system。所以可以有很多選擇。"
+   ]
+  },
+  {
+   "title": "On-disk structures",
+   "scene": "fs-23d-ondisk",
+   "points": [
+    {
+     "t": 1018,
+     "text": "實作 mapping 需要的 data structure 分兩類，第一類是 on-disk structure：必須永久存在 disk 上。"
+    },
+    {
+     "t": 1058,
+     "text": "Boot control block：開機用 partition 最前面 reserve 的空間，存開機用的 code 和 data（optional）。"
+    },
+    {
+     "t": 1095,
+     "text": "Partition control block：記錄 partition 有多少 block、多少空間，分割時建立。"
+    },
+    {
+     "t": 1139,
+     "text": "Formatting 時建立 file control block 與 directory structure，剩下的空間是 data blocks；FCB 存 attributes（像 PCB），開檔時 load 到 open-file table。"
+    }
+   ],
+   "cues": [
+    1018.4,
+    1040.3,
+    1058,
+    1067.4,
+    1077.6,
+    1095.4,
+    1106.3,
+    1122,
+    1139.3,
+    1162.5,
+    1199.2,
+    1202.8,
+    1216.8,
+    1225,
+    1237.2
+   ],
+   "explain": [
+    "接著介紹 file system 實作 mapping、做 I/O 時需要哪些 data structure。",
+    "第一類叫 on-disk structure：這些 structure 全部必須存在 disk 上，因為檔案是永久存在的。下面這長條代表一個 partition 在 disk 上的樣子。",
+    "第一個叫 boot control block（開機控制區塊），顧名思義是開機用的。",
+    "如果這個 partition 是拿來開機的系統槽，它最前面的空間會先 reserve（保留）下來。",
+    "裡面存開機需要的 code 和 data（細節不講），讓這個 partition 變成可以開機的 partition。",
+    "再來，一顆 hard drive 上可以切好幾個 partition。",
+    "每個 partition 都有一個 partition control block，記錄這個 partition 有多少 block、還有多少空間。",
+    "做磁區分割時：切好位置後，第一件事就是 create 這個 partition control block，讓 OS 能透過它知道怎麼 access 這個 partition 的內容。",
+    "partition 完之後要做 formatting，讓它變成一個 file system，這時就需要 file control block（FCB，檔案控制區塊），還有 directory。",
+    "通常先存 directory structure，存完之後，剩下的空間全部用來放 file 的 block（data blocks），怎麼放就看配置方式。",
+    "所以一般而言，一個 partition 看起來就是這樣：前面是這些控制資訊，最後才是 file 的內容。",
+    "第一個（boot control block）是 optional 的：不是每個 partition 都拿來開機。開機時系統會去找它，不能開機的就忽略。",
+    "control block 之後才是 data block，真正放資料的部分。",
+    "file control block 存的就是檔案的 attribute，跟 process control block（PCB）的概念一樣：存 file permission 等屬性。",
+    "開啟檔案時，就把這些資訊 load 到我們之前介紹的 open-file table 裡，就可以開始 access 這個 file 了。"
+   ]
+  },
+  {
+   "title": "下課與下次預告",
+   "scene": null,
+   "points": [
+    {
+     "t": 1249,
+     "text": "今天先到這裡；下次介紹 homework 會用到的 disk allocation 演算法。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "一個 sector 是 512 bytes、block 是 4KB，一個 block 由幾個 sector 組成？",
+   "opts": [
+    "8",
+    "4",
+    "2",
+    "16"
+   ],
+   "ans": "8",
+   "why": "4096 ÷ 512 = 8。block 可以是 sector 的倍數，但不能小於 sector。"
+  },
+  {
+   "q": "不同 file system（如 FAT32、NTFS）最大的差別在哪？",
+   "opts": [
+    "disk allocation 與 file structure 搜尋的實作",
+    "提供給使用者的 API",
+    "是否有 directory",
+    "是否能存檔案"
+   ],
+   "ans": "disk allocation 與 file structure 搜尋的實作",
+   "why": "對上介面都一樣，差在對下管理 disk 的方式。"
+  },
+  {
+   "q": "要修改 ACL 的檢查機制，應該改 layered file system 的哪一層？",
+   "opts": [
+    "Logical file system",
+    "File-organization module",
+    "Basic file system",
+    "Device driver"
+   ],
+   "ans": "Logical file system",
+   "why": "logical file system 定義 API、處理 permission。"
+  },
+  {
+   "q": "把「檔案第 100 個 byte」轉成「第幾個 block」的是哪一層？",
+   "opts": [
+    "File-organization module",
+    "Logical file system",
+    "Basic file system",
+    "I/O control"
+   ],
+   "ans": "File-organization module",
+   "why": "它負責 logical position → block；basic FS 再把 block 對到 cylinder/track/sector。"
+  },
+  {
+   "q": "Virtual file system（VFS）的作用是？",
+   "opts": [
+    "提供統一介面，把呼叫轉給實際管理該檔案的 FS",
+    "把 disk 當成 memory",
+    "加速 disk I/O",
+    "取代 device driver"
+   ],
+   "ans": "提供統一介面，把呼叫轉給實際管理該檔案的 FS",
+   "why": "使用者只看到一個 FS，底下可以是 UFS、NTFS 等。"
+  },
+  {
+   "q": "哪個 on-disk structure 記錄 partition 有多少 block、多少空間？",
+   "opts": [
+    "Partition control block",
+    "Boot control block",
+    "File control block",
+    "Open-file table"
+   ],
+   "ans": "Partition control block",
+   "why": "boot control block 存開機用 code；FCB 存單一檔案的 attributes；open-file table 在 memory。"
+  }
+ ]
+}

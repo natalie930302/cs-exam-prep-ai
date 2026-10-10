@@ -1,186 +1,398 @@
 {
  "video": "0vYydtG1Xi4",
  "label": "清大周志遠 第23C講 Directory Structure & File System",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
    "title": "三種 access method 的例子",
-   "scene": "access-methods",
+   "scene": "fs-23c-access",
    "points": [
     {
-     "text": "Sequential access 的例子是 C 的 fread / fwrite；index access 的例子是 database。",
-     "t": 5
+     "t": 14,
+     "text": "Sequential access 的例子是 C 的 fread / fwrite；index access 的例子是 database。"
     },
     {
-     "text": "Direct access：像 MATLAB load 一個檔案後，直接要 A(3,3)（第 3 列第 3 行）的資料，不需要 index。",
-     "t": 14
+     "t": 20,
+     "text": "Direct access：像 MATLAB load 一個檔案後，直接要 A(3,3)（第 3 列第 3 行）的資料，不需要 index 或名字。"
     },
     {
-     "text": "看 API 的參數就分得出來：沒給 position 是 sequential；給 position 是 direct；給名字（key）去查 index 是 index access。",
-     "t": 52
+     "t": 84,
+     "text": "看 API 的參數就分得出來：沒給 position 是 sequential；給 position 是 direct；給名字（key）去查 index 是 index access。"
     },
     {
-     "text": "實作上差別在 mapping 與實體存取 pattern：sequential 盡量把資料串在一起放；index 需要額外 data structure 來快速搜尋位置。",
-     "t": 88
+     "t": 128,
+     "text": "實作上差別在 mapping 與實體存取 pattern：sequential 盡量把資料串在一起放；index 需要額外 data structure 來快速搜尋位置。"
     }
+   ],
+   "cues": [
+    14.1,
+    17.2,
+    20.2,
+    45.4,
+    57.1,
+    76.4,
+    84.4,
+    94.8,
+    103.6,
+    114.1,
+    128.5,
+    153.1
+   ],
+   "explain": [
+    "老師下課又想到一個例子，先複習：sequential access（循序存取）的例子就像 C 程式裡的 fread、fwrite，一筆接一筆往後讀。",
+    "index access（索引存取）的例子則像 database：用一個 key 去查資料。",
+    "那 direct access（直接存取）有什麼例子？比較像是一些高階語言提供的功能。",
+    "例如 MATLAB：你可以 load 一個檔案，檔案的每一行當作 row（列），用逗號分開的當作 column（行），變成一個表格。",
+    "load 進來後，你可能想要的就是：「請告訴我 A(3,3) 位置的資料是什麼」，也就是第 3 列第 3 行。",
+    "這就是 direct access：你直接跟它講第幾列、第幾行，不用 index、也不用名字，給的就是位置（座標）。",
+    "哪一種比較好？當然要看使用者，也就是 application 的行為需求，自然會找到對應的 access method。",
+    "從 API 的角度，看它的 argument（參數）就能觀察出來：如果沒有給 position，一定是 sequential access。",
+    "如果給的是位置資訊，像剛剛的 A(3,3)，要寫到這個位置、從這裡讀出來，就是 direct access。",
+    "如果你直接給一個名字（例如 John，自己取的 key），用它去 refer 到你要的資料，那就是 index access。",
+    "實作上，database、file system，或者語言加的一層，都要在上面處理 mapping。另一件事是：access pattern 對到 physical device 上會變亂，怎麼確保讀寫夠快，方法就不一樣。",
+    "sequential 的資料行為就是連續的，那就盡量把資料串在一起放；會跳著讀的、有 index 的，就可能要建內部的 data structure 來追蹤、快速搜尋，減少多餘的 I/O。"
    ]
   },
   {
    "title": "General-graph directory 與 garbage collection",
-   "scene": "general-graph-gc",
+   "scene": "fs-23c-gengraph",
    "points": [
     {
-     "text": "directory 從 single-level、two-level 演進到 tree，最一般化是 general graph：任意位置、任意方向都可以加 edge。",
-     "t": 128
+     "t": 180,
+     "text": "Directory 從 single-level、two-level 演進到 tree，最一般化是 general graph：任意位置、任意方向都可以加 edge。"
     },
     {
-     "text": "和 acyclic graph 最大差別是會出現 cycle，要處理類似 dangling pointer 的問題。",
-     "t": 152
+     "t": 203,
+     "text": "和 acyclic graph 最大差別是會出現 cycle，要處理 dangling pointer 的問題。"
     },
     {
-     "text": "例子：刪掉 bin 到 g2 的 link 後，g2 和 t1 已經走不到，但它們互相 reference，counter 都不是 0，只看 counter 刪不掉。",
-     "t": 178
+     "t": 240,
+     "text": "例子：刪掉 bin 到 g2 的 link 後，g2 和 t1 已經走不到，但它們互相 reference，counter 都不是 0，只看 counter 刪不掉。"
     },
     {
-     "text": "解法：做 cycle detection，或最常見的 garbage collection：週期性從 root 往下 label，沒被 label 的就是 unreachable，刪掉（兩個 pass）。",
-     "t": 211
+     "t": 272,
+     "text": "解法：cycle detection，或最常見的 garbage collection：週期性從 root 往下 label，沒被 label 的就是 unreachable，刪掉（兩個 pass）。"
     },
     {
-     "text": "檔案系統的使用者和檔案數量很大，週期性 GC 太貴，所以很多 FS 不支援 general graph：會造成 cycle 的 link 直接視為 invalid。",
-     "t": 242
+     "t": 312,
+     "text": "檔案系統的使用者和檔案數量很大，週期性 GC 太貴，所以很多 FS 不支援 general graph：會造成 cycle 的 link 直接視為 invalid。"
     }
    ],
-   "trap": "reference count 只能處理 acyclic graph；有 cycle 時要靠 garbage collection。"
+   "trap": "reference count 只能處理 acyclic graph；有 cycle 時要靠 garbage collection。",
+   "cues": [
+    180.3,
+    187.6,
+    203.7,
+    212,
+    240.7,
+    248.6,
+    259.3,
+    272.3,
+    280.1,
+    293.4,
+    312.3,
+    328,
+    360
+   ],
+   "explain": [
+    "回到 directory 結構：前面介紹過 single level、two level，再演進成 tree。",
+    "最一般化（general）的就是 general graph：完全不受限，在這個 graph 上任何位置、任何方向都可以加 edge。這裡 bin 到 g2 那條金色的線就是一個 link。",
+    "這樣的結果就是任何可能都會出現。跟 acyclic graph 最大的差別：可能會有 cycle（環）跑出來，像 g2 和 t1 互相指著繞成一圈。",
+    "有了 cycle 之後最大的 issue，就是怎麼解決 dangling pointer（懸空指標）。這個問題就跟寫程式處理 pointer 一樣，pointer 更容易出現 cycle 這種狀況。",
+    "看例子：把 bin 到 g2 這個 link 拿掉（刪除）。",
+    "拿掉之後的問題是：剩下的 g2 和 t1 其實也應該刪掉，因為它們已經不可能被 access 到了（從 root 走不到）。",
+    "但你怎麼知道？這時只用 counter 沒辦法：g2 和 t1 互相 reference，count 值還是 1，不會變 0，就不會被刪。",
+    "第一種解法：做 cycle detection，看看是不是有 cycle、有沒有連線。",
+    "最常見的是 garbage collection（垃圾回收）的概念：periodically（週期性）從 root 開始一路往下 label（標記），看哪些是 reachable（走得到的）。綠色就是被標記的。",
+    "標記完之後，沒有被 label 的就是 unreachable，可以 delete 掉。這是最常見的「兩個 pass」做法：你不用管它有沒有 cycle，反正走不到的就是要刪的內容。",
+    "可以想見這些 overhead 都比較大。而且 file system 更不喜歡做這件事，因為大型系統的使用者和檔案數量非常驚人，週期性去做很沒效率。",
+    "所以很多 file system 不支援 general graph 的目錄結構：當你加的 link 會 create cycle 時，就直接擋住，說這是 invalid 的動作，避免後面的維護問題。這種需求本來也很少見。",
+    "總結：directory 其實就是在處理 mapping 的事情，幫你找到 file 真正的 ID。"
+   ]
   },
   {
    "title": "Mounting 與 mount point",
-   "scene": "mount-points",
+   "scene": "fs-23c-mount",
    "points": [
     {
-     "text": "Mounting：把 storage device 掛進系統，讓 file system（directory structure）可以存取上面的資料。",
-     "t": 297
+     "t": 373,
+     "text": "Mounting：把 storage device 掛進系統，讓 file system（directory structure）可以存取上面的資料。"
     },
     {
-     "text": "第一件事是決定 mount point：掛在 tree 上的哪個節點。",
-     "t": 339
+     "t": 432,
+     "text": "第一件事是決定 mount point：掛在 tree 上的哪個節點。"
     },
     {
-     "text": "三種時機：boot time（系統槽一開機就要 mount，否則無法載入 OS）、run time 自動 mount（插上就掛好）、手動 mount。",
-     "t": 365
+     "t": 471,
+     "text": "三種時機：boot time（系統槽一開機就要 mount，否則無法載入 OS）、run time 自動 mount（插上就掛好）、手動 mount。"
     },
     {
-     "text": "例子：原本只有 local，usr、home 還沒有東西；把第二個 volume 掛在 usr 下，usr 就是 mount point。",
-     "t": 465
+     "t": 554,
+     "text": "例子：原本只有 local，usr、home 還沒有東西；把第二個 volume 掛在 usr 下，usr 就是 mount point。"
     },
     {
-     "text": "可以 recursive：在被 mount 的 volume 底下再掛別的；Windows 只能掛成 C:、D:、E:（root 底下），Linux / Mac 可掛在任何已存在的資料夾，例如 john 底下的 games。",
-     "t": 510
+     "t": 591,
+     "text": "可以 recursive：在被 mount 的 volume 底下再掛別的；Windows 只能掛成 C:、D:、E:（root 底下），Linux / Mac 可掛在任何已存在的資料夾，例如 john 底下的 games。"
     }
+   ],
+   "cues": [
+    373.3,
+    389.4,
+    412.6,
+    432.4,
+    455.2,
+    471.7,
+    480.2,
+    504.4,
+    530.3,
+    554.4,
+    568,
+    591,
+    604.7,
+    631.1,
+    654
+   ],
+   "explain": [
+    "接下來介紹 mounting（掛載）和 sharing（共享），這是使用檔案時很常做的兩件事。先講 mounting。",
+    "要使用一個儲存空間（右邊的 device），第一件事就是把它 mount 到系統裡，讓系統可以 access 到那個 storage device 上的資料。這個動作就叫 mounting。",
+    "這裡說的是 file system 的 mounting：使用者或程式要 access 資料或檔案，都要透過 file system，也就是透過 directory structure 找到它。上面這棵 tree 就是目前的目錄。",
+    "mount 時第一件事，要決定 mount point：到底要把它掛在哪裡？",
+    "現在的目錄都是 tree 或 acyclic graph，一定有一個 root，你要從絕對路徑知道它的位置。掛上去的那個節點（例如亮起來的 usr），就是 mount point（掛載點）。",
+    "mount 會在三種時機發生。第一種是 boot time：一開機就已經 mount 好了，最好的例子就是系統槽。",
+    "別忘了，作業系統本身也存在檔案系統裡。那個檔案系統如果不先 mount 起來，根本沒辦法把 OS 的資料 load 到 memory 開始執行，所以系統那個 volume 預設開機就 mount。",
+    "第二種是 run time 自動 mount，現在非常常見：一插上去就自動搜尋，甚至沒有 driver 也幫你下載，使用者什麼都不用做就 mount 好。",
+    "最後是 manually（手動）：比較早期、比較特殊的 device，或找不到 driver、沒辦法自動化時，就在執行中用手動的方式把它 mount 進檔案系統。",
+    "看一個例子：原本的檔案系統可能只有 local 有一些檔案，usr 和 home 底下都還沒有東西。",
+    "你 mount 了第二個 volume 進來，掛在 usr 下面（藍綠色代表不同的 file system）。usr 就是 mount point。",
+    "甚至可以 recursive（遞迴）：mount 完之後，在被 mount 的那個 volume 底下，還可以再掛其他的，一直下去。",
+    "這在 Windows 比較感覺不到：Windows 想減少使用者的麻煩，限制也比較多，一掛進來就是 C 槽、D 槽、E 槽，只能掛在 root 下。",
+    "但整個系統的角度其實沒有這種規定。在 Linux 或 Mac，你可以自己選要掛在哪裡，只要那個資料夾存在就行，例如把 games 掛在 john 這個 folder 下面。",
+    "這些可以是不同的 partition，甚至再切出第四個 partition 掛上去也可以，所以可以任意延展這個 tree structure。"
    ]
   },
   {
    "title": "Mount table：跨 partition 找檔案",
-   "scene": "mount-table",
+   "scene": "fs-23c-mtable",
    "points": [
     {
-     "text": "mount 一個 partition 時，OS 會維護一張 mount table，記錄這個 partition 存在。",
-     "t": 617
+     "t": 674,
+     "text": "Mount 一個 partition 時，OS 會維護一張 mount table，記錄這個 partition 存在。"
     },
     {
-     "text": "例子：root 下有三個 folder，其中 usr、mnt 來自其他 partition（P2、P3），在 directory 裡只要標記一個 m。",
-     "t": 638
+     "t": 714,
+     "text": "例子：root 下有三個 folder，其中 usr、mnt 來自其他 partition（P2、P3），在 directory 裡只要標記一個 m。"
     },
     {
-     "text": "traverse 時從 root（系統槽）開始，遇到標 m 的 usr 就查 mount table：接在哪個 port、用什麼 protocol。",
-     "t": 669
+     "t": 753,
+     "text": "Traverse 時從 root（系統槽）開始，遇到標 m 的 usr 就查 mount table：接在哪個 port、用什麼 protocol。"
     },
     {
-     "text": "接著換到那個 partition，它的 root 就相當於 usr，繼續往下找到檔案，再讀出內容。",
-     "t": 700
+     "t": 777,
+     "text": "接著換到那個 partition，它的 root 就相當於 usr，繼續往下找到檔案，再讀出內容。"
     },
     {
-     "text": "總結：directory 上的標記 + mount table + partition table 存取所需資訊。",
-     "t": 721
+     "t": 805,
+     "text": "總結：directory 上的標記 + mount table + partition table 存取所需資訊。"
     }
+   ],
+   "cues": [
+    674.4,
+    691.5,
+    714.5,
+    749.3,
+    753.3,
+    762.8,
+    769,
+    777.2,
+    790.6,
+    797,
+    805
+   ],
+   "explain": [
+    "實際上 mount 的時候，在 metadata（描述資料的資料）管理上到底發生什麼事？稍微看進去一點。左上是系統槽 P1 的目錄。",
+    "當你 mount 一個 partition 或 volume 進來，OS 會 maintain（維護）一張 mount table，這樣系統就知道有這個 partition 存在。",
+    "假設一開始 root 下面有三個 folder，其中 usr 和 mnt 是掛載進來的，它們不屬於 P1，而是來自獨立的 partition P2、P3（右邊是 P2 的內容）。",
+    "要把它們放在同一個檔案系統下操作，directory 裡只要在 usr、mnt 寫一個 m 就好，也就是 mark 起來。",
+    "現在要找 /usr/hw.c。方式一樣，從 root 開始找，也就是你的 system drive（系統槽）。",
+    "走到 usr，發現它有 m 標記，代表是 mount 進來的，就去查 mount table（亮起的那一行），看它對到哪一個 physical device。",
+    "mount table 裡存著需要的資訊：這個 drive 接在哪個 port 上、用什麼 protocol（通訊協定）等等。",
+    "透過這些資訊，就能 access 另一個 partition。P2 從它自己的 root 開始找，而這個 root 就相當於 usr。",
+    "接著在 P2 裡繼續 traverse，找到 hw.c 這個檔案的資訊。",
+    "找到檔名之後，內容也依序存在後面，就可以把資料讀出來了。",
+    "總結 mount 會發生的事：有一張 mount table；directory structure 裡把 mount point mark 起來，系統就知道要去另一個 partition 讀；再加上 partition table 存著 access 那個 partition 需要的資訊，就能切換過去繼續找。"
    ]
   },
   {
    "title": "Sharing：user ID、group ID 與三種 class",
-   "scene": "share-ugo",
+   "scene": "fs-23c-share",
    "points": [
     {
-     "text": "檔案系統最重要的用途之一是多使用者間的 sharing，所以 permission 非常重要（作業不能被別人看到或覆寫）。",
-     "t": 750
+     "t": 832,
+     "text": "檔案系統最重要的用途之一是多使用者間的 sharing，所以 permission 非常重要（作業不能被別人看到或覆寫）。"
     },
     {
-     "text": "使用者有唯一的 user ID，也屬於某個 group ID；預設的 group 就是自己，管理者可以建 students 這種 group。",
-     "t": 797
+     "t": 888,
+     "text": "使用者有唯一的 user ID，也屬於某個 group ID；預設的 group 就是自己，管理者可以建 students 這種 group。"
     },
     {
-     "text": "檔案這邊分三個 level：owner（只有一個）、和檔案同 group 的使用者、others；任何使用者一定落在其中一個。",
-     "t": 861
+     "t": 942,
+     "text": "檔案這邊分三個 level：owner（只有一個）、和檔案同 group 的使用者、others；任何使用者一定落在其中一個。"
     },
     {
-     "text": "同一個 group 的人權限都相同，不能再細分。",
-     "t": 990
-    },
-    {
-     "text": "privilege 只有 read、write、execute；只有 owner 或 root 能修改檔案的權限與擁有者。",
-     "t": 1009
+     "t": 1039,
+     "text": "同一個 group 的人權限都相同，不能再細分。"
     }
+   ],
+   "cues": [
+    832.5,
+    853.7,
+    878,
+    888.8,
+    895,
+    912.4,
+    930.3,
+    942.7,
+    958.7,
+    971.5,
+    1001.7,
+    1014.3,
+    1039.6
+   ],
+   "explain": [
+    "另一個很常見、也比較重要的是 sharing（共享）。檔案系統存在的理由之一，就是有 multiple user（多使用者）時，讓大家透過檔案分享資料。",
+    "分享時 permission（權限）就非常重要。如果大家的作業放在工作站上，別人都能隨便看到，或你的檔案不小心被別人 override 掉，問題就很嚴重。",
+    "所以 file system 怎麼處理 sharing 很重要。演進下來，現在大家的做法是這樣：",
+    "第一，要能 identify（識別）使用者，所以每個使用者都有一個 unique 的 user ID（畫面上的名字和號碼是示意）。",
+    "除此之外還有 group ID。使用情境上，很多時候同一群使用者有相同需求、share 相同的檔案，所以每個使用者也會屬於某個 group。",
+    "預設情況（by default），你的 group 就是你自己：使用者進來時系統會幫他建一個自己的 group，只有他在裡面，所以平常沒感覺，但它是存在的。",
+    "在系統管理時，可能就會建一個 group 叫 students，把學生都放進去（綠色的 bob、carol），students 就只能 access 某些檔案，很好管理。",
+    "再來看 file 這邊：要怎麼知道一個使用者對這個檔案有什麼權限？現在的方式是分成三種 level。這個檔案 hw.c 的 owner 是 alice，group 是 students。",
+    "第一個 level 是 owner，對應到 user。一個 file 只會有一個 owner，我們可以定義 owner 有什麼權限。",
+    "第二個 level 是 group：你不是 owner，但你屬於這個檔案所屬的 group，權限就可以另外設定。例如 owner 可以讀寫甚至執行，group 可能只能讀。",
+    "最後是 others：不是 owner，也不是同 group 的，其他人全部丟到 others。",
+    "所以任何一個使用者要操作這個 file，照這個方式一定會落在某一個 level 裡，再根據那個 level 的權限統一設定和管理。",
+    "對 file 而言是反向思考：只有一個 owner，看它屬於哪一個 group；所有同 group 的人權限都相同，沒辦法再細分。"
    ]
   },
   {
    "title": "ACL 簡化成 rwx 三個 bit",
-   "scene": "acl-bits",
+   "scene": "fs-23c-acl",
    "points": [
     {
-     "text": "access control 問題：最直覺是每個檔案一張 list 列出每個使用者的權限，但使用者一多，list 很長又要一直改，還要 load 進 memory 才能判斷，不可行。",
-     "t": 1089
+     "t": 1072,
+     "text": "Privilege 只有 read、write、execute；只有 owner 或 root 能修改檔案的權限與擁有者。"
     },
     {
-     "text": "現在的做法：三個 class（owner、group、others）× 三種權限（r、w、x），每個 class 3 個 bit，共 9 bits。",
-     "t": 1163
+     "t": 1135,
+     "text": "Access control 問題：最直覺是每個檔案一張 list 列出每個使用者的權限，但使用者一多，list 很長又要一直改，還要 load 進 memory 才能判斷，不可行。"
     },
     {
-     "text": "例子：owner 111（可讀寫執行）、group 110（讀寫）、others 100（只能讀）。",
-     "t": 1225
+     "t": 1217,
+     "text": "現在的做法：三個 class（owner、group、others）× 三種權限（r、w、x），每個 class 3 個 bit；例如 owner 111、group 110、others 100。"
     },
     {
-     "text": "ls -l 前面那串就是 ACL：第一個字元表示是 directory 還是 file，後面 9 個符號；例如 rw-rw-r--，group 是 staff。",
-     "t": 1281
+     "t": 1327,
+     "text": "ls -l 前面那串就是 ACL：第一個字元表示是 directory 還是 file，後面 9 個符號；例如 rw-rw-r--，group 是 staff。"
     },
     {
-     "text": "對 folder 而言 x 代表能不能 traverse 進去；遇到 permission denied 要檢查路徑上每個 parent folder 有沒有 x。",
-     "t": 1395
+     "t": 1421,
+     "text": "對 folder 而言 x 代表能不能 traverse 進去；遇到 permission denied 要檢查路徑上每個 parent folder 有沒有 x。"
     },
     {
-     "text": "修改指令是 chmod，例如 chmod 644：每個數字對應一個 class。",
-     "t": 1484
+     "t": 1495,
+     "text": "修改指令是 chmod，例如 chmod 644：每個數字對應一個 class。"
     }
    ],
-   "trap": "補充：r=4、w=2、x=1；644 = rw-r--r--。目錄的 r 是列出內容、x 是進入／穿過。"
+   "trap": "補充：r=4、w=2、x=1；644 = rw-r--r--。目錄的 r 是列出內容、x 是進入／穿過。",
+   "cues": [
+    1072.6,
+    1095.8,
+    1135.5,
+    1162.2,
+    1175.1,
+    1188.5,
+    1217.3,
+    1229.6,
+    1255,
+    1272.6,
+    1289.5,
+    1299.4,
+    1327.7,
+    1348.3,
+    1373.1,
+    1421,
+    1433.2,
+    1464.7,
+    1495.2
+   ],
+   "explain": [
+    "剛才說的 permission（許可權）到底指什麼？基本上就是三種：read（讀）、write（寫）、execute（執行）。",
+    "每個 level 對應不同的 privilege（權限）。只有檔案的 owner，或 root（整個系統的管理者），可以修改檔案的權限、group、owner 等資訊；其他使用者只能 follow 它規定的 policy。",
+    "那權限要怎麼描述？這個問題從早期設計作業系統、檔案系統時就有，叫做 access control（存取控制）問題。",
+    "演變到現在的結論是用一個 list 來控制：Access-Control List（ACL），記錄每個使用者對一個 file 有什麼權限。",
+    "最單純的想法是 one to one：每個檔案對到一張 list，list 上列出每一個使用者和他的權限。",
+    "問題是：系統使用者隨時都在增加，你得一直修改 list，而且 list 會非常長，光存這些資訊就耗掉太多空間。這些資訊還要 load 到 memory 才能判斷，所以不可行。",
+    "現在的做法就是剛才看到的三個 class：owner、group（同 group 的人）、others。",
+    "權限也限制在三個單純的動作：r 是 read、w 是 write、x 是 execute，也就是讀、修改、執行的權利。",
+    "這樣原本很長的 list，就簡化成每個 class 3 個 bit，三個 class 加起來也只是 9 個 bit，非常少的儲存空間。",
+    "看例子：owner 是 111，代表只要是 owner，就三個權利都有。某個 bit 是 0，就代表沒有那個動作的權利。",
+    "group 是 110：可以 read、write，但不能執行；others 是 100：只能 read。",
+    "檔案的 owner 或系統的 root，就透過修改這幾個 bit 來控制 access control。",
+    "可以回去自己試：在工作站上打 ls -l，把所有權限列出來，前面一定有一串奇怪的符號，那就是 access control list。",
+    "對照一下：第一個字元不屬於 ACL，只是說它是 directory 還是 file；接下來 9 個符號分三組，對應 owner、group、others。字母代表 enable，dash（-）代表 disable。",
+    "例如 -rw-rw-r--：這是一個 file；owner 可以讀寫、不能執行；group（這裡是 staff）也可以讀寫、不能執行；其他人只有 read。",
+    "對 folder（資料夾）來說，execute 的意思是：你能不能 traverse 進去，看到裡面有哪些內容。",
+    "所以有時遇到 access permission denied，要檢查你 access 那個檔案時，路徑上每一層 parent folder，你這個使用者有沒有 execute 的權限。有 x 才代表你能進去那個 folder。",
+    "不同 group 之間也很好控制，例如加到 student 這個 group 的人都只能 read、不能 write，只有 owner 能 write。Windows 也一樣，只是用圖形介面設定。",
+    "修改 ACL 的指令是 chmod。例如 chmod 644：每個數字對到一個 class，6 = 110 = rw-，4 = 100 = r--，所以變成 rw-r--r--。"
+   ]
   },
   {
    "title": "Protection：damage 與 security",
-   "scene": "protection-two",
+   "scene": "fs-23c-protect",
    "points": [
     {
-     "text": "Protection 有兩個層面；前面講的 access permission 也是 protection 的一部分。",
-     "t": 1516
+     "t": 1524,
+     "text": "Protection 有兩個層面；前面講的 access permission（ACL）也是 protection 的一部分。"
     },
     {
-     "text": "damage：檔案絕不能遺失，方法是 RAID，用多顆硬碟存副本提高 reliability（之後儲存系統章節介紹）。",
-     "t": 1554
+     "t": 1560,
+     "text": "damage：檔案絕不能遺失，方法是 RAID，用多顆硬碟存副本提高 reliability（之後儲存系統章節介紹）。"
     },
     {
-     "text": "security / privacy：單一系統最基本是 password 登入，系統知道你的 ID 後再用 ACL 判斷能做什麼。",
-     "t": 1604
+     "t": 1600,
+     "text": "security / privacy：單一系統最基本是 password 登入，系統知道你的 ID 後再用 ACL 判斷能做什麼。"
     },
     {
-     "text": "有網路後 password 封包可能被監聽偷走，需要加密等機制，這是資安的另一大領域。",
-     "t": 1666
+     "t": 1654,
+     "text": "有網路後 password 可能被繞過，或封包被監聽偷走，需要加密等機制，這是資安的另一大領域。"
     }
+   ],
+   "cues": [
+    1524.3,
+    1550,
+    1560.5,
+    1572.6,
+    1581.1,
+    1600.6,
+    1620.7,
+    1633.6,
+    1654.2,
+    1674.6,
+    1705
+   ],
+   "explain": [
+    "最後是 protection（保護），非常重要，分兩個層面。",
+    "其中一部分是在同一個 server、同一個檔案系統裡，誰屬於誰、能做什麼動作，也就是剛才介紹的 ACL，這也是 protection 機制的一部分：你不能隨便看別人的檔案。",
+    "另一塊更重要的是 damage（損壞）：你的 file 絕對不能遺失。",
+    "怎麼讓檔案不遺失？之後講 storage system 時會介紹 RAID，就是用很多顆硬碟。",
+    "資料 copy 在很多顆硬碟上，一顆硬碟壞了，還能從另一顆讀出來。用多顆硬碟提高資料的 reliability（可靠度）。",
+    "另一個比較麻煩的是 privacy（隱私）、security（安全）：怎麼確保資料不會被別人偷走。資安是一個很大的獨立領域。",
+    "以單一系統來說，最基本的就是 password（密碼）：只要登入進來，你就是合法使用者。",
+    "系統知道你的 ID 之後，就可以透過 access control list 知道你能做什麼、不能做什麼。這是當初假設使用者要 login 才能 access file 時，最基本的 protection。",
+    "但現在這很容易被突破：根本不用 login，可以透過程式、web 服務等各種方式侵入一台電腦。",
+    "有了網路，什麼都變複雜：你打的 password 傳到遠端電腦的過程中，封包可能被偷聽、監聽、截走，password 就被偷了，所以要加密等等，很多 issue 跑出來。",
+    "這屬於 protection 的另一個層面：privacy 跟 security。至於資料怎麼不遺失，後面介紹儲存系統時會講 RAID。以上就是從使用者角度看 file system 在 sharing、mounting、protection 上的考量。"
    ]
   }
  ],
@@ -262,6 +474,5 @@
    "ans": "無法 traverse 進入該目錄",
    "why": "路徑上任一層 parent 缺 x 都會 permission denied。"
   }
- ],
- "timing": "estimated"
+ ]
 }

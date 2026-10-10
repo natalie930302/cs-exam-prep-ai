@@ -91,9 +91,9 @@
  },
  "0vYydtG1Xi4": {
   "label": "清大周志遠 第23C講 Directory Structure & File System",
-  "points": 34,
+  "points": 33,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "13r9QY6cmjc": {
   "label": "MIT OCW 18.06 L22：Diagonalization and Powers of A",
@@ -607,9 +607,9 @@
  },
  "C42WzJATHg0": {
   "label": "清大周志遠 第25A講 File System / Mass Storage System",
-  "points": 35,
+  "points": 33,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "C5SPsY72_CM": {
   "label": "MIT 6.006 Rec14：DFS",
@@ -1235,6 +1235,12 @@
   "quiz": 6,
   "cued": true
  },
+ "NDBhHLzz4p8": {
+  "label": "清大周志遠 第23B講 Directory Structure",
+  "points": 27,
+  "quiz": 6,
+  "cued": true
+ },
  "nfDvFjXU2VI": {
   "label": "交大彭文志 Lec24 Search Structures (1/3)",
   "points": 97,
@@ -1383,6 +1389,12 @@
   "label": "台大林軒田 DSA Linked List",
   "points": 133,
   "quiz": 8,
+  "cued": true
+ },
+ "pb0dALUBDm8": {
+  "label": "清大周志遠 第25B講 File System / Mass Storage System",
+  "points": 23,
+  "quiz": 6,
   "cued": true
  },
  "pcKY4hjDrxk": {
@@ -1607,6 +1619,12 @@
   "quiz": 8,
   "cued": true
  },
+ "TA7728hp_IA": {
+  "label": "清大周志遠 第23D講 File System Implementation",
+  "points": 23,
+  "quiz": 6,
+  "cued": true
+ },
  "tIE2lkJv20c": {
   "label": "Theory of Computation：P, NP, NP-Complete and NP-Hard",
   "points": 27,
@@ -1701,6 +1719,12 @@
   "label": "交大彭文志 Lec13 Trees (2/6)",
   "points": 76,
   "quiz": 8,
+  "cued": true
+ },
+ "UpPyxA0THzU": {
+  "label": "清大周志遠 第24B講 File System Implementation",
+  "points": 23,
+  "quiz": 7,
   "cued": true
  },
  "USLvdBuxTno": {
@@ -1889,6 +1913,12 @@
   "quiz": 6,
   "cued": true
  },
+ "xzjOe7-m6qc": {
+  "label": "清大周志遠 第23A講 File Concept & Access Methods",
+  "points": 36,
+  "quiz": 6,
+  "cued": true
+ },
  "ygK0YON10sQ": {
   "label": "Abdul Bari：Recursion and Stack",
   "points": 28,
@@ -1970,6 +2000,12 @@
  "zXhWPrMLXGo": {
   "label": "Abdul Bari：Merge Sort - Hindi",
   "points": 54,
+  "quiz": 6,
+  "cued": true
+ },
+ "ZYgU9wrZaZo": {
+  "label": "清大周志遠 第24A講 File System Implementation",
+  "points": 27,
   "quiz": 6,
   "cued": true
  },

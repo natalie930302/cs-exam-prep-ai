@@ -1,0 +1,435 @@
+{
+ "video": "NDBhHLzz4p8",
+ "label": "清大周志遠 第23B講 Directory Structure",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Partition 與 Volume",
+   "scene": "fs-23b-partvol",
+   "points": [
+    {
+     "t": 16,
+     "text": "檔案很多時用 directory（資料夾）管理；此外還要分清楚 partition 與 volume。"
+    },
+    {
+     "t": 72,
+     "text": "Partition 是把儲存裝置切割出來的一塊；formatting 在 partition 上建立 file system，之後它就成為 volume（像 C 槽、D 槽）。"
+    },
+    {
+     "t": 169,
+     "text": "Partition 不一定對到一顆硬碟：可以是多顆 disk 組成（例如 5 顆 2T 組成 10T），也可以只切一部分；floppy、CD-ROM 則無法 partition。"
+    },
+    {
+     "t": 251,
+     "text": "總結：partition 是 raw 的，format 之後成為 volume，差別在有沒有檔案系統。"
+    }
+   ],
+   "trap": "Volume 不等於 partition：volume 是已經 format、有 file system 的 partition。",
+   "cues": [
+    16.1,
+    49.7,
+    67.7,
+    72.4,
+    94.6,
+    104.8,
+    121.7,
+    139,
+    169.5,
+    190.4,
+    220.2,
+    251.3
+   ],
+   "explain": [
+    "檔案是存資料的 logical unit。檔案一多，就要用資料夾（directory）來管理，比較好找；對人是這樣，對系統運作也是一樣。",
+    "除了 directory，存檔案時還有兩個常聽到的詞要分清楚：partition（分割區）和 volume（磁區／槽）。下面這條長方塊代表一顆硬碟。",
+    "volume 就像你電腦裡的 C 槽、D 槽。",
+    "partition 則是對一顆硬碟（或儲存裝置）做「切割」，切出來的那一塊就叫 partition。這裡切成 P1、P2 兩塊。",
+    "這兩個指的是完全不同的東西：volume 是 partition 被格式化、有了檔案系統之後的樣子。",
+    "買一顆新硬碟，要開始存檔案前，第一件事通常就是 partition：決定要切多少空間當一個儲存區。",
+    "接著做 formatting（格式化）。格式化在做什麼？就是在這個 partition 上「建立一個檔案系統」，綠色那層就是檔案系統。",
+    "有了檔案系統，就能用檔案的方式存資料，這塊空間也就從 partition 變成 volume（例如 C:）。重點就是：有沒有 file system。",
+    "現在軟體很有彈性，partition 不一定對到一顆實體硬碟：它也可以是 group of multiple disks（好幾顆硬碟組成）。",
+    "例如每顆硬碟只有 2T，但想要一個很大的槽？可以把 5 顆串在一起，變成一個 10T 的 partition（2T × 5 = 10T），甚至透過網路串，變成分散式的概念。",
+    "但也受限於硬體：不是所有儲存裝置都能 partition，像 floppy（軟碟）、CD-ROM 就是一整個，沒辦法再切。",
+    "記住：partition 是 raw（原始、沒格式化）的；format 之後變成 volume。差別就在有沒有檔案系統。"
+   ]
+  },
+  {
+   "title": "Raw partition：database 與 swap space",
+   "scene": "fs-23b-raw",
+   "points": [
+    {
+     "t": 262,
+     "text": "Database 角色和 file system 類似，但要 support random access。"
+    },
+    {
+     "t": 277,
+     "text": "很多 database 直接用沒 format 的 raw partition：table 的 row 大小固定，自己管理就好；swap space 也只需要一塊 raw partition。"
+    }
+   ],
+   "cues": [
+    262.5,
+    277,
+    302.6,
+    329.8
+   ],
+   "explain": [
+    "補充：database（資料庫）的角色跟檔案系統很像，也要把資料放在儲存裝置上，只是它的應用要 support random access。",
+    "database 用的儲存空間，很多時候其實沒有做 formatting，而是直接拿一塊 raw partition，在上面建立 database。因為它的管理方式不同（要建 index 等），根本不想用 file 的形式。",
+    "傳統 database 用 table 存資料，每個 row 的大小都已經知道，何必還考慮 file？要怎麼用就直接切來用。",
+    "之前講過的 swap space（記憶體置換空間）也一樣，不需要透過檔案系統，給它一塊 raw partition 就好。沒有人規定一定要透過 file system。"
+   ]
+  },
+  {
+   "title": "Directory、partition 與 disk 的關係",
+   "scene": "fs-23b-layout",
+   "points": [
+    {
+     "t": 340,
+     "text": "Directory 用切割分類讓人容易找到 file；這裡的位置只是 logical 的 path。"
+    },
+    {
+     "t": 366,
+     "text": "Partition / volume 可以在同一顆 disk 上，也可以跨 disk。"
+    },
+    {
+     "t": 397,
+     "text": "Volume 會記錄 directory 與 file 的 data structure：先從 directory 找到檔案，再找 content 存在哪。"
+    }
+   ],
+   "cues": [
+    340,
+    355.1,
+    366,
+    375.6,
+    397,
+    408.1
+   ],
+   "explain": [
+    "最後是大家很熟的 directory（資料夾）：在檔案管理上把檔案切割、分類，比較容易找到你要的檔案。",
+    "要注意：這裡說的「位置」只是 logical 的位置，也就是檔案的 path（路徑），例如 /home/john/a.txt。",
+    "看示意圖：disk 1、disk 2 是 physical（實體）的儲存裝置。",
+    "partition（變成 volume 之後）可以在同一顆 disk 上（A、B），也可以跨兩顆 disk（C），沒有一定。",
+    "partition 被 format 成 volume 之後，最大差別是：檔案系統會記錄 directory 和 file 的 data structure（資料結構）。下一章會更仔細介紹。",
+    "通常先存好 directory 的資料：先從 directory 找到要的檔案，再看這個 file 的 content 存在哪裡。"
+   ]
+  },
+  {
+   "title": "Directory 的本意：name → ID 的 mapping",
+   "scene": "fs-23b-purpose",
+   "points": [
+    {
+     "t": 427,
+     "text": "現在 directory 是樹狀結構，但早期使用者、檔案不多時是 single-level directory。"
+    },
+    {
+     "t": 462,
+     "text": "Directory 一開始的目的只是把人看得懂的 file name 對到 machine 的 unique ID。"
+    },
+    {
+     "t": 506,
+     "text": "File 必須 persistent：directory 資訊也一定要寫到硬碟，運作時才 load 到 memory 的 table。"
+    }
+   ],
+   "cues": [
+    427.6,
+    435.4,
+    455.7,
+    462.5,
+    475.7,
+    488.1,
+    506,
+    519,
+    541.6
+   ],
+   "explain": [
+    "現在大家都知道 directory 是一個樹狀（tree）結構，就像畫面上這樣。",
+    "但早期在想「怎麼管理檔案」的時候，這其實是一步步演進出來的。那時使用者不多、檔案也不多。",
+    "最早很單純，可以說沒有資料夾，叫做 single-level directory（單層目錄）：一個 directory 底下直接就是所有檔名。",
+    "一個名字對到某一個 file。例如亮起來的 test，對到下面那個檔案。",
+    "file 真正的身分是機器用的 unique ID（這裡 #5021 是示意）。人不可能去記這種看不懂的數字。",
+    "所以建立 directory 一開始的目的，只是把 file name 對到某一個唯一的檔案內容（object），就只是做這個 mapping。",
+    "這個 mapping 有一點跟之前介紹的東西都不同：file 必須是 persistent（永久存在）的，斷電也不能遺失。",
+    "所以不只是 file 的內容，directory 的資訊也一定要寫到硬碟上。可以在 memory 當 cache 暫存，但最後必須寫回硬碟，否則會遺失。",
+    "只是在運作過程中，會被 load 到 memory，放進前面介紹的 system-wide table 或 open-file table，方便 process 操作。"
+   ]
+  },
+  {
+   "title": "Directory operations",
+   "scene": "fs-23b-ops",
+   "points": [
+    {
+     "t": 560,
+     "text": "Directory operation：create file、delete、rename 都算，因為要更新 directory structure。"
+    },
+    {
+     "t": 586,
+     "text": "List directory 在現代 file system 常是 bottleneck：一個 folder 可能有上萬個 file、tree 又深，ls 會卡很久。"
+    },
+    {
+     "t": 660,
+     "text": "另一個 issue 是 search：給 path 要能快速 traverse；directory 不一定用 tree 存，也可能用 hash。"
+    }
+   ],
+   "cues": [
+    560.5,
+    566.2,
+    578.4,
+    586.6,
+    595,
+    610.3,
+    633.3,
+    660,
+    678.6
+   ],
+   "explain": [
+    "directory 能做的 operation（操作）更少。",
+    "create file（建立檔案）也算 directory 的操作，因為要把它加進 directory 的 structure 裡，系統才知道這個檔案存在。",
+    "delete（刪除）、rename（改名）也都是。",
+    "另一個大家容易忽略的是 list directory：把資料夾內容列出來（像 ls）。",
+    "大家可能不知道：在現代檔案系統設計裡，list 通常是 bottleneck（瓶頸），是最耗時間的操作。",
+    "因為大型檔案系統裡檔案非常多。如果一個 folder 有 1 萬個 file，想想要吃掉多少 memory、花多少時間，才能把資訊從 disk 全部撈出來。",
+    "更別說現在的檔案系統 tree 很深、使用者很多。大型系統隨便下個 ls 把資料全部撈出來，可能會卡非常非常久，這是設計時的一大考量。",
+    "另一個設計 issue 是「怎麼找」：給一個 path，例如 home 下面的 john、homework1、a.txt。",
+    "要怎麼很快地 traverse（走過）directory 找到位置？directory 甚至不一定用 tree 的形式存，也可能用 hash 等方式。"
+   ]
+  },
+  {
+   "title": "Single-level directory",
+   "scene": "fs-23b-single",
+   "points": [
+    {
+     "t": 701,
+     "text": "Single-level directory：root 底下全部都是檔名，沒有 folder，但仍是 directory。"
+    },
+    {
+     "t": 744,
+     "text": "File name 必須 unique；使用者多時容易同名（大家都產生 a.out）而 override 或無法建立。"
+    },
+    {
+     "t": 784,
+     "text": "List 時只能 scan through 全部檔案，效率很差；只適合早期小規模。"
+    }
+   ],
+   "cues": [
+    701,
+    719,
+    728.4,
+    744.7,
+    759.7,
+    776.5,
+    784.8,
+    800
+   ],
+   "explain": [
+    "回到最早的設計：目的很單純，就是做 mapping。我們不想記人看不懂的 ID，希望用有意義、還能改的 file name。",
+    "所以最早就是 single-level directory。",
+    "它的結構就是：一個 root，下面全部都是檔案名稱。沒有 folder，但它也是一個 directory（第一層 directory）。",
+    "在這種架構下，file name 必須是 unique（唯一）的。同一個資料夾裡不能有重複的名字，不然怎麼做 mapping？",
+    "問題來了：檔案越來越多，而且很多使用者 share 同一個資料夾時，很可能用到相同的名字，例如每個人編譯都產生 a.out。",
+    "結果不是把別人的檔案 override（覆蓋）掉，就是系統說「已經存在」，產生不了。很難維持 unique。",
+    "另一個問題：list 的 efficiency 很差。既然沒有分類，就只能 scan through 很多根本不是你的檔案。",
+    "所以 scale 小的早期只為了解決 mapping，這樣沒問題；但使用者和檔案越來越多，就開始不行了。"
+   ]
+  },
+  {
+   "title": "Two-level 與 tree-structured directory",
+   "scene": "fs-23b-tree",
+   "points": [
+    {
+     "t": 816,
+     "text": "Single level 不行就用 multiple level（folder）：每個 user 有自己的資料夾，list 只列自己的檔案，並有 path 的概念。"
+    },
+    {
+     "t": 879,
+     "text": "再擴展成 tree：任意 level，使用者自己建資料夾。"
+    },
+    {
+     "t": 900,
+     "text": "Tree 有 absolute path 與 relative path（相對於目前位置）；系統處理時多半先把 relative 換成 absolute。"
+    }
+   ],
+   "cues": [
+    816.4,
+    830,
+    836.7,
+    845.5,
+    856,
+    879.7,
+    892.6,
+    900.1,
+    908.1,
+    943.6
+   ],
+   "explain": [
+    "很直覺：既然 single level 不行，就用 multiple level。multiple level 指的就是 folder（資料夾）。",
+    "除了檔名，directory 裡還會加入資料夾，例如 user1、user2（上面的 MFD 是 master file directory，最上層目錄）。",
+    "這樣第一個好處：list 時只會列出自己的檔案，不會列出跟你無關的人的資訊。",
+    "第二個好處：找檔案可以開始用 traverse（一層層往下走），path（路徑）的概念就出來了，例如 /user1/a。",
+    "不過最終要找的，還是這個人看得懂的 file name 對到哪一個 ID，這才是 directory 真正的目的。",
+    "有了 multiple level，接下來就越長越大：為什麼要固定 two level？乾脆變成 tree，任何 level 都可以。",
+    "每個使用者可以自己 create 資料夾。現在的檔案系統就是這個樣子。",
+    "在 tree 的架構下，有絕對路徑（absolute path）和相對路徑（relative path）。絕對路徑是從 root 一路寫下來，例如 /spell/mail/exp。",
+    "相對路徑：你在檔案系統裡可以切換資料夾（在 tree 裡 traverse），相對於「目前所在位置」的路徑，就是 relative path。例如目前在 mail，寫 exp 就好。",
+    "相對路徑主要是方便使用。系統在 process 時，多半還是先把 relative path 換成 absolute path，再做後面的動作。"
+   ]
+  },
+  {
+   "title": "Acyclic-graph directory 與 link",
+   "scene": "fs-23b-acyclic",
+   "points": [
+    {
+     "t": 967,
+     "text": "Acyclic graph：放鬆 tree「每個 node 只有一個 parent」的限制，讓不同人 share 同一個檔案，例如 /dict/count 與 /spell/count 指到同一份內容，但不能有 cycle。"
+    },
+    {
+     "t": 1031,
+     "text": "Linux 用 ln -s 建 symbolic link，分 hard 與 soft；同一個 file 可有多個 absolute path。"
+    },
+    {
+     "t": 1097,
+     "text": "和 copy 相比：不浪費空間，也沒有 duplication 的 consistency 問題，改一邊另一邊立刻看到。"
+    }
+   ],
+   "trap": "Acyclic graph 允許共享（多個 parent），但不允許 cycle。",
+   "cues": [
+    967.8,
+    974,
+    976.6,
+    986.2,
+    1002.3,
+    1017.1,
+    1031,
+    1044.1,
+    1076.1,
+    1097.7,
+    1106.1,
+    1120.1
+   ],
+   "explain": [
+    "有了 tree 之後，為了一些使用需求，再把它 generalize（一般化）一點。",
+    "就有了 acyclic graph（無環圖）的目錄結構。",
+    "tree 的限制是：每個 node 只能有一個 parent（上一層）。例如 count 只屬於 dict。",
+    "但實際應用時，慢慢會有一些情況是：希望不同的人 share 相同的檔案。",
+    "所以可以這樣建：/dict/count 和 /spell/count 是兩個不同的檔案名字，但其實對到同一個 file 的內容。金色的線就是多加的那條 edge。",
+    "這就是 acyclic graph：稍微放鬆，可以加 edge；但不能讓它形成 cycle（繞一圈回到自己）。",
+    "怎麼加？在 Linux 裡可以自己玩玩看，用 symbolic link 的指令：ln -s。",
+    "link 分 hard 和 soft，差別在刪掉其中一個名字時：是整個內容就真的刪掉，還是要全部名字都刪掉，內容才消失。所以有不同的 option。",
+    "這樣同一個檔案就會有 multiple absolute path（多個絕對路徑）。很多軟體因為設計需求會這樣用。",
+    "為什麼不直接 copy 一份？跟 copy 最大的差別：第一，copy 真的會浪費儲存空間。",
+    "第二，就是前面講過的：資料本來應該只有一份，你把它 duplicate，要怎麼維持資料一致性？非常麻煩。",
+    "用 symbolic link 的方式，可以讓一個檔案出現在兩個資料夾，其實是同一份：有人改了，另一邊立刻就看到。"
+   ]
+  },
+  {
+   "title": "Dangling pointer 與 reference counter",
+   "scene": "fs-23b-dangle",
+   "points": [
+    {
+     "t": 1139,
+     "text": "一份資料兩個名字，像 pointer：把檔案砍掉後另一個名字變 dangling pointer，access 時發生錯誤（內容已 lost）。"
+    },
+    {
+     "t": 1189,
+     "text": "Acyclic graph 沒有 cycle，用 reference counter 就能解決：每多一個名字 counter +1，直到變 0 才真的從 storage 刪除。"
+    }
+   ],
+   "cues": [
+    1139.3,
+    1154.1,
+    1165.7,
+    1189.5,
+    1198.3,
+    1201.1,
+    1209.6
+   ],
+   "explain": [
+    "雖然資料只有一份，但畢竟有兩個名字指到它，就像寫程式時的 pointer 一樣。",
+    "當我們從一邊把檔案真的砍掉，另一邊的名字還在，卻指向一個已經不存在的東西，這就是 dangling pointer（懸空指標）問題。",
+    "這時去 access 那個檔案就會出錯。它不只是「找不到」：名字存在，內容卻 lost 了，這是一種 fail（失敗）的狀況。",
+    "為什麼先只談 acyclic graph？就是因為它沒有 cycle，比較容易解決 dangling pointer。",
+    "方法是用 counter（計數器）。",
+    "只要有一個檔名指到這個檔案，counter 就是 1；兩個名字，就變 2。",
+    "刪掉一個名字就減 1，直到變成 0 才把檔案真的從 storage 上 remove。不是 0 代表還有人指著它，就要 keep 住。這樣就很容易判斷什麼時候該真的刪。"
+   ]
+  },
+  {
+   "title": "下課休息",
+   "scene": null,
+   "points": [
+    {
+     "t": 1231,
+     "text": "休息十分鐘，下一段介紹最後一種結構：general graph。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Partition 與 volume 的主要差別是？",
+   "opts": [
+    "volume 已經 format、有 file system",
+    "partition 一定比 volume 大",
+    "volume 只能在一顆硬碟上",
+    "兩者完全相同"
+   ],
+   "ans": "volume 已經 format、有 file system",
+   "why": "partition 是 raw 的，format 後建立 file system 才成為 volume。"
+  },
+  {
+   "q": "哪種軟體常直接使用 raw partition、不經 file system？",
+   "opts": [
+    "database",
+    "文書處理器",
+    "瀏覽器",
+    "編譯器"
+   ],
+   "ans": "database",
+   "why": "database 自己管理 table/row，swap space 也一樣只需要 raw partition。"
+  },
+  {
+   "q": "Single-level directory 的主要問題是？",
+   "opts": [
+    "檔名必須唯一且 list 效率差",
+    "不能存檔案",
+    "無法 mapping 到 ID",
+    "一定會有 cycle"
+   ],
+   "ans": "檔名必須唯一且 list 效率差",
+   "why": "所有人共用一層，a.out 容易撞名，list 也得掃過所有檔案。"
+  },
+  {
+   "q": "在現代檔案系統中，哪個 directory operation 常是 bottleneck？",
+   "opts": [
+    "list directory",
+    "rename",
+    "create",
+    "delete"
+   ],
+   "ans": "list directory",
+   "why": "一個 folder 可能有上萬個 file，要從 disk 全部撈出來很耗時。"
+  },
+  {
+   "q": "Acyclic-graph directory 相對於 tree 放寬了什麼？",
+   "opts": [
+    "一個檔案可以有多個 parent（共享）",
+    "可以有 cycle",
+    "檔名可以重複在同一層",
+    "不需要 root"
+   ],
+   "ans": "一個檔案可以有多個 parent（共享）",
+   "why": "例如 /dict/count 與 /spell/count 指到同一份，但不能形成 cycle。"
+  },
+  {
+   "q": "Acyclic graph 中，什麼時候才真的刪除共享檔案？",
+   "opts": [
+    "reference counter 變成 0",
+    "任何一個名字被刪時",
+    "每次開機時",
+    "永遠不刪"
+   ],
+   "ans": "reference counter 變成 0",
+   "why": "每多一個名字 counter +1，刪名字 −1，變 0 才 remove。"
+  }
+ ]
+}

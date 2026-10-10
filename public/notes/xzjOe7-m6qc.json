@@ -1,0 +1,548 @@
+{
+ "video": "xzjOe7-m6qc",
+ "label": "清大周志遠 第23A講 File Concept & Access Methods",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "本章導覽：檔案系統要談什麼",
+   "scene": "fs-23a-intro",
+   "points": [
+    {
+     "t": 2,
+     "text": "介紹完 CPU、memory，最後一塊資源是 storage；儲存最主要的形式就是檔案。"
+    },
+    {
+     "t": 43,
+     "text": "檔案系統分兩章：本章 File System Interface（使用者角度），下一章 Implementation（實作考量）。"
+    },
+    {
+     "t": 96,
+     "text": "本章內容：檔案與 access method、directory、mounting、sharing（可能跨網路）、protection。"
+    }
+   ],
+   "cues": [
+    2,
+    51.3,
+    96,
+    130.9,
+    139,
+    153.5,
+    191.1
+   ],
+   "explain": [
+    "作業系統管三大類資源：CPU、memory，以及最後這塊 storage（儲存）。存東西最常見的形式就是「檔案」，所以這章從檔案講起。CPU 和 memory 先淡掉，主角換成 disk 和 file。",
+    "檔案系統分兩章講。這章是 interface（介面）：從「使用者」的角度看檔案系統扮演什麼角色；下一章才講 implementation（實作）：檔案系統內部怎麼設計。",
+    "第一個主題：檔案到底是什麼，還有 access method（存取方法），也就是「讀一個檔案有哪些方式」。這會影響寫程式的方式，也影響底層怎麼實作。",
+    "第二個主題是 directory（目錄），也就是大家熟悉的「資料夾」。",
+    "第三個是 mounting（掛載）：把一個儲存空間「掛」進檔案系統，讓系統可以動態擴充可用的空間。",
+    "第四個是 sharing（共享）。檔案系統出現的重要原因就是讓大家共享資料；以前是同一台電腦的不同使用者，現在甚至跨網路，更複雜。",
+    "最後是 protection（保護）。資料屬於使用者，跟其他資源很不一樣，要好好保護。"
+   ]
+  },
+  {
+   "title": "File 是 logical storage unit",
+   "scene": "fs-23a-logical",
+   "points": [
+    {
+     "t": 208,
+     "text": "File 是 logical storage unit：storage 不管存什麼，就是一堆 bytes，file 是呈現與使用資料最常見的方式。"
+    },
+    {
+     "t": 257,
+     "text": "Physical unit 取決於 hardware；硬碟有好幾片 platter，每片分成一圈圈 track，track 再切成 sector。"
+    },
+    {
+     "t": 330,
+     "text": "Sector 才是真正存資料的最小 physical storage unit；file 的內容最後要 map 到這些 sector 上。"
+    }
+   ],
+   "cues": [
+    208.3,
+    210.6,
+    225.5,
+    257.7,
+    284,
+    310.5,
+    322.1,
+    324.2,
+    329.9,
+    341.4
+   ],
+   "explain": [
+    "先回答最基本的問題：什麼是 file（檔案）？左邊這張紙就代表一個檔案 a.txt。",
+    "file 是一種 logical storage unit（邏輯儲存單位）。「邏輯」的意思是：它是為了讓人方便使用而定義出來的單位，不是硬體真正的樣子。",
+    "對 storage 來說，存的東西只是一堆 bytes（位元組），它不在乎內容是文字還是圖片。這排小方塊就是檔案內容的 bytes（數值只是示意）。",
+    "那 physical（實體）的單位是什麼？要看 hardware 用什麼裝置、什麼方式儲存。右邊的同心圓代表硬碟的一片盤面。",
+    "目前最主要的儲存裝置還是 hard drive（硬碟），靠讀寫頭在旋轉的盤面上讀寫資料。之後講 storage system 的章節會詳細介紹。",
+    "硬碟裡面有好幾片讀寫盤（plate / platter），疊在一起轉動。這裡只把其中一片「正面」畫出來給你看。",
+    "每片盤面被切成一圈一圈的同心圓，每一圈叫做 track（磁軌）。",
+    "每個 track 再被切成一段一段，每一段叫 sector（磁區）。紅色那段弧線就是一個 sector。",
+    "sector 才是真正存資料的最小單位：資料最後都是放到某個 sector 上。這就是 physical storage unit。",
+    "所以 file 只是我們「看」資料時的 logical unit；檔案系統要把檔案內容 map（對應）到實體 sector 的位置上，箭頭就是這個對應。"
+   ]
+  },
+  {
+   "title": "File attributes",
+   "scene": "fs-23a-attr",
+   "points": [
+    {
+     "t": 361,
+     "text": "除了把內容 map 到 physical 位置，file 還有很多 attribute 描述它。"
+    },
+    {
+     "t": 376,
+     "text": "檔名只是方便使用者辨認的 attribute；真正唯一的是 non-human readable 的 identifier。"
+    },
+    {
+     "t": 400,
+     "text": "還有 type、location、size、protection 等；有些是給 OS / file system 管理用，全部都要存起來。"
+    }
+   ],
+   "cues": [
+    361.1,
+    367.6,
+    376.6,
+    387.8,
+    400.6,
+    417.9,
+    423.6
+   ],
+   "explain": [
+    "檔案系統要做的第一件事，是把檔案的內容 map 到 device 上的某個位置（左邊的紙和下面的硬碟）。",
+    "除此之外，為了方便操作，還會有很多 attribute（屬性）來描述這個檔案。右邊這張表就是它的屬性清單。",
+    "第一個是 name（檔名）。檔名其實也只是一個屬性，是使用者自己取的，方便「人」辨認而已。",
+    "真正要唯一的是 identifier（識別碼），一個人看不懂的 ID（這裡的 #1027 是示意）。人不喜歡記數字，所以才另外有檔名。",
+    "其他常見的屬性：type（資料型態）、location（存在 device 的哪裡）、size（大小）、protection（誰可以讀寫）。",
+    "有些屬性是讓使用者方便讀檔、用檔；有些則是讓 OS 或 file system 自己管理檔案用的。",
+    "這些屬性都必須存起來（箭頭指回硬碟），屬性加上內容，才構成我們說的一個 file。"
+   ]
+  },
+  {
+   "title": "File operations",
+   "scene": "fs-23a-ops",
+   "points": [
+    {
+     "t": 433,
+     "text": "File operation 大約十種：open、read、write、create、delete 等。"
+    },
+    {
+     "t": 454,
+     "text": "Truncate：從某一點之後的內容都不要了。"
+    },
+    {
+     "t": 475,
+     "text": "Concatenate：把兩個檔案接在一起，例如不同 process 各自 dump 的 log 合併才有意義。"
+    }
+   ],
+   "cues": [
+    433.6,
+    446.3,
+    451.5,
+    454.5,
+    458.8,
+    475.7,
+    477.6,
+    491.4
+   ],
+   "explain": [
+    "file 上支援的 operation（操作）其實不多，大概十個左右。",
+    "最常見的就是 open（開啟）、read（讀）、write（寫）。",
+    "還有 create（建立）和 delete（刪除）。",
+    "另一個常用的是 truncate（截斷）。下面這排方塊代表一個 log 檔的內容（示意）。",
+    "truncate 的意思是：從某個位置開始，後面的內容都不要了。淡掉的那幾格就是被截掉的部分。處理檔案時很常用。",
+    "還有 concatenate（串接）：把兩個檔案接在一起。這裡有 log1 和 log2 兩個檔案。",
+    "把 log2 接到 log1 後面，變成一個檔案。哪個在前、哪個在後都可以。",
+    "什麼時候會用？例如系統裡不同 process 各自 dump（輸出）了一份 log，分在不同檔案；但它們要合在一起看才有意義，這時就 concatenate。"
+   ]
+  },
+  {
+   "title": "兩個 data structure：open-file table 與 system-wide table",
+   "scene": "fs-23a-tables",
+   "points": [
+    {
+     "t": 522,
+     "text": "為了 manage 檔案內容，運作時需要 metadata：檔案存在哪、目前操作到哪。"
+    },
+    {
+     "t": 548,
+     "text": "Process 這邊有 open-file table；為什麼一定要先 open：open 才會建立這些資訊。"
+    },
+    {
+     "t": 584,
+     "text": "OS 這邊有 system-wide table，內容 share 給所有 process；跟 process 有關的資訊存在 per-process 的 open-file table。"
+    }
+   ],
+   "cues": [
+    522,
+    544.1,
+    548.8,
+    559.2,
+    584.3,
+    606.6,
+    624.2,
+    640.4
+   ],
+   "explain": [
+    "要操作、修改檔案的內容，系統在運作時需要一些 metadata（描述資料的資料），例如：這個檔案存在哪？剛剛操作到哪個位置？",
+    "維護一個檔案的運作，最主要靠兩個 data structure（資料結構）。",
+    "第一個在 process 這邊：正在操作這個檔案的 process（左邊的 P1），會保留一張 open-file table（開檔表）。",
+    "為什麼操作檔案前一定要先 open？因為 open 才會建立這張表裡需要的資訊（亮起來的 entry）；沒有 open，後面的讀寫都沒辦法做。",
+    "第二個在 OS 這邊：檔案被開啟時，OS 也會把這個檔案的資料存起來，放在 system-wide table（全系統共用的表）。",
+    "system-wide 的意思是：這張表的內容是 share（共享）給所有 process 的。P1、P2 不管誰開了 a.txt，箭頭都指到同一個地方。",
+    "跟「是哪個 process 開的」有關的資訊（每個 process 都可能不同），就存在各自的 open-file table 裡。",
+    "兩張表都要維護好，整個系統才能正常運作。接下來分別仔細看。"
+   ]
+  },
+  {
+   "title": "Per-process open-file table",
+   "scene": "fs-23a-perproc",
+   "points": [
+    {
+     "t": 652,
+     "text": "Open-file table 是 per process 的：每開一個檔案就有一個 entry。"
+    },
+    {
+     "t": 688,
+     "text": "fopen 給的 file handler 對到這個 entry；entry 存 position，每個 process 各有自己的 position，read 之後往後移。"
+    },
+    {
+     "t": 731,
+     "text": "還有 access right：同一個檔案，不同 process 開啟的權限可能不同（read / write），也記在 open-file table。"
+    }
+   ],
+   "cues": [
+    652,
+    660.7,
+    688.1,
+    698.5,
+    707.9,
+    709.5,
+    720.4,
+    731.4,
+    748.6
+   ],
+   "explain": [
+    "先看 process 這邊的 open-file table。重點是：它是 per process（每個 process 各有一張）的。",
+    "每開一個檔案，表裡就多一個 entry（項目）。entry 本身是一個 data structure，可以存所有關於這個檔案、而且只跟這個 process 有關的資訊。",
+    "寫過 C 的話應該記得：fopen 之後會拿到一個 file handler（大家常叫它 file pointer），之後讀寫都用它。",
+    "這個 handler 其實就是對到 open-file table 裡某個 entry 的位置，箭頭就是這個對應。",
+    "entry 裡很重要的一項是 position（目前讀寫到哪個位置）。剛開檔時從 0 開始。",
+    "同一個檔案可以被很多 process 開啟，但每個 process 對它都有自己的 position。右邊的 P2 也開了 a.txt，它有自己的 entry。",
+    "P1 讀了 4 個 bytes，它的 position 就往後移到 4；P2 的 position 還是 0，因為這只跟各自的 process 有關。",
+    "另一個例子是 access right（存取權限）。同一個檔案，P1 用 read 開、P2 用 write 開，權限就不同。",
+    "像這種會因 process 而不同的資訊，都放在 per-process 的 open-file table 裡。"
+   ]
+  },
+  {
+   "title": "System-wide table 與 data consistency",
+   "scene": "fs-23a-syswide",
+   "points": [
+    {
+     "t": 772,
+     "text": "System-wide table 跨整個 OS，任何 process 開的檔案都有一個 entry，和 per-process 的 entry 對在一起。"
+    },
+    {
+     "t": 802,
+     "text": "存 process independent 的資訊：disk location、access date、file size。"
+    },
+    {
+     "t": 875,
+     "text": "為什麼要切兩張表：同一份資料 duplicate 會造成 data consistency 問題（例如 file size 被 write 改了），所以大家看到都一樣的資料只存一份。"
+    }
+   ],
+   "cues": [
+    772.2,
+    788.9,
+    802.2,
+    822.5,
+    847.5,
+    875.3,
+    890.1,
+    911.1,
+    929.9,
+    951.3,
+    982.6
+   ],
+   "explain": [
+    "另一張是 system-wide open-file table。它跨整個作業系統：任何一個 process 開啟的檔案，在這裡都有一個 entry。",
+    "兩邊的 entry 是對在一起的：P1、P2 表裡都有 a.txt，各自指到 system-wide 表裡同一個 a.txt。",
+    "那 system-wide 存什麼？存跟 process 無關（process independent）的資訊，也就是不管誰開，看到都一樣的東西。",
+    "例如 disk location（檔案在硬碟上的位置）。寫一個 byte 時要知道寫到 disk 哪裡；而檔案只有一個，內容的位置也只有一個。",
+    "還有 access date（存取時間）、file size（檔案大小）。很多 process 同時開 a.txt，看到的這些資訊都一樣。",
+    "為什麼要這樣分？為什麼不乾脆把這些資訊也全部存在每個 process 自己的表裡？",
+    "因為把同一份資料複製（duplicate）好幾份來維護，在系統設計上是很危險的事。這裡假設兩份表裡都存了 size = 100。",
+    "如果 P1 寫入讓檔案變長，size 被改成 120，但另一份還是 100，兩份資料就對不上了。",
+    "這就是 data consistency（資料一致性）問題：同一份資料有多個副本時，要保證它們一致，通常很麻煩。",
+    "所以最好的做法：大家都應該看到一樣的資料，就只存一份在 system-wide table；會因 process 而不同的，再各自存。這樣實作和運作都比較 efficient。",
+    "這兩張表先從使用者角度簡單介紹，下一章講檔案系統運作時，會再看怎麼用它們來操作檔案。"
+   ]
+  },
+  {
+   "title": "File type（副檔名）只是 hint",
+   "scene": "fs-23a-type",
+   "points": [
+    {
+     "t": 994,
+     "text": "檔案開啟後，attribute 依是否和 process 有關，放到不同 table。"
+    },
+    {
+     "t": 1017,
+     "text": "File type 就是副檔名，對 OS 沒有實質意義，只是 hint：點兩下時 OS 依副檔名先猜、先試對應的應用程式。"
+    },
+    {
+     "t": 1067,
+     "text": "Linux 很多檔案沒有副檔名也無所謂；副檔名主要方便人分辨。"
+    }
+   ],
+   "trap": "副檔名不決定檔案內容格式，OS 只把它當 hint 來選開啟的程式。",
+   "cues": [
+    994.6,
+    1017.7,
+    1024.5,
+    1038.2,
+    1052.1,
+    1067.3
+   ],
+   "explain": [
+    "剛剛看到檔案有很多 attribute。檔案被開啟後，這些屬性會依照「跟 process 有沒有關」，分別放到 system-wide 或 per-process 的表裡。",
+    "提醒一個大家很熟的屬性：file type（檔案型別），也就是副檔名，例如 report.docx 的 .docx。",
+    "要有正確觀念：每個檔案雖然都有副檔名，但它對整個系統運作、尤其對 OS 來說，沒有實質意義，只是一個 hint（提示）。",
+    "舉例：你點兩下一個檔案想執行它，OS 要怎麼知道該用哪個應用程式開？不同檔案需要不同程式。",
+    "OS 看副檔名，就先猜、先嘗試用對應的程式（例如 .docx 用 Word）去開。就只是這樣而已。",
+    "所以在 Linux 這類系統，很多檔案根本沒有副檔名，這也完全沒問題。副檔名主要是方便人分辨，也讓系統有個猜測依據。"
+   ]
+  },
+  {
+   "title": "Sequential access",
+   "scene": "fs-23a-seq",
+   "points": [
+    {
+     "t": 1096,
+     "text": "File access 大致分三大類：sequential、direct、index，其他都是 variation。"
+    },
+    {
+     "t": 1136,
+     "text": "Sequential：檔案是 array of bytes，讀寫必須連續，API 只需要 current position；read / write 只給長度，position 隱含地往後移，要到別處就 reset / rewind。"
+    },
+    {
+     "t": 1255,
+     "text": "C 的 fopen、fread、fwrite 都是 sequential access；檔案多存在硬碟，硬碟 sequential 讀寫遠快於 random。"
+    }
+   ],
+   "cues": [
+    1096.6,
+    1122.3,
+    1136.6,
+    1139.8,
+    1157.9,
+    1169.6,
+    1182,
+    1194.2,
+    1216.3,
+    1255.6,
+    1267.2
+   ],
+   "explain": [
+    "接著看怎麼 access（存取）一個檔案。平常我們可能就是開 Word，或寫個 fopen 來讀寫。",
+    "回到本質，檔案的存取大致分成三大類：sequential、direct、index，其他大多只是變化版本。",
+    "第一種、也是最主要的：sequential access（循序存取）。下面這排 0 到 9 的格子代表一個檔案。",
+    "檔案其實就是一個 array of bytes（一串連續的 bytes）。",
+    "sequential 的意思是讀的時候必須連續。所以設計這種 API，只需要一個 current position（目前位置），也就是這個金色箭頭。",
+    "read 就是從目前的位置接續讀下去。讀了 0 到 3 這 4 格。",
+    "呼叫 read、write 時，不需要給任何位置資訊，只要告訴它要讀寫的長度，例如 read(fp, 4)。",
+    "每讀完一次，position 就自動往後移：讀 4 個 bytes 就往後 4。這是 implicit（隱含）的，你程式裡沒寫，負責存取檔案的 file system 或 library 幫你移。",
+    "如果要跳到別的位置，就要 reset 或 rewind：把 position 移回 0，或移到某個指定位置。",
+    "C library 裡的 fopen、fread、fwrite，就都是 sequential access。",
+    "為什麼檔案系統偏好 sequential？因為檔案大多存在硬碟，而硬碟 sequential 讀寫遠快於 random（讀寫頭不用一直跳），這樣也最符合「從頭讀到尾」的使用情境。"
+   ]
+  },
+  {
+   "title": "Direct（random）access",
+   "scene": "fs-23a-direct",
+   "points": [
+    {
+     "t": 1334,
+     "text": "Direct access（random access）：直接告訴 file system 要讀檔案的哪個位置，read / write 要帶 position 參數。"
+    },
+    {
+     "t": 1393,
+     "text": "看似比較 powerful，但從頭掃到尾時用 sequential API（reset 後一直 read）很簡單；用 direct API 要自己 increase position，不直覺。"
+    },
+    {
+     "t": 1480,
+     "text": "依使用行為選 API；file system 大部分是 sequential access。"
+    }
+   ],
+   "cues": [
+    1334,
+    1340.7,
+    1351.6,
+    1370.1,
+    1393.5,
+    1404.5,
+    1426.3,
+    1449,
+    1480,
+    1507.8
+   ],
+   "explain": [
+    "有 sequential，另一種就是 direct access（直接存取）。同樣用一排格子代表檔案。",
+    "direct access 也就是俗稱的 random access（隨機存取）：讀寫時用「跳著」的方式。",
+    "你要直接告訴下面的檔案系統，要讀檔案的哪個位置，例如 read(fp, pos=7, 1)，箭頭就直接跳到第 7 格。",
+    "所以看這種 API 一定會發現：呼叫 read、write 時必須塞一個 position 參數。不給位置的話，library 也不知道要讀哪，因為位置可以是任意的。",
+    "這樣看起來比較 powerful：一個 API 就能讀任何位置，沒有 sequential 那種限制。",
+    "那為什麼還要 sequential 的 API？因為看實際應用就會發現，兩者各有各的好處。",
+    "如果使用者本來就是要從頭掃到尾，把每筆資料都讀一遍，用 sequential API 非常簡單：reset 之後 read、read、read，自然就讀完整個檔案。",
+    "用 direct API 當然也做得到（它更有彈性），但每次讀之前，你都要自己去 increase position，再 read 一次，讀寫位置變成使用者自己要管，不直覺也不方便。",
+    "所以兩種 API 都存在：看使用需求，有的是順著讀檔，有的是要去特定位置讀，就該用不同的 API。",
+    "而檔案系統大部分看到的都是 sequential access，因為檔案的特性就是這樣。"
+   ]
+  },
+  {
+   "title": "Index access",
+   "scene": "fs-23a-index",
+   "points": [
+    {
+     "t": 1524,
+     "text": "Index access 是 random / direct access 的變形，知道概念即可，像 database。"
+    },
+    {
+     "t": 1557,
+     "text": "Database 找資料只給 identifier（如 John），不想 sequential 掃，希望 random access 直接取出那一筆。"
+    },
+    {
+     "t": 1632,
+     "text": "一般檔案沒有 structure；有 record 結構時，在 random access 上再建一張 index table，把 John、Smith、Adams 這些 key mapping 到 position。"
+    }
+   ],
+   "cues": [
+    1524.2,
+    1551.4,
+    1557.3,
+    1577.4,
+    1591.9,
+    1632.2,
+    1647,
+    1664.2
+   ],
+   "explain": [
+    "random access 的另一種變形叫 index access（索引存取）。不用硬背，知道概念就好。",
+    "index access 就像 database（資料庫）。",
+    "在 database 找資料時，你只會說「我要 John 的資料」：拿一個名字當 identifier，但不知道資料實際存在哪。",
+    "這種時候不會想用 sequential 從頭找（太慢），而是希望用 random access，很快知道那筆在哪、直接把它拉出來。",
+    "更進一步的做法是用 index（索引）：一張表把名字對到位置（這裡的位置數字是示意）。",
+    "前面說檔案通常是 sequential，因為一般檔案沒有 structure（結構），就是從頭讀到尾。",
+    "但當資料型態越來越複雜，內部有 record（一筆一筆紀錄）的結構時，它仍然是檔案，只是讀取方式就不一樣了。",
+    "這時就在 random access 上面再建一張 table 做 mapping：John、Smith、Adams 各自對到哪個 position。查 John → 表上寫 6 → 直接去第 6 筆。這就是 index access，database 很常見。"
+   ]
+  },
+  {
+   "title": "Access pattern 與 storage device 的配合",
+   "scene": "fs-23a-impl",
+   "points": [
+    {
+     "t": 1690,
+     "text": "檔案系統多是 sequential，database 也是一種檔案但設計很不同。"
+    },
+    {
+     "t": 1711,
+     "text": "Disk 不喜歡 random access；要 support random access，上層通常要有 memory cache 才夠快。"
+    },
+    {
+     "t": 1763,
+     "text": "依應用情境選 access method：對上減少 programming effort，對下讓 access pattern 在 physical device 上有效率；不同實作方式各有擅長。"
+    }
+   ],
+   "cues": [
+    1690,
+    1711.7,
+    1719.5,
+    1731.1,
+    1763.3,
+    1777.9,
+    1783.8,
+    1818.6,
+    1857.6
+   ],
+   "explain": [
+    "不同型別的 access：檔案系統比較多是 sequential；但 database 其實也是一種檔案資料，它的設計會很不同。",
+    "前面提過，physical device（實體裝置）像 disk，不太喜歡 random access，因為讀寫頭要一直移動。",
+    "所以上面那層資料管理軟體如果要 support random access，通常一定要有 memory cache（記憶體快取）才會夠快：先把資料放在 memory，memory 的 random access 才快。",
+    "這讓我們知道 database 和 file system 的設計很不同：database 需要 random access，就盡量把資料 keep 在 memory 來加速硬碟的存取。",
+    "重點：file access 有不同方式，要看應用情境；支援 file access 的 library 要選比較適合的 access 方式。",
+    "對上（使用者）：選對方式可以減少寫程式的 effort。",
+    "對下（儲存裝置）：要讓這樣的 access pattern 在 physical storage device 上能快速、有效率地存取。pattern 跟 device 特性不合時（例如在 disk 上做 random），就要靠那層管理軟體想辦法解決。",
+    "做作業時會發現：同樣是 file system，也有不同實作方式，有的適合 sequential，有的適合 random，有的適合 truncate 或 concatenate。",
+    "這裡先從使用的角度建立觀念：有 sequential 和 random access 兩種不同的使用方式。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "硬碟上真正存資料的最小 physical 單位是？",
+   "opts": [
+    "sector",
+    "file",
+    "track",
+    "directory"
+   ],
+   "ans": "sector",
+   "why": "track 再切成 sector，sector 是最小的 physical storage unit；file 只是 logical unit。"
+  },
+  {
+   "q": "下列哪個資訊應該放在 per-process 的 open-file table？",
+   "opts": [
+    "目前讀寫的 position",
+    "disk location",
+    "file size",
+    "access date"
+   ],
+   "ans": "目前讀寫的 position",
+   "why": "每個 process 讀到哪不同；disk location、size、date 大家看到都一樣，放 system-wide。"
+  },
+  {
+   "q": "為什麼 file size 不在每個 process 的表裡各存一份？",
+   "opts": [
+    "複製多份會有 data consistency 問題",
+    "process 不能知道檔案大小",
+    "file size 不需要存",
+    "open-file table 太小"
+   ],
+   "ans": "複製多份會有 data consistency 問題",
+   "why": "一個 process write 改了 size，其他副本會不一致，所以只存一份在 system-wide table。"
+  },
+  {
+   "q": "對 OS 來說，副檔名（file type）是什麼？",
+   "opts": [
+    "只是一個 hint",
+    "決定檔案內容格式的關鍵",
+    "檔案唯一的 identifier",
+    "一定要有，否則無法開啟"
+   ],
+   "ans": "只是一個 hint",
+   "why": "OS 依副檔名猜要用哪個程式開；Linux 很多檔案沒有副檔名也沒關係。"
+  },
+  {
+   "q": "呼叫 read(fp, 4) 只給長度、不給位置，屬於哪種 access method？",
+   "opts": [
+    "Sequential access",
+    "Direct access",
+    "Index access",
+    "Hashed access"
+   ],
+   "ans": "Sequential access",
+   "why": "sequential 由 current position 隱含地往後移；direct 必須帶 position 參數。"
+  },
+  {
+   "q": "為什麼檔案系統偏好 sequential access？",
+   "opts": [
+    "硬碟 sequential 讀寫遠快於 random",
+    "random access 無法實作",
+    "sequential 比較省空間",
+    "C 語言只支援 sequential"
+   ],
+   "ans": "硬碟 sequential 讀寫遠快於 random",
+   "why": "硬碟有讀寫頭移動的 overhead，連續讀寫最快。"
+  }
+ ]
+}

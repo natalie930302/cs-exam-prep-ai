@@ -1,0 +1,431 @@
+{
+ "video": "UpPyxA0THzU",
+ "label": "清大周志遠 第24B講 File System Implementation",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Allocation methods 總覽",
+   "scene": "fs-24b-overview",
+   "points": [
+    {
+     "t": 14,
+     "text": "Allocation method：檔案內容怎麼 map 到 data block、放在 disk 哪些位置，影響讀寫頭的路徑與 performance。"
+    },
+    {
+     "t": 61,
+     "text": "三種基本做法：contiguous（連續擺放）、linked（像 linked list 串起來）、indexed（pointer 收集起來查表）。"
+    },
+    {
+     "t": 107,
+     "text": "要考慮：disk 空間有限、file 大小會改變（找不找得到夠長的連續空間），以及 sequential 與 random 讀取的 behavior 差異。"
+    }
+   ],
+   "cues": [
+    14.8,
+    42.9,
+    47.5,
+    61,
+    65.9,
+    71.6,
+    86,
+    107.3,
+    116.1,
+    130.4
+   ],
+   "explain": [
+    "接下來全部 focus 在 allocation method（配置方法）。一個 file 有很多內容，最小的管理單位是 data block。資料要怎麼 map 到這些 data block？這些 block 要放在 physical disk 的哪些位置？",
+    "怎麼放會影響讀寫頭移動的順序和路徑長短，也就是 performance（效能）。",
+    "所以問題是：disk 的 block 到底怎麼 allocate（配置）給 file 存資料？",
+    "基本做法有三種，用三種不同的 data structure。",
+    "第一種：contiguous，顧名思義就是連續擺放（橘色那排相鄰的格子）。",
+    "第二種：linked，就像 linked list（鏈結串列），把這些 block 用 link 串起來，至少可以一個個找到（藍色散開的格子）。",
+    "最後是 index：把每個 data block 的 pointer 位置收集起來，要找時直接查表 lookup，找到 pointer 就直接跳到要的位置。",
+    "基本上就這三種，還有一些變形要仔細討論。因為要考慮兩件事：第一，disk space 有限，而且 file 的長短會改變。",
+    "所以能不能找到夠長的連續空間，就是一個 issue。",
+    "第二，存好這樣的 layout 之後，sequentially 讀這個 file，跟跳著讀，behavior 會有差別；你會發現每種方法各有好處和壞處。"
+   ]
+  },
+  {
+   "title": "Contiguous allocation",
+   "scene": "fs-24b-contig",
+   "points": [
+    {
+     "t": 141,
+     "text": "Contiguous：檔案從哪開始擺就必須連續，例如 tr 從 block 14 開始存 14、15、16。"
+    },
+    {
+     "t": 188,
+     "text": "FCB / directory 只需存 start 與 length；找 byte 位置用算的：byte ÷ block size 得到第幾塊，再加上 start（老師示意：1000 ÷ 200 = 5，14 + 5 = 19）。"
+    },
+    {
+     "t": 238,
+     "text": "Block 編號在 format 時由 file system 決定 block size 並 labeling。"
+    }
+   ],
+   "trap": "老師的 14 + 5 = 19 是公式示意；課本圖中 tr 只有 3 塊（14–16），實際存取不能超過 length。",
+   "cues": [
+    141.8,
+    154.1,
+    172.9,
+    188.6,
+    198.2,
+    213.2,
+    226.7,
+    238.5,
+    260.4
+   ],
+   "explain": [
+    "先看第一個 solution：contiguous allocation（連續配置）。應該是最直接、最簡單的做法。下面 0 到 31 號格子代表 disk 上的 block。",
+    "假設有五個 files（這是恐龍書的圖）：count、f、tr、mail、list，每個檔案各佔一段連續的 block。",
+    "contiguous 的意思是：不論從哪裡開始擺，後面都必須接著連續放。例如 tr 從 14 開始存，就依序存 14、15、16。",
+    "那 file control block 裡要存什麼資訊，才能找到資料？",
+    "例如要找 tr 的第 1000 個 byte。假設 block size 是 200（示意），1000 ÷ 200 = 5，就知道它在第 5 個 block（從 0 開始算）的第一個位置。但第 5 個 block 在哪？",
+    "因為是 contiguous，要存的資訊很簡單：starting point（起點）跟長度。也就是這個檔案從 disk 的哪個位置開始、長度多少。",
+    "tr 從 14 開始，加 5 就是 19，用算的就找到位置（這是老師示範公式的數字；課本圖裡 tr 只有 3 塊，實際上不能讀超過長度）。",
+    "這些 block 的號碼從哪來？partition 告訴你有哪一塊 disk 空間可用，formatting 時 file system 就會做 labeling（編號）。",
+    "format 時 file system 可以選它要的 data block size，所以它知道 block size；至於 file 要放在哪，是現在討論的另一件事。"
+   ]
+  },
+  {
+   "title": "Contiguous 的優缺點",
+   "scene": "fs-24b-contigpc",
+   "points": [
+    {
+     "t": 284,
+     "text": "優點：找任何位置用算的，一個 I/O request 就讀到，sequential 與 random 的 seek 都最小；directory entry 只要兩個 integer。"
+    },
+    {
+     "t": 361,
+     "text": "缺點：檔案來來去去產生 external fragmentation；檔案增長時後面被佔，就得整個搬走，disk 使用率下降。"
+    },
+    {
+     "t": 423,
+     "text": "Solution：compaction（硬碟重組）。"
+    }
+   ],
+   "cues": [
+    284.6,
+    292.6,
+    314,
+    320.4,
+    344.6,
+    361,
+    371.6,
+    378.4,
+    403.8,
+    423.4
+   ],
+   "explain": [
+    "重點來了：看它的好處跟壞處。",
+    "第一個好處：要找任何資料的位置，effort 是最小的。不需要 traverse 整顆硬碟或整個 file：給任何 position，用算的就知道在第幾個 data block。",
+    "算出來之後，只要發一個 single I/O request 給 disk drive，就把資料讀出來。",
+    "所以 seek time（讀寫頭移動時間）最小，不管讀寫是 sequential 還是 random 都一樣：sequential 知道下一個在哪；random 給一個 position 也不用 search，直接算。非常 efficient。",
+    "directory entry 也很小：只要存兩個值，starting data block 在哪、有幾個 data block，兩個 integer 就結束了。又簡單又有效率。",
+    "那 trade-off（代價）在哪？很容易有 external fragmentation（外部碎裂），而且很嚴重。",
+    "別忘了檔案是來來去去的：有的被刪、有的新建，就會開始有越來越多的 fragment（碎片），空位東一塊、西一塊（灰色是後來其他檔案）。",
+    "更糟的是檔案會增長，這是最大問題：如果它把後面的空間用完（例如 tr 後面接著 mail），就沒辦法再長，你得把整個 file 搬到另一個位置。",
+    "所以 disk space 越來越難使用，使用率開始下降；要長大時撞到別的 file，不是 fail，就是要整個 file 做 copy，effort 非常大。",
+    "solution 跟 memory 管理一樣：可以做 compaction（壓縮重組）。大家說「系統很慢，把硬碟整理一下」，就是在處理 fragmentation。這問題 contiguous 最明顯，其他方法多少也有影響。"
+   ]
+  },
+  {
+   "title": "Extent-based file system",
+   "scene": "fs-24b-extent",
+   "points": [
+    {
+     "t": 457,
+     "text": "Extent-based：contiguous 與 linked list 的結合；一次 allocate 一個 extent（一組連續 block），不夠再給一個，extent 之間用 linked list 串起來（extent 尾巴記下一個 extent 的位置）。"
+    },
+    {
+     "t": 576,
+     "text": "減少 external fragmentation，但固定大小會有 internal fragmentation；主要犧牲 random access：每個 extent 長 3 時讀第 7 個 block，要先讀第 1、第 2 個 extent 的尾巴，共 3 個 I/O（多 2 個）。"
+    }
+   ],
+   "cues": [
+    457.3,
+    466.8,
+    492.5,
+    507.5,
+    516.7,
+    523.5,
+    547.7,
+    576.1,
+    586.5,
+    608.4,
+    618.3,
+    631,
+    664.3,
+    676.4,
+    714.2
+   ],
+   "explain": [
+    "不能 grow 的問題，導致一個折中的 solution，叫 extent-based file system。",
+    "簡單講就是跟 linked list 結合。基本做法雖然是 contiguous、linked、index 三種，但過程中常常 hybrid（混合），互相彌補對方的缺點。",
+    "contiguous 的 file system 最常見的就是 extent-based：空間不夠時，不是 allocate 一個 block，而是一次給一個 extent（例如定義成 5 個連續 block 為一個單位）。這裡畫成每個 extent 3 塊。",
+    "用完不夠怎麼辦？再給它一個 extent。這兩個 extent 可以在不同的地方。",
+    "然後用 linked list 把它們串起來（金色的線；位置是示意）。",
+    "別忘了這是 on-disk structure，所以 linked list 的意思是：在每個 extent 的尾巴留 4 個 byte，記錄下一個 extent 的 data block location。要把那個 block 讀進 memory 之後，才知道接下來去哪。",
+    "所以一個 extent 會記錄：開始的 block、長度（可以固定，也可以變動；變動就要記長度），還有下一個 extent 在哪（沒有也要寫 null），才能串在一起。",
+    "這樣的做法犧牲了什麼？",
+    "它解決了 external fragment（如果長度可以動態更好）；但如果 extent 是固定大小，例如一次給 5 個，用不完就會有 internal fragmentation（內部碎裂），灰色那格就是浪費。",
+    "它最主要犧牲的是 random access 的 performance。",
+    "舉例：要讀第 7 個 block，每個 extent 只有 3 個長度，所以第 7 個在第 3 個 extent 裡。",
+    "可是第 3 個 extent 在哪？你必須 traverse 這個 linked list：把每個 extent 最後那個 block 的資訊從 disk 讀到 memory，才知道下一個在哪。",
+    "所以 I/O request 變成：先讀第 1 個 extent 的尾巴，再讀第 2 個 extent 的尾巴，最後才讀第 7 個 block，總共 3 個 I/O request。",
+    "本來只要一個 I/O request，為了 traverse 多了兩個 additional I/O，random 的效能當然變差：disk 讀越多次越慢。",
+    "總結：extent-based 就是 contiguous 加上 link。如果 extent 是固定大小，internal、external fragmentation 都還可能存在；任意長度才能解決。"
+   ]
+  },
+  {
+   "title": "Linked allocation",
+   "scene": "fs-24b-linked",
+   "points": [
+    {
+     "t": 727,
+     "text": "Linked allocation：每個 block 用 link 串起來，directory 存 start 與 end；每個 block 留幾個 byte 存下一個 pointer（恐龍書 jeep：9→16→1→10→25）。"
+    },
+    {
+     "t": 793,
+     "text": "優點：有空 block 就能用，容易 grow / shrink、reuse；sequential 讀時 pointer 隨 data 一起讀進來，不多讀。"
+    },
+    {
+     "t": 848,
+     "text": "缺點：random 要 traverse 前面的 block 只為拿 pointer，非常慢；每個 block 都浪費空間存 pointer。"
+    }
+   ],
+   "cues": [
+    727.6,
+    741,
+    755.2,
+    770.5,
+    793.9,
+    801,
+    816,
+    827,
+    848.6,
+    875.1
+   ],
+   "explain": [
+    "看完剛剛的做法，第二個基本類型是另一個極端：全部都用 link。",
+    "這就是標準的 linked allocation：每個 block 全部用 link 串起來。這是恐龍書的 jeep：9 → 16 → 1 → 10 → 25。",
+    "每個 file 要存的也很簡單：起始和結束。為什麼要存結束？因為知道最後一個 data block 的 id，就不需要再 traverse 才知道哪裡是尾巴。",
+    "每個 block 最後會 reserve 幾個 byte，存下一個位置。所以開頭只要存一個起點就好，後面就 traverse 這個 linked list。",
+    "來看優缺點。第一，size 沒問題：只要找到任何一個 available（可用）的 data block，加上去就好（綠色的 28）。",
+    "所以很容易 grow 或 shrink；free 掉的 data block 也很容易 reuse。這是它最大的好處。",
+    "那 performance 呢？要看 sequential 還是 random。sequential 其實還不錯，因為 sequential 就是 traverse，不會多出 I/O request。",
+    "例如從頭開始讀：讀完 16 裡的 data，自然也把下一個 pointer 一起 load 進來，沒有 extra 的讀取，也不用花額外力氣 load pointer。",
+    "但如果是 random 就非常慘：你要 traverse 才找得到，越後面的位置讀的資料越多。你根本不要那些 data block 的資料，只要裡面的 pointer，卻花非常久的時間。這是它最大的缺點。",
+    "另一個缺點是浪費空間存 pointer：每個 block 都要犧牲幾個 byte。"
+   ]
+  },
+  {
+   "title": "Linked：cluster、reliability 與配置效率",
+   "scene": "fs-24b-linked2",
+   "points": [
+    {
+     "t": 891,
+     "text": "把多個 block cluster 成一個單位以減少 link 與 traversing（linked + contiguous 就像 extent）。"
+    },
+    {
+     "t": 926,
+     "text": "缺點：reliability，一個 link 斷掉（資料壞掉或斷電沒修好 metadata）後面整個 file 都 lost。"
+    },
+    {
+     "t": 950,
+     "text": "優點：配置空間 O(1)，直接從 free list 最上面 pop 一個 block，create 最快。"
+    }
+   ],
+   "cues": [
+    891.8,
+    926.1,
+    934.2,
+    943.3,
+    950.4,
+    959.1
+   ],
+   "explain": [
+    "為了解決 link 的問題（不想 traverse 那麼多、存那麼多 link），跟剛才一樣：把很多 block cluster（群組）在一起當一個單位，就像 extent。link 加上 contiguous，就是俗稱的 extent。",
+    "用 link 還要注意另一個缺點：reliability（可靠度）。",
+    "既然是 linked list，只要有一個 link 斷掉（紅色那塊壞了），整個 file 後面就全部 lost 了。這是非常大的 issue。",
+    "只要一個資料壞掉，或修改檔案過程中斷電、沒把 metadata 修好，整個 file 可能就 collapse（崩壞）。",
+    "但它最大的好處是：資源使用非常有效率。",
+    "找 free 空間是 order one（O(1)，常數時間），根本不用 search：從 free data block list 最上面 pop 一個出來，管它什麼 ID 就存進去。所以 create 時它是最快的做法。"
+   ]
+  },
+  {
+   "title": "FAT32：把 pointer 收集成表",
+   "scene": "fs-24b-fat",
+   "points": [
+    {
+     "t": 976,
+     "text": "FAT32 用 linked 的概念，但把所有 pointer 收集成一張 table（只有 pointer，沒有 data）；例如 217 → 618 → 339 → EOF。"
+    },
+    {
+     "t": 1043,
+     "text": "Mount 時整張 table load 到 memory，random access 的 lookup 在 memory 完成，只要 1 次 disk I/O，跟 contiguous 一樣快。"
+    },
+    {
+     "t": 1099,
+     "text": "32 指 table entry 用 32 bits（FAT64 是 64 bits）；FAT 本質上是 pointer 的 cache；fail recovery 另用 log 等。XFS 則是 extent-based。"
+    }
+   ],
+   "trap": "老師口述是「217 指到 168」，應為課本圖的 618（217 → 618 → 339）。",
+   "cues": [
+    976.5,
+    992.3,
+    1002.5,
+    1019,
+    1032.8,
+    1043.2,
+    1070.7,
+    1082.1,
+    1099,
+    1105.2,
+    1121.4,
+    1130.3,
+    1158.5
+   ],
+   "explain": [
+    "剛剛的 linked allocation，在真實的 file system 也看得到，就是有名的 FAT32。directory 裡記錄檔案 test 從 217 開始。",
+    "它為什麼能避開剛才的問題？它主要要解決 random access 和 traversing 的 overhead：不希望每次都要去 disk 一個一個 lookup。",
+    "做法很簡單：把這些 linked list 的 pointer 全部收集起來（它是一種 metadata），變成一個 single table 存起來。這張表就叫 FAT（File Allocation Table）。",
+    "表裡只是 pointer 的資訊：例如這個 file 從 217 開始，217 這格寫 618（下一塊是 618），618 那格寫 339，339 是 EOF（結束）。這是恐龍書的圖。",
+    "注意這只是一個 table，裡面沒有 data content，是把 pointer 整個抽出來另外存。",
+    "這樣做的好處：load 這個 file system，也就是 mount 時，就把整個 table load 到 memory。pointer 比 data 小很多，可以存在小空間裡，一開始從 disk sequential 一次全部讀進來。",
+    "所以今天就算是 random access 也沒關係：traversing 在 memory 裡做 lookup，沒有 disk I/O。",
+    "在 memory 裡找到真正的 block ID，直接對 disk 下指令，所以 lookup 變成 1 次 disk I/O，跟 contiguous 一模一樣，速度也可以非常快。",
+    "為什麼叫 FAT32？很簡單，32 指的是 table 的每個 entry 用了 32 bit。",
+    "現在也有 FAT64，其實沒什麼，就是位元變成 64 bit，做法一樣。很多 file system 都這麼做，最主要是解決 random access 問題。",
+    "至於 fail recovery（壞掉後的復原），那是另一個 issue，可以用 log 等其他做法。",
+    "簡單講 FAT 就是一個 cache：把 pointer 收集起來，存在相鄰或連續的 data block 裡，整個 load 到 memory 當 cache，讓 random access 變得非常快，變成 minimum seek time。",
+    "補充：FAT32 用的是 linked。如果好奇 contiguous 類的 file system，有一個叫 XFS，它是 extent-based 的做法，很多 OS 都 support。"
+   ]
+  },
+  {
+   "title": "Indexed allocation",
+   "scene": "fs-24b-indexed",
+   "points": [
+    {
+     "t": 1192,
+     "text": "Indexed：pointer 收集在 index block，完全 lookup、不用 traverse；找第 3 個 block 就查第 3 個 entry。"
+    },
+    {
+     "t": 1240,
+     "text": "Index block 只存 pointer，data block 只存 data；index block 每個 file 一個，FAT 則是整個 file system 一張表；FCB 只存 index block 的 id。"
+    }
+   ],
+   "trap": "FAT 是整個 file system 共用一張表、查表仍是沿 link 走；indexed 是每個檔案一個 index block，直接 lookup。",
+   "cues": [
+    1192.7,
+    1201.2,
+    1221.4,
+    1231.6,
+    1240,
+    1258.5,
+    1274.4,
+    1297.6,
+    1318.1
+   ],
+   "explain": [
+    "最後一個是 index（索引配置）。",
+    "概念一樣是把 pointer 收集起來（金色的 IB 就是 index block，在 block 19），但跟剛才的 FAT 不一樣：沒有 traversing。FAT 就算收集起來，找的時候還是要在 memory 裡沿著 link 走。",
+    "index 完全就是 lookup：這個 file 的第幾個 data block，存在哪一個 physical location，直接存在表裡。恐龍書的 jeep：index block 19 存著 [9, 16, 1, 10, 25, −1, −1, −1]。",
+    "例如要找這個 file 第 3 個 block 的位置，直接查表第 3 個 entry（是 1），就直接去用。這就是 index。",
+    "這些 index 全部存在一個 data block 裡，這個 block 存的不是檔案內容，只是 pointer 的位置。",
+    "而它指到的 data block 裡只有 data，完全沒有 pointer。這是跟 linked 最大的差別。",
+    "還有一點：index block 是每個 file 一個，各自獨立；前面看到的 FAT 則是整個 file system 只有一張 table（看 file system 有多大的空間）。",
+    "所以 FAT 裡其他的 entry 存的可能是別的 file 的 pointer，而且它很大，會連續存好幾個 data block，整個讀出來；它用的還是 link 的概念，別搞混。",
+    "在 indexed 裡，file control block 只要存這個 file 的 index block 的 id，裡面才有這個 file 的所有資訊，直接 lookup 去 access。"
+   ]
+  },
+  {
+   "title": "下課",
+   "scene": null,
+   "points": [
+    {
+     "t": 1334,
+     "text": "已經下課；下次講完 indexed 的優缺點，接著進入第 12 章 Storage System。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Contiguous allocation 的 directory entry 需要存什麼？",
+   "opts": [
+    "start 與 length",
+    "每個 block 的 pointer",
+    "index block 的位置",
+    "FAT 的起點"
+   ],
+   "ans": "start 與 length",
+   "why": "連續擺放，用起點加偏移就能算出任何 block 的位置。"
+  },
+  {
+   "q": "Contiguous allocation 最大的缺點是？",
+   "opts": [
+    "external fragmentation，檔案難以增長",
+    "random access 很慢",
+    "每個 block 浪費空間存 pointer",
+    "一個 link 斷掉檔案就毀了"
+   ],
+   "ans": "external fragmentation，檔案難以增長",
+   "why": "檔案來來去去產生碎片，後面被佔就得整個搬走。"
+  },
+  {
+   "q": "Extent-based（每個 extent 3 塊，用 linked list 串），讀第 7 個 block 需要幾次 I/O？",
+   "opts": [
+    "3",
+    "1",
+    "2",
+    "7"
+   ],
+   "ans": "3",
+   "why": "讀第 1、第 2 個 extent 的尾巴找下一個 extent，再讀第 7 塊：3 次。"
+  },
+  {
+   "q": "傳統 linked allocation 在什麼情況下表現最差？",
+   "opts": [
+    "random access",
+    "sequential access",
+    "建立新檔案",
+    "檔案增長"
+   ],
+   "ans": "random access",
+   "why": "要 traverse 前面的 block 只為拿 pointer，每讀一塊都是一次 I/O。"
+  },
+  {
+   "q": "FAT32 的「32」指的是？",
+   "opts": [
+    "table 每個 entry 用 32 bits",
+    "最多 32 個檔案",
+    "block 大小 32KB",
+    "32 層目錄"
+   ],
+   "ans": "table 每個 entry 用 32 bits",
+   "why": "FAT64 只是 entry 改成 64 bits，做法相同。"
+  },
+  {
+   "q": "FAT 讓 linked allocation 的 random access 變快的關鍵是？",
+   "opts": [
+    "整張表 mount 時 load 到 memory，在 memory 裡 lookup",
+    "每個 block 存兩個 pointer",
+    "檔案改成連續擺放",
+    "使用 bit vector"
+   ],
+   "ans": "整張表 mount 時 load 到 memory，在 memory 裡 lookup",
+   "why": "查表免 disk I/O，找到 block ID 後只需 1 次 I/O。"
+  },
+  {
+   "q": "Indexed allocation 中，FCB 只需要存什麼？",
+   "opts": [
+    "index block 的 id",
+    "所有 data block 的 id",
+    "start 與 length",
+    "FAT 的位置"
+   ],
+   "ans": "index block 的 id",
+   "why": "index block 裡才有這個檔案所有 data block 的 pointer。"
+  }
+ ]
+}

@@ -1,0 +1,414 @@
+{
+ "video": "pb0dALUBDm8",
+ "label": "清大周志遠 第25B講 File System / Mass Storage System",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Mass storage 導覽",
+   "scene": "fs-25b-intro",
+   "points": [
+    {
+     "t": 17,
+     "text": "File system 管 logical 的 file；storage system 是更 low level 的 physical storage device 管理。"
+    },
+    {
+     "t": 42,
+     "text": "Mass storage：用多個 disk 拼出更 reliable、效能更好的系統，靠 software 管理現有 hardware。"
+    },
+    {
+     "t": 86,
+     "text": "本章以 disk 為主（也有 SSD、Flash）：hard drive 構造、disk scheduling、RAID。"
+    }
+   ],
+   "cues": [
+    17,
+    21.2,
+    42.7,
+    66.3,
+    86.3,
+    99,
+    107.4,
+    117.1,
+    122.6
+   ],
+   "explain": [
+    "file system 講完，接著越走越底層：file system 下面用到的是 storage。file system 管的是 file 這種 logical（邏輯）的東西。",
+    "談 storage system 時，指的是更 low level 的部分：已經到 physical storage device（實體儲存裝置）的管理了。",
+    "為什麼叫 mass storage（大量儲存）？最主要因為後面會介紹怎麼用多個 storage、多個 disk，拼出一個更 reliable（可靠）或效能更好的 storage system。",
+    "現在這個年代的做法就是這樣：hardware 當然有在進步，但更多是靠現有的 hardware 兜起來，透過 software 的管理，做出更強、更便宜或效能更好的系統。所以 software 的重要性非常大。",
+    "這裡只講 disk，因為目前為止它還是最 popular、最常見的 storage。",
+    "現在也有很多有趣的 storage device，像 SSD、甚至 Flash。",
+    "但我們只能先從最基本的 hard drive 構造開始介紹。",
+    "然後介紹 disk scheduling：讀寫頭怎麼移動的方法。",
+    "最後是 RAID，非常重要。去店裡都買得到 RAID 的 system，上完這段就會有概念。"
+   ]
+  },
+  {
+   "title": "Disk structure",
+   "scene": "fs-25b-structure",
+   "points": [
+    {
+     "t": 137,
+     "text": "Disk 以 hard drive 為例：file system 讀的 block 會 map 到 sector；disk 有多片 platter，每片有多圈 track，track 切成 sector，一個 block 對到一個或多個 sector。"
+    },
+    {
+     "t": 183,
+     "text": "Sector 要有 ID 才能 mapping；sector 0 從哪開始無所謂，重點是編號要連續。"
+    },
+    {
+     "t": 217,
+     "text": "編號差代表讀寫頭要移動的距離；disk scheduling 就是要 minimize 移動距離。"
+    }
+   ],
+   "cues": [
+    137.2,
+    149.3,
+    160.3,
+    167.5,
+    171.3,
+    174.6,
+    176.3,
+    183.1,
+    195.5,
+    205.5,
+    217.2,
+    230.7
+   ],
+   "explain": [
+    "首先講 disk 的 structure（結構），以 hard drive 當例子。",
+    "我們說過，disk 會切成 block，這是 logical 的操作單位：接續 file system，最後它就是要讀這些 block。",
+    "這些 block 其實會 map 到 sector，所以一個 block 由好幾個 sector 組成。",
+    "一個 disk 分成好幾個讀寫盤（platter）。右邊畫的是其中一片的正面。",
+    "一片讀寫盤上有好幾個 track，一圈一圈的。",
+    "再把 track 切成 sector（紅色那段）。",
+    "一個 data block 可能對到一個，或是多個 sector。",
+    "很重要的是：這些 sector 要有 ID（編號），我們才能 identify 它，做 mapping 的動作。",
+    "編號沒有一定的規定：通常 sector 0 可能從最外圈（或最內圈）的第一個 track 開始，從哪開始其實無所謂。",
+    "重點是你的 number 一定要有關聯、有連續的現象。",
+    "為什麼？因為硬碟讀寫最好是順著它移動的方式。所以這個 number 往往也代表讀寫頭要跳動、移動的距離。",
+    "之後講 scheduling algorithm 就會看到：最好的 scheduling 就是 minimize 移動距離，而距離看 sector 的 number 就知道。"
+   ]
+  },
+  {
+   "title": "CLV：Constant Linear Velocity",
+   "scene": "fs-25b-clv",
+   "points": [
+    {
+     "t": 251,
+     "text": "磁碟類裝置（hard drive、CD-ROM、DVD-ROM）依移動方式分兩種。"
+    },
+    {
+     "t": 283,
+     "text": "CLV：外圈空間大、sector 多；為了維持相同的資料讀取速度，外圈轉慢、內圈轉快。"
+    },
+    {
+     "t": 383,
+     "text": "所以放 CD / DVD 時會突然加速、聲音變大：轉速隨讀的位置（內圈或外圈）改變。"
+    }
+   ],
+   "cues": [
+    251.1,
+    260.7,
+    277.6,
+    283.2,
+    295.2,
+    308.3,
+    312.4,
+    328.9,
+    359.1,
+    369.5,
+    383.1,
+    418
+   ],
+   "explain": [
+    "知道怎麼 labeling 之後，接著看這些 drive 到底怎麼移動。左邊這片盤上，外圈的 sector 比內圈多。",
+    "除了傳統 hard drive，類似的磁碟型 storage device 還有 CD-ROM、DVD-ROM。",
+    "它們都是磁碟，但因為移動方式不同，可以分成兩種型別。",
+    "第一種叫 CLV：Constant Linear Velocity（固定線速度）。",
+    "越外圈的 track 空間越大（綠色那圈），能存的 sector 越多，可以存的資料量就越大（16 個是示意）。",
+    "如果你要維持相同的讀取速度（每秒讀出一樣多的資料）……",
+    "讀外圈時，因為資料量比較多，轉一小段（例如 30 度，示意）就讀到需要的量，所以不用轉那麼快。",
+    "但內圈面積小，能存的 sector 數量比較少，讀出來的資料量也比較少。",
+    "所以要讀相同的資料量，內圈就必須把整圈都讀完。",
+    "結果就是：為了 deliver 相同的資料讀取速度，外圈可以轉慢一點；讀到內圈時，轉的速度就要加快。",
+    "所以讀 CD-ROM 時會發現它有時突然很快、有時很慢；放 DVD 時突然加速、聲音變很大，有時又好像轉得比較慢。",
+    "就是因為讀內圈時要轉更快，每秒才讀得出相同的資料量。它的轉速不一致，depends on 你現在讀的是內圈還是外圈。"
+   ]
+  },
+  {
+   "title": "CAV：Constant Angular Velocity",
+   "scene": "fs-25b-cav",
+   "points": [
+    {
+     "t": 430,
+     "text": "CAV：轉速固定（例如 7200 RPM），只要轉的角度相同，讀出的資料量就相同。"
+    },
+    {
+     "t": 474,
+     "text": "買硬碟要看 rotation speed（單位 RPM，每分鐘轉數）；轉速永遠固定。"
+    },
+    {
+     "t": 524,
+     "text": "因此外圈 density 較疏、sector 較長較寬，內圈較密，維持相同 data rate；CLV 改轉速、CAV 改 density，標準 hard drive 是 CAV。"
+    }
+   ],
+   "trap": "轉速規格的單位是 RPM（每分鐘轉數），例如 7200 RPM；課本：CD/DVD 用 CLV，hard disk 用 CAV。",
+   "cues": [
+    430,
+    440.3,
+    463.2,
+    474.6,
+    491.7,
+    501.3,
+    524.8,
+    543.1,
+    552.2,
+    567,
+    588.2
+   ],
+   "explain": [
+    "第二種做法叫 CAV：Constant Angular Velocity（固定角速度）。注意這片盤每一圈都是 8 個 sector。",
+    "意思是：不管內圈還是外圈，只要轉動的角度相同，讀出來的資料量就相同（三段紅色弧線角度一樣）。",
+    "它希望 rotation（旋轉）的速度一致：不管讀內圈還是外圈，整個磁碟就是固定轉速，例如 7200 轉。",
+    "大家買硬碟時應該注意過：為什麼有些貴、有些便宜？第一是有不同等級（容不容易壞），再來當然是容量 size。",
+    "第三個一定要注意看，不然錢就被騙走了：它的 rotation speed（轉速）。常見的是 7200 這種規格，單位是 RPM，也就是每分鐘轉幾圈。",
+    "它的 rotation speed always 就是那個數字：不管你資料放哪、怎麼用，都維持固定速度，因為它每秒能轉過的角度是固定的。這就是硬碟的特性。",
+    "在這樣的特性下，存資料時就必須配合它：外圈的 density（密度）必須比較疏鬆（綠色）。",
+    "因為同樣的角度，外圈面積很大，但讀出來的資料量要相同，所以不用存那麼密：越外圈的 sector 越長越寬，越內圈的 density 越密、越小。",
+    "這樣確保 data rate 維持一樣。對軟體而言，凡事越穩定、越 predictable（可預測）越好，hardware 就要配合做到。",
+    "因為面積的問題有兩種選擇：要嘛隨內外圈改變讀取的轉速（CLV），要嘛改變儲存的 density，轉速就不必改變（CAV）。",
+    "標準的 hard drive 就是第二種：CAV。"
+   ]
+  },
+  {
+   "title": "Disk attachment",
+   "scene": "fs-25b-attach",
+   "points": [
+    {
+     "t": 601,
+     "text": "I/O device 要 attach 到 computer system 才能做 I/O（細節在下一章 I/O subsystem）。"
+    },
+    {
+     "t": 634,
+     "text": "兩邊各有 controller：host controller（controller card、主機板上的 device）與 disk drive 的 controller，中間透過 bus（如 SATA）依該 bus 的 protocol 溝通。"
+    }
+   ],
+   "cues": [
+    601,
+    626.8,
+    634.5,
+    640.6,
+    654.7,
+    664.1,
+    679.1,
+    688.4
+   ],
+   "explain": [
+    "知道怎麼擺放、怎麼讀出來這些機械運作的基本方法後，最後要跟整個系統連起來：把這些 I/O device attach（接上）到 computer system 裡，讓它可以做 I/O。",
+    "怎麼做 I/O 是下一章 I/O subsystem 的內容，下次再講 detail。",
+    "基本上我們知道，它會透過 controller（控制器），之前也介紹過，會分成兩邊。",
+    "computer system 這邊有一個 host controller：通常是一張 controller card，或主機板上的一個 device，甚至 CPU 直接當 controller。",
+    "drive 這邊也必須有一個 controller；如果是 disk，就是 disk drive 的 controller。",
+    "兩邊就是兩個小的 I/O unit，要溝通才能運作。中間用什麼連線方式？",
+    "就是我們常看到的 SATA 等等排線，那個就是中間的 bus（匯流排）：要怎麼把它接起來。",
+    "每種 bus 都有自己的 protocol（通訊協定）和傳輸資料的特性。兩邊就是 sender、receiver，兩個人溝通好才能傳資料。細節下一章再講。"
+   ]
+  },
+  {
+   "title": "Disk scheduling 的目的",
+   "scene": "fs-25b-sched",
+   "points": [
+    {
+     "t": 707,
+     "text": "Disk 會收到來自 file system、database 等各種 software 的大量 I/O request，disk controller 要決定處理順序。"
+    },
+    {
+     "t": 761,
+     "text": "Disk scheduling 的目的是減少讀寫時間。"
+    }
+   ],
+   "cues": [
+    707.9,
+    717.5,
+    721.3,
+    742.4,
+    761.1
+   ],
+   "explain": [
+    "接下來進入管理 disk 比較重要的部分。第一個 issue 就是 disk 的 scheduling algorithm（排程演算法）。",
+    "disk 本身會接收到很多 I/O request。",
+    "來自 file system，甚至 database，任何 software 都可以同時產生各式各樣的 I/O request。這裡已經是最 low level：到 disk、到 driver 的下面了。",
+    "disk controller 接到這些 request 之後要做決定：到底要按照什麼樣的順序，處理這些 I/O request、把資料讀出來（順序是示意）。",
+    "disk scheduling 的目的，當然就是要減少讀寫的時間。"
+   ]
+  },
+  {
+   "title": "Disk access time",
+   "scene": "fs-25b-access",
+   "points": [
+    {
+     "t": 766,
+     "text": "Disk access time 的 model：盤以固定速度 rotate；讀不同 track 時讀寫頭要移動。"
+    },
+    {
+     "t": 841,
+     "text": "先把讀寫頭移到 track（seek），再轉到 sector（rotation），然後讀寫（transfer）：access time = seek time + rotation time + transfer time。"
+    },
+    {
+     "t": 880,
+     "text": "Rotation 由轉速決定（7200 RPM 一圈約 8.33 ms）；transfer time = 資料量 ÷ bandwidth，也可由資料量與時間反推 bandwidth。"
+    }
+   ],
+   "cues": [
+    766.2,
+    785.7,
+    796.1,
+    804.4,
+    826.2,
+    841.5,
+    852.3,
+    862.2,
+    868.5,
+    880,
+    897,
+    917.2
+   ],
+   "explain": [
+    "第一步先看 disk 讀寫的時間到底怎麼算出來，或怎麼被 model 出來，叫做 disk access time。這純粹跟 disk 的硬體設計與運作有關。",
+    "hard drive 的運作是這樣：有很多讀寫盤，第一，它會 rotate（旋轉）。",
+    "對 disk 來說，rotate 的速度像剛才說的是 constant（固定的），所以不用管是內圈還外圈：每一圈 sector 的數量是一定的。",
+    "但有不同的 track。要讀不同 track 時，就需要讀寫頭（右邊的 arm，紅色是頭），它會移動：往裡面移或往外移。",
+    "讀資料時，你可能要讀任何一個 sector（紅色那段），所以它要知道在第幾個 plate（盤）、第幾個 track。不同的 plate 可以同時讀，沒關係。",
+    "讀寫頭現在可能不在這個 track，而在更外圈。所以第一件事，要把它移進來，移到那個 track 的位置。這段叫 seek。",
+    "移進來之後，再把盤轉過來，這就是 rotation，轉到你要的位置。",
+    "然後才開始做讀寫。所以整個時間 break down（拆解）成：seek time、rotation time、transfer time。",
+    "seek time 指的就是移動磁頭（往前往後）的時間，依 track 的位置決定。",
+    "第二是 rotation time：多快可以轉一圈，以及目標離現在位置有多遠。例如每分鐘 7200 轉，一圈是 60 ÷ 7200 秒 ≈ 8.33 ms，平均要等半圈，大約 4.17 ms（課本常用的算法）。",
+    "最後才是真正的 transfer time（傳輸時間），depends on 資料的大小：byte 的數量除以 bandwidth（頻寬）。bandwidth 越高，花的時間越短。",
+    "也可以倒推回來：知道 transfer 了多少資料量，又知道 request 從進去到完成的時間，就能算出它的 bandwidth。"
+   ]
+  },
+  {
+   "title": "為什麼 scheduling 要 minimize seek time",
+   "scene": "fs-25b-seek",
+   "points": [
+    {
+     "t": 933,
+     "text": "Transfer time 只跟資料量與使用者的 I/O pattern 有關，controller 無法最佳化；rotation time 也很快（轉速高）。"
+    },
+    {
+     "t": 1000,
+     "text": "Seek time 是 hard drive 效能最大的問題：移動磁頭是機械動作（SSD 沒有機械所以快）。"
+    },
+    {
+     "t": 1031,
+     "text": "Seek time 取決於所有 I/O request 的處理順序（每個 track 各讀一個：依序 vs 亂跳差很多），所以 disk scheduling 要 minimize seek time；SSD 等裝置重點不同。"
+    }
+   ],
+   "cues": [
+    933.8,
+    938.2,
+    968.5,
+    982.4,
+    1000.2,
+    1016.5,
+    1031.1,
+    1042.7,
+    1055.3,
+    1076.6,
+    1094.1
+   ],
+   "explain": [
+    "這三個時間，你可以注意到幾件事（柱子高度只是示意）。",
+    "第一個 transfer time 跟 disk scheduling 無關，因為它跟資料量有關。你一次 sequential 讀很多 bytes，跟把同樣大小切碎、散落各地，時間當然不同，但那是使用者的 behavior、I/O pattern 的問題，disk controller 沒辦法最佳化它。",
+    "rotation time 基本上也非常快：想想看，每分鐘 7200 轉，從這裡轉到那裡非常非常快。",
+    "7200 轉的重點在於：找到位置之後，如果要讀的資料量很大、要轉好幾圈，轉得快讀寫就快，所以它跟 bandwidth 也有相關。",
+    "這兩個時間相對都很快，也不需要特別去最佳化。最後的 seek time，才是 hard drive 效能最大的問題。",
+    "因為移動磁頭是機械式的行為。為什麼 SSD 快？就是它沒有機械，是不一樣的原理。",
+    "移動磁頭很耗時間，光是從最內圈移到最外圈就要花非常多時間。所以談 scheduling 時，目的就是 minimize（最小化）讀寫時間的重點：minimize seek time。",
+    "而且 seek time 跟單一個 I/O request 無關，而是跟所有人的 I/O request 的讀取順序有關。",
+    "簡單講：如果使用者要的資料剛好在每個 track 都有一個 sector，你依序讀，跟 randomly 跳著讀，磁頭移動的距離差非常多，時間也差非常多。看右邊箭頭的兩種走法。",
+    "所以 disk scheduling 對整個 disk performance 很重要，因為它可以 minimize seek time 這個多餘的 overhead。",
+    "這個現象只有 disk 這種有磁碟、或 CD-ROM 類型的 storage system 才有；SSD 等其他 storage device 的管理，重點就不一樣了。"
+   ]
+  },
+  {
+   "title": "下次預告",
+   "scene": null,
+   "points": [
+    {
+     "t": 1111,
+     "text": "留到下一次：disk scheduling algorithms。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "哪一種方式在讀內圈時必須加快轉速？",
+   "opts": [
+    "CLV（constant linear velocity）",
+    "CAV（constant angular velocity）",
+    "RAID",
+    "SSD"
+   ],
+   "ans": "CLV（constant linear velocity）",
+   "why": "CLV 維持相同資料讀取速度，內圈資料少所以要轉快；CD/DVD 屬於這種。"
+  },
+  {
+   "q": "標準 hard drive 用 CAV，為了維持相同 data rate，外圈的 density 會？",
+   "opts": [
+    "比較疏鬆",
+    "比較密",
+    "和內圈一樣",
+    "不存資料"
+   ],
+   "ans": "比較疏鬆",
+   "why": "轉速固定、同角度資料量相同，外圈面積大所以 sector 較長較寬。"
+  },
+  {
+   "q": "Disk access time 由哪三部分組成？",
+   "opts": [
+    "seek time + rotation time + transfer time",
+    "CPU time + I/O time + wait time",
+    "boot time + mount time + read time",
+    "seek time + cache time + bus time"
+   ],
+   "ans": "seek time + rotation time + transfer time",
+   "why": "先移磁頭到 track，再轉到 sector，最後傳輸資料。"
+  },
+  {
+   "q": "Disk scheduling 主要在最小化哪一項？",
+   "opts": [
+    "seek time",
+    "transfer time",
+    "rotation speed",
+    "bandwidth"
+   ],
+   "ans": "seek time",
+   "why": "移動磁頭是機械動作最慢，且取決於 request 的處理順序；transfer 取決於資料量。"
+  },
+  {
+   "q": "轉速 7200 RPM 的硬碟，轉一圈大約多久？",
+   "opts": [
+    "約 8.33 ms",
+    "約 0.14 ms",
+    "約 72 ms",
+    "約 1 s"
+   ],
+   "ans": "約 8.33 ms",
+   "why": "60 秒 ÷ 7200 ≈ 0.00833 秒；平均 rotational latency 約半圈 4.17 ms。"
+  },
+  {
+   "q": "Sector 編號為什麼要連續？",
+   "opts": [
+    "編號差反映讀寫頭要移動的距離，方便 scheduling",
+    "因為 file system 只能讀連續編號",
+    "為了加密",
+    "因為 SSD 需要"
+   ],
+   "ans": "編號差反映讀寫頭要移動的距離，方便 scheduling",
+   "why": "硬碟順著移動方向讀寫最好；看編號就知道距離。"
+  }
+ ]
+}

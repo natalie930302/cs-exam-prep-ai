@@ -1,210 +1,472 @@
 {
  "video": "C42WzJATHg0",
  "label": "清大周志遠 第25A講 File System / Mass Storage System",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
    "title": "複習：Contiguous 與 Linked allocation",
-   "scene": "contig-linked",
+   "scene": "fs-25a-review",
    "points": [
     {
-     "text": "Contiguous：知道要讀第幾個 byte，就能算出 physical data block 的位置，sequential 和 random 都很快。",
-     "t": 5
+     "t": 14,
+     "text": "Contiguous：知道要讀第幾個 byte，就能算出 physical data block 的位置，sequential 和 random 都很快。"
     },
     {
-     "text": "Linked：像 linked list 把 data block 串起來，只要有空間就能用；contiguous 的壞處是檔案大小改變或空間破碎時放不下。",
-     "t": 22
+     "t": 60,
+     "text": "Linked：像 linked list 把 data block 串起來，只要有空間就能用；contiguous 的壞處是檔案大小改變或空間破碎時放不下。"
     },
     {
-     "text": "Linked 的 sequential 還可以，但從第 5 個 block 開始讀到第 10 個，前 4 個 block 還是得讀出來才找得到第 5 個。",
-     "t": 39
+     "t": 96,
+     "text": "Linked 的 sequential 還可以，但從第 5 個 block 開始讀到第 10 個，前 4 個 block 還是得讀出來才找得到第 5 個。"
     },
     {
-     "text": "random access 更糟：跳來跳去，甚至重複讀；原因是 pointer 散落在 disk 的各個 data block，每讀一個 pointer 就是一次 I/O。",
-     "t": 51
+     "t": 113,
+     "text": "Random access 更糟：跳來跳去，甚至重複讀；原因是 pointer 散落在 disk 的各個 data block，每讀一個 pointer 就是一次 I/O。"
     }
+   ],
+   "cues": [
+    14.4,
+    17,
+    47.3,
+    60.3,
+    72,
+    80.4,
+    96.1,
+    104.7,
+    113.7,
+    119.7,
+    121.3
+   ],
+   "explain": [
+    "先複習上次介紹的硬碟空間分配方法。第一種是 contiguous（連續擺放）。這裡用恐龍書圖裡的 mail：從 block 19 開始、長度 6。",
+    "它的好處是：不管 sequential（連續）讀還是 random（隨機）讀都非常快。",
+    "因為使用者只要告訴檔案系統要讀第幾個 byte（第幾個 position），就可以用算的直接知道 physical data block 在哪裡，例如第 5 塊就是 19 + 4 = 23（示意），然後直接對 disk 做 I/O。",
+    "第二種是 linked：把每個 data block 像 linked list 一樣串起來（這個 10 塊檔案的位置是示意）。",
+    "它的好處是：只要有空間都可以使用。",
+    "相對地，contiguous 最大的壞處是：檔案大小改變，或空間破碎時，就沒辦法擺放；linked 只要有空間就能用，用 linked list 串起來就好。",
+    "可是 linked 的壞處剛好反過來。sequential 的話還不錯，反正就順著 linked list 讀。",
+    "但如果不是從頭開始讀，還是有 overhead：例如從第 5 個 block 讀到第 10 個，前面 4 個 block 還是得讀出來，才找得到第 5 個 block 的位置。右上角的計數就是 I/O 次數。",
+    "如果是 random 就更糟了：根本是跳來跳去。例如先讀第 8 塊，就要從頭走 8 次。",
+    "甚至會重複讀：讀完第 8 塊又要跳回第 3 塊，又得從頭走，總共 8 + 3 = 11 次（示意）。",
+    "這麼沒效率的最大原因：pointer 散落在 disk 上那些 data block 裡，每次要讀出一個 pointer 的位置，就是一次 I/O。這是它最糟糕的地方。"
    ]
   },
   {
    "title": "FAT：把 pointer 集中起來",
-   "scene": "fat",
+   "scene": "fs-25a-fat",
    "points": [
     {
-     "text": "改善方法很單純：把 pointer 全部收集起來，存在前面幾個 block。",
-     "t": 70
+     "t": 143,
+     "text": "改善方法很單純：把 pointer 全部收集起來，存在前面幾個 block。"
     },
     {
-     "text": "mount file system 時就把這些 pointer load 到 memory，traversing 仍然要做，但在 memory 裡做，不需要一直 I/O。",
-     "t": 84
+     "t": 168,
+     "text": "Mount file system 時就把這些 pointer load 到 memory，traversing 仍然要做，但在 memory 裡做，不需要一直 I/O。"
     },
     {
-     "text": "FAT32 / FAT64 已經不是傳統的 linked allocation，而是改善版；考試問 linked 時要留意。",
-     "t": 108
+     "t": 202,
+     "text": "FAT32 / FAT64 已經不是傳統的 linked allocation，而是改善版；考試問 linked 時要留意。"
     }
    ],
-   "trap": "考題說「linked allocation」通常指傳統版（pointer 在每個 block 裡）；FAT 要另外看。"
+   "trap": "考題說「linked allocation」通常指傳統版（pointer 在每個 block 裡）；FAT 要另外看。",
+   "cues": [
+    143.9,
+    150,
+    159.5,
+    168.1,
+    173.4,
+    192.5,
+    202.3,
+    210.2
+   ],
+   "explain": [
+    "上次提到，這樣的方式其實還是有被採用的，因為要解決 random 時很多 I/O request 的問題，是有辦法的。",
+    "而且很單純：把它的 pointer 全部收集起來，只留 pointer 的 information。右邊就是收集起來的表：FAT[9] = 16，代表 block 9 的下一塊是 16，依此類推。",
+    "把這些 pointer 存在前面的幾個 data block（紫色的 FAT）。",
+    "這些 pointer 在你 mount 這個 file system 時，一開始就 load 到 memory 裡。",
+    "load 到 memory 之後，traversing（沿著鏈走）這個動作還是有，但因為在 memory 裡，不需要一直做 I/O。",
+    "只要一開始把存 pointer 的 data block load 進 memory，就解決剛才的問題：linked list 也可以變得很 efficient。例如讀第 8 塊，只要 1 次 disk I/O。",
+    "但這已經不是傳統的 linked list 了。考試如果問 linked list 的事情，老師會稍微註明，大家要留意。",
+    "FAT32 並不是傳統的 link，已經是改善版。傳統的 random 是個問題；改善最好的方式，就是像 FAT32 或 FAT64 這樣把 pointer 收集起來、load 到 memory。"
+   ]
   },
   {
    "title": "Indexed allocation",
-   "scene": "indexed-alloc",
+   "scene": "fs-25a-indexed",
    "points": [
     {
-     "text": "Indexed：pointer 不是用 linked list 串，而是 direct access 的概念，全部存在一起，這個 block 稱為 index block。",
-     "t": 128
+     "t": 227,
+     "text": "Indexed：pointer 不是用 linked list 串，而是 direct access 的概念，全部存在一起，這個 block 稱為 index block。"
     },
     {
-     "text": "directory 存檔名和一個指向 index block 的 pointer；讀出 index block，找到第幾個 entry，直接 access 對應的 data block。",
-     "t": 161
+     "t": 275,
+     "text": "Directory 存檔名和一個指向 index block 的 pointer；讀出 index block，找到第幾個 entry，直接 access 對應的 data block。"
     },
     {
-     "text": "random 和 sequential 都很有效率，沒有 external fragmentation；有 free list 就容易 create 或 extend 檔案。",
-     "t": 200
+     "t": 320,
+     "text": "Random 和 sequential 都很有效率，沒有 external fragmentation；有 free list 就容易 create 或 extend 檔案。"
     },
     {
-     "text": "缺點：要浪費一整個 index block；檔案只有 2 個 data block 只需 8 bytes，仍要配置整個 512 bytes 的 index block，浪費比 linked（每塊 4 bytes）更嚴重。",
-     "t": 231
+     "t": 356,
+     "text": "缺點：要浪費一整個 index block；檔案只有 2 個 data block 只需 8 bytes，仍要配置整個 512 bytes 的 index block，浪費比 linked（每塊 4 bytes）更嚴重。"
     }
+   ],
+   "cues": [
+    227.5,
+    234.2,
+    247,
+    269,
+    275.5,
+    286.4,
+    304.3,
+    320.6,
+    333.4,
+    340.3,
+    356.7,
+    364.3,
+    370.6,
+    390.1,
+    406.9,
+    416.5
+   ],
+   "explain": [
+    "第三個做法是 index（索引配置）。",
+    "跟剛才的差別在於：一樣有 pointer，但不是用 linked list 的概念，而是 direct access（直接存取）的概念。",
+    "因為是 direct access，這些 pointer 當然一定要存在一起。存在一起的這個 block 叫 index block。pointer 還是要存在 disk 上，所以也存在原本的某個 block 上，只是它只存 pointer（恐龍書例子：block 19）。",
+    "其他被它指到的，就是所謂的 data block。",
+    "要找這個 file 的任何位置開始讀：首先 directory 裡存的是檔案名稱，和一個 pointer，指到 index block 在哪。",
+    "到了 index block，一樣要把它讀出來，然後看你要的是第幾個 block，找到它的 entry 之後，直接 access 對應的 data block。例如第 4 格是 10，就直接去 block 10（示意）。",
+    "這就是 indexed allocation：把所有 pointer bring together（集中），放在一個 special 的 block，叫 index block。",
+    "因為這樣，direct（random）access 會變得非常 efficient；sequential access 也一樣，一次就可以找到位置。",
+    "另外它也沒有 external fragmentation：只要有空的位置都可以用，跟 linked 一樣。",
+    "也很容易 create file：只要有一個 free list，知道哪些 data block 是 available，就能找到空間去 extend 一個 file，或 create 一個新的 file。",
+    "它的缺點一樣出在 pointer。",
+    "要存這些 pointer，就會浪費掉一整個 index block。",
+    "跟傳統 linked 的方式比：linked 只是每個 data block 浪費 4 個 byte。",
+    "但 index block 整個只能存 index。如果 file 很小，例如只有 2 個 data block，代表只要 2 個 entry，也就是 8 個 byte 就夠。",
+    "可是假設 index block 是 512 byte 這麼大，你還是得 allocate 一整個 512 byte 的 index block 來存，只用了 8 個 byte。",
+    "剩下 504 byte 的空間都浪費掉了（紅色）。因為 index 跟 data 完全切開，所以浪費比 linked 的方式更嚴重。"
    ]
   },
   {
    "title": "檔案太大：Linked index scheme",
-   "scene": "linked-index",
+   "scene": "fs-25a-linkidx",
    "points": [
     {
-     "text": "block 512 bytes、pointer 4 bytes，一個 index block 只能放 128 個 pointer，超過 128 個 data block 就放不下。",
-     "t": 318
+     "t": 431,
+     "text": "Block 512 bytes、pointer 4 bytes，一個 index block 只能放 128 個 pointer，超過 128 個 data block 就放不下，需要多個 index block。"
     },
     {
-     "text": "Linked index scheme：再 create 新的 index block，index block 之間留 pointer，用 linked list 把 index block 串起來；本質仍是 indexed。",
-     "t": 371
+     "t": 482,
+     "text": "三種解法之一 linked index scheme：再 create 新的 index block，index block 之間留 pointer，用 linked list 把 index block 串起來；本質仍是 indexed。"
     },
     {
-     "text": "檔案很大時 random access 跳到很後面，要 lookup 好幾個 index block，越後面越慢。",
-     "t": 487
+     "t": 592,
+     "text": "檔案很大時 random access 跳到很後面，要 lookup 好幾個 index block，越後面越慢。"
     }
+   ],
+   "cues": [
+    431.9,
+    446.1,
+    455.3,
+    470.9,
+    482.5,
+    492.4,
+    497.9,
+    524.9,
+    533.8,
+    551.7,
+    572.9,
+    584.6,
+    592.1
+   ],
+   "explain": [
+    "index block 的做法還必須克服另一件事：檔案很小會浪費空間；那如果檔案非常大呢？",
+    "代表要存的 pointer 數量相對變很多，多到可能超過一個 data block 能存的空間。",
+    "例如一個 data block 是 512 byte，一個 pointer 需要 4 個 byte，所以 512 ÷ 4 = 128：超過 128 個 data block，一個 index block 就存不下了。",
+    "那就需要多個 index block 來存。很多個 index block 要怎麼做 extension（延伸）？",
+    "有三種不一樣的方式可以解決這個問題。",
+    "第一個做法叫 linked index scheme。",
+    "這些名字都用 linking 或 indexing，大家要稍微留意：它還是 index 的做法，只是用 link 的方式解決 index block 不夠大的問題。",
+    "一開始只有一個 index block，就是 19，裡面用傳統做法指到一個一個 data block。",
+    "檔案長得超過這個 size 怎麼辦？一定需要一個新的 index block：create 一個新的，裡面存它的 pointer。",
+    "這兩個必須能連在一起，所以在 index block 之間留一個 pointer，指向下一個 index block，用 linked list 把 index block 串起來。這就叫 linked index scheme。",
+    "再強調一次：linked index scheme 其實是 index 的做法，只是把 index block 用 link 串起來。",
+    "以此類推，file 一直漲，就一直 create index block，也相對 create 這些 link。",
+    "問題是：如果有 random（direct）access，檔案很大、跳到很遠的地方，讀寫就會開始變慢，因為要 look up 好幾個 index block。檔案越大，traverse 的時間越長。"
    ]
   },
   {
    "title": "Multi-level index",
-   "scene": "multilevel-index",
+   "scene": "fs-25a-multilevel",
    "points": [
     {
-     "text": "Multi-level（hierarchical）index 跟 page table 的延伸做法一樣：例如 16 指到的 index block 裡的 19，指到的仍是 index block，最後才是 data。",
-     "t": 520
+     "t": 612,
+     "text": "Multi-level（hierarchical）index 跟 page table 的延伸做法一樣：例如 16 指到的 index block 裡的 19，指到的仍是 index block，最後才是 data。"
     },
     {
-     "text": "好處：檔案很大時，random access 到尾巴也直接往下跳；不像 linked index 有 10 個 index block 就要 lookup 10 次，速度比較平均穩定。",
-     "t": 607
+     "t": 679,
+     "text": "好處：檔案很大時，random access 到尾巴也直接往下跳；不像 linked index 有 10 個 index block 就要 lookup 10 次，速度比較平均穩定。"
     },
     {
-     "text": "缺點：hierarchy 讓空間浪費較嚴重，適合非常大的檔案；只有 leaf node 才是 data block 的 pointer。",
-     "t": 699
+     "t": 741,
+     "text": "缺點：hierarchy 讓空間浪費較嚴重，適合非常大的檔案（medium size 適合 linked）；只有 leaf node 才是 data block 的 pointer。"
     }
+   ],
+   "cues": [
+    612.3,
+    621.7,
+    635.3,
+    646.8,
+    656.4,
+    660.1,
+    679.1,
+    699.5,
+    709.3,
+    714.9,
+    737.7,
+    741.8,
+    757.1,
+    784.1
+   ],
+   "explain": [
+    "這是第一種做法。接著第二種做法。",
+    "它其實非常像大家已經學過、在 memory 管理用的做法：multi-level、hierarchical（階層式）的 index，跟當時教的 page table 怎麼延伸是一樣的。",
+    "一開始當然只有一個 index block（左邊的 16，叫 outer index），裡面可以存一些 pointer。",
+    "但這邊是 hierarchy，所以每個 pointer 指到的不是 data block，而是 index block。",
+    "這是 2 level；要加到 3 level 等等也都可以。",
+    "例如 16 指到的這個 index block 裡，第一個寫 19；19 指到的 block 裡存的還是 index；這些 pointer 指到的，最後才是真正的 data。這就是 hierarchical 的方式。",
+    "這個做法最大的好處是什麼？",
+    "剛才說最大的問題是：檔案很大、要 random access 到尾巴時會很慢。前面的做法要一直 traverse：有 10 個 index block，就要 lookup 10 次才找到位置（紅色柱子越來越高）。",
+    "所以讀寫速度很不平均：檔案前面的很快，後面的很慢。",
+    "但 multi-level 就算是很後面也沒關係，直接往下跳就好（綠色柱子都一樣高，2 層）。",
+    "它的速度比較穩定：檔案很大，但前面、後面的讀寫速度都差不多。你也可以說都差不多慢，但比較平均穩定，對系統效能管理和使用者來說，通常比較 prefer。",
+    "相對的缺點是：浪費 space 比較嚴重，因為 hierarchy 等於是指數在成長。",
+    "所以檔案非常大時適合用這種 hierarchy；如果是 medium size，可能適合前面 linked 的做法；真的很大才需要這種方式，用指數倍數快速擴大能指到的空間。",
+    "記得：只有 leaf node（最底層）才是那些 data block 的 pointer。"
    ]
   },
   {
    "title": "UNIX inode：combined scheme",
-   "scene": "inode-combined",
+   "scene": "fs-25a-inode",
    "points": [
     {
-     "text": "Combined 是 UNIX inode 的預設做法：小檔案用一層、大檔案用多層，像 Intel page table 可選 4MB / 4KB page 一樣折衷。",
-     "t": 742
+     "t": 794,
+     "text": "Combined 是 UNIX inode 的預設做法：小檔案用一層、大檔案用多層，像 Intel page table 可選 4MB / 4KB page 一樣折衷。"
     },
     {
-     "text": "前面是 direct blocks，直接存 data block 的 pointer；inode 大小有限，假設 block 4KB，只靠 direct 就算一千個 entry 也只到 4MB。",
-     "t": 803
+     "t": 850,
+     "text": "前面是 direct blocks，直接存 data block 的 pointer；inode 大小有限，block 4KB 時只靠 direct 就算一千個 entry 也只到 4MB。"
     },
     {
-     "text": "single indirect：pointer 指到的是 index block；4KB ÷ 4 bytes ≈ 1000 個 entry。",
-     "t": 875
+     "t": 909,
+     "text": "Single indirect 指到 index block：4KB ÷ 4B = 1024 個 entry；不夠再用 double、triple。"
     },
     {
-     "text": "還不夠就用 double（two level），再用 triple。",
-     "t": 913
-    },
-    {
-     "text": "trade-off：小檔案用 direct 只要一次 lookup；越後面 level 越多，lookup 和 I/O 次數越多。",
-     "t": 974
-    },
-    {
-     "text": "例子：12 個 direct × 4KB = 48KB；single 再加 4MB；double 到 4GB；triple 到 4TB。",
-     "t": 1000
+     "t": 998,
+     "text": "Trade-off：小檔案 direct 一次 lookup；level 越多 lookup / I/O 越多。例：12 direct × 4KB = 48KB；single 再加 4MB；double 4GB；triple 4TB。"
     }
    ],
-   "trap": "補充：精確值是 4KB ÷ 4B = 1024 個 pointer，single = 1024 × 4KB = 4MB，double = 1024² × 4KB = 4GB，triple = 1024³ × 4KB = 4TB；最大檔案是四項相加。"
+   "trap": "精確值：4KB ÷ 4B = 1024 個 pointer，single = 1024 × 4KB = 4MB，double = 1024² × 4KB = 4GB，triple = 1024³ × 4KB = 4TB；最大檔案是四項相加。",
+   "cues": [
+    794.5,
+    802.7,
+    819,
+    840.9,
+    850.7,
+    874.1,
+    886.3,
+    896,
+    909.3,
+    931.1,
+    953,
+    987.4,
+    998.5,
+    1014.1,
+    1023.3,
+    1042.3,
+    1062.3,
+    1080
+   ],
+   "explain": [
+    "最後一個是 combined，也是 UNIX inode 預設的做法。左邊這一排格子就是 inode 裡存 pointer 的欄位。",
+    "它用 multi-level，但要看檔案大小：檔案很大就要很多 level；檔案很小，用 one level 或 two level 就夠。",
+    "這跟 memory 管理比較接近：還記得 Intel 的 page table 可以用 4MB 或 4KB 的 page size 切換嗎？這邊也一樣，是一個折中的方式，給你 option。",
+    "inode 存了這個 file 的 information，其中很重要的就是它的 data block 到底在哪裡。",
+    "檔案很小時，最好就是 index 直接指到：這些叫 direct blocks（亮起的 0 到 11），直接存 data block 的 pointer。要第幾個 block，直接在這裡找。",
+    "但 inode 也只是一個 data structure，它的 size 一定有限。",
+    "每一個 entry 只能指到一個 data block。假設一個 block 是 4KB，一個 entry 就只能指到 4KB。",
+    "所以就算有一千個 entry，整個 file 最大也只能存到 4MB 左右。4MB 很小，根本塞不下。",
+    "塞不下怎麼辦？就用剛剛的 multi-level 做法：single indirect（單層間接）。indirect 的意思是多加了一層：這個 pointer 指到的不是 data block，而是一個 index block（裡面存的還是 index）。",
+    "假設 block 是 4KB、一個 pointer 4 個 byte，光這一個 index block 就可以存 4KB ÷ 4B = 1024（約一千）個 entry，每個 entry 再乘上 data block 的 size 4KB，就是 4MB。",
+    "如果超過 4MB 還不夠，就用 double，也就是 two level。從哪個 pointer 開始找，就知道裡面的值要翻譯成 data 還是 index。",
+    "以此類推到 triple，能存的檔案大小就更大。這就是 combined：把 multi-level 的做法分成不同的 level。",
+    "最大的好處在 performance：檔案小時大家都喜歡 direct，只要一個 lookup 就找到檔案資料。",
+    "越後面就是 multi-level 的缺點：有幾個 level 就要 lookup 幾次，I/O 次數變多。（direct 1 次、single 2 次、double 3 次、triple 4 次，都含讀 data 那次，假設 inode 已在 memory。）",
+    "size 就是它的 trade-off。以這個例子來說：有 12 個 direct entry，每個只能存 4KB，所以只能到 48KB，很小的檔案。",
+    "檔案超過這個 size，就開始用 single indirect，光這部分就存到 4MB，再加上 48KB 才是 total file size。只要小於這個大小，只需要用前面兩部分。",
+    "再不夠就可以長到 4GB（double）；最後一層 triple 是 4TB。這已經非常大了，整顆 disk 也不過就 TB 級。最大檔案 = 48KB + 4MB + 4GB + 4TB。",
+    "當然還是有極限：檔案真的非常大時，很多東西要改寫，file system 也會沒辦法 handle。最後一個作業可能會用到這個概念：自己 manage data structure，create 更大的 file。"
+   ]
   },
   {
    "title": "Free-space management：三種串法",
-   "scene": "free-list-kinds",
+   "scene": "fs-25a-freekinds",
    "points": [
     {
-     "text": "allocate 之外也要管理剩餘空間在哪裡，才能做 allocation。",
-     "t": 1094
+     "t": 1112,
+     "text": "Allocate 之外也要管理剩餘空間在哪裡，才能做 allocation。"
     },
     {
-     "text": "把 free space 想成一個檔案：linked list 就是 linked allocation、grouping 就是 linked index、counting 就是 contiguous；這個檔案只要支援 sequential access。",
-     "t": 1114
+     "t": 1144,
+     "text": "把 free space 想成一個檔案：linked list 就是 linked allocation、grouping 就是 linked index、counting 就是 contiguous；這個檔案只要支援 sequential access。"
     },
     {
-     "text": "名字不用刻意背，做法跟前面的配置方式一樣；唯一不同的是 bit vector：不串起來，只用 bit 判斷有沒有空。",
-     "t": 1198
+     "t": 1188,
+     "text": "名字不用刻意背，做法跟前面的配置方式一樣；唯一不同的是 bit vector：不串起來，只用 bit 判斷有沒有空。"
     }
    ],
-   "trap": "補充（恐龍書）：grouping 是第一個 free block 存 n 個 free block 的位址；counting 記 (起始位址, 連續塊數)。"
+   "trap": "補充（恐龍書）：grouping 是第一個 free block 存 n 個 free block 的位址；counting 記 (起始位址, 連續塊數)。",
+   "cues": [
+    1112.8,
+    1129.5,
+    1144.3,
+    1146.2,
+    1149.8,
+    1154.7,
+    1188.5,
+    1198.5
+   ],
+   "explain": [
+    "介紹完怎麼 allocate，最後是 free space（剩餘空間）的 management：我們也要管理哪裡可以找到剩餘的空間，才能做 allocation。灰色是用掉的，空格是 free 的。",
+    "做法可以分成四種。尤其後面三種名字看起來不太一樣，其實不用特別再去看它。",
+    "第一種 linked list，就是 linked allocation：每個空塊存下一個空塊的位置（綠線把空塊串起來）。",
+    "grouping 指的就是 linked index 的做法：第一個空塊裡存 n 個空塊的位址，最後一格再指到下一組（課本的描述）。",
+    "counting 指的就是 contiguous 的做法：記錄（起點，連續有幾塊），例如 (2,4) 表示從 2 開始連續 4 塊是空的。",
+    "簡單講，可以把 free space 想成一個 file，把它全部串起來。這個 file 很簡單，只需要 support sequential access：每次只要找第一個有空的位置，用完就把位置換一下。",
+    "所以名字不一樣，但去看課本的描述，就是這三種做法而已。名字不用刻意去背，知道做法就好。",
+    "唯一比較特別的是 bit vector：不把它串起來，只用 bit 的方式判斷有沒有空。等一下講。"
+   ]
   },
   {
    "title": "Bit vector",
-   "scene": "bit-vector",
+   "scene": "fs-25a-bitvec",
    "points": [
     {
-     "text": "Bit vector：partition 裡每個 block 用一個 bit 表示，0 當作 free、1 是 occupied。",
-     "t": 1222
+     "t": 1223,
+     "text": "Bit vector：partition 裡每個 block 用一個 bit 表示，周老師課堂慣例 0 當作 free、1 是 occupied。"
     },
     {
-     "text": "好處：簡單，硬體處理 bit 很快，一次可讀 32 或 64 bits。",
-     "t": 1294
+     "t": 1283,
+     "text": "好處：簡單，硬體處理 bit 很快，一次可讀 32 或 64 bits。"
     },
     {
-     "text": "缺點：partition 非常大時 bit 數量很多，超過 CPU cache 就會 slowdown。",
-     "t": 1333
+     "t": 1315,
+     "text": "缺點：partition 非常大時 bit 數量很多，超過 CPU cache 就會 slowdown（課本例：1TB ÷ 4KB = 2²⁸ 塊，bitmap 32MB）。"
     }
    ],
-   "trap": "補充：恐龍書慣例相反（1 = free、0 = allocated），考題要看題目的定義。"
+   "trap": "恐龍書慣例相反（1 = free、0 = allocated），考題要看題目的定義。",
+   "cues": [
+    1223.8,
+    1240.5,
+    1249.6,
+    1257,
+    1278,
+    1283.1,
+    1288,
+    1305.3,
+    1315.5,
+    1328.3
+   ],
+   "explain": [
+    "什麼是 bit vector？把整個 partition 的空間（一個 file system 管一個 partition），也就是這些 data block，拿來看。",
+    "每個 block 只要知道它有沒有被用到、現在是不是 free 的，就用一個 bit 表示。有多少個 block，就有多少個 bit。",
+    "老師的慣例是：0 當作 free、1 是 occupied（被佔用）。下面那串 0101 就是 bit vector。注意恐龍書的慣例剛好相反（1 = free），考試要看題目怎麼定義。",
+    "只要去找 0 的位置，就知道哪些可以做 allocation（綠色）。",
+    "跟剛才把 free space 當 file 串起來的做法不同：這裡沒有串起來，只是 0101，只想知道有空沒空；而且可以 exactly 知道哪些是空的，一次就看到很多個。",
+    "好處第一個：很簡單，就是 0101。",
+    "判斷也比較快：比在那邊 traverse 一個 link 再判斷數字要快。電腦本來就是 bit，hardware 對 0101 的計算 logic 更簡單。",
+    "而且一次可以讀 64 個或 32 個 bit（一整排一起看），處理速度比較快。",
+    "缺點主要是：如果 partition 長得非常非常大（現在硬碟越來越大），bit 的數量也會越來越多。",
+    "多到超過 CPU cache 的大小時，就可能開始 slow down，發揮不了最大的優勢。課本的例子：1TB 的 disk、4KB 的 block，有 2⁴⁰ ÷ 2¹² = 2²⁸ 個 block，bitmap 就要 2²⁸ bits = 32MB。"
+   ]
   },
   {
    "title": "為什麼需要知道所有的 free block",
-   "scene": "bitmap-nearest",
+   "scene": "fs-25a-nearest",
    "points": [
     {
-     "text": "contiguous 不能隨便找空位，要找連續的 0，用 bit vector 才有效率。",
-     "t": 1371
+     "t": 1347,
+     "text": "Contiguous 不能隨便找空位，要找連續的 0，用 bit vector 才有效率。"
     },
     {
-     "text": "就算是 linked，同一個檔案放在相近的位置也能減少磁頭移動。",
-     "t": 1417
+     "t": 1383,
+     "text": "就算是 linked，同一個檔案放在相近的位置也能減少磁頭移動；要知道哪些臨近有空位就需要 0101。"
     },
     {
-     "text": "檔案系統常要求：給一個 position，回傳離它最近、而且大小至少某個 size 的空位；bit vector 不用修改就能回答。",
-     "t": 1487
+     "t": 1442,
+     "text": "檔案系統常要求：給一個 position，回傳離它最近、而且大小至少某個 size 的空位；linked list 類做法要修改，bit vector 不用修改就能回答。"
     }
+   ],
+   "cues": [
+    1347,
+    1360.3,
+    1383.8,
+    1400.6,
+    1410.8,
+    1424,
+    1442.8,
+    1469.4,
+    1482,
+    1497.2
+   ],
+   "explain": [
+    "為什麼需要這種 0101？通常不是隨便找一個有空的位置就好嗎？為什麼要一次知道所有 0 的位置？有幾個原因。",
+    "第一，看前面幾種配置方式：像 contiguous，就不能隨便找，它要「連續的 0」。用 bit vector 才有效率，一次就能找出哪裡有連續的一串 0（這裡找到 8–13 這 6 個，示意）。",
+    "如果是 linked list，雖然實際上可以隨便擺，但如果擺在比較近的地方、能連續在一起，disk 磁頭移動的距離還是會減少。",
+    "所以不管什麼做法，都希望盡量把同一個 file 放在相近的 physical location 上。",
+    "如果你想知道「哪些臨近的位置有空位」，就不是單純一個 linked list 能解決的，要有 0101 才找得到。",
+    "而且你可以 load 某一塊範圍，看看這個範圍內哪些地方有空，做更好的判斷。它給的 information 更多，allocation 時就有機會選到更近、更好的位置。",
+    "至於前面看到的 linked list 那三種做法，老師看過一些 file system 的 code，實際上比較少真的直接這樣用，那樣蠻複雜的；它們會切成一段一段，做類似 binary search 的動作。",
+    "為了 performance，大部分 file system 需要的不只是找到一個 free 空間，而是：給你某一個 position，你要很快 return 離那個位置最近的 0 在哪。",
+    "甚至再多一個 condition：最近，而且大小至少要超過某個 size。這是 file system 做 allocation 時常要求的 criteria。這裡找到 17–18（示意）。",
+    "把這兩個 condition 加進去，前面那些做法都需要修改；bit vector 不用修改，很容易判斷。所以它也是蠻有效率的做法。"
    ]
   },
   {
    "title": "考試重點：計算 I/O 次數與總結",
-   "scene": "io-count",
+   "scene": "fs-25a-summary",
    "points": [
     {
-     "text": "要會模擬：檔案大小 10 個 block，用某種方式串起來，讀第 10 個 block 的第 3 個 byte 需要多少次 I/O。",
-     "t": 1610
+     "t": 1515,
+     "text": "Linked list、grouping、counting 就是之前介紹的管理方式；allocation 方式是這章後半段的重點。"
     },
     {
-     "text": "這些方法名字很像（linked、linked index、multi-level），要分清楚各自怎麼運作。",
-     "t": 1632
+     "t": 1545,
+     "text": "要會模擬：檔案大小 10 個 block，用某種方式串起來，讀第 10 個 block 的第 3 個 byte 需要多少次 I/O；名字很像要分清楚。"
     },
     {
-     "text": "File system 最重要的就是 mapping：file path 對到 inode（FCB），FCB 再把檔案位置 map 到 physical location。",
-     "t": 1636
+     "t": 1599,
+     "text": "File system 最重要的就是 mapping：file path 對到 inode（FCB），FCB 再把檔案位置 map 到 physical location。"
     }
+   ],
+   "cues": [
+    1515.4,
+    1529.5,
+    1545.2,
+    1561,
+    1585.7,
+    1599.8,
+    1619.5
+   ],
+   "explain": [
+    "這有圖，大家稍微看一下就好：linked list 就是 linked list，跟之前介紹的完全一樣；grouping 跟 counting 看描述就知道是之前介紹的那兩種管理方式。",
+    "這是章節後半段很重要的部分：這幾個 allocation 的方式，一定要知道它到底怎麼運作。",
+    "另一個是要思考：這些不同的 allocation 方式，對於不同的 I/O pattern，會產生多少個 I/O request 才能完成一個動作。",
+    "例如：一個檔案大小是 10 個 block，存在某些位置，用某種方式串起來，要讀這個檔案第 10 個 block 的第 3 個 byte，需要多少次 I/O？這裡用常見的假設示範（FCB 已在 memory、index block 不在 memory）：contiguous 1 次；linked 要讀過前 9 塊才拿到第 10 塊的位置，共 10 次；FAT 在 memory 查表，1 次；indexed 讀 index block 加 data，2 次。",
+    "這些名字有些類似（linked、linked index、multi-level……），要把它們分清楚，套用到實際模擬上，才知道效能好壞。",
+    "這就結束了 file system implementation 的部分。file system 最重要的就是做 mapping：第一個是 namespace，一個 file path 怎麼對到一個 inode，也就是 file control block。",
+    "第二個是 file control block 裡存的 file location，怎麼 map 到 physical 的 location，有哪些配置方式。這兩塊就是最重要的部分。"
    ]
   }
  ],
@@ -286,6 +548,5 @@
    "ans": "Contiguous",
    "why": "counting 記起點與連續塊數，就像 contiguous。"
   }
- ],
- "timing": "estimated"
+ ]
 }
