@@ -235,7 +235,8 @@
   function syncState(id){ const n = notesIndex[id]; return !n ? 'none' : n.cued ? 'cued' : 'old'; }
   function syncBadge(id){
     const st = syncState(id);
-    return st === 'cued' ? '<span class="st-badge ok">動畫逐句對齊</span>'
+    // a finished video needs no label; only the unfinished ones say so
+    return st === 'cued' ? ''
       : st === 'old' ? '<span class="st-badge old">動畫未逐句</span>' : '<span class="st-badge none">動畫製作中</span>';
   }
   function renderVideoList(){
@@ -251,7 +252,7 @@
       const pct = !w && durS && pos > 30 ? Math.min(100, Math.round(pos / durS * 100)) : 0;
       return '<li><button class="st-v' + (isCur ? ' current' : '') + (w ? ' watched' : '') + '" data-i="' + i + '">'
         + '<span class="st-v-n">' + (w ? '✓' : String(i + 1).padStart(2, '0')) + '</span>'
-        + '<span class="st-v-title">' + esc(o.label) + (o.teacher ? '<small class="st-v-teacher">' + esc(o.teacher) + '</small>' : '') + '</span>'
+        + '<span class="st-v-title"><span class="st-v-name">' + esc(o.label) + '</span>' + (o.teacher ? '<small class="st-v-teacher">' + esc(o.teacher) + '</small>' : '') + '</span>'
         + '<span class="st-v-meta">' + esc(o.dur || '') + syncBadge(id) + '</span>'
         + (pct ? '<span class="st-progress"><span style="width:' + pct + '%"></span></span>' : '')
         + '</button>'
