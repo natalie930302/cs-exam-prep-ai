@@ -1,0 +1,199 @@
+{
+ "video": "p7fXiuokfWs",
+ "label": "清大OCW 趙啟超《離散數學》第17B講 Generating Functions and Complexity of Algorithms",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "建 bijection ⇒ 兩個集合一樣大",
+   "points": [
+    {
+     "t": 6,
+     "text": "左：分割 n、份數 ≤ r 的所有 partition；右：分割 n + r、份數 = r 的所有 partition。"
+    },
+    {
+     "t": 21,
+     "text": "兩個集合之間建了 one-to-one correspondence（bijection），所以 cardinality（size）一樣，證完。"
+    },
+    {
+     "t": 38,
+     "text": "證「兩個數目一樣」常用這招：建一個 bijection。"
+    },
+    {
+     "t": 73,
+     "text": "Ferrers 圖一定由大排到小，下面不會比較長。"
+    }
+   ],
+   "scene": "acD-bij-recap",
+   "cues": [
+    5.8,
+    9.4,
+    21.1,
+    26.8,
+    37.8,
+    72.8
+   ],
+   "explain": [
+    "接續上一段：左邊是「把 n 分成 ≤ r 份」的所有分割，構成一個集合（畫面用 n = 4、r = 3 示意）。",
+    "右邊是「把 n + r 分成剛好 r 份」的所有分割，也構成一個集合。",
+    "兩個集合之間建立了一對一的對應：左邊可以推到右邊（加一個 column），右邊可以推回左邊（拿掉一個 column）。",
+    "這是一個 bijection，所以兩個集合的 cardinality（元素個數、大小）一樣，證完了。",
+    "要證明「兩個數目一樣」，最常見的就是這招：建一個 bijection。",
+    "提醒：Ferrers 圖一定由大排到小，下面那排不會比上面長。"
+   ]
+  },
+  {
+   "title": "Ferrers 圖的 transposition：4+3+3+2+1+1 → 6+4+3+1",
+   "points": [
+    {
+     "t": 97,
+     "text": "例：14 = 4 + 3 + 3 + 2 + 1 + 1 的 Ferrers 圖。"
+    },
+    {
+     "t": 147,
+     "text": "transposition：row 變 column、column 變 row（像矩陣取 transpose）。"
+    },
+    {
+     "t": 168,
+     "text": "第一個 column（6 點）變第一個 row；結果是 6 + 4 + 3 + 1，還是 14 的 partition。"
+    },
+    {
+     "t": 205,
+     "text": "transpose 後仍是合法的 Ferrers 圖（大到小、點數不變）；再 transpose 回來就是原本的 ⇒ bijection。"
+    }
+   ],
+   "trap": "transpose 後第 i 排的點數 = 原本「大於等於 i 的份有幾個」，不是把原本的數字倒過來排。",
+   "scene": "acD-transpose",
+   "cues": [
+    96.6,
+    112.3,
+    146.6,
+    168,
+    179.9,
+    189.5,
+    205.3,
+    243.7,
+    263.7
+   ],
+   "explain": [
+    "再看一個例子：14 的一個分割 4 + 3 + 3 + 2 + 1 + 1。",
+    "它的 Ferrers 圖：一排 4 點、兩排 3 點、一排 2 點、兩排 1 點。分割和圖是一對一的。",
+    "接著做 transposition：把 row（橫排）變成 column（直行），column 變成 row。",
+    "就像矩陣取 transpose 一樣，每個點沿著對角線翻過去。",
+    "原本的第一個 column 有 6 點，翻過去就變成第一個 row：6 點。",
+    "第二個 row 有 4 點、第三個 row 3 點、第四個 row 1 點。",
+    "翻過來之後還是一個合法的 Ferrers 圖：每排還是由長到短，因為原本的 column 本來就越來越短。點數也沒有少。",
+    "所以它是 6 + 4 + 3 + 1，加起來還是 14，是 14 的另一個分割。",
+    "再 transpose 一次就回到原來的圖。所以 transpose 是一對一的對應（bijection）。"
+   ]
+  },
+  {
+   "title": "largest part = m 的個數 = 恰有 m 份的個數",
+   "points": [
+    {
+     "t": 324,
+     "text": "用 transposition 證明性質；簡單的工具、不同的觀點。"
+    },
+    {
+     "t": 376,
+     "text": "分割 n 且 largest part = m 的個數 = 分割 n 且 number of parts = m 的個數。"
+    },
+    {
+     "t": 397,
+     "text": "例：4+3+3+2+1+1 最大份 4、有 6 份；6+4+3+1 最大份 6、有 4 份。"
+    },
+    {
+     "t": 488,
+     "text": "largest part m ⇔ 第一 row 有 m 點；m 份 ⇔ 第一 column 有 m 點；transpose 就互換。"
+    },
+    {
+     "t": 662,
+     "text": "transpose 是 bijection ⇒ 兩種個數一樣。Ferrers 圖和生成函數可以混著用。"
+    }
+   ],
+   "scene": "acD-largest",
+   "cues": [
+    323.7,
+    375.8,
+    397.2,
+    411,
+    450.7,
+    488.4,
+    546.2,
+    594.3,
+    647,
+    662.4,
+    752.8
+   ],
+   "explain": [
+    "用 transposition 可以證明下面這個性質。老師說：簡單的工具、不同的觀點，可以看到原本看不到的事。",
+    "第一種分割：把 n 分割，而且最大的那一份（largest part）剛好是 m。",
+    "例如左邊 4 + 3 + 3 + 2 + 1 + 1 最大份是 4，右邊 6 + 4 + 3 + 1 最大份是 6。最大份就是第一排（金色）。",
+    "第二種分割：把 n 分割，而且份數（number of parts）剛好是 m。性質是：這兩種分法的個數一樣。",
+    "份數就是有幾排，也就是第一個 column 的點數（青綠色）：左邊 6 份、右邊 4 份。",
+    "在 Ferrers 圖上，「最大份是 m」就是「第一個 row 有 m 點」。",
+    "「有 m 份」就是「第一個 column 有 m 點」。所以要把第一 row 有 m 點的圖，變成第一 column 有 m 點的圖。",
+    "怎麼變？transpose 就好！左邊的圖 transpose 剛好是右邊的圖。",
+    "第一個 row 的 m 點翻過去變成第一個 column 的 m 點：左邊最大份 4 → 右邊 4 份；右邊最大份 6 → 左邊 6 份。",
+    "所以這兩種分割之間有一對一的對應，個數一樣。畫面用 n = 6 示意：m = 1 到 6，兩邊的個數都相等。",
+    "有了 Ferrers 圖，很多性質一下就看出來。前面有一個是用生成函數證的；兩種工具混著用，可以證出更多平常看不出來的性質。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "4 + 3 + 3 + 2 + 1 + 1 的 Ferrers 圖 transpose 之後是哪個 partition？",
+   "opts": [
+    "6 + 4 + 3 + 1",
+    "1 + 1 + 2 + 3 + 3 + 4",
+    "6 + 3 + 3 + 2",
+    "5 + 4 + 3 + 2"
+   ],
+   "ans": "6 + 4 + 3 + 1",
+   "why": "第 i 排點數 = 原本 ≥ i 的份數：≥1 有 6 份、≥2 有 4 份、≥3 有 3 份、≥4 有 1 份。"
+  },
+  {
+   "q": "transpose 後，第一個 row 的點數等於原本的什麼？",
+   "opts": [
+    "原本的份數（第一個 column 的點數）",
+    "原本最大的那一份",
+    "原本的總點數",
+    "原本最小的那一份"
+   ],
+   "ans": "原本的份數（第一個 column 的點數）",
+   "why": "第一個 column 翻過去變成第一個 row；第一個 column 有幾點就是有幾份。"
+  },
+  {
+   "q": "「最大份是 m」與「恰好 m 份」的分割數相等，證明用的是？",
+   "opts": [
+    "Ferrers 圖的 transposition（一一對應）",
+    "拿掉 Ferrers 圖第一個 column",
+    "Euler 五邊形數定理",
+    "排容原理"
+   ],
+   "ans": "Ferrers 圖的 transposition（一一對應）",
+   "why": "最大份 m ⇔ 第一 row 有 m 點；transpose 後變成第一 column 有 m 點 ⇔ m 份。"
+  },
+  {
+   "q": "要證兩個有限集合元素個數一樣，最常用的方法是？",
+   "opts": [
+    "在兩個集合之間建一個 bijection",
+    "證明兩個集合都非空",
+    "把兩個集合的元素相加",
+    "找出兩個集合的交集"
+   ],
+   "ans": "在兩個集合之間建一個 bijection",
+   "why": "一一對應（雙射）存在，兩邊的 cardinality 就一樣。"
+  },
+  {
+   "q": "6 的分割中，最大份是 3 的有幾種？",
+   "opts": [
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "ans": "3",
+   "why": "3 + 3、3 + 2 + 1、3 + 1 + 1 + 1；跟「恰 3 份」的 4 + 1 + 1、3 + 2 + 1、2 + 2 + 2 一樣是 3 種。"
+  }
+ ]
+}

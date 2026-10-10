@@ -3987,6 +3987,1238 @@ scene('acC-cnt-bounds', '15D：z₁ + z₂ + z₃ + z₄ = n 加上下限', [
   },
 ]);
   }
+
+  // ═══ acD.js ═══
+  {
+const P = K; const { V3, tag, cube, kill, glow, code, anim, arrow, zone, travel, remove, step, buddy, prop, bob, fresh } = P;
+const { txt, line } = P;
+// (kit has no beat: short waits use ctx.beat)
+// ─── 離散數學 第 6 章（清大 趙啟超 第16A–17D講）— cued scenes ───
+// 換零錢的生成函數、整數分割 p(n)、Euler 五邊形數定理與 p(n) 的遞迴、distinct = odd、Ferrers 圖與 transpose、
+// 演算法複雜度（時間表、Big-O）、bubble sort 與 insertion sort。
+// 每個 scene 是一串 step；每個 step 等老師說到那句話（notes 的 cues）才動一下，不重播、不循環。
+// 老師的例子（100¢、56¢、p(3)、p(4)、p(5)、8 的分割、14 = 4+3+3+2+1+1、n = 20/40/60、47 73 21 45 28 69 19 23）照用；
+// 畫面上的係數、p(n)、時間都由程式算（多半算兩種方法互相比對，顯示 ✓／✘）；老師沒給的數字標「示意」。
+const wt = (tok, ms) => ctx.beat(tok, ms);
+const cap = (a, b = '') => say(a, b);
+const hd = (t, x, y, z = 0) => tag(t, 'ptr', x, y, z);
+const hot = (t, x, y, z = 0) => tag(t, 'ptr alt', x, y, z);
+const sm = (t, x, y, z = 0) => tag(t, 'idx', x, y, z);
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const pl = (t, x, y, z = 0) => tag(t, '', x, y, z);
+const ok = (b, x, y, t) => (b ? good(t || '✓', x, y) : bad(t ? t.replace('✓', '✘') : '✘', x, y));
+const FC = { blue: '#4b9ee2', orange: '#dd8238', green: '#2fc092', purple: '#9b7ef4', pink: '#e55a9b', teal: '#31aab0', red: '#d64545', sand: '#e9dcc4', gray: '#d8cfc0', gold: '#c08a1f', mint: '#d2f1e6', sky: '#cfe6f7', lilac: '#dfd3fb', peach: '#f6d3b8' };
+const HL = '#6a4a00', NG = '#5a1010';
+const PAL = ['#4b9ee2', '#e55a9b', '#2fc092', '#dd8238', '#9b7ef4', '#31aab0', '#c08a1f', '#5c7a4a'];
+const gone = (...os) => os.forEach((o) => { if (!o) return; if (Array.isArray(o)) return gone(...o); if (o.all) return gone(o.all); if (o.element) remove(o); else kill(o); });
+const card = (t, c, x, y, w = 4, h = 0.55, drop = 0.8) => cube(t, c, [w, h, 0.45], x, y, 0, drop);
+const relab = (m, t) => { if (m.userData.lbl) txt(m.userData.lbl, t); };
+const SUPM = { 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹', '+': '⁺', '-': '⁻', '−': '⁻', n: 'ⁿ', k: 'ᵏ', m: 'ᵐ', i: 'ⁱ' };
+const SUBM = { 0: '₀', 1: '₁', 2: '₂', 3: '₃', 4: '₄', 5: '₅', 6: '₆', 7: '₇', 8: '₈', 9: '₉', '+': '₊', '-': '₋', '−': '₋', n: 'ₙ', j: 'ⱼ', i: 'ᵢ' };
+const sp = (s) => String(s).split('').map((c) => SUPM[c] || c).join('');
+const sb = (s) => String(s).split('').map((c) => SUBM[c] || c).join('');
+const xp = (e) => (e === 0 ? '1' : e === 1 ? 'x' : 'x' + sp(e));
+function scene(id, title, steps, cam) {
+  FRAG.push([id, title, async (tok) => {
+    const c = cam || CAM; fresh(c[0], c[1]);
+    const S = {};
+    for (const f of steps) { await step(tok); await f(tok, S); }
+  }]);
+}
+const CAM = [[0, 3.6, 15], [0, 3.1, 0]];
+// ── formal power series (coefficient arrays up to x^N) ──
+const zeros = (N) => Array(N + 1).fill(0);
+function pmul(a, b, N) { const c = zeros(N); for (let i = 0; i <= N; i++) if (a[i]) for (let j = 0; i + j <= N; j++) if (b[j]) c[i + j] += a[i] * b[j]; return c; }
+function geo(k, N, lo = 0, hi = Infinity) { const a = zeros(N); for (let e = lo; e <= hi && e * k <= N; e++) a[e * k] = 1; return a; } // Σ x^{ek}, lo ≤ e ≤ hi
+function lin(terms, N) { const a = zeros(N); for (const [e, c] of terms) if (e <= N) a[e] += c; return a; }
+const prod = (fs, N) => fs.reduce((acc, f) => pmul(acc, f, N), lin([[0, 1]], N));
+const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+const same = (a, b, n0, n1) => range(n0, n1).every((i) => a[i] === b[i]);
+// polynomial text: "1 − x − x² + x⁵ …"
+function pstr(a, maxDeg, more = true) {
+  let s = '';
+  for (let e = 0; e <= maxDeg && e < a.length; e++) {
+    const c = a[e]; if (!c) continue; const mag = Math.abs(c);
+    const body = e === 0 ? String(mag) : (mag === 1 ? '' : mag) + xp(e);
+    s += s ? (c < 0 ? ' − ' : ' + ') + body : (c < 0 ? '−' : '') + body;
+  }
+  return (s || '0') + (more ? ' ⋯' : '');
+}
+// ── integer partitions ──
+function parts(n, max = n) { if (n === 0) return [[]]; const o = []; for (let k = Math.min(n, max); k >= 1; k--) for (const r of parts(n - k, k)) o.push([k, ...r]); return o; }
+const isDistinct = (p) => p.every((v, i) => i === 0 || v !== p[i - 1]);
+const isOdd = (p) => p.every((v) => v % 2 === 1);
+const pj = (p) => p.join(' + ');
+const sameList = (A, B) => A.length === B.length && A.every((p, i) => pj(p) === pj(B[i]));
+const conj = (p) => range(1, p[0] || 0).map((c) => p.filter((v) => v >= c).length);
+const pent = (m) => (m * (3 * m - 1)) / 2;   // m → (3m² − m)/2 ; pent(−m) = (3m² + m)/2
+// p(n) from Euler's recurrence
+function pRec(N) {
+  const p = [1];
+  for (let n = 1; n <= N; n++) { let s = 0; for (let m = 1; pent(m) <= n; m++) { const sg = m % 2 ? 1 : -1; s += sg * (p[n - pent(m)] + (pent(-m) <= n ? p[n - pent(-m)] : 0)); } p[n] = s; }
+  return p;
+}
+// p(n) from the product ∏ 1/(1 − x^k)
+const pProd = (N) => prod(range(1, N).map((k) => geo(k, N)), N);
+// the denominator ∏(1 − x^k) up to x^N
+const euler = (N) => prod(range(1, N).map((k) => lin([[0, 1], [k, -1]], N)), N);
+// a partition drawn as a bar of blocks (block width ∝ part)
+function prow(ps, x0, y, u = 0.45, c, drop = 0.6) {
+  let off = 0;
+  return ps.map((k, i) => { const m = cube(String(k), c || PAL[(k - 1) % PAL.length], [k * u - 0.06, 0.42, 0.42], x0 + (off + k / 2) * u, y, 0, drop); off += k; return m; });
+}
+// Ferrers diagram: one row of dots per part, left aligned, largest on top
+const DOT = new THREE.SphereGeometry(0.13, 14, 10);
+function dot(x, y, c) { const m = new THREE.Mesh(DOT, new THREE.MeshStandardMaterial({ color: c, roughness: 0.5 })); m.position.set(x, y, 0); lab.world.add(m); return m; }
+function ferrers(ps, x0, y0, s = 0.42, c = FC.blue) { const rows = ps.map((k, r) => range(0, k - 1).map((j) => dot(x0 + j * s, y0 - r * s, c))); return { rows, all: rows.flat(), x0, y0, s }; }
+const paint = (m, c) => m.material.color.set(c);
+// a coin facing the camera
+function coin(t, c, r, x, y) {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.14, 32), new THREE.MeshStandardMaterial({ color: c, roughness: 0.35, metalness: 0.3 }));
+  m.rotation.x = Math.PI / 2; m.position.set(x, y, 0);
+  const l = lab.label(t, 'val'); l.position.set(0, 0.12, 0); m.add(l); lab.world.add(m); return m;
+}
+// coefficient rack: cubes with the power of x above each
+function rack(vals, x0, y, dx = 0.8, c = FC.blue, label = '') {
+  const all = []; if (label) all.push(sm(label, x0 - 1.3, y));
+  const cells = vals.map((v, i) => cube(v < 0 ? '−' + Math.abs(v) : String(v), v < 0 ? FC.pink : v > 0 ? c : FC.gray, [0.64, 0.5, 0.45], x0 + i * dx, y, 0, 0.5));
+  vals.forEach((v, i) => all.push(sm(xp(i), x0 + i * dx, y + 0.5)));
+  all.push(...cells); return { all, cells };
+}
+async function slide(tok, o, x, y, ms = 500) { const a = o.position.clone(); await travel(tok, o, a, V3(x, y, 0), ms); }
+async function moveMany(tok, list, ms = 700) { const from = list.map(([o]) => o.position.clone()); await anim(tok, ms, (u) => list.forEach(([o, x, y], i) => { o.position.x = from[i].x + (x - from[i].x) * u; o.position.y = from[i].y + (y - from[i].y) * u; })); }
+
+// ════════ 0aAQE0u0Dq0（趙啟超 16A：換零錢、partition of integers 的生成函數） ════════
+const COINS = [['penny', 1, '#b87333', 0.36], ['nickel', 5, '#b9bec4', 0.46], ['dime', 10, '#c9ced4', 0.33], ['quarter', 25, '#d4d8dc', 0.56]];
+const CV = [1, 5, 10, 25];
+// number of ways to change n cents (dynamic programming) and a brute-force recount
+function changeDP(n, vals) { const w = zeros(n); w[0] = 1; for (const v of vals) for (let s = v; s <= n; s++) w[s] += w[s - v]; return w; }
+function changeBrute(n) { let c = 0; for (let d = 0; 25 * d <= n; d++) for (let q = 0; 25 * d + 10 * q <= n; q++) for (let b = 0; 25 * d + 10 * q + 5 * b <= n; b++) c++; return c; }
+function comboRow(cnt, vals, names, unit, target, y) {
+  const segs = []; let sum = 0;
+  for (let i = vals.length - 1; i >= 0; i--) if (cnt[i]) { segs.push(cnt[i] + ' 個 ' + names[i]); sum += cnt[i] * vals[i]; }
+  return [pl(segs.join(' + '), -1.2, y), ok(sum === target, 4.9, y, '= ' + sum + unit + ' ✓')];
+}
+
+scene('acD-coin-setup', '16A：換零錢——n 分錢有幾種換法？', [
+  async (tok, S) => { // @3.8
+    hot('用 generating function 來數（enumeration）', 0, 7.2); cap('上次：用生成函數數「有幾種方法」', '再講最後一個例子');
+  },
+  async (tok, S) => { // @5.4
+    hd('換零錢：n 分錢（n cents）有幾種換法？', 0, 6.4); cap('例子：換零錢的問題', 'number of ways to change n cents');
+  },
+  async (tok, S) => { // @76.6
+    S.c = []; S.c[0] = coin('1¢', COINS[0][2], COINS[0][3], -4.5, 5.0); sm('penny：1 分', -4.5, 4.2); cap('美金硬幣 penny：1 分錢', '樣子很像台幣一塊');
+  },
+  async (tok, S) => { // @97.6
+    S.c[1] = coin('5¢', COINS[1][2], COINS[1][3], -1.5, 5.0); sm('nickel：5 分', -1.5, 4.2); cap('nickel：5 分錢', '大小跟台幣五塊差不多');
+  },
+  async (tok, S) => { // @105.3
+    S.c[2] = coin('10¢', COINS[2][2], COINS[2][3], 1.5, 5.0); sm('dime：10 分', 1.5, 4.2); cap('dime：10 分錢', '銀色、比 nickel 還小');
+  },
+  async (tok, S) => { // @118.9
+    S.c[3] = coin('25¢', COINS[3][2], COINS[3][3], 4.5, 5.0); sm('quarter：25 分', 4.5, 4.2); cap('quarter：25 分（quarter dollar）', '四分之一塊美金');
+  },
+  async (tok, S) => { // @135.7
+    S.ask = bub('n 分錢 → 換成這四種硬幣，一共幾種換法？', 0, 3.4); cap('問：n 分錢有幾種換法？', '每種硬幣個數不限');
+  },
+  async (tok, S) => { // @148.3
+    gone(S.ask); hd('例：n = 100（一塊錢 = 100¢）', -3.4, 3.3);
+    S.rows = [comboRow([0, 0, 0, 4], CV, COINS.map((c) => c[0]), '¢', 100, 2.5)]; cap('例：100¢ 換成 4 個 quarter', '25 × 4 = 100');
+  },
+  async (tok, S) => { // @159.1
+    S.rows.push(comboRow([0, 1, 2, 3], CV, COINS.map((c) => c[0]), '¢', 100, 1.8)); cap('或 3 quarter + 2 dime + 1 nickel', '75 + 20 + 5 = 100');
+  },
+  async (tok, S) => { // @162.6
+    S.rows.push(comboRow([100, 0, 0, 0], CV, COINS.map((c) => c[0]), '¢', 100, 1.1)); cap('或者 100 個 penny', '每種換法都算一種');
+  },
+  async (tok, S) => { // @164.7
+    S.rows.push(comboRow([10, 2, 3, 2], CV, COINS.map((c) => c[0]), '¢', 100, 0.4)); cap('或 2Q + 3D + 2N + 10P', '50 + 30 + 10 + 10 = 100');
+  },
+  async (tok, S) => { // @194.1
+    gone(S.rows); S.rows = [];
+    hd('台幣也一樣：100 元換成 50、10、5、1 元硬幣', 0, 2.6);
+    const TV = [1, 5, 10, 50], TN = ['1 元', '5 元', '10 元', '50 元'];
+    S.rows.push(comboRow([0, 0, 0, 2], TV, TN, ' 元', 100, 1.9), comboRow([0, 0, 10, 0], TV, TN, ' 元', 100, 1.2), comboRow([100, 0, 0, 0], TV, TN, ' 元', 100, 0.5), comboRow([10, 0, 9, 0], TV, TN, ' 元', 100, -0.2));
+    cap('像台幣 100 元換零錢', '兩個 50、十個 10、九個 10 加十個 1…');
+  },
+  async (tok, S) => { // @246.1
+    note('直接數不容易：每個 n 的情況都不一樣 → 要對一般的 n 求答案', 0, -1.0); cap('直接算不容易', '要的是一般 n 的答案');
+  },
+]);
+
+scene('acD-coin-gf', '16A：換零錢的生成函數 G(x)', [
+  async (tok, S) => { // @256.8
+    hot('換零錢：還是用 generating function', 0, 7.2); cap('一樣用生成函數', '其實一下就算出來');
+  },
+  async (tok, S) => { // @264.5
+    hd('gₙ = n 分錢的換法數　　G(x) = Σ gₙ xⁿ', 0, 6.4); cap('把換法數叫 gₙ', '直接算它的生成函數 G(x)');
+  },
+  async (tok, S) => { // @320.7
+    S.ic = COINS.map((c, i) => { const m = coin(c[1] + '¢', c[2], 0.3, -5.1 + i * 3.4, 5.4); return m; });
+    S.k = COINS.map((c, i) => sm(c[0] + '：每個貢獻 ' + c[1], -5.1 + i * 3.4, 4.75)); cap('每種硬幣的貢獻不一樣', 'penny 1 分，quarter 25 分');
+  },
+  async (tok, S) => { // @342.1
+    S.f = []; S.f[0] = card('1 + x + x² + x³ + ⋯', FC.peach, -5.1, 4.0, 3.1); cap('penny 的部分：1 + x + x² + ⋯', '0 個、1 個、2 個…');
+  },
+  async (tok, S) => { // @355.5
+    glow(S.f[0], HL); S.n0 = sm('選 x² ⇔ 用 2 個 penny（每個指數 +1）', -4.3, 3.3); cap('選到 x² 就是用了兩個 penny', '一個 penny 指數貢獻 1');
+  },
+  async (tok, S) => { // @367.3
+    glow(S.f[0], null); S.f[1] = card('1 + x⁵ + x¹⁰ + ⋯', FC.sky, -1.7, 4.0, 3.1); glow(S.f[1], HL); S.n1 = sm('每個 nickel 指數 +5', -0.6, 2.75);
+    cap('nickel：1 + x⁵ + x¹⁰ + ⋯', '一個 nickel 貢獻 5');
+  },
+  async (tok, S) => { // @402.6
+    glow(S.f[1], null); gone(S.n0, S.n1);
+    S.f[2] = card('1 + x¹⁰ + x²⁰ + ⋯', FC.sky, 1.7, 4.0, 3.1); S.f[3] = card('1 + x²⁵ + x⁵⁰ + ⋯', FC.lilac, 5.1, 4.0, 3.1);
+    sm('×', -3.4, 4.0); sm('×', 0, 4.0); sm('×', 3.4, 4.0); cap('dime 貢獻 10、quarter 貢獻 25', 'G(x) 就是四個乘起來');
+  },
+  async (tok, S) => { // @422.5
+    S.tt = pl('乘開的一項：xᵃ · x⁵ᵇ · x¹⁰ᶜ · x²⁵ᵈ', 0, 2.9); S.tt2 = sm('a 個 penny、b 個 nickel、c 個 dime、d 個 quarter', 0, 2.35);
+    cap('乘開的每一項：xᵃ·x⁵ᵇ·x¹⁰ᶜ·x²⁵ᵈ', 'a、b、c、d 是各幾個');
+  },
+  async (tok, S) => { // @457.0
+    const pick = [1, 10, 20, 25]; const sum = pick.reduce((a, b) => a + b, 0);
+    S.pk = pick.map((e, i) => { glow(S.f[i], HL); return hot(xp(e), -5.1 + i * 3.4, 3.35); });
+    S.r1 = ok(sum === 56, 0, 1.6, 'x¹ · x¹⁰ · x²⁰ · x²⁵ = x⁵⁶（1 + 10 + 20 + 25 = ' + sum + '）✓'); cap('例如挑 x、x¹⁰、x²⁰、x²⁵', '乘起來是 x⁵⁶');
+  },
+  async (tok, S) => { // @493.1
+    const cnt = [1, 2, 2, 1]; const tot = cnt.reduce((s, c, i) => s + c * CV[i], 0);
+    S.r2 = ok(tot === 56, 0, 1.0, '⇒ 56¢ = 1 個 penny + 2 個 nickel + 2 個 dime + 1 個 quarter ✓'); cap('這代表 56¢ 的一種換法', '1 penny、2 nickel、2 dime、1 quarter');
+  },
+  async (tok, S) => { // @506.0
+    S.f.forEach((f) => glow(f, null)); gone(S.pk);
+    S.r3 = good('每一種乘出 xⁿ 的選法 = 一種換法 → 對 xⁿ 的係數貢獻 1 ⇒ 係數就是 gₙ', 0, 0.35); cap('每種選法對係數貢獻 1', '所以 xⁿ 的係數 = gₙ');
+  },
+  async (tok, S) => { // @571.3
+    gone(S.tt, S.tt2, S.r1, S.r2, S.r3);
+    ['1/(1 − x)', '1/(1 − x⁵)', '1/(1 − x¹⁰)', '1/(1 − x²⁵)'].forEach((t, i) => relab(S.f[i], t));
+    S.cf = hot('G(x) = 1 / [(1 − x)(1 − x⁵)(1 − x¹⁰)(1 − x²⁵)]', 0, 2.9); sm('（1 + y + y² + ⋯ = 1/(1 − y)，公比 y = x、x⁵、x¹⁰、x²⁵）', 0, 2.35);
+    cap('整理：G(x) = 1/[(1−x)(1−x⁵)(1−x¹⁰)(1−x²⁵)]', '每個都是等比級數');
+  },
+  async (tok, S) => { // @598.1
+    const N = 100, G = prod(CV.map((v) => geo(v, N)), N), D = changeDP(N, CV);
+    S.rk = rack(G.slice(0, 13), -4.6, 1.0, 0.8, FC.blue, 'gₙ');
+    const fine = same(G, D, 0, N) && G[100] === changeBrute(100);
+    ok(fine, 0, -0.1, '剩下只是展開（程式展開驗算：g₁₀₀ = ' + G[100] + '，跟逐一數的結果相同）✓'); cap('剩下只是展開的問題', '展開到 xⁿ，係數就是 gₙ');
+  },
+  async (tok, S) => { // @655.8
+    note('台幣：1/[(1 − x)(1 − x⁵)(1 − x¹⁰)(1 − x⁵⁰)]——只把 25 換成 50', 0, -0.8); cap('換成台幣：25 改成 50 就好', '1、5、10、50 元');
+  },
+]);
+
+scene('acD-coin-limit', '16A：硬幣個數有限制時', [
+  async (tok, S) => { // @743.1
+    hot('變化：硬幣個數有限制', 0, 7.2);
+    sm('penny（個數不限）', -4.4, 6.2); S.a = card('1 + x + x² + x³ + ⋯', FC.peach, 1.2, 6.2, 5.2);
+    sm('一定要 2 個 penny', -4.4, 5.0); S.b = card('x²（這部分固定，先扣掉 2¢）', FC.sky, 1.2, 5.0, 5.2); glow(S.b, HL);
+    cap('一定要 2 個 penny：那部分固定', '先扣掉，只看剩下的');
+  },
+  async (tok, S) => { // @760.5
+    glow(S.b, null);
+    sm('penny 2～10 個', -4.4, 3.8); S.c = card(range(2, 10).map(xp).join(' + '), FC.mint, 1.2, 3.8, 5.6); glow(S.c, HL);
+    cap('如果是 2 到 10 個', '就只乘 x² + x³ + ⋯ + x¹⁰');
+  },
+  async (tok, S) => { // @775.8
+    glow(S.c, null); note('不限 = 所有可能都乘進去；有範圍 → 只乘那段範圍的項', 0, 2.6); cap('全部可能就整串都乘', '有範圍就只乘那個範圍');
+  },
+  async (tok, S) => { // @785.8
+    good('看懂「乘開的每一項是什麼意思」，這些變化都不是問題', 0, 1.6); cap('看懂乘開的意思', '各種變化都會');
+  },
+]);
+
+scene('acD-part-small', '16A：Partition of integers——p(3) = 3、p(4) = 5', [
+  async (tok, S) => { // @798.5
+    hot('Partition of integers（整數分割）', 0, 7.2); cap('下一個主題：partition of integers', '很早就被研究過');
+  },
+  async (tok, S) => { // @815.5
+    hd('把 3 分割（每一份都是正整數）', -3.6, 6.3); prow([3], -5.6, 5.4); sm('一份：3', -1.6, 5.4); cap('例：把 3 分割', '分成一份：就是 3');
+  },
+  async (tok, S) => { // @835.7
+    prow([2, 1], -5.6, 4.6); sm('兩份：2 + 1', -1.6, 4.6); cap('分成兩份：一個 2、一個 1', '');
+  },
+  async (tok, S) => { // @846.6
+    S.n = note('1 + 2 跟 2 + 1 一樣（順序不算）', -3.6, 3.95); cap('2 + 1 跟 1 + 2 是同一種', '順序不影響');
+  },
+  async (tok, S) => { // @854.3
+    gone(S.n); prow([1, 1, 1], -5.6, 3.8); sm('三份：1 + 1 + 1', -1.6, 3.8);
+    ok(parts(3).length === 3, -3.6, 3.0, '3 有 3 種分法 ✓'); cap('分成三份：三個 1', '所以 3 有三種分法');
+  },
+  async (tok, S) => { // @875.6
+    hd('把 4 分割', 3.4, 6.3); prow([4], 1.4, 5.4); sm('一份：4', 5.8, 5.4); cap('再看 4', '只分一份：4');
+  },
+  async (tok, S) => { // @887.3
+    prow([3, 1], 1.4, 4.6); sm('3 + 1', 5.8, 4.6); cap('兩份：一個 3、一個 1', '1 + 3 是同一個');
+  },
+  async (tok, S) => { // @907.8
+    prow([2, 2], 1.4, 3.8); sm('2 + 2', 5.8, 3.8); cap('兩份還有：兩個 2', '0 不算，要正整數');
+  },
+  async (tok, S) => { // @927.0
+    prow([2, 1, 1], 1.4, 3.0); sm('2 + 1 + 1', 5.8, 3.0); cap('三份：2 + 1 + 1', '');
+  },
+  async (tok, S) => { // @931.1
+    prow([1, 1, 1, 1], 1.4, 2.2); sm('1 + 1 + 1 + 1', 5.8, 2.2); cap('四份：四個 1', '');
+  },
+  async (tok, S) => { // @951.9
+    ok(parts(4).length === 5, 3.4, 1.4, '4 有 5 種分法 ✓'); cap('所以 4 有五種分法', '3 有三種、4 有五種');
+  },
+  async (tok, S) => { // @997.3
+    hd('p(n) = the number of ways to partition n', 0, 0.5); sm('p(3) = 3、p(4) = 5（n 是正整數）', 0, -0.05); cap('定義 p(n)：把 n 分割的方法數', '要算一般的 p(n)');
+  },
+  async (tok, S) => { // @1038.7
+    note('直接數不容易：n = 6 就更麻煩了', 0, -0.7); cap('直接數很麻煩', 'n 一大就數不完');
+  },
+]);
+
+scene('acD-part-gf', '16A：p(n) 的生成函數 P(x) = ∏ 1/(1 − xᵏ)', [
+  async (tok, S) => { // @1070.1
+    hot('p(n) 的生成函數', 0, 7.2); cap('還是用生成函數算 p(n)', '');
+  },
+  async (tok, S) => { // @1089.6
+    sm('定義 p(0) = 1（為了常數項方便）', -3.6, 6.4); cap('先定義 p(0) = 1', '只是為了方便');
+  },
+  async (tok, S) => { // @1114.4
+    hd('P(x) = Σ p(n)xⁿ（n ≥ 0）', 3.0, 6.4); cap('P(x) = Σ p(n) xⁿ', '');
+  },
+  async (tok, S) => { // @1154.8
+    const L = [['4', 'k₄ = 1'], ['3 + 1', 'k₃ = 1、k₁ = 1'], ['2 + 2', 'k₂ = 2'], ['2 + 1 + 1', 'k₂ = 1、k₁ = 2'], ['1 + 1 + 1 + 1', 'k₁ = 4']];
+    S.tb = L.map(([a, b], i) => [pl(a, -5.4, 3.5 - i * 0.55), sm(b, -3.0, 3.5 - i * 0.55)]);
+    S.th = sm('4 的分法：幾個 1、幾個 2、幾個 3、幾個 4', -4.2, 4.0); cap('看每種分法有幾個 1、2、3…', '加起來要等於 n');
+  },
+  async (tok, S) => { // @1189.4
+    S.f = []; S.f[0] = card('1 + x + x² + x³ + ⋯', FC.peach, -5.0, 5.3, 2.8); sm('1 的部分', -5.0, 4.75); cap('1 的部分：1 + x + x² + ⋯', '沒有 1、一個 1、兩個 1…');
+  },
+  async (tok, S) => { // @1206.4
+    S.f[1] = card('1 + x² + x⁴ + x⁶ + ⋯', FC.sky, -1.9, 5.3, 2.8); sm('2 的部分', -1.9, 4.75); cap('2 的部分：1 + x² + x⁴ + ⋯', '一個 2、兩個 2…');
+  },
+  async (tok, S) => { // @1228.5
+    S.f[2] = card('1 + x³ + x⁶ + x⁹ + ⋯', FC.mint, 1.2, 5.3, 2.8); sm('3 的部分', 1.2, 4.75); cap('3 的部分：1 + x³ + x⁶ + ⋯', '');
+  },
+  async (tok, S) => { // @1237.7
+    S.f[3] = card('1 + x⁴ + x⁸ + ⋯', FC.lilac, 4.3, 5.3, 2.6); sm('4 的部分', 4.3, 4.75); cap('4 的部分：1 + x⁴ + x⁸ + ⋯', '');
+  },
+  async (tok, S) => { // @1254.6
+    S.dots = hot('⋯', 6.3, 5.3); sm('一直乘下去', 6.2, 4.75); cap('一直乘下去', 'n 可以很大，所以要全部');
+  },
+  async (tok, S) => { // @1285.8
+    note('先不管收不收斂（形式上的 power series）', 2.6, 4.2); cap('不管收不收斂', '');
+  },
+  async (tok, S) => { // @1314.4
+    pl('xᵏ¹ · x²ᵏ² · x³ᵏ³ · x⁴ᵏ⁴ ⋯ = xⁿ', 2.6, 3.4); pl('⇔ n = k₁ + 2k₂ + 3k₃ + 4k₄ + ⋯', 2.6, 2.8);
+    S.tb[3].forEach((l) => { l.element.className = 'lab-label ptr alt'; });
+    const ex = 2 * 1 + 1 * 2; ok(ex === 4, 2.6, 2.2, '例 2 + 1 + 1：k₁ = 2、k₂ = 1 → x² · x² = x⁴ ✓'); cap('乘開一項 = 一組 k₁, k₂, k₃…', 'n = k₁ + 2k₂ + 3k₃ + ⋯');
+  },
+  async (tok, S) => { // @1365.7
+    const N = 10, A = pProd(N), B = range(0, N).map((n) => parts(n).length);
+    ok(same(A, B, 0, N), 2.6, 1.5, 'xⁿ 的係數：' + A.slice(0, 8).join(', ') + ' ⋯ = p(n) ✓'); cap('每一組解貢獻 1', 'xⁿ 的係數就是 p(n)');
+  },
+  async (tok, S) => { // @1384.3
+    ['1/(1 − x)', '1/(1 − x²)', '1/(1 − x³)', '1/(1 − x⁴)'].forEach((t, i) => relab(S.f[i], t));
+    hot('P(x) = ∏ 1/(1 − xᵏ)（k = 1, 2, 3, …）', 0, 0.6); cap('寫成 P(x) = ∏ 1/(1 − xᵏ)', '一直乘到無窮');
+  },
+  async (tok, S) => { // @1423.5
+    note('跟換零錢一模一樣，只是要乘到無窮', 0, -0.1); cap('跟換零錢一樣', '只是乘到無窮');
+  },
+]);
+
+scene('acD-part-trunc', '16A：只算某一個 p(n)：乘到 1/(1 − xⁿ) 就夠', [
+  async (tok, S) => { // @1433.4
+    hot('無窮乘積怎麼辦？', 0, 7.2); pl('P(x) = 1/(1 − x) · 1/(1 − x²) · 1/(1 − x³) · ⋯', 0, 6.4); cap('乘到無窮，怎麼處理？', '');
+  },
+  async (tok, S) => { // @1465.3
+    hd('如果只要算某一個 n（n 固定）', 0, 5.6); sm('示意：n = 4', 0, 5.05); cap('第一個觀察：只算某一個 n', '例如 n 固定');
+  },
+  async (tok, S) => { // @1498.9
+    const N = 4, A = prod(range(1, N).map((k) => geo(k, N)), N);
+    pl('只乘到 1/(1 − x⁴)：1/[(1 − x)(1 − x²)(1 − x³)(1 − x⁴)]', 0, 4.3);
+    S.r1 = rack(A, -1.6, 3.2, 0.8, FC.blue, '係數');
+    ok(A[4] === parts(4).length, 0, 2.3, 'x⁴ 的係數 = ' + A[4] + ' = p(4) ✓'); cap('乘到 1/(1 − xⁿ) 就好', '取 xⁿ 的係數就是 p(n)');
+  },
+  async (tok, S) => { // @1521.5
+    const N = 6, B = prod(range(1, N).map((k) => geo(k, N)), N), A = prod(range(1, 4).map((k) => geo(k, 4)), 4);
+    pl('多乘 1/(1 − x⁵)、1/(1 − x⁶)：', -3.4, 1.4);
+    S.r2 = rack(B, -1.6, 0.6, 0.8, FC.teal, '');
+    ok(same(A, B, 0, 4), 0, -0.3, 'x⁰～x⁴ 的係數都沒變 ✓（每一份都 ≤ n，不會大於 n）'); cap('多乘的因式不會貢獻到 xⁿ', '每一份不可能大於 n');
+  },
+  async (tok, S) => { // @1536.3
+    good('只算某一個 n：有限個因式就能算出 p(n)', 0, -1.0); cap('只要某個 n，就這樣算', '');
+  },
+]);
+
+scene('acD-part-denom', '16A：分母乘開：1 − x − x² + x⁵ + x⁷ − ⋯', [
+  async (tok, S) => { // @1548.6
+    hot('但完整的 P(x) 要乘到無窮：想要 efficient 的算法', 0, 7.2); cap('還是想知道完整的展開', '或有效率的算法');
+  },
+  async (tok, S) => { // @1579.0
+    hd('先不管分子，看分母：(1 − x)(1 − x²)(1 − x³)(1 − x⁴) ⋯', 0, 6.4); cap('先把分母乘開', '');
+  },
+  async (tok, S) => { // @1587.3
+    sm('只算前面幾項：例如算到 x⁷，(1 − x⁸) 以後都不會貢獻', 0, 5.8); cap('只算前幾項就好', '後面的次數太大，貢獻不到');
+  },
+  async (tok, S) => { // @1639.7
+    const E = euler(30); S.E = E;
+    hot('= ' + pstr(E, 26), 0, 4.9);
+    S.rk = rack(E.slice(0, 16), -6.0, 3.6, 0.8, FC.blue, '');
+    cap('乘開以後是這樣', '1 − x − x² + x⁵ + x⁷ − ⋯');
+  },
+  async (tok, S) => { // @1656.8
+    const two = pmul(lin([[0, 1], [1, -1]], 3), lin([[0, 1], [2, -1]], 3), 3);
+    ok(same(two, S.E, 0, 2), 0, 2.5, '只要到 x²：乘到 (1 − x²) 就夠——(1 − x)(1 − x²) = ' + pstr(two, 3, false) + '，前 3 項一樣 ✓');
+    sm('要到 x⁵：最多乘到 (1 − x⁵)', 0, 1.9); cap('要算到 x²，乘到 1 − x² 就好', '每個有限項都算得出來');
+  },
+  async (tok, S) => { // @1676.1
+    [1, 2, 12, 15].forEach((e) => glow(S.rk.cells[e], NG)); [5, 7].forEach((e) => glow(S.rk.cells[e], HL));
+    sm('1 之後兩個一組：負、負，正、正，負、負…', 0, 1.2); cap('有規律：兩個一組', '兩個負、兩個正、兩個負…');
+  },
+  async (tok, S) => { // @1694.1
+    note('每組開頭：1、5、12、22 → 答案下一講揭曉', 0, 0.5); cap('每組開頭 1、5、12、22', '這個規律下一講講');
+  },
+]);
+
+// ════════ I9tMLP4KeEY（趙啟超 16B：Euler 五邊形數定理、p(n) 的遞迴、有限制的分割） ════════
+scene('acD-euler-thm', '16B：Euler’s Pentagonal Number Theorem', [
+  async (tok, S) => { // @3.8
+    hot('定理：∏(1 − xⁱ)，i = 1 到 ∞，乘開', 0, 7.2); cap('這是個定理', '把 ∏(1 − xⁱ) 乘開');
+  },
+  async (tok, S) => { // @6.4
+    sm('常數項 1；後面兩個一組，用 m 標第幾組', 0, 6.5); cap('常數 1，後面兩個兩個一組', '用 m 標第 m 組');
+  },
+  async (tok, S) => { // @9.0
+    sm('每組前面有 (−1)ᵐ：負、正、負、正…', 0, 6.0); cap('前面是 (−1)ᵐ', '正負相間');
+  },
+  async (tok, S) => { // @49.8
+    S.g = [[1, 2], [5, 7], [12, 15]].map(([a, b], i) => { const m = i + 1, y = 5.0 - i * 0.75, sg = m % 2 ? '−' : '+';
+      return [sm('m = ' + m, -5.2, y), card(sg + ' x' + sp(a), m % 2 ? FC.pink : FC.mint, -3.4, y, 1.6, 0.5), card(sg + ' x' + sp(b), m % 2 ? FC.pink : FC.mint, -1.6, y, 1.6, 0.5)]; });
+    sm('下一組開頭：22', -3.4, 2.75); cap('m=1：1、2；m=2：5、7；m=3：12、15', '下一個是 22');
+  },
+  async (tok, S) => { // @99.6
+    hd('∏(1 − xⁱ) = 1 + Σ (−1)ᵐ [ x^((3m² − m)/2) + x^((3m² + m)/2) ]', 0, 2.0); cap('規律：(3m² − m)/2 和 (3m² + m)/2', 'm = 1, 2, 3, …');
+  },
+  async (tok, S) => { // @108.9
+    const m = 1; ok(pent(m) === 1 && pent(-m) === 2, 3.6, 5.0, 'm = 1：(3 − 1)/2 = ' + pent(m) + '，(3 + 1)/2 = ' + pent(-m) + ' ✓'); cap('m = 1：1 和 2', '');
+  },
+  async (tok, S) => { // @119.8
+    const m = 2; ok(pent(m) === 5 && pent(-m) === 7, 3.6, 4.25, 'm = 2：(12 − 2)/2 = ' + pent(m) + '，(12 + 2)/2 = ' + pent(-m) + ' ✓'); cap('m = 2：5 和 7', '');
+  },
+  async (tok, S) => { // @128.0
+    const m = 3; ok(pent(m) === 12 && pent(-m) === 15, 3.6, 3.5, 'm = 3：(27 − 3)/2 = ' + pent(m) + '，(27 + 3)/2 = ' + pent(-m) + ' ✓'); cap('m = 3：12 和 15', '');
+  },
+  async (tok, S) => { // @145.6
+    const N = 40, E = euler(N), F = zeros(N); F[0] = 1;
+    for (let m = 1; pent(m) <= N; m++) { const sg = m % 2 ? -1 : 1; F[pent(m)] += sg; if (pent(-m) <= N) F[pent(-m)] += sg; }
+    ok(same(E, F, 0, N), 0, 1.2, '程式把乘積乘開到 x⁴⁰，跟公式逐項比對 ✓'); cap('一對一對、正負相間', '代 m 進去就知道');
+  },
+  async (tok, S) => { // @158.6
+    pl('Euler 最早提出 → 有些組合數學書叫 Euler’s Identity', 0, 0.5); cap('Euler 提出的', '有些書叫 Euler’s Identity');
+  },
+  async (tok, S) => { // @182.7
+    hot('Euler’s Pentagonal Number Theorem（五邊形數定理）', 0, -0.2); cap('比較常見的名字', 'Pentagonal Number Theorem');
+  },
+]);
+
+// pentagon dots: pentagons of side 0, 1, …, m−1 sharing one corner and its two edges
+function pentDots(m, s) {
+  const out = []; const seen = new Set(); const D = [0, 72, 144, 216, 288].map((d) => [Math.cos((d * Math.PI) / 180), Math.sin((d * Math.PI) / 180)]);
+  for (let k = 1; k <= m; k++) {
+    const L = k - 1; let p = [0, 0]; const layer = [];
+    for (const u of D) {
+      for (let j = 0; j < Math.max(L, 1); j++) { const q = [p[0] + u[0] * j * s, p[1] + u[1] * j * s]; const key = q.map((v) => v.toFixed(3)).join(','); if (!seen.has(key)) { seen.add(key); layer.push(q); } }
+      p = [p[0] + u[0] * L * s, p[1] + u[1] * L * s];
+    }
+    out.push(layer);
+  }
+  return out;
+}
+scene('acD-pentagon', '16B：Pentagonal numbers 1、5、12、22', [
+  async (tok, S) => { // @234.0
+    hot('Pentagonal = Pentagon（五邊形）的形容詞', 0, 7.2);
+    const r = 1.1, cx = -3.0, cy = 3.0; S.out = range(0, 4).map((i) => { const a1 = Math.PI / 2 + (i * 2 * Math.PI) / 5, a2 = Math.PI / 2 + ((i + 1) * 2 * Math.PI) / 5; return line(cx + r * Math.cos(a1), cy + r * Math.sin(a1), cx + r * Math.cos(a2), cy + r * Math.sin(a2)); });
+    S.pn = sm('Pentagon：五角大廈、五邊形', -3.0, 1.4); cap('Pentagon 就是五邊形', '美國國防部五角大廈');
+  },
+  async (tok, S) => { // @264.2
+    gone(S.out, S.pn); hd('pentagonal number = (3m² − m)/2', 3.2, 6.3); cap('pentagonal number = (3m² − m)/2', '');
+  },
+  async (tok, S) => { // @274.7
+    S.num = [1, 2, 3, 4].map((m, i) => card(String(pent(m)), FC.sand, 1.6 + i * 1.1, 5.4, 0.8, 0.55)); sm('m = 1, 2, 3, 4', 3.25, 4.75); cap('1、5、12、22', '跟五邊形有關係');
+  },
+  ...[1, 2, 3, 4, 5].map((m) => async (tok, S) => { // @291.5 @294.3 @297.1 @324.9 @375.7
+    if (!S.L) { S.L = pentDots(5, 0.55); S.dd = []; S.cnt = 0; }
+    const x0 = -4.6, y0 = 1.0, c = PAL[(m - 1) % PAL.length];
+    S.dd.forEach((d) => paint(d, '#b8ab94'));
+    S.L[m - 1].forEach(([x, y]) => { S.dd.push(dot(x0 + x, y0 + y, c)); });
+    S.cnt += S.L[m - 1].length;
+    ok(S.cnt === pent(m), 3.2, 3.9 - (m - 1) * 0.5, 'm = ' + m + '：' + S.cnt + ' 個點 = (3·' + m + '² − ' + m + ')/2 ✓');
+    S.num.forEach((n, i) => glow(n, i === m - 1 ? HL : null));
+    cap(['1：就是一個點', '5：五邊形的五個點', '12：邊上多一點，裡面再一個五邊形', '22：每邊切三段', '下一個：每邊切四段 → 35'][m - 1], '點的總數 = (3m² − m)/2');
+  }),
+  async (tok, S) => { // @388.2
+    S.num.forEach((n) => glow(n, null));
+    pl('把 m 換成 −m：(3m² + m)/2 = ' + [1, 2, 3, 4].map((m) => pent(-m)).join('、'), 2.6, 1.2); sm('→ generalized pentagonal number', 2.6, 0.65); cap('把 m 帶 −m：(3m² + m)/2', 'generalized pentagonal number');
+  },
+  async (tok, S) => { // @401.6
+    const ex = []; for (let m = 1; m <= 4; m++) ex.push(pent(m), pent(-m));
+    hot('乘開後 x 的指數：' + ex.join('、') + ' ⋯', 1.6, 0.0); cap('x 的指數就是這些五邊形數', '所以叫 Pentagonal Number Theorem');
+  },
+]);
+
+scene('acD-pn-derive', '16B：由生成函數倒推 p(n) 的遞迴式', [
+  async (tok, S) => { // @486.9
+    hot('用 Euler 的結果來算 p(n)', 0, 7.2); S.B = []; S.y = 6.4; cap('用這個結果來算 p(n)', '');
+  },
+  async (tok, S) => { // @500.7
+    pl('P(x) = 1 / ∏(1 − xᵏ)　（生成函數已知）', 0, 6.4); pl('∏(1 − xᵏ) = ' + pstr(euler(16), 16) + '　（Euler）', 0, 5.8); cap('生成函數知道，分母乘開也知道', '');
+  },
+  async (tok, S) => { // @514.4
+    hd('→ 倒回去找 p(n) 要滿足的 recurrence relation', 0, 5.15); cap('倒回去找遞迴關係', '');
+  },
+  async (tok, S) => { // @530.5
+    sm('以前：給 recurrence → 求生成函數；現在反過來', 0, 4.6); cap('以前：遞迴式 → 生成函數', '現在反過來');
+  },
+  async (tok, S) => { // @558.1
+    note('約定：n < 0 時 p(n) = 0；p(0) = 1（乘開常數項是 1）', 0, 4.05); cap('約定 n < 0 時 p(n) = 0', 'p(0) = 1');
+  },
+  async (tok, S) => { // @583.5
+    S.rec = hot('p(n) = Σ (−1)ᵐ⁺¹ [ p(n − (3m² − m)/2) + p(n − (3m² + m)/2) ]，m ≥ 1', 0, 3.4); cap('p(n) 要滿足的遞迴式', '用前面的 p 算現在的');
+  },
+  async (tok, S) => { // @660.5
+    S.rec.element.className = 'lab-label ptr'; pl('為什麼？　P(x) · ∏(1 − xᵏ) = 1', 0, 2.7); cap('因為 P(x) 乘分母 = 1', '');
+  },
+  async (tok, S) => { // @696.4
+    pl('(p₀ + p₁x + p₂x² + ⋯)(1 − x − x² + x⁵ + x⁷ − ⋯) = 1', 0, 2.1); cap('把 Euler 的展開式代進來', '');
+  },
+  async (tok, S) => { // @736.0
+    sm('兩邊係數相等：常數項 = 1；x、x²、x³ … 的係數都 = 0', 0, 1.5); cap('兩邊係數要相等', '常數項 1，其他都 0');
+  },
+  async (tok, S) => { // @754.2
+    const p = pRec(5); const lhs = p[5] - p[4] - p[3] + p[0];
+    ok(lhs === 0, 0, 0.85, '例 x⁵ 的係數：p₅ − p₄ − p₃ + p₀ = 0 ⇒ p₅ = p₄ + p₃ − p₀ ✓'); cap('例如看 x⁵ 的係數', '就得到 p₅ 的關係');
+  },
+  async (tok, S) => { // @780.6
+    note('作業三第 8 題有類似的題目；兩邊整理、係數相等就找到了', 0, 0.2); cap('細節就不寫了', '作業有類似題');
+  },
+]);
+
+scene('acD-pn-compute', '16B：用遞迴算 p(1)…p(10)、p(100)', [
+  async (tok, S) => { // @816.7
+    hot('m = 1 代進去：p(n) = p(n − 1) + p(n − 2) ⋯', 0, 7.2); cap('m = 1 代進去', 'p(n − 1) + p(n − 2)');
+  },
+  async (tok, S) => { // @839.0
+    hd('p(n) = p(n−1) + p(n−2) − p(n−5) − p(n−7) + p(n−12) + p(n−15) − p(n−22) ⋯', 0, 6.4); cap('再來 − p(n−5) − p(n−7)', '然後 + p(n−12) + p(n−15)…');
+  },
+  async (tok, S) => { // @867.4
+    S.p = pRec(100); S.cells = {}; S.X = (n) => -5.0 + n * 1.0;
+    range(0, 10).forEach((n) => sm('p(' + n + ')', S.X(n), 4.65));
+    S.cells[0] = cube('1', FC.orange, [0.75, 0.6, 0.5], S.X(0), 5.3, 0, 0.6); cap('每個 p(n) 用前面的算', 'p(0) = 1，負的當 0');
+  },
+  ...[1, 2, 3, 4, 5, 6].map((n) => async (tok, S) => { // @946.1 @961.0 @973.4 @994.1 @996.6 @1017.7
+    const terms = []; let v = 0;
+    for (let m = 1; pent(m) <= n; m++) { const sg = m % 2 ? 1 : -1; for (const g of [pent(m), pent(-m)]) if (g <= n) { terms.push([sg, n - g]); v += sg * S.p[n - g]; } }
+    const ex = terms.map(([sg, k], i) => (i ? (sg > 0 ? ' + ' : ' − ') : sg > 0 ? '' : '−') + 'p(' + k + ')').join('');
+    const vals = terms.map(([sg, k], i) => (i ? (sg > 0 ? ' + ' : ' − ') : sg > 0 ? '' : '−') + S.p[k]).join('');
+    Object.values(S.cells).forEach((c) => glow(c, null)); terms.forEach(([, k]) => glow(S.cells[k], HL));
+    S.cells[n] = cube(String(v), FC.blue, [0.75, 0.6, 0.5], S.X(n), 5.3, 0, 0.6);
+    if (S.line) gone(S.line);
+    S.line = ok(v === parts(n).length, 0, 3.6, 'p(' + n + ') = ' + ex + ' = ' + vals + ' = ' + v + '（直接數也是 ' + parts(n).length + '）✓');
+    cap('p(' + n + ') = ' + ex + ' = ' + v, '');
+  }),
+  async (tok, S) => { // @1039.4
+    Object.values(S.cells).forEach((c) => glow(c, null));
+    [7, 8, 9, 10].forEach((n) => { S.cells[n] = cube(String(S.p[n]), FC.teal, [0.75, 0.6, 0.5], S.X(n), 5.3, 0, 0.6); });
+    gone(S.line); S.line = ok([7, 8, 9, 10].every((n) => S.p[n] === parts(n).length), 0, 3.6, 'p(7) = 15、p(8) = 22、p(9) = 30、p(10) = 42 ✓');
+    cap('p(7)=15、p(8)=22、p(9)=30、p(10)=42', '可以一直算下去');
+  },
+  async (tok, S) => { // @1060.5
+    const Q = pProd(100);
+    S.big = card('p(100) = ' + S.p[100].toLocaleString('en-US'), FC.gold, 0, 2.5, 4.6, 0.65); glow(S.big, HL);
+    ok(S.p[100] === Q[100], 0, 1.75, '（遞迴算的 = 乘積展開的 x¹⁰⁰ 係數）✓'); cap('p(100) = 190,569,292', '一億九千零五十六萬多');
+  },
+  async (tok, S) => { // @1080.0
+    note('直接一個一個列：要數一億九千多萬種，算到哪一年？用生成函數很輕鬆', 0, 1.0); cap('直接數要數到哪一年', '用生成函數就很輕鬆');
+  },
+  async (tok, S) => { // @1125.2
+    const g = []; for (let m = 1; m <= 5; m++) g.push(pent(m), pent(-m));
+    sm('n 越大，要加減的項越多：n − ' + g.join('、n − ') + ' ⋯', 0, 0.3); cap('n 越大，要加減的項越來越多', '1、2、5、7、12、15、22…');
+  },
+]);
+
+scene('acD-part-restrict', '16B：有限制的分割 p(n | P)：以 5 為例', [
+  async (tok, S) => { // @1142.2
+    hot('有限制的 partition', 0, 7.2); cap('前面的分割沒有限制', '下面開始有限制');
+  },
+  async (tok, S) => { // @1164.9
+    hd('p(n | P)：分割後每一份要滿足性質 P', 0, 6.45); cap('記號 p(n | P)', '一豎後面寫要滿足的條件');
+  },
+  async (tok, S) => { // @1228.2
+    S.hD = hd('D：each part is distinct（每份都不同）', -2.0, 5.75); cap('例：each part is distinct', '每一份都要不一樣');
+  },
+  async (tok, S) => { // @1259.6
+    S.hO = hd('O：each part is odd（每份都是奇數）', 3.6, 5.75); cap('例：each part is odd', '不能有 2、4 這種');
+  },
+  async (tok, S) => { // @1290.6
+    S.P = parts(5); S.Y = (i) => 4.9 - i * 0.62;
+    S.P.forEach((p, i) => { prow(p, -6.6, S.Y(i), 0.42, null, 0.4); sm(pj(p), -3.4, S.Y(i)); });
+    ok(S.P.length === 7, -4.6, 0.3, '沒限制：p(5) = 7 ✓'); cap('用 5 來看：沒限制有 7 種', '');
+  },
+  ...[[0], [1, 2], [3, 4], [5, 6]].map((ix, k) => async (tok, S) => { // @1303.2 @1321.1 @1338.4 @1362.8
+    ix.forEach((i) => { S.dD = S.dD || []; S.dD[i] = isDistinct(S.P[i]); ok(S.dD[i], -0.6, S.Y(i), S.dD[i] ? '✓' : '✘ 有重複'); });
+    if (k === 3) { const n = S.dD.filter(Boolean).length; ok(n === 3, -0.6, 0.3, 'p(5 | distinct) = ' + n + ' ✓'); }
+    cap(['一份：5，當然都不同', '兩份：4 + 1、3 + 2 都可以', '三份：3+1+1、2+2+1 都有重複', '四份、五份也不行 → 只有 3 種'][k], '');
+  }),
+  ...[[0], [1, 2], [3, 4], [5, 6]].map((ix, k) => async (tok, S) => { // @1409.3 @1418.6 @1430.0 @1444.6
+    ix.forEach((i) => { S.dO = S.dO || []; S.dO[i] = isOdd(S.P[i]); ok(S.dO[i], 3.6, S.Y(i), S.dO[i] ? '✓' : '✘ 有偶數'); });
+    if (k === 3) { const n = S.dO.filter(Boolean).length; ok(n === 3, 3.6, 0.3, 'p(5 | odd) = ' + n + ' ✓'); }
+    cap(['只用奇數：5 可以', '兩份：4+1、3+2 都有偶數', '三份：3 + 1 + 1 可以', '五個 1 可以 → 也是 3 種'][k], '');
+  }),
+  async (tok, S) => { // @1501.4
+    hot('兩個都是 3——這不是巧合（下次講）', 0, -0.4); cap('兩個都是 3', '不是巧合，下次講');
+  },
+]);
+
+// ════════ VAn-mpZAbM4（趙啟超 17A：distinct = odd、生成函數證明、Ferrers 圖） ════════
+const D8 = [[8], [7, 1], [6, 2], [5, 3], [5, 2, 1], [4, 3, 1]];
+const O8 = [[7, 1], [5, 3], [5, 1, 1, 1], [3, 3, 1, 1], [3, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1]];
+scene('acD-eight', '17A：分割 8——distinct 跟 odd 各有幾種', [
+  async (tok, S) => { // @3.8
+    hot('複習：p(n | P)，P = each part distinct 或 each part odd', 0, 7.2); cap('上次講到有限制的分割', 'distinct 或 odd');
+  },
+  async (tok, S) => { // @42.8
+    sm('分割 5：distinct 有 3 種、odd 也 3 種', 0, 6.55); cap('分割 5：兩種條件都是 3 種', '');
+  },
+  async (tok, S) => { // @57.7
+    hd('分割 8：each part is distinct', -3.6, 6.0); S.Y = (i) => 5.25 - i * 0.62; cap('再看 8：每一份都不一樣', '');
+  },
+  async (tok, S) => { // @78.2
+    prow(D8[0], -6.8, S.Y(0), 0.38, null, 0.4); sm(pj(D8[0]), -2.0, S.Y(0)); cap('一份：8', '');
+  },
+  async (tok, S) => { // @80.8
+    [1, 2, 3].forEach((i) => { prow(D8[i], -6.8, S.Y(i), 0.38, null, 0.4); sm(pj(D8[i]), -2.0, S.Y(i)); });
+    bad('4 + 4 ✘（兩份一樣）', -3.6, S.Y(6) - 0.1); cap('兩份：7+1、6+2、5+3', '4 + 4 不行');
+  },
+  async (tok, S) => { // @104.2
+    [4, 5].forEach((i) => { prow(D8[i], -6.8, S.Y(i), 0.38, null, 0.4); sm(pj(D8[i]), -2.0, S.Y(i)); }); cap('三份：5+2+1、4+3+1', '其他會有兩個一樣');
+  },
+  async (tok, S) => { // @134.0
+    const A = parts(8).filter(isDistinct); ok(sameList(A, D8), -3.6, S.Y(7) - 0.2, '四份以上一定重複 → 共 ' + A.length + ' 種 ✓'); cap('四份以上一定重複', '所以 distinct 有 6 種');
+  },
+  async (tok, S) => { // @184.7
+    hd('分割 8：each part is odd', 3.4, 6.0); sm('只能用 1、3、5、7（可重複）；一份 8 是偶數 ✘', 3.4, 5.55); cap('再看 each part is odd', '只能 1、3、5、7');
+  },
+  async (tok, S) => { // @204.9
+    [0, 1].forEach((i) => { prow(O8[i], 0.4, S.Y(i) - 0.3, 0.38, null, 0.4); sm(pj(O8[i]), 5.6, S.Y(i) - 0.3); }); cap('兩份：7 + 1、5 + 3', '');
+  },
+  async (tok, S) => { // @208.8
+    note('三份 ✘：三個奇數加起來是奇數', 3.4, S.Y(2) - 0.3); cap('三份不行', '一定會有偶數');
+  },
+  async (tok, S) => { // @221.1
+    [2, 3].forEach((i) => { prow(O8[i], 0.4, S.Y(i + 1) - 0.3, 0.38, null, 0.4); sm(pj(O8[i]), 5.6, S.Y(i + 1) - 0.3); }); cap('四份：5+1+1+1、3+3+1+1', '');
+  },
+  async (tok, S) => { // @239.8
+    prow(O8[4], 0.4, S.Y(5) - 0.3, 0.38, null, 0.4); sm(pj(O8[4]), 5.6, S.Y(5) - 0.3); cap('五份不行；六份：3 + 五個 1', '');
+  },
+  async (tok, S) => { // @261.8
+    prow(O8[5], 0.4, S.Y(6) - 0.3, 0.38, null, 0.4); sm('1 × 8', 5.6, S.Y(6) - 0.3);
+    const B = parts(8).filter(isOdd); ok(sameList(B, O8), 3.4, S.Y(7) - 0.5, '七份不行；八個 1 → 共 ' + B.length + ' 種 ✓'); cap('七份不行；八份：八個 1', 'odd 也是 6 種');
+  },
+  async (tok, S) => { // @295.0
+    hot('兩個都是 6！', 0, -0.6); cap('兩個數目一樣', '5 一樣，8 也一樣');
+  },
+]);
+
+scene('acD-conj', '17A：巧合嗎？先猜（conjecture）再證明', [
+  async (tok, S) => { // @319.0
+    hot('只是巧合嗎？', 0, 7.2); cap('這只是巧合嗎？', '');
+  },
+  async (tok, S) => { // @348.3
+    const ns = range(1, 12); const dx = 0.9, x0 = -4.6;
+    sm('n', x0 - 1.3, 5.6); sm('distinct', x0 - 1.3, 4.9); sm('odd', x0 - 1.3, 4.2);
+    let all = true;
+    ns.forEach((n, i) => { const a = parts(n).filter(isDistinct).length, b = parts(n).filter(isOdd).length; all = all && a === b;
+      sm(String(n), x0 + i * dx, 5.6); cube(String(a), FC.blue, [0.66, 0.5, 0.45], x0 + i * dx, 4.9, 0, 0.5); cube(String(b), FC.green, [0.66, 0.5, 0.45], x0 + i * dx, 4.2, 0, 0.5); ok(a === b, x0 + i * dx, 3.6); });
+    sm('示意：程式把 n = 1～12 都數一遍', 0, 3.0); cap('再試 7、試 9…', '都一樣');
+  },
+  async (tok, S) => { // @372.1
+    hd('試了很多都一樣 → 寫一個猜想（conjecture）', 0, 2.2); cap('試多了都一樣，就猜它一樣', '寫成一個猜想');
+  },
+  async (tok, S) => { // @417.6
+    note('猜錯的東西一輩子證不出來；這個是對的 → 來證明', 0, 1.4); cap('猜錯了永遠證不出來', '這個是對的，來證');
+  },
+]);
+
+scene('acD-do-proof', '17A：用生成函數證明 distinct 個數 = odd 個數', [
+  async (tok, S) => { // @444.6
+    hot('用生成函數證明：p(n | distinct) = p(n | odd)', 0, 7.2); cap('用生成函數一下就證出來', '');
+  },
+  async (tok, S) => { // @471.5
+    pl('P_d(x)：each part distinct 的生成函數　P_o(x)：each part odd 的', 0, 6.45); cap('兩個生成函數：P_d(x)、P_o(x)', '證明它們一樣');
+  },
+  async (tok, S) => { // @555.8
+    pl('沒限制：(1 + x + x² + ⋯)(1 + x² + x⁴ + ⋯)(1 + x³ + x⁶ + ⋯) ⋯', 0, 5.85); cap('沒限制時是這樣', '');
+  },
+  async (tok, S) => { // @595.8
+    sm('distinct：每個數最多用一次 → 每個因式只留到 xᵏ 這一項', 0, 5.3); cap('distinct：每個數最多一個', '後面的項都不能有');
+  },
+  async (tok, S) => { // @616.0
+    hd('P_d(x) = (1 + x)(1 + x²)(1 + x³)(1 + x⁴) ⋯', 0, 4.7); cap('P_d(x) = (1+x)(1+x²)(1+x³)⋯', '');
+  },
+  async (tok, S) => { // @668.2
+    pl('1 + x = (1 − x²)/(1 − x)', -3.2, 4.0); cap('1 + x = (1 − x²)/(1 − x)', '');
+  },
+  async (tok, S) => { // @681.7
+    pl('1 + x² = (1 − x⁴)/(1 − x²)，1 + x³ = (1 − x⁶)/(1 − x³)', 2.6, 4.0); cap('同理：x 換成 x²、x³…', '');
+  },
+  async (tok, S) => { // @708.8
+    S.fr = [['1 − x²', '1 − x'], ['1 − x⁴', '1 − x²'], ['1 − x⁶', '1 − x³'], ['1 − x⁸', '1 − x⁴'], ['1 − x¹⁰', '1 − x⁵']].map(([a, b], i) => {
+      const x = -5.2 + i * 2.3; return { top: card(a, FC.sky, x, 3.1, 1.9, 0.45), bot: card(b, FC.peach, x, 2.5, 1.9, 0.45) }; });
+    sm('⋯', 6.4, 2.8);
+    glow(S.fr[0].top, NG); glow(S.fr[1].bot, NG); S.x1 = bad('x² 上下消掉', -4.0, 1.9); cap('乘起來，上面 1−x² 跟下面消掉', '');
+  },
+  async (tok, S) => { // @730.4
+    glow(S.fr[1].top, NG); glow(S.fr[3].bot, NG); glow(S.fr[2].top, '#3a1010');
+    sm('x⁴ 消掉、x⁶ 也會被後面的 1 − x⁶ 消掉 ⋯ 分子全部消光', 0, 1.9); gone(S.x1); cap('四次方、六次方也都消掉', '偶數次方全消光');
+  },
+  async (tok, S) => { // @741.5
+    S.fr.forEach((f) => { f.top.visible = false; glow(f.bot, null); }); [1, 3].forEach((i) => { S.fr[i].bot.visible = false; });
+    hot('= 1 / [(1 − x)(1 − x³)(1 − x⁵) ⋯]　只剩奇數次方', 0, 1.3); cap('剩下 1/[(1−x)(1−x³)(1−x⁵)⋯]', '只剩奇數次方');
+  },
+  async (tok, S) => { // @813.4
+    pl('= (1 + x + x² + ⋯)(1 + x³ + x⁶ + ⋯)(1 + x⁵ + ⋯) ⋯ ＝ P_o(x)：每一份都是奇數', 0, 0.7); cap('這就是 each part odd 的生成函數', '= P_o(x)');
+  },
+  async (tok, S) => { // @842.6
+    const N = 12;
+    const A = prod(range(1, N).map((k) => lin([[0, 1], [k, 1]], N)), N), B = prod(range(1, N).filter((k) => k % 2).map((k) => geo(k, N)), N);
+    rack(A, -4.4, -0.2, 0.75, FC.blue, 'P_d'); rack(B, -4.4, -1.1, 0.75, FC.green, 'P_o');
+    ok(same(A, B, 0, N), 5.4, -0.65, '逐項相同 ✓'); cap('生成函數一樣 ⇒ 每個係數一樣', '證完了');
+  },
+]);
+
+scene('acD-ferrers', '17A：Ferrers diagram', [
+  async (tok, S) => { // @902.9
+    hot('Ferrers diagram（Ferrers graph）', 0, 7.2); sm('用一排一排的點來畫一個 partition', 0, 6.55); cap('Ferrers diagram：用點畫分割', '');
+  },
+  async (tok, S) => { // @935.3
+    hd('6 = 2 + 2 + 1 + 1', -4.6, 5.7); cap('例：6 = 2 + 2 + 1 + 1', '');
+  },
+  async (tok, S) => { // @963.5
+    S.a = ferrers([2, 2, 1, 1], -5.3, 4.9, 0.45, FC.blue); note('從大排到小；每一份畫一排點；左邊對齊', 0, 1.6); cap('大到小排，一份畫一排點', '最左邊要對齊');
+  },
+  async (tok, S) => { // @990.2
+    hd('6 = 3 + 1 + 1 + 1', 0, 5.7); S.b = ferrers([3, 1, 1, 1], -0.6, 4.9, 0.45, FC.pink); cap('3 + 1 + 1 + 1', '');
+  },
+  async (tok, S) => { // @994.9
+    hd('6 = 4 + 2', 4.6, 5.7); S.c = ferrers([4, 2], 3.9, 4.9, 0.45, FC.green); cap('4 + 2', '');
+  },
+  async (tok, S) => { // @1023.5
+    good('每個 partition ↔ 唯一一個 Ferrers 圖：one-to-one correspondence', 0, 0.9); cap('分割跟圖一一對應', 'one-to-one correspondence');
+  },
+]);
+
+const R7 = [[5, 1, 1], [4, 2, 1], [3, 3, 1], [3, 2, 2]];
+scene('acD-ferrers-col', '17A：parts ≤ r 的分割 ↔ n + r 恰 r 份的分割', [
+  async (tok, S) => { // @1059.0
+    hot('用 Ferrers 圖，很多性質一看就出來', 0, 7.2); cap('用 Ferrers 圖看性質', '');
+  },
+  async (tok, S) => { // @1084.7
+    hd('左：分割 n，number of parts ≤ r', -3.6, 6.4); cap('左邊：分割 n，份數 ≤ r', '');
+  },
+  async (tok, S) => { // @1129.2
+    hd('右：分割 n + r，number of parts = r', 3.6, 6.4); cap('右邊：分割 n + r，剛好 r 份', '');
+  },
+  async (tok, S) => { // @1148.4
+    sm('兩邊之間建一個 bijection → 數目就一樣', 0, 5.8); note('示意：n = 4、r = 3', 0, 5.25); cap('建一個 bijection', '兩邊數目就一樣');
+  },
+  async (tok, S) => { // @1174.0
+    S.F = R7.map((p, i) => ferrers(p, 1.2 + (i % 2) * 3.0, 4.3 - Math.floor(i / 2) * 1.8, 0.4, FC.blue));
+    S.t = sm('每個圖都是 n + r = 7 個點', 3.6, 0.4); cap('先看右邊：全部有 n + r 點', '');
+  },
+  async (tok, S) => { // @1192.4
+    S.F.forEach((f) => f.rows.forEach((r) => paint(r[0], FC.gold)));
+    gone(S.t); S.t = sm('r 份 ⇒ 最左邊的 column 有 r = 3 點', 3.6, 0.4); cap('有 r 份 ⇒ 最左 column 有 r 點', '');
+  },
+  async (tok, S) => { // @1240.4
+    note('每排由上到下越來越短（大排到小）', 3.6, -0.2); cap('圖一定是斜斜往下變短', '上面大、下面小');
+  },
+  async (tok, S) => { // @1326.3
+    for (const f of S.F) for (const r of f.rows) { const d = r[0]; await anim(tok, 60, (u) => { d.position.y += 0.08 * u; }); kill(d); }
+    cap('把最左邊的 column 拿掉', '少了 r 點');
+  },
+  async (tok, S) => { // @1358.3
+    const L = []; const list = [];
+    S.F.forEach((f, i) => { const tx = -5.8 + (i % 2) * 2.8, ty = 4.3 - Math.floor(i / 2) * 1.8; const q = [];
+      f.rows.forEach((r, ri) => { if (r.length > 1) q.push(r.length - 1); r.slice(1).forEach((d, j) => list.push([d, tx + j * 0.4, ty - ri * 0.4])); }); L.push(q); });
+    await moveMany(tok, list, 900);
+    const want = parts(4).filter((p) => p.length <= 3);
+    ok(sameList(L, want), -3.6, 0.4, '剩 n = 4 點、份數 ≤ 3：' + L.map(pj).join('、') + ' ✓'); cap('剩下 n 點，份數 ≤ r', '就變成左邊那種');
+  },
+  async (tok, S) => { // @1467.0
+    arrow(V3(-1.2, 3.4, 0), V3(1.0, 3.4, 0)); arrow(V3(1.0, 2.8, 0), V3(-1.2, 2.8, 0));
+    sm('拿掉第一 column ⇄ 加回一個 r 點的 column', 0, 2.3); cap('反過來：加一個 r 點的 column', '就回到右邊');
+  },
+  async (tok, S) => { // @1483.7
+    good('一一對應 ⇒ 兩邊數目一樣（這裡都是 ' + R7.length + ' 種）', 0, -0.4); cap('一一對應，兩邊數目一樣', '');
+  },
+]);
+
+// ════════ p7fXiuokfWs（趙啟超 17B：bijection、transpose、largest part = m ↔ m 份） ════════
+scene('acD-bij-recap', '17B：兩個集合之間的 bijection', [
+  async (tok, S) => { // @5.8
+    hd('分割 n，parts ≤ r', -3.6, 6.3); S.A = parts(4).filter((p) => p.length <= 3).map((p, i) => card(pj(p), FC.sky, -3.6, 5.4 - i * 0.7, 2.6, 0.5)); sm('示意：n = 4、r = 3', -3.6, 2.4); cap('左邊：份數 ≤ r 的分割構成一個集合', '');
+  },
+  async (tok, S) => { // @9.4
+    hd('分割 n + r，parts = r', 3.6, 6.3); S.B = R7.map((p, i) => card(pj(p), FC.peach, 3.6, 5.4 - i * 0.7, 2.6, 0.5)); cap('右邊：n + r 恰 r 份的分割', '也構成一個集合');
+  },
+  async (tok, S) => { // @21.1
+    const L = parts(4).filter((p) => p.length <= 3);
+    S.ok = R7.every((p, i) => pj(p.map((v) => v - 1).filter((v) => v > 0)) === pj(L[i]));
+    S.A.forEach((a, i) => arrow(V3(-2.2, 5.4 - i * 0.7, 0), V3(2.2, 5.4 - i * 0.7, 0))); cap('中間建了一個一對一的對應', '這邊推到那邊，那邊推回來');
+  },
+  async (tok, S) => { // @26.8
+    ok(S.ok, 0, 2.2, 'bijection ⇒ 兩個集合的 cardinality（size）一樣 ✓'); cap('bijection ⇒ 兩邊大小一樣', '證完了');
+  },
+  async (tok, S) => { // @37.8
+    note('要證兩個數目一樣，常用這招：建一個 bijection', 0, 1.4); cap('證數目一樣常這樣做', '建一個 bijection');
+  },
+  async (tok, S) => { // @72.8
+    ferrers([3, 2, 2], -0.6, 0.6, 0.4, FC.blue); sm('Ferrers 圖一定大排到小，不會下面比較長', 0, -0.8); cap('一定大排到小', '不會下面比較大');
+  },
+]);
+
+const P14 = [4, 3, 3, 2, 1, 1];
+scene('acD-transpose', '17B：Ferrers 圖的 transposition', [
+  async (tok, S) => { // @96.6
+    hd('14 的一個 partition：' + pj(P14), 0, 6.6); ok(P14.reduce((a, b) => a + b, 0) === 14, 4.8, 6.0, '= 14 ✓'); cap('看 14 的一個 partition', '4 + 3 + 3 + 2 + 1 + 1');
+  },
+  async (tok, S) => { // @112.3
+    S.x0 = -1.6; S.y0 = 5.4; S.s = 0.5; S.F = ferrers(P14, S.x0, S.y0, S.s, FC.blue); S.F.rows.forEach((r) => paint(r[0], FC.gold));
+    S.rl = P14.map((k, r) => sm(String(k), S.x0 - 0.7, S.y0 - r * S.s)); cap('它的 Ferrers 圖', '一個 4、兩個 3、一個 2、兩個 1');
+  },
+  async (tok, S) => { // @146.6
+    sm('transposition：row 變 column、column 變 row', 3.4, 4.6); cap('考慮 transposition', 'row 變 column，column 變 row');
+  },
+  async (tok, S) => { // @168.0
+    sm('（像矩陣取 transpose）', 3.4, 4.0); gone(S.rl);
+    const list = []; S.F.rows.forEach((row, r) => row.forEach((d, c) => list.push([d, S.x0 + r * S.s, S.y0 - c * S.s])));
+    await moveMany(tok, list, 1500); cap('就像矩陣取 transpose', '');
+  },
+  async (tok, S) => { // @179.9
+    S.Q = conj(P14); S.ql = [sm(String(S.Q[0]), S.x0 - 0.7, S.y0)]; cap('第一個 column 變成第一個 row', '一共 6 點');
+  },
+  async (tok, S) => { // @189.5
+    S.Q.slice(1).forEach((k, r) => S.ql.push(sm(String(k), S.x0 - 0.7, S.y0 - (r + 1) * S.s))); cap('第二 row 4 點、第三 row 3 點', '第四 row 1 點');
+  },
+  async (tok, S) => { // @205.3
+    const legal = S.Q.every((v, i) => i === 0 || v <= S.Q[i - 1]);
+    ok(legal, 3.4, 3.2, '還是合法的 Ferrers 圖：大排到小 ✓'); cap('轉過來還是合法的 Ferrers 圖', '點數也沒少');
+  },
+  async (tok, S) => { // @243.7
+    const sum = S.Q.reduce((a, b) => a + b, 0); ok(sum === 14, 3.4, 2.5, pj(S.Q) + ' = ' + sum + '：還是 14 的 partition ✓'); cap('6 + 4 + 3 + 1 = 14', '還是 14 的 partition');
+  },
+  async (tok, S) => { // @263.7
+    const list = []; S.F.rows.forEach((row, r) => row.forEach((d, c) => list.push([d, S.x0 + c * S.s, S.y0 - r * S.s])));
+    gone(S.ql); await moveMany(tok, list, 1500);
+    ok(pj(conj(S.Q)) === pj(P14), 3.4, 1.8, '再 transpose 回來就是原本的 ⇒ 一對一（bijection）✓'); cap('再 transpose 回來就回到原來', '所以是一對一');
+  },
+]);
+
+const Q14 = conj(P14);
+scene('acD-largest', '17B：largest part = m ↔ 恰有 m 份', [
+  async (tok, S) => { // @323.7
+    hot('用 transposition 證一個性質', 0, 7.2); sm('簡單的工具、不同的觀點，看到原本看不到的', 0, 6.55); cap('用這個來證下面的性質', '');
+  },
+  async (tok, S) => { // @375.8
+    hd('分割 n，largest part = m', -3.4, 5.9); cap('第一種：最大的那一份是 m', '');
+  },
+  async (tok, S) => { // @397.2
+    S.A = ferrers(P14, -5.6, 4.9, 0.42, FC.blue); S.B = ferrers(Q14, 1.4, 4.9, 0.42, FC.green);
+    S.A.rows[0].forEach((d) => paint(d, FC.gold)); S.B.rows[0].forEach((d) => paint(d, FC.gold));
+    sm(pj(P14) + '：largest = ' + Math.max(...P14), -4.2, 2.1); sm(pj(Q14) + '：largest = ' + Math.max(...Q14), 2.8, 2.1); cap('例：這個最大的 part 是 4', '那個最大的 part 是 6');
+  },
+  async (tok, S) => { // @411.0
+    hd('分割 n，number of parts = m', 3.4, 5.9); cap('第二種：一共 m 份', '兩種個數一樣');
+  },
+  async (tok, S) => { // @450.7
+    S.A.rows.forEach((r, i) => { if (i) paint(r[0], FC.teal); }); S.B.rows.forEach((r, i) => { if (i) paint(r[0], FC.teal); });
+    sm('有 ' + P14.length + ' 份', -4.2, 1.55); sm('有 ' + Q14.length + ' 份', 2.8, 1.55); cap('number of parts：這個 6 份', '那個 4 份');
+  },
+  async (tok, S) => { // @488.4
+    pl('largest part = m ⇔ 第一個 row 有 m 點', -3.4, 0.9); cap('最大份是 m ⇔ 第一 row 有 m 點', '');
+  },
+  async (tok, S) => { // @546.2
+    pl('m 份 ⇔ 第一個 column 有 m 點', 3.4, 0.9); cap('要變成：第一 column 有 m 點', '');
+  },
+  async (tok, S) => { // @594.3
+    arrow(V3(-2.6, 4.0, 0), V3(1.0, 4.0, 0)); arrow(V3(1.0, 3.5, 0), V3(-2.6, 3.5, 0)); ok(pj(conj(P14)) === pj(Q14), -0.8, 3.0, 'transpose ✓'); cap('transpose 過來就好', '');
+  },
+  async (tok, S) => { // @647.0
+    sm('左：largest 4 → 右：4 份；右：largest 6 → 左：6 份', 0, 0.3); cap('第一 row m 點 ↔ 第一 column m 點', '最大份 m ↔ m 份');
+  },
+  async (tok, S) => { // @662.4
+    const n = 6; let all = true; const cs = range(1, n).map((m) => { const a = parts(n).filter((p) => p[0] === m).length, b = parts(n).filter((p) => p.length === m).length; all = all && a === b; return a + '=' + b; });
+    ok(all, 0, -0.3, '示意 n = 6，m = 1～6：' + cs.join('、') + ' ✓'); cap('這兩種分割一一對應', '個數一樣');
+  },
+  async (tok, S) => { // @752.8
+    note('Ferrers 圖 + 生成函數，混著用可以證很多性質', 0, -0.9); cap('Ferrers 圖很好用', '跟生成函數混著用');
+  },
+]);
+
+// ════════ XVt8JJgj8JE（趙啟超 17C：complexity of algorithms、Big-O） ════════
+scene('acD-why', '17C：為什麼要估計複雜度', [
+  async (tok, S) => { // @6.0
+    hot('Complexity of algorithms（演算法的複雜度）', 0, 7.2); sm('enumeration 的最後一部分', 0, 6.55); cap('enumeration 最後一部分', 'complexity of algorithms');
+  },
+  async (tok, S) => { // @10.2
+    S.m = prop('monitor', -4.2, 2.6, 0, 1.2); bub('做之前先估計：要花多少時間？', -4.2, 5.3); cap('先估計要花多少時間', '');
+  },
+  async (tok, S) => { // @36.4
+    S.r = [card('n = 10：跑了 1 小時', FC.mint, 2.4, 5.0, 4.2), card('n = 100：？', FC.sky, 2.4, 4.2, 4.2), card('n = 1000：？', FC.sky, 2.4, 3.4, 4.2)]; cap('n = 10 跑一小時', '那 n = 100、1000 呢？');
+  },
+  async (tok, S) => { // @56.5
+    relab(S.r[1], 'n = 100：要 5 年？等不到！'); glow(S.r[1], NG); cap('如果要跑 5 年', '根本等不到');
+  },
+  async (tok, S) => { // @76.8
+    sm('先算複雜度：n = 100 的工作量是 n = 10 的幾倍', 2.4, 2.5); cap('先算複雜度', 'n = 100 是 n = 10 的幾倍');
+  },
+  async (tok, S) => { // @97.8
+    note('跑兩個禮拜，中間可能停電、當機，就沒有結果', 2.4, 1.8); cap('跑兩個禮拜可能就當掉了', '');
+  },
+  async (tok, S) => { // @115.7
+    good('用 complexity of algorithm 來估計', 0, 0.6); cap('用演算法的複雜度來考慮', '');
+  },
+]);
+
+scene('acD-algo', '17C：什麼是 algorithm', [
+  async (tok, S) => { // @125.4
+    hd('algorithm = a list of precise instructions', 0, 6.4); cap('algorithm：一串精確的指令', '');
+  },
+  async (tok, S) => { // @179.8
+    pl('designed to solve a particular type of problem', 0, 5.7); sm('（解一整類問題，不是只解一個特例）', 0, 5.15); cap('解的是一整類的問題', '不只是一個 special case');
+  },
+  async (tok, S) => { // @194.4
+    sm('台灣通常叫「演算法」', 0, 4.5); cap('台灣叫演算法', '');
+  },
+  async (tok, S) => { // @204.8
+    S.c = card('Programs = Algorithms + Data Structures', FC.gold, 0, 3.6, 7.0, 0.6); glow(S.c, HL); cap('Programs = Algorithms + Data Structures', '以前的一本書名');
+  },
+  async (tok, S) => { // @222.8
+    glow(S.c, null); card('algorithm：怎麼做', FC.sky, -2.6, 2.4, 3.6); card('data structure：資料怎麼存', FC.peach, 2.6, 2.4, 4.4);
+    note('兩部分要配合：資料存得好，演算法才能做得好', 0, 1.5); cap('一個怎麼做，一個怎麼存', '要互相配合');
+  },
+]);
+
+scene('acD-fn', '17C：分析 algorithm：size n 與 f(n)', [
+  async (tok, S) => { // @237.9
+    hot('怎麼分析一個 algorithm', 0, 7.2); cap('來分析一個 algorithm', '');
+  },
+  async (tok, S) => { // @274.6
+    card('① 把 algorithm 描述得很 precise', FC.sky, 0, 6.0, 7.0); cap('第一：描述得很精確', '');
+  },
+  async (tok, S) => { // @282.0
+    card('② 定義問題（instance）的 size：n', FC.mint, 0, 5.1, 7.0); cap('定義問題的 size，叫 n', '');
+  },
+  async (tok, S) => { // @314.3
+    S.f = card('③ f(n) = number of operations required', FC.peach, 0, 4.2, 7.0); glow(S.f, HL); cap('f(n)：需要做幾次運算', 'number of operations');
+  },
+  async (tok, S) => { // @348.0
+    glow(S.f, null); sm('不只一種運算 → 看最花時間的那種（例：乘法比加法貴很多）', 0, 3.4); cap('不只一種運算時', '看最複雜的那種');
+  },
+  async (tok, S) => { // @363.7
+    note('描述跟 size 都要精確，結果才不會錯', 0, 2.6); cap('描述、size 都要精確', '');
+  },
+]);
+
+const TN = [20, 40, 60];
+const fmtT = (sec) => {
+  if (sec < 60) return String(parseFloat(sec.toPrecision(3))) + ' 秒';
+  if (sec < 86400 * 365) return String(parseFloat((sec / 86400).toPrecision(3))) + ' 天';
+  return Math.round(sec / (86400 * 365 * 100)) + ' 個世紀';
+};
+scene('acD-time', '17C：n、n²、n³、2ⁿ 要跑多久（每次 10⁻⁶ 秒）', [
+  async (tok, S) => { // @494.3
+    hot('複雜度 f(n)：size = n 時某種 operation 的次數', 0, 7.2); cap('複雜度就是這個 f(n)', '');
+  },
+  async (tok, S) => { // @534.3
+    hd('不同的複雜度要花多少時間？', 0, 6.45); cap('看不同複雜度要花多久', '');
+  },
+  async (tok, S) => { // @561.2
+    sm('假設每秒做 10⁶ 次 → 一次 10⁻⁶ 秒（1 μs）', 0, 5.9); cap('假設每秒一百萬次', '一次 10⁻⁶ 秒');
+  },
+  async (tok, S) => { // @576.6
+    note('MIPS = Million Instructions Per Second', 0, 5.35); cap('MIPS：每秒幾百萬個指令', '');
+  },
+  async (tok, S) => { // @606.6
+    S.X = (j) => -2.0 + j * 3.0; TN.forEach((n, j) => hd('n = ' + n, S.X(j), 4.6)); sm('f(n)', -5.2, 4.6); cap('n 取 20、40、60', '');
+  },
+  ...[['n', (n) => n], ['n²', (n) => n * n], ['n³', (n) => n ** 3]].map(([nm, f], r) => async (tok, S) => { // @628.7 @687.2 @744.2
+    const y = 3.8 - r * 0.8; sm(nm, -5.2, y);
+    TN.forEach((n, j) => cube(fmtT(f(n) * 1e-6), FC.sky, [2.7, 0.55, 0.45], S.X(j), y, 0, 0.6));
+    cap(['f(n) = n：20 次 × 10⁻⁶ 秒…', 'n²：400、1600、3600 次', 'n³：8000、64000、216000 次'][r], '都不到 1 秒');
+  }),
+  async (tok, S) => { // @799.6
+    S.y2 = 3.8 - 3 * 0.8; sm('2ⁿ', -5.2, S.y2); S.c = []; S.c[0] = cube(fmtT(2 ** 20 * 1e-6), FC.peach, [2.7, 0.55, 0.45], S.X(0), S.y2, 0, 0.6); cap('2ⁿ：n 跑到指數上去', '2²⁰ 次 ≈ 1 秒');
+  },
+  async (tok, S) => { // @811.8
+    S.c[1] = cube(fmtT(2 ** 40 * 1e-6), FC.peach, [2.7, 0.55, 0.45], S.X(1), S.y2, 0, 0.6); cap('2⁴⁰：12.7 天', '還不到兩個禮拜');
+  },
+  async (tok, S) => { // @837.7
+    S.c[2] = cube('？', FC.red, [2.7, 0.55, 0.45], S.X(2), S.y2, 0, 0.6); S.g = bub('猜猜看 n = 60 要多久？', S.X(2), 0.9); cap('n = 60 呢？猜猜看', '');
+  },
+  async (tok, S) => { // @876.2
+    gone(S.g); const sec = 2 ** 60 * 1e-6; relab(S.c[2], fmtT(sec)); glow(S.c[2], NG);
+    const yrs = sec / (86400 * 365); ok(Math.round(yrs / 100) === 366, S.X(2), 0.9, '≈ ' + Math.round(yrs).toLocaleString('en-US') + ' 年 ✓'); cap('366 個世紀', '三萬多年');
+  },
+  async (tok, S) => { // @889.0
+    bad('指數成長很可怕：n = 40 不到兩週，n = 60 要三萬多年', 0, 0.1); cap('指數成長很可怕', '');
+  },
+  async (tok, S) => { // @902.0
+    note('動手之前，先估計要花多少時間', 0, -0.6); cap('做事前先估計', '要有一點概念');
+  },
+]);
+
+const fEx = (n) => 3 * n ** 3 - 20 * n ** 2 + 5 * n - 11;
+scene('acD-bigo', '17C：Big-O notation 的定義', [
+  async (tok, S) => { // @958.3
+    hot('常用的 notation', 0, 7.2); cap('介紹常用的符號', '');
+  },
+  async (tok, S) => { // @983.7
+    hd('Big-O notation：O(g(n))', 0, 6.45); cap('大寫的 O：Big-O notation', '');
+  },
+  async (tok, S) => { // @1041.3
+    S.d = card('f(n) ∈ O(g(n))：存在正常數 k 和 N₀，對所有 n ≥ N₀，|f(n)| ≤ k·|g(n)|', FC.gold, 0, 5.6, 12.6, 0.6); glow(S.d, HL);
+    cap('存在常數 k、N₀', 'n ≥ N₀ 時 |f(n)| ≤ k·|g(n)|');
+  },
+  async (tok, S) => { // @1057.1
+    glow(S.d, null); sm('只看 n 夠大（n ≥ N₀）以後；前面 n 小的時候不管', 0, 4.9); cap('n 夠大以後才算', '前面小的不管');
+  },
+  async (tok, S) => { // @1069.1
+    sm('寫成 f(n) ∈ O(g(n))，唸作「big O of g(n)」', 0, 4.35); cap('唸作 big O of g(n)', '');
+  },
+  async (tok, S) => { // @1139.8
+    hd('例：f(n) = 3n³ − 20n² + 5n − 11', 0, 3.6); cap('舉個例子', 'f(n) = 3n³ − 20n² + 5n − 11');
+  },
+  async (tok, S) => { // @1174.5
+    pl('n ≥ 1：|f(n)| ≤ 3n³ + 20n³ + 5n³ + 11n³ = 39n³', 0, 2.95);
+    const ns = [1, 2, 3, 5, 10]; let all = true; for (let n = 1; n <= 1000; n++) all = all && Math.abs(fEx(n)) <= 39 * n ** 3;
+    ns.forEach((n, i) => { const x = -4.4 + i * 2.2; sm('n = ' + n, x, 2.35); pl('|f| = ' + Math.abs(fEx(n)), x, 1.85); sm('39n³ = ' + 39 * n ** 3, x, 1.4); });
+    ok(all, 0, 0.85, '程式檢查 n = 1～1000 都成立 ✓'); cap('係數取絕對值加起來：39', '|f(n)| ≤ 39n³');
+  },
+  async (tok, S) => { // @1186.4
+    good('k = 39、N₀ = 1 ⇒ f(n) ∈ O(n³)（前面的 constant 不管）', 0, 0.25); cap('所以 f(n) 是 big O of n³', 'constant 不管它');
+  },
+  async (tok, S) => { // @1205.7
+    sm('Big-O 告訴你：n 很大時大概的成長趨勢', 0, -0.35); cap('Big-O 看大概的趨勢', '');
+  },
+  async (tok, S) => { // @1236.8
+    note('趨勢差很多：exponential 跟 polynomial（剛才那張表）', 0, -0.95); cap('趨勢的影響很大', '指數 vs 多項式');
+  },
+]);
+
+scene('acD-dom', '17C：看長得最快的那一項', [
+  async (tok, S) => { // @1267.9
+    hd('n² + 17n + 3 ∈ O(n²)', 0, 6.4); const n = 100; sm('例 n = 100：n² = ' + n * n + '，17n + 3 = ' + (17 * n + 3), 0, 5.8); cap('n² + 17n + 3：big O of n²', 'n 很大時 n² 長最快');
+  },
+  async (tok, S) => { // @1302.7
+    hd('2ⁿ + n³ + 12n（示意）∈ O(2ⁿ)', 0, 4.8); const n = 30; sm('例 n = 30：2ⁿ = ' + (2 ** n).toLocaleString('en-US') + '，n³ + 12n = ' + (n ** 3 + 12 * n).toLocaleString('en-US'), 0, 4.2); cap('exponential 比 polynomial 快多了', '所以看 2ⁿ');
+  },
+  async (tok, S) => { // @1321.8
+    good('影響最大的 = growth 最快的那一項', 0, 3.3); cap('看 growth 最快的那一項', '');
+  },
+  async (tok, S) => { // @1340.1
+    note('要寫實際的成長：n² 也 ≤ n⁵，但寫 O(n⁵) 沒有意義（示意）', 0, 2.4); cap('要寫有意義的那個', '不要寫一個大很多的');
+  },
+]);
+
+// ════════ cM8ymJ355fc（趙啟超 17D：sorting、bubble sort、insertion sort） ════════
+scene('acD-sort-def', '17D：sorting：找一個 permutation', [
+  async (tok, S) => { // @3.8
+    hot('Sorting algorithm：排大小', 0, 7.2); cap('sorting：把東西排大小', '通常小的在前');
+  },
+  async (tok, S) => { // @10.5
+    S.v = [47, 73, 21]; S.c = S.v.map((v, i) => cube(String(v), FC.blue, [0.9, 0.9, 0.9], -2.0 + i * 2.0, 4.6, 0, 0.8));
+    S.v.forEach((v, i) => sm('x' + sb(i + 1), -2.0 + i * 2.0, 3.85)); sm('示意', 4.0, 4.6); cap('一串不一樣的數 x₁, x₂, …, xₙ', 'sequence of distinct numbers');
+  },
+  async (tok, S) => { // @58.4
+    sm('只要是 total order（任兩個都能比大小）的集合就能排，不一定是數字', 0, 6.4); cap('只要是 total order 就能排', '不一定是一般的數');
+  },
+  async (tok, S) => { // @99.5
+    sm('排成 increasing order（小到大）；decreasing 也可以', 0, 5.85); cap('排成由小到大', '下面都做 increasing');
+  },
+  async (tok, S) => { // @161.6
+    const pi = S.v.map((v, i) => i).sort((a, b) => S.v[a] - S.v[b]);
+    pl('找一個 permutation π：x_π(1) < x_π(2) < ⋯ < x_π(n)', 0, 3.0);
+    await moveMany(tok, pi.map((k, pos) => [S.c[k], -2.0 + pos * 2.0, 2.0]), 1000);
+    pi.forEach((k, pos) => sm('π(' + (pos + 1) + ') = ' + (k + 1), -2.0 + pos * 2.0, 1.25));
+    ok(pi.every((k, i) => i === 0 || S.v[pi[i - 1]] < S.v[k]), 0, 0.6, '21 < 47 < 73 ✓'); cap('用 permutation 排成小到大', 'x_π(1) < x_π(2) < ⋯');
+  },
+  async (tok, S) => { // @191.8
+    note('permutation 是 bijection：π(1), …, π(n) 都不一樣', 0, -0.1); cap('permutation 是 bijection', '每個位置都不一樣');
+  },
+]);
+
+const BUB = [47, 73, 21, 45, 28];
+function arr(vals, x0, y, dx, c = FC.blue) { return vals.map((v, i) => ({ v, m: cube(String(v), c, [0.9, 0.9, 0.9], x0 + i * dx, y, 0, 0.7) })); }
+async function bubblePass(tok, S, j) {
+  const n = S.a.length;
+  for (let i = 0; i < n - j; i++) {
+    const A = S.a[i], B = S.a[i + 1]; glow(A.m, HL); glow(B.m, HL); S.cmp++; await wt(tok, 220);
+    if (A.v > B.v) { await moveMany(tok, [[A.m, S.X(i + 1), S.y], [B.m, S.X(i), S.y]], 300); S.a[i] = B; S.a[i + 1] = A; }
+    glow(A.m, null); glow(B.m, null);
+  }
+  paint(S.a[n - j].m, FC.green);
+}
+scene('acD-bubble', '17D：Bubble sort', [
+  async (tok, S) => { // @212.7
+    hot('Bubble sort（氣泡排序）', 0, 7.2); S.X = (i) => -3.6 + i * 1.8; S.y = 2.4; S.a = arr(BUB, -3.6, S.y, 1.8); S.cmp = 0;
+    sm('示意：x₁…x₅ = ' + BUB.join('、'), 0, 1.3); cap('最簡單的 sorting：bubble sort', '');
+  },
+  async (tok, S) => { // @242.5
+    S.n1 = note('像氣泡：最輕的先浮上來，再第二輕的…', 0, 3.7); cap('像氣泡一個一個浮上來', '最輕的先上來');
+  },
+  async (tok, S) => { // @263.4
+    gone(S.n1); S.n1 = note('這裡反過來：最大的先沉到最後面', 0, 3.7); cap('這裡反過來寫', '最大的先沉下去');
+  },
+  async (tok, S) => { // @313.4
+    gone(S.n1); S.code = code(['for j := 1 to n − 1 do', '  for i := 1 to n − j do', '    if xᵢ > xᵢ₊₁ then 交換 xᵢ、xᵢ₊₁'], -2.6, 6.3, 0.56); cap('用 pseudocode 寫', '兩層 for loop');
+  },
+  async (tok, S) => { // @343.3
+    S.code.hl(2); await bubblePass(tok, S, 1); cap('j = 1：兩兩比，大的往後掉', '');
+  },
+  async (tok, S) => { // @364.9
+    S.code.hl(0); S.t1 = ok(S.a[4].v === Math.max(...BUB), 0, 1.3 - 0.6, '比完一輪，最大的 ' + S.a[4].v + ' 在最後 ✓'); cap('比完一輪，最大的在最後', '');
+  },
+  async (tok, S) => { // @367.9
+    S.code.hl(1); await bubblePass(tok, S, 2); cap('第二輪只比前面的', '第二大的掉到 n − 1');
+  },
+  async (tok, S) => { // @379.8
+    sm('內圈：1 到 n − 1、1 到 n − 2、1 到 n − 3 …', 0, 4.4); cap('內圈 1 到 n−1、n−2、n−3…', '');
+  },
+  async (tok, S) => { // @392.9
+    S.code.hl(2); await bubblePass(tok, S, 3); await bubblePass(tok, S, 4); paint(S.a[0].m, FC.green);
+    const sorted = [...BUB].sort((a, b) => a - b); ok(S.a.every((o, i) => o.v === sorted[i]), 0, 0.1, '全部做完就排好了：' + S.a.map((o) => o.v).join(' < ') + ' ✓'); cap('一輪一輪做完就排好了', '');
+  },
+  async (tok, S) => { // @431.1
+    S.code.hl(-1); good('就兩個 for loop', 0, -0.6); cap('bubble sort 就兩個 for loop', '');
+  },
+]);
+
+scene('acD-bubble-count', '17D：Bubble sort 比較幾次', [
+  async (tok, S) => { // @463.6
+    hot('Bubble sort 的複雜度：數 comparison 的次數', 0, 7.2); cap('算一下複雜度', '數比大小的次數');
+  },
+  async (tok, S) => { // @490.6
+    const n = 5; pl('第 j 個 pass：i 從 1 到 n − j → 比 n − j 次', 0, 6.4); sm('示意 n = 5', 0, 5.85);
+    S.b = range(1, n - 1).map((j, k) => { const h = (n - j) * 0.7; cube(String(n - j), FC.blue, [0.9, h, 0.6], -3.0 + k * 2.0, 1.5 + h / 2, 0, 0); return sm('j = ' + j, -3.0 + k * 2.0, 1.0); }); cap('第 j 個 pass 比 n − j 次', '');
+  },
+  async (tok, S) => { // @540.3
+    pl('total = (n − 1) + (n − 2) + ⋯ + 1', 0, 0.3); cap('全部加起來', '(n − 1) + (n − 2) + ⋯ + 1');
+  },
+  async (tok, S) => { // @565.3
+    const n = 5, sum = range(1, n - 1).reduce((a, b) => a + b, 0); hd('= n(n − 1)/2', 0, -0.3);
+    ok(sum === (n * (n - 1)) / 2, 4.6, -0.3, 'n = 5：4+3+2+1 = ' + sum + ' ✓'); cap('= n(n − 1)/2', '');
+  },
+  async (tok, S) => { // @574.5
+    good('∈ O(n²)：看影響最大的 n² 項', 0, -0.95); cap('用 Big-O：O(n²)', '');
+  },
+]);
+
+const INS = [47, 73, 21, 45, 28, 69, 19, 23];
+scene('acD-insertion', '17D：Insertion sort：47 73 21 45 28 69 19 23', [
+  async (tok, S) => { // @619.3
+    hot('Insertion sort（插入排序）', 0, 7.2); sm('人自己排大小常常這樣做', 0, 6.55); cap('另一種：insertion sort', '人排大小常這樣做');
+  },
+  async (tok, S) => { // @668.6
+    S.X = (i) => -5.25 + i * 1.5; S.in = INS.map((v, i) => cube(String(v), FC.sky, [1.0, 0.8, 0.8], S.X(i), 5.0, 0, 0.7)); INS.forEach((v, i) => sm(String(i + 1), S.X(i), 5.75));
+    S.sorted = []; S.yS = 2.4; range(0, 7).forEach((i) => sm('·', S.X(i), S.yS - 0.7)); cap('要排這 8 個數', '一個一個拿出來塞進去');
+  },
+  ...INS.map((val, j) => async (tok, S) => { // @677.1 @678.2 @691.6 @715.1 @737.3 @756.7 @759.6 @775.2
+    const m = S.in[j]; let i = 0;
+    while (i < S.sorted.length && val > S.sorted[i].v) { glow(S.sorted[i].m, HL); await wt(tok, 140); glow(S.sorted[i].m, null); i++; }
+    if (i < S.sorted.length) { glow(S.sorted[i].m, NG); await wt(tok, 160); glow(S.sorted[i].m, null); }
+    const shift = S.sorted.slice(i).map((o, k) => [o.m, S.X(i + k + 1), S.yS]);
+    if (shift.length) await moveMany(tok, shift, 400);
+    await moveMany(tok, [[m, S.X(i), S.yS]], 500); glow(m, null);
+    S.sorted.splice(i, 0, { v: val, m });
+    cap([
+      '第一個：47，就一個', '73 跟 47 比：比較大，放後面', '21 比 47 小：放最前面，47、73 往後移', '45：比 21 大、比 47 小',
+      '28：比 21 大、比 45 小', '69：放在 47 和 73 中間', '19：最小，整排往後移', '23：19、21 比它小，28 比它大',
+    ][j], S.sorted.map((o) => o.v).join(' '));
+  }),
+  async (tok, S) => { // @800.3
+    const want = [...INS].sort((a, b) => a - b); ok(S.sorted.every((o, i) => o.v === want[i]), 0, 0.6, '一個一個塞進去，前面一直是排好的：' + S.sorted.map((o) => o.v).join(' < ') + ' ✓'); cap('這就是 insertion sort', '一次塞一個到對的位置');
+  },
+]);
+
+scene('acD-ins-code', '17D：Insertion sort 的 pseudocode', [
+  async (tok, S) => { // @820.5
+    hot('Insertion sort 的 pseudocode', 0, 7.2);
+    S.code = code(['for j := 2 to n do', '  i := 1', '  while xⱼ > xᵢ do i := i + 1', '  temp := xⱼ', '  for k := 0 to j − i − 1 do', '    xⱼ₋ₖ := xⱼ₋ₖ₋₁', '  xᵢ := temp'], -3.4, 6.4, 0.5);
+    sm('（類似 Pascal 的 begin … end 格式）', 3.6, 6.4); cap('寫成 pseudocode', '類似 Pascal 的格式');
+  },
+  async (tok, S) => { // @843.9
+    S.code.hl(0); sm('j 從 2 到 n：把第 j 個塞進去', 3.6, 5.7); cap('j 從 2 跑到 n', '');
+  },
+  async (tok, S) => { // @855.0
+    S.X = (i) => -5.25 + i * 1.5; S.y = 1.6; const pre = [19, 21, 28, 45, 47, 69, 73];
+    S.a = pre.map((v, i) => ({ v, m: cube(String(v), FC.blue, [1.0, 0.8, 0.8], S.X(i), S.y, 0, 0.6) }));
+    S.xj = { v: 23, m: cube('23', FC.orange, [1.0, 0.8, 0.8], S.X(7), S.y, 0, 0.6) }; range(0, 7).forEach((i) => sm(String(i + 1), S.X(i), S.y - 0.75));
+    sm('例（j = 8）：前面 x₁…x₇ 已經排好，要把 x₈ = 23 塞進來', 0, 2.75); cap('前面已經排好', '要把 xⱼ 塞進來');
+  },
+  async (tok, S) => { // @867.6
+    S.code.hl(2); let i = 0;
+    while (S.xj.v > S.a[i].v) { glow(S.a[i].m, HL); await wt(tok, 300); glow(S.a[i].m, null); i++; }
+    glow(S.a[i].m, NG); S.i = i; S.ip = sm('i = ' + (i + 1), S.X(i), S.y + 0.75); cap('從第一個開始比', '比較大就跟下一個比');
+  },
+  async (tok, S) => { // @907.4
+    glow(S.a[S.i].m, null); S.code.hl(3); S.tmp = sm('temp', 4.6, 3.5); await moveMany(tok, [[S.xj.m, 4.6, 4.2]], 600); cap('比到比它小的位置就停', 'xⱼ 先放到暫存 temp');
+  },
+  async (tok, S) => { // @921.0
+    S.code.hl(5); sm('xᵢ … xⱼ₋₁ 全部往後移一格', 0, 0.35); cap('把 xᵢ 後面整段往後移一格', '');
+  },
+  async (tok, S) => { // @935.7
+    for (let k = S.a.length - 1; k >= S.i; k--) await moveMany(tok, [[S.a[k].m, S.X(k + 1), S.y]], 250);
+    cap('73、69、47、45、28 往後移', 'xᵢ 就空出來了');
+  },
+  async (tok, S) => { // @978.4
+    S.code.hl(6); await moveMany(tok, [[S.xj.m, S.X(S.i), S.y]], 600);
+    S.a.splice(S.i, 0, S.xj); ok(S.a.every((o, k) => k === 0 || S.a[k - 1].v < o.v), 0, -0.3, 'temp 放進 xᵢ：' + S.a.map((o) => o.v).join(' < ') + ' ✓'); cap('再把 temp 放進 xᵢ', '跟手寫的方法一樣');
+  },
+]);
+
+scene('acD-ins-count', '17D：Insertion sort 的 worst case 與 n log n', [
+  async (tok, S) => { // @1002.2
+    hot('Insertion sort：比較幾次？', 0, 7.2); cap('算一下比較的次數', '');
+  },
+  async (tok, S) => { // @1015.8
+    S.X = (i) => -5.25 + i * 1.5; const pre = [21, 28, 45, 47, 73];
+    const a = pre.map((v, i) => cube(String(v), FC.blue, [1.0, 0.8, 0.8], S.X(i), 5.0, 0, 0.6)); cube('69', FC.orange, [1.0, 0.8, 0.8], S.X(6), 5.0, 0, 0.6);
+    let c = 0; for (let i = 0; i < pre.length; i++) { c++; glow(a[i], HL); await wt(tok, 200); if (69 < pre[i]) break; }
+    ok(c === 5, 0, 4.0, 'j = 6 塞 69：這次比了 ' + c + ' 次 ✓（也可能比 1 次就停）'); cap('69 要塞進來：比了五個', '也可能一個就停');
+  },
+  async (tok, S) => { // @1042.5
+    sm('比較次數不一定 → 有人算 average case，有人算 worst case', 0, 3.4); cap('次數不一定', 'average 或 worst case');
+  },
+  async (tok, S) => { // @1053.1
+    hd('今天算 worst case：比到最後才停', 0, 2.8); cap('今天算最差的情況', '');
+  },
+  async (tok, S) => { // @1068.3
+    pl('第 j 個最多跟前面 j − 1 個都比過 → 最多 j − 1 次', 0, 2.2); cap('第 j 個最多比 j − 1 次', '');
+  },
+  async (tok, S) => { // @1106.9
+    const n = 8, tot = range(2, n).reduce((s, j) => s + (j - 1), 0);
+    pl('worst case total = 1 + 2 + ⋯ + (n − 1) = n(n − 1)/2', 0, 1.6); ok(tot === (n * (n - 1)) / 2, 0, 1.0, '示意 n = 8：1 + 2 + ⋯ + 7 = ' + tot + ' ✓'); cap('全部：1 加到 n − 1', '= n(n − 1)/2');
+  },
+  async (tok, S) => { // @1148.8
+    good('∈ O(n²)', 0, 0.4); cap('所以還是 O(n²)', '');
+  },
+  async (tok, S) => { // @1158.6
+    sm('bubble sort：次數固定；insertion sort：worst case；兩個都是 O(n²)', 0, -0.2); cap('兩個都是 O(n²)', 'bubble 固定、insertion 算最差');
+  },
+  async (tok, S) => { // @1169.2
+    note('有些 sorting 在 worst case 只要 O(n log n) 次比較（用 tree 存資料，後面講）', 0, -0.8); cap('有些可以做到 n log n', '跟資料怎麼存有關');
+  },
+]);
+  }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
 

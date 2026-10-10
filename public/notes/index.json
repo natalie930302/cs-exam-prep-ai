@@ -47,6 +47,12 @@
   "quiz": 6,
   "cued": true
  },
+ "0aAQE0u0Dq0": {
+  "label": "清大OCW 趙啟超《離散數學》第16A講 Generating Functions",
+  "points": 34,
+  "quiz": 6,
+  "cued": true
+ },
  "0fVJsIC1QXs": {
   "label": "交大彭文志 Lec18 Graph (1/4)",
   "points": 77,
@@ -719,6 +725,12 @@
   "quiz": 7,
   "cued": true
  },
+ "cM8ymJ355fc": {
+  "label": "清大OCW 趙啟超《離散數學》第17D講 Generating Functions and Complexity of Algorithms",
+  "points": 21,
+  "quiz": 5,
+  "cued": true
+ },
  "cmQQL_hBBIM": {
   "label": "交大OCW 江蕙如《演算法》Lec24 Chapter 9 Linear Programming",
   "points": 48,
@@ -1100,6 +1112,12 @@
  "hZjp35QI-40": {
   "label": "交大江蕙如 Lec10 Greedy Algorithms (1/5)",
   "points": 110,
+  "quiz": 6,
+  "cued": true
+ },
+ "I9tMLP4KeEY": {
+  "label": "清大OCW 趙啟超《離散數學》第16B講 Generating Functions",
+  "points": 27,
   "quiz": 6,
   "cued": true
  },
@@ -1607,6 +1625,12 @@
   "quiz": 7,
   "cued": true
  },
+ "p7fXiuokfWs": {
+  "label": "清大OCW 趙啟超《離散數學》第17B講 Generating Functions and Complexity of Algorithms",
+  "points": 13,
+  "quiz": 5,
+  "cued": true
+ },
  "pAs8Swu1Y3Y": {
   "label": "台大林軒田 DSA Linked List",
   "points": 133,
@@ -2033,6 +2057,12 @@
   "quiz": 6,
   "cued": true
  },
+ "VAn-mpZAbM4": {
+  "label": "清大OCW 趙啟超《離散數學》第17A講 Generating Functions and Complexity of Algorithms",
+  "points": 20,
+  "quiz": 6,
+  "cued": true
+ },
  "VCIVXPoiLpU": {
   "label": "Gate Smashers：Shortest Job First (SJF) Scheduling Algorithm",
   "points": 9,
@@ -2181,6 +2211,12 @@
   "label": "交大彭文志 Lec07 Stacks & Queues (2/2)",
   "points": 111,
   "quiz": 8,
+  "cued": true
+ },
+ "XVt8JJgj8JE": {
+  "label": "清大OCW 趙啟超《離散數學》第17C講 Generating Functions and Complexity of Algorithms",
+  "points": 20,
+  "quiz": 5,
   "cued": true
  },
  "xxwRs_2XjjY": {
