@@ -334,6 +334,8 @@
             : e.data === 100 ? '這支影片已被移除或設為私人' : '這支影片暫時無法播放（錯誤 ' + e.data + '）';
           showPlayerError(msg);
         },
+        // the captions module loads late; turn it off the moment it appears
+        onApiChange: function(){ ytCaptionsOff(); },
         onStateChange: function(e){
           if (e.data === YT.PlayerState.PLAYING || e.data === YT.PlayerState.BUFFERING) ytCaptionsOff();
           if (e.data === YT.PlayerState.ENDED && current) {
@@ -348,9 +350,19 @@
   // A viewer's YouTube setting (or the video itself) can turn captions on;
   // unloading the captions module turns them off again on every start.
   function ytCaptionsOff(){
+    try { player.setOption('captions', 'track', {}); } catch (e) {}
     try { player.unloadModule('captions'); } catch (e) {}
     try { player.unloadModule('cc'); } catch (e) {}
   }
+  // YouTube may switch a caption track back on (viewer setting, auto-translate):
+  // check every couple of seconds and turn it off again
+  setInterval(function(){
+    if (!playerReady || !player.getOption) return;
+    try {
+      const tr = player.getOption('captions', 'track');
+      if (tr && tr.languageCode) ytCaptionsOff();
+    } catch (e) {}
+  }, 1500);
   let lastYtError = null;
   function showPlayerError(msg){
     let el = document.getElementById('ytErr');
