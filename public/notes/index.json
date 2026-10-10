@@ -239,6 +239,12 @@
   "quiz": 7,
   "cued": true
  },
+ "4myFFRFCMXw": {
+  "label": "清大OCW 趙啟超《離散數學》第3D講 Mathematical Induction and Functions",
+  "points": 7,
+  "quiz": 6,
+  "cued": true
+ },
  "4tSdhWBVv6A": {
   "label": "Priority Queue, Binary Heap",
   "points": 116,
@@ -279,6 +285,12 @@
   "label": "MIT 6.006 Rec13：BFS",
   "points": 29,
   "quiz": 6,
+  "cued": true
+ },
+ "5QtHzN4SRZc": {
+  "label": "交大OCW 易志偉《離散數學》Lec13 Induction and Recur (3/4)",
+  "points": 37,
+  "quiz": 7,
   "cued": true
  },
  "5v-tKX2uRAk": {
@@ -1187,6 +1199,12 @@
   "quiz": 5,
   "cued": true
  },
+ "lW6rnG95fEs": {
+  "label": "清大OCW 趙啟超《離散數學》第3A講 Mathematical Induction and Functions",
+  "points": 13,
+  "quiz": 5,
+  "cued": true
+ },
  "lY1SKWSR3pk": {
   "label": "交大江蕙如 Lec20 Network Flow (1/2)",
   "points": 129,
@@ -1209,6 +1227,12 @@
   "label": "Abdul Bari：Merge Sort",
   "points": 45,
   "quiz": 6,
+  "cued": true
+ },
+ "MbqDHNAMoZ8": {
+  "label": "清大OCW 趙啟超《離散數學》第3B講 Mathematical Induction and Functions",
+  "points": 9,
+  "quiz": 5,
   "cued": true
  },
  "MfhjkfocRR0": {
@@ -1557,6 +1581,12 @@
   "label": "台大林軒田 DSA Stack / Queue",
   "points": 284,
   "quiz": 8,
+  "cued": true
+ },
+ "R29RKSmZCnM": {
+  "label": "交大OCW 易志偉《離散數學》Lec12 Induction and Recur (2/4)",
+  "points": 44,
+  "quiz": 7,
   "cued": true
  },
  "r5CTlHdo9Oo": {
@@ -2013,6 +2043,12 @@
   "label": "交大彭文志 Lec21 Graph (4/4)",
   "points": 90,
   "quiz": 7,
+  "cued": true
+ },
+ "z9KwEh9GBes": {
+  "label": "清大OCW 趙啟超《離散數學》第3C講 Mathematical Induction and Functions",
+  "points": 9,
+  "quiz": 5,
   "cued": true
  },
  "Z9OPaNpNwXk": {

@@ -1,0 +1,183 @@
+{
+ "video": "4myFFRFCMXw",
+ "label": "清大OCW 趙啟超《離散數學》第3D講 Mathematical Induction and Functions",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "onto（surjective）與 bijective",
+   "points": [
+    {
+     "t": 4,
+     "text": "onto：f(A) = B，等價於 ∀b ∈ B ∃a ∈ A，f(a) = b；又叫 surjective（蓋射）。"
+    },
+    {
+     "t": 100,
+     "text": "one-to-one 與 onto 是互相獨立的兩個性質。"
+    },
+    {
+     "t": 118,
+     "text": "兩者都成立叫 one-to-one correspondence、bijective（對射）。"
+    }
+   ],
+   "trap": "one-to-one 不代表 onto，onto 也不代表 one-to-one。",
+   "scene": "pfC-3d-onto",
+   "cues": [
+    4.3,
+    7,
+    45.2,
+    57.6,
+    100.2,
+    118.9,
+    162.8
+   ],
+   "explain": [
+    "onto 的意思：f 的值域（range）就是它的 codomain，也就是 f(A) = B。舞台上 B 的 b1、b2 都有箭頭指到。",
+    "同樣的意思也可以寫成：B 裡面的每一個元素 b，都至少有一個 A 裡的元素 a 對應過去，f(a) = b。",
+    "這叫 surjective，名詞是 surjection。中文叫蓋射（蓋上去的「蓋」）；剛才的 injective 叫嵌射。",
+    "以後要證 one-to-one，就證「f(a₁) = f(a₂) ⇒ a₁ = a₂」；要證 onto，就證「任何 B 裡的 b，都找得到定義域裡的 a 使 f(a) = b」。",
+    "one-to-one 不見得 onto，onto 也不見得 one-to-one。它們是兩個不同的性質：可能兩個都是、都不是，或只有一個是。",
+    "如果兩個性質都成立，又是 one-to-one 又是 onto，就有另一個名字：one-to-one correspondence，或叫 bijective，名詞是 bijection，中文叫對射。",
+    "整理三個名詞：injective（嵌射）、surjective（蓋射）、bijective（對射，同時是前兩者）。"
+   ]
+  },
+  {
+   "title": "例：A = {1, 2, 3} 到 B = {x, y} 的函式",
+   "points": [
+    {
+     "t": 190,
+     "text": "A = {1, 2, 3}、B = {x, y}：共 2³ = 8 個函式；一般 |A| = m、|B| = n 時共 nᵐ 個。"
+    },
+    {
+     "t": 486,
+     "text": "injective 0 個（B 太小）、surjective 6 個（除了全 x、全 y）、bijective 0 個。"
+    }
+   ],
+   "scene": "pfC-3d-count",
+   "cues": [
+    193.1,
+    220.9,
+    285.1,
+    301.7,
+    357.7,
+    405.2,
+    486.9,
+    548,
+    606.3,
+    617.8
+   ],
+   "explain": [
+    "用一個小例子熟悉定義：A = {1, 2, 3}，B = {x, y}，兩個都是非空的有限集合。",
+    "A 到 B 的函式只有有限多個。問：其中有多少個是 injective？多少個是 surjective？多少個是 bijective？",
+    "第一個問題先問：A 到 B 的函式全部有多少個？有同學說 8 個。",
+    "為什麼是 8？函式就是幫 1、2、3 各選一個 B 裡的元素。1 有 x、y 兩種選擇，2 也有兩種，3 也有兩種，而且彼此無關，所以 2 × 2 × 2 = 8 種。",
+    "如果 B 有 4 個元素，就是 4 × 4 × 4 = 4³。一般來說，A 有 m 個元素、B 有 n 個元素，每個 A 的元素都有 n 種選擇，共 nᵐ 個函式。",
+    "因為只有 8 個，就全部列出來：f1 到 f8，每一列寫出 f(1)、f(2)、f(3)。例如 f1 把 1、2、3 全對到 x。",
+    "哪些是 injective？injective 要 1、2、3 對過去都不一樣，但 B 只有 x、y 兩個，一定有兩個對到同一個，所以 8 個全部都不是。",
+    "哪些是 surjective？B 的每個元素都要被對到，也就是 x 和 y 都要出現。只有全部是 x（f1）和全部是 y（f8）不行，其餘 6 個都是。",
+    "bijective 要同時是 injective 和 surjective（兩個都 yes），這裡沒有一個，所以 0 個。",
+    "答案：injective 0 個、surjective 6 個、bijective 0 個。知道定義就很簡單。"
+   ]
+  },
+  {
+   "title": "一般情況：|A| = m、|B| = n",
+   "points": [
+    {
+     "t": 632,
+     "text": "共 nᵐ 個函式；injective 要 n ≥ m（例：3 → 4 有 4·3·2 = 24 個）。"
+    },
+    {
+     "t": 712,
+     "text": "surjective 一般要用排容原理計算，且需要 m ≥ n；bijective 需要 m = n。"
+    }
+   ],
+   "trap": "|B| < |A| 時不可能有 injective；|B| > |A| 時不可能有 surjective。",
+   "scene": "pfC-3d-gen",
+   "cues": [
+    640,
+    657.9,
+    692.9,
+    712.2,
+    738.4,
+    759.3,
+    788.5
+   ],
+   "explain": [
+    "回到一般情況：A 有 m 個元素（cardinality，元素個數是 m），B 有 n 個元素，全部共有 nᵐ 個函式。",
+    "有多少個 injective？剛才的例子沒有，因為 B 太小了：A 有 3 個元素，要對到 3 個不同的元素，B 至少要有 3 個才行。所以 injective 需要 n ≥ m。",
+    "如果 A 有 3 個、B 有 4 個：1 有 4 種選擇，2 不能跟 1 一樣剩 3 種，3 剩 2 種，所以有 4·3·2 = 24 個 injective。這是高中的排列。",
+    "有多少個 surjective？剛才的例子是 6 個。一般的公式稍微麻煩，後面會用排容原理（principle of inclusion–exclusion）來算。",
+    "bijective 要同時是 injective 和 surjective，m 和 n 必須滿足一些條件才會有。",
+    "例如 B 有 4 個、A 只有 3 個：A 最多對到 3 個，一定有一個沒被對到，所以不會有 surjective。surjective 需要 m ≥ n。",
+    "所以 injective 要 n ≥ m、surjective 要 m ≥ n，兩個都要成立的 bijective 就要 m = n。這門課很重要的一部分是 enumeration（計數），前面只是熱身。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "A = {1, 2, 3}、B = {x, y}，A → B 的函式共有幾個？",
+   "opts": [
+    "6",
+    "8",
+    "9",
+    "5"
+   ],
+   "ans": "8",
+   "why": "每個元素有 2 種選擇：2³ = 8。"
+  },
+  {
+   "q": "承上，surjective（onto）的函式有幾個？",
+   "opts": [
+    "0",
+    "2",
+    "6",
+    "8"
+   ],
+   "ans": "6",
+   "why": "只有全對到 x、全對到 y 兩個不是 onto，8 − 2 = 6。"
+  },
+  {
+   "q": "承上，injective 的函式有幾個？",
+   "opts": [
+    "0",
+    "2",
+    "3",
+    "6"
+   ],
+   "ans": "0",
+   "why": "B 只有 2 個元素，1、2、3 不可能對到三個不同元素。"
+  },
+  {
+   "q": "|A| = 3、|B| = 4，A → B 的 injective 函式有幾個？",
+   "opts": [
+    "12",
+    "24",
+    "64",
+    "81"
+   ],
+   "ans": "24",
+   "why": "4 · 3 · 2 = 24（排列）。"
+  },
+  {
+   "q": "要存在 bijection A → B（有限集合），|A| 與 |B| 的關係是？",
+   "opts": [
+    "|A| < |B|",
+    "|A| > |B|",
+    "|A| = |B|",
+    "沒有限制"
+   ],
+   "ans": "|A| = |B|",
+   "why": "injective 需 |B| ≥ |A|，surjective 需 |A| ≥ |B|。"
+  },
+  {
+   "q": "證明 f 是 onto，要證明的是？",
+   "opts": [
+    "f(a₁) = f(a₂) ⇒ a₁ = a₂",
+    "任給 b ∈ B，存在 a ∈ A 使 f(a) = b",
+    "每個 a 都有唯一的 f(a)",
+    "f(A) ⊆ B"
+   ],
+   "ans": "任給 b ∈ B，存在 a ∈ A 使 f(a) = b",
+   "why": "onto 就是 f(A) = B。"
+  }
+ ]
+}

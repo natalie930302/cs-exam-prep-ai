@@ -4595,6 +4595,2263 @@ scene('pfB-l11-modexp', "2081⁹³⁷ mod 2537 要怎麼算？", CAM, [
         },
 ]);
   }
+
+  // ═══ pfC.js ═══
+  {
+const P = K; const { V3, tag, cube, kill, glow, code, anim, arrow, zone, travel, remove, step, buddy, prop, bob, fresh } = P;
+const { txt, tint } = P;
+const pline = P.line;
+// (kit has no beat: short waits use ctx.beat)
+// ─── 離散數學 第 2 章（交大 易志偉 Lec12–Lec13 Induction and Recursion、清大 趙啟超 第3A–3D講）— cued scenes ───
+// 每個 scene 是一串 steps；每一步等老師講到那一句（notes 的 cues）才動一下。不重播、不循環。
+// 老師的例子照用（2¹⁶、2¹³ = 1101₂、1+…+n、n < 2ⁿ、2ⁿ < n!、power set、H_{2ⁿ}、郵票 4/5、火柴、
+// 八邊形、f(n+1) = 2f(n)+3、Fibonacci、3 ∈ S、apple、power(5,3)、5¹⁰、10 6 5 7 8 3 2、Σ(4i+3)、Σi³、
+// aₙ = 3ⁿ − 2ⁿ、everybody is rich、A = {1,2,3} → B = {x,y}…）；老師沒給的數字標「示意」。
+const wt = (tok, ms) => ctx.beat(tok, ms);
+const cap = (a, b = '') => say(a, b);
+const T = (t, c, x, y, z = 0) => tag(t, c, x, y, z);
+const L = (t, c, x, y, z = 0) => { const l = tag(t, c, x, y, z); if (l.center) l.center.set(0, 0.5); return l; };
+const cls = (l, c) => { if (l && l.element) l.element.className = 'lab-label ' + c; };
+const CAM = [[0, 4.2, 14], [0, 3.0, 0]];
+const FC = { blue: '#4b9ee2', orange: '#dd8238', green: '#2fc092', purple: '#9b7ef4', pink: '#e55a9b', teal: '#31aab0', red: '#d64545', sand: '#e9dcc4', gold: '#c08a1f', gray: '#cfc6b6', sky: '#cfe6f7', mint: '#d2f1e6' };
+const OKG = '#0f5a3a', NG = '#7a1010', HL = '#6a4a00';
+function scene(id, title, steps, cam = CAM) {
+  FRAG.push([id, title, async (tok) => {
+    fresh(cam[0], cam[1]);
+    const S = {};
+    for (const f of steps) { await step(tok); await f(tok, S); }
+  }]);
+}
+// a proof board: lines appear one under another (left-aligned); add() lights the newest line
+function board(x, yTop, dy = 0.6) {
+  const ls = []; let last = null;
+  return {
+    ls,
+    add(t, c = 'note', dx = 0) {
+      if (last && last.userData.hot) { cls(last, 'say'); last.userData.hot = false; }
+      const l = L(t, c, x + dx, yTop - ls.length * dy); ls.push(l); l.userData.hot = c === 'note'; last = l; return l;
+    },
+    set(i, c) { cls(ls[i < 0 ? ls.length + i : i], c); },
+    dim() { ls.forEach((l) => cls(l, 'idx')); last = null; },
+    clear() { ls.forEach((l) => kill(l)); ls.length = 0; last = null; },
+  };
+}
+const chip = (t, c, x, y, w = 0.9, h = 0.6, drop = 0) => cube(t, c, [w, h, 0.6], x, y, 0, drop);
+// a row of dominoes standing on y; fall(i) tips number i over to the right
+function dominoes(n, x0, y, gap = 0.9, col = FC.blue, labels = null) {
+  const ms = [], lb = [];
+  for (let i = 0; i < n; i++) {
+    const x = x0 + i * gap;
+    const m = cube('', col, [0.22, 1.2, 0.8], x, y + 0.6, 0); m.userData.x = x; m.userData.y = y; ms.push(m);
+    if (labels) lb.push(T(String(labels[i]), 'idx', x, y - 0.35));
+  }
+  async function fall(tok, i, t = 300) {
+    const m = ms[i]; if (!m || m.userData.down) return; m.userData.down = 1;
+    const px = m.userData.x + 0.11, py = m.userData.y;
+    await anim(tok, t, (u) => { const th = -1.0 * u, c = Math.cos(th), s = Math.sin(th); m.rotation.z = th; m.position.set(px - 0.11 * c - 0.6 * s, py - 0.11 * s + 0.6 * c, 0); });
+  }
+  async function run(tok, a, b, t = 180) { for (let i = a; i <= b; i++) await fall(tok, i, t); }
+  return { ms, lb, fall, run };
+}
+function poly(pts, color = '#6e5f49') { const ls = []; for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[(i + 1) % pts.length]; ls.push(pline(a[0], a[1], b[0], b[1], 0, color)); } return ls; }
+const seg = (a, b, color = '#6e5f49') => pline(a[0], a[1], b[0], b[1], 0, color);
+async function lift(tok, ms, t = 400) { const y0 = ms.map((m) => m.position.y); await anim(tok, t, (u) => ms.forEach((m, i) => { m.position.y = y0[i] + u * 1.2; })); ms.forEach((m) => kill(m)); }
+
+// ════════ R29RKSmZCnM（Lec12 Induction and Recursion：快速冪、歸納法、強歸納） ════════
+scene('pfC-12-mulmod', 'aᵇ mod m：先取餘數再乘', [
+  async (tok, S) => { // 7.1
+    S.B = board(-6.6, 6.4); S.B.add('目標：aᵇ mod m（b 很大）');
+    cap('要算 aᵇ 除以 m 的餘數', 'b 很大，a 也不小');
+  },
+  async (tok, S) => { // 13.1
+    S.B.add('aᵇ = a · a · … · a（乘 b 次）');
+    S.ch = [];
+    for (let i = 0; i < 6; i++) { S.ch.push(chip('a', FC.blue, 1.4 + i * 0.85, 4.6, 0.7, 0.6, 1.2)); await wt(tok, 120); }
+    T('… 一共乘 b 次', 'idx', 3.5, 3.9);
+    cap('aᵇ 就是 a 自己乘 b 次', '乘、乘、乘…');
+  },
+  async (tok, S) => { // 38.6
+    S.B.add('越乘越大 → overflow', 'bad'); S.ch.forEach((m) => glow(m, NG));
+    cap('乘的過程很容易 overflow', '數字大到電腦裝不下');
+  },
+  async (tok, S) => { // 49.7
+    S.ch.forEach((m) => glow(m, '#000000'));
+    S.B.add('a 先 mod m，b 也先 mod m');
+    cap('兩數相乘求餘數：先各自取餘數', '(a mod m)、(b mod m)');
+  },
+  async (tok, S) => { // 61.3
+    S.B.add('兩個餘數相乘可能又 ≥ m → 再 mod m');
+    S.B.add('(a·b) mod m = ((a mod m)(b mod m)) mod m', 'good');
+    T('示意：7·8 = 56，56 mod 5 = 1', 'idx', 3.8, 2.6);
+    T('(2·3) mod 5 = 6 mod 5 = 1 ✓', 'idx', 3.8, 2.0);
+    cap('乘起來可能又超過 m', '所以最後再取一次餘數');
+  },
+  async (tok, S) => { // 71.2
+    S.B.add('mulmod(a, b, m) = ((a mod m)(b mod m)) mod m');
+    cap('寫成演算法：mod 的乘法', '');
+  },
+  async (tok, S) => { // 86.5
+    S.B.add('但 b 可能上千上萬：真的乘 b 次太慢', 'bad');
+    cap('真的乘 b 次不合理', 'b 越大算越久');
+  },
+]);
+
+scene('pfC-12-sq16', '2¹⁶：平方一次就到', [
+  async (tok, S) => { // 122.0
+    S.B = board(-6.6, 6.4); S.B.add('2¹⁶ = ?');
+    cap('先問：2¹⁶ 怎麼算？', '答案是 65536');
+  },
+  async (tok, S) => { // 149.4
+    S.B.add('笨方法：2 → 4 → 8 → 16 → …（每次乘 2）', 'bad');
+    const v = [2, 4, 8, 16, 32, 64];
+    for (let i = 0; i < v.length; i++) { chip(String(v[i]), FC.sand, 1.2 + i * 0.95, 4.4, 0.8, 0.6, 1); await wt(tok, 140); }
+    T('… 一路乘到 65536：要 15 次乘法', 'idx', 3.6, 3.7);
+    cap('一次乘一個 2：徹底錯誤的想法', '');
+  },
+  async (tok, S) => { // 173.2
+    S.B.add('16 = 2·8 → 2¹⁶ = (2⁸)²');
+    cap('指數律：2¹⁶ = (2⁸)²', '16 是 8 的兩倍');
+  },
+  async (tok, S) => { // 190.5
+    S.B.add('2⁸ = 256，256² = 65536', 'good');
+    chip('256', FC.blue, 2.0, 2.2, 1.2, 0.7, 1.2); chip('65536', FC.green, 5.2, 2.2, 1.6, 0.7, 1.2);
+    arrow(V3(2.7, 2.2, 0), V3(4.3, 2.2, 0)); T('平方（乘 1 次）', 'idx', 3.5, 2.8);
+    cap('背得 2⁸ = 256，平方一次就是 65536', '只要一次乘法');
+  },
+  async (tok, S) => { // 208.2
+    S.B.add('從 2⁸ 一個一個乘到 2¹⁶：還要 8 次');
+    T('平方：1 次　vs　一個個乘：8 次', 'note', 3.6, 1.2);
+    cap('當然選平方', '');
+  },
+]);
+
+scene('pfC-12-sq13', '2¹³：13 = 2·6 + 1，二進位 1101', [
+  async (tok, S) => { // 240.1
+    S.B = board(-6.6, 6.4); S.B.add('2¹³ = ?');
+    cap('換成 2¹³：能不能也用平方？', '');
+  },
+  async (tok, S) => { // 261.0
+    S.B.add('13 ÷ 2 = 6.5 → (2^6.5)²？ 6.5 不喜歡', 'bad');
+    cap('13 除一半是 6.5', '不是整數，不好用');
+  },
+  async (tok, S) => { // 269.7
+    S.B.add('13 = 2·6 + 1');
+    cap('改寫：13 = 2·6 + 1', '這就是除法公式');
+  },
+  async (tok, S) => { // 292.3
+    S.B.add('2¹³ = (2⁶)² · 2¹');
+    cap('先算 2⁶ 再平方，多出來的 1 再乘一個 2', '');
+  },
+  async (tok, S) => { // 304.0
+    S.B.add('6 = 2·3 + 0 → 2⁶ = (2³)² · 2⁰');
+    S.B.add('3 = 2·1 + 1 → 2³ = (2¹)² · 2¹', 'say');
+    cap('2⁶ 一樣折一半', '一直除以 2，記下餘數');
+  },
+  async (tok, S) => { // 367.2
+    S.B.add('13 = 1101₂（8 + 4 + 0 + 1）');
+    S.bits = ['1', '1', '0', '1'].map((b, i) => chip(b, b === '1' ? FC.green : FC.gray, 2.0 + i * 1.1, 5.2, 0.8, 0.6, 1));
+    ['8', '4', '2', '1'].forEach((w, i) => T('權重 ' + w, 'idx', 2.0 + i * 1.1, 4.6));
+    cap('13 寫成二進位是 1101', '8 + 4 + 1 = 13');
+  },
+  async (tok, S) => { // 401.4
+    S.B.add('13 = 2³ + 2² + 2⁰');
+    S.B.add('2¹³ = 2^(2³) · 2^(2²) · 2^(2⁰)', 'say');
+    cap('剛才一直除以 2，其實就是在找二進位', '指數加法 → 乘法');
+  },
+  async (tok, S) => { // 463.5
+    const v = ['2^(2⁰) = 2', '2^(2¹) = 4', '2^(2²) = 16', '2^(2³) = 256'];
+    S.lad = [];
+    for (let i = 0; i < 4; i++) {
+      S.lad.push(chip(v[i], FC.blue, 1.3 + i * 1.75, 2.6, 1.6, 0.6, 1));
+      if (i) arrow(V3(1.3 + (i - 1) * 1.75 + 0.8, 3.1, 0), V3(1.3 + i * 1.75 - 0.8, 3.1, 0));
+      await wt(tok, 200);
+    }
+    cap('2 平方得 4，4 平方得 16，16 平方得 256', '');
+  },
+  async (tok, S) => { // 525.0
+    T('每一項 = 前一項的平方', 'note', 3.9, 3.6);
+    cap('相鄰兩項的關係：平方', '');
+  },
+  async (tok, S) => { // 537.0
+    const b = ['1', '0', '1', '1'];
+    S.lad.forEach((m, i) => { glow(m, b[i] === '1' ? OKG : '#000000'); if (b[i] === '0') tint(m, FC.gray); T('位元 ' + b[i] + (b[i] === '1' ? ' → 乘' : ' → 不乘'), b[i] === '1' ? 'good' : 'idx', 1.3 + i * 1.75, 1.9); });
+    S.B.add('2¹³ = 2 · 16 · 256 = 8192', 'good');
+    cap('該不該乘：看二進位那一位', '1 就乘進來，0 就跳過');
+  },
+]);
+
+scene('pfC-12-modexp', '快速冪演算法（modular exponentiation）', [
+  async (tok, S) => { // 548.1
+    S.B = board(-6.6, 6.4); S.B.add('換成一般的 aᵇ：b 寫成二進位');
+    S.lad = ['a', 'a²', 'a⁴', 'a⁸'].map((t, i) => chip(t, FC.gray, 1.4 + i * 1.6, 4.6, 1.0, 0.6));
+    ['2⁰', '2¹', '2²', '2³'].forEach((t, i) => T('a^(' + t + ')', 'idx', 1.4 + i * 1.6, 3.95));
+    S.x = T('x = 1', 'note', 3.8, 2.9);
+    cap('把底數換成 a：aᵇ', '先把 b 換成二進位');
+  },
+  async (tok, S) => { // 572.6
+    tint(S.lad[0], FC.blue); glow(S.lad[0], OKG); txt(S.x, 'x = a');
+    T('第 0 位 = 1 → 乘', 'good', 1.4, 5.3);
+    cap('第 0 位是 1：乘上 a^(2⁰) = a', '結果先放在暫存器 x');
+  },
+  async (tok, S) => { // 585.5
+    tint(S.lad[1], FC.blue);
+    cap('把 a 自己平方 → a^(2¹)', '');
+  },
+  async (tok, S) => { // 596.3
+    T('第 1 位 = 0 → 不乘', 'idx', 3.0, 5.3);
+    cap('這一位是 0：這一項沒有，不要乘', '但還是要繼續平方');
+  },
+  async (tok, S) => { // 605.2
+    tint(S.lad[2], FC.blue); glow(S.lad[2], OKG); T('第 2 位 = 1 → 乘', 'good', 4.6, 5.3); txt(S.x, 'x = a · a⁴ = a⁵');
+    await wt(tok, 500);
+    tint(S.lad[3], FC.blue); glow(S.lad[3], OKG); T('第 3 位 = 1 → 乘', 'good', 6.2, 5.3); txt(S.x, 'x = a⁵ · a⁸ = a¹³（示意：b = 1101₂）');
+    cap('再平方 → a⁴、a⁸；那一位是 1 就乘進來', '一直累乘上去');
+  },
+  async (tok, S) => { // 630.6
+    S.B.clear(); S.lad.forEach((m) => kill(m)); kill(S.x);
+    S.code = code(['procedure modexp(b, n = (a_{k-1}…a₁a₀)₂, m)', 'x := 1', 'power := b mod m', 'for i := 0 to k − 1', '   if aᵢ = 1 then x := (x · power) mod m', '   power := (power · power) mod m', 'return x      { x = bⁿ mod m }'], -2.6, 6.4);
+    S.code.hl(1); cls(S.code.ls[2], 'ptr alt');
+    cap('寫成演算法：x := 1，power := b mod m', '底數太大沒用，先取餘數');
+  },
+  async (tok, S) => { // 674.0
+    S.code.hl(3);
+    cap('i 從 0 到 k−1：一位一位看指數', '每一位是 0 或 1');
+  },
+  async (tok, S) => { // 696.0
+    S.code.hl(4);
+    cap('aᵢ = 1：x 乘上 power 再 mod m', 'x 最後就是答案（餘數）');
+  },
+  async (tok, S) => { // 735.7
+    S.code.hl(5);
+    cap('power 自己平方再 mod m', '不管這一位是不是 1，都要平方');
+  },
+  async (tok, S) => { // 774.0
+    S.code.hl(-1);
+    T('例：13 = 8 + 4 + 1 → 2¹³ = 2⁸ · 2⁴ · 2¹', 'note', 3.4, 2.4);
+    ['i', 'aᵢ', 'power', 'x'].forEach((h, j) => T(h, 'ptr', 1.2 + j * 1.6, 1.7));
+    cap('不看 mod，用 2¹³ 走一次', '13 = 1101₂');
+  },
+  async (tok, S) => { // 797.6
+    ['0', '1', '2', '1 · 2 = 2'].forEach((v, j) => T(v, 'say', 1.2 + j * 1.6, 1.15));
+    cap('i = 0：power = 2¹ = 2，位元 1 → x = 2', '');
+  },
+  async (tok, S) => { // 810.7
+    ['1', '0', '4', '2（不乘）'].forEach((v, j) => T(v, j === 3 ? 'idx' : 'say', 1.2 + j * 1.6, 0.6));
+    cap('i = 1：power = 2·2 = 4，位元 0 → 不乘', '');
+  },
+  async (tok, S) => { // 836.6
+    ['2', '1', '16', '2 · 16 = 32'].forEach((v, j) => T(v, 'say', 1.2 + j * 1.6, 0.05));
+    cap('i = 2：power = 4·4 = 16，位元 1 → x = 32', '');
+  },
+  async (tok, S) => { // 848.5
+    ['3', '1', '256', '32 · 256 = 8192'].forEach((v, j) => T(v, j === 3 ? 'good' : 'say', 1.2 + j * 1.6, -0.5));
+    cap('i = 3：power = 256 → x = 8192 = 2¹³', '16·16 = 256');
+  },
+  async (tok, S) => { // 860.4
+    S.code.hl(4); cls(S.code.ls[5], 'ptr alt');
+    cap('每一步都 mod m：數字變小，答案不變', '這就是要 mod 的原因');
+  },
+]);
+
+scene('pfC-12-indform', '數學歸納法的正式寫法：三步驟', [
+  async (tok, S) => { // 954.0
+    S.B = board(-6.6, 6.4); S.B.add('數學歸納法：正式地寫一次');
+    cap('數學歸納法大家都會', '這次把它正式寫下來');
+  },
+  async (tok, S) => { // 966.8
+    S.B.add('P(n)：跟 n 有關的命題，n ∈ ℤ⁺');
+    cap('P(n)：一個帶 n 的命題', 'n 可以是正整數（或自然數）');
+  },
+  async (tok, S) => { // 983.0
+    S.B.add('例：P(n)：1 + 2 + … + n = n(n+1)/2');
+    cap('例如以前解過的 1 + … + n', '這個等式本身就是一個命題');
+  },
+  async (tok, S) => { // 1004.5
+    S.B.add('P(1)：1 = 1·(1+1)/2 ？');
+    cap('n = 1 時，問 1 會不會等於 1·2/2', '對或錯');
+  },
+  async (tok, S) => { // 1020.0
+    S.B.add('要證：∀n ∈ ℤ⁺，P(n) 為真');
+    cap('目標：所有正整數 n，P(n) 都對', '題目常只寫 prove');
+  },
+  async (tok, S) => { // 1077.7
+    S.B.add('三步驟：① 起始條件 ② 推演 ③ 結論');
+    cap('答案一定要寫出 ①②③', '① 和 ③ 是固定形式');
+  },
+  async (tok, S) => { // 1108.1
+    S.B.add('② 重點：任意 k，若 P(k) 為真 → P(k+1) 為真');
+    cap('重點在第二步', '假設 P(k) 對，推出 P(k+1) 也對');
+  },
+  async (tok, S) => { // 1142.7
+    S.B.add('① 起始：最小的 n，P(1) 為真');
+    cap('起始條件：最小的那個數', '通常很明顯，寫下來就好');
+  },
+  async (tok, S) => { // 1186.0
+    T('例：n = 10 對 → 能推出 n = 11 對', 'say', 3.6, 3.0);
+    cap('隨便給一個 k，例如 10', '10 對的話，11 也會對嗎？');
+  },
+  async (tok, S) => { // 1195.6
+    S.D = dominoes(7, 1.0, 0.3, 0.9, FC.blue, [1, 2, 3, 4, 5, 6, '…']);
+    cap('這就像推骨牌', '這一張倒，下一張就會倒');
+  },
+  async (tok, S) => { // 1202.7
+    await S.D.fall(tok, 0, 400); await S.D.run(tok, 1, 6, 160);
+    cap('第一張推倒了 → 第二張倒 → 第三張倒…', '一直連續下去');
+  },
+  async (tok, S) => { // 1216.0
+    S.B.add('③ 結論：∀n ∈ ℤ⁺，P(n) 為真', 'good');
+    cap('最後寫結論：證完了', '把要證的話再寫一次');
+  },
+]);
+
+scene('pfC-12-sum', '證明 1 + 2 + … + n = n(n+1)/2', [
+  async (tok, S) => { // 1242.0
+    S.B = board(-6.6, 6.4); S.B.add('證明：1 + 2 + … + n = n(n+1)/2');
+    S.D = dominoes(7, 1.2, 0.3, 0.9, FC.blue, [1, 2, 3, 4, 5, 6, '…']);
+    cap('來證剛才的例子', '');
+  },
+  async (tok, S) => { // 1252.1
+    S.B.add('P(n)：1 + … + n = n(n+1)/2');
+    cap('先寫出命題 P(n)', '問這個等號成不成立');
+  },
+  async (tok, S) => { // 1277.7
+    S.B.add('① n = 1：1 = 1·(1+1)/2 = 1 ✓');
+    await S.D.fall(tok, 0, 400);
+    cap('第一塊骨牌：n = 1 帶進去', '左邊 1，右邊 1·2/2 = 1');
+  },
+  async (tok, S) => { // 1299.3
+    S.B.add('② 假設 P(k)：1 + … + k = k(k+1)/2');
+    cap('假設隨便一個 k，P(k) 是對的', '這是可以用的工具，先寫下來');
+  },
+  async (tok, S) => { // 1310.6
+    S.B.add('目標 P(k+1)：1 + … + (k+1) = (k+1)(k+2)/2');
+    cap('要證 k+1 時也對', '右邊是 (k+1)((k+1)+1)/2');
+  },
+  async (tok, S) => { // 1336.0
+    S.B.add('左邊 = (1 + … + k) + (k+1)');
+    cap('把左邊拆成：加到 k，再加 k+1', '');
+  },
+  async (tok, S) => { // 1341.2
+    S.B.add('= k(k+1)/2 + (k+1)　← 用假設');
+    cap('前面那段用假設換掉', 'k(k+1)/2');
+  },
+  async (tok, S) => { // 1350.0
+    S.B.add('= (k+1)(k/2 + 1)　← 提出 k+1');
+    cap('提出公因式 k+1', '');
+  },
+  async (tok, S) => { // 1357.1
+    S.B.add('= (k+1)(k+2)/2 ✓', 'good');
+    cap('k/2 + 1 = (k+2)/2', '剛好就是目標');
+  },
+  async (tok, S) => { // 1365.3
+    await S.D.run(tok, 1, 6, 170);
+    cap('P(k) 對 → P(k+1) 也對', '前一張倒，下一張就倒');
+  },
+  async (tok, S) => { // 1386.7
+    S.B.add('③ 結論：∀n ∈ ℤ⁺，P(n) 為真', 'good');
+    cap('最後寫結論，表示做完了', '');
+  },
+]);
+
+scene('pfC-12-n2n', '證明 n < 2ⁿ', [
+  async (tok, S) => { // 1409.2
+    S.B = board(-6.6, 6.4); S.B.add('n ∈ ℤ⁺，證明 n < 2ⁿ');
+    cap('下一題：n < 2ⁿ', 'n 是正整數 1, 2, 3, …');
+  },
+  async (tok, S) => { // 1428.2
+    S.B.add('P(n)：n < 2ⁿ');
+    cap('先寫成命題 P(n)', '');
+  },
+  async (tok, S) => { // 1437.0
+    S.B.add('① P(1)：1 < 2¹ = 2 ✓');
+    cap('第一塊骨牌 n = 1', '1 < 2，對');
+  },
+  async (tok, S) => { // 1458.0
+    S.B.add('② 假設 P(k)：k < 2ᵏ');
+    cap('假設 P(k) 對', '手上有什麼，先寫下來');
+  },
+  async (tok, S) => { // 1477.0
+    S.B.add('目標：k + 1 < 2ᵏ⁺¹');
+    cap('從這裡出發，想辦法串到 2ᵏ⁺¹', '');
+  },
+  async (tok, S) => { // 1487.2
+    S.B.add('k + 1 < 2ᵏ + 1　← 假設兩邊加 1');
+    cap('k < 2ᵏ，兩邊同時加 1', '');
+  },
+  async (tok, S) => { // 1509.0
+    S.B.add('因為 k ≥ 1，所以 1 ≤ 2ᵏ');
+    cap('那個 1 比 2ᵏ 小（或相等）', '');
+  },
+  async (tok, S) => { // 1524.0
+    S.B.add('≤ 2ᵏ + 2ᵏ = 2 · 2ᵏ = 2ᵏ⁺¹ ✓', 'good');
+    cap('把 1 換成 2ᵏ，兩個相加是兩倍', '剛好變成 2ᵏ⁺¹');
+  },
+  async (tok, S) => { // 1539.0
+    S.B.add('③ 結論：∀n ∈ ℤ⁺，n < 2ⁿ', 'good');
+    cap('P(k+1) 成立，證完了', '');
+  },
+]);
+
+scene('pfC-12-fact', '2ⁿ < n!：第一塊骨牌在 4', [
+  async (tok, S) => { // 1563.0
+    S.B = board(-6.6, 6.4); S.B.add('第一塊骨牌不一定是 0 或 1');
+    cap('之前 n 都是自然數或正整數', '現在稍微不一樣');
+  },
+  async (tok, S) => { // 1573.0
+    S.B.add('n ≥ 4，證明 2ⁿ < n!');
+    S.D = dominoes(8, 0.6, 0.3, 0.85, FC.blue, [1, 2, 3, 4, 5, 6, 7, 8]);
+    [0, 1, 2].forEach((i) => tint(S.D.ms[i], FC.gray));
+    cap('第一塊骨牌在 4', '1、2、3 不用管');
+  },
+  async (tok, S) => { // 1589.9
+    S.B.add('① basis step：n = 4');
+    glow(S.D.ms[3], HL);
+    cap('basis step：最小的那塊，n = 4', '真的帶進去算');
+  },
+  async (tok, S) => { // 1609.0
+    S.B.add('2⁴ = 16');
+    cap('2⁴ = 16', '');
+  },
+  async (tok, S) => { // 1616.1
+    S.B.add('4! = 4·3·2·1 = 24 → 16 < 24 ✓');
+    await S.D.fall(tok, 3, 400);
+    cap('4! = 24，16 < 24 對', '第一塊倒了');
+  },
+  async (tok, S) => { // 1632.7
+    S.B.add('② 假設 2ᵏ < k!，k ≥ 4');
+    cap('假設 2ᵏ < k!', 'k ≥ 4 這個條件等一下會用到');
+  },
+  async (tok, S) => { // 1665.1
+    S.B.add('2ᵏ⁺¹ = 2 · 2ᵏ');
+    cap('2ᵏ⁺¹：先把一個 2 提出來', '讓 2ᵏ 露出來');
+  },
+  async (tok, S) => { // 1674.4
+    S.B.add('< 2 · k!　← 用假設');
+    cap('2ᵏ < k!，用上去', '');
+  },
+  async (tok, S) => { // 1677.0
+    S.B.add('< (k+1) · k!　← k+1 ≥ 5 > 2');
+    cap('k ≥ 4，所以 k+1 ≥ 5，比 2 大', '把 2 換成 k+1');
+  },
+  async (tok, S) => { // 1694.7
+    S.B.add('= (k+1)! ✓', 'good');
+    cap('頭跟尾抓出來：2ᵏ⁺¹ < (k+1)!', '');
+  },
+  async (tok, S) => { // 1705.0
+    T('證明裡一定要用到假設 P(k)', 'note', 3.6, 3.2);
+    await S.D.run(tok, 4, 7, 170);
+    cap('前面不對，這裡也證不出來', '所以一定要把假設用上');
+  },
+  async (tok, S) => { // 1724.4
+    S.B.add('③ 結論：∀n ≥ 4，2ⁿ < n!', 'good');
+    cap('最後下結論：①②③ 清楚標出來', '');
+  },
+]);
+
+scene('pfC-12-power', '|P(S)| = 2^|S|：對集合大小歸納', [
+  async (tok, S) => { // 1758.7
+    S.B = board(-6.6, 6.4); S.B.add('條件放鬆：不一定是「∀n ∈ ℤ⁺」');
+    cap('不要死記一定是自然數或正整數', '從 4 開始也沒差');
+  },
+  async (tok, S) => { // 1798.4
+    S.B.add('例：|P(S)| = 2^|S|（P(S)：S 的所有子集合）');
+    cap('不是數列：是一個集合的敘述', 'power set 的個數 = 2 的 |S| 次方');
+  },
+  async (tok, S) => { // 1819.0
+    S.B.add('要有順序 → 對「集合大小 |S|」做歸納');
+    cap('歸納法一定要有骨牌的順序', '小問題會了，推到大一點的');
+  },
+  async (tok, S) => { // 1883.3
+    S.B.add('大小 3 的對 → 推出大小 4 的也對');
+    cap('先說清楚：歸納的對象是集合大小', '');
+  },
+  async (tok, S) => { // 1915.6
+    S.B.add('最小的集合：∅（大小 0）= 第一塊骨牌');
+    cap('最小的集合是空集合', '0 個、1 個、2 個、3 個……');
+  },
+  async (tok, S) => { // 1943.4
+    S.B.add('S = ∅：P(∅) = {∅}，大小 1 = 2⁰ ✓', 'good');
+    cap('空集合的子集合只有它自己', 'P(∅) = {∅} 有 1 個東西，2⁰ = 1');
+  },
+  async (tok, S) => { // 1997.6
+    S.B.clear(); S.B.add('例：S = {1, 2, 3}，|S| = 3');
+    cap('舉個例子：S = {1, 2, 3}', '');
+  },
+  async (tok, S) => { // 2033.3
+    const sub = ['∅', '{1}', '{2}', '{3}', '{1,2}', '{1,3}', '{2,3}', '{1,2,3}'];
+    S.row = [];
+    for (let i = 0; i < 8; i++) { S.row.push(chip(sub[i], FC.blue, 1.8 + (i % 4) * 1.55, 5.6 - Math.floor(i / 4) * 0.75, 1.35, 0.6, 1)); await wt(tok, 120); }
+    cap('把 S 的子集合一個一個列出來', '');
+  },
+  async (tok, S) => { // 2073.6
+    S.B.add('共 8 個 = 2³ ✓', 'good');
+    cap('8 個，剛好是 2³', '');
+  },
+  async (tok, S) => { // 2091.5
+    S.B.add("S' = S ∪ {a} = {1, 2, 3, a}");
+    cap('下一塊骨牌：多放一個新元素 a', '');
+  },
+  async (tok, S) => { // 2147.0
+    S.B.add("|S'| = |S| + 1");
+    cap('a 跟 1、2、3 都不同', '所以大小多 1');
+  },
+  async (tok, S) => { // 2175.7
+    T('① 不含 a：就是原來的 8 個', 'ptr', 4.1, 6.3);
+    cap('S′ 的子集合分兩類', '第一類：不含 a');
+  },
+  async (tok, S) => { // 2196.2
+    const sub = ['{a}', '{1,a}', '{2,a}', '{3,a}', '{1,2,a}', '{1,3,a}', '{2,3,a}', '{1,2,3,a}'];
+    for (let i = 0; i < 8; i++) { chip(sub[i], FC.orange, 1.8 + (i % 4) * 1.55, 3.0 - Math.floor(i / 4) * 0.75, 1.45, 0.6, 1); await wt(tok, 120); }
+    T('② 含 a：每個舊的再塞進 a', 'ptr', 4.1, 3.7);
+    cap('第二類：含 a', '每一個舊子集合再多放一個 a');
+  },
+  async (tok, S) => { // 2239.8
+    S.B.add("P(S') = P(S) ∪ { X ∪ {a} : X ∈ P(S) }");
+    cap('沒有別的可能了', '第二類是第一類的 copy，再塞一個 a');
+  },
+  async (tok, S) => { // 2266.4
+    S.B.add("兩類一樣多 → |P(S')| = 2 · |P(S)| = 16", 'good');
+    cap('大小變兩倍', '8 × 2 = 16 = 2⁴');
+  },
+  async (tok, S) => { // 2291.0
+    S.B.add('正式：|S| = k+1，拿掉一個元素得 T，|T| = k');
+    cap('正式寫：假設大小 k 的都對', '大小 k+1 的 S 拿掉一個元素，剩 T');
+  },
+  async (tok, S) => { // 2352.3
+    S.B.add('|P(S)| = 2 · |P(T)| = 2 · 2ᵏ = 2ᵏ⁺¹ ✓', 'good');
+    cap('T 可以用假設：|P(T)| = 2ᵏ', '再乘 2 就是 2ᵏ⁺¹');
+  },
+]);
+
+scene('pfC-12-harm', '調和數 H_{2ⁿ} ≥ 1 + n/2', [
+  async (tok, S) => { // 2380.6
+    S.B = board(-6.6, 6.4); S.B.add('另一種數列：不是 1, 2, 3, 4 一個一個');
+    cap('這次的數列不是一個接一個', '');
+  },
+  async (tok, S) => { // 2402.6
+    S.B.add('H_j = 1 + 1/2 + 1/3 + … + 1/j（調和數）');
+    S.bar = [];
+    for (let j = 1; j <= 8; j++) { const h = 2.4 / j; S.bar.push(cube('', FC.blue, [0.5, h, 0.5], 1.2 + (j - 1) * 0.72, 0.2 + h / 2, 0)); T('1/' + j, 'idx', 1.2 + (j - 1) * 0.72, -0.15); }
+    cap('Harmonic number：1 + 1/2 + … + 1/j', '每根柱子是一項 1/j');
+  },
+  async (tok, S) => { // 2408.4
+    S.B.add('跟 log 很像（1/x 的積分）→ 很有用');
+    cap('它跟 log 很接近', '常拿來評估 log 的增長');
+  },
+  async (tok, S) => { // 2429.0
+    S.B.add('只看 H₁, H₂, H₄, H₈, …（n = 0, 1, 2, 3…）');
+    [[0], [1], [2, 3], [4, 5, 6, 7]].forEach((g, k) => g.forEach((i) => tint(S.bar[i], [FC.purple, FC.orange, FC.teal, FC.pink][k])));
+    cap('只管第 2ⁿ 項', 'n 是自然數，2⁰ = 1');
+  },
+  async (tok, S) => { // 2455.1
+    S.B.add('證明：H_{2ⁿ} ≥ 1 + n/2');
+    cap('要證 H_{2ⁿ} ≥ 1 + n/2', '');
+  },
+  async (tok, S) => { // 2468.8
+    T('一直加會越來越大、不會收斂（像 log）', 'idx', 3.9, 3.5);
+    cap('意思：這個數列會越加越大', '跟 log 一樣不會停在某個值');
+  },
+  async (tok, S) => { // 2532.3
+    S.B.add('① n = 0：H₁ = 1，右邊 1 + 0/2 = 1 → 1 ≥ 1 ✓');
+    cap('n = 0：左邊 H₁ = 1，右邊也是 1', '≥ 含等於，所以對');
+  },
+  async (tok, S) => { // 2565.2
+    S.B.add('② 假設 H_{2ᵏ} ≥ 1 + k/2');
+    cap('假設 k 的時候對', '');
+  },
+  async (tok, S) => { // 2579.8
+    S.B.add('H_{2ᵏ⁺¹} = H_{2ᵏ} + [1/(2ᵏ+1) + … + 1/2ᵏ⁺¹]');
+    cap('照定義寫開：前面一段 + 後面一段', '');
+  },
+  async (tok, S) => { // 2593.3
+    S.B.add('前段 H_{2ᵏ} ≥ 1 + k/2　← 用假設');
+    cap('前面那段套用假設', '');
+  },
+  async (tok, S) => { // 2602.8
+    S.B.add('後段每一項 ≥ 1/2ᵏ⁺¹（分母最大的最小）');
+    [4, 5, 6, 7].forEach((i) => glow(S.bar[i], HL));
+    T('示意 k = 2：1/5…1/8 都 ≥ 1/8', 'idx', 3.8, 2.5);
+    cap('後面那些數字誰最小？分母最大的', '全部換成最小的，只會變小');
+  },
+  async (tok, S) => { // 2633.6
+    S.B.add('後段共 2ᵏ 項 → ≥ 2ᵏ · 1/2ᵏ⁺¹ = 1/2');
+    cap('一共 2ᵏ 項，每項至少 1/2ᵏ⁺¹', '乘起來是 1/2');
+  },
+  async (tok, S) => { // 2664.7
+    S.B.add('H_{2ᵏ⁺¹} ≥ 1 + k/2 + 1/2 = 1 + (k+1)/2 ✓', 'good');
+    cap('兩段加起來：k+1 也對', '常常就是這樣「換小」');
+  },
+]);
+
+scene('pfC-12-demorgan', '推廣的 De Morgan 定律', [
+  async (tok, S) => { // 2681.1
+    S.B = board(-6.6, 6.4); S.B.add('要證：(A₁ ∩ A₂ ∩ … ∩ Aₙ)ᶜ = A₁ᶜ ∪ A₂ᶜ ∪ … ∪ Aₙᶜ');
+    cap('先把要證的東西寫下來', 'n 個集合交集的補集');
+  },
+  async (tok, S) => { // 2709.4
+    S.B.add('工具：兩個集合的 De Morgan（X ∩ Y）ᶜ = Xᶜ ∪ Yᶜ');
+    S.B.add('　　　＋ 假設 k 個集合時成立', 'say');
+    cap('手上有兩個工具', '兩個集合的公式、k 個集合的假設');
+  },
+  async (tok, S) => { // 2723.3
+    S.B.add('k+1 個看成兩塊：B = A₁ ∩ … ∩ A_k，和 A_{k+1}');
+    S.b1 = chip('B = A₁ ∩ … ∩ A_k', FC.blue, 2.4, 2.0, 2.6, 0.7, 1); S.b2 = chip('A_{k+1}', FC.orange, 5.4, 2.0, 1.4, 0.7, 1);
+    cap('換個心態：前面 k 個當成一個集合 B', '後面一個 A_{k+1}');
+  },
+  async (tok, S) => { // 2756.9
+    S.B.add('(B ∩ A_{k+1})ᶜ = Bᶜ ∪ A_{k+1}ᶜ　← 兩個集合版');
+    cap('先用兩個集合的 De Morgan', '');
+  },
+  async (tok, S) => { // 2776.8
+    S.B.add('Bᶜ = A₁ᶜ ∪ … ∪ A_kᶜ　← 歸納假設');
+    glow(S.b1, OKG);
+    cap('Bᶜ 是 k 個集合交集的補集', '可以套用假設');
+  },
+  async (tok, S) => { // 2800.9
+    S.B.add('連集結合律 → A₁ᶜ ∪ … ∪ A_kᶜ ∪ A_{k+1}ᶜ ✓', 'good');
+    cap('全部都是連集，用結合律合在一起', '就是 k+1 個的公式');
+  },
+  async (tok, S) => { // 2817.1
+    S.B.add('③ 故得證', 'good');
+    cap('Step 3：故得證', '');
+  },
+]);
+
+scene('pfC-12-incl', '排容原理的歸納證明', [
+  async (tok, S) => { // 2844.5
+    S.B = board(-6.6, 6.4); S.B.add('排容原理：|A₁ ∪ A₂ ∪ … ∪ Aₙ| = ?');
+    cap('Inclusion–exclusion principle', '算連集裡有幾個東西');
+  },
+  async (tok, S) => { // 2867.9
+    S.B.add('= Σ|Aᵢ| − Σ_{i<j}|Aᵢ ∩ Aⱼ| + Σ_{i<j<l}|Aᵢ ∩ Aⱼ ∩ A_l| − …');
+    T('加個別 → 減兩兩（加過頭）→ 加回三個（減過頭）…', 'idx', 0.4, 4.6);
+    cap('先加個別的，加過頭就減掉兩兩的', '減過頭再把三個的加回去');
+  },
+  async (tok, S) => { // 2924.6
+    S.B.add('假設 n 個集合時成立，看 n+1 個');
+    cap('假設 n 個集合成立', '手上的工具：兩個集合的公式、n 個的公式');
+  },
+  async (tok, S) => { // 2950.1
+    S.B.add('把 Aₙ ∪ Aₙ₊₁ 當成一個集合 → 只剩 n 個 → 套假設');
+    S.c = [1, 2, 3].map((i) => chip('A' + ['₁', '₂', '…'][i - 1], FC.blue, 0.8 + i * 1.1, 2.0, 0.9, 0.6, 1));
+    S.d = chip('Aₙ ∪ Aₙ₊₁', FC.orange, 6.0, 2.0, 1.6, 0.6, 1);
+    cap('最後兩個先綁成一個', '這樣只有 n 個集合，可以套假設');
+  },
+  async (tok, S) => { // 3023.4
+    S.B.add('|Aₙ ∪ Aₙ₊₁| 再用兩個集合的公式拆開');
+    cap('裡面還藏著連集：再拆開', '|X ∪ Y| = |X| + |Y| − |X ∩ Y|');
+  },
+  async (tok, S) => { // 3092.8
+    S.B.add('分配律：Aᵢ ∩ (Aₙ ∪ Aₙ₊₁) = (Aᵢ ∩ Aₙ) ∪ (Aᵢ ∩ Aₙ₊₁)');
+    cap('交集裡有連集：用分配律', '');
+  },
+  async (tok, S) => { // 3125.8
+    S.B.add('又跑出連集 → 再套一次排容');
+    cap('我們只要交集，不要連集', '再套一次排容原理');
+  },
+  async (tok, S) => { // 3142.5
+    S.B.add('兩兩一組、三三一組合併 → 剛好是 n+1 個集合的所有配對');
+    cap('把兩項的放一起、三項的放一起', '所有可能的配對都找齊了');
+  },
+  async (tok, S) => { // 3203.1
+    S.B.add('整理完 = n+1 個集合的排容公式 ✓', 'good');
+    cap('證明結束（投影片有幾個筆誤）', '');
+  },
+  async (tok, S) => { // 3211.0
+    T('證明不一定是數字：也可以是抽象的形式', 'note', 2.0, 0.6);
+    cap('證明不一定都是數字', '也可以是比較抽象的寫法');
+  },
+]);
+
+scene('pfC-12-strong', '強歸納法：每個 n > 1 都能質因數分解', [
+  async (tok, S) => { // 3233.7
+    S.B = board(-6.6, 6.4); S.B.add('Strong Induction（強數學歸納法）');
+    S.D = dominoes(6, 1.0, 0.3, 0.9, FC.blue, [2, 3, 4, 5, 'k', 'k+1']);
+    cap('式子二：Strong Induction', '');
+  },
+  async (tok, S) => { // 3242.4
+    S.B.add('剛才：前一張推倒下一張');
+    cap('剛才的骨牌：前一張推倒下一張', '還不能應付所有情況');
+  },
+  async (tok, S) => { // 3254.1
+    S.B.add('有時候：要靠前面好幾張');
+    cap('有時候問題會縮成前面好幾個', '不是只跟前一個有關');
+  },
+  async (tok, S) => { // 3262.1
+    S.B.add('第一張要倒；第 k+1 張倒，是因為前面全倒了');
+    await S.D.fall(tok, 0, 350);
+    cap('一樣要先推倒第一張', '');
+  },
+  async (tok, S) => { // 3288.3
+    S.B.add('可以假設 P(1), P(2), …, P(k) 全部為真');
+    cap('差別在手上的牌', '前面所有的都可以假設是對的');
+  },
+  async (tok, S) => { // 3299.8
+    S.big = cube('', FC.orange, [0.5, 2.0, 0.9], 1.0 + 6 * 0.9, 1.3, 0);
+    T('超級大骨牌', 'ptr', 1.0 + 6 * 0.9, 2.7);
+    cap('中間放了一個超級大骨牌', '要前面好幾張一起倒才推得動');
+  },
+  async (tok, S) => { // 3320.3
+    S.B.add('例：每個整數 n > 1 都能寫成質數的乘積');
+    cap('例子：質因數分解', 'n > 1 的整數都可以分解');
+  },
+  async (tok, S) => { // 3336.6
+    S.B.add('分解是乘法 → 變小要用除法，不是 n → n−1');
+    cap('要把問題變小，只能用除法', '至少除以 2，跟前一個 n−1 無關');
+  },
+  async (tok, S) => { // 3370.5
+    S.B.add('① n = 2：2 本身是質數 ✓');
+    cap('第一塊骨牌：n = 2', '2 自己就是質數');
+  },
+  async (tok, S) => { // 3393.0
+    S.B.add('② 假設 2, 3, 4, …, k 都能分解');
+    await S.D.run(tok, 1, 4, 160);
+    cap('假設 2 到 k 全部都有質因數分解', '要證 k+1 也有');
+  },
+  async (tok, S) => { // 3409.8
+    S.B.add('case 1：k+1 是質數 → 自己就是分解 ✓');
+    cap('第一種情況：k+1 是質數', '質數不能再變小，自己就是');
+  },
+  async (tok, S) => { // 3441.3
+    S.B.add('case 2：k+1 = a · b，2 ≤ a, b ≤ k');
+    cap('不是質數：可以寫成兩數相乘', 'a、b 都比 k+1 小');
+  },
+  async (tok, S) => { // 3471.8
+    S.B.add('a、b 落在 2…k → 依假設都能分解');
+    cap('a、b 都在前面那些骨牌裡', '根據假設，它們都能分解');
+  },
+  async (tok, S) => { // 3480.8
+    S.B.add('k+1 = (a 的分解) · (b 的分解) ✓', 'good');
+    T('示意：12 = 3 · 4 = 3 · 2 · 2', 'idx', 3.6, 3.4);
+    await S.D.fall(tok, 5, 400);
+    cap('把兩個分解乘起來就好', '');
+  },
+]);
+
+scene('pfC-12-match', '撿火柴遊戲：後手必勝', [
+  async (tok, S) => { // 3503.0
+    S.B = board(-6.6, 6.4); S.B.add('撿火柴遊戲');
+    cap('以前玩過的撿火柴遊戲', '');
+  },
+  async (tok, S) => { // 3514.5
+    S.B.add('兩堆一樣多；輪流從其中一堆拿走若干根');
+    S.B.add('拿到最後一根的人贏', 'say');
+    cap('兩堆火柴數量一樣', '每次只能從一堆裡拿');
+  },
+  async (tok, S) => { // 3552.4
+    S.B.add('主張：第二個拿的人一定贏');
+    cap('第二個挑的人一定贏', '這遊戲不用玩');
+  },
+  async (tok, S) => { // 3601.0
+    S.B.add('對「每堆的根數 n」做歸納');
+    cap('最明顯的是火柴的根數', '');
+  },
+  async (tok, S) => { // 3610.5
+    S.B.add('① n = 1：先手拿走一根，後手拿最後一根 ✓');
+    const a = cube('', FC.gold, [0.14, 1.0, 0.14], 2.0, 1.0, 0), b = cube('', FC.gold, [0.14, 1.0, 0.14], 5.0, 1.0, 0);
+    T('左堆', 'idx', 2.0, 0.2); T('右堆', 'idx', 5.0, 0.2);
+    await lift(tok, [a], 400); await lift(tok, [b], 400);
+    cap('每堆一根：先手只能拿走一根', '後手拿走剩下那根 → 後手贏');
+  },
+  async (tok, S) => { // 3634.7
+    S.B.add('② 假設每堆 1, 2, …, k 根時，後手都贏');
+    cap('假設火柴 1 根、2 根…到 k 根', '都是第二個人贏');
+  },
+  async (tok, S) => { // 3661.6
+    S.B.add('k+1 根：先手拿 r 根，後手在另一堆也拿 r 根');
+    S.L = []; S.R = [];
+    for (let i = 0; i < 5; i++) { S.L.push(cube('', FC.gold, [0.14, 1.0, 0.14], 1.4 + i * 0.3, 1.0, 0)); S.R.push(cube('', FC.gold, [0.14, 1.0, 0.14], 4.4 + i * 0.3, 1.0, 0)); }
+    T('示意：k+1 = 5', 'idx', 3.4, 2.0);
+    await lift(tok, S.L.slice(2), 400);
+    await lift(tok, S.R.slice(2), 400);
+    cap('先手從一堆拿 3 根', '我就跟屁蟲：另一堆也拿 3 根');
+  },
+  async (tok, S) => { // 3688.3
+    S.B.add('剩下兩堆都是 k+1−r 根，又輪先手');
+    cap('又變成兩堆一樣多', '還是輪他先挑，我還是第二個');
+  },
+  async (tok, S) => { // 3697.8
+    S.B.add('k+1−r ≤ k → 依假設後手贏 ✓', 'good');
+    cap('根數 ≤ k：根據前面的假設', '一定是後手贏');
+  },
+  async (tok, S) => { // 3718.7
+    T('現場玩：你拿幾根，我就在另一堆拿幾根', 'note', 3.4, 3.2);
+    await lift(tok, [S.L[1]], 350); await lift(tok, [S.R[1]], 350);
+    cap('課堂上實際玩一次', '你做什麼，我就跟你做一樣的事');
+  },
+]);
+
+scene('pfC-12-stamp', '郵票：4 元與 5 元湊出 ≥ 12 元', [
+  async (tok, S) => { // 3764.5
+    S.B = board(-6.6, 6.4); S.B.add('寄信：要準備幾種郵票才夠貼？');
+    cap('去郵局寄信：30、40、50 元…', '要準備幾種郵票？');
+  },
+  async (tok, S) => { // 3787.3
+    S.B.add('只要 4 元和 5 元 → ≥ 12 的金額都湊得出來');
+    cap('信封夠大的話，只要 4 元和 5 元', '任何 ≥ 12 的金額都能湊');
+  },
+  async (tok, S) => { // 3834.3
+    S.B.add('起始條件不只一個');
+    cap('這次起始條件要好幾個', '為什麼？等一下看');
+  },
+  async (tok, S) => { // 3860.9
+    S.row = (y, a) => a.forEach((v, i) => chip(String(v), v === 4 ? FC.blue : FC.orange, 2.4 + i * 0.75, y, 0.6, 0.6, 1));
+    T('12', 'ptr', 1.4, 4.4); S.row(4.4, [4, 4, 4]);
+    cap('12 = 4 + 4 + 4', '');
+  },
+  async (tok, S) => { // 3870.0
+    T('13', 'ptr', 1.4, 3.6); S.row(3.6, [4, 4, 5]);
+    cap('13 = 4 + 4 + 5', '');
+  },
+  async (tok, S) => { // 3873.7
+    T('14', 'ptr', 1.4, 2.8); S.row(2.8, [4, 5, 5]);
+    cap('14 = 4 + 5 + 5', '');
+  },
+  async (tok, S) => { // 3876.4
+    T('15', 'ptr', 1.4, 2.0); S.row(2.0, [5, 5, 5]);
+    cap('15 = 5 + 5 + 5', '這 4 個是起始條件');
+  },
+  async (tok, S) => { // 3898.1
+    S.B.add('假設 12, 13, …, k 都湊得出來（k ≥ 15）');
+    cap('假設 12 到 k 全部都湊得出來', 'k + 1 怎麼辦？');
+  },
+  async (tok, S) => { // 3921.7
+    S.B.add('k+1：先貼一張 4 元，剩 k−3');
+    T('k+1', 'ptr', 1.4, 0.9); chip('4', FC.blue, 2.4, 0.9, 0.6, 0.6, 1); chip('k−3', FC.gray, 3.6, 0.9, 1.2, 0.6, 1);
+    cap('先貼一張 4 元郵票', '剩下只要湊 k−3');
+  },
+  async (tok, S) => { // 3947.5
+    S.B.add('12 ≤ k−3 < k → 依假設湊得出 → 再加 4 ✓', 'good');
+    cap('k−3 落在 12 到 k 的範圍', '所以湊得出來，再多貼一張 4');
+  },
+  async (tok, S) => { // 3974.4
+    S.B.add('為什麼要 4 個起始？一次往回退 4 步：16 → 12');
+    cap('一貼就是 4 元，要往前看 4 格', '例如 16 貼一張 4，剩 12');
+  },
+]);
+
+const OCT = [[1.6, 0.2], [0.0, 1.24], [0.56, 3.0], [2.4, 3.4], [4.0, 2.36], [5.6, 3.4], [5.36, 0.6], [3.6, 1.24]];
+scene('pfC-12-poly', '多邊形：凸（convex）與凹（concave）', [
+  async (tok, S) => { // 4013.7
+    S.B = board(-6.6, 6.4); S.B.add('Polygon 多邊形：看邊的個數');
+    cap('Polygon：多邊形', '幾個邊就叫幾邊形');
+  },
+  async (tok, S) => { // 4031.6
+    const hex = [0, 1, 2, 3, 4, 5].map((k) => [2.2 + 1.4 * Math.cos(Math.PI / 6 + k * Math.PI / 3), 4.0 + 1.4 * Math.sin(Math.PI / 6 + k * Math.PI / 3)]);
+    poly(hex); seg(hex[0], hex[3], '#2fc092'); seg(hex[1], hex[4], '#2fc092'); seg(hex[2], hex[5], '#2fc092');
+    T('convex 凸', 'good', 2.2, 1.9);
+    S.B.add('convex 凸：對角線不管怎麼畫，都在裡面');
+    cap('對角線：連兩個頂點', '凸多邊形：全部對角線都在裡面');
+  },
+  async (tok, S) => { // 4059.4
+    const cc = [[4.6, 2.6], [6.6, 2.6], [6.6, 5.2], [5.6, 3.6], [4.6, 5.2]];
+    poly(cc); seg(cc[2], cc[4], '#d64545');
+    T('concave 凹', 'bad', 5.6, 1.9);
+    S.B.add('concave 凹：有對角線跑到外面');
+    cap('凹多邊形：有的對角線在外面', '');
+  },
+  async (tok, S) => { // 4108.7
+    S.B.add('多邊形 = 直線圍成的封閉區域；分凸、凹兩類', 'good');
+    cap('直線圍起來的封閉區域', '直線的個數 = 邊數');
+  },
+]);
+
+scene('pfC-12-tri', '三角剖分：n 邊形切成 n − 2 個三角形', [
+  async (tok, S) => { // 4136.6
+    S.B = board(-6.6, 6.4); S.B.add('證明：任何 n 邊形都能切成 n − 2 個三角形');
+    cap('不管哪一種多邊形', '切成三角形');
+  },
+  async (tok, S) => { // 4149.3
+    const pent = [0, 1, 2, 3, 4].map((k) => [4.6 + 1.2 * Math.cos(Math.PI / 2 + k * 2 * Math.PI / 5), 5.0 + 1.2 * Math.sin(Math.PI / 2 + k * 2 * Math.PI / 5)]);
+    poly(pent); seg(pent[0], pent[2], '#2fc092'); seg(pent[0], pent[3], '#2fc092');
+    S.B.add('凸的：5 → 3、6 → 4、7 → 5、8 → 6');
+    cap('凸多邊形很好理解', '五邊形對角線畫出去，切成 3 個');
+  },
+  async (tok, S) => { // 4192.7
+    poly(OCT); S.bad = seg(OCT[3], OCT[5], '#d64545');
+    S.B.add('凹的：一刀下去可能切到外面', 'bad');
+    cap('凹多邊形一切下去', '可能跑到外面，很難說是不是三角形');
+  },
+  async (tok, S) => { // 4210.3
+    S.B.add('要證：不管凸凹，n 邊形 → n − 2 個三角形');
+    cap('目標：任何 n 邊形都能切成 n−2 個', '');
+  },
+  async (tok, S) => { // 4260.5
+    S.B.add('Lemma：至少有一條對角線完全在裡面');
+    kill(S.bad); S.good = seg(OCT[0], OCT[3], '#2fc092');
+    cap('關鍵：課本的 lemma', '一定找得到一條在內部的對角線');
+  },
+  async (tok, S) => { // 4294.0
+    S.B.add('沿這條內部對角線切成兩塊');
+    cap('找一條內部對角線', '把多邊形切成兩部分');
+  },
+  async (tok, S) => { // 4317.3
+    OCT.forEach((p, i) => { const q = OCT[(i + 1) % 8]; T(String(i + 1), 'idx', (p[0] + q[0]) / 2, (p[1] + q[1]) / 2 - 0.25); });
+    S.B.add('例：八邊形（形狀示意）');
+    cap('數一下：原來有 8 個邊', '');
+  },
+  async (tok, S) => { // 4340.1
+    T('4 邊形', 'ptr', 1.1, 2.1); T('6 邊形', 'ptr', 4.2, 1.6);
+    S.B.add('切開 → 一個四邊形 + 一個六邊形');
+    cap('切成一半：一個 4 邊、一個 6 邊', '');
+  },
+  async (tok, S) => { // 4354.4
+    seg(OCT[0], OCT[2], '#4b9ee2');
+    [[4, 6], [4, 7], [3, 7]].forEach(([a, b]) => seg(OCT[a], OCT[b], '#4b9ee2'));
+    S.B.add('依（強）歸納：4 邊形 → 2 個，6 邊形 → 4 個');
+    cap('用歸納假設：4 邊形切成 2 個三角形', '6 邊形切成 4 個');
+  },
+  async (tok, S) => { // 4380.9
+    S.B.add('八邊形 = 4 邊形 + 6 邊形');
+    cap('原來是八邊形，切完變 4 跟 6', '');
+  },
+  async (tok, S) => { // 4393.5
+    S.B.add('4 + 6 = 8 + 2 → (4−2) + (6−2) = 8 − 2 = 6 ✓', 'good');
+    cap('那一刀多出一條邊，兩塊都用到', '三角形 (4−2)+(6−2) 剛好是 8−2');
+  },
+]);
+
+// ════════ 5QtHzN4SRZc（Lec13 Induction and Recursion：遞迴定義、結構、遞迴演算法） ════════
+// a little drawn tree: nodes [[x,y]…] (relative), edges [[i,j]…]
+function tree(nodes, edges, ox, oy, col = FC.green) {
+  const ms = nodes.map(([x, y]) => cube('', col, [0.32, 0.32, 0.32], ox + x, oy + y, 0));
+  const es = edges.map(([i, j]) => seg([ox + nodes[i][0], oy + nodes[i][1]], [ox + nodes[j][0], oy + nodes[j][1]], '#6e5f49'));
+  return { ms, es, kill() { ms.forEach((m) => kill(m)); es.forEach((e) => kill(e)); } };
+}
+
+scene('pfC-13-seq', '遞迴定義數列：首項 + 遞迴式', [
+  async (tok, S) => { // 35.7
+    S.B = board(-6.6, 6.4); S.B.add('遞迴（recursion）：寫程式也會用到');
+    cap('今天的主題：遞迴', 'n 推 n+1、推 n+2 的概念');
+  },
+  async (tok, S) => { // 47.3
+    S.B.add('數列：aₙ = f(n)，n 是整數');
+    cap('先看最常見的形式：數列', 'aₙ 就是一個以整數 n 為變數的函式');
+  },
+  async (tok, S) => { // 61.1
+    S.B.add('給首項，後面的項用前面的項湊出來 → 遞迴定義');
+    cap('另一種定義法：給首項', '後面的用 aₙ₋₁、aₙ₋₂… 湊出來');
+  },
+  async (tok, S) => { // 87.1
+    S.B.add('aₙ = 2ⁿ（等比）');
+    cap('例：aₙ = 2ⁿ', '');
+  },
+  async (tok, S) => { // 102.3
+    S.B.add('a₀ = 1，aₙ = 2 · aₙ₋₁ → 同一個數列');
+    const v = [1, 2, 4, 8, 16];
+    for (let i = 0; i < v.length; i++) { chip(String(v[i]), FC.blue, 2.0 + i * 1.0, 5.2, 0.8, 0.6, 1); T('a' + '₀₁₂₃₄'[i], 'idx', 2.0 + i * 1.0, 4.6); if (i) T('×2', 'idx', 1.5 + i * 1.0, 5.75); await wt(tok, 150); }
+    cap('a₀ = 1，每一項是前一項的兩倍', '跟直接給 2ⁿ 是同一個答案');
+  },
+  async (tok, S) => { // 148.3
+    S.B.add('例：f(0) = 3，f(n+1) = 2f(n) + 3');
+    S.f = [chip('3', FC.orange, 2.0, 3.4, 0.8, 0.6, 1)]; T('f(0)', 'idx', 2.0, 2.8);
+    cap('f(n+1) = 2f(n) + 3', '首項 f(0) = 3');
+  },
+  async (tok, S) => { // 158.6
+    S.B.add('f(1) = 2·3 + 3 = 9', 'say'); chip('9', FC.orange, 3.2, 3.4, 0.8, 0.6, 1); T('f(1)', 'idx', 3.2, 2.8);
+    cap('f(1) = 2·f(0) + 3 = 9', '');
+  },
+  async (tok, S) => { // 172.3
+    S.B.add('f(2) = 2·9 + 3 = 21', 'say'); chip('21', FC.orange, 4.4, 3.4, 0.8, 0.6, 1); T('f(2)', 'idx', 4.4, 2.8);
+    cap('f(2) = 2·f(1) + 3 = 21', '');
+  },
+  async (tok, S) => { // 183.6
+    S.B.add('f(3) = 2·21 + 3 = 45', 'say'); chip('45', FC.orange, 5.6, 3.4, 0.8, 0.6, 1); T('f(3)', 'idx', 5.6, 2.8);
+    cap('f(3) = 2·f(2) + 3 = 45', '依此類推');
+  },
+  async (tok, S) => { // 198.0
+    S.B.add('階乘：f(0) = 1');
+    cap('階乘函式也可以這樣定', '');
+  },
+  async (tok, S) => { // 213.0
+    S.B.add('n! = n · (n−1)! → f(n) = n · f(n−1)');
+    cap('n! = n 乘上 (n−1)!', '');
+  },
+  async (tok, S) => { // 226.4
+    S.B.add('一定要有首項！', 'bad');
+    cap('要算出這些數字，一定要有首項', '');
+  },
+  async (tok, S) => { // 233.3
+    T('示意：f(0) = 5 → f(1) = 13、f(2) = 29…全部不同', 'note', 3.6, 1.6);
+    cap('遞迴式一樣、首項不一樣', '後面的答案全部不一樣');
+  },
+]);
+
+scene('pfC-13-fib', 'Fibonacci 與 fₙ < 2ⁿ（強歸納）', [
+  async (tok, S) => { // 268.2
+    S.B = board(-6.6, 6.4); S.B.add('Fibonacci：fₙ = fₙ₋₁ + fₙ₋₂');
+    cap('Fibonacci 數列', '這一項 = 前兩項相加');
+  },
+  async (tok, S) => { // 283.0
+    S.B.add('跟前兩項有關 → 起始條件要給兩個（像貼郵票）');
+    cap('跟前面幾項有關', '起始條件就要給幾項');
+  },
+  async (tok, S) => { // 296.7
+    S.B.add('f₀ = 0，f₁ = 1');
+    S.v = [0, 1, 1, 2, 3, 5, 8]; S.c = [];
+    for (let i = 0; i < 2; i++) { S.c.push(chip(String(S.v[i]), FC.blue, 1.0 + i * 0.95, 5.2, 0.8, 0.6, 1)); T('f' + '₀₁₂₃₄₅₆'[i], 'idx', 1.0 + i * 0.95, 4.6); }
+    cap('首項 f₀ = 0，f₁ = 1', '');
+  },
+  async (tok, S) => { // 299.8
+    S.c.push(chip('1', FC.green, 1.0 + 2 * 0.95, 5.2, 0.8, 0.6, 1)); T('f₂', 'idx', 1.0 + 2 * 0.95, 4.6);
+    S.B.add('f₂ = f₀ + f₁ = 1', 'say');
+    cap('f₂ = 0 + 1 = 1', '');
+  },
+  async (tok, S) => { // 302.1
+    for (let i = 3; i < 7; i++) { S.c.push(chip(String(S.v[i]), FC.green, 1.0 + i * 0.95, 5.2, 0.8, 0.6, 1)); T('f' + '₀₁₂₃₄₅₆'[i], 'idx', 1.0 + i * 0.95, 4.6); await wt(tok, 150); }
+    S.B.add('f₃ = f₁ + f₂ = 2，f₄ = 3，f₅ = 5，…', 'say');
+    cap('f₃ = 1 + 1 = 2，這樣推下來', '');
+  },
+  async (tok, S) => { // 320.6
+    S.B.add('起始條件一定要給足');
+    cap('跟前兩項有關，起始條件就要兩個', '有時候不只一項');
+  },
+  async (tok, S) => { // 333.4
+    S.B.add('估計大小：證明 fₙ < 2ⁿ');
+    ['1', '2', '4', '8', '16', '32', '64'].forEach((t, i) => T('2ⁿ=' + t, 'idx', 1.0 + i * 0.95, 3.9));
+    cap('不知道 fₙ 確切多少，先估計', '至少知道不會超過 2ⁿ');
+  },
+  async (tok, S) => { // 374.1
+    S.B.add('本質跟歸納法一樣：兩個 basis');
+    cap('遞迴式的證明大多用數學歸納法', '給了兩個起始條件 → 兩個 basis');
+  },
+  async (tok, S) => { // 386.0
+    S.B.add('n = 0：f₀ = 0 < 2⁰ = 1 ✓', 'say'); glow(S.c[0], OKG);
+    cap('n = 0：0 < 1，成立', '');
+  },
+  async (tok, S) => { // 397.9
+    S.B.add('n = 1：f₁ = 1 < 2¹ = 2 ✓', 'say'); glow(S.c[1], OKG);
+    cap('n = 1：1 < 2，成立', '');
+  },
+  async (tok, S) => { // 408.8
+    S.B.add('跟前兩項有關 → 用強數學歸納法');
+    cap('因為跟前兩項有關', '要用強數學歸納法（第二歸納法）');
+  },
+  async (tok, S) => { // 423.9
+    S.B.add('假設所有 k < n（n ≥ 2）：f_k < 2ᵏ');
+    cap('考慮 n 時，先假設比 n 小的都對', '');
+  },
+  async (tok, S) => { // 441.5
+    S.B.add('fₙ = fₙ₋₁ + fₙ₋₂ < 2ⁿ⁻¹ + 2ⁿ⁻²');
+    cap('n−1、n−2 都落在假設的範圍', '各自用假設換掉');
+  },
+  async (tok, S) => { // 459.9
+    S.B.add('< 2ⁿ⁻¹ + 2ⁿ⁻¹ = 2ⁿ ✓', 'good'); S.c.forEach((m) => glow(m, OKG));
+    cap('把 2ⁿ⁻² 放大成 2ⁿ⁻¹', '兩個相加就是 2ⁿ');
+  },
+  async (tok, S) => { // 482.8
+    T('記得照 ① ② ③ 標準順序寫', 'note', 3.8, 2.8);
+    cap('證明結束', '記得 1、2、3 照順序寫');
+  },
+  async (tok, S) => { // 491.1
+    T('練習：n ≥ 3 時 fₙ > αⁿ⁻²，α = (1+√5)/2', 'say', 3.0, 2.0);
+    T('basis 要驗 n = 3、4', 'idx', 3.0, 1.4);
+    cap('練習：同樣技巧證 fₙ > αⁿ⁻²', 'basis 驗第 3、4 項');
+  },
+]);
+
+scene('pfC-13-lame', 'Lamé 定理：輾轉相除法的次數', [
+  async (tok, S) => { // 558.0
+    S.B = board(-6.6, 6.4); S.B.add('輾轉相除法：電腦算得出來，但要除幾次？');
+    cap('輾轉相除法可以算', '問題是要算幾次');
+  },
+  async (tok, S) => { // 577.4
+    S.B.add('RSA：數字可能有 100、200 位');
+    cap('上次的 RSA：數字非常大', '二進位可能 100、200 位');
+  },
+  async (tok, S) => { // 601.9
+    S.B.add('如果要除一千萬次 → 一兩天才算完，沒實用性', 'bad');
+    cap('除法次數太多就沒有實用性', '');
+  },
+  async (tok, S) => { // 617.4
+    S.B.add('定理：除法的次數其實很合理');
+    cap('這個定理保證次數不會太誇張', '');
+  },
+  async (tok, S) => { // 634.5
+    S.B.add('例：五位數（例如一萬多）');
+    ['萬', '千', '百', '十', '個'].forEach((d, i) => chip(d, FC.sky, 2.0 + i * 0.9, 3.6, 0.7, 0.6, 1));
+    cap('以十進位來看：五個位數', '一萬、兩萬、三萬多都一樣');
+  },
+  async (tok, S) => { // 653.9
+    S.B.add('除法次數 ≤ 5 × 位數 = 5 × 5 = 25 次', 'good');
+    cap('次數不會超過位數的五倍', '五位數 → 最多 25 次');
+  },
+  async (tok, S) => { // 675.1
+    S.B.add('提示：除數下一步變被除數 → 兩步一起看規律');
+    cap('練習：試著證明', '每兩步觀察一次規則');
+  },
+]);
+
+scene('pfC-13-set3', '遞迴定義集合：3 ∈ S；x, y ∈ S → x + y ∈ S', [
+  async (tok, S) => { // 769.6
+    S.B = board(-6.6, 6.4); S.B.add('遞迴不只定義數列：大的東西拆成小的來說');
+    cap('不一定是數列', '大東西不好講，就拆成小的');
+  },
+  async (tok, S) => { // 791.3
+    S.B.add('定義一個集合 S（沒直接說它是什麼）');
+    S.z = zone('S', 3.6, 2.0, 0, 5.4, 3.0);
+    cap('定義一個集合 S', '題目只給幾條簡單的 rule');
+  },
+  async (tok, S) => { // 812.4
+    S.B.add('① 起始：3 ∈ S');
+    S.n3 = chip('3', FC.blue, 1.6, 2.4, 0.8, 0.6, 1.5);
+    cap('集合裡有一個數字 3', '這是起始條件');
+  },
+  async (tok, S) => { // 820.2
+    S.B.add('② 規則：x ∈ S 且 y ∈ S → x + y ∈ S');
+    cap('兩個在 S 裡的數相加', '結果也在 S 裡');
+  },
+  async (tok, S) => { // 833.6
+    S.B.add('起始條件 + 規則 = 遞迴（recursive）定義');
+    cap('這就是遞迴的定義', '用已知的生出新的');
+  },
+  async (tok, S) => { // 897.4
+    T('只有一個 3，找不到第二個數？', 'bad', 3.6, 4.2);
+    cap('x + y 要兩個數', '可是只給了一個 3');
+  },
+  async (tok, S) => { // 930.3
+    S.B.add('x、y 可以一樣！x = y = 3 → 6 ∈ S');
+    chip('6', FC.green, 2.8, 2.4, 0.8, 0.6, 1.5);
+    cap('沒說 x 和 y 要不一樣', '3 + 3 = 6');
+  },
+  async (tok, S) => { // 962.4
+    S.B.add('x = 3，y = 6 → 9 ∈ S', 'say');
+    chip('9', FC.green, 4.0, 2.4, 0.8, 0.6, 1.5);
+    cap('3 + 6 = 9', '');
+  },
+  async (tok, S) => { // 972.7
+    chip('12', FC.green, 5.2, 2.4, 0.8, 0.6, 1.5); chip('15', FC.green, 1.6, 1.4, 0.8, 0.6, 1.5); T('…', 'say', 2.8, 1.4);
+    cap('一直這樣加下去', '');
+  },
+  async (tok, S) => { // 981.2
+    S.B.add('S = {3k | k ∈ ℤ⁺}：3 的正倍數', 'good');
+    cap('歸納出來：S 就是 3 的正倍數', '');
+  },
+]);
+
+scene('pfC-13-str', '字串與字母集 Σ', [
+  async (tok, S) => { // 1011.5
+    S.B = board(-6.6, 6.4); S.B.add('字串（string）');
+    cap('另一種集合：字串', '');
+  },
+  async (tok, S) => { // 1029.3
+    S.B.add('字母集 Σ = {a, b, …, z}（26 個）');
+    cap('字母集通常用 Σ 表示', '先用記憶中的 a 到 z');
+  },
+  async (tok, S) => { // 1054.8
+    S.B.add('Σ⁰ = {λ}：長度 0（空字串）');
+    chip('λ', FC.gray, 2.0, 5.2, 0.8, 0.6, 1); T('Σ⁰', 'ptr', 0.9, 5.2);
+    cap('Σ⁰：長度 0 的字串', '只有一個：空字串');
+  },
+  async (tok, S) => { // 1074.9
+    S.B.add('Σ¹ = {a, b, c, …, z}：長度 1');
+    ['a', 'b', 'c', '…', 'z'].forEach((t, i) => chip(t, FC.blue, 2.0 + i * 0.9, 4.2, 0.7, 0.6, 1)); T('Σ¹', 'ptr', 0.9, 4.2);
+    cap('Σ¹：長度 1 的字串', 'a、b、c 一直到 z');
+  },
+  async (tok, S) => { // 1097.8
+    S.B.add('Σ² = {aa, ab, …, ba, bb, …, zz}：順序有關');
+    ['aa', 'ab', '…', 'ba', 'bb', '…'].forEach((t, i) => chip(t, FC.orange, 2.0 + i * 0.9, 3.2, 0.8, 0.6, 1)); T('Σ²', 'ptr', 0.9, 3.2);
+    cap('Σ²：長度 2 的字串', 'ab 跟 ba 不一樣');
+  },
+  async (tok, S) => { // 1125.9
+    S.B.add('|Σ⁰| = 1，|Σ¹| = 26，|Σ²| = 26²', 'say');
+    cap('大小：1、26、26²……', '');
+  },
+  async (tok, S) => { // 1153.6
+    S.B.add('Σ* = Σ⁰ ∪ Σ¹ ∪ Σ² ∪ …：所有字串');
+    cap('全部聯集起來：所有字串的集合', '長度可以 100、200，也可以是空字串');
+  },
+  async (tok, S) => { // 1201.6
+    S.B.add('字母集可以換：程式的變數名、正規語言', 'say');
+    cap('字母集可以換', '以後寫程式、正規語言都會用到');
+  },
+  async (tok, S) => { // 1224.3
+    S.B.add('Σ = {0, 1} → 二進位字串');
+    ['0', '1', '01', '110'].forEach((t, i) => chip(t, FC.teal, 2.0 + i * 1.0, 1.8, 0.8, 0.6, 1));
+    cap('字母集是 {0, 1}', '列出來的就是一串串二進位');
+  },
+]);
+
+scene('pfC-13-sigstar', '遞迴定義 Σ*：一步步拼出 apple', [
+  async (tok, S) => { // 1251.3
+    S.B = board(-6.6, 6.4); S.B.add('用遞迴定義 Σ*（所有字串）');
+    cap('同一個 Σ*', '這次用遞迴來定義');
+  },
+  async (tok, S) => { // 1273.4
+    S.B.add('① 起始：λ ∈ Σ*（空字串）');
+    cap('最短的字串是空字串', '用 λ 表示');
+  },
+  async (tok, S) => { // 1297.9
+    S.B.add('② 規則：w ∈ Σ*、x ∈ Σ → wx ∈ Σ*');
+    cap('舊字串後面接一個字母', '得到新的字串');
+  },
+  async (tok, S) => { // 1331.6
+    S.B.add('例：ab ∈ Σ*，x ∈ Σ → "abx" ∈ Σ*', 'say');
+    cap('已知 "ab" 是字串，x 是字母', '所以 "abx" 也是字串');
+  },
+  async (tok, S) => { // 1376.9
+    S.B.add('證明 "apple" ∈ Σ*');
+    S.rail = cube('', FC.sand, [6.0, 0.12, 0.8], 3.6, 1.6, 0);
+    cap('隨便舉個例子：apple', '要重複用這兩條規則');
+  },
+  async (tok, S) => { // 1412.2
+    S.B.add('1. λ ∈ Σ*', 'say');
+    S.w = T('目前：λ', 'note', 3.6, 3.0);
+    cap('先知道：空字串在 Σ* 裡', '');
+  },
+  async (tok, S) => { // 1423.8
+    S.B.add('2. a ∈ Σ → "a" ∈ Σ*', 'say');
+    S.k = [chip('a', FC.blue, 1.2, 2.0, 0.7, 0.6, 1.5)]; txt(S.w, '目前："a"');
+    cap('a 是字母，接在空字串後面', '得到 "a"');
+  },
+  async (tok, S) => { // 1453.8
+    S.B.add('3. p ∈ Σ → "ap" ∈ Σ*', 'say');
+    S.k.push(chip('p', FC.blue, 2.1, 2.0, 0.7, 0.6, 1.5)); txt(S.w, '目前："ap"');
+    cap('再接一個 p', '"ap" 也在 Σ* 裡');
+  },
+  async (tok, S) => { // 1473.1
+    S.B.add('4. p ∈ Σ → "app" ∈ Σ*', 'say');
+    S.k.push(chip('p', FC.blue, 3.0, 2.0, 0.7, 0.6, 1.5)); txt(S.w, '目前："app"');
+    cap('再接一個 p', '"app"');
+  },
+  async (tok, S) => { // 1486.5
+    S.B.add('5–6. 接 l、e → "apple" ∈ Σ* ✓', 'good');
+    S.k.push(chip('l', FC.blue, 3.9, 2.0, 0.7, 0.6, 1.5)); await wt(tok, 300); S.k.push(chip('e', FC.blue, 4.8, 2.0, 0.7, 0.6, 1.5));
+    S.k.forEach((m) => glow(m, OKG)); txt(S.w, '"apple" ∈ Σ* ✓');
+    cap('幾次之後，apple 確實在 Σ* 裡', '');
+  },
+  async (tok, S) => { // 1511.3
+    T('練習：「長度聯集」和「遞迴」兩種定義，得到同一個集合', 'say', 2.4, 0.6);
+    cap('兩種定義的 Σ* 一模一樣', '請試著證明');
+  },
+]);
+
+scene('pfC-13-tree', '遞迴定義有根樹（rooted tree）', [
+  async (tok, S) => { // 1547.2
+    S.B = board(-6.6, 6.4); S.B.add('樹（tree）：考試不考，但要知道概念');
+    cap('這種東西叫樹', '');
+  },
+  async (tok, S) => { // 1554.9
+    S.B.add('黑點 = 節點（node），連線 = 邊（edge）');
+    S.t0 = tree([[0, 1.2], [-0.8, 0], [0.8, 0], [0.8, -1.0]], [[0, 1], [0, 2], [2, 3]], 4.0, 4.2, FC.gray);
+    cap('節點與邊', '抽象地講樹是什麼很難');
+  },
+  async (tok, S) => { // 1570.5
+    S.t0.kill();
+    S.B.add('① 起始：一個點就是一棵有根樹');
+    tree([[0, 0]], [], 1.2, 4.6); T('一個點', 'idx', 1.2, 4.0);
+    cap('給一個建構式的定義', '起始：只有一個點，它就是樹根');
+  },
+  async (tok, S) => { // 1596.7
+    S.B.add('② 規則：T₁, …, Tₙ 是樹 → 加一個新根，連到每棵的根');
+    cap('有好幾棵樹 T₁、T₂…Tₙ', '多一個新節點，連到每棵樹的根');
+  },
+  async (tok, S) => { // 1645.7
+    tree([[0, 0.9], [0, 0]], [[0, 1]], 2.8, 4.2); T('一棵 + 新根', 'idx', 2.8, 3.6);
+    cap('一棵樹 + 新樹根', '連起來是新的有根樹');
+  },
+  async (tok, S) => { // 1673.8
+    tree([[0.5, 0.9], [0, 0], [1.0, 0]], [[0, 1], [0, 2]], 4.1, 4.2); T('兩棵 + 新根', 'idx', 4.6, 3.6);
+    cap('兩棵樹上面再擺一個新根', '也是一棵樹');
+  },
+  async (tok, S) => { // 1695.7
+    tree([[1.0, 1.0], [0, 0], [1.0, 0], [2.0, 0], [0, -0.9], [2.0, -0.9]], [[0, 1], [0, 2], [0, 3], [1, 4], [3, 5]], 2.0, 1.8);
+    T('再組合：越長越大', 'idx', 3.0, 0.4);
+    cap('把已經做好的樹再組合', '放一個新根，連過去');
+  },
+  async (tok, S) => { // 1771.5
+    S.B.add('名詞：樹根、子樹、父親、小孩、兄弟', 'good');
+    T('樹根', 'ptr', 3.0, 3.25); T('兄弟', 'idx', 4.6, 1.3);
+    cap('最上面是樹根；底下整棵是子樹', '像族譜：父親、小孩、兄弟');
+  },
+]);
+
+scene('pfC-13-btree', '遞迴定義二元樹（extended binary tree）', [
+  async (tok, S) => { // 1811.3
+    S.B = board(-6.6, 6.4); S.B.add('二元樹（binary tree）');
+    cap('另一種：二元樹', '跟有根樹稍微不一樣');
+  },
+  async (tok, S) => { // 1821.7
+    S.B.add('① 起始：空的（什麼都沒有）也是一棵二元樹');
+    cap('起始條件不一樣', '什麼都沒有也是一棵二元樹');
+  },
+  async (tok, S) => { // 1856.5
+    S.B.add('② 規則：T₁（左）、T₂（右）+ 一個新根');
+    cap('只能接兩棵：T₁ 和 T₂', '每個人最多兩個小孩');
+  },
+  async (tok, S) => { // 1897.7
+    T('∅', 'note', 1.4, 4.6); T('最小的二元樹', 'idx', 1.4, 4.0);
+    cap('最小的二元樹是什麼？', '是空的，這要小心');
+  },
+  async (tok, S) => { // 1917.9
+    T('∅', 'idx', 2.7, 4.0); T('∅', 'idx', 3.9, 4.0); tree([[0, 0]], [], 3.3, 4.8); T('→ 一個點', 'say', 4.9, 4.8);
+    cap('左邊放空樹、右邊放空樹、加樹根', '空的沒有根可以連 → 只剩一個點');
+  },
+  async (tok, S) => { // 1945.3
+    S.bt = tree([[1.0, 1.2], [0, 0], [2.0, 0], [-0.6, -1.0]], [[0, 1], [0, 2], [1, 3]], 2.4, 1.6);
+    T('左兒子', 'ptr', 2.0, 1.0); T('右兒子', 'ptr', 4.8, 1.0);
+    cap('只有兩個，所以有順序', '左兒子、右兒子');
+  },
+  async (tok, S) => { // 1968.9
+    T('左子樹', 'idx', 1.6, 0.1); T('右子樹', 'idx', 4.4, 0.6);
+    cap('左兒子下面整串：左子樹', '右邊的：右子樹');
+  },
+  async (tok, S) => { // 2012.3
+    S.B.add('有根樹：最小是一個點；小孩不限個數、不分順序', 'say');
+    cap('比較：有根樹最小是一個點', '小孩隨便生，畫左畫右都一樣');
+  },
+  async (tok, S) => { // 2059.6
+    S.B.add('二元樹：只有左兒子 ≠ 只有右兒子');
+    tree([[0, 0.8], [-0.5, 0]], [[0, 1]], -1.0, 0.4, FC.purple); tree([[0, 0.8], [0.5, 0]], [[0, 1]], 0.4, 0.4, FC.purple);
+    T('≠', 'note', -0.3, 0.8);
+    cap('同樣一個小孩', '一個是左邊有兒子，一個是右邊有兒子');
+  },
+  async (tok, S) => { // 2110.5
+    S.B.add('有兒子 = 內部節點；沒兒子 = 葉子（leaf / external node）', 'good');
+    S.bt.ms.forEach((m, i) => tint(m, i === 2 || i === 3 ? FC.orange : FC.green));
+    cap('有兒子的：internal node', '沒兒子的：leaf，像樹葉');
+  },
+]);
+
+scene('pfC-13-pow', '遞迴演算法：power(5, 3) 的呼叫過程', [
+  async (tok, S) => { // 2135.9
+    S.B = board(-6.6, 6.4); S.B.add('遞迴演算法：把遞迴定義直接寫成程式');
+    cap('遞迴演算法', '剛才的概念直接寫成程式');
+  },
+  async (tok, S) => { // 2147.8
+    S.B.add('aⁿ：for 迴圈，每次乘一個 a', 'say');
+    cap('算 aⁿ：寫一個 for 迴圈', '乘 n 次 a');
+  },
+  async (tok, S) => { // 2165.2
+    S.B.add('aⁿ = a · aⁿ⁻¹');
+    cap('aⁿ = a 乘 aⁿ⁻¹', 'aⁿ⁻¹ 自己呼叫自己就算得出來');
+  },
+  async (tok, S) => { // 2180.5
+    S.B.clear();
+    S.code = code(['procedure power(a, n)', 'if n = 0 then return 1', 'else return a · power(a, n − 1)'], -3.4, 6.4);
+    S.code.hl(2);
+    cap('函式叫 power', '回傳 a 乘 power(a, n−1)');
+  },
+  async (tok, S) => { // 2200.0
+    T('一定要有停止條件！', 'bad', -3.4, 4.4);
+    cap('一直簡化，最後一定要停', '寫程式叫終止條件');
+  },
+  async (tok, S) => { // 2221.7
+    S.code.hl(1);
+    cap('n = 0：任何數的 0 次方是 1', '三行就寫完了');
+  },
+  async (tok, S) => { // 2239.2
+    S.code.hl(-1); T('trace：power(5, 3)', 'note', -3.4, 3.6);
+    S.st = []; S.push = (t) => { const m = chip(t, FC.sky, 3.6, 0.6 + S.st.length * 0.85, 3.6, 0.7, 1.2); S.st.push(m); return m; };
+    T('堆疊（stack）', 'ptr', 3.6, -0.2);
+    cap('追蹤函式呼叫的過程', '要算 5³');
+  },
+  async (tok, S) => { // 2260.5
+    S.code.hl(2); S.push('power(5,3) = 5 · power(5,2)');
+    cap('n = 3 ≠ 0 → 5 · power(5, 2)', '乘法先冷凍起來，放進堆疊');
+  },
+  async (tok, S) => { // 2299.7
+    S.push('power(5,2) = 5 · power(5,1)');
+    cap('進到函式開頭，算 5²', '5 · power(5, 1)，再冷凍');
+  },
+  async (tok, S) => { // 2334.8
+    S.push('power(5,1) = 5 · power(5,0)');
+    cap('n 還是不等於 0', '5 · power(5, 0)');
+  },
+  async (tok, S) => { // 2344.9
+    S.code.hl(1); const m = S.push('power(5,0) = 1'); tint(m, FC.green);
+    cap('n = 0：直接回傳 1', '');
+  },
+  async (tok, S) => { // 2377.6
+    kill(S.st.pop()); S.code.hl(2); txt(S.st[2].userData.lbl, 'power(5,1) = 5 · 1 = 5'); tint(S.st[2], FC.green);
+    cap('5 · 1 = 5', '回到上一層');
+  },
+  async (tok, S) => { // 2400.7
+    kill(S.st.pop()); txt(S.st[1].userData.lbl, 'power(5,2) = 5 · 5 = 25'); tint(S.st[1], FC.green);
+    cap('從冷凍庫拿出來：5 · 5 = 25', '');
+  },
+  async (tok, S) => { // 2411.0
+    kill(S.st.pop()); txt(S.st[0].userData.lbl, 'power(5,3) = 5 · 25 = 125'); tint(S.st[0], FC.green); glow(S.st[0], OKG);
+    cap('再拿出來：5 · 25 = 125', '答案 125');
+  },
+  async (tok, S) => { // 2416.2
+    T('大問題冷凍在堆疊 → 小問題算完 → 一層層還回來', 'say', 0.0, 2.6);
+    cap('這就是遞迴呼叫', '');
+  },
+  async (tok, S) => { // 2439.5
+    T('呼叫次數 ∝ 計算時間：5¹⁰ 要呼叫 11 次（n = 10…0）', 'note', 0.0, 1.9);
+    cap('呼叫越多次，花的時間越多', '5¹⁰ 大約要呼叫 10 次以上');
+  },
+]);
+
+scene('pfC-13-fastpow', '更快的遞迴：n 是偶數就對半', [
+  async (tok, S) => { // 2470.7
+    S.B = board(-6.6, 6.4); S.B.add('mpower：bⁿ mod m = (b · (bⁿ⁻¹ mod m)) mod m');
+    cap('加上 mod 的版本', '一樣是 b 乘 bⁿ⁻¹，再取餘數');
+  },
+  async (tok, S) => { // 2500.2
+    S.B.add('n 偶數（n = 2k）：bⁿ = (bᵏ)² → 一次砍一半');
+    cap('n 是偶數時，先算 b^(n/2) 再平方', '10 一次就剩 5');
+  },
+  async (tok, S) => { // 2538.8
+    S.B.add('trace：5¹⁰（先不看 mod）');
+    S.st = []; S.push = (t) => { const m = chip(t, FC.sky, 3.4, 0.6 + S.st.length * 0.8, 3.8, 0.65, 1.2); S.st.push(m); return m; };
+    cap('跟著程式走一次', '算 5¹⁰');
+  },
+  async (tok, S) => { // 2562.5
+    S.push('power(5,10) = power(5,5)²');
+    cap('10 不是 0，是 2 的倍數', '先算 power(5, 5) 再平方');
+  },
+  async (tok, S) => { // 2615.3
+    S.push('power(5,5) = 5 · power(5,4)');
+    cap('5 不能被 2 整除', '用另一條：5 · power(5, 4)');
+  },
+  async (tok, S) => { // 2631.9
+    S.push('power(5,4) = power(5,2)²');
+    cap('4 是偶數', 'power(5, 2) 再平方');
+  },
+  async (tok, S) => { // 2647.6
+    S.push('power(5,2) = power(5,1)²');
+    cap('2 是偶數', 'power(5, 1) 再平方');
+  },
+  async (tok, S) => { // 2675.0
+    S.push('power(5,1) = 5 · power(5,0)');
+    cap('1 是奇數', '5 · power(5, 0)');
+  },
+  async (tok, S) => { // 2682.1
+    tint(S.push('power(5,0) = 1'), FC.green); await wt(tok, 300);
+    kill(S.st.pop()); txt(S.st[4].userData.lbl, 'power(5,1) = 5 · 1 = 5'); tint(S.st[4], FC.green);
+    cap('5⁰ = 1，1 · 5 = 5', '');
+  },
+  async (tok, S) => { // 2699.0
+    kill(S.st.pop()); txt(S.st[3].userData.lbl, 'power(5,2) = 5² = 25'); tint(S.st[3], FC.green);
+    cap('5 的平方 = 25', '');
+  },
+  async (tok, S) => { // 2705.0
+    kill(S.st.pop()); txt(S.st[2].userData.lbl, 'power(5,4) = 25² = 625'); tint(S.st[2], FC.green);
+    cap('25 的平方 = 625', '');
+  },
+  async (tok, S) => { // 2713.4
+    kill(S.st.pop()); txt(S.st[1].userData.lbl, 'power(5,5) = 625 · 5 = 3125'); tint(S.st[1], FC.green);
+    cap('625 · 5 = 3125', '');
+  },
+  async (tok, S) => { // 2716.0
+    kill(S.st.pop()); txt(S.st[0].userData.lbl, 'power(5,10) = 3125² = 9765625'); tint(S.st[0], FC.green); glow(S.st[0], OKG);
+    cap('再平方：3125² = 9765625 = 5¹⁰', '');
+  },
+  async (tok, S) => { // 2729.8
+    S.B.add('只呼叫 6 次（原本要 11 次）', 'good');
+    cap('呼叫了 6 次', '比原來的 11 次少很多');
+  },
+  async (tok, S) => { // 2764.4
+    S.B.add('壞寫法：power(5,5) · power(5,5) → 算兩次、一直分岔', 'bad');
+    cap('不寫平方、呼叫自己兩次', '電腦會兩條路都算，反而更慢');
+  },
+]);
+
+scene('pfC-13-gcd', '遞迴的 gcd（Euclid 演算法）', [
+  async (tok, S) => { // 2852.9
+    S.B = board(-6.6, 6.4); S.B.add('Euclid 演算法也能寫成遞迴');
+    S.code = code(['procedure gcd(a, b)   {0 ≤ a < b}', 'if a = 0 then return b', 'else return gcd(b mod a, a)'], -3.2, 5.6);
+    cap('輾轉相除法的遞迴版', '');
+  },
+  async (tok, S) => { // 2871.1
+    S.code.hl(1);
+    cap('a 是 0 的話，答案就是 b', '');
+  },
+  async (tok, S) => { // 2876.0
+    S.code.hl(2);
+    ['gcd(4, 10)', '→ gcd(10 mod 4, 4) = gcd(2, 4)', '→ gcd(4 mod 2, 2) = gcd(0, 2)', '→ 2'].forEach((t, i) => L(t, i === 3 ? 'good' : 'say', 0.8, 3.4 - i * 0.6));
+    T('示意', 'idx', 0.8, 4.0);
+    cap('不是 0：用 b 除以 a 的餘數，順序要換', '不用另外的變數交換');
+  },
+  async (tok, S) => { // 2895.5
+    S.code.hl(1); T('一定要有終止條件，否則永遠停不了', 'bad', 0.0, 0.6);
+    cap('最主要：一定要有終止條件', '不然程式永遠停不了');
+  },
+]);
+
+scene('pfC-13-msort', 'Merge sort：10, 6, 5, 7, 8, 3, 2', [
+  async (tok, S) => { // 2911.0
+    S.B = board(-6.6, 6.4); S.B.add('排序：把大問題弄成小問題');
+    cap('寫演算法第一個學的：排序', '就像期末排成績');
+  },
+  async (tok, S) => { // 2930.8
+    S.B.add('最原始：先抓最大的，再抓剩下最大的', 'say');
+    cap('一個一個比，記住目前最大的', '不是很好，但很好寫');
+  },
+  async (tok, S) => { // 2949.8
+    S.B.add('Merge sort：100 個學生 → 50 + 50');
+    cap('不要一次處理 100 個', '先分兩堆，各自排好');
+  },
+  async (tok, S) => { // 2984.6
+    S.B.add('兩堆排好 → 比兩堆的頂，大的先拿（像撲克牌）');
+    cap('像撲克牌：兩疊都排好、最大的在上面', '比兩疊的頂端，拿大的');
+  },
+  async (tok, S) => { // 3020.7
+    S.B.add('那 50 個怎麼排？再切一半 → 遞迴');
+    cap('剩下 50 個怎麼辦？', '再切成 25、25，一直切');
+  },
+  async (tok, S) => { // 3053.8
+    S.B.clear();
+    S.row = (vals, x0, y, col = FC.blue) => vals.map((v, i) => chip(String(v), col, x0 + i * 0.75, y, 0.62, 0.55, 1));
+    S.r0 = S.row([10, 6, 5, 7, 8, 3, 2], -2.3, 6.2);
+    T('例：由大排到小', 'idx', -4.4, 6.2);
+    cap('例：10, 6, 5, 7, 8, 3, 2', '由大排到小');
+  },
+  async (tok, S) => { // 3076.8
+    S.row([10, 6, 5], -5.6, 5.0); S.row([7, 8, 3, 2], 1.0, 5.0);
+    cap('先切一半', '左邊 3 個、右邊 4 個');
+  },
+  async (tok, S) => { // 3098.6
+    S.row([10], -6.4, 3.8); S.row([6, 5], -4.6, 3.8); S.row([6], -5.0, 2.6); S.row([5], -3.8, 2.6);
+    cap('三個再切：10 | 6, 5', '6, 5 再切成 6 | 5；一個的不用排');
+  },
+  async (tok, S) => { // 3137.0
+    S.row([6, 5], -4.6, 1.4, FC.green);
+    cap('合併 6 和 5：誰比較大？6', '6 先放，再放 5');
+  },
+  async (tok, S) => { // 3155.8
+    S.row([10, 6, 5], -5.6, 0.2, FC.green);
+    cap('合併 10 | 6, 5：頂端 10 vs 6', '10 先拿，剩下 6、5');
+  },
+  async (tok, S) => { // 3181.5
+    S.row([7, 8], 0.4, 3.8); S.row([3, 2], 2.8, 3.8);
+    cap('右邊四個也切一半', '7, 8 一組；3, 2 一組');
+  },
+  async (tok, S) => { // 3189.0
+    S.row([8, 7], 0.4, 2.6, FC.green);
+    cap('7 | 8 → 8 比較大', '排成 8, 7');
+  },
+  async (tok, S) => { // 3211.5
+    S.row([3, 2], 2.8, 2.6, FC.green);
+    cap('3 | 2 → 3 比較大', '排成 3, 2');
+  },
+  async (tok, S) => { // 3232.3
+    S.row([8, 7, 3, 2], 1.0, 1.4, FC.green);
+    cap('合併：8 vs 3 → 8；7 vs 3 → 7', '剩 3、2 照放');
+  },
+  async (tok, S) => { // 3247.8
+    const out = S.row([10, 8, 7, 6, 5, 3, 2], -2.3, -0.6, FC.orange); out.forEach((m) => glow(m, OKG));
+    cap('最後合併：10 vs 8 → 10；8 vs 6 → 8…', '10, 8, 7, 6, 5, 3, 2');
+  },
+  async (tok, S) => { // 3279.2
+    T('Merge sort 比 selection sort 快很多，用遞迴寫', 'note', 2.6, 0.2);
+    cap('這就是 merge sort', '效能比 selection sort 好很多');
+  },
+], [[0, 3.2, 14.5], [0, 2.6, 0]]);
+
+scene('pfC-13-mscode', 'mergesort 與 merge 的程式', [
+  async (tok, S) => { // 3294.0
+    S.code = code(['procedure mergesort(L = a₁, …, aₙ)', 'if n > 1 then', '   m := ⌊n/2⌋', '   L₁ := a₁, …, aₘ;  L₂ := aₘ₊₁, …, aₙ', '   L := merge(mergesort(L₁), mergesort(L₂))', '{ L 已排好 }'], -2.4, 6.4);
+    S.code.hl(4);
+    cap('切一半，兩半各自排序，再 merge', '相信兩半排得完');
+  },
+  async (tok, S) => { // 3330.9
+    S.code.hl(1);
+    cap('一直切到只剩 1 個', 'n = 1 不進來，直接回傳');
+  },
+  async (tok, S) => { // 3354.0
+    S.code.hl(-1);
+    T('merge（示意，程式是小排到大）', 'ptr', 3.0, 2.8);
+    S.a = [2, 5, 6].map((v, i) => chip(String(v), FC.blue, 1.0 + i * 0.8, 2.0, 0.6, 0.55)); S.b = [3, 7].map((v, i) => chip(String(v), FC.orange, 4.2 + i * 0.8, 2.0, 0.6, 0.55));
+    T('i', 'ptr', 1.0, 1.4); T('j', 'ptr', 4.2, 1.4);
+    [2, 3, 5, 6].forEach((v, i) => chip(String(v), FC.green, 1.6 + i * 0.8, 0.6, 0.6, 0.55, 1));
+    cap('i、j 指著兩疊目前的位置', '比 aᵢ 和 bⱼ，小的先放');
+  },
+  async (tok, S) => { // 3413.1
+    chip('7', FC.green, 1.6 + 4 * 0.8, 0.6, 0.6, 0.55, 1);
+    T('一疊空了 → 另一疊剩下的直接 copy', 'note', 3.0, -0.2);
+    cap('其中一疊空了', '另一疊剩下的照抄過來');
+  },
+]);
+
+scene('pfC-13-ack', 'Ackermann 函數 A(m, n)', [
+  async (tok, S) => { // 3428.3
+    S.B = board(-6.6, 6.4); S.B.add('Ackermann function（Rosen 的定義）');
+    S.B.add('A(m, n) = 2n　　　　　　　若 m = 0', 'say');
+    S.B.add('　　　　 = 0　　　　　　　 若 m ≥ 1, n = 0', 'say');
+    S.B.add('　　　　 = 2　　　　　　　 若 m ≥ 1, n = 1', 'say');
+    S.B.add('　　　　 = A(m−1, A(m, n−1))　若 m ≥ 1, n ≥ 2', 'say');
+    cap('不要小看這個：Ackermann 函數', '');
+  },
+  async (tok, S) => { // 3446.8
+    S.B.add('作業：A(2, 2) = ?');
+    cap('回去練習：算 A(2, 2)', '要像追蹤函式呼叫一樣一個一個帶');
+  },
+  async (tok, S) => { // 3468.0
+    S.B.set(4, 'ptr alt');
+    cap('m = 2 不是 0；n = 2 不是 0 也不是 1', '只能用最後一條遞迴式');
+  },
+  async (tok, S) => { // 3493.0
+    S.B.add('A(2, 2) = A(1, A(2, 1))：先算裡面的 A(2, 1) = 2', 'say');
+    S.B.add('= A(1, 2) = A(0, A(1, 1)) = A(0, 2) = 4', 'good');
+    cap('A(2, 2) = A(1, A(2, 1))', '先跑進去算 A(2, 1)，再帶回來');
+  },
+  async (tok, S) => { // 3511.5
+    S.B.add('回去再算 A(3, 3)（會非常大）');
+    cap('看起來很簡單', '回去再算 A(3, 3)');
+  },
+]);
+
+// ════════ 趙啟超 第3A–3D講（Mathematical Induction and Functions） ════════
+function oval(cx, cy, rx, ry, color = '#6e5f49') { const p = []; for (let k = 0; k < 28; k++) { const a = k / 28 * Math.PI * 2; p.push([cx + rx * Math.cos(a), cy + ry * Math.sin(a)]); } return poly(p, color); }
+const dot = (t, c, x, y) => chip(t, c, x, y, 0.55, 0.45);
+const arr = (a, b, color = 0x6e5f49) => arrow(V3(a[0], a[1], 0), V3(b[0], b[1], 0), color);
+
+// ── 3A ──
+scene('pfC-3a-prin', '數學歸納法的原理：basis、hypothesis、step', [
+  async (tok, S) => { // 26.2
+    S.B = board(-6.6, 6.4); S.B.add('數學歸納法（mathematical induction）');
+    cap('今天教數學歸納法', '以前應該學過，後面會強調注意的地方');
+  },
+  async (tok, S) => { // 44.0
+    S.B.add('statement S(n)：裡面有一個變數 n');
+    cap('有一個 statement S(n)', '裡面有個 variable n');
+  },
+  async (tok, S) => { // 62.6
+    S.B.add('第一點：n = 1 帶進去，S(1) 成立');
+    S.D = dominoes(7, 1.0, 0.3, 0.9, FC.blue, ['S(1)', 'S(2)', 'S(3)', 'S(4)', 'S(5)', 'S(6)', '…']);
+    cap('第一點：n 用 1 帶進去', 'statement 會成立');
+  },
+  async (tok, S) => { // 79.0
+    S.B.add('第二點：S(k) 成立 ⇒ S(k+1) 成立');
+    cap('第二點：n = k 成立', '可以推到 n = k+1 也成立');
+  },
+  async (tok, S) => { // 101.0
+    S.B.add('這個推論要對「所有」自然數 k 都成立');
+    cap('這個 implication（推論）', '要對所有的 k 都成立');
+  },
+  async (tok, S) => { // 124.3
+    await S.D.fall(tok, 0, 350); await S.D.run(tok, 1, 3, 220);
+    cap('S(1) 成立 → 套第二點 → S(2) → S(3)…', '一直推上去');
+  },
+  async (tok, S) => { // 140.5
+    await S.D.run(tok, 4, 6, 160);
+    S.B.add('⇒ 所有自然數 n，S(n) 都成立', 'good');
+    cap('所有的自然數都會成立', '從小的一直推上去：induction');
+  },
+  async (tok, S) => { // 158.3
+    S.B.add('第一步 = induction basis（檢查 initial condition）');
+    cap('第一步叫 induction basis', '歸納的基礎');
+  },
+  async (tok, S) => { // 175.3
+    S.B.add('沒有 S(1)，後面什麼都推不上去', 'bad');
+    cap('必須先有 S(1) 成立', '不然就沒有歸納的基礎');
+  },
+  async (tok, S) => { // 194.7
+    S.B.add('「S(k) 成立」= induction hypothesis（歸納假設）');
+    cap('推論前面那部分', '叫 induction hypothesis');
+  },
+  async (tok, S) => { // 205.6
+    S.B.add('「S(k) ⇒ S(k+1)」= induction step');
+    cap('整個推上去的步驟', '叫 induction step');
+  },
+  async (tok, S) => { // 234.0
+    S.D2 = dominoes(7, 1.0, 2.8, 0.9, FC.orange); S.D2.ms[3].position.x += 0.8;
+    await S.D2.fall(tok, 0, 300); await S.D2.run(tok, 1, 2, 200);
+    T('中間有一個 k 不成立 → 鏈子斷了', 'bad', 4.0, 4.6);
+    cap('如果中間有一個 k 不成立', '歸納就斷了，後面倒不下去');
+  },
+  async (tok, S) => { // 269.4
+    T('S(1) → 帶入 → S(2) → 帶入 → S(3)…', 'note', 3.6, 5.4);
+    cap('基本道理就是這樣', '一次一次帶進去');
+  },
+]);
+
+scene('pfC-3a-4i3', '例：Σ(4i + 3) = 2n² + 5n', [
+  async (tok, S) => { // 292.2
+    S.B = board(-6.6, 6.4); S.B.add('對所有自然數 n（1, 2, 3, …）');
+    cap('看一個例子', '自然數從 1 開始');
+  },
+  async (tok, S) => { // 304.7
+    S.B.add('Σ_{i=1}^{n}：i 從 1 帶到 n，全部加起來', 'say');
+    cap('summation 符號', 'i 從 1 一直帶到 n，再加起來');
+  },
+  async (tok, S) => { // 318.0
+    S.B.add('Σ_{i=1}^{n} (4i + 3) = 2n² + 5n');
+    cap('要證：Σ(4i + 3) = 2n² + 5n', '');
+  },
+  async (tok, S) => { // 337.1
+    S.B.add('induction basis：n = 1');
+    cap('第一步：check initial condition', '');
+  },
+  async (tok, S) => { // 356.6
+    S.B.add('左邊：4·1 + 3 = 7', 'say');
+    cap('左邊 i 只帶 1：4·1 + 3 = 7', '');
+  },
+  async (tok, S) => { // 381.4
+    S.B.add('右邊：2·1² + 5·1 = 7 → 相等 ✓', 'good');
+    cap('右邊 2 + 5 = 7', '兩邊相等，basis 成立');
+  },
+  async (tok, S) => { // 399.0
+    S.B.add('induction step');
+    cap('主要的證明都在 induction step', '');
+  },
+  async (tok, S) => { // 405.9
+    S.B.add('hypothesis：Σ_{i=1}^{k} (4i + 3) = 2k² + 5k');
+    cap('假設 n = k 時成立', '這是 induction hypothesis');
+  },
+  async (tok, S) => { // 428.3
+    S.B.add('要證：Σ_{i=1}^{k+1} (4i + 3) = 2(k+1)² + 5(k+1)');
+    cap('要證 n = k+1 時成立', '目標寫清楚');
+  },
+  async (tok, S) => { // 462.3
+    S.B.add('= Σ_{i=1}^{k} (4i + 3) + [4(k+1) + 3]', 'say');
+    cap('拆成兩項：加到 k 的部分', '加上 i = k+1 那一項');
+  },
+  async (tok, S) => { // 476.0
+    S.B.add('= (2k² + 5k) + (4k + 7)　← 用 hypothesis', 'say');
+    cap('前面那項用假設換掉', '後面 4(k+1) + 3 = 4k + 7');
+  },
+  async (tok, S) => { // 508.8
+    S.B.add('= 2k² + 9k + 7', 'say');
+    cap('全部加起來', '2k² + 9k + 7');
+  },
+  async (tok, S) => { // 519.8
+    S.B.add('2(k+1)² + 5(k+1) = 2k² + 4k + 2 + 5k + 5 = 2k² + 9k + 7 ✓', 'good');
+    cap('目標展開也是 2k² + 9k + 7', '兩邊一樣，證完');
+  },
+  async (tok, S) => { // 557.8
+    S.D = dominoes(6, 1.2, 0.3, 0.9, FC.blue, [1, 2, 3, 4, 5, '…']); await S.D.run(tok, 0, 5, 160);
+    S.B.add('by mathematical induction：對所有 n 成立', 'good');
+    cap('n = 1 成立 → n = 2 → n = 3…', 'by mathematical induction');
+  },
+]);
+
+scene('pfC-3a-cube', '例：Σ i³ = [n(n+1)/2]²', [
+  async (tok, S) => { // 604.8
+    S.B = board(-6.6, 6.4); S.B.add('再一個類似的例子');
+    cap('再看一個類似的例子', '依樣畫葫蘆');
+  },
+  async (tok, S) => { // 614.2
+    S.B.add('1³ + 2³ + … + n³ = [n(n+1)/2]²');
+    cap('立方和', '答案是 [n(n+1)/2] 整個平方');
+  },
+  async (tok, S) => { // 647.8
+    S.B.add('basis n = 1：1³ = 1，[1·2/2]² = 1² = 1 ✓');
+    cap('n = 1：左邊 1，右邊 1', '相等');
+  },
+  async (tok, S) => { // 682.5
+    S.B.add('step：假設 Σ_{i=1}^{k} i³ = [k(k+1)/2]²');
+    cap('假設 induction hypothesis 成立', '');
+  },
+  async (tok, S) => { // 697.9
+    S.B.add('要證：Σ_{i=1}^{k+1} i³ = [(k+1)(k+2)/2]²');
+    cap('要證 n = k+1', '');
+  },
+  async (tok, S) => { // 711.5
+    S.B.add('= Σ_{i=1}^{k} i³ + (k+1)³', 'say');
+    cap('一樣拆成兩項', '加到 k 的、再加 (k+1)³');
+  },
+  async (tok, S) => { // 739.0
+    S.B.add('= k²(k+1)²/4 + (k+1)³　← 用 hypothesis', 'say');
+    cap('前面用假設', '');
+  },
+  async (tok, S) => { // 757.0
+    S.B.add('= (k+1)² · (k²/4 + k + 1)', 'say');
+    cap('提出 (k+1)² 這個因式', '');
+  },
+  async (tok, S) => { // 770.2
+    S.B.add('= (k+1)²(k² + 4k + 4)/4 = [(k+1)(k+2)/2]² ✓', 'good');
+    cap('通分、提出 1/4', 'k² + 4k + 4 = (k+2)²');
+  },
+  async (tok, S) => { // 791.9
+    S.B.add('basis + step → by induction，對所有 n 成立', 'good');
+    cap('兩步都寫完', 'by induction 就好');
+  },
+]);
+
+scene('pfC-3a-rec', '不知道答案時：recurrence relation', [
+  async (tok, S) => { // 840.8
+    S.B = board(-6.6, 6.4); S.B.add('用歸納法證明：必須先知道答案');
+    cap('要證這個，得先知道右邊是什麼', '證明都是這樣');
+  },
+  async (tok, S) => { // 860.6
+    S.B.add('不知道答案怎麼辦？', 'bad');
+    cap('如果不知道答案呢？', '');
+  },
+  async (tok, S) => { // 886.4
+    S.B.add('例：1³ + 2³ + … + n³ = ?');
+    cap('叫你算這個是多少', '歸納法就沒用了');
+  },
+  async (tok, S) => { // 901.6
+    S.B.add('→ 用 recurrence relation（遞迴關係）');
+    cap('用 recurrence relation', '');
+  },
+  async (tok, S) => { // 932.0
+    S.B.add('aₙ = Σ_{i=1}^{n} i³');
+    cap('把整個和叫做 aₙ', '跟 n 有關');
+  },
+  async (tok, S) => { // 944.4
+    S.B.add('aₙ − aₙ₋₁ = n³（n ≥ 2）');
+    cap('aₙ 跟 aₙ₋₁ 差哪一項？', '差一個 n³');
+  },
+  async (tok, S) => { // 966.0
+    S.B.add('initial condition：a₁ = 1³ = 1');
+    S.c = [chip('a₁ = 1', FC.blue, 2.0, 1.6, 1.3, 0.6, 1)];
+    cap('還需要 initial condition', 'a₁ = 1');
+  },
+  async (tok, S) => { // 1006.5
+    S.c.push(chip('a₂ = 1 + 8 = 9', FC.green, 4.2, 1.6, 2.2, 0.6, 1)); await wt(tok, 300);
+    S.c.push(chip('a₃ = 9 + 27 = 36', FC.green, 3.2, 0.7, 2.4, 0.6, 1));
+    cap('用一次得 a₂ = 9', '再用一次得 a₃ = 36…');
+  },
+  async (tok, S) => { // 1030.9
+    S.B.add('aₙ 是 well-defined（完整定義了）', 'good');
+    cap('後面都能用前面算出來', '所以 aₙ 是 well-defined');
+  },
+  async (tok, S) => { // 1054.0
+    S.B.add('解 recurrence relation = 寫成只跟 n 有關的式子');
+    cap('這就是 recurrence relation', '解它：寫成 n 的式子');
+  },
+  async (tok, S) => { // 1074.1
+    S.B.add('右邊不是 0 → non-homogeneous；像 differential equation', 'say');
+    cap('右邊不是 0：non-homogeneous', '又叫 difference equation');
+  },
+  async (tok, S) => { // 1103.7
+    S.B.add('改成 4 次方、5 次方也照樣解（後面教）');
+    cap('所有次方都能解', '後面會教怎麼解');
+  },
+]);
+
+// ── 3B ──
+scene('pfC-3b-gen', '廣義的歸納法：從 n₀ 開始、可用前面全部', [
+  async (tok, S) => { // 4.2
+    S.B = board(-6.6, 6.4); S.B.add('另一種形式（廣義一點）的 principle');
+    cap('把歸納法變得廣義一點', '');
+  },
+  async (tok, S) => { // 17.1
+    S.B.add('basis 不一定從 1 開始（例如從 2）');
+    S.D = dominoes(8, 0.6, 0.3, 0.85, FC.blue, ['n₀', 'n₀+1', '…', 'n₁', '…', 'k', 'k+1', '…']);
+    cap('initial condition 不一定從 1 開始', '從 2 開始也可以');
+  },
+  async (tok, S) => { // 34.5
+    S.B.add('initial condition 可以好幾個：S(n₀), …, S(n₁)');
+    [0, 1, 2, 3].forEach((i) => glow(S.D.ms[i], HL));
+    cap('有時候要 check 好幾個', '從 n₀ 一直到 n₁');
+  },
+  async (tok, S) => { // 75.0
+    S.B.add('step：可以假設 S(n₀), S(n₀+1), …, S(k) 全部成立');
+    cap('不只假設 S(k)', '從頭到現在的都成立了');
+  },
+  async (tok, S) => { // 112.0
+    T('例：1、2 成立 → 證 3 時兩個都能用', 'say', 3.6, 4.4);
+    cap('比方說 1 和 2 已經成立', '證 3 的時候兩個都可以用');
+  },
+  async (tok, S) => { // 156.0
+    await S.D.run(tok, 0, 6, 160);
+    cap('n₀ 到 k+1 都成立', '再證下一個，一直上去');
+  },
+  async (tok, S) => { // 162.0
+    S.B.add('⇒ S(n) 對所有 n ≥ n₀ 成立', 'good');
+    cap('最小是 n₀，後面全部成立', '概念都一樣');
+  },
+  async (tok, S) => { // 178.6
+    S.B.add('需要幾個 initial condition？看 step 要往前用幾格');
+    cap('每個 case 不太一樣', '看一下就知道要幾個');
+  },
+]);
+
+scene('pfC-3b-rec2', 'second-order 遞迴：aₙ = 3ⁿ − 2ⁿ', [
+  async (tok, S) => { // 197.4
+    S.B = board(-6.6, 6.4); S.B.add('second-order recurrence：跟前兩項有關');
+    cap('second order recurrence relation', '剛才那個只跟前一項有關：first order');
+  },
+  async (tok, S) => { // 215.8
+    S.B.add('a₁ = 1，a₂ = 5 → a₃ = 5·5 − 6·1 = 19 …');
+    [['a₁', 1], ['a₂', 5], ['a₃', 19], ['a₄', 65]].forEach(([n, v], i) => { chip(String(v), i < 2 ? FC.blue : FC.green, 1.6 + i * 1.3, 4.6, 0.9, 0.6, 1); T(n, 'idx', 1.6 + i * 1.3, 4.0); });
+    cap('要有兩個起始值', '有 a₁、a₂ 就能算 a₃、a₄… → well-defined');
+  },
+  async (tok, S) => { // 238.9
+    S.B.add('aₙ₊₁ = 5aₙ − 6aₙ₋₁，n ≥ 2');
+    cap('這個式子對 n ≥ 2 成立', 'n = 2 時就用到 a₂、a₁');
+  },
+  async (tok, S) => { // 257.3
+    S.B.add('解出來：aₙ = 3ⁿ − 2ⁿ');
+    cap('這是 homogeneous recurrence', '後面學會的話一下就解出來');
+  },
+  async (tok, S) => { // 280.3
+    S.B.add('用歸納法證（已經知道答案）：要 check 兩個 basis');
+    S.D = dominoes(6, 1.2, 0.3, 0.9, FC.blue, ['n=1', 'n=2', 'n=3', 'n=4', 'n=5', '…']);
+    cap('證下一個要用前面兩個', '所以要 check 兩個');
+  },
+  async (tok, S) => { // 304.1
+    S.B.add('n = 1：3¹ − 2¹ = 1 = a₁ ✓', 'say'); await S.D.fall(tok, 0, 300);
+    cap('n = 1：3 − 2 = 1', '跟 a₁ 一樣');
+  },
+  async (tok, S) => { // 321.9
+    S.B.add('n = 2：3² − 2² = 9 − 4 = 5 = a₂ ✓', 'say'); await S.D.fall(tok, 1, 300);
+    cap('n = 2：9 − 4 = 5', '剛好是 a₂');
+  },
+  async (tok, S) => { // 346.1
+    S.B.add('hypothesis：公式對 a_k、a_{k−1} 都成立');
+    cap('只需要前面兩個', '所以只假設 a_k、a_{k−1}');
+  },
+  async (tok, S) => { // 366.3
+    S.B.add('要證：a_{k+1} = 3^{k+1} − 2^{k+1}');
+    cap('要證 a_{k+1}', '');
+  },
+  async (tok, S) => { // 377.2
+    S.B.add('a_{k+1} = 5a_k − 6a_{k−1} = 5(3ᵏ − 2ᵏ) − 6(3ᵏ⁻¹ − 2ᵏ⁻¹)', 'say');
+    cap('用 recurrence relation', '再把前面兩個帶進來');
+  },
+  async (tok, S) => { // 393.4
+    S.B.add('= 3ᵏ⁻¹(5·3 − 6) − 2ᵏ⁻¹(5·2 − 6)', 'say');
+    cap('3 的次方放一起、2 的次方放一起', '提出 3ᵏ⁻¹ 和 2ᵏ⁻¹');
+  },
+  async (tok, S) => { // 418.0
+    S.B.add('= 9·3ᵏ⁻¹ − 4·2ᵏ⁻¹ = 3ᵏ⁺¹ − 2ᵏ⁺¹ ✓', 'good');
+    cap('15 − 6 = 9 = 3²，10 − 6 = 4 = 2²', '');
+  },
+  async (tok, S) => { // 431.0
+    for (let i = 2; i < 6; i++) { await S.D.fall(tok, i, 300); }
+    cap('1、2 成立 → 3；2、3 → 4；3、4 → 5…', '一直歸納下去');
+  },
+  async (tok, S) => { // 462.7
+    T('■', 'note', 6.3, 1.8);
+    cap('畫一個塗黑的方塊：證明結束', '有些人寫 QED');
+  },
+  async (tok, S) => { // 473.9
+    T('hypothesis 假設幾格，看 step 用到幾格', 'say', 3.6, 3.0);
+    cap('這裡用到兩格，就假設兩格', '其實從頭到現在都可以用');
+  },
+]);
+
+scene('pfC-3b-rich', '「定理」：everybody is rich', [
+  async (tok, S) => { // 518.6
+    S.B = board(-6.6, 6.4); S.B.add('定理：everybody is rich（每個人都有錢）');
+    cap('看我怎麼用歸納法證這個定理', '每個人都有錢');
+  },
+  async (tok, S) => { // 545.7
+    S.B.add('S(n)：任意 n 個人，若至少一人有錢 → 全部有錢');
+    cap('先弄一個跟 n 有關的 statement', '');
+  },
+  async (tok, S) => { // 592.6
+    S.B.add('證完 S(n) + 世界上至少有一個有錢人 → 全部有錢', 'say');
+    cap('世界上至少有一個有錢人', '所以所有人都有錢？');
+  },
+  async (tok, S) => { // 614.5
+    S.B.add('basis n = 1：只有一個人，他有錢 → 全部有錢 ✓');
+    S.one = buddy('α₁', '$', FC.gold, 1.4, 0.2);
+    cap('n = 1：至少一人有錢，而全部也只有一人', '很明顯是對的');
+  },
+  async (tok, S) => { // 663.6
+    S.B.add('step：假設 S(k) 成立');
+    kill(S.one.g);
+    cap('Induction step', '假設任何 k 個人都滿足');
+  },
+  async (tok, S) => { // 695.6
+    S.B.add('k+1 個人 α₁, …, α_{k+1}；不失一般性 α₁ 有錢');
+    S.p = ['α₁', 'α₂', 'α₃', 'α₄', 'α₅'].map((n, i) => buddy(n, i ? '' : '$', i ? FC.gray : FC.gold, 1.2 + i * 1.3, 0.2));
+    T('示意：k+1 = 5', 'idx', 3.8, -0.4);
+    cap('k+1 個人，有一個有錢', '叫他 α₁（不失一般性）');
+  },
+  async (tok, S) => { // 742.8
+    S.B.add('第一組 α₁ … α_k（k 個人，含 α₁）→ 依 S(k) 全有錢', 'say');
+    S.g1 = T('第一組：α₁ … α_k', 'ptr', 3.15, 2.2);
+    for (let i = 1; i < 4; i++) { tint(S.p[i].body, FC.gold); S.p[i].set('$'); }
+    cap('先把 α_{k+1} 拿掉，剩 k 個人', '裡面有 α₁ 有錢 → 全部有錢');
+  },
+  async (tok, S) => { // 797.1
+    S.B.add('第二組 α₁, …, α_{k−1}, α_{k+1}（拿掉 α_k）→ 也全有錢', 'say');
+    kill(S.g1); T('第二組：拿掉 α_k，放進 α_{k+1}', 'ptr', 3.8, 2.2);
+    tint(S.p[4].body, FC.gold); S.p[4].set('$'); await S.p[4].hop(tok);
+    cap('再找 k 個人：拿掉 α_k、放進 α_{k+1}', '裡面還是有 α₁ → 全部有錢');
+  },
+  async (tok, S) => { // 846.9
+    S.B.add('⇒ S(k+1)；by induction S(n) 對所有 n 成立', 'say');
+    cap('S(k) ⇒ S(k+1)', 'by mathematical induction');
+  },
+  async (tok, S) => { // 872.6
+    S.B.add('結論：everybody is rich ?!', 'bad');
+    S.p.forEach((b) => b.mood('happy'));
+    cap('所以所有人都有錢', '定理證完了？');
+  },
+  async (tok, S) => { // 935.3
+    T('把 rich 換成 beautiful、ugly… 也都「證得出來」', 'say', 3.6, 3.6);
+    cap('證明跟「有錢」這個形容詞無關', '換成任何形容詞都成立？');
+  },
+  async (tok, S) => { // 956.8
+    T('結論不對 → 證明一定有錯（窮教授就是反例）', 'bad', 3.6, 4.4);
+    S.p.forEach((b) => b.mood('wow'));
+    cap('問題：證明是錯的', '要 disprove 結論，找一個沒錢的人就好');
+  },
+  async (tok, S) => { // 975.4
+    T('重點：找出「證明」哪裡錯', 'note', 3.6, 5.2);
+    cap('定理很複雜時你不知道它對不對', '要能看出證明哪裡不對');
+  },
+]);
+
+// ── 3C ──
+scene('pfC-3c-bug', '錯在哪裡：S(1) ⇏ S(2)', [
+  async (tok, S) => { // 4.3
+    S.B = board(-6.6, 6.4); S.B.add("what's wrong with the proof?");
+    cap('這個證明有什麼問題？', '');
+  },
+  async (tok, S) => { // 35.5
+    S.B.add('要把論證真的帶進每一步：1 → 2 → 3 → 4');
+    cap('不要只看 statement', '要把 argument 帶進去，一步步推');
+  },
+  async (tok, S) => { // 64.0
+    S.B.add('S(1)：對，沒問題', 'say');
+    S.D = dominoes(6, 1.2, 3.2, 0.9, FC.blue, ['S(1)', 'S(2)', 'S(3)', 'S(4)', 'S(5)', '…']);
+    cap('S(1) 很明顯是對的', '');
+  },
+  async (tok, S) => { // 78.0
+    S.B.add('k = 1：用 S(1) 推 S(2)，只有兩個人 α₁、α₂');
+    S.a1 = buddy('α₁', '$', FC.gold, 2.4, 0.2); S.a2 = buddy('α₂', '', FC.gray, 5.0, 0.2);
+    cap('induction step 帶 k = 1', '要從 S(1) 推到 S(2)：兩個人');
+  },
+  async (tok, S) => { // 105.2
+    S.B.add('第一組（k = 1 個人）要含有錢的 α₁：只能是 {α₁}', 'say');
+    S.r1 = T('{α₁}', 'ptr', 2.4, 1.9);
+    cap('挑一個人出來，必須是有錢的那個', '第一次只能挑 α₁');
+  },
+  async (tok, S) => { // 119.7
+    S.B.add('第二組也要含 α₁ → 還是 {α₁}；α₂ 永遠沒被放進去', 'bad');
+    T('還是 {α₁}', 'bad', 2.4, 2.5); T('α₂ 沒人管', 'bad', 5.0, 1.9);
+    cap('第二次還是要有 α₁', '根本沒有兩個不同的集合');
+  },
+  async (tok, S) => { // 134.6
+    S.B.add('k = 2：{α₁, α₂}、{α₁, α₃} → 可以', 'good');
+    cap('如果 k = 2 成立，要證 3', '第一次挑 α₁α₂、第二次挑 α₁α₃，OK');
+  },
+  async (tok, S) => { // 152.5
+    S.B.add('S(2) ⇒ S(3)、S(3) ⇒ S(4)… 都沒問題', 'say');
+    cap('後面的 induction step 都沒問題', '');
+  },
+  async (tok, S) => { // 175.7
+    S.D.ms[1].position.x += 0.9; await S.D.fall(tok, 0, 400);
+    T('S(1) ⇏ S(2)：第一張推不倒第二張', 'bad', 3.6, 5.0);
+    cap('問題在：S(1) 推不到 S(2)', '2 不成立，後面都沒辦法');
+  },
+  async (tok, S) => { // 236.1
+    S.B.add('重點不是「定理錯」，是「證明哪裡錯」');
+    cap('定理本來就不對，是故意的', '要理解的是證明怎麼不對');
+  },
+  async (tok, S) => { // 262.1
+    S.B.add('看別人的歸納證明：每一步都要真的推得上去', 'good');
+    cap('檢查 1 推 2、2 推 3、3 推 4', '整個都 work，證明才對');
+  },
+]);
+
+scene('pfC-3c-func', '函式 f : A → B：domain、codomain、range', [
+  async (tok, S) => { // 321.3
+    S.B = board(-6.6, 6.4); S.B.add('函式（function）的定義');
+    cap('歸納法講完，接著看函式', '');
+  },
+  async (tok, S) => { // 329.2
+    S.B.add('A、B：兩個非空集合（nonempty set）');
+    oval(1.6, 2.6, 1.3, 2.0); oval(5.4, 2.6, 1.3, 2.0); T('A', 'ptr', 1.6, 5.0); T('B', 'ptr', 5.4, 5.0);
+    cap('兩個集合 A、B', '都不是空集合');
+  },
+  async (tok, S) => { // 336.6
+    S.B.add('f : A → B：一個規則（rule / mapping）');
+    cap('函式 f 從 A 對應到 B', '是一個 rule 或 mapping');
+  },
+  async (tok, S) => { // 346.5
+    S.B.add('A 的每一個元素 → B 裡「唯一」一個元素');
+    S.A = [3.8, 2.6, 1.4].map((y, i) => dot(['a₁', 'a₂', 'a₃'][i], FC.blue, 1.6, y));
+    S.Bp = [4.0, 3.0, 2.0, 1.0].map((y, i) => dot(['b₁', 'b₂', 'b₃', 'b₄'][i], FC.orange, 5.4, y));
+    cap('A 裡每一個 element', '都對應到 B 裡唯一的一個');
+  },
+  async (tok, S) => { // 367.6
+    arr([2.0, 3.8], [5.0, 4.0]); arr([2.0, 2.6], [5.0, 3.0]); arr([2.0, 1.4], [5.0, 3.0]);
+    T('示意圖', 'idx', 3.5, 0.2);
+    cap('通常這樣畫（示意圖）', '');
+  },
+  async (tok, S) => { // 380.2
+    S.B.add('A = domain（定義域）'); T('domain', 'idx', 1.6, 0.3);
+    cap('A 叫 domain，定義域', '裡面每個 element 都要有定義');
+  },
+  async (tok, S) => { // 403.0
+    S.B.add('B = codomain（對應域）'); T('codomain', 'idx', 5.4, 0.3);
+    cap('B 叫 codomain', '對應過去的那個集合');
+  },
+  async (tok, S) => { // 424.4
+    S.B.add('a 對應到 b：寫成 f(a) = b');
+    cap('a 對應到 b', '寫成 f(a) = b');
+  },
+  async (tok, S) => { // 459.2
+    S.B.add('一個 a 對到兩個 b → 不是 well-defined', 'bad');
+    S.badArr = arr([2.0, 1.4], [5.0, 2.0], 0xd64545);
+    cap('結果不是唯一', '這個函式就不是 well-defined');
+  },
+  async (tok, S) => { // 464.4
+    kill(S.badArr);
+    S.B.add('f(A) = { f(a) | a ∈ A }：range（值域）');
+    glow(S.Bp[0], OKG); glow(S.Bp[1], OKG);
+    cap('A 裡所有元素對過去的那一塊', '叫 range，值域');
+  },
+  async (tok, S) => { // 509.9
+    S.B.add('f(A) ⊆ B，不一定是整個 B', 'say');
+    cap('f(A) 是 B 的 subset', 'B 裡不見得每個都被對到');
+  },
+  async (tok, S) => { // 537.7
+    S.B.add('函式：每個元素都有定義，而且結果唯一', 'good');
+    cap('domain 每個都有定義', '結果在 codomain 裡、唯一');
+  },
+]);
+
+scene('pfC-3c-inj', 'one-to-one（injective）與 onto', [
+  async (tok, S) => { // 577.4
+    S.B = board(-6.6, 6.4); S.B.add('有些特別的函式');
+    oval(1.6, 2.6, 1.3, 2.2); oval(5.4, 2.6, 1.3, 2.2); T('A', 'ptr', 1.6, 5.2); T('B', 'ptr', 5.4, 5.2);
+    cap('我們有興趣的函式', '常有一些特別的性質');
+  },
+  async (tok, S) => { // 593.9
+    S.B.add('one-to-one = injective（一對一函式、嵌射）');
+    cap('one-to-one，又叫 injective', '中文：一對一函式');
+  },
+  async (tok, S) => { // 615.8
+    S.B.add('f(a₁) = f(a₂) ⇒ a₁ = a₂');
+    cap('對應過去一樣', '原來就一樣');
+  },
+  async (tok, S) => { // 631.8
+    S.B.add('contrapositive：a₁ ≠ a₂ ⇒ f(a₁) ≠ f(a₂)');
+    cap('換成逆否命題', '不一樣的，對過去就不一樣');
+  },
+  async (tok, S) => { // 665.0
+    S.B.add('名詞：injection', 'say');
+    cap('injective 是形容詞', '名詞是 injection');
+  },
+  async (tok, S) => { // 696.3
+    [4.0, 3.0, 2.0, 1.0].forEach((y, i) => { dot('a' + (i + 1), FC.blue, 1.6, y); arr([2.0, y], [5.0, y + 0.25]); });
+    [4.25, 3.25, 2.25, 1.25, 0.5].forEach((y, i) => dot('b' + (i + 1), FC.orange, 5.4, y));
+    cap('例：A 有四個元素', '全部對到不同的 → 一對一');
+  },
+  async (tok, S) => { // 735.5
+    S.B.add('onto：一般 f(A) 只是 B 的一部分');
+    T('b5 沒被對到', 'idx', 5.4, -0.1);
+    cap('再來叫 onto', '一般值域只是 B 的一部分');
+  },
+  async (tok, S) => { // 756.3
+    S.B.add('B 的每一個元素都被對到 → surjective（onto）', 'good');
+    cap('如果 B 的每一個都被對應到', '就叫 surjective');
+  },
+]);
+
+// ── 3D ──
+scene('pfC-3d-onto', 'onto（surjective）與 bijective', [
+  async (tok, S) => { // 4.3
+    S.B = board(-6.6, 6.4); S.B.add('onto：f 的 range 就是 codomain，f(A) = B');
+    oval(1.6, 2.4, 1.2, 1.8); oval(5.4, 2.4, 1.2, 1.8);
+    [3.6, 2.4, 1.2].forEach((y, i) => dot('a' + (i + 1), FC.blue, 1.6, y));
+    [3.3, 1.5].forEach((y, i) => dot('b' + (i + 1), FC.orange, 5.4, y));
+    arr([2.0, 3.6], [5.0, 3.3]); arr([2.0, 2.4], [5.0, 1.6]); arr([2.0, 1.2], [5.0, 1.4]);
+    cap('f 的值域就是 codomain', '');
+  },
+  async (tok, S) => { // 7.0
+    S.B.add('等價：∀b ∈ B ∃a ∈ A，f(a) = b');
+    cap('B 裡每一個 element', '都至少有一個 a 對應過去');
+  },
+  async (tok, S) => { // 45.2
+    S.B.add('surjective / surjection（蓋射）');
+    cap('叫 surjective 或 surjection', '中文：蓋射，蓋上去的蓋');
+  },
+  async (tok, S) => { // 57.6
+    S.B.add('證 one-to-one：f(a₁) = f(a₂) ⇒ a₁ = a₂', 'say');
+    S.B.add('證 onto：任給 b ∈ B，找出 a 使 f(a) = b', 'say');
+    cap('要證 one-to-one、onto', '就分別證這兩句話');
+  },
+  async (tok, S) => { // 100.2
+    S.B.add('兩個性質互相獨立：可能都是、都不是、只有一個');
+    cap('one-to-one 不見得 onto', 'onto 也不見得 one-to-one');
+  },
+  async (tok, S) => { // 118.9
+    S.B.add('兩個都成立 → one-to-one correspondence = bijective（對射）', 'good');
+    cap('又是 one-to-one 又是 onto', '叫 bijective，名詞 bijection');
+  },
+  async (tok, S) => { // 162.8
+    ['injective 嵌射', 'surjective 蓋射', 'bijective 對射'].forEach((t, i) => T(t, i === 2 ? 'good' : 'note', 3.6, 5.4 - i * 0.6));
+    cap('嵌射、蓋射、對射', 'injective、surjective、bijective');
+  },
+]);
+
+scene('pfC-3d-count', '例：A = {1, 2, 3} → B = {x, y} 的 8 個函式', [
+  async (tok, S) => { // 193.1
+    S.B = board(-6.6, 6.4); S.B.add('A = {1, 2, 3}，B = {x, y}');
+    cap('用小例子熟悉定義', 'A 有 3 個元素，B 有 2 個');
+  },
+  async (tok, S) => { // 220.9
+    S.B.add('問：幾個 injective？幾個 surjective？幾個 bijective？');
+    cap('所有 A → B 的函式是有限個', '其中各有多少個？');
+  },
+  async (tok, S) => { // 285.1
+    S.B.add('先問：A → B 的函式總共幾個？');
+    cap('全部有多少個不同的函式？', '有同學說 8 個');
+  },
+  async (tok, S) => { // 301.7
+    S.B.add('1 有 2 種、2 有 2 種、3 有 2 種 → 2·2·2 = 8');
+    cap('每個元素選 x 或 y', '彼此無關 → 2 × 2 × 2');
+  },
+  async (tok, S) => { // 357.7
+    S.B.add('|B| = 4 → 4³；一般 |A| = m，|B| = n → nᵐ', 'say');
+    cap('B 有 4 個元素就是 4³', '一般：n 的 m 次方');
+  },
+  async (tok, S) => { // 405.2
+    const fs = ['xxx', 'xxy', 'xyx', 'xyy', 'yxx', 'yxy', 'yyx', 'yyy'];
+    T('f(1) f(2) f(3)', 'ptr', 2.6, 6.0);
+    S.rows = fs.map((t, i) => { T('f' + (i + 1), 'idx', 0.9, 5.4 - i * 0.62); return t.split('').map((c, j) => dot(c, c === 'x' ? FC.blue : FC.orange, 1.8 + j * 0.8, 5.4 - i * 0.62)); });
+    S.col = (j, name) => T(name, 'ptr', 4.4 + j * 1.2, 6.0);
+    cap('只有 8 個，全部列出來', 'f1 到 f8');
+  },
+  async (tok, S) => { // 486.9
+    S.col(0, 'inj');
+    for (let i = 0; i < 8; i++) { T('no', 'bad', 4.4, 5.4 - i * 0.62); await wt(tok, 80); }
+    cap('injective：1、2、3 要對到不同的', '只有 x、y 兩個 → 全部 no');
+  },
+  async (tok, S) => { // 548.0
+    S.col(1, 'sur');
+    for (let i = 0; i < 8; i++) { const ok = i !== 0 && i !== 7; T(ok ? 'yes' : 'no', ok ? 'good' : 'bad', 5.6, 5.4 - i * 0.62); await wt(tok, 80); }
+    cap('surjective：x 和 y 都要出現', '只有 xxx、yyy 不是 → 6 個');
+  },
+  async (tok, S) => { // 606.3
+    S.col(2, 'bij');
+    for (let i = 0; i < 8; i++) T('no', 'bad', 6.8, 5.4 - i * 0.62);
+    cap('bijective：兩個都要 yes', '沒有一個 → 0 個');
+  },
+  async (tok, S) => { // 617.8
+    S.B.add('答案：injective 0、surjective 6、bijective 0', 'good');
+    cap('injective 0 個', 'surjective 6 個、bijective 0 個');
+  },
+]);
+
+scene('pfC-3d-gen', '一般情況：|A| = m，|B| = n', [
+  async (tok, S) => { // 640.0
+    S.B = board(-6.6, 6.4); S.B.add('|A| = m，|B| = n → 共 nᵐ 個函式');
+    cap('全部 2³ = 8 個', '一般是 n 的 m 次方個');
+  },
+  async (tok, S) => { // 657.9
+    S.B.add('injective：這例沒有 → B 太小；需要 n ≥ m');
+    cap('injective 要對到不同元素', 'B 至少要有 3 個才行');
+  },
+  async (tok, S) => { // 692.9
+    S.B.add('A 有 3 個、B 有 4 個 → injective 有 4·3·2 = 24 個', 'say');
+    [0, 1, 2].forEach((i) => dot(String(i + 1), FC.blue, 1.6, 4.4 - i * 1.0));
+    [0, 1, 2, 3].forEach((i) => dot('b' + (i + 1), FC.orange, 5.0, 4.8 - i * 1.0));
+    T('4 種 · 3 種 · 2 種（排列）', 'idx', 3.3, 1.0);
+    cap('簡單的排列組合', '1 有 4 種、2 剩 3 種、3 剩 2 種');
+  },
+  async (tok, S) => { // 712.2
+    S.B.add('surjective：這例 6 個；一般用排容原理（後面教）');
+    cap('surjective 一般比較麻煩', '後面用 inclusion–exclusion 算');
+  },
+  async (tok, S) => { // 738.4
+    S.B.add('bijective：m、n 要滿足條件才有');
+    cap('bijective 又要 injective 又要 surjective', 'm 和 n 要有關係');
+  },
+  async (tok, S) => { // 759.3
+    S.B.add('B 有 4 個、A 只有 3 個 → 一定有一個沒被對到 → 沒有 surjective', 'bad');
+    cap('A 只有 3 個，最多對到 3 個', '一定有一個沒被對到');
+  },
+  async (tok, S) => { // 788.5
+    S.B.add('injective 要 n ≥ m、surjective 要 m ≥ n → bijective 要 m = n', 'good');
+    cap('計數（enumeration）很重要', '這只是熱身');
+  },
+]);
+  }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
 
