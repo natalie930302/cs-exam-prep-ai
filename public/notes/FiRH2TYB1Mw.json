@@ -1,117 +1,205 @@
 {
  "video": "FiRH2TYB1Mw",
  "label": "清大周志遠 第6B講 Processes Concept",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
    "title": "本章內容",
    "scene": null,
    "points": [
     {
-     "text": "進入第三章：接下來每章介紹 OS 的一個重要 component，第一個是 process。",
-     "t": 16
+     "t": 14,
+     "text": "進入第三章：接下來每章介紹 OS 的一個重要 component（subsystem），第一個是 process。"
     },
     {
-     "text": "這章的 scheduling 只講 scheduler 的分層架構，演算法留到 CPU scheduling 章。",
-     "t": 35
+     "t": 56,
+     "text": "這章的 scheduling 只講 scheduler 的基本架構（CPU scheduling、job scheduling），演算法留到後面的章節。"
     },
     {
-     "text": "還會講 process 的 create，以及 interprocess communication（message passing、shared memory）。",
-     "t": 71
+     "t": 88,
+     "text": "還會講對 process 能做的操作（create），以及 interprocess communication（message passing、shared memory，補充 socket 等）。"
     }
    ]
   },
   {
    "title": "Program vs Process",
-   "scene": "program-vs-process",
+   "scene": "proc-6b-progproc",
+   "cues": [
+    136.1,
+    146.4,
+    156.6,
+    194.9,
+    202.5,
+    217.7,
+    231.8,
+    242.5,
+    248.4,
+    265.4,
+    278.9
+   ],
    "points": [
     {
-     "text": "中文都叫「程式」，英文卻分 program 和 process，鼓勵看原文。",
-     "t": 128
+     "t": 136,
+     "text": "中文都叫「程式」，英文卻分 program 和 process，鼓勵看原文。"
     },
     {
-     "text": "program 是 passive entity：只是 disk 上的 binary file，等著被執行的程式碼。",
-     "t": 166
+     "t": 195,
+     "text": "program 是 passive entity：只是 disk 上的 binary file，等著被執行的程式碼。"
     },
     {
-     "text": "process 是 active entity：正在 execute 的程式。",
-     "t": 200
+     "t": 232,
+     "text": "process 是 active entity：正在 execute 的程式。"
     },
     {
-     "text": "關鍵區別：process 在 memory 裡（CPU 才能 access），program 在 disk 上。",
-     "t": 220
+     "t": 242,
+     "text": "關鍵區別：process 是在 memory 裡的 program（CPU 才能 access），program 在 disk 上。"
     },
     {
-     "text": "OS 這門課重視的是 process，不是 program；答題用字要分清楚。",
-     "t": 236
+     "t": 279,
+     "text": "OS 這門課重視的是 process，不是 program；答題用字要分清楚。"
     }
+   ],
+   "explain": [
+    "這一章的主角是 [[process]]。第一件事先搞清楚：process 跟 program 有什麼不一樣？左邊是硬碟（disk），右邊是[[記憶體]]（memory）。",
+    "中文裡「我寫程式」「我執行程式」都用「程式」這個詞，所以很容易把兩件事混在一起。老師提醒：這正是看原文比較清楚的地方。",
+    "翻成英文就分開了：寫程式叫 programming，寫出來的東西是 program；程式「正在執行」的那個東西叫 process。",
+    "Program 是 passive entity，也就是「被動的、死的東西」。它就像一本放在書架上的食譜，本身不會動。",
+    "在電腦裡，program 只是一堆 binary code，也就是一串 0 和 1（bits、bytes）組成的檔案。",
+    "這個檔案存在 disk 上，靜靜等著被執行。只要沒人執行它，它永遠只是一個檔案。",
+    "Process 是 active entity，「主動的、正在動的」。正在 execute（執行）的程式，才叫 process。像是照著食譜正在煮菜的那個過程。",
+    "最重要的區別是位置：process 是被搬進 memory 裡、正在跑的 program。所以小人從 disk 搬到了 memory。",
+    "為什麼一定要在 memory？因為 [[CPU]] 只能直接存取 memory 裡的東西，放在 disk 上的 program CPU 碰不到。",
+    "所以 program 和 process 差很多：一個在 disk、不會動；一個在 memory、正在跑。考試回答時用字一定要用對。",
+    "OS（[[operating system]]）要管的是 process，不是 program。怎麼寫 program 大家以前學過了，這章要學的是 OS 怎麼管理 process。"
    ]
   },
   {
    "title": "Process 的 memory 內容",
-   "scene": "process-memory",
+   "scene": "proc-6b-memory",
+   "cues": [
+    292.6,
+    302.0,
+    316.0,
+    333.4,
+    347.6,
+    357.7,
+    367.3,
+    386.1,
+    404.5,
+    422.9,
+    433.6,
+    445.1,
+    462.8,
+    465.2,
+    478.3
+   ],
    "points": [
     {
-     "text": "每個 process 有自己的 memory space，裡面切成幾個區塊。",
-     "t": 270
+     "t": 292,
+     "text": "每個 process 有自己的 memory space，裡面切成幾個區塊。"
     },
     {
-     "text": "code segment：compile 好的 instruction，load 進 memory 等 CPU fetch。",
-     "t": 306
+     "t": 316,
+     "text": "code segment：compile 好的 instruction，load 進 memory 等 CPU fetch。"
     },
     {
-     "text": "變數放三個地方：data section 放 global variable，load 時就存在。",
-     "t": 376
+     "t": 367,
+     "text": "變數放三個地方：data section 放 global variable，load 時就存在，任何 function 都能 access。"
     },
     {
-     "text": "stack 放 local variable：function return 就消失，用 stack 一次 pop 很有效率。",
-     "t": 433
+     "t": 433,
+     "text": "stack 放 local variable：function return 就消失，用 stack 一次 pop 很有效率。"
     },
     {
-     "text": "heap 放 malloc 等 dynamic allocation：最自由，也最要小心。",
-     "t": 467
+     "t": 463,
+     "text": "heap 放 malloc 等 dynamic allocation：最自由，也最要小心。"
     },
     {
-     "text": "寫程式要清楚變數放在哪一區，因為管理方式不同。",
-     "t": 484
+     "t": 478,
+     "text": "寫程式要清楚變數放在哪一區，因為管理方式不同。"
     }
    ],
-   "trap": "補充：動畫裡的 int g、x、malloc 範例是自訂的，用來對應課堂講的四個區塊（恐龍書 Fig. 3.1）。"
+   "trap": "動畫裡的 int g、x、malloc(8) 是示意例子，用來對應課堂講的四個區塊（恐龍書 Fig. 3.1）。",
+   "explain": [
+    "既然 process 在[[記憶體]]裡，就來看它在記憶體裡長什麼樣子。右邊這一區就是一個 process 分到的 memory。",
+    "每個 process 都有自己的一塊空間（[[address space]]），從位址 0 到 max。這塊空間裡的內容會再切成好幾個區塊，各放不同的東西。",
+    "第一塊是 code segment（也叫 text），放的就是你的程式碼。沒有程式碼，就沒東西可以執行。",
+    "程式碼原本存在檔案裡（例如 a.out）。要執行時，OS 先把它 load（載入）進 memory，放進 code 這一塊。",
+    "放進來的程式碼是一道一道的 instruction（指令），等著 [[CPU]] 一條一條 fetch（抓）進去執行。",
+    "注意：這裡放的不是你寫的 C 原始碼，而是[[編譯器]] compile 好的機器指令，可以直接送進 CPU。",
+    "接下來三塊都是放[[變數]]的地方。寫程式時變數會被放在三個不同的區域，這點非常重要。左邊這段小程式是示意例子。",
+    "第一個是 data section，專門放 global variable（全域變數），像示意程式裡的 int g。",
+    "全域變數在 program 被 load 的時候就已經知道有哪些、一開始就存在，而且程式裡任何一個[[函式]]都存取得到。",
+    "這些區塊不會切得剛剛好大小，因為之後有些區塊會在執行中「長大」，所以要預留一段範圍。",
+    "第二個是 [[stack]]，放 local variable（區域變數），也就是函式裡面宣告的變數，像 int x。",
+    "函式一 return（結束），它的區域變數就不需要了。用 stack 這種「後進先出」的結構，可以一次把它們全部 pop 掉，非常有效率。",
+    "第三個是 [[heap]]，放 dynamic allocation（動態配置）的東西，例如用 [[malloc]] 在執行時才要來的 8 bytes。",
+    "heap 是最自由的一塊：要多少拿多少、什麼時候放都行；但也最容易出錯（忘了釋放、指錯位置），所以要最小心。",
+    "總結：寫程式時要清楚每個變數放在 code、data、stack、heap 的哪一區，因為每一區的管理方式不一樣。"
+   ]
   },
   {
    "title": "Process 的 metadata",
-   "scene": "pcb",
+   "scene": "proc-6b-meta",
+   "cues": [
+    495.0,
+    501.5,
+    507.4,
+    518.8,
+    521.9,
+    532.1,
+    544.4
+   ],
    "points": [
     {
-     "text": "除了 memory 內容，還需要管理 process 的 metadata。",
-     "t": 501
+     "t": 495,
+     "text": "除了 memory 內容，還需要管理 process 的 metadata。"
     },
     {
-     "text": "最重要的是 program counter：目前執行到哪裡。",
-     "t": 501
+     "t": 501,
+     "text": "最重要的是 program counter：目前執行到哪裡。"
     },
     {
-     "text": "register 的內容：CPU 被很多程式共用，被 switch 走時要記下來讓出。",
-     "t": 535
+     "t": 507,
+     "text": "register 的內容：CPU 被很多程式共用，被 switch 走時要存下來讓出。"
     },
     {
-     "text": "resource 狀態：開了哪些 file、用了哪些 socket、port。",
-     "t": 554
+     "t": 532,
+     "text": "resource 狀態：開了哪些 file、用了哪些 socket、port。"
+    }
+   ],
+   "explain": [
+    "一個 process 除了 memory 裡的 code、data、heap、stack，OS 還要記一些「關於它的資料」，叫做 metadata。這些之後會整理成一張卡片，叫 [[PCB]]。",
+    "最重要的是 program counter（PC）：記錄這個 process 目前執行到哪一行指令。金色箭頭就是 PC 指著 code 的某一行。",
+    "再來是 register（暫存器）的內容。register 是 CPU 裡面超快的小格子，程式執行時算到一半的值都放在裡面。",
+    "問題是：[[CPU]] 是很多程式在輪流共用的，register 不可能一直留給同一個 process。",
+    "所以當一個 process 被換下來（switch 走）的時候，要把它 register 裡的值抄一份存起來，下次輪到它才能從原地接著做。這就是之後要講的 [[context switch]]。",
+    "最後是 resource（資源）的狀態：process 開檔案、用網路時，OS 會給它一個像「號碼牌」的 reference，要記下來。",
+    "例如它開了哪些檔案、用了幾個 socket 的 port（畫面上的檔名和 port 號是示意）。這些都屬於 process 的 metadata。"
+   ]
+  },
+  {
+   "title": "下課",
+   "scene": null,
+   "points": [
+    {
+     "t": 550,
+     "text": "今天先講到這裡。"
     }
    ]
   }
  ],
  "quiz": [
   {
-   "q": "Program 和 process 的差別何者正確？",
+   "q": "Program 和 process 的差別，何者正確？",
    "opts": [
     "program 是 disk 上的 passive binary，process 是 memory 中執行的 active entity",
     "兩者只是中英文翻譯不同",
     "process 存在 disk 上",
-    "program 有 program counter"
+    "program 有自己的 program counter"
    ],
    "ans": "program 是 disk 上的 passive binary，process 是 memory 中執行的 active entity",
-   "why": "課堂強調 passive vs active，以及位置 disk vs memory。"
+   "why": "課堂強調 passive vs active，以及位置 disk vs memory（CPU 只能 access memory）。"
   },
   {
    "q": "global variable 放在 process 的哪一區？",
@@ -136,6 +224,17 @@
    "why": "dynamic allocation 在 heap。"
   },
   {
+   "q": "local variable 放在 stack 的主要原因是？",
+   "opts": [
+    "function return 時可以一次 pop 掉，有效率",
+    "stack 的空間最大",
+    "所有 function 都要看得到它",
+    "它要在 load 時就存在"
+   ],
+   "ans": "function return 時可以一次 pop 掉，有效率",
+   "why": "local variable 隨 function 結束而消失，用 stack 管理最方便。"
+  },
+  {
    "q": "為什麼 register 的值要記在 process 的 metadata 裡？",
    "opts": [
     "CPU 被多個程式共用，被換走時要保存",
@@ -146,6 +245,5 @@
    "ans": "CPU 被多個程式共用，被換走時要保存",
    "why": "switch 時把 register 存起來，回來時才能接著跑。"
   }
- ],
- "timing": "estimated"
+ ]
 }

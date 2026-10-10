@@ -1,0 +1,180 @@
+{
+ "video": "aKiUuuKXfKY",
+ "label": "清大周志遠 第7B講 Processes Concept",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Process scheduling 與各種 queue",
+   "scene": "proc-7b-queues",
+   "cues": [
+    0.8,
+    6.1,
+    44.8,
+    59.9,
+    77.8,
+    91.5,
+    115.0,
+    136.0,
+    151.6,
+    182.3,
+    193.2,
+    231.8,
+    250.9,
+    276.8
+   ],
+   "points": [
+    {
+     "t": 0,
+     "text": "process scheduling 很重要：很多 process 在 memory（multiprogramming）、頻繁 context switch（time sharing），要輪流用 CPU。"
+    },
+    {
+     "t": 77,
+     "text": "順序由 scheduling algorithm 決定；CPU free 或被強迫 context switch 時，scheduler 被叫起來選新的 process。"
+    },
+    {
+     "t": 115,
+     "text": "有 queue 就要 schedule：ready queue（最主要）、job queue（誰能 load 進 memory）、device queue（等 I/O）。"
+    },
+    {
+     "t": 193,
+     "text": "每個 device 通常有自己的 queue；sleep 等也有其他 waiting queue。"
+    },
+    {
+     "t": 231,
+     "text": "queue 用 PCB 裡的 pointer 串起來，有時記 head、tail 或雙向串，方便 reorder；作業 3 的 ready queue 可能分好幾個 level。"
+    }
+   ],
+   "explain": [
+    "知道 process 的 life cycle、怎麼在 queue 之間移動、怎麼在 CPU 上交換之後，先簡單介紹 OS 裡有哪些 [[scheduler]]，演算法之後才會仔細講。",
+    "process 的 scheduling（排程）在 OS 裡非常非常重要。",
+    "因為現代系統都會把很多 process load 在 memory 裡，也就是 [[multiprogramming]]，這樣才能 maximize（最大化）CPU 的使用率。",
+    "而且我們希望很頻繁地做 [[context switch]]，才能實現 [[time sharing]]，做出 interactive（可以即時互動）的系統。",
+    "所以這些 process 必須輪流使用 CPU。誰先誰後，就由 scheduling algorithm，也就是 OS 裡的 scheduler 這個 module 負責。",
+    "當 CPU free 出來（沒有人在執行），或某個 process 被強迫 context switch 時，OS 的 scheduler 就會被叫起來，選一個新的 process 去執行。",
+    "排程時，process 是被放在 queue 裡面。OS 裡不只有剛剛看到的 [[ready queue]]，還有 job queue 和 device queue（也就是 waiting queue）。",
+    "只要有 queue 的地方，就需要 schedule 來決定下一個是誰。最主要的是 ready queue：決定誰去使用 CPU。",
+    "早期 memory 比較有限的電腦，還有一層 job queue：決定什麼時候允許一個 program load 進 memory、變成 process（進入 new）。",
+    "從 job queue 被選中、進到 ready queue 之後，還要再被 schedule 一次，決定什麼時候可以使用 CPU。",
+    "如果在 waiting state，就有 device queue。為什麼叫 device queue？因為每個 device（disk、印表機、鍵盤…）通常有自己的 queue。像 sleep 或被 interrupt 這種不是做 I/O 的等待，也會有其他 waiting queue。",
+    "通常的管理方式就像這樣：一個 ready queue 給 CPU；I/O 的 waiting queue 有很多個，看你在哪個 device、甚至哪顆 disk。它們都是用 [[PCB]] 裡的 pointer 串起來的。",
+    "有時還會把 head（頭）和 tail（尾）都記起來，甚至前後雙向串，方便 run time 依照 scheduling algorithm 動態調整順序（reorder）。",
+    "作業 3 實作比較複雜的 scheduling algorithm 時會看到：ready queue 不一定只有一個，可能有 level 1、level 2、level 3，用這些方式管理。"
+   ]
+  },
+  {
+   "title": "Queueing diagram：在 queue 之間移動",
+   "scene": "proc-7b-qdiagram",
+   "cues": [
+    303.0,
+    316.8,
+    322.8,
+    334.2,
+    345.7,
+    357.0,
+    384.8,
+    418.8,
+    449.8
+   ],
+   "points": [
+    {
+     "t": 303,
+     "text": "process 在 ready queue 等 CPU；發出 I/O request（例如 printf）就進 I/O queue，做完靠 interrupt 回 ready queue。"
+    },
+    {
+     "t": 345,
+     "text": "timer alarm 被 fire（time sharing）：從 CPU 直接回 ready queue。"
+    },
+    {
+     "t": 357,
+     "text": "create process（Linux 的 fork）：若設計成 child 先執行，parent 進 waiting queue，等 child 完再回 ready queue。"
+    },
+    {
+     "t": 418,
+     "text": "wait for interrupt：例如 sleep 100 秒，時間到 fire interrupt 叫醒它，回 ready queue。"
+    },
+    {
+     "t": 449,
+     "text": "waiting queue 有很多種，不同的 event 通常有專門的 queue。"
+    }
+   ],
+   "explain": [
+    "ready queue 是最主要的 scheduling。剛剛也看過 state 之間的轉換，這張圖（queueing diagram）把 queue 跟 state 轉換的關係畫在一起。",
+    "process 通常在 ready queue 裡等著拿到 CPU，輪到它就被送上 CPU 執行。",
+    "如果它自己發出 I/O request，例如 call printf，就會被放到 I/O queue，也就是螢幕（monitor）那個 device 的 waiting queue。",
+    "等 I/O 做完，裝置會丟一個 [[interrupt]] 回來，OS 就知道可以把它放回 ready queue。process 就這樣在 queue 之間移動。",
+    "或是 timer 的 alarm 被 fire 了：因為 [[time sharing]]，它會從 CPU 直接回到 ready queue 的尾端。",
+    "還有一種：process 可以 create process。程式裡的 process 不是天生就有，就像人一樣要被「生」出來，有 parent 和 children 的關係，形成一棵 tree。Linux 裡 create process 的動作叫 [[fork]]。",
+    "create 出 child 後有兩種設計：parent 繼續執行；或讓 children 先執行。如果讓 child 先執行，parent 就會被放到 waiting queue，等 child 執行完，才能回到 ready queue。",
+    "最後一種是 wait for interrupt，例如 sleep。call sleep(100) 的意思是：100 秒之後幫我 fire 一個 interrupt，把我叫醒。所以它被放到 waiting queue，等 interrupt 發生才回到 ready queue。",
+    "這張圖大概知道就好：ready queue 和 waiting queue 之間有很多種情形，process 從 CPU 被踢出來進 waiting 的原因很多，OS 通常會為不同的 event 準備專門的 queue 來處理。"
+   ]
+  },
+  {
+   "title": "下次預告",
+   "scene": null,
+   "points": [
+    {
+     "t": 469,
+     "text": "下週一繼續講 scheduling：job scheduling 與 CPU scheduling 的差異，以及中間的 mid-term scheduler。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "早期 OS 中，決定哪個 program 可以 load 進 memory 的 queue 是？",
+   "opts": [
+    "job queue",
+    "ready queue",
+    "device queue",
+    "waiting queue"
+   ],
+   "ans": "job queue",
+   "why": "job queue 是第一層：誰能從 program 變成 memory 裡的 process。"
+  },
+  {
+   "q": "process call printf 之後，會被放到哪裡？",
+   "opts": [
+    "該 I/O device 的 device queue",
+    "ready queue 尾端",
+    "job queue",
+    "直接 terminated"
+   ],
+   "ans": "該 I/O device 的 device queue",
+   "why": "發出 I/O request 進 I/O（device）queue，做完靠 interrupt 回 ready queue。"
+  },
+  {
+   "q": "timer alarm 被 fire 時，正在 CPU 上的 process 會去哪？",
+   "opts": [
+    "ready queue",
+    "device queue",
+    "job queue",
+    "waiting queue"
+   ],
+   "ans": "ready queue",
+   "why": "time sharing 的 time slice 用完，直接回 ready queue。"
+  },
+  {
+   "q": "queue 裡的 process 通常怎麼串起來？",
+   "opts": [
+    "用 PCB 裡的 pointer 串成 linked list",
+    "用陣列存它們的程式碼",
+    "把 memory space 搬到 queue",
+    "用 PID 排序存在 disk"
+   ],
+   "ans": "用 PCB 裡的 pointer 串成 linked list",
+   "why": "queue 裡串的是 PCB；有時還記 head、tail 或雙向串，方便 reorder。"
+  },
+  {
+   "q": "call sleep(100) 的 process 何時會回到 ready queue？",
+   "opts": [
+    "100 秒到、interrupt 把它叫醒時",
+    "下一個 time slice 開始時",
+    "有別的 process 結束時",
+    "馬上就回去"
+   ],
+   "ans": "100 秒到、interrupt 把它叫醒時",
+   "why": "sleep 是 wait for interrupt：在 waiting queue 等 interrupt 發生。"
+  }
+ ]
+}

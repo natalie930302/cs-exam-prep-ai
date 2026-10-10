@@ -1,163 +1,340 @@
 {
  "video": "AztAXONxs7M",
  "label": "清大周志遠 第8A講 Processes Concept",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
    "title": "狀態與位置的對應",
-   "scene": "state-location",
+   "scene": "proc-8a-stateloc",
+   "cues": [
+    15.3,
+    19.7,
+    44.2,
+    47.7,
+    61.6,
+    81.4,
+    86.2,
+    93.6,
+    111.6,
+    117.7,
+    121.7,
+    136.9
+   ],
    "points": [
     {
-     "text": "CPU 只有個位數到十幾個 core，要執行的程式卻很多：需要 scheduling。",
-     "t": 0
+     "t": 15,
+     "text": "CPU 只有個位數到十幾個 core，memory 裡要執行的 process 卻很多：需要 scheduling。"
     },
     {
-     "text": "memory 也有限，使用者要跑的程式不一定能 load 進來，也要排程。",
-     "t": 42
+     "t": 47,
+     "text": "memory 也有限，使用者要跑的程式不一定能 load 進來，也要排程。"
     },
     {
-     "text": "在 CPU 上＝running；在 memory 裡＝ready（ready to run）。",
-     "t": 62
+     "t": 81,
+     "text": "在 CPU 上＝running；在 memory 裡＝ready（ready to run）；還在 disk 上、只是被 create＝new。"
     },
     {
-     "text": "還在 disk 上、只是被 create＝new；執行完離開＝terminated。",
-     "t": 83
+     "t": 111,
+     "text": "執行完離開＝terminated。"
     },
     {
-     "text": "waiting：在 memory 但就算 CPU 空也不能跑，例如等別人、等 interrupt、自己 call sleep。",
-     "t": 122
+     "t": 117,
+     "text": "waiting：在 memory 但就算 CPU 空也不能跑，例如等別人、等 interrupt、自己 call sleep。"
     }
+   ],
+   "explain": [
+    "OS 除了讓 [[process]] 在不同狀態之間切換，還要做 scheduling（排程）。因為真正能執行程式的 [[CPU]] 數量很少：只有個位數到十幾個 core（核心）。",
+    "可是 memory 裡等著要跑的 process 卻很多，這就是 [[multiprogramming]]：同時把很多程式放在記憶體裡。",
+    "CPU 少、process 多，怎麼辦？大家輪流用。P1 上去跑一下，再回到 memory 讓別人用。",
+    "還有更多 program 放在 disk 上，等著被 load 進 memory。可是 memory 的空間也是有限的。",
+    "所以使用者說要執行一個程式，不代表它馬上進得了 memory，也需要排程決定誰先進來、誰先等。",
+    "把這三個地方對到 process 的狀態：在 CPU 上正在執行的，叫 running。",
+    "在 memory 裡、隨時可以上 CPU 的，叫 ready，意思是 ready to run（準備好可以跑了）。",
+    "還在 disk 上、只是剛被 create（建立）、還沒擠進 memory 的，只能叫 new。",
+    "程式執行完、整個離開，就是 terminated。這樣五個狀態已經看到四個了。",
+    "唯一比較特別的是 waiting。看那個難過的小人：它還在 memory 裡，卻不能上 CPU。",
+    "waiting 的原因很多：可能在等別的 process、等 [[interrupt]]（例如等 I/O 做完），或是自己呼叫了 sleep 這種 [[system call]]。",
+    "重點：waiting 的 process 雖然在 memory，但就算 CPU 空著它也沒辦法執行（紅色的叉）。這是它跟 ready 最大的不同。"
    ]
   },
   {
    "title": "Long-term vs Short-term scheduler",
-   "scene": "lt-st-scheduler",
+   "scene": "proc-8a-ltst",
+   "cues": [
+    158.2,
+    171.5,
+    175.3,
+    189.6,
+    203.8,
+    216.2,
+    224.8,
+    245.0,
+    270.6
+   ],
    "points": [
     {
-     "text": "進 CPU 的排程叫 CPU scheduling；進 memory 的叫 job scheduling。",
-     "t": 161
+     "t": 158,
+     "text": "進 CPU 的排程叫 CPU scheduling；進 memory 的叫 job scheduling，由不同的 scheduler 負責。"
     },
     {
-     "text": "CPU scheduler 又叫 short-term：time sharing 每幾 ms 就有 alarm 打斷、重新排程。",
-     "t": 197
+     "t": 189,
+     "text": "CPU scheduler 又叫 short-term：time sharing 每幾 ms 就有 alarm 打斷、重新排程，頻率非常高。"
     },
     {
-     "text": "job scheduler 又叫 long-term：幾秒、幾分鐘才做一次。",
-     "t": 217
+     "t": 224,
+     "text": "job scheduler 又叫 long-term：幾秒、幾分鐘才做一次。"
     },
     {
-     "text": "long-term 頻率低，是因為要等使用者 launch 新 process 才需要排。",
-     "t": 236
+     "t": 245,
+     "text": "long-term 頻率低，是因為要等使用者 launch 新 process 才需要排。"
     }
+   ],
+   "explain": [
+    "disk → memory → CPU，每一關都有人在搶位子。要搶，就需要 [[scheduler]] 來排順序。",
+    "從 memory 進到 CPU 的排程，叫 [[CPU scheduling]]：決定 ready 的 process 裡誰先上 CPU。",
+    "從 disk 進到 memory 的排程，叫 job scheduling：決定哪個新程式可以被載入。兩者由不同的 scheduler 負責。",
+    "CPU scheduler 又叫 [[short-term scheduler]]。照字面理解就好：它的工作「很頻繁」、間隔很短。",
+    "為什麼頻繁？因為 [[time sharing]]：每隔幾個 ms（毫秒）timer 就響一次 alarm，打斷正在跑的程式，把 OS 的 scheduler 叫起來重新排，換下一個上 CPU。",
+    "每幾毫秒就要排一次，頻率非常非常高，所以叫 short-term。",
+    "job scheduler 叫 [[long-term scheduler]]：它可能幾秒、甚至幾分鐘才需要做一次排程，跟毫秒比起來「很久」。",
+    "為什麼這麼久？因為要有「人」去開一個新程式（launch process），才需要決定它能不能進 memory。人的動作大概幾秒才一次。",
+    "記住對應：short-term ↔ CPU scheduling（memory → CPU）；long-term ↔ job scheduling（disk → memory）。"
    ]
   },
   {
-   "title": "Mid-term scheduler",
-   "scene": "midterm-swap",
+   "title": "Mid-term scheduler：swap 回 disk",
+   "scene": "proc-8a-midterm",
+   "cues": [
+    283.7,
+    296.6,
+    314.5,
+    336.9,
+    349.1,
+    366.6,
+    387.0,
+    409.7,
+    442.8,
+    457.4
+   ],
    "points": [
     {
-     "text": "兩者中間還有 mid-term scheduler：把 process 從 memory swap 回 disk。",
-     "t": 296
+     "t": 283,
+     "text": "兩者中間還有 mid-term scheduler：把 process 從 memory swap 回 disk。"
     },
     {
-     "text": "它跟 virtual memory 結合：用 disk 的一塊空間來擴充 memory。",
-     "t": 315
+     "t": 314,
+     "text": "它跟 virtual memory 結合：用 disk 的一塊空間來擴充 memory。"
     },
     {
-     "text": "memory 不夠時，把一些 process 踢回 disk，這個動作叫 swapping。",
-     "t": 336
+     "t": 336,
+     "text": "memory 不夠時，把一些 process 踢回 disk，這個動作叫 swapping。"
     },
     {
-     "text": "程式 allocate 的大空間常常不會立刻用到，可以先放到 disk。",
-     "t": 375
+     "t": 366,
+     "text": "程式 allocate 的大空間（例如 1 GB）常常不會立刻用到，可以先搬到 disk。"
     },
     {
-     "text": "swap 的是 memory content，不是原本的檔案；被 swap out 的要先搬回 memory 才能回 ready。",
-     "t": 453
+     "t": 409,
+     "text": "swap 的是 memory content，不是原本的檔案；被 swap out 的要先搬回 memory 才能回 ready 執行。"
     }
+   ],
+   "trap": "老師說被 swap out 的 process「進入 waiting」；課本把它另稱為 suspended（被暫停、不在 memory）。重點是：要先 swap in 回 memory 才能再被執行。",
+   "explain": [
+    "long-term 和 short-term 中間，其實還有第三個：mid-term scheduler（中期排程器）。它的作用跟前兩個不太一樣。",
+    "它負責決定：什麼時候要把一個 process 從 memory 搬「回」disk 去。方向剛好跟 long-term 相反。",
+    "它跟 [[virtual memory]]（虛擬記憶體）是一起出現的：memory 不夠大，所以拿 disk 的一塊空間（[[swap space]]）當作 memory 的延伸。",
+    "當 memory 不夠用時，mid-term scheduler 就把一些 process 從 memory 踢回 disk。",
+    "這個動作叫 [[swapping]]：把 memory 裡的內容整個 dump（倒）到 disk 上存起來。",
+    "為什麼有東西可以搬？例如一個程式可以一開口就 allocate 1 GB 的記憶體，但它真的會馬上用嗎？通常不會，至少不會立刻用。",
+    "這些要了卻還沒在用的空間，就可以先搬到 disk 上，把寶貴的 memory 空間留給別人。",
+    "整個 process 被搬到 disk 之後，就不能直接執行了（變暗）。真的要執行時，OS 得先把它的內容搬回 memory。",
+    "注意：存到 disk 的不是你原本的程式檔，而是這個 process 在 memory 裡的「當下內容」（變數的值、stack 等）。",
+    "等 memory 有空位，或這個 process 被選中要執行時，mid-term scheduler 先把它搬回 memory（swap in），它才能回到 ready、開始執行。"
    ]
   },
   {
    "title": "Degree of multiprogramming 與 process mix",
-   "scene": "dop-mix",
+   "scene": "proc-8a-dopmix",
+   "cues": [
+    490.7,
+    507.1,
+    530.1,
+    542.9,
+    559.1,
+    588.7,
+    607.1,
+    619.1,
+    644.1,
+    679.8,
+    706.1,
+    734.0,
+    749.4,
+    794.7,
+    821.4
+   ],
    "points": [
     {
-     "text": "long-term scheduler 控制 degree of multiprogramming：memory 裡有幾個 process。",
-     "t": 508
+     "t": 490,
+     "text": "long-term scheduler 控制 degree of multiprogramming：memory 裡有幾個 process。"
     },
     {
-     "text": "degree 太低：CPU 可能 idle（batch 的 degree 永遠是 1）。",
-     "t": 565
+     "t": 542,
+     "text": "degree 太低：CPU 可能 idle（batch 的 degree 永遠是 1）。"
     },
     {
-     "text": "degree 太高：太多 process 搶 memory，一直 swapping → thrashing。",
-     "t": 583
+     "t": 559,
+     "text": "degree 太高：太多 process 搶有限的 memory，一直 swapping → thrashing。"
     },
     {
-     "text": "目的是 CPU 和 I/O 的時間 overlap：全是 CPU-bound，I/O 閒著；全是 I/O-bound，CPU 閒著。",
-     "t": 681
+     "t": 588,
+     "text": "long-term 頻率低、由使用者驅動；它挑誰進 memory 會影響效能。"
     },
     {
-     "text": "long-term 要挑出 CPU-bound 與 I/O-bound 平衡的 mix。",
-     "t": 718
+     "t": 619,
+     "text": "目的是 CPU 和 I/O 的時間 overlap：全是 CPU-bound，I/O 閒著；全是 I/O-bound，CPU 閒著。"
     },
     {
-     "text": "現代電腦 memory 大，long-term 角色淡化，改由 mid-term（VM 管理）控制 mix。",
-     "t": 811
+     "t": 706,
+     "text": "long-term 要挑出 CPU-bound 與 I/O-bound 平衡的 mix，兩邊都不 idle。"
+    },
+    {
+     "t": 749,
+     "text": "現代電腦 memory 大，long-term 角色淡化，改由 mid-term（VM 管理）控制 mix。"
+    },
+    {
+     "t": 821,
+     "text": "重要的是 ready queue 裡的 CPU/I/O mix 和 degree，不論由哪個機制控制。"
     }
    ],
-   "trap": "課堂原音把 thrashing 說成 trashing，正確拼法是 thrashing。"
+   "trap": "課堂原音把 thrashing 說成 trashing，正確拼法是 thrashing。",
+   "explain": [
+    "三個 scheduler 都很重要。long-term scheduler 的角色是：控制 [[degree of multiprogramming]]。這個名詞下一章還會一直用到。",
+    "degree of multiprogramming 就是「這台電腦的 memory 裡現在有幾個 process」。multiprogramming 是 memory 裡放很多程式，degree 就是「幾個」。",
+    "long-term scheduler 決定 new 的程式能不能進 memory，等於就是在控制這個數字。",
+    "degree 太少：像早期最簡單的 batch 系統，degree 永遠是 1。這個程式去等 I/O 時，CPU 就沒事做（idle），使用率下降。",
+    "degree 太高：太多 process 在搶有限的 memory，結果大家一直在 disk 和 memory 之間 swapping，電腦忙著搬東西，這叫 [[thrashing]]。所以 degree 不能太高也不能太低。",
+    "為什麼叫 long-term？因為它執行頻率不高，而且是由使用者驅動：沒有新的 process 進來，它就什麼事都不用做。",
+    "long-term scheduler 不能讓所有人都進來，要挑。挑誰進 memory，會很影響電腦的效能。",
+    "挑的原則來自 multiprogramming 的最終目的：讓 CPU 執行的時間和 I/O 的時間 overlap（重疊），兩邊同時都有事做。",
+    "如果挑進來的全是 [[CPU-bound]] 程式（只做加減乘除、不太碰 I/O），CPU 忙翻了，但 I/O 裝置（滑鼠、印表機）全閒著，I/O 的頻寬就浪費了。",
+    "反過來，如果全是 I/O-bound 程式（每個都在 printf、scanf），大家都在等很慢的 I/O，CPU 的指令很少，CPU 仍然 idle。這也不行。",
+    "所以 long-term 要挑出平衡的組合（mix）：CPU-bound 和 I/O-bound 混著放，CPU 和 I/O 都很忙、都不 idle，使用率才會增加。",
+    "使用者的程式是使用者決定的，有時會突然來一堆 CPU-bound，有時一堆 I/O-bound，scheduler 要在其中挑出好的比例（mix ratio）。",
+    "不過現在的 server、記憶體大的電腦，加上 virtual memory，基本上程式一執行就直接放進 memory，long-term scheduler 的角色已經被淡化了。",
+    "那挑選的工作交給誰？變成 mid-term scheduler：先全部載入，之後再決定哪些 process 或 memory 內容要 kick out（踢回）disk。",
+    "重點不在誰負責，而是兩件事永遠重要：ready queue 裡 CPU-bound / I/O-bound 的 mix，以及 degree of multiprogramming。早期是 long-term 管，現代是 virtual memory / mid-term 管。"
+   ]
   },
   {
    "title": "Short-term scheduler 的設計",
-   "scene": "st-overhead",
+   "scene": "proc-8a-stdesign",
+   "cues": [
+    871.9,
+    896.9,
+    920.1,
+    930.1,
+    946.4,
+    975.8,
+    991.8,
+    1007.4,
+    1041.1,
+    1058.5,
+    1099.2,
+    1123.4,
+    1167.5
+   ],
    "points": [
     {
-     "text": "short-term 通常 100 ms 甚至更短就執行一次，由 timer alarm 控制。",
-     "t": 887
+     "t": 871,
+     "text": "short-term 通常 100 ms 甚至更短就執行一次，由 timer alarm 控制。"
     },
     {
-     "text": "system call 和 I/O interrupt 也會叫起它，所以頻率更高。",
-     "t": 925
+     "t": 896,
+     "text": "system call 和 I/O interrupt 也會叫起它，所以頻率更高。"
     },
     {
-     "text": "它決定 wait time：同樣的 process、不同演算法，平均等待時間不同。",
-     "t": 980
+     "t": 930,
+     "text": "它的演算法決定 wait time：同樣的 process、不同演算法，平均等待時間不同。"
     },
     {
-     "text": "也要顧 fairness：平均低不代表大家滿意（像國家收入高不代表均富）。",
-     "t": 1037
+     "t": 991,
+     "text": "也要顧 fairness：平均低不代表大家滿意（像國家收入高不代表均富）。"
     },
     {
-     "text": "演算法必須非常有效率：每 100 ms 排一次、每次跑 10 ms → 10% overhead。",
-     "t": 1130
+     "t": 1041,
+     "text": "它直接影響效能和使用者看到的 response time。"
     },
     {
-     "text": "若要 50 ms，CPU 一半時間沒在做使用者的事，電腦會覺得很慢。",
-     "t": 1148
+     "t": 1058,
+     "text": "演算法必須非常有效率：每 100 ms 排一次、每次跑 10 ms → 10% overhead。"
+    },
+    {
+     "t": 1123,
+     "text": "若要 50 ms，CPU 一半時間沒在做使用者的事，電腦會覺得很慢；太複雜的演算法不 practical。"
     }
+   ],
+   "explain": [
+    "[[short-term scheduler]] 執行得很頻繁：通常大概每 100 ms（毫秒）甚至更短就要做一次，最基本的節奏由 timer 的 alarm 控制。",
+    "除了 timer，使用者程式呼叫 [[system call]]、I/O 裝置丟 [[interrupt]] 進來，也都會把它叫起來，所以實際頻率比 timer 還高。",
+    "把整條路串起來：long-term 在前面把 process 放進 memory，short-term 在後面把 process 送上 CPU；做完 I/O 的 process 會回到 [[ready queue]]。",
+    "short-term 的重點是它的排程演算法（scheduling algorithm），後面會有一整章專門介紹。",
+    "它想確保的第一件事是 [[waiting time]]：ready queue 裡大家平均等了多久。就像中午排隊買飯，大家都希望越短越好。",
+    "同樣的人、同樣的順序進來，用不同的演算法，算出來的平均等待時間就會不同（畫面上換順序只是示意）。好的演算法能讓效能變好。",
+    "第二件事是 fairness（公平）：希望每個人等的時間盡量差不多，像 priority、round-robin 這些演算法都會考慮公平。",
+    "平均很低，不代表大家都高興。就像一個國家平均收入很高，不代表大家都很均富。所以也要確保最久的人不會等無限久。",
+    "這些都是 short-term scheduler 決定的，它直接影響程式的效能，以及使用者感受到的 [[response time]]（按下去多久有反應）。",
+    "偏偏，達成這些目標的演算法本身又必須非常快。queue 很長的時候，光是掃一遍就要時間；如果演算法要 n²，時間會非常驚人。",
+    "老師的例子：每 100 ms 做一次 scheduling，演算法每次只跑 10 ms，夠短了吧？但 overhead（額外開銷）就是 10 ÷ 100 = 10%，紅色那段 CPU 完全沒在幫使用者做事。",
+    "如果演算法要 50 ms，那 CPU 雖然 100% 在忙，卻有一半時間不在做使用者的事，當然會覺得這台電腦很慢。",
+    "所以 short-term 的演算法不能想得太複雜：理論上再好，跑太久在現實中就是不 practical 的解法。"
    ]
   },
   {
    "title": "Mid-term：swap out 與 swap in",
-   "scene": "midterm-swap",
+   "scene": "proc-8a-swapio",
+   "cues": [
+    1184.2,
+    1206.6,
+    1214.8,
+    1222.2,
+    1233.6,
+    1252.8,
+    1271.7,
+    1284.4,
+    1317.2
+   ],
    "points": [
     {
-     "text": "mid-term 在 disk 和 memory 之間做 swap out、swap in。",
-     "t": 1207
+     "t": 1184,
+     "text": "mid-term 在 disk 和 memory 之間做 swap out、swap in。"
     },
     {
-     "text": "swap out：控制 degree，避免 thrashing。",
-     "t": 1226
+     "t": 1206,
+     "text": "swap out：控制 degree，避免 thrashing（CPU 很忙卻沒在跑使用者的指令）。"
     },
     {
-     "text": "swap in：memory 空出來時，讓等在 disk 的 process 回來執行。",
-     "t": 1262
+     "t": 1233,
+     "text": "swap in：memory 空出來時，讓等在 disk 的 process 回來執行。"
     },
     {
-     "text": "可以改善 process mix，也可以 free 出 memory 給正在執行的程式。",
-     "t": 1298
+     "t": 1252,
+     "text": "主要目的：improve process mix；現代沒有 long-term，進來之後靠 mid-term 管理。"
+    },
+    {
+     "t": 1284,
+     "text": "也可以 free 出 memory 給正在執行的程式；細節在 virtual memory 章節。"
     }
+   ],
+   "explain": [
+    "回到 mid-term scheduler。它跟另外兩個很不一樣：它做的是 swap out 和 swap in，也就是在 disk 和 memory 之間搬 process。",
+    "swap out：把一個 process 從 memory 搬回 disk。",
+    "為什麼要搬？為了控制 [[degree of multiprogramming]]。memory 裡太多 process 會造成 [[thrashing]]。",
+    "thrashing 的結果是：CPU 看起來很忙碌，但都在忙著搬資料，根本不在跑使用者的指令，所以你還是覺得電腦很慢。",
+    "swap in：有人被 swap out 之後，memory 的位置就空出來了，這時可以把等在 disk 的 process 搬回來繼續執行。",
+    "最主要的目的是 improve process mix，也就是調整 CPU-bound 和 I/O-bound 的比例：挑誰該留在 memory、誰可以先離開。",
+    "現在的電腦沒有 long-term scheduler，程式來了都先放進來；進來之後要怎麼進一步管理，就靠 mid-term。因為實體 memory 還是很小，只是 disk 很大。",
+    "第二個目的是 free out memory：degree 太高時，把只是在 waiting、在等的 process 搬出去，把 memory 讓給真正正在執行的程式。",
+    "mid-term scheduler 都是跟 [[virtual memory]] 結合在一起的。之後講到 virtual memory，會更清楚什麼時候用 swap 來管理 memory 裡要留下哪些內容。"
    ]
   }
  ],
@@ -172,6 +349,17 @@
    ],
    "ans": "new",
    "why": "課堂對應：disk＝new、memory＝ready、CPU＝running。"
+  },
+  {
+   "q": "一個 process 在 memory 裡，CPU 空著它卻不能執行（例如呼叫了 sleep），它是哪個狀態？",
+   "opts": [
+    "waiting",
+    "ready",
+    "new",
+    "running"
+   ],
+   "ans": "waiting",
+   "why": "waiting：在等別人、等 interrupt 或自己 sleep，就算 CPU 空也不能跑。"
   },
   {
    "q": "為什麼 CPU scheduler 叫 short-term？",
@@ -196,6 +384,17 @@
    "why": "太多 process 搶 memory，一直在 swapping。"
   },
   {
+   "q": "memory 裡全部都是 I/O-bound 的 process，會怎樣？",
+   "opts": [
+    "CPU idle，大家都在等 I/O",
+    "I/O 裝置閒著",
+    "CPU 和 I/O 都很忙",
+    "一定 thrashing"
+   ],
+   "ans": "CPU idle，大家都在等 I/O",
+   "why": "要挑 CPU-bound 與 I/O-bound 平衡的 mix，兩邊才都不 idle。"
+  },
+  {
    "q": "每 100 ms 做一次 scheduling，演算法每次跑 10 ms，overhead 是？",
    "opts": [
     "10%",
@@ -217,6 +416,5 @@
    "ans": "mid-term",
    "why": "mid-term 跟 virtual memory 結合，負責 swapping。"
   }
- ],
- "timing": "estimated"
+ ]
 }

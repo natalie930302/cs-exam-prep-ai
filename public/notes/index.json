@@ -491,6 +491,12 @@
   "quiz": 8,
   "cued": true
  },
+ "aKiUuuKXfKY": {
+  "label": "清大周志遠 第7B講 Processes Concept",
+  "points": 11,
+  "quiz": 5,
+  "cued": true
+ },
  "ARvQcqJ_-NY": {
   "label": "Abdul Bari：Greedy Method - Introduction",
   "points": 17,
@@ -511,9 +517,9 @@
  },
  "AztAXONxs7M": {
   "label": "清大周志遠 第8A講 Processes Concept",
-  "points": 30,
-  "quiz": 5,
-  "cued": false
+  "points": 34,
+  "quiz": 7,
+  "cued": true
  },
  "a_IRpiyBIm0": {
   "label": "How to prove NP-Completeness - The Steps",
@@ -671,6 +677,12 @@
   "quiz": 7,
   "cued": false
  },
+ "dDghjse91lE": {
+  "label": "清大周志遠 第9A講 Processes Concept",
+  "points": 29,
+  "quiz": 7,
+  "cued": true
+ },
  "ddsP7NecEBk": {
   "label": "Abdul Bari：Asymptotic Notations - Simplified",
   "points": 51,
@@ -763,9 +775,15 @@
  },
  "ETPHC9DffdU": {
   "label": "清大周志遠 第8B講 Processes Concept",
-  "points": 33,
-  "quiz": 5,
-  "cued": false
+  "points": 36,
+  "quiz": 6,
+  "cued": true
+ },
+ "f-mBLtGY6Ig": {
+  "label": "清大周志遠 第7A講 Processes Concept",
+  "points": 36,
+  "quiz": 6,
+  "cued": true
  },
  "FbYzBWdhMb0": {
   "label": "Abdul Bari：1.2 Characteristics of Algorithm",
@@ -781,9 +799,9 @@
  },
  "FiRH2TYB1Mw": {
   "label": "清大周志遠 第6B講 Processes Concept",
-  "points": 18,
-  "quiz": 4,
-  "cued": false
+  "points": 19,
+  "quiz": 5,
+  "cued": true
  },
  "FNeL18KsWPc": {
   "label": "MIT 6.006：AVL Trees, AVL Sort",
@@ -908,6 +926,18 @@
  "IawM82BQ4II": {
   "label": "Abdul Bari：2.1.2 Recurrence Relation #2",
   "points": 25,
+  "quiz": 5,
+  "cued": true
+ },
+ "IFEFVXvjiHY": {
+  "label": "Neso Academy：fork() and exec() System Calls",
+  "points": 19,
+  "quiz": 5,
+  "cued": true
+ },
+ "iFRv7y8i7Sw": {
+  "label": "清大周志遠 第9B講 Processes Concept",
+  "points": 10,
   "quiz": 5,
   "cued": true
  },
@@ -1151,6 +1181,12 @@
   "quiz": 7,
   "cued": true
  },
+ "oiB5Oalb8A8": {
+  "label": "清大周志遠 第8D講 Processes Concept",
+  "points": 27,
+  "quiz": 6,
+  "cued": true
+ },
  "oNI0rf2P9gE": {
   "label": "Abdul Bari：4.2 All Pairs Shortest Path (Floyd-Warshall)",
   "points": 35,
@@ -1271,6 +1307,12 @@
   "quiz": 6,
   "cued": true
  },
+ "qbUTlZ05VYk": {
+  "label": "清大周志遠 第6A講 OS Structure/Processes Concept",
+  "points": 41,
+  "quiz": 6,
+  "cued": true
+ },
  "QFcyt8fgQMU": {
   "label": "MIT 6.006 Rec2：Python Cost Model, Document Distance",
   "points": 83,
@@ -1334,6 +1376,12 @@
  "RpgcYiky7uw": {
   "label": "Tushar Roy：Strongly Connected Components",
   "points": 16,
+  "quiz": 6,
+  "cued": true
+ },
+ "RrjOXZ-XzkM": {
+  "label": "清大周志遠 第8C講 Processes Concept",
+  "points": 21,
   "quiz": 6,
   "cued": true
  },

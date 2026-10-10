@@ -1,181 +1,388 @@
 {
  "video": "ETPHC9DffdU",
  "label": "清大周志遠 第8B講 Processes Concept",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
    "title": "三種 scheduler 回顧",
-   "scene": "lt-st-scheduler",
+   "scene": "proc-8b-recap",
+   "cues": [
+    14.8,
+    16.4,
+    17.4,
+    18.9
+   ],
    "points": [
     {
-     "text": "CPU（short-term）一定要 efficient；long-term 控制 degree；mid-term 做 swapping。",
-     "t": 0
+     "t": 14,
+     "text": "CPU（short-term）一定要 efficient；long-term 控制 degree；mid-term 做 swapping。"
     },
     {
-     "text": "現代電腦把它們跟其他機制綁在一起，但要做的事情原則一樣。",
-     "t": 22
+     "t": 21,
+     "text": "現代電腦把它們跟其他機制綁在一起，但要做的事情原則一樣。"
     }
+   ],
+   "explain": [
+    "先快速回顧上一段：OS 裡有三種不同的 [[scheduler]]，各有各的工作。",
+    "負責 CPU 的 [[short-term scheduler]]：因為執行得非常頻繁，一定要很有效率（efficient）。",
+    "[[long-term scheduler]]：控制 [[degree of multiprogramming]]，也就是 memory 裡放幾個 process。",
+    "mid-term scheduler：負責 [[swapping]]，把 process 在 memory 和 disk 之間搬進搬出。現代電腦更複雜、會跟其他機制綁在一起，但原則就是這三件事。"
    ]
   },
   {
    "title": "PID 與 process tree",
-   "scene": "process-tree",
+   "scene": "proc-8b-tree",
+   "cues": [
+    53.9,
+    65.0,
+    83.2,
+    91.0,
+    98.2,
+    110.5,
+    122.2,
+    128.1,
+    136.6,
+    147.9,
+    165.8,
+    179.1,
+    198.9
+   ],
    "points": [
     {
-     "text": "process 是 entity，被 create 時就 assign 一個 unique 的 PID。",
-     "t": 62
+     "t": 53,
+     "text": "接下來從 user / programmer 的角度：怎麼 create process、怎麼讓 process 溝通。"
     },
     {
-     "text": "process 不是一開始就全部存在：開機只有一個，其他都由它 create，形成 parent / children 關係。",
-     "t": 105
+     "t": 83,
+     "text": "process 是 entity，被 create 時就 assign 一個 unique 的 PID（process identifier）。"
     },
     {
-     "text": "任何系統任何時刻都能畫出 tree of processes，沒有例外。",
-     "t": 126
+     "t": 110,
+     "text": "process 不是一開始就全部存在：開機只有一個，其他都由它 create，形成 parent / children 關係。"
     },
     {
-     "text": "不會有 parent 不存在的 process（像 dangling pointer）；parent 不見了，下面的全部砍掉。",
-     "t": 147
+     "t": 136,
+     "text": "任何系統任何時刻都能畫出 tree of processes，沒有例外。"
     },
     {
-     "text": "在 server 上用 ps -ael 列出所有 process，看 PID 和 parent，可以自己重建這棵 tree。",
-     "t": 169
+     "t": 147,
+     "text": "不會有 parent 不存在的 process（像 dangling pointer）；parent 不見了，下面的全部砍掉。"
+    },
+    {
+     "t": 179,
+     "text": "在 server 上用 ps -ael 列出所有 process，看 PID 和 parent，可以自己重建這棵 tree。"
     }
    ],
-   "trap": "補充：課本稱為 cascading termination（有些系統如此）；Linux 實際上會把孤兒 process 交給 init（systemd）收養。"
+   "trap": "課本稱「parent 結束、child 跟著被砍」為 cascading termination（有些系統如此）；Linux 實際上會把孤兒 process 交給 init（systemd）收養。圖中的 tree 是課本 Fig. 3.8。",
+   "explain": [
+    "前面講的是 OS 怎麼管理 process。接下來換個角度，看 process 本身。",
+    "也就是回到使用者、寫程式的人（programmer）：他要怎麼 create 一個 process？process 之間又要怎麼溝通？",
+    "在電腦系統裡，每個 process 都是一個獨立的個體（entity）。要認得它，就必須給它一個獨一無二的 ID。",
+    "這個 ID 叫做 process identifier，簡稱 PID，就像每個人的身分證字號。",
+    "第一件重要的事：process 只要一被 create 出來，就會被分配（assign）一個 PID。",
+    "process 不是一開機就全部跑出來的。它們要被「生」出來，而且有 parent（父）和 children（子）的關係，就像人一樣。",
+    "一開始，整台電腦只有一個 process 在執行（課本圖裡的 init，PID = 1）。",
+    "其他 process 都是透過它（或它的後代）一個一個 create 出來的，所以畫面上一層一層長出來。",
+    "所以不管什麼系統、在任何時刻，你都一定能畫出一棵樹，叫做 tree of processes，沒有例外。",
+    "不可能有一個 process「沒有 parent」卻自己存在，那就像 C 語言裡指向不存在東西的 dangling pointer。OS 管理的系統裡不允許這種事。",
+    "如果某個 parent 不見了，老師說它下面的 process 也會全部被砍掉，不然 OS 不知道怎麼管理它們（看 bash 那一整枝消失）。",
+    "你可以自己在 Linux server 上打 ps -ael 這個指令，它會列出所有 process 和它們的 PID。",
+    "每一行還會告訴你這個 process 的 parent 是誰（PPID）。把這些數字串起來，就能自己重建出那棵 tree。剛開機、process 還不多的時候最容易畫。"
+   ]
   },
   {
    "title": "Parent 與 child 的關係選擇",
-   "scene": "creation-options",
+   "scene": "proc-8b-options",
+   "cues": [
+    231.3,
+    251.3,
+    267.4,
+    281.8,
+    302.4,
+    322.0,
+    328.0,
+    339.4,
+    370.6,
+    403.4,
+    422.7,
+    439.4,
+    470.2,
+    492.6,
+    515.7,
+    539.3,
+    559.7
+   ],
    "points": [
     {
-     "text": "parent 和 child 是不同程式但有關聯，關聯性由 OS 設計者決定。",
-     "t": 231
+     "t": 231,
+     "text": "parent 和 child 是不同程式但有關聯，關聯性分三方面，由 OS 設計者決定。"
     },
     {
-     "text": "resource sharing：child 能不能繼承 parent 開的 file handler、memory？",
-     "t": 274
+     "t": 281,
+     "text": "resource sharing：child 能不能繼承 parent 開的 file handler、memory？"
     },
     {
-     "text": "三種：share all、只 share subset、完全不 share（各自一份）。",
-     "t": 313
+     "t": 322,
+     "text": "三種：share all、只 share subset（例如 global 看得到、動態配置的看不到）、完全不 share（各自一份）。"
     },
     {
-     "text": "execution：concurrent（由 scheduler 決定誰先），或 parent 等到 children terminate。",
-     "t": 410
+     "t": 370,
+     "text": "execution：concurrent（由 scheduler 決定誰先），或 parent 等到 children terminate。"
     },
     {
-     "text": "若選擇等待，parent 會因為 create child 而被放進 waiting queue。",
-     "t": 448
+     "t": 439,
+     "text": "若選擇等待，parent 會因為 create child 而被放進 waiting queue。"
     },
     {
-     "text": "address space：duplicate（連 PC 都一樣），或 create 時直接 load 新的 program、reset PC。",
-     "t": 528
+     "t": 470,
+     "text": "address space：duplicate（連 PC 都一樣），或 create 時直接 load 新的 program、reset PC。"
+    },
+    {
+     "t": 559,
+     "text": "duplicate 出來的兩支看起來一模一樣，但 memory address 不同，是兩支程式。"
     }
+   ],
+   "explain": [
+    "process creation 其實就是 parent 和 children 之間的關係。現在來看：parent 和 child 到底有什麼差別？",
+    "parent 和 child 是兩支不同的程式，但又有關聯（因為 child 是 parent 生的）。這個關聯性分成三個面向：資源、執行順序、記憶體內容。",
+    "每個面向要選哪一種，是由設計 OS 的人自己決定的，沒有標準答案。",
+    "第一個面向：resource sharing（資源共享）。例如 parent 打開了一個檔案 a.txt，那生出來的 child 能不能直接沿用這個檔案的 handler（把手、號碼牌）去存取它？",
+    "一個 process 擁有很多東西：檔案 handler、自己的 memory 空間、global variable、動態配置的 variable……",
+    "第一種選擇是 share all：parent 和 child 看到的內容完全一樣。",
+    "第二種是只共享一部分（subset）：例如 global variable 看得到，但動態配置的 variable 看不到。",
+    "第三種是什麼都不共享：你是你、我是我，分家了。只是給你一份 copy，兩個人的 memory address 完全不同。",
+    "第二個面向：執行順序。原本是 parent 在執行，執行到某個指令呼叫 [[system call]] 要 create child。child 生出來後就有兩個人，但 [[CPU]] 只有一顆，誰先？",
+    "一種選擇是 concurrent（並行）：把它們當成兩支普通程式，讓 OS 的 scheduler 決定誰先誰後都可以。",
+    "另一種是 wait until children terminate：child 的優先權比較高，一定要 child 執行完，parent 才能接著跑。",
+    "如果 OS 這樣定義，parent 一 create child 就必須等，所以會進到 [[waiting queue]]。注意它不是在做 I/O，也不是 sleep，只是在等 child。",
+    "第三個面向，也是最重要的：memory content，也就是 process 的 [[address space]]（code、data、heap、stack 那些區塊）。",
+    "一種選擇是 duplicate：把 parent 的記憶體內容完全複製一份給 child，執行碼也一模一樣。",
+    "另一種是 create 完就順便 load 一個新的 program：把新程式碼直接放進 child 的 code section，program counter 也重設，一次變成完全不同狀態的程式。",
+    "如果選 duplicate，連 program counter 都會一樣：parent 執行到第 3 行時 create child，child 也從第 3 行開始，所有狀態都維持一樣（第 3 行是示意）。",
+    "所以你分不出這兩支程式，它們長得一樣、行為也一樣。但它們的 memory address 其實不同，只是 copy，本質上是兩支不同的程式。"
    ]
   },
   {
    "title": "Linux / UNIX 的 fork()",
-   "scene": "fork-return",
+   "scene": "proc-8b-fork",
+   "cues": [
+    588.3,
+    606.2,
+    621.8,
+    639.5,
+    659.3,
+    674.9,
+    682.8,
+    698.6,
+    708.9,
+    729.7,
+    747.1,
+    759.9,
+    781.3,
+    794.0
+   ],
    "points": [
     {
-     "text": "Linux 用 fork 這個 system call create child。",
-     "t": 604
+     "t": 588,
+     "text": "Linux / UNIX（Windows 也類似）用 fork 這個 system call create child。"
     },
     {
-     "text": "fork 選擇 duplicate：global、heap 的內容與值都一模一樣，PC 位置也一樣。",
-     "t": 642
+     "t": 621,
+     "text": "fork 選擇 duplicate：global、heap 的內容與值都一模一樣，PC 位置也一樣。"
     },
     {
-     "text": "選擇 concurrent execution：誰先跑由 OS 決定，parent 不用進 waiting。",
-     "t": 697
+     "t": 682,
+     "text": "選擇 concurrent execution：誰先跑由 OS 決定，parent 不用進 waiting。"
     },
     {
-     "text": "唯一不同是回傳值：child 拿到 0，parent 拿到新 child 的 PID。",
-     "t": 755
+     "t": 708,
+     "text": "唯一不同是回傳值：child 拿到 0，parent 拿到新 child 的 PID。"
     },
     {
-     "text": "parent 一定知道 child 是誰；child 不知道 parent，要另外 call system call 問 OS。",
-     "t": 792
+     "t": 759,
+     "text": "parent 一定知道 child 是誰；child 不知道 parent，要另外 call system call 問 OS。"
     },
     {
-     "text": "程式用回傳值判斷自己是 child 還是 parent，做不同的事。",
-     "t": 814
+     "t": 794,
+     "text": "程式用回傳值判斷自己是 child 還是 parent，做不同的事。"
     }
+   ],
+   "trap": "畫面上的 PID 100 / 101 和 int a = 5 是示意數字。",
+   "explain": [
+    "剛剛的可能性很抽象，直接看真實的例子：Linux、UNIX（Windows 大致也類似）是怎麼定義 process creation 的。",
+    "在 Linux 裡要 create process，就是呼叫 [[fork]] 這個 [[system call]]。只要 call 了它，OS 就會幫你 create 一個 child 出來。",
+    "對照剛剛的選項：fork 選的是 duplicate。child 的 memory content 會跟 parent 長得完完全全一模一樣。",
+    "也就是說：在 call fork 之前，你有哪些 global variable、heap 裡動態配置了什麼、值是多少，child 通通都有，完全一樣。",
+    "你有 variable a，我就有 variable a；你 a = 5，我的 a 也是 5（5 是示意）。fork 之前的狀態全部照抄一份，變成 child 自己的內容。",
+    "甚至連 program counter 的位置都一樣：兩個都停在 fork 這一行，等於是完全一樣的兩支程式。",
+    "執行順序方面，fork 選的是 concurrent execution：兩個沒有先後順序，可能 child 先被執行，也可能 parent 先。",
+    "看 OS 決定，無所謂。所以 parent 不需要被放到 waiting state，不用等。大部分使用者也比較希望這樣。",
+    "那這兩個唯一的不同是什麼？fork 本身也是一個 function call，它會 return（回傳）一個值。",
+    "如果你是 child，fork 的回傳值是 0。因為它是剛被生出來的，fork 沒有告訴它任何人的 ID。",
+    "如果你是 parent，fork 回傳的是新 create 出來那個 child 的 PID（這裡示意為 101），所以 parent 知道 child 是誰。",
+    "這跟人很像：父母一定知道小孩是誰，但小孩不一定知道父母是誰。",
+    "child 如果想知道 parent 是誰，可以再呼叫別的 system call 去問 OS（例如 getppid()），只是 fork 的回傳值不會告訴它。",
+    "所以程式就可以用這個回傳值來判斷：我是 child 還是 parent？然後兩邊各做不同的事情（if (pid == 0) 走 child 那條路）。"
    ]
   },
   {
-   "title": "execlp",
-   "scene": "exec-replace",
+   "title": "execlp：換成另一支程式",
+   "scene": "proc-8b-exec",
+   "cues": [
+    810.3,
+    823.1,
+    835.0,
+    850.2,
+    855.7,
+    865.0,
+    870.8,
+    881.0,
+    893.4,
+    904.3,
+    926.3
+   ],
    "points": [
     {
-     "text": "fork 完內容一樣，但開新 process 通常是要它做不同的事。",
-     "t": 853
+     "t": 810,
+     "text": "Linux 程式 fork 完，下一步通常 call execlp。"
     },
     {
-     "text": "execlp 給一個 binary file，把 child 的 code segment 整個換掉。",
-     "t": 894
+     "t": 823,
+     "text": "fork 完內容一樣，但開新 process 是要它做不同的事、執行不同的 binary。"
     },
     {
-     "text": "heap、stack 清空，program counter 設回起點：等於 reset 成另一支程式。",
-     "t": 912
+     "t": 855,
+     "text": "execlp 給一個 binary file，把 child 的 code segment 整個換掉。"
     },
     {
-     "text": "還是要先 create：要跟 OS 註冊 PID、配置 memory space，再把內容重來一遍。",
-     "t": 931
+     "t": 870,
+     "text": "heap、stack 清空，program counter 設回起點：等於 reset 成另一支程式。"
+    },
+    {
+     "t": 893,
+     "text": "還是要先 create：要跟 OS 註冊 PID、配置 memory space，再把內容重來一遍。"
     }
+   ],
+   "explain": [
+    "在 Linux 寫程式，call 完 fork 之後，下一步通常就會呼叫 execlp（exec 家族的一個 system call）。",
+    "為什麼？因為 fork 是 duplicate：parent 和 child 的內容完完全全一樣，連執行碼都一樣。",
+    "可是我們 create 新 process 的目的，當然不是讓它做同樣的事。同一件事一個 process 做就好了。",
+    "要它做不一樣的事，就是讓它執行不同的 binary code，也就是另一支程式。",
+    "execlp 就是做這件事：你給它一個 binary file（一個 program，例如 /bin/ls）。",
+    "它會把新 process 的 code segment 整個 replace（替換）成這支新程式的程式碼。",
+    "然後把 heap、stack 全部清空，program counter 設成 0（從頭開始）。也就是把這個 process reset。",
+    "這樣一來，新的 child process 就等於在執行一支完全不一樣的程式（變成 ls 了）。",
+    "注意：execlp 只是把 memory content 重設。那既然內容要整個重來，為什麼還要先 fork（create）呢？",
+    "因為 create 這個動作本身還是需要的：要跟 OS 註冊一個 PID、跟 OS 要一塊 memory space。這些登記手續 exec 不會幫你做。",
+    "總結：fork 之後，新程式 by default 跟 parent 做一樣的事；call execlp，它才把自己 reset，去做不一樣的事。兩個是不同的動作。"
    ]
   },
   {
-   "title": "wait",
-   "scene": "fork-exec-wait",
+   "title": "wait：parent 等 child",
+   "scene": "proc-8b-wait",
+   "cues": [
+    941.8,
+    947.8,
+    963.6,
+    969.6,
+    979.6,
+    986.5,
+    997.8,
+    1010.0
+   ],
    "points": [
     {
-     "text": "Linux 是 concurrent，parent 和 child 的順序無法控制；想控制可以 call wait。",
-     "t": 968
+     "t": 941,
+     "text": "Linux 是 concurrent，parent 和 child 的順序無法控制；想控制可以 call wait。"
     },
     {
-     "text": "wait 指定要等哪個 child 結束，等於強迫把 parent 放進 waiting queue。",
-     "t": 987
+     "t": 969,
+     "text": "wait 指定要等哪個 child 結束，等於強迫把 parent 放進 waiting queue。"
     },
     {
-     "text": "這是 programmer 自己下的同步指令，不是 OS 預設。",
-     "t": 1008
+     "t": 986,
+     "text": "這是 programmer 自己下的同步指令，不是 OS 預設。"
     },
     {
-     "text": "parent 還能對 child 做 kill、suspend；最基本的是 fork、exec、wait 三個。",
-     "t": 1027
+     "t": 997,
+     "text": "parent 還能對 child 做 kill、suspend；最基本的是 fork、exec、wait 三個。"
     }
+   ],
+   "explain": [
+    "第三個很常用的 system call 是 wait。",
+    "Linux 的 fork 是 concurrent 執行，所以 parent 和 child 誰先跑、誰後跑，你沒辦法控制（畫面上兩個輪流上 CPU）。",
+    "如果你想控制，也可以：使用者透過 wait 這種 [[system call]] 來控制。",
+    "call wait 的時候，可以指定 parent 要等哪一個 child 結束。",
+    "等 child 結束後 parent 才繼續執行，也就是強迫把 parent 自己放進 [[waiting queue]]。這時 child 就能先用 CPU。",
+    "注意這是 programmer 自己下的指令，不是 OS 的預設行為。如果你想讓 parent 和 child 做同步化（[[synchronization]]），就 call wait。",
+    "parent 還可以對 child 做很多事，例如 kill（把它結束掉）、suspend（暫停它）。",
+    "不過 fork、exec、wait 這三個是最基本、一定要知道的。尤其前兩個會影響程式的行為：先 duplicate，所以才需要 exec 重新載入，才能執行不一樣的程式。"
    ]
   },
   {
    "title": "Duplicate 的實作：copy-on-write",
-   "scene": "copy-on-write",
+   "scene": "proc-8b-cow",
+   "cues": [
+    1036.0,
+    1052.8,
+    1072.9,
+    1083.4,
+    1099.7,
+    1112.4,
+    1130.2,
+    1146.2,
+    1158.1,
+    1175.8,
+    1199.4,
+    1206.6,
+    1229.2,
+    1266.1,
+    1284.4,
+    1303.9
+   ],
    "points": [
     {
-     "text": "A call fork 產生 A'，內容一樣（同顏色）。",
-     "t": 1101
+     "t": 1036,
+     "text": "先看 duplicate 和 reload 在 memory 裡的樣子：A call fork 產生 A'，內容一樣（同顏色）。"
     },
     {
-     "text": "naive 作法 exact copy：A 佔 100 MB 就再配置 100 MB 全部 copy，很浪費。",
-     "t": 1139
+     "t": 1099,
+     "text": "naive 作法 exact copy：A 佔 100 MB 就再配置 100 MB 全部 copy，很浪費。"
     },
     {
-     "text": "實際作法 copy-on-write：只 copy 一定會改的部分（像 PC），其他用 pointer 共用 parent 的。",
-     "t": 1178
+     "t": 1146,
+     "text": "實際作法 copy-on-write：只 copy 一定會改的部分（像 PC），其他用 pointer 共用 parent 的。"
     },
     {
-     "text": "parent 或 child 修改共用的值時，run time 才真的 copy，兩邊分家。",
-     "t": 1235
+     "t": 1199,
+     "text": "parent 或 child 修改共用的值時，run time 才真的 copy，兩邊分家；A' 慢慢長到跟 A 一樣大但內容不同。"
     },
     {
-     "text": "A' 會慢慢長到跟 A 一樣大，但內容不同；對使用者而言內容一模一樣。",
-     "t": 1252
+     "t": 1266,
+     "text": "對使用者而言內容一模一樣，OS 偷偷省 memory。"
     },
     {
-     "text": "call execlp 之後，那塊空間整個換掉，跟 A 完全脫鉤。",
-     "t": 1308
+     "t": 1284,
+     "text": "call execlp 之後，那塊空間的 code、heap 整個換掉，跟 A 完全脫鉤。"
     }
+   ],
+   "explain": [
+    "看範例程式碼之前，先看 memory 裡的樣子，比較能把 duplicate 和 reload（exec）串起來。",
+    "我們說 process 就是 memory 裡的 content。畫面上：A 是一個程式的記憶體空間、旁邊是另一個 user 的程式、右邊是 OS，中間是空的空間。",
+    "現在 A 這個程式呼叫 [[fork]]。",
+    "就產生一個 child，佔住一塊空間。顏色一樣，代表裡面的內容一樣：一支新程式跑出來，做的事跟 A 一模一樣，叫它 A'。",
+    "你可能注意到 A' 比 A 小一點。原因是實作上其實有兩種選擇。",
+    "第一種是比較 naive（天真、直接）的做法：exact copy。A 佔了 100 MB，就再跟系統要 100 MB，把裡面的東西全部 copy 一份。",
+    "可是這樣很浪費：兩份裡面的資料一模一樣，何必存兩份？浪費 memory 空間。",
+    "實際系統比較常用的做法叫 [[copy-on-write]]（寫入時才複製）。下一章講 memory 時會更仔細。",
+    "copy 的時候，只複製一定會被改掉的部分，例如 program counter 的位置、一些執行時必須的基本變數。",
+    "不影響執行的部分，就不複製，而是用一個像 pointer 的東西指回 parent。例如要讀 A 的 global variable，只要值沒被改過，就直接讀 parent 的。",
+    "因為一開始大家的內容都相同，所以讓兩個 process 共用（share）同一份。",
+    "但只要 parent 或 child 其中一個去修改這個共用的值，兩邊就要分家了：OS 在 run time 發現有人動到共用的記憶體，才幫你真的 copy 那一塊。",
+    "所以 A' 會慢慢慢慢長大，最後大小跟 A 一樣，但裡面的值已經不一樣了（顏色變了）。這就是 copy-on-write。",
+    "重點是：對使用者看到的 process 而言，兩個的內容就是一模一樣；只是 OS 偷偷動了手腳，省下不必要的 memory。",
+    "如果想讓新 process 跑不同的程式，就呼叫 execlp：code segment 被換成別的程式，heap 等等也會 reset。",
+    "這時這塊空間的大小和內容，就跟 A 完全脫鉤、完全無關了。這就是為什麼 fork 之後還要再 call execlp。"
    ]
   }
  ],
@@ -211,7 +418,7 @@
     "複製 parent 的 memory"
    ],
    "ans": "把 code 換成新程式、清空 heap/stack、PC 重設",
-   "why": "exec 不會建立新 process，而是 reset 目前這個。"
+   "why": "exec 不會建立新 process，而是 reset 目前這個；PID 不變。"
   },
   {
    "q": "Copy-on-write 什麼時候才真的複製？",
@@ -234,7 +441,17 @@
    ],
    "ans": "parent 呼叫 wait()",
    "why": "Linux 的 fork 是 concurrent，parent 不必等；是 programmer 用 wait 讓它等。"
+  },
+  {
+   "q": "child 想知道自己的 parent 是誰，應該怎麼做？",
+   "opts": [
+    "另外呼叫 system call 問 OS（如 getppid）",
+    "看 fork 的回傳值",
+    "讀自己的 PID 減 1",
+    "沒有辦法知道"
+   ],
+   "ans": "另外呼叫 system call 問 OS（如 getppid）",
+   "why": "fork 在 child 回傳 0，不會告訴它 parent 是誰。"
   }
- ],
- "timing": "estimated"
+ ]
 }

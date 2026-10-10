@@ -1,0 +1,374 @@
+{
+ "video": "oiB5Oalb8A8",
+ "label": "清大周志遠 第8D講 Processes Concept",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "IPC：為什麼 process 要溝通",
+   "scene": "proc-8d-ipc",
+   "cues": [
+    1.9,
+    4.4,
+    54.7,
+    93.3,
+    122.5,
+    138.2,
+    159.5,
+    180.0
+   ],
+   "points": [
+    {
+     "t": 1,
+     "text": "interprocess communication（IPC）：process（甚至 thread）之間溝通的機制，用來兜成更大的系統。"
+    },
+    {
+     "t": 93,
+     "text": "independent process 不溝通；cooperating process 需要透過 IPC 完成工作（大系統、網路程式）。"
+    },
+    {
+     "t": 122,
+     "text": "溝通的目的：information sharing、平行計算加速、convenience（web server 一個 user 一個 process）、modularity（microkernel）。"
+    }
+   ],
+   "explain": [
+    "這一章最後一塊：interprocess communication，俗稱 IPC，也就是 process 之間的溝通。",
+    "現在我們會 create、也會 kill process 了。真正使用時，process 常常不是各做各的，而是需要互相溝通，才能兜成一個比較大的系統。",
+    "IPC 指的是多個 process、甚至 [[thread]] 之間的溝通。因為 OS 有時不太嚴格區分 process 和 thread，所以內部的溝通機制統稱 IPC。",
+    "沒有溝通的叫 independent process；需要溝通的叫 cooperating process。寫比較大的系統時很常見，所有網路程式也都是 cooperating 的。",
+    "溝通的目的，第一是 information sharing（分享資訊），像所有網路程式都是，而且不限於一台電腦，[[socket]] 也是 IPC 的一種。",
+    "第二是平行程式：用很多 process 或 thread 一起解同一個問題、做同一個計算來加速，既然解同一個問題，難免需要溝通。",
+    "第三是方便（convenience）：像 web server 有很多 user 連進來，讓每個人對到一個 process 或 thread，就很容易管理這些 connection。",
+    "第四是 modularity，最標準的例子是 microkernel：它把 component 都放在 user space，透過 IPC 溝通，kernel 只需要提供 IPC 的服務。"
+   ]
+  },
+  {
+   "title": "Shared memory vs Message passing",
+   "scene": "proc-8d-models",
+   "cues": [
+    208.6,
+    236.5,
+    251.9,
+    277.0,
+    297.8,
+    320.9,
+    342.7,
+    356.6,
+    381.6,
+    400.5,
+    424.7
+   ],
+   "points": [
+    {
+     "t": 208,
+     "text": "OS 提供兩種：shared memory（共用一塊 memory，用 pointer 直接讀寫）與 message passing（透過 memory copy 傳訊息，跨電腦就像 email）。"
+    },
+    {
+     "t": 297,
+     "text": "shared memory 快，但 synchronization 很難；用 pointer 就是 shared memory，call send / receive 就是 message passing。"
+    },
+    {
+     "t": 342,
+     "text": "message passing 要 system call 又要 copy，通常較慢；但資料小、不想處理 synchronization 時可能更快。"
+    },
+    {
+     "t": 381,
+     "text": "跨電腦只能 message passing；人多、複雜用 message passing，人少、簡單用 shared memory。"
+    },
+    {
+     "t": 424,
+     "text": "OS 兩種都提供；message passing 包成一層層 API 給使用者。"
+    }
+   ],
+   "explain": [
+    "OS 提供的溝通方式，用 memory 的概念來分，只有兩種：[[shared memory]]，或 [[message passing]]。",
+    "shared memory：有一塊 memory 空間是共用的，兩個 process 都可以直接用 pointer 去存取、同時讀寫，不會違反保護規則，由 programmer 自己管理。",
+    "message passing 是透過 memory copy：把資料 copy 給對方，就像在傳遞一則訊息。在同一台電腦裡像是 memory copy；擴展到跨電腦，就更像傳訊息，像 email。",
+    "所有網路程式、socket programming，其實都是 message passing：把封包透過網路傳到另一台電腦上的程式來溝通。",
+    "shared memory 最討厭的是 [[synchronization]]（同步），後面會有一章專門講，等一下先看一個基本例子。它的好處是快，因為直接用 memory address 存取資料。",
+    "programmer 自己也感覺得出來你在用哪一種：用 pointer 就是 shared memory；call 一個 send、receive 或 set up connection 的 function，就是 message passing。",
+    "message passing 反過來：用 send 和 receive，必須透過 [[system call]]，又要 copy，所以通常比較慢。",
+    "但如果資料很小，或你不想碰 synchronization（不用 locking 那些很複雜的東西），message passing 有時反而更快，效能更好。",
+    "所以要看你做什麼事、哪個 model 比較適合。如果要跨電腦，當然沒有選擇，通常就是 message passing；同一台電腦寫 multi-thread programming，也可以考慮 message passing。",
+    "一般的判斷是：一台電腦還是多台？溝通的人多還是少？人多、很複雜，就用 message passing；人少、資料少、溝通 pattern 很簡單，用 shared memory 可能比較快。",
+    "OS 兩種都提供。shared memory 會在 thread programming 教；message passing 你不會直接 call system call，OS 會一層一層包成 API，讓使用者比較好用。"
+   ]
+  },
+  {
+   "title": "Socket：IP + port",
+   "scene": "proc-8d-socket",
+   "cues": [
+    452.9,
+    470.7,
+    492.3,
+    504.6,
+    516.0,
+    522.3,
+    531.5,
+    555.5,
+    579.6,
+    603.8
+   ],
+   "points": [
+    {
+     "t": 452,
+     "text": "message passing 最常見的是 socket，另一個是 RPC（分散式系統常用）。"
+    },
+    {
+     "t": 504,
+     "text": "socket 用 IP + port identify：IP 是一台電腦，port 就是那台電腦上的一個 process（程式要先 bind 到 port）。"
+    },
+    {
+     "t": 555,
+     "text": "不可能有兩個 process 綁同一個 port。"
+    },
+    {
+     "t": 579,
+     "text": "socket 很 low-level：message 只是一串 bytes、沒有資料型態，sender 和 receiver 要自己說好怎麼解讀。"
+    }
+   ],
+   "trap": "老師口誤成 HTTP 8088；HTTP 的標準 port 是 80，FTP 是 21。畫面上的 IP 是示意。",
+   "explain": [
+    "message passing 最常見、大家都聽過的就是 [[socket]]；另一個是 RPC，可能比較沒接觸過。",
+    "很多比較大型、需要跨電腦的分散式系統，都是用 RPC 來寫程式。就像有 socket programming，也有 RPC programming。",
+    "socket 很基本，如果不熟，非常建議去修網路程式設計，自己寫一下 socket programming 的程式。",
+    "socket 的重點是：它 identify 一個對象的方式是 IP 和 port，純粹網路的角度。",
+    "IP 在電腦世界裡指的就是一台電腦（畫面上的 IP 是示意）。",
+    "port 是什麼？每種服務都有一個 port number，例如 HTTP 是 80、FTP 是 21。",
+    "其實 port number 指的就是 process。任何網路程式用 socket 時，第一件事就是 bind（綁定）到一個 port，這樣 OS 就知道這個 port 來的封包要交給那個 process，再由它處理剩下的事。",
+    "所以 IP + port 在網路世界裡就是 identify「哪一台 host 上的哪一支程式」。絕對不可能有兩個 process 綁到同一個 port，否則就無法分辨。這樣任何地方的兩支程式都能透過 socket 開始溝通。",
+    "socket 的溝通方式比較 low-level：給你的 message 就是一串 bytes（string of bytes），沒有資料型態。寫過 HTTP 的人知道，message body 就是一堆 bytes。",
+    "所以 sender 和 receiver 要自己事先說好，才能解讀裡面的內容；它不會直接傳一個 integer 或 data structure 給你。要 data structure，就用其他方式（例如 RPC）。"
+   ]
+  },
+  {
+   "title": "RPC：Remote Procedure Call",
+   "scene": "proc-8d-rpc",
+   "cues": [
+    636.8,
+    643.2,
+    668.5,
+    683.3,
+    693.8,
+    713.3,
+    740.8,
+    746.4,
+    765.9
+   ],
+   "points": [
+    {
+     "t": 636,
+     "text": "RPC：像 call function 一樣，去 call 另一個 process（甚至另一台電腦）上的 procedure。"
+    },
+    {
+     "t": 693,
+     "text": "RPC 是建在 OS system call 上的一層 API；server register 可被 call 的 function、設定 port。"
+    },
+    {
+     "t": 740,
+     "text": "client 直接 call server 的 function；input、output 的 argument 有 data type，不只是一堆 bytes。"
+    },
+    {
+     "t": 765,
+     "text": "programmer 不用管對方在哪台電腦、哪個 process。"
+    }
+   ],
+   "explain": [
+    "另一個非常重要的是 RPC，全名 remote procedure call（遠端程序呼叫）。",
+    "它跟 socket 最大的不同：socket 很 flexible 但很 low-level，只是一串 bytes。可是大家寫程式都知道，我們最喜歡寫 function call。",
+    "每個程式有自己的 function。如果兩個 process 要溝通時，能直接 call 對方的 function，那是最好的。",
+    "所以叫 remote procedure call：你 call 的這個 procedure（function）是 remote 的，它在另一個 process，甚至另一台電腦上的 process。",
+    "RPC 當然是一層 API：它建在 OS 的 system call 上面，最後 expose 出一個 RPC 的 API 讓使用者寫程式。",
+    "server 指的是提供這些 method 的那支程式：它定義一些 function，透過 RPC library register（登記）哪些 function 可以讓別人 call；跟 socket 類似，也要 set up port 等設定。",
+    "重點是 client 用了 RPC 之後，就可以直接 call 某個 server 上的 function（畫面上的 add(3, 4) 是示意）。",
+    "而且 input 和 output 的 argument 是有 data type 的：你會定義它是 integer 還是 floating point，return 回來也有 type，不是一堆 bytes 而已。",
+    "所以 programmer 不需要在意對方到底在哪台電腦、哪個 process，就像 call 一個普通 function 一樣去溝通。這就是 RPC。"
+   ]
+  },
+  {
+   "title": "Shared memory 與 synchronization",
+   "scene": "proc-8d-shm",
+   "cues": [
+    788.0,
+    809.5,
+    824.7,
+    848.2,
+    862.5,
+    881.0,
+    921.5,
+    940.4,
+    962.0,
+    991.0
+   ],
+   "points": [
+    {
+     "t": 788,
+     "text": "shared memory 沒什麼 API，就是 direct memory access；唯一條件是要有一塊 process 和 OS 都知道可共用的 region。"
+    },
+    {
+     "t": 824,
+     "text": "因為 protection，by default 不存在；要 call system call 請 OS create region，使用的 process 再 call attach。"
+    },
+    {
+     "t": 881,
+     "text": "create 之後 OS 不管內容；放什麼 data structure 由兩邊 process 自己說好。"
+    },
+    {
+     "t": 921,
+     "text": "synchronization：多個 process 同時 write 會出問題，例如 counter++ / counter-- 同時執行，結果不一定回到原值。"
+    },
+    {
+     "t": 991,
+     "text": "因為 counter++ 會變成好幾行 assembly，交錯執行就出錯；要由使用者自己處理。"
+    }
+   ],
+   "trap": "老師口述的錯誤結果數字不清楚；課本的經典例子是 counter = 5 時，一個 ++、一個 -- 交錯執行，可能得到 4 或 6。",
+   "explain": [
+    "[[shared memory]] 主要用在 thread programming。它沒什麼 API，因為就是 direct 的 memory access。",
+    "要用這個方式，唯一的條件是：要能 create 一塊 shared memory region，也就是一塊 process 和 OS 都知道可以共用的 memory 空間。",
+    "這件事 by default 是不會發生的。因為 OS 有 protection 機制，不同 process 不可能憑空有共用的區域。",
+    "所以要溝通的 process 要自己呼叫 [[system call]]，請 OS 幫忙 create 這塊 region（畫面上的 shmget 是 Linux 的例子）。",
+    "要透過這塊 region 溝通的 process，還要再呼叫另一個 system call 叫 attach，跟 OS 說「我要用這塊空間」。一切都在 OS 的管理下。",
+    "region 被 create 出來之後，OS 就什麼事也不幫你了。它就是一堆 bytes，要放什麼 data structure、怎麼用 pointer 存取，是兩邊 process 自己說好的。OS 只確保你存取時不會擋你。",
+    "還有一件非常重要的事：[[synchronization]]（同步）。如果兩個以上的 process 同時想對這塊內容做 write，通常就會產生問題，你不知道結果會是什麼。",
+    "例如把一個 counter 變數放在這塊空間，記錄裡面有幾個 element。一個 process 負責放東西進去，做 counter++；另一個把東西拿出來，做 counter--。",
+    "看起來沒什麼：5 加 1 變 6，再減 1 回到 5。可是兩個人同時執行加加減減時，答案可能不會回到 5（課本的例子會變成 4 或 6）。",
+    "為什麼？因為一行 counter++ 其實會變成好幾行 assembly code（load、add、store）。兩邊的 assembly 混在一起執行、又共用同一個 memory 內容，就會出問題。這很討厭，使用者要自己想辦法處理。"
+   ]
+  },
+  {
+   "title": "Producer–consumer：bounded buffer",
+   "scene": "proc-8d-buffer",
+   "cues": [
+    1012.5,
+    1033.0,
+    1050.5,
+    1062.2,
+    1072.7,
+    1103.4,
+    1125.2,
+    1144.7,
+    1188.1,
+    1205.8,
+    1231.8,
+    1284.3,
+    1334.5,
+    1362.0,
+    1393.3,
+    1416.8
+   ],
+   "points": [
+    {
+     "t": 1012,
+     "text": "標準例子 producer–consumer：兩支程式共用一塊有限大小的 buffer，producer 放、consumer 拿。"
+    },
+    {
+     "t": 1103,
+     "text": "in 指向 producer 下一個要寫的位置，out 指向 consumer 下一個要讀的位置；要判斷 empty（consumer 要等）和 full（producer 不能覆蓋）。"
+    },
+    {
+     "t": 1188,
+     "text": "empty：in == out；full：(in + 1) % BUFFER_SIZE == out（circular buffer）。"
+    },
+    {
+     "t": 1231,
+     "text": "所以永遠空著一格，否則填滿時 in == out 無法分辨空或滿；之後用 locking 可以解決。"
+    },
+    {
+     "t": 1334,
+     "text": "producer：while (((in + 1) % BUFFER_SIZE) == out); consumer：while (in == out); 分號表示 busy waiting。"
+    },
+    {
+     "t": 1393,
+     "text": "shared region 裡要存 buffer、in、out；這個例子沒有 locking，同步章節再回來看。"
+    }
+   ],
+   "trap": "full 的條件是 (in + 1) % BUFFER_SIZE == out，所以最多只能放 BUFFER_SIZE − 1 個。畫面上 BUFFER_SIZE = 5 是示意。",
+   "explain": [
+    "直接看一個例子，感受 shared memory programming 要怎麼處理同步。最標準的例子叫 [[producer-consumer problem]]：一支程式負責產生資料，另一支負責把它 consume（拿掉）。",
+    "有兩支不同的程式，共用一塊 memory 的 buffer（怎麼 create 就跳過，反正有 system call 可以做）。這裡假設 BUFFER_SIZE = 5（示意）。",
+    "producer 的工作是不斷把 content 放進去，顏色深的格子就是有東西的。",
+    "consumer 則是把資料讀出來，一個一個拿掉。",
+    "難就難在 buffer 的大小是有限的。buffer 通常可能很大，但還是有限。",
+    "要管理這塊 buffer，先定義兩個 pointer：in 給 producer，讓它知道要寫到哪個位置；out 給 consumer，讓它知道從哪裡讀。",
+    "空間有限，所以要能判斷兩件事。第一，什麼時候 buffer 是 empty：空的話 consumer 不能再移動 pointer 拿資料，必須等 producer。",
+    "第二，什麼時候是 full：如果 consumer 比較慢、producer 一直丟，buffer 可能滿了。滿了還繼續寫，就會 override（覆蓋）原來的資料，資料就 lost 了。所以兩個人不能各自用無窮迴圈一直寫、一直讀，要有判斷。",
+    "empty 的判斷：資料全部拿光時，out 會一路往後移，最後 in 和 out 會在同一格。所以 in == out 就是 empty。",
+    "full 怎麼判斷？in 一直加，到底之後繞回前面（用 % 取餘數，像 round robin，叫 circular buffer）。當 (in + 1) % BUFFER_SIZE == out，就是滿了。",
+    "為什麼要加 1？模擬一下：如果真的把每一格都寫滿，in 繞回來又會等於 out，這時 in == out 可能是 empty 也可能是 full，兩個人就不知道發生什麼事了。所以要提前停住，永遠留一格空的。",
+    "也就是說，為了讓兩個 process 同步，我們犧牲掉一個儲存空間，這是這個 solution 的缺點。之後學了 locking 的機制，就可以不浪費這一格。",
+    "看程式：producer 一直在寫，但先用 while 判斷是不是滿的。注意 while 後面直接是分號：滿的話它就一直在那邊空轉 loop，這叫 [[busy waiting]]。只有不滿時才寫入、移動 in。",
+    "consumer 一直在 consume，但如果 in == out 就是 empty，不能再讀。同樣注意分號（每年都很多人問）：它會卡在這一行，直到條件不成立才跳出來讀資料、移動 out。",
+    "這塊 shared memory region 裡，除了存 buffer 本身，還要存 in 和 out 這兩個 pointer 的值，這三個都是共用的資料。",
+    "這就是標準的 shared memory programming。這個例子沒有用任何 locking；之後講同步的章節會介紹 locking，重新看這個例子，就能用滿整個 buffer 的空間。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "下列哪一個「不是」課堂提到 process 需要 IPC 的理由？",
+   "opts": [
+    "讓每個 process 的 memory 互相隔離",
+    "information sharing",
+    "平行計算加速",
+    "modularity（如 microkernel）"
+   ],
+   "ans": "讓每個 process 的 memory 互相隔離",
+   "why": "隔離是 protection 的目標；IPC 是為了分享資訊、加速、方便與 modularity。"
+  },
+  {
+   "q": "關於 shared memory 與 message passing，何者正確？",
+   "opts": [
+    "shared memory 較快，但要自己處理 synchronization",
+    "message passing 不需要 system call",
+    "跨電腦溝通通常用 shared memory",
+    "shared memory 由 OS 管理裡面的資料格式"
+   ],
+   "ans": "shared memory 較快，但要自己處理 synchronization",
+   "why": "message passing 要 system call 和 copy；跨電腦用 message passing；shared region 的內容 OS 不管。"
+  },
+  {
+   "q": "socket 用什麼 identify 溝通的對象？",
+   "opts": [
+    "IP 加 port",
+    "PID 加 PPID",
+    "MAC 位址加 PID",
+    "檔名加路徑"
+   ],
+   "ans": "IP 加 port",
+   "why": "IP 代表哪台電腦，port 代表那台電腦上的哪個 process。"
+  },
+  {
+   "q": "RPC 相對 socket 的主要優點是？",
+   "opts": [
+    "像 call function 一樣溝通，參數與回傳值有 data type",
+    "不需要網路",
+    "比 shared memory 更快",
+    "不需要 server 端"
+   ],
+   "ans": "像 call function 一樣溝通，參數與回傳值有 data type",
+   "why": "socket 只傳一串 bytes；RPC 讓 client 直接 call server 的 function。"
+  },
+  {
+   "q": "bounded buffer（BUFFER_SIZE = 5）用 in、out 判斷，最多同時能放幾個 item？",
+   "opts": [
+    "4",
+    "5",
+    "6",
+    "3"
+   ],
+   "ans": "4",
+   "why": "full 的條件是 (in + 1) % 5 == out，永遠空一格，否則 in == out 分不出空或滿。"
+  },
+  {
+   "q": "consumer 的 while (in == out); 代表？",
+   "opts": [
+    "buffer 是空的，就一直空轉等待（busy waiting）",
+    "buffer 滿了",
+    "consumer 結束",
+    "進入 waiting queue 睡覺"
+   ],
+   "ans": "buffer 是空的，就一直空轉等待（busy waiting）",
+   "why": "in == out 是 empty；分號讓它卡在這行一直檢查。"
+  }
+ ]
+}

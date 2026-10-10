@@ -1,0 +1,183 @@
+{
+ "video": "iFRv7y8i7Sw",
+ "label": "清大周志遠 第9B講 Processes Concept",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Socket programming 的流程",
+   "scene": "proc-9b-socket",
+   "cues": [
+    1.2,
+    42.8,
+    61.8,
+    78.8,
+    92.8,
+    99.8,
+    114.8,
+    121.9,
+    140.8,
+    173.8,
+    207.1,
+    229.8,
+    251.6
+   ],
+   "points": [
+    {
+     "t": 1,
+     "text": "socket 用 IP 和 port 指定哪台機器上的哪支程式來溝通。"
+    },
+    {
+     "t": 42,
+     "text": "server：socket → bind(port) → listen → accept；client：socket → connect。accept 後 link 建立，就能 read / write，最後 close（server close 會關掉整個 port）。"
+    },
+    {
+     "t": 140,
+     "text": "single thread 的 server 只能服務一個人；實際上 accept 後 main thread 會 create 一個 thread（要共享資訊所以用 thread）去服務，自己繼續 listen。web server 都是 multi-thread。"
+    },
+    {
+     "t": 251,
+     "text": "socket 傳的是 unstructured string of bytes，parsing 由 programmer 負責。"
+    }
+   ],
+   "explain": [
+    "剛剛講完 send、receive；另一種 message passing 的方式是 [[socket]]：用 IP 和 port 指定是哪台機器上的哪支程式在溝通。網路相關的課會講更多。",
+    "右邊是 socket programming 的整個流程。server 端要先開一個 socket，它是用 socket 方式溝通的一個 entity。",
+    "socket 只是一個 logical 的 channel，所以它必須 bind（綁定）到一個 port，OS 才知道是哪個程式要用這個 port 溝通。",
+    "因為有兩邊，server 要先 listen，就像 web server 要先上線，使用者才能連進來。listen 就是在等有沒有人進來。",
+    "client 端同樣開一個 socket，然後 call connect，要連過去。",
+    "server 這邊會一直等（block），等到有人 connect 過來，就做 accept，兩邊真正的 link 就建立起來了。",
+    "建起來之後，就可以開始 read 或 write，透過這個 channel 溝通。",
+    "最後兩邊都可以 close。client close 只是關掉它的 socket；server close 的話，不只 socket，連整個 port 都關掉，就沒人可以再連進來了。",
+    "補充一下（我們也講過 [[thread]] 了）：web server 都希望很多人同時連進來。如果 server 是 single thread 的程式，一定只能 handle 一個使用者，做不到同時處理很多人。",
+    "實際發生的是：accept 之後，main thread 看到有 connect request 進來，就動態 create 一個新的 thread 去跟這個 client 溝通。為什麼是 thread 不是 process？因為很多資訊它們還需要 share。",
+    "所以下一個人來時，原本的 main thread 不會被擋住：它把 client 交給新 thread，自己又回去 listen，等下一個人。",
+    "所以 web server 都是 multi-thread programming，就是在 connect 時 create 新 thread。網路現在是非常基本的溝通方式，大部分都用 socket，很建議大家要知道怎麼寫。",
+    "socket 溝通的特色就是之前說的 unstructured string of bytes：像標準的 HTTP 例子，body 裡可以是任何東西。parsing（解析）由 programmer 負責，socket 只負責建立 channel。"
+   ]
+  },
+  {
+   "title": "RPC：stub 與 parameter marshalling",
+   "scene": "proc-9b-rpc",
+   "cues": [
+    273.7,
+    286.1,
+    304.4,
+    325.0,
+    345.0,
+    356.5,
+    388.7,
+    413.8,
+    446.9,
+    473.0,
+    498.1,
+    525.7,
+    568.8
+   ],
+   "points": [
+    {
+     "t": 273,
+     "text": "RPC 讓 remote 的 function 用起來像一般 function call；靠 RPC library 的 stub（client 端）與 skeleton（server 端）。"
+    },
+    {
+     "t": 345,
+     "text": "stub / skeleton 負責把有 data type 的 parameter package / unpackage，下面通常還是透過 socket。"
+    },
+    {
+     "t": 388,
+     "text": "pack parameters 叫 parameter marshalling；跨電腦要處理 big / little endian、int 16 bit vs 32 bit 等差異。"
+    },
+    {
+     "t": 525,
+     "text": "pointer 指的是 local memory，傳到別台電腦沒意義；大小確定的 data structure 可以 copy，pointer 大多不支援。"
+    }
+   ],
+   "trap": "畫面上的 add(3, 4)、位址 0x7ffc… 都是示意。",
+   "explain": [
+    "最後介紹 RPC。socket 只有 bytes、沒有 data structure，所以不好用；我們喜歡的是 call function。",
+    "RPC 上次介紹過：透過網路，可以 call 一個 remote 的 function。call 起來還是 function call，但其實在遠端，很貼近大家熟悉的寫程式方式（畫面上的 add(3, 4) 是示意）。",
+    "為什麼做得到？因為提供 RPC 的 library 裡有所謂的 stub：一個小的 daemon（背景小程式），run 在 client 端和 server 端，幫忙處理參數的傳遞。",
+    "仔細看：client 端的叫 stub，remote 端的叫 skeleton。這兩支小程式由 library 負責 implement，使用者不需要自己寫。",
+    "RPC 跟 socket 其實很接近，差別在於 RPC 的參數有 data type。所以才需要這兩支小程式：負責把 parameter 做 package（打包）和 unpackage（拆包）。",
+    "這兩支小程式下面的溝通方式，通常也是透過 socket，這是一種選擇。所以它只是一層包一層，讓 programmer 越來越方便。",
+    "client 端最重要的就是 pack parameters，這個動作叫 parameter marshalling。名字不用特別背，走網路的人未來才比較會用到。",
+    "很重要的觀念：RPC 的特色是可以跨電腦，但跨電腦不簡單，因為各電腦的作業系統不一樣。例如 big endian 和 little endian：一個數字放進 memory 時，是從高位元組還是低位元組開始排？兩台電腦可能設定不同。",
+    "或是 int：大家宣告變數都寫 int，可是 int 在有些電腦是 16 bit，有些是 32 bit。所以只是單純把 memory 的 bytes copy 過去，可能讀出錯誤的值。",
+    "marshalling 在 package / unpackage 時就要處理這些很繁瑣的事，嚴謹地轉換，讓雙方能互相溝通；由它負責，而不是讓使用者自己處理。",
+    "後面就很單純了：caller 就像 blocking 的 function call 一樣，等結果傳回來。",
+    "marshalling 是 RPC 最大的 issue，課本那章也提到很多其他問題，建議看一下。另一個問題：雖然是 function call，要傳 data structure，尤其是傳 pointer，非常麻煩。pointer 指的是 local memory 的位置，傳到另一台電腦根本沒有意義。",
+    "要有意義，就得把 pointer 可能用到的 memory 內容全部 copy 過去。所以如果是完整、大小確定（well-defined）的 data structure，RPC 可以幫你 copy；但 pointer 不知道要 copy 多少，太沒效率，大部分 RPC 就選擇不支援。"
+   ]
+  },
+  {
+   "title": "總結與下次預告",
+   "scene": null,
+   "points": [
+    {
+     "t": 604,
+     "text": "平行程式會用到 shared memory 與 message passing；網路方面用 socket；分散式系統用 RPC。"
+    },
+    {
+     "t": 636,
+     "text": "下次開始上最重要的第八章。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "socket programming 中，server 端的正確順序是？",
+   "opts": [
+    "socket → bind → listen → accept",
+    "socket → connect → listen → bind",
+    "bind → socket → accept → listen",
+    "listen → socket → bind → connect"
+   ],
+   "ans": "socket → bind → listen → accept",
+   "why": "client 端是 socket → connect；accept 之後 link 才建立。"
+  },
+  {
+   "q": "web server accept 一個連線後，通常怎麼服務多個使用者？",
+   "opts": [
+    "create 一個 thread 服務該 client，main thread 繼續 listen",
+    "main thread 自己服務，其他人排隊",
+    "每次都 fork 一個 process 並讓 main 等它",
+    "關掉 port 再重開"
+   ],
+   "ans": "create 一個 thread 服務該 client，main thread 繼續 listen",
+   "why": "要 share 資訊所以用 thread；web server 是 multi-thread programming。"
+  },
+  {
+   "q": "RPC 中，負責把參數打包、處理 endian 等差異的動作叫？",
+   "opts": [
+    "parameter marshalling",
+    "context switch",
+    "copy-on-write",
+    "busy waiting"
+   ],
+   "ans": "parameter marshalling",
+   "why": "client 的 stub、server 的 skeleton 負責 package / unpackage。"
+  },
+  {
+   "q": "為什麼大部分 RPC 不支援傳 pointer？",
+   "opts": [
+    "pointer 指的是 local memory，到別台電腦沒意義，且不知道要 copy 多少",
+    "pointer 太大",
+    "socket 不能傳數字",
+    "因為 RPC 只能傳字串"
+   ],
+   "ans": "pointer 指的是 local memory，到別台電腦沒意義，且不知道要 copy 多少",
+   "why": "大小確定的 data structure 可以 copy；pointer 成本太高。"
+  },
+  {
+   "q": "socket 傳輸的資料型態是？",
+   "opts": [
+    "unstructured string of bytes，由 programmer 自己 parse",
+    "有型態的參數",
+    "只能傳 integer",
+    "物件"
+   ],
+   "ans": "unstructured string of bytes，由 programmer 自己 parse",
+   "why": "socket 只負責建立 channel；要有 data type 就用 RPC。"
+  }
+ ]
+}

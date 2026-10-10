@@ -1,0 +1,271 @@
+{
+ "video": "IFEFVXvjiHY",
+ "label": "Neso Academy：fork() and exec() System Calls",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場：為什麼先學 fork 和 exec",
+   "scene": null,
+   "points": [
+    {
+     "t": 0,
+     "text": "談 threading 的問題之前，要先懂 fork 和 exec 這兩個 system call。"
+    },
+    {
+     "t": 35,
+     "text": "fork、exec 主要是 Linux 系統的用法，Windows 不能完全照做；Linux 是 open source，適合深入學 OS。"
+    }
+   ]
+  },
+  {
+   "title": "fork() 與 exec() 的定義",
+   "scene": "proc-neso-def",
+   "cues": [
+    77.2,
+    83.6,
+    96.7,
+    115.2,
+    121.0,
+    137.5,
+    158.0,
+    181.2,
+    198.7
+   ],
+   "points": [
+    {
+     "t": 77,
+     "text": "fork：建立一個獨立的 duplicate process，跟呼叫它的 process 一模一樣，唯一差別是 PID 不同。"
+    },
+    {
+     "t": 121,
+     "text": "呼叫 fork 的是 parent process，複製出來的是 child process。"
+    },
+    {
+     "t": 137,
+     "text": "exec：把參數指定的 program 取代整個 process（包括所有 thread）。"
+    },
+    {
+     "t": 181,
+     "text": "exec 不建立新 process，所以 PID 不變，只是內容換了。"
+    }
+   ],
+   "trap": "畫面上的 PID 100 / 101 / 200 是示意數字。",
+   "explain": [
+    "先看這兩個 [[system call]] 是什麼、各自做什麼。",
+    "第一個是 [[fork]]：它用來建立一個獨立的、duplicate（複製）的 process。",
+    "假設有一個 process 正在跑，你想要一個跟它一模一樣的 replica（複製品），就呼叫 fork。被建立的新 process 跟呼叫 fork 的那個完全一樣。",
+    "唯一的差別：新建立的 process 會有不同的 process ID（PID）。畫面上的 100、101 只是示意。",
+    "呼叫 fork 的那個叫 [[parent process]]，複製出來的那個叫 child process。child 是 parent 的 exact replica，只有 PID 不同。",
+    "第二個是 exec。呼叫 exec 時，你在參數裡指定的那個 program，會取代（replace）整個 process，包括它所有的 [[thread]]。",
+    "跟 fork 不一樣，呼叫 exec 時一定要傳入一個參數，而這個參數是另一個 program。",
+    "簡單說：exec 是用另一個程式「取代」目前的 process。它不是建立新的 process，而是替換既有的那一個。",
+    "所以 process ID 維持不變（還是 200），但內容已經不同了。這就是 exec 的用途。"
+   ]
+  },
+  {
+   "title": "實機示範：一個 fork()",
+   "scene": "proc-neso-fork1",
+   "cues": [
+    213.8,
+    255.3,
+    316.8,
+    371.5,
+    394.4,
+    433.8,
+    453.7,
+    487.7
+   ],
+   "points": [
+    {
+     "t": 213,
+     "text": "在 Linux（Linux Mint）上寫 C 程式 fex1.c：印出 Hello Neso Academy 和 getpid() 的 PID。"
+    },
+    {
+     "t": 316,
+     "text": "gcc fex1.c 編譯出 a.out，./a.out 執行，印一次（PID 5824）。"
+    },
+    {
+     "t": 394,
+     "text": "加上一個 fork() 再執行：印兩次（PID 5837、5838），parent 一次、child 一次。"
+    },
+    {
+     "t": 487,
+     "text": "兩個 process 的 PID 不同，但內容相同，所以印出同樣的字。"
+    }
+   ],
+   "explain": [
+    "光背定義不夠，接下來用 C 寫程式，在 Linux 上實際執行、分析 output，看 fork 和 exec 怎麼運作。fork / exec 是 Linux 系統的東西，所以要切到 Linux（Linux Mint）。",
+    "第一個檔案 fex1.c 很簡單：main 裡只有一行 printf，印出 Hello Neso Academy，再用 getpid() 這個函式拿到 process ID 印出來。",
+    "在資料夾開 terminal，打 gcc fex1.c。gcc 是 Linux 用來編譯 C 程式的 compiler；編譯完會產生一個執行檔，預設名字叫 a.out。",
+    "執行時打 ./a.out，就看到 output：Hello Neso Academy，PID 是 5824。目前就只印一行。",
+    "回到程式，加上一行 fork() 這個 system call，存檔。",
+    "重新用 gcc 編譯（新的 a.out 取代舊的），再執行 ./a.out。這次印了兩次：一次 PID 5837，一次 PID 5838。",
+    "為什麼印兩次？就是因為 fork：程式建立了自己的 child process，所以這段程式被執行了兩次，一次由 parent 執行、一次由 child 執行。",
+    "注意兩個 PID 不一樣。這就是一開始說的：fork 會建立一個 PID 不同、但內容完全一樣的 process，所以印出一樣的字，只有 PID 不同。"
+   ]
+  },
+  {
+   "title": "三個 fork()：印幾次？",
+   "scene": "proc-neso-fork3",
+   "cues": [
+    507.9,
+    538.4,
+    560.3,
+    590.8,
+    613.2,
+    626.6,
+    652.6,
+    694.2
+   ],
+   "points": [
+    {
+     "t": 507,
+     "text": "改成三個 fork() 再執行：印了 8 次，每次 PID 都不同。"
+    },
+    {
+     "t": 590,
+     "text": "原因：P1 → 第一個 fork 生 P2；第二個 fork 時 P1、P2 各生一個（P3、P4）；第三個 fork 時四個各生一個（P5～P8）。"
+    },
+    {
+     "t": 694,
+     "text": "共 8 = 2³ 個 process，內容相同、PID 不同，所以印 8 次。"
+    }
+   ],
+   "explain": [
+    "再修改程式：多加兩個 fork，總共三個 fork system call，存檔。",
+    "執行前先暫停想一想：有三個 fork，print 會被執行幾次？",
+    "執行結果：印了 1、2、3……8 次！而且 8 次的 process ID 都不一樣。",
+    "為什麼是 8 次？一開始只有第一個 parent process，叫它 P1。它自己只會印一次 Hello 和它的 PID。",
+    "執行第一個 fork 時，P1 建立自己的 child，叫 P2。現在有兩個 process。",
+    "執行第二個 fork 時，系統裡已經有兩個 process，每個都會各自建立一個 child：P1 生 P3，P2 生 P4。現在共 4 個。",
+    "執行最後一個 fork 時，有 4 個 process，每個都再生一個 child：P1 生 P5、P2 生 P6、P4 生 P7、P3 生 P8。",
+    "沒有更多 fork 了，總共有 8 個 process（2³），所以 Hello Neso Academy 印了 8 次。它們都是新的 process，內容相同、PID 不同。"
+   ]
+  },
+  {
+   "title": "實機示範：exec()",
+   "scene": "proc-neso-exec",
+   "cues": [
+    725.3,
+    754.6,
+    782.2,
+    791.4,
+    832.5,
+    840.9,
+    877.7,
+    1008.0,
+    1025.8,
+    1048.8,
+    1077.2,
+    1080.8,
+    1138.7,
+    1182.8
+   ],
+   "points": [
+    {
+     "t": 725,
+     "text": "ex1.c：印自己的 PID，宣告 {\"Hello\", \"Neso\", \"Academy\", NULL}，用 execv 執行 ex2，之後還有 printf(\"Back to ex1.c\")。"
+    },
+    {
+     "t": 840,
+     "text": "ex2.c：印 We are in ex2.c 和自己的 PID。兩個都用 gcc -o 指定輸出檔名，避免都叫 a.out。"
+    },
+    {
+     "t": 1008,
+     "text": "執行 ./ex1：先印 PID of ex1.c = 5962，接著印 We are in ex2.c，PID of ex2.c 也是 5962。"
+    },
+    {
+     "t": 1080,
+     "text": "不是跳過去，而是 process 的內容被 ex2 取代，所以 PID 不變；Back to ex1.c 永遠不會印出來。"
+    },
+    {
+     "t": 1182,
+     "text": "總結：fork 建立 PID 不同、內容相同的 child；exec 取代整個 process，PID 不變。"
+    }
+   ],
+   "explain": [
+    "接著看 exec。另一個資料夾裡有兩個 C 程式：ex1.c 和 ex2.c，用來理解 exec 怎麼運作。",
+    "ex1.c 的 main 有一些參數，裡面先印出 ex1.c 的 process ID，一樣用 getpid() 從系統拿到。",
+    "接著宣告一個 character array（字元陣列），放進 Hello、Neso、Academy，最後一個是 NULL。",
+    "然後呼叫 exec system call，這裡寫的是 execv。exec 有一整個家族的不同版本，這是其中之一。我們把 ex2 程式的執行檔當作參數傳進去。",
+    "execv 之後還有一行 printf，印出「Back to ex1.c」，然後 return 0。",
+    "ex2.c 也有 main，裡面只有兩個 printf：先印「We are in ex2.c」，讓我們知道已經進到 ex2；再用 getpid() 印出 ex2 的 PID。",
+    "兩個都要編譯。注意：gcc 預設輸出檔叫 a.out，兩個程式在同一個資料夾，後編譯的 a.out 會覆蓋前一個。所以用 -o 指定輸出檔名：gcc ex1.c -o ex1、gcc ex2.c -o ex2。",
+    "現在只執行第一個：./ex1。",
+    "它先印出 ex1.c 的 PID，等於 5962。",
+    "接著它呼叫了 execv，傳入 ex2，結果印出「We are in ex2.c」！這行是 ex2.c 裡面的內容。",
+    "然後印出 ex2.c 的 PID，是多少？還是 5962。",
+    "所以其實不是「跳」到另一個程式。真正發生的是：呼叫 exec 時，第一個 process 的內容被第二個程式取代了。因為沒有建立新的 process，PID 維持不變，只是內容換掉了。",
+    "再看 ex1.c，還有一行 Back to ex1.c 沒有印出來。為什麼？因為進到 ex2 之後，沒有任何東西讓它回到第一個程式，原本的內容已經被換掉，控制權永遠回不來了。",
+    "總結：fork 會建立一個獨立的 duplicate child process，PID 不同但內容相同；exec 會取代整個 process，PID 維持不變但內容換掉。"
+   ]
+  },
+  {
+   "title": "結尾",
+   "scene": null,
+   "points": [
+    {
+     "t": 1201,
+     "text": "理解 fork 和 exec 後，下一講進入 threading 會遇到的問題。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "fork() 建立的 child process 和 parent 的差別是？",
+   "opts": [
+    "PID 不同，內容相同",
+    "PID 相同，內容不同",
+    "兩者完全相同，包括 PID",
+    "child 沒有程式碼"
+   ],
+   "ans": "PID 不同，內容相同",
+   "why": "fork 建立 exact replica，唯一差別是 process ID。"
+  },
+  {
+   "q": "exec() 執行成功後，process 的 PID 會？",
+   "opts": [
+    "維持不變",
+    "變成新的 PID",
+    "變成 0",
+    "變成 parent 的 PID"
+   ],
+   "ans": "維持不變",
+   "why": "exec 不建立新 process，只是用新程式取代內容。"
+  },
+  {
+   "q": "程式裡連續三個 fork() 後接一個 printf，總共會印幾次？",
+   "opts": [
+    "8",
+    "3",
+    "4",
+    "6"
+   ],
+   "ans": "8",
+   "why": "每個 fork 讓 process 數加倍：2³ = 8。"
+  },
+  {
+   "q": "ex1.c 中 execv(\"./ex2\", args); 之後的 printf(\"Back to ex1.c\") 為什麼沒有印出來？",
+   "opts": [
+    "process 的內容已被 ex2 取代，不會回到 ex1 的程式碼",
+    "printf 寫錯了",
+    "ex2 把它 kill 掉了",
+    "因為 PID 不同"
+   ],
+   "ans": "process 的內容已被 ex2 取代，不會回到 ex1 的程式碼",
+   "why": "exec 成功後不會 return 回原本的程式。"
+  },
+  {
+   "q": "為什麼示範時要用 gcc ex1.c -o ex1？",
+   "opts": [
+    "避免兩個程式的輸出檔都叫 a.out 而互相覆蓋",
+    "讓程式跑得更快",
+    "-o 是 fork 需要的參數",
+    "為了改變 PID"
+   ],
+   "ans": "避免兩個程式的輸出檔都叫 a.out 而互相覆蓋",
+   "why": "gcc 預設輸出 a.out；-o 指定檔名。"
+  }
+ ]
+}

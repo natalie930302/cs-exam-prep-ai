@@ -1,0 +1,510 @@
+{
+ "video": "qbUTlZ05VYk",
+ "label": "清大周志遠 第6A講 OS Structure/Processes Concept",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "OS 架構：simple 與 layered",
+   "scene": "proc-6a-struct",
+   "cues": [
+    1.2,
+    3.3,
+    5.7,
+    41.8,
+    55.8,
+    67.8,
+    75.8
+   ],
+   "points": [
+    {
+     "t": 1,
+     "text": "OS 有好幾種架構，要知道各自的定義與優缺點。"
+    },
+    {
+     "t": 3,
+     "text": "simple：developer 很自由，但沒有區分、沒有規則 → 容易有 bug、被 hacker 侵入、難 maintain。"
+    },
+    {
+     "t": 55,
+     "text": "layered：把 component 從最底層到最上層分層，每層只能往下 call，不能往上。"
+    },
+    {
+     "t": 75,
+     "text": "好處：修改只影響上面的層，debug 可以一層一層來。"
+    }
+   ],
+   "explain": [
+    "上一講介紹了好幾種作業系統的架構（architecture），也就是 OS 內部的程式要怎麼組織。每一種都要知道它的定義、好處和壞處。",
+    "第一種是 simple：很簡單，開發的人（developer）有很大的自由，想怎麼建構 OS 內部都可以。",
+    "缺點是：裡面沒有任何區分、沒有任何規則，各部分想怎麼互相呼叫都行（紅線亂連）。",
+    "太自由的結果就是容易有 bug、容易被 hacker 入侵，因為設計不夠嚴謹，之後也很難維護（maintenance）。",
+    "第二種是 layered（分層）：把 OS 的元件（component）切成一層一層，從最底層的 hardware 到最上層的使用者介面。",
+    "規定是：每一層裡的程式只能往「下面」的層呼叫，不能往上呼叫。",
+    "好處是出問題時你知道會影響誰：改了某一層的函式，只會影響它上面的層，不會影響下面的層；debug 時也可以一層一層往上檢查。"
+   ]
+  },
+  {
+   "title": "Microkernel 與 modular OS",
+   "scene": "proc-6a-micro",
+   "cues": [
+    88.8,
+    100.5,
+    116.1,
+    133.8,
+    148.8,
+    158.3,
+    179.8,
+    208.9
+   ],
+   "points": [
+    {
+     "t": 88,
+     "text": "microkernel：只把最核心、必要的部分當 kernel，其他變成可替換的 module（configurable）。"
+    },
+    {
+     "t": 116,
+     "text": "關鍵：這些 module run 在 user space，所以要透過 message passing 跟 kernel 溝通。"
+    },
+    {
+     "t": 148,
+     "text": "缺點：message passing 的 system call、interrupt 很慢；優點：很 flexible，kernel 小所以比較 reliable。"
+    },
+    {
+     "t": 179,
+     "text": "modular OS（現代 OS 主流）：也是 module 可 plug in，但全部在 kernel space，所以比較有效率。"
+    },
+    {
+     "t": 208,
+     "text": "可以自己試 insert kernel module 來修改 OS。"
+    }
+   ],
+   "trap": "microkernel 與 modular 的差別：microkernel 的 module 在 user space（靠 message passing），modular OS 的 module 在 kernel space。",
+   "explain": [
+    "Microkernel 一定要知道，它的概念很特別：只把 OS 最核心、一定需要的部分定義成 [[kernel]]，盡量讓 kernel 非常非常小。",
+    "其他功能（file system、driver、記憶體管理）盡量變成一堆可以替換的 module。這樣 OS 就是 configurable（可以依需要組裝）。",
+    "非常重要：這些 module 是 run 在 user space，不是 kernel space。所以一定要分清楚 kernel space（有最高權限的區域）和 user space（一般程式的區域）。",
+    "因為 module 在 user space，它們要互相溝通、要用 kernel 的服務，就必須透過 [[message passing]]（傳訊息），由 kernel 提供的通訊服務幫忙轉送。",
+    "缺點是效能比較慢：每次傳訊息都要呼叫 [[system call]]、產生 [[interrupt]]，這些都很慢。",
+    "優點是非常 modular、很 flexible；而且 kernel 很小，出錯的機會自然就小，所以可能更 reliable（可靠）。名字 micro 就是 kernel 非常小的意思。",
+    "現代 OS 主要用的是 modular OS：一樣有 modularity，可以把 module plug in（插上去），但 module 全部放在 kernel space，所以運作比較有效率。",
+    "有興趣可以自己玩玩看：在 Linux 用 insert kernel module（insmod）插入一個 module，就能修改 OS，正因為它是 module 化的。"
+   ]
+  },
+  {
+   "title": "Virtual machine 的歷史",
+   "scene": "proc-6a-vmhist",
+   "cues": [
+    226.5,
+    253.5,
+    274.8,
+    291.8,
+    305.0
+   ],
+   "points": [
+    {
+     "t": 226,
+     "text": "最後講 virtual machine（VM），大家應該都聽過。"
+    },
+    {
+     "t": 253,
+     "text": "VM 不是新技術，四五十年前就有：一台 hardware 有很多使用者，何不每人有自己的 OS？"
+    },
+    {
+     "t": 291,
+     "text": "當時就做出來、也 work，isolation 很好。"
+    },
+    {
+     "t": 305,
+     "text": "但當時硬體太弱（CPU 不快、memory 不大），每人多跑一個 OS 負擔太重，所以不 popular。"
+    }
+   ],
+   "explain": [
+    "這一講最後要講 [[virtual machine]]（虛擬機器，簡稱 VM）。相信大家都聽過，也非常 popular。",
+    "VM 其實不是這一兩年才出來的，它四五十年前就有了，不要太驚訝。",
+    "早在大家思考「OS 該怎麼設計」時，就有人提出：一台硬體電腦有很多使用者，為什麼只能有一個 OS？為什麼不讓每個人都有自己的 OS？也許這樣共用硬體會更好。",
+    "所以很早就有人做出 VM，而且真的 work。因為每個人有自己的 OS，isolation（隔離）非常好，完全不用怕別的使用者影響你。",
+    "那為什麼當時沒有流行？因為計算效能太差：當時 CPU 不快、memory 不大，每個人除了跑自己的應用程式，還要多跑一整個 OS，負擔太重。"
+   ]
+  },
+  {
+   "title": "VM 的概念與困難",
+   "scene": "proc-6a-vmconcept",
+   "cues": [
+    334.6,
+    348.8,
+    361.8,
+    387.6,
+    408.3,
+    424.8
+   ],
+   "points": [
+    {
+     "t": 334,
+     "text": "VM 把下面的東西整個抽象化；即使下面已經有 OS 或軟體，也把它抽象成就像 hardware。"
+    },
+    {
+     "t": 361,
+     "text": "灌了一個 OS，上面還能透過 VM 再灌一個 OS。"
+    },
+    {
+     "t": 387,
+     "text": "Nachos 用 instruction translation 來 virtualize，但真實電腦還有 I/O 等等。"
+    },
+    {
+     "t": 424,
+     "text": "難在 OS 設計時對 hardware 有 assumption，其中很麻煩的是 critical instruction。"
+    }
+   ],
+   "explain": [
+    "VM 是什麼？它的概念是把下面的東西整個抽象化（abstraction）。OS 本來就會把硬體抽象化給程式用，VM 的定義更 general 一點。",
+    "就算下面已經有一個作業系統、或已經有別的軟體在跑，VM 仍然有能力把它們抽象成「就像一台 hardware」一樣。",
+    "所以你灌了一個 OS 之後，上面還能透過 VM 技術再灌一個 OS，對上面那個 OS 來說，下面就像不存在、像直接裝在實體機器上。抽象又多了一層。",
+    "課程用的 Nachos 就是一種把電腦系統 virtualize 的方式：透過 translation（翻譯）去轉換指令。",
+    "但 Nachos 很單純，只負責轉換 instruction。真實電腦運作不只是 CPU 指令，還要做 I/O 等等很多動作。",
+    "虛擬化難在哪？如果只是一對一翻譯指令好像不難，但 OS 在設計時，就對 hardware 有一些假設（assumption）。其中一個很大的麻煩叫 critical instruction，等一下會看到。"
+   ]
+  },
+  {
+   "title": "VM 怎麼執行 privileged instruction",
+   "scene": "proc-6a-trap",
+   "cues": [
+    455.3,
+    481.0,
+    503.5,
+    526.8,
+    552.0,
+    584.6,
+    612.8,
+    632.7,
+    689.8,
+    703.8,
+    727.7,
+    735.1,
+    761.8,
+    772.8
+   ],
+   "points": [
+    {
+     "t": 455,
+     "text": "VM：hardware 上有原本的 OS 或管理軟體，上面 create 很多 VM，各有自己的 OS，互不知道彼此。"
+    },
+    {
+     "t": 503,
+     "text": "難點：guest kernel 以為自己在 kernel space，實際上 run 在 user space，執行 privileged instruction 會 fail。"
+    },
+    {
+     "t": 584,
+     "text": "解法：非法指令丟出 exception（interrupt），下面的 OS 接到後知道是 VM，在 kernel space 幫它再執行一次。"
+    },
+    {
+     "t": 703,
+     "text": "所以 VM 比較慢：privileged instruction 要做兩次；一般指令直接 go through。"
+    },
+    {
+     "t": 735,
+     "text": "hardware support：CPU 多一個 VM mode 的 bit，自己判斷指令來自 VM，直接放行，比較快。"
+    }
+   ],
+   "explain": [
+    "先看 VM 的樣子：最下面是 hardware，上面是原本的 OS 或管理軟體（host / VM 管理層），再上面可以 create 很多 VM，每個 VM 都有自己的 OS（guest kernel）。",
+    "虛擬化指的不是去改 kernel，而是夾一層 layer：讓一台電腦同時 run 很多 VM，它們完全不知道彼此存在，每一個都以為整台 hardware 只屬於自己。",
+    "難點又回到最基本的 user space 和 kernel space。kernel 運作時假設自己在 kernel space（kernel mode），所以它才可以執行 privileged instruction（特權指令，只有 kernel 能執行的指令）。",
+    "可是在 VM 裡，這個 guest kernel 對最底層的系統而言，其實是 run 在 user space 的。我們必須騙它，讓它以為自己在 kernel space。",
+    "問題來了：當它執行 privileged instruction 時，因為實際上在 user space，這個指令就沒辦法執行，會 fail。所以 VM 不是單純翻譯指令這麼簡單。",
+    "第一代 VM 的解法很快就想到了：還記得 [[interrupt]] 嗎？privileged instruction 在 user space 執行是非法的，電腦會丟出一個 signal，說這是 exception（非法指令）。",
+    "這個 interrupt 會先回到下面那個 OS（VM 管理層），由它接到。",
+    "它一接到就知道：原來上面那位想執行 privileged instruction，但它在 user space 不能執行。好吧，我知道它是 VM，就在 kernel space 幫它再執行一次，這次就會過了。",
+    "所以 VM 能運作的重要概念是：攔截 interrupt，再幫它執行一次。看起來是 user space 做了 kernel space 的事，實際上是下面的人代勞。",
+    "這樣當然比較慢：system call 本來就慢，原本做一次，現在變成下去、上來、再下去，做兩次。這就是 VM 效能比較差的原因之一。",
+    "不過只有 privileged instruction 會做兩次；一般指令不需要特權，直接 go through，沒有問題。",
+    "所以你買 CPU 時會看到「支援 virtualization technology」，意思就是 hardware support（硬體幫忙）。",
+    "這種 CPU 裡多加了一個 bit：除了 kernel mode、user mode，還有 VM mode（virtualize mode）。",
+    "看到 privileged instruction 時，CPU 自己就知道它不是來自 user、也不是真正的 kernel，而是來自 VM，就直接讓它 go through，不用再繞上來一趟，所以比較快。"
+   ]
+  },
+  {
+   "title": "Critical instruction（補充）",
+   "scene": "proc-6a-critical",
+   "cues": [
+    811.8,
+    825.8,
+    833.9,
+    843.1,
+    861.0,
+    883.8,
+    910.8,
+    926.8,
+    965.8
+   ],
+   "points": [
+    {
+     "t": 811,
+     "text": "critical instruction 很討厭；這是補充，課本不一定有，考試不考。"
+    },
+    {
+     "t": 833,
+     "text": "它不是 privileged instruction，user space 也能執行，但在 user / kernel space 執行結果不同（例：A+B vs A+2B）。"
+    },
+    {
+     "t": 883,
+     "text": "沒有 hardware support 時它不會被 catch、不會丟 interrupt，guest kernel 得到錯的結果。"
+    },
+    {
+     "t": 926,
+     "text": "必須用別的方式找出 critical instruction，所以 software 虛擬化不簡單。"
+    }
+   ],
+   "explain": [
+    "hardware support 看起來問題都解決了，但還有一個非常討厭的東西：critical instruction（關鍵指令）。",
+    "老師說這是補充，課本不一定有、考試也不會考，但知道比較好。",
+    "critical instruction 不是 privileged instruction，所以在 user space 也可以執行，不會被擋下來。",
+    "奇妙的是：同一個指令在 user space 執行的結果，跟在 kernel space 執行的結果會不一樣。為什麼？要問 x86 指令的設計者，總之有這個需求。",
+    "老師舉例：有一個指令叫「假」，在 user space 執行是 A + B，在 kernel space 執行卻變成 A + 2B。行為不一樣，就叫 critical instruction。",
+    "沒有 hardware support 時就麻煩了：它不會被下面的 hardware 發現，也不會丟 interrupt，因為它在 user space 本來就能執行。",
+    "所以 guest kernel 在 user space 執行它，硬體直接幫它做了，得到 A + B。但 guest kernel 以為自己在 kernel space，本來應該得到 A + 2B，結果就錯了。",
+    "所以你必須另外想辦法知道哪些指令是 critical instruction，不能再靠「是不是 privileged」來判斷，變得很囉嗦。",
+    "結論：純用 software 做虛擬化沒那麼簡單，其中一大議題就是要處理 critical instruction。"
+   ]
+  },
+  {
+   "title": "為什麼 VM 這麼 popular",
+   "scene": "proc-6a-vmwhy",
+   "cues": [
+    975.7,
+    987.8,
+    1029.2,
+    1065.2,
+    1102.6,
+    1142.8,
+    1172.6,
+    1195.8,
+    1227.8,
+    1281.0,
+    1316.2,
+    1360.8,
+    1403.8,
+    1430.6,
+    1457.2,
+    1484.8
+   ],
+   "points": [
+    {
+     "t": 975,
+     "text": "VM 的好處一：protection——isolation 完整，hack 一個 OS 碰不到另一個。"
+    },
+    {
+     "t": 1029,
+     "text": "二：compatibility——legacy software 需要特定舊環境，有 VM 不用一個環境買一台電腦。"
+    },
+    {
+     "t": 1142,
+     "text": "三：research 與開發——kernel 有 bug 只是一個 VM crash；honey farm 用假 VM 收集攻擊 pattern。"
+    },
+    {
+     "t": 1316,
+     "text": "四：cloud computing——用 SSH 連線就能用遠端資源；VM 把大機器切成很多小 VM 提高使用率。"
+    },
+    {
+     "t": 1457,
+     "text": "雲端不一定要 VM，container 更 lightweight；重點是一定程度的 isolation。"
+    }
+   ],
+   "explain": [
+    "VM 為什麼這麼 popular？因為它帶來很多好處，老師講了幾個原因。",
+    "第一個是 protection（保護）：這也是最早提出 VM 的原因。不同使用者共用一台電腦卻互不影響，而且隔離更徹底：就算有人 hack 了一個 OS，也碰不到另一個 OS，因為那是完全不同的系統。",
+    "第二個是 compatibility（相容性），現在大家裝 VM 大多是為了這個。有些 legacy software（老軟體）一定要在特定環境才能跑，例如一定要很舊版的 Windows。",
+    "時代變了，你電腦上還有很多其他軟體，每個要的環境都不同。沒有 VM 的話，只好一個環境買一台電腦、每台只跑一個應用程式，非常浪費錢又沒效率。業界很常遇到。",
+    "有了 VM 就不一樣：買一台電腦、灌最常用的 OS，哪個程式要別的環境，就開個 VM 去執行它。像作業要在 Linux 跑，你只有 Mac 或 Windows，開個 VM 就好。",
+    "第三個是學術界常用的 research 和開發。做 kernel 開發時，kernel 只要有 bug 就會 crash，而開發時一定常寫出有 bug 的程式。",
+    "如果沒有 VM，直接在實體機器上改 OS：每改一版就要重裝，有 bug 整台電腦就 crash、關機、重開機，非常痛苦，硬體可能都會壞掉。",
+    "有了 VM，你改的是 VM 裡的 OS。它再怎麼 crash，也只是一個 program 而已，不會整個系統損毀，甚至還能把 state 存到下面真正的機器上。",
+    "還有一個好玩的應用叫 honey farm（蜂巢），做 security 的人最喜歡。要反擊，先要知道別人怎麼 attack；但拿實體機器讓人攻擊，機器會被破壞、資料全沒了，根本收集不到。",
+    "用 VM 就可以開一台假的機器讓人攻擊，就像用蜜吸引蜜蜂進來，把攻擊的 pattern 和 behavior 記錄下來做研究。",
+    "第四個，也是現在大家都知道的：cloud computing（雲端計算）。Google、Microsoft，最大的是 Amazon，有很多 data center（資料中心）和電腦資源。",
+    "你只要能連線（例如用 SSH 連進去，像大家連系上的 server 寫作業），用手機或任何 device 都無所謂，能下指令就好，其他事情都在遠端機器做，不用自己買硬體，用租的就好。",
+    "雲端的重點是 resource sharing（資源共享），而且要讓資源使用率高。如果一人分一台實體機器，每個人用的量很少，會有很多空著的 CPU cycle，provider 很難賺錢。",
+    "VM 就是一種資源管理方式：把很大的實體機器切成很多小的 virtual machine。使用者根本不知道，反正他登入的 server 有 OS 在跑就好。",
+    "不過雲端不一定要靠 VM，共享有很多方式。現在更多人用 container（容器），比 VM 更 lightweight，也能達到很多人共用一台電腦的目的。",
+    "重點是要有一定程度的 isolation：大家共用電腦，卻要讓你覺得那是你自己擁有的電腦、沒有人跟你共用，實際上是共用的。"
+   ]
+  },
+  {
+   "title": "Full virtualization vs Para-virtualization",
+   "scene": "proc-6a-fullpara",
+   "cues": [
+    1503.4,
+    1517.8,
+    1532.8,
+    1547.8,
+    1573.5,
+    1595.8,
+    1643.1,
+    1666.0,
+    1687.1,
+    1730.1,
+    1752.4,
+    1789.8,
+    1811.8,
+    1845.2
+   ],
+   "points": [
+    {
+     "t": 1503,
+     "text": "full virtualization：下面是 host OS，上面在 user space 的是 guest OS；guest OS 程式碼完全不用改。"
+    },
+    {
+     "t": 1573,
+     "text": "比較難，要靠 virtualization layer、kernel module 或 hardware support；VMware 早期不靠 hardware 就做到。"
+    },
+    {
+     "t": 1643,
+     "text": "para-virtualization：多一個知道所有 VM 的 master（global zone），guest OS 必須被修改。"
+    },
+    {
+     "t": 1730,
+     "text": "效能不一定比較差：master 能做 global 最佳化（例：大家各自 sequential，合起來變 random）；缺點是多一層 overhead。"
+    },
+    {
+     "t": 1845,
+     "text": "現在有 hardware support，full 比較熱門；Xen（para）、VMware、KVM（open source full）。"
+    }
+   ],
+   "explain": [
+    "VM 用的虛擬化技術可以分成幾種類型，看兩個主要的。",
+    "第一種叫 full virtualization（完全虛擬化）。",
+    "在虛擬化的世界裡，下面原本的 OS 叫 host OS（主人）；上面其實 run 在 user space、暫時來作客的那個 OS 叫 guest OS（客人）。",
+    "full virtualization 的定義是：guest OS 的程式碼完全不用動。一個能裝在實體 PC 上的 OS，就能直接拿來裝在這個環境裡跑。它渾然不知自己在虛擬世界，所以叫 full。",
+    "這當然比較難做，要處理剛剛那些 privileged / critical instruction 的問題。因為上面完全不改，只能靠下面那層 virtualization layer、kernel module，或 hardware support。",
+    "VMware 為什麼是 VM 最大的公司？因為早期 CPU 沒有 hardware support 時，它就做到了 full virtualization。所以用 VMware 可以拿任何 OS 的光碟映像檔直接裝起來跑。",
+    "另一種叫 para-virtualization（半虛擬化），para 有「一半」或「並行」的意思。",
+    "結構跟剛剛類似：上面是 guest OS，下面是 host OS。差別是左邊多了一個 global zone，叫 master 或 manager，它是一個特殊的程式，知道所有 VM 的存在。",
+    "重點是：guest OS 必須被修改，不是隨便拿一個就能裝。只有一半虛擬化，所以比較有限制。但因為可以「開後門」，比較容易實現虛擬化（hardware support 其實也是一種後門）。",
+    "效能呢？多了一個 master，不一定比較慢。有些研究發現它的效能反而比較好。",
+    "為什麼？每個 OS 的管理策略都假設「這個硬體只有我在用」。例如讀 disk 時 sequential（循序）讀比較快，file system 可能故意把使用者的讀取順序重排成 sequential。",
+    "但在 VM 裡大家共用同一顆 disk：你是 sequential、我也是 sequential，加起來交錯在一起就變成 random 了，最佳化老半天白做。full virtualization 沒有下面的管理者，一定會這樣。",
+    "para 有 master 這個管理者，它拿到大家的存取 pattern 後，可以再做一次更 global 的最佳化。缺點是要跟 master 溝通，多一層，會有一些 overhead。",
+    "所以沒有哪一個一定比較好。現在有 hardware support，比較熱門的是 full virtualization。想試的話：para 最有名的是 Xen；full 有很貴的 VMware，open source 的是 KVM。"
+   ]
+  },
+  {
+   "title": "Java virtual machine",
+   "scene": "proc-6a-jvm",
+   "cues": [
+    1897.8,
+    1923.6,
+    1942.2,
+    1958.6,
+    1971.8,
+    2014.8,
+    2026.0,
+    2066.8
+   ],
+   "points": [
+    {
+     "t": 1897,
+     "text": "Java 以 virtual machine 的概念設計（JVM）；它的虛擬化只管執行 instruction，跟 Nachos 很接近。"
+    },
+    {
+     "t": 1942,
+     "text": "Java compile 完是 bytecode（不是 x86、MIPS），到不同電腦再 translate 成 host 的指令。"
+    },
+    {
+     "t": 1971,
+     "text": "程式只用 VM 裡的 memory，isolation 好，所以很 secure。"
+    },
+    {
+     "t": 2014,
+     "text": "逐行 translation 很慢；JIT compile 把翻過的記下來 reuse，但還是比 C 慢一點。"
+    }
+   ],
+   "explain": [
+    "最後是 Java。Java 是很特殊的程式語言，它的執行方式是以 virtual machine 的概念設計的，所以叫 Java virtual machine（JVM）。",
+    "JVM 的虛擬化相對單純，因為它只管「執行 instruction」這件事，其他都不管，跟課程的 Nachos 非常接近，重點就是 code translation。",
+    "Java 程式 compile 完會變成自己的 binary code，叫 bytecode。它不是 x86、不是 MIPS，不屬於任何一種實體硬體，是 Java machine 自己的指令。",
+    "要在不同的電腦上執行時，JVM 就把 bytecode translate 成下面那台 host 電腦的指令。",
+    "因為 JVM 像一個 OS，對程式使用的 memory 有很好的 isolation：程式再怎麼寫，也只會用到 VM 裡面的 memory，不太可能影響其他人。所以很 secure，很多做網路的人喜歡用，你再怎麼寫 bug、怎麼 attack，都不太會影響下面的 web server。",
+    "translation 是一定要的，但它很慢，因為是一個 instruction 一個 instruction 在翻。",
+    "Java 最厲害的是 just-in-time（JIT）compile：執行時把翻譯過的 instruction 或 function 記下來，像查字典一樣，遇到同樣的就直接拿來用，不用再翻，省下很多時間。",
+    "不過再怎麼最佳化，效能還是會比 C 這類直接編成機器碼的語言差一點。"
+   ]
+  },
+  {
+   "title": "本章回顧",
+   "scene": null,
+   "points": [
+    {
+     "t": 2079,
+     "text": "回去複習：microkernel 的 module 在 user space、modular OS 的 module 在 kernel space；VM 的好處與用途；para-virtualization 當補充。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Microkernel 和 modular OS 最主要的差別是？",
+   "opts": [
+    "microkernel 的 module 在 user space，modular OS 的 module 在 kernel space",
+    "microkernel 沒有 module",
+    "modular OS 的 kernel 比較小",
+    "兩者都靠 message passing 溝通"
+   ],
+   "ans": "microkernel 的 module 在 user space，modular OS 的 module 在 kernel space",
+   "why": "microkernel 的 module 在 user space，要靠 message passing（較慢）；modular OS 的 module 在 kernel space，較有效率。"
+  },
+  {
+   "q": "Layered 架構的規則是？",
+   "opts": [
+    "每一層只能呼叫它下面的層",
+    "每一層只能呼叫它上面的層",
+    "各層可以任意互相呼叫",
+    "只有最上層能呼叫 hardware"
+   ],
+   "ans": "每一層只能呼叫它下面的層",
+   "why": "只往下 call，所以修改只影響上層、可以一層一層 debug。"
+  },
+  {
+   "q": "沒有 hardware support 時，guest kernel 執行 privileged instruction 會怎樣？",
+   "opts": [
+    "在 user space 失敗並丟出 exception，由下層的 VM 管理層攔截後代為執行",
+    "直接成功執行",
+    "整台電腦 crash",
+    "被忽略，什麼都不做"
+   ],
+   "ans": "在 user space 失敗並丟出 exception，由下層的 VM 管理層攔截後代為執行",
+   "why": "guest kernel 實際 run 在 user space；靠 interrupt 攔截再執行一次，所以比較慢。"
+  },
+  {
+   "q": "下列何者「不是」課堂提到的 VM 好處？",
+   "opts": [
+    "讓程式執行得比實體機器更快",
+    "protection（isolation）",
+    "compatibility（跑 legacy software）",
+    "cloud computing 的資源共享"
+   ],
+   "ans": "讓程式執行得比實體機器更快",
+   "why": "VM 通常比較慢（privileged instruction 要做兩次）；好處是 protection、compatibility、研究開發、cloud。"
+  },
+  {
+   "q": "Para-virtualization 的特點是？",
+   "opts": [
+    "guest OS 必須被修改",
+    "guest OS 完全不用改",
+    "不需要 host OS",
+    "一定比 full virtualization 慢"
+   ],
+   "ans": "guest OS 必須被修改",
+   "why": "para 有知道所有 VM 的 master，guest 要修改；效能不一定比較差。"
+  },
+  {
+   "q": "Java 的 just-in-time compile 主要在做什麼？",
+   "opts": [
+    "把翻譯過的指令記下來重複使用",
+    "把 Java 直接編成 x86",
+    "讓 bytecode 不需要 translation",
+    "讓 Java 比 C 快"
+   ],
+   "ans": "把翻譯過的指令記下來重複使用",
+   "why": "JIT 記下翻過的 instruction / function，再遇到就 reuse，省下翻譯時間。"
+  }
+ ]
+}

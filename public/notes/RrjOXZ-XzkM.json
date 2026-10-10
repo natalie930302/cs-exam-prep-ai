@@ -1,0 +1,306 @@
+{
+ "video": "RrjOXZ-XzkM",
+ "label": "清大周志遠 第8C講 Processes Concept",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "為什麼 fork 和 execlp 分開",
+   "scene": "proc-8c-why",
+   "cues": [
+    15.3,
+    26.8,
+    37.9,
+    44.2,
+    62.4,
+    76.2,
+    96.2,
+    110.9,
+    145.0,
+    184.1,
+    199.5,
+    237.8,
+    257.0
+   ],
+   "points": [
+    {
+     "t": 15,
+     "text": "每個 OS 可以 define 自己的 system call；Linux 的決定是 fork 負責 create process，execlp 負責 reset 執行內容。"
+    },
+    {
+     "t": 76,
+     "text": "想 create 新 process 去跑另一個 binary，就要先 call fork 再 call execlp。"
+    },
+    {
+     "t": 96,
+     "text": "合理：create（allocate memory、建立 PCB 等 metadata、initialize）和 reset 內容（變數、PC、code）是不同的事。"
+    },
+    {
+     "t": 184,
+     "text": "那只是 Linux 的決定；creation 的考量是執行順序、資源歸屬、memory space 的起始狀態，新版也可能有新的 system call。"
+    },
+    {
+     "t": 257,
+     "text": "kernel 很複雜，system call 越少越好，由 programmer 自己組合這些 service。"
+    }
+   ],
+   "explain": [
+    "下課很多同學來問：system call 為什麼這樣設計？為什麼要先 [[fork]]，再 execlp？",
+    "先回到根本：每個 OS 都可以 define（定義）自己的 [[system call]]。這裡介紹的是 Linux 的決定。",
+    "Linux 有一個 system call 叫 fork，負責 process creation（建立 process）。",
+    "另外再提供一個 system call 叫 execlp，用來 replace（替換）一個程式目前 memory 裡的內容，尤其是執行的程式碼，也就是把一個 program reset。",
+    "所以 Linux 決定把這兩件事切開，用兩個不同的 system call 來做。",
+    "programmer 看了這些 system call 後，依自己的需求使用：如果你的目的是 create 一個新 process、叫它 run 另一個 binary code，就必須先 call fork，再 call execlp。",
+    "這其實很合理：create 一個 process，跟 reset 一個 process 裡的 memory 內容（binary code 和 state），是完全不同的兩件事。",
+    "create 要做很多事：allocate memory 空間；管理一個 process 永遠需要很多 data structure、metadata，例如一定要幫它 create 一個 [[PCB]]，裡面的值和空間都要 initialize。這些是 fork 在做的。",
+    "至於 create 出來後，裡面該存什麼 variable 狀態、program counter 是多少、code section 放什麼，是另一個問題，由 execlp 去設定。兩個結合起來，才達成 programmer 要做的事。",
+    "之前花工夫討論 creation 的各種可能性，是要大家不要被綁死：這只是 Linux 的決定。",
+    "parent 和 children 的關聯性，最主要的考量有三個：執行順序、已取得的系統資源歸屬，以及最重要的 memory space 起始狀態（複製一份還是清掉重來）。Linux 只是在這些選擇下，用這三個 system call 來實現。",
+    "所以就算是 Linux，比較新的版本也可能 define 新的 system call，支援不同方式的 process creation，沒有人說不行。",
+    "kernel 很複雜，通常不希望 define 太多 system call，否則會造成 maintenance 的困擾。所以 system call 越少越好，像一個一個 module 化的 service，由 programmer 自己想辦法組合，也許要多寫幾行 code，但對 OS 越簡化越好。"
+   ]
+  },
+  {
+   "title": "範例程式：fork + execlp + wait",
+   "scene": "proc-8c-example",
+   "cues": [
+    296.6,
+    310.1,
+    332.8,
+    356.7,
+    373.4,
+    388.4,
+    397.4,
+    408.5,
+    428.9,
+    441.0,
+    475.2,
+    491.8,
+    517.8,
+    551.5,
+    573.7,
+    599.1,
+    661.8,
+    672.4,
+    710.7,
+    753.4
+   ],
+   "points": [
+    {
+     "t": 296,
+     "text": "call fork 後要想像旁邊多了一支一模一樣的 process（雙胞胎），各有自己的 PC；唯一不同是回傳值。"
+    },
+    {
+     "t": 373,
+     "text": "parent 的回傳值是 child 的 PID，走 else；child 的回傳值是 0，進 if。"
+    },
+    {
+     "t": 408,
+     "text": "child print 後 call execlp(\"/bin/ls\")：程式碼被整個覆蓋成 ls，後面的程式它看不到。"
+    },
+    {
+     "t": 491,
+     "text": "parent call wait：進 waiting queue，等 child（同一個 process，只是內容換了）terminate，OS signal 它回 ready queue。"
+    },
+    {
+     "t": 551,
+     "text": "最後一行只有 parent 會執行。output：child、parent 兩行順序不一定（concurrent）；ls 一定在 process end 之前；process end 只有一行。"
+    },
+    {
+     "t": 672,
+     "text": "考試會給這類程式，要能推出 output。"
+    },
+    {
+     "t": 710,
+     "text": "Linux 的 wait 要給 status pointer（記錄 success / fail），回傳等到的 child PID；沒指定時任何一個 child 結束就 break。"
+    }
+   ],
+   "trap": "畫面上的程式是依課堂說明整理的示意版本；重點是 ls 的輸出一定在 parent 的最後一行之前，而 child 和 parent 的第一行順序不一定。",
+   "explain": [
+    "剛剛介紹了三個 system call，現在直接看它們寫成程式長什麼樣子。",
+    "第一行 call fork。其實這是 C library 的 function，它會再去呼叫 OS 的 system call，名字取得一樣叫 fork，作用是 create 一個新的 process。",
+    "很重要：一 call 下去，你腦中就要想像，旁邊又多了一支 process，裡面的程式碼完完全全一樣，像雙胞胎。而且它們各有自己的 program counter，自己指自己的。",
+    "雖然什麼都一樣，但有一個不一樣：return 值。如果你是 parent，a 的值不可能是 0，因為它是 child 的 PID。",
+    "下一行是 if else，parent 和 child 都會一行一行執行。parent 執行到 if (a == 0) 時發現不符合（a 有值），就跳到 else。",
+    "child 剛好反過來：它的 a 是 0，所以進到 if 裡面。",
+    "所以這兩支程式雖然程式碼一樣、同時在跑，但 trace 時它們會走到不同的地方去，各自有 PC、獨立執行。",
+    "child 就去 print 這一行：「我是 child process」（也可以 print 它的 PID）。",
+    "接著，child 去 call execlp；parent 則去 call wait。",
+    "execlp 的目的是把原來的程式碼整個覆蓋掉。child 執行到這一行之後，就整個清掉、改去執行 /bin/ls 這支程式（ls 是 Linux 裡列出資料夾內容的指令）。",
+    "所以 child 現在就去執行 ls，執行完就結束了。它不會再執行後面的程式，因為它已經被換成另一支程式，那些程式碼它全部看不見了。",
+    "parent 在 wait。注意：child 的內容雖然換了，但它還是同一個 process（同一個 PID），parent 等的仍然是原來那個 child。",
+    "依照 wait 的定義，要等那支程式 terminate 才能繼續，所以 parent 被放到 OS 的 [[waiting queue]]。等 OS 知道 child 結束了，就 signal 告訴 parent 可以繼續，把它放回 [[ready queue]]。它執行下一行時，child 一定已經結束了。",
+    "很重要：最後一行 process end 只會被 parent 執行到。雖然這一行在 if else 外面，但 child 已經變成 ls，看不見它了，所以 child 不會執行最後一行。",
+    "如果你看 output，前兩行會是 child 和 parent 印的那兩行，但這兩行的順序沒有一定，因為兩個是 concurrent 執行，可能互換。",
+    "ls 的輸出（資料夾的檔案列表）一定會出現在 process end 之前，因為 parent 有 wait，一定要等 child 全部執行完，才會離開 wait、印出下一行。",
+    "而且最後的 process end 只可能看見一行，不可能看見兩行。",
+    "這是 process 之間很基本的觀念。考試可能會給你一段用這些 system call 寫的簡單程式，只要理解 fork、execlp、wait 的意義，就能推出 output 長什麼樣子。",
+    "補充：Linux 的 wait 會要求你塞一個 status 的 pointer，告訴你那個 process 結束時的狀態（success 還是 fail）；wait 本身回傳的是等到的那個 child 的 PID。",
+    "為什麼這裡沒指定等哪一個？因為可以 create 很多 child，這個版本的 wait 沒有指定，任何一個 child 結束它就會 break，並告訴你是誰結束了。wait 有很多 version，也有可以指定的，可以自己查。"
+   ]
+  },
+  {
+   "title": "for 迴圈裡 fork：畫 process tree",
+   "scene": "proc-8c-forkloop",
+   "cues": [
+    797.9,
+    810.1,
+    818.9,
+    834.9,
+    859.9,
+    893.9,
+    918.9,
+    937.0,
+    950.8,
+    986.9
+   ],
+   "points": [
+    {
+     "t": 797,
+     "text": "child 也能再 create，所以是 tree。例：for 迴圈三次，每次都 fork。"
+    },
+    {
+     "t": 834,
+     "text": "trace 最簡單的方法是畫 tree：P0 在 i = 0 產生 P1；fork 不 reset PC，i = 1 時兩個都 fork（P2、P3）；i = 2 時四個都 fork → 8 個 process。"
+    },
+    {
+     "t": 937,
+     "text": "考題可能混 if else 與 execlp：execlp 只是換掉內容、不會產生新 process，那支之後就不會再 fork。"
+    },
+    {
+     "t": 986,
+     "text": "最好的練習：自己寫程式在 server 上 run，跟自己畫的 tree 對照。"
+    }
+   ],
+   "explain": [
+    "還記得 process 是一棵 tree 嗎？為什麼是 tree？因為 child 也可以再 create 自己的 child。",
+    "例如寫一個很簡單的程式：for 迴圈跑三次，裡面都寫一個 fork。會發生什麼事？要 trace 一下。",
+    "fork 之後就有 child 和 parent。不管是誰，每個人都會繼續下一個 iteration，又去 call fork；所以第二代又會 create 第三代，一直下去。",
+    "trace 時通常想知道：誰是誰的 parent、誰是誰的 child、每個執行到哪個 program counter。有點複雜，最簡單的方法就是畫成 tree，你就不會 lost。",
+    "P0 是原來的程式。進來時 i = 0，call fork，就產生 P1。",
+    "不要忘記 fork 不會 reset program counter，所以兩個人下一輪的 i 都是 1。i = 1 時 P0 再 call 一次 fork，生出 P2；P1 也 call fork，生出 P3。",
+    "現在有 4 個 process，都會再走一次 for loop。最後一圈 i = 2，每個人都 call 一次 fork，就得到 8 個 process，也就是 2³。",
+    "考試的題目可能複雜一點：中間多一些 if、else，再加一些 execlp 混在一起。最好的方式還是畫這棵 tree。",
+    "例如寫 if (pid == 0) 就 call execlp：那支程式就斷掉了，不用再往下畫。execlp 只是把內容換掉，並不會再產生新的 process；它被 replace 後就不會再執行剩下的 fork。",
+    "最簡單的練習方式：自己給自己出題，在系上的 server 寫程式、compile、run，把資訊 print 出來，看電腦跑出來的 tree 跟你想的有沒有 match。不 match 就是你的理解有漏掉的地方。"
+   ]
+  },
+  {
+   "title": "Process termination",
+   "scene": "proc-8c-exit",
+   "cues": [
+    1045.7,
+    1063.3,
+    1071.7,
+    1100.9,
+    1124.3,
+    1145.8,
+    1208.2,
+    1244.9,
+    1310.9,
+    1360.4
+   ],
+   "points": [
+    {
+     "t": 1045,
+     "text": "termination：call exit（main return 時也會 call exit），把 file handler、I/O buffer、memory 等 resource 全部 deallocate 還給 OS。"
+    },
+    {
+     "t": 1100,
+     "text": "parent 可以用 abort(PID) 強迫 kill 自己的 children（不能 kill parent）。"
+    },
+    {
+     "t": 1145,
+     "text": "例如 web server 的 child 用太多資源（malicious user）或 client 已斷線，就 abort 它。"
+    },
+    {
+     "t": 1208,
+     "text": "OS 是 tree：kill 一個 parent，下面所有 children 會被一層一層砍掉。"
+    },
+    {
+     "t": 1244,
+     "text": "Ctrl-C：console 是上層 process，對它的 child 下 abort；砍別人的 process 要用 kill，透過 OS 並需要 permission。"
+    }
+   ],
+   "explain": [
+    "creation 講完，接著是 termination（結束）。我們都知道，就是呼叫 exit 這個 [[system call]]。",
+    "當你的 main return 的時候，其實也會去呼叫到 exit。",
+    "exit 最主要就是把所有 resource deallocate（釋放）：包括你 open 的 file handler、I/O 的 buffer，還有你 allocate 的 memory，全部還給 OS，讓 OS 給其他程式使用。",
+    "除了自己 call exit 結束自己，因為有 parent 和 children 的關係，parent 也可以強迫把一個程式 kill 掉。這個指令叫 abort，給它一個 PID，指定要 kill 哪一個。",
+    "但基本上你只能 kill 你的 children，不能 kill 你的 parent（kill parent 的話自己也會被 kill 掉），只能從上往下。",
+    "什麼時候會 call abort？通常是有問題時。例如 web server：很多 client 連進來，會 create 很多 child process 負責不同的事。如果某個 client 用太多資源（可能是 malicious user），或已經斷線、很久沒回應，parent 就可以把那個 child abort 掉。",
+    "很重要：OS 是 tree 的概念。當你 kill 掉一個 parent，它下面所有的 children 都會被砍掉，是強迫的、一層一層 kill 下去。",
+    "補充：你們一定都用過 Ctrl-C。為什麼有用？因為你下指令的 console 本身是一個比較上層的 process（OS 啟動後先 create 的），你在 console 執行的程式其實是它 create 的 child。按 Ctrl-C，console 就對那個 child 下 abort，把它砍掉。",
+    "如果想砍的程式不是你產生的（例如別的 user 的 web server 卡住），就要用 kill 指令。它其實是 call system call 請 OS 去砍，OS 是最上面的 root process，可以砍任何程式，但你要有足夠的 permission（權限）。",
+    "所以雖然使用上不一定感覺得出來，但 process 之間其實有很嚴謹、一層一層的上下關係，你才能用這些方式 kill process。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Linux 想 create 新 process 去執行另一支程式，正確的作法是？",
+   "opts": [
+    "先 fork，再在 child 裡 execlp",
+    "只要 execlp",
+    "先 execlp 再 fork",
+    "只要 fork"
+   ],
+   "ans": "先 fork，再在 child 裡 execlp",
+   "why": "fork 負責 create，execlp 負責把內容 reset 成新程式。"
+  },
+  {
+   "q": "a = fork(); 之後 if (a == 0) 這個分支會被誰執行？",
+   "opts": [
+    "child",
+    "parent",
+    "兩個都會",
+    "都不會"
+   ],
+   "ans": "child",
+   "why": "child 的回傳值是 0，parent 拿到 child 的 PID（非 0）走 else。"
+  },
+  {
+   "q": "child 呼叫 execlp(\"/bin/ls\", …) 成功之後，它還會執行 execlp 後面的程式碼嗎？",
+   "opts": [
+    "不會，程式碼已被整個覆蓋",
+    "會，執行完 ls 再回來",
+    "會，但只執行 printf",
+    "看 scheduler 決定"
+   ],
+   "ans": "不會，程式碼已被整個覆蓋",
+   "why": "execlp 把 code 換掉；ls 執行完就結束了。"
+  },
+  {
+   "q": "for (i = 0; i < 3; i++) fork(); 執行完共有幾個 process（含原本的）？",
+   "opts": [
+    "8",
+    "3",
+    "4",
+    "6"
+   ],
+   "ans": "8",
+   "why": "每一輪每個 process 都 fork 一次：1 → 2 → 4 → 8 = 2³。"
+  },
+  {
+   "q": "parent 可以用 abort 強迫結束哪些 process？",
+   "opts": [
+    "自己的 children",
+    "自己的 parent",
+    "任何 process",
+    "只有自己"
+   ],
+   "ans": "自己的 children",
+   "why": "只能從上往下 kill children；砍別人的要透過 kill 和 permission。"
+  },
+  {
+   "q": "parent 在 wait 時，child 執行 execlp 換成 ls，parent 等的對象？",
+   "opts": [
+    "仍然是同一個 child process",
+    "變成 ls 這個新 process，要重新 wait",
+    "wait 會立刻返回",
+    "parent 會被 kill"
+   ],
+   "ans": "仍然是同一個 child process",
+   "why": "execlp 不建立新 process，PID 不變，只是內容換了。"
+  }
+ ]
+}

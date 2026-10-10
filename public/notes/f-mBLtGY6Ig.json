@@ -1,0 +1,441 @@
+{
+ "video": "f-mBLtGY6Ig",
+ "label": "清大周志遠 第7A講 Processes Concept",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Process 在 memory 裡的樣子",
+   "scene": "proc-7a-layout",
+   "cues": [
+    1.8,
+    4.6,
+    7.5,
+    50.9,
+    60.0,
+    76.7,
+    97.0,
+    128.5,
+    151.4,
+    165.5,
+    188.4
+   ],
+   "points": [
+    {
+     "t": 1,
+     "text": "process 的 memory 組成：程式碼（text）、data（global variable，load 時就 allocate）、stack（local variable）、heap（malloc）。"
+    },
+    {
+     "t": 60,
+     "text": "heap 由 programmer 自己管理，忘了 deallocate 會 memory leak。"
+    },
+    {
+     "t": 76,
+     "text": "OS 還要記 process 的 state、program counter、register（context switch 時要存）、resource（open file 等）。"
+    },
+    {
+     "t": 151,
+     "text": "例子：0 在下面放 text、data；heap 和 stack run time 會變，空間留在中間，一個往上長、一個往下長。"
+    },
+    {
+     "t": 188,
+     "text": "allocate 太多或 recursive 太深，空間用完就 out of memory。"
+    }
+   ],
+   "explain": [
+    "複習上次：process 就是放在[[記憶體]]裡的程式，它的 memory 由幾個必要部分組成。第一個是程式碼，叫 text（code）。",
+    "第二個是 data，放 global variable（全域變數）。程式一 load 進 memory，OS 就知道要幫這些變數 allocate 空間。",
+    "再來是 [[stack]]，放 function 裡的 local variable（區域變數）。function 一 return，這些變數就消失。",
+    "還有 [[heap]]：用 [[malloc]]、透過 pointer 在執行時 dynamic allocate（動態配置）出來的空間，都放在這裡。",
+    "heap 的空間由 programmer 自己管理：用完要記得 deallocate（釋放），不然就會 memory leak（記憶體洩漏），是很嚴重的問題。",
+    "除了這些內容，OS 還需要一些資訊來管理 process：例如它目前的 state（狀態），還有 program counter，也就是執行到程式的哪一行。",
+    "還要記 register 的內容。因為系統是 [[time sharing]]，process 不可能一直霸佔 CPU；被 switch 出來時，register 的狀態必須存下來，這就是 [[context switch]]。",
+    "最後是 resource：例如你 open 一個 file，或跟 OS 要了一些硬體控制，都會拿到像 token 的東西，也要存下來。",
+    "這是 memory 安排的一個例子（每個 OS 管理方式不太一樣）：位址 0 在最下面，先放 text（code），再放 data。",
+    "heap 和 stack 在 run time（執行中）會變大變小，text 和 data 是固定的。所以中間留一段空間，heap 往上長、stack 往下長，才能有效利用整個 memory space。",
+    "所以你 allocate 太多 memory，或一直 recursive 呼叫讓 stack 越長越多，最後空間用完（或超過 stack / heap 的大小限制），系統就會說 out of memory，不讓你再 allocate。"
+   ]
+  },
+  {
+   "title": "Thread：lightweight process",
+   "scene": "proc-7a-thread",
+   "cues": [
+    223.2,
+    245.9,
+    251.1,
+    275.4,
+    297.2,
+    328.7,
+    352.0,
+    374.3,
+    385.0,
+    394.3,
+    417.1,
+    438.4,
+    475.1,
+    502.1,
+    529.3
+   ],
+   "points": [
+    {
+     "t": 223,
+     "text": "thread 又叫 lightweight process：管理方式和 process 相同，但同一 process 的 thread 共用部分 memory。"
+    },
+    {
+     "t": 275,
+     "text": "create thread 時共用空間不用重建，所以 lightweight；thread 是 CPU 執行的最基本單位。"
+    },
+    {
+     "t": 352,
+     "text": "同一 process 的 thread 共用 code section、data section、OS resource（例如 open 的 file）。"
+    },
+    {
+     "t": 385,
+     "text": "register、stack 不共用：每個 thread 執行位置不同、function call 不同，local variable 互相看不見。"
+    },
+    {
+     "t": 438,
+     "text": "data 共用，所以 multi-thread programming 用 global variable（或 heap pointer）溝通。"
+    },
+    {
+     "t": 475,
+     "text": "各自獨立的有 PC、register、thread ID、stack。"
+    },
+    {
+     "t": 502,
+     "text": "管理 thread 與 process 概念相同；Linux 對 OS 而言只有 thread，Nachos 也都叫 thread。"
+    }
+   ],
+   "explain": [
+    "除了 process，大家常聽到另一個東西叫 [[thread]]（執行緒）。它跟 process 不太一樣，但很多地方又很相似，之後會再詳細講。",
+    "thread 又叫 lightweight process（輕量級的 process）。",
+    "管理 thread 的方式跟 process 完全一樣；但同一個 process 底下的很多 thread，會共用一些 memory 空間。之前提過的 [[shared memory]] 溝通，用 thread 寫就很方便，因為有一塊空間 by default 就是共用的。",
+    "所以 create 一個 thread 時，那些共用的空間不用再重新 create 一次，因為 parent process 形成時就已經 allocate 好了。管理和配置都少了一些動作，所以說它 lightweight。",
+    "而且電腦系統裡最基本的執行單位其實是 thread：CPU 執行時的單位是 thread。一個 process 可以切成很多 thread；只有一個 thread 的 process，就是 process 對到一個 thread。",
+    "右邊這張圖看得更清楚：process 和 thread 最大的差別，就在於同一個 process 下的 thread 有些 memory 空間是共用的。",
+    "依照定義，同一個 process 的 thread 共用三塊：code section、data section，還有 OS 的 resource。",
+    "例如 open 一個 file：只要有一個 thread 開了，另一個 thread 可以直接拿這個 file pointer 去 read 或 write。",
+    "但 register 和 stack 就沒有共用，每個 thread 各有一份。",
+    "為什麼 register 不能共用？因為每個 thread 執行的位置可以不一樣，甚至在執行不同的 function，它在 code 裡的位置（PC）和當下的狀態都是獨立的，要各自記下來。",
+    "stack 放的是 function call 和 local variable。每個 thread 可能在呼叫不同的 function，所以 stack 狀態也不同，不同 thread 的 local variable 互相看不見。",
+    "但 data section 是共用的。所以寫 multi-thread programming 時，用 global variable 來溝通；allocate 在 heap 上的東西，只要有 pointer，任何一個 thread 都能讀，OS 不會擋你，因為它們都在同一個 memory space。",
+    "因為每個 thread 要能獨立執行，所以它有自己的 program counter、register、thread ID（OS 知道你是這個 process 的哪個 thread），還有自己的 stack。",
+    "不同 OS 實作 thread 的方式有些不同，但大概念上管理 thread 跟管理 process 是一樣的，thread 只是 process 下面再一層。所以接下來都講 process，概念可以套用到 thread。",
+    "甚至像 Linux，對 OS 而言其實沒有 process 的概念，每個 process 都當成 thread，只看它們之間哪些 memory 共用。Nachos 也都只叫 thread。用哪個名字是次要的，管理方式視為相同。"
+   ]
+  },
+  {
+   "title": "Process 的五個狀態",
+   "scene": "proc-7a-states",
+   "cues": [
+    586.2,
+    604.5,
+    648.0,
+    685.6,
+    732.0,
+    746.0,
+    783.2,
+    795.4,
+    821.1,
+    859.4,
+    874.7,
+    900.0,
+    912.6,
+    966.5,
+    984.2,
+    1017.5,
+    1050.4,
+    1079.4
+   ],
+   "points": [
+    {
+     "t": 586,
+     "text": "process 的 life cycle 分五個 state：new、ready、running、waiting、terminated。"
+    },
+    {
+     "t": 604,
+     "text": "new：把 program load 進 memory、allocate 各 segment、initialize；memory 不夠時 new 就會 fail。"
+    },
+    {
+     "t": 685,
+     "text": "ready：在 queue 裡等 CPU core；running：被選中、instruction 送進 CPU 執行。"
+    },
+    {
+     "t": 746,
+     "text": "waiting：做 I/O（printf、scanf）時不需要 CPU 也不能立刻執行；完成後回 ready。terminated：release 所有資源。"
+    },
+    {
+     "t": 821,
+     "text": "new 之後 OS 要 admit（memory 不夠或沒有 permission 會被擋）；schedule 是選人，dispatch 是把它放上 CPU。"
+    },
+    {
+     "t": 912,
+     "text": "running → ready：被 interrupt（timer，time sharing），控制權回到 OS scheduler。"
+    },
+    {
+     "t": 984,
+     "text": "running → waiting：自己做 I/O 或 call sleep；waiting → ready：event 完成（靠 interrupt 通知 OS）。"
+    },
+    {
+     "t": 1050,
+     "text": "scheduler 只從 ready queue 挑；ready、waiting 都用 queue 管理。這張圖和轉換原因要記好。"
+    }
+   ],
+   "explain": [
+    "接下來看 process 的整個 life cycle（生命週期）：一個 process 被 launch 之後，OS 把它的執行過程分成五個 state（狀態）。",
+    "第一個是 new：process 剛被 create。這階段要做很多事：把 program load 到 memory，把剛剛那幾個 segment 全部 allocate 出來，做 initialization，memory 那邊也要記錄哪些空間給它。",
+    "如果是早期 memory 比較少的電腦，你 launch 太多 process，連 new 都可能失敗：allocate 不到 memory（out of memory），在 new 的過程就被 kill 掉。現在一些 memory 很有限的 embedded device 也會這樣。",
+    "第二個是 ready。電腦裡什麼都要 share，process 要競爭的資源是 CPU 的 core，而 core 數量有限。所以 process 在 memory 裡準備好後，會被放進一個 queue，等著被 OS 排上 CPU。",
+    "第三個是 running：被選中了，真的把 instruction 送進 CPU 執行。這時候才是真的在執行程式。",
+    "執行過程中，程式不只用 CPU，還會做 I/O，例如 call printf、scanf 讀資料。做 I/O 時不需要 CPU，但也不是 ready、不能立刻執行，就進入 waiting state。",
+    "等這些 I/O 事情完成、又需要用 CPU 時，才會被放回 ready state。",
+    "最後是 terminated：跟 new 相反，把所有資源 release（釋放）掉，讓 OS 可以把這些資源給其他 process 用。",
+    "用這張 diagram 把五個 state 記起來。new 之後 OS 還有一個 admit（准許）的動作：如果 memory 不夠，或你沒有執行這個程式的 permission（系統要做 protection），OS 就把你擋掉，進不了 ready。",
+    "一切正常的話就進入 ready state。ready 其實就是一個 queue，大家在裡面等著被 OS 做 scheduling。",
+    "輪到你時：schedule 是「選人」的動作；dispatch 是選到之後，把你 load 進 CPU、分配出去的動作。dispatch 之後就進入 running。",
+    "簡單一點的程式只做計算，例如一個 for loop 做 i++，執行完就直接離開（exit → terminated）。",
+    "但就算是純計算，也可能從 running 回到 ready，原因是被 [[interrupt]] 了。通常是 timer：[[time sharing]] 系統每隔固定幾個 ms，timer 就會發出 hardware signal，把主控權拿回給 OS，原本在跑的 process 被迫 switch、回到 ready。",
+    "switch 給誰？給 OS 的 [[scheduler]]（作業 3 會看到）。這就是為什麼 OS 隨時都能掌握誰在執行、隨時可以換人。",
+    "還有其他情況：你自己要做 I/O，或呼叫 sleep 這種 [[system call]]，你就放掉 CPU 的執行權，讓 OS 換別人跑，而你的 process 進入 waiting。",
+    "等 I/O 的 event 結束，或 sleep 10 秒時間到了，這些完成都是靠 interrupt 通知 OS。OS 知道哪個 process 的事件完成了，就把它從 waiting 移回 ready，讓它有機會再被執行。",
+    "所以 scheduler 要做的事很單純：從 [[ready queue]] 裡挑程式放到 running。只要在 ready，就代表它一定可以執行；不能執行的會放在 waiting。",
+    "這張圖非常重要，尤其是五個 state 之間每個轉換的原因要記起來。ready 和 waiting 都是用 queue 管理的：同時有很多 process 在等 CPU，也有很多在等 I/O 或 event。"
+   ]
+  },
+  {
+   "title": "Process Control Block（PCB）",
+   "scene": "proc-7a-pcb",
+   "cues": [
+    1123.9,
+    1141.5,
+    1163.6,
+    1178.6,
+    1231.2,
+    1250.0,
+    1285.6,
+    1311.3,
+    1326.9,
+    1373.8,
+    1394.3,
+    1404.9
+   ],
+   "points": [
+    {
+     "t": 1123,
+     "text": "OS 用 process control block（PCB）實現剛剛的邏輯：每個 process create 時，OS allocate 一張 PCB table。"
+    },
+    {
+     "t": 1178,
+     "text": "PCB 有 pointer：process 放進 queue 其實是把 PCB 用 linked list 串進 queue。"
+    },
+    {
+     "t": 1231,
+     "text": "PCB 記 process state、program counter、CPU registers；這些 OS 幫它記，process 自己的 memory 裡沒有。"
+    },
+    {
+     "t": 1285,
+     "text": "還有 CPU scheduling 資訊（priority）、memory 資訊（base / limit register）、I/O status、accounting（開了幾個 file）。"
+    },
+    {
+     "t": 1404,
+     "text": "PCB 存在 kernel 自己的 memory（kernel space）。"
+    }
+   ],
+   "explain": [
+    "在 OS 的世界裡，很重要的是要能掌握每一個 process。剛剛講的是概念上的邏輯，那實際上要怎麼實現？",
+    "實現的方式是：每個 process 都有一個 process control block，簡稱 [[PCB]]。",
+    "當一個 process 被 create 時，OS 就幫它 allocate 一張 table（表格），就叫 PCB，記錄剛剛那些資訊，OS 才能隨時知道誰在 queue 裡、在哪個 state。",
+    "PCB 的第一個欄位是 pointer。PCB 是 OS create 出來管理用的物件。我們說「把 process 放進 queue」，實際上是把它的 PCB 放進 queue，而不是搬動它的 memory 空間；用 [[linked list]] 串起來，pointer 指向 queue 裡下一個 PCB。",
+    "再來是 process state：它現在是 new、在 ready queue，還是在 waiting queue。",
+    "還有 program counter 和 CPU register。注意這些資訊是 OS 幫它記的，process 自己的 memory space 裡沒有，因為只有 OS 需要知道。PCB 放在 memory 裡，而且是 kernel space 的 memory，也就是 OS 自己的記憶體。",
+    "PCB 裡可以塞很多東西，比較複雜的 OS 會放非常多資訊：任何為了 control、manage 這個 process 需要的資訊，都統一放在這裡，不論 scheduling、memory allocation 還是 I/O 都靠它。",
+    "例如 [[CPU scheduling]] 的資訊：process 的 priority（優先權）放在哪、要怎麼改？就在 PCB 裡。作業會實作 priority scheduling。",
+    "memory 的資訊：做 memory protection 要用 [[base register]] 和 limit register 的值。hardware 的 register 只有兩三個，大家輪流用，所以只有當這個 process 進入 running 時，才把它的 base、limit 值從 memory load 到 hardware 去做檢查。平常就存在 PCB。",
+    "I/O 的資訊：它現在在等哪一個 I/O device。不同 device 有不同的 waiting queue，管理起來方便、找得快，所以要記它在哪個 queue。",
+    "還有 accounting（記帳）：例如你開了多少個 file。系統為什麼知道你開超過 400 個 file？就是因為 PCB 有記錄。",
+    "所以 PCB 是 OS 管理 process 時最重要的資訊。記得：它存在 kernel 自己的 memory 裡。"
+   ]
+  },
+  {
+   "title": "Context switch",
+   "scene": "proc-7a-ctx",
+   "cues": [
+    1419.7,
+    1449.1,
+    1478.2,
+    1490.1,
+    1504.8,
+    1521.4,
+    1548.4,
+    1565.8,
+    1587.3,
+    1616.2,
+    1646.8,
+    1672.3,
+    1700.5
+   ],
+   "points": [
+    {
+     "t": 1419,
+     "text": "context switch（專有名詞）：把 CPU 上執行的 process 換成另一個 process。"
+    },
+    {
+     "t": 1478,
+     "text": "一定是因為 interrupt（例如按 keyboard）或程式 call system call（例如 printf），否則 CPU 會一直執行原程式。"
+    },
+    {
+     "t": 1548,
+     "text": "P0 被打斷後 idle；OS 把 CPU 裡的 state 存進 PCB₀，再從 PCB₁ load P1 的 state。"
+    },
+    {
+     "t": 1616,
+     "text": "context switch 期間 P0、P1 都 idle；完成後 P1 才從它的 PC 開始執行。"
+    },
+    {
+     "t": 1672,
+     "text": "要切回 P0 時，save 進 PCB₁、load PCB₀；context switch 就是 kernel 透過 PCB 做 save 和 load。"
+    }
+   ],
+   "explain": [
+    "有了 PCB，除了在 queue 之間移動，還有一件非常重要的事：[[context switch]]。這是 OS 的專有名詞，不能隨便換成別的說法。",
+    "context switch 指的就是：把原來在 CPU 上執行的 process，換成另一個 process 的動作。整個系統能 share CPU，就是靠這個動作。",
+    "看這張簡單的 diagram：假設 process 0（P0）原本在執行，也就是它的所有狀態都 load 在 CPU 的 register 裡。",
+    "context switch 會發生，一定是因為有一個 [[interrupt]]，或是這個程式自己呼叫了 [[system call]]，才需要切換到別的程式。",
+    "如果沒有 interrupt 或 system call，CPU 的行為很簡單：一條一條 sequential 讀原來那個程式的 instruction，它就會一直佔用 CPU，永遠卡住。",
+    "所以只有兩種情況：程式自己呼叫 system call，例如 printf，請 OS 幫它做事（OS 也是一支程式，所以要換到 OS 那邊）；或是有 hardware interrupt 進來，例如有人按了 keyboard，電腦要處理這個 signal。",
+    "不管哪一種，P0 被打斷後只能 idle（閒置），等事情處理完、OS 重新讓它執行，才能回來用 CPU。",
+    "要把 CPU 讓出來，要做的就是：把 CPU 裡的 state（PC、register 等）全部存到 P0 的 PCB。這樣狀態才記下來了。",
+    "記完之後要 run 新的 process，例如 P1。P1 可能是 OS，也可能是另一個 user 的 process。不管是誰，要讓它執行，就要從它自己的 PCB 把 state load 進來。",
+    "注意：在做這些事的時候，對 P0 和 P1 而言都是 idle 的，沒有在執行它們的程式碼，只是在執行 OS 做 context switch 的動作。",
+    "context switch 完成後，P1 才開始執行：把 program counter 設到它要執行的位置，開始 fetch 指令。",
+    "如果 P1 之後又要把執行權讓回給 P0，就重複一樣的動作：把 P1 的 state save 進 PCB₁，再 load P0 的 state。這個例子裡總共做了兩次 context switch。",
+    "所以 context switch 就是 kernel 在做 switch：透過 PCB 做 save 和 load，讓 process 可以回到原來的執行狀態，從上次停下的地方繼續。"
+   ]
+  },
+  {
+   "title": "Context switch 是 overhead",
+   "scene": "proc-7a-ctxcost",
+   "cues": [
+    1731.3,
+    1762.6,
+    1784.3,
+    1798.7,
+    1816.8,
+    1846.8,
+    1882.4,
+    1915.2,
+    1974.8
+   ],
+   "points": [
+    {
+     "t": 1731,
+     "text": "context switch 是 overhead：過程中 process 都 idle，浪費 CPU cycle，只是為了管理和 sharing。"
+    },
+    {
+     "t": 1762,
+     "text": "想盡量避免但避免不了（time sharing 每幾 ms 就要做一次），只能想辦法讓它變快。"
+    },
+    {
+     "t": 1798,
+     "text": "改善方式：memory 更快；register 少一點（但現代 CPU register 只會變多）。"
+    },
+    {
+     "t": 1846,
+     "text": "software：一個 instruction 就完成 load + save；hardware support：多組 register set，switch 只換一組，不用寫回 memory（但成本高）。"
+    },
+    {
+     "t": 1974,
+     "text": "作業 3 trace code 會看到 context switch 的 function 和 PCB（Nachos 叫 thread control block）。"
+    }
+   ],
+   "explain": [
+    "context switch 有一點一定要知道：它是 overhead（額外開銷），也就是多餘、浪費的時間。因為過程中任何 process 都在 idle，從使用者角度看，等於在浪費 CPU cycle，純粹是為了管理和 sharing 才做的。",
+    "所以我們通常想盡量避免它，這是一個 trade-off（取捨）。但沒辦法完全避免，因為 CPU 要 share 給所有 process、要有好的 response time，就得靠它。",
+    "[[time sharing]] 每多少 ms 就要做一次 context switch，所以這是非常非常頻繁的動作。實際系統必須想辦法改善它。",
+    "目標是減少 switch 的時間。第一個方法跟 memory 的速度有關：context switch 其實就是在做 memory 的讀、save、load，memory 快一點，這個動作就快一點。",
+    "第二個是 register 的數量：register 少，要存取的就少，時間就減少。但現代電腦不太會這樣做，因為 register 越多計算越快、程式越好寫，所以現在 CPU 的 register 其實是變多的。",
+    "能用的方法是後面兩個。software 端：本來把 register 一個個寫進 memory 要下好幾個 instruction，有些系統的 OS 跟 CPU 合作，提供一個 instruction 就把 load 和 save 全部一次做完，省掉一些步驟。",
+    "更常見的是 hardware support（software 終究有極限）：CPU 裡有好幾組（set）register。運作時其實只需要一組給正在執行的 process，但 CPU 準備了三組、四組甚至更多。",
+    "這樣可以一次把四五個程式的狀態都記在 hardware register 裡。context switch 時只是從一組 register 換到另一組，還在 hardware 裡，不用寫回 memory，速度當然快。代價是成本比較高，因為 register 是比較貴的儲存元件。很多能同時執行多個 process 的 CPU 都用這種設計。",
+    "作業 3 trace code 時會看到：程式會呼叫 OS 裡 context switch 的 function，做剛剛的 load 和 save；也一定會看到 PCB，在 Nachos 裡叫 thread control block。（畫面上的程式碼是示意。）"
+   ]
+  },
+  {
+   "title": "自己複習",
+   "scene": null,
+   "points": [
+    {
+     "t": 2003,
+     "text": "自己 review 時特別看五個 state 之間的轉換。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "同一個 process 的多個 thread，下列哪一個「不」共用？",
+   "opts": [
+    "stack",
+    "code section",
+    "data section",
+    "open 的 file"
+   ],
+   "ans": "stack",
+   "why": "code、data、OS resource 共用；register、stack（以及 PC、thread ID）各自一份。"
+  },
+  {
+   "q": "process 呼叫 sleep 之後會進入哪個 state？",
+   "opts": [
+    "waiting",
+    "ready",
+    "new",
+    "terminated"
+   ],
+   "ans": "waiting",
+   "why": "自己做 I/O 或 call sleep 會放掉 CPU 進入 waiting；event 完成再回 ready。"
+  },
+  {
+   "q": "running 的 process 因為 timer interrupt 被打斷，會進入？",
+   "opts": [
+    "ready",
+    "waiting",
+    "new",
+    "terminated"
+   ],
+   "ans": "ready",
+   "why": "time sharing 的 timer 把控制權拿回 OS，process 回到 ready queue。"
+  },
+  {
+   "q": "「把 process 放進 ready queue」實際上放進 queue 的是什麼？",
+   "opts": [
+    "它的 PCB（用 linked list 串起來）",
+    "它整個 memory space",
+    "它的程式檔",
+    "它的 stack"
+   ],
+   "ans": "它的 PCB（用 linked list 串起來）",
+   "why": "queue 裡串的是 PCB，PCB 有指向下一個 PCB 的 pointer。"
+  },
+  {
+   "q": "PCB 存放在哪裡？",
+   "opts": [
+    "kernel space 的 memory",
+    "process 自己的 stack",
+    "disk",
+    "CPU 的 cache"
+   ],
+   "ans": "kernel space 的 memory",
+   "why": "PCB 是 OS 的資料，放在 kernel 自己的 memory。"
+  },
+  {
+   "q": "下列哪個方法最能有效加快 context switch？",
+   "opts": [
+    "CPU 提供多組 register set",
+    "增加 process 數量",
+    "加大 disk",
+    "增加 time quantum 以外的 I/O"
+   ],
+   "ans": "CPU 提供多組 register set",
+   "why": "switch 時只換用另一組 register，不必把 state 寫回 memory。"
+  }
+ ]
+}
