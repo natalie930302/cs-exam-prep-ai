@@ -343,9 +343,9 @@
  },
  "7gMLNiEz3nw": {
   "label": "Gate Smashers：Banker Algorithm",
-  "points": 29,
+  "points": 27,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "7h1s2SojIRw": {
   "label": "Abdul Bari：Quick Sort",
@@ -543,6 +543,12 @@
   "label": "台大林軒田 DSA Array / Linked List",
   "points": 212,
   "quiz": 8,
+  "cued": true
+ },
+ "b2lHjRiLeFE": {
+  "label": "清大周志遠 第22D講 Ch7:Deadlocks",
+  "points": 14,
+  "quiz": 5,
   "cued": true
  },
  "B7hVxCmfPtM": {
@@ -743,6 +749,12 @@
   "quiz": 7,
   "cued": true
  },
+ "efH4nuwUalA": {
+  "label": "清大周志遠 第22A講 System Model & Deadlock Characterization",
+  "points": 36,
+  "quiz": 6,
+  "cued": true
+ },
  "eGSXsaJ-BlY": {
   "label": "MIT 6.006 Rec8：Simulation Algorithms（隨機算法應用）",
   "points": 41,
@@ -916,6 +928,12 @@
   "points": 21,
   "quiz": 5,
   "cued": false
+ },
+ "HvXHTgLys1g": {
+  "label": "清大周志遠 第22C講 Deadlock Prevention & Avoidance(續)",
+  "points": 35,
+  "quiz": 7,
+  "cued": true
  },
  "hXwxLgEOp-U": {
   "label": "交大彭文志 Lec22 Sorting",
@@ -1155,6 +1173,12 @@
   "label": "清大周志遠 第16D講 Scheduling Algorithms",
   "points": 31,
   "quiz": 7,
+  "cued": true
+ },
+ "n6YiasR-3uc": {
+  "label": "清大周志遠 第22B講 Deadlock Prevention & Avoidance",
+  "points": 16,
+  "quiz": 6,
   "cued": true
  },
  "Nd0XDY-jVHs": {
@@ -1677,6 +1701,12 @@
   "label": "Abdul Bari：Tree Traversal",
   "points": 16,
   "quiz": 4,
+  "cued": true
+ },
+ "XpKrBUZqfGI": {
+  "label": "Deadlock | Necessary Condition for Deadlock | Resource Allocation Graph",
+  "points": 17,
+  "quiz": 5,
   "cued": true
  },
  "xqM9NVKUWmg": {

@@ -1,0 +1,569 @@
+{
+ "video": "HvXHTgLys1g",
+ "label": "清大周志遠 第22C講 Deadlock Prevention & Avoidance(續)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Prevention 實例：memory 與 CPU",
+   "scene": "dl-c-memcpu",
+   "points": [
+    {
+     "t": 16,
+     "text": "Memory：系統讓大家 share access（拿掉 mutual exclusion），memory access 本身不會 deadlock；第六章的 deadlock 是 programmer 自己加 critical section 造成的。"
+    },
+    {
+     "t": 91,
+     "text": "CPU：不能 share（instruction、pipeline 不能混），所以 OS 用 preemption（context switch 存 register），CPU 不可能造成 deadlock。"
+    },
+    {
+     "t": 160,
+     "text": "兩個反過來的例子；programmer 層的 critical section 要自己處理。"
+    }
+   ],
+   "cues": [
+    15.8,
+    18.4,
+    44.6,
+    57.0,
+    91.0,
+    113.5,
+    131.0,
+    160.0
+   ],
+   "explain": [
+    "老師用最熟悉的兩個資源——CPU 和 memory——說明 prevention 在系統裡實際怎麼做。",
+    "memory：系統讓大家共用存取。像 multi-[[thread]] 程式的 global memory，所有 thread 都能同時讀寫那塊空間。",
+    "以系統的角度，memory 等於把 mutual exclusion 這個條件拿掉了，所以光是 access memory 不會造成 deadlock。",
+    "那第六章的 deadlock 從哪來？是 programmer 為了解 [[race condition]]，自己在程式裡加了 critical section（加鎖）造成的。",
+    "反過來看 CPU：它不能共用。兩個 instruction 不可能混在同一條 [[pipeline]] 裡一起執行。",
+    "CPU 不能共用，又不想 deadlock，OS 就讓它可以被搶（preemption）：用 [[context switch]] 把 register 存到 memory，CPU 隨時可以換人用。",
+    "這剛好是兩個相反的例子：memory 拿掉互斥、CPU 允許搶。所以 CPU 這個資源本身不可能造成 deadlock。",
+    "至於 programmer 自己在程式裡加的 critical section，就是 programmer 要負責解決的，系統不幫忙。"
+   ]
+  },
+  {
+   "title": "Avoidance：考慮 worst case",
+   "scene": "dl-c-worst",
+   "points": [
+    {
+     "t": 185,
+     "text": "Avoidance：假設四個條件可能發生，run time 根據目前狀態及時避免；single / multiple instance 概念一樣。"
+    },
+    {
+     "t": 218,
+     "text": "要事先避免，就要考慮 worst case：未來最糟的情況發生也不會 deadlock，系統才允許這個 resource assignment。"
+    }
+   ],
+   "cues": [
+    185.0,
+    192.0,
+    207.6,
+    218.1,
+    234.0,
+    253.5
+   ],
+   "explain": [
+    "接下來第二大塊：[[deadlock avoidance]]（避免）。",
+    "這時假設四個條件都有可能成立，系統在執行中根據目前的狀態，及時避開 deadlock。",
+    "分成 single instance 和 multiple instance 兩種情況，但解法的概念是一樣的。",
+    "deadlock 都是因為程式做了某個資源動作（例如申請資源 R）之後才發生的。",
+    "要事先避免，就得考慮 worst case（最壞情況）：假設未來最糟的事情都發生了，會不會 deadlock？",
+    "只有在「最壞情況也不會 deadlock」時，系統才答應這次資源分配。這樣不管其他 process 之後做什麼，都不會出事。"
+   ]
+  },
+  {
+   "title": "Single instance：claim edge",
+   "scene": "dl-c-claim",
+   "points": [
+    {
+     "t": 280,
+     "text": "Single instance 用 resource-allocation graph：request、assignment edge 代表已經發生的事。"
+    },
+    {
+     "t": 314,
+     "text": "worst case 要考慮未來：加上 claim edge（trace code 知道未來 may 要的 resource），方向同 request（P → R），用不同顏色。"
+    },
+    {
+     "t": 379,
+     "text": "worst case 下 claim edge 成真就變 request edge；edge 多了更容易 circular wait，但單純加上 claim edge 不會造成 circle。"
+    }
+   ],
+   "cues": [
+    280.4,
+    297.6,
+    314.7,
+    324.3,
+    355.0,
+    379.1,
+    411.4,
+    428.7,
+    440.2
+   ],
+   "explain": [
+    "worst case 怎麼看？每種資源只有一個 instance 時，回到 resource-allocation graph，它最能描述整個系統。",
+    "符號跟之前一樣：R1 → P1 是 assignment edge（R1 已經給 P1）；P2 → R1 是 request edge（P2 在等 R1）。這些都是「已經發生」的事。",
+    "worst case 要求系統還要考慮「未來可能發生」的事。",
+    "所以多加一種邊：claim edge（宣告邊，紫色虛線）。系統追蹤 process 的程式碼，知道 P1 未來「可能」會要 R2。",
+    "claim edge 跟 request edge 一樣是從 process 指向 resource，只是用不同顏色表示「還沒發生、不一定會發生」。P2 也可能要 R2。",
+    "為什麼要標出來？因為最壞情況下它真的發生了：P1 真的提出要求，這條虛線就變成實線的 request edge。",
+    "邊越多，越有機會繞成圈（circular wait）。把未來可能的事都當作會發生，這就是 worst case。",
+    "不過 claim edge 都是 P → R 的方向，單純加上去本身不會讓圖多出圈。",
+    "claim edge 變成 request edge 也只是換顏色，方向一樣，還不危險。"
+   ]
+  },
+  {
+   "title": "Request 來了：給還是不給？",
+   "scene": "dl-c-decide",
+   "points": [
+    {
+     "t": 461,
+     "text": "真正怕的是 request 變成 assignment edge：系統決定給（變綠）或不給（維持 request）。"
+    },
+    {
+     "t": 505,
+     "text": "把所有可能畫出來，判斷變成 assignment 後會不會有 circle：P1 要 R2 → 沒有 circle，同意；P2 要 R2 → P1 ⇢ R2 → P2 → R1 → P1 成圈，不答應。"
+    },
+    {
+     "t": 612,
+     "text": "即使 resource available 也可以擋；決定 depend on 目前狀態（若 P1 沒拿著 R1 就不會成圈）。"
+    },
+    {
+     "t": 684,
+     "text": "實作：假設同意，跑 circle detection；有 circle 就維持 request、等狀態改變才 assign。"
+    }
+   ],
+   "trap": "老師在 L399 一度說成「P2 要 R1」，指的是 P2 要 R2。avoidance 會拒絕「資源明明有空」的 request，這是它和一般配置最大的不同。",
+   "cues": [
+    461.6,
+    471.2,
+    482.0,
+    497.6,
+    505.0,
+    531.5,
+    541.2,
+    552.0,
+    584.3,
+    612.3,
+    637.0,
+    659.0,
+    684.2
+   ],
+   "explain": [
+    "真正危險的，是邊變成 assignment edge（資源真的給出去）。",
+    "假設 P1 的 claim edge 真的發生了，而現在 R2 沒有人在用（亮起來）。",
+    "系統要決定：要不要把 R2 給 P1？給的話，這條邊就翻成綠色的 assignment edge（R2 → P1）。",
+    "不同意的話，它就維持 request 的樣子，P1 先等著。系統有權做這個決定。",
+    "avoid 的做法：所有可能的邊都已經畫上去了，所以可以檢查「變成綠色之後會不會出現圈」。",
+    "例：P1 要 R2，把它給 P1。很明顯沒有圈，可以給。",
+    "換一個情況：如果是 P2 來要 R2，給了之後方向一翻：P1 ⇢ R2 → P2 → R1 → P1，紅色繞成一圈。",
+    "雖然 P1 → R2 現在還只是 claim，但最壞情況下它下一秒就可能成真，沒人預測得到。到時候就真的 deadlock。",
+    "所以為了避開任何可能，P2 要 R2 時系統不答應（維持 request）；同樣的狀態下，P1 要 R2 就會答應。",
+    "avoidance 就是：先把所有可能畫上去，request 來時決定要不要變成 assignment。就算資源現在有空，也可以擋。",
+    "這個決定取決於目前的狀態。如果 P1 根本沒拿著 R1（R1 → P1 不存在），就算把 R2 給 P2 也不會有圈。",
+    "所以問題是：紫色變紅色（request）之後，要不要再變綠色（assignment）？擋掉就只是紅線；同意了又有圈，下一秒可能 deadlock。",
+    "實作方式：先假設同意，跑一次找圈的演算法（circle detection）。找到圈就不准，讓它等，直到狀態改變、同意也不會有圈時，才真的分配。"
+   ]
+  },
+  {
+   "title": "Avoidance 的代價",
+   "scene": "dl-c-cost",
+   "points": [
+    {
+     "t": 720,
+     "text": "resource type 很多、process 幾千，最好的 detection algorithm 也要 n²；除非很怕 deadlock，不一定願意付代價。"
+    },
+    {
+     "t": 760,
+     "text": "algorithm：畫上 claim edge → claim 變 request 時，看變成 assignment 會不會有 circle → 會就維持 request，不會才 grant。"
+    }
+   ],
+   "cues": [
+    720.7,
+    726.0,
+    744.2,
+    750.9,
+    760.0
+   ],
+   "explain": [
+    "不管 detection 還是 avoidance，演算法的計算量都不小。",
+    "把程式系統拆開來看，資源種類比想像中多很多，process 也常有幾千個，n 不會小。",
+    "跑一次偵測，最好的演算法也要 n² 等級的時間，非常花時間。",
+    "所以除非真的很怕 deadlock，否則系統不一定願意付這個代價。",
+    "整個方法總結四步：畫上 claim edge；claim 變成 request；假設變成 assignment 再找圈；有圈就維持 request，沒有才答應。"
+   ]
+  },
+  {
+   "title": "Safe、unsafe 與 deadlock",
+   "scene": "dl-c-safe",
+   "points": [
+    {
+     "t": 800,
+     "text": "Banker's algorithm 處理 multiple instance：不好畫圖，但有簡單的 algorithm（約 n²）。"
+    },
+    {
+     "t": 825,
+     "text": "safe：絕對不會 deadlock；unsafe：worst case 下有可能；deadlock 是 unsafe 裡面的一部分。avoidance 就是維持在 safe state。"
+    },
+    {
+     "t": 896,
+     "text": "Banker's 的檢查：找一個讓 process 依序執行完畢的 sequence；找得到 → safe，找不到 → unsafe。同意某 assignment 後找不到就擋掉或 hold。"
+    }
+   ],
+   "trap": "unsafe ≠ deadlock：unsafe 只代表「無法保證」不 deadlock，deadlock ⊂ unsafe。",
+   "cues": [
+    800.5,
+    807.7,
+    825.0,
+    836.2,
+    842.4,
+    858.0,
+    896.0,
+    928.4,
+    959.3
+   ],
+   "explain": [
+    "接下來 Banker's algorithm（銀行家演算法），處理每種資源有多個 instance 的情況。",
+    "多個 instance 不好畫成圖，但有一個簡單的演算法可以判斷，計算量大約還是 n²。",
+    "概念跟剛才一樣：把系統所有可能的狀態分成兩區——safe（安全）和 unsafe（不安全）。",
+    "[[safe state]]：絕對不可能發生 deadlock。",
+    "unsafe：在最壞情況下「有可能」deadlock。真正的 deadlock 是 unsafe 裡面的一小塊（紅色區域）。",
+    "avoidance 就是讓系統一直待在 safe 區。任何會把系統從 safe 推到 unsafe 的動作，就擋掉。",
+    "Banker's 怎麼判斷 safe？找一個順序（sequence），讓所有 process 照這個順序一個一個都能執行完。",
+    "找得到這個順序，就在 safe state，不可能 deadlock；找不到，就是進入了 unsafe state，有可能 deadlock。",
+    "用在 avoidance：先假設答應某個分配，答應後如果找不到順序，就擋掉或先 hold 住，等系統狀態改變再說。"
+   ]
+  },
+  {
+   "title": "Safe sequence：12 台 tape drive",
+   "scene": "dl-c-tape",
+   "points": [
+    {
+     "t": 1000,
+     "text": "一種 resource type、12 個 instance；P0 用 5、P1 用 2、P2 用 2；Max（同一時間最多需要）分別 10、4、9，是 given。"
+    },
+    {
+     "t": 1133,
+     "text": "12 − 9 = 3：P1 還要 2 → 做完放 4 → 5；P0 還要 5 → 做完 → 10；P2 還要 7 → 可以。"
+    },
+    {
+     "t": 1242,
+     "text": "safe sequence < P1, P0, P2 > → 這個狀態是 safe。"
+    }
+   ],
+   "cues": [
+    1000.3,
+    1011.3,
+    1045.5,
+    1064.1,
+    1105.6,
+    1133.0,
+    1159.7,
+    1166.0,
+    1183.7,
+    1217.7,
+    1236.0,
+    1242.7
+   ],
+   "explain": [
+    "來看 safe sequence（安全序列）到底是什麼。",
+    "先只看一種資源：12 台 tape drive（磁帶機），也就是 12 個 instance。多種資源之後再講，演算法本質一樣。",
+    "系統有三個 process，這是目前的狀態：P0 拿著 5 台、P1 拿著 2 台、P2 拿著 2 台（彩色方塊）。",
+    "灰色格子是 Max：程式在某個時刻「同時」最多需要幾台。P0 現在只用 5 台，但最多會到 10 台，代表它下一秒可能再要 5 台。",
+    "Max 是事先給定的（由 compiler 或 programmer 提供）。注意它是「某一步同時最多需要多少」，不是整個程式總共用了多少。",
+    "這個例子可以找到 safe sequence：P1、P0、P2。我們一步一步驗證。",
+    "總共 12 台，已經用了 5 + 2 + 2 = 9 台，所以現在空著 3 台（Available = 3）。",
+    "最壞情況：下一秒大家都要到 Max。P0 還要 5 台、P1 還要 2 台、P2 還要 7 台。",
+    "空的 3 台夠 P1（只要 2 台），先給 P1，它就能跑完。跑完後它手上的 4 台全部放回來：3 − 2 + 4 = 5 台。",
+    "現在有 5 台，P0 剛好還要 5 台，可以做完。做完歸還它全部的 10 台：5 − 5 + 10 = 10 台。",
+    "有 10 台，P2 只要再 7 台，也可以做完，最後 12 台全部回來。",
+    "照 P1 → P0 → P2 的順序，大家都能順利做完，所以這個狀態是 safe，這個順序就是 safe sequence。"
+   ]
+  },
+  {
+   "title": "找不到 safe sequence：unsafe",
+   "scene": "dl-c-unsafe",
+   "points": [
+    {
+     "t": 1296,
+     "text": "把 P2 從 2 改成 3：剩 2；P1 做完 → 4；P0 要 5、P2 要 6 都不行 → 找不到 safe sequence → unsafe。"
+    },
+    {
+     "t": 1380,
+     "text": "現在還沒有 deadlock；要 worst case 真的發生才會。avoidance 事先看會不會進 unsafe 再決定。"
+    },
+    {
+     "t": 1437,
+     "text": "注意：做完 free 掉時加回去的是目前 hold 的數量，不是 Max。"
+    }
+   ],
+   "trap": "safety 檢查中 process 做完時，Work 加的是 Allocation（目前持有），不是 Max，也不是 Need。",
+   "cues": [
+    1296.0,
+    1303.0,
+    1317.3,
+    1342.2,
+    1363.1,
+    1373.0,
+    1380.2,
+    1404.3,
+    1437.5
+   ],
+   "explain": [
+    "換一個找不到 safe sequence 的例子。這當然可能發生。",
+    "小改一下：P2 多拿了一台，從 2 台變 3 台。現在用了 10 台，只剩 2 台。",
+    "找順序時不用擔心從誰開始，從上往下掃就好。因為每做完一個，空出來的資源只會變多，順序不影響最後找不找得到。",
+    "剩 2 台：P1 還要 2 台，可以。做完放回 4 台：原本的 2 − 2 + 4 = 4 台。",
+    "但現在只有 4 台：P0 還要 5 台、P2 還要 6 台，都不夠，卡住了，找不到 safe sequence。",
+    "所以系統進入的這個狀態就是 unsafe state。",
+    "那它現在 deadlock 了嗎？還沒有。要等最壞情況真的發生、大家下一秒真的要到 Max，才會真的卡死。",
+    "avoidance 就是在事前考慮最壞情況：答應之後會不會進入 unsafe？會的話就要擋掉。",
+    "常犯的錯：Max 是「最多會用」的量；process 做完時，加回 Available 的是它「目前拿著」的數量，不是 Max。"
+   ]
+  },
+  {
+   "title": "Banker's algorithm 的概念",
+   "scene": "dl-c-banker",
+   "points": [
+    {
+     "t": 1467,
+     "text": "Banker's：request 來時先修改 current holding（假裝給，但不真的 assign），看是否仍 safe；不是就不允許。"
+    },
+    {
+     "t": 1517,
+     "text": "步驟：記下 Max（worst case）→ 能滿足的 process 做完、釋放資源 → 依序找出 safe sequence → 找得到才真的 approve。"
+    }
+   ],
+   "cues": [
+    1467.3,
+    1478.4,
+    1497.2,
+    1517.0,
+    1529.5,
+    1552.7
+   ],
+   "explain": [
+    "知道 safe sequence 之後，來看 Banker's algorithm 怎麼用它。有個 process 送來一個 request。",
+    "第一步「預先決定」：先把它目前持有的數字改掉，假裝答應了，但還沒真的把資源給它。",
+    "第二步：在這個假設下，系統還是 safe 嗎？如果不是，就不能答應。",
+    "整個演算法先假設最壞情況：把每個 process 最多會用的量（Max）記下來，再檢查目前是不是 safe。",
+    "檢查方式：能滿足需求的 process 就讓它做完、把資源拿回來，再給其他 process 用，這樣依序排出一個 safe sequence。",
+    "只要排得出來，這次分配就沒問題。檢查完，才真的答應這次資源分配。"
+   ]
+  },
+  {
+   "title": "多種資源 A、B、C：找 safe sequence",
+   "scene": "dl-c-multi",
+   "points": [
+    {
+     "t": 1565,
+     "text": "延伸到多種 resource type：Max、Allocation（current holding）、Need = Max − Allocation。"
+    },
+    {
+     "t": 1598,
+     "text": "Available = Total − ΣAllocation = (10,5,7) − (7,2,5) = (3,3,2)；要減的是 Allocation 這欄。"
+    },
+    {
+     "t": 1626,
+     "text": "掃描時三種資源要同時 Need ≤ Work；可以的不只一個，給誰都不影響結論，safe sequence 也不唯一。"
+    },
+    {
+     "t": 1689,
+     "text": "P1 (1,2,2) → Work (5,3,2)；P3 → (7,4,3)；P4 → (7,4,5)；P2 → (10,4,7)；P0 → (10,5,7)：< P1, P3, P4, P2, P0 > → safe。"
+    }
+   ],
+   "cues": [
+    1565.5,
+    1585.5,
+    1594.0,
+    1598.2,
+    1614.0,
+    1622.2,
+    1626.1,
+    1644.0,
+    1662.4,
+    1676.5,
+    1689.5,
+    1699.0,
+    1702.9,
+    1708.7
+   ],
+   "explain": [
+    "換成多種資源 A、B、C（恐龍書的例子，總量 10、5、7）。演算法完全一樣，只是數字多一點。左邊是 Allocation 和 Max。",
+    "表上有 Max（最多要多少），也有 Allocation：目前每個 process 手上拿著多少（current holding）。",
+    "Need = Max − Allocation，就是還需要多少：P0 (7,4,3)、P1 (1,2,2)、P2 (6,0,0)、P3 (0,1,1)、P4 (4,3,1)。",
+    "再算目前還有多少可用（Available）：Total 減掉大家目前拿著的。",
+    "A 欄加起來：0 + 2 + 3 + 2 + 0 = 7，總共 10 個，所以 A 剩 3。B、C 同理，Available = (10,5,7) − (7,2,5) = (3,3,2)。",
+    "老師提醒：是 Total 減 Allocation 這一欄，不是減 Max 或 Need。",
+    "接著像剛才一樣從上往下掃。多種資源時，A、B、C 三欄要「同時」都夠才行。",
+    "例：P0 要 (7,4,3)，拿 (3,3,2) 一欄一欄比，三欄都不夠（紅色），就算全部給它也做不完。",
+    "P1 的 (1,2,2) 和 P3 的 (0,1,1) 都 ≤ (3,3,2)。要先給誰都可以，不影響最後找不找得到。",
+    "safe sequence 可能不只一個，找到任何一個就夠了。",
+    "選 P1：(1,2,2) ≤ (3,3,2)，讓它做完。它把手上的 Allocation (2,0,0) 還回來，Work 變 (5,3,2)。",
+    "以此類推：P3 (0,1,1) ≤ (5,3,2)，做完加 (2,1,1) 變 (7,4,3)；P4 (4,3,1) ≤ (7,4,3)，加 (0,0,2) 變 (7,4,5)。",
+    "P2 (6,0,0) ≤ (7,4,5)，加 (3,0,2) 變 (10,4,7)；P0 (7,4,3) ≤ (10,4,7)，加 (0,1,0) 變 (10,5,7)。順序就是老師說的 1、3、4、2、0。",
+    "全部都能做完，所以目前是 safe state。最後 Work 回到 Total (10,5,7)，這是很好的驗算方法。"
+   ]
+  },
+  {
+   "title": "Request：P1 再要 (1,0,2)",
+   "scene": "dl-c-req1",
+   "points": [
+    {
+     "t": 1728,
+     "text": "avoidance：原狀態是 safe；P1 request (1,0,2)，OS 要決定允不允許。"
+    },
+    {
+     "t": 1771,
+     "text": "假設同意：Allocation[P1] (2,0,0) → (3,0,2)，Need[P1] → (0,2,0)，Available → (2,3,0)，再跑一次 safety。"
+    },
+    {
+     "t": 1820,
+     "text": "找得到 < P1, P3, P4, P0, P2 > → 可以 accept。"
+    }
+   ],
+   "trap": "恐龍書先檢查 Request ≤ Need、Request ≤ Available，才「假裝分配」再跑 safety；這題 (1,0,2) ≤ Need (1,2,2) 且 ≤ Available (3,3,2)。",
+   "cues": [
+    1728.6,
+    1737.5,
+    1766.4,
+    1771.0,
+    1789.4,
+    1804.4,
+    1812.6,
+    1820.5,
+    1825.1,
+    1834.6
+   ],
+   "explain": [
+    "用剛才的表示範 avoidance：原本的狀態已經確認是 safe（找得到 P1、P3、P4、P2、P0）。",
+    "現在 P1 送來一個 request：它要再多 1 個 A、2 個 C，也就是 (1,0,2)，才能執行下一段程式（例如 malloc、建立物件）。",
+    "OS 要決定：答不答應？",
+    "最容易搞混的地方：先「假設答應」，把 request 加到 Allocation 上，但不是真的給。",
+    "P1 的 Allocation 從 (2,0,0) 變 (3,0,2)；Need 從 (1,2,2) 變 (0,2,0)；Available 從 (3,3,2) 變 (2,3,0)。",
+    "在這個假設的狀態下，再跑一次找 safe sequence 的演算法。",
+    "如果找不到，就代表答應後可能 deadlock，這個 request 不能答應。",
+    "這題找得到：P1 的 (0,2,0) ≤ (2,3,0)，做完加 (3,0,2) 變 (5,3,2)；P3 的 (0,1,1) 可以，加 (2,1,1) 變 (7,4,3)。",
+    "接著 P4 (4,3,1) ≤ (7,4,3) → (7,4,5)；P0 (7,4,3) → (7,5,5)；P2 (6,0,0) → (10,5,7)。順序 P1、P3、P4、P0、P2。",
+    "找得到 safe sequence，這個分配就可以答應。答應後不管未來發生什麼，都還有解，不會 deadlock。"
+   ]
+  },
+  {
+   "title": "Request：P4 要 (3,3,0) → unsafe",
+   "scene": "dl-c-req2",
+   "points": [
+    {
+     "t": 1851,
+     "text": "從原來的狀態出發，P4 request (3,3,0)：假設同意 → Allocation[P4] (3,3,2)，Available (0,0,2)，Need[P4] (1,0,1)。"
+    },
+    {
+     "t": 1885,
+     "text": "五個 process 的 Need 都有一欄 > (0,0,2) → 找不到 safe sequence → hold 住或 reject。"
+    },
+    {
+     "t": 1913,
+     "text": "每個 request 都先改 Allocation 假設發生、跑一遍；Max 永遠不變（worst case），Allocation 記錄目前狀態。"
+    }
+   ],
+   "trap": "這題 (3,3,0) ≤ Need (4,3,1) 也 ≤ Available (3,3,2)，資源「夠」，但給了會 unsafe，所以仍然不給。",
+   "cues": [
+    1851.5,
+    1863.7,
+    1877.3,
+    1885.1,
+    1892.0,
+    1913.6,
+    1940.4,
+    1958.6
+   ],
+   "explain": [
+    "另一個例子，一樣從原本的狀態出發：這次 P4 說它要 3 個 A、3 個 B，也就是 (3,3,0)。",
+    "檢查方式一樣，先假設答應：P4 的 Allocation 從 (0,0,2) 變 (3,3,2)。Available 只剩 (0,0,2)，P4 的 Need 變 (1,0,1)。",
+    "注意這是從原來的狀態出發，剛才 P1 的 request 並沒有發生。",
+    "假設答應後跑一次：Work = (0,0,2)。一個一個看，每個 process 的 Need 都至少有一欄比 Work 大（紅色），找不到 safe sequence。",
+    "找不到，系統就把這次分配先 hold 住，甚至直接拒絕。這樣系統就不會進入 unsafe state。",
+    "這就是 Banker's algorithm：每個 request 來，先改 Allocation 假設它發生，跑一遍；會進入 unsafe 就拒絕或等待，保持 safe 才答應。",
+    "欄位千萬別搞錯：Max 永遠不會變，它是程式最壞情況的需求，是事先給定的限制。",
+    "Allocation 才是記錄目前狀態的欄位，它會因為分配而改變。我們要檢查的，就是改變之後會不會出問題。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "12 台 tape drive：P0 Max 10 持有 5、P1 Max 4 持有 2、P2 Max 9 持有 2。safe sequence？",
+   "opts": [
+    "< P1, P0, P2 >",
+    "< P0, P1, P2 >",
+    "< P2, P1, P0 >",
+    "不存在（unsafe）"
+   ],
+   "ans": "< P1, P0, P2 >",
+   "why": "Available 3：P1 要 2 → 做完 5；P0 要 5 → 10；P2 要 7 → 可以。"
+  },
+  {
+   "q": "同上，但 P2 持有 3 台，則？",
+   "opts": [
+    "unsafe，但目前還不是 deadlock",
+    "已經 deadlock",
+    "safe：< P1, P0, P2 >",
+    "safe：< P1, P2, P0 >"
+   ],
+   "ans": "unsafe，但目前還不是 deadlock",
+   "why": "剩 2：P1 做完 → 4；P0 要 5、P2 要 6 都不夠 → 找不到 safe sequence。unsafe 只是可能 deadlock。"
+  },
+  {
+   "q": "恐龍書例（A/B/C = 10/5/7）中，Available 是？",
+   "opts": [
+    "(3,3,2)",
+    "(7,2,5)",
+    "(10,5,7)",
+    "(2,3,0)"
+   ],
+   "ans": "(3,3,2)",
+   "why": "ΣAllocation = (7,2,5)，Available = (10,5,7) − (7,2,5)。"
+  },
+  {
+   "q": "同一例，P1 request (1,0,2)，假設給之後的 Available？",
+   "opts": [
+    "(2,3,0)",
+    "(4,3,4)",
+    "(3,3,2)",
+    "(1,3,0)"
+   ],
+   "ans": "(2,3,0)",
+   "why": "(3,3,2) − (1,0,2) = (2,3,0)；之後仍找得到 < P1, P3, P4, P0, P2 >，所以可以給。"
+  },
+  {
+   "q": "同一例（原狀態），P4 request (3,3,0)，結果？",
+   "opts": [
+    "不給：假設給後找不到 safe sequence",
+    "給：資源足夠",
+    "錯誤：超過 Need",
+    "已經 deadlock"
+   ],
+   "ans": "不給：假設給後找不到 safe sequence",
+   "why": "Available 會變 (0,0,2)，沒有任何 Need ≤ (0,0,2)。"
+  },
+  {
+   "q": "Single instance 的 avoidance 中，claim edge 代表？",
+   "opts": [
+    "process 未來可能會 request 這個 resource",
+    "resource 已經配給 process",
+    "process 正在等 resource",
+    "process 在等另一個 process"
+   ],
+   "ans": "process 未來可能會 request 這個 resource",
+   "why": "方向同 request edge（P → R），用虛線；request 來時檢查變成 assignment 會不會成圈。"
+  },
+  {
+   "q": "safety 檢查中 process 做完，Work 要加上？",
+   "opts": [
+    "它的 Allocation",
+    "它的 Max",
+    "它的 Need",
+    "它的 Request"
+   ],
+   "ans": "它的 Allocation",
+   "why": "做完把目前持有的全部還回來。"
+  }
+ ]
+}

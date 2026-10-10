@@ -1,0 +1,255 @@
+{
+ "video": "b2lHjRiLeFE",
+ "label": "清大周志遠 第22D講 Ch7:Deadlocks",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Detection：同一套演算法，只看現在",
+   "scene": "dl-d-intro",
+   "points": [
+    {
+     "t": 16,
+     "text": "Detection 拿 avoidance 的演算法來用，差別是不管未來、只管現在的狀態，所以更簡單、沒有 decision。"
+    }
+   ],
+   "cues": [
+    15.8,
+    16.7,
+    19.0
+   ],
+   "explain": [
+    "最後一部分：[[deadlock detection]]（偵測）和 recovery（恢復）。",
+    "會做 avoidance，就能拿同一套演算法來做 detection。",
+    "差別在於 detection 不管未來（沒有 claim edge、不用 Max），只看「現在」的狀態；它也不用決定給不給，只判斷現在到底有沒有出問題，所以更簡單。"
+   ]
+  },
+  {
+   "title": "Single instance：找 cycle、wait-for graph",
+   "scene": "dl-d-single",
+   "points": [
+    {
+     "t": 44,
+     "text": "Single instance 回到 graph：不用 claim edge，只記錄目前的 request / assignment，跑 circle detection，有 circle 就是 deadlock。"
+    },
+    {
+     "t": 100,
+     "text": "可簡化成 wait-for graph：把 resource 節點拿掉，直接畫 process 之間的等待關係，結果不變。"
+    }
+   ],
+   "trap": "wait-for graph 只適用每種資源一個 instance；Pi → Pj 代表 Pi 在等 Pj 放掉資源。",
+   "cues": [
+    43.7,
+    53.1,
+    64.2,
+    72.4,
+    93.7,
+    100.0,
+    117.2,
+    131.6
+   ],
+   "explain": [
+    "先看每種資源只有一個 instance 的情況，一樣回到圖的做法。這張圖是示意。",
+    "圖上有 process，也有資源；每種資源只有一個，所以一個方塊就好。",
+    "avoidance 時會畫 claim edge（未來可能要的），detection 不需要，因為它只管現在。",
+    "系統狀態一改變就記下來，畫出目前的 request edge（灰）和 assignment edge（綠）。",
+    "然後跑找圈的演算法。這張圖找到 P1 → R1 → P2 → R2 → P3 → R3 → P1 一圈，single instance 有圈就是 deadlock。",
+    "投影片上有兩張圖，右邊那張只是簡化版。",
+    "process 之間一定是透過某個資源產生等待關係。只有一個 instance 時，可以把資源節點拿掉，直接畫「P1 在等 P2」這種箭頭，叫 wait-for graph（等待圖）。",
+    "拿掉資源不影響結果，只看 process 之間的依賴，一樣找圈，找到就代表偵測到 deadlock。"
+   ]
+  },
+  {
+   "title": "Multiple instance：detection algorithm",
+   "scene": "dl-d-multi",
+   "points": [
+    {
+     "t": 154,
+     "text": "Multiple instance 用 safe sequence 的演算法做 detection；single instance 有 circle 就 100% deadlock。"
+    },
+    {
+     "t": 207,
+     "text": "不用 Max，只看 Allocation 與目前的 Request（Request 是 given，不是假設）；Request ≤ Work 就假設它做得完並 free Allocation。"
+    },
+    {
+     "t": 271,
+     "text": "恐龍書例（7/2/6，Available (0,0,0)）：P0 → P2 → P3 → P4 → P1 全部做完 → 目前沒有 deadlock。"
+    }
+   ],
+   "trap": "老師說 multiple instance「找不到 safe sequence 不代表 deadlock」；但課本的 detection algorithm 用的是目前的 Request（不是 Max），跑完 Finish 仍為 false 的 process 就是已經 deadlocked 的 process。「不一定 deadlock」說的是 avoidance 的 unsafe。",
+   "cues": [
+    153.8,
+    160.2,
+    172.1,
+    206.8,
+    212.0,
+    228.3,
+    238.5,
+    245.4,
+    253.5,
+    271.3,
+    275.8,
+    280.7
+   ],
+   "explain": [
+    "每種資源有多個 instance 時，就跑剛才找 safe sequence 的演算法來做 detection。",
+    "對照：single instance 只要有圈，就百分之百是 deadlock。",
+    "老師說 multiple instance 的版本只是在檢查 safe 還是 unsafe，並說找不到不代表一定 deadlock。這句要小心：課本的 detection 用的是現在的 Request，找不到就代表那些 process 已經 deadlock（見易錯點）。",
+    "套用同樣的做法，但這裡不需要 Max，因為只看目前的系統狀態。",
+    "只要知道兩張表：目前的 Allocation（手上拿著多少），和目前的 Request（正在等著要多少）。恐龍書例子：A、B、C 共 7、2、6 個，現在全部配出去了，Available = (0,0,0)。",
+    "例如 P1 已經卡在那裡：它還要 2 個 A、2 個 C 才能執行（Request = (2,0,2)）。",
+    "一樣看目前剩多少資源（Available），能不能滿足某人的 Request。",
+    "能滿足的就讓它做完，把它的 Allocation 放回來。P0 的 Request 是 (0,0,0)，馬上能做完，Available 變 (0,1,0)。",
+    "為什麼不用 Max？Need = Max − Allocation 是「假設」最多會要多少；detection 的 Request 是已經給定的事實：現在就是要這麼多才能執行。",
+    "直接拿 Available 比 Request：P1 要 (2,0,2)，但只有 (0,1,0)，不夠，先等。P2 要 (0,0,0) 可以，做完加 (3,0,3) 變 (3,1,3)；P3 要 (1,0,0) 可以，加 (2,1,1) 變 (5,2,4)。",
+    "達到就放、沒達到就等：P4 要 (0,0,2) 可以，加 (0,0,2) 變 (5,2,6)；回頭看 P1 要 (2,0,2) 現在夠了，加 (2,0,0) 變 (7,2,6)。",
+    "全部都能做完（Finish 全部 true），所以目前沒有 deadlock。若有人始終做不完，就代表偵測到 deadlock，接著要決定怎麼 recovery。"
+   ]
+  },
+  {
+   "title": "P2 多要一個 C → deadlock",
+   "scene": "dl-d-more",
+   "points": [
+    {
+     "t": 297,
+     "text": "同一例，P2 的 Request 多一個 C → (0,0,1)；沒有 avoidance，系統就照給。"
+    },
+    {
+     "t": 310,
+     "text": "跑 detection：只有 P0 做得完（Work (0,1,0)），P1～P4 的 Request 都不夠 → 已經 deadlock。"
+    },
+    {
+     "t": 327,
+     "text": "OS 還能跑，它要 detect 才知道 user program 不跑的原因。"
+    }
+   ],
+   "cues": [
+    297.5,
+    302.3,
+    309.8,
+    318.0,
+    327.3
+   ],
+   "explain": [
+    "一樣的例子，原本是沒有 deadlock 的。",
+    "現在假設 P2 又多要一個 C，它的 Request 從 (0,0,0) 變成 (0,0,1)。",
+    "沒有 avoidance 機制，程式要什麼系統就答應。跑 detection：P0 做完後 Work = (0,1,0)；P1 要 (2,0,2)、P2 要 (0,0,1)、P3 要 (1,0,0)、P4 要 (0,0,2)，每個都至少有一欄不夠。",
+    "於是系統已經呈現 deadlock：Finish 還是 false 的 P1、P2、P3、P4 就是卡住的 process。",
+    "為什麼 OS 要做這些計算？卡住的是使用者的程式，OS 本身還能跑。OS 需要知道程式不動的原因，是不是已經 deadlock，才能處理。"
+   ]
+  },
+  {
+   "title": "Recovery",
+   "scene": "dl-d-recover",
+   "points": [
+    {
+     "t": 350,
+     "text": "最暴力：全部 kill（＝ reboot）；好一點：只 kill 在 circle 裡的 process。"
+    },
+    {
+     "t": 398,
+     "text": "one at a time：一次砍一個再檢查；但誰先砍？priority 最低的不一定能解，可能反而砍更多，需要 user program 資訊、case by case。"
+    },
+    {
+     "t": 466,
+     "text": "選 victim；若有 preemption + rollback（checkpoint）可回復，要 partial 還是整個重來；一直砍同一個會 starvation。"
+    },
+    {
+     "t": 518,
+     "text": "recovery 多半 case by case：實務上要嘛 avoid / prevent，要嘛 ignore。"
+    }
+   ],
+   "trap": "選 victim 要把被 rollback 的次數算進 cost，否則同一個 process 會一直被選中而 starvation。",
+   "cues": [
+    350.7,
+    360.6,
+    376.6,
+    398.3,
+    420.3,
+    437.0,
+    466.0,
+    484.5,
+    495.5,
+    518.3
+   ],
+   "explain": [
+    "知道怎麼偵測之後，真正麻煩的是 recovery（恢復）。示意：P1～P4 互相等成一圈，P5、P6 沒有參與。",
+    "第一種最暴力：所有 process 全部 kill 掉，等於 reboot。電腦沒反應時，原因之一可能就是 deadlock。",
+    "稍微好一點：只 kill 那些在圈裡的 process（P1～P4），P5、P6 不受影響。",
+    "更溫和：one at a time，一次只砍一個，再跑一次 detection 看能不能解套，不行再砍下一個。",
+    "問題是誰先砍？也許砍 priority（優先權）最低的，但不一定能解決，因為它手上的資源可能很少。",
+    "從 priority 低的一路砍下去，最後砍掉的 process 可能反而更多。怎麼做最好，需要很多使用者程式的資訊，只能看情況。",
+    "總之要選一個 victim（犧牲者）。如果系統支援 preemption 和 rollback（例如定期做 checkpoint 存檔），被砍的程式可以回到之前的狀態。",
+    "但還要看支援程度：能部分回復（partial rollback），還是只能整個重來（total rollback）。",
+    "還有一個問題：會不會老是砍同一個？很有可能，例如 priority 最低的那個一直被選中，它就永遠跑不完，這就是 [[starvation]]（飢餓）。",
+    "recovery 很多是 case by case，課堂不多講。實務上要嘛事先 avoid 或 prevent，要嘛 ignore，讓使用者自己解決。"
+   ]
+  },
+  {
+   "title": "第七章結束",
+   "scene": null,
+   "points": [
+    {
+     "t": 540,
+     "text": "第七章 deadlock 到此結束。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Deadlock detection（multiple instance）和 Banker 的 safety 檢查最大的差別？",
+   "opts": [
+    "detection 比的是目前的 Request，不需要 Max",
+    "detection 比的是 Max",
+    "detection 只能用在 single instance",
+    "detection 不需要 Allocation"
+   ],
+   "ans": "detection 比的是目前的 Request，不需要 Max",
+   "why": "Banker 用 Need = Max − Allocation（假設最壞）；detection 用已經 given 的 Request。"
+  },
+  {
+   "q": "恐龍書 detection 例（Available (0,0,0)）中，P2 的 Request 改為 (0,0,1) 後？",
+   "opts": [
+    "P1、P2、P3、P4 deadlock",
+    "沒有 deadlock",
+    "只有 P2 deadlock",
+    "全部 5 個 deadlock"
+   ],
+   "ans": "P1、P2、P3、P4 deadlock",
+   "why": "P0 做完後 Work = (0,1,0)，其餘 Request 都有一欄不夠。"
+  },
+  {
+   "q": "Wait-for graph 適用於？",
+   "opts": [
+    "每種資源只有一個 instance 的 detection",
+    "multiple instance 的 detection",
+    "Banker 的 safety 檢查",
+    "prevention"
+   ],
+   "ans": "每種資源只有一個 instance 的 detection",
+   "why": "把 RAG 的資源節點收掉；有 cycle 就是 deadlock。"
+  },
+  {
+   "q": "Recovery 一次 kill 一個 process，每 kill 一個之後要？",
+   "opts": [
+    "再跑一次 detection",
+    "重新開機",
+    "把所有 process 都 rollback",
+    "什麼都不用做"
+   ],
+   "ans": "再跑一次 detection",
+   "why": "看 deadlock 解開了沒，沒有再選下一個 victim。"
+  },
+  {
+   "q": "一直選同一個 process 當 victim 會造成？",
+   "opts": [
+    "starvation",
+    "race condition",
+    "circular wait",
+    "context switch"
+   ],
+   "ans": "starvation",
+   "why": "它永遠做不完；把 rollback 次數算進 cost 可避免。"
+  }
+ ]
+}

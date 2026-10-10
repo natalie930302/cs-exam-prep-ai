@@ -1,0 +1,315 @@
+{
+ "video": "XpKrBUZqfGI",
+ "label": "Deadlock | Necessary Condition for Deadlock | Resource Allocation Graph",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場",
+   "scene": null,
+   "points": [
+    {
+     "t": 0,
+     "text": "本系列會談 deadlock 的定義、處理方法與 Banker's algorithm。"
+    }
+   ]
+  },
+  {
+   "title": "Deadlock 的定義",
+   "scene": "dl-e-def",
+   "points": [
+    {
+     "t": 37,
+     "text": "一組 process 中，每個都在等「只有組內另一個 process 才能觸發」的事件；也就是在等一個永遠不會發生的事件。"
+    }
+   ],
+   "cues": [
+    37.7,
+    48.4,
+    66.1
+   ],
+   "explain": [
+    "deadlock 的定義：一組 process 都在等資源，而這些資源也正被組裡其他 process 等著或拿著。",
+    "更精確地說：組裡每個 process 都在等一個事件（例如有人放掉資源），而這個事件只有同組的另一個 process 才能觸發。",
+    "換句話說，兩個以上的 process 在等一個永遠不會發生的事件，所以全部卡住。"
+   ]
+  },
+  {
+   "title": "單線橋的例子",
+   "scene": "dl-e-bridge",
+   "points": [
+    {
+     "t": 77,
+     "text": "單線橋一次只能過一台車；兩邊各來一台在中間相遇，只有一方後退另一方才能過，兩邊都不退就是 deadlock。"
+    }
+   ],
+   "cues": [
+    77.0,
+    92.0,
+    104.3,
+    126.7
+   ],
+   "explain": [
+    "經典例子：一座單線橋，一次只能讓一台車通過。",
+    "兩邊各來一台車，在橋中間遇到了。",
+    "只有其中一台倒車，另一台才過得去；如果兩台都堅持不退，就永遠卡在橋上，這就是 deadlock。",
+    "對應到 OS：橋是一個資源，兩台車是兩個都在要這個資源的 process。"
+   ]
+  },
+  {
+   "title": "OS 的例子：P1、P2、R1、R2",
+   "scene": "dl-e-two",
+   "points": [
+    {
+     "t": 137,
+     "text": "P1、P2 都需要 R1 和 R2 才能完成。"
+    },
+    {
+     "t": 203,
+     "text": "time 0：R1 配給 P1、R2 配給 P2；接著 P1 request R2、P2 request R1。"
+    },
+    {
+     "t": 270,
+     "text": "拿不到就不放 → P1 等 P2 放 R2、P2 等 P1 放 R1 → deadlock。"
+    }
+   ],
+   "cues": [
+    137.0,
+    166.0,
+    183.6,
+    203.0,
+    239.7,
+    250.4,
+    264.4,
+    270.7,
+    287.3,
+    308.1
+   ],
+   "explain": [
+    "從 OS 的角度看：兩個 process（P1、P2），兩個資源（R1、R2），各只有一個。",
+    "P1 要同時拿到 R1 和 R2 才能做完。",
+    "P2 也一樣，需要 R1 和 R2。",
+    "一開始（time 0）R1 是空的，配給 P1，畫一條綠色 assignment edge R1 → P1。",
+    "同一時間 R2 也是空的，配給 P2。",
+    "P1 還需要 R2，所以對 R2 發出 request（灰色箭頭 P1 → R2）。",
+    "P2 也需要 R1，同樣發出 request。",
+    "問題來了：P1 拿不到 R2 就不肯放 R1；P2 拿不到 R1 也不肯放 R2。",
+    "箭頭繞成一圈（紅色），這就是 deadlock：每個 process 都在等組內另一個 process 才能觸發的事件。",
+    "P1 在等 P2 放掉 R2，P2 在等 P1 放掉 R1，完全符合定義。"
+   ]
+  },
+  {
+   "title": "四個必要條件",
+   "scene": "dl-e-four",
+   "points": [
+    {
+     "t": 325,
+     "text": "四個條件同時成立才可能 deadlock。"
+    },
+    {
+     "t": 345,
+     "text": "Mutual exclusion：一次只有一個 process 能用，resource 不能 shared mode。Hold and wait：至少 hold 一個、同時等另一個。"
+    },
+    {
+     "t": 428,
+     "text": "No preemption：resource 只能由 process 自願釋放。Circular wait：P0 等 P1、P1 等 P2 … Pn 等 P0。"
+    }
+   ],
+   "cues": [
+    325.0,
+    345.7,
+    365.6,
+    378.2,
+    428.0,
+    466.6,
+    473.3,
+    513.1
+   ],
+   "explain": [
+    "deadlock 的必要條件（necessary conditions）有四個，必須同時成立才可能發生 deadlock。",
+    "① [[mutual exclusion]]：一個資源一次只能讓一個 process 使用。P1 拿著 R，P2 只能等。",
+    "也就是說資源不能共用（shared mode）。有互斥，才可能 deadlock。",
+    "② hold and wait：process 手上至少握著一個資源（R1），同時又在等另一個資源（R2）。",
+    "③ no preemption：資源只能由拿著它的 process 自願放掉，別人不能搶走。",
+    "反過來，如果可以強制把資源收回來，就能把卡住的狀態解開。",
+    "④ [[circular wait]]：P0 等 P1、P1 等 P2……一直到 Pn，而 Pn 又在等 P0，繞成一圈。",
+    "這四個條件要同時成立，deadlock 才會發生：mutual exclusion、hold and wait、no preemption、circular wait。"
+   ]
+  },
+  {
+   "title": "Resource allocation graph",
+   "scene": "dl-e-rag",
+   "points": [
+    {
+     "t": 535,
+     "text": "RAG G = (V, E)：vertex 分 process、resource 兩種；edge 分 assign、request 兩種。"
+    },
+    {
+     "t": 606,
+     "text": "process 畫成 Pi；resource 方塊裡的點數 = instance 數（single / multiple instance）。"
+    },
+    {
+     "t": 672,
+     "text": "Assign edge：resource → process；request edge：process → resource。"
+    }
+   ],
+   "cues": [
+    535.0,
+    553.5,
+    581.1,
+    606.4,
+    619.0,
+    651.0,
+    672.7,
+    700.2
+   ],
+   "explain": [
+    "resource allocation graph（資源配置圖）用 G 表示，由一組 vertex（點）和 edge（邊）組成。",
+    "vertex 有兩種：process（圓）和 resource（方塊）。",
+    "edge 也有兩種：assign edge（配置邊）和 request edge（請求邊）。",
+    "process 寫成 Pi，i 是編號 0、1、2、3……",
+    "resource 又分兩種：只有一個的 single instance，和有很多份的 multiple instance（例如很多份 media player 的拷貝）。",
+    "single instance 畫成方塊裡一個點；multiple instance 有幾個 instance 就畫幾個點，這裡是 4 個。",
+    "assign edge：資源已經配給 process，方向是 resource → process（綠色）。",
+    "request edge：process 在要資源，方向是 process → resource（灰色）。"
+   ]
+  },
+  {
+   "title": "Galvin 的例子：沒有 deadlock",
+   "scene": "dl-e-ex1",
+   "points": [
+    {
+     "t": 721,
+     "text": "Galvin 經典例：P1 要 R1（在 P2）；R2 兩個 instance 給了 P1、P2；P2 要 R3（在 P3）。"
+    },
+    {
+     "t": 794,
+     "text": "P3 沒有其他 request → 做完放 R3 → P2 拿到 R3 做完、放掉 R1、R2 → P1 拿到 R1 做完 → 沒有 deadlock。"
+    }
+   ],
+   "cues": [
+    721.1,
+    739.0,
+    745.2,
+    757.0,
+    770.3,
+    777.5,
+    794.0,
+    800.8,
+    842.4,
+    879.6,
+    911.6
+   ],
+   "explain": [
+    "用一個經典例子，從圖判斷會不會 deadlock。",
+    "這是 Galvin（恐龍書作者之一）書上的例子，多數課本都有。三個 process、三種資源，R2 有兩個 instance。",
+    "P1 想要 R1，可是 R1 已經配給了 P2。",
+    "R2 的一個 instance 配給了 P1。",
+    "R2 其實有兩個 instance，另一個配給了 P2。",
+    "P2 在 request R3，而 R3 配給了 P3。",
+    "這就是目前的狀況，問題是：有沒有 deadlock？",
+    "先看 P3：它沒有在要別的資源，只靠 R3 就能做完，做完就把 R3 放掉。",
+    "R3 空出來後，P2 的 request 變成配置（綠色），P2 也能一路執行完。",
+    "P2 做完，把 R1、R2（還有 R3）都放掉。P1 只差 R1，現在拿到了，也能做完。",
+    "所以這張圖目前沒有 deadlock：P3 做完後，其他人就依序做完。"
+   ]
+  },
+  {
+   "title": "P3 也要 R2：deadlock",
+   "scene": "dl-e-ex2",
+   "points": [
+    {
+     "t": 929,
+     "text": "同一張圖，P3 再 request R2：R2 在 P1、P2 手上；P2 等 P3 的 R3；P1 等 P2 的 R1 → 互相依賴 → deadlock。"
+    },
+    {
+     "t": 1011,
+     "text": "RAG 可以拿來偵測系統裡有沒有 deadlock。"
+    }
+   ],
+   "trap": "這張圖有兩個 cycle：P1→R1→P2→R3→P3→R2→P1 與 P2→R3→P3→R2→P2；R2 有兩個 instance，但兩個都在 cycle 裡的 process 手上，所以真的 deadlock。",
+   "cues": [
+    929.6,
+    968.6,
+    983.6,
+    993.2,
+    1000.1,
+    1011.1
+   ],
+   "explain": [
+    "同一張圖只改一個地方：P3 也在 request R2（黃色箭頭）。",
+    "R2 在誰手上？P1 和 P2 各一個。所以 P3 要等 P1 或 P2 做完才能完成。",
+    "P2 需要 R3，但 R3 在 P3 手上，所以 P2 也做不完。",
+    "P1 需要 R1，R1 在 P2 手上；而 P2 要等 P3 之後才做得完。",
+    "每個 process 都依賴另一個 process，誰都做不完，這就是 deadlock。",
+    "這就是 resource allocation graph 的用途：拿來偵測系統裡有沒有 deadlock。"
+   ]
+  },
+  {
+   "title": "總結",
+   "scene": null,
+   "points": [
+    {
+     "t": 1021,
+     "text": "本集：deadlock 的定義、四個必要條件、resource allocation graph 與例子。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "以下哪個不是 deadlock 的必要條件？",
+   "opts": [
+    "starvation",
+    "mutual exclusion",
+    "hold and wait",
+    "circular wait"
+   ],
+   "ans": "starvation",
+   "why": "四個條件：mutual exclusion、hold and wait、no preemption、circular wait。"
+  },
+  {
+   "q": "RAG 中 request edge 的方向？",
+   "opts": [
+    "process → resource",
+    "resource → process",
+    "process → process",
+    "resource → resource"
+   ],
+   "ans": "process → resource",
+   "why": "assign edge 是 resource → process。"
+  },
+  {
+   "q": "Galvin 例中（P3 沒有再 request），三個 process 的完成順序？",
+   "opts": [
+    "P3 → P2 → P1",
+    "P1 → P2 → P3",
+    "P2 → P3 → P1",
+    "會 deadlock"
+   ],
+   "ans": "P3 → P2 → P1",
+   "why": "P3 放 R3 → P2 做完放 R1、R2 → P1 拿到 R1。"
+  },
+  {
+   "q": "同一例加上 P3 → R2 後？",
+   "opts": [
+    "deadlock",
+    "沒有 deadlock",
+    "只有 P3 卡住",
+    "只有 P1 卡住"
+   ],
+   "ans": "deadlock",
+   "why": "R2 兩個 instance 都在 P1、P2 手上，P1、P2、P3 互相依賴。"
+  },
+  {
+   "q": "P1 拿著 R1 等 R2、P2 拿著 R2 等 R1，這是什麼？",
+   "opts": [
+    "deadlock",
+    "starvation",
+    "race condition",
+    "livelock"
+   ],
+   "ans": "deadlock",
+   "why": "每個都在等組內另一個 process 才能觸發的事件。"
+  }
+ ]
+}

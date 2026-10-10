@@ -1,0 +1,472 @@
+{
+ "video": "efH4nuwUalA",
+ "label": "清大周志遠 第22A講 System Model & Deadlock Characterization",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "第七章：從 synchronization 到 deadlock",
+   "scene": "dl-a-intro",
+   "points": [
+    {
+     "t": 14,
+     "text": "第六章用 lock 解 critical section、保證一次只有一個程式使用 resource；但 lock 用得不好，就會 deadlock。"
+    },
+    {
+     "t": 49,
+     "text": "deadlock：process 之間互相在等，讓所有 process 都沒辦法繼續執行。"
+    },
+    {
+     "t": 76,
+     "text": "解決方法分兩種：prevention（系統設計時事先 eliminate 可能性）與 avoidance（run time 動態看系統狀態再避開）。"
+    }
+   ],
+   "cues": [
+    14.2,
+    17.1,
+    49.1,
+    53.3,
+    76.3,
+    98.0,
+    123.5
+   ],
+   "explain": [
+    "這一章講 [[deadlock]]（死結）。它跟上一章的 synchronization（同步）有關：大家搶著用同一份東西時，要排好順序。",
+    "上一章為了保護 [[critical section]]（一次只能一個人進去的程式片段），我們用 lock（鎖）。拿到鎖的人才能用，這樣保證一次只有一個程式使用這個 resource（資源）。",
+    "可是鎖用得不好就出事：P1 拿著一把鎖、等 P2 的鎖；P2 拿著另一把、等 P1 的。兩個都在等對方放手。",
+    "結果兩個 process（執行中的程式）都卡住，誰也動不了，這種狀況就叫 deadlock。",
+    "第一種解法 prevention（預防）：設計系統時就定好規則，讓 deadlock 根本不可能發生，不管使用者怎麼寫程式。",
+    "第二種解法 avoidance（避免）：程式跑的時候（run time），系統一直看目前的狀態，發現危險就先避開。",
+    "所以這章的路線是：先把 deadlock 的定義講清楚，再分別講 prevention 和 avoidance 有哪些方法。"
+   ]
+  },
+  {
+   "title": "什麼是 deadlock：hold 著資源又在等",
+   "scene": "dl-a-what",
+   "points": [
+    {
+     "t": 137,
+     "text": "process 執行時需要 resource（很抽象：一段程式、memory content、CPU core 的 slot…），要佔有它才能繼續。"
+    },
+    {
+     "t": 188,
+     "text": "資源有限：被別人拿走就要等；需要多個資源時，各自掌握一部分就會互相等待。"
+    },
+    {
+     "t": 219,
+     "text": "核心：hold 著 resource 又在 wait 別的，等不到也不放 → 卡住。"
+    },
+    {
+     "t": 239,
+     "text": "例：兩個 tape drive，兩個 process 各 hold 一個再等另一個；例：A、B 兩個 semaphore 呼叫順序不好。"
+    },
+    {
+     "t": 355,
+     "text": "只要一個程式需要 acquire 多個資源，而它們又被別人拿走，就可能 deadlock。"
+    }
+   ],
+   "cues": [
+    137.5,
+    152.0,
+    188.3,
+    197.3,
+    219.3,
+    238.9,
+    270.2,
+    313.0,
+    324.5,
+    355.0
+   ],
+   "explain": [
+    "先用直覺講什麼是 deadlock。畫面上有兩個 process：P1 和 P2。",
+    "process 執行時需要 resource（資源）。資源很抽象：可以是一段程式、一塊 memory 的內容、或 CPU 核心的執行時段——總之要「佔有」它才能繼續跑。",
+    "資源數量有限。P1 先拿到 R1；如果別人也要 R1，就只能等 P1 用完。",
+    "麻煩的是一個程式常需要好幾種資源。P2 拿到了 R2，結果兩人各握一部分，又都在等對方手上的那份，紅箭頭就是「我在等你」。",
+    "這就是 deadlock 的核心：hold（握住）一個資源，同時 wait（等）另一個；等不到又不肯放手，就永遠卡住。",
+    "老師舉的實體例子：兩個 tape drive（磁帶機），一次只能給一個程式用，而程式要同時寫到兩個 drive 才能完成。",
+    "剛好兩個 process 各拿到一個 drive，又都在等另一個。誰都不退讓，系統就像停住一樣。",
+    "第二個例子來自上一章：A、B 兩個 [[semaphore]]（號誌，用 wait/signal 控制先後）。左邊程式先 wait(A) 再 wait(B)，右邊程式順序相反。",
+    "如果兩邊剛好都先拿到第一個（左邊拿到 A、右邊拿到 B），接著左邊等 B、右邊等 A——要兩個都有才肯放手，於是 deadlock。",
+    "結論：只要程式需要同時拿好幾個資源，而這些資源又被別人拿走，就有可能發生 deadlock。"
+   ]
+  },
+  {
+   "title": "Deadlock 的四個必要條件",
+   "scene": "dl-a-four",
+   "points": [
+    {
+     "t": 373,
+     "text": "四個條件是 necessary（必要條件）：要同時成立才會 deadlock，缺一個就不會。"
+    },
+    {
+     "t": 393,
+     "text": "① Mutual exclusion：一次只能一個人使用；可以 share 就不會 waiting。解 critical section 就需要它，所以很常發生。"
+    },
+    {
+     "t": 438,
+     "text": "② Hold and wait：已經拿到一個、還在等另一個，並一直 hold 著。若拿不到就全部放掉重來，就不會 deadlock。"
+    },
+    {
+     "t": 499,
+     "text": "③ No preemption：resource 只能自願 release，不能被強迫放掉。printer 印到一半無法 preempt；state 記不下來或 resume 代價大。"
+    },
+    {
+     "t": 583,
+     "text": "④ Circular wait：process 互相等成一圈；只是單向的等待最終會解開，不算 deadlock。"
+    }
+   ],
+   "trap": "四個是「必要」條件：都成立才「可能」deadlock；只要破壞其中一個就保證不會 deadlock。circular wait 其實隱含了 hold and wait。",
+   "cues": [
+    373.6,
+    387.6,
+    393.0,
+    404.3,
+    418.2,
+    438.0,
+    467.2,
+    499.5,
+    518.7,
+    546.6,
+    583.6,
+    600.0,
+    622.4
+   ],
+   "explain": [
+    "老師把 deadlock 正式整理成四個條件。圖上四個 process（P1～P4）圍成一圈，中間是四個資源（R1～R4）。",
+    "這四個是 necessary（必要）條件：要「同時」成立才會 deadlock。換句話說，只要其中一個不成立，就保證沒有 deadlock。",
+    "第一個 [[mutual exclusion]]（互斥）：一個資源一次只能讓一個人使用，資源亮起來表示「被獨佔」。",
+    "反過來想：如果資源可以 share（大家同時用），根本不用排隊等，就不可能 deadlock。",
+    "但這個條件很常見，因為解 [[critical section]] 本來就要求一次只有一個人進去，所以第一個條件常常成立。",
+    "第二個 hold and wait（持有並等待）：每個人手上已經拿著一個資源（資源移到小人旁邊），還在等下一個，而且不放手。",
+    "反過來：如果規定「拿不到就把手上的全部放掉，重新來過」，就沒有人一邊握著一邊等，也就不會 deadlock。",
+    "第三個 no preemption（不可搶奪）：資源只能由拿著它的人「自願」放掉，別人不能強迫它交出來。",
+    "如果可以 [[preemption]]（強迫它放掉，例如直接把程式 kill 掉），你等的人就能被逼著讓出資源，也就沒有人會一直等。",
+    "可是很多資源沒辦法搶：印表機印到一半，你不能說「先停，等一下再接著印」。很多程式的狀態記不下來，或記下來再恢復的成本太高。",
+    "第四個 [[circular wait]]（循環等待）：P1 等 P2、P2 等 P3、P3 等 P4、P4 又等 P1，紅箭頭繞成一圈。",
+    "如果只是單向排隊（P4 沒有在等 P1），最後一個人做完放手，前面的就依序解開，只是等比較久，不叫 deadlock。",
+    "所以 deadlock 發生時，一定能找到一個繞回原點的等待圈。"
+   ]
+  },
+  {
+   "title": "交通的例子：四台車卡在路口",
+   "scene": "dl-a-traffic",
+   "points": [
+    {
+     "t": 633,
+     "text": "四個方向的車剛好全部卡在路口，沒有一台可以動：標準的 deadlock。"
+    },
+    {
+     "t": 660,
+     "text": "Mutual exclusion：路口每塊空間一次只能一台車。Hold and wait：停在這格、等前面那格（所以路口畫黃線不准停）。"
+    },
+    {
+     "t": 716,
+     "text": "No preemption：一般車不能強迫前車讓開（消防車、救護車才行）。Circular wait：大家互相等。"
+    },
+    {
+     "t": 753,
+     "text": "電腦裡同理：路口換成 lock、shared memory 或 physical resource；四個同時存在才 deadlock，解掉一個就沒有。"
+    }
+   ],
+   "cues": [
+    633.0,
+    660.4,
+    683.0,
+    700.0,
+    716.3,
+    737.5,
+    753.0,
+    778.3
+   ],
+   "explain": [
+    "用交通來記四個條件：十字路口四個方向的車剛好全部擠進路口，沒有一台能動，這就是 deadlock。",
+    "Mutual exclusion：把路口切成四格，每一格就是一個資源，一格一次只能停一台車，不能兩台疊在一起。",
+    "Hold and wait：每台車佔住自己這一格（hold），同時在等前面那一格空出來（wait）。",
+    "這就是為什麼路口會畫黃線、規定不能停在路口：一停下來就形成 hold and wait。",
+    "No preemption：一般車子不能叫前面的車讓開。只有消防車、救護車這種有特權的，才能「搶」路權。",
+    "Circular wait：四台車你等我、我等他，繞成一圈。只要有一格沒被佔住，最後大家都能慢慢通過。",
+    "電腦裡也一樣：路口那幾格換成 lock、共用的 memory 空間、或實體設備，就是程式在搶的資源。",
+    "四個條件同時存在才會 deadlock，解掉任一個系統就不會 deadlock。麻煩的是，這四個都是電腦運作時常常需要的。"
+   ]
+  },
+  {
+   "title": "System model：resource type、instance、request → use → release",
+   "scene": "dl-a-model",
+   "points": [
+    {
+     "t": 800,
+     "text": "用數學模型描述：resource type（CPU、memory、device、lock…）。"
+    },
+    {
+     "t": 845,
+     "text": "每個 type 有多個 instance（例：4 個 CPU core、2 個 hard drive），像 counting semaphore 是一個數量。"
+    },
+    {
+     "t": 886,
+     "text": "程式描述成：需要哪些 resource、各幾個 instance；使用過程重複 request → use → release。"
+    },
+    {
+     "t": 917,
+     "text": "使用中 resource 被佔住，別人不能用 → process 之間產生 dependency → 可能 deadlock。"
+    }
+   ],
+   "cues": [
+    800.7,
+    822.0,
+    845.5,
+    868.5,
+    886.0,
+    905.2,
+    917.0
+   ],
+   "explain": [
+    "要用演算法解 deadlock，先把問題寫成模型。這一段定義幾個基本符號。",
+    "Resource type（資源種類）：例如 CPU 是一種、memory 是一種、硬碟這類 device 是一種、lock 也是一種。注意這只是「種類」。",
+    "每一種 type 可以有好幾個 instance（實際的個數）。老師舉例：多核心有 4 個 CPU、硬碟有 2 顆。圖上 memory 和 lock 的個數是示意。",
+    "就像上一章的 [[counting semaphore]]：它代表一個數量，不一定只有 0 或 1。",
+    "一個程式就可以描述成：它需要哪些種類的資源、每種要幾個 instance。",
+    "使用資源的過程一直重複三步：request（申請）→ use（使用）→ release（用完才放掉）。",
+    "在 use 的期間，資源被這個 process 佔住，別人不能用。於是 process 之間有了「誰在等誰」的關係（dependency），deadlock 就可能出現。"
+   ]
+  },
+  {
+   "title": "Resource-allocation graph",
+   "scene": "dl-a-rag",
+   "points": [
+    {
+     "t": 940,
+     "text": "把系統狀態畫成 resource-allocation graph：process 用圓圈，resource 用方塊，方塊裡每個點是一個 instance。"
+    },
+    {
+     "t": 1005,
+     "text": "Request edge：P → R，表示 process 需要這個 resource、還在等（像等 lock 進 critical section）。"
+    },
+    {
+     "t": 1050,
+     "text": "Assignment edge：R → P，表示這個 instance 已經 assign 給 process、正在使用；顏色不重要，方向才重要。"
+    },
+    {
+     "t": 1101,
+     "text": "從圖上看得到 hold and wait（P1 hold 一個 R2、wait R1），也能看有沒有 circular wait。"
+    },
+    {
+     "t": 1141,
+     "text": "之後用這張圖判斷有沒有 deadlock，或答應某個 request 會不會有危險。"
+    }
+   ],
+   "cues": [
+    940.0,
+    963.4,
+    974.0,
+    983.0,
+    1005.7,
+    1037.6,
+    1050.5,
+    1064.6,
+    1101.0,
+    1125.5,
+    1141.1
+   ],
+   "explain": [
+    "剛才的符號可以畫成一張圖。process 之間的關係，用 graph（圖）最容易看清楚。",
+    "這張圖叫 resource-allocation graph（資源配置圖），用來描述系統「現在」的狀態。",
+    "process 用圓圈表示（這裡畫成小人）。這個例子有三個 process：P1、P2、P3。",
+    "resource 用方塊表示，方塊裡每個白點代表一個 instance。R1、R3 各 1 個，R2 有 2 個，R4 有 3 個（這是恐龍書上的圖）。",
+    "process 需要某個資源時，畫一條「從 P 指向 R」的箭頭，叫 request edge（請求邊）：P1 想要 R1、P2 想要 R3。",
+    "就像進 critical section 前要等一把 lock：request edge 代表「還沒拿到，正在等」。",
+    "已經拿到的，畫「從 R 指向 P」的箭頭，叫 assignment edge（配置邊）。R1 給了 P2；R2 的兩個 instance 一個給 P2、一個給 P1；R3 給了 P3。",
+    "老師提醒：顏色不重要，重點是方向。P → R 是在等，R → P 是已經拿到、正在使用。",
+    "從圖上直接看得到 hold and wait：P1 握著一個 R2（R2 → P1），又在等 R1（P1 → R1）。",
+    "同樣也能沿著箭頭找有沒有繞成一圈，也就是 circular wait。這樣就能用圖學的演算法來解 deadlock。",
+    "之後會用這張圖判斷兩件事：現在是不是已經 deadlock？如果答應某個 request，未來會不會有 deadlock 的危險？"
+   ]
+  },
+  {
+   "title": "有 cycle 一定 deadlock 嗎？",
+   "scene": "dl-a-cycle",
+   "points": [
+    {
+     "t": 1174,
+     "text": "沒有 circle → 一定沒有 deadlock（少了 circular wait）。"
+    },
+    {
+     "t": 1200,
+     "text": "有 circle 不一定 deadlock。例一：P1 等 P2、P2 等 P3，P3 再要 R2，而 R2 的兩個 instance 在 P1、P2 手上 → 互相等 → deadlock。"
+    },
+    {
+     "t": 1321,
+     "text": "例二：P1 → R1 → P3 → R2 → P1 有 circle，但 P2、P4 沒有在等，做完會放掉資源 → 沒有 deadlock。"
+    },
+    {
+     "t": 1425,
+     "text": "結論：沒有 circle 一定 safe；有 circle 時，若每種 resource 只有一個 instance 就一定 deadlock，有 multiple instance 則不一定。"
+    },
+    {
+     "t": 1490,
+     "text": "之後用 circle detection 的 algorithm 判斷（complexity 蠻高，但正確）。"
+    }
+   ],
+   "trap": "「有 cycle 一定 deadlock」只在每種資源只有一個 instance 時成立；multiple instance 時 cycle 只是必要條件。",
+   "cues": [
+    1174.1,
+    1184.0,
+    1200.1,
+    1222.2,
+    1241.6,
+    1253.4,
+    1280.0,
+    1299.0,
+    1321.4,
+    1334.3,
+    1361.6,
+    1383.5,
+    1404.7,
+    1425.0,
+    1436.4,
+    1447.3,
+    1462.0,
+    1490.1
+   ],
+   "explain": [
+    "先回到恐龍書那張圖。circular wait 是四個條件之一，所以第一步就是看圖上有沒有繞成一圈。",
+    "這張圖沿著箭頭走，找不到任何一圈。少了 circular wait 這個必要條件，就一定沒有 deadlock，三個人都會做完。",
+    "那反過來，有一圈是不是就一定 deadlock？不一定。老師用兩個例子說明。",
+    "例一：P1 要 R1，而 R1 只有一個、在 P2 手上，所以 P1 其實在等 P2。",
+    "同理 P2 要 R3，R3 在 P3 手上，所以 P2 在等 P3。",
+    "這次 P3 也多要一個 R2（新的黃色箭頭）。問題是：P3 會不會在等 P1？",
+    "R2 雖然有兩個 instance，但一個被 P2 拿著、一個被 P1 拿著，沒有空的。所以 P3 同時在等 P1 和 P2，紅色就是找到的等待圈。",
+    "三個人互相等：P1 等 P2、P2 等 P3、P3 又等 P1，誰都做不完，這就是 deadlock。",
+    "例二換一張圖：一樣找得到一圈 P1 → R1 → P3 → R2 → P1。",
+    "P1 已經有一個 R2，它要的是 R1；R1 的兩個 instance 在 P2、P3 手上。",
+    "關鍵是 P2 沒有在等任何人，所以它一定做得完；做完就放掉 R1，P1 就拿到 R1（箭頭變成綠色），P1 也能做完。",
+    "P3 也一樣：它要的 R2 在 P1 或 P4 手上，而 P4 沒有被任何人擋住，做完就會放出一個 R2。",
+    "所以這張圖雖然有一圈，卻沒有 deadlock。",
+    "結論一：把系統畫成圖，只要沒有 cycle（圈），就一定沒有 deadlock，是安全的。",
+    "結論二：有 cycle 時，要看每種資源有幾個 instance。",
+    "如果每種資源都只有一個 instance，有圈就一定 deadlock，因為你要的那一個一定被圈裡的人拿著，沒有別的可以繞過去。",
+    "如果有多個 instance（像剛才的 R1、R2 各有 2 個），有圈只是「可能」deadlock，要再仔細判斷。把它們改成只有 1 個，就鐵定 deadlock。",
+    "之後會介紹用演算法做 circle detection（找圈），雖然計算量不小，但可以正確判斷。"
+   ]
+  },
+  {
+   "title": "處理 deadlock 的方法",
+   "scene": "dl-a-methods",
+   "points": [
+    {
+     "t": 1519,
+     "text": "Prevention：never enter deadlock，事先把四個條件之一拿掉。"
+    },
+    {
+     "t": 1558,
+     "text": "Avoidance：run time 一直 monitor 資源分配與 process 關聯，判斷能不能把 resource assign 出去。"
+    },
+    {
+     "t": 1634,
+     "text": "Detection + recovery：讓它發生再解決，要能 detect、也要決定怎麼 recover（kill 哪個）。"
+    },
+    {
+     "t": 1701,
+     "text": "Ignore：多數 commercial 系統的選擇（detection/avoidance 代價高、deadlock 不常發生 → reboot）；重要系統不能這樣。"
+    },
+    {
+     "t": 1810,
+     "text": "本章重點在 prevention 與 avoidance；detection 做法類似，recovery 是 case by case。"
+    }
+   ],
+   "trap": "老師說 avoidance 是「run time detection」，但課本的 deadlock detection 是另一類：detection 是事後找出已發生的 deadlock，avoidance 是配置前先檢查會不會進入 unsafe state。",
+   "cues": [
+    1519.0,
+    1533.6,
+    1558.1,
+    1593.2,
+    1634.6,
+    1660.2,
+    1701.0,
+    1717.0,
+    1736.0,
+    1789.6,
+    1810.2
+   ],
+   "explain": [
+    "怎麼不讓 deadlock 發生？老師說基本上有兩種角度。",
+    "第一種 [[deadlock prevention]]：事先把四個條件拿掉其中一個。這樣不管程式怎麼寫，都絕對不會 deadlock。",
+    "第二種 [[deadlock avoidance]]：在 run time 一直盯著目前的資源分配、process 之間的關係，判斷「現在把這個資源給它安不安全」。",
+    "老師提醒常搞混：prevention 是事前把條件拿掉；avoidance 是執行中隨時判斷、避開危險。",
+    "另一種比較消極的做法：先不管，讓系統跑，等 deadlock 真的發生了再 recovery（恢復）。",
+    "這要解決兩件事：一、能 [[deadlock detection]]，偵測到 deadlock 已經發生；二、怎麼恢復，例如要 kill 掉哪個 process 影響最小。",
+    "最後一種是 ignore（忽略）：系統什麼都不做，卡住就卡住。",
+    "因為 detection 和 avoidance 要不斷檢查系統，很耗 CPU、讓系統變慢，所以很多一般的商用系統乾脆選 ignore。",
+    "deadlock 本來就不該常發生，真的發生了就讓使用者自己處理，例如按 Ctrl-Alt-Del 重開機。你的電腦多半就是這樣。",
+    "但重要的系統不能這樣，例如武器控制、核電廠，總不能叫人 reboot，就必須用前面的方法。",
+    "本章重點放在 prevention 和 avoidance；detection 的做法跟 avoidance 很像，recovery 則要看情況，課堂不多講。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Deadlock 的四個必要條件要怎樣才會 deadlock？",
+   "opts": [
+    "四個同時成立",
+    "任一個成立",
+    "至少兩個成立",
+    "只要 circular wait 成立"
+   ],
+   "ans": "四個同時成立",
+   "why": "necessary 條件：缺一個就不會 deadlock，所以 prevention 只要破壞其中一個。"
+  },
+  {
+   "q": "Resource-allocation graph 中，R → P 的箭頭代表？",
+   "opts": [
+    "assignment edge：資源已配給該 process",
+    "request edge：process 在等資源",
+    "claim edge：未來可能要求",
+    "process 在等另一個 process"
+   ],
+   "ans": "assignment edge：資源已配給該 process",
+   "why": "P → R 是 request edge；R → P 是 assignment edge。顏色不重要，方向才重要。"
+  },
+  {
+   "q": "RAG 有 cycle，而每種資源都只有一個 instance，則？",
+   "opts": [
+    "一定 deadlock",
+    "一定沒有 deadlock",
+    "可能 deadlock",
+    "要看 process 數量"
+   ],
+   "ans": "一定 deadlock",
+   "why": "single instance 時 cycle ⇔ deadlock；multiple instance 時 cycle 只是可能。"
+  },
+  {
+   "q": "RAG 沒有 cycle，則？",
+   "opts": [
+    "一定沒有 deadlock",
+    "一定 deadlock",
+    "可能 deadlock",
+    "要看 instance 數"
+   ],
+   "ans": "一定沒有 deadlock",
+   "why": "沒有 circular wait，少了一個必要條件。"
+  },
+  {
+   "q": "老師說多數 commercial 系統面對 deadlock 的做法是？",
+   "opts": [
+    "ignore，發生就讓使用者 reboot",
+    "prevention",
+    "avoidance",
+    "每秒跑一次 detection"
+   ],
+   "ans": "ignore，發生就讓使用者 reboot",
+   "why": "detection/avoidance 代價高，而 deadlock 不常發生。重要系統（核電廠）則不能這樣。"
+  },
+  {
+   "q": "印表機印到一半不能被搶走，對應哪個條件？",
+   "opts": [
+    "no preemption",
+    "mutual exclusion",
+    "hold and wait",
+    "circular wait"
+   ],
+   "ans": "no preemption",
+   "why": "狀態記不下來、resume 代價高，只能等它自願 release。"
+  }
+ ]
+}

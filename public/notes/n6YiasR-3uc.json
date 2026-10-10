@@ -1,0 +1,275 @@
+{
+ "video": "n6YiasR-3uc",
+ "label": "清大周志遠 第22B講 Deadlock Prevention & Avoidance",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Prevention ①：拿掉 mutual exclusion",
+   "scene": "dl-b-me",
+   "points": [
+    {
+     "t": 17,
+     "text": "Prevention：一開始就讓系統不會發生 deadlock，四個條件一個一個討論怎麼拿掉。"
+    },
+    {
+     "t": 54,
+     "text": "拿掉 mutual exclusion = 把 lock 機制抽掉；例：read-only 的 memory，大家同時 access 不需要 lock。"
+    },
+    {
+     "t": 101,
+     "text": "但 printer、critical section 一定要 mutual exclusion → 先把資源分類，能 share 的就不要 lock。"
+    }
+   ],
+   "cues": [
+    16.8,
+    46.3,
+    54.2,
+    70.7,
+    101.3,
+    125.7
+   ],
+   "explain": [
+    "先講 [[deadlock prevention]]（預防）：不用在執行中一直偵測，而是一開始就讓系統不可能 deadlock。",
+    "deadlock 需要四個條件同時成立，所以老師把四個條件一個一個拿出來，討論怎麼讓它不成立。",
+    "第一個 [[mutual exclusion]]（一次只能一人用）。要拿掉它，就是把 synchronization 用的 lock（鎖）抽掉。",
+    "這招在某些地方真的能用：如果 memory 的資料大家都只讀不寫（read-only），同時讀也不會出錯，根本不需要鎖，也就不會因為搶鎖而 deadlock。",
+    "可是不能每種資源都這樣做。印表機、[[critical section]] 這種東西，本質上一次只能一人用，一定要 mutual exclusion。",
+    "所以實際做法是：先把資源分類，本來就能共用的就別上鎖，這些資源就不會造成 deadlock。"
+   ]
+  },
+  {
+   "title": "Prevention ②：拿掉 hold and wait（all or nothing）",
+   "scene": "dl-b-hw",
+   "points": [
+    {
+     "t": 159,
+     "text": "改寫法：要用多個資源時，一次把全部 acquire 到才往下做；拿不到任何一個，就把已取得的全部 release、從頭來過。"
+    },
+    {
+     "t": 220,
+     "text": "缺點：資源使用率很低（同時全部拿到的機率是相乘的），process 可能一直 acquire/release 卻無法執行。"
+    },
+    {
+     "t": 276,
+     "text": "CPU 這種重要資源不適合；本來就慢的 IO device 可以用；解法本質是 all or nothing。"
+    }
+   ],
+   "trap": "破壞 hold and wait 的代價：資源利用率低，且可能 starvation（一直湊不齊全部資源的 process 永遠等不到）。",
+   "cues": [
+    159.4,
+    168.0,
+    182.2,
+    220.4,
+    236.0,
+    254.7,
+    276.9,
+    295.7,
+    304.0
+   ],
+   "explain": [
+    "第二個條件 hold and wait：手上握著一個資源（R1），又在等其他資源（R2、R3）。",
+    "要拿掉它就得改程式寫法：要用好幾個資源時，必須一次把全部都拿到，才開始做下一步。",
+    "只要其中一個拿不到（例如 R2 被別人用），就把已經拿到的全部放掉，從頭再來。這樣不會有人「握著一個在等」，也就沒有 hold and wait。",
+    "缺點是資源的使用率會變得很低，因為要「同時」全部拿到的機會小很多。",
+    "用機率想（這裡的數字是示意）：每個資源拿到的機率是 1/2，三個要同時拿到就是 1/2 × 1/2 × 1/2 = 1/8，機率是相乘的。",
+    "結果很多 process 一直拿、放、拿、放，卻始終跑不起來；資源也常常沒人在用，整台電腦效能就變差。",
+    "像 CPU 這麼重要的資源，就不適合用這種方式，使用率太低會嚴重拖慢執行時間。",
+    "但有些 IO device 本來就很慢，用這種方式影響不大，可以考慮。",
+    "總結：hold and wait 的解法，就是把拿資源的方式改成 all or nothing（要嘛全拿、要嘛全不拿）。"
+   ]
+  },
+  {
+   "title": "Prevention ③：允許 preemption",
+   "scene": "dl-b-np",
+   "points": [
+    {
+     "t": 314,
+     "text": "拿掉 no preemption = 允許 preemption：條件是能把資源的 state 記下來，打斷後能從停的地方繼續。"
+    },
+    {
+     "t": 349,
+     "text": "CPU 就是標準例子（context switch）：使用率高、重要的 process 可以先用；代價是要存 state（memory、register）。"
+    },
+    {
+     "t": 388,
+     "text": "不是所有資源都能 preempt：printer 印到一半無法記錄 state；CPU、memory 適合，IO device 不行。"
+    }
+   ],
+   "cues": [
+    314.5,
+    331.0,
+    349.0,
+    362.1,
+    371.4,
+    388.0,
+    403.4
+   ],
+   "explain": [
+    "第三個條件 no preemption（不能搶）。拿掉它就是允許 [[preemption]]（搶占），而前提是：能把這個資源目前的狀態（state）記下來。",
+    "記得下來，就能隨時喊停、先讓別人用，等別人用完再還給你，你從剛剛停的地方接著做。圖上資源先交給 P2，再還給 P1。",
+    "CPU 就是標準例子，這正是為什麼 CPU 有 [[context switch]]（切換執行中的程式）。",
+    "CPU 能被搶，使用率就很高；有比較重要的 process 來了，可以馬上把 CPU 讓給它。",
+    "代價是要存這些狀態：多用一些 memory、多用一些硬體 [[register]]（暫存器，例如 PC、SP）。",
+    "而且不是每種資源都能搶。印表機印到一半，它的狀態沒辦法記錄，不能說停就停。",
+    "所以這招適合 CPU、memory、[[pipeline]] 這種「程式狀態」類的資源；很多 IO device 就做不到。要看是哪一種 resource。"
+   ]
+  },
+  {
+   "title": "Prevention ④：total order 拿掉 circular wait",
+   "scene": "dl-b-cw",
+   "points": [
+    {
+     "t": 420,
+     "text": "把 resource 排成 total order，分配 policy 只有一個方向，就不會繞成 circle。"
+    },
+    {
+     "t": 513,
+     "text": "規則：process 要 Rk 時，手上所有比 k 大的 resource 都要先 release（例：有 R0、R5 要 R3 → 先放 R5；要 R0 → 全部放掉）。"
+    },
+    {
+     "t": 608,
+     "text": "例：tape drive = 1、disk = 5、printer = 12，必須依序取得。"
+    },
+    {
+     "t": 634,
+     "text": "證明：circle 由 hold and wait 串成，最後一定有「hold 高 index、wait R0」這一條，而規則不允許 → 不會有 circular wait。"
+    },
+    {
+     "t": 780,
+     "text": "缺點：越後面的 resource 越難拿、等待時間較久；不 enforce 順序可能更快，但有 deadlock 危險。"
+    }
+   ],
+   "trap": "恐龍書的寫法是「只能依 F(R) 遞增的順序 request；要 Rj 時手上不能有 F(Ri) ≥ F(Rj) 的資源」，和老師「要 Rk 就先放掉比 k 大的」是同一件事。",
+   "cues": [
+    420.7,
+    437.4,
+    445.1,
+    458.1,
+    513.2,
+    540.2,
+    582.5,
+    608.9,
+    634.3,
+    689.0,
+    712.3,
+    764.2,
+    780.7,
+    807.0
+   ],
+   "explain": [
+    "最後一個條件 [[circular wait]]：P1 等 P2、P2 等 P3、P3 等 P4、P4 又等 P1，繞成一圈。",
+    "拿掉它的方法：把所有資源排成一個 [[total order]]（全序），也就是每個資源都有一個編號，誰先誰後很清楚。",
+    "會繞成一圈，是因為等待的方向最後繞回來了：最後面的人在等最前面的人（黃色那條）。",
+    "如果分配資源的規則只允許一個方向，最後面的人就不會去等最前面的人，黃色那條不存在，圈就斷了，P4 可以做完。",
+    "實際的規則：資源編號 R0、R1、R2…，process 要 Rk 時，手上所有編號比 k 大的資源都要先放掉。",
+    "例子：P 已經有 R0 和 R5，現在想要 R3。因為要依序來，得先拿 R3 才輪得到 R5，所以 R5 要先放回去。",
+    "更極端：手上什麼都有了，卻要 R0，那就全部放掉，從 R0 開始一步一步重新拿。",
+    "課本的例子：tape drive 編號 1、disk 編號 5、printer 編號 12。要這三個資源，一定得照 1 → 5 → 12 的順序拿，不能亂跳。",
+    "為什麼這樣保證沒有圈？一個等待圈一定是一串 hold and wait 接起來的：P0 拿著 R0 等 R1，R1 被某人拿著、他又在等下一個……",
+    "要繞回原點變成圈，最後一定會有一條：某個 process 拿著編號很大的 Rn，卻在要 R0。",
+    "但「拿著編號高的、去要編號低的」正是規則禁止的，這一條根本不會出現，所以圈不可能形成。",
+    "這就叫 total ordering：資源有順序，不能 hold 一個 order 高的，再去 wait 一個 order 低的。",
+    "缺點有點像拿掉 hold and wait：越後面的資源越難拿到，因為前面的要先拿齊，等待時間比較久（柱子高低是示意）。",
+    "如果不規定順序，可能剛好 R5 先空出來，你運氣好反而更快拿齊；但也因此有 deadlock 的危險。"
+   ]
+  },
+  {
+   "title": "接下來：avoidance 分 single / multiple instance",
+   "scene": "dl-b-next",
+   "points": [
+    {
+     "t": 847,
+     "text": "Avoidance 分兩塊：single instance 用圖看有沒有 circle；multiple instances 用 Banker's algorithm。"
+    }
+   ],
+   "cues": [
+    847.4,
+    857.4,
+    871.2
+   ],
+   "explain": [
+    "prevention 講完了，接下來是 [[deadlock avoidance]]。老師把它切成兩大塊來討論。",
+    "第一塊：每種資源只有一個 instance（single instance）。這時用圖看就好，跑一個找圈的 graph 演算法就有答案。",
+    "第二塊：每種資源有多個 instance。這時用 Banker's algorithm（銀行家演算法），是一個把圖的方法推廣後的簡單演算法。"
+   ]
+  },
+  {
+   "title": "休息",
+   "scene": null,
+   "points": [
+    {
+     "t": 889,
+     "text": "休息 10 分鐘，下一段介紹這兩個做法。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "要求 process 一次申請到所有資源才開始執行，破壞的是？",
+   "opts": [
+    "hold and wait",
+    "circular wait",
+    "no preemption",
+    "mutual exclusion"
+   ],
+   "ans": "hold and wait",
+   "why": "all or nothing：不會一邊握著一邊等。代價是資源利用率低。"
+  },
+  {
+   "q": "CPU 用 context switch 避免 deadlock，破壞的是哪個條件？",
+   "opts": [
+    "no preemption",
+    "mutual exclusion",
+    "hold and wait",
+    "circular wait"
+   ],
+   "ans": "no preemption",
+   "why": "把 register 等 state 存起來，就能 preempt CPU。"
+  },
+  {
+   "q": "依資源編號 total order 申請，破壞的是？",
+   "opts": [
+    "circular wait",
+    "hold and wait",
+    "no preemption",
+    "mutual exclusion"
+   ],
+   "ans": "circular wait",
+   "why": "不可能 hold 編號高的再等編號低的，所以繞不成一圈。"
+  },
+  {
+   "q": "老師的規則下，process 已有 R0、R5，想要 R3，要怎麼做？",
+   "opts": [
+    "先放掉 R5，再要 R3",
+    "直接要 R3",
+    "放掉 R0 和 R5",
+    "等 R5 用完"
+   ],
+   "ans": "先放掉 R5，再要 R3",
+   "why": "要 Rk 時，手上比 k 大的都要先 release。"
+  },
+  {
+   "q": "哪一種資源最適合用「拿掉 mutual exclusion」來 prevent？",
+   "opts": [
+    "read-only 的 memory 資料",
+    "printer",
+    "critical section",
+    "tape drive"
+   ],
+   "ans": "read-only 的 memory 資料",
+   "why": "只讀可以同時 access，不需要 lock；printer、critical section 本質上要互斥。"
+  },
+  {
+   "q": "拿掉 hold and wait 的主要缺點？",
+   "opts": [
+    "資源使用率低",
+    "需要記錄 state",
+    "會形成 circular wait",
+    "需要事先知道 Max"
+   ],
+   "ans": "資源使用率低",
+   "why": "同時全部拿到的機率是相乘的，很多 process 一直 acquire/release 跑不起來。"
+  }
+ ]
+}

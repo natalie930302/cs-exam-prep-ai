@@ -1,170 +1,336 @@
 {
  "video": "7gMLNiEz3nw",
  "label": "Gate Smashers：Banker Algorithm",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
    "title": "Banker's algorithm 是 deadlock avoidance",
-   "scene": "banker-avoid",
+   "scene": "dl-f-avoid",
    "points": [
     {
-     "text": "Banker's algorithm 是 deadlock avoidance algorithm：要事先告訴 OS 有哪些 process、各要哪些資源、要多少。",
-     "t": 0
+     "t": 0,
+     "text": "Banker's algorithm 是 deadlock avoidance algorithm：要事先告訴 OS 有哪些 process、各要哪些資源、要多少。"
     },
     {
-     "text": "系統依這些資訊決定讓誰執行、讓誰等。",
-     "t": 35
+     "t": 27,
+     "text": "系統依這些資訊決定讓誰執行、讓誰等。常考它是 prevention 還是 avoidance：答案是 avoidance。"
     },
     {
-     "text": "常考它是 prevention 還是 avoidance：答案是 avoidance。",
-     "t": 54
-    },
-    {
-     "text": "影片接著說它「也用於 deadlock detection」，並一再稱它為 detection algorithm（這是錯誤用語，見易錯點）。",
-     "t": 67
+     "t": 57,
+     "text": "影片接著說它「也用於 deadlock detection」（這是錯誤用語，見易錯點）。"
     }
    ],
-   "trap": "影片把 Banker's 叫做 deadlock detection algorithm 是錯的。Banker's 是 avoidance：配置前用 Max 檢查是否仍在 safe state。Deadlock detection 是另一個演算法（比較目前的 Request 矩陣，不需要 Max），用在 deadlock 已經發生之後找出卡住的 process。"
-  },
-  {
-   "title": "題目給的狀態：Total、Allocation、Max",
-   "scene": "banker-tables",
-   "points": [
-    {
-     "text": "5 個 process P1–P5、3 種資源 A、B、C（可以想成 CPU、memory、printer，instance 數就是個數）。",
-     "t": 86
-    },
-    {
-     "text": "系統共有 A 10、B 5、C 7 個 instance。",
-     "t": 183
-    },
-    {
-     "text": "Allocation：已經配給各 process 的；P1 (0,1,0)、P2 (2,0,0)、P3 (3,0,2)、P4 (2,1,1)、P5 (0,0,2)。",
-     "t": 197
-    },
-    {
-     "text": "Max（maximum need）：每個 process 事先宣告最多要多少，例如 P1 (7,5,3)、P3 (9,0,2)；給夠就能做完並結束。",
-     "t": 274
-    },
-    {
-     "text": "事先告知需求，正是它被稱為 avoidance 的原因。",
-     "t": 283
-    }
+   "trap": "影片把 Banker's 叫做 deadlock detection algorithm 是錯的。Banker's 是 avoidance：配置前用 Max 檢查是否仍在 safe state。Deadlock detection 是另一個演算法（比較目前的 Request 矩陣，不需要 Max），用在 deadlock 已經發生之後找出卡住的 process。",
+   "cues": [
+    0.3,
+    9.4,
+    27.1,
+    36.3,
+    57.1,
+    66.6
    ],
-   "trap": "影片的 P1–P5 就是恐龍書 P0–P4 的同一題（Available 3,3,2）；對答案時注意編號差 1。"
-  },
-  {
-   "title": "Safe 與 unsafe",
-   "scene": "safe-unsafe",
-   "points": [
-    {
-     "text": "題目可能問：是否會 deadlock？用 safe / unsafe 回答。",
-     "t": 348
-    },
-    {
-     "text": "影片說：safe = 不會 deadlock，unsafe = 會 deadlock（這是簡化說法）。",
-     "t": 364
-    },
-    {
-     "text": "如果 safe，要寫出 safe sequence：讓 process 依序做完而不 deadlock 的順序。",
-     "t": 377
-    }
-   ],
-   "trap": "unsafe 不等於 deadlock：unsafe 只代表 OS 無法保證避開 deadlock、「可能」走到 deadlock；deadlock 是 unsafe 的子集合。"
-  },
-  {
-   "title": "Available = Total − ΣAllocation",
-   "scene": "banker-available",
-   "points": [
-    {
-     "text": "不是從時間 0 開始，而是某個時間點已經配出去一些資源。",
-     "t": 411
-    },
-    {
-     "text": "Allocation 各欄加總：A 0+2+3+2+0 = 7、B 1+1 = 2、C 2+1+2 = 5。",
-     "t": 441
-    },
-    {
-     "text": "Available = (10,5,7) − (7,2,5) = (3,3,2)，這是目前（current）的可用量。",
-     "t": 466
-    }
+   "explain": [
+    "Banker's algorithm（銀行家演算法）又叫 [[deadlock avoidance]] algorithm。畫面上是題目的五個 process：P1～P5。",
+    "之所以叫 avoidance，是因為要事先告訴 OS：有哪些 process、會要哪些資源、最多要多少（Max）。",
+    "OS 根據這些資訊決定：哪個 process 先執行、哪個要先等（wait）。",
+    "常考：它屬於 prevention 還是 avoidance？答案是 deadlock avoidance。",
+    "影片接著說它「也用於 deadlock detection」，這是錯的說法：Banker's 只用在 avoidance。",
+    "[[deadlock detection]] 是另一個演算法：它比較的是目前的 Request，不需要 Max，用在 deadlock 已經發生之後找出卡住的 process。"
    ]
   },
   {
-   "title": "Need = Max − Allocation",
-   "scene": "banker-need",
+   "title": "題目：Total、Allocation、Max",
+   "scene": "dl-f-tables",
    "points": [
     {
-     "text": "Remaining need（Need）= Max − Allocation；像小孩要 10 顆蘋果、已給 3 顆，還要給 7 顆。",
-     "t": 495
+     "t": 73,
+     "text": "5 個 process P1–P5、3 種資源 A、B、C（可以想成 CPU、memory、printer，instance 數就是個數）。"
     },
     {
-     "text": "P1：(7,5,3) − (0,1,0) = (7,4,3)；P2：(3,2,2) − (2,0,0) = (1,2,2)。",
-     "t": 577
+     "t": 178,
+     "text": "系統共有 A 10、B 5、C 7 個 instance。"
     },
     {
-     "text": "P3：(9,0,2) − (3,0,2) = (6,0,0)；要 A 對 A、B 對 B、C 對 C 逐欄相減，常在這裡算錯。",
-     "t": 626
+     "t": 195,
+     "text": "Allocation：P1 (0,1,0)、P2 (2,0,0)、P3 (3,0,2)、P4 (2,1,1)、P5 (0,0,2)。"
     },
     {
-     "text": "P4：(4,2,2) − (2,1,1) = (2,1,1)；P5：(5,3,3) − (0,0,2) = (5,3,1)。",
-     "t": 645
+     "t": 272,
+     "text": "Max（maximum need）：P1 (7,5,3)、P2 (3,2,2)、P3 (9,0,2)、P4 (4,2,2)、P5 (5,3,3)；事先告知需求正是它叫 avoidance 的原因。"
     }
+   ],
+   "trap": "影片的 P1–P5 跟恐龍書 P0–P4 那題很像，但 P4、P5 的 Max 不同（恐龍書 P3 Max (2,2,2)、P4 Max (4,3,3)），Need 與 safe sequence 也不同，別混用。",
+   "cues": [
+    73.6,
+    80.8,
+    155.8,
+    178.1,
+    195.7,
+    235.9,
+    251.8,
+    272.7,
+    281.2,
+    290.5,
+    318.4,
+    340.6
+   ],
+   "explain": [
+    "這種題目在 GATE（印度研究所考試）和各種考試很常出：題目會給一個情境（scenario）。",
+    "情境裡有 5 個 process（P1～P5），和 3 種資源 A、B、C。表格先是空的，等等一格一格填。",
+    "這 3 種是不同 type 的資源，可以把 A 想成 CPU、B 想成 memory、C 想成 printer。instance 就是「個數」。",
+    "系統總共有 A 10 個、B 5 個、C 7 個，也就是 10 個 CPU、5 個 memory、7 台 printer。",
+    "Allocation（已配置）：系統目前已經分給每個 process 多少。",
+    "P1：A 0 個（一個 CPU 都還沒給）、B 1 個、C 0 個，也就是 (0,1,0)。",
+    "P2 (2,0,0)、P3 (3,0,2)、P4 (2,1,1)、P5 (0,0,2)。",
+    "Maximum need（Max）：每個 process 總共最多需要多少。",
+    "這是重點：正因為 process 事先把需求告訴系統，所以它叫 deadlock avoidance。",
+    "P1 事先說：我要 A 7 個、B 5 個、C 3 個，給我這些我就能成功執行完。",
+    "P3 的 Max 是 (9,0,2)：A 9 個、B 不需要、C 2 個。",
+    "P4、P5 也都給了：P4 (4,2,2)、P5 (5,3,3)。"
+   ]
+  },
+  {
+   "title": "Safe 與 unsafe",
+   "scene": "dl-f-safe",
+   "points": [
+    {
+     "t": 346,
+     "text": "題目問：會不會 deadlock？用 safe / unsafe 回答。"
+    },
+    {
+     "t": 357,
+     "text": "影片說 safe = 不會 deadlock，unsafe = 會 deadlock（簡化說法）；若 safe，要寫出 safe sequence。"
+    }
+   ],
+   "trap": "unsafe 不等於 deadlock：unsafe 只代表 OS 無法保證避開 deadlock、「可能」走到 deadlock；deadlock 是 unsafe 的子集合。",
+   "cues": [
+    346.5,
+    357.6,
+    377.6
+   ],
+   "explain": [
+    "主要問題是：這個情境會不會 deadlock？",
+    "用 safe（安全）或 unsafe 回答。safe 一定不會 deadlock；影片說 unsafe「會」deadlock，精確地說是「可能」會（deadlock 是 unsafe 裡面的一部分）。",
+    "如果不會 deadlock，還要寫出 safe sequence：process 照什麼順序拿資源、做完，才不會卡住。"
+   ]
+  },
+  {
+   "title": "Available = Total − ΣAllocation",
+   "scene": "dl-f-avail",
+   "points": [
+    {
+     "t": 399,
+     "text": "不是從時間 0 開始，而是某個時間點已經配出去一些資源。"
+    },
+    {
+     "t": 435,
+     "text": "Allocation 各欄加總：A 0+2+3+2+0 = 7、B 1+1 = 2、C 2+1+2 = 5。"
+    },
+    {
+     "t": 470,
+     "text": "Available = (10,5,7) − (7,2,5) = (3,3,2)，這是目前（current）的可用量。"
+    }
+   ],
+   "cues": [
+    399.4,
+    407.4,
+    414.7,
+    435.6,
+    451.3,
+    470.8,
+    487.0,
+    498.5
+   ],
+   "explain": [
+    "第三樣要算的是 Available（目前可用）。",
+    "系統總共有 (10,5,7)。",
+    "但系統已經配出去一些了：我們不是從一開始（時間 0）看，而是在某個時間點看，表上的 Allocation 都已經被拿走。",
+    "把 Allocation 的 A 欄加起來：0 + 2 + 3 + 2 + 0 = 7，A 已經配出 7 個。",
+    "B 欄：1 + 1 = 2；C 欄：2 + 1 + 2 = 5。所以總共配出 (7,2,5)。",
+    "A 總共 10 個，給了 7 個，剩 10 − 7 = 3 個。",
+    "B：5 − 2 = 3，C：7 − 5 = 2，所以 Available = (3,3,2)。",
+    "這就是目前（current）可用的資源：(3,3,2)。"
+   ]
+  },
+  {
+   "title": "Remaining need = Max − Allocation",
+   "scene": "dl-f-need",
+   "points": [
+    {
+     "t": 509,
+     "text": "Remaining need（Need）= Max − Allocation；像小孩要 10 顆蘋果、已給 3 顆，還要給 7 顆。"
+    },
+    {
+     "t": 584,
+     "text": "P1：(7,5,3) − (0,1,0) = (7,4,3)；P2：(3,2,2) − (2,0,0) = (1,2,2)。"
+    },
+    {
+     "t": 637,
+     "text": "P3：(9,0,2) − (3,0,2) = (6,0,0)；要 A 對 A、B 對 B、C 對 C 逐欄相減。"
+    },
+    {
+     "t": 656,
+     "text": "P4：(4,2,2) − (2,1,1) = (2,1,1)；P5：(5,3,3) − (0,0,2) = (5,3,1)。"
+    }
+   ],
+   "cues": [
+    509.4,
+    544.5,
+    579.8,
+    584.6,
+    596.5,
+    605.1,
+    613.8,
+    637.7,
+    645.8,
+    656.7,
+    665.0,
+    678.6
+   ],
+   "explain": [
+    "下一個要算 remaining need（還需要多少），表格多了一欄 Need，先用問號表示。",
+    "像小時候的數學題：小孩要 10 顆蘋果，你已經給了 3 顆，還要再給 7 顆。",
+    "公式：remaining need = maximum need − allocation（最多要的 − 已經給的）。",
+    "P1 的 A：最多要 7 個，已經給 0 個，還要 7 個。",
+    "P1 的 B：要 5 個、已經給 1 個，5 − 1 = 4。",
+    "P1 的 C：要 3 個、一個都沒給，還是 3。所以 P1 的 Need = (7,4,3)。",
+    "P2：A 要 3、已給 2，還要 1；B 要 2、給 0，還要 2；C 同樣 2。(3,2,2) − (2,0,0) = (1,2,2)。",
+    "P3：9 − 3 = 6、0 − 0 = 0、2 − 2 = 0，Need = (6,0,0)。",
+    "小心：A 只能減 A、B 減 B、C 減 C，對錯欄是最常見的計算錯誤。",
+    "P4：4 − 2 = 2、2 − 1 = 1、2 − 1 = 1，Need = (2,1,1)。",
+    "P5：C 要 3、已給 2，只剩 1。(5,3,3) − (0,0,2) = (5,3,1)。",
+    "五個 process 的 Need 都算好了：(7,4,3)、(1,2,2)、(6,0,0)、(2,1,1)、(5,3,1)。"
    ]
   },
   {
    "title": "Safety check：找 safe sequence",
-   "scene": "banker-safety",
+   "scene": "dl-f-safety",
    "points": [
     {
-     "text": "Work 先等於 Available (3,3,2)；P1 要 (7,4,3)：A、B、C 都不夠 → 先跳過。",
-     "t": 679
+     "t": 705,
+     "text": "Work 先等於 Available (3,3,2)；P1 要 (7,4,3)：A、B、C 都不夠 → 先跳過。"
     },
     {
-     "text": "P2 要 (1,2,2) ≤ (3,3,2) → 可以；三種資源要「同時」都夠，只夠 C 一種不算。",
-     "t": 735
+     "t": 765,
+     "text": "P2 要 (1,2,2) ≤ (3,3,2) → 可以；三種資源要「同時」都夠，只夠一部分不算。P3 要 6 個 A，不行。"
     },
     {
-     "text": "P2 做完，連同原本持有的 (2,0,0) 一起釋放：Work = (5,3,2)。",
-     "t": 869
+     "t": 909,
+     "text": "P2 做完，連同原本持有的 (2,0,0) 一起釋放：Work = (5,3,2)。"
     },
     {
-     "text": "P3 要 6 個 A，只有 5 → 不行；P4 要 (2,1,1) ≤ (5,3,2) → 可以，Work + (2,1,1) = (7,4,3)。",
-     "t": 957
+     "t": 985,
+     "text": "P3 要 6 個 A，只有 5 → 不行；P4 要 (2,1,1) ≤ (5,3,2) → 可以，Work + (2,1,1) = (7,4,3)。"
     },
     {
-     "text": "接著往下看 P5：(5,3,1) ≤ (7,4,3) → 可以，Work + (0,0,2) = (7,4,5)。",
-     "t": 1091
+     "t": 1120,
+     "text": "接著往下看 P5：(5,3,1) ≤ (7,4,3) → 可以，Work + (0,0,2) = (7,4,5)。"
     },
     {
-     "text": "回頭 P1：(7,4,3) ≤ (7,4,5) → Work = (7,5,5)；最後 P3：(6,0,0) → Work = (10,5,7)。",
-     "t": 1164
+     "t": 1199,
+     "text": "回頭 P1：(7,4,3) ≤ (7,4,5) → Work = (7,5,5)；最後 P3：(6,0,0) → Work = (10,5,7)。"
     },
     {
-     "text": "最後 Work 回到 Total (10,5,7)，可以拿來驗算；得到 safe sequence P2 → P4 → P5 → P1 → P3。",
-     "t": 1260
+     "t": 1283,
+     "text": "最後 Work 回到 Total (10,5,7)，可以拿來驗算；得到 safe sequence P2 → P4 → P5 → P1 → P3。"
     }
    ],
-   "trap": "影片在 L186 說 P5 持有「0, 1, 2」，但加的是 (0,0,2)；P5 的 Allocation 是 (0,0,2)。判斷條件是 Need ≤ Work（每一種都要），更新是 Work += Allocation（不是加 Need）。"
+   "trap": "判斷條件是 Need ≤ Work（每一種都要），更新是 Work += Allocation（不是加 Need）。影片在 L186 把 P5 持有說成「0, 1, 2」，但加的是 (0,0,2)；P5 的 Allocation 是 (0,0,2)。",
+   "cues": [
+    705.6,
+    716.1,
+    724.2,
+    749.9,
+    765.2,
+    782.3,
+    844.0,
+    875.1,
+    909.0,
+    944.9,
+    985.3,
+    1009.2,
+    1040.4,
+    1083.5,
+    1120.0,
+    1162.1,
+    1199.5,
+    1232.3,
+    1243.0,
+    1268.6,
+    1283.1,
+    1310.9
+   ],
+   "explain": [
+    "開始找 safe sequence。現在可用的是 A 3、B 3、C 2，右邊 Work 欄從 (3,3,2) 開始。",
+    "每一步都檢查：用目前的可用量，能不能滿足某個 process 剩下的需求（Need）？",
+    "P1 要 A 7 個只有 3、B 要 4 只有 3、C 要 3 只有 2，三欄全紅，滿足不了，P1 先不排進順序。",
+    "接著看 P2。如果每個 process 的需求都滿足不了，就代表會 deadlock（unsafe）。",
+    "P2：A 要 1 有 3、B 要 2 有 3、C 要 2 有 2，三欄都綠，可以滿足。",
+    "這是示意：如果 P2 的 A 不是 1 而是 4，就算 B、C 夠也不行。三種資源必須「同時」都夠，不能只給一部分。",
+    "P3 要 (6,0,0)：B、C 都不需要，看起來好像可以，但 A 要 6 個只有 3，還是不行。",
+    "回到 P2：(1,2,2) ≤ (3,3,2)，輕鬆滿足，所以 sequence 的第一個是 P2。",
+    "P2 拿到剩下的資源後成功執行、結束（terminate），連它原本拿著的 Allocation (2,0,0) 也一起放出來。",
+    "把 (2,0,0) 加回可用量：(3,3,2) + (2,0,0) = (5,3,2)，Work 多了一列。",
+    "再看 P3：要 6 個 A，現在只有 5，還是不夠。",
+    "P4：A 要 2 有 5、B 要 1 有 3、C 要 1 有 2，可以，下一個是 P4。",
+    "規則只有一條：對每一種資源，remaining need 都要 ≤ 目前可用量，才能給。",
+    "P4 結束，放出它拿著的 A 2、B 1、C 1：(5,3,2) + (2,1,1) = (7,4,3)。",
+    "照順序往下看 P5：要 (5,3,1)，(7,4,3) 夠，可以。（也可以回頭先看 P3 或 P1，都沒關係。）",
+    "P5 做完，放出 (0,0,2)：(7,4,3) + (0,0,2) = (7,4,5)。",
+    "回頭再檢查 P1：(7,4,3) ≤ (7,4,5)，可以，給它 A 7、B 4、C 3，P1 成功執行。",
+    "P1 原本拿著的 (0,1,0) 收回來：(7,4,5) + (0,1,0) = (7,5,5)。",
+    "只剩 P3：要 6 個 A，現在有 7 個；B 不需要、C 也夠，可以滿足。",
+    "P3 結束，放出 (3,0,2)：(7,5,5) + (3,0,2) = (10,5,7)。",
+    "最後得到 (10,5,7)，正好等於一開始的總數。所有資源都回來了，這可以用來驗算有沒有算錯。",
+    "沒有 deadlock，這個順序就是 safe sequence：P2 → P4 → P5 → P1 → P3。"
+   ]
   },
   {
    "title": "Safe sequence 不唯一；Banker 的限制",
-   "scene": "banker-nonunique",
+   "scene": "dl-f-limits",
    "points": [
     {
-     "text": "safe sequence 不唯一，例如 P3 也可以排得更前面；考題可能給一個序列要你檢查。",
-     "t": 1298
+     "t": 1316,
+     "text": "safe sequence 不唯一（例：P2 → P4 → P3 → P5 → P1 也行）；考題可能給一個序列要你檢查。"
     },
     {
-     "text": "只要某一步找不到任何 process 的 Need ≤ Work，就是 unsafe。",
-     "t": 1324
+     "t": 1340,
+     "text": "只要某一步找不到任何 process 的 Need ≤ Work，就是 unsafe。"
     },
     {
-     "text": "現實中 process 很少事先告訴系統固定的 Max，需求是動態的，所以 Banker 難以實際使用，但是很重要的理論基礎。",
-     "t": 1355
+     "t": 1352,
+     "text": "現實中 process 很少事先告訴系統固定的 Max，需求是動態的，所以 Banker 難以實際使用，但是很重要的理論基礎。"
     }
    ],
-   "trap": "影片 L212–213 說「能滿足任何一個就排第一個」容易誤解：要整個過程每一步都能找到 Need ≤ Work 的 process、最後全部 Finish 才是 safe。"
+   "trap": "影片把 Banker's 叫做 deadlock detection algorithm 是錯的。Banker's 是 avoidance：配置前用 Max 檢查是否仍在 safe state。Deadlock detection 是另一個演算法（比較目前的 Request 矩陣，不需要 Max），用在 deadlock 已經發生之後找出卡住的 process。",
+   "cues": [
+    1319.0,
+    1329.0,
+    1340.3,
+    1352.5,
+    1371.2,
+    1408.8,
+    1416.2
+   ],
+   "explain": [
+    "safe sequence 不是唯一的。例如做完 P2、P4 後 Work 是 (7,4,3)，P3 的 (6,0,0) 也夠，所以 P2 → P4 → P3 → P5 → P1 也行。",
+    "考題可能給你一個順序，問它是不是 safe sequence。要照順序一步一步驗算。",
+    "什麼時候會 deadlock？只有在某一步，任何一個 process 的需求都滿足不了時。只要有一個可以，它就能排進順序。",
+    "deadlock avoidance 需要事先把資訊交給系統：有幾個 process、幾種資源、每個最多要多少（Max）。",
+    "但現實中，process 很少事先說出固定的需求。需求是動態的，執行中會增加或減少，所以很難真的照這樣實作。",
+    "不過它是實作的基礎，很重要，考試也常考，要仔細算。",
+    "影片最後又把它叫做 deadlock detection。別被誤導：Banker's 是 avoidance，detection 是另一個演算法。"
+   ]
+  },
+  {
+   "title": "結尾",
+   "scene": null,
+   "points": [
+    {
+     "t": 1435,
+     "text": "影片結尾。"
+    }
+   ]
   }
  ],
  "quiz": [
@@ -245,6 +411,5 @@
    "ans": "可能會 deadlock，但不一定已經 deadlock",
    "why": "deadlock ⊂ unsafe。"
   }
- ],
- "timing": "estimated"
+ ]
 }
