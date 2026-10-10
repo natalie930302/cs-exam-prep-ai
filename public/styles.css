@@ -7400,8 +7400,20 @@ body#appRoot .fab-nav .fab-btn:hover { background: var(--surf2); color: var(--tx
 body#appRoot .fab-nav .fab-btn.on { background: var(--ac, #5b7a45); color: #fff; }
 body#appRoot .fab-nav .fab-btn:focus-visible { outline: 2px solid var(--ac, #5b7a45); outline-offset: 2px; }
 /* 主要內容讓出右邊一點空間，懸浮鈕不會蓋到卡片的右上角 */
-@media (min-width: 760px) { body#appRoot #main { padding-right: 76px; } }
+@media (min-width: 760px) { body#appRoot #main { padding-left: 56px; padding-right: 56px; } }
 @media (max-width: 759px) {
   body#appRoot .fab-nav { top: 10px; right: 10px; }
   body#appRoot .fab-nav .fab-btn { width: 38px; height: 38px; }
 }
+/* 懸浮鈕：蓋過舊的 .pill 樣式（圓角方塊、底色、陰影），統一成同大小的正圓 */
+body#appRoot .fab-nav { gap: 2px !important; padding: 4px !important; border-radius: 999px !important;
+  background: color-mix(in srgb, var(--surf) 92%, transparent) !important; backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px rgba(60, 45, 20, .10) !important; }
+body#appRoot .fab-nav .fab-btn, body#appRoot .fab-nav .fab-btn.pill {
+  width: 40px !important; height: 40px !important; min-width: 0 !important; min-height: 0 !important; padding: 0 !important;
+  border: 0 !important; border-radius: 50% !important; background: transparent !important; box-shadow: none !important;
+  color: var(--mt) !important; transform: none !important;
+}
+body#appRoot .fab-nav .fab-btn:hover { background: color-mix(in srgb, var(--tx) 6%, transparent) !important; color: var(--tx) !important; }
+body#appRoot .fab-nav .fab-btn.on { background: var(--ac, #5b7a45) !important; color: #fff !important; }
+body#appRoot .fab-nav .fab-btn .ic { width: 18px; height: 18px; }
