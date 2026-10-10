@@ -1,0 +1,268 @@
+{
+ "video": "Nif2TZ5Cohw",
+ "label": "Page Faults & Page Fault Handling（含Thrashing）",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場",
+   "scene": null,
+   "points": [
+    {
+     "t": 7,
+     "text": "頻道開場：memory management 系列，今天講 page fault 與 page fault handling（接續上一集 paging）。"
+    }
+   ]
+  },
+  {
+   "title": "Process A 與 page fault",
+   "scene": "vm-pf-what",
+   "cues": [
+    41.1,
+    60.9,
+    71.5,
+    85.8
+   ],
+   "explain": [
+    "假設有一個 process A，它很大、page 的大小相對很小，所以把它切成 4 個 page：P1、P2、P3、P4。",
+    "paging 裡，virtual memory 切成 pages（頁），main memory 切成 frames（頁框），page 和 frame 一樣大。",
+    "page fault（缺頁）就是：要執行或需要的 page 不在 main memory，而是在 secondary storage（硬碟上當作 virtual memory 的區域）。這裡 P3 就不在。",
+    "這正是 paging 幫我們做到的：在 secondary storage 留一塊空間存放某些 process 的 page，main memory 滿了也沒關係，等於擴充了 main memory。"
+   ],
+   "points": [
+    {
+     "t": 41,
+     "text": "process A 太大，切成 P1–P4；virtual memory 切成 pages，main memory 切成同樣大小的 frames。"
+    },
+    {
+     "t": 71,
+     "text": "page fault：要執行的 page 不在 main memory，而在 secondary storage（virtual memory）。"
+    },
+    {
+     "t": 85,
+     "text": "paging 在 secondary storage 留空間放 page，等於擴充 main memory。"
+    }
+   ]
+  },
+  {
+   "title": "Page fault handling 六步驟",
+   "scene": "vm-pf-steps",
+   "cues": [
+    107.2,
+    119.6,
+    128.6,
+    166.8,
+    171.8,
+    185.2,
+    199.3,
+    227.9,
+    255.7,
+    282.2,
+    316.7,
+    367.3,
+    382.3,
+    409.6
+   ],
+   "explain": [
+    "CPU 正在執行 process A 的 P2，P2 裡有一個指令：load X。右邊是 main memory，左上是 CPU。",
+    "假設 load X 需要用到 P3，CPU 就發出要 P3 的請求。",
+    "CPU 不知道 P3 不在 main memory，要有人告訴它。這是 MMU（memory management unit，記憶體管理單元）的工作：拿 P3 去查 process A 的 page table（每個 process 有自己的 page table）。這是 step 1。",
+    "page table 的第一欄是 page number（頁號），第二欄是 frame number（頁框號），最後一欄是 valid / invalid bit。",
+    "P3 這一格是 i，也就是 invalid bit，代表 page 3 不在 main memory。",
+    "看 main memory 也是：P1 在這裡、P2 在它下面，接著直接是 P4，沒有 P3。",
+    "step 2：發生了 page fault，於是產生一個 page trap signal 送給 OS，裡面帶著「process A 的 P3 不在」這些資訊。",
+    "trap 是作業系統裡優先權很高的訊號，OS 不能搶先跳過、也不能忽略，一定要處理。",
+    "step 3：OS 到 secondary storage（被當作 virtual memory、也切成一格格 page 的那塊）找到 P3。",
+    "step 4：把缺的 page 帶回 main memory 的一個空 frame。打叉的那塊被占用了，F34 是空的，因為 page 和 frame 一樣大，P3 直接載入 F34。",
+    "注意：P1、P2 緊鄰在 F7、F8，P3 卻在 F34，並不連續。paging 就是這樣做到 non-contiguous（非連續）配置，因為 page table 記下了每頁確切在哪，像一個索引（index）。",
+    "step 5：update page table，在 P3 那一格填上它所在的 frame：F34，並改成 valid。",
+    "step 6：restart the instruction。CPU 重新執行 load X，這次在 page table 找到 P3，就開始執行。",
+    "如果 P3 本來就在 F34，根本不會 page fault：MMU 查表找到 frame 34，直接從 step 1 跳到 step 6，step 2 到 5 都不需要。"
+   ],
+   "points": [
+    {
+     "t": 107,
+     "text": "CPU 執行 P2 的 load X，需要 P3 → ① MMU 查 process A 的 page table，P3 是 invalid（i）。"
+    },
+    {
+     "t": 199,
+     "text": "② page fault → 發出 trap signal 給 OS（高優先，不能忽略）。"
+    },
+    {
+     "t": 255,
+     "text": "③ OS 在 secondary storage 找到 P3 → ④ 載入 free frame F34。"
+    },
+    {
+     "t": 316,
+     "text": "P1、P2 在 F7、F8，P3 在 F34：靠 page table 當 index，可以不連續。"
+    },
+    {
+     "t": 367,
+     "text": "⑤ update page table（P3 → F34）→ ⑥ restart load X。"
+    },
+    {
+     "t": 409,
+     "text": "若 P3 本來就在 memory：step 1 直接到 step 6，不需要 2～5。"
+    }
+   ]
+  },
+  {
+   "title": "EAT 計算題",
+   "scene": "vm-pf-eat",
+   "cues": [
+    462.3,
+    475.7,
+    501.7,
+    530.8,
+    559.8,
+    592.2,
+    611.7,
+    619.1,
+    637.6
+   ],
+   "explain": [
+    "理解 page fault 之後，來做一題考試常見的小計算題。",
+    "第一點：page fault 的機率 p 介於 0 到 1 之間。記憶體快滿時很多 page 在 main memory 和硬碟間來回，某些 page 不在就會 fault。",
+    "第二點：EAT（effective access time，有效存取時間）= (1 − p) × 記憶體存取時間 + p × page fault overhead。1 − p 是沒發生 page fault 的機率。",
+    "page fault overhead 是發生 page fault 時，多做 step 2 到 6 的額外時間；沒發生就從 step 1 直接到 step 6。",
+    "題目：記憶體存取 100 ms，page fault overhead 10 ms，10 次存取有 1 次 page fault，也就是 p = 1/10 = 0.1。（這是影片自訂的題目數字。）",
+    "代入公式：先算 (1 − 0.1) × 100。",
+    "提醒：題目可能給 ms、µs 或 ns，計算前要先換成同一個單位。",
+    "再加上 p × overhead，也就是 0.1 × 10。",
+    "0.9 × 100 = 90，0.1 × 10 = 1，所以 EAT = 90 + 1 = 91 ms。"
+   ],
+   "points": [
+    {
+     "t": 462,
+     "text": "0 ≤ p ≤ 1；EAT = (1 − p) × memory access + p × page fault overhead。"
+    },
+    {
+     "t": 530,
+     "text": "overhead 是發生 page fault 時多走 step 2～6 的額外時間。"
+    },
+    {
+     "t": 559,
+     "text": "題目：memory access 100 ms、overhead 10 ms、10 次有 1 次 fault（p = 0.1）→ EAT = 0.9 × 100 + 0.1 × 10 = 91 ms。"
+    },
+    {
+     "t": 611,
+     "text": "計算前先把單位統一。"
+    }
+   ],
+   "trap": "影片的數字只是練習用：真實系統 page fault 的處理時間（ms 級、讀 disk）遠大於一次記憶體存取（ns 級），不會像題目一樣 overhead 比 memory access 小。"
+  },
+  {
+   "title": "Thrashing",
+   "scene": "vm-pf-thrash",
+   "cues": [
+    659.9,
+    667.7,
+    712.3,
+    724.6,
+    758.6,
+    789.1,
+    814.3
+   ],
+   "explain": [
+    "最後談 thrashing（顛簸）。左邊是 RAM（實體記憶體），右邊是 virtual memory（在硬碟上）。",
+    "程式完成初始化後，大多只用到一小部分的 code 和 data pages。就像大型遊戲：一開始 loading 很久，載入完就順順地跑。",
+    "最常被存取的那些 pages，叫做 working set（工作集）。",
+    "當 working set 只占系統全部 page 的一小部分，virtual memory 運作得最有效率，花在處理 page fault 的計算很少，因為不太需要在 VM 和 RAM 之間搬來搬去。",
+    "但 working set 變大時，RAM 被塞滿，有些 page 被搬到 virtual memory，要用時又被搬回 RAM。在到達臨界點之前，處理這些 page fault 還應付得來。",
+    "超過臨界點後，page fault 急遽增加，處理 fault 的時間壓過真正運算的時間，整個系統變慢，這就叫 thrashing。",
+    "一句話：thrashing 就是因為 page fault，page 在 RAM 和 virtual memory 之間失控地來回 swapping。"
+   ],
+   "points": [
+    {
+     "t": 659,
+     "text": "程式初始化後通常只用少量 code／data pages；最常被 access 的 pages 稱為 working set。"
+    },
+    {
+     "t": 724,
+     "text": "working set 小 → 很少 page fault，virtual memory 最有效率。"
+    },
+    {
+     "t": 758,
+     "text": "working set 變大塞滿 RAM → page 在 RAM 與 VM 間來回；fault 劇增、處理時間壓過運算 → thrashing（失控的 swapping）。"
+    }
+   ]
+  },
+  {
+   "title": "結尾",
+   "scene": null,
+   "points": [
+    {
+     "t": 826,
+     "text": "回顧：page fault 是什麼、怎麼處理、EAT 計算題、thrashing；頻道結尾。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Page fault handling 的第一步是？",
+   "opts": [
+    "MMU 查 page table",
+    "OS 從 disk 讀 page",
+    "restart instruction",
+    "update page table"
+   ],
+   "ans": "MMU 查 page table",
+   "why": "查表發現 invalid bit 才會 trap。"
+  },
+  {
+   "q": "Page fault 時送給 OS 的是什麼訊號？",
+   "opts": [
+    "trap（高優先，不能忽略）",
+    "一般的 I/O 完成中斷",
+    "segmentation fault",
+    "system call"
+   ],
+   "ans": "trap（高優先，不能忽略）",
+   "why": "step 2：產生 page trap signal。"
+  },
+  {
+   "q": "P3 被載入 F34 之後，下一步是？",
+   "opts": [
+    "update page table（P3 → F34）",
+    "重新開機",
+    "把 P1 換出",
+    "清空 TLB"
+   ],
+   "ans": "update page table（P3 → F34）",
+   "why": "再 restart 指令。"
+  },
+  {
+   "q": "memory access 100 ms、overhead 10 ms、p = 0.1，EAT = ？",
+   "opts": [
+    "91 ms",
+    "100 ms",
+    "10 ms",
+    "110 ms"
+   ],
+   "ans": "91 ms",
+   "why": "0.9×100 + 0.1×10 = 90 + 1。"
+  },
+  {
+   "q": "如果需要的 page 本來就在 memory 中？",
+   "opts": [
+    "step 1 直接到 step 6",
+    "仍要走完 6 步",
+    "要先做 step 3",
+    "一定會 thrashing"
+   ],
+   "ans": "step 1 直接到 step 6",
+   "why": "不需要 step 2～5。"
+  },
+  {
+   "q": "Thrashing 是指？",
+   "opts": [
+    "page 因 page fault 在 RAM 與 VM 間失控地來回 swap",
+    "CPU 過熱",
+    "TLB 命中率太高",
+    "working set 太小"
+   ],
+   "ans": "page 因 page fault 在 RAM 與 VM 間失控地來回 swap",
+   "why": "處理 fault 的時間壓過運算時間。"
+  }
+ ]
+}

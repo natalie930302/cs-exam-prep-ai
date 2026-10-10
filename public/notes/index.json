@@ -617,6 +617,12 @@
   "quiz": 6,
   "cued": true
  },
+ "cfPNAeAatGs": {
+  "label": "清大周志遠 第14D講 Allocation of Frames",
+  "points": 32,
+  "quiz": 7,
+  "cued": true
+ },
  "cgaPEsMJkSc": {
   "label": "交大彭文志 Lec05 Arrays (3/4)",
   "points": 146,
@@ -741,6 +747,12 @@
   "label": "MIT 6.006 L24：Topics in Algorithms Research",
   "points": 34,
   "quiz": 7,
+  "cued": true
+ },
+ "DXU7SqsYDvg": {
+  "label": "Page Replacement Algorithms（LRU and Optimal）",
+  "points": 10,
+  "quiz": 6,
   "cued": true
  },
  "e2cF8a5aAhE": {
@@ -1223,9 +1235,21 @@
   "quiz": 6,
   "cued": true
  },
+ "ngdrizxxvPY": {
+  "label": "清大周志遠 第14A講 Demand Paging(Review)",
+  "points": 28,
+  "quiz": 6,
+  "cued": true
+ },
  "NI4OKSvGAgM": {
   "label": "Abdul Bari：1.9 Properties of Asymptotic Notations",
   "points": 30,
+  "quiz": 6,
+  "cued": true
+ },
+ "Nif2TZ5Cohw": {
+  "label": "Page Faults & Page Fault Handling（含Thrashing）",
+  "points": 18,
   "quiz": 6,
   "cued": true
  },
@@ -1329,6 +1353,12 @@
   "label": "Abdul Bari：1.5.3 Time Complexity of While and if #3",
   "points": 49,
   "quiz": 6,
+  "cued": true
+ },
+ "P1MlFqr5VMw": {
+  "label": "清大周志遠 第14B講 Page Replacement",
+  "points": 26,
+  "quiz": 5,
   "cued": true
  },
  "p7C-ObHrCP8": {
@@ -1571,6 +1601,12 @@
   "quiz": 4,
   "cued": true
  },
+ "TnmN_KNIbc4": {
+  "label": "清大周志遠 第13A講 Background",
+  "points": 27,
+  "quiz": 5,
+  "cued": true
+ },
  "tp4_UXaVyx8": {
   "label": "MIT 6.006 L22：DP IV: Guitar Fingering, Tetris, Super Mario Bros.（進階DP範例，補充）",
   "points": 107,
@@ -1587,6 +1623,12 @@
   "label": "交大江蕙如 Lec05 Chapter 2 Algorithm Analysis (2/2)",
   "points": 148,
   "quiz": 8,
+  "cued": true
+ },
+ "TXcPJuccafA": {
+  "label": "清大周志遠 第14C講 Page Replacement(續)",
+  "points": 31,
+  "quiz": 7,
   "cued": true
  },
  "u4zElpAChLM": {
@@ -1659,6 +1701,12 @@
   "label": "Knuth-Morris-Pratt（KMP）String Matching Algorithm",
   "points": 47,
   "quiz": 7,
+  "cued": true
+ },
+ "VAaunFe_lRs": {
+  "label": "清大周志遠 第13B講 Demand Paging & Process Creation",
+  "points": 40,
+  "quiz": 6,
   "cued": true
  },
  "VCIVXPoiLpU": {

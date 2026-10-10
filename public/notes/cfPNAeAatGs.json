@@ -1,0 +1,468 @@
+{
+ "video": "cfPNAeAatGs",
+ "label": "清大周志遠 第14D講 Allocation of Frames",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "每個 process 最少要幾個 frame",
+   "scene": "vm-14d-min",
+   "cues": [
+    13.8,
+    43.3,
+    59.7,
+    95.7,
+    104.7,
+    138.8,
+    200.2,
+    213.4,
+    258.3
+   ],
+   "explain": [
+    "剛剛講的是單一 process 要踢掉自己哪一頁。接下來要跨 process 考慮：所有 process 共用實體記憶體，每個 process 應該分到幾個 frame？",
+    "拿太少會怎樣？首先要知道：一個程式要能執行，每個指令有一個「最少需要的 frame 數」。",
+    "一個很極端的例子：在某台機器上只執行一個指令，最壞情況要同時用到 6 個 frame。OS 若不能保證至少 6 個，這程式根本跑不起來。",
+    "為什麼要 6 個？這是很早期的 IBM 機器（課本是 IBM 370 的 MVC 指令）。",
+    "這個指令很複雜，長度是 6 個 byte。運氣不好時它剛好跨在兩個 page 中間，光是把指令讀進來（fetch）就要 2 個 frame。",
+    "它是一個很強的搬移（move）指令：從某個 base address 開始、指定長度，直接記憶體對記憶體搬資料（很多 CPU 只能記憶體到暫存器）。",
+    "如果來源的 base 在一個 page 裡，長度只要六、八個 byte 就可能跨過頁界，又是 2 個 page。",
+    "搬到的目的地也可能跨兩個 page。2 + 2 + 2 = 6，所以至少要空出 6 個 frame 才能執行這一個指令。",
+    "通常不會那麼誇張，但 2 到 4 個 frame 是一定需要的。"
+   ],
+   "points": [
+    {
+     "t": 13,
+     "text": "第二個問題：所有 process 共用 physical memory，每個該分幾個 frame；太少就跑不起來。"
+    },
+    {
+     "t": 59,
+     "text": "極端例子（早期 IBM 370 的 MVC）：一個 instruction worst case 要 6 個 frame。"
+    },
+    {
+     "t": 104,
+     "text": "指令 6 bytes 可能跨 2 頁；memory→memory 搬移的來源、目的地各可能跨 2 頁：2＋2＋2＝6。"
+    },
+    {
+     "t": 258,
+     "text": "通常沒那麼誇張，但 2～4 個 frame 一定需要。"
+    }
+   ]
+  },
+  {
+   "title": "Fixed vs priority allocation",
+   "scene": "vm-14d-fixed",
+   "cues": [
+    274.4,
+    283.3,
+    297.3,
+    306.7,
+    323.1,
+    355.7
+   ],
+   "explain": [
+    "frame allocation（frame 分配）的目的，就是決定每個 process 到底給它幾個 frame。",
+    "第一大類叫 fixed allocation（固定分配）：根據 process 一開始的資訊就決定好，跟執行時（run time）的狀況無關。",
+    "例如 equal（平均分配）：有 100 個 frame、5 個 process，每個分 20 個。",
+    "或 proportional（按比例分配）：事先知道每個程式的大小，照大小比例分。課本例子：62 個 frame，兩個 process 分別 10 頁和 127 頁，約分到 4 和 57 個。",
+    "另一大類叫 priority allocation（依優先權分配）：在 run time 才決定，根據每個 process 的 priority。",
+    "priority 高的通常比較重要、要先跑或跑快，就多給一些。priority 在執行時也能調整，例如跑太久、霸佔 CPU 和記憶體的，就把 priority 降低。"
+   ],
+   "points": [
+    {
+     "t": 274,
+     "text": "fixed allocation：run 之前依 process 資訊決定，與 run time 無關——equal（100 frames、5 個 process → 各 20）或 proportional（依大小比例）。"
+    },
+    {
+     "t": 323,
+     "text": "priority allocation：run time 依 priority 決定，priority 高的給多；priority 可在 run time 調整。"
+    }
+   ]
+  },
+  {
+   "title": "Local vs global replacement",
+   "scene": "vm-14d-global",
+   "cues": [
+    389.4,
+    408.4,
+    426,
+    446.2,
+    457,
+    477.4,
+    498,
+    515.1,
+    541.6
+   ],
+   "explain": [
+    "另一個分類角度是 local 和 global。左邊是 process A 的 frame，右邊是 process B 的，A 有一個新的 page 要進來。",
+    "local replacement（區域置換）：一個 process 要做 page replacement 時，只能換掉自己的 page。通常跟 fixed allocation 綁在一起。",
+    "就像你要 100 個 frame，我只給你 10 個，那你就只能在自己這 10 個位置裡搶來搶去（數字示意）。",
+    "local 或 fixed 通常效果不好：事前不知道程式會怎麼跑，而程式的行為變化又很大。",
+    "global replacement（全域置換）：挑 victim 時，任何程式的 page 只要沒在用，都可以拿來換。",
+    "它通常跟 priority allocation 綁在一起：priority 高的人可以一直去搶 priority 低的人的 frame，讓整個系統效能最好。這裡 A 搶走了 B 的一個 frame。",
+    "問題是：一直搶別人的，最弱的那個可能連最少需要的 6 個 frame 都沒有，那就完蛋了。所以通常要設一個 minimum 下限。",
+    "更重要的問題是接下來的 thrashing：frame 很少時也許還能執行，但會跑得非常非常慢，慢到 CPU 幾乎都沒在用。",
+    "一般系統一定是用 global 加 priority，但它必須解決 thrashing 的問題。"
+   ],
+   "points": [
+    {
+     "t": 389,
+     "text": "local：只能替換自己的 page（常與 fixed 綁）；事前不知道程式行為，效果通常差。"
+    },
+    {
+     "t": 457,
+     "text": "global：victim 可以是任何 process 的 page（常與 priority 綁），高 priority 搶低 priority 的 frame。"
+    },
+    {
+     "t": 498,
+     "text": "風險：被搶到連 minimum 都不夠，所以要設下限；更嚴重的是 thrashing。一般用 global＋priority。"
+    }
+   ]
+  },
+  {
+   "title": "Thrashing",
+   "scene": "vm-14d-thrash",
+   "cues": [
+    564.6,
+    574.6,
+    584.8,
+    622.5,
+    637.8,
+    653.1,
+    666.8,
+    696.8,
+    720.7
+   ],
+   "explain": [
+    "thrashing（顛簸）是什麼？起因是 page fault。",
+    "要用的 page 不在記憶體，就要去 disk 拿，而存取 disk 很慢。",
+    "在 page 搬進來之前，CPU 不能繼續，因為正在執行的指令就需要這一頁。一般程式可以讓 CPU 和 I/O 同時進行（overlap），但 page fault 發生在指令執行中途，沒辦法 overlap，一定要等。",
+    "如果 page fault 非常頻繁，就會有非常多的 I/O。",
+    "之前一直說 degree of multiprogramming（同時在記憶體的程式數）越多越好，可以讓 CPU 和 I/O 重疊，這也是事實，所以 OS 喜歡一直增加它。圖上的綠線是 CPU 使用率跟著上升（曲線示意）。",
+    "但一直增加的結果，每個 process 分到的 frame 一直變少，page fault rate 就開始上升，剛用的 page 很容易被踢出去。",
+    "page 被踢出去就要 I/O，CPU 在等 I/O、開始閒置，使用率整個掉下去，而且掉得又快又嚴重（紅線）。",
+    "thrashing 的定義很簡單：系統花在 paging（I/O 搬 page）的時間，超過執行使用者指令（execution）的時間。",
+    "這時一定會觀察到：雖然 degree of multiprogramming 很高，CPU 使用率卻嚴重往下掉。"
+   ],
+   "points": [
+    {
+     "t": 564,
+     "text": "page fault 要 access disk，CPU 必須等 I/O（page fault 發生在 instruction 執行中，無法 overlap）。"
+    },
+    {
+     "t": 622,
+     "text": "page fault 頻繁 → 大量 I/O。"
+    },
+    {
+     "t": 637,
+     "text": "degree of multiprogramming 一直增加 → 每人 frame 減少 → page fault rate 上升 → CPU 使用率驟降。"
+    },
+    {
+     "t": 696,
+     "text": "定義：系統花在 paging 的時間超過 execution；可觀察到 degree 很高但 CPU 使用率嚴重下降。"
+    }
+   ]
+  },
+  {
+   "title": "Thrashing 的惡性循環",
+   "scene": "vm-14d-cycle",
+   "cues": [
+    735.2,
+    751.1,
+    764.6,
+    776,
+    791.1,
+    802.2,
+    823.7,
+    850.8,
+    884.6
+   ],
+   "explain": [
+    "為什麼會掉得這麼快，而不是慢慢下降？因為它進入了一個惡性循環，我們一步步看。",
+    "一開始本來就會有一些 page fault；隨著 degree of multiprogramming 一直增加，page fault 的機率一直上升。",
+    "page fault 會產生 I/O，CPU 開始閒置（idle），使用率往下掉。",
+    "OS 自以為很聰明（早期電腦就是這樣）：看到 CPU 使用率下降，以為是自己沒做好，是 degree of multiprogramming 太低了。",
+    "所以它增加 degree of multiprogramming：讓更多 process 進入 ready queue，希望 CPU 和 I/O 能重疊。",
+    "新加入的 process 也需要 frame 才能跑，它們就去跟原來的 process 搶 frame。",
+    "本來會 page fault 就是因為 frame 不夠，現在每個人的 frame 更少，page fault 更多、I/O 更長，CPU 掉得更兇，OS 又更積極地加 process……又回到第一步，一直循環。",
+    "所以才會看到 CPU 使用率像懸崖（cliff）一樣直接掉下去；I/O 時間遠大於 CPU，系統幾乎不動，不是只慢 10%、20%。",
+    "怎麼解決？關鍵是控制正確的 frame 數量，也就是 degree of multiprogramming。介紹兩個解法：working set 和 page-fault frequency。"
+   ],
+   "points": [
+    {
+     "t": 735,
+     "text": "惡性循環：page fault↑ → I/O↑、CPU idle → OS 以為 degree 太低 → 加 process → 每人 frame 更少 → page fault 更多。"
+    },
+    {
+     "t": 850,
+     "text": "CPU 使用率像懸崖一樣掉下去；解法是控制 frame 數／degree：working set、page-fault frequency。"
+    }
+   ]
+  },
+  {
+   "title": "Working set 的概念",
+   "scene": "vm-14d-ws",
+   "cues": [
+    925.7,
+    937.7,
+    954,
+    972,
+    1017.6,
+    1039.2
+   ],
+   "explain": [
+    "第一個解法：working set（工作集），它是從 locality 的角度出發。",
+    "給一段時間（window，例如一分鐘或十分鐘），因為有 locality，可以數出這個 process 在這段時間裡用了多少個不同的 page。藍色框就是 window（數字示意）。",
+    "用了幾個，就給它幾個 frame：給多了它也不會用，給少了在這段時間就可能 page fault，剛好 match 最理想。",
+    "但 locality 會隨時間改變：程式先存取某個 array，再換到另一個 array，或跑到某段 function code，行為完全不同，需要的數量也跟著變。所以 OS 要一直追蹤。",
+    "working set model 的做法：第一，定義一個 time window，叫 Δ（delta）；第二，數這段時間內有多少個不同的 page，叫 working set size（WSS）。",
+    "把每支程式的 WSS 都算出來，就照這個分配 frame；真的不夠，再用比例之類的方法。"
+   ],
+   "points": [
+    {
+     "t": 925,
+     "text": "working set 從 locality 出發：看一段 window 內 process 用了多少個不同 page，就給它那麼多 frame。"
+    },
+    {
+     "t": 972,
+     "text": "locality 會隨時間改變，所以要一直 keep track。"
+    },
+    {
+     "t": 1017,
+     "text": "working set model：定義 window Δ，數 window 內不同 page 的數量（WSS），每支程式都算出來再分配。"
+    }
+   ]
+  },
+  {
+   "title": "Working set 例子：Δ = 10",
+   "scene": "vm-14d-wsex",
+   "cues": [
+    1059.3,
+    1080,
+    1090.7,
+    1106,
+    1118
+   ],
+   "explain": [
+    "理論上 window 是一段時間，但實作時為了簡單通常只看順序，數「最近多少次記憶體存取」。上面是課本的 page reference table。",
+    "系統一直執行，就一直保留過去 10 個存取的紀錄；這個 Δ = 10 就是 window。",
+    "在 t1 這個時間點，過去 10 個出現的 page 是 1、2、5、6、7 這五個（重複的只算一次），所以 working set size 是 5。",
+    "隨著時間進到另一個 locality（t2），不只 page 不一樣，size 也不一樣：只剩 3、4 兩個，WSS 變成 2。",
+    "所以 OS 要隨時觀察，把每個 process 的 frame 數設到最適合的值，這就是 working set。"
+   ],
+   "points": [
+    {
+     "t": 1059,
+     "text": "實務上不用時間而數 access 次數：保留最近 Δ = 10 個 reference。"
+    },
+    {
+     "t": 1090,
+     "text": "t1：最近 10 個是 2 6 1 5 7 7 7 7 5 1 → WS = {1, 2, 5, 6, 7}，WSS = 5。"
+    },
+    {
+     "t": 1106,
+     "text": "t2 進到另一個 locality：WS = {3, 4}，WSS = 2；OS 要隨時觀察、調整。"
+    }
+   ]
+  },
+  {
+   "title": "D = Σ WSSi 與 m",
+   "scene": "vm-14d-wsd",
+   "cues": [
+    1129.8,
+    1143.6,
+    1171.3,
+    1188.5,
+    1211.9,
+    1244.6,
+    1294.7
+   ],
+   "explain": [
+    "把剛剛的概念寫成演算法。第一步定義 WSSi：第 i 個 process 的 working set size（圖上的數字是示意）。",
+    "每個 process 都不一樣，把它們全部加起來，就是總共需要的 frame 數，叫 D。D 個 frame 都有的話，所有程式都能順利執行、不會 page fault。",
+    "小 m 是實際可用的 frame 數，也就是實體記憶體的大小。",
+    "OS 算出 D，跟 m 比較。如果 D 比 m 大（這裡 11 > 10），就知道有人會開始 page fault，有 thrashing 的危險；差很多就可能嚴重 thrashing。",
+    "這時 OS 會 suspend（暫停）一個 process，例如 priority 最低的，把它整個 swap 到 disk（這就是 mid-term scheduler 的工作）。D 就降下來，讓 D ≤ m。",
+    "反過來，如果 m 遠大於 D，代表很多 frame 空著沒用，degree of multiprogramming 不夠。這時可以啟動新的 process，或挑 priority 高、之前被 suspend 的重新執行，CPU 使用率就能提高。",
+    "老師提醒：每年很多同學只寫一個 WSS，那是完全錯的。一定要每個 process 都算出自己的 WSS、加總後再跟 m 比，才能決定要 suspend 還是 launch process。"
+   ],
+   "points": [
+    {
+     "t": 1129,
+     "text": "WSSi：第 i 個 process 的 working set size；D = Σ WSSi 為總需求，m 為可用 frame 數。"
+    },
+    {
+     "t": 1188,
+     "text": "D > m → 有 thrashing 危險：suspend 一個 process（如 priority 最低的，swap 出去）讓 D ≤ m。"
+    },
+    {
+     "t": 1244,
+     "text": "m ≫ D → frame 閒置：啟動新的或恢復被 suspend 的 process，提高 degree。"
+    },
+    {
+     "t": 1294,
+     "text": "常見錯誤：只寫一個 WSS；必須每個 process 都算再加總比較。"
+    }
+   ]
+  },
+  {
+   "title": "Page-fault frequency（PFF）",
+   "scene": "vm-14d-pff",
+   "cues": [
+    1329,
+    1337.8,
+    1384.1,
+    1401.1,
+    1425.3,
+    1446.5,
+    1474.5,
+    1515.5,
+    1552.6
+   ],
+   "explain": [
+    "working set 可以明顯解決 thrashing，通常能讓 CPU 使用率很高。",
+    "缺點是很 expensive（昂貴），不好實作：每次記憶體存取都要更新計數，每秒幾百萬次，overhead（額外負擔）非常高。",
+    "另一個比較直覺的做法，從 page fault 本身下手：thrashing 的問題就是 page fault rate 太高。這叫 page-fault frequency（PFF）。圖上是「分到的 frame 越多，page fault rate 越低」的曲線（示意）。",
+    "做法：監控每個 process 的 page fault rate，把它控制在一個範圍中間，例如 5% 到 10%。",
+    "為什麼不是越低越好、壓到 0%？0% 代表給了太多空閒的 frame，degree of multiprogramming 不夠，也不是好事。",
+    "所以有一個 upper bound（上界）和一個 lower bound（下界）。範圍在哪裡最好沒有一定的道理，是系統 tune 出來的。",
+    "跟 working set 最大的差別：只要數 page fault 這個事件。page fault 幾百萬次存取才發生一次，而且發生時 OS 本來就要處理，順便把 counter 加 1 就好，overhead 非常小。",
+    "rate 超過上界的 process，代表 frame 不夠，就多給它 frame；這些 frame 從 rate 低於下界、frame 太多的 process 身上拿。這樣一直做 balancing。",
+    "這個方法成立的前提是：frame 增加，page fault 一定減少。這就是為什麼不能有 anomaly，要用 stack algorithm（像 LRU）。"
+   ],
+   "points": [
+    {
+     "t": 1329,
+     "text": "working set 有效但 expensive：每次 memory access 都要 counting。"
+    },
+    {
+     "t": 1384,
+     "text": "PFF：monitor 每個 process 的 page fault rate，控制在 upper bound 與 lower bound 之間（太低代表 frame 太多閒置）。"
+    },
+    {
+     "t": 1474,
+     "text": "overhead 小：只在 page fault 時 counter + 1。"
+    },
+    {
+     "t": 1515,
+     "text": "超過上界 → 給更多 frame；低於下界 → 收回 frame 給別人。前提：frame 增加 page fault 一定減少（stack algorithm）。"
+    }
+   ]
+  },
+  {
+   "title": "Working set 與 PFF 的關係",
+   "scene": "vm-14d-rel",
+   "cues": [
+    1586.3,
+    1600,
+    1607,
+    1618.8,
+    1660.7
+   ],
+   "explain": [
+    "最後這張圖說明：雖然有兩種方法，但它們在解決同一個問題，相關性非常高。",
+    "從時間的角度看 page fault rate：有時高、有時低（曲線示意）。",
+    "什麼時候會高？進入一個新的 locality、要重新算 working set 的時候，rate 就衝上去，形成一個 peak（尖峰）。",
+    "兩個 peak 之間，就代表一段 working set。working set 的做法在 page fault 往上衝時更新 size；PFF 的做法在 rate 超過上界時調整。看你從哪個角度做，但重點都是 locality。",
+    "locality 會改變，所以要在 run time 一直調整。working set 因為 implementation overhead 比較高，比較少用；大家多半觀察 page fault rate。"
+   ],
+   "points": [
+    {
+     "t": 1586,
+     "text": "兩者解決同一問題、相關性高：進入新 locality 時 page fault rate 出現 peak，兩個 peak 之間就是一個 working set。"
+    },
+    {
+     "t": 1660,
+     "text": "working set 的 implementation overhead 較高，實務上多觀察 page fault rate。"
+    }
+   ]
+  },
+  {
+   "title": "結尾",
+   "scene": null,
+   "points": [
+    {
+     "t": 1675,
+     "text": "第九章教完（期中考範圍）；thrashing、working set、page-fault frequency 的做法常考，一定要會描述。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "IBM 370 的 MVC 指令 worst case 需要幾個 frame？",
+   "opts": [
+    "6",
+    "2",
+    "4",
+    "3"
+   ],
+   "ans": "6",
+   "why": "指令本身、來源、目的地各可能跨 2 頁。"
+  },
+  {
+   "q": "Global replacement 的特性是？",
+   "opts": [
+    "可以從任何 process 挑 victim",
+    "只能換自己的 page",
+    "一定搭配 equal allocation",
+    "不會有 thrashing"
+   ],
+   "ans": "可以從任何 process 挑 victim",
+   "why": "常與 priority allocation 搭配。"
+  },
+  {
+   "q": "Thrashing 的定義是？",
+   "opts": [
+    "花在 paging 的時間超過 execution 的時間",
+    "CPU 使用率 100%",
+    "TLB miss 太多",
+    "process 數量太少"
+   ],
+   "ans": "花在 paging 的時間超過 execution 的時間",
+   "why": "此時 CPU 使用率會驟降。"
+  },
+  {
+   "q": "Thrashing 惡性循環中，OS 看到 CPU 使用率下降時錯誤地做了什麼？",
+   "opts": [
+    "增加 degree of multiprogramming",
+    "suspend 所有 process",
+    "增加 page size",
+    "關閉 virtual memory"
+   ],
+   "ans": "增加 degree of multiprogramming",
+   "why": "加 process 只會讓每人 frame 更少、fault 更多。"
+  },
+  {
+   "q": "Δ = 10，最近 10 個 reference 是 2 6 1 5 7 7 7 7 5 1，WSS 為？",
+   "opts": [
+    "5",
+    "10",
+    "4",
+    "7"
+   ],
+   "ans": "5",
+   "why": "不同的 page：1, 2, 5, 6, 7。"
+  },
+  {
+   "q": "Working set 中 D = Σ WSSi > m 時，OS 應該？",
+   "opts": [
+    "suspend 一個 process",
+    "再啟動一個 process",
+    "增加 Δ",
+    "什麼都不做"
+   ],
+   "ans": "suspend 一個 process",
+   "why": "讓 D ≤ m，避免 thrashing。"
+  },
+  {
+   "q": "Page-fault frequency 中，某 process 的 rate 低於 lower bound 代表？",
+   "opts": [
+    "它的 frame 太多，可以收回一些",
+    "它的 frame 不夠",
+    "正在 thrashing",
+    "要提高它的 priority"
+   ],
+   "ans": "它的 frame 太多，可以收回一些",
+   "why": "收回的 frame 給 rate 超過上界的 process。"
+  }
+ ]
+}

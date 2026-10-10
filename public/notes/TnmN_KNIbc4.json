@@ -1,0 +1,326 @@
+{
+ "video": "TnmN_KNIbc4",
+ "label": "清大周志遠 第13A講 Background",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "本章大綱：virtual memory",
+   "scene": "vm-13a-plan",
+   "cues": [
+    14.6,
+    36.2,
+    44.6,
+    58.1,
+    76.8,
+    85.8,
+    112
+   ],
+   "explain": [
+    "這一章叫 virtual memory（虛擬記憶體）。它的意思是：作業系統管理記憶體時，不只用真正的 memory（RAM），還會把硬碟（disk）拿來幫忙。",
+    "第一件事先說明 virtual memory 是什麼。上一章學過 paging：把記憶體切成一樣大的小塊（page）來管理，這章會接著用。",
+    "在 virtual memory 底下做 paging 的方法，叫 demand paging（需要時才搬進來的分頁）。",
+    "之前講 fork（複製出一個新的 process）時提過：建立 process 其實就是在分配記憶體，這章會講它跟記憶體管理的關係。",
+    "本章最重要的是 page replacement algorithm：記憶體滿了時，要把哪一頁請出去。演算法本身不難，但一定要會算。",
+    "另一個很重要的是 thrashing（輾轉／顛簸）：明明開了更多程式，CPU 卻越來越閒。這跟 virtual memory 的使用息息相關。",
+    "老師會解釋 thrashing 為什麼會發生，以及 OS 用什麼基本方法避免它。"
+   ],
+   "points": [
+    {
+     "t": 14,
+     "text": "第九章 virtual memory：memory 管理不只用 memory，還會用到硬碟。"
+    },
+    {
+     "t": 36,
+     "text": "內容：virtual memory 是什麼 → demand paging → process creation（fork）與 memory 的關係。"
+    },
+    {
+     "t": 77,
+     "text": "重點一：page replacement algorithm（演算法簡單，但一定要會）。"
+    },
+    {
+     "t": 86,
+     "text": "重點二：thrashing——process 開越多，CPU 使用率反而往下掉；要知道 OS 怎麼避免。"
+    }
+   ]
+  },
+  {
+   "title": "為什麼不必把整支程式放進 memory",
+   "scene": "vm-13a-why",
+   "cues": [
+    122.4,
+    140.5,
+    150,
+    171.2,
+    186.8,
+    198.6,
+    207.2,
+    241.1,
+    260.4
+   ],
+   "explain": [
+    "一支程式裡有很多部分。老師說：我們並不想一開始就把整個 process（執行中的程式）的內容通通搬進 memory。",
+    "前面章節學過 dynamic loading（要用某個函式時才載入）和 dynamic linking（執行時才連到 library），都能少佔一些記憶體。",
+    "這一章的 virtual memory 會更積極地省：讓放在 memory 裡的東西都更有意義。",
+    "例如處理錯誤的程式碼，平常根本不會執行到，放在 memory 裡只是佔位置。",
+    "程式裡有很多 branch（if/else 分支），有些路徑可能永遠不會走到。",
+    "共用的 library（函式庫）可以用 dynamic linking 處理，需要時才連過去。",
+    "還有一種前面沒解決的：使用者宣告了很大的 array，例如一萬個元素（不小心多打幾個零），卻幾乎沒用到，這就很浪費。",
+    "virtual memory 可以做到更細的程度：以 page 為單位，沒被 access（存取）到的 page 就先不放進 memory，只把真的用到的搬進來。",
+    "一切都是為了提高 memory utilization（使用率）。注意這裡的「使用率」是指放進去的東西真的有被存取，而不是只看塞了多少。"
+   ],
+   "points": [
+    {
+     "t": 122,
+     "text": "不希望一開始就把 process 全部的 memory content 放進 memory。"
+    },
+    {
+     "t": 140,
+     "text": "之前學過的 dynamic loading／linking 能減少用量；virtual memory 更積極。"
+    },
+    {
+     "t": 171,
+     "text": "很多內容根本用不到：error 處理、少走的 branch、library、宣告了卻沒用的大 array。"
+    },
+    {
+     "t": 241,
+     "text": "virtual memory 做到 page 這麼 low level：沒被 access 的 page 就不放 memory。"
+    },
+    {
+     "t": 260,
+     "text": "目的：提升 memory utilization——不是放了多少，而是放進去的真的被 access。"
+    }
+   ]
+  },
+  {
+   "title": "Virtual memory 的好處",
+   "scene": "vm-13a-benefit",
+   "cues": [
+    287.3,
+    316.2,
+    338.5,
+    380.2,
+    409,
+    436.6,
+    504.6,
+    529,
+    576
+   ],
+   "explain": [
+    "logical address（邏輯位址）是程式自己看到的位址；physical address（實體位址）是真正 RAM 的位置。virtual memory 把這兩者徹底分開，中間用一張對照表連起來。",
+    "既然分開了，程式的某一頁不一定要對到 RAM，甚至可以對到 disk 上；放在哪裡，使用者根本不必在意。",
+    "好處一：可以執行比實體記憶體還大的程式。例如 RAM 只有 16GB，logical space 卻可以更大；也許慢一點，但跑得動。",
+    "好處二：硬碟也被當成記憶體的一部分，等於可用空間變大，CPU、I/O 等資源的使用率就能提高。",
+    "空間變大就能放更多 process，這叫 degree of multiprogramming（同時在記憶體裡的程式數量）提高。程式越多，就越有機會讓閒著的資源被用上。",
+    "好處三：寫程式（尤其是 compiler、linker 這一層）變簡單：只要管自己的 logical 空間，不必管 RAM 上哪些位置被別人用了。",
+    "好處四：程式跑得比較快。沒有 virtual memory 時，程式要整支 load 進記憶體才能開始，程式越大，初始化越久。",
+    "用 demand paging，一開始什麼都不搬，要用哪一頁才搬那一頁；一次只搬 4KB，而不是一次搬 10MB，啟動時間大幅縮短。",
+    "這些好處跟第八章 virtual address 的好處有重疊，因為 virtual memory 包含 virtual address，而且更進一步用到了 disk。"
+   ],
+   "points": [
+    {
+     "t": 287,
+     "text": "virtual memory 是把 logical address 和 physical address 切開的極致：甚至可以 map 到 disk。"
+    },
+    {
+     "t": 338,
+     "text": "① program 可以比 physical memory 還大（logical space > physical）。"
+    },
+    {
+     "t": 380,
+     "text": "② disk 也當 memory，能放更多 process → degree of multiprogramming 提高，資源使用率上升。"
+    },
+    {
+     "t": 436,
+     "text": "③ programming 簡化：compiler／linker 只管自己的 logical address。"
+    },
+    {
+     "t": 504,
+     "text": "④ 程式跑比較快，尤其是啟動：demand paging 一次只搬 4KB，而不是整支 10MB。"
+    }
+   ]
+  },
+  {
+   "title": "為什麼通常是 demand paging",
+   "scene": "vm-13a-seg",
+   "cues": [
+    605.6,
+    631.8,
+    640.6,
+    663.6,
+    695.7,
+    715,
+    736.1,
+    796
+   ],
+   "explain": [
+    "virtual memory 的做法可以分兩種：demand paging（以 page 為單位），或 demand segmentation（以 segment 為單位）。",
+    "把記憶體內容放到 disk 時，同樣的想法可以一頁一頁搬，也可以一段一段（segment）搬。",
+    "但大家通常不用 segmentation：segment 大小不固定，搬出去再搬回來時，要找一個夠大的空洞（像 best fit、worst fit），最壞要 O(n) 的時間。",
+    "page 大小固定，有空位就一定放得下，用一條 free list（空閒清單）拿第一個就好，只要 O(1)。",
+    "電腦同時有兩者時，是 segmentation 在上層、paging 在下層，不會倒過來。",
+    "因為 segmentation 是照使用者寫程式的角度切的：code、heap、stack 各是一段，寫程式比較直覺。",
+    "而真正放進 physical memory 時，固定大小的 paging 比較好管：找空位 O(1)、沒有 external fragmentation（零碎空洞），internal fragmentation 也只在 4KB 以內。",
+    "所以 demand paging 是在 paging 這一層做的，不用管 segmentation；segmentation 主要跟 compiler 比較有關。"
+   ],
+   "points": [
+    {
+     "t": 605,
+     "text": "virtual memory 可做成 demand paging 或 demand segmentation；通常用 paging。"
+    },
+    {
+     "t": 640,
+     "text": "segment 大小不固定，搬回來要找空洞（best/worst fit），至少 O(n)；page 固定大小，free list O(1)。"
+    },
+    {
+     "t": 695,
+     "text": "兩者並存時：segmentation 在上（符合 user 的 view），paging 在下（方便硬體管理）。"
+    },
+    {
+     "t": 736,
+     "text": "paging：找空位 O(1)、沒有 external fragmentation、internal fragmentation 小；demand paging 在 paging level 做。"
+    }
+   ]
+  },
+  {
+   "title": "Virtual memory 示意：page 可以待在 disk",
+   "scene": "vm-13a-map",
+   "cues": [
+    809,
+    834.7,
+    849.1,
+    871,
+    891,
+    912.2
+   ],
+   "explain": [
+    "左邊是程式的 logical address，就是一堆 page（A、B、C、D）；中間是 page table（投影片叫 memory map），把每一頁對到右邊 physical memory 的某個 frame（RAM 裡的格子）。",
+    "virtual memory 再多一層：發現某一頁很久沒被存取，就把它 swap（換出）到 disk 存起來，page table 那一格標成不在 memory。",
+    "等 CPU 的指令要存取那個位置時，OS 發現它在 disk，就把資料搬回 physical memory，然後一切照常，好像什麼都沒發生。",
+    "所以 disk 好像變成記憶體的一部分。但要注意：RAM 的大小沒變，而且 CPU 不能直接讀 disk，page 一定要先回到 memory 才能被存取。",
+    "那誰該被踢到 disk？這就是後面要講的 replacement algorithm。選錯的話，就會不斷在 memory 和 disk 之間搬來搬去。",
+    "提醒：這個「從 disk 搬回 memory」不是 load program。它只是把那 4KB 的 bytes 複製過去，不在乎內容是什麼；load program 則要建立 page table、PCB（process control block），是不一樣的事。"
+   ],
+   "points": [
+    {
+     "t": 809,
+     "text": "logical address 是一堆 page，經 page table（memory map）對到 physical memory。"
+    },
+    {
+     "t": 834,
+     "text": "很久沒被 access 的 page 可以 swap 到 disk；要用時 OS 發現它在 disk，搬回來照常 access。"
+    },
+    {
+     "t": 871,
+     "text": "disk 被當成 memory 的一部分，但 CPU 不能直接 access disk：page 一定要先回到 memory。"
+    },
+    {
+     "t": 891,
+     "text": "誰該被踢到 disk 由 replacement algorithm 決定，選錯就會一直搬來搬去。"
+    },
+    {
+     "t": 912,
+     "text": "swap 只是 copy 4KB 的 bytes，不是 load program（不會建 page table、PCB）。"
+    }
+   ]
+  },
+  {
+   "title": "對照：沒有 virtual memory 時程式怎麼跑",
+   "scene": "vm-13a-novm",
+   "cues": [
+    949.7,
+    989.5,
+    1014.7,
+    1028.4,
+    1046.3,
+    1073.6,
+    1101.3,
+    1118.3
+   ],
+   "explain": [
+    "先複習第八章的做法：程式 compile 完變成 binary，裡面的位址都是 virtual address（程式自己的位址）。",
+    "要 run 一個程式，loader（載入器）先做準備：建立 PCB（記錄這個 process 的資料），還有 page table。",
+    "如果沒有 virtual memory、也沒有 demand paging，就很單純：一開始把所有內容全部 load 進 physical memory，page table 每格都填好。",
+    "如果 memory 不夠，或某個 process 很久沒跑，就把整個 process 一次搬到硬碟，這是以 process 為單位的 swapping。",
+    "接著開始執行：每個位址都透過 page table 翻譯（translation）成 physical address，再去存取。",
+    "執行中也可能動態要更多記憶體（例如 malloc）：OS 先修改 page table 分配好位置，再把資料放進去。",
+    "因為使用起來是散落的、不一定照順序，所以 page table 要標出哪些格子 valid（有效）、哪些 invalid（無效）。",
+    "程式結束時，就把它用的 memory 和 page table 等等釋放（free）掉。"
+   ],
+   "points": [
+    {
+     "t": 949,
+     "text": "compile 完的 binary 用的是 virtual address；run 時 loader 建 PCB 與 page table。"
+    },
+    {
+     "t": 1014,
+     "text": "沒有 virtual memory：一開始全部 load 進 physical memory；不夠時以整個 process 為單位 swap。"
+    },
+    {
+     "t": 1046,
+     "text": "執行時透過 page table 做 translation；run time 也能動態 allocate（改 page table）。"
+    },
+    {
+     "t": 1101,
+     "text": "使用是散落的，所以要用 valid／invalid 區分；結束時 free 掉 memory 與 table。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Virtual memory 讓「放進 memory 的東西真的被用到」，這提升的是什麼？",
+   "opts": [
+    "memory utilization（放進去的被 access）",
+    "disk 容量",
+    "CPU 時脈",
+    "TLB 大小"
+   ],
+   "ans": "memory utilization（放進去的被 access）",
+   "why": "老師強調：使用率不是放了多少，而是放進去的內容真的有被存取。"
+  },
+  {
+   "q": "下列哪一個不是課堂提到的 virtual memory 好處？",
+   "opts": [
+    "program 可以比 physical memory 大",
+    "提高 degree of multiprogramming",
+    "程式啟動比較快",
+    "CPU 可以直接讀 disk 上的 page"
+   ],
+   "ans": "CPU 可以直接讀 disk 上的 page",
+   "why": "CPU 不能直接 access disk；page 一定要先搬回 memory。"
+  },
+  {
+   "q": "為什麼 virtual memory 通常做成 demand paging 而不是 demand segmentation？",
+   "opts": [
+    "page 固定大小，找空位 O(1)",
+    "segment 比較小",
+    "paging 沒有 internal fragmentation",
+    "segmentation 不能放到 disk"
+   ],
+   "ans": "page 固定大小，找空位 O(1)",
+   "why": "segment 大小不固定，搬回來要找夠大的洞，需 O(n)；page 用 free list 即可。"
+  },
+  {
+   "q": "segmentation 與 paging 同時存在時，層次是？",
+   "opts": [
+    "segmentation 在上、paging 在下",
+    "paging 在上、segmentation 在下",
+    "兩者平行、各管一半",
+    "只能擇一"
+   ],
+   "ans": "segmentation 在上、paging 在下",
+   "why": "segmentation 符合 user 的 view，paging 方便硬體管理。"
+  },
+  {
+   "q": "把一個 page 從 disk 搬回 memory，和 load program 的差別是？",
+   "opts": [
+    "swap 只是 copy 4KB 的 bytes，不建 PCB／page table",
+    "兩者完全一樣",
+    "swap 會重新 compile",
+    "load program 不需要 page table"
+   ],
+   "ans": "swap 只是 copy 4KB 的 bytes，不建 PCB／page table",
+   "why": "老師提醒：swapping 不在乎內容，只是搬 bytes。"
+  }
+ ]
+}

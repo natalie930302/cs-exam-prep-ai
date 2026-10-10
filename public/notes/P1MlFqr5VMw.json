@@ -1,0 +1,360 @@
+{
+ "video": "P1MlFqr5VMw",
+ "label": "清大周志遠 第14B講 Page Replacement",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Page replacement 為什麼重要",
+   "scene": "vm-14b-why",
+   "cues": [
+    14.9,
+    20.2,
+    43.9,
+    80.4,
+    120.2,
+    139.4
+   ],
+   "explain": [
+    "page fault 發生時要找一個空的 frame 放新 page。但記憶體四格都被佔了，找不到空位，這時就要多做一件事：replacement（置換）。",
+    "要把誰換出去？這就是 replacement algorithm（置換演算法）要決定的。",
+    "它對電腦效能影響很大，因為好壞決定了 page fault 的次數。例如把等一下馬上要用的 page 2 踢出去，它很快又要搬回來，多了一次很慢的 disk 存取。",
+    "沒有空 frame 時有兩種解法。第一種很極端：用 swapper（mid-term scheduler）挑一個沒在用的 process，整個搬到 disk；但那個程式就完全不能執行了，不太好。",
+    "OS 比較喜歡細緻（fine-grained）的做法：在 page 這一層，由 pager 只挑一個 page 換出去，不用挑整個 process。",
+    "一個程式有很多 page 其實都沒在用，所以要找一個可以換掉的 page 很容易。"
+   ],
+   "points": [
+    {
+     "t": 14,
+     "text": "page fault 時找不到 free frame，就要 replacement；replace 誰由演算法決定。"
+    },
+    {
+     "t": 44,
+     "text": "演算法好壞決定 page fault 次數：把等一下要用的 page 踢掉，它又要搬回來（disk access）。"
+    },
+    {
+     "t": 80,
+     "text": "沒有 free frame 時：swap 整個 process（swapper，程式完全不能動）或只 swap 一個 page（pager，較常用）。"
+    }
+   ]
+  },
+  {
+   "title": "Dirty（modify）bit",
+   "scene": "vm-14b-dirty",
+   "cues": [
+    149.2,
+    163.6,
+    189.6,
+    207.9,
+    223.4,
+    244.9,
+    264.6,
+    284.1
+   ],
+   "explain": [
+    "當一個 page 被換到 disk 時，有一件很重要的事要注意。左邊是記憶體裡的三個 page，右邊是 disk。",
+    "其實記憶體內容一開始就在 disk 上，是被 load 進記憶體的；所以 disk 上本來就有一份 copy，換出去只是「存回去」。",
+    "很多 page 根本沒被改過，例如 library，只有讀而已。沒改過卻在踢出去時再寫一次回 disk，就很浪費時間。",
+    "所以 page table 的每一格再多一個很重要的 bit，叫 dirty bit（也叫 modify bit，修改位元）。",
+    "剛 load 進來時是 0，代表跟硬碟上的一樣；只要這一頁被修改過（寫入過），OS 就把它設成 1。這裡 data 那一頁被寫過了。",
+    "要把某一頁換出去時，OS 檢查這個 bit：如果是 0，代表從沒改過，什麼都不用寫，直接讓新的 page 覆蓋過去。",
+    "如果是 1，代表這 4KB 裡某個 byte 改過了，但不知道是哪一個，只好把整頁寫回硬碟。",
+    "本來一次 page fault 要「把舊的寫出去」加上「把新的讀進來」兩次 disk 動作；有了 dirty bit，沒改過的就不用寫，資料量和時間大約減半。"
+   ],
+   "points": [
+    {
+     "t": 149,
+     "text": "page 在 disk 上本來就有一份 copy；很多 page（如只讀的 library）從沒被修改。"
+    },
+    {
+     "t": 208,
+     "text": "page table 多一個 dirty bit：load 進來時 0，被修改就設 1。"
+    },
+    {
+     "t": 244,
+     "text": "swap 出去時：dirty = 0 直接覆蓋不寫回；dirty = 1 整頁寫回 disk。"
+    },
+    {
+     "t": 284,
+     "text": "本來一次 page fault 要寫出 victim＋讀進新 page；dirty bit 讓沒改過的不必寫，時間約減半。"
+    }
+   ]
+  },
+  {
+   "title": "兩個問題：frame allocation 與 page replacement",
+   "scene": "vm-14b-two",
+   "cues": [
+    315.7,
+    322.1,
+    348.3,
+    359.6,
+    372.6
+   ],
+   "explain": [
+    "要做 replacement，其實有兩個問題要探討。系統裡有很多 process。",
+    "第一個問題：記憶體不夠時，每個 process 要給幾個 frame？這叫 frame-allocation algorithm（frame 分配演算法）。",
+    "例如一個程式其實要 100 個 frame，但機制可能只給它 10 個，因為不需要把整支程式都 load 進來。",
+    "第二個問題：在分到的那 10 個 frame 裡，要用新的 page 時，要換掉誰？這就是 page replacement。",
+    "老師先講 replacement，再講 frame allocation。所以現在先只看單一程式：到底哪一個 page 要被踢出去。"
+   ],
+   "points": [
+    {
+     "t": 315,
+     "text": "① frame-allocation algorithm：每個 process 給多少 frame（例：要 100 個只給 10 個）。"
+    },
+    {
+     "t": 359,
+     "text": "② page-replacement algorithm：在那些 frame 裡要 replace 誰。"
+    },
+    {
+     "t": 372,
+     "text": "先講 replacement，只 focus 單一程式；之後再講 frame allocation。"
+    }
+   ]
+  },
+  {
+   "title": "Page replacement 的步驟",
+   "scene": "vm-14b-steps",
+   "cues": [
+    400,
+    410.6,
+    418.7,
+    432.7,
+    437.3
+   ],
+   "explain": [
+    "第一步：找到造成 page fault 的那一頁（page 6）在 disk 的哪個位置。",
+    "第二步：先看有沒有 free frame（空的格子），有的話就先用。",
+    "沒有的話，就呼叫 replacement algorithm，在記憶體裡選一個 frame 當 victim（受害者），把它 swap 到 disk。",
+    "第三步：把新的 page 放進空出來的 frame，然後 update page table。",
+    "第四步：重新執行剛剛那個指令。跟之前的流程一樣，只是多了一個 replace 的動作。"
+   ],
+   "points": [
+    {
+     "t": 400,
+     "text": "① 找到要的 page 在 disk 的位置；② 有 free frame 就先用，沒有就用 replacement algorithm 選 victim 並 swap 出去。"
+    },
+    {
+     "t": 432,
+     "text": "③ 讀進新 page、update page table；④ restart 那個 instruction。"
+    }
+   ]
+  },
+  {
+   "title": "Reference string：演算法的 input",
+   "scene": "vm-14b-refstr",
+   "cues": [
+    472.2,
+    484.5,
+    490.6,
+    515.9,
+    527.8,
+    545.5
+   ],
+   "explain": [
+    "接下來看 replacement algorithm 怎麼被描述成一個數學問題，以及有哪些常見的演算法。",
+    "目標很明確：讓 page fault 的次數（或比率）越少越好。",
+    "它的 input 叫 reference string（參考字串）：程式執行時依序存取記憶體位置，記下來的一串東西。",
+    "因為是 page replacement，我們不在乎確切是哪個 byte 位址，只在乎是第幾個 page。同一頁裡位置不同沒差，反正都讀得到。",
+    "例如 1 2 3 4 1 2 5 1 2 3 4 5：先讀第 1 頁、第 2 頁、第 3、第 4 頁，再回到第 1 頁……接下來的例子都用這串。",
+    "我們只看基本的演算法，重點是概念：FIFO（先進先出）很直觀；最重要的是 LRU，一般系統都在用，一定要會。"
+   ],
+   "points": [
+    {
+     "t": 472,
+     "text": "目標：減少 page fault 次數（rate）。"
+    },
+    {
+     "t": 490,
+     "text": "input 是 reference string：執行過程依序 access 的 page 編號（不管 byte address）。"
+    },
+    {
+     "t": 527,
+     "text": "例：1 2 3 4 1 2 5 1 2 3 4 5；基本演算法 FIFO、Optimal、LRU，最重要的是 LRU。"
+    }
+   ]
+  },
+  {
+   "title": "FIFO：3 個 frame",
+   "scene": "vm-14b-fifo",
+   "cues": [
+    596.8,
+    613.8,
+    645.2,
+    672.8,
+    685.6,
+    695.2,
+    726.8,
+    756.2,
+    778.6,
+    815.5,
+    827.3,
+    861.5,
+    897.9,
+    916.1,
+    922.4,
+    925.2,
+    936.8,
+    949.9,
+    957
+   ],
+   "explain": [
+    "先從 FIFO（first in, first out，先進先出）開始。上面這排是 reference string，CPU 依序要用這些 page。",
+    "第二個需要知道的是記憶體有幾個 frame。例子故意很小：只有 3 個 frame。程式總共有幾頁不重要，只看被存取到的。",
+    "演算法要決定哪些 page 留在 frame 裡。現在被存取的那頁一定要在裡面；問題是其他位置要留給誰，要踢人時踢誰。",
+    "例子通常從記憶體全空開始，因為之前發生什麼我們也不知道。",
+    "CPU 要 page 1，有空位，直接放進去，不用 replace。下面紅色的 F 代表發生一次 page fault。",
+    "注意：三個位置的順序不重要，page 放哪一格都可以。這樣畫是為了表示 FIFO 的 queue：上面最新、下面最舊，實作時用 head、tail 兩個指標就能很快完成。",
+    "我們的目的就是算：在這個 input 和這麼多 frame 下，會產生幾次 page fault（越少越好），以及是哪幾次。",
+    "第一次存取一定是 page fault，跑不掉。例子縮小了所以 fault 很多；實際上有 locality，而且 frame 可能有成千上萬個，不是 3 個。",
+    "接著要 page 2：第一次用，page fault。新的放到最上面，舊的往下推。",
+    "page 3 也是第一次，page fault。前三個沒什麼好說，依序全部 fault，queue 現在是 3、2、1。",
+    "page 4 來了，三格都滿了，要 replace。照 FIFO 的定義，最早進來的 1 被踢掉。這還是一次 page fault；前四個都是第一次存取，任何演算法都救不了。",
+    "重要的是：畫起來好像 page 從一格移到另一格，其實記憶體裡沒有搬動。page 3 一直待在它的 frame，圖上的位置只是 queue 這個資料結構，用來知道下一個該踢誰。",
+    "接下來 1 又來了！才剛把 1 踢掉，它就要用，又是一次 page fault。這就看出 FIFO 不是好演算法。",
+    "2 進來，一樣很不幸，又是 page fault（2 剛被擠出去）。",
+    "5 也是 page fault，把最舊的 4 擠出去。",
+    "這時 1 進來是 hit（命中，已經在記憶體裡）。但 FIFO 只看進來的順序，不會因為被用到就移動它，所以 1 仍然會是下一個被踢的。",
+    "2 進來是 hit。接著 3 進來要往下推，1 雖然前兩次才被存取過，因為是最早進來的，還是被踢出去。",
+    "剩下的大家照規則走一遍：4 是 page fault，最後的 5 是 hit。",
+    "最後數有幾個紅色 F：FIFO 在 3 個 frame 下總共 9 次 page fault。"
+   ],
+   "points": [
+    {
+     "t": 596,
+     "text": "input：reference string 1 2 3 4 1 2 5 1 2 3 4 5，physical memory 有 3 個 frame，從全空開始。"
+    },
+    {
+     "t": 685,
+     "text": "FIFO 用 queue（head／tail）管理；圖上順序只是 queue，page 在 frame 裡並沒有移動。"
+    },
+    {
+     "t": 756,
+     "text": "前幾次是第一次 access，一定 page fault；4 來時踢掉最早進來的 1。"
+    },
+    {
+     "t": 897,
+     "text": "才踢掉 1，1 就又來了 → 又 fault；FIFO 不會因 hit 而移動 page。"
+    },
+    {
+     "t": 957,
+     "text": "總共 9 次 page fault。"
+    }
+   ]
+  },
+  {
+   "title": "Belady's anomaly",
+   "scene": "vm-14b-belady",
+   "cues": [
+    972.4,
+    984.1,
+    1006.6,
+    1023.1,
+    1036.7,
+    1050.9,
+    1085.6,
+    1117.7,
+    1170.3
+   ],
+   "explain": [
+    "剛剛 FIFO 在 3 個 frame 下是 9 次。顯然不太好，這個數字應該還能再降。",
+    "FIFO 還有另一個很大的問題，叫 anomaly（異常）。是 Belady 這位研究者發現的，所以叫 Belady's anomaly，名字不用背。",
+    "一般直覺是：增加 frame 數，也就是給更多資源，page fault 應該會減少、電腦跑更快。",
+    "anomaly 指的是：增加了 frame，page fault 卻沒有減少，有時甚至還增加。",
+    "用完全一樣的 reference string、一樣的 FIFO，只把 frame 從 3 個改成 4 個，再跑一次。大家也可以順便練習。",
+    "結果 page fault 變成 10 次，剛剛 3 個 frame 是 9 次。給更多 frame 反而更多 fault，跟我們的預期相違背。",
+    "把它畫成圖：橫軸是 frame 數，縱軸是 page fault 次數。正常應該是 non-increasing（持平或往下）；FIFO 卻在 3→4 這裡往上跳（數字都是實際模擬的）。不是每次都會，但有可能。",
+    "這對設計電腦系統的人很討厭。大家調系統參數都假設「資源越多越好」；如果插更多記憶體反而變慢，就很難調整這個系統。",
+    "所以 FIFO 的問題有兩個層面：page fault 不夠少（偶爾做錯決定），更討厭的是這個 anomaly，讓系統不照常理運作。"
+   ],
+   "points": [
+    {
+     "t": 972,
+     "text": "FIFO 除了 page fault 偏多，還有 anomaly（Belady 發現）。"
+    },
+    {
+     "t": 1006,
+     "text": "anomaly：增加 frame（resource），page fault 沒減少，甚至增加。"
+    },
+    {
+     "t": 1036,
+     "text": "同一串用 4 個 frame 跑 FIFO：10 次 > 3 個 frame 的 9 次。"
+    },
+    {
+     "t": 1085,
+     "text": "理想上 page fault 對 frame 數應該 non-increasing；FIFO 在 3→4 往上跳。"
+    },
+    {
+     "t": 1117,
+     "text": "對系統設計者很討厭：多買 memory 反而變慢，系統無法 tune。"
+    }
+   ]
+  },
+  {
+   "title": "休息",
+   "scene": null,
+   "points": [
+    {
+     "t": 1199,
+     "text": "先休息 10 分鐘；回來直接講 optimal algorithm——最好的演算法其實很直觀。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Reference string 1 2 3 4 1 2 5 1 2 3 4 5、3 個 frame，FIFO 的 page fault 次數？",
+   "opts": [
+    "9",
+    "10",
+    "7",
+    "12"
+   ],
+   "ans": "9",
+   "why": "實際模擬：前 4 次與 1、2、5、3、4 共 9 次 fault。"
+  },
+  {
+   "q": "同一串改用 4 個 frame 的 FIFO，page fault 次數？這現象叫？",
+   "opts": [
+    "10 次，Belady's anomaly",
+    "8 次，thrashing",
+    "6 次，locality",
+    "9 次，沒有變化"
+   ],
+   "ans": "10 次，Belady's anomaly",
+   "why": "frame 變多 fault 反而變多。"
+  },
+  {
+   "q": "Dirty bit = 0 的 page 被選為 victim 時？",
+   "opts": [
+    "不用寫回 disk，直接覆蓋",
+    "整頁寫回 disk",
+    "不能被換出",
+    "要先 zero-out"
+   ],
+   "ans": "不用寫回 disk，直接覆蓋",
+   "why": "沒被修改過，disk 上的 copy 是一樣的。"
+  },
+  {
+   "q": "Page replacement algorithm 的 input 是？",
+   "opts": [
+    "reference string（依序 access 的 page 編號）",
+    "每次 access 的 byte address",
+    "process 的 priority",
+    "frame 的實體位址"
+   ],
+   "ans": "reference string（依序 access 的 page 編號）",
+   "why": "只在乎第幾個 page。"
+  },
+  {
+   "q": "在 FIFO 中，一個 page 被 hit 之後？",
+   "opts": [
+    "位置不變，仍照進來的順序被踢",
+    "移到 queue 最前面",
+    "永遠不會被踢",
+    "dirty bit 設成 1"
+   ],
+   "ans": "位置不變，仍照進來的順序被踢",
+   "why": "FIFO 只看 first in；會移到最前面的是 LRU。"
+  }
+ ]
+}

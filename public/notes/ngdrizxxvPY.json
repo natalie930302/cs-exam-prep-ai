@@ -1,0 +1,363 @@
+{
+ "video": "ngdrizxxvPY",
+ "label": "清大周志遠 第14A講 Demand Paging(Review)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "複習：EAT 被 page fault 主宰",
+   "scene": "vm-14a-eat",
+   "cues": [
+    13.8,
+    19.4,
+    42.6,
+    64.6,
+    96.1,
+    106,
+    136.3,
+    164,
+    192.7
+   ],
+   "explain": [
+    "先複習上次的 EAT（有效存取時間）公式：跟 TLB 那個很像，只是多了一層「要去 disk 拿」的情況。",
+    "公式不必刻意背，重點是結果很兩極：只要有 page fault，時間就被它主宰。紅色長條代表 page fault 的時間（長度示意）。",
+    "因為 disk 比 memory 慢非常多。用這個簡單的數學模型，就能評估 page fault rate 對存取時間的影響。",
+    "從使用者角度想：一般人大概能容忍慢 10%。反推回去，page fault rate 必須非常非常低，比 TLB 的 miss rate 還低得多。",
+    "這種低機率真的做得到嗎？可以，因為程式有 locality（區域性）：短時間內總是用到附近的資料。",
+    "一次 page fault 雖然慢，但會把一整個 page 搬進來：通常 4KB，現在也有 8KB，Intel Pentium 甚至可以選 4MB 的 page。",
+    "而每次存取記憶體只讀 1 到 4 個 byte。所以搬進一頁之後，接下來在這頁裡的存取都不會再 fault，機率自然很低。",
+    "但不是沒有影響：程式跳來跳去、或你同時開一堆程式、記憶體不夠時，page fault 機率升高，電腦就越來越慢。",
+    "這也是為什麼大家建議把 OS 裝在 SSD：swap space（置換空間）放在 SSD 上，處理 page fault 時讀得快很多，整台電腦就變快。"
+   ],
+   "points": [
+    {
+     "t": 14,
+     "text": "EAT 公式跟 TLB 類似，只是多了 disk access；結果很兩極，時間被 page fault 主宰。"
+    },
+    {
+     "t": 64,
+     "text": "若只容忍 10% 變慢，page fault rate 必須極低（遠低於 TLB miss rate）。"
+    },
+    {
+     "t": 96,
+     "text": "做得到靠 locality：一次 fault 搬進整個 page（4KB、8KB，Pentium 可選 4MB），之後同一頁的 access 都不 fault。"
+    },
+    {
+     "t": 164,
+     "text": "但開太多程式、memory 不夠時 fault 變多，電腦越來越慢；swap space 放在 SSD 能大幅加快 page fault 處理。"
+    }
+   ]
+  },
+  {
+   "title": "今天的主題",
+   "scene": "vm-14a-topics",
+   "cues": [
+    230,
+    248.4,
+    258.5
+   ],
+   "explain": [
+    "接下來介紹幾個跟記憶體息息相關的機制。demand paging 之前講過了：每次只搬一個 4KB 的 page。",
+    "第一個：copy-on-write（寫入時才複製），讓 fork 這個動作變快。",
+    "第二個：memory-mapped file。平常讀寫檔案要經過 file system，步驟很多；這個方法可以完全跳過它，所以比較快，但也有缺點。"
+   ],
+   "points": [
+    {
+     "t": 230,
+     "text": "demand paging 講過；今天講 copy-on-write（讓 fork 變快）與 memory-mapped file（跳過 file system）。"
+    }
+   ]
+  },
+  {
+   "title": "Copy-on-write 的想法",
+   "scene": "vm-14a-cow",
+   "cues": [
+    297.5,
+    327.5,
+    348.2,
+    360.5,
+    383.4,
+    416.3
+   ],
+   "explain": [
+    "大部分 OS 用 fork 建立新 process，預設行為是：child（子行程）是 parent（父行程）的一份複製，一開始內容一模一樣。真的整份複製很浪費時間。",
+    "學過 paging 就知道，MMU 做的就是「對照」。內容既然完全一樣，就讓兩邊的 page table 指到同一份實體記憶體，這叫 sharing（共用）。",
+    "但它們畢竟是兩個不同的程式，行為不同。只要其中一個改了記憶體內容，就必須把兩份完全拆開。",
+    "什麼時候會改？就是 write（寫入）的時候。讀沒有問題；要寫時，OS 才把那一頁複製一份，這就是 copy-on-write。",
+    "好處：建立新 process 的時間大幅縮短。代價（trade-off）是執行中才去 copy，會慢一點點。很多最佳化都是這種「需要時才做」的思路。",
+    "補充：要拿一個 free frame 給新的 page 時，通常會先 zero-out（全部清成 0），否則可能看到前一個 process 留下的資料，造成安全問題。"
+   ],
+   "points": [
+    {
+     "t": 295,
+     "text": "fork 的 default：child 是 parent 的 copy；真的全部 copy 很浪費時間。"
+    },
+    {
+     "t": 327,
+     "text": "內容一樣就用 sharing（page table 指同一份）；有人 write 時才 copy 那一頁：copy-on-write。"
+    },
+    {
+     "t": 383,
+     "text": "建立 process 快很多；trade-off 是執行中才 copy 會稍慢。free frame 給新 page 前通常會 zero-out（安全）。"
+    }
+   ]
+  },
+  {
+   "title": "COW 例子：parent 改了 page C",
+   "scene": "vm-14a-cowex",
+   "cues": [
+    457.3,
+    485.8,
+    500.2,
+    514.1,
+    538.5,
+    564.2
+   ],
+   "explain": [
+    "fork 剛完成時，parent 和 child 的使用者資料完全一樣，唯一不同的是 PCB，那是 OS 自己維護、一定會另外複製的。中間是實體記憶體的 page A、B、C。",
+    "所以不需要複製：把兩邊的 page table 設成一樣，都指到同一份 A、B、C，用 sharing 的方式。",
+    "我們學過：fork 對 parent 和 child 回傳不同的值，程式可以靠它讓兩者做不一樣的事。",
+    "例如 parent 在某個 function 裡新建一個變數 Test1，它放在 stack 上，所在的是 page C。新建變數就是一次 write。",
+    "現在 page C 的內容 parent 和 child 不一樣了，於是做 copy-on-write：複製一份 C，讓 parent 指到新的那份。只有 C 被複製，A、B 仍然共用。",
+    "誰用新的、誰用舊的，是 OS 實作的細節，無所謂；重點是現在有兩份。parent 看得到 Test1，child 那邊沒有這個變數，兩個程式都正常繼續跑。"
+   ],
+   "points": [
+    {
+     "t": 457,
+     "text": "fork 後 parent、child 的 user data 完全一樣（只有 OS 維護的 PCB 不同）→ page table 設成一樣，share page A、B、C。"
+    },
+    {
+     "t": 500,
+     "text": "靠 fork 的回傳值讓兩者做不同事；parent 在 function 裡新建 variable Test1（stack）→ write page C。"
+    },
+    {
+     "t": 538,
+     "text": "page C 被 copy 一份給 parent；parent 看得到 Test1，child 沒有。誰拿新的、誰拿舊的是 implementation，無所謂。"
+    }
+   ]
+  },
+  {
+   "title": "Memory-mapped file 的概念",
+   "scene": "vm-14a-mmap",
+   "cues": [
+    601.9,
+    613.4,
+    629.3,
+    651.4,
+    670.7,
+    708.2
+   ],
+   "explain": [
+    "下一個比較特別的機制：memory-mapped file（記憶體映射檔案）。右邊是存在 disk 上的檔案。",
+    "它的目的：讓使用者程式用「存取記憶體」的方式，去讀或寫一個檔案。",
+    "什麼叫存取記憶體的方式？簡單說就是 array。檔案本身就是一串 byte（byte stream），把它對應到一個 byte 的 array：A[0] 對到第 0 個 byte，A[1] 對到第 1 個……",
+    "只要一個指令，就把整個檔案 map 到記憶體的某個位置；之後用 array、pointer 的寫法操作，不需要 fread、fwrite。",
+    "這其實跟 virtual memory 是同一個概念：一個記憶體位址，實際上對到 disk 上的某個位置，OS 很容易做到這種一對一的對應。",
+    "你把 A[1] 改成某個值，看起來只是改了記憶體；但因為這個檔案是用 mmap 開的，OS 知道這個位址對到檔案的哪個 byte，會把它寫回檔案。"
+   ],
+   "points": [
+    {
+     "t": 602,
+     "text": "讓 user program 用 memory access（像 array、pointer）的方式 read／write file。"
+    },
+    {
+     "t": 629,
+     "text": "file 是 byte stream，map 到一個 byte array；一個指令 map 上去，之後不用 fread／fwrite。"
+    },
+    {
+     "t": 670,
+     "text": "跟 virtual memory 同樣的概念：memory address 對到 disk 上的位置；改 A[1]，OS 知道對到 file 的哪個 byte 並寫回。"
+    }
+   ]
+  },
+  {
+   "title": "Memory-mapped file 的優缺點",
+   "scene": "vm-14a-mmappc",
+   "cues": [
+    747.4,
+    757.4,
+    795.3,
+    815.4,
+    885.6,
+    953.8,
+    1030,
+    1078.2,
+    1106
+   ],
+   "explain": [
+    "最大的好處：完全跳過 file system，因為現在只是存取記憶體。程式直接通到檔案。",
+    "file system 畢竟是一整套系統：隨便一個 fread、fwrite，都要檢查權限、檢查檔案有沒有打開……呼叫路徑很長，所以比較慢。",
+    "另一個好處是 sharing：檔案內容放進記憶體後，用 paging 就能讓很多 process 共用同一塊。",
+    "反過來看 file system 很嚴謹：一個檔案被用 write 權限打開，別人就不能同時用 write 打開（被 lock 住）。用 mmap 的話，聰明的 programmer 可以自己寫 locking，更細緻地控制誰能寫哪裡。",
+    "但缺點很多。第一：很容易用，也就很容易弄壞。記憶體只有「共用或不共用」，沒有讀、寫、執行這些 access control（存取控制），全靠使用的程式自己守規矩。",
+    "第二：data loss（資料遺失）。資料在記憶體裡，不會隨時寫回 disk，一斷電或當機就沒了；file system 則會幫你做還原這些事。",
+    "第三：寫程式比較難。檔案有一堆清楚的 API；這裡只是一個 array，每筆資料幾個 byte、前面是整數後面變字元，全都要自己清楚，位移一個 byte 就毀了。",
+    "所以它適合：資料很單純、要很快、暫時性的檔案，而且只有一個或少數使用者。其他一般情況還是需要 file system。",
+    "比較常用的是系統層的軟體。像 swap、virtual memory 本身就是同樣的機制，處理的就是一塊塊 4KB 的單純資料。"
+   ],
+   "points": [
+    {
+     "t": 747,
+     "text": "優點①：bypass file system（不必走檢查 permission、open 狀態等長 call path）。"
+    },
+    {
+     "t": 795,
+     "text": "優點②：sharing 容易；file system 會 lock 住 write，mmap 讓 programmer 自己用 locking 細緻控制。"
+    },
+    {
+     "t": 885,
+     "text": "缺點①：沒有 access control（rwx），容易弄壞。"
+    },
+    {
+     "t": 954,
+     "text": "缺點②：data loss，資料在 memory，crash 就沒了。"
+    },
+    {
+     "t": 1030,
+     "text": "缺點③：programming 難，型別、位移都自己負責。"
+    },
+    {
+     "t": 1078,
+     "text": "適合：資料單純、要快、temporary、少數使用者；系統層（swap、virtual memory）常用同樣機制。"
+    }
+   ]
+  },
+  {
+   "title": "File system 讀寫 vs memory-mapped file",
+   "scene": "vm-14a-code",
+   "cues": [
+    1152.1,
+    1184.8,
+    1202.2,
+    1239,
+    1293.5,
+    1325.6,
+    1376.8,
+    1448.2,
+    1484.1,
+    1511.6,
+    1562.3
+   ],
+   "explain": [
+    "這張圖看起來複雜但不難：disk 上的檔案也是被排成一串 byte，跟記憶體沒差，所以一個 page 就對到檔案的 4KB 內容，依此類推。",
+    "mmap 之後很多 process 可以同時 map 到同一個檔案，方法就是把各自的 page table 設好，大家就存取到同一份記憶體內容。",
+    "左邊是大家熟悉的寫法：open 檔案，seek（移動）到某個位置，再 read。這些都是透過 file system 操作。",
+    "file system 做了很多事，其中很重要的是 buffering／caching（緩衝）：因為 disk 太慢，read 時它會 prefetch（預先抓）一整塊，例如 256 bytes，放在自己的 buffer。",
+    "你其實只要一個 int（4 bytes），它再把這 4 bytes 複製到使用者空間的 buf。等於資料被複製了兩次。",
+    "write 也一樣：先寫到 buffer，等 close 時才 flush（真的寫進硬碟）。fflush 就是強迫它立刻寫，不然有時會遺失或晚一點才看得到。",
+    "換成 memory-mapped file：一樣先 open，然後告訴 OS 要把檔案的哪一段 map 到記憶體，它回傳一個 pointer（指標）p，本質上就是一個 byte array。",
+    "接著不用 read、write 這些 file system 的呼叫，直接用 pointer 操作，例如 p[1000]++，這就等於一次 write，而且可以直接跳到任何位置。",
+    "但寫下去只是改了自己的記憶體內容，跟 disk 上的檔案還沒同步。這時候斷電，資料就沒了，也沒人保護你。",
+    "只有呼叫 munmap（取消映射）時，才把資料寫回去；而且它不知道你改了哪裡，就把整段重新寫一遍。",
+    "最好的例子是顯示卡：螢幕上的畫面就是一堆 pixel，也就是記憶體裡的一個 byte array。用 mmap 把它對到記憶體，一次整個寫完再 flush，非常快。"
+   ],
+   "points": [
+    {
+     "t": 1152,
+     "text": "disk file 也是一排 byte，一個 page 對 4KB；多個 process 可同時 map（設 page table）。"
+    },
+    {
+     "t": 1202,
+     "text": "file system：open、seek、read；FS 先 prefetch 一大塊到 buffer（例 256 bytes），再 copy 你要的 4 bytes 到 user space（copy 兩次）。"
+    },
+    {
+     "t": 1325,
+     "text": "write 先寫到 buffer，close 時才 flush（fflush 可強迫）。"
+    },
+    {
+     "t": 1377,
+     "text": "mmap：open 後指定 file 哪一段 map 到 memory，回傳 pointer；用 pointer 直接寫。"
+    },
+    {
+     "t": 1484,
+     "text": "寫下去只改 memory、尚未 sync（斷電會遺失）；munmap 時整段寫回 file。"
+    },
+    {
+     "t": 1562,
+     "text": "例子：顯示卡——螢幕 pixel 就是 memory content，用 mmap 一次寫完再 flush，非常快。"
+    }
+   ]
+  },
+  {
+   "title": "小結",
+   "scene": null,
+   "points": [
+    {
+     "t": 1603,
+     "text": "API 細節各系統不同；munmap（記憶體）與 close（file handle）是分開的兩件事。"
+    },
+    {
+     "t": 1659,
+     "text": "前半段重點：demand paging、copy-on-write、memory-mapped file——都是跟 disk 息息相關的特殊記憶體操作。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Copy-on-write 中，什麼時候才真正複製 page？",
+   "opts": [
+    "parent 或 child 對該 page 做 write 時",
+    "fork 一呼叫就全部複製",
+    "read 時",
+    "process 結束時"
+   ],
+   "ans": "parent 或 child 對該 page 做 write 時",
+   "why": "內容一樣時共用，寫入才複製那一頁。"
+  },
+  {
+   "q": "COW 例子中 parent 新建變數 Test1 在 page C，結果是？",
+   "opts": [
+    "只有 page C 被複製一份",
+    "A、B、C 全部被複製",
+    "child 也看得到 Test1",
+    "page table 不用改"
+   ],
+   "ans": "只有 page C 被複製一份",
+   "why": "只有被寫入的 page 才 copy，其他仍共用。"
+  },
+  {
+   "q": "Memory-mapped file 最大的好處是？",
+   "opts": [
+    "bypass file system，存取較快",
+    "自動有 access control",
+    "斷電不會遺失資料",
+    "程式比較好寫"
+   ],
+   "ans": "bypass file system，存取較快",
+   "why": "直接用 memory access 操作 file。"
+  },
+  {
+   "q": "下列哪一個是 memory-mapped file 的缺點？",
+   "opts": [
+    "資料在 memory 中，crash 時容易 data loss",
+    "一定比 file system 慢",
+    "不能 share",
+    "只能讀不能寫"
+   ],
+   "ans": "資料在 memory 中，crash 時容易 data loss",
+   "why": "要到 munmap 才寫回 file。"
+  },
+  {
+   "q": "用 file system 的 read 讀 4 bytes，資料大致被 copy 幾次？",
+   "opts": [
+    "兩次：disk → FS buffer → user buffer",
+    "一次",
+    "零次",
+    "四次"
+   ],
+   "ans": "兩次：disk → FS buffer → user buffer",
+   "why": "FS 先 prefetch 到 buffer，再 copy 到 user space。"
+  },
+  {
+   "q": "為什麼 swap space 放在 SSD 會讓電腦變快？",
+   "opts": [
+    "page fault 讀 disk 的時間被大幅縮短",
+    "TLB 變大",
+    "CPU 時脈變快",
+    "page size 變大"
+   ],
+   "ans": "page fault 讀 disk 的時間被大幅縮短",
+   "why": "EAT 被 page fault time 主宰。"
+  }
+ ]
+}

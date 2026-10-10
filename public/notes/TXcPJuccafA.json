@@ -1,0 +1,433 @@
+{
+ "video": "TXcPJuccafA",
+ "label": "清大周志遠 第14C講 Page Replacement(續)",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Optimal algorithm",
+   "scene": "vm-14c-opt",
+   "cues": [
+    13.8,
+    19.1,
+    43.8,
+    59.5,
+    90.5,
+    109.6,
+    141,
+    163.4
+   ],
+   "explain": [
+    "剛剛的 FIFO 不一定好，還有 anomaly，所以系統設計者不太喜歡用。",
+    "那 replacement 這個問題的最佳解（optimal）長什麼樣？其實很容易描述。",
+    "一句話：在記憶體裡的 page 中，最晚才會再被用到的那個，先把它踢出去。例如未來依序要用 2、1、2、1、3（示意），page 3 最晚才用，就踢 3。",
+    "很直覺：如果踢別的，它們一定會比較早被用到，也就更早產生 page fault。不得已要踢，當然踢最不可能用到的。",
+    "重點是存取的「順序」，不是時間：隔幾秒、幾毫秒都不重要，只看誰排在最後面。",
+    "說得簡單、理論上也好證明，但實際做不到，因為它有個前提：你必須知道未來整串 reference string。",
+    "就算 compiler 能預測一部分，程式有 branch（分支），執行時才知道走哪邊，不可能百分之百知道存取順序。",
+    "所以它是一個理論上的演算法，拿來當 baseline（基準）：知道最少最少會有幾次 page fault，其他演算法就看能多接近它，還有多少改進空間。"
+   ],
+   "points": [
+    {
+     "t": 13,
+     "text": "Optimal（Belady 提出）：把「最晚才會再被用到」的 page 踢掉；只看順序不看時間。"
+    },
+    {
+     "t": 109,
+     "text": "無法 implement：必須知道未來的 reference string（有 branch，無法完美預測）。"
+    },
+    {
+     "t": 163,
+     "text": "當作 theoretical baseline：知道最少的 page fault 次數，用來評估其他演算法。"
+    }
+   ]
+  },
+  {
+   "title": "OPT 例子：4 個 frame",
+   "scene": "vm-14c-optex",
+   "cues": [
+    189.9,
+    198.2,
+    208,
+    231.3,
+    235.7,
+    265.7,
+    275.4,
+    289.3,
+    306,
+    318.8,
+    336.6
+   ],
+   "explain": [
+    "一樣來跑例子：這次有 4 個 frame，同一個 reference string。圖上每一列是一個固定的 frame。",
+    "前四個沒什麼好說，直接擺進去，全部都是 page fault，就算是 optimal 也一樣。",
+    "1 來了。之前的方法會看 queue 裡的順序，OPT 不在乎過去，它看的是未來。1 本來就在記憶體裡，所以是 hit。",
+    "2 也在，hit，繼續留著，沒什麼好選的。",
+    "5 來了，要換掉一個。往後看：1 下一個就要用，2 再下一個，接著是 3，4 最晚才用。所以踢掉 4，把 5 放進去。",
+    "接下來 1、2、3 很明顯全都是 hit，內容不用變。",
+    "4 來了。往後看只剩一個 5，所以唯一不能丟的是 5；1、2、3 以後都不會再用，丟誰都一樣。這裡選最早進來的 1。",
+    "考試遇到這種最後的平手（tiebreaker），丟誰都可以，都是對的。但如果後面還有 2、3、1，那就要丟最晚用的 1。",
+    "就是照這個簡單規則：最晚才會用到的丟掉。最後的 5 是 hit。",
+    "總共只有 6 次 page fault。前面 FIFO 是 9 次、10 次，最好最好就是 6 次。",
+    "實際上做不出來，所以很多演算法在想怎麼「預測」：觀察程式執行，估計每頁下次被 reuse 的距離，把最遠的踢掉，甚至用 learning 的方法，去逼近 optimal。"
+   ],
+   "points": [
+    {
+     "t": 189,
+     "text": "同一串 1 2 3 4 1 2 5 1 2 3 4 5、4 個 frame；前四個一定 fault。"
+    },
+    {
+     "t": 208,
+     "text": "OPT 不看過去、往未來看：5 來時 1、2、3、4 中 4 最晚再用 → 踢 4。"
+    },
+    {
+     "t": 275,
+     "text": "4 來時只剩 5 會再用，1、2、3 平手，丟誰都可以（考試的 tiebreaker 都算對）。"
+    },
+    {
+     "t": 318,
+     "text": "總共 6 次 page fault（FIFO 是 9、10 次）；實務上用預測 reuse distance 來逼近 OPT。"
+    }
+   ]
+  },
+  {
+   "title": "LRU：往回看",
+   "scene": "vm-14c-lru",
+   "cues": [
+    378.4,
+    390.2,
+    409.4,
+    445,
+    454.6
+   ],
+   "explain": [
+    "實際上沒辦法用 optimal，那大家用什麼？用得最多的是 LRU。",
+    "LRU 是 least recently used（最近最少使用）的縮寫，是一個 heuristic（經驗法則）：既然不能往未來看，那就往回看過去。",
+    "我們提過很多次：程式有 locality。剛用完的 page，很高機率會再用；附近的 page 也是。",
+    "越久沒用到的，越可能不會再用（例如處理錯誤的函式）。所以往回看，最久以前才被存取的那一頁（這裡是 3），先踢掉。",
+    "因為 locality，系統實驗證明 LRU 表現蠻好。還有一點非常重要：它可以在 O(1) 時間完成。OS 做什麼都要快，像 learning 要訓練就太花時間了。"
+   ],
+   "points": [
+    {
+     "t": 378,
+     "text": "實際最常用 LRU（least recently used）：不能看未來就往回看，踢最久沒被用的。"
+    },
+    {
+     "t": 409,
+     "text": "依據 locality：剛用過的很可能再用；很久沒用的（如 error handling）很可能不再用。"
+    },
+    {
+     "t": 454,
+     "text": "實驗證明效果不錯，而且 implementation 可做到 O(1)。"
+    }
+   ]
+  },
+  {
+   "title": "LRU 的兩種實作",
+   "scene": "vm-14c-lruimpl",
+   "cues": [
+    493.7,
+    497.1,
+    515.1,
+    529.6
+   ],
+   "explain": [
+    "LRU 怎麼實作？有兩種。",
+    "第一種叫 counter implementation：每個 page 被存取時，記下一個 time stamp（時間戳記，幾點幾分用的）。圖上的時間是示意。",
+    "要找最久沒用的，就得把每一格掃一遍（linear search），是 O(n)：frame 越多跑得越慢，非常不好。",
+    "實際上會用 stack，有點像 FIFO 的 queue：最近用的放最上面，最底下就是下一個要踢的，O(1) 就找得到。"
+   ],
+   "points": [
+    {
+     "t": 493,
+     "text": "counter：每頁存 time stamp，找最舊要 linear scan，O(n)。"
+    },
+    {
+     "t": 529,
+     "text": "stack（類似 FIFO 的 queue）：最近用的在上、最底就是 victim，O(1)。"
+    }
+   ]
+  },
+  {
+   "title": "LRU 例子：4 個 frame",
+   "scene": "vm-14c-lruex",
+   "cues": [
+    546.4,
+    553.9,
+    567,
+    596.7,
+    614.4,
+    620,
+    637.6,
+    642
+   ],
+   "explain": [
+    "前面一樣，1、2、3、4 全部 page fault，放進 stack，新的在最上面。",
+    "跟 FIFO 不一樣的地方在這裡：1 進來，它已經在記憶體裡，是一個 hit，沒有 page fault。",
+    "但我知道 1 是最近才用的，不想把它踢掉，所以把它從 stack 底部拉回最上面。現在最底下的 2，變成最久沒被用、下一個會被踢的。",
+    "這就是 LRU 跟 FIFO 的差別：hit 的時候要拉到最前面；新進來的就往下推。最近被存取的永遠在最上面，是最後才會被踢的候選。",
+    "2 也已經在了，拉到最上面，stack 變成 2、1、4、3。",
+    "5 進來，位置不夠，繼續往下推，最底的 3 被踢掉。回去看 FIFO 的例子，FIFO 會踢 1，不會踢 3，這就是兩種演算法的差別。",
+    "後面照規則：1、2 是 hit；3 進來踢 4、4 進來踢 5、5 進來踢 1，都是 page fault。總共 8 次。",
+    "考試或自己模擬時，最好用實作的角度：照固定規則在腦中跑一遍程式，就知道哪些是 page fault，最不會出錯。"
+   ],
+   "points": [
+    {
+     "t": 546,
+     "text": "同一串、4 個 frame；前 4 個都 fault。"
+    },
+    {
+     "t": 553,
+     "text": "1 hit → 從 stack 底拉到最上；被 access 的永遠在最上，最底是下一個 victim。"
+    },
+    {
+     "t": 620,
+     "text": "5 進來踢 3（FIFO 會踢 1）；最後共 8 次 page fault。"
+    },
+    {
+     "t": 642,
+     "text": "考試時用實作的角度、照固定規則模擬最不會錯。"
+    }
+   ]
+  },
+  {
+   "title": "為什麼 LRU 是 O(1)",
+   "scene": "vm-14c-lruo1",
+   "cues": [
+    657.7,
+    664.8,
+    672.6,
+    690.6,
+    707.4,
+    731.7,
+    763.6
+   ],
+   "explain": [
+    "為什麼 LRU 可以 O(1)？其實不難看出來。",
+    "用 doubly linked list（雙向鏈結串列）：每個節點往前、往後都有指標，拿出一個節點或插到最前面，都只要 O(1)。",
+    "你可能會問：1 hit 了，它在 list 裡的位置不一定在最下面，要怎麼 O(1) 知道它在哪？一個個找就變 O(n) 了。",
+    "做法是再用一個 hash map（雜湊表）：用 page 號碼當 key，存它在 linked list 裡的節點指標。hash 一下 1，就直接拿到它的位置。",
+    "找到之後把它從原位置拿出來（dequeue），再放到最前面（enqueue）。hash map 加上 doubly linked list，平均 O(1)。",
+    "所以 LRU 很容易實作、非常快，結果通常也不錯，是最常被使用的 replacement algorithm。不只 paging，cache 的置換也大多用 LRU。",
+    "但 LRU 也不是最好：同一串、4 個 frame，它是 8 次，比 FIFO 的 10 次好，跟 optimal 的 6 次還有一點距離。"
+   ],
+   "points": [
+    {
+     "t": 657,
+     "text": "doubly linked list：dequeue／enqueue O(1)。"
+    },
+    {
+     "t": 690,
+     "text": "hash map 存每個 page 在 list 中的 node pointer → 找到後移到最前面，平均 O(1)。"
+    },
+    {
+     "t": 731,
+     "text": "最常用的 replacement algorithm；cache 的 replacement 也多用 LRU。"
+    },
+    {
+     "t": 763,
+     "text": "LRU 8 次：比 FIFO 好，但比 OPT 6 次差。"
+    }
+   ]
+  },
+  {
+   "title": "Stack algorithm",
+   "scene": "vm-14c-stack",
+   "cues": [
+    779.1,
+    792.1,
+    813.3,
+    838,
+    876.3,
+    916,
+    961,
+    1010.7,
+    1044
+   ],
+   "explain": [
+    "這些 heuristic 的好壞會因情況不同而改變；系統設計者更在乎的是「可以被證明的性質」，它絕對不會跑掉。",
+    "LRU 和 optimal 都屬於一類演算法，叫 stack algorithm。",
+    "定義是這樣：在某個時間點，用 n 個 frame 時，記憶體裡會放著某一組 page。這裡看第 7 個 reference（5）之後，LRU 用 3 個 frame 時放的是這三頁。",
+    "同樣的 input，把 frame 加 1，同一個時間點裡面放更多 page。如果是 stack algorithm，原來那幾頁一定都還在裡面，也就是新的集合是原來的 superset（超集合）。綠色的就是原來那三頁。",
+    "這就像 stack 一直往上疊：stack 越大，裡面一定包含原來全部的東西。",
+    "為什麼重要？它保證：增加 frame 時，原來在的 page 都還在，只是多放一些。多放的也許能減少 page fault、也許不能，但絕不會讓 page fault 變多，所以不會有 anomaly。這也是系統喜歡它的一大原因。",
+    "為什麼 LRU 是？從任何時間點往回看，記憶體裡放的就是最先看到的 n 個不同 page。如果有 n+1 個 frame，就往回看 n+1 個，當然包含原來那 n 個。",
+    "optimal 也是同樣的道理，只是方向相反：往未來看前 n 個不同的 page，frame 多就看更多，所以也是 stack algorithm。",
+    "FIFO 不是。同一個時間點，FIFO 用 4 個 frame 的內容沒有包含 3 個 frame 的內容（少了 page 1），所以它會發生 Belady's anomaly。這是很重要的考點。"
+   ],
+   "points": [
+    {
+     "t": 779,
+     "text": "LRU 和 OPT 都是 stack algorithm：同一時間點，n 個 frame 裡的 page 一定是 n+1 個 frame 時的 subset。"
+    },
+    {
+     "t": 876,
+     "text": "所以增加 frame 不會增加 page fault → 不會有 Belady's anomaly。"
+    },
+    {
+     "t": 961,
+     "text": "LRU：往回看前 n 個不同 page；OPT：往未來看前 n 個；多一個 frame 就多看一個，一定包含原來的。"
+    },
+    {
+     "t": 1044,
+     "text": "FIFO 不是 stack algorithm。"
+    }
+   ]
+  },
+  {
+   "title": "LRU 的變形：additional-reference-bits、second chance",
+   "scene": "vm-14c-approx",
+   "cues": [
+    1069.6,
+    1089.1,
+    1095.1,
+    1114.2,
+    1123.6,
+    1155
+   ],
+   "explain": [
+    "cache 或 replacement 的演算法非常多，不會一一介紹，知道概念就好。",
+    "課本提到幾個比較複雜的變化。像 additional-reference-bits：每頁有 8 個 bit，定期把「最近有沒有被用」移進最左邊，數值越小代表越久沒用，例如 01110111 比 11000100 更久沒用。還有 second chance。",
+    "second chance（第二次機會）：老師用「兩層」來比喻；課本的做法叫 clock：記憶體的 frame 排成一圈，每頁有一個 reference bit（最近用過就是 1），指標在圈上轉。現在 page 6 要進來（數字是示意）。",
+    "被選中的人不會馬上被踢，而是先降到低 priority：指標指到 bit 是 1 的 page，就把它清成 0、跳過，給它第二次機會。page 2、page 5 都被跳過了。",
+    "真正要踢的，是從低 priority 裡挑：指標遇到 bit 已經是 0 的 page 1，就把它換成新的 page 6。",
+    "這些其實基本上都是 LRU 的變形，因為 LRU 有剛剛說的那些非常重要的好處。"
+   ],
+   "points": [
+    {
+     "t": 1069,
+     "text": "cache／replacement 演算法非常多，多半是 LRU 的變形。"
+    },
+    {
+     "t": 1089,
+     "text": "課本：additional-reference-bits（定期右移的 8 bits，值最小者最久沒用）、second chance（clock）。"
+    },
+    {
+     "t": 1095,
+     "text": "second chance：被選中的 page 若 reference bit 為 1，清成 0 並跳過（給第二次機會）；遇到 bit 0 才換掉。"
+    },
+    {
+     "t": 1155,
+     "text": "這些基本上都是近似 LRU 的變形。"
+    }
+   ],
+   "trap": "老師用「兩個 stack」形容 second chance；課本（Silberschatz）的 second-chance 是 FIFO＋reference bit 的 clock 演算法：bit=1 清成 0 跳過，bit=0 才換掉。"
+  },
+  {
+   "title": "Counting：LFU 與 MFU",
+   "scene": "vm-14c-count",
+   "cues": [
+    1174,
+    1184.7,
+    1217.1,
+    1239.1,
+    1252.7,
+    1303.1,
+    1330.9,
+    1386.6
+   ],
+   "explain": [
+    "前面看的是 recency（多久以前用），另一型是看 frequency（用了幾次）。每頁旁邊記一個計數（數字是示意）。",
+    "想法是：最常用到的就留在記憶體裡，page fault 次數就會減少，聽起來比較合理。",
+    "LFU（least frequently used，最不常用）：次數最少的先踢掉，這裡是 page 2。",
+    "MFU（most frequently used，最常用）剛好倒過來：用最多次的那個，反而先踢掉，這裡是 page 1。",
+    "LFU 的問題：常用不代表「正在用」。程式常常在某一段時間突然一直用某一塊記憶體（burst），把次數衝很高，之後就不用了，它卻一直佔著位置。",
+    "MFU 的想法是：最近被用很多次的，可能已經用完了。例如一個 for loop 一直在處理某個 array，算完就不會再用。這沒有對錯，只是對程式行為的不同假設。",
+    "但這些做法通常不受歡迎：每次存取都要把 counter 加 1，非常花時間；而且存取次數太多，counter 會 overflow（溢位），要做各種近似。",
+    "LRU 的結果通常不會比這些差，甚至更好。"
+   ],
+   "points": [
+    {
+     "t": 1174,
+     "text": "另一型依 frequency：LFU 踢 count 最小的；MFU 踢 count 最大的。"
+    },
+    {
+     "t": 1252,
+     "text": "LFU 問題：一段 burst 把 count 衝高，之後不用卻一直佔著；MFU 認為最常用的可能剛用完。"
+    },
+    {
+     "t": 1330,
+     "text": "都不受歡迎：每次 access 都要計數，成本高、counter 會 overflow；LRU 通常不比它們差。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Reference string 1 2 3 4 1 2 5 1 2 3 4 5、4 個 frame，OPT 的 page fault 次數？",
+   "opts": [
+    "6",
+    "8",
+    "10",
+    "9"
+   ],
+   "ans": "6",
+   "why": "只有前 4 次、5、以及後面的 4 會 fault。"
+  },
+  {
+   "q": "同一串、4 個 frame，LRU 的 page fault 次數？",
+   "opts": [
+    "8",
+    "6",
+    "10",
+    "7"
+   ],
+   "ans": "8",
+   "why": "1 2 3 4、5（踢 3）、3（踢 4）、4（踢 5）、5（踢 1）。"
+  },
+  {
+   "q": "Optimal algorithm 為什麼無法實作？",
+   "opts": [
+    "必須事先知道未來的 reference string",
+    "O(n²) 太慢",
+    "會有 Belady's anomaly",
+    "需要 dirty bit"
+   ],
+   "ans": "必須事先知道未來的 reference string",
+   "why": "只能當 baseline。"
+  },
+  {
+   "q": "LRU 要做到 O(1) 通常用什麼資料結構？",
+   "opts": [
+    "hash map + doubly linked list",
+    "只用 array 線性搜尋",
+    "binary search tree",
+    "heap"
+   ],
+   "ans": "hash map + doubly linked list",
+   "why": "hash 找節點，linked list O(1) 移到最前面。"
+  },
+  {
+   "q": "下列哪一個不是 stack algorithm（可能有 Belady's anomaly）？",
+   "opts": [
+    "FIFO",
+    "LRU",
+    "Optimal",
+    "以上都是 stack algorithm"
+   ],
+   "ans": "FIFO",
+   "why": "LRU 與 OPT 都是 stack algorithm。"
+  },
+  {
+   "q": "Second-chance（clock）演算法中，指標遇到 reference bit = 1 的 page 會？",
+   "opts": [
+    "把 bit 清成 0 並跳過",
+    "立刻換掉它",
+    "把 bit 設成 1",
+    "寫回 disk"
+   ],
+   "ans": "把 bit 清成 0 並跳過",
+   "why": "給它第二次機會；遇到 bit 0 才換掉。"
+  },
+  {
+   "q": "LFU 的主要問題是？",
+   "opts": [
+    "一段 burst 讓 count 很高，之後不用卻一直佔著 frame",
+    "一定比 FIFO 差",
+    "無法計數",
+    "需要知道未來"
+   ],
+   "ans": "一段 burst 讓 count 很高，之後不用卻一直佔著 frame",
+   "why": "常用不代表正在用。"
+  }
+ ]
+}

@@ -1,0 +1,248 @@
+{
+ "video": "DXU7SqsYDvg",
+ "label": "Page Replacement Algorithms（LRU and Optimal）",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "LRU 例題：19 個 reference、3 個 frame",
+   "scene": "vm-ex-lru",
+   "cues": [
+    0,
+    14.6,
+    27.3,
+    42.1,
+    64,
+    92.4,
+    113.6,
+    126.5,
+    133.7,
+    143.3,
+    184.3,
+    227.5,
+    235.1,
+    270,
+    290.7,
+    315.1,
+    339.4,
+    344,
+    346.8,
+    368.4,
+    371,
+    384.5,
+    398,
+    405.3,
+    417.4,
+    431,
+    439.1,
+    461.1
+   ],
+   "explain": [
+    "這是跟 FIFO 那集同一個例子。上面這排是 reference string：CPU 依序要 page 3、page 2、page 1……共 19 次。",
+    "有 3 個 frame（f1、f2、f3）。用 LRU 置換，要算出 page fault 次數，還有 hit ratio（命中率）。",
+    "題目可能再加一個條件：一開始 frame 全空，第一次把 page 放進去也算 page fault。",
+    "LRU 是 least recently used：換掉「最長一段時間沒被用到」的 page。",
+    "CPU 先要 page 3，三個 frame 都沒有，是 page fault（紅色 F），放進 f1。",
+    "接著要 page 2。OS 檢查記憶體（記憶體切成 frame），只有 3 在，所以 page fault，把 2 載入。",
+    "要 page 1，不在，但還有一個空 frame，放進去，也是 page fault。",
+    "要 page 3：它就在 frame 裡，這是 hit（綠色勾）。",
+    "下一個是 4：不在，是 miss。三個 frame 都滿了，沒辦法直接放。",
+    "OS 要從記憶體裡選一頁 swap out（換出到 secondary memory，也就是硬碟），再把 4 swap in。選誰，就由 LRU 決定。",
+    "簡單的技巧：從 4 的位置往左看 reference string。先看到 3、再看到 1，最後才看到 2，所以 2 是最久沒用的，換掉 2，4 放到原本 2 的 frame。",
+    "要 page 1：在記憶體裡，hit。",
+    "要 page 6：miss。往左看，先看到 1、再 4、最後是 3，3 最久沒用，換掉 3。",
+    "要 page 2：miss。往左看：6 最近、再來 1、最後 4，換掉 4。",
+    "要 page 4：miss。6、2、1 三個中，往左看最後才出現的是 1，換掉 1。",
+    "要 page 3：miss。4 最近，然後 2，最左邊是 6，換掉 6。",
+    "要 page 4：在，hit。",
+    "要 page 2：在，hit。",
+    "要 page 1：miss。往左看依序是 2、4、3，3 最久沒用，換掉 3。",
+    "要 page 4：在，hit。",
+    "要 page 5：miss。往左看 4、1、2，換掉 2。",
+    "要 page 2：miss。往左看 5、4、1，換掉 1。",
+    "要 page 1：miss。往左看 2、5、4，換掉 4。",
+    "要 page 3：miss。往左看 1、2、5，換掉 5。",
+    "要 page 4：miss。往左看 3、1、2，換掉 2。",
+    "數一數紅色 F：總共 14 次 page fault。",
+    "hit 有 5 次，hit ratio = 5 ÷ 19（總共 19 次存取）。影片口誤說成 5/9，分母應該是 19。",
+    "miss ratio（失誤率）可以寫成 1 − 5/19，也就是 14/19。"
+   ],
+   "points": [
+    {
+     "t": 0,
+     "text": "reference string：3 2 1 3 4 1 6 2 4 3 4 2 1 4 5 2 1 3 4，3 個 frame；frame 全空時放入也算 page fault。"
+    },
+    {
+     "t": 42,
+     "text": "LRU：換掉最長時間沒被用到的 page。技巧：從目前位置往左看 reference string，三個 page 中最後才看到的就是 victim。"
+    },
+    {
+     "t": 64,
+     "text": "依序模擬：3、2、1 fault，3 hit，4 換掉 2，1 hit，6 換 3，2 換 4，4 換 1，3 換 6……"
+    },
+    {
+     "t": 431,
+     "text": "共 14 次 page fault、5 次 hit：hit ratio = 5/19，miss ratio = 14/19。"
+    }
+   ],
+   "trap": "影片把 hit ratio 唸成「5/9」，正確是 5/19（分母是 reference 的總數 19）。"
+  },
+  {
+   "title": "Optimal 例題：同一串",
+   "scene": "vm-ex-opt",
+   "cues": [
+    479,
+    495.2,
+    517.7,
+    528.8,
+    536.1,
+    560.1,
+    631.1,
+    639.5,
+    657.1,
+    668.2,
+    692.2,
+    697.1,
+    706.5,
+    721.5,
+    725.4,
+    739.6,
+    743.6,
+    746,
+    775.2,
+    800.8,
+    821.1,
+    849.4,
+    873.7,
+    897.4,
+    916.6
+   ],
+   "explain": [
+    "用 optimal（最佳）置換解同一題，看會有幾次 page fault。",
+    "它的準則：換掉在不久的將來不會被用到、也就是未來最長一段時間不會被用到的 page。它考慮的是未來。",
+    "一樣：3、2、1 都不在，三次 miss，三個 frame 滿了。",
+    "要 page 3：在，hit。",
+    "要 page 4：不在，miss。哪一頁要被選為 victim（換出到硬碟）？",
+    "這次從 4 往右看未來：CPU 接著會要 1，所以不能換 1；再來會要 2；最後才要 3。最右邊才出現的 3 就是 victim，換掉 3。",
+    "要 page 1：在，hit。",
+    "要 page 6：miss。往右看：2 先出現、再來 4，1 最右邊，換掉 1。",
+    "要 page 2、page 4：都在，兩次 hit。",
+    "要 page 3：miss。4 和 2 之後都會用，6 以後再也不會被用到，當然換掉 6。",
+    "要 page 4：在，hit。",
+    "要 page 2：在，hit。",
+    "要 page 1：miss。往右看 4 先、再 2、3 最右邊，換掉 3。",
+    "要 page 4：在，hit。",
+    "要 page 5：miss。往右看 2、1 都會先出現，4 最右邊，換掉 4。",
+    "要 page 2：在，hit。",
+    "要 page 1：在，hit。",
+    "要 page 3：miss。這時 5、2、1 以後都不會再被要求，換哪一個都可以。",
+    "遇到這種平手，就套用 FIFO（先進先出）：三個裡面最早進來的是 2，所以換掉 2。",
+    "要 page 4：miss，後面已經沒有任何請求了，同樣用 FIFO：5、3、1 中最早進來的是 1，換掉 1。",
+    "數一數：總共 10 次 page fault、9 次 hit。hit ratio = 9/19，miss ratio = 10/19。",
+    "optimal 在所有方法中 page fault 最少，但它要預測未來 CPU 會要哪一頁，幾乎不可能做到，所以無法實作。",
+    "那它有什麼用？當 benchmark（標準）：拿其他置換演算法跟它比，就知道誰好誰不好。它是理論上的概念。",
+    "同一串 reference 的比較：FIFO 13 次、LRU 14 次、optimal 10 次；hit ratio 分別是 6/19、5/19、9/19。",
+    "這一串剛好 FIFO 比 LRU 少，但不能因此說 FIFO 比較好，換一串可能就相反。只有 optimal 在任何情況下都一定最少。"
+   ],
+   "points": [
+    {
+     "t": 479,
+     "text": "Optimal：換掉未來最長時間不會被用到的 page（往右看，最右邊才出現的就是 victim）。"
+    },
+    {
+     "t": 517,
+     "text": "依序模擬：4 換 3、6 換 1、3 換 6、1 換 3、5 換 4……"
+    },
+    {
+     "t": 746,
+     "text": "若三個都不會再被用到（平手），就用 FIFO：換掉最早進來的。"
+    },
+    {
+     "t": 821,
+     "text": "共 10 次 page fault、9 次 hit：hit ratio 9/19、miss ratio 10/19。"
+    },
+    {
+     "t": 849,
+     "text": "OPT 最少但無法實作（要預測未來），用來當 benchmark；本題 FIFO 13、LRU 14、OPT 10。"
+    }
+   ]
+  },
+  {
+   "title": "結尾",
+   "scene": null,
+   "points": [
+    {
+     "t": 959,
+     "text": "OPT 跟 SJF 排程一樣的缺點：無法預知未來。下一集談 FIFO 的 Belady's anomaly，以及 LRU、OPT 的優缺點。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Reference string 3 2 1 3 4 1 6 2 4 3 4 2 1 4 5 2 1 3 4、3 個 frame，LRU 的 page fault 次數？",
+   "opts": [
+    "14",
+    "13",
+    "10",
+    "12"
+   ],
+   "ans": "14",
+   "why": "實際模擬共 14 次 fault、5 次 hit。"
+  },
+  {
+   "q": "承上，LRU 的 hit ratio？",
+   "opts": [
+    "5/19",
+    "5/9",
+    "14/19",
+    "9/19"
+   ],
+   "ans": "5/19",
+   "why": "分母是總 reference 數 19。"
+  },
+  {
+   "q": "同一串用 Optimal，page fault 次數？",
+   "opts": [
+    "10",
+    "9",
+    "14",
+    "13"
+   ],
+   "ans": "10",
+   "why": "9 次 hit，hit ratio 9/19。"
+  },
+  {
+   "q": "LRU 找 victim 的快速技巧是？",
+   "opts": [
+    "從目前位置往左看，最後才出現的 page",
+    "往右看，最先出現的 page",
+    "選編號最小的 page",
+    "選最早進來的 page"
+   ],
+   "ans": "從目前位置往左看，最後才出現的 page",
+   "why": "最久沒被用到的就是 victim。"
+  },
+  {
+   "q": "Optimal 遇到 frame 裡的 page 以後都不會再被用到（平手）時，影片用什麼規則？",
+   "opts": [
+    "FIFO：換掉最早進來的",
+    "換掉編號最大的",
+    "不換",
+    "換掉最近用過的"
+   ],
+   "ans": "FIFO：換掉最早進來的",
+   "why": "平手時任選皆可，影片用 FIFO 打破平手。"
+  },
+  {
+   "q": "本題 FIFO 13 次、LRU 14 次，可以得出什麼結論？",
+   "opts": [
+    "不能據此說 FIFO 比 LRU 好；只有 OPT 一定最少",
+    "FIFO 永遠比 LRU 好",
+    "LRU 有 Belady's anomaly",
+    "OPT 不一定最少"
+   ],
+   "ans": "不能據此說 FIFO 比 LRU 好；只有 OPT 一定最少",
+   "why": "結果依 reference string 而定。"
+  }
+ ]
+}

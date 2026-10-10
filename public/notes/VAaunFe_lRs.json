@@ -1,0 +1,470 @@
+{
+ "video": "VAaunFe_lRs",
+ "label": "清大周志遠 第13B講 Demand Paging & Process Creation",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Demand paging：要了才搬",
+   "scene": "vm-13b-what",
+   "cues": [
+    14.6,
+    25,
+    38.2,
+    53,
+    70.5,
+    74.5
+   ],
+   "explain": [
+    "demand 的意思是「需要」。demand paging 就是：你要用了，我才去做這件事。所有 page 一開始都在 disk 上。",
+    "不是一次把程式的 page 全部 load 進記憶體，而是你要哪一頁，才把那一頁搬進來。",
+    "第一個好處：I/O（輸入輸出）比較少，load 的時間短。一次只搬一個 page（4KB），比一次搬 10MB 快多了。",
+    "第二個好處：記憶體只放要用的東西，使用率提高，剩下的空間可以給別的程式用。",
+    "別的程式也能放進記憶體，所以 degree of multiprogramming（同時在記憶體裡的程式數）提高。",
+    "就算沒有 dynamic loading、linking 這些機制，光看程式怎麼用記憶體，以 page 為單位決定放 memory 或留在 disk，就是 demand paging。"
+   ],
+   "points": [
+    {
+     "t": 14,
+     "text": "demand paging：不是一次把 page 全部 load，而是要用哪個 page 才搬它。"
+    },
+    {
+     "t": 38,
+     "text": "好處①：I/O 少、load time 短（一次 4KB，而不是 10MB）。"
+    },
+    {
+     "t": 53,
+     "text": "好處②：memory 只放要用的，剩下的給別的程式 → degree of multiprogramming 增加。"
+    },
+    {
+     "t": 74,
+     "text": "就算沒有 dynamic loading／linking，也能以 page 為單位決定放 memory 還是先留在 disk。"
+    }
+   ]
+  },
+  {
+   "title": "無效位址 vs 還沒搬進來（pure demand paging）",
+   "scene": "vm-13b-invalid",
+   "cues": [
+    94.7,
+    108.1,
+    129.9,
+    151,
+    164,
+    177,
+    192
+   ],
+   "explain": [
+    "用 demand paging 時，每次存取一個位址，都要判斷它屬於哪種情況。左邊是一個 process 的位址空間。",
+    "第一種叫 invalid reference（無效參考）：這個位址根本沒有分配給程式、超出範圍，本來就不該存取。",
+    "第二種要分開看：位址是有效的，只是那一頁「還沒搬進」記憶體，因為還沒有人要用它。",
+    "這種存取一樣會造成錯誤（fault），但它其實是在通知 OS：「需要這一頁了」，OS 就去做 paging 把它搬進來。",
+    "pure demand paging（純需求分頁）：load 一個 process 時，只建立 page table 和 PCB，記憶體裡一頁都不放。",
+    "程式真的開始跑、用到哪一頁，才把那一頁放進記憶體。",
+    "pure 是比較極端的做法。實際系統可能會先 load 前面一定會用到的內容，省掉一開始一連串的 fault。"
+   ],
+   "points": [
+    {
+     "t": 94,
+     "text": "access 一個 address 時，要分辨兩種情況。"
+    },
+    {
+     "t": 108,
+     "text": "invalid reference：超出程式 allocate 的範圍，真的不該 access。"
+    },
+    {
+     "t": 129,
+     "text": "有效但不在 memory：只是還沒搬；這個 fault 是在告訴 OS「demand 來了」。"
+    },
+    {
+     "t": 164,
+     "text": "pure demand paging：load 時只建 page table、PCB，memory 什麼都沒有；run 時才放。"
+    },
+    {
+     "t": 192,
+     "text": "pure 是極端；實際系統可能先 load 一定會用到的部分。"
+    }
+   ]
+  },
+  {
+   "title": "Swapper vs pager",
+   "scene": "vm-13b-pager",
+   "cues": [
+    209.3,
+    225.5,
+    233.5,
+    259.1,
+    270
+   ],
+   "explain": [
+    "現在可以比較 demand paging 和之前學的 mid-term scheduler（俗稱 swapper）。記憶體裡有 P1、P2 兩個 process。",
+    "swapper 是以 process 為單位：把整個 process（例如 P1）一次搬到 disk。",
+    "demand paging 是 pager（分頁器）在做：以 page 為單位，只搬某一頁，不會整個 process 一起搬。",
+    "所以一個 process 可以一部分在 disk、一部分在 memory，還是能繼續執行，不需要整個被暫停（suspend）。",
+    "OS 通常兩個都有，是不同層級的管理：swapper 把整個 process 移走時，pager 就沒事做；swapper 留下的 process，pager 再決定其中哪些 page 不要。"
+   ],
+   "points": [
+    {
+     "t": 209,
+     "text": "mid-term scheduler（swapper）以 process 為單位，整個 swap 出去。"
+    },
+    {
+     "t": 233,
+     "text": "demand paging 是 pager 做的：以 page 為單位，process 可以部分在 disk、照常運作。"
+    },
+    {
+     "t": 270,
+     "text": "OS 通常兩者都有，是不同 level 的管理，不衝突。"
+    }
+   ]
+  },
+  {
+   "title": "Valid-invalid bit",
+   "scene": "vm-13b-vbit",
+   "cues": [
+    296.7,
+    312.7,
+    325.7,
+    333.5,
+    339.1,
+    361.8,
+    390.2,
+    410
+   ],
+   "explain": [
+    "問題是：OS 要怎麼知道一個位址的參考是有效還是無效？",
+    "答案是 page table 裡每一格的 valid-invalid bit（有效-無效位元）。它主要用途就是做 virtual memory。",
+    "如果 bit 設起來（v，也就是 1），代表這一頁現在在記憶體裡。",
+    "如果是 0（i），在這裡代表：這一頁是有效的，只是目前不在記憶體。",
+    "存取時看到 0，就產生 page fault（缺頁錯誤）。OS 接到後把那一頁從 disk 搬進記憶體，填上 frame 號碼、把 bit 改成 v。",
+    "pure demand paging 一開始一頁都沒有在記憶體，所以所有 bit 都設成 0，等著被搬。",
+    "那可讀、可寫這些權限呢？通常在 segmentation 那層管；paging 這層只需要知道這頁在 disk 還是 memory。",
+    "page 被 swap 到的地方叫 backing store（swap space，置換空間），它跟一般存檔案的 file system 是不同的東西。"
+   ],
+   "points": [
+    {
+     "t": 296,
+     "text": "靠 page table 的 valid-invalid bit 分辨；這個 bit 主要給 virtual memory 用。"
+    },
+    {
+     "t": 326,
+     "text": "v（1）：在 memory；i（0）：有效但目前不在 memory → access 時產生 page fault，OS 把 page 搬進來。"
+    },
+    {
+     "t": 361,
+     "text": "pure demand paging 一開始所有 bit 都是 i。"
+    },
+    {
+     "t": 390,
+     "text": "read／write 權限通常在 segment level 做；paging 只管在 disk 還是 memory。swap 到 backing store（swap space），不同於 file system。"
+    }
+   ]
+  },
+  {
+   "title": "例子：pure demand paging 一步步跑",
+   "scene": "vm-13b-run",
+   "cues": [
+    423.9,
+    433.6,
+    446.7,
+    458.2,
+    472,
+    486.4,
+    491.4,
+    503.3,
+    528.1,
+    543.9,
+    579.7
+   ],
+   "explain": [
+    "用同一個例子，這次改成 demand paging。左邊是程式，為了好看，假設一個 page 只放一個指令（示意）。",
+    "load 的時候只建立 page table，但裡面是空的（全部 i）；PCB 還是要建，可是記憶體裡什麼都沒放。",
+    "開始執行第一個指令。要存取記憶體，一樣先去看 page table。",
+    "發現 valid bit 是 invalid，就產生 page fault。因為這是 paging 的過程，所以叫 page fault，不叫 segmentation fault。",
+    "fault 會呼叫 OS（這是一種 interrupt，中斷）。OS 處理 paging：它知道這行指令的內容放在 disk 的哪裡。",
+    "把那一頁從 disk load 進記憶體的某個 frame。",
+    "接著 update page table：填上 frame 號碼，把 valid bit 設起來。",
+    "平常執行完一個指令 program counter（PC，下一個指令的位置）會加 4。page fault 處理完後，要把 PC 減 4 移回去，讓 CPU 重新 fetch 同一個指令。",
+    "重做一模一樣的指令，這次發現資料在記憶體裡了，就正常執行。結果跟沒發生過一樣。",
+    "接下來的指令也一樣先檢查：如果在不同的 page，就再 fault、搬進來、更新表、再做一次。右邊的記憶體就這樣慢慢長出來。",
+    "那怎麼知道位址是不是有效的？上一層的 segment 有 length，會先檢查；到了 paging 這層已經確定有效，只需要看在不在記憶體。"
+   ],
+   "points": [
+    {
+     "t": 424,
+     "text": "load 時只建空的 page table（PCB 也建），memory 什麼都沒有。"
+    },
+    {
+     "t": 446,
+     "text": "執行第一個 instruction：查 page table → bit 是 invalid → page fault（不是 segmentation fault）。"
+    },
+    {
+     "t": 472,
+     "text": "OS 接到 interrupt：找到那頁在 disk 的位置、load 進 memory、update page table 並設 valid。"
+    },
+    {
+     "t": 503,
+     "text": "program counter −4，重新 fetch 同一個 instruction，這次就正常執行。"
+    },
+    {
+     "t": 543,
+     "text": "之後每遇到不在 memory 的 page 都重複：fault → 搬 → update → 重做。"
+    },
+    {
+     "t": 579,
+     "text": "address 有沒有效，上一層 segment 的 length 先檢查過；paging 這層只看在不在 memory。"
+    }
+   ]
+  },
+  {
+   "title": "Page fault 處理步驟",
+   "scene": "vm-13b-steps",
+   "cues": [
+    618.9,
+    626,
+    643.2,
+    672.3,
+    698.7,
+    719.7,
+    726.1,
+    737.5,
+    758.3,
+    780.4
+   ],
+   "explain": [
+    "把剛剛的流程整理成步驟。左上是 CPU，中間是 page table（page 1 是 i），右邊是記憶體，最下面有一格空的 frame，右下是 disk。",
+    "第一步：先存取，發現 bit 是 invalid，就丟出 page fault。它是軟體產生的 interrupt，所以也叫 trap（陷阱）。",
+    "OS 接到後可能先再確認一次：這個位址有沒有超過 segment 的長度、或 PCB 裡記錄的記憶體上限？超過的話就是真的無效。",
+    "如果有效，才去看 valid bit：是 valid 就直接存取；不在記憶體，就繼續做 paging。",
+    "接著要找一個空的 frame。用 free list（空閒清單）拿一個，O(1) 時間就找到。",
+    "然後做 swapping：把那一頁的內容從 disk 複製到這個 frame。",
+    "再 update page table：填上 frame 號碼（這裡示意為 9），並把 valid bit 設成 valid。",
+    "最後一步千萬別忘了：restart。PC 減 4，重新執行剛剛那個指令，這次就會成功。",
+    "整理一下：CPU 不管三七二十一先存取，看到 bit 無效就產生 interrupt，這個 interrupt 會被 OS 的 pager 接住，知道要做 paging。",
+    "那一頁原本在 disk 的哪裡呢？在 load、或把它搬到 disk 時，OS 就記下來了，所以找得到。"
+   ],
+   "points": [
+    {
+     "t": 618,
+     "text": "① access 發現 invalid → page fault（trap，software interrupt）。"
+    },
+    {
+     "t": 643,
+     "text": "② OS 檢查是否超出 segment length／memory limit；有效才看 valid bit，不在 memory 就做 paging。"
+    },
+    {
+     "t": 698,
+     "text": "③ 找 empty frame（free list O(1)）→ ④ 從 disk copy 進來 → ⑤ update page table、設 valid。"
+    },
+    {
+     "t": 737,
+     "text": "⑥ restart：PC −4，重做那個 instruction。"
+    },
+    {
+     "t": 780,
+     "text": "page 在 disk 的位置在 load 或搬出時就記下了。"
+    }
+   ]
+  },
+  {
+   "title": "沒有 free frame：要先 replacement",
+   "scene": "vm-13b-noframe",
+   "cues": [
+    817,
+    825.4,
+    839.2,
+    852,
+    863.3,
+    882.1
+   ],
+   "explain": [
+    "剛剛的情況有空的 frame，很單純。現在記憶體四格都滿了，新的 page 6 要進來。",
+    "如果沒有空 frame 怎麼辦？在「找 free frame」這步後面，要多做一件事。",
+    "就是強迫某一頁從記憶體 swap 到 disk，清出一個位置。",
+    "要把誰踢出去？決定這件事的演算法就叫 replacement algorithm（置換演算法）。清出位置後，新的 page 就放進去。",
+    "這一步只有必要時才會觸發：流程還是先找 free frame，真的沒有了才呼叫 replacement。",
+    "所以這整個流程的效能，就取決於 replacement algorithm 設計得好不好。"
+   ],
+   "points": [
+    {
+     "t": 817,
+     "text": "有 free frame 就直接放；沒有的話，找 free frame 之後要多一步：replacement。"
+    },
+    {
+     "t": 839,
+     "text": "強迫某個 page swap 到 disk 清出位置；踢誰由 replacement algorithm 決定。"
+    },
+    {
+     "t": 863,
+     "text": "只有沒有 free frame 時才 trigger；整個流程的效能取決於 replacement algorithm。"
+    }
+   ]
+  },
+  {
+   "title": "Demand paging 的 effective access time",
+   "scene": "vm-13b-eat",
+   "cues": [
+    892.6,
+    911.5,
+    936,
+    957.7,
+    1002.4,
+    1034,
+    1065.4,
+    1097.6,
+    1112,
+    1136.1,
+    1174.1,
+    1189.5,
+    1247.5
+   ],
+   "explain": [
+    "來看 demand paging 對「平均每次存取記憶體要多久」的影響，叫 effective access time（EAT，有效存取時間）。算法跟 TLB 那章很像。",
+    "用 p 表示 page fault rate（缺頁率）：每次存取記憶體，有多少機率會發生 page fault。p 介於 0 和 1 之間。",
+    "沒有發生 page fault 的機率是 1 − p，這時只要花一次記憶體存取時間，記作 ma。",
+    "ma 細算其實不是固定值：要看 TLB 有沒有命中（影響位址翻譯），而且還包括把資料從記憶體晶片傳到 CPU 暫存器的時間。",
+    "發生 page fault 的機率是 p，這時要花 page fault time：把整頁從 disk 搬進記憶體、再給 CPU 的時間。兩項加起來就是 EAT。",
+    "代入課本的數字：記憶體存取 200 ns（奈秒），page fault 要讀 disk，大約 8 ms（毫秒），也就是 8,000,000 ns。page fault time 遠遠大於 ma（圖上的長度只是示意）。",
+    "整理後 EAT = 200 + p × 7,999,800（ns）。第一項幾乎不重要，EAT 基本上正比於「page fault 時間 × page fault rate」。",
+    "舉例：1000 次存取裡只有 1 次 page fault，p = 0.001。",
+    "算出來 EAT = 199.8 + 8000 ≈ 8200 ns ≈ 8.2 µs（微秒）。原本只要 200 ns，變成慢了大約 40 倍，不是 40%。",
+    "如果只願意慢 10%（EAT < 220 ns），就要 200 + 7,999,800 × p < 220，算出 p < 0.0000025，也就是大約 40 萬次存取才能有 1 次 page fault。",
+    "那為什麼電腦有 virtual memory，我們卻不覺得慢？原因跟 TLB 一樣：locality（區域性），程式短時間內總是用附近的資料。",
+    "一次 page fault 就搬進一整個 4KB 的 page，之後的存取（例如 for loop 一直讀同一個 array）都在這一頁裡，都不會再 fault，所以實際的 page fault rate 非常低。",
+    "把處理步驟拆開看：trap、恢復狀態、更新 page table 都很快，時間幾乎都花在 disk 存取上，所以 page fault rate 一定要非常低。"
+   ],
+   "points": [
+    {
+     "t": 892,
+     "text": "p = page fault rate（0 ≤ p ≤ 1）；EAT = (1 − p) × ma + p × page fault time。"
+    },
+    {
+     "t": 957,
+     "text": "ma 細算含 TLB hit／miss 與傳 bytes 的時間；page fault time 是從 disk 搬回再給 CPU 的時間。"
+    },
+    {
+     "t": 1034,
+     "text": "ma = 200 ns、page fault time = 8 ms：EAT = 200 + p × 7,999,800（ns），幾乎正比於 p × page fault time。"
+    },
+    {
+     "t": 1097,
+     "text": "p = 1/1000 → EAT ≈ 8.2 µs，比 200 ns 慢約 40 倍。"
+    },
+    {
+     "t": 1136,
+     "text": "只容忍慢 10%：p < 0.0000025（約 40 萬次才能有 1 次 fault）。"
+    },
+    {
+     "t": 1174,
+     "text": "實際不覺得慢：locality；一次 fault 搬進整個 4KB page，後面的 access 都 hit。"
+    },
+    {
+     "t": 1247,
+     "text": "拆開步驟看：時間幾乎全被 disk access 主宰。"
+    }
+   ],
+   "trap": "老師口頭把 8.2 µs 說成 8.2 millisecond；正確是 8.2 微秒（8199.8 ns）。10% 的條件課本算出 p < 0.0000025，不是「萬分之一」。"
+  },
+  {
+   "title": "Process 與 virtual memory",
+   "scene": "vm-13b-proc",
+   "cues": [
+    1305,
+    1323.3,
+    1342.9,
+    1371.2,
+    1398.3,
+    1426.1
+   ],
+   "explain": [
+    "有了 virtual memory，對 process（執行中的程式）的管理有哪些好處？",
+    "第一個：demand paging。load 的時間很小，每次 swapping 也很快。",
+    "第二個：fork 要複製整份記憶體。有了 virtual memory，可以用 copy-on-write（寫入時才複製）：等 parent 和 child 的內容真的不一樣時，才建立新的 page。",
+    "第三個：memory-mapped file（記憶體映射檔案）。平常讀檔用 fopen、fread，要經過 file system（檔案系統），步驟多所以慢一點。",
+    "做法是把檔案的位置（offset）跟記憶體位址綁在一起，就能跳過 file system。",
+    "它跟 virtual memory 剛好倒過來：把 disk 上的檔案內容，當作記憶體內容來存取，效能比較好。下次會詳細講。"
+   ],
+   "points": [
+    {
+     "t": 1305,
+     "text": "virtual memory 對 process 的好處：① demand paging（load time 小、swapping 快）。"
+    },
+    {
+     "t": 1342,
+     "text": "② fork 用 copy-on-write：內容真的不同時才 create 新 page。"
+    },
+    {
+     "t": 1371,
+     "text": "③ memory-mapped file：file offset 綁 memory address，跳過 file system，把 disk 上的 file 當 memory 存取。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Pure demand paging 中，process 剛 load 完時 page table 的 valid-invalid bit 是？",
+   "opts": [
+    "全部是 i（0）",
+    "全部是 v（1）",
+    "一半 v 一半 i",
+    "不需要 bit"
+   ],
+   "ans": "全部是 i（0）",
+   "why": "一開始沒有任何 page 在 memory。"
+  },
+  {
+   "q": "Page fault 處理完後，為什麼要把 PC 減 4？",
+   "opts": [
+    "重新執行造成 fault 的那個 instruction",
+    "跳過那個 instruction",
+    "回到上一個 function",
+    "清空 TLB"
+   ],
+   "ans": "重新執行造成 fault 的那個 instruction",
+   "why": "restart：page 搬進來後要重做同一個指令。"
+  },
+  {
+   "q": "ma = 200 ns、page fault time = 8 ms、p = 0.001，EAT 約為？",
+   "opts": [
+    "8.2 µs",
+    "200 ns",
+    "8.2 ms",
+    "208 ns"
+   ],
+   "ans": "8.2 µs",
+   "why": "0.999×200 + 0.001×8,000,000 = 8199.8 ns ≈ 8.2 µs。"
+  },
+  {
+   "q": "承上，若只容忍變慢 10%，p 需小於？",
+   "opts": [
+    "0.0000025",
+    "0.001",
+    "0.1",
+    "0.00025"
+   ],
+   "ans": "0.0000025",
+   "why": "220 > 200 + 7,999,800p → p < 0.0000025。"
+  },
+  {
+   "q": "swapper（mid-term scheduler）與 pager 的差別？",
+   "opts": [
+    "swapper 以 process 為單位，pager 以 page 為單位",
+    "swapper 以 page 為單位",
+    "兩者完全相同",
+    "pager 只處理 file system"
+   ],
+   "ans": "swapper 以 process 為單位，pager 以 page 為單位",
+   "why": "demand paging 是 pager 做的事。"
+  },
+  {
+   "q": "沒有 free frame 時，page fault 處理會多出哪一步？",
+   "opts": [
+    "用 replacement algorithm 選 victim 換出去",
+    "直接 abort process",
+    "把 TLB 清空",
+    "重新開機"
+   ],
+   "ans": "用 replacement algorithm 選 victim 換出去",
+   "why": "強迫某個 page swap 到 disk 清出位置。"
+  }
+ ]
+}
