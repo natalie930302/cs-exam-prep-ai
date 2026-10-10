@@ -2465,6 +2465,2136 @@ scene('pfA-l4-cases', '列舉法（proof by cases）：x² + 3y² = 8 沒有整�
   },
 ]);
   }
+
+  // ═══ pfB.js ═══
+  {
+const P = K; const { V3, tag, cube, kill, glow, code, anim, arrow, zone, travel, remove, step, buddy, prop, bob, fresh } = P;
+const { txt, tint, line, relabel } = P;
+// (kit has no beat: short waits use ctx.beat)
+// ─── 離散數學 第 2 章（交大 易志偉 Lec08–Lec11：Algorithms and the Integers）— cued scenes ───
+// 每個 scene 是一串 steps；每一步等老師講到那一句（notes 的 cues）才動一下。不重播、不循環。
+// 老師的數字照用（101 = 11·9 + 2、−11 = 3·(−4) + 1、gcd(528,30) = 6、139 = (2023)₄、x ≡ 52 (mod 105)、
+// p = 43, q = 59, e = 13, d = 937, 1819 → 2081…）；老師沒給的數字標「示意」。
+const wt = (tok, ms) => ctx.beat(tok, ms);
+const cap = (a, b = '') => say(a, b);
+const hd = (t, x, y, z = 0) => tag(t, 'ptr', x, y, z);
+const hot = (t, x, y, z = 0) => tag(t, 'ptr alt', x, y, z);
+const sm = (t, x, y, z = 0) => tag(t, 'idx', x, y, z);
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const pl = (t, x, y, z = 0) => tag(t, '', x, y, z);
+const bx = (t, c, x, y, z = 0, w = 0.6, h = 0.6, d = 0.6) => cube(t, c, [w, h, d], x, y, z);
+const FC = { blue: '#4b9ee2', orange: '#dd8238', green: '#2fc092', purple: '#9b7ef4', pink: '#e55a9b', teal: '#31aab0', red: '#d64545', gray: '#d8cfc0', dark: '#8d8170', sand: '#e9dcc4', paper: '#f6efe2', gold: '#c08a1f', tan: '#c9bba3', mint: '#d2f1e6', lilac: '#dfd3fb', sky: '#cfe6f7' };
+const HL = '#6a4a00', OKG = '#0f5a3a', NG = '#5a1010';
+const gone = (...os) => os.forEach((o) => { if (!o) return; if (Array.isArray(o)) return gone(...o); if (o.ls && o.add) return gone(o.ls); if (o.ls) return o.kill(); if (o.g) kill(o.g); else if (o.element) remove(o); else kill(o); });
+function scene(id, title, cam, steps) {
+  FRAG.push([id, title, async (tok) => {
+    fresh(cam[0], cam[1]);
+    const S = {};
+    for (const f of steps) { await step(tok); await f(tok, S); }
+  }]);
+}
+const CAM = [[0, 4.2, 14], [0, 3.0, 0]];
+// a board: text lines top → down; hi(i) lights line i (−1 = none)
+function board(x, yTop, dy = 0.62) {
+  const ls = [];
+  return {
+    ls,
+    add(t, cls = '') { const l = tag(t, cls, x, yTop - ls.length * dy); l.userData.base = cls; ls.push(l); return l; },
+    skip() { ls.push(null); },
+    hi(i) { ls.forEach((l, k) => { if (l) l.element.className = 'lab-label' + (k === i ? ' ptr alt' : (l.userData.base ? ' ' + l.userData.base : '')); }); },
+    last() { this.hi(ls.length - 1); },
+    clear() { ls.forEach((l) => l && remove(l)); ls.length = 0; },
+  };
+}
+// a row of value cubes (digits, bits, residues)
+function row(x0, y, vals, o = {}) {
+  const w = o.w || 0.6, gap = o.gap == null ? 0.1 : o.gap, c = o.c || FC.blue;
+  const cells = vals.map((v, i) => bx(v, typeof c === 'function' ? c(i, v) : c, x0 + i * (w + gap), y, o.z || 0, w, o.h || w, o.d || w));
+  return { cells, x: (i) => x0 + i * (w + gap) };
+}
+// n small cubes in groups of g (counting pictures)
+function groups(x0, y, n, g, color, left = 0, leftColor = FC.red, s = 0.3) {
+  const out = []; let x = x0;
+  for (let i = 0; i < n; i++) { out.push(bx('', color, x, y, 0, s, s, s)); x += s + 0.05; if ((i + 1) % g === 0) x += 0.22; }
+  for (let i = 0; i < left; i++) { out.push(bx('', leftColor, x, y, 0, s, s, s)); x += s + 0.05; }
+  return out;
+}
+// a number line: x(v) maps values; ticks labelled every `every`
+function nline(x0, x1, y, v0, v1, every = 1) {
+  const X = (v) => x0 + (v - v0) * (x1 - x0) / (v1 - v0);
+  const ls = [line(x0 - 0.2, y, x1 + 0.2, y, 0, '#8a7a60')];
+  for (let v = v0; v <= v1; v += every) ls.push(sm(String(v), X(v), y - 0.35));
+  return { X, ls };
+}
+async function slide(tok, o, x, y, z = 0, ms = 600) { const a = o.position.clone(); await travel(tok, o, a, V3(x, y, z), ms); }
+
+
+// ════════ wiVH6goGrWQ（交大OCW 易志偉《離散數學》Lec08 Algorithms and the Integers (1/4)） ════════
+scene('pfB-l8-divdef', "整除 a | b：定義與例子", CAM, [
+  // 32.6
+  async (tok, S) => {
+          hot('3-4：整數與除法', 0, 7.2); cap('整數與除法的正式定義', '因數、倍數、整除');
+        },
+  // 64.8
+  async (tok, S) => {
+          S.z = []; for (let v = -3; v <= 3; v++) S.z.push(bx(String(v), v < 0 ? FC.orange : v === 0 ? FC.gray : FC.blue, -2.4 + (v + 3) * 0.8, 5.6, 0, 0.6, 0.6, 0.6));
+          sm('ℤ = {…, −2, −1, 0, 1, 2, …}（示意）', 0, 4.9); cap('ℤ：整數的集合', '0、正整數、負整數都在裡面');
+        },
+  // 86.5
+  async (tok, S) => {
+          glow(S.z[3], NG); S.a = bx('a', FC.purple, -5.2, 3.6, 0, 0.8, 0.8, 0.8); S.b = bx('b', FC.teal, -4.0, 3.6, 0, 0.8, 0.8, 0.8);
+          bad('a ≠ 0（除以 0 沒有定義）', -4.6, 2.6); cap('取兩個整數 a、b', 'a 當除數，不能是 0');
+        },
+  // 107
+  async (tok, S) => {
+          glow(S.z[3], null); S.L = board(-3.4, 1.6); S.L.add('a | b ：a 整除 b（沒有餘數）', 'ptr alt'); cap('a | b：a 整除 b', '一直線代表「整除」');
+        },
+  // 123.2
+  async (tok, S) => {
+          S.L.add('⇔ 存在整數 c，使 b = a · c'); S.L.last(); cap('存在整數 c 使 b = a·c', '證明時都用這個等式');
+        },
+  // 133.4
+  async (tok, S) => {
+          S.L.add('a 是 b 的因數；b 是 a 的倍數'); S.L.last(); cap('a 是因數，b 是倍數', '');
+        },
+  // 151.7
+  async (tok, S) => {
+          S.L.hi(-1); S.g1 = groups(1.0, 4.0, 12, 3, FC.green); good('3 | −12 ✔：−12 = 3·(−4)', 3.4, 3.2); cap('3 | −12 成立', '−12 = 3 × (−4)');
+        },
+  // 165.2
+  async (tok, S) => {
+          S.g2 = groups(1.0, 2.0, 6, 3, FC.blue, 1); bad('3 ∤ 7 ✘：7 = 3·2 + 1，餘 1', 3.4, 1.2); cap('3 不整除 7', '7 除以 3 會餘 1');
+        },
+  // 176.9
+  async (tok, S) => {
+          gone(S.g1, S.g2); hot('b 是偶數 ⇔ 2 | b', 3.4, 0.2); cap('偶數的定義：2 | b', '');
+        },
+  // 186
+  async (tok, S) => {
+          good('0 = 2·0 → 0 是偶數', 3.4, -0.5); cap('0 是偶數', '因為 0 = 2 × 0');
+        },
+  // 189
+  async (tok, S) => {
+          good('−4 = 2·(−2) → −4 是偶數', 3.4, -1.2); cap('−4 也是偶數', '−4 = 2 × (−2)');
+        },
+]);
+scene('pfB-l8-divprops', "整除的三個性質（附證明）", CAM, [
+  // 197.5
+  async (tok, S) => {
+          hd('a, b, c ∈ ℤ，a ≠ 0', -3.4, 7.2); S.L = board(-3.4, 6.3, 0.75); S.R = board(3.4, 6.3, 0.75); cap('整除的性質', 'a、b、c 都是整數');
+        },
+  // 210.7
+  async (tok, S) => {
+          S.L.add('a | 0：0 是任何數的倍數'); S.L.last(); cap('0 是任何數的倍數', '0 = a × 0');
+        },
+  // 224.7
+  async (tok, S) => {
+          S.L.add('(i) a|b 且 a|c ⇒ a|(b+c)'); S.L.last(); cap('(i) a|b、a|c ⇒ a|(b+c)', '');
+        },
+  // 239.7
+  async (tok, S) => {
+          S.R.add('a | b ⇒ b = a·k₁'); S.R.last(); cap('b = a·k₁', '把整除翻成等式');
+        },
+  // 251.3
+  async (tok, S) => {
+          S.R.add('a | c ⇒ c = a·k₂'); S.R.last(); cap('c = a·k₂', '');
+        },
+  // 255.3
+  async (tok, S) => {
+          S.R.add('b + c = a·(k₁ + k₂) ✔', 'good'); S.R.hi(-1); cap('b + c = a(k₁ + k₂)', 'k₁ + k₂ 是整數 → a | (b + c)');
+        },
+  // 271.5
+  async (tok, S) => {
+          S.R.clear(); S.L.add('(ii) a|b ⇒ a|bc'); S.L.last(); cap('(ii) a|b ⇒ a|bc', '');
+        },
+  // 286.1
+  async (tok, S) => {
+          S.R.add('b = a·k₁'); S.R.add('bc = a·(k₁·c) ✔', 'good'); cap('bc = a·(k₁c)', '括號裡是整數 → a | bc');
+        },
+  // 299.2
+  async (tok, S) => {
+          S.R.clear(); S.L.add('(iii) a|b 且 b|c ⇒ a|c'); S.L.last(); cap('(iii) a|b、b|c ⇒ a|c', '整除可以接力');
+        },
+  // 304.2
+  async (tok, S) => {
+          S.R.add('b | c ⇒ c = b·k₃'); S.R.last(); cap('c = b·k₃', '');
+        },
+  // 316.1
+  async (tok, S) => {
+          S.R.add('c = (a·k₁)·k₃ = a·(k₁k₃)'); S.R.last(); cap('代入 b = a·k₁', 'c = a·(k₁k₃)');
+        },
+  // 334.4
+  async (tok, S) => {
+          S.R.add('a | c ✔', 'good'); S.R.hi(-1); S.L.hi(-1); cap('a | c 得證', '');
+        },
+]);
+scene('pfB-l8-divalg', "除法演算法：101 = 11·9 + 2、−11 = 3·(−4) + 1", CAM, [
+  // 337.4
+  async (tok, S) => {
+          hd('The Division Algorithm', -3.6, 7.2); S.L = board(-3.8, 6.3, 0.7); cap('除法演算法', '被除數 = 除數 × 商 + 餘數');
+        },
+  // 349.1
+  async (tok, S) => {
+          sm('其實是「定理」，不是演算法', -3.6, 6.7); cap('名字叫演算法，其實是定理', '演算法要有輸入、輸出');
+        },
+  // 362.5
+  async (tok, S) => {
+          S.L.add('a：被除數（dividend）'); S.L.last(); cap('a：被除數', '');
+        },
+  // 372.9
+  async (tok, S) => {
+          S.L.add('d ≠ 0：除數 → 唯一的 q、r'); S.L.last(); cap('d ≠ 0 ⇒ 唯一的商 q、餘數 r', '');
+        },
+  // 387.4
+  async (tok, S) => {
+          S.L.add('a = d · q + r'); S.L.last(); cap('a = d·q + r', '');
+        },
+  // 393.8
+  async (tok, S) => {
+          S.L.add('0 ≤ r < |d|', 'good'); S.L.last(); cap('餘數：0 ≤ r < |d|', '餘數不能是負的');
+        },
+  // 426.7
+  async (tok, S) => {
+          S.L.add('q = ⌊a / d⌋（d > 0）'); S.L.last(); cap('q = ⌊a/d⌋', '高斯符號：往下取整');
+        },
+  // 436
+  async (tok, S) => {
+          S.L.add('r = a − d · q'); S.L.last(); cap('r = a − d·q', '');
+        },
+  // 450
+  async (tok, S) => {
+          S.L.hi(-1); S.bars = []; for (let i = 0; i < 9; i++) S.bars.push(bx('11', FC.blue, 1.0 + i * 0.56, 4.8, 0, 0.48, 1.0, 0.5));
+          S.bars.push(bx('', FC.red, 6.1, 4.45, 0, 0.3, 0.3, 0.3), bx('', FC.red, 6.45, 4.45, 0, 0.3, 0.3, 0.3));
+          good('101 = 11·9 + 2', 3.6, 6.0); cap('101 = 11·9 + 2', '商 9、餘數 2');
+        },
+  // 451.4
+  async (tok, S) => {
+          note('餘數 ≥ 0，且 < 除數', 3.6, 3.6); cap('餘數要 ≥ 0 而且比除數小', '');
+        },
+  // 462
+  async (tok, S) => {
+          S.nl = nline(0.9, 6.3, 1.8, -12, 0, 3);
+          S.m = bx('−12', FC.purple, S.nl.X(-12), 2.4, 0, 0.5, 0.5, 0.5); await wt(tok, 500);
+          S.ar = arrow(V3(S.nl.X(-12), 2.8, 0), V3(S.nl.X(-11), 2.8, 0), 0xd64545); S.p = bx('−11', FC.orange, S.nl.X(-11) + 0.2, 3.3, 0, 0.5, 0.5, 0.5);
+          good('−11 = 3·(−4) + 1', 3.6, 0.6); cap('−11 = 3·(−4) + 1', '商 −4、餘數 1（不是 −2）');
+        },
+]);
+scene('pfB-l8-mod', "mod：取餘數運算", CAM, [
+  // 475.3
+  async (tok, S) => {
+          hd('mod：取餘數運算', 0, 7.2); S.L = board(0, 6.2, 0.75); cap('取餘數運算 mod', '');
+        },
+  // 487.3
+  async (tok, S) => {
+          S.L.add('整數 a、d，d > 1（d = 1 永遠餘 0）'); S.L.last(); cap('a、d 為整數，d > 1', 'd = 1 就沒有餘數可言');
+        },
+  // 497.4
+  async (tok, S) => {
+          S.L.add('a mod d = r（除法演算法的餘數）'); S.L.last(); cap('a mod d = 餘數 r', '');
+        },
+  // 526
+  async (tok, S) => {
+          S.L.add('101 mod 11 = 2，−11 mod 3 = 1', 'good'); S.L.last(); cap('a 除以 d 的餘數', '101 mod 11 = 2、−11 mod 3 = 1');
+        },
+  // 540.2
+  async (tok, S) => {
+          S.L.add('a mod d = a − d·⌊a / d⌋'); S.L.last(); cap('a mod d = a − d·⌊a/d⌋', '');
+        },
+  // 554.3
+  async (tok, S) => {
+          S.c = code(['r = a % d;   // C 語言', '-11 % 3  → -2（C）', '-11 mod 3 → 1（數學）'], 0, 2.4); S.c.hl(0); cap('C 語言：%', '負數時和數學 mod 不同');
+        },
+]);
+scene('pfB-l8-congr', "同餘：a ≡ b (mod m) ⇔ m | (a − b)", CAM, [
+  // 568.2
+  async (tok, S) => {
+          hd('同餘 congruence', -3.6, 7.2); S.L = board(-3.6, 6.2, 0.75); cap('同餘：餘數相同', 'congruence');
+        },
+  // 586.1
+  async (tok, S) => {
+          S.L.add('a, b ∈ ℤ，m 是正整數'); S.L.last(); cap('a、b 整數，m 正整數', '');
+        },
+  // 598
+  async (tok, S) => {
+          S.L.add('a ≡ b (mod m) ⇔ m | (a − b)'); S.L.last(); cap('a ≡ b (mod m) ⇔ m | (a − b)', '');
+        },
+  // 609.9
+  async (tok, S) => {
+          sm('≡ 讀作「同餘」；(mod m) 說明除數', -3.6, 3.4); cap('符號 ≡', '括號註明 mod m');
+        },
+  // 622.6
+  async (tok, S) => {
+          S.L.add('⇔ a − b ≡ 0 (mod m)'); S.L.last(); cap('也可寫 a − b ≡ 0 (mod m)', 'iff：兩個方向都成立');
+        },
+  // 676.2
+  async (tok, S) => {
+          S.L.hi(-1); S.a = groups(1.4, 4.6, 2, 2, FC.blue, 1); S.b = groups(1.4, 3.6, 0, 2, FC.blue, 1);
+          sm('3', 0.8, 4.6); sm('1', 0.8, 3.6); good('3 ≡ 1 (mod 2)：2 | (3 − 1)', 3.6, 2.6); cap('3 ≡ 1 (mod 2)', '2 整除 3 − 1 = 2');
+        },
+  // 698.8
+  async (tok, S) => {
+          S.L.add('a = dq + r ⇒ d | (a − r)'); S.L.last(); cap('a − r 一定被 d 整除', '每個數都和自己的餘數同餘');
+        },
+  // 725.2
+  async (tok, S) => {
+          S.L.add('只看 a − b 能不能被 m 整除', 'good'); S.L.hi(-1); cap('判斷同餘：看 a − b', '能被 m 整除就同餘');
+        },
+]);
+scene('pfB-l8-congops', "同餘的加法、乘法規則", CAM, [
+  // 756.7
+  async (tok, S) => {
+          S.L = board(-3.5, 6.8, 0.72); S.R = board(3.6, 6.8, 0.72); S.L.add('a ≡ b ⇔ ∃k：a = b + k·m'); S.L.last(); cap('a = b + k·m', '同餘的等式寫法');
+        },
+  // 775
+  async (tok, S) => {
+          S.L.add('⇔ a − b 是 m 的倍數'); S.L.last(); cap('a − b = k·m', '');
+        },
+  // 797.2
+  async (tok, S) => {
+          S.L.add('設 a ≡ b，c ≡ d (mod m)', 'ptr'); S.L.last(); cap('設 a ≡ b、c ≡ d (mod m)', '');
+        },
+  // 821.4
+  async (tok, S) => {
+          S.L.add('① a + c ≡ b + d (mod m)'); S.L.last(); cap('① 可以相加', 'a + c ≡ b + d');
+        },
+  // 855.6
+  async (tok, S) => {
+          S.R.add('a − b = m·k₁'); S.R.last(); cap('a − b = m·k₁', '');
+        },
+  // 877.9
+  async (tok, S) => {
+          S.R.add('c − d = m·k₂'); S.R.last(); cap('c − d = m·k₂', '');
+        },
+  // 902.3
+  async (tok, S) => {
+          S.R.add('(a+c) − (b+d) = m(k₁+k₂) ✔', 'good'); S.R.hi(-1); sm('示意：7 ≡ 2、11 ≡ 1 (mod 5) ⇒ 18 ≡ 3', 3.6, 4.0); cap('相加後差仍是 m 的倍數', '');
+        },
+  // 950.1
+  async (tok, S) => {
+          S.L.add('② a · c ≡ b · d (mod m)'); S.L.last(); cap('② 可以相乘', 'ac ≡ bd');
+        },
+  // 991.8
+  async (tok, S) => {
+          S.f1 = pl('(a + b) mod m = ((a mod m) + (b mod m)) mod m', 0, 1.0); S.L.hi(-1); cap('先各自取餘數再相加', '');
+        },
+  // 1002.6
+  async (tok, S) => {
+          sm('因為 a ≡ (a mod m)，b ≡ (b mod m)', 0, 0.4); cap('a 和自己的餘數同餘', '再套規則一');
+        },
+  // 1185.9
+  async (tok, S) => {
+          S.R.clear(); S.R.add('a = b + m·k₁，c = d + m·k₂'); S.R.last(); cap('a = b + mk₁，c = d + mk₂', '');
+        },
+  // 1196.7
+  async (tok, S) => {
+          S.R.add('ac = bd + m(bk₂ + dk₁ + mk₁k₂) ✔', 'good'); S.R.hi(-1); sm('示意：77 ≡ 2·1 = 2 (mod 5)', 3.6, 4.6); cap('ac − bd 是 m 的倍數', '所以 ac ≡ bd');
+        },
+  // 1210.3
+  async (tok, S) => {
+          pl('(a · b) mod m = ((a mod m)(b mod m)) mod m', 0, -0.3); cap('乘法也可先取餘數', '');
+        },
+]);
+scene('pfB-l8-cantor', "實數不可數：對角線法", CAM, [
+  // 1254.6
+  async (tok, S) => {
+          hd('定理：實數集合 ℝ 不可數', -3.4, 7.2); S.L = board(-3.6, 6.2, 0.72); cap('ℝ 不可數', '');
+        },
+  // 1272.8
+  async (tok, S) => {
+          S.L.add('可數 ⇔ 能和 1, 2, 3, … 一一對應'); S.L.last(); cap('可數：能發號碼牌', '一對一對應到正整數');
+        },
+  // 1318.3
+  async (tok, S) => {
+          S.L.add('反證：假設 ℝ 可數', 'bad'); S.L.last(); cap('反證法：先假設可數', '');
+        },
+  // 1349.5
+  async (tok, S) => {
+          S.L.add('可數集合的子集合也可數'); S.L.last(); cap('子集合也要可數', '');
+        },
+  // 1370.5
+  async (tok, S) => {
+          S.L.add('⇒ (0, 1) 也要可數'); S.L.last(); cap('看 (0,1) 這個子集合', '');
+        },
+  // 1431
+  async (tok, S) => {
+          S.L.hi(-1); S.D = [[2, 3, 7, 1], [1, 4, 5, 9], [6, 0, 4, 2], [9, 9, 1, 8]]; S.cells = [];
+          sm('（數字示意）', 2.6, 6.6);
+          S.cells.push(row(1.6, 5.6, S.D[0], { w: 0.55, c: FC.sand }).cells); pl('r₁ = 0.', 0.6, 5.6); cap('r₁ = 0.d₁₁d₁₂d₁₃…', '');
+        },
+  // 1441.6
+  async (tok, S) => {
+          for (let i = 1; i < 4; i++) { S.cells.push(row(1.6, 5.6 - i * 0.75, S.D[i], { w: 0.55, c: FC.sand }).cells); pl('r' + '₁₂₃₄'[i] + ' = 0.', 0.6, 5.6 - i * 0.75); await wt(tok, 200); }
+          sm('⋮', 2.6, 2.6); cap('r₂、r₃、… 全部列出', '');
+        },
+  // 1460.8
+  async (tok, S) => {
+          pl('r = 0.', 0.6, 1.6); S.r = row(1.6, 1.6, ['?', '?', '?', '?'], { w: 0.55, c: FC.mint }).cells; cap('造一個不在清單上的 r', '');
+        },
+  // 1512.7
+  async (tok, S) => {
+          for (let i = 0; i < 4; i++) glow(S.cells[i][i], HL);
+          note('dᵢ = 4（若 dᵢᵢ ≠ 4）；dᵢ = 5（若 dᵢᵢ = 4）', -3.6, 1.0); cap('看對角線 dᵢᵢ', '≠ 4 放 4，= 4 放 5');
+        },
+  // 1622.3
+  async (tok, S) => {
+          relabel(S.r[0], '4'); glow(S.r[0], OKG); cap('d₁₁ = 2 ≠ 4 → 放 4', '');
+        },
+  // 1636.6
+  async (tok, S) => {
+          relabel(S.r[1], '5'); glow(S.r[1], OKG); cap('d₂₂ = 4 → 放 5', '');
+        },
+  // 1646.1
+  async (tok, S) => {
+          relabel(S.r[2], '5'); relabel(S.r[3], '4'); glow(S.r[2], OKG); glow(S.r[3], OKG);
+          bad('r 和每個 rᵢ 在第 i 位都不同 → 不在清單上', 2.4, 0.6); cap('r 不在清單上', '');
+        },
+  // 1664.8
+  async (tok, S) => {
+          good('(0,1) 不可數 ⇒ ℝ 不可數', -3.6, -0.2); cap('矛盾 ⇒ ℝ 不可數', '');
+        },
+]);
+
+// ════════ a_iekTDu1xQ（交大OCW 易志偉《離散數學》Lec09 Algorithms and the Integers (2/4)） ════════
+scene('pfB-l9-sym', "整除：用符號簡潔寫下", CAM, [
+  // 7.1
+  async (tok, S) => {
+          S.L = board(0, 6.6, 0.8); S.L.add('a | b ⇔ ∃c ∈ ℤ，b = a · c', 'ptr alt'); cap('a | b ⇔ 存在 c 使 b = ac', '');
+        },
+  // 27.5
+  async (tok, S) => {
+          S.L.add('中文敘述 → 先寫成符號 a | b'); S.L.last(); cap('先把條件寫成符號', '方便記憶');
+        },
+  // 39.7
+  async (tok, S) => {
+          S.L.add('推演時用等式：b = a · c', 'good'); S.L.last(); cap('推演用等式 b = a·c', '');
+        },
+]);
+scene('pfB-l9-read', "讀懂符號：a|b ∧ b|c → a|c", CAM, [
+  // 89.1
+  async (tok, S) => {
+          S.L = board(0, 6.2, 0.9); S.L.add('a | b ∧ b | c  →  a | c'); S.L.last(); cap('a|b 且 b|c ⇒ a|c', '先看懂意思');
+        },
+  // 102.5
+  async (tok, S) => {
+          S.L.add('a | b ∧ a | c  →  ∀m, n ∈ ℤ：a | (mb + nc)'); S.L.last(); cap('a | (mb + nc)', 'b、c 的線性組合');
+        },
+  // 111.3
+  async (tok, S) => {
+          S.L.hi(-1); bub('只寫符號也能溝通 ✔', 0, 3.4); cap('符號就是共同語言', '');
+        },
+]);
+scene('pfB-l9-divsign', "除法公式：±11 除以 ±3", CAM, [
+  // 138.4
+  async (tok, S) => {
+          hd('除法：不一定除得盡', -3.6, 7.2); S.L = board(-3.6, 6.2, 0.7); cap('一般的除法', '有可能除不盡');
+        },
+  // 148.1
+  async (tok, S) => {
+          S.L.add('a = b · q + r（全是整數）'); S.L.last(); cap('a = bq + r', '');
+        },
+  // 164.7
+  async (tok, S) => {
+          S.q = bub('哪個條件讓答案只有一種？', 3.4, 6.4); cap('哪個條件最重要？', '');
+        },
+  // 189.7
+  async (tok, S) => {
+          S.L.add('a ÷ b → 商 q、餘數 r（要唯一）'); S.L.last(); cap('答案要唯一', '');
+        },
+  // 240.5
+  async (tok, S) => {
+          remove(S.q); S.q = bub('關鍵：限制餘數 r', 3.4, 6.4); cap('最重要的是餘數', '');
+        },
+  // 247.1
+  async (tok, S) => {
+          S.L.add('0 ≤ r < |b|', 'good'); S.L.last(); cap('0 ≤ r < |b|', 'a、b 可正可負');
+        },
+  // 270.5
+  async (tok, S) => {
+          S.L.add('⇒ q 也唯一'); S.L.last(); cap('商 q 也唯一', '');
+        },
+  // 287.5
+  async (tok, S) => {
+          S.L.hi(-1); S.nl = nline(0.3, 6.3, 2.0, -12, 12, 3); sm('10 ÷ 2 = 5 餘 0；11 ÷ 3 = 3 餘 2', 3.3, 5.6); cap('10 ÷ 2 = 5 餘 0', '11 ÷ 3 = 3 餘 2');
+        },
+  // 316.6
+  async (tok, S) => {
+          S.m = bx('9', FC.blue, S.nl.X(9), 2.6, 0, 0.45, 0.45, 0.45); S.a1 = arrow(V3(S.nl.X(9), 3.0, 0), V3(S.nl.X(11), 3.0, 0), 0x2fc092);
+          S.R = board(3.3, 4.8, 0.62); S.R.add('11 = 3 · 3 + 2', 'good'); cap('11 = 3·3 + 2', '寫成等式才能運算');
+        },
+  // 326.9
+  async (tok, S) => {
+          S.m2 = bx('−12', FC.purple, S.nl.X(-12), 2.6, 0, 0.45, 0.45, 0.45); S.a2 = arrow(V3(S.nl.X(-12), 3.0, 0), V3(S.nl.X(-11), 3.0, 0), 0xd64545);
+          S.R.add('−11 = 3 · (−4) + 1', 'good'); cap('−11 = 3·(−4) + 1', '商 −4、餘 1');
+        },
+  // 394.2
+  async (tok, S) => {
+          sm('除數 −3：餘數仍要 0 ≤ r < 3', 3.3, 3.6); cap('除數是 −3 呢？', '餘數仍 0 ≤ r < 3');
+        },
+  // 425
+  async (tok, S) => {
+          S.R.add('11 = (−3) · (−3) + 2', 'good'); cap('11 = (−3)·(−3) + 2', '商 −3、餘 2');
+        },
+  // 441.7
+  async (tok, S) => {
+          S.R.add('−11 = (−3) · 4 + 1', 'good'); cap('−11 = (−3)·4 + 1', '商 4、餘 1');
+        },
+]);
+scene('pfB-l9-congr', "同餘：10、13、16、1 除以 3 都餘 1", CAM, [
+  // 463.9
+  async (tok, S) => {
+          hd('同餘：只在意餘數', -3.6, 7.2); S.L = board(-3.6, 6.3, 0.66); cap('同餘', '');
+        },
+  // 480.2
+  async (tok, S) => {
+          S.L.add('「餘」= 餘數 → 一定要有除法'); S.L.last(); cap('先有除法才有餘數', '');
+        },
+  // 497
+  async (tok, S) => {
+          S.L.add('大家要除「同一個」數'); S.L.last(); cap('除數要一樣才公平', '');
+        },
+  // 529.2
+  async (tok, S) => {
+          S.L.add('共同的除數：divisor'); S.L.last(); cap('共同的 divisor', '');
+        },
+  // 534.2
+  async (tok, S) => {
+          S.L.hi(-1); S.cols = []; S.addc = (n, i) => { const r = n % 3; const c = bx(String(n), [FC.gray, FC.green, FC.blue][r], 0.6 + i * 1.0, 5.4, 0, 0.75, 0.75, 0.75); const t = sm('餘 ' + r, 0.6 + i * 1.0, 4.6); S.cols.push([c, t, r]); };
+          S.addc(10, 0); cap('10 ÷ 3 = 3 餘 1', '');
+        },
+  // 608.6
+  async (tok, S) => {
+          for (let i = 1; i <= 4; i++) { S.addc(10 + i, i); await wt(tok, 250); } cap('11、12、13、14 除以 3', '餘 2、0、1、2');
+        },
+  // 654.8
+  async (tok, S) => {
+          glow(S.cols[0][0], HL); glow(S.cols[3][0], HL); cap('10 和 13 都餘 1', '');
+        },
+  // 659.2
+  async (tok, S) => {
+          S.addc(16, 5); glow(S.cols[5][0], HL); cap('16 ÷ 3 也餘 1', '');
+        },
+  // 678.7
+  async (tok, S) => {
+          S.one = bx('1', FC.green, 3.6, 3.2, 0, 0.75, 0.75, 0.75); glow(S.one, HL); sm('最簡單的代表', 3.6, 2.4); cap('最簡單的代表：1', '');
+        },
+  // 698.5
+  async (tok, S) => {
+          S.L.add('10、13、16、1 …：除 3 都餘 1'); S.L.last(); cap('除 3 底下同餘', '');
+        },
+  // 739.4
+  async (tok, S) => {
+          S.L.add('10 ≡ 13 (mod 3)', 'ptr alt'); cap('10 ≡ 13 (mod 3)', '括號寫清楚除數');
+        },
+  // 754
+  async (tok, S) => {
+          bad('不要寫 10 = 13 ✘', -3.6, -0.1); cap('不要用等號', '只是餘數一樣，不是相等');
+        },
+  // 777.3
+  async (tok, S) => {
+          gone(S.cols.map((c) => [c[0], c[1]]), S.one); S.R = board(3.2, 5.6, 0.75); S.R.add('① a mod m = b mod m'); S.R.last(); cap('① 餘數相等', '直接但不好算');
+        },
+  // 808.6
+  async (tok, S) => {
+          S.R.add('② m | (a − b)'); S.R.last(); cap('② m | (a − b)', '相減後餘數抵消');
+        },
+  // 861.2
+  async (tok, S) => {
+          S.R.add('③ ∃c：a − b = c · m', 'good'); S.R.last(); cap('③ a − b = c·m', '證明最常用');
+        },
+]);
+scene('pfB-l9-byte', "1000 = 256·3 + 232：用兩個 byte 存", CAM, [
+  // 897.6
+  async (tok, S) => {
+          hd('為什麼資工要學同餘？', 0, 7.2); cap('同餘在電腦裡有什麼用？', '');
+        },
+  // 919.2
+  async (tok, S) => {
+          S.b1 = row(-2.45, 5.4, [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], { w: 0.6, c: FC.sand }).cells; sm('1 byte = 8 bits', 0, 4.7); cap('1 byte = 8 bits', '');
+        },
+  // 929.5
+  async (tok, S) => {
+          pl('能存 0 ～ 255（2⁸ = 256 種）', 0, 6.3); cap('能存 0～255', '');
+        },
+  // 939.6
+  async (tok, S) => {
+          S.big = bx('1000', FC.red, -5.4, 5.4, 0, 1.0, 0.8, 0.8); bad('1000 放不下！', -5.4, 4.5); cap('1000 放不下', '要留哪一部分？');
+        },
+  // 959.7
+  async (tok, S) => {
+          S.L = board(0, 3.6, 0.65); S.L.add('1000 ÷ 256（2⁸ = 256）'); S.L.last(); cap('1000 除以 256', '餘數一定在 0～255');
+        },
+  // 1004.8
+  async (tok, S) => {
+          S.L.add('1000 mod 256 = 232'); S.L.last(); '11101000'.split('').forEach((d, i) => { relabel(S.b1[i], d); if (d === '1') glow(S.b1[i], OKG); }); cap('餘數 232 → 一個 byte', '232 = 11101000₂');
+        },
+  // 1012.5
+  async (tok, S) => {
+          S.b2 = row(-2.45, 1.4, '00000011'.split(''), { w: 0.6, c: FC.lilac }).cells; sm('第二個 byte：商 3', 0, 0.7); cap('第二個 byte 記商 3', '');
+        },
+  // 1033.7
+  async (tok, S) => {
+          S.L.add('1000 = 256 · 3 + 232 ✔', 'good'); S.L.last(); cap('湊回去：256·3 + 232 = 1000', '');
+        },
+  // 1049.3
+  async (tok, S) => {
+          S.L.hi(-1); note('RSA 加密：只記餘數（3-7 節）', -5.0, 2.6); cap('RSA 也只記餘數', '後面 3-7 節');
+        },
+]);
+scene('pfB-l9-sumproof', "同餘相加的證明：把已知寫成等式", CAM, [
+  // 1088.2
+  async (tok, S) => {
+          S.L = board(-3.4, 6.6, 0.75); S.L.add('a ≡ b (mod m) ⇔ ∃k：a = b + km'); S.L.last(); cap('a = b + km', '同餘的等式形式');
+        },
+  // 1121.8
+  async (tok, S) => {
+          hd('求證：a + c ≡ b + d (mod m)', 3.0, 7.2); cap('求證 a + c ≡ b + d', '');
+        },
+  // 1166.3
+  async (tok, S) => {
+          S.L.add('已知：a ≡ b，c ≡ d (mod m)', 'ptr'); S.L.last(); cap('先寫下已知', '');
+        },
+  // 1206.1
+  async (tok, S) => {
+          S.L.add('a = b + k₁ m'); S.L.last(); cap('a = b + k₁m', '');
+        },
+  // 1212.4
+  async (tok, S) => {
+          S.L.add('c = d + k₂ m'); S.L.last(); cap('c = d + k₂m', '');
+        },
+  // 1241
+  async (tok, S) => {
+          S.R = board(3.0, 3.6, 0.75); S.R.add('目標：a + c = b + d + (？) · m', 'note'); cap('目標等式', 'a + c = b + d + ？·m');
+        },
+  // 1281
+  async (tok, S) => {
+          S.R.add('a + c = b + d + k₁m + k₂m'); S.R.last(); cap('兩式相加', '');
+        },
+  // 1293
+  async (tok, S) => {
+          S.R.add('= b + d + (k₁ + k₂) m'); S.R.last(); cap('？ = k₁ + k₂', '');
+        },
+  // 1298.9
+  async (tok, S) => {
+          S.R.add('k₁ + k₂ ∈ ℤ ⇒ a + c ≡ b + d ✔', 'good'); S.R.hi(-1); S.L.hi(-1); cap('k₁ + k₂ 是整數 ⇒ 得證', '');
+        },
+]);
+scene('pfB-l9-prime', "質數、合成數、100 = 2²·5²", CAM, [
+  // 1325.2
+  async (tok, S) => {
+          hd('3-5：質數、gcd、lcm', -3.6, 7.2); S.L = board(-3.6, 6.3, 0.68); cap('3-5：質數與 gcd、lcm', '');
+        },
+  // 1341.3
+  async (tok, S) => {
+          S.L.add('p ≥ 2'); S.L.last(); cap('質數一定 ≥ 2', '');
+        },
+  // 1377.9
+  async (tok, S) => {
+          S.L.add('正因數只有 1 和 p → 質數 prime'); S.L.last(); cap('只有 1 和自己 → 質數', '');
+        },
+  // 1398.4
+  async (tok, S) => {
+          S.L.add('q ≥ 2 且不是質數 → 合成數'); S.L.last(); cap('合成數：≥ 2 且不是質數', '');
+        },
+  // 1438.8
+  async (tok, S) => {
+          S.L.add('−2：都不是 ✘', 'bad'); cap('−2：都不是', '定義要求 ≥ 2');
+        },
+  // 1465.8
+  async (tok, S) => {
+          S.L.add('1：也都不是 ✘', 'bad'); cap('1：都不是', '');
+        },
+  // 1480.5
+  async (tok, S) => {
+          S.L.hi(-1); const ps = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97];
+          S.ps = ps.map((p, i) => bx(String(p), FC.green, 1.2 + (i % 5) * 0.95, 6.4 - Math.floor(i / 5) * 0.8, 0, 0.7, 0.6, 0.5)); sm('1～100 的質數（25 個）', 3.1, 7.2); cap('背 1～100 的質數', '共 25 個');
+        },
+  // 1514.4
+  async (tok, S) => {
+          bad('51 = 3 × 17 → 不是質數', 3.1, 2.2); cap('51 = 3 × 17', '不是質數');
+        },
+  // 1531.1
+  async (tok, S) => {
+          gone(S.ps); S.f = pl('100 = 2 · 2 · 5 · 5', 3.1, 6.0); cap('100 = 2·2·5·5', '因數分解');
+        },
+  // 1568.4
+  async (tok, S) => {
+          good('100 = 2² · 5²（標準分解式）', 3.1, 5.2); cap('100 = 2²·5²', '標準分解式');
+        },
+  // 1581
+  async (tok, S) => {
+          hot('a = p₁^n₁ · p₂^n₂ ⋯ p_k^n_k', 3.1, 3.8); cap('a = p₁^n₁ ⋯ p_k^n_k', '每個整數都能這樣寫');
+        },
+]);
+scene('pfB-l9-gcd', "gcd = max{公因數}，lcm = min{正的公倍數}", CAM, [
+  // 1609
+  async (tok, S) => {
+          hd('最大公因數 gcd', -3.4, 7.2); S.L = board(-3.4, 6.3, 0.75); cap('最大公因數 gcd', '');
+        },
+  // 1618.2
+  async (tok, S) => {
+          S.L.add('能同時整除 a、b 的最大整數'); S.L.last(); cap('同時整除 a、b，最大的', '');
+        },
+  // 1648.5
+  async (tok, S) => {
+          S.L.add('max{ 集合 }：挑出最大的'); S.L.last(); cap('max：集合裡最大的', '');
+        },
+  // 1678.8
+  async (tok, S) => {
+          S.L.add('gcd(a,b) = max{ m : m|a 且 m|b }', 'ptr alt'); cap('gcd = max{公因數}', '');
+        },
+  // 1693.3
+  async (tok, S) => {
+          S.d = [1, 2, 3, 6].map((v, i) => bx(String(v), FC.blue, 1.6 + i * 1.0, 5.6, 0, 0.7, 0.7, 0.7)); await wt(tok, 400); glow(S.d[3], HL);
+          sm('示意：12、18 的公因數', 3.1, 6.5); good('gcd(12, 18) = 6', 3.1, 4.7); cap('示意：gcd(12, 18) = 6', '');
+        },
+  // 1719
+  async (tok, S) => {
+          S.L.hi(-1); hd('最小公倍數 lcm', -3.4, 2.4); cap('最小公倍數 lcm', '');
+        },
+  // 1730.5
+  async (tok, S) => {
+          bad('負的倍數 −36, −72, … 沒有最小', 3.1, 2.4); cap('小心負數', '負的倍數沒有最小');
+        },
+  // 1745.8
+  async (tok, S) => {
+          S.L2 = board(-3.4, 1.6, 0.7); S.L2.add('m ∈ ℤ⁺（正整數）'); S.L2.last(); cap('限制在正整數 ℤ⁺', '');
+        },
+  // 1758.4
+  async (tok, S) => {
+          S.L2.add('lcm(a,b) = min{ m ∈ ℤ⁺ : a|m 且 b|m }', 'ptr alt'); good('示意：lcm(12, 18) = 36', 3.1, 1.4); cap('lcm = min{正的公倍數}', '');
+        },
+]);
+scene('pfB-l9-sqrt', "合成數 n 有一個因數 ≤ √n", CAM, [
+  // 1775.3
+  async (tok, S) => {
+          hd('n 合成數 ⇒ 有質因數 ≤ √n', 0, 7.2); S.L = board(-3.6, 6.2, 0.75); cap('合成數有 ≤ √n 的質因數', '');
+        },
+  // 1793.7
+  async (tok, S) => {
+          sm('用反證法', 0, 6.6); cap('用反證法', '');
+        },
+  // 1821.6
+  async (tok, S) => {
+          S.L.add('n = a · b，1 < a, b < n'); S.L.last(); cap('n = ab', 'a、b 不是 1 也不是 n');
+          S.nl = nline(1.0, 6.4, 1.6, 0, 14, 2); S.sq = hot('√n', 1.0 + Math.sqrt(91) * 5.4 / 14, 2.6); sm('示意：n = 91 = 7 · 13，√91 ≈ 9.54', 3.7, 0.6);
+        },
+  // 1839.7
+  async (tok, S) => {
+          S.L.add('目標：a ≤ √n 或 b ≤ √n', 'note'); cap('目標：至少一個 ≤ √n', '');
+        },
+  // 1848.8
+  async (tok, S) => {
+          S.L.add('假設 a > √n 且 b > √n', 'bad'); cap('假設兩個都 > √n', '');
+        },
+  // 1871.4
+  async (tok, S) => {
+          S.L.add('⇒ a · b > √n · √n = n'); S.L.last(); cap('ab > n', '');
+        },
+  // 1883.6
+  async (tok, S) => {
+          S.L.add('但 a · b = n ⇒ 矛盾！', 'bad'); cap('ab = n 又 ab > n：矛盾', '');
+        },
+  // 1903.2
+  async (tok, S) => {
+          S.L.add('⇒ 至少一個 ≤ √n ✔', 'good'); S.L.hi(-1); S.b7 = bx('7', FC.green, 1.0 + 7 * 5.4 / 14, 2.3, 0, 0.45, 0.45, 0.45); S.b13 = bx('13', FC.orange, 1.0 + 13 * 5.4 / 14, 2.3, 0, 0.45, 0.45, 0.45); cap('至少一個 ≤ √n', '示意：7 ≤ √91');
+        },
+]);
+scene('pfB-l9-infcop', "質數無窮多；互質 gcd = 1", CAM, [
+  // 1942
+  async (tok, S) => {
+          hd('質數有無窮多個', -3.0, 6.6); cap('質數有無窮多個', '');
+        },
+  // 1953.8
+  async (tok, S) => {
+          sm('反證：假設有限 → 推出矛盾（課本）', -3.0, 5.8); cap('假設有限 → 矛盾', '細節看課本');
+        },
+  // 1989
+  async (tok, S) => {
+          hot('m、n 互質 ⇔ gcd(m, n) = 1', 2.4, 3.4); sm('示意：gcd(8, 15) = 1', 2.4, 2.6); cap('互質：gcd = 1', 'relatively prime');
+        },
+]);
+
+// ════════ ddMlBS2RYp4（交大OCW 易志偉《離散數學》Lec10 Algorithms and the Integers (3/4)） ════════
+scene('pfB-l10-base', "b 進位展開 n = a_k b^k + … + a_1 b + a_0", CAM, [
+  // 33.6
+  async (tok, S) => {
+          hd('3-6 數字系統', 0, 7.2); cap('數字系統：數字的表示法', '');
+        },
+  // 48.3
+  async (tok, S) => {
+          S.L = board(-3.8, 6.2, 0.68); S.L.add('20 = 2 × 10'); S.L.last(); cap('十根手指 → 以 10 為底', '20 = 2 × 10');
+        },
+  // 57.6
+  async (tok, S) => {
+          S.L.add('200 = 2 × 100 = 2 × 10²'); S.L.last(); cap('200 = 2 × 10²', '逢十進位');
+        },
+  // 78
+  async (tok, S) => {
+          S.et = buddy('ET', '0 1', FC.green, 3.6, 4.6, 0, 0.9); cap('ET 兩根手指 → 二進位', '只有 0 和 1');
+        },
+  // 112.4
+  async (tok, S) => {
+          S.p2 = row(1.6, 2.6, ['2³', '2²', '2¹', '2⁰'], { w: 0.8, c: FC.mint }).cells; sm('二進位每一位的「重量」', 2.8, 1.8); cap('二進位：2⁰、2¹、2²、2³…', '');
+        },
+  // 137.3
+  async (tok, S) => {
+          S.p10 = row(1.6, 0.9, ['10³', '10²', '10¹', '10⁰'], { w: 0.8, c: FC.sky }).cells; sm('十進位每一位的「重量」', 2.8, 0.1); cap('十進位：10⁰、10¹、10²…', '');
+        },
+  // 151.3
+  async (tok, S) => {
+          S.L.add('b：基底 base（b ≥ 2）'); S.L.last(); cap('b：基底', '');
+        },
+  // 172.5
+  async (tok, S) => {
+          S.L.add('n = a_k b^k + … + a_1 b + a_0', 'ptr alt'); cap('n = a_k b^k + … + a_1 b + a_0', '');
+        },
+  // 232.4
+  async (tok, S) => {
+          S.L.add('a_k ≠ 0（532 不寫成 0532）'); S.L.last(); cap('最高位 ≠ 0', '');
+        },
+  // 257.3
+  async (tok, S) => {
+          S.L.add('0 ≤ a_i ≤ b − 1（滿 b 就進位）'); S.L.last(); cap('係數 0 ～ b − 1', '');
+        },
+  // 280.2
+  async (tok, S) => {
+          S.L.add('⇒ 表示法唯一', 'good'); S.L.hi(-1); cap('表示法唯一', '');
+        },
+]);
+scene('pfB-l10-157', "157 = (9D)₁₆ = (235)₈ = (10011101)₂", CAM, [
+  // 308.5
+  async (tok, S) => {
+          S.L = board(-3.4, 6.6, 0.85); S.L.add('157 = 1·10² + 5·10¹ + 7·10⁰'); S.L.last(); cap('157 = 1·10² + 5·10 + 7', '');
+        },
+  // 339
+  async (tok, S) => {
+          sm('decimal expansion', -3.4, 7.2); cap('decimal expansion', '十進位展開');
+        },
+  // 344.4
+  async (tok, S) => {
+          S.tags = ['16 進位', '8 進位', '2 進位'].map((t, i) => bub(t, 2.0 + i * 1.9, 7.0)); cap('16、8、2 進位', '');
+        },
+  // 352
+  async (tok, S) => {
+          S.L.add('157 = 9·16¹ + 13·16⁰'); S.L.last(); S.h = row(1.8, 5.0, ['9', '13'], { w: 0.9, c: FC.orange }).cells; cap('157 = 9·16 + 13', '');
+        },
+  // 389.3
+  async (tok, S) => {
+          sm('10=A 11=B 12=C 13=D 14=E 15=F', 2.4, 4.1); cap('10～15 用 A～F', '避免和兩位數混淆');
+        },
+  // 422.5
+  async (tok, S) => {
+          relabel(S.h[1], 'D'); glow(S.h[1], HL); S.L.add('= (9D)₁₆', 'good'); cap('157 = (9D)₁₆', '下標寫明基底');
+        },
+  // 463.5
+  async (tok, S) => {
+          S.L.add('157 = 2·8² + 3·8 + 5 = (235)₈', 'good'); S.o = row(1.8, 3.0, ['2', '3', '5'], { w: 0.9, c: FC.purple }).cells; cap('157 = (235)₈', '128 + 24 + 5');
+        },
+  // 500.1
+  async (tok, S) => {
+          S.L.add('157 = (10011101)₂', 'good'); S.b = row(0.6, 1.2, '10011101'.split(''), { w: 0.62, c: (i, v) => (v === '1' ? FC.green : FC.gray) }).cells; sm('128 + 16 + 8 + 4 + 1 = 157', 3.1, 0.4); cap('157 = (10011101)₂', '');
+        },
+]);
+scene('pfB-l10-to10', "(134)₅ = 1·25 + 3·5 + 4 = 44", CAM, [
+  // 553
+  async (tok, S) => {
+          S.d = row(-1.0, 5.4, ['1', '3', '4'], { w: 1.0, c: FC.teal }).cells; sm('(134)₅', 0.1, 4.5); cap('(134)₅ = ？', '');
+        },
+  // 564.9
+  async (tok, S) => {
+          ['5²', '5¹', '5⁰'].forEach((t, i) => sm(t, -1.0 + i * 1.1, 6.3)); cap('4·5⁰ + 3·5¹ + 1·5²', '');
+        },
+  // 578.5
+  async (tok, S) => {
+          good('(134)₅ = 4 + 15 + 25 = 44', 0.1, 3.4); cap('= 4 + 15 + 25 = 44', '');
+        },
+  // 588.1
+  async (tok, S) => {
+          note('換回十進位：乘開相加', 0.1, 2.4); cap('乘開相加就好', '');
+        },
+]);
+scene('pfB-l10-repdiv', "連除法：139 → 四進位、五進位", CAM, [
+  // 613.5
+  async (tok, S) => {
+          hd('連除法', -4.4, 7.2); cap('十進位 → b 進位：連除法', '');
+        },
+  // 621.1
+  async (tok, S) => {
+          hot('139 = (2023)₄ ？', -4.4, 6.4); cap('139 = (2023)₄？', '');
+        },
+  // 634.3
+  async (tok, S) => {
+          sm('驗算：3 + 8 + 0 + 128 = 139 ✔', -4.4, 5.7); cap('驗算：128 + 0 + 8 + 3 = 139', '');
+        },
+  // 661.1
+  async (tok, S) => {
+          S.L = board(-4.2, 4.8, 0.62); cap('一直做除法', '');
+        },
+  // 676.2
+  async (tok, S) => {
+          S.L.add('139 = 34·4 + 3'); S.L.last(); S.dg = row(1.2, 5.6, ['?', '?', '?', '3'], { w: 0.9, c: FC.sand }).cells; ['4³', '4²', '4¹', '4⁰'].forEach((t, i) => sm(t, 1.2 + i * 1.0, 6.5)); glow(S.dg[3], OKG); cap('139 = 34·4 + 3', '餘 3 → 第 0 位');
+        },
+  // 707.1
+  async (tok, S) => {
+          S.L.add('34 = 8·4 + 2'); S.L.last(); relabel(S.dg[2], '2'); glow(S.dg[2], OKG); cap('34 = 8·4 + 2', '餘 2 → 第 1 位');
+        },
+  // 746.1
+  async (tok, S) => {
+          S.L.add('8 = 2·4 + 0'); S.L.last(); relabel(S.dg[1], '0'); glow(S.dg[1], OKG); cap('8 = 2·4 + 0', '餘 0 → 第 2 位');
+        },
+  // 760.1
+  async (tok, S) => {
+          bad('0 不能丟！', 2.7, 4.6); cap('0 一定要寫', '');
+        },
+  // 766.1
+  async (tok, S) => {
+          S.L.add('139 = 2·4³ + 0·4² + 2·4 + 3'); S.L.last(); relabel(S.dg[0], '2'); glow(S.dg[0], OKG); cap('139 = 2·4³ + 0·4² + 2·4 + 3', '');
+        },
+  // 788.3
+  async (tok, S) => {
+          S.L.hi(-1); S.poly = sm('多項式版：一直除以 (x + 1)，餘數依序是 d、c、b、a', 2.7, 3.6); cap('和多項式連除一樣', '');
+        },
+  // 858.3
+  async (tok, S) => {
+          gone(S.L); S.R = board(-4.2, 4.8, 0.62); S.R.add('4 │ 139'); S.R.add('4 │  34 … 3'); S.R.add('4 │   8 … 2'); S.R.add('     2 … 0'); S.R.hi(-1); cap('短除法排版', '');
+        },
+  // 905.3
+  async (tok, S) => {
+          S.up = arrow(V3(-1.4, 2.6, 0), V3(-1.4, 4.4, 0), 0xc08a1f); S.g4 = good('由下往上讀 → (2023)₄', -4.2, 1.8); cap('由下往上讀：(2023)₄', '');
+        },
+  // 940.2
+  async (tok, S) => {
+          gone(S.R, S.up, S.poly, S.g4); S.F = board(-4.2, 4.8, 0.62); S.F.add('5 │ 139'); S.d5 = row(1.2, 2.6, ['?', '?', '?', '?'], { w: 0.9, c: FC.lilac }).cells; ['5³', '5²', '5¹', '5⁰'].forEach((t, i) => sm(t, 1.2 + i * 1.0, 3.5)); cap('139 換成五進位', '');
+        },
+  // 953.2
+  async (tok, S) => {
+          S.F.add('5 │  27 … 4'); S.F.last(); relabel(S.d5[3], '4'); glow(S.d5[3], OKG); cap('139 = 27·5 + 4', '');
+        },
+  // 961.5
+  async (tok, S) => {
+          S.F.add('5 │   5 … 2'); S.F.last(); relabel(S.d5[2], '2'); glow(S.d5[2], OKG); cap('27 = 5·5 + 2', '');
+        },
+  // 973.8
+  async (tok, S) => {
+          S.F.add('     1 … 0'); S.F.last(); relabel(S.d5[1], '0'); relabel(S.d5[0], '1'); glow(S.d5[1], OKG); glow(S.d5[0], OKG); cap('5 = 1·5 + 0', '0 不能丟');
+        },
+  // 987.4
+  async (tok, S) => {
+          S.F.hi(-1); good('139 = (1024)₅', 3.0, 1.4); cap('139 = (1024)₅', '125 + 10 + 4 = 139');
+        },
+]);
+scene('pfB-l10-weight', "位權：最高位最重要", CAM, [
+  // 1004.8
+  async (tok, S) => {
+          S.d = row(-2.0, 5.4, ['1', '0', '2', '4'], { w: 1.0, c: FC.lilac }).cells; cap('位置的權重', '');
+        },
+  // 1021
+  async (tok, S) => {
+          ['1·5³', '0·5²', '2·5¹', '4·5⁰'].forEach((t, i) => sm(t, -2.0 + i * 1.1, 4.5)); ['第3位', '第2位', '第1位', '第0位'].forEach((t, i) => sm(t, -2.0 + i * 1.1, 6.3)); cap('weight：5³、5²、5¹、5⁰', '');
+        },
+  // 1059.9
+  async (tok, S) => {
+          S.b = row(-2.0, 2.6, ['1', '0', '1', '1'], { w: 1.0, c: FC.mint }).cells; sm('二進位（示意）', -0.4, 1.8); cap('二進位的一位：bit', '');
+        },
+  // 1071.9
+  async (tok, S) => {
+          S.a = arrow(V3(2.4, 3.6, 0), V3(-2.6, 3.6, 0), 0xc08a1f); sm('權重越來越重', 0.0, 3.9); cap('越左邊權重越重', '');
+        },
+  // 1084.9
+  async (tok, S) => {
+          S.n = row(3.6, 5.4, ['2', '5', '6', '9'], { w: 0.8, c: FC.sky }).cells; glow(S.n[0], HL); bub('2569 ≈ 2000', 4.8, 6.6); cap('2569 ≈ 2000', '最高位最有意義');
+        },
+  // 1117.4
+  async (tok, S) => {
+          glow(S.b[0], HL); hot('MSB', -2.0, 0.9); cap('MSB：最高位', 'most significant bit');
+        },
+  // 1131.9
+  async (tok, S) => {
+          glow(S.b[3], OKG); good('LSB', 1.3, 0.9); cap('LSB：最低位', 'least significant bit');
+        },
+  // 1185
+  async (tok, S) => {
+          note('5 進位 → 10 進位 → 3 進位', 3.6, 1.6); cap('五進位 → 十進位 → 三進位', '兩步完成');
+        },
+]);
+scene('pfB-l10-code', "連除法的 pseudocode", CAM, [
+  // 1217.2
+  async (tok, S) => {
+          S.c = code(['procedure base b expansion(n, b)', 'q := n', 'k := 0', 'while q ≠ 0', '    a_k := q mod b', '    q := ⌊q / b⌋', '    k := k + 1', 'return (a_{k−1} … a_1 a_0)'], -2.6, 6.6, 0.62); cap('把連除法寫成程式', '');
+        },
+  // 1224.1
+  async (tok, S) => {
+          S.c.hl(0); cap('輸入 n、基底 b', '');
+        },
+  // 1238.2
+  async (tok, S) => {
+          S.c.hl(1); S.q = buddy('q', '139', FC.blue, 3.4, 4.0, 0, 0.9); sm('（沿用 139、b = 4 示意）', 3.6, 6.6); cap('q := n', '');
+        },
+  // 1242.2
+  async (tok, S) => {
+          S.c.hl(2); S.k = buddy('k', '0', FC.orange, 5.4, 4.0, 0, 0.9); cap('k := 0', '從第 0 位開始');
+        },
+  // 1254
+  async (tok, S) => {
+          S.c.hl(3); cap('while q ≠ 0', '');
+        },
+  // 1273
+  async (tok, S) => {
+          S.c.hl(4); S.dg = bx('3', FC.green, 4.4, 2.2, 0, 0.7, 0.7, 0.7); sm('a₀ = 3', 4.4, 1.4); cap('a_k := q mod b', '139 mod 4 = 3');
+        },
+  // 1285.8
+  async (tok, S) => {
+          S.c.hl(5); S.q.set('34'); cap('q := ⌊q / b⌋', '⌊139/4⌋ = 34');
+        },
+  // 1298.8
+  async (tok, S) => {
+          S.c.hl(6); S.k.set('1'); await wt(tok, 400); S.c.hl(7); good('→ (2023)₄', 4.4, 0.5); cap('k := k + 1，下一位', '一直除到 q = 0');
+        },
+]);
+scene('pfB-l10-group', "(ABC)₁₆ → 二進位 → (5274)₈", CAM, [
+  // 1325.3
+  async (tok, S) => {
+          hd('快速互換：2、8、16 進位', 0, 7.2); cap('快速轉換', '');
+        },
+  // 1344.4
+  async (tok, S) => {
+          S.L = board(-4.4, 6.4, 0.62); S.L.add('8 = 2³，16 = 2⁴'); S.L.last(); cap('8 = 2³、16 = 2⁴', '');
+        },
+  // 1359.4
+  async (tok, S) => {
+          S.L.add('→ 經過二進位互換'); S.L.last(); cap('經過二進位最快', '');
+        },
+  // 1376.6
+  async (tok, S) => {
+          S.L.hi(-1); const H = '0123456789ABCDEF'; S.tb = []; for (let i = 0; i < 16; i++) S.tb.push(sm(H[i] + ' = ' + i.toString(2).padStart(4, '0'), -5.4 + Math.floor(i / 8) * 2.2, 4.8 - (i % 8) * 0.5)); cap('一位 16 進位 = 4 bits', '');
+        },
+  // 1412.1
+  async (tok, S) => {
+          S.bits = row(0.0, 5.6, '101010111100'.split(''), { w: 0.48, gap: 0.06, c: (i) => [FC.orange, FC.teal, FC.purple][Math.floor(i / 4)] }).cells; S.bits.forEach((m) => { m.visible = false; });
+          for (let i = 0; i < 4; i++) S.bits[i].visible = true; S.abc = [sm('A', 0.81, 6.3)]; cap('A = 1010', '');
+        },
+  // 1422.2
+  async (tok, S) => {
+          for (let i = 4; i < 8; i++) S.bits[i].visible = true; S.abc.push(sm('B', 2.97, 6.3)); cap('B = 1011', '');
+        },
+  // 1425
+  async (tok, S) => {
+          for (let i = 8; i < 12; i++) S.bits[i].visible = true; S.abc.push(sm('C', 5.13, 6.3)); good('(ABC)₁₆ = (101010111100)₂', 3.0, 4.9); cap('C = 1100', '(ABC)₁₆ = (101010111100)₂');
+        },
+  // 1428.7
+  async (tok, S) => {
+          gone(S.tb); S.L.add('一位 8 進位 = 3 bits'); S.L.last(); cap('一位 8 進位 = 3 bits', '');
+        },
+  // 1454.2
+  async (tok, S) => {
+          S.tb = []; for (let i = 0; i < 8; i++) S.tb.push(sm(i + ' = ' + i.toString(2).padStart(3, '0'), -4.4, 4.2 - i * 0.5)); cap('0～7 的三位二進位', '');
+        },
+  // 1464
+  async (tok, S) => {
+          gone(S.abc); S.bits.forEach((m, i) => { const g = Math.floor(i / 3); m.position.x = i * 0.54 + g * 0.3; tint(m, [FC.sky, FC.lilac, FC.mint, FC.sand][g]); }); S.ar = arrow(V3(6.4, 3.6, 0), V3(4.6, 3.6, 0), 0xc08a1f); sm('從右邊開始分組', 5.0, 3.2); cap('從右邊三個一組', '');
+        },
+  // 1476
+  async (tok, S) => {
+          ['5', '2', '7', '4'].forEach((d, g) => good(d, 0.54 + g * 1.92, 4.6)); hot('= (5274)₈', 3.0, 2.4); cap('(101 010 111 100)₂ = (5274)₈', '');
+        },
+]);
+scene('pfB-l10-753', "753 = (11003)₅ = (1361)₈ = (2F1)₁₆", CAM, [
+  // 1504.2
+  async (tok, S) => {
+          hd('753（由老師的除法還原）', -4.0, 7.2); cap('再算一個：753', '');
+        },
+  // 1520.4
+  async (tok, S) => {
+          S.L = board(-4.4, 6.3, 0.6); S.L.add('5 │ 753'); S.L.add('5 │ 150 … 3'); S.L.last(); cap('753 = 150·5 + 3', '');
+        },
+  // 1537.4
+  async (tok, S) => {
+          S.L.add('5 │  30 … 0'); S.L.add('5 │   6 … 0'); S.L.add('     1 … 1'); S.L.hi(-1); good('753 = (11003)₅', -4.4, 3.0); cap('753 = (11003)₅', '');
+        },
+  // 1556.1
+  async (tok, S) => {
+          S.R = board(0.6, 6.3, 0.6); S.R.add('8 │ 753'); cap('換八進位', '');
+        },
+  // 1577.7
+  async (tok, S) => {
+          S.R.add('8 │  94 … 1'); S.R.add('8 │  11 … 6'); S.R.add('     1 … 3'); S.R.hi(-1); good('753 = (1361)₈', 0.6, 3.6); cap('753 = (1361)₈', '');
+        },
+  // 1588.5
+  async (tok, S) => {
+          note('8 進位 → 2 進位 → 16 進位', 4.6, 6.8); cap('經過二進位換十六進位', '');
+        },
+  // 1607.5
+  async (tok, S) => {
+          S.b3 = row(-0.4, 1.6, '001011110001'.split(''), { w: 0.48, gap: 0.06, c: (i) => [FC.sky, FC.lilac, FC.mint, FC.sand][Math.floor(i / 3)] }).cells; S.dl = ['1', '3', '6', '1'].map((d, g) => sm(d, -0.4 + g * 1.62 + 0.54, 2.3)); cap('每位換 3 bits', '1→001、3→011、6→110、1→001');
+        },
+  // 1617.4
+  async (tok, S) => {
+          gone(S.dl); S.b3.forEach((m, i) => { const g = Math.floor(i / 4); tint(m, [FC.orange, FC.teal, FC.purple][g]); m.position.x = -0.4 + i * 0.54 + g * 0.3; }); cap('改成 4 個一組', '不夠補 0');
+        },
+  // 1639.7
+  async (tok, S) => {
+          ['2', 'F', '1'].forEach((d, g) => good(d, -0.4 + g * 2.46 + 0.81, 0.8)); hot('753 = (2F1)₁₆', 3.0, -0.2); cap('753 = (2F1)₁₆', '');
+        },
+  // 1649.6
+  async (tok, S) => {
+          bub('(16)₂₀ = 1·20 + 6 = 26', -4.0, 1.4); cap('(16)₂₀ = 26', '二十進位也照公式');
+        },
+]);
+scene('pfB-l10-arith', "二進位加法、長乘法 1011 × 101", CAM, [
+  // 1701.6
+  async (tok, S) => {
+          hd('二進位的運算', 0, 7.2); cap('二進位的加減乘除', '和十進位一樣');
+        },
+  // 1713.3
+  async (tok, S) => {
+          S.A = row(-4.6, 5.6, ['', '1', '1', '1', '0'], { w: 0.6, c: FC.sky }).cells; S.B = row(-4.6, 4.8, ['', '1', '0', '1', '1'], { w: 0.6, c: FC.lilac }).cells; S.A[0].visible = false; S.B[0].visible = false;
+          sm('+', -5.4, 4.8); sm('示意：1110 + 1011（課本例）', -2.9, 6.5); S.Sm = row(-4.6, 3.6, [' ', ' ', ' ', ' ', ' '], { w: 0.6, c: FC.mint }).cells; cap('對齊個位，一位一位加', '');
+        },
+  // 1732
+  async (tok, S) => {
+          relabel(S.Sm[4], '1'); await wt(tok, 300); relabel(S.Sm[3], '0'); S.c1 = sm('進 1', -2.8, 6.0); cap('1 + 1 = 10：寫 0 進 1', '');
+        },
+  // 1759.2
+  async (tok, S) => {
+          relabel(S.Sm[2], '0'); await wt(tok, 300); relabel(S.Sm[1], '1'); relabel(S.Sm[0], '1'); good('1110 + 1011 = 11001（14 + 11 = 25）', -2.9, 2.8); cap('1 + 1 + 1 = 11：寫 1 進 1', '答案 11001');
+        },
+  // 1778.4
+  async (tok, S) => {
+          note('半加器 → 全加器 → 串起來', 4.4, 6.4); cap('半加器、全加器', '數位邏輯會學');
+        },
+  // 1809
+  async (tok, S) => {
+          S.M = code(['      1011', '  ×    101', '  --------', '      1011', '     0000 ', '    1011  ', '  --------', '    110111'], 2.6, 5.4, 0.5); S.M.ls.forEach((l, i) => { if (i > 2) l.element.style.visibility = 'hidden'; }); S.M.hl(-1); cap('長乘法：1011 × 101', '');
+        },
+  // 1814.3
+  async (tok, S) => {
+          S.M.ls[3].element.style.visibility = ''; S.M.hl(3); cap('乘 1：照抄 1011', '');
+        },
+  // 1823.4
+  async (tok, S) => {
+          S.M.ls[4].element.style.visibility = ''; S.M.hl(4); cap('乘 0：全部是 0', '');
+        },
+  // 1838.3
+  async (tok, S) => {
+          [5, 6, 7].forEach((i) => { S.M.ls[i].element.style.visibility = ''; }); S.M.hl(7); sm('左移 = 右邊補 0', 5.6, 3.4); cap('左移後相加 = 110111', '11 × 5 = 55');
+        },
+  // 1896.4
+  async (tok, S) => {
+          bub('長乘法、長除法 ≈ 多項式，但要處理進位', 0, -0.4); cap('和多項式的乘除很像', '多了進位');
+        },
+]);
+scene('pfB-l10-euclid', "輾轉相除法的原理", CAM, [
+  // 1957.1
+  async (tok, S) => {
+          S.lk = prop('lock', 5.4, 5.0, 0, 1.4); note('目標：會算 RSA', 5.4, 6.6); cap('目標：RSA', '先學數論工具');
+        },
+  // 1994
+  async (tok, S) => {
+          hd('Euclidean algorithm（輾轉相除法）', -2.4, 7.2); S.L = board(-3.0, 6.2, 0.75); cap('Euclid 演算法', '輾轉相除法');
+        },
+  // 2022.4
+  async (tok, S) => {
+          S.L.add('a = b · q + r'); S.L.last(); cap('a = bq + r', '');
+        },
+  // 2060.2
+  async (tok, S) => {
+          S.L.add('gcd(a, b) = gcd(b, r)', 'ptr alt'); cap('gcd(a, b) = gcd(b, r)', '');
+        },
+  // 2072.6
+  async (tok, S) => {
+          S.x = buddy('a', 'a', FC.blue, 2.2, 1.0, 0, 1.0); S.y = buddy('b', 'b', FC.orange, 4.2, 1.0, 0, 0.8); S.r = buddy('r', 'r', FC.green, 6.0, 1.0, 0, 0.6); cap('(b, r) 比 (a, b) 小', '');
+        },
+  // 2127.9
+  async (tok, S) => {
+          S.L.add('重複到出現 0 → gcd = 另一個數'); S.L.last(); cap('一直縮小到 0', 'gcd 就是另一個數');
+        },
+  // 2157.1
+  async (tok, S) => {
+          S.R = board(3.6, 6.2, 0.75); S.R.add('證明：兩邊公因數相同'); S.R.last(); cap('證明：公因數一模一樣', '');
+        },
+  // 2204.9
+  async (tok, S) => {
+          S.R.add('設 c | a，c | b'); S.R.last(); cap('設 c | a、c | b', '只要再證 c | r');
+        },
+  // 2227.7
+  async (tok, S) => {
+          S.R.add('r = a − b · q'); S.R.last(); cap('r = a − bq', '');
+        },
+  // 2252.2
+  async (tok, S) => {
+          S.R.add('⇒ c | (a − bq) = r ✔', 'good'); S.R.last(); cap('c | r', '線性組合也被 c 整除');
+        },
+  // 2272.4
+  async (tok, S) => {
+          S.R.add('反向同理 ⇒ gcd 相同', 'good'); S.R.hi(-1); S.L.hi(-1); cap('反向同理', '公因數相同 ⇒ gcd 相同');
+        },
+]);
+scene('pfB-l10-528', "gcd(528, 30)：528 → 30 → 18 → 12 → 6 → 0", CAM, [
+  // 2298.7
+  async (tok, S) => {
+          S.x = buddy('x', '528', FC.blue, 2.6, 4.4, 0, 1.0); S.y = buddy('y', '30', FC.orange, 4.8, 4.4, 0, 1.0); S.L = board(-4.0, 6.6, 0.7); cap('gcd(528, 30) = ？', '');
+        },
+  // 2316.3
+  async (tok, S) => {
+          bub('大 ÷ 小 → 留下「小的」和「餘數」', 3.7, 6.8); cap('大的除以小的', '留小的和餘數');
+        },
+  // 2338.9
+  async (tok, S) => {
+          S.L.add('528 = 17·30 + 18'); S.L.last(); S.x.set('30'); S.y.set('18'); cap('528 = 17·30 + 18', '→ gcd(30, 18)');
+        },
+  // 2393.5
+  async (tok, S) => {
+          S.L.add('30 = 1·18 + 12'); S.L.last(); S.x.set('18'); S.y.set('12'); cap('30 = 1·18 + 12', '→ gcd(18, 12)');
+        },
+  // 2405.7
+  async (tok, S) => {
+          S.L.add('18 = 1·12 + 6'); S.L.last(); S.x.set('12'); S.y.set('6'); cap('18 = 1·12 + 6', '→ gcd(12, 6)');
+        },
+  // 2420
+  async (tok, S) => {
+          S.L.add('12 = 2·6 + 0'); S.L.last(); S.x.set('6'); S.y.set('0'); S.x.mood('happy'); good('gcd(528, 30) = 6', -4.0, 3.4); cap('12 = 2·6 + 0', 'gcd(528, 30) = 6');
+        },
+  // 2445.5
+  async (tok, S) => {
+          S.L.hi(-1); S.c = code(['procedure gcd(a, b)', 'x := a;  y := b', 'while y ≠ 0', '    r := x mod y', '    x := y', '    y := r', 'return x'], -4.0, 2.4, 0.56); S.c.hl(1); cap('x := a，y := b', '');
+        },
+  // 2469.4
+  async (tok, S) => {
+          S.c.hl(3); cap('r := x mod y', '');
+        },
+  // 2488.5
+  async (tok, S) => {
+          S.c.hl(4); await wt(tok, 300); S.c.hl(5); cap('x := y，y := r', '');
+        },
+  // 2499.7
+  async (tok, S) => {
+          S.c.hl(6); cap('y = 0 時回傳 x', '');
+        },
+]);
+scene('pfB-l10-bezout', "6 = 2·528 − 35·30；1 = 12·528 − 181·35", CAM, [
+  // 2512.8
+  async (tok, S) => {
+          S.E = board(-4.4, 6.6, 0.6); ['528 = 17·30 + 18', '30 = 1·18 + 12', '18 = 1·12 + 6', '12 = 2·6 + 0'].forEach((t) => S.E.add(t)); S.E.hi(-1); sm('（剛才的輾轉相除）', -4.4, 7.2); cap('3-7：沿用 gcd(528, 30)', '');
+        },
+  // 2529
+  async (tok, S) => {
+          hot('gcd(a, b) = s·a + t·b', 2.6, 7.0); cap('gcd(a, b) = sa + tb', 'Bézout 定理');
+        },
+  // 2554.5
+  async (tok, S) => {
+          pl('s · 528 + t · 30 = 6', 2.6, 6.2); cap('s·528 + t·30 = 6', '一定有整數解');
+        },
+  // 2577.3
+  async (tok, S) => {
+          S.up = arrow(V3(-1.8, 4.4, 0), V3(-1.8, 6.6, 0), 0xc08a1f); cap('把 Euclid 倒推回去', '');
+        },
+  // 2603.4
+  async (tok, S) => {
+          S.E.hi(2); cap('從 6 出現的那一行開始', '');
+        },
+  // 2632.8
+  async (tok, S) => {
+          S.R = board(2.6, 5.2, 0.66); S.R.add('6 = 18 − 1·12'); S.R.last(); cap('6 = 18 − 1·12', '');
+        },
+  // 2654.4
+  async (tok, S) => {
+          S.E.hi(1); S.R.add('= 18 − 1·(30 − 1·18)'); S.R.last(); cap('換掉 12 = 30 − 18', '');
+        },
+  // 2682.5
+  async (tok, S) => {
+          S.R.add('= 2·18 − 1·30'); S.R.last(); cap('= 2·18 − 30', '');
+        },
+  // 2697.5
+  async (tok, S) => {
+          S.E.hi(0); S.R.add('= 2·(528 − 17·30) − 1·30'); S.R.last(); cap('換掉 18 = 528 − 17·30', '');
+        },
+  // 2713.4
+  async (tok, S) => {
+          S.R.add('= 2·528 − 35·30', 'good'); S.R.last(); cap('6 = 2·528 − 35·30', '');
+        },
+  // 2742.6
+  async (tok, S) => {
+          S.R.hi(-1); good('s = 2，t = −35（1056 − 1050 = 6）', 2.6, 0.9); cap('s = 2，t = −35', '一定要會的技巧');
+        },
+  // 2770.9
+  async (tok, S) => {
+          gone(S.E, S.R, S.up); S.E = board(-4.4, 5.6, 0.62); hd('講義例：gcd(528, 35) = 1（互質）', -2.4, 6.6); cap('528 和 35 互質', 'gcd = 1');
+        },
+  // 2794.7
+  async (tok, S) => {
+          ['528 = 15·35 + 3', '35 = 11·3 + 2', '3 = 1·2 + 1'].forEach((t) => S.E.add(t)); S.E.hi(2); cap('528 = 15·35 + 3 …', '餘數出現 1 就停');
+        },
+  // 2810.3
+  async (tok, S) => {
+          S.R = board(2.6, 5.6, 0.62); ['1 = 3 − 1·2', '= 3 − (35 − 11·3) = 12·3 − 35', '= 12·(528 − 15·35) − 35'].forEach((t) => S.R.add(t)); S.R.add('= 12·528 − 181·35', 'good'); S.R.hi(-1); cap('1 = 12·528 − 181·35', '6336 − 6335 = 1');
+        },
+]);
+scene('pfB-l10-lemma', "互質時 a | bc ⇒ a | c", CAM, [
+  // 2831.3
+  async (tok, S) => {
+          S.L = board(-3.6, 6.6, 0.72); S.L.add('gcd(a, b) = 1，a | bc'); S.L.last(); cap('gcd(a, b) = 1 且 a | bc', '');
+        },
+  // 2856.9
+  async (tok, S) => {
+          S.L.add('⇒ a | c ？', 'note'); cap('結論：a | c', '');
+        },
+  // 2867.4
+  async (tok, S) => {
+          S.R = board(3.0, 6.6, 0.72); S.R.add('s·a + t·b = 1'); S.R.last(); cap('sa + tb = 1', 'Bézout');
+        },
+  // 2883.1
+  async (tok, S) => {
+          S.R.add('s·a·c + t·b·c = c'); S.R.last(); cap('兩邊乘 c', 'sac + tbc = c');
+        },
+  // 2893.4
+  async (tok, S) => {
+          S.R.add('s·a·c：a 的倍數'); S.R.last(); cap('sac 是 a 的倍數', '');
+        },
+  // 2920.4
+  async (tok, S) => {
+          S.R.add('t·(bc)：a | bc → a 的倍數'); S.R.last(); cap('tbc 也是 a 的倍數', '因為 a | bc');
+        },
+  // 2927.7
+  async (tok, S) => {
+          S.R.add('⇒ c 是 a 的倍數：a | c ✔', 'good'); S.R.hi(-1); S.L.hi(-1); cap('a | c 得證', '');
+        },
+  // 2941.1
+  async (tok, S) => {
+          note('預告：mod 的消去律、倒數', -3.6, 4.0); cap('預告：消去律與倒數', '');
+        },
+  // 2976.3
+  async (tok, S) => {
+          hot('p 質數，p | a₁a₂⋯aₙ ⇒ p | 某個 aᵢ', -1.0, 1.6); cap('推廣到質數 p', 'p 至少整除其中一個');
+        },
+]);
+scene('pfB-l10-cancel', "ac ≡ bc (mod m)，gcd(c, m) = 1 ⇒ a ≡ b", CAM, [
+  // 3003.2
+  async (tok, S) => {
+          hd('mod 的消去律', -3.6, 7.2); S.L = board(-3.6, 6.4, 0.72); cap('mod 裡的消去律', '不是都能消');
+        },
+  // 3021.6
+  async (tok, S) => {
+          S.L.add('a·c ≡ b·c (mod m)'); S.L.last(); cap('ac ≡ bc (mod m)', '');
+        },
+  // 3045
+  async (tok, S) => {
+          S.L.add('能直接消掉 c 嗎？ ✘', 'bad'); cap('不能隨便消 c', '');
+        },
+  // 3072.3
+  async (tok, S) => {
+          S.R = board(3.4, 6.4, 0.72); S.R.add('示意：2·2 ≡ 2·5 (mod 6)', 'idx'); S.R.add('但 2 ≢ 5 (mod 6) ✘', 'bad'); cap('反例：4 ≡ 10 (mod 6)', '但 2 ≢ 5');
+        },
+  // 3078.1
+  async (tok, S) => {
+          S.L.add('若 gcd(c, m) = 1 ⇒ a ≡ b (mod m)', 'good'); S.L.last(); cap('c、m 互質才能消', '');
+        },
+  // 3105
+  async (tok, S) => {
+          S.R.clear(); S.R.add('m | ac − bc = (a − b)·c'); S.R.last(); cap('m | (a − b)c', '');
+        },
+  // 3117.9
+  async (tok, S) => {
+          S.R.add('gcd(c, m) = 1 ⇒ m | (a − b) ✔', 'good'); S.R.hi(-1); cap('引理 ⇒ m | (a − b)', 'a ≡ b (mod m)');
+        },
+  // 3133.6
+  async (tok, S) => {
+          S.L.hi(-1); hot('消去 = 除法 = 乘上反元素', 0, 1.6); cap('消去律就是除法', '用反元素來看');
+        },
+  // 3149.9
+  async (tok, S) => {
+          pl('÷ 3 = × 1/3，÷ 5 = × 1/5', 0, 0.8); cap('除以 3 = 乘 1/3', '');
+        },
+  // 3189
+  async (tok, S) => {
+          good('兩邊乘 c⁻¹：c · c⁻¹ ≡ 1 → 消失', 0, 0.0); cap('兩邊乘 c⁻¹', 'c 就消掉了');
+        },
+]);
+scene('pfB-l10-inverse', "gcd(a, m) = 1 ⇒ 存在 a⁻¹ (mod m)", CAM, [
+  // 3230.2
+  async (tok, S) => {
+          S.L = board(-3.0, 6.6, 0.75); S.L.add('若 gcd(a, m) = 1'); S.L.last(); cap('a、m 互質', '');
+        },
+  // 3245.9
+  async (tok, S) => {
+          S.L.add('⇒ ∃b：a · b ≡ 1 (mod m)'); S.L.last(); cap('∃b：ab ≡ 1 (mod m)', '');
+        },
+  // 3264.4
+  async (tok, S) => {
+          S.L.add('b = a⁻¹（mod m 的倒數）', 'ptr alt'); cap('b = a⁻¹', '模反元素');
+        },
+  // 3273
+  async (tok, S) => {
+          bad('mod m 不能丟', 3.6, 6.0); cap('mod m 一定要寫', '');
+        },
+  // 3307.7
+  async (tok, S) => {
+          S.L.hi(-1); hd('怎麼找？', 3.6, 4.6); cap('怎麼找倒數？', '');
+        },
+  // 3326.6
+  async (tok, S) => {
+          S.R = board(3.6, 3.8, 0.75); S.R.add('s·a + t·m = 1'); S.R.last(); cap('sa + tm = 1', '');
+        },
+  // 3347.6
+  async (tok, S) => {
+          S.R.add('⇒ s·a ≡ 1 (mod m)'); S.R.last(); cap('mod m：t·m 消失', 's·a ≡ 1 (mod m)');
+        },
+  // 3388.9
+  async (tok, S) => {
+          S.R.add('s = a⁻¹ ✔', 'good'); S.R.hi(-1); cap('s 就是 a⁻¹', '');
+        },
+]);
+scene('pfB-l10-inv5', "5⁻¹ ≡ −1 ≡ 2 (mod 3)", CAM, [
+  // 3416.9
+  async (tok, S) => {
+          S.L = board(-3.6, 6.6, 0.68); cap('來算一個例子', '');
+        },
+  // 3421.6
+  async (tok, S) => {
+          S.L.add('a = 5，m = 3'); S.L.last(); S.five = buddy('a', '5', FC.blue, 3.4, 4.2, 0, 1.0); cap('a = 5，m = 3', '');
+        },
+  // 3441.6
+  async (tok, S) => {
+          S.L.add('gcd(5, 3) = 1 ✔'); S.L.last(); cap('gcd(5, 3) = 1', '倒數存在');
+        },
+  // 3473
+  async (tok, S) => {
+          S.L.add('求 s：5 · s ≡ 1 (mod 3)', 'ptr alt'); cap('求 5s ≡ 1 (mod 3)', '');
+        },
+  // 3528.8
+  async (tok, S) => {
+          S.L.add('⇔ 求 s·5 + t·3 = 1'); S.L.last(); cap('解 5s + 3t = 1', '');
+        },
+  // 3541.1
+  async (tok, S) => {
+          S.R = board(3.4, 2.8, 0.62); S.R.add('5 = 1·3 + 2'); S.R.add('3 = 1·2 + 1'); S.R.hi(-1); cap('gcd(5,3) → gcd(3,2) → gcd(2,1)', '');
+        },
+  // 3568.8
+  async (tok, S) => {
+          S.L.hi(-1); S.R.hi(1); S.B = board(-3.6, 2.6, 0.62); S.B.add('1 = 3 − 1·2'); S.B.last(); cap('1 = 3 − 1·2', '');
+        },
+  // 3572.4
+  async (tok, S) => {
+          S.R.hi(0); cap('2 = 5 − 1·3', '');
+        },
+  // 3590.4
+  async (tok, S) => {
+          S.B.add('= 3 − (5 − 1·3) = 2·3 − 1·5'); S.B.last(); cap('1 = 2·3 − 1·5', '');
+        },
+  // 3620.2
+  async (tok, S) => {
+          S.B.add('⇒ 5⁻¹ ≡ −1 (mod 3)'); S.B.last(); cap('5⁻¹ ≡ −1 (mod 3)', '');
+        },
+  // 3641.2
+  async (tok, S) => {
+          S.B.add('≡ −1 + 3 = 2', 'good'); S.B.last(); S.five.set('5⁻¹=2'); cap('−1 + 3 = 2', '5⁻¹ ≡ 2 (mod 3)');
+        },
+  // 3654.9
+  async (tok, S) => {
+          S.five.mood('happy'); good('5 · 2 = 10，10 mod 3 = 1 ✔', 3.4, 6.4); cap('驗算：10 mod 3 = 1', '');
+        },
+  // 3683.8
+  async (tok, S) => {
+          S.B.hi(-1); note('mod 運算用 =；同餘關係用 ≡', 3.4, 5.6); cap('= 和 ≡ 意義不同', '');
+        },
+  // 3732.6
+  async (tok, S) => {
+          bad('不互質 → 沒有倒數', 3.4, 0.4); cap('只有互質才有倒數', '');
+        },
+]);
+scene('pfB-l10-invex', "倒數的例子：mod 3、mod 6、mod 9", CAM, [
+  // 3755.6
+  async (tok, S) => {
+          S.L = board(-3.6, 6.6, 0.68); S.L.add('7 · 5⁻¹ (mod 3) = ？'); S.L.last(); cap('7·5⁻¹ (mod 3) = ？', '');
+        },
+  // 3779.5
+  async (tok, S) => {
+          S.L.add('5⁻¹ 換成 2（不是 1/5）'); S.L.last(); cap('5⁻¹ 換成 2', '不是 1/5');
+        },
+  // 3812.3
+  async (tok, S) => {
+          S.L.add('7 · 2 = 14 ≡ 2 (mod 3)', 'good'); S.L.last(); cap('14 ≡ 2 (mod 3)', '');
+        },
+  // 3830.9
+  async (tok, S) => {
+          S.L.hi(-1); sm('乘一個特別的數，帶有「除法」的味道', -3.6, 4.4); cap('是乘法，不是除法', '');
+        },
+  // 3871.4
+  async (tok, S) => {
+          bad('只有互質才有倒數', -3.6, 3.7); cap('只有互質才有倒數', '');
+        },
+  // 3906.6
+  async (tok, S) => {
+          S.R = board(3.4, 6.6, 0.68); S.R.add('mod 6：gcd(5, 6) = 1 ✔'); S.R.last(); S.c6 = [0, 1, 2, 3, 4, 5].map((v, i) => bx(String(v), v === 5 ? FC.green : FC.sand, 1.2 + i * 0.85, 4.8, 0, 0.6, 0.6, 0.6)); cap('mod 6 裡的 5', '和 6 互質');
+        },
+  // 3931.3
+  async (tok, S) => {
+          S.R.add('5 ≡ −1 ⇒ 5⁻¹ = 5'); S.R.last(); cap('5 ≡ −1 (mod 6)', '(−1)(−1) = 1 ⇒ 5⁻¹ = 5');
+        },
+  // 3975.4
+  async (tok, S) => {
+          S.R.add('5 · 5 = 25 ≡ 1 (mod 6) ✔', 'good'); S.R.last(); glow(S.c6[5], OKG); cap('25 ≡ 1 (mod 6)', '');
+        },
+  // 3999.6
+  async (tok, S) => {
+          [2, 3, 4].forEach((i) => tint(S.c6[i], FC.red)); S.R.add('2、3、4：和 6 不互質 ✘', 'bad'); cap('2、3、4 都和 6 不互質', '');
+        },
+  // 4026.3
+  async (tok, S) => {
+          S.R.add('2⁻¹ (mod 6) 不存在'); S.R.last(); cap('2⁻¹ (mod 6) 不存在', '');
+        },
+  // 4046.8
+  async (tok, S) => {
+          gone(S.c6); S.R.hi(-1); S.N = board(3.4, 2.4, 0.66); S.N.add('mod 9，a = 2'); S.N.last(); cap('mod 9，a = 2', '');
+        },
+  // 4052.6
+  async (tok, S) => {
+          S.N.add('2 · 5 = 10 ≡ 1 ⇒ 2⁻¹ = 5，5⁻¹ = 2', 'good'); S.N.last(); cap('2·5 = 10 ≡ 1 (mod 9)', '2⁻¹ = 5、5⁻¹ = 2');
+        },
+  // 4099.6
+  async (tok, S) => {
+          S.N.add('gcd(6, 9) = 3 ⇒ 6⁻¹ 不存在', 'bad'); cap('6 在 mod 9 沒有倒數', 'gcd(6, 9) = 3');
+        },
+]);
+scene('pfB-l10-crtintro', "韓信點兵：x ≡ 1 (mod 3)、x ≡ 2 (mod 5)", CAM, [
+  // 4121.8
+  async (tok, S) => {
+          S.sold = []; for (let i = 0; i < 3; i++) S.sold.push(buddy('', '', [FC.blue, FC.orange, FC.green][i], -5.4 + i * 1.1, 4.6, 0, 0.6)); S.L = board(-0.6, 6.6, 0.68); S.L.add('3 個一數剩 1、5 個剩 1、7 個剩 1'); S.L.last(); cap('韓信點兵', '3、5、7 個一數都剩 1');
+        },
+  // 4140.9
+  async (tok, S) => {
+          S.L.add('x = 105k + 1'); S.L.last(); cap('3·5·7 的倍數 + 1', '');
+        },
+  // 4146.4
+  async (tok, S) => {
+          S.L.add('都差 1：x = 105k − 1'); S.L.last(); cap('都差 1 → 倍數 − 1', '');
+        },
+  // 4165
+  async (tok, S) => {
+          S.L.hi(-1); hd('中國餘數定理', -4.2, 2.8); cap('中國餘數定理', '');
+        },
+  // 4177.9
+  async (tok, S) => {
+          note('除數兩兩互質（3、5、7）', -4.2, 2.0); cap('3、5、7 兩兩互質', '基本要件');
+        },
+  // 4234.4
+  async (tok, S) => {
+          S.L.add('x ≡ aᵢ (mod mᵢ)', 'ptr alt'); cap('x ≡ aᵢ (mod mᵢ)', '剩多少 = 餘數');
+        },
+  // 4251.1
+  async (tok, S) => {
+          S.L.add('答案 = (m₁m₂⋯) 的倍數 + 某個數'); S.L.last(); cap('找出那個「餘數」', '');
+        },
+  // 4281.7
+  async (tok, S) => {
+          gone(S.sold); S.L.hi(-1); S.R = board(3.6, 2.6, 0.62); S.R.add('x ≡ 1 (mod 3)'); S.R.add('x ≡ 2 (mod 5)'); S.R.hi(-1); cap('x ≡ 1 (mod 3)、x ≡ 2 (mod 5)', '');
+        },
+  // 4298
+  async (tok, S) => {
+          S.R.add('x = 15k + ？'); S.R.last(); cap('x = 15k + ？', '');
+        },
+  // 4317
+  async (tok, S) => {
+          S.tr = [1, 4, 7].map((v, i) => bx(String(v), v === 7 ? FC.green : FC.gray, -0.8 + i * 1.0, -0.4, 0, 0.6, 0.6, 0.6)); sm('除 3 餘 1：1、4、7…', 0.2, -1.2); cap('湊：1、4、7', '7 除 5 餘 2 ✔');
+        },
+  // 4351.8
+  async (tok, S) => {
+          S.R.add('x ≡ 7 (mod 15)', 'good'); S.R.last(); cap('x ≡ 7 (mod 15)', '');
+        },
+  // 4369.1
+  async (tok, S) => {
+          S.R.add('+ x ≡ 3 (mod 7) ⇒ x ≡ ？ (mod 105)', 'note'); cap('三個條件：mod 105', '要有系統的方法');
+        },
+]);
+scene('pfB-l10-crt', "CRT：x ≡ 1, 2, 3 (mod 3, 5, 7) ⇒ x ≡ 52 (mod 105)", CAM, [
+  // 4417.5
+  async (tok, S) => {
+          hd('系統解法', -4.6, 7.2); S.E = board(-4.6, 6.4, 0.62); ['x ≡ 1 (mod 3)', 'x ≡ 2 (mod 5)', 'x ≡ 3 (mod 7)'].forEach((t) => S.E.add(t)); S.E.hi(-1); cap('三個同餘式', '');
+        },
+  // 4429.5
+  async (tok, S) => {
+          S.T = []; const cols = ['i', 'aᵢ', 'mᵢ', 'Mᵢ', 'yᵢ']; cols.forEach((c, j) => S.T.push(hd(c, 0.2 + j * 1.4, 6.6)));
+          S.cell = {}; [[1, 1, 3], [2, 2, 5], [3, 3, 7]].forEach((r, i) => r.forEach((v, j) => { S.cell[i + ',' + j] = bx(String(v), FC.sand, 0.2 + j * 1.4, 5.8 - i * 0.8, 0, 0.9, 0.6, 0.5); }));
+          cap('aᵢ：餘數，mᵢ：除數', '');
+        },
+  // 4450.4
+  async (tok, S) => {
+          note('3、5、7 兩兩互質 ✔', -4.6, 4.4); cap('兩兩互質', '');
+        },
+  // 4456
+  async (tok, S) => {
+          S.F = board(-4.6, 3.6, 0.62); S.F.add('Mᵢ = m / mᵢ'); S.F.last(); cap('Mᵢ = m / mᵢ', '');
+        },
+  // 4477
+  async (tok, S) => {
+          S.F.add('m = 3·5·7 = 105'); S.F.last(); S.cell['0,3'] = bx('35', FC.sky, 0.2 + 3 * 1.4, 5.8, 0, 0.9, 0.6, 0.5); cap('m = 105，M₁ = 35', '= 5 × 7');
+        },
+  // 4497
+  async (tok, S) => {
+          S.cell['1,3'] = bx('21', FC.sky, 0.2 + 3 * 1.4, 5.0, 0, 0.9, 0.6, 0.5); S.cell['2,3'] = bx('15', FC.sky, 0.2 + 3 * 1.4, 4.2, 0, 0.9, 0.6, 0.5); cap('M₂ = 21，M₃ = 15', '');
+        },
+  // 4511.4
+  async (tok, S) => {
+          S.F.add('Mᵢ · yᵢ ≡ 1 (mod mᵢ)', 'ptr alt'); cap('yᵢ = Mᵢ⁻¹ (mod mᵢ)', '');
+        },
+  // 4571.6
+  async (tok, S) => {
+          S.F.add('Mᵢ 和 mᵢ 互質 → 倒數存在'); S.F.last(); cap('Mᵢ 和 mᵢ 互質', '所以 yᵢ 存在');
+        },
+  // 4643.2
+  async (tok, S) => {
+          S.F.hi(-1); S.cell['0,4'] = bx('2', FC.green, 0.2 + 4 * 1.4, 5.8, 0, 0.9, 0.6, 0.5); sm('35 ≡ 2，2·2 = 4 ≡ 1 (mod 3)', 3.0, 3.3); cap('y₁ = 2', '35 ≡ 2，2·2 ≡ 1 (mod 3)');
+        },
+  // 4711.6
+  async (tok, S) => {
+          S.cell['1,4'] = bx('1', FC.green, 0.2 + 4 * 1.4, 5.0, 0, 0.9, 0.6, 0.5); sm('21 ≡ 1 (mod 5)', 3.0, 2.7); cap('y₂ = 1', '21 ≡ 1 (mod 5)');
+        },
+  // 4753
+  async (tok, S) => {
+          S.cell['2,4'] = bx('1', FC.green, 0.2 + 4 * 1.4, 4.2, 0, 0.9, 0.6, 0.5); sm('15 ≡ 1 (mod 7)', 3.0, 2.1); cap('y₃ = 1', '15 ≡ 1 (mod 7)');
+        },
+  // 4786.6
+  async (tok, S) => {
+          S.X = board(1.6, 1.2, 0.62); S.X.add('x ≡ Σ aᵢ · Mᵢ · yᵢ (mod m)', 'ptr alt'); cap('x = Σ aᵢMᵢyᵢ', '');
+        },
+  // 4814
+  async (tok, S) => {
+          S.X.add('= 1·35·2 + 2·21·1 + 3·15·1'); S.X.last(); cap('= 1·35·2 + 2·21·1 + 3·15·1', 'Mᵢ 照抄');
+        },
+  // 4839.6
+  async (tok, S) => {
+          S.X.add('= 70 + 42 + 45 = 157'); S.X.last(); cap('70 + 42 + 45 = 157', '');
+        },
+  // 4862.1
+  async (tok, S) => {
+          S.X.add('157 mod 105 = 52 ⇒ x ≡ 52 (mod 105)', 'good'); S.X.last(); cap('x ≡ 52 (mod 105)', '52 = 3·17+1 = 5·10+2 = 7·7+3');
+        },
+  // 4926.7
+  async (tok, S) => {
+          S.X.hi(-1); S.T.forEach((l) => { l.element.className = 'lab-label ptr alt'; }); cap('列表幫助記憶', '這題會考');
+        },
+  // 4956.4
+  async (tok, S) => {
+          S.T.forEach((l) => { l.element.className = 'lab-label ptr'; }); tint(S.cell['1,3'], FC.gray); tint(S.cell['2,3'], FC.gray); cap('除以 m₁：第 2、3 項整除', '');
+        },
+  // 5014.6
+  async (tok, S) => {
+          glow(S.cell['0,3'], HL); glow(S.cell['0,4'], HL); good('x ≡ a₁·1 = a₁ (mod m₁)', -4.6, 0.2); cap('只剩 a₁·M₁y₁ ≡ a₁', '');
+        },
+  // 5042.8
+  async (tok, S) => {
+          tint(S.cell['1,3'], FC.sky); tint(S.cell['2,3'], FC.sky); cap('除 m₂ 剩 a₂，除 m₃ 剩 a₃', '');
+        },
+  // 5096.2
+  async (tok, S) => {
+          bad('unique（唯一）還沒證！', -4.6, 1.0); cap('唯一性還沒證', '自己想想');
+        },
+  // 5155.1
+  async (tok, S) => {
+          hot('一般：k = 1…n，x ≡ Σ aₖMₖyₖ (mod m)', 0.6, -2.0); cap('推廣到 n 個式子', '');
+        },
+]);
+
+// ════════ IlMZbpJW1ek（交大OCW 易志偉《離散數學》Lec11 Algorithms and the Integers (4/4) / Induction and Recur (1/4)） ════════
+scene('pfB-l11-review', "CRT 步驟：m → Mᵢ → yᵢ → Σ aᵢMᵢyᵢ", CAM, [
+  // 7.1
+  async (tok, S) => {
+          S.L = board(-3.4, 6.6, 0.8); hd('中國餘數定理：四個步驟', 2.6, 7.2); cap('CRT 解題步驟', '');
+        },
+  // 14
+  async (tok, S) => {
+          S.L.add('① m = m₁ · m₂ · m₃'); S.L.last(); cap('① m = m₁m₂m₃', '');
+        },
+  // 26.3
+  async (tok, S) => {
+          S.L.add('② M₁ = 5·7，M₂ = 3·7，M₃ = 3·5'); S.L.last(); cap('② Mᵢ = 除了 mᵢ 的其他乘積', '');
+        },
+  // 48.3
+  async (tok, S) => {
+          S.L.add('③ yᵢ = Mᵢ⁻¹ (mod mᵢ)'); S.L.last(); cap('③ yᵢ：Mᵢ 在 mod mᵢ 的倒數', '');
+        },
+  // 71.3
+  async (tok, S) => {
+          sm('數字大 → Euclid 倒推求倒數', -3.4, 3.0); cap('數字大就用 Euclid 倒推', '');
+        },
+  // 99.3
+  async (tok, S) => {
+          S.L.add('④ x ≡ Σ aᵢ Mᵢ yᵢ (mod m)', 'good'); S.L.last(); cap('④ x = Σ aᵢMᵢyᵢ', '');
+        },
+]);
+scene('pfB-l11-noncop', "x ≡ 2 (mod 15) 拆成 mod 3 與 mod 5", CAM, [
+  // 109.1
+  async (tok, S) => {
+          hd('除數不互質怎麼辦？', -3.4, 7.2); S.L = board(-3.4, 6.2, 0.66); cap('除數不互質怎麼辦？', '');
+        },
+  // 143.2
+  async (tok, S) => {
+          ['x ≡ 2 (mod 3)', 'x ≡ 3 (mod 5)', 'x ≡ 2 (mod 15)'].forEach((t) => S.L.add(t)); S.L.hi(2); cap('第三式改成 x ≡ 2 (mod 15)', '');
+        },
+  // 173.2
+  async (tok, S) => {
+          bad('15 和 3、5 都不互質', 2.8, 5.4); cap('15 和 3、5 不互質', '');
+        },
+  // 201.4
+  async (tok, S) => {
+          S.f = pl('15 = 3 × 5', 2.8, 4.6); cap('15 = 3 × 5', '');
+        },
+  // 235.2
+  async (tok, S) => {
+          S.R = board(2.8, 3.8, 0.62); S.R.add('x ≡ 2 (mod 15)'); S.R.add('⇔ x ≡ 2 (mod 3) 且 x ≡ 2 (mod 5)', 'ptr alt'); cap('x ≡ 2 (mod 15)', '⇔ x ≡ 2 (mod 3) 且 x ≡ 2 (mod 5)');
+        },
+  // 270.4
+  async (tok, S) => {
+          S.L.clear(); ['x ≡ 2 (mod 3)', 'x ≡ 3 (mod 5)', 'x ≡ 2 (mod 3)', 'x ≡ 2 (mod 5)'].forEach((t) => S.L.add(t)); S.L.hi(-1); cap('換成四個式子', '');
+        },
+  // 329.9
+  async (tok, S) => {
+          S.L.ls[2].element.className = 'lab-label lab-dim'; S.L.ls[2].userData.base = 'lab-dim'; sm('重複 → 刪掉', -0.6, 4.9); cap('重複的刪掉', '');
+        },
+  // 343.6
+  async (tok, S) => {
+          S.L.ls[1].element.className = 'lab-label bad'; S.L.ls[3].element.className = 'lab-label bad'; bad('mod 5 餘 3 又餘 2：矛盾', -3.4, 3.0); cap('矛盾 contradiction', '');
+        },
+  // 364.9
+  async (tok, S) => {
+          hot('⇒ 無解', -3.4, 2.2); cap('答案：無解', '');
+        },
+  // 383.6
+  async (tok, S) => {
+          gone(S.R, S.f); S.N = board(2.8, 5.0, 0.62); S.N.add('改成 x ≡ 8 (mod 15)？'); S.N.last(); S.tr = [2, 5, 8, 11].map((v, i) => bx(String(v), v === 8 ? FC.green : FC.gray, 1.6 + i * 0.9, 6.0, 0, 0.6, 0.6, 0.6)); cap('改成 8 試試', '');
+        },
+  // 412.5
+  async (tok, S) => {
+          S.N.add('8 ≡ 2 (mod 3)，8 ≡ 3 (mod 5)'); S.N.last(); cap('8 ≡ 2 (mod 3)，8 ≡ 3 (mod 5)', '');
+        },
+  // 425.4
+  async (tok, S) => {
+          S.N.add('和原題相同 → 相容 ✔', 'good'); S.N.add('（補算）x ≡ 8 (mod 15)', 'idx'); S.N.hi(-1); cap('條件相容', '補算：x ≡ 8 (mod 15)');
+        },
+]);
+scene('pfB-l11-noncop2', "不互質的除數：拆解、刪重複、保留 mod 4", CAM, [
+  // 446.8
+  async (tok, S) => {
+          hd('再一例（數字依推理重建・示意）', -2.0, 7.2); S.L = board(-4.2, 6.3, 0.62); ['x ≡ 5 (mod 6)', 'x ≡ 10 (mod 30)', 'x ≡ 3 (mod 4)'].forEach((t) => S.L.add(t)); S.L.hi(-1); cap('再一例：有解還是無解？', '');
+        },
+  // 452.4
+  async (tok, S) => {
+          bad('6、30、4 都不互質', -4.2, 4.1); cap('除數都不互質', '');
+        },
+  // 464.6
+  async (tok, S) => {
+          S.R = board(2.4, 6.3, 0.62); cap('因數分解來化簡', '');
+        },
+  // 472.2
+  async (tok, S) => {
+          S.L.hi(0); S.R.add('mod 6 → x ≡ 1 (mod 2)，x ≡ 2 (mod 3)'); S.R.last(); cap('6 = 2·3', 'x ≡ 1 (mod 2)，x ≡ 2 (mod 3)');
+        },
+  // 492.9
+  async (tok, S) => {
+          S.L.hi(1); S.R.add('mod 30 → x ≡ 0 (mod 2)，≡ 1 (mod 3)，≡ 0 (mod 5)'); S.R.last(); cap('30 = 2·3·5', '');
+        },
+  // 542
+  async (tok, S) => {
+          S.L.hi(-1); S.bd = bad('mod 2：餘 1 vs 餘 0 → 矛盾，無解', -4.2, 2.6); cap('mod 2 矛盾 ⇒ 無解', '');
+        },
+  // 552
+  async (tok, S) => {
+          S.R.hi(1); cap('調整數字讓它有解', '以 mod 30 那條為準');
+        },
+  // 590.8
+  async (tok, S) => {
+          S.L.ls[0].element.textContent = 'x ≡ 4 (mod 6)'; S.L.hi(0); gone(S.bd); S.R.clear(); S.R.add('mod 6 → x ≡ 0 (mod 2)，x ≡ 1 (mod 3)'); S.R.last(); cap('改成 x ≡ 4 (mod 6)', '');
+        },
+  // 604.3
+  async (tok, S) => {
+          sm('和 mod 30 的條件重複 → 多餘', -4.2, 2.6); cap('mod 6 那條多餘', '');
+        },
+  // 627.6
+  async (tok, S) => {
+          S.L.hi(1); S.R.add('mod 30 → x ≡ 0 (mod 5)，x ≡ 4 (mod 6)'); S.R.last(); cap('30 = 5 × 6（互質）', '');
+        },
+  // 664.1
+  async (tok, S) => {
+          S.L.ls[0].element.className = 'lab-label lab-dim'; S.L.ls[0].userData.base = 'lab-dim'; cap('一眼看出重複', '');
+        },
+  // 683.2
+  async (tok, S) => {
+          S.R.add('mod 6 → x ≡ 0 (mod 2)，x ≡ 1 (mod 3)'); S.R.last(); cap('6 = 2·3 再拆', '');
+        },
+  // 717.1
+  async (tok, S) => {
+          S.L.hi(2); bad('4 = 2 × 2：拆不成互質', -4.2, 3.4); cap('4 = 2 × 2 拆不開', '');
+        },
+  // 736.4
+  async (tok, S) => {
+          S.R.add('x ≡ 3 (mod 4) ⇒ x ≡ 1 (mod 2) ✘ 矛盾', 'bad'); cap('mod 4 推出 mod 2 餘 1', '又矛盾 → 無解');
+        },
+  // 786.5
+  async (tok, S) => {
+          S.L.ls[2].element.textContent = 'x ≡ 2 (mod 4)'; S.R.add('改 x ≡ 2 (mod 4) ⇒ x ≡ 0 (mod 2) ✔', 'good'); cap('改成 x ≡ 2 (mod 4)', '沒有矛盾');
+        },
+  // 813.2
+  async (tok, S) => {
+          S.R.hi(-1); note('mod 4 比 mod 2 嚴格', 2.4, 0.6); cap('mod 4 比較嚴格', '');
+        },
+  // 854.2
+  async (tok, S) => {
+          sm('mod 2 只用來檢查，算答案留 mod 4', 2.4, -0.1); cap('留 mod 4，丟 mod 2', '');
+        },
+  // 909.2
+  async (tok, S) => {
+          hot('x ≡ 2 (mod 4)，≡ 1 (mod 3)，≡ 0 (mod 5) → mod 60', -2.0, -1.0); good('（補算）x ≡ 10 (mod 60)', -2.0, -1.8); cap('4、3、5 互質 → mod 60', '補算：x ≡ 10');
+        },
+  // 930.5
+  async (tok, S) => {
+          S.L.hi(-1); bub('拆開 → 檢查矛盾 → 刪重複、留嚴格', 2.4, 7.0); cap('拆開、檢查、留嚴格', '');
+        },
+]);
+scene('pfB-l11-fermat', "費馬小定理：10⁶ ≡ 1 (mod 7)", CAM, [
+  // 1012.6
+  async (tok, S) => {
+          hd('費馬小定理', -3.6, 7.2); S.L = board(-3.6, 6.3, 0.66); cap('費馬小定理', 'RSA 之前的工具');
+        },
+  // 1021.4
+  async (tok, S) => {
+          S.L.add('p 質數，a 不是 p 的倍數'); S.L.last(); cap('p 質數、p ∤ a', '');
+        },
+  // 1045.1
+  async (tok, S) => {
+          S.L.add('a^(p−1) ≡ 1 (mod p)', 'ptr alt'); cap('a^(p−1) ≡ 1 (mod p)', '');
+        },
+  // 1057.9
+  async (tok, S) => {
+          S.L.add('例：p = 7，a = 10'); S.L.last(); cap('p = 7，a = 10', '');
+        },
+  // 1068.2
+  async (tok, S) => {
+          S.L.add('10⁶ ≡ 1 (mod 7)？'); S.L.last(); cap('10⁶ 除以 7 餘 1？', '');
+        },
+  // 1110.2
+  async (tok, S) => {
+          S.L.add('1000000 = 7 · 142857 + 1 ✔', 'good'); S.L.last(); cap('1000000 = 7·142857 + 1', '真的餘 1');
+        },
+  // 1144.1
+  async (tok, S) => {
+          S.L.hi(-1); hd('為什麼？', 3.4, 7.2); cap('為什麼會這樣？', '');
+        },
+  // 1172.5
+  async (tok, S) => {
+          S.top = [0, 1, 2, 3, 4, 5, 6].map((v, i) => bx(String(v), FC.sand, 0.6 + i * 0.9, 6.0, 0, 0.65, 0.65, 0.65)); sm('mod 7 的餘數', 3.3, 6.8); cap('mod 7：7 種餘數', '');
+        },
+  // 1186.5
+  async (tok, S) => {
+          kill(S.top[0]); S.top.shift(); cap('拿掉 0：剩 1～6', '');
+        },
+  // 1201.7
+  async (tok, S) => {
+          note('6 個數 ↔ 指數 6 = p − 1', 3.3, 4.9); cap('6 個數 = p − 1', '');
+        },
+  // 1213.5
+  async (tok, S) => {
+          S.bot = [1, 2, 3, 4, 5, 6].map((v, i) => bx(v + '·10', FC.lilac, 1.5 + i * 0.9, 3.8, 0, 0.8, 0.6, 0.6)); cap('每個都乘 10', '');
+        },
+  // 1238
+  async (tok, S) => {
+          sm('gcd(10, 7) = 1 → 10 有倒數', 3.3, 3.0); cap('10 和 7 互質', '有倒數');
+        },
+  // 1267.8
+  async (tok, S) => {
+          cap('乘 10 之後仍然兩兩不同', '');
+        },
+  // 1285.1
+  async (tok, S) => {
+          S.L.clear(); S.L.add('a ≢ b ⇒ a·10 ≢ b·10 (mod 7)'); S.L.last(); cap('a ≢ b ⇒ a·10 ≢ b·10', '因為能消去');
+        },
+  // 1314.4
+  async (tok, S) => {
+          relabel(S.bot[0], '3'); relabel(S.bot[1], '6'); relabel(S.bot[5], '4'); [0, 1, 5].forEach((i) => tint(S.bot[i], FC.mint)); cap('10→3、20→6、60→4', '');
+        },
+  // 1341.9
+  async (tok, S) => {
+          relabel(S.bot[2], '2'); relabel(S.bot[3], '5'); relabel(S.bot[4], '1'); [2, 3, 4].forEach((i) => tint(S.bot[i], FC.mint)); cap('30→2、40→5、50→1', '六個都不同');
+        },
+  // 1373.7
+  async (tok, S) => {
+          for (let i = 0; i < 6; i++) glow(S.top[i], OKG), glow(S.bot[i], OKG); hot('重排 permutation', 3.3, 2.3); cap('只是重新排列', 'permutation');
+        },
+  // 1385
+  async (tok, S) => {
+          S.L.add('1·2·3·4·5·6 ≡ (1·10)(2·10)⋯(6·10)'); S.L.last(); cap('全部乘起來', '餘數相等');
+        },
+  // 1426
+  async (tok, S) => {
+          S.L.add('6! ≡ 6! · 10⁶ (mod 7)'); S.L.last(); cap('6! ≡ 6!·10⁶ (mod 7)', '');
+        },
+  // 1452.3
+  async (tok, S) => {
+          S.L.add('消去 6! ⇒ 10⁶ ≡ 1 (mod 7) ✔', 'good'); S.L.last(); cap('消去 6!', '10⁶ ≡ 1 (mod 7)');
+        },
+  // 1464.6
+  async (tok, S) => {
+          S.L.add('一般：a^(p−1) ≡ 1 (mod p)', 'ptr alt'); cap('換成 p、a 也成立', '');
+        },
+  // 1482.4
+  async (tok, S) => {
+          S.L.hi(-1); bub('關鍵：乘 a 造成重排', 3.3, 1.4); cap('轉折點：重排', '');
+        },
+]);
+scene('pfB-l11-fermat2', "對所有整數：a^p ≡ a (mod p)", CAM, [
+  // 1527.9
+  async (tok, S) => {
+          S.L = board(-3.4, 6.6, 0.72); S.L.add('對所有整數 a：a^p ≡ a (mod p)', 'ptr alt'); cap('放寬：a^p ≡ a (mod p)', '');
+        },
+  // 1553.6
+  async (tok, S) => {
+          S.L.add('情況一：p ∤ a；情況二：p | a'); S.L.last(); cap('只有兩種情況', '');
+        },
+  // 1566.4
+  async (tok, S) => {
+          S.R = board(3.4, 4.6, 0.72); S.R.add('p ∤ a：a^(p−1) ≡ 1 → × a → a^p ≡ a ✔'); S.R.last(); cap('情況一：兩邊乘 a', '');
+        },
+  // 1593.6
+  async (tok, S) => {
+          S.R.add('p | a：a^p ≡ 0 ≡ a ✔'); S.R.last(); cap('情況二：兩邊都 ≡ 0', '');
+        },
+  // 1631.6
+  async (tok, S) => {
+          S.R.hi(-1); S.L.hi(-1); good('費馬小定理 → RSA 會用到', 0, 1.4); cap('RSA 會用到', '');
+        },
+  // 1644.1
+  async (tok, S) => {
+          note('作業：b ≢ c ⇔ ab ≢ ac (mod p)（p ∤ a）', 0, 0.4); cap('回家寫成數學式', 'b ≢ c ⇔ ab ≢ ac');
+        },
+]);
+scene('pfB-l11-crypto', "加密 → 密文 → 解密", CAM, [
+  // 1754.2
+  async (tok, S) => {
+          hd('RSA：加密與解密', 0, 7.2); cap('RSA：加密、解密', '');
+        },
+  // 1768.2
+  async (tok, S) => {
+          S.a = buddy('寄件者', '', FC.blue, -5.2, 2.2, 0, 1.0); S.b = buddy('收件者', '', FC.green, 5.2, 2.2, 0, 1.0); S.e = buddy('偷看的人', '', FC.gray, 0, 4.4, -1.0, 0.8); S.e.mood('wow'); cap('怕中間有人偷看', '');
+        },
+  // 1775.6
+  async (tok, S) => {
+          S.p = prop('file', -3.4, 2.2, 0, 0.9, '資料'); cap('處理一下，讓人看不懂', '');
+        },
+  // 1813.9
+  async (tok, S) => {
+          S.p.userData.label.element.textContent = '明文'; cap('明文', '看得懂');
+        },
+  // 1818.4
+  async (tok, S) => {
+          S.lk = prop('lock', -1.6, 2.2, 0, 1.0); await slide(tok, S.p, -1.6, 2.4, 0, 700); S.p.userData.label.element.textContent = '密文'; S.a.mood('happy'); cap('加密 → 密文', '別人看不懂');
+        },
+  // 1835.6
+  async (tok, S) => {
+          await slide(tok, S.p, 3.4, 2.2, 0, 900); S.p.userData.label.element.textContent = '明文'; S.b.mood('happy'); S.e.mood('sad'); cap('解密 → 明文', '');
+        },
+  // 1846.1
+  async (tok, S) => {
+          sm('寄件者加密，收件者解密', -5.2, 1.0); sm('中間的人看不懂', 0, 3.4, -1.0); cap('寄件者加密、收件者解密', '');
+        },
+]);
+scene('pfB-l11-rsakey', "RSA：p, q → n = pq → e、d", CAM, [
+  // 1860
+  async (tok, S) => {
+          hd('RSA = Rivest · Shamir · Adleman', 0, 7.2); S.L = board(-3.4, 6.2, 0.72); cap('RSA：三位發明者', '');
+        },
+  // 1878.4
+  async (tok, S) => {
+          cap('設計加密系統', '');
+        },
+  // 1883.6
+  async (tok, S) => {
+          S.p = buddy('p', 'p', FC.orange, 3.0, 4.4, 0, 0.9); S.q = buddy('q', 'q', FC.purple, 5.0, 4.4, 0, 0.9); S.L.add('① 兩個大質數 p、q'); S.L.last(); cap('① 兩個大質數 p、q', '');
+        },
+  // 1901.9
+  async (tok, S) => {
+          sm('實務：2¹²⁸ 以上的大數', 4.0, 3.4); cap('p、q 要非常大', '2¹²⁸ 以上');
+        },
+  // 1933.3
+  async (tok, S) => {
+          S.L.add('② n = p · q'); S.L.last(); cap('② n = pq', '');
+        },
+  // 1936.6
+  async (tok, S) => {
+          sm('n：算餘數用的除數', -3.4, 4.76); cap('n 是除數', '');
+        },
+  // 1954.2
+  async (tok, S) => {
+          S.L.skip(); S.L.add('③ (p − 1)(q − 1)'); S.L.last(); cap('③ (p−1)(q−1)', '');
+        },
+  // 1966.9
+  async (tok, S) => {
+          S.L.add('④ e：gcd(e, (p−1)(q−1)) = 1'); S.L.last(); cap('④ e 和 (p−1)(q−1) 互質', '');
+        },
+  // 1982.8
+  async (tok, S) => {
+          S.ke = prop('lock', 3.0, 1.6, 0, 1.0); sm('e：一把鑰匙', 3.0, 0.9); cap('e：一把鑰匙', '');
+        },
+  // 1990.4
+  async (tok, S) => {
+          S.L.add('⑤ d·e ≡ 1 (mod (p−1)(q−1))', 'ptr alt'); S.kd = prop('lock', 5.0, 1.6, 0, 1.0); sm('d：e 的倒數', 5.0, 0.9); cap('⑤ d = e⁻¹ mod (p−1)(q−1)', '');
+        },
+  // 2030.8
+  async (tok, S) => {
+          good('n：公開（寫在電話簿）', -3.4, 0.6); cap('n 公開', 'public key');
+        },
+  // 2048
+  async (tok, S) => {
+          sm('Rosen：公鑰 (n, e)，私鑰 d', -3.4, -0.1); cap('一把公開、一把私藏', 'Rosen：公開 (n, e)，d 保密');
+        },
+  // 2078.9
+  async (tok, S) => {
+          S.p.mood('sad'); S.q.mood('sad'); await wt(tok, 300); kill(S.p.g); kill(S.q.g); bad('p、q 用完銷毀', 4.0, 5.0); cap('p、q 要銷毀', '像密碼單用完就撕');
+        },
+]);
+scene('pfB-l11-rsaenc', "C = M^e mod n，M = C^d mod n", CAM, [
+  // 2129.4
+  async (tok, S) => {
+          S.bits = row(-4.6, 5.8, '0100100001101001'.split(''), { w: 0.42, gap: 0.06, c: (i, v) => (v === '1' ? FC.green : FC.gray) }).cells; sm('明文的 ASCII（示意 "Hi"）', -1.0, 6.6); cap('明文 = 一串二進位', 'ASCII code');
+        },
+  // 2149.4
+  async (tok, S) => {
+          S.m = buddy('M', 'M', FC.blue, -4.6, 2.6, 0, 0.9); sm('一塊 = 一個數字 M', -4.6, 1.8); cap('切成區塊：數字 M', '例：64 bits 一塊');
+        },
+  // 2169.4
+  async (tok, S) => {
+          S.L = board(1.6, 4.4, 0.72); S.L.add('C = M^e mod n'); S.L.last(); cap('M^e 除以 n 取餘數', '');
+        },
+  // 2183.5
+  async (tok, S) => {
+          S.c = buddy('C', 'C', FC.orange, 0, 2.6, 0, 0.9); await slide(tok, S.c.g, 2.2, 0.4, 0, 800); cap('密文 C 送出去', '');
+        },
+  // 2194
+  async (tok, S) => {
+          S.L.add('C^d mod n = M', 'good'); S.L.last(); S.m2 = buddy('M', 'M', FC.blue, 5.4, 2.6, 0, 0.9); S.m2.mood('happy'); cap('C^d mod n = M', '還原！');
+        },
+  // 2219.8
+  async (tok, S) => {
+          sm('同樣的運算，換一把鑰匙', 1.6, 2.4); cap('運算相同，鑰匙不同', '');
+        },
+  // 2228.2
+  async (tok, S) => {
+          note('Rosen：用公開 e 加密、私鑰 d 解密', 1.6, 1.6); cap('哪把鑰匙公開？', '課本：e 公開、d 私藏');
+        },
+  // 2254.7
+  async (tok, S) => {
+          S.L.hi(-1); hd('為什麼 C^d ≡ M？', -4.0, 7.2); cap('為什麼會還原？', '');
+        },
+  // 2295.1
+  async (tok, S) => {
+          S.P = board(-4.0, 6.3, 0.72); S.P.add('C^d ≡ (M^e)^d = M^(ed) (mod n)'); S.P.last(); cap('C^d ≡ M^(ed) (mod n)', '');
+        },
+  // 2311.6
+  async (tok, S) => {
+          S.P.add('M^(ed) ≡ M (mod n) ？', 'note'); cap('M^(ed) ≡ M？', '');
+        },
+  // 2329
+  async (tok, S) => {
+          S.P.add('費馬小定理（mod p、mod q）＋ 中國餘數定理', 'good'); S.P.last(); cap('費馬小定理 + CRT', '');
+        },
+]);
+scene('pfB-l11-rsaex', "RSA 例：n = 2537、e = 13、d = 937", CAM, [
+  // 2334.7
+  async (tok, S) => {
+          S.L = board(-3.6, 6.6, 0.68); hd('RSA 例子', 3.4, 7.2); cap('算一次例子', '');
+        },
+  // 2337.5
+  async (tok, S) => {
+          S.L.add('p = 43，q = 59'); S.L.last(); cap('p = 43，q = 59', '');
+        },
+  // 2348.6
+  async (tok, S) => {
+          S.L.add('n = 43 · 59 = 2537'); S.L.last(); cap('n = 2537', '');
+        },
+  // 2350.8
+  async (tok, S) => {
+          S.L.add('e = 13'); S.L.last(); cap('e = 13', '');
+        },
+  // 2358.5
+  async (tok, S) => {
+          S.L.add('(p−1)(q−1) = 42·58 = 2436，gcd(13, 2436) = 1'); S.L.last(); cap('42·58 = 2436', '和 13 互質');
+        },
+  // 2372
+  async (tok, S) => {
+          S.L.add('d = 937（13·937 = 5·2436 + 1）', 'good'); S.L.last(); cap('d = 937', '13·937 ≡ 1 (mod 2436)');
+        },
+  // 2382.2
+  async (tok, S) => {
+          S.L.hi(-1); S.keep = ['e = 13', 'd = 937', 'n = 2537'].map((t, i) => bx(t, FC.gold, 1.6 + i * 1.9, 5.6, 0, 1.6, 0.6, 0.6)); bad('p、q 丟掉', 3.5, 4.7); cap('只留 e、d、n', '');
+        },
+  // 2409.6
+  async (tok, S) => {
+          S.m = buddy('M', '1819', FC.blue, -5.4, 0.6, 0, 1.0); cap('明文 M = 1819', '');
+        },
+  // 2418.8
+  async (tok, S) => {
+          S.E = board(1.6, 3.6, 0.7); S.E.add('1819¹³ mod 2537 = 2081'); S.E.last(); cap('1819¹³ mod 2537 = 2081', '加密');
+        },
+  // 2436.3
+  async (tok, S) => {
+          S.c = buddy('C', '2081', FC.orange, -1.6, 0.6, 0, 1.0); await slide(tok, S.c.g, 1.4, 0.6, 0, 800); cap('網路上傳的是 2081', '');
+        },
+  // 2449.9
+  async (tok, S) => {
+          S.E.add('2081⁹³⁷ mod 2537 = 1819 ✔', 'good'); S.E.last(); S.m2 = buddy('M', '1819', FC.blue, 5.4, 0.6, 0, 1.0); S.m2.mood('happy'); cap('2081⁹³⁷ mod 2537 = 1819', '解密還原');
+        },
+  // 2469.7
+  async (tok, S) => {
+          S.E.hi(-1); cap('加密 ↔ 解密', '還原明文');
+        },
+]);
+scene('pfB-l11-modexp', "2081⁹³⁷ mod 2537 要怎麼算？", CAM, [
+  // 2491.8
+  async (tok, S) => {
+          hd('2081⁹³⁷ mod 2537 怎麼算？', 0, 7.2); S.L = board(-3.6, 6.2, 0.72); cap('怎麼算這個？', '每筆資料都要算');
+        },
+  // 2512.7
+  async (tok, S) => {
+          S.pc = prop('monitor', 4.0, 3.4, 0, 1.2); cap('寫程式的問題', '');
+        },
+  // 2520.4
+  async (tok, S) => {
+          S.L.add('① 速度：要乘 937 次嗎？'); S.L.last(); cap('① 速度', '');
+        },
+  // 2543.4
+  async (tok, S) => {
+          S.L.add('② overflow：數字太大裝不下', 'bad'); cap('② overflow', '');
+        },
+  // 2579.6
+  async (tok, S) => {
+          S.L.add('(a·b) mod m = ((a mod m)·b) mod m'); S.L.last(); cap('先取餘數再乘', '');
+        },
+  // 2607.8
+  async (tok, S) => {
+          S.L.add('每乘一次就 mod 一次 ✔', 'good'); S.L.last(); cap('每步都取餘數', '就不會 overflow');
+        },
+  // 2624.6
+  async (tok, S) => {
+          S.L.hi(-1); S.R = board(3.6, 1.2, 0.72); cap('怎麼加速？', '');
+        },
+  // 2633.8
+  async (tok, S) => {
+          S.R.add('5¹² = 5⁶ · 5⁶'); S.R.last(); cap('5¹² = 5⁶ · 5⁶', '');
+        },
+  // 2656.7
+  async (tok, S) => {
+          S.R.add('5⁶ 平方一次 → 5¹²'); S.R.last(); cap('平方一次', '');
+        },
+  // 2662.5
+  async (tok, S) => {
+          S.R.add('5⁶ = 5³ · 5³', 'good'); S.R.last(); cap('5⁶ = 5³·5³', '一直對半');
+        },
+  // 2672.4
+  async (tok, S) => {
+          S.R.hi(-1); note('兩個技巧 → 寫成遞迴函式', -3.6, 1.0); cap('寫成遞迴函式', '');
+        },
+]);
+  }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
 

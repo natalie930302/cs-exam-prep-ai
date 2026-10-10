@@ -527,6 +527,12 @@
   "quiz": 7,
   "cued": true
  },
+ "a_iekTDu1xQ": {
+  "label": "交大OCW 易志偉《離散數學》Lec09 Algorithms and the Integers (2/4)",
+  "points": 27,
+  "quiz": 6,
+  "cued": true
+ },
  "a_IRpiyBIm0": {
   "label": "How to prove NP-Completeness - The Steps",
   "points": 37,
@@ -704,6 +710,12 @@
  "dDghjse91lE": {
   "label": "清大周志遠 第9A講 Processes Concept",
   "points": 29,
+  "quiz": 7,
+  "cued": true
+ },
+ "ddMlBS2RYp4": {
+  "label": "交大OCW 易志偉《離散數學》Lec10 Algorithms and the Integers (3/4)",
+  "points": 54,
   "quiz": 7,
   "cued": true
  },
@@ -1017,6 +1029,12 @@
   "label": "交大江蕙如 Lec14 Greedy Algorithms (5/5)",
   "points": 91,
   "quiz": 8,
+  "cued": true
+ },
+ "IlMZbpJW1ek": {
+  "label": "交大OCW 易志偉《離散數學》Lec11 Algorithms and the Integers (4/4) / Induction and Recur (1/4)",
+  "points": 30,
+  "quiz": 6,
   "cued": true
  },
  "IOx8vtDzGO0": {
@@ -1833,6 +1851,12 @@
   "label": "MIT 6.006 Rec21：DP Knapsack Problem",
   "points": 82,
   "quiz": 7,
+  "cued": true
+ },
+ "wiVH6goGrWQ": {
+  "label": "交大OCW 易志偉《離散數學》Lec08 Algorithms and the Integers (1/4)",
+  "points": 25,
+  "quiz": 6,
   "cued": true
  },
  "WlBBTSL0ZRc": {
