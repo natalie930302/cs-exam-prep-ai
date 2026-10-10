@@ -39,7 +39,7 @@
   "label": "Abdul Bari：6.3 Graph Coloring Problem - Backtracking",
   "points": 25,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "0fVJsIC1QXs": {
   "label": "交大彭文志 Lec18 Graph (1/4)",
@@ -103,9 +103,9 @@
  },
  "1FEP_sNb62k": {
   "label": "Abdul Bari：7.3 Traveling Salesman Problem - Branch and Bound",
-  "points": 7,
-  "quiz": 3,
-  "cued": false
+  "points": 32,
+  "quiz": 7,
+  "cued": true
  },
  "1gIwNYCcwAk": {
   "label": "清大周志遠 第2D講 Special-purpose Systems",
@@ -219,7 +219,7 @@
   "label": "Abdul Bari：7 Branch and Bound Introduction",
   "points": 22,
   "quiz": 5,
-  "cued": false
+  "cued": true
  },
  "48K3qS2531o": {
   "label": "清大周志遠 第20D講 Classical Synchronization Problems & Monitors",
@@ -605,6 +605,12 @@
   "quiz": 7,
   "cued": true
  },
+ "cmQQL_hBBIM": {
+  "label": "交大OCW 江蕙如《演算法》Lec24 Chapter 9 Linear Programming",
+  "points": 48,
+  "quiz": 8,
+  "cued": true
+ },
  "CNO_I8jhX3I": {
   "label": "清大周志遠 第18C講 Background & Critical Section",
   "points": 36,
@@ -675,12 +681,24 @@
   "label": "Abdul Bari：6 Introduction to Backtracking - Brute Force Approach",
   "points": 18,
   "quiz": 5,
-  "cued": false
+  "cued": true
  },
  "dkmxHij2pfU": {
   "label": "交大江蕙如 Lec18 Dynamic Programming (2/3)",
   "points": 149,
   "quiz": 8,
+  "cued": true
+ },
+ "dQr4wZCiJJ4": {
+  "label": "Abdul Bari：6.4 Hamiltonian Cycle - Backtracking",
+  "points": 28,
+  "quiz": 7,
+  "cued": true
+ },
+ "dU40AvBURDQ": {
+  "label": "MIT 6.006 L24：Topics in Algorithms Research",
+  "points": 34,
+  "quiz": 7,
   "cued": true
  },
  "e2cF8a5aAhE": {
@@ -698,6 +716,12 @@
  "eCaXlAaN2uE": {
   "label": "MIT 6.006 L11：Integer Arithmetic, Karatsuba Multiplication",
   "points": 78,
+  "quiz": 7,
+  "cued": true
+ },
+ "eGSXsaJ-BlY": {
+  "label": "MIT 6.006 Rec8：Simulation Algorithms（隨機算法應用）",
+  "points": 41,
   "quiz": 7,
   "cued": true
  },
@@ -819,6 +843,12 @@
   "label": "Abdul Bari：3.3 Optimal Merge Pattern - Greedy Method",
   "points": 12,
   "quiz": 5,
+  "cued": true
+ },
+ "hkAONP0aC9w": {
+  "label": "MIT 6.006 Rec24：Final Exam Review",
+  "points": 24,
+  "quiz": 7,
   "cued": true
  },
  "HlFsexTpM4Q": {
@@ -953,6 +983,12 @@
   "quiz": 8,
   "cued": true
  },
+ "kyLxTdsT8ws": {
+  "label": "Abdul Bari：6.2 Sum Of Subsets Problem - Backtracking",
+  "points": 15,
+  "quiz": 6,
+  "cued": true
+ },
  "kyUpc_5705s": {
   "label": "Abdul Bari：BFS DFS - Simplified",
   "points": 15,
@@ -981,6 +1017,12 @@
   "label": "台大林軒田 DSA Skip List / BST / AVL Tree",
   "points": 192,
   "quiz": 8,
+  "cued": true
+ },
+ "M7Fl_z7_J2k": {
+  "label": "Abdul Bari：7.1 Job Sequencing with Deadline - Branch and Bound",
+  "points": 16,
+  "quiz": 5,
   "cued": true
  },
  "mB5HXBb_HY8": {
@@ -1481,6 +1523,12 @@
   "quiz": 5,
   "cued": true
  },
+ "xFv_Hl4B83A": {
+  "label": "Abdul Bari：6.1 N Queens Problem using Backtracking",
+  "points": 16,
+  "quiz": 6,
+  "cued": true
+ },
  "xGYsEqe9Vl0": {
   "label": "Abdul Bari：1.3 How to Write and Analyze Algorithm",
   "points": 32,
@@ -1505,6 +1553,12 @@
   "quiz": 8,
   "cued": true
  },
+ "xyqIXdUXeU0": {
+  "label": "Approximation Algorithms 1 - Introduction and Vertex Cover Problem",
+  "points": 35,
+  "quiz": 6,
+  "cued": true
+ },
  "ygK0YON10sQ": {
   "label": "Abdul Bari：Recursion and Stack",
   "points": 28,
@@ -1515,6 +1569,12 @@
   "label": "交大彭文志 Lec11 Lists (4/4)",
   "points": 67,
   "quiz": 7,
+  "cued": true
+ },
+ "yV1d-b_NeK8": {
+  "label": "Abdul Bari：7.2 0/1 Knapsack using Branch and Bound",
+  "points": 15,
+  "quiz": 6,
   "cued": true
  },
  "yWZHGsd06dA": {
