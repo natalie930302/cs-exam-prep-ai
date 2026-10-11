@@ -737,6 +737,12 @@
   "quiz": 6,
   "cued": true
  },
+ "Bu-L3BvML5E": {
+  "label": "黃婷婷教授計算機結構_第21B講 Pipelining",
+  "points": 52,
+  "quiz": 7,
+  "cued": true
+ },
  "bULIs7AVDNk": {
   "label": "交大彭文志 Lec23 Hashing",
   "points": 185,
@@ -1406,6 +1412,12 @@
  "ih43BS7GsNY": {
   "label": "交大OCW 易志偉《離散數學》Lec02 Logic and Proofs (2/5)",
   "points": 33,
+  "quiz": 7,
+  "cued": true
+ },
+ "II7Eh-Q8hdI": {
+  "label": "黃婷婷教授計算機結構_第20A講 Pipelining",
+  "points": 63,
   "quiz": 7,
   "cued": true
  },
@@ -2441,6 +2453,12 @@
   "quiz": 8,
   "cued": true
  },
+ "t27kbXWP5GY": {
+  "label": "Pipeline Hazards（Structural, Data and Control Hazards）",
+  "points": 16,
+  "quiz": 5,
+  "cued": true
+ },
  "t5Wxk96QjUk": {
   "label": "MIT 6.006 Rec23：Computational Complexity",
   "points": 93,
@@ -2775,6 +2793,12 @@
   "label": "交大彭文志 Lec20 Graph (3/4)",
   "points": 233,
   "quiz": 8,
+  "cued": true
+ },
+ "WpJZIFEtgg4": {
+  "label": "黃婷婷教授計算機結構_第21A講 Pipelining",
+  "points": 44,
+  "quiz": 6,
   "cued": true
  },
  "wU6udHRIkcc": {

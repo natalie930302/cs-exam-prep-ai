@@ -1,0 +1,292 @@
+{
+ "video": "t27kbXWP5GY",
+ "label": "Pipeline Hazards（Structural, Data and Control Hazards）",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Pipelining 回顧與三種 hazard",
+   "scene": "ppB-hz-intro",
+   "points": [
+    {
+     "t": 7,
+     "text": "pipelining：多個指令在執行時 overlap（之前用洗衣服的例子）；pipeline 裡發生的問題叫 hazard。"
+    },
+    {
+     "t": 97,
+     "text": "三種 hazard：structural（兩個指令要同一個 resource）、data（資料依賴還沒做完的前一個指令）、control（branch、jump 造成 fetch 延遲）。"
+    }
+   ],
+   "cues": [
+    7.5,
+    14.6,
+    30.2,
+    51.1,
+    63,
+    82.7,
+    96.9,
+    115.1,
+    143.9
+   ],
+   "explain": [
+    "這支英文短片的主題是 pipeline hazards（管線的危障）。",
+    "它要回答兩件事：什麼是 [[hazard]]？總共有幾種？",
+    "講者先提醒：要先懂 [[pipeline]]。之前的影片用洗衣服當例子：洗、烘、摺三個步驟，第一籃在烘的時候，第二籃就可以開始洗。",
+    "pipelining 就是讓好幾個指令在執行時「重疊」（overlap）：右邊時序圖每一列是一個指令，每往右一格是一個 clock cycle（T1、T2…），三個指令錯開一格同時進行。",
+    "可是這樣重疊會出問題。pipeline 裡發生的這些問題，就叫 hazard。",
+    "hazard 會讓下一個要執行的指令遇到困難，沒辦法照原本的節奏執行。",
+    "hazard 有三種。第一種是 [[structural hazard]]（結構危障）：兩個指令同時需要同一種硬體資源。",
+    "第二種是 [[data hazard]]（資料危障）：一個指令需要的資料要靠前一個指令算出來，但前一個還沒做完，下一個只好等。",
+    "第三種是 [[control hazard]]（控制危障）：跟 branch、jump 這類會改變流程的指令有關，會造成抓指令（fetch）的延遲。"
+   ]
+  },
+  {
+   "title": "Structural hazard：I1 寫 memory、I4 讀 memory",
+   "scene": "ppB-hz-struct",
+   "points": [
+    {
+     "t": 167,
+     "text": "structural hazard：同一個 clock cycle，兩個以上的指令需要同一個 resource（memory、registers、ALU）。"
+    },
+    {
+     "t": 218,
+     "text": "四個 phase：FI、DI、EI、WR；FI 從 memory 讀指令，WR 把結果存進 memory。"
+    },
+    {
+     "t": 307,
+     "text": "T4：I1 的 WR 和 I4 的 FI 同時要用 memory → resource clash → structural hazard。"
+    }
+   ],
+   "trap": "影片的設定是「指令和資料用同一個 memory」。課本的 MIPS 把 instruction memory 和 data memory 分開，所以 MIPS 的 pipeline 沒有這個 structural hazard。",
+   "cues": [
+    167.8,
+    173.3,
+    197.9,
+    217.6,
+    249.2,
+    266,
+    275.1,
+    289.5,
+    307.5,
+    337
+   ],
+   "explain": [
+    "一個一個來看，先看 structural hazard。",
+    "資源可能是[[記憶體]]、general purpose [[register]]（一般用途暫存器）或 [[ALU]]。好幾個指令同時要用同一個，就會出問題。",
+    "定義：在同一個 [[clock cycle]] 裡，pipeline 中有不只一個指令要用同一個 resource，就會衝突（conflict），這就是 structural hazard。",
+    "這支影片用四個 phase 的 pipeline：FI（fetch，取指令）、DI（decode，解碼）、EI（execute，執行）、WR（write result，寫結果）。表格有 I1～I4 四個指令、T1～T7 七個 cycle。",
+    "先看第一個指令 I1：T1 取指令、T2 解碼、T3 執行、T4 寫結果。",
+    "注意兩個亮起來的格子：FI 要從 memory 把指令讀進來，WR 在這個例子裡也要把結果存進 memory。兩個 phase 都會用到 memory。",
+    "這就是 pipeline：I1 在 decode 時，I2 就同時被 fetch。",
+    "I2 decode 時 fetch I3，I3 decode 時 fetch I4，一路錯開一格。",
+    "看 T4 這一欄（紅框）：I1 正在 WR，要把結果寫進 memory；同一時間 I4 在 FI，要從 memory 讀指令。程式模擬確認：只有這一格衝突。",
+    "兩個指令同時要同一個 memory，資源打架（resource clash），這就造成 structural hazard。"
+   ]
+  },
+  {
+   "title": "Structural hazard 的解法：I4 晚點 fetch（7 → 10 cycles）",
+   "scene": "ppB-hz-struct2",
+   "points": [
+    {
+     "t": 351,
+     "text": "解法：I1～I3 不變，等 I3 的結果寫完，下一個 cycle（T7）才 fetch I4。"
+    },
+    {
+     "t": 407,
+     "text": "structural hazard 避免了，但總共從 7 個 cycle 變成 10 個 cycle。"
+    }
+   ],
+   "cues": [
+    351.6,
+    375.1,
+    384.3,
+    398.4,
+    406.8,
+    418.1
+   ],
+   "explain": [
+    "怎麼避免這個衝突？表格擴充到 T10。",
+    "I1、I2、I3 照原本的時間跑，都沒問題；問題出在 I4 要 fetch 的那一點。",
+    "T4、T5、T6 這三個 cycle，memory 分別被 I1、I2、I3 的 WR 占用（藍框）。所以 I4 要等到 I3 的結果寫完，下一個 cycle T7 才能 fetch。",
+    "接著 I4 再 decode、execute、寫回結果，一路到 T10。",
+    "這樣就沒有任何一個 cycle 有兩個 phase 同時用 memory，structural hazard 就避免了。",
+    "代價是時間：不管衝突的話全部 7 個 cycle 就做完；避開衝突之後要 10 個 cycle（程式算的）。"
+   ]
+  },
+  {
+   "title": "Data hazard：依 read / write 順序分三種",
+   "scene": "ppB-hz-data",
+   "points": [
+    {
+     "t": 446,
+     "text": "data hazard：一個指令依賴另一個還在處理中的指令。"
+    },
+    {
+     "t": 472,
+     "text": "依暫存器 read / write 的順序分三種：RAW（flow / true dependency）、WAR（anti dependency）、WAW（output dependency）。"
+    }
+   ],
+   "trap": "講者在 7:44 附近口誤說成「structural hazard」；這裡講的是 data hazard。",
+   "cues": [
+    446.7,
+    451.5,
+    472,
+    487.5,
+    497.7
+   ],
+   "explain": [
+    "接著看 [[data hazard]]。",
+    "指令一個一個被 fetch、decode、execute。如果一個指令執行時，要依賴另一個還在處理中的指令（例如示意程式裡 I2 要用 I1 寫的 R0），就是 data hazard。（講者這裡口誤說成 structural hazard。）",
+    "暫存器只有兩種動作：read（讀）和 write（寫）。依照兩個指令對同一個暫存器 read、write 的先後，把 data hazard 分成三種。",
+    "第一種：RAW（read after write，寫了之後才讀），也叫 flow dependency 或 true dependency（真正的相依）。",
+    "第二種：WAR（write after read），也叫 anti dependency；第三種：WAW（write after write），也叫 output dependency。"
+   ]
+  },
+  {
+   "title": "RAW、WAR、WAW 的例子",
+   "scene": "ppB-hz-raw",
+   "points": [
+    {
+     "t": 509,
+     "text": "RAW：I2 要用 I1 產生的資料（I1 寫 R0、I2 讀 R0），I1 還沒做完 I2 就不能用。"
+    },
+    {
+     "t": 561,
+     "text": "WAR（較少見）：I2 在 I1 讀之前就寫了同一個暫存器；必須 I1 先讀、I2 再寫。"
+    },
+    {
+     "t": 640,
+     "text": "WAW：兩個指令寫同一個暫存器，必須照 issue 的順序寫。"
+    },
+    {
+     "t": 697,
+     "text": "WAR、WAW 只在平行或 out-of-order 執行時出現，原因是 compiler 用了同一個暫存器，可以避免。"
+    }
+   ],
+   "cues": [
+    509,
+    521.3,
+    543.1,
+    560.9,
+    578.7,
+    587.3,
+    615.6,
+    639.6,
+    650.4,
+    672.7,
+    697.3,
+    706.5,
+    733.7
+   ],
+   "explain": [
+    "先看 RAW：read after write。",
+    "例子（暫存器是示意）：I1 是 ADD，把結果寫進 R0；I2 是 SUB，要讀 R0。I2 的資料是 I1 產生的。程式比對兩個指令讀寫的暫存器，判定是 RAW。",
+    "在 I1 完全執行完、把結果提供出來之前，I2 不能用 R0，否則會拿到舊的值。I2 依賴 I1。",
+    "第二種：WAR（write after read）。講者說這種比較少見，但也要懂。",
+    "WAR 的意思是：後面的 I2 在前面的 I1「讀」某個暫存器之前，就先把它「寫」掉了。",
+    "例子：I1 是 ADD，要讀 R0 來做加法；I2 是 SUB，結果要寫進 R0。程式判定是 WAR。",
+    "正確順序應該是 I1 先讀 R0、I2 再寫。如果 I2 搶先寫了，I1 就會讀到被改過的 R0，程式執行就錯了。",
+    "第三種：WAW（write after write）。",
+    "兩個平行的指令都要寫同一個暫存器，就必須照它們 issue（發出）的順序來寫：誰先 issue，誰先寫。",
+    "例子：I1 的 ADD 和 I2 的 SUB，結果都寫進 R0。最後 R0 應該是 I2 的結果，如果順序反了，留下的就是 I1 的舊結果。",
+    "這就是三種會出現 data hazard 的情況：RAW、WAR、WAW。",
+    "其中 WAR 和 WAW 只會在指令平行執行或不照順序（out-of-order）執行時出現。像課本的五級 MIPS pipeline 是照順序的，主要只會遇到 RAW。",
+    "為什麼會發生？因為 [[compiler]] 剛好分配了同一個暫存器編號。只要換用不同的暫存器（renaming），這兩種是完全可以避免的。"
+   ]
+  },
+  {
+   "title": "Control hazard：branch 改變 PC",
+   "scene": "ppB-hz-ctrl",
+   "points": [
+    {
+     "t": 757,
+     "text": "control hazard 是最複雜的 hazard：branch、conditional 等會改變 PC 的指令造成。"
+    },
+    {
+     "t": 812,
+     "text": "branch 在 pipeline 開頭，decode 時下一個已經被 fetch，不知道該執行哪個；隨便拿一個拿錯就是 branch misprediction；if-else 也一樣。"
+    },
+    {
+     "t": 922,
+     "text": "總結：三種 hazard：structural、data、control。"
+    }
+   ],
+   "cues": [
+    757.4,
+    770.8,
+    802.4,
+    812.4,
+    838.6,
+    857.9,
+    892,
+    922.5
+   ],
+   "explain": [
+    "第三種：[[control hazard]]，講者說這是 pipeline 裡最複雜的一種。",
+    "它出現在 branch、條件判斷這類指令：它們可能會改變 [[program counter]]（PC，下一個要抓的指令位址）的值。",
+    "這時程式接下來往哪裡走，是由 branch 指令決定的。",
+    "例子：一個 branch 指令在 pipeline 的開頭（第一列，四個 phase 是示意）。",
+    "當 branch 在 decode 時，pipeline 已經在 fetch 第二個指令了（粉紅）；可是 branch 還沒決定要不要跳，根本不知道下一個該執行哪一個。",
+    "pipeline 只好先隨便挑一個抓進來。如果挑錯了，就叫 branch misprediction（分支預測錯誤），這就是 control hazard。",
+    "if-else 這種條件敘述也一樣：要等第一個指令的結果出來，才知道下一個該去哪裡拿。",
+    "總結：pipeline hazard 有三種：structural、data、control。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "影片的四階段 pipeline（FI、DI、EI、WR），FI 讀 memory、WR 寫 memory。I1～I4 依序每個 cycle 進一個，哪一個 cycle 會發生 structural hazard？",
+   "opts": [
+    "T4：I1 的 WR 與 I4 的 FI",
+    "T2：I1 的 DI 與 I2 的 FI",
+    "T3：I1 的 EI 與 I3 的 FI",
+    "T7：I4 的 WR"
+   ],
+   "ans": "T4：I1 的 WR 與 I4 的 FI",
+   "why": "I1 在 T4 寫結果到 memory，同時 I4 在 T4 要從 memory 取指令，兩者搶同一個 memory。"
+  },
+  {
+   "q": "承上題，若讓 I4 等到 memory 沒人寫結果時才 fetch，四個指令總共要幾個 cycle？",
+   "opts": [
+    "10",
+    "7",
+    "8",
+    "9"
+   ],
+   "ans": "10",
+   "why": "T4、T5、T6 memory 分別被 I1、I2、I3 的 WR 占用，I4 到 T7 才 fetch，T7～T10 做完，共 10 個 cycle（原本 7 個）。"
+  },
+  {
+   "q": "I1：ADD R4, R0, R1；I2：SUB R0, R2, R3。這兩個指令之間是哪一種 data hazard？",
+   "opts": [
+    "WAR（anti dependency）",
+    "RAW（true dependency）",
+    "WAW（output dependency）",
+    "沒有 hazard"
+   ],
+   "ans": "WAR（anti dependency）",
+   "why": "I1 要讀 R0，I2 要寫 R0；若 I2 先寫，I1 會讀到錯的值。"
+  },
+  {
+   "q": "哪一種 data hazard 是「真正的資料相依」，無法靠換暫存器（renaming）消除？",
+   "opts": [
+    "RAW",
+    "WAR",
+    "WAW",
+    "三種都可以靠 renaming 消除"
+   ],
+   "ans": "RAW",
+   "why": "RAW 是後面的指令真的需要前面算出的值；WAR、WAW 只是剛好用同一個暫存器名字，換名字就能避免。"
+  },
+  {
+   "q": "control hazard 主要由什麼造成？",
+   "opts": [
+    "會改變 PC 的 branch / jump 指令",
+    "兩個指令同時使用 ALU",
+    "指令讀到還沒寫回的暫存器",
+    "cache 太小"
+   ],
+   "ans": "會改變 PC 的 branch / jump 指令",
+   "why": "branch 還在 decode 時下一個已經被 fetch，不知道該抓哪一個；抓錯就是 branch misprediction。"
+  }
+ ]
+}

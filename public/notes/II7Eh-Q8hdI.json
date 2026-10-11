@@ -1,0 +1,954 @@
+{
+ "video": "II7Eh-Q8hdI",
+ "label": "黃婷婷教授計算機結構_第20A講 Pipelining",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "回顧：data hazard 與 control hazard",
+   "scene": "ppB-20a-recap",
+   "points": [
+    {
+     "t": 17,
+     "text": "pipeline 的 hazard 有兩種：data hazard、control hazard。"
+    },
+    {
+     "t": 22,
+     "text": "data hazard 來自 data dependence：前面的指令還在後面的 stage、還沒把結果寫回，後面的指令可能讀到舊資料，所以要 forwarding（或 stall）。"
+    },
+    {
+     "t": 66,
+     "text": "control hazard 跟 branch 指令有關。"
+    }
+   ],
+   "cues": [
+    20.6,
+    22,
+    46.4,
+    58.4,
+    65.8
+   ],
+   "explain": [
+    "先複習上次的重點。[[pipeline]] 讓好幾個指令同時在不同階段執行，但會出現一些「危險狀況」，叫做 [[hazard]]。老師說主要有兩種：[[data hazard]] 和 [[control hazard]]。",
+    "[[data hazard]] 的原因是「資料相依」：後面的指令要用前面指令算出來的結果。左邊例子（示意）：add 把答案寫進 $1，下一個 sub 馬上要讀 $1。",
+    "問題是 add 還在 pipeline 比較後面的階段，答案還沒寫回[[register]]；sub 這時去讀 $1，就會拿到「舊的」值，算出來就錯了。",
+    "解法是 [[forwarding]]：答案一算出來，就直接從 pipeline 中間「抄近路」送給需要的指令，不必等它寫回；真的來不及時，就只好 stall（讓後面的指令停一下等）。",
+    "另一種是 [[control hazard]]，它跟 [[branch instruction]]（分支指令，例如 beq）有關。接下來整堂課主要就在講它。"
+   ]
+  },
+  {
+   "title": "（點名同學回答）",
+   "scene": null,
+   "points": [
+    {
+     "t": 70,
+     "text": "老師點名同學回答什麼是 control hazard。"
+    }
+   ]
+  },
+  {
+   "title": "Control hazard：branch 還沒決定，下一個指令就要 fetch",
+   "scene": "ppB-20a-ctrl",
+   "points": [
+    {
+     "t": 94,
+     "text": "control hazard 由 branch 指令造成：pipeline 每個 cycle 都要 fetch 一個指令。"
+    },
+    {
+     "t": 119,
+     "text": "beq 在 decode 時，下一個指令已經要 fetch，但還不知道該 fetch PC + 4（sequential）還是 target（taken）；unconditional branch 一定跳。"
+    },
+    {
+     "t": 161,
+     "text": "不管怎樣都一定要 fetch 一個，fetch 錯了就是 control hazard。"
+    }
+   ],
+   "cues": [
+    94.1,
+    107.5,
+    119,
+    129.7,
+    134.1,
+    152.6,
+    160.7,
+    172.7
+   ],
+   "explain": [
+    "上面五個方塊是 [[pipeline]] 的五個階段：IF（抓指令）、ID（解碼、讀暫存器）、EX（運算）、MEM（讀寫記憶體）、WB（寫回暫存器）。現在一個 beq（分支指令）剛進到 IF。",
+    "pipeline 的規矩是：每一個 [[clock cycle]] 都要抓（fetch）一個新指令進來，這樣才能讓各階段都忙著，速度才快。",
+    "beq 往前走到 ID（解碼）。就在同一個 cycle，IF 已經要抓下一個指令了，畫面上那個「?」就是它。",
+    "問題來了：beq 到底要不要跳，還沒算出來，所以 IF 根本不知道該抓哪一個指令。",
+    "只有兩種可能：不跳（not taken），就照順序抓 PC + 4 那個指令；要跳（taken），就該去抓 target（目標位址）的指令。[[program counter]]（PC）就是「下一個要抓的指令位址」。",
+    "還有一種 unconditional branch（無條件跳躍，例如 j），它不用比較，一定會跳。",
+    "可是 pipeline 不能停下來等：下一個 cycle 一定要抓一個指令進來。抓到的可能剛好是對的，也可能是錯的。",
+    "如果抓錯了，這個狀況就叫 [[control hazard]]（控制危障）產生了。"
+   ]
+  },
+  {
+   "title": "Flush：猜錯就把指令沖掉",
+   "scene": "ppB-20a-flush",
+   "points": [
+    {
+     "t": 174,
+     "text": "發生 control hazard：發現 fetch 的指令不是要跳去的地方，就把它 flush 掉（像沖馬桶）。"
+    },
+    {
+     "t": 202,
+     "text": "只要還沒 write、state 沒改變，flush 都是安全的。"
+    }
+   ],
+   "cues": [
+    174.6,
+    188,
+    199.2,
+    202.3
+   ],
+   "explain": [
+    "假設 beq 其實要跳，可是 IF 已經抓進一個「錯的路」上的指令（粉紅色）。這時候該怎麼辦？",
+    "一發現要跳去的地方跟抓進來的不一樣，就把錯的指令 [[flush]] 掉。",
+    "老師的比喻：flush 就像沖馬桶，把它整個沖走，當作沒抓過。",
+    "為什麼可以直接沖掉？因為錯的指令才走到最前面幾個階段，還沒「寫入」任何東西。只要還沒寫，程式的狀態（state）就沒被改變，沖掉不會留下後遺症。"
+   ]
+  },
+  {
+   "title": "（問同學：怎麼 flush 一個指令）",
+   "scene": null,
+   "points": [
+    {
+     "t": 213,
+     "text": "老師連續點名同學回答怎麼 flush 一個指令。"
+    }
+   ]
+  },
+  {
+   "title": "Flush = 變成 bubble（no-op）",
+   "scene": "ppB-20a-bubble",
+   "points": [
+    {
+     "t": 267,
+     "text": "flush 就是把指令變成 bubble：不改變任何 state，等於一個 no-op。"
+    },
+    {
+     "t": 286,
+     "text": "read 沒關係，write 才會改變 state。"
+    }
+   ],
+   "cues": [
+    267,
+    278.7,
+    281.2,
+    286.1
+   ],
+   "explain": [
+    "同學答出來了：flush 就是把那個指令變成一個 [[bubble]]（氣泡）。bubble 會跟著 pipeline 往前流，但它是空的，什麼都不做。",
+    "怎樣才算「變成 bubble」？就是讓它不改變任何 state。state 指的是暫存器和[[記憶體]]裡的內容，也就是程式真正的「狀態」。",
+    "這種什麼都不做的指令叫 no-op（no operation）：它待會不會去寫任何東西。",
+    "讀（read）一下沒關係，不會弄壞任何東西；真正危險的是寫（write），因為寫了就改變 state。所以 flush 的重點是：絕對不能讓它寫。"
+   ]
+  },
+  {
+   "title": "（問同學：flush 要怎麼做）",
+   "scene": null,
+   "points": [
+    {
+     "t": 293,
+     "text": "老師繼續點名同學回答怎麼 flush。"
+    }
+   ]
+  },
+  {
+   "title": "Flush 的做法：control signal 全部設 0",
+   "scene": "ppB-20a-zero",
+   "points": [
+    {
+     "t": 325,
+     "text": "flush = 把 decode 出來的 control signal 全部設成 0，它就不會做任何動作。"
+    },
+    {
+     "t": 340,
+     "text": "還在 IF 階段的指令，就把整個指令（opcode）設成 0：全 0 的指令是 sll $0,$0,0，什麼都不做。"
+    },
+    {
+     "t": 379,
+     "text": "等於塞了一個 bubble（no-op）；control hazard 猜錯時就做 flush。"
+    }
+   ],
+   "cues": [
+    325.7,
+    333.5,
+    340.3,
+    351.7,
+    378.7,
+    384
+   ],
+   "explain": [
+    "答案揭曉：把它的 [[control signal]]（控制訊號）全部設成 0。上面這排是 lw 解碼出來的訊號（示意），例如 RegWrite = 1 代表要寫暫存器、MemRead = 1 代表要讀記憶體。全部變成 0。",
+    "控制訊號全是 0，就代表：不寫暫存器、不讀也不寫記憶體。這個指令雖然還在 pipeline 裡流動，卻什麼事都不會做。",
+    "如果它還在最前面的 IF 階段、還沒 decode，就直接把抓進來的 32-bit 指令整個設成 0。lw $4, 50($7) 的[[machine code]]是 0x8CE40032，設成 0x00000000 之後，解碼出來是 sll $0, $0, 0：把 0 號暫存器左移 0 位，等於什麼都沒做（nop）。",
+    "整理一下：已經在 pipeline 中間的，就把它 decode 出來的 control signal 設 0；還在 IF 的，就把指令本身設 0。兩種都是讓它「不做事」。",
+    "做完以後，這個位置就像塞了一個 [[bubble]]，也就是 no-op。",
+    "所以 [[control hazard]] 發生、猜錯的時候，處理方法就是 [[flush]]。"
+   ]
+  },
+  {
+   "title": "決定越早越好：branch 從第 4 stage 移到第 2 stage",
+   "scene": "ppB-20a-early",
+   "points": [
+    {
+     "t": 392,
+     "text": "flush 掉的指令等於白做，傷害 performance，所以越早發現越好。"
+    },
+    {
+     "t": 426,
+     "text": "我們的設計在第 2 個 stage（ID）就決定跳不跳；本來在第 4 個 stage（MEM）。"
+    },
+    {
+     "t": 474,
+     "text": "在 MEM 決定：後面 3 個指令要 flush（犧牲 3 個 cycle）；移到 ID：只 flush 1 個。"
+    }
+   ],
+   "cues": [
+    392.2,
+    405,
+    414.1,
+    426,
+    443.7,
+    473.9,
+    504.6,
+    518.7,
+    521
+   ],
+   "explain": [
+    "[[flush]] 雖然能修正錯誤，卻會傷害效能。pipeline 的目的本來就是「前一個還沒做完就先抓下一個」來加速。",
+    "下面是一張時序圖：橫的是 [[clock cycle]] 1、2、3…，每一列是一個指令。beq 在 cycle 1 進來；在它還沒決定之前，pipeline 已經照順序抓進好幾個指令。如果最後發現要跳，這些都白做了。",
+    "所以「發現猜錯」這件事越早越好；如果常常發生又很晚才發現，效能就會浪費很多。",
+    "我們（課本）的 5 個 stage 設計，是在第 2 個 stage（ID，decode）就決定要不要跳：jump 或 beq 都在 decode、讀暫存器的時候就判斷完。圖上 beq 的 ID 格子亮起來。",
+    "可是原本的設計，是在第 4 個 stage（MEM）才決定。看 beq 的 MEM 格子：要到 cycle 4 結束才知道。",
+    "到那時，cycle 2、3、4 已經各抓了一個指令，三個都在錯的路上，只好全部 flush（變粉紅），從 cycle 5 才抓到正確的 target。也就是犧牲 3 個 cycle：penalty = 4 − 1 = 3。",
+    "如果把決定提早到第 2 個 stage（ID）呢？看下面那張圖：beq 在 cycle 2 結束就知道了。",
+    "只有 cycle 2 抓進來的那一個是錯的，flush 1 個就好，cycle 3 就抓正確的 target。這和本章 schedule() 模擬的結果一致：penalty = 1。",
+    "結論：做決定的 stage 越前面，猜錯時要 flush 的就越少；越後面，後面的全部都要 flush。"
+   ]
+  },
+  {
+   "title": "Deeper pipeline：猜錯的 penalty 更大",
+   "scene": "ppB-20a-deep",
+   "points": [
+    {
+     "t": 544,
+     "text": "deeper 或 superscalar 的 pipeline 分成很多 stage，決定又在很後面，每次猜錯要犧牲很多 cycle，branch penalty 更 significant。"
+    },
+    {
+     "t": 572,
+     "text": "我們的 design 猜錯只犧牲 1 個 cycle；切越深 cycle 越短、performance 越高，但 penalty 越大，所以猜對很重要。"
+    }
+   ],
+   "cues": [
+    544.2,
+    558.1,
+    569.3,
+    572.1,
+    579.3,
+    599.8
+   ],
+   "explain": [
+    "這裡比較三種 pipeline。最下面那條是比較深（deeper）的 pipeline，例如切成 8 個 stage（示意）。superscalar 是一次跑好幾條的處理器，下一講會介紹。",
+    "如果它在第 6 個 stage 才決定跳不跳，猜錯時前面已經抓進來的 5 個指令都要 [[flush]]（粉紅色）。",
+    "所以在很深的 pipeline 裡，branch 猜錯的代價（penalty）就更大、更明顯（significant）。",
+    "上面兩條是 5 個 stage：在 ID 決定只犧牲 1 個 cycle，在 MEM 決定要犧牲 3 個。規律很簡單：penalty = 決定的 stage − 1。我們的設計猜錯只損失 1 個 cycle，還 OK。",
+    "為什麼還要切那麼深？因為切越多 stage，每個 stage 做的事越少，[[clock cycle]] 就能越短，效能越高。可是一旦猜錯、要 flush，後面的 cycle 全部犧牲掉。",
+    "所以重點來了：「猜對」這件事非常重要。"
+   ]
+  },
+  {
+   "title": "最簡單的猜法：predict not taken（PC + 4）",
+   "scene": "ppB-20a-pnt",
+   "points": [
+    {
+     "t": 610,
+     "text": "beq 要到 decode（第 2 stage）才決定，但第 1 stage 已經要 fetch：fetch 哪個就是在猜。"
+    },
+    {
+     "t": 683,
+     "text": "可以猜「跟上一次一樣」（要記錄，較複雜）；最直覺的是 PC = PC + 4，假設 sequential（predict not taken），真的跳就猜錯、重來。"
+    }
+   ],
+   "cues": [
+    609.7,
+    625.1,
+    641.3,
+    682.7,
+    697.3,
+    714.1
+   ],
+   "explain": [
+    "老師問：最簡單的猜法是什麼？beq 在 ID，IF 要抓下一個（問號）。",
+    "beq 要到第 2 個 stage（decode）才能決定；可是同一時間，第 1 個 stage 已經必須抓一個指令。",
+    "所以「抓哪一個」其實就是在猜（predict）。",
+    "有一種猜法是「跟上一次一樣」：上次跳，這次也猜跳。但這要把上次的結果記下來，比較複雜，等一下再講。",
+    "最直覺的猜法：PC = PC + 4，也就是假設它不跳、照順序執行下一個。這叫 predict not taken。",
+    "萬一它真的跳到 target，就代表猜錯了，把抓錯的 [[flush]] 掉，重新從 target 抓。"
+   ]
+  },
+  {
+   "title": "Loop：猜 PC + 4 每次都錯",
+   "scene": "ppB-20a-loop",
+   "points": [
+    {
+     "t": 719,
+     "text": "猜 PC + 4 常常會錯：loop 最後的 branch 大部分都要跳回 loop 的頭。"
+    },
+    {
+     "t": 776,
+     "text": "loop 會執行很多次（1000、1 萬次），每次跳回頭都猜錯，所以不能只用 PC + 4。"
+    }
+   ],
+   "cues": [
+    719,
+    735,
+    760.6,
+    775.7,
+    785.5,
+    797.6
+   ],
+   "explain": [
+    "可是「永遠猜 PC + 4」常常會錯。為什麼？看看[[迴圈]]（loop）。",
+    "組合語言寫的 loop，最後都有一個 branch（示意程式：bne $s1, $zero, Loop）：還要繼續就跳回 loop 的頭（綠色箭頭），結束了才往下走、跳出 loop。",
+    "正常狀況下，這個 branch 幾乎每次都要「跳回頭」（taken）。如果永遠猜 PC + 4（不跳），每次都會猜錯。",
+    "錯一兩次也許沒關係，可是 loop 通常會執行很多次，可能 1000 次、1 萬次。",
+    "算給你看：loop 跑 1000 次，這個 branch 有 999 次要跳回頭、最後 1 次才不跳。猜 PC + 4 的話，999 次全部猜錯，只有最後那次猜對。",
+    "所以不能只用 PC + 4 來預測，要更聰明一點的方法。"
+   ]
+  },
+  {
+   "title": "Branch prediction buffer 與 associative memory",
+   "scene": "ppB-20a-bht",
+   "points": [
+    {
+     "t": 801,
+     "text": "branch prediction buffer（branch history table）：像一個 table，記錄每個 branch 上一次 taken 還是 not taken；猜錯就 update 那個 bit。"
+    },
+    {
+     "t": 873,
+     "text": "用 branch 的位址（PC）來查；用 associative memory 實作：只存最近幾個 branch，查的時候同時跟每個 entry 比對，沒 match 就照 default。"
+    }
+   ],
+   "cues": [
+    801.2,
+    807.7,
+    815.7,
+    849.3,
+    862.4,
+    873,
+    905,
+    912.1,
+    925.1,
+    935.6,
+    974.4,
+    986.7
+   ],
+   "explain": [
+    "更複雜一點的方法：做一個 branch prediction buffer，就像一張表（table）。",
+    "表裡記錄「上一次這個 branch 是跳（taken）還是沒跳（not taken）」。",
+    "一開始還不知道，就用預設值（default），例如全部先猜 not taken，記成 0。左邊這列是位址 48 的 branch（示意）。",
+    "結果這個 branch 其實要跳到 target，代表猜錯了。這時趕快把那個 bit 更新成 1（taken）。",
+    "下次再遇到這個指令，查表看到 1，就猜 taken。這種記錄上一次狀況的表，叫 branch prediction buffer，也叫 branch history table。",
+    "要怎麼實作？每個 branch 指令的位址是知道的：抓指令時 [[program counter]]（PC）裡的值就是它的位址，例如 48（示意）。",
+    "老師說要用一種特別的記憶體：associative memory（關聯式記憶體）。",
+    "先想一般的[[陣列]]：index 是固定的，知道 index 100，就直接去第 100 格拿資料。",
+    "如果用這種方法，要替「每一個可能的位址」都留一格，那需要非常大一塊[[記憶體]]，太浪費了。",
+    "associative memory 不一樣：它只有少少幾個 entry（例如 5 個），每個 entry 除了內容，還存著「它是哪個位址」。查的時候拿位址去跟每個 entry 存的位址比對，對上了（match）才把內容讀出來。",
+    "所以 5 個 entry 就記錄「最近 5 個 branch 的位址」和它們是 taken 還是 not taken（右邊的值是示意）。",
+    "下次查表時，5 個 entry「同時」比對（一起閃一下），有 match 就讀出預測；全部都沒 match，表示這不是最近用過的 branch，就照預設的方法猜。"
+   ]
+  },
+  {
+   "title": "Cache 與 associative 查表的例子",
+   "scene": "ppB-20a-assoc",
+   "points": [
+    {
+     "t": 1009,
+     "text": "這種 memory 下一章（cache）會介紹：memory 在 chip 外、access 很久，pipeline 的 clock 又要配合最長的 stage，所以用小而快的 cache，一個 cycle 就拿到。"
+    },
+    {
+     "t": 1072,
+     "text": "associative 查表：index 要寫出來。例：entry 3→A、5→B、7→C；讀 5 → 同時比對 → B；讀 4 → 沒 match，不讀出東西。"
+    },
+    {
+     "t": 1131,
+     "text": "不用每個位址都記，只記最近有跳的幾個（位址與內容都記）。"
+    }
+   ],
+   "cues": [
+    1009.4,
+    1019.5,
+    1042,
+    1055.1,
+    1072,
+    1091.6,
+    1106,
+    1114,
+    1131,
+    1150.5
+   ],
+   "explain": [
+    "老師說，這種 memory 下一章會講，它叫 [[cache]]。",
+    "電腦的記憶體分好幾層。主記憶體（memory）在 CPU 晶片外面（off chip），去拿一次資料要很久。",
+    "而 pipeline 的 [[clock cycle]] 要設成「最慢那個 stage」的時間。如果 MEM 階段每次都真的去主記憶體，這個 stage 就超慢，整條 pipeline 的每個 cycle 都被拖長。",
+    "所以 CPU 旁邊放一個小小的 [[cache]]，把最常用的東西放進去；要用時先去 cache 找，通常一個 cycle 就拿到了。",
+    "branch history table 也可以用這種方式做。和陣列不同，這裡的 index 要「寫出來」存在表裡（左欄），因為它不是按照順序排好的。",
+    "老師的例子：表只有 3 個 entry，index 3 的值是 A、index 5 是 B、index 7 是 C。",
+    "現在要讀 5：把 5 同時跟 3、5、7 三個比對，第二個 match，就把它的內容 B 讀出來。",
+    "如果要讀 4 呢？跟 3、5、7 比都不相同，沒有 match，就什麼都不讀出來（表示表裡沒有它）。",
+    "這樣就不用每個位址都記下來了：只記「最近有跳的那幾個 branch」就好，但每一筆要同時記位址和內容。",
+    "用 associative memory 實作，把預測結果也存在這張表裡。"
+   ]
+  },
+  {
+   "title": "Fetch 時先查表；猜錯要 flush 並 flip",
+   "scene": "ppB-20a-flip",
+   "points": [
+    {
+     "t": 1156,
+     "text": "每次 instruction fetch 前先查 table：match 就讀出預測，fetch fall through（PC + 4）或 target；target address 也要記。"
+    },
+    {
+     "t": 1190,
+     "text": "猜錯：flush pipeline，並 flip prediction（1 bit 記錄，錯了馬上 flip）。"
+    }
+   ],
+   "cues": [
+    1162,
+    1173.1,
+    1186.1,
+    1190.2,
+    1207.2,
+    1213.2,
+    1223.6,
+    1240.4
+   ],
+   "explain": [
+    "流程是這樣：每次要抓指令之前，先拿 PC 去查這張表，看有沒有 match。",
+    "有 match 就讀出預測：猜不跳就抓 fall through（也就是 PC + 4）；猜跳就抓 target 位址的指令。",
+    "要抓 target，就得知道 target 在哪，所以 target address 也要記下來，等一下會講。",
+    "如果最後發現猜錯了，要做兩件事：[[flush]] pipeline（把抓錯的沖掉），以及把預測翻過來（flip）。",
+    "因為只用一個 bit 記錄，所以一猜錯就馬上把它翻過來。",
+    "例如表裡原本記 taken（1），這次實際上 not taken，猜錯了，就把 bit 改成 0。",
+    "所以猜錯時，除了 flush pipeline，還要 flip prediction。",
+    "預測錯的 penalty 很大，所以大家都希望把 [[branch prediction]] 做得更好一點。"
+   ]
+  },
+  {
+   "title": "1-bit predictor 不夠：loop 的問題",
+   "scene": "ppB-20a-1bit",
+   "points": [
+    {
+     "t": 1248,
+     "text": "1-bit predictor：只記上一次跳（1）或不跳（0），照上一次做。"
+    },
+    {
+     "t": 1264,
+     "text": "一個 bit 不夠：outer loop 常發生、執行很多次（inner 50、outer 100），每輪都錯，penalty 很大。"
+    },
+    {
+     "t": 1311,
+     "text": "optimization 要特別注意 loop：make the common case fast。"
+    }
+   ],
+   "cues": [
+    1248.2,
+    1264.4,
+    1281.2,
+    1295.2,
+    1311.4
+   ],
+   "explain": [
+    "剛剛那種只用一個 bit 的叫 1-bit predictor：跳記 1、不跳記 0，這次就照上一次的結果猜。",
+    "老師說：一個 bit 在某些狀況下不夠用。哪種狀況？",
+    "就是 loop 裡面還有 loop（巢狀迴圈）。例如 inner loop 跑 50 次、outer loop 跑 100 次（示意程式）。outer loop 很常見，而且一樣會執行很多次。",
+    "inner loop 的 branch 每跑完一輪就會猜錯，outer 跑 100 次就錯 100 次以上。只要牽涉到 loop，錯一次就會被乘上很多倍，penalty 非常大。",
+    "所以做最佳化時要特別注意 loop。這就是之前講過的設計原則：make the common case fast（讓最常發生的情況變快）。"
+   ]
+  },
+  {
+   "title": "（題外話：研究生專做 loop optimization）",
+   "scene": null,
+   "points": [
+    {
+     "t": 1321,
+     "text": "老師談做研究時常專注在 loop 的 optimization。"
+    }
+   ]
+  },
+  {
+   "title": "1-bit 跑巢狀 loop：出口錯、再進來又錯",
+   "scene": "ppB-20a-1bitrun",
+   "points": [
+    {
+     "t": 1356,
+     "text": "inner loop 執行 100 次每次都跳，第 101 次不跳；1-bit 記錄是 taken，第 101 次猜錯 → flush，bit flip 成 0。"
+    },
+    {
+     "t": 1440,
+     "text": "回到 outer loop 再進 inner loop：bit 是 0 → 猜 not taken，但第一次應該 taken → 又錯。"
+    },
+    {
+     "t": 1467,
+     "text": "taken → not taken 只是一次性的，錯一次就 flip 太早：每輪 inner loop 錯 2 次。"
+    }
+   ],
+   "cues": [
+    1356.1,
+    1369.6,
+    1380.5,
+    1388.6,
+    1405.5,
+    1414.1,
+    1428.1,
+    1440.2,
+    1459,
+    1467.2,
+    1495.2
+   ],
+   "explain": [
+    "用老師的例子跑一次：inner loop 執行 100 次，每次結尾的 branch 都要跳回頭（T = taken）。",
+    "到了第 101 次，100 次已經做滿，loop 結束，這次不跳（N = not taken）。",
+    "可是 1-bit predictor 只有一個 bit。前面一直 taken、taken、taken，bit 記的是 1。",
+    "上面一排是預測：前 100 次猜 taken，全部猜對；第 101 次還是猜 taken，可是實際不跳，猜錯了（紅色）。",
+    "猜錯就要把抓錯的指令 [[flush]] 掉。",
+    "而且要把 prediction bit 翻成 0，也就是改成「not taken」。",
+    "這時已經跳出 inner loop，回到 outer loop 繼續做。",
+    "outer loop 做完一圈，又要再進入 inner loop。這時 bit 是 0，所以預測 not taken。",
+    "可是進 loop 的第一次應該是 taken（要跳回頭繼續跑），所以又猜錯了！",
+    "問題在於：taken 變 not taken 只是「一次性」的（只在出口發生一次），大部分時候都是 taken。只錯一次就把 bit 翻掉，太早下結論了。",
+    "用程式模擬三輪 inner loop：第一輪錯 1 次（出口），之後每一輪都錯 2 次（出口一次、重新進來一次）。"
+   ]
+  },
+  {
+   "title": "錯兩次才 flip：2-bit predictor",
+   "scene": "ppB-20a-2bit",
+   "points": [
+    {
+     "t": 1507,
+     "text": "錯兩次才 flip：出口錯一次仍預測 taken，下次進 loop 就猜對。"
+    },
+    {
+     "t": 1528,
+     "text": "outer loop 可能 1000 次，每輪省一次就很多；prediction 錯誤要壓到很低，所以多用一個 bit（2-bit）。"
+    }
+   ],
+   "cues": [
+    1507.2,
+    1515.6,
+    1522.6,
+    1528.4,
+    1544.6,
+    1552.5
+   ],
+   "explain": [
+    "才錯一次就翻，太急了。老師提議：能不能錯兩次以上才翻？",
+    "如果規定錯兩次才翻：loop 出口那次猜錯了，但只錯一次，所以預測還是維持 taken。",
+    "下一次再進 inner loop，預測 taken、實際也是 taken，猜對了！",
+    "只省了一次有差嗎？有！outer loop 可能跑 1000 次。程式模擬整個巢狀 loop（1000 輪、每輪 101 次 branch）：1-bit 錯 1999 次，2-bit 只錯 1000 次。",
+    "換成錯誤率：1-bit 大約 1.98%，2-bit 大約 0.99%。老師說預測錯誤要壓到很少，零點幾、一點多 percent。",
+    "所以多用一個 bit，用兩個 bit 來記錄，就能預測得更準。"
+   ]
+  },
+  {
+   "title": "2-bit predictor = 4 個 state 的 finite state machine",
+   "scene": "ppB-20a-fsm",
+   "points": [
+    {
+     "t": 1559,
+     "text": "2-bit predictor 是一個 4 個 state 的 finite state machine，用兩個 flip-flop 存 state，依現在 state 和結果決定下一個 state。"
+    },
+    {
+     "t": 1600,
+     "text": "在 taken 這側：一次 not taken 只換 state，仍預測 taken；錯兩次才預測 not taken；not taken 這側也要兩次才回來。"
+    },
+    {
+     "t": 1664,
+     "text": "例：在 00 預測 taken → 不是 taken → 01（仍預測 taken）→ 又不是 → 預測 not taken 的 state。"
+    }
+   ],
+   "cues": [
+    1559.5,
+    1567,
+    1584.2,
+    1600,
+    1617.7,
+    1624.3,
+    1633.2,
+    1646.5,
+    1663.6,
+    1689,
+    1702,
+    1710.5,
+    1720.7
+   ],
+   "explain": [
+    "兩個 bit 到底是什麼意思？上面這兩格就是那兩個 bit。",
+    "兩個 bit 可以表示 4 種狀態，所以它其實是一個有 4 個 state 的狀態機（finite state machine）。老師說 state 要怎麼編號都可以，這裡照老師的講法：00 是起點。左邊兩個（綠）預測 taken，右邊兩個（橘）預測 not taken。",
+    "兩個 bit 用兩個 [[flip-flop]]（能記住 0 或 1 的小電路）存起來。下一個 state 由「現在的 state」和「這次實際的結果」決定。",
+    "如果現在在最左邊的 taken state，這次也真的 taken，就留在原地（↺）。",
+    "如果出現一次 not taken：往右移一格，但這一格還是預測 taken，不會馬上改口。",
+    "如果又錯一次（連續兩次 not taken），才移到右邊、開始預測 not taken。",
+    "在 not taken 那一側也一樣（綠色箭頭往左）：要兩次 taken 才會回到預測 taken。",
+    "這是稍微複雜一點的狀態機，但用很簡單的 control 電路就做得出來。",
+    "跑一次老師的例子：現在在 00（金色小方塊），下一個 branch 來了，預測 taken。",
+    "結果實際不是 taken，猜錯了，於是走到 01。",
+    "在 01 的時候，下一個 branch 來，還是預測 taken。",
+    "萬一又不是 taken，才走到預測 not taken 的那個 state，下一次就猜 not taken。這組轉換跟程式用 2-bit counter 模擬的結果一致。",
+    "用 state 加上「這次結果」這個 signal 來控制，就做出了 2-bit 的 [[branch prediction]]。"
+   ]
+  },
+  {
+   "title": "預測 taken，可是 target 在哪？",
+   "scene": "ppB-20a-btb",
+   "points": [
+    {
+     "t": 1733,
+     "text": "預測要跳，還要知道跳去的位址；我們的 implementation 在 decode（第 2 cycle）才算出 target（從 EX 搬過來）。"
+    },
+    {
+     "t": 1778,
+     "text": "只預測 taken 而不知道位址，還是有 1 cycle penalty，所以要把跳去的位址記下來。"
+    }
+   ],
+   "cues": [
+    1733.5,
+    1746.1,
+    1757.7,
+    1777.7,
+    1788.6
+   ],
+   "explain": [
+    "就算預測「要跳」，還有一個問題：要跳去的位址到底在哪？",
+    "在我們的設計裡，target 位址也是在第 2 個 cycle（ID）才算出來。",
+    "原本 target 是在 EX 階段算的，為了提早決定，整個搬到 decode 去算了。",
+    "可是 IF 在 cycle 2 就要抓下一個指令，那時 target 還沒算好。所以就算預測 taken，也不知道去哪抓，還是要多等 1 個 cycle（penalty）。",
+    "解法：把「跳去的位址」也記下來。"
+   ]
+  },
+  {
+   "title": "（問同學：怎麼知道要跳去哪）",
+   "scene": null,
+   "points": [
+    {
+     "t": 1799,
+     "text": "老師點名同學回答 target address 要怎麼記錄。"
+    }
+   ]
+  },
+  {
+   "title": "Table 裡連 target 一起記（dynamic prediction）",
+   "scene": "ppB-20a-btb2",
+   "points": [
+    {
+     "t": 1823,
+     "text": "prediction table 只記 taken/not taken 不夠：decode 在算 target 的同時就要 fetch next。"
+    },
+    {
+     "t": 1888,
+     "text": "上次 taken 時就知道跳去哪，把 target 一起記在 table；用 PC 查表，taken 就同時讀出 target。"
+    },
+    {
+     "t": 1947,
+     "text": "這就是 dynamic prediction；loop 會一直 repeat，所以預測錯誤率要很低。"
+    }
+   ],
+   "cues": [
+    1823.8,
+    1837.6,
+    1864.2,
+    1888.7,
+    1901.1,
+    1926.1,
+    1947.1,
+    1958.8,
+    1973.4
+   ],
+   "explain": [
+    "表裡如果只用一個 bit 記 taken / not taken，夠不夠？（位址 48、target 96 都是示意）",
+    "beq 在 decode 計算 target 的同時，IF 就必須抓下一個指令；只知道「要跳」卻不知道位址，還是抓不了。",
+    "所以要把 target address 記下來。可是要記哪一個？",
+    "關鍵：為什麼表裡會記 taken？因為上一次它真的跳了。既然上次跳了，那時就已經算出它跳去哪裡。",
+    "那就把 target 一起記下來：表裡每一列有 branch 位址、T/N、target 三欄。",
+    "之後抓指令時，用現在的 PC 去查表；預測 taken 的話，target 也同時讀出來，馬上就能去抓 96 的指令，不用等。",
+    "把 target 也存在表裡就沒問題了。這種「邊跑邊記錄、邊預測」的方法就是 dynamic prediction（課本叫 branch target buffer）。",
+    "為什麼這麼重要？看起來只差一個 cycle，但 loop 會一直重複執行，一錯就錯很多次。",
+    "所以預測錯誤率通常要壓到很低的個位數 %，要盡量設計讓它預測對。"
+   ]
+  },
+  {
+   "title": "Delayed branch：只差一個 cycle",
+   "scene": "ppB-20a-delay1",
+   "points": [
+    {
+     "t": 1987,
+     "text": "另一個方法：delayed branch。branch 在第 2 stage 決定，決定時第 1 stage 已經 fetch 一個（PC + 4 或 target），只差一個 cycle。"
+    },
+    {
+     "t": 2137,
+     "text": "這個 slot 放一個「跳或不跳都要執行」的指令；大約 50% 找得到，找到就搬到 branch 下面。"
+    }
+   ],
+   "cues": [
+    1987.3,
+    2010.6,
+    2038,
+    2069.5,
+    2082.6,
+    2137.3,
+    2206.2,
+    2216,
+    2225.1
+   ],
+   "explain": [
+    "前面講的是「猜」（predict）。另一個處理 [[control hazard]] 的方法叫 delayed branch（延遲分支）。",
+    "看時序圖：beq 在第 2 個 stage（ID）決定，ID 結束就知道要不要跳，再過一個 clock 就能抓正確的指令。",
+    "可是在它決定的那個 cycle，第 1 個 stage 已經抓進一個指令（粉紅問號）。",
+    "只有兩種可能：抓 PC + 4，結果它要跳，就錯了；抓 target，結果它不跳，也錯了。",
+    "其實只差一個 cycle 而已。",
+    "那換個想法：這個多出來的 slot，能不能放一個「不管跳不跳，本來就都要執行」的指令？這樣怎麼抓都不會錯。",
+    "要找的就是這種指令。看左下的示意程式：beq 前面有一個 add，它不管跳不跳都會被執行。",
+    "老師說大約 50% 的情況找得到這種指令。",
+    "找到了，就把它搬到 beq 的下面，放進那個 slot（叫 delay slot）。時序圖第二列變成 add：它照常走完五個階段，完全不浪費。"
+   ]
+  },
+  {
+   "title": "Delayed branch 的條件與限制",
+   "scene": "ppB-20a-delay2",
+   "points": [
+    {
+     "t": 2251,
+     "text": "delayed branch：branch 後面那個指令 always executed；用 compiler reorder，條件是沒有 dependency。"
+    },
+    {
+     "t": 2331,
+     "text": "跳過去也要執行它，所以不用 flush；永遠 fetch 下一個但沒有 penalty。"
+    },
+    {
+     "t": 2378,
+     "text": "有 dependency 不能搬；約 50% 找得到。pipeline 淺只要塞 1 個很容易，深的要塞 3 個就難。"
+    }
+   ],
+   "cues": [
+    2251,
+    2304.1,
+    2331.1,
+    2353,
+    2378,
+    2398.7
+   ],
+   "explain": [
+    "這就叫 delayed branch：branch 後面緊接的那一個指令，不管跳不跳都「一定執行」（always executed）。",
+    "搬之前要檢查：add 寫的是 $s1，beq 只讀 $s2 和 $zero，兩者沒有相依（dependency），所以可以安全地搬到 beq 後面。",
+    "就算 beq 跳到 target，這個 add 本來也要執行，所以完全不用 [[flush]]。",
+    "換句話說：它永遠抓下一個指令（看起來像猜 not taken），卻沒有 penalty。這是用 [[compiler]]（編譯器）的技巧，把指令重新排列（rearrange）。",
+    "條件是能搬：如果那個指令跟 branch 有 dependency，就不能亂搬。大約 50% 找得到；找不到就只好放一個 nop。",
+    "pipeline 不深時（在第 2 個 stage 就決定），只要塞 1 個指令，很容易找到；pipeline 很深的話要塞 3 個，就很難找滿了。"
+   ]
+  },
+  {
+   "title": "Exception：意料之外的事件",
+   "scene": "ppB-20a-exc",
+   "points": [
+    {
+     "t": 2420,
+     "text": "exception：程式執行時沒預期到的 event，要停下來跳到 OS；可能是 I/O（interrupt），或 process 本身出問題（undefined opcode、overflow）。"
+    },
+    {
+     "t": 2484,
+     "text": "exception 也是一種 control hazard；OS 也是一組 program（system program）。"
+    },
+    {
+     "t": 2535,
+     "text": "MIPS：internal 叫 exception，從 external I/O controller 來的叫 interrupt；都會犧牲效能。"
+    }
+   ],
+   "cues": [
+    2423.4,
+    2434.7,
+    2449.2,
+    2459.4,
+    2483.7,
+    2509.6,
+    2535,
+    2555,
+    2584,
+    2605.2
+   ],
+   "explain": [
+    "branch hazard 講完，接著是 exception（例外）。左邊是一段正在執行的程式（位址 1000 開始，示意）。",
+    "exception 是「意料之外的事件」（unexpected event）：寫程式時沒預期它會發生，但它發生了，程式只好停下來，跳去作業系統（OS）處理。",
+    "原因之一是 I/O：例如硬碟資料讀完了，要通知原本在等的程式，這叫 [[interrupt]]。",
+    "另一種是程式本身出問題：例如解碼出一個不認得的 [[opcode]]（undefined opcode），或是運算 [[overflow]]（溢位）。這時沒辦法正常執行下去。",
+    "仔細想想，exception 也是一種 [[control hazard]]：本來照著程式一個一個執行，突然有事件要你停下來，程式的流向（control flow）就改變了。",
+    "跳到 OS 其實沒什麼了不起：OS 也是一組程式，只是它是系統的程式（system program），不是使用者寫的。",
+    "在 MIPS 的定義裡：CPU「內部」發生的（例如 overflow），叫 exception。",
+    "從「外部」I/O controller 來的，叫 interrupt。",
+    "例如 I/O 做完了，就送一個 signal 給 CPU：「我這邊做完了」，CPU 再找時間處理。",
+    "這些事件都沒辦法預期；一發生，就像 control hazard 一樣，剛才在 pipeline 裡做的可能都要 [[flush]]，會犧牲效能。要設計得好、損失最少，並不簡單。"
+   ]
+  },
+  {
+   "title": "處理 exception：EPC、Cause、entry point",
+   "scene": "ppB-20a-handle",
+   "points": [
+    {
+     "t": 2650,
+     "text": "exception 發生：停止 normal flow，跳去 OS（改 PC，例如 1000 → 34686），所以也是 control hazard。"
+    },
+    {
+     "t": 2726,
+     "text": "把 PC 記在 EPC（Exception Program Counter），處理完 load 回 PC；I/O interrupt 做完這個指令、回來執行下一個，exception 要 repeat 這個指令。"
+    },
+    {
+     "t": 2873,
+     "text": "原因記在 Cause：MIPS 只有 undefined opcode（0）和 overflow（1）；exception 不把指令做完，馬上跳到唯一的 entry point 8000 0180，再判斷是哪一種。"
+    }
+   ],
+   "cues": [
+    2650.6,
+    2663.4,
+    2677.5,
+    2708.4,
+    2726.1,
+    2742.5,
+    2805.3,
+    2813.2,
+    2856.1,
+    2861.6,
+    2873.2,
+    2893.1,
+    2927.2,
+    2938.8,
+    2967
+   ],
+   "explain": [
+    "CPU 正在執行 1000 這個位址的指令，突然來了一個沒預期的 signal。",
+    "不同種類的事件要做不同處理；但共同點是：正常的流程要停下來。",
+    "跳去 OS 其實就是改 [[program counter]]：例如 OS 的處理程式從 34686 開始（老師舉的數字），就把 PC 從 1000 改成 34686，開始執行 OS 的程式。",
+    "本來應該執行下一個指令，結果跳到別的地方去了，所以 exception 也是一種 control hazard。",
+    "要先把「現在的 PC」記下來（下面這格 EPC），因為處理完可能要回來。",
+    "很多情況處理完還能回來，例如 I/O，只是暫停一下去處理，處理完繼續原本的程式。",
+    "回來要回哪裡？有兩種狀況。I/O interrupt：通常讓現在這個指令執行完再去處理，回來時執行「下一個」指令。",
+    "exception：是這個指令本身出了問題（例如 overflow），它沒做完，回來時要「重新執行」（repeat）這個指令。",
+    "PC 記在一個特別的暫存器：EPC（Exception Program Counter），這裡記成 1000。",
+    "處理完，把 EPC 的值放回 PC，程式就從那裡正常繼續執行（綠色箭頭）。",
+    "發生的原因也要記下來（Cause 暫存器），因為 handler（處理程式）要知道是哪一種狀況才能處理。",
+    "老師舉的簡單例子：MIPS 只有兩種 exception，undefined opcode 記 0、overflow 記 1。",
+    "因為是 exception（不是 interrupt），出問題的指令不會被執行完。",
+    "然後馬上跳去 handler。MIPS 只有一個入口（entry point）：位址 8000 0180，不管哪種 exception 都跳到這裡。",
+    "就像一個大門：大家都從這裡進去，進去之後，再由 OS 判斷是哪一種 exception、去執行對應的處理程式。"
+   ]
+  },
+  {
+   "title": "Single entry vs vectored interrupt",
+   "scene": "ppB-20a-vec",
+   "points": [
+    {
+     "t": 2981,
+     "text": "方法一：single entry（MIPS），都跳到 8000 0180，入口程式依 Cause 跳到對應 handler。"
+    },
+    {
+     "t": 3008,
+     "text": "方法二：vectored interrupt：依原因直接當 index 查表，跳到對應 handler 的開始位址。"
+    }
+   ],
+   "cues": [
+    2981.4,
+    2995,
+    3007.5,
+    3017.1,
+    3048
+   ],
+   "explain": [
+    "處理 exception 有兩種方法。第一種是 single entry：只有一個入口，不管發生什麼都跳到 8000 0180。",
+    "進入 OS 之後，入口程式看 Cause 暫存器（0 或 1），再跳到對應的 handler：undefined opcode 的或 overflow 的。",
+    "另一種方法叫 vectored interrupt（向量式中斷）。",
+    "它直接拿「原因」當 index 去查一張表（像[[陣列]]的 index），表裡寫著每種原因的 handler 位址，直接跳過去，不用先到同一個入口再判斷。",
+    "總結：MIPS 用 single entry point；vectored interrupt 則是依不同原因直接跳到對應 subroutine 的開頭。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "MIPS 五級 pipeline 把 branch 的決定從第 4 個 stage（MEM）提早到第 2 個 stage（ID）。分支成立且猜 not taken 時，要 flush 幾個指令？",
+   "opts": [
+    "1 個",
+    "2 個",
+    "3 個",
+    "0 個"
+   ],
+   "ans": "1 個",
+   "why": "在第 d 個 stage 決定，前面已多抓 d − 1 個：ID 決定 → 1 個；原本在 MEM 決定要 flush 3 個。"
+  },
+  {
+   "q": "flush 一個已經在 pipeline 中的指令，硬體實際上做的是？",
+   "opts": [
+    "把它 decode 出來的 control signal 全部設成 0",
+    "把它的結果寫回後再還原",
+    "讓整條 pipeline 停 3 個 cycle",
+    "把 PC 設成 0"
+   ],
+   "ans": "把它 decode 出來的 control signal 全部設成 0",
+   "why": "control signal 全 0 → 不寫暫存器、不讀寫記憶體，變成 bubble（no-op）；還在 IF 的則把指令本身設成 0。"
+  },
+  {
+   "q": "inner loop 每次跑 100 圈（branch：100 次 taken、1 次 not taken），外層一直重複。穩定之後，1-bit predictor 每一輪 inner loop 會猜錯幾次？",
+   "opts": [
+    "2 次",
+    "1 次",
+    "0 次",
+    "100 次"
+   ],
+   "ans": "2 次",
+   "why": "出口那次猜 taken 錯一次、bit 翻成 0；下一輪剛進來猜 not taken 又錯一次。2-bit 只錯出口那 1 次。"
+  },
+  {
+   "q": "2-bit predictor 目前在「強 taken」的 state，接著連續出現兩次 not taken。這兩次的預測分別是？",
+   "opts": [
+    "taken、taken",
+    "taken、not taken",
+    "not taken、not taken",
+    "not taken、taken"
+   ],
+   "ans": "taken、taken",
+   "why": "第一次 N 只降到「弱 taken」，仍預測 taken；第二次也猜 taken（又錯），之後才進到預測 not taken 的 state。"
+  },
+  {
+   "q": "為什麼 branch history table 除了 taken / not taken，還要記 target address？",
+   "opts": [
+    "target 要到 ID 才算得出來，IF 抓下一個指令時就需要它",
+    "因為 associative memory 規定要存兩欄",
+    "為了計算 CPI",
+    "為了處理 overflow exception"
+   ],
+   "ans": "target 要到 ID 才算得出來，IF 抓下一個指令時就需要它",
+   "why": "只知道「要跳」卻不知道去哪，還是得等 1 個 cycle；上次 taken 時就知道 target，一起記下來就能馬上 fetch。"
+  },
+  {
+   "q": "關於 delayed branch，下列何者正確？",
+   "opts": [
+    "branch 後面那個 slot 的指令不管跳不跳都會執行",
+    "slot 裡的指令只有在 taken 時執行",
+    "一定要 flush slot 裡的指令",
+    "pipeline 越深越容易填滿 slot"
+   ],
+   "ans": "branch 後面那個 slot 的指令不管跳不跳都會執行",
+   "why": "compiler 找一個和 branch 沒有 dependency、兩條路都要執行的指令放進 delay slot，找不到就放 nop；pipeline 越深要填的 slot 越多越難。"
+  },
+  {
+   "q": "MIPS 發生 overflow exception 時，下列何者不是硬體要做的事？",
+   "opts": [
+    "把出問題的指令先執行完再處理",
+    "把 offending 指令的位址存進 EPC",
+    "在 Cause 記下原因",
+    "跳到 handler 入口 8000 0180"
+   ],
+   "ans": "把出問題的指令先執行完再處理",
+   "why": "exception 是指令本身出問題，不能讓它寫回（不執行完）；I/O interrupt 才通常讓目前指令做完再處理。"
+  }
+ ]
+}

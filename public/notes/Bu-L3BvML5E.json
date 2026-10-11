@@ -1,0 +1,870 @@
+{
+ "video": "Bu-L3BvML5E",
+ "label": "黃婷婷教授計算機結構_第21B講 Pipelining",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "為什麼 multiple issue 一定要猜",
+   "scene": "ppB-21b-why",
+   "points": [
+    {
+     "t": 17,
+     "text": "不猜就要等 branch 決定才 fetch，pipeline 常常是空的；就算能一次 fetch 兩個，不敢猜也只能 fetch 一個。"
+    },
+    {
+     "t": 46,
+     "text": "要讓 pipeline 大部分時間都滿就要猜（speculation）；猜錯時 software 用 fix-up routine，hardware 就是 superscalar。"
+    }
+   ],
+   "cues": [
+    17,
+    27.2,
+    37.5,
+    45.7,
+    55.4,
+    73
+   ],
+   "explain": [
+    "上一節下課時有同學問：「猜」跟 multiple issue 有什麼關係？",
+    "如果不猜，就要等 branch 決定之後才能抓下一個指令。看時序圖：beq 後面空了一格（bubble），下一個指令晚了一個 cycle 才進來。",
+    "這樣 pipeline 常常是空的。就算硬體一次能抓兩個指令，如果不敢猜，還是只能抓一個，兩條 pipeline 等於白做。",
+    "所以為了讓平行度更高、pipeline 大部分時間都是滿的，就一定要猜，這就是 speculation（推測執行）的意思。",
+    "猜可能猜錯。如果用 software 的方法：程式裡加一段檢查，發現猜錯就跳到 fix-up routine 修回來。",
+    "如果用 hardware 的方法，那就是 [[superscalar]] 架構。"
+   ]
+  },
+  {
+   "title": "Superscalar：in-order fetch、out-of-order 執行、in-order commit",
+   "scene": "ppB-21b-commit",
+   "points": [
+    {
+     "t": 78,
+     "text": "superscalar：fetch / issue in order（找出 dependency），execution out of order。"
+    },
+    {
+     "t": 90,
+     "text": "結果先放 buffer，不馬上寫回 register / memory（改 state 才算數）；commit 時才 in order 寫回，猜錯就 flush。"
+    }
+   ],
+   "cues": [
+    78.3,
+    84,
+    90.4,
+    97.7,
+    106.5,
+    111.1,
+    121
+   ],
+   "explain": [
+    "superscalar 的整個概念是這樣：抓指令（fetch）的時候照順序（in order），順便把指令之間的 dependency 找出來。",
+    "真正執行（execution）的時候可以 out of order：不照順序，誰準備好了誰先做，有先有後沒關係。",
+    "做完的結果先存在一個 buffer 裡，不會馬上寫回[[register]]，也不會馬上寫進[[記憶體]]。",
+    "因為只有改變 state（暫存器、記憶體的內容）才會真的影響結果；中間怎麼算、放在暫時的地方都沒關係。",
+    "最後一個階段叫 commit：這時才按照原本程式的順序，一個一個把結果寫回去。",
+    "如果還不確定結果是對的（例如還在猜），就讓它留在 buffer；確定正確了才寫回。",
+    "像 branch 猜錯，就把 buffer 裡那些錯的結果 [[flush]] 掉，完全不影響 state。"
+   ]
+  },
+  {
+   "title": "Speculation 與 exception",
+   "scene": "ppB-21b-specexc",
+   "points": [
+    {
+     "t": 130,
+     "text": "猜 load 先做，結果是 invalid address 產生 exception；這不是真的 exception（正常執行不會發生），不能馬上處理。"
+    },
+    {
+     "t": 160,
+     "text": "static 要 defer exception；dynamic 要 buffer exception 直到真的 commit；需要更多 hardware 與 effort。"
+    }
+   ],
+   "cues": [
+    130.2,
+    141.1,
+    149.4,
+    158,
+    160,
+    173.3,
+    188.6
+   ],
+   "explain": [
+    "exception 也一樣要注意：我們先猜、先做了，結果出了狀況怎麼辦？",
+    "例子（示意）：branch 還沒決定，我們猜某個 load 會被執行，就先讓它做。",
+    "結果這個 load 的位址 $t0 是一個不合法的位址（invalid address），就產生了 exception。",
+    "這個 exception 不能算數！因為如果照正常順序執行，branch 可能根本不會走到這個 load，它不是真正的 exception。",
+    "所以不論 static 或 dynamic 都要處理這件事。static（compiler）的做法是把 exception 延後（defer）。",
+    "dynamic（hardware）的做法是把 exception 也先放在 buffer 裡，直到這個指令真的 commit、確定會執行，才真正處理。",
+    "這些都需要更多 hardware、更多心力，因為 speculation 和 exception 會互相交錯在一起。"
+   ]
+  },
+  {
+   "title": "Static multiple issue = VLIW",
+   "scene": "ppB-21b-vliw",
+   "points": [
+    {
+     "t": 198,
+     "text": "static multiple issue 主要是 compiler approach，dynamic 主要是 hardware approach。"
+    },
+    {
+     "t": 220,
+     "text": "compiler 把能平行的指令 pack 在一起當成一個指令（包內不能有 dependency）；需要足夠 parallelism 和更多 pipeline resource。"
+    },
+    {
+     "t": 268,
+     "text": "一包就是一個很長的指令：VLIW（very long instruction word）。"
+    }
+   ],
+   "cues": [
+    198.7,
+    208.5,
+    220.6,
+    239.7,
+    250.1,
+    257.3,
+    268.5,
+    288.1
+   ],
+   "explain": [
+    "兩種 multiple issue 再仔細看：static 和 dynamic。",
+    "static 主要靠 [[compiler]]，dynamic 主要靠 hardware。先看 static。",
+    "在程式還沒執行之前，compiler 就把可以平行做的指令包（pack）在一起，例如一個 add 和一個 lw（示意），整包當成一個指令來看。",
+    "同一包裡的指令當然不能有 dependency；如果發生 exception，也把整包當作一個指令處理。",
+    "要做到這件事，首先要有足夠的[[parallelism]]，才找得到可以包在一起的指令。",
+    "再來，pipeline 的 resource 也要增加，才能同時執行一整包。",
+    "一整包當成一個很長的指令，所以叫 VLIW：very long instruction word（超長指令字）。",
+    "所以說某個處理器是 VLIW，意思就是它用 compiler 的方法，把很多指令包在一起，同一時間執行很多個。"
+   ]
+  },
+  {
+   "title": "Scheduling：同一包不能有 dependency，找不到就 nop",
+   "scene": "ppB-21b-sched",
+   "points": [
+    {
+     "t": 295,
+     "text": "compiler 要 remove hazard：issue packet 內不能有 dependency；packet 之間的 dependency 看 processor 怎麼處理。"
+    },
+    {
+     "t": 333,
+     "text": "找不到能 pack 的就 insert no-op，這就是 scheduling 的問題。"
+    }
+   ],
+   "cues": [
+    295.6,
+    308.6,
+    320,
+    333
+   ],
+   "explain": [
+    "要排（schedule）指令時會發生什麼事？compiler 必須自己把 hazard 移除。",
+    "規則一：同一個 issue packet 裡的指令不能有 dependency。例如（示意）add 寫 $t0、lw 要用 $t0 當位址，就不能放同一包。",
+    "如果是 packet 和 packet 之間有 dependency，就要看 processor 怎麼處理；有的處理器連這個都不允許，compiler 都要知道。",
+    "找不到能一起 pack 的指令怎麼辦？就插 no-op（nop）。上面的例子就拆成兩包，各配一個 nop。這就是 scheduling（排程）要解決的問題。"
+   ]
+  },
+  {
+   "title": "MIPS dual issue：ALU/branch + load/store",
+   "scene": "ppB-21b-dual",
+   "points": [
+    {
+     "t": 342,
+     "text": "dual issue 例子：VLIW 不是任何組合都可以；一包 = 一個 ALU 或 branch ＋ 一個 load 或 store（不能兩個 load、兩個 ALU）。"
+    },
+    {
+     "t": 385,
+     "text": "每個指令 32 bit，一包 64 bit aligned，一次 fetch 64 bit；pack 不起來就放 nop（簡化 hardware）。"
+    },
+    {
+     "t": 445,
+     "text": "pipeline 圖：每個 cycle 進兩個指令；scheduling 要依 hardware 規定 pack，選不出來就 nop。"
+    }
+   ],
+   "cues": [
+    342,
+    351,
+    362,
+    372.4,
+    385.4,
+    396.6,
+    445.2,
+    459.5,
+    485.7,
+    513,
+    555.4,
+    579.7,
+    609
+   ],
+   "explain": [
+    "看一個例子：dual issue，一次發兩個指令。",
+    "VLIW 並不是隨便兩個指令都能包在一起。",
+    "這個例子規定：一個必須是 ALU 指令（或 branch），另一個必須是 load 或 store。不能兩個都是 load，也不能兩個都是 ALU，這是硬體設計上的考量。",
+    "所以一個 packet 有兩個位置（slot）：slot 0 放 ALU 或 branch，slot 1 放 load 或 store。",
+    "每個指令 32 bit，兩個包在一起就是 64 bit，對齊 64 bit 存放，每次就抓 64 bit。",
+    "實在包不起來，就放一個 nop。這樣規定是為了簡化 hardware：每次都固定抓 64 bit，不用一下抓一個、一下抓兩個。",
+    "看 pipeline 圖：第一個 cycle 同時進來兩個指令，一個 ALU / branch、一個 load / store，一起走五個階段。",
+    "第二個、第三個 cycle 也一樣各進兩個，但永遠是「ALU 配 load/store」，不能兩個都是 load，也不能兩個都是 ALU 或 branch。",
+    "老師再強調：不是有兩條 pipeline 就可以隨便要什麼，因為有些 resource 要共用，硬體已經規定好哪些可以搭配。",
+    "所以 scheduling 要根據 hardware 的規定來 pack，不能亂包。老師說這一段考試一定會考。",
+    "直覺上會以為隨便找兩個互不相干（independent）的指令就行，其實不是：要一個從 ALU/branch 組、一個從 load/store 組。",
+    "選不出來怎麼辦？就放 no-op。",
+    "所以每次抓的還是 64 bit，其中一個是 ALU、一個是 load/store；真的包不起來的那一格就是 nop。"
+   ]
+  },
+  {
+   "title": "Dual issue 需要的 hardware",
+   "scene": "ppB-21b-hw",
+   "points": [
+    {
+     "t": 635,
+     "text": "不必 double 全部 hardware：register file 要 4 個 read port（R-type 與 load/store 的 rs、rt）、2 個 write port。"
+    },
+    {
+     "t": 762,
+     "text": "EX 要多一個 ALU 算 load/store 的地址；memory、write back 一樣。"
+    }
+   ],
+   "cues": [
+    634.8,
+    649,
+    662,
+    685.1,
+    702.2,
+    734,
+    762.4,
+    787.3,
+    808.5
+   ],
+   "explain": [
+    "dual issue 需要哪些 hardware？不用把整個處理器加倍，只要增加某些 resource。",
+    "同時執行兩個指令：一個 ALU 指令、一個 load/store（示意：add 和 sw）。",
+    "同一個時間去讀 [[register file]]，要讀出幾個 operand（運算元）？",
+    "R-type 要讀 rs、rt 兩個；store 也要讀 rs（位址基底）和 rt（要存的值）兩個。合起來同時要讀 4 個。",
+    "以前 register file 只有 2 個 read port（讀取口），現在要 4 個。port 越多，硬體成本越高，可不是免費的。",
+    "而且同一個時間，前面可能有兩個指令剛好走到 WB 要寫回，所以還要 2 個 write port。",
+    "EX 階段：以前算數和算記憶體位址共用同一個 [[ALU]]；現在兩個指令同時做，要多一個 ALU 專門算 load/store 的位址。",
+    "MEM 和 WB 階段則跟原本一樣。",
+    "老師的類比：如果要做 shift 運算，ALU 做不到，就得加一個 shifter，並把輸入接過去。想增加功能，就要增加 hardware。"
+   ]
+  },
+  {
+   "title": "Dual issue 的 hazard：同一包不能 forward",
+   "scene": "ppB-21b-dhz",
+   "points": [
+    {
+     "t": 859,
+     "text": "同時執行兩個指令，hazard 的代價也比較大。"
+    },
+    {
+     "t": 895,
+     "text": "single issue：前一個 ALU 結果已在 pipeline register，forward 就好；dual issue 同一包兩個同時在 EX，一個算一個要用，沒辦法 forward，只好拆成兩包。"
+    },
+    {
+     "t": 986,
+     "text": "另一個 penalty：load-use。"
+    }
+   ],
+   "cues": [
+    859.4,
+    882.5,
+    895.2,
+    937,
+    964.3,
+    985.8
+   ],
+   "explain": [
+    "同時執行兩個指令雖然更快，但發生 hazard 時代價也比較大。",
+    "先看 EX 階段的 [[data hazard]]：資料還沒算出來，後面的就要用。",
+    "在 single issue 時：add 在 EX 算出 $t0，下一個 cycle 的 sub 要用，結果早就放在 [[pipeline register]] 裡了，直接 [[forwarding]] 過去（金色箭頭），完全不用停。",
+    "可是 dual issue 時，如果 add 和用到 $t0 的 lw（示意）被包在同一包，兩個同時在 EX：一個正在算、另一個同時就要用，沒有東西可以 forward。",
+    "只好把它們拆成兩包，讓 lw 晚一個 cycle，就像 stall 一樣。",
+    "還有另一個 penalty：load-use。"
+   ]
+  },
+  {
+   "title": "（問同學：什麼是 load-use hazard）",
+   "scene": null,
+   "points": [
+    {
+     "t": 991,
+     "text": "老師點名同學回答什麼是 load-use hazard。"
+    }
+   ]
+  },
+  {
+   "title": "Load-use hazard：dual issue 損失 2 個指令",
+   "scene": "ppB-21b-lu",
+   "points": [
+    {
+     "t": 1014,
+     "text": "兩種 data dependency：R-type 接 R-type 用 forwarding 即可；load 的資料第 4 stage 結束才有，下一個在第 3 stage 就要用 → 一定有 1 cycle penalty。"
+    },
+    {
+     "t": 1080,
+     "text": "single issue 損失 1 個指令的位置，dual issue 一個 cycle 是 2 個 → scheduling 很重要。"
+    }
+   ],
+   "cues": [
+    1014.2,
+    1021.2,
+    1041.3,
+    1053,
+    1059.6,
+    1067.2,
+    1080.3,
+    1093.3
+   ],
+   "explain": [
+    "data dependency 有兩種。第一種是 R-type 接 R-type（課本例子 sub $2 接 and）：用 forwarding 就好。",
+    "第二種：load 讀進來的資料，下一個指令馬上就要用（課本例子 lw $2 接 and）。",
+    "為什麼 R-type 可以 forward？因為 ALU 在 EX 就算完了，下一個指令到 EX 時，結果已經在 pipeline register 裡（金色箭頭）。",
+    "但 load 是在第 4 個 stage（MEM）才去記憶體拿資料，要到第 4 個 stage 結束才拿到。",
+    "下一個 and 在那個時候已經在第 3 個 stage（EX）要用了，資料還沒出來，怎樣都給不了。",
+    "所以一定有一個 cycle 的 penalty：and 停一格（灰色 bubble），程式模擬也是 stall 1 個 cycle。",
+    "single issue 時，這一個 cycle 只損失 1 個指令的位置；dual issue 時，一個 cycle 本來可以做 2 個指令，所以損失 2 個。",
+    "因此 dual issue 的 scheduling 特別重要，要盡量把指令排好，避開這些 stall。"
+   ]
+  },
+  {
+   "title": "（老師問同學、提醒要跟上前面的內容）",
+   "scene": null,
+   "points": [
+    {
+     "t": 1100,
+     "text": "老師點名多位同學回答 load-use hazard，並提醒大家要複習前面的 hazard。"
+    }
+   ]
+  },
+  {
+   "title": "再講一次：forwarding 與 load-use",
+   "scene": "ppB-21b-lu2",
+   "points": [
+    {
+     "t": 1160,
+     "text": "data hazard：要用前一個指令的資料但還沒出來；ALU type 第 5 stage 才寫回但早就算出來，用 forwarding 直接拿。"
+    },
+    {
+     "t": 1202,
+     "text": "前一個是 load：第 4 stage 才讀資料，下一個在第 3 stage 就要用 → insert 一個 bubble（load-use hazard）；single issue 犧牲 1 個、dual issue 犧牲 2 個。"
+    }
+   ],
+   "cues": [
+    1160,
+    1171.7,
+    1186,
+    1201.9,
+    1214.7,
+    1236.2,
+    1243.5,
+    1253.7
+   ],
+   "explain": [
+    "老師重新講一次 data hazard：下一個指令馬上要用前一個指令的資料，可是資料還沒出來，怎麼用？",
+    "ALU 類的指令（例如 sub）要到第 5 個 stage 才把結果寫回暫存器，但其實在 EX 就已經算好了，只是還沒寫回。",
+    "所以下一個指令要用時，雖然還沒寫回，也可以直接拿過來：硬體偵測到這個狀況，就從 pipeline register 把資料 forward 過去。程式模擬：0 個 stall。",
+    "如果前一個是 load（lw）：它要到第 4 個 stage 才去讀資料。",
+    "下一個指令在第 3 個 stage 就要用，這時資料根本還沒讀出來。",
+    "所以一定要多等一個 cycle：插入一個 [[bubble]]（stall 1 cycle）。",
+    "這就叫 load-use hazard：load 之後馬上使用，就一定要停一個 cycle。",
+    "single issue 只犧牲 1 個指令；dual issue 時下面有兩個指令在等，要插兩個 bubble，犧牲 2 個。"
+   ]
+  },
+  {
+   "title": "Scheduling 例子：4 個 cycle 做 5 個指令",
+   "scene": "ppB-21b-sched-ex",
+   "points": [
+    {
+     "t": 1271,
+     "text": "例子：Loop: lw $t0,0($s1); addu $t0,$t0,$s2; sw $t0,0($s1); addi $s1,$s1,-4; bne $s1,$zero,Loop（array 每個元素加 $s2）。"
+    },
+    {
+     "t": 1349,
+     "text": "lw、addu、sw 經 $t0 相依，不能同一包；addi 可跟上面 pack，bne 跟 sw pack（sw 改成 4($s1)）。"
+    },
+    {
+     "t": 1486,
+     "text": "4 個 cycle 執行 5 個指令，IPC = 1.25，遠低於理想的 2。"
+    }
+   ],
+   "cues": [
+    1271,
+    1283.4,
+    1296.1,
+    1304,
+    1313.2,
+    1331.7,
+    1349.3,
+    1360.4,
+    1370.7,
+    1378.1,
+    1401.2,
+    1461.2,
+    1473,
+    1486.4,
+    1496.5
+   ],
+   "explain": [
+    "來排一個程式。這是課本的例子：一個 loop。",
+    "它做的事很簡單：有一個[[陣列]]，每次讀一個元素進來，加上一個值，再寫回去。",
+    "lw $t0, 0($s1)：$s1 指向目前的元素，把它讀進 $t0。",
+    "addu $t0, $t0, $s2：把 $t0 加上一個固定的數（scalar）$s2，結果放回 $t0。",
+    "sw 把結果寫回原位；addi $s1, $s1, -4 讓 $s1 往前移一個元素（一個 word 是 4 bytes，例如從第 100 個 byte 位址到 96）。",
+    "bne $s1, $zero, Loop：$s1 還不是 0 就繼續 loop，是 0 就結束。",
+    "投影片的顏色代表 dependency：$t0 這一串（lw → addu → sw）互相相依，$s1 那一串（addi → bne）也相依。",
+    "現在要 pack：每個 cycle 一包，左邊放 ALU / branch，右邊放 load / store。",
+    "lw、addu、sw 三個有 dependency，不可能放在同一包，只能各占一個 cycle：lw 在 cycle 1，addu 要等 load-use，排到 cycle 3，sw 在 cycle 4。",
+    "addi 是 ALU 指令，可以跟上面的指令 pack，放在 cycle 2。",
+    "規則就是綠色的（ALU）可以跟紅色的（load/store）包在一起；branch 也可以跟 store 配一包。",
+    "老師的版本把 bne 跟 sw 包在 cycle 4。注意 sw 現在在 addi 之後才執行，$s1 已經減了 4，所以 offset 要改成 4($s1)，才會寫回原來的位置。",
+    "結果只有最後一包真的兩格都有用，其他格子都是 nop（灰色）。",
+    "4 個 cycle 執行 5 個指令，IPC = 5 / 4 = 1.25。程式真的跑了 8 個元素，排好的版本和照順序執行的結果完全一樣。",
+    "可是有兩條 pipeline，理想的 IPC 應該是 2，現在只增加一點點，效能不好。"
+   ]
+  },
+  {
+   "title": "Loop unrolling：一次做 4 份",
+   "scene": "ppB-21b-unroll",
+   "points": [
+    {
+     "t": 1510,
+     "text": "loop unrolling：把 loop body copy 4 份，1000 次 iteration 變 250 次。"
+    },
+    {
+     "t": 1550,
+     "text": "unroll 後 window 裡有更多指令，就可以同時執行、好好 pack。"
+    }
+   ],
+   "cues": [
+    1510.1,
+    1525.4,
+    1531,
+    1550.6,
+    1572.3,
+    1612.2
+   ],
+   "explain": [
+    "loop 會一直執行。compiler 裡有一個很重要的方法：loop unrolling（迴圈展開）。",
+    "剛才排的只是一個 iteration（一圈），可是它要執行 1000 次。",
+    "把 loop 的內容 copy 4 份放在同一圈裡：一圈做 4 個元素，1000 次就變成 1000 / 4 = 250 圈。",
+    "為什麼要這樣？因為展開之後，同時有很多指令可以一起執行。",
+    "四份 copy 放在一起，compiler 一次能看到的指令（window）變多了，就能好好地 schedule、pack。",
+    "每一份做的事都一樣：讀一個元素、加上 scalar、寫回下一個位置。四份處理四個相鄰的元素。"
+   ]
+  },
+  {
+   "title": "Register renaming 與 unrolled schedule（8 cycle 14 個指令）",
+   "scene": "ppB-21b-rename",
+   "points": [
+    {
+     "t": 1669,
+     "text": "單純 copy 都用 $t0，看起來有 dependency；其實前一份已經 store 回去，下一份 load 的是新資料，沒有關係。"
+    },
+    {
+     "t": 1750,
+     "text": "unroll 後改名 $t0～$t3（rename）：只是 name dependency，不是真的 data dependency。"
+    },
+    {
+     "t": 1805,
+     "text": "一次考慮四個 element：先 load、再運算，下一份的 load 和上一份的加法重疊；8 個 cycle 做 14 個指令，IPC = 1.75；代價是多用 register、code size 變大。"
+    }
+   ],
+   "cues": [
+    1669,
+    1691,
+    1704.5,
+    1750.3,
+    1769.2,
+    1805.3,
+    1825.3,
+    1858.5,
+    1962.3,
+    1981
+   ],
+   "explain": [
+    "如果只是單純 copy，四份都用同一個 $t0，看起來每一份都依賴前一份的 $t0，好像沒辦法平行。",
+    "可是仔細想想：這一份的 $t0 跟下一份的 $t0，真的有關係嗎？",
+    "沒有關係！前一份讀進來、加完、已經 store 回記憶體了；下一份 load 進 $t0 的是全新的資料。",
+    "那就換個名字：四份分別用 $t0、$t1、$t2、$t3，多用幾個 [[register]] 就好。",
+    "這就是 rename（重新命名）。它們之間只是「名字」相同造成的 name dependency，資料本身根本沒有相依。",
+    "這等於一次考慮四個元素一起排程。下面的表就是 unroll 後的排程。",
+    "先連續兩個 cycle 都在 load：cycle 1 讀 $t0（同時 addi 把 $s1 減 16），cycle 2 讀 $t1。",
+    "兩個 cycle 後資料到了，就開始加法；同時繼續 load 下一份。你會看到「後一份的 load」和「前一份的加法」在同一個 cycle 重疊進行，最後再一路 store 回去。",
+    "結果 8 個 cycle 執行 14 個指令，IPC = 14 / 8 = 1.75，比剛才的 1.25 好很多。程式模擬也確認：結果和照順序執行完全一樣，且沒有違反 load-use 的規則。",
+    "代價是什麼？要用更多 register（$t0～$t3 同時在用），程式碼（code size）也變成大約四倍。"
+   ]
+  },
+  {
+   "title": "Unrolling 的好處與 anti-dependence",
+   "scene": "ppB-21b-overhead",
+   "points": [
+    {
+     "t": 2017,
+     "text": "unroll 可以 reduce loop control overhead：本來每個 iteration 都要 check（bne），unroll 4 次後 1000 次 check 變 250 次。"
+    },
+    {
+     "t": 2096,
+     "text": "register renaming：load 之前舊值已 store，不是真的 dependency，只是 name dependency（anti-dependence），rename 就好；只 unroll 不 rename 不行。"
+    },
+    {
+     "t": 2193,
+     "text": "不是 4 的倍數（如 1003 次）：1000 次 unroll，剩下 3 次單獨跑。"
+    }
+   ],
+   "cues": [
+    2017.5,
+    2034,
+    2047.1,
+    2056.7,
+    2095.7,
+    2121.1,
+    2148,
+    2160.3,
+    2182,
+    2193,
+    2202,
+    2245
+   ],
+   "explain": [
+    "回到前面那一頁投影片，上面有一個名詞：anti-dependency。",
+    "loop unrolling 的另一個好處：reduce loop control overhead，減少控制迴圈的額外工作。",
+    "本來每一圈都要做一次檢查（bne），看要不要繼續。上排每一格都是一次 bne。",
+    "展開 4 次之後，4 份做完才檢查一次（下排）。原本 1000 次檢查，現在只要 250 次，指令變少了。",
+    "展開時讓不同 iteration 用不同的暫存器（$t0、$t1、$t2、$t3），這就是 register renaming。",
+    "為什麼可以這樣做？因為它不是真的 dependency：把新資料 load 進 $t0 之前，舊的 $t0 早就被 store 回去了。",
+    "兩個 $t0 的值根本不一樣，只是名字相同（name dependency），所以改個名字就好。",
+    "注意：只 unroll 不 rename 是不行的。四份都還叫 $t0，compiler 會以為它們有 dependency，就不敢重新排。",
+    "這種因為名字相同造成的相依，叫 anti-dependence（反相依）。",
+    "同學問：如果 loop 次數不是 4 的倍數怎麼辦？",
+    "例如 1003 次：前 1000 次用展開的版本跑（250 圈），剩下的 3 次就照原本一次一圈跑完。這是小事情。",
+    "所以 software approach 最重要的就是 scheduling，尤其是 loop：loop 可能跑一千、一萬次，排得不好效能就差很多。"
+   ]
+  },
+  {
+   "title": "Dynamic multiple issue：superscalar",
+   "scene": "ppB-21b-dyn",
+   "points": [
+    {
+     "t": 2267,
+     "text": "dynamic multiple issue（hardware approach）最簡單的是 superscalar：issue 時檢查 dependency，決定這個 cycle 發 0～4 個，避免 structural / data hazard。"
+    },
+    {
+     "t": 2305,
+     "text": "compiler 幫忙集中沒 dependency 的指令會更好，但最後由 hardware 負責。"
+    },
+    {
+     "t": 2342,
+     "text": "例：lw $t0 → addu 用 $t0（相依），sub 與它們無關 → 可以先執行（out-of-order），commit 時照順序。"
+    }
+   ],
+   "cues": [
+    2267,
+    2272.6,
+    2282.3,
+    2304.8,
+    2320.7,
+    2341.8,
+    2352.3,
+    2355.3,
+    2367.6,
+    2382
+   ],
+   "explain": [
+    "另一種是 dynamic multiple issue，主要靠 hardware。",
+    "最簡單的版本就叫 [[superscalar]] processor。",
+    "它在 issue（發出指令）的時候檢查 dependency，決定這個 cycle 要發 0 個、1 個、2 個…，以避免 [[structural hazard]] 和 [[data hazard]]。",
+    "雖然可以不靠 compiler，但如果 compiler 幫忙把沒有相依的指令集中在一起，硬體比較容易一次發出多個。",
+    "不過最後要發幾個，還是由 hardware 負責決定。",
+    "看一個例子（課本的四行程式）：lw 讀進 $t0，下一個 addu 要用 $t0，這兩個有 dependency。",
+    "就算是 2-issue，也只能先發 lw，再發 addu。",
+    "可是下一個 sub 跟 lw、addu 根本沒關係（程式檢查過）。load 要很久，為什麼要讓 sub 乾等？",
+    "那就讓 sub 先執行：load 都還沒做完，後面的 sub 已經先做了，這就是 out-of-order execution。",
+    "中間誰能執行就先執行，只要最後寫回（commit）時照順序寫就好，由硬體偵測這件事。"
+   ]
+  },
+  {
+   "title": "Superscalar 的結構：reservation station 與 commit unit",
+   "scene": "ppB-21b-ss",
+   "points": [
+    {
+     "t": 2399,
+     "text": "三段：in-order issue（fetch & decode，找出 dependency）、out-of-order execution（function unit）、in-order commit。"
+    },
+    {
+     "t": 2441,
+     "text": "reservation station 放 operand，operand 可從 register file、剛做完的 function unit 或 commit unit 來（像 forwarding），兩個 operand 都到就算。"
+    },
+    {
+     "t": 2455,
+     "text": "commit unit 是 buffer：結果先放這裡，因為會改變 state，一定 in-order commit。"
+    }
+   ],
+   "cues": [
+    2399.5,
+    2405.7,
+    2414.1,
+    2422.2,
+    2428.8,
+    2441,
+    2448.2,
+    2455.6,
+    2467.7,
+    2507.4,
+    2520,
+    2533.5,
+    2577.5
+   ],
+   "explain": [
+    "dynamic superscalar 的基本架構長這樣。",
+    "分成三段。第一段：instruction fetch 和 decode，照順序 issue（in-order issue）。",
+    "第二段：很多個 function unit（整數、浮點、load/store），可以 out-of-order 執行，每個前面有 reservation station。第三段：commit unit，照順序 commit。",
+    "指令讀進來時一定要照順序，因為要靠順序找出 dependency。",
+    "中間的 function unit 則不照順序：誰的 operand 到齊了，誰就先做。",
+    "怎麼知道 operand 到了沒？每個 function unit 前面有 reservation station（保留站），專門放它需要的 operand。",
+    "operand 可以來自 [[register file]]，也可以直接來自剛算完的 function unit，或是 commit unit 裡算好但還沒寫回的結果，很像 [[forwarding]] 的概念。",
+    "最後是 commit unit，它也是一個 buffer：算完的結果放在這裡，不馬上寫回 register file，也不馬上寫進記憶體。",
+    "它要 in-order commit：寫回的順序和原本程式的順序一樣。",
+    "只要 data ready，function unit 就開始算，算完把結果放到 commit unit。",
+    "中間這段 out-of-order 執行，只要 ready 就算，所以可以加快速度。",
+    "整理：in-order issue 時把 dependency 記下來；reservation station 先 hold 住 operand，兩個 operand 都來了就做運算。",
+    "算完先放在 commit unit 的 buffer；因為寫回會改變 state，所以一定照順序 commit。"
+   ]
+  },
+  {
+   "title": "Hardware 也在做 renaming 和 speculation",
+   "scene": "ppB-21b-hwspec",
+   "points": [
+    {
+     "t": 2599,
+     "text": "superscalar 也在做 renaming：知道 data dependency、data ready 就做，名字不重要。"
+    },
+    {
+     "t": 2653,
+     "text": "hardware 常用兩種 speculation：branch prediction 與 load speculation（早點 load、store 還沒做完就先 load、store 的值可 bypass 給 load）；不確定就不 commit，錯了 redo。"
+    }
+   ],
+   "cues": [
+    2599.4,
+    2612.7,
+    2632.2,
+    2652.8,
+    2678.4,
+    2696.4,
+    2719.9
+   ],
+   "explain": [
+    "為什麼 superscalar 也能加速？因為它其實也在做 renaming。",
+    "它只要知道 data dependency，data 一 ready 就開始做；暫存器原本叫什麼名字根本不重要。",
+    "這就相當於前面 loop unrolling 時做的 renaming，只是改由 hardware 自動完成。",
+    "硬體也要猜，常用的兩種 speculation：branch 的預測，以及 load 的推測。",
+    "load 的資料常常馬上就要用，所以最好早點猜、早點把值 load 進來；萬一猜錯，只要不 commit 就好。",
+    "例如：預測 load 的有效位址；前面的 store 還沒完成（outstanding）就先 load；或是把 store 要寫的值直接 bypass 給後面的 load。這些都能加速很多。",
+    "load 結果如果還不確定，就放在最後一個 stage 的 buffer 裡先不 commit；確認錯了就重做（redo）。"
+   ]
+  },
+  {
+   "title": "為什麼不只靠 compiler（VLIW）？",
+   "scene": "ppB-21b-whyss",
+   "points": [
+    {
+     "t": 2740,
+     "text": "VLIW 只靠 compiler、hardware 不太改，但還需要 superscalar：三個原因。"
+    },
+    {
+     "t": 2797,
+     "text": "① 不是所有 stall 都能 predict：cache miss，compile 時不知道誰在 cache；② delay slot 不見得填得滿；③ 同一 ISA 有不同 implementation，換機器 compiler 的 optimization 要重來。"
+    }
+   ],
+   "cues": [
+    2740.4,
+    2794.4,
+    2797.1,
+    2808.3,
+    2849.4,
+    2861.8,
+    2883.6,
+    2913.3,
+    2934.5
+   ],
+   "explain": [
+    "比較兩種方法：compiler 的方法很簡單，offline 做就好，處理器不太需要改；superscalar 則需要很多硬體做各種檢查。",
+    "那為什麼還需要 superscalar？老師給三個原因。",
+    "第一：不是所有的 stall 都能事先預測。",
+    "例如下一章要講的記憶體系統：常用的資料放在很小的 [[cache]]，[[cache hit]] 一個 cycle 就拿到；[[cache miss]] 要去主記憶體，要很多 cycle，pipeline 只好停下來等。",
+    "而哪些資料會在 cache 裡，compile 的時候絕對不知道，所以 compiler 沒辦法事先排好。",
+    "第二：像 delayed branch，不見得每次都找得到足夠的指令填進 delay slot。",
+    "第三：同一個 instruction set，可以有很多不同的實作：4 個 stage、5 個 stage、2-issue……每種的 latency 和 dependency 都不一樣。",
+    "compiler 要針對每一台機器做最佳化；換了一台機器，原本的最佳化可能就不適用，要重來一次，很麻煩。",
+    "所以光靠 VLIW 不夠，還是需要 superscalar。"
+   ]
+  },
+  {
+   "title": "Multiple issue 沒有想像中那麼好",
+   "scene": "ppB-21b-fallacy",
+   "points": [
+    {
+     "t": 2945,
+     "text": "multiple issue 大部分會 work，但：dependency（尤其 pointer）難消除、window 太小、memory delay 與 bandwidth 有限、speculation 猜錯要付代價。"
+    },
+    {
+     "t": 3014,
+     "text": "另一個 issue：power。"
+    }
+   ],
+   "cues": [
+    2945.1,
+    2959.3,
+    2972.2,
+    2989.2,
+    3004.4,
+    3013.8
+   ],
+   "explain": [
+    "multiple issue 大部分情況都有效，大家也希望它有效。",
+    "但因為 dependency，效果常常沒想像中好。尤其是 pointer（指標）：兩個指標可能指到同一個地方，這種相依很難消除。",
+    "還有 window size 太小：一次看到的指令太少，就找不到足夠多沒有相依的指令拉過來一起做。",
+    "還有記憶體的延遲（delay）和頻寬（bandwidth）有限，每次能讀進來的量有限，pipeline 很難一直滿。",
+    "speculation 會有幫助，但要猜得對；猜錯就要 flush，付出代價。",
+    "另外一個問題：power（耗電）。"
+   ]
+  },
+  {
+   "title": "Power wall → multi-core",
+   "scene": "ppB-21b-power",
+   "points": [
+    {
+     "t": 3020,
+     "text": "電晶體便宜，放了很多機制（branch prediction、superscalar、很深的 pipeline），但 hardware 要耗 power，power 變成 limiting factor → multi-core。"
+    },
+    {
+     "t": 3082,
+     "text": "Pentium 4：31 stage、1 core、103 W；Intel Core：14 stage、2 core、75 W；UltraSPARC III：14 stage、1 core、90 W；UltraSPARC T1：6 stage、8 core、70 W。"
+    }
+   ],
+   "cues": [
+    3020.4,
+    3050.9,
+    3076.4,
+    3082.4,
+    3092.9,
+    3107.5
+   ],
+   "explain": [
+    "電晶體越來越便宜，一顆晶片可以放很多機制：branch prediction、branch history、superscalar、很深的 pipeline……",
+    "可是硬體越多越複雜，就越耗電。power 變成限制因素（limiting factor），沒辦法再一直放更多硬體。",
+    "所以現在有 multi-core（多核心）的做法。",
+    "老師投影片上的例子：Pentium 4 有 31 個 pipeline stage、1 個 core，耗電 103 W；Intel Core 只有 14 個 stage，卻有 2 個 core，只要 75 W。",
+    "SPARC 也一樣：UltraSPARC III 是 14 個 stage、單一 core、90 W；UltraSPARC T1 的 pipeline 只有 6 個 stage，卻放了 8 個 core，只要 70 W。",
+    "所以不一定要把每個 core 做得那麼複雜：pipeline 簡單一點、多放幾個 core，也能達到效果，耗電還更低。"
+   ]
+  },
+  {
+   "title": "本章總結",
+   "scene": "ppB-21b-concl",
+   "points": [
+    {
+     "t": 3126,
+     "text": "pipeline 簡單，麻煩在 dependency（data / control hazard）；pipeline 跟 technology、ISA 都有關，ISA 影響 datapath 與 control 設計。"
+    },
+    {
+     "t": 3184,
+     "text": "pipeline 增加 throughput，不減少 latency；三種 hazard：structural、data、control；ILP（static / dynamic）受 dependency 限制。"
+    }
+   ],
+   "cues": [
+    3126.5,
+    3137.4,
+    3150.6,
+    3171.7,
+    3183.9,
+    3191.1,
+    3196
+   ],
+   "explain": [
+    "最後總結這一章。pipeline 的概念很簡單，麻煩的是 dependency：要注意 data hazard 和 control hazard。",
+    "pipeline 跟 technology 有關：就是因為電晶體太便宜、太多了，設計才越來越複雜、pipeline 越來越深。",
+    "跟 instruction set 也有關：指令集設計得太複雜，就很難做出高效能的 pipeline；簡單的指令集比較好切 stage。",
+    "指令集會影響 [[datapath]] 和 control 的設計。",
+    "重要觀念：pipeline 增加的是 [[throughput]]（單位時間完成的指令數），不會減少單一指令的 latency（從開始到完成的時間）。",
+    "pipeline 有三種 hazard：[[structural hazard]]、[[data hazard]]、[[control hazard]]，要知道怎麼解決。",
+    "要再加速，就靠 instruction-level parallelism，有 static 和 dynamic 兩種；但因為 dependency，沒辦法同時發出那麼多指令，不容易達到理想值。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "MIPS static dual issue 的每個 issue packet 由哪兩種指令組成？",
+   "opts": [
+    "一個 ALU 或 branch，加一個 load 或 store",
+    "任意兩個沒有 dependency 的指令",
+    "兩個 load/store",
+    "兩個 ALU 指令"
+   ],
+   "ans": "一個 ALU 或 branch，加一個 load 或 store",
+   "why": "硬體規定 slot 0 放 ALU/branch、slot 1 放 load/store，一包 64 bit；湊不出來就放 nop。"
+  },
+  {
+   "q": "dual issue 時 register file 至少需要幾個 read port 與 write port？",
+   "opts": [
+    "4 個 read port、2 個 write port",
+    "2 個 read port、1 個 write port",
+    "4 個 read port、4 個 write port",
+    "3 個 read port、2 個 write port"
+   ],
+   "ans": "4 個 read port、2 個 write port",
+   "why": "ALU 指令讀 rs、rt，store 讀 rs、rt，共 4 個；同一 cycle 可能有兩個指令寫回，所以 2 個 write port。另外還要多一個 ALU 算位址。"
+  },
+  {
+   "q": "課本的 loop（lw、addu、sw、addi、bne）排成 dual issue 不展開，需要 4 個 cycle。IPC 是多少？",
+   "opts": [
+    "1.25",
+    "2",
+    "0.8",
+    "1.75"
+   ],
+   "ans": "1.25",
+   "why": "5 個指令 ÷ 4 個 cycle = 1.25；理想應為 2。展開 4 次並 rename 後 14 個指令 / 8 個 cycle = 1.75。"
+  },
+  {
+   "q": "loop unrolling 時把每一份的 $t0 改名成 $t1、$t2、$t3，消除的是哪一種相依？",
+   "opts": [
+    "anti-dependence（name dependence）",
+    "真正的 data dependence（RAW）",
+    "control dependence",
+    "structural hazard"
+   ],
+   "ans": "anti-dependence（name dependence）",
+   "why": "下一份 load 進 $t0 前，舊值早已 store 回去，兩者只是同名，資料無關；rename 後就能重新排程。"
+  },
+  {
+   "q": "在 dual-issue 的 MIPS 上，lw 的結果被下一個指令立刻使用，會怎樣？",
+   "opts": [
+    "仍要停 1 個 cycle，但這個 cycle 等於浪費 2 個指令的位置",
+    "可以用 forwarding 完全避免",
+    "要停 2 個 cycle",
+    "只有 single issue 才會有 load-use hazard"
+   ],
+   "ans": "仍要停 1 個 cycle，但這個 cycle 等於浪費 2 個指令的位置",
+   "why": "load 在 MEM 結束才有資料，下一個在 EX 就要用；dual issue 一個 cycle 本可做 2 個指令，所以損失加倍，scheduling 更重要。"
+  },
+  {
+   "q": "superscalar 處理器中，哪個部分是 out-of-order？",
+   "opts": [
+    "function unit 的執行（operand 到齊就做）",
+    "instruction fetch 與 decode",
+    "commit 寫回 register 與 memory",
+    "三個部分全都 out-of-order"
+   ],
+   "ans": "function unit 的執行（operand 到齊就做）",
+   "why": "in-order issue、out-of-order execution、in-order commit；結果先放 commit unit 的 buffer，照程式順序寫回才改變 state。"
+  },
+  {
+   "q": "下列哪一個是「只靠 compiler（VLIW）不夠，還需要 superscalar」的原因？",
+   "opts": [
+    "compile 時無法知道哪些存取會 cache miss",
+    "compiler 無法做 loop unrolling",
+    "VLIW 不能執行 branch",
+    "superscalar 不需要任何額外硬體"
+   ],
+   "ans": "compile 時無法知道哪些存取會 cache miss",
+   "why": "老師的三個原因：stall（如 cache miss）無法事先預測、delay slot 不一定填得滿、同一 ISA 的不同 implementation 需要不同最佳化。"
+  }
+ ]
+}

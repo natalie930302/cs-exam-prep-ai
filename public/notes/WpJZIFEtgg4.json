@@ -1,0 +1,741 @@
+{
+ "video": "WpJZIFEtgg4",
+ "label": "黃婷婷教授計算機結構_第21A講 Pipelining",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "複習 control hazard：方法一，猜 PC + 4、錯了 flush",
+   "scene": "ppB-21a-review",
+   "points": [
+    {
+     "t": 17,
+     "text": "講 exception 前，先整理 branch prediction 與 delayed branch。"
+    },
+    {
+     "t": 35,
+     "text": "碰到 beq / bne 還是要繼續 fetch；最簡單是 fetch PC + 4（not taken），若 taken 就是 control hazard。"
+    },
+    {
+     "t": 82,
+     "text": "在第 3 stage 決定要 flush 2 個、第 4 stage 要 flush 3 個；我們移到第 2 stage，penalty 只有 1 個 cycle。"
+    }
+   ],
+   "cues": [
+    17,
+    35.1,
+    45,
+    61,
+    70.3,
+    82,
+    108.7,
+    131.3
+   ],
+   "explain": [
+    "老師發現大家對上次講的 branch prediction 和 delayed branch 有點搞混，所以先整理一次。下面三張卡片就是處理 [[control hazard]] 的三種機制。",
+    "[[pipeline]] 的規則：每個 cycle 都要抓一個指令進來，指令一直流進去。",
+    "碰到 beq、bne 這種有條件的跳躍，在它決定之前不知道要跳去哪裡，可是還是得繼續抓下一個。",
+    "最簡單的做法：先抓 not taken 的那一個，也就是 PC + 4，直接放進 pipeline。",
+    "可是如果 branch 其實要跳（taken），抓進來的就是錯的，這就是 control hazard。",
+    "如果在第 3 個 stage 才決定，前面已經多抓 2 個要全部 [[flush]]；第 4 個 stage 決定，就要 flush 3 個。",
+    "五級 pipeline 比較單純，所以課本的設計把決定從第 4 個 stage 搬到第 2 個 stage（ID）。猜錯只要 flush 1 個，penalty 1 個 clock cycle。",
+    "這就是第一種、也是最簡單的機制：一律猜 PC + 4，錯了就 flush。"
+   ]
+  },
+  {
+   "title": "方法二：delayed branch",
+   "scene": "ppB-21a-delay",
+   "points": [
+    {
+     "t": 144,
+     "text": "pipeline 很短，只差一個指令：永遠 fetch 一個有用的指令放在 branch 下一個（compiler 找兩條路都會執行的）。"
+    },
+    {
+     "t": 198,
+     "text": "找不到就 insert no-op；約 50% 找得到；不需要 flush。"
+    }
+   ],
+   "cues": [
+    144.5,
+    156,
+    169.4,
+    182.6,
+    198.5,
+    207,
+    231
+   ],
+   "explain": [
+    "第二種機制：既然五級 pipeline 很短，猜錯也只差一個指令，那就從這一個 slot 下手。",
+    "想辦法讓這個 slot 永遠抓到一個「有用的」指令。效果上等於 branch 的決定晚一個 cycle 才生效。",
+    "用 [[compiler]] 的技巧：在程式裡找一個不管 taken 或 not taken 都會執行的指令（示意：add），把它塞到 branch 的下一個位置。時序圖第二列就換成這個 add。",
+    "這樣一來就沒有「猜錯」的問題：真的執行到 branch 時，下一個指令本來就該執行。",
+    "如果找不到這樣的指令，就插一個 no-op（什麼都不做的指令）。",
+    "老師說大約 50% 的時候找得到。",
+    "那還需要 flush 嗎？不需要了：下一個指令要嘛是有用的，要嘛是 nop，都不用沖掉。這就是 delayed branch。"
+   ]
+  },
+  {
+   "title": "方法三：branch history table（為什麼需要）",
+   "scene": "ppB-21a-dyn",
+   "points": [
+    {
+     "t": 251,
+     "text": "第一種 always not taken，taken 就 flush；5 stage 還 OK，但 10 stage 以上、決定在很後面就要 flush 很多。"
+    },
+    {
+     "t": 294,
+     "text": "loop 大部分是 taken，不能亂猜；用 branch history table 記錄（要更多 hardware），用在 high performance 的設計。"
+    },
+    {
+     "t": 359,
+     "text": "三個機制有關但不是混在一起；delayed branch 是另一個想法。"
+    }
+   ],
+   "cues": [
+    251.1,
+    256.4,
+    268.5,
+    282.5,
+    294,
+    314.2,
+    325.1,
+    359
+   ],
+   "explain": [
+    "第三種技巧。",
+    "回想第一種：always not taken，等於永遠 PC + 4；如果是 taken 就要 flush pipeline。",
+    "五個 stage 的 pipeline flush 一個指令還 OK；可是高效能（high performance）的處理器可能切到 10 個 stage 以上。",
+    "如果決定在很後面的 stage（例如第 6 個，示意），猜錯就要 flush 5 個，犧牲很多 cycle。",
+    "所以預測很重要，不能亂猜。例如 [[迴圈]]，它的 branch 大部分都是 taken，一律猜 not taken 會一直錯。",
+    "所以用比較複雜的機制：branch history table，把歷史記錄下來。當然，這需要更多 hardware。",
+    "電晶體越來越便宜，大家就做更高效能的設計：pipeline 更長、[[clock cycle]] 更短。這時第 2 個 stage 本來就很忙，沒辦法把 branch 的決定隨便往前搬。",
+    "老師強調：這三個機制有一點相關，但不是混在一起用的。尤其 delayed branch 是另一個想法：用 compiler 插入有用的指令，就不用 flush。"
+   ]
+  },
+  {
+   "title": "Exception 與 interrupt（MIPS 的定義）",
+   "scene": "ppB-21a-exc",
+   "points": [
+    {
+     "t": 388,
+     "text": "exception：沒辦法預期的狀況，例如 I/O 做完要通知讓出 CPU 的 process。"
+    },
+    {
+     "t": 427,
+     "text": "MIPS：CPU 內部發生的（undefined opcode、overflow）叫 exception；外部 I/O 來的叫 interrupt。"
+    }
+   ],
+   "cues": [
+    388,
+    400,
+    409.6,
+    427.4,
+    440
+   ],
+   "explain": [
+    "接著複習上次介紹的 exception（例外）。",
+    "exception 是沒辦法預期的狀況。常見的例子是 I/O：例如讀硬碟的工作做完了，要通知 CPU。",
+    "因為 CPU 會在不同 process（正在執行的程式）之間切換：process A 要做 I/O，就停下來，把 CPU 讓給 process B。等 I/O 做完，一定要通知 A，不然 A 永遠沒辦法繼續。",
+    "在 MIPS 裡分成兩種：CPU 自己內部發生的，例如 undefined [[opcode]]、[[overflow]]，叫 exception。",
+    "從外部 I/O 過來的，叫 [[interrupt]]。"
+   ]
+  },
+  {
+   "title": "Handler 要做的事（先不管 pipeline）",
+   "scene": "ppB-21a-handler",
+   "points": [
+    {
+     "t": 445,
+     "text": "先當 single cycle 來看：發生 exception 就跳到 exception handler（OS）；可恢復的要把 offending 指令記在 EPC。"
+    },
+    {
+     "t": 503,
+     "text": "跳去之前把原因記在 Cause register（只有 undefined opcode、overflow 時 1 bit 就夠）。"
+    },
+    {
+     "t": 529,
+     "text": "兩種跳法：single entry（MIPS：8000 0180，再依 Cause 叫 handler）或 vectored interrupt（很多 entry point）。"
+    },
+    {
+     "t": 601,
+     "text": "restartable 的處理完用 EPC 回原 program；不能 recover 的就 terminate、report error。"
+    }
+   ],
+   "cues": [
+    445.2,
+    461.3,
+    476.2,
+    503.3,
+    520.2,
+    528.7,
+    542.6,
+    554,
+    568.6,
+    601.3,
+    622
+   ],
+   "explain": [
+    "發生 exception 時要做什麼？先不管 pipeline，把它當成 [[single cycle]] 的處理器、一個指令一個指令照順序執行來想。",
+    "第一件事：跳到 exception handler，也就是跳到作業系統（OS）的處理程式。",
+    "如果這個狀況可以恢復（例如 I/O interrupt），等一下還要回來，所以要先把被打斷的那個指令（offending instruction）的位址記到 EPC。",
+    "跳過去之前，還要把「原因」記下來，存在 Cause register，因為 OS 有很多種處理程式，要知道該叫哪一個。",
+    "如果只有 undefined opcode 和 overflow 兩種，一個 bit 就夠：0 代表一種、1 代表另一種。",
+    "怎麼跳過去？有兩種方法。第一種是 single entry：只有一個入口，MIPS 就是位址 8000 0180，大家都跳到那裡。",
+    "跳到那個 OS 程式之後，它再看 Cause 的值，決定要叫哪一個 handler 來處理。",
+    "另一種叫 vectored interrupt：有很多個入口，每一種原因各有自己的 handler 位址（右邊這張表）。",
+    "例如 undefined opcode，下一個 PC 就設成 handler A 的位址；overflow 就設成 handler B 的位址，直接從那裡開始執行。",
+    "處理完之後：如果是可以重新開始的（restartable），例如 I/O interrupt，就用 EPC 跳回原來的程式繼續做。",
+    "如果是不能恢復的錯誤，就結束（terminate）這個程式，並回報錯誤（report error）。"
+   ]
+  },
+  {
+   "title": "Pipeline 裡的 exception = 另一種 control hazard",
+   "scene": "ppB-21a-pipe",
+   "points": [
+    {
+     "t": 636,
+     "text": "pipeline 同時執行很多指令，發生 exception 就像 control hazard：之前的指令完成、之後的 flush，再跳到 OS。"
+    },
+    {
+     "t": 722,
+     "text": "例：add 在 EX 發生 overflow，不能讓 $1 寫下去；and、or 完成，add 和之後的 flush，記 Cause，transfer 到 handler。"
+    }
+   ],
+   "cues": [
+    636,
+    651.1,
+    679.3,
+    703.2,
+    722,
+    731.6,
+    737.5,
+    758.1
+   ],
+   "explain": [
+    "剛剛的處理步驟，不管是不是 pipeline 都要做到。",
+    "但 pipeline 同時在執行好多個指令。看 cycle 6 這一欄：出事的指令前面有已經快做完的，後面也有剛抓進來的。",
+    "所以在 pipeline 裡，exception 很像一個 [[control hazard]]：程式流程要改變，跳到 OS 的位址去。",
+    "原則：發生 exception 之前的指令，要讓它們做完；之後的指令，要 [[flush]] 掉。",
+    "例子：add 這個指令在 EX 階段算出 [[overflow]]（溢位）。",
+    "這時絕對不能讓 add 把結果寫進 $1，寫下去就改變了程式的狀態（program state），錯誤會留下來。",
+    "所以：前面的 and、or 繼續做完（綠色）；add 和它後面的 slt、lw 全部 flush（粉紅）。再把原因記到 Cause。",
+    "最後跳到 handler。整件事就像一個沒預測到的 branch：抓錯的沖掉，改去抓 handler 的指令。"
+   ]
+  },
+  {
+   "title": "Exception 的硬體：flush 訊號、handler 位址、Cause、EPC",
+   "scene": "ppB-21a-hw",
+   "points": [
+    {
+     "t": 768,
+     "text": "硬體和 control hazard 差不多：發生在 EX 就把那裡和之前 stage 的 control signal 設 0（IF.Flush、ID.Flush、EX.Flush）。"
+    },
+    {
+     "t": 818,
+     "text": "PC 多一個選擇：single entry point 8000 0180；另外要 Cause、EPC register。"
+    },
+    {
+     "t": 894,
+     "text": "restartable：flush、handler 執行完再從那個指令重來；I/O interrupt 通常做完那個指令才處理，handler 要判斷從哪個指令繼續。"
+    }
+   ],
+   "cues": [
+    768,
+    777,
+    789.3,
+    809.6,
+    818.1,
+    830.4,
+    849.6,
+    860.5,
+    870,
+    894,
+    911.1,
+    934
+   ],
+   "explain": [
+    "要處理 pipeline 裡的 exception，hardware 要加些什麼？上面是五個 stage，中間深色的是 [[pipeline register]]。",
+    "假設 exception 發生在 EX stage，例如剛才的 overflow。",
+    "要能做 flush：EX 這裡的 [[control signal]] 要能設成 0，它前面的 ID、IF 也都要能設成 0。所以加了 IF.Flush、ID.Flush、EX.Flush 三條訊號。",
+    "發生 exception 時，這些 flush 訊號就變成 1，把那些指令的控制訊號清成 0。",
+    "PC 那邊也要改：MIPS 只有一個 handler 入口，所以把 8000 0180 這個位址接到 PC 前面的選擇器（mux）。",
+    "一發現 exception，就把 8000 0180 載入 PC，下一個 cycle 就開始抓 handler 的指令。",
+    "整體跟 control hazard 很像：在哪個 stage 發生，那個 stage 和它後面進來的指令都 flush，之前的讓它做完。",
+    "再強調一次很重要的觀念：flush 就是把 control signal 設成 0。",
+    "另外還要兩個暫存器：Cause（記原因）和 EPC（記出事指令的位址），待會要跳回來就靠 EPC。",
+    "可以重新開始的 exception：先 flush，handler 處理完，再回到那個指令，從頭再執行一次，好像什麼都沒發生。",
+    "要區分：I/O interrupt 通常讓那個指令做完才處理；overflow 這種則要從那個指令重新開始。",
+    "所以 PC 存起來之後，要由 handler（也就是軟體）判斷原因，決定回來時從哪一個指令繼續。"
+   ]
+  },
+  {
+   "title": "例子：4C 的 add 發生 overflow",
+   "scene": "ppB-21a-ex",
+   "points": [
+    {
+     "t": 960,
+     "text": "課本例子：40 sub、44 and、48 or、4C add（overflow）、50 slt、54 lw；handler 在 8000 0180，第一個指令是 store。"
+    },
+    {
+     "t": 991,
+     "text": "add 在 cycle 6 的 EX 偵測到 overflow：add、slt、lw flush 成 3 個 bubble，and、or 繼續完成。"
+    },
+    {
+     "t": 1075,
+     "text": "cycle 7 已經從 8000 0180 fetch handler 的 sw；OS 也是 software，只是 PC 換了。"
+    }
+   ],
+   "cues": [
+    960.1,
+    971.7,
+    985.8,
+    991.4,
+    995.6,
+    1003.3,
+    1033.6,
+    1062.2,
+    1075.1,
+    1090.1
+   ],
+   "explain": [
+    "來看例子：程式從位址 40 開始，執行到 4C 的 add $1, $2, $1 時發生 overflow。",
+    "handler 在 8000 0180（single entry point），它的第一個指令是一個 store（sw），先把一些東西存起來。",
+    "畫成時序圖：每列一個指令，一個 cycle 抓一個。cycle 1 到 5 大家照常往前走，add 前面有 sub、and、or，後面有 slt、lw。",
+    "cycle 6：add 進到 EX，算出 overflow（紅框）。程式模擬確認：沒有 stall，add 正好在 cycle 6 的 EX。",
+    "從 add 開始，以下的指令（add、slt、lw）全部 flush：它們的 control signal 設成 0（變粉紅）。",
+    "前面的 and、or 要繼續往前，把它們做完（綠色）：and 在 cycle 6 寫回、or 在 cycle 7 寫回。sub 早就做完了。",
+    "到了下一個 cycle（7），add、slt、lw 原本該做的階段都變成 [[bubble]]，什麼都不做。",
+    "這三個 bubble 就是 flush 的結果。同時，EPC 記下位址（課本硬體存的是 4C + 4 = 50），Cause 記成 overflow（老師的編號是 1）。",
+    "因為只有一個入口，cycle 7 就已經從 8000 0180 抓進 handler 的第一個指令 sw（最後一列）。",
+    "同一個處理器，前半段執行一般程式，發生 exception 後就把 PC 換成 OS 的程式來執行。OS 也只是軟體。（handler 之後會把 EPC 減 4，找到出事的 add。）"
+   ]
+  },
+  {
+   "title": "Multiple exceptions：precise 與 imprecise",
+   "scene": "ppB-21a-multi",
+   "points": [
+    {
+     "t": 1126,
+     "text": "pipeline 可能同時發生多個 exception：處理最早的指令（在最後面 stage 的），把它以下 flush → precise exception；五級 pipeline 很簡單。"
+    },
+    {
+     "t": 1240,
+     "text": "superscalar、out-of-order：最後面 stage 的不一定是最早的指令 → precise 很難；改用 imprecise：停下 pipeline、save state 交給 OS。"
+    }
+   ],
+   "cues": [
+    1126.2,
+    1132.4,
+    1162,
+    1189.7,
+    1213,
+    1225.7,
+    1240.2,
+    1268.1,
+    1294.2,
+    1335.3,
+    1359.4
+   ],
+   "explain": [
+    "因為 pipeline 同時有好幾個指令在跑，可能在同一個 cycle 發生好幾個 exception。五個 stage 上各有一個指令：i1 已經在 WB，i5 剛進 IF。",
+    "假設紅色的那幾個同時出事（示意），分散在不同 stage。應該先處理誰？",
+    "答案是處理「最前面的指令」：也就是走得最遠、在 pipeline 最後面 stage 的那個，因為它最早進來、最早開始執行。",
+    "所以選 i2（在 MEM），它是出事的指令裡最早的；它以下（i3、i4、i5）全部 flush。i1 讓它做完。",
+    "能準確找到出事的指令、而且它之前的都做完、之後的都清掉，這叫 precise exception（精確例外）。",
+    "在五級 pipeline 裡這很簡單：大家依序進來，誰在最後面一看就知道。",
+    "可是在 [[superscalar]]、很深、而且 out-of-order（不照順序執行）的處理器裡，沒有相依的指令可以先做，所以走在最後面 stage 的，不一定是最早的指令。",
+    "不知道誰是最早的，要維持 precise exception 就很困難。",
+    "這時用 imprecise exception：把 pipeline 停下來、把狀態（state）存起來，直接跳到 OS，讓 OS 去判斷是誰出事、哪些要 flush。",
+    "如果硬要用 hardware 找出精確的那一個，要很多 hardware，所以一般交給 software 處理。",
+    "就算判斷得不那麼精確，只要能恢復（recover）就好。所以 out-of-order 的處理器常常用 imprecise exception。"
+   ]
+  },
+  {
+   "title": "Pipeline 就是一種 instruction-level parallelism",
+   "scene": "ppB-21a-ilp",
+   "points": [
+    {
+     "t": 1416,
+     "text": "superscalar / dynamic pipelining 是更 advanced 的 processor（只簡單介紹）。"
+    },
+    {
+     "t": 1440,
+     "text": "pipeline 就是一種 ILP：切 5 個 stage，相當於 5 個指令同時執行，沒有 dependency 的話 throughput 約 5 倍。"
+    },
+    {
+     "t": 1531,
+     "text": "要更高的 parallelism 有哪些方法？"
+    }
+   ],
+   "cues": [
+    1416.2,
+    1440.5,
+    1445.5,
+    1470,
+    1475.4,
+    1513.5,
+    1531
+   ],
+   "explain": [
+    "接下來簡單介紹更進階的處理器：[[superscalar]] 和 dynamic pipelining（老師說只講幾張，有興趣可以修進階的課）。",
+    "先問：什麼是 instruction-level parallelism（ILP，指令層級的平行）？",
+    "其實 [[pipeline]] 本身就是一種 ILP。看這張圖：切成 5 個 stage，五個指令依序錯開一個 cycle 進來。",
+    "切成很多 stage，就代表同一個時間有很多指令在不同階段一起進行。看亮起來的 cycle 5 這一欄。",
+    "在 cycle 5，五個指令分別在 WB、MEM、EX、ID、IF，正好 5 個同時在執行（程式算的）。",
+    "如果沒有 dependency，之後每個 cycle 都完成一個指令，[[throughput]]（單位時間完成的量）大約是不用 pipeline 的 5 倍。",
+    "如果想要更多的[[parallelism]]，讓單位時間完成更多指令，有哪些方法？"
+   ]
+  },
+  {
+   "title": "方法一：deeper pipeline（切更細）",
+   "scene": "ppB-21a-deep",
+   "points": [
+    {
+     "t": 1560,
+     "text": "切更細（7、8、10 個 stage）：像洗衣服把洗衣、脫水分兩台；10 個 stage 就同時 10 個指令。"
+    },
+    {
+     "t": 1611,
+     "text": "切更小 → clock cycle 更短（clock = 最慢 stage 的時間）；但工作不一定塞得進，branch 在很後面決定 penalty 也大。"
+    }
+   ],
+   "cues": [
+    1560.5,
+    1565,
+    1586.2,
+    1595.4,
+    1606.6,
+    1611.4,
+    1644.6,
+    1649.7,
+    1662.2,
+    1689
+   ],
+   "explain": [
+    "第一個方法很簡單：切得更細，例如切成 7 個、8 個 stage。",
+    "用洗衣服來想：本來一台洗衣機要洗完、脫水完才結束。如果擺兩台，一台專門洗、一台專門脫水，就多了一個 stage。",
+    "烘乾、摺衣服也可以各分成兩段，stage 越多，同時在處理的衣服就越多。",
+    "如果增加到 10 個 stage，同時就有 10 個指令在做，理想上速度是 10 倍。",
+    "這就叫 deeper pipeline（更深的 pipeline）。",
+    "把同一件事切得更小，代表每個 stage 的工作變少，[[clock cycle]] 也可以變短。下面用一件 1000 ps 的工作來示意。",
+    "老師問：clock cycle 要設成多少？答案是「最慢那個 stage 需要的時間」。切成 5 段、每段 200 ps（示意），clock 就是 200 ps。",
+    "切成 10 段，每段只做更少的事，例如 100 ps，clock 就能更快。",
+    "可是 cycle 很短時，每個 stage 分到的時間很少，有些工作不見得塞得進去。",
+    "另外，pipeline 很深的話，branch 如果在很後面才決定，猜錯的 penalty 也很大。"
+   ]
+  },
+  {
+   "title": "方法二：multiple issue（兩條 pipeline）",
+   "scene": "ppB-21a-wide",
+   "points": [
+    {
+     "t": 1704,
+     "text": "還是 5 個 stage：一條 pipeline 不夠，就再加一條（double resource），從寬度增加平行度。"
+    }
+   ],
+   "cues": [
+    1704.4,
+    1711.6,
+    1740.1,
+    1753.1,
+    1758.6,
+    1770.6
+   ],
+   "explain": [
+    "第二個方向：stage 數不變，還是 5 個 stage，上面是一條 pipeline。",
+    "那要怎樣讓更多指令同時做？",
+    "老師的提示：只有一條 pipeline，不能兩條嗎？",
+    "再加一條 pipeline（下面那一組）：一條有 5 個指令在跑，兩條就有 10 個。",
+    "也就是說，可以從深度增加平行，也可以從寬度增加。",
+    "把資源加倍（double resource），同一個 cycle 就可以 issue（發出）不只一個指令。看兩條 pipeline 的 cycle 5。"
+   ]
+  },
+  {
+   "title": "（問同學：兩條 pipeline 每個 cycle fetch 幾個指令）",
+   "scene": null,
+   "points": [
+    {
+     "t": 1781,
+     "text": "老師點名同學回答兩條 pipeline 時每個 cycle 要 fetch 幾個指令。"
+    }
+   ]
+  },
+  {
+   "title": "兩條 pipeline：同時 10 個指令",
+   "scene": "ppB-21a-wide2",
+   "points": [
+    {
+     "t": 1855,
+     "text": "兩條 pipeline：一次 fetch 2 個、執行 2 個；2 條 × 5 stage = 同時 10 個指令。"
+    },
+    {
+     "t": 1956,
+     "text": "這叫 multiple issue：每個 stage 不只一個指令。"
+    }
+   ],
+   "cues": [
+    1855.5,
+    1884.4,
+    1909,
+    1956.1
+   ],
+   "explain": [
+    "答案很簡單：兩條 pipeline，就一次 fetch 兩個指令、一次執行兩個。",
+    "一種平行化是把 pipeline 加深（同時 5、6、7 個）；也可以橫向，一次 fetch 2 個、3 個、4 個。",
+    "兩條 pipeline、每條 5 個 stage：在 cycle 5 同時有 2 × 5 = 10 個指令在跑（程式算的）。",
+    "這叫 multiple issue：每個 stage 同時處理不只一個指令，IF 一次抓兩個、ID 一次解兩個、EX 一次算兩個。"
+   ]
+  },
+  {
+   "title": "CPI 與 IPC",
+   "scene": "ppB-21a-ipc",
+   "points": [
+    {
+     "t": 1976,
+     "text": "single issue：每 cycle 最多完成 1 個指令，CPI ≥ 1；multiple issue 一個 cycle 可完成多個，改用 IPC（instructions per cycle，越大越好）。"
+    },
+    {
+     "t": 2193,
+     "text": "例：4 GHz、4-way → 每秒 16 billion 個指令，CPI = 0.25，IPC = 4；這是最好的狀況，dependency 會讓它達不到。"
+    }
+   ],
+   "cues": [
+    1976.7,
+    1998.3,
+    2023,
+    2030.5,
+    2060.6,
+    2078,
+    2111.5,
+    2193.4,
+    2201.7,
+    2215.6,
+    2238.1,
+    2291
+   ],
+   "explain": [
+    "multiple issue 之後，每個 cycle 有好多個指令同時在做。那一個 cycle 能完成幾個指令？",
+    "一般（single issue）的 pipeline，最好的情況是每個 cycle 完成 1 個指令。",
+    "如果有 dependency 要 stall、或要 flush，就變成每個 cycle 還完成不到 1 個。",
+    "所以我們用 [[CPI]]（cycles per instruction，一個指令平均要幾個 cycle）來衡量，single issue 時 CPI 是 1 或大於 1。",
+    "可是 multiple issue 時，例如 2-issue，一個 cycle 可以完成 2 個指令。",
+    "這時 CPI 會小於 1，用起來不直覺，所以定義新的指標 IPC（instructions per cycle）：一個 cycle 完成幾個指令，越大越好。",
+    "CPI 和 IPC 是兩個不同的東西，它們互為倒數：IPC = 1 / CPI。",
+    "例子：4 GHz 的處理器，4-way multiple issue（一次發 4 個）。",
+    "4 GHz 代表每秒 4 × 10⁹ 個 cycle，每個 cycle 最多 4 個指令，所以每秒最多執行 16 billion（160 億）個指令。",
+    "沒有 dependency 時，每個 cycle 完成 4 個指令，所以每個指令平均只要 1/4 個 cycle：CPI = 0.25。",
+    "換成 IPC：一個 cycle 完成 4 個，IPC = 4。兩個數字描述的是同一件事。",
+    "但這都是最好的狀況。有 dependency 時，就算有兩條 pipeline，也不一定每次都拿得到兩個能一起做的指令。"
+   ]
+  },
+  {
+   "title": "Static vs dynamic multiple issue",
+   "scene": "ppB-21a-static",
+   "points": [
+    {
+     "t": 2333,
+     "text": "static multiple issue：compile 時把能同時 issue 的指令 pack 成 issue packet，compiler 負責 detect and avoid hazard。"
+    },
+    {
+     "t": 2418,
+     "text": "dynamic multiple issue：run time 由 hardware 決定、處理 hazard（像 forwarding 的概念），compiler 幫忙排會更好。"
+    }
+   ],
+   "cues": [
+    2333,
+    2343,
+    2365.7,
+    2379.9,
+    2418,
+    2427.5,
+    2438,
+    2447.1,
+    2488.2
+   ],
+   "explain": [
+    "multiple issue 分兩大類：static 和 dynamic。",
+    "static（靜態）：在 compile 的時候就決定好，哪些指令可以同時發出去。",
+    "[[compiler]] 把可以一起發的指令包（pack）在一起，叫一個 issue packet：4-way 就包 4 個，2-way 就包 2 個。",
+    "因為是 compile 時決定的，偵測和避免 [[hazard]] 都是 compiler 的責任，硬體不管；如果猜錯，compiler 要產生修正的程式碼。",
+    "dynamic（動態）：等到 run time（程式真正在跑）才由硬體決定。",
+    "有點像 [[forwarding]]：硬體偵測到條件符合，就把資料給它，讓它平行做。",
+    "遇到 hazard，全部由 hardware 處理。",
+    "雖然 compiler 沒有責任，但如果它幫忙把沒有相依的指令排在附近，硬體能看到的範圍有限，效果會更好。",
+    "整理：static 是 software（compiler）的方法，dynamic 是 hardware 的方法。"
+   ]
+  },
+  {
+   "title": "Speculation：猜 branch、猜 load",
+   "scene": "ppB-21a-spec",
+   "points": [
+    {
+     "t": 2500,
+     "text": "兩種方法都要 speculation：不猜就只能等 branch、load，沒辦法平行；盡快開始，猜錯再 roll back。"
+    },
+    {
+     "t": 2547,
+     "text": "兩個例子：猜 branch 的結果；猜 load（store 後面緊接 load，通常不是同一個 address，就先 load）。"
+    }
+   ],
+   "cues": [
+    2500.2,
+    2505.3,
+    2520.6,
+    2547,
+    2580.4,
+    2595.2,
+    2618
+   ],
+   "explain": [
+    "不管哪一種方法，speculation（猜測）都很重要。",
+    "如果什麼都不敢猜，遇到 branch 就要等它決定、遇到 load 就要等資料，只能呆在那邊，根本沒辦法平行。",
+    "所以策略是：盡快開始做（start operation as soon as possible），猜錯了再 roll back（退回去重來）就好。",
+    "branch 就是最好的例子：猜它 taken 還是 not taken，先照猜的做下去。",
+    "另一個例子是猜 load。看示意程式：一個 store（sw）後面緊接一個 load（lw）。",
+    "這兩個通常不會用到同一個 address。",
+    "所以就猜它們不同，讓 load 先做。因為 load 很花時間，如果資料不在 [[cache]] 裡（[[cache miss]]），還要去 memory 拿，更久。"
+   ]
+  },
+  {
+   "title": "Speculate on load：什麼時候會錯",
+   "scene": "ppB-21a-load",
+   "points": [
+    {
+     "t": 2652,
+     "text": "正常 store 先做再 load；load 先做只有在兩個是同一個地址時才會錯（老師的 1300、100）。"
+    },
+    {
+     "t": 2758,
+     "text": "不同地址（store 100、load 200）先 load 不會錯：這叫 speculate on load；compiler 通常猜不同地址、做完再 check。"
+    },
+    {
+     "t": 2897,
+     "text": "store 可以慢慢寫（computation 已做完），load 的資料下一個指令馬上要用、cache miss 又久，所以 load 先做；錯了就 rollback。"
+    }
+   ],
+   "cues": [
+    2652.1,
+    2703.1,
+    2715.6,
+    2737.7,
+    2758.3,
+    2781.4,
+    2807.1,
+    2845.4,
+    2862,
+    2897,
+    2926.5,
+    2965.6,
+    2983.4
+   ],
+   "explain": [
+    "詳細看 speculate on load。右邊是三個記憶體位址和裡面的值（示意）。程式是 store 寫 9 到某個位址，緊接著 load 從某個位址讀。",
+    "正常的順序：store 先做完，再做 load。",
+    "如果讓 load 先做，什麼時候會錯？只有 store 和 load 是同一個位址才會錯：例如都是 1300。照順序應該讀到剛寫進去的 9，load 先做卻讀到舊的 3。",
+    "可是正常寫程式會這樣嗎？先寫回記憶體、又馬上把同一個東西讀出來？很少。馬上要用的值，直接放在[[register]]裡用就好了。",
+    "所以假設它們是不同的地址：store 寫 100、load 讀 200。程式驗算：不管哪個先做，load 都讀到 7，結果一樣，不會錯。",
+    "這種「先假設不衝突、讓 load 先做」的技巧，就叫 speculate on load。",
+    "老師再講一次：如果 store 寫 100，load 也讀 100，load 先做就會讀到舊值 5，而不是應該的 9，這就錯了。",
+    "如果 store 寫 100、load 讀 200，load 先做完全沒問題。",
+    "因為同一個位址的情況很少，所以通常猜「不是同一個地址」，先 load，做完之後再檢查（check）有沒有猜錯。",
+    "為什麼要讓 load 先？store 的運算早就做完了，只差最後把結果寫進記憶體，晚一點寫不影響別人。",
+    "load 就不一樣：它讀進來的資料，下一個指令可能馬上就要拿去加、去減，晚一步大家都得等。",
+    "如果遇到 [[cache miss]]，load 要等很久；store 則可以先放進 buffer，慢慢寫就好。",
+    "萬一真的猜錯，rollback 就好。所以 speculation 很重要。"
+   ]
+  },
+  {
+   "title": "猜錯怎麼辦：fix-up routine 或 hardware flush",
+   "scene": "ppB-21a-fix",
+   "points": [
+    {
+     "t": 2992,
+     "text": "compiler 可以 reorder（把 load 放到 store 前面），插入 check：猜對不做事、猜錯跳到 fix-up routine recover。"
+    },
+    {
+     "t": 3036,
+     "text": "hardware approach：用更多 hardware 檢查 condition，錯了就 flush 指令。"
+    }
+   ],
+   "cues": [
+    2992.3,
+    3010.5,
+    3023,
+    3036.4
+   ],
+   "explain": [
+    "[[compiler]] 可以重新排列指令，例如把 load 搬到 store 前面（示意）。",
+    "既然是 compiler 的做法，硬體不會幫忙檢查，所以 compiler 要在程式裡插一段 if-then-else，檢查剛才猜得對不對。",
+    "猜對了就什麼都不用做；猜錯了就跳到一段修正程式（fix-up routine），把錯誤的結果恢復過來。",
+    "如果是 hardware 的做法，就要靠更多硬體去檢查條件，發現猜錯就把相關指令 [[flush]] 掉。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "4 GHz 的 4-way multiple-issue 處理器，在沒有任何 dependency 的理想情況下，CPI 與 IPC 分別是？",
+   "opts": [
+    "CPI = 0.25，IPC = 4",
+    "CPI = 4，IPC = 0.25",
+    "CPI = 1，IPC = 1",
+    "CPI = 0.25，IPC = 16"
+   ],
+   "ans": "CPI = 0.25，IPC = 4",
+   "why": "每個 cycle 完成 4 個指令 → IPC = 4、CPI = 1/4；每秒最多 4 × 10⁹ × 4 = 16 billion 個指令。"
+  },
+  {
+   "q": "MIPS pipeline 中，4C 的 add 在 EX 偵測到 overflow，下列處理何者正確？",
+   "opts": [
+    "前面的 and、or 繼續完成；add、slt、lw flush 成 bubble；PC 改成 8000 0180",
+    "所有指令都 flush，從 40 重新執行",
+    "add 先寫回 $1 再跳到 handler",
+    "等 lw 做完再處理 exception"
+   ],
+   "ans": "前面的 and、or 繼續完成；add、slt、lw flush 成 bubble；PC 改成 8000 0180",
+   "why": "exception 前的指令要完成、出事的與之後的要 flush（不能讓 add 改 $1），記 EPC、Cause 後跳到 single entry point。"
+  },
+  {
+   "q": "同一個 cycle 有好幾個 stage 的指令發生 exception，precise exception 要先處理哪一個？",
+   "opts": [
+    "在 pipeline 最後面 stage、最早進來的那個",
+    "在 IF stage 的那個",
+    "最後一個發生的",
+    "任選一個"
+   ],
+   "ans": "在 pipeline 最後面 stage、最早進來的那個",
+   "why": "in-order 的 pipeline 中走得最遠的就是最早的指令；它之前的都已完成，它以下全部 flush。out-of-order 時無法這樣判斷，才用 imprecise。"
+  },
+  {
+   "q": "關於 static 與 dynamic multiple issue，下列何者正確？",
+   "opts": [
+    "static 由 compiler 在 compile time 把指令 pack 成 issue packet；dynamic 由 hardware 在 run time 決定",
+    "static 由 hardware 決定，dynamic 由 compiler 決定",
+    "兩者都完全不需要 compiler",
+    "dynamic multiple issue 不會有 hazard"
+   ],
+   "ans": "static 由 compiler 在 compile time 把指令 pack 成 issue packet；dynamic 由 hardware 在 run time 決定",
+   "why": "static（VLIW）靠 compiler 排程與避免 hazard；dynamic（superscalar）靠硬體，但 compiler 幫忙排序仍有益。"
+  },
+  {
+   "q": "store 後面緊接一個 load，讓 load 先執行（speculate on load），什麼情況會讀錯？",
+   "opts": [
+    "兩者存取同一個記憶體位址",
+    "兩者存取不同位址",
+    "load 的目的暫存器是 $0",
+    "store 存的是 0"
+   ],
+   "ans": "兩者存取同一個記憶體位址",
+   "why": "同一位址時 load 應該讀到 store 剛寫的新值，先做就會讀到舊值；不同位址則順序互換不影響結果。"
+  },
+  {
+   "q": "把 pipeline 從 5 個 stage 切成 10 個 stage，下列何者「不」是它的代價？",
+   "opts": [
+    "每個指令的 CPI 一定變成 2",
+    "每個 stage 的時間很短，工作可能塞不進去",
+    "branch 在很後面才決定時，猜錯 penalty 變大",
+    "需要更多 pipeline register"
+   ],
+   "ans": "每個指令的 CPI 一定變成 2",
+   "why": "切更深可讓 clock 更短、同時更多指令在跑；代價是工作難切、branch penalty 變大等，並不會讓 CPI 固定變成 2。"
+  }
+ ]
+}
