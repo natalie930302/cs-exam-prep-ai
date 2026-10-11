@@ -440,8 +440,8 @@
  "8o5Cmfpeo6g": {
   "label": "MIT 18.06 L6：Column Space and Nullspace",
   "points": 35,
-  "quiz": 5,
-  "cued": false
+  "quiz": 6,
+  "cued": true
  },
  "8RlCb74uFp0": {
   "label": "清大周志遠 第17A講 Process Scheduling",
@@ -493,9 +493,9 @@
  },
  "9Q1q7s1jTzU": {
   "label": "MIT OCW 18.06 L8：Solving Ax = b: Row Reduced Form R",
-  "points": 31,
-  "quiz": 5,
-  "cued": false
+  "points": 33,
+  "quiz": 6,
+  "cued": true
  },
  "9rVuyjxzwgM": {
   "label": "Abdul Bari：2.5 Root Function",
@@ -1691,6 +1691,12 @@
   "quiz": 6,
   "cued": true
  },
+ "nHlE7EgJFds": {
+  "label": "MIT 18.06 L9：Four Fundamental Subspaces",
+  "points": 24,
+  "quiz": 6,
+  "cued": true
+ },
  "NI4OKSvGAgM": {
   "label": "Abdul Bari：1.9 Properties of Asymptotic Notations",
   "points": 30,
@@ -2423,6 +2429,12 @@
   "quiz": 5,
   "cued": true
  },
+ "VqP2tREMvt0": {
+  "label": "MIT OCW 18.06 L7：Solving Ax = 0: Pivot Variables, Special Solutions",
+  "points": 23,
+  "quiz": 6,
+  "cued": true
+ },
  "VwQeypxlevE": {
   "label": "交大彭文志 Lec12 Trees (1/6)",
   "points": 179,
@@ -2625,6 +2637,12 @@
   "label": "Abdul Bari：Recursion and Stack",
   "points": 28,
   "quiz": 7,
+  "cued": true
+ },
+ "yjBerM5jWsc": {
+  "label": "MIT 18.06 L9：Independence, Basis, and Dimension（完整版）",
+  "points": 29,
+  "quiz": 6,
   "cued": true
  },
  "YlKDp03Kg68": {
