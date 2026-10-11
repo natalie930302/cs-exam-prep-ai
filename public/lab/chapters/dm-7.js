@@ -1463,55 +1463,102 @@ scene('gr-19b-table', '整理成表：walk／trail／path × open／closed', [
 
 
 // ════════ lyVL6rqj7gU（清大 趙啟超 第19C講：用 path 定義 equivalence relation、components、connected graph） ════════
-// 這段影片的自動字幕幾乎無法辨識：內容依板書與教科書（Grimaldi）推斷，例子一律示意。
+// 依中文逐字稿逐句對齊。老師板書的圖看不到點名：舞台上的圖（1~5 一塊、6~8 一塊）是示意，標「示意」。
+// 老師的例子：「12345 這五點是一個 component」、另一部分跟它沒連在一起 → 兩個 components。
 const CC = [['1', -0.4, -1.8], ['2', 1.8, -2.2], ['3', 2.2, 0.0], ['4', 0.2, 0.6], ['5', -0.2, 2.4], ['6', 4.2, -1.6], ['7', 5.6, 0.2], ['8', 4.6, 2.2]];
-const ccG = (o) => { const G = gnew(CC, o); ges(G, '12 23 34 45 24 67'); return G; };
-const CCOL = ['#4b9ee2', '#e55a9b', '#2fc092'];
-const ccPaint = (G) => { const groups = [['1', '2', '3', '4', '5'], ['6', '7'], ['8']]; groups.forEach((g, k) => g.forEach((n) => vcol(G, n, CCOL[k]))); };
-scene('gr-19c-path', '兩個端點之間有沒有 path', [
-  async (tok, S) => { S.G = ccG(); DEMO(2.6, 0.3, 3.4); S.B = board(-6.6, 4.8); S.B.add('undirected graph 裡的兩個端點'); cap('在 undirected graph 裡看兩個端點', '（本段字幕無法辨識，依板書推斷）'); },
-  async (tok, S) => { S.B.add('它們之間有沒有一條 path？'); vglow(S.G, '1', GOLD); vglow(S.G, '5', GOLD); cap('兩個端點能不能用 path 連起來？', ''); },
-  async (tok, S) => { S.B.add('path：端點不重複、edge 不重複'); cap('path：端點不重複', 'edge 也就不重複'); },
-  async (tok, S) => { for (const [p, q] of [['1', '2'], ['2', '4'], ['4', '5']]) { paintE(findE(S.G, p, q), COL.green, true); await wt(tok, 300); } S.B.add('1 到 5：有 path 1-2-4-5', 'good'); cap('1 和 5 之間有 path', '1 → 2 → 4 → 5'); },
-  async (tok, S) => { vglow(S.G, '5', null); vglow(S.G, '7', RED); T('1 到 7：沒有 path', 'bad', 3.0, 2.6, -2.6); S.B.add('1 到 7：找不到 path', 'bad'); cap('1 和 7 之間就沒有 path', '沒有邊通過去'); },
+const ccG = () => { const G = gnew(CC); ges(G, '12 23 34 45 24 67 78'); return G; };
+const CCOL = ['#4b9ee2', '#e55a9b'];
+const CA = ['1', '2', '3', '4', '5'], CB = ['6', '7', '8'];
+const inA = (G, i) => CA.includes(G.V[i].name);
+const ccPaint = (G) => { CA.forEach((n) => vcol(G, n, CCOL[0])); CB.forEach((n) => vcol(G, n, CCOL[1])); };
+const ccEdges = (G, thick = true) => G.E.forEach((e) => paintE(e, CCOL[inA(G, e.u) ? 0 : 1], thick));
+const ccTags = () => [T('{1,2,3,4,5}', 'ptr', 0.6, 3.2, -1.6), T('{6,7,8}', 'ptr', 4.9, 2.6, -1.6)];
+async function walkPath(tok, G, ns, color = COL.gold, ms = 500) {
+  const tk = tokenAt(G, ns[0]);
+  for (let i = 0; i + 1 < ns.length; i++) await walk(tok, G, tk, ns[i], ns[i + 1], ms, color);
+  return tk;
+}
+
+scene('gr-19c-path', '用「有沒有 path」定義一個 relation', [
+  async (tok, S) => { S.G = ccG(); DEMO(2.6, 0.3, 3.4); S.B = board(-6.6, 4.8); S.B.add('u、v：graph 的兩個端點'); S.B.add('定義一個 binary relation'); vglow(S.G, '1', GOLD); vglow(S.G, '5', GOLD); T('u', 'ptr', -0.4, 1.4, -1.8); T('v', 'ptr', -0.2, 1.4, 2.4); cap('拿 graph 的兩個端點 u、v', '定義一個 binary relation'); },
+  async (tok, S) => { S.tk = await walkPath(tok, S.G, ['1', '2', '4', '5'], COL.green); cap('如果兩點中間有一條 path', '可以從這一點一路走到那一點'); },
+  async (tok, S) => { S.B.add('u R v ⇔ u、v 之間有 path', 'good'); cap('就說這兩個端點滿足這個 relation', 'u R v'); },
+  async (tok, S) => { S.B.add('path：端點不重複、edge 不重複'); cap('path：端點不會重複', 'edge 也不會重複'); },
+  async (tok, S) => { S.B.add('有路走得到 → 滿足 relation'); cap('有一條路可以從一點走到另一點', '這兩點就滿足這個 relation'); },
+  async (tok, S) => { kill(S.tk); S.B.add('→ 它是 equivalence relation', 'good'); cap('很容易確認：這個 relation', '是一個 equivalence relation'); },
 ], CAMW);
 
 scene('gr-19c-equiv', '「有 path」是 equivalence relation', [
-  async (tok, S) => { S.G = ccG(); DEMO(2.6, 0.3, 3.4); S.B = board(-6.6, 4.9, 0.52, -2.6, 8); S.B.add('在 V 上定義關係 R：'); S.B.add('a R b ⇔ a、b 之間有 path'); cap('在 vertex set V 上定義一個 relation', 'a R b：a 和 b 之間有 path'); },
-  async (tok, S) => { S.B.add('R 是 equivalence relation？'); cap('它是不是 equivalence relation？', '檢查三個性質'); },
-  async (tok, S) => { S.B.add('reflexive：a R a（長度 0 的 path）'); vglow(S.G, '3', GOLD); cap('reflexive：每個點到自己', '長度 0 的 path'); },
-  async (tok, S) => { vglow(S.G, '3', null); paintE(findE(S.G, '1', '2'), COL.gold, true); S.B.add('symmetric：a R b ⇒ b R a'); cap('symmetric：a 到 b 有 path', '反過來走，b 到 a 也有'); },
-  async (tok, S) => { paintE(findE(S.G, '2', '3'), COL.gold, true); S.B.add('transitive：a R b、b R c ⇒ a R c'); cap('transitive：a 到 b、b 到 c 都有 path', '接起來 a 到 c 也有（必要時去掉重複的部分）'); },
-  async (tok, S) => { S.B.add('三個都滿足 → equivalence relation', 'good'); cap('reflexive、symmetric、transitive', '所以是 equivalence relation'); },
-  async (tok, S) => { S.G.E.forEach((e) => paintE(e, COL.edge, false)); S.B.add('→ 有 equivalence classes'); cap('equivalence relation', '就有 equivalence classes'); },
-  async (tok, S) => { S.B.add('equivalence classes 是 V 的 partition'); cap('這些 classes 把 V 分割（partition）', ''); },
-  async (tok, S) => { ccPaint(S.G); T('{1,2,3,4,5}', 'ptr', 0.6, 3.2, -1.6); T('{6,7}', 'ptr', 4.9, 2.6, -1.6); T('{8}', 'ptr', 4.6, 1.6, 2.2); cap('V 分成不同的 equivalence classes', '同色 = 同一個 class'); },
-  async (tok, S) => { S.B.add('同一 class：有 path；不同 class：沒有'); cap('同一個 class 的兩點之間有 path', '不同 class 的點之間沒有 path'); },
+  async (tok, S) => { S.G = ccG(); DEMO(2.6, 0.3, 3.4); S.B = board(-6.6, 4.9, 0.52, -2.6, 8); S.B.add('vertex set V：任拿兩個端點'); vglow(S.G, '1', GOLD); vglow(S.G, '7', GOLD); cap('在 vertex set V 裡', '任意拿兩個端點出來'); },
+  async (tok, S) => { for (const [p, q] of [['1', '2'], ['2', '4'], ['4', '5']]) { paintE(findE(S.G, p, q), COL.green, true); await wt(tok, 250); } S.t1 = T('1、5：有 path → 滿足', 'good', -0.2, 2.0, 3.4); S.t2 = T('1、7：沒有 path → 不滿足', 'bad', 5.0, 2.0, -2.8); S.B.add('要嘛滿足、要嘛不滿足'); cap('兩點要嘛滿足這個 relation', '要嘛不滿足：看中間有沒有路徑'); },
+  async (tok, S) => { kill(S.t1); kill(S.t2); vglow(S.G, '1', null); vglow(S.G, '7', null); S.G.E.forEach((e) => paintE(e, COL.edge, false)); S.B.add('equivalence relation：檢查三個條件'); cap('這個 relation 是 equivalence relation', '要滿足三個條件'); },
+  async (tok, S) => { S.B.add('① reflexive：A R A'); vglow(S.G, '3', GOLD); T('A', 'ptr', 2.2, 1.4, 0.0); cap('① 自己跟自己要滿足', '點就在那裡，所以 OK'); },
+  async (tok, S) => { vglow(S.G, '3', null); S.B.add('② symmetric：A R B ⇒ B R A'); cap('② A 跟 B 滿足', 'B 就要跟 A 滿足'); },
+  async (tok, S) => { T('A', 'ptr', -0.4, 1.4, -1.8); T('B', 'ptr', 2.2, 1.9, 0.0); S.tk = await walkPath(tok, S.G, ['1', '2', '3'], COL.gold); cap('A R B：有一條路徑從 A 到 B', ''); },
+  async (tok, S) => { await walk(tok, S.G, S.tk, '3', '2', 500, null); await walk(tok, S.G, S.tk, '2', '1', 500, null); kill(S.tk); cap('把路徑反過來走', '就是 B 到 A → B R A'); },
+  async (tok, S) => { S.B.add('③ transitive：A R B、B R C ⇒ A R C'); cap('③ 遞移性：A 跟 B 滿足、B 跟 C 滿足', 'A 就要跟 C 滿足'); },
+  async (tok, S) => { T('C', 'ptr', -0.2, 1.4, 2.4); S.tk = tokenAt(S.G, '1'); await walk(tok, S.G, S.tk, '1', '2', 450, COL.gold); await walk(tok, S.G, S.tk, '2', '3', 450, COL.gold); cap('A R B：有一條路徑 A 到 B', ''); },
+  async (tok, S) => { await walk(tok, S.G, S.tk, '3', '4', 450, COL.green); await walk(tok, S.G, S.tk, '4', '5', 450, COL.green); cap('B R C：B 有一條路徑到 C', ''); },
+  async (tok, S) => { kill(S.tk); T('A → B → C', 'good', 1.0, 3.4, -0.4); cap('接起來：就有一條路從 A 到 C', '所以 A R C'); },
+  async (tok, S) => { S.B.add('transitive ✓'); cap('所以它也滿足 transitive condition', ''); },
+  async (tok, S) => { S.B.add('reflexive、symmetric、transitive → equivalence relation', 'good'); cap('reflexive、symmetric、transitive 都滿足', '所以這是一個 equivalence relation'); },
+], CAMW);
+
+scene('gr-19c-class', 'Equivalence classes：把 V 分成幾塊', [
+  async (tok, S) => { S.G = ccG(); DEMO(2.6, 0.3, 3.4); S.B = board(-6.6, 4.9, 0.52, -2.6, 8); S.B.add('equivalence relation → equivalence classes'); cap('一個 equivalence relation', '就會有 equivalence classes'); },
+  async (tok, S) => { S.B.add('classes 是 V 的 partition'); cap('equivalence classes 會對原來的集合', '做一個 partition（分割）'); },
+  async (tok, S) => { ccPaint(S.G); ccTags(); S.B.add('V = {1,2,3,4,5} ∪ {6,7,8}（示意）'); cap('整個 V 被 partition 成', '不同的 equivalence classes（同色 = 同一個 class）'); },
+  async (tok, S) => { S.B.add('同一個 class：兩兩滿足 relation'); vglow(S.G, '1', GOLD); vglow(S.G, '3', GOLD); cap('在同一個 class 裡的端點', '兩兩都滿足這個 relation'); },
+  async (tok, S) => { S.tk = await walkPath(tok, S.G, ['1', '2', '3'], COL.gold); cap('滿足 relation 的意思：', '兩點中間有一條路徑連起來'); },
+  async (tok, S) => { kill(S.tk); vglow(S.G, '1', null); vglow(S.G, '3', null); S.B.add('同一個 class ⇔ 中間有 path', 'good'); cap('兩個 vertices 在同一個 class', '若且唯若 它們中間有一條 path'); },
 ], CAMW);
 
 scene('gr-19c-comp', 'Components：G 分成 r 塊', [
-  async (tok, S) => { S.B = board(-6.6, 4.9, 0.52, -2.6, 8); S.B.add('G = (V, E)'); S.G = ccG(); DEMO(2.6, 0.3, 3.4); cap('一個 graph G = (V, E)', ''); },
-  async (tok, S) => { S.B.add('undirected graph'); cap('undirected graph', ''); },
-  async (tok, S) => { S.B.add('用剛才的 equivalence relation'); cap('用剛才「有 path」的 equivalence relation', ''); },
-  async (tok, S) => { ccPaint(S.G); S.B.add('V 分成 V₁, V₂, …, V_r'); cap('V 被分成 r 個 equivalence classes', '這裡 r = 3'); },
-  async (tok, S) => { T('V₁', 'ptr', 0.6, 3.2, -1.6); T('V₂', 'ptr', 4.9, 2.6, -1.6); T('V₃', 'ptr', 4.6, 1.6, 2.2); cap('每一塊叫 Vᵢ', ''); },
-  async (tok, S) => { S.G.E.forEach((e) => { const c = CCOL[['1', '2', '3', '4', '5'].includes(S.G.V[e.u].name) ? 0 : 1]; paintE(e, c, true); }); S.B.add('Eᵢ：兩端都在 Vᵢ 的 edges'); cap('Eᵢ：兩個端點都在 Vᵢ 裡的 edges', '每條邊一定落在某一塊'); },
-  async (tok, S) => { S.B.add('Gᵢ = (Vᵢ, Eᵢ)'); cap('Gᵢ = (Vᵢ, Eᵢ)', ''); },
-  async (tok, S) => { S.B.add('Gᵢ 叫 G 的 component；G 有 r 個', 'good'); T('3 個 components', 'good', 2.6, 3.6, -2.6); cap('每個 Gᵢ 叫做一個 component', 'G 分成 r 個 components'); },
-  async (tok, S) => { S.B.add('每個 component 自己是一個 graph'); cap('每個 component 本身就是一個 graph', ''); },
-  async (tok, S) => { S.B.add('component 之間沒有 edge', 'bad'); cap('不同 component 之間', '沒有任何 edge 相連'); },
+  async (tok, S) => { S.B = board(-6.6, 4.9, 0.52, -2.6, 8); S.B.add('G = (V, E)'); S.G = ccG(); DEMO(2.6, 0.3, 3.4); cap('假設 graph 是 G', '兩個集合：vertex set V、edge set E'); },
+  async (tok, S) => { S.B.add('undirected graph'); cap('它是 undirected graph', ''); },
+  async (tok, S) => { S.B.add('用剛才「中間有 path」的 equivalence relation'); cap('用剛才定義的 equivalence relation', '兩點中間有 path 就滿足'); },
+  async (tok, S) => { ccPaint(S.G); S.B.add('V 被 partition 成 r 個 classes'); cap('V 被 partition 成 r 個 classes', '這張示意圖 r = 2'); },
+  async (tok, S) => { ccEdges(S.G); cap('每個 class 裡的端點', '都有 path 連在一起'); },
+  async (tok, S) => { T('之間沒有 path', 'bad', 3.4, 1.8, 0.4); cap('不同 class 的兩點之間就沒有 path', '有 path 的話就會在同一個 class'); },
+  async (tok, S) => { T('V₁', 'ptr', 0.6, 3.2, -1.6); T('V₂', 'ptr', 4.9, 2.6, -1.6); S.B.add('V 分成 V₁, V₂, …, V_r'); cap('把 V 分成 V₁ 到 V_r 這些 subset', ''); },
+  async (tok, S) => { S.B.add('Eᵢ：兩個端點都在 Vᵢ 的 edges'); T('E₁', 'ptr', 1.0, 2.2, -0.6); T('E₂', 'ptr', 5.0, 1.6, 0.4); cap('Eᵢ 包含哪些 edge？', '兩個端點都在 Vᵢ 裡的那些邊'); },
+  async (tok, S) => { S.bad = ge(S.G, '3', '6', { color: COL.hot }); paintE(S.bad, COL.hot, true); S.q = T('跨兩塊的邊？', 'bad', 3.2, 1.6, -1.0); cap('會不會有一條邊一端在 V₁、一端在 V₂？', '不可能——為什麼？'); },
+  async (tok, S) => { CB.forEach((n) => vcol(S.G, n, CCOL[0])); cap('如果有這種邊，它就像一座橋', '兩邊的點都走得到 → 變成同一個 class'); },
+  async (tok, S) => { removeEdge(S.G, S.bad); kill(S.q); ccPaint(S.G); S.B.add('不會有跨兩個 class 的邊', 'bad'); cap('但它們本來在不同的 class', '所以不可能有這種邊'); },
+  async (tok, S) => { S.B.add('E₁, …, E_r 也是 E 的 partition'); cap('E₁ 到 E_r 也是 E 的 partition', '合起來是全部的邊，兩兩交集是空集合'); },
+  async (tok, S) => { S.B.add('Gᵢ = (Vᵢ, Eᵢ)'); cap('把 Vᵢ 跟 Eᵢ 這個圖', '叫做 Gᵢ'); },
+  async (tok, S) => { S.B.add('Gᵢ 叫 G 的 component；G 有 r 個', 'good'); T('2 個 components', 'good', 2.6, 3.6, -2.6); cap('Gᵢ 就叫做 G 的一個 component', '這個圖被分成 r 個 components'); },
 ], CAMW);
 
-scene('gr-19c-conn', 'Connected graph：只有一個 component', [
-  async (tok, S) => { S.B = board(-6.6, 4.9, 0.52, -2.6, 8); S.B.add('connected graph（連通圖）'); cap('connected graph', ''); },
-  async (tok, S) => { S.G = ccG(); DEMO(2.6, 0.3, 3.4); cap('看例子', ''); },
-  async (tok, S) => { ['1', '2', '3', '4', '5'].forEach((n) => vcol(S.G, n, CCOL[0])); T('這 5 點：1 個 component', 'ptr', 0.6, 3.4, -1.6); cap('1、2、3、4、5 這 5 點', '是一個 component'); },
-  async (tok, S) => { ['6', '7'].forEach((n) => vcol(S.G, n, CCOL[1])); vcol(S.G, '8', CCOL[2]); T('整張圖：3 個 components', 'bad', 2.6, 3.9, -2.6); cap('整張圖有不只一個 component', '→ 不是 connected'); },
-  async (tok, S) => { ge(S.G, '5', '8', { color: COL.gold }); ge(S.G, '3', '6', { color: COL.gold }); S.G.V.forEach((v, i) => vcol(S.G, i, CCOL[0])); T('加兩條邊 → 只剩 1 個 component', 'good', 2.6, 3.3, -2.6); cap('（示意）加上兩條邊', '全部連成 1 個 component'); },
-  async (tok, S) => { S.B.add('只有 1 個 component ⇔ connected', 'good'); cap('只有一個 component', '叫 connected graph'); },
-  async (tok, S) => { S.B.add('等價：任兩個不同端點之間都有 path'); cap('connected：任兩個不同端點之間', '都有一條 path'); },
-  async (tok, S) => { S.B.add('任兩點都滿足這個 equivalence relation'); cap('任兩點都在同一個 equivalence class', ''); },
-  async (tok, S) => { S.B.add('兩種說法是同樣的意思'); cap('兩種定義是同樣的意思', ''); },
+scene('gr-19c-conn', 'Component 的直覺、connected graph', [
+  async (tok, S) => { S.B = board(-6.6, 4.9, 0.52, -2.6, 8); S.G = ccG(); DEMO(2.6, 0.3, 3.4); ccPaint(S.G); ccEdges(S.G); S.B.add('每個 component 自己是一個 graph'); cap('每個 component', '它自己就是一個 graph'); },
+  async (tok, S) => { S.B.add('跟其他 component 不會連在一起'); T('中間沒有邊', 'bad', 3.4, 1.8, 0.4); cap('它跟其他 component', '不會連在一起'); },
+  async (tok, S) => { CB.forEach((n) => vcol(S.G, n, COL.dim)); S.G.E.forEach((e) => { if (!inA(S.G, e.u)) paintE(e, COL.dim, false); }); T('(V₁, E₁)', 'ptr', 0.6, 3.2, -1.6); cap('把所有 edge 放進來：', 'V₁、E₁ 就是一個 component'); },
+  async (tok, S) => { CB.forEach((n) => vcol(S.G, n, CCOL[1])); S.G.E.forEach((e) => { if (!inA(S.G, e.u)) paintE(e, CCOL[1], true); }); T('(V₂, E₂)', 'ptr', 4.9, 2.6, -1.6); cap('V₂、E₂ 是另一個 component', ''); },
+  async (tok, S) => { S.B.add('連在一起的那一整塊 = 一個 component', 'good'); cap('簡單講：連在一起的那一整塊', '就叫一個 component'); },
+  async (tok, S) => { S.B.add('只有一個 component → connected', 'good'); cap('如果這個圖只有一個 component', '它就叫 connected'); },
+  async (tok, S) => { S.B.add('connected graph（連通圖）'); cap('只有一個 component 的圖', '叫 connected graph'); },
+], CAMW);
+
+scene('gr-19c-ex', '例子：這個圖有幾個 component？', [
+  async (tok, S) => { S.B = board(-6.6, 4.9, 0.52, -2.6, 8); S.G = ccG(); DEMO(2.6, 0.3, 3.4); S.B.add('用例子看（點名為示意）'); cap('用下面這個例子', '很簡單就看出來'); },
+  async (tok, S) => { S.B.add('這個 graph 有幾個 component？'); cap('這個 graph 有幾個 component？', ''); },
+  async (tok, S) => { CA.forEach((n) => vcol(S.G, n, CCOL[0])); S.G.E.forEach((e) => { if (inA(S.G, e.u)) paintE(e, CCOL[0], true); }); T('1~5：一個 component', 'ptr', 0.6, 3.2, -1.6); cap('1、2、3、4、5 這五點和它們的邊', '連在一起，是一個 component'); },
+  async (tok, S) => { CB.forEach((n) => vcol(S.G, n, CCOL[1])); S.G.E.forEach((e) => { if (!inA(S.G, e.u)) paintE(e, CCOL[1], true); }); T('2 個 components', 'bad', 2.6, 3.9, -2.6); S.B.add('兩部分沒連在一起 → 2 個 components'); cap('另一部分跟它根本沒有連在一起', '所以有兩個 components'); },
+  async (tok, S) => { S.B.add('相連的一部分 = 一個 component'); cap('相連的部分有幾塊', '就有幾個 component'); },
+  async (tok, S) => { S.e = ge(S.G, '3', '6', { color: COL.gold }); paintE(S.e, COL.gold, true); S.G.V.forEach((v, i) => vcol(S.G, i, CCOL[0])); T('（示意）全部連在一起 → 1 個', 'good', 2.6, 3.3, -2.6); cap('如果全部連在一起', '就只有一個 component'); },
+  async (tok, S) => { S.B.add('只有 1 個 component → connected graph', 'good'); cap('這個圖就叫 connected graph', ''); },
+], CAMW);
+
+scene('gr-19c-def2', 'Connected 的另一個定義：任兩點有 path', [
+  async (tok, S) => { S.B = board(-6.6, 4.9, 0.52, -2.6, 8); S.G = ccG(); ge(S.G, '3', '6'); DEMO(2.6, 0.3, 3.4); S.G.V.forEach((v, i) => vcol(S.G, i, CCOL[0])); S.B.add('connected 的另一個定義（意思一樣）'); cap('connected graph 還有另一個定義', '意思是一樣的（equivalent）'); },
+  async (tok, S) => { S.B.add('一個 component = 全在一個 class'); cap('connected：它是一個 component', '全部都在同一個 equivalence class 裡'); },
+  async (tok, S) => { S.B.add('所有 vertex 兩兩滿足 relation'); cap('在同一個 class 裡', '所有 vertex 都滿足這個 equivalence relation'); },
+  async (tok, S) => { vglow(S.G, '1', GOLD); vglow(S.G, '8', GOLD); S.tk = await walkPath(tok, S.G, ['1', '2', '3', '6', '7', '8'], COL.green, 380); cap('滿足 relation：任何兩點', '都有一條 path 連在一起'); },
+  async (tok, S) => { kill(S.tk); S.B.add('a path between any two distinct vertices', 'good'); cap('connected：there is a path between', 'any two distinct vertices'); },
+  async (tok, S) => { S.B.add('1 個 component ⇔ 1 個 class ⇔ 任兩點有 path'); cap('只有一個 component → 只有一個 class', '→ 任何兩點都有路徑連起來'); },
+  async (tok, S) => { S.B.add('兩種定義是同樣的意思', 'good'); cap('用 component 定義、用 path 定義', '兩個是同樣的意思'); },
+  async (tok, S) => { S.B.add('後面常假設：圖是 connected'); cap('後面常會假設「這個圖是 connected」', '這一段只是在解釋 component、connected 兩個名詞'); },
 ], CAMW);
 
 

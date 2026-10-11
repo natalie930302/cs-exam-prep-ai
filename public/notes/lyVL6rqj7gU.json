@@ -8,154 +8,300 @@
    "points": [
     {
      "t": 0,
-     "text": "本段影片自動字幕幾乎無法辨識；以下各段內容依板書與教科書推斷，例子為示意。"
+     "text": "影片前約 40 秒沒有講課語音。"
     }
    ],
    "scene": null
   },
   {
-   "title": "兩個端點之間的 path",
+   "title": "用「中間有沒有 path」定義 relation",
    "points": [
     {
      "t": 39,
-     "text": "在 undirected graph 中，看兩個端點之間有沒有 path（端點、邊都不重複）。"
+     "text": "拿 graph 的兩個端點 u、v：如果中間有一條 path 可以從一點走到另一點，就說它們滿足這個 binary relation。"
+    },
+    {
+     "t": 44,
+     "text": "path：端點不重複、edge 不重複。"
+    },
+    {
+     "t": 90,
+     "text": "老師先說：很容易確認這個 relation 是 equivalence relation。"
     }
    ],
    "scene": "gr-19c-path",
    "cues": [
     39.3,
-    49.8,
-    70,
-    79.2,
-    91.1
+    41.1,
+    42.9,
+    44,
+    81.3,
+    90.7
    ],
    "explain": [
-    "這段影片的字幕幾乎辨識不出來，畫面依板書與教科書推斷，例子是示意。先看 undirected graph 裡的兩個端點。",
-    "問題是：這兩個端點之間，能不能用一條 path 連起來？",
-    "複習：path 是端點不重複的 walk，所以 edge 也不重複。",
-    "例如 1 和 5 之間有 path：1 → 2 → 4 → 5。",
-    "但 1 和 7 之間找不到任何 path，因為沒有邊可以通過去。"
+    "老師先在 graph 上拿兩個端點，叫它們 u 和 v，要用它們定義一個 binary relation（二元關係，也就是規定「哪兩個東西算有關係」）。舞台上的圖是示意。",
+    "規則是：如果 u、v 中間有一條 path，可以從這一點一路沿著邊走到那一點⋯⋯",
+    "⋯⋯就說這兩個端點「滿足這個 relation」，寫成 u R v。",
+    "複習一下 path：沿著邊走的路線，端點不會重複，所以 edge 也不會重複。",
+    "老師再講一次：兩個端點之間只要有一條路走得到，它們就滿足這個 relation。",
+    "然後他說，你很簡單就能確認這是一個 equivalence relation（等價關係）。下一段就來檢查。"
    ]
   },
   {
-   "title": "「有 path」是 equivalence relation",
+   "title": "檢查：它是 equivalence relation",
    "points": [
     {
-     "t": 124,
-     "text": "在 V 上定義 a R b ⇔ a、b 之間有 path（或 a = b）。"
+     "t": 123,
+     "text": "在 V 裡任拿兩點：中間有路徑就滿足，沒有就不滿足。"
     },
     {
-     "t": 146,
-     "text": "R 滿足 reflexive、symmetric、transitive → equivalence relation。"
+     "t": 149,
+     "text": "reflexive：自己跟自己滿足。symmetric：A 到 B 的路徑反過來就是 B 到 A。"
     },
     {
-     "t": 212,
-     "text": "它的 equivalence classes 是 V 的 partition。"
+     "t": 172,
+     "text": "transitive：A 到 B 有路、B 到 C 有路，接起來 A 到 C 有路。"
+    },
+    {
+     "t": 197,
+     "text": "三個都滿足 → equivalence relation。"
     }
    ],
+   "trap": "一般把「自己到自己」看成長度 0 的 path，所以 reflexive 成立；A→B、B→C 接起來若有重複的點，把中間繞圈的部分剪掉仍是一條 path（這是補充說明，老師直接說「有一條路徑」）。",
    "scene": "gr-19c-equiv",
    "cues": [
-    124.2,
-    146.1,
-    152,
-    154.2,
-    168.1,
-    195.1,
-    212.6,
-    216.6,
-    250.4,
-    303
+    123.6,
+    133.5,
+    145.8,
+    152.2,
+    158.5,
+    163.9,
+    166.6,
+    172.4,
+    182,
+    186.9,
+    190.1,
+    194.9,
+    197.7
    ],
    "explain": [
-    "在 vertex set V 上定義一個關係：a 和 b 有關係，就是 a、b 之間有一條 path。",
-    "這個關係是不是 equivalence relation（等價關係）？要檢查三個性質。",
-    "reflexive（反身性）：每個點跟自己有關係，可以看成長度 0 的 path。",
-    "symmetric（對稱性）：a 到 b 有 path，把它倒過來走，b 到 a 也有 path。",
-    "transitive（遞移性）：a 到 b 有 path、b 到 c 有 path，接起來就能從 a 走到 c（有重複的點就把中間繞圈的部分剪掉）。",
-    "三個性質都滿足，所以這是一個 equivalence relation。",
-    "有 equivalence relation，就有 equivalence classes（等價類）。",
-    "equivalence classes 會把整個集合 V 分割（partition）成互不重疊的幾塊。",
-    "這個例子裡，V 分成 {1,2,3,4,5}、{6,7}、{8} 三個 class，同色代表同一個 class。",
-    "同一個 class 裡的任兩點之間都有 path；不同 class 的點之間沒有 path。"
+    "在 vertex set V（所有端點組成的集合）裡，任意拿兩個端點出來。",
+    "這兩點要嘛滿足這個 relation，要嘛不滿足。例如示意圖裡 1 和 5 中間有路，滿足；1 和 7 中間沒有路，不滿足。",
+    "老師說這個 relation 是 equivalence relation。要當 equivalence relation，必須滿足三個條件。",
+    "第一個是 reflexive（反身性）：每個點都要跟自己滿足。點自己就在那裡，所以 OK。",
+    "第二個是 symmetric（對稱性）：如果 A 跟 B 滿足，B 也要跟 A 滿足。",
+    "A 跟 B 滿足，表示有一條路徑從 A 走到 B。",
+    "把這條路徑反過來走，就是從 B 到 A，所以 B 跟 A 也滿足。",
+    "第三個是 transitive（遞移性）：A 跟 B 滿足、B 跟 C 滿足，那 A 就要跟 C 滿足。",
+    "A 跟 B 滿足：有一條路徑從 A 到 B。",
+    "B 跟 C 滿足：B 有一條路徑到 C。",
+    "兩段接起來，就有一條路從 A 到 C，沒問題吧？",
+    "所以它也滿足 transitive condition。",
+    "reflexive、symmetric、transitive 三個都滿足，所以這是一個 equivalence relation。"
+   ]
+  },
+  {
+   "title": "Equivalence classes 把 V 分成幾塊",
+   "points": [
+    {
+     "t": 211,
+     "text": "equivalence relation 會產生 equivalence classes，它們是 V 的 partition。"
+    },
+    {
+     "t": 255,
+     "text": "同一個 class 裡的點兩兩滿足 relation，也就是中間有路徑。"
+    },
+    {
+     "t": 302,
+     "text": "兩個 vertices 在同一個 class ⇔ 它們中間有 path。"
+    }
+   ],
+   "scene": "gr-19c-class",
+   "cues": [
+    211.3,
+    216.4,
+    250.4,
+    255.4,
+    262.5,
+    302.4
+   ],
+   "explain": [
+    "只要是 equivalence relation，就會有所謂的 equivalence classes（等價類）：彼此有關係的東西會被歸成同一類。",
+    "這些 equivalence classes 會對原來的集合做一個 partition（分割）：每個點剛好屬於一類，不重複也不遺漏。",
+    "所以整個集合 V 會被分成不同的 equivalence classes。示意圖裡分成 {1,2,3,4,5} 和 {6,7,8}，同顏色就是同一類。",
+    "在同一個 class 裡的端點是什麼意思？就是它們兩兩都滿足這個 relation。",
+    "滿足這個 relation，就是兩點中間有一條路徑連起來。",
+    "所以：兩個 vertices 在同一個 class，若且唯若（兩個方向都成立）它們中間有一條 path。"
    ]
   },
   {
    "title": "Components",
    "points": [
     {
-     "t": 320,
-     "text": "G = (V, E) 的 equivalence classes V₁, …, V_r。"
+     "t": 381,
+     "text": "G = (V, E) 是 undirected graph，用「中間有 path」這個 equivalence relation 把 V 分成 r 個 classes V₁…V_r。"
     },
     {
-     "t": 497,
-     "text": "Eᵢ = 兩端都在 Vᵢ 的邊；Gᵢ = (Vᵢ, Eᵢ) 叫做 G 的 component。"
+     "t": 416,
+     "text": "同一個 class 裡有 path 連在一起；不同 class 之間沒有 path。"
     },
     {
-     "t": 621,
-     "text": "每個 component 本身是一個 graph，不同 component 之間沒有邊。"
+     "t": 485,
+     "text": "Eᵢ：兩個端點都在 Vᵢ 的邊；不會有邊跨兩個 class（否則兩塊就連通、變成同一個 class）。"
+    },
+    {
+     "t": 560,
+     "text": "E₁…E_r 也是 E 的 partition。"
+    },
+    {
+     "t": 587,
+     "text": "Gᵢ = (Vᵢ, Eᵢ) 叫做 G 的一個 component；G 分成 r 個 components。"
     }
    ],
+   "trap": "一條邊不可能一端在 Vᵢ、一端在 Vⱼ（i ≠ j）：有這條邊，兩邊的點就有路徑相通，會落在同一個 equivalence class。",
    "scene": "gr-19c-comp",
    "cues": [
-    320.6,
-    386.2,
-    388.6,
-    401.3,
-    477,
-    496.9,
-    587.1,
-    608.7,
-    621.4,
-    624.6
+    381.2,
+    389,
+    390.6,
+    400.5,
+    408.7,
+    416.1,
+    475.8,
+    485.1,
+    513.8,
+    525.5,
+    544.2,
+    560.3,
+    586.8,
+    611
    ],
    "explain": [
-    "考慮一個 graph G = (V, E)。",
-    "它是 undirected graph。",
-    "用剛才「兩點之間有 path」這個 equivalence relation。",
-    "V 被分成 r 個 equivalence classes：V₁、V₂、…、V_r。這裡 r = 3。",
-    "每一塊叫 Vᵢ。",
-    "Eᵢ 是兩個端點都在 Vᵢ 裡面的那些 edges。每條邊的兩端一定有 path 相通，所以一定落在同一塊。",
-    "把 Vᵢ 和 Eᵢ 放在一起，得到 Gᵢ = (Vᵢ, Eᵢ)。",
-    "每個 Gᵢ 叫做 G 的一個 component（連通分量），G 被分成 r 個 components。",
-    "每個 component 自己就是一個 graph。",
-    "而不同 component 之間，沒有任何 edge 相連。"
+    "假設 graph 叫 G，它有兩個集合：vertex set V（端點）和 edge set E（邊）。",
+    "它是 undirected graph（邊沒有方向）。",
+    "用剛才定義的 equivalence relation：兩點中間有 path，就滿足。",
+    "因為它是 equivalence relation，全部的 vertex 會被 partition 成 r 個 equivalence classes。示意圖裡 r = 2。",
+    "每一個 class 裡的端點，都有 path 連在一起。",
+    "不同 class 的任兩點就不會有 path：如果有 path，它們就會在同一個 class 裡。",
+    "把 V 分成 V₁ 到 V_r 這幾個 subset（子集合）。",
+    "那 Eᵢ 是什麼？Eᵢ 包含的是「兩個端點都在 Vᵢ 裡面」的那些邊。",
+    "會不會有一條邊一端在 V₁、另一端在 V₂？老師說不可能，為什麼？（紅色那條是假設的邊）",
+    "如果有這種邊，它就像一座橋，這邊的點都能走到那邊的點，那它們就會在同一個 equivalence class 裡。",
+    "可是它們本來在不同的 equivalence class，所以不可能有這種邊。",
+    "所以 E₁ 到 E_r 也是 E 的一個 partition：全部合起來就是所有的邊，兩兩交集是空集合。",
+    "把 Vᵢ 和 Eᵢ 放在一起，得到一個圖，叫做 Gᵢ。",
+    "Gᵢ 就叫做 G 的一個 component（連通分量），整個圖被分成 r 個 components。"
    ]
   },
   {
-   "title": "Connected graph",
+   "title": "Component 的直覺與 connected graph",
    "points": [
     {
-     "t": 682,
-     "text": "connected graph：只有一個 component。"
+     "t": 621,
+     "text": "每個 component 自己是一個 graph，跟其他 component 不會連在一起。"
+    },
+    {
+     "t": 645,
+     "text": "簡單講：連在一起的那一整塊叫一個 component。"
+    },
+    {
+     "t": 652,
+     "text": "只有一個 component 的圖叫 connected graph。"
+    }
+   ],
+   "scene": "gr-19c-conn",
+   "cues": [
+    621.4,
+    624.6,
+    636.5,
+    643,
+    645.7,
+    652.6,
+    685
+   ],
+   "explain": [
+    "每個 component 它自己就是一個 graph。",
+    "而且它跟其他 component 不會連在一起，因為邊只會在同一塊裡面，塊跟塊中間沒有邊。",
+    "把所有 edge 放進來看：V₁ 和 E₁ 就是一個 component。",
+    "V₂ 和 E₂ 是另一個 component。",
+    "簡單講，連在一起的那一整部分，就叫做一個 component。",
+    "如果這個圖只有一個 component，它就叫 connected（連通）。",
+    "只有一個 component 的圖，就叫 connected graph（連通圖）。"
+   ]
+  },
+  {
+   "title": "例子：有幾個 component？",
+   "points": [
+    {
+     "t": 690,
+     "text": "老師用板書的例子：1、2、3、4、5 這五點是一個 component，另一部分跟它沒連在一起 → 兩個 components。"
+    },
+    {
+     "t": 787,
+     "text": "如果全部連在一起，就只有一個 component → connected graph。"
+    }
+   ],
+   "scene": "gr-19c-ex",
+   "cues": [
+    690,
+    734.7,
+    750.5,
+    764.3,
+    771.3,
+    787.2,
+    795.8
+   ],
+   "explain": [
+    "老師用黑板上的例子說明，很簡單就看得出來。（舞台上的點名是示意）",
+    "問題：這個 graph 有幾個 component？",
+    "1、2、3、4、5 這五點和它們之間的邊連在一起，是一個 component。",
+    "另一部分跟這五點根本沒有連在一起，所以這個圖有兩個 components。",
+    "相連的部分有幾塊，就有幾個 component。",
+    "這個圖可以拆成幾個相連的部分？如果全部連在一起，就只有一個 component。（金色那條邊是示意）",
+    "只有一個 component，這個圖就叫 connected graph。"
+   ]
+  },
+  {
+   "title": "Connected 的另一個定義",
+   "points": [
+    {
+     "t": 799,
+     "text": "connected graph 有另一個等價的定義。"
     },
     {
      "t": 868,
-     "text": "等價說法：任兩個不同端點之間都有 path。"
+     "text": "undirected graph 是 connected ⇔ there is a path between any two distinct vertices。"
+    },
+    {
+     "t": 904,
+     "text": "用 component 定義或用 path 定義，意思一樣。"
+    },
+    {
+     "t": 918,
+     "text": "後面常假設圖是 connected；這段只是解釋 component、connected 兩個名詞。"
     }
    ],
-   "trap": "只有一個孤立點的圖也算 connected（只有一個 component）。",
-   "scene": "gr-19c-conn",
+   "trap": "connected 是「任兩點之間有 path」，不是「任兩點之間有 edge」（那是 complete graph）。",
+   "scene": "gr-19c-def2",
    "cues": [
-    682.7,
-    733.1,
-    750.2,
-    765.8,
-    777.2,
-    787.7,
-    868,
-    876.9,
-    903.8
+    799.6,
+    822.4,
+    833.5,
+    838.3,
+    868.3,
+    889.6,
+    903.8,
+    918.4
    ],
    "explain": [
-    "接著定義 connected graph（連通圖）。",
-    "看例子（示意）。",
-    "1、2、3、4、5 這 5 個點互相都有 path，是一個 component。",
-    "但整張圖有 3 個 components，所以這張圖不是 connected。",
-    "如果加上兩條邊（示意），所有點就連成一個 component。",
-    "只有一個 component 的 graph，就叫 connected graph。",
-    "換句話說：connected 就是任兩個不同的端點之間，都有一條 path。",
-    "也就是任兩點都滿足剛才的 equivalence relation，全部在同一個 class 裡。",
-    "這兩種定義說的是同一件事。"
+    "connected graph 還有另一個定義，意思一樣（equivalent）。",
+    "剛才說 connected 就是整個圖是一個 component，也就是所有點都在同一個 equivalence class 裡。",
+    "都在同一個 class 裡，所有的 vertex 就兩兩滿足這個 equivalence relation。",
+    "滿足這個 relation，就是任何兩點都有一條 path 連在一起。例如 1 到 8 也走得到。",
+    "所以定義：一個 undirected graph 是 connected，如果 there is a path between any two distinct vertices（任兩個不同端點之間都有 path）。",
+    "只有一個 component，就只有一個 equivalence class，任何兩點都在同一個 class，所以任何兩點都有路徑連起來。",
+    "老師用 component 定義、課本用 path 定義，這兩個是同樣的意思，用哪一個都可以。",
+    "後面很多定理會假設「這個圖是 connected」。這一段只是在解釋 component 和 connected 這兩個名詞。"
    ]
   }
  ],
@@ -169,29 +315,40 @@
     "只有 transitive"
    ],
    "ans": "equivalence relation",
-   "why": "它是 reflexive、symmetric、transitive，所以是等價關係。"
+   "why": "老師逐一檢查：reflexive（自己跟自己）、symmetric（路徑反過來走）、transitive（兩段路徑接起來）都成立。"
   },
   {
-   "q": "component 指的是？",
+   "q": "為什麼不會有一條邊一端在 V₁、另一端在 V₂？",
    "opts": [
-    "由一個 equivalence class 的端點和它們之間的邊組成的子圖",
+    "有這條邊，兩邊的點就有路徑相通，會在同一個 equivalence class",
+    "因為 graph 是 directed",
+    "因為每個點的 degree 都是偶數",
+    "因為 E 是空集合"
+   ],
+   "ans": "有這條邊，兩邊的點就有路徑相通，會在同一個 equivalence class",
+   "why": "這條邊會像橋一樣把兩塊接通，和「它們在不同 class」矛盾。"
+  },
+  {
+   "q": "component Gᵢ 指的是？",
+   "opts": [
+    "(Vᵢ, Eᵢ)：一個 equivalence class 的端點，加上兩端都在裡面的邊",
     "任何一條 path",
     "度數最大的端點",
     "任意兩點之間的邊"
    ],
-   "ans": "由一個 equivalence class 的端點和它們之間的邊組成的子圖",
-   "why": "Gᵢ = (Vᵢ, Eᵢ)，Vᵢ 是 equivalence class。"
+   "ans": "(Vᵢ, Eᵢ)：一個 equivalence class 的端點，加上兩端都在裡面的邊",
+   "why": "Vᵢ 是 equivalence class，Eᵢ 是兩個端點都在 Vᵢ 的邊。"
   },
   {
-   "q": "一個圖有 {1,2,3,4,5}、{6,7}、{8} 三個 equivalence classes，它有幾個 components？",
+   "q": "老師的例子：1、2、3、4、5 連成一塊，另一部分跟它沒連在一起。這個圖有幾個 components？",
    "opts": [
-    "3",
+    "2",
     "1",
-    "8",
-    "2"
+    "5",
+    "3"
    ],
-   "ans": "3",
-   "why": "每個 equivalence class 對應一個 component。"
+   "ans": "2",
+   "why": "相連的部分有幾塊就有幾個 component：兩塊 → 2 個。"
   },
   {
    "q": "connected graph 的定義是？",
