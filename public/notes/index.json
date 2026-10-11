@@ -307,9 +307,9 @@
  },
  "5hO3MrzPa0A": {
   "label": "MIT OCW 18.06 L4：Factorization into A = LU",
-  "points": 41,
+  "points": 26,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "5JxShDZ_ylo": {
   "label": "MIT 6.006 Rec13：BFS",
@@ -1433,6 +1433,12 @@
   "quiz": 5,
   "cued": true
  },
+ "kjBOesZCoqc": {
+  "label": "3Blue1Brown：Essence of linear algebra preview",
+  "points": 8,
+  "quiz": 4,
+  "cued": true
+ },
  "klWl-t7V5qY": {
   "label": "交大OCW 易志偉《離散數學》Lec01 Logic and Proofs (1/5)",
   "points": 72,
@@ -2018,6 +2024,12 @@
  "qQ8vS2btsxI": {
   "label": "Abdul Bari：9.2 Rabin-Karp String Matching Algorithm",
   "points": 39,
+  "quiz": 7,
+  "cued": true
+ },
+ "QVKj3LADCnA": {
+  "label": "MIT OCW 18.06 L2：Elimination with Matrices",
+  "points": 32,
   "quiz": 7,
   "cued": true
  },
@@ -2673,6 +2685,12 @@
   "label": "清大OCW 趙啟超《離散數學》第15C講 Generating Functions",
   "points": 10,
   "quiz": 5,
+  "cued": true
+ },
+ "ZK3O402wf1c": {
+  "label": "MIT OCW 18.06 L1：Geometry of Linear Equations",
+  "points": 33,
+  "quiz": 6,
   "cued": true
  },
  "zLuuRC56uvI": {
