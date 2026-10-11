@@ -1,0 +1,674 @@
+{
+ "video": "PlbXyb-UymI",
+ "label": "黃婷婷教授計算機結構_第6B講 Instruction Set Architecture",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Stored-program computer：指令和資料都是 0101",
+   "scene": "isB-6b-stored",
+   "points": [
+    {
+     "t": 0,
+     "text": "指令和資料都是 32-bit 的 0/1 pattern，光看 bit 分不出是指令還是資料。"
+    },
+    {
+     "t": 50,
+     "text": "Stored-program：program 和 data 通通放在 memory 裡，讀出來要當 data 或當指令來執行都可以。"
+    },
+    {
+     "t": 68,
+     "text": "一個 program 也可以是 data：對 compiler 來說，你的 C 程式就是它的 input data。"
+    }
+   ],
+   "cues": [
+    0.45,
+    2.5,
+    4.42,
+    50.68,
+    64.96,
+    68.96,
+    94.76,
+    118.16,
+    125.1
+   ],
+   "explain": [
+    "這一講先補一個很重要的觀念：[[stored-program]] computer（儲存程式的電腦）。右邊這一排格子代表[[記憶體]]，每一格放一個 32-bit 的 [[word]]。",
+    "在 MIPS 裡，一個[[指令]]是 32 個 bit，一筆整數資料也是 32 個 bit。左邊這兩串 0 和 1 完全一樣（這裡用 add $t0, $s1, $s2 的機器碼當例子）。",
+    "問題來了：給你一串 0101，你分得出它是指令還是資料嗎？分不出來！因為它們本質上都只是一串 bit。",
+    "所以電腦乾脆不區分：不管是指令還是資料，通通變成 0101 放進記憶體。兩串 bit 飛進記憶體的兩個格子裡，看起來一模一樣。",
+    "舉個例子：你寫了一個 C 程式。對你來說，它是一個「程式」，是要拿來執行的。",
+    "可是對 [[compiler]]（編譯器）來說，你的程式只是它要讀進來處理的「資料」：它讀你的程式（input），產生 assembly code（output）。同一個東西，換個角度就從程式變成資料。",
+    "因此 program 和 data 通通都放在記憶體裡，只是放在不同的區塊（一塊放程式、一塊放資料）。這個想法看起來簡單，其實是電腦史上很厲害的發現。",
+    "要用的時候，把它讀出來：要當資料就當資料（同一串 bit 當成整數是 36,847,648），要當指令就拿去執行（它就是 add 指令）。怎麼解讀，看你拿它做什麼。",
+    "總結：指令也用 binary（二進位）表示，跟資料一樣存在記憶體裡，這就叫 stored-program computer；而且 program 可以處理 program，compiler 就是最好的例子。"
+   ]
+  },
+  {
+   "title": "為什麼 R-type 後面還有 funct 欄位",
+   "scene": "isB-6b-funct",
+   "points": [
+    {
+     "t": 160,
+     "text": "問題：I-type 只看 op 就知道做什麼，R-type 為什麼還要看最後 6 bits 的 funct？"
+    }
+   ],
+   "cues": [
+    163.3,
+    187.66,
+    191.68
+   ],
+   "explain": [
+    "老師回到上一講留下的問題。上面是 [[R-format]]：op、rs、rt、rd、shamt、funct；下面是 [[I-format]]：op、rs、rt、16-bit [[immediate]]。括號裡是每個欄位幾個 bit。",
+    "I-type 的指令，看最前面 6 bits 的 [[opcode]] 就知道要做什麼動作。",
+    "R-type 就不一樣：前面的 op 看完，還要再看最後面 6 bits 的 [[funct]]，才知道是 add 還是 sub。為什麼要這樣設計？老師請同學猜。"
+   ]
+  },
+  {
+   "title": "（同學回答）",
+   "scene": null,
+   "points": [
+    {
+     "t": 206,
+     "text": "老師請同學回答為什麼 R-type 需要 funct。"
+    }
+   ]
+  },
+  {
+   "title": "全部塞進 op 會怎樣：opcode 不夠、immediate 變小",
+   "scene": "isB-6b-funct2",
+   "points": [
+    {
+     "t": 238,
+     "text": "如果每個運算都用自己的 op code，6 bits（64 種）不夠，op 要加長。"
+    },
+    {
+     "t": 293,
+     "text": "所有 format 的 op 一樣長，op 變長 → I-type 的 immediate 少 bit → 常數範圍變小。"
+    },
+    {
+     "t": 348,
+     "text": "R-type 在 rs、rt、rd、shamt 後還有空位，用 6-bit funct 分辨運算，op 維持 6 bits。"
+    }
+   ],
+   "trap": "funct 存在的理由不是「R-type 比較特別」，而是為了讓 op 維持 6 bits，保住 I-type 16-bit 的 immediate。",
+   "cues": [
+    249.82,
+    273.89,
+    293.37,
+    317.21,
+    336.03,
+    348.39,
+    413.31
+   ],
+   "explain": [
+    "假設每一種運算（add、sub、and、or……）都要有自己獨立的 op code。6 個 bit 最多只能表示 2⁶ = 64 種，運算一多就不夠用了。",
+    "不夠怎麼辦？只好把 op 加長，例如變成 7 bits（這裡是示意）。而且為了格式整齊，不管哪種 type，op 都要一樣長。",
+    "可是一個指令總共就只有 32 bits，前面多用一個，後面就得少一個。",
+    "對 R-type 來說沒差：rs、rt、rd、shamt 各 5 bits 照樣放得下，後面還有剩。",
+    "但對 I-type 就慘了：immediate 從 16 bits 變成 15 bits，能表示的範圍從 ±2¹⁵ 縮成 ±2¹⁴，少了一半。我們希望 immediate 越長越好。",
+    "所以聰明的做法是：R-type 用完 rs、rt、rd、shamt 之後還剩 6 個 bit 沒用，就把「到底是哪一種運算」放在這最後 6 bits，也就是 funct。",
+    "這樣所有 R-type 共用同一個 op = 0，再用 funct 區分（add 是 32、sub 是 34）。op code 只要 6 bits 就夠，I-type 的 16-bit immediate 也完全不受影響。"
+   ]
+  },
+  {
+   "title": "（課堂問答）",
+   "scene": null,
+   "points": [
+    {
+     "t": 415,
+     "text": "老師確認同學是否理解。"
+    }
+   ]
+  },
+  {
+   "title": "Logical operations：把一個 word 看成 32 個 bit",
+   "scene": "isB-6b-bitwise",
+   "points": [
+    {
+     "t": 443,
+     "text": "接下來兩個主題：logical operation、decision making（branch）。"
+    },
+    {
+     "t": 493,
+     "text": "bitwise operation：不把 32 bits 當一個數字，而是一個 bit 一個 bit 處理（shift、and、or）。"
+    }
+   ],
+   "cues": [
+    444.85,
+    460.27,
+    477.03,
+    493.37,
+    512.29
+   ],
+   "explain": [
+    "接下來要介紹兩類很重要的指令：第一是 [[logical operation]]（邏輯運算），第二是 decision making，也就是 [[branch]]（分支）。",
+    "decision making 為什麼重要？因為程式厲害的地方就在於：有時候執行、有時候不執行，有時候還會重複執行。",
+    "先看 logical operation。之前我們都把 32 bits 當成「一整個數字」：放在 register 是 32 bits，放在記憶體也是 32 bits，整塊一起加減。",
+    "其實一個 [[word]] 裡面就是 32 個 0 或 1。換個角度，一個 bit 一個 bit 去看它，這就叫 [[bitwise]] operation。",
+    "像 shift（移位）、and、or，都是對每一個 bit 分別去做的。會寫程式的話這些不難，我們複習一遍。"
+   ]
+  },
+  {
+   "title": "Shift：sll、srl、sra",
+   "scene": "isB-6b-shift",
+   "points": [
+    {
+     "t": 534,
+     "text": "C 的 <<、>>、&、|、~ 對應 MIPS 的 sll、srl、and/andi、or/ori；MIPS 沒有 NOT，用 nor。"
+    },
+    {
+     "t": 633,
+     "text": "sll、srl：空出的位置補 0。"
+    },
+    {
+     "t": 652,
+     "text": "sra（shift right arithmetic）：當 signed number，左邊補 sign bit（正數補 0、負數補 1）。"
+    }
+   ],
+   "trap": "srl 不管正負一律補 0；只有 sra 會補 sign bit。左移沒有 arithmetic 版本（MIPS 只有 sll）。",
+   "cues": [
+    534.01,
+    560.23,
+    583.39,
+    633.33,
+    640.57,
+    652.65,
+    686.31,
+    709.67,
+    717.17,
+    733.11,
+    750.87
+   ],
+   "explain": [
+    "這張表把 C、Java 的寫法跟 MIPS 指令對起來：左移 << 對應 [[sll]]（shift left logical），右移對應 [[srl]]，AND 對應 and／andi，OR 對應 or／ori。",
+    "MIPS 沒有 NOT 指令，改用 [[nor]] 來做。因為 R-type 指令都是「兩個來源、一個目的」，NOT 只有一個來源，為了格式一致就不另外設計。",
+    "shift 指令的寫法：sll 目的 register, 來源 register, 移幾位。例如課本的 sll $t2, $s0, 4，第四個欄位就是 [[shift amount]]。",
+    "左移時右邊會空出位置，sll 一律補 0。看這個 8-bit 的示意：每個 bit 往左一格，最右邊補上 0（發亮的那格）。",
+    "往右移一樣，左邊空出來的位置全部補 0，叫 shift right logical（srl）。",
+    "如果把這串 bit 當成 [[signed number]]（有正負號的數），右移時左邊就不能隨便補 0，要補「[[sign bit]]」，這叫 [[sign extension]]，指令是 sra（shift right arithmetic）。這個例子最左邊是 1，所以補 1。",
+    "整理一下：正數的 sign bit 是 0，sra 補 0；負數的 sign bit 是 1，sra 補 1。而 srl 不管正負，一律補 0。",
+    "看一個 32-bit 的例子（數值示意）：往右 shift 8 個 bit，每個 bit 往右移 8 格，最前面空出來的 8 格（發亮處）補 0。",
+    "往左 shift 8 個 bit：最前面 8 個 bit 被擠出去不見了，後面空出的 8 格補 0。",
+    "換成 sra 8：這個數最前面的 sign bit 是 0（正數），所以 sign extension 補的也是 0，結果和 srl 一樣。",
+    "再換一個最前面是 1 的數，它是負數。sra 8 時前面要補 8 個 1，這樣結果仍然是負數，數值相當於除以 2⁸。這就是 srl 和 sra 的差別。"
+   ]
+  },
+  {
+   "title": "shift 的 R-format，左移 i 位 = 乘以 2ⁱ",
+   "scene": "isB-6b-shiftfmt",
+   "points": [
+    {
+     "t": 766,
+     "text": "shift 是 R-type：op = 0，funct 分辨 sll/srl/sra，shamt 放移動位數，rs 不用。"
+    },
+    {
+     "t": 814,
+     "text": "sll i 位 = 乘以 2ⁱ；右移 = 除以 2ⁱ。shift 很便宜，聰明的 compiler 會把 a × 8 變成 sll 3。"
+    }
+   ],
+   "cues": [
+    766.27,
+    775.48,
+    782.21,
+    793.41,
+    814.52,
+    820.96,
+    834.4,
+    860.98
+   ],
+   "explain": [
+    "shift 指令是 R-type。以課本的 sll $t2, $s0, 4 為例，六個欄位是 0、0、16、10、4、0：$s0 是第 16 號 register，$t2 是第 10 號，4 是要移的位數。程式算出來和課本一致 ✓。",
+    "op 加上 funct 一起告訴我們：是左移還是右移、是 logical 還是 arithmetic（sll 的 funct = 0、srl = 2、sra = 3）。",
+    "要移幾位就放在 shamt（shift amount）欄位。它有 5 bits，可以表示 0 ～ 31，剛好夠 32-bit 的 word 用。",
+    "shift 只需要一個來源和一個目的，共兩個 register，所以 rs 這格沒用到，填 0。",
+    "一個很重要的觀念：左移並補 0，等於乘以 2。左移 1 位就是 ×2，左移 2 位就是 ×2² = ×4。像 3 左移一位變 6，再左移一位變 12。",
+    "反過來，往右移就相當於除法：右移 1 位除以 2，右移 2 位除以 2²（對 unsigned 數成立）。",
+    "為什麼重要？因為 shift 很便宜，一個 R-type 指令很快就做完；乘法則要對每個 bit 處理，又麻煩又慢。",
+    "所以聰明的 [[compiler]] 看到乘以 2 的次方，例如 a × 8 = a × 2³，就會改成 sll 3，產生更有效率的 code。例：5 左移 3 位 = 40 = 5 × 8 ✓。"
+   ]
+  },
+  {
+   "title": "AND 選出 bit、OR 設定 bit",
+   "scene": "isB-6b-andor",
+   "points": [
+    {
+     "t": 893,
+     "text": "and：bit 對 bit 做 AND；用 mask（要的位置放 1）把需要的 bit 選出來，其他清成 0。"
+    },
+    {
+     "t": 953,
+     "text": "or：要設成 1 的位置放 1，其他放 0，OR 之後指定 bit 變 1，其他不變。"
+    }
+   ],
+   "cues": [
+    894.78,
+    908.56,
+    927.94,
+    932.18,
+    953.86,
+    965.08,
+    971.3
+   ],
+   "explain": [
+    "and 也是 bitwise：兩個數的每個 bit 一一配對做 AND。右上角是真值表：兩個都是 1 才得 1。",
+    "假設 $t2 裡有一個值（這是課本的例子，高 16 bits 都是 0，所以只畫低 16 bits）。我們只想留下其中某一塊 bit，其他全部清成 0。",
+    "做法：準備一個 [[mask]]（遮罩）放在 $t1，要保留的位置放 1，其他位置放 0。",
+    "and $t0, $t1, $t2：mask 是 1 的地方保留原本的 bit，是 0 的地方一律變 0。結果 $t0 = 0x00000C00，正好把要的 bit 選出來 ✓。",
+    "or 的用途剛好相反：把某些 bit 設成 1，其他 bit 不要動。",
+    "一樣準備 $t1：想變成 1 的位置寫 1，其他寫 0。",
+    "任何 bit 跟 1 做 OR 都是 1；跟 0 做 OR 則保持原樣。所以 or $t0, $t1, $t2 之後，指定的位置都變成 1，其他 bit 不變，結果 0x00003DC0 ✓。"
+   ]
+  },
+  {
+   "title": "NOT 用 NOR 和 $zero 來做",
+   "scene": "isB-6b-nor",
+   "points": [
+    {
+     "t": 995,
+     "text": "MIPS 沒有 NOT；a NOR b = NOT(a OR b)。"
+    },
+    {
+     "t": 1026,
+     "text": "b = 0 時 a OR 0 = a，所以 a NOR 0 = NOT a。"
+    },
+    {
+     "t": 1092,
+     "text": "常數 0 來自 $zero：nor $t0, $t1, $zero 就是 $t0 = NOT $t1。"
+    }
+   ],
+   "cues": [
+    995.32,
+    1008.02,
+    1026.08,
+    1048.2,
+    1057.54,
+    1092.88,
+    1112.44
+   ],
+   "explain": [
+    "MIPS 沒有 NOT 這個指令，它用 [[nor]] 來代替。",
+    "NOR 的意思：先把 a 和 b 做 OR，外面再加一個 NOT。",
+    "想用 NOR 做出 NOT a，b 要放什麼？要讓 a OR b 還是 a，b 就要是 0，因為任何 bit 跟 0 做 OR 都不變。",
+    "外面再加上 NOT：a NOR 0 = NOT(a OR 0) = NOT a。這樣就做出 NOT 了。",
+    "可是 nor 是 R-type，只能拿 register 當運算元，不能直接寫常數 0。那 0 從哪裡來？",
+    "答案是 [[$zero]]：第 0 號 register 硬體上永遠是 0，隨時都能拿來用。nor $t0, $t1, $zero 就把 NOT $t1 放進 $t0（這裡 $t1 用前面的 mask 當例子，結果 0xFFFFC3FF ✓）。",
+    "結論：NOT 是用 NOR 實作的，把其中一個運算元設成 $zero 就好。目前為止介紹的 shift、and、or、nor，都是在 bit 層次上操作。"
+   ]
+  },
+  {
+   "title": "Decision making：beq、bne、j",
+   "scene": "isB-6b-branch",
+   "points": [
+    {
+     "t": 1138,
+     "text": "程式要能做決定（if-else）和重複（loop），需要 branch 指令。"
+    },
+    {
+     "t": 1211,
+     "text": "beq rs, rt, L1：相等就跳；bne：不相等才跳，兩者是 conditional branch。"
+    },
+    {
+     "t": 1306,
+     "text": "j L1：unconditional jump；beq $zero, $zero 意義相同但格式不同。"
+    },
+    {
+     "t": 1406,
+     "text": "beq/bne 是 I-format（剩 16 bits 描述目標），j 是 J-format（26 bits），j 跳得比較遠。"
+    }
+   ],
+   "trap": "beq 和 j 意義上都能「一定跳」，但 beq 是 I-type（16-bit 位移），j 是 J-type（26-bit 位址），範圍不同。",
+   "cues": [
+    1138.64,
+    1159.5,
+    1166.72,
+    1211.86,
+    1256.42,
+    1268.2,
+    1285.4,
+    1306,
+    1332.5,
+    1351.9,
+    1406.78,
+    1430.64,
+    1473.32
+   ],
+   "explain": [
+    "到目前為止學的都是「運算」：加減、logical operation。如果程式只會從第一行一直執行到最後一行，就寫不出什麼厲害的程式。",
+    "寫程式最厲害的是「做決定」：if 條件成立就做 A，else 就做 B。",
+    "或是一段 code 重複執行，直到條件滿足才停，這就是 [[loop]]。MIPS 也需要指令來支援這些，就是 decision making 和 branch 指令。",
+    "第一個指令是 [[beq]]（branch equal）：beq register1, register2, L1。L1 是一個 [[label]]（標籤），代表要跳去的地方。",
+    "意思是：兩個 register 的值一樣，就跳到 L1（go to L1）。例如兩個都是 4（數值示意），就跳。",
+    "[[bne]]（branch not equal）則相反：兩個 register 的值不一樣，才跳到 L1。",
+    "這兩個都是 [[conditional branch]]（條件分支）：條件滿足才跳。",
+    "另一個是 j（jump），叫 unconditional jump（無條件跳躍）：不管什麼，執行到這個指令就跳到 label，就像 go to。",
+    "其實用 beq 也能做到無條件跳：比較兩個一定都是 0 的 register（例如 $zero 跟 $zero），它們一定相等，所以一定會跳。",
+    "但 j 和 beq 雖然意義一樣，instruction format 不一樣，能跳的範圍也不一樣。怎麼跳、跳去哪裡比較複雜，後面再講。",
+    "猜猜 beq 是哪種 format？它有 op、兩個 register、後面一個 label，和 I-type 一模一樣：op + rs + rt + 16 bits。所以 beq、bne 是 I-type，目標要放在那 16 bits 裡。",
+    "j 就是第三種 format：[[J-format]]。op 一樣是 6 bits，後面 32 − 6 = 26 bits 全部用來描述要跳去哪裡。",
+    "beq/bne 用掉 6 + 5 + 5 個 bit，只剩 16 bits；j 有 26 bits。所以 beq/bne 只能在附近跳，j 可以跳比較遠。"
+   ]
+  },
+  {
+   "title": "if-then-else 編成 bne + j",
+   "scene": "isB-6b-ifelse",
+   "points": [
+    {
+     "t": 1544,
+     "text": "例：if (i == j) f = g + h; else f = g − h;，f～j 放在 $s0～$s4。"
+    },
+    {
+     "t": 1623,
+     "text": "bne $s3, $s4, Else（條件反過來寫）；不跳就做 add，再 j Exit；Else 做 sub。"
+    },
+    {
+     "t": 1695,
+     "text": "true path 做完一定要 j Exit，否則會順序執行到 sub。"
+    }
+   ],
+   "trap": "指令是一個一個依序執行的：then 部分做完若沒有 j Exit，就會「掉進」else 的 sub。",
+   "cues": [
+    1554.98,
+    1578.86,
+    1595.14,
+    1604.62,
+    1623.32,
+    1641.44,
+    1665.84,
+    1695.96,
+    1708.32,
+    1780.48
+   ],
+   "explain": [
+    "來看 compiler 怎麼把 C 的 if-then-else 變成 assembly：如果 i 等於 j，就做 f = g + h，否則做 f = g − h。",
+    "先決定變數放哪裡：f、g、h、i、j 依序放在 $s0、$s1、$s2、$s3、$s4。",
+    "畫成流程圖：i == j 成立走 true path（f = g + h），不成立走 false path（f = g − h）。",
+    "不管走哪一條，最後都要到同一個出口 Exit，接著執行下一個 statement。",
+    "第一行用 bne $s3, $s4, Else：i 和 j 不一樣就跳到 Else。注意條件是「反過來」寫的，不相等才跳。",
+    "Else 這裡做 g − h：sub $s0, $s1, $s2，結果放到 f（$s0），做完自然往下走到 Exit。",
+    "如果 bne 的條件不滿足（也就是 i == j），就不跳，直接執行下一個指令：add $s0, $s1, $s2，也就是 f = g + h。",
+    "add 做完之後，一定要加一行 j Exit，直接跳到出口。",
+    "如果忘了 j Exit 會怎樣？電腦會乖乖執行「下一個指令」，也就是 sub，把剛算好的 f 蓋掉，結果就錯了。",
+    "電腦就是這麼「笨」：一個指令接一個指令照順序做。不想執行下一個，就要明確叫它 jump。程式用示意值跑兩種情況驗算：i = j 得 f = 10、i ≠ j 得 f = 4 ✓。"
+   ]
+  },
+  {
+   "title": "Loop：while (save[i] == k) i += 1;",
+   "scene": "isB-6b-loop",
+   "points": [
+    {
+     "t": 1808,
+     "text": "例：while (save[i] == k) i += 1;，i 在 $s3、k 在 $s5、save 的 base 在 $s6。"
+    },
+    {
+     "t": 1877,
+     "text": "save[i] 的 byte offset = i × 4（i = 3 → 12，i = 5 → 20），用 sll 2 代替乘法。"
+    },
+    {
+     "t": 1960,
+     "text": "sll → add → lw → bne（不等就到 Exit）→ addi → j Loop。"
+    }
+   ],
+   "trap": "index i 要先 ×4 變成 byte offset；因為 i 會變，offset 不能寫死在 lw 裡，要先算進 $t1。",
+   "cues": [
+    1811.22,
+    1827.62,
+    1856.5,
+    1870.92,
+    1877.86,
+    1895.21,
+    1960.23,
+    1990.21,
+    2015.45,
+    2029.33,
+    2056.21,
+    2066.37,
+    2089.25
+   ],
+   "explain": [
+    "第二種是 loop：只要 save[i] 等於 k，就一直把 i 加 1。",
+    "麻煩的地方：i 是 save 這個 [[array]] 的 index（索引）。之前存取 array 時 offset 是固定的，這裡 offset 會跟著 i 改變。每格下面的 +0、+4、+8 是它離起點幾個 byte。",
+    "save 的起始位址（也就是 [[base register]]）放在 $s6。",
+    "i 放在 $s3，要比較的 k 放在 $s5。",
+    "如果 i = 3，要從 base 加多少？不是 3，而是 3 × 4 = 12，因為一個 [[word]] 佔 4 個 [[byte]]。",
+    "如果 i = 5，就是 5 × 4 = 20。永遠要乘以 4。因為 i 一直在變，要先把 offset 算出來。",
+    "剛剛學過：乘法很浪費時間，所以用 shift。sll $t1, $s3, 2 把 i 左移 2 位，就是 × 4，結果放在 $t1。",
+    "add $t1, $t1, $s6：base（$s6）加上 offset，$t1 就是 save[i] 的位址。",
+    "lw $t0, 0($t1)：位址已經算好了，offset 寫 0，把 save[i] 讀進 $t0。",
+    "k 在 $s5，拿 $t0 跟 $s5 比：bne $t0, $s5, Exit。不相等表示條件不滿足，就跳出去到 Exit，不做了。",
+    "如果相等，就不跳，執行下一個指令：addi $s3, $s3, 1，也就是 i = i + 1。",
+    "這一圈做完，要讓它再做一遍：j Loop 跳回 loop 的開頭。",
+    "這就是 loop 的寫法。用示意值跑一次：save 前四格是 5、5、5、7，k = 5，跑到 save[3] = 7 ≠ 5 就離開，i = 3，共執行 22 個指令 ✓。"
+   ]
+  },
+  {
+   "title": "（同學提問）",
+   "scene": null,
+   "points": [
+    {
+     "t": 2099,
+     "text": "老師問同學哪裡不懂。"
+    }
+   ]
+  },
+  {
+   "title": "Loop 的結構與 basic block",
+   "scene": "isB-6b-block",
+   "points": [
+    {
+     "t": 2126,
+     "text": "前三行算 save[i] 的位址並讀出；bne 是測試；中間是 body；最後 j Loop 回開頭。"
+    },
+    {
+     "t": 2234,
+     "text": "basic block：從 entry point 進來、到 branch 跳出之前的一段 code；compiler 常以它為單位做 optimization。"
+    }
+   ],
+   "cues": [
+    2133.98,
+    2146,
+    2166.32,
+    2179.2,
+    2234.66,
+    2262.3
+   ],
+   "explain": [
+    "把 loop 拆開看：前三行（sll、add、lw）在做 index，算出 save[i] 在哪裡，再把資料讀進 $t0。",
+    "bne 這一行跟 loop 的 condition 有關：save[i] 跟 k 不一樣，條件不滿足，就跳出去。",
+    "中間這部分是 loop 的 body（本體）。這裡只有一行 i = i + 1，但實際上可能有很多 statement，全部放在這裡。",
+    "body 做完，最後一行 j Loop 跳回 loop 的開頭（紅色箭頭）。",
+    "loop 會執行很多次（100 次、1400 次……），把 loop body 好好最佳化，效果就很好。compiler 常以 [[basic block]] 為單位做 optimization。",
+    "basic block 的定義：從 entry point（入口）進來，到跳出去之前的這一段 code。中間沒有分支跳進來或跳出去，只能從頭進、從尾出。"
+   ]
+  },
+  {
+   "title": "slt：判斷「小於」",
+   "scene": "isB-6b-slt",
+   "points": [
+    {
+     "t": 2274,
+     "text": "beq/bne 只能判斷 == 和 !=，其他比較靠 slt（set on less than）。"
+    },
+    {
+     "t": 2362,
+     "text": "slt rd, rs, rt：rs < rt 則 rd = 1，否則 0；再用 bne/beq 跟 $zero 比。"
+    },
+    {
+     "t": 2426,
+     "text": "if (g < h) goto Less：slt $t0, $s0, $s1；bne $t0, $zero, Less。"
+    }
+   ],
+   "cues": [
+    2282.72,
+    2302.57,
+    2323.75,
+    2362.67,
+    2393.89,
+    2426.76,
+    2441.14,
+    2459.59
+   ],
+   "explain": [
+    "寫程式除了「等於」、「不等於」，還有大於、小於、大於等於、小於等於。",
+    "只有 beq、bne 夠不夠？不夠，它們只能判斷相等與不相等（綠色），其他四種（橘色）做不到。",
+    "MIPS 只多加一個指令：[[slt]]（set on less than），它是 R-type。",
+    "意思是：如果 rs 小於 rt，就把 rd「set」成 1；否則 rd 設成 0。",
+    "算出 0 或 1 之後，再用 conditional branch 拿它跟 0 比，就能決定要不要跳。",
+    "例：if (g < h) goto Less，g 在 $s0、h 在 $s1。用兩個指令：先 slt $t0, $s0, $s1，再 bne $t0, $zero, Less。（g = 3、h = 7 是示意值）",
+    "執行 slt：3 真的小於 7，所以 $t0 被 set 成 1 ✓。",
+    "再執行 bne $t0, $zero, Less：$t0 跟 0 比，不是 0，表示 g < h 成立，就跳到 Less。"
+   ]
+  },
+  {
+   "title": "為什麼沒有 blt：省 opcode、不拖慢 clock",
+   "scene": "isB-6b-noblt",
+   "points": [
+    {
+     "t": 2474,
+     "text": "不直接做 blt/ble/bgt/bge：會浪費 4 個 op code；slt 換 register 位置 + beq/bne 就能做出四種。"
+    },
+    {
+     "t": 2524,
+     "text": "比較加跳躍太多事，會讓 clock period 變長、拖累所有指令；拆成兩個指令讓 common case 快。"
+    }
+   ],
+   "trap": "「blt 是 pseudo-instruction」：assembler 會把它換成 slt + bne，硬體並沒有這個指令。",
+   "cues": [
+    2479.96,
+    2495.34,
+    2499.82,
+    2524.92,
+    2558.28,
+    2570.66,
+    2607.62,
+    2666.14,
+    2685.18
+   ],
+   "explain": [
+    "為什麼不乾脆設計「小於就跳」「小於等於就跳」……這種指令？那就要 blt、ble、bgt、bge 四個指令。",
+    "第一個理由：這樣要多用掉 4 個 op code。op code 只有 6 bits，很珍貴。",
+    "只用一個 slt，把兩個 register 的擺放位置換一換，再搭配 beq 或 bne，就能做出四種比較。",
+    "第二個理由跟速度有關，和 [[clock cycle]] 有關。",
+    "每個指令都要在一個 clock cycle 內完成，而所有指令的 clock period（週期長度）都是一樣的，就像刀子固定速度在轉，轉一次做一件事。",
+    "如果把「比較」和「跳」合在一個指令裡，這個指令要做很多事，clock period 就得拉長。因為大家共用同一個 clock，結果所有指令（add、lw……）都被拖慢了。",
+    "拆成 slt + bne 兩個指令，雖然要兩個 cycle，但每個 cycle 還是短的，其他指令不受影響。",
+    "beq、bne 才是最常用的（common case），讓它們保持簡單快速，就是 make the common case fast。",
+    "回家練習：<、>=、>、<= 四種都只用 slt + beq/bne 寫出來。答案在這張表：換 a、b 的位置決定 < 或 >，用 bne 或 beq 決定要不要包含等號。程式用 −5 ～ 5 全部組合驗算，四種都對 ✓。"
+   ]
+  },
+  {
+   "title": "signed 與 unsigned 的比較",
+   "scene": "isB-6b-signed",
+   "points": [
+    {
+     "t": 2716,
+     "text": "同一串 bit：unsigned 時 1111…1111 很大；signed 時是 −1。"
+    },
+    {
+     "t": 2750,
+     "text": "slt 做 signed 比較、sltu 做 unsigned 比較，結果可能不同。"
+    }
+   ],
+   "cues": [
+    2716.24,
+    2726.8,
+    2731.94,
+    2750.33
+   ],
+   "explain": [
+    "比較時還要注意一件事。這是課本的例子：$s0 是 32 個 1，$s1 是 1。",
+    "如果當成 [[unsigned]] number（沒有負數），$s0 = 4,294,967,295，當然比 1 大。",
+    "如果當成 [[signed number]]（用 two's complement 表示），最前面的 1 代表負數，$s0 其實是 −1，比 1 小。",
+    "所以同一串 bit，比較結果不同：slt 做 signed 比較得到 1，sltu（set on less than unsigned）做 unsigned 比較得到 0 ✓。寫程式時要用對指令。"
+   ]
+  },
+  {
+   "title": "（下次預告：procedure call）",
+   "scene": null,
+   "points": [
+    {
+     "t": 2759,
+     "text": "下次介紹 procedure call，是 assembly 最難的部分。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "MIPS 的 R-type 為什麼用 funct 欄位區分運算，而不把每個運算都放進 op？",
+   "opts": [
+    "讓 op 維持 6 bits，I-type 保有 16-bit immediate",
+    "因為 R-type 指令比較長",
+    "因為 funct 執行比較快",
+    "因為 R-type 不需要 op 欄位"
+   ],
+   "ans": "讓 op 維持 6 bits，I-type 保有 16-bit immediate",
+   "why": "所有 format 的 op 一樣長；op 加長會讓 I-type 的 immediate 變短、範圍變小。R-type 剛好有剩下的 6 bits 可當 funct。"
+  },
+  {
+   "q": "$t0 = 1111 0000 … 0000（最高 4 bits 為 1），執行 sra $t1, $t0, 4 後，$t1 最高 8 bits 是？",
+   "opts": [
+    "1111 1111",
+    "0000 1111",
+    "1111 0000",
+    "0000 0000"
+   ],
+   "ans": "1111 1111",
+   "why": "sra 左邊補 sign bit（1），原本的 1111 右移 4 位，前面再補 4 個 1，所以是 1111 1111。srl 才會得到 0000 1111。"
+  },
+  {
+   "q": "要讓 $t0 = NOT $t1，MIPS 應寫成？",
+   "opts": [
+    "nor $t0, $t1, $zero",
+    "not $t0, $t1",
+    "and $t0, $t1, $zero",
+    "or $t0, $t1, $zero"
+   ],
+   "ans": "nor $t0, $t1, $zero",
+   "why": "MIPS 沒有 not；a NOR 0 = NOT(a OR 0) = NOT a，0 由 $zero 提供。"
+  },
+  {
+   "q": "if (i == j) f = g + h; else f = g − h; 用 bne $s3, $s4, Else 開頭，then 部分（add）後面一定要接什麼？",
+   "opts": [
+    "j Exit",
+    "bne $s3, $s4, Exit",
+    "jr $ra",
+    "什麼都不用"
+   ],
+   "ans": "j Exit",
+   "why": "指令依序執行，沒有 j Exit 就會接著做 Else 的 sub，把 f 蓋掉。"
+  },
+  {
+   "q": "while (save[i] == k) 迴圈中，i 在 $s3，計算 byte offset 最有效率的指令是？",
+   "opts": [
+    "sll $t1, $s3, 2",
+    "mul $t1, $s3, 4",
+    "addi $t1, $s3, 4",
+    "srl $t1, $s3, 2"
+   ],
+   "ans": "sll $t1, $s3, 2",
+   "why": "一個 word 4 bytes，offset = i × 4 = i 左移 2 位；shift 比乘法便宜。"
+  },
+  {
+   "q": "要實作 if (a >= b) goto L，正確的是？",
+   "opts": [
+    "slt $t0, a, b；beq $t0, $zero, L",
+    "slt $t0, a, b；bne $t0, $zero, L",
+    "slt $t0, b, a；bne $t0, $zero, L",
+    "slt $t0, b, a；beq $t0, $zero, L"
+   ],
+   "ans": "slt $t0, a, b；beq $t0, $zero, L",
+   "why": "a >= b 等於「不是 a < b」：slt 得 0 時跳，所以用 beq $t0, $zero。"
+  },
+  {
+   "q": "$s0 = 0xFFFFFFFF、$s1 = 1，slt $t0, $s0, $s1 與 sltu $t1, $s0, $s1 的結果是？",
+   "opts": [
+    "$t0 = 1、$t1 = 0",
+    "$t0 = 0、$t1 = 1",
+    "兩個都是 1",
+    "兩個都是 0"
+   ],
+   "ans": "$t0 = 1、$t1 = 0",
+   "why": "signed 時 $s0 = −1 < 1；unsigned 時 $s0 = 4,294,967,295 > 1。"
+  }
+ ]
+}

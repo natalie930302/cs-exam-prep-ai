@@ -1,0 +1,706 @@
+{
+ "video": "CqVPl7fIlAo",
+ "label": "黃婷婷教授計算機結構_第7B講 Instruction Set Architecture",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "補充：PC 與跳躍",
+   "scene": "isB-7b-pc",
+   "points": [
+    {
+     "t": 0,
+     "text": "PC 存下一個要執行的指令位址；循序執行時 PC 每次 + 4。"
+    },
+    {
+     "t": 51,
+     "text": "要跳，就把 target address 放進 PC。"
+    }
+   ],
+   "cues": [
+    0,
+    2.78,
+    6.03,
+    51.38,
+    70.1,
+    91.52
+   ],
+   "explain": [
+    "先補充上一節同學不太清楚的地方：[[Program Counter]]（PC）到底在做什麼？「跳過去」是怎麼回事？",
+    "例如 jal 後面寫一個 procedure 的 label，意思是要跳去那個 subroutine。label 代表的就是 subroutine 的位址。",
+    "假設 subroutine 的位址是 37685（老師隨口舉的數字；真正的指令位址都會是 4 的倍數），要怎麼跳過去？",
+    "很簡單：把 PC 設成 37685 就好。因為 PC 裝的就是「下一個要執行的指令位址」，下一個就會執行 37685 那裡的指令。",
+    "不跳的時候是循序（sequential）執行：一個指令 4 bytes，PC 每次加 4，1000、1004、1008……一直往下。",
+    "要跳的話，就把 target address（目標位址）放進 PC，接下來就從那裡開始執行。jal 做的就是這件事（再加上記住 $ra）。"
+   ]
+  },
+  {
+   "title": "fact：呼叫前要存 $ra 和 $a0",
+   "scene": "isB-7b-factsave",
+   "points": [
+    {
+     "t": 117,
+     "text": "fact 是 non-leaf（recursive）procedure。"
+    },
+    {
+     "t": 130,
+     "text": "$a0（n）會改變但回來還要用 → 存；$v0 現在用不到 → 不存；$ra 要回到上一層 → 存。"
+    },
+    {
+     "t": 223,
+     "text": "addi $sp, $sp, −8；sw $ra, 4($sp)；sw $a0, 0($sp)。"
+    }
+   ],
+   "cues": [
+    117.38,
+    130.94,
+    136.6,
+    161.84,
+    179.8,
+    223.06,
+    227.04
+   ],
+   "explain": [
+    "來看 non-leaf procedure 的例子：fact。左邊是課本的 MIPS 程式（先淡淡的顯示），右邊是 stack。最好的 non-leaf 例子就是 recursive call，一直叫自己。",
+    "參數 $a0（n）每叫一層就會改變，可是回來之後又要用到，所以要存起來。",
+    "$v0 要不要存？兒子等一下會用 $v0 回傳結果，但你（爸爸）現在並沒有用到它，所以不需要存。",
+    "站在爸爸的角度：把 control 交給兒子之前，要存的是 argument n，因為回來還要用。",
+    "還有：你自己做完要回到祖父那邊，所以 return address（$ra）也要存。用「要 call 兒子」和「要回去」這兩個角度想，就知道要存什麼。",
+    "要存兩個東西，每個 4 bytes，所以 addi $sp, $sp, -8，stack 往下挪兩格。",
+    "然後 sw $ra, 4($sp)、sw $a0, 0($sp)，把 return address 和 n 存進 stack。這是叫 procedure 之前要做的準備。"
+   ]
+  },
+  {
+   "title": "fact：測 n < 1，base case 回傳 1",
+   "scene": "isB-7b-factbase",
+   "points": [
+    {
+     "t": 237,
+     "text": "slti $t0, $a0, 1；beq $t0, $zero, L1（n ≥ 1 就去 L1 遞迴）。"
+    },
+    {
+     "t": 359,
+     "text": "base case：addi $v0, $zero, 1；addi $sp, $sp, 8；jr $ra。"
+    }
+   ],
+   "cues": [
+    240.46,
+    251.69,
+    269.14,
+    291.18,
+    359.36,
+    405.92,
+    412.04
+   ],
+   "explain": [
+    "準備好 stack 後開始做事：先測試 n < 1。",
+    "要判斷「小於」，就用上一講的 [[slt]] 搭配 beq/bne。這裡和常數 1 比，用 slti $t0, $a0, 1（slt 的 immediate 版本），n 放在 $a0。",
+    "如果 n 真的小於 1，$t0 就被 set 成 1；否則 $t0 = 0。",
+    "beq $t0, $zero, L1：$t0 跟 0 比，等於 0 表示「n < 1 不成立」，就跳到 L1 去做 recursive call（紅色箭頭）。",
+    "如果 n < 1（base case），就要 return 1：把 1 放到回傳值 $v0，addi $v0, $zero, 1。",
+    "做完要回去之前，把剛才的 stack 恢復：addi $sp, $sp, 8。這一層沒有動到 $a0 和 $ra，所以不用 lw 回來。",
+    "最後 jr $ra 跳回去。這就是遞迴的 termination condition（終止條件）。"
+   ]
+  },
+  {
+   "title": "fact：L1 遞迴、還原、相乘",
+   "scene": "isB-7b-factrec",
+   "points": [
+    {
+     "t": 429,
+     "text": "L1：addi $a0, $a0, −1；jal fact。"
+    },
+    {
+     "t": 541,
+     "text": "回來後 lw $a0、lw $ra、addi $sp, $sp, 8，再 mul $v0, $a0, $v0、jr $ra。"
+    },
+    {
+     "t": 689,
+     "text": "base case 只恢復 $sp；else 因為呼叫過 procedure，$a0、$ra 都要還原。"
+    }
+   ],
+   "trap": "回來後要先 lw $a0 拿回原本的 n 再乘；若直接用 $a0，乘到的是 n − 1。",
+   "cues": [
+    429.16,
+    454.34,
+    482.14,
+    517.26,
+    522.96,
+    541.76,
+    624.94,
+    640.72,
+    644.98,
+    659.9,
+    671.44,
+    689.38,
+    737
+   ],
+   "explain": [
+    "n ≥ 1 的情況會跳到 L1，做 recursive call。",
+    "else 這部分不只是叫 subroutine：回來之後還沒結束，還要把回傳值乘以 n，再 return。下面四張小卡是要做的事。",
+    "第一件事：把參數減 1。",
+    "addi $a0, $a0, -1：$a0 變成新的參數 n − 1（老師口誤說 a1，實際是 $a0）。",
+    "jal fact：跳去叫自己。jal 會把下一行的位址存進 $ra。",
+    "那一層做完回來後，執行 next instruction。這時兒子的回傳值 fact(n − 1) 已經在 $v0 裡。",
+    "可是 $a0 剛才被改成 n − 1 了，所以先 lw $a0, 0($sp)，從 stack 拿回原本的 n（發亮的那格）。",
+    "jal 也把 $ra 改掉了，所以 lw $ra, 4($sp) 把原本的 return address 拿回來。",
+    "stack pointer 也恢復原狀：addi $sp, $sp, 8。",
+    "現在做乘法：mul $v0, $a0, $v0，也就是 n × fact(n − 1)，結果放回 $v0 準備回傳（老師口誤說 b0，指的是 $v0）。",
+    "最後 jr $ra 回到上一層。",
+    "比較兩條路：if（base case）沒有動到 $a0 和 $ra，只要恢復 $sp；else 叫過 procedure，$a0、$ra 都被改了，所以要多做兩個 lw。",
+    "用模擬器跑 fact(3) 驗算（n = 3 是示意）：結果 $v0 = 6 = 3 × 2 × 1 ✓，$sp 回到 1000；最深時有 4 層（n = 3、2、1、0），每層 8 bytes，$sp 降到 968。"
+   ]
+  },
+  {
+   "title": "Procedure frame：stack 上放什麼",
+   "scene": "isB-7b-frame",
+   "points": [
+    {
+     "t": 752,
+     "text": "一次呼叫在 stack 上放：saved arguments、return address、saved $s、local arrays & structures。"
+    },
+    {
+     "t": 810,
+     "text": "回到 caller 時整塊 pop 掉；這一塊叫 activation record（procedure frame）。"
+    }
+   ],
+   "cues": [
+    754.72,
+    775.86,
+    788,
+    810.28,
+    833.68
+   ],
+   "explain": [
+    "整理一下 stack 在記憶體裡的樣子。叫 procedure 之前，stack 長這樣：上面是 caller 的資料，[[$sp]] 和 $fp（frame pointer）指在這裡。",
+    "剛才 leaf 的例子很簡單；一般情況（不管 leaf 或 non-leaf）要存的有：會用到的 argument、最重要的 return address、還有會用到的 $s register。",
+    "另外，procedure 自己的 local 變數，例如 local array、structure，也在這裡配置（由 callee 負責）。",
+    "用完回到爸爸那邊，這些就不要了，整塊 pop 掉，$sp 回到原位。",
+    "這一整塊有個名字：[[activation record]]（也叫 procedure frame）。"
+   ]
+  },
+  {
+   "title": "（同學反應）",
+   "scene": null,
+   "points": [
+    {
+     "t": 844,
+     "text": "老師問同學有沒有聽過 activation record。"
+    }
+   ]
+  },
+  {
+   "title": "Activation record：create 與 pop",
+   "scene": "isB-7b-frame2",
+   "points": [
+    {
+     "t": 857,
+     "text": "每次呼叫 procedure 就在 top of stack 建一個 activation record（arguments、return address、local variables），做完就 pop。"
+    }
+   ],
+   "cues": [
+    863.54,
+    880.82
+   ],
+   "explain": [
+    "每次呼叫一個 procedure，就在 top of stack 建立一個 [[activation record]]，裡面放 argument、return address、local variable 等。",
+    "procedure 做完，就把這個 activation record pop 掉，從 stack 上刪除。"
+   ]
+  },
+  {
+   "title": "Memory layout",
+   "scene": "isB-7b-layout",
+   "points": [
+    {
+     "t": 888,
+     "text": "memory 由下往上：reserved、text（程式）、static data、dynamic data（heap，往上長）、stack（往下長）。"
+    },
+    {
+     "t": 938,
+     "text": "stack 從高位址往下長，所以 push 時 $sp 要減。"
+    },
+    {
+     "t": 989,
+     "text": "不管哪一區，lw/sw 都用 base + offset 存取。"
+    }
+   ],
+   "cues": [
+    901.62,
+    908.42,
+    913.46,
+    915.36,
+    938.84,
+    959.16,
+    968.84,
+    989.44
+   ],
+   "explain": [
+    "整個 memory 可以看成一條一維的長條，從位址 0 一直往上。我們來看它怎麼分區。",
+    "最底下一塊保留（reserved）給特別用途。",
+    "text 區放你的程式，也就是指令。課本上程式從 0040 0000（hex）開始，PC 一開始指在這裡。",
+    "static data 放程式執行期間一直都在的資料，例如 global 變數。課本上 $gp（global pointer）指在 1000 8000（hex）。",
+    "同學問過：為什麼 stack pointer 是用減的？因為 stack 從最上面（高位址，課本 $sp = 7fff fffc hex）開始，往下長，所以 push 時 $sp 要減。",
+    "另一邊放 dynamic data（也叫 [[heap]]），從下往上長，和 stack 往中間空白處靠攏。",
+    "dynamic data 是程式執行時才決定要不要配置的，例如 Java 的 new、C 的 malloc，或 pointer 指到的資料。",
+    "不管資料在哪一區，load/store 的方式都沒變：給 base address 和 offset 就拿得到。只是各區的使用方式不同。"
+   ]
+  },
+  {
+   "title": "Procedure convention：caller 與 callee 的約定",
+   "scene": "isB-7b-conv",
+   "points": [
+    {
+     "t": 1015,
+     "text": "convention 不是硬體規定，而是讓程式不容易寫錯、讓不同人寫的 caller/callee 能合作。"
+    },
+    {
+     "t": 1119,
+     "text": "callee 可自由使用 $v、$a、$t（和 $ra）；caller 若之後還要用，自己存到 stack。"
+    },
+    {
+     "t": 1239,
+     "text": "callee 用到 $s 必須存起來並還原。"
+    }
+   ],
+   "trap": "caller-saved：$t、$a、$v、$ra；callee-saved：$s（以及 $sp）。",
+   "cues": [
+    1020.04,
+    1031.92,
+    1049.12,
+    1075,
+    1083.18,
+    1119.04,
+    1163.64,
+    1178.4,
+    1206.76,
+    1239.08,
+    1278.6
+   ],
+   "explain": [
+    "把剛才的規則整理一下，這叫 procedure convention（呼叫約定）。",
+    "其實硬體根本不管：$s、$t 亂用也能跑，只要你自己記得哪些會被 procedure 弄掉。但這樣很容易寫錯。",
+    "而且 caller 和 callee 可能是不同的人寫的，各用各的方式就會搞亂。",
+    "[[caller]] 是發出呼叫（jal）的 function；[[callee]] 是被呼叫的 function。",
+    "兩者之間有一個 contract（約定）：哪些可以動、哪些不能動，就像你和爸爸事先講好。這樣即使不同人寫也能合作。",
+    "callee 的權利：$v（回傳值）、$a（參數）、$t（temporary）都可以隨便用。",
+    "所以 caller 要負責：自己的 return address 要顧好。",
+    "$a0 ～ $a3、$v0、$v1 如果之後還要用原本的值，caller 要自己存，因為 callee 不會幫你恢復。",
+    "$t 也一樣：callee 會把它弄亂，caller 想保留就自己存到 stack。",
+    "caller 的權利：$s 不能被亂動，回來時一定要是原狀。想保護的東西就放在 $s。",
+    "所以 callee 只要負責 $s：用到就先存起來，回去之前還原。這張圖可以清楚看出什麼時候該由誰存。"
+   ]
+  },
+  {
+   "title": "整理：caller 與 callee 各做哪些事",
+   "scene": "isB-7b-steps",
+   "points": [
+    {
+     "t": 1298,
+     "text": "caller：存 $v/$a/$t/$ra（需要的話）→ 放參數 → jal → 從 $v0/$v1 拿結果 → 還原。"
+    },
+    {
+     "t": 1361,
+     "text": "callee：存要用的 $s → 運算 → 結果放 $v0/$v1 → 還原 $s、$sp → jr $ra。"
+    }
+   ],
+   "cues": [
+    1301.86,
+    1319.82,
+    1336.18,
+    1341.78,
+    1347.92,
+    1361.86,
+    1371.32,
+    1374.78
+   ],
+   "explain": [
+    "再整理一次。左邊是 caller、右邊是 callee。先看 caller 呼叫前要做什麼。",
+    "① caller 把 $sp 往下挪，把需要保留的 $v、$a、$t、$ra 存進 stack；$s 不用存（callee 會負責）。",
+    "② 把要傳的參數放進 $a0 ～ $a3，然後 jal 跳過去。",
+    "③ 回來後，從 $v0、$v1 拿到結果。",
+    "④ 把存的值拿回來，恢復 stack pointer。",
+    "callee 這邊：① $s 不能亂弄，要用就先存起來；然後用拿到的參數做運算。",
+    "② 做完把結果放在 $v0、$v1。",
+    "③ 回去之前還原 $s 和 stack pointer，然後 jr $ra 跳回去。兩邊分工清楚，程式就不會亂。"
+   ]
+  },
+  {
+   "title": "（作業說明）",
+   "scene": null,
+   "points": [
+    {
+     "t": 1391,
+     "text": "下一個作業會寫 procedure call。"
+    }
+   ]
+  },
+  {
+   "title": "字元資料：ASCII、Latin-1、Unicode",
+   "scene": "isB-7b-ascii",
+   "points": [
+    {
+     "t": 1409,
+     "text": "字元在電腦裡也只是 0101，靠 encoding 規定意義。"
+    },
+    {
+     "t": 1451,
+     "text": "ASCII：1 byte，128 個字元（'A' = 65）；Latin-1：256 個；Unicode：32-bit character set。"
+    }
+   ],
+   "cues": [
+    1411.7,
+    1425.76,
+    1433.74,
+    1451.78,
+    1463.14,
+    1472.2,
+    1492.88
+   ],
+   "explain": [
+    "下一個主題：電腦怎麼跟人溝通？我們常用 A、B、C 這些 symbol，而不是 0101。",
+    "這些叫 character data（字元資料）：英文字母、標點、中文……各種 symbol。",
+    "不管是數字（1's complement、2's complement）、指令，還是字元，在電腦裡都是 0101 的 pattern，只是解釋的方式不同。例如 'A' 就是這 8 個 bit。",
+    "[[ASCII]] 規定用一個 [[byte]]（8 bits）表示一個字元，不同的 bit pattern 代表不同字元。'A' = 65 = 0100 0001 ✓。",
+    "ASCII 有 128 個字元，Latin-1 擴充到 256 個，這兩種都是 1 byte 一個字元。",
+    "[[Unicode]] 用 32 bits 的 character set，幾乎全世界的文字（包括中文）都在裡面，例如「中」是 U+4E2D。",
+    "總之就是一個規定（encoding）：哪個 pattern 叫 A、哪個叫 B，大家照規定使用就好。"
+   ]
+  },
+  {
+   "title": "Byte / halfword 指令：lb、lbu、sb",
+   "scene": "isB-7b-lb",
+   "points": [
+    {
+     "t": 1507,
+     "text": "lb、lbu、lh、lhu、sb、sh；signed 或 unsigned 解讀。"
+    },
+    {
+     "t": 1558,
+     "text": "register 永遠 32 bits；載入 byte 放最右邊，lb 左邊 sign-extend、lbu 左邊補 0；sb 存最右邊的 byte。"
+    },
+    {
+     "t": 1670,
+     "text": "例：byte F7 → lb 得 0xFFFFFFF7，lbu 得 0x000000F7。"
+    }
+   ],
+   "trap": "lb 會 sign-extend：F7 這種最高位是 1 的 byte，用 lb 讀會變成負數；處理字元通常用 lbu。",
+   "cues": [
+    1509.94,
+    1522.72,
+    1531.04,
+    1558.96,
+    1584.8,
+    1598.37,
+    1631.85,
+    1639.47,
+    1658.97,
+    1670.94,
+    1708.09,
+    1726.69
+   ],
+   "explain": [
+    "在 MIPS 裡，讀到的資料可能只是一個 byte：數字通常是 32 bits，但 ASCII 字元只要 1 個 byte。",
+    "所以有 byte 和 halfword（2 bytes）的指令：lb、lbu、lh、lhu（load），sb、sh（store）。",
+    "它們又分兩種：把資料當 signed number 看，或當 unsigned number（或字元）看。",
+    "問題是：register 永遠是 32 bits；記憶體是 byte address，可以拿 1 個、2 個或 4 個 byte。",
+    "從記憶體搬一個 byte 進來，只有 8 bits，要放在 32-bit register 的哪裡？",
+    "規定放在最右邊。那左邊剩下的 24 bits 要填什麼？要看是哪個指令。",
+    "lb（load byte）把它當成 signed number：左邊 24 bits 全部填這個 byte 的 [[sign bit]]，這叫 [[sign extension]]。",
+    "lbu（load byte unsigned）把它當 unsigned：左邊 24 bits 全部設成 0（zero extension）。halfword 的 lh、lhu 道理一樣。",
+    "反過來，sb（store byte）從 register 存一個 byte 到記憶體時，存的是最右邊那個 byte（綠色）。",
+    "例子：$t0 是 base register，指到記憶體裡一個 byte，內容是 F7（hex，F7 = 1111 0111）。執行 lb $t1, 0($t0)。",
+    "lb 把它當 signed number：最前面是 1，所以 sign extension 把左邊全部填 1，$t1 = 0xFFFFFFF7（也就是 −9）✓。",
+    "同一個 F7 用 lbu 讀：左邊補 0，$t1 = 0x000000F7（247）✓。同一個 byte，指令不同，register 裡的結果就不同。"
+   ]
+  },
+  {
+   "title": "strcpy：call by value 與 call by reference",
+   "scene": "isB-7b-strcpy1",
+   "points": [
+    {
+     "t": 1755,
+     "text": "例：strcpy(x, y)，把字串 y 複製到 x。"
+    },
+    {
+     "t": 1828,
+     "text": "C 傳 array 傳的是地址；地址也是 32 bits，放在 $a0、$a1，當 base register 用。"
+    }
+   ],
+   "cues": [
+    1759.39,
+    1774.75,
+    1789.38,
+    1801.79,
+    1828.11,
+    1841.07,
+    1876.53,
+    1901.96
+   ],
+   "explain": [
+    "例子：string copy（strcpy）。這個 subroutine 把字串 y 一個字元一個字元複製到 x，直到遇到字串結尾 \\0 為止。",
+    "有同學問：C 裡有 call by value 和 call by reference，兩者有什麼不同？",
+    "call by value：傳一個「值」過去，對方拿去運算就結束了。",
+    "call by reference：傳一個「地址」過去，所有的變化都發生在那個地址裡的資料上。",
+    "在 C 裡把 array 傳給 function，傳的其實是地址。所以 strcpy 的 x[]、y[] 都是位址。",
+    "地址也是 32 bits，一樣放在 register：x 的位址在 $a0、y 的位址在 $a1（3000、2000 是示意）。",
+    "拿到地址，怎麼取得裡面的資料？用 load 指令：把地址當 [[base register]]，加上 offset。",
+    "所以不管是 call by value 還是 by reference，參數都放在 register：值就直接用，地址就當 base register 用。"
+   ]
+  },
+  {
+   "title": "strcpy 的 MIPS 程式",
+   "scene": "isB-7b-strcpy2",
+   "points": [
+    {
+     "t": 1945,
+     "text": "x、y 的地址在 $a0、$a1；i 用 $s0，callee 要先存 $s0。"
+    },
+    {
+     "t": 2039,
+     "text": "迴圈：$t1 = y + i；lbu $t2；$t3 = x + i；sb $t2；beq $t2, $zero 結束。"
+    },
+    {
+     "t": 2128,
+     "text": "不能 memory 直接搬到 memory，一定經過 register。"
+    }
+   ],
+   "trap": "char 一個 byte，所以 index 不用 ×4；用 lbu/sb，不是 lw/sw。",
+   "cues": [
+    1954.02,
+    1967.98,
+    1999.08,
+    2015.8,
+    2039.6,
+    2050.44,
+    2071.82,
+    2103.54,
+    2128.78,
+    2246.84,
+    2255.84,
+    2265.36
+   ],
+   "explain": [
+    "這是 strcpy 的 MIPS 程式。caller 已經把 x、y 的地址放在 $a0、$a1，注意它們是地址，不是值。右邊的字串 \"Hi\"、位址和 $s0 原本的 77 都是示意。",
+    "subroutine 裡的 i 用 $s0 來放。$s 是爸爸要保持原狀的。",
+    "所以這是 callee 的責任：先 addi $sp, $sp, -4，再 sw $s0, 0($sp)，把 $s0 原本的值存起來。",
+    "迴圈開始前 i = 0：add $s0, $zero, $zero。",
+    "算 y[i] 的地址：add $t1, $s0, $a1。字元一個 byte，所以 i 不用乘 4。",
+    "lbu $t2, 0($t1)：把 y[i] 這個 byte 搬進 $t2，第一次是 'H'。",
+    "算 x[i] 的地址：add $t3, $s0, $a0，放在 $t3。",
+    "sb $t2, 0($t3)：把 $t2 存到 x[i]。這兩步合起來完成 x[i] = y[i]。",
+    "最重要的觀念：MIPS 是 load-store machine，不能把 y 的資料直接搬到 x，一定要先 load 進 register，再 store 出去。",
+    "搬完要測試：剛搬的是不是 \\0（字串結尾）？beq $t2, $zero, L2，是 0 就跳到 L2 結束。",
+    "不是 0 就 addi $s0, $s0, 1（i + 1），j L1 繼續下一個字元。一直做到 \\0 也複製過去為止。",
+    "跳出去之前恢復：lw $s0, 0($sp)、addi $sp, $sp, 4，再 jr $ra 回到 caller。模擬整段程式驗算：x 變成 \"Hi\\0\"，$s0 還原成 77，$sp 回到 1000 ✓。"
+   ]
+  },
+  {
+   "title": "strcpy 的兩個重點",
+   "scene": "isB-7b-strcpy3",
+   "points": [
+    {
+     "t": 2275,
+     "text": "argument 可以是值也可以是地址；地址就當 base register 用。"
+    },
+    {
+     "t": 2306,
+     "text": "MIPS 沒有 memory → memory 的指令，一定先 load 進 register 再 store。"
+    }
+   ],
+   "cues": [
+    2279.94,
+    2297.44,
+    2306.88,
+    2314.54
+   ],
+   "explain": [
+    "重點一：argument 可以是值，也可以是地址，反正都是 32 bits，放在 $a0 ～ $a3。",
+    "如果是地址，就可以當 base register，去 reference 記憶體裡的資料。",
+    "重點二：MIPS 有沒有指令能把記憶體 A 的資料直接搬到記憶體 B？沒有！",
+    "一定要先把 A 的資料 load 到 register file，再從 register store 到 B。"
+   ]
+  },
+  {
+   "title": "接下來：大常數與 branch 位址",
+   "scene": "isB-7b-const",
+   "points": [
+    {
+     "t": 2326,
+     "text": "剛才都說 branch 是 I-type，但沒說 immediate 怎麼放位址。"
+    },
+    {
+     "t": 2364,
+     "text": "immediate 只有 16 bits：超過 16 bits 的常數怎麼辦？"
+    }
+   ],
+   "cues": [
+    2329.46,
+    2348.52,
+    2364.86,
+    2386.98
+   ],
+   "explain": [
+    "剛才介紹了 procedure call，前面也介紹了 branch 指令，我們都說 branch 是 I-type。",
+    "可是我們寫程式時只寫一個 label，它的 instruction format 裡到底放什麼？",
+    "另外，I-type 的 immediate 只有 16 bits。如果需要一個很大的常數，16 bits 根本放不下，怎麼辦？",
+    "所以接下來介紹兩件事：① 怎麼表示超過 16 bits 的 32-bit 常數；② branch／jump 的位址怎麼放。"
+   ]
+  },
+  {
+   "title": "32-bit 常數：lui + ori",
+   "scene": "isB-7b-lui",
+   "points": [
+    {
+     "t": 2406,
+     "text": "16 bits 放得下就直接用 immediate；放不下就用 lui + ori。"
+    },
+    {
+     "t": 2475,
+     "text": "lui $s0, 61：61 放到 $s0 的高 16 bits，低 16 bits 清成 0。"
+    },
+    {
+     "t": 2669,
+     "text": "ori $s0, $s0, 2304：把低 16 bits OR 進去 → 0x003D0900 = 4,000,000。"
+    }
+   ],
+   "trap": "第二步用 ori 而不是 addi：ori 是 zero-extend，不會因為低半部最高位是 1 而改到高半部。",
+   "cues": [
+    2406.5,
+    2412.18,
+    2424.3,
+    2446.92,
+    2464.7,
+    2475.2,
+    2512.64,
+    2546.58,
+    2567.72,
+    2652.86,
+    2669.98,
+    2709.62,
+    2782.48,
+    2790.98
+   ],
+   "explain": [
+    "先看 32-bit constant。上面這串是我們想要的常數（課本的例子）。其實不管 data 多大，都是 32 bits。",
+    "如果常數在 16 bits 之內放得下，就直接放在 instruction 裡（例如 addi）。",
+    "放不下時，有一個指令叫 [[lui]]（load upper immediate）。",
+    "我們想把這個大常數（4,000,000 = 0x003D0900）放進 $s0。它的前 16 bits 也有 1，16-bit 的 immediate 裝不下。",
+    "做法：把它拆成兩半。前 16 bits 是 61，後 16 bits 是 2304，61 × 65536 + 2304 = 4,000,000 ✓。",
+    "lui 還是 I-type，一樣有 16 bits 的常數欄位。I-type 有兩個 register 欄位，但 lui 只需要一個 destination，所以 rs 填 0。lui $s0, 61 的欄位是 15、0、16、61 ✓。",
+    "指令寫成 lui $s0, 61：destination 是 $s0，immediate 是 61（前半部的值）。",
+    "lui 會把指令後半部的這 16 bits（61），搬到 $s0 的「上半部」（發亮處）。",
+    "再講一次：要做的 32-bit 常數拆兩半，一半寫在 lui 的 immediate，另一半寫在接下來 ori 的 immediate，兩段合起來就是 32 bits。",
+    "lui 除了把 61 放到上半部，還會把後面 16 bits 全部設成 0。現在 $s0 = 61 × 65536。",
+    "接著用 [[ori]]（or immediate）：ori $s0, $s0, 2304，把 2304 OR 進去。",
+    "2304 也只有 16 bits，前面補 0 變成 32 bits（ori 是 zero extension）。它的 1 只在低 16 bits。",
+    "OR 之後：上半部原本的 61 不受影響（OR 0 不變），下半部原本是 0，OR 之後變成 2304。$s0 = 0x003D0900 = 4,000,000 ✓。",
+    "所以要在 register 裡做出一個 32-bit 的大常數，就用 lui + ori，不需要先把它放在記憶體裡。"
+   ]
+  },
+  {
+   "title": "Branch 的 16-bit immediate 怎麼表示 32-bit 位址？",
+   "scene": "isB-7b-brq",
+   "points": [
+    {
+     "t": 2811,
+     "text": "beq/bne 是 I-type：rs、rt 比較，跳的目標要放在 16-bit immediate。"
+    },
+    {
+     "t": 2936,
+     "text": "但位址有 32 bits——下次揭曉怎麼做（PC-relative）。"
+    }
+   ],
+   "cues": [
+    2811.3,
+    2836.16,
+    2859.24,
+    2870.2,
+    2936.1
+   ],
+   "explain": [
+    "再來是很重要的 branch 指令。之前講 beq、bne、j，只告訴你 format 長怎樣。",
+    "它是 I-type：op、rs、rt，再加 16-bit immediate。beq 檢查 rs 和 rt 是否一樣，一樣就跳。",
+    "要跳去的位址，就要放在這個 immediate 裡（發亮處）。",
+    "可是我們只寫了 L1、L2 這種 label，電腦看不懂 L1，它只看得懂 0101 這種 pattern。",
+    "問題是：immediate 只有 16 bits，記憶體位址卻是 32 bits，怎麼寫得下？老師說下次揭曉。"
+   ]
+  },
+  {
+   "title": "（下次揭曉）",
+   "scene": null,
+   "points": [
+    {
+     "t": 2951,
+     "text": "下次介紹 branch 的位址怎麼表示。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "遞迴的 fact procedure 在呼叫 fact(n − 1) 前，必須存到 stack 的是？",
+   "opts": [
+    "$ra 和 $a0",
+    "只有 $v0",
+    "$t0 和 $v0",
+    "只有 $sp"
+   ],
+   "ans": "$ra 和 $a0",
+   "why": "jal 會覆寫 $ra；$a0 會被改成 n − 1，但回來還要乘以 n。$v0 這時用不到，不用存。"
+  },
+  {
+   "q": "fact 的 L1 部分，jal fact 回來後第一個指令是 lw $a0, 0($sp)，目的是？",
+   "opts": [
+    "拿回原本的 n，再和 fact(n − 1) 相乘",
+    "把回傳值放進 $a0",
+    "讓 $sp 回到原位",
+    "跳回 caller"
+   ],
+   "ans": "拿回原本的 n，再和 fact(n − 1) 相乘",
+   "why": "$a0 呼叫前被改成 n − 1，必須從 stack 取回 n。"
+  },
+  {
+   "q": "依 MIPS 的 memory layout，stack 與 dynamic data（heap）的成長方向是？",
+   "opts": [
+    "stack 從高位址往下長，heap 往上長",
+    "兩者都往上長",
+    "stack 往上長，heap 往下長",
+    "兩者都固定大小"
+   ],
+   "ans": "stack 從高位址往下長，heap 往上長",
+   "why": "兩者往中間的空白處靠攏，所以 push 時 $sp 要減。"
+  },
+  {
+   "q": "記憶體中一個 byte 為 0xF7，執行 lb $t1, 0($t0) 後 $t1 = ？",
+   "opts": [
+    "0xFFFFFFF7",
+    "0x000000F7",
+    "0xF7000000",
+    "0x0000F7F7"
+   ],
+   "ans": "0xFFFFFFF7",
+   "why": "lb 把 byte 放在最右邊，左邊 24 bits 做 sign extension；F7 最高位是 1，所以補 1。lbu 才會得到 0x000000F7。"
+  },
+  {
+   "q": "strcpy 中 callee 用 $s0 當 index i，依 convention 它必須？",
+   "opts": [
+    "先把 $s0 存到 stack，結束前還原",
+    "什麼都不用做",
+    "請 caller 先存 $s0",
+    "改用 $a0 當 index"
+   ],
+   "ans": "先把 $s0 存到 stack，結束前還原",
+   "why": "$s 是 callee-saved，callee 用到就要負責保存與還原。"
+  },
+  {
+   "q": "要讓 $s0 = 0x003D0900，正確的指令序列是？",
+   "opts": [
+    "lui $s0, 61；ori $s0, $s0, 2304",
+    "addi $s0, $zero, 4000000",
+    "lui $s0, 2304；ori $s0, $s0, 61",
+    "ori $s0, $zero, 61；lui $s0, 2304"
+   ],
+   "ans": "lui $s0, 61；ori $s0, $s0, 2304",
+   "why": "0x003D = 61 放高 16 bits（lui 會把低半清 0），0x0900 = 2304 用 ori 放低 16 bits。addi 的 immediate 只有 16 bits 放不下。"
+  }
+ ]
+}

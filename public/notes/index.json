@@ -275,6 +275,12 @@
   "quiz": 6,
   "cued": true
  },
+ "4FhTREqO4xE": {
+  "label": "黃婷婷教授計算機結構_第8A講 Instruction set architecture",
+  "points": 48,
+  "quiz": 7,
+  "cued": true
+ },
  "4HDjWNV09QY": {
   "label": "交大彭文志 Lec17 Trees (6/6)",
   "points": 103,
@@ -833,6 +839,12 @@
   "quiz": 7,
   "cued": true
  },
+ "CqVPl7fIlAo": {
+  "label": "黃婷婷教授計算機結構_第7B講 Instruction Set Architecture",
+  "points": 43,
+  "quiz": 6,
+  "cued": true
+ },
  "crMqlrIH4Ds": {
   "label": "清大OCW 趙啟超《離散數學》第27D講 Shortest-Path Problem and Minimal Spanning Trees",
   "points": 13,
@@ -1245,6 +1257,12 @@
   "label": "黃婷婷教授計算機結構_第12A講 Computer Arithmetic",
   "points": 32,
   "quiz": 6,
+  "cued": true
+ },
+ "H6wkyzXzX6g": {
+  "label": "黃婷婷教授計算機結構_第7A講 Instruction Set Architecture",
+  "points": 48,
+  "quiz": 7,
   "cued": true
  },
  "HA96JKO9znE": {
@@ -2103,6 +2121,12 @@
   "label": "Paging in Operating Systems with Example & Working",
   "points": 13,
   "quiz": 5,
+  "cued": true
+ },
+ "PlbXyb-UymI": {
+  "label": "黃婷婷教授計算機結構_第6B講 Instruction Set Architecture",
+  "points": 42,
+  "quiz": 7,
   "cued": true
  },
  "PLpMBf9Nbyg": {

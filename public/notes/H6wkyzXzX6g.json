@@ -1,0 +1,778 @@
+{
+ "video": "H6wkyzXzX6g",
+ "label": "黃婷婷教授計算機結構_第7A講 Instruction Set Architecture",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "今天：supporting procedures；先複習",
+   "scene": "isB-7a-review",
+   "points": [
+    {
+     "t": 0,
+     "text": "今天介紹硬體如何支援 procedure；先複習 instruction format，因為後面要依 ISA 設計硬體。"
+    },
+    {
+     "t": 6,
+     "text": "MIPS 是 RISC，又稱 load-store machine。"
+    }
+   ],
+   "cues": [
+    0.1,
+    0.5,
+    6.55
+   ],
+   "explain": [
+    "今天的主題是「硬體怎麼支援 [[procedure]]」。procedure 就是 C 語言裡的 function（函式）。",
+    "開始前先複習 instruction set。後面要根據 instruction set 來設計電腦的 organization（硬體組織），所以這幾種 format 一定要很熟。",
+    "MIPS 是一台 [[RISC]] machine，又叫 [[load-store]] machine。為什麼這樣叫？老師請同學回答。"
+   ]
+  },
+  {
+   "title": "（點名問答）",
+   "scene": null,
+   "points": [
+    {
+     "t": 53,
+     "text": "老師點同學回答什麼是 load-store machine。"
+    }
+   ]
+  },
+  {
+   "title": "Load-store machine 與 immediate operand",
+   "scene": "isB-7a-ls",
+   "points": [
+    {
+     "t": 78,
+     "text": "load-store machine：做運算時 operand 一定要在 register 裡。"
+    },
+    {
+     "t": 145,
+     "text": "memory 與 register 之間用 lw（load）、sw（store）搬資料。"
+    },
+    {
+     "t": 169,
+     "text": "常數很常用，直接放在指令裡（immediate operand），這就是 I-type。"
+    }
+   ],
+   "cues": [
+    78.19,
+    88.17,
+    104.64,
+    133.53,
+    145.63,
+    169.67,
+    195.25,
+    201.41,
+    217.51
+   ],
+   "explain": [
+    "做加減乘除時，[[operand]]（運算元）可以從哪裡來？一般的電腦可以從 memory 或很多地方直接拿。",
+    "但 load-store machine 規定：運算的 operand 一定要在 [[register]] 裡。ALU 不能直接拿 memory 的資料來算（紅色叉叉）。",
+    "換句話說，要加、要減之前，資料一定要已經在 register 裡（綠色箭頭）。",
+    "可是資料那麼多，不可能全部放在 register，大部分還是在記憶體裡。",
+    "所以另外有專門搬資料的指令：[[lw]]（load word）把資料從記憶體搬進 register，[[sw]]（store word）把 register 的資料存回記憶體。這就是「load-store」名字的由來。",
+    "還有一種 operand 很常出現：常數（constant）。像 a + 5、a + 6、b + 7，裡面都有一個固定的數字。",
+    "所以 MIPS 特別設計一種指令，直接把常數放在指令裡面，叫 [[immediate]] operand。例如 addi 的最後 16 bits 就放常數 5。",
+    "如果不這樣做，常數就得先放在記憶體，用之前還要 lw 搬進 register，很花時間。",
+    "這種格式就叫 [[I-format]]（I 代表 immediate）。"
+   ]
+  },
+  {
+   "title": "R-format：欄位與 bit 數",
+   "scene": "isB-7a-rfmt",
+   "points": [
+    {
+     "t": 224,
+     "text": "R-type：op 6、rs 5、rt 5、rd 5、shamt 5、funct 6，共 32 bits；用於加減、logical 運算。"
+    },
+    {
+     "t": 268,
+     "text": "register 欄位 5 bits 因為有 32 個 register；shamt 5 bits 表示 0～31。"
+    },
+    {
+     "t": 289,
+     "text": "op 和 funct 合起來決定運算。"
+    }
+   ],
+   "cues": [
+    224.99,
+    245.62,
+    256.06,
+    259.96,
+    268.04,
+    276.42,
+    289.6
+   ],
+   "explain": [
+    "第一種格式：[[R-format]]（R 代表 register）。",
+    "它有 op code、三個 operand（rs、rt、rd）、shift amount 和 function code。",
+    "這種指令主要拿來做加、減、and、or 這類運算，三個 operand 都是 register。",
+    "每個欄位的長度：op 6 bits，rs、rt、rd 各 5 bits，shamt 5 bits，funct 6 bits，加起來剛好 32 bits ✓。",
+    "為什麼 register 欄位是 5 bits？因為 register file 有 32 個 register，2⁵ = 32，5 個 bit 剛好能指定其中一個。",
+    "shift amount 也是 5 bits：一個 word 是 32 bits，最多移 0 ～ 31 位，共 32 種情況。",
+    "最後，op 和 funct 合在一起，決定這個指令到底要做什麼動作。"
+   ]
+  },
+  {
+   "title": "I-format 用途一：immediate 運算",
+   "scene": "isB-7a-ifmt",
+   "points": [
+    {
+     "t": 297,
+     "text": "I-type：op 6、rs 5、rt 5、immediate 16。I = immediate，operand 直接在指令裡。"
+    }
+   ],
+   "cues": [
+    297.56,
+    334.44,
+    347.1
+   ],
+   "explain": [
+    "第二種：[[I-format]]。哪些指令屬於 I-type？老師請同學回答。",
+    "I 就是 [[immediate]]：把 operand 直接放在 instruction 裡面。",
+    "格式是 op、rs、rt，剩下的 16 bits 全部拿來放 immediate operand。例如課本的 addi $s3, $s3, 4。"
+   ]
+  },
+  {
+   "title": "（點名）",
+   "scene": null,
+   "points": [
+    {
+     "t": 359,
+     "text": "老師點名同學。"
+    }
+   ]
+  },
+  {
+   "title": "I-format 用途二：load / store",
+   "scene": "isB-7a-ifmt2",
+   "points": [
+    {
+     "t": 379,
+     "text": "lw、sw 也是 I-type：rs 是 base register，16 bits 是 offset。"
+    }
+   ],
+   "cues": [
+    379.98,
+    410.55,
+    422.67
+   ],
+   "explain": [
+    "還有哪些指令也用 I-format？這很重要，因為好幾種指令都是。",
+    "load、store 也是 I-type：需要兩個 register 加一個常數。例：lw $t0, 32($s3)。",
+    "那 16 bits 用來放 offset：位址 = base register（$s3）+ offset（32）。程式組出來的欄位是 35、19、8、32 ✓（lw 的 op 是 35，$s3 是 19 號，$t0 是 8 號）。"
+   ]
+  },
+  {
+   "title": "（點名）",
+   "scene": null,
+   "points": [
+    {
+     "t": 425,
+     "text": "老師點名同學。"
+    }
+   ]
+  },
+  {
+   "title": "I-format 用途三：beq / bne",
+   "scene": "isB-7a-ifmt3",
+   "points": [
+    {
+     "t": 459,
+     "text": "後面設計硬體只要支援這幾種 type。"
+    },
+    {
+     "t": 504,
+     "text": "beq/bne（做決定）也用 I-format。"
+    },
+    {
+     "t": 527,
+     "text": "I-type 有三種用途：immediate 運算、load/store、conditional branch。"
+    }
+   ],
+   "cues": [
+    463.29,
+    476.23,
+    504.09,
+    527.69
+   ],
+   "explain": [
+    "後面設計 organization 時，只要支援這幾種 type，幾乎就能建一台電腦。所以一定要知道它們能做哪些動作。",
+    "寫程式最重要的是什麼？一行一行執行之外，還要做決定：有時做這邊、有時做那邊，就是 if-then-else。",
+    "要實作 if-then-else 需要 conditional branch：[[beq]]、[[bne]]，它們也是 I-type。",
+    "R-type 只有一種樣子，很好記；I-type 雖然名字叫 immediate，實際上有三種用途：immediate 運算、load/store、beq/bne。"
+   ]
+  },
+  {
+   "title": "（作業說明）",
+   "scene": null,
+   "points": [
+    {
+     "t": 555,
+     "text": "第一個作業：用 assembly 寫 if-then-else 和 loop。"
+    }
+   ]
+  },
+  {
+   "title": "Procedure call 的六個步驟",
+   "scene": "isB-7a-proc",
+   "points": [
+    {
+     "t": 581,
+     "text": "procedure call 讓程式可以 reuse、modular。"
+    },
+    {
+     "t": 625,
+     "text": "caller 呼叫 callee：放參數 → 轉交 control → 取得 storage → 執行 → 放結果 → 交回 control。"
+    },
+    {
+     "t": 738,
+     "text": "參數和結果都放在固定的 register；但 register file 只有一個。"
+    }
+   ],
+   "cues": [
+    584.29,
+    625.49,
+    641.09,
+    667.23,
+    699.47,
+    717.35,
+    720.73,
+    726.39,
+    738.95,
+    756.73,
+    790.55
+   ],
+   "explain": [
+    "寫程式時另一個很重要的東西：[[procedure]] call。如果只寫一個超大的程式，很沒組織；有了 procedure，程式才能重複使用（reuse）、寫得模組化（modular）。",
+    "有去叫的人叫 [[caller]]（像爸爸），被叫的叫 [[callee]]（像兒子）。",
+    "① caller 先把參數（parameter，也叫引數）放好。同一個 procedure 可以叫很多次，參數不同，結果就不同。",
+    "② 把 control（執行權）轉交給 callee：跳到 procedure 去執行。",
+    "③ callee 開始做事之前，要先取得需要的 storage（儲存空間），例如它自己的 local variable。",
+    "④ 執行 procedure 的工作。",
+    "⑤ 做完後把結果（result）放在 caller 拿得到的地方。",
+    "⑥ 把 control 交回 caller，回到原來的地方繼續執行。",
+    "在 assembly 裡，參數要放在 register，因為運算都靠 register。而且要有固定規則，不然 callee 不知道去哪裡拿。",
+    "麻煩的是：爸爸叫兒子、兒子還可能叫孫子……可是 register file 只有一個，大家共用，資料要放哪裡？這要好好處理。",
+    "最後結果也放在一個固定的 register，這樣回到 caller 就知道去哪裡拿。"
+   ]
+  },
+  {
+   "title": "leaf_example 需要哪些特別的 register",
+   "scene": "isB-7a-leafc",
+   "points": [
+    {
+     "t": 806,
+     "text": "例：sum = leaf_example(a,b,c,d)，leaf_example 算 f = (g+h) − (i+j)。"
+    },
+    {
+     "t": 892,
+     "text": "需要：return address（$ra）、procedure address（label）、參數 $a0–$a3、回傳值 $v0–$v1、運算用 $s0–$s7。"
+    }
+   ],
+   "cues": [
+    808.85,
+    837.65,
+    851.99,
+    892.89,
+    898.71,
+    927.63,
+    940.25,
+    959.77,
+    971.37
+   ],
+   "explain": [
+    "一個簡單的 C 例子：main（爸爸）在某一行呼叫 leaf_example(a, b, c, d)，前後還有很多其他 statement。",
+    "leaf_example 做的事：前兩個參數相加、後兩個參數相加，再相減得到 f，然後 return f 給 caller。",
+    "呼叫的那一行和 procedure 本身在程式的不同地方（可能一個在第 5 行、一個在第 100 行）。執行到呼叫時要跳過去，算完再回來往下做。",
+    "第一個要處理的：回來時要回到「下一個 statement」，所以這個位置（[[return address]]）一定要存起來。",
+    "MIPS 在 32 個 register 裡規定一個專門放 return address，叫 [[$ra]]。",
+    "還要知道跳去哪裡：procedure 的位址，就像 jump 一樣用一個 label（leaf_example）表示。",
+    "參數也放在特別的 register：$a0 ～ $a3（a 代表 argument）。這次可能是 3、5、7、8，下次又是別的數。",
+    "回傳值放在 $v0、$v1（v 代表 value）。",
+    "做運算時也需要 register，像 $s0 ～ $s7。這些 register 不是亂用的，每一種都有固定用途。"
+   ]
+  },
+  {
+   "title": "32 個 register 的分工",
+   "scene": "isB-7a-regmap",
+   "points": [
+    {
+     "t": 983,
+     "text": "$t0–$t7 = 8–15、$s0–$s7 = 16–23、$a0–$a3 = 4–7、$v0–$v1 = 2–3、$zero = 0、$ra = 31。"
+    },
+    {
+     "t": 1111,
+     "text": "$gp 28、$sp 29、$fp 30 有特殊用途；$k0、$k1 給 OS。"
+    }
+   ],
+   "cues": [
+    992.49,
+    1009.69,
+    1054.69,
+    1073.97,
+    1082.59,
+    1095.09,
+    1111.89,
+    1127.99
+   ],
+   "explain": [
+    "回到 32 個 register 的表（格子上的數字是編號）。第 8 ～ 15 號叫 $t0 ～ $t7（t 代表 temporary），寫 $t0 或 $8 都可以。",
+    "第 16 ～ 23 號叫 $s0 ～ $s7（s 代表 saved）。之前看起來 $t 和 $s 沒差別，在 procedure call 裡它們的用法就不同了。",
+    "參數 $a0 ～ $a3 是第 4 ～ 7 號。要呼叫 procedure 時，有參數就放這裡。",
+    "回傳值 $v0、$v1 是第 2、3 號。",
+    "第 0 號是 [[$zero]]，硬體接死，永遠是 0。",
+    "第 31 號是 [[$ra]]，保留給 return address，別人不能亂用。",
+    "還有 $gp（global pointer）、$sp（stack pointer）、$fp（frame pointer）各有特殊用途；$k0、$k1 是給作業系統（OS）用的。這樣 32 個 register 的用途大部分都清楚了。",
+    "其中 [[$sp]] 等一下呼叫 procedure 時就會用到。"
+   ]
+  },
+  {
+   "title": "跳到 procedure，還要能跳回來",
+   "scene": "isB-7a-jumpq",
+   "points": [
+    {
+     "t": 1139,
+     "text": "呼叫 procedure 要跳過去（jump），做完還要回到呼叫的下一個指令。"
+    }
+   ],
+   "cues": [
+    1143.63,
+    1171.26,
+    1193.22,
+    1203.02,
+    1226.84,
+    1243.18
+   ],
+   "explain": [
+    "要叫 procedure，就需要特別的指令。第一件事：跳到 subroutine（procedure）那邊去。",
+    "我們已經學過會「跳」的指令：beq、bne 跳短距離，j（jump）跳比較遠。",
+    "要跳到 subroutine，用一個 jump 就可以（金色箭頭）。",
+    "但跳過去就算了嗎？不行，做完還要跳回來（綠色箭頭）。",
+    "回到哪裡？回到呼叫那一行的「下一個 instruction」。",
+    "程式執行時，有一個地方記錄「下一個要執行哪個指令」。它叫什麼？老師請同學回答。"
+   ]
+  },
+  {
+   "title": "（同學回答）",
+   "scene": null,
+   "points": [
+    {
+     "t": 1285,
+     "text": "老師請同學回答下一個指令的位址記在哪裡。"
+    }
+   ]
+  },
+  {
+   "title": "PC、jal 與 jr $ra",
+   "scene": "isB-7a-jal",
+   "points": [
+    {
+     "t": 1358,
+     "text": "Program Counter（PC）存下一個要執行的指令位址。"
+    },
+    {
+     "t": 1463,
+     "text": "jal：一個指令做兩件事——$ra = PC + 4，然後跳到 procedure（make the common case fast）。"
+    },
+    {
+     "t": 1541,
+     "text": "jr $ra：把 $ra copy 到 PC，回到 caller；jr 也可用來實作 switch。"
+    }
+   ],
+   "trap": "jal 存進 $ra 的是「jal 的下一個指令」（PC + 4），不是 jal 自己的位址。",
+   "cues": [
+    1358.18,
+    1380.32,
+    1397.83,
+    1410.98,
+    1417.16,
+    1446.2,
+    1463,
+    1490.54,
+    1541.56,
+    1615.84,
+    1646.63
+   ],
+   "explain": [
+    "答案是 [[Program Counter]]（PC，程式計數器）：它存的是「下一個要執行的指令」在記憶體的位址。現在執行到位址 1000 的 jal（1000 是示意）。",
+    "跳去 procedure 之後還要回到 next instruction，所以要把 next instruction 的位址記在某個地方。",
+    "跳過去的方法：把 procedure 的位址（老師舉例 3468）放進 PC，下一個就從 3468 開始執行。",
+    "next instruction 的位址（1000 + 4 = 1004）記在 [[$ra]] 這個 register。",
+    "procedure 做完要回來時，再把 $ra 的值放回 PC，就回到 next instruction 了。",
+    "照理說可以用兩個指令做：一個把 next instruction 的位址存進 $ra，一個 jump 過去。",
+    "MIPS 把它合成一個指令：[[jal]]（jump and link）。它做兩件事：① 先把 PC + 4（下一個指令的位址）存進 $ra；② 再把 PC 設成 procedure 的位址。程式模擬 jal 確認：它寫了 $ra，下一個執行的就是 procedure 的第一行 ✓。",
+    "為什麼特別設計？因為 procedure call 太常用了，而且這兩件事很快就做得完——make the common case fast。",
+    "procedure 做完要回去：執行 [[jr]] $ra（jump register）。register 剛好 32 bits，等於一個位址的長度，jr 就把 $ra 的值 copy 到 PC，於是回到 1004。",
+    "jr 不只能用在 procedure：也可以實作 switch-case。把各個 case 的位址放進 register，再 jr 跳過去（有興趣可以自己研究）。",
+    "記住：實作 procedure call 一定要這兩個新指令：jal 和 jr。"
+   ]
+  },
+  {
+   "title": "Caller 要寫什麼：搬參數、jal、拿 $v0",
+   "scene": "isB-7a-caller",
+   "points": [
+    {
+     "t": 1660,
+     "text": "a、b、c、d 原本在 $s0–$s3，用 add $aK, $sK, $zero 搬到 $a0–$a3。"
+    },
+    {
+     "t": 1742,
+     "text": "jal leaf_example；回來後結果在 $v0，搬到 $s4（sum）。"
+    }
+   ],
+   "cues": [
+    1662.35,
+    1694.55,
+    1718.01,
+    1727.47,
+    1742.07,
+    1768.77,
+    1784.15
+   ],
+   "explain": [
+    "caller 那一行 sum = leaf_example(a, b, c, d)，要寫成哪些指令？右上是 C，左邊等一下一行一行出現。",
+    "a、b、c、d 正在 main 裡運算，放在 $s0 ～ $s3（數值 5、3、4、2 是示意）。運算通常用 $s 和 $t。",
+    "要叫 procedure，就要把它們搬到參數 register $a0 ～ $a3。",
+    "怎麼搬？add $a0, $s0, $zero：$zero 永遠是 0，加 0 等於沒變，所以就是把 $s0 copy 到 $a0，這就是「move」。四個依序搬好。",
+    "參數準備好，執行 jal leaf_example：跳過去，callee 做完會回到下一行。",
+    "回來時，callee 已經把結果放在 $v0：(5 + 3) − (4 + 2) = 2。",
+    "sum 放在 $s4，所以 add $s4, $v0, $zero 把結果搬過去。程式模擬整段 caller + callee：$s4 = 2 ✓。"
+   ]
+  },
+  {
+   "title": "（同學回答 jal 做什麼）",
+   "scene": null,
+   "points": [
+    {
+     "t": 1803,
+     "text": "同學回答：jal 把下一個指令的位址存到 $ra，再跳到 label。"
+    }
+   ]
+  },
+  {
+   "title": "Callee 也要用 $s0、$t0、$t1：衝突",
+   "scene": "isB-7a-callee",
+   "points": [
+    {
+     "t": 1874,
+     "text": "callee：g～j 在 $a0–$a3，f 用 $s0，g+h、i+j 暫放 $t0、$t1，結果放 $v0。"
+    },
+    {
+     "t": 1957,
+     "text": "caller 也在用 $s、$t，而 register file 只有一份 → callee 要先存、用完還原。"
+    }
+   ],
+   "cues": [
+    1874.31,
+    1893.17,
+    1914.59,
+    1926.15,
+    1940.19,
+    1957.17,
+    1992.41,
+    2032.6,
+    2066.52
+   ],
+   "explain": [
+    "換 callee 這邊：它被叫進來，拿到參數，還需要一個 local 變數 f，算 (g + h) − (i + j) 後 return f。",
+    "caller 已經把 g、h、i、j 放好在 $a0 ～ $a3。",
+    "f 用 $s0 來放。",
+    "一個指令一次只能加兩個數，所以 g + h、i + j 要先算好放在 temporary register。課本用 $t0、$t1（老師口頭說 t1、t2，意思一樣）。",
+    "算完的結果放在 $v0 回傳。",
+    "問題來了：caller 自己也在用 $s 和 $t！callee 說它也要用 $s0、$t0、$t1，兩邊在搶同一批 register。",
+    "因為 register file 只有一份、32 個 register：不管執行到 main 還是 procedure，大家都用同一份。callee 一用，caller 原本的資料就被蓋掉了。",
+    "就像爸爸出門，你在家開 party 可以，但爸爸回來前要全部恢復原狀，不要讓他發現。",
+    "callee 知道自己要用哪幾個 register（$s0 和兩個 temporary），就在使用之前先把它們原本的值存起來，做完 procedure 再恢復原狀。"
+   ]
+  },
+  {
+   "title": "存到 stack：memory 與 $sp",
+   "scene": "isB-7a-stack",
+   "points": [
+    {
+     "t": 2085,
+     "text": "舊的值存在 memory 的 stack；stack 是 last in first out。"
+    },
+    {
+     "t": 2145,
+     "text": "$sp（第 29 號 register）指著 top of stack；procedure 結束要恢復原狀。"
+    }
+   ],
+   "cues": [
+    2085.41,
+    2099.89,
+    2122.27,
+    2145.27,
+    2155.85,
+    2170.41,
+    2194.13
+   ],
+   "explain": [
+    "舊的值存在哪裡？存在 [[stack]]（堆疊）。stack 是記憶體裡的一塊區域，記憶體很大，放得下。上面是高位址、下面是低位址。",
+    "而且要把這塊記憶體組織成 stack 的樣子：呼叫 procedure 時，把要用的資料存上去。",
+    "stack 是 last in first out（後進先出）：新資料 push 到最上面（top of stack），處理完就 pop 掉。資料結構課學過。",
+    "有一個 [[stack pointer]] 記住現在用到哪裡，它指著 top of stack。",
+    "stack pointer 就是第 29 號 register，[[$sp]]（這裡用 1000 當示意位址）。",
+    "procedure 執行時，把要用的 $s0 和兩個 temporary 存進 stack，stack 往下長 3 格，$sp 跟著往下移。",
+    "procedure 一結束，就把資料拿回來、stack 恢復原狀，$sp 回到 1000，回到爸爸那邊像什麼都沒發生。"
+   ]
+  },
+  {
+   "title": "leaf_example 一行一行跑",
+   "scene": "isB-7a-leafrun",
+   "points": [
+    {
+     "t": 2205,
+     "text": "leaf_example：addi $sp, $sp, −12，sw $t1/$t0/$s0 到 8/4/0($sp)。"
+    },
+    {
+     "t": 2329,
+     "text": "計算 f，放 $v0。"
+    },
+    {
+     "t": 2356,
+     "text": "離開前 lw 還原三個 register、addi $sp, $sp, 12、jr $ra。"
+    }
+   ],
+   "trap": "stack 往低位址長：push 要先把 $sp 減掉，pop 要加回來；sw/lw 的 offset 以 $sp 為 base。",
+   "cues": [
+    2208.55,
+    2220.93,
+    2244.43,
+    2284.59,
+    2301.97,
+    2315.71,
+    2329.13,
+    2335.57,
+    2347.43,
+    2356.39,
+    2366.15,
+    2367.61,
+    2377.53
+   ],
+   "explain": [
+    "這是 MIPS 小模擬器：上面 32 個 register、下面是記憶體 968 ～ 996、左邊是程式。jal 已經執行，$ra 記好了回去的位址，PC 現在在 leaf 的第一行。暫存器的初值（參數 5、3、4、2，$s0 = 11、$t0 = 22、$t1 = 33）都是示意。",
+    "stack 在記憶體裡，要知道位址就看 [[$sp]]（發亮的那格），現在 $sp = 1000。",
+    "要存 3 個資料，每個 4 bytes，共 12 bytes。stack 是從高位址往低位址長的，所以 $sp 要減 12。",
+    "執行 addi $sp, $sp, -12：$sp 從 1000 變成 988，空出 3 格（988、992、996）。",
+    "執行 sw $t1, 8($sp)：位址 = $sp + 8 = 996，把 $t1 的舊值 33 存進去。sw 的位址就是 base register 加 offset，這裡 base 是 $sp。",
+    "接著 sw $t0, 4($sp) 存到 992、sw $s0, 0($sp) 存到 988。三個會被破壞的 register 都安全地存好了。",
+    "開始計算：add $t0, $a0, $a1，g + h = 5 + 3 = 8 放進 $t0。現在可以放心用 $t0，因為舊值已經存起來了。",
+    "add $t1, $a2, $a3 得到 i + j = 6；再 sub $s0, $t0, $t1 得到 f = 8 − 6 = 2。",
+    "return 的值要放 $v0：add $v0, $s0, $zero，$v0 = 2。",
+    "這樣就做完可以走了嗎？不行！走之前要恢復原狀，stack 裡發亮的三格就是要拿回來的舊值。",
+    "用 lw 把舊值一個個載回來：$s0 = 11、$t0 = 22、$t1 = 33。",
+    "$sp 也要恢復：addi $sp, $sp, 12，回到 1000。",
+    "最後 jr $ra 跳回 caller。驗算：$v0 = 2，$s0、$t0、$t1 都還原成 11、22、33，$sp = 1000 ✓，爸爸完全看不出來。"
+   ]
+  },
+  {
+   "title": "$t 與 $s 的分工：誰負責保存",
+   "scene": "isB-7a-ts",
+   "points": [
+    {
+     "t": 2387,
+     "text": "$t：caller 不在乎、callee 可以亂用；$s：callee 用到就一定要存並還原。"
+    },
+    {
+     "t": 2476,
+     "text": "因此 leaf_example 只要存 $s0，stack 只長一格。"
+    },
+    {
+     "t": 2510,
+     "text": "caller 若在乎某個值就放 $s（或自己先存），不能期待 $t 不變。"
+    }
+   ],
+   "trap": "$t 是 caller-saved（callee 不保證保留）；$s 是 callee-saved（callee 用到必須還原）。",
+   "cues": [
+    2397.33,
+    2410.19,
+    2437.91,
+    2444.77,
+    2476.91,
+    2492.49,
+    2510.99,
+    2542.49,
+    2553.37,
+    2571.49
+   ],
+   "explain": [
+    "一開始說 $s 和 $t 好像沒差別、可以亂用。但在寫 procedure call 時，它們就有不同的約定。",
+    "老師的比喻：爸爸出門把家交給你。有些東西他不在乎，冰箱吃光也沒關係；有些很在乎，桌上的玻璃不能打破。",
+    "爸爸不在乎的東西放在 $t（temporary）：被弄亂就算了。",
+    "爸爸在乎的東西放在 $s：絕對不能破壞。",
+    "有了這個約定，callee 只要存 $s 就好，$t 不需要存。少搬幾次 load/store，程式更有效率。",
+    "所以 leaf_example 只要存 $s0：stack 只長一格（addi $sp, $sp, -4；sw $s0, 0($sp)），結束時一樣還原。用示意值跑一次：$v0 = 2，$s0 還原、$sp 回到 1000 ✓。",
+    "相對地，caller 就不能期待 $t 還維持原狀。房子交給兒子，就要有冰箱被吃光的心理準備。",
+    "caller 的責任：在乎的資料不要放 $t，要搬到 $s（或自己先存好）；放在 $t 就表示不在乎。",
+    "callee 的責任：$t 可以隨便用，但只要用到 $s，就保證要存起來、用完恢復原狀。",
+    "兩邊各負各的責任，stack 上只要放 $s0。這種約定叫 register convention，讓不同人寫的 caller 和 callee 也能合作。"
+   ]
+  },
+  {
+   "title": "Non-leaf procedure：$ra 一定要存",
+   "scene": "isB-7a-nonleaf",
+   "points": [
+    {
+     "t": 2593,
+     "text": "leaf procedure 不再叫別人；non-leaf 會再叫別的 procedure（nested、recursive）。"
+    },
+    {
+     "t": 2644,
+     "text": "每叫一層在 top of stack 放一塊，return 時 pop。"
+    },
+    {
+     "t": 2692,
+     "text": "再呼叫前要先把自己的 $ra（和需要的 argument、temporary）存到 stack，否則回不去。"
+    }
+   ],
+   "trap": "non-leaf procedure 用 jal 呼叫別人時會覆寫 $ra，所以必須先把 $ra 存到 stack。",
+   "cues": [
+    2596.99,
+    2611.01,
+    2622.97,
+    2644.49,
+    2654.23,
+    2676.77,
+    2692.31,
+    2712.43,
+    2722.49,
+    2755.73
+   ],
+   "explain": [
+    "真實情況沒這麼簡單：祖父叫爸爸、爸爸叫你、你可能又叫你兒子……一代一代往下。",
+    "不再叫別人的叫 [[leaf procedure]]（像樹葉，在最末端）；自己還會叫別人的，叫 non-leaf procedure。",
+    "同樣的問題：從祖先開始每一代都用同一個 register file，所以每次交給下一代之前，都要把相關資料存起來。",
+    "每叫一代，就在 top of stack 放一塊屬於它的資料，stack 一層層往下長。",
+    "return 之後，top of stack 就 pop 掉，回到上一層；上一層做完再 pop……這是 procedure call 最基本的概念。",
+    "所以就算是 nested call 或 recursive call（自己叫自己）都沒問題，只要好好安排記憶體裡的 stack。",
+    "最需要注意的是 return address：一定要回得去。",
+    "祖父用 jal 叫爸爸時，$ra 存著「回祖父」的位址。爸爸再用 jal 叫你時，$ra 被改成「回爸爸」，原本的值被蓋掉，爸爸做完就回不了祖父那邊了。",
+    "所以爸爸在叫兒子之前，要先把自己的 $ra 存到 stack，回來後再取出。",
+    "還有 argument、temporary 等，該存的也要存；叫完之後再把 stack 恢復原樣。"
+   ]
+  },
+  {
+   "title": "遞迴 fact(n)：n 和 $ra 要存",
+   "scene": "isB-7a-factc",
+   "points": [
+    {
+     "t": 2773,
+     "text": "fact(n)：n < 1 回傳 1，否則回傳 n × fact(n − 1)。"
+    },
+    {
+     "t": 2837,
+     "text": "n 放 $a0；呼叫前 $a0 要改成 n − 1，回來還要用 n，所以 $a0（和 $ra）要存起來。"
+    }
+   ],
+   "cues": [
+    2775.97,
+    2784.67,
+    2790.95,
+    2807.07,
+    2837.81,
+    2849.75,
+    2862.25
+   ],
+   "explain": [
+    "比較難的例子：factorial（階乘）。這是一個 [[recursive]] call（遞迴）。",
+    "如果 n < 1，就 return 1。",
+    "否則把參數改成 n − 1，再叫自己一次。",
+    "注意：subroutine 回來之後還沒結束！還要把回傳值乘以現在的 n，再 return。",
+    "參數 n 放在 $a0（這裡用 n = 3 示意）。",
+    "叫 fact(n − 1) 之前，$a0 要先減 1，變成 2。可是回來後要乘的是原本的 n = 3，它已經不見了。",
+    "所以 $a0（n）一定要先存起來，$ra 也是。哪些要存、哪些不用存，下一節繼續。"
+   ]
+  },
+  {
+   "title": "（下課休息）",
+   "scene": null,
+   "points": [
+    {
+     "t": 2890,
+     "text": "下一節繼續 fact 的 MIPS 程式。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "MIPS 叫 load-store machine 的意思是？",
+   "opts": [
+    "算術運算的 operand 必須在 register，記憶體只能用 load/store 存取",
+    "每個指令都要 load 和 store 一次",
+    "只能存取 byte",
+    "運算可以直接用 memory operand"
+   ],
+   "ans": "算術運算的 operand 必須在 register，記憶體只能用 load/store 存取",
+   "why": "運算前資料要先 lw 進 register，結果再 sw 回記憶體。"
+  },
+  {
+   "q": "下列哪一種指令「不是」使用 I-format？",
+   "opts": [
+    "add",
+    "addi",
+    "lw",
+    "beq"
+   ],
+   "ans": "add",
+   "why": "add 是 R-format；I-format 用在 immediate 運算、load/store、beq/bne。"
+  },
+  {
+   "q": "jal leaf_example 位於位址 1000，執行後 $ra 的值是？",
+   "opts": [
+    "1004",
+    "1000",
+    "leaf_example 的位址",
+    "996"
+   ],
+   "ans": "1004",
+   "why": "jal 把 PC + 4（下一個指令的位址）存進 $ra，再跳到 procedure。"
+  },
+  {
+   "q": "procedure 結束要回到 caller，應執行？",
+   "opts": [
+    "jr $ra",
+    "j $ra",
+    "jal $ra",
+    "beq $ra, $zero"
+   ],
+   "ans": "jr $ra",
+   "why": "jr 把 register 的 32-bit 值放進 PC。"
+  },
+  {
+   "q": "leaf_example 要存 3 個 register，stack 的第一個指令是？",
+   "opts": [
+    "addi $sp, $sp, -12",
+    "addi $sp, $sp, 12",
+    "addi $sp, $sp, -3",
+    "sw $sp, 12($sp)"
+   ],
+   "ans": "addi $sp, $sp, -12",
+   "why": "3 個 word × 4 bytes = 12；MIPS 的 stack 往低位址長，所以減 12。"
+  },
+  {
+   "q": "依 register convention，callee 用到哪一組 register 時必須先存、用完還原？",
+   "opts": [
+    "$s0–$s7",
+    "$t0–$t9",
+    "$a0–$a3",
+    "$v0–$v1"
+   ],
+   "ans": "$s0–$s7",
+   "why": "$s 是 saved（callee-saved）；$t 是 temporary，callee 可以隨意使用。"
+  },
+  {
+   "q": "為什麼 non-leaf procedure 一定要把 $ra 存到 stack？",
+   "opts": [
+    "它用 jal 呼叫別人時會覆寫 $ra",
+    "因為 $ra 是 temporary",
+    "因為 jr 只能讀 stack",
+    "因為 $sp 會被清成 0"
+   ],
+   "ans": "它用 jal 呼叫別人時會覆寫 $ra",
+   "why": "不先存，自己做完就回不到 caller。"
+  }
+ ]
+}
