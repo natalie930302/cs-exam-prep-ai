@@ -1,0 +1,762 @@
+{
+ "video": "2ICqPUCycWQ",
+ "label": "黃婷婷教授計算機結構_第3A講 Computer Abstractions and Technology",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Abstraction：分層看電腦",
+   "scene": "nuA-3a-abs",
+   "cues": [
+    17.8,
+    21.17,
+    23.19,
+    47.43,
+    57.42
+   ],
+   "points": [
+    {
+     "t": 17,
+     "text": "今天介紹 abstraction 與 performance。abstraction（抽象）：從不同層級看電腦，看高層時把低層細節藏起來，懂了再往下一層。"
+    }
+   ],
+   "explain": [
+    "上次介紹了電腦怎麼演進，今天要講兩件事：abstraction（抽象化）和 performance（電腦的效能怎麼計算）。",
+    "abstraction 就是「抽象」的意思。",
+    "我們看一台電腦時，可以從不同的層級去看：比較 high level 的、中間的、比較 low level 的。",
+    "看 high level 的時候，就把下面 low level 的東西先藏起來（畫面上變淡），比較容易理解；等懂了，再往下一層去了解。",
+    "接下來就用這個方法，在不同層級上看電腦是由哪些 component（元件）組成的。"
+   ]
+  },
+  {
+   "title": "Hardware、system software、application software",
+   "scene": "nuA-3a-layers",
+   "cues": [
+    64.75,
+    85.49,
+    93.47,
+    106.48,
+    109.78,
+    127.94,
+    135.42,
+    171.96,
+    197.22,
+    218.96,
+    232.22
+   ],
+   "points": [
+    {
+     "t": 65,
+     "text": "硬體單獨不會動作，軟體驅動硬體；軟體分 application software 與 system software。"
+    },
+    {
+     "t": 93,
+     "text": "層級：hardware（最裡）→ system software → application software（銀行、機場系統、game）。"
+    },
+    {
+     "t": 128,
+     "text": "system software 有兩種：compiler（把 high-level language 翻成 machine code）與 OS（處理共用的 I/O、memory、storage，scheduling 與 sharing resource）。"
+    }
+   ],
+   "explain": [
+    "電腦分成硬體和軟體兩部分。單獨一個硬體不會自己動作，單獨一個軟體也不會；軟體像是去驅動硬體做事。",
+    "軟體又分兩種：一種叫 application program（應用程式），另一種叫 system program（系統程式）。",
+    "它們的層級像同心圓。最裡面一層是 hardware。",
+    "外面包一層 system software（系統軟體）。",
+    "最外面是 application software，就是我們平常用的應用：銀行的系統、機場的系統，甚至你玩的 game。",
+    "應用軟體不能直接跑在硬體上，要透過 system software。system software 主要有兩種：compiler 和 OS（作業系統）。",
+    "[[compiler]] 幫你把 high-level language（像 C）翻譯成機器懂的語言。電腦只懂 0 和 1，叫人直接寫 0101 太麻煩、也寫不大，所以用高階語言寫，再交給 compiler 翻譯。",
+    "OS 處理大家共用的東西，例如 I/O、memory、storage。這些低層的事情與其每個程式各寫一份，不如寫一份大家 share。",
+    "很多 process（執行中的程式）可能同時要用同一個 resource，要有人決定誰先用、誰後用，這叫 scheduling 和 sharing resource，也是 OS 的工作。",
+    "所以以後有人問你電腦由什麼組成，很簡單：hardware、system software、application software 三大部分。",
+    "你將來念研究所走的各個領域，也一定落在這三塊：做 application、做 system，還是做 hardware。"
+   ]
+  },
+  {
+   "title": "Program 的層級：high-level、assembly、machine code",
+   "scene": "nuA-3a-code",
+   "cues": [
+    243.8,
+    255.86,
+    265.54,
+    276.78,
+    300.28,
+    326.2,
+    337.52,
+    356.72,
+    362.66
+   ],
+   "points": [
+    {
+     "t": 244,
+     "text": "program code 分層：high-level language（如 C 的 swap）提供 productivity 與 portability。"
+    },
+    {
+     "t": 326,
+     "text": "compiler 翻成 assembly（lw = load，用 symbol 表示，跟 instruction set 很像），assembler 再一對一翻成 0101 的 machine code。"
+    }
+   ],
+   "explain": [
+    "換從程式碼（program code）的角度看，也可以分成很多層級。",
+    "你大一學的 C、Java 都是 high-level language，可是機器看不懂，它只懂 0 和 1，也就是最下面的 machine code。",
+    "最高的一層是 high-level language。右邊是 C 寫的 swap 函式：把陣列 v 的第 k 個和第 k+1 個元素交換。",
+    "它寫得很接近問題本身，有點像數學符號夾雜英文，容易寫，所以提供 productivity（生產力）：寫得快、寫得多。叫你直接寫 0101，你寫不出來。",
+    "它還提供 portability（可攜性）：不同機器的 instruction set 不一樣，但同一份 C 程式到哪台都一樣，交給那台機器的 compiler 翻譯就好。",
+    "經過 compiler 之後，swap 變成右邊這段 MIPS [[assembly language]]：已經很像機器的 instruction 了。",
+    "例如 lw 就是 load（從 memory 載入到 register）。實際上它對應幾個 bit，但用 lw 這種符號（symbol）表示，人還看得懂。",
+    "這就是 assembly language，跟 instruction set 非常像的一種表示法，層級比 C 低，但人還能理解。",
+    "最後 [[assembler]] 做一對一的翻譯，很簡單：opcode、各欄位直接換成 bits。lw $t0, 0($t1) 的 opcode 是 35、rs 是 $t1（9 號）、rt 是 $t0（8 號）、offset 0，拼起來就是 0x8D280000。"
+   ]
+  },
+  {
+   "title": "電腦的組成與 mouse",
+   "scene": "nuA-3a-io",
+   "cues": [
+    388.96,
+    412.1,
+    415.58,
+    421.58,
+    432.44,
+    441.32,
+    455.7,
+    474.28,
+    499.5,
+    508.84,
+    518.14,
+    543.68
+   ],
+   "points": [
+    {
+     "t": 389,
+     "text": "hardware：processor、memory、I/O（user-interface device：display、keyboard、mouse；storage device；network adapter）。"
+    },
+    {
+     "t": 474,
+     "text": "optical mouse：LED 照亮表面，小 camera 每秒拍 1,500 張，小 processor 比對影像差異算出 x、y 移動；舊式滾球 mouse 用 counter 加減。"
+    }
+   ],
+   "explain": [
+    "看 hardware：不管是 desktop、server 還是 embedded computer，一定有一個 processor 處理運算。",
+    "還要有 memory，儲存資料的地方。",
+    "另外還有 I/O，就是和外面溝通的 input、output 裝置。",
+    "I/O 分幾種。第一種是 user-interface device，跟使用者溝通的：display（螢幕）、keyboard、mouse。",
+    "第二種是 storage device：處理完要把資料存起來、需要時再取出來。",
+    "第三種是 network adapter（網路卡）：讓機器和機器之間可以連線、溝通。",
+    "從最外表看一台電腦：display 是 output device；keyboard、mouse 是 input device；還有接網路的接頭。",
+    "再往下一層，看 mouse 裡面長什麼樣。以前的 mouse 裡有顆球滾來滾去，現在都是 optical（光學）mouse。",
+    "它有一個 LED 燈，發光照在你的桌面上。",
+    "裡面其實是一個小小的低解析度 camera，每秒可以拍 1,500 張照片。",
+    "裡面有一個小 processor 做 image processing（影像處理）：比對這一張和下一張照片哪裡不同，就能算出你往 x、y 哪個方向移動。",
+    "傳統的滾球 mouse 則是用 counter（計數器）：球往某方向滾，x、y 的值就加或減，再把位置反映出來。"
+   ]
+  },
+  {
+   "title": "Display：pixel、resolution、frame buffer",
+   "scene": "nuA-3a-display",
+   "cues": [
+    568.16,
+    583.1,
+    593.92,
+    605.46,
+    608.76,
+    622.38,
+    631.46,
+    649.4,
+    660.52,
+    677.62
+   ],
+   "points": [
+    {
+     "t": 568,
+     "text": "螢幕用 bitmap 表示影像，每點是一個 pixel；黑白 8 bits 表示灰階，彩色用 RGB 各 8 bits。"
+    },
+    {
+     "t": 631,
+     "text": "resolution：640×480 到 2560×1600，pixel 越多越精細。"
+    },
+    {
+     "t": 660,
+     "text": "frame buffer 存每個 pixel 的數值，決定顯示的顏色。"
+    }
+   ],
+   "explain": [
+    "再往下看 display（螢幕）是怎麼運作的。這種一層層往下看的方式，本身就是 abstraction。",
+    "螢幕用 bitmap 表示影像：一點一點組成，每一點叫一個 pixel（像素）。",
+    "如果是黑白的，每個 pixel 用 8 個 bit 表示灰階深淺。8 bits 有 2⁸ = 256 種值，所以有 256 級灰階。",
+    "例如 00000000 是最黑、11111111 是最白，中間的值就是不同的深淺。",
+    "彩色的話，要用三種基本原色：紅（R）、綠（G）、藍（B）。",
+    "R、G、B 各用 8 個 bit，一個 pixel 共 24 bits，可以表示 2²⁴ = 16,777,216 種顏色。",
+    "resolution（解析度）是螢幕上有多少個點。640 × 480 就有 307,200 個 pixel。",
+    "到 2560 × 1600 就有 4,096,000 個 pixel。點越多，畫面越精細。",
+    "螢幕上的每一點都對應到一塊記憶體 frame buffer 裡的一格（金色箭頭）。",
+    "frame buffer 存的就是這一點的數字（例如那 8 bits），螢幕照這個數字顯示對應的顏色。"
+   ]
+  },
+  {
+   "title": "打開 notebook：CPU、DRAM、cache",
+   "scene": "nuA-3a-inside",
+   "cues": [
+    691.54,
+    703.46,
+    708.1,
+    718.28,
+    728.76,
+    747.22,
+    768.04,
+    786.96,
+    801.82,
+    822.02,
+    851.8,
+    874.9
+   ],
+   "points": [
+    {
+     "t": 691,
+     "text": "notebook 內部：風扇、DVD drive、hard drive、電池、DRAM memory、CPU（很小但最貴）。"
+    },
+    {
+     "t": 729,
+     "text": "CPU 和 memory 不在同一個 chip：存取 memory 是 off-chip，比較慢。"
+    },
+    {
+     "t": 747,
+     "text": "processor 內有 datapath、control 與 cache memory（on-chip、小而快）；4 核心 processor 有 L1 instruction/data cache、L2、L3 shared cache，cache 佔很大面積。"
+    }
+   ],
+   "trap": "cache 在 processor 的 chip 上（on-chip），main memory（DRAM）在 chip 外（off-chip）。",
+   "explain": [
+    "把一台 notebook 打開看看，這裡是風扇。",
+    "還有 DVD drive、hard drive，這裡放電池。",
+    "DRAM memory 也在板子上，是插進插槽裡的。",
+    "這裡是 processor，也就是 CPU。相比之下它只是很小一塊，卻是整台電腦最貴的零件。",
+    "一個很重要的觀念：CPU 和 memory 不在同一個 chip 上。CPU 要去 memory 拿東西是 off-chip（晶片外），要花比較長的時間。",
+    "再看 processor 裡面。第一堂課說過，主要有 datapath（幫我們運算）和 control（告訴它什麼時間做什麼）。",
+    "它還有一個叫 [[cache]] memory 的東西。不是已經有 DRAM 了嗎？cache 是另一種 memory。",
+    "cache 和 processing unit 做在同一個 chip 上（on-chip），比較小但很快。",
+    "為什麼需要它？運算時常常馬上又要用到剛才的資料。如果每次都寫回 off-chip 的 memory 再讀回來（紅點走的路），很浪費時間。",
+    "cache 不能做很大：太大會讓整個 CPU 變慢，也比較貴，所以做一塊比較小、但很快的 memory 跟 processor 放在一起。",
+    "這是一顆 4 core（4 核心）的 processor：每個 core 有自己的 L1 instruction cache 和 data cache，下面還有 L2、L3 的 shared cache（大家共用）。",
+    "你會發現 cache 佔了相當大的面積，真正做事的 integer、floating point、load/store 單元只有一小塊。cache 就是為了讓常用的資料不用跑到 off-chip 去拿。"
+   ]
+  },
+  {
+   "title": "Volatile 與 non-volatile memory、network",
+   "scene": "nuA-3a-mem",
+   "cues": [
+    914.74,
+    924.8,
+    934.62,
+    963.68,
+    983.18,
+    995.8
+   ],
+   "points": [
+    {
+     "t": 914,
+     "text": "main memory（DRAM）是 volatile：斷電資料就不見；secondary memory（disk、flash、CD、DVD）是 non-volatile，容量大但慢。"
+    },
+    {
+     "t": 963,
+     "text": "network（LAN、WAN、wireless）讓機器連在一起 share resource。"
+    },
+    {
+     "t": 983,
+     "text": "abstraction 幫我們 deal with complexity。"
+    }
+   ],
+   "explain": [
+    "processor 周邊還有什麼？剛才的 main memory 和 cache 都可以存資料。",
+    "main memory 是 volatile（揮發性）的：一斷電（power off），裡面的資料就全部不見了，畫面上的 bits 就這樣消失。",
+    "另一種是 non-volatile secondary memory（非揮發性的次要儲存）：disk、flash（隨身碟裡的那種）、CD-ROM、DVD。斷電資料也還在，容量更大，但速度更慢。",
+    "還有 network：透過區域網路（LAN）、廣域網路（WAN）或無線網路（Wi-Fi、Bluetooth），機器之間連在一起，share 各種 resource。",
+    "剛才從不同的角度看了 abstraction：從 program 的層級、從整台電腦的外觀、從裡面的小 component。",
+    "abstraction 幫我們處理 complexity（複雜度）：一開始就看最細的細節會搞不清楚，所以先看最抽象、最高階的部分，再一層一層往下看。"
+   ]
+  },
+  {
+   "title": "ISA 是軟硬體介面；ABI",
+   "scene": "nuA-3a-abi",
+   "cues": [
+    1017,
+    1033.38,
+    1040.24,
+    1056.5,
+    1068.97,
+    1080.82,
+    1100.84,
+    1130.58
+   ],
+   "points": [
+    {
+     "t": 1017,
+     "text": "ISA 定義 processor 要能執行哪些 instruction，是 hardware 與 software 之間的 interface，解決雞生蛋問題。"
+    },
+    {
+     "t": 1081,
+     "text": "ISA + system software（OS 的 system call）interface = Application Binary Interface（ABI）。"
+    }
+   ],
+   "explain": [
+    "[[instruction set architecture]]（ISA）前面介紹過：像 assembly 的一種語言，定義這個 processor 到底要能執行哪些 instruction。",
+    "它是 hardware 和 software 之間一個很重要的 interface（介面）。",
+    "為什麼需要它？開發一台電腦時，software 說「hardware 沒做出來，我怎麼寫？」hardware 說「software 沒寫出來，我怎麼知道要做什麼？」就變成雞生蛋、蛋生雞，大家都卡住。",
+    "所以在中間定一層 ISA。定好以後，兩邊都有依據，就能分頭開始做。",
+    "software 的人不用管 hardware 怎麼 implement，只要相信它一定能執行這些 instruction，就可以開始開發軟體。",
+    "除了 instruction set，還有 OS 這些 system software 幫忙處理細節，寫程式的人只要知道怎麼呼叫 [[system call]] 就好。",
+    "ISA 加上 system software 的介面，合起來叫 Application Binary Interface（ABI）。寫 application 的人只要知道 ABI，就能開發程式。",
+    "對 hardware 的人來說，只要知道 instruction set，不管 software 開發什麼，就把那些 instruction 實作出來。ISA 讓兩邊從這裡分開，各自往更細的地方研究。"
+   ]
+  },
+  {
+   "title": "Technology trend：Moore's Law、cost-performance",
+   "scene": "nuA-3a-trend",
+   "cues": [
+    1164.75,
+    1179.21,
+    1232.37,
+    1250.37,
+    1260.73,
+    1272.93,
+    1287.56
+   ],
+   "points": [
+    {
+     "t": 1165,
+     "text": "接著看 performance；回顧 Moore's Law：每 18 個月 transistor double。"
+    },
+    {
+     "t": 1250,
+     "text": "DRAM capacity 持續增加；越小越快、越便宜（chip 依面積計價）。"
+    },
+    {
+     "t": 1273,
+     "text": "cost-performance 從真空管（=1）到現在增加幾十億倍，所以到處都能放 processor。"
+    }
+   ],
+   "explain": [
+    "介紹完 abstraction，接下來看 performance（效能）：怎麼衡量一台電腦的效能？",
+    "先回顧一下前面介紹過的 Moore's Law（老師在這裡點同學回答）。",
+    "Moore's Law：大約每 18 個月（一年半），transistor 數量就 double，因為 feature size 一直縮小、技術越來越進步。這解釋了為什麼電腦在很短時間內發展得這麼快。",
+    "這張圖是 DRAM 的容量：同樣的面積，容量一直變大（右邊柱子是示意）。",
+    "東西越小，速度越快；而晶片是照面積算錢的，面積越小越便宜，所以 cost 越來越低。",
+    "從歷史看，如果把真空管時代的 cost-performance（每塊錢買到的效能）當作 1，五十多年後已經變成幾十億倍。老師口述約 60 億倍，課本表上 2005 年 ULSI 是 6,200,000,000。",
+    "效能增加這麼多、又這麼便宜，所以到處都負擔得起放一顆 processor。"
+   ]
+  },
+  {
+   "title": "用飛機比喻 performance",
+   "scene": "nuA-3a-plane",
+   "cues": [
+    1307.75,
+    1324.68,
+    1348.99,
+    1367.53,
+    1395.02,
+    1417.48,
+    1426.16,
+    1437.12,
+    1449.08,
+    1477.88,
+    1492.94
+   ],
+   "points": [
+    {
+     "t": 1308,
+     "text": "Concorde：132 人、4000 mile、1350 mph；747：470 人、4150 mile、610 mph。"
+    },
+    {
+     "t": 1417,
+     "text": "看 capacity → 747；看 range → DC-8；看 speed → Concorde；看 passengers × mph（單位時間的工作量）→ 747（286,700 > 178,200）。標準不同，答案不同。"
+    }
+   ],
+   "explain": [
+    "電腦設計出來，要怎麼說它好還是壞？老師用飛機來比喻。",
+    "第一架是 Concorde（協和號）：可以載 132 人，加滿油能飛 4000 mile，速度每小時 1350 mile。",
+    "第二架是 Boeing 747：可以載 470 人，航程 4150 mile，巡航速度 610 mph，比較慢。",
+    "問題來了：這兩架飛機到底哪一架比較好？",
+    "同學沒有直接看數字大小，而是分析：要看用什麼標準。看人數是一種答案，看速度又是另一種答案。",
+    "如果看 passenger capacity（能載多少人），747 最好。",
+    "如果看 cruising range（不加油能飛多遠），課本表裡的 Douglas DC-8 最好，可以飛很久都不用加油。",
+    "如果看速度，Concorde 最快。這三個都很直覺，從數字就看得出來。",
+    "還可以把人數和速度一起考慮：把「人數 × 速度」當成一個標準。",
+    "人數 × 速度，代表單位時間內能把多少人送多遠，也就是單位時間做了多少事。Concorde 132 × 1350 = 178,200，747 是 470 × 610 = 286,700，這樣看 747 反而比較好。",
+    "所以飛機要從不同的衡量標準看快慢，電腦也一樣，接下來看電腦用哪些標準。"
+   ]
+  },
+  {
+   "title": "Response time 與 throughput",
+   "scene": "nuA-3a-rt",
+   "cues": [
+    1505.08,
+    1528.36,
+    1532.1,
+    1559.46,
+    1593.54,
+    1617.48,
+    1661.03,
+    1686.77,
+    1699.8
+   ],
+   "points": [
+    {
+     "t": 1505,
+     "text": "response time：完成一個工作要多久；throughput：單位時間完成多少工作。"
+    },
+    {
+     "t": 1593,
+     "text": "換更快的 processor：兩者都改善；多加 processor：throughput 增加，response time 不一定變好。之後主要看 response time。"
+    }
+   ],
+   "trap": "加更多 processor 不一定讓單一工作的 response time 變短，但 throughput 會增加。",
+   "explain": [
+    "第一個標準是 [[response time]]（回應時間），有點像飛機的速度。",
+    "把一個工作丟進電腦，多久能算出結果，越快越好，這就是 response time。",
+    "第二個是 [[throughput]]：total work done per unit time，單位時間能完成多少工作，越多越好，有點像剛才的「人數 × 速度」。",
+    "這兩個有什麼關係？改善了 response time，throughput 一定變好嗎？反過來呢？",
+    "情況一：把 processor 換成更快的。同一個 job 跑得更快，response time 變好；單位時間能做更多事，throughput 也變高。",
+    "情況二：多加一個 processor。response time 一定變快嗎？不一定，如果工作沒辦法分給兩個 processor 做，一個 job 還是要那麼久。",
+    "兩個 processor 各做一個 job：每個 job 還是要 10 個 time unit 才出來，response time 沒變；但同時做兩個，單位時間完成的工作加倍，throughput 增加了。",
+    "所以兩者不見得有絕對關係：throughput 變好，response time 不一定變好。",
+    "兩個都跟效能很有關係，但這門課之後主要專注在 response time：丟一個 job 進去，要花多少時間出來。"
+   ]
+  },
+  {
+   "title": "Elapsed time 與 CPU time；benchmark",
+   "scene": "nuA-3a-elapsed",
+   "cues": [
+    1712.33,
+    1723.57,
+    1741.67,
+    1783.79,
+    1796.06,
+    1822.27,
+    1839.54,
+    1867.07,
+    1885.21
+   ],
+   "points": [
+    {
+     "t": 1712,
+     "text": "elapsed time（wall clock）包含 CPU、I/O、OS、idle 時間，決定 system performance。"
+    },
+    {
+     "t": 1796,
+     "text": "CPU time 只看 CPU：user CPU time + system CPU time。system performance 與 CPU performance 不是絕對關係；不同 program 用不同 benchmark。"
+    }
+   ],
+   "explain": [
+    "就算是 response time，也要再細分成幾種。",
+    "第一種叫 elapsed time：就是時鐘上的時間。例如現在 10:40，過了一分鐘結果出來，elapsed time 就是一分鐘。",
+    "這段時間裡不只 CPU 在算，還有 I/O 的時間、OS 在跑的時間，以及和別的 job 共用電腦時自己閒著（idle）的時間，全部算進 elapsed time。",
+    "所以 elapsed time 決定的是整個 system 的 performance：不只 CPU，還有 OS、I/O 的表現。",
+    "但如果是在設計 processor，只想看 CPU 跑多快，就把其他時間拿掉，只看 CPU time。這門課主要就是設計 CPU。",
+    "CPU time 又分兩部分：跑 application 的 user CPU time，以及跑 OS 處理事情的 system CPU time，兩個加起來就是 CPU time。",
+    "system performance 和 CPU performance 也不是絕對關係：CPU 很快，其他地方處理不好，整體還是不好；反過來用好幾顆慢的 processor 搭配得好，系統效能也可能很好。",
+    "不同的程式對 CPU 和系統的要求不同，所以後面講 benchmark（評測程式）時，要先想清楚你要量什麼。",
+    "例如科學家一天到晚跑計算很重的程式，主要測 CPU；銀行注重 transaction，常常要 I/O，就要測整個系統。"
+   ]
+  },
+  {
+   "title": "Relative performance",
+   "scene": "nuA-3a-rel",
+   "cues": [
+    1935.99,
+    1952.03,
+    1960.33,
+    1976.69,
+    1995.57,
+    2005.47,
+    2031.93
+   ],
+   "points": [
+    {
+     "t": 1936,
+     "text": "performance = 1 / execution time；X 比 Y 快 n 倍：n = Time_Y / Time_X。"
+    },
+    {
+     "t": 1995,
+     "text": "例：A 10 s、B 15 s → 15/10 = 1.5，A 比 B 快 1.5 倍。"
+    }
+   ],
+   "trap": "分子放「比較慢那台」的時間：A 比 B 快幾倍 = Time_B ÷ Time_A。",
+   "explain": [
+    "再來看 relative performance（相對效能）：有 A、B 兩台電腦，相對來說誰比較好、好多少？",
+    "我們用 execution time（執行時間）來比，不管是整個系統的時間還是 CPU 的時間。",
+    "時間越長，performance 越差。所以 performance 和時間是倒數關係：performance = 1 ÷ execution time。",
+    "要算 X 比 Y 快幾倍，就把 Y 的時間放在分子、X 的時間放在分母：n = Time_Y ÷ Time_X。",
+    "例子：A 跑這個程式要 10 秒，B 要 15 秒。A 比 B 好多少？",
+    "把 B 的時間放分子、A 的時間放分母：15 ÷ 10 = 1.5，所以 A 比 B 快 1.5 倍。",
+    "這個公式很簡單，但越簡單越容易搞混。記住：分子是比較慢那台的時間，算出來才會大於 1。"
+   ]
+  },
+  {
+   "title": "Clock：period 與 rate",
+   "scene": "nuA-3a-clock",
+   "cues": [
+    2055.59,
+    2060.23,
+    2073.97,
+    2080.3,
+    2111.05,
+    2132.53,
+    2142.89,
+    2169.77,
+    2186.77,
+    2202.49,
+    2216.03
+   ],
+   "points": [
+    {
+     "t": 2043,
+     "text": "clock：規律的 high/low 訊號，固定速度；控制 state 與 data transfer、computation。"
+    },
+    {
+     "t": 2132,
+     "text": "clock period（一個 cycle 的時間）與 clock rate（每秒幾個 cycle）互為倒數：250 ps = 0.25 ns；4 GHz = 4×10⁹ /s。"
+    }
+   ],
+   "explain": [
+    "再進一步看 CPU 跑多快，要用一個叫 [[clock]] 的東西。",
+    "clock 是一種訊號：很規律地 high、low、high、low 一直跳。",
+    "它跑得很穩定，快慢是固定的，叫 constant rate。",
+    "設計電腦時用 clock 控制狀態（state）：每當 clock 到（金色的邊緣），這一段的運算就必須做完，然後把下一個 state 存起來。",
+    "所以 clock 控制了 data transfer 和 computation。要算一件工作花多少時間，就看它用了多少個 clock。",
+    "一次 high 加 low 叫一個 [[clock period]]（一個 cycle），紅色箭頭標出的長度。",
+    "clock period 拉得很長，一個 cycle 裡可以做很多運算，但代表它跳得很慢。",
+    "單位時間跳幾下，叫 [[clock rate]]（clock frequency），常用來表示電腦運作的快慢。",
+    "例子：clock period 是 250 picosecond（ps），換算是 0.25 ns，也就是 250 × 10⁻¹² 秒。",
+    "clock frequency 是每秒可以跑多少個 cycle，和 clock period 是倒數關係。",
+    "常聽到「4 GHz 的電腦」：4 GHz 就是每秒跑 4 × 10⁹ 個 cycle（GHz 加 3 個 0 是 MHz，再加 6 個 0 是 Hz）。剛好 1 ÷ 250 ps = 4 GHz。"
+   ]
+  },
+  {
+   "title": "CPU time = clock cycles × clock cycle time",
+   "scene": "nuA-3a-cputime",
+   "cues": [
+    2246.15,
+    2251.51,
+    2283.31,
+    2297.63,
+    2319.85,
+    2340.24,
+    2363.6,
+    2434.26,
+    2462.72,
+    2483.34
+   ],
+   "points": [
+    {
+     "t": 2246,
+     "text": "CPU time = CPU clock cycles × clock cycle time = CPU clock cycles ÷ clock rate。"
+    },
+    {
+     "t": 2320,
+     "text": "改善：減少 cycle 數或提高 clock rate；但縮短 period 可能讓工作需要更多 cycle，設計者要 trade off clock rate 與 cycle count。"
+    }
+   ],
+   "trap": "clock rate 提高不一定讓 CPU time 變短：cycle 數可能跟著增加。",
+   "explain": [
+    "我們常用 clock 來衡量 CPU 的效能。怎麼衡量？看第二個公式。",
+    "CPU time = 一共用了多少個 [[clock cycle]] × 每個 cycle 要多少時間（clock cycle time）。跑了 100 萬個 clock，乘上每個的時間，就是 CPU 時間。",
+    "因為 clock cycle time 和 clock rate 互為倒數，也可以寫成：CPU time = clock cycles ÷ clock rate。",
+    "老師的例子：每秒可以跑 100 個 clock，總共跑了 1000 個 clock，要多少時間？1000 ÷ 100 = 10 秒。",
+    "知道公式後，要改善效能可以怎麼做？第一，減少需要的 clock cycle 數。",
+    "第二，讓 clock rate 變快，也就是把 clock period 變短，單位時間跑更多 cycle。",
+    "那只要把 clock period 變小，效能就一定變好嗎？",
+    "如果 clock cycle 數不變，當然會變快。",
+    "但 cycle 數會不變嗎？不一定。原本一個 cycle 剛好做完一件事；period 縮短後（示意從 1.0 變 0.6）做不完了，就要用兩個 cycle，總時間 1.2 反而比 1.0 長。",
+    "所以 hardware designer 常常要在 clock rate 和 clock cycle count 之間做 trade-off，不能一味把 clock period 一直縮。"
+   ]
+  },
+  {
+   "title": "例題：從 10 秒降到 6 秒要多少 GHz",
+   "scene": "nuA-3a-ex",
+   "cues": [
+    2508.22,
+    2521.8,
+    2530.82,
+    2548.84,
+    2591.5,
+    2636.72,
+    2650.22,
+    2691.66,
+    2707.25
+   ],
+   "points": [
+    {
+     "t": 2508,
+     "text": "A：2 GHz，CPU time 10 s；B 想降到 6 s，但 clock cycles 是 A 的 1.2 倍。"
+    },
+    {
+     "t": 2591,
+     "text": "Clock Rate_B = 1.2 × (10 s × 2 GHz) ÷ 6 s = 24×10⁹ ÷ 6 = 4 GHz。"
+    }
+   ],
+   "explain": [
+    "例題：computer A 的 clock 是 2 GHz，跑某個程式 CPU time 是 10 秒。",
+    "現在要設計 computer B，希望同一個程式的 CPU time 降到 6 秒。",
+    "但就像剛才講的，clock 變快後 cycle 數不會維持：B 的總 clock cycle 數會是 A 的 1.2 倍。",
+    "問題：B 的 clock rate 要多少，才能降到 6 秒？",
+    "先寫公式：clock rate = 總 clock cycle 數 ÷ CPU time。B 的 CPU time 已知是 6 秒。",
+    "B 的 cycle 數不知道，只知道是 A 的 1.2 倍。",
+    "A 的 cycle 數可以算：一秒跑 2 × 10⁹ 次，跑了 10 秒，相乘就是 20 × 10⁹ 個 cycle（左邊的堆疊）。",
+    "代回去：B 的 cycle 數 = 1.2 × 20 × 10⁹ = 24 × 10⁹（右邊的堆疊），再除以 6 秒，得到 4 × 10⁹，也就是 4 GHz。",
+    "這些公式看起來好像很複雜，其實比高中數學還簡單，不要自己把它想得太難。"
+   ]
+  },
+  {
+   "title": "Instruction count 與 CPI",
+   "scene": "nuA-3a-cpi",
+   "cues": [
+    2725.16,
+    2732.58,
+    2752.2,
+    2781.26,
+    2791.88,
+    2835.2,
+    2859.76,
+    2880.32
+   ],
+   "points": [
+    {
+     "t": 2725,
+     "text": "programmer 看 instruction level：instruction count（IC）與 CPI（clock cycles per instruction）。"
+    },
+    {
+     "t": 2792,
+     "text": "不同 hardware、不同 instruction 的 CPI 不同（ripple vs lookahead；乘法 shift-and-add 比加法久）。"
+    },
+    {
+     "t": 2860,
+     "text": "Clock cycles = IC × CPI；CPU time = IC × CPI × clock cycle time = IC × CPI ÷ clock rate。"
+    }
+   ],
+   "explain": [
+    "剛才講的 clock、cycle 是比較 low level 的，在探討 CPU 和 clock 的關係。",
+    "寫程式的人看到的是 instruction level：一個 C 程式經過 compiler 之後，變成多少個 instruction。",
+    "這個數量叫 [[instruction count]]（IC）：程式轉換成 ISA 定義的 instruction 後，總共有幾個。這是比較高一點的層級。",
+    "另一個是 [[CPI]]（clock cycles per instruction）：平均一個 instruction 要幾個 clock cycle。",
+    "例如做加法：如果用 carry ripple adder，carry 要一位一位傳，假設要 5 個 cycle；改用 carry lookahead adder，硬體比較大，但很快，可能 2 個 cycle 就算出來。所以不同硬體 CPI 不同。",
+    "乘法用 shift and add：8 bit 乘 8 bit 至少要加 8 次，每次都加 8 個 bit，花的時間跟加法不一樣，CPI 也不一樣。",
+    "有了 CPI，把 instruction count 乘以 CPI，就是總共用了多少 clock cycle。",
+    "再乘以 clock cycle time（或除以 clock rate），就得到 CPU time：CPU time = IC × CPI × clock cycle time。這是更高一層的看法。"
+   ]
+  },
+  {
+   "title": "影響 instruction count 與 CPI 的因素",
+   "scene": "nuA-3a-ic",
+   "cues": [
+    2904.9,
+    2918.26,
+    2937.7,
+    2949.06,
+    2967.58,
+    3018.62,
+    3070.14,
+    3095,
+    3120.68,
+    3147.4
+   ],
+   "points": [
+    {
+     "t": 2905,
+     "text": "IC 受 program、algorithm（quick sort vs bubble sort）、ISA（x = a + b + c：三 operand 1 個 vs 兩 operand 2 個）、compiler（把 loop 裡不變的運算移出）影響。"
+    },
+    {
+     "t": 3070,
+     "text": "CPI 受 hardware 影響；不同 instruction 有不同 CPI，平均 CPI 看 instruction 比例；乘 2⁵ 改用 shift 可降低平均 CPI。"
+    }
+   ],
+   "explain": [
+    "一個 program 的 instruction count 是怎麼決定的？",
+    "第一，看程式本身：同樣叫你寫 sorting，你寫 100 行，他可能寫 80 行，compiler 產生的 assembly 不一樣，instruction 數就不一樣。",
+    "第二，看 algorithm：你寫 quick sort、他寫 bubble sort，產生的 instruction 也不一樣。",
+    "所以為什麼要學 algorithm、data structure？電腦跑得快不只是硬體的事，你能不能寫出用很少 instruction 就做完的好程式也很重要。",
+    "第三，看 ISA：x = a + b + c。如果 ISA 有「三個 operand 一次加」的 instruction，一個就做完；如果每次只能加兩個 operand，要先 a + b 放到暫存 t，再 t + c，就要兩個 instruction。",
+    "第四，看 compiler：如果你在 loop 裡寫了一行不會變的 a = 5，loop 跑 140 次就做 140 次。聰明的 compiler 會發現它是 constant，把它搬到 loop 外，只做 1 次，省下 139 個 instruction。",
+    "那 CPI 呢？一個 instruction 要幾個 cycle，跟 hardware 有關，例如加法器用 carry ripple 還是 carry lookahead。",
+    "不同的 instruction 有不同的 CPI，乘法和加法當然不同。整個程式的平均 CPI，要看各類 instruction 佔多少比例；簡單的 instruction 越多越好。",
+    "例如 A 乘以 2 的 5 次方：真的做乘法要很久，但它其實就是 A 往左 shift 5 個 bit（示意 A = 3，3 × 32 = 96 = 3 左移 5 位）。夠聰明的 compiler 用一個 shift instruction 就好。",
+    "這樣簡單的 instruction 變多、難的變少，overall 的平均 CPI 就會變小。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "System software 主要包括哪兩種？",
+   "opts": [
+    "compiler 與 operating system",
+    "compiler 與 application",
+    "hardware 與 OS",
+    "assembler 與 game"
+   ],
+   "ans": "compiler 與 operating system",
+   "why": "compiler 把 high-level language 翻成 machine code；OS 管共用的 I/O、memory 與 scheduling。"
+  },
+  {
+   "q": "A 跑程式 10 秒、B 跑 15 秒，A 比 B 快幾倍？",
+   "opts": [
+    "1.5 倍",
+    "0.67 倍",
+    "5 倍",
+    "25 倍"
+   ],
+   "ans": "1.5 倍",
+   "why": "Performance_A / Performance_B = Time_B / Time_A = 15 / 10 = 1.5。"
+  },
+  {
+   "q": "clock period 為 250 ps，clock rate 是？",
+   "opts": [
+    "4 GHz",
+    "250 MHz",
+    "0.25 GHz",
+    "25 GHz"
+   ],
+   "ans": "4 GHz",
+   "why": "1 / (250 × 10⁻¹² s) = 4 × 10⁹ Hz = 4 GHz。"
+  },
+  {
+   "q": "A：2 GHz、CPU time 10 s。B 要 6 s，但 clock cycles 是 A 的 1.2 倍，B 的 clock rate 要多少？",
+   "opts": [
+    "4 GHz",
+    "3.33 GHz",
+    "2.4 GHz",
+    "6 GHz"
+   ],
+   "ans": "4 GHz",
+   "why": "Cycles_A = 10 × 2×10⁹ = 20×10⁹；Cycles_B = 24×10⁹；24×10⁹ / 6 s = 4 GHz。"
+  },
+  {
+   "q": "CPU time 的公式是？",
+   "opts": [
+    "Instruction Count × CPI × Clock Cycle Time",
+    "Instruction Count × CPI × Clock Rate",
+    "Instruction Count ÷ CPI × Clock Cycle Time",
+    "CPI × Clock Rate ÷ Instruction Count"
+   ],
+   "ans": "Instruction Count × CPI × Clock Cycle Time",
+   "why": "IC × CPI = clock cycles，再乘 clock cycle time（或除以 clock rate）。"
+  },
+  {
+   "q": "多加一個 processor，各自跑不同的 job，通常會？",
+   "opts": [
+    "throughput 增加，但單一 job 的 response time 不一定變短",
+    "response time 一定變短",
+    "throughput 和 response time 都不變",
+    "throughput 下降"
+   ],
+   "ans": "throughput 增加，但單一 job 的 response time 不一定變短",
+   "why": "每個 job 還是要同樣時間，但同時做兩個，單位時間完成的工作變多。"
+  },
+  {
+   "q": "Main memory（DRAM）和 disk 的差別，下列何者正確？",
+   "opts": [
+    "DRAM 是 volatile（斷電資料消失），disk 是 non-volatile 但比較慢",
+    "DRAM 是 non-volatile，disk 是 volatile",
+    "兩者都在 CPU 的 chip 上",
+    "disk 比 cache 還快"
+   ],
+   "ans": "DRAM 是 volatile（斷電資料消失），disk 是 non-volatile 但比較慢",
+   "why": "secondary memory（disk、flash）容量大、斷電資料還在，但速度慢；cache 才在 CPU chip 上。"
+  }
+ ]
+}

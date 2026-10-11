@@ -1,0 +1,622 @@
+{
+ "video": "-iVii4A6cQg",
+ "label": "黃婷婷教授計算機結構_第9A講 Instruction Set Architecture / Computer Arithmetic",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "回顧：R、I、J format",
+   "scene": "nuA-9a-recap",
+   "cues": [
+    17.68,
+    24.4,
+    29.44,
+    44.2
+   ],
+   "points": [
+    {
+     "t": 17,
+     "text": "三種 instruction format：R-type、I-type、J-type 一定要記熟，之後要學 hardware 怎麼 implement 它們。"
+    }
+   ],
+   "explain": [
+    "上次介紹了 MIPS 的三種 [[instruction format]]：R-type、I-type、J-type。畫面列出每種的欄位和 bit 數，加起來都是 32 bits。",
+    "哪一類 instruction 長什麼樣子，一定要趕快記起來。老師比喻：人家叫你炒菜，你連要炒什麼菜都不知道，怎麼炒？",
+    "因為這一章結束後，就要開始介紹 hardware 怎麼實作（implement）這些 instruction。",
+    "這一章最後，再把 software 怎麼把 program 跑起來的流程整體收尾一下。"
+   ]
+  },
+  {
+   "title": "C program 到 memory：compiler、assembler、linker、loader",
+   "scene": "nuA-9a-chain",
+   "cues": [
+    53.94,
+    60.44,
+    66.32,
+    71.42,
+    78.32,
+    89.58,
+    104.58
+   ],
+   "points": [
+    {
+     "t": 54,
+     "text": "C program → compiler → assembly → assembler → object module；linker 連上 library → executable；loader 載入 memory。"
+    },
+    {
+     "t": 89,
+     "text": "assembler 基本上是一對一轉換。"
+    }
+   ],
+   "explain": [
+    "從一個 C program 開始。",
+    "經過 [[compiler]] 變成 assembly，再經過 [[assembler]]，產生 object module：一段已經是 machine language 的程式。",
+    "你的程式會呼叫很多 library，那些不是你寫的，或是以前就寫好的 subroutine，它們也是 machine language。",
+    "linker（連結器）把這些 module 連起來，變成一個可以執行的 executable machine language program。",
+    "最後 loader（載入器）把它 load 進 memory，程式就可以開始執行了。",
+    "我們真正寫的是 C program。寫 assembly 的人知道，一點點功能就要寫好長，所以希望 compiler 幫我們寫。",
+    "assembler 的主要工作已經是一對一的轉換：把 symbolic 的 load、store 這些符號，直接對應成機器看得懂的 0101。"
+   ]
+  },
+  {
+   "title": "Pseudo-instruction 與 $at",
+   "scene": "nuA-9a-pseudo",
+   "cues": [
+    136.56,
+    144.41,
+    157.68,
+    177.12,
+    188.24,
+    202.26,
+    213.62,
+    221.18,
+    228.78,
+    257.4,
+    284.84,
+    300.6,
+    320.42,
+    357.8
+   ],
+   "points": [
+    {
+     "t": 136,
+     "text": "pseudo-instruction：寫起來方便、但沒有對應 hardware 的指令，由 assembler 轉成真指令。"
+    },
+    {
+     "t": 177,
+     "text": "move $t0,$t1 → add $t0,$zero,$t1；blt → slt + bne。"
+    },
+    {
+     "t": 257,
+     "text": "展開時需要第三個 register：register 1（$at）保留給 assembler；register 0 固定是 0。"
+    }
+   ],
+   "trap": "pseudo-instruction 沒有自己的 hardware；blt 展開成 slt $at,… 加 bne，所以 user 不能用 $at。",
+   "explain": [
+    "assembler 除了一對一翻譯，還做哪些事？linker、loader 又要什麼資訊？一個一個看。",
+    "assembler 有一種東西叫 pseudo-instruction（虛擬指令、假指令）。",
+    "先回想：真正的 instruction，設計出來就一定有一個 hardware 去執行它，這才叫 instruction set design。",
+    "可是有些 instruction 只是為了寫起來方便，例如 move $t0, $t1（把 $t1 的值搬到 $t0），很好寫。",
+    "但硬體裡並沒有一條「register 直接搬到 register」的路徑，沒有真正的 move hardware。",
+    "assembler 會把它換成 add $t0, $zero, $t1：把 0 加上 $t1，經過 ALU 放到 $t0。示意 $t1 = 7，0 + 7 = 7，效果就是搬移。",
+    "另一個例子是 blt（branch if less than）：比小就跳。",
+    "我們也沒有這樣的 hardware：沒有一個硬體能同時比大小、測試、再跳。",
+    "assembler 用兩個真指令來做：先 slt（set on less than）把比較結果（1 或 0）放進一個 register，再用 bne（branch not equal）判斷它不是 0 就跳。",
+    "這就產生一個問題：你寫 blt 時只用到 $t0、$t1 兩個 register，展開後卻需要第三個 register 來放比較結果。",
+    "第三個用哪一個？要再去看你的程式嗎？32 個 register 裡，programmer 用掉了哪些，assembler 並不知道。",
+    "所以 MIPS 規定：register 1 叫 $at（assembler temporary），保留給 assembler 用，user 的程式不准用。下面一排是 32 個 register，金色的就是 1 號。",
+    "還有 register 0（$zero）：硬體上固定就是 0，前面的 move 就是靠它。",
+    "所以 slt 需要的第三個 register 就用 $at，保證不會蓋掉使用者的資料。示意 $t0 = 3、$t1 = 5：3 < 5，$at = 1 ≠ 0，就跳到 L。"
+   ]
+  },
+  {
+   "title": "Object module 的內容",
+   "scene": "nuA-9a-obj",
+   "cues": [
+    381.62,
+    403.3,
+    412.22,
+    422.1,
+    442.72,
+    469.2,
+    491.08
+   ],
+   "points": [
+    {
+     "t": 381,
+     "text": "object module 包含：header、text segment（翻好的 instruction）、static data segment、relocation info、symbol table（global 定義與 external reference）、debugging info。"
+    }
+   ],
+   "explain": [
+    "經過 compiler、assembler，會產生 object module，可能一個 subroutine 就是一個；待會 linker 再把它們連起來。要存哪些資訊呢？",
+    "首先要有 header：既然要把東西包起來，總要描述這個包裹裡有什麼。",
+    "text segment：已經翻譯成 0101 的 machine instruction。",
+    "static data segment：有些 storage 是程式一開始執行就要配置好的（不是執行中才配），要把它留下來。",
+    "relocation information：現在只是一個個 module，還沒放進真正的 memory，絕對地址（absolute address）還不知道。要記下哪些地址待會要補上。",
+    "symbol table：記錄 global 的定義和 external reference。例如你呼叫了 library 的 function，那段程式你根本沒寫，link 時才把它補起來。",
+    "最後還有 debugging 用的資訊。"
+   ]
+  },
+  {
+   "title": "Linker 與 loader",
+   "scene": "nuA-9a-link",
+   "cues": [
+    495.12,
+    506.08,
+    507.9,
+    518.88,
+    527.86,
+    546.16,
+    586.54,
+    596.1,
+    613.38,
+    636.4,
+    650.38,
+    652.76
+   ],
+   "points": [
+    {
+     "t": 495,
+     "text": "linker：merge segments、決定 label 的 address、補上 location-dependent 與 external reference。"
+    },
+    {
+     "t": 528,
+     "text": "loader 放到絕對位置；有 virtual memory 時不用一次全搬，用 translation（page）table。"
+    },
+    {
+     "t": 586,
+     "text": "loading 步驟：讀 header 得 segment size → create virtual address space → 準備 text、data（page table）→ arguments 放 stack → initialize registers → 跳到 startup 開始 main。"
+    }
+   ],
+   "explain": [
+    "linker 的工作：把 compiler、assembler 產生的這些 object module link 起來。",
+    "先把各個 module 的 segment merge（合併）在一起。",
+    "每個 subroutine 原本各自做好，包在一起後，要把每個 label 的 address 決定下來。",
+    "還要把跟位置有關（location dependent）的地方，以及 external reference（呼叫別的 module）都補上正確的地址。",
+    "linker 只把相對位置排好。真正放進 memory 的絕對位置（放上半部還是下半部），是 loader 的事；有些系統用 relocation 的方式，從某個起點加上去。",
+    "如果用 [[virtual memory]]（後面會教），就不用一次把整個程式搬進 memory：先放在 disk，跑到哪搬到哪，有一個 translation table 記錄搬到哪裡。",
+    "load 一個 program 的步驟：第一，讀 header，知道各個 segment 有多大。",
+    "第二，create virtual address space（建立程式的位址空間）。有 virtual memory 的話，設好就好，不用搬。",
+    "第三，準備 text 和初始化的 data。若是 virtual memory 系統，就建好 [[page table]]，先標成「都不在 memory」，之後發生 [[page fault]] 時再一頁一頁搬進來。",
+    "第四，把 argument 放到 stack。C program 的 main 其實也是一個 procedure，從它開始跑之前要先把參數設好。",
+    "第五，把 register initialize（初始化）。",
+    "第六，跳到 startup routine，開始 run，就像你執行 C program 時從 main 開始一樣。"
+   ]
+  },
+  {
+   "title": "Sort 範例（自行閱讀）",
+   "scene": null,
+   "points": [
+    {
+     "t": 673,
+     "text": "課本的 sort 範例（swap procedure 與 main procedure、stack 的使用）細節繁瑣，請回家自己看。"
+    }
+   ]
+  },
+  {
+   "title": "Compiler optimization：IC、CPI 不能單獨看",
+   "scene": "nuA-9a-opt",
+   "cues": [
+    724.76,
+    737.92,
+    755.52,
+    803.93,
+    813.8,
+    829.89,
+    863.79,
+    874.49,
+    903.59,
+    926.94,
+    948.96,
+    980.44
+   ],
+   "points": [
+    {
+     "t": 725,
+     "text": "課本圖（bubble sort）：relative performance none 1.00、O1 2.37、O2 2.38、O3 2.41，O3 最好；clock cycles 越少越好。"
+    },
+    {
+     "t": 864,
+     "text": "O1 的 instruction count 最少，但 CPI 較高；要 IC × CPI 才是 clock cycles，絕對不能單用 IC 或 CPI 評估。"
+    }
+   ],
+   "trap": "instruction count 最少的（O1）不一定最快；要看 IC × CPI × clock cycle time。",
+   "explain": [
+    "程式介紹完，來分析幾張圖：compiler 的 optimization（最佳化）到底有多大作用？下面四組是不優化、O1、O2、O3（數字取自課本圖，bubble sort）。",
+    "第一張是 relative performance：把不做任何 optimization 的效能當作 1，看做了 O1、O2、O3 之後是幾倍。",
+    "問題：這裡面誰的 performance 最好？是越高越好還是越低越好？一定要會看圖。",
+    "performance 越高越好，最高的是 O3（2.41），雖然跟 O1、O2 差不太多。",
+    "下一張是 clock cycle count。clock period 一樣的話，cycle 數越少，執行時間越短，越好。",
+    "執行時間 = cycle 數 × clock period。拿不優化的時間當分子、O3 的時間當分母：158,615 ÷ 65,747 ≈ 2.41，就是 O3 的 relative performance。",
+    "再看 instruction count：看起來好像越少越好。",
+    "O1 的 instruction count 最少。那可以說 O1 的 performance 最好嗎？",
+    "再看 CPI：平均一個 instruction 要幾個 clock cycle。O1 雖然 instruction 少，CPI 卻是最高的 1.79。",
+    "所以只看 instruction count，或只看 CPI，都不能判斷 execution time 的好壞。",
+    "一定要把兩個乘起來：IC × CPI 才是真正的 clock cycle 數。O1 約 67,000（百萬）個，O3 約 65,700，O3 反而比較少，所以 O3 最快。compiler 也可能產生比較複雜的 instruction，CPI 就高。",
+    "記住：絕對不能單獨用 instruction count，也絕對不能單獨用 CPI 來判斷一個 compiler 的效果好壞。"
+   ]
+  },
+  {
+   "title": "Algorithm 比 compiler optimization 重要",
+   "scene": "nuA-9a-algo",
+   "cues": [
+    995.78,
+    1003.18,
+    1009.02,
+    1016.9,
+    1032,
+    1040,
+    1049.7,
+    1060.4,
+    1074.54,
+    1130.6,
+    1138.7,
+    1157.67,
+    1186.24
+   ],
+   "points": [
+    {
+     "t": 994,
+     "text": "bubble sort：C 的 O1～O3 約 2.4 倍，Java interpreter 0.12、JIT 2.13；quicksort：O1 只有 1.5 倍，Java 改善更少。"
+    },
+    {
+     "t": 1074,
+     "text": "quicksort 比 bubble sort 快 2,468 倍（老師說約 2500），遠大於 compiler 優化；越上層的 optimization 改善越大。"
+    },
+    {
+     "t": 1186,
+     "text": "Lessons：IC、CPI 不能單獨當效能指標；compiler optimization 對 algorithm 敏感；爛的 program 差很遠。"
+    }
+   ],
+   "explain": [
+    "再看下一張：bubble sort 的 relative performance（課本圖）。",
+    "C 語言：不做 optimization、O1、O2、O3 四種。",
+    "Java：用 interpreter（直譯器）不做最佳化，以及用 just-in-time（JIT）編譯。",
+    "C 做的 optimization 和 Java 的差別很大。",
+    "再看 quicksort，跟 bubble sort 是不同的 algorithm。",
+    "同樣是 O1：bubble sort 可以快 2.37 倍（老師說約 2.5），quicksort 只快了 1.5 倍。",
+    "Java 這邊的改善也比較少，用 quicksort 時 Java 的表現甚至比 C 不做 optimization 還差。",
+    "所以不同的 program，即使用同樣的 compiler optimization、不同的語言，結果都不一樣。",
+    "最有意思的是最下面這張：拿 quicksort 跟 bubble sort 比，效能進步多少？",
+    "在 C 不優化的情況下，quicksort 比 bubble sort 快 2,468 倍（老師說大約 2500 倍）。",
+    "對照一下：compiler 寫得再好，改善也只有 1.5 倍、2 倍多；換一個好的 algorithm，卻能快兩千多倍。",
+    "結論：寫好 algorithm 非常重要。就算不用 O1、O2，一個好的 quicksort 就能比 bubble sort 快兩千多倍。越上層的 optimization，得到的 improvement 越大；做完再用下層的方法加速。",
+    "Lessons learned：instruction count 和 CPI 不能單獨當效能指標，要看 execution time；compiler optimization 的效果對 algorithm 很敏感；一個爛 program 會差很遠，一定要先把程式寫好。"
+   ]
+  },
+  {
+   "title": "Arrays vs pointers",
+   "scene": "nuA-9a-ptr",
+   "cues": [
+    1227.5,
+    1248.36,
+    1264.82,
+    1273.08,
+    1284.78,
+    1372.48,
+    1395.6,
+    1440.22,
+    1462.14,
+    1506.34,
+    1521.48,
+    1553.28,
+    1584.34,
+    1618.24
+   ],
+   "points": [
+    {
+     "t": 1227,
+     "text": "清 array：index 寫法每圈要 i×4 算地址；pointer 寫法每圈 p += 4。"
+    },
+    {
+     "t": 1395,
+     "text": "array 版 loop 6 個 instruction（sll 代替 ×4），pointer 版 4 個；100 次省 200 個。"
+    },
+    {
+     "t": 1553,
+     "text": "strength reduction（乘法→shift）、induction variable elimination（把 index 計算移出 loop）；好 compiler 會做，寫程式仍要 readable。"
+    }
+   ],
+   "explain": [
+    "最後一個例子：array 和 pointer。這也是跟 compiler 有關的 optimization，好的 compiler 可以幫你做。",
+    "常見的程式：for i 從 0 到 size（例如 100），把 array 全部 set 成 0。array 在 memory 裡一格接一格，每格 4 bytes。",
+    "有兩種寫法：左邊用 array index（array[i]），右邊用 memory pointer（*p）。",
+    "pointer 寫法：指標 p 直接指到 memory 的某一格，下一個就加上一個 element 的大小，例如 4 bytes 就加 4。畫面上 p 一格一格往右走，走過的就清成 0。",
+    "array 寫法：i = 0、1、2、3 一直 increment，但每次 increment 完還要再算一次地址：base + i × 4。",
+    "這兩個程式功能一樣：一個用 index 一個一個加，一個從起始地址開始一路往後跳，直到最後一個 element 的地址。",
+    "直接把 array 版轉成 assembly：i 要乘以 4 才是 byte 位移，但乘法很花硬體和時間，所以用 shift left 兩位（sll ..., 2）來做。",
+    "接著算出地址、把那格 set 成 0、i 加 1、檢查條件、跳回去。loop 裡一共 6 個 instruction。",
+    "pointer 版：直接給 memory 的起始地址，每次做完就 p = p + 4（addi $t0,$t0,4）。",
+    "這個 loop 裡沒有 i 的 increment，也沒有乘以 4：這些都搬到 loop 外面只做一次。loop 裡只剩 4 個 instruction。",
+    "每圈省 6 − 4 = 2 個 instruction；loop 跑 100 次，就省了 200 個 instruction 的時間，是很大的節省。",
+    "compiler 的術語：把乘法換成 shift，叫 strength reduction（把「重」的運算換成「輕」的），兩個版本都有做。",
+    "把 index 的計算從 loop 裡移到外面，叫 induction variable elimination，讓 loop 從 6 個 instruction 變 4 個。",
+    "這些是 compiler 很重要的技巧，好的 compiler 應該自動幫你做。所以你寫程式時不需要寫成難懂的版本，還是要寫 readable（看得懂）的程式。"
+   ]
+  },
+  {
+   "title": "ARM 與 MIPS",
+   "scene": "nuA-9a-arm",
+   "cues": [
+    1669.1,
+    1711.04,
+    1719.76,
+    1746.26,
+    1756.72,
+    1764.54,
+    1775.38,
+    1783.88,
+    1803.16,
+    1830.82,
+    1912.14,
+    1938.22,
+    1971.74,
+    2010.56
+   ],
+   "points": [
+    {
+     "t": 1669,
+     "text": "MIPS 與 ARM 最相近，都是 RISC：1985 年、32-bit instruction、32-bit address、data aligned、memory-mapped I/O；MIPS 32 個 register、ARM 16 個，ARM addressing mode 較多。"
+    },
+    {
+     "t": 1784,
+     "text": "ARM 每個 instruction 有 4-bit condition；status register 存 N、Z、C、V；CMP 只設 condition code；一個 instruction 就能做 if，省 instruction count；format 比 MIPS 多。"
+    }
+   ],
+   "explain": [
+    "MIPS 大致介紹完了，在開始 hardware 之前，看看其他 instruction set：最重要的是 ARM 和 x86。只給概念，不深入。",
+    "其中 MIPS 和 ARM 最相近，都是 RISC 的 instruction set architecture。用一張表來比較。",
+    "ARM 是最 popular 的 embedded core，現在手機都用 ARM，使用量已經超過 x86。",
+    "兩者都在 1985 年左右出來，instruction 都是 32 bits，address space 也都是 32 bits。",
+    "data 都要 align（對齊）。addressing mode（定址方式）MIPS 比較少，ARM 比較多。",
+    "register 數量：MIPS 有 32 個，ARM 只有 16 個（老師的比較）。",
+    "I/O 都是 memory mapped（用存取記憶體地址的方式操作 I/O），這部分一樣。",
+    "ARM 最大的差別在這裡：每個 instruction 前面有 4 個 bit 的 condition，決定這個 instruction 要不要執行。",
+    "在 MIPS 要做「比較後跳」，要先用 slt 把比較結果放進一個 register（要指定 rd），再用 branch 去測那個 register。",
+    "ARM 不這樣做。它有一個專門的 status register 放 condition code：結果是不是 negative（N）、是不是 zero（Z）、有沒有 carry（C）、有沒有 overflow（V）。不用拿 32 個 general purpose register 之一來放。",
+    "ARM 還有 compare instruction：CMP r1, r2 只做比較，不改動任何 register，只更新 condition code。示意 3 − 5 < 0，所以 N = 1、Z = 0。",
+    "之後每個 instruction 都看目前的 condition code：滿足它前面那 4 bits 指定的條件才執行。例如 ADDLT 只在「小於」時才加。",
+    "好處：像 if (a < b) 做某件事，MIPS 要寫好幾個 instruction 跳來跳去；ARM 只要一個有條件的 instruction，滿足就做、不滿足就不做，省了很多 instruction count。",
+    "ARM 的 instruction 也是 32 bits，format 比 x86 規則，但比 MIPS 的三種多，要多一些 bit 來決定是哪一種 format。"
+   ]
+  },
+  {
+   "title": "x86 的演進：backward compatibility",
+   "scene": "nuA-9a-x86hist",
+   "cues": [
+    2052.1,
+    2059.35,
+    2073.06,
+    2125.96,
+    2143.92,
+    2153.82,
+    2164.48,
+    2175.42,
+    2200.04,
+    2211.96,
+    2227.5,
+    2253.32,
+    2258.68,
+    2294.66
+   ],
+   "points": [
+    {
+     "t": 2043,
+     "text": "x86 是 CISC，關鍵是 evolution with backward compatibility：舊程式要能跑，所以越長越複雜。"
+    },
+    {
+     "t": 2126,
+     "text": "1974 8-bit（accumulator）→ 1978 8086 16-bit → 1980 8087 FP coprocessor → 1982 80286 MMU、24-bit address → 1985 80386 32-bit（IA-32）→ 1989 486 → 1993 Pentium（superscalar、FDIV bug）→ Pentium Pro/II → 1999 SSE。"
+    },
+    {
+     "t": 2294,
+     "text": "extension 一定保留舊的；technical elegance ≠ market success。"
+    }
+   ],
+   "explain": [
+    "ARM 基本上跟 MIPS 差不多，都是 RISC；x86 就差很多了，它是 CISC（Complex Instruction Set Computer）。",
+    "理解 x86 最重要的一句話：evolution with backward compatibility（一路演進，同時向後相容）。",
+    "x86 這麼複雜、不 elegant，為什麼還留到現在？因為大家還在用：以前所有程式都是用它的 instruction set 寫的，新的出來，舊的程式還是要能跑。",
+    "最早（1974 年）是 8-bit 的 processor，沒有 general purpose register file，只有一個 accumulator：所有加減都在這一個 register 裡做。",
+    "1978 年擴充成 16-bit：8086。",
+    "1980 年加入 floating point coprocessor（8087）。原來只有整數，要做浮點運算就交給這顆專門的協同處理器。",
+    "1982 年（80286）有了比較複雜的 memory management unit，address 變成 24 bits，可以定址 2²⁴ = 16 MB。",
+    "1985 年 386 擴充成 32 bits，就是 IA-32，跟 ARM 這些 32-bit 的差不多同時，還有更多 addressing mode、paging 和 segment。",
+    "1989 年 486 出來，同時也有 AMD 等競爭者。",
+    "1993 年 Pentium：有 superscalar 的結構，同一時間可以執行更多 instruction（後面的章節會介紹）。",
+    "Pentium 有一個有名的 floating point divide bug（除法算錯）。從那之後，hardware 做出來前的 formal verification（形式驗證）變得非常重要。",
+    "之後有 Pentium Pro、Pentium II，新的 architecture 一直出來。",
+    "1999 年之後加入 SSE（Streaming SIMD Extension）：single instruction multiple data，一個 instruction 同時處理很多資料，主要給串流進來的圖形資料用。後來很多新 instruction 都是 SSE 的擴充。",
+    "重點：Intel 每次 extension 都一定要 compatible，舊的 instruction 一定要維持，不然舊程式不能跑，這是它最大的負擔。它的 technical elegance（技術上的優雅）不等於 market success，但有人買、有人用，它就成功。"
+   ]
+  },
+  {
+   "title": "x86 的 register、addressing、encoding 與實作",
+   "scene": "nuA-9a-x86isa",
+   "cues": [
+    2332.9,
+    2354.48,
+    2365.9,
+    2383.74,
+    2401.26,
+    2415.46,
+    2424.22,
+    2459.54,
+    2484.62,
+    2529.2
+   ],
+   "points": [
+    {
+     "t": 2333,
+     "text": "x86 只有 8 個 general purpose register；只有兩個 operand（一個兼 source 與 destination），其中一個可在 memory（不是 load-store）；addressing 複雜。"
+    },
+    {
+     "t": 2401,
+     "text": "MIPS、ARM 固定 32 bits；x86 長度不一（1～15 bytes），要額外 bits 判斷長度。"
+    },
+    {
+     "t": 2459,
+     "text": "實作：簡單 instruction 一對一；複雜的拆成 micro-operation，類似 RISC，效能與 RISC 相近。"
+    }
+   ],
+   "explain": [
+    "看 x86 的 register file：general purpose register 只有 8 個（32-bit 的 EAX、ECX…），而且還跟一些特定用途共用。",
+    "addressing 也很複雜：一個 instruction 只有兩個 operand，其中一個同時當 source 和 destination，例如 add eax, ebx 就是 eax = eax + ebx。",
+    "而且其中一個 operand 可以直接在 memory 裡。我們的 MIPS 是 load-store machine：運算的東西一定要先在 register 或 immediate。",
+    "memory addressing 的方法也很多：base + displacement（跟 MIPS 很像），還有 index 乘上 scale 等等。每個 instruction 都可能有一個 operand 要去 memory 拿，可能花很長時間。",
+    "再看 instruction encoding：MIPS 和 ARM 每個 instruction 都是 32 bits，每次 fetch 就拿 32 bits，然後 decode 就好。",
+    "x86 不是：instruction 的長度各式各樣，從 1 byte 到 15 bytes 都有（畫面是示意）。",
+    "一個簡單的問題就難倒你：下一個 instruction 多長？要先看前面的一些 bits 才知道要拿多少，需要很多 extra bits 來 encode，每次 fetch 的 size 也不一樣。",
+    "那真正的硬體怎麼做？為了相容，這些 instruction 都必須支援；但 compiler 盡量產生簡單的 instruction，簡單的就一對一，直接用 hardware 實作。",
+    "複雜的 instruction 不直接用一大塊硬體做，而是拆成很多小的 micro-instruction（micro-operation），用它們湊起來執行。",
+    "這樣 hardware 只要處理小而簡單的 micro-operation，比較容易 optimize、speed up，其實已經很像 RISC 的概念了，效能也跟 RISC 差不多。"
+   ]
+  },
+  {
+   "title": "Fallacies 與 pitfalls",
+   "scene": "nuA-9a-fall",
+   "cues": [
+    2553.14,
+    2560.62,
+    2585.44,
+    2621.06,
+    2659.71,
+    2712.01,
+    2750.13,
+    2769.63,
+    2788.27
+   ],
+   "points": [
+    {
+     "t": 2553,
+     "text": "Fallacy：powerful instruction ≠ higher performance（難實作、拉長 clock cycle）；寫 assembly 不一定比較快（compiler 很厲害、HLL 生產力高）；backward compatibility 不代表 instruction set 不變（x86 一直增加）。"
+    },
+    {
+     "t": 2769,
+     "text": "Pitfall：連續 word 的 address 每次 +4；procedure return 後指向其區域變數的 pointer 已無效。"
+    }
+   ],
+   "explain": [
+    "最後是 fallacy（錯誤的觀念，這些敘述是錯的）和 pitfall（容易犯錯的地方），兩個都不要犯。",
+    "fallacy 1：「很 powerful 的 instruction，就會有很 high 的 performance。」聽起來好像對：instruction 數變少了。",
+    "其實不對：complex instruction 很難實作，而且為了它，整個 clock cycle 要拉長，所有其他 instruction 都被拖慢（畫面上每個 cycle 都被撐寬）。所以 powerful 不代表 high performance。",
+    "fallacy 2：「為了寫出很 efficient 的程式，我要寫 assembly code。」",
+    "錯。現在的 compiler 很厲害，能轉出很有效率的 assembly（像剛才的 strength reduction）。要有生產力、少犯錯，就要寫越少行越好，也就是寫 high-level language。學 assembly 是讓你體會它多難寫。",
+    "fallacy 3：「為了 backward compatibility，instruction set 就不能變、不能增加。」",
+    "錯。看 x86：它的 instruction 一直增加。舊的要維持、要繼續實作，但新的 application 需要新的 instruction，所以還是越來越多。",
+    "pitfall 1：以為連續的 word，address 是每次加 1。其實 memory 以 byte 定址，一個 word 是 32 bits = 4 bytes，所以 address 是 0、4、8、12，每次加 4。",
+    "pitfall 2：把指向 procedure 區域變數的 pointer 傳出去。procedure 結束後，它的 stack frame 已經被 pop 掉，那些 pointer 就無效了，不能再用。"
+   ]
+  },
+  {
+   "title": "四個設計原則與結語",
+   "scene": "nuA-9a-prin",
+   "cues": [
+    2806.67,
+    2878.28,
+    2894.78,
+    2922.5,
+    2945.72,
+    2977.06,
+    2990.16
+   ],
+   "points": [
+    {
+     "t": 2806,
+     "text": "四個設計原則：simplicity favors regularity（三種固定 format）、smaller is faster（32 個 register 而非 64）、make the common case fast（immediate type）、good design demands good compromises（R/I/J 略有不同）。"
+    },
+    {
+     "t": 2977,
+     "text": "MIPS 是典型 RISC，x86 是 CISC；設計前要 profiling，針對常用的 instruction 最佳化（Amdahl's law）。"
+    }
+   ],
+   "explain": [
+    "結語：講了這麼多 instruction set，它長這樣是有原因的，就是這四條設計原則。",
+    "第一條 simplicity favors regularity（簡單來自規則）：例如 instruction format 只有三種，op 固定 6 bits，rs、rt、rd 位置固定。",
+    "第二條 smaller is faster（小就是快）：例如 register file 越大好像越好，為什麼不用 64 個？只取 32 個，因為小的比較快。",
+    "第三條 make the common case fast（讓常見的情況變快）：程式裡 constant 很常用，所以專門設計 immediate type（I-type），把常數直接放在 instruction 裡，不用再去 memory 拿。",
+    "第四條 good design demands good compromises（好設計需要好的折衷）：我們希望只有一種 format，但 R、I、J 還是稍微不一樣，這就是 compromise。",
+    "還有 software、hardware 的層次（前面介紹過）；MIPS 是典型的 RISC instruction set，x86 是 CISC。",
+    "最後一張圖：將來做設計一定要先做分析（profiling），知道所有 instruction 裡哪些最常用。要 optimize 就 focus 在它們，因為依 Amdahl's law，佔的比例高，優化才有用，也就是 make the common case fast。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "MIPS 的 move $t0, $t1 是什麼？",
+   "opts": [
+    "pseudo-instruction，assembler 換成 add $t0, $zero, $t1",
+    "真正的 instruction，有專門的 register 搬移硬體",
+    "J-type instruction",
+    "只能在 ARM 上用"
+   ],
+   "ans": "pseudo-instruction，assembler 換成 add $t0, $zero, $t1",
+   "why": "硬體沒有 register 到 register 的 move 路徑，用 0 + $t1 經過 ALU 達成。"
+  },
+  {
+   "q": "blt $t0, $t1, L 由 assembler 展開成？",
+   "opts": [
+    "slt $at, $t0, $t1 ＋ bne $at, $zero, L",
+    "beq $t0, $t1, L",
+    "sub $t0, $t0, $t1 ＋ j L",
+    "lw $at, 0($t0) ＋ bne $at, $t1, L"
+   ],
+   "ans": "slt $at, $t0, $t1 ＋ bne $at, $zero, L",
+   "why": "沒有比小就跳的硬體；需要的第三個 register 用保留給 assembler 的 $at（register 1）。"
+  },
+  {
+   "q": "評估 compiler optimization 的效果，應該看？",
+   "opts": [
+    "execution time（IC × CPI × clock cycle time）",
+    "只看 instruction count",
+    "只看 CPI",
+    "只看 clock rate"
+   ],
+   "ans": "execution time（IC × CPI × clock cycle time）",
+   "why": "課本圖中 O1 的 IC 最少，但 CPI 較高，實際 O3 的 clock cycles 最少、最快。"
+  },
+  {
+   "q": "把 i × 4 改成 shift left 2 位，這種 compiler 技巧叫？",
+   "opts": [
+    "strength reduction",
+    "induction variable elimination",
+    "loop unrolling",
+    "register spilling"
+   ],
+   "ans": "strength reduction",
+   "why": "把「重」的乘法換成「輕」的 shift；把 index 計算移出 loop 叫 induction variable elimination。"
+  },
+  {
+   "q": "清 array 的 loop：array 版 6 個 instruction、pointer 版 4 個，跑 100 次省多少個 instruction？",
+   "opts": [
+    "200",
+    "100",
+    "400",
+    "600"
+   ],
+   "ans": "200",
+   "why": "每圈省 6 − 4 = 2 個，100 圈 × 2 = 200。"
+  },
+  {
+   "q": "x86 這麼複雜還一直存在的主要原因？",
+   "opts": [
+    "backward compatibility：舊程式要能跑",
+    "它是 RISC，比較 elegant",
+    "它的 instruction 都是固定 32 bits",
+    "它有 32 個 general purpose register"
+   ],
+   "ans": "backward compatibility：舊程式要能跑",
+   "why": "evolution with backward compatibility；technical elegance ≠ market success。"
+  },
+  {
+   "q": "下列何者是 fallacy（錯誤觀念）？",
+   "opts": [
+    "powerful 的 instruction 一定帶來 higher performance",
+    "連續 word 的 address 每次 +4",
+    "register 0 固定為 0",
+    "MIPS 有三種 instruction format"
+   ],
+   "ans": "powerful 的 instruction 一定帶來 higher performance",
+   "why": "complex instruction 難實作，還會拉長 clock cycle、拖累其他 instruction。"
+  }
+ ]
+}

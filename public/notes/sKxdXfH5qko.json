@@ -1,0 +1,262 @@
+{
+ "video": "sKxdXfH5qko",
+ "label": "IEEE 754 Floating Point Representation（Single & Double Precision）",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "為什麼需要 IEEE 754",
+   "scene": "nuA-ieee-why",
+   "cues": [
+    0.44,
+    4.74,
+    22.78,
+    40.4,
+    44.66,
+    54.8,
+    73.92
+   ],
+   "points": [
+    {
+     "t": 0,
+     "text": "浮點數用 mantissa × exponent 表示，但每個人用的 bit 數不同，電腦無法判斷哪些是 mantissa、哪些是 exponent。"
+    },
+    {
+     "t": 40,
+     "text": "所以需要標準（就像 ASCII：A = 65、a = 97）：IEEE 754；其中 binary16 叫 half precision。"
+    }
+   ],
+   "explain": [
+    "上一集用科學記號表示浮點數（有小數點的數）：mantissa（有效數字）乘上 2 的 exponent（指數）次方。",
+    "上一集的例子用 10 個 bit 表示一個數（畫面是示意）。",
+    "可是如果有人用 12 bits、有人用 14 bits，電腦很難知道總共用了幾個 bit，哪幾個是 mantissa、哪幾個是 exponent。",
+    "所以需要訂一個大家都遵守的標準（standard）。",
+    "就像字母有 ASCII 標準：大寫 A 用 65 表示、小寫 a 用 97 表示，大家都照這個存，電腦才讀得懂。",
+    "浮點數的標準是 [[IEEE 754]]，現在電腦都用它來表示浮點數。",
+    "IEEE 754 裡有好幾種格式。第一種是 binary16（16 bits），叫 half precision（半精度）。"
+   ]
+  },
+  {
+   "title": "Biased exponent 與 half precision",
+   "scene": "nuA-ieee-half",
+   "cues": [
+    97.92,
+    103.19,
+    117.06,
+    144.92,
+    183.25,
+    186.26,
+    205.75,
+    214.21,
+    222.85,
+    243.11,
+    256.19
+   ],
+   "points": [
+    {
+     "t": 98,
+     "text": "每種格式要知道 sign + mantissa 的 bit 數、exponent 的 bit 數，以及最重要的 biased exponent（exponent 可能是負的，加 bias 存）。"
+    },
+    {
+     "t": 145,
+     "text": "binary16：1 + 5 + 10；bias = 2^(n−1) − 1 = 15；e = 8 存 23，e = −3 存 12。"
+    }
+   ],
+   "trap": "bias 公式裡的 n 是 exponent 的「bit 數」，不是 exponent 本身。",
+   "explain": [
+    "每一種格式都要知道幾件事：sign 加 mantissa 用幾個 bit、exponent 用幾個 bit。下面的表會一格一格填。",
+    "最重要的是 biased exponent（偏移過的 exponent）。",
+    "為什麼要 bias？exponent 可能是負的，直接存負數不方便（還要處理正負號）。所以把每個 exponent 都加上一個固定的數（[[bias]]），讓存進去的值都是正的。",
+    "binary16 總共 16 bits：11 bits 給 sign 和 mantissa，剩下 16 − 11 = 5 bits 給 exponent。",
+    "exponent 有 5 bits，bias 是多少？很好記的公式：bias = 2^(n−1) − 1，n 是 exponent 的 bit 數。",
+    "這裡 n = 5：2 的 4 次方是 16，16 − 1 = 15，所以 bias 是 15。",
+    "原本的 exponent 都加上 15 再存。要記住：5 是 exponent 用了幾個 bit，不是 exponent 本身。",
+    "例：exponent 是 8，biased exponent 就是 8 + 15 = 23，用 5 bits 寫成 10111。",
+    "如果 exponent 是 −3，biased exponent 是 −3 + 15 = 12（01100）。負的 exponent 也變成正數存起來了。",
+    "所以 half precision 的排法：1 bit sign、5 bits exponent，剩下 10 bits 是 mantissa。1 + 5 + 10 = 16。",
+    "half precision 精度太低，比較不常用。接下來看最重要的 32 和 64 bits。"
+   ]
+  },
+  {
+   "title": "Single 與 double precision",
+   "scene": "nuA-ieee-sd",
+   "cues": [
+    258.4,
+    266.67,
+    278.42,
+    295.45,
+    304.67,
+    325.05,
+    334.49,
+    347.81,
+    360.26
+   ],
+   "points": [
+    {
+     "t": 258,
+     "text": "single precision（32 bits）：1 sign + 23 mantissa（共 24）+ 8 exponent，bias = 2⁷ − 1 = 127。"
+    },
+    {
+     "t": 325,
+     "text": "double precision（64 bits）：1 + 52（共 53）+ 11 exponent，bias = 2¹⁰ − 1 = 1023；另有 binary128（quadruple）、binary256（octuple）。"
+    }
+   ],
+   "trap": "single 的 bias 是 127（不是 128），double 是 1023。",
+   "explain": [
+    "最重要的兩種格式：32 bits 和 64 bits。",
+    "32 bits 叫 single precision（單精度），64 bits 叫 double precision（雙精度）。",
+    "single precision：24 個 bit 給 sign 和 mantissa，其中 1 bit 是 sign、23 bits 是 mantissa。",
+    "32 − 24 = 8，剩下 8 bits 給 exponent。",
+    "bias 用同一個公式：2^(8−1) − 1 = 128 − 1 = 127。真正的 exponent 加 127 才存進去。下面的 32 格就是 single 的排法：紅色 sign、藍色 exponent、綠色 mantissa（fraction）。",
+    "double precision：53 bits 給 sign 和 mantissa（1 + 52），64 − 53 = 11 bits 給 exponent。",
+    "bias = 2^(11−1) − 1 = 1024 − 1 = 1023。",
+    "還有更大的 binary128（quadruple precision，mantissa 連 sign 共 113 bits）和 binary256（octuple precision）。",
+    "不過最重要的是 single 和 double。接下來用例子示範，怎麼把一個數表示成這兩種格式。"
+   ]
+  },
+  {
+   "title": "例：116 → single precision",
+   "scene": "nuA-ieee-116",
+   "cues": [
+    370.81,
+    381.95,
+    419.46,
+    433.78,
+    473.64,
+    492.78,
+    514.36,
+    534.22,
+    564.74,
+    590.62
+   ],
+   "points": [
+    {
+     "t": 371,
+     "text": "步驟 1：116 = 1110100₂。步驟 2：normalization → 1.110100 × 2⁶。"
+    },
+    {
+     "t": 473,
+     "text": "步驟 3：S = 0；biased exponent 6 + 127 = 133 = 10000101；mantissa 去掉前面的 1 → 110100 再補 0 → 0x42E80000。"
+    }
+   ],
+   "trap": "normalized 的「1.」不存（hidden bit），mantissa 只存小數點後面。",
+   "explain": [
+    "第一個例子：十進位的 116，要用 single precision 表示。",
+    "第一步：把 116 轉成二進位。方法是一直除以 2，記下每次的餘數。",
+    "餘數從下往上讀，就是 116 的二進位：1110100。程式驗算過：1110100₂ 確實等於 116。",
+    "第二步：normalization（正規化）。規則是小數點前面只留一個 1。1110100. 的小數點往左移 6 位，變成 1.110100，所以要乘 2⁶ 才等值：116 = 1.110100 × 2⁶。",
+    "第三步：照格式放進 32 個 bit。第一個 bit 是 sign：116 是正數，sign = 0。",
+    "接下來 8 個 bit（藍色）放 exponent，但放的是 biased exponent。",
+    "single precision 的 biased exponent = 原本的 exponent + 127 = 6 + 127 = 133。",
+    "133 換成二進位：133 = 128 + 4 + 1，寫成 8 bits 是 10000101，填進 exponent 欄。",
+    "最後 23 bits 放 mantissa。normalized 之後小數點前一定是 1，所以這個「1.」不用存，只存小數點後面的 110100。",
+    "23 bits 還沒填滿沒關係，剩下全部補 0。這就是 116 的 single precision：0 10000101 11010000000000000000000，寫成 16 進位是 0x42E80000。"
+   ]
+  },
+  {
+   "title": "驗算 116，並換成 double precision",
+   "scene": "nuA-ieee-back",
+   "cues": [
+    599,
+    615.8,
+    632.8,
+    661.4,
+    668.66,
+    678.96,
+    697.96,
+    707.9,
+    735.21,
+    747.44
+   ],
+   "points": [
+    {
+     "t": 599,
+     "text": "還原：(−1)^S × 1.M × 2^(E − 127) = 1 × 1.110100 × 2⁶ = 116。"
+    },
+    {
+     "t": 661,
+     "text": "double：binary 相同；biased exponent 6 + 1023 = 1029 = 10000000101；1 + 11 + 52 → 0x405D000000000000。"
+    }
+   ],
+   "explain": [
+    "要從 bits 算回原本的值，用這個公式：value = (−1)^S × 1.M × 2^(E − 127)。",
+    "S = 0，所以 (−1)⁰ = 1，是正數。M 是 110100，前面補回那個沒存的 1，得到 1.110100。",
+    "E 是 133，2^(133 − 127) = 2⁶：把小數點往右移 6 位，1.110100 變回 1110100，就是 116。",
+    "如果要 double precision，二進位和 normalization 都一樣：1.110100 × 2⁶。",
+    "不一樣的只有 bias：double 加 1023，所以 biased exponent = 6 + 1023 = 1029。",
+    "double 的排法：1 bit sign、11 bits exponent、52 bits mantissa。64 格太長，畫面分成上下兩列。",
+    "52 bits 的 mantissa 一樣放 110100，剩下全部補 0。",
+    "exponent 放 1029：1029 = 1024 + 4 + 1，寫成 11 bits 是 10000000101。",
+    "這就是 116 的 double precision 表示，寫成 16 進位是 0x405D000000000000，程式用電腦內建的 double 驗算一致。",
+    "下一集會再舉一個包含小數部分的例子，示範 single 和 double 怎麼表示。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "exponent 有 n 個 bit 時，IEEE 754 的 bias 是？",
+   "opts": [
+    "2^(n−1) − 1",
+    "2^n − 1",
+    "2^(n−1)",
+    "2^n"
+   ],
+   "ans": "2^(n−1) − 1",
+   "why": "binary16 n = 5 → 15；single n = 8 → 127；double n = 11 → 1023。"
+  },
+  {
+   "q": "IEEE 754 single precision 的格式是？",
+   "opts": [
+    "1 sign + 8 exponent + 23 mantissa，bias 127",
+    "1 sign + 11 exponent + 52 mantissa，bias 1023",
+    "1 sign + 5 exponent + 10 mantissa，bias 15",
+    "1 sign + 8 exponent + 23 mantissa，bias 128"
+   ],
+   "ans": "1 sign + 8 exponent + 23 mantissa，bias 127",
+   "why": "32 bits：24 給 sign 和 mantissa，8 給 exponent，bias = 2⁷ − 1 = 127。"
+  },
+  {
+   "q": "IEEE 754 double precision 的 exponent 與 bias？",
+   "opts": [
+    "11 bits，bias 1023",
+    "8 bits，bias 127",
+    "11 bits，bias 1024",
+    "10 bits，bias 511"
+   ],
+   "ans": "11 bits，bias 1023",
+   "why": "64 − 53 = 11 bits；2¹⁰ − 1 = 1023。"
+  },
+  {
+   "q": "116 的 IEEE 754 single precision（hex）是？",
+   "opts": [
+    "0x42E80000",
+    "0x42E90000",
+    "0x43740000",
+    "0xC2E80000"
+   ],
+   "ans": "0x42E80000",
+   "why": "116 = 1.110100 × 2⁶；S = 0、E = 133 = 10000101、M = 1101000…0。"
+  },
+  {
+   "q": "116 用 double precision 時，存的 biased exponent 是？",
+   "opts": [
+    "1029",
+    "133",
+    "1023",
+    "6"
+   ],
+   "ans": "1029",
+   "why": "6 + 1023 = 1029 = 10000000101。"
+  },
+  {
+   "q": "binary16（half precision）中，exponent = −3 存成多少？",
+   "opts": [
+    "12",
+    "−3",
+    "18",
+    "124"
+   ],
+   "ans": "12",
+   "why": "bias = 2⁴ − 1 = 15，−3 + 15 = 12。"
+  }
+ ]
+}

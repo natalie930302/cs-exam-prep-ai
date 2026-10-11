@@ -1,0 +1,507 @@
+{
+ "video": "YY1wOUdIwWU",
+ "label": "黃婷婷教授計算機結構_第1A講 Course Outline",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場：這學期要教什麼",
+   "scene": null,
+   "points": [
+    {
+     "t": 19,
+     "text": "開場：介紹這學期 Computer Architecture 要教什麼，以及對同學的要求。"
+    }
+   ]
+  },
+  {
+   "title": "為什麼電腦用二進位",
+   "scene": "nuA-1a-binary",
+   "cues": [
+    34.57,
+    46.12,
+    59.24,
+    66.5,
+    78.56,
+    91.1
+   ],
+   "points": [
+    {
+     "t": 34,
+     "text": "電腦用二進位：signal 的電壓用一個 threshold 分成 high、low，只有兩種 state。"
+    },
+    {
+     "t": 91,
+     "text": "一個 signal 就是一個 bit，只有 0 和 1（也可叫 true/false、high/low）。"
+    }
+   ],
+   "explain": [
+    "老師一開始先問一個根本的問題：我們平常算數用十進位（0～9），為什麼電腦偏偏用二進位（只有 0 和 1）？答案藏在電腦「怎麼表示資料」裡。",
+    "電腦裡的資料都是靠電線上的「訊號（signal）」傳的。一個訊號可以代表一筆資訊，可能是一個指令（instruction），也可能是一個數字。",
+    "訊號其實就是電線上的電壓。畫面上每根柱子是某一刻的電壓高低（示意）。電壓會有一點雜訊、不會剛好整齊，所以電腦不去分很多等級。",
+    "做法是畫一條門檻線（threshold）：比它高的一律算 high（藍色），比它低的一律算 low。這樣就算電壓有點抖動，也不會判斷錯。",
+    "既然只分「高」和「低」，一個訊號就只有兩種狀態（state）。你要叫它 high/low、true/false 或 1/0 都可以，意思一樣。",
+    "只有兩種狀態的一個訊號，就叫做一個 bit（位元），值只有 0 或 1。所以電腦天生就是二進位：不是人硬要選，而是電壓只分兩種最穩定。"
+   ]
+  },
+  {
+   "title": "Transistor：NMOS 開關怎麼運作",
+   "scene": "nuA-1a-nmos",
+   "cues": [
+    104.98,
+    120,
+    142.74,
+    168.28,
+    176.32,
+    196.36,
+    241.76,
+    278.74,
+    304.54,
+    321.18,
+    331.16
+   ],
+   "points": [
+    {
+     "t": 104,
+     "text": "訊號要靠電子開關（switch）運作，switch 用 transistor 做。"
+    },
+    {
+     "t": 120,
+     "text": "NMOS 結構：p-type silicon 底座、兩邊 n-type、中間 oxide insulator、上面金屬 gate；PMOS 則 n、p 相反。"
+    },
+    {
+     "t": 242,
+     "text": "三個 terminal：source、drain、gate。"
+    },
+    {
+     "t": 279,
+     "text": "gate 加 high voltage 吸引 electron 形成 channel，source–drain 有電位差就有電流（開）；拿掉電壓 channel 消失（關）。"
+    }
+   ],
+   "explain": [
+    "要讓 0 和 1 在電路裡跑來跑去，最基本的零件是「電子開關（switch）」：能被控制成通或不通。這個開關就是 [[transistor]]（電晶體）。",
+    "先看一個 NMOS transistor 的剖面。最下面的底座是 p-type silicon。silicon（矽）是半導體；做成 p-type 之後裡面「電洞」比較多，可以想成帶正電。",
+    "在底座上做出兩塊 n-type silicon（藍色）。n-type 的電子比較多，帶負電。p、n 是用化學步驟（摻雜）做出來的。",
+    "兩塊 n-type 中間的上方，鋪一層很薄的 oxide insulator（氧化物絕緣層），它不導電，把上面和下面隔開。",
+    "絕緣層上面再放一層金屬，叫 gate（閘極）。整個結構就是一個基本的開關，把很多個組合起來就能處理訊號、建出電腦。",
+    "有 NMOS 就有 PMOS：把 n 和 p 對調（底座是 n-type、兩邊是 p-type）。NMOS 和 PMOS 一起用，就能組成邏輯閘（gate）。",
+    "這三個位置很重要，叫三個 terminal：左邊 source（源極）、右邊 drain（汲極）、上面 gate。我們在這三個點加不同電壓，就能讓它變成開或關。",
+    "在 gate 加一個高電壓（high）。因為異性相吸，底座裡的電子（藍色小方塊）會被吸到 gate 正下方聚集。",
+    "這些電子在 source 和 drain 之間排成一條通道，叫 channel。channel 一出現，兩邊就被接通了。",
+    "這時只要在 source 和 drain 之間加一個電位差，電流就會沿著 channel 流過去，開關處於「開（ON）」。",
+    "把 gate 的電壓拿掉，電子散開、channel 消失，電流過不去，開關就「關（OFF）」。所以用 gate 的電壓就能控制開或關。"
+   ]
+  },
+  {
+   "title": "用 transistor 組出 NAND gate",
+   "scene": "nuA-1a-nand",
+   "cues": [
+    371.48,
+    393.32,
+    420.06,
+    453.54,
+    461.28,
+    489.48,
+    506.14,
+    529.9,
+    547.2
+   ],
+   "points": [
+    {
+     "t": 372,
+     "text": "NMOS：gate 給 1 導通；PMOS（有圈圈）：gate 給 0 導通。"
+    },
+    {
+     "t": 420,
+     "text": "兩個 PMOS 並聯接 VDD、兩個 NMOS 串聯接 Ground，output C：00、01、10 → 1，11 → 0，是 NAND gate。"
+    },
+    {
+     "t": 547,
+     "text": "NAND 是 functionally complete：任何 Boolean function 都能用 NAND 組出來。"
+    }
+   ],
+   "trap": "NMOS 是 gate = 1 導通、PMOS 是 gate = 0 導通；NAND 的 NMOS 是「串聯」（兩個都 1 才拉到 0），PMOS 是「並聯」。",
+   "explain": [
+    "有了開關，先學它的符號。NMOS 的規則很簡單：gate 給 1（高電壓）就導通，給 0 就不通。",
+    "PMOS 的符號上多一個小圈圈，代表「相反」：gate 給 0 才導通，給 1 反而不通。",
+    "現在把它們接起來：上面兩個 PMOS「並聯」接到 VDD（高電壓），下面兩個 NMOS「串聯」接到 Ground（低電壓）。並聯是只要一條通就通；串聯要兩個都通才通。",
+    "輸入 A、B 分別接到 PMOS 和 NMOS 的 gate，輸出 C 接在中間。右邊的表要把每種輸入組合會得到的 C 填出來。",
+    "A = 0、B = 0：兩個 NMOS 都不通（綠色是通、紅色是不通），兩個 PMOS 都通，所以 VDD 的電把 C 充成 1。",
+    "只有一個輸入是 1 時：串聯的 NMOS 有一個斷掉，下面不通；上面並聯的 PMOS 還有一條通，所以 C 還是 1。",
+    "A = B = 1：兩個 PMOS 都不通，兩個 NMOS 都通，C 被接到 Ground，所以 C = 0。",
+    "整理表格：只有 A、B 都是 1 時輸出 0，其他都是 1，也就是 NOT(A AND B)，這就是 NAND gate。程式逐列比對，四列都對。",
+    "NAND 有個厲害的性質叫 functionally complete：給任何真值表（任何 Boolean function），都能只用 NAND 兜出來。例如把同一個 A 接到兩個輸入，就得到 NOT A。"
+   ]
+  },
+  {
+   "title": "從 gate 到 function unit 與 register",
+   "scene": "nuA-1a-units",
+   "cues": [
+    566.48,
+    571.46,
+    603.3,
+    617.42,
+    642.16,
+    652.7,
+    673.56,
+    686.38
+   ],
+   "points": [
+    {
+     "t": 567,
+     "text": "有了 NAND 就能做 function unit：1-bit full adder（3 input → sum、carry），重複就成 16、32-bit 加法器。"
+    },
+    {
+     "t": 618,
+     "text": "乘法 = shift and add。"
+    },
+    {
+     "t": 642,
+     "text": "兩個 gate cross-coupled 成 latch 存 1 bit，擴充到 16/32 bits 就是 register。"
+    }
+   ],
+   "explain": [
+    "有了 NAND 這個萬用的邏輯閘，就能往上組出各種「功能單元（function unit）」，例如做加法的電路。",
+    "full adder（全加器）把 3 個 bit 相加：a、b 和從右邊進來的 carry-in。輸出兩個 bit：這一位的 sum，以及要往左送的 carry-out。示意 1 + 1 + 0 = 2，寫 0 進 1。",
+    "會做 1 個 bit 的加法，就會做 16 bits：因為每個 bit 做的事都一樣，把 16 個 full adder 串起來（carry 一路往左傳）就好；再加倍就是 32 bits。",
+    "會加法、會 shift（移位），就會乘法。示意 3 × 5：乘數 0101 的每個 1，就把 0011 往左移對應的位數，再把這些 partial product 加起來，得到 15。",
+    "電腦只會算還不夠，算完的結果、還沒用到的資料都要「存起來」。",
+    "把兩個 gate 的輸出交叉接回彼此的輸入（cross-coupled），就成了 [[latch]]。它像一個會自己記住的開關：存進 1 後就算輸入離開，它還是 1。這樣就能存 1 個 bit。",
+    "一個 latch 存 1 bit；把 16 或 32 個排在一起，就能存一個 16／32 bits 的數字，這就是 [[register]]（暫存器）。",
+    "能運算（加法器、乘法）又能記憶（latch、register），電腦需要的元件大體上都做得出來了。這些都是「數位邏輯設計」課的內容。"
+   ]
+  },
+  {
+   "title": "電腦的基本架構：processor、memory、I/O",
+   "scene": "nuA-1a-org",
+   "cues": [
+    704.28,
+    717.6,
+    738.12,
+    740.06,
+    747.92,
+    760.78,
+    773.96,
+    795.34,
+    821.06,
+    841.1,
+    858.04,
+    862.14,
+    883.54,
+    912.4
+   ],
+   "points": [
+    {
+     "t": 704,
+     "text": "執行流程：從 memory 拿 instruction 放 instruction register → decode → control 發出訊號 → 從暫存器拿 data 運算 → 存回暫存器。"
+    },
+    {
+     "t": 761,
+     "text": "processor = datapath + control；memory 存大量 data 與 program；I/O：keyboard、mouse（input），display、printer（output），disk 也算 I/O。"
+    },
+    {
+     "t": 884,
+     "text": "Computer organization：介紹各 function unit 的功能與 performance（如 carry ripple vs carry lookahead），以及它們的連接、data flow 與 control（常用 RTL 描述）。"
+    }
+   ],
+   "explain": [
+    "零件都準備好了，來看它們怎麼合作。左邊的倉庫是 memory（記憶體），中間的是 [[register file]]（一組暫存器）。",
+    "程式其實就是一串 instruction（指令）。電腦第一步：從 memory 拿出下一個 instruction。",
+    "拿到的 instruction 先放進一個專門的暫存器，叫 instruction register，等著被看懂。",
+    "接著 decode（解碼）：看這個 instruction 到底要做什麼。負責的是 control（控制單元）。",
+    "control 發出控制訊號（橘色箭頭）：從暫存器拿出 data，送進 ALU 運算，再把結果寫回暫存器。一個 instruction 就這樣做完。",
+    "任何一台電腦的 processor（處理器）都是這種架構，分成兩部分：datapath 和 control。",
+    "[[datapath]] 顧名思義是「資料走的路」：data 從 register file 拿出來、經過運算單元，再寫回 register file，路徑一定是這樣。",
+    "可是每個 [[clock]] 要做的事不一樣：這次加、下次減、再下次 shift，或什麼都不做。決定「現在做什麼」的就是 control（controller）。",
+    "register 很快但只能放少量資料。大量的 data，還有程式本身，都存在 memory 裡。processor 和 memory 是整台電腦的核心。",
+    "電腦算完要給人用，所以需要 I/O（輸入/輸出）。input 是把東西交給電腦的裝置，例如 keyboard、mouse。",
+    "output 是把結果給我們的裝置，例如 display（螢幕）、printer（印表機）。",
+    "disk（硬碟）也算一種 I/O：資料多到 memory 放不下時就放 disk，它既能讀進來也能寫出去。",
+    "「computer organization」在學什麼？它介紹每個 function unit 做什麼、效能好不好。例如加法器有 carry ripple adder、carry lookahead adder，硬體和速度都不同。",
+    "再把元件用線連起來，data 在裡面流動（data flow），什麼時候做什麼由 control 控制。這種描述常用一種高階語言：Register Transfer Level（RTL）描述。"
+   ]
+  },
+  {
+   "title": "Organization vs Architecture；ISA 是軟硬體介面",
+   "scene": "nuA-1a-arch",
+   "cues": [
+    942.76,
+    963.26,
+    998.12,
+    1023.92,
+    1073.92,
+    1091.76,
+    1112.04,
+    1127.54,
+    1152.3
+   ],
+   "points": [
+    {
+     "t": 943,
+     "text": "Organization 像營造商照圖施工；Architecture 像建築師做設計。"
+    },
+    {
+     "t": 998,
+     "text": "不同應用要不同 processor（科學運算要強 floating point，多媒體可能只要整數）。"
+    },
+    {
+     "t": 1024,
+     "text": "Computer Architecture = Instruction Set Architecture + Machine Organization，要做 trade-off（成本 vs 效益）。"
+    },
+    {
+     "t": 1092,
+     "text": "ISA 是 software 與 hardware 之間的 interface：雙方都只照 instruction 各自開發；hardware 也可用 emulator 模擬。"
+    }
+   ],
+   "explain": [
+    "這門課叫 Computer Architecture，不是 Computer Organization。兩個名字聽起來很像，但意思不太一樣。",
+    "老師用蓋房子比喻：建築師決定要蓋幾層、幾間教室、幾個演講廳（設計）；營造商照著設計圖把房子蓋起來（施工）。",
+    "電腦也要「設計」：不同的用途需要不同的 processor。做科學運算，floating point（小數運算）要很強；處理影像、多媒體，可能只要整數運算就夠，所以 instruction 也要跟著設計。",
+    "所以 Computer Architecture 介於 software 和 hardware 之間，包含兩件事：[[instruction set architecture]]（ISA，像建築師的設計）＋ machine organization（照設計做出硬體）。",
+    "設計時要權衡（[[trade-off]]）：要這樣做還是那樣做？成本多少、效益多少？先定好 ISA，再設計 organization。",
+    "ISA 還有一個重要角色：它是 software 和 hardware 之間的介面（interface）。開發新 processor 時，常常硬體、軟體都還沒有，就先把 ISA 設計出來。",
+    "software 的人不需要知道硬體怎麼做，只要知道「有哪些 instruction 可以用」，就能往上開發程式。",
+    "hardware 的人也不用管軟體會跑什麼程式，只要知道最後一定會執行這些 instruction，就照著把硬體做出來。ISA 讓兩邊可以同時、分開工作。",
+    "這裡的「hardware」不一定是真的晶片：也可以寫一個 emulator（模擬器），用軟體模擬另一種 instruction set 的機器。"
+   ]
+  },
+  {
+   "title": "從 high-level language 到 machine language",
+   "scene": "nuA-1a-flow",
+   "cues": [
+    1168.38,
+    1182.01,
+    1196.86,
+    1210.02,
+    1228,
+    1242.08
+   ],
+   "points": [
+    {
+     "t": 1169,
+     "text": "high-level language（C、Java）→ compiler → assembly（load、store、add…）→ assembler → machine language（直接轉換）。"
+    },
+    {
+     "t": 1210,
+     "text": "ISA 決定產生的 assembly；不同 processor 的最終 code 不同；0101 變成 control signals。從這角度看，instruction set 就是 assembly instruction 的集合。"
+    }
+   ],
+   "explain": [
+    "換個角度看 instruction set。我們寫程式通常用 high-level language，例如 C 或 Java；右邊的 a = b + c 是示意的一行程式。",
+    "[[compiler]]（編譯器）把它翻成 [[assembly language]]：把一行拆成一個個小 instruction，像 load、store、add。這裡假設 a、b、c 已在暫存器 $s0、$s1、$s2，就是一個 add。",
+    "[[assembler]]（組譯器）再把 assembly 翻成 machine language（機器碼），也就是一串 0 和 1。這一步只是直接查表轉換。這個 add 依 MIPS 規則編成 32 個 bit，程式算出等於 0x02328020。",
+    "你的 instruction set 長怎樣，compiler 就會產生怎樣的 assembly。不同的 processor 有不同的 instruction set，最後產生的 code 也不一樣。",
+    "這些 0101 送進 processor 後，就變成控制訊號（control signals），控制 data 在硬體裡怎麼運作，回到前面講的「訊號就是 0 和 1」。",
+    "所以從這個角度看，instruction set 就是所有 assembly instruction 的集合。"
+   ]
+  },
+  {
+   "title": "Instruction set 規定了什麼",
+   "scene": "nuA-1a-isa",
+   "cues": [
+    1251.68,
+    1265.36,
+    1276.84,
+    1334.86,
+    1358.28,
+    1379.9,
+    1422.12,
+    1431.76,
+    1458.26
+   ],
+   "points": [
+    {
+     "t": 1252,
+     "text": "對 software 而言 ISA 是 conceptual structure 與 functional behavior，不管實作。"
+    },
+    {
+     "t": 1266,
+     "text": "三個 operand 一個 add 就好；只允許兩個 operand（destination 與 source 相同）就要兩個 instruction，需要的 hardware 也不同。"
+    },
+    {
+     "t": 1335,
+     "text": "ISA 規定：register 數量（16 或 32）、data encoding（2's 或 1's complement）、有哪些 instruction（例如要不要乘法）、instruction format、怎麼拿 data。"
+    },
+    {
+     "t": 1432,
+     "text": "本課用 MIPS R3000 為例；MIPS 只有三種 format。"
+    }
+   ],
+   "explain": [
+    "對寫軟體的人來說，ISA 就是一個「概念上的結構（conceptual structure）」和「功能行為（functional behavior）」：知道每個 instruction 會做什麼，不需要知道硬體怎麼實作。",
+    "舉例：加法要幾個 operand（運算元）？如果 instruction 允許三個 operand，就能「b 加 c 放到 a」，一個 instruction 完成。這裡示意 b = 2、c = 3。",
+    "如果只准兩個 operand，目標和來源必須是同一個（destination = source），就要先把 b 搬到 a，再把 c 加進 a，兩個 instruction。結果一樣是 5，但 instruction 數和需要的硬體都不同。",
+    "ISA 也規定 storage 怎麼組織，例如有 16 個還是 32 個 [[register]]。16 個比較少、能做的事少，但可能比較快；32 個是不同的結構。這會影響很大。",
+    "ISA 還要規定 data 怎麼編碼，例如負數用 [[two's complement]] 還是 1's complement。示意 −5：1's 是把 5 的每個 bit 反相，2's 再多加 1。表示法不同，做加減的硬體就要不同設計。",
+    "要提供哪些 instruction 也是 ISA 決定的。有乘法 instruction，就要放一個很大的乘法器；如果乘法不常用，可以不提供，改用很多次加法模擬（示意 6×4 = 加 4 次 6），代價是很多個 cycle、很慢。",
+    "另外還有 [[instruction format]]（每個 instruction 的 bits 怎麼排），以及怎麼拿到 data（addressing，定址方式）。",
+    "這門課拿 MIPS R3000 的 instruction set 當範例：前面先介紹它的 instructions，後面再看要怎麼把 hardware 建出來。",
+    "MIPS 有一個重要特點：只有三種 format（R、I、J），就能描述所有 instruction。每種 format 的欄位加起來都剛好 32 bits，程式驗算過。"
+   ]
+  },
+  {
+   "title": "Intel（CISC）與 ARM（RISC）",
+   "scene": "nuA-1a-isas",
+   "cues": [
+    1472.92,
+    1488.42,
+    1508.88,
+    1534.72,
+    1566.92
+   ],
+   "points": [
+    {
+     "t": 1473,
+     "text": "最 popular 的 ISA：Intel（PC，286、386… IA-64，一直加 instruction）與 ARM（手機裡大多是 ARM）。"
+    },
+    {
+     "t": 1535,
+     "text": "Intel 是 CISC（Complex Instruction Set Computer），ARM 是 RISC（Reduced Instruction Set Computer），MIPS 也屬 RISC。"
+    },
+    {
+     "t": 1567,
+     "text": "學 Computer Architecture：變化快、processor 無所不在。"
+    }
+   ],
+   "explain": [
+    "instruction set 有很多種，以前發展過不少，現在最 popular 的兩個是 Intel 和 ARM。",
+    "Intel 的 processor 是 PC 上常用的，從 286、386 一路到 IA-64，有很多版本。每一版都隨需求加更多 instruction、更強，加 instruction 當然也要加 hardware。",
+    "ARM 已經發展到第 8 版。它用在哪？手機！你的手機用的不是 Intel 的 x86，大概 90% 都是 ARM 的核心。",
+    "這兩個也代表兩大陣營：Intel 是 CISC（Complex Instruction Set Computer，指令多又複雜），ARM 是 RISC（Reduced Instruction Set Computer，指令精簡）。我們課上用的 MIPS 也屬於 RISC 這一類，只是細節不同。",
+    "為什麼要學？基本架構雖然一樣，但應用一變就要加新東西，變化很快；而且到處都需要 processor。學完這門課，你就有能力設計一個 processor。"
+   ]
+  },
+  {
+   "title": "課務：老師、助教、上課時間、課本",
+   "scene": null,
+   "points": [
+    {
+     "t": 1601,
+     "text": "老師、助教 office hour 與上課時間（禮拜二、四，週四 10–12 點可能補課）。"
+    },
+    {
+     "t": 1706,
+     "text": "課本：Patterson & Hennessy；有 ARM 版本加附 MIPS instruction set 的小本，買書要注意。"
+    }
+   ]
+  },
+  {
+   "title": "上課範圍與先修：邏輯設計",
+   "scene": "nuA-1a-prereq",
+   "cues": [
+    1879.48,
+    1906.14,
+    1930.98,
+    1946
+   ],
+   "points": [
+    {
+     "t": 1880,
+     "text": "大致照課本章節次序，過去進度大約到 memory。"
+    },
+    {
+     "t": 1906,
+     "text": "先修：Logic Design（adder、latch、control、mux），以及 number representation（1's、2's complement）。"
+    }
+   ],
+   "explain": [
+    "上課內容基本上照課本的章節次序走：抽象與技術、instructions、arithmetic、processor、memory hierarchy。以過去的進度，大概會上到 memory。",
+    "這門課需要先修的基礎是 Logic Design（邏輯設計）。沒修過也可以，但一定要自己努力補起來，不能不理它。",
+    "因為剛才用到的加法器（adder）、latch、control、mux（多工器）都是邏輯設計教的，完全不會就很難往下學。",
+    "還有 number representation（數字表示法），例如 1's complement 和 2's complement。畫面示意 −6 的兩種寫法：1's 是把 6 反相，2's 再加 1。"
+   ]
+  },
+  {
+   "title": "作業、考試與評分",
+   "scene": null,
+   "points": [
+    {
+     "t": 1967,
+     "text": "要學 MIPS instruction set 並寫簡單 assembly，用 processor emulator 測試；每章 1–2 個 homework，另有 final project（software project）。"
+    },
+    {
+     "t": 2033,
+     "text": "評分：homework + final project 30%、期中 35%、期末 35%；不補考、不補交；抄襲以零分計，可以討論但要自己寫。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "電腦用二進位，最根本的原因是？",
+   "opts": [
+    "訊號電壓用 threshold 只分 high、low 兩種狀態，最穩定",
+    "二進位的數字比十進位短",
+    "十進位無法表示負數",
+    "二進位不需要電晶體"
+   ],
+   "ans": "訊號電壓用 threshold 只分 high、low 兩種狀態，最穩定",
+   "why": "一個 signal 的電壓被 threshold 分成 high／low，只有兩種 state，所以一個 signal 就是一個 bit。"
+  },
+  {
+   "q": "NMOS 和 PMOS 何時導通？",
+   "opts": [
+    "NMOS gate = 1 導通；PMOS gate = 0 導通",
+    "NMOS gate = 0 導通；PMOS gate = 1 導通",
+    "兩者都是 gate = 1 導通",
+    "兩者都是 gate = 0 導通"
+   ],
+   "ans": "NMOS gate = 1 導通；PMOS gate = 0 導通",
+   "why": "PMOS 符號上的小圈圈表示相反：給 0 才通。"
+  },
+  {
+   "q": "兩個 PMOS 並聯接 VDD、兩個 NMOS 串聯接 Ground，輸入 A、B 接 gate，輸出是什麼 gate？",
+   "opts": [
+    "NAND",
+    "NOR",
+    "AND",
+    "XOR"
+   ],
+   "ans": "NAND",
+   "why": "只有 A = B = 1 時串聯的 NMOS 全通、PMOS 全斷，輸出 0；其他情況輸出 1。"
+  },
+  {
+   "q": "Computer Architecture 包含哪兩部分？",
+   "opts": [
+    "Instruction Set Architecture + Machine Organization",
+    "Datapath + Control",
+    "Compiler + Operating System",
+    "Memory + I/O"
+   ],
+   "ans": "Instruction Set Architecture + Machine Organization",
+   "why": "ISA 像建築師的設計，organization 照設計做出硬體；datapath + control 是 processor 的組成。"
+  },
+  {
+   "q": "Processor 由哪兩部分構成？",
+   "opts": [
+    "datapath 與 control",
+    "memory 與 disk",
+    "compiler 與 assembler",
+    "input 與 output"
+   ],
+   "ans": "datapath 與 control",
+   "why": "datapath 是 data 走的路（register file → ALU → register file），control 決定每個 clock 做什麼。"
+  },
+  {
+   "q": "下列哪一個正確？",
+   "opts": [
+    "Intel x86 是 CISC，ARM 與 MIPS 是 RISC",
+    "Intel x86 是 RISC，ARM 是 CISC",
+    "ARM 與 x86 都是 CISC",
+    "MIPS 是 CISC"
+   ],
+   "ans": "Intel x86 是 CISC，ARM 與 MIPS 是 RISC",
+   "why": "CISC = Complex Instruction Set Computer；RISC = Reduced Instruction Set Computer。"
+  },
+  {
+   "q": "MIPS 有幾種 instruction format？",
+   "opts": [
+    "3 種（R、I、J），都是 32 bits",
+    "2 種，長度不同",
+    "1 種，16 bits",
+    "很多種，1～15 bytes"
+   ],
+   "ans": "3 種（R、I、J），都是 32 bits",
+   "why": "R：op rs rt rd shamt funct；I：op rs rt immediate；J：op address，加起來都是 32 bits。"
+  }
+ ]
+}

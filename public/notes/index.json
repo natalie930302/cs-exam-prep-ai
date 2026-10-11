@@ -35,6 +35,12 @@
   "quiz": 7,
   "cued": true
  },
+ "-iVii4A6cQg": {
+  "label": "黃婷婷教授計算機結構_第9A講 Instruction Set Architecture / Computer Arithmetic",
+  "points": 31,
+  "quiz": 7,
+  "cued": true
+ },
  "-JTq1BFBwmo": {
   "label": "Abdul Bari：1.1 Priori Analysis and Posteriori Testing",
   "points": 7,
@@ -194,6 +200,12 @@
  "2E7MmKv0Y24": {
   "label": "MIT 6.006 L16：Dijkstra",
   "points": 66,
+  "quiz": 7,
+  "cued": true
+ },
+ "2ICqPUCycWQ": {
+  "label": "黃婷婷教授計算機結構_第3A講 Computer Abstractions and Technology",
+  "points": 41,
   "quiz": 7,
   "cued": true
  },
@@ -2303,6 +2315,12 @@
   "quiz": 6,
   "cued": true
  },
+ "sKxdXfH5qko": {
+  "label": "IEEE 754 Floating Point Representation（Single & Double Precision）",
+  "points": 10,
+  "quiz": 6,
+  "cued": true
+ },
  "SLsHKh_OUEM": {
   "label": "Master's Theorem Explained",
   "points": 23,
@@ -2825,6 +2843,12 @@
   "quiz": 7,
   "cued": true
  },
+ "y76BZn5u-b4": {
+  "label": "黃婷婷教授計算機結構_第2A講 Computer's History",
+  "points": 32,
+  "quiz": 7,
+  "cued": true
+ },
  "yewOwasU9Hk": {
   "label": "清大OCW 趙啟超《離散數學》第22B講 Planar Graphs",
   "points": 17,
@@ -2894,6 +2918,12 @@
  "Yx0dJFe1VdM": {
   "label": "交大彭文志 Lec21 Graph (4/4)",
   "points": 90,
+  "quiz": 7,
+  "cued": true
+ },
+ "YY1wOUdIwWU": {
+  "label": "黃婷婷教授計算機結構_第1A講 Course Outline",
+  "points": 35,
   "quiz": 7,
   "cued": true
  },

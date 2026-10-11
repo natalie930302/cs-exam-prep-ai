@@ -1,0 +1,577 @@
+{
+ "video": "y76BZn5u-b4",
+ "label": "黃婷婷教授計算機結構_第2A講 Computer's History",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "本單元三個主題",
+   "scene": "nuA-2a-outline",
+   "cues": [
+    5.36,
+    6.32,
+    48.44,
+    65.02,
+    74.72,
+    82.98,
+    87.74,
+    94.38,
+    101.86,
+    115.3
+   ],
+   "points": [
+    {
+     "t": 0,
+     "text": "本單元 Computer Abstractions and Technology 三部分：歷史、abstraction、technology（performance 指標：CPU time、power；benchmarking；cost）。"
+    },
+    {
+     "t": 115,
+     "text": "今天先講第一部分：computer 的歷史。"
+    }
+   ],
+   "explain": [
+    "這個單元叫「Computer Abstractions and Technology」，老師把它分成三個部分，畫面上三塊板子就是這三個主題。",
+    "第一部分是歷史：電腦怎麼從最開始，一步步演進到現在。",
+    "第二部分是 abstraction（抽象化）：在每一個層級，都把下面的細節（detail、complexity）藏起來，只看這一層，這樣比較容易懂。",
+    "第三部分是 technology：隨著製造技術進步，電腦一直在變。",
+    "要說一台電腦「好還是壞」，就得先定好衡量的標準，也就是 performance（效能）指標。",
+    "其中最重要的指標之一是 CPU time：電腦算完一件工作，CPU 實際花了多少時間。",
+    "另一個也很重要的指標是 power（耗電）。",
+    "有了指標，還要知道怎麼量：用 profiling（分析程式哪裡花時間）和 benchmarking（用標準測試程式來比）。",
+    "最後看 cost（成本）。cost 越高，performance 可能越好，兩者之間是一種取捨（[[trade-off]]）。",
+    "這三個主題中，今天先專心講第一個：電腦的歷史，它是怎麼來的。"
+   ]
+  },
+  {
+   "title": "什麼是 computer？Harvard Mark I",
+   "scene": "nuA-2a-whatis",
+   "cues": [
+    124.16,
+    141.44,
+    159.18,
+    169.94,
+    184.44,
+    204.88,
+    211.18,
+    229.1,
+    243.76
+   ],
+   "points": [
+    {
+     "t": 124,
+     "text": "算盤能幫忙計算，但不是 computer。"
+    },
+    {
+     "t": 159,
+     "text": "computer：programmable 的 electronic machine，做高速數學、邏輯運算，並收集、儲存、分析資料。"
+    },
+    {
+     "t": 211,
+     "text": "Harvard Mark I（1944）：general purpose 的機電裝置，instruction 與 data 分開儲存 → Harvard architecture。"
+    }
+   ],
+   "trap": "Harvard architecture 的重點是 instruction 和 data 放在「不同的 memory」，不是指某所學校的設計。",
+   "explain": [
+    "電腦是什麼時候出現的？老師先舉算盤：中國很早以前就有算盤，可以幫我們做計算。",
+    "那算盤算不算 computer？不算。也不是因為它沒插電：就算插了電，也不能就叫做 computer。",
+    "字典的定義第一個關鍵字是 programmable（可程式化）：它可以依照你的需求，改變它要做的動作。算盤沒辦法「換一個程式」自己做別的事。",
+    "而且它是 electronic machine（電子機器），能做高速的數學和邏輯運算，也能把資料收集、儲存、分析。符合這些的機器才叫 computer。",
+    "在真正的第一台 computer 出現之前，歷史上已經有各種計算裝置：有通用（general purpose）也有專用（special purpose）的，有可程式也有不行的，有機械、機電、也有電子的。",
+    "例如有專門做 difference（差分）計算的機器，也有記帳用的機器。",
+    "其中一台很重要：Harvard Mark I（1944 年）。它是 general purpose 的機器，用機械加電子做成。",
+    "它有一個很重要的特色：instruction（指令）和 data（資料）分開存在兩個地方，CPU 分別從兩邊拿。",
+    "這種「instruction 和 data 放在不同 memory」的設計，後來就叫做 Harvard architecture，在現代的 processor 設計裡還會看到。"
+   ]
+  },
+  {
+   "title": "ENIAC 與電晶體",
+   "scene": "nuA-2a-eniac",
+   "cues": [
+    260.3,
+    270.92,
+    290.02,
+    322.16,
+    334.72,
+    343.3,
+    357.74,
+    362.94,
+    395.94,
+    415.28
+   ],
+   "points": [
+    {
+     "t": 260,
+     "text": "ENIAC：第一部全電子、可程式、general purpose 的電腦，1943 年 U Penn 開始、1946 年完成，因二次大戰破解密碼需要大量運算。"
+    },
+    {
+     "t": 322,
+     "text": "ENIAC 長 25 m、高 2.5 m，用真空管當 switch，每秒 1,900 個加法，programming 靠人調 cable 和 switch。"
+    },
+    {
+     "t": 396,
+     "text": "電晶體（transistor）比真空管 reliable，之後當 switch 並發展成 IC。"
+    }
+   ],
+   "explain": [
+    "下一個問題：第一部「全電子、可程式、一般用途」的電腦是什麼時候做出來的？",
+    "答案是 ENIAC。它是 University of Pennsylvania 在 1943 年開始的計畫，一直到 1946 年才完成。下面的時間軸標出這兩個年份。",
+    "為什麼那時候要做電腦？1939 到 1945 年正在打第二次世界大戰。戰爭需要破解對方的密碼，要非常大量的運算，所以才有這個計畫。",
+    "ENIAC 有多大？長 25 公尺。上面那條長條是 100 公尺的跑道，ENIAC 就是它的四分之一，非常長。",
+    "它高 2.5 公尺，比一個 170 公分的人還高 80 公分。",
+    "ENIAC 用真空管（vacuum tube）當 switch（開關）。switch 是組成電腦最重要的元件。",
+    "它的速度是每秒可以做 1,900 個加法。現在的電腦每秒能做幾十億次，當時已經算很快了。",
+    "有趣的是，它的 programming（寫程式）不是打字，而是靠人把 cable（電線）和 switch 搬來搬去、重新接線。",
+    "差不多同一個時期，電晶體（[[transistor]]）被發明出來。跟真空管比，它更 reliable（可靠、不容易壞）。",
+    "下一個時期，transistor 就被拿來當 switch；之後再跟其他元件一起做成 IC（積體電路），才有後來的發展。"
+   ]
+  },
+  {
+   "title": "50 年代商品化、IBM 與 IC",
+   "scene": "nuA-2a-ic",
+   "cues": [
+    427.89,
+    442.66,
+    459.08,
+    472.7,
+    489.28,
+    510.58,
+    522.1,
+    526.78,
+    549.84,
+    571.28,
+    605.48
+   ],
+   "points": [
+    {
+     "t": 428,
+     "text": "50 年代電腦商品化：很貴很大、要專門房間，用在商務、辦公室自動化與科學計算。"
+    },
+    {
+     "t": 459,
+     "text": "50 年代出現電晶體電腦（如 IBM 1401）；IBM 原本做 punch card，被稱為 Big Blue。"
+    },
+    {
+     "t": 522,
+     "text": "Integrated Circuit（1958）：把 transistor、電阻、電容全做在同一塊半導體上，size 可以一直縮小，同一顆 chip 放更多 device。"
+    }
+   ],
+   "explain": [
+    "40 年代有了電腦，到了 50 年代電腦開始商品化（可以買賣）。不過那時的電腦非常貴、非常大台，要放在專門的房間裡，冷氣和溫度都很重要。",
+    "因為每台都很貴，一般人用不起，主要用在商務、辦公室自動化，或是科學計算。",
+    "50 年代也出現了用電晶體做的電腦，例如 IBM 1401，時間軸上標出來。",
+    "IBM 一開始其實不做電腦，是做 punch card（打孔卡）的公司。以前沒有鍵盤，寫程式、輸入資料都要打一張張卡片。",
+    "卡片上每個位置打洞或不打洞：光透得過去或透不過去，就代表 1 或 0（畫面是示意）。這又是二進位。",
+    "IBM 從 50 年代才開始做電腦，後來大家常叫它 Big Blue。",
+    "這個時期還有一件很重要的事：IC（Integrated Circuit，積體電路）的出現。",
+    "光有 transistor 還不夠，做電路還要電阻（R）、電容（C）等等。它們原本都是一個一個獨立（discrete）的零件，要用線接起來，很佔空間。",
+    "IC 的想法是：把 transistor、電阻、電容全部做在同一塊半導體上。做一顆 chip 時，所有東西一起做出來，不用再外接。",
+    "這個突破讓電路的尺寸可以一直縮小（shrink），小到我們的手根本碰不到那麼小的東西。",
+    "一顆 chip 能放越多 device，就代表越大的計算能力（computation power）。這是 1958 年很重要的發明。"
+   ]
+  },
+  {
+   "title": "Microprocessor、PC 與 open system",
+   "scene": "nuA-2a-pc",
+   "cues": [
+    618.08,
+    634.3,
+    651.08,
+    675.44,
+    704.78,
+    719.96,
+    764.4,
+    818.7,
+    840.4,
+    873.3
+   ],
+   "points": [
+    {
+     "t": 618,
+     "text": "70 年代 Intel 4004 微處理器：用在計算機，原本 12 顆 chip 整合成 1 顆。"
+    },
+    {
+     "t": 651,
+     "text": "1977 Apple II；1981 IBM PC（晚 4 年）；Microsoft 與 PC 在 1980–2000 dominate 市場。"
+    },
+    {
+     "t": 720,
+     "text": "IBM PC 勝出：相對便宜，而且是 open system（spec 公開，大家都能做）。"
+    },
+    {
+     "t": 840,
+     "text": "Xerox Alto（1973）已有 mouse、Ethernet、icon、menu、WYSIWYG、LAN、laser printer。"
+    }
+   ],
+   "explain": [
+    "70 年代，很多 transistor 已經能放進一顆 IC。最重要的成果是 Intel 4004 microprocessor（微處理器）：整個 CPU 做在一顆 chip 上。",
+    "第一顆微處理器用在計算機上，也是商業考量：原本要 12 顆 chip，把它們全部整合成一顆，就便宜多了。",
+    "有了 microprocessor，就有了 PC（Personal Computer，個人電腦）。1977 年 Apple II 推出，是個人電腦的開始。",
+    "IBM 的 PC 晚了四年，1981 年才推出。程式算一下：1981 − 1977 = 4 年。",
+    "有了 PC 也造就了微軟（Microsoft）的作業系統。從 1980 年代到 2000 年，PC 加上微軟幾乎主宰了市場。",
+    "問題來了：Apple II 早了四年，為什麼後來大部分 PC 都是 IBM 的架構？同學的第一個答案是：比較便宜。",
+    "更根本的原因：IBM PC 是 open system（開放系統），把規格（spec）全部公開。只要符合規格，誰都能做相容的零件，臺灣很多周邊零件產業就是這樣發展起來的。大家都能賺錢，就一起推這個架構。",
+    "現在的手機也有兩種路線：Android 是開放的，很多廠商都能用；Apple 是封閉的（closed）。誰會成功，還不知道。",
+    "70 年代還有很多了不起的發明，很多在 Xerox（全錄，做影印機的公司）的實驗 PC「Alto」上：mouse、Ethernet、圖形介面的 icon、menu，還有「所見即所得」的編輯。",
+    "還有區域網路（LAN）、雷射印表機。我們今天用的很多東西，1973 年就已經有 prototype（原型）了。"
+   ]
+  },
+  {
+   "title": "應用軟體、VLSI 與 RISC",
+   "scene": "nuA-2a-risc",
+   "cues": [
+    885.78,
+    902.8,
+    919.16,
+    935.72,
+    948.92,
+    969.93,
+    992.46,
+    1010.44
+   ],
+   "points": [
+    {
+     "t": 886,
+     "text": "讓 PC 好用的是軟體：1979 年第一個電腦記帳軟體，之後有 dBase；硬體加應用才會發展。"
+    },
+    {
+     "t": 935,
+     "text": "80 年代進入 VLSI（一顆 chip 幾十萬 transistor），Cocke、Patterson、Hennessy 提出 RISC，用在 workstation（MIPS、Sun、IBM）；對手是 CISC（Intel x86，用在 PC）。"
+    }
+   ],
+   "explain": [
+    "有了 microprocessor、有了 PC，可是真正讓 PC 好用的不是硬體，而是軟體。硬體再 powerful，沒有應用程式（application）也沒用。",
+    "1979 年出現第一個用電腦記帳的軟體（試算表）。記帳、處理資料變得很容易，PC 才真正 popular 起來。",
+    "之後還有 dBase 做 database（資料庫）。所以硬體加上應用，兩個一起才讓電腦越來越發展。",
+    "到了 80 年代，比較重要的是一種新的 architecture 進入電腦領域：RISC。",
+    "原因是那時進入了 VLSI（very large scale integration）時代：一顆 chip 裡已經能放幾十萬個 transistor，運算能力變得非常大。",
+    "三位學者：IBM 的 Cocke、UC Berkeley 的 Patterson、Stanford 的 Hennessy（後兩位就是我們課本的作者），提出了 RISC（Reduced Instruction Set Computer，精簡指令集電腦）。",
+    "RISC 不只是學術成果，很多商用 processor 也用它，主要在 workstation（工作站），像 MIPS、Sun、IBM。",
+    "RISC 是跟誰比？跟 CISC（Complex Instruction Set Computer，複雜指令集）比。CISC 用在我們的 PC 上，就是 Intel 的 x86 系列。"
+   ]
+  },
+  {
+   "title": "後 PC 時代與 Moore's Law",
+   "scene": "nuA-2a-moore",
+   "cues": [
+    1033.3,
+    1052.08,
+    1087.7,
+    1100.88,
+    1114.86,
+    1123.74,
+    1145.44
+   ],
+   "points": [
+    {
+     "t": 1033,
+     "text": "PC 越來越 high-end；後 PC 時代 embedded computer 無所不在（冰箱、相機、手機、手錶）。"
+    },
+    {
+     "t": 1101,
+     "text": "Moore's Law：每一年半，一顆 chip 上的 transistor double；同樣面積、同樣成本有更強的 computation power。"
+    }
+   ],
+   "explain": [
+    "80 年代之後，PC 一直變得更 high-end、更快，workstation 越來越少人用，大家有一台 PC 就夠了。",
+    "現在是「後 PC 時代」：PC 幾乎人人都有了，發展重點變成 embedded computer（嵌入式電腦）。冰箱、相機、攝影機、手機、手錶裡面都有一台小電腦。",
+    "從 40 年代有電腦到現在，還不到 60 年，電腦的發展卻非常快。",
+    "在這個快速發展的背後，有一個定律在支撐，叫做 Moore's Law（摩爾定律）。",
+    "Moore's Law 說：每一年半，同一顆 chip 上的 transistor 數量就會 double（變兩倍）。柱子每往右一格代表過了 1.5 年，高度就翻倍；5 次之後是 2⁵ = 32 倍（示意）。",
+    "意思是：每隔一年半，同樣的面積、同樣的成本，就能有更強的計算能力，而且越來越便宜。",
+    "因為越來越便宜，電腦什麼地方都用得到：車子裡要裝好多 microprocessor，手機、基因研究、網路搜尋引擎，到處都是電腦。"
+   ]
+  },
+  {
+   "title": "Feature size：為什麼 transistor 能一直加倍",
+   "scene": "nuA-2a-feature",
+   "cues": [
+    1175.66,
+    1192,
+    1216.78,
+    1241.14,
+    1258.24,
+    1305.64,
+    1314.38,
+    1355.16,
+    1365.64,
+    1403.9,
+    1431.74,
+    1444.74,
+    1476.28
+   ],
+   "points": [
+    {
+     "t": 1175,
+     "text": "transistor 開關的快慢取決於 source 到 drain 的距離，越短越快；這個最短長度叫 feature size（line width），取決於 technology。"
+    },
+    {
+     "t": 1305,
+     "text": "feature size 從 100 micron 一路縮小；台積電量產 28 nm = 0.028 micron（頭髮約 100 micron）。"
+    },
+    {
+     "t": 1444,
+     "text": "Moore（Intel co-founder）1965 年預測：每 18 個月 transistor double。"
+    }
+   ],
+   "trap": "28 nm = 0.028 µm（1 µm = 1000 nm），不是 0.28 µm。",
+   "explain": [
+    "為什麼 transistor 數量可以每一年半就加倍？老師拿出一開始那張 transistor 剖面圖來解釋。",
+    "回想一下：gate 加電壓，下面就形成 channel，source 和 drain 之間有電流通過，開關就是「開」。",
+    "開和關，就是讓電從這邊（source）到那邊（drain）。紅色箭頭這段距離越短，開關的速度就越快。",
+    "當然希望越短越好，可是能做到多短，要看製造技術（technology）。",
+    "這個「能做到的最短距離」叫做 feature size，也叫 line width（線寬），就是 source 到 drain 之間的長度。",
+    "隨著技術進步，feature size 一直減小，從最早的 100 micron（微米）一路往下。柱子用的是對數刻度，中間幾代的數字是示意。",
+    "台積電（TSMC，專門幫人製造晶片的公司）已經宣佈，28 奈米（nm）的製程可以量產了。",
+    "換算一下：1 micron = 1000 nm，所以 28 nm = 0.028 micron。",
+    "這有多小？一根頭髮大約 100 micron。100 ÷ 0.028 ≈ 3,571，也就是比頭髮細了三千多倍。",
+    "transistor 做得這麼窄、這麼小，一顆 chip 上就能放非常非常多個。",
+    "老師的圖：橫軸是時間，縱軸是一顆 microprocessor 裡的 transistor 數量，越來越多。",
+    "Moore's Law 其實是一個預測。Gordon Moore 是 Intel 的共同創辦人，他在 1965 年寫了一篇 paper，觀察前十多年半導體的發展做出預測。",
+    "他預測：因為 feature size 越縮越小，大約每 18 個月（1.5 年）transistor 數量就會 double。人家問你 Moore's Law，就要答得出這一句。"
+   ]
+  },
+  {
+   "title": "電腦分類：desktop、server、embedded",
+   "scene": "nuA-2a-classes",
+   "cues": [
+    1510.9,
+    1519.66,
+    1528.08,
+    1538.9,
+    1556.36,
+    1592.22,
+    1626.86,
+    1632.28,
+    1666.4
+   ],
+   "points": [
+    {
+     "t": 1511,
+     "text": "三大類：desktop（含 notebook）、server、embedded computer。"
+    },
+    {
+     "t": 1556,
+     "text": "desktop：general purpose，看 cost/performance；server：capacity、performance、reliability（小 server 到 building size）；embedded：系統中的小 component，power、performance、cost，尤其 cost 與 power。"
+    }
+   ],
+   "explain": [
+    "看完歷史，老師把電腦分成幾類。",
+    "第一類：desktop computer，就是你家桌上的 PC，或是 notebook，給個人用的。",
+    "第二類：server（伺服器），例如系上或計算中心用的，更大型、更 high-end，也有做科學計算的。",
+    "第三類：embedded computer（嵌入式電腦），就是後 PC 時代隨處可見、嵌在各種裝置裡的電腦。",
+    "desktop 是 general purpose（一般用途）：計算、寫功課、上網都靠它。買的時候會比較價錢和速度，也就是 cost/performance。",
+    "server 是大家共用的，要做大量計算，所以 capacity（容量）、performance 很重要，reliability（可靠度）更重要：不能突然當機、把大家的資料弄丟。cost 反而不是第一考量。",
+    "server 的大小從小型 server 到整棟建築物（building size）那麼大的都有。",
+    "embedded computer 只是一個大系統裡的小零件（component），不是自己獨立運作，所以 power、performance、cost 都很重要，尤其 cost：它不能很貴。",
+    "power 也很重要：手持或戴在手上的裝置電池有限，不能太耗電。"
+   ]
+  },
+  {
+   "title": "推動電腦發展的力量",
+   "scene": "nuA-2a-drive",
+   "cues": [
+    1685.66,
+    1700.44,
+    1718.72,
+    1752.08,
+    1772.24,
+    1813.62,
+    1859.86,
+    1890.5,
+    1921.52,
+    1954.5,
+    1968.86
+   ],
+   "points": [
+    {
+     "t": 1685,
+     "text": "application 推動 machine 平衡發展：科學計算要 floating point 與 memory bandwidth；transaction 要 I/O 與 integer；media 用 8-bit pixel 的 low precision。"
+    },
+    {
+     "t": 1813,
+     "text": "application 推動 performance；high-level language 讓應用更多。"
+    },
+    {
+     "t": 1890,
+     "text": "compatibility 與 ease of use（Intel x86 因軟體多而存活）；market demand／market share。"
+    }
+   ],
+   "explain": [
+    "電腦是怎麼一路發展過來的？老師整理了幾個重要的推動力。",
+    "第一：application（應用）推動電腦「平衡」地發展。電腦怎麼發展，取決於大家拿它做什麼。",
+    "做數值模擬、科學計算時，需要很強的 floating point（小數）運算；資料很大，放不進 register，要一直從 memory 搬進搬出，所以 memory bandwidth（頻寬）也很重要。",
+    "另一種是 transaction processing（交易處理）：去銀行、提款、上網查一筆資料。這時 I/O 和 integer（整數）運算比較重要。",
+    "還有 media processing（多媒體）：圖片是用一個個 pixel（像素）組成，每個 pixel 只有 8 bits（0～255，共 256 級），是 low precision（低精度）的運算。三種應用需要的技術都不一樣。",
+    "第二：application 也推動 performance。如果軟體已經跑得很快，你不會想買新電腦；正是因為新軟體跑很慢，大家才想要更快的機器。",
+    "high-level language 出現後，應用程式更容易寫，像 game 這種需要很大計算力和記憶體的程式也寫得出來，這又推著硬體往前走。",
+    "第三：compatibility（相容性）。買了新電腦，你一定希望舊的 application 還能跑，這是選電腦很重要的考量。",
+    "所以 Intel 的 CISC 設計雖然沒有 RISC 那麼 elegant（漂亮），很多地方不如 RISC，但上面累積的軟體實在太多，換掉就不能用，大家就繼續用它。",
+    "還有 ease of use（容易使用）：新系統如果很複雜，大家也不想換。",
+    "最後是 market demand（市場需求）和 market share（市占）：一個很好的功能如果只有很少人需要，研發投資就回收不了，也就不會去做。"
+   ]
+  },
+  {
+   "title": "General purpose computer 的特性",
+   "scene": "nuA-2a-gp",
+   "cues": [
+    2001.12,
+    2045.1,
+    2069.3,
+    2114.58,
+    2147.84,
+    2176.52
+   ],
+   "points": [
+    {
+     "t": 2001,
+     "text": "general purpose（desktop + server）：software compatibility 最重要、product life 短、價格高、profit margin 大、OS issues 重要；未來著重 performance、human interface、bandwidth。"
+    }
+   ],
+   "explain": [
+    "把 desktop 和 server 合成一大類：general purpose computer（通用電腦），另一大類是 embedded computer。來比較它們的需求有什麼不一樣。",
+    "general purpose 電腦最重要的是 software compatibility（軟體相容性），因為上面一直有很多軟體在用。",
+    "它的 product life（產品壽命）很短、價格比較高、profit margin（利潤）比較大。",
+    "想想你以前的電腦，現在還會用嗎？早就淘汰了，因為太慢。新一代出來，舊的就不用了，這就是 short product cycle。",
+    "OS（作業系統）也很重要：習慣用 Windows 就會繼續買 x86 的電腦，習慣 workstation 的系統就繼續用那套。",
+    "未來 transistor 會繼續變多，general purpose 電腦會繼續著重 performance、human interface（人機介面）、bandwidth 這些方向。"
+   ]
+  },
+  {
+   "title": "Embedded computer 的特性",
+   "scene": "nuA-2a-emb",
+   "cues": [
+    2194.28,
+    2219.83,
+    2251.76,
+    2264.26,
+    2315.82,
+    2330.4,
+    2343.71,
+    2356.06,
+    2449.38,
+    2464.02,
+    2500.62,
+    2532.48,
+    2590.42
+   ],
+   "points": [
+    {
+     "t": 2194,
+     "text": "embedded：在另一個 device 裡的小 component，跑 predetermined application（冰箱、車子），用在 control、consumer electronics、game、cellphone。"
+    },
+    {
+     "t": 2316,
+     "text": "通常沒有 floating point、不需要 MMU、整合 peripheral；ISA 各式各樣、compatibility 不是問題；low power；4/8-bit 處理器可用很久；量大、cost 低。"
+    },
+    {
+     "t": 2532,
+     "text": "1995 年 x86 數量第一，2002 年 ARM 變第一；embedded 是未來趨勢。"
+    }
+   ],
+   "trap": "embedded computer 的 compatibility「不是」主要問題（自己寫自己的軟體），general purpose 才是 software compatibility 最重要。",
+   "explain": [
+    "embedded computer 是放在另一個裝置（device）裡面的，它不是主角，只是大系統裡的一個小零件，例如冰箱裡的小 processor。",
+    "它通常只跑一個事先決定好的應用（predetermined application）：冰箱就那幾個功能，車子裡的 microprocessor 固定控制出油量、煞車，不會隨時多加功能。",
+    "它用在控制（control）、消費性電子產品、遊戲機、手機等等，在這些系統裡都只是其中一個零件。",
+    "例如用 Lego 拼出來的機器人，裡面裝了一顆 microprocessor，就能做很多事：刷馬桶、換燈泡、玩魔術方塊。",
+    "它跟 general purpose 電腦有什麼不同？第一，通常沒有 floating point：功能固定，不需要那麼複雜的小數運算。",
+    "第二，不需要 memory management unit（記憶體管理單元，MMU），因為沒有很大的記憶體要管理。",
+    "第三，它會跟各式各樣的 peripheral（周邊 I/O 功能）整合在一起。",
+    "第四，ISA 可以各式各樣。在 PC 市場，你很難設計一顆和 Intel 相容的 processor 去競爭；但 embedded 功能固定，自己設計 processor、自己寫軟體就好，compatibility 不是問題，比較容易進入。",
+    "要注意 low power（低耗電）很重要，因為它只是大系統裡的一小部分。",
+    "它也可以存在很久：4-bit、8-bit 的 microprocessor 到現在還在用，例如豆漿機裡就有一顆，一直用下去。",
+    "還有量很大、cost 一定要很低：一台相機才幾千元，裡面的 processor 能多貴？PC 要好幾萬，可以比較一下。",
+    "看 microprocessor 的數量：1995 年 x86（用在 PC）是第一名；到了 2002 年，ARM 已經變成第一名，因為手機和各種 controller 都用 ARM。",
+    "這張市場圖顯示手機用的 processor 成長最快。embedded computer 是更重要的未來趨勢，不論是 processor 還是軟體開發都很重要。"
+   ]
+  },
+  {
+   "title": "結語",
+   "scene": null,
+   "points": [
+    {
+     "t": 2634,
+     "text": "從歷史可以學到未來要怎麼發展；下次介紹 abstraction 與 technology。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Harvard architecture 的特點是？",
+   "opts": [
+    "instruction 和 data 放在不同的 memory",
+    "instruction 和 data 放在同一個 memory",
+    "只用真空管做 switch",
+    "只有一個 accumulator register"
+   ],
+   "ans": "instruction 和 data 放在不同的 memory",
+   "why": "Harvard Mark I（1944）的 instruction 與 data 分開儲存，這種設計就叫 Harvard architecture。"
+  },
+  {
+   "q": "ENIAC 用什麼當 switch？",
+   "opts": [
+    "真空管（vacuum tube）",
+    "電晶體（transistor）",
+    "IC",
+    "microprocessor"
+   ],
+   "ans": "真空管（vacuum tube）",
+   "why": "ENIAC（1943–1946）用真空管，每秒 1,900 個加法；電晶體之後才取代真空管。"
+  },
+  {
+   "q": "Integrated Circuit（IC）帶來的最大改變是？",
+   "opts": [
+    "把 transistor、電阻、電容做在同一塊半導體上，尺寸可以一直縮小",
+    "讓電腦可以 programmable",
+    "讓 instruction 和 data 分開存",
+    "讓 PC 變成 open system"
+   ],
+   "ans": "把 transistor、電阻、電容做在同一塊半導體上，尺寸可以一直縮小",
+   "why": "discrete component 要一個個接起來很佔空間；IC 一次全部做出來，一顆 chip 能放更多 device。"
+  },
+  {
+   "q": "老師講的 Moore's Law 是？",
+   "opts": [
+    "每 18 個月，一顆 chip 上的 transistor 數量 double",
+    "每 18 個月 clock rate double",
+    "每年 feature size 減半",
+    "每 18 個月價格 double"
+   ],
+   "ans": "每 18 個月，一顆 chip 上的 transistor 數量 double",
+   "why": "Moore（Intel co-founder）1965 年預測：feature size 越縮越小，每 18 個月 transistor 數 double。"
+  },
+  {
+   "q": "Apple II（1977）比 IBM PC（1981）早，為什麼後來大部分 PC 是 IBM 架構？",
+   "opts": [
+    "IBM PC 是 open system，spec 公開，大家都能做相容產品、比較便宜",
+    "IBM PC 用 RISC",
+    "IBM PC 不需要 OS",
+    "Apple II 沒有 microprocessor"
+   ],
+   "ans": "IBM PC 是 open system，spec 公開，大家都能做相容產品、比較便宜",
+   "why": "規格公開讓很多廠商參與、價格下降，也帶動臺灣的周邊產業。"
+  },
+  {
+   "q": "embedded computer 最重要的考量通常是？",
+   "opts": [
+    "cost 與 power",
+    "software compatibility",
+    "floating point 效能",
+    "memory management unit"
+   ],
+   "ans": "cost 與 power",
+   "why": "它只是系統裡的小 component，量大、要便宜；手持裝置電池有限，要 low power。"
+  },
+  {
+   "q": "28 nm 等於多少 micron？",
+   "opts": [
+    "0.028 µm",
+    "0.28 µm",
+    "2.8 µm",
+    "28 µm"
+   ],
+   "ans": "0.028 µm",
+   "why": "1 µm = 1000 nm，28 ÷ 1000 = 0.028；頭髮約 100 µm。"
+  }
+ ]
+}
