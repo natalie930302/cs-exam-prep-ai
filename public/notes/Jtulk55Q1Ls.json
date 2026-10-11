@@ -1,0 +1,523 @@
+{
+ "video": "Jtulk55Q1Ls",
+ "label": "黃婷婷教授計算機結構_第26A講 Memory",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "複習：page table、TLB、cache 用 physical address",
+   "scene": "cvm-26a-recap",
+   "points": [
+    {
+     "t": 18,
+     "text": "Virtual memory 是 hierarchy 最後一層：每個 program 有自己的 virtual space，share physical memory；全部的 space 在 disk 的 swap space。"
+    },
+    {
+     "t": 76,
+     "text": "Penalty 大 → page 大（1K、4K）、fully associative；page table 在 memory，正常要兩次 memory access。"
+    },
+    {
+     "t": 184,
+     "text": "常用的 data 放 cache、常用的 translation 放 TLB；兩者都 hit 時不需要任何 memory access。"
+    },
+    {
+     "t": 276,
+     "text": "Cache 用 physical address（unique），所以要先 translation 才能查 cache：sequential。"
+    }
+   ],
+   "cues": [
+    18.6,
+    45.8,
+    75.4,
+    100.4,
+    111,
+    152.8,
+    167.4,
+    184.2,
+    219.4,
+    242.4,
+    275.6,
+    309.9
+   ],
+   "explain": [
+    "今天把 memory 的部分結束。先複習：virtual memory 是 hierarchy 最後一層。每個 program 有自己的 virtual memory space，很多 program 同時 run，共用一塊 physical memory。",
+    "因為 locality，只要把需要的 page 搬進 main memory；整個 program 需要的 virtual space 都放在 disk 的 swap space。",
+    "Secondary storage 和 main memory 之間的 miss penalty 很大，所以搬進搬出的單位叫 page，很大，1K、4K bytes。",
+    "Penalty 大，所以用 fully associative：只要 memory 有位置就可以放進去。",
+    "給一個 virtual address，要先找出它的 page 在哪個 frame：去 memory 裡的 page table 找到 entry 做 translation。",
+    "Page number 換成 frame number，當作 physical address 的前半部（high-order bits）；後半部是不變的 page offset，合起來就是 physical address。",
+    "拿到 physical address 還要再去 memory 拿資料。所以正常要兩次 memory access：一次 page table、一次真正的資料。",
+    "怎麼加速？常常被 access 的 data，就放在 cache 上，這是 hierarchy 最早介紹的一層。",
+    "同樣的道理，translation 也常常用到（一個 page 裡有 locality），所以把常用的 entry 放在 CPU 旁邊，那就是 TLB。",
+    "所以雖然正常要兩次 memory access，靠 TLB 和 cache，最後可能一次都不需要：TLB 找 entry、translation，再到 cache 直接拿 data。",
+    "Cache 用的是什麼 address？physical address。因為有很多 process，但 physical 只有一個，所以 physical address 是 unique（獨一無二）的。",
+    "所以要先經過 translation：TLB hit 就直接得到 physical address 去 access cache；TLB miss 要去 memory 找 entry。做完 translation 才能查 cache，是 sequential 的。"
+   ]
+  },
+  {
+   "title": "Virtually addressed cache：快，但有兩個問題",
+   "scene": "cvm-26a-vcache",
+   "points": [
+    {
+     "t": 345,
+     "text": "想讓 translation 和 cache access 同時做：cache 改用 virtual address，hit 就不用 translation，miss 才翻譯。"
+    },
+    {
+     "t": 471,
+     "text": "問題一：多個 process 的同一個 virtual address 指不同 data → tag 加 process ID。"
+    },
+    {
+     "t": 569,
+     "text": "問題二：兩個 virtual address map 到同一個 physical address（aliasing），cache 內多份 copy 要一致，需要很多 hardware。"
+    }
+   ],
+   "trap": "Virtually addressed cache 的 tag 不加 process ID，換 process 時同一個 VA 會拿到別人的資料。",
+   "cues": [
+    347.6,
+    374.1,
+    388.5,
+    399.2,
+    440,
+    470.4,
+    496.4,
+    531.8,
+    568.8,
+    602.6,
+    628.4
+   ],
+   "explain": [
+    "先 translation 再查 cache，時間會拉得比較長。有沒有可能兩件事同時做？",
+    "要同時做，cache 就得直接用 virtual address 去 access，cache 裡擺的就是 virtual address，不需要 translation。",
+    "直接拿 virtual address 去 cache 找，hit 就結束了，完全不用 translation。",
+    "只有 miss 時，才需要透過 translation 得到 physical address，去 main memory 把東西搬進 cache。",
+    "這樣可以同時做，但天下有這麼容易的事情嗎？沒有，會出現一些問題。",
+    "第一個問題：cache 是 shared。在 multiprogramming 下，好幾個 process 輪流在同一個 CPU 上 run，共用同一個 cache。",
+    "你說第 8 號 address，他也說第 8 號，但各有自己的 address space，其實不是同一個 data。同一個 virtual address 不再 unique。畫面上的數字是示意。",
+    "解法：每個 process 都有一個 ID（process ID）。把 ID 加進 tag，就知道是哪個 process 的，又變 unique 了。",
+    "第二個問題：physical address 可能被 shared。兩個 process 可能用不同的 virtual address，指到同一個 physical location。",
+    "這樣 cache 裡同一個 physical 位置會有兩份 copy。更新一份時，其他 copy 也都要更新（consistency，一致性），需要花很多 hardware 去維護。",
+    "所以 virtually addressed cache 的好處是可以同時做，代價是要用很多 hardware 處理這些問題。"
+   ]
+  },
+  {
+   "title": "Virtually indexed, physically tagged：index 落在 page offset 裡",
+   "scene": "cvm-26a-vipt",
+   "points": [
+    {
+     "t": 646,
+     "text": "變形：cache 仍用 physical address 的 tag（unique），但 index 取自 page offset 中不會被翻譯的部分。"
+    },
+    {
+     "t": 785,
+     "text": "若 index 用到會被 translation 改變的 bits，就得等 translation 完；只有 page number 那段會變。"
+    },
+    {
+     "t": 1018,
+     "text": "Page size 夠大，index + block offset 落在 page offset 裡：用 VA 的 index 讀 cache，同時 TLB 翻譯，讀出 tag 後馬上比對。"
+    },
+    {
+     "t": 1255,
+     "text": "Cache miss、TLB hit → 1 次 memory access；兩者都 miss → 2 次。"
+    }
+   ],
+   "trap": "條件是 index + block offset 的 bit 數 ≤ page offset 的 bit 數（page 要夠大）。",
+   "cues": [
+    648.4,
+    667.2,
+    695.6,
+    733.8,
+    759.9,
+    784.9,
+    861.5,
+    966.2,
+    1000.6,
+    1017.3,
+    1050.1,
+    1059.8,
+    1079.6,
+    1137.7,
+    1179.6,
+    1202.4,
+    1254.8,
+    1274.9,
+    1295.5
+   ],
+   "explain": [
+    "另一個做法是稍微變化一下，叫做 virtually indexed, physically tagged（虛擬索引、實體標籤）。",
+    "Cache 基本上還是用 physical address 來標示（tag）。只要是 physical address 就是 unique，不會有「不同名字、同一個位置」的問題。",
+    "看 translation：TLB 把 page number 換成 frame number，page offset 不會變。",
+    "再看 cache 的地址：最後幾個 bit 是 block offset。老師的例子 block 是 4 bytes，所以最後 2 個 bit 不用理它。index 10 bits 是我們補的示意值。",
+    "把 block number 的 low-order bits 當 index 去 access cache，剩下的高位元就是 tag，用來分辨很多 map 到同一位置的人。",
+    "如果 index 用到了會被 translation 改變的 bits，拿 virtual address 去 index 就不正確，只能等 translation 完畢再 access cache。",
+    "換個角度看 32-bit 的地址：translation 會改變的只有前面 frame number 那一段。",
+    "如果還沒 translation，就不知道 physical address 是什麼，只能先翻譯、再查 cache，這樣 sequential 很慢。",
+    "Translation 時變的是哪裡？只有前面那一小塊；page offset 這邊完全不變。",
+    "所以只要 page size 夠大，cache 的 index（加上 block offset）就完全落在不變的 page offset 裡。程式檢查：2 + 10 = 12 ≤ 12。",
+    "這部分在 virtual address 和 physical address 是一樣的，所以可以直接用 virtual address 的這幾個 bit 去 access cache。",
+    "Cache 讀出 tag 要花一點時間；同一時間，TLB 也在做 translation。",
+    "等 tag 讀出來，translation 也做完了，馬上就能比對，沒有浪費時間。cache access 和 translation 就同步進行了。",
+    "因為 index 的部分跟 virtual address 一樣，所以叫 virtually indexed；但 tag 其實是 physical address，所以叫 physically tagged。",
+    "流程：給一個 virtual address，page offset 部分不會變，拿去當 index 讀 cache；page number 送進 TLB 翻譯。",
+    "TLB 翻出來的 physical tag，和 cache 讀出來的 tag 比對：一樣而且 valid，就是 hit，資料送給 CPU。",
+    "如果 cache 裡沒有（tag 不對或 invalid），但 TLB hit，就只要一次 memory access 把 block 拿進來。",
+    "如果 TLB 也 miss，就要先去 page table 把 entry 搬進來，再去拿 block，共兩次 memory access。",
+    "這個方法的條件：page size 一定要夠大，cache 的 index 才不會落到會變的地方。"
+   ]
+  },
+  {
+   "title": "Memory protection：OS、supervisor mode、system call",
+   "scene": "cvm-26a-protect",
+   "points": [
+    {
+     "t": 1314,
+     "text": "很多 process share 同一塊 physical memory，需要 protection。"
+    },
+    {
+     "t": 1351,
+     "text": "Page table 等狀態只有 OS 在 supervisor（kernel）mode 才能存取；user 要靠 system call 進入 kernel mode，因此無法 access 別人的資料。"
+    }
+   ],
+   "cues": [
+    1322.8,
+    1339.9,
+    1351.1,
+    1372.9,
+    1387.1,
+    1408.4
+   ],
+   "explain": [
+    "Memory protection（記憶體保護）：很多 process share 同一個 memory，我的 data 會不會被別人改掉？",
+    "每個 task 都有自己的 virtual address，但用的是同一塊 physical memory，所以需要保護。",
+    "保護靠 OS 來做。有些動作 user program 不能做，例如看 page table、做 translation 的設定。每個 process 有自己的 page table，你沒辦法去碰別人的。",
+    "OS 運作在 supervisor mode（也叫 kernel mode，核心模式），只有在這個 mode 才能做這些動作，一般 user 不行。",
+    "所以雖然 physical memory 是 shared，並不是任何 user program 都能 access 別人的東西。",
+    "User 要從 user mode 跳到 kernel mode，必須透過 system call（系統呼叫）。這樣 user 之間就不會互相 access 到對方的 data。"
+   ]
+  },
+  {
+   "title": "小結：page table、TLB、cache 與 index",
+   "scene": "cvm-26a-sum",
+   "points": [
+    {
+     "t": 1430,
+     "text": "Page table 做 translation、TLB speed up；最快是 TLB hit + cache hit。"
+    },
+    {
+     "t": 1465,
+     "text": "Cache 用 physical index 要等 TLB；加速法：virtual address cache，或 page 夠大時用不變的部分當 index，只翻譯 tag。"
+    }
+   ],
+   "cues": [
+    1434.2,
+    1443,
+    1458.1,
+    1465.1,
+    1473.8
+   ],
+   "explain": [
+    "小結今天的 virtual memory：主要有一個 page table 做 translation。",
+    "TLB 用來 speed up translation。",
+    "TLB 和 cache 都在 memory 系統裡，最快的狀況就是 TLB hit、cache hit。",
+    "Cache 用的是 physical address 的 index，所以要先經過 TLB 做 translation。",
+    "想更快的方法：cache 直接用 virtual address；或者 page size 夠大，用 physical address 不變的部分當 cache index，只有 tag 要做 translation。"
+   ]
+  },
+  {
+   "title": "Memory hierarchy 共同架構：放在哪裡、怎麼找",
+   "scene": "cvm-26a-place",
+   "points": [
+    {
+     "t": 1498,
+     "text": "每一層都利用 locality，像 cache；都要回答四個問題：placement、finding、replacement、write。"
+    },
+    {
+     "t": 1573,
+     "text": "Placement：direct map（1-way）、n-way set associative、fully associative；associativity 越高 miss rate 越低但好處遞減、成本與 access time 增加。"
+    },
+    {
+     "t": 1689,
+     "text": "Finding：direct map 1 個 tag 比較；n-way n 個；fully associative cache 全部比對；virtual memory 用完整的 page table 直接 index，不用比 tag。"
+    }
+   ],
+   "cues": [
+    1501.2,
+    1516.1,
+    1519.9,
+    1572.9,
+    1604.7,
+    1654.2,
+    1665.8,
+    1688.7,
+    1705.1,
+    1737.2,
+    1761.2,
+    1855
+   ],
+   "explain": [
+    "最後把整個 memory hierarchy 做個複習：cache、TLB、virtual memory，每一層都利用 principle of locality，就像 cache 一樣。",
+    "每一層都要解決四個問題。唸書時可以照這四個問題去比較每一層。",
+    "第一個是 block placement：block 可以放在哪裡？不同的 placement 方法，找 block 的方法也不一樣。",
+    "Direct map 用 set associative 的角度看，就是每個 set 只有 1 個 entry（one-way）。index 算出來只有一個位置，直接放進去。",
+    "N-way set associative：用 index 算出屬於哪個 set；2-way 的 set 裡有兩個 entry，4-way 有四個，選任何一個都可以，競爭沒那麼激烈。",
+    "Fully associative：等於整個 cache 只有一個 set，裡面 N 個 element，放在任何位置都可以。",
+    "Associativity 越高，miss rate 越低，但好處越來越小；同時 complexity、cost 和 access time 都會增加。",
+    "第二個問題：怎麼找 block？direct map 只有一個位置，做一次 tag comparison 就知道是不是我。",
+    "N-way set associative：set 裡有 n 個人，要 n 個 tag 同時比較，n 越大需要的 hardware 越多。",
+    "Fully associative 的 cache：例如有 1024 個 entry，就要 1024 個 tag 同時比對。",
+    "Virtual memory 也是 fully associative，但它建一張完整的 lookup table（page table），用 page number 直接 index 就知道在哪個 frame，不需要比 tag。",
+    "Cache 用 hardware 做比對；virtual memory 查 page table 要多一次 memory access，但 fully associative 讓 miss rate 降低，因為只要有空間就能放。"
+   ]
+  },
+  {
+   "title": "共同架構：replacement 與 write policy",
+   "scene": "cvm-26a-repwrite",
+   "points": [
+    {
+     "t": 1888,
+     "text": "Direct map 沒有 replacement 選擇；set/fully associative 依 temporal locality 用 LRU，實務上用 approximation 或 random。"
+    },
+    {
+     "t": 1993,
+     "text": "Write through 保持兩層一致但 traffic 多，可加 write buffer；write back 設 dirty，被 replace 時才寫回。Virtual memory 一定 write back。"
+    }
+   ],
+   "cues": [
+    1889.8,
+    1901.4,
+    1913.5,
+    1931.6,
+    1983.1,
+    1992.6,
+    2015.6,
+    2025.5,
+    2045.5
+   ],
+   "explain": [
+    "第三個問題 replacement：direct map 只有一個位置，我來你就要走，沒有選擇；set associative 和 fully associative 才有 replacement 的問題。",
+    "例如 4-way，4 個位置都坐滿了，新的人進來，誰要出去？",
+    "照 temporal locality，很久很久沒用到的，最可能以後也不用，所以把 least recently used（LRU）的搬出去。",
+    "但 way 很多時，要精確記錄誰最久沒用需要很多 hardware，所以通常用 approximation。virtual memory 就是用 reference bit：一段時間清 0、用到設 1，換掉還是 0 的。",
+    "另一種方法是 random（隨機），不需要那麼多 hardware。",
+    "第四個問題 write：write through 每次 update 上層，也同時寫下層，保持兩份 copy 一致，但 traffic（流量）大增。",
+    "加一個 write buffer 可以減少 overhead：先寫進 buffer，buffer 再慢慢寫到 lower level。",
+    "Write back：每次 update 時不寫回，只把它標成 dirty（髒的，被寫過）；等 upper level 這塊要被 replace 時才寫回 lower level。",
+    "Virtual memory 就不用講了，一定是 write back。overhead 太大，不可能每改一個 data 就寫回 disk，要等 page 被換出去時才整個寫回。"
+   ]
+  },
+  {
+   "title": "Miss 的三個來源：compulsory、capacity、conflict",
+   "scene": "cvm-26a-3c",
+   "points": [
+    {
+     "t": 2063,
+     "text": "Compulsory（cold start）：第一次 access 一定 miss。"
+    },
+    {
+     "t": 2094,
+     "text": "Capacity：容量不夠，例如要用 100、只放得下 80；virtual memory 也一樣。"
+    },
+    {
+     "t": 2140,
+     "text": "Conflict（collision）：direct map / set associative 只能放在固定的 set，別處有空也不能去；fully associative 沒有 conflict miss。"
+    }
+   ],
+   "trap": "同一個 miss 在 fully associative 下就不會發生 → 它才算 conflict miss。",
+   "cues": [
+    2064.6,
+    2070.9,
+    2093.8,
+    2119.2,
+    2139.8,
+    2151.8,
+    2196.2
+   ],
+   "explain": [
+    "Sources of misses：有哪些原因會造成 cache miss，或是 page fault？",
+    "第一種 compulsory miss（強制性 miss），也叫 cold start miss：一開始誰都不在裡面，第一次 access 到某個 block 一定會 miss。",
+    "第二種 capacity miss（容量 miss）：容量真的不夠。要用的東西有 100，upper level 只放得下 80，一定擺不下。",
+    "Virtual memory 也一樣：physical memory 有限，很多 process 的 virtual space 放不下，就會產生 capacity miss。",
+    "第三種 conflict miss，也叫 collision miss（衝突 miss）。fully associative 沒有這個問題，只要有位置就能進來。",
+    "Direct map 或 set associative 為了快，用 index 規定你只能坐某個位置。示意例子：4 個 block 的 direct map，依序 access block 0、4、0、4，0 和 4 都 map 到 line 0，即使 line 1–3 空著也不能去，結果全部 miss；換成 fully associative 只 miss 前 2 次。程式模擬過。",
+    "所以這三種不同的 miss 都會發生；conflict miss 只出現在不是 fully associative 的設計。"
+   ]
+  },
+  {
+   "title": "改 design 一定變快嗎？size、associativity、block size",
+   "scene": "cvm-26a-tradeoff",
+   "points": [
+    {
+     "t": 2205,
+     "text": "降低 miss rate 不一定提升 overall performance。"
+    },
+    {
+     "t": 2244,
+     "text": "Cache size ↑：capacity miss ↓、access time ↑；associativity ↑：conflict ↓、access time ↑；block size ↑：spatial locality、miss rate ↓，但 miss penalty ↑。"
+    },
+    {
+     "t": 2331,
+     "text": "Cache size 固定時 block 太大 → block 數變少 → conflict 增加，miss rate 反而上升。"
+    },
+    {
+     "t": 2429,
+     "text": "Trends：synchronous SRAM/DRAM burst、restructure code 增加 locality、prefetching。"
+    }
+   ],
+   "cues": [
+    2212.7,
+    2243.5,
+    2268.8,
+    2289.3,
+    2319.2,
+    2331,
+    2398.4,
+    2429.1,
+    2440,
+    2470.3
+   ],
+   "explain": [
+    "知道 miss 的原因後，改變 design 降低 miss rate，就一定會增加 performance 嗎？不一定，要看整體。",
+    "把 cache size 變大：可以降低 capacity miss，因為空間更大；但 cache 越大越慢，access time 會增加。",
+    "把 associativity 增加，例如 2-way 變 4-way：一個 set 可以容納更多人，不用打架，conflict miss 降低；但 access time 也會增加。",
+    "把 block size 變大：附近的資料一起搬進來，利用 spatial locality（空間區域性），miss rate 會下降。",
+    "可是 block 變大，每次搬進搬出要搬很多東西，miss penalty 就增加了。",
+    "還記得那張圖嗎？cache size 固定時，block size 一直變大，miss rate 先下降，後來反而上升。為什麼？（圖形是示意）",
+    "因為 cache size 固定，block 越大，number of blocks 就越少：例如 16 KiB 的 cache，16 B 的 block 有 1024 個，1 KiB 的 block 只剩 16 個（示意）。更多人 map 到同一個位置，conflict 增加。",
+    "一些 memory hierarchy 的 trend：synchronous SRAM 可以提供 burst of data，DRAM 也重新設計來提供更高的 bandwidth（頻寬）。",
+    "也可以 restructure code（改寫程式）來增加 locality。設計 algorithm 時不能只看 time complexity，data 若分散，cache miss 會讓它變慢。",
+    "還有 prefetching（預先抓取）的方法，也可以讓 cache miss 降低。"
+   ]
+  },
+  {
+   "title": "Cache 的 control：finite state machine 與一個簡單 cache",
+   "scene": "cvm-26a-fsmintro",
+   "points": [
+    {
+     "t": 2485,
+     "text": "Single cycle 的 control 由 opcode（和 funct）決定；pipeline 在 decode 時產生後往下傳。"
+    },
+    {
+     "t": 2586,
+     "text": "Cache controller 沒有 instruction，要看目前 state 與 input 決定 control signal 與 next state → 用 finite state machine。"
+    },
+    {
+     "t": 2653,
+     "text": "簡單 cache：direct mapped、write-back、write allocate、block 4 words、16 KiB（1024 blocks）、32-bit address、valid/dirty、blocking；位址切成 tag 18 | index 10 | offset 4。"
+    }
+   ],
+   "cues": [
+    2486.8,
+    2497.7,
+    2549.4,
+    2585.6,
+    2625.2,
+    2653.1,
+    2670.1,
+    2683.1,
+    2704.8,
+    2728.4,
+    2751
+   ],
+   "explain": [
+    "接下來看用 finite state machine（有限狀態機）去 control 一個 simple cache 是怎麼回事。",
+    "先回想 single cycle processor：control signal 怎麼來？看 instruction 的 opcode 就知道；有些運算（像加減乘除）的細節藏在 funct field。",
+    "Pipeline 也一樣：control signal 在 decode 階段就產生，只是後面的 stage 才用到，就一路傳下去。",
+    "但 cache 沒有 instruction。它要發出什麼 control signal，取決於現在在哪一個 state（狀態）、收到哪些 input。",
+    "所以用 finite state machine 來 model：在某個 state，收到某些 input，就發出對應的 signal，並 transition（轉移）到下一個 state。",
+    "例子是一個很簡單的 cache：direct mapped、write-back；write allocate 表示 write miss 時也要把 block 搬進來。",
+    "Block 是 4 個 word（16 bytes），cache size 16K bytes，所以一共 16K ÷ 16 = 1024 個 block。程式驗算過。",
+    "32-bit byte address；每個 block 有 valid bit、dirty bit。它是 blocking cache：access cache 時 CPU 會 stall 在那邊等。",
+    "Tag 有幾個 bit？先看 block：16 bytes = 2⁴，所以最後 4 個 bit 是 block offset。",
+    "往上是 block number，取它的 low-order bits 當 index。1024 個 block 需要 10 個 bit。",
+    "Direct map 用 10 個 bit 當 index，剩下 32 − 10 − 4 = 18 bits 就是 tag。"
+   ]
+  },
+  {
+   "title": "下課休息",
+   "scene": null,
+   "points": [
+    {
+     "t": 2755,
+     "text": "休息一下，下一節繼續。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Virtually addressed cache 在 multiprogramming 下的第一個問題怎麼解？",
+   "opts": [
+    "在 tag 加上 process ID",
+    "把 page size 變大",
+    "改用 write through",
+    "把 TLB 變大"
+   ],
+   "ans": "在 tag 加上 process ID",
+   "why": "不同 process 的同一個 virtual address 指不同 data；加 ID 讓位址變 unique。"
+  },
+  {
+   "q": "Page 4 KiB（offset 12 bits）、cache block 4 bytes、index 10 bits，可以做 virtually indexed, physically tagged 嗎？",
+   "opts": [
+    "可以，2 + 10 = 12 ≤ 12",
+    "不行，index 太長",
+    "不行，因為 tag 不夠",
+    "只有 fully associative 才行"
+   ],
+   "ans": "可以，2 + 10 = 12 ≤ 12",
+   "why": "Index 與 block offset 全落在不會被翻譯的 page offset 裡，可以邊讀 cache 邊查 TLB。"
+  },
+  {
+   "q": "Virtual memory 查 page table 時為什麼不用比對 tag？",
+   "opts": [
+    "page table 是完整的 lookup table，用 page number 直接 index",
+    "因為 page 很大",
+    "因為 TLB 會幫忙比對",
+    "因為它是 direct mapped"
+   ],
+   "ans": "page table 是完整的 lookup table，用 page number 直接 index",
+   "why": "Fully associative 的 cache 要全部比對 tag；VM 建一張完整的表，直接 index 就知道 frame。"
+  },
+  {
+   "q": "一個 miss 在 fully associative cache 下不會發生，但在 direct-mapped cache 下會發生，它屬於哪一種？",
+   "opts": [
+    "conflict miss",
+    "compulsory miss",
+    "capacity miss",
+    "coherence miss"
+   ],
+   "ans": "conflict miss",
+   "why": "只能放在固定位置、別處有空也不能去造成的 miss，就是 conflict（collision）miss。"
+  },
+  {
+   "q": "Cache size 固定，block size 一直加大，miss rate 最後反而上升，主因是？",
+   "opts": [
+    "block 數變少，conflict 增加",
+    "spatial locality 消失",
+    "tag 變長",
+    "hit time 變短"
+   ],
+   "ans": "block 數變少，conflict 增加",
+   "why": "總容量固定時 block 越大個數越少，更多 block map 到同一位置。"
+  },
+  {
+   "q": "16 KiB direct-mapped cache、block 4 words（16 B）、32-bit address，tag 幾個 bit？",
+   "opts": [
+    "18",
+    "20",
+    "16",
+    "22"
+   ],
+   "ans": "18",
+   "why": "offset 4 bits、1024 blocks → index 10 bits，tag = 32 − 10 − 4 = 18。"
+  },
+  {
+   "q": "使用者程式要做只有 OS 才能做的事（例如動 page table），要怎麼辦？",
+   "opts": [
+    "透過 system call 進入 kernel mode，由 OS 做",
+    "直接寫 page table register",
+    "關掉 TLB",
+    "改用 physical address"
+   ],
+   "ans": "透過 system call 進入 kernel mode，由 OS 做",
+   "why": "Page table 等狀態只有 supervisor（kernel）mode 能存取，這就是 protection。"
+  }
+ ]
+}

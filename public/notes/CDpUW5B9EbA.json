@@ -1,0 +1,518 @@
+{
+ "video": "CDpUW5B9EbA",
+ "label": "黃婷婷教授計算機結構_第25B講 Memory",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "黑板例子：4 個 page、2 個 frame 的 translation",
+   "scene": "cvm-25b-board",
+   "points": [
+    {
+     "t": 17,
+     "text": "平常 memory reference 是給一個地址就去拿；virtual address 是自己編的號碼，真正位置要經過 translation。"
+    },
+    {
+     "t": 127,
+     "text": "黑板例子：virtual space 4 個 page、每個 4 bytes；前 2 bits 是 page number，後 2 bits 是 page offset。physical 只有 2 個 frame。"
+    },
+    {
+     "t": 259,
+     "text": "Page 01 整塊搬進 frame 00，page table 第 01 個 entry 記 → 00。"
+    },
+    {
+     "t": 347,
+     "text": "Virtual 0110：page 01 查表得 frame 00，offset 10 不變 → physical 0010。"
+    }
+   ],
+   "trap": "黑板上 frame number 寫成 00、01 兩位；重點是 offset 原樣接上，只換掉 page number。",
+   "cues": [
+    20.4,
+    74,
+    92.4,
+    126.5,
+    169.7,
+    180.8,
+    212.3,
+    259.1,
+    281.7,
+    294.6,
+    331.1,
+    346.9,
+    364.6,
+    419.6
+   ],
+   "explain": [
+    "再用黑板上的小例子看 translation。平常的 memory reference（記憶體存取）就是：給一個地址，去那裡拿東西。",
+    "如果 virtual address 和 physical address 一樣，就很簡單：給 0011 就去 0011 拿，給 1011 就去 1011 拿。",
+    "但 virtual address 其實是我寫程式時自己編的「假」號碼，東西真正擺在 memory 的另一個地址，所以需要 translation 把它找出來。",
+    "假設 virtual space 分成 4 個 page，每個 page 只有 4 個 byte。位址就是 0000、0001、0010……一路排下來，總共 16 個。",
+    "怎麼知道一個位址在第幾個 page？看前面兩個 bit 就知道：00 是第 0 個 page、01 是第 1 個……",
+    "後面兩個 bit 是 page offset，表示在 page 裡的第 0、1、2、3 個 byte。",
+    "Physical memory 只有兩個 frame。它的地址前面就是 frame number，黑板上寫作 00、01。",
+    "紅色的 page 01 常常被用到，所以把它整塊搬進 main memory，放在 frame 00。",
+    "Page table 有 4 個 entry（對應 4 個 page）。第 01 個 entry 記下：page 01 放在 frame 00。",
+    "現在要 access page 01 裡的第 3 個 element。搬到 frame 以後，它還是第 3 個嗎？是的，因為整塊一起搬。",
+    "所以 page offset 搬過去不會變。會變的只有前面的 page number。",
+    "給你 virtual address 0110：前面 01 是 page number，拿去 page table 查，得到 frame 00。",
+    "後面的 offset 10 不變，接在 frame 00 後面，physical address 就是 0010。程式驗算過。",
+    "總結：page 整塊搬，裡面的相對位置不變，用 low-order bits（offset）描述；high-order bits 是 page number，靠 translation table 換成 frame number。"
+   ]
+  },
+  {
+   "title": "Page table 太大：bound register 與兩個 limit",
+   "scene": "cvm-25b-limit",
+   "points": [
+    {
+     "t": 465,
+     "text": "Page table 大小和 virtual page 數有關，每個 program 一張，放在 memory；每次先查表再 access。"
+    },
+    {
+     "t": 539,
+     "text": "32-bit VA、4K page：2²⁰ entry × 4 B = 4 MB。"
+    },
+    {
+     "t": 569,
+     "text": "不必全部存：用 bound register 隨使用量增長；stack 與 dynamic data 從兩端長，用兩個 limit 更合理。其他方法：hashing、multi-level。"
+    }
+   ],
+   "cues": [
+    469.6,
+    485.3,
+    513.8,
+    538.7,
+    562.8,
+    568.8,
+    579.4,
+    601.9,
+    618.9,
+    638.3,
+    653.4
+   ],
+   "explain": [
+    "Page table 的大小跟 virtual address 有多少個 page 有關：1024 個 page 就要 1024 個 entry，而且每個 program 都要一張。",
+    "Page table 擺在 memory 裡。這跟 cache 用硬體同時比對 tag 不一樣：因為是 fully associative，所以用一張表來轉換。",
+    "所以每次都要先到 page table 做 translation，再用得到的 physical address 去 access 真正的 memory。",
+    "第一個問題：太大。32-bit virtual address、4K（2¹²）的 page，offset 用掉 12 bits，剩下 20 bits，有 2²⁰ 個 entry。",
+    "每個 entry 4 bytes，2²⁰ × 4 = 4 MB，很大。程式驗算過。",
+    "我們不需要全部存，因為 translation 也有 locality，可能只用到其中一兩個 entry。",
+    "方法一：bound register（界限暫存器）。現在只用到第 10、15、18 個 entry，就用多少給多少，limit 慢慢往上漲，不必一次全部配置。",
+    "但 memory 其實是從兩端長過來的：stack（堆疊）從高位址往下長，dynamic data（動態資料）從低位址往上長。",
+    "所以用兩個 limit register 比較合理：一個管往上長的，一個管往下長的。",
+    "其他方法還有：把 page table 本身再分頁（multi-level page table），或用 hashing。",
+    "再舉例 limit：用到第 15 個就設 15，用到 30 就設 30。30 以下合法，30 以上不合法，需要時再一直長。"
+   ]
+  },
+  {
+   "title": "Hashing：inverted page table 只跟 frame 數一樣大",
+   "scene": "cvm-25b-hash",
+   "points": [
+    {
+     "t": 684,
+     "text": "Hashing：值的範圍很大但實際出現的少，用 hash function（例如 mod 100）把它 map 到小表。"
+    },
+    {
+     "t": 829,
+     "text": "Page table 一樣：frame 遠比 virtual page 少，table 只要跟 frame 數一樣大；entry 要記 page number 與 frame，collision 用 chaining 或 linear probing。"
+    },
+    {
+     "t": 1019,
+     "text": "例：28-bit VA、4K page → 64K 個 page；physical 16K 個 frame → inverted page table 只要 16K 個 entry。"
+    }
+   ],
+   "trap": "Inverted page table 的大小跟 physical frame 數成正比，不是跟 virtual page 數。",
+   "cues": [
+    697.9,
+    725.9,
+    765.2,
+    788.8,
+    828.7,
+    866,
+    883,
+    897.4,
+    935.8,
+    1018.9,
+    1067.4,
+    1085
+   ],
+   "explain": [
+    "另一個方法用 hashing（雜湊）。資料結構學過 hash table，還記得嗎？",
+    "例如值的範圍是 1 到 1000，但真正會出現的可能只有 100 個。",
+    "如果用 array 直接 index，就得開 1000 格，其中大多數空著，就像 page table 一樣浪費。",
+    "只挖 100 個洞，用 hashing function（例如 mod 100）來決定位置：101 除以 100 餘 1，就放在第 1 格。程式驗算過。",
+    "Page table 也一樣：virtual 可能有 1024 個 page，但 physical frame 只有 100 個，任何時刻最多只有 100 個 page 在 memory。",
+    "所以根據 frame 的數目只 create 100 個 entry，用 hashing function 把 page number map 到這張表。",
+    "1024 個 page 擠進 100 格，一定會 collision（碰撞）。所以每個 entry 要記錄是哪個 page number、對應哪個 frame。畫面上的數字是示意。",
+    "這張表只要跟 frame 數一樣大就可以了：雖然有 1024 個 page，100 個 frame 就只要 100 個 entry。",
+    "衝突了怎麼辦？用 hashing 的方法：chaining（用 link list 串起來）或 linear probing（往下一格找）。比對記錄的 page number，對不上就繼續找。",
+    "課本的數字：28-bit virtual address、4K page，page number 有 28 − 12 = 16 bits，也就是 64K 個 page；physical 有 16K 個 frame，page 數是 frame 數的 4 倍。",
+    "一般的 page table 要 64K 個 entry；用 inverted page table（反向分頁表，依 frame 數來建）只要 16K 個。",
+    "沒有直接 index 了，那怎麼知道要去哪一格找？透過 hashing function 算出位置。"
+   ]
+  },
+  {
+   "title": "Two-level page table：用到才展開",
+   "scene": "cvm-25b-twolevel",
+   "points": [
+    {
+     "t": 1125,
+     "text": "Page number 拆成兩段：第一層選一大塊，第二層（每塊 2¹⁰ 個 entry）才是真正的 entry。"
+    },
+    {
+     "t": 1233,
+     "text": "有用到的那一塊才展開（配置第二層），沒用到的不 allocate。"
+    },
+    {
+     "t": 1269,
+     "text": "小例子：4-bit page number 拆成 2 | 2，第一層 4 個 entry；只用到 00、01 時只要 4 + 2 × 4 = 12 個 entry，不必 16 個。"
+    }
+   ],
+   "cues": [
+    1127.2,
+    1152.5,
+    1179.3,
+    1192.8,
+    1232.4,
+    1268.9,
+    1304.7,
+    1328.4,
+    1338.8,
+    1348,
+    1373
+   ],
+   "explain": [
+    "Two-level page table（兩層分頁表）。前面是 page number，有 2²⁰ 個；全部展開就要 2²⁰ 個 entry。",
+    "把 page number 再切成兩份：前面那份（第一層）指到某一大塊。",
+    "每一大塊裡面又分成 2¹⁰ 個 entry，由後面那份（第二層）來選。",
+    "所以是兩層：較高的 level 先選哪一大塊，再到低一層的 table 用 index 找到真正的 entry。",
+    "關鍵是：這一塊有用到，才把它展開（配置第二層 table）；沒用到的就不配置。若只用到 2 塊，只需 2¹⁰ + 2 × 2¹⁰ 個 entry，遠小於 2²⁰（示意）。",
+    "老師再講一次，用小例子：page number 只有 4 bits。開頭是 00 的一塊、01 一塊、10 一塊、11 一塊。",
+    "第一層只要存 4 個 entry（00、01、10、11）。如果全部展開是 16 個。",
+    "假如 00 有用到，就把 00 那塊展開；01 有用到，也展開。",
+    "10、11 沒有用到，就不需要 allocate 它們的第二層。",
+    "第一層記錄每塊有沒有用到：1 代表用到（已展開），0 代表沒用到。",
+    "所以只要存第一層這張小表，加上有用到的第二層：4 + 2 × 4 = 12 個 entry，比 16 個少。程式驗算過。"
+   ]
+  },
+  {
+   "title": "Page table 太慢：translation look-aside buffer（TLB）",
+   "scene": "cvm-25b-tlb",
+   "points": [
+    {
+     "t": 1394,
+     "text": "Page table 放在 main memory，每次 translation 都要多一次 memory access。"
+    },
+    {
+     "t": 1431,
+     "text": "Page 很大，連續的 address 用同一個 translation → 把常用 entry 放到 CPU 旁的 hardware buffer：TLB。"
+    },
+    {
+     "t": 1571,
+     "text": "Hardware 便宜後 TLB 有多個 entry，organize 成像 cache；先查 TLB，hit 就直接 access memory，miss 才去查 page table。"
+    }
+   ],
+   "cues": [
+    1397.6,
+    1415.6,
+    1431.1,
+    1445.9,
+    1454.8,
+    1474.3,
+    1496.4,
+    1510.8,
+    1556.3,
+    1571.3,
+    1631.9,
+    1649
+   ],
+   "explain": [
+    "Page table 太大的問題有方法處理了；那 page table 存取太慢怎麼辦？用 translation look-aside buffer。",
+    "Page table 存在 main memory，每次做 translation 都要去那邊拿 entry。",
+    "可是 page 很大（1024、2048 個 byte），用到這個 address，下一個、再下一個多半在同一個 page，用的是同一個 translation。",
+    "那為什麼要把這個 entry 放在 memory？把它搬到 CPU 旁邊，緊緊靠著 CPU 就好。",
+    "最早真的只有一個 entry 的 buffer，就已經省掉很多事情了。",
+    "例如連續 access 0100、0101……，每個都要 translation，查的都是同一個 page table entry，一直用到它。",
+    "這其實就是 cache 的觀念：常用的東西放在靠近 CPU 的地方。這個專門放 translation 的 buffer 就叫 TLB（Translation Look-aside Buffer）。",
+    "沒有 TLB 的話，每次 memory operation 都要兩次：一次去 page table 讀 entry，一次真正的 memory access。",
+    "TLB 是 hardware 做的。OS 是 software，沒辦法做到這麼快，所以要 hardware 幫忙。",
+    "後來 hardware 越來越便宜，TLB 不只放一個 entry，而是多放幾個，並且 organize 成像一個 cache 一樣。",
+    "每次要 translation，先到 TLB 看在不在。在的話就已經翻好了，直接拿 physical address 去 main memory access。",
+    "如果 TLB miss（不在裡面），才去 main memory 查 page table 做真正的 translation，然後再去 physical memory 拿東西。"
+   ]
+  },
+  {
+   "title": "TLB 細節：MMU、hit rate、dirty bit、兩種 TLB miss",
+   "scene": "cvm-25b-tlbmore",
+   "points": [
+    {
+     "t": 1662,
+     "text": "TLB hit 時 memory reference 只剩一次；miss 才查 page table。TLB 在 CPU 端的 MMU 裡，可為 fully 或 set associative。"
+    },
+    {
+     "t": 1759,
+     "text": "TLB miss rate 只有 0.01%–1%；miss 可由 hardware 或 software（OS）處理。"
+    },
+    {
+     "t": 1790,
+     "text": "Write 時 dirty bit 先記在 TLB，TLB entry 被換掉時才寫回 page table。"
+    },
+    {
+     "t": 1861,
+     "text": "TLB miss 兩種：translation 沒搬上來（page 在 memory）、page 根本不在 memory（page fault）。"
+    }
+   ],
+   "trap": "TLB miss 不等於 page fault：大多只是 translation 不在 TLB，從 page table 補上即可。",
+   "cues": [
+    1664.8,
+    1682.7,
+    1692.3,
+    1709.3,
+    1731.6,
+    1752.2,
+    1759.2,
+    1775,
+    1789.3,
+    1797.6,
+    1829.6,
+    1861,
+    1874.6,
+    1922.5,
+    1958,
+    1985.8
+   ],
+   "explain": [
+    "TLB 就是把常用的 page table entry 放在 CPU 旁邊，不用每次去 main memory access page table。",
+    "TLB hit 時，page table 不用 reference，memory reference 只剩下一次（拿資料那次）。",
+    "TLB miss 時，就還是要去 memory 裡的 page table 找 translation，再去 physical address。",
+    "Main memory 被分成好多塊：一塊放 page table，其他是各個 process 執行時需要的 frame。",
+    "TLB 通常在 memory management unit（MMU，記憶體管理單元）裡，在 CPU 這一端，不在 DRAM 那一端。",
+    "TLB 不只一個 entry，可以 organize 成 fully associative 或 set associative。",
+    "TLB 的 hit rate 很高，miss rate 只有 0.01% 到 1%，因為每個 page 都很大，locality 非常高。",
+    "TLB miss 可以用 hardware 處理（比較複雜），也可以 interrupt 跳到 OS，讓 software 處理。",
+    "TLB hit 時，如果是 read 就沒事了；如果是 write 呢？別忘了 dirty bit。",
+    "TLB entry 只是 page table 的一個 copy。page table 在 memory，不可能每寫一次就去改它，所以 dirty bit 先 set 在 TLB 這邊。",
+    "等到這個 TLB entry 被 replace 掉，或 page 被換出去時，才把 dirty 的資訊寫回 page table。",
+    "TLB miss 有兩種情況。第一種：page 其實在 main memory，只是它的 translation 沒擺上 TLB，從 page table 搬上來就好。",
+    "第二種：page 根本不在 memory，page table 裡也沒有有效的 translation，當然更不會在 TLB，這就是 page fault。",
+    "這兩個層次要分清楚：TLB 是 page table 的一小部分。不在 page table 的，一定也不在 TLB，要照 page fault 的方式處理。",
+    "整理：page table 太大，有 limit、hashing、multi-level 等方法；access 太慢，就用 TLB。",
+    "TLB 就是把常用的 translation 放在 CPU 附近。為什麼要這麼做？因為每次 access page table 都要多一次 memory access。"
+   ]
+  },
+  {
+   "title": "TLB 與 cache：最好一次 memory access 都不用",
+   "scene": "cvm-25b-tlbcache",
+   "points": [
+    {
+     "t": 2010,
+     "text": "TLB 和 cache 都是加速：TLB 做 translation，得到的 physical address 先去 cache 找。"
+    },
+    {
+     "t": 2072,
+     "text": "TLB hit + cache hit → 一次 memory access 都不用。"
+    },
+    {
+     "t": 2116,
+     "text": "流程：VA → TLB（miss 才查 page table）→ PA → cache（miss 才去 memory）；目前還沒談 page fault。"
+    },
+    {
+     "t": 2221,
+     "text": "VPN 經 TLB 得 physical page number，接上 offset 成 PA；PA 再切成 cache 的 tag | index | offset。"
+    }
+   ],
+   "cues": [
+    2015.5,
+    2033,
+    2038,
+    2049.5,
+    2061,
+    2071.7,
+    2115.3,
+    2143.5,
+    2170.9,
+    2184.4,
+    2220.3,
+    2243.4,
+    2252,
+    2274.3
+   ],
+   "explain": [
+    "Translation 得到 physical address 後，真的要去 memory 拿嗎？不一定，上面還有一層 cache。",
+    "TLB 和 cache 其實都是為了加速 access。",
+    "正常狀況（沒 TLB 也沒 cache）：先到 memory 的 page table 拿 entry 做 translation，得到 physical address，再去 memory access，共兩次。",
+    "有 TLB：要 translation 時先去 TLB 看，有的話馬上得到 physical address。",
+    "有 cache：拿到 physical address 後先去 cache 檢查，cache 裡有就不用去 memory 拿。",
+    "所以 TLB 加 cache，最好的情況是 translation 在 TLB 做完、資料又在 cache，一個 memory access 都不需要。",
+    "看流程圖：CPU 發出 virtual address，先去 TLB 找，hit 就得到 physical address；再到 cache 看，hit 就直接把資料傳給 CPU。這是最好的路徑。",
+    "比較差的情況：TLB miss，entry 不在 TLB，就要去 memory 做 translation，得到 physical address 後再去 cache 看。這只是 translation 不在而已。",
+    "不管 TLB hit 或 miss，拿到 physical address 去 cache 找；不在 cache 就是 cache miss，要去 memory 把東西搬進來。",
+    "以上都還沒有 page fault，也就是東西都在 main memory。而且這個流程是 sequential（循序）的：先翻譯完，才查 cache。",
+    "把 TLB 和 cache 接起來看：virtual page number 送進 TLB（只有少少幾個 entry，就在 CPU 旁邊），很快告訴你 physical page number。",
+    "Physical page number 加上 page offset，就是 physical address。",
+    "再用 physical address 去 access cache：後半段當 cache index，最前面當 tag 來比對，用 direct map 或 set associative 都可以。畫面上 cache 的 bit 數是示意。",
+    "最快的狀況就是這樣：TLB 把 virtual 轉成 physical，再用 physical address 查 cache。"
+   ]
+  },
+  {
+   "title": "TLB + cache 流程圖：read、write、protection",
+   "scene": "cvm-25b-flow",
+   "points": [
+    {
+     "t": 2300,
+     "text": "流程：TLB access → hit 後判斷 read/write；read 去 cache，hit 給資料，miss 則 stall（hardware 處理，不放棄 CPU）。"
+    },
+    {
+     "t": 2364,
+     "text": "Write 先檢查 write access bit：沒有就 protection exception；有才寫 cache、設 dirty。"
+    },
+    {
+     "t": 2389,
+     "text": "希望大部分走 TLB hit + cache hit；page fault 要 million cycles，交給 OS。"
+    }
+   ],
+   "trap": "Cache miss：CPU stall（hardware）；page fault：context switch（software）。",
+   "cues": [
+    2306.7,
+    2317.4,
+    2320.7,
+    2338.2,
+    2363.4,
+    2368.3,
+    2376.7,
+    2389.1,
+    2428.7,
+    2439.5,
+    2476.6
+   ],
+   "explain": [
+    "看流程圖：先做 TLB access，判斷 hit 還是 miss。",
+    "TLB hit 之後，看是不是 write；不是 write 就是 read，去 access cache。",
+    "Cache hit：資料從 cache 拿過來給 CPU。Cache miss：CPU 要 stall（暫停等待）。",
+    "Cache miss 用 hardware 處理：CPU 只是停下來等幾個 cycle，並不放棄 CPU。如果交給 OS，OS 要跑很多指令，反而更慢。",
+    "如果是 write，先檢查有沒有 write access（寫入權限）。",
+    "沒有權限的話，就是 write protection exception：OS 中斷你，不准寫這個地方。",
+    "有權限才繼續 access cache：hit 就寫進去，順便把 dirty 等 bit 設好；miss 就照 cache miss 的方式處理。",
+    "整個 TLB 和 cache 的目標：大部分時候都走 TLB hit、cache hit 這條路，完全不用碰 main memory。",
+    "只在 TLB 和 cache 之間走，一兩個 cycle 就完成；要到 memory 就要更多 cycle。畫面上長條的高度只是示意。",
+    "如果東西連 memory 都沒有，就是 page fault，要上百萬個 cycle，所以交給 OS（software）處理，OS 多花幾千幾萬個 cycle 也沒關係。",
+    "分清楚：cache 和 cache miss 用 hardware 處理；page fault 用 software 處理，因為它的 penalty 非常大。"
+   ]
+  },
+  {
+   "title": "TLB／page table／cache：哪些組合可能發生",
+   "scene": "cvm-25b-combos",
+   "points": [
+    {
+     "t": 2490,
+     "text": "老師逐一點名問 TLB、page table、cache 的 hit/miss 組合。"
+    },
+    {
+     "t": 2524,
+     "text": "可能：hit/hit/miss、miss/hit/hit、miss/hit/miss、miss/miss/miss（page fault）。"
+    },
+    {
+     "t": 2701,
+     "text": "不可能：TLB hit 但 page table miss（TLB 是 page table 的子集）；page table miss 卻 cache hit（page 不在 memory 不可能在 cache）。"
+    }
+   ],
+   "trap": "TLB hit 時其實根本不會去查 page table；「TLB hit、page table miss」不可能。",
+   "cues": [
+    2491.5,
+    2523.4,
+    2566.2,
+    2614.7,
+    2636.5,
+    2701.1,
+    2753.5,
+    2818
+   ],
+   "explain": [
+    "來看所有的組合：TLB、page table、cache 各自 hit 或 miss，哪些有可能發生？",
+    "TLB hit、page table hit、cache miss：可能。translation 在 TLB，但資料不在 cache。注意 TLB hit 時其實根本不會去查 page table。",
+    "TLB miss、page table hit、cache hit：可能。常用的 entry 還沒搬上 TLB（例如第一次用），但資料可能已經被搬進 cache 了。",
+    "TLB miss、page table hit、cache miss：可能。translation 在 page table 找到，但資料還沒搬進 cache。",
+    "全部都 miss：可能，但很危險、很花時間。entry 不在 page table 表示 page 不在 main memory，就是 page fault。",
+    "TLB hit、page table miss：不可能。TLB 只是把 page table 裡常用的一小部分放上來；page table 都沒有，TLB 怎麼會有？",
+    "TLB hit、page table miss、cache hit：也不可能，理由一樣：TLB 的 entry 一定是 page table 的子集，TLB hit，page table 就一定 hit。",
+    "最後 TLB miss、page table miss、cache hit：不可能。page table 沒有代表已經 page fault、東西不在 memory，不在 memory 怎麼可能在 cache？"
+   ]
+  },
+  {
+   "title": "今天到這裡",
+   "scene": null,
+   "points": [
+    {
+     "t": 2849,
+     "text": "本講結束。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "黑板例子：page 01 放在 frame 00，virtual address 0110 的 physical address 是？",
+   "opts": [
+    "0010",
+    "0110",
+    "0001",
+    "1010"
+   ],
+   "ans": "0010",
+   "why": "Page number 01 → frame 00；offset 10 不變 → 00|10 = 0010。"
+  },
+  {
+   "q": "28-bit virtual address、4 KiB page、physical 有 16K 個 frame，inverted page table 要幾個 entry？",
+   "opts": [
+    "16K",
+    "64K",
+    "4K",
+    "256K"
+   ],
+   "ans": "16K",
+   "why": "Inverted page table 依 frame 數建表：16K 個；一般 page table 才是 2¹⁶ = 64K 個。"
+  },
+  {
+   "q": "Two-level page table 省空間的原因是？",
+   "opts": [
+    "只為有用到的區塊配置第二層 table",
+    "把每個 entry 變小",
+    "把 page size 變小",
+    "把 TLB 變大"
+   ],
+   "ans": "只為有用到的區塊配置第二層 table",
+   "why": "第一層記哪幾塊有用到，沒用到的第二層不 allocate。"
+  },
+  {
+   "q": "以下哪一種組合不可能發生？",
+   "opts": [
+    "TLB hit、page table miss、cache miss",
+    "TLB miss、page table hit、cache hit",
+    "TLB miss、page table hit、cache miss",
+    "TLB miss、page table miss、cache miss"
+   ],
+   "ans": "TLB hit、page table miss、cache miss",
+   "why": "TLB 是 page table 的子集；page table 沒有的 translation 不可能在 TLB。"
+  },
+  {
+   "q": "TLB hit 且是 write 時，dirty bit 先記在哪裡？",
+   "opts": [
+    "TLB 的 entry",
+    "main memory 的 page table",
+    "disk",
+    "cache 的 tag"
+   ],
+   "ans": "TLB 的 entry",
+   "why": "每寫一次都改 memory 裡的 page table 太慢；TLB entry 被換掉時才把 dirty 資訊寫回 page table。"
+  },
+  {
+   "q": "Cache miss 與 page fault 的處理方式？",
+   "opts": [
+    "cache miss 由 hardware（CPU stall）；page fault 由 OS（software）",
+    "兩者都由 OS 處理",
+    "兩者都由 hardware 處理",
+    "cache miss 由 OS；page fault 由 hardware"
+   ],
+   "ans": "cache miss 由 hardware（CPU stall）；page fault 由 OS（software）",
+   "why": "Cache miss 只要幾個 cycle；page fault 要上百萬 cycle，交給 OS 並 context switch。"
+  }
+ ]
+}

@@ -815,6 +815,12 @@
   "quiz": 4,
   "cued": true
  },
+ "CDpUW5B9EbA": {
+  "label": "黃婷婷教授計算機結構_第25B講 Memory",
+  "points": 31,
+  "quiz": 6,
+  "cued": true
+ },
  "cdZnhQjJu4I": {
   "label": "MIT 18.06 L21：Eigenvalues and Eigenvectors",
   "points": 39,
@@ -1565,6 +1571,12 @@
   "quiz": 6,
   "cued": true
  },
+ "JqxIZlm23R8": {
+  "label": "黃婷婷教授計算機結構_第25A講 Memory",
+  "points": 50,
+  "quiz": 7,
+  "cued": true
+ },
  "JR2fneVevbg": {
   "label": "Minimum Cost Spanning Tree | Kruskal's & Prim's",
   "points": 27,
@@ -1575,6 +1587,12 @@
   "label": "MIT 6.006 Rec12：Karatsuba Multiplication, Newton's Method",
   "points": 103,
   "quiz": 8,
+  "cued": true
+ },
+ "Jtulk55Q1Ls": {
+  "label": "黃婷婷教授計算機結構_第26A講 Memory",
+  "points": 31,
+  "quiz": 7,
   "cued": true
  },
  "ju-qSc1_rwQ": {
@@ -1778,6 +1796,12 @@
  "M0Sa8fLOajA": {
   "label": "MIT OCW 18.06 L26：Complex Matrices; Fast Fourier Transform",
   "points": 30,
+  "quiz": 7,
+  "cued": true
+ },
+ "m6HNCwqazNE": {
+  "label": "黃婷婷教授計算機結構_第26B講 Memory",
+  "points": 32,
   "quiz": 7,
   "cued": true
  },

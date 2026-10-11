@@ -1,0 +1,534 @@
+{
+ "video": "m6HNCwqazNE",
+ "label": "黃婷婷教授計算機結構_第26B講 Memory",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "再談 virtual memory：每個 process 一整個 virtual space",
+   "scene": "cvm-26b-recap",
+   "points": [
+    {
+     "t": 17,
+     "text": "老師回答同學的 virtual memory 問題：這是系統（OS）層面的概念。"
+    },
+    {
+     "t": 48,
+     "text": "每個 process 有完整、獨立的 virtual address space；多個 process 共用一個 CPU 與一塊 physical memory，各自只把需要的幾個 page 放進 main memory。"
+    },
+    {
+     "t": 178,
+     "text": "每個 process 全部的 space 都在 disk 上，用到才搬；不用 VM 就只能一個 program 獨佔、sequential 執行。"
+    }
+   ],
+   "cues": [
+    21.4,
+    47.9,
+    74.4,
+    90.5,
+    127.7,
+    142.3,
+    157.8,
+    178,
+    240.8,
+    285.2
+   ],
+   "explain": [
+    "Virtual memory 是一個系統（作業系統）操作上的概念，牽涉到 OS，所以一開始不懂很正常。",
+    "每個 program 執行起來就是一個 process（行程，不是 processor）。每個 process 都有自己完整、獨立的 virtual address space，例如 2³² 個 byte。",
+    "但這三個 program 同時在 run，共用同一個 CPU、同一塊 physical address space。",
+    "P1 在 run 的時候，雖然它的 space 有 2³² 這麼大，實際上只要把要用的三、四個 page 拿進 main memory 就好。",
+    "P1 run 到一半要做 IO，就把 CPU 放棄，留給另一個 process（畫面上換 P2）。",
+    "輪到 P1 再 run 時，它需要的 page 也還在 main memory，從剛才被 interrupt 的地方 resume（繼續做）。",
+    "大家需要的 page 其實都放在同一個 main memory 裡。你自己看到、可以使用的空間叫 virtual address space，只拿其中幾塊放進 physical memory。",
+    "那整個 2³² 的空間在哪？都在 disk 上有位置；沒用到的就 swap 出去放在 disk，而且不需要連續擺放，用到時再搬過來。",
+    "如果不要 virtual memory，就是一個 program 獨佔自己的 memory 和 CPU，跑完一個才換下一個（sequential），位址就是 physical address，沒有 translation 的問題。",
+    "正因為很多 program 要 share CPU 和 memory（multiprogramming），又有 locality，所以只搬自己要用的進來，也因此需要 translation。"
+   ]
+  },
+  {
+   "title": "課堂問答：還有沒有問題",
+   "scene": null,
+   "points": [
+    {
+     "t": 311,
+     "text": "老師請同學有問題就提出來，這是 OS 的東西，現在先弄懂。"
+    }
+   ]
+  },
+  {
+   "title": "Cache controller 的 input / output signals",
+   "scene": "cvm-26b-sig",
+   "points": [
+    {
+     "t": 327,
+     "text": "Controller 依目前 state 與 input 發出 control signal、決定下一個 state → 用 finite state machine。"
+    },
+    {
+     "t": 350,
+     "text": "例子：direct mapped、write-back、write allocate 的 cache。"
+    },
+    {
+     "t": 380,
+     "text": "CPU ↔ cache：Read/Write、Valid、32-bit address、32-bit write/read data、Ready。"
+    },
+    {
+     "t": 439,
+     "text": "Cache ↔ memory：Read/Write、Valid、32-bit address、128-bit data（一個 block 4 words）、Ready（可能要 multiple cycles）。"
+    }
+   ],
+   "cues": [
+    330.6,
+    349.9,
+    365.2,
+    379.9,
+    384.7,
+    408.1,
+    414.8,
+    431.6,
+    438.4,
+    468.3,
+    485.5,
+    506.4
+   ],
+   "explain": [
+    "另一種 controller 的設計：要發出什麼 control signal，是看現在的狀況（state）和 input，然後再跳到下一個狀況。所以用 finite state machine 來 model。",
+    "例子就是剛才那個簡單的 cache：direct mapped、write back、write allocate。",
+    "先看這個 cache controller 跟 CPU、跟 memory 之間有哪些 input 和 output。",
+    "CPU 要告訴 cache：這次是 read 還是 write。",
+    "還要一個 valid signal：線上的訊號隨時在變，CPU 把 valid 設成 1，才表示「要開始 access cache 了」。",
+    "要給 cache address：2³² 個 byte，所以 address 是 32 bits。",
+    "Data 也是 32 bits，因為一個 word 是 32 bits：write data 往 cache 寫進去，read data 從 cache 拿出來。",
+    "Cache 把東西準備好了，要跟 CPU 說 ready。",
+    "Cache 也跟 memory 有關係：cache miss 時要去 memory 拿東西；因為是 write back，block 被換掉時也要寫回 memory。",
+    "對 memory 也有一組類似的 signal：read/write、valid（要開始 access memory 時通知它），還有 32-bit 的 address。",
+    "為什麼 data 是 128 bits？因為每次搬一整個 block：4 個 word × 32 bits = 128 bits。程式驗算過。",
+    "Memory 讀完或寫完會送 ready 通知 cache。memory 比較慢，這可能要好幾個 cycle。"
+   ]
+  },
+  {
+   "title": "Cache controller 的 finite state machine",
+   "scene": "cvm-26b-fsm",
+   "points": [
+    {
+     "t": 522,
+     "text": "四個 state：Idle、Compare Tag、Write-Back、Allocate。"
+    },
+    {
+     "t": 538,
+     "text": "Valid CPU request → Compare Tag；hit（write 則 set dirty、valid、tag）→ Idle。"
+    },
+    {
+     "t": 617,
+     "text": "Miss 且舊 block dirty → Write-Back（等 memory ready）→ Allocate；miss 且 clean → 直接 Allocate；Allocate 完回 Compare Tag，此時 hit。"
+    },
+    {
+     "t": 728,
+     "text": "Write allocate：block 是整體，寫其中一個 word 也要把整個 block 搬上來，再寫一次並設 dirty。"
+    }
+   ],
+   "trap": "Write miss 時（write allocate）也要先 Allocate 把 block 讀進來，回到 Compare Tag 後才真正寫入並設 dirty。",
+   "cues": [
+    524.9,
+    537.8,
+    543.7,
+    562,
+    572.9,
+    610.3,
+    616.3,
+    637,
+    652.7,
+    670.8,
+    695.8,
+    709.4,
+    728.3,
+    772.3
+   ],
+   "explain": [
+    "把 cache controller model 成 finite state machine。一開始沒有 cache access 時，它待在 Idle state。",
+    "CPU 送來 valid = 1 的 request，就 transition 到 Compare Tag state，做 tag 比較。",
+    "比較之後，如果 valid 而且 tag 一樣，就是 cache hit，資料可以用了。",
+    "如果都沒有 access，就每個 clock 都在 Idle 原地轉；一有 valid signal 才離開。",
+    "在 Compare Tag 時如果是 write，要發出 signal 去寫：set dirty bit，而且 dirty、valid、tag 是存在一起的，一起寫。",
+    "如果是 hit，事情做完，就回到 Idle。",
+    "如果是 cache miss，要看被換掉的那個舊 block 是不是 dirty（被改過）。",
+    "是 dirty 的話，要到 Write-Back state 把它寫回 memory。這要花很多時間：通知 memory 開始寫，在 memory 送回 ready 之前一直留在這個 state。",
+    "Memory 說寫好了，就到 Allocate state。",
+    "如果舊的 block 不是 dirty，就不用寫回，直接跳到 Allocate。",
+    "到 Allocate 有兩種情況：read 或 write，通通都要 allocate，把新的 block 從 memory 讀進 cache。",
+    "寫完之後回到 Compare Tag，這時 tag 已經一樣了，就會 hit，再回到 Idle；如果是 write，要設成 dirty。程式模擬「dirty 舊 block + write miss」的路徑：Idle → Compare Tag → Write-Back → Allocate → Compare Tag → Idle。",
+    "為什麼 write 也要 allocate？因為你寫的是 block 裡的其中一個 word，block 是一個整體，所以要把整個 block 搬上來（這叫 write allocate；另一種 policy 是 write no-allocate，只改 memory 裡那個 word）。",
+    "搬上來的是舊的 data，所以要回到 Compare Tag 再寫一次，並把 dirty 設成 1。這樣 read、write 才一致。"
+   ]
+  },
+  {
+   "title": "FSM 怎麼變成硬體：state register 與 combinational logic",
+   "scene": "cvm-26b-impl",
+   "points": [
+    {
+     "t": 796,
+     "text": "FSM 把 controller 分成多個 state，一個 state 一個 clock cycle；某 state 做太多事會拉長所有 cycle，可以拆成兩個 state。"
+    },
+    {
+     "t": 851,
+     "text": "合成：4 個 state 用 2 bits（2 個 flip-flop）記 present state；combinational logic 依 input 與 present state 產生 control signal 與 next state。"
+    },
+    {
+     "t": 918,
+     "text": "這和 instruction 的 control（看 opcode）不同，要 model 所有 state 與 input 的組合。"
+    }
+   ],
+   "cues": [
+    796.1,
+    810,
+    817.6,
+    836.7,
+    851,
+    878.4,
+    889.9,
+    917.5
+   ],
+   "explain": [
+    "Finite state machine 把 cache controller 分成這幾個 state。",
+    "每個 state 就是一個 clock cycle 要做的事情。",
+    "如果某個 state 要做很多事，clock cycle 就必須讓它做完；因為大家共用同一個 clock，其他 state 的 cycle 也跟著變長。",
+    "解法：把這個 state 拆成兩個 state，各做一半，clock cycle 就可以變短。",
+    "有了 FSM，就可以用邏輯設計學過的方法合成。4 個 state 要幾個 bit 記錄？⌈log₂ 4⌉ = 2 個 bit，也就是兩個 latch 或 flip-flop（00、01、10、11）。",
+    "這個 state register 記住 present state（現在的狀態），算出來的 next state（下一個狀態）再存回去。",
+    "不同的 input 進來，和 present state 一起經過 combinational logic（組合邏輯），決定要發出哪些 control signal，並 transition 到 next state。",
+    "這跟 instruction 的 control 很不一樣：instruction 一進來看 opcode 就知道要做什麼；這裡要看在哪個 state、收到什麼 input，所以要把所有組合都 model 進 FSM。"
+   ]
+  },
+  {
+   "title": "Cache coherence：多個 CPU 各有一份 copy",
+   "scene": "cvm-26b-coh",
+   "points": [
+    {
+     "t": 977,
+     "text": "Multi-core 時各 CPU 的 cache 可能有同一個 physical address 的 copy → coherence 問題。"
+    },
+    {
+     "t": 1037,
+     "text": "例：X = 0；A、B 都讀到 0；A 寫 1 後 B 的 cache 仍是 0 → 同一 location 兩個值。"
+    },
+    {
+     "t": 1085,
+     "text": "定義：讀到最近寫入的值；formal：同一 processor 寫後讀、別的 processor 寫後經足夠時間再讀、對同一 location 的 write 要 serialized。"
+    }
+   ],
+   "cues": [
+    976.7,
+    990.9,
+    1027.3,
+    1036.9,
+    1042.6,
+    1049.1,
+    1054.6,
+    1058.4,
+    1084.8,
+    1116.5,
+    1142.5,
+    1170
+   ],
+   "explain": [
+    "最後一個主題：parallelism（平行化）和 memory hierarchy 的關係，也就是 cache coherence（快取一致性）。只有平行化時才會碰到。",
+    "現在一個 processor 裡不只一個 core（multi-core）。如果有好幾個 CPU，每個 CPU 有自己的 cache，同一份 data 可能在不同 cache 各有一份 copy。",
+    "很多 CPU share 同一個 physical address 時，就會發生這個問題。",
+    "舉例：一開始 memory 裡 X 的值是 0。（這是課本的例子，假設 cache 是 write-through，寫入時 memory 同步更新。）",
+    "CPU A 去讀 X，讀到 0，放進 A 的 cache。",
+    "CPU B 也讀 X，也拿到 0，放進 B 的 cache。到這裡都沒問題。",
+    "接著 CPU A 把 1 寫到 X：A 的 cache 變成 1（memory 也更新成 1）。",
+    "如果 B 沒有跟著同步 update，B 的 cache 裡還是 0。同一個 location 出現不同的值，這就是 coherence 的問題。",
+    "嚴格來說，什麼叫 cache coherence？就是：讀一個 location 時，一定讀到最近被寫進去的那個值。",
+    "Formal 定義第一條：同一個 processor 寫了之後馬上讀（中間沒有別人寫），要讀到自己剛寫的值。單一 processor 本來就是這樣。",
+    "第二條：別的 CPU 寫了這個 location，經過足夠的時間之後再讀，要讀到新寫的正確值。",
+    "第三條：P1、P2 都去寫同一個 location 時，寫入要 serialized（排成一個順序），而且每個 processor 看到的順序都要相同，不能有人看到 P1 先、有人看到 P2 先。"
+   ]
+  },
+  {
+   "title": "Coherence protocol：directory 與 snooping（write invalidate）",
+   "scene": "cvm-26b-snoop",
+   "points": [
+    {
+     "t": 1213,
+     "text": "兩種 protocol：directory-based（集中記錄誰 share）與 snooping（每個 cache 自己監看 bus）。"
+    },
+    {
+     "t": 1342,
+     "text": "Invalidating snooping：要寫的 cache 取得 exclusive access，在 bus 上 broadcast invalidate，其他有 copy 的 cache 把自己的 copy 作廢。"
+    },
+    {
+     "t": 1410,
+     "text": "例：A、B 都讀 X = 0；A 寫 1 → B invalid；B 再讀 → miss，向 owner A 拿 1，memory 同時 update。"
+    }
+   ],
+   "cues": [
+    1212.8,
+    1234.2,
+    1241.1,
+    1256.8,
+    1319.9,
+    1341.5,
+    1359.8,
+    1378.3,
+    1409.6,
+    1415.5,
+    1440.8,
+    1468.3
+   ],
+   "explain": [
+    "怎麼維持 coherence？同一個 data 會經由 migration（搬移）、replication（複製）出現在很多地方，形成好幾個 copy。",
+    "有兩種 protocol：snooping，或 directory-based。",
+    "Directory-based 比較像 centralized（集中式）：有一個 directory 記錄所有資料的狀況，誰 share 這個 data、有沒有被 update、誰可以寫。",
+    "Snooping 沒有中央管理者。每個 processor 的 cache 都自己去監看 interconnect（例如 bus），看經過的傳輸。",
+    "Snoop 的意思就是愛管閒事、到處探聽（老師用史努比比喻）。每個 cache 都盯著 bus，看別人在做什麼。",
+    "只要有人把某個 data 改了，你如果也有這個 copy，就把自己的 copy invalidate（作廢）。",
+    "這叫 invalidating snooping protocol。某個 cache 要寫時，一定要拿到這個 block 的 exclusive access（獨占權），不能兩個人同時寫，否則就分不出誰先誰後。",
+    "寫的同時在 bus 上 broadcast（廣播）一個 invalidate message。其他 cache 一直在監看，一看到就把自己的那份變成 invalid。",
+    "例子：cache A 讀 X 得到 0，cache B 也讀 X 得到 0，沒問題。",
+    "A 寫 1 到 X，同時發出 invalidate message；B 看到了，就把自己的 X invalidate。這個例子用 write back，所以 memory 裡還是舊的 0。",
+    "B 再讀 X 時，因為已經 invalid，就是 cache miss。它去跟 owner（擁有最新值的 A）要資料，拿到 1，同時把 memory update 成 1。程式驗算各步狀態。",
+    "Snooping 的基本概念：大家各管各的；要寫時發出 signal，大家看到就把自己的 copy invalidate；之後誰 cache miss，就去跟 owner 要最新的 copy。"
+   ]
+  },
+  {
+   "title": "例子：Intel 四核心的三層 cache",
+   "scene": "cvm-26b-intel",
+   "points": [
+    {
+     "t": 1490,
+     "text": "Intel 4-core：三層 cache；L1（I-cache、D-cache）與 L2 是每個 core 的 private cache，L3（8 MB）是 shared。"
+    },
+    {
+     "t": 1587,
+     "text": "TLB 也是 2-level；投影片比較 Intel 與 AMD 的 TLB、cache 參數。"
+    }
+   ],
+   "cues": [
+    1492.5,
+    1505,
+    1518.7,
+    1529.1,
+    1537.9,
+    1587.1,
+    1596.1
+   ],
+   "explain": [
+    "這是 Intel 一顆 4-core processor 的大概架構，讓大家知道現在 advanced 的 processor 長什麼樣子。",
+    "它有三個 level 的 cache：L1、L2、L3。我們以前只講過一層。",
+    "Cache 有 shared 也有不 shared 的。Level 1 分成 I-cache（指令）和 D-cache（資料），每個 core 自己一份，叫 private cache。",
+    "Level 2 也是 private，每個 core 都有自己的 copy。",
+    "Level 3 有 8 MB，是 shared，四個 core 都可以來這裡拿 data。現在 multi-core 的設計多半這樣：L1、L2 private，L3 shared。",
+    "TLB 也做成 2-level，有兩層。",
+    "投影片上有 Intel 和 AMD 的比較：TLB、cache 的 size、replacement 等，回去看一下這些數字，有個概念。"
+   ]
+  },
+  {
+   "title": "Pitfall：byte address 與 word／block／page address",
+   "scene": "cvm-26b-pitfall",
+   "points": [
+    {
+     "t": 1616,
+     "text": "不要混淆 byte address 與 word address，先搞清楚 word、block、page 的 size。"
+    },
+    {
+     "t": 1641,
+     "text": "32-bit byte address：word 4 bytes → word address 30 bits；block 32 bytes → offset 5 bits、block address 27 bits；page 4 KiB → offset 12 bits、page number 20 bits。"
+    }
+   ],
+   "trap": "題目給的位址通常是 byte address；要算 word／block／page number，先扣掉對應 size 的 offset bits。",
+   "cues": [
+    1616.2,
+    1624.8,
+    1640.6,
+    1649.3,
+    1713.6,
+    1767,
+    1800.9,
+    1832.8,
+    1874.2
+   ],
+   "explain": [
+    "最後是一些注意事項，也就是常犯的錯。",
+    "Byte address 和 word address 絕對不一樣。算 index、page number 之前，一定要先搞清楚 word、block、page 的 size 是多少。",
+    "我們說 2³² 個 byte，所以 32 bits 是 byte address（每個 byte 一個編號），不是 word address。",
+    "如果一個 word 是 4 個 byte，最後 2 個 bit 是 word 裡的 offset，所以 word address 看前面 30 個 bit。",
+    "換成 cache block：一個 block 32 個 byte，那 block address 有幾個 bit？",
+    "32 = 2⁵，用掉 5 個 bit 當 offset，所以 block address 是 32 − 5 = 27 bits。",
+    "再換成 page：一個 page 4K bytes = 4 × 1024 = 2¹²，用掉 12 個 bit。",
+    "所以 page number 是前面 32 − 12 = 20 個 bit。",
+    "概念其實完全一樣：word number、block number、page number 都是看 size 多大，扣掉那些 low-order bits，剩下的就是它的 address。"
+   ]
+  },
+  {
+   "title": "寫程式也要想到 locality：row-major 陣列",
+   "scene": "cvm-26b-array",
+   "points": [
+    {
+     "t": 1905,
+     "text": "寫 code 時要記得 memory system 與 locality。"
+    },
+    {
+     "t": 1930,
+     "text": "二維 array 在一維 memory 中要選 row major 或 column major；row major 時一列一列存取 locality 好，一行一行存取每次都跳一大段，cache miss 變多。"
+    }
+   ],
+   "cues": [
+    1906.6,
+    1918.3,
+    1929.3,
+    1986.6,
+    2001.3,
+    2014.8
+   ],
+   "explain": [
+    "寫 code 的時候，千萬不要忘了你有一個 memory system，要有 locality 的概念。",
+    "簡單例子：一維 array 的 index 一個接一個往下走，好像有 locality，很棒。",
+    "二維 array 呢？memory 是一維的，所以要決定怎麼擺：一個 row 擺完再擺下一個 row（row major），或一個 column 擺完再擺下一個（column major）。畫面上是 row major。",
+    "如果機器是 row major，你也一個 row 一個 row 存取，連續的資料擺在一起，locality 很好。示意：每個 block 放 4 個 element、cache 只放得下 2 個 block，走完 16 個 element 只 miss 4 次。",
+    "但如果你一個 column 一個 column 存取，每次都跳過一整個 row，就沒有 locality 了。同樣的示意 cache，16 次全部 miss。程式模擬過。",
+    "所以寫程式時要知道 memory 系統長什麼樣子、資料怎麼擺。存取順序跟擺法不 match，就會有很多 cache miss，速度變慢。"
+   ]
+  },
+  {
+   "title": "Multiprocessor 與 out-of-order 的效能評估",
+   "scene": "cvm-26b-ooo",
+   "points": [
+    {
+     "t": 2050,
+     "text": "Multiprocessor 時多個人 map 到同一位置，要增加 associativity。"
+    },
+    {
+     "t": 2065,
+     "text": "Out-of-order superscalar 能把 cache miss hide 起來，不能只用 miss 數算 performance，要用 simulation。"
+    }
+   ],
+   "cues": [
+    2049.8,
+    2066.4,
+    2092.5
+   ],
+   "explain": [
+    "Multiprocessor 時，很多人同時 map 到同一個位置的機會變大，associativity 要增加。",
+    "在 out-of-order 的 superscalar processor 上，雖然有 cache miss，performance 不一定被拖垮：只要有別的指令 ready，functional unit 照樣在 run，cache miss 被 hide 在裡面。",
+    "所以不能只拿 cache miss 次數去算 performance，要用 simulation，看整體真正的平均時間。"
+   ]
+  },
+  {
+   "title": "結論：fast 又 large 的 memory 錯覺",
+   "scene": "cvm-26b-end",
+   "points": [
+    {
+     "t": 2127,
+     "text": "Fast memory 小、large memory 慢；靠 hierarchy 與 caching，看起來又快又大。"
+    },
+    {
+     "t": 2152,
+     "text": "關鍵是 locality；hierarchy 可以很多層（L1、L2、L3、memory），memory system 設計對 single 與 multiprocessor 都很重要。"
+    }
+   ],
+   "cues": [
+    2129.1,
+    2133.7,
+    2151.6,
+    2166.3,
+    2175.7
+   ],
+   "explain": [
+    "結論：fast 的 memory 一定 small，large 的 memory 一定 slow。",
+    "透過 memory hierarchy 和 caching 的 idea，把一小部分放在靠近 CPU 的 upper level，讓我們好像看到一個又快、又大的 memory。",
+    "這一切靠 locality：程式運作時，任何時間只需要一小部分（在它的 working window 裡），把這些搬進來就好。",
+    "Memory hierarchy 可以有很多層，光 cache 就分 L1、L2、L3，再往下是 memory、disk。",
+    "Memory 系統的設計非常重要，不管是 single processor 還是 multiprocessor。"
+   ]
+  },
+  {
+   "title": "本單元結束",
+   "scene": null,
+   "points": [
+    {
+     "t": 2184,
+     "text": "Memory 這個單元介紹到這邊。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Write-back、write-allocate 的 cache，write miss 且被換掉的 block 是 dirty，controller 會經過哪些 state？",
+   "opts": [
+    "Idle → Compare Tag → Write-Back → Allocate → Compare Tag → Idle",
+    "Idle → Compare Tag → Allocate → Idle",
+    "Idle → Write-Back → Idle",
+    "Idle → Compare Tag → Idle"
+   ],
+   "ans": "Idle → Compare Tag → Write-Back → Allocate → Compare Tag → Idle",
+   "why": "Dirty 要先寫回，再 Allocate 讀新 block，回 Compare Tag 才 hit 並寫入、設 dirty。"
+  },
+  {
+   "q": "一個 cache controller 的 FSM 有 4 個 state，state register 至少要幾個 flip-flop？",
+   "opts": [
+    "2",
+    "4",
+    "1",
+    "3"
+   ],
+   "ans": "2",
+   "why": "⌈log₂ 4⌉ = 2 bits。"
+  },
+  {
+   "q": "Cache 與 memory 之間的 data 線為什麼是 128 bits？",
+   "opts": [
+    "一次搬一個 4-word block：4 × 32 = 128",
+    "因為 address 是 128 bits",
+    "因為 cache 有 128 個 block",
+    "因為 memory 比較快"
+   ],
+   "ans": "一次搬一個 4-word block：4 × 32 = 128",
+   "why": "CPU 一次要一個 word（32 bits），cache miss 時一次搬一整個 block。"
+  },
+  {
+   "q": "Invalidating snooping protocol 中，cache A 要寫 X 時做什麼？",
+   "opts": [
+    "取得 exclusive access，並在 bus 上 broadcast invalidate",
+    "把 X 直接寫到所有其他 cache",
+    "先通知 directory 再寫",
+    "等其他 cache 都 miss 才寫"
+   ],
+   "ans": "取得 exclusive access，並在 bus 上 broadcast invalidate",
+   "why": "其他 cache 監看到 invalidate 就作廢自己的 copy，之後 miss 時再向 owner 要最新值。"
+  },
+  {
+   "q": "32-bit byte address、cache block 32 bytes，block address 有幾個 bit？",
+   "opts": [
+    "27",
+    "30",
+    "26",
+    "32"
+   ],
+   "ans": "27",
+   "why": "32 = 2⁵ → offset 5 bits，32 − 5 = 27。"
+  },
+  {
+   "q": "32-bit byte address、page 4 KiB，page number 有幾個 bit？",
+   "opts": [
+    "20",
+    "22",
+    "12",
+    "30"
+   ],
+   "ans": "20",
+   "why": "4K = 2¹² → offset 12 bits，32 − 12 = 20。"
+  },
+  {
+   "q": "Row-major 的二維 array，哪種存取順序 cache miss 比較少？",
+   "opts": [
+    "一個 row 一個 row 存取",
+    "一個 column 一個 column 存取",
+    "兩者一樣",
+    "隨機存取"
+   ],
+   "ans": "一個 row 一個 row 存取",
+   "why": "Row major 時同一列連續擺放，依列存取有 spatial locality；依行存取每次跳一整列。"
+  }
+ ]
+}

@@ -1,0 +1,675 @@
+{
+ "video": "JqxIZlm23R8",
+ "label": "黃婷婷教授計算機結構_第25A講 Memory",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "為什麼需要 virtual memory：multiprogramming",
+   "scene": "cvm-25a-why",
+   "points": [
+    {
+     "t": 17,
+     "text": "上次講到 virtual memory；因為它和 OS 的 multiprogramming 有關，先補這個概念。"
+    },
+    {
+     "t": 138,
+     "text": "若一個 program 獨佔 CPU 與 memory，virtual address 就是 physical address，不需要 translation。"
+    },
+    {
+     "t": 196,
+     "text": "但 program 常做 IO（上百萬 cycle），CPU 會閒著；multiprogramming 讓好幾個 program 一起 run，有人做 IO 時換別人用 CPU。"
+    },
+    {
+     "t": 266,
+     "text": "每個 program 都有自己的 address space，大家 share 同一塊 physical memory；user space 甚至可以比 physical 大。"
+    },
+    {
+     "t": 302,
+     "text": "靠 locality，只要把正在用的那一塊搬進 main memory；全部的 space 放在 disk 的 swap space。"
+    }
+   ],
+   "trap": "Virtual memory 不只是「讓 memory 看起來更大」，更關鍵的是讓多個 program 安全地 share 同一塊 physical memory。",
+   "cues": [
+    46.4,
+    70.2,
+    138,
+    180.6,
+    217.8,
+    265.6,
+    285,
+    302.3,
+    326.6,
+    348.8
+   ],
+   "explain": [
+    "先看整個 memory hierarchy（記憶體階層）：CPU 旁邊有 cache（快取），再來是 main memory（主記憶體），最下面是 disk（硬碟）。cache 放常用的東西；那 memory 和 disk 之間，為什麼又要多一個 virtual memory（虛擬記憶體）呢？",
+    "我們寫的 program 裡每樣東西都有 address（位址）：程式碼、static data（固定的資料）、stack（堆疊）各放在 user memory space 的某個地方。",
+    "如果整台電腦只跑你一個 program，最簡單：你說第 100 個 address，就直接是 memory 的第 100 個位置，完全不用 translation（位址轉換）。",
+    "問題是 program 常常在做 IO（讀寫硬碟、等輸入），IO 要花上百萬個 cycle。這段時間 CPU 只能閒著，很浪費。",
+    "所以作業系統（OS）用 multiprogramming（多工）：好幾個 program 一起 run。P1 去做 IO，就從 ready list 拿一個準備好的 program 來用 CPU。",
+    "可是大家寫程式時，位址都從 0 開始，同一個位址到底放誰的？解法是：每個人都有自己的 address space（位址空間），大家再 share 同一塊 physical memory（實體記憶體）。",
+    "而且 user 看到的 space 可以比真正的 physical memory 還大，因為反正不會一次全部搬進來。",
+    "為什麼搬一部分就夠？因為 locality（區域性）：程式執行時，同一段時間只會用到某一塊。執行到哪一塊，就把那一塊搬進 main memory。",
+    "其他還沒用到的東西放哪裡？放在 disk 上的 swap space（交換區），所有 program 需要的空間都先放在那裡。",
+    "每次只搬需要的一小塊。cache 那邊一塊叫 block；在 virtual memory 這一層，一塊叫做 page（頁）。"
+   ]
+  },
+  {
+   "title": "Virtual memory 這一層：page 很大、由 OS 管",
+   "scene": "cvm-25a-level",
+   "points": [
+    {
+     "t": 355,
+     "text": "Disk 是 lower level、main memory 是 upper level；所有 program 在 disk，只有少部分在 main memory。"
+    },
+    {
+     "t": 389,
+     "text": "Disk 更慢，所以一次搬大塊（page，1 KiB 以上），搬的時候放棄 CPU 給別人。"
+    },
+    {
+     "t": 417,
+     "text": "Miss 要上百萬 cycle，可以用 software（OS）來管理。"
+    },
+    {
+     "t": 491,
+     "text": "固定大小搬進搬出：disk 上叫 page，memory 裡放的位置叫 frame；main memory 就像 disk 的 cache。"
+    }
+   ],
+   "cues": [
+    358.9,
+    375.2,
+    392.4,
+    399.4,
+    417,
+    468.5,
+    490.4,
+    504.3
+   ],
+   "explain": [
+    "把 virtual memory 想成 hierarchy 多了一層：disk 是 lower level（下層，大又慢），main memory 是 upper level（上層，小又快）。所有 program 都在 disk，只有少部分放進 main memory。",
+    "Disk 比 memory 慢非常多。要用的東西不在 main memory，就要花很長很長的時間搬進來。",
+    "既然搬一次這麼貴，就一次搬大塊一點。這一塊叫 page，大小通常 1 KiB 以上。",
+    "要搬的時候，這個 program 就把 CPU 讓給別人，讓 disk 在背景慢慢搬，不浪費 CPU。",
+    "因為一次 miss 要上百萬個 cycle，就算 OS（作業系統，是軟體）多跑幾萬個 cycle 來把事情處理得聰明一點，也很划算。所以這一層用 software 來管理。",
+    "從 disk 搬到 memory 也要做 translation，概念和 memory、cache 之間非常像。",
+    "搬進搬出都用固定的大小：在 disk 上這一塊叫 page，放進 memory 時佔的那個位置叫 frame（頁框）。",
+    "所以換個角度看：main memory 就好像 disk 的 cache。"
+   ]
+  },
+  {
+   "title": "每人一個 virtual address space：教室座位的比喻",
+   "scene": "cvm-25a-share",
+   "points": [
+    {
+     "t": 515,
+     "text": "每個 program 有自己的 virtual address space；常用的放 main memory，不常用的放 disk，許多 program 同時在 physical memory 裡 run。"
+    },
+    {
+     "t": 576,
+     "text": "Virtual 和 physical 切成一樣大小的塊，任何一塊可以放到任何位置，只要一個 translation table。"
+    },
+    {
+     "t": 603,
+     "text": "比喻：教室 10 個位置，38 號同學坐 10 號位，table 記「38 → 10」就找得到他。"
+    },
+    {
+     "t": 713,
+     "text": "要的 page 不在 main memory，就產生 page fault。"
+    }
+   ],
+   "cues": [
+    534.2,
+    555.6,
+    576.1,
+    602.6,
+    618.6,
+    653.8,
+    664.2,
+    713
+   ],
+   "explain": [
+    "畫面上 A、B 兩個 program 各有自己的 virtual space。常用的 page 放進 physical memory，不常用的留在 disk。",
+    "Virtual 和 physical 不需要一樣：A 的 page 1 可以放在 physical 的 2 號，B 的 page 4 可以放在 0 號，放哪裡都行。",
+    "做法是把 program 切成一塊一塊（例如 1K），physical 也切成一樣大小的一塊一塊，兩邊切法相同。",
+    "老師的比喻：教室只有 10 個位置（就是 frame），每個位置一樣大，可以坐任何一位同學。",
+    "學號 38 號的同學坐到 10 號位置。只要有一張 table 寫著「38 號 → 10 號位」，要找他就到 10 號位去找。",
+    "這其實就是一個 mapping（對應）：把 virtual page 對應到 physical frame。",
+    "所以寫程式時可以用很大的 virtual space，很方便；真正執行時一次只用到幾塊，用到哪塊再搬進來。",
+    "如果要用的 page 不在 main memory 裡，就叫做 page fault（缺頁）。"
+   ]
+  },
+  {
+   "title": "Page 與 frame、四個問題、為什麼 fully associative",
+   "scene": "cvm-25a-four",
+   "points": [
+    {
+     "t": 724,
+     "text": "Memory 裡叫 frame、disk 上叫 page，兩個一樣大小。"
+    },
+    {
+     "t": 766,
+     "text": "和 cache 一樣有四個問題：block size、placement、replacement、write。"
+    },
+    {
+     "t": 784,
+     "text": "Miss penalty 上百萬 cycle，所以 page 很大。"
+    },
+    {
+     "t": 856,
+     "text": "有空位就要讓 page 進來，所以用 fully associative：任何 page 可放任何 frame，需要 page table 做 translation。"
+    }
+   ],
+   "trap": "Virtual memory 用 fully associative 是為了降低 page fault 次數（penalty 太大），代價是要一張 page table 來查位置。",
+   "cues": [
+    723.9,
+    765.9,
+    783.9,
+    822.8,
+    850.5,
+    855.7,
+    878.2,
+    898.2
+   ],
+   "explain": [
+    "要記清楚：在 memory 裡的位置叫 frame，在 disk 上的那一塊叫 page，兩個一樣大小，所以搬進來剛好放得下。",
+    "和 cache 一樣，這一層也要回答四個問題：一塊多大（block size）、放哪裡怎麼找（placement）、滿了誰出去（replacement）、寫入怎麼處理（write）。",
+    "第一個問題：因為 miss penalty（沒找到要付的代價）高達上百萬個 cycle，一旦 page fault 就 interrupt、把 CPU 讓出去，所以乾脆一次搬大塊，page 通常很大。",
+    "第二個問題是怎麼放。cache 學過三種：direct map（每塊只能放一個固定位置）、set associative（放在一組裡的某幾個位置）、fully associative（哪裡都可以放）。",
+    "如果用 direct map，memory 明明還有空位，卻因為位置固定而不能放，就會多發生 page fault，而每次 penalty 都非常大。",
+    "所以 virtual memory 用 fully associative：任何一個 page 可以擺在任何一個 frame。",
+    "位置的大小一定要符合 page 的大小，就像一個洞對一個 page，剛好塞得進去。",
+    "既然 page 可以在任何地方，就需要一張表記錄它在哪裡，這張表就是 page table（分頁表），用來做 translation。"
+   ]
+  },
+  {
+   "title": "Address translation：virtual page number + page offset",
+   "scene": "cvm-25a-split",
+   "points": [
+    {
+     "t": 902,
+     "text": "Page 為 2¹² bytes 時，virtual address 最低 12 bits 是 page offset，上面是 virtual page number。"
+    },
+    {
+     "t": 945,
+     "text": "Page 搬到 frame 時，裡面每個 byte 的相對位置不變，所以 page offset 不用翻譯。"
+    },
+    {
+     "t": 1067,
+     "text": "Page 放在哪個 frame 由 translation table 決定，例如 page 5 → frame 3。"
+    },
+    {
+     "t": 1103,
+     "text": "Physical address = physical frame number 接上 page offset。"
+    }
+   ],
+   "trap": "只有 page number 需要翻譯；page offset 原封不動抄過去。",
+   "cues": [
+    905.4,
+    923.3,
+    934,
+    949.7,
+    999.3,
+    1034,
+    1066.9,
+    1084.9,
+    1102.9
+   ],
+   "explain": [
+    "給你一個 virtual address（虛擬位址）。如果一個 page 是 2¹² 個 byte，那最低的 12 個 bit 就叫 page offset（頁內位移），表示在 page 裡的第幾個 byte。",
+    "這和 word（字組）的概念一樣：一個 word 4 個 byte，最後 2 個 bit 只是在 word 裡挑第幾個 byte，找第幾個 word 時不用理它。",
+    "扣掉 offset，前面剩下的 bit 就是 virtual page number（VPN，虛擬頁號），表示這是第幾個 page。",
+    "想想看：把一整個 page 搬到某個 frame，裡面第 0、1、2、3 個 byte 的位置會變嗎？",
+    "不會！第 3 個 byte 搬過去還是第 3 個。這個相對位置就是 page offset，所以 offset 完全不用翻譯。",
+    "前面的 high-order bits（高位元）告訴你是第幾個 page，就像看第幾個 word 一樣。",
+    "Page 要擺去哪個 frame，我們不在乎，只要用一個 translation table 對應就好。",
+    "老師的例子：你是 page 5，查 table 後被告知「請到 3 號位置」，也就是 physical frame number 3。這裡 offset 用 0x2A4 當示意值。",
+    "Frame 3 很大，要找裡面的 byte，就把不變的 page offset 直接接上去。程式算出 PA = 3 × 4096 + 0x2A4 = 0x32A4，這就是 physical address（實體位址）。"
+   ]
+  },
+  {
+   "title": "Virtual address space 可以比 physical 大",
+   "scene": "cvm-25a-size",
+   "points": [
+    {
+     "t": 1118,
+     "text": "Virtual address 可以比較大，例如 2³⁶ 的 virtual space、只有 2³⁴ 的 physical space；1024 個 page 只配 32 個 frame 也可以。"
+    },
+    {
+     "t": 1175,
+     "text": "Physical 大小由 hardware 決定，virtual 不必和它一樣大。"
+    }
+   ],
+   "cues": [
+    1125.8,
+    1132.8,
+    1150.7,
+    1175.1
+   ],
+   "explain": [
+    "Translation 之後位址不一定變小，但 virtual address 可以比較大，physical 可以比較小。",
+    "例如 virtual 有 2³⁶ 個 address（64 GiB），physical 只有 2³⁴（16 GiB），virtual 是 physical 的 4 倍。程式驗算 2³⁶ ÷ 2³⁴ = 4。",
+    "因為都切成一塊一塊、又不會同時全部搬進來，virtual 有 1024 個 page，physical 只有 32 個 frame 也沒關係。",
+    "兩者可以一樣大，也可以不一樣大。physical 有多大是 hardware 決定的，virtual address space 不必跟它一樣。"
+   ]
+  },
+  {
+   "title": "Page table 的 valid bit：一開始是空的",
+   "scene": "cvm-25a-valid",
+   "points": [
+    {
+     "t": 1190,
+     "text": "Page table 一開始是空的，每個 entry 有 valid bit。"
+    },
+    {
+     "t": 1225,
+     "text": "查到 invalid → page fault，OS 把 page 從 disk 搬進 main memory，記下放在哪個 frame，再把 entry 設成 valid。"
+    },
+    {
+     "t": 1282,
+     "text": "下次再 access 就能直接 translation。"
+    },
+    {
+     "t": 1323,
+     "text": "多個 program share main memory，每個 program 有自己的 page table，由 OS 管理。"
+    }
+   ],
+   "cues": [
+    1193.4,
+    1213.3,
+    1225,
+    1230.9,
+    1239,
+    1260.7,
+    1281.6,
+    1323
+   ],
+   "explain": [
+    "Page table 怎麼產生？跟 cache 很像：是一張表，每次有 page 搬進來，就要更新它。",
+    "一開始 page table 是空的。每個 entry（表格的一列）有一個 valid bit（有效位元），一開始全部是 0，表示「還沒有東西」。",
+    "拿 virtual address 的 VPN 2 去查，發現 valid = 0，代表這個 page 還沒搬進來，產生 page fault。",
+    "這時 OS 會到 disk，把你要的 page 搬到 main memory 的某個 frame（畫面上放進 frame 1）。",
+    "OS 像班長一樣，知道教室哪裡還有空位、誰坐在哪個 frame，所以由它決定放哪裡。",
+    "搬好之後，OS 把這個 entry 設成 valid = 1，並記下 frame 1。現在這個 entry 有效了。",
+    "下次再 access VPN 2，查到 valid，就能直接翻譯到 frame 1，不用再 page fault。",
+    "Physical memory 裡同時有好多個 program。每個 program 都有自己的 page table，把自己的 virtual page 翻譯到 frame，這些表都由 OS 管理。"
+   ]
+  },
+  {
+   "title": "Paging：page fault 時 OS 做什麼",
+   "scene": "cvm-25a-paging",
+   "points": [
+    {
+     "t": 1355,
+     "text": "Paging：virtual page 與 physical page frame 切成同樣大小，透過 page table 做 mapping。"
+    },
+    {
+     "t": 1418,
+     "text": "在 memory：例如 page 3 對到 frame 5；不在：page fault。"
+    },
+    {
+     "t": 1457,
+     "text": "Page fault → interrupt，OS 處理，CPU 換別人用；IO 把 page 搬進來，搬完 interrupt，process 回到 ready queue，之後從剛停的地方 resume。"
+    }
+   ],
+   "cues": [
+    1365.5,
+    1394.1,
+    1418,
+    1426.7,
+    1456.4,
+    1463.6,
+    1474.5,
+    1496.6
+   ],
+   "explain": [
+    "Paging（分頁）的定義：virtual address 切成 page，physical address 切成 page frame，兩者一定要 equal size（一樣大小）。",
+    "誰對到誰，就靠 page table 來記錄這個 mapping。",
+    "如果資料在 memory 裡，例如第 3 個 page 對到第 5 個 frame，table 會給你有效的 frame，就能拿到資料。",
+    "如果不在，table 會告訴你它還在 disk、沒搬進來，這時就產生 page fault。",
+    "Page fault 發生時會 interrupt（中斷），OS 開始處理，這個 program 就把 CPU 讓出來給別人用。",
+    "接著做 IO：disk 慢慢把需要的 page 搬到 memory 的空 frame。",
+    "搬完以後再 interrupt 一下，OS 把這個 process 放回 ready queue（等候用 CPU 的隊伍），等 CPU 有空。",
+    "輪到它時，從剛才停下的地方繼續做。對 program 自己來說，好像一直都是按順序執行，完全不知道中間發生過什麼。"
+   ]
+  },
+  {
+   "title": "Page table 是 memory 裡的 array；page table register",
+   "scene": "cvm-25a-ptarray",
+   "points": [
+    {
+     "t": 1566,
+     "text": "Page table 是放在 main memory 的 array，用 virtual page number 當 index，裡面放 physical frame number。"
+    },
+    {
+     "t": 1627,
+     "text": "Page table 不一定從 0 開始放，page table register 記起點；從 100 放時，第 5 個 entry 在 105。"
+    },
+    {
+     "t": 1717,
+     "text": "Entry 裡還有 status bits（valid、reference、dirty）；不在 memory 的指向 disk 的 swap area。"
+    },
+    {
+     "t": 1798,
+     "text": "例：VPN 38，page table 從 100 開始 → 到 138 拿 frame number，接上 page offset 就是 physical address。"
+    }
+   ],
+   "cues": [
+    1565.7,
+    1591.7,
+    1627.1,
+    1655,
+    1703.7,
+    1716.8,
+    1738.4,
+    1776.6,
+    1797.3,
+    1835.4
+   ],
+   "explain": [
+    "Page table 長什麼樣子？它就像一個 array（陣列），放在 main memory 裡。",
+    "第 i 個 entry 對應第 i 個 page，裡面存的是它的 physical frame number。所以用 page number 當 index（索引）直接去查。",
+    "Page table 一定要從 memory 位址 0 開始放嗎？不一定，可以放在任何地方，例如從 100 開始。",
+    "從 100 開始放，要找第 5 個 entry，就去 access 100 + 5 = 105。",
+    "起點記在哪裡？記在 page table register（分頁表暫存器）裡，它告訴硬體 page table 從哪裡開始。",
+    "如果 page 在 memory 裡就叫 hit，entry 會給你 frame number，還有一些 status bit：valid（有效）、reference（最近有沒有被用）、dirty（有沒有被寫過）。",
+    "如果不在 memory，entry 會指到 disk 上的 swap area，告訴 OS 它在 disk 的哪裡，這時就是 page fault，程式不能繼續，要等 OS 處理。",
+    "整理一下 translation：virtual page number 經過 page table 翻譯，page offset 直接往下抄，不變。",
+    "例如 page number 是 38，就找第 38 個 entry。table 從 0 開始放就在 38；從 100 開始放，就在 100 + 38 = 138 那個位置。",
+    "拿到的 frame number 就是 physical address 的 high-order bits，接上不變的 page offset（low-order bits），就得到 physical address。"
+   ]
+  },
+  {
+   "title": "Page table 在 memory：每次要兩次 memory reference",
+   "scene": "cvm-25a-twice",
+   "points": [
+    {
+     "t": 1905,
+     "text": "Page table 在 memory，每次 access 要先查 page table、再去拿資料：兩次 memory reference，太慢。"
+    },
+    {
+     "t": 1997,
+     "text": "Page 很大，同一 page 裡的 address 都用同一個 entry → 可以把常用 entry 放到 CPU 旁邊（下一講的 TLB）。"
+    }
+   ],
+   "cues": [
+    1904.9,
+    1914.7,
+    1945.2,
+    1968.8,
+    1996.8,
+    2014.5
+   ],
+   "explain": [
+    "Page table 放在哪裡？放在 memory 裡。",
+    "所以每次要 access 一個 virtual address，都要先到 memory 裡的 page table 查出對應的 physical address。",
+    "拿到 physical address 之後，還要再去 memory 拿真正的資料。所以每一次 access 要 2 次 memory reference。",
+    "Memory 本來就很慢，光 access 一次就慢到要加 cache 來加速了，現在還要兩次，當然不能接受。",
+    "想想看：一個 page 很大，裡面每個 address 做 translation 時，用的都是同一個 page table entry。",
+    "常常用到的 entry，何必放在 memory？放到靠近 CPU 的地方，就可以馬上做 translation。這就是下一講的 TLB。"
+   ]
+  },
+  {
+   "title": "課堂問答（點名）",
+   "scene": null,
+   "points": [
+    {
+     "t": 2029,
+     "text": "老師點名請同學想想還有什麼問題。"
+    }
+   ]
+  },
+  {
+   "title": "另一個問題：page table 可能很大",
+   "scene": "cvm-25a-ptbig",
+   "points": [
+    {
+     "t": 2056,
+     "text": "每個 program 有自己的 page table；fully associative 需要每個 page 一個 entry，virtual space 很大時 table 很大。"
+    },
+    {
+     "t": 2128,
+     "text": "兩個問題：page table 太大、每次 access 要兩倍時間。"
+    }
+   ],
+   "cues": [
+    2077,
+    2097.2,
+    2112.2,
+    2128.2
+   ],
+   "explain": [
+    "同時有好幾個 program 在 run，每個 program 都有自己的一張 page translation table。",
+    "因為 fully associative，每個 page 都要在 page table 上有一個 entry：1024 個 page 就要 1024 個 entry。",
+    "如果 virtual space 很大，page 就很多，page table 也會跟著變得很大。",
+    "所以用了 translation 之後有兩個問題：一是 page table 太大，二是每次 access 要兩倍的 memory 存取。後面要一一改進。"
+   ]
+  },
+  {
+   "title": "Page fault：硬體偵測、OS 處理",
+   "scene": "cvm-25a-fault",
+   "points": [
+    {
+     "t": 2139,
+     "text": "查 page table 發現 page 不在 main memory → page fault。"
+    },
+    {
+     "t": 2189,
+     "text": "Hardware 可以偵測，但 page fault 由 software（OS）處理；OS 跑幾千到幾萬 cycle，比起 disk 的上百萬 cycle 很小。faulting process 被 context switch。"
+    },
+    {
+     "t": 2295,
+     "text": "OS 處理：有空 frame 就直接放；滿了就 replace（被改過的先寫回），讀進 page、update page table、restart。"
+    },
+    {
+     "t": 2360,
+     "text": "OS 在 disk 為整個 virtual space 建 swap space，並用 data structure 記錄 page 的位置與使用情形；真正的 IO 由 disk 自己搬。"
+    }
+   ],
+   "trap": "Cache miss 由硬體處理（CPU stall 幾個 cycle）；page fault 由 OS 軟體處理（context switch），因為 penalty 差了好幾個數量級。",
+   "cues": [
+    2142.2,
+    2188.6,
+    2194.7,
+    2206.7,
+    2243.5,
+    2294.4,
+    2319.7,
+    2329.1,
+    2359.6,
+    2391.1,
+    2436
+   ],
+   "explain": [
+    "查 page table 時發現這個 page 不在 main memory，就是 page fault。",
+    "Page fault 的 penalty 很大。硬體可以 detect（偵測）到 valid = 0，但沒辦法自己修正。",
+    "對照 cache：cache miss 只要幾個 cycle，用硬體很快修好就行。",
+    "Page fault 必須用 software（OS 的程式）處理。OS 跑個幾千、幾萬 cycle，比起 disk 的幾百萬 cycle 小很多，而且軟體可以做比較複雜、聰明的決定。",
+    "發生 page fault 的 process 會被 context switch（換出去），CPU 換人用。",
+    "OS 處理 page fault：如果 main memory 還有空的 frame，就直接把 page 搬進來（一開始執行時常是這樣）。",
+    "如果 physical memory 已經滿了，就要 replace（換掉）一個 page；被換掉的如果改過，要先寫回 disk，把位置空出來。",
+    "然後把要的 page 從 disk 讀進來、update page table，再讓 program 重新開始（resume）。",
+    "OS 要先為整個 virtual address space 在 disk 上 create swap space，所有 page 在 disk 上都要先有位置。",
+    "OS 還要有 data structure 記錄：哪個 page 在 disk 的哪裡、在哪個 frame、什麼時候被用過，才能決定要換誰。",
+    "OS 把事情決定好、設定好之後，真正的 IO 不需要 OS 一直盯著，disk 自己把資料搬到 memory，搬完再 interrupt CPU。"
+   ]
+  },
+  {
+   "title": "Page replacement：reference bit 近似 LRU；write back + dirty bit",
+   "scene": "cvm-25a-replace",
+   "points": [
+    {
+     "t": 2475,
+     "text": "Fully associative 滿了要選誰出去，需要 replacement policy。"
+    },
+    {
+     "t": 2539,
+     "text": "依 temporal locality 用 LRU；實作上用 reference (use) bit 近似：用到設 1，換時挑 0，定期全部清 0。"
+    },
+    {
+     "t": 2645,
+     "text": "Virtual memory 一定是 write back，配 dirty bit（在 page table entry），被改過的 page 被換掉時才寫回 disk。"
+    }
+   ],
+   "trap": "Virtual memory 不可能用 write through：每次寫都寫 disk 太慢。",
+   "cues": [
+    2492.5,
+    2508.6,
+    2539,
+    2556.5,
+    2575.2,
+    2584.8,
+    2596.9,
+    2628,
+    2644.7,
+    2654.6,
+    2666.6,
+    2688.1
+   ],
+   "explain": [
+    "再來是 replacement 的問題。direct map 每塊只有一個固定位置，來了就換掉原本的；fully associative 可以放任何地方，滿了就要決定誰出去。",
+    "Set associative 一組兩個位置都滿時要有 policy；fully associative 更需要，例如 1024 個 frame 都滿了，新的 page 要進來，該請誰出去？",
+    "靠 temporal locality（時間區域性）：最近用過的待會很可能再用，所以把最久沒用的搬出去，這叫 LRU（least recently used）。",
+    "純粹的 LRU 要一直記錄誰最近用、誰最久沒用，太複雜。所以改用簡單的 reference bit（也叫 use bit）。畫面上 16 個 page 各有一個 bit。",
+    "只要 page 被用到，就把它的 reference bit 設成 1。",
+    "OS 要換 page 時，就找 reference bit 是 0 的那個（代表最近沒被用），把它換掉。",
+    "老師的例子：先全部設成 0，這段期間有 10 個被用到變成 1、6 個還是 0，就從這 6 個裡隨便挑一個換掉。程式數過：10 個 1、6 個 0。",
+    "但不能說用過一次就永遠算「最近用過」。所以每隔一段時間就把全部清回 0，之後被用到的才再設成 1，這樣就近似 LRU。",
+    "那 write 呢？是 write through（每次寫都同步寫到下層）還是 write back（先寫在上層，換出去時才寫回）？",
+    "不可能是 write through：每更新一次就寫回 disk，要上百萬 cycle，根本做不到。所以一定是 write back。",
+    "Write back 要搭配 dirty bit（髒位元），記錄這個 page 有沒有被改過。沒改過的話，它和 disk 上的資料一模一樣，換出去時就不用寫回。",
+    "Dirty bit 放在 page table 的 entry 裡。被改過的 page 被 replace 時，要多做一個 write back 的動作。"
+   ]
+  },
+  {
+   "title": "Page table 太大：4 KiB page → 4 MiB；bound register",
+   "scene": "cvm-25a-huge",
+   "points": [
+    {
+     "t": 2700,
+     "text": "四個問題都解決了，但 page table 帶來兩個問題：太大、太慢（兩次 access）。"
+    },
+    {
+     "t": 2809,
+     "text": "32-bit virtual address、4 KiB page：offset 12 bits、2²⁰ 個 entry，每個 4 bytes → 4 MiB；每個 program 一份。"
+    },
+    {
+     "t": 2859,
+     "text": "Page table 也有 locality，只需放用得到的部分；方法一：用 bound/limit register 限制 table size，隨著使用量慢慢長。"
+    }
+   ],
+   "cues": [
+    2705,
+    2720.5,
+    2764.3,
+    2809,
+    2824.9,
+    2827.4,
+    2840,
+    2858.6,
+    2889,
+    2927.1
+   ],
+   "explain": [
+    "到這裡，四個問題（放哪裡、怎麼找、換誰、怎麼寫）都和 cache 一樣回答完了。",
+    "但是 page table 帶來兩個特別的問題：第一，page table 太大；第二，每次要先查 page table，存取太慢。",
+    "為什麼太大？因為每個 virtual page 都要一個 entry。direct map 的 cache 只要比 tag，不用為每個可能的 block 都建一格；fully associative 用查表，就得每個 page 都有一格。",
+    "算算看：32-bit 的 virtual address，一個 page 4 KiB = 2¹² bytes，所以 page offset 用掉 12 個 bit。",
+    "剩下 32 − 12 = 20 個 bit 是 page number，所以有 2²⁰ 個 page table entry。",
+    "如果每個 entry 佔 4 bytes，2²⁰ × 4 = 4 MiB（4 MB），程式驗算過。",
+    "同時有好多 program 在 run，每個人都要一張 4 MiB 的 table，memory 會被佔掉很多空間。",
+    "其實 page table 也有 locality：同一時間只會 access 某一塊 virtual space，只要那一塊的 translation 在就好，不需要整張放在 memory。",
+    "第一個方法：用 bound register（界限暫存器）限制 table size。程式執行時 dynamic data 和 stack 會一直長，table 也跟著慢慢長，一開始不必整張都有。",
+    "例如現在只用到 100 個 entry，limit 就設 100，只配置 0 到 100；用得更多再放更多 entry 進去。"
+   ]
+  },
+  {
+   "title": "下課休息",
+   "scene": null,
+   "points": [
+    {
+     "t": 2936,
+     "text": "休息一下，下一節繼續講怎麼處理 page table 的問題。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "為什麼 virtual memory 的 page 通常很大（1 KiB 以上）？",
+   "opts": [
+    "page fault 的 penalty 上百萬 cycle，一次多搬一點來分攤",
+    "因為 page table 需要很多 bit",
+    "因為 cache 的 block 很大",
+    "為了讓 TLB 比較小"
+   ],
+   "ans": "page fault 的 penalty 上百萬 cycle，一次多搬一點來分攤",
+   "why": "Disk 很慢，搬一次的代價極高，所以 block（page）做大，平衡很長的 access time。"
+  },
+  {
+   "q": "把一個 page 搬進某個 frame 後，哪一部分的位址不用翻譯？",
+   "opts": [
+    "page offset",
+    "virtual page number",
+    "frame number",
+    "整個位址都要翻譯"
+   ],
+   "ans": "page offset",
+   "why": "整塊搬過去，裡面每個 byte 的相對位置不變，所以 page offset 原封不動；只翻譯 page number。"
+  },
+  {
+   "q": "32-bit virtual address、4 KiB page、每個 PTE 4 bytes，單層 page table 多大？",
+   "opts": [
+    "4 MiB",
+    "4 KiB",
+    "1 MiB",
+    "16 MiB"
+   ],
+   "ans": "4 MiB",
+   "why": "offset 12 bits → 2²⁰ 個 entry × 4 B = 4 MiB。"
+  },
+  {
+   "q": "Page table 從 memory 位址 100 開始放，VPN 38 的 entry 在哪個位址（以 entry 為單位）？",
+   "opts": [
+    "138",
+    "38",
+    "100",
+    "3800"
+   ],
+   "ans": "138",
+   "why": "Page table register 記起點 100，第 38 個 entry 在 100 + 38 = 138。"
+  },
+  {
+   "q": "為什麼 page fault 用 software（OS）處理，而 cache miss 用 hardware？",
+   "opts": [
+    "page fault 要上百萬 cycle，OS 多花幾萬 cycle 也划算",
+    "OS 比 hardware 快",
+    "cache miss 不需要處理",
+    "page fault 不會發生 context switch"
+   ],
+   "ans": "page fault 要上百萬 cycle，OS 多花幾萬 cycle 也划算",
+   "why": "Hardware 只偵測；處理交給 OS，可以做複雜的決定，且 process 會 context switch 讓出 CPU。"
+  },
+  {
+   "q": "Virtual memory 採用哪種 write policy？",
+   "opts": [
+    "write back，配 dirty bit",
+    "write through",
+    "write through 加 write buffer",
+    "不允許寫入"
+   ],
+   "ans": "write back，配 dirty bit",
+   "why": "每次寫都寫回 disk 不可能；改過的 page（dirty = 1）被換掉時才寫回。"
+  },
+  {
+   "q": "用 reference bit 近似 LRU 時，OS 要換 page 會挑哪一個？",
+   "opts": [
+    "reference bit 為 0 的 page",
+    "reference bit 為 1 的 page",
+    "dirty bit 為 1 的 page",
+    "最早放進來的 page"
+   ],
+   "ans": "reference bit 為 0 的 page",
+   "why": "被用到就設 1，定期清 0；還是 0 的代表這段時間沒被用，近似「最久沒用」。"
+  }
+ ]
+}
