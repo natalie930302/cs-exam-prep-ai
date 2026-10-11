@@ -1,0 +1,417 @@
+{
+ "video": "jhMWFZV6hy8",
+ "label": "黃婷婷教授計算機結構_第6A講 Instruction Set Architecture",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "回顧：base + offset，g = h + A[8] 與 A[12] = h + A[8]",
+   "scene": "isA-6a-review",
+   "points": [
+    {
+     "t": 18,
+     "text": "Load-store machine：運算的 operand 一定在 register；register 只有 32 個（smaller is faster），其他放 memory，用 load/store 搬。"
+    },
+    {
+     "t": 76,
+     "text": "Memory address 32 bits 太長，用 base register + offset 描述（lw $t0, 32($s3)）。"
+    },
+    {
+     "t": 212,
+     "text": "g = h + A[8]：lw $t0, 32($s3)；add $s1, $s2, $t0。A[12] = h + A[8]：再加 sw $t0, 48($s3)。"
+    }
+   ],
+   "cues": [
+    18.4,
+    40.5,
+    60.1,
+    76.7,
+    103.2,
+    124.1,
+    180.6,
+    212.2,
+    252.8,
+    271.3,
+    295,
+    317.3,
+    364.7
+   ],
+   "explain": [
+    "複習：MIPS 是 load-store machine，要做加減等運算時，operand 一定要在 register 裡。",
+    "Register 要快，所以不能多（smaller is faster），只有 32 個。其他的 operand 就放在 memory。",
+    "Memory 裡的資料要透過 load、store 指令搬進或搬出 register，搬進來以後才開始運算。",
+    "Load/store 指令要寫三件事：它是 load 還是 store（op code）、哪一個 register（只有 32 個，5 bits 就夠）、memory 的哪一個地址。",
+    "但 memory address 有 32 bits，整個放進指令太長了。",
+    "所以用比較間接的方法：拿一個 register 當 base register，裡面放 32 bits 的起點地址，再加上一個 offset（往上或往下多少）。這是到目前為止稍微難一點的地方。",
+    "Load 指令長這樣：lw $t0, 32($s3)。意思是：base 在 $s3，加上 offset 32 就是地址，從那裡拿資料搬到 $t0。",
+    "例子：g = h + A[8]。Array 資料量大，放在 memory。g 在 $s1、h 在 $s2，A 的起始地址在 $s3（數值是示意）。",
+    "A[8] 的 offset 是多少？地址以 byte 算，一個 data 是 4 個 byte，所以 8 × 4 = 32。",
+    "先 lw $t0, 32($s3)：地址 1000 + 32 = 1032，把 A[8] 的內容搬到 $t0。",
+    "再 add $s1, $s2, $t0：h 加上 A[8]，放到 g。高階語言一行，就要先 load 再 add。",
+    "稍微複雜一點：A[12] = h + A[8]。一樣先 load A[8]、跟 h 相加，結果先放在 $t0。",
+    "最後要存回 A[12]，用 store word：base 還是 $s3，第 12 個元素，offset = 12 × 4 = 48。所以是 sw $t0, 48($s3)。"
+   ]
+  },
+  {
+   "title": "Byte address、alignment、big／little endian",
+   "scene": "isA-6a-endian",
+   "points": [
+    {
+     "t": 400,
+     "text": "Memory 每個存取單位有一個地址；MIPS 地址以 byte 計（常要存取單一 byte），word = 4 bytes，word 地址是 4 的倍數。"
+    },
+    {
+     "t": 529,
+     "text": "Alignment：word 必須從 4 的倍數開始放，不可以從 1、2、3 開始。"
+    },
+    {
+     "t": 611,
+     "text": "Word 內 byte 的編號：little endian 地址 0 放 least significant byte；big endian 地址 0 放 most significant byte（MIPS 是 big endian）。"
+    }
+   ],
+   "trap": "Big endian：位址最小的 byte 是 most significant byte（「大端」先放）；MIPS 屬 big endian。",
+   "cues": [
+    404.2,
+    429.9,
+    457.5,
+    499,
+    529.5,
+    554.9,
+    611.3,
+    618.9,
+    650.6
+   ],
+   "explain": [
+    "接著是一些要注意的地方。Memory 要能一格一格存取，每一格給一個地址：Memory[0]、Memory[1]、Memory[2]……",
+    "這裡的一格是 memory 的基本存取單位。早期可能真的只是一個 byte，隨著技術進步，一次可以存取更大的單位。",
+    "既然 MIPS 都以 4 個 byte 為單位存取，為什麼不用「第幾個 word」當地址，地址的 bits 還可以少一點？因為我們還是常常需要存取單一個 byte，所以地址仍然以 byte 來算。",
+    "MIPS 一個 word 是 32 bits，也就是 4 個 byte。所以每個 word 的地址會是 0、4、8……4 的倍數。",
+    "很重要的概念：alignment（對齊）。一個 word 不能亂放，一定要從 4 的倍數開始。",
+    "不可以從地址 1、2 或 3 開始放一個 word，這叫沒有對齊。畫面上紅色那個從 1 開始的 word 就是不合法的。",
+    "另一個概念：一個 word 裡有 4 個 byte，這 4 個 byte 的編號順序有兩種習慣：big endian 和 little endian。拿 0x12345678 當例子（示意），12 是最高位的 byte。",
+    "Little endian：地址 0 放最低位（least significant）的 byte，也就是 78，接著 56、34、12。",
+    "Big endian：地址 0 放最高位（most significant）的 byte，也就是 12，接著 34、56、78。MIPS 屬於 big endian。這只是習慣，買機器時知道它用哪一種，就知道怎麼存取裡面的 byte。"
+   ]
+  },
+  {
+   "title": "Register 放不下：spilling；register vs memory",
+   "scene": "isA-6a-spill",
+   "points": [
+    {
+     "t": 685,
+     "text": "Operand 可放 register 或 memory，運算前一定要搬到 register；compiler 把常用的 variable 放 register，放不下的 spill 到 memory。"
+    },
+    {
+     "t": 762,
+     "text": "Register file 不能做很大（smaller is faster）；register 只要 5 bits 指定，一個指令能描述三個；memory 地址長、一個指令只處理一個 memory operand。"
+    }
+   ],
+   "cues": [
+    685.7,
+    704.2,
+    736.1,
+    762.1,
+    807.8,
+    838.5,
+    868.1
+   ],
+   "explain": [
+    "到現在學過 register 和 memory 都能放 operand。但要運算時，一定要先搬到 register 裡。",
+    "平常我們寫高階語言，是 compiler 把它翻成 assembly，也是 compiler 幫我們分配：運算中一直要用到的 variable，放在 register。",
+    "如果 variable 太多，register 放不下，就要多用一些 load/store 把它們放到 memory 去，就像水裝不下溢出來一樣，叫 spilling（溢出）。",
+    "Load/store 很花時間，那把 register file 做大一點，全部放進去不就好了？不行！做很大就會變慢，還是那句話：smaller is faster。",
+    "Register 還有一個好處：32 個 register 只要 5 個 bits 就能指定是哪一個，所以一個 add 指令裡可以描述三個 register。",
+    "Memory 很大，地址太長，指令裡描述它很費力。所以做 data transfer 時，一個指令一次只能處理一個 memory 的 operand。",
+    "這就是兩者的角色：常常用、最近要用的放 register；不常用、或超過 register 容量的，就寫回 memory。"
+   ]
+  },
+  {
+   "title": "Immediate operand：addi、$zero、move",
+   "scene": "isA-6a-imm",
+   "points": [
+    {
+     "t": 884,
+     "text": "第三種 operand：immediate（constant）。像 a = a + 5 的常數約占 50% 的 operand。"
+    },
+    {
+     "t": 1013,
+     "text": "常數放 memory 每次都要 load，太慢 → make the common case fast：把常數放進指令（addi）。"
+    },
+    {
+     "t": 1159,
+     "text": "f = g + 10 → addi $s0, $s1, 10；常數可正可負，所以沒有 subtract immediate（addi $s2, $s1, -1）。"
+    },
+    {
+     "t": 1216,
+     "text": "$zero 硬體接死為 0，寫入無效；MIPS 沒有 move，用 add $t2, $s1, $zero。"
+    }
+   ],
+   "cues": [
+    884.1,
+    899.2,
+    916.7,
+    1013.4,
+    1053.1,
+    1095.2,
+    1158.8,
+    1188.9,
+    1216.7,
+    1266.3,
+    1275.9
+   ],
+   "explain": [
+    "介紹完 register 和 memory 兩種 operand，還有很重要的第三種：immediate operand，也就是常數（constant）。（畫面上 register 的值是示意）",
+    "寫程式常常有 a = a + 5、b = b + 1 這種加減常數的運算。分析起來，大約 50% 的 operand 都是這種形式。",
+    "機器只認得 0 和 1。要加 5，就需要 5 的 bit pattern（000…0101）。這個 pattern 要從哪裡來？不能憑空生出來。",
+    "最直覺的做法：把常用的常數先存在 memory，要用的時候 load 進來。但這樣每次加個 5 都要多一個 load，很浪費時間。",
+    "這種情況又佔了 50%，依照 make the common case fast 的原則，要讓它快：直接把常數放進指令裡面。",
+    "這種指令在名字後面加一個 i，例如 addi（add immediate）：把第 29 個 register（$sp）加 4，4 這個 pattern 就放在指令裡。讀出指令時，常數也一起拿到了。",
+    "例子：f = g + 10，f、g 分別在 $s0、$s1，寫成 addi $s0, $s1, 10。",
+    "常數可以是正的也可以是負的，所以 MIPS 不需要「減常數」的指令：要減 1，就加 −1，寫成 addi $s2, $s1, -1。",
+    "另一個常數：0。0 太常用了（等於 0、大於 0、小於 0……），所以 MIPS 直接把第 0 個 register 用硬體接死成 0，叫 hard-wired，要用 0 就讀 $zero。",
+    "$zero 是改不了的。就算寫「把 0 加 5 放到 $zero」，結果還是 0，這個指令等於什麼都沒做。",
+    "$zero 還有一個妙用：MIPS 沒有 move（搬移）指令。要把 $s1 搬到 $t2，就寫 add $t2, $s1, $zero，加 0 等於原封不動搬過去。"
+   ]
+  },
+  {
+   "title": "指令怎麼表示：32 bits、regular 的格式",
+   "scene": "isA-6a-repr",
+   "points": [
+    {
+     "t": 1339,
+     "text": "Signed／unsigned 的表示請自己複習（logic design）。"
+    },
+    {
+     "t": 1377,
+     "text": "電腦只認得 0 和 1：指令也要編成 32 bits（跟 register、word 一樣，regular），再切成 fields。"
+    },
+    {
+     "t": 1522,
+     "text": "格式越一致越好：硬體固定先取前 6 bits 當 op code；若各格式 op code 長度不同就無從判斷。MIPS 只有 R、I、J 三種格式，x86 很多。"
+    }
+   ],
+   "cues": [
+    1339.7,
+    1377.7,
+    1417.5,
+    1488.2,
+    1522.4,
+    1554.5,
+    1679,
+    1716.8,
+    1742.9
+   ],
+   "explain": [
+    "數字的表示法（signed 有號、unsigned 無號）在 logic design 學過，老師請大家回去自己唸。",
+    "我們寫的 add $t0, … 對機器來說是沒有意義的文字，電腦只看得懂 0 和 1。要怎麼把一個指令表示成 0101？",
+    "第一個問題是長度。register 是 32 bits，memory 一次搬進搬出也是 32 bits（一個 word），那指令多長？32 bits。要讓設計簡單，就要 regular。",
+    "把 32 個 bits 切成好幾個 field，每一格代表一種資訊。",
+    "電腦拿到一個指令，就先把前 6 個 bits 拿出來，那是 op code；再拿 5 個 bits，那是第幾個 register……",
+    "如果每種格式長得不一樣，例如 R-type 的 op code 6 bits、I-type 7 bits、J-type 8 bits，拿到指令時根本不知道要先拿幾個 bits 才是 op code，還得先猜、再判斷，就變複雜了。",
+    "所以格式要盡可能一樣：不管哪種指令，第一格都是 6-bit 的 op code，拿出來就知道是什麼。MIPS 只有三種格式，設計 hardware 會很簡單。",
+    "對照 x86：有一大堆指令格式，硬體就會很複雜。",
+    "MIPS 的三種格式：R-type、I-type、J-type。所有指令都落在這三種裡，硬體只要處理這三種就好。"
+   ]
+  },
+  {
+   "title": "R-format：add $t0, $s1, $s2 編碼",
+   "scene": "isA-6a-rfmt",
+   "points": [
+    {
+     "t": 1769,
+     "text": "R-type（add、sub、and、or）：op 6、rs 5、rt 5、rd 5、shamt 5、funct 6 = 32 bits。"
+    },
+    {
+     "t": 1814,
+     "text": "R-type 的 op 都是 0，由 funct 區分（add 32、sub 34）；rs、rt 是 source，rd 是 destination；shamt 5 bits（shift 0～31），沒用到填 0。"
+    },
+    {
+     "t": 2063,
+     "text": "add $t0, $s1, $s2 → 0 17 18 8 0 32 → 000000 10001 10010 01000 00000 100000 = 0x02324020。"
+    },
+    {
+     "t": 2256,
+     "text": "用 hexadecimal 表示：每 4 bits 一個 hex digit（例：eca8 6420）。"
+    }
+   ],
+   "trap": "Assembly 寫 add rd, rs, rt（destination 寫在最前面），但編碼時欄位順序是 op rs rt rd shamt funct。",
+   "cues": [
+    1769,
+    1786.6,
+    1814.1,
+    1845.4,
+    1888,
+    1911.1,
+    1921,
+    2049.3,
+    2062.9,
+    2076,
+    2091.9,
+    2100.7,
+    2110.9,
+    2125,
+    2150.2,
+    2215.5,
+    2256.2,
+    2287.2
+   ],
+   "explain": [
+    "第一種格式 R-type：就是一開始介紹的加、減、邏輯運算這類指令。",
+    "它的 32 bits 分成六個 field：op 6 bits、rs 5、rt 5、rd 5、shamt 5、funct 6，加起來剛好 32。",
+    "第一個 field 是 op code，告訴我們是什麼指令。R-type 很特別：所有的加、減、and、or 都歸成一組，op code 全部給同一個 pattern：000000。",
+    "那到底是加還是 and、or？再用最後 6 bits 的 function code（funct）來區分：add 是 32、sub 是 34、and 是 36、or 是 37。op 加上 funct 一起決定動作。",
+    "中間三個 field：rs、rt、rd。因為 MIPS 是 load-store machine，要描述兩個 source 和一個 destination；register 有 32 個，所以每個 5 bits。",
+    "rs 是第一個 source，rt 是第二個 source（target），rd 是 destination（結果放哪）。",
+    "剩下的 5 bits 叫 shamt（shift amount），給 shift 指令用。一個 32-bit 的資料最多 shift 31 次（再多就全是 0，沒意義），0～31 共 32 種，所以 5 bits 剛好。",
+    "如果指令沒用到 shift（像 add），這個 field 就填 0。",
+    "來看例子：add $t0, $s1, $s2，意思是把 $s1 和 $s2 加起來放到 $t0。",
+    "它是 R-type，所以 op 一律是 0；它是加法，funct 是 32。",
+    "第一個 source rs 是 $s1，也就是第 17 個 register；第二個 source rt 是 $s2，第 18 個。",
+    "destination rd 是 $t0，第 8 個 register；不是 shift，shamt 填 0。所以六個欄位的十進位是 0 17 18 8 0 32。",
+    "把每個欄位換成 binary：op 6 bits 是 000000、rs 5 bits 是 10001……接起來就是機器真正看到的 32 個 bits。",
+    "這串 0101 跟一般 data 長得一模一樣，當成數字也能讀出一個值。差別只在：告訴機器這是 instruction，它就照指令的格式去解釋。",
+    "知道這是 R-type 指令，硬體就照格式切開：前 6 個是 op code，再來 5、5、5、5、6 個 bits 一段一段拿出來，組合起來就知道要做什麼。",
+    "R-type 長什麼樣子一定要記得，後面設計 hardware 就是照著這三種格式來做的。",
+    "一長串 0101 很難讀，常用 hexadecimal（16 進位）表示：每 4 個 bits 切一塊，對應一個 16 進位數字。這個指令就是 0x02324020。",
+    "課本的轉換例子：hex 的 eca8 6420，每個 hex digit 換成 4 個 bits，e = 1110、c = 1100……反過來也一樣。"
+   ]
+  },
+  {
+   "title": "I-format：addi $21, $22, −50 與 lw $t0, 1200($t1)",
+   "scene": "isA-6a-ifmt",
+   "points": [
+    {
+     "t": 2299,
+     "text": "I-type（lw、sw、addi）：op 6、rs 5、rt 5、immediate 16（R-type 的 rd + shamt + funct 合成一格）。"
+    },
+    {
+     "t": 2428,
+     "text": "immediate 是 signed，要 sign extension 成 32 bits（正數補 0、負數補 1），範圍 −2¹⁵ ～ 2¹⁵ − 1。"
+    },
+    {
+     "t": 2577,
+     "text": "Design Principle 3：Good design demands good compromise：格式不同，但 op、rs、rt 位置相同，decode 相似。"
+    },
+    {
+     "t": 2676,
+     "text": "addi $21, $22, −50 → 8 22 21 −50 = 0x22D5FFCE；lw $t0, 1200($t1) → 35 9 8 1200 = 0x8D2804B0。offset 範圍也受 16 bits 限制。"
+    }
+   ],
+   "trap": "I-type 的 rt 是目的地（addi、lw），但在格式裡排在 rs 後面；assembly 寫法與欄位順序不同。",
+   "cues": [
+    2299.1,
+    2333.9,
+    2386.8,
+    2397.6,
+    2428.3,
+    2479.5,
+    2528.7,
+    2576.9,
+    2594.2,
+    2631.9,
+    2676.3,
+    2712.3,
+    2738.1,
+    2785.3,
+    2837.8,
+    2902.8
+   ],
+   "explain": [
+    "第二種格式 I-type：除了加減，我們還學了 load、store 和 immediate。I 就是 immediate 的意思：指令裡有一格放常數。",
+    "I-type 的 op code 一樣是 6 bits，rs、rt 一樣各 5 bits。原本 R-type 後面的 rd（5）、shamt（5）、funct（6）加起來 16 bits，合成一格叫 immediate。",
+    "屬於 I-type 的有：lw（load）、sw（store）、addi（add immediate）等。",
+    "現在只描述兩個 register：rs 一樣是 source；rt 叫 target，像 addi、lw 時它就是 destination（結果放的地方）。",
+    "Immediate 這 16 bits 被當成 signed number（有正負）。可是運算的資料是 32 bits，所以要先把 16 bits 擴成 32 bits，這叫 sign extension（符號擴展）。",
+    "做法：看最高位的 sign bit，是 0（正數）前面就補 0，是 1（負數）前面就補 1。例如 −50 擴成 32 bits 後，值還是 −50。",
+    "所以常數不能任意大：16 bits 的 signed number 範圍是 −2¹⁵ 到 2¹⁵ − 1，也就是 −32768 到 32767。超過就放不進這個指令。",
+    "這裡出現第三個 design principle：Good design demands good compromise（好的設計需要好的妥協）。",
+    "為什麼不乾脆跟 R-type 一樣的格式，把常數放在 shamt 或 funct 那格？那只有 5、6 個 bits，太小了。所以妥協：把後面三格合成 16 bits，讓常數可以大一點。",
+    "格式雖然不同，但盡量相似：不管 R-type 還是 I-type，前 6 bits 一定是 op、接著 5 bits 一定是 rs、再來是 rt，所以 decode（解碼）的硬體很相似。",
+    "例子：addi $21, $22, −50，意思是把 22 號 register 的值加上 −50，放到 21 號。addi 的 op code 是 8。",
+    "注意順序：assembly 先寫 destination（21），再寫 source（22）；但在格式裡 rs（source，22）排前面、rt（destination，21）排後面。",
+    "最後 16 bits 放 −50（用二補數表示）。整個指令：8、22、21、−50，換成 binary 再換成 hex 是 0x22D5FFCE。",
+    "Load、store 也是 I-type。例如 lw $t0, 1200($t1)：lw 的 op code 是 35。",
+    "rs 放 base register $t1（第 9 個），rt 放目的地 $t0（第 8 個），16 bits 放 offset 1200。所以是 35 9 8 1200，編成 0x8D2804B0。",
+    "lw/sw 的 16 bits 當 offset 用，同樣是 signed、要 sign extension。所以 offset 不能任意大，只能在 base 的 ±2¹⁵ bytes 範圍內；超過的話，就得把 base 改到別的位置。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "add $t0, $s1, $s2 的機器碼（hex）是？",
+   "opts": [
+    "0x02324020",
+    "0x02324022",
+    "0x01124020",
+    "0x02328020"
+   ],
+   "ans": "0x02324020",
+   "why": "op 0、rs 17、rt 18、rd 8、shamt 0、funct 32 → 000000 10001 10010 01000 00000 100000。"
+  },
+  {
+   "q": "R-format 中 shamt 為什麼只要 5 bits？",
+   "opts": [
+    "32-bit 資料最多 shift 31 次，0～31 用 5 bits 表示",
+    "因為 register 有 5 個",
+    "因為 op code 是 5 bits",
+    "因為 shift 只能做 5 次"
+   ],
+   "ans": "32-bit 資料最多 shift 31 次，0～31 用 5 bits 表示",
+   "why": "shift 32 以上就全是 0，沒有意義；2⁵ = 32 種剛好。"
+  },
+  {
+   "q": "addi $21, $22, −50 編碼時，rs 與 rt 分別是？",
+   "opts": [
+    "rs = 22、rt = 21",
+    "rs = 21、rt = 22",
+    "rs = 0、rt = 21",
+    "rs = 22、rt = −50"
+   ],
+   "ans": "rs = 22、rt = 21",
+   "why": "I-type 的 rs 是 source（22），rt 是目的地（21），順序與 assembly 寫法相反。"
+  },
+  {
+   "q": "16-bit immediate 做 sign extension 時，負數前面補什麼？",
+   "opts": [
+    "補 1",
+    "補 0",
+    "補 sign bit 的相反",
+    "不用補"
+   ],
+   "ans": "補 1",
+   "why": "把 sign bit 往前複製：正數補 0、負數補 1，值不變。"
+  },
+  {
+   "q": "MIPS 沒有 move 指令，要把 $s1 複製到 $t2 可以用？",
+   "opts": [
+    "add $t2, $s1, $zero",
+    "addi $s1, $t2, 0",
+    "lw $t2, 0($s1)",
+    "sub $t2, $zero, $s1"
+   ],
+   "ans": "add $t2, $s1, $zero",
+   "why": "$zero 永遠是 0，加 0 等於原封不動搬過去。"
+  },
+  {
+   "q": "關於 alignment，MIPS 的 word 可以放在哪個地址開始？",
+   "opts": [
+    "8",
+    "6",
+    "2",
+    "1"
+   ],
+   "ans": "8",
+   "why": "word 是 4 bytes，必須從 4 的倍數開始（0、4、8…）。"
+  },
+  {
+   "q": "把常數直接放進指令（addi）主要依據哪個原則？",
+   "opts": [
+    "Make the common case fast",
+    "Smaller is faster",
+    "Simplicity favors regularity",
+    "Amdahl 的 parallelism"
+   ],
+   "ans": "Make the common case fast",
+   "why": "約 50% 的 operand 是常數，放 memory 每次都要 load 太慢。"
+  }
+ ]
+}

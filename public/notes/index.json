@@ -547,9 +547,9 @@
  },
  "A6sbcPRLkmg": {
   "label": "黃婷婷教授計算機結構_第4A講 Computer Abstractions and Technology / Instruction Set Architecture",
-  "points": 47,
+  "points": 46,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "Aa2sqUhIn-E": {
   "label": "MIT 6.006 L15：Single-Source Shortest Paths Problem",
@@ -1151,6 +1151,12 @@
   "quiz": 6,
   "cued": true
  },
+ "fy7H3jWfBnY": {
+  "label": "1.5 Addressing Modes | MIPS | Computer Architecture",
+  "points": 13,
+  "quiz": 6,
+  "cued": true
+ },
  "f_Vw45CmKXs": {
   "label": "清大OCW 趙啟超《離散數學》第2A講 Set Theory",
   "points": 44,
@@ -1437,6 +1443,12 @@
   "label": "清大OCW 趙啟超《離散數學》第9C講 Principles of Counting",
   "points": 12,
   "quiz": 5,
+  "cued": true
+ },
+ "jhMWFZV6hy8": {
+  "label": "黃婷婷教授計算機結構_第6A講 Instruction Set Architecture",
+  "points": 23,
+  "quiz": 7,
   "cued": true
  },
  "JibVXBElKL0": {
@@ -2237,6 +2249,12 @@
   "quiz": 4,
   "cued": true
  },
+ "Ri-K2287x2U": {
+  "label": "黃婷婷教授計算機結構_第5A講 Instruction Set Architecture",
+  "points": 22,
+  "quiz": 6,
+  "cued": true
+ },
  "RjvhXL0WTrY": {
   "label": "台大林軒田 DSA Tree / Heap",
   "points": 166,
@@ -2288,6 +2306,12 @@
  "S5vS9YEvnFU": {
   "label": "交大江蕙如 Lec19 Dynamic Programming (3/3)",
   "points": 80,
+  "quiz": 7,
+  "cued": true
+ },
+ "SbLPeJMK_d8": {
+  "label": "黃婷婷教授計算機結構_第4B講 Computer Abstractions and Technology / Instruction Set Architecture",
+  "points": 37,
   "quiz": 7,
   "cued": true
  },

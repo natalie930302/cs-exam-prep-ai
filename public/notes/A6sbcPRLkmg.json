@@ -1,262 +1,532 @@
 {
  "video": "A6sbcPRLkmg",
  "label": "黃婷婷教授計算機結構_第4A講 Computer Abstractions and Technology / Instruction Set Architecture",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
    "title": "回顧：response time、throughput、CPU time",
-   "scene": "cpu-time-eq",
+   "scene": "isA-4a-perf",
    "points": [
     {
-     "text": "評估電腦效能有兩種標準：response time（丟進去多久拿到結果）與 throughput（單位時間完成多少工作）；本課偏重 response time。",
-     "t": 13
+     "t": 18,
+     "text": "評估電腦效能有兩種常用標準：response time（丟進去多久拿到結果）與 throughput（單位時間完成多少工作）；本課偏重 response time。"
     },
     {
-     "text": "牆上時鐘量到的時間包含 CPU、I/O、idle；只看 CPU performance 時改用 CPU time。",
-     "t": 65
+     "t": 98,
+     "text": "牆上時鐘量到的時間包含 CPU、I/O、idle；只看 CPU performance 時改用 CPU time。"
     },
     {
-     "text": "CPU time = clock cycles 數 × clock period；clock period 是 clock frequency（clock rate）的倒數。",
-     "t": 118
+     "t": 117,
+     "text": "CPU time = clock cycles 數 × clock period；clock period 是 clock rate（frequency）的倒數。"
     },
     {
-     "text": "所以 CPU time 也等於 clock cycles 數 ÷ clock rate。",
-     "t": 139
+     "t": 171,
+     "text": "所以 CPU time 也等於 clock cycles 數 ÷ clock rate。"
     }
+   ],
+   "cues": [
+    18,
+    22.3,
+    24.1,
+    75.7,
+    86.5,
+    98.2,
+    107.2,
+    116.8,
+    137,
+    144,
+    170.9
+   ],
+   "explain": [
+    "老師先複習：要說一台電腦「效能好不好」，得先定一個量的標準。就像比賽跑步要先講好比的是時間還是距離。",
+    "第一種標準叫 response time（回應時間）：把一件工作（job）丟進電腦，到拿到結果，總共花多久。越短越好。",
+    "第二種標準叫 throughput（產出量）。它看的不是單一件事多快，而是一段時間內總共做完多少事。",
+    "Throughput 就是「單位時間做完幾件事」，例如每秒完成幾個 job。右邊一排 job 代表同一段時間裡做完的工作。",
+    "這兩種標準都有用，但這門課主要討論 response time，也就是「一件事要花多久」。",
+    "如果用牆上的時鐘量，從丟進去到結果出來的時間，其實包含 CPU 在算的時間、等 I/O（例如讀硬碟）的時間，還有閒著（idle）的時間。",
+    "要評估 CPU 本身好不好，就把 I/O、idle 這些拿掉，只算 CPU 真正在做事的時間，叫做 CPU time。",
+    "CPU 是跟著 clock（時脈）一拍一拍做事的。所以可以數：這件工作總共跑了幾個 clock cycle。畫面上的 12 格是示意的例子。",
+    "知道跑了幾個 cycle，再乘上每個 cycle 多長（clock period），就得到 CPU time。示意：12 個 cycle × 0.5 ns = 6 ns。",
+    "Clock rate（clock frequency，時脈頻率）就是每秒有幾個 cycle，剛好是 clock period 的倒數。0.5 ns 一拍，就是每秒 20 億拍，也就是 2 GHz。",
+    "因為 rate 是 period 的倒數，「乘 period」等於「除以 rate」。所以 CPU time 也可以寫成 cycles ÷ clock rate，算出來一樣是 6 ns。"
    ]
   },
   {
    "title": "Instruction count 與 CPI",
-   "scene": "cpu-time-eq",
+   "scene": "isA-4a-cpi",
    "points": [
     {
-     "text": "用 clock 太低階，programmer 希望在 instruction level 算：CPI = 平均一個 instruction 要幾個 clock cycle。",
-     "t": 157
+     "t": 186,
+     "text": "用 clock 算太低階，programmer 希望在 instruction level 算：CPI = 平均一個 instruction 要幾個 clock cycle。"
     },
     {
-     "text": "ISA 是 software 與 hardware 的 interface：硬體照 ISA 實作、軟體照 ISA 開發。",
-     "t": 208
+     "t": 238,
+     "text": "ISA 是 software 與 hardware 的 interface：硬體照 ISA 實作、軟體照 ISA 開發。"
     },
     {
-     "text": "指令複雜度與 organization 不同，各指令 cycle 數不一樣，取平均就是 CPI。",
-     "t": 244
+     "t": 263,
+     "text": "指令複雜度與 organization 不同，各指令 cycle 數不一樣，取平均就是 CPI。"
     },
     {
-     "text": "CPU time = Instruction count × CPI × clock cycle time。",
-     "t": 254
+     "t": 313,
+     "text": "CPU time = Instruction count × CPI × clock cycle time。"
     },
     {
-     "text": "IC 受 program、instruction set、compiler 影響；CPI 主要由硬體設計（organization）決定，也要依 instruction mix 算平均。",
-     "t": 267
+     "t": 332,
+     "text": "IC 受 program、instruction set、compiler 影響；CPI 主要由硬體設計（organization）決定，也要依 instruction mix 算平均。"
     }
+   ],
+   "cues": [
+    190.2,
+    202.4,
+    225.2,
+    238.4,
+    263,
+    273.6,
+    313,
+    324.7,
+    332.5,
+    358,
+    365.7
+   ],
+   "explain": [
+    "只數 clock 對寫程式的人太「低階」了。寫程式的人比較在意：我的程式有幾個指令？每個指令要多久？所以老師要改從指令（instruction）的角度算。",
+    "這裡要用到兩個量：instruction count（IC，程式總共執行幾個指令）和 CPI。",
+    "CPI 是 Clocks Per Instruction：一個指令平均要幾個 clock cycle 才做完。畫面上第一個指令 I1 佔了 2 格 clock。",
+    "老師順便複習 ISA（Instruction Set Architecture，指令集架構）：它是 software 和 hardware 之間的約定。硬體照它來做，軟體也照它來寫。",
+    "每個指令的複雜度不同，硬體的做法（organization）也不同，所以每個指令需要的 cycle 數不一樣：有的 1 格、有的 3 格（數字是示意）。",
+    "把它們平均起來：6 個指令總共 12 個 cycle，12 ÷ 6 = 2，這個平均值就是 CPI。",
+    "反過來說：指令數 × 每個指令平均幾個 cycle = 總共的 cycle 數。6 × 2 = 12，跟數格子的結果一樣。",
+    "總 cycle 數再乘上每個 cycle 的長度，就是 CPU time。這就是最重要的公式：CPU time = IC × CPI × clock cycle time。",
+    "IC 會受什麼影響？程式寫得好不好、指令集怎麼設計、compiler 會不會把多餘的指令拿掉，都會讓指令數不同。",
+    "每個指令平均要幾個 cycle（CPI），主要看硬體怎麼設計，也就是 organization（組織、實作方式）。",
+    "不同種類的指令 CPI 不同，所以要看程式裡各種指令佔多少（instruction mix），再算平均 CPI。下一段會仔細算。"
    ]
   },
   {
    "title": "CPI 例題：相同 ISA 的電腦 A 與 B",
-   "scene": "cpi-ab",
+   "scene": "isA-4a-ab",
    "points": [
     {
-     "text": "相同 ISA、相同 program 與 compiler → 兩台電腦的 instruction count 相同（記作 I）。",
-     "t": 315
+     "t": 376,
+     "text": "相同 ISA、相同 program 與 compiler → 兩台電腦的 instruction count 相同（記作 I）。"
     },
     {
-     "text": "A：cycle time 250 ps、CPI 2.0（clock 快，一件事要多幾個 cycle）；B：cycle time 500 ps、CPI 1.2。",
-     "t": 359
+     "t": 450,
+     "text": "A：cycle time 250 ps、CPI 2.0（clock 快，一件事要多幾個 cycle）；B：cycle time 500 ps、CPI 1.2。"
     },
     {
-     "text": "CPU time_A = I × 2.0 × 250 ps = 500·I ps；CPU time_B = I × 1.2 × 500 ps = 600·I ps。",
-     "t": 411
+     "t": 496,
+     "text": "CPU time_A = I × 2.0 × 250 ps = 500·I ps；CPU time_B = I × 1.2 × 500 ps = 600·I ps。"
     },
     {
-     "text": "A 比較快；「A 比 B 快幾倍」= B 的執行時間（分子）÷ A 的執行時間（分母）= 1.2。",
-     "t": 468
+     "t": 569,
+     "text": "A 比較快；「A 比 B 快幾倍」= B 的執行時間（分子）÷ A 的執行時間（分母）= 1.2。"
     }
    ],
-   "trap": "比較快慢要把「慢的那台的時間」放分子；clock 比較快不代表整體比較快，要連 CPI 一起算。"
+   "trap": "比較快慢要把「慢的那台的時間」放分子；clock 比較快不代表整體比較快，要連 CPI 一起算。",
+   "cues": [
+    375.8,
+    409.3,
+    432.8,
+    449.9,
+    462.7,
+    479.4,
+    496.3,
+    541.4,
+    551.4,
+    569.1,
+    595
+   ],
+   "explain": [
+    "例題：有兩台電腦 A 和 B，它們的指令集架構（ISA）一樣。",
+    "ISA 一樣，再用同一個程式、同一個 compiler 編譯，產生的指令就一模一樣，指令數也一樣，我們用一個大寫 I 代表。",
+    "那為什麼會是兩台不同的電腦？因為硬體做法（organization）不同。就像都用 Intel 的指令集，但用不同的電路去實作。",
+    "A 的 clock 一格 250 ps（ps 是兆分之一秒），B 一格 500 ps。上面一排是 A 的 clock，下面是 B 的：A 的格子比較窄，代表 clock 跑得比較快。",
+    "A 的 clock 很快，但每一格能做的事比較少，所以一個指令平均要 2 個 cycle：CPI = 2.0。",
+    "B 的 clock 比較慢，每一格比較長，能做比較多事，所以一個指令平均只要 1.2 個 cycle：CPI = 1.2。",
+    "誰比較快不能只看 clock，要把 CPU time 算出來：IC × CPI × cycle time。",
+    "A：每個指令 2.0 × 250 = 500 ps，I 個指令就是 500·I ps。上排每個藍色方塊是一個指令，寬 500 ps。",
+    "B：每個指令 1.2 × 500 = 600 ps，所以是 600·I ps。下排方塊比較寬，同樣 5 個指令排起來比較長。",
+    "500·I 比 600·I 小，所以 A 比較快。雖然 A 每個指令要比較多 cycle，但它的 cycle 短很多。",
+    "「A 比 B 快幾倍」要把慢的 B 的時間放分子、A 的時間放分母：600·I ÷ 500·I = 1.2，I 會消掉。所以 A 比 B 快 1.2 倍。"
+   ]
   },
   {
    "title": "CPI in more detail：依指令類別加權",
-   "scene": "cpi-classes",
+   "scene": "isA-4a-class",
    "points": [
     {
-     "text": "不同指令需要的 cycle 不同（乘法 vs 加法、load/store 要到 memory），把指令分類，每類有自己的 CPI。",
-     "t": 538
+     "t": 624,
+     "text": "不同指令需要的 cycle 不同（乘法 vs 加法、load/store 要到 memory），把指令分類，每類有自己的 CPI。"
     },
     {
-     "text": "Clock cycles = Σ（CPI_i × IC_i）；平均 CPI = 總 cycles ÷ 總 IC = Σ CPI_i × 該類比例。",
-     "t": 601
+     "t": 686,
+     "text": "Clock cycles = Σ（CPI_i × IC_i）；平均 CPI = 總 cycles ÷ 總 IC = Σ CPI_i × 該類比例。"
     },
     {
-     "text": "例：A、B、C 三類 CPI 分別為 1、2、3。",
-     "t": 659
+     "t": 755,
+     "text": "例：A、B、C 三類 CPI 分別為 1、2、3。"
     },
     {
-     "text": "Sequence 1：IC = 2、1、2 → cycles = 2 + 2 + 6 = 10，CPI = 10 / 5 = 2.0。",
-     "t": 703
+     "t": 799,
+     "text": "Sequence 1：IC = 2、1、2 → cycles = 2 + 2 + 6 = 10，CPI = 10 / 5 = 2.0。"
     },
     {
-     "text": "Sequence 2：IC = 4、1、1 → cycles = 4 + 2 + 3 = 9，CPI = 9 / 6 = 1.5（指令比較多，但比較快）。",
-     "t": 739
+     "t": 822,
+     "text": "Sequence 2：IC = 4、1、1 → cycles = 4 + 2 + 3 = 9，CPI = 9 / 6 = 1.5（指令比較多，但比較快）。"
     }
    ],
-   "trap": "補充：Sequence 2 指令數較多卻只要 9 個 cycles，所以「指令少」不等於「跑得快」，要看總 cycles。"
+   "trap": "Sequence 2 指令數較多卻只要 9 個 cycles，所以「指令少」不等於「跑得快」，要看總 cycles。",
+   "cues": [
+    624.5,
+    639.3,
+    662.6,
+    686.5,
+    726.2,
+    754.8,
+    777,
+    799.5,
+    812.8,
+    822.3,
+    838.4,
+    845.1
+   ],
+   "explain": [
+    "剛才的例題直接給了一個平均 CPI。現在老師要更仔細地看這個平均是怎麼來的。",
+    "實際上每種指令要的 cycle 不一樣：乘法比加法複雜；load、store 還要到記憶體拿資料，更花時間。方塊寬度代表需要的 cycle（示意）。",
+    "所以把指令分成幾類，同一類的指令 CPI 一樣，每一類有自己的 CPI。",
+    "總 cycle 數 = 每一類的 CPI × 這類指令有幾個，再全部加起來。Σ 這個符號就是「全部加起來」的意思。",
+    "平均 CPI = 總 cycles ÷ 總指令數。也等於「每類的 CPI × 這類佔的比例」加總，就是加權平均，跟算學期總成績一樣。",
+    "例題：指令分 A、B、C 三類，A 類只要 1 個 cycle，B 類 2 個，C 類比較複雜要 3 個。",
+    "兩種不同的 compiler 產生了兩段指令序列：Sequence 1 有 A 2 個、B 1 個、C 2 個；Sequence 2 有 A 4 個、B 1 個、C 1 個。",
+    "Sequence 1 的總 cycles：A 類 2 個 × 1 + B 類 1 個 × 2 + C 類 2 個 × 3 = 2 + 2 + 6 = 10。方塊寬度就是 cycle 數，排起來共 10 格。",
+    "Sequence 1 共 2 + 1 + 2 = 5 個指令，平均 CPI = 10 ÷ 5 = 2.0。",
+    "Sequence 2 的總 cycles：4 × 1 + 1 × 2 + 1 × 3 = 4 + 2 + 3 = 9。",
+    "Sequence 2 有 6 個指令，CPI = 9 ÷ 6 = 1.5。有趣的是：它的指令比較多，總 cycles 卻比較少，所以反而比較快。",
+    "重點：只要知道每一類有幾個指令、每類的 CPI 是多少，就用這個加權公式算總 cycles 和平均 CPI。"
+   ]
   },
   {
    "title": "Performance 的影響因素總表",
-   "scene": "perf-factors",
+   "scene": "isA-4a-factor",
    "points": [
     {
-     "text": "Program 會影響 instruction count（寫法、algorithm 不同），也會影響 CPI（多用加 vs 多用乘），不影響 clock rate。",
-     "t": 825
+     "t": 862,
+     "text": "總表：program、compiler、ISA、organization、technology 各影響 IC、CPI、clock rate 的哪幾項。"
     },
     {
-     "text": "Compiler 產生指令、做 optimization，影響 instruction count 與 CPI，不影響 clock rate。",
-     "t": 943
+     "t": 891,
+     "text": "Program 會影響 instruction count（寫法、algorithm 不同），也會影響 CPI（多用加 vs 多用乘），不影響 clock rate。"
     },
     {
-     "text": "Instruction set architecture：例如只有加與 shift 的 ISA，乘法要用很多加與 shift 完成 → 影響 IC 與 CPI。",
-     "t": 1021
+     "t": 1032,
+     "text": "Compiler 產生指令、做 optimization，影響 instruction count 與 CPI，不影響 clock rate。"
     },
     {
-     "text": "Organization（硬體實作）不影響 IC；影響 CPI（carry ripple adder 硬體少但較慢，carry lookahead 像樹、硬體多但快），也決定 clock rate。",
-     "t": 1140
+     "t": 1067,
+     "text": "ISA 以上是 software（影響 IC、CPI），以下是 hardware（organization、technology 影響 clock rate）。"
     },
     {
-     "text": "Technology（製程、feature size 變小）讓電路跑更快 → clock period 變小，影響 clock rate。",
-     "t": 1254
+     "t": 1087,
+     "text": "Instruction set architecture：例如只有加與 shift 的 ISA，乘法要用很多加與 shift 完成 → 影響 IC 與 CPI。"
     },
     {
-     "text": "ISA 以上是 software（影響 IC、CPI），以下是 hardware（organization、technology 影響 clock rate）。",
-     "t": 1317
+     "t": 1156,
+     "text": "Organization（硬體實作）不影響 IC；影響 CPI（carry ripple adder 硬體少但較慢，carry lookahead 像樹、硬體多但快），也決定 clock rate。"
+    },
+    {
+     "t": 1312,
+     "text": "Technology（製程、feature size 變小）讓電路跑更快 → clock period 變小，影響 clock rate。"
     }
    ],
-   "trap": "補充：P&H 課本的表格把 ISA 也列為會影響 clock rate（指令複雜度會影響硬體能做多快），考選擇題時注意版本。"
+   "trap": "P&H 課本的表格把 ISA 也列為會影響 clock rate（指令複雜度會影響硬體能做多快），考選擇題時注意版本。",
+   "cues": [
+    862.1,
+    891.4,
+    953,
+    991.7,
+    1032.3,
+    1051.5,
+    1060,
+    1067,
+    1087.1,
+    1148.7,
+    1155.9,
+    1222.1,
+    1243.4,
+    1297,
+    1312.7,
+    1367.8,
+    1387.7
+   ],
+   "explain": [
+    "總整理：CPU time = IC × CPI × clock period。表格的列是會影響效能的五件事，欄是這三個量。老師一格一格問：會不會影響？",
+    "Program（程式）會影響指令數：你寫 100 行、同學寫 50 行，或用不同的 algorithm，執行的指令數就不同。打勾。",
+    "Program 也會影響 CPI：同樣的工作，你用一堆加法、同學用乘法，用到的指令種類不同，每個指令的 cycle 數就不同。打勾。",
+    "Program 不影響 clock rate：clock 多快是硬體怎麼做決定的，跟你程式怎麼寫無關。打叉。",
+    "Compiler（編譯器）負責把程式翻成指令。不同 compiler、有沒有做 optimization（最佳化），產生的指令數不同。打勾。",
+    "既然 compiler 決定了指令的種類和數量，CPI 當然也會跟著變。打勾。",
+    "Compiler 不影響 clock rate，因為那是硬體實作的事。打叉。",
+    "紅線就是 ISA 這個介面：往上都是 software，只會影響 IC 和 CPI；往下是 hardware，才會跟 clock rate 有關。",
+    "ISA 會影響指令數：如果你的指令集只有「加」和「shift（移位）」，沒有乘法，要做乘法就得用很多個加和 shift 湊出來；同學的指令集有乘法，一個指令就做完。",
+    "指令集不同，每個指令要的 cycle 也不同，所以 ISA 也影響 CPI。老師的表沒有勾 ISA 對 clock rate；課本的表有勾，考試注意版本。",
+    "Organization（組織）是：ISA 定好以後，真的用硬體把這些指令做出來。要做加、減、乘，就照規格實作電路。",
+    "Organization 不影響指令數：指令數在 software 那一層（程式、compiler、ISA）就已經決定了。打叉。",
+    "Organization 會影響 CPI：同一個 32-bit 加法，用 carry ripple adder（只要 full adder 串起來，硬體少但慢）或 carry lookahead adder（像一棵樹，硬體多但快），要的 cycle 就不同。",
+    "Organization 也決定 clock rate：硬體設計決定每個 clock 要多長、每拍做多少事。打勾。",
+    "Technology（製程技術）是設計好之後拿去工廠（例如台積電）做出來。它影響 clock rate。",
+    "因為製程進步讓 feature size（電晶體大小）越來越小，電路跑得更快：cycle 數一樣，但每個 clock period 變短了。",
+    "這張表把 IC、CPI、clock rate 和軟硬體介面的關係全部整理好。看懂這張表，就懂效能公式裡每一項是誰在決定。"
+   ]
   },
   {
    "title": "Power trend：dynamic 與 static power",
-   "scene": "power-wall",
+   "scene": "isA-4a-power",
    "points": [
     {
-     "text": "近年 power 變成重要限制：Intel 各世代 clock rate 與 power 一起上升，最近才變平。",
-     "t": 1369
+     "t": 1416,
+     "text": "近年 power 變成重要限制：Intel 各世代 clock rate 與 power 一起上升，最近才變平。"
     },
     {
-     "text": "Power 分 dynamic（CMOS 0↔1 切換時對 output capacitance 充放電）與 static（不動也有 leakage 漏電流）。",
-     "t": 1400
+     "t": 1472,
+     "text": "Power 分 dynamic（CMOS 0↔1 切換時對 output capacitance 充放電）與 static（不動也有 leakage 漏電流）。"
     },
     {
-     "text": "Dynamic power ∝ capacitive load × voltage² × frequency；capacitive load 跟 fan-out、面積有關。",
-     "t": 1434
+     "t": 1508,
+     "text": "Dynamic power ∝ capacitive load × voltage² × frequency；capacitive load 跟 fan-out、面積有關。"
     },
     {
-     "text": "過去 25 年 frequency 增加約 1000 倍，dynamic power 只增加約 30 倍，因為 voltage 從 5V 降到 1V（每代約降 15%，且是平方關係）。",
-     "t": 1484
+     "t": 1553,
+     "text": "過去 25 年 frequency 增加約 1000 倍，dynamic power 只增加約 30 倍，因為 voltage 從 5V 降到 1V（每代約降 15%，且是平方關係）。"
     },
     {
-     "text": "Voltage 降到約 1V 就不能再降，否則 leakage 變很大、電晶體關不緊；power density 高、散熱變成問題。",
-     "t": 1537
+     "t": 1599,
+     "text": "Voltage 降到約 1V 就不能再降，否則 leakage 變很大、電晶體關不緊；power density 高、散熱變成問題。"
     },
     {
-     "text": "例：新 CPU 的 capacitive load、voltage、frequency 都是舊的 85% → power 變成 0.85⁴ ≈ 0.52。",
-     "t": 1615
+     "t": 1666,
+     "text": "例：新 CPU 的 capacitive load、voltage、frequency 都是舊的 85% → power 變成 0.85⁴ ≈ 0.52。"
     }
    ],
-   "trap": "Voltage 是平方項：降 15% 的效果比 frequency 降 15% 大得多。"
+   "cues": [
+    1415.8,
+    1440.7,
+    1471.9,
+    1491.5,
+    1507.9,
+    1515.5,
+    1538.3,
+    1553.6,
+    1570.5,
+    1599.7,
+    1632.6,
+    1666.1,
+    1683.5,
+    1696.7
+   ],
+   "explain": [
+    "除了跑多快，現在還有一件很重要的事：power（功率消耗）。以前不太在意，近幾年變成設計電腦最大的限制之一。",
+    "這是 Intel 二十幾年來各代處理器：clock rate（藍）越來越快，power（紅）也跟著越來越大，直到最近兩代才變平。柱子高度是示意。",
+    "為什麼變平？因為 power 的問題。Power 分兩大類：dynamic power（動態，做事時才耗）和 static power（靜態，不做事也在漏電，叫 leakage）。",
+    "Dynamic power 怎麼來的？電路裡的 0 和 1 是用電壓高低表示。0 變 1、1 變 0 時，要對輸出端的電容充電、放電，就在消耗能量。",
+    "Dynamic power 跟三樣東西成正比：capacitive load（電容負載 C）、電壓 V 的平方、切換頻率 f。",
+    "Capacitive load 是什麼？一個 gate 的輸出接給越多個 gate（fan-out 越大），要推動的電容就越大；它也跟電路面積很有關係。",
+    "Voltage 就是我們用多高的電壓代表 1、多低代表 0。",
+    "過去 25 年，frequency 快了超過 1000 倍，但 dynamic power 只增加大約 30 倍。照理說應該增加很多才對，為什麼？",
+    "秘訣是降電壓：從 5V 降到 1V。因為公式裡是 V 的平方，電壓變成 1/5，power 就變成 1/25。1000 × 1/25 = 40，跟「約 30 倍」是同一個量級（C 等其他因素也有變）。",
+    "那就一直降電壓不就好了？不行。電壓降到大約 1V 就降不下去了，再降的話 leakage 漏電會變很大，電晶體想關也關不緊。",
+    "Power 降不下來，同一塊面積裡又塞進更多運算，power density（單位面積的功率）就變很高，產生很多熱，散熱變成大問題。",
+    "例題：新的 CPU 跟舊的比，C、V、f 都變成 85%。代入公式：C 乘 0.85、V² 乘 0.85 兩次、f 再乘 0.85，方塊一步一步變小。",
+    "0.85 × 0.85² × 0.85 = 0.85⁴ ≈ 0.52。每樣只降 15%，power 卻幾乎降一半，因為電壓是平方項。",
+    "可是因為 leakage，電壓沒辦法再降，power 就降不下來，熱也散不掉。很貴的散熱方法一般桌機、便宜伺服器負擔不起，這就是 power wall（功率牆）。"
+   ]
   },
   {
    "title": "Uniprocessor 到 multi-core",
-   "scene": "multicore",
+   "scene": "isA-4a-multi",
    "points": [
     {
-     "text": "2002 年前 uniprocessor performance 每年約成長 1.5 倍，之後因 power、ILP、memory latency 只剩約 1.2 倍。",
-     "t": 1697
+     "t": 1740,
+     "text": "為了 power，近年不再只追求 feature size 縮小，改走 multi-core。"
     },
     {
-     "text": "2004 年後業界轉向 multi-core microprocessor：一顆晶片裡放 2 個、4 個 core。",
-     "t": 1739
+     "t": 1752,
+     "text": "Uniprocessor 效能 2002 前每年約 1.5 倍，之後只剩約 1.2 倍（power、ILP、memory latency）。"
     },
     {
-     "text": "以前 technology 與 pipeline 等硬體進步，程式一行都不用改就變快；multi-core 把責任移到 programmer。",
-     "t": 1783
+     "t": 1845,
+     "text": "以前換更快的 processor，舊程式一行不改就變快；multi-core 時代責任跑到 programmer。"
     },
     {
-     "text": "程式不改時，多加 core 只提高 throughput（同時跑更多 job），response time 不變；也能降頻省電。",
-     "t": 1871
+     "t": 1919,
+     "text": "程式不改、只加 core：response time 不變，提升的是 throughput（也可降 clock 省 power）。"
     },
     {
-     "text": "要改善 response time 必須寫 parallel programming：拆工作、load balancing、communication 與 synchronization（A、B 都做完才能做 C）。",
-     "t": 1946
+     "t": 1998,
+     "text": "要改進 response time 就要 parallel programming：找出可平行部分、load balancing、communication 與 synchronization（A、B 都完成才能做 C）。"
     }
    ],
-   "trap": "多核心「不改程式」只增加 throughput，不會縮短單一程式的 response time。"
+   "cues": [
+    1740.3,
+    1752.1,
+    1770.1,
+    1798.3,
+    1845.6,
+    1897.6,
+    1919,
+    1961.1,
+    1978.6,
+    1998.3,
+    2015.8,
+    2030.3,
+    2046.1
+   ],
+   "explain": [
+    "為了解決 power 的問題，近幾年的發展方向變了：不再只想把電晶體做小、把單一處理器做快，而是走向 multi-core（多核心）。",
+    "先看 uniprocessor（一顆晶片只有一個 core）的效能：2002 年以前，每年大約進步 1.5 倍，柱子一年比一年高。",
+    "2002 年以後只剩每年大約 1.2 倍。原因有 power、指令層級的平行度（ILP）挖不出更多，還有 memory 太慢，CPU 再快資料也拿不進來。",
+    "2004 年以後，大家改把好幾個 core 放在同一顆 microprocessor 裡，你買的電腦可能是 2 核、4 核，用平行的方式做事。",
+    "這跟以前有個很大的差別：以前 processor 變快時，寫程式的人一行 code 都不用改，同一個程式放到新機器上自然就變快。",
+    "換成多核心以後，要變快的責任跑到 programmer 身上了。程式不改，多出來的 core 不會自動幫你。",
+    "如果一行都不改，加了兩個、四個 core，到底增加了什麼？同一個 job 丟進去，花的時間一樣，所以 response time 沒有變。",
+    "增加的是 throughput：第一個 job 放這個 core、第二個 job 放那個 core，單位時間可以做更多事。",
+    "既然一次能做兩件事，也可以把 clock frequency 調慢一點，power 就跟著降低。",
+    "如果想讓「單一個工作」更快，也就是改進 response time，就得寫 parallel program（平行程式），明確地把工作分給不同的 core。",
+    "寫平行程式要先找出哪些地方可以同時做，把它拆開，寫成不同部分的 code，分給不同 core。",
+    "要注意 load balancing（負載平衡）：A 很大、B 很小，core 2 很快做完就閒著，整體還是要等 A。工作要盡量平均分配。",
+    "還有 communication 和 synchronization（同步）：如果 C 要等 A 和 B 都做完才能開始，就得同步，不能 A 一做完就直接做 C。這些都讓平行程式不好寫。"
+   ]
   },
   {
    "title": "Benchmark 與 SPEC",
-   "scene": "spec-ratio",
+   "scene": "isA-4a-bench",
    "points": [
     {
-     "text": "衡量效能要實際 run program；但該跑哪個程式要依 workload 而定（科學家常跑矩陣相乘，作家用 word processor）。",
-     "t": 2213
+     "t": 2104,
+     "text": "有了 CPU time 與 power 的標準，要實際 run 程式來量；選哪個程式要看自己的 workload。"
     },
     {
-     "text": "自己建 workload 很辛苦，所以用寫好的 benchmark；各公司自訂的 benchmark 沒有公信力，需要 industry standard。",
-     "t": 2284
+     "t": 2316,
+     "text": "自己建 workload 太辛苦 → benchmark（寫好的一組程式）；各公司自建沒公信力 → industry standard：SPEC（1989～，SPEC2006 有 CPU integer/FP 等）。"
     },
     {
-     "text": "SPEC：多家電腦公司合資的組織，1989 年開始；SPEC CPU2006 有 integer 與 floating point，也有 HPC、client-server、mail 等測試。",
-     "t": 2413
-    },
-    {
-     "text": "Benchmark 的問題：compiler／library 針對 benchmark 特別最佳化、system configuration 影響結果、規格可能偏袒某機器、benchmark 太小，且要定期更換。",
-     "t": 2457
+     "t": 2493,
+     "text": "Benchmark 的問題：針對它做 compiler/library optimization、受 system configuration 影響、只是一小組程式，所以要定期更換。"
     }
+   ],
+   "cues": [
+    2104,
+    2164.5,
+    2242,
+    2268.2,
+    2292.4,
+    2316.5,
+    2359.1,
+    2391.5,
+    2454.8,
+    2493.4,
+    2531.3,
+    2552.8,
+    2571.8
+   ],
+   "explain": [
+    "效能的標準（CPU time）和 power 都定義好了，接下來的問題是：實際上要怎麼量，才能說這台機器好還是不好？",
+    "最直接的方法：拿一個程式（program）到 A、B、C 機器上 run，看哪台跑得快。",
+    "例如拿一個矩陣相乘的程式去測，好不好？老師說：好，也不好，要看情況。",
+    "如果你是科學家，平常常做矩陣相乘，用它來測很有意義；如果你是作家，很少算矩陣，用它來測就沒什麼意義。",
+    "所以要依自己的 workload（平常的工作內容）來測：工程師常用 compiler、試算表；作家常用文書處理。",
+    "可是每個人都自己寫一組程式來測，太辛苦了。所以有人先寫好一組程式讓大家用，這叫 benchmark（基準測試程式）。",
+    "問題來了：A 公司、B 公司如果各自做 benchmark，都會挑對自己有利的程式，說「我的效能多好多好」，沒有公信力。",
+    "所以需要一個 industry standard（業界標準）：各家公司一起出錢成立一個機構，由它來做 benchmark，大家用同一組測才公平。這個機構就是 SPEC。",
+    "SPEC 從 1989 年開始做 benchmark。老師當時最新的是 SPEC2006：有專門測 CPU 的（分 integer 整數和 floating point 浮點數），也有測 HPC、client-server、mail 系統等。",
+    "Benchmark 也有 trick（陷阱）：程式是公開的，廠商可以讓 compiler 或 library 專門針對這些 code 做最佳化，分數變好看，但不代表真實的效能。",
+    "另外，測出來的結果也跟整個系統的設定（system configuration）有關；而測試規格本身也可能剛好對某台機器有利。",
+    "再來，benchmark 只是一小組程式，沒辦法涵蓋所有情況；而且要一陣子就更換，不然大家只針對它優化，就失去意義。",
+    "老師也提醒：將來讀研究所做實驗，也是在做 benchmarking。像影像處理就有大家共用的標準圖片，用同一組資料比較不同的 algorithm。"
    ]
   },
   {
    "title": "SPECratio 與 geometric mean",
-   "scene": "spec-ratio",
+   "scene": "isA-4a-ratio",
    "points": [
     {
-     "text": "以 AMD Opteron X4 跑 SPEC CPU2006 integer 為例：記錄 instruction count、CPI、clock cycle time、execution time。",
-     "t": 2620
+     "t": 2614,
+     "text": "例：SPEC CPU2006 integer 測 AMD X4：收集 IC、CPI、clock cycle time、execution time。"
     },
     {
-     "text": "不比絕對時間，而是跟 reference machine 比：SPECratio = reference time ÷ execution time，越大越好（例：某程式 15.3）。",
-     "t": 2654
+     "t": 2664,
+     "text": "SPECratio = reference machine 的時間 ÷ 待測機器的 execution time，越大越好（perl：9770 ÷ 637 ≈ 15.3）。"
     },
     {
-     "text": "彙總用 geometric mean：所有 SPECratio 乘起來再開 n 次方根（不是 arithmetic mean）。",
-     "t": 2723
+     "t": 2715,
+     "text": "多個程式的 SPECratio 用 geometric mean（全部乘起來開 n 次方根）彙總；X4 的 12 個程式約 11.7。"
     },
     {
-     "text": "最後只要比 summary 數字：你 10、我 11，我在這組 benchmark 上比較好。",
-     "t": 2793
+     "t": 2780,
+     "text": "最後只比 summary：你 10、我 11 → 這組 benchmark 我比較好。"
     }
    ],
-   "trap": "補充：用 geometric mean 的好處是「換哪台當 reference machine，兩台機器的相對排名都不變」。"
+   "cues": [
+    2614.5,
+    2629.5,
+    2648.3,
+    2664.6,
+    2692,
+    2714.8,
+    2733.9,
+    2764.9,
+    2780.3
+   ],
+   "explain": [
+    "舉例：用 SPEC2006 裡專測 CPU 整數運算（integer）的那組程式來做 benchmarking。",
+    "要測的是 AMD 的一顆處理器 X4。把這組 benchmark 程式拿到 X4 上 run。",
+    "每個程式都收集它的指令數（IC）、CPI、clock cycle time，乘起來得到 execution time（執行時間）。例如 perl 這個程式在 X4 上跑了 637 秒。",
+    "光看 637 秒這個絕對值很難比。所以找一台 reference machine（參考機器）：A 機器跟它比、B 機器也跟它比，比完就能知道 A 和 B 誰好。perl 在參考機器上要 9770 秒。",
+    "SPECratio = 參考機器的時間 ÷ 待測機器的時間 = 9770 ÷ 637 ≈ 15.3。就跟之前「A 比 B 快幾倍」的算法一樣，越大代表越快。",
+    "12 個程式各有一個 ratio（柱子）。要合成一個總分，這裡用 geometric mean（幾何平均）：把 12 個 ratio 全部乘起來，再開 12 次方根，得到約 11.7（紅線）。",
+    "加總有很多方法。arithmetic mean（算術平均）是全部加起來除以個數，算出來會不一樣。SPEC 選用 geometric mean，好處是換一台參考機器，排名也不會變。",
+    "這張表就是課本裡 X4 的結果。你設計一顆 processor，也用同樣的流程測這組 benchmark，得到自己的一張表。",
+    "最後只要看 summary 那一個數字：你的是 10、我的是 11，就說對這組 benchmark 來講，我的 CPU 效能比較好。"
+   ]
   },
   {
    "title": "SPEC power benchmark",
-   "scene": "spec-power",
+   "scene": "isA-4a-spow",
    "points": [
     {
-     "text": "Power 不能只看瓦數，還要看 performance：記錄 throughput（每秒完成的 operations）與消耗的 power。",
-     "t": 2822
+     "t": 2795,
+     "text": "SPEC power：在 100%、90%、…、0% 各種 load 下記錄 throughput（ssj_ops）與 power（watts）。"
     },
     {
-     "text": "從 100% load 開始，每次減 10% 一直到 0%（idle），每個等級都量 ops 與 watts。",
-     "t": 2854
+     "t": 2874,
+     "text": "總分 = Σ ssj_ops ÷ Σ power（每瓦能做多少事）。"
     },
     {
-     "text": "總分 = Σ ssj_ops ÷ Σ power：每瓦可以做多少事。",
-     "t": 2898
-    },
-    {
-     "text": "0% load 時沒做任何事仍消耗不少 power，因為 static power（leakage）占很大比例。",
-     "t": 2940
+     "t": 2916,
+     "text": "0% load 時沒做事仍消耗不少 power：static power（leakage）占很大比例。"
     }
    ],
-   "trap": "Idle 也耗電：leakage 是 static power，跟有沒有在運算無關。"
+   "cues": [
+    2795,
+    2808.5,
+    2819.5,
+    2851.1,
+    2874.6,
+    2916.6,
+    2931.1,
+    2957.1
+   ],
+   "explain": [
+    "Power 也有 benchmark。但不能只看耗多少電，還要看它同時做了多少事，所以要記錄兩樣東西。",
+    "一樣是 throughput：每秒完成幾個 operation（ssj_ops，藍色）；另一樣是 power：每秒消耗多少瓦（watts，橘色）。",
+    "工作的 loading（負載）不同，耗電也不同。所以從 100% 負載開始，90%、80%……一直到 0%，每 10% 跑一次。",
+    "這是同一顆 X4 的結果：負載降低時，做的事（藍）一路變少，耗電（橘）也往下降，但降得比較慢。柱子高度是示意。",
+    "加總的方法：把每個負載下完成的 operation 全部加起來，除以全部消耗的 power，得到「每一瓦能做多少事」。",
+    "注意最右邊 0% 的地方：完全沒做事，performance 是 0，可是 power 還是不小！",
+    "為什麼？還記得 power 有兩種：dynamic 和 static。Static 就是漏電（leakage），就算什麼都不做也一直在漏。",
+    "現在電壓已經降到大約 1V，漏電在整個 power 裡佔了很大的比例。怎麼解決，就是現在研究在做的事。"
+   ]
   }
  ],
  "quiz": [
@@ -337,6 +607,5 @@
    "ans": "static power（leakage）",
    "why": "電晶體關不緊會漏電，不運算也耗電。"
   }
- ],
- "timing": "estimated"
+ ]
 }

@@ -1,0 +1,298 @@
+{
+ "video": "fy7H3jWfBnY",
+ "label": "1.5 Addressing Modes | MIPS | Computer Architecture",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "什麼是 addressing mode",
+   "scene": "isA-am-intro",
+   "points": [
+    {
+     "t": 0,
+     "text": "Addressing mode：指令中指定 operand 的各種方式。MIPS 有五種：immediate、register、base、PC-relative、pseudo-direct。"
+    }
+   ],
+   "cues": [
+    0,
+    8,
+    16
+   ],
+   "explain": [
+    "這支影片（英文講解）介紹 MIPS 架構裡的各種 addressing mode（定址模式）。",
+    "Addressing mode 的定義：在一個指令裡，用來「指定 operand 在哪裡」的各種方法。operand 可能就寫在指令裡、在 register 裡，或在記憶體裡。",
+    "MIPS 有五種 addressing mode：immediate、register、base、PC-relative、pseudo-direct。接下來一種一種看。"
+   ]
+  },
+  {
+   "title": "Immediate addressing",
+   "scene": "isA-am-imm",
+   "points": [
+    {
+     "t": 21,
+     "text": "Immediate：格式 op（6）、rs、rt（結果）、immediate；資料就隨指令提供，不另外存在 memory。"
+    },
+    {
+     "t": 55,
+     "text": "每種模式的 op code 都是 6 bits（2⁶ = 64 種）；同一個指令換不同 register 不算不同指令。"
+    }
+   ],
+   "trap": "老師說最多 64 種指令；但 R-type 的 op 都是 0、再用 funct 區分，所以 MIPS 實際指令數不只 64 個。",
+   "cues": [
+    21,
+    23.5,
+    41.4,
+    55.7,
+    74.7
+   ],
+   "explain": [
+    "第一種：immediate addressing（立即定址）。",
+    "格式：最前面是 6 bits 的 op code，接著一個 source register（rs）、一個 register rt（結果也放這裡），最後是 immediate value。老師沒給具體指令，畫面用 addi $s1, $s2, 5 當示意例子。",
+    "既然叫 immediate，指令裡就一定有一個 immediate data：資料直接跟著指令一起提供，不另外存在記憶體裡。這個例子的機器碼也算出來了。",
+    "所有的 addressing mode，op code 都只有 6 bits，所以最多有 2⁶ = 64 種不同的 op code。",
+    "例如 add 是一個指令、multiply 是另一個指令；但 add 用哪幾個 register，不算是不同的指令，處理器是靠欄位裡的值分辨的。補充：R-type 的 op 都是 0，再用 funct 區分，所以實際指令數不只 64。"
+   ]
+  },
+  {
+   "title": "Register addressing：add $s1, $s2, $s3",
+   "scene": "isA-am-reg",
+   "points": [
+    {
+     "t": 95,
+     "text": "Register：三個 register field（32 個 register → 5 bits）、shamt（只有 shift 用，否則 0）、funct（add 32、sub 34），add/sub 的 op = 000000。"
+    },
+    {
+     "t": 204,
+     "text": "add $s1, $s2, $s3：rs = $s2（18）、rt = $s3（19）、rd = $s1（17）→ 0 18 19 17 0 32 = 0x02538820；所有 operand 都是 register。"
+    }
+   ],
+   "trap": "Assembly 的寫法是 add rd, rs, rt，但機器碼欄位順序是 rs、rt、rd。",
+   "cues": [
+    95,
+    98.7,
+    127.5,
+    145.8,
+    171.6,
+    179.4,
+    204.7,
+    223.7,
+    248.1,
+    287.3,
+    313.7,
+    352.1
+   ],
+   "explain": [
+    "第二種：register addressing。這種格式有三個 register field。",
+    "MIPS 有 32 個 register，要指定其中一個需要幾個 bits？2⁵ = 32，所以 5 個 bits，每個 register field 都是 5 bits。",
+    "這個 field 叫 shift amount（shamt），add、sub 不用它，只有 shift left、shift right 才用。其他指令這格要填 0，五個 bits 全是 0。",
+    "最後的 function field 有 6 bits：要做加法就填 32（換成 binary 100000），減法填 34。",
+    "另外，add 和 sub 的 op code 是 000000，六個 bits 全是 0。",
+    "怎麼知道是 0 和 32？這是 MIPS 設計者定的。如果你自己設計處理器，也可以定別的值；但我們討論 MIPS，就照它的規定。",
+    "例子：add $s1, $s2, $s3。執行時把 $s2 和 $s3 相加，結果存到 $s1。",
+    "$s2、$s3 是 source register，它們的 5-bit 編號分別填進 rs（18）和 rt（19）；destination $s1 的編號（17）填進 rd。",
+    "這是 add，所以 funct 填 32，op 和 shamt 都是 0。整個指令就是 0 18 19 17 0 32，換成 hex 是 0x02538820。",
+    "注意：在 assembly 裡 $s3 寫在最後、$s2 在中間；但在機器碼格式裡，$s2 放在最前面的 rs，$s3 在中間的 rt，結果 $s1 在 rd。",
+    "rs 是 source register；rt 可以用 $t register，也可以用 $s register（換成 $t0，填的編號就跟著變）；rd 一定是用來放結果的。",
+    "為什麼叫 register addressing mode？因為這個指令所有的 operand 都是 register。"
+   ]
+  },
+  {
+   "title": "Base（displacement）addressing：lw $s1, 32($s3)",
+   "scene": "isA-am-base",
+   "points": [
+    {
+     "t": 371,
+     "text": "Base addressing（displacement addressing）：lw $s1, 32($s3)，address = 32 + $s3 的內容；lw 讀 4 bytes（lh 2、lb 1）。"
+    },
+    {
+     "t": 483,
+     "text": "格式：op 35、rs = $s3（base）、rt = $s1（結果）、16-bit address/offset（32 是位址的一部分，不是 data）。整個 32 bits 叫 instruction code，op code 只是前 6 bits。"
+    },
+    {
+     "t": 663,
+     "text": "$s3 是 base register、32 是 offset（displacement），位址由 register 間接提供。"
+    }
+   ],
+   "trap": "老師也把 base addressing 叫 indirect addressing；課本的名稱是 base／displacement。不要和「記憶體裡存的是位址」的 memory indirect 混淆（MIPS 沒有那種）。",
+   "cues": [
+    371.7,
+    385.6,
+    411,
+    420.5,
+    441.7,
+    451.4,
+    468.1,
+    482.9,
+    496.9,
+    515.2,
+    557.7,
+    589.3,
+    619.6,
+    663.5,
+    720.4
+   ],
+   "explain": [
+    "第三種：base addressing。它也叫 displacement addressing（老師另外也叫它 indirect addressing），名字很多種。",
+    "解釋 addressing mode 時一定要先給例子，至少記住一個例子，再根據它畫圖說明。",
+    "例子：lw $s1, 32($s3)（load word）。畫面上 $s3 = 1000、記憶體 1032 裡放 77，都是示意的值。",
+    "這個指令裡的 32 和 $s3 會一起算出一個 address：32 加上 $s3 的內容。1000 + 32 = 1032，它指向記憶體的一個位置。",
+    "從那個位置拿一個 word。word 是 4 個 byte，half word 是 2 個 byte，byte 就是 1 個 byte（8 bits）。",
+    "因為是 load word，就從記憶體拿 4 個 byte，載入 register $s1。所有 register 都是 32 bits，剛好放得下。",
+    "注意：這裡的 32 雖然直接寫在指令裡，但它不是資料，而是 address 的一部分。",
+    "所以格式跟 register mode 不一樣：沒有第三個 register 的 field，只有兩個 register 和一個 address field（16 bits）。",
+    "指令裡直接給的值，可能是 address，也可能是 data：用 immediate mode 時它是 data；用 base mode 時它是 address（的一部分）。",
+    "op code 6 bits（lw 是 35）；source register 是 $s3（19）；rt 原本叫 temporary register，這裡用來放結果，填 $s1 的編號（17）。注意填的是 register 的編號，不是它裡面的資料。",
+    "要分清楚：整個 32 bits 叫 instruction code（指令碼）；op code（operation code）只是最前面的 6 bits。",
+    "執行時：把指令裡的 32 和 $s3 的值相加，得到 address，再用這個 address 去存取記憶體。",
+    "因為是 load word，從記憶體讀 4 個 byte。如果用 load half word 會讀 2 個 byte，用 load byte（lb）只讀 1 個 byte，結果都放到 $s1。",
+    "為什麼叫 base addressing？$s3 這個 register 提供了位址的基準，叫 base register（換成 $s4、$s5 也可以）；32 是加上去的位移，叫 offset 或 displacement，所以也叫 displacement addressing。",
+    "32 是直接寫在指令裡的，但 $s3 只是「間接」提供位址的一部分，所以老師也叫它 indirect addressing。課本的正式名稱是 base 或 displacement addressing。"
+   ]
+  },
+  {
+   "title": "PC-relative addressing：bne $s0, $s1, 100",
+   "scene": "isA-am-pc",
+   "points": [
+    {
+     "t": 747,
+     "text": "PC（program counter）存放目前執行指令的地址；要跳到別處就改 PC。"
+    },
+    {
+     "t": 801,
+     "text": "bne $s0, $s1, 100：不相等就跳到 PC + 4 + 100 × 4（100 是指令數）；beq 同理。"
+    },
+    {
+     "t": 944,
+     "text": "格式：op、rs = $s0、rt = $s1、16-bit offset（5 16 17 100）；跳躍目標相對於目前的 PC。"
+    }
+   ],
+   "trap": "offset 是 16-bit signed：可跳 −2¹⁵ ～ 2¹⁵ − 1 個指令（老師說 2¹⁶）；目標 = PC + 4 + offset × 4。",
+   "cues": [
+    747.5,
+    763.2,
+    782.3,
+    801,
+    814.2,
+    831.1,
+    860.8,
+    893,
+    915.8,
+    944.4,
+    985,
+    1032.1
+   ],
+   "explain": [
+    "第四種：PC-relative addressing。PC 是 program counter（程式計數器），它存著目前正在執行的那個指令的地址。",
+    "指令也放在記憶體裡，要給地址才拿得到。處理器就是照 PC 的地址，把目前的指令拿進來執行。沒有 PC 就拿不到目前的指令。",
+    "如果想跳到程式的別的地方執行，就要改變 PC 的值，它才會到新地址去拿指令。",
+    "例子：bne $s0, $s1, 100。bne 是 branch on not equal（不相等就分支）。",
+    "執行時比較 $s0 和 $s1：如果不相等，就跳到「100」指定的地方，從那裡開始執行。",
+    "這裡的 100 不是記憶體的第 100 格，而是「第 100 個指令」。每個指令 4 個 byte，所以要乘 4：100 × 4 = 400 bytes。",
+    "而且還要再加 4，因為是從下一個指令開始算。所以不相等時跳到 PC + 4 + 100 × 4。如果 PC 是 1000（示意），目標就是 1000 + 4 + 400 = 1404。",
+    "也可以用 beq（branch on equal）：相等時才跳到 PC + 4 + 100 × 4。就像高階語言的 if，條件式的指令很多，但觀念一樣。",
+    "bne、beq 這種簡短的寫法叫 mnemonic，是指令的符號表示。這些指令提供「有條件的分支」。",
+    "格式：bne 有自己的 6-bit op code（5）。這裡沒有結果要存，只是比較兩個 register：第一個 $s0 放 rs，第二個 $s1 放 rt，100 放在最後的 16 bits。",
+    "6 + 5 + 5 = 16，剩下 16 bits 放這個值，所以不能給太大的數，像 20 萬、100 萬就放不下。課本補充：它是 signed，範圍是 −2¹⁵ 到 2¹⁵ − 1 個指令。",
+    "為什麼叫 PC-relative？因為跳到哪裡是「相對於目前的 PC」：PC 是 1000 就以 1000 為基準，PC 是 10000 就以 10000 為基準。"
+   ]
+  },
+  {
+   "title": "Pseudo-direct addressing：j 2500",
+   "scene": "isA-am-pseudo",
+   "points": [
+    {
+     "t": 1079,
+     "text": "j 2500：無條件跳躍，目標直接寫在指令（26 bits）；2500 是指令數 → × 4 = 10000。"
+    },
+    {
+     "t": 1142,
+     "text": "課本：目標 = PC 最高 4 bits ‖ 26-bit 欄位 ‖ 00（接起來，不是相加），所以叫 pseudo-direct。"
+    }
+   ],
+   "trap": "老師說把 2500 × 4「加上」目前的 PC；課本（MIPS）是把 PC 最高 4 bits「接」在 26-bit 欄位 × 4 前面，並不是相加。",
+   "cues": [
+    1079.4,
+    1091.1,
+    1105,
+    1113.9,
+    1141.8,
+    1159.7
+   ],
+   "explain": [
+    "最後一種：pseudo-direct addressing（偽直接定址），很簡單。例子：j 2500，jump 到 2500。",
+    "前一種 bne 是有條件的跳躍；j 是無條件跳，而且直接把要跳去哪裡寫在指令裡（26 bits）。",
+    "執行 j 2500，處理器會跳到 2500 × 4 = 10000 這個地址，從那裡開始執行。",
+    "指令裡給的 2500 不是地址，而是「要跨過幾個指令」；每個指令 4 個 byte，所以要乘 4。",
+    "老師說要再跟目前的 PC 值組合。精確地說（課本）：不是相加，而是把 PC 最高的 4 bits 接在前面、2500 的 26 bits 在中間、最後補兩個 0（等於乘 4）。這裡 PC 最高 4 bits 是 0，所以結果正好是 10000。",
+    "值幾乎是直接給的，但最高 4 bits 還要靠 PC 補，所以不算完全的 direct addressing，叫 pseudo-direct addressing。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "lw $s1, 32($s3) 使用哪一種 addressing mode？",
+   "opts": [
+    "Base（displacement）addressing",
+    "Immediate addressing",
+    "PC-relative addressing",
+    "Pseudo-direct addressing"
+   ],
+   "ans": "Base（displacement）addressing",
+   "why": "位址 = base register $s3 的內容 + offset 32。"
+  },
+  {
+   "q": "位址 1000 的 bne $s0, $s1, 100，不相等時跳到哪個地址？",
+   "opts": [
+    "1404",
+    "1100",
+    "1400",
+    "1104"
+   ],
+   "ans": "1404",
+   "why": "PC-relative：(PC + 4) + 100 × 4 = 1004 + 400 = 1404。"
+  },
+  {
+   "q": "j 2500（PC 最高 4 bits 為 0）跳到的地址是？",
+   "opts": [
+    "10000",
+    "2500",
+    "2504",
+    "10004"
+   ],
+   "ans": "10000",
+   "why": "pseudo-direct：PC[31:28] ‖ 2500 ‖ 00 = 2500 × 4 = 10000。"
+  },
+  {
+   "q": "add $s1, $s2, $s3 的 rs、rt、rd 依序是？",
+   "opts": [
+    "18、19、17",
+    "17、18、19",
+    "19、18、17",
+    "17、19、18"
+   ],
+   "ans": "18、19、17",
+   "why": "rs = $s2（18）、rt = $s3（19）、rd = $s1（17）；assembly 的順序與欄位順序不同。"
+  },
+  {
+   "q": "Register addressing 的 register field 為什麼是 5 bits？",
+   "opts": [
+    "MIPS 有 32 個 register，2⁵ = 32",
+    "因為 op code 是 5 bits",
+    "因為 word 是 5 bytes",
+    "因為 shamt 是 5 bits"
+   ],
+   "ans": "MIPS 有 32 個 register，2⁵ = 32",
+   "why": "5 bits 剛好能編號 0～31。"
+  },
+  {
+   "q": "Immediate addressing 的特點是？",
+   "opts": [
+    "operand 的資料直接放在指令裡",
+    "operand 一定在 memory",
+    "位址由 PC 決定",
+    "三個 operand 都是 register"
+   ],
+   "ans": "operand 的資料直接放在指令裡",
+   "why": "例如 addi 的 16-bit immediate 就是運算用的常數。"
+  }
+ ]
+}

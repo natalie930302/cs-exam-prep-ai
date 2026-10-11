@@ -1,0 +1,398 @@
+{
+ "video": "Ri-K2287x2U",
+ "label": "黃婷婷教授計算機結構_第5A講 Instruction Set Architecture",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "回顧：算術指令與 32 個 register",
+   "scene": "isA-5a-review",
+   "points": [
+    {
+     "t": 0,
+     "text": "回顧 MIPS 第一種指令（ALU 的加減、邏輯運算）：op code、destination、source1、source2，三個 operand 一定是 register。"
+    },
+    {
+     "t": 84,
+     "text": "32 個 register → 位址 5 bits；register file 太大會慢。寫程式可用 $t0～$t7（8～15）、$s0～$s7（16～23）。"
+    },
+    {
+     "t": 159,
+     "text": "CPU：register file → ALU → 寫回 register；floating point 在 coprocessor；memory 在 CPU 外面。"
+    }
+   ],
+   "cues": [
+    19.8,
+    37.4,
+    58.6,
+    84.2,
+    113.8,
+    127.3,
+    159.3
+   ],
+   "explain": [
+    "上一講介紹了 MIPS 的第一種指令：專門做加、減、邏輯運算，這些運算在 ALU（算術邏輯單元）裡做。",
+    "它有四個 field：第一個是 op code（做什麼），接著是 destination（結果放哪）、source 1、source 2（拿誰來算），例如 add $t0, $s1, $s2。",
+    "規定是：後面這三個一定要是 register。",
+    "老師問：32 個 register，編號 0 到 31，要幾個 bits 才能表示？答案是 5 個，因為 2⁵ = 32。這個觀念很重要。",
+    "Register file 當然希望大一點、比較靈活，但太大速度會變慢，所以要選一個適當的大小。",
+    "32 個 register 有些有特別用途。寫程式時可以用的主要是 8～15 號（叫 $t0～$t7，temporary）和 16～23 號（叫 $s0～$s7）。",
+    "CPU 的結構：要運算時，資料從 register file 拿到 ALU，算完再寫回 register。浮點數另外由 coprocessor 處理。CPU 外面有一個很大的 memory，可以放更多資料。"
+   ]
+  },
+  {
+   "title": "f = (g + h) − (i + j) 編成三個指令",
+   "scene": "isA-5a-fghij",
+   "points": [
+    {
+     "t": 191,
+     "text": "例：f = (g + h) − (i + j) 有四個 operand，但 MIPS 一個指令只有兩個 source、一個 destination。"
+    },
+    {
+     "t": 235,
+     "text": "f～j 放在 $s0～$s4：add $t0, $s1, $s2；add $t1, $s3, $s4；sub $s0, $t0, $t1。"
+    },
+    {
+     "t": 295,
+     "text": "一個 C statement 變三個 assembly statement；加減與 and/or 只能在 register 上做，不在 register 的要先搬進來。"
+    }
+   ],
+   "cues": [
+    191.2,
+    201.8,
+    235.7,
+    258.8,
+    271.9,
+    283,
+    295.1,
+    319
+   ],
+   "explain": [
+    "再看上次的例子：f = (g + h) − (i + j)。這行 C 有 g、h、i、j 四個 operand。",
+    "但 MIPS 的指令一次只能有兩個 source、一個 destination，所以要拆成好幾個指令。",
+    "在 C 裡 g、h、i、j 只是變數的名字；在 MIPS 裡，加法的 operand 一定要在 register。假設 f 到 j 已經放在 $s0 到 $s4 這五個 register（g、h、i、j 的值是示意）。",
+    "第一個指令：把 g（$s1）和 h（$s2）加起來，放到暫存的 $t0。5 + 3 = 8。",
+    "第二個指令：把 i（$s3）和 j（$s4）加起來，放到 $t1。4 + 2 = 6。",
+    "第三個指令：$t0 − $t1，結果放到 $s0，也就是 f。8 − 6 = 2，跟直接算 (5 + 3) − (4 + 2) 一樣。",
+    "一行 C 寫成三行 assembly。每一行都遵守規定：只有三個 operand，一個 destination、兩個 source。",
+    "加、減、and、or 這些運算只能在 register 上做。如果資料不在 register 裡，就要用別的指令先搬進來，後面會介紹。"
+   ]
+  },
+  {
+   "title": "Register architecture 的演變",
+   "scene": "isA-5a-arch",
+   "points": [
+    {
+     "t": 339,
+     "text": "歷史上的 register architecture：accumulator、stack、general purpose register、load-store（MIPS）。"
+    },
+    {
+     "t": 388,
+     "text": "Accumulator：只有一個 register，指令只寫一個 memory address（load B、add C）。Stack：只能操作 top of stack（push A、push B、add、pop C）。"
+    },
+    {
+     "t": 602,
+     "text": "GPR：多個 register 任意存取，分 2-address、3-address，operand 可在 register 或 memory。"
+    },
+    {
+     "t": 690,
+     "text": "RISC（load-store）：運算的 operand 全部要在 register，存取 memory 拆成獨立的 load/store → 好做 optimization。"
+    }
+   ],
+   "cues": [
+    339.7,
+    368.9,
+    388,
+    409,
+    479.7,
+    529.6,
+    569.7,
+    602.6,
+    622.2,
+    666.2,
+    690.2,
+    756.4,
+    787.1
+   ],
+   "explain": [
+    "Register file 長什麼樣子，是指令集很重要的特性。歷史上有好幾種設計。",
+    "大致有四種：accumulator、stack、general purpose register（GPR），還有 load-store。MIPS 屬於最後這種。",
+    "最早期硬體很貴，CPU 裡只建得起一個 register，這個 register 有個特別的名字：accumulator（累加器）。",
+    "只有一個 register 要怎麼做 A = B + C？先把 B 從記憶體 load 進 accumulator，再「add C」：C 從記憶體拿來，和 accumulator 相加，結果還是放回 accumulator。（A、B、C 的值是示意）",
+    "所以指令只要寫一個 address 就好：另一個運算元和結果的位置都不用講，因為只有一個 accumulator。",
+    "後來演變成 stack：register 比較多了，但不能隨便存取，只能像疊盤子一樣，last in first out，資料只能 push 到最上面，也只能從最上面拿。",
+    "做 A + B：push A、push B，再 add，它會自動把最上面兩個相加，結果放回最上面；最後 pop 到 C。add 不用寫任何 operand。",
+    "硬體越來越便宜，可以有很多個 register，而且任意一個都能存取，這叫 general purpose register（通用暫存器）。",
+    "GPR 又分兩種：2-address（例如 add A, B 表示 A = A + B）和 3-address（add A, B, C）。要描述的地址越多，指令就越長。",
+    "GPR 還有一個特點：operand 可以在 register，也可以直接從 memory 拿，指令只要寫清楚來源就好。",
+    "到了 RISC 的 load-store machine，特別規定：做加減運算時，三個 operand 全部都要在 register 裡。",
+    "為什麼比較快？register 存取很快。如果有一個 operand 在 memory，就要先去記憶體拿，這個指令要花多少時間都說不準。",
+    "所以把「去記憶體拿東西」拆出來，變成獨立的 load、store 指令。指令切得比較小、比較單純，就比較好做 optimization（最佳化）。"
+   ]
+  },
+  {
+   "title": "C = A + B 的四種寫法與比較",
+   "scene": "isA-5a-cab",
+   "points": [
+    {
+     "t": 876,
+     "text": "C = A + B：stack（push A、push B、add、pop C）、accumulator（load A、add B、store C）、register-memory（load R1,A；add R1,B；store C,R1）、load-store（load、load、add R3,R1,R2、store）。"
+    },
+    {
+     "t": 1081,
+     "text": "1975 年後 stack／accumulator 已沒人用；x86 屬 register-memory，RISC 屬 load-store。"
+    },
+    {
+     "t": 1099,
+     "text": "Register-memory 指令較長但數量少；load-store 指令多但短。指令少不一定快（要等 memory），拆小好做 optimization；MIPS 是 load-store machine。"
+    }
+   ],
+   "trap": "指令數比較少不代表比較快：要看每個指令要多少 cycle（CPI）。",
+   "cues": [
+    875.9,
+    892.3,
+    955.5,
+    1013.5,
+    1045.1,
+    1081.3,
+    1099.7,
+    1169.4,
+    1229.4,
+    1285.1,
+    1312.7
+   ],
+   "explain": [
+    "把同一件事 C = A + B，用四種架構各寫一次（A = 2、B = 5 是示意）。",
+    "Stack：A、B 本來在記憶體。push A、push B 把它們放到頂端；add 不用寫 operand，一定是頂端兩個相加，結果放回頂端；最後 pop C 把結果存回 C。",
+    "Accumulator：load A（不用講放哪，一定是 accumulator），add B（B 加上 accumulator 裡的值，結果還在 accumulator），store C（從哪存也不用講）。",
+    "GPR 的 register-memory 寫法：先把 A 拿到 R1，add R1, B 直接把記憶體裡的 B 拿來和 R1 相加，最後 store 回 C。operand 可以來自記憶體。",
+    "Load-store：加之前要確保 operand 都在 register：load A 到 R1、load B 到 R2，R1 + R2 放到 R3，再 store 回記憶體的 C。",
+    "1975 年以後，已經沒有機器用 stack 和 accumulator 了。現在主要是後兩種：Intel x86 屬 register-memory，RISC（像 MIPS）屬 load-store。",
+    "比較這兩種：每個指令幾個 bytes、總共幾個指令、CPI（每個指令幾個 cycle）各有什麼差別？",
+    "Register-memory 的指令比較長，因為要放記憶體的 address；但它只要 3 個指令。Load-store 要 4 個指令，但每個比較短。",
+    "那 3 個指令一定比 4 個快嗎？不一定！add R1, B 要先去記憶體拿 B 才能加，可能很久；load-store 的 add 資料都在 register，很快就做完。",
+    "重點：指令數多不代表 cycle 數多。把每個指令拆成小的、單純的，雖然總數多一點，卻比較好做 optimization。",
+    "MIPS 就是 load-store machine：所有算術、邏輯運算的 operand，一定要先在 register file 裡才能做。"
+   ]
+  },
+  {
+   "title": "Memory operand：byte address 與 base + offset",
+   "scene": "isA-5a-memop",
+   "points": [
+    {
+     "t": 1340,
+     "text": "Array、matrix 等大量資料放 memory，用 load（memory→register）、store（register→memory）搬；指令要指定 register（5 bits）與 memory address。"
+    },
+    {
+     "t": 1491,
+     "text": "Memory 是一維的 byte array：MIPS 有 2³² bytes → address 32 bits，直接放進指令太長。"
+    },
+    {
+     "t": 1707,
+     "text": "改用 base register（pointer，放 32-bit 起點）＋ offset：只要 5 bits 指定 register 加一個小 offset。"
+    },
+    {
+     "t": 1930,
+     "text": "例：$s0 = 1000，1000 + 12 = 1012；array 元素在 1000、1004、1008…，base 要先用指令設好；word = 4 bytes。"
+    }
+   ],
+   "cues": [
+    1340.1,
+    1347.3,
+    1389.6,
+    1438.4,
+    1491.1,
+    1542.5,
+    1599.1,
+    1624.4,
+    1707.7,
+    1878.8,
+    1929.8,
+    1979.8,
+    2036.3,
+    2069.9,
+    2138.5,
+    2202.5,
+    2232.4,
+    2280.5
+   ],
+   "explain": [
+    "第二部分：memory operand（記憶體裡的運算元）和 data transfer（資料搬移）。",
+    "簡單的變數可以直接放在 register。但程式裡常有大量資料，像 array、matrix，register 總共才 32 個，放不下，只能放在 memory。",
+    "運算前資料一定要在 register，所以需要搬資料的指令：把資料從 memory 搬到 register 叫 load；從 register 搬到 memory 叫 store。",
+    "搬資料一定要說「從哪裡搬到哪裡」。第一件事：是哪一個 register。32 個 register 用 5 bits 就能指定，很簡單。",
+    "第二件事：memory 的哪一個位置。記憶體像一個很長的一維陣列，每個 byte（8 bits）有一個編號，叫 byte address：第 0 個、第 1 個、第 2 個……",
+    "MIPS 的記憶體至少有 2³² 個 byte，所以一個地址要 32 個 bits 才表示得完。",
+    "對照一下：如果只有 1024 個 byte，因為 1024 = 2¹⁰，地址只要 10 個 bits；2³² 個 byte 就要 32 個 bits。",
+    "如果把地址直接寫進指令：op code 要幾個 bits、register 要 5 bits，再加上 32 bits 的地址，指令就太長了，放不下。",
+    "所以 MIPS 換一個方法：先找一個 pointer（指標）指到記憶體的某個位置，要存取的地方 = pointer 再往上加多少（offset，偏移量）。",
+    "為什麼這麼麻煩？因為 pointer 放在 register 裡。指令只要用 5 bits 說「pointer 在哪個 register」，不用寫出 32 bits 的完整地址。這個 register 叫 base register。",
+    "例子：要存取位址 1012（裡面放 999）。直接寫 1012 的話，前面一大串 0 也要寫，還是 32 bits，指令沒有那麼多位置。",
+    "改用 reference 的方法：$s0 裡放 1000，像一個 pointer 指到 1000。要 1012，就是 1000 + 12。",
+    "這樣指令裡只要寫：base 是 $s0（5 bits）和 offset 12。offset 通常是很小的數，用不了多少 bits。",
+    "如果要存取 1 萬附近的資料呢？把 base 改設成 10000，再從那裡加 offset 就好。",
+    "為什麼 base 要放 1000？因為要用的資料在 1000 附近。這其實就是 array：第一筆在 1000、第二筆在 1004、第三筆在 1008……把 base 設在第一筆，其他的加 4、加 8 就到了。",
+    "$s0 裡的 1000 不是一開始就有的，要先寫一個指令把 $s0 設成 1000（或 10000），看資料在記憶體哪裡。",
+    "為什麼一筆加 4？因為地址是以 byte 為單位，但 MIPS 的一個 word（一筆資料）是 4 個 byte。",
+    "整理：把記憶體當成一維陣列，用 base register 當 pointer 指到起點，真正的地址 = base register 裡的值 + offset。"
+   ]
+  },
+  {
+   "title": "lw / sw：base register + offset 的例子",
+   "scene": "isA-5a-lwsw",
+   "points": [
+    {
+     "t": 2346,
+     "text": "lw $t0, 12($s0)：op code、destination register、offset、base register；lw = load word（32 bits）。"
+    },
+    {
+     "t": 2477,
+     "text": "例：$s0 = 1000、Mem[1012] = 999 → 地址 1000 + 12 = 1012，$t0 = 999（拿的是地址裡面的內容）。"
+    },
+    {
+     "t": 2609,
+     "text": "sw（store word）也用 base + offset：$s0 = 1000、$t0 = 25，sw $t0, 12($s0) → Mem[1012] = 25；offset 可正可負。"
+    }
+   ],
+   "trap": "lw 算出來的 1012 只是地址；載入 register 的是 Mem[1012] 的內容（999），不是 1012。",
+   "cues": [
+    2346.1,
+    2377.8,
+    2410.5,
+    2417.6,
+    2439,
+    2451.5,
+    2477.3,
+    2491.3,
+    2530,
+    2580.9,
+    2609.7,
+    2647.3,
+    2669,
+    2705.2,
+    2737.4
+   ],
+   "explain": [
+    "Load 指令的長相：一樣分成幾個 field。第一個是 op code「lw」，第二個是 destination：資料從記憶體搬進來要放到哪個 register（$t0）。",
+    "第三、第四個 field 是用來算記憶體地址的。因為 32 bits 的地址放不進指令，所以用一個 base register 加上 offset。",
+    "寫成 lw $t0, 12($s0)：把 $s0 裡的內容加上 12，就是記憶體的地址。",
+    "lw 是 load word 的意思：每次搬一個 word，也就是 32 個 bits 進來。",
+    "括號裡的 $s0 叫 base register，前面的 12 叫 offset。",
+    "這對應到寫程式時的 array：把第一個元素的位置設成 base，其他元素就從 base 加多少去存取。",
+    "例子：記憶體 1012 的地方放了 999，$s0 已經用一個指令設成 1000。",
+    "$s0 的內容 1000 加上 12，等於 1012。所以要去 1012 這個地址拿東西。",
+    "執行完，$t0 是 1012 還是 999？是 999！1012 只是地址，lw 拿的是那個地址「裡面」的東西。",
+    "再問一次：為什麼不直接把地址寫進指令？因為 32-bit 的地址太大了，指令放不下，所以用間接的方法描述。",
+    "反過來，運算完要把資料從 register 搬回記憶體，叫 store，指令是 sw（store word）。",
+    "一樣要說是哪一個 register 的資料、要搬到記憶體哪裡，描述地址的方法一樣是 base register + offset，只有 op code 不同。",
+    "例子：$s0 是 1000，$t0 是 25。執行 sw $t0, 12($s0)，25 會被存到哪裡？",
+    "地址 = 1000 + 12 = 1012。執行完後，記憶體 1012 這格就變成 25。",
+    "offset 是一個整數，可以是正的、也可以是負的（往上或往下）。詳細的指令格式下次再講。"
+   ]
+  },
+  {
+   "title": "Compilation with memory：g = h + A[8]、A[12] = h + A[8]",
+   "scene": "isA-5a-array",
+   "points": [
+    {
+     "t": 2758,
+     "text": "g = h + A[8]（g 在 $s1、h 在 $s2、A 的 base 在 $s3）：offset = 8 × 4 = 32 → lw $t0, 32($s3)；add $s1, $s2, $t0。"
+    },
+    {
+     "t": 2836,
+     "text": "A[12] = h + A[8]：lw $t0, 32($s3)；add $t0, $s2, $t0；sw $t0, 48($s3)（12 × 4 = 48）。存取 array 時 base 不變、只改 offset。"
+    }
+   ],
+   "trap": "offset 以 byte 計：A[8] 是 8 × 4 = 32，不是 8。",
+   "cues": [
+    2758.2,
+    2770.8,
+    2792.1,
+    2809,
+    2821,
+    2836.1,
+    2855.7,
+    2866.9,
+    2890.6
+   ],
+   "explain": [
+    "把剛學的用在編譯上：C 寫 g = h + A[8]，怎麼變成 assembly？先要知道 g、h、A[8] 各在哪裡。",
+    "假設 g 在 $s1、h 在 $s2，陣列 A 的第 0 個元素的地址（base）已經放在 $s3。（h = 5、A 從 1000 開始、A[8] = 30 都是示意的值）",
+    "A[8] 的 offset 要寫多少？它是第 8 個元素，一個元素是一個 word = 4 bytes，所以 offset = 8 × 4 = 32。",
+    "第一個指令 lw $t0, 32($s3)：地址 1000 + 32 = 1032，把 A[8] 的內容搬到 $t0。",
+    "第二個指令 add $s1, $s2, $t0：h 加上 A[8]，結果放到 g（$s1）。5 + 30 = 35。",
+    "第二個例子：A[12] = h + A[8]。除了讀 A[8]、加上 h，還要把結果存回 A[12]。",
+    "一樣先 lw 把 A[8] 搬到 $t0，再跟 h（$s2）相加，結果先放在 $t0。",
+    "最後用 sw 存回 A[12]：base 還是 $s3，不用改；第 12 個元素，offset = 12 × 4 = 48。所以是 sw $t0, 48($s3)，1048 那格變成 35。",
+    "重點：存取 array 時，base 不需要變，只要改 offset（32、48……），就能存取 array 裡任何一個元素。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "$s0 = 1000，Mem[1012] = 999。執行 lw $t0, 12($s0) 後，$t0 = ？",
+   "opts": [
+    "999",
+    "1012",
+    "1000",
+    "12"
+   ],
+   "ans": "999",
+   "why": "地址 = 1000 + 12 = 1012；lw 載入的是 Mem[1012] 的內容 999。"
+  },
+  {
+   "q": "A 的 base 在 $s3，載入 A[8] 的指令是？",
+   "opts": [
+    "lw $t0, 32($s3)",
+    "lw $t0, 8($s3)",
+    "lw $t0, 32($t0)",
+    "sw $t0, 32($s3)"
+   ],
+   "ans": "lw $t0, 32($s3)",
+   "why": "byte address、一個 word 4 bytes：offset = 8 × 4 = 32。"
+  },
+  {
+   "q": "A[12] = h + A[8] 的最後一個指令（h 在 $s2、base 在 $s3）是？",
+   "opts": [
+    "sw $t0, 48($s3)",
+    "sw $t0, 12($s3)",
+    "lw $t0, 48($s3)",
+    "sw $s3, 48($t0)"
+   ],
+   "ans": "sw $t0, 48($s3)",
+   "why": "把結果 store 回 A[12]，offset = 12 × 4 = 48，base 不變。"
+  },
+  {
+   "q": "MIPS 屬於哪一種 register architecture？",
+   "opts": [
+    "load-store",
+    "accumulator",
+    "stack",
+    "register-memory"
+   ],
+   "ans": "load-store",
+   "why": "算術邏輯運算的 operand 都必須在 register，存取 memory 只能用 load/store。"
+  },
+  {
+   "q": "為什麼 lw/sw 用 base register + offset，而不把位址直接寫進指令？",
+   "opts": [
+    "32-bit 位址太長，指令放不下；指定 register 只要 5 bits",
+    "因為 memory 是 word address",
+    "因為 register 比較便宜",
+    "因為 offset 一定是 0"
+   ],
+   "ans": "32-bit 位址太長，指令放不下；指定 register 只要 5 bits",
+   "why": "base register 裡放完整的 32-bit 起點，指令只需 5 bits 指定它加一個小 offset。"
+  },
+  {
+   "q": "用 accumulator 架構做 C = A + B，需要的指令是？",
+   "opts": [
+    "load A；add B；store C",
+    "push A；push B；add；pop C",
+    "add C, A, B",
+    "load R1, A；load R2, B；add R3, R1, R2；store C, R3"
+   ],
+   "ans": "load A；add B；store C",
+   "why": "只有一個 accumulator，每個指令只要寫一個 memory address。"
+  }
+ ]
+}

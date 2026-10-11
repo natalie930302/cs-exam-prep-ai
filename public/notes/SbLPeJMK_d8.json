@@ -1,0 +1,575 @@
+{
+ "video": "SbLPeJMK_d8",
+ "label": "黃婷婷教授計算機結構_第4B講 Computer Abstractions and Technology / Instruction Set Architecture",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "IC 怎麼做出來與 yield",
+   "scene": "isA-4b-mfg",
+   "points": [
+    {
+     "t": 18,
+     "text": "效能之外還要看 cost。IC 製造：silicon ingot → 切成 blank wafer → 20～40 道 processing steps（每層一個 mask）→ patterned wafer。"
+    },
+    {
+     "t": 107,
+     "text": "測試 → 切割（dicing）丟掉壞的 → packaging（feature size 太小要包裝才能連線）→ 再測試 → 出貨。"
+    },
+    {
+     "t": 151,
+     "text": "Yield = 好的 die 占全部的比例；100 顆中 90 顆好 → 90%。Yield 越高代表製程越好。"
+    }
+   ],
+   "cues": [
+    17.9,
+    21.6,
+    46.9,
+    62.6,
+    94.3,
+    107.2,
+    121.4,
+    128.7,
+    141,
+    151,
+    170.8
+   ],
+   "explain": [
+    "上一講談完效能和 benchmark。可是效能再好，也要看價錢（cost）。這一段看一顆晶片的 cost 是怎麼算出來的。",
+    "晶片的製造從一根 silicon ingot（矽晶棒）開始：長長的一根，像香腸一樣，直徑大約 8 到 12 吋。",
+    "把矽晶棒切成一片一片薄薄的圓片，叫做 blank wafer（空白晶圓）。",
+    "晶圓送進晶圓廠（例如台積電），經過 20 到 40 道化學製程。每一道都要一張 mask（光罩），把設計好的形狀（電晶體、導線）照到晶圓上。",
+    "一層一層做完以後，晶圓上就有了電路，叫 patterned wafer。同一個設計在一片晶圓上重複做很多次，每一個小方塊叫一個 die（晶粒）。",
+    "做好以後要測試：有些 die 是壞的、不能動（紅色）。",
+    "接著把晶圓切開（dicing），壞的就丟掉。",
+    "Die 上的線寬非常非常小，沒辦法直接跟外面連線，所以要做 packaging（封裝），拉出人手、電路板摸得到的接腳。",
+    "包好以後再測一次，沒問題才出貨。這就是整個製造流程。",
+    "做了 100 顆，不一定 100 顆都好，可能只有 90 顆好。好的比例叫 yield（良率）：90 ÷ 100 = 90%。",
+    "Yield 越高代表製程技術越好。如果同樣的製程只有 50% 的 yield，做 100 顆就要丟 50 顆，成本當然很高。"
+   ]
+  },
+  {
+   "title": "Cost per die、dies per wafer、defect 與面積",
+   "scene": "isA-4b-cost",
+   "points": [
+    {
+     "t": 194,
+     "text": "一片 wafer 上重複做同一設計（例：AMD X2 wafer 117 個 die）。Cost per die = cost per wafer ÷（dies per wafer × yield）。"
+    },
+    {
+     "t": 263,
+     "text": "例：wafer 100 元、100 個 die、yield 90% → 100 ÷ 90 ≈ 1.11 元。"
+    },
+    {
+     "t": 281,
+     "text": "Dies per wafer ≈ wafer area ÷ die area：die 越大切得越少。"
+    },
+    {
+     "t": 344,
+     "text": "Yield 跟 defects per area（製程好壞）與 die area（設計者控制）有關：同樣 5 顆灰塵，die 越大越容易壞。"
+    },
+    {
+     "t": 521,
+     "text": "Chip cost 還要加上 testing cost 與 packaging cost；cost 跟 area 關係最大。"
+    }
+   ],
+   "cues": [
+    193.9,
+    231.2,
+    262.9,
+    281.7,
+    325.6,
+    344.6,
+    378.1,
+    423.6,
+    443.5,
+    488.6,
+    520.9,
+    529.2,
+    595
+   ],
+   "explain": [
+    "一片晶圓上是同一個設計重複做很多次。像這片 AMD X2 的晶圓上有 117 個 die（畫面上的格子是示意）。",
+    "一顆 die 多少錢？把一片晶圓的成本，除以這片晶圓上「好的 die」的數量。好的 die 數 = 這片能切幾個 die × yield。",
+    "老師的例子：一片晶圓 100 元，可以切 100 個 die，但只有 90% 是好的，所以只有 90 顆能賣。100 ÷ 90 ≈ 1.11 元一顆。",
+    "一片晶圓能切幾個 die？大約是晶圓面積 ÷ 每個 die 的面積。",
+    "例如晶圓面積 1000：每個 die 面積 100，只能切 10 顆；每個 die 面積 50，就能切 20 顆。die 越大，切得越少。",
+    "Yield 又跟什麼有關？跟單位面積的缺陷數（defects per area）和 die 的面積有關。課本有一個公式，老師這裡只講直覺。",
+    "缺陷從哪來？現在線寬只有幾十奈米，晶圓廠雖然是無塵室（clean room），還是有很小的灰塵。灰塵掉到 chip 上，那顆就壞了。",
+    "製程控制得越好，缺陷率越低，yield 就越高。每家晶圓廠、每種製程都有自己的缺陷率。",
+    "面積的影響：同樣掉了 5 顆灰塵，如果整片只切 5 顆大 die，很可能每顆都中獎；切成 100 顆小 die，最多壞 5 顆，至少 95 顆是好的。",
+    "缺陷率看製程，但 die 的面積是設計者決定的。面積越大，yield 越低，每顆的成本也越高。",
+    "除了 die 本身，還有 testing（測試）的成本：做好之後要測哪些好、哪些壞。",
+    "還有 packaging（封裝）的成本：沒包裝的裸晶（bare die）根本摸不到，包裝後有接腳，才能放進電腦。",
+    "總結：晶片成本 = die 的成本（跟面積、yield 有關）＋測試＋封裝。再拿成本和效能做 trade-off（取捨），就知道要選什麼電腦。"
+   ]
+  },
+  {
+   "title": "Amdahl's law：台北→高雄、乘法 80 秒",
+   "scene": "isA-4b-amdahl",
+   "points": [
+    {
+     "t": 610,
+     "text": "台北→高雄：市區 0.5 h + 高速公路 4 h + 市區 0.5 h = 5 h；改坐飛機只能改進中間（1 h）→ 2 h，speedup 2.5 倍。"
+    },
+    {
+     "t": 717,
+     "text": "Amdahl's law：只有被影響的部分會變快；T_improved = T_affected ÷ n + T_unaffected。"
+    },
+    {
+     "t": 774,
+     "text": "例：100 s 中乘法占 80 s，想整體快 5 倍（20 s）→ 80/n + 20 = 20，做不到。"
+    },
+    {
+     "t": 833,
+     "text": "Make the common case fast：用 profiling 找出最常執行的部分再加速。"
+    }
+   ],
+   "trap": "整體 speedup 受「沒被改進的部分」限制：改進的部分再快，總時間也不會少於不受影響的時間。",
+   "cues": [
+    610.2,
+    620.6,
+    636.4,
+    642.2,
+    651.1,
+    694.1,
+    705.8,
+    717.7,
+    768.7,
+    773.9,
+    783.4,
+    803.7,
+    832.8,
+    849.7,
+    872.6
+   ],
+   "explain": [
+    "課本後面補充了另一個很重要的效能觀念。老師先用一個生活例子說明。",
+    "從台北到高雄：先在市區走 0.5 小時才上高速公路。",
+    "高速公路要開 4 小時。",
+    "下了高速公路，到目的地還要 0.5 小時。總共 0.5 + 4 + 0.5 = 5 小時。",
+    "如果改坐飛機呢？不管開車還是坐飛機，兩頭在市區的 0.5 小時（到機場、出機場）都省不掉，這部分改進不了。",
+    "能改進的只有中間那段：高速公路 4 小時變成飛機 1 小時。",
+    "總時間變成 0.5 + 1 + 0.5 = 2 小時。速度提升（speedup）= 原來 ÷ 現在 = 5 ÷ 2 = 2.5 倍。中間快了 4 倍，整體卻只有 2.5 倍。",
+    "這就是 Amdahl's law（安達爾定律）：電腦由很多部分組成，你改進其中一部分，只有那部分會變快，沒被影響的部分時間不變，所以整體的改進有上限。",
+    "寫成公式：改進後的時間 = 受影響部分的時間 ÷ 改進倍數 + 不受影響部分的時間。",
+    "例題：一個程式跑 100 秒，其中乘法佔了 80 秒，其他 20 秒做別的事。",
+    "希望整個程式快 5 倍，也就是 100 ÷ 5 = 20 秒。辦得到嗎？",
+    "那 20 秒不是乘法，怎麼改都還在。要總時間 20 秒，乘法的 80 秒就得變成 0，代表乘法要無限快。橘色條再縮，總時間也不會小於 20 秒，所以做不到。",
+    "Amdahl's law 告訴我們一個重要原則：make the common case fast——讓最常發生的情況變快。",
+    "例如加法、load/store 一天到晚在用，值得加速；乘法如果只佔 1% 的時間，花很大力氣加速它，整體只快一點點，不划算。",
+    "所以設計處理器前要先做 profiling（分析程式時間花在哪），把要花錢的硬體放在最常跑的地方，用最少的錢得到最大的改進。"
+   ]
+  },
+  {
+   "title": "Fallacy：低負載時很省電？",
+   "scene": "isA-4b-idle",
+   "points": [
+    {
+     "t": 902,
+     "text": "Fallacy：電腦閒著時是 low power。實測：50% load 仍耗 83% power、10% load 耗 61%，0% load 還要 141 W。"
+    },
+    {
+     "t": 949,
+     "text": "理想是 power 與 loading 成比例；Google data center 大多在 10%～50% load、滿載只占約 1%，現在的 processor 因 leakage 還做不到。"
+    }
+   ],
+   "cues": [
+    901.9,
+    915.2,
+    931.4,
+    935.8,
+    949.2,
+    976.1,
+    993
+   ],
+   "explain": [
+    "第二個常見的錯誤想法（fallacy）：「電腦閒著、負載低的時候，就很省電」。這句話對嗎？",
+    "看 power 的 profiling 數據：滿載（100% load）當作 100%；只做一半的工作（50%），power 還要 83%；只做 10% 的工作，還要 61%。",
+    "什麼工作都不做（0% load），還要消耗 141 瓦。",
+    "所以「閒著就很省電」是錯的。什麼事都不做，並不表示 low power。原因就是前面講的 leakage（漏電）。",
+    "最理想的處理器是：power 跟 loading（負載）成正比，做一半的事只耗一半的電。可是現在的處理器因為漏電，做不到。",
+    "Google 的資料中心統計：大部分時間負載在 10% 到 50% 之間，真的跑到 100% 只佔大約 1% 的時間。也就是說，電大多花在負載不高的時候。",
+    "如果能設計出 power 跟 loading 成比例的處理器，50% 負載只用 50% 的電，那就是非常棒的處理器。老師說這是你們的 challenge。"
+   ]
+  },
+  {
+   "title": "Fallacy：用 MIPS 當效能指標",
+   "scene": "isA-4b-mips",
+   "points": [
+    {
+     "t": 1011,
+     "text": "MIPS = Million Instructions Per Second。"
+    },
+    {
+     "t": 1056,
+     "text": "MIPS 只數指令個數、不管指令複雜度，不能反映真正效能；要比 execution time。"
+    }
+   ],
+   "trap": "這裡的 MIPS 是「每秒百萬指令數」這個指標，不是 MIPS 指令集；MIPS 高不一定比較快。",
+   "cues": [
+    1011.6,
+    1018.5,
+    1047.1,
+    1056.1,
+    1067.5,
+    1084.5
+   ],
+   "explain": [
+    "另一個不對的說法：用 MIPS 當作效能指標。注意這裡的 MIPS 不是指令集的名字，而是一個數字。",
+    "MIPS = Million Instructions Per Second：每秒執行幾百萬個指令。常聽人說「這是 3 MIPS 的機器、那是 5 MIPS 的機器」。",
+    "直覺上，2 MIPS 的機器應該比 1 MIPS 的快？",
+    "問題是 MIPS 只數「指令個數」。指令有複雜有簡單：A 機器的指令很簡單，同一個程式要 1000 萬個指令；B 機器的指令比較複雜，300 萬個就做完（數字是示意）。",
+    "真的要比的是執行時間。A：1000 萬 ÷ 每秒 200 萬 = 5 秒；B：300 萬 ÷ 每秒 100 萬 = 3 秒。MIPS 比較低的 B 反而比較快！",
+    "所以 MIPS 雖然簡單好用，卻不能反映真正的效能。人家說他的機器 MIPS 比較高，你還是要看執行時間。"
+   ]
+  },
+  {
+   "title": "本單元結論",
+   "scene": "isA-4b-sum",
+   "points": [
+    {
+     "t": 1101,
+     "text": "Technology 進步（Moore's law：transistor 數約每 1.5～2 年 ×2）→ cost/performance 不斷改善。"
+    },
+    {
+     "t": 1148,
+     "text": "Abstraction 隱藏低層複雜度；ISA 是 hardware/software interface。"
+    },
+    {
+     "t": 1170,
+     "text": "Execution time 是最好的效能衡量；power 是限制因素；現在用 parallelism 提升效能。"
+    }
+   ],
+   "cues": [
+    1101.4,
+    1116.1,
+    1148.5,
+    1158,
+    1170.6,
+    1181.6,
+    1192.3
+   ],
+   "explain": [
+    "這一章的結論。第一點：因為技術一直進步，cost／performance（花多少錢買到多少效能）不斷在改善。",
+    "是哪一個定律告訴我們的？Moore's law（摩爾定律）：晶片上的電晶體數量大約每 1.5 到 2 年就翻一倍。柱子每根是前一根的兩倍（畫成對數高度）。",
+    "第二點：abstraction（抽象化）。把下面一層的複雜細節藏起來，讓我們可以一層一層理解。",
+    "第三點：ISA 是 hardware 和 software 之間的介面。有了 ISA，軟體和硬體可以分開各自發展。",
+    "第四點：真正把執行時間算出來，才是最好的效能衡量方式；MIPS 之類的都不是。",
+    "第五點：power 是一個限制因素。電壓降不下去，散熱成為一定要解決的問題。",
+    "第六點：所以現在新的處理器都用 parallelism（平行化，像 multi-core）來提升效能。"
+   ]
+  },
+  {
+   "title": "課務：習題",
+   "scene": null,
+   "points": [
+    {
+     "t": 1199,
+     "text": "課務說明：本章習題已放上網，約有 10 天可以做。"
+    }
+   ],
+   "explain_idle": "老師在交代作業（習題放上網、約 10 天），沒有新的內容。"
+  },
+  {
+   "title": "Instruction set 入門：operator、operand、a = b + 5",
+   "scene": "isA-4b-isa",
+   "points": [
+    {
+     "t": 1219,
+     "text": "本章把 instruction set 介紹完（以 MIPS 為例），之後才依 ISA 設計 organization；computer architecture = ISA + machine organization。"
+    },
+    {
+     "t": 1278,
+     "text": "對 programmer 而言 ISA 就是 assembly：C 程式有 operator、operand（variable、constant）、expression、assignment。"
+    },
+    {
+     "t": 1361,
+     "text": "a = b + 5 一行 C 變成 4 行 assembly（load、load、add、store）：每行對應一個 hardware 動作；op code 說做什麼、operand 從 memory、register、constant 來。"
+    },
+    {
+     "t": 1477,
+     "text": "ISA 包括：storage（register 數量、memory 大小與存取方式）、data type、instruction format、operations。"
+    },
+    {
+     "t": 1640,
+     "text": "MIPS 只有三種 instruction format、全部 32 bits；Intel x86 指令有長有短，硬體判斷較複雜。"
+    }
+   ],
+   "cues": [
+    1219.6,
+    1253.6,
+    1278.6,
+    1300.7,
+    1314.2,
+    1338.9,
+    1361,
+    1409.7,
+    1441.4,
+    1462.6,
+    1477.2,
+    1543.2,
+    1594.7,
+    1615.9,
+    1640,
+    1674.1
+   ],
+   "explain": [
+    "這一章要把 instruction set（指令集）整個介紹完，以 MIPS 為例。介紹完以後，後面的章節才根據它來設計硬體（organization）。",
+    "先複習：computer architecture（計算機結構）包含兩部分——instruction set architecture（指令集架構）和 machine organization（硬體怎麼做）。",
+    "ISA 聽起來很抽象。對寫程式的人來說，它就是 assembly（組合語言）：你用 C 寫程式，compiler 最後會把它翻成 assembly code。",
+    "看一段 C 程式：裡面一定有 operator（運算子），例如加、減、乘、除、取餘數（%）。",
+    "Operator 要作用在 operand（運算元）上，operand 可以是 variable（變數，值會變）或 constant（常數）。",
+    "Operator 作用在 operand 上就是 expression（運算式），算完再 assign（指定）給另一個 variable，就是 assignment statement。",
+    "像 a = b + 5 這麼一行 C，寫成 assembly 要變成四行：先把 b 從記憶體 load 到 $r1，把 5 放進 $r2，加起來放 $r3，再 store 回記憶體的 a。這裡的寫法是一般的示意寫法。",
+    "這四行裡的 operand 從三種地方來：記憶體裡的資料（M[b]）、register（$r1）、constant（5）。",
+    "每行最前面的 load、add、store 說明「要做什麼動作」，這叫 op code（operation code），也就是 operator。",
+    "為什麼要切得這麼細？因為每一行 assembly 都對應硬體的一個動作。高階語言寫一行很簡單，硬體卻要四步才做完。",
+    "那 instruction set 要規定哪些東西？第一，storage：資料放哪裡、有幾個 register（32 個還是 16 個）、記憶體多大、怎麼去記憶體拿資料。",
+    "第二，data type（資料型別）：同一串 0101，當作整數（integer）和當作浮點數（floating point）代表的值不一樣，加法器的設計也不一樣。",
+    "第三，instruction format（指令格式）：每個指令多長？固定 32 bits、16 bits，還是有長有短？",
+    "第四，operations：這個處理器允許做哪些動作？load、store、加、減、乘、除……",
+    "這門課用 MIPS 當例子。MIPS 有個好處：指令格式很簡單，只有三種（R、I、J），而且都一樣長，一律 32 bits。",
+    "別的指令集呢？像 Intel 的 x86，指令有長有短，非常複雜。越複雜，硬體就要花越多 overhead 去判斷這是哪一種指令；越簡單，硬體一看就認得。"
+   ]
+  },
+  {
+   "title": "MIPS 算術指令：add／sub 與 f = (g + h) − (i + j)",
+   "scene": "isA-4b-arith",
+   "points": [
+    {
+     "t": 1732,
+     "text": "MIPS operand 來源：register、memory、constant（immediate）。"
+    },
+    {
+     "t": 1755,
+     "text": "算術／邏輯指令固定四個 field：operation、destination、source1、source2（add a, b, c 表示 a = b + c），每個指令 32 bits。"
+    },
+    {
+     "t": 1857,
+     "text": "一次只能兩個 source，C 裡多個 operand 要拆成多條指令。Design Principle 1：Simplicity favors regularity → 硬體簡單、快、便宜。"
+    },
+    {
+     "t": 2010,
+     "text": "例：f = (g + h) − (i + j) → add t0, g, h；add t1, i, j；sub f, t0, t1（一行 C 變三個指令）。"
+    }
+   ],
+   "cues": [
+    1731.8,
+    1755.6,
+    1794.4,
+    1806.9,
+    1815.6,
+    1824.7,
+    1857.4,
+    1927.9,
+    1957.6,
+    1986.4,
+    2010.2,
+    2032.4,
+    2039.9,
+    2049
+   ],
+   "explain": [
+    "開始介紹 MIPS 的指令。運算一定要有 operand，MIPS 的 operand 可以從三個地方來：register、memory、constant（常數，MIPS 叫 immediate）。",
+    "先看算術指令的文法：它有四個 field（欄位），像這樣排成一排。",
+    "第一個 field 寫動作，例如 add；第二個是 destination（目的地），也就是算完的結果要放到哪裡。",
+    "第三、第四個 field 是兩個 source（來源），要拿來運算的兩個值。",
+    "所以 add a, b, c 的意思是：把 b 和 c 加起來，放到 a。也就是 a = b + c。",
+    "每個指令都是 32 bits，而且格式很嚴格：一定是一個 operator 加三個 operand，順序是 destination、source1、source2。",
+    "那 C 裡面一次加四、五個數呢？可不可以在後面一直寫下去？不行！要加就只能寫成這個格式，所以必須拆成好幾條。",
+    "為什麼規定這麼嚴？格式越 regular（規律），硬體越簡單：讀進一個指令，固定位置的前幾個 bits 就是 op code，馬上知道要做什麼。",
+    "這就是第一個 design principle：Simplicity favors regularity——要簡單，就要規律。",
+    "簡單的好處：硬體要判斷的事情少，面積小、成本低，速度也能提升，達到 high performance、low cost。",
+    "例子：C 裡寫 f = (g + h) − (i + j)，有 g、h、i、j 四個 operand。可是一個 MIPS 指令只能有兩個 source，所以要拆開。",
+    "第一步：先算 g + h，結果放在一個暫存的地方 t0（temporary）。",
+    "第二步：算 i + j，放在 t1。",
+    "第三步：t0 − t1，放到 f。一行 C 拆成三個 MIPS 指令，每一條都遵守「一個動作、三個 operand」的規定。"
+   ]
+  },
+  {
+   "title": "Register operand：為什麼用 register",
+   "scene": "isA-4b-regs",
+   "points": [
+    {
+     "t": 2072,
+     "text": "Assembly 沒有 variable；算術指令的 operand 只能放在 register（register file 就在 ALU 旁邊），memory 在另一顆 chip、off-chip 存取慢。"
+    },
+    {
+     "t": 2212,
+     "text": "Register 的好處：比 memory 快、compiler 好用（暫存）、減少 memory traffic、improve code density。"
+    },
+    {
+     "t": 2346,
+     "text": "指定位置要的 bits：150 個編號要 8 bits、32-bit memory address 要 32 bits，32 個 register 只要 5 bits。"
+    }
+   ],
+   "cues": [
+    2071.8,
+    2103.4,
+    2137.4,
+    2163.8,
+    2212.4,
+    2229.6,
+    2260.9,
+    2288.7,
+    2346.5,
+    2382.7
+   ],
+   "explain": [
+    "剛剛寫的 t0、g、h、f 只是方便看的名字。Assembly 跟高階語言不一樣，沒有 variable，operand 一定要放在固定的地方，你要告訴它在哪裡。",
+    "像 add 這種指令，operand 只能放在 register（暫存器）裡。",
+    "Register 是什麼？在 CPU 裡、緊鄰加法器等運算單元的地方，建了一些可以存資料的小格子，合起來叫 register file。",
+    "Memory（記憶體）是另外一顆晶片。要去記憶體拿資料，得離開 processor（off-chip），很花時間。",
+    "所以用 register 的第一個好處：比 memory 快很多，就在旁邊，讀寫都很快。",
+    "第二個好處：compiler 好用。像 t0、t1 這種算到一半的暫存值，就放在 register 裡。",
+    "第三個好處：把 variable 放在 register，就不用一直去記憶體搬東西，減少 memory traffic（記憶體的交通量）。",
+    "第四個好處：improve code density（程式碼密度）。要存取某個位置，指令裡得寫出它的編號，編號越大要的 bits 越多。",
+    "例如班上 150 個人，每人一個學號，學號至少要能放到 150，需要 8 bits（2⁸ = 256）。記憶體很大，一個位址要 32 bits。",
+    "可是 register 只有 32 個，2⁵ = 32，只要 5 個 bits 就能指定是哪一個。指令裡用的 bits 少很多。"
+   ]
+  },
+  {
+   "title": "MIPS 的 32 個 register",
+   "scene": "isA-4b-mregs",
+   "points": [
+    {
+     "t": 2435,
+     "text": "MIPS 有 32 個 register（5 bits 編號）；64 個要 6 bits、128 個要 7 bits，add 要 3 個 register field。"
+    },
+    {
+     "t": 2542,
+     "text": "每個 register 32 bits（一個 word）。Design Principle 2：Smaller is faster。"
+    },
+    {
+     "t": 2631,
+     "text": "$s0～$s7（16～23）放 variable、$t0～$t7（8～15）放 temporary、$zero 永遠是 0、$v/$a（2～7）給 procedure、$gp/$sp/$fp/$ra（28～31）等特殊用途。"
+    },
+    {
+     "t": 2781,
+     "text": "MIPS organization：memory、CPU（registers、arithmetic unit、乘除結果放 Hi/Lo）、floating point 在 coprocessor 1。"
+    }
+   ],
+   "trap": "課本：$s0～$s7 是 16～23、$t0～$t7 是 8～15（$t8、$t9 是 24、25），$gp/$sp/$fp/$ra 是 28～31（ASR 聽成 16～22、28～34）。",
+   "cues": [
+    2435.3,
+    2458.4,
+    2506.6,
+    2542.2,
+    2560,
+    2611,
+    2630.8,
+    2656.7,
+    2671.5,
+    2700.3,
+    2721.1,
+    2756.4,
+    2781.5
+   ],
+   "explain": [
+    "MIPS 的指令集有 32 個 register，編號 0 到 31。要指定其中一個，需要 5 個 bits。",
+    "如果覺得不夠，想要 64 個？比較 flexible，但每次指定要 6 個 bits；128 個要 7 個 bits。",
+    "一個 add 指令要指定三個 register（一個 destination、兩個 source），32 個 register 時就用掉 3 × 5 = 15 bits。register 越多，指令裡佔的位置越多，這是 trade-off。",
+    "MIPS 的選擇：32 個 register，每個 32 bits。資料和指令也都是 32 bits。",
+    "為什麼不要 64、128 個？除了指令變長，register file 越大，速度就越慢。這是第二個 design principle：Smaller is faster——越小越快。",
+    "32 個 bits 合起來叫一個 word（字組）。不管去 register 還是 memory 存取，基本上都以一個 word 為單位。",
+    "每個 register 可以用編號稱呼（$0～$31），也可以用名字，寫程式比較好讀。例如 $s0 就是第 16 個 register。",
+    "16 到 23 號叫 $s0～$s7，用來放程式裡一般的 variable。",
+    "8 到 15 號叫 $t0～$t7，放 temporary（暫時的）值，例如算到一半的結果。",
+    "0 號 register 很特別：裡面永遠是 0。因為 0 太常用了（比較是不是 0、清成 0），乾脆用硬體固定一個。",
+    "2、3 號（$v0、$v1）和 4 到 7 號（$a0～$a3）是寫 procedure（副程式）時用的：$a 放參數，$v 放回傳值。",
+    "剩下的有特殊用途：給 assembler 和 OS 用的、幾個 pointer（$gp、$sp、$fp），還有 31 號 $ra 存 return address（返回位址）。所以 32 個並不是都能隨便用。",
+    "整體的 organization：外面有 memory；CPU 裡有 32 個 register 和做加減的運算單元。乘法結果會變長、除法有商和餘數，放在 Hi、Lo；浮點數另外由 coprocessor 1 處理。"
+   ]
+  },
+  {
+   "title": "下課",
+   "scene": null,
+   "points": [
+    {
+     "t": 2848,
+     "text": "老師準備用 register 重寫 f = (g + h) − (i + j)，下次再講。"
+    }
+   ],
+   "explain_idle": "老師提了一下剛才的例子，就先下課了，下一講再繼續。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "一片 wafer 成本 100 元，可切 100 個 die，yield 90%，每顆好的 die 成本約多少？",
+   "opts": [
+    "約 1.11 元",
+    "1 元",
+    "0.9 元",
+    "約 1.25 元"
+   ],
+   "ans": "約 1.11 元",
+   "why": "Cost per die = 100 ÷ (100 × 0.9) = 100 ÷ 90 ≈ 1.11。"
+  },
+  {
+   "q": "台北到高雄：市區 0.5 h + 高速公路 4 h + 市區 0.5 h。改坐飛機（中間變 1 h），整體 speedup 是？",
+   "opts": [
+    "2.5 倍",
+    "4 倍",
+    "5 倍",
+    "2 倍"
+   ],
+   "ans": "2.5 倍",
+   "why": "原本 5 h，現在 0.5 + 1 + 0.5 = 2 h，5 ÷ 2 = 2.5；市區兩段改進不了。"
+  },
+  {
+   "q": "程式 100 s 中乘法占 80 s，想讓整個程式快 5 倍，乘法要快幾倍？",
+   "opts": [
+    "做不到",
+    "5 倍",
+    "20 倍",
+    "80 倍"
+   ],
+   "ans": "做不到",
+   "why": "目標 20 s，但非乘法的 20 s 不變：80/n + 20 = 20 → n 無限大（Amdahl's law）。"
+  },
+  {
+   "q": "關於用 MIPS（每秒百萬指令數）比較效能，何者正確？",
+   "opts": [
+    "MIPS 不管指令複雜度，不能反映真正效能",
+    "MIPS 越高一定越快",
+    "MIPS 就是 execution time",
+    "MIPS 已考慮 CPI"
+   ],
+   "ans": "MIPS 不管指令複雜度，不能反映真正效能",
+   "why": "不同 ISA 指令複雜度不同，要比 execution time。"
+  },
+  {
+   "q": "MIPS 選 32 個 register 而不是更多，是依據哪個 design principle？",
+   "opts": [
+    "Smaller is faster",
+    "Simplicity favors regularity",
+    "Make the common case fast",
+    "Good design demands good compromise"
+   ],
+   "ans": "Smaller is faster",
+   "why": "register file 越大越慢，指令裡指定 register 的 bits 也越多。"
+  },
+  {
+   "q": "MIPS 的 $s0～$s7 是第幾號 register？",
+   "opts": [
+    "16～23",
+    "8～15",
+    "0～7",
+    "24～31"
+   ],
+   "ans": "16～23",
+   "why": "$t0～$t7 是 8～15，$s0～$s7 是 16～23。"
+  },
+  {
+   "q": "電腦在 0% load（什麼都不做）時仍消耗不少 power，主要因為？",
+   "opts": [
+    "leakage（static power）",
+    "clock rate 太高",
+    "dynamic power 充放電",
+    "benchmark 量錯"
+   ],
+   "ans": "leakage（static power）",
+   "why": "電晶體關不緊會漏電，idle 不等於 low power。"
+  }
+ ]
+}
