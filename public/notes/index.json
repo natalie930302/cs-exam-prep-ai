@@ -803,6 +803,12 @@
   "quiz": 5,
   "cued": true
  },
+ "CtxWiSNrxvI": {
+  "label": "交大OCW 易志偉《離散數學》Lec20 Relations (2/4)",
+  "points": 31,
+  "quiz": 6,
+  "cued": true
+ },
  "cvooTtquDlQ": {
   "label": "Binary Search Tree | BST | Design & Algorithms",
   "points": 24,
@@ -1757,6 +1763,12 @@
   "quiz": 6,
   "cued": true
  },
+ "ouXIBZTTtuk": {
+  "label": "交大OCW 易志偉《離散數學》Lec21 Relations (3/4)",
+  "points": 39,
+  "quiz": 7,
+  "cued": true
+ },
  "OVhJHBYJLSE": {
   "label": "交大江蕙如 Lec03 Chapter 1 Introduction (2/2)",
   "points": 87,
@@ -2007,6 +2019,12 @@
   "label": "清大OCW 趙啟超《離散數學》第2B講 Set Theory",
   "points": 25,
   "quiz": 7,
+  "cued": true
+ },
+ "RexPywlCmV8": {
+  "label": "Equivalence Relation",
+  "points": 16,
+  "quiz": 5,
   "cued": true
  },
  "RjvhXL0WTrY": {
@@ -2301,6 +2319,12 @@
   "label": "清大周志遠 第2C講 Computer-System Architecture(續)",
   "points": 26,
   "quiz": 6,
+  "cued": true
+ },
+ "vfyUU_prh9s": {
+  "label": "Algebraic Structures: Groups, Rings, and Fields",
+  "points": 23,
+  "quiz": 7,
   "cued": true
  },
  "VHsNFDXGV-0": {
