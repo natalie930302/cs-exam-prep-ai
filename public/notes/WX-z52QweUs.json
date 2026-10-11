@@ -194,7 +194,7 @@
     "最簡單的壓縮：除法取餘數（mod）。18273 除以 100，餘數是 73，所以放進第 73 格。餘數一定比除數小，所以一定落在範圍內。",
     "一般化：要限制在 k 格，就用 x mod k，結果一定在 0 到 k−1 之間。",
     "也有更複雜的壓縮法，但它們其實等於把複雜的計算搬進 hash code 那一步去做。",
-    "所以真正負責「壓縮」的只有 division（取餘數）。老師的建議：好好設計 hash code，最後做一次 mod 就好。"
+    "所以老師的建議是：好好設計 hash code，最後做一次 mod 就好。注意：用 mod 時除數 k 最好選質數（至少沒有小質因數），不要選 2 的次方；而且課本除了 division，還有 mid-square、folding、digit analysis 等方法。"
    ],
    "points": [
     {
@@ -218,11 +218,11 @@
      "t": 1684
     },
     {
-     "text": "真正做到 compress 的其實只有 division 這一步。",
+     "text": "老師認為真正做到 compress 的只有 division 這一步（課本還列了其他 hash 方法，見易錯點）。",
      "t": 1694
     }
    ],
-   "trap": "補充：場景中的 \"ABC\" → 18273 → mod 100 = 73 是為示意自行代入（18273 是下一段 polynomial hash code 的值）。"
+   "trap": "補充：場景中的 \"ABC\" → 18273 → mod 100 = 73 是為示意自行代入（18273 是下一段 polynomial hash code 的值）。 ｜ 老師在 27:09 說「真正能 compress 的其實只有除法」，但正確是課本列了 division、mid-square、folding、digit analysis 等多種 hash function；而且用 division 時除數要選質數（或沒有小質因數的數），避免 2 的次方，否則只看到 key 的低位 bit、容易撞（課本：Horowitz 8.2 hash functions；CLRS 11.3）。"
   },
   {
    "title": "Summation hash code：ABC 與 ACB 相同",
@@ -1655,7 +1655,7 @@
      "t": 5850
     }
    ],
-   "trap": "補充：quadratic probing 不保證走遍整張表；m 為質數且 load factor ≤ 0.5 時保證找得到空位。場景用 m = 17、key 37 示意。"
+   "trap": "補充：quadratic probing 不保證走遍整張表；m 為質數且 load factor ≤ 0.5 時保證找得到空位。場景用 m = 17、key 37 示意。 ｜ 老師在 96:30 說 quadratic probing 讓大家「不要擠在一起」，但正確是它只消除 primary clustering；同一個起點的 key 走一樣的探測序列，仍有 secondary clustering（課本：Horowitz 8.2 overflow handling）。"
   },
   {
    "title": "Double hashing",
@@ -1971,7 +1971,7 @@
      "t": 7828
     }
    ],
-   "trap": "補充：場景中 n = 5、k = 10 的分布是示意；100 筆、10 格、3 格則是老師的說法。"
+   "trap": "補充：場景中 n = 5、k = 10 的分布是示意；100 筆、10 格、3 格則是老師的說法。 ｜ 老師在 126:44 講 load factor 時沒有分處理方式。正確是：open addressing（linear／quadratic probing、double hashing）每格只放一個，所以 n ≤ k、α ≤ 1；chaining 每格是一條 list，α 可以大於 1（課本：CLRS 11.2、11.4）。"
   },
   {
    "title": "改 hash、加格子：空間換時間",

@@ -38,7 +38,7 @@
      "t": 121
     },
     {
-     "text": "search tree 的操作是 O(log n)。",
+     "text": "平衡的 search tree（例如 AVL）操作是 O(log n)；一般 BST 是 O(h)，最差 O(n)。",
      "t": 151
     },
     {
@@ -61,9 +61,10 @@
     "第一個例子是 stack：東西一層層疊上去，只能從最上面（top）放進去、拿出來，就像一疊盤子。",
     "queue 的規則是一邊進、另一邊出，像排隊。如果你從中間偷拿，就已經不是在當 queue 用了。",
     "tree 不一樣：它的順序沒有直接排在眼前，而是要看你用哪一種 traversal（走訪方式）去走，這叫 implicit（隱含的）。",
-    "search tree（例如 BST）的操作大約是 O(log n)：每往下走一層，就把範圍縮小一半。要找最小值，得一路往左走到底。",
+    "search tree 的操作是 O(h)：每往下走一層就少一層。平衡的樹（例如 AVL）h 約 log n，所以是 O(log n)；一般 BST 長歪時最差是 O(n)。要找最小值，得一路往左走到底。",
     "今天的目標：整體效能維持 log n，但「拿出最優先的那個」要變成常數時間（不管資料多少都一樣快）。這就是 priority queue 要做的事。"
-   ]
+   ],
+   "trap": "老師在 2:32 說 search tree 是 log n，但正確是只有平衡的 search tree 才保證 O(log n)；一般 BST 是 O(h)，最差 O(n)（課本：Horowitz 5.7）。"
   },
   {
    "title": "Priority Queue：不是先來先服務",
@@ -650,9 +651,10 @@
     "最大的錯誤就是以為同一層有順序，千萬別犯。另外，剛才 36 拿上去再往下沉的動作，叫 percolate down。",
     "對照 BST / AVL：它們有「左小右大」的規則，但沒有「最小的在 root」這回事。",
     "在 BST 裡要找最小值，得從 root 一路往左走到底：33 → 17 → 15。",
-    "這要走一個 height，也就是 log n 次操作；heap 的最小值就在 root，常數時間 O(1)。",
+    "這要走一個 height：平衡的樹（如 AVL）是 log n，一般 BST 最差可到 n；heap 的最小值就在 root，常數時間 O(1)。",
     "heap 只回答一件事：「現在誰最急？」其他元素怎麼排都不重要。"
-   ]
+   ],
+   "trap": "老師在 40:56 說 BST 找最小值要 log n，但正確是 O(h)：平衡時才是 log n，一般 BST 最差 O(n)。"
   },
   {
    "title": "閒聊",

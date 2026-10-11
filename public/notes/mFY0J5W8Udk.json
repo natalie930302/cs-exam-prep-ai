@@ -217,7 +217,8 @@
      "t": 451,
      "text": "解法：open hashing（chaining）與 closed hashing（linear probing、quadratic probing）。"
     }
-   ]
+   ],
+   "trap": "老師在 7:06 說 open hashing = chaining、closed hashing = probing，名詞本身沒錯，但要注意 probing 也叫 open addressing，字面上剛好跟 open hashing 相反，看題目時以「資料放在表裡面（probing）還是掛 chain」判斷（課本：Horowitz 8.2）。"
   },
   {
    "title": "Chaining（open hashing）",
@@ -246,7 +247,7 @@
     "搜尋 13：先用同一個 hash function 算 h(13) = 13 mod 10 = 3。",
     "到 index 3 的 chain 裡從頭找：第一個是 3，不是；下一個是 13，找到了。",
     "同一條 chain 可能不只一個元素，所以可能要搜完整條 linked list。",
-    "因此時間不再是 O(1)，但仍然比 binary search 的 log n 快（平均情況；補充：最壞全擠在同一條 chain 會是 O(n)）。"
+    "因此時間不再是 O(1)。老師說「仍然比 log n 快」，這只在 load factor α 很小時的平均情況成立：chaining 的平均搜尋是 O(1 + α)，最壞全擠在同一條 chain 會是 O(n)。"
    ],
    "points": [
     {
@@ -275,10 +276,10 @@
     },
     {
      "t": 577,
-     "text": "時間不再是 O(1)，但仍比 log n 快。"
+     "text": "時間不再是 O(1)：平均 O(1 + α)，最壞全部擠在同一條 chain 是 O(n)。"
     }
    ],
-   "trap": "補充：「比 log n 快」是平均情況；chaining 的平均搜尋時間是 O(1 + α)（α = n/m），最壞全部擠在同一條 chain 是 O(n)。"
+   "trap": "補充：「比 log n 快」是平均情況；chaining 的平均搜尋時間是 O(1 + α)（α = n/m），最壞全部擠在同一條 chain 是 O(n)。 ｜ 老師在 9:31、13:17 說 chaining 和 linear probing 的時間「大於 1，但比 log n 快」，但正確是平均情況 O(1 + α)，最壞 O(n)，沒有「一定比 log n 快」這回事（課本：CLRS 11.2、11.4）。"
   },
   {
    "title": "Linear probing（closed hashing）",
@@ -320,7 +321,7 @@
     "往後看：[5] 不是、[6] 也不是。",
     "下一格 [7] 是空格，就停下來，回答 24 找不到。因為如果 24 在表裡，當初 insert 時一定會放在這個空格或更前面。",
     "搜尋規則：用 hash function 算出起點，往後一格一格找，直到找到元素或遇到空格為止。",
-    "時間也不是 O(1)，會多於 1 次，但通常比 log n 好。",
+    "時間也不是 O(1)，會多於 1 次；老師說通常比 log n 好，這是表不太滿時的平均情況，最壞可以到 O(n)。",
     "linear probing 的問題：clustering（群聚）。元素會擠在連續的一塊位置（[3]～[6]），撞進這一塊就要走很久，搜尋變慢。（補充：刪除時不能直接清空格子，否則會把搜尋路線切斷。）"
    ],
    "points": [

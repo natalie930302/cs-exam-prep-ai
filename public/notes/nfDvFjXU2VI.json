@@ -485,7 +485,7 @@
      "t": 1360
     },
     {
-     "text": "總結：每 insert 一個 node，就計算目前所有 node 的 BF。",
+     "text": "總結：每 insert 一個 node，就從插入點沿路往上更新 BF（不用算整棵樹）。",
      "t": 1380
     },
     {
@@ -497,7 +497,7 @@
      "t": 1433
     }
    ],
-   "trap": "補充：AVL 會一直旋轉、形狀不固定，用 array 會有大量搬移與空洞；課本（Horowitz）用 link（pointer）實作，每個 node 存 bf。",
+   "trap": "補充：AVL 會一直旋轉、形狀不固定，用 array 會有大量搬移與空洞；課本（Horowitz）用 link（pointer）實作，每個 node 存 bf。 ｜ 老師在 23:00 說每插入一個就算「整棵樹所有 node 的 BF」，但正確是只要沿插入路徑往上更新 BF，找到第一個 |BF| = 2 的 A 就做旋轉，所以 insert 是 O(log n)（課本：Horowitz 10.2 AVL insert）。",
    "cues": [
     1287.9,
     1304,
@@ -522,7 +522,7 @@
     "為什麼 heap 用 array？因為 heap 常常要找 parent 和 child。存在 array 裡，第 i 格的 parent 是 i/2、child 是 2i 和 2i+1，算一下就找到。",
     "這是資料結構的精神：同一種結構，表示的方法不只一種，要想清楚哪一種最適合它常做的操作。AVL 常常要旋轉、整塊搬 subtree，你覺得哪一種比較好？",
     "最後總結 AVL insert 的流程。每 insert 一個 node 進來，例如這裡 insert DEC……",
-    "……就對整棵樹目前所有的 node 計算 BF。",
+    "……就從新 node 往 root 沿著插入路徑更新 BF。只有這條路上的 node 高度可能改變，其他 node 不用重算。（老師說成算整棵樹所有 node 的 BF。）",
     "接著判斷是四種情況的哪一種。要判斷，得先找出兩個角色。",
     "第一個角色：剛 insert 進來的 node，叫 Y。",
     "從 Y 往 root 一路往上走，第一個看到違反 BF 規定的 node 就是 A。這裡是 MAR。",

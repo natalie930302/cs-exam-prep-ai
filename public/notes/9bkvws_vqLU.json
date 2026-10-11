@@ -76,7 +76,7 @@
     "insertion sort 太慢了，所以我們不太在意它。",
     "那前三種有、後兩種（counting、radix）沒有的共同點到底是什麼？"
    ],
-   "trap": "補充：insertion sort 的時間（最差 O(n²)）影片中沒有念出來。"
+   "trap": "補充：insertion sort 的時間（最差 O(n²)）影片中沒有念出來。 ｜ 助教在 3:02 說 heap sort 是「n 次 insert 再 n 次 extract」，接著又說 heap sort 是 in place，但正確是 in-place 的 heap sort 用 bottom-up 建 heap（O(n)），再把 root 交換到陣列尾端；n 次 insert 的版本要另外建 heap（課本：CLRS 6.4）。"
   },
   {
    "title": "Comparison model 與 n log n 下界",

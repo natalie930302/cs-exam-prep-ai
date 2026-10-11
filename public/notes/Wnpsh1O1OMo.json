@@ -198,7 +198,7 @@
      "t": 616
     }
    ],
-   "trap": "補充：畫面上三棵 spanning tree 的形狀是示意，重點是 4 個頂點、3 條邊、沒有 cycle。",
+   "trap": "補充：畫面上三棵 spanning tree 的形狀是示意，重點是 4 個頂點、3 條邊、沒有 cycle。 ｜ 老師在 9:23 說 spanning tree 的 edge「至少 n − 1」，但正確是 spanning tree 恰好有 n − 1 條邊（課本：Horowitz 6.1 spanning tree）。",
    "cues": [
     500.8,
     515.6,
@@ -219,7 +219,7 @@
     "特性二：它的 edge 比 G 少，只挑了其中幾條。為什麼叫 subgraph？就是因為 edge 沒有 G 那麼全。",
     "它希望用最少的 edge，把所有 vertex 都連起來。小封包從 0 出發，沿著這 3 條邊就能走遍 1、3、2。",
     "如果 edge 上有 weight，而這棵 spanning tree 的 weight 加起來又是最小的，它就叫 minimum cost spanning tree（最小成本生成樹，MCST）。",
-    "tree 有 n 個 node 時，要把它們全部連起來，至少需要 n − 1 條 edge，而且不會有 cycle（繞一圈回到自己）。",
+    "tree 有 n 個 node 時，要把它們全部連起來而且不形成 cycle，剛好需要 n − 1 條 edge（少一條會斷開，多一條就會有 cycle）。",
     "再看左邊的 G：它是 complete graph（完全圖），4 個頂點兩兩都有邊，一共 6 條。",
     "旁邊這三個 subgraph 都是 G 的 spanning tree：每個都包含全部 4 個頂點。",
     "它們的 edge 集合都是 G 的 edge 的 subset（子集合）。例如 G′2 用的 (0,1)、(0,2)、(0,3)，在 G 上都找得到（藍色）。",
@@ -579,7 +579,7 @@
      "t": 1827
     }
    ],
-   "trap": "更正：Kruskal、Prim、Sollin 雖然是 greedy，但對 MST 都保證得到最小 cost（cut property）；有相同 weight 時只是「樹」可能不唯一，最小 cost 一定相同。",
+   "trap": "更正：Kruskal、Prim、Sollin 雖然是 greedy，但對 MST 都保證得到最小 cost（cut property）；有相同 weight 時只是「樹」可能不唯一，最小 cost 一定相同。 ｜ 老師在 30:27 說 biconnected「比 connected 更強，可能會是有向圖，彼此要互相連線」，但正確是 biconnected 是「無向」連通圖的概念：拿掉任一個頂點後仍然連通（沒有 articulation point）；有向圖裡「彼此互相到得了」叫 strongly connected（課本：Horowitz 6.2.5 biconnected components）。",
    "cues": [
     1746.8,
     1762.8,
@@ -1285,7 +1285,7 @@
      "t": 4546
     },
     {
-     "text": "例：從新竹到台北，往頭份走偏離方向，所以會從竹北再往前。",
+     "text": "老師舉從新竹到台北的例子；但 Dijkstra 不看目的地的方向，只挑目前距離最短的點（見易錯點）。",
      "t": 4584
     },
     {
@@ -1329,10 +1329,11 @@
     "所以它有點像 spanning tree 裡的 Prim：從一個點開始，看鄰近的點，慢慢往外長。",
     "老師的例子：從新竹出發要到台北，走高速公路。",
     "從新竹出發，最近的交流道可能是竹北，或是頭份。",
-    "目的地是台北，所以往頭份走是錯的，因為它偏離了台北的方向。",
+    "老師說往頭份走是錯的，因為偏離台北的方向。但 Dijkstra 其實不看方向：它每次只挑「目前已知距離最短」的點，如果頭份比竹北近，它會先處理頭份。",
     "所以會從竹北再往前走，到楊梅。",
     "Dijkstra 的精神就是這樣：每次把「確定是最短路徑」的點 include 進來，再透過它們往外延伸，直到所有的點都拜訪過，答案就出來了。"
-   ]
+   ],
+   "trap": "老師在 75:30 用「往頭份偏離台北方向所以錯」解釋 Dijkstra，但正確是 Dijkstra 不看目標方向，只依目前距離最小的頂點往外擴張；會看方向的是 A* 之類的 heuristic search（課本：Horowitz 6.4.1 single source shortest paths）。"
   },
   {
    "title": "Dijkstra 例：Boston 出發的初始化",
@@ -1965,7 +1966,7 @@
      "t": 6942
     },
     {
-     "text": "all pairs shortest path：老師覺得蠻暴力，要把經過所有點的 path 都找出來。",
+     "text": "all pairs shortest path：老師覺得蠻暴力；其實 Floyd 是 O(n³) 的動態規劃，不用列舉路徑。",
      "t": 6948
     }
    ],
@@ -1985,8 +1986,9 @@
     "第二個演算法是 Bellman-Ford。",
     "Bellman-Ford 允許有負值的 edge。這兩個演算法都要知道怎麼 run（實際一步一步算）。",
     "再來是 all pairs shortest path。",
-    "老師覺得它的解法蠻暴力的：觀念很簡單，就是把經過所有點的 path 都找出來比較。"
-   ]
+    "老師覺得它的解法蠻暴力，好像要把經過所有點的 path 都找出來比較。其實不是：Floyd 每一輪只用 A^(k−1) 算出 A^k，三層迴圈 O(n³)，是動態規劃，不用把路徑一條一條列出來。"
+   ],
+   "trap": "老師在 111:22 說 Floyd「蠻暴力的，要把經過所有點的所有 path 找出來」，但正確是 Floyd 是動態規劃：A^k[i][j] = min(A^(k−1)[i][j], A^(k−1)[i][k] + A^(k−1)[k][j])，O(n³)，不列舉路徑（課本：Horowitz 6.4.3 all-pairs shortest paths）。"
   },
   {
    "title": "AOV network",

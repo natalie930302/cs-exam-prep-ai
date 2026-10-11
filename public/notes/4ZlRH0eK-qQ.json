@@ -65,7 +65,8 @@
     "也可以改成拿 (6, 1)、不拿 (1, 2)，一樣是 spanning tree。",
     "所以要拿哪幾條邊，有好幾種選擇（choice），同一張圖可以有很多棵不同的 spanning tree。",
     "寫成數學定義：S 是 G 的子圖，S 的頂點集合和 G 一樣，S 的邊數 = 頂點數 − 1。"
-   ]
+   ],
+   "trap": "老師在 2:18–4:29 用「C(|E|, |V|−1) − cycle 個數」算 spanning tree 數量，但正確是要扣掉「所有含 cycle 的 n − 1 條邊組合」，不是扣 cycle 的個數；一般圖要用 Kirchhoff 的 matrix-tree theorem（見下一段的例子：答案是 15，不是 19）。"
   },
   {
    "title": "可能的 spanning tree 有幾棵",
@@ -348,7 +349,8 @@
     "(5, 7) = 24：5 已經透過 4 連到 7，再加就成圈，丟掉。",
     "(5, 6) = 25，選。現在選滿 6 條邊，最後的 28 不用再看了。",
     "加起來 cost = 99，跟 Prim 的結果一樣。這張圖上兩個演算法得到同一棵 MST。"
-   ]
+   ],
+   "trap": "老師在 13:30–15:41 說 Kruskal 是 Θ(V·E) ≈ n²、用 min heap 後是 n log n，但正確是課本寫成 O(E log E) = O(E log V)：建 heap O(E)，最多刪 E 次（被丟掉的邊也要刪），每次 O(log E)，再加上 union-find 判斷 cycle（課本：Horowitz 6.3.1 Kruskal）。"
   },
   {
    "title": "Kruskal 的時間與 min Heap",

@@ -51,7 +51,8 @@
     "第二條規則：internal node（不是最底層 leaf 的 node）至少要有 ⌈m/2⌉ 個 child，⌈ ⌉ 是「無條件進位」。m = 4 時是 ⌈4/2⌉ = 2，所以至少 2 個 child。",
     "有 2 個 child，中間就一定夾著 1 個 key，所以每個 node 至少 1 個 key。合起來：order 4 的 B-tree，每個 node 有 1 到 3 個 key。",
     "B-tree 是 binary search tree（BST）的延伸，插入時一樣從 root（樹根）開始比大小：小的往左、大的往右，一直走到 leaf（最底層的 node）。差別只是一個 node 裡有好幾個 key 要比。"
-   ]
+   ],
+   "trap": "老師在 0:46 說 internal node 至少 M/2 個 children，但正確是 ⌈m/2⌉（取上整），而且 root 例外，至少 2 個 child 就好；這題 m = 4 剛好整除看不出差別，m 是奇數時就會差 1（課本：Horowitz 11.2）。"
   },
   {
    "title": "插入 5、3、21，插 9 第一次 split",

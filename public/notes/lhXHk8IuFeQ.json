@@ -228,7 +228,7 @@
      "t": 822
     }
    ],
-   "trap": "補充：兩者的循序搜尋都是 O(n)；array 快在不用追 pointer、記憶體連續（常數較小）。若 array 已排序還能 binary search O(log n)。",
+   "trap": "補充：兩者的循序搜尋都是 O(n)；array 快在不用追 pointer、記憶體連續（常數較小）。若 array 已排序還能 binary search O(log n)。 ｜ 老師在 12:21 說要刪 GAT 時用 array「理論上應該比較快」，但正確是兩者搜尋都是 O(n)；找到後 array 刪除還要把後面的資料往前搬，O(n)，linked list 只要改前一個 node 的 link，O(1)。這正是課本改用 linked list 的理由（課本：Horowitz 4.1）。",
    "cues": [
     614.8,
     640.8,
@@ -685,7 +685,7 @@
      "t": 2814
     },
     {
-     "text": "沒有標準答案，可做可不做。",
+     "text": "老師說「沒有標準答案，可做可不做」；正確是 delete 或放進 free list 二選一，但一定要做其中一種。",
      "t": 2860
     },
     {
@@ -720,7 +720,7 @@
    "explain": [
     "pointer 改完了，50 已經離開 list。問題是：要不要把它佔的 memory 釋放（release）掉？",
     "也就是：要不要再做一個 delete 這個 node 的動作？老師請覺得要做的人舉手。",
-    "答案：沒有標準答案，可做可不做。",
+    "老師的答案是「沒有標準答案，可做可不做」。更精確地說：下面兩種做法都可以，但至少要做一種；如果兩種都不做、只把 node 從 list 拿掉，那塊記憶體就再也找不回來（memory leak）。",
     "做法一：直接 delete，把記憶體還給系統。對 memory 斤斤計較時就這樣做。",
     "做法二：先不還給系統，而是用另一條 linked list 把刪掉的 node 存起來。",
     "這條專門收刪掉的 node 的 list，叫做 free 的 linked list（free list）。",
@@ -728,7 +728,8 @@
     "拿到後再做 data assignment，把新的資料填進去（例如 70）。",
     "好處：不用重新跟系統要記憶體。new 會呼叫 system call，系統要去找空間給你，這是一筆額外負擔（overhead）。",
     "兩種做法都可以，但用 free list 少了跟系統要空間的 overhead，效率可能好一點。"
-   ]
+   ],
+   "trap": "老師在 45:56 說刪除後要不要 delete node「沒有標準答案，可做可不做」，但正確是 delete 掉或放進 free list（av list）都可以，兩種都不做會造成 memory leak（課本：Horowitz 4.5 reusing nodes）。"
   }
  ],
  "quiz": [

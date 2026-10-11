@@ -82,11 +82,11 @@
      "t": 202
     },
     {
-     "text": "注意 symmetric：考試可能改成 asymmetric（x ≡ y 不代表 y ≡ x）。",
+     "text": "注意 symmetric：考試可能改成不對稱的關係（x ≡ y 不一定有 y ≡ x）。",
      "t": 255
     }
    ],
-   "trap": "題目若把 symmetric 換成 asymmetric，就不再是 equivalence relation，不能用這套方法分 class。",
+   "trap": "題目若把 symmetric 換成 asymmetric，就不再是 equivalence relation，不能用這套方法分 class。 ｜ 老師在 4:02 說 asymmetric 是「x = y 並不代表 y = x」，但正確是那叫 not symmetric（不對稱）；asymmetric 的定義是 x R y ⇒ ¬(y R x)，比 not symmetric 更強（課本：離散數學 relation 性質）。",
    "cues": [
     152.8,
     157.8,
@@ -107,7 +107,7 @@
     "後來又讀到 3 ≡ 5，就推出 1 ≡ 5（transitive）。",
     "所以 1、3、5 是一個 equivalence class（等價類）：組裡任兩個數都能透過這三個性質找到關係。",
     "特別注意 symmetric：x ≡ y 就有 y ≡ x，所以讀一個 pair 要記兩個方向。",
-    "老師提醒：考試可能把它改成 asymmetric（不對稱），那時 x ≡ y 就不代表 y ≡ x，做法要跟著改。"
+    "老師提醒：考試可能把它改成不對稱（not symmetric），那時 x ≡ y 不代表 y ≡ x，就不是 equivalence relation，做法要跟著改。注意：離散數學的 asymmetric 是更強的條件：x R y 就一定沒有 y R x。"
    ]
   },
   {

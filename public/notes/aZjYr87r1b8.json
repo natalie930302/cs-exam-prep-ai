@@ -571,7 +571,7 @@
      "t": 1663
     },
     {
-     "text": "例如 degree 10，至少 5 個 child 才能開新的 node，用來控制高度。",
+     "text": "例如 degree 10，非 root 的 internal node 至少要有 5 個 child；這是隨時都要滿足的下限，用來控制高度。",
      "t": 1671
     },
     {
@@ -602,13 +602,14 @@
     "B-tree 就是「加上規則的 m-way search tree」。來看有哪些規則（右邊這棵 degree 4 的樹符合全部規則）。",
     "規則一：每個 node 至少要填一半——degree 是 m，就至少要有 ⌈m/2⌉ 個 child。",
     "m/2 要取 ceiling（無條件進位），不是 floor（無條件捨去）。例如 ⌈5/2⌉ = 3。",
-    "例如 degree 10：一個 node 要先有 5 個 child（填滿一半），才能去開新的 node。這是為了控制樹的高度不要亂長。",
+    "例如 degree 10：每個非 root 的 internal node 隨時都要至少有 5 個 child（至少半滿）。老師說成「先有 5 個 child 才能開新的 node」，這不是建立的順序，而是每個 node 都要遵守的下限；leaf 沒有 child，不受這條限制。",
     "規則二：這條「至少一半」能套在 root 上嗎？不行，否則第一個 key 插進去時 root 只有 1 個 key，就違規了。",
     "所以 root 例外：root 至少 2 個 child 就好，也就是 root 可以只有 1 個 key。其他 node 都要至少半滿。",
     "規則三：所有 leaf node 都必須在同一層（綠線）。這讓每次搜尋走的層數都一樣。",
     "建立 m-way search tree 時只要遵守這些規則，其實就是在建 B-tree。",
     "第四點（建立方式）：B-tree 是 bottom-up（由下往上）建的。key 一律先放進 leaf，滿了就 split 把 key 往上送，所以樹是從 root 那端長高。"
-   ]
+   ],
+   "trap": "老師在 28:11 把 ⌈m/2⌉ 解釋成「目前的 node 至少半滿，才能建立下一個 node」，但正確是 ⌈m/2⌉ 是每個非 root 的 internal node 隨時都要滿足的 child 數下限，不是建立順序；leaf 沒有 child，不受這條限制（課本：Horowitz 11.2 B-trees）。"
   },
   {
    "title": "degree 4 插入 10, 20, 40, 50：40 往上",

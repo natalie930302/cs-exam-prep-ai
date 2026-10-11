@@ -307,7 +307,7 @@
     },
     {
      "t": 1542,
-     "text": "要求：真的能解決問題、在有限步驟內停止、有效率而非暴力法。"
+     "text": "要求：真的能解決問題、在有限步驟內停止、每一步都做得到（effectiveness）。"
     },
     {
      "t": 1570,
@@ -336,12 +336,13 @@
     "[[輸出]] 則是要吐回去的答案。input 和 output 合起來，反映出你要解決的問題。",
     "你設計的方法要真的能解決問題：給這些 input，就得到正確的 output。",
     "而且要在有限的步驟內跑完，也就是會停止。",
-    "還希望它有效率，不是暴力法（把所有可能都試一遍）。",
+    "課本的第五個條件叫 effectiveness：每一步都要是基本、做得到的操作（老師講成「有效率、不是暴力法」，這不對：暴力法也是演算法）。",
     "舉最簡單的例子：[[排序]]（sort）。",
     "排序問題：input 是一堆數字，output 也是一堆數字。",
     "但 output 要符合一個條件：從小到大（或從大到小）排好。input、output 都要講明白。",
     "知道問題的 input、output 之後，接著問：你怎麼解？計概學過 bubble sort、selection sort。"
-   ]
+   ],
+   "trap": "老師在 25:53 說演算法要「有效率，不是暴力法」，但正確是課本的五個條件是 input、output、definiteness（每步明確）、finiteness（有限步停止）、effectiveness（每步都是做得到的基本操作），沒有「有效率」這條，暴力法也是演算法（課本：Horowitz 1.2 algorithm specification）。"
   },
   {
    "title": "Selection sort：概念、pseudocode 與程式",
@@ -427,7 +428,7 @@
     },
     {
      "t": 2216,
-     "text": "以比較為基礎（comparison-based）最快可達 n log n，quick sort 是代表；不靠比較的 radix、bucket 等方法可以更快。"
+     "text": "以比較為基礎（comparison-based）的排序最好只能到 n log n；quick sort 平均 n log n，但最壞是 n²。不靠比較的 radix、bucket 等方法可以更快。"
     }
    ],
    "cues": [
@@ -448,10 +449,11 @@
     "那最快的 sort 是哪一個？（同學們在台下猜了一陣子）",
     "答案：最快可以達到 n log n。",
     "給 n 個數字，比較次數可以達到 n log n。這是基於 comparison（兩兩比大小）的演算法。",
-    "在 comparison-based 的演算法裡，quick sort 是最快的，名字也取得好。",
-    "如果不是 comparison-based，例如 radix sort、用 bucket（桶子）的方法，靠 hash function 決定丟進哪個 bucket，不用兩兩比較。",
+    "在 comparison-based 的演算法裡，quick sort 平均最快、名字也取得好；但它最壞情況是 O(n²)（例如每次 pivot 都選到最大或最小）。最壞也能保證 n log n 的是 merge sort、heap sort。",
+    "如果不是 comparison-based，例如 radix sort、bucket sort，是依照每一位數字（或值的範圍）把資料分配到 bucket 再收回來，不用兩兩比較。",
     "所以不靠比較的方法，可以比 n log n 更快。"
-   ]
+   ],
+   "trap": "老師在 35:14 說 quick sort「不管 average 或 worst case」都是 n log n，但正確是 quick sort 平均 Θ(n log n)、最壞 Θ(n²)；比較式排序的下界 Ω(n log n) 由 merge sort、heap sort 在最壞情況也能達到（課本：Horowitz 7.3；CLRS 7.2、8.1）。 ｜ 老師在 37:17 說 radix sort 是「用 bucket 的方法去做 hash」，但正確是 radix sort 依位數做 stable 的分配與收集，不是 hash（課本：Horowitz 7.8）。"
   },
   {
    "title": "搜尋問題：binary search 找 6",
@@ -705,13 +707,14 @@
     "沒選進來的數字，一個一個跟這 k 個的最後一個比。比它小就直接丟掉；33 比 7 大，可以進來。",
     "比較大的就有機會進來，插到適當的位置，最後一個被擠掉。全部比完，最後一個就是第 k 大：45。",
     "兩個方法都能選出第 k 大，但一個要對 n 個數字做排序，一個只對 k 個排序。",
-    "如果 n 遠遠大於 k，方法一一定比方法二差，因為排序要花很多工夫。",
+    "老師說 n 遠大於 k 時，方法一一定比方法二差。其實要看 k：方法二最壞約 O(nk)，只有 k 很小（小於約 log n）時才比全部排序的 O(n log n) 快。",
     "方法二只排 k 個，後面只要做比較（comparison），會比較快。",
     "selection problem 跟 sorting problem 並不一樣。",
     "但你可以用 sorting 的方法來解 selection 的問題。這就是為什麼要學資料結構和演算法：它們會變成你的知識。",
     "面對新的問題時，回想過去學過哪些知識可以拿來用。",
     "這就是站在巨人的肩膀上：前人研究出的東西，讓我們能很快去解決更 advanced 的問題。"
-   ]
+   ],
+   "trap": "老師在 57:55 說 n 遠大於 k 時方法一（全部排序）「一定」比方法二差，但正確是方法二每個數最多插入一次、最壞 O(k log k + (n − k)·k) = O(nk)，k 大於約 log n 時反而比 O(n log n) 慢（課本：selection problem 分析）。"
   },
   {
    "title": "閒聊：為什麼讀研究所",
@@ -729,7 +732,7 @@
    "points": [
     {
      "t": 3930,
-     "text": "Recursive algorithm：自己呼叫自己（direct），或透過其他 function 繞回來（indirect）；例 C(n, m) = C(n−1, m) + C(n−1, m−1)。"
+     "text": "Recursive algorithm：自己呼叫自己（direct），或 A 呼叫 B、B 再呼叫回 A（indirect）；例 C(n, m) = C(n−1, m) + C(n−1, m−1)。"
     },
     {
      "t": 4000,
@@ -758,8 +761,8 @@
    "explain": [
     "演算法裡還有一種：recursive algorithm（[[遞迴]]演算法），就是自己呼叫自己。",
     "function 直接呼叫自己，叫 direct recursive。",
-    "如果 function 1 呼叫 function 2，function 2 又呼叫自己，function 1 也是透過別的 function 產生遞迴，一樣算 recursive。",
-    "例子：n 個取 m 個的組合數 C(n, m)，可以拆成 C(n−1, m) + C(n−1, m−1)，問題變小一號。",
+    "如果 A 呼叫 B，B 又呼叫回 A，形成一個環，叫 indirect recursive（間接遞迴）。注意：A 只是呼叫一個本身會遞迴的 B，A 自己並不算遞迴。",
+    "例子：從 n 個取 m 個的組合數（不是排列）C(n, m)，可以拆成 C(n−1, m) + C(n−1, m−1)，問題變小一號。",
     "設計遞迴演算法時要注意：不要讓它進入無限的呼叫，否則永遠不會停，就不是好的演算法。",
     "演算法有個條件：一定要會停止。",
     "什麼時候停？要特別注意 boundary condition，也就是[[邊界條件]]：停的條件。",
@@ -769,7 +772,8 @@
     "程式裡寫在：if n == 0，直接 return 1。",
     "不是 0 的話，return n × fact(n−1)。最底層回傳 1，再一層一層乘回去：1、2、6、24。",
     "寫遞迴時千萬記得問自己：它什麼時候停？這會提醒你把 boundary condition 放上去，避免程式停不下來。"
-   ]
+   ],
+   "trap": "老師在 65:11 說 indirect recursion 是「function 1 呼叫 function 2，function 2 呼叫自己」，但正確是 A 呼叫 B、B 再呼叫回 A（呼叫形成環）才是 indirect recursion；A 呼叫一個自己會遞迴的 B，A 本身不算遞迴（課本：Horowitz 1.2.2 recursive algorithms）。 ｜ 老師在 66:12 說 C(n,m) 是「n 個取 m 個來排列」，但正確是組合，不是排列。"
   },
   {
    "title": "遞迴乘法",
@@ -864,7 +868,7 @@
    "why": "25 > 14 往右、> 22 往右、< 26 往左，只剩 24 也不是，所以不存在。"
   },
   {
-   "q": "找第 k 大時，n 遠大於 k，哪個方法比較好？",
+   "q": "找第 k 大時，n 遠大於 k 而且 k 很小，哪個方法比較好？",
    "opts": [
     "把 n 個全部排序再取第 k 個",
     "只排 k 個，其餘逐一和第 k 個比較、較大才插入",
@@ -872,7 +876,7 @@
     "一定要用遞迴"
    ],
    "ans": "只排 k 個，其餘逐一和第 k 個比較、較大才插入",
-   "why": "方法一要排序全部 n 個；方法二只排 k 個，後面只做比較。"
+   "why": "方法一要排序全部 n 個（O(n log n)）；方法二只排 k 個，其餘最多插入一次，約 O(nk)。k 很小時方法二較快，k 大時反而較慢。"
   },
   {
    "q": "fact(n) 遞迴計算階乘時，boundary condition 是？",

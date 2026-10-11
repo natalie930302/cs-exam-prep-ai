@@ -1260,7 +1260,7 @@
      "t": 3487
     }
    ],
-   "trap": "補充：動畫為示意（8 個 partition 與輸出序列無具體數值）。",
+   "trap": "補充：動畫為示意（8 個 partition 與輸出序列無具體數值）。 ｜ 老師在 54:45 說 external sort 是「透過 cluster、分散式 node 的 memory」來做，但正確是 external sort 指資料放在磁碟、記憶體放不下，在單一台機器上分段排序成 run 再合併，和分散式無關（課本：Horowitz 7.10 external sorting）。",
    "cues": [
     3284.8,
     3308.8,
@@ -1283,7 +1283,7 @@
     "再建一棵 winner tree 來合併。這棵樹很小，用不到多少 memory。",
     "每塊一次只要拿最前面的數字來比，partition 加上 winner tree，就能排序大規模的數字。",
     "這對應到 external sort。sorting 分成 internal sort（資料全部放得進 memory）和 external sort。",
-    "memory 放不下全部資料時，就用 external sort；也可以讓很多台電腦（node）各算一點再合起來。"
+    "memory 放不下全部資料時，就用 external sort：資料放在磁碟上，一次讀一段進記憶體排好，再合併。（老師順口說可以讓很多台電腦各算一點，那是分散式排序，不是 external sort 的定義。）"
    ]
   },
   {

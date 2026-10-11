@@ -848,7 +848,7 @@
      "t": 5899
     },
     {
-     "text": "若把空連結也算進去，每個 node 的 degree 都等於 2，只是其中可能指向空。",
+     "text": "老師說：若把空連結也算進去，每個 node 都有兩個連結位置（但 degree 只算非空的子樹）。",
      "t": 5949
     },
     {
@@ -856,14 +856,14 @@
      "t": 5977
     }
    ],
-   "trap": "補充：binary tree 不是 degree ≤ 2 的 tree 那麼簡單——它區分左右，且可以是空樹（洪逸／Horowitz 定義：binary tree 為 node 的有限集合，可為空，或由 root 與兩棵互斥的 left / right subtree 組成）。只有一個 child 時，『左 child』和『右 child』是兩棵不同的 binary tree。",
+   "trap": "補充：binary tree 不是 degree ≤ 2 的 tree 那麼簡單——它區分左右，且可以是空樹（洪逸／Horowitz 定義：binary tree 為 node 的有限集合，可為空，或由 root 與兩棵互斥的 left / right subtree 組成）。只有一個 child 時，『左 child』和『右 child』是兩棵不同的 binary tree。 ｜ 老師在 98:53 說「把空的小紙條算進去，每個節點的 degree 都是 2」，但正確是 degree 只算非空子樹的個數，leaf 的 degree 是 0（課本：Horowitz 5.1 degree of a node）。",
    "explain": [
     "binary tree 有很多有趣的性質，接下來好幾講都會先鎖定 binary tree，有些結果再推廣到一般的樹。",
     "binary tree 的條件一：整棵樹的 degree 最多是 2（老師先寫「= 2」，再改成「≤ 2」）。",
     "條件二：要有 order（順序），左邊和右邊是有差別的。",
     "剛才從一般樹轉過來時，老師也畫出了那些「指向空」的小紙條（紅色 ∅）：長到尾巴、不再長的地方。",
     "這些空紙條沒有真的存資料，所以以後畫圖不會畫；真的需要時，請自行腦補。",
-    "如果把空紙條也算進去，每個 node 的 degree 都剛好等於 2：兩條都在，只是有的指向空。",
+    "如果把空紙條也算進去，每個 node 都有兩個連結位置：兩條都在，只是有的指向空。注意：課本的 degree 只算「非空」的子樹，所以 leaf 的 degree 還是 0，不是 2。",
     "所以可以這樣理解 binary tree：每個 node 都有左、右兩邊，只是某一邊可能是空的。"
    ]
   },

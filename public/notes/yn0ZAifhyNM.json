@@ -486,7 +486,7 @@
      "t": 1580
     },
     {
-     "text": "好處之一：某個 link 斷掉，還能透過另一個方向接回來。",
+     "text": "好處：可以往回走；只拿到某個 node 的指標時，也能 O(1) 刪除它（不必找前一個）。",
      "t": 1598
     },
     {
@@ -516,14 +516,15 @@
    "explain": [
     "linked list 講到這邊：靠 pointer 串起來，有頭端 first。",
     "doubly linked list 就是多了一組 link（這裡用有 header 的環狀版）。",
-    "好處之一：如果某條 link 斷掉，例如 12 → 10 的 rlink 斷了，往右走就到不了 10、7……",
-    "還可以透過另一個方向找回來：從 header 的 llink 往左走 3 → 5 → 7 → 10。",
+    "老師說好處之一是「link 斷了可以救回來」，例如 12 → 10 的 rlink 斷了，往右走就到不了 10、7……",
+    "雖然可以從 header 的 llink 往左走 3 → 5 → 7 → 10 繞過去，但這不是課本說的好處：指標真的壞掉時兩個方向也會不一致。課本的重點是可以往回走，以及刪除 x 時用 x->llink 直接找到前一個，O(1) 完成。",
     "想想看：在 doubly linked list 上要找一個 element，怎麼做？",
     "例如要找數字 7 有沒有出現在 list 裡。",
     "如果沒有其他條件，就跟 singly 一樣：從左或從右一個一個檢查，這裡從左邊要看 15、12、10、7 四次。",
     "可以做得更好：insert 的時候就讓 list 排序，例如從大排到小。",
     "再依數字大小判斷從哪一邊找比較快：7 比較接近最小的 3，就從右邊找，3 次就找到。"
-   ]
+   ],
+   "trap": "老師在 25:52 說 doubly linked list 的好處是「link 斷了可以救回來」、可以防止停電或磁頭壞掉，但正確是課本的主要理由：可以雙向走訪，而且只拿到某個 node 的指標就能 O(1) 刪除它（x->llink->rlink = x->rlink; x->rlink->llink = x->llink），不必再找前一個 node（課本：Horowitz 4.10 doubly linked lists）。"
   },
   {
    "title": "應用：檔案的 disk block",
@@ -658,15 +659,15 @@
    "why": "第 i 個 head node 同時當 row i 和 column i 的頭，所以取 row、column 較多者。"
   },
   {
-   "q": "為什麼檔案的 disk block 適合用 doubly linked list 串？",
+   "q": "課本強調 doubly linked list 比 singly 多一組 link 的主要好處是？",
    "opts": [
     "比較省空間",
-    "一個 pointer 壞掉時，還能從另一個方向找到其他 block",
-    "可以 O(1) 隨機存取任一 block",
+    "可以往回走，而且只拿到 node x 的指標就能 O(1) 刪除它",
+    "可以 O(1) 隨機存取任一 node",
     "不需要 header"
    ],
-   "ans": "一個 pointer 壞掉時，還能從另一個方向找到其他 block",
-   "why": "Singly 斷一個 link 後面就找不到；doubly 多一組 link，比較不會 missing node。"
+   "ans": "可以往回走，而且只拿到 node x 的指標就能 O(1) 刪除它",
+   "why": "用 x->llink 直接找到前一個 node，不必從頭找。老師說的「link 壞掉可以救回來」不是課本的理由，指標壞掉時兩個方向也會不一致。"
   }
  ]
 }

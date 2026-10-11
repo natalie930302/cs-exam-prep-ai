@@ -1227,7 +1227,7 @@
      "t": 6962
     },
     {
-     "text": "STL 的 deque 正是這種想法：一堆小 array 連在一起。",
+     "text": "STL 的 deque 用類似的想法：資料分成一塊一塊固定大小的小 array。",
      "t": 6989
     },
     {
@@ -1235,7 +1235,7 @@
      "t": 6995
     },
     {
-     "text": "跨小 array 時 random access 就沒那麼快。",
+     "text": "老師說跨小 array 時 random access 會變慢；實際的 STL deque 仍是 O(1)（見易錯點）。",
      "t": 7016
     },
     {
@@ -1243,7 +1243,7 @@
      "t": 7030
     }
    ],
-   "trap": "補充：實際的 STL deque 用一個指標陣列（map）指向固定大小的 block，所以 random access 仍是 O(1)，不是沿著 linked list 一塊一塊走。",
+   "trap": "補充：實際的 STL deque 用一個指標陣列（map）指向固定大小的 block，所以 random access 仍是 O(1)，不是沿著 linked list 一塊一塊走。 ｜ 老師在 116:02 說 deque「exactly 就是把小 array 用 linked list 串起來」，所以 random access 比較慢；但正確是 std::deque 用指標陣列（map）指向各 block，index 先算出在第幾塊、再算塊內位置，random access 是 O(1)（課本：C++ 標準函式庫 deque）。",
    "cues": [
     6962.82,
     6967.8,
@@ -1257,10 +1257,10 @@
    "explain": [
     "同學在 Slido 問：copy 很浪費時間，能不能把大 array 切成幾個小 array（這裡每塊 4 格），再用 linked list 連起來？",
     "老師說這是非常好的問題，還記得剛才講的 deque（double-ended queue）嗎？",
-    "C++ STL 裡的 deque，做法 exactly 就是這樣：把一堆小 array 用 linked list 連在一起（箭頭就是串起來的紙條）。",
+    "C++ STL 裡的 deque 確實是用一堆固定大小的小 array 來存。老師說它是用 linked list 把小 array 串起來；實際的 STL 是用一個指標陣列（map）記住每一塊在哪裡（見易錯點）。",
     "所以它有小 array 的特性：每一塊的記憶體是集中的，cache efficiency（快取效率）比較好。",
     "同時又有 linked list 的彈性：要變大就多接一塊，不用整個 copy。",
-    "但 index access 就不會那麼快了：要拿第 9 個，得先一塊一塊找過去。",
+    "老師說這樣 index access 會變慢、要一塊一塊找過去。如果真的用 linked list 串，確實要這樣走；但 STL deque 用指標陣列，第幾塊可以直接算出來，不必一塊一塊找。",
     "在一塊小 array 的範圍內，random access 還是快的：9 就是第 2 塊裡的第 1 格，直接算就到。",
     "所以它介在 array（random access 很快）和 linked list（random access 很慢）中間，是一種 trade-off。（補充：真正的 STL deque 用一個指標陣列管理這些 block，所以 random access 仍是 O(1)。）"
    ]

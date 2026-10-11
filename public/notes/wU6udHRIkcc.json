@@ -350,7 +350,7 @@
      "t": 1347
     }
    ],
-   "trap": "影片在 (6, 8) 說「−8 比較大」：其實比的是 −6 與 −2 的絕對值（點數），合併之後 parent[1] 才變成 −8。",
+   "trap": "影片在 (6, 8) 說「−8 比較大」：其實比的是 −6 與 −2 的絕對值（點數），合併之後 parent[1] 才變成 −8。 ｜ 老師在 19:01 說 find「只走一步，不是 n，算常數時間」，但正確是 find 的成本是樹高：只用 weighted union 時最差 O(log n)；加上 collapsing find 後，一連串操作攤銷起來接近 O(α(n))，不是保證每次常數（課本：Horowitz 5.10 Lemma 5.5 與 Ackermann 函數的界）。 ｜ 老師在 19:44 說「weight 和 rank 是一樣的」，但正確是 Horowitz 的 weighting rule 比元素個數，CLRS 的 rank 是樹高的上界，兩者不同（這段影片存的是點數，也就是 weight）。",
    "cues": [
     917.4,
     945.8,

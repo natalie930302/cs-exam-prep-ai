@@ -31,7 +31,7 @@
     "對照上一講的 separate chaining（也叫 open hashing）：每一格往下掛一條 linked list（一節一節串起來的串列），撞在同一格的資料就接在串列上。",
     "串列可以一直接長，所以存的資料數可以比格子數還多。代價是：每個節點都要額外的記憶體。",
     "open addressing 則完全不用表以外的記憶體，資料一定都在這排格子裡。",
-    "代價是表要夠大。load factor λ（負載因子）＝ 資料筆數 ÷ 格子數，表示表有多滿。open addressing 在 λ 小於 0.5（不到半滿）時效果最好。",
+    "代價是表要夠大。load factor λ（負載因子）＝ 資料筆數 ÷ 格子數，表示表有多滿。open addressing 的 λ 越小越快；老師說 λ 要小於 0.5，那其實是 quadratic probing 保證找得到空位的條件，linear probing 沒有硬性門檻，只是 λ 越大越慢。",
     "回顧上次的例子：h(x) = x mod 10（mod 就是取除以 10 的餘數），10、20、30、40、50 的餘數全是 0，全部撞在 index 0。",
     "chaining 把它們串成一條 linked list，但 linked list 本身也要佔記憶體。老師不想要這樣。",
     "在白板上再做一次：h(x) = x mod 10，所以表有 0～9 共 10 格。",
@@ -57,7 +57,7 @@
     },
     {
      "t": 52,
-     "text": "Open addressing 需要比較大的表，load factor λ 低於 0.5 時效果好。"
+     "text": "Open addressing 需要比較大的表，load factor λ 越低越快；λ < 0.5 是 quadratic probing 保證找得到空位的條件。"
     },
     {
      "t": 73,
@@ -71,7 +71,8 @@
      "t": 196,
      "text": "表裡明明還有很多空格，卻另外花了 linked list 的記憶體。"
     }
-   ]
+   ],
+   "trap": "老師在 0:45 說 open addressing 要 λ < 0.5 才能用，但正確是 λ < 0.5（且表大小為質數）是 quadratic probing 保證找得到空位的條件；linear probing 只要 λ < 1 就放得下，只是 λ 越大越慢（課本：CLRS 11.4）。"
   },
   {
    "title": "Linear probing 的想法：撞了放下一格",
@@ -432,7 +433,8 @@
      "t": 989,
      "text": "Open addressing 只用表本身的記憶體，不需 chaining 的額外資料結構。"
     }
-   ]
+   ],
+   "trap": "老師在 16:07 說 quadratic probing「會消除 clustering 的問題」，但正確是它只消除 primary clustering；起點相同的 key 走同一條探測序列，仍有 secondary clustering（課本：Horowitz 8.2）。"
   }
  ],
  "quiz": [
