@@ -1,0 +1,325 @@
+{
+ "video": "MvNiJbIxfu0",
+ "label": "清大OCW 趙啟超《離散數學》第7A講 Relations",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "複習：equivalence relation",
+   "points": [
+    {
+     "t": 3,
+     "text": "equivalence relation：A 上的 binary relation，滿足 reflexive、symmetric、transitive。"
+    },
+    {
+     "t": 77,
+     "text": "例：congruence modulo n（n ≥ 2）：a − b 是 n 的倍數，或 a mod n = b mod n。"
+    }
+   ],
+   "scene": "reA-7a-recap",
+   "cues": [
+    3.8,
+    32.9,
+    47,
+    56.3,
+    77.1,
+    91.6
+   ],
+   "explain": [
+    "先複習上一講：集合 A 上的 binary relation，就是 A × A 的一個 subset。",
+    "如果它滿足三個條件，就叫 equivalence relation。第一個：每個元素都跟自己有關係，叫 reflexive。右邊小圖的圈圈就是「自己指向自己」。",
+    "第二個：a 跟 b 有關係，b 跟 a 就也有關係，叫 symmetric。小圖裡箭頭有去有回。",
+    "第三個：a 跟 b、b 跟 c 有關係，a 跟 c 就有關係，叫 transitive。小圖裡 a → b → c 就有 a → c。",
+    "上一講的例子是 congruence modulo n，n 是大於等於 2 的正整數。",
+    "兩個整數相減是 n 的倍數就有關係，或者說它們除以 n 的餘數一樣。這是一個 equivalence relation。"
+   ]
+  },
+  {
+   "title": "Equivalence class [x] 與三個性質",
+   "points": [
+    {
+     "t": 118,
+     "text": "[x] = {y ∈ A : y R x}：所有跟 x 有關係的元素，叫 x 的 equivalence class。"
+    },
+    {
+     "t": 202,
+     "text": "性質 (a) x ∈ [x]；(b) x R y ⇔ [x] = [y]；(c) [x] = [y] 或 [x] ∩ [y] = ∅（disjoint）。"
+    }
+   ],
+   "trap": "(c) 說兩個 class 要嘛完全一樣、要嘛完全不重疊，不可能只重疊一部分。",
+   "scene": "reA-7a-class",
+   "cues": [
+    118,
+    126.3,
+    144.1,
+    158.8,
+    179.5,
+    201.9,
+    212.7,
+    229.1
+   ],
+   "explain": [
+    "現在看 equivalence relation 會帶來什麼結果。假設集合 A 上有一個 equivalence relation R。為了看得具體，畫面用 A = {0,…,8}、R = mod 3 同餘當示意。",
+    "對 A 裡的每個元素 x，定義一個新符號：中括號 [x]。",
+    "[x] 是一個集合：所有跟 x 有關係的 y 都放進來，寫成 {y ∈ A : y R x}。例如 [1] = {1, 4, 7}，因為它們除以 3 都餘 1。",
+    "[x] 叫做 x 的 equivalence class（等價類）：跟 x「算是一樣」的那一群。",
+    "A 裡每個元素都可以定義自己的 class。這個例子裡 [0] = {0,3,6}、[2] = {2,5,8}，各用一個顏色圈起來。",
+    "性質 (a)：x 一定在自己的 class 裡。",
+    "性質 (b)：x 跟 y 有關係，若且唯若 [x] 和 [y] 是同一個集合。「若且唯若」就是兩個方向都成立。例如 1 R 4，而 [1] 和 [4] 確實相同。",
+    "性質 (c)：任兩個元素的 class，不是完全一樣，就是交集為空集合（disjoint，互不相交）。"
+   ]
+  },
+  {
+   "title": "證明 (a)：x ∈ [x]",
+   "points": [
+    {
+     "t": 250,
+     "text": "[x] 裡是所有跟 x 有關係的元素，所以只要證 x R x——這正是 reflexive。"
+    }
+   ],
+   "scene": "reA-7a-pa",
+   "cues": [
+    250.1,
+    265.8,
+    286.8,
+    310.1
+   ],
+   "explain": [
+    "先證第一點：x 在自己的 equivalence class 裡。",
+    "[x] 裡放的是所有跟 x 有關係的元素，所以只要證明 x 跟 x 自己有關係就好。",
+    "為什麼 x R x？因為 equivalence relation 一定滿足 reflexive（反身性），自己跟自己一定有關係。",
+    "所以 x 就在 [x] 裡面：每個 equivalence class 一定包含它自己。"
+   ]
+  },
+  {
+   "title": "證明 (b)：x R y ⇔ [x] = [y]",
+   "points": [
+    {
+     "t": 329,
+     "text": "⇒：證兩個集合相等，用互相包含。"
+    },
+    {
+     "t": 423,
+     "text": "[x] ⊆ [y]：w ∈ [x] ⇒ w R x，加上 x R y，transitive ⇒ w R y ⇒ w ∈ [y]。"
+    },
+    {
+     "t": 536,
+     "text": "[y] ⊆ [x]：t ∈ [y] ⇒ t R y；symmetric 得 y R x；transitive ⇒ t R x。"
+    },
+    {
+     "t": 644,
+     "text": "⇐：x ∈ [x] = [y]，所以 x ∈ [y]，即 x R y。"
+    }
+   ],
+   "trap": "證 [y] ⊆ [x] 時要先用 symmetric 把 x R y 變成 y R x，才能接 transitive。",
+   "scene": "reA-7a-pb",
+   "cues": [
+    329.7,
+    340.5,
+    356.2,
+    423.7,
+    448.6,
+    470.1,
+    492.3,
+    536.2,
+    570.5,
+    595.9,
+    634.4,
+    644.1,
+    669.5,
+    705
+   ],
+   "explain": [
+    "第二點：如果 x 跟 y 有關係（金色箭頭），那 [x] 和 [y] 會是同一個集合。",
+    "這是「若且唯若」，所以要證兩個方向：從左推到右，也要從右推回左。先證左推右。",
+    "要證兩個集合一樣，標準做法是證它們互相包含：[x] ⊆ [y]，而且 [y] ⊆ [x]。",
+    "先證 [x] ⊆ [y]：在 [x] 裡任意拿一個元素，叫它 w，證明 w 也在 [y] 裡。",
+    "w 在 [x] 裡，照定義就是 w 跟 x 有關係：w R x。",
+    "現在有 w R x，而且一開始假設 x R y。用 transitive（遞移性）就得到 w R y。",
+    "w R y 的意思就是 w 在 [y] 裡。任何 [x] 裡的元素都在 [y] 裡，所以 [x] ⊆ [y]。",
+    "再證另一邊 [y] ⊆ [x]：在 [y] 裡任意拿一個 t，所以 t R y。",
+    "一開始假設 x R y，因為 R 是 symmetric（對稱），所以也有 y R x。",
+    "t R y、y R x，再用 transitive 得到 t R x，所以 t 在 [x] 裡，[y] ⊆ [x]。",
+    "兩個方向的包含都成立，所以 [x] = [y]，兩個 class 重合成同一個。",
+    "接著證反方向：假設 [x] 和 [y] 是同一個集合，要推出 x R y。",
+    "由性質 (a)，x 在 [x] 裡；[x] 又等於 [y]，所以 x 在 [y] 裡，意思就是 x R y。這個方向比較簡單。",
+    "兩個方向都證完了。整個證明只用到集合相等的證法、equivalence class 的定義，和三個性質。"
+   ]
+  },
+  {
+   "title": "證明 (c)：不是一樣就是 disjoint",
+   "points": [
+    {
+     "t": 733,
+     "text": "(c)：任兩個 class 不是一樣就是 disjoint，不會只交一部分。x R y 時一樣（由 (b)）。"
+    },
+    {
+     "t": 809,
+     "text": "x、y 沒關係時用反證：若有 v ∈ [x] ∩ [y]，則 v R x、v R y ⇒ x R v（symmetric）⇒ x R y（transitive），矛盾。"
+    }
+   ],
+   "scene": "reA-7a-pc",
+   "cues": [
+    733.5,
+    742.7,
+    772.5,
+    809,
+    825.7,
+    859,
+    891.9,
+    908.4,
+    917.9,
+    931.6,
+    940
+   ],
+   "explain": [
+    "再看第三點：任兩個 equivalence class，要嘛一模一樣，要嘛交集是空集合。",
+    "也就是說，不可能像畫面這樣只重疊一部分。",
+    "什麼時候一模一樣？就是 x 跟 y 有關係的時候，這正是剛證完的第 (b) 點。",
+    "另一種情況：x 跟 y 沒有關係。這時要證 [x] 和 [y] 的交集是空集合。",
+    "用反證法：先假設交集「不是」空集合，然後推出矛盾。",
+    "交集不是空的，表示有某個元素 v 同時在 [x] 裡、也在 [y] 裡。",
+    "關鍵想法：把 v 當成連接 x 和 y 的橋樑。",
+    "v 在 [x] 裡，所以 v R x；v 在 [y] 裡，所以 v R y。",
+    "用 symmetric 把 v R x 反過來，變成 x R v。",
+    "現在 x R v、v R y，用 transitive 就得到 x R y。",
+    "可是一開始說 x 跟 y 沒關係，矛盾了！所以交集只能是空集合，兩個 class 分開。"
+   ]
+  },
+  {
+   "title": "課堂問答：(b) 的第二段為什麼能用對稱性",
+   "points": [
+    {
+     "t": 1007,
+     "text": "學生提問，老師回顧 (b) 的第二段：x R y 的假設一直都在，用 symmetric 反過來成 y R x 才能接上 transitive。"
+    }
+   ],
+   "scene": null
+  },
+  {
+   "title": "equivalence classes 的直觀：物以類聚",
+   "points": [
+    {
+     "t": 1064,
+     "text": "每個元素都有自己的 class；互相 equivalent 的元素聚在同一個 class。"
+    },
+    {
+     "t": 1123,
+     "text": "不同 class 交集是空的：有交集就會被「橋樑」接成同一個。Birds of a feather flock together。"
+    }
+   ],
+   "scene": "reA-7a-flock",
+   "cues": [
+    1064.8,
+    1081.7,
+    1104.6,
+    1123.4,
+    1141.7,
+    1169.6
+   ],
+   "explain": [
+    "整理一下直觀的圖像：集合 A 裡有很多元素（這裡用 mod 3 當示意），每個元素都有自己的 equivalence class。",
+    "互相 equivalent 的元素會聚在同一個 class 裡。畫面上元素各自走到自己那一群。",
+    "每個元素都在自己的 class 裡；同一群裡的元素，它們的 class 都是同一個。",
+    "不同群之間沒有交集。因為如果有交集，中間那個元素就會像橋一樣把兩群連成同一群。",
+    "英文諺語 Birds of a feather flock together，中文就是「物以類聚」：同樣羽毛的鳥會飛在一起。",
+    "所以 equivalence relation 會把集合裡的元素，分成一群一群不同的 equivalence classes。"
+   ]
+  },
+  {
+   "title": "集合的 partition",
+   "points": [
+    {
+     "t": 1179,
+     "text": "A 的 partition：一些 non-empty subsets Aᵢ（i ∈ index set I）。"
+    },
+    {
+     "t": 1237,
+     "text": "條件：① ⋃ Aᵢ = A；② i ≠ j ⇒ Aᵢ ∩ Aⱼ = ∅。"
+    },
+    {
+     "t": 1301,
+     "text": "就像把一個 pie 切成一塊一塊。"
+    }
+   ],
+   "trap": "partition 的每一塊都必須是 non-empty；而且全部 union 起來要剛好是 A，不能漏掉元素。",
+   "scene": "reA-7a-partition",
+   "cues": [
+    1179.4,
+    1196.8,
+    1208.2,
+    1237.7,
+    1245.6,
+    1284,
+    1300.9,
+    1329.1
+   ],
+   "explain": [
+    "剛才「分成一群一群」的概念，在集合論裡有個名字，叫 partition（分割）。",
+    "集合 A 的一個 partition，是一些 A 的 subset，而且每一個都不能是空集合（non-empty）。",
+    "這些 subset 寫成 Aᵢ，i 屬於某個 index set（編號的集合）I，例如 A₁、A₃、A₅，編號不一定要連續。",
+    "第一個條件：把所有 Aᵢ 聯集（union）起來，剛好就是原來的 A，一個元素都不漏。",
+    "第二個條件：任兩塊不同的 Aᵢ、Aⱼ，交集是空集合，也就是兩兩 disjoint，不重疊。",
+    "滿足這兩個條件的這些 Aᵢ，就叫做 A 的一個 partition。",
+    "想像把 A 切成一塊一塊，例如切成 A₁ 到 A₇ 七塊（示意）。",
+    "就像把一個 pie（派）切開：每塊不重疊，合起來又是整個派。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "A = {0,…,8}、R 為 mod 3 同餘，[1] = ?",
+   "opts": [
+    "{1}",
+    "{0, 1, 2}",
+    "{1, 3, 5, 7}",
+    "{1, 4, 7}"
+   ],
+   "ans": "{1, 4, 7}",
+   "why": "除以 3 餘 1 的元素。"
+  },
+  {
+   "q": "證明 x ∈ [x] 用到哪個性質？",
+   "opts": [
+    "reflexive",
+    "symmetric",
+    "transitive",
+    "antisymmetric"
+   ],
+   "ans": "reflexive",
+   "why": "x R x 正是反身性。"
+  },
+  {
+   "q": "已知 x R y，證明 [x] ⊆ [y] 時，由 w R x 推到 w R y 用的是？",
+   "opts": [
+    "反證法",
+    "transitive",
+    "symmetric",
+    "reflexive"
+   ],
+   "ans": "transitive",
+   "why": "w R x、x R y ⇒ w R y。"
+  },
+  {
+   "q": "兩個 equivalence class [x]、[y] 的關係一定是？",
+   "opts": [
+    "一定交集為空",
+    "可能只重疊一部分",
+    "相等或交集為空",
+    "一定相等"
+   ],
+   "ans": "相等或交集為空",
+   "why": "性質 (c)。"
+  },
+  {
+   "q": "下列何者「不是」partition 的條件？",
+   "opts": [
+    "每一塊都不是空集合",
+    "全部 union 是 A",
+    "不同塊交集是空集合",
+    "每一塊大小要相同"
+   ],
+   "ans": "每一塊大小要相同",
+   "why": "partition 不要求每塊一樣大。"
+  }
+ ]
+}

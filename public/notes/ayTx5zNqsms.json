@@ -1,0 +1,280 @@
+{
+ "video": "ayTx5zNqsms",
+ "label": "清大OCW 趙啟超《離散數學》第8A講 Relations",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "複習 partial order",
+   "points": [
+    {
+     "t": 4,
+     "text": "partial order：reflexive、antisymmetric、transitive；有順序，但不是所有都能排。"
+    },
+    {
+     "t": 64,
+     "text": "用 Hasse diagram 描述；例子：整除、⊆；寫成 a ≼ b。"
+    }
+   ],
+   "scene": "reA-8a-recap",
+   "cues": [
+    4.2,
+    7.6,
+    9.5,
+    34.7,
+    51.4,
+    64.2,
+    81.9,
+    102.7
+   ],
+   "explain": [
+    "複習 partial order：集合 A 上的一個 relation R，要滿足三個條件。",
+    "第一個：自己跟自己有關係，reflexive。",
+    "第二個：a R b 而且 b R a，就一定 a = b，叫 antisymmetric。",
+    "第三個：a R b、b R c 就有 a R c，transitive（遞移性）。",
+    "partial order 就是有一個順序，有前有後；但不是所有元素都能排，所以叫 partial。",
+    "上次講過可以用 Hasse diagram 畫出整個 partial order，例如 6 的因數在整除下的圖。",
+    "也介紹過兩個例子：自然數的整除關係、subset 之間的 ⊆ 關係。",
+    "之後都把 partial order 寫成 a ≼ b，不管實際的 relation 是什麼，看起來有「左小右大」的順序感。"
+   ]
+  },
+  {
+   "title": "total order",
+   "points": [
+    {
+     "t": 137,
+     "text": "total order：任何兩個元素都 comparable（a ≼ b 或 b ≼ a）。"
+    },
+    {
+     "t": 209,
+     "text": "整除不是 total order（2、3 不能比）；≤ 在 Z 上是 total order。"
+    },
+    {
+     "t": 345,
+     "text": "total order 的 Hasse diagram 是一條線；排名次需要 total order。"
+    }
+   ],
+   "trap": "total order 一定是 partial order，但 partial order 不一定是 total order。",
+   "scene": "reA-8a-total",
+   "cues": [
+    137.6,
+    156.6,
+    170.6,
+    200.4,
+    209.5,
+    250.5,
+    280.2,
+    297.6,
+    345,
+    359.5,
+    423.3
+   ],
+   "explain": [
+    "有一種特別的 partial order 叫 total order（全序），partial 這個名字其實就是相對它而來的。",
+    "total order 的條件：A 裡任何兩個元素都 comparable（可以比較）。",
+    "comparable 的意思是：a ≼ b 或 b ≼ a，至少一個成立。不是 a 排在前面，就是 b 排在前面。",
+    "一般的 partial order 不一定如此：拿兩個元素出來，可能兩邊都不成立。",
+    "例如整除：2 不整除 3，3 也不整除 2，2 和 3 不 comparable，所以整除不是 total order。",
+    "一個 total order 的例子：整數上的「小於等於」≤。",
+    "先確認 ≤ 是 partial order：a ≤ a；a ≤ b 且 b ≤ a 就 a = b；a ≤ b、b ≤ c 就 a ≤ c。",
+    "而且任何兩個整數都能比大小，所以 ≤ 在 Z 上是 total order。",
+    "total order 的 Hasse diagram 長什麼樣子？",
+    "因為任何兩個都能比，所有元素會排成一條直線往上，像排隊一樣（畫面是 Z 的一小段示意）。",
+    "老師提到：排名次 1、2、3…… 就是假設每個人都能比較，也就是 total order。一般的 partial order 就沒辦法這樣排成一列。"
+   ]
+  },
+  {
+   "title": "{1,2,3} 上有幾個 partial order？",
+   "points": [
+    {
+     "t": 446,
+     "text": "A = {1,2,3}：2⁹ = 512 個 relation 中有幾個 partial order？用 Hasse diagram 的形狀來數比較容易。"
+    },
+    {
+     "t": 574,
+     "text": "形狀：都不連 1、兩點連一點獨立 6、一下兩上 3、一上兩下 3、一條線 6。"
+    },
+    {
+     "t": 866,
+     "text": "共 1 + 6 + 3 + 3 + 6 = 19 個 partial order，其中一條線的 6 個是 total order。"
+    }
+   ],
+   "trap": "同一個形狀換標號不一定得到新的 partial order：三點都不連時怎麼標都是同一個（只有 1 個）。",
+   "scene": "reA-8a-count",
+   "cues": [
+    446,
+    457.1,
+    461.4,
+    476.9,
+    502.4,
+    532.3,
+    565.8,
+    574.6,
+    664.9,
+    710.1,
+    768.1,
+    794,
+    805.9,
+    850.3,
+    866.1,
+    881.4,
+    908.1
+   ],
+   "explain": [
+    "接著做 enumeration（數數目），這是離散數學很重要的部分。",
+    "集合 A = {1, 2, 3}。",
+    "A 上的 relation 是 A × A 的任何一個 subset，它不一定是 partial order，因為不一定滿足三個條件。",
+    "問題：所有 relation 裡，有幾個是 partial order？其中又有幾個是 total order？",
+    "方法一：A × A 有 9 個 pair，所以一共 2⁹ = 512 個 relation，一個一個檢查。做得出來，但很麻煩，不小心就漏掉。",
+    "方法二：一個 partial order 就對應一張 Hasse diagram，所以去數有幾種不同的 Hasse diagram 就好。",
+    "三個元素就是三個點，點之間有的連線、有的不連，看看可以有哪些形狀。",
+    "形狀一：三點都不連，只有 (1,1)、(2,2)、(3,3)。不管點怎麼標號都是同一個 relation，所以只有 1 個。",
+    "形狀二：兩個點連起來（一高一低），另一個點獨立。",
+    "獨立的點有 3 種選法，剩下兩點誰在上面有 2 種，所以 3 × 2 × 1 = 6 個。",
+    "形狀三：一點在下、兩點在上。選下面那點有 3 種；上面兩點對調是同一個，所以 3 個。",
+    "形狀四：反過來，一點在上、兩點在下，同樣 3 個。",
+    "形狀五：三點排成一條線，每種排法順序都不同，有 3! = 6 個。",
+    "沒有別的形狀了：有連線就一定一高一低，三個點只有這幾種可能。",
+    "加起來 1 + 6 + 3 + 3 + 6 = 19 個 partial order。畫面上程式把 512 個 relation 全部檢查，也是 19 個，每種形狀的個數也都對得上。",
+    "total order 的 Hasse diagram 一定是一條線，所以 19 個裡面有 6 個是 total order。",
+    "前面數 equivalence relation 時，也是換成數 partition。如果從 2⁹ 個 relation 硬挑，很容易出錯。"
+   ]
+  },
+  {
+   "title": "poset 與 totally ordered set",
+   "points": [
+    {
+     "t": 939,
+     "text": "集合 A 加上一個 partial order ≼，叫 partially ordered set，簡稱 poset。"
+    },
+    {
+     "t": 989,
+     "text": "若 ≼ 是 total order，叫 totally ordered set。"
+    }
+   ],
+   "scene": "reA-8a-poset",
+   "cues": [
+    939.9,
+    944.2,
+    959.8,
+    989.7,
+    1006.5
+   ],
+   "explain": [
+    "幾個名詞：假設集合 A 上定義了一個 partial order。",
+    "這個集合連同它的 partial order，叫 partially ordered set（偏序集）。",
+    "簡寫成 poset（P-O-S-E-T）。論文裡常看到「假設這是一個 poset」，表示結果對任何 partial order 都成立。",
+    "如果這個 order 是 total order，這個集合就叫 totally ordered set。",
+    "一般來說 order 不一定是 total，不見得任兩個都能比，像左邊整除的圖裡 2 和 3。"
+   ]
+  },
+  {
+   "title": "maximal 與 minimal element",
+   "points": [
+    {
+     "t": 1020,
+     "text": "在 poset 上，把 ≼ 左邊叫「小」、右邊叫「大」；x ≺ a 表示 x ≼ a 且 x ≠ a。"
+    },
+    {
+     "t": 1047,
+     "text": "maximal element：沒有 a 使 x ≺ a（沒有人比它大）；不等於「比所有人都大」。"
+    },
+    {
+     "t": 1154,
+     "text": "minimal element：沒有 a 使 a ≺ x（沒有人比它小）。"
+    }
+   ],
+   "trap": "maximal 可以不只一個；「沒有人比它大」不代表「它比所有人都大」，因為有些元素根本不能比。",
+   "scene": "reA-8a-maxmin",
+   "cues": [
+    1020.4,
+    1030,
+    1047.1,
+    1077.9,
+    1088.1,
+    1120,
+    1123.8,
+    1154.2,
+    1201.3
+   ],
+   "explain": [
+    "再來幾個衍生出來的名詞，它們都在 poset 上定義。",
+    "為了好講，把 a ≼ b 左邊的叫「小」、右邊的叫「大」。注意這只是說法，不一定真的是數字大小。",
+    "第一個名詞：maximal element（極大元素）。畫面用 {1,2,3} 加上整除當示意：1 在下面，2 和 3 在上面。",
+    "x 是 maximal 的意思是：沒有人比它大，也就是找不到 a 使 x ≺ a。（老師一開始口誤說成「比它小」，馬上更正了。）",
+    "x ≺ a 的意思是 x ≼ a 而且 x ≠ a，就是把 ≼ 下面那一橫拿掉，少寫幾個字。",
+    "這個例子裡 2 和 3 都是 maximal。但要小心：「沒有人比它大」跟「它比所有人都大」不是同一件事。",
+    "因為有些元素根本不能比：2 和 3 互不整除，所以 2 沒有比 3 大，3 也沒有比 2 大，沒有人「比所有人都大」。",
+    "反過來的叫 minimal element：沒有人比它小，找不到 a 使 a ≺ x。這個例子裡是 1。",
+    "整理：maximal 是沒有比它大的元素，minimal 是沒有比它小的元素。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "total order 比 partial order 多要求什麼？",
+   "opts": [
+    "symmetric",
+    "每個元素都有 loop",
+    "沒有 maximal element",
+    "任兩個元素都 comparable"
+   ],
+   "ans": "任兩個元素都 comparable",
+   "why": "a ≼ b 或 b ≼ a 一定有一個成立。"
+  },
+  {
+   "q": "{1,2,3} 上有幾個 partial order？",
+   "opts": [
+    "19",
+    "6",
+    "13",
+    "29"
+   ],
+   "ans": "19",
+   "why": "1 + 6 + 3 + 3 + 6 = 19。"
+  },
+  {
+   "q": "其中有幾個是 total order？",
+   "opts": [
+    "19",
+    "6",
+    "3",
+    "1"
+   ],
+   "ans": "6",
+   "why": "total order 的 Hasse diagram 是一條線，3! = 6。"
+  },
+  {
+   "q": "「兩點連、一點獨立」形狀的 partial order 有幾個？",
+   "opts": [
+    "2",
+    "1",
+    "6",
+    "3"
+   ],
+   "ans": "6",
+   "why": "獨立點 3 種 × 上下 2 種。"
+  },
+  {
+   "q": "poset 是什麼的簡寫？",
+   "opts": [
+    "positive set",
+    "power set",
+    "possible set",
+    "partially ordered set"
+   ],
+   "ans": "partially ordered set",
+   "why": "集合加上一個 partial order。"
+  },
+  {
+   "q": "{1,2,3} 在整除下的 maximal elements 是？",
+   "opts": [
+    "2 和 3",
+    "只有 3",
+    "只有 1",
+    "沒有"
+   ],
+   "ans": "2 和 3",
+   "why": "2、3 上面都沒有別人；它們互相不能比。"
+  }
+ ]
+}

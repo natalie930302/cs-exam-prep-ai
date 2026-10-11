@@ -1,0 +1,328 @@
+{
+ "video": "AqETkP2lPY4",
+ "label": "清大OCW 趙啟超《離散數學》第8B講 Relations",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "greatest 與 least element",
+   "points": [
+    {
+     "t": 4,
+     "text": "greatest element x：對所有 a ∈ A，a ≼ x（比所有人都大，必須跟所有人都能比）。"
+    },
+    {
+     "t": 35,
+     "text": "least element：對所有 a，x ≼ a。"
+    },
+    {
+     "t": 53,
+     "text": "greatest ≠ maximal、least ≠ minimal：maximal 只是「沒有人比它大」。"
+    }
+   ],
+   "trap": "greatest 若存在一定唯一，也是唯一的 maximal；但有 maximal 不代表有 greatest。",
+   "scene": "reA-8b-great",
+   "cues": [
+    4.2,
+    5.8,
+    7.2,
+    35.5,
+    52.8,
+    66.5,
+    82.4
+   ],
+   "explain": [
+    "前面講了 maximal 和 minimal，現在講 greatest element。",
+    "x 是 greatest element 的意思是：它比所有人都大，對 A 裡每一個 a，都有 a ≼ x。畫面還是用 {1,2,3} 加整除當示意。",
+    "所以有個先決條件：x 必須跟所有人都能比，才可能是 greatest。",
+    "反過來，least element 就是比所有人都小：對每一個 a，都有 x ≼ a。它也必須跟每個人都能比。",
+    "greatest 和 maximal 是不一樣的東西，問題就出在「能不能比」。",
+    "maximal 只說沒有人比它大，不代表它比所有人大。示意圖裡 2、3 都是 maximal，但它們互相不能比，所以沒有 greatest。",
+    "同理，minimal 和 least 也是不同的概念。"
+   ]
+  },
+  {
+   "title": "三個例子",
+   "points": [
+    {
+     "t": 85,
+     "text": "(a) 1–2–4–8 一條線：maximal = greatest = 8，minimal = least = 1（total order 時兩者一樣）。"
+    },
+    {
+     "t": 190,
+     "text": "(b) 2、3、5、7 都不連：全部都是 maximal 也都是 minimal，沒有 greatest、沒有 least。"
+    },
+    {
+     "t": 259,
+     "text": "(c) 9 個元素：maximal 12、385；minimal 2、3、5、7、11；沒有 greatest、least。"
+    },
+    {
+     "t": 354,
+     "text": "partial order 不是任兩個都能比，所以 maximal 不一定是 greatest。"
+    }
+   ],
+   "scene": "reA-8b-ex",
+   "cues": [
+    85.6,
+    92.4,
+    125.5,
+    139.1,
+    144.3,
+    151.5,
+    158.7,
+    164.3,
+    190.3,
+    208.6,
+    218,
+    229.9,
+    243.6,
+    258.8,
+    298,
+    310.7,
+    318.8,
+    332.4,
+    354.4
+   ],
+   "explain": [
+    "看三個 partial order 的例子，都用 Hasse diagram 畫。",
+    "(a) 是 1、2、4、8 排成一條線；(b) 是 2、3、5、7 四個點都不連；(c) 有九個元素。三張都是合法的 Hasse diagram。(c) 的連線是依老師說的答案重建成整除關係的示意。",
+    "對每個例子問四件事：哪些是 maximal、minimal、greatest、least？表格的每一列對應一個問題。",
+    "(a) 的 maximal：沒有人比它大的，就是最上面的 8。",
+    "(a) 的 minimal：沒有人比它小的，是最下面的 1。",
+    "(a) 的 greatest：比所有人都大的，還是 8，因為從 8 往下走得到每一個點。",
+    "(a) 的 least：比所有人都小的，是 1。",
+    "這個例子 maximal 和 greatest 一樣、minimal 和 least 一樣，因為它是 total order，所有人排成一列，大家都能比。",
+    "(b) 這個集合有四個元素，但只有自己跟自己有關係，四個點之間完全沒有連線。",
+    "(b) 的 maximal：每個點上面都沒有別人，所以四個全都是 maximal。",
+    "(b) 的 minimal：每個點下面也都沒有別人，所以 2、3、5、7 也全都是 minimal。",
+    "(b) 的 greatest：要從它往下走得到所有點，沒有任何一個點做得到，所以沒有 greatest。",
+    "(b) 的 least：要從它往上走得到所有點，也沒有，所以沒有 least。",
+    "(c) 這個集合有 9 個元素。",
+    "(c) 的 maximal：上面沒有別人的點，是 12 和 385。maximal 不一定只有一個。",
+    "(c) 的 minimal：下面沒有別人的點，是 2、3、5、7、11。",
+    "(c) 的 greatest：12 和 385 互相不能比，沒有一個點能往下走到全部，所以沒有 greatest。",
+    "(c) 的 least：也沒有任何一個點能往上走到全部，所以沒有 least。",
+    "重點：partial order 不是任兩個都能比，所以 maximal 不一定是 greatest。只有 total order（排成一列）時兩者才一定一樣。老師也提醒：世界上很多東西本來就不能比。"
+   ]
+  },
+  {
+   "title": "lower bound、upper bound、glb、lub",
+   "points": [
+    {
+     "t": 400,
+     "text": "B ⊆ A（A 是 poset）。x ∈ A 是 B 的 lower bound：對所有 b ∈ B，x ≼ b；upper bound 類似。"
+    },
+    {
+     "t": 460,
+     "text": "bound 不一定在 B 裡、也不一定只有一個。"
+    },
+    {
+     "t": 534,
+     "text": "glb（greatest lower bound）：本身是 lower bound，且比所有 lower bound 大；lub（least upper bound）：upper bound 中最小的。"
+    }
+   ],
+   "trap": "lower bound 要比 B 的「每一個」元素都小（而且要能比）；只比其中一個小不算。",
+   "scene": "reA-8b-bound",
+   "cues": [
+    400.4,
+    405.5,
+    421.2,
+    426.3,
+    460,
+    473.6,
+    484.5,
+    508.8,
+    534.6,
+    598.3
+   ],
+   "explain": [
+    "回到定義，再介紹幾個名詞。",
+    "設 A 是一個 poset，B 是 A 的一部分（subset）。畫面示意：A = 12 的因數、整除；B = {4, 6}（粉紅色）。",
+    "要定義 B 的 lower bound（下界）和 upper bound（上界）。",
+    "A 裡的元素 x 是 B 的 lower bound：x 比 B 裡每一個元素都小（x ≼ b）。這個例子裡 1 和 2 同時整除 4 和 6，所以 lower bound 是 {1, 2}（藍色）。",
+    "lower bound 不一定要在 B 裡面，只要在 A 裡就好。這裡 1、2 都不在 B 裡。",
+    "同理，y 是 B 的 upper bound：y 比 B 裡每一個都大。4 和 6 都整除 12，所以 upper bound 是 {12}（橘色）。",
+    "這表示 bound 必須跟 B 裡每個元素都 comparable。這只需要 partial order 就能定義，不用 total order。",
+    "lower bound 不一定只有一個，這裡就有 1 和 2 兩個。upper bound 也一樣可能有好幾個。",
+    "所有 lower bound 裡最大的那一個，叫 greatest lower bound（glb，最大下界）：它本身是 lower bound，又比其他所有 lower bound 都大。這裡 glb = 2。",
+    "反過來，所有 upper bound 裡最小的叫 least upper bound（lub，最小上界）。這裡 lub = 12。"
+   ]
+  },
+  {
+   "title": "例子：B = {1/n} 的 lub 與 glb",
+   "points": [
+    {
+     "t": 627,
+     "text": "A = Q、partial order ≤（其實是 total order），B = {1, 1/2, 1/3, …}。"
+    },
+    {
+     "t": 690,
+     "text": "lub(B) = 1（就在 B 裡）。"
+    },
+    {
+     "t": 746,
+     "text": "glb(B) = 0：任何 ε > 0 都有 1/n < ε，所以正數都不是 lower bound；0 不在 B 裡。"
+    },
+    {
+     "t": 860,
+     "text": "glb 又叫 infimum（inf），lub 又叫 supremum（sup）；只需要 partial order。"
+    }
+   ],
+   "trap": "glb、lub 不一定是 B 的元素（這裡 glb = 0 ∉ B），但一定是 A 的元素。",
+   "scene": "reA-8b-q",
+   "cues": [
+    627.7,
+    637.4,
+    645.4,
+    659.6,
+    682.9,
+    690.4,
+    709.1,
+    718.3,
+    745.8,
+    756.4,
+    763.4,
+    770.8,
+    799.6,
+    814.2,
+    860.6,
+    915.3
+   ],
+   "explain": [
+    "舉個例子：A 是所有有理數 Q。",
+    "有理數就是可以寫成分數的數。",
+    "partial order 用「小於等於」≤。其實任兩個有理數都能比大小，所以它是 total order。",
+    "B 是 A 的一部分：1、1/2、1/3、1/4、……一直下去，1/100、1/101……。數線上這些點越來越擠向 0。",
+    "我們最有興趣的是 B 的 lub 和 glb。",
+    "先問 lub（least upper bound，最小上界）是多少？",
+    "upper bound 要比 B 裡每一個數都大（≥）。",
+    "1 比 B 裡每一個都大，而且 1 本身就在 B 裡，任何比 1 小的數都不是 upper bound，所以 lub = 1。",
+    "glb 比較有趣。",
+    "glb 要比 B 裡所有元素都小（是 lower bound），而且是所有 lower bound 裡最大的。",
+    "答案是 0。學過微積分的極限就知道，1/n 會越來越接近 0。",
+    "為什麼不能是比 0 大的數？任何一個正數 ε，總能找到 n 使 1/n < ε。例如 ε = 0.05，取 n = 21，1/21 就比它小，所以 ε 不是 lower bound。",
+    "0 比每個 1/n 都小，而且比 0 大的數都不是 lower bound，所以 0 是最大的 lower bound：glb = 0。",
+    "注意 0 不在 B 裡面（每個 1/n 都大於 0）。lub 和 glb 不一定在 B 裡，但一定在大集合 A 裡，因為 partial order 是定義在 A 上。",
+    "數學上 glb 常叫 infimum（記作 inf），lub 叫 supremum（記作 sup）。",
+    "這些概念只要 partial order 就能定義，不需要 total order。"
+   ]
+  },
+  {
+   "title": "lattice",
+   "points": [
+    {
+     "t": 925,
+     "text": "poset 中任兩個元素都有 lub 和 glb，就叫 lattice。"
+    },
+    {
+     "t": 989,
+     "text": "(N, ≤)：lub = max、glb = min（如 2、3 → 3、2），是 lattice。"
+    },
+    {
+     "t": 1092,
+     "text": "(N, |)：lub = lcm、glb = gcd，也是 lattice（雖然不是 total order）。"
+    }
+   ],
+   "scene": "reA-8b-lattice",
+   "cues": [
+    925.6,
+    932,
+    941.1,
+    989.2,
+    1004.2,
+    1033.4,
+    1038.1,
+    1065.5,
+    1092.3,
+    1104.7,
+    1119.1,
+    1149,
+    1162.8,
+    1215.9
+   ],
+   "explain": [
+    "最後一個定義。",
+    "在一個 poset 裡，如果任何兩個元素 x、y 都有 least upper bound，也都有 greatest lower bound……",
+    "那這個 poset 就叫 lattice（格）。",
+    "例子一：自然數 N 加上 ≤。它其實是 total order。",
+    "兩個自然數的 lub：要找比兩個都大（≥）的數裡最小的，就是兩個裡比較大的那個，max(x, y)。",
+    "兩個自然數的 glb：就是兩個裡比較小的，min(x, y)。",
+    "例如 2 和 3：lub = 3、glb = 2。",
+    "任兩個自然數都找得到，所以 (N, ≤) 是 lattice。",
+    "例子二：還是自然數，但 partial order 換成整除。畫面用 12 的因數那一段當示意。",
+    "2 整除 4、3 整除 6，但不是任兩個數都有整除關係，所以它不是 total order。",
+    "兩個數的 lub：要找兩個數的公倍數，而且在整除順序下最小，就是最小公倍數 lcm。例如 4 和 6 的 lub 是 12。",
+    "glb：兩個數的公因數裡最大的，就是最大公因數 gcd。4 和 6 的 glb 是 2。",
+    "任兩個自然數都有 lcm 和 gcd，所以 (N, |) 也是 lattice。可見 lattice 不需要是 total order。",
+    "到這裡 relation 的部分就講完了：一般 relation 的定義、equivalence relation，還有 partial order。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "greatest element 和 maximal element 的差別是？",
+   "opts": [
+    "兩者完全相同",
+    "maximal 一定唯一",
+    "greatest 可以有很多個",
+    "greatest 要比所有元素都大；maximal 只要沒有元素比它大"
+   ],
+   "ans": "greatest 要比所有元素都大；maximal 只要沒有元素比它大",
+   "why": "有些元素不能比，所以 maximal 不一定比所有人大。"
+  },
+  {
+   "q": "Hasse diagram 是 2、3、5、7 四點都不連，greatest element 是？",
+   "opts": [
+    "沒有",
+    "7",
+    "2",
+    "全部"
+   ],
+   "ans": "沒有",
+   "why": "沒有一個點能往下走到所有點。"
+  },
+  {
+   "q": "B = {1, 1/2, 1/3, …} 在 (Q, ≤) 中的 glb 是？",
+   "opts": [
+    "不存在",
+    "0",
+    "1",
+    "1/2"
+   ],
+   "ans": "0",
+   "why": "任何正數都會被某個 1/n 超過；0 是最大的 lower bound。"
+  },
+  {
+   "q": "在 (N, |) 中，4 和 6 的 lub 是？",
+   "opts": [
+    "2",
+    "6",
+    "12",
+    "24"
+   ],
+   "ans": "12",
+   "why": "lub 是最小公倍數 lcm(4, 6) = 12。"
+  },
+  {
+   "q": "在 (N, |) 中，lub 和 glb 分別是？",
+   "opts": [
+    "max 和 min",
+    "gcd 和 lcm",
+    "乘積和 1",
+    "lcm 和 gcd"
+   ],
+   "ans": "lcm 和 gcd",
+   "why": "公倍數裡最小、公因數裡最大。"
+  },
+  {
+   "q": "lattice 的定義是？",
+   "opts": [
+    "任兩個元素都有 lub 和 glb 的 poset",
+    "任兩個元素都 comparable 的 poset",
+    "有 greatest element 的 poset",
+    "有限的 poset"
+   ],
+   "ans": "任兩個元素都有 lub 和 glb 的 poset",
+   "why": "(N, |) 不是 total order 但仍是 lattice。"
+  }
+ ]
+}

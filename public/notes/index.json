@@ -587,6 +587,12 @@
   "quiz": 6,
   "cued": true
  },
+ "AqETkP2lPY4": {
+  "label": "清大OCW 趙啟超《離散數學》第8B講 Relations",
+  "points": 17,
+  "quiz": 6,
+  "cued": true
+ },
  "ARvQcqJ_-NY": {
   "label": "Abdul Bari：Greedy Method - Introduction",
   "points": 17,
@@ -603,6 +609,12 @@
   "label": "交大彭文志 Lec19 Graph (2/4)",
   "points": 81,
   "quiz": 7,
+  "cued": true
+ },
+ "ayTx5zNqsms": {
+  "label": "清大OCW 趙啟超《離散數學》第8A講 Relations",
+  "points": 13,
+  "quiz": 6,
   "cued": true
  },
  "AzCFmDjYLXM": {
@@ -941,6 +953,12 @@
   "quiz": 6,
   "cued": false
  },
+ "EAvNAZUNDnw": {
+  "label": "清大OCW 趙啟超《離散數學》第6B講 Relations",
+  "points": 23,
+  "quiz": 6,
+  "cued": true
+ },
  "eCaXlAaN2uE": {
   "label": "MIT 6.006 L11：Integer Arithmetic, Karatsuba Multiplication",
   "points": 78,
@@ -1112,6 +1130,12 @@
  "ghXHy5y3EuE": {
   "label": "清大OCW 趙啟超《離散數學》第15D講 Generating Functions",
   "points": 6,
+  "quiz": 5,
+  "cued": true
+ },
+ "gK9BvMo2uCY": {
+  "label": "清大OCW 趙啟超《離散數學》第7B講 Relations",
+  "points": 11,
   "quiz": 5,
   "cued": true
  },
@@ -1469,6 +1493,12 @@
   "quiz": 6,
   "cued": true
  },
+ "lmgRzAA4ZbY": {
+  "label": "清大OCW 趙啟超《離散數學》第7C講 Relations",
+  "points": 14,
+  "quiz": 5,
+  "cued": true
+ },
  "LO5yHmkp5c4": {
   "label": "清大OCW 趙啟超《離散數學》第15A講 Generating Functions",
   "points": 13,
@@ -1581,6 +1611,12 @@
   "label": "MIT 6.006 Rec15：Shortest Paths",
   "points": 89,
   "quiz": 7,
+  "cued": true
+ },
+ "MvNiJbIxfu0": {
+  "label": "清大OCW 趙啟超《離散數學》第7A講 Relations",
+  "points": 17,
+  "quiz": 5,
   "cued": true
  },
  "mwN18xfwNhk": {
@@ -1850,6 +1886,12 @@
  "PdvGEI-P3-M": {
   "label": "Abdul Bari：Stack vs Heap",
   "points": 18,
+  "quiz": 6,
+  "cued": true
+ },
+ "PedAKD8Ybkk": {
+  "label": "清大OCW 趙啟超《離散數學》第6A講 Relations",
+  "points": 23,
   "quiz": 6,
   "cued": true
  },
@@ -2660,6 +2702,12 @@
  "zsQ-r279BbA": {
   "label": "清大OCW 趙啟超《離散數學》第4A講 Functions",
   "points": 27,
+  "quiz": 6,
+  "cued": true
+ },
+ "zuoCvi9f56Y": {
+  "label": "清大OCW 趙啟超《離散數學》第7D講 Relations",
+  "points": 15,
   "quiz": 6,
   "cued": true
  },

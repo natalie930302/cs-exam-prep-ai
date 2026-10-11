@@ -1,0 +1,280 @@
+{
+ "video": "lmgRzAA4ZbY",
+ "label": "清大OCW 趙啟超《離散數學》第7C講 Relations",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "複習：一一對應",
+   "points": [
+    {
+     "t": 3,
+     "text": "A 上所有 equivalence relations ↔ A 的所有 partitions；A 有限時兩邊數目一樣。"
+    }
+   ],
+   "scene": "reA-7c-recap",
+   "cues": [
+    3.8,
+    7.7
+   ],
+   "explain": [
+    "複習：集合 A 上所有 equivalence relation 構成的集合，和 A 的所有 partition 構成的集合，中間有一個 bijection（一對一對應）。",
+    "A 是有限集合時，兩邊的數目一樣多，所以不管從左邊算還是從右邊算，答案都相同。"
+   ]
+  },
+  {
+   "title": "三個元素的 partition：1 + 3 + 1 = 5",
+   "points": [
+    {
+     "t": 34,
+     "text": "|A| = 3：各自一塊 1 種、兩個一塊加一個 3 種、全部一塊 1 種，共 5 種 partition。"
+    },
+    {
+     "t": 125,
+     "text": "所以三個元素上的 equivalence relation 也是 5 個；把每一塊當成 equivalence class 就得到 relation。"
+    },
+    {
+     "t": 172,
+     "text": "四個元素的也可以慢慢數（答案 15）。"
+    }
+   ],
+   "trap": "{1,2}{3} 和 {3}{1,2} 是同一個 partition：塊的順序不重要。",
+   "scene": "reA-7c-count3",
+   "cues": [
+    34.3,
+    49.7,
+    59.6,
+    72,
+    96.2,
+    105.2,
+    113.2,
+    125.7,
+    144.3,
+    150.5,
+    171.9
+   ],
+   "explain": [
+    "看一個例子：A 有三個元素 {1,2,3}，它有幾種不同的 partition？",
+    "只要懂 partition 的定義，這只是數數的問題。",
+    "第一種情況：三個元素各自一塊，{1}{2}{3}。這種只有 1 種。",
+    "第二種：兩個在一塊、一個自己一塊。看是哪一個落單，有 3 種：{1,2}{3}、{1,3}{2}、{2,3}{1}。",
+    "第三種：三個全部在同一塊 {1,2,3}，也只有 1 種。",
+    "沒有別的分法了（不是三塊、就是兩塊、就是一塊），所以一共 1 + 3 + 1 = 5 種 partition。",
+    "這個答案只跟 A 有幾個元素有關，元素叫 1 2 3 還是 4 5 6 都一樣。",
+    "那三個元素的集合上有幾個 equivalence relation？直接數不好想，因為每個都要檢查三個條件。",
+    "但兩邊數目一樣，所以答案也是 5 個。畫面上用程式把 2⁹ = 512 個 relation 全部檢查，確實剛好 5 個是 equivalence relation。",
+    "對應的方法：把 partition 的每一塊當成一個 equivalence class。例如 {1,2}{3} 就對應 R = {(1,1),(1,2),(2,1),(2,2),(3,3)}。",
+    "四個元素的情況，慢慢分類數也不難，答案是 15 種（程式列舉）。"
+   ]
+  },
+  {
+   "title": "congruence modulo n 的 equivalence classes",
+   "points": [
+    {
+     "t": 232,
+     "text": "congruence modulo n（n ≥ 2，n = 1 沒意思）在 Z 上的 classes：x mod n 只可能是 0, 1, …, n − 1。"
+    },
+    {
+     "t": 322,
+     "text": "[0] = n 的倍數、[1] = 除以 n 餘 1、…、[n − 1]：一共 n 個 class。"
+    },
+    {
+     "t": 433,
+     "text": "這 n 個 class 構成 Z 的 partition；看 classes 就知道這個 relation 長什麼樣。"
+    }
+   ],
+   "scene": "reA-7c-modclass",
+   "cues": [
+    232.2,
+    243.1,
+    259.3,
+    284.6,
+    318.1,
+    322.6,
+    371.6,
+    401.7,
+    428,
+    433,
+    449.7
+   ],
+   "explain": [
+    "回來看 congruence modulo n：在所有整數 Z 上，它是一個 equivalence relation。",
+    "n 至少要是 2。如果 n = 1，任何整數除以 1 餘數都是 0，所有整數都互相有關係，就沒什麼意思了。",
+    "現在來看它的 equivalence class 到底是哪些。",
+    "a ≡ b 就是 a mod n = b mod n。而 x mod n 是餘數，只可能是 0、1、2，一直到 n − 1。",
+    "所以不同的 class 一共就有 n 個。畫面用 n = 3 當示意。",
+    "[0] 是所有跟 0 同餘的整數，也就是 n 的倍數：…, −2n, −n, 0, n, 2n, …，往左右兩邊一直延伸。n = 3 時就是 …, −6, −3, 0, 3, 6, 9, …。",
+    "[1] 是除以 n 餘 1 的那些整數，等於把 [0] 每個數都加 1。",
+    "再加 1 就是 [2]，一直到 [n − 1]。n = 3 時到 [2] 就結束了。",
+    "一共有 n 個 equivalence class：[0]、[1]、…、[n − 1]。",
+    "每一個整數都會落在其中某一個 class，全部合起來是 Z，彼此不重疊，所以它們是 Z 的一個 partition。",
+    "看這些 equivalence class（也就是看這個 partition），就等於看懂了這個 equivalence relation。"
+   ]
+  },
+  {
+   "title": "分班就是 partition",
+   "points": [
+    {
+     "t": 470,
+     "text": "大一分班：單雙號（mod 2）、3n／3n+1／3n+2（mod 3）都是把學生做 partition。"
+    }
+   ],
+   "scene": "reA-7c-class",
+   "cues": [
+    470.1,
+    487.7,
+    491.3,
+    513.4,
+    529.4
+   ],
+   "explain": [
+    "老師舉生活例子：以前大一班上人很多（174 人），必修課要分班。畫面用 12 個學號當示意。",
+    "常見分法是單雙號，其實就是看學號 mod 2 是 0 還是 1，分成兩班。",
+    "也有分三班的：學號是 3n、3n+1 還是 3n+2，也就是 mod 3 的結果是 0、1、2。",
+    "每個學生剛好被分到一班，班與班不重疊，所以分班就是一個 partition。",
+    "不同的課用不同的分法，所以這門課跟你同班的人，另一門課不一定同班。"
+   ]
+  },
+  {
+   "title": "等號是最強的 equivalence relation",
+   "points": [
+    {
+     "t": 538,
+     "text": "等號 = 是 equivalence relation（x = x；x = y ⇒ y = x；x = y、y = z ⇒ x = z）。"
+    },
+    {
+     "t": 579,
+     "text": "它是最強的 equivalence relation；一般的 equivalence 可以看成放鬆的等號。"
+    },
+    {
+     "t": 613,
+     "text": "等號的 equivalence class 只有自己：每一塊都是 singleton（只有一個元素的集合）。"
+    }
+   ],
+   "scene": "reA-7c-equal",
+   "cues": [
+    538.4,
+    554.3,
+    565.6,
+    579.5,
+    613.4,
+    642.3,
+    645.9,
+    684.9
+   ],
+   "explain": [
+    "再看另一個 equivalence relation：我們從小用的等號 =，英文叫 equality。",
+    "老師先宣稱：等號是一個 equivalence relation。",
+    "check 三個條件：x = x 沒問題；x = y 就有 y = x；x = y 且 y = z，就有 x = z。三個都成立。",
+    "等號可以說是「最強」的 equivalence relation，因為要完全相等。一般的 equivalence relation（像 mod n）比較寬鬆，可以想成放鬆版的等號。",
+    "那 x 的 equivalence class 是什麼？只有跟 x 相等的元素，也就是只有 x 自己。畫面用 A = {1,…,6} 示意。",
+    "所以等號對應的 partition，每一塊都只有一個元素。",
+    "只有一個元素的集合有個名字，叫 singleton。",
+    "equivalence relation 就講到這裡。它最主要的性質就是：equivalent 的元素聚成一個 class，不同 class 兩兩不相交。"
+   ]
+  },
+  {
+   "title": "partial order 的定義",
+   "points": [
+    {
+     "t": 701,
+     "text": "partial order（partial ordering）：reflexive、antisymmetric、transitive。"
+    },
+    {
+     "t": 794,
+     "text": "antisymmetric：a R b 且 b R a ⇒ a = b。"
+    },
+    {
+     "t": 837,
+     "text": "order 是排順序；partial 是只有部分元素能排順序。"
+    }
+   ],
+   "trap": "antisymmetric 不是「不 symmetric」：它只禁止兩個「不同」的元素互相有關係，(a, a) 是允許的。",
+   "scene": "reA-7c-po",
+   "cues": [
+    701.9,
+    717.1,
+    742.6,
+    747.1,
+    770.3,
+    785.8,
+    794.4,
+    821.6,
+    836.9,
+    864.2,
+    886.8,
+    902.3
+   ],
+   "explain": [
+    "接下來介紹另一種常見的 relation，叫 partial order（偏序）。",
+    "有些書叫 partial ordering，或 partial ordering relation，都是同一個東西。",
+    "它也要滿足三個條件。",
+    "第一個跟 equivalence relation 一樣：reflexive，自己跟自己有關係。",
+    "第三個也一樣：transitive，a R b、b R c 就有 a R c。",
+    "不一樣的是中間那個：equivalence 要 symmetric，partial order 要的是 antisymmetric（反對稱）。",
+    "antisymmetric 說：如果 a R b 而且 b R a，那 a 一定等於 b。也就是兩個「不同」的元素不能互相有關係，右邊小圖這種來回的箭頭是不允許的。",
+    "滿足 reflexive、antisymmetric、transitive 這三個條件的 relation，就叫 partial order。",
+    "名字的意思：order 是排順序，有前有後；partial 是「部分」，只有一部分元素可以排出順序。",
+    "既然是排順序，兩個不一樣的東西，不能 a 排在 b 前面、b 又排在 a 前面，那順序就亂了，所以要 antisymmetric。",
+    "a 在 b 前面、b 在 c 前面，那 a 就在 c 前面，這就是 transitive。",
+    "而 partial 的意思是：不是任何兩個元素都能排出前後，只有某些可以。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "三個元素的集合有幾種不同的 partition？",
+   "opts": [
+    "3",
+    "6",
+    "8",
+    "5"
+   ],
+   "ans": "5",
+   "why": "1 + 3 + 1 = 5。"
+  },
+  {
+   "q": "congruence modulo n 在 Z 上有幾個不同的 equivalence class？",
+   "opts": [
+    "n",
+    "n − 1",
+    "無限多個",
+    "2"
+   ],
+   "ans": "n",
+   "why": "[0]、[1]、…、[n − 1]。"
+  },
+  {
+   "q": "n = 3 時，[1] 包含下列哪個數？",
+   "opts": [
+    "3",
+    "−2",
+    "−1",
+    "0"
+   ],
+   "ans": "−2",
+   "why": "−2 mod 3 = 1。"
+  },
+  {
+   "q": "等號 = 的 equivalence class 是？",
+   "opts": [
+    "空集合",
+    "兩個元素的集合",
+    "singleton（只有自己）",
+    "整個集合"
+   ],
+   "ans": "singleton（只有自己）",
+   "why": "只有和 x 相等的元素，就是 x 自己。"
+  },
+  {
+   "q": "partial order 的三個條件是？",
+   "opts": [
+    "reflexive、symmetric、transitive",
+    "symmetric、antisymmetric、transitive",
+    "reflexive、symmetric、antisymmetric",
+    "reflexive、antisymmetric、transitive"
+   ],
+   "ans": "reflexive、antisymmetric、transitive",
+   "why": "中間把 symmetric 換成 antisymmetric。"
+  }
+ ]
+}

@@ -1,0 +1,215 @@
+{
+ "video": "gK9BvMo2uCY",
+ "label": "清大OCW 趙啟超《離散數學》第7B講 Relations",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "閒聊：Pi Day",
+   "points": [
+    {
+     "t": 4,
+     "text": "閒聊：3 月 14 日是 Pi Day，老師母校的學生會在半夜吃派慶祝。"
+    }
+   ],
+   "scene": null
+  },
+  {
+   "title": "不同的 equivalence classes 構成 partition",
+   "points": [
+    {
+     "t": 42,
+     "text": "把 pie 切成一塊塊、塊與塊交集為空，這就是 partition。"
+    },
+    {
+     "t": 62,
+     "text": "R 是 A 上的 equivalence relation ⇒ 不同的 equivalence classes 構成 A 的 partition（一樣的 class 只算一次）。"
+    },
+    {
+     "t": 152,
+     "text": "union = A 由性質 (a)；不同 class 交集為空由性質 (c)。"
+    }
+   ],
+   "scene": "reA-7b-class2part",
+   "cues": [
+    42.3,
+    50.4,
+    61.8,
+    86.3,
+    104.6,
+    115,
+    152,
+    169.4
+   ],
+   "explain": [
+    "把派切成一塊一塊，任兩塊之間沒有重疊（交集是空集合），這就是上一講的 partition。",
+    "那 partition 跟 equivalence class 有什麼關係？",
+    "假設在集合 A 上定義了一個 equivalence relation，就會有 equivalence classes。這裡還是用 A = {0,…,8}、mod 3 當示意。",
+    "結論：那些「不一樣的」equivalence classes，剛好構成 A 的一個 partition。",
+    "為什麼要說「不一樣的」？因為 [0]、[3]、[6] 其實是同一個集合 {0,3,6}，一樣的只算一次。這個例子只有 3 個不同的 class。",
+    "要證明它們是 partition，就要檢查兩件事：union 是 A，而且兩兩交集是空集合。",
+    "union 為什麼是 A？因為每個元素都在自己的 class 裡（性質 a），所以把所有 class 合起來，一個元素都不會漏。",
+    "不同的 class 交集為什麼是空的？性質 (c) 說 class 不是一樣就是 disjoint；既然拿的是不一樣的，就一定 disjoint。"
+   ]
+  },
+  {
+   "title": "反過來：由 partition 定義 equivalence relation",
+   "points": [
+    {
+     "t": 183,
+     "text": "反過來，給一個 partition {Aᵢ}，定義 x R y ⇔ x、y 在同一個 Aᵢ。"
+    },
+    {
+     "t": 292,
+     "text": "這樣定義的 R 是 equivalence relation，只要證三個條件。"
+    }
+   ],
+   "scene": "reA-7b-part2rel",
+   "cues": [
+    183.7,
+    222.9,
+    248.8,
+    293,
+    336.1
+   ],
+   "explain": [
+    "剛才的方向是：先有 equivalence relation，它的 classes 就是一個 partition。",
+    "現在反過來：先給一個 partition。畫面上是示意：A = {1,…,6} 切成 A₁ = {1,2}、A₂ = {3,4,5}、A₃ = {6}。",
+    "定義 relation：兩個元素在同一塊，就說它們有關係。這個例子的 pair 個數是 2² + 3² + 1² = 14（同一塊裡任兩個都能配，包括自己配自己）。",
+    "這樣定義出來的 relation，會是一個 equivalence relation。",
+    "要證明它是 equivalence relation，只要檢查 reflexive、symmetric、transitive 三個條件。"
+   ]
+  },
+  {
+   "title": "證明「同一塊」是 equivalence relation",
+   "points": [
+    {
+     "t": 349,
+     "text": "reflexive：自己跟自己在同一塊；symmetric：x、y 同塊 ⇒ y、x 同塊。"
+    },
+    {
+     "t": 429,
+     "text": "transitive：x、y ∈ Aᵢ，y、z ∈ Aⱼ ⇒ y ∈ Aᵢ ∩ Aⱼ ⇒ Aᵢ = Aⱼ（否則違反 partition）⇒ x、z 同塊。"
+    }
+   ],
+   "trap": "transitive 的關鍵是 partition 的「不同塊交集為空」：y 同時在兩塊，兩塊就一定是同一塊。",
+   "scene": "reA-7b-proof",
+   "cues": [
+    349.4,
+    380.7,
+    429.1,
+    480.9,
+    506,
+    519.5,
+    539.6
+   ],
+   "explain": [
+    "反身性：x 跟自己當然在同一塊，所以每個元素都有 loop。",
+    "對稱性：x 跟 y 在同一塊，那 y 跟 x 當然也在同一塊，只是把話反過來說一次。",
+    "遞移性：假設 x、y 在某一塊 Aᵢ，y、z 在某一塊 Aⱼ。一開始不能直接說 Aᵢ 和 Aⱼ 是同一塊。",
+    "但 y 同時在 Aᵢ 和 Aⱼ 裡，所以它們的交集不是空的。",
+    "partition 規定不同塊的交集一定是空的，所以 Aᵢ 和 Aⱼ 只能是同一塊，否則就矛盾。",
+    "既然是同一塊，x 和 z 都在 Aᵢ 裡，所以 x R z，遞移性成立。",
+    "三個條件都證完，這個 relation 是 equivalence relation。畫面上也用程式檢查了示意例子。"
+   ]
+  },
+  {
+   "title": "equivalence relations ↔ partitions 一一對應",
+   "points": [
+    {
+     "t": 550,
+     "text": "equivalence relation → classes 是 partition；partition →「同一塊」是 equivalence relation。"
+    },
+    {
+     "t": 591,
+     "text": "A 上所有 equivalence relations 的集合與 A 的所有 partitions 的集合之間有 bijection（one-to-one correspondence）。"
+    },
+    {
+     "t": 691,
+     "text": "A 有限時兩邊個數相同：要數 equivalence relations，可以改數 partitions。"
+    }
+   ],
+   "scene": "reA-7b-bij",
+   "cues": [
+    550.7,
+    562.6,
+    569.2,
+    590.9,
+    611.8,
+    646.9,
+    666.2,
+    690.8,
+    735,
+    775.9
+   ],
+   "explain": [
+    "把前面兩個性質放在一起看。",
+    "方向一：有一個 equivalence relation，它的 equivalence classes 就是一個 partition。",
+    "方向二：有一個 partition，「在同一塊」就是一個 equivalence relation。",
+    "這兩個方向剛好互相還原，所以兩者之間是一對一的對應，叫 one-to-one correspondence，也叫 bijection（對射）。",
+    "左邊這個大集合：A 上「所有」可能的 equivalence relations。A 是有限集合時，它也只有有限多個。這裡用 A = {1,2,3} 示意。",
+    "右邊這個大集合：A 的所有不同的 partitions，也是有限多個。",
+    "兩邊之間有一個 bijection：左邊每一個 relation 對到右邊一個 partition，反過來也一樣，一個對一個。",
+    "兩個有限集合之間有 bijection，元素個數就一定一樣多。A = {1,2,3} 時兩邊都是 5 個。",
+    "這很有用：如果要數 A 上有幾個 equivalence relation，可以改去數 partition，通常比較好數。",
+    "例如四個元素的集合，就去數它有幾種 partition。程式算出來兩邊都是 15 個。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "A = {0,…,8}、R 為 mod 3 同餘，有幾個「不同的」equivalence class？",
+   "opts": [
+    "9",
+    "1",
+    "27",
+    "3"
+   ],
+   "ans": "3",
+   "why": "[0]、[1]、[2]，其他都和它們重複。"
+  },
+  {
+   "q": "partition {1,2}、{3,4,5}、{6} 定義的 equivalence relation 有幾個 ordered pair？",
+   "opts": [
+    "14",
+    "6",
+    "9",
+    "36"
+   ],
+   "ans": "14",
+   "why": "2² + 3² + 1² = 4 + 9 + 1 = 14。"
+  },
+  {
+   "q": "證明「同一塊」relation 是 transitive 時，關鍵用到 partition 的哪個條件？",
+   "opts": [
+    "每塊大小一樣",
+    "不同塊交集為空",
+    "每塊都不是空集合",
+    "union 是 A"
+   ],
+   "ans": "不同塊交集為空",
+   "why": "y 同時在 Aᵢ、Aⱼ，兩塊交集不空，只能是同一塊。"
+  },
+  {
+   "q": "A 有限時，A 上 equivalence relations 的個數等於？",
+   "opts": [
+    "|A|!",
+    "|A|²",
+    "A 的 partitions 個數",
+    "2^|A|"
+   ],
+   "ans": "A 的 partitions 個數",
+   "why": "兩者之間有 bijection。"
+  },
+  {
+   "q": "4 個元素的集合上有幾個 equivalence relation？",
+   "opts": [
+    "16",
+    "24",
+    "5",
+    "15"
+   ],
+   "ans": "15",
+   "why": "等於 4 個元素的 partition 個數 15。"
+  }
+ ]
+}
