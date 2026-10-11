@@ -1,0 +1,269 @@
+{
+ "video": "_ArgZzfH7aw",
+ "label": "清大OCW 趙啟超《離散數學》第26B講 Trees",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Merge sort 的 worst case：n log₂ n − n + 1",
+   "points": [
+    {
+     "t": 4,
+     "text": "level h：2ʰ⁻¹ 對，每對 2⁰ + 2⁰ − 1 = 1 次，共 2ʰ − 2ʰ⁻¹。"
+    },
+    {
+     "t": 176,
+     "text": "level k：每對兩個 sublist 各 2ʰ⁻ᵏ 個，最多 2ʰ⁻ᵏ⁺¹ − 1 次；乘 2ᵏ⁻¹ 對 = 2ʰ − 2ᵏ⁻¹。"
+    },
+    {
+     "t": 368,
+     "text": "全部 Σₖ₌₁ʰ(2ʰ − 2ᵏ⁻¹) = h·2ʰ − (2ʰ − 1)。"
+    },
+    {
+     "t": 484,
+     "text": "代 n = 2ʰ、h = log₂ n：n log₂ n − n + 1 = O(n log n)。"
+    },
+    {
+     "t": 632,
+     "text": "比 bubble、insertion sort 的 O(n²) 好：每層 O(n)，但只有 log n 層。"
+    }
+   ],
+   "trap": "log 的底在 Big-O 裡不重要（換底只差常數倍）；但精確式子 n log₂ n − n + 1 的底是 2。",
+   "scene": "g8c-ms-count",
+   "cues": [
+    4,
+    68.7,
+    124.4,
+    176,
+    214.6,
+    243,
+    368,
+    428,
+    457.7,
+    484.1,
+    584.4,
+    603,
+    632,
+    741.2,
+    766
+   ],
+   "explain": [
+    "接著算比較次數。先看最下面 level h：有 2ʰ⁻¹ 對，每片葉子只有一個元素。",
+    "每一對要 merge 兩個各有 2⁰ 個元素的 sublist，最多 n₁ + n₂ − 1 = 2⁰ + 2⁰ − 1 = 2¹ − 1 次。",
+    "2ʰ⁻¹ 對 × (2¹ − 1) 次，乘開是 2ʰ − 2ʰ⁻¹。h = 3 時是 4 次。",
+    "再算一般的 level k（k 從 1 到 h），從下面一層一層 merge 回來，每層都要算。",
+    "level k 的每一對，兩個 sublist 各有 2ʰ⁻ᵏ 個元素，最多要比 2ʰ⁻ᵏ + 2ʰ⁻ᵏ − 1 = 2ʰ⁻ᵏ⁺¹ − 1 次。",
+    "再乘上 2ᵏ⁻¹ 對：2ᵏ⁻¹ × 2ʰ⁻ᵏ⁺¹ 的指數 k 剛好消掉變成 2ʰ，所以 level k 要 2ʰ − 2ᵏ⁻¹ 次。",
+    "全部的比較次數就是把每一層加起來：Σ（k = 1 到 h）(2ʰ − 2ᵏ⁻¹)。右邊列出 h = 3 時每層 7、6、4 次。",
+    "拆成兩塊算：前面 2ʰ 是常數，加 h 次就是 h·2ʰ；後面是 1 + 2 + … + 2ʰ⁻¹。",
+    "後面是等比級數，和是 2ʰ − 1。所以總共 h·2ʰ − 2ʰ + 1。h = 3：24 − 8 + 1 = 17，和 7 + 6 + 4 相同。",
+    "用 n 表示：n = 2ʰ，所以 h = log₂ n，總數是 n log₂ n − n + 1。舞台上用遞迴式驗證 n = 2 到 1024 都對。",
+    "n 很大時 n log n 那項最大，所以 merge sort 最多的比較次數是 O(n log n)。",
+    "Big-O 裡 log 的底寫不寫都一樣：換底只會多乘一個常數，常數在 Big-O 裡可以拿掉。",
+    "對比：bubble、insertion sort 都是 O(n²)。n log n 除以 n² 在 n 趨近無限大時趨近 0，所以 n log n 長得慢很多。",
+    "好在哪裡？每一層的比較次數 2ʰ − 2ᵏ⁻¹ 都小於 n，也就是每層 O(n)。",
+    "但 tree 的高度和葉子數是 log 的關係：只有 log₂ n 層。O(n) × log n = O(n log n)。這就是用 tree 的好處。"
+   ]
+  },
+  {
+   "title": "Shortest path problem 的設定",
+   "points": [
+    {
+     "t": 799,
+     "text": "（merge sort 告一段落。）"
+    },
+    {
+     "t": 814,
+     "text": "graph 的 optimization 問題：shortest path problem。"
+    },
+    {
+     "t": 866,
+     "text": "給 undirected connected simple graph，每個 edge {u, v} 有 weight w(u, v) > 0；沒有邊就設 ∞。"
+    },
+    {
+     "t": 992,
+     "text": "例：A–F 的 weighted graph，如 w(B, C) = 5、w(C, E) = 4。"
+    }
+   ],
+   "scene": "g8c-sp-setup",
+   "cues": [
+    814.5,
+    818.8,
+    866,
+    888,
+    929,
+    945.4,
+    992,
+    1008,
+    1025
+   ],
+   "explain": [
+    "新主題：graph 上的 optimization（最佳化）問題。",
+    "第一個問題叫 shortest path problem，最短路徑問題。",
+    "問題的設定：給一個 undirected（沒有方向）、connected（任兩點都有 path 相連，也就是只有一個 component）的 simple graph。",
+    "每一條 edge 上有一個 weight（權重），都是大於 0 的數。",
+    "如果 {u, v} 是 edge set E 裡的邊，它的 weight 記成 w(u, v)，是正數。",
+    "如果兩點之間沒有邊，就把 weight 設成無限大（∞）；因為我們找最小的，∞ 一定不會被選到。",
+    "舉例：一個 connected simple graph，有六個端點 A 到 F。",
+    "每條 edge 加上 weight，就變成 weighted simple graph。老師唸出的數字是 3 9 7 5 2 4 6 8 1 5；其中黃色的四個在投影片上對應哪條邊看不清楚，是示意。",
+    "例如 BC 這條邊的 weight 是 5，CE 是 4。"
+   ]
+  },
+  {
+   "title": "Path 的 weight",
+   "points": [
+    {
+     "t": 1052,
+     "text": "path 的 weight = 它所有 edge 的 weight 總和。"
+    },
+    {
+     "t": 1123,
+     "text": "A D C B F：7 + 2 + 5 + 8 = 22；A D F：7 + 5 = 12 比較小。"
+    },
+    {
+     "t": 1223,
+     "text": "shortest path problem：在某兩點間所有 path 中找 weight 最小的。"
+    }
+   ],
+   "scene": "g8c-sp-path",
+   "cues": [
+    1052.6,
+    1084.6,
+    1123,
+    1143.1,
+    1173.1,
+    1192.2,
+    1213,
+    1223.2,
+    1288.5
+   ],
+   "explain": [
+    "每條 edge 有了 weight，就可以定義一條 path（路徑）的 weight。",
+    "path 會經過好幾條 edge，把這些 edge 的 weight 加起來，就是這條 path 的 weight（sum of the weights of its edges）。",
+    "例子：path A D C B F。只要講出端點的順序，就知道走哪些邊：A→D、D→C、C→B、B→F。",
+    "它的 weight = w(A,D) + w(D,C) + w(C,B) + w(B,F)。",
+    "= 7 + 2 + 5 + 8 = 22。這是一條從 A 到 F、weight 22 的 path。",
+    "但 A 到 F 不只一條路。例如 A D F：7 + 5 = 12，比剛才小。",
+    "A C E F、A B E F 也都是 A 到 F 的 path，到 F 的路有很多很多條。",
+    "我們要找的是：從某個點到另一個點的所有 path 裡，weight 最小的那一條。這就是 shortest path problem。",
+    "把 weight 想成距離，就是「最短路徑」；在不同應用裡，weight 也可以是別的量（metric），例如時間或成本。"
+   ]
+  },
+  {
+   "title": "Principle of optimality",
+   "points": [
+    {
+     "t": 1309,
+     "text": "暴力列出所有 path 再比，path 太多、複雜度太大。"
+    },
+    {
+     "t": 1378,
+     "text": "principle of optimality：A 到 B 的最短路徑 P 經過 C，則 A 到 C 那段 P₁ 也是 A 到 C 的最短路徑。"
+    },
+    {
+     "t": 1625,
+     "text": "反證：若有更短的 P₁′，走 P₁′ 再接 P₂ 就比 P 短，矛盾。"
+    },
+    {
+     "t": 1753,
+     "text": "例：台北到新竹的最短路經過桃園，台北到桃園那段也最短；所以只需保留到中間點的最短路徑 → 下次 Dijkstra algorithm。"
+    }
+   ],
+   "trap": "principle of optimality 說的是「最短路徑的一段也是最短的」；反過來「把兩段最短路接起來一定最短」並不成立。",
+   "scene": "g8c-sp-opt",
+   "cues": [
+    1309.4,
+    1342.4,
+    1378.6,
+    1406.1,
+    1437.1,
+    1532.4,
+    1625.6,
+    1691,
+    1753.7,
+    1784,
+    1816.5
+   ],
+   "explain": [
+    "怎麼找最短路徑？有一個很簡單、很好理解的原理。",
+    "這是最佳化問題。最笨的方法：把所有 path 都找出來、weight 加一加再比。圖是有限的，path 數也有限，但可能非常非常多，複雜度太大。",
+    "要把複雜度降下來，就用 principle of optimality（最佳化原理）。",
+    "假設 P 是從 A 到 B 的最短路徑，而且 P 中間經過某一點 C（任何中間點都可以）。",
+    "把 P 分成兩段：A 到 C 那段叫 P₁，C 到 B 那段叫 P₂。舞台上的數字是示意：P₁ = 10、P₂ = 8、P = 18。",
+    "原理說：P₁ 一定是所有從 A 到 C 的 path 裡最短的那一條。",
+    "為什麼？用反證法。假設有另一條 P₁′ 從 A 到 C，比 P₁ 還短（示意 7）。那到 C 為什麼還要走 P₁？",
+    "改走 P₁′ 再接 P₂：7 + 8 = 15 < 18，比 P 還短，跟「P 是最短的」矛盾。所以 P₁ 一定最短。",
+    "生活例子：台北到新竹的最短路如果經過桃園，那台北到桃園這段一定也是台北到桃園最短的路，不然換那條更短的就好了。",
+    "所以從起點到某個中間點，只要保留最短的那條就好，其他的不可能成為最短路徑的一部分，可以全部丟掉——複雜度就降很多。",
+    "下次介紹的 Dijkstra algorithm，就是用這個原理來找最短路徑。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "n = 8 時，merge sort 最多比較幾次？",
+   "opts": [
+    "17",
+    "24",
+    "28",
+    "7"
+   ],
+   "ans": "17",
+   "why": "n log₂ n − n + 1 = 24 − 8 + 1 = 17。"
+  },
+  {
+   "q": "merge sort 的 worst-case 比較次數是？",
+   "opts": [
+    "O(n log n)",
+    "O(n²)",
+    "O(n)",
+    "O(log n)"
+   ],
+   "ans": "O(n log n)",
+   "why": "每層 O(n)，共 log₂ n 層。"
+  },
+  {
+   "q": "n = 2ʰ 時，level k merge 回來最多要比幾次？",
+   "opts": [
+    "2ʰ − 2ᵏ⁻¹",
+    "2ʰ⁻ᵏ⁺¹ − 1",
+    "2ᵏ⁻¹",
+    "h·2ʰ"
+   ],
+   "ans": "2ʰ − 2ᵏ⁻¹",
+   "why": "2ᵏ⁻¹ 對 × (2ʰ⁻ᵏ⁺¹ − 1) 次。"
+  },
+  {
+   "q": "例題中 path A D C B F 的 weight 是？",
+   "opts": [
+    "22",
+    "12",
+    "20",
+    "24"
+   ],
+   "ans": "22",
+   "why": "7 + 2 + 5 + 8 = 22。"
+  },
+  {
+   "q": "shortest path problem 中，兩點之間沒有 edge 時 weight 設成？",
+   "opts": [
+    "∞",
+    "0",
+    "−1",
+    "1"
+   ],
+   "ans": "∞",
+   "why": "找最小時就一定不會選到。"
+  },
+  {
+   "q": "P 是 A 到 B 的最短路徑且經過 C，principle of optimality 保證什麼？",
+   "opts": [
+    "P 中 A 到 C 那段是 A 到 C 的最短路徑",
+    "C 到 B 的最短路徑一定經過 A",
+    "A 到 C 只有一條 path",
+    "P 的每條邊 weight 都相同"
+   ],
+   "ans": "P 中 A 到 C 那段是 A 到 C 的最短路徑",
+   "why": "若有更短的，接上 P₂ 就比 P 短，矛盾。"
+  }
+ ]
+}

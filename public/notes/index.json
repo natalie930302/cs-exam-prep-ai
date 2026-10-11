@@ -11,6 +11,12 @@
   "quiz": 8,
   "cued": true
  },
+ "-1gpdgE3Tig": {
+  "label": "清大OCW 趙啟超《離散數學》第26A講 Trees",
+  "points": 14,
+  "quiz": 5,
+  "cued": true
+ },
  "-b2lciNd2L4": {
   "label": "Binary Tree Traversals（Inorder, Preorder, Postorder）",
   "points": 22,
@@ -593,6 +599,12 @@
   "quiz": 7,
   "cued": true
  },
+ "AzCFmDjYLXM": {
+  "label": "清大OCW 趙啟超《離散數學》第25D講 Trees",
+  "points": 14,
+  "quiz": 5,
+  "cued": true
+ },
  "aZjYr87r1b8": {
   "label": "Abdul Bari：B Trees and B+ Trees",
   "points": 103,
@@ -1157,6 +1169,12 @@
   "quiz": 7,
   "cued": true
  },
+ "HxJ9nxLsGM8": {
+  "label": "清大OCW 趙啟超《離散數學》第25B講 Trees",
+  "points": 14,
+  "quiz": 5,
+  "cued": true
+ },
  "hXwxLgEOp-U": {
   "label": "交大彭文志 Lec22 Sorting",
   "points": 220,
@@ -1619,6 +1637,12 @@
   "quiz": 6,
   "cued": true
  },
+ "OOQOvGDi_0w": {
+  "label": "清大OCW 趙啟超《離散數學》第25C講 Trees",
+  "points": 20,
+  "quiz": 6,
+  "cued": true
+ },
  "OQ5jsbhAv_M": {
   "label": "MIT 6.006 L11：DP I",
   "points": 69,
@@ -1743,6 +1767,12 @@
   "label": "Paging in Operating Systems with Example & Working",
   "points": 13,
   "quiz": 5,
+  "cued": true
+ },
+ "ppLCIhAnxfI": {
+  "label": "清大OCW 趙啟超《離散數學》第25A講 Trees",
+  "points": 16,
+  "quiz": 6,
   "cued": true
  },
  "pPMMUa8guTE": {
@@ -2522,6 +2552,12 @@
  "ZZqiVUT8EWI": {
   "label": "清大OCW 趙啟超《離散數學》第11C+D講 Principle of Inclusion and Exclusion",
   "points": 40,
+  "quiz": 6,
+  "cued": true
+ },
+ "_ArgZzfH7aw": {
+  "label": "清大OCW 趙啟超《離散數學》第26B講 Trees",
+  "points": 16,
   "quiz": 6,
   "cued": true
  },

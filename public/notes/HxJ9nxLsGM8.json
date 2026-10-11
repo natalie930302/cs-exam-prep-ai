@@ -1,0 +1,238 @@
+{
+ "video": "HxJ9nxLsGM8",
+ "label": "清大OCW 趙啟超《離散數學》第25B講 Trees",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Spanning tree 的例子",
+   "points": [
+    {
+     "t": 44,
+     "text": "原來的圖 G 有 8 個端點、很多邊（舞台用示意圖）；要找 T：G 的 subgraph、是 tree、包含所有端點。"
+    },
+    {
+     "t": 118,
+     "text": "檢查：T 的邊都在 G 裡、connected 且沒有 cycle、8 個端點都在（7 條邊）。"
+    },
+    {
+     "t": 157,
+     "text": "spanning tree 通常不唯一：邊取法不同就得到不同的 tree。"
+    }
+   ],
+   "scene": "g8c-span-ex",
+   "cues": [
+    44.6,
+    58.6,
+    66.1,
+    113.9,
+    118.1,
+    129.5,
+    137.5,
+    157.5
+   ],
+   "explain": [
+    "看一個例子：圖 G 有 8 個端點、好多邊。投影片上的圖看不到，舞台上用一張示意圖。",
+    "要找它的 spanning tree：一個 tree，而且是 G 的 subgraph（只用 G 裡有的邊）。",
+    "而且這個 tree 要包含所有端點——8 個點一個都不能少。",
+    "例如金色這組邊，就是 G 的一個 spanning tree，叫 T。",
+    "檢查一：T 的每條邊都是 G 的邊，所以 T 是 G 的 subgraph，沒有偷加邊。",
+    "檢查二：tree 的定義是 connected graph without cycles——T 連通而且沒有 cycle。",
+    "檢查三：spanning——8 個端點全部在 T 裡。8 個點的 tree 剛好 7 條邊。",
+    "換一種取法（藍色）也是 spanning tree。所以 spanning tree 通常不只一個，看你怎麼挑邊。"
+   ]
+  },
+  {
+   "title": "DFS：depth-first search",
+   "points": [
+    {
+     "t": 178,
+     "text": "兩個建 spanning tree 的演算法：深度先 DFS、廣度先 BFS。"
+    },
+    {
+     "t": 209,
+     "text": "先把端點排順序 v₁…vₙ；有多個選擇時照這個順序，避免 ambiguity。"
+    },
+    {
+     "t": 373,
+     "text": "DFS：T ← {v₁}，執行 visit(v₁)。"
+    },
+    {
+     "t": 447,
+     "text": "visit(v)：對每個與 v 相鄰、不在 T 的 w，把 w 和 {v, w} 加進 T，再 visit(w)（recursive）。"
+    },
+    {
+     "t": 608,
+     "text": "能往下就一直往下；走不下去就回到上一層再找。"
+    },
+    {
+     "t": 639,
+     "text": "每次加入的端點都不在 T 裡，所以不會產生 cycle；最後得到 spanning tree。"
+    }
+   ],
+   "trap": "DFS 加邊時新端點一定「不在 T 裡」——這正是它永遠不會造出 cycle 的原因。",
+   "scene": "g8c-dfs-code",
+   "cues": [
+    178,
+    195.6,
+    209.1,
+    238.6,
+    293.3,
+    323,
+    373,
+    410.4,
+    447.2,
+    477,
+    521.2,
+    585.5,
+    593.4,
+    608.2,
+    618.6,
+    639.6,
+    667,
+    686,
+    746
+   ],
+   "explain": [
+    "接下來介紹兩個演算法，用來找 spanning tree。找法其實很多種。",
+    "兩個演算法的差別：深度優先（往下鑽）還是廣度優先（往旁邊擴）。",
+    "在開始之前，先把圖 G 的端點排一個順序（舞台上是示意圖）。",
+    "端點編成 v₁ 到 vₙ（這裡 a 到 h）。執行時如果有好幾個可以選，就照這個順序選，這樣結果才唯一、沒有 ambiguity。",
+    "第一個演算法：depth-first search，簡稱 DFS。depth 是「深度」。",
+    "這是 DFS 的 pseudocode：主程式兩行，再加一個副程式 visit。",
+    "一開始 T 只有一個端點 v₁。其實從哪個點開始都可以，這裡照順序用 v₁ = a。",
+    "主程式接著執行 visit(v₁)；它做完回來，整個演算法就結束了。",
+    "重點在副程式 visit(v)。它會 call 它自己，是 recursive（遞迴）的。",
+    "visit(v) 做的事：找每一個跟 v 有邊相連、而且還不在 T 裡的端點 w。已經在 T 裡的就不用管。",
+    "找到 w 就把 w 和邊 {v, w} 加進 T。這裡 a 的鄰居照順序是 b，就加入邊 {a, b}。",
+    "加完立刻 visit(w)：從 b 出發再找還不在 T 裡的鄰居，找到 c。",
+    "能往下就一直往下：c → d → h。",
+    "這就是 depth-first（深度先）：先往深的地方走到底。",
+    "走到 h 時，它的鄰居都已經在 tree 裡了；這時再加邊就會造成 cycle，所以不能加。",
+    "為什麼 DFS 永遠不會產生 cycle？因為每次加的那個新端點都不在 T 裡。一開始是 tree，每一步還是 tree——用歸納法，最後也是 tree。",
+    "走不下去時，procedure 就回到剛才呼叫它的地方（上一層）：h → d → c，繼續找下一個還沒處理的鄰居。",
+    "從 c 再往下：c → g → f → e。沒有了再回來、再往下……",
+    "全部處理完回到 v₁ 就結束。每個端點都進了 T，邊也都是 G 的邊，所以得到 G 的一個 spanning tree。"
+   ]
+  },
+  {
+   "title": "BFS：breadth-first search",
+   "points": [
+    {
+     "t": 760,
+     "text": "BFS 除了 T，還用一個 queue L 存「走到了但還沒處理」的端點。"
+    },
+    {
+     "t": 854,
+     "text": "queue：First In First Out，像排隊；stack 是先進後出。"
+    },
+    {
+     "t": 961,
+     "text": "先把 v₁ 放進 L；L 不空時拿出第一個 v，把相鄰、不在 L 也不在 T 的 w 加到 L 尾巴、邊 {v, w} 加進 T。"
+    },
+    {
+     "t": 1189,
+     "text": "一層一層長：level 1 全部長完才長 level 2，讓每個端點的 level 盡量小。"
+    },
+    {
+     "t": 1258,
+     "text": "還有其他方法，例如邊上有 weight 的 minimal spanning tree，之後再講。"
+    }
+   ],
+   "trap": "BFS 的 L 是 queue（FIFO），不是 stack；用 stack（先進後出）的話，走法就不再是一層一層了。",
+   "scene": "g8c-bfs-code",
+   "cues": [
+    760.1,
+    803.1,
+    854.1,
+    879,
+    901,
+    917.5,
+    961.6,
+    968.4,
+    1007,
+    1080.3,
+    1129.6,
+    1142,
+    1166.3,
+    1189.8,
+    1209,
+    1258.1
+   ],
+   "explain": [
+    "另一個演算法是 breadth-first search，簡稱 BFS。breadth 是「廣度」，跟剛才的 depth 相對。",
+    "看 BFS 的 pseudocode。T 一樣是從一個端點慢慢長大的 tree，但另外還需要一個 L。",
+    "L 是資料結構裡的 queue（佇列）：First In First Out，先進去的先出來。",
+    "就像排隊：從尾巴排進去、從前面出來。相反地，先進後出的叫 stack（堆疊）。",
+    "L 一開始是空的。它用來放「已經走到、但還沒處理」的端點。",
+    "while 迴圈：只要 L 裡還有東西就一直做；L 空了就代表所有端點都處理過，T 就是 spanning tree。",
+    "第一步：把 v₁（這裡是 a）放進 L。",
+    "從 L 前面拿出第一個：現在只有 a。",
+    "看 a 的鄰居：b 不在 L 也不在 T，就把 b 加到 L 的尾巴，同時把邊 {a, b} 加進 T。",
+    "再找 a 的下一個鄰居 e：一樣加到 L 尾巴、邊 {a, e} 加進 T。",
+    "a 的鄰居都處理完了，for 迴圈結束。這些鄰居都在 L 裡排隊。",
+    "回到 while：從 L 前面拿出 b，b 再長出 c、f（放到隊伍尾巴）。",
+    "再拿出下一個 e：它的鄰居都處理過了，沒得長；接著拿出 c，長出 d、g。",
+    "所以是一層一層長：離起點 1 步的（level 1）全部長完，才輪到 level 2。這就是廣度先。",
+    "這樣每個端點都在盡量小的 level。繼續做到 L 空了，就得到 BFS spanning tree。",
+    "找 spanning tree 還有別的方法；如果邊上有 weight，就是之後要講的 minimal spanning tree。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "一個有 8 個端點的 connected graph，它的 spanning tree 有幾條邊？",
+   "opts": [
+    "7",
+    "8",
+    "9",
+    "不一定"
+   ],
+   "ans": "7",
+   "why": "n 個端點的 tree 一定有 n − 1 條邊。"
+  },
+  {
+   "q": "DFS 為什麼不會產生 cycle？",
+   "opts": [
+    "每次加入的新端點都還不在 T 裡",
+    "每次都選 weight 最小的邊",
+    "它只走 level 1",
+    "它用 queue 存端點"
+   ],
+   "ans": "每次加入的新端點都還不在 T 裡",
+   "why": "新邊的一端是 T 外的點，加進去不可能形成 cycle。"
+  },
+  {
+   "q": "BFS 用來存「還沒處理的端點」的資料結構是？",
+   "opts": [
+    "queue（先進先出）",
+    "stack（先進後出）",
+    "heap",
+    "hash table"
+   ],
+   "ans": "queue（先進先出）",
+   "why": "L 是 queue：從尾巴加入、從前面取出。"
+  },
+  {
+   "q": "一個 connected graph 的 spanning tree 一定唯一嗎？",
+   "opts": [
+    "不一定，通常有很多個",
+    "一定唯一",
+    "只有 tree 才有",
+    "只有 complete graph 才不唯一"
+   ],
+   "ans": "不一定，通常有很多個",
+   "why": "邊的取法不同就得到不同的 spanning tree（G 本身是 tree 時才唯一）。"
+  },
+  {
+   "q": "DFS／BFS 有多個鄰居可以選時，課堂上怎麼處理？",
+   "opts": [
+    "事先給端點排序 v₁…vₙ，照順序選",
+    "隨機選",
+    "選 degree 最大的",
+    "選 weight 最小的"
+   ],
+   "ans": "事先給端點排序 v₁…vₙ，照順序選",
+   "why": "先排順序可以避免 ambiguity，結果就唯一。"
+  }
+ ]
+}

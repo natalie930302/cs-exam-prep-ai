@@ -1,0 +1,211 @@
+{
+ "video": "AzCFmDjYLXM",
+ "label": "清大OCW 趙啟超《離散數學》第25D講 Trees",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Trees and sorting",
+   "points": [
+    {
+     "t": 4,
+     "text": "tree 的最後一個 topic：sorting。之前學過 bubble sort、insertion sort。"
+    },
+    {
+     "t": 57,
+     "text": "以 comparison 數目來看，bubble sort 和 insertion sort 都是 O(n²)。"
+    },
+    {
+     "t": 74,
+     "text": "用 binary tree 來組織資料，比較次數可以降低：Algorithms + Data Structures = Programs。"
+    },
+    {
+     "t": 113,
+     "text": "介紹 merge sort。"
+    }
+   ],
+   "scene": "g8c-sort-intro",
+   "cues": [
+    4.3,
+    6.7,
+    8.2,
+    57.4,
+    74.2,
+    94.5,
+    113.2
+   ],
+   "explain": [
+    "tree 的最後一個主題：tree 和 sorting（排序）。",
+    "之前學過兩種 sorting：bubble sort 和 insertion sort。",
+    "sorting 就是把一串數照大小排好；更一般地說，是把一個 totally ordered set 的元素照那個順序排好。舞台上的數字是示意。",
+    "衡量 sorting 的複雜度，看的是「比較（comparison）幾次」。bubble 和 insertion sort 都是 O(n²)。",
+    "如果在排序過程中用 binary tree 這種資料結構來組織資料，比較次數可以降下來。",
+    "有本書的名字就叫 Algorithms + Data Structures = Programs：演算法怎麼做，跟資料怎麼存息息相關，選對資料結構就能降低複雜度。",
+    "例子就是 merge sort（合併排序）。先用例子看它怎麼做，再看 pseudocode。"
+   ]
+  },
+  {
+   "title": "Merge sort 第一步：splitting",
+   "points": [
+    {
+     "t": 132,
+     "text": "例：6 2 7 3 4 9 5 1 8，9 個數要照大小排。"
+    },
+    {
+     "t": 169,
+     "text": "merge sort 兩步：splitting、merging，各對應一棵 binary tree。"
+    },
+    {
+     "t": 195,
+     "text": "每次切一半，不能整除時左邊多一個：⌈9/2⌉ = 5 → 6 2 7 3 4｜9 5 1 8。"
+    },
+    {
+     "t": 266,
+     "text": "一直分到每個端點只有一個數；最後 6 2 分成 6、2。"
+    },
+    {
+     "t": 301,
+     "text": "得到 splitting tree：每個 internal vertex 都有兩個 children（8 個 internal、9 片葉子）。"
+    }
+   ],
+   "scene": "g8c-ms-split",
+   "cues": [
+    157,
+    169.2,
+    180.5,
+    195.6,
+    219.7,
+    242.7,
+    266.6,
+    286.2,
+    301.7,
+    321.7
+   ],
+   "explain": [
+    "例子：這 9 個數 6 2 7 3 4 9 5 1 8 沒有照順序，要把它由小到大排好。整串先當成 tree 的一個點（root）。",
+    "merge sort 分兩步。第一步叫 splitting：把資料分開。",
+    "第二步叫 merging：再合併回來。兩步各會長出一棵 binary tree：splitting tree 和 merging tree。",
+    "怎麼分？每次切一半。9 個不能整除，比較多的那份放左邊：9 ÷ 2 = 4.5，取 ceiling（往上取整）是 5。",
+    "所以左邊是 6 2 7 3 4（5 個），右邊是 9 5 1 8（4 個）。只是分開，還沒有排。",
+    "下一層一樣分：6 2 7 3 4 → 6 2 7｜3 4；9 5 1 8 → 9 5｜1 8。",
+    "一直分下去，直到每個端點只剩一個數。",
+    "這時只剩 6 2 還沒分完，再把它分成 6 和 2。",
+    "splitting 完成。這個過程建出來的 tree 叫 splitting tree。",
+    "因為每次都分成兩個，每個 internal vertex 都剛好有兩個 children——課本把這種 tree 叫 complete binary tree。這裡 8 個 internal、9 片葉子。"
+   ]
+  },
+  {
+   "title": "Merge sort 第二步：merging",
+   "points": [
+    {
+     "t": 339,
+     "text": "merging：從葉子開始，把兩個已排好的 sublist 合成一個排好的 list。"
+    },
+    {
+     "t": 430,
+     "text": "做法：比兩個 list 的第一個（最小的），小的先寫下來並拿掉；一邊空了，剩下的整段接到後面。"
+    },
+    {
+     "t": 560,
+     "text": "2 6 7 ＋ 3 4 → 2 3 4 6 7；5 9 ＋ 1 8 → 1 5 8 9。"
+    },
+    {
+     "t": 640,
+     "text": "最後 2 3 4 6 7 ＋ 1 5 8 9（比 7 次）→ 1 2 3 4 5 6 7 8 9。"
+    },
+    {
+     "t": 694,
+     "text": "兩個 pass：splitting 與 merging；下次寫 pseudocode 並算複雜度。"
+    }
+   ],
+   "trap": "一邊 list 空了以後，剩下的元素不用再比，直接整段接上；所以一次 merge 的比較次數最多 n₁ + n₂ − 1，常常更少。",
+   "scene": "g8c-ms-merge",
+   "cues": [
+    339,
+    359.6,
+    381.2,
+    401.3,
+    430,
+    454.3,
+    495.6,
+    526.4,
+    560.2,
+    601.3,
+    640.5,
+    694.6,
+    799
+   ],
+   "explain": [
+    "第二部分 merging：把兩個「已經排好」的 sublist 合併成一個排好的 list。",
+    "從 tree 的葉子開始。每片葉子只有一個數，一個數當然已經排好了。",
+    "先把 6 和 2 merge：小的在前，變成 2 6。",
+    "2 6 再跟上面一層的 7 merge。兩個 list 都已經排好。",
+    "怎麼 merge？拿兩邊的第一個來比：2 比 7 小，2 先下來；再比 6 和 7，6 下來。左邊空了，剩下的 7 直接接到後面。",
+    "規則總結：每次只比兩個 list 的最前面（各自最小的），小的寫下來並拿掉；直到一邊空了，另一邊剩下的一定都比較大，整段照抄接在後面。",
+    "其他葉子也照做：3 4 還是 3 4，9 5 變 5 9，1 8 還是 1 8。",
+    "一直往上：每兩個端點 merge 成一個，上面兩個 list 都已經排好。",
+    "2 6 7 和 3 4：2 比 3 → 2；6 比 3 → 3；6 比 4 → 4。右邊空了，6 7 直接接後面，得到 2 3 4 6 7。",
+    "5 9 和 1 8：5 比 1 → 1；5 比 8 → 5；9 比 8 → 8。右邊空了，9 接後面，得到 1 5 8 9。",
+    "最後一次：2 3 4 6 7 和 1 5 8 9，一樣從頭比，共比了 7 次，最後 8 9 直接接上，得到 1 2 3 4 5 6 7 8 9。",
+    "整個做了兩個 pass：splitting（每次切一半，兩邊個數最多差 1）和 merging（兩個排好的合成一個）。",
+    "下次會寫出 pseudocode，並算出比較次數——會比 bubble、insertion sort 的 n² 還低。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "merge sort 把 9 個數第一次 split，左邊有幾個？",
+   "opts": [
+    "5",
+    "4",
+    "3",
+    "6"
+   ],
+   "ans": "5",
+   "why": "左邊放 ⌈9/2⌉ = 5 個。"
+  },
+  {
+   "q": "merge「2 6 7」和「3 4」要比較幾次？",
+   "opts": [
+    "3",
+    "4",
+    "5",
+    "2"
+   ],
+   "ans": "3",
+   "why": "2 vs 3、6 vs 3、6 vs 4，之後右邊空了，6 7 直接接上。"
+  },
+  {
+   "q": "merge「2 3 4 6 7」和「1 5 8 9」比較了幾次？",
+   "opts": [
+    "7",
+    "8",
+    "9",
+    "5"
+   ],
+   "ans": "7",
+   "why": "1、2、3、4、5、6、7 各比一次後左邊空了，8 9 直接接上。"
+  },
+  {
+   "q": "bubble sort 的比較次數是？",
+   "opts": [
+    "O(n²)",
+    "O(n log n)",
+    "O(n)",
+    "O(log n)"
+   ],
+   "ans": "O(n²)",
+   "why": "老師提到 bubble 和 insertion sort 都是 O(n²)。"
+  },
+  {
+   "q": "9 個數的 splitting tree 有幾片葉子、幾個 internal vertex？",
+   "opts": [
+    "9 片葉子、8 個 internal",
+    "9 片葉子、9 個 internal",
+    "8 片葉子、9 個 internal",
+    "9 片葉子、4 個 internal"
+   ],
+   "ans": "9 片葉子、8 個 internal",
+   "why": "每個 internal 剛好 2 個 children：葉子數 = internal + 1。"
+  }
+ ]
+}

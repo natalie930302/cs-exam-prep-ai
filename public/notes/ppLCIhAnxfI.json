@@ -1,0 +1,319 @@
+{
+ "video": "ppLCIhAnxfI",
+ "label": "清大OCW 趙啟超《離散數學》第25A講 Trees",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "回顧：三種 tree traversal",
+   "points": [
+    {
+     "t": 4,
+     "text": "三種 traversal：preorder、postorder、inorder，差別在什麼時候 visit root。"
+    },
+    {
+     "t": 33,
+     "text": "root 在第二個（中間）被 visit 的叫 inorder；上次看過同一棵 tree 用三種順序走的結果。"
+    }
+   ],
+   "scene": "g8c-trav-recap",
+   "cues": [
+    4.3,
+    7.5,
+    8.5,
+    10.6
+   ],
+   "explain": [
+    "先複習：traversal（走訪）就是把 tree 的每個點都拜訪一次。舞台上是示意：一個 root r，底下兩棵 subtree T₁、T₂。",
+    "preorder：一開始就先 visit root，再依序走 subtree。「pre」就是「先」的意思。",
+    "postorder：等所有 subtree 都走完，最後才 visit root。「post」是「後」。",
+    "inorder：root 排在中間——先走第一棵 subtree，第二個才是 root，再走其餘的。"
+   ]
+  },
+  {
+   "title": "應用：數學 expression → binary tree",
+   "points": [
+    {
+     "t": 55,
+     "text": "例子：用 binary tree 處理數學 expression（含加減乘除與取指數）。"
+    },
+    {
+     "t": 141,
+     "text": "程式語言寫法：t + (u * v) / (w + x − y ↑ z)；* 乘、/ 除、↑ 取指數。"
+    },
+    {
+     "t": 261,
+     "text": "建 binary tree：運算子放在上面（parent），兩個 children 做 parent 的運算。"
+    },
+    {
+     "t": 342,
+     "text": "每個運算子剛好兩個 children，變數都是葉子：6 個運算子、7 個葉子。"
+    }
+   ],
+   "trap": "老師把 w + x − y↑z 讀成 w + (x − y↑z)；數值和 (w + x) − y↑z 一樣，但 tree 的形狀不同，寫出來的 Polish notation 也不同。",
+   "scene": "g8c-expr-tree",
+   "cues": [
+    72.4,
+    78.3,
+    93.1,
+    102.4,
+    141,
+    161.5,
+    185.6,
+    261,
+    281.7,
+    290.3,
+    298.7,
+    301.6,
+    308,
+    311,
+    313.5,
+    342
+   ],
+   "explain": [
+    "來看 tree 的一個應用：電腦要怎麼算一個數學式子（expression）。",
+    "式子裡有加、減、乘、除，還有取指數（exponential，例如 y 的 z 次方）。",
+    "我們從小學的規則：括號先算、指數最先、再乘除、最後加減。電腦也得遵守這個優先順序。",
+    "如果每個變數都給一個值，電腦要用什麼步驟，才能照優先順序把答案算出來？",
+    "在程式語言（procedural language）裡，每個運算都要明確寫出來，像乘法不能省略。",
+    "符號對照：+ 加、* 乘、/ 除、− 減、↑ 取指數。",
+    "方法：先把式子變成一棵 binary tree（每個點最多兩個 children 的 tree）。整個式子最後算的是「t 加上後面」，所以 root 是 +。",
+    "規則：運算子放在上面當 parent，它的兩個 children 就是要拿來做這個運算的兩個東西。",
+    "root 是 +：左邊是 t，右邊是「後面這一大塊」。",
+    "後面這一大塊主要是一個除法，所以 + 的 right child 是 /。",
+    "被除數是 u * v，所以 / 的 left child 是 *，* 底下掛 u 和 v。",
+    "除數是後面括號裡那一塊，它也是一棵 subtree，root 是 +。",
+    "這個 + 是「w 加上後面」，後面那塊的 root 是減號 −。",
+    "− 是「x 減掉 y 的 z 次方」：左邊 x，右邊是取指數 ↑。",
+    "↑ 的兩個 children 是 y 和 z，代表 y 的 z 次方。整棵 tree 長好了。",
+    "檢查：每個運算子剛好有兩個 children，變數都在葉子。6 個運算子、7 個葉子——葉子剛好比 internal vertex 多 1。"
+   ]
+  },
+  {
+   "title": "Preorder → Polish notation",
+   "points": [
+    {
+     "t": 367,
+     "text": "對 expression tree 做 preorder traversal，得到 Polish notation（紀念波蘭邏輯學家 Łukasiewicz）。"
+    },
+    {
+     "t": 428,
+     "text": "preorder：先 root，再 left subtree，再 right subtree → + t / * u v + w − x ↑ y z。"
+    },
+    {
+     "t": 500,
+     "text": "用 postorder 得到 reverse Polish notation：t u v * w x y z ↑ − + / +。"
+    }
+   ],
+   "scene": "g8c-polish",
+   "cues": [
+    367,
+    407.8,
+    414,
+    428.2,
+    437.7,
+    440.5,
+    447,
+    452,
+    459.3,
+    464.2,
+    468.7,
+    471.2,
+    474.4,
+    489,
+    500.3
+   ],
+   "explain": [
+    "有了 tree，怎麼算？用 preorder traversal 把它從頭走一遍。",
+    "preorder 走出來的那一串符號，叫做 Polish notation（波蘭表示法）。",
+    "這個名字是紀念提出它的邏輯學家 Łukasiewicz。老師提到他的出身其實跟今天的烏克蘭有關，不過習慣上叫 Polish notation。",
+    "preorder 先從 root 開始：寫下 +。",
+    "接著 visit left subtree：它只有一片葉子 t。",
+    "再走 right subtree：一樣先寫它的 root，也就是 /。",
+    "/ 的 left subtree 也是先 root：寫下 *。",
+    "* 的兩個 children：u、v。左邊這塊處理完了。",
+    "回到 / 的 right subtree：先它的 root +。",
+    "+ 的 left subtree 是葉子 w。",
+    "+ 的 right subtree：先 root −。",
+    "− 的 left subtree 是 x。",
+    "最後 − 的 right subtree：先 ↑，再 y、z。整棵 tree 走完。",
+    "得到的整串 + t / * u v + w − x ↑ y z，就是這個 expression 的 Polish notation（共 13 個符號）。",
+    "如果改用 postorder（root 最後），得到的叫 reverse Polish notation，順序剛好反過來用。"
+   ]
+  },
+  {
+   "title": "Polish notation 從右到左計算",
+   "points": [
+    {
+     "t": 516,
+     "text": "Polish notation 從右往左算；reverse Polish 從左往右算。"
+    },
+    {
+     "t": 583,
+     "text": "帶值 t = 4、u = 2、v = 3、w = 1、x = 9、y = 2、z = 3。"
+    },
+    {
+     "t": 652,
+     "text": "從右邊 scan，碰到運算子就和它後面兩個數運算，再用結果取代這三個。"
+    },
+    {
+     "t": 875,
+     "text": "依序得到 8、1、2、6、3，最後答案 7；和直接代入原式相同。"
+    }
+   ],
+   "trap": "Polish notation 的運算子作用在它「後面」兩個數，前一個是左運算元：÷ 6 2 是 6 ÷ 2 = 3，− 9 8 是 9 − 8，不是反過來。",
+   "scene": "g8c-polish-eval",
+   "cues": [
+    520.7,
+    532.2,
+    564.1,
+    583,
+    640.1,
+    652.1,
+    686,
+    697.1,
+    716.3,
+    744.2,
+    763.1,
+    778.4,
+    799.7,
+    814.5,
+    822,
+    842.3,
+    856.3,
+    859.2,
+    875.7,
+    886.5,
+    947.2
+   ],
+   "explain": [
+    "有了 Polish notation，下一步是：每個變數有值時，怎麼把它算出來？",
+    "規則：從右邊往左邊算——從最後面開始往前看。",
+    "如果用的是 reverse Polish notation，就反過來，從左往右算。",
+    "先把每個變數的值帶進去：t = 4、u = 2、v = 3、w = 1、x = 9、y = 2、z = 3。",
+    "帶完值的 Polish notation 就是第一列。接下來一步一步算。",
+    "從右邊一個一個 scan：3、2，然後碰到運算子 ↑。運算子會作用在它「後面」那兩個數。",
+    "↑ 2 3 就是 2 的 3 次方 = 8。",
+    "把「↑ 2 3」這三個符號換成 8，得到第二列，其他不動。",
+    "再從右邊 scan：8、9，碰到 −。− 9 8 的意思是 9 − 8 = 1（前面那個是被減數）。",
+    "把這三個換成 1。",
+    "繼續：1、1，碰到 +，1 + 1 = 2。",
+    "把這三個換成 2。",
+    "這次不太一樣：從右邊看 2、3、2 都是數字，還沒碰到運算子，要繼續 scan，直到碰到 × 為止。",
+    "碰到 ×：拿它後面兩個數 2 × 3 = 6；最後面那個 2 先不動。",
+    "把「× 2 3」換成 6。",
+    "從右 scan：2、6，碰到 ÷，算 6 ÷ 2 = 3（運算子後面第一個數是被除數）。",
+    "換成 3。",
+    "最後：3、4，碰到 +，4 + 3 = 7。",
+    "只剩一個數，答案就是 7。",
+    "整理流程：expression 先建成 binary tree，preorder 得到 Polish notation，再從右到左算，碰到運算子就跟後面兩個數運算。",
+    "驗算：直接代進原式 4 + (2·3)/(1 + 9 − 2³) = 4 + 6/2 = 7，和手算一樣。這樣括號和優先順序就自動處理好了。"
+   ]
+  },
+  {
+   "title": "Spanning tree 的定義",
+   "points": [
+    {
+     "t": 1006,
+     "text": "spanning tree：先要有一個 connected simple graph G = (V, E)。"
+    },
+    {
+     "t": 1050,
+     "text": "T = (V′, E′) 必須是 G 的 subgraph，而且是 tree。"
+    },
+    {
+     "t": 1075,
+     "text": "spanning：V′ = V，T 包含 G 的所有端點；不能多出 G 沒有的邊或點。"
+    }
+   ],
+   "scene": "g8c-span-def",
+   "cues": [
+    1006,
+    1027.6,
+    1041,
+    1050.9,
+    1070.4,
+    1075.3,
+    1084.2,
+    1111.5
+   ],
+   "explain": [
+    "新主題：spanning tree（生成樹）。名字有兩半：它是一棵 tree，而且要 spanning。",
+    "一定要先有一個原來的圖 G：connected（連通）的 simple graph，端點集合 V、邊集合 E。舞台上的圖是示意。",
+    "G 的一個 spanning tree 叫 T，它的端點集合是 V′、邊集合是 E′。",
+    "第一個要求：T 是 G 的 subgraph，也就是 T 的點和邊都要從 G 裡面拿。",
+    "第二個要求：T 是 tree——連通、而且沒有 cycle。金色的邊就是一個例子。",
+    "什麼叫 spanning？T 的端點集合要跟原來一樣：V′ = V。",
+    "也就是 G 的每個端點都要在 T 裡。5 個點的 tree 剛好 4 條邊。",
+    "總結：T 不能多出 G 沒有的邊或點（subgraph），要是 tree，還要包含所有端點（spanning）。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "把 expression tree 做 preorder traversal，得到的是？",
+   "opts": [
+    "Polish notation",
+    "reverse Polish notation",
+    "infix 寫法",
+    "inorder 序列"
+   ],
+   "ans": "Polish notation",
+   "why": "preorder（先 root）走 expression tree 得到 Polish notation；postorder 得到 reverse Polish。"
+  },
+  {
+   "q": "Polish notation「+ 4 / * 2 3 + 1 − 9 ↑ 2 3」的值是？",
+   "opts": [
+    "7",
+    "5",
+    "10",
+    "4"
+   ],
+   "ans": "7",
+   "why": "從右到左：2³ = 8、9 − 8 = 1、1 + 1 = 2、2 × 3 = 6、6 ÷ 2 = 3、4 + 3 = 7。"
+  },
+  {
+   "q": "Polish notation 要從哪個方向計算？",
+   "opts": [
+    "從右到左",
+    "從左到右",
+    "從中間往外",
+    "任何方向都可以"
+   ],
+   "ans": "從右到左",
+   "why": "從右邊 scan，碰到運算子就和它後面兩個數運算；reverse Polish 才是從左到右。"
+  },
+  {
+   "q": "t + (u * v) / (w + x − y ↑ z) 這棵 tree 的 postorder（reverse Polish）是？",
+   "opts": [
+    "t u v * w x y z ↑ − + / +",
+    "+ t / * u v + w − x ↑ y z",
+    "t + u * v / w + x − y ↑ z",
+    "t u v w x y z + * / − ↑ +"
+   ],
+   "ans": "t u v * w x y z ↑ − + / +",
+   "why": "postorder：先走完 subtree 再寫 root。"
+  },
+  {
+   "q": "「÷ 6 2」在 Polish notation 裡等於？",
+   "opts": [
+    "3",
+    "1/3",
+    "12",
+    "4"
+   ],
+   "ans": "3",
+   "why": "運算子後面第一個數是左運算元：6 ÷ 2 = 3。"
+  },
+  {
+   "q": "T 是 G 的 spanning tree，下列哪一個「不」是必要條件？",
+   "opts": [
+    "E′ = E（T 包含 G 的所有邊）",
+    "T 是 G 的 subgraph",
+    "T 是 tree",
+    "V′ = V"
+   ],
+   "ans": "E′ = E（T 包含 G 的所有邊）",
+   "why": "spanning 只要求包含所有端點；邊只取一部分（n 個點用 n − 1 條邊）。"
+  }
+ ]
+}

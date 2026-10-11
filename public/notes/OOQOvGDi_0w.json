@@ -1,0 +1,308 @@
+{
+ "video": "OOQOvGDi_0w",
+ "label": "清大OCW 趙啟超《離散數學》第25C講 Trees",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "DFS 例子（A–J）",
+   "points": [
+    {
+     "t": 4,
+     "text": "例：connected simple graph G（A–J，含 cycle A–B–D，所以不是 tree；圖的位置照口述重建）。"
+    },
+    {
+     "t": 79,
+     "text": "用 DFS、照字母順序，從 A 開始。"
+    },
+    {
+     "t": 121,
+     "text": "A → B → D；D 走不下去回 B → E → F；回 E → H；一路回到 A → C → G → I、J。"
+    },
+    {
+     "t": 397,
+     "text": "加入順序 A B D E F H C G I J；9 條邊 = 10 − 1，是 spanning tree。"
+    }
+   ],
+   "scene": "g8c-dfs-ex",
+   "cues": [
+    9.3,
+    79.3,
+    99,
+    121.6,
+    161.6,
+    189,
+    205.2,
+    233.6,
+    251.5,
+    274.2,
+    298.5,
+    317.4,
+    339,
+    359.3,
+    397,
+    407.5
+   ],
+   "explain": [
+    "來看一個完整例子。G 是 connected simple graph，有 10 個點；A、B、D 三點繞成一個 cycle，所以 G 本身不是 tree。（點的位置是照老師口述重建的示意。）",
+    "先用 DFS（深度先）找它的 spanning tree。",
+    "有多個選擇時用字母順序（alphabetic order），所以從 A 開始。",
+    "A 連到 B、C、D，照字母先走 B：把 B 和邊 AB 加進 tree。",
+    "從 B 繼續往下：還沒在 tree 裡的鄰居有 D、E，照順序先走 D。",
+    "D 只連到 A 和 B，都已經在 tree 裡了。下不去，就回到上一層 B。",
+    "B 還有一個 E 不在 tree 裡，走到 E。",
+    "E 往下有 F 和 H，字母順序先 F，加入邊 EF。",
+    "F 唯一的鄰居 E 已經在 tree 裡，回到 E；E 還有 H 沒加，加入邊 EH。",
+    "H、F、B 都在 tree 裡了，E 沒得走；回到 B，B 也做完了，再回到 A。",
+    "A 的鄰居裡 B、D 都在 tree 裡，只剩 C：加入邊 AC。",
+    "C 往下只有 G（A 已經在裡面）：加入邊 CG。",
+    "G 往下有 I 和 J：先 I；I 下面沒有，回到 G 再走 J。",
+    "所有點都處理完了，就一層一層回去：J → G → C → A，結束。",
+    "加入的順序是 A B D E F H C G I J，跟老師黑板上的一樣。能走就走、沒得走就回來，這就是 DFS。",
+    "每次加入的端點都不在 tree 裡，所以一直是 tree；10 個點全加進來、共 9 條邊，就是 spanning tree。"
+   ]
+  },
+  {
+   "title": "BFS 例子（A–J）",
+   "points": [
+    {
+     "t": 412,
+     "text": "BFS 從 A 開始：A 的鄰居 B、C、D 依序進 queue。"
+    },
+    {
+     "t": 491,
+     "text": "拿出 B → E；拿出 C → G；D 沒有可加的。"
+    },
+    {
+     "t": 567,
+     "text": "拿出 E → F、H；拿出 G → I、J；F、H、I、J 都沒有可加的，queue 空了就結束。"
+    },
+    {
+     "t": 641,
+     "text": "順序 A｜B C D｜E G｜F H I J：一層一層，廣度先。"
+    }
+   ],
+   "scene": "g8c-bfs-ex",
+   "cues": [
+    415.3,
+    427,
+    443.6,
+    474,
+    491.8,
+    536,
+    556,
+    567.7,
+    593.3,
+    614.2,
+    641.1,
+    663
+   ],
+   "explain": [
+    "同一張圖改用 BFS（廣度先），一樣從 A 開始：A 先放進 queue。",
+    "拿出 A。A 連到 B、C、D，照字母先處理 B：B 丟進 queue（就是 L），邊 AB 加進 tree。",
+    "再來 C：不在 queue 也不在 tree，丟進 queue，加邊 AC。",
+    "A 還有一個 D，也加進去。可以連到 A 的都處理完了。",
+    "從 queue 前面拿出第一個：B。B 的鄰居裡只有 E 還沒出現過，加邊 BE。",
+    "再拿出最前面的 C，C 往下是 G，加邊 CG。",
+    "拿出 D：D 連到 A、B，都已經在 tree 裡，沒有可以加的。",
+    "拿出 E：先 F 再 H，兩個都丟進 queue。",
+    "拿出 G：先 I 再 J，也丟進 queue。",
+    "queue 裡剩 F、H、I、J，一個個拿出來都沒有新鄰居。queue 空了，結束。",
+    "順序是 A，然後 B C D，然後 E G，然後 F H I J——一層（level）一層長出來。",
+    "對照：BFS 是廣度先，先把同一層長滿；DFS 是深度先，能往下就往下。"
+   ]
+  },
+  {
+   "title": "BFS 的應用",
+   "points": [
+    {
+     "t": 677,
+     "text": "BFS 可以限制 tree 的 height：例如做到 level 5 就停。"
+    },
+    {
+     "t": 716,
+     "text": "這時不一定是 spanning tree，但離起點最短距離 ≤ 5 的端點全在裡面，而且在最短的 level。"
+    },
+    {
+     "t": 743,
+     "text": "應用：P2P network（如 BitTorrent）找附近的 node、搜尋引擎 crawler、social network。"
+    }
+   ],
+   "scene": "g8c-bfs-apps",
+   "cues": [
+    677,
+    688,
+    716.7,
+    743.5,
+    788.4,
+    794.7,
+    798.1
+   ],
+   "explain": [
+    "BFS 有很多應用，原因在它「一層一層」長的特性。",
+    "BFS 可以限制 tree 的高度（height），例如只做到 level 5。舞台上是示意。",
+    "做到 level 5 就停：這棵 tree 不一定包含所有點（不是 spanning tree），但所有離起點最短距離 ≤ 5 的點都會在裡面，而且就放在它最短距離那一層。",
+    "應用一：P2P（peer-to-peer）網路，例如 BitTorrent。大家邊下載邊分享，用 BFS 找附近也在下載同一個檔案的 node，就不必都去原來的 server 下載。",
+    "應用二：搜尋引擎的 crawler（爬蟲），一層一層去找網頁。",
+    "應用三：social network，例如找跟你很近的人。",
+    "這些應用的關鍵都是：BFS 可以只找到第幾層就停下來。"
+   ]
+  },
+  {
+   "title": "Paul Erdős 小傳",
+   "points": [
+    {
+     "t": 812,
+     "text": "有趣的應用：collaboration graph 上的 BFS tree，和數學家 Paul Erdős 有關。"
+    },
+    {
+     "t": 854,
+     "text": "Erdős（1913–1996），匈牙利數學家，專長組合數學與數論；一生發表約 1500 篇論文、合作者超過 500 人，被稱為 Master of Collaboration。"
+    },
+    {
+     "t": 1036,
+     "text": "1983 年得 Wolf Prize；過世時紐約時報稱他 founded the field of discrete mathematics。"
+    }
+   ],
+   "scene": null
+  },
+  {
+   "title": "Collaboration graph 與 Erdős number",
+   "points": [
+    {
+     "t": 1185,
+     "text": "collaboration graph：端點是作者，兩人合寫過論文就連一條邊（simple graph，多篇也只一條）。"
+    },
+    {
+     "t": 1309,
+     "text": "從 Erdős 出發做 BFS：和他合寫過的是 level 1，再往下是 level 2……"
+    },
+    {
+     "t": 1430,
+     "text": "Erdős number = 所在的 level = 到 Erdős 的最短 path 邊數；Erdős 本人是 0。"
+    },
+    {
+     "t": 1573,
+     "text": "Erdős 已過世，number 1 固定為 512 人；number 2 約 12600 人（老師查到的）還在增加。"
+    }
+   ],
+   "trap": "Erdős 本人的 Erdős number 是 0（不是 1）；和他合寫過論文的人才是 1。",
+   "scene": "g8c-erdos",
+   "cues": [
+    1185.6,
+    1237.4,
+    1241,
+    1254,
+    1278,
+    1309.4,
+    1332.3,
+    1370.2,
+    1430.3,
+    1478.5,
+    1507.3,
+    1573,
+    1589.8,
+    1617.3,
+    1636.6
+   ],
+   "explain": [
+    "因為 Erdős 跟非常多人合作，數學界有個有名的東西叫 Erdős number。",
+    "先建一張 collaboration graph（合作圖）：每個端點代表一位作者。",
+    "兩個人合寫過論文，就在他們之間連一條邊。例如 A、B 合寫過。",
+    "A–C、B–C、B–D、A–E 也合作過，都連起來。",
+    "這是 simple graph：合寫兩篇還是只連一條邊，沒有 multiple edge。",
+    "Erdős number 的做法：把 Paul Erdős 當成 v₁，在這張圖上做 BFS。（這裡假設 Erdős 跟 A 合寫過，是示意。）",
+    "所有跟 Erdős 合寫過論文的人，放在第一層（level 1）。",
+    "再從 level 1 的人長下去：跟他們合寫過、但還沒出現的人放在 level 2，依此類推。",
+    "Erdős number 就是你在這棵 BFS tree 的 level：Erdős 本人是 0，跟他合寫過的是 1，再下一層是 2……",
+    "換句話說，Erdős number 是在 collaboration graph 上你到 Erdős 的最短 path 有幾條邊。BFS 正好保證 level = 最短距離。",
+    "有個 Erdős Number Project 網站，把 number 是 1、2 的人都列出來，還可以查自己的。",
+    "Erdős 在 1996 年過世，不可能再跟他合寫論文，所以 Erdős number 1 的人不會再增加。",
+    "Erdős number 1 的有 512 人。",
+    "number 2 的人還會增加（還能跟 number 1 的人合寫）。老師查到大約 12600 人。",
+    "number 3、4 的人數更多（老師引用 33605、83642，是較舊的統計）。"
+   ]
+  },
+  {
+   "title": "老師的 Erdős number",
+   "points": [
+    {
+     "t": 1674,
+     "text": "老師分享：他的指導教授是 Erdős number 1，所以老師是 2；Erdős 已過世，現在不可能再成為 1。"
+    },
+    {
+     "t": 1777,
+     "text": "在數學界，問別人的 Erdős number 是件有趣的事。"
+    }
+   ],
+   "scene": null
+  }
+ ],
+ "quiz": [
+  {
+   "q": "在 A–J 的例子中，用 DFS（字母順序、從 A 開始）加入端點的順序是？",
+   "opts": [
+    "A B D E F H C G I J",
+    "A B C D E G F H I J",
+    "A B D E H F C G J I",
+    "A C G I J B D E F H"
+   ],
+   "ans": "A B D E F H C G I J",
+   "why": "B 之後先 D，D 走不下去回 B → E → F，再 H，最後 C → G → I、J。"
+  },
+  {
+   "q": "同一張圖用 BFS（字母順序、從 A 開始）的順序是？",
+   "opts": [
+    "A B C D E G F H I J",
+    "A B D E F H C G I J",
+    "A B C D E F G H I J",
+    "A D C B E G F H I J"
+   ],
+   "ans": "A B C D E G F H I J",
+   "why": "level 1：B C D；level 2：E G；level 3：F H I J。"
+  },
+  {
+   "q": "BFS 只做到 level 5 就停，得到的 tree 有什麼性質？",
+   "opts": [
+    "離起點最短距離 ≤ 5 的端點全部在裡面",
+    "一定是 spanning tree",
+    "一定比 DFS tree 高",
+    "只有葉子在 level 5"
+   ],
+   "ans": "離起點最短距離 ≤ 5 的端點全部在裡面",
+   "why": "BFS 一層一層長，每個點出現在它的最短距離那一層。"
+  },
+  {
+   "q": "某人跟 Erdős number 1 的人合寫過論文，但沒跟 Erdős 本人合寫過，他的 Erdős number 是？",
+   "opts": [
+    "2",
+    "1",
+    "0",
+    "3"
+   ],
+   "ans": "2",
+   "why": "Erdős number = collaboration graph 上到 Erdős 的最短距離。"
+  },
+  {
+   "q": "Paul Erdős 本人的 Erdős number 是？",
+   "opts": [
+    "0",
+    "1",
+    "無定義",
+    "512"
+   ],
+   "ans": "0",
+   "why": "他是 BFS 的起點（level 0）。"
+  },
+  {
+   "q": "A–J 那張圖（10 個點）的 spanning tree 有幾條邊？",
+   "opts": [
+    "9",
+    "10",
+    "11",
+    "8"
+   ],
+   "ans": "9",
+   "why": "n 個點的 tree 有 n − 1 條邊；原圖有 10 條邊，拿掉 cycle A–B–D 的一條。"
+  }
+ ]
+}
