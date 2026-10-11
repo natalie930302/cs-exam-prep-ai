@@ -121,9 +121,9 @@
  },
  "13r9QY6cmjc": {
   "label": "MIT OCW 18.06 L22：Diagonalization and Powers of A",
-  "points": 36,
+  "points": 38,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "1FEP_sNb62k": {
   "label": "Abdul Bari：7.3 Traveling Salesman Problem - Branch and Bound",
@@ -755,6 +755,12 @@
   "quiz": 4,
   "cued": true
  },
+ "cdZnhQjJu4I": {
+  "label": "MIT 18.06 L21：Eigenvalues and Eigenvectors",
+  "points": 39,
+  "quiz": 6,
+  "cued": true
+ },
  "cfPNAeAatGs": {
   "label": "清大周志遠 第14D講 Allocation of Frames",
   "points": 32,
@@ -1361,6 +1367,12 @@
   "quiz": 7,
   "cued": true
  },
+ "IZqwi0wJovM": {
+  "label": "MIT OCW 18.06 L23：Differential Equations and exp(At)",
+  "points": 33,
+  "quiz": 6,
+  "cued": true
+ },
  "jBoa60H5XVU": {
   "label": "清大OCW 趙啟超《離散數學》第1C講 Logic and Set Theory",
   "points": 34,
@@ -1581,6 +1593,12 @@
   "label": "清大OCW 趙啟超《離散數學》第3A講 Mathematical Induction and Functions",
   "points": 13,
   "quiz": 5,
+  "cued": true
+ },
+ "lXNXrLcoerU": {
+  "label": "MIT 18.06 L21：Eigenvalues and Eigenvectors（另一錄影版本）",
+  "points": 39,
+  "quiz": 6,
   "cued": true
  },
  "lY1SKWSR3pk": {
