@@ -1625,6 +1625,12 @@
   "quiz": 8,
   "cued": true
  },
+ "M0Sa8fLOajA": {
+  "label": "MIT OCW 18.06 L26：Complex Matrices; Fast Fourier Transform",
+  "points": 30,
+  "quiz": 7,
+  "cued": true
+ },
  "M7Fl_z7_J2k": {
   "label": "Abdul Bari：7.1 Job Sequencing with Deadline - Branch and Bound",
   "points": 16,
@@ -2405,6 +2411,12 @@
   "quiz": 9,
   "cued": true
  },
+ "UCc9q_cAhho": {
+  "label": "MIT 18.06 L25：Symmetric Matrices and Positive Definiteness",
+  "points": 41,
+  "quiz": 7,
+  "cued": true
+ },
  "ucL0BLz2OGk": {
   "label": "交大彭文志 Lec26 Search Structures (3/3)",
   "points": 106,
@@ -2439,6 +2451,12 @@
   "label": "Abdul Bari：Pointer Arithmetic",
   "points": 27,
   "quiz": 6,
+  "cued": true
+ },
+ "umt6BB1nJ4w": {
+  "label": "MIT 18.06 L25：（另一個錄影版本）",
+  "points": 41,
+  "quiz": 7,
   "cued": true
  },
  "UO0B1SQOAgk": {
@@ -2517,6 +2535,12 @@
   "label": "清大周志遠 第2C講 Computer-System Architecture(續)",
   "points": 26,
   "quiz": 6,
+  "cued": true
+ },
+ "vF7eyJ2g3kU": {
+  "label": "MIT OCW 18.06 L27：Positive Definite Matrices and Minima",
+  "points": 35,
+  "quiz": 7,
   "cued": true
  },
  "vfyUU_prh9s": {
