@@ -1,0 +1,225 @@
+{
+ "video": "crMqlrIH4Ds",
+ "label": "清大OCW 趙啟超《離散數學》第27D講 Shortest-Path Problem and Minimal Spanning Trees",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "證明第一步：Prim 的 output 是 spanning tree",
+   "points": [
+    {
+     "t": 9,
+     "text": "要證 Prim 的 output 是 minimal spanning tree：先證它是 spanning tree，再證 minimal。"
+    },
+    {
+     "t": 33,
+     "text": "每次加的邊接在原來的 T 上 → connected；做 n − 1 次 → n 個端點、n − 1 條邊；每條邊一端在 T、一端不在 → 沒有 cycle。所以是 spanning tree。"
+    }
+   ],
+   "scene": "g8d-prim-st",
+   "cues": [
+    9,
+    25.6,
+    33.7,
+    48.4,
+    67.7,
+    77.8
+   ],
+   "explain": [
+    "接下來證明 Prim's algorithm 是對的：它最後輸出的一定是 minimal spanning tree。",
+    "分兩步：先確定輸出是一棵 spanning tree，再證明它的 weight 是最小的。",
+    "為什麼 connected？因為每次加進來的邊，都有一端接在原本的 T 上，所以新點一定和 T 連在一起。畫面上是 Prim 在老師的圖上的結果。",
+    "一開始 1 個點，做 n − 1 次、每次多 1 個點 1 條邊，最後有 n 個點、n − 1 條邊。",
+    "為什麼沒有 cycle？每條加進來的邊都是一端在 T、另一端在 T 外面的新點，不可能繞回 T 形成 cycle。",
+    "connected、沒有 cycle，所以是 tree；又包含所有端點，所以是 spanning tree ✓。第一步完成。"
+   ]
+  },
+  {
+   "title": "歸納法：T 一直是某棵 MST 的 subtree",
+   "points": [
+    {
+     "t": 96,
+     "text": "用數學歸納法。Induction hypothesis：到目前為止的 T 是某一棵 MST M 的 subtree（subtree：本身也是 tree 的 subgraph）。"
+    },
+    {
+     "t": 243,
+     "text": "如果這件事一直成立，最後 T 含所有端點，就等於那棵 MST。"
+    },
+    {
+     "t": 278,
+     "text": "Basis：一開始 T 只有一個端點，每棵 MST 都包含它，成立。"
+    },
+    {
+     "t": 326,
+     "text": "Induction step：加上 algorithm 選的 e 之後，T + e 仍是某棵 MST M′ 的 subtree；M′ 不一定等於 M。"
+    }
+   ],
+   "scene": "g8d-prim-ih",
+   "cues": [
+    96.9,
+    170.5,
+    220.8,
+    243.2,
+    278.6,
+    326,
+    394.5
+   ],
+   "explain": [
+    "第二步要證 minimal，方法是 mathematical induction（數學歸納法）。畫面上用一張示意小圖 K 來說明。",
+    "歸納假設：目前長出來的 T（綠點、金邊），是某一棵 MST M 的一部分。藍邊是 M 裡其他的邊，M 的總 weight 是 6。",
+    "subtree 的意思：它是某棵 tree 的 subgraph（取一部分點和邊），而且本身也是一棵 tree。",
+    "如果每一步都維持「T 是某棵 MST 的一部分」，等到 T 含有所有端點時，T 就整個等於那棵 MST 了。",
+    "先檢查起點（basis）：一開始 T 只有一個端點。任何一棵 MST 都包含所有端點，當然也包含它，所以成立。",
+    "再來是歸納步驟：假設 T 是某棵 MST M 的 subtree，algorithm 加上它選的邊 e（黃色）以後，T + e 也要是某棵 MST 的 subtree。",
+    "注意這棵新的 MST 叫 M′，不一定是原來的 M。因為 MST 不一定唯一，這張示意圖 weight 6 的 MST 就有好幾棵。"
+   ]
+  },
+  {
+   "title": "Case 1：e 本來就在 M 裡",
+   "points": [
+    {
+     "t": 460,
+     "text": "分兩個 case。若 e ∈ M，T + e 仍是 M 的 subtree，M′ = M，直接結束。"
+    }
+   ],
+   "scene": "g8d-prim-case1",
+   "cues": [
+    460.9,
+    477.2
+   ],
+   "explain": [
+    "分兩種情況討論：algorithm 選的 e 在不在 M 裡面。",
+    "如果 e 本來就在 M 裡（這裡藍邊的 M 剛好含 bc），把 e 加進 T 之後 T 還是 M 的一部分，M′ 就是 M，什麼都不用證。"
+   ]
+  },
+  {
+   "title": "Case 2：e 不在 M 裡，用 e′ 交換",
+   "points": [
+    {
+     "t": 521,
+     "text": "若 e ∉ M：把 e 加進 M，因為 e 的兩端都已在 M 中，會產生唯一的 cycle。"
+    },
+    {
+     "t": 791,
+     "text": "e 一端在 T、一端不在 T；沿 cycle 繞回 T，一定還有另一條 e′ 也跨過 T 的邊界。"
+    },
+    {
+     "t": 1070,
+     "text": "e′ 也是可以加的候選，algorithm 卻選了 e，所以 w(e′) ≥ w(e)。"
+    },
+    {
+     "t": 1163,
+     "text": "M′ = M + e − e′：打斷唯一的 cycle，仍含所有端點，是 spanning tree；w(M′) = w(M) + w(e) − w(e′) ≤ w(M)，所以 M′ 也是 MST，而且包含 T 和 e。"
+    },
+    {
+     "t": 1452,
+     "text": "每一步都成立，最後的 T 就是一棵 MST。"
+    }
+   ],
+   "trap": "M′ 不必等於 M，證明只需要「某一棵」MST 包含 T + e；e′ 要挑 cycle 上「跨過 T 邊界」的那條，不是 cycle 上隨便一條。",
+   "scene": "g8d-prim-case2",
+   "cues": [
+    521.6,
+    589,
+    690.2,
+    791.5,
+    849.6,
+    880.1,
+    1070.9,
+    1163.5,
+    1270,
+    1385.6,
+    1452.7
+   ],
+   "explain": [
+    "比較麻煩的是第二種：e（這裡是 bc）不在 M 裡。藍邊是 M，綠色區域是目前的 T = {a, b}。",
+    "把 e 硬加進 M。M 是 spanning tree，e 的兩端早就在 M 裡，所以一加就會繞出一個 cycle，而且只有一個（橘色）。",
+    "老師補一句：e 是 algorithm 選出來的邊。T = {a, b} 時候選有 bc 2、ax 2、bd 3，最小值平手，algorithm 選了 bc。",
+    "algorithm 選 e 的條件是：一端在 T 裡（b）、一端在 T 外（c）。",
+    "沿著 cycle 走一圈：從 T 裡經過 e 跑出去，最後一定要再走回 T，所以 cycle 上一定還有另一條邊 e′ 也跨過 T 的邊界。這裡 e′ 是 ax（紅色）。",
+    "這就是老師畫的示意圖：綠色的 T 是一塊區域，黃色的 e 從裡面跨出去，紅色的 e′ 再跨回來。",
+    "e′ 也是一端在 T、一端不在，本來也有資格被 algorithm 選。但 algorithm 選了 e，表示 e 的 weight 不比 e′ 大：w(e′) ≥ w(e)。這裡兩個都是 2 ✓。",
+    "現在做一個交換：把 e 加進 M，同時拿掉 e′。唯一的 cycle 被打斷，端點一個都沒少，所以得到的 M′ 還是 spanning tree ✓。",
+    "M′ 的 weight = M 的 weight + w(e) − w(e′)。因為 w(e′) ≥ w(e)，weight 不會增加；M 已經是最小的，所以 M′ 也是 MST ✓。",
+    "而且 M′ 包含原來的 T，也包含 e，所以 T + e 是 M′ 的 subtree，歸納步驟完成 ✓。",
+    "一開始成立，每加一條邊也成立，做到最後 T 含所有端點，它就是一棵 minimal spanning tree。"
+   ]
+  },
+  {
+   "title": "證明重點整理",
+   "points": [
+    {
+     "t": 1475,
+     "text": "整理：每一步的 T 都是某棵 MST 的 subtree；關鍵是找 M′（e ∈ M 就用 M，否則加 e、拿掉 e′）。下次講另一個 greedy：Kruskal。"
+    }
+   ],
+   "scene": "g8d-prim-sum",
+   "cues": [
+    1475.8,
+    1515.5,
+    1553.4
+   ],
+   "explain": [
+    "整理一下：證明的核心是「algorithm 每一步造出來的 T，都是某棵 MST 的 subtree」。一開始對、每一步都對，最後就是 MST。",
+    "最關鍵的是怎麼找到 M′：e 在 M 裡就直接用 M；不在的話，把 e 加進去、把 cycle 上跨邊界的 e′ 拿掉。",
+    "這是一個 greedy 方法會成功的例子。下一講介紹另一個也找 MST 的 greedy algorithm，出發點不太一樣。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "證明 Prim 的 output 是 spanning tree 時，為什麼沒有 cycle？",
+   "opts": [
+    "每條加入的邊一端在 T、一端不在 T",
+    "因為每條邊的 weight 都不同",
+    "因為圖是 simple graph",
+    "因為只加了 n 條邊"
+   ],
+   "ans": "每條加入的邊一端在 T、一端不在 T",
+   "why": "新的端點原本不在 T 裡，加進去不可能繞回 T。"
+  },
+  {
+   "q": "Prim 正確性證明的 induction hypothesis 是？",
+   "opts": [
+    "目前的 T 是某棵 MST 的 subtree",
+    "目前的 T 本身就是 MST",
+    "目前的 T 是 weight 最小的 path",
+    "每條邊都屬於所有 MST"
+   ],
+   "ans": "目前的 T 是某棵 MST 的 subtree",
+   "why": "只要求「某一棵」MST 包含 T。"
+  },
+  {
+   "q": "Case 2 中，e′ 是怎麼找到的？",
+   "opts": [
+    "把 e 加進 M 產生 cycle，沿 cycle 找另一條跨過 T 邊界的邊",
+    "在全圖找 weight 最大的邊",
+    "在 T 裡找一條邊",
+    "任取 M 中不在 T 的一條邊"
+   ],
+   "ans": "把 e 加進 M 產生 cycle，沿 cycle 找另一條跨過 T 邊界的邊",
+   "why": "cycle 從 T 經 e 跨出去，一定要再跨回來，那條就是 e′。"
+  },
+  {
+   "q": "為什麼 w(e′) ≥ w(e)？",
+   "opts": [
+    "e′ 也是可加的候選，但 algorithm 選了 weight 最小的 e",
+    "因為 e′ 在 M 裡",
+    "因為 e′ 在 cycle 上",
+    "因為 e 先被考慮"
+   ],
+   "ans": "e′ 也是可加的候選，但 algorithm 選了 weight 最小的 e",
+   "why": "如果 e′ 更小，algorithm 會選 e′。"
+  },
+  {
+   "q": "M′ = M + e − e′ 為什麼還是 MST？",
+   "opts": [
+    "它是 spanning tree 且 weight ≤ w(M)",
+    "因為它包含 e",
+    "因為 M′ = M",
+    "因為 e′ 是 weight 最大的邊"
+   ],
+   "ans": "它是 spanning tree 且 weight ≤ w(M)",
+   "why": "打斷 cycle 仍是 spanning tree；w(e) ≤ w(e′) 所以 weight 不增加。"
+  }
+ ]
+}

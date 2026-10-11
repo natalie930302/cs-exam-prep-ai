@@ -1,0 +1,215 @@
+{
+ "video": "LIKCqbxc-sI",
+ "label": "清大OCW 趙啟超《離散數學》第28B講 Minimal Spanning Trees",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "證明二：T 一直是某棵 MST 的 subgraph",
+   "points": [
+    {
+     "t": 4,
+     "text": "第二部分：output 不只是 spanning tree，而是 MST；方法跟 Prim 的證明很像。"
+    },
+    {
+     "t": 48,
+     "text": "T 過程中不一定是 tree，所以 induction hypothesis 改成：T 是某棵 MST M 的 subgraph。"
+    },
+    {
+     "t": 193,
+     "text": "Basis：T = ∅ 一定是 subgraph。Induction step：加上下一條 e 後，仍是某棵 MST M′ 的 subgraph；e ∈ M 時 M′ = M。"
+    }
+   ],
+   "scene": "g8d-kr-ih",
+   "cues": [
+    4.4,
+    21.4,
+    48.1,
+    115.8,
+    193.6,
+    213.4,
+    313.9
+   ],
+   "explain": [
+    "接著證明第二部分：Kruskal 輸出的 T 不只是 spanning tree，而且是 minimal spanning tree。",
+    "方法跟證明 Prim 時幾乎一樣，只要稍微修改。",
+    "證 Prim 時說「T 是某棵 MST 的 subtree」，但 Kruskal 的 T 過程中可能分成好幾塊（綠色兩塊），不一定是 tree，所以只能說它是某棵 MST 的 subgraph。畫面是示意小圖。",
+    "同樣用歸納法。假設：目前的 T 是某棵 MST M 的 subgraph。M 就是金色加藍色的邊。",
+    "起點：一開始 T 是空集合，空的當然是任何圖的 subgraph，成立。",
+    "歸納步驟：algorithm 下一條加的是 e（黃色的 bc），要證明 T + e 仍然是某棵 MST M′ 的 subgraph。",
+    "一樣分兩種情況。如果 e 本來就在 M 裡，M′ 就是 M，結束。主要看 e 不在 M 裡的情況。"
+   ]
+  },
+  {
+   "title": "e 不在 M 裡：找 e′ 交換",
+   "points": [
+    {
+     "t": 342,
+     "text": "e ∉ M：把 e 加進 M 會產生唯一的 cycle。"
+    },
+    {
+     "t": 415,
+     "text": "e 的條件是加進 T 不會形成 cycle，也就是 e 的兩端不在 T 的同一個 component（可能一端不在 T、兩端都不在 T、或在不同 component）。"
+    },
+    {
+     "t": 587,
+     "text": "沿 cycle 繞一圈，可以找到另一條 e′ ≠ e，兩端也不在 T 的同一個 component。"
+    },
+    {
+     "t": 854,
+     "text": "e、e′ 都有資格加進 T，algorithm 選了 e，所以 w(e) ≤ w(e′)。"
+    },
+    {
+     "t": 894,
+     "text": "M′ = M + e − e′ 是 spanning tree，weight 不會增加，所以是 MST，而且包含 T 和 e；一路推到最後 T 就是 MST。"
+    }
+   ],
+   "trap": "Kruskal 版本的條件是「兩端不在 T 的同一個 component」，比 Prim 的「一端在 T、一端不在 T」寬：e 的兩端可以都已在 T 裡，只要在不同 component。",
+   "scene": "g8d-kr-case2",
+   "cues": [
+    342.4,
+    364.1,
+    415.6,
+    444.9,
+    524.3,
+    587,
+    674.6,
+    813.9,
+    854.8,
+    894.2,
+    958.3,
+    1010.5
+   ],
+   "explain": [
+    "看 e 不在 M 裡的情況。示意圖中 e = bc，M 是金色加藍色的邊，不含 bc。",
+    "跟 Prim 一樣：把 e 加進 M，因為 M 已經含所有點，一定會繞出唯一的 cycle（橘色）b a x d c b。",
+    "這次 e 的條件不同。Kruskal 選 e 的條件是：加進 T 不會形成 cycle。",
+    "換句話說，e 的兩端不在 T 的同一個 component 裡。如果在同一塊，加進去就繞成 cycle 了。Prim 是「一端在 T、一端不在」，這裡不一定。",
+    "「不在同一塊」有好幾種可能：一端在 T、一端不在；兩端都不在 T；或兩端在 T 的不同塊。這裡 bc 的 b 在 {a, b}、c 在 {c, d}，是第三種。",
+    "沿著 cycle 繞一圈：e 跨過了兩塊之間，要繞回來就一定還有另一條邊 e′，它的兩端也不在 T 的同一塊。",
+    "老師畫的示意圖：綠色是 T 的各個 component，橘色是 cycle。這裡找到的 e′ 是 dx，而且 x 根本不在 T 裡。",
+    "這只是其中一種狀況。這個 cycle 上符合條件的邊其實有 ax 和 xd 兩條，挑哪一條都可以。",
+    "e 和 e′ 加進 T 都不會形成 cycle，兩個都有資格。algorithm 選了 e，表示 e 的 weight 不比 e′ 大：w(e) ≤ w(e′)。這裡都是 2 ✓。",
+    "接下來和 Prim 的證明一模一樣：把 e 加進 M、拿掉 e′，唯一的 cycle 被打斷，得到的 M′ 還是 spanning tree ✓。",
+    "M′ 的 weight = 6 + 2 − 2 = 6，沒有增加，所以 M′ 也是 MST；而且 M′ 包含原來的 T 和 e ✓。歸納步驟成立。",
+    "從頭推到尾：T 一直是某棵 MST 的 subgraph；第一部分又證過最後 T 是 spanning tree，所以 T 就是一棵 minimal spanning tree。"
+   ]
+  },
+  {
+   "title": "兩個證明的比較",
+   "points": [
+    {
+     "t": 1028,
+     "text": "和 Prim 的證明幾乎一樣：subtree 換成 subgraph，「一端在 T、一端不在 T」換成「兩端不在 T 的同一個 component」。"
+    },
+    {
+     "t": 1093,
+     "text": "不是所有問題 greedy 都能找到最好的，但常常可以先從 greedy 想起，再調整。"
+    }
+   ],
+   "scene": "g8d-kr-cmp",
+   "cues": [
+    1028.7,
+    1064,
+    1093.1
+   ],
+   "explain": [
+    "比較一下：Kruskal 第二部分的證明跟 Prim 幾乎一模一樣，只改了兩個地方——subtree 改成 subgraph，以及 e 的條件。",
+    "所以 Kruskal 雖然過程中不是 tree，做到最後一定是 spanning tree，而且是 minimal 的。從小的 weight 開始加，直覺上也比較好想。",
+    "提醒：不是所有問題用 greedy 都會得到最好的答案。但設計演算法時，常常可以先從 greedy 想，因為它通常比較容易做，再想辦法調整。"
+   ]
+  },
+  {
+   "title": "複雜度",
+   "points": [
+    {
+     "t": 1133,
+     "text": "Prim 跟 Dijkstra 很像：direct implementation 是 O(n²)；用 binary heap 做 priority queue 可到 O(e log n)。"
+    },
+    {
+     "t": 1255,
+     "text": "binary heap：complete binary tree，而且 parent 比它的 children 小（min-heap）。"
+    },
+    {
+     "t": 1284,
+     "text": "Kruskal 用 union-find 資料結構：O(e log e)。Prim、Kruskal 都是會找到 MST 的 greedy algorithm。"
+    }
+   ],
+   "scene": "g8d-mst-cost",
+   "cues": [
+    1133.7,
+    1139.5,
+    1189,
+    1255,
+    1284.4,
+    1321,
+    1341.3
+   ],
+   "explain": [
+    "最後稍微看一下複雜度，只講結果，不詳細推導。",
+    "Prim 其實跟 Dijkstra 很像（都是一個一個點加進來、每次挑最小的），所以直接實作的 worst case 也是 O(n²)，n 是端點數。",
+    "用好一點的 data structure——priority queue，用 binary heap 實作——可以降到 O(e log n)，e 是邊數。邊不多時比 n² 小很多。",
+    "binary heap 是一棵 complete binary tree（一層一層從左到右填滿），而且每個 parent 都比它的 children 小。畫面上是示意的例子，程式檢查過 ✓。",
+    "Kruskal 的話，用一種叫 union-find 的資料結構來判斷「加這條邊會不會形成 cycle」，複雜度是 O(e log e)。",
+    "這些資料結構的細節屬於資料結構課，這門離散數學就不深入了。",
+    "總結：我們學了兩個找 minimal spanning tree 的 greedy algorithm——Prim 和 Kruskal，兩個都保證找到 MST。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Kruskal 證明二的 induction hypothesis 為什麼用 subgraph 而不是 subtree？",
+   "opts": [
+    "因為過程中的 T 可能有好幾個 component，不一定是 tree",
+    "因為 T 一定是 tree",
+    "因為 M 不是 tree",
+    "因為 subgraph 比較好畫"
+   ],
+   "ans": "因為過程中的 T 可能有好幾個 component，不一定是 tree",
+   "why": "Kruskal 的 T 在過程中是 forest。"
+  },
+  {
+   "q": "Kruskal 選的 e 滿足什麼條件？",
+   "opts": [
+    "兩端不在 T 的同一個 component",
+    "一端在 T、一端不在 T",
+    "兩端都在 T 的同一個 component",
+    "和 T 沒有共同端點"
+   ],
+   "ans": "兩端不在 T 的同一個 component",
+   "why": "這正是「加進去不會形成 cycle」的意思。"
+  },
+  {
+   "q": "證明中為什麼 w(e) ≤ w(e′)？",
+   "opts": [
+    "e、e′ 都可以加，而 algorithm 選了 weight 最小的 e",
+    "因為 e′ 在 M 裡",
+    "因為 e 比 e′ 先被畫出來",
+    "因為 cycle 上 weight 都相同"
+   ],
+   "ans": "e、e′ 都可以加，而 algorithm 選了 weight 最小的 e",
+   "why": "Kruskal 照 weight 從小到大考慮，e 先被選中。"
+  },
+  {
+   "q": "Kruskal 用 union-find 的 worst-case 複雜度是？",
+   "opts": [
+    "O(e log e)",
+    "O(n²)",
+    "O(e²)",
+    "O(n)"
+   ],
+   "ans": "O(e log e)",
+   "why": "主要花在把 e 條邊排序。"
+  },
+  {
+   "q": "binary heap（min-heap）滿足什麼性質？",
+   "opts": [
+    "complete binary tree，且 parent ≤ children",
+    "每個節點恰有兩個 children",
+    "left child ≤ parent ≤ right child",
+    "所有 leaf 都在同一層"
+   ],
+   "ans": "complete binary tree，且 parent ≤ children",
+   "why": "left ≤ parent ≤ right 是 binary search tree 的性質。"
+  }
+ ]
+}

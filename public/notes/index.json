@@ -503,6 +503,12 @@
   "quiz": 5,
   "cued": true
  },
+ "9r_YXw7i_mY": {
+  "label": "清大OCW 趙啟超《離散數學》第27B講 Shortest-Path Problem and Minimal Spanning Trees",
+  "points": 22,
+  "quiz": 6,
+  "cued": true
+ },
  "9SgLBjXqwd4": {
   "label": "Abdul Bari：1.5.2 Time Complexity Example #2",
   "points": 36,
@@ -789,6 +795,12 @@
   "label": "Abdul Bari：Huffman Coding - Greedy Method",
   "points": 16,
   "quiz": 7,
+  "cued": true
+ },
+ "crMqlrIH4Ds": {
+  "label": "清大OCW 趙啟超《離散數學》第27D講 Shortest-Path Problem and Minimal Spanning Trees",
+  "points": 13,
+  "quiz": 5,
   "cued": true
  },
  "cvooTtquDlQ": {
@@ -1097,6 +1109,12 @@
   "quiz": 8,
   "cued": true
  },
+ "Greva74E0ZU": {
+  "label": "清大OCW 趙啟超《離散數學》第27C講 Shortest-Path Problem and Minimal Spanning Trees",
+  "points": 18,
+  "quiz": 6,
+  "cued": true
+ },
  "HA96JKO9znE": {
   "label": "清大周志遠 第5B講 OS Services",
   "points": 26,
@@ -1349,6 +1367,12 @@
   "quiz": 5,
   "cued": true
  },
+ "Kj2w3kDGWBc": {
+  "label": "清大OCW 趙啟超《離散數學》第27A講 Shortest-Path Problem and Minimal Spanning Trees",
+  "points": 21,
+  "quiz": 5,
+  "cued": true
+ },
  "klWl-t7V5qY": {
   "label": "交大OCW 易志偉《離散數學》Lec01 Logic and Proofs (1/5)",
   "points": 72,
@@ -1395,6 +1419,12 @@
   "label": "交大彭文志 Lec08 Lists (1/4)",
   "points": 76,
   "quiz": 7,
+  "cued": true
+ },
+ "LIKCqbxc-sI": {
+  "label": "清大OCW 趙啟超《離散數學》第28B講 Minimal Spanning Trees",
+  "points": 13,
+  "quiz": 5,
   "cued": true
  },
  "lj3E24nnPjI": {
@@ -2301,6 +2331,12 @@
   "label": "交大彭文志 Lec04 Arrays (2/4)",
   "points": 98,
   "quiz": 7,
+  "cued": true
+ },
+ "XAW_4UvQGWg": {
+  "label": "清大OCW 趙啟超《離散數學》第28A講 Minimal Spanning Trees",
+  "points": 16,
+  "quiz": 5,
   "cued": true
  },
  "XaXsJJh-Q5Y": {

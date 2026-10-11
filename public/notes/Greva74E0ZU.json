@@ -1,0 +1,289 @@
+{
+ "video": "Greva74E0ZU",
+ "label": "清大OCW 趙啟超《離散數學》第27C講 Shortest-Path Problem and Minimal Spanning Trees",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Minimal spanning tree 的定義",
+   "points": [
+    {
+     "t": 4,
+     "text": "第二個問題：minimal spanning tree（也叫 minimum spanning tree，兩種說法同義）。"
+    },
+    {
+     "t": 50,
+     "text": "給 weighted、undirected、connected simple graph G = (V, E)，有 n 個端點、e 條邊。"
+    },
+    {
+     "t": 148,
+     "text": "MST：G 的所有 spanning tree 中，edge weight 總和最小的那一棵。"
+    },
+    {
+     "t": 170,
+     "text": "spanning tree 通常不唯一；DFS、BFS、Dijkstra 都會給一棵，但目的不同。"
+    }
+   ],
+   "scene": "g8d-mst-def",
+   "cues": [
+    4.5,
+    50.4,
+    114.1,
+    148.9,
+    170.3,
+    194.7,
+    219.7
+   ],
+   "explain": [
+    "最佳化的第二個問題叫 minimal spanning tree（最小生成樹），有些書叫 minimum spanning tree，意思一樣，常簡寫成 MST。",
+    "題目給一張 weighted、undirected、connected simple graph G。這裡用的還是 A 到 F 那張圖：6 個端點、10 條邊。",
+    "MST 首先要是一棵 spanning tree（生成樹）：本身是 tree（connected、沒有 cycle），而且包含圖上所有端點。",
+    "再加上 minimal：把這棵樹所有邊的 weight 加起來，要是所有 spanning tree 裡最小的。",
+    "一張圖的 spanning tree 通常很多棵。程式把這張圖的全部列出來，一共 130 棵。",
+    "我們之前用 DFS、BFS，還有剛學的 Dijkstra，都會得到一棵 spanning tree，但它們各有各的目的。",
+    "現在的目標不一樣：要在這麼多棵裡，找出 weight 總和最小的那一棵。這張圖的答案是 15。"
+   ]
+  },
+  {
+   "title": "例子：三棵 spanning tree 比 weight",
+   "points": [
+    {
+     "t": 237,
+     "text": "在同一張圖上舉三棵 spanning tree：T1（Dijkstra 的結果）、T2、T3（T2 的形狀畫面為示意，weight 照老師說的 33）。"
+    },
+    {
+     "t": 426,
+     "text": "weight：T1 = 3+5+7+6+1 = 22，T2 = 33，T3 = 15。"
+    },
+    {
+     "t": 510,
+     "text": "T3 最小。Dijkstra 的 tree 讓 A 到各點最短（例如 A 到 E：T1 是 9，T3 是 12），但總 weight 不一定最小——目的不同，結果就不同。"
+    },
+    {
+     "t": 581,
+     "text": "T3 就是這張圖的 MST（weight 15）；一般 MST 不一定唯一，algorithm 給出其中一棵。"
+    }
+   ],
+   "trap": "shortest-path tree 不等於 minimal spanning tree：一個讓「起點到各點」最短，一個讓「所有邊的總和」最小。",
+   "scene": "g8d-mst-ex",
+   "cues": [
+    237.6,
+    288.2,
+    302.8,
+    318.8,
+    321.3,
+    426.1,
+    465.9,
+    488.2,
+    510.1,
+    552.1,
+    581.6,
+    590
+   ],
+   "explain": [
+    "來看例子。左邊是原來的圖 G。",
+    "這張圖跟剛才 Dijkstra 的例子是同一張。",
+    "隨便舉幾棵 spanning tree。第一棵 T1，每個點都在、沒有 cycle。",
+    "第二棵 T2 也是 spanning tree。黑板上看不清楚，畫面上的形狀是示意，但 weight 和老師說的一樣是 33。",
+    "第三棵 T3，也是 spanning tree。",
+    "T1 其實就是剛才 Dijkstra 跑出來的那棵樹。把 5 條邊的 weight 加起來：3 + 5 + 7 + 6 + 1 = 22。",
+    "T2 的 5 條邊加起來是 33。",
+    "T3 的 5 條邊加起來是 15。不同的 spanning tree，weight 總和可能不一樣（也可能剛好一樣）。",
+    "三棵裡 T3 的 15 最小。注意 Dijkstra 找到的 T1 雖然讓 A 到每個點都最短，但總 weight 22 不是最小的。",
+    "舉例：A 到 E，T1 裡走 A B E 是 9，T3 裡要走 A B C E 是 12。兩種樹的目的不同，所以答案不同。",
+    "其實 T3 就是這張圖的 minimal spanning tree。程式把 130 棵全部列出來比，最小的確實是 15 ✓，不可能更低。",
+    "MST 一般不一定唯一（weight 相同的可能有好幾棵，這張圖剛好只有一棵）。algorithm 會給你其中一棵就對了。"
+   ]
+  },
+  {
+   "title": "Greedy algorithm：每次選眼前最好的",
+   "points": [
+    {
+     "t": 620,
+     "text": "greedy algorithm（貪心演算法）：每一步都做當下看起來最好的選擇，不管對未來的影響（repeatedly makes locally best choices, ignoring effects in the future）。"
+    },
+    {
+     "t": 755,
+     "text": "不是所有問題 greedy 都會得到最好的（像下棋能吃就吃，可能掉進陷阱），但 MST 這個問題 greedy 會 work。"
+    }
+   ],
+   "scene": "g8d-greedy",
+   "cues": [
+    620.8,
+    633.4,
+    657.9,
+    725.3,
+    755.6,
+    782.8
+   ],
+   "explain": [
+    "要怎麼找 MST？總不能把所有 spanning tree 都列出來比，圖一大就太多了。",
+    "有一類方法叫 greedy algorithm，中文叫貪心演算法。",
+    "貪心的意思是：每一步都選「現在看起來最好」的，完全不管以後會怎樣。老師的比喻是下棋時能吃就吃。",
+    "英文的說法是 repeatedly makes locally best choices, ignoring effects in the future：一再做局部最好的決定，不考慮未來的影響。",
+    "這種做法不一定總是對。下棋時對手可能故意讓你吃，把你引進陷阱，結果反而輸了。",
+    "但好消息是：MST 這個問題，用 greedy 的方法最後一定會得到最好的答案。"
+   ]
+  },
+  {
+   "title": "Prim's algorithm",
+   "points": [
+    {
+     "t": 815,
+     "text": "介紹兩個找 MST 的 greedy algorithm，先講 Prim。"
+    },
+    {
+     "t": 863,
+     "text": "T 是一棵 growing tree：一開始是任意一個端點，每次加一條 edge（和它新帶進來的端點）。"
+    },
+    {
+     "t": 975,
+     "text": "加的 edge 必須一端在 T、一端不在 T——這樣不會產生 cycle，T 一直是 tree。"
+    },
+    {
+     "t": 1059,
+     "text": "在所有可以加的 edge 中挑 weight 最小的（greedy）；做 n − 1 次後得到 spanning tree，而且是 MST（後面證明）。"
+    }
+   ],
+   "scene": "g8d-prim-algo",
+   "cues": [
+    815.6,
+    863.7,
+    918.6,
+    963.2,
+    975.9,
+    1029,
+    1059.1,
+    1102.5,
+    1157.2
+   ],
+   "explain": [
+    "找 MST 有兩個 greedy 方法，兩個都會成功。先介紹第一個：Prim's algorithm。",
+    "它的做法是一條邊一條邊加進去，直到變成一棵 spanning tree。右邊是步驟。",
+    "Prim 讓 T 一直保持是一棵 tree，而且慢慢長大，所以叫 growing tree。左邊綠色區域是目前的 T（示意小圖）。",
+    "一開始 T 只有一個端點，選哪一個都可以。",
+    "每次要加的邊有規定：一端在 T 裡面、另一端在 T 外面。橘色的這幾條就是現在可以加的。",
+    "為什麼這樣規定？如果兩端都在 T 裡（像 q r），加進去就會繞成一個 cycle。一端在內一端在外，加進去還是連通又沒有 cycle，所以仍然是 tree。",
+    "可以加的邊通常很多條，Prim 挑 weight 最小的那條。這就是 greedy：眼前有比較小的，沒道理去選大的。這裡挑 r t（3）。",
+    "每次加一條邊、多一個端點。從 1 個點開始做 n − 1 次，就有 n 個點、n − 1 條邊，正好是 spanning tree。",
+    "每一步都是 tree，每次都挑最小的邊，最後就得到 minimal spanning tree。為什麼一定最小，下一段會證明。"
+   ]
+  },
+  {
+   "title": "Prim's algorithm 跑老師的圖",
+   "points": [
+    {
+     "t": 1199,
+     "text": "同一張圖，從 A 開始；6 個端點，一開始 1 個，要再做 5 次。"
+    },
+    {
+     "t": 1322,
+     "text": "T = {A}：候選 AB 3、AC 9、AD 7 → 加 AB；T = {A, B}：候選 AC 9、AD 7、BC 5、BE 6、BF 8 → 加 BC。"
+    },
+    {
+     "t": 1453,
+     "text": "T = {A, B, C}：最小是 CD 2；T = {A, B, C, D}：BE 6、BF 8、CE 4、DF 5 → 加 CE；最後只剩 F：EF 1 最小 → 加 EF。"
+    },
+    {
+     "t": 1646,
+     "text": "結果是 AB、BC、CD、CE、EF，total weight 3+5+2+4+1 = 15，就是前面的 T3。"
+    }
+   ],
+   "trap": "Prim 每次只看「一端在 T、一端不在 T」的邊；兩端都已在 T 裡的邊（例如 T = {A, B, C} 時的 AC）不能加。",
+   "scene": "g8d-prim-run",
+   "cues": [
+    1199,
+    1282.3,
+    1297.7,
+    1322.1,
+    1371.3,
+    1453.2,
+    1560.5,
+    1593.7,
+    1646,
+    1691.2,
+    1714.9
+   ],
+   "explain": [
+    "用同一張圖實際跑一次 Prim。",
+    "一共 6 個端點：一開始放 1 個，之後每次加 1 個，再做 5 次就完成。",
+    "從 A 開始，T 裡現在只有 A。",
+    "可以加的邊是從 A 連出去的 AB、AC、AD，weight 3、9、7，最小是 AB 的 3，加進去。",
+    "現在 T = {A, B}。一端在 T、一端不在的邊有 AC 9、AD 7、BC 5、BE 6、BF 8，最小的是 BC 的 5，加進去（老師口誤說成 AC，其實是 BC）。",
+    "T = {A, B, C}。候選有 AD 7、BE 6、BF 8、CD 2、CE 4，最小是 CD 的 2。",
+    "T = {A, B, C, D}，還沒進來的是 E、F。候選 BE 6、BF 8、CE 4、DF 5，最小是 CE 的 4。",
+    "只剩 F：候選 BF 8、DF 5、EF 1，最小是 EF 的 1，加進去。",
+    "全部端點都進來了。因為每次加的邊都一端在內一端在外，T 一路都是 tree，最後就是 spanning tree。",
+    "把 5 條邊加起來：3 + 5 + 2 + 4 + 1 = 15，正好就是前面例子裡的 T3，也就是 MST ✓。",
+    "接下來要證明：照這樣 greedy 地做，得到的一定是 minimal spanning tree。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "minimal spanning tree 是什麼？",
+   "opts": [
+    "所有 spanning tree 中，edge weight 總和最小的那一棵",
+    "從起點到每點都最短的那棵 tree",
+    "邊數最少的 subgraph",
+    "weight 最小的那一條 edge"
+   ],
+   "ans": "所有 spanning tree 中，edge weight 總和最小的那一棵",
+   "why": "MST 比的是整棵樹邊的 weight 總和。"
+  },
+  {
+   "q": "老師例子中，Dijkstra 得到的 tree（T1）weight 是多少？",
+   "opts": [
+    "22",
+    "15",
+    "33",
+    "10"
+   ],
+   "ans": "22",
+   "why": "3 + 5 + 7 + 6 + 1 = 22；MST 是 15。"
+  },
+  {
+   "q": "greedy algorithm 的特色是？",
+   "opts": [
+    "每一步都選當下最好的，不考慮未來的影響",
+    "把所有可能都列出來比較",
+    "每一步都回頭修改之前的選擇",
+    "隨機挑一個"
+   ],
+   "ans": "每一步都選當下最好的，不考慮未來的影響",
+   "why": "locally best choice，ignoring effects in the future。"
+  },
+  {
+   "q": "Prim's algorithm 每次加的 edge 必須滿足？",
+   "opts": [
+    "一端在 T、一端不在 T，而且是這種邊中 weight 最小的",
+    "兩端都在 T 裡",
+    "全圖 weight 最小、不管位置",
+    "兩端都不在 T 裡"
+   ],
+   "ans": "一端在 T、一端不在 T，而且是這種邊中 weight 最小的",
+   "why": "一端在內一端在外，加進去不會有 cycle，T 一直是 tree。"
+  },
+  {
+   "q": "老師的圖從 A 跑 Prim，第二條加入的 edge 是？",
+   "opts": [
+    "BC",
+    "AC",
+    "AD",
+    "CD"
+   ],
+   "ans": "BC",
+   "why": "T = {A, B} 時候選 AC 9、AD 7、BC 5、BE 6、BF 8，最小是 BC。"
+  },
+  {
+   "q": "Prim 在老師的圖上得到的 total weight 是？",
+   "opts": [
+    "15",
+    "22",
+    "33",
+    "17"
+   ],
+   "ans": "15",
+   "why": "AB 3 + BC 5 + CD 2 + CE 4 + EF 1 = 15。"
+  }
+ ]
+}

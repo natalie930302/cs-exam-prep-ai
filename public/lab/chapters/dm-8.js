@@ -5488,6 +5488,1192 @@ scene('g8c-sp-opt', '26B：principle of optimality', [
   },
 ]);
   }
+
+  // ═══ g8d.js ═══
+  {
+const P = K; const { V3, tag, cube, kill, glow, code, anim, arrow, zone, travel, remove, step, buddy, prop, bob, fresh } = P;
+const { txt, showL } = P;
+// (kit has no beat: short waits use ctx.beat)
+// ─── 離散數學 第 8 章（清大 趙啟超 第27A–28B講 Shortest path／Minimal spanning tree）— cued scenes ───
+// 老師的例子圖 G：6 個端點 A–F、10 條邊。26B 口述的 weight「3 9 7 5 2 4 6 8 1 5」對應 AB AC AD BC CD CE BE BF EF DF，
+// 而且 26B 的 ADCBF = 22、ADF = 12，27B 每一輪的 L 值，27C／28A 的 Prim／Kruskal 每一步都和這組邊相符。端點擺放位置是示意。
+// Dijkstra 的每個 label、Prim／Kruskal 每一步的候選邊與選擇、total weight 都由程式在這張圖上算出來，
+// 再和老師口述的數字比對，另外用「列舉所有 path／所有 spanning tree」驗算，畫面顯示 ✓／✘。
+// 27A 的抽象講解用的 H6、兩個 correctness 證明用的 K 是自己設計的示意小圖（畫面標「示意」），數字一樣由程式算。
+const wt = (tok, ms) => ctx.beat(tok, ms);
+const cap = (a, b = '') => say(a, b);
+const hd = (t, x, y, z = 0) => tag(t, 'ptr', x, y, z);
+const hot = (t, x, y, z = 0) => tag(t, 'ptr alt', x, y, z);
+const sm = (t, x, y, z = 0) => tag(t, 'idx', x, y, z);
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const pl = (t, x, y, z = 0) => tag(t, '', x, y, z);
+const ok = (b, x, y, t) => (b ? good(t, x, y) : bad(t.replace(/✓/g, '✘'), x, y));
+const gone = (...os) => os.forEach((o) => { if (!o) return; if (Array.isArray(o)) return gone(...o); if (o.ls && typeof o.kill === 'function') return o.kill(); if (typeof o.all === 'function') return gone(o.all()); if (o.element) remove(o); else kill(o); });
+const setCls = (l, cls) => { l.element.className = 'lab-label' + (cls ? ' ' + cls : ''); };
+const CAM = [[0, 3.6, 15], [0, 3.1, 0]];
+const TC = { node: '#cdbfa6', edge: '#9c8b70', faint: '#e4dccd', a: '#4b9ee2', b: '#e55a9b', hot: '#d64545', gold: '#c08a1f', green: '#2fc092', yel: '#e9c53a', purple: '#9b7ef4', orange: '#dd8238' };
+// a scene = a list of step functions; each runs when the video reaches its cue.
+// o.pre: functions run silently first (to rebuild the state a later section starts from).
+function scene(id, title, steps, o = {}) {
+  FRAG.push([id, title, async (tok) => {
+    const c = o.cam || CAM; fresh(c[0], c[1]);
+    const S = {};
+    for (const f of o.pre || []) await f(tok, S, true);
+    for (const f of steps) { await step(tok); await f(tok, S, false); }
+  }]);
+}
+
+// ── 3D 小零件 ──
+const NG = new THREE.SphereGeometry(0.3, 18, 12);
+const CG = new THREE.CylinderGeometry(1, 1, 1, 8);
+function seg(x1, y1, x2, y2, c = TC.edge, r = 0.05, z = -0.03) {
+  const dx = x2 - x1, dy = y2 - y1, L = Math.max(0.02, Math.hypot(dx, dy));
+  const m = new THREE.Mesh(CG, new THREE.MeshStandardMaterial({ color: c, roughness: 0.6 }));
+  m.scale.set(r, L, r); m.position.set((x1 + x2) / 2, (y1 + y2) / 2, z); m.rotation.z = Math.atan2(dy, dx) - Math.PI / 2;
+  lab.world.add(m); return m;
+}
+function dash(pts, c = TC.hot, r = 0.045) {
+  const out = [];
+  for (let i = 0; i + 1 < pts.length; i++) {
+    const [x1, y1] = pts[i], [x2, y2] = pts[i + 1]; const L = Math.hypot(x2 - x1, y2 - y1), k = Math.max(2, Math.round(L / 0.25));
+    for (let j = 0; j < k; j += 2) { const a = j / k, b = Math.min(1, (j + 1) / k); out.push(seg(x1 + (x2 - x1) * a, y1 + (y2 - y1) * a, x1 + (x2 - x1) * b, y1 + (y2 - y1) * b, c, r, 0.02)); }
+  }
+  return out;
+}
+function blob(x, y, rx, ry, c, op = 0.22, rot = 0) {
+  const m = new THREE.Mesh(new THREE.CircleGeometry(1, 40), new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: op, side: THREE.DoubleSide, depthWrite: false }));
+  m.scale.set(rx, ry, 1); m.position.set(x, y, -0.2); m.rotation.z = rot; lab.world.add(m); return m;
+}
+const key = (a, b) => (a < b ? a + '|' + b : b + '|' + a);
+const en = (e) => e[0] + e[1];
+// weighted graph drawn in the picture plane. E = [[u, v, w], …]
+function mkG(Pm, E, o = {}) {
+  const s = o.s || 1, dx = o.dx || 0, dy = o.dy || 0, er = o.er || 0.05;
+  const g = { V: {}, E: {}, W: {}, P: {}, ex: [] };
+  for (const n of Object.keys(Pm)) {
+    const X = Pm[n][0] * s + dx, Y = Pm[n][1] * s + dy; g.P[n] = [X, Y];
+    const m = new THREE.Mesh(NG, new THREE.MeshStandardMaterial({ color: TC.node, roughness: 0.5 }));
+    m.scale.setScalar(o.r || 1); m.position.set(X, Y, 0); lab.world.add(m);
+    m.add(lab.label(o.nm ? o.nm(n) : n, 'val')); g.V[n] = m;
+  }
+  for (const [u, v, w] of E) {
+    if (o.only && !o.only.some((e) => key(e[0], e[1]) === key(u, v))) continue;
+    const [x1, y1] = g.P[u], [x2, y2] = g.P[v];
+    g.E[key(u, v)] = seg(x1, y1, x2, y2, TC.edge, er);
+    if (w != null && o.weights !== false) {
+      const L = Math.hypot(x2 - x1, y2 - y1), nx = -(y2 - y1) / L, ny = (x2 - x1) / L, off = (o.off ?? 0.3) * (o.flip && o.flip.includes(u + v) ? -1 : 1);
+      g.W[key(u, v)] = pl(String(w), (x1 + x2) / 2 + nx * off, (y1 + y2) / 2 + ny * off, 0.05);
+    }
+  }
+  g.ecol = (u, v, c, thick) => { const e = g.E[key(u, v)]; if (!e) return; e.material.color.set(c); const r = thick ? er * 2.2 : er; e.scale.x = r; e.scale.z = r; };
+  g.vcol = (n, c, gl) => { g.V[n].material.color.set(c); glow(g.V[n], gl || '#000000'); };
+  g.reset = () => { for (const k of Object.keys(g.E)) { const [u, v] = k.split('|'); g.ecol(u, v, TC.edge, false); } };
+  g.all = () => [...Object.values(g.V), ...Object.values(g.E), ...Object.values(g.W), ...g.ex];
+  return g;
+}
+function paintPath(g, pth, c) { for (let k = 0; k + 1 < pth.length; k++) g.ecol(pth[k], pth[k + 1], c, true); }
+
+// ── 圖的計算（全部在畫面上的圖上算） ──
+const fmt = (x) => (x === Infinity ? '∞' : String(x));
+const sum = (E) => E.reduce((s, e) => s + e[2], 0);
+function wOf(E, u, v) { for (const [a, b, w] of E) if ((a === u && b === v) || (a === v && b === u)) return w; return Infinity; }
+function dsu(V) { const p = {}; V.forEach((v) => (p[v] = v)); const f = (x) => (p[x] === x ? x : (p[x] = f(p[x]))); return { f, u(a, b) { a = f(a); b = f(b); if (a === b) return false; p[a] = b; return true; } }; }
+function dijkstra(names, E, s) {
+  const L = {}, pre = {}; names.forEach((n) => { L[n] = Infinity; pre[n] = null; }); L[s] = 0;
+  const S = [], it = [];
+  while (S.length < names.length) {
+    const out = names.filter((n) => !S.includes(n)); let u = out[0]; for (const n of out) if (L[n] < L[u]) u = n;
+    const Lbefore = { ...L }; S.push(u); const ch = [];
+    for (const v of names) if (!S.includes(v)) { const w = wOf(E, u, v), old = L[v], cand = L[u] + w, upd = old > cand; ch.push({ v, old, w, cand, upd }); if (upd) { L[v] = cand; pre[v] = u; } }
+    it.push({ u, Lu: L[u], out, Lbefore, ch, L: { ...L }, pre: { ...pre }, S: S.slice() });
+  }
+  return { L, pre, it };
+}
+function minPaths(names, E, a) {   // brute force: min weight over ALL simple paths from a
+  const best = {}; names.forEach((n) => (best[n] = Infinity));
+  const go = (v, seen, w) => { if (w < best[v]) best[v] = w; for (const [x, y, ww] of E) { const nb = x === v ? y : y === v ? x : null; if (nb && !seen.has(nb)) { seen.add(nb); go(nb, seen, w + ww); seen.delete(nb); } } };
+  go(a, new Set([a]), 0); return best;
+}
+function back(pre, v) { const p = [v]; while (pre[p[0]]) p.unshift(pre[p[0]]); return p; }
+const preEdges = (E, pre) => Object.keys(pre).filter((v) => pre[v]).map((v) => [pre[v], v, wOf(E, pre[v], v)]);
+function isST(names, es) { if (es.length !== names.length - 1) return false; const d = dsu(names); return es.every(([u, v]) => d.u(u, v)); }
+function allST(names, E) { const k = names.length - 1, out = []; const rec = (i, pick) => { if (pick.length === k) { if (isST(names, pick)) out.push(pick.slice()); return; } if (i >= E.length || pick.length + E.length - i < k) return; pick.push(E[i]); rec(i + 1, pick); pick.pop(); rec(i + 1, pick); }; rec(0, []); return out; }
+function treePath(es, a, b) {
+  const A = {}; es.forEach(([u, v]) => { (A[u] = A[u] || []).push(v); (A[v] = A[v] || []).push(u); });
+  const par = { [a]: null }, q = [a]; while (q.length) { const x = q.shift(); for (const y of A[x] || []) if (!(y in par)) { par[y] = x; q.push(y); } }
+  if (!(b in par)) return null; const p = [b]; while (par[p[0]] != null) p.unshift(par[p[0]]); return p;
+}
+function prim(names, E, r) {
+  const T = [r], es = [], steps = [];
+  while (T.length < names.length) {
+    const cand = E.filter(([u, v]) => T.includes(u) !== T.includes(v)); let best = cand[0]; for (const c of cand) if (c[2] < best[2]) best = c;
+    steps.push({ T: T.slice(), cand, e: best }); es.push(best); T.push(T.includes(best[0]) ? best[1] : best[0]);
+  }
+  return { es, steps, T };
+}
+function kruskal(names, order) {
+  const d = dsu(names), acc = [], log = [];
+  for (const e of order) { if (acc.length === names.length - 1) break; const cyc = d.f(e[0]) === d.f(e[1]); log.push({ e, ok: !cyc, path: cyc ? treePath(acc, e[0], e[1]) : null }); if (!cyc) { d.u(e[0], e[1]); acc.push(e); } }
+  return { acc, log };
+}
+function compCount(es) { const vs = [...new Set(es.flatMap((e) => [e[0], e[1]]))]; const d = dsu(vs); es.forEach((e) => d.u(e[0], e[1])); return new Set(vs.map(d.f)).size; }
+function cycleEdges(pth) { const out = []; for (let k = 0; k + 1 < pth.length; k++) out.push([pth[k], pth[k + 1]]); return out; }
+
+// ── 老師的例子圖 G（A–F，10 條邊） ──
+const GP = { A: [-6.3, 3.4], B: [-3.8, 6.0], C: [-4.0, 3.4], D: [-3.8, 0.8], E: [-2.3, 3.8], F: [-0.6, 3.0] };
+const GE = [['A', 'B', 3], ['A', 'C', 9], ['A', 'D', 7], ['B', 'C', 5], ['B', 'E', 6], ['B', 'F', 8], ['C', 'D', 2], ['C', 'E', 4], ['D', 'F', 5], ['E', 'F', 1]];
+const GN = Object.keys(GP);
+const GFLIP = ['AC', 'CD', 'CE'];
+const gG = (o = {}) => mkG(GP, GE, Object.assign({ flip: GFLIP }, o));
+const DJ = dijkstra(GN, GE, 'A');
+const SAID_L = { A: 0, B: 3, C: 8, D: 7, E: 9, F: 10 }, SAID_P = { A: null, B: 'A', C: 'B', D: 'A', E: 'B', F: 'E' };
+const DJ_OK = GN.every((n) => DJ.L[n] === SAID_L[n] && DJ.pre[n] === SAID_P[n]);
+const BRUTE = minPaths(GN, GE, 'A');
+const BRUTE_OK = GN.every((n) => BRUTE[n] === DJ.L[n]);
+const PR = prim(GN, GE, 'A'), PR_W = sum(PR.es);
+const KR_ORDER = ['EF', 'CD', 'AB', 'CE', 'DF', 'BC', 'BE', 'AD', 'BF', 'AC'].map((nm) => GE.find((e) => en(e) === nm));
+const KR_SORTED = KR_ORDER.every((e, i) => e && (!i || KR_ORDER[i - 1][2] <= e[2])) && new Set(KR_ORDER).size === GE.length;
+const KR = kruskal(GN, KR_ORDER), KR_W = sum(KR.acc);
+const STS = allST(GN, GE), MST_W = Math.min(...STS.map(sum)), MST_N = STS.filter((t) => sum(t) === MST_W).length;
+const pathW = (p) => cycleEdges(p).reduce((s, [u, v]) => s + wOf(GE, u, v), 0);
+
+// ── Dijkstra 表格（右邊）：每列 = 一個端點的 label (L, 前一點) ──
+const TX = 1.0, TY = 5.7, TDY = 0.66;
+const rowS = (n, L, p) => n + '：(' + fmt(L) + ', ' + (p || '–') + ')';
+function mkTab(S, names, x = TX, y = TY) {
+  S.head = sm('label = (L 值, 前一個端點)', x + 0.6, y + 0.72);
+  S.rows = {}; S.L = {}; S.pre = {};
+  names.forEach((n, i) => { S.L[n] = Infinity; S.pre[n] = null; S.rows[n] = pl(rowS(n, Infinity, null), x, y - i * TDY); });
+  S.setRow = (n, L, p) => { S.L[n] = L; S.pre[n] = p; txt(S.rows[n], rowS(n, L, p)); };
+}
+function paintPre(S, E) { S.g.reset(); preEdges(E, S.pre).forEach(([u, v]) => S.g.ecol(u, v, TC.gold, true)); }
+
+// ════════ Kj2w3kDGWBc（趙啟超 27A：shortest path、principle of optimality、Dijkstra 的設定與想法） ════════
+// H6：講抽象步驟用的示意圖（v1 連到 v3、v5、v6，和老師「隨便寫 V3 V5 V6」一致）
+const HP = { 1: [-6.2, 3.5], 2: [-2.4, 5.8], 3: [-4.4, 5.4], 4: [-0.8, 2.6], 5: [-3.5, 3.1], 6: [-4.8, 1.0] };
+const HE = [['1', '3', 2], ['1', '5', 6], ['1', '6', 4], ['3', '2', 3], ['3', '5', 1], ['2', '4', 7], ['5', '4', 2], ['6', '4', 5]];
+const HN = Object.keys(HP);
+const vn = (n) => 'v' + n;
+const gH = (o = {}) => mkG(HP, HE, Object.assign({ nm: vn }, o));
+const HD = dijkstra(HN, HE, '1');
+const HB = minPaths(HN, HE, '1');
+const HD_OK = HN.every((n) => HB[n] === HD.L[n]);
+const hl = (n, L, p) => '(' + fmt(L) + ', ' + (p ? vn(p) : '–') + ')';
+function hLabels(S) { S.vl = {}; HN.forEach((n) => { const [x, y] = S.g.P[n]; S.vl[n] = sm('', x, y + 0.55); }); S.setV = (n, L, p) => txt(S.vl[n], hl(n, L, p)); }
+const DCODE = [
+  'Dijkstra（起點 v₁）',
+  'L(v₁) = 0；其他 L(v) = ∞',
+  'label v₁ = (0, –)；S = ∅',
+  'while S ≠ V:',
+  '  u = 不在 S、L 值最小的端點',
+  '  S = S ∪ {u}',
+  '  for 每個不在 S 的 v:',
+  '    if L(v) > L(u) + w(u,v):',
+  '      L(v) = L(u) + w(u,v)',
+  '      label v = (L(v), u)',
+];
+function mkCode(S, x = 3.4, y = 6.5, upto = DCODE.length) { S.code = code(DCODE, x, y, 0.5); S.code.ls.forEach((l, i) => showL(l, i < upto)); S.reveal = (k) => S.code.ls.forEach((l, i) => { if (i < k) showL(l, true); }); }
+
+scene('g8d-sp-intro', '27A：Shortest path 問題與 principle of optimality', [
+  async (tok, S) => { // @4.4
+    S.g = gG(); S.t = hd('weighted、undirected、connected simple graph', 1.0, 6.6);
+    S.n = note('前一講的例子圖（擺放為示意）', 3.0, 0.6); cap('每個 edge 上有一個 weight', '');
+  },
+  async (tok, S) => { // @7.2
+    const p1 = ['A', 'D', 'C', 'B', 'F'], p2 = ['A', 'D', 'F'];
+    paintPath(S.g, p1, TC.orange); S.a = pl('path A D C B F：weight = ' + cycleEdges(p1).map(([u, v]) => wOf(GE, u, v)).join('+') + ' = ' + pathW(p1), 3.0, 4.6);
+    S.b = pl('path A D F：weight = ' + cycleEdges(p2).map(([u, v]) => wOf(GE, u, v)).join('+') + ' = ' + pathW(p2), 3.0, 3.8);
+    S.c = good('找 weight 和最小的 path：A → F 最短 = ' + BRUTE.F + '（列舉所有 path）', 3.0, 2.9);
+    cap('path 的 weight = 邊的 weight 加起來', '要找最小的那條');
+  },
+  async (tok, S) => { // @10.6
+    gone(S.g, S.t, S.n, S.a, S.b, S.c);
+    S.pa = [-5.2, 3.0]; S.pc = [-0.8, 4.4]; S.pb = [4.6, 3.0];
+    const nd = (p, n) => { const m = new THREE.Mesh(NG, new THREE.MeshStandardMaterial({ color: TC.node })); m.position.set(p[0], p[1], 0); m.add(lab.label(n, 'val')); lab.world.add(m); return m; };
+    nd(S.pa, 'A'); nd(S.pc, 'C'); nd(S.pb, 'B');
+    seg(S.pa[0], S.pa[1], -3.0, 4.7, TC.a, 0.09); seg(-3.0, 4.7, S.pc[0], S.pc[1], TC.a, 0.09);
+    seg(S.pc[0], S.pc[1], 1.8, 4.9, TC.b, 0.09); seg(1.8, 4.9, S.pb[0], S.pb[1], TC.b, 0.09);
+    pl('P₁', -3.0, 5.3); pl('P₂', 1.8, 5.5);
+    hd('P = A 到 B 的最短 path，經過中間點 C', 0, 6.7); note('示意', 5.6, 6.7);
+    cap('principle of optimality', '最短路徑上的中間點 C');
+  },
+  async (tok, S) => { // @37.0
+    S.p1 = good('P₁ 一定是 A 到 C 所有 path 中最短的', -2.8, 2.2); cap('最短 path 上每點到 A 也都最短', '');
+  },
+  async (tok, S) => { // @46.2
+    S.alt = dash([S.pa, [-3.2, 1.0], S.pc], TC.hot); bad("P₁' 比 P₁ 短？那 P₁' + P₂ 就比 P 短，矛盾", -2.2, 0.4);
+    sm('其他 A→C 的 path 都可以丟掉，只留最短的', 2.4, 1.4); cap('只要留最短的那些 path', '其他的不可能是答案的一部分');
+  },
+  async (tok, S) => { // @60.1
+    gone(S.alt); S.dj = hot('Dijkstra algorithm', 3.4, -0.6); cap('有名的 Dijkstra algorithm', '');
+  },
+  async (tok, S) => { // @67.6
+    sm('給一個起點 → 輸出它到「所有其他點」的最短 path', 3.4, -1.1); cap('一點到所有其他點的最短路徑', '');
+  },
+]);
+
+scene('g8d-dij-setup', '27A：Dijkstra 的輸入與 initialization', [
+  async (tok, S) => { // @134.0
+    S.g = gH(); note('示意圖', -3.5, -0.2); hd('weighted、undirected、connected、simple', -3.4, 7.0); cap('輸入：weighted connected simple graph', '');
+  },
+  async (tok, S) => { // @149.3
+    sm('端點編號 v₁ … vₙ（這裡 n = ' + HN.length + '）只是為了好講', -3.4, 6.5); cap('端點編成 v₁ 到 vₙ', '編號順序沒有影響');
+  },
+  async (tok, S) => { // @164.7
+    S.g.ecol('3', '5', TC.orange, true); S.w = bub('w(v₃, v₅) = ' + wOf(HE, '3', '5'), -2.6, 4.6); cap('edge {vᵢ, vⱼ} 上的 weight', '');
+  },
+  async (tok, S) => { // @170.0
+    S.g.ecol('3', '5', TC.edge, false); gone(S.w);
+    S.nd = dash([S.g.P['1'], S.g.P['2']], TC.hot, 0.03); S.w = bad('v₁ v₂ 沒有 edge → w = ' + fmt(wOf(HE, '1', '2')), -4.0, 6.4);
+    cap('沒有 edge：weight 當成 ∞', '永遠不會被選到');
+  },
+  async (tok, S) => { // @194.0
+    gone(S.nd, S.w); mkCode(S, 3.4, 6.5, 2); S.code.hl(1); cap('initialization', '最後輸出 v₁ 到每點的最短距離');
+  },
+  async (tok, S) => { // @218.6
+    hLabels(S); HN.forEach((n) => n !== '1' && txt(S.vl[n], 'L = ∞')); cap('其他端點的 L 值先設成 ∞', '');
+  },
+  async (tok, S) => { // @223.1
+    txt(S.vl['1'], 'L = 0'); S.g.vcol('1', TC.a, '#0b2a4a'); cap('L(v₁) = 0', 'v₁ 到自己距離是 0');
+  },
+  async (tok, S) => { // @235.1
+    S.reveal(3); S.code.hl(2); txt(S.vl['1'], hl('1', 0, null)); S.tp = bub('label = (L 值, 前一個端點)：v₁ 沒有前一個', 3.4, 0.9); cap('每個端點有一個 2-tuple label', '');
+  },
+  async (tok, S) => { // @260.9
+    gone(S.tp); S.s = hot('S = ∅', -6.0, 6.3); sm('S：已經處理過的端點', -6.0, 5.8); cap('S 一開始是空集合', 'S 放處理過的端點');
+  },
+  async (tok, S) => { // @275.4
+    S.reveal(4); S.code.hl(3); S.tp = bub('n 個端點一個一個處理 → n 次 iteration', 3.4, 0.9); cap('S 包含所有端點就結束', '共 n 次 iteration');
+  },
+]);
+
+// 27A 的 while loop：用 H6 在「第 1 輪做完」的狀態講第 2 輪（示意）
+const H1 = HD.it[0], H2 = HD.it[1];
+scene('g8d-dij-loop', '27A：while loop——挑 u、加進 S、更新 L 值', [
+  async (tok, S) => { // @312.1
+    S.g = gH(); note('示意圖：第 1 輪（u = v₁）做完的狀態', -3.4, -0.2); hLabels(S);
+    HN.forEach((n) => S.setV(n, H1.L[n], H1.pre[n])); S.g.vcol('1', TC.green); S.blob = blob(S.g.P['1'][0], S.g.P['1'][1], 0.7, 0.7, TC.green);
+    preEdges(HE, H1.pre).forEach(([u, v]) => S.g.ecol(u, v, TC.gold, true));
+    mkCode(S); S.code.hl(3); cap('主要就是這個 while loop', '');
+  },
+  async (tok, S) => { // @328.5
+    S.s = hot('S = {' + H1.S.map(vn).join(', ') + '} ≠ V → 繼續', -5.0, 6.8); cap('條件：還有端點不在 S 裡', '全部都在 S 就結束');
+  },
+  async (tok, S) => { // @351.0
+    S.b1 = bub('每一輪挑一個端點出來處理，叫 u', 3.4, 0.9); cap('每次找一個端點 u 來處理', '');
+  },
+  async (tok, S) => { // @367.0
+    gone(S.b1); S.code.hl(4);
+    const out = H2.out; S.b1 = pl('不在 S：' + out.map((n) => vn(n) + '=' + fmt(H2.Lbefore[n])).join('  '), 3.4, 1.0);
+    S.b2 = good('L 最小 → u = ' + vn(H2.u), 3.4, 0.4); S.g.vcol(H2.u, TC.orange, '#5a2a00');
+    cap('u：不在 S、L 值最小', '');
+  },
+  async (tok, S) => { // @392.1
+    sm('最小的不只一個時隨便挑一個；最短 path 也不一定唯一', 3.4, -0.1); cap('平手就隨便挑一個', '答案不一定唯一，但一定最短');
+  },
+  async (tok, S) => { // @418.5
+    S.code.hl(5); txt(S.s, 'S = {' + H2.S.map(vn).join(', ') + '}'); S.g.vcol(H2.u, TC.green);
+    gone(S.blob); S.blob = blob((S.g.P['1'][0] + S.g.P[H2.u][0]) / 2, (S.g.P['1'][1] + S.g.P[H2.u][1]) / 2, 1.6, 1.2, TC.green, 0.2, 0.9);
+    cap('把 u 加進 S', '代表 u 處理過了');
+  },
+  async (tok, S) => { // @457.1
+    gone(S.b1, S.b2); S.b1 = sm('找 u：' + H2.out.length + ' 個候選 → 比較 ' + (H2.out.length - 1) + ' 次（comparison）', 3.4, 1.0); cap('找最小要做 comparison', '');
+  },
+  async (tok, S) => { // @480.6
+    S.code.hl(6); txt(S.b1, '對每個不在 S 的 v：' + H2.ch.map((c) => vn(c.v)).join('、')); cap('for：每個還沒處理的 v', '處理過的就不管');
+  },
+  async (tok, S) => { // @506.3
+    S.b2 = bub('L 值 = 到目前為止 v₁ 到這點的最短距離（還不一定是最後答案）', 3.4, 0.3); cap('L 值是什麼？', '到現在為止的最短距離');
+  },
+  async (tok, S) => { // @548.2
+    gone(S.b2); const c = H2.ch.find((x) => x.v === '5');
+    S.b2 = pl('L(u) = L(' + vn(H2.u) + ') = ' + H2.Lu + '；L(v₅) = ' + fmt(c.old) + '（上一輪的）', 3.4, 0.3); S.g.vcol('5', TC.a);
+    cap('拿 v₅ 當例子', '');
+  },
+  async (tok, S) => { // @567.0
+    S.code.hl(7); const c = H2.ch.find((x) => x.v === '5'); S.g.ecol(H2.u, '5', TC.green, true);
+    S.b3 = ok(c.upd, 3.4, -0.35, fmt(c.old) + ' > ' + H2.Lu + ' + ' + c.w + ' = ' + c.cand + '：先到 u 再到 v 比較短 ✓');
+    cap('先到 u 再到 v 比較短？', '那就應該經過 u');
+  },
+  async (tok, S) => { // @595.6
+    S.code.hl(8); const c = H2.ch.find((x) => x.v === '5'); txt(S.vl['5'], 'L = ' + c.cand);
+    const c2 = H2.ch.find((x) => x.v === '2'); txt(S.vl['2'], 'L = ' + c2.cand); S.g.ecol(H2.u, '2', TC.green, true);
+    gone(S.b3); S.b3 = sm('v₂ 也一樣：' + fmt(c2.old) + ' > ' + H2.Lu + ' + ' + c2.w + ' → L(v₂) = ' + c2.cand, 3.4, -0.35);
+    cap('L(v) 改成經過 u 的距離', '');
+  },
+  async (tok, S) => { // @608.1
+    S.code.hl(9); ['5', '2'].forEach((n) => S.setV(n, H2.L[n], H2.pre[n])); S.g.ecol('1', '5', TC.faint, false);
+    cap('label 後面記「前一個端點」u', '');
+  },
+  async (tok, S) => { // @629.3
+    HN.forEach((n) => S.setV(n, H2.L[n], H2.pre[n])); S.g.vcol('5', TC.node); S.b4 = sm('每個端點都帶著 (距離, 前一點)', -3.4, 6.6); cap('每個端點都有一個 2-tuple', '');
+  },
+  async (tok, S) => { // @665.7
+    const p = back(H2.pre, '5'); S.g.reset(); paintPath(S.g, p, TC.hot);
+    gone(S.b4); S.b4 = good('v₅ ← ' + p.slice(0, -1).reverse().map(vn).join(' ← ') + '：倒著找回去就是路徑', -3.4, 6.6); cap('知道前一點，就能 backtrack', '');
+  },
+]);
+
+scene('g8d-dij-meaning', '27A：結束時 label 的意義', [
+  async (tok, S) => { // @688.6
+    S.g = gH(); note('示意圖：Dijkstra 跑完', -3.4, -0.2); hLabels(S); HN.forEach((n) => S.setV(n, HD.L[n], HD.pre[n]));
+    S.t = hd('結束時每個 vᵢ 都有 label (L(vᵢ), u)', 3.0, 6.4); cap('做完後每個端點的 label', '');
+  },
+  async (tok, S) => { // @697.6
+    const p = back(HD.pre, '4'); paintPath(S.g, p, TC.a);
+    S.a = pl('L(v₄) = ' + HD.L['4'] + ' = ' + cycleEdges(p).map(([u, v]) => wOf(HE, u, v)).join(' + ') + '（edge weight 的和）', 3.0, 5.4);
+    S.b = ok(HD_OK, 3.0, 4.7, '列舉所有 path：每個 L 都是真的最短 ✓'); cap('L(vᵢ) = v₁ 到 vᵢ 最短 path 的 weight', '');
+  },
+  async (tok, S) => { // @718.2
+    S.c = pl('u = predecessor vertex：v₄ 的前一個是 ' + vn(HD.pre['4']), 3.0, 3.8); S.g.vcol(HD.pre['4'], TC.orange); cap('u 是最短 path 上的前一個端點', '');
+  },
+  async (tok, S) => { // @739.0
+    const p = back(HD.pre, '4'); S.g.reset(); paintPath(S.g, p, TC.hot);
+    S.d = good('v₄ ← ' + p.slice(0, -1).reverse().map(vn).join(' ← ') + '：一個一個找回去', 3.0, 3.0); cap('一個一個往回找，就得到 path', '');
+  },
+  async (tok, S) => { // @749.0
+    S.g.reset(); preEdges(HE, HD.pre).forEach(([u, v]) => S.g.ecol(u, v, TC.gold, true)); S.g.vcol(HD.pre['4'], TC.node);
+    S.e = sm('所有端點都這樣 → v₁ 到每一點的最短 path 和距離都有了', 3.0, 2.2); cap('v₁ 到所有端點的最短 path', '');
+  },
+]);
+
+scene('g8d-dij-idea', '27A：從頭想一遍——為什麼每次挑 L 最小', [
+  async (tok, S) => { // @793.9
+    S.g = gH(); note('示意圖', -3.4, -0.2); hLabels(S); S.t = hd('過程中：L = 只考慮處理過的端點時的最短距離', 1.6, 6.9);
+    mkTab(S, HN.map(vn)); HN.forEach((n) => setCls(S.rows[vn(n)], '')); S.s = hot('S = ∅', 2.0, 1.0); cap('中間過程 label 的意思', '');
+  },
+  async (tok, S) => { // @825.0
+    HN.forEach((n) => { const L = n === '1' ? 0 : Infinity; S.setV(n, L, null); S.setRow(vn(n), L, null); }); cap('一開始：v₁ 是 0，其他都是 ∞', '什麼都還沒處理');
+  },
+  async (tok, S) => { // @872.0
+    S.g.vcol(HD.it[0].u, TC.orange, '#5a2a00'); setCls(S.rows[vn(HD.it[0].u)], 'ptr alt'); S.u = pl('u = ' + vn(HD.it[0].u) + '（其他都是 ∞）', 4.6, 1.0); cap('挑 L 最小的 → 第一個一定是 v₁', '');
+  },
+  async (tok, S) => { // @898.0
+    S.g.vcol('1', TC.green); txt(S.s, 'S = {v₁}'); setCls(S.rows.v1, 'good'); cap('v₁ 加進 S', '其他 v₂…vₙ 都要比一比');
+  },
+  async (tok, S) => { // @931.4
+    for (const c of HD.it[0].ch) if (c.upd) { S.setV(c.v, c.cand, '1'); S.setRow(vn(c.v), c.cand, vn('1')); S.g.ecol('1', c.v, TC.gold, true); }
+    cap('跟 v₁ 相連的點：L 變成 edge 的 weight', '沒相連的還是 ∞');
+  },
+  async (tok, S) => { // @986.9
+    txt(S.u, '有限的只有 ' + HD.it[0].ch.filter((c) => c.upd).map((c) => vn(c.v)).join('、')); cap('再挑一個 u', '只有跟 v₁ 相連的有有限 L 值');
+  },
+  async (tok, S) => { // @1013.8
+    const u = HD.it[1].u; txt(S.u, 'u = ' + vn(u) + '（L = ' + HD.it[1].Lu + ' 最小）'); S.g.vcol(u, TC.green); setCls(S.rows[vn(u)], 'good');
+    txt(S.s, 'S = {' + HD.it[1].S.map(vn).join(', ') + '}'); cap('挑最小的 ' + vn(u) + ' 加進 S', '');
+  },
+  async (tok, S) => { // @1037.3
+    const it = HD.it[1]; S.g.reset(); preEdges(HE, it.pre).forEach(([u, v]) => S.g.ecol(u, v, TC.gold, true));
+    for (const c of it.ch) if (c.upd) { S.setV(c.v, c.cand, it.u); S.setRow(vn(c.v), c.cand, vn(it.u)); }
+    S.up = sm('經過 ' + vn(it.u) + ' 比較近的：' + it.ch.filter((c) => c.upd).map((c) => vn(c.v) + ' ' + fmt(c.old) + '→' + c.cand).join('，'), 3.0, 0.4);
+    cap('經過 ' + vn(it.u) + ' 會不會比較近？', '近的就更新 L 和 predecessor');
+  },
+  async (tok, S, q) => { // @1071.7
+    gone(S.up);
+    for (const it of HD.it.slice(2)) {
+      S.g.vcol(it.u, TC.green); setCls(S.rows[vn(it.u)], 'good'); txt(S.s, 'S = {' + it.S.map(vn).join(', ') + '}'); txt(S.u, 'u = ' + vn(it.u));
+      for (const c of it.ch) if (c.upd) { S.setV(c.v, c.cand, it.u); S.setRow(vn(c.v), c.cand, vn(it.u)); }
+      S.g.reset(); preEdges(HE, it.pre).forEach(([u, v]) => S.g.ecol(u, v, TC.gold, true));
+      if (!q) await wt(tok, 500);
+    }
+    cap('範圍慢慢擴大到所有端點', '');
+  },
+  async (tok, S) => { // @1078.8
+    S.w1 = bub('挑進來的是目前 L 最小的：繞別的點（weight ≥ 0）只會更長', 3.0, 0.4); cap('為什麼挑最小？', '走別條不會比較短');
+  },
+  async (tok, S) => { // @1100.0
+    gone(S.w1); S.w1 = bub('一直維持：只經過 S 裡的點時，L 就是最短距離', 3.0, 0.4); cap('一直維持同一件事', '');
+  },
+  async (tok, S) => { // @1132.8
+    S.w2 = ok(HD_OK, 3.0, -0.2, '最後 S = 全部 → L 就是真正最短（和列舉比對 ✓）'); cap('到最後就是最短路徑', '可以用歸納法證');
+  },
+  async (tok, S) => { // @1176.0
+    gone(S.w1, S.w2); S.w1 = pl('花時間 ①：找最小的 L(u) → comparison', 3.0, 0.4); cap('複雜度主要在哪？', '先是找 minimum');
+  },
+  async (tok, S) => { // @1185.0
+    S.w2 = pl('花時間 ②：for 迴圈裡每個 v 一次比較 + 一次加法', 3.0, -0.2); cap('再來是一個比較、一個加法', '');
+  },
+  async (tok, S) => { // @1200.9
+    S.w3 = hot('下一段：用前面那張 A–F 的圖實際跑一次', 0, 7.4); cap('實際 run 一個例子', '');
+  },
+]);
+
+// ════════ 9r_YXw7i_mY（趙啟超 27B：Dijkstra 跑老師的圖、結果是 spanning tree、複雜度） ════════
+const vIdx = (n) => GN.indexOf(n);
+function cmpOp(k, v, extra) {
+  return async (tok, S) => {
+    const it = DJ.it[k], c = it.ch.find((x) => x.v === v), u = it.u;
+    gone(S.cmp); paintPre(S, GE); const y = S.rows[v].position.y;
+    S.cmp = [pl('L(' + v + ') = ' + fmt(c.old) + '  vs  L(' + u + ') + w(' + u + v + ') = ' + it.Lu + ' + ' + fmt(c.w) + ' = ' + fmt(c.cand), 4.5, y)];
+    if (c.w !== Infinity) S.g.ecol(u, v, c.upd ? TC.green : TC.hot, true);
+    if (c.upd) { S.setRow(v, c.cand, u); paintPre(S, GE); S.g.ecol(u, v, TC.green, true); S.cmp.push(good('比較短 → 改成 (' + c.cand + ', ' + u + ')', 4.5, y - 0.36)); }
+    else S.cmp.push(note(c.w === Infinity ? u + ' 到 ' + v + ' 沒有 edge → 維持' : '沒有比較短 → 維持', 4.5, y - 0.36));
+    if (extra) S.cmp.push(sm(extra, 4.5, y - 0.72));
+    cap(v + '：經過 ' + u + ' 會不會比較短？', c.upd ? '會 → 更新 label' : '不會 → 不動');
+  };
+}
+function pickOp(k, sayIt) {
+  return async (tok, S) => {
+    const it = DJ.it[k]; gone(S.cmp); paintPre(S, GE);
+    if (S.cur) { setCls(S.rows[S.cur], 'good'); S.g.vcol(S.cur, TC.green); }
+    const out = it.out.slice().sort((a, b) => it.Lbefore[a] - it.Lbefore[b]);
+    S.cmp = [pl('不在 S：' + out.map((n) => n + ' ' + fmt(it.Lbefore[n])).join('，') + ' → 最小 ' + it.u, 3.4, 0.55)];
+    S.cur = it.u; setCls(S.rows[it.u], 'ptr alt'); S.g.vcol(it.u, TC.orange, '#5a2a00');
+    txt(S.sl, 'S = {' + it.S.join(', ') + '}'); txt(S.ul, 'u = ' + it.u);
+    cap(sayIt || ('挑 L 最小的 → u = ' + it.u), '先把 ' + it.u + ' 加進 S');
+  };
+}
+const RUN = [
+  async (tok, S) => { // 0 @4.4
+    S.g = gG(); S.g.vcol('A', TC.a, '#0b2a4a'); S.t = hd('v₁ = A：找 A 到其他每點的最短 path 和 weight', 0.6, 7.1);
+    S.n = note('端點擺放為示意；邊和 weight 照老師的圖', -3.4, -0.2); cap('前面的例子，起點 v₁ = A', '');
+  },
+  async (tok, S) => { // 1 @7.3
+    S.mx = []; const x0 = 1.4, y0 = 6.1, d = 0.82, dy = 0.66; S.cell = {};
+    GN.forEach((n, j) => { S.mx.push(sm(n, x0 + (j + 1) * d, y0)); S.mx.push(sm(n, x0, y0 - (j + 1) * dy)); });
+    GN.forEach((a, i) => GN.forEach((b, j) => { const l = pl(a === b ? '–' : (wOf(GE, a, b) < Infinity ? '1' : '0'), x0 + (j + 1) * d, y0 - (i + 1) * dy); S.cell[a + b] = l; S.mx.push(l); }));
+    S.mx.push(sm('adjacency matrix（有 edge = 1）', x0 + 3.4, y0 - 7 * dy)); cap('存成矩陣：先看 adjacency matrix', '');
+  },
+  async (tok, S) => { // 2 @58.4
+    GN.forEach((a) => GN.forEach((b) => { if (a !== b) txt(S.cell[a + b], fmt(wOf(GE, a, b))); }));
+    txt(S.mx[S.mx.length - 1], 'weight matrix：0 → ∞、1 → 那條 edge 的 weight'); cap('0 換成 ∞，1 換成 weight', '後面只看這個矩陣');
+  },
+  async (tok, S) => { // 3 @93.1
+    gone(S.mx, S.t); mkTab(S, GN); S.setRow('A', 0, null); S.sl = hot('S = ∅', 1.0, 1.3); S.ul = pl('u = ?', 3.0, 1.3);
+    cap('一開始 A 的 label 是 (0, –)', '其他 L 值都是 ∞');
+  },
+  pickOp(0, 'L 最小的是 A → u = A'), // 4 @103.5
+  async (tok, S) => { // 5 @118.2
+    gone(S.cmp); const nb = GE.filter((e) => e[0] === 'A' || e[1] === 'A'); nb.forEach(([u, v]) => S.g.ecol(u, v, TC.orange, true));
+    S.cmp = [pl('A 連到：' + nb.map((e) => (e[0] === 'A' ? e[1] : e[0])).join('、') + ' → 這些會被 update', 3.4, 0.55)]; cap('跟 A 相連的 B、C、D 會被 update', '');
+  },
+  async (tok, S) => { // 6 @160.8
+    gone(S.cmp); const it = DJ.it[0]; S.cmp = [];
+    for (const c of it.ch) if (c.upd) { S.setRow(c.v, c.cand, 'A'); S.cmp.push(sm('0 + ' + c.w + ' = ' + c.cand + ' < ∞', 3.6, S.rows[c.v].position.y)); }
+    paintPre(S, GE); cap('L 值就是 AB、AC、AD 的 weight', '前一個端點都是 A');
+  },
+  async (tok, S) => { // 7 @188.0
+    S.cmp.push(note('E、F 還是 ∞：挑最小時不會挑到', 3.8, S.rows.E.position.y - 0.3)); cap('E、F 還是 ∞', '');
+  },
+  pickOp(1, '挑最小的 3 → u = B'), // 8 @212.3
+  async (tok, S) => { // 9 @230.1
+    S.lockA = sm('（處理過，不會再變）', 3.2, S.rows.A.position.y); cap('處理過的端點不會變', '');
+  },
+  async (tok, S) => { // 10 @249.5
+    gone(S.cmp); S.cmp = [pl('還沒處理：' + DJ.it[1].ch.map((c) => c.v).join(' ') + '：經過 B 會不會比較好？', 3.4, 0.55)]; cap('C D E F：改走 B 會不會比較好？', '');
+  },
+  cmpOp(1, 'C'), // 11 @266.1
+  cmpOp(1, 'D'), // 12 @307.8
+  cmpOp(1, 'E'), // 13 @339.2
+  cmpOp(1, 'F'), // 14 @364.9
+  async (tok, S) => { // 15 @396.5
+    gone(S.cmp); paintPre(S, GE);
+    S.cmp = [bub('金色 = 每點 label 的「前一點」連起來；其實只存 label，路徑倒著找', 3.2, -0.1)]; cap('把 L 值對應的路徑畫出來', '實際上只存 label');
+  },
+  pickOp(2, 'C D E F 是 8、7、9、11 → u = D'), // 16 @435.4
+  async (tok, S) => { // 17 @496.0
+    S.cmp.push(bub('加進 S 的都是當時 L 最小的：從別處繞過來不會更短', 3.2, -0.1)); cap('處理過的一定是最好的', '因為每次都挑最小的');
+  },
+  cmpOp(2, 'C'), // 18 @540.0
+  cmpOp(2, 'E', '（老師這裡順口算了 C→E：8+4=12，那是處理 C 時的比較，結果一樣維持 9）'), // 19 @566.7
+  cmpOp(2, 'F'), // 20 @598.5
+  async (tok, S) => { // 21 @622.1
+    gone(S.cmp); const any = DJ.it[2].ch.some((c) => c.upd); S.cmp = [ok(!any, 3.4, 0.55, '加了 D 以後 label 都沒變 ✓')]; cap('加了 D，路徑和 L 值都沒變', '');
+  },
+  pickOp(3, 'C E F 是 8、9、11 → u = C'), // 22 @630.7
+  cmpOp(3, 'E'), // 23 @701.5
+  cmpOp(3, 'F'), // 24 @725.9
+  async (tok, S) => { // 25 @745.0
+    gone(S.cmp); const any = DJ.it[2].ch.some((c) => c.upd) || DJ.it[3].ch.some((c) => c.upd);
+    S.cmp = [ok(!any, 3.4, 0.55, '加 D、加 C 都沒改變任何 label ✓')]; cap('加 D、加 C 都不影響', '再兩個就做完');
+  },
+  pickOp(4, 'E 是 9、F 是 11 → u = E'), // 26 @760.4
+  cmpOp(4, 'F'), // 27 @832.5
+  pickOp(5, '剩下只有 F → u = F'), // 28 @872.1
+  async (tok, S) => { // 29 @895.7
+    gone(S.cmp); setCls(S.rows.F, 'good'); S.g.vcol('F', TC.green); S.cur = null;
+    S.cmp = [pl('先把 F 加進 S，再處理「不在 S 的 v」——已經沒有了 → 結束', 3.4, 0.55)]; cap('F 加進 S 後沒有端點要處理', 'if 不會執行，結束');
+  },
+  async (tok, S) => { // 30 @955.7
+    gone(S.cmp); S.cmp = [ok(DJ_OK && BRUTE_OK, 3.4, 0.55, '和老師算的一樣，也和列舉所有 path 的最小值一樣 ✓')]; cap('最後的 label', 'A 0、B 3A、C 8B、D 7A、E 9B、F 10E');
+  },
+];
+const RES = [
+  async (tok, S) => { // @981.4
+    gone(S.cmp); const p = back(DJ.pre, 'F'); S.g.reset(); paintPath(S.g, p, TC.hot);
+    S.r1 = pl('A → F：weight ' + DJ.L.F + '；F ← ' + p.slice(0, -1).reverse().join(' ← ') + ' → path ' + p.join(' '), 3.4, -0.1); cap('A 到 F：weight 10', '從 predecessor 倒著找');
+  },
+  async (tok, S) => { // @1000.5
+    S.r2 = sm(['E', 'C', 'D'].map((v) => v + '：' + back(DJ.pre, v).join(' ')).join('　'), 3.4, -0.6); cap('A B E、A B C、A D', '每個端點都找得回去');
+  },
+  async (tok, S) => { // @1019.4
+    gone(S.r1, S.r2); paintPre(S, GE); S.r1 = pl('金色的邊：包含全部 ' + GN.length + ' 個端點 → spanning', 3.4, -0.1); cap('結果一定是 spanning tree', '包含所有端點');
+  },
+  async (tok, S) => { // @1033.0
+    const es = preEdges(GE, DJ.pre); S.r2 = ok(isST(GN, es), 3.4, -0.6, es.length + ' 條邊、connected、沒有 cycle → tree ✓'); cap('connected、沒有 cycle → tree', '每點只留一個前一點');
+  },
+  async (tok, S) => { // @1066.6
+    S.r3 = sm('tree：A 到每一點 exactly 一條 path', 3.4, -1.1); cap('A 到每點只有唯一一條 path', '');
+  },
+  async (tok, S) => { // @1138.3
+    gone(S.r1, S.r2, S.r3); const p = back(DJ.pre, 'F'); paintPre(S, GE); paintPath(S.g, p, TC.hot);
+    S.r1 = pl('A B E F：' + cycleEdges(p).map(([u, v]) => wOf(GE, u, v)).join(' + ') + ' = ' + pathW(p), 3.4, -0.1); cap('A 到 F：A B E F，weight 10', '');
+  },
+  async (tok, S) => { // @1178.4
+    const p = back(DJ.pre, 'C'); paintPre(S, GE); paintPath(S.g, p, TC.a);
+    S.r2 = pl('A B C：' + cycleEdges(p).map(([u, v]) => wOf(GE, u, v)).join(' + ') + ' = ' + pathW(p), 3.4, -0.6); cap('A 到 C：A B C，weight 8', '只存 label 就看得出來');
+  },
+  async (tok, S) => { // @1203.5
+    S.r3 = good('每次加進 L 最小的 → 留下的一定是最短的', 3.4, -1.1); cap('每次都加 L 最小的', '所以留下的一定最短');
+  },
+];
+function runScene(id, title, a, b) { scene(id, title, RUN.slice(a, b), { pre: RUN.slice(0, a) }); }
+runScene('g8d-run-matrix', '27B：老師的圖與 weight matrix', 0, 3);
+runScene('g8d-run-ab', '27B：第 1、2 輪——處理 A、B', 3, 16);
+runScene('g8d-run-dc', '27B：第 3、4 輪——處理 D、C', 16, 26);
+runScene('g8d-run-ef', '27B：第 5、6 輪——處理 E、F，結束', 26, 30);
+scene('g8d-run-result', '27B：結果——最短 path 與 spanning tree', [RUN[30], ...RES], { pre: RUN.slice(0, 30) });
+
+scene('g8d-dij-cost', '27B：Direct implementation 的複雜度 O(n²)', [
+  async (tok, S) => { // @1304.2
+    mkCode(S, -3.2, 6.4); S.t = hd('算一下 Dijkstra 的複雜度（n = 端點數）', 2.6, 7.0); cap('算 Dijkstra 的複雜度', '');
+  },
+  async (tok, S) => { // @1318.6
+    S.code.hl(3); S.a = pl('真正有運算的：n − 1 個 iteration（最後一輪只剩一點）', 2.6, 6.3); cap('n − 1 個 iteration', '最後一輪不用比');
+  },
+  async (tok, S) => { // @1389.0
+    S.code.hl(4); S.b = pl('第 1 輪：找最小的 L(u)，n − 1 個候選 → 最多 n − 1 次比較', 2.6, 5.6); cap('第 1 輪找 u：n − 1 次比較', '');
+  },
+  async (tok, S) => { // @1455.4
+    S.code.hl(7); S.c = pl('for 迴圈：每個 v 最多 1 次比較 + 1 次加法 → 各 n − 1', 2.6, 4.9); cap('更新：比較、加法各 n − 1', '');
+  },
+  async (tok, S) => { // @1527.7
+    const n = GN.length; S.d = pl('第 i 輪：找 u 比 n − i 次、更新比 n − i 次、加 n − i 次', 2.6, 4.2);
+    S.rowsI = []; for (let i = 1; i < n; i++) S.rowsI.push(sm('n = ' + n + '，i = ' + i + '：比較 ' + 2 * (n - i) + '、加法 ' + (n - i), 2.6, 3.7 - (i - 1) * 0.42));
+    cap('一般的第 i 輪：n − i', '例：老師的圖 n = 6');
+  },
+  async (tok, S) => { // @1651.6
+    const n = GN.length; let c = 0; for (let i = 1; i < n; i++) c += 2 * (n - i);
+    S.e = ok(c === n * (n - 1), -3.2, 0.3, '比較總數 Σ 2(n − i) = n(n − 1)；n = 6：' + c + ' ✓'); cap('比較次數加起來 = n(n − 1)', '');
+  },
+  async (tok, S) => { // @1730.7
+    const n = GN.length; let a = 0; for (let i = 1; i < n; i++) a += n - i;
+    S.f = ok(a === n * (n - 1) / 2, -3.2, -0.3, '加法總數 Σ (n − i) = n(n − 1)/2；n = 6：' + a + ' ✓'); cap('加法次數 = n(n − 1)/2', '');
+  },
+  async (tok, S) => { // @1763.6
+    S.g = hot('不管算比較還是加法：worst case O(n²)', 2.6, 0.9); cap('worst-case complexity：O(n²)', '');
+  },
+  async (tok, S) => { // @1805.3
+    S.h = sm('這叫 direct implementation：照剛剛的步驟直接寫', 2.6, 0.3); cap('這是 direct implementation', '');
+  },
+]);
+
+scene('g8d-dij-heap', '27B：用 priority queue（binary heap）降低複雜度', [
+  async (tok, S) => { // @1825.6
+    S.t = hd('複雜度跟資料怎麼存（data structure）有關', 0, 6.6); cap('複雜度跟 data structure 有關', '');
+  },
+  async (tok, S) => { // @1866.4
+    S.a = pl('用 priority queue 存 L 值；priority queue 用 binary heap 實作', 0, 5.8); cap('priority queue，用 binary heap 做', '');
+  },
+  async (tok, S) => { // @1925.9
+    S.b = hot('複雜度 O(e · log₂ n)：n = 端點數，e = edge 數', 0, 5.0); cap('O(e log n)', 'n 端點、e 邊');
+  },
+  async (tok, S) => { // @1971.5
+    S.c = sm('跟 edge 數 e 成正比，跟端點數只差一個 log n（log 的底不影響 big-O）', 0, 4.4); cap('跟 edge 數成正比', '');
+  },
+  async (tok, S) => { // @1994.5
+    const n = 1000, e = 3000, a = Math.round(e * Math.log2(n)), b = n * n;
+    S.d = ok(a < b, 0, 3.4, '例：n = 1000、e = 3000：e·log₂n ≈ ' + a.toLocaleString() + ' < n² = ' + b.toLocaleString() + ' ✓'); cap('edge 不多時比 n² 小', '');
+  },
+  async (tok, S) => { // @1998.0
+    const n = 1000, e = n * (n - 1) / 2, a = Math.round(e * Math.log2(n)), b = n * n;
+    S.f = bad('e ≈ n²/2（' + e.toLocaleString() + '）：e·log₂n ≈ ' + a.toLocaleString() + ' > n²', 0, 2.6); cap('edge 跟 n² 同級時反而比較大', '');
+  },
+  async (tok, S) => { // @2055.5
+    S.g = good('直接做：O(n²)；用 heap：O(e log n)', 0, 1.6); cap('直接做是 O(n²)', '');
+  },
+]);
+
+// ════════ Greva74E0ZU（趙啟超 27C：minimal spanning tree、greedy、Prim's algorithm 與例子） ════════
+const T1 = preEdges(GE, DJ.pre);                     // Dijkstra 的結果
+const T2 = ['AC', 'AD', 'AB', 'BE', 'BF'].map((nm) => GE.find((e) => en(e) === nm));   // 一棵 weight 33 的 spanning tree（形狀示意）
+const T3 = PR.es;                                     // Prim 的結果 = MST
+const TS = [T1, T2, T3], TSX = [-1.75, 1.65, 5.05];
+scene('g8d-mst-def', '27C：Minimal spanning tree 的定義', [
+  async (tok, S) => { // @4.5
+    S.t = hd('第二個問題：minimal spanning tree（也叫 minimum spanning tree）', 0, 7.0); cap('第二個問題：minimal spanning tree', 'minimal、minimum 意思一樣');
+  },
+  async (tok, S) => { // @50.4
+    S.g = gG(); S.a = pl('G = (V, E)：weighted、undirected、connected、simple', 2.8, 6.2);
+    S.b = sm('這張圖：n = |V| = ' + GN.length + '，e = |E| = ' + GE.length, 2.8, 5.6); cap('給一個 weighted connected simple graph', '');
+  },
+  async (tok, S) => { // @114.1
+    T3.forEach(([u, v]) => S.g.ecol(u, v, TC.gold, true)); S.c = pl('首先它是 spanning tree：tree、含所有端點', 2.8, 4.8); cap('MST 首先是 spanning tree', '');
+  },
+  async (tok, S) => { // @148.9
+    S.d = hot('minimal：edge weight 和是所有 spanning tree 裡最小的', 2.8, 4.0); cap('weight 的和要最小', '');
+  },
+  async (tok, S) => { // @170.3
+    S.e = ok(STS.length > 1, 2.8, 3.2, '這張圖的 spanning tree 一共 ' + STS.length + ' 棵（程式列舉）✓'); cap('spanning tree 通常不唯一', '');
+  },
+  async (tok, S) => { // @194.7
+    S.f = sm('DFS、BFS、Dijkstra 都會給你一棵 spanning tree，但目的不同', 2.8, 2.5); cap('DFS、BFS、Dijkstra 都給 spanning tree', '');
+  },
+  async (tok, S) => { // @219.7
+    S.h = good('現在要找：所有 spanning tree 中 weight 和最小 = ' + MST_W, 2.8, 1.8); cap('現在要找 weight 和最小的', '');
+  },
+]);
+
+scene('g8d-mst-ex', '27C：例子——三棵 spanning tree 比 weight', [
+  async (tok, S) => { // @237.6
+    S.G = gG({ s: 0.5, dx: -3.6, dy: 2.3, er: 0.035, off: 0.22, r: 0.6 }); S.Gl = pl('G', -5.1, 6.0); cap('看一個例子', '');
+  },
+  async (tok, S) => { // @288.2
+    S.n = note('跟 Dijkstra 例子是同一張圖', -5.1, 1.4); cap('跟 Dijkstra 用的是同一個圖', '');
+  },
+  ...[0, 1, 2].map((k) => async (tok, S) => { // @302.8 @318.8 @321.3
+    S.T = S.T || []; S.T[k] = gG({ s: 0.5, dx: TSX[k] + 1.6, dy: 2.3, er: 0.04, off: 0.22, r: 0.6, only: TS[k] });
+    TS[k].forEach(([u, v]) => S.T[k].ecol(u, v, TC.gold, false)); pl('T' + (k + 1), TSX[k], 6.0);
+    if (k === 1) note('形狀示意', TSX[k], 6.55);
+    cap('T' + (k + 1) + ' 也是一棵 spanning tree', '');
+  }),
+  ...[0, 1, 2].map((k) => async (tok, S) => { // @426.1 @465.9 @488.2
+    const ws = TS[k].map((e) => e[2]);
+    S['w' + k] = ok(isST(GN, TS[k]), TSX[k], 1.2, ws.join('+') + ' = ' + sum(TS[k]) + ' ✓');
+    if (k === 0) S.d0 = sm('= Dijkstra 的結果', TSX[k], 0.6);
+    cap('T' + (k + 1) + ' 的 weight = ' + sum(TS[k]), k === 0 ? '就是剛才 Dijkstra 的結果' : '');
+  }),
+  async (tok, S) => { // @510.1
+    S.best = hot('三棵裡 T3 的 ' + sum(T3) + ' 最小', TSX[2], 0.0); cap('15 最好', 'Dijkstra 的樹不一定 weight 最小');
+  },
+  async (tok, S) => { // @552.1
+    const p1 = treePath(T1, 'A', 'E'), p3 = treePath(T3, 'A', 'E');
+    paintPath(S.T[0], p1, TC.hot); paintPath(S.T[2], p3, TC.hot);
+    S.pe = pl('A 到 E：T1 走 ' + p1.join('') + ' = ' + pathW(p1) + '，T3 走 ' + p3.join('') + ' = ' + pathW(p3), 1.6, -0.7); cap('目的不同，結果就不同', 'T1 讓 A 到各點最短');
+  },
+  async (tok, S) => { // @581.6
+    S.ms = ok(sum(T3) === MST_W, -4.3, -0.1, '列舉全部 ' + STS.length + ' 棵：最小 = ' + MST_W + ' ✓ → T3 是 MST'); cap('T3 就是 minimal spanning tree', '不會比 15 更低');
+  },
+  async (tok, S) => { // @590.0
+    S.un = sm('一般 MST 不一定唯一（這張圖 weight ' + MST_W + ' 的有 ' + MST_N + ' 棵）；algorithm 給你其中一棵', -4.3, -0.65); cap('MST 不一定唯一', 'algorithm 給你一個就對了');
+  },
+]);
+
+scene('g8d-greedy', '27C：Greedy algorithm——每次選眼前最好的', [
+  async (tok, S) => { // @620.8
+    S.t = hd('要怎麼找 minimal spanning tree？', 0, 6.6); cap('怎麼找 MST？', '');
+  },
+  async (tok, S) => { // @633.4
+    S.a = hot('一類方法：greedy algorithm（貪心）', 0, 5.7); cap('greedy algorithm：貪心的演算法', '');
+  },
+  async (tok, S) => { // @657.9
+    S.b = bub('每一步都選「現在看起來最好」的，不管以後——像下棋能吃就吃', 0, 4.8); cap('現在最好就選，不管以後', '');
+  },
+  async (tok, S) => { // @725.3
+    S.c = pl('repeatedly makes locally best choices, ignoring effects in the future', 0, 3.9); cap('locally best choice', '不管未來的影響');
+  },
+  async (tok, S) => { // @755.6
+    S.d = bad('不是每個問題都行：下棋能吃就吃，可能掉進陷阱輸掉', 0, 3.0); cap('有些問題 greedy 不會最好', '');
+  },
+  async (tok, S) => { // @782.8
+    S.e = good('但 MST 這個問題 greedy 會 work', 0, 2.1); cap('MST 問題 greedy 會 work', '');
+  },
+]);
+
+// Prim 的抽象說明：T 裡 3 點、外面 2 點（示意）
+const QP = { p: [-5.6, 4.6], q: [-4.4, 2.6], r: [-3.2, 4.4], s: [-1.4, 3.0], t: [-1.0, 5.4] };
+const QE = [['p', 'q', 3], ['p', 'r', 2], ['q', 'r', 6], ['q', 's', 4], ['r', 's', 6], ['r', 't', 3], ['s', 't', 2]];
+const QT = ['p', 'q', 'r'];
+const QC = QE.filter(([u, v]) => QT.includes(u) !== QT.includes(v));
+const QBEST = QC.reduce((b, c) => (c[2] < b[2] ? c : b));
+const PCODE = ['Prim', 'T = 任選一個端點', 'for i = 1 to n − 1:', '  e = 一端在 T、一端不在 T 的', '      edge 中 weight 最小的', '  把 e（和它的新端點）加進 T', 'return T'];
+scene('g8d-prim-algo', "27C：Prim's algorithm——讓一棵 tree 慢慢長大", [
+  async (tok, S) => { // @815.6
+    S.t = hd("兩個 greedy algorithm 都會 work；先講 Prim's algorithm", 0, 7.0); cap("第一個：Prim's algorithm", '');
+  },
+  async (tok, S) => { // @863.7
+    S.code = code(PCODE, 3.4, 6.3, 0.52); S.code.hl(0); S.a = sm('一條 edge 一條 edge 加，直到變成 spanning tree', 3.4, 2.4); cap('一個 edge 一個 edge 加進去', '');
+  },
+  async (tok, S) => { // @918.6
+    S.g = mkG(QP, QE); note('示意圖', -3.4, 0.9); S.zone = blob(-4.4, 3.8, 1.9, 1.6, TC.green); pl('T', -5.9, 5.6);
+    [['p', 'q'], ['p', 'r']].forEach(([u, v]) => S.g.ecol(u, v, TC.gold, true)); QT.forEach((n) => S.g.vcol(n, TC.green));
+    S.b = sm('T 一直是一棵 tree（growing tree）', -3.4, 0.35); cap('T 一直維持是 tree', '慢慢長大');
+  },
+  async (tok, S) => { // @963.2
+    S.code.hl(1); S.c = sm('一開始：T = 任何一個端點都可以', 3.4, 1.85); cap('一開始選任何一個端點', '');
+  },
+  async (tok, S) => { // @975.9
+    S.code.hl(3); QC.forEach(([u, v]) => S.g.ecol(u, v, TC.orange, true));
+    S.d = pl('可以加的：' + QC.map((e) => en(e) + ' ' + e[2]).join('，'), -3.4, -0.25); cap('加的邊：一端在 T、一端不在 T', '');
+  },
+  async (tok, S) => { // @1029.0
+    S.g.ecol('q', 'r', TC.hot, true); S.e = bad('q r 兩端都在 T 裡 → 會造成 cycle ✘', -3.4, 6.6); cap('這樣加不會有 cycle，還連通', '所以還是 tree');
+  },
+  async (tok, S) => { // @1059.1
+    S.g.ecol('q', 'r', TC.edge, false); gone(S.e); S.code.hl(4); S.g.ecol(QBEST[0], QBEST[1], TC.green, true);
+    S.e = good('greedy：挑 weight 最小的 → ' + en(QBEST) + '（' + QBEST[2] + '）', -3.4, 6.6); cap('很多選擇 → 挑 weight 最小的', 'greedy 就在這裡');
+  },
+  async (tok, S) => { // @1102.5
+    S.code.hl(2); S.f = sm('每次多 1 個端點、1 條邊：做 n − 1 次 → n 點、n − 1 邊', 3.4, 1.3); cap('做 n − 1 次就是 spanning tree', '');
+  },
+  async (tok, S) => { // @1157.2
+    S.code.hl(6); S.h = good('每步都是 tree、每次 weight 最小 → minimal spanning tree（後面證明）', 1.0, -0.8); cap('結果是 MST', '後面會證明');
+  },
+]);
+
+function primPaint(S, k) {   // T after k Prim steps, on G
+  const st = PR.steps[k]; S.g.reset(); PR.es.slice(0, k).forEach(([u, v]) => S.g.ecol(u, v, TC.gold, true));
+  GN.forEach((n) => S.g.vcol(n, st && st.T.includes(n) ? TC.green : (k >= PR.steps.length ? TC.green : TC.node)));
+}
+function primOp(k, said) {
+  return async (tok, S) => {
+    const st = PR.steps[k]; primPaint(S, k); st.cand.forEach(([u, v]) => S.g.ecol(u, v, TC.orange, true)); S.g.ecol(st.e[0], st.e[1], TC.hot, true);
+    gone(S.c1, S.c2);
+    S.c1 = pl('T = {' + st.T.join(', ') + '}；可以加：' + st.cand.map((e) => en(e) + ' ' + e[2]).join('，'), 2.6, 5.3);
+    S.c2 = good('最小 → 加 ' + en(st.e) + '（' + st.e[2] + '）', 2.6, 4.7);
+    S.log.push(sm('第 ' + (k + 1) + ' 步：+' + en(st.e) + ' ' + st.e[2], 2.6, 3.9 - k * 0.45));
+    cap(said || ('加 ' + en(st.e) + '（weight ' + st.e[2] + '）'), '一端在 T、一端不在 T 裡最小的');
+  };
+}
+scene('g8d-prim-run', "27C：Prim's algorithm 跑老師的圖", [
+  async (tok, S) => { // @1199.0
+    S.g = gG(); S.log = []; S.n = note('同一張圖（擺放為示意）', -3.4, -0.2); cap('例子還是原來那張圖', '');
+  },
+  async (tok, S) => { // @1282.3
+    S.t = hd(GN.length + ' 個端點：一開始 1 個，再做 ' + (GN.length - 1) + ' 次', 2.6, 6.6); cap('6 個端點：再做 5 次', '');
+  },
+  async (tok, S) => { // @1297.7
+    primPaint(S, 0); S.c1 = pl('T = {A}', 2.6, 5.3); cap('從 A 開始', 'T 只有 A');
+  },
+  ...PR.steps.map((st, k) => primOp(k)),   // @1322.1 @1371.3 @1453.2 @1560.5 @1593.7
+  async (tok, S) => { // @1646.0
+    gone(S.c1, S.c2); primPaint(S, PR.steps.length); S.c1 = ok(isST(GN, PR.es), 2.6, 5.3, '全部端點都進來；一直是 tree → spanning tree ✓'); cap('全部端點都加進來了', 'T 一直是 tree');
+  },
+  async (tok, S) => { // @1691.2
+    S.c2 = ok(PR_W === 15 && PR_W === MST_W && PR_W === sum(T3), 2.6, 4.7, 'total weight = ' + PR.es.map((e) => e[2]).join('+') + ' = ' + PR_W + ' = 前面的 T3 ✓'); cap('total weight = 15', '就是前面的 T3');
+  },
+  async (tok, S) => { // @1714.9
+    S.c3 = hot('接下來：證明 Prim 一定給出 MST', 2.6, 1.3); cap('接下來證明 correctness', '');
+  },
+]);
+
+// ════════ crMqlrIH4Ds（趙啟超 27D：Prim's algorithm 的 correctness 證明） ════════
+// K：證明用的示意小圖（有兩棵以上 MST，才看得到 M ≠ M'）
+const KP = { a: [-5.9, 4.9], b: [-3.3, 5.7], c: [-1.1, 3.6], d: [-2.6, 1.1], x: [-5.6, 2.0] };
+const KE = [['a', 'b', 1], ['c', 'd', 1], ['b', 'c', 2], ['a', 'x', 2], ['d', 'x', 2], ['b', 'd', 3]];
+const KN = Object.keys(KP);
+const gK = (o = {}) => mkG(KP, KE, o);
+const KST = allST(KN, KE), K_MW = Math.min(...KST.map(sum)), K_MN = KST.filter((t) => sum(t) === K_MW).length;
+const isMST = (es) => isST(KN, es) && sum(es) === K_MW;
+const KM = ['ab', 'cd', 'ax', 'dx'].map((nm) => KE.find((e) => en(e) === nm || e[1] + e[0] === nm));
+const KPR = prim(KN, KE, 'a');                  // Prim 從 a：第 1 步 ab，第 2 步 bc
+const PT = KPR.steps[1].T, Pe = KPR.steps[1].e;  // T = {a, b}，algorithm 選的 e
+const PCYC = treePath(KM, Pe[0], Pe[1]);         // M 裡 e 兩端之間的 path → 加 e 後的 cycle
+const PCROSS = cycleEdges(PCYC).filter(([u, v]) => PT.includes(u) !== PT.includes(v));
+const Pe2 = KE.find((e) => key(e[0], e[1]) === key(PCROSS[0][0], PCROSS[0][1]));
+const PM2 = KM.filter((e) => e !== Pe2).concat([Pe]);
+function kBase(S, M, T) {
+  S.g = gK(); note('示意圖', -3.5, 0.2);
+  M.forEach(([u, v]) => S.g.ecol(u, v, TC.a, true));
+  if (T) T.forEach((n) => S.g.vcol(n, TC.green));
+}
+const ln = (S, k, t, cls = '') => { S.LN = S.LN || []; gone(S.LN[k]); S.LN[k] = tag(t, cls, 2.9, 6.4 - k * 0.62); return S.LN[k]; };
+
+scene('g8d-prim-st', '27D：證明第一步——Prim 的 output 是 spanning tree', [
+  async (tok, S) => { // @9.0
+    S.g = gG(); ln(S, 0, '要證：Prim 的 output 是 minimal spanning tree', 'ptr'); cap('證明 Prim 的 correctness', '');
+  },
+  async (tok, S) => { // @25.6
+    ln(S, 1, '先確定是 spanning tree，再證 minimal', 'idx'); cap('先證是 spanning tree', '再證 minimal');
+  },
+  async (tok, S) => { // @33.7
+    PR.es.forEach(([u, v]) => S.g.ecol(u, v, TC.gold, true)); ln(S, 2, '每次加的邊都接在原來的 T 上 → connected'); cap('connected：每條邊都接在 T 上', '');
+  },
+  async (tok, S) => { // @48.4
+    ln(S, 3, '做 n − 1 次：' + GN.length + ' 個端點、' + PR.es.length + ' 條邊'); cap('n 個端點、n − 1 條邊', '');
+  },
+  async (tok, S) => { // @67.7
+    ln(S, 4, '每條邊一端在 T、一端不在 → 不會有 cycle'); cap('不會有 cycle', '');
+  },
+  async (tok, S) => { // @77.8
+    ln(S, 5, 'connected、沒 cycle、含所有端點 → spanning tree ✓', isST(GN, PR.es) ? 'good' : 'bad'); cap('所以是 spanning tree', '');
+  },
+]);
+
+scene('g8d-prim-ih', '27D：歸納法——T 一直是某棵 MST 的 subtree', [
+  async (tok, S) => { // @96.9
+    kBase(S, [], null); ln(S, 0, '用數學歸納法證：output 是 minimal spanning tree', 'ptr'); cap('用數學歸納法', '');
+  },
+  async (tok, S) => { // @170.5
+    KPR.es.slice(0, 1).forEach(([u, v]) => S.g.ecol(u, v, TC.gold, true)); ['a', 'b'].forEach((n) => S.g.vcol(n, TC.green));
+    KM.forEach(([u, v]) => { if (!(key(u, v) === key('a', 'b'))) S.g.ecol(u, v, TC.a, true); });
+    ln(S, 1, 'Induction hypothesis：目前的 T 是某一棵 MST M 的 subtree'); ln(S, 2, '綠點金邊 = T，藍邊 = M 其他的邊（M weight ' + sum(KM) + '）', 'idx');
+    cap('假設：T 是某棵 MST 的 subtree', '');
+  },
+  async (tok, S) => { // @220.8
+    ln(S, 3, 'subtree：某棵 tree 的 subgraph，本身也是 tree', 'idx'); cap('subtree 是什麼？', '');
+  },
+  async (tok, S) => { // @243.2
+    ln(S, 4, '一直成立 → 最後 T 含所有端點，就是那棵 MST'); cap('一直成立，最後就是 MST', '');
+  },
+  async (tok, S) => { // @278.6
+    S.g.vcol('b', TC.node); S.g.ecol('a', 'b', TC.a, true); ln(S, 5, 'Basis：一開始 T 只有一個端點，每棵 MST 都含它 ✓', 'good'); cap('basis：一開始只有一個端點', '一定成立');
+  },
+  async (tok, S) => { // @326.0
+    S.g.vcol('b', TC.green); S.g.ecol('a', 'b', TC.gold, true); S.g.ecol(Pe[0], Pe[1], TC.yel, true);
+    ln(S, 6, 'Induction step：加上 algorithm 選的 e（黃）後，仍是某棵 MST M′ 的 subtree'); cap('加上 e 之後還是某棵 MST 的一部分', '');
+  },
+  async (tok, S) => { // @394.5
+    ln(S, 7, "M′ 不一定等於 M：這張圖 weight " + K_MW + ' 的 MST 有 ' + K_MN + ' 棵（列舉）', K_MN > 1 ? 'note' : 'bad'); cap("M' 不一定跟 M 一樣", 'MST 不一定唯一');
+  },
+]);
+
+const KM1 = KST.find((t) => isMST(t) && t.some((e) => e === Pe) && t.some((e) => key(e[0], e[1]) === key('a', 'b')));
+scene('g8d-prim-case1', '27D：Case 1——e 本來就在 M 裡', [
+  async (tok, S) => { // @460.9
+    kBase(S, KM1, PT); S.g.ecol('a', 'b', TC.gold, true); ln(S, 0, '分兩個 case：e ∈ M，或 e ∉ M', 'ptr'); cap('分兩個 case 討論', '');
+  },
+  async (tok, S) => { // @477.2
+    S.g.ecol(Pe[0], Pe[1], TC.yel, true); ln(S, 1, 'e = ' + en(Pe) + ' 本來就在 M 裡（藍邊）→ M′ = M，證完 ✓', isMST(KM1) ? 'good' : 'bad'); cap('e 在 M 裡：M′ 就是 M', '天下太平');
+  },
+]);
+
+function pTboundary(S) { S.zone = blob(-4.6, 5.3, 2.0, 1.0, TC.green, 0.2, 0.25); pl('T', -6.4, 6.1); }
+scene('g8d-prim-case2', "27D：Case 2——e 不在 M 裡，用 e' 交換", [
+  async (tok, S) => { // @521.6
+    kBase(S, KM, PT); S.g.ecol('a', 'b', TC.gold, true); pTboundary(S); ln(S, 0, 'Case 2：e = ' + en(Pe) + ' 不在 M 裡（M = 藍邊）', 'ptr'); cap('e 不在 M 裡', '');
+  },
+  async (tok, S) => { // @589.0
+    S.ed = dash([S.g.P[Pe[0]], S.g.P[Pe[1]]], TC.yel, 0.07); paintPath(S.g, PCYC, TC.orange);
+    ln(S, 1, '把 e 加進 M：兩端早就在 M 裡 → 唯一的 cycle ' + PCYC.join('') + Pe[0]); cap('e 加進 M 會產生一個 cycle', '');
+  },
+  async (tok, S) => { // @690.2
+    ln(S, 2, 'e 是 algorithm 選的：候選 ' + KPR.steps[1].cand.map((e) => en(e) + ' ' + e[2]).join('，') + ' → ' + en(Pe), 'idx'); cap('補一句：e 是 algorithm 選的邊', '');
+  },
+  async (tok, S) => { // @791.5
+    ln(S, 3, 'e 的條件：一端（' + Pe[0] + '）在 T、一端（' + Pe[1] + '）不在 T'); cap('e：一端在 T、一端不在 T', '');
+  },
+  async (tok, S) => { // @849.6
+    S.g.ecol(Pe2[0], Pe2[1], TC.hot, true); ln(S, 4, "沿 cycle 走回 T：一定還有一條 e′ = " + en(Pe2) + ' 也跨過 T 的邊界'); cap("沿著 cycle 繞，找到 e'", '它也一端在 T、一端不在');
+  },
+  async (tok, S) => { // @880.1
+    S.zone.material.opacity = 0.32; ln(S, 5, '示意：綠區 = T；黃 = e 出去，紅 = e′ 回來', 'idx'); cap('老師畫的示意圖', '出去了一定要再回來');
+  },
+  async (tok, S) => { // @1070.9
+    ln(S, 6, "e′ 也夠資格被加，但 algorithm 選了 e → w(e′) = " + Pe2[2] + ' ≥ w(e) = ' + Pe[2] + ' ✓', Pe2[2] >= Pe[2] ? 'good' : 'bad'); cap("所以 w(e') ≥ w(e)", '不然會選 e′');
+  },
+  async (tok, S) => { // @1163.5
+    gone(S.ed); S.g.reset(); PM2.forEach(([u, v]) => S.g.ecol(u, v, TC.a, true)); S.g.ecol(Pe[0], Pe[1], TC.yel, true);
+    S.cut = dash([S.g.P[Pe2[0]], S.g.P[Pe2[1]]], TC.hot, 0.03);
+    ln(S, 7, 'M′ = M + e − e′：cycle 被打斷、端點都還在 → spanning tree ✓', isST(KN, PM2) ? 'good' : 'bad'); cap("M + e − e'：還是 spanning tree", '');
+  },
+  async (tok, S) => { // @1270.0
+    ln(S, 8, 'w(M′) = ' + sum(KM) + ' + ' + Pe[2] + ' − ' + Pe2[2] + ' = ' + sum(PM2) + ' ≤ w(M) → M′ 也是 MST ✓', isMST(PM2) ? 'good' : 'bad'); cap('weight 不會增加 → M′ 也是 MST', '');
+  },
+  async (tok, S) => { // @1385.6
+    S.g.ecol('a', 'b', TC.gold, true); ln(S, 9, 'M′ 包含 T 和 e → induction step 成立 ✓', PM2.includes(Pe) && PM2.some((e) => key(e[0], e[1]) === key('a', 'b')) ? 'good' : 'bad'); cap('M′ 包含 T 和 e', 'induction step 完成');
+  },
+  async (tok, S) => { // @1452.7
+    ln(S, 10, '每一步都成立 → 最後的 T 就是一棵 MST', 'ptr alt'); cap('每一步都成立 → 最後是 MST', '');
+  },
+]);
+
+scene('g8d-prim-sum', '27D：證明重點整理', [
+  async (tok, S) => { // @1475.8
+    ln(S, 0, '每一步造出來的 T 都是某棵 MST 的 subtree', 'ptr'); ln(S, 1, '一開始成立；每一步都成立；最後就是 MST', ''); cap('整理：每一步都是某棵 MST 的 subtree', '');
+  },
+  async (tok, S) => { // @1515.5
+    ln(S, 2, 'M′ 怎麼找：e ∈ M → M′ = M；e ∉ M → 加 e、拿掉 e′', 'good'); cap("關鍵：M' 怎麼找", '');
+  },
+  async (tok, S) => { // @1553.4
+    ln(S, 3, 'greedy 會 work 的例子；下次：另一個 greedy（Kruskal）', 'idx'); cap('greedy 會 work 的一個例子', '下次講另一個');
+  },
+], { cam: [[0, 3.6, 15], [2.6, 3.4, 0]] });
+
+// ════════ XAW_4UvQGWg（趙啟超 28A：Kruskal's algorithm、例子、證明 output 是 spanning tree） ════════
+scene('g8d-prim-recap', '28A：回顧 Prim——一直維持 tree', [
+  async (tok, S) => { // @4.4
+    S.g = gG(); primPaint(S, PR.steps.length); ln(S, 0, 'Prim：T 從一個端點開始長大，最後含所有端點', 'ptr'); cap('回顧 Prim：growing tree', '');
+  },
+  async (tok, S) => { // @40.0
+    ln(S, 1, 'greedy：維持 tree 的前提下，加 weight 最小的 edge'); cap('維持 tree，加 weight 最小的', '');
+  },
+  async (tok, S) => { // @56.2
+    const T = PR.steps[2].T; primPaint(S, 2); const inside = GE.find((e) => T.includes(e[0]) && T.includes(e[1]) && !PR.es.slice(0, 2).includes(e));
+    S.g.ecol(inside[0], inside[1], TC.hot, true);
+    ln(S, 2, 'T = {' + T.join(', ') + '} 時，' + en(inside) + ' 兩端都在 T 裡 → cycle ' + treePath(PR.es.slice(0, 2), inside[0], inside[1]).join('') + inside[0], 'bad');
+    ln(S, 3, '所以條件是：一端在 T 內、一端在 T 外', 'good'); cap('一端在內、一端在外', '不然就有 cycle');
+  },
+]);
+
+const sortedTags = (S, x = 1.8, y = 6.3, dy = 0.55) => { S.sl = KR_ORDER.map((e, i) => pl(en(e) + '  ' + e[2], x, y - i * dy)); };
+scene('g8d-kr-idea', "28A：Kruskal's algorithm 的想法", [
+  async (tok, S) => { // @76.6
+    S.g = gG(); S.t = hd("另一個 greedy：Kruskal's algorithm", 2.6, 7.0); cap("另一個 greedy：Kruskal's algorithm", '');
+  },
+  async (tok, S) => { // @94.9
+    ln(S, 1, 'Prim 一直維持 tree；Kruskal 不要求', 'idx'); cap('Kruskal 不要求一直是 tree', '');
+  },
+  async (tok, S) => { // @116.0
+    sortedTags(S, 1.4, 5.0, 0.5); ln(S, 2, '從 weight 小的 edge 開始，一條一條加', ''); cap('從 weight 最小的開始一條條加', '');
+  },
+  async (tok, S) => { // @132.4
+    ln(S, 3, '會形成 cycle 的就不加，換下一條', 'bad'); cap('會形成 cycle 就不加', '換下一個');
+  },
+  async (tok, S) => { // @166.6
+    ln(S, 4, '過程中不一定是 tree；最後是 spanning tree 就好', 'good'); cap('過程不一定是 tree', '最後是 spanning tree');
+  },
+], { cam: [[0, 3.6, 15], [0, 3.4, 0]] });
+
+const KCODE = ['Kruskal', 'T = ∅', 'for i = 1 to n − 1:', '  e = 不在 T、加進 T 不會形成 cycle', '      的 edge 中 weight 最小的', '  T = T ∪ {e}', 'return T'];
+scene('g8d-kr-algo', "28A：Kruskal's algorithm 的步驟", [
+  async (tok, S) => { // @204.2
+    S.code = code(KCODE, -2.6, 6.3, 0.55); S.code.hl(1); S.a = pl('T 是原圖的 subgraph，一開始是空集合', 3.4, 6.3); cap('T 一開始是空集合', '');
+  },
+  async (tok, S) => { // @220.2
+    S.b = pl('n 個 vertices → spanning tree 要 n − 1 條 edge', 3.4, 5.6); cap('spanning tree 有 n − 1 條 edge', 'tree 的邊比點少 1');
+  },
+  async (tok, S) => { // @239.7
+    S.code.hl(2); S.c = pl('for 迴圈做 n − 1 次，每次加一條', 3.4, 4.9); cap('for 迴圈做 n − 1 次', '');
+  },
+  async (tok, S) => { // @264.1
+    S.code.hl(3); S.d = pl('挑不在 T 裡、weight 最小的', 3.4, 4.2); cap('挑 weight 最小的 edge', '');
+  },
+  async (tok, S) => { // @282.0
+    S.code.hl(4); S.e = bad('條件：加進 T 不會形成 cycle', 3.4, 3.5); cap('條件：不會形成 cycle', '');
+  },
+  async (tok, S) => { // @321.9
+    S.code.hl(6); S.f = sm('後面證明：結果是 spanning tree，而且是 MST', 3.4, 2.8); cap('後面證明它是 MST', '');
+  },
+  async (tok, S) => { // @330.7
+    S.h = ok(KR_SORTED, 0.4, 1.4, '要先 sort：' + KR_ORDER.map((e) => en(e) + ' ' + e[2]).join(' ≤ ') + ' ✓'); cap('要先把 edge 照 weight 排好', 'sort');
+  },
+]);
+
+function krOp(k) {
+  return async (tok, S) => {
+    const lg = KR.log[k]; const [u, v, w] = lg.e; const i = KR_ORDER.indexOf(lg.e);
+    gone(S.cy); S.g.reset(); KR.acc.forEach((e) => { if (KR.log.slice(0, k).some((l) => l.ok && l.e === e)) S.g.ecol(e[0], e[1], TC.gold, true); });
+    if (lg.ok) { S.g.ecol(u, v, TC.green, true); setCls(S.sl[i], 'good'); txt(S.sl[i], en(lg.e) + '  ' + w + '  ✓ 加入'); }
+    else { S.g.ecol(u, v, TC.hot, true); paintPath(S.g, lg.path, TC.orange); setCls(S.sl[i], 'bad'); txt(S.sl[i], en(lg.e) + '  ' + w + '  ✘ cycle'); S.cy = bad('加 ' + en(lg.e) + ' 會形成 cycle ' + lg.path.join('') + ' → 不加', -3.4, -0.2); }
+    cap(lg.ok ? ('加 ' + en(lg.e) + '（weight ' + w + '）') : (en(lg.e) + ' 會形成 cycle'), lg.ok ? '不會形成 cycle' : '不能加，換下一個');
+  };
+}
+scene('g8d-kr-run', "28A：Kruskal's algorithm 跑老師的圖", [
+  async (tok, S) => { // @436.0
+    S.g = gG(); S.t = hd('同一張圖：' + GN.length + ' 個端點、' + GE.length + ' 條 edge', 0.8, 7.0); note('擺放為示意', -3.4, -0.7); cap('同一個圖：6 個端點、10 條 edge', '');
+  },
+  async (tok, S) => { // @462.7
+    sortedTags(S, 1.8, 6.2, 0.55); S.s = ok(KR_SORTED, 4.6, 6.2, '照 weight sort 好 ✓'); cap('先 sort', '從小排到大');
+  },
+  krOp(0), krOp(1), krOp(2), // @473.7 @520.4 @569.7
+  async (tok, S) => { // @596.2
+    S.cnt = pl('要 ' + (GN.length - 1) + ' 條邊：已經 3 條，再 2 步', 4.6, 5.4); cap('共要 5 條邊：再兩步', '');
+  },
+  krOp(3), krOp(4), krOp(5), // @616.0 @712.0 @731.3
+  async (tok, S) => { // @748.0
+    gone(S.cy, S.cnt); S.g.reset(); KR.acc.forEach(([u, v]) => S.g.ecol(u, v, TC.gold, true));
+    S.cnt = ok(isST(GN, KR.acc) && KR_W === PR_W && KR_W === MST_W, 4.6, 5.4, 'spanning tree，total ' + KR.acc.map((e) => e[2]).join('+') + ' = ' + KR_W + ' = Prim 的 ✓');
+    cap('total weight 15', '和 Prim 找到的一樣');
+  },
+  async (tok, S) => { // @781.1
+    S.p = pl('Prim：只加「一端在 T 內」的邊 → T 一直是 tree', 4.6, 4.6); cap('Prim 的 T 一直是 tree', '');
+  },
+  async (tok, S) => { // @804.8
+    const cs = [2, 3, 4, 5].map((m) => compCount(KR.acc.slice(0, m)));
+    S.q = pl('Kruskal：2、3、4、5 條邊時有 ' + cs.join('、') + ' 個 component', 4.6, 3.9); S.q2 = sm('（只算有接到 edge 的端點）過程中不一定 connected', 4.6, 3.4);
+    cap('Kruskal 過程中不一定 connected', '最後才變一個 component');
+  },
+  async (tok, S) => { // @843.5
+    S.r = good('都是 greedy，出發點不同：一個顧 tree，一個顧 weight', 4.6, 2.6); cap('都是 greedy，出發點不同', '');
+  },
+], { cam: [[0, 3.6, 15], [0.4, 3.3, 0]] });
+
+// 證明一的示意：如果 T 有 2 個 component（n = 6、5 條邊）
+const FP = { p: [-6.0, 4.8], q: [-4.8, 5.8], r: [-4.6, 4.2], s: [-3.4, 5.0], t: [-2.2, 4.6], u: [-1.2, 5.6], w: [-1.0, 3.8] };
+const FE = [['p', 'q'], ['q', 'r'], ['q', 's'], ['t', 'u'], ['t', 'w']];
+scene('g8d-kr-st', '28A：證明一——Kruskal 的 output 是 spanning tree', [
+  async (tok, S) => { // @880.7
+    ln(S, 0, '要證：Kruskal 的 output 是 minimal spanning tree', 'ptr'); cap('證明 Kruskal 的 correctness', '');
+  },
+  async (tok, S) => { // @919.4
+    ln(S, 1, '比 Prim 多一步：先證 output 是 spanning tree', ''); cap('比 Prim 多證一部分', '');
+  },
+  async (tok, S) => { // @952.1
+    S.g = gG({ s: 0.75, dx: -1.6, dy: 0.6, r: 0.8 }); KR.acc.slice(0, 3).forEach(([u, v]) => S.g.ecol(u, v, TC.gold, true));
+    S.n1 = sm('剛才第 3 步：' + compCount(KR.acc.slice(0, 3)) + ' 塊，不 connected', -4.2, 0.0); ln(S, 2, '過程中不一定 connected，所以要另外證', 'idx'); cap('過程中不一定 connected', '');
+  },
+  async (tok, S) => { // @997.3
+    ln(S, 3, 'output T：G 的 subgraph（點、邊都來自 G）'); cap('T 是 G 的 subgraph', '');
+  },
+  async (tok, S) => { // @1034.5
+    ln(S, 4, 'for 迴圈做 n − 1 次 → T 有 n − 1 條 edge'); cap('T 有 n − 1 條 edge', '');
+  },
+  async (tok, S) => { // @1051.6
+    ln(S, 5, '每次都確定不會形成 cycle → T 沒有 cycle'); cap('T 沒有 cycle', '');
+  },
+  async (tok, S) => { // @1098.3
+    gone(S.g, S.n1); ln(S, 6, '差在：T 可能不只一個 component？', 'bad'); cap('問題：會不會不只一個 component？', '');
+  },
+  async (tok, S) => { // @1151.0
+    S.f = mkG(Object.fromEntries(Object.entries(FP).map(([k, p]) => [k, [p[0], p[1] - 1.6]])), FE.map((e) => [...e, null]), { nm: () => '' });
+    FE.forEach(([u, v]) => S.f.ecol(u, v, TC.gold, true)); note('示意：假設 T 有 2 個 component', -3.6, 1.2);
+    ln(S, 7, '沒有 cycle → 每個 component 都是 tree（forest）'); cap('每個 component 都是 tree', 'T 是 forest');
+  },
+  async (tok, S) => { // @1267.4
+    S.c1 = sm('4 點 3 邊', -4.8, 5.0); S.c2 = sm('3 點 2 邊', -1.6, 5.0); ln(S, 8, 'tree：端點數 = 邊數 + 1'); cap('tree 的端點比邊多 1', '');
+  },
+  async (tok, S) => { // @1323.8
+    const n = GN.length; ln(S, 9, 'k 個 component → 端點數 = 邊數 + k；n = ' + n + '：' + [1, 2, 3].map((k) => 'k=' + k + '→' + (n - 1 + k)).join('，'));
+    S.c3 = bad('5 條邊、2 個 component → ' + (3 + 2 + 2) + ' 個端點', -3.2, 1.8); cap('k 個 component：多 k 個端點', '');
+  },
+  async (tok, S) => { // @1342.8
+    ln(S, 10, 'k ≥ 2 → 端點數 > n，但 T ⊆ G 只有 n 點 → 矛盾', 'bad'); cap('超過 n 個端點 → 矛盾', '');
+  },
+  async (tok, S) => { // @1533.6
+    gone(S.f, S.c1, S.c2, S.c3); ln(S, 11, '所以 T 只有一個 component：connected、沒 cycle → tree', 'good'); cap('T connected、沒有 cycle → tree', '');
+  },
+  async (tok, S) => { // @1559.2
+    S.g = gG({ s: 0.75, dx: -1.6, dy: 0.6, r: 0.8 }); KR.acc.forEach(([u, v]) => S.g.ecol(u, v, TC.gold, true));
+    ln(S, 12, 'tree 有 n − 1 條邊 → n 個端點 → G 的端點全在 → spanning tree ✓', isST(GN, KR.acc) ? 'good' : 'bad'); cap('n 個端點全在 → spanning tree', '');
+  },
+  async (tok, S) => { // @1633.0
+    ln(S, 13, '第二部分（下一段）：證明它是 minimal', 'ptr alt'); cap('接著證明它是 minimal', '');
+  },
+], { cam: [[0, 3.6, 15], [0.4, 3.0, 0]] });
+
+// ════════ LIKCqbxc-sI（趙啟超 28B：Kruskal 證明二、複雜度） ════════
+const KKR = kruskal(KN, KE.slice().sort((a, b) => a[2] - b[2]));
+const KT = KKR.acc.slice(0, 2), Ke = KKR.acc[2];             // T = {ab, cd}，下一條加進來的 e
+const kComp = (() => { const d = dsu(KN); KT.forEach(([u, v]) => d.u(u, v)); return d; })();
+const inT = (n) => KT.some((e) => e[0] === n || e[1] === n);
+const KCYC = treePath(KM, Ke[0], Ke[1]);
+const KCYC_E = cycleEdges([...KCYC]);                         // path edges in M (cycle = these + e)
+const KCROSS = KCYC_E.filter(([u, v]) => kComp.f(u) !== kComp.f(v));
+const Ke2 = KE.find((e) => key(e[0], e[1]) === key(KCROSS[KCROSS.length - 1][0], KCROSS[KCROSS.length - 1][1]));
+const KM2 = KM.filter((e) => e !== Ke2).concat([Ke]);
+function kTzones(S) {
+  S.z1 = blob(-4.6, 5.3, 1.9, 0.75, TC.green, 0.22, 0.27); S.z2 = blob(-1.85, 2.35, 0.75, 1.7, TC.green, 0.22, -0.5);
+}
+scene('g8d-kr-ih', '28B：證明二——T 一直是某棵 MST 的 subgraph', [
+  async (tok, S) => { // @4.4
+    ln(S, 0, '第二部分：output 不只是 spanning tree，而是 MST', 'ptr'); cap('證明二：它是 MST', '');
+  },
+  async (tok, S) => { // @21.4
+    ln(S, 1, '方法跟 Prim 的證明很像，稍微修改', 'idx'); cap('跟 Prim 的證明很像', '');
+  },
+  async (tok, S) => { // @48.1
+    kBase(S, [], null); KT.forEach(([u, v]) => S.g.ecol(u, v, TC.gold, true)); KN.filter(inT).forEach((n) => S.g.vcol(n, TC.green)); kTzones(S);
+    ln(S, 2, 'T 不一定是 tree → 只能說：某棵 MST 的 subgraph'); cap('T 是某棵 MST 的 subgraph', '不能說 subtree');
+  },
+  async (tok, S) => { // @115.8
+    KM.forEach(([u, v]) => { if (!KT.includes(KE.find((e) => key(e[0], e[1]) === key(u, v)))) S.g.ecol(u, v, TC.a, true); });
+    ln(S, 3, 'Induction hypothesis：目前的 T 是某棵 MST M 的 subgraph（M = 金 + 藍）'); cap('同樣用歸納法', '');
+  },
+  async (tok, S) => { // @193.6
+    ln(S, 4, 'Basis：一開始 T = ∅，當然是任何圖的 subgraph ✓', 'good'); cap('basis：空集合一定是 subgraph', '');
+  },
+  async (tok, S) => { // @213.4
+    S.g.ecol(Ke[0], Ke[1], TC.yel, true); ln(S, 5, 'Step：加上下一條 e = ' + en(Ke) + '（黃）後，仍是某棵 MST M′ 的 subgraph'); cap('加上下一條 e 之後呢？', '');
+  },
+  async (tok, S) => { // @313.9
+    ln(S, 6, 'e ∈ M → M′ = M，結束；主要看 e ∉ M', 'idx'); cap('e 在 M 裡就結束了', '主要看另一個 case');
+  },
+]);
+
+scene('g8d-kr-case2', "28B：e 不在 M 裡——找 e' 交換", [
+  async (tok, S) => { // @342.4
+    kBase(S, KM, KN.filter(inT)); KT.forEach(([u, v]) => S.g.ecol(u, v, TC.gold, true)); kTzones(S);
+    ln(S, 0, 'e = ' + en(Ke) + ' 不在 M 裡（M = 金 + 藍）', 'ptr'); cap('e 不在 M 裡', '');
+  },
+  async (tok, S) => { // @364.1
+    S.ed = dash([S.g.P[Ke[0]], S.g.P[Ke[1]]], TC.yel, 0.07); paintPath(S.g, KCYC, TC.orange);
+    ln(S, 1, '把 e 加進 M → 產生唯一的 cycle ' + KCYC.join('') + KCYC[0]); cap('把 e 加進 M：產生 cycle', '跟 Prim 一樣');
+  },
+  async (tok, S) => { // @415.6
+    ln(S, 2, 'e 的條件：加進 T 不會形成 cycle'); cap('e 的條件：加進 T 不會有 cycle', '');
+  },
+  async (tok, S) => { // @444.9
+    ln(S, 3, '也就是：e 的兩端不在 T 的同一個 component', 'good'); cap('兩端不在 T 的同一個 component', '不一定一端在 T 外');
+  },
+  async (tok, S) => { // @524.3
+    const cmpOf = (n) => (inT(n) ? '{' + KN.filter((m) => inT(m) && kComp.f(m) === kComp.f(n)).join('') + '}' : '不在 T');
+    ln(S, 4, '可能：一端不在 T／兩端都不在 T／在 T 的不同 component', 'idx');
+    ln(S, 5, '這裡 e = ' + en(Ke) + '：' + Ke[0] + ' 在 ' + cmpOf(Ke[0]) + '，' + Ke[1] + ' 在 ' + cmpOf(Ke[1]), ''); cap('否定有好幾種情況', '');
+  },
+  async (tok, S) => { // @587.0
+    S.g.ecol(Ke2[0], Ke2[1], TC.hot, true);
+    ln(S, 6, "沿 cycle 走：另一條 e′ ≠ e，兩端也不在 T 的同一個 component"); cap("沿 cycle 繞，找到 e'", '');
+  },
+  async (tok, S) => { // @674.6
+    ln(S, 7, '示意：綠 = T 的 component，橘 = cycle；e′ = ' + en(Ke2) + '（' + Ke2[1] + ' 根本不在 T 裡）', 'idx'); cap('老師畫的示意圖', '');
+  },
+  async (tok, S) => { // @813.9
+    const all = KCROSS.map((e) => e[0] + e[1]).join('、'); ln(S, 8, '這只是一種狀況；cycle 上符合條件的有：' + all, 'idx'); cap('這只是其中一種狀況', '');
+  },
+  async (tok, S) => { // @854.8
+    ln(S, 9, "e 和 e′ 都夠資格，algorithm 選了 e → w(e) = " + Ke[2] + ' ≤ w(e′) = ' + Ke2[2] + ' ✓', Ke[2] <= Ke2[2] ? 'good' : 'bad'); cap("w(e) ≤ w(e')", '不然會先選 e′');
+  },
+  async (tok, S) => { // @894.2
+    gone(S.ed); S.g.reset(); KM2.forEach(([u, v]) => S.g.ecol(u, v, TC.a, true)); KT.forEach(([u, v]) => S.g.ecol(u, v, TC.gold, true)); S.g.ecol(Ke[0], Ke[1], TC.yel, true);
+    S.cut = dash([S.g.P[Ke2[0]], S.g.P[Ke2[1]]], TC.hot, 0.03);
+    ln(S, 10, 'M′ = M + e − e′：cycle 打斷 → spanning tree ✓', isST(KN, KM2) ? 'good' : 'bad'); cap("M + e − e' 還是 spanning tree", '');
+  },
+  async (tok, S) => { // @958.3
+    ln(S, 11, 'w(M′) = ' + sum(KM) + ' + ' + Ke[2] + ' − ' + Ke2[2] + ' = ' + sum(KM2) + ' → M′ 是 MST，且含 T 和 e ✓', isMST(KM2) && KM2.includes(Ke) && KT.every((e) => KM2.includes(e)) ? 'good' : 'bad');
+    cap("weight 沒增加 → M' 是 MST", '而且包含 T 和 e');
+  },
+  async (tok, S) => { // @1010.5
+    ln(S, 12, '一路推到最後：T 是 spanning tree 又是某棵 MST 的 subgraph → T 就是 MST', 'ptr alt'); cap('最後 T 就是 MST', '');
+  },
+]);
+
+scene('g8d-kr-cmp', '28B：兩個證明的比較', [
+  async (tok, S) => { // @1028.7
+    ln(S, 0, '和 Prim 的證明幾乎一模一樣，只換兩個地方：', 'ptr');
+    ln(S, 1, 'subtree → subgraph', ''); ln(S, 2, '「一端在 T、一端不在」→「兩端不在 T 的同一個 component」', ''); cap('跟 Prim 的證明幾乎一樣', '只改條件');
+  },
+  async (tok, S) => { // @1064.0
+    ln(S, 3, '過程中不一定是 tree，但最後一定是 MST', 'good'); cap('過程不是 tree，最後是 MST', '');
+  },
+  async (tok, S) => { // @1093.1
+    ln(S, 4, '不是所有問題 greedy 都最好；但常常可以先從 greedy 想', 'note'); cap('greedy 不一定都最好', '但常是好的起點');
+  },
+], { cam: [[0, 3.6, 15], [2.6, 3.4, 0]] });
+
+const HEAP = [1, 3, 2, 7, 4, 5];   // 示意：min-heap（parent ≤ children）
+const HEAP_OK = HEAP.every((v, i) => !i || HEAP[(i - 1) >> 1] <= v);
+scene('g8d-mst-cost', '28B：Prim 與 Kruskal 的複雜度', [
+  async (tok, S) => { // @1133.7
+    ln(S, 0, '複雜度（只講結果，不詳細推導）', 'ptr'); cap('稍微看一下複雜度', '');
+  },
+  async (tok, S) => { // @1139.5
+    ln(S, 1, 'Prim 跟 Dijkstra 很像 → direct implementation：O(n²)'); cap('Prim 和 Dijkstra 很像', 'direct：O(n²)');
+  },
+  async (tok, S) => { // @1189.0
+    ln(S, 2, '用 priority queue（binary heap）：O(e log₂ n)，e = edge 數'); cap('用 binary heap：O(e log n)', '');
+  },
+  async (tok, S) => { // @1255.0
+    const pos = (i) => { const d = Math.floor(Math.log2(i + 1)), k = i + 1 - (1 << d); const w = 4.4 / (1 << d); return [-5.2 + w / 2 + k * w - 1.0, 5.6 - d * 1.3]; };
+    HEAP.forEach((v, i) => { if (i) { const [x1, y1] = pos((i - 1) >> 1), [x2, y2] = pos(i); seg(x1, y1, x2, y2); } });
+    S.hp = HEAP.map((v, i) => { const [x, y] = pos(i); const m = new THREE.Mesh(NG, new THREE.MeshStandardMaterial({ color: TC.node })); m.position.set(x, y, 0); m.add(lab.label(String(v), 'val')); lab.world.add(m); return m; });
+    note('示意', -5.8, 6.4); ln(S, 3, 'binary heap：complete binary tree，parent ≤ children ' + (HEAP_OK ? '✓' : '✘'), HEAP_OK ? 'good' : 'bad');
+    cap('binary heap：parent 比 children 小', '是一棵 complete binary tree');
+  },
+  async (tok, S) => { // @1284.4
+    ln(S, 4, 'Kruskal：用 union-find 資料結構 → O(e log₂ e)'); cap('Kruskal：union-find，O(e log e)', '');
+  },
+  async (tok, S) => { // @1321.0
+    ln(S, 5, '細節屬於資料結構課，這裡不講', 'idx'); cap('細節是資料結構課的內容', '');
+  },
+  async (tok, S) => { // @1341.3
+    ln(S, 6, '兩個找 MST 的 greedy algorithm：Prim、Kruskal，都會 work', 'good'); cap('Prim 和 Kruskal 都是 greedy', '都找得到 MST');
+  },
+]);
+  }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
 

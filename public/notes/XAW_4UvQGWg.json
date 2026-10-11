@@ -1,0 +1,263 @@
+{
+ "video": "XAW_4UvQGWg",
+ "label": "清大OCW 趙啟超《離散數學》第28A講 Minimal Spanning Trees",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "回顧 Prim：一直維持 tree",
+   "points": [
+    {
+     "t": 4,
+     "text": "Prim：T 從一個端點開始長大，每次在維持 tree 的前提下加 weight 最小的 edge。"
+    },
+    {
+     "t": 56,
+     "text": "維持 tree 的條件：加的邊一端在 T 內、一端在 T 外；兩端都在 T 內會造成 cycle。"
+    }
+   ],
+   "scene": "g8d-prim-recap",
+   "cues": [
+    4.4,
+    40,
+    56.2
+   ],
+   "explain": [
+    "先回顧上次的 Prim：T 是一棵從一個端點開始慢慢長大的 tree，最後含所有端點，就是 spanning tree。畫面是它在老師的圖上的結果。",
+    "greedy 的地方在：每次加一條邊，在「加完還是 tree」的前提下，挑 weight 最小的。",
+    "怎麼保證還是 tree？加的邊一端在 T 內、一端在外。如果兩端都在 T 內，例如 T = {A, B, C} 時加 AC，就會繞成 cycle A B C A。"
+   ]
+  },
+  {
+   "title": "Kruskal's algorithm 的想法",
+   "points": [
+    {
+     "t": 76,
+     "text": "另一個 greedy algorithm：Kruskal。它不要求過程中一直是 tree。"
+    },
+    {
+     "t": 116,
+     "text": "從 weight 最小的 edge 開始一條條加；會形成 cycle 的就不加，換下一條。過程中不一定是 tree，最後是 spanning tree。"
+    }
+   ],
+   "scene": "g8d-kr-idea",
+   "cues": [
+    76.6,
+    94.9,
+    116,
+    132.4,
+    166.6
+   ],
+   "explain": [
+    "今天介紹另一個找 MST 的 greedy algorithm，叫 Kruskal's algorithm。",
+    "Prim 的想法是一直維持一棵 tree；Kruskal 不這樣要求。",
+    "Kruskal 從 weight 的角度想：既然要總和最小，就從 weight 最小的邊開始，一條一條往上加。右邊是照 weight 排好的邊。",
+    "但有些邊不能加：如果加進去會形成 cycle，就跳過它，換下一條 weight 小的。",
+    "這樣做的過程中，選到的邊可能分散成好幾塊，不一定是 tree；但只要最後是一棵 spanning tree 就可以了。"
+   ]
+  },
+  {
+   "title": "Kruskal's algorithm 的步驟",
+   "points": [
+    {
+     "t": 204,
+     "text": "T 一開始是空集合；for i = 1 到 n − 1，每次加一條不在 T 中、加進去不會形成 cycle、而且 weight 最小的 edge。"
+    },
+    {
+     "t": 330,
+     "text": "實作時要先把 edges 照 weight 由小到大 sort。"
+    }
+   ],
+   "scene": "g8d-kr-algo",
+   "cues": [
+    204.2,
+    220.2,
+    239.7,
+    264.1,
+    282,
+    321.9,
+    330.7
+   ],
+   "explain": [
+    "步驟寫出來：T 是原圖的一個 subgraph（子圖），一開始是空的，什麼邊都沒有。",
+    "圖有 n 個端點。一棵 spanning tree 要 n 個點，而 tree 的邊數永遠比點數少 1，所以要 n − 1 條邊。",
+    "所以 for 迴圈做 n − 1 次，每次加一條邊。",
+    "每次挑的是：還不在 T 裡、weight 最小的邊。",
+    "但有一個條件：加進 T 後不能形成 cycle。會形成 cycle 的就跳過，因為有 cycle 就不是 tree 了。",
+    "做完 n − 1 次就結束。後面會證明：結果一定是 spanning tree，而且是 minimal spanning tree。",
+    "因為要從小的開始一個一個考慮，實作時要先把所有邊照 weight 從小排到大（sort）。老師的圖排好就是這個順序 ✓。"
+   ]
+  },
+  {
+   "title": "Kruskal's algorithm 跑老師的圖",
+   "points": [
+    {
+     "t": 436,
+     "text": "同一張圖：6 個端點、10 條 edge，先照 weight sort。"
+    },
+    {
+     "t": 473,
+     "text": "依序加入 EF 1、CD 2、AB 3、CE 4（都不會形成 cycle）。"
+    },
+    {
+     "t": 712,
+     "text": "兩條 weight 5：DF 會形成 cycle D–C–E–F，不加；BC 不會，加入。"
+    },
+    {
+     "t": 748,
+     "text": "得到 spanning tree，total weight 15，和 Prim 的結果一樣。"
+    },
+    {
+     "t": 781,
+     "text": "差別：Prim 的 T 一直是 tree；Kruskal 過程中可能有好幾個 component（2、3、2、1）。兩者都是 greedy，出發點不同。"
+    }
+   ],
+   "trap": "Kruskal 判斷的是「加進去會不會形成 cycle」，不是「是否接在已選的邊上」；過程中 T 可以是不連通的 forest。",
+   "scene": "g8d-kr-run",
+   "cues": [
+    436,
+    462.7,
+    473.7,
+    520.4,
+    569.7,
+    596.2,
+    616,
+    712,
+    731.3,
+    748,
+    781.1,
+    804.8,
+    843.5
+   ],
+   "explain": [
+    "用同一張圖跑一次：6 個端點、10 條邊。",
+    "第一件事是 sort：把 10 條邊照 weight 從小排到大，右邊就是排好的順序。",
+    "weight 最小的是 EF（1）。T 一開始什麼都沒有，加進去絕對不會有 cycle，加入。",
+    "第二小是 CD（2）。加進去不會形成 cycle，加入。",
+    "再來是 AB（3），也不會形成 cycle，加入。",
+    "6 個端點的 spanning tree 要 5 條邊，現在已經 3 條，再兩步就結束。",
+    "接著是 CE（4），加進去也沒有 cycle，加入。",
+    "下一個是 weight 5，有兩條。先看 DF：D 和 F 已經透過 D C E F 連在一起，再加 DF 就會繞成 cycle，所以不能加。",
+    "換另一條 weight 5 的 BC：B 和 C 原本不連通，加進去沒有 cycle，加入。",
+    "5 條邊到齊，是一棵 spanning tree。total weight = 1 + 2 + 3 + 4 + 5 = 15，和 Prim 找到的一樣 ✓。",
+    "比較兩者：Prim 只加「一端在 T 內、一端在外」的邊，所以 T 從頭到尾都是 tree。",
+    "Kruskal 只要不形成 cycle 就加，過程中常常分成好幾塊：2 條邊時 2 塊、3 條 3 塊、4 條 2 塊，最後才變成 1 塊（只算有接到邊的端點）。",
+    "兩個都是 greedy、都每次挑 weight 最小的，只是出發點不同：一個顧著維持 tree，一個從 weight 小的開始加。兩個都會成功。"
+   ]
+  },
+  {
+   "title": "證明一：Kruskal 的 output 是 spanning tree",
+   "points": [
+    {
+     "t": 880,
+     "text": "比 Prim 多一步：Kruskal 過程中不一定 connected，要先證 output 是 spanning tree。"
+    },
+    {
+     "t": 997,
+     "text": "output T 是 G 的 subgraph，有 n − 1 條邊，沒有 cycle。"
+    },
+    {
+     "t": 1098,
+     "text": "若 T 有 k 個 component，每個都是 tree（端點數 = 邊數 + 1），所以 T 的端點數 = (n − 1) + k。"
+    },
+    {
+     "t": 1342,
+     "text": "k ≥ 2 會讓端點數超過 n，但 T 是 G 的 subgraph，最多 n 個端點，矛盾；所以 T connected，是 tree。"
+    },
+    {
+     "t": 1559,
+     "text": "tree 有 n − 1 條邊就有 n 個端點，G 的端點全在 T 裡，所以 T 是 spanning tree。"
+    }
+   ],
+   "scene": "g8d-kr-st",
+   "cues": [
+    880.7,
+    919.4,
+    952.1,
+    997.3,
+    1034.5,
+    1051.6,
+    1098.3,
+    1151,
+    1267.4,
+    1323.8,
+    1342.8,
+    1533.6,
+    1559.2,
+    1633
+   ],
+   "explain": [
+    "接下來證明 Kruskal 的結果是 minimal spanning tree。",
+    "這個證明比 Prim 多一步。Prim 一直是 tree，最後自然是 spanning tree；Kruskal 卻要先證明結果真的是 spanning tree。",
+    "因為 Kruskal 過程中不一定連通，例如剛才做到第 3 步時分成 3 塊，一眼看不出最後一定會連起來。",
+    "先整理已知的：輸出的 T 用的點和邊都來自 G，所以是 G 的 subgraph。",
+    "for 迴圈跑了 n − 1 次，每次加一條，所以 T 有 n − 1 條邊。",
+    "每次加邊都確認不會形成 cycle，所以 T 沒有 cycle。",
+    "還差什麼？T 有可能不只一個 component（連通塊）嗎？要證明它只有一塊。",
+    "假設 T 有好幾塊。因為 T 沒有 cycle，每一塊自己都是一棵 tree，整個 T 是 forest（森林）。畫面是示意。",
+    "tree 有一個性質：端點數永遠比邊數多 1。例如 4 點 3 邊、3 點 2 邊。",
+    "所以 k 塊合起來，端點數 = 邊數 + k。T 有 n − 1 條邊，兩塊就有 n + 1 個點、三塊就有 n + 2 個點。例如 5 條邊分 2 塊，就要 7 個點。",
+    "可是 T 是 G 的 subgraph，G 只有 n 個點，T 不可能超過 n 個點。k ≥ 2 就矛盾了。",
+    "所以 T 只有一個 component，也就是 connected；再加上沒有 cycle，T 是一棵 tree。",
+    "tree 有 n − 1 條邊就一定有 n 個點，而 G 總共只有 n 個點，所以 G 的每個點都在 T 裡，T 是 spanning tree ✓。",
+    "第一部分證完。第二部分要證明它不只是 spanning tree，而且是 minimal 的。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Kruskal 每次考慮加入哪條 edge？",
+   "opts": [
+    "還沒考慮過的 edge 中 weight 最小的，且加入後不形成 cycle",
+    "一端在 T、一端不在 T 中 weight 最小的",
+    "weight 最大的 edge",
+    "離起點最近的 edge"
+   ],
+   "ans": "還沒考慮過的 edge 中 weight 最小的，且加入後不形成 cycle",
+   "why": "Kruskal 從小到大考慮，只要不形成 cycle 就加。"
+  },
+  {
+   "q": "老師的圖跑 Kruskal 時，哪條 edge 被拒絕？",
+   "opts": [
+    "DF",
+    "BC",
+    "CE",
+    "AB"
+   ],
+   "ans": "DF",
+   "why": "D、F 已透過 D C E F 連通，加 DF 會形成 cycle。"
+  },
+  {
+   "q": "Kruskal 在老師的圖上得到的 total weight 是？",
+   "opts": [
+    "15",
+    "16",
+    "22",
+    "20"
+   ],
+   "ans": "15",
+   "why": "EF 1 + CD 2 + AB 3 + CE 4 + BC 5 = 15，和 Prim 一樣。"
+  },
+  {
+   "q": "Kruskal 和 Prim 的主要差別是？",
+   "opts": [
+    "Kruskal 過程中不一定是 tree；Prim 一直是 tree",
+    "Kruskal 不是 greedy",
+    "Prim 要先 sort 所有 edge",
+    "Kruskal 找到的不一定是 MST"
+   ],
+   "ans": "Kruskal 過程中不一定是 tree；Prim 一直是 tree",
+   "why": "兩者都是 greedy，都會找到 MST。"
+  },
+  {
+   "q": "證明 Kruskal 的 output connected 時，用到什麼關係？",
+   "opts": [
+    "k 個 component 的 forest 有「邊數 + k」個端點",
+    "tree 的邊數 = 端點數",
+    "每個端點的 degree 都是 2",
+    "complete graph 的邊數"
+   ],
+   "ans": "k 個 component 的 forest 有「邊數 + k」個端點",
+   "why": "n − 1 條邊、k ≥ 2 會超過 n 個端點，矛盾。"
+  }
+ ]
+}
