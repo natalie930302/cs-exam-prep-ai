@@ -1061,6 +1061,12 @@
   "quiz": 6,
   "cued": true
  },
+ "f8DVtPvqtwc": {
+  "label": "SVD | Step-By-Step Example and Explanation",
+  "points": 25,
+  "quiz": 5,
+  "cued": true
+ },
  "FbYzBWdhMb0": {
   "label": "Abdul Bari：1.2 Characteristics of Algorithm",
   "points": 21,
@@ -1171,9 +1177,9 @@
  },
  "Go2aLo7ZOlU": {
   "label": "MIT OCW 18.06 L33：Left and Right Inverses; Pseudoinverse",
-  "points": 35,
+  "points": 40,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "GO4Lbeh8M_0": {
   "label": "清大周志遠 第15B講 Thread Introduction(續)",
@@ -1215,6 +1221,12 @@
   "label": "清大OCW 趙啟超《離散數學》第12D講 Recurrence Relations",
   "points": 17,
   "quiz": 5,
+  "cued": true
+ },
+ "HgC1l_6ySkc": {
+  "label": "MIT OCW 18.06 L32：Quiz 3 Review",
+  "points": 38,
+  "quiz": 7,
   "cued": true
  },
  "HHIc5JZyenI": {
@@ -1799,6 +1811,12 @@
   "quiz": 8,
   "cued": true
  },
+ "Nx0lRBaXoz4": {
+  "label": "MIT 18.06 L29：（另一個錄影版本）",
+  "points": 36,
+  "quiz": 6,
+  "cued": true
+ },
  "Nz1KZXbghj8": {
   "label": "MIT 6.006 L7：Counting Sort, Radix Sort",
   "points": 93,
@@ -2243,6 +2261,12 @@
   "quiz": 7,
   "cued": true
  },
+ "RWvi4Vx4CDc": {
+  "label": "MIT OCW 18.06 L34：Final Course Review",
+  "points": 31,
+  "quiz": 6,
+  "cued": true
+ },
  "s-CYnVz-uh4": {
   "label": "MIT 6.006 L13：BFS",
   "points": 33,
@@ -2397,6 +2421,12 @@
   "label": "清大周志遠 第14C講 Page Replacement(續)",
   "points": 31,
   "quiz": 7,
+  "cued": true
+ },
+ "TX_vooSnhm8": {
+  "label": "MIT 18.06 L29：Singular Value Decomposition",
+  "points": 36,
+  "quiz": 6,
   "cued": true
  },
  "tz_miTx3owE": {

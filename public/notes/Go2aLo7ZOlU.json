@@ -1,209 +1,454 @@
 {
  "video": "Go2aLo7ZOlU",
  "label": "MIT OCW 18.06 L33：Left and Right Inverses; Pseudoinverse",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
-   "title": "四個子空間與 two-sided inverse",
-   "scene": "inverse-cases",
-   "params": {
-    "focus": "two-sided"
-   },
+   "title": "開場：小考成績與今天的安排",
+   "scene": null,
    "points": [
     {
-     "text": "回到 m×n、rank r 矩陣的四個子空間圖：row space ⟂ null space，column space ⟂ N(Aᵀ)。",
-     "t": 83
+     "t": 4,
+     "text": "閒聊：老師的生日研討會、Quiz 3 成績和 Quiz 2 差不多。"
     },
     {
-     "text": "主題：left inverse、right inverse，以及 pseudo-inverse（課本 7.4 節）。",
-     "t": 120
-    },
-    {
-     "text": "Two-sided inverse：AA⁻¹ = I = A⁻¹A，只在 r = m = n（方陣、full rank）時存在。",
-     "t": 173
+     "t": 56,
+     "text": "今天是期末複習的第一步，週三總複習。"
     }
+   ]
+  },
+  {
+   "title": "四個子空間與 two-sided inverse",
+   "scene": "sv-l33-cases",
+   "points": [
+    {
+     "t": 84,
+     "text": "四個子空間：row space ⟂ null space、column space ⟂ N(Aᵀ)。"
+    },
+    {
+     "t": 91,
+     "text": "主題：left / right inverse 與 pseudo-inverse。"
+    },
+    {
+     "t": 172,
+     "text": "Two-sided inverse：AA⁻¹ = I = A⁻¹A。"
+    },
+    {
+     "t": 215,
+     "text": "只在 r = m = n（方陣、full rank）時存在。"
+    }
+   ],
+   "cues": [
+    84.76,
+    91.82,
+    116.94,
+    134.32,
+    150.06,
+    172.54,
+    215.47
+   ],
+   "explain": [
+    "今天的主角還是四個基本子空間（fundamental subspaces），這是線性代數最基本的圖。畫面是一個 3 × 4、rank 2 的示意：左邊 row space（列空間）與 null space（零空間），右邊 column space（行空間）與 N(Aᵀ)（左零空間）。",
+    "今天要談 left inverse（左反矩陣）、right inverse（右反矩陣），以及 pseudo-inverse（虛反矩陣）。pseudo-inverse 在課本第七章末，不會考，但背後全是基本觀念。",
+    "回到 m × n、rank r 的矩陣：四個子空間的維度分別是 r、n − r（左邊），r、m − r（右邊）。",
+    "左邊的 row space 和 null space 互為正交補（互相垂直、合起來是整個 ℝⁿ）；右邊的 column space 和 N(Aᵀ) 也是。",
+    "要分辨各種可能。第一種：什麼時候矩陣有完美的、兩邊都能用的反矩陣（two-sided inverse）？",
+    "就是我們平常說的反矩陣：AA⁻¹ = I = A⁻¹A，乘在左邊或右邊都得到單位矩陣。",
+    "這時 r、m、n 三個數全部相等：方陣、full rank（滿秩）。動畫中兩個 null space 都縮成只剩 0，這是第二章的主角。"
    ]
   },
   {
    "title": "Full column rank：left inverse",
-   "scene": "left-inverse",
+   "scene": "sv-l33-left",
    "points": [
     {
-     "text": "Full column rank：r = n，columns 獨立，N(A) = {0}。",
-     "t": 261
+     "t": 233,
+     "text": "Full column rank：r = n，N(A) = {0}。"
     },
     {
-     "text": "Ax = b 有 0 或 1 個解：沒有 null space 可以加，但 rows 可能不獨立，所以可能無解。",
-     "t": 380
+     "t": 429,
+     "text": "Ax = b 有 0 或 1 個解。"
     },
     {
-     "text": "rank = n 時 AᵀA 是 n×n 對稱、可逆的矩陣。",
-     "t": 489
+     "t": 490,
+     "text": "AᵀA（n × n）對稱可逆。"
     },
     {
-     "text": "Left inverse：A⁻¹_left = (AᵀA)⁻¹Aᵀ，乘在左邊 (AᵀA)⁻¹AᵀA = I（n×n）。",
-     "t": 551
+     "t": 547,
+     "text": "A⁻¹_left = (AᵀA)⁻¹Aᵀ，A⁻¹_left A = I；最小平方的關鍵。"
     },
     {
-     "text": "這正是 least squares 的關鍵：normal equation 的係數矩陣 AᵀA 可逆。",
-     "t": 600
-    },
-    {
-     "text": "長方形矩陣不可能有 two-sided inverse：A 或 Aᵀ 一定有 null space。",
-     "t": 690
+     "t": 701,
+     "text": "長方形矩陣沒有 two-sided inverse。"
     }
+   ],
+   "cues": [
+    233.27,
+    262.59,
+    303.26,
+    306.48,
+    346.78,
+    402.85,
+    429.3,
+    465.33,
+    490.84,
+    547.82,
+    580.78,
+    597.73,
+    630.22,
+    686.6,
+    701.44
+   ],
+   "explain": [
+    "第三章開始處理不是 full rank 的矩陣，並特別看了 full column rank（行滿秩）的情形。",
+    "這種情形會有 left inverse（左反矩陣），老師要把它找出來。",
+    "full column rank 代表 r = n：rank 等於行數。",
+    "n 個 columns 都獨立，但通常列比較多（m > n），rows 不一定獨立。畫面用 3 × 2 的 A = [1 0; 0 1; 1 1] 示意，綠色平面是它的 column space。",
+    "null space 只有零向量：columns 獨立，只有「全部係數都是 0」的組合才得到 0。",
+    "沒有 null space，所以 row space 就是整個 ℝⁿ。",
+    "Ax = b 的解有 0 個或 1 個：通常可以在一個解上加 null space 的向量，但這裡 null space 沒有東西可加，所以有解就只有一個（例如平面上的 b = A(1, 2)）。",
+    "但 rows 通常不獨立，有些 b 消去後會出現 0 = 非零 的矛盾，就無解。例如 (1, 2, 4) 不在平面上。",
+    "老師最強調的組合 AᵀA：rank 是 n 時，AᵀA 是 n × n、對稱、而且可逆。示意例子 AᵀA = [2 1; 1 2]，行列式 3。",
+    "所以 A 有一個「單邊」反矩陣：A⁻¹_left = (AᵀA)⁻¹Aᵀ。示意例子算出來是 (1/3)[2 −1 1; −1 2 1]。",
+    "把它乘在 A 的左邊：(AᵀA)⁻¹AᵀA，括號一放就看出是 I（n × n）。程式確認無誤。",
+    "這正是最小平方（least squares）的關鍵：normal equation 的係數矩陣就是 AᵀA，full column rank 時可逆。對不在平面上的 b，A⁻¹_left b 給出最小平方解 x̂（虛線是投影的方向）。",
+    "反過來乘在右邊呢？A 是 m × n、left inverse 是 n × m，乘在右邊會得到 m × m 的矩陣，不會是 I。",
+    "這種情形 AᵀA 很好，AAᵀ 卻是壞的：示意例子 AAᵀ 是 3 × 3、行列式 0，不可逆。",
+    "長方形矩陣不可能有 two-sided inverse：m ≠ n 時一定有 free variable，A 或 Aᵀ 一定有 null space。"
    ]
   },
   {
    "title": "Full row rank：right inverse",
-   "scene": "right-inverse",
+   "scene": "sv-l33-right",
    "points": [
     {
-     "text": "Full row rank：r = m，rows 獨立，N(Aᵀ) = {0}。",
-     "t": 760
+     "t": 728,
+     "text": "Full row rank：r = m，N(Aᵀ) = {0}。"
     },
     {
-     "text": "Ax = b 永遠有解（消去不會出現 0 = 1），而且有 n − m 個 free variables，解有無限多個。",
-     "t": 858
+     "t": 818,
+     "text": "Ax = b 永遠有解，且有 n − m 個 free variables。"
     },
     {
-     "text": "Right inverse：A⁻¹_right = Aᵀ(AAᵀ)⁻¹，A·A⁻¹_right = I（m×m）；和 left inverse 完全對稱。",
-     "t": 940
+     "t": 941,
+     "text": "A⁻¹_right = Aᵀ(AAᵀ)⁻¹，A·A⁻¹_right = I。"
     },
     {
-     "text": "第四種情形 r < m 且 r < n：四個子空間都在，維度分別 r、n − r、r、m − r。",
-     "t": 1010
+     "t": 1015,
+     "text": "情形 4：r < m、r < n，四個子空間都在。"
     }
+   ],
+   "cues": [
+    728.66,
+    748.57,
+    770.16,
+    791.89,
+    818.02,
+    858.86,
+    897.02,
+    941.16,
+    960.56,
+    989.33,
+    1015.29
+   ],
+   "explain": [
+    "接著看相反的情形：right inverse（右反矩陣）。",
+    "full row rank（列滿秩）：r = m，m 個 rows 獨立，但 columns 不獨立。畫面用 2 × 3 的示意矩陣（上一段 A 的轉置）。",
+    "完全翻過來：Aᵀ 的 null space 只有 0，因為 rows 沒有任何組合會變成零列。",
+    "Ax = b 有幾個解？",
+    "rows 獨立，消去永遠不會出現零列，不會有 0 = 1 的問題，所以 Ax = b 永遠有解；但解太多了，因為有 null space。",
+    "有 n 個變數、m 個 pivot，所以有 n − m 個 free variables（自由變數）。示意例子 n − m = 1：所有解排成一整條橘色直線。",
+    "這次要找乘在右邊的反矩陣：A·A⁻¹_right = I。",
+    "上面好的是 AᵀA，這次好的是 AAᵀ（m × m 可逆），所以 A⁻¹_right = Aᵀ(AAᵀ)⁻¹。它挑出的解 (0, 1, 1) 正好在 row space 裡。",
+    "和上一段完全平行：程式確認 A·Aᵀ(AAᵀ)⁻¹ = I（m × m）。",
+    "整理目前的情形：情形 1 兩個 null space 都消失；情形 2 是 A 的 null space 消失；情形 3 是 Aᵀ 的 null space 消失。",
+    "情形 4 最一般：r 比 m、n 都小，四個子空間都在，維度是 r、n − r、r、m − r。"
    ]
   },
   {
    "title": "反過來乘：得到投影",
-   "scene": "inverse-projection",
+   "scene": "sv-l33-proj",
    "points": [
     {
-     "text": "A·A⁻¹_left = A(AᵀA)⁻¹Aᵀ = P：投影到 column space。",
-     "t": 1093
+     "t": 1048,
+     "text": "A·A⁻¹_left = A(AᵀA)⁻¹Aᵀ = P：投影到 column space。"
     },
     {
-     "text": "投影矩陣「想當 I」：在 column space 上是 I，其他方向是 0。",
-     "t": 1130
+     "t": 1147,
+     "text": "P 在 column space 上是 I，垂直方向是 0。"
     },
     {
-     "text": "A⁻¹_right·A = Aᵀ(AAᵀ)⁻¹A：投影到 row space。",
-     "t": 1190
+     "t": 1214,
+     "text": "A⁻¹_right·A = Aᵀ(AAᵀ)⁻¹A：投影到 row space。"
+    }
+   ],
+   "cues": [
+    1048.69,
+    1073.35,
+    1091.75,
+    1132.4,
+    1147.17,
+    1160.04,
+    1180.77,
+    1214.49
+   ],
+   "explain": [
+    "回頭再看一下 full column rank 的情形。",
+    "left inverse 乘在左邊得到 I；剛才說反過來乘得不到 I。那到底得到什麼？",
+    "A 乘上 left inverse：A(AᵀA)⁻¹Aᵀ。示意例子算出一個 3 × 3 矩陣。",
+    "大家都認得它：P，投影矩陣！它把向量投影到 column space。程式確認它對稱而且 P² = P。",
+    "投影矩陣「想要當單位矩陣」：已經在 column space（綠色平面）上的向量，乘了之後完全不動。",
+    "可是這是不可能的任務：它只能在平面上當 I，垂直方向的向量被送到 0，其他向量 b 被壓到平面上變成 Pb。",
+    "同樣地，把 right inverse 放到左邊：Aᵀ(AAᵀ)⁻¹A，只是把 A 和 Aᵀ 對調。",
+    "它也是投影矩陣，投影到 row space。示意例子中 2 × 3 矩陣的 row space 剛好就是同一個平面，所以兩個矩陣一模一樣。"
+   ]
+  },
+  {
+   "title": "閒聊：線性代數 vs. 微積分",
+   "scene": null,
+   "points": [
+    {
+     "t": 1258,
+     "text": "這些 rank 與 free variables 的事一定要會。"
+    },
+    {
+     "t": 1288,
+     "text": "閒聊：微積分的公式不優雅，線性代數「平」又漂亮，能走到高維。"
     }
    ]
   },
   {
    "title": "一般情形：row space ↔ column space 一對一",
-   "scene": "pinv-map",
-   "params": {
-    "focus": "map"
-   },
+   "scene": "sv-l33-map",
    "points": [
     {
-     "text": "一般 rank r < m, n：兩個 null space 讓 inverse 不存在——被打成 0 的向量回不來。",
-     "t": 1260
+     "t": 1338,
+     "text": "一般情形 r < m、r < n：兩個 null space 讓反矩陣不存在。"
     },
     {
-     "text": "x 在 row space，Ax 一定在 column space；兩個空間都是 r 維。",
-     "t": 1350
+     "t": 1407,
+     "text": "x 在 row space ⇒ Ax 在 column space；兩邊都是 r 維。"
     },
     {
-     "text": "從 row space 到 column space，A 是一對一的：不同的 x、y 給出不同的 Ax、Ay。",
-     "t": 1429
+     "t": 1470,
+     "text": "A 殺掉 null space 的成分；row space 中 x ≠ y ⇒ Ax ≠ Ay。"
     },
     {
-     "text": "限制在這兩個空間上 A 可逆，它的反方向就是 pseudo-inverse A⁺：y = A⁺(Ay)。",
-     "t": 1599
+     "t": 1576,
+     "text": "限制在這兩個空間上 A 可逆，反方向就是 A⁺。"
     },
     {
-     "text": "A 把 null space 打成 0，A⁺ 把 N(Aᵀ) 打成 0。",
-     "t": 1630
+     "t": 1635,
+     "text": "A 殺 N(A)，A⁺ 殺 N(Aᵀ)。"
     }
+   ],
+   "cues": [
+    1338.22,
+    1350.36,
+    1364.58,
+    1390.77,
+    1407.65,
+    1419.13,
+    1440.23,
+    1470.23,
+    1490.83,
+    1566.14,
+    1576.22,
+    1604.88,
+    1635
+   ],
+   "explain": [
+    "現在真正來看一般情形：什麼才算合理的反矩陣？畫面用 L29 的 rank 1 矩陣（縮小 1/5）示意。",
+    "rank r 比 n 小，A 有 null space；r 也比 m 小，Aᵀ 也有 null space。四條線就是四個子空間。",
+    "就是這兩個 null space 讓反矩陣不存在：如果 A 把一個向量打成 0，任何反矩陣都不可能把它救回來。",
+    "取 row space 裡的一個向量 x，乘上 A。",
+    "Ax 在哪裡？一定在 column space，因為 Ax 是 columns 的組合。",
+    "把 row space 裡所有向量都乘上 A，就得到 column space 裡的一堆向量。",
+    "老師的看法：x（在 row space）和 Ax（在 column space）之間是一對一的。這有機會成立，因為兩個空間都是 r 維。",
+    "大部分向量同時有 row space 成分和 null space 成分；A 會把 null space 的成分殺掉，所以 x + n 和 x 被送到同一點。",
+    "但如果 y 也在 row space、而且 y ≠ x，那 Ay 一定不會撞到 Ax。",
+    "換句話說：如果只看 row space 到 column space，A 是完美的，就像一個可逆矩陣。",
+    "它的反方向，就叫做 pseudo-inverse（虛反矩陣）：column space 裡的每個向量，都來自 row space 裡唯一的一個向量。",
+    "大家接受的記號是 A⁺（A plus）：A⁺(Ax) = x、A⁺(Ay) = y。程式算出 A⁺ 並確認這兩件事。",
+    "A 殺掉 null space 的東西，A⁺ 則殺掉 N(Aᵀ) 的東西。真正重要的事，都發生在 row space 與 column space 之間。"
    ]
   },
   {
    "title": "證明：Ax = Ay ⇒ x = y",
-   "scene": "pinv-map",
-   "params": {
-    "focus": "proof"
-   },
+   "scene": "sv-l33-proof",
    "points": [
     {
-     "text": "假設 x、y 都在 row space 且 Ax = Ay，則 A(x − y) = 0，x − y 在 null space。",
-     "t": 1700
+     "t": 1647,
+     "text": "x、y 在 row space，若 Ax = Ay，則 A(x − y) = 0。"
     },
     {
-     "text": "row space 是向量空間，x − y 也在 row space。",
-     "t": 1760
+     "t": 1747,
+     "text": "x − y 在 null space。"
     },
     {
-     "text": "同時在 row space 和 null space（互為正交補）只有零向量，所以 x = y。",
-     "t": 1800
+     "t": 1760,
+     "text": "x − y 也在 row space（向量空間對減法封閉）。"
+    },
+    {
+     "t": 1796,
+     "text": "row space ∩ null space = {0} ⇒ x = y。"
     }
+   ],
+   "cues": [
+    1647.55,
+    1668.93,
+    1690.1,
+    1719.37,
+    1725.43,
+    1747.34,
+    1760.68,
+    1796.16,
+    1828.99
+   ],
+   "explain": [
+    "基本事實：在兩個 r 維空間之間，A 是完美的。為什麼？",
+    "證明。老師說他很少寫「proof」這個字，這次要用一次。",
+    "先把敘述講清楚：x 和 y 是 row space 裡兩個不同的向量，要證明 Ax ≠ Ay。",
+    "反過來假設它們一樣：Ax = Ay。",
+    "這等於 A(x − y) = 0。",
+    "所以 x − y 在 null space 裡（紅色箭頭）。",
+    "另一方面，row space 是向量空間：x、y 都在裡面，相減 x − y 也一定在裡面。",
+    "x − y 同時在 row space 和 null space，而這兩個空間互相垂直，交集只有零向量。所以 x − y = 0，也就是 x = y，和假設矛盾。",
+    "結論：只要 null space 不擋路，A 就是從 row space 到 column space 的可逆對應，它的反矩陣就是 pseudo-inverse。"
    ]
   },
   {
-   "title": "為什麼統計學家需要 A⁺",
-   "scene": "rank-deficient-ls",
+   "title": "統計學家需要 A⁺",
+   "scene": "sv-l33-stats",
    "points": [
     {
-     "text": "統計的 linear regression 就是 least squares，需要 full column rank。",
-     "t": 1845
+     "t": 1842,
+     "text": "統計的 linear regression 就是最小平方。"
     },
     {
-     "text": "重複做同一個實驗，columns 不獨立，AᵀA 變成 singular，normal equation 解不出唯一 x̂。",
-     "t": 1900
+     "t": 1905,
+     "text": "重複實驗 ⇒ columns 相依 ⇒ AᵀA singular。"
     },
     {
-     "text": "這時 pseudo-inverse 剛好派上用場。",
-     "t": 1950
+     "t": 1923,
+     "text": "這時用 pseudo-inverse。"
     }
+   ],
+   "cues": [
+    1842.86,
+    1861.17,
+    1894.65,
+    1905.69,
+    1917.44,
+    1923.71
+   ],
+   "explain": [
+    "這個反矩陣叫 pseudo-inverse，在應用上非常有用，統計學家發現「這就是我們一直需要的」。",
+    "為什麼？統計學家很愛最小平方，linear regression（線性迴歸）就是這個問題。",
+    "但最小平方的 normal equation 只有在 full column rank 時才行得通。",
+    "統計學家常常擔心：萬一重複做了同一個實驗，量測就不獨立，A 的 columns 相依。畫面用 A = [1 1; 2 2; 1 1]、b = (2, 1, 3) 示意。",
+    "這時他們依賴的 AᵀA 變成 singular（不可逆），最小平方解不唯一：橘色那整條線 x₁ + x₂ = 7/6 都是解。",
+    "pseudo-inverse 剛好在這時派上用場。補充：A⁺b = (7/12, 7/12)，它落在 row space 上，是所有最小平方解裡最短的那一個。"
    ],
    "trap": "補充：rank 不足時最小平方解有無限多個，A⁺b 是其中長度最短（落在 row space）的那一個。"
   },
   {
    "title": "Σ 的 pseudo-inverse",
-   "scene": "pinv-sigma",
+   "scene": "sv-l33-sigma",
    "points": [
     {
-     "text": "從 SVD 出發：A = UΣVᵀ，U、V 是 orthogonal，Σ 是 m×n 對角、只有 r 個非零 σ。",
-     "t": 1971
+     "t": 1950,
+     "text": "從 SVD 出發：A = UΣVᵀ，Σ 是 m × n、rank r。"
     },
     {
-     "text": "σ 來自 AᵀA 與 AAᵀ；Σ 是 rank r 最簡單的例子。",
-     "t": 2030
+     "t": 2108,
+     "text": "Σ⁺ 是 n × m：對角放 1/σ₁ … 1/σ_r，其他 0。"
     },
     {
-     "text": "Σ⁺ 是 n×m：對角放 1/σ₁ … 1/σᵣ，其他全是 0。",
-     "t": 2090
+     "t": 2147,
+     "text": "ΣΣ⁺（m × m）、Σ⁺Σ（n × n）都是 r 個 1、其他 0。"
     },
     {
-     "text": "ΣΣ⁺（m×m）與 Σ⁺Σ（n×n）都是前 r 個 1、其他 0：分別是投影到 column space 與 row space。",
-     "t": 2177
-    },
-    {
-     "text": "Pseudo-inverse 左乘右乘都得不到 I，只得到投影：把東西帶回兩個好空間、清掉 null space。",
-     "t": 2250
+     "t": 2237,
+     "text": "它們是投影：分別投影到 column space 與 row space。"
     }
+   ],
+   "cues": [
+    1950.03,
+    1972.97,
+    1982.51,
+    1995.73,
+    2037.9,
+    2085.64,
+    2108.15,
+    2116.77,
+    2147.6,
+    2186.3,
+    2221.71,
+    2237.09,
+    2254.41
+   ],
+   "explain": [
+    "最後一部分：怎麼求出 pseudo-inverse A⁺？",
+    "一個方法：從 SVD（奇異值分解）出發。",
+    "SVD 把 A 分解成正交矩陣 × 對角矩陣 × 正交矩陣：A = UΣVᵀ。",
+    "中間的 Σ 有幾個非零的 σ（來自 AᵀA 和 AAᵀ），其他全是 0。畫面用 3 × 4、σ = 3、2 示意。",
+    "Σ 的 rank 是 r（非零的個數），有 m 列、n 行。它是一般情形「最簡單的例子」。",
+    "可以猜得到：如果是可逆的對角矩陣，反矩陣就是每個對角元素取倒數 1/σ。",
+    "但只取到 σ_r，其他還是 0：Σ⁺ 的對角線放 1/3、1/2。",
+    "Σ 是 m × n，Σ⁺ 的形狀要轉過來，是 n × m；兩個的 rank 都是 r。",
+    "Σ 乘 Σ⁺ 得到什麼？對角線上 r 個 1，其他全是 0，大小 m × m。",
+    "反過來乘 Σ⁺Σ 呢？每個矩陣都有 pseudo-inverse，但不一定有左或右反矩陣。",
+    "Σ⁺Σ 是 n × n，一樣是 r 個 1、其他 0，只是大小不同。",
+    "它們都是投影矩陣：ΣΣ⁺ 投影到 column space，Σ⁺Σ 投影到 row space。",
+    "pseudo-inverse 能做到最好的事：左乘右乘都得不到 I，只得到投影——把東西帶回兩個好空間，清掉 null space。"
    ]
   },
   {
    "title": "A⁺ = VΣ⁺Uᵀ",
-   "scene": "pinv-svd",
+   "scene": "sv-l33-pinv",
    "points": [
     {
-     "text": "Vᵀ 的反矩陣是 V，U 的反矩陣是 Uᵀ；所有麻煩都集中在 Σ。",
-     "t": 2300
+     "t": 2278,
+     "text": "A = UΣVᵀ：Vᵀ 的反矩陣是 V，U 的反矩陣是 Uᵀ。"
     },
     {
-     "text": "A⁺ = VΣ⁺Uᵀ：SVD 把問題放進對角矩陣，怎麼「反」一目了然。",
-     "t": 2340
+     "t": 2310,
+     "text": "A⁺ = VΣ⁺Uᵀ。"
     },
     {
-     "text": "Σ⁺ 其他位置放東西也不影響 ΣΣ⁺，但最小（全 0）的那個才是 pseudo-inverse。",
-     "t": 2398
+     "t": 2353,
+     "text": "Σ⁺ 零區放東西不影響乘積；最小的那個才是 pseudo-inverse。"
+    }
+   ],
+   "cues": [
+    2278.09,
+    2286.09,
+    2298.27,
+    2310.13,
+    2325.34,
+    2353.4,
+    2386.1,
+    2422.06
+   ],
+   "explain": [
+    "現在求 A 本身的 pseudo-inverse，A = UΣVᵀ。畫面再用 rank 1 的 [4 3; 8 6]/5 示意。",
+    "Vᵀ 的反矩陣是什麼？它是正交矩陣，反矩陣就是 V。",
+    "Σ 承擔了所有麻煩（所有 null space 都是它造成的），它沒有真正的反矩陣，只有 pseudo-inverse Σ⁺。",
+    "U 的反矩陣是 Uᵀ。順序倒過來：A⁺ = VΣ⁺Uᵀ。程式算出 A⁺ = (1/25)[4 8; 3 6]，並確認 AA⁺A = A。動畫中輸出那邊的單位圓被 A⁺ 送回 row space 上一小段（長度 1/σ₁）。",
+    "統計學家在 rank 不足、最小平方壞掉時就這樣做。SVD 的好處是把所有問題都放進對角矩陣，在那裡怎麼做一清二楚。",
+    "其實 Σ⁺ 在「零區」還可以多放別的東西：它只會乘到 0，不影響 ΣΣ⁺ 和 Σ⁺Σ（程式用示意的 5 驗證）。",
+    "但好的 pseudo-inverse 是「沒有多餘東西」、最小的那一個：它只放產生 r 個 1 所必需的 1/σ。",
+    "pseudo-inverse 這個詞不會出現在考試上，但這整張圖——四個子空間、rank、null space——就是第一到第四章的內容。SVD 是求 pseudo-inverse 的冠軍方法：U、V 轉置就好，對角矩陣一看就知道怎麼做。"
+   ]
+  },
+  {
+   "title": "結尾",
+   "scene": null,
+   "points": [
+    {
+     "t": 2486,
+     "text": "休息五分鐘；週三總複習。"
     }
    ]
   }
@@ -275,6 +520,5 @@
    "ans": "VΣ⁺Uᵀ",
    "why": "倒過來乘，每個因子取（pseudo-）inverse：(Vᵀ)⁻¹ = V、U⁻¹ = Uᵀ。"
   }
- ],
- "timing": "estimated"
+ ]
 }
