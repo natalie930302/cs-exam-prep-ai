@@ -9439,6 +9439,1660 @@ scene('g8f-recap', 'Maximum flow 單元回顧', [
   },
 ]);
   }
+
+  // ═══ g8g.js ═══
+  {
+const P = K; const { V3, tag, cube, kill, glow, code, anim, arrow, zone, travel, remove, step, buddy, prop, bob, fresh } = P;
+// (kit has no beat: short waits use ctx.beat)
+// ─── 離散數學 第 8 章 — cued scenes（g8g）───
+//   6WZvVJ0Q1FA  Spanning Tree（Rosen 11.4：定義、拿掉 circuit、DFS、BFS、有向圖 DFS、練習）
+//   Erea1QASjXY  Discrete Math II 10.8.1 Graph Coloring（地圖著色、dual graph、χ(G)、Kₙ、Cₙ、chromatic polynomial）
+//   P2FRYshQ57s  交大 易志偉 Lec24 Graphs (3/3)（權重圖、最短路徑、Dijkstra、回溯路徑、Euler path/circuit、
+//                Königsberg、Hamilton、連通、component、強／弱連通）
+// 每個 scene 是一串 steps；每一步等老師講到那一句（notes 的 cues）才動一下。不重播、不循環。
+// 老師的圖：能從口述完整重建的照用（生成樹三張例圖沿用本章的 EX1／DFSG／BFSG／DIRG；Dijkstra 的 A–F 圖與 12 點圖
+// 由老師算的每一步反推出邊與權重）；看不到的一律標「示意」。所有計數、距離、著色都在程式裡算並打 ✓。
+const wt = (tok, ms) => ctx.beat(tok, ms);
+const cap = (a, b = '') => say(a, b);
+const setc = (l, c) => { if (l && l.element) l.element.className = 'lab-label ' + c; };
+const set = (l, t) => { if (l && l.element) l.element.textContent = t; };
+const LL = (t, c, x, z, y = 0.4) => { const l = tag(t, c, x, y, z); if (l.center) l.center.set(0, 0.5); return l; };
+const GCAM = [[0, 10, 8.6], [0, 0, 0.2]];
+function scene(id, title, steps, cam = GCAM) {
+  FRAG.push([id, title, async (tok) => {
+    fresh(cam[0], cam[1]);
+    const S = {};
+    for (const f of steps) { await step(tok); await f(tok, S); }
+  }]);
+}
+// lines on the floor, one under another; the newest line is lit
+function board(x, z0, dz = 0.58) {
+  const ls = []; let last = null;
+  return {
+    ls,
+    add(t, c = 'note') {
+      if (last && last.userData.hot) { setc(last, 'say'); last.userData.hot = false; }
+      const l = LL(t, c, x, z0 + ls.length * dz); ls.push(l); l.userData.hot = c === 'note'; last = l; return l;
+    },
+    clear() { ls.forEach((l) => kill(l)); ls.length = 0; last = null; },
+  };
+}
+const EG = (gv, u, v) => { const k = gv.find(u, v); if (k < 0) throw new Error('no edge ' + u + '-' + v); return gv.em[k]; };
+function flash(gv, cyc, c = COL.hot) { cyc.forEach((n, i) => paintEdge(EG(gv, n, cyc[(i + 1) % cyc.length]), c, true)); }
+const calm = (gv) => gv.em.forEach((e) => { if (e.g.visible) paintEdge(e, COL.edge, false); });
+const liveIdx = (gv) => gv.em.map((e, i) => i).filter((i) => gv.em[i].g.visible);
+// a spanning tree check on the edges still shown: n − 1 edges, no cycle (⇒ connected)
+function treeCheck(gv) { const idx = liveIdx(gv); return idx.length === gv.G.V.length - 1 && acyclic(gv.G, idx); }
+function reach(V, E, s, dir) {
+  const A = Object.fromEntries(V.map((v) => [v, []]));
+  E.forEach(([u, v]) => { A[u].push(v); if (!dir) A[v].push(u); });
+  const seen = new Set([s]), q = [s];
+  while (q.length) { const u = q.shift(); for (const w of A[u]) if (!seen.has(w)) { seen.add(w); q.push(w); } }
+  return seen;
+}
+function components(V, E) { const left = new Set(V); let n = 0; while (left.size) { const s = [...left][0]; reach(V, E, s).forEach((v) => left.delete(v)); n++; } return n; }
+function ball(p, c = COL.hot) {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 12), new THREE.MeshStandardMaterial({ color: c, roughness: 0.4 }));
+  m.position.set(p.x, 0.85, p.z); lab.world.add(m); return m;
+}
+async function walk(tok, m, gv, seq, ms = 380, paint) {
+  for (let i = 0; i + 1 < seq.length; i++) {
+    const a = gv.pos(seq[i]), b = gv.pos(seq[i + 1]);
+    await anim(tok, ms, (u) => { m.position.set(a.x + (b.x - a.x) * u, 0.85, a.z + (b.z - a.z) * u); });
+    if (paint) paintEdge(EG(gv, seq[i], seq[i + 1]), paint, true);
+  }
+}
+const snapAt = (st, pre) => { const k = st.findIndex((x) => x.msg.startsWith(pre)); if (k < 0) throw new Error('snap ' + pre); return k; };
+async function playSnaps(tok, gv, st, a, b, ms = 260, lvl = false, on) {
+  for (let k = a; k <= b; k++) { paintTrav(gv, st[k], lvl); if (on) on(st[k]); if (k < b) await wt(tok, ms); }
+}
+const lastSnap = (st) => st.length - 1;
+// parent map of the DFS tree in a final snapshot (tree edge i joins a vertex and its parent)
+function dfsParents(G, root, order) {
+  const A = adjOf(G, order), par = { [root]: null }, seen = new Set([root]);
+  const visit = (v) => { for (const { to } of A[v]) if (!seen.has(to)) { seen.add(to); par[to] = v; visit(to); } };
+  visit(root); return par;
+}
+const ancestor = (par, a, b) => { for (let x = par[b]; x !== null && x !== undefined; x = par[x]) if (x === a) return true; return false; };
+function degs(G) { const d = Object.fromEntries(G.V.map((v) => [v, 0])); G.E.forEach((e) => { d[e.u]++; d[e.v]++; }); return d; }
+// a walk that uses every edge exactly once? (multi-edges allowed)
+function eulerOK(G, seq) {
+  const used = new Array(G.E.length).fill(false);
+  for (let i = 0; i + 1 < seq.length; i++) {
+    const k = G.E.findIndex((e, j) => !used[j] && ((e.u === seq[i] && e.v === seq[i + 1]) || (e.v === seq[i] && e.u === seq[i + 1])));
+    if (k < 0) return false; used[k] = true;
+  }
+  return used.every(Boolean);
+}
+function degTags(gv, cls = 'ptr alt') {
+  const d = degs(gv.G), out = {};
+  gv.G.V.forEach((v) => { const p = gv.pos(v); out[v] = tag('deg ' + d[v], d[v] % 2 ? 'bad' : cls, p.x + 0.55, p.y + 0.6, p.z - 0.45); });
+  return out;
+}
+
+// ════════ 6WZvVJ0Q1FA（Spanning Tree：Rosen 11.4） ════════
+// EX1 / DFSG / BFSG / DIRG / EXR 是本章原本照影片口述重建的圖（DFSG 的回邊位置影片看不清，是補的）。
+
+scene('g8g-st-def', 'Spanning tree 的定義', [
+  async (tok, S) => {
+    S.B = board(-6.9, -3.4);
+    S.B.add('G：simple graph');
+    S.B.add('spanning tree of G：G 的子圖');
+    S.B.add('  ① 本身是一棵樹　② 含 G 的每一個頂點', 'say');
+    cap('定義：spanning tree', '包含 G 所有頂點、本身是樹的子圖');
+  },
+  async (tok, S) => {
+    S.gv = drawGraph(EX1, { s: 0.85, ox: 2.3, oz: 0.3 });
+    cap('例子：找這張 simple graph 的 spanning tree', '');
+  },
+  async (tok, S) => {
+    const E = EX1.E.map((e) => [e.u, e.v]);
+    const ok = reach(EX1.V, E, 'a').size === EX1.V.length;
+    EX1.V.forEach((v) => vcol(S.gv, v, COL.vis));
+    S.cnt = tag('a～g：7 個頂點、9 條邊、連通 ' + (ok ? '✓' : '✗'), 'ptr alt', 2.3, 0.3, 3.0);
+    cap('頂點 a 到 g，彼此都連得到', '這張圖是 connected');
+  },
+  async (tok, S) => {
+    EX1.V.forEach((v) => vcol(S.gv, v, COL.idle));
+    flash(S.gv, ['a', 'b', 'f', 'e']);
+    S.B.add('但它不是樹：有 simple circuit a–b–f–e–a', 'bad');
+    cap('但它不是樹', '因為它含有 simple circuit');
+  },
+  async (tok, S) => {
+    S.w = ball(S.gv.pos('a'));
+    await walk(tok, S.w, S.gv, ['a', 'b', 'f', 'e', 'a'], 450);
+    cap('simple circuit：從一個點出發、繞回同一點', '有點像一個圈');
+  },
+  async (tok, S) => {
+    kill(S.w);
+    S.B.add('樹：從根往下走，不會再回到同一個點', 'note');
+    cap('樹的原則：從根往下，不會繞回同一點', '會繞回來的就只是「圖」');
+  },
+  async (tok, S) => {
+    S.B.add('目標：拿掉 simple circuit，頂點一個不少', 'good');
+    cap('作法：把圖改成 spanning tree', '拿掉 simple circuit');
+  },
+]);
+
+scene('g8g-st-remove', '拿掉 simple circuit 上的邊', [
+  async (tok, S) => {
+    S.B = board(-6.9, -3.4);
+    S.gv = drawGraph(EX1, { s: 0.85, ox: 2.3, oz: 0.3 });
+    S.m = 9; S.cnt = tag('7 個頂點、9 條邊', 'ptr alt', 2.3, 0.3, 3.0);
+    S.B.add('保留 a～g 全部 7 個頂點，只拿掉邊');
+    cap('拿掉 circuit 上的邊', 'a 到 g 的頂點全部留著');
+  },
+  async (tok, S) => {
+    flash(S.gv, ['a', 'b', 'f', 'e']); await wt(tok, 700);
+    await removeEdge(tok, EG(S.gv, 'a', 'e')); calm(S.gv);
+    set(S.cnt, '7 個頂點、' + (--S.m) + ' 條邊');
+    S.B.add('拿掉 {a,e}：a–b–f–e–a 不見了');
+    cap('拿掉邊 {a,e}', 'circuit a–b–f–e–a 消失');
+  },
+  async (tok, S) => {
+    flash(S.gv, ['c', 'g', 'f']);
+    cap('但還有 circuit：c–g–f–c', '剩下的圖還不是樹');
+  },
+  async (tok, S) => {
+    calm(S.gv); flash(S.gv, ['e', 'g', 'f']); await wt(tok, 700);
+    await removeEdge(tok, EG(S.gv, 'e', 'f')); calm(S.gv);
+    set(S.cnt, '7 個頂點、' + (--S.m) + ' 條邊');
+    S.B.add('拿掉 {e,f}：e–g–f–e 不見了');
+    cap('拿掉 {e,f}', '因為 e–g–f–e 也是 circuit');
+  },
+  async (tok, S) => {
+    flash(S.gv, ['f', 'c', 'g']); await wt(tok, 700);
+    await removeEdge(tok, EG(S.gv, 'c', 'g')); calm(S.gv);
+    set(S.cnt, '7 個頂點、' + (--S.m) + ' 條邊');
+    S.B.add('拿掉 {c,g}：f–c–g–f 不見了');
+    cap('再拿掉 {c,g}', 'f–c–g–f 也是 circuit');
+  },
+  async (tok, S) => {
+    const ok = treeCheck(S.gv);
+    S.gv.em.forEach((e) => { if (e.g.visible) paintEdge(e, COL.tree, true); });
+    EX1.V.forEach((v) => vcol(S.gv, v, COL.vis));
+    set(S.cnt, '7 個頂點、6 條邊 = 7 − 1，沒有 circuit ' + (ok ? '✓' : '✗'));
+    cap('沒有 simple circuit 了', '這就是一棵 spanning tree');
+  },
+  async (tok, S) => {
+    S.B.add('連通但有 circuit → 拿光 circuit、頂點不變 → spanning tree', 'good');
+    cap('spanning tree 的意思', '拿掉所有 circuit，但頂點數不變');
+  },
+  async (tok, S) => {
+    S.B.add('拿哪一條不重要：{a,e}、{c,g}、{e,f}… 換別條也行', 'say');
+    cap('拿掉哪條邊不唯一', 'spanning tree 可以有很多棵');
+  },
+  async (tok, S) => {
+    ['a', 'e', 'f', 'g', 'c'].forEach((v) => glow(S.gv.vm[v], '#7a5a00'));
+    S.B.add('{a,e}←a–e–f–b–a、{e,f}←e–g–f–e、{c,g}←g–f–c–g', 'say');
+    cap('再說一次為什麼拿這三條', '每條都在一個 circuit 上');
+  },
+  async (tok, S) => {
+    ['a', 'e', 'f', 'g', 'c'].forEach((v) => glow(S.gv.vm[v], null));
+    S.B.add('連通 ✓　沒有 circuit ✓　7 個頂點都在 ✓', 'good');
+    cap('結論', '拿掉所有 circuit、保留所有頂點 → spanning tree');
+  },
+]);
+
+const RULE = parseG({ r: [-1.8, 0.2], s: [0, -1.4], t: [2.0, -2.0], u: [2.0, 0.6], v: [-0.4, 2.0] }, 'r-s s-t s-u r-v');
+scene('g8g-st-rule', 'DFS 建 spanning tree 的規則', [
+  async (tok, S) => {
+    S.B = board(-6.9, -3.4);
+    S.B.add('建 spanning tree 的兩個演算法：');
+    S.B.add('  depth-first search（DFS）', 'say');
+    S.B.add('  breadth-first search（BFS）', 'say');
+    cap('兩個主要演算法', 'DFS 和 BFS');
+  },
+  async (tok, S) => {
+    S.ai = tag('人工智慧課：搜尋、遊戲也常用', 'idx', -4.6, 0.3, -0.2);
+    cap('這兩個在 AI 課很常用', '搜尋演算法、遊戲');
+  },
+  async (tok, S) => {
+    kill(S.ai);
+    S.gv = drawGraph(RULE, { s: 1, ox: 2.6, oz: 0.2 });
+    tag('示意', 'idx', 5.4, 0.3, -2.6);
+    S.st = travSteps(RULE, 'r', 'dfs');
+    S.path = tag('', 'ptr alt', 2.6, 0.3, 3.1);
+    S.on = (x) => set(S.path, '路徑：' + (x.ds.join(' → ') || '—'));
+    await playSnaps(tok, S.gv, S.st, 0, 0, 0, false, S.on);
+    S.B.add('① 任選一個頂點當根（這裡選 r）');
+    cap('第一步：隨便選一個頂點當根', '');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.gv, S.st, 1, 2, 500, false, S.on);
+    S.B.add('② 一直加邊：接在路徑最後一點、接到還沒走過的點');
+    cap('從根開始一條路徑', '新邊接在最後一點、通往新的頂點');
+  },
+  async (tok, S) => {
+    glow(S.gv.vm.t, '#8a1010');
+    cap('能走多遠就走多遠', 't 已經走不下去');
+  },
+  async (tok, S) => {
+    S.B.add('③ 若路徑已經經過所有頂點 → 就是 spanning tree', 'say');
+    cap('如果路徑已經經過所有頂點，就完成了', '這裡還缺 u、v');
+  },
+  async (tok, S) => {
+    glow(S.gv.vm.t, null);
+    await playSnaps(tok, S.gv, S.st, 3, 4, 600, false, S.on);
+    S.B.add('④ 否則 backtrack：退回上一點，從那裡接新路徑');
+    cap('backtracking：退回 s', '從 s 再接到沒走過的 u');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.gv, S.st, 5, 7, 500, false, S.on);
+    S.B.add('⑤ 還是不行就再往回退一點');
+    cap('s 也沒有新點了 → 再退回 r', 'r 接到 v');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.gv, S.st, 8, lastSnap(S.st), 400, false, S.on);
+    const n = S.st[lastSnap(S.st)].tree.length;
+    set(S.path, '5 個頂點、' + n + ' 條樹邊 = 5 − 1 ' + (n === 4 ? '✓' : '✗'));
+    cap('重複到所有頂點都拜訪過', '得到一棵 spanning tree');
+  },
+  async (tok, S) => {
+    cap('整理：選根 → 走到下一點 → 接一條邊 → 繼續', '能走就一直走');
+  },
+  async (tok, S) => {
+    S.B.add('沒路了就 backtrack，直到所有頂點都走過', 'good');
+    cap('沒路就往回退', '再找沒去過的方向');
+  },
+]);
+
+scene('g8g-st-dfs-ex', 'DFS 例子：從 f 出發', [
+  async (tok, S) => {
+    S.gv = drawGraph(DFSG);
+    S.st = travSteps(DFSG, 'f', 'dfs', DFS_ORDER);
+    S.path = tag('', 'ptr alt', 0, 0.3, 3.4);
+    S.on = (x) => set(S.path, '目前路徑：' + (x.ds.join(' → ') || '—'));
+    cap('例子：用 DFS 找這張圖的 spanning tree', '');
+  },
+  async (tok, S) => {
+    vcol(S.gv, 'f', COL.vis, '#8a6400');
+    cap('任選一個頂點當根', '這裡選 f');
+  },
+  async (tok, S) => {
+    for (const [a, b] of [['f', 'g'], ['g', 'h'], ['h', 'k'], ['k', 'j']]) { paintEdge(EG(S.gv, a, b), COL.blue, true); await wt(tok, 250); }
+    S.pre = tag('先口頭講一遍', 'idx', 0, 0.3, -3.0);
+    cap('老師先講一遍：f → g → h → k → j', 'j 走不下去');
+  },
+  async (tok, S) => {
+    paintEdge(EG(S.gv, 'h', 'i'), COL.blue, true);
+    cap('退回 k、再退回 h', 'h 還沒去 i → 走 i');
+  },
+  async (tok, S) => {
+    glow(S.gv.vm.f, '#8a6400');
+    cap('再退回 f，往 d、e… 走下去', '以此類推');
+  },
+  async (tok, S) => {
+    kill(S.pre);
+    await playSnaps(tok, S.gv, S.st, 0, 0, 0, false, S.on);
+    cap('正式來一次：從 f 開始', '');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.gv, S.st, 1, 4, 450, false, S.on);
+    cap('一直加邊、接到新的頂點', '路徑 f → g → h → k → j');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.gv, S.st, 5, 5, 0, false, S.on);
+    cap('j 走不下去 → 回到 k', 'k 也沒有新的頂點');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.gv, S.st, 6, 7, 600, false, S.on);
+    cap('再回到 h：還沒去 i', '接上 h–i');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.gv, S.st, 8, 8, 0, false, S.on);
+    cap('到了 i 又走不下去', '回到 h');
+  },
+  async (tok, S) => {
+    const a = snapAt(S.st, 'h 走不下去'), b = snapAt(S.st, 'f → d');
+    await playSnaps(tok, S.gv, S.st, a, b, 450, false, S.on);
+    cap('h、g 都沒新點了，一路退回 f', 'f 還可以走到 d：新路徑');
+  },
+  async (tok, S) => {
+    const a = snapAt(S.st, 'd → e'), b = snapAt(S.st, 'c → a');
+    await playSnaps(tok, S.gv, S.st, a, b, 500, false, S.on);
+    cap('d → e → c → a', '能走多遠走多遠');
+  },
+  async (tok, S) => {
+    cap('根可以任意選', '選別的根也會得到 spanning tree，只是路徑不同');
+  },
+  async (tok, S) => {
+    const a = snapAt(S.st, 'a 走不下去'), b = snapAt(S.st, 'c → b');
+    await playSnaps(tok, S.gv, S.st, a, b, 600, false, S.on);
+    cap('a 走不下去 → 回到 c', 'c 還沒去 b → 接上 c–b');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.gv, S.st, snapAt(S.st, 'b 走不下去'), lastSnap(S.st), 160, false, S.on);
+    const fin = S.st[lastSnap(S.st)];
+    const ok = fin.tree.length === DFSG.V.length - 1 && acyclic(DFSG, fin.tree);
+    set(S.path, '根 f：11 個頂點、' + fin.tree.length + ' 條樹邊、沒有 circuit ' + (ok ? '✓' : '✗'));
+    cap('這就是 spanning tree', '根是 f');
+  },
+  async (tok, S) => {
+    const st = travSteps(DFSG, 'h', 'dfs', DFS_ORDER), fin = st[lastSnap(st)];
+    paintTrav(S.gv, fin);
+    fin.tree.forEach((i) => paintEdge(S.gv.em[i], COL.purple, true));
+    const ok = fin.tree.length === 10 && acyclic(DFSG, fin.tree);
+    set(S.path, '換根 h：一樣 ' + fin.tree.length + ' 條樹邊 ' + (ok ? '✓' : '✗') + '（路徑不同）');
+    cap('換 h 當根再做一次', '一樣是 spanning tree，路徑可能不同');
+  },
+  async (tok, S) => {
+    cap('回到定義：含所有頂點、本身是樹的子圖', '樹：有根、不會重複拜訪同一個頂點');
+  },
+]);
+
+const DCODE = ['procedure DFS(G: 連通圖，頂點 v₁…vₙ)', '  T := 只含 v₁ 的樹', '  visit(v₁)', 'procedure visit(v)', '  for 每個與 v 相鄰、還不在 T 的 w', '    把 w 和 {v,w} 加進 T', '    visit(w)'];
+scene('g8g-st-dfs-code', 'Tree edge、back edge 與 DFS 虛擬碼', [
+  async (tok, S) => {
+    S.gv = drawGraph(DFSG, { s: 0.62, ox: 2.4, oz: 0.6 });
+    S.st = travSteps(DFSG, 'f', 'dfs', DFS_ORDER);
+    S.fin = S.st[lastSnap(S.st)];
+    paintTrav(S.gv, S.fin);
+    S.info = tag('', 'ptr alt', 2.4, 0.3, 3.0);
+    cap('DFS 建 spanning tree：任選根，一路往下走', '這是剛才從 f 出發的結果');
+  },
+  async (tok, S) => {
+    S.fin.tree.forEach((i) => paintEdge(S.gv.em[i], COL.tree, true));
+    set(S.info, 'tree edges：' + S.fin.tree.length + ' 條');
+    cap('DFS 選到的邊叫 tree edges', '金色那些');
+  },
+  async (tok, S) => {
+    const par = dfsParents(DFSG, 'f', DFS_ORDER);
+    const back = DFSG.E.map((e, i) => i).filter((i) => !S.fin.tree.includes(i));
+    back.forEach((i) => paintEdge(S.gv.em[i], COL.pink, true));
+    const ok = back.every((i) => { const { u, v } = DFSG.E[i]; return ancestor(par, u, v) || ancestor(par, v, u); });
+    set(S.info, 'back edges：' + back.map((i) => '{' + DFSG.E[i].u + ',' + DFSG.E[i].v + '}').join(' ') + '　都連到祖先 ' + (ok ? '✓' : '✗'));
+    cap('其他的邊都連到祖先或子孫', '叫 back edges（粉紅色）');
+  },
+  async (tok, S) => {
+    cap('課本圖：tree edges 用粗藍線', 'back edges 用細黑線');
+  },
+  async (tok, S) => {
+    S.code = code(DCODE, -3.9, 3.6, 0.62, -1);
+    paintTrav(S.gv, S.st[0]);
+    cap('DFS 的虛擬碼（Rosen）', '');
+  },
+  async (tok, S) => {
+    S.code.hl(5);
+    cap('加了邊 {v,w} 之後', '先把 w 探索完，才回到 v 看下一個鄰居');
+  },
+  async (tok, S) => {
+    S.code.hl(1);
+    set(S.info, 'T = { f }（v₁ = f）');
+    cap('G 是連通圖，頂點 v₁…vₙ', 'T 一開始只有 v₁');
+  },
+  async (tok, S) => {
+    S.code.hl(2);
+    cap('呼叫 visit(v₁)', '');
+  },
+  async (tok, S) => {
+    S.code.hl(3);
+    cap('visit(v) 是遞迴的', '');
+  },
+  async (tok, S) => {
+    S.code.hl(5);
+    await playSnaps(tok, S.gv, S.st, 1, 1, 0);
+    set(S.info, 'w = g：加進 g 和 {f,g}');
+    cap('每個和 v 相鄰、還不在 T 的 w', '把 w 和邊 {v,w} 加進 T');
+  },
+  async (tok, S) => {
+    S.code.hl(6);
+    await playSnaps(tok, S.gv, S.st, 2, 2, 0);
+    set(S.info, '遞迴 visit(g)：接著接上 h');
+    cap('然後遞迴呼叫 visit(w)', '');
+  },
+], [[0, 9.5, 9.5], [0, 0.8, 0.6]]);
+
+scene('g8g-st-bfs', 'BFS 例子：從 e 出發、一層一層', [
+  async (tok, S) => {
+    S.B = board(-6.9, -3.4);
+    S.B.add('BFS（breadth-first search）建 spanning tree');
+    cap('接下來：breadth-first search', '一樣可以建 spanning tree');
+  },
+  async (tok, S) => {
+    S.B.add('① 任選根，加入所有和根相鄰的邊 → level 1');
+    cap('選一個根，把它所有的邊都接上', '另一端的點就是 level 1');
+  },
+  async (tok, S) => {
+    S.B.add('② 對上一層每個點加邊，只要不形成 simple circuit');
+    cap('對上一層的每個頂點加邊', '只要不會造成 simple circuit');
+  },
+  async (tok, S) => {
+    S.B.add('③ 一直做到所有頂點都加進來');
+    cap('做到所有頂點都進樹為止', '');
+  },
+  async (tok, S) => {
+    S.gv = drawGraph(BFSG, { s: 0.74, ox: 1.9, oz: 0.3 });
+    S.st = travSteps(BFSG, 'e', 'bfs');
+    S.q = tag('', 'ptr alt', 1.9, 0.3, 3.0);
+    S.on = (x) => set(S.q, 'L = [ ' + x.ds.join(' ') + ' ]');
+    cap('例子：用 BFS 找這張圖的 spanning tree', '');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.gv, S.st, 0, 0, 0, true, S.on);
+    cap('這次選 e 當根', '根怎麼選沒有規定');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.gv, S.st, 1, snapAt(S.st, 'e — i'), 350, true, S.on);
+    cap('e 和 b、d、f、i 相鄰', '這四個是 level 1');
+  },
+  async (tok, S) => {
+    const p = S.gv.pos('a'); S.xa = tag('a 和 e 沒有邊 ✗', 'bad', p.x, p.y + 0.8, p.z - 0.6);
+    cap('a 不在 level 1', '因為 e 和 a 之間沒有邊');
+  },
+  async (tok, S) => {
+    kill(S.xa);
+    await playSnaps(tok, S.gv, S.st, snapAt(S.st, '從 L 取出 b'), snapAt(S.st, 'b — c'), 450, true, S.on);
+    cap('從最左邊的 b 開始：b 接 a 和 c', '不能再接 e，e 已經是根');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.gv, S.st, snapAt(S.st, '從 L 取出 d'), snapAt(S.st, 'd — h'), 500, true, S.on);
+    cap('d 接 h', 'a 已經在樹裡，不能再接');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.gv, S.st, snapAt(S.st, '從 L 取出 f'), snapAt(S.st, 'f — j'), 450, true, S.on);
+    cap('f 接 g 和 j', 'e 是根、c 已經接過');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.gv, S.st, snapAt(S.st, '從 L 取出 i'), snapAt(S.st, 'i — k'), 500, true, S.on);
+    cap('最後是 i：只能接 k', 'e、j、h 都已經在樹裡');
+  },
+  async (tok, S) => {
+    const lv = S.st[snapAt(S.st, 'i — k')].lvl;
+    const n2 = Object.values(lv).filter((x) => x === 2).length;
+    S.B.add('level 2 完成：a c h g j k（' + n2 + ' 個）');
+    cap('level 2 做完了', '');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.gv, S.st, snapAt(S.st, '從 L 取出 a'), snapAt(S.st, '從 L 取出 h'), 450, true, S.on);
+    cap('level 3：a、c、h 都沒有新點可接', '');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.gv, S.st, snapAt(S.st, '從 L 取出 g'), snapAt(S.st, 'g — l'), 500, true, S.on);
+    cap('g 接 l', 'l 只和 g 相連');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.gv, S.st, snapAt(S.st, '從 L 取出 j'), lastSnap(S.st), 220, true, S.on);
+    const fin = S.st[lastSnap(S.st)];
+    const ok = fin.tree.length === BFSG.V.length - 1 && acyclic(BFSG, fin.tree);
+    set(S.q, '13 個頂點、' + fin.tree.length + ' 條樹邊、沒有 circuit ' + (ok ? '✓' : '✗'));
+    cap('j 沒有新點；k 接 m', '完成 spanning tree');
+  },
+  async (tok, S) => {
+    const lv = S.st[lastSnap(S.st)].lvl, c = (k) => Object.values(lv).filter((x) => x === k).length;
+    S.B.add('level 1：' + c(1) + ' 個　level 2：' + c(2) + ' 個　level 3：' + c(3) + ' 個', 'good');
+    cap('BFS：一層一層往外', '先接根的鄰居，再看它們沒拜訪過的鄰居');
+  },
+]);
+
+const VS_DFS = { e: 'ibdf', i: 'jhke', j: 'fgi', f: 'gcej', g: 'ljf', c: 'bf', b: 'aec', a: 'bd', d: 'aeh', h: 'dik', k: 'hmi', l: 'g', m: 'k' };
+const VS_BFS = { f: 'ecgj', e: 'bdif' };
+scene('g8g-st-vs', '同一張圖：DFS 與 BFS 的差別', [
+  async (tok, S) => {
+    S.L = drawGraph(BFSG, { s: 0.5, ox: -3.4, oz: 0.2 }); S.R = drawGraph(BFSG, { s: 0.5, ox: 3.4, oz: 0.2 });
+    S.tl = tag('DFS，根 e（路線示意）', 'ptr', -3.4, 0.3, -2.3); S.tr = tag('BFS', 'ptr alt', 3.4, 0.3, -2.3);
+    S.a = travSteps(BFSG, 'e', 'dfs', VS_DFS); S.b = travSteps(BFSG, 'f', 'bfs', VS_BFS);
+    S.pa = tag('', 'idx', -3.4, 0.3, 2.4);
+    await playSnaps(tok, S.L, S.a, 0, 0, 0);
+    cap('如果改做 DFS：一樣用 e 當根', '');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.L, S.a, 1, snapAt(S.a, 'g → l'), 350, false, (x) => set(S.pa, x.ds.join('→')));
+    cap('一路走成一條長路徑', 'e → i → j → f → g → l');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.L, S.a, snapAt(S.a, 'l 走不下去'), snapAt(S.a, 'g 走不下去'), 600, false, (x) => set(S.pa, x.ds.join('→')));
+    cap('走到底沒路 → 退回 g，g 也沒有新點', '再往回退');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.L, S.a, snapAt(S.a, 'f → c'), lastSnap(S.a), 110, false, (x) => set(S.pa, x.ds.join('→') || ''));
+    const d = Math.max(...Object.values(S.a[lastSnap(S.a)].lvl));
+    set(S.pa, 'DFS 樹深度 ' + d + '、' + S.a[lastSnap(S.a)].tree.length + ' 條邊 ✓');
+    cap('再從還有路的點往 c、b、a… 走下去', 'DFS 長出又深又長的樹');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.R, S.b, 0, snapAt(S.b, 'f — j'), 300, true);
+    set(S.tr, 'BFS，根 f');
+    cap('BFS：選 f 當根', 'f 的鄰居 c、e、g、j 都是 level 1');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.R, S.b, snapAt(S.b, '從 L 取出 e'), lastSnap(S.b), 120, true);
+    const fin = S.b[lastSnap(S.b)], d = Math.max(...Object.values(fin.lvl));
+    const ok = fin.tree.length === 12 && acyclic(BFSG, fin.tree);
+    tag('BFS 樹深度 ' + d + '、' + fin.tree.length + ' 條邊 ' + (ok ? '✓' : '✗'), 'idx', 3.4, 0.3, 2.4);
+    cap('再看 level 1 的點：e 接 b、d、i', '一層一層往外，樹比較矮');
+  },
+]);
+
+const BCODE = ['procedure BFS(G: 連通圖，頂點 v₁…vₙ)', '  T := 只含 v₁ 的樹；L := 空串列', '  把 v₁ 放進 L（未處理頂點）', '  while L 不空', '    移除 L 最前面的頂點 v', '    for v 的每個鄰居 w', '      if w 不在 L、也不在 T：', '        w 加到 L 尾端；w 和 {v,w} 加進 T'];
+scene('g8g-st-bfs-code', 'BFS 虛擬碼：未處理頂點的 list L', [
+  async (tok, S) => {
+    S.code = code(BCODE, -3.9, 3.8, 0.58, -1);
+    S.gv = drawGraph(BFSG, { s: 0.55, ox: 3.0, oz: 0.6 });
+    S.st = travSteps(BFSG, 'e', 'bfs');
+    S.q = tag('', 'ptr alt', 3.0, 0.3, 3.0);
+    S.code.hl(0);
+    cap('BFS 的虛擬碼', 'G 是連通圖，頂點 v₁…vₙ');
+  },
+  async (tok, S) => {
+    S.code.hl(1);
+    paintTrav(S.gv, S.st[0]);
+    set(S.q, 'T = { e }（拿剛才的圖，v₁ = e）　L = [ ]');
+    cap('T 一開始只有 v₁', 'L 是空的 list');
+  },
+  async (tok, S) => {
+    S.code.hl(2);
+    set(S.q, 'L = [ e ]');
+    cap('把 v₁ 放進 L', 'L 存的是「還沒處理」的頂點');
+  },
+  async (tok, S) => {
+    S.code.hl(3);
+    cap('只要 L 不是空的就繼續', 'L 空了就結束');
+  },
+  async (tok, S) => {
+    S.code.hl(4);
+    paintTrav(S.gv, S.st[1]);
+    set(S.q, '取出 e　L = [ ]');
+    cap('移除 L 最前面的頂點 v', '處理過就不再看它');
+  },
+  async (tok, S) => {
+    S.code.hl(5);
+    cap('看 v 的每一個鄰居 w', '');
+  },
+  async (tok, S) => {
+    S.code.hl(7);
+    await playSnaps(tok, S.gv, S.st, 2, snapAt(S.st, 'e — i'), 400, false, (x) => set(S.q, 'L = [ ' + x.ds.join(' ') + ' ]'));
+    cap('w 不在 L 也不在 T → 放到 L 尾端', '同時把 w 和 {v,w} 加進 T');
+  },
+], [[0, 9.5, 9.5], [0, 0.8, 0.6]]);
+
+scene('g8g-st-dir', '有向圖的 DFS：spanning forest', [
+  async (tok, S) => {
+    S.gv = drawGraph(DIRG);
+    S.st = travSteps(DIRG, 'a', 'dfs');
+    S.path = tag('', 'ptr alt', 0, 0.3, 3.6);
+    S.on = (x) => set(S.path, '路徑：' + (x.ds.join(' → ') || '—'));
+    cap('有向圖也可以做 DFS（BFS 也可以）', '');
+  },
+  async (tok, S) => {
+    cap('但結果不一定是 spanning tree', '而是 spanning forest（好幾棵樹）');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.gv, S.st, 0, snapAt(S.st, 'c → g'), 450, false, S.on);
+    cap('從 a 開始：路徑 a → b → c → g', '');
+  },
+  async (tok, S) => {
+    const k = S.gv.find('d', 'c'); paintEdge(S.gv.em[k], COL.hot, true);
+    const p = S.gv.pos('d'); S.xd = tag('箭頭是 d → c，c 不能走到 d ✗', 'bad', p.x - 1.5, p.y + 0.8, p.z - 0.7);
+    cap('要照箭頭方向走', 'c 不能到 d，因為箭頭是 d → c');
+  },
+  async (tok, S) => {
+    kill(S.xd); paintTrav(S.gv, S.st[snapAt(S.st, 'c → g')]);
+    glow(S.gv.vm.g, '#8a1010');
+    cap('到 g 被擋住了', 'g 沒有往外的箭頭');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.gv, S.st, snapAt(S.st, 'g 走不下去'), snapAt(S.st, 'g 走不下去'), 0, false, S.on);
+    cap('從 g 退回 c', '');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.gv, S.st, snapAt(S.st, 'c 走不下去'), snapAt(S.st, 'f → e'), 500, false, S.on);
+    cap('c 也沒路 → 退回 b', 'b 接上 f → e');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.gv, S.st, snapAt(S.st, 'e 走不下去'), snapAt(S.st, 'b 走不下去'), 450, false, S.on);
+    cap('一路退回 a', 'a 也沒有新的路了');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.gv, S.st, snapAt(S.st, '回不到新點了：另起一棵樹，根 = d'), snapAt(S.st, '回不到新點了：另起一棵樹，根 = d'), 0, false, S.on);
+    cap('只好另起一棵樹', '新的根是 d');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.gv, S.st, snapAt(S.st, 'd → h'), snapAt(S.st, 'k → j'), 450, false, S.on);
+    cap('從 d 照箭頭走：d → h → l → k → j', '');
+  },
+  async (tok, S) => {
+    const k = S.gv.find('i', 'j'); paintEdge(S.gv.em[k], COL.hot, true);
+    cap('到了 j 不能走到 i', '箭頭是 i → j');
+  },
+  async (tok, S) => {
+    await playSnaps(tok, S.gv, S.st, snapAt(S.st, 'j 走不下去'), lastSnap(S.st), 150, false, S.on);
+    const roots = S.st[lastSnap(S.st)].roots;
+    const comp = {}; let r = -1;
+    S.st.forEach((x) => { if (x.msg.startsWith('選') || x.msg.startsWith('回不到')) r++; if (x.cur && comp[x.cur] === undefined) comp[x.cur] = r; });
+    DIRG.V.forEach((v) => vcol(S.gv, v, COMP[comp[v] % COMP.length]));
+    set(S.path, 'spanning forest：' + roots.length + ' 棵樹（根 ' + roots.join('、') + '）✓');
+    cap('最後一棵只有 i 自己', '三棵樹合起來是 spanning forest');
+  },
+  async (tok, S) => {
+    S.web = tag('🕸 web spider：從一個網頁沿著連結（有向邊）一路探索', 'note', 0, 0.3, -3.2);
+    cap('應用：搜尋引擎建索引', 'web spider（crawler）有系統地探索整個 Web');
+  },
+]);
+
+scene('g8g-st-ex1', '練習：拿掉 circuit 上的邊（a–b–d、b–c–e）', [
+  async (tok, S) => {
+    S.gv = drawGraph(EXR, { s: 1, ox: 1.2, oz: 0 });
+    S.cnt = tag('5 個頂點、6 條邊', 'ptr alt', 1.2, 0.3, 2.8);
+    cap('練習：拿掉 simple circuit 上的邊', '找出 spanning tree');
+  },
+  async (tok, S) => {
+    flash(S.gv, ['a', 'b', 'd']); flash(S.gv, ['b', 'c', 'e'], COL.orange);
+    cap('兩個 simple circuit：a–b–d–a、b–c–e–b', '');
+  },
+  async (tok, S) => {
+    await removeEdge(tok, EG(S.gv, 'a', 'b'));
+    set(S.cnt, '5 個頂點、5 條邊');
+    cap('{a,b} 在 circuit 上，拿掉它', '拿 {a,d} 也可以');
+  },
+  async (tok, S) => {
+    await removeEdge(tok, EG(S.gv, 'b', 'c'));
+    calm(S.gv); set(S.cnt, '5 個頂點、4 條邊');
+    cap('{b,c} 也在 circuit 上，拿掉', '');
+  },
+  async (tok, S) => {
+    const ok = treeCheck(S.gv);
+    S.gv.em.forEach((e) => { if (e.g.visible) paintEdge(e, COL.tree, true); });
+    EXR.V.forEach((v) => vcol(S.gv, v, COL.vis));
+    set(S.cnt, '4 條邊 = 5 − 1、沒有 circuit ' + (ok ? '✓' : '✗'));
+    cap('沒有 simple circuit 了', '兩個 circuit 各拿一條邊就夠');
+  },
+  async (tok, S) => {
+    cap('spanning tree：a–d–b–e–c', '到 c 之後回不到 b');
+  },
+]);
+
+scene('g8g-st-ex2', '練習：很多 circuit 的圖（只列老師唸的邊）', [
+  async (tok, S) => {
+    S.B = board(-6.4, -3.0, 0.7);
+    S.B.add('另一題：拿掉 simple circuit 上的邊 → spanning tree');
+    tag('原圖畫面看不到，這裡只列老師唸到的', 'idx', 0, 0.3, 3.2);
+    cap('另一題：一樣拿掉 circuit 上的邊', '');
+  },
+  async (tok, S) => {
+    S.B.add('circuit 很多：a–h–i…、b–i–j…、c–j–d…', 'say');
+    cap('這張圖有很多 simple circuit', '');
+  },
+  async (tok, S) => {
+    S.B.add('拿掉：{a,i}、{b,i}、{b,j}、{c,d} …');
+    cap('每個 circuit 拿掉一條邊', '');
+  },
+  async (tok, S) => {
+    S.B.add('再拿掉：{i,j}、{f,j}、{f,i}、{e,j} …');
+    cap('下面的 circuit 也一樣處理', '');
+  },
+  async (tok, S) => {
+    S.B.add('檢查：頂點一個都沒少 ✓、沒有 simple circuit ✓', 'good');
+    cap('拿完要檢查', '頂點都在、沒有 circuit');
+  },
+]);
+
+scene('g8g-st-tri', '練習：三角形的所有 spanning tree', [
+  async (tok, S) => {
+    S.K3 = parseG({ a: [0, -1.3], b: [-1.3, 1], c: [1.3, 1] }, 'a-b b-c c-a');
+    S.big = drawGraph(S.K3, { s: 1, ox: 0, oz: -1.4 });
+    cap('畫出這張 simple graph 的所有 spanning tree', '三角形 a、b、c');
+  },
+  async (tok, S) => {
+    flash(S.big, ['a', 'b', 'c']);
+    cap('只有一個 circuit：a–b–c–a', '');
+  },
+  async (tok, S) => {
+    // the tree that leaves out edge {u,v}, drawn in slot k
+    S.add = (u, v, k) => {
+      const T = spanningTrees(S.K3).find((t) => { const m = S.K3.E.find((e, i) => !t.includes(i)); return (m.u === u && m.v === v) || (m.u === v && m.v === u); });
+      if (!T) throw new Error('no tree without ' + u + v);
+      const gv = drawGraph(S.K3, { s: 0.75, ox: -4 + k * 4, oz: 1.6 });
+      gv.em.forEach((e, i) => paintEdge(e, T.includes(i) ? COL.tree : COL.dim, T.includes(i), T.includes(i)));
+      tag('拿掉 {' + u + ',' + v + '}', 'idx', -4 + k * 4, 0.3, 3.2);
+    };
+    S.add('a', 'b', 0); cap('拿掉 {a,b}', '第 1 棵');
+  },
+  async (tok, S) => { S.add('a', 'c', 1); cap('或拿掉 {a,c}', '第 2 棵'); },
+  async (tok, S) => { S.add('b', 'c', 2); cap('或拿掉 {b,c}', '第 3 棵'); },
+  async (tok, S) => {
+    const n = spanningTrees(S.K3).length;
+    tag('共 ' + n + ' 棵 spanning tree ' + (n === 3 ? '✓' : '✗'), 'good', 0, 0.3, -3.3);
+    cap('三種都是 spanning tree', '起點不會再繞回同一點');
+  },
+]);
+
+scene('g8g-st-ex-a', '練習：指定 a 當根的 DFS', [
+  async (tok, S) => {
+    S.B = board(-6.4, -3.0, 0.7);
+    S.B.add('題目：用 DFS 產生 spanning tree，以 a 為根');
+    tag('原圖畫面看不到；下面只是流程示意', 'idx', 0, 0.3, 3.3);
+    cap('練習：DFS，指定 a 當根', '');
+  },
+  async (tok, S) => {
+    S.B.add('根很重要：根不同，spanning tree 就不同', 'say');
+    cap('一定要照題目選 a', '根換了，路徑和樹都會不同');
+  },
+  async (tok, S) => {
+    S.B.add('從 a 出發，能走多遠走多遠，先不 backtrack');
+    S.chips = ['a', 'b', 'c', '…', 'h', '…', 'l'].map((t, i) => cube(t, COL.vis, [0.7, 0.4, 0.7], -3 + i * 1.1, 0.3, 1.4));
+    cap('樹用粗線畫出來', '從 a 開始，盡量往下走');
+  },
+  async (tok, S) => {
+    S.B.add('每一步選「字母順序最前面、還沒用過」的鄰居');
+    cap('每一步選字母最前面、還沒用過的點', '');
+  },
+  async (tok, S) => {
+    glow(S.chips[6], '#8a1010'); glow(S.chips[4], '#8a6400');
+    S.B.add('路徑走到 l 卡住 → backtrack 到 h');
+    cap('走到 l 卡住', '退回 h');
+  },
+  async (tok, S) => {
+    S.B.add('從 h 一路走到 n，不用再 backtrack');
+    cap('從 h 再形成一條路徑一路到 n', '');
+  },
+  async (tok, S) => {
+    S.B.add('最後退回 i，接上 m → 完成', 'good');
+    cap('最後退回 i 接上 m', '所有頂點都進樹');
+  },
+]);
+
+// ════════ Erea1QASjXY（Graph Coloring） ════════
+// 地圖照本章 MAP_CELLS／MAPD（邊 A–B A–C B–C B–E C–D C–E D–E，照影片口述）。影片的 greedy 塗出 4 色、
+// P(G,λ) 寫 λ(λ−1)(λ−2)(λ−1)(λ−3)；照這些相鄰關係其實 3 色就夠、P = λ(λ−1)(λ−2)³ —— 場景兩者都演、標出錯在哪。
+const mapCtr = (r, ox, oz, cs) => { const cells = MAP_CELLS[r]; const c = cells.reduce((s, [a, b]) => [s[0] + a / cells.length, s[1] + b / cells.length], [0, 0]); return [ox + (c[0] - 1) * cs, oz + (c[1] - 1) * cs]; };
+const MAPADJ = (u, v) => MAPD.E.some((e) => (e.u === u && e.v === v) || (e.u === v && e.v === u));
+const proper = (G, col) => G.E.every((e) => col[e.u] !== col[e.v]);
+scene('g8g-col-map', '地圖著色：相鄰國家不同色', [
+  async (tok, S) => {
+    S.t = tag('Graph coloring', 'note', 0, 0.3, -3.6);
+    cap('這部影片：graph coloring', '');
+  },
+  async (tok, S) => {
+    S.ox = 0; S.oz = -0.2; S.cs = 1.8;
+    S.map = drawMap(S.ox, S.oz, S.cs);
+    S.x = {};
+    S.mark = (r, t, c = 'bad') => { if (S.x[r]) kill(S.x[r]); const [x, z] = mapCtr(r, S.ox, S.oz, S.cs); S.x[r] = tag(t, c, x, 0.9, z + 0.55); };
+    tag('虛構大陸（示意）', 'idx', 3.6, 0.3, -2.4);
+    cap('虛構的大陸分成 A～E 幾個國家', '相鄰國家的國旗不想同色');
+  },
+  async (tok, S) => {
+    set(S.t, '最少要幾種顏色？');
+    cap('做旗子的人想省錢', '顏色越少越好：最少要幾色？');
+  },
+  async (tok, S) => { S.col = { A: 0 }; S.map.paint('A', CC[0]); cap('先讓 A 用黃色', ''); },
+  async (tok, S) => { S.mark('B', '不能黃'); S.mark('C', '不能黃'); cap('B、C 都和 A 相鄰', '所以不能用黃色'); },
+  async (tok, S) => { S.col.D = 0; S.map.paint('D', CC[0]); cap('D 沒有碰到 A', 'D 也可以用黃色'); },
+  async (tok, S) => { S.mark('E', '不能黃'); cap('E 碰到 D（黃）', 'E 不能黃'); },
+  async (tok, S) => { kill(S.x.B); delete S.x.B; S.col.B = 1; S.map.paint('B', CC[1]); cap('換一個顏色：B 用綠色', ''); },
+  async (tok, S) => { S.mark('C', '不能黃、綠'); S.mark('E', '不能黃、綠'); cap('C、E 都碰到 B', '不能用綠色'); },
+  async (tok, S) => { kill(S.x.C); delete S.x.C; S.col.C = 2; S.map.paint('C', CC[2]); cap('再找新顏色：C 用藍色', ''); },
+  async (tok, S) => { S.mark('E', 'B 綠、C 藍、D 黃 都碰到'); cap('E 碰到 B、C、D', '綠、藍、黃都不能用'); },
+  async (tok, S) => { kill(S.x.E); S.col.E = 3; S.map.paint('E', CC[3]); cap('E 只好用第 4 色（紫）', ''); },
+  async (tok, S) => {
+    const ok = proper(MAPD, S.col), k = new Set(Object.values(S.col)).size;
+    set(S.t, '影片：這樣塗用了 ' + k + ' 色、相鄰都不同 ' + (ok ? '✓' : '✗'));
+    cap('影片的結論：最少要 4 色', '（等一下會看到其實 3 色就夠）');
+  },
+]);
+
+scene('g8g-col-dual', '對偶圖：區域變頂點', [
+  async (tok, S) => {
+    S.map = drawMap(-4.2, 0, 1.3);
+    S.gv = drawGraph(MAPD, { s: 1.15, ox: 2.8, oz: 0 });
+    S.gv.em.forEach((e) => paintEdge(e, COL.edge, false, false));
+    S.info = tag('dual graph：國家 → 頂點', 'ptr alt', 2.8, 0.3, -3.0);
+    cap('另一個看法：dual graph', '每個區域變成一個頂點');
+  },
+  async (tok, S) => { ['B', 'C'].forEach((v) => paintEdge(EG(S.gv, 'A', v), COL.edge, false)); set(S.info, '相鄰就連一條邊'); cap('兩國相鄰就連一條邊', 'A 鄰 B、C'); },
+  async (tok, S) => { ['C', 'E'].forEach((v) => paintEdge(EG(S.gv, 'B', v), COL.edge, false)); cap('B 鄰 C、E', ''); },
+  async (tok, S) => { ['D', 'E'].forEach((v) => paintEdge(EG(S.gv, 'C', v), COL.edge, false)); cap('C 鄰 D、E', ''); },
+  async (tok, S) => {
+    paintEdge(EG(S.gv, 'D', 'E'), COL.edge, false);
+    const n = liveIdx(S.gv).length;
+    set(S.info, '共 ' + n + ' 條邊 ' + (n === 7 ? '✓' : '✗'));
+    cap('D 鄰 E', '');
+  },
+  async (tok, S) => { cap('這張圖完全代表地圖上的相鄰關係', ''); },
+  async (tok, S) => { set(S.info, 'graph coloring：相鄰頂點不同色，最少幾色？'); cap('graph coloring', '相鄰（有邊）的頂點不能同色'); },
+  async (tok, S) => { S.col = { A: 0, D: 0 }; vcol(S.gv, 'A', CC[0]); vcol(S.gv, 'D', CC[0]); cap('A 黃 → B、C 不能黃', 'D 可以黃'); },
+  async (tok, S) => { S.col.B = 1; vcol(S.gv, 'B', CC[1]); cap('B 綠', 'C、E 都碰到 B，不能綠'); },
+  async (tok, S) => {
+    S.col.C = 2; S.col.E = 3; vcol(S.gv, 'C', CC[2]); await wt(tok, 500); vcol(S.gv, 'E', CC[3]);
+    set(S.info, '跟地圖一樣：4 色、相鄰都不同 ' + (proper(MAPD, S.col) ? '✓' : '✗'));
+    cap('C 藍，E 只能紫', '跟地圖上做的一模一樣');
+  },
+  async (tok, S) => {
+    const better = { C: 0, E: 1, B: 2, D: 2, A: 1 };
+    for (const r of ['C', 'E', 'B', 'D', 'A']) { vcol(S.gv, r, CC[better[r]]); S.map.paint(r, CC[better[r]]); await wt(tok, 300); }
+    const ok = proper(MAPD, better), x = chi(colorClasses(MAPD));
+    set(S.info, '補充：B、D 不相鄰可同色 → 3 色 ' + (ok ? '✓' : '✗') + '，χ = ' + x);
+    cap('用圖來看比較容易', '補充：其實 3 色就夠（影片的塗法不是最少）');
+  },
+]);
+
+scene('g8g-col-bip', '二分圖：兩色就夠', [
+  async (tok, S) => {
+    S.t = tag('之前講 bipartite graph 時就碰過著色', 'note', 0, 0.3, -3.4);
+    cap('其實之前學過一點著色', '在 bipartite graph 那裡');
+  },
+  async (tok, S) => {
+    S.G = parseG(ringP(['A', 'B', 'C', 'D', 'E', 'F'], 2.4), 'A-B B-C C-D D-E E-F F-A');
+    S.gv = drawGraph(S.G);
+    tag('C₆', 'ptr', 3.4, 0.3, -2.2);
+    cap('如果一張圖只用兩色就塗得完…', '例如 C₆');
+  },
+  async (tok, S) => {
+    for (const [v, c] of [['A', 0], ['B', 2], ['C', 0], ['D', 2], ['E', 0], ['F', 2]]) { vcol(S.gv, v, CC[c]); await wt(tok, 250); }
+    cap('C₆ 可以只用兩色', 'A、C、E 一色；B、D、F 一色');
+  },
+  async (tok, S) => {
+    const side = { A: [-2.8, -2], C: [-2.8, 0], E: [-2.8, 2], B: [2.8, -2], D: [2.8, 0], F: [2.8, 2] };
+    S.gv.em.forEach((e) => { e.g.visible = false; });
+    S.side = side;
+    for (const v of S.G.V) move(S.gv.vm[v], side[v][0], 0.3, side[v][1]);
+    cap('重畫成 bipartite graph', 'A、C、E 一邊；B、D、F 一邊');
+  },
+  async (tok, S) => {
+    for (const e of S.G.E) { edgeMesh(V3(S.side[e.u][0], 0.3, S.side[e.u][1]), V3(S.side[e.v][0], 0.3, S.side[e.v][1])); await wt(tok, 220); }
+    cap('A–B、B–C、C–D、D–E、E–F、F–A', '每條邊都跨兩邊');
+  },
+  async (tok, S) => {
+    const L = new Set(['A', 'C', 'E']);
+    const ok = S.G.E.every((e) => L.has(e.u) !== L.has(e.v));
+    set(S.t, '同一邊的點彼此都沒有邊 ' + (ok ? '✓' : '✗') + ' → bipartite');
+    cap('A、C、E 彼此不相連；B、D、F 也是', '所以是 bipartite graph');
+  },
+  async (tok, S) => {
+    lab.clear();
+    S.T = parseG({ A: [0, -1.6], B: [-1.8, 1.3], C: [1.8, 1.3] }, 'A-B B-C C-A');
+    S.tv = drawGraph(S.T); vcol(S.tv, 'A', CC[0]);
+    S.t = tag('三角形 A、B、C', 'note', 0, 0.3, -3.2);
+    cap('三角形 ABC：A 黃', 'B、C 都不能黃');
+  },
+  async (tok, S) => { vcol(S.tv, 'B', CC[2]); cap('B 藍', 'C 不能藍'); },
+  async (tok, S) => {
+    vcol(S.tv, 'C', CC[3]);
+    const x = chi(colorClasses(S.T));
+    set(S.t, '三角形要 ' + x + ' 色 → 不是 bipartite ' + (x === 3 ? '✓' : '✗'));
+    cap('C 只能第三色', '要 3 色 → 不是二分圖');
+  },
+]);
+
+scene('g8g-col-kn', 'Chromatic number 與完全圖 Kₙ', [
+  async (tok, S) => {
+    S.B = board(-6.6, -3.5);
+    S.B.add('chromatic number χ(G)：塗好 G 最少要幾色');
+    cap('最少需要的顏色數有特別的名字', 'chromatic number，記作 χ(G)');
+  },
+  async (tok, S) => { S.B.add('bipartite graph（有邊）：χ(G) = 2'); cap('任何 bipartite graph', 'χ(G) = 2'); },
+  async (tok, S) => {
+    S.Ks = [2, 3, 4].map((n) => parseG(ringP('ABCD'.slice(0, n).split(''), 1.25, n === 2 ? 0 : Math.PI / 2), n === 2 ? 'A-B' : n === 3 ? 'A-B B-C C-A' : 'A-B A-C A-D B-C B-D C-D'));
+    S.gvs = S.Ks.map((G, k) => drawGraph(G, { ox: -3.8 + k * 3.9, oz: 0.6 }));
+    S.Ks.forEach((G, k) => tag('K' + G.V.length, 'ptr', -3.8 + k * 3.9, 0.3, 2.6));
+    cap('完全圖 K₂、K₃、K₄', '每個頂點都和其他所有頂點相連');
+  },
+  async (tok, S) => { cap('找出每個的 chromatic number', '再看能不能推廣'); },
+  async (tok, S) => {
+    S.paint = async (k) => { const G = S.Ks[k]; for (let i = 0; i < G.V.length; i++) { vcol(S.gvs[k], G.V[i], CC[i]); await wt(tok, 300); } const x = chi(colorClasses(G)); tag('χ = ' + x + (x === G.V.length ? ' ✓' : ' ✗'), 'good', -3.8 + k * 3.9, 0.3, -1.4); };
+    await S.paint(0); cap('K₂：兩點相連 → 要 2 色', '');
+  },
+  async (tok, S) => { await S.paint(1); cap('K₃：B 碰到 A、C 碰到 A 和 B', '要 3 色'); },
+  async (tok, S) => { await S.paint(2); cap('K₄ 也一樣', 'χ(K₄) = 4'); },
+  async (tok, S) => { S.gvs[2].em.forEach((e) => paintEdge(e, COL.hot, true)); cap('原因：每個頂點都和其他所有頂點相連', '所以每個點都要自己的顏色'); },
+  async (tok, S) => { S.gvs[2].em.forEach((e) => paintEdge(e, COL.edge, false)); S.B.add('χ(Kₙ) = n', 'good'); cap('推廣：χ(Kₙ) = n', ''); },
+]);
+
+scene('g8g-col-cn', 'Cycle graph 的 chromatic number', [
+  async (tok, S) => {
+    S.Cs = [3, 4, 5, 6].map((n) => { const nm = 'ABCDEF'.slice(0, n).split(''); return parseG(ringP(nm, 1.15), nm.map((v, i) => v + '-' + nm[(i + 1) % n]).join(' ')); });
+    S.gvs = S.Cs.map((G, k) => drawGraph(G, { ox: -4.8 + k * 3.2, s: 1, size: [0.5, 0.45, 0.5], gap: 0.3 }));
+    S.Cs.forEach((G, k) => tag('C' + G.V.length, 'ptr', -4.8 + k * 3.2, 0.3, 2));
+    cap('cycle graph：每個點連到下一個，最後繞回起點', '');
+  },
+  async (tok, S) => {
+    S.res = (k) => { const x = chi(colorClasses(S.Cs[k])); tag('χ = ' + x + ' ✓', 'good', -4.8 + k * 3.2, 0.3, -1.9); };
+    cap('找 C₃、C₄、C₅、C₆ 的 chromatic number', '再推廣到 Cₙ');
+  },
+  async (tok, S) => { for (const [i, c] of [[0, 0], [1, 2], [2, 3]]) { vcol(S.gvs[0], S.Cs[0].V[i], CC[c]); await wt(tok, 300); } S.res(0); cap('C₃ 其實就是 K₃', '要 3 色'); },
+  async (tok, S) => { vcol(S.gvs[1], 'A', CC[0]); await wt(tok, 300); vcol(S.gvs[1], 'B', CC[2]); cap('C₄：A 一色，B 要不同色', ''); },
+  async (tok, S) => { vcol(S.gvs[1], 'C', CC[0]); await wt(tok, 300); vcol(S.gvs[1], 'D', CC[2]); cap('C 不碰 A → 和 A 同色', 'D 不碰 B → 和 B 同色'); },
+  async (tok, S) => { S.res(1); cap('χ(C₄) = 2', ''); },
+  async (tok, S) => { vcol(S.gvs[2], 'A', CC[0]); vcol(S.gvs[2], 'C', CC[0]); cap('C₅：A、C 用同一色', 'B、D 不能用；E 碰 A 也不能'); },
+  async (tok, S) => { vcol(S.gvs[2], 'B', CC[2]); vcol(S.gvs[2], 'D', CC[2]); cap('B 換一色，D 也可以用它', ''); },
+  async (tok, S) => { vcol(S.gvs[2], 'E', CC[3]); cap('E 同時碰到黃和藍', '只好用第三色'); },
+  async (tok, S) => { S.res(2); cap('χ(C₅) = 3', ''); },
+  async (tok, S) => { ['A', 'C', 'E'].forEach((v) => vcol(S.gvs[3], v, CC[0])); cap('C₆：A、C、E 彼此不相連', '用同一色'); },
+  async (tok, S) => { ['B', 'D', 'F'].forEach((v) => vcol(S.gvs[3], v, CC[2])); cap('B、D、F 用另一色', ''); },
+  async (tok, S) => { S.res(3); cap('χ(C₆) = 2', '就是剛才那個 bipartite graph'); },
+  async (tok, S) => { S.g1 = tag('n 偶數：χ(Cₙ) = 2', 'good', -1.6, 0.3, -3.3); cap('偶數個頂點：剛好分成兩色', ''); },
+  async (tok, S) => { tag('n 奇數：χ(Cₙ) = 3', 'good', 2.2, 0.3, -3.3); cap('奇數個頂點：多出的那一點碰到兩種顏色', '要 3 色'); },
+]);
+
+scene('g8g-col-poly', 'Chromatic polynomial：地圖例（含勘誤）', [
+  async (tok, S) => {
+    S.B = board(0.9, -3.4);
+    S.B.add('這部分課本沒有（影片補充）', 'say');
+    cap('換個問題（課本沒有）', '');
+  },
+  async (tok, S) => { S.B.add('chromatic polynomial P(G,λ)：用 λ 色有幾種塗法'); cap('不是問最少幾色', '而是給 λ 種顏色，有幾種塗法'); },
+  async (tok, S) => {
+    S.gv = drawGraph(MAPD, { s: 1.25, ox: -3.6, oz: 0.3 });
+    S.tl = {};
+    S.lab = (v, s) => { const p = S.gv.pos(v); if (S.tl[v]) set(S.tl[v], s); else S.tl[v] = tag(s, 'ptr alt', p.x, p.y + 0.85, p.z); vcol(S.gv, v, COL.vis); };
+    cap('回到虛構大陸的 dual graph', '');
+  },
+  async (tok, S) => { S.lab('A', 'λ'); cap('A：λ 種顏色都可以', ''); },
+  async (tok, S) => { S.lab('B', 'λ−1'); cap('B：除了 A 用掉的那色', 'λ − 1 種'); },
+  async (tok, S) => { S.lab('C', 'λ−2'); cap('C 碰到 A 和 B', 'λ − 2 種'); },
+  async (tok, S) => { S.lab('D', 'λ−1'); cap('D 只碰到 C', 'λ − 1 種'); },
+  async (tok, S) => { S.lab('E', 'λ−3'); cap('E 碰到 B、C、D', '影片寫 λ − 3'); },
+  async (tok, S) => { S.B.add('影片：P = λ(λ−1)(λ−2)(λ−1)(λ−3)'); cap('相乘就是影片的 chromatic polynomial', '不用展開'); },
+  async (tok, S) => { S.B.add('用法：5 色有幾種塗法？→ λ = 5'); cap('怎麼用：5 色有幾種塗法？', ''); },
+  async (tok, S) => {
+    S.vals = [5, 4, 3, 4, 2];
+    for (let i = 0; i < 5; i++) { cube(S.vals[i], CC[i], [0.8, 0.6, 0.8], 1.6 + i * 1.0, 0.3, 1.2, 2.5); await wt(tok, 250); }
+    cap('λ 換成 5：5、4、3、4、2', '');
+  },
+  async (tok, S) => {
+    const p = S.vals.reduce((a, b) => a * b, 1);
+    S.B.add('5·4·3·4·2 = ' + p + '（影片的答案）');
+    cap('全部乘起來', '5 × 4 × 3 × 4 × 2 = ' + p);
+  },
+  async (tok, S) => {
+    vcol(S.gv, 'B', COL.hot); vcol(S.gv, 'D', COL.hot);
+    const a = colorClasses(MAPD);
+    S.B.add('勘誤：B、D 不相鄰、可能同色 → E 不一定少 3 色', 'bad');
+    S.B.add('正確：P = λ(λ−1)(λ−2)³，P(G,5) = ' + chromP(a, 5) + (chromP(a, 5) === 5 * 4 * 27 ? ' ✓' : ' ✗'), 'good');
+    cap('道理：每一步的選擇數不受前面影響才能相乘', '補充：B、D 可同色，影片這裡算錯');
+  },
+]);
+
+scene('g8g-col-k4', '練習：P(G,λ) 與 P(G,6)', [
+  async (tok, S) => {
+    S.gv = drawGraph(K4X, { s: 0.9, ox: -2.6, oz: 0.2 });
+    S.B = board(1.2, -3.2);
+    S.B.add('求 P(G,λ)，再算 P(G,6)');
+    cap('最後一題：chromatic polynomial 與 P(G,6)', '');
+  },
+  async (tok, S) => { S.l = (v, s) => { const p = S.gv.pos(v); tag(s, 'ptr alt', p.x, p.y + 0.85, p.z); vcol(S.gv, v, COL.vis); }; S.l('A', 'λ'); cap('從一個頂點開始：A 標 λ', ''); },
+  async (tok, S) => { S.l('B', 'λ−1'); cap('B 不能用 A 的顏色', 'λ − 1'); },
+  async (tok, S) => { S.l('C', 'λ−2'); cap('C：λ − 2', '（場景用 A、B、C、D 兩兩相鄰的 K₄）'); },
+  async (tok, S) => { S.l('D', 'λ−3'); cap('D 和 A、B、C 都相鄰', 'λ − 3'); },
+  async (tok, S) => { S.B.add('P(G,λ) = λ(λ−1)(λ−2)(λ−3)'); cap('相乘得到 P(G,λ)', ''); },
+  async (tok, S) => { S.B.add('只要多項式 → λ 保留；題目要 λ = 6', 'say'); cap('如果只問多項式，λ 留著就好', '題目要的是 6 色'); },
+  async (tok, S) => {
+    S.v = [6, 5, 4, 3];
+    for (let i = 0; i < 4; i++) { cube(S.v[i], CC[i], [0.8, 0.6, 0.8], 1.8 + i * 1.1, 0.3, 1.4, 2.5); await wt(tok, 250); }
+    cap('λ 換成 6', '6 × 5 × 4 × 3');
+  },
+  async (tok, S) => {
+    const p = chromP(colorClasses(K4X), 6);
+    S.B.add('P(G,6) = 6·5·4·3 = ' + p + (p === 360 ? ' ✓' : ' ✗'), 'good');
+    cap('30 × 4 = 120，120 × 3 = 360', '');
+  },
+]);
+
+// ════════ P2FRYshQ57s（交大 易志偉 Lec24：最短路徑、Dijkstra、Euler、Hamilton、連通） ════════
+// 臺灣路網是老師「隨便亂畫」的示意；權重照老師說的：北–桃 30、北–宜 50、桃–竹 70、桃–宜 70、宜–花 100、
+// 宜–投 70、竹–中 100、竹–投 10、投–中 40、花–投 150。A–F 圖、12 點圖：由老師算的每一步反推出邊與權重，位置是示意。
+const TW = parseG({ 臺北: [2.6, -2.9], 桃園: [0.3, -2.2], 宜蘭: [4.4, -1.0], 新竹: [-1.4, -0.6], 花蓮: [4.4, 2.5], 南投: [1.3, 1.3], 臺中: [-2.0, 2.3] },
+  '臺北-桃園:30 臺北-宜蘭:50 桃園-新竹:70 桃園-宜蘭:70 宜蘭-花蓮:100 宜蘭-南投:70 新竹-臺中:100 新竹-南投:10 南投-臺中:40 花蓮-南投:150');
+const DJ = parseG({ A: [-4, -0.5], B: [-1, -2.6], C: [-3.5, 2.5], D: [4, -1], E: [-1, 0.2], F: [1.8, -0.6] }, 'A-B:1 A-C:4 B-D:3 B-E:3 C-E:3 C-D:10 D-F:5 E-F:1');
+const V12 = parseG({ V1: [-4.6, -2.3], V2: [-1.6, -2.3], V3: [1.4, -2.3], V8: [4.6, -2.3], V4: [-4.6, 0], V6: [-1.6, 0], V7: [1.4, 0], V10: [4.6, 0.2], V5: [-3.1, 2.4], V9: [0, 2.5], V11: [3.0, 2.8], V12: [5.2, 2.0] },
+  'V1-V2:1 V1-V4:3 V2-V3:2 V2-V6:4 V4-V5:3 V3-V8:3 V6-V5:1 V6-V7:1 V7-V8:2 V7-V10:3 V5-V9:2 V9-V10:6 V9-V11:5 V10-V12:1 V12-V11:1');
+const wl = (gv, u, v, on = true) => { const e = EG(gv, u, v); if (e.wl) showL(e.wl, on); };
+const twMap = (o = {}) => { const gv = drawGraph(TW, { s: o.s ?? 0.95, ox: o.ox ?? 1.4, oz: o.oz ?? 0.2, size: [0.95, 0.4, 0.62] }); gv.em.forEach((e) => showL(e.wl, false)); tag('路網（示意）', 'idx', (o.ox ?? 1.4) + 3.2, 0.3, 3.4); return gv; };
+// Dijkstra 狀態：L（目前已知最短距離）、S（已確定）、prev（從哪裡來）
+function djState(G, gv, opt = {}) {
+  const D = { L: {}, S: new Set(), prev: {}, lab: {}, red: [] };
+  G.V.forEach((v) => { D.L[v] = Infinity; const p = gv.pos(v); D.lab[v] = tag('', 'idx', p.x + (opt.dx ?? 0), p.y + 0.75, p.z - (opt.dz ?? 0.55)); });
+  D.show = (v) => { set(D.lab[v], (opt.pre ?? 'L=') + fmtD(D.L[v])); setc(D.lab[v], D.S.has(v) ? 'good' : D.L[v] === Infinity ? 'idx' : 'ptr alt'); };
+  D.showAll = () => G.V.forEach(D.show);
+  D.calm = () => { D.red.forEach((k) => { const e = gv.em[k]; const tree = G.V.some((v) => D.S.has(v) && D.prev[v] && gv.find(D.prev[v], v) === k); paintEdge(e, tree ? COL.tree : COL.edge, tree); }); D.red = []; };
+  D.pick = (u) => {
+    D.calm();
+    const rest = G.V.filter((v) => !D.S.has(v)), m = Math.min(...rest.map((v) => D.L[v]));
+    if (D.L[u] !== m) throw new Error('Dijkstra pick ' + u + ' is not the minimum');
+    D.S.add(u); vcol(gv, u, COL.vis); D.show(u);
+    if (D.prev[u]) paintEdge(gv.em[gv.find(D.prev[u], u)], COL.tree, true);
+    return m;
+  };
+  D.relax = (u, v) => {
+    const k = gv.find(u, v); if (k < 0) throw new Error('no edge ' + u + '-' + v);
+    const w = G.E[k].w, nd = D.L[u] + w, old = D.L[v], up = nd < old;
+    paintEdge(gv.em[k], COL.hot, true); D.red.push(k);
+    if (up) { D.L[v] = nd; D.prev[v] = u; D.show(v); }
+    return u + '→' + v + '：' + D.L[u] + ' + ' + w + ' = ' + nd + (up ? ' < ' + fmtD(old) + ' → 更新' : ' ≥ ' + fmtD(old) + ' → 不變');
+  };
+  D.path = (t) => { const p = [t]; while (D.prev[p[0]]) p.unshift(D.prev[p[0]]); return p; };
+  D.pathLen = (p) => p.slice(1).reduce((s, v, i) => s + G.E[gv.find(p[i], v)].w, 0);
+  return D;
+}
+
+scene('g8g-tw-roads', '從路網說起', [
+  async (tok, S) => {
+    S.gv = twMap();
+    S.gv.em.forEach((e) => { e.g.visible = false; });
+    cap('用距離來想：臺北、桃園、新竹、宜蘭…', '');
+  },
+  async (tok, S) => { for (const e of S.gv.em) { e.g.visible = true; await wt(tok, 120); } cap('把路網連起來', '老師說是隨便畫的'); },
+  async (tok, S) => { cap('路網裡每一條路都有它的距離', ''); },
+  async (tok, S) => {
+    for (const [u, v] of [['臺北', '宜蘭'], ['宜蘭', '花蓮'], ['花蓮', '南投'], ['南投', '臺中']]) { wl(S.gv, u, v); await wt(tok, 300); }
+    cap('例如到宜蘭 50 公里、宜蘭到花蓮 100', '花蓮到南投 150、南投到臺中 40');
+  },
+  async (tok, S) => { cap('每一條路都有一個長度', '這樣的圖有特別的名字'); },
+]);
+
+scene('g8g-tw-wdef', '權重圖的定義', [
+  async (tok, S) => {
+    S.gv = twMap({ s: 0.78, ox: 2.6 });
+    for (const [u, v] of [['臺北', '宜蘭'], ['宜蘭', '花蓮'], ['花蓮', '南投'], ['南投', '臺中']]) wl(S.gv, u, v);
+    S.B = board(-6.9, -3.4);
+    S.B.add('節點、邊之外，每個邊再給一個數字');
+    cap('除了節點和邊', '每一個邊再給它一個數字');
+  },
+  async (tok, S) => { S.B.add('這個數字叫「權重」（weight）→ 權重圖'); cap('這個數字叫權重', '這種圖叫權重圖（weighted graph）'); },
+  async (tok, S) => { S.B.add('G = (V, E, w)：V 節點集合'); cap('定義：G 有節點集合 V', ''); },
+  async (tok, S) => { S.B.add('　E 邊集合，再多一個函式 w'); cap('還有邊集合 E', '另外多了一個函式'); },
+  async (tok, S) => { S.B.add('　w：E → 實數（就是標在邊上的數字）'); cap('函式把每個邊對應到一個實數', '就是標在邊上的距離'); },
+  async (tok, S) => { S.B.add('數字可以是距離、時間、過路費…', 'say'); cap('也可以是錢：高速公路的收費', '只要是生活裡有意義的數字'); },
+  async (tok, S) => { S.B.add('今天的新概念：邊上帶數字', 'good'); cap('今天的第一個新概念', '邊上可以帶數字'); },
+]);
+
+scene('g8g-tw-sp', '最短路徑問題', [
+  async (tok, S) => {
+    S.gv = twMap({ s: 0.85, ox: 2.4 });
+    S.gv.em.forEach((e) => showL(e.wl, true));
+    S.B = board(-6.9, -3.4);
+    vcol(S.gv, '臺北', COL.vis, '#8a6400');
+    S.B.add('以臺北為起點，規劃行程');
+    cap('從臺北出發規劃行程', '到每個地方的最短距離是多少？');
+  },
+  async (tok, S) => { S.B.add('shortest path 問題：固定一個起點'); cap('這叫 shortest path（最短路徑）問題', '今天固定一個起點：臺北'); },
+  async (tok, S) => {
+    for (const [u, v] of [['臺北', '桃園'], ['桃園', '新竹'], ['新竹', '臺中']]) paintEdge(EG(S.gv, u, v), COL.blue, true);
+    await wt(tok, 900);
+    for (const [u, v] of [['臺北', '宜蘭'], ['宜蘭', '南投'], ['南投', '臺中']]) paintEdge(EG(S.gv, u, v), COL.orange, true);
+    cap('臺北到臺中，怎麼走都可以', '走西部、或繞宜蘭…');
+  },
+  async (tok, S) => { S.B.add('問：臺北到臺中最短多遠？怎麼走？'); cap('最短距離是多少？', '要怎麼走？'); },
+  async (tok, S) => { calm(S.gv); S.B.add('等一下：Dijkstra 演算法'); cap('等一下介紹 Dijkstra 演算法', '用來算最短路徑'); },
+  async (tok, S) => { S.B.add('一次算出臺北到「所有」城市的最短路徑', 'good'); cap('它不只算臺北到臺中', '到桃園、新竹、宜蘭…全部一起算出來'); },
+]);
+
+scene('g8g-tw-greedy', '最直覺的方法（greedy）：從臺北往外確定', [
+  async (tok, S) => {
+    S.gv = twMap({ s: 0.95, ox: 1.6 });
+    for (const [u, v] of [['臺北', '宜蘭'], ['宜蘭', '花蓮'], ['花蓮', '南投'], ['南投', '臺中']]) wl(S.gv, u, v);
+    S.D = djState(TW, S.gv, { pre: '', dz: 0.6 });
+    S.st = tag('', 'ptr alt', -4.6, 0.3, -3.4);
+    cap('最直覺的方法通常就是答案', '叫 greedy（貪婪）演算法');
+  },
+  async (tok, S) => { cap('只看目前看得到的鄰居', '決定到誰最近'); },
+  async (tok, S) => {
+    for (const [u, v] of [['桃園', '新竹'], ['臺北', '桃園'], ['桃園', '宜蘭'], ['新竹', '臺中']]) { wl(S.gv, u, v); await wt(tok, 300); }
+    cap('先隨便填幾個數字', '70、30、70、100');
+  },
+  async (tok, S) => {
+    S.D.L['臺北'] = 0; S.D.pick('臺北');
+    S.D.relax('臺北', '桃園'); S.D.relax('臺北', '宜蘭');
+    set(S.st, '臺北的鄰居：桃園 30、宜蘭 50');
+    cap('從臺北出發，先看附近哪裡最近', '桃園 30 公里、宜蘭 50 公里');
+  },
+  async (tok, S) => {
+    S.D.pick('桃園');
+    set(S.st, '桃園 30 確定 ✓（繞別的地方只會更遠）');
+    cap('桃園最近：30 公里就確定了', '不直接走的話，繞別的城市只會更遠');
+  },
+  async (tok, S) => { set(S.st, S.D.relax('桃園', '新竹')); cap('經過桃園再走 70 到新竹', '30 + 70 = 100'); },
+  async (tok, S) => { set(S.st, S.D.relax('桃園', '宜蘭')); cap('經過桃園到宜蘭：30 + 70 = 100', '比直接走的 50 遠，不用'); },
+  async (tok, S) => { S.D.pick('宜蘭'); set(S.st, '宜蘭 50 確定 ✓'); cap('宜蘭到臺北的距離確定是 50', ''); },
+  async (tok, S) => { set(S.st, S.D.relax('宜蘭', '花蓮')); cap('從宜蘭往外看：花蓮', '50 + 100 = 150'); },
+  async (tok, S) => { wl(S.gv, '宜蘭', '南投'); set(S.st, S.D.relax('宜蘭', '南投')); cap('宜蘭到南投（隨便寫 70）', '50 + 70 = 120'); },
+  async (tok, S) => { S.D.calm(); paintEdge(EG(S.gv, '宜蘭', '桃園'), COL.dim, false); cap('宜蘭也連回桃園', '桃園已經確定是 30，不用再看'); },
+  async (tok, S) => {
+    const m = S.D.pick('新竹');
+    set(S.st, '候選：新竹 100、南投 120、花蓮 150 → 新竹 ' + m + ' 最小 ✓');
+    cap('三個城市往外看：新竹 100、南投 120、花蓮 150', '最近的是新竹 → 確定');
+  },
+  async (tok, S) => { set(S.st, S.D.relax('新竹', '臺中')); cap('從新竹到臺中', '100 + 100 = 200'); },
+  async (tok, S) => { wl(S.gv, '新竹', '南投'); set(S.st, S.D.relax('新竹', '南投')); cap('假設新竹到南投 10 公里', '100 + 10 = 110，比 120 短 → 改掉'); },
+  async (tok, S) => { const m = S.D.pick('南投'); set(S.st, '候選：臺中 200、南投 110、花蓮 150 → 南投 ' + m + ' ✓'); cap('200、110、150 哪個最短？', '南投 110 確定'); },
+  async (tok, S) => { set(S.st, S.D.relax('南投', '花蓮')); cap('南投到花蓮那段 150', '對花蓮沒有用'); },
+  async (tok, S) => { set(S.st, S.D.relax('南投', '臺中')); cap('南投到臺中：110 + 40 = 150', '比經過新竹的 200 近 → 改掉'); },
+  async (tok, S) => { S.D.pick('花蓮'); set(S.st, '臺中、花蓮都是 150：先挑花蓮 ✓'); cap('臺中和花蓮都是 150', '隨便挑，先挑花蓮'); },
+  async (tok, S) => {
+    S.D.pick('臺中');
+    const want = { 臺北: 0, 桃園: 30, 宜蘭: 50, 新竹: 100, 南投: 110, 花蓮: 150, 臺中: 150 };
+    const ok = TW.V.every((v) => S.D.L[v] === want[v]);
+    set(S.st, '全部確定：臺中 150 ' + (ok ? '✓' : '✗'));
+    cap('花蓮沒連到臺中，臺中不變', '最後臺中 150 確定');
+  },
+  async (tok, S) => { cap('電腦可以這樣算', '我們等一下會列一個表來追蹤'); },
+  async (tok, S) => { set(S.st, '知道臺中 150，可是怎麼走？要能回溯'); cap('知道到臺中 150 公里', '但是要怎麼走？改來改去容易忘記'); },
+]);
+
+scene('g8g-dj-path', '權重圖與路徑長度', [
+  async (tok, S) => {
+    S.B = board(-6.9, -3.5);
+    S.B.add('權重圖 weighted graph：G = (V, E, w)');
+    cap('權重圖：節點集合、邊集合', '再加一個權重函式');
+  },
+  async (tok, S) => { S.B.add('w(e)：邊的長度，或開車要花的時間'); cap('權重告訴你每個邊的長度', '或是開車要花多少時間'); },
+  async (tok, S) => { S.B.add('這一小節：shortest-path problem'); cap('這一節講 shortest-path problem', ''); },
+  async (tok, S) => { S.B.add('w 是函式：每個邊一個數字；距離 → 都是正數', 'say'); cap('w 是一個函式，每個邊一個數字', '距離都是正數；生活中有些可能是負的'); },
+  async (tok, S) => {
+    S.gv = drawGraph(DJ, { s: 0.82, ox: 2.4, oz: 0.3 });
+    S.gv.em.forEach((e) => showL(e.wl, false));
+    tag('位置示意', 'idx', 5.4, 0.3, -2.4);
+    for (const [u, v] of [['A', 'B'], ['B', 'D'], ['D', 'C']]) { paintEdge(EG(S.gv, u, v), COL.blue, true); await wt(tok, 300); }
+    cap('路徑：A 到 B、B 到 D、D 到 C', 'A B D C 就是一條路徑');
+  },
+  async (tok, S) => { S.B.add('路徑由前後相接的邊組成：{A,B}{B,D}{D,C}'); cap('它由 AB、BD、DC 這三個邊組成', ''); },
+  async (tok, S) => { paintEdge(EG(S.gv, 'C', 'A'), COL.orange, true); S.B.add('再加 {C,A} 回到起點 → cycle'); cap('再加上 CA 回到 A', '這叫 cycle'); },
+  async (tok, S) => {
+    for (const [u, v] of [['A', 'B'], ['B', 'D'], ['D', 'C']]) wl(S.gv, u, v);
+    paintEdge(EG(S.gv, 'C', 'A'), COL.edge, false);
+    cap('加上權重：A–B 1、B–D 3、D–C 10', '');
+  },
+]);
+
+scene('g8g-dj-len', '權重函式與路徑長度：A 到 F', [
+  async (tok, S) => {
+    S.gv = drawGraph(DJ, { s: 0.82, ox: 2.4, oz: 0.3 });
+    S.gv.em.forEach((e) => showL(e.wl, false));
+    S.B = board(-6.9, -3.5);
+    S.B.add('G = (V, E, w)');
+    cap('用這張圖當例子', '把 V、E、w 老老實實寫出來');
+  },
+  async (tok, S) => { S.B.add('V = {A, B, C, D, E, F}'); cap('節點集合', 'V = {A, B, C, D, E, F}'); },
+  async (tok, S) => { S.B.add('E = {' + DJ.E.map((e) => e.u + e.v).join(', ') + '}'); cap('邊的集合 E', '共 ' + DJ.E.length + ' 條'); },
+  async (tok, S) => { wl(S.gv, 'A', 'B'); S.B.add('w：每個邊一個數字，w({A,B}) = 1'); cap('w 對每個邊給一個數字', 'w({A,B}) = 1'); },
+  async (tok, S) => { S.gv.em.forEach((e) => showL(e.wl, true)); S.B.add('w 要完整描述：每個邊都寫出來', 'say'); cap('完整的函式要把每個邊都寫下來', ''); },
+  async (tok, S) => { cap('一般直接把權重標在邊上', '看圖就知道'); },
+  async (tok, S) => {
+    S.p1 = ['A', 'B', 'D', 'F'];
+    for (let i = 0; i < 3; i++) { paintEdge(EG(S.gv, S.p1[i], S.p1[i + 1]), COL.blue, true); await wt(tok, 300); }
+    cap('路徑：A → B → D → F', '像是從臺北經過三個路段到高雄');
+  },
+  async (tok, S) => { S.B.add('路徑長度 = 各段權重加總'); cap('路徑的長度', '就是每一段的權重加起來'); },
+  async (tok, S) => { S.B.add('w({A,B}) + w({B,D}) + w({D,F})'); cap('A→B、B→D、D→F 三段', ''); },
+  async (tok, S) => {
+    const L = S.p1.slice(1).reduce((s, v, i) => s + DJ.E[S.gv.find(S.p1[i], v)].w, 0);
+    S.B.add('= 1 + 3 + 5 = ' + L + (L === 9 ? ' ✓' : ' ✗'), 'good');
+    cap('1 + 3 + 5 = ' + L, '');
+  },
+  async (tok, S) => {
+    calm(S.gv); const p = ['A', 'C', 'D', 'F'];
+    p.slice(1).forEach((v, i) => paintEdge(EG(S.gv, p[i], v), COL.orange, true));
+    const L = p.slice(1).reduce((s, v, i) => s + DJ.E[S.gv.find(p[i], v)].w, 0);
+    S.B.add('A → C → D → F：4 + 10 + 5 = ' + L + (L === 19 ? ' ✓' : ' ✗'));
+    cap('也可以 A → C → D → F', '4 + 10 + 5 = 19');
+  },
+  async (tok, S) => {
+    calm(S.gv); const p = ['A', 'B', 'E', 'F'];
+    p.slice(1).forEach((v, i) => paintEdge(EG(S.gv, p[i], v), COL.vis, true));
+    const L = p.slice(1).reduce((s, v, i) => s + DJ.E[S.gv.find(p[i], v)].w, 0);
+    S.B.add('A → B → E → F：1 + 3 + 1 = ' + L + (L === 5 ? ' ✓' : ' ✗'));
+    cap('或 A → B → E → F', '1 + 3 + 1 = 5，更短');
+  },
+  async (tok, S) => { S.B.add('A 到 F 最短的路是哪一條？'); cap('A 到 F 最短的是哪一條？', '印象中就是長度 5 這條'); },
+  async (tok, S) => { calm(S.gv); glow(S.gv.vm.D, '#8a6400'); S.B.add('A 到 D 呢？最短多長、怎麼走？'); cap('A 到 D 的最短路徑呢？', ''); },
+  async (tok, S) => { glow(S.gv.vm.D, null); S.B.add('= 最短路徑問題：最短、最省時的那一條', 'good'); cap('這就是最短路徑問題', '從各種組合裡找最短的一條'); },
+]);
+
+scene('g8g-dj-setup', 'Dijkstra 演算法：起始條件', [
+  async (tok, S) => {
+    S.B = board(-6.9, -3.5);
+    S.B.add('Dijkstra 演算法（有 k：D-i-j-k-s-t-r-a）');
+    cap('Dijkstra 演算法', '');
+  },
+  async (tok, S) => {
+    S.gv = drawGraph(DJ, { s: 0.82, ox: 2.4, oz: 0.3 });
+    S.B.add('輸入：連通、simple 的權重圖');
+    cap('把剛才的想法寫成演算法', '輸入一張連通的權重圖');
+  },
+  async (tok, S) => { S.B.add('權重要是正的（負的會出問題）', 'say'); cap('權重要是正的', '有負的會有麻煩'); },
+  async (tok, S) => { vcol(S.gv, 'A', COL.idle, '#8a6400'); glow(S.gv.vm.F, '#8a1010'); S.B.add('起點 A（臺北），終點 F（高雄）'); cap('A 是起點', '問 A 到 F 的最短路徑'); },
+  async (tok, S) => { cap('它其實算了很多', '拿掉一個停止條件，就能算出到所有城市的最短路徑'); },
+  async (tok, S) => { S.B.add('到不了的地方：距離先設成 ∞'); cap('剛才：先看臺北到誰最近', '暫時到不了的地方，距離設成無窮大'); },
+  async (tok, S) => {
+    S.D = djState(DJ, S.gv); S.D.showAll();
+    S.B.add('L(v)：目前已知從 A 到 v 的最短距離，一開始全是 ∞');
+    cap('函式 L：目前已知的最短距離', '一開始什麼都不知道，全部 ∞');
+  },
+  async (tok, S) => { S.D.L.A = 0; S.D.show('A'); S.B.add('L(A) = 0：自己到自己'); cap('起點自己到自己', '距離是 0'); },
+  async (tok, S) => { S.Sl = tag('S = { }', 'ptr', 2.4, 0.3, 3.2); S.B.add('S = 空集合'); cap('集合 S 一開始是空的', ''); },
+  async (tok, S) => { S.B.add('S：已經「確定」最短距離的點', 'say'); cap('S 放的是已經確定最短距離的城市', '就像剛才桃園 30 確定後寫在旁邊'); },
+  async (tok, S) => { S.B.add('迴圈：每次挑「不在 S、L 最小」的點'); cap('接著是一個迴圈', '每次挑還沒確定、但距離最近的那一個'); },
+  async (tok, S) => { S.tb = tag('表：A B C D E F 各一格 L，外加集合 S', 'idx', 2.4, 0.3, -3.3); cap('我們列一個表來追蹤', '每個點目前的最短距離，和集合 S'); },
+  async (tok, S) => { G_all(S, Infinity); cap('第一步：除了起點，全部設成 ∞', '（老師口誤說 0，馬上改成無窮大）'); },
+  async (tok, S) => { S.D.L.A = 0; S.D.show('A'); cap('第二步：A 自己寫 0', 'S 目前是空的'); },
+  async (tok, S) => { S.B.add('如果 F 已經在 S → 停（已找到）'); cap('要找到高雄（F）', '迴圈先檢查 F 在不在 S 裡'); },
+  async (tok, S) => { S.B.add('否則：從不在 S 的點裡找 L 最小的 u', 'good'); cap('還沒找到就繼續', '從不在 S 的點裡挑 L 最小的'); },
+]);
+function G_all(S, x) { DJ.V.forEach((v) => { S.D.L[v] = x; S.D.show(v); }); }
+
+const DJ_UPD = 'if L(u) + w(u,v) < L(v)：L(v) := L(u) + w(u,v)';
+scene('g8g-dj-run1', 'Dijkstra 第一圈：確定 A、更新鄰居', [
+  async (tok, S) => {
+    S.gv = drawGraph(DJ, { s: 0.82, ox: 2.4, oz: 0.3 });
+    S.D = djState(DJ, S.gv); S.D.L.A = 0; S.D.showAll();
+    S.B = board(-6.9, -3.5);
+    S.Sl = tag('S = { }', 'ptr', 2.4, 0.3, 3.2);
+    S.st = tag('', 'ptr alt', -4.3, 0.3, 3.2);
+    const m = S.D.pick('A'); S.D.S.delete('A'); vcol(S.gv, 'A', COL.idle, '#8a6400'); S.D.show('A');
+    S.B.add('不在 S 的點裡 L 最小：u = A（L = ' + m + '）');
+    cap('這些距離都還沒確定', '最小的是 A（0），所以 u = A');
+  },
+  async (tok, S) => { S.D.pick('A'); set(S.Sl, 'S = { A }'); S.B.add('把 u = A 放進 S'); cap('把 A 放進 S', 'A 的最短距離確定了'); },
+  async (tok, S) => { S.B.add('接著 update'); cap('接著要 update', ''); },
+  async (tok, S) => { glow(S.gv.vm.B, '#8a6400'); glow(S.gv.vm.C, '#8a6400'); cap('從 A 出發，探索相鄰的點', 'A 的鄰居是 B 和 C'); },
+  async (tok, S) => { paintEdge(EG(S.gv, 'A', 'B'), COL.hot, true); set(S.st, 'A→B：0 + 1 = 1'); cap('經過 A 再走邊 {A,B}', '0 + 1 = 1'); },
+  async (tok, S) => { glow(S.gv.vm.B, null); set(S.st, S.D.relax('A', 'B')); cap('表上原本 B 是 ∞', '新路長度 1，比較短 → 記下 1'); },
+  async (tok, S) => { glow(S.gv.vm.C, null); set(S.st, S.D.relax('A', 'C')); cap('A 還有一條長度 4 的邊到 C', '0 + 4 = 4 → C 改成 4'); },
+  async (tok, S) => { cap('其他點目前還不知道', '保留 ∞'); },
+  async (tok, S) => { S.B.add(DJ_UPD); cap('演算法的這一行', '新路比原本知道的短，就 update'); },
+  async (tok, S) => { S.B.add('B：0 + 1 < ∞ ✓　C：0 + 4 < ∞ ✓', 'say'); cap('剛才做的就是這件事', 'B：0+1 < ∞；C：0+4 < ∞'); },
+  async (tok, S) => { S.D.calm(); S.B.add('其他點和 A 不相鄰 → 這一圈結束'); cap('其他點和 A 不相鄰', '這一圈迴圈結束'); },
+  async (tok, S) => { S.B.add('F 在 S 裡嗎？沒有 → 繼續', 'bad'); cap('檢查：F 在 S 裡嗎？', 'S 只有 A → 繼續做'); },
+]);
+
+scene('g8g-dj-run2', 'Dijkstra 後面幾圈：B、D、C、E、F', [
+  async (tok, S) => {
+    S.gv = drawGraph(DJ, { s: 0.82, ox: 2.4, oz: 0.3 });
+    S.D = djState(DJ, S.gv); S.D.L.A = 0; S.D.pick('A'); S.D.relax('A', 'B'); S.D.relax('A', 'C'); S.D.calm(); S.D.showAll();
+    S.Sl = tag('S = { A }', 'ptr', 2.4, 0.3, 3.2);
+    S.st = tag('', 'ptr alt', -3.4, 0.3, 3.2);
+    S.upS = () => set(S.Sl, 'S = { ' + [...S.D.S].join(', ') + ' }');
+    cap('已經確定的就不抄了', '目前 B = 1、C = 4');
+  },
+  async (tok, S) => { S.D.pick('B'); S.upS(); set(S.st, 'B 1、C 4 → 挑最小的 B'); cap('greedy：挑最短的', 'B（1）確定，放進 S'); },
+  async (tok, S) => { cap('接著 update', '能不能經過 B 走到別的城市？'); },
+  async (tok, S) => { set(S.st, S.D.relax('B', 'D')); cap('B 到 D 長度 3', '1 + 3 = 4 < ∞ → D = 4'); },
+  async (tok, S) => { set(S.st, S.D.relax('B', 'E')); cap('B 到 E 也是 3', '1 + 3 = 4 → E = 4'); },
+  async (tok, S) => { S.D.calm(); set(S.st, '其他照抄：C 4、D 4、E 4、F ∞'); cap('其他的照抄', ''); },
+  async (tok, S) => { S.D.pick('D'); S.upS(); set(S.st, 'C、D、E 都是 4：隨便挑，挑 D'); cap('C、D、E 都是 4', '隨便挑，這次挑 D'); },
+  async (tok, S) => { cap('挑哪一個，最後的距離都一樣', '最短的路可能有好幾條'); },
+  async (tok, S) => { set(S.st, S.D.relax('D', 'F')); cap('D 確定 4；D 往下到 F', '4 + 5 = 9 < ∞ → F = 9'); },
+  async (tok, S) => { set(S.st, S.D.relax('D', 'C')); cap('D 到 C：4 + 10 = 14', '原本 C 已經是 4，14 沒有用'); },
+  async (tok, S) => { S.D.calm(); cap('D 出去的路都看過了', '其他不會改變'); },
+  async (tok, S) => { S.D.pick('C'); S.upS(); set(S.st, '剩下最小：C（4）'); cap('又回到迴圈：剩下最小的', '這次挑 C（4）'); },
+  async (tok, S) => { set(S.st, S.D.relax('C', 'E')); cap('C 連到 E，長度 3', '4 + 3 = 7，E 已經是 4 → 沒用'); },
+  async (tok, S) => { S.D.calm(); S.D.pick('E'); S.upS(); set(S.st, '剩 E 4、F 9 → 挑 E'); cap('剩下 4 和 9', '沒得選：E（4）'); },
+  async (tok, S) => { set(S.st, S.D.relax('E', 'F')); cap('E 確定 4；經過 E 到 F', '4 + 1 = 5 < 9 → F 改成 5'); },
+  async (tok, S) => { S.D.calm(); S.D.pick('F'); S.upS(); set(S.st, 'F（5）確定 → 停'); cap('最後 F 也確定了', ''); },
+  async (tok, S) => {
+    const want = { A: 0, B: 1, C: 4, D: 4, E: 4, F: 5 };
+    const ok = DJ.V.every((v) => S.D.L[v] === want[v]);
+    set(S.st, 'A0 B1 C4 D4 E4 F5 ' + (ok ? '✓' : '✗'));
+    cap('最短距離：A 0、B 1、C 4', 'D 4、E 4、F 5');
+  },
+]);
+
+scene('g8g-dj-back', '回溯：最短路徑怎麼走', [
+  async (tok, S) => {
+    S.gv = drawGraph(DJ, { s: 0.82, ox: 2.4, oz: 0.3 });
+    S.D = djState(DJ, S.gv); S.D.L.A = 0;
+    for (const [u, vs] of [['A', ['B', 'C']], ['B', ['D', 'E']], ['D', ['F', 'C']], ['C', ['E']], ['E', ['F']], ['F', []]]) { S.D.pick(u); vs.forEach((v) => S.D.relax(u, v)); S.D.calm(); }
+    S.D.showAll();
+    S.B = board(-6.9, -3.5);
+    S.B.add('距離知道了，路要怎麼走？');
+    cap('問 A 到 F：路要怎麼走？', '');
+  },
+  async (tok, S) => { glow(S.gv.vm.F, '#8a1010'); S.B.add('往回找：F 為什麼從 9 變成 5？'); cap('往回退', 'F 的答案為什麼從 9 變成 5？'); },
+  async (tok, S) => { paintEdge(EG(S.gv, 'E', 'F'), COL.hot, true); S.B.add('因為確定了 E：4 + 1 = 5 → F 的上一站是 E'); cap('因為知道了 E：4 + 1 = 5', '所以上一站是 E'); },
+  async (tok, S) => { paintEdge(EG(S.gv, 'B', 'E'), COL.hot, true); S.B.add('E 為什麼從 ∞ 變成 4？因為取了 B'); cap('E 為什麼是 4？', '因為確定 B 之後，1 + 3 = 4'); },
+  async (tok, S) => { paintEdge(EG(S.gv, 'A', 'B'), COL.hot, true); S.B.add('B 為什麼是 1？從 A 過來'); cap('B 為什麼是 1？', '從 A 過來'); },
+  async (tok, S) => {
+    const p = S.D.path('F'), L = S.D.pathLen(p);
+    S.B.add('路徑：' + p.join(' → ') + '，長度 ' + L + (L === S.D.L.F ? ' ✓' : ' ✗'), 'good');
+    cap('A → B → E → F 這條路就出來了', '');
+  },
+  async (tok, S) => { S.B.add('兩個資訊：最短距離，和回溯出來的路', 'say'); cap('表格告訴我們兩件事', '最短距離、以及往回找出的路徑'); },
+  async (tok, S) => { calm(S.gv); glow(S.gv.vm.F, null); glow(S.gv.vm.D, '#8a1010'); S.B.add('再一個：D 的最短距離是 4'); cap('再舉一個例子', 'D 的最短距離是 4'); },
+  async (tok, S) => {
+    const p = S.D.path('D'), L = S.D.pathLen(p);
+    p.slice(1).forEach((v, i) => paintEdge(EG(S.gv, p[i], v), COL.hot, true));
+    S.B.add('D ← B ← A：' + p.join(' → ') + '，長度 ' + L + (L === 4 ? ' ✓' : ' ✗'), 'good');
+    cap('D 的上一站是 B，B 的上一站是 A', 'A → B → D');
+  },
+]);
+
+scene('g8g-dj12', 'Dijkstra 再一例：12 個節點', [
+  async (tok, S) => {
+    S.gv = drawGraph(V12, { s: 1, ox: -0.3, oz: 0.2, size: [0.62, 0.4, 0.62] });
+    S.gv.em.forEach((e) => { e.g.visible = false; showL(e.wl, false); });
+    tag('位置示意；邊與權重由老師的計算反推', 'idx', -3.6, 0.3, 3.6);
+    cap('再做一個例子：12 個節點', '');
+  },
+  async (tok, S) => { cap('叫它們 V1、V2、…、V12', ''); },
+  async (tok, S) => { glow(S.gv.vm.V1, '#8a6400'); glow(S.gv.vm.V12, '#8a1010'); cap('從 V1 出發', '找到 V12 的最短路徑'); },
+  async (tok, S) => { for (const e of S.gv.em) { e.g.visible = true; showL(e.wl, true); await wt(tok, 90); } cap('數字隨便填', '1、2、3、4…'); },
+  async (tok, S) => {
+    S.D = djState(V12, S.gv, { dz: 0.62 }); S.D.showAll();
+    S.st = tag('', 'ptr alt', -1.0, 0.3, -3.4);
+    cap('一樣畫一個表 L', '一開始全部 ∞');
+  },
+  async (tok, S) => { glow(S.gv.vm.V1, null); S.D.L.V1 = 0; S.D.show('V1'); cap('V1 是出發點', 'L(V1) = 0'); },
+  async (tok, S) => { S.D.pick('V1'); set(S.st, S.D.relax('V1', 'V2')); cap('第一圈：V1（0）', '到 V2：0 + 1 = 1'); },
+  async (tok, S) => { set(S.st, S.D.relax('V1', 'V4')); cap('到 V4：0 + 3 = 3', '只有這兩個和 V1 相鄰'); },
+  async (tok, S) => { S.D.pick('V2'); set(S.st, '最小的是 V2（1）→ 確定'); cap('一圈做完；最短的是 V2', 'V2 = 1 確定'); },
+  async (tok, S) => { set(S.st, S.D.relax('V2', 'V3')); cap('從 V2 探索：到 V3', '1 + 2 = 3'); },
+  async (tok, S) => { set(S.st, S.D.relax('V2', 'V6')); cap('到 V6：1 + 4 = 5', ''); },
+  async (tok, S) => { S.D.pick('V4'); set(S.st, 'V3、V4 都是 3：挑 V4'); cap('兩個 3，隨便挑', '這次挑後面的 V4'); },
+  async (tok, S) => { set(S.st, S.D.relax('V4', 'V5')); cap('從 V4 出去：到 V5', '3 + 3 = 6'); },
+  async (tok, S) => { S.D.pick('V3'); set(S.st, '最小：V3（3）'); cap('現在最小的是 V3', '確定 3'); },
+  async (tok, S) => { set(S.st, S.D.relax('V3', 'V8')); cap('V3 到 V8', '3 + 3 = 6'); },
+  async (tok, S) => { S.D.pick('V6'); set(S.st, '下一輪最小：V6（5）'); cap('下一輪最小的是 5', 'V6 放進來'); },
+  async (tok, S) => { set(S.st, S.D.relax('V6', 'V5')); cap('V6 到 V5：5 + 1 = 6', '跟原本的 6 一樣，不用改'); },
+  async (tok, S) => { set(S.st, S.D.relax('V6', 'V7')); cap('V6 到 V7：5 + 1 = 6', '原本 ∞ → 6'); },
+  async (tok, S) => { S.D.pick('V7'); set(S.st, 'V5、V7、V8 都是 6：挑 V7'); cap('V5、V7、V8 都是 6', '挑 V7'); },
+  async (tok, S) => { set(S.st, S.D.relax('V7', 'V8')); cap('V7 到 V8：6 + 2 = 8', '沒有比 6 小'); },
+  async (tok, S) => { set(S.st, S.D.relax('V7', 'V10')); cap('V7 到 V10：6 + 3 = 9', ''); },
+  async (tok, S) => { S.D.pick('V8'); S.D.calm(); set(S.st, 'V5、V8 一樣：挑 V8，沒有新鄰居 → 照抄'); cap('V5 和 V8 一樣大，挑 V8', 'V8 的邊都看過了，表格不變'); },
+  async (tok, S) => { S.D.pick('V5'); set(S.st, S.D.relax('V5', 'V9')); cap('接著 V5（6）', '到 V9：6 + 2 = 8'); },
+  async (tok, S) => { S.D.pick('V9'); set(S.st, S.D.relax('V9', 'V10')); cap('8 最小：取 V9', '到 V10：8 + 6 = 14，已經有 9 → 沒用'); },
+  async (tok, S) => { set(S.st, S.D.relax('V9', 'V11')); cap('V9 到 V11：8 + 5 = 13', ''); },
+  async (tok, S) => { S.D.pick('V10'); set(S.st, S.D.relax('V10', 'V12')); cap('抓 V10（9）', '到 V12：9 + 1 = 10'); },
+  async (tok, S) => { S.D.pick('V12'); set(S.st, S.D.relax('V12', 'V11')); cap('最小的是 V12（10）', 'update：到 V11 10 + 1 = 11 < 13'); },
+  async (tok, S) => {
+    S.D.calm(); S.D.pick('V11');
+    const want = { V1: 0, V2: 1, V3: 3, V4: 3, V5: 6, V6: 5, V7: 6, V8: 6, V9: 8, V10: 9, V11: 11, V12: 10 };
+    const ok = V12.V.every((v) => S.D.L[v] === want[v]);
+    set(S.st, '全部確定 ' + (ok ? '✓' : '✗') + '（只找 V12 的話，V12 確定就可以停）');
+    cap('只要 V12 的話，確定 V12 就能停', '要全部的話，再做完最後的 V11');
+  },
+  async (tok, S) => { glow(S.gv.vm.V12, '#8a1010'); paintEdge(EG(S.gv, 'V10', 'V12'), COL.hot, true); set(S.st, 'V12 的 10 從哪來？從 V10'); cap('怎麼走到 V12？往回找', '10 是因為取了 V10'); },
+  async (tok, S) => { paintEdge(EG(S.gv, 'V7', 'V10'), COL.hot, true); set(S.st, 'V10 的 9 從 V7 來'); cap('V10 為什麼是 9？', '因為選了 V7'); },
+  async (tok, S) => { paintEdge(EG(S.gv, 'V6', 'V7'), COL.hot, true); set(S.st, 'V7 的 6 從 V6 來'); cap('V7 為什麼是 6？', '從 V6 過來'); },
+  async (tok, S) => { paintEdge(EG(S.gv, 'V2', 'V6'), COL.hot, true); paintEdge(EG(S.gv, 'V1', 'V2'), COL.hot, true); set(S.st, 'V6 的 5 從 V2 來；V2 的 1 從 V1 來'); cap('V6 從 V2 來', 'V2 從 V1 來'); },
+  async (tok, S) => {
+    const p = S.D.path('V12'), L = S.D.pathLen(p);
+    set(S.st, p.join(' → ') + '：1+4+1+3+1 = ' + L + (L === 10 ? ' ✓' : ' ✗'));
+    cap('最短路徑：V1 → V2 → V6 → V7 → V10 → V12', '');
+  },
+  async (tok, S) => { cap('兩個資訊：最短距離、最短路徑', '最短路徑可能不只一條，演算法只告訴你一條'); },
+]);
+
+// Euler：老師黑板上的圖看不到，以下圖形都是示意（度數照老師唸的）
+const HOUSE = parseG({ a: [-1.4, 0.6], b: [1.4, 0.6], c: [1.4, 2.6], d: [-1.4, 2.6], e: [0, -1.4] }, 'a-b b-c c-d d-a a-e e-b');
+const SQ = parseG({ a: [-1.2, -1.2], b: [1.2, -1.2], c: [1.2, 1.2], d: [-1.2, 1.2] }, 'a-b b-c c-d d-a');
+const DEG13 = parseG({ p: [-2.2, 0], q: [-0.4, 0], r: [0.8, -1.6], s: [2.4, 0], t: [0.8, 1.6] }, 'p-q q-r r-s s-t t-q');
+scene('g8g-euler', '一筆畫：Euler path 與 Euler circuit', [
+  async (tok, S) => {
+    S.t = tag('一筆畫', 'note', 0, 0.3, -3.6);
+    S.g1 = drawGraph(SQ, { s: 0.85, ox: -4.4, oz: 0.2 }); S.g2 = drawGraph(HOUSE, { s: 0.8, ox: 0, oz: -0.2 }); S.g3 = drawGraph(K4X, { s: 0.45, ox: 4.4, oz: 0.2 });
+    tag('示意', 'idx', 5.8, 0.3, -2.4);
+    cap('一筆畫：小時候玩過的', '');
+  },
+  async (tok, S) => { set(S.t, '筆不離紙，每個「邊」恰好畫一次'); cap('筆不要拿起來', '每一條邊都畫過一次，不能畫第二次'); },
+  async (tok, S) => { set(S.t, 'Euler 問題（一筆畫問題）'); cap('這叫 Euler 的問題', ''); },
+  async (tok, S) => {
+    const seq = ['a', 'b', 'c', 'd', 'a']; S.w = ball(S.g1.pos('a'));
+    await walk(tok, S.w, S.g1, seq, 380, COL.vis);
+    tag('回到起點：Euler circuit ' + (eulerOK(SQ, seq) ? '✓' : '✗'), 'good', -4.4, 0.3, 2.3);
+    cap('從這點出發，最後回到同一點', '叫 Euler circuit（或 cycle）');
+  },
+  async (tok, S) => {
+    kill(S.w); const seq = ['a', 'e', 'b', 'a', 'd', 'c', 'b']; S.w = ball(S.g2.pos('a'));
+    await walk(tok, S.w, S.g2, seq, 300, COL.blue);
+    tag('起點 ≠ 終點：Euler path ' + (eulerOK(HOUSE, seq) ? '✓' : '✗'), 'ptr alt', 0, 0.3, 3.0);
+    cap('這個起點和終點不一樣', '叫 Euler path');
+  },
+  async (tok, S) => {
+    kill(S.w);
+    tag('怎麼畫都畫不完 ✗', 'bad', 4.4, 0.3, 1.8);
+    cap('這個怎麼試都沒有一筆畫', '');
+  },
+  async (tok, S) => {
+    lab.clear();
+    S.gv = drawGraph(DEG13, { s: 1.1, ox: 0.6, oz: 0.3 });
+    S.w = ball(S.gv.pos('r'));
+    await walk(tok, S.w, S.gv, ['r', 'q', 't'], 500, COL.blue);
+    S.t = tag('走進一個點，就一定要走出去', 'note', 0, 0.3, -3.4);
+    cap('簡單的觀察', '走進一個點，如果還有邊，就一定要走出去');
+  },
+  async (tok, S) => { glow(S.gv.vm.q, '#8a6400'); set(S.t, '一進一出：除了起點和終點'); cap('一進一出', '只有起點、終點可以只出不進、只進不出'); },
+  async (tok, S) => { set(S.t, '中間的點：進出成對 → 連線數（degree）是偶數'); cap('中間經過的點都是一進一出', '所以它的連線數一定是偶數'); },
+  async (tok, S) => { set(S.t, '起點、終點：可以（而且必須）是奇數'); cap('起點出去就不回來、終點進來就不出去', '這兩個可以是奇數'); },
+  async (tok, S) => { set(S.t, '起點 = 終點（circuit）：那一點也一進一出 → 偶數'); cap('如果同一點出發、同一點結束', '那一點也成對 → 偶數'); },
+  async (tok, S) => { S.r1 = tag('Euler path：中間都偶數，頭尾是奇數', 'good', 0, 0.3, 2.9); cap('結論：Euler path', '中間的點偶數、頭尾兩點奇數'); },
+  async (tok, S) => { S.r2 = tag('Euler circuit：所有點都是偶數', 'good', 0, 0.3, 3.5); cap('Euler circuit', '所有點的連線數都是偶數'); },
+  async (tok, S) => { set(S.t, '反過來也成立（可以證明）'); cap('反過來也對', '度數符合，就一定有 Euler path／circuit'); },
+  async (tok, S) => { kill(S.w); kill(S.r1); kill(S.r2); glow(S.gv.vm.q, null); calm(S.gv); S.dt = degTags(S.gv); set(S.t, '連線數：1（奇）、3（奇）、2、2、2'); cap('例：這個 1 是奇數、這個 3 是奇數', '其他都是 2，偶數'); },
+  async (tok, S) => {
+    const seq = ['p', 'q', 'r', 's', 't', 'q']; S.w = ball(S.gv.pos('p'));
+    await walk(tok, S.w, S.gv, seq, 350, COL.vis);
+    set(S.t, '兩個奇數點 → 有 Euler path，頭尾就是它們 ' + (eulerOK(DEG13, seq) ? '✓' : '✗'));
+    cap('兩個奇數、其他偶數', '一定有 Euler path，頭尾就是那兩個奇數點');
+  },
+  async (tok, S) => { set(S.t, '不從奇數點開始、結束，就找不到'); cap('如果不是從奇數點開始', '就找不到這條路'); },
+]);
+
+const STAR = parseG({ o: [0, 0], x: [0, -1.8], y: [-1.6, 1.0], z: [1.6, 1.0] }, 'o-x o-y o-z');
+const TRI1 = parseG({ x: [-1.2, -1.0], y: [1.2, -1.0], z: [0, 1.0], t: [0, 2.6] }, 'x-y y-z z-x z-t');
+scene('g8g-euler-deg', '數連線數就能判斷', [
+  async (tok, S) => {
+    S.gv = drawGraph(STAR, { s: 1, ox: -3.4, oz: 0 }); S.dt = degTags(S.gv);
+    tag('示意', 'idx', -1.2, 0.3, -2.6);
+    const odd = Object.values(degs(STAR)).filter((d) => d % 2).length;
+    S.r = tag('奇數點 ' + odd + ' 個 → 沒有 Euler path／circuit ✗', 'bad', -3.4, 0.3, 2.6);
+    cap('這個：連線數 1、1、1 都是奇數', '不用找了，一定找不到');
+  },
+  async (tok, S) => { tag('奇數點只能有 0 個（circuit）或 2 個（path）', 'note', 0, 0.3, -3.5); cap('奇數點的個數不是 0 或 2', '就絕對沒有'); },
+  async (tok, S) => {
+    S.g2 = drawGraph(TRI1, { s: 1, ox: 3.0, oz: -0.4 }); degTags(S.g2);
+    const seq = ['t', 'z', 'x', 'y', 'z']; S.w = ball(S.g2.pos('t'));
+    await walk(tok, S.w, S.g2, seq, 350, COL.vis);
+    tag('兩個奇數點 → Euler path ' + (eulerOK(TRI1, seq) ? '✓' : '✗'), 'good', 3.0, 0.3, 2.9);
+    cap('這個：2、2、3、1', '兩個奇數、其他偶數 → 有 Euler path');
+  },
+]);
+
+const HZ = parseG({ A: [-4.2, 0], x: [-1.6, 0], B: [1.6, 0], y: [-2.8, -2.2], z: [-0.4, -2.2], u: [0.4, 2.2], w: [2.8, 2.2] }, 'A-x x-B x-y y-z z-x B-u u-w w-B');
+scene('g8g-euler-alg', '怎麼找 Euler path：先走一段、再兜圈接上', [
+  async (tok, S) => {
+    S.gv = drawGraph(HZ, { s: 1, ox: 1.2, oz: 0.2 }); S.dt = degTags(S.gv);
+    tag('示意', 'idx', 4.6, 0.3, -2.8);
+    S.t = tag('A、B 是奇數點 → 一定從 A 開始、B 結束', 'note', -1.0, 0.3, -3.5);
+    cap('怎麼找？用漸進的方法', '一定是從一個奇數點開始、另一個結束');
+  },
+  async (tok, S) => {
+    S.w = ball(S.gv.pos('A'));
+    await walk(tok, S.w, S.gv, ['A', 'x', 'B'], 500, COL.blue);
+    set(S.t, '第一步：隨便找一條 A 到 B 的路：A → x → B');
+    cap('先從 A 隨便找一條路到 B', '');
+  },
+  async (tok, S) => {
+    for (const [u, v] of [['A', 'x'], ['x', 'B']]) EG(S.gv, u, v).g.visible = false;
+    set(S.t, '走過的邊不能再走 → 擦掉');
+    cap('走過的路不能再走', '把它擦掉');
+  },
+  async (tok, S) => {
+    S.dt && Object.values(S.dt).forEach((l) => kill(l));
+    const rest = HZ.E.filter((e) => !((e.u === 'A' && e.v === 'x') || (e.u === 'x' && e.v === 'B')));
+    const d = Object.fromEntries(HZ.V.map((v) => [v, 0])); rest.forEach((e) => { d[e.u]++; d[e.v]++; });
+    HZ.V.forEach((v) => { const p = S.gv.pos(v); tag('剩 ' + d[v], d[v] % 2 ? 'bad' : 'ptr alt', p.x + 0.55, p.y + 0.6, p.z - 0.45); });
+    set(S.t, '剩餘圖（residual graph）：每個點的連線數都是偶數 ' + (Object.values(d).every((x) => x % 2 === 0) ? '✓' : '✗'));
+    cap('剩下的圖叫 residual graph', '每個點剩下的連線數都是偶數');
+  },
+  async (tok, S) => { set(S.t, '所以剩下的部分可以繞圈：從走過的點出發、繞回來'); cap('剩下的部分可以形成 Euler circuit', '從剛才經過的點出發，繞一圈回來'); },
+  async (tok, S) => {
+    S.w.position.copy(S.gv.pos('x')); S.w.position.y = 0.85;
+    await walk(tok, S.w, S.gv, ['x', 'y', 'z', 'x'], 400, COL.orange);
+    set(S.t, '在 x「兜風」一圈再接回原路：A → x → y → z → x → B');
+    cap('到 x 先別急著去 B', '出去兜一圈回到 x，再接回原來的路');
+  },
+  async (tok, S) => {
+    S.w.position.copy(S.gv.pos('B')); S.w.position.y = 0.85;
+    await walk(tok, S.w, S.gv, ['B', 'u', 'w', 'B'], 400, COL.purple);
+    set(S.t, '剩下的再從走過的點 B 兜一圈接上');
+    cap('剩下的一樣', '從走過的點再去兜一圈，接上');
+  },
+  async (tok, S) => {
+    for (const [u, v] of [['A', 'x'], ['x', 'B']]) EG(S.gv, u, v).g.visible = true;
+    const seq = ['A', 'x', 'y', 'z', 'x', 'B', 'u', 'w', 'B'];
+    seq.slice(1).forEach((v, i) => paintEdge(EG(S.gv, seq[i], v), COL.vis, true));
+    set(S.t, seq.join('→') + '：8 條邊各一次 ' + (eulerOK(HZ, seq) ? '✓' : '✗'));
+    cap('接起來就是一條 Euler path', '');
+  },
+  async (tok, S) => { tag('path：奇數點走到奇數點，再從經過的點兜圈接上', 'good', -1.0, 0.3, 3.3); cap('演算法：先從奇數點走到奇數點', '再從經過的點兜圈接上，直到所有邊都走過'); },
+  async (tok, S) => { tag('circuit：隨便一點先繞一圈回自己，再慢慢接', 'good', -1.0, 0.3, 3.9); cap('Euler circuit 也一樣', '隨便一點先繞一圈回來，再慢慢把圈接上'); },
+]);
+
+const KBG = parseG({ C: [0, -2.4], A: [-1.2, 0], B: [0, 2.4], D: [2.6, 0] }, 'A-C A-C A-B A-B A-D C-D B-D');
+scene('g8g-konig', 'Königsberg 七橋：四個奇數點', [
+  async (tok, S) => {
+    S.t = tag('一筆畫：走過所有的邊', 'note', 0, 0.3, -3.6);
+    cap('一筆畫要走過所有的邊', '這個問題來自 Euler 住的小城');
+  },
+  async (tok, S) => { S.water = lab.box('#9fd3f0', [9, 0.04, 1.0]); S.water.position.set(0, 0.0, 0.2); lab.world.add(S.water); set(S.t, '一條河、七座橋（示意）'); cap('城裡有一條河、七座橋', ''); },
+  async (tok, S) => { set(S.t, '每天散步：從家出發，七座橋都走過，再回家？'); cap('能不能從家裡出去，七座橋都走過一次', '再繞回家？'); },
+  async (tok, S) => {
+    kill(S.water);
+    S.gv = drawGraph(KBG, { s: 1.1, ox: -0.6, oz: 0.2, par: 0.6 });
+    set(S.t, '區域 → 節點 C、A、B、D；橋 → 邊');
+    cap('把區域當節點：C、A、B、D', '橋就是邊');
+  },
+  async (tok, S) => {
+    S.dt = degTags(S.gv);
+    const d = degs(KBG), odd = Object.values(d).filter((x) => x % 2).length;
+    set(S.t, '連線數 C ' + d.C + '、A ' + d.A + '、B ' + d.B + '、D ' + d.D + '：' + odd + ' 個奇數點');
+    cap('數連線數：3、5、3、3', '全部都是奇數，四個');
+  },
+  async (tok, S) => { tag('奇數點 4 個 → Euler path、circuit 都沒有 ✗', 'bad', 0, 0.3, 3.4); cap('所以 Euler path 和 Euler circuit', '都不存在'); },
+]);
+
+const GRID6 = parseG({ p: [-2.4, -1.2], q: [0, -1.2], r: [2.4, -1.2], s: [-2.4, 1.2], t: [0, 1.2], u: [2.4, 1.2] }, 'p-q q-r p-s q-t r-u s-t t-u');
+scene('g8g-ham', 'Hamilton path 與 Hamilton circuit', [
+  async (tok, S) => { S.t = tag('Hamilton path', 'note', 0, 0.3, -3.4); cap('另外一個類似的名詞', 'Hamilton path'); },
+  async (tok, S) => { set(S.t, '像 traveling salesman：推銷員挨家挨戶敲門'); cap('跟之後的 traveling salesman 很像', '推銷員要挨家挨戶去敲門'); },
+  async (tok, S) => {
+    S.gv = drawGraph(GRID6, { s: 1.1, ox: 0, oz: 0.3 });
+    tag('街道圖（示意）', 'idx', 3.6, 0.3, -2.0);
+    set(S.t, '每一家都走過一次，不能重複');
+    cap('這是街道圖', '每一家都要去，而且不能重複');
+  },
+  async (tok, S) => {
+    const seq = ['p', 'q', 'r', 'u', 't', 's'];
+    S.w = ball(S.gv.pos('p'));
+    await walk(tok, S.w, S.gv, seq, 350, COL.blue);
+    const ok = new Set(seq).size === GRID6.V.length && seq.length === GRID6.V.length;
+    seq.forEach((v) => vcol(S.gv, v, COL.vis));
+    set(S.t, '每個「節點」恰好經過一次：Hamilton path ' + (ok ? '✓' : '✗'));
+    cap('一筆畫把每一個「節點」走過一遍', '走過就不能再回來');
+  },
+  async (tok, S) => { tag('比 Euler 難很多：NP 類的難題', 'bad', 0, 0.3, 3.0); cap('這比 Euler 的問題難很多', '是 NP 類的問題，電腦也不太會算'); },
+  async (tok, S) => { cap('不管怎樣：每個節點只能經過一次', '問的是這樣的路存不存在'); },
+  async (tok, S) => {
+    await walk(tok, S.w, S.gv, ['s', 'p'], 450, COL.orange);
+    set(S.t, '頭尾相連（回到起點）：Hamilton circuit ✓');
+    cap('如果要求頭尾相連', '從這邊出去、從這邊回來 → Hamilton circuit');
+  },
+  async (tok, S) => { tag('老師：Hamilton 是難題，考試不考；Euler 可能考', 'say', 0, 0.3, 3.6); cap('時間不多，這是難的問題', '考試不考它；Euler 比較好懂，可能會考'); },
+]);
+
+const CONN = parseG({ a: [-2.2, -1.4], b: [0, -2.0], c: [2.2, -1.2], d: [2.0, 1.4], e: [-0.2, 1.8], f: [-2.4, 1.2] }, 'a-b b-c c-d d-e e-f f-a b-e');
+scene('g8g-conn', '連通圖與 component', [
+  async (tok, S) => { S.B = board(-6.9, -3.5); S.B.add('9.4：路徑頭尾相連 → circuit'); cap('9.4：路徑之前講過', '頭尾相連的路徑叫 circuit'); },
+  async (tok, S) => { S.B.add('有向圖：沿著箭頭方向走，不能逆向', 'say'); cap('有向圖的路徑', '要順著方向走，不能逆向行駛'); },
+  async (tok, S) => { S.B.add('連通圖：用路網來想'); cap('很重要的名詞：連通圖', '用剛才的路網來想'); },
+  async (tok, S) => {
+    S.T = parseG({ A: [-1.6, -1], B: [1.6, -1], C: [0, 1.6] }, 'A-B B-C C-A');
+    S.gv = drawGraph(S.T, { s: 1, ox: 2.6, oz: 0.2 });
+    S.B.add('A 能走到 B（經過幾段都可以）→ A、B 連在一起');
+    cap('從 A 城市可以走到 B 城市', '不管經過幾個路段，就說 A、B 連在一起');
+  },
+  async (tok, S) => { S.B.add('任兩點之間都有路徑 → 連通圖（connected）'); cap('如果任兩個節點之間都有路徑', '這張圖就是連通圖'); },
+  async (tok, S) => {
+    const E = S.T.E.map((e) => [e.u, e.v]);
+    S.ck = tag('連通 ' + (components(S.T.V, E) === 1 ? '✓' : '✗'), 'good', 2.6, 0.3, 2.6);
+    cap('這張是不是連通圖？是', 'A 到 B、B 到 C… 兩兩都連得到');
+  },
+  async (tok, S) => {
+    EG(S.gv, 'A', 'B').g.visible = false;
+    const E = S.T.E.filter((e) => !(e.u === 'A' && e.v === 'B')).map((e) => [e.u, e.v]);
+    set(S.ck, '擦掉 {A,B}：A→C→B 還走得到，連通 ' + (components(S.T.V, E) === 1 ? '✓' : '✗'));
+    cap('擦掉一條邊', '還是連通：A 經過 C 到 B');
+  },
+  async (tok, S) => {
+    EG(S.gv, 'B', 'C').g.visible = false;
+    const E = [['C', 'A']];
+    const n = components(S.T.V, E);
+    set(S.ck, '再擦 {B,C}：A 走不到 B → 不連通（' + n + ' 塊）');
+    setc(S.ck, 'bad');
+    cap('再擦一條', 'A 沒辦法走到 B → 不是連通圖');
+  },
+  async (tok, S) => {
+    lab.clear(); S.B = board(-6.9, -3.5);
+    S.gv = drawGraph(CONN, { s: 1, ox: 2.4, oz: 0.2 });
+    S.E = CONN.E.map((e) => [e.u, e.v]);
+    S.ck = tag('連通 ✓', 'good', 2.4, 0.3, 3.0);
+    await wt(tok, 600);
+    for (const [u, v] of [['a', 'b'], ['f', 'a']]) EG(S.gv, u, v).g.visible = false;
+    S.E = S.E.filter(([u, v]) => !((u === 'a' && v === 'b') || (u === 'f' && v === 'a')));
+    set(S.ck, '擦掉 a 的兩條邊：a 孤立 → ' + components(CONN.V, S.E) + ' 個 component');
+    setc(S.ck, 'bad');
+    cap('點多一點也一樣', '擦掉這裡，a 跟大家都不相連 → 不連通（示意）');
+  },
+  async (tok, S) => {
+    for (const [u, v] of [['a', 'b'], ['f', 'a']]) EG(S.gv, u, v).g.visible = true;
+    for (const [u, v] of [['b', 'c'], ['d', 'e']]) EG(S.gv, u, v).g.visible = false;
+    S.E = CONN.E.map((e) => [e.u, e.v]).filter(([u, v]) => !((u === 'b' && v === 'c') || (u === 'd' && v === 'e')));
+    set(S.ck, '改擦 {b,c}、{d,e}：左右兩邊走不到 → ' + components(CONN.V, S.E) + ' 個 component');
+    cap('或擦掉這兩條', '這邊的點走不到那邊 → 也不是連通圖');
+  },
+  async (tok, S) => {
+    const left = reach(CONN.V, S.E, 'a');
+    CONN.V.forEach((v) => vcol(S.gv, v, left.has(v) ? COMP[0] : COMP[1]));
+    S.B.add('連在一起的一塊 → 叫 component');
+    cap('連在一起的部分', '叫做一個 component');
+  },
+  async (tok, S) => { S.B.add('不連通的圖 = 兩個以上的 component（這裡 ' + components(CONN.V, S.E) + ' 個 ✓）', 'good'); cap('不連通的圖', '會分成兩個以上的 component'); },
+]);
+
+const DIR5 = parseG({ A: [-3, -1], C: [-0.6, -2.2], D: [1.6, -0.4], B: [-0.6, 1.4], E: [3.4, 1.6] }, 'A>B A>C C>D D>B D>E');
+scene('g8g-strong', '有向圖：強連通與弱連通', [
+  async (tok, S) => {
+    S.gv = drawGraph(DIR5, { s: 1, ox: 2.0, oz: 0.2 });
+    S.B = board(-6.9, -3.5);
+    tag('示意', 'idx', 5.4, 0.3, -2.6);
+    S.B.add('有向圖比較麻煩：路徑附帶方向');
+    cap('比較麻煩的是有向圖', '路徑除了邊，還有方向');
+  },
+  async (tok, S) => {
+    const p = ['A', 'C', 'D', 'B']; p.slice(1).forEach((v, i) => paintEdge(EG(S.gv, p[i], v), COL.blue, true));
+    S.B.add('要順著箭頭：A → C → D → B 是一條路徑');
+    cap('A 要到 B：可以 A → B', '也可以 A → C → D → B');
+  },
+  async (tok, S) => {
+    calm(S.gv);
+    const r = reach(DIR5.V, DIR5.E.map((e) => [e.u, e.v]), 'E', true);
+    S.B.add('E 走不到 B：沒有這條路 ' + (r.has('B') ? '✗' : '✓'), 'bad');
+    cap('但不能說 E 可以走到 B', '圖上沒有這樣的路');
+  },
+  async (tok, S) => { S.B.add('連通要怎麼定義？兩種'); cap('有方向時，連通怎麼定義？', '分成兩種'); },
+  async (tok, S) => { S.B.add('強連通（strongly connected）：A→B、B→A 都要走得通'); cap('強連通', 'A 到 B 走得通，B 到 A 也要走得通'); },
+  async (tok, S) => {
+    const E = DIR5.E.map((e) => [e.u, e.v]);
+    const ab = reach(DIR5.V, E, 'A', true).has('B'), ba = reach(DIR5.V, E, 'B', true).has('A');
+    glow(S.gv.vm.B, '#8a1010');
+    S.B.add('A 到 B：' + (ab ? '可以 ✓' : '不行') + '　B 到 A：' + (ba ? '可以' : '不行 ✗（B 只進不出）'));
+    cap('A 可以到 B', '但 B 只進不出，走不回 A → 不是強連通');
+  },
+  async (tok, S) => {
+    const E = DIR5.E.map((e) => [e.u, e.v]);
+    const strong = DIR5.V.every((v) => reach(DIR5.V, E, v, true).size === DIR5.V.length);
+    S.B.add('強連通：任兩點去得了也回得來 → 這張 ' + (strong ? '是' : '不是 ✓'));
+    cap('強連通：任兩點之間', '去得了、也回得來');
+  },
+  async (tok, S) => {
+    glow(S.gv.vm.B, null);
+    const E = DIR5.E.map((e) => [e.u, e.v]);
+    const weak = components(DIR5.V, E) === 1;
+    S.B.add('弱連通：拿掉方向變無向圖，連在一起 → 這張' + (weak ? '是 ✓' : '不是'), 'good');
+    cap('弱連通：把方向拿掉，當成無向圖', '如果連在一起，就叫 weakly connected');
+  },
+]);
+  }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
 

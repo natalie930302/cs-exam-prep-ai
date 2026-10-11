@@ -381,7 +381,7 @@
   "label": "Spanning Tree：Discrete Mathematics",
   "points": 43,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "7a28lIQIHJQ": {
   "label": "交大江蕙如 Lec01 課程介紹",
@@ -985,9 +985,9 @@
  },
  "Erea1QASjXY": {
   "label": "Discrete Math II - 10.8.1 Graph Coloring",
-  "points": 26,
+  "points": 27,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "ETPHC9DffdU": {
   "label": "清大周志遠 第8B講 Processes Concept",
@@ -1791,6 +1791,12 @@
   "label": "清大周志遠 第14B講 Page Replacement",
   "points": 26,
   "quiz": 5,
+  "cued": true
+ },
+ "P2FRYshQ57s": {
+  "label": "交大OCW 易志偉《離散數學》Lec24 Graphs (3/3)",
+  "points": 58,
+  "quiz": 7,
   "cued": true
  },
  "p7C-ObHrCP8": {
