@@ -3486,5 +3486,391 @@
   "zh": "編譯器",
   "what": "把高階語言（如 C）整個翻成機器碼的程式。",
   "subj": "ca"
+ },
+ "graph": {
+  "en": "graph（圖）",
+  "what": "由一群頂點（vertex / node）和連接它們的邊（edge）組成的結構，記作 G = (V, E)。邊可以有方向（有向圖）或沒有方向（無向圖），也可以帶權重。",
+  "like": "捷運路線圖：車站是頂點，兩站之間的軌道是邊。"
+ },
+ "tree": {
+  "en": "tree（樹）",
+  "what": "一種特別的無向圖：連通、而且沒有環。n 個頂點的樹剛好有 n − 1 條邊，任兩個頂點之間只有一條路。",
+  "like": "家族族譜：從祖先一路往下分支，不會繞回原處。"
+ },
+ "distance": {
+  "en": "distance（距離）",
+  "what": "圖上從頂點 u 走到頂點 v 的最短路徑長度；沒有權重時就是最少要走幾條邊。BFS 一層一層往外走，第 k 層的頂點距離起點剛好是 k。",
+  "like": "從家到同學家最少要轉幾次車。"
+ },
+ "pixel": {
+  "en": "pixel（像素）",
+  "what": "數位圖片上最小的一個色點。整張圖片是由一格一格 pixel 排成的方陣，每格的顏色通常用 R、G、B 三個數值表示。",
+  "like": "馬賽克拼貼裡的一小塊磁磚。",
+  "basic": true
+ },
+ "R-format": {
+  "en": "R-format（暫存器格式）",
+  "what": "MIPS 指令格式之一，給運算元全在暫存器裡的指令（如 add、sub、and、sll）。32 個 bit 分成 op(6)、rs(5)、rt(5)、rd(5)、shamt(5)、funct(6)；op 都是 0，靠 funct 分辨是哪個運算。",
+  "like": "一張固定欄位的表單：兩個來源、一個目的地，再勾選要做哪種運算。"
+ },
+ "I-format": {
+  "en": "I-format（立即值格式）",
+  "what": "MIPS 指令格式之一，給需要一個常數的指令（addi、lw、sw、beq、bne 等）。32 個 bit 分成 op(6)、rs(5)、rt(5)、immediate(16)，16 bit 的常數直接寫在指令裡。",
+  "like": "表單上留了一格可以直接填數字，不必另外去查。"
+ },
+ "J-format": {
+  "en": "J-format（跳躍格式）",
+  "what": "MIPS 指令格式之一，給 j 和 jal 用。32 個 bit 分成 op(6) 和 address(26)，26 bit 盡量留給跳躍目標位址。",
+  "like": "一張只寫「目的地」的車票，其他欄位都省了。"
+ },
+ "beq": {
+  "en": "branch if equal",
+  "what": "MIPS 條件分支指令：beq rs, rt, L —— 如果兩個暫存器的值相等，就跳到標籤 L；不相等就照順序執行下一行。屬於 I-format，目標用 PC-relative 算出。",
+  "like": "「如果兩張票號碼一樣，就走左邊通道」。"
+ },
+ "bne": {
+  "en": "branch if not equal",
+  "what": "MIPS 條件分支指令：bne rs, rt, L —— 兩個暫存器的值不相等才跳到 L，相等就繼續往下。常拿來實作 if 和迴圈。",
+  "like": "「答案不對就回去重做，對了就往下一題」。"
+ },
+ "label": {
+  "en": "label（標籤）",
+  "what": "組合語言裡替某一行指令取的名字（如 L1、Loop、Exit），讓分支或跳躍指令可以寫「跳到 L1」。組譯器會把它換成真正的位址或位移數字。",
+  "like": "書裡夾的便利貼：寫「看這頁」，比記頁碼方便。"
+ },
+ "PC-relative addressing": {
+  "en": "PC-relative addressing（相對於 PC 定址）",
+  "what": "beq/bne 用的定址方式：目標位址 = (PC + 4) + 位移量 × 4。位移量是 16 bit 有號數，以 word 為單位，所以能往前或往後跳約 ±2^15 個指令。",
+  "like": "「從你現在的位置再往前走 3 間」，而不是說完整門牌。"
+ },
+ "pseudodirect addressing": {
+  "en": "pseudodirect addressing（虛擬直接定址）",
+  "what": "j 和 jal 用的定址方式：把指令裡 26 bit 的位址左移 2 位，前面再接上 PC（PC+4）最高 4 個 bit，拼成 32 bit 的目標位址。只能跳到同一個 256 MB 區塊內。",
+  "like": "同一棟大樓裡只講樓層和房號，大樓名稱沿用現在這棟。"
+ },
+ "jr": {
+  "en": "jump register",
+  "what": "MIPS 指令 jr rs：跳到暫存器 rs 裡存的位址。最常見的是 jr $ra，讓函式結束時回到呼叫它的地方；也用來實作 switch 的跳躍表。",
+  "like": "照著紙條上寫的地址回去。"
+ },
+ "addressing mode": {
+  "en": "addressing mode（定址模式）",
+  "what": "指令找到運算元或跳躍目標的方式。MIPS 有五種：立即值、暫存器、基底（base + offset，lw/sw 用）、PC-relative（分支用）、pseudodirect（j 用）。",
+  "like": "找人的不同方法：直接給人、說在哪個房間、說從這裡往前幾間、或給完整地址。"
+ },
+ "bit": {
+  "en": "bit（位元）",
+  "what": "電腦裡最小的資料單位，只能是 0 或 1。8 個 bit 組成 1 個 byte。",
+  "like": "一個電燈開關：不是開就是關。",
+  "basic": true
+ },
+ "動態規劃": {
+  "en": "dynamic programming (DP)",
+  "what": "把問題拆成許多會重複出現的子問題，每個子問題只算一次並把答案記在表格裡，再用小問題的答案組出大問題的答案。適用於有最佳子結構和重疊子問題的題目。",
+  "like": "爬樓梯時在每一階記下「到這裡有幾種走法」，往上算時直接查，不必從頭數。"
+ },
+ "貪婪法": {
+  "en": "greedy method",
+  "what": "每一步都挑「眼前看起來最好」的選擇，選了就不反悔。只有在問題具備貪婪選擇性質時才保證得到最佳解，例如 Kruskal、Prim、Dijkstra。",
+  "like": "找零錢時每次都先拿面額最大的硬幣。"
+ },
+ "最小生成樹": {
+  "en": "minimum spanning tree (MST)",
+  "what": "在連通、有權重的無向圖中，選出一些邊把所有頂點連起來且不形成環（成為一棵樹），並讓邊的權重總和最小。常用 Kruskal 或 Prim 演算法求。",
+  "like": "幫幾個村莊拉電線：每個村莊都要通電，總電線長度要最省。"
+ },
+ "最短路徑": {
+  "en": "shortest path",
+  "what": "在有權重的圖上，從起點到終點所有路徑中權重總和最小的那一條。單一起點常用 Dijkstra（邊權非負）或 Bellman-Ford（可有負邊）。",
+  "like": "導航 App 幫你找花最少時間到目的地的路線。"
+ },
+ "遞迴關係": {
+  "en": "recurrence relation",
+  "what": "用較小輸入的答案來定義較大輸入答案的式子，例如 F(n) = F(n−1) + F(n−2)。DP 的核心就是先寫出遞迴關係。",
+  "like": "「今天存款 = 昨天存款 + 今天存入」，每天都靠前一天算出來。"
+ },
+ "重疊子問題": {
+  "en": "overlapping subproblems",
+  "what": "遞迴拆解時，同一個子問題會被重複遇到很多次。這是 DP 有效的條件之一：把算過的答案存起來，就不用重算。",
+  "like": "好幾份作業都要用到同一個公式，抄在小抄上，不必每次重新推導。"
+ },
+ "tabulation": {
+  "en": "tabulation（由下而上填表）",
+  "what": "DP 的一種寫法：從最小的子問題開始，用迴圈依序把表格填滿，最後一格就是答案。和「記憶化遞迴」（top-down memoization）相對。",
+  "like": "蓋房子從地基往上一層一層蓋。"
+ },
+ "多段圖": {
+  "en": "multistage graph",
+  "what": "一種有向圖：頂點被分成 k 個階段（stage），每條邊都只從某一階段指向下一階段。題目通常求從第一階段的起點到最後階段的終點的最低成本路徑，用 DP 解。",
+  "like": "轉機旅行：每一段只能從這一站飛到下一站，要挑總票價最便宜的組合。"
+ },
+ "有向圖": {
+  "en": "directed graph (digraph)",
+  "what": "每條邊都有方向的圖，邊 (u, v) 表示只能從 u 走到 v，不一定能反過來走。",
+  "like": "單行道組成的路網。"
+ },
+ "graph search": {
+  "en": "graph search（圖的搜尋 / 走訪）",
+  "what": "按某種規則有系統地拜訪圖中的頂點，每個頂點只拜訪一次。最基本的兩種是 BFS（一層一層往外）和 DFS（一路走到底再回頭）。",
+  "like": "在一棟陌生大樓裡有計畫地逛完每個房間，不重複也不漏掉。"
+ },
+ "edge classification": {
+  "en": "edge classification（邊的分類）",
+  "what": "DFS 走完後，把圖上的邊分成四類：tree edge（DFS 樹上的邊）、back edge（指回祖先）、forward edge（指向非子節點的後代）、cross edge（其他）。有 back edge 就代表圖中有環。",
+  "like": "整理家族關係：親子、往回連到祖先、跳代連到孫輩、旁支親戚。"
+ },
+ "process": {
+  "en": "process（行程 / 程序）",
+  "what": "正在執行中的程式。除了程式碼，還包含自己的記憶體空間、暫存器內容、程式計數器和狀態（new、ready、running、waiting、terminated），由 OS 管理。",
+  "like": "食譜是程式；廚師正照著食譜做菜的這件事，才是 process。"
+ },
+ "degree of multiprogramming": {
+  "en": "degree of multiprogramming（多工程度）",
+  "what": "記憶體中同時存在的 process 數量。由 long-term scheduler 控制；太低 CPU 會閒著，太高則可能記憶體不夠而發生 thrashing。",
+  "like": "一間廚房同時開幾道菜：太少廚師閒著，太多廚房擠爆。"
+ },
+ "slt": {
+  "en": "set on less than",
+  "what": "MIPS 指令 slt rd, rs, rt：如果 rs < rt（當成有號數比較），就把 rd 設成 1，否則設成 0。常和 beq/bne 搭配做出「小於就跳」。無號版是 sltu。",
+  "like": "裁判比較兩人身高，左邊比較矮就舉 1 號牌，不然舉 0 號牌。"
+ },
+ "$sp": {
+  "en": "stack pointer register",
+  "what": "MIPS 的 29 號暫存器，存目前 stack 頂端的位址。MIPS 的 stack 往低位址長：push 時先把 $sp 減掉要用的大小再存資料，pop 時讀完再加回去。",
+  "like": "一疊盤子最上面那個盤子的位置標記。"
+ },
+ "callee": {
+  "en": "callee（被呼叫者）",
+  "what": "被呼叫的那個函式。MIPS 慣例中，callee 若要用 $s0–$s7，必須先把舊值存到 stack，返回前再還原；呼叫它的函式叫 caller。",
+  "like": "被交辦工作的同事：借用你的工具可以，但還你之前要放回原位。"
+ },
+ "ASCII": {
+  "en": "American Standard Code for Information Interchange",
+  "what": "一套把英文字母、數字、符號對應成數字的編碼，共 128 個字元，用 7 bit 表示（通常存在 1 個 byte），例如 'A' = 65。",
+  "like": "一本密碼對照表：每個字母對一個號碼。",
+  "basic": true
+ },
+ "Unicode": {
+  "en": "Unicode（萬國碼）",
+  "what": "涵蓋全世界幾乎所有文字的字元編碼標準，每個字元有一個編號（code point），例如「中」是 U+4E2D。前 128 個和 ASCII 相同。",
+  "like": "全球通用的超大號對照表，連中文、日文、表情符號都有號碼。",
+  "basic": true
+ },
+ "sign bit": {
+  "en": "sign bit（符號位元）",
+  "what": "有號數最左邊（最高位）的那個 bit：0 代表非負、1 代表負。在 2's complement 裡它的位值是 −2^(n−1)。",
+  "like": "溫度計數字前面的正負號。"
+ },
+ "lui": {
+  "en": "load upper immediate",
+  "what": "MIPS 指令 lui rt, imm：把 16 bit 常數放進 rt 的高 16 位，低 16 位補 0。和 ori 搭配就能把一個 32 bit 常數放進暫存器。",
+  "like": "寫八位數電話號碼時，先填前面四碼，後面四碼留空。"
+ },
+ "ori": {
+  "en": "or immediate",
+  "what": "MIPS 指令 ori rt, rs, imm：把 rs 和 16 bit 常數做 bitwise OR，結果放 rt；常數高位補 0（zero-extend）。常接在 lui 後面填入低 16 位。",
+  "like": "接著把電話號碼後面四碼填上。"
+ },
+ "鄰接矩陣": {
+  "en": "adjacency matrix",
+  "what": "用 V × V 的二維陣列表示圖：A[i][j] = 1（或邊的權重）代表有邊從 i 到 j，否則為 0（或 ∞）。查兩點是否相鄰只要 O(1)，但空間固定是 O(V²)。",
+  "like": "城市間的直飛航班表：橫列出發、直行抵達，有航班就打勾。"
+ },
+ "procedure": {
+  "en": "procedure（程序 / 函式）",
+  "what": "一段被包起來、可以被呼叫的程式，也就是 C 語言的 function。執行時要：放參數、跳過去、配空間、做事、放回傳值、跳回來。",
+  "like": "公司裡可以隨時找來幫忙的專員。",
+  "basic": true
+ },
+ "RISC": {
+  "en": "Reduced Instruction Set Computer",
+  "what": "精簡指令集的設計理念：指令種類少、格式固定長度、只用 load/store 存取記憶體，讓硬體簡單又能做 pipeline。MIPS、ARM、RISC-V 都屬於 RISC；相對的是 CISC（如 x86）。",
+  "like": "只賣幾款標準套餐的餐廳：選項少，但出餐又快又穩。"
+ },
+ "load-store": {
+  "en": "load-store architecture",
+  "what": "只有 load（如 lw）和 store（如 sw）指令能存取記憶體，其他運算指令只能對暫存器做。MIPS 就是這種架構。",
+  "like": "廚房規定：食材要先從倉庫拿到砧板上才能切，不能在倉庫裡直接切。"
+ },
+ "lw": {
+  "en": "load word",
+  "what": "MIPS 指令 lw rt, offset(rs)：從記憶體位址 rs + offset 讀出一個 word（32 bit）放進暫存器 rt。屬於 I-format。",
+  "like": "從置物櫃把東西拿出來放到桌上。"
+ },
+ "sw": {
+  "en": "store word",
+  "what": "MIPS 指令 sw rt, offset(rs)：把暫存器 rt 的 32 bit 值寫到記憶體位址 rs + offset。屬於 I-format。",
+  "like": "把桌上的東西收回置物櫃指定的格子。"
+ },
+ "$ra": {
+  "en": "return address register",
+  "what": "MIPS 的 31 號暫存器，存函式結束後要回去的位址。jal 會自動把 PC + 4 存進 $ra，函式最後用 jr $ra 回去。",
+  "like": "出門辦事前在門口留的紙條：「辦完回這裡」。"
+ },
+ "$zero": {
+  "en": "zero register",
+  "what": "MIPS 的 0 號暫存器，值永遠是 0，寫進去也不會改變。常用來搬值（add $t0, $s1, $zero）或和 0 比較。",
+  "like": "一個永遠歸零、怎麼按都不會變的計數器。"
+ },
+ "jal": {
+  "en": "jump and link",
+  "what": "MIPS 呼叫函式的指令 jal ProcedureAddress：先把下一行指令的位址（PC + 4）存進 $ra，再跳到函式開頭。屬於 J-format。",
+  "like": "出門前先記下自己家地址，再出發去辦事。"
+ },
+ "stack pointer": {
+  "en": "stack pointer（堆疊指標）",
+  "what": "指向 stack 目前頂端的指標；在 MIPS 就是 $sp。函式要暫存資料時移動它來配置或釋放 stack 空間。",
+  "like": "疊盤子時標記「目前最上面在哪」的那支夾子。"
+ },
+ "leaf procedure": {
+  "en": "leaf procedure（葉函式）",
+  "what": "不會再呼叫其他函式的函式。因為不用 jal，$ra 不會被蓋掉，通常不必把 $ra 存到 stack，比較省事。",
+  "like": "工作鏈最末端的人：自己做完就交差，不必再轉交別人。"
+ },
+ "stored-program": {
+  "en": "stored-program concept（儲存程式概念）",
+  "what": "指令和資料一樣用二進位數字表示，一起存放在記憶體中；電腦從記憶體取出指令來執行。換程式只要換記憶體內容，不用改硬體（von Neumann 架構的核心）。",
+  "like": "同一台音響放不同的 CD 就播不同的歌，不必換音響。"
+ },
+ "word": {
+  "en": "word（字組）",
+  "what": "處理器一次自然處理的資料大小。MIPS 的 word 是 32 bit（4 byte），暫存器、指令、lw/sw 的單位都是一個 word。",
+  "like": "搬家時一次搬一整箱，而不是一件一件拿。"
+ },
+ "指令": {
+  "en": "instruction",
+  "what": "CPU 能直接執行的一個基本命令，例如加法、讀記憶體、跳躍。在 MIPS 裡每個指令都是 32 bit 的二進位數字。",
+  "like": "食譜裡的一個步驟，例如「加一匙鹽」。",
+  "basic": true
+ },
+ "funct": {
+  "en": "function field",
+  "what": "R-format 指令最後 6 bit 的欄位。R-format 的 op 都是 0，由 funct 決定到底是 add、sub、and、or、slt 等哪一個運算。",
+  "like": "同一張點餐單上的「口味」欄：主餐一樣，靠這格分辨。"
+ },
+ "logical operation": {
+  "en": "logical operation（邏輯運算）",
+  "what": "對資料逐 bit 做的運算，例如 AND、OR、NOR、XOR，以及左移、右移。用來取出、設定或清除特定的 bit。",
+  "like": "用一排開關一個一個對照著決定開或關。"
+ },
+ "branch": {
+  "en": "branch（分支）",
+  "what": "依條件決定要不要跳到別處執行的指令，例如 MIPS 的 beq、bne；條件不成立就照順序執行下一行。if 和迴圈都靠它實作。",
+  "like": "岔路口的路標：符合條件往左，不符合直走。"
+ },
+ "bitwise": {
+  "en": "bitwise（逐位元）",
+  "what": "對兩個數的每一個對應位置的 bit 各自運算，彼此不互相進位，例如 bitwise AND：1010 AND 0110 = 0010。",
+  "like": "兩排燈一盞對一盞比較，各自決定結果。"
+ },
+ "sll": {
+  "en": "shift left logical",
+  "what": "MIPS 指令 sll rd, rt, shamt：把 rt 的 bit 全部往左移 shamt 位，右邊補 0，結果放 rd。左移 i 位等於乘以 2^i（不溢位時）。",
+  "like": "數字後面補 0：在十進位補一個 0 就是乘 10。"
+ },
+ "srl": {
+  "en": "shift right logical",
+  "what": "MIPS 指令 srl rd, rt, shamt：把 rt 的 bit 全部往右移 shamt 位，左邊補 0。對無號數等於除以 2^i 取整數（有號負數要用 sra）。",
+  "like": "把數字最後幾位劃掉，相當於除以 10 的幾次方。"
+ },
+ "nor": {
+  "en": "NOR（反或）",
+  "what": "MIPS 指令 nor rd, rs, rt：先逐 bit 做 OR 再取反，結果放 rd。MIPS 沒有 NOT 指令，用 nor $t0, $t1, $zero 就等於 NOT $t1。",
+  "like": "「兩個人都沒舉手」才算成立。"
+ },
+ "shift amount": {
+  "en": "shamt（shift amount）",
+  "what": "R-format 裡 5 bit 的欄位，記錄移位指令（sll、srl 等）要移幾位，範圍 0–31；非移位指令這欄填 0。",
+  "like": "告訴你「整排往左挪幾格」的那個數字。"
+ },
+ "signed number": {
+  "en": "signed number（有號數）",
+  "what": "可以表示正數和負數的整數表示法，現代電腦用 2's complement（二補數）。n bit 的範圍是 −2^(n−1) 到 2^(n−1) − 1。",
+  "like": "有零上、零下的溫度計。"
+ },
+ "mask": {
+  "en": "mask（遮罩）",
+  "what": "一個特別設計的位元樣式，和資料做 AND（或 OR）來保留、清除或設定指定位置的 bit。AND 時，mask 是 1 的位置保留原值，是 0 的位置清成 0。",
+  "like": "噴漆用的鏤空模板：只有挖空的地方會被噴到。"
+ },
+ "loop": {
+  "en": "loop（迴圈）",
+  "what": "重複執行同一段程式，直到條件滿足才停止，例如 for、while。在組合語言裡用 branch 跳回開頭來實作。",
+  "like": "跑操場：還沒跑滿 10 圈就繼續跑。",
+  "basic": true
+ },
+ "conditional branch": {
+  "en": "conditional branch（條件分支）",
+  "what": "先檢查一個條件，成立才跳到指定位置，不成立就執行下一行。MIPS 的 beq、bne 都是；j 是不看條件的無條件跳躍。",
+  "like": "「下雨就搭公車，沒下雨就騎車」。"
+ },
+ "array": {
+  "en": "array（陣列）",
+  "what": "一排連續、從 0 開始編號的格子。在記憶體裡元素連續存放，所以 A[i] 的位址 = 起點位址 + i × 每格大小（MIPS 的 int 陣列每格 4 byte）。",
+  "like": "一排有號碼的置物櫃。",
+  "basic": true
+ },
+ "basic block": {
+  "en": "basic block（基本區塊）",
+  "what": "一段連續的指令：只有第一行能被跳進來，只有最後一行能跳出去，中間沒有分支也沒有分支目標。compiler 常以它為單位做最佳化。",
+  "like": "一段沒有岔路、沒有匝道的直線公路。"
+ },
+ "unsigned": {
+  "en": "unsigned（無號數）",
+  "what": "只表示 0 和正數的整數，所有 bit 都拿來表示大小，n bit 的範圍是 0 到 2^n − 1。MIPS 有對應的無號指令，例如 sltu、addu。",
+  "like": "只有正數刻度的尺。"
+ },
+ "旅行推銷員問題": {
+  "en": "traveling salesperson problem (TSP)",
+  "what": "給一張有權重的圖，從某城市出發，每個城市恰好拜訪一次再回到起點，求總成本最小的路線。屬於 NP-hard，DP 解法時間是 O(n²·2^n)。",
+  "like": "外送員要繞完所有訂單再回店裡，怎麼排路線最省時間。"
+ },
+ "Map": {
+  "en": "Map（映射 / 對照表）",
+  "what": "一種資料結構，存放「key → value」的配對；給一個 key 就能找到它對應的 value，key 不能重複。常用雜湊表或平衡搜尋樹實作。",
+  "like": "字典：用單字（key）查到解釋（value）。"
+ },
+ "暴力法": {
+  "en": "brute force",
+  "what": "把所有可能的解全部列出來一一檢查，再挑出符合條件或最好的。簡單保證正確，但可能非常慢（常是指數時間）。",
+  "like": "忘記密碼鎖時從 000 試到 999。"
+ },
+ "0/1 knapsack": {
+  "en": "0/1 knapsack problem（0/1 背包問題）",
+  "what": "有 n 件物品，各有重量和價值，背包容量有限；每件物品只能「整件拿」或「不拿」，求總價值最大的裝法。用 DP 可在 O(nW) 時間解（W 為容量）。",
+  "like": "行李限重 20 公斤，要挑哪些東西帶，讓帶走的總價值最高。"
+ },
+ "diameter": {
+  "en": "diameter（直徑）",
+  "what": "圖中所有頂點對之間最短距離的最大值，也就是「最遠的兩點相隔多遠」。",
+  "like": "一座城市裡相距最遠的兩個地點之間，最短要走多遠。"
+ },
+ "LCS": {
+  "en": "longest common subsequence（最長共同子序列）",
+  "what": "給兩個字串，找出同時是兩者子序列的最長序列。字元要保持原本順序但可以不連續，例如 ABCBDAB 和 BDCABA 的一個 LCS 是 BCBA。用 DP 解，時間 O(mn)。",
+  "like": "比對兩份筆記，找出兩人都依同樣順序寫到的最多重點。"
+ },
+ "字串": {
+  "en": "string",
+  "what": "由字元依序排成的一串資料，例如 \"hello\"。C 語言用以 '\\0' 結尾的字元陣列表示。",
+  "like": "一串串在線上的珠子，每顆珠子是一個字。",
+  "basic": true
+ },
+ "子序列": {
+  "en": "subsequence",
+  "what": "從一個序列中刪掉 0 個或多個元素、其他元素保持原本順序所得到的序列；不必連續。例如 ACE 是 ABCDE 的子序列。",
+  "like": "從一整排照片裡挑幾張，順序不變但可以跳著挑。"
+ },
+ "機率": {
+  "en": "probability",
+  "what": "某件事發生的可能性，用 0 到 1 之間的數字表示；0 是不可能，1 是一定發生。",
+  "like": "氣象預報說降雨機率 70%。",
+  "basic": true
+ },
+ "整數": {
+  "en": "integer",
+  "what": "沒有小數部分的數，包括正整數、0 和負整數，集合記作 ℤ = {…, −2, −1, 0, 1, 2, …}。",
+  "like": "樓層號碼：有地上幾樓、地下幾樓，沒有 2.5 樓。",
+  "basic": true
  }
 }
