@@ -1,0 +1,564 @@
+{
+ "video": "YvSSt6kQbuk",
+ "label": "黃婷婷教授計算機結構_第14B講 Computer Arithmetic / Single-Cycle Processor",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "設計步驟回顧：今天做前三步",
+   "scene": "cpu-steps2",
+   "cues": [
+    19.12,
+    38.06,
+    49.62
+   ],
+   "explain": [
+    "接著上次：設計 processor 的前三步是分析 instruction、選 datapath 的 component、再把它們 assemble 起來。",
+    "第四、第五步是 control：每個指令要把 control signal 設成什麼，然後合成 control logic。",
+    "今天著重前三步：怎麼分析指令、怎麼把 [[datapath]] 找出來；control 的 0 和 1 怎麼設計，之後再講。"
+   ],
+   "points": [
+    {
+     "t": 19,
+     "text": "設計 processor：分析 instruction → 選 datapath component → assemble；④⑤ 是 control。今天著重前三步。"
+    }
+   ]
+  },
+  {
+   "title": "複習 R／I／J format：每個欄位的用途",
+   "scene": "cpu-formats",
+   "cues": [
+    64.54,
+    81.76,
+    115.8,
+    158.27,
+    195.58,
+    224.34,
+    258.82,
+    289.26,
+    351.92,
+    391.99
+   ],
+   "explain": [
+    "第一步是分析 instruction。先複習 MIPS 的三種 [[instruction format]]：R-type、I-type、J-type，考試很可能會考。",
+    "[[R-type]] 長這樣：前 6 bits 是 [[opcode]]，接著 rs、rt、rd、shift amount 各 5 bits，最後 6 bits 是 function，加起來 32 bits。",
+    "為什麼 rs、rt、rd 都是 5 bits？因為 [[register file]] 裡有 32 個 register，要說「第幾個」就要 2⁵ = 32 種編號，剛好 5 bits。",
+    "shamt 是 shift amount（要 shift 幾位）。資料只有 32 bits，shift 0 到 31 位共 32 種狀況，5 bits 就夠描述。",
+    "funct 是做什麼的？所有 R-type 的 op code 都是 000000，加和減怎麼分？就靠最後 6 bits 的 function code：add 是 100000、sub 是 100010。",
+    "[[I-type]] 的 op、rs、rt 和 R-type 一樣，後面 16 bits 是 [[immediate]]。immediate 有好幾種用途。",
+    "用途一：load / store 要算 memory 地址，用 base + offset。immediate 就是 offset，加上 base register（rs）的內容，就是 target address。",
+    "用途二：當 constant，例如 addi。這 16 bits 是一個小的 two's complement 數，可以是正的也可以是負的。",
+    "用途三：beq 的 offset。它像 memory 的 offset 一樣，只是加到 Program Counter 上，決定要跳去哪裡。",
+    "[[J-type]] 的 target address 只有 26 bits。因為指令以 4 bytes 為單位，後面補兩個 0；前面再接上 PC 的前 4 bits，湊成 32 bits 的跳躍目標。"
+   ],
+   "points": [
+    {
+     "t": 59,
+     "text": "R-type：op 6、rs 5、rt 5、rd 5、shamt 5、funct 6；register 地址 5 bits 因為有 32 個 register。"
+    },
+    {
+     "t": 143,
+     "text": "shamt 5 bits（shift 0～31）；R-type 的 op 都是 0，用 funct 區分加、減。"
+    },
+    {
+     "t": 222,
+     "text": "I-type 的 16-bit immediate：load／store 的 offset、constant、branch 的 PC 相對 offset。"
+    },
+    {
+     "t": 392,
+     "text": "J-type：26-bit target，後面補 00、前面接 PC 的前 4 bits。"
+    }
+   ]
+  },
+  {
+   "title": "各 format 對應的指令：I-type 有三類",
+   "scene": "cpu-groups",
+   "cues": [
+    418.76,
+    434.88,
+    463.96,
+    491.16
+   ],
+   "explain": [
+    "三個 type 的每個欄位都知道了，再看看每個 type 包含哪些指令。",
+    "R-type 主要是加、減、and、or 這些：把 rs、rt 當 source register，rd 當 destination，做什麼運算由 function code 決定。",
+    "I-type 有三類一定要記：load / store、immediate 運算、branch。它們都用 rs、rt、immediate，但解釋方式不一樣，所以最容易搞混。",
+    "J-type 就是 jump，直接跳過去，只有這一個指令。"
+   ],
+   "points": [
+    {
+     "t": 418,
+     "text": "R-type：add、sub 等，rs、rt 為 source、rd 為 destination，funct 決定運算。"
+    },
+    {
+     "t": 459,
+     "text": "I-type 有三類：load／store、immediate 運算、branch，都用 rs、rt、immediate；J-type 是 jump。"
+    }
+   ]
+  },
+  {
+   "title": "RTL（logical register transfer）：add",
+   "scene": "cpu-rtladd",
+   "cues": [
+    526.02,
+    539.12,
+    556.04,
+    570.92,
+    585.84,
+    619.74
+   ],
+   "explain": [
+    "要設計 hardware，先把每個指令「到底要做什麼」寫清楚。這種寫法叫 logical register transfer（RTL）：用 register 之間的搬移來描述動作。",
+    "先把 32 bits 切成欄位：op 6、rs 5、rt 5、rd 5、shamt 5、funct 6，每個欄位都有固定的大小，加起來剛好 32。",
+    "add 要做的事：rs、rt 就像 index，去 register file 把 R[rs] 和 R[rt] 拿出來，相加後放到 R[rd]。",
+    "同時還要做 PC ← PC + 4，準備執行下一個指令。這兩件事就是 add 的全部。",
+    "把每個指令要做的事都這樣寫出來：做加要做什麼、做 load 要做什麼……照著這些描述，就能設計出 hardware。",
+    "以 add 為例：從 register file 第 rs 個、第 rt 個拿出來（示意 7 和 5），做加法，放回 register file 的第 rd 個，得到 12。"
+   ],
+   "points": [
+    {
+     "t": 515,
+     "text": "RTL 描述每個指令的動作：add → R[rd] ← R[rs] + R[rt]；PC ← PC + 4。"
+    },
+    {
+     "t": 586,
+     "text": "把每個指令的動作寫出來，就能照著設計 hardware。"
+    }
+   ]
+  },
+  {
+   "title": "Load 的 RTL：base + sign-extended offset",
+   "scene": "cpu-rtllw",
+   "cues": [
+    653.44,
+    667.54,
+    677.04,
+    693.24,
+    704.24,
+    723.06,
+    783.74,
+    808.28,
+    864.74,
+    888.32,
+    911.56,
+    928.92
+   ],
+   "explain": [
+    "再看 load 和 store，比 add 麻煩一點。它們的 format 是 op、rs、rt，加上後面 16 bits 的 immediate。",
+    "如果是 load / store，後面 16 bits 就解釋成 offset。",
+    "ALU 做的是 32 bits 的加減，offset 卻只有 16 bits，而且可正可負（two's complement），所以要先做 [[sign extension]]，變成 32 bits。",
+    "base 在哪裡？在 rs 描述的那個 register 裡（[[base register]]）。",
+    "把 R[rs] 和 sign-extended 的 offset 加起來，就是 memory 的地址，然後去 memory access。",
+    "load 把讀出來的東西放到 rt 指定的 register；同時一樣要 PC ← PC + 4。",
+    "老師再講一遍：拿到 32 bits，前 6 bits 是 op code，接著 rs、rt，最後 16 bits 是 immediate。",
+    "一開始根本不知道它是 R、I 還是 J，hardware 就同時用每一種方式解釋、把每個欄位都拿出來；等 op code 告訴你是什麼，用不到的就不理它。",
+    "rs 讀出來是 32 bits，offset 只有 16 bits，兩個寬度不同，不能直接相加。",
+    "可以在前面直接補 0 嗎？不行。例如 4 bits 的 1011 是 −5，前面補 0 變成 00001011，卻變成了 11，完全不是同一個數。",
+    "正確做法：正數前面補 0、負數前面補 1，這就是 sign extension。0101 變 00000101 還是 5；1011 變 11111011 還是 −5。16 bits 變 32 bits 也一樣。",
+    "extend 成 32 bits 後，跟 rs 讀出來的 base 一起運算，得到 memory 地址，再去拿資料放到 rt。示意：base 1000、offset −4，地址就是 996。"
+   ],
+   "points": [
+    {
+     "t": 648,
+     "text": "lw：addr = R[rs] + SignExt(imm16)；R[rt] ← MEM[addr]；PC ← PC + 4。"
+    },
+    {
+     "t": 771,
+     "text": "一開始不知道指令 type，就同時用各種 format 解釋，再由 opcode 決定。"
+    },
+    {
+     "t": 864,
+     "text": "32 bits 和 16 bits 不能直接加：要 sign extension（正數補 0、負數補 1），不能一律補 0。"
+    }
+   ],
+   "trap": "offset 是 signed：sign extension 不是補 0，負數要補 1。"
+  },
+  {
+   "title": "Store、addi、beq 的 RTL",
+   "scene": "cpu-rtlsw",
+   "cues": [
+    951.28,
+    978.18,
+    986.1,
+    1014.32,
+    1045.88,
+    1067.36,
+    1084.46,
+    1105.16,
+    1110.18
+   ],
+   "explain": [
+    "store 用的是同樣的 format，只是方向相反：把 register（rt）的東西放到 memory。地址一樣是 R[rs] + sign-extended offset。",
+    "一樣要做 PC ← PC + 4。",
+    "add immediate（addi）：把 rs 的內容加上 instruction 裡的 constant，結果放到 rt。",
+    "這 16 bits 是 signed 還是 unsigned？加的 constant 有正有負，所以是 signed number，範圍是 −32768 到 32767。",
+    "所以就算是 immediate data，也一定要做 sign extension。示意：−50 前面要補 1；如果補 0，就變成 65486 了。",
+    "beq：把 rs、rt 兩個 register 拿出來比較，相等才跳。",
+    "hardware 不知道這個指令是不是 branch，所以一開始就 always 先做 PC + 4；跳的時候是以 PC + 4 為基準。",
+    "跳的目標：offset 做 sign extension、後面接兩個 0（等於 × 4），再加上 PC + 4。不相等的話就是 PC + 4。",
+    "target address 可以先算好放著；到底要不要跳，等比較的結果出來再決定。"
+   ],
+   "points": [
+    {
+     "t": 948,
+     "text": "sw：MEM[R[rs] + SignExt(imm16)] ← R[rt]；PC ← PC + 4。"
+    },
+    {
+     "t": 988,
+     "text": "addi：R[rt] ← R[rs] + SignExt(imm16)；immediate 是 signed，一樣要 sign extension。"
+    },
+    {
+     "t": 1067,
+     "text": "beq：比較 R[rs]、R[rt]；PC + 4 一定先算，target = PC + 4 + (SignExt(imm16) ‖ 00)，相等才選 target。"
+    }
+   ]
+  },
+  {
+   "title": "課堂問答：大家都懂嗎",
+   "scene": null,
+   "points": [
+    {
+     "t": 1117,
+     "text": "老師點名確認 RTL 的意義大家都懂。"
+    }
+   ]
+  },
+  {
+   "title": "‖ 是 concatenate：offset 後面接兩個 0",
+   "scene": "cpu-concat",
+   "cues": [
+    1149,
+    1174.6
+   ],
+   "explain": [
+    "同學問 ‖ 是什麼：它是 concatenate，把兩串 bits 接在一起，不是 OR。offset ‖ 00 就是在 offset 後面接上兩個 0。",
+    "為什麼？一個 instruction 是 4 bytes，word address 最後兩個 bits 一定是 00，不需要浪費 bits 存，用的時候補回來就好。示意：3 ‖ 00 = 12 = 3 × 4。"
+   ],
+   "points": [
+    {
+     "t": 1149,
+     "text": "‖ 是 concatenate（並起來），不是 OR；word address 最後兩 bits 一定是 00，所以後面補兩個 0。"
+    }
+   ]
+  },
+  {
+   "title": "需要哪些 component",
+   "scene": "cpu-parts",
+   "cues": [
+    1199,
+    1213.72,
+    1231.02,
+    1237.7,
+    1251.74,
+    1324.18,
+    1349.48,
+    1376.94
+   ],
+   "explain": [
+    "要做剛才那些動作，需要哪些 component？第一個是 register file，存所有 register 的內容。",
+    "還要一個 [[program counter]]，32 bits，記錄下一個要 access 的 instruction 在哪裡。",
+    "每次都要 + 4，所以要一個簡單的加法器專門做這件事。",
+    "要一個 [[ALU]] 做加減等運算，也要一個 sign extension 的元件把 16 bits 變成 32 bits。",
+    "有的指令用不到 sign extension，但 hardware 不知道，就 always 先做出來，用不用由 control 決定。就像設計 ALU 時，加、and、or 全都一起算，最後用 mux 選要哪個結果。",
+    "還需要 memory：instruction memory 和 data memory。register file 裡有 32 個 register，每個 32 bits。",
+    "PC 為什麼是 32 bits？因為 memory space 是 2³² 個 bytes，地址要 32 bits 才能指到每一個位置。",
+    "最後還要一個加法器，把 PC 加上 branch 的 offset，算出 target address。"
+   ],
+   "points": [
+    {
+     "t": 1199,
+     "text": "需要：register file、PC（32 bits）、+4 的 adder、ALU、sign extender、instruction memory、data memory、算 branch target 的 adder。"
+    },
+    {
+     "t": 1250,
+     "text": "sign extension 等元件 always 做，用不用由 control 選（像 ALU 全部算、最後用 mux 選）。"
+    }
+   ]
+  },
+  {
+   "title": "提醒：後面六頁最重要",
+   "scene": null,
+   "points": [
+    {
+     "t": 1381,
+     "text": "老師提醒接下來六頁最重要，上課專心聽就會。"
+    }
+   ]
+  },
+  {
+   "title": "Combinational components：adder、MUX、ALU（32 bits）",
+   "scene": "cpu-comb",
+   "cues": [
+    1420.47,
+    1436.57
+   ],
+   "explain": [
+    "先看 datapath 的 combinational components：加法器、MUX、ALU，剛剛都介紹過。",
+    "要記住：進出的不是 1 個 bit，而是 32 bits。圖上畫一條斜線就表示這裡其實有 32 條線，A、B 都是 32 bits 的數。"
+   ],
+   "points": [
+    {
+     "t": 1409,
+     "text": "datapath 的 combinational components：adder、MUX、ALU；進出都是 32 bits，圖上用斜線表示。"
+    }
+   ]
+  },
+  {
+   "title": "Register file：兩個 read port、一個 write port",
+   "scene": "cpu-regfile",
+   "cues": [
+    1466.63,
+    1492.57,
+    1514.31,
+    1549.03,
+    1604.57,
+    1618.83,
+    1652.07,
+    1695.19,
+    1717.43,
+    1748.45,
+    1808.46,
+    1880.89,
+    2008.84
+   ],
+   "explain": [
+    "sequential component 有兩大類：PC 和 register。一個 register 就像 32 個 D [[flip-flop]] 排在一起，存 32 bits。",
+    "注意：它一定要有 write enable。不是每個 cycle 都要把東西寫進去，要看 write enable。",
+    "[[register file]] 裡有 32 個這樣的 register，每個 32 bits。",
+    "每次讀 register file，要讀兩個 operand：rs 和 rt。所以要給它兩個地址 RA、RB，也就是兩個 read port。",
+    "如果設計成一個 cycle 只讀一個 operand，就只要一個 port。但 port 越多，hardware 的成本越高，這是 trade-off。",
+    "我們要的 register file：每個 cycle 可以讀兩個、寫一個。cycle 一開始給地址就能讀出來；cycle 結束的 transition 時把資料寫進去。",
+    "所以要給它三個地址：兩個讀的（RA、RB）、一個寫的（RW），各 5 bits。",
+    "很重要的 write enable（WrEn）：有時候只讀不寫，要靠它控制這個 cycle 准不准寫回去。",
+    "讀出來的東西放哪？RA 說讀第 3 個、RB 說讀第 8 個，資料就分別放在 busA、busB 這兩條 32 bits 的 output bus 上。",
+    "要寫回去的時候，32 bits 的資料放在 busW 上，在 cycle 結束時寫進去。",
+    "RA、RB 是地址：32 個 register 要說第幾個，2⁵ = 32，所以是 5 bits。",
+    "寫的時候，RW 告訴它寫到第幾個，例如第 5 個 register；資料從 busW 送進去，第 5 個 register 的內容就改變了。",
+    "clock 怎麼控制？在 clock edge（這張投影片畫的是 negative edge）而且 WrEn = 1 才寫。所以一個 clock cycle 可以讀兩筆、寫一筆。"
+   ],
+   "points": [
+    {
+     "t": 1463,
+     "text": "register = 32 個 D flip-flop，要有 write enable；register file 有 32 個 32-bit register。"
+    },
+    {
+     "t": 1542,
+     "text": "RA、RB（各 5 bits）選要讀的 register，資料從 busA、busB 出來；RW 選寫入位置、資料從 busW 進去。"
+    },
+    {
+     "t": 1698,
+     "text": "WrEn 決定這個 cycle 能不能寫；每個 cycle 可讀兩個、寫一個，寫入在 clock edge 且 WrEn = 1。"
+    }
+   ]
+  },
+  {
+   "title": "Memory element：一個 address、一定可讀、WrEn 才寫",
+   "scene": "cpu-memel",
+   "cues": [
+    2041.86,
+    2051.46,
+    2088,
+    2106.04,
+    2126.5
+   ],
+   "explain": [
+    "再看 memory element，它跟 register file 不太一樣。",
+    "它只有一個 address。register file 同一個 cycle 要讀兩個、寫一個，所以要很多 port；memory 一次只做一件事，不是 read 就是 write，address 共用就好。",
+    "這個 cycle 要不要寫進去，一樣由 write enable 決定。",
+    "只要給它 address，它 always 會把那個位置的 data 讀出來；只有 write 的時候，裡面的 data 才會改變。",
+    "它有一個 input bus（Data In，要寫進去的）和一個 output bus（Data Out，讀出來的）。WrEn = 1 時，把 Data In 寫到 address 指的位置。"
+   ],
+   "points": [
+    {
+     "t": 2033,
+     "text": "memory 只有一個 address（一次 read 或 write），一個 Data In、一個 Data Out；always 讀出，WrEn = 1 才寫。"
+    }
+   ]
+  },
+  {
+   "title": "Fetch 的 datapath：PC → instruction memory，PC + 4 等到 clock edge 才寫",
+   "scene": "cpu-fetchdp",
+   "cues": [
+    2154,
+    2176.82,
+    2211.84,
+    2248.68,
+    2269.6,
+    2274.14,
+    2299.42
+   ],
+   "explain": [
+    "開始組 datapath。先做每個指令都一定要做的事：fetch instruction，然後 PC = PC + 4。",
+    "PC 讀出來的值，接到 instruction memory 的 read address。給它地址，它就把指令讀出來。",
+    "讀出來的是 32 bits 的 instruction（圖上應該畫一條斜線）。所有指令都要這樣 fetch，接著才開始 decode。",
+    "在 decode 之前，always 要做 PC = PC + 4，所以這裡放一個加法器。",
+    "算好的 PC + 4 會不會立刻寫進 PC？不會，它只是算好在那邊等著。",
+    "等到這個 [[clock period]] 結束、edge trigger 的時候，才寫進 PC。",
+    "如果中途就寫進去，PC 變了，instruction memory 就會吐出另一個 instruction，前一個都還沒做完，後果很壞。所以一定要等到 clock edge。"
+   ],
+   "points": [
+    {
+     "t": 2154,
+     "text": "所有指令都做：PC 接 instruction memory 的 read address，讀出 32-bit instruction；adder 算 PC + 4。"
+    },
+    {
+     "t": 2248,
+     "text": "PC + 4 算好先等著，cycle 結束（edge trigger）才寫入 PC；中途寫入會去拿另一個 instruction。"
+    }
+   ]
+  },
+  {
+   "title": "R-type（add／sub）的 datapath",
+   "scene": "cpu-rdp",
+   "cues": [
+    2335.14,
+    2347.9,
+    2374.2,
+    2380.16,
+    2451.81,
+    2461.29,
+    2476.53,
+    2515.4
+   ],
+   "explain": [
+    "先看 R-type 的加和減。instruction fetch 已經拿到 32 bits 了。",
+    "接著把 op、rs、rt、rd 的五個 bits 從固定的位置拿出來。",
+    "rs 是一個 register 的地址，接到 register file 的第一個 read address（RA）。register file 有兩個 read port、一個 write port。",
+    "rt 接到第二個 read address（RB）；rd 是要寫的地方，接到 write address（RW）。rs、rt 是讀的地址，rd 是寫的地址。",
+    "讀出來的兩個 operand 從 busA、busB 出來，接到 ALU 去做運算。",
+    "ALU 要做加還是減？由 control（ALUctr）告訴它，後面再講怎麼產生。",
+    "算完的結果要寫回 register file，所以 ALU 的 output 接到 busW（write data），寫進 rd 指定的 register。",
+    "到底要不要寫？R-type 要寫，所以 RegWr = 1；別的指令就不一定，所以這也是一個 control signal。"
+   ],
+   "points": [
+    {
+     "t": 2325,
+     "text": "R-type：rs → RA、rt → RB、rd → RW；busA、busB 進 ALU，結果接回 busW。"
+    },
+    {
+     "t": 2459,
+     "text": "ALU 做什麼由 control（ALUctr）決定；要不要寫回由 RegWr 決定。"
+    }
+   ]
+  },
+  {
+   "title": "Load／store 的 datapath：rs 算地址，rt 角色不同",
+   "scene": "cpu-lsdp",
+   "cues": [
+    2529.12,
+    2561.68,
+    2570.76,
+    2591.98,
+    2614.28,
+    2649.22,
+    2748.2,
+    2770.59,
+    2829.78
+   ],
+   "explain": [
+    "換 load / store。它的 format 是 op、rs、rt、16 bits 的 immediate。跟 R-type 比，沒有 rd 這個欄位了。",
+    "rs、rt 還是一樣接到 RA、RB 去讀。",
+    "後面的 16 bits immediate 拿出來做 sign extension，再跟 rs 讀出來的 base 一起進 ALU 相加。",
+    "ALU 算出來的是 target address，接到 data memory 的 address，data 就讀出來了。",
+    "lw 要把 memory 讀出來的 data 寫回 register file，所以把它接到 busW（write data）。",
+    "寫到哪一個 register？lw 是寫到 rt，所以 rt 也要接到 write address（RW）。這跟 R-type 不同，R-type 那裡接的是 rd。",
+    "store 是把 register 的東西寫到 memory：讀出 rt，從 busB 接到 data memory 的 write data。",
+    "不管 load 還是 store，memory 的地址都由 rs 的內容加上 sign-extended offset 來算。",
+    "但 rt 的角色不一樣：lw 的 rt 是 destination，告訴你資料要放到哪個 register；sw 的 rt 是 source，要把它的內容讀出來存到 memory。"
+   ],
+   "points": [
+    {
+     "t": 2527,
+     "text": "I-format 沒有 rd；rs、rt 照樣讀；immediate sign-extend 後和 R[rs] 進 ALU 算地址。"
+    },
+    {
+     "t": 2607,
+     "text": "lw：memory 讀出的 data 接到 busW，寫到 rt（所以 rt 也要接到 RW）。"
+    },
+    {
+     "t": 2750,
+     "text": "sw：讀 rt，從 busB 接到 data memory 的 write data；地址都是 rs + offset，rt 在 lw／sw 角色不同。"
+    }
+   ],
+   "trap": "lw 的 rt 是 destination，sw 的 rt 是 source；地址永遠由 rs + offset 算。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "R-type 的 rs、rt、rd 為什麼各是 5 bits？",
+   "opts": [
+    "register file 有 32 個 register",
+    "ALU 有 5 種運算",
+    "指令有 5 個欄位",
+    "shift 最多 5 位"
+   ],
+   "ans": "register file 有 32 個 register",
+   "why": "要指定 32 個 register 中的哪一個，需要 log₂32 = 5 bits。"
+  },
+  {
+   "q": "lw rt, imm16(rs) 的 RTL 是？",
+   "opts": [
+    "R[rt] ← MEM[R[rs] + SignExt(imm16)]",
+    "R[rs] ← MEM[R[rt] + imm16]",
+    "MEM[R[rs] + SignExt(imm16)] ← R[rt]",
+    "R[rd] ← MEM[R[rs]]"
+   ],
+   "ans": "R[rt] ← MEM[R[rs] + SignExt(imm16)]",
+   "why": "地址是 base（rs）+ sign-extended offset，讀出的資料放到 rt；第三個選項是 sw。"
+  },
+  {
+   "q": "4-bit 的 1011 sign-extend 到 8 bits 是？",
+   "opts": [
+    "11111011",
+    "00001011",
+    "10110000",
+    "10001011"
+   ],
+   "ans": "11111011",
+   "why": "1011 是 −5（負數），前面補 1 才表示同一個數；補 0 會變成 11。"
+  },
+  {
+   "q": "beq 的 branch target 怎麼算？",
+   "opts": [
+    "PC + 4 + (SignExt(imm16) ‖ 00)",
+    "PC + imm16",
+    "(PC + 4)[31:28] ‖ target ‖ 00",
+    "R[rs] + SignExt(imm16)"
+   ],
+   "ans": "PC + 4 + (SignExt(imm16) ‖ 00)",
+   "why": "PC + 4 一定先算好；offset 以 word 為單位，接兩個 0（×4）再加上 PC + 4。"
+  },
+  {
+   "q": "register file 每個 cycle 可以？",
+   "opts": [
+    "讀兩個 register、寫一個",
+    "讀一個、寫一個",
+    "讀兩個、寫兩個",
+    "只能讀或寫其中一個"
+   ],
+   "ans": "讀兩個 register、寫一個",
+   "why": "有 RA、RB 兩個 read port 與 RW 一個 write port；memory element 則一次只 read 或 write。"
+  },
+  {
+   "q": "sw 指令中 rt 的角色是？",
+   "opts": [
+    "source：要存到 memory 的資料",
+    "destination：寫入的 register",
+    "base register",
+    "不使用"
+   ],
+   "ans": "source：要存到 memory 的資料",
+   "why": "sw 讀出 rt 的內容寫入 memory；lw 的 rt 才是 destination；base 永遠是 rs。"
+  },
+  {
+   "q": "算好的 PC + 4 什麼時候寫進 PC？",
+   "opts": [
+    "clock cycle 結束的 clock edge",
+    "算好立刻寫入",
+    "decode 完成時",
+    "ALU 算完時"
+   ],
+   "ans": "clock cycle 結束的 clock edge",
+   "why": "中途改 PC 會讓 instruction memory 輸出另一個指令；等到 edge 才寫。"
+  }
+ ]
+}

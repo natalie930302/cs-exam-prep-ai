@@ -1,0 +1,500 @@
+{
+ "video": "4vRk10j9MC8",
+ "label": "黃婷婷教授計算機結構_第17A講 Single-Cycle Processor / Pipelining",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "加入 jump：{PC+4[31:28], address, 00}，多一個 Jump mux",
+   "scene": "cpu-jump",
+   "cues": [
+    30.04,
+    36.56,
+    55.48,
+    61.24,
+    77.65,
+    89.46,
+    97.12,
+    112.06,
+    123.62,
+    141.98,
+    163.86
+   ],
+   "explain": [
+    "上次介紹完 single cycle 的 controller，還有一個指令沒加進去：jump。它的 format 是前 6 bits 的 op code（2），後面 26 bits 是 address。",
+    "除了 op code，剩下的 26 bits 全都用來描述要跳去的地址。（老師說考試考過這題。）",
+    "怎麼跳？先把這 26 bits shift 兩位（後面補 00），因為它是 word address，指令以 4 bytes 為單位，於是變成 28 bits。",
+    "再接上現在 PC（+4）的前 4 個 bits，湊成 32 bits，就是要跳去的地址。畫面用示意的數字算出來，並檢查拆回去會得到原本的 26 bits。",
+    "怎麼加到 datapath？opcode decode 出來，如果是 jump 指令，controller 就發出一個 control signal：Jump。",
+    "先前的 datapath，PC = PC + 4 是在這裡做的。",
+    "第一個 mux 在選：如果是 branch equal、而且相等，就選 1（算好的 branch target）；否則選 0（PC + 4）。",
+    "選出來之後再接另一個 mux：如果是 jump 指令，control signal Jump = 1，就選 1 這邊。",
+    "1 是哪一條 path？就是剛剛講的：instruction 後 26 bits shift 兩位，再和 PC + 4 的前 4 bits concatenate，得到 jump target。",
+    "所以第一個 mux 選 PC + 4（sequential）或 branch；第二個 mux 再在前一個的結果和 jump target 之間選，選出來寫回 PC。",
+    "新的 datapath 就是多算一個 jump 的 target address，control 多一個 Jump signal。到這裡 R、I、J 三種 type、datapath 和 control 都介紹完了。"
+   ],
+   "points": [
+    {
+     "t": 18,
+     "text": "jump：op 6 bits + 26-bit address；shift 2 bits 後接上 PC 的前 4 bits 就是 jump 地址。"
+    },
+    {
+     "t": 69,
+     "text": "datapath：第一個 mux 選 PC + 4 或 branch target，第二個 mux（control signal Jump）選 jump address。"
+    }
+   ]
+  },
+  {
+   "title": "Worst case：lw 決定 single cycle 的 clock period，CPI = 1 但不 efficient",
+   "scene": "cpu-worst",
+   "cues": [
+    192.66,
+    204.82,
+    232.28,
+    238.34,
+    261.72,
+    288.09,
+    297.63
+   ],
+   "explain": [
+    "看看 worst case 的 delay。lw 這個指令要最多的時間。畫面的各單元 ps 數字是示意（課本常用的 200／100／200／200／100）。",
+    "lw 要經過：clock-to-Q、instruction memory access、register access、ALU、最主要的 data memory access、寫回 register，還有 clock skew。",
+    "因為 single cycle 的 cycle 長度是固定的，要看哪個指令最長，就把 clock period 設成那麼長。示意的 lw 是 800 ps。",
+    "其他指令也許不需要這麼長的時間，但大家都要一樣，clock 不能變來變去，所以都用最長的那個 path 當 clock period。",
+    "CPI 是什麼？clock per instruction。single cycle 每個指令都是 1 個 cycle，所以 CPI = 1，只是 clock period 很長。",
+    "所以這樣的 implementation 沒有效率：短的指令每次都白白等待。",
+    "下一個 implementation 是 pipeline，現在的 processor 都用它。但剛剛學的 single cycle 的 datapath 和 control，pipeline 全部都會用到，所以一定要了解。"
+   ],
+   "points": [
+    {
+     "t": 186,
+     "text": "lw 最長：clock-to-Q、instruction memory、register、ALU、data memory、寫回 register、clock skew。"
+    },
+    {
+     "t": 224,
+     "text": "cycle 長度固定 → clock period = 最長的指令；CPI = 1，但不 efficient；datapath 與 control 會沿用到 pipeline。"
+    }
+   ]
+  },
+  {
+   "title": "MIPS 的設計讓 controller 簡單",
+   "scene": "cpu-mipsgood",
+   "cues": [
+    319.67,
+    328.99,
+    354.91,
+    377.99,
+    396.59
+   ],
+   "explain": [
+    "學過 controller 的設計，就能體會 MIPS 為什麼這樣設計。",
+    "opcode 在固定的位置，decode 很簡單：每次都拿前 6 bits。如果不知道在哪裡（前 6 bits？前 8 bits？），controller 就變得很複雜。",
+    "source register 盡量在同一個地方：rs 永遠是第一個 source，從 register file 拿；第二個 source 可能是 rt 或 sign extension，所以那裡要 mux。",
+    "immediate 永遠在同一個位置。它可能拿去做 sign extension、算 PC-relative 的地址、或做 immediate 運算，但位置都一樣。",
+    "結論：instruction format 越簡單、越一致，datapath 和 controller 就越容易合成。這一章就到這裡。"
+   ],
+   "points": [
+    {
+     "t": 313,
+     "text": "opcode 位置固定、source register 位置固定（rs 第一個）、immediate 位置固定 → decode 簡單；format 越簡單越容易合成。"
+    }
+   ]
+  },
+  {
+   "title": "Pipeline 這一章的內容",
+   "scene": "cpu-pipeplan",
+   "cues": [
+    403.67,
+    425.03,
+    444.63,
+    484.71,
+    504.73
+   ],
+   "explain": [
+    "接下來是 [[pipeline]]：現在 high performance 的 processor 一定用到這個技巧。它也是拿前面 single cycle 的 datapath 和 control 來設計出來的。",
+    "先有一個簡單的 overview，看什麼叫 pipeline；再看 pipeline 的 datapath 和 control 怎麼設計。如果 single cycle 學會了，這兩個很簡單。",
+    "比較難的是 [[data hazard]] 和 [[control hazard]]。sequential 執行時，前一個指令做完才做下一個；pipeline 裡前一個可能還沒做完，後一個就進去了，有 dependency 就會出問題。",
+    "再來是 exception：發生 interrupt 等不正常的事，要跳出正常的執行流程，這也相當於一種 hazard。",
+    "最後介紹其他 high performance 的架構，例如 [[superscalar]]、dynamic pipelining。"
+   ],
+   "points": [
+    {
+     "t": 400,
+     "text": "pipeline：overview、datapath、control；難點是 data hazard 與 control hazard；再來 exception、superscalar、dynamic pipelining。"
+    }
+   ]
+  },
+  {
+   "title": "洗衣服的比喻：sequential 6 小時、pipeline 3.5 小時",
+   "scene": "cpu-laundry",
+   "cues": [
+    520.19,
+    534.93,
+    552.39,
+    563.43,
+    602.6,
+    616.83,
+    643.1,
+    682.77
+   ],
+   "explain": [
+    "用洗衣服來打比方。有四個人：A、B、C、D，他們都要去洗衣服。",
+    "洗衣服要經過：洗衣機洗、烘乾機烘乾、再把衣服摺起來。就像宿舍洗衣房裡有一台洗衣機、一台烘乾機、一張桌子。",
+    "假設洗衣服要 30 分鐘、烘乾 40 分鐘、摺衣服 20 分鐘，一個人總共 90 分鐘。",
+    "第一種做法：A 進去就把門鎖起來，洗、烘、摺全部做完才開門讓 B 進去；B 也一樣。這就是 sequential laundry。",
+    "這樣要多久？一個人 90 分鐘，四個人就是 360 分鐘 = 6 個小時。",
+    "這樣很自私：A 在用烘乾機的時候，洗衣機根本沒人用；A 在摺衣服時，洗衣機和烘乾機都空著，為什麼不讓別人進來用？",
+    "這就是 pipeline 的概念：A 洗完去烘乾，洗衣機空出來就讓 B 進去；A 摺衣服時，B 烘乾、C 洗衣服。resource 用完就 release 給下一個人。",
+    "這樣只要 3.5 個小時（210 分鐘）就全部洗完。程式模擬每台機器同時只給一個人用，算出來正是 30 + 4 × 40 + 20 = 210 分鐘。"
+   ],
+   "points": [
+    {
+     "t": 510,
+     "text": "四個人 A、B、C、D；洗 30、烘 40、摺 20 分鐘。"
+    },
+    {
+     "t": 561,
+     "text": "sequential（做完才換人）：4 × 90 = 360 分 = 6 小時。"
+    },
+    {
+     "t": 616,
+     "text": "pipeline（resource 用完就給下一個人）：30 + 4 × 40 + 20 = 210 分 = 3.5 小時。"
+    }
+   ]
+  },
+  {
+   "title": "Pipeline 的觀念：latency 不變、throughput 增加、被最慢的 stage 限制",
+   "scene": "cpu-lessons",
+   "cues": [
+    699.41,
+    721.87,
+    739.99,
+    758.69,
+    818.93,
+    845.95,
+    906.33,
+    941.03,
+    972.37
+   ],
+   "explain": [
+    "從這個例子學到什麼？第一，latency 有沒有改變？latency 就是 response time：把衣服丟進去，到拿到衣服要多久。",
+    "不會改變。每一批衣服還是要洗、烘、摺，自己的工作時間還是 30 + 40 + 20 = 90 分鐘，pipeline 不會讓它變快。",
+    "加快的是整體：單位時間完成的工作變多了，叫 [[throughput]]。程式算出 A、B、C、D 完成的時間是 90、130、170、210 分，穩定後每 40 分鐘就完成一批。",
+    "pipeline 被最慢的 stage 限制。B 洗完只要 30 分鐘，但烘乾機要 40 分鐘，A 還在烘，B 只能等。所以每個 stage 其實都變成 40 分鐘。",
+    "在同一個時間，我們用到不同的 resource：洗衣機、烘乾機、摺衣桌大家共享；但每個 resource 一次只能給一個人用，不能搶。",
+    "potential speedup 有多少？本來任何時間只做一件事，現在切成三個 stage，三件事同時在做，所以最多可以快 3 倍：speedup = stage 的數目。",
+    "但達不到那麼多。第一，每個 stage 的長度不一樣（30、40、20），會被最長的那個限制。實際只有 360 ÷ 210 ≈ 1.71 倍。",
+    "第二，剛開始（fill）時只用到洗衣機，結束（drain）時只用到摺衣桌，其他 resource 閒著，也會降低 speedup。",
+    "更麻煩的是 dependency：它會讓 pipeline 停下來。這個洗衣的例子沒有 dependency，所以可以順順地 flow；後面再來解決 dependency 的問題。"
+   ],
+   "points": [
+    {
+     "t": 695,
+     "text": "latency（一批的工作時間）不會因 pipeline 變短；throughput（單位時間完成的工作）增加。"
+    },
+    {
+     "t": 758,
+     "text": "pipeline rate 被最慢的 stage 限制；同時使用多個 resource。"
+    },
+    {
+     "t": 841,
+     "text": "potential speedup = stage 數；unbalanced stage、fill／drain 會降低 speedup；dependency 會造成 stall。"
+    }
+   ],
+   "trap": "pipeline 改善的是 throughput，不是單一工作的 latency。"
+  },
+  {
+   "title": "Processor 的 pipeline：single cycle 800 ps vs 每個 stage 200 ps",
+   "scene": "cpu-pipeproc",
+   "cues": [
+    991.41,
+    1007.13,
+    1042.01,
+    1052.05,
+    1073.79,
+    1082.07,
+    1119.02,
+    1133.92,
+    1159.86,
+    1201.32
+   ],
+   "explain": [
+    "換成 processor 的設計。原本 single cycle：一個 cycle 要把所有事情做完，lw、sw 都要完整做完才換下一個。",
+    "想想看，lw 其實可以分成好幾個動作：instruction fetch、decode、register access、ALU 運算、memory access……",
+    "把這個長長的 cycle 切成五個 stage：instruction fetch、register access（decode）、execution、memory access、write back，每個 stage 一個比較短的 cycle。",
+    "第一個 stage 做完，resource 就給下一個人用：當 lw 在做 register access 時，instruction memory 就可以給下一個 instruction 用。這樣就形成 pipeline。",
+    "performance 差多少？single cycle 一個指令要 800 ps，做完才能做下一個。",
+    "pipeline 的話，最慢的 stage 是 200 ps，就把每個 stage 都設成 200 ps。",
+    "站在最後的出口等：single cycle 每 800 ps 才有一個結果出來（800、1600、2400 ps）。",
+    "pipeline 重疊著做，clock cycle 200 ps：第一個要 5 × 200 = 1000 ps，之後每 200 ps 就有一個結果出來。單位時間完成的工作變多了。",
+    "為什麼可以 pipeline？因為 register、ALU、memory 這些 resource 都在那裡，只是同一個時間給不同的 instruction 共享。",
+    "pipeline 改善了什麼？不是 latency（一個指令從丟進去到完成的時間），而是 throughput，一定要記住。"
+   ],
+   "points": [
+    {
+     "t": 990,
+     "text": "lw 可以分成 IF、ID（register access）、EX、MEM、WB 五個 stage，做完就把 resource 給下一個指令。"
+    },
+    {
+     "t": 1071,
+     "text": "single cycle 每 800 ps 一個結果；pipeline 最慢 stage 200 ps → 每 200 ps 一個結果。"
+    },
+    {
+     "t": 1160,
+     "text": "resource 都在，只是不同時間給不同指令共享；pipeline 改善 throughput，不改善 latency。"
+    }
+   ]
+  },
+  {
+   "title": "五個 stage：IF、ID、EX、MEM、WB",
+   "scene": "cpu-stages",
+   "cues": [
+    1252.21,
+    1272.27,
+    1308.65,
+    1341.33,
+    1347.57,
+    1353.09,
+    1463.01,
+    1469.65,
+    1475.47,
+    1491.39,
+    1529.55,
+    1567.23,
+    1581.01,
+    1595.61,
+    1607.83
+   ],
+   "explain": [
+    "來看 pipeline 的 datapath 要怎麼做，先看基本概念。",
+    "single cycle 的 datapath 從頭到尾就是一個 stage 在做事。我們可不可以用它來做 pipeline 的基本結構？control 可不可以用？要做什麼改變？",
+    "要把 datapath 分成一階一階，因為要把工作分成五個小工作。就像洗衣、烘乾，每個 stage 做什麼、做完沒有，要分得很清楚，否則衣服會跟別人的混在一起。",
+    "第一個 stage：[[instruction fetch]]（IF）。這五個一定要記起來。",
+    "第二個 stage：[[instruction decode]]（ID），decode 包含 register file 的 access。",
+    "第三個 stage：execution（EX），就是 ALU 的部分：R-type 把兩個 operand 相加相減；beq 也在這裡算兩個是否相等。",
+    "老師問：如果是 load / store，這時 ALU 在做什麼？在算 memory 的 address：address calculation。",
+    "load / store 接著做 memory access（MEM）；完畢之後做 [[write back]]（WB）。",
+    "所以五個 stage：IF、ID、EX、MEM、WB，一定要記起來。",
+    "分好之後，要把每個 resource 和 stage 對應起來。resource 是共享的，但任何時間每個 resource 只能被一個 instruction 用，不能兩個同時搶；要保證 flow 不會 conflict。",
+    "仔細看每個 stage 做什麼。IF：用 PC 的地址去 instruction memory 拿指令，放進 instruction register（因為後面好幾個 cycle 都要用），再做 PC + 4。",
+    "ID：controller decode、access register file；投影片上 branch 的 target 也在這裡先算好。",
+    "EX：R-type 做加減；load / store 算地址；branch equal 比較兩個是否一樣；jump 算 target address。",
+    "MEM：R-type 沒有這個動作；load / store 去 access memory。WB：把 load 的 data 寫回 register file。",
+    "store 到第四個 stage 就結束了；load 要寫回 register file，所以要 5 個 stage；R-type 在投影片中是第 4 個 stage 就寫回，因為已經算完了。"
+   ],
+   "points": [
+    {
+     "t": 1240,
+     "text": "用 single cycle 的 datapath，切成五個 stage：IF、ID（decode + register access）、EX、MEM、WB。"
+    },
+    {
+     "t": 1452,
+     "text": "lw／sw 的 EX 是 address calculation；每個 resource 在每個 stage 只能給一個 instruction 用。"
+    },
+    {
+     "t": 1528,
+     "text": "IF：讀指令、PC + 4；ID：decode、讀 register；EX：運算／算地址／比較；MEM：access memory；WB：寫回（sw 4 個 stage、lw 5 個）。"
+    }
+   ]
+  },
+  {
+   "title": "Pipeline register：把每個 stage 切乾淨",
+   "scene": "cpu-preg",
+   "cues": [
+    1634.19,
+    1661.31,
+    1701.99,
+    1741.97,
+    1772.15,
+    1787.44,
+    1830.37,
+    1883.39,
+    1899.44
+   ],
+   "explain": [
+    "我們用 single cycle 的 datapath，把它分成 5 個 stage：IF、ID（有 controller 的 decoder 和 register access）、ALU 的 EX、memory 的 MEM、write back。",
+    "這樣切好就可以開始 pipeline 了嗎？不行，不能切一切就結束。",
+    "「切」只是你心裡想好的。signal 會照你想的跑嗎？不會：有的跑得快、有的跑得慢，在一個長 cycle 裡，有的已經跑到後面、有的還在前面。",
+    "我們希望一個 stage 剛好一個 clock cycle：做完、存起來，下一個 stage 再開始，每一個 stage 都切得乾乾淨淨，才有「一步一步」的觀念。",
+    "所以要在每個切開的地方加一個 [[pipeline register]]，把每個 stage 做完的東西存在裡面。",
+    "pipeline register 由 clock 控制，跟 clock 同步：clock 一來，這個 stage 做完的結果就寫進 pipeline register，下一個 clock 再開始下一輪運算。",
+    "資料存好了，這個 stage 的 resource（例如 instruction memory）就可以 release 給下一個 instruction 用；下一個 stage 的 input 就從 pipeline register 拿。",
+    "那 clock period 比原來長還是短？",
+    "變短了：原本 single cycle 那麼長，現在切成一段一段，clock period 只要一個 stage 的時間，clock 就變快。"
+   ],
+   "points": [
+    {
+     "t": 1634,
+     "text": "只「想好」切在哪裡不夠：signal 有快有慢；要在每個 stage 之間加 pipeline register（IF/ID、ID/EX、EX/MEM、MEM/WB），由 clock 控制。"
+    },
+    {
+     "t": 1825,
+     "text": "結果存進 pipeline register 後，resource 就能給下一個指令；clock period 縮短為一個 stage。"
+    }
+   ]
+  },
+  {
+   "title": "lw 在 pipeline 中：先讀 register、後選；寫回時用哪個 rt？",
+   "scene": "cpu-lwpipe",
+   "cues": [
+    1909.92,
+    1932.98,
+    1936.86,
+    1968.96,
+    1990.58,
+    2031.1,
+    2080.64,
+    2110.24,
+    2163.48,
+    2168.92,
+    2198.64,
+    2237.32
+   ],
+   "explain": [
+    "看 lw 在 pipeline 裡做什麼：instruction fetch 讀 instruction memory；instruction decode 時同時做 register fetch。",
+    "opcode 在 decode 的時候，rs、rt、rd 都已經在那裡了，就直接拿去 access register file。",
+    "讀出來的東西一定會用到嗎？那時候還不知道這是什麼 instruction。",
+    "不一定會用到。但為了節省時間，先讀出來再說；等 opcode decode 完知道是什麼指令，用不到的就不理它。",
+    "sign extension 也照樣做，後 16 bits 一起做好。最後 controller 決定 control signal，選要的 data 就好。",
+    "pipeline 的 lw 在每個 stage 用到哪些 resource？IF 用 instruction memory；ID 用 register file 的 read port 和 decoder；EX 用 ALU；MEM 用 data memory；WB 用 register file 的 write port。",
+    "看動畫：先 instruction fetch、PC + 4，讀出來的 instruction 放進 pipeline register。不能弄丟，因為下一個 clock cycle 下一個 instruction 就進來了。",
+    "投影片上，元件左半邊上色代表 write、右半邊上色代表 read。ID 根據 pipeline register 裡的 instruction 讀 rs、rt、rd，sign extension 也做，clock cycle 結束時全部存進 pipeline register。",
+    "接著 EX 算地址，存起來；第四個 stage access memory；第五個 stage write back。",
+    "現在有一個問題：lw 一路跑到第五個 stage，要寫回 register file，寫到哪裡？寫到 rt。",
+    "可是這時候新的 instruction 也進來了，正在 ID，它也拿出了它自己的 rt。到底用誰的？我們要的是第五個 stage 那個 lw 的 rt。",
+    "要想辦法選對，後面會介紹用 control 處理。這就是 dependency 產生的關係，也是 hazard 麻煩的地方。"
+   ],
+   "points": [
+    {
+     "t": 1900,
+     "text": "ID 時一邊 decode 一邊用 rs、rt、rd 讀 register file、做 sign extension（不一定用到，但省時間）。"
+    },
+    {
+     "t": 2030,
+     "text": "lw 用到：instruction memory、register file read port、ALU、data memory、register file write port。"
+    },
+    {
+     "t": 2168,
+     "text": "問題：lw 在第 5 stage 寫回 rt 時，新指令也帶著它的 rt → 要選對，後面的 dependency／hazard。"
+    }
+   ]
+  },
+  {
+   "title": "R-type（4 stage）與 lw（5 stage）混在一起 → structural hazard",
+   "scene": "cpu-struct",
+   "cues": [
+    2253.36,
+    2275,
+    2281.94,
+    2299.1,
+    2317.24,
+    2350.82,
+    2359.46,
+    2447.76,
+    2451.56,
+    2464.14
+   ],
+   "explain": [
+    "再來是 R-type：instruction fetch、register access 和 decoding、execution，然後 write back，四個 stage 就結束。",
+    "如果全部都是 lw，一個接一個 pipeline，其實沒什麼問題。",
+    "但你能規定誰跟誰 pipeline 嗎？不行，可能是 lw、lw、R、lw……各式各樣的混合。",
+    "假如 R-type 跟 lw 混在一起：前面一個 lw，後面跟一個 R-type。",
+    "lw 有五個 stage，第五個 stage 才寫 register file；R-type 只有四個 stage，在第四個 stage 就寫。R-type 晚一個 cycle 進來，結果兩個都在 cycle 5 寫，程式算出來撞在一起。",
+    "兩個人同時要寫 register file，可是只有一個 write port，就會打架。",
+    "用洗衣服來比喻：前面的同學洗衣、烘乾、摺衣；你的衣服已經手洗好了，晚一個小時來，卻跳過洗衣機直接去烘乾，就跟前面那個人撞在烘乾機了。",
+    "這就是 resource conflict：時間分配不對，造成兩個指令搶同一個 resource。",
+    "這叫做 [[structural hazard]]：不同的 instruction 在同一個時間要用同一個 resource。",
+    "要怎麼解決這個 structural hazard？下一節再來解答。"
+   ],
+   "points": [
+    {
+     "t": 2253,
+     "text": "R-type：IF、ID、EX、WB；全是 lw 沒問題，但指令順序無法規定。"
+    },
+    {
+     "t": 2299,
+     "text": "lw 後面跟 R-type：lw 第 5 stage、R-type 第 4 stage 同一個 cycle 都要寫 register file → resource conflict = structural hazard。"
+    }
+   ],
+   "trap": "structural hazard：不同指令在同一個 cycle 要用同一個 resource（例如 register file 的 write port）。"
+  }
+ ],
+ "quiz": [
+  {
+   "q": "jump 的目標地址如何組成？",
+   "opts": [
+    "{PC+4[31:28], address[25:0], 00}",
+    "PC + 4 + address × 4",
+    "address[25:0] ‖ 000000",
+    "R[rs]"
+   ],
+   "ans": "{PC+4[31:28], address[25:0], 00}",
+   "why": "26-bit address shift 2 位成 28 bits，前面接 PC+4 的前 4 bits，共 32 bits。"
+  },
+  {
+   "q": "洗衣（洗 30、烘 40、摺 20 分鐘）四批，pipeline 共需多久？",
+   "opts": [
+    "3.5 小時",
+    "6 小時",
+    "2 小時",
+    "4 小時"
+   ],
+   "ans": "3.5 小時",
+   "why": "30 + 4 × 40 + 20 = 210 分鐘；sequential 才是 4 × 90 = 360 分鐘 = 6 小時。"
+  },
+  {
+   "q": "pipeline 改善的是什麼？",
+   "opts": [
+    "throughput",
+    "單一指令的 latency",
+    "CPI 變成 0",
+    "instruction count"
+   ],
+   "ans": "throughput",
+   "why": "每個指令還是要經過所有 stage，latency 不變；單位時間完成的指令變多。"
+  },
+  {
+   "q": "pipeline 的 potential speedup 等於？",
+   "opts": [
+    "pipeline stage 的數目",
+    "最慢 stage 的時間",
+    "指令數",
+    "永遠 2 倍"
+   ],
+   "ans": "pipeline stage 的數目",
+   "why": "理想上 n 個 stage 同時工作；不平均的 stage、fill／drain 與 dependency 會讓實際值較低。"
+  },
+  {
+   "q": "single cycle 每 800 ps 一個結果；切成最慢 200 ps 的 stage 後，穩定時多久完成一個指令？",
+   "opts": [
+    "200 ps",
+    "800 ps",
+    "1000 ps",
+    "160 ps"
+   ],
+   "ans": "200 ps",
+   "why": "clock period 取最慢的 stage（200 ps），每個 cycle 完成一個；第一個需要 5 × 200 = 1000 ps。"
+  },
+  {
+   "q": "為什麼要在 stage 之間加 pipeline register？",
+   "opts": [
+    "把每個 stage 的結果存起來，讓 stage 切乾淨並釋放 resource",
+    "增加 register 數量給程式用",
+    "減少 instruction count",
+    "取代 data memory"
+   ],
+   "ans": "把每個 stage 的結果存起來，讓 stage 切乾淨並釋放 resource",
+   "why": "signal 有快有慢，必須在 clock edge 把結果存下來，下一個 stage 從 pipeline register 取 input。"
+  },
+  {
+   "q": "lw 後面緊接著 4-stage 的 R-type，會發生什麼？",
+   "opts": [
+    "兩者在同一個 cycle 寫 register file：structural hazard",
+    "data hazard：R-type 讀到舊值",
+    "control hazard",
+    "不會有問題"
+   ],
+   "ans": "兩者在同一個 cycle 寫 register file：structural hazard",
+   "why": "lw 在第 5 stage 寫、R-type 在第 4 stage 寫，晚一個 cycle 進來剛好同一 cycle 搶 write port。"
+  }
+ ]
+}

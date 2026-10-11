@@ -1,0 +1,666 @@
+{
+ "video": "Ml6xpYl_tns",
+ "label": "黃婷婷教授計算機結構_第14A講 Computer Arithmetic / Single-Cycle Processor",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Floating point 乘法：exponent 相加、減一次 bias，mantissa 相乘",
+   "scene": "cpu-fpmul",
+   "cues": [
+    18.07,
+    52.85,
+    86.13,
+    119.22,
+    155.1,
+    173.78,
+    221.52,
+    245.62,
+    312.28,
+    325.79,
+    339.42
+   ],
+   "explain": [
+    "上次學了[[floating point]]的加法，今天看乘法。先回想它的樣子：[[IEEE 754]] [[single precision]]把 32 個 bits 分成三段：1 個 sign、8 個 [[exponent]]、23 個 fraction。",
+    "同樣是一串 0 和 1，當成整數和當成 floating point 的「讀法」完全不同。floating point 的值是 (−1)^S × 1.fraction × 2 的 (exponent − bias) 次方，所以運算的方法也要跟著不一樣。",
+    "老師先叫大家別管電腦，用國中學過的科學記號想：兩個數 a×10^x 和 b×10^y 相乘，要怎麼算？",
+    "答案很簡單：前面的數字（mantissa）相乘，次方（exponent）相加。畫面上用 2.0×10³ 乘 3.0×10² 當示意，程式算出來剛好是 6.0×10⁵。",
+    "有時候乘出來小數點前面超過一位，例如 5.0×4.0 = 20.0，就不是 [[normalized]] 的樣子，要把小數點移一位、次方加 1，變成 2.0×10⁶。",
+    "電腦裡多了一個小麻煩：exponent 不是直接存，而是存「真正的 exponent + [[bias]]」，這叫 biased representation。single precision 的 bias 是 127。",
+    "老師用小例子說明：exponent 用 4 bits、bias 是 8。7 存成 7+8 = 15（1111），−3 存成 −3+8 = 5（0101）。",
+    "如果直接把存起來的兩個數相加，15 + 5 = 20。可是真正的 7 + (−3) = 4，應該存成 4 + 8 = 12。多出來的 8，是因為兩個數各加了一次 bias，總共加了兩次。",
+    "所以相加之後要再減掉一次 bias：20 − 8 = 12，剛好就是 4 + 8，程式比對打勾。這是 floating point 乘法比較容易忘的地方。",
+    "exponent 處理好之後，把 mantissa 相乘，再 normalize。接著做 rounding（四捨五入到能存的位數）；round 完有可能又不是 normalized，所以第 ③④ 步可能要重複幾次。",
+    "最後補上正負號。因為 sign 和大小（magnitude）是分開存的，只要大小相乘、sign 用 XOR：同號得正、異號得負，畫面上把四種組合都驗證了。"
+   ],
+   "points": [
+    {
+     "t": 18,
+     "text": "floating point 的表示（sign、exponent、mantissa）和 integer 不同，所以加、乘的 hardware 也不同。"
+    },
+    {
+     "t": 86,
+     "text": "科學記號相乘：mantissa 相乘、exponent 相加；乘出來不是 normalized form 就要 normalize。"
+    },
+    {
+     "t": 163,
+     "text": "exponent 用 biased representation：兩個 biased exponent 相加會多加一次 bias，要減掉。"
+    },
+    {
+     "t": 219,
+     "text": "老師的例子：exponent 7 與 −3、bias 8 → 15 + 5 = 20，減 8 得 12 = 4 + 8。"
+    },
+    {
+     "t": 323,
+     "text": "步驟：exponent 相加減 bias → mantissa 相乘 → normalize → round（可能要重複）→ 設 sign（XOR）。"
+    }
+   ],
+   "trap": "兩個 biased exponent 相加後一定要減一次 bias；sign 和 magnitude 分開處理，sign = S₁ XOR S₂。"
+  },
+  {
+   "title": "例題：1.000₂×2⁻¹ × −1.110₂×2⁻²",
+   "scene": "cpu-fpmulex",
+   "cues": [
+    352.53,
+    364.08,
+    387.12,
+    394.94
+   ],
+   "explain": [
+    "來看一個例子：用 4 位的 binary 數，A = 1.000₂×2⁻¹（也就是 0.5），B = −1.110₂×2⁻²（也就是 −0.4375）。",
+    "exponent 直接加：−1 + (−2) = −3。可是電腦裡存的是加過 127 的值：126 + 125 = 251，要再減一次 127，得到 124，也就是 −3 + 127，正確。",
+    "mantissa 相乘：1.000 × 1.110 = 1.110000。小數點前只有一個 1，已經是 normalized，不用調整；round 到 4 位還是 1.110。",
+    "一正一負相乘是負的，所以答案是 −1.110₂×2⁻³ = −0.21875。程式直接算 0.5 × (−0.4375)，結果一樣，打勾。"
+   ],
+   "points": [
+    {
+     "t": 352,
+     "text": "4 位 binary 例子：exponent −1 + −2 = −3；biased 126 + 125 = 251，減 127 = 124。"
+    },
+    {
+     "t": 387,
+     "text": "mantissa 1.000 × 1.110 = 1.110000，已 normalized；sign 為負 → −1.110₂ × 2⁻³ = −0.21875。"
+    }
+   ]
+  },
+  {
+   "title": "Floating point 的硬體：Coprocessor 1 與它的指令",
+   "scene": "cpu-cop1",
+   "cues": [
+    400,
+    430.3,
+    435.78,
+    453.76,
+    464.42,
+    517.44,
+    531.86,
+    544.12,
+    591.04
+   ],
+   "explain": [
+    "先看整個 hardware。主 [[CPU]] 裡有 ALU、乘法器和除法器，不過這些都是給整數用的。",
+    "floating point 的加、乘需要很多 hardware，不是幾個 full adder 就能搞定，所以交給另一個 processor 來做，叫做 Coprocessor 1。",
+    "最早的 x86 根本沒有 floating point 硬體，只能用 software 拿整數指令慢慢模擬；為了加快，後來才加上 floating point coprocessor。",
+    "Coprocessor 1 有自己的 [[register file]]（$f0 到 $f31）和自己的運算單元，跟主 CPU 是分開的。",
+    "既然是不同的硬體，就要不同的指令。寫 add 到底是主 CPU 的加還是 coprocessor 的加？所以 floating point 的指令後面帶 .s（[[single precision]]）或 .d（[[double precision]]）。",
+    "它的 register 也有自己的名字：$f0、$f1…。寫 $t0 這種名字，就是去主 CPU 拿。",
+    "double precision 一個數要 64 bits，一個 register 只有 32 bits，所以用一對：$f0 和 $f1 合起來當一個，$f2 和 $f3 當另一個。",
+    "load / store 也要分清楚：什麼都不加的 lw、sw 是主 CPU 的；要搬到 coprocessor 1 的 register，要用 lwc1、swc1（c1 就是 coprocessor 1）。",
+    "有時想把資料搬回主 CPU 處理，就用 move 指令：mfc1 從 coprocessor 1 搬出來、mtc1 搬進去。"
+   ],
+   "points": [
+    {
+     "t": 400,
+     "text": "floating point 運算交給另一個 processor：Coprocessor 1（最早 x86 沒有，用 software 模擬）。"
+    },
+    {
+     "t": 450,
+     "text": "Coprocessor 1 有自己的 register file（$f0–$f31）和運算單元；指令加 .s／.d 表示 single／double。"
+    },
+    {
+     "t": 532,
+     "text": "double precision 用一對 register（$f0+$f1）。"
+    },
+    {
+     "t": 544,
+     "text": "load／store 要用 lwc1／swc1；主 CPU 與 coprocessor 之間用 mfc1／mtc1 搬資料。"
+    }
+   ]
+  },
+  {
+   "title": "Highlights：同一串 bits 的不同解釋、range 有限、associativity",
+   "scene": "cpu-fpfall",
+   "cues": [
+    633.12,
+    647.08,
+    658.1,
+    669.52,
+    736.24,
+    748.74,
+    778.54,
+    800.96,
+    812.26,
+    831.1,
+    845.84,
+    880.96
+   ],
+   "explain": [
+    "本章的重點提醒：同樣一串 32 bits，可以有不同的解釋。畫面上這串 bits 如果當成 [[two's complement]] 整數，就是 −1945632764。",
+    "同一串 bits 也可以當成指令：前 6 個 bits 是 [[opcode]]。這裡 opcode 是 35，也就是 lw，解出來是 lw $t0, 4($zero)。",
+    "再把它當成 floating point：第一個 bit 是 sign、接下來 8 個是 exponent、剩下是 fraction。算出來是一個非常小的負數。同樣的 bits，三種意思。",
+    "解釋不同，需要的 hardware 就不同。當成整數相加，用 carry-lookahead adder 就好；當成 floating point 相加，就要對齊 exponent、相加、normalize、round 那一大串硬體。",
+    "所以資訊的意義看你怎麼解釋它；決定了解釋，才照著解釋去設計 hardware。",
+    "另一個重點：bits 的數目有限。32 個 bits 不夠就換 64 個，但 64 個還是有極限，所以 range（能表示多大）和 precision（能多精確）一定有限。",
+    "因為有限，所以 associativity（結合律）要小心。看三個數：x = −1.5×10³⁸、y = 1.5×10³⁸（非常大），z = 1.0。",
+    "先算 x + y：一正一負剛好抵消變 0，再加 z 得到 1.0。",
+    "換個順序先算 y + z：y 已經大到極限，加上 1.0 根本表示不出差別，結果還是 y，1.0 就這樣消失了。",
+    "再拿這個結果去加 x，就變成 0。",
+    "同樣三個數，只是先加誰不同，答案一個是 1.0、一個是 0.0。原因就是能表示的 range 和 precision 有限。",
+    "寫 parallel 程式時更要注意：一連串的加法分給不同 processor，誰先做、誰後做不一定，加的順序不同，結果就可能不一樣，難以預測。"
+   ],
+   "points": [
+    {
+     "t": 633,
+     "text": "同一個 32-bit 字串可解釋成 integer、instruction 或 floating point；解釋不同，需要的 hardware 就不同。"
+    },
+    {
+     "t": 748,
+     "text": "不論怎麼表示，range 與 precision 都有限。"
+    },
+    {
+     "t": 778,
+     "text": "floating point 加法沒有 associativity：x=−1.5×10³⁸、y=1.5×10³⁸、z=1.0 → (x+y)+z = 1.0，x+(y+z) = 0.0。"
+    },
+    {
+     "t": 876,
+     "text": "parallel programming 的相加順序不固定，結果可能不同。"
+    }
+   ],
+   "trap": "floating point 的 (x+y)+z 不一定等於 x+(y+z)：很大的數加 1.0，1.0 會被「吃掉」。"
+  },
+  {
+   "title": "x86 的 floating point 指令（回家看）",
+   "scene": null,
+   "points": [
+    {
+     "t": 906,
+     "text": "x86 的 floating point／multimedia 指令隨時間一直加上去，細節回家看投影片。"
+    }
+   ]
+  },
+  {
+   "title": "乘除 2 的次方用 shift；signed shift 要 sign extension",
+   "scene": "cpu-shift",
+   "cues": [
+    929.26,
+    951.72,
+    975.84,
+    982.56
+   ],
+   "explain": [
+    "老師提醒：如果要乘或除的是 2 的幾次方，不要傻傻地真的做乘除，用 [[shift left]] / shift right 就好。畫面用 5 × 4 當示意：往左 shift 2 位，0000 0101 變成 0001 0100，就是 20。",
+    "乘法、除法要一個 bit 一個 bit 做 iteration，很花 hardware 也很花時間；barrel shifter 一個 clock cycle 就能 shift 完，快很多。",
+    "shift 也分 signed 和 unsigned。示意：−8 往右 shift 1 位想得到 −4，空出來的位置要補 sign bit（1）；如果補 0，會變成 124，完全錯了。",
+    "這種「補 sign bit」就是 [[sign extension]]：4 bits 的 1010（−6）要變成 8 bits，前面補 1 變成 11111010，表示的還是同一個數 −6。正數就補 0。"
+   ],
+   "points": [
+    {
+     "t": 928,
+     "text": "乘除 2^i 不要真的做乘除，用 shift；barrel shifter 一個 clock cycle 就做完。"
+    },
+    {
+     "t": 966,
+     "text": "signed shift 要補 sign bit；sign extension 讓位數變多但表示同一個數。"
+    }
+   ]
+  },
+  {
+   "title": "誰在乎 floating point：Pentium 的除法 bug",
+   "scene": null,
+   "points": [
+    {
+     "t": 997,
+     "text": "日常帳戶少 0.002 分沒人在乎，但科學運算很依賴 floating point；Pentium 曾因 floating point 除法 bug 回收。"
+    }
+   ]
+  },
+  {
+   "title": "本章結語：make the common case fast",
+   "scene": "cpu-common",
+   "cues": [
+    1033.78,
+    1051.06,
+    1066.62,
+    1081.26,
+    1109.5,
+    1135.94,
+    1168.44
+   ],
+   "explain": [
+    "這一章的結語：[[instruction set]] 可以支援各種表示法，同樣的 bits 看你怎麼解釋；解釋好以後，照著解釋設計加、減、乘、除的 hardware。",
+    "不管用哪一種方法表示，range 和 precision 都是有限的，這點要一直記得。",
+    "對想做 processor 設計的人很重要的一個觀察：雖然設計了很多 instructions，真正常用的其實只有一小部分，老師引述投影片說大約 54 個。",
+    "用 SPEC 這套 [[benchmark]] 去測：老師說這些常用指令就涵蓋了 SPEC integer 的全部、SPEC floating point 的 97%。",
+    "這就是 [[trade-off]]：如果要做很便宜的 processor，很多少用的指令乾脆不做，需要時用 software 去模擬（emulate）。",
+    "反過來，如果要加速，就應該加速最常用的那些指令。同樣的代價，整體跑得更快，這叫 make the common case fast，是設計 processor 一定要記住的觀念。",
+    "老師舉自己研究生的例子：常常要 decode 的指令，給一個小而快的 decoder；不常用的，給一個大一點、省電的 decoder。這也是 make the common case fast。"
+   ],
+   "points": [
+    {
+     "t": 1031,
+     "text": "instruction set 支援各種表示法；依解釋設計 hardware；range 與 precision 都有限。"
+    },
+    {
+     "t": 1060,
+     "text": "設計了很多指令，常用的只是少數（老師說約 54 個，涵蓋 SPEC int 100%、SPEC fp 97%）。"
+    },
+    {
+     "t": 1109,
+     "text": "trade-off：便宜的設計可把少用的指令交給 software emulate；要加速就加速常用的指令 → make the common case fast。"
+    }
+   ]
+  },
+  {
+   "title": "講義還沒發（課堂行政）",
+   "scene": null,
+   "points": [
+    {
+     "t": 1188,
+     "text": "講義還沒發，先看投影片。"
+    }
+   ]
+  },
+  {
+   "title": "新的一章：設計 processor（single cycle → pipeline）",
+   "scene": "cpu-intro",
+   "cues": [
+    1246.38,
+    1300.9,
+    1316.32,
+    1324.78,
+    1350.96,
+    1405.82
+   ],
+   "explain": [
+    "新的一章：怎麼設計 processor 的 hardware。前面學了 instruction set 為什麼要這樣設計（trade-off），也學了加法器、ALU 這些 arithmetic components，現在把它們組成一個真正的 processor。",
+    "我們只會設計幾個代表性的指令，但方法學會了就能類推，自己設計一整個 processor。",
+    "先介紹 [[single cycle]] 的 processor：每一個 instruction 都在一個 clock cycle 裡做完。",
+    "問題是指令有長有短。lw、sw 要去 memory 拿東西，很慢；一個 cycle 要等最長的做完，短的指令也只能乾等，所以 single cycle 不切實際，但它教你基本設計方法。",
+    "下一章會介紹 [[pipeline]]：把指令切成一階一階的 stage，現在的 processor 都是這樣做。",
+    "讀這一章的訣竅：圖上每一個元件、每一條線，都搞清楚它從哪裡來、代表什麼。全部懂了就不用背，回家看一下就好。"
+   ],
+   "points": [
+    {
+     "t": 1246,
+     "text": "前面學了 instruction set design 的 trade-off、arithmetic components，現在真正設計一個 processor。"
+    },
+    {
+     "t": 1314,
+     "text": "single cycle：每個 instruction 一個 cycle 做完；但 lw／sw 要等 memory，cycle 很長，不切實際。"
+    },
+    {
+     "t": 1341,
+     "text": "下一步是 pipeline：切成一階一階的 stage。讀圖方法：搞懂每一條線從哪來、代表什麼，不用背。"
+    }
+   ]
+  },
+  {
+   "title": "CPU 的效能：IC × CPI × cycle time",
+   "scene": "cpu-perf",
+   "cues": [
+    1461.58,
+    1496.46,
+    1523.72,
+    1548.34,
+    1584.12,
+    1590.72,
+    1615.36
+   ],
+   "explain": [
+    "所有通用的 CPU 都在做同一件事：從 memory 拿一個 instruction（fetch）、看懂它（decode）、執行它（execute），然後再拿下一個，一直重複。",
+    "怎麼評估 CPU 好不好？三個數相乘：[[instruction count]] × [[CPI]]（一個指令平均要幾個 clock）× clock cycle time，就是 [[CPU time]]。",
+    "instruction count 由什麼決定？由 instruction set（有沒有乘法指令等等）和 [[compiler]]（翻譯得聰不聰明、有沒有 optimize）決定。",
+    "CPI 和 cycle time 則完全看 hardware 怎麼設計，例如加法器設計得快還是簡單，做加法要的 cycle 數就不同。",
+    "single cycle 的版本，每個指令只花一個 clock cycle，所以 CPI = 1。示意：執行 100 個指令，就是 100 個 cycles。",
+    "可是 clock period 會很長：一定要等最長的那個指令做完，clock 才能改變，所以它不見得 efficient。",
+    "接下來會講兩個版本：簡化版的 single cycle，以及真正在用的 pipeline 版本。"
+   ],
+   "points": [
+    {
+     "t": 1451,
+     "text": "general-purpose processor：fetch → decode → execute，一直重複。"
+    },
+    {
+     "t": 1490,
+     "text": "CPU time = instruction count × CPI × cycle time；IC 由 ISA 與 compiler 決定，CPI 與 cycle time 由 hardware 決定。"
+    },
+    {
+     "t": 1584,
+     "text": "single cycle：CPI = 1，但 clock period 要等最長的指令，不 efficient。"
+    }
+   ]
+  },
+  {
+   "title": "要實作的指令與 R／I／J 三種 format",
+   "scene": "cpu-subset",
+   "cues": [
+    1629.78,
+    1633.64,
+    1635.52,
+    1640.61,
+    1648.32,
+    1675.26,
+    1701.9
+   ],
+   "explain": [
+    "我們要實作的指令其實很少，只有幾個。",
+    "第一類是 memory reference：lw（從 memory 讀到 register）和 sw（從 register 寫到 memory）。",
+    "第二類是算術、邏輯運算：add、sub、and、or、slt，都是 [[R-type]] 指令。",
+    "第三類是 control：beq（相等就跳，或 bne）和 j（直接跳），用來改變執行的順序。",
+    "雖然少，但已經包含幾乎所有大類：和 memory 溝通、做運算、改變 control sequence。",
+    "[[MIPS]] 很簡單，只有三種 [[instruction format]]：R-type、[[I-type]]、[[J-type]]。程式把每種的欄位寬度加起來，都剛好是 32 bits。",
+    "如果只有一種 format，設計最簡單；不得已才妥協成三種。等你自己設計過 hardware 就會體會：format 越少、越一致越好。"
+   ],
+   "points": [
+    {
+     "t": 1623,
+     "text": "實作的子集：memory reference（lw、sw）、arithmetic-logical（add、sub、and、or、slt）、control（beq、j）。"
+    },
+    {
+     "t": 1674,
+     "text": "MIPS 只有 R、I、J 三種 format，都是 32 bits；format 越少越一致，hardware 越簡單。"
+    }
+   ]
+  },
+  {
+   "title": "一個 instruction 怎麼執行：PC、fetch、decode、執行、更新 PC",
+   "scene": "cpu-exec",
+   "cues": [
+    1714.7,
+    1761.72,
+    1780.17,
+    1797.89,
+    1822.67,
+    1846.08,
+    1871.85,
+    1880.71,
+    1896.89
+   ],
+   "explain": [
+    "程式寫好後，每一個 assembly 指令都要先做 [[instruction fetch]]：把它從 memory 拿出來。問題是：去哪裡拿？",
+    "答案是 [[program counter]]（PC）。PC 裡放著一個位址，告訴你要去 memory 第幾個位置拿指令。",
+    "一個接一個執行的話，下一個指令就在 PC + 4（一個指令 4 bytes），例如 1000 → 1004。要跳的話，例如從 1000 跳到 2000，就把 PC 改成 2000。",
+    "PC 本身是一個 32 bits 的 [[register]]。用它的值去 instruction memory 拿出指令，這就叫 fetch。",
+    "拿到 32 bits 之後要 decode。一開始不知道它是 R、I 還是 J，就同時用三種方式去解釋，等 opcode 看完才知道是哪一種。",
+    "decode 之後去 register file 拿運算元：有的指令要讀 rs、rt 兩個，有的只讀 rs（因為 rt 是要寫入的 destination）。",
+    "接著用 [[ALU]] 依照指令做運算；如果是 lw / sw，還要再去 access data memory。",
+    "一個指令做完要更新 PC：一般是 PC + 4；如果是 branch 或 jump，target address 在過程中就要先算好。",
+    "PC 更新完，下一個 iteration 再回去拿下一個指令：fetch、decode、execute，一直重複，這就是程式執行的全部過程。"
+   ],
+   "points": [
+    {
+     "t": 1714,
+     "text": "Program Counter 告訴你去 instruction memory 的哪裡拿指令；sequential 就 PC + 4，跳就換成 target。"
+    },
+    {
+     "t": 1821,
+     "text": "decode 時同時用 R／I／J 解釋；讀 register file（rs、rt）；ALU 運算；lw／sw 再 access memory。"
+    },
+    {
+     "t": 1872,
+     "text": "最後 PC ← PC + 4 或 target address，進入下一個 iteration。"
+    }
+   ]
+  },
+  {
+   "title": "Datapath 概觀：共用的路要靠 multiplexer 與 control signal",
+   "scene": "cpu-overview",
+   "cues": [
+    1909.55,
+    1935.23,
+    1945.65,
+    1973.85,
+    1997.17,
+    2008.55,
+    2022.39,
+    2074.65,
+    2137.25,
+    2154.35,
+    2180.25
+   ],
+   "explain": [
+    "先看簡單的概觀。不管指令多複雜，形狀大概都這樣：PC 放一個 32 bits 的位址，例如 1000，就去 instruction memory 的 1000 拿指令。",
+    "如果要跳到 10000，PC 就放 10000，下一次就去 10000 拿。",
+    "拿出來的指令圖上只畫一條線，其實是 32 個 bits。前 6 個 bits 一定是 opcode，後面是 rs、rt、rd 等欄位。",
+    "MIPS 雖然有三種 format，但 rs 一定在同一個位置、rt 也一定在同一個位置，所以這兩個 5 bits 的 register 地址可以馬上拿去讀 register file。",
+    "讀出來就交給 ALU 運算；如果是 R-type，算完直接寫回 register file 就結束了。",
+    "如果是 lw / sw，ALU 算出來的是 memory 的地址，還要再去 data memory；lw 讀到的資料要再放回 register。",
+    "MIPS 是 load-store machine：資料要先 load 到 register 才能運算，算完再 store 回去。lw / sw 只負責搬資料，不跟運算混在一起。",
+    "問題來了：寫回 register 的入口只有一條。R-type 的 ALU 結果要走，lw 的 memory 資料也要走，就像兩台車搶同一個高速公路入口，會打架。",
+    "解決辦法是放一個 multiplexer（mux，多工器）。2-to-1、4-to-1 的 mux 決定這個 cycle 讓誰上高速公路。",
+    "mux 一定有一個 [[control signal]] 決定選哪邊。這個訊號從 opcode decode 出來：知道現在是哪個指令，就知道誰該有優先權。",
+    "最後完成的 [[datapath]] 就是這張圖：基本元件還是那些，但多了好幾個 mux，每個 mux 都由 control signal 控制，讓共用的路不會打架。"
+   ],
+   "points": [
+    {
+     "t": 1909,
+     "text": "PC 放 32-bit 位址（例：1000；跳到 10000 就放 10000）去 instruction memory 拿指令。"
+    },
+    {
+     "t": 1945,
+     "text": "指令 32 bits，rs、rt 位置固定，可立刻去讀 register file；ALU 運算，R-type 寫回，lw／sw 去 data memory。"
+    },
+    {
+     "t": 2050,
+     "text": "寫回 register 只有一條路，ALU 結果與 memory 資料搶 → 用 mux 選；mux 的 control signal 由 opcode decode 而來。"
+    }
+   ]
+  },
+  {
+   "title": "基本元件：wire、bus、combinational 與 sequential element",
+   "scene": "cpu-elems",
+   "cues": [
+    2233.33,
+    2256.17,
+    2282.49,
+    2304.71,
+    2344.19,
+    2361.39
+   ],
+   "explain": [
+    "要設計 datapath，先複習邏輯設計的基本元件。最基本的是 wire 上的 signal：low 代表 0，high 代表 1。",
+    "data 常常是 32 bits，圖上不會真的畫 32 條線，而是畫一條線、上面打一條斜線，表示這是一組很多 bits 的 [[bus]]。",
+    "線上跑的 0101 就是 information，它可能是 two's complement 的整數，也可能是 floating point，看你怎麼表示。",
+    "處理這些 information 的 hardware 有兩種。第一種是 [[combinational logic]]，例如加法器、ALU：input 一改變，output 就跟著改變，像 3+4 的 input 換成 5，output 馬上變 9。",
+    "第二種是 sequential element，負責把東西存起來。因為時間被切成一個一個 clock cycle，一次做一件事，做完的結果要存下來給下一個 cycle 用。",
+    "combinational element 前面都學過了：最簡單的 AND gate、加法器、ALU、還有 mux。"
+   ],
+   "points": [
+    {
+     "t": 2228,
+     "text": "signal 在 wire 上，low = 0、high = 1；多個 bits 的 data 畫成一條加斜線的 bus。"
+    },
+    {
+     "t": 2304,
+     "text": "combinational element（AND gate、adder、ALU、mux）：input 一變 output 就變；sequential element 負責存。"
+    }
+   ]
+  },
+  {
+   "title": "Sequential element：edge-triggered 與 write enable",
+   "scene": "cpu-edge",
+   "cues": [
+    2380.35,
+    2396.67,
+    2427.35,
+    2451.09,
+    2465.05,
+    2534.91,
+    2543.43,
+    2569.79,
+    2585.93,
+    2599.73,
+    2651.09
+   ],
+   "explain": [
+    "因為一次只做一件事，我們用 [[clock]] 來約束：每一個 [[clock period]] 只做一件事，做完把結果存起來，讓下一個 period 接著用。",
+    "register 就是用來存 data 的 sequential element（裡面是一排 [[flip-flop]]）。圖上這個是 rising edge trigger 的 register。",
+    "第一種存法叫 level sensitive：只要 clock 是 high（黃色那幾段），這整段時間都可以把東西寫進去。",
+    "第二種叫 edge triggered：只有 clock 從 0 變 1 的那一瞬間（綠色箭頭）才寫進去。",
+    "在兩個 edge 之間，input D 不管怎麼變都沒用，不會被存下來。output Q 只在 rising edge 那一刻抓 D 的值，程式檢查 Q 只在 edge 改變。",
+    "為什麼要用 edge trigger？為了避免 racing 之類的 timing 問題，所以 datapath 常用 edge-triggered 的元件。",
+    "再加一個很重要的東西：write enable（Write）。要寫進去，不但 clock 要在 transition，Write 還要等於 1。",
+    "這幾個 edge 剛好 Write = 1，所以資料寫進去了（綠色打勾）。",
+    "這幾個 edge 雖然 clock 也從 low 變 high，但 Write = 0，沒有 enable，就不寫進去，storage element 不改變。",
+    "為什麼這麼重要？register file、data memory 的 input 接到很多地方、一直動來動去，但不是每個指令都要寫，不能每個 clock 都寫進去。",
+    "所以它們一定要有 Write 這個 [[control signal]]，由 controller 決定：要寫才設 1，不寫就設 0。"
+   ],
+   "points": [
+    {
+     "t": 2370,
+     "text": "用 clock 約束：每個 period 做一件事並存起來；register 是 edge-triggered 的 storage element。"
+    },
+    {
+     "t": 2422,
+     "text": "level sensitive：clock 為 high 時都可寫；edge triggered：只在 0→1 transition 寫，中間 input 變化不會被存。"
+    },
+    {
+     "t": 2540,
+     "text": "加 write enable：clock edge 且 Write = 1 才寫；register file、data memory 都需要 Write 這個 control signal。"
+    }
+   ]
+  },
+  {
+   "title": "Clocking methodology：critical path 決定 clock period",
+   "scene": "cpu-clockm",
+   "cues": [
+    2669.57,
+    2697.93,
+    2715.49,
+    2726.29,
+    2750.15,
+    2785.93
+   ],
+   "explain": [
+    "複習 clocking methodology：一個 state element（存東西的）送出資料，經過 combinational logic 運算，結果再存進下一個 state element。",
+    "clock transition 的時候，新的 data 進到 state element；combinational logic 只要 input 一變就開始動、開始算。",
+    "可是運算要時間：訊號要經過 AND gate、OR gate…，這段叫 path delay，要等走完才算完成。畫面上的 delay 數字是示意。",
+    "這段 delay 一定要小於 clock period。如果太長，下一個 clock 已經 transition 了，output 才姍姍來遲，就 latch 不到正確的資料。",
+    "不同的 input 走的路不一樣，有快有慢。一定要用最長的那條，叫 critical path，來決定 clock period。示意的三條路中最長 5.5 ns，所以 clock period 至少 5.5 ns。",
+    "起點和終點也可以是同一個 state element，沒關係：每個 clock 來，它就換成新算好的值。"
+   ],
+   "points": [
+    {
+     "t": 2668,
+     "text": "clock transition 時新 data 進入，combinational logic 開始計算，經過 path delay 才算完。"
+    },
+    {
+     "t": 2726,
+     "text": "combinational delay 必須小於 clock period；最長的 path（critical path）決定 clock period。"
+    }
+   ]
+  },
+  {
+   "title": "設計 processor 的五個步驟",
+   "scene": "cpu-steps",
+   "cues": [
+    2831.21,
+    2852.07,
+    2885.25,
+    2894.39,
+    2921.37
+   ],
+   "explain": [
+    "接下來進入重點：怎麼設計一個 processor？第一步，分析 instruction set。就像炒菜，你連要炒麻婆豆腐還是炒牛肉都不知道，怎麼炒？",
+    "分析時除了知道有哪些指令，還要知道每個指令的 format（R、I、J），decode 時才知道這 32 bits 怎麼解釋、要做什麼運算。",
+    "第二、三步：選出 datapath 需要的元件，一個指令一個指令把它們接起來。",
+    "很多指令有共同的部分，就把它們整合成一個 datapath。同一個 datapath 為什麼能做不同的指令？靠 control。",
+    "第四、五步就是 control：決定每個指令的 control signal 要怎麼設，再把 control logic 合成出來。下一節繼續。"
+   ],
+   "points": [
+    {
+     "t": 2825,
+     "text": "① 分析 instruction set（format 與動作）② 選 datapath components ③ 組合 datapath ④ 決定 control signals ⑤ 合成 control logic。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "floating point 乘法中，兩個 biased exponent 相加後要做什麼？",
+   "opts": [
+    "減掉一次 bias",
+    "再加一次 bias",
+    "除以 2",
+    "不用處理"
+   ],
+   "ans": "減掉一次 bias",
+   "why": "兩個數各加了一次 bias，相加後 bias 出現兩次，要減掉一次（例：15 + 5 − 8 = 12 = 4 + 8）。"
+  },
+  {
+   "q": "1.000₂×2⁻¹ × −1.110₂×2⁻² 的結果是？",
+   "opts": [
+    "−1.110₂×2⁻³",
+    "−1.110₂×2⁻²",
+    "1.110₂×2⁻³",
+    "−0.111₂×2⁻²"
+   ],
+   "ans": "−1.110₂×2⁻³",
+   "why": "exponent −1 + −2 = −3；mantissa 1.000 × 1.110 = 1.110（已 normalized）；sign 為負。"
+  },
+  {
+   "q": "x = −1.5×10³⁸、y = 1.5×10³⁸、z = 1.0（single precision），x + (y + z) = ?",
+   "opts": [
+    "0.0",
+    "1.0",
+    "1.5×10³⁸",
+    "overflow"
+   ],
+   "ans": "0.0",
+   "why": "y + z 中 1.0 太小被吃掉仍是 y，再加 x 得 0；但 (x + y) + z = 1.0，所以 floating point 加法沒有結合律。"
+  },
+  {
+   "q": "要把 floating point register 的資料搬到主 CPU 的 register，用哪個指令？",
+   "opts": [
+    "mfc1",
+    "lwc1",
+    "add.s",
+    "swc1"
+   ],
+   "ans": "mfc1",
+   "why": "mfc1 = move from coprocessor 1；lwc1／swc1 是和 memory 之間的 load／store。"
+  },
+  {
+   "q": "單週期 CPU 的 CPI 是多少？它的缺點是？",
+   "opts": [
+    "CPI = 1，clock period 要等最長的指令",
+    "CPI = 5，clock period 很短",
+    "CPI = 1，clock period 最短",
+    "CPI 不固定，需要 pipeline register"
+   ],
+   "ans": "CPI = 1，clock period 要等最長的指令",
+   "why": "每個指令一個 cycle，但 cycle 長度必須容納最慢的指令（lw），短指令也要等。"
+  },
+  {
+   "q": "edge-triggered 且有 write enable 的 register，什麼時候會寫入？",
+   "opts": [
+    "clock 的 rising edge 且 Write = 1",
+    "clock 為 high 的整段時間",
+    "只要 input 改變",
+    "Write = 1 的任何時間"
+   ],
+   "ans": "clock 的 rising edge 且 Write = 1",
+   "why": "edge-triggered 只在 transition 寫；再加 write enable，Write = 0 時即使有 edge 也不寫。"
+  },
+  {
+   "q": "clock period 由什麼決定？",
+   "opts": [
+    "combinational logic 中最長的 path（critical path）",
+    "最短的 path",
+    "所有 path delay 的平均",
+    "register 的個數"
+   ],
+   "ans": "combinational logic 中最長的 path（critical path）",
+   "why": "delay 必須小於 clock period 才能 latch 到正確資料，所以要用最長的那條。"
+  }
+ ]
+}

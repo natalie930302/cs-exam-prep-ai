@@ -1,0 +1,533 @@
+{
+ "video": "3Ig6EcOGV3s",
+ "label": "黃婷婷教授計算機結構_第16A講 Single-Cycle Processor",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "回顧：mux 讓 datapath 共用；controller 產生 control signal",
+   "scene": "cpu-recap4",
+   "cues": [
+    17.1,
+    46.87,
+    68.7,
+    82.16,
+    101.56
+   ],
+   "explain": [
+    "今天繼續 [[single cycle]] implementation。它有兩部分：datapath 怎麼合成、control 怎麼設。datapath 是一個指令一個指令找出來，再 merge 起來。",
+    "一個 output 可以 fan out 給很多人，但一個 input 只能從一個 source 過來，所以 merge 時要靠 mux 決定這次走哪個 source。",
+    "instruction 經過 controller，發出下面這些 control signal。大部分時候，只看 instruction 就能決定 control signal。",
+    "但有時候還要 datapath 的結果才能決定。例如 branch：要比對兩個 register 一不一樣（equal），一樣才跳。",
+    "比對的動作是在 datapath 做的，所以 datapath 也會把運算結果交給 controller，一起決定 control signal。"
+   ],
+   "points": [
+    {
+     "t": 17,
+     "text": "single cycle = datapath + control；一個 input 只能有一個來源，靠 mux；control signal 大多看 instruction，有時還要 datapath 的結果（equal）。"
+    }
+   ]
+  },
+  {
+   "title": "Main control 的觀察：欄位位置固定、控制點有哪些",
+   "scene": "cpu-obs4",
+   "cues": [
+    112.1,
+    125.12,
+    127.92,
+    135,
+    162.82,
+    175.94,
+    196.6,
+    209.5
+   ],
+   "explain": [
+    "先回顧上次 main controller 的重要觀察，這都是因為 instruction 的設計方式。畫面上是 R-type、lw/sw、beq 三種 format。",
+    "opcode 一定在同一個地方：最前面 6 個 bits（31–26）。",
+    "要讀的兩個 register 一定是 rs 和 rt，也都在固定的位置。",
+    "rt 有時候又是 destination：load 時用 rt 描述要寫的 register；R-type 則用 rd。所以這裡需要 mux。",
+    "load / store 的 base register 永遠在 rs（老師說考試考過這題）。用 rs 當 base 加上 offset，就算出 memory 的地址。",
+    "後面 16 bits 可能是 offset，也可能是 immediate value。各種 type 盡量共用同一個 format，format 越簡單，control 就越簡單。",
+    "這是上次合成好的 datapath，從前到後有很多控制點。",
+    "RegDst、ALUOp 這些都是 control signal。待會要做的，就是決定每個控制點要設成什麼值，datapath 才會執行我們要的指令。"
+   ],
+   "points": [
+    {
+     "t": 112,
+     "text": "opcode 永遠在 bits 31–26；讀的 register 是 rs、rt；destination 是 rt（lw）或 rd（R-type）。"
+    },
+    {
+     "t": 151,
+     "text": "load／store 的 base 永遠在 rs；後 16 bits 是 offset／immediate。format 越一致 control 越簡單。"
+    },
+    {
+     "t": 191,
+     "text": "datapath 上的控制點（RegDst、ALUOp…）就是要設定的 control signals。"
+    }
+   ]
+  },
+  {
+   "title": "Datapath with control unit：main control 與 ALU control",
+   "scene": "cpu-ctrlunit4",
+   "cues": [
+    243.91,
+    253.78,
+    272.9,
+    294.38,
+    323.54,
+    397.79,
+    462.08,
+    496.26,
+    518.73,
+    543.51
+   ],
+   "explain": [
+    "先看 datapath with control unit：跟剛才那張不一樣的地方，就是加上了 controller。",
+    "controller 在這兩個地方。上面那個主要看 opcode：opcode 進來 decode 之後，就發出 control signal。",
+    "因為 instruction 設計的關係，還需要一個 ALU 的 control。所以有一個 main controller，還有一個 ALU control。",
+    "大部分 control signal 看 opcode 就能決定，但有些不行。case 1：branch。它過來時不能馬上決定要跳去哪裡，要是 branch 而且減出來是 0，才選跳的地址。",
+    "case 2：ALU 要做什麼運算？看到 opcode 就知道嗎？不一定，有時候可以、有時候不行。",
+    "load / store 時，ALU 要把 rs 和 sign-extended 的 immediate 相加，算 memory 地址，所以知道要做加。",
+    "branch equal 時，要把 rs、rt 拿來比對，所以要做減，也知道。",
+    "但 R-type 時，opcode 全是 000000，看 opcode 不知道要做什麼。要看哪個 field？function（考試也考過）。",
+    "所以 R-type 要多看一個 function code 才知道，因此需要一個小的 controller：ALU control。",
+    "opcode 分析出來，只告訴你這是哪一種 category（load/store、beq、或 R-type），再加上 function code，才決定真正給 ALU 的 control signal。這就是分兩部分的 controller。"
+   ],
+   "points": [
+    {
+     "t": 239,
+     "text": "多了 controller：main control（看 opcode）＋ ALU control。"
+    },
+    {
+     "t": 288,
+     "text": "不能馬上決定的：branch 要看減出來是否為 0；ALU 運算 lw／sw 知道是加、beq 是減，R-type 要看 funct。"
+    },
+    {
+     "t": 524,
+     "text": "main control 只告訴是哪一類，加上 funct 才決定 ALU control → 兩層 controller。"
+    }
+   ]
+  },
+  {
+   "title": "add 的 control signals：ALUSrc 0、MemtoReg 0、RegDst 1、RegWrite 1、PCSrc 0",
+   "scene": "cpu-addctl",
+   "cues": [
+    551,
+    577.11,
+    589.22,
+    629.77,
+    660.25,
+    783.36,
+    817.42,
+    858.13,
+    911.88,
+    966.54,
+    1003.03,
+    1088.96,
+    1100.72,
+    1146.73,
+    1202.88,
+    1214.3
+   ],
+   "explain": [
+    "control logic 看起來是 random logic、沒有規則，其實不難。只要了解 datapath 的路怎麼走，就能很快找出 [[truth table]]，再合成出 control logic。",
+    "先看執行 add 時，要設定哪些 control signal。",
+    "首先做 instruction fetch，從 instruction memory 拿出來。它的 rs、rt 都是地址，要連到該連的地方。",
+    "紅色的部分：前面 6 個 bits 給 controller decode；rs 連到第一個讀地址、rt 連第二個；最後的 field（funct）連到 ALU control。然後去 access register file。",
+    "第一個 operand 永遠是 rs，不用 control signal。第二個 operand 前面有一個 mux，它的 control signal 叫 ALUSrc。add 的第二個 source 從哪裡來？",
+    "從 rt 讀出來，所以 ALUSrc 要設 0，選中 register file 那一條。",
+    "算完要寫回去，又碰到一個 2-to-1 mux（MemtoReg）：寫回 register 的資料可能從 memory 來，也可能從 ALU 來。",
+    "add 是 R-type，結果從 ALU 過來，所以這個 mux 選 0：MemtoReg = 0。",
+    "add 的 destination 由 rd 指定。寫回 register file 時，要告訴它寫到哪裡：rt 指定的還是 rd 指定的？",
+    "add 要寫到 rd，所以 RegDst 設 1。到這裡 R-type 已經知道三個 control signal：ALUSrc 0、MemtoReg 0、RegDst 1。",
+    "還有一個比較難的：register file 是不是 always 都要寫進去？data 一直在那裡，clock 也一直會來，不能每個 cycle 都寫，要靠一個 control signal 決定。",
+    "這個 signal 就是 RegWrite（register 的 write enable）。只有 R-type 和 load 才寫，所以 add 時 RegWrite = 1。",
+    "對比一下：如果是 branch equal，要寫回 register file 嗎？不用，所以 beq 的 RegWrite 設 0。",
+    "最後，add 的 Program Counter 要選誰？一個是 PC + 4，一個是 branch 的 target。",
+    "add 不跳，選 PC + 4，所以這個 mux 的 control signal 設 0。",
+    "這樣把一個指令走一遍，就知道在這個指令下每個 control signal 要怎麼設。這是第一件事，知道了才能合成 control logic。程式對照控制表打勾。"
+   ],
+   "points": [
+    {
+     "t": 551,
+     "text": "control logic 看似 random，其實只要知道 datapath 怎麼走，truth table 就找得出來。"
+    },
+    {
+     "t": 577,
+     "text": "add：ALUSrc = 0（rt）、MemtoReg = 0（ALU）、RegDst = 1（rd）。"
+    },
+    {
+     "t": 990,
+     "text": "RegWrite 決定是否寫入 register file：add = 1、beq = 0；PCSrc = 0（PC + 4）。"
+    }
+   ],
+   "trap": "register file 的 data 與 clock 一直都在，沒有 RegWrite 控制就會每個 cycle 都寫進去。"
+  },
+  {
+   "title": "lw 的 control signals：ALUSrc 1、MemtoReg 1、RegDst 0、RegWrite 1",
+   "scene": "cpu-lwctl",
+   "cues": [
+    1244.2,
+    1338.5,
+    1353.18,
+    1377.76,
+    1387.24,
+    1415.67,
+    1496.2,
+    1514.49,
+    1535.09,
+    1550.57
+   ],
+   "explain": [
+    "再來看 load 指令，每個 signal 要設什麼。老師提醒：從這裡到 pipeline 都非常重要，上課專心聽，回家就很省力。",
+    "從 instruction fetch 開始，接著要做 ALU computation。",
+    "ALU 的第一個 source 是 rs，大家都是 rs，不用 control signal。",
+    "第二個 source 可能來自 rt，也可能是 16 bits 做 sign extension 來的。load 要用 offset，所以 ALUSrc 設 1。",
+    "算出來的是 memory 的 address，就去讀 memory。",
+    "讀出來要寫回 register file。這個 mux 的 source 從哪裡來？從 memory 來，所以 MemtoReg 設 1。",
+    "還要寫回去：destination 可能是 rt 或 rd。load 的 destination 由誰指定？rt。",
+    "選 rt，RegDst 設 0。",
+    "register file 的 RegWrite 是 1 還是 0？load 要寫回去，所以也設 1。這是很重要的 control signal。",
+    "跟 add 一樣，PC = PC + 4，所以 PC source 這個 mux 也設 0。程式對照控制表打勾。"
+   ],
+   "points": [
+    {
+     "t": 1243,
+     "text": "lw：ALUSrc = 1（sign-extended offset）、MemtoReg = 1（memory）、RegDst = 0（rt）、RegWrite = 1、PCSrc = 0。"
+    }
+   ]
+  },
+  {
+   "title": "beq 的 control signals：ALUSrc 0、RegWrite 0、Branch AND Zero",
+   "scene": "cpu-beqctl",
+   "cues": [
+    1554.7,
+    1593.08,
+    1611.59,
+    1616.17,
+    1631.03,
+    1645.99
+   ],
+   "explain": [
+    "再來 branch equal。",
+    "ALU 的第二個 source：比較 rs 和 rt，所以要 rt，ALUSrc 設 0。",
+    "比完之後，ALU 的值還是會跑到寫回的地方，那裡還是有值。這時候該寫嗎？不該。",
+    "所以 RegWrite 設 0。雖然線上都有 data、有 value，但 RegWrite 是 0 就不會寫進去。也因此 RegDst、MemtoReg 選什麼都沒關係，是 don't care（X）。",
+    "比對完之後，用 control 決定要不要跳：beq 的 Branch = 1。",
+    "如果相等（Zero = 1），PC source 就選要跳的那個地址；不相等就還是 PC + 4。"
+   ],
+   "points": [
+    {
+     "t": 1553,
+     "text": "beq：ALUSrc = 0（比較 rs、rt）、RegWrite = 0（不寫，RegDst／MemtoReg 為 don't care）；相等時 PC 選 branch target。"
+    }
+   ]
+  },
+  {
+   "title": "control 就是 input（opcode）到 output 的 truth table",
+   "scene": "cpu-tt",
+   "cues": [
+    1666.37,
+    1670.03,
+    1701.59
+   ],
+   "explain": [
+    "做 control 分析時，先把每個指令走一遍，知道每個 mux 怎麼設。知道以後，合成太簡單了：就是一個 truth table。",
+    "它只是 input 和 output 的 mapping：input 是 opcode，output 是每個 control signal。最難的是知道每個怎麼設，一旦知道就簡單了。",
+    "opcode 告訴你是哪個指令，就把 output 設成剛才走一遍得到的值。畫面上四種指令的值直接取自本章的控制訊號表。"
+   ],
+   "points": [
+    {
+     "t": 1658,
+     "text": "先把每個指令走一遍，知道每個 mux 怎麼設；之後合成就是一張 truth table：opcode → control signals。"
+    }
+   ]
+  },
+  {
+   "title": "ALUOp：opcode 先分成加、減、看 funct 三組",
+   "scene": "cpu-aluop",
+   "cues": [
+    1715.07,
+    1729.71,
+    1745.87,
+    1790.83,
+    1792.97,
+    1799.37,
+    1844.07,
+    1857.47,
+    1885.51,
+    1927.55,
+    1936.87,
+    1959.71,
+    1987.09,
+    2016.56
+   ],
+   "explain": [
+    "這種兩層的 controller 怎麼設計？先看 ALU 的 controller。",
+    "大部分的 control signal，在 opcode 決定之後就能發出來：要不要 read、write、要不要 memory write……知道 opcode 就知道是什麼指令。",
+    "ALU 就有點複雜：從 opcode 一半知道、一半不知道。",
+    "load / store 一看就知道要做加。",
+    "branch equal 要做減；那 R-type 呢？不知道。",
+    "所以光從 opcode，可以分成三個類別：知道要做加、知道要做減、還不知道（要看 function code）。",
+    "三種狀態要用幾個 bits 來 encode？2 個 bits（2² = 4 ≥ 3）。",
+    "例如 00 代表加、01 代表減、10 代表還不知道、要看 funct。這 2 bits 從 main controller 出來，叫 ALUOp。",
+    "ALUOp 這兩個 bits 再搭配指令最後的 function field（6 bits），才會真正決定給 ALU 的 control。",
+    "output 是什麼？就是 ALU 的 control signal，在設計 ALU 時已經定好了。",
+    "0000 是做 AND、0001 是做 OR、0010 是做加。",
+    "所以要做加時，ALU control 的 output 要產生 0010。",
+    "減是 0110：要指揮 ALU 做減，就要發出 0110。",
+    "什麼時候發出減？由 input 決定：從 opcode 就知道要減（beq），或者是 R-type、funct 說是 sub，都發出 0110。程式驗證兩種情況都得到 0110。"
+   ],
+   "points": [
+    {
+     "t": 1710,
+     "text": "兩層 controller：ALU control 比較複雜，從 opcode 只知道一半。"
+    },
+    {
+     "t": 1785,
+     "text": "opcode 分三類：lw／sw 做加、beq 做減、R-type 不知道 → 用 2 bits 的 ALUOp（00、01、10）。"
+    },
+    {
+     "t": 1885,
+     "text": "ALUOp 加上 funct 決定 ALU control：0000 AND、0001 OR、0010 add、0110 sub。"
+    }
+   ]
+  },
+  {
+   "title": "ALU control 的 truth table：00 XXXXXX → 0010、01 → 0110、10 看 funct",
+   "scene": "cpu-alutt",
+   "cues": [
+    2042.11,
+    2052.77,
+    2125.2,
+    2154.49,
+    2204.97,
+    2217.27,
+    2243.76,
+    2273.76,
+    2295.5,
+    2311.2,
+    2326.5
+   ],
+   "explain": [
+    "整理一下 controller：opcode 6 bits 進到 main control。",
+    "它發出上面 7 個控制 mux 和 enable 的 control signal，另外再發出 2 bits 的 ALU operation（ALUOp）。",
+    "ALUOp 這 2 bits 代表什麼？是加、是減、或是不知道。因為從 opcode 並不能知道全部的資訊。",
+    "只有三種 group，所以用 2 bits：把知道的部分資訊 encode 起來。",
+    "load 和 store 的時候，ALUOp = 00，表示要做加。",
+    "做減給 01，不知道給 10，分成三個 group。",
+    "有了這個資訊，ALU control 的 truth table 就出來了。",
+    "ALUOp 是 00 或 01 時，需不需要看 function field？它也會被讀出來，但不需要，是 don't care，在表裡打 X。",
+    "所以 truth table 裡碰到 00 XXXXXX 就發出 0010（加）；碰到 01，不管 funct，都發出 0110（減）。程式用任意 funct 驗證。",
+    "如果是 10，表示 unknown，要搭配 funct 才發出 control：add 0010、sub 0110、and 0000、or 0001、slt 0111，程式逐列算過。",
+    "左邊是 truth table 的 input，右邊是 output。會不會合成了？"
+   ],
+   "points": [
+    {
+     "t": 2042,
+     "text": "main control：7 個 mux／enable 訊號 + 2-bit ALUOp（00 加、01 減、10 看 funct）。"
+    },
+    {
+     "t": 2229,
+     "text": "ALU control truth table：00 XXXXXX → 0010；01 XXXXXX → 0110；10 + funct → add 0010、sub 0110、and 0000、or 0001、slt 0111。"
+    }
+   ]
+  },
+  {
+   "title": "ALU control 的邏輯式：一次看一個 output",
+   "scene": "cpu-alueq",
+   "cues": [
+    2362.68,
+    2365.72,
+    2380.84,
+    2394.24,
+    2410.66,
+    2434.6,
+    2466.32,
+    2475.61,
+    2508.91,
+    2579.16,
+    2595.56,
+    2607.8
+   ],
+   "explain": [
+    "這是一個 truth table。input 是幾個 bits？ALUOp 2 個加上 funct 6 個，共 8 個。",
+    "output 是幾個 bits？4 個。所以這是一個 8 個 input、4 個 output 的 truth table。",
+    "truth table 出來了，會不會合成？邏輯設計教過：用 Karnaugh map 就能合成出邏輯式。",
+    "左邊是 8 個 input，右邊是 output，接下來要把邏輯式寫出來。",
+    "合成時一次只看一個 output：第一個 function、第二個、第三個、第四個，就像邏輯設計時一個 output 一個 output 做。",
+    "第一個 output 叫 bit 3：它全部都是 0。",
+    "不管 input 怎麼變，它永遠是 0，是一個 constant 0，不需要任何邏輯。",
+    "第二個 bit（bit 2）：把是 1 的地方找出來，看在哪些條件下是 1。",
+    "條件是：ALUOp0 是 1 的時候，或者 ALUOp1 = 1 而且 funct 是某些值的時候；每個條件 AND 起來再 OR，就是 sum of products。利用 don't care 化簡後是 ALUOp0 + ALUOp1·F1。",
+    "同樣的方法做 bit 1 和 bit 0，得到另外兩條式子。程式把 4 條式子代回 7 列，output 全部正確。",
+    "畫成 gate 就是這樣，input 可以共用。",
+    "bit 3 是 constant 0，直接接到 ground 就好。這樣 ALU control 的 4 個 output 都完成了。"
+   ],
+   "points": [
+    {
+     "t": 2340,
+     "text": "input 8 bits（ALUOp 2 + funct 6）、output 4 bits；用 Karnaugh map 合成，一次看一個 output。"
+    },
+    {
+     "t": 2430,
+     "text": "bit 3 全為 0 → constant 0（接 ground）；bit 2 = ALUOp0 + ALUOp1·F1；bit 1 = ¬ALUOp1 + ¬F2；bit 0 = ALUOp1·(F3 + F0)。"
+    }
+   ]
+  },
+  {
+   "title": "Main control 的 truth table：opcode → 9 個 control signals",
+   "scene": "cpu-mainctl",
+   "cues": [
+    2616.1,
+    2639.18,
+    2668.9,
+    2684.36,
+    2714.56,
+    2760.98,
+    2783.36,
+    2830.06,
+    2843.14,
+    2874.13
+   ],
+   "explain": [
+    "剛剛做完的是 ALU controller，也就是小的那一個。順序是：main controller decode 完，產生 2 bits 的 ALUOp，再加上 function code，用剛剛的 truth table 合成 ALU control。我們是從後面往前講。",
+    "現在看 main controller。它主要看第一個 field（opcode）就能決定。知道是什麼指令，大部分 control 怎麼設就都知道了，剛才同學都答出來了。",
+    "這張圖就是 main controller 的 truth table：上面是不同的 opcode（input），下面是要發出的 control signal（output）。",
+    "opcode 000000 代表 R-type。R-type 的 RegDst 是 1、ALUSrc 是 0……這些值剛剛都 trace 過了，就填進去。",
+    "load 的 opcode 是 100011（35）：它的每個 mux 怎麼設，也寫出來。程式把 35、43、4 轉成 6 bits 核對。",
+    "舉例：R-type 的第一個 control signal 是 RegDst，決定 destination 從 rt 還是 rd 來。R-type 要寫 rd，所以是 1。",
+    "ALUSrc 決定 ALU 第二個 operand 從哪裡來：R-type 從 rt 來，所以是 0。設 0 選一條 path、設 1 選另一條。",
+    "ALUOp：R-type 是 unknown 那一組，我們剛剛給它 10，所以這裡設 10。",
+    "load 和 store 也一樣，每個 mux 照它們的 path 設好。它們要做加，落在 00 那組；beq 做減，是 01。",
+    "上面是 input、下面是 output，就是一張 truth table，只是寫成矩陣的樣子。"
+   ],
+   "points": [
+    {
+     "t": 2616,
+     "text": "順序：main controller decode → ALUOp + funct → ALU control。"
+    },
+    {
+     "t": 2640,
+     "text": "main control truth table：R-format（000000）、lw（100011）、sw（101011）、beq（000100）各自的 RegDst、ALUSrc、MemtoReg、RegWrite、MemRead、MemWrite、Branch、ALUOp。"
+    }
+   ]
+  },
+  {
+   "title": "每個 control signal 一條式子：RegWrite = R-format + lw，用 PLA 實作",
+   "scene": "cpu-pla",
+   "cues": [
+    2907.08,
+    2930.54,
+    2934.52,
+    2958.8,
+    2985.78,
+    3007.56,
+    3019.58
+   ],
+   "explain": [
+    "每個 control signal 都是一個 output，例如 RegDst 是一個 output、ALUSrc 也是一個 output。針對每個 output，看它什麼時候要設 1、什麼時候設 0。",
+    "例如 RegWrite：什麼時候會設成 1？也就是什麼時候會寫 register？",
+    "R-type 會寫，還有 load 也會寫。",
+    "所以 opcode 是 000000 或 100011 的時候設 1：用 AND gate 認出這兩個 opcode，再 OR 起來就是 RegWrite。程式對照真值表打勾。",
+    "這可以用 PLA 實作。PLA 是 AND 和 OR 的組合：AND plane 把各種 opcode 的狀況做出來，OR plane 把需要的條件 OR 起來。",
+    "例如 ALUSrc 什麼時候是 1？lw 和 sw 的時候，所以從這兩個 AND gate 各拉一條線到 ALUSrc 的 OR gate。",
+    "每個 output 都這樣接線過來，AND、OR 做成 PLA，main controller 就完成了。"
+   ],
+   "points": [
+    {
+     "t": 2900,
+     "text": "每個 output 看何時為 1：RegWrite = R-format + lw、ALUSrc = lw + sw…；用 PLA（AND plane + OR plane）實作。"
+    }
+   ]
+  },
+  {
+   "title": "下次：jump 與 pipeline（課堂行政）",
+   "scene": null,
+   "points": [
+    {
+     "t": 3026,
+     "text": "還有 jump 沒講，下次繼續，接著是更重要的 pipeline。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "lw 的 RegDst、ALUSrc、MemtoReg、RegWrite 分別是？",
+   "opts": [
+    "0, 1, 1, 1",
+    "1, 0, 0, 1",
+    "0, 1, 0, 1",
+    "X, 1, X, 0"
+   ],
+   "ans": "0, 1, 1, 1",
+   "why": "lw 寫 rt（RegDst 0）、用 offset（ALUSrc 1）、寫回 memory 資料（MemtoReg 1）、要寫 register（RegWrite 1）；1,0,0,1 是 R-type、X,1,X,0 是 sw。"
+  },
+  {
+   "q": "beq 的 RegDst 為什麼是 X（don't care）？",
+   "opts": [
+    "RegWrite = 0，選誰都不會寫入",
+    "beq 沒有 rt",
+    "beq 用 rd",
+    "ALU 不用"
+   ],
+   "ans": "RegWrite = 0，選誰都不會寫入",
+   "why": "不寫 register file，寫入地址選 rt 或 rd 都沒影響。"
+  },
+  {
+   "q": "ALUOp = 01 時，ALU control 輸出？",
+   "opts": [
+    "0110",
+    "0010",
+    "0000",
+    "看 funct 決定"
+   ],
+   "ans": "0110",
+   "why": "ALUOp 01 是 beq 的「減」組，不看 funct，直接輸出 subtract 0110。"
+  },
+  {
+   "q": "ALUOp = 10、funct = 100101 時 ALU control 輸出？",
+   "opts": [
+    "0001",
+    "0000",
+    "0010",
+    "0111"
+   ],
+   "ans": "0001",
+   "why": "100101 是 or，ALU control 0001。"
+  },
+  {
+   "q": "ALU control 的 Operation3（最高位）的邏輯式是？",
+   "opts": [
+    "恆為 0（接 ground）",
+    "ALUOp1",
+    "ALUOp0 + F1",
+    "F3 + F0"
+   ],
+   "ans": "恆為 0（接 ground）",
+   "why": "7 列的 output 最高位都是 0，所以是 constant 0。"
+  },
+  {
+   "q": "RegWrite 在哪些指令為 1？",
+   "opts": [
+    "R-format 與 lw",
+    "lw 與 sw",
+    "R-format 與 beq",
+    "只有 lw"
+   ],
+   "ans": "R-format 與 lw",
+   "why": "只有 R-type 和 load 要寫 register file；PLA 中 RegWrite = Rformat + lw。"
+  },
+  {
+   "q": "ALU control truth table 的 input 和 output 各幾個 bits？",
+   "opts": [
+    "8 個 input、4 個 output",
+    "6 個 input、4 個 output",
+    "2 個 input、4 個 output",
+    "8 個 input、9 個 output"
+   ],
+   "ans": "8 個 input、4 個 output",
+   "why": "input = ALUOp 2 bits + funct 6 bits；output = 4-bit ALU control。"
+  }
+ ]
+}

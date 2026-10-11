@@ -1,0 +1,610 @@
+{
+ "video": "iblxfbOsp_g",
+ "label": "黃婷婷教授計算機結構_第15A講 Single-Cycle Processor",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Fetch：所有指令都有的部分",
+   "scene": "cpu-fetch3",
+   "cues": [
+    22.32,
+    49.46,
+    65.59,
+    74.47
+   ],
+   "explain": [
+    "複習上次：組 datapath 要一個指令一個指令來。第一部分是 [[instruction fetch]]，每個指令都一定要做。",
+    "Program Counter 用裡面的地址告訴 instruction memory 要讀哪裡，讀出來的指令就放在這條線上。",
+    "接著 PC 的值要加 4，所以需要一個加法器（Add）；加完要存回 PC。",
+    "但不是馬上存回去，要等到 clock edge trigger（0 變 1）的時候才寫進 PC。這部分所有指令都有。"
+   ],
+   "points": [
+    {
+     "t": 19,
+     "text": "每個指令都要 fetch：PC 的地址去 instruction memory 拿指令；PC + 4 等到 clock edge 才存回。"
+    }
+   ]
+  },
+  {
+   "title": "複習 R-type 的 datapath",
+   "scene": "cpu-rdp3",
+   "cues": [
+    92.85,
+    109.75,
+    120.91,
+    146.59,
+    192.57,
+    231.17
+   ],
+   "explain": [
+    "上次介紹的加、減，都是 R-type 指令：op、rs、rt、rd、shift amount、function。先了解它的動作。",
+    "它的 RTL：R[rd] ← R[rs] op R[rt]。rs、rt、rd 都是 register file 裡的地址，告訴你去第幾個 register。",
+    "rs、rt 把東西拿出來之後做 operation，做完放到 rd 指定的地方。",
+    "所以 rs 接到 register file 的第一個 read address、rt 接第二個。給它地址，data 就從 busA、busB 出來。",
+    "讀完要寫回去，寫的地址在 rd，所以 rd 接到 write address。地址是 5 bits，data 是 32 bits。",
+    "rs、rt 的內容經過 ALU 算完，結果接回 write data。這就是 add / subtract 的 datapath。"
+   ],
+   "points": [
+    {
+     "t": 88,
+     "text": "R-type：R[rd] ← R[rs] op R[rt]；rs → 第一個 read address、rt → 第二個、rd → write address，ALU 結果接回 write data。"
+    }
+   ]
+  },
+  {
+   "title": "Load／store 的 datapath",
+   "scene": "cpu-lsdp3",
+   "cues": [
+    248.05,
+    266.49,
+    286.09,
+    322.95,
+    336.07,
+    342.51,
+    438.83,
+    458.53,
+    465.03,
+    494.65,
+    523.43
+   ],
+   "explain": [
+    "再看 store、load。它的 format 是 op code、rs、rt、16 bits 的 immediate。",
+    "rs 代表 [[base register]]：它的內容加上 offset，就是 memory 的地址。",
+    "所以要去 register file 讀 rs 這個 register 的內容。",
+    "immediate 在指令最後 16 bits，data 卻是 32 bits，要先做 sign extension，才能和 base 相加。",
+    "rs 的內容和 sign-extended 的數經過 ALU，就算出 data memory 的地址。這部分 load 和 store 都一樣。",
+    "可是 rt 的角色不一樣。load 是把 memory 的東西搬到 register file，這時 rt 代表什麼？",
+    "load 時 rt 告訴我們要寫到哪一個 register，所以 rt 要接到 register file 的 write address。",
+    "資料從哪裡來？從 data memory 讀出來，所以有一條線從 memory 接到 write data。",
+    "那 store 呢？store 是把 register file 的東西放到 memory。rs 已經拿去算地址了，要存的 data 從哪裡來？",
+    "data 由 rt 描述。這時 rt 的角色是「讀第二個 operand」，所以接到第二個 read address，把資料讀出來。",
+    "讀出來的值接到 data memory 的 write data，因為 store 要寫 memory。"
+   ],
+   "points": [
+    {
+     "t": 237,
+     "text": "rs 是 base register；immediate sign-extend 後與 R[rs] 經 ALU 算出 data memory 地址（load、store 相同）。"
+    },
+    {
+     "t": 343,
+     "text": "load：rt 是寫入目標 → 接 write address；memory 讀出的 data 接 write data。"
+    },
+    {
+     "t": 465,
+     "text": "store：rt 是第二個 read address，讀出的值接到 data memory 的 write data。"
+    }
+   ]
+  },
+  {
+   "title": "fan-out 可以、fan-in 要用 mux：write address 的 rt／rd",
+   "scene": "cpu-fanout",
+   "cues": [
+    535.01,
+    569.85,
+    584.09,
+    627.57,
+    680.7,
+    704.75,
+    730.4,
+    745.5
+   ],
+   "explain": [
+    "為什麼要這樣接？因為一開始指令讀出來，根本不知道它是 R-type、load 還是 store，所以所有可能都先接好。",
+    "[[MIPS]] 的 format 盡量一致：不管 R-type 還是 load / store，rs 的位置都一樣，rt 也一樣，所以不需要做選擇。",
+    "但有一個地方不一樣：寫入的地址。R-type 給 rd，load 給 rt。",
+    "先講一個重要觀念。邏輯設計裡，一個 gate 的 output 可以同時接到好幾個 gate 的 input，這叫 fan out，完全沒問題。",
+    "可是一個 input 可以同時接兩個人的 output 嗎？不行，兩個訊號會打架，不知道要聽誰的。",
+    "所以前面要放一個 select 的東西，也就是 mux，由它選要哪一個 input。",
+    "回到 datapath：register file 的 write address 一會兒是 rt、一會兒是 rd，不能兩條線同時接上去。",
+    "所以前面要放一個 2-to-1 的 mux，選 rt 或 rd，再接到 write address。"
+   ],
+   "points": [
+    {
+     "t": 531,
+     "text": "一開始不知道是什麼指令，所以所有可能都要接；format 一致（rs、rt 位置固定）就不必選擇。"
+    },
+    {
+     "t": 609,
+     "text": "一個 output 可以給很多人（fan-out）；一個 input 不能同時接兩個來源，要用 mux 選。"
+    },
+    {
+     "t": 723,
+     "text": "write address 有時是 rt、有時是 rd → 前面放 2-to-1 mux。"
+    }
+   ],
+   "trap": "fan-out 沒問題；同一個 input 有兩個來源時一定要加 mux。"
+  },
+  {
+   "title": "合併 R-type 與 load／store：ALUSrc 與 MemtoReg 兩個 mux",
+   "scene": "cpu-merge",
+   "cues": [
+    790.92,
+    816.54,
+    842.17,
+    888.4,
+    892.84,
+    904.4,
+    937.46,
+    943.32
+   ],
+   "explain": [
+    "接下來把 add / subtract 跟 load / store 合併成一個 datapath，讓它兩種指令都能執行。",
+    "ALU 的第一個 operand 永遠是 rs，不管哪種指令都一樣，只有一種可能，直接接過去就好。這就是 format 一致的好處。",
+    "第二個 operand 有兩種來源：R-type 來自 register file（rt），load / store 來自 sign extension（offset）。一個 input 不能接兩個來源。",
+    "所以前面加一個 2-to-1 mux，用 control input 控制它，這個 [[control signal]] 叫 ALUSrc。",
+    "ALUSrc = 0 時，從 register file 讀出來的那條；ALUSrc = 1 時，選 sign extension 那條。",
+    "寫回 register file 的 data 也有兩個來源：ALU 算完的結果，或 load 從 memory 讀出來的資料。",
+    "所以這裡又要一個 2-to-1 mux，control signal 叫 MemtoReg。",
+    "MemtoReg = 1 表示是 load，寫回 memory 的資料；MemtoReg = 0 表示是 R-type，寫回 ALU 的結果。"
+   ],
+   "points": [
+    {
+     "t": 790,
+     "text": "ALU 第一個 operand 永遠是 rs；第二個來自 register（R-type）或 sign extension（load／store）→ ALUSrc mux（0：register、1：immediate）。"
+    },
+    {
+     "t": 899,
+     "text": "寫回 register file 的 data 來自 ALU 或 memory → MemtoReg mux（0：ALU、1：memory）。"
+    }
+   ]
+  },
+  {
+   "title": "課堂問答：R-type 與 load 的 ALUSrc、MemtoReg、RegDst",
+   "scene": "cpu-quiz3",
+   "cues": [
+    972.14,
+    994.8,
+    1007.75,
+    1020.89,
+    1060.81,
+    1092.38
+   ],
+   "explain": [
+    "老師點同學回答：如果是 R-type，ALUSrc 要設多少？第二個 operand 從 register file 來，所以是 0。",
+    "R-type 的 MemtoReg 要設 1 還是 0？寫回的是 ALU 的結果，所以是 0。程式對照控制訊號表，打勾。",
+    "換 load：ALUSrc 要設多少？第二個 operand 是 offset（sign extension 來的），所以是 1。",
+    "load 的 MemtoReg 呢？寫回的是 memory 讀出來的資料，所以是 1。",
+    "老師再問：這張圖還沒畫完整，write register 前面需不需要一個 2-to-1 mux？",
+    "需要。load 的寫入地址是 rt，R-type 是 rd，所以前面要有一個 mux 決定 destination 的地址，之後叫 RegDst。"
+   ],
+   "points": [
+    {
+     "t": 964,
+     "text": "R-type：ALUSrc 0、MemtoReg 0；load：ALUSrc 1、MemtoReg 1；write register 前也要 mux（rt 或 rd）。"
+    }
+   ]
+  },
+  {
+   "title": "加入 beq：ALU 做減法、另一個 adder 算 target、mux 選下一個 PC",
+   "scene": "cpu-beqdp",
+   "cues": [
+    1102.5,
+    1121.28,
+    1141.74,
+    1152.24,
+    1191.94,
+    1208.08,
+    1242.02,
+    1251.68,
+    1276.88,
+    1287.14
+   ],
+   "explain": [
+    "再加第三類指令：branch，它也是 [[I-type]]。R-type、load / store、branch 三大類就齊了。",
+    "beq 要做什麼？把 rs 和 rt 比較，看有沒有 equal；相等就跳到一個新的 address，而不是 PC + 4。",
+    "怎麼比較？用 ALU 做減法就好：把 rs、rt 的內容讀出來相減。",
+    "還要算出新的 target address。PC + 4 不管怎樣都已經先算好了，跳的目標就以它為基準。",
+    "這個地址一定要先算好。不能等到確定要跳才開始算，那樣就來不及了。",
+    "rs、rt 讀出來，ALU 做減。減出來不等於 0 表示 not equal；等於 0，Zero 這條線就是 1。示意：7 − 7 = 0。",
+    "ALU 已經拿去做比較了，target address 怎麼辦？需要另外一個加法器專門算它。",
+    "照定義：後 16 bits 先 sign extend，再 left shift 兩位（等於補兩個 0、乘 4），加上 PC + 4。示意：1004 + 3 × 4 = 1016。",
+    "要不要跳呢？再用一個 2-to-1 的 mux，在 PC + 4 和剛算好的 target 之間選。",
+    "如果答案是 equal（Zero = 1）就跳，選 target；不是的話就不跳，選 PC + 4。"
+   ],
+   "points": [
+    {
+     "t": 1100,
+     "text": "beq（I-type）：比較 rs、rt，相等就跳到新地址；用 ALU 做減法比較。"
+    },
+    {
+     "t": 1152,
+     "text": "target = PC + 4 + (SignExt(offset) << 2)，要先算好，需要另一個 adder。"
+    },
+    {
+     "t": 1274,
+     "text": "用 2-to-1 mux 選 PC + 4 或 target；equal（減出來 0）才跳。"
+    }
+   ]
+  },
+  {
+   "title": "完整的單週期 datapath：每條線的原因",
+   "scene": "cpu-full",
+   "cues": [
+    1295.02,
+    1308.9,
+    1318.3,
+    1328.44,
+    1346.96,
+    1372.08,
+    1398.96,
+    1421.56,
+    1448.68
+   ],
+   "explain": [
+    "這就是完整的 [[single cycle]] implementation。雖然只做了三類指令，但已經包含最主要的類別。",
+    "PC 讀出來之後，跟 + 4 的加法器產生下一個 sequential address。",
+    "如果是 branch equal，sign extension 出來的值 shift 兩位，跟 PC + 4 相加，算出 branch target。",
+    "這個 mux 決定要不要跳；選出來的就是下一個要執行的 instruction 的地址，寫回 Program Counter。這是控制「次序」的部分。",
+    "再看 datapath 的部分：rs、rt 接到 register file 的第一、第二個讀地址。但 rt 也可能是 destination，所以多拉一條 fan out 出去。",
+    "寫回 register file 的地址可能是 rt 也可能是 rd，所以要一個 2-to-1 mux，control signal 叫 register destination（RegDst）。",
+    "ALU 第一個 operand 永遠是 rs，直接接過去；第二個可能來自 register file，也可能來自 sign extension（算 memory 地址用），所以這裡也有 mux（ALUSrc）。",
+    "ALU 的結果要寫回 register file：R-type 直接寫回；如果是 load，ALU 算的是地址，要從 memory 讀出來再寫回，所以又一個 mux（MemtoReg）。",
+    "這張圖最重要，學會了就已經會一半的 pipeline。把每一條線的原因都找出來，你就知道整個設計怎麼來的，不用背。"
+   ],
+   "points": [
+    {
+     "t": 1293,
+     "text": "PC + 4 與 branch target（SignExt << 2 + PC + 4）由 mux 選出 next PC。"
+    },
+    {
+     "t": 1347,
+     "text": "rs、rt 接 register file；寫入地址 rt／rd → RegDst mux；ALU 第二運算元 → ALUSrc mux；寫回資料 → MemtoReg mux。"
+    },
+    {
+     "t": 1445,
+     "text": "這張圖最重要：搞懂每一條線的原因，就能進到 pipeline。"
+    }
+   ]
+  },
+  {
+   "title": "add 的 data flow：在完整 datapath 上走一遍",
+   "scene": "cpu-addflow",
+   "cues": [
+    1500,
+    1508.8,
+    1517.04,
+    1534.18,
+    1543.38,
+    1570.36,
+    1581.26,
+    1597.32
+   ],
+   "explain": [
+    "用 add 看一次 data flow：資料怎麼在這張圖上跑。畫面上的 $t2 = 7、$t3 = 5 是示意的數字。",
+    "一開始，Program Counter 告訴我們要去哪裡拿指令。",
+    "去 instruction memory 拿出來，裡面的 rs、rt、rd 就出來了，去 access register file。",
+    "同時 Program Counter 要 increment by 4，算好放在這邊等。",
+    "讀出第一個、第二個 operand。注意這裡的 control 要設 ALUSrc = 0：第二個 operand 從 register file 來。",
+    "ALU 的結果也接到 data memory（這是 fan out），memory 只要 input 有變化也會去讀；讀就讀，我們不會取它的值。",
+    "因為這裡有一個 mux 控制它：MemtoReg = 0，選 ALU 這條路寫回去。",
+    "結果其實早就算好、在這裡等著；等到 clock edge 來了，才「搭」一聲寫進 register file（$t1 = 12），PC 也同時更新。"
+   ],
+   "points": [
+    {
+     "t": 1500,
+     "text": "add：PC → instruction memory；rs、rt 讀 register file；PC + 4；ALUSrc = 0。"
+    },
+    {
+     "t": 1555,
+     "text": "ALU 結果也會送到 data memory（fan-out），但 MemtoReg = 0 選 ALU；clock edge 才寫回。"
+    }
+   ]
+  },
+  {
+   "title": "Clocking：clock period 設成最長的 delay",
+   "scene": "cpu-clock3",
+   "cues": [
+    1640.92,
+    1662.4,
+    1690.58
+   ],
+   "explain": [
+    "回顧 clocking methodology：clock transition 的時候，data available，開始運算。",
+    "全部計算完畢之後，下一個 0 → 1 的 transition 才可以來，代表新的一個 cycle 開始。",
+    "所以 [[clock period]] 一定要設成運算中最長的那條 path 的 delay；否則 clock transition 時還有 path 沒算完，就會 latch 到錯誤的資料。"
+   ],
+   "points": [
+    {
+     "t": 1635,
+     "text": "transition 後 data available 開始計算，全部算完下一個 edge 才能來；clock period 設為最長 path 的 delay。"
+    }
+   ]
+  },
+  {
+   "title": "R-type 的 timing：clock-to-Q、IM、decode／register、ALU",
+   "scene": "cpu-rtime",
+   "cues": [
+    1707.78,
+    1721.66,
+    1742.16,
+    1772.2,
+    1781.32,
+    1809.53,
+    1849.52,
+    1896.96,
+    1925.18
+   ],
+   "explain": [
+    "看看這幾個指令的 clock period 要多長。先看最簡單的 R-type，這叫 register to register timing。畫面上的 ps 數字都是示意，老師沒有給。",
+    "從新的 clock edge trigger 開始（這張投影片是 negative edge）。",
+    "trigger 之後，資料進到 PC，要一點點時間 output 才看得到，因為裡面是 cross-coupled 的 NOR gate 之類的電路。這叫 clock-to-Q delay。",
+    "PC 的 output 一出來，就拿去 access instruction memory。讀出來也要時間：instruction memory access time。",
+    "指令出來之後，controller 要 decode，才知道是加還是 load、mux 該設 0 還是 1，這有 control 的 delay。",
+    "同時，rs、rt 的位置已經知道了，趕快去 access register file，這也有 delay。",
+    "讀出來之後 ALU 計算，有 ALU 的 delay。ALU 算完、data ready，clock 才可以 transition。",
+    "有的事情可以同時做：control decode 和 register access 可以一起進行，所以只要算比較長的那一個。",
+    "有的一定要接續：register 讀出來之後才能算 ALU，所以要相加。照這樣找出最長的 path：示意的 R-type 是 30 + 200 + 100 + 200 = 530 ps。"
+   ],
+   "points": [
+    {
+     "t": 1700,
+     "text": "register-to-register timing：clock-to-Q → instruction memory access → control decode 與 register file access（並行）→ ALU。"
+    },
+    {
+     "t": 1899,
+     "text": "可並行的取較長者，必須接續的要相加；找出最長 path。"
+    }
+   ]
+  },
+  {
+   "title": "Critical path：load 最長",
+   "scene": "cpu-lwtime",
+   "cues": [
+    1945.14,
+    1957.16,
+    1993.34,
+    2008.22,
+    2039.7,
+    2045.3,
+    2071.14
+   ],
+   "explain": [
+    "R-type 是最長的嗎？介紹過的 beq、load、store、R-type 中，最長的應該是 load：算完地址還要再去 memory 拿東西。",
+    "最長的那條 path 叫 critical path。前面和 R-type 一樣：clock-to-Q、instruction memory、decode 和 register access、ALU。",
+    "但 load 的 ALU 只是算出地址，還要做 access data memory 的動作，讀完才能寫回，所以比 R-type 還長。",
+    "列出來：clock-to-Q、instruction memory、register file access、ALU、data memory access，再加上寫 register file 的 setup time。",
+    "setup time：clock 要 transition 之前，data 必須先準備好、穩定一段時間，不能 clock 來的時候才急急忙忙在變。",
+    "clock skew：clock 送到各處的時間有先有後。為了不產生 racing，要用最壞的狀況，把 clock 再拉長一點。",
+    "真正最長的 path 要到這裡，clock period 一定要取這麼長。示意數字加起來是 760 ps。"
+   ],
+   "points": [
+    {
+     "t": 1939,
+     "text": "load 最長：算完地址還要 access data memory，才寫回。"
+    },
+    {
+     "t": 2003,
+     "text": "critical path = clock-to-Q + IM + register file + ALU + data memory + setup time + clock skew。"
+    }
+   ],
+   "trap": "clock period 要涵蓋 setup time 與 clock skew，不只是各單元 delay 的和。"
+  },
+  {
+   "title": "Control：決定 datapath 走哪條路",
+   "scene": "cpu-ctrl3",
+   "cues": [
+    2089.98,
+    2100.64,
+    2117.72,
+    2132.68,
+    2171.89,
+    2190.4
+   ],
+   "explain": [
+    "datapath 其實算簡單的。再來是 control：什麼叫 control？",
+    "PC 的 source 從哪裡來？到底要跳還是不跳？register 要不要 write？destination 是 rt 還是 rd？這些都要有人決定。",
+    "它們全都是 control signal，就是那些 2-to-1 mux 的選擇訊號。",
+    "Controller 從 opcode 發出 control signal 控制 datapath；datapath 也會回傳一些訊號給 controller。例如 beq 減出來等於 0，就告訴它「這兩個一樣」，PC 的 source 就要不一樣。",
+    "datapath 告訴你每個指令有哪些路徑可以走，control 決定這次走哪一條，因為我們現在在做什麼 operation 而定。",
+    "control signal 的產生沒有規律，所以 control logic 叫 random logic；不像加法器每個 bit 的電路都一樣，那叫 regular logic。"
+   ],
+   "points": [
+    {
+     "t": 2080,
+     "text": "control 決定 PC source、要不要寫 register、destination 是 rt 或 rd…，就是各個 mux 的 control signal。"
+    },
+    {
+     "t": 2130,
+     "text": "datapath 也回傳訊號給 controller（如 beq 的 Zero）；control logic 是 random logic。"
+    }
+   ]
+  },
+  {
+   "title": "MIPS 的 format 一致，control 才簡單",
+   "scene": "cpu-regular",
+   "cues": [
+    2210,
+    2216.94,
+    2241.8,
+    2265,
+    2278.41,
+    2291.52,
+    2312.04
+   ],
+   "explain": [
+    "老師說：MIPS 的 instruction set 設計得很好（比 Intel 好），看完 datapath 就知道為什麼。",
+    "op code 永遠在前 6 個 bits。如果不知道它在哪裡，讀進來每個地方都要檢查；固定在那裡，直接拿出來就知道是什麼指令。",
+    "設計 datapath 時也體會到了：某個 field 可能是這個也可能是那個，就要全部接起來再用 control 選。format 越一致，設計就越簡單。",
+    "要讀 register file：rs 永遠固定在同一個地方，第二個一定是 rt（R-type、beq、store 都讀 rt）。",
+    "base register 永遠在 rs；beq、load、store 的 offset 一定在後面 16 bits。",
+    "destination register 就是剛剛講的：可能是 rt，也可能是 rd。這是唯一不太一致的地方。",
+    "沒關係，用一個 mux 選要寫回哪個 address。如果 format 越不一致，就要越多這種 mux。"
+   ],
+   "points": [
+    {
+     "t": 2210,
+     "text": "op code 永遠在前 6 bits；rs 位置固定、第二個讀 rt；base 在 rs、offset 在後 16 bits；只有 destination（rt／rd）不一致，要 mux。"
+    }
+   ]
+  },
+  {
+   "title": "Controller：輸入 opcode，輸出各個 control signal",
+   "scene": "cpu-ctrlunit",
+   "cues": [
+    2316.24,
+    2355.42,
+    2362.18,
+    2387.28,
+    2399.2,
+    2437
+   ],
+   "explain": [
+    "control signal 是什麼？就是圖上這些控制點。會設計 datapath、再會設計 control，你就會設計一個 processor。看起來亂七八糟，其實了解了就很簡單。",
+    "例如 register file：給它 address 不代表一定要寫，還要一個 control signal（RegWrite）是 1 才寫。",
+    "memory 也一樣：只有 MemWrite 是 1 才寫，否則它就一直在讀。這些都是要設對的 control signal。",
+    "Controller 在這裡，它把所有的 control signal 發出來，去控制不同的地方。",
+    "Controller 的 input 是什麼？最主要是 opcode（前 6 bits）。知道 opcode 就知道是什麼指令，也就知道每個 control signal 要設什麼值。",
+    "發出來的 control signals 分別接到這些 mux 的 select input，去控制這些 mux。"
+   ],
+   "points": [
+    {
+     "t": 2315,
+     "text": "control signal 包括 RegWrite、MemWrite 等 write enable 與各 mux 的 select；controller 的 input 主要是 opcode，輸出接到各個控制點。"
+    }
+   ]
+  },
+  {
+   "title": "兩個例外：PCSrc 要看 Zero、ALU 要看 funct（ALU control）",
+   "scene": "cpu-twonot",
+   "cues": [
+    2443.68,
+    2463.68,
+    2476.26,
+    2492.16,
+    2526.54,
+    2537.52,
+    2554.74,
+    2610.88,
+    2645.6,
+    2650.6,
+    2686.64
+   ],
+   "explain": [
+    "要注意：有幾個 control signal 不是從 controller 一出來就能決定的。",
+    "大部分可以立刻決定。像 destination 是 rt 還是 rd，controller 一分析 opcode 就知道，立刻接過去。",
+    "第一個例外：下一個 instruction 在哪裡（PCSrc）。controller 從 opcode 知道這是 branch，但 branch 不一定會跳。",
+    "還要看 ALU 把 rs、rt 相減，結果是不是 0（equal），是 0 才真的要跳。",
+    "所以這裡有一個 AND gate：Branch（controller 給的）AND Zero（datapath 給的），兩個都成立才得到 PCSrc。畫面把四種組合都驗證了。",
+    "第二個例外：ALU 要做什麼 operation。",
+    "還記得設計 ALU 時的 control code 嗎？0010 做加、0000 做 AND、0001 做 OR、0110 做減、0111 做 slt。",
+    "如果是 R-type，只看 opcode 能知道要做什麼嗎？不行，因為 R-type 的 opcode 都長得一模一樣（000000），要再看 function code。",
+    "所以需要第二個 stage 的 decoder：ALU control，它把 opcode 的資訊和 funct 合起來，才知道要做什麼運算。",
+    "不過 opcode 也不是完全沒用：load / store 一看就知道要做加（算地址），branch 一看就知道要做減。opcode 能告訴你是哪一個 group：加、減、或者要看 funct。",
+    "所以 opcode 先做部分的解碼，再加上 function code，兩個合起來才真正決定 ALU control 的值，去控制 ALU 做什麼。"
+   ],
+   "points": [
+    {
+     "t": 2440,
+     "text": "大部分 control signal 由 opcode 立刻決定；PCSrc 還要看 Zero：PCSrc = Branch AND Zero。"
+    },
+    {
+     "t": 2533,
+     "text": "ALU control（0000 AND、0001 OR、0010 add、0110 sub、0111 slt）：R-type 的 opcode 都一樣，要再看 funct → 第二層 decoder。"
+    },
+    {
+     "t": 2650,
+     "text": "opcode 給部分資訊（lw／sw 做加、beq 做減、R-type 看 funct），加上 funct 才決定 ALU control。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "單週期 datapath 中，ALU 第二個 operand 前的 mux 叫什麼？lw 時設多少？",
+   "opts": [
+    "ALUSrc，lw 設 1",
+    "ALUSrc，lw 設 0",
+    "MemtoReg，lw 設 1",
+    "RegDst，lw 設 0"
+   ],
+   "ans": "ALUSrc，lw 設 1",
+   "why": "ALUSrc = 1 選 sign-extended offset，lw／sw 用來算地址；R-type 與 beq 設 0。"
+  },
+  {
+   "q": "R-type 指令的 MemtoReg 應設為？",
+   "opts": [
+    "0",
+    "1",
+    "X",
+    "依 funct 而定"
+   ],
+   "ans": "0",
+   "why": "R-type 寫回 ALU 的結果，所以 MemtoReg = 0；lw 寫回 memory 資料才是 1。"
+  },
+  {
+   "q": "為什麼 register file 的 write register 前要放 mux？",
+   "opts": [
+    "R-type 寫 rd，lw 寫 rt",
+    "要選 rs 或 rt 讀",
+    "fan-out 太多",
+    "要選 PC + 4 或 target"
+   ],
+   "ans": "R-type 寫 rd，lw 寫 rt",
+   "why": "同一個 input 有兩個可能來源（fan-in），必須用 mux（RegDst）選。"
+  },
+  {
+   "q": "beq 的 PCSrc 怎麼產生？",
+   "opts": [
+    "Branch AND Zero",
+    "只看 opcode",
+    "Branch OR Zero",
+    "ALUOp"
+   ],
+   "ans": "Branch AND Zero",
+   "why": "opcode 只知道是 branch，還要 ALU 減出 0（Zero = 1）才跳。"
+  },
+  {
+   "q": "單週期 CPU 中 critical path 最長的是哪類指令？",
+   "opts": [
+    "lw",
+    "R-type",
+    "beq",
+    "sw"
+   ],
+   "ans": "lw",
+   "why": "lw 經過 instruction memory、register file、ALU、data memory，再寫回 register file，用到最多單元。"
+  },
+  {
+   "q": "為什麼需要 ALU control 這個第二層 decoder？",
+   "opts": [
+    "R-type 的 opcode 都相同，要再看 funct",
+    "opcode 太長",
+    "ALU 太慢",
+    "為了算 branch target"
+   ],
+   "ans": "R-type 的 opcode 都相同，要再看 funct",
+   "why": "opcode 只能分出加（lw／sw）、減（beq）或「看 funct」三組，R-type 要 funct 才知道做什麼。"
+  },
+  {
+   "q": "control decode 與 register file access 在時間上的關係是？",
+   "opts": [
+    "可以同時進行，取較長者",
+    "一定先 decode 再讀 register",
+    "一定先讀 register 再 decode",
+    "兩者都在 ALU 之後"
+   ],
+   "ans": "可以同時進行，取較長者",
+   "why": "rs、rt 位置固定，讀出指令後就能一邊 decode 一邊讀 register file。"
+  }
+ ]
+}
